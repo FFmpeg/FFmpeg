@@ -4,6 +4,8 @@
 #include <algorithm>
 #include <set>
 #include <Windows.h>
+#include <process.h>
+#include <direct.h>
 
 bool projectGenerator::passAllMake( )
 {
@@ -65,6 +67,8 @@ bool projectGenerator::passAllMake( )
 bool projectGenerator::outputProject( )
 {
     //Output the generated files
+    uint uiSPos = m_sProjectDir.rfind( '/', m_sProjectDir.length( ) - 2 ) + 1;
+    string sProjectName = m_sProjectDir.substr( uiSPos, m_sProjectDir.length( ) - 1 - uiSPos );
     //Check that all headers are correct
     for( StaticList::iterator itIt=m_vHIncludes.begin( ); itIt!=m_vHIncludes.end( ); itIt++ )
     {
@@ -159,8 +163,6 @@ bool projectGenerator::outputProject( )
     }
 
     //We now have complete list of all the files the we need
-    uint uiSPos = m_sProjectDir.rfind( '/', m_sProjectDir.length()-2 )+1;
-    string sProjectName = m_sProjectDir.substr( uiSPos, m_sProjectDir.length()-1-uiSPos );
     cout << "  Generating project file (" << sProjectName << ")..." << endl;
     //Open the input temp project file
     m_ifInputFile.open( "../templates/template_in.vcxproj" );
@@ -803,61 +805,368 @@ cd $(ProjectDir)\n\
     ofFiltersFile << sFiltersFile;
     ofFiltersFile.close( );
 
-    //Copy across the module definitions
-    string sSourceFile = "../templates/" + sProjectName + ".def";
-    //Open the input module def file
-    m_ifInputFile.open( sSourceFile );
+    //Open the exports files and get export names
+    cout << "  Generating project exports file (" << sProjectName << ")..." << endl;
+    string sExportList;
+    if( !findFile( this->m_sProjectDir + "/*.v", sExportList ) )
+    {
+        cout << "  Error: Failed finding project exports (" << sProjectName << ")" << endl;
+        return false;
+    }
+    //Open the input export file
+    m_ifInputFile.open( this->m_sProjectDir + sExportList );
     if( !m_ifInputFile.is_open( ) )
     {
-        cout << "  Error: Failed opening template module definition (" << sSourceFile << ")" << endl;
+        cout << "  Error: Failed opening project exports (" << this->m_sProjectDir + sExportList << ")" << endl;
         return false;
     }
 
     //Load whole file into internal string
-    string sModuleFile;
+    string sExportsFile;
     m_ifInputFile.seekg( 0, m_ifInputFile.end );
-    uiBufferSize = (uint)m_ifInputFile.tellg();
+    uiBufferSize = (uint)m_ifInputFile.tellg( );
     m_ifInputFile.seekg( 0, m_ifInputFile.beg );
-    sModuleFile.resize( uiBufferSize );
-    m_ifInputFile.read( &sModuleFile[0], uiBufferSize );
-    if( uiBufferSize != m_ifInputFile.gcount() )
+    sExportsFile.resize( uiBufferSize );
+    m_ifInputFile.read( &sExportsFile[0], uiBufferSize );
+    if( uiBufferSize != m_ifInputFile.gcount( ) )
     {
-        sModuleFile.resize( (uint)m_ifInputFile.gcount() );
+        sExportsFile.resize( (uint)m_ifInputFile.gcount( ) );
     }
     m_ifInputFile.close( );
 
-    //Check the module file for configuration specific outputs
-    string sModuleSearch = ";if ";
-    string sModuleSearchEnd = ";endif";
-    uiFindPos = sModuleFile.find( sModuleSearch );
-    while( uiFindPos != string::npos )
+    //Search for start of global tag
+    string sGlobal = "global:";
+    StaticList vExportStrings;
+    uiFindPos = sExportsFile.find( sGlobal );
+    if( uiFindPos != string::npos )
     {
-        //Get the config option
-        uint uiFindPosE = uiFindPos+sModuleSearch.length();
-        uint uiFindPos2 = sModuleFile.find( '\n', uiFindPosE );
-        string sConfigOpt = sModuleFile.substr( uiFindPosE, uiFindPos2-uiFindPosE );
-        configGenerator::ValuesList::iterator vitCO = m_ConfigHelper.getConfigOption( sConfigOpt );
-        if( vitCO == m_ConfigHelper.m_vConfigValues.end() )
+        //Remove everything outside the global section
+        uiFindPos += sGlobal.length( );
+        uint uiFindPos2 = sExportsFile.find( "local:", uiFindPos );
+        sExportsFile = sExportsFile.substr( uiFindPos, uiFindPos2 - uiFindPos );
+
+        //Remove any comments
+        uiFindPos = sExportsFile.find( '#' );
+        while( uiFindPos != string::npos )
         {
-            cout << "  Error: Unknown config option found in module file (" << sConfigOpt << ")" << endl;
+            //find end of line
+            uiFindPos2 = sExportsFile.find( 10, uiFindPos + 1 ); //10 is line feed
+            sExportsFile.erase( uiFindPos, uiFindPos2 - uiFindPos + 1 );
+            uiFindPos = sExportsFile.find( '#', uiFindPos+1 );
+        }
+
+        //Clean any remaining white space out
+        sExportsFile.erase( remove_if( sExportsFile.begin( ), sExportsFile.end( ), ::isspace ), sExportsFile.end( ) );
+
+        //Get any export strings
+        uiFindPos = 0;
+        uiFindPos2 = sExportsFile.find( ';' );
+        while( uiFindPos2 != string::npos )
+        {
+            vExportStrings.push_back( sExportsFile.substr( uiFindPos, uiFindPos2 - uiFindPos ) );
+            uiFindPos = uiFindPos2 + 1;
+            uiFindPos2 = sExportsFile.find( ';', uiFindPos );
+        }
+    }
+    else
+    {
+        cout << "  Error: Failed finding global start in project exports (" << sExportList << ")" << endl;
+        return false;
+    }
+
+    //Create a test file to read in header declarations
+    string sOutDir = "../../../../../msvc32/";
+    string sCLExtra = "/I\"" + sOutDir + "include/\"";
+    for( StaticList::iterator vitIt = vIncludeDirs.begin( ); vitIt < vIncludeDirs.end( ); vitIt++ )
+    {
+        string sIncludeDir = *vitIt;
+        uint uiFindPos2 = sIncludeDir.find( "$(OutDir)" );
+        if( uiFindPos2 != string::npos )
+        {
+            sIncludeDir.replace( uiFindPos2, 9, sOutDir );
+        }
+        replace( sIncludeDir.begin( ), sIncludeDir.end( ), '\\', '/' );
+        uiFindPos2 = sIncludeDir.find( "$(" );
+        if( uiFindPos2 != string::npos )
+        {
+            sIncludeDir.replace( uiFindPos2, 2, "%" );
+        }
+        uiFindPos2 = sIncludeDir.find( ")" );
+        if( uiFindPos2 != string::npos )
+        {
+            sIncludeDir.replace( uiFindPos2, 1, "%" );
+        }
+        sCLExtra += " /I\"" + sIncludeDir + '\"';
+    }
+
+    //Split each source file into different directories to avoid name clashes
+    map<string,StaticList> mDirectoryObjects;
+    for( StaticList::iterator itI = m_vCIncludes.begin( ); itI < m_vCIncludes.end( ); itI++ )
+    {
+        //Several input source files have the same name so we need to explicitly specify an output object file otherwise they will clash
+        uint uiPos = itI->rfind( "../" );
+        uiPos = ( uiPos == string::npos ) ? 0 : uiPos + 3;
+        uint uiPos2 = itI->rfind( "/" );
+        uiPos2 = ( uiPos2 == string::npos ) ? string::npos : uiPos2 - uiPos;
+        string sFolderName = itI->substr( uiPos, uiPos2 );
+        mDirectoryObjects[sFolderName].push_back( *itI );
+    }
+    for( StaticList::iterator itI = m_vCPPIncludes.begin( ); itI < m_vCPPIncludes.end( ); itI++ )
+    {
+        //Several input source files have the same name so we need to explicitly specify an output object file otherwise they will clash
+        uint uiPos = itI->rfind( "../" );
+        uiPos = ( uiPos == string::npos ) ? 0 : uiPos + 3;
+        uint uiPos2 = itI->rfind( "/" );
+        uiPos2 = ( uiPos2 == string::npos ) ? string::npos : uiPos2 - uiPos;
+        string sFolderName = itI->substr( uiPos, uiPos2 );
+        mDirectoryObjects[sFolderName].push_back( *itI );
+    }
+
+    //Use Microsoft compiler to pass the test file and retrieve declarations
+    string sCLLaunchBat = "@echo off \n";
+    sCLLaunchBat += "if exist \"%VS140COMNTOOLS%\\vsvars32.bat\" ( \n\
+call \"%VS140COMNTOOLS%\\vsvars32.bat\" \n\
+goto MSVCVarsDone \n\
+) else if exist \"%VS130COMNTOOLS%\\vsvars32.bat\" ( \n\
+call \"%VS130COMNTOOLS%\\vsvars32.bat\" \n\
+goto MSVCVarsDone \n\
+) else if exist \"%VS120COMNTOOLS%\\vsvars32.bat\" ( \n\
+call \"%VS120COMNTOOLS%\\vsvars32.bat\" \n\
+goto MSVCVarsDone \n\
+) else if exist \"%VS110COMNTOOLS%\\vsvars32.bat\" ( \n\
+call \"%VS110COMNTOOLS%\\vsvars32.bat\" \n\
+goto MSVCVarsDone \n\
+) else ( \n\
+exit /b 1 \n\
+) \n\
+:MSVCVarsDone \n";
+    _mkdir( sProjectNameShort.c_str() );
+    for( map<string, StaticList>::iterator itI = mDirectoryObjects.begin( ); itI != mDirectoryObjects.end( ); itI++ )
+    {
+        //Need to make output directory so cl doesnt fail outputting objs
+        _mkdir( ( sProjectNameShort + "/" + itI->first ).c_str( ) );
+        uint uiNumCLCalls = (uint)ceilf( (float)itI->second.size( ) / 50.0f );
+        uint uiTotalPos = 0;
+        //Split calls into groups of 50 to prevent batch file length limit
+        for( uint uiI = 0; uiI < uiNumCLCalls; uiI++ )
+        {
+            sCLLaunchBat += "cl.exe";
+            sCLLaunchBat += " /I\"../../\" /I\"../../../\" " + sCLExtra + " /Fo\"" + sProjectNameShort + "/" + itI->first + "/\" /D\"_DEBUG\" /D\"WIN32\" /D\"_WINDOWS\" /D\"HAVE_AV_CONFIG_H\" /D\"inline=__inline\" /D\"strtod=avpriv_strtod\" /FI\"compat\\msvcrt\\snprintf.h\" /FR\"" + sProjectNameShort + "/" + itI->first + "/\" /c /MP /nologo";
+            uint uiStartPos = uiTotalPos;
+            for( uiTotalPos; uiTotalPos < min( uiStartPos + 50, itI->second.size( ) ); uiTotalPos++ )
+            {
+                sCLLaunchBat += " \"../../" + itI->second[uiTotalPos] + "\"";
+            }
+            sCLLaunchBat += " >nul \nif %errorlevel% neq 0 exit / b 1\n";
+        }
+    }
+    sCLLaunchBat += "exit /b %errorlevel%";
+    ofstream ofBatFile( "test.bat" );
+    if( !ofBatFile.is_open( ) )
+    {
+        cout << "  Error: Failed opening temporary spawn batch file" << endl;
+        return false;
+    }
+    ofBatFile << sCLLaunchBat;
+    ofBatFile.close( );
+
+    if( 0 != system( "test.bat" ) )
+    {
+        cout << "  Error: Failed calling temp.bat. Make sure you have Visual Studio or the Microsoft compiler installed" << endl;
+        //Remove the test header files
+        deleteFile( "test.bat" );
+        StaticList vDeleteFiles;
+        findFiles( sProjectNameShort + "/*.obj", vDeleteFiles );
+        findFiles( sProjectNameShort + "/*.sbr", vDeleteFiles );
+        for( StaticList::iterator itI = vDeleteFiles.begin( ); itI < vDeleteFiles.end( ); itI++ )
+        {
+            deleteFile( *itI );
+        }
+        for( map<string, StaticList>::iterator itI = mDirectoryObjects.end( ); itI != mDirectoryObjects.begin( );  )
+        {
+            --itI;
+            _rmdir( itI->first.c_str( ) );
+        }
+        _rmdir( sProjectNameShort.c_str( ) );
+        return false;
+    }
+
+    //Remove the compilation objects
+    deleteFile( "test.bat" );
+    StaticList vDeleteFiles;
+    findFiles( sProjectNameShort + "/*.obj", vDeleteFiles );
+    for( StaticList::iterator itI = vDeleteFiles.begin( ); itI < vDeleteFiles.end( ); itI++ )
+    {
+        deleteFile( *itI );
+    }
+
+    //Loaded in the compiler passed files
+    StaticList vSBRFiles;
+    StaticList vModuleExports;
+    StaticList vModuleDataExports;
+    findFiles( sProjectNameShort + "/*.sbr", vSBRFiles );
+    for( StaticList::iterator itSBR = vSBRFiles.begin( ); itSBR < vSBRFiles.end( ); itSBR++ )
+    {
+        m_ifInputFile.open( *itSBR, ios_base::in | ios_base::binary );
+        if( !m_ifInputFile.is_open( ) )
+        {
+            cout << "  Error: Failed opening compiler output (" + *itSBR + ")" << endl;
+            //Remove the test sbr files
+            for( StaticList::iterator itI = vSBRFiles.begin( ); itI < vSBRFiles.end( ); itI++ )
+            {
+                deleteFile( *itI );
+            }
+            for( map<string, StaticList>::iterator itI = mDirectoryObjects.end( ); itI != mDirectoryObjects.begin( ); )
+            {
+                --itI;
+                _rmdir( itI->first.c_str( ) );
+            }
+            _rmdir( sProjectNameShort.c_str( ) );
             return false;
         }
-        uint uiFindPosEnd = sModuleFile.find( sModuleSearchEnd, uiFindPos2 );;
-        //Check if option is enabled
-        if( vitCO->m_sValue.compare("1") == 0 )
+        string sSBRFile;
+        m_ifInputFile.seekg( 0, m_ifInputFile.end );
+        uiBufferSize = (uint)m_ifInputFile.tellg( );
+        m_ifInputFile.seekg( 0, m_ifInputFile.beg );
+        sSBRFile.resize( uiBufferSize );
+        m_ifInputFile.read( &sSBRFile[0], uiBufferSize );
+        if( uiBufferSize != m_ifInputFile.gcount( ) )
         {
-            //Remove the if and the endif
-            sModuleFile.erase( uiFindPosEnd, sModuleSearchEnd.length()+1 ); //endif first as erasing the if will change uiFindPosEnd position
-            sModuleFile.erase( uiFindPos, uiFindPos2-uiFindPos+1 ); //+1 for newline
+            sSBRFile.resize( (uint)m_ifInputFile.gcount( ) );
         }
-        else
+        m_ifInputFile.close( );
+
+        //Search through file for module exports
+        for( StaticList::iterator itI = vExportStrings.begin( ); itI < vExportStrings.end( ); itI++ )
         {
-            //Remove everything from start of if to endif
-            uiFindPosEnd += sModuleSearchEnd.length();
-            sModuleFile.erase( uiFindPos, uiFindPosEnd-uiFindPos+1 ); //+1 for newline
+            //SBR files contain data in specif formats
+            // NULL SizeOfID Type Imp NULL ID Name NULL
+            // where:
+            // SizeOfID specifies how many characters are in the ID
+            //  ETX=2
+            //  C=3
+            // Type specifies the type of the entry (function, data, define etc.)
+            //  BEL=typedef
+            //  EOT=data
+            //  SOH=function
+            //  ENQ=pre-processor define
+            // Imp specifies if this is an declaration or a definition
+            //  `=declaration
+            //  @=definition
+            //  STX=static or inline
+            //  NULL=pre-processor
+            // ID is a 2 or 3 character sequence used to uniquely identify the object
+            
+            //Check if it is a wild card search
+            uiFindPos = itI->find( '*' );
+            if( uiFindPos != string::npos )
+            {
+                //Strip the wild card (Note: assumes wild card is at the end!)
+                string sSearch = itI->substr( 0, uiFindPos );
+
+                //Search for all occurrences
+                uiFindPos = sSBRFile.find( sSearch );
+                while( uiFindPos != string::npos )
+                {
+                    //Find end of name signaled by NULL character
+                    uint uiFindPos2 = sSBRFile.find( (char)0x00, uiFindPos + 1 );
+
+                    //Check if this is a define
+                    uint uiFindPos3 = sSBRFile.rfind( (char)0x00, uiFindPos-3 );
+                    uint uiFindPosDiff = uiFindPos - uiFindPos3;
+                    if( ( sSBRFile.at( uiFindPos3 - 1 ) == '@' ) && 
+                        ( ( ( uiFindPosDiff == 3 ) && ( sSBRFile.at( uiFindPos3 - 3 ) == (char)0x03 ) ) ||
+                        ( ( uiFindPosDiff == 4 ) && ( sSBRFile.at( uiFindPos3 - 3 ) == 'C' ) ) ) )
+                    {
+                        //Check if this is a data or function name
+                        string sFoundName = sSBRFile.substr( uiFindPos, uiFindPos2 - uiFindPos );
+                        if( ( sSBRFile.at( uiFindPos3 - 2 ) == (char)0x01 ) )
+                        {
+                            //This is a function
+                            if( find( vModuleExports.begin( ), vModuleExports.end( ), sFoundName ) == vModuleExports.end( ) )
+                            {
+                                vModuleExports.push_back( sFoundName );
+                            }
+                        }
+                        else if( ( sSBRFile.at( uiFindPos3 - 2 ) == (char)0x04 ) )
+                        {
+                            //This is data
+                            if( find( vModuleDataExports.begin( ), vModuleDataExports.end( ), sFoundName ) == vModuleDataExports.end( ) )
+                            {
+                                vModuleDataExports.push_back( sFoundName );
+                            }
+                        }
+                    }
+
+                    //Get next
+                    uiFindPos = sSBRFile.find( sSearch, uiFindPos2 + 1 );
+                }
+            }
+            else
+            {
+                uiFindPos = sSBRFile.find( *itI );
+                //Make sure the match is an exact one
+                uint uiFindPos3;
+                uint uiFindPosDiff;
+                while( ( uiFindPos != string::npos ) && ( ( sSBRFile.at( uiFindPos + itI->length( ) ) != (char)0x00 ) ||
+                    ( ( uiFindPos3 = sSBRFile.rfind( (char)0x00, uiFindPos-3 ) ) == string::npos ) ||
+                    ( ( uiFindPosDiff = uiFindPos - uiFindPos3 ) > 4 ) ||
+                    ( sSBRFile.at( uiFindPos3 - 1 ) != '@' ) ||
+                    ( ( uiFindPosDiff == 3 ) && ( sSBRFile.at( uiFindPos3 - 3 ) != (char)0x03 ) ) ||
+                    ( ( uiFindPosDiff == 4 ) && ( sSBRFile.at( uiFindPos3 - 3 ) != 'C' ) ) ) )
+                {
+                    uiFindPos = sSBRFile.find( *itI, uiFindPos + 1 );
+                }
+                if( uiFindPos == string::npos )
+                {
+                    continue;
+                }
+                //Check if this is a data or function name
+                if( ( sSBRFile.at( uiFindPos3 - 2 ) == (char)0x01 ) )
+                {
+                    //This is a function
+                    if( find( vModuleExports.begin( ), vModuleExports.end( ), *itI ) == vModuleExports.end( ) )
+                    {
+                        vModuleExports.push_back( *itI );
+                    }
+                }
+                else if( ( sSBRFile.at( uiFindPos3 - 2 ) == (char)0x04 ) )
+                {
+                    //This is data
+                    if( find( vModuleDataExports.begin( ), vModuleDataExports.end( ), *itI ) == vModuleDataExports.end( ) )
+                    {
+                        vModuleDataExports.push_back( *itI );
+                    }
+                }
+            }
         }
-        //get next
-        uiFindPos = sModuleFile.find( sModuleSearch, uiFindPos+1 );
+    }
+
+    //Remove the test header files
+    for( StaticList::iterator itI = vSBRFiles.begin( ); itI < vSBRFiles.end( ); itI++ )
+    {
+        deleteFile( *itI );
+    }
+    for( map<string, StaticList>::iterator itI = mDirectoryObjects.end( ); itI != mDirectoryObjects.begin( ); )
+    {
+        --itI;
+        _rmdir( itI->first.c_str( ) );
+    }
+    _rmdir( sProjectNameShort.c_str( ) );
+
+    //Sort the exports
+    sort( vModuleExports.begin( ), vModuleExports.end( ) );
+    sort( vModuleDataExports.begin( ), vModuleDataExports.end( ) );
+
+    //Create the export module string
+    string sModuleFile = "EXPORTS\n";
+    for( StaticList::iterator itI = vModuleExports.begin( ); itI < vModuleExports.end( ); itI++ )
+    {
+        sModuleFile += "    " + *itI + "\n";
+    }
+    for( StaticList::iterator itI = vModuleDataExports.begin( ); itI < vModuleDataExports.end( ); itI++ )
+    {
+        sModuleFile += "    " + *itI + " DATA\n";
     }
 
     string sDestinationFile = "../../" + sProjectName + ".def";
@@ -2046,19 +2355,48 @@ bool projectGenerator::findFile( const string & sFileName, string & sRetFileName
 bool projectGenerator::findFiles( const string & sFileSearch, vector<string> & VRetFiles )
 {
     WIN32_FIND_DATA SearchFile;
+    uint uiStartSize = VRetFiles.size( );
+    uint uiPos = sFileSearch.rfind( "/" );
+    string sPath;
+    string sSearchTerm = sFileSearch;
+    if( uiPos != string::npos )
+    {
+        ++uiPos;
+        sPath = sFileSearch.substr( 0, uiPos );
+        sSearchTerm = sFileSearch.substr( uiPos );
+    }
     HANDLE SearchHandle=FindFirstFile( sFileSearch.c_str( ), &SearchFile );
     if( SearchHandle != INVALID_HANDLE_VALUE )
     {
         //Update the return filename list
-        VRetFiles.push_back( SearchFile.cFileName );
-        while( FindNextFile( SearchHandle, &SearchFile ) != 0 );
+        VRetFiles.push_back( sPath + SearchFile.cFileName );
+        while( FindNextFile( SearchHandle, &SearchFile ) != 0 )
         {
-            VRetFiles.push_back( SearchFile.cFileName );
+            VRetFiles.push_back( sPath + SearchFile.cFileName );
         }
         FindClose( SearchHandle );
-        return true;
     }
-    return false;
+    //Search all sub directories as well
+    string sSearch = sPath + "*";
+    SearchHandle = FindFirstFile( sSearch.c_str( ), &SearchFile );
+    if( SearchHandle != INVALID_HANDLE_VALUE )
+    {
+        BOOL bCont = TRUE;
+        while( bCont == TRUE )
+        {
+            if( SearchFile.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY )
+            {
+                // this is a directory
+                if( strcmp( SearchFile.cFileName, "." ) != 0 && strcmp( SearchFile.cFileName, ".." ) != 0 )
+                {
+                    string sNewPath = sPath + SearchFile.cFileName + "/" + sSearchTerm;
+                    findFiles( sNewPath, VRetFiles );
+                }
+            }
+            bCont = FindNextFile( SearchHandle, &SearchFile );
+        }
+    }
+    return ( VRetFiles.size( ) - uiStartSize ) > 0;
 }
 
 bool projectGenerator::findSourceFile( const string & sFile, const string & sExtension, string & sRetFileName )
