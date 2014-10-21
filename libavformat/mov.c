@@ -355,15 +355,15 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     }
 #endif
 
-    str_size_alloc = str_size << 1; // worst-case requirement for output string in case of utf8 coded input
-    str = av_malloc(str_size_alloc);
-    if (!str)
-        return AVERROR(ENOMEM);
-
     if (!key)
         return 0;
     if (atom.size < 0)
         return AVERROR_INVALIDDATA;
+
+    str_size_alloc = str_size << 1; // worst-case requirement for output string in case of utf8 coded input
+    str = av_malloc(str_size_alloc);
+    if (!str)
+        return AVERROR(ENOMEM);
 
     if (parse)
         parse(c, pb, str_size, key);
@@ -372,8 +372,10 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             mov_read_mac_string(c, pb, str_size, str, str_size_alloc);
         } else {
             int ret = avio_read(pb, str, str_size);
-            if (ret != str_size)
+            if (ret != str_size) {
+                av_freep(&str);
                 return ret < 0 ? ret : AVERROR_INVALIDDATA;
+            }
             str[str_size] = 0;
         }
         c->fc->event_flags |= AVFMT_EVENT_FLAG_METADATA_UPDATED;
