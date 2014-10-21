@@ -3766,7 +3766,7 @@ static int mov_write_trailer(AVFormatContext *s)
             av_log(s, AV_LOG_INFO, "Starting second pass: moving the moov atom to the beginning of the file\n");
             res = shift_data(s);
             if (res == 0) {
-                avio_seek(s->pb, mov->reserved_moov_pos, SEEK_SET);
+                avio_seek(pb, mov->reserved_moov_pos, SEEK_SET);
                 mov_write_moov_tag(pb, mov, s);
             }
         } else {
