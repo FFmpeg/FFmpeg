@@ -515,12 +515,15 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         break;
     case 0x22111100:
     case 0x42111100:
+    case 0x24111100:
         if (s->bits <= 8) s->avctx->pix_fmt = s->cs_itu601 ? AV_PIX_FMT_YUV420P : AV_PIX_FMT_YUVJ420P;
         else              s->avctx->pix_fmt = AV_PIX_FMT_YUV420P16;
         s->avctx->color_range = s->cs_itu601 ? AVCOL_RANGE_MPEG : AVCOL_RANGE_JPEG;
         if (pix_fmt_id == 0x42111100) {
             s->upscale_h = 6;
             s->chroma_height = (s->height + 1) / 2;
+        } else if (pix_fmt_id == 0x24111100) {
+            s->upscale_v = 6;
         }
         break;
     case 0x41111100:
@@ -2124,21 +2127,27 @@ the_end:
                    avctx->pix_fmt == AV_PIX_FMT_YUV444P  ||
                    avctx->pix_fmt == AV_PIX_FMT_YUVJ422P ||
                    avctx->pix_fmt == AV_PIX_FMT_YUV422P  ||
+                   avctx->pix_fmt == AV_PIX_FMT_YUVJ420P ||
+                   avctx->pix_fmt == AV_PIX_FMT_YUV420P  ||
                    avctx->pix_fmt == AV_PIX_FMT_YUVA444P ||
                    avctx->pix_fmt == AV_PIX_FMT_GBRAP
                    );
         avcodec_get_chroma_sub_sample(s->avctx->pix_fmt, &hshift, &vshift);
         for (p = 0; p < 4; p++) {
-            uint8_t *dst = &((uint8_t *)s->picture_ptr->data[p])[(s->height - 1) * s->linesize[p]];
+            uint8_t *dst;
             int w = s->width;
+            int h = s->height;
             if (!(s->upscale_v & (1<<p)))
                 continue;
-            if (p==1 || p==2)
+            if (p==1 || p==2) {
                 w = FF_CEIL_RSHIFT(w, hshift);
-            for (i = s->height - 1; i; i--) {
+                h = FF_CEIL_RSHIFT(h, vshift);
+            }
+            dst = &((uint8_t *)s->picture_ptr->data[p])[(h - 1) * s->linesize[p]];
+            for (i = h - 1; i; i--) {
                 uint8_t *src1 = &((uint8_t *)s->picture_ptr->data[p])[i / 2 * s->linesize[p]];
                 uint8_t *src2 = &((uint8_t *)s->picture_ptr->data[p])[(i + 1) / 2 * s->linesize[p]];
-                if (src1 == src2 || i == s->height - 1) {
+                if (src1 == src2 || i == h - 1) {
                     memcpy(dst, src1, w);
                 } else {
                     for (index = 0; index < w; index++)
