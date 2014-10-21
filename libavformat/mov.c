@@ -3943,6 +3943,17 @@ static int mov_read_header(AVFormatContext *s)
         }
     }
 
+    if (mov->use_mfra_for > 0) {
+        for (i = 0; i < s->nb_streams; i++) {
+            AVStream *st = s->streams[i];
+            MOVStreamContext *sc = st->priv_data;
+            if (sc->duration_for_fps > 0) {
+                st->codec->bit_rate = sc->data_size * 8 * sc->time_scale /
+                    sc->duration_for_fps;
+            }
+        }
+    }
+
     for (i = 0; i < mov->bitrates_count && i < s->nb_streams; i++) {
         if (mov->bitrates[i]) {
             s->streams[i]->codec->bit_rate = mov->bitrates[i];
