@@ -63,7 +63,6 @@ typedef struct MJpegDecodeContext {
     int progressive;
     int rgb;
     int upscale_h;
-    int chroma_height;
     int upscale_v;
     int rct;            /* standard rct */
     int pegasus_rct;    /* pegasus reversible colorspace transform */

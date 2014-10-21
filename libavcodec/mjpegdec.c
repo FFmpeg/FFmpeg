@@ -444,12 +444,10 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
             s->avctx->pix_fmt = AV_PIX_FMT_GBRAP;
             s->upscale_v = 6;
             s->upscale_h = 6;
-            s->chroma_height = s->height;
         } else if (s->adobe_transform == 2 && s->bits <= 8) {
             s->avctx->pix_fmt = AV_PIX_FMT_YUVA444P;
             s->upscale_v = 6;
             s->upscale_h = 6;
-            s->chroma_height = s->height;
             s->avctx->color_range = s->cs_itu601 ? AVCOL_RANGE_MPEG : AVCOL_RANGE_JPEG;
         } else {
             if (s->bits <= 8) s->avctx->pix_fmt = AV_PIX_FMT_YUVA420P;
@@ -466,7 +464,6 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         else
             goto unk_pixfmt;
         s->avctx->color_range = s->cs_itu601 ? AVCOL_RANGE_MPEG : AVCOL_RANGE_JPEG;
-        s->chroma_height = s->height;
         break;
     case 0x22221100:
     case 0x22112200:
@@ -475,7 +472,6 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         else
             goto unk_pixfmt;
         s->avctx->color_range = s->cs_itu601 ? AVCOL_RANGE_MPEG : AVCOL_RANGE_JPEG;
-        s->chroma_height = (s->height + 1) / 2;
         break;
     case 0x11000000:
     case 0x13000000:
@@ -499,7 +495,6 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         else
             goto unk_pixfmt;
         s->avctx->color_range = s->cs_itu601 ? AVCOL_RANGE_MPEG : AVCOL_RANGE_JPEG;
-        s->chroma_height = (s->height + 1) / 2;
         break;
     case 0x21111100:
         if (s->bits <= 8) s->avctx->pix_fmt = s->cs_itu601 ? AV_PIX_FMT_YUV422P : AV_PIX_FMT_YUVJ422P;
@@ -521,7 +516,6 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         s->avctx->color_range = s->cs_itu601 ? AVCOL_RANGE_MPEG : AVCOL_RANGE_JPEG;
         if (pix_fmt_id == 0x42111100) {
             s->upscale_h = 6;
-            s->chroma_height = (s->height + 1) / 2;
         } else if (pix_fmt_id == 0x24111100) {
             s->upscale_v = 6;
         }
@@ -2103,12 +2097,17 @@ the_end:
         for (p = 0; p<4; p++) {
             uint8_t *line = s->picture_ptr->data[p];
             int w = s->width;
+            int h = s->height;
             if (!(s->upscale_h & (1<<p)))
                 continue;
-            if (p==1 || p==2)
+            if (p==1 || p==2) {
                 w >>= hshift;
+                h = FF_CEIL_RSHIFT(h, vshift);
+            }
+            if (s->upscale_v & (1<<p))
+                h = (h+1)>>1;
             av_assert0(w > 0);
-            for (i = 0; i < s->chroma_height; i++) {
+            for (i = 0; i < h; i++) {
                 if (is16bit) ((uint16_t*)line)[w - 1] = ((uint16_t*)line)[(w - 1) / 2];
                 else                      line[w - 1] = line[(w - 1) / 2];
                 for (index = w - 2; index > 0; index--) {
