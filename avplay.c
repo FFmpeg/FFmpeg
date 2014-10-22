@@ -101,7 +101,7 @@ typedef struct PacketQueue {
 
 typedef struct VideoPicture {
     double pts;             // presentation timestamp for this picture
-    double target_clock;    // av_gettime() time at which this should be displayed ideally
+    double target_clock;    // av_gettime_relative() time at which this should be displayed ideally
     int64_t pos;            // byte position in file
     SDL_Overlay *bmp;
     int width, height; /* source height & width */
@@ -197,7 +197,7 @@ typedef struct VideoState {
     AVStream *video_st;
     PacketQueue videoq;
     double video_current_pts;       // current displayed pts (different from video_clock if frame fifos are used)
-    double video_current_pts_drift; // video_current_pts - time (av_gettime) at which we updated video_current_pts - used to have running video pts
+    double video_current_pts_drift; // video_current_pts - time (av_gettime_relative) at which we updated video_current_pts - used to have running video pts
     int64_t video_current_pos;      // current displayed file pos
     VideoPicture pictq[VIDEO_PICTURE_QUEUE_SIZE];
     int pictq_size, pictq_rindex, pictq_windex;
@@ -754,7 +754,7 @@ static void video_audio_display(VideoState *s)
         /* to be more precise, we take into account the time spent since
            the last buffer computation */
         if (audio_callback_time) {
-            time_diff = av_gettime() - audio_callback_time;
+            time_diff = av_gettime_relative() - audio_callback_time;
             delay -= (time_diff * s->sdl_sample_rate) / 1000000;
         }
 
@@ -972,7 +972,7 @@ static double get_video_clock(VideoState *is)
     if (is->paused) {
         return is->video_current_pts;
     } else {
-        return is->video_current_pts_drift + av_gettime() / 1000000.0;
+        return is->video_current_pts_drift + av_gettime_relative() / 1000000.0;
     }
 }
 
@@ -980,7 +980,7 @@ static double get_video_clock(VideoState *is)
 static double get_external_clock(VideoState *is)
 {
     int64_t ti;
-    ti = av_gettime();
+    ti = av_gettime_relative();
     return is->external_clock + ((ti - is->external_clock_time) * 1e-6);
 }
 
@@ -1022,11 +1022,11 @@ static void stream_seek(VideoState *is, int64_t pos, int64_t rel, int seek_by_by
 static void stream_pause(VideoState *is)
 {
     if (is->paused) {
-        is->frame_timer += av_gettime() / 1000000.0 + is->video_current_pts_drift - is->video_current_pts;
+        is->frame_timer += av_gettime_relative() / 1000000.0 + is->video_current_pts_drift - is->video_current_pts;
         if (is->read_pause_return != AVERROR(ENOSYS)) {
-            is->video_current_pts = is->video_current_pts_drift + av_gettime() / 1000000.0;
+            is->video_current_pts = is->video_current_pts_drift + av_gettime_relative() / 1000000.0;
         }
-        is->video_current_pts_drift = is->video_current_pts - av_gettime() / 1000000.0;
+        is->video_current_pts_drift = is->video_current_pts - av_gettime_relative() / 1000000.0;
     }
     is->paused = !is->paused;
 }
@@ -1084,7 +1084,7 @@ retry:
         if (is->pictq_size == 0) {
             // nothing to do, no picture to display in the que
         } else {
-            double time = av_gettime() / 1000000.0;
+            double time = av_gettime_relative() / 1000000.0;
             double next_target;
             /* dequeue the picture */
             vp = &is->pictq[is->pictq_rindex];
@@ -1190,7 +1190,7 @@ retry:
         int aqsize, vqsize, sqsize;
         double av_diff;
 
-        cur_time = av_gettime();
+        cur_time = av_gettime_relative();
         if (!last_time || (cur_time - last_time) >= 30000) {
             aqsize = 0;
             vqsize = 0;
@@ -1464,7 +1464,7 @@ static int get_video_frame(VideoState *is, AVFrame *frame, int64_t *pts, AVPacke
         init_pts_correction(&is->pts_ctx);
         is->frame_last_pts = AV_NOPTS_VALUE;
         is->frame_last_delay = 0;
-        is->frame_timer = (double)av_gettime() / 1000000.0;
+        is->frame_timer = (double)av_gettime_relative() / 1000000.0;
         is->skip_frames = 1;
         is->skip_frames_index = 0;
         return 0;
@@ -1993,7 +1993,7 @@ static void sdl_audio_callback(void *opaque, Uint8 *stream, int len)
     int audio_size, len1;
     double pts;
 
-    audio_callback_time = av_gettime();
+    audio_callback_time = av_gettime_relative();
 
     while (len > 0) {
         if (is->audio_buf_index >= is->audio_buf_size) {
