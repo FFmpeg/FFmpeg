@@ -629,6 +629,9 @@ static int mkv_write_stereo_mode(AVFormatContext *s, AVIOContext *pb,
                                  AVStream *st, int mode)
 {
     int i;
+    int display_width, display_height;
+    int h_width = 1, h_height = 1;
+    AVCodecContext *codec = st->codec;
     AVDictionaryEntry *tag;
     MatroskaVideoStereoModeType format = MATROSKA_VIDEO_STEREOMODE_TYPE_NB;
 
@@ -643,6 +646,7 @@ static int mkv_write_stereo_mode(AVFormatContext *s, AVIOContext *pb,
         }
     }
 
+    // iterate to find the stereo3d side data
     for (i = 0; i < st->nb_side_data; i++) {
         AVPacketSideData sd = st->side_data[i];
         if (sd.type == AV_PKT_DATA_STEREO3D) {
@@ -656,11 +660,13 @@ static int mkv_write_stereo_mode(AVFormatContext *s, AVIOContext *pb,
                 format = (stereo->flags & AV_STEREO3D_FLAG_INVERT)
                     ? MATROSKA_VIDEO_STEREOMODE_TYPE_RIGHT_LEFT
                     : MATROSKA_VIDEO_STEREOMODE_TYPE_LEFT_RIGHT;
+                h_width = 2;
                 break;
             case AV_STEREO3D_TOPBOTTOM:
                 format = MATROSKA_VIDEO_STEREOMODE_TYPE_TOP_BOTTOM;
                 if (stereo->flags & AV_STEREO3D_FLAG_INVERT)
                     format--;
+                h_height = 2;
                 break;
             case AV_STEREO3D_CHECKERBOARD:
                 format = MATROSKA_VIDEO_STEREOMODE_TYPE_CHECKERBOARD_LR;
@@ -671,11 +677,13 @@ static int mkv_write_stereo_mode(AVFormatContext *s, AVIOContext *pb,
                 format = MATROSKA_VIDEO_STEREOMODE_TYPE_ROW_INTERLEAVED_LR;
                 if (stereo->flags & AV_STEREO3D_FLAG_INVERT)
                     format--;
+                h_height = 2;
                 break;
             case AV_STEREO3D_COLUMNS:
                 format = MATROSKA_VIDEO_STEREOMODE_TYPE_COL_INTERLEAVED_LR;
                 if (stereo->flags & AV_STEREO3D_FLAG_INVERT)
                     format--;
+                h_width = 2;
                 break;
             case AV_STEREO3D_FRAMESEQUENCE:
                 format = MATROSKA_VIDEO_STEREOMODE_TYPE_BOTH_EYES_BLOCK_LR;
@@ -688,13 +696,29 @@ static int mkv_write_stereo_mode(AVFormatContext *s, AVIOContext *pb,
         }
     }
 
+    // if webm, do not write unsupported modes
     if (mode == MODE_WEBM &&
         (format > MATROSKA_VIDEO_STEREOMODE_TYPE_TOP_BOTTOM &&
          format != MATROSKA_VIDEO_STEREOMODE_TYPE_RIGHT_LEFT))
         format = MATROSKA_VIDEO_STEREOMODE_TYPE_NB;
 
+    // write StereoMode if format is valid
     if (format < MATROSKA_VIDEO_STEREOMODE_TYPE_NB)
         put_ebml_uint(pb, MATROSKA_ID_VIDEOSTEREOMODE, format);
+
+    // write DisplayWidth and DisplayHeight, they contain the size of
+    // a single source view and/or the display aspect ratio
+    display_width  = codec->width  / h_width;
+    display_height = codec->height / h_height;
+    if (st->sample_aspect_ratio.num) {
+        display_width *= av_q2d(st->sample_aspect_ratio);
+        put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYUNIT, 3); // DAR
+    }
+    if (st->sample_aspect_ratio.num ||
+        format < MATROSKA_VIDEO_STEREOMODE_TYPE_NB) {
+        put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYWIDTH,  display_width);
+        put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYHEIGHT, display_height);
+    }
 
     return 0;
 }
@@ -804,12 +828,6 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
         if (ret < 0)
             return ret;
 
-        if (st->sample_aspect_ratio.num) {
-            int d_width = codec->width*av_q2d(st->sample_aspect_ratio);
-            put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYWIDTH , d_width);
-            put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYHEIGHT, codec->height);
-            put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYUNIT, 3);
-        }
         end_ebml_master(pb, subinfo);
         break;
 
