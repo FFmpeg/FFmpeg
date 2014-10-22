@@ -341,6 +341,14 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
             pkt->dts += offset;
         if (pkt->pts != AV_NOPTS_VALUE)
             pkt->pts += offset;
+
+        if (pkt->dts != AV_NOPTS_VALUE && pkt->dts < 0) {
+            av_log(s, AV_LOG_WARNING,
+                   "Packets poorly interleaved, failed to avoid negative "
+                   "timestamp %"PRId64" in stream %d.\n"
+                   "Try -max_interleave_delta 0 as a possible workaround.\n",
+                   pkt->dts, pkt->stream_index);
+        }
     }
     ret = s->oformat->write_packet(s, pkt);
 
