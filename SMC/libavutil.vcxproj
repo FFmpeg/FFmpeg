@@ -95,6 +95,9 @@
     <ClCompile Include="..\libavutil\buffer.c">
       <ObjectFileName>$(IntDir)\libavutil_buffer.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavutil\cast5.c">
+      <ObjectFileName>$(IntDir)\libavutil_cast5.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavutil\channel_layout.c">
       <ObjectFileName>$(IntDir)\libavutil_channel_layout.obj</ObjectFileName>
     </ClCompile>
@@ -269,6 +272,7 @@
     <ClInclude Include="..\libavutil\bprint.h" />
     <ClInclude Include="..\libavutil\bswap.h" />
     <ClInclude Include="..\libavutil\buffer.h" />
+    <ClInclude Include="..\libavutil\cast5.h" />
     <ClInclude Include="..\libavutil\channel_layout.h" />
     <ClInclude Include="..\libavutil\common.h" />
     <ClInclude Include="..\libavutil\cpu.h" />
@@ -586,6 +590,7 @@ copy ..\libavutil\blowfish.h $(OutDir)\include\libavutil
 copy ..\libavutil\bprint.h $(OutDir)\include\libavutil
 copy ..\libavutil\bswap.h $(OutDir)\include\libavutil
 copy ..\libavutil\buffer.h $(OutDir)\include\libavutil
+copy ..\libavutil\cast5.h $(OutDir)\include\libavutil
 copy ..\libavutil\channel_layout.h $(OutDir)\include\libavutil
 copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
@@ -708,6 +713,7 @@ copy ..\libavutil\blowfish.h $(OutDir)\include\libavutil
 copy ..\libavutil\bprint.h $(OutDir)\include\libavutil
 copy ..\libavutil\bswap.h $(OutDir)\include\libavutil
 copy ..\libavutil\buffer.h $(OutDir)\include\libavutil
+copy ..\libavutil\cast5.h $(OutDir)\include\libavutil
 copy ..\libavutil\channel_layout.h $(OutDir)\include\libavutil
 copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
@@ -834,6 +840,7 @@ copy ..\libavutil\blowfish.h $(OutDir)\include\libavutil
 copy ..\libavutil\bprint.h $(OutDir)\include\libavutil
 copy ..\libavutil\bswap.h $(OutDir)\include\libavutil
 copy ..\libavutil\buffer.h $(OutDir)\include\libavutil
+copy ..\libavutil\cast5.h $(OutDir)\include\libavutil
 copy ..\libavutil\channel_layout.h $(OutDir)\include\libavutil
 copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
@@ -959,6 +966,7 @@ copy ..\libavutil\blowfish.h $(OutDir)\include\libavutil
 copy ..\libavutil\bprint.h $(OutDir)\include\libavutil
 copy ..\libavutil\bswap.h $(OutDir)\include\libavutil
 copy ..\libavutil\buffer.h $(OutDir)\include\libavutil
+copy ..\libavutil\cast5.h $(OutDir)\include\libavutil
 copy ..\libavutil\channel_layout.h $(OutDir)\include\libavutil
 copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
@@ -1085,6 +1093,7 @@ copy ..\libavutil\blowfish.h $(OutDir)\include\libavutil
 copy ..\libavutil\bprint.h $(OutDir)\include\libavutil
 copy ..\libavutil\bswap.h $(OutDir)\include\libavutil
 copy ..\libavutil\buffer.h $(OutDir)\include\libavutil
+copy ..\libavutil\cast5.h $(OutDir)\include\libavutil
 copy ..\libavutil\channel_layout.h $(OutDir)\include\libavutil
 copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
@@ -1210,6 +1219,7 @@ copy ..\libavutil\blowfish.h $(OutDir)\include\libavutil
 copy ..\libavutil\bprint.h $(OutDir)\include\libavutil
 copy ..\libavutil\bswap.h $(OutDir)\include\libavutil
 copy ..\libavutil\buffer.h $(OutDir)\include\libavutil
+copy ..\libavutil\cast5.h $(OutDir)\include\libavutil
 copy ..\libavutil\channel_layout.h $(OutDir)\include\libavutil
 copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
@@ -1339,6 +1349,7 @@ copy ..\libavutil\blowfish.h $(OutDir)\include\libavutil
 copy ..\libavutil\bprint.h $(OutDir)\include\libavutil
 copy ..\libavutil\bswap.h $(OutDir)\include\libavutil
 copy ..\libavutil\buffer.h $(OutDir)\include\libavutil
+copy ..\libavutil\cast5.h $(OutDir)\include\libavutil
 copy ..\libavutil\channel_layout.h $(OutDir)\include\libavutil
 copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
@@ -1468,6 +1479,7 @@ copy ..\libavutil\blowfish.h $(OutDir)\include\libavutil
 copy ..\libavutil\bprint.h $(OutDir)\include\libavutil
 copy ..\libavutil\bswap.h $(OutDir)\include\libavutil
 copy ..\libavutil\buffer.h $(OutDir)\include\libavutil
+copy ..\libavutil\cast5.h $(OutDir)\include\libavutil
 copy ..\libavutil\channel_layout.h $(OutDir)\include\libavutil
 copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
@@ -1603,6 +1615,7 @@ copy ..\libavutil\blowfish.h $(OutDir)\include\libavutil
 copy ..\libavutil\bprint.h $(OutDir)\include\libavutil
 copy ..\libavutil\bswap.h $(OutDir)\include\libavutil
 copy ..\libavutil\buffer.h $(OutDir)\include\libavutil
+copy ..\libavutil\cast5.h $(OutDir)\include\libavutil
 copy ..\libavutil\channel_layout.h $(OutDir)\include\libavutil
 copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
@@ -1737,6 +1750,7 @@ copy ..\libavutil\blowfish.h $(OutDir)\include\libavutil
 copy ..\libavutil\bprint.h $(OutDir)\include\libavutil
 copy ..\libavutil\bswap.h $(OutDir)\include\libavutil
 copy ..\libavutil\buffer.h $(OutDir)\include\libavutil
+copy ..\libavutil\cast5.h $(OutDir)\include\libavutil
 copy ..\libavutil\channel_layout.h $(OutDir)\include\libavutil
 copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
@@ -1872,6 +1886,7 @@ copy ..\libavutil\blowfish.h $(OutDir)\include\libavutil
 copy ..\libavutil\bprint.h $(OutDir)\include\libavutil
 copy ..\libavutil\bswap.h $(OutDir)\include\libavutil
 copy ..\libavutil\buffer.h $(OutDir)\include\libavutil
+copy ..\libavutil\cast5.h $(OutDir)\include\libavutil
 copy ..\libavutil\channel_layout.h $(OutDir)\include\libavutil
 copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
@@ -2006,6 +2021,7 @@ copy ..\libavutil\blowfish.h $(OutDir)\include\libavutil
 copy ..\libavutil\bprint.h $(OutDir)\include\libavutil
 copy ..\libavutil\bswap.h $(OutDir)\include\libavutil
 copy ..\libavutil\buffer.h $(OutDir)\include\libavutil
+copy ..\libavutil\cast5.h $(OutDir)\include\libavutil
 copy ..\libavutil\channel_layout.h $(OutDir)\include\libavutil
 copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
@@ -2134,6 +2150,7 @@ copy ..\libavutil\blowfish.h $(OutDir)\include\libavutil
 copy ..\libavutil\bprint.h $(OutDir)\include\libavutil
 copy ..\libavutil\bswap.h $(OutDir)\include\libavutil
 copy ..\libavutil\buffer.h $(OutDir)\include\libavutil
+copy ..\libavutil\cast5.h $(OutDir)\include\libavutil
 copy ..\libavutil\channel_layout.h $(OutDir)\include\libavutil
 copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
@@ -2262,6 +2279,7 @@ copy ..\libavutil\blowfish.h $(OutDir)\include\libavutil
 copy ..\libavutil\bprint.h $(OutDir)\include\libavutil
 copy ..\libavutil\bswap.h $(OutDir)\include\libavutil
 copy ..\libavutil\buffer.h $(OutDir)\include\libavutil
+copy ..\libavutil\cast5.h $(OutDir)\include\libavutil
 copy ..\libavutil\channel_layout.h $(OutDir)\include\libavutil
 copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil

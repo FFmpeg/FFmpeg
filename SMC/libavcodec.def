@@ -9,6 +9,7 @@ EXPORTS
     av_bitstream_filter_filter
     av_bitstream_filter_init
     av_bitstream_filter_next
+    av_codec_get_chroma_intra_matrix
     av_codec_get_codec_descriptor
     av_codec_get_lowres
     av_codec_get_max_lowres
@@ -37,6 +38,7 @@ EXPORTS
     av_fft_end
     av_fft_init
     av_fft_permute
+    av_fopen_utf8
     av_free_packet
     av_get_audio_frame_duration
     av_get_bits_per_sample
@@ -68,6 +70,7 @@ EXPORTS
     av_packet_rescale_ts
     av_packet_shrink_side_data
     av_packet_split_side_data
+    av_packet_unpack_dictionary
     av_packet_unref
     av_parser_change
     av_parser_close
@@ -98,8 +101,8 @@ EXPORTS
     avcodec_configuration
     avcodec_copy_context
     avcodec_dct_alloc
-    avcodec_dct_init
     avcodec_dct_get_class
+    avcodec_dct_init
     avcodec_decode_audio3
     avcodec_decode_audio4
     avcodec_decode_subtitle2
@@ -157,7 +160,6 @@ EXPORTS
     avpicture_get_size
     avpicture_layout
     avpriv_aac_parse_header
-    avpriv_ac3_channel_layout_tab DATA
     avpriv_ac3_parse_header
     avpriv_ac3_parse_header2
     avpriv_align_put_bits
@@ -166,7 +168,6 @@ EXPORTS
     avpriv_copy_bits
     avpriv_copy_pce_data
     avpriv_dca_convert_bitstream
-    avpriv_dca_sample_rates DATA
     avpriv_dirac_parse_sequence_header
     avpriv_dnxhd_get_frame_size
     avpriv_do_elbg
@@ -180,18 +181,9 @@ EXPORTS
     avpriv_h264_has_num_reorder_frames
     avpriv_init_elbg
     avpriv_lock_avformat
-    avpriv_mjpeg_bits_ac_chrominance DATA
-    avpriv_mjpeg_bits_ac_luminance DATA
-    avpriv_mjpeg_bits_dc_chrominance DATA
-    avpriv_mjpeg_bits_dc_luminance DATA
-    avpriv_mjpeg_val_ac_chrominance DATA
-    avpriv_mjpeg_val_ac_luminance DATA
-    avpriv_mjpeg_val_dc DATA
-    avpriv_mpa_bitrate_tab DATA
     avpriv_mpa_decode_header
-    avpriv_mpa_freq_tab DATA
+    avpriv_mpa_decode_header2
     avpriv_mpeg4audio_get_config
-    avpriv_mpeg4audio_sample_rates DATA
     avpriv_mpegaudio_decode_header
     avpriv_put_string
     avpriv_split_xiph_headers
@@ -203,8 +195,17 @@ EXPORTS
     avpriv_vorbis_parse_frame_flags
     avpriv_vorbis_parse_reset
     avsubtitle_free
-    ff_idctdsp_init
-    ff_fdctdsp_init
-    ff_pixblockdsp_init
-    ff_me_cmp_init
-    ff_raw_pix_fmt_tags DATA
+    avpriv_ac3_channel_layout_tab DATA
+    avpriv_dca_sample_rates DATA
+    avpriv_mjpeg_bits_ac_chrominance DATA
+    avpriv_mjpeg_bits_ac_luminance DATA
+    avpriv_mjpeg_bits_dc_chrominance DATA
+    avpriv_mjpeg_bits_dc_luminance DATA
+    avpriv_mjpeg_val_ac_chrominance DATA
+    avpriv_mjpeg_val_ac_luminance DATA
+    avpriv_mjpeg_val_dc DATA
+    avpriv_mpa_bitrate_tab DATA
+    avpriv_mpa_freq_tab DATA
+    avpriv_mpeg4audio_sample_rates DATA
+    avpriv_pix_fmt_bps_avi DATA
+    avpriv_pix_fmt_bps_mov DATA

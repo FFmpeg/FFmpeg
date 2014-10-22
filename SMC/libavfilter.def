@@ -18,7 +18,6 @@ EXPORTS
     av_buffersrc_write_frame
     av_filter_next
     avfilter_add_matrix
-    avfilter_all_channel_layouts DATA
     avfilter_config_links
     avfilter_configuration
     avfilter_copy_buf_props
@@ -78,3 +77,4 @@ EXPORTS
     avfilter_unref_buffer
     avfilter_unref_bufferp
     avfilter_version
+    avfilter_all_channel_layouts DATA

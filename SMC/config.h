@@ -145,91 +145,23 @@
 #define HAVE_LDBRX_INLINE 0
 #define HAVE_PPC4XX_INLINE 0
 #define HAVE_VSX_INLINE 0
-#if defined(__INTEL_COMPILER)
-#   define HAVE_AMD3DNOW_INLINE 1
-#else
-#   define HAVE_AMD3DNOW_INLINE 0
-#endif
-#if defined(__INTEL_COMPILER)
-#   define HAVE_AMD3DNOWEXT_INLINE 1
-#else
-#   define HAVE_AMD3DNOWEXT_INLINE 0
-#endif
-#if defined(__INTEL_COMPILER)
-#   define HAVE_AVX_INLINE 1
-#else
-#   define HAVE_AVX_INLINE 0
-#endif
-#if defined(__INTEL_COMPILER)
-#   define HAVE_AVX2_INLINE 1
-#else
-#   define HAVE_AVX2_INLINE 0
-#endif
-#if defined(__INTEL_COMPILER)
-#   define HAVE_FMA3_INLINE 1
-#else
-#   define HAVE_FMA3_INLINE 0
-#endif
-#if defined(__INTEL_COMPILER)
-#   define HAVE_FMA4_INLINE 1
-#else
-#   define HAVE_FMA4_INLINE 0
-#endif
-#if defined(__INTEL_COMPILER)
-#   define HAVE_MMX_INLINE 1
-#else
-#   define HAVE_MMX_INLINE 0
-#endif
-#if defined(__INTEL_COMPILER)
-#   define HAVE_MMXEXT_INLINE 1
-#else
-#   define HAVE_MMXEXT_INLINE 0
-#endif
-#if defined(__INTEL_COMPILER)
-#   define HAVE_SSE_INLINE 1
-#else
-#   define HAVE_SSE_INLINE 0
-#endif
-#if defined(__INTEL_COMPILER)
-#   define HAVE_SSE2_INLINE 1
-#else
-#   define HAVE_SSE2_INLINE 0
-#endif
-#if defined(__INTEL_COMPILER)
-#   define HAVE_SSE3_INLINE 1
-#else
-#   define HAVE_SSE3_INLINE 0
-#endif
-#if defined(__INTEL_COMPILER)
-#   define HAVE_SSE4_INLINE 1
-#else
-#   define HAVE_SSE4_INLINE 0
-#endif
-#if defined(__INTEL_COMPILER)
-#   define HAVE_SSE42_INLINE 1
-#else
-#   define HAVE_SSE42_INLINE 0
-#endif
-#if defined(__INTEL_COMPILER)
-#   define HAVE_SSSE3_INLINE 1
-#else
-#   define HAVE_SSSE3_INLINE 0
-#endif
-#if defined(__INTEL_COMPILER)
-#   define HAVE_XOP_INLINE 1
-#else
-#   define HAVE_XOP_INLINE 0
-#endif
-#if defined(__INTEL_COMPILER)
-#   define HAVE_CPUNOP_INLINE 1
-#else
-#   define HAVE_CPUNOP_INLINE 0
-#endif
-#if defined(__INTEL_COMPILER)
-#   define HAVE_I686_INLINE 1
-#else
-#   define HAVE_I686_INLINE 0
-#endif
+#define HAVE_AMD3DNOW_INLINE HAVE_INLINE_ASM
+#define HAVE_AMD3DNOWEXT_INLINE HAVE_INLINE_ASM
+#define HAVE_AVX_INLINE HAVE_INLINE_ASM
+#define HAVE_AVX2_INLINE HAVE_INLINE_ASM
+#define HAVE_FMA3_INLINE HAVE_INLINE_ASM
+#define HAVE_FMA4_INLINE HAVE_INLINE_ASM
+#define HAVE_MMX_INLINE HAVE_INLINE_ASM
+#define HAVE_MMXEXT_INLINE HAVE_INLINE_ASM
+#define HAVE_SSE_INLINE HAVE_INLINE_ASM
+#define HAVE_SSE2_INLINE HAVE_INLINE_ASM
+#define HAVE_SSE3_INLINE HAVE_INLINE_ASM
+#define HAVE_SSE4_INLINE HAVE_INLINE_ASM
+#define HAVE_SSE42_INLINE HAVE_INLINE_ASM
+#define HAVE_SSSE3_INLINE HAVE_INLINE_ASM
+#define HAVE_XOP_INLINE HAVE_INLINE_ASM
+#define HAVE_CPUNOP_INLINE HAVE_INLINE_ASM
+#define HAVE_I686_INLINE HAVE_INLINE_ASM
 #define HAVE_MIPSFPU_INLINE 0
 #define HAVE_MIPS32R2_INLINE 0
 #define HAVE_MIPSDSPR1_INLINE 0

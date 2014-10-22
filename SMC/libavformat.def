@@ -13,11 +13,19 @@ EXPORTS
     av_find_input_format
     av_find_program_from_stream
     av_fmt_ctx_get_duration_estimation_method
+    av_fopen_utf8
     av_format_get_audio_codec
+    av_format_get_control_message_cb
+    av_format_get_metadata_header_padding
+    av_format_get_opaque
     av_format_get_probe_score
     av_format_get_subtitle_codec
     av_format_get_video_codec
+    av_format_inject_global_side_data
     av_format_set_audio_codec
+    av_format_set_control_message_cb
+    av_format_set_metadata_header_padding
+    av_format_set_opaque
     av_format_set_subtitle_codec
     av_format_set_video_codec
     av_get_frame_filename
@@ -32,6 +40,7 @@ EXPORTS
     av_iformat_next
     av_index_search_timestamp
     av_interleaved_write_frame
+    av_interleaved_write_uncoded_frame
     av_match_ext
     av_new_program
     av_oformat_next
@@ -53,10 +62,13 @@ EXPORTS
     av_stream_get_end_pts
     av_stream_get_parser
     av_stream_get_r_frame_rate
+    av_stream_get_side_data
     av_stream_set_r_frame_rate
     av_url_split
     av_write_frame
     av_write_trailer
+    av_write_uncoded_frame
+    av_write_uncoded_frame_query
     avformat_alloc_context
     avformat_alloc_output_context2
     avformat_close_input
@@ -64,6 +76,8 @@ EXPORTS
     avformat_find_stream_info
     avformat_free_context
     avformat_get_class
+    avformat_get_mov_audio_tags
+    avformat_get_mov_video_tags
     avformat_get_riff_audio_tags
     avformat_get_riff_video_tags
     avformat_license
@@ -83,6 +97,7 @@ EXPORTS
     avio_close_dyn_buf
     avio_closep
     avio_enum_protocols
+    avio_feof
     avio_find_protocol_name
     avio_flush
     avio_get_str
@@ -123,6 +138,22 @@ EXPORTS
     avpriv_dv_get_packet
     avpriv_dv_init_demux
     avpriv_dv_produce_packet
+    avpriv_mpegts_parse_close
+    avpriv_mpegts_parse_open
+    avpriv_mpegts_parse_packet
     avpriv_new_chapter
     avpriv_set_pts_info
-    ff_codec_get_id
+    ff_inet_aton
+    ff_rtp_get_local_rtcp_port
+    ff_rtp_get_local_rtp_port
+    ff_rtsp_parse_line
+    ff_socket_nonblock
+    ffio_open_dyn_packet_buf
+    ffio_set_buf_size
+    ffurl_close
+    ffurl_open
+    ffurl_read_complete
+    ffurl_seek
+    ffurl_size
+    ffurl_write
+    url_feof

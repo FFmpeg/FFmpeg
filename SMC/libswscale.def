@@ -3,7 +3,6 @@ EXPORTS
     sws_allocVec
     sws_alloc_context
     sws_cloneVec
-    sws_context_class DATA
     sws_convVec
     sws_convertPalette8ToPacked24
     sws_convertPalette8ToPacked32
@@ -34,3 +33,4 @@ EXPORTS
     swscale_configuration
     swscale_license
     swscale_version
+    sws_context_class DATA
