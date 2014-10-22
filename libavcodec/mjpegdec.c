@@ -2101,7 +2101,7 @@ the_end:
             if (!(s->upscale_h & (1<<p)))
                 continue;
             if (p==1 || p==2) {
-                w >>= hshift;
+                w = FF_CEIL_RSHIFT(w, hshift);
                 h = FF_CEIL_RSHIFT(h, vshift);
             }
             if (s->upscale_v & (1<<p))
