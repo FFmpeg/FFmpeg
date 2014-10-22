@@ -3090,9 +3090,9 @@ static OutputStream *choose_output(void)
         OutputStream *ost = output_streams[i];
         int64_t opts = av_rescale_q(ost->st->cur_dts, ost->st->time_base,
                                     AV_TIME_BASE_Q);
-        if (!ost->unavailable && !ost->finished && opts < opts_min) {
+        if (!ost->finished && opts < opts_min) {
             opts_min = opts;
-            ost_min  = ost;
+            ost_min  = ost->unavailable ? NULL : ost;
         }
     }
     return ost_min;
