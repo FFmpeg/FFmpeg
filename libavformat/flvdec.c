@@ -746,7 +746,7 @@ static int flv_data_packet(AVFormatContext *s, AVPacket *pkt,
     if (i == s->nb_streams) {
         st = create_stream(s, AVMEDIA_TYPE_DATA);
         if (!st)
-            return AVERROR_INVALIDDATA;
+            return AVERROR(ENOMEM);
         st->codec->codec_id = AV_CODEC_ID_TEXT;
     }
 
@@ -930,6 +930,7 @@ retry_duration:
         } else {
             AVCodecContext ctx = {0};
             ctx.sample_rate = sample_rate;
+            ctx.bits_per_coded_sample = bits_per_coded_sample;
             flv_set_audio_codec(s, st, &ctx, flags & FLV_AUDIO_CODECID_MASK);
             sample_rate = ctx.sample_rate;
         }

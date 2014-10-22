@@ -250,7 +250,7 @@ redo:
 fail:
     if (s->hd)
         ffurl_closep(&s->hd);
-    return AVERROR(EIO);
+    return ff_http_averror(s->http_code, AVERROR(EIO));
 }
 
 int ff_http_do_new_request(URLContext *h, const char *uri)
@@ -270,6 +270,23 @@ int ff_http_do_new_request(URLContext *h, const char *uri)
     ret = http_open_cnx(h, &options);
     av_dict_free(&options);
     return ret;
+}
+
+int ff_http_averror(int status_code, int default_averror)
+{
+    switch (status_code) {
+        case 400: return AVERROR_HTTP_BAD_REQUEST;
+        case 401: return AVERROR_HTTP_UNAUTHORIZED;
+        case 403: return AVERROR_HTTP_FORBIDDEN;
+        case 404: return AVERROR_HTTP_NOT_FOUND;
+        default: break;
+    }
+    if (status_code >= 400 && status_code <= 499)
+        return AVERROR_HTTP_OTHER_4XX;
+    else if (status_code >= 500)
+        return AVERROR_HTTP_SERVER_ERROR;
+    else
+        return default_averror;
 }
 
 static int http_open(URLContext *h, const char *uri, int flags,
@@ -354,7 +371,7 @@ static int check_http_code(URLContext *h, int http_code, const char *end)
         (http_code != 407 || s->proxy_auth_state.auth_type != HTTP_AUTH_NONE)) {
         end += strspn(end, SPACE_CHARS);
         av_log(h, AV_LOG_WARNING, "HTTP error %d %s\n", http_code, end);
-        return AVERROR(EIO);
+        return ff_http_averror(http_code, AVERROR(EIO));
     }
     return 0;
 }
@@ -1267,7 +1284,7 @@ redo:
 
     if (s->http_code < 400)
         return 0;
-    ret = AVERROR(EIO);
+    ret = ff_http_averror(s->http_code, AVERROR(EIO));
 
 fail:
     http_proxy_close(h);

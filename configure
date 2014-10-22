@@ -4390,7 +4390,7 @@ EOF
 od -t x1 $TMPO | grep -q '42 *49 *47 *45' && enable bigendian
 
 if  [ "$cpu" = "power7" ] || [ "$cpu" = "power8" ] ;then
-    if ! enabled bigendian ;then
+    if ! enabled bigendian && enabled altivec ;then
         enable vsx
     fi
 fi
@@ -4880,7 +4880,10 @@ enabled libvpx            && {
     enabled libvpx_vp9_encoder && { check_lib2 "vpx/vpx_encoder.h vpx/vp8cx.h" "vpx_codec_vp9_cx VP9E_SET_AQ_MODE" -lvpx || disable libvpx_vp9_encoder; } }
 enabled libwavpack        && require libwavpack wavpack/wavpack.h WavpackOpenFileOutput  -lwavpack
 enabled libwebp           && require_pkg_config "libwebp >= 0.2.0" webp/encode.h WebPGetEncoderVersion
-enabled libx264           && require libx264 x264.h x264_encoder_encode -lx264 &&
+enabled libx264           && { { check_pkg_config x264 "stdint.h x264.h" x264_encoder_encode &&
+                                 require_pkg_config x264 "stdint.h x264.h" x264_encoder_encode; } ||
+                               { require libx264 x264.h x264_encoder_encode -lx264 &&
+                                 warn "using libx264 without pkg-config"; } } &&
                              { check_cpp_condition x264.h "X264_BUILD >= 118" ||
                                die "ERROR: libx264 must be installed and version must be >= 0.118."; }
 enabled libx265           && require_pkg_config x265 x265.h x265_encoder_encode &&
@@ -4964,6 +4967,7 @@ check_header linux/videodev2.h
 check_code cc linux/videodev2.h "struct v4l2_frmsizeenum vfse; vfse.discrete.width = 0;" && enable_safe struct_v4l2_frmivalenum_discrete
 
 check_header sys/videoio.h
+check_code cc sys/videoio.h "struct v4l2_frmsizeenum vfse; vfse.discrete.width = 0;" && enable_safe struct_v4l2_frmivalenum_discrete
 
 check_func_headers "windows.h vfw.h" capCreateCaptureWindow "$vfwcap_indev_extralibs"
 # check that WM_CAP_DRIVER_CONNECT is defined to the proper value

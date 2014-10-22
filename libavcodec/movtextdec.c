@@ -42,7 +42,6 @@ static int text_to_ass(AVBPrint *buf, const char *text, const char *text_end)
         text++;
     }
 
-    av_bprintf(buf, "\r\n");
     return 0;
 }
 
@@ -96,7 +95,7 @@ static int mov_text_decode_frame(AVCodecContext *avctx,
     // Note that the spec recommends lines be no longer than 2048 characters.
     av_bprint_init(&buf, 0, AV_BPRINT_SIZE_UNLIMITED);
     text_to_ass(&buf, ptr, end);
-    ret = ff_ass_add_rect_bprint(sub, &buf, ts_start, ts_end-ts_start, 0);
+    ret = ff_ass_add_rect_bprint(sub, &buf, ts_start, ts_end-ts_start);
     av_bprint_finalize(&buf, NULL);
     if (ret < 0)
         return ret;

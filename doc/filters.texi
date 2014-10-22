@@ -4174,7 +4174,7 @@ drawtext='fontfile=Linux Libertine O-40\:style=Semibold:text=FFmpeg'
 @item
 Print the date of a real-time encoding (see strftime(3)):
 @example
-drawtext='fontfile=FreeSans.ttf:text=%@{localtime:%a %b %d %Y@}'
+drawtext='fontfile=FreeSans.ttf:text=%@{localtime\:%a %b %d %Y@}'
 @end example
 
 @item
@@ -5573,6 +5573,34 @@ Detect video interlacing type.
 This filter tries to detect if the input is interlaced or progressive,
 top or bottom field first.
 
+The filter will log these metadata values:
+
+@table @option
+@item single.tff
+Cumulative number of frames detected as top field first using single-frame detection.
+
+@item multiple.tff
+Cumulative number of frames detected as top field first using multiple-frame detection.
+
+@item single.bff
+Cumulative number of frames detected as bottom field first using single-frame detection.
+
+@item multiple.bff
+Cumulative number of frames detected as bottom field first using multiple-frame detection.
+
+@item single.progressive
+Cumulative number of frames detected as progressive using single-frame detection.
+
+@item multiple.progressive
+Cumulative number of frames detected as progressive using multiple-frame detection.
+
+@item single.undetermined
+Cumulative number of frames that could not be classified using single-frame detection.
+
+@item multiple.undetermined
+Cumulative number of frames that could not be classified using multiple-frame detection.
+@end table
+
 The filter accepts the following options:
 
 @table @option
@@ -6718,6 +6746,9 @@ A description of the accepted parameters follows.
 @item y3
 Set coordinates expression for top left, top right, bottom left and bottom right corners.
 Default values are @code{0:0:W:0:0:H:W:H} with which perspective will remain unchanged.
+If the @code{sense} option is set to @code{source}, then the specified points will be sent
+to the corners of the destination. If the @code{sense} option is set to @code{destination},
+then the corners of the source will be sent to the specified coordinates.
 
 The expressions can use the following variables:
 
@@ -6737,6 +6768,24 @@ It accepts the following values:
 @end table
 
 Default value is @samp{linear}.
+
+@item sense
+Set interpretation of coordinate options.
+
+It accepts the following values:
+@table @samp
+@item 0, source
+
+Send point in the source specified by the given coordinates to
+the corners of the destination.
+
+@item 1, destination
+
+Send the corners of the source to the point in the destination specified
+by the given coordinates.
+
+Default value is @samp{source}.
+@end table
 @end table
 
 @section phase

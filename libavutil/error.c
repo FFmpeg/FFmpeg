@@ -53,6 +53,12 @@ static const struct error_entry error_entries[] = {
     { ERROR_TAG(UNKNOWN),            "Unknown error occurred"                         },
     { ERROR_TAG(EXPERIMENTAL),       "Experimental feature"                           },
     { ERROR_TAG(INPUT_AND_OUTPUT_CHANGED), "Input and output changed"                 },
+    { ERROR_TAG(HTTP_BAD_REQUEST),   "Server returned 400 Bad Request"         },
+    { ERROR_TAG(HTTP_UNAUTHORIZED),  "Server returned 401 Unauthorized (authorization failed)" },
+    { ERROR_TAG(HTTP_FORBIDDEN),     "Server returned 403 Forbidden (access denied)" },
+    { ERROR_TAG(HTTP_NOT_FOUND),     "Server returned 404 Not Found"           },
+    { ERROR_TAG(HTTP_OTHER_4XX),     "Server returned 4XX Client Error, but not one of 40{0,1,3,4}" },
+    { ERROR_TAG(HTTP_SERVER_ERROR),  "Server returned 5XX Server Error reply" },
 };
 
 int av_strerror(int errnum, char *errbuf, size_t errbuf_size)

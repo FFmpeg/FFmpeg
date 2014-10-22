@@ -1794,21 +1794,19 @@ typedef struct AVCodecContext {
      */
     int noise_reduction;
 
+#if FF_API_MPV_OPT
     /**
-     * Motion estimation threshold below which no motion estimation is
-     * performed, but instead the user specified motion vectors are used.
-     *
-     * - encoding: Set by user.
-     * - decoding: unused
+     * @deprecated this field is unused
      */
+    attribute_deprecated
     int me_threshold;
 
     /**
-     * Macroblock threshold below which the user specified macroblock types will be used.
-     * - encoding: Set by user.
-     * - decoding: unused
+     * @deprecated this field is unused
      */
+    attribute_deprecated
     int mb_threshold;
+#endif
 
     /**
      * precision of the intra DC coefficient - 8
@@ -1831,13 +1829,13 @@ typedef struct AVCodecContext {
      */
     int skip_bottom;
 
+#if FF_API_MPV_OPT
     /**
-     * Border processing masking, raises the quantizer for mbs on the borders
-     * of the picture.
-     * - encoding: Set by user.
-     * - decoding: unused
+     * @deprecated use encoder private options instead
      */
+    attribute_deprecated
     float border_masking;
+#endif
 
     /**
      * minimum MB lagrange multipler
@@ -2271,16 +2269,18 @@ typedef struct AVCodecContext {
      */
     int max_qdiff;
 
+#if FF_API_MPV_OPT
     /**
-     * ratecontrol qmin qmax limiting method
-     * 0-> clipping, 1-> use a nice continuous function to limit qscale within qmin/qmax.
-     * - encoding: Set by user.
-     * - decoding: unused
+     * @deprecated use encoder private options instead
      */
+    attribute_deprecated
     float rc_qsquish;
 
+    attribute_deprecated
     float rc_qmod_amp;
+    attribute_deprecated
     int rc_qmod_freq;
+#endif
 
     /**
      * decoder bitstream buffer size
@@ -2297,12 +2297,13 @@ typedef struct AVCodecContext {
     int rc_override_count;
     RcOverride *rc_override;
 
+#if FF_API_MPV_OPT
     /**
-     * rate control equation
-     * - encoding: Set by user
-     * - decoding: unused
+     * @deprecated use encoder private options instead
      */
+    attribute_deprecated
     const char *rc_eq;
+#endif
 
     /**
      * maximum bitrate
@@ -2318,14 +2319,16 @@ typedef struct AVCodecContext {
      */
     int rc_min_rate;
 
+#if FF_API_MPV_OPT
+    /**
+     * @deprecated use encoder private options instead
+     */
+    attribute_deprecated
     float rc_buffer_aggressivity;
 
-    /**
-     * initial complexity for pass1 ratecontrol
-     * - encoding: Set by user.
-     * - decoding: unused
-     */
+    attribute_deprecated
     float rc_initial_cplx;
+#endif
 
     /**
      * Ratecontrol attempt to use, at maximum, <value> of what can be used without an underflow.
@@ -2369,19 +2372,19 @@ typedef struct AVCodecContext {
      */
     int context_model;
 
+#if FF_API_MPV_OPT
     /**
-     * minimum Lagrange multiplier
-     * - encoding: Set by user.
-     * - decoding: unused
+     * @deprecated use encoder private options instead
      */
+    attribute_deprecated
     int lmin;
 
     /**
-     * maximum Lagrange multiplier
-     * - encoding: Set by user.
-     * - decoding: unused
+     * @deprecated use encoder private options instead
      */
+    attribute_deprecated
     int lmax;
+#endif
 
     /**
      * frame skip threshold
@@ -3109,6 +3112,13 @@ typedef struct AVCodecContext {
      */
     uint8_t *dump_separator;
 
+    /**
+     * ',' seperated list of allowed decoders.
+     * If NULL then all are allowed
+     * - encoding: unused
+     * - decoding: set by user through AVOPtions (NO direct access)
+     */
+    char *codec_whitelist;
 } AVCodecContext;
 
 AVRational av_codec_get_pkt_timebase         (const AVCodecContext *avctx);

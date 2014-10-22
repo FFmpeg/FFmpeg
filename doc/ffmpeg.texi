@@ -1016,6 +1016,12 @@ processing (e.g. in case the format option @option{avoid_negative_ts}
 is enabled) the output timestamps may mismatch with the input
 timestamps even when this option is selected.
 
+@item -start_at_zero
+When used with @option{copyts}, shift input timestamps so they start at zero.
+
+This means that using e.g. @code{-ss 50} will make output timestamps start at
+50 seconds, regardless of what timestamp the input file started at.
+
 @item -copytb @var{mode}
 Specify how to set the encoder timebase when stream copying.  @var{mode} is an
 integer numeric value, and can assume one of the following values:

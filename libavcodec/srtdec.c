@@ -183,7 +183,6 @@ static void srt_to_ass(AVCodecContext *avctx, AVBPrint *dst,
         dst->len -= 2;
     dst->str[dst->len] = 0;
     rstrip_spaces_buf(dst);
-    av_bprintf(dst, "\r\n");
 }
 
 static int srt_decode_frame(AVCodecContext *avctx,
@@ -217,7 +216,7 @@ static int srt_decode_frame(AVCodecContext *avctx,
                                     (AVRational){1,100});
 
     srt_to_ass(avctx, &buffer, avpkt->data, x1, y1, x2, y2);
-    ret = ff_ass_add_rect_bprint(sub, &buffer, ts_start, ts_end-ts_start, 0);
+    ret = ff_ass_add_rect_bprint(sub, &buffer, ts_start, ts_end-ts_start);
     av_bprint_finalize(&buffer, NULL);
     if (ret < 0)
         return ret;

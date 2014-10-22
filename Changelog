@@ -5,6 +5,7 @@ version <next>:
 - HEVC/H.265 RTP payload format (draft v6) packetizer
 - SUP/PGS subtitle demuxer
 - ffprobe -show_pixel_formats option
+- CAST128 symmetric block cipher, ECB mode
 
 version 2.4:
 - Icecast protocol

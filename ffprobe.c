@@ -2118,6 +2118,22 @@ static int show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_id
             s = av_get_colorspace_name(dec_ctx->colorspace);
             if (s) print_str    ("color_space", s);
             else   print_str_opt("color_space", "unknown");
+
+            if (dec_ctx->color_trc != AVCOL_TRC_UNSPECIFIED)
+                print_str("color_transfer", av_color_transfer_name(dec_ctx->color_trc));
+            else
+                print_str_opt("color_transfer", av_color_transfer_name(dec_ctx->color_trc));
+
+            if (dec_ctx->color_primaries != AVCOL_PRI_UNSPECIFIED)
+                print_str("color_primaries", av_color_primaries_name(dec_ctx->color_primaries));
+            else
+                print_str_opt("color_primaries", av_color_primaries_name(dec_ctx->color_primaries));
+
+            if (dec_ctx->chroma_sample_location != AVCHROMA_LOC_UNSPECIFIED)
+                print_str("chroma_location", av_chroma_location_name(dec_ctx->chroma_sample_location));
+            else
+                print_str_opt("chroma_location", av_chroma_location_name(dec_ctx->chroma_sample_location));
+
             if (dec_ctx->timecode_frame_start >= 0) {
                 char tcbuf[AV_TIMECODE_STR_SIZE];
                 av_timecode_make_mpeg_tc_string(tcbuf, dec_ctx->timecode_frame_start);

@@ -532,7 +532,7 @@ static int rtsp_read_play(AVFormatContext *s)
         }
         ff_rtsp_send_cmd(s, "PLAY", rt->control_uri, cmd, reply, NULL);
         if (reply->status_code != RTSP_STATUS_OK) {
-            return -1;
+            return ff_rtsp_averror(reply->status_code, -1);
         }
         if (rt->transport == RTSP_TRANSPORT_RTP &&
             reply->range_start != AV_NOPTS_VALUE) {
@@ -564,7 +564,7 @@ static int rtsp_read_pause(AVFormatContext *s)
     else if (!(rt->server_type == RTSP_SERVER_REAL && rt->need_subscription)) {
         ff_rtsp_send_cmd(s, "PAUSE", rt->control_uri, NULL, reply, NULL);
         if (reply->status_code != RTSP_STATUS_OK) {
-            return -1;
+            return ff_rtsp_averror(reply->status_code, -1);
         }
     }
     rt->state = RTSP_STATE_PAUSED;
@@ -591,12 +591,12 @@ int ff_rtsp_setup_input_streams(AVFormatContext *s, RTSPMessageHeader *reply)
                    sizeof(cmd));
     }
     ff_rtsp_send_cmd(s, "DESCRIBE", rt->control_uri, cmd, reply, &content);
-    if (!content)
-        return AVERROR_INVALIDDATA;
     if (reply->status_code != RTSP_STATUS_OK) {
         av_freep(&content);
-        return AVERROR_INVALIDDATA;
+        return ff_rtsp_averror(reply->status_code, AVERROR_INVALIDDATA);
     }
+    if (!content)
+        return AVERROR_INVALIDDATA;
 
     av_log(s, AV_LOG_VERBOSE, "SDP:\n%s\n", content);
     /* now we got the SDP description, we parse it */
@@ -717,10 +717,10 @@ static int rtsp_read_header(AVFormatContext *s)
         if (rt->initial_pause) {
             /* do not start immediately */
         } else {
-            if (rtsp_read_play(s) < 0) {
+            if ((ret = rtsp_read_play(s)) < 0) {
                 ff_rtsp_close_streams(s);
                 ff_rtsp_close_connections(s);
-                return AVERROR_INVALIDDATA;
+                return ret;
             }
         }
     }
@@ -814,7 +814,7 @@ retry:
                 ff_rtsp_send_cmd(s, "SET_PARAMETER", rt->control_uri,
                                  cmd, reply, NULL);
                 if (reply->status_code != RTSP_STATUS_OK)
-                    return AVERROR_INVALIDDATA;
+                    return ff_rtsp_averror(reply->status_code, AVERROR_INVALIDDATA);
                 rt->need_subscription = 1;
             }
         }
@@ -849,7 +849,7 @@ retry:
             ff_rtsp_send_cmd(s, "SET_PARAMETER", rt->control_uri,
                              cmd, reply, NULL);
             if (reply->status_code != RTSP_STATUS_OK)
-                return AVERROR_INVALIDDATA;
+                return ff_rtsp_averror(reply->status_code, AVERROR_INVALIDDATA);
             rt->need_subscription = 0;
 
             if (rt->state == RTSP_STATE_STREAMING)
@@ -910,6 +910,7 @@ static int rtsp_read_seek(AVFormatContext *s, int stream_index,
                           int64_t timestamp, int flags)
 {
     RTSPState *rt = s->priv_data;
+    int ret;
 
     rt->seek_timestamp = av_rescale_q(timestamp,
                                       s->streams[stream_index]->time_base,
@@ -919,11 +920,11 @@ static int rtsp_read_seek(AVFormatContext *s, int stream_index,
     case RTSP_STATE_IDLE:
         break;
     case RTSP_STATE_STREAMING:
-        if (rtsp_read_pause(s) != 0)
-            return -1;
+        if ((ret = rtsp_read_pause(s)) != 0)
+            return ret;
         rt->state = RTSP_STATE_SEEKING;
-        if (rtsp_read_play(s) != 0)
-            return -1;
+        if ((ret = rtsp_read_play(s)) != 0)
+            return ret;
         break;
     case RTSP_STATE_PAUSED:
         rt->state = RTSP_STATE_IDLE;

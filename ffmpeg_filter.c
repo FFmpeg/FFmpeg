@@ -383,9 +383,8 @@ static int configure_output_video_filter(FilterGraph *fg, OutputFilter *ofilter,
         snprintf(name, sizeof(name), "pixel format for output stream %d:%d",
                  ost->file_index, ost->index);
         ret = avfilter_graph_create_filter(&filter,
-                                                avfilter_get_by_name("format"),
-                                                "format", pix_fmts, NULL,
-                                                fg->graph);
+                                           avfilter_get_by_name("format"),
+                                           "format", pix_fmts, NULL, fg->graph);
         av_freep(&pix_fmts);
         if (ret < 0)
             return ret;

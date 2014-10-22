@@ -167,6 +167,9 @@
       <xsd:attribute name="level"                type="xsd:int"/>
       <xsd:attribute name="color_range"          type="xsd:string"/>
       <xsd:attribute name="color_space"          type="xsd:string"/>
+      <xsd:attribute name="color_transfer"       type="xsd:string"/>
+      <xsd:attribute name="color_primaries"      type="xsd:string"/>
+      <xsd:attribute name="chroma_location"      type="xsd:string"/>
       <xsd:attribute name="timecode"             type="xsd:string"/>
 
       <!-- audio attributes -->

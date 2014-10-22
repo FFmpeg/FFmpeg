@@ -1,5 +1,5 @@
 /*
- * Phanton Cine demuxer
+ * Phantom Cine demuxer
  * Copyright (c) 2010-2011 Peter Ross <pross@xvid.org>
  *
  * This file is part of FFmpeg.

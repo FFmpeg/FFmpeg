@@ -374,12 +374,19 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
     /* Fixed QSCALE */
     s->fixed_qscale = !!(avctx->flags & CODEC_FLAG_QSCALE);
 
+#if FF_API_MPV_OPT
+    FF_DISABLE_DEPRECATION_WARNINGS
+    if (avctx->border_masking != 0.0)
+        s->border_masking = avctx->border_masking;
+    FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
     s->adaptive_quant = (s->avctx->lumi_masking ||
                          s->avctx->dark_masking ||
                          s->avctx->temporal_cplx_masking ||
                          s->avctx->spatial_cplx_masking  ||
                          s->avctx->p_masking      ||
-                         s->avctx->border_masking ||
+                         s->border_masking ||
                          (s->mpv_flags & FF_MPV_FLAG_QP_RD)) &&
                         !s->fixed_qscale;
 
@@ -637,13 +644,6 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
 
     if (!avctx->time_base.den || !avctx->time_base.num) {
         av_log(avctx, AV_LOG_ERROR, "framerate not set\n");
-        return -1;
-    }
-
-    i = (INT_MAX / 2 + 128) >> 8;
-    if (avctx->mb_threshold >= i) {
-        av_log(avctx, AV_LOG_ERROR, "mb_threshold too large, max is %d\n",
-               i - 1);
         return -1;
     }
 
@@ -947,6 +947,32 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
     FF_DISABLE_DEPRECATION_WARNINGS
     if (avctx->flags & CODEC_FLAG_MV0)
         s->mpv_flags |= FF_MPV_FLAG_MV0;
+    FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
+#if FF_API_MPV_OPT
+    FF_DISABLE_DEPRECATION_WARNINGS
+    if (avctx->rc_qsquish != 0.0)
+        s->rc_qsquish = avctx->rc_qsquish;
+    if (avctx->rc_qmod_amp != 0.0)
+        s->rc_qmod_amp = avctx->rc_qmod_amp;
+    if (avctx->rc_qmod_freq)
+        s->rc_qmod_freq = avctx->rc_qmod_freq;
+    if (avctx->rc_buffer_aggressivity != 1.0)
+        s->rc_buffer_aggressivity = avctx->rc_buffer_aggressivity;
+    if (avctx->rc_initial_cplx != 0.0)
+        s->rc_initial_cplx = avctx->rc_initial_cplx;
+    if (avctx->lmin)
+        s->lmin = avctx->lmin;
+    if (avctx->lmax)
+        s->lmax = avctx->lmax;
+
+    if (avctx->rc_eq) {
+        av_freep(&s->rc_eq);
+        s->rc_eq = av_strdup(avctx->rc_eq);
+        if (!s->rc_eq)
+            return AVERROR(ENOMEM);
+    }
     FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
@@ -1759,7 +1785,7 @@ vbv_retry:
             int max_size = FFMAX(rcc->buffer_index * avctx->rc_max_available_vbv_use, rcc->buffer_index - 500);
 
             if (put_bits_count(&s->pb) > max_size &&
-                s->lambda < s->avctx->lmax) {
+                s->lambda < s->lmax) {
                 s->next_lambda = FFMAX(s->lambda + 1, s->lambda *
                                        (s->qscale + 1) / s->qscale);
                 if (s->adaptive_quant) {

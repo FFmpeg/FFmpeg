@@ -291,6 +291,11 @@ static int set_codec_from_probe_data(AVFormatContext *s, AVStream *st,
 int av_demuxer_open(AVFormatContext *ic) {
     int err;
 
+    if (ic->format_whitelist && av_match_list(ic->iformat->name, ic->format_whitelist, ',') <= 0) {
+        av_log(ic, AV_LOG_ERROR, "Format not on whitelist\n");
+        return AVERROR(EINVAL);
+    }
+
     if (ic->iformat->read_header) {
         err = ic->iformat->read_header(ic);
         if (err < 0)
@@ -402,6 +407,13 @@ int avformat_open_input(AVFormatContext **ps, const char *filename,
     if ((ret = init_input(s, filename, &tmp)) < 0)
         goto fail;
     s->probe_score = ret;
+
+    if (s->format_whitelist && av_match_list(s->iformat->name, s->format_whitelist, ',') <= 0) {
+        av_log(s, AV_LOG_ERROR, "Format not on whitelist\n");
+        ret = AVERROR(EINVAL);
+        goto fail;
+    }
+
     avio_skip(s->pb, s->skip_initial_bytes);
 
     /* Check filename in case an image number is expected. */
@@ -2576,6 +2588,8 @@ static int try_decode_frame(AVFormatContext *s, AVStream *st, AVPacket *avpkt,
         /* Force thread count to 1 since the H.264 decoder will not extract
          * SPS and PPS to extradata during multi-threaded decoding. */
         av_dict_set(options ? options : &thread_opt, "threads", "1", 0);
+        if (s->codec_whitelist)
+            av_dict_set(options ? options : &thread_opt, "codec_whitelist", s->codec_whitelist, 0);
         ret = avcodec_open2(st->codec, codec, options ? options : &thread_opt);
         if (!options)
             av_dict_free(&thread_opt);
@@ -3008,6 +3022,9 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
         /* Force thread count to 1 since the H.264 decoder will not extract
          * SPS and PPS to extradata during multi-threaded decoding. */
         av_dict_set(options ? &options[i] : &thread_opt, "threads", "1", 0);
+
+        if (ic->codec_whitelist)
+            av_dict_set(options ? &options[i] : &thread_opt, "codec_whitelist", ic->codec_whitelist, 0);
 
         /* Ensure that subtitle_header is properly set. */
         if (st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE

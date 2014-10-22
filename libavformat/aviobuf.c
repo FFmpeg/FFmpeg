@@ -1097,7 +1097,6 @@ int avio_close_dyn_buf(AVIOContext *s, uint8_t **pbuffer)
         *pbuffer = NULL;
         return 0;
     }
-    d = s->opaque;
 
     /* don't attempt to pad fixed-size packet buffers */
     if (!s->max_packet_size) {
@@ -1107,6 +1106,7 @@ int avio_close_dyn_buf(AVIOContext *s, uint8_t **pbuffer)
 
     avio_flush(s);
 
+    d = s->opaque;
     *pbuffer = d->buffer;
     size = d->size;
     av_free(d);

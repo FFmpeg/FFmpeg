@@ -154,6 +154,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *picref)
 {
     AVFilterContext *ctx = link->dst;
     IDETContext *idet = ctx->priv;
+    AVDictionary **metadata = avpriv_frame_get_metadatap(picref);
 
     if (idet->prev)
         av_frame_free(&idet->prev);
@@ -176,6 +177,16 @@ static int filter_frame(AVFilterLink *link, AVFrame *picref)
     }
 
     filter(ctx);
+
+    av_dict_set_int(metadata, "lavfi.idet.single.tff", idet->prestat[TFF], 0);
+    av_dict_set_int(metadata, "lavfi.idet.single.bff", idet->prestat[BFF], 0);
+    av_dict_set_int(metadata, "lavfi.idet.single.progressive", idet->prestat[PROGRESSIVE], 0);
+    av_dict_set_int(metadata, "lavfi.idet.single.undetermined", idet->prestat[UNDETERMINED], 0);
+
+    av_dict_set_int(metadata, "lavfi.idet.multiple.tff", idet->poststat[TFF], 0);
+    av_dict_set_int(metadata, "lavfi.idet.multiple.bff", idet->poststat[BFF], 0);
+    av_dict_set_int(metadata, "lavfi.idet.multiple.progressive", idet->poststat[PROGRESSIVE], 0);
+    av_dict_set_int(metadata, "lavfi.idet.multiple.undetermined", idet->poststat[UNDETERMINED], 0);
 
     return ff_filter_frame(ctx->outputs[0], av_frame_clone(idet->cur));
 }

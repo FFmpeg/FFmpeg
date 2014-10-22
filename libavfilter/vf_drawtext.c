@@ -477,7 +477,7 @@ static int load_textfile(AVFilterContext *ctx)
         return err;
     }
 
-    if (!(tmp = av_realloc(s->text, textbuf_size + 1))) {
+    if (textbuf_size > SIZE_MAX - 1 || !(tmp = av_realloc(s->text, textbuf_size + 1))) {
         av_file_unmap(textbuf, textbuf_size);
         return AVERROR(ENOMEM);
     }

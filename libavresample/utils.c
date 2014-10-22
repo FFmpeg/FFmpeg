@@ -585,9 +585,12 @@ static inline int convert_frame(AVAudioResampleContext *avr,
 
 static inline int available_samples(AVFrame *out)
 {
+    int samples;
     int bytes_per_sample = av_get_bytes_per_sample(out->format);
-    int samples = out->linesize[0] / bytes_per_sample;
+    if (!bytes_per_sample)
+        return AVERROR(EINVAL);
 
+    samples = out->linesize[0] / bytes_per_sample;
     if (av_sample_fmt_is_planar(out->format)) {
         return samples;
     } else {

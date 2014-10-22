@@ -91,6 +91,7 @@ int do_benchmark_all  = 0;
 int do_hex_dump       = 0;
 int do_pkt_dump       = 0;
 int copy_ts           = 0;
+int start_at_zero     = 0;
 int copy_tb           = -1;
 int debug_ts          = 0;
 int exit_on_error     = 0;
@@ -921,7 +922,7 @@ static int open_input_file(OptionsContext *o, const char *filename)
     f->start_time = o->start_time;
     f->recording_time = o->recording_time;
     f->input_ts_offset = o->input_ts_offset;
-    f->ts_offset  = o->input_ts_offset - (copy_ts ? 0 : timestamp);
+    f->ts_offset  = o->input_ts_offset - (copy_ts ? (start_at_zero && ic->start_time != AV_NOPTS_VALUE ? ic->start_time : 0) : timestamp);
     f->nb_streams = ic->nb_streams;
     f->rate_emu   = o->rate_emu;
     f->accurate_seek = o->accurate_seek;
@@ -2840,6 +2841,8 @@ const OptionDef options[] = {
         "audio drift threshold", "threshold" },
     { "copyts",         OPT_BOOL | OPT_EXPERT,                       { &copy_ts },
         "copy timestamps" },
+    { "start_at_zero",  OPT_BOOL | OPT_EXPERT,                       { &start_at_zero },
+        "shift input timestamps to start at 0 when using copyts" },
     { "copytb",         HAS_ARG | OPT_INT | OPT_EXPERT,              { &copy_tb },
         "copy input stream time base when stream copying", "mode" },
     { "shortest",       OPT_BOOL | OPT_EXPERT | OPT_OFFSET |

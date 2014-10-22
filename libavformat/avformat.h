@@ -1584,6 +1584,22 @@ typedef struct AVFormatContext {
      */
     int format_probesize;
 
+    /**
+     * ',' seperated list of allowed decoders.
+     * If NULL then all are allowed
+     * - encoding: unused
+     * - decoding: set by user through AVOptions (NO direct access)
+     */
+    char *codec_whitelist;
+
+    /**
+     * ',' seperated list of allowed demuxers.
+     * If NULL then all are allowed
+     * - encoding: unused
+     * - decoding: set by user through AVOptions (NO direct access)
+     */
+    char *format_whitelist;
+
     /*****************************************************************
      * All fields below this line are not part of the public API. They
      * may not be used outside of libavformat and can be changed and

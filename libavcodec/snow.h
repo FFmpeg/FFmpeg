@@ -29,6 +29,8 @@
 
 #include "rangecoder.h"
 #include "mathops.h"
+
+#define FF_MPV_OFFSET(x) (offsetof(MpegEncContext, x) + offsetof(SnowContext, m))
 #include "mpegvideo.h"
 #include "h264qpel.h"
 
