@@ -320,7 +320,7 @@ static int parse_playlist(HLSContext *c, const char *url,
         }
     }
     if (var)
-        var->last_load_time = av_gettime();
+        var->last_load_time = av_gettime_relative();
 
 fail:
     av_free(new_url);
@@ -392,7 +392,7 @@ restart:
 
 reload:
         if (!v->finished &&
-            av_gettime() - v->last_load_time >= reload_interval) {
+            av_gettime_relative() - v->last_load_time >= reload_interval) {
             if ((ret = parse_playlist(c, v->url, v, NULL)) < 0)
                 return ret;
             /* If we need to reload the playlist again below (if
@@ -409,7 +409,7 @@ reload:
         if (v->cur_seq_no >= v->start_seq_no + v->n_segments) {
             if (v->finished)
                 return AVERROR_EOF;
-            while (av_gettime() - v->last_load_time < reload_interval) {
+            while (av_gettime_relative() - v->last_load_time < reload_interval) {
                 if (ff_check_interrupt(c->interrupt_callback))
                     return AVERROR_EXIT;
                 av_usleep(100*1000);
