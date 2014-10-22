@@ -2921,11 +2921,11 @@ static int matroska_read_seek(AVFormatContext *s, int stream_index,
         goto err;
     timestamp = FFMAX(timestamp, st->index_entries[0].timestamp);
 
-    if ((index = av_index_search_timestamp(st, timestamp, flags)) < 0) {
+    if ((index = av_index_search_timestamp(st, timestamp, flags)) < 0 || index == st->nb_index_entries - 1) {
         avio_seek(s->pb, st->index_entries[st->nb_index_entries - 1].pos,
                   SEEK_SET);
         matroska->current_id = 0;
-        while ((index = av_index_search_timestamp(st, timestamp, flags)) < 0) {
+        while ((index = av_index_search_timestamp(st, timestamp, flags)) < 0 || index == st->nb_index_entries - 1) {
             matroska_clear_queue(matroska);
             if (matroska_parse_cluster(matroska) < 0)
                 break;
