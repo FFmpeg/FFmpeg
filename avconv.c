@@ -876,7 +876,7 @@ static void print_report(int is_last_report, int64_t timer_start)
     if (!is_last_report) {
         int64_t cur_time;
         /* display the report every 0.5 seconds */
-        cur_time = av_gettime();
+        cur_time = av_gettime_relative();
         if (last_time == -1) {
             last_time = cur_time;
             return;
@@ -913,7 +913,7 @@ static void print_report(int is_last_report, int64_t timer_start)
             snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "q=%2.1f ", q);
         }
         if (!vid && enc->codec_type == AVMEDIA_TYPE_VIDEO) {
-            float t = (av_gettime() - timer_start) / 1000000.0;
+            float t = (av_gettime_relative() - timer_start) / 1000000.0;
 
             frame_number = ost->frame_number;
             snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "frame=%5d fps=%3d q=%3.1f ",
@@ -1673,7 +1673,7 @@ static int transcode_init(void)
         InputFile *ifile = input_files[i];
         if (ifile->rate_emu)
             for (j = 0; j < ifile->nb_streams; j++)
-                input_streams[j + ifile->ist_index]->start = av_gettime();
+                input_streams[j + ifile->ist_index]->start = av_gettime_relative();
     }
 
     /* output stream init */
@@ -2281,7 +2281,7 @@ static int get_input_packet(InputFile *f, AVPacket *pkt)
         for (i = 0; i < f->nb_streams; i++) {
             InputStream *ist = input_streams[f->ist_index + i];
             int64_t pts = av_rescale(ist->last_dts, 1000000, AV_TIME_BASE);
-            int64_t now = av_gettime() - ist->start;
+            int64_t now = av_gettime_relative() - ist->start;
             if (pts > now)
                 return AVERROR(EAGAIN);
         }
@@ -2471,7 +2471,7 @@ static int transcode(void)
     av_log(NULL, AV_LOG_INFO, "Press ctrl-c to stop encoding\n");
     term_init();
 
-    timer_start = av_gettime();
+    timer_start = av_gettime_relative();
 
 #if HAVE_PTHREADS
     if ((ret = init_input_threads()) < 0)
@@ -2586,7 +2586,7 @@ static int64_t getutime(void)
     GetProcessTimes(proc, &c, &e, &k, &u);
     return ((int64_t) u.dwHighDateTime << 32 | u.dwLowDateTime) / 10;
 #else
-    return av_gettime();
+    return av_gettime_relative();
 #endif
 }
 
