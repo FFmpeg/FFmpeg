@@ -87,7 +87,7 @@ int av_match_ext(const char *filename, const char *extensions)
 
     ext = strrchr(filename, '.');
     if (ext)
-        return av_match_list(ext + 1, extensions, ',');
+        return av_match_name(ext + 1, extensions);
     return 0;
 }
 
