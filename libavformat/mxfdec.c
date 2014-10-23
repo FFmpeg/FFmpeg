@@ -1571,6 +1571,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
                     }
                     /* Turn field height into frame height. */
                     st->codec->height *= 2;
+                    break;
                 default:
                     av_log(mxf->fc, AV_LOG_INFO,
                            "Unknown frame layout type: %d\n",
