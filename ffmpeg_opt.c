@@ -1277,6 +1277,8 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc, in
         av_log(NULL, AV_LOG_FATAL, "Invalid framerate value: %s\n", frame_rate);
         exit_program(1);
     }
+    if (frame_rate && video_sync_method == VSYNC_PASSTHROUGH)
+        av_log(NULL, AV_LOG_ERROR, "Using -vsync 0 and -r can produce invalid output files\n");
 
     MATCH_PER_STREAM_OPT(frame_aspect_ratios, str, frame_aspect_ratio, oc, st);
     if (frame_aspect_ratio) {
