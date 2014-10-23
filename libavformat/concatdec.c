@@ -288,6 +288,11 @@ static int open_file(AVFormatContext *avf, unsigned fileno)
         return AVERROR(ENOMEM);
 
     cat->avf->interrupt_callback = avf->interrupt_callback;
+
+    av_assert0(!cat->avf->codec_whitelist && !cat->avf->format_whitelist);
+    cat->avf-> codec_whitelist = av_strdup(avf->codec_whitelist);
+    cat->avf->format_whitelist = av_strdup(avf->format_whitelist);
+
     if ((ret = avformat_open_input(&cat->avf, file->url, NULL, NULL)) < 0 ||
         (ret = avformat_find_stream_info(cat->avf, NULL)) < 0) {
         av_log(avf, AV_LOG_ERROR, "Impossible to open '%s'\n", file->url);
