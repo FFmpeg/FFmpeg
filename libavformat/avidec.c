@@ -996,7 +996,7 @@ fail:
     return 0;
 }
 
-static int read_gab2_sub(AVStream *st, AVPacket *pkt)
+static int read_gab2_sub(AVFormatContext *s, AVStream *st, AVPacket *pkt)
 {
     if (pkt->size >= 7 &&
         pkt->size < INT_MAX - AVPROBE_PADDING_SIZE &&
@@ -1039,6 +1039,11 @@ static int read_gab2_sub(AVStream *st, AVPacket *pkt)
             goto error;
 
         ast->sub_ctx->pb = pb;
+
+        av_assert0(!ast->sub_ctx->codec_whitelist && !ast->sub_ctx->format_whitelist);
+        ast->sub_ctx-> codec_whitelist = av_strdup(s->codec_whitelist);
+        ast->sub_ctx->format_whitelist = av_strdup(s->format_whitelist);
+
         if (!avformat_open_input(&ast->sub_ctx, "", sub_demuxer, NULL)) {
             ff_read_packet(ast->sub_ctx, &ast->sub_pkt);
             *st->codec = *ast->sub_ctx->streams[0]->codec;
@@ -1390,7 +1395,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             if (size < 0)
                 av_free_packet(pkt);
         } else if (st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE &&
-                   !st->codec->codec_tag && read_gab2_sub(st, pkt)) {
+                   !st->codec->codec_tag && read_gab2_sub(s, st, pkt)) {
             ast->frame_offset++;
             avi->stream_index = -1;
             ast->remaining    = 0;
