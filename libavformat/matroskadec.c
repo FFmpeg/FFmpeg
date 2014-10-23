@@ -2265,6 +2265,7 @@ static int matroska_parse_frame(MatroskaDemuxContext *matroska,
     /* XXX: prevent data copy... */
     if (av_new_packet(pkt, pkt_size + offset) < 0) {
         av_free(pkt);
+        av_freep(&pkt_data);
         return AVERROR(ENOMEM);
     }
 
