@@ -22,6 +22,7 @@
 
 #include "libavformat/avformat.h"
 #include "libavformat/internal.h"
+#include "libavutil/avassert.h"
 #include "libavutil/opt.h"
 
 typedef struct {
@@ -74,6 +75,10 @@ static int libquvi_read_header(AVFormatContext *s)
     rc = quvi_getprop(m, QUVIPROP_MEDIAURL, &media_url);
     if (rc != QUVI_OK)
         goto quvi_fail;
+
+    av_assert0(!qc->fmtctx->codec_whitelist && !qc->fmtctx->format_whitelist);
+    qc->fmtctx-> codec_whitelist = av_strdup(s->codec_whitelist);
+    qc->fmtctx->format_whitelist = av_strdup(s->format_whitelist);
 
     ret = avformat_open_input(&qc->fmtctx, media_url, NULL, NULL);
     if (ret < 0)
