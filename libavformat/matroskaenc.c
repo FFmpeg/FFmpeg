@@ -1443,8 +1443,11 @@ static int mkv_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
     ts += mkv->tracks[pkt->stream_index].ts_offset;
 
     if (!s->pb->seekable) {
-        if (!mkv->dyn_bc)
-            avio_open_dyn_buf(&mkv->dyn_bc);
+        if (!mkv->dyn_bc) {
+            ret = avio_open_dyn_buf(&mkv->dyn_bc);
+            if (ret < 0)
+                return ret;
+        }
         pb = mkv->dyn_bc;
     }
 
