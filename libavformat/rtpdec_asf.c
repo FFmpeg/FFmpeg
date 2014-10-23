@@ -25,6 +25,7 @@
  * @author Ronald S. Bultje <rbultje@ronald.bitfreak.net>
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/base64.h"
 #include "libavutil/avstring.h"
 #include "libavutil/intreadwrite.h"
@@ -115,6 +116,11 @@ int ff_wms_parse_sdp_a_line(AVFormatContext *s, const char *p)
             return AVERROR(ENOMEM);
         rt->asf_ctx->pb      = &pb;
         av_dict_set(&opts, "no_resync_search", "1", 0);
+
+        av_assert0(!rt->asf_ctx->codec_whitelist && !rt->asf_ctx->format_whitelist);
+        rt->asf_ctx-> codec_whitelist = av_strdup(s->codec_whitelist);
+        rt->asf_ctx->format_whitelist = av_strdup(s->format_whitelist);
+
         ret = avformat_open_input(&rt->asf_ctx, "", &ff_asf_demuxer, &opts);
         av_dict_free(&opts);
         if (ret < 0)
