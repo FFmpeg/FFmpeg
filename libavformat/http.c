@@ -248,6 +248,8 @@ fail:
     if (s->hd)
         ffurl_close(s->hd);
     s->hd = NULL;
+    if (location_changed < 0)
+        return location_changed;
     return AVERROR(EIO);
 }
 
