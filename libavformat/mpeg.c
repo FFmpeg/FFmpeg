@@ -695,6 +695,14 @@ static int vobsub_read_header(AVFormatContext *s)
     }
     memcpy(ext, !strncmp(ext, "IDX", 3) ? "SUB" : "sub", 3);
     av_log(s, AV_LOG_VERBOSE, "IDX/SUB: %s -> %s\n", s->filename, sub_name);
+
+    vobsub->sub_ctx = avformat_alloc_context();
+    if (!vobsub->sub_ctx)
+        return AVERROR(ENOMEM);
+
+    vobsub->sub_ctx-> codec_whitelist = av_strdup(s->codec_whitelist);
+    vobsub->sub_ctx->format_whitelist = av_strdup(s->format_whitelist);
+
     ret = avformat_open_input(&vobsub->sub_ctx, sub_name, &ff_mpegps_demuxer, NULL);
     if (ret < 0) {
         av_log(s, AV_LOG_ERROR, "Unable to open %s as MPEG subtitles\n", sub_name);
