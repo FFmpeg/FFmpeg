@@ -274,6 +274,7 @@ struct AACContext {
     ChannelElement          *che[4][MAX_ELEM_ID];
     ChannelElement  *tag_che_map[4][MAX_ELEM_ID];
     int tags_mapped;
+    int warned_remapping_once;
     /** @} */
 
     /**
