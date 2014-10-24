@@ -103,7 +103,10 @@ Print detailed information about the filter name @var{filter_name}. Use the
 Show version.
 
 @item -formats
-Show available formats.
+Show available formats (including devices).
+
+@item -devices
+Show available devices.
 
 @item -codecs
 Show all codecs known to libavcodec.
