@@ -666,7 +666,7 @@ static int parse_playlist(HLSContext *c, const char *url,
         }
     }
     if (pls)
-        pls->last_load_time = av_gettime();
+        pls->last_load_time = av_gettime_relative();
 
 fail:
     av_free(new_url);
@@ -1035,7 +1035,7 @@ restart:
 
 reload:
         if (!v->finished &&
-            av_gettime() - v->last_load_time >= reload_interval) {
+            av_gettime_relative() - v->last_load_time >= reload_interval) {
             if ((ret = parse_playlist(c, v->url, v, NULL)) < 0) {
                 av_log(v->parent, AV_LOG_WARNING, "Failed to reload playlist %d\n",
                        v->index);
@@ -1055,7 +1055,7 @@ reload:
         if (v->cur_seq_no >= v->start_seq_no + v->n_segments) {
             if (v->finished)
                 return AVERROR_EOF;
-            while (av_gettime() - v->last_load_time < reload_interval) {
+            while (av_gettime_relative() - v->last_load_time < reload_interval) {
                 if (ff_check_interrupt(c->interrupt_callback))
                     return AVERROR_EXIT;
                 av_usleep(100*1000);
@@ -1198,7 +1198,7 @@ static int select_cur_seq_no(HLSContext *c, struct playlist *pls)
     int seq_no;
 
     if (!pls->finished && !c->first_packet &&
-        av_gettime() - pls->last_load_time >= default_reload_interval(pls))
+        av_gettime_relative() - pls->last_load_time >= default_reload_interval(pls))
         /* reload the playlist since it was suspended */
         parse_playlist(c, pls->url, pls, NULL);
 
