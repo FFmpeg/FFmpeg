@@ -215,7 +215,9 @@ static void mp3_parse_info_tag(AVFormatContext *s, AVStream *st,
     /* Encoder delays */
     v= avio_rb24(s->pb);
     if(AV_RB32(version) == MKBETAG('L', 'A', 'M', 'E')
-        || AV_RB32(version) == MKBETAG('L', 'a', 'v', 'f')) {
+        || AV_RB32(version) == MKBETAG('L', 'a', 'v', 'f')
+        || AV_RB32(version) == MKBETAG('L', 'a', 'v', 'c')
+    ) {
 
         mp3->start_pad = v>>12;
         mp3->  end_pad = v&4095;
