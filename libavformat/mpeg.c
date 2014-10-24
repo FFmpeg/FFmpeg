@@ -700,8 +700,8 @@ static int vobsub_read_header(AVFormatContext *s)
     if (!vobsub->sub_ctx)
         return AVERROR(ENOMEM);
 
-    vobsub->sub_ctx-> codec_whitelist = av_strdup(s->codec_whitelist);
-    vobsub->sub_ctx->format_whitelist = av_strdup(s->format_whitelist);
+    if ((ret = ff_copy_whitelists(vobsub->sub_ctx, s)) < 0)
+        goto end;
 
     ret = avformat_open_input(&vobsub->sub_ctx, sub_name, &ff_mpegps_demuxer, NULL);
     if (ret < 0) {

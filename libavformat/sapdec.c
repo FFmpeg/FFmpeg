@@ -160,9 +160,8 @@ static int sap_read_header(AVFormatContext *s)
     sap->sdp_ctx->pb        = &sap->sdp_pb;
     sap->sdp_ctx->interrupt_callback = s->interrupt_callback;
 
-    av_assert0(!sap->sdp_ctx->codec_whitelist && !sap->sdp_ctx->format_whitelist);
-    sap->sdp_ctx-> codec_whitelist = av_strdup(s->codec_whitelist);
-    sap->sdp_ctx->format_whitelist = av_strdup(s->format_whitelist);
+    if ((ret = ff_copy_whitelists(sap->sdp_ctx, s)) < 0)
+        goto fail;
 
     ret = avformat_open_input(&sap->sdp_ctx, "temp.sdp", infmt, NULL);
     if (ret < 0)

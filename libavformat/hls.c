@@ -1345,9 +1345,8 @@ static int hls_read_header(AVFormatContext *s)
         pls->ctx->pb       = &pls->pb;
         pls->stream_offset = stream_offset;
 
-        av_assert0(!pls->ctx->codec_whitelist && !pls->ctx->format_whitelist);
-        pls->ctx-> codec_whitelist = av_strdup(s->codec_whitelist);
-        pls->ctx->format_whitelist = av_strdup(s->format_whitelist);
+        if ((ret = ff_copy_whitelists(pls->ctx, s)) < 0)
+            goto fail;
 
         ret = avformat_open_input(&pls->ctx, pls->segments[0]->url, in_fmt, NULL);
         if (ret < 0)

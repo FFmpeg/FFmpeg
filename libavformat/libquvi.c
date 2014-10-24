@@ -76,9 +76,8 @@ static int libquvi_read_header(AVFormatContext *s)
     if (rc != QUVI_OK)
         goto quvi_fail;
 
-    av_assert0(!qc->fmtctx->codec_whitelist && !qc->fmtctx->format_whitelist);
-    qc->fmtctx-> codec_whitelist = av_strdup(s->codec_whitelist);
-    qc->fmtctx->format_whitelist = av_strdup(s->format_whitelist);
+    if ((ret = ff_copy_whitelists(qc->fmtctx, s)) < 0)
+        goto end;
 
     ret = avformat_open_input(&qc->fmtctx, media_url, NULL, NULL);
     if (ret < 0)

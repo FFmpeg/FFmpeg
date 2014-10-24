@@ -1040,9 +1040,8 @@ static int read_gab2_sub(AVFormatContext *s, AVStream *st, AVPacket *pkt)
 
         ast->sub_ctx->pb = pb;
 
-        av_assert0(!ast->sub_ctx->codec_whitelist && !ast->sub_ctx->format_whitelist);
-        ast->sub_ctx-> codec_whitelist = av_strdup(s->codec_whitelist);
-        ast->sub_ctx->format_whitelist = av_strdup(s->format_whitelist);
+        if (ff_copy_whitelists(ast->sub_ctx, s) < 0)
+            goto error;
 
         if (!avformat_open_input(&ast->sub_ctx, "", sub_demuxer, NULL)) {
             ff_read_packet(ast->sub_ctx, &ast->sub_pkt);
@@ -1056,6 +1055,7 @@ static int read_gab2_sub(AVFormatContext *s, AVStream *st, AVPacket *pkt)
         return 1;
 
 error:
+        av_freep(&ast->sub_ctx);
         av_freep(&pb);
     }
     return 0;

@@ -412,5 +412,9 @@ enum AVWriteUncodedFrameFlags {
 
 };
 
+/**
+ * Copies the whilelists from one context to the other
+ */
+int ff_copy_whitelists(AVFormatContext *dst, AVFormatContext *src);
 
 #endif /* AVFORMAT_INTERNAL_H */

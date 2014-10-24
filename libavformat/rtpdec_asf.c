@@ -117,9 +117,10 @@ int ff_wms_parse_sdp_a_line(AVFormatContext *s, const char *p)
         rt->asf_ctx->pb      = &pb;
         av_dict_set(&opts, "no_resync_search", "1", 0);
 
-        av_assert0(!rt->asf_ctx->codec_whitelist && !rt->asf_ctx->format_whitelist);
-        rt->asf_ctx-> codec_whitelist = av_strdup(s->codec_whitelist);
-        rt->asf_ctx->format_whitelist = av_strdup(s->format_whitelist);
+        if ((ret = ff_copy_whitelists(rt->asf_ctx, s)) < 0) {
+            av_dict_free(&opts);
+            return ret;
+        }
 
         ret = avformat_open_input(&rt->asf_ctx, "", &ff_asf_demuxer, &opts);
         av_dict_free(&opts);
