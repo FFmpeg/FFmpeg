@@ -96,13 +96,16 @@ static int mtv_read_header(AVFormatContext *s)
 
     /* Calculate width and height if missing from header */
 
-    if(!mtv->img_width)
+    if (!mtv->img_width && mtv->img_height > 0 && mtv->img_bpp >= 8)
         mtv->img_width=mtv->img_segment_size / (mtv->img_bpp>>3)
                         / mtv->img_height;
 
-    if(!mtv->img_height)
+    if (!mtv->img_height && mtv->img_width > 0 && mtv->img_bpp >= 8)
         mtv->img_height=mtv->img_segment_size / (mtv->img_bpp>>3)
                         / mtv->img_width;
+
+    if (!mtv->img_width || !mtv->img_height)
+        return AVERROR_INVALIDDATA;
 
     avio_skip(pb, 4);
     audio_subsegments = avio_rl16(pb);
