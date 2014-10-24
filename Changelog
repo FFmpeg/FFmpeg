@@ -7,6 +7,7 @@ version <next>:
 - ffprobe -show_pixel_formats option
 - CAST128 symmetric block cipher, ECB mode
 - STL subtitle demuxer and decoder
+- libutvideo YUV 4:2:2 10bit support
 
 version 2.4:
 - Icecast protocol
