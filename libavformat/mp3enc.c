@@ -231,7 +231,12 @@ static int mp3_write_xing(AVFormatContext *s)
     // encoder short version string
     if (enc) {
         uint8_t encoder_str[9] = { 0 };
-        memcpy(encoder_str, enc->value, FFMIN(strlen(enc->value), sizeof(encoder_str)));
+        if (   strlen(enc->value) > sizeof(encoder_str)
+            && !strcmp("Lavc libmp3lame", enc->value)) {
+            memcpy(encoder_str, "Lavf lame", 9);
+        } else
+            memcpy(encoder_str, enc->value, FFMIN(strlen(enc->value), sizeof(encoder_str)));
+
         avio_write(dyn_ctx, encoder_str, sizeof(encoder_str));
     } else
         avio_write(dyn_ctx, "Lavf\0\0\0\0\0", 9);
