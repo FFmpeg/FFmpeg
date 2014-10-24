@@ -47,6 +47,7 @@
 #include "libavutil/random_seed.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/time_internal.h"
 #include "libavutil/tree.h"
 #include "libavutil/lfg.h"
 #include "avfilter.h"
@@ -535,8 +536,6 @@ static int dtext_prepare_text(AVFilterContext *ctx)
     Glyph dummy = { 0 };
     int width  = ctx->inputs[0]->w;
     int height = ctx->inputs[0]->h;
-
-#if HAVE_LOCALTIME_R
     time_t now = time(0);
     struct tm ltime;
     uint8_t *buf = s->expanded_text;
@@ -558,7 +557,6 @@ static int dtext_prepare_text(AVFilterContext *ctx)
         return AVERROR(ENOMEM);
     text = s->expanded_text = buf;
     s->expanded_text_size = buf_size;
-#endif
 
     if ((len = strlen(text)) > s->nb_positions) {
         FT_Vector *p = av_realloc(s->positions,
