@@ -31,6 +31,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/intfloat.h"
 #include "libavutil/dict.h"
+#include "libavutil/time_internal.h"
 #include "avformat.h"
 #include "internal.h"
 #include "riff.h"
@@ -428,7 +429,8 @@ static int read_probe(AVProbeData *p)
 static void filetime_to_iso8601(char *buf, int buf_size, int64_t value)
 {
     time_t t = (value / 10000000LL) - 11644473600LL;
-    struct tm *tm = gmtime(&t);
+    struct tm tmbuf;
+    struct tm *tm = gmtime_r(&t, &tmbuf);
     if (tm) {
         if (!strftime(buf, buf_size, "%Y-%m-%d %H:%M:%S", tm))
             buf[0] = '\0';
@@ -442,7 +444,8 @@ static void filetime_to_iso8601(char *buf, int buf_size, int64_t value)
 static void crazytime_to_iso8601(char *buf, int buf_size, int64_t value)
 {
     time_t t = (value / 10000000LL) - 719162LL*86400LL;
-    struct tm *tm = gmtime(&t);
+    struct tm tmbuf;
+    struct tm *tm = gmtime_r(&t, &tmbuf);
     if (tm) {
         if (!strftime(buf, buf_size, "%Y-%m-%d %H:%M:%S", tm))
             buf[0] = '\0';
@@ -456,7 +459,8 @@ static void crazytime_to_iso8601(char *buf, int buf_size, int64_t value)
 static void oledate_to_iso8601(char *buf, int buf_size, int64_t value)
 {
     time_t t = 631112400LL + 86400*av_int2double(value);
-    struct tm *tm = gmtime(&t);
+    struct tm tmbuf;
+    struct tm *tm = gmtime_r(&t, &tmbuf);
     if (tm) {
         if (!strftime(buf, buf_size, "%Y-%m-%d %H:%M:%S", tm))
             buf[0] = '\0';

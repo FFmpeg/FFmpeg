@@ -29,6 +29,7 @@
 #include "eval.h"
 #include "log.h"
 #include "random_seed.h"
+#include "time_internal.h"
 #include "parseutils.h"
 
 typedef struct {
@@ -483,7 +484,7 @@ int av_parse_time(int64_t *timeval, const char *timestr, int duration)
 {
     const char *p;
     int64_t t;
-    struct tm dt = { 0 };
+    struct tm dt = { 0 }, tmbuf;
     int i;
     static const char * const date_fmt[] = {
         "%Y-%m-%d",
@@ -527,9 +528,9 @@ int av_parse_time(int64_t *timeval, const char *timestr, int duration)
          * current year-month-day time */
         if (!q) {
             if (is_utc) {
-                dt = *gmtime(&now);
+                dt = *gmtime_r(&now, &tmbuf);
             } else {
-                dt = *localtime(&now);
+                dt = *localtime_r(&now, &tmbuf);
             }
             dt.tm_hour = dt.tm_min = dt.tm_sec = 0;
         } else {
