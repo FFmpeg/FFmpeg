@@ -322,8 +322,8 @@ static int hds_write_header(AVFormatContext *s)
     AVOutputFormat *oformat;
 
     if (mkdir(s->filename, 0777) == -1 && errno != EEXIST) {
-        av_log(s, AV_LOG_ERROR , "Failed to create directory %s\n", s->filename);
         ret = AVERROR(errno);
+        av_log(s, AV_LOG_ERROR , "Failed to create directory %s\n", s->filename);
         goto fail;
     }
 
