@@ -206,7 +206,7 @@ int ff_dv_init_dynamic_tables(DVVideoContext *ctx, const AVDVProfile *d)
     factor1 = &ctx->idct_factor[0];
     factor2 = &ctx->idct_factor[DV_PROFILE_IS_HD(d) ? 4096 : 2816];
     if (DV_PROFILE_IS_HD(d)) {
-        const int *iweight1, *iweight2;
+        const uint16_t *iweight1, *iweight2;
         if (d->height == 720) {
             iweight1 = &ff_dv_iweight_720_y[0];
             iweight2 = &ff_dv_iweight_720_c[0];
@@ -223,7 +223,7 @@ int ff_dv_init_dynamic_tables(DVVideoContext *ctx, const AVDVProfile *d)
             }
         }
     } else {
-        const int *iweight1 = &ff_dv_iweight_88[0];
+        const uint16_t *iweight1 = &ff_dv_iweight_88[0];
         for (j = 0; j < 2; j++, iweight1 = &ff_dv_iweight_248[0]) {
             for (s = 0; s < 22; s++) {
                 for (i = c = 0; c < 4; c++) {
