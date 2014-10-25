@@ -87,7 +87,7 @@ static void lpc_compute_autocorr_c(const double *data, int len, int lag,
  * Quantize LPC coefficients
  */
 static void quantize_lpc_coefs(double *lpc_in, int order, int precision,
-                               int32_t *lpc_out, int *shift, int max_shift, int zero_shift)
+                               int32_t *lpc_out, int *shift, int max_shift,int min_shift, int zero_shift)
 {
     int i;
     double cmax, error;
