@@ -68,10 +68,11 @@ av_cold int ff_xvid_rate_control_init(MpegEncContext *s)
                  (rce->header_bits + rce->mv_bits + 7) / 8);
 
         if (write(fd, tmp, strlen(tmp)) < 0) {
+            int ret = AVERROR(errno);
             av_log(NULL, AV_LOG_ERROR, "Error %s writing 2pass logfile\n", strerror(errno));
             av_free(tmp_name);
             close(fd);
-            return AVERROR(errno);
+            return ret;
         }
     }
 
