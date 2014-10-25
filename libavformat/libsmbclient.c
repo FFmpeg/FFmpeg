@@ -50,12 +50,14 @@ static av_cold int libsmbc_connect(URLContext *h)
 
     libsmbc->ctx = smbc_new_context();
     if (!libsmbc->ctx) {
+        int ret = AVERROR(errno);
         av_log(h, AV_LOG_ERROR, "Cannot create context: %s.\n", strerror(errno));
-        return AVERROR(errno);
+        return ret;
     }
     if (!smbc_init_context(libsmbc->ctx)) {
+        int ret = AVERROR(errno);
         av_log(h, AV_LOG_ERROR, "Cannot initialize context: %s.\n", strerror(errno));
-        return AVERROR(errno);
+        return ret;
     }
     smbc_set_context(libsmbc->ctx);
 
@@ -68,8 +70,9 @@ static av_cold int libsmbc_connect(URLContext *h)
         smbc_setWorkgroup(libsmbc->ctx, libsmbc->workgroup);
 
     if (smbc_init(NULL, 0) < 0) {
+        int ret = AVERROR(errno);
         av_log(h, AV_LOG_ERROR, "Initialization failed: %s\n", strerror(errno));
-        return AVERROR(errno);
+        return ret;
     }
     return 0;
 }
@@ -157,8 +160,9 @@ static int libsmbc_read(URLContext *h, unsigned char *buf, int size)
     int bytes_read;
 
     if ((bytes_read = smbc_read(libsmbc->fd, buf, size)) < 0) {
+        int ret = AVERROR(errno);
         av_log(h, AV_LOG_ERROR, "Read error: %s\n", strerror(errno));
-        return AVERROR(errno);
+        return ret;
     }
 
     return bytes_read;
@@ -170,8 +174,9 @@ static int libsmbc_write(URLContext *h, const unsigned char *buf, int size)
     int bytes_written;
 
     if ((bytes_written = smbc_write(libsmbc->fd, buf, size)) < 0) {
+        int ret = AVERROR(errno);
         av_log(h, AV_LOG_ERROR, "Write error: %s\n", strerror(errno));
-        return AVERROR(errno);
+        return ret;
     }
 
     return bytes_written;
