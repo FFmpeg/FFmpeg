@@ -80,13 +80,14 @@ static int interleave_new_audio_packet(AVFormatContext *s, AVPacket *pkt,
 {
     AVStream *st = s->streams[stream_index];
     AudioInterleaveContext *aic = st->priv_data;
-
+    int ret;
     int size = FFMIN(av_fifo_size(aic->fifo), *aic->samples * aic->sample_size);
     if (!size || (!flush && size == av_fifo_size(aic->fifo)))
         return 0;
 
-    if (av_new_packet(pkt, size) < 0)
-        return AVERROR(ENOMEM);
+    ret = av_new_packet(pkt, size);
+    if (ret < 0)
+        return ret;
     av_fifo_generic_read(aic->fifo, pkt->data, size, NULL);
 
     pkt->dts = pkt->pts = aic->dts;
