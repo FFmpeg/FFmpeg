@@ -378,11 +378,15 @@ int ff_generate_avci_extradata(AVStream *st);
  * @param newpath destination path
  * @return        0 or AVERROR on failure
  */
-static inline int ff_rename(const char *oldpath, const char *newpath)
+static inline int ff_rename(const char *oldpath, const char *newpath, void *logctx)
 {
-    if (rename(oldpath, newpath) == -1)
-        return AVERROR(errno);
-    return 0;
+    int ret = 0;
+    if (rename(oldpath, newpath) == -1) {
+        ret = AVERROR(errno);
+        if (logctx)
+            av_log(logctx, AV_LOG_ERROR, "failed to rename file %s to %s\n", oldpath, newpath);
+    }
+    return ret;
 }
 
 /**
