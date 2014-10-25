@@ -129,6 +129,12 @@ typedef struct {
 typedef struct {
     UID uid;
     enum MXFMetadataSetType type;
+    UID input_segment_ref;
+} MXFPulldownComponent;
+
+typedef struct {
+    UID uid;
+    enum MXFMetadataSetType type;
     MXFSequence *sequence; /* mandatory, and only one */
     UID sequence_ref;
     int track_id;
@@ -688,6 +694,17 @@ static int mxf_read_timecode_component(void *arg, AVIOContext *pb, int tag, int 
         break;
     case 0x1503:
         mxf_timecode->drop_frame = avio_r8(pb);
+        break;
+    }
+    return 0;
+}
+
+static int mxf_read_pulldown_component(void *arg, AVIOContext *pb, int tag, int size, UID uid, int64_t klv_offset)
+{
+    MXFPulldownComponent *mxf_pulldown = arg;
+    switch(tag) {
+    case 0x0d01:
+        avio_read(pb, mxf_pulldown->input_segment_ref, 16);
         break;
     }
     return 0;
@@ -1413,6 +1430,7 @@ static int mxf_parse_physical_source_package(MXFContext *mxf, MXFTrack *source_t
     MXFStructuralComponent *component = NULL;
     MXFStructuralComponent *sourceclip = NULL;
     MXFTimecodeComponent *mxf_tc = NULL;
+    MXFPulldownComponent *mxf_pulldown = NULL;
     int i, j, k;
     AVTimecode tc;
     int flags;
@@ -1456,8 +1474,16 @@ static int mxf_parse_physical_source_package(MXFContext *mxf, MXFTrack *source_t
 
             for (k = 0; k < physical_track->sequence->structural_components_count; k++) {
                 component = mxf_resolve_strong_ref(mxf, &physical_track->sequence->structural_components_refs[k], TimecodeComponent);
-                if (!component)
-                    continue;
+                if (!component){
+                    /* timcode component may be located on a pulldown component */
+                    component = mxf_resolve_strong_ref(mxf, &physical_track->sequence->structural_components_refs[k], PulldownComponent);
+                    if (!component)
+                        continue;
+                    mxf_pulldown = (MXFPulldownComponent*)component;
+                    component = mxf_resolve_strong_ref(mxf, &mxf_pulldown->input_segment_ref, TimecodeComponent);
+                    if (!component)
+                        continue;
+                }
 
                 mxf_tc = (MXFTimecodeComponent*)component;
                 flags = mxf_tc->drop_frame == 1 ? AV_TIMECODE_FLAG_DROPFRAME : 0;
@@ -1944,6 +1970,7 @@ static const MXFMetadataReadTableEntry mxf_metadata_read_table[] = {
     { { 0x06,0x0e,0x2b,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x3A,0x00 }, mxf_read_track, sizeof(MXFTrack), Track }, /* Static Track */
     { { 0x06,0x0e,0x2b,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x3B,0x00 }, mxf_read_track, sizeof(MXFTrack), Track }, /* Generic Track */
     { { 0x06,0x0e,0x2b,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x14,0x00 }, mxf_read_timecode_component, sizeof(MXFTimecodeComponent), TimecodeComponent },
+    { { 0x06,0x0e,0x2b,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x0c,0x00 }, mxf_read_pulldown_component, sizeof(MXFPulldownComponent), PulldownComponent },
     { { 0x06,0x0e,0x2b,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x04,0x01,0x02,0x02,0x00,0x00 }, mxf_read_cryptographic_context, sizeof(MXFCryptoContext), CryptoContext },
     { { 0x06,0x0e,0x2b,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x02,0x01,0x01,0x10,0x01,0x00 }, mxf_read_index_table_segment, sizeof(MXFIndexTableSegment), IndexTableSegment },
     { { 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 }, NULL, 0, AnyType },
