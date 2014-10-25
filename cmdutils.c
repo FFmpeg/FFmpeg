@@ -959,9 +959,10 @@ static int init_report(const char *env)
 
     report_file = fopen(filename.str, "w");
     if (!report_file) {
+        int ret = AVERROR(errno);
         av_log(NULL, AV_LOG_ERROR, "Failed to open report \"%s\": %s\n",
                filename.str, strerror(errno));
-        return AVERROR(errno);
+        return ret;
     }
     av_log_set_callback(log_callback_report);
     av_log(NULL, AV_LOG_INFO,
@@ -1863,17 +1864,19 @@ int cmdutils_read_file(const char *filename, char **bufptr, size_t *size)
     FILE *f = av_fopen_utf8(filename, "rb");
 
     if (!f) {
+        ret = AVERROR(errno);
         av_log(NULL, AV_LOG_ERROR, "Cannot read file '%s': %s\n", filename,
                strerror(errno));
-        return AVERROR(errno);
+        return ret;
     }
     fseek(f, 0, SEEK_END);
     *size = ftell(f);
     fseek(f, 0, SEEK_SET);
     if (*size == (size_t)-1) {
+        ret = AVERROR(errno);
         av_log(NULL, AV_LOG_ERROR, "IO error: %s\n", strerror(errno));
         fclose(f);
-        return AVERROR(errno);
+        return ret;
     }
     *bufptr = av_malloc(*size + 1);
     if (!*bufptr) {
@@ -1885,9 +1888,9 @@ int cmdutils_read_file(const char *filename, char **bufptr, size_t *size)
     if (ret < *size) {
         av_free(*bufptr);
         if (ferror(f)) {
+            ret = AVERROR(errno);
             av_log(NULL, AV_LOG_ERROR, "Error while reading file '%s': %s\n",
                    filename, strerror(errno));
-            ret = AVERROR(errno);
         } else
             ret = AVERROR_EOF;
     } else {
