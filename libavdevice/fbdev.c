@@ -100,6 +100,7 @@ static av_cold int fbdev_read_header(AVFormatContext *avctx)
     AVStream *st = NULL;
     enum AVPixelFormat pix_fmt;
     int ret, flags = O_RDONLY;
+    char errbuf[128];
 
     ret = av_parse_video_rate(&fbdev->framerate_q, fbdev->framerate);
     if (ret < 0) {
@@ -117,23 +118,26 @@ static av_cold int fbdev_read_header(AVFormatContext *avctx)
 
     if ((fbdev->fd = avpriv_open(avctx->filename, flags)) == -1) {
         ret = AVERROR(errno);
+        av_strerror(ret, errbuf, sizeof(errbuf));
         av_log(avctx, AV_LOG_ERROR,
                "Could not open framebuffer device '%s': %s\n",
-               avctx->filename, strerror(ret));
+               avctx->filename, errbuf);
         return ret;
     }
 
     if (ioctl(fbdev->fd, FBIOGET_VSCREENINFO, &fbdev->varinfo) < 0) {
         ret = AVERROR(errno);
+        av_strerror(ret, errbuf, sizeof(errbuf));
         av_log(avctx, AV_LOG_ERROR,
-               "FBIOGET_VSCREENINFO: %s\n", strerror(errno));
+               "FBIOGET_VSCREENINFO: %s\n", errbuf);
         goto fail;
     }
 
     if (ioctl(fbdev->fd, FBIOGET_FSCREENINFO, &fbdev->fixinfo) < 0) {
         ret = AVERROR(errno);
+        av_strerror(ret, errbuf, sizeof(errbuf));
         av_log(avctx, AV_LOG_ERROR,
-               "FBIOGET_FSCREENINFO: %s\n", strerror(errno));
+               "FBIOGET_FSCREENINFO: %s\n", errbuf);
         goto fail;
     }
 
@@ -154,7 +158,8 @@ static av_cold int fbdev_read_header(AVFormatContext *avctx)
     fbdev->data = mmap(NULL, fbdev->fixinfo.smem_len, PROT_READ, MAP_SHARED, fbdev->fd, 0);
     if (fbdev->data == MAP_FAILED) {
         ret = AVERROR(errno);
-        av_log(avctx, AV_LOG_ERROR, "Error in mmap(): %s\n", strerror(errno));
+        av_strerror(ret, errbuf, sizeof(errbuf));
+        av_log(avctx, AV_LOG_ERROR, "Error in mmap(): %s\n", errbuf);
         goto fail;
     }
 
@@ -211,9 +216,12 @@ static int fbdev_read_packet(AVFormatContext *avctx, AVPacket *pkt)
         return ret;
 
     /* refresh fbdev->varinfo, visible data position may change at each call */
-    if (ioctl(fbdev->fd, FBIOGET_VSCREENINFO, &fbdev->varinfo) < 0)
+    if (ioctl(fbdev->fd, FBIOGET_VSCREENINFO, &fbdev->varinfo) < 0) {
+        char errbuf[128];
+        av_strerror(AVERROR(errno), errbuf, sizeof(errbuf));
         av_log(avctx, AV_LOG_WARNING,
-               "Error refreshing variable info: %s\n", strerror(errno));
+               "Error refreshing variable info: %s\n", errbuf);
+    }
 
     pkt->pts = curtime;
 
