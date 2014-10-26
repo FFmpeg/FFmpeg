@@ -536,7 +536,8 @@ rh->max_matrix_channel = 1;
 }
 clear_channel_params(ctx, restart_channel_params);
 clear_decoding_params(ctx, restart_decoding_params);
-dsputil_init(&ctx->dsp, avctx);
+ff_audiodsp_init(&ctx->dsp);  
+//dsputil_init(&ctx->dsp, avctx);
 return 0;
 }
 /****************************************************************************
