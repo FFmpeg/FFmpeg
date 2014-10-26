@@ -25,6 +25,7 @@
 #include "mlp.h"
 #include "dsputil.h"
 #include "lpc.h"
+#include "pcm.c"
 #define MAJOR_HEADER_INTERVAL 16
 #define MLP_MIN_LPC_ORDER 1
 #define MLP_MAX_LPC_ORDER 8
@@ -428,12 +429,12 @@ if (avctx->channels <= 2) {
 ctx->substream_info |= SUBSTREAM_INFO_MAX_2_CHAN;
 }
 switch (avctx->sample_fmt) {
-case SAMPLE_FMT_S16:
+case AV_SAMPLE_FMT_S16:
 ctx->coded_sample_fmt[0] = BITS_16;
 ctx->wordlength = 16;
 break;
 /* TODO 20 bits: */
-case SAMPLE_FMT_S32:
+case AV_SAMPLE_FMT_S32:
 ctx->coded_sample_fmt[0] = BITS_24;
 ctx->wordlength = 24;
 break;
@@ -1045,7 +1046,7 @@ ctx->max_output_bits[ctx->frame_index] = number_sbits(greatest);
 /** Wrapper function for inputting data in two different bit-depths. */
 static void input_data(MLPEncodeContext *ctx, void *samples)
 {
-if (ctx->avctx->sample_fmt == SAMPLE_FMT_S32)
+if (ctx->avctx->sample_fmt == AV_SAMPLE_FMT_S32)
 input_data_internal(ctx, samples, 1);
 else
 input_data_internal(ctx, samples, 0);
@@ -1156,7 +1157,7 @@ sample_buffer += ctx->num_channels;
 }
 order = ff_lpc_calc_coefs(&ctx->dsp, ctx->lpc_sample_buffer, ctx->number_of_samples,
 MLP_MIN_LPC_ORDER, max_order, 11,
-coefs, shift, 1,
+coefs, shift, -1, 1,
 ORDER_METHOD_EST, MLP_MIN_LPC_SHIFT, MLP_MAX_LPC_SHIFT, MLP_MIN_LPC_SHIFT);
 fp->order = order;
 fp->shift = shift[order-1];
@@ -1570,7 +1571,7 @@ int32_t *sample_buffer = ctx->sample_buffer;
 unsigned int mat, i, maxchan;
 maxchan = ctx->num_channels;
 for (mat = 0; mat < mp->count; mat++) {
-unsigned int msb_mask_bits = (ctx->avctx->sample_fmt == SAMPLE_FMT_S16 ? 8 : 0) - mp->shift[mat];
+unsigned int msb_mask_bits = (ctx->avctx->sample_fmt == AV_SAMPLE_FMT_S16 ? 8 : 0) - mp->shift[mat];
 int32_t mask = MSB_MASK(msb_mask_bits);
 unsigned int outch = mp->outch[mat];
 sample_buffer = ctx->sample_buffer;
@@ -1916,15 +1917,15 @@ av_freep(&avctx->coded_frame);
 av_freep(&ctx->frame_size);
 return 0;
 }
-AVCodec mlp_encoder = {
+AVCodec ff_mlp_encoder = {
 "mlp",
-CODEC_TYPE_AUDIO,
+AVMEDIA_TYPE_AUDIO,
 CODEC_ID_MLP,
 sizeof(MLPEncodeContext),
 mlp_encode_init,
 mlp_encode_frame,
 mlp_encode_close,
 .capabilities = CODEC_CAP_SMALL_LAST_FRAME | CODEC_CAP_DELAY,
-.sample_fmts = (enum SampleFormat[]){SAMPLE_FMT_S16,SAMPLE_FMT_S32,SAMPLE_FMT_NONE},
+.sample_fmts = (enum SampleFormat[]){AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_S32,SAMPLE_FMT_NONE},
 .long_name = NULL_IF_CONFIG_SMALL("MLP (Meridian Lossless Packing)"),
 };
