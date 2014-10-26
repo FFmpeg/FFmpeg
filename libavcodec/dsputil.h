@@ -84,4 +84,4 @@ typedef struct DSPContext {
 attribute_deprecated void avpriv_dsputil_init(DSPContext* p, AVCodecContext *avctx);
 
 #endif
-#endif /* AVCODEC_DSPUTIL_H */
+/*#endif  AVCODEC_DSPUTIL_H */
