@@ -112,7 +112,7 @@ static void quantize_lpc_coefs(double *lpc_in, int order, int precision,
 
     /* calculate level shift which scales max coeff to available bits */
     sh = max_shift;
-    while((cmax * (1 << sh) > qmax) && (sh > 0)) {
+   while((cmax * (1 << sh) > qmax) && (sh > min_shift)) {
         sh--;
     }
 
@@ -172,7 +172,7 @@ int ff_lpc_calc_coefs(LPCContext *s,
                       int max_order, int precision,
                       int32_t coefs[][MAX_LPC_ORDER], int *shift,
                       enum FFLPCType lpc_type, int lpc_passes,
-                      int omethod, int max_shift, int zero_shift)
+                      int omethod, int min_shift, int max_shift, int zero_shift)
 {
     double autoc[MAX_LPC_ORDER+1];
     double ref[MAX_LPC_ORDER];
@@ -255,10 +255,10 @@ int ff_lpc_calc_coefs(LPCContext *s,
     if(omethod == ORDER_METHOD_EST) {
         opt_order = estimate_best_order(ref, min_order, max_order);
         i = opt_order-1;
-        quantize_lpc_coefs(lpc[i], i+1, precision, coefs[i], &shift[i], max_shift, zero_shift);
+       quantize_lpc_coefs(lpc[i], i+1, precision, coefs[i], &shift[i], min_shift, max_shift, zero_shift);
     } else {
         for(i=min_order-1; i<max_order; i++) {
-            quantize_lpc_coefs(lpc[i], i+1, precision, coefs[i], &shift[i], max_shift, zero_shift);
+            quantize_lpc_coefs(lpc[i], i+1, precision, coefs[i], &shift[i], min_shift, max_shift, zero_shift);
         }
     }
 
