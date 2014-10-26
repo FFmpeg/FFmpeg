@@ -52,6 +52,7 @@
 #include "libavutil/random_seed.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/timecode.h"
+#include "libavutil/time_internal.h"
 #include "libavutil/tree.h"
 #include "libavutil/lfg.h"
 #include "avfilter.h"
@@ -842,13 +843,6 @@ static int func_metadata(AVFilterContext *ctx, AVBPrint *bp,
         av_bprintf(bp, "%s", e->value);
     return 0;
 }
-
-#if !HAVE_LOCALTIME_R
-static void localtime_r(const time_t *t, struct tm *tm)
-{
-    *tm = *localtime(t);
-}
-#endif
 
 static int func_strftime(AVFilterContext *ctx, AVBPrint *bp,
                          char *fct, unsigned argc, char **argv, int tag)
