@@ -1714,6 +1714,7 @@ SYSTEM_FUNCS="
     gettimeofday
     glob
     glXGetProcAddress
+    gmtime_r
     inet_aton
     isatty
     jack_port_get_latency_range
@@ -4690,6 +4691,7 @@ check_func  gethrtime
 check_func  getopt
 check_func  getrusage
 check_func  gettimeofday
+check_func  gmtime_r
 check_func  isatty
 check_func  localtime_r
 check_func  mach_absolute_time
