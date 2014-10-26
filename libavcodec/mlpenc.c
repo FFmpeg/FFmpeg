@@ -1918,14 +1918,15 @@ av_freep(&ctx->frame_size);
 return 0;
 }
 AVCodec ff_mlp_encoder = {
-"mlp",
-AVMEDIA_TYPE_AUDIO,
-CODEC_ID_MLP,
-sizeof(MLPEncodeContext),
-mlp_encode_init,
-mlp_encode_frame,
-mlp_encode_close,
-.capabilities = CODEC_CAP_SMALL_LAST_FRAME | CODEC_CAP_DELAY,
-.sample_fmts = (enum SampleFormat[]){AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_S32,SAMPLE_FMT_NONE},
-.long_name = NULL_IF_CONFIG_SMALL("MLP (Meridian Lossless Packing)"),
+.name              ="mlp",
+.long_name         = NULL_IF_CONFIG_SMALL("MLP (Meridian Lossless P
+.type              =AVMEDIA_TYPE_AUDIO,
+.id                =CODEC_ID_MLP,
+.priv_data_size    =sizeof(MLPEncodeContext),
+.init              =mlp_encode_init,
+.encode2           =mlp_encode_frame,
+.close             =mlp_encode_close,
+.capabilities      =CODEC_CAP_SMALL_LAST_FRAME | CODEC_CAP_DELAY,
+.sample_fmts       = (enum AVSampleFormat[]){AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_S32,AV_SAMPLE_FMT_NONE},
+
 };
