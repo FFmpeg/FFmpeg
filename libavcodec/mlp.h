@@ -74,7 +74,9 @@
 typedef struct FilterParams {
     uint8_t     order; ///< number of taps in filter
     uint8_t     shift; ///< Right shift to apply to output of filter.
-
+    int32_t coeff[MAX_FIR_ORDER];
+     int coeff_bits;
+int coeff_shift;
     int32_t     state[MAX_FIR_ORDER];
 } FilterParams;
 
