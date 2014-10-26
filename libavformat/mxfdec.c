@@ -1877,7 +1877,8 @@ static int mxf_timestamp_to_str(uint64_t timestamp, char **str)
     *str = av_mallocz(32);
     if (!*str)
         return AVERROR(ENOMEM);
-    strftime(*str, 32, "%Y-%m-%d %H:%M:%S", &time);
+    if (!strftime(*str, 32, "%Y-%m-%d %H:%M:%S", &time))
+        str[0] = '\0';
 
     return 0;
 }

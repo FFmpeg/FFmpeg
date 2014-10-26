@@ -389,7 +389,8 @@ static int filetime_to_iso8601(char *buf, int buf_size, int64_t value)
     struct tm *tm = gmtime(&t);
     if (!tm)
         return -1;
-    strftime(buf, buf_size, "%Y-%m-%d %H:%M:%S", tm);
+    if (!strftime(buf, buf_size, "%Y-%m-%d %H:%M:%S", tm))
+        return -1;
     return 0;
 }
 
@@ -403,7 +404,8 @@ static int crazytime_to_iso8601(char *buf, int buf_size, int64_t value)
     struct tm *tm = gmtime(&t);
     if (!tm)
         return -1;
-    strftime(buf, buf_size, "%Y-%m-%d %H:%M:%S", tm);
+    if (!strftime(buf, buf_size, "%Y-%m-%d %H:%M:%S", tm))
+        return -1;
     return 0;
 }
 
@@ -417,7 +419,8 @@ static int oledate_to_iso8601(char *buf, int buf_size, int64_t value)
     struct tm *tm= gmtime(&t);
     if (!tm)
         return -1;
-    strftime(buf, buf_size, "%Y-%m-%d %H:%M:%S", tm);
+    if (!strftime(buf, buf_size, "%Y-%m-%d %H:%M:%S", tm))
+        return -1;
     return 0;
 }
 

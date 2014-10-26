@@ -816,8 +816,8 @@ static void mov_metadata_creation_time(AVDictionary **metadata, int64_t time)
         timet = time;
         ptm = gmtime(&timet);
         if (!ptm) return;
-        strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", ptm);
-        av_dict_set(metadata, "creation_time", buffer, 0);
+        if (strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", ptm))
+            av_dict_set(metadata, "creation_time", buffer, 0);
     }
 }
 
