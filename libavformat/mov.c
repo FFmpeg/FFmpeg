@@ -35,6 +35,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/intfloat.h"
 #include "libavutil/mathematics.h"
+#include "libavutil/time_internal.h"
 #include "libavutil/avstring.h"
 #include "libavutil/dict.h"
 #include "libavutil/opt.h"
@@ -809,12 +810,12 @@ static void mov_metadata_creation_time(AVDictionary **metadata, int64_t time)
 {
     char buffer[32];
     if (time) {
-        struct tm *ptm;
+        struct tm *ptm, tmbuf;
         time_t timet;
         if(time >= 2082844800)
             time -= 2082844800;  /* seconds between 1904-01-01 and Epoch */
         timet = time;
-        ptm = gmtime(&timet);
+        ptm = gmtime_r(&timet, &tmbuf);
         if (!ptm) return;
         if (strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", ptm))
             av_dict_set(metadata, "creation_time", buffer, 0);

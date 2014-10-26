@@ -39,6 +39,7 @@
 #include "libavutil/random_seed.h"
 #include "libavutil/timecode.h"
 #include "libavutil/avassert.h"
+#include "libavutil/time_internal.h"
 #include "libavcodec/bytestream.h"
 #include "libavcodec/dnxhddata.h"
 #include "audiointerleave.h"
@@ -1664,7 +1665,8 @@ static int mxf_parse_mpeg2_frame(AVFormatContext *s, AVStream *st,
 
 static uint64_t mxf_parse_timestamp(time_t timestamp)
 {
-    struct tm *time = gmtime(&timestamp);
+    struct tm tmbuf;
+    struct tm *time = gmtime_r(&timestamp, &tmbuf);
     if (!time)
         return 0;
     return (uint64_t)(time->tm_year+1900) << 48 |
