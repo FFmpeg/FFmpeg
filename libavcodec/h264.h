@@ -1092,6 +1092,43 @@ static av_always_inline int get_dct8x8_allowed(H264Context *h)
                   0x0001000100010001ULL));
 }
 
+static inline int find_start_code(const uint8_t *buf, int buf_size,
+                           int buf_index, int next_avc)
+{
+    // start code prefix search
+    for (; buf_index + 3 < next_avc; buf_index++)
+        // This should always succeed in the first iteration.
+        if (buf[buf_index]     == 0 &&
+            buf[buf_index + 1] == 0 &&
+            buf[buf_index + 2] == 1)
+            break;
+
+    buf_index += 3;
+
+    if (buf_index >= buf_size)
+        return buf_size;
+
+    return buf_index;
+}
+
+static inline int get_avc_nalsize(H264Context *h, const uint8_t *buf,
+                           int buf_size, int *buf_index)
+{
+    int i, nalsize = 0;
+
+    if (*buf_index >= buf_size - h->nal_length_size)
+        return -1;
+
+    for (i = 0; i < h->nal_length_size; i++)
+        nalsize = ((unsigned)nalsize << 8) | buf[(*buf_index)++];
+    if (nalsize <= 0 || nalsize > buf_size - *buf_index) {
+        av_log(h->avctx, AV_LOG_ERROR,
+               "AVC: nal size %d\n", nalsize);
+        return -1;
+    }
+    return nalsize;
+}
+
 int ff_h264_field_end(H264Context *h, int in_setup);
 
 int ff_h264_ref_picture(H264Context *h, H264Picture *dst, H264Picture *src);
