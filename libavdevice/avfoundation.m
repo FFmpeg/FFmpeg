@@ -535,7 +535,9 @@ static int avf_read_header(AVFormatContext *s)
     pthread_mutex_init(&ctx->frame_lock, NULL);
     pthread_cond_init(&ctx->frame_wait_cond, NULL);
 
+#if __MAC_OS_X_VERSION_MIN_REQUIRED >= 1070
     CGGetActiveDisplayList(0, NULL, &num_screens);
+#endif
 
     // List devices if requested
     if (ctx->list_devices) {
@@ -548,6 +550,7 @@ static int avf_read_header(AVFormatContext *s)
             av_log(ctx, AV_LOG_INFO, "[%d] %s\n", index, name);
             index++;
         }
+#if __MAC_OS_X_VERSION_MIN_REQUIRED >= 1070
         if (num_screens > 0) {
             CGDirectDisplayID screens[num_screens];
             CGGetActiveDisplayList(num_screens, screens, &num_screens);
@@ -555,6 +558,7 @@ static int avf_read_header(AVFormatContext *s)
                 av_log(ctx, AV_LOG_INFO, "[%d] Capture screen %d\n", index + i, i);
             }
         }
+#endif
 
         av_log(ctx, AV_LOG_INFO, "AVFoundation audio devices:\n");
         devices = [AVCaptureDevice devicesWithMediaType:AVMediaTypeAudio];
@@ -588,10 +592,12 @@ static int avf_read_header(AVFormatContext *s)
         if (ctx->video_device_index < ctx->num_video_devices) {
             video_device = [video_devices objectAtIndex:ctx->video_device_index];
         } else if (ctx->video_device_index < ctx->num_video_devices + num_screens) {
+#if __MAC_OS_X_VERSION_MIN_REQUIRED >= 1070
             CGDirectDisplayID screens[num_screens];
             CGGetActiveDisplayList(num_screens, screens, &num_screens);
             AVCaptureScreenInput* capture_screen_input = [[[AVCaptureScreenInput alloc] initWithDisplayID:screens[ctx->video_device_index - ctx->num_video_devices]] autorelease];
             video_device = (AVCaptureDevice*) capture_screen_input;
+#endif
          } else {
             av_log(ctx, AV_LOG_ERROR, "Invalid device index\n");
             goto fail;
@@ -606,6 +612,7 @@ static int avf_read_header(AVFormatContext *s)
             }
         }
 
+#if __MAC_OS_X_VERSION_MIN_REQUIRED >= 1070
         // looking for screen inputs
         if (!video_device) {
             int idx;
@@ -617,6 +624,7 @@ static int avf_read_header(AVFormatContext *s)
                 ctx->video_device_index = ctx->num_video_devices + idx;
             }
         }
+#endif
 
         if (!video_device) {
             av_log(ctx, AV_LOG_ERROR, "Video device not found\n");
