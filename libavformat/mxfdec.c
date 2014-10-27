@@ -816,7 +816,7 @@ static void mxf_read_pixel_layout(AVIOContext *pb, MXFDescriptor *descriptor)
         value = avio_r8(pb);
         av_dlog(NULL, "pixel layout: code %#x\n", code);
 
-        if (ofs < 16) {
+        if (ofs <= 14) {
             layout[ofs++] = code;
             layout[ofs++] = value;
         }
