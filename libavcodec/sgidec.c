@@ -145,7 +145,7 @@ static int read_rle_sgi(uint8_t *out_buf, SgiState *s)
     for (z = 0; z < s->depth; z++) {
         dest_row = out_buf;
         for (y = 0; y < s->height; y++) {
-            linesize = s->width * s->depth * s->bytes_per_channel;
+            linesize = s->width * s->depth;
             dest_row -= s->linesize;
             start_offset = bytestream2_get_be32(&g_table);
             bytestream2_seek(&s->g, start_offset, SEEK_SET);
