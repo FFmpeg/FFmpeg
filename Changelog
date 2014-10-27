@@ -8,6 +8,7 @@ version <next>:
 - CAST128 symmetric block cipher, ECB mode
 - STL subtitle demuxer and decoder
 - libutvideo YUV 4:2:2 10bit support
+- XCB-based screen-grabber
 
 version 2.4:
 - Icecast protocol
