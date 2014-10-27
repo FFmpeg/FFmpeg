@@ -36,6 +36,7 @@
 #include "h264dsp.h"
 #include "h264pred.h"
 #include "h264qpel.h"
+#include "internal.h" // for avpriv_find_start_code()
 #include "rectangle.h"
 
 #define MAX_SPS_COUNT          32
@@ -972,20 +973,11 @@ static av_always_inline int get_dct8x8_allowed(H264Context *h)
 static inline int find_start_code(const uint8_t *buf, int buf_size,
                            int buf_index, int next_avc)
 {
-    // start code prefix search
-    for (; buf_index + 3 < next_avc; buf_index++)
-        // This should always succeed in the first iteration.
-        if (buf[buf_index]     == 0 &&
-            buf[buf_index + 1] == 0 &&
-            buf[buf_index + 2] == 1)
-            break;
+    uint32_t state = -1;
 
-    buf_index += 3;
+    buf_index = avpriv_find_start_code(buf + buf_index, buf + next_avc + 1, &state) - buf - 1;
 
-    if (buf_index >= buf_size)
-        return buf_size;
-
-    return buf_index;
+    return FFMIN(buf_index, buf_size);
 }
 
 static inline int get_avc_nalsize(H264Context *h, const uint8_t *buf,
