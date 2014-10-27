@@ -98,7 +98,7 @@ static int expand_rle_row16(SgiState *s, uint16_t *out_buf,
             break;
 
         /* Check for buffer overflow. */
-        if (pixelstride * (count - 1) >= len) {
+        if (out_end - out_buf <= pixelstride * (count - 1)) {
             av_log(s->avctx, AV_LOG_ERROR, "Invalid pixel count.\n");
             return AVERROR_INVALIDDATA;
         }
