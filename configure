@@ -5197,7 +5197,6 @@ elif enabled llvm_gcc; then
 elif enabled clang; then
     check_cflags -mllvm -stack-alignment=16
     check_cflags -Qunused-arguments
-    check_cflags -Werror=implicit-function-declaration
     check_cflags -Werror=missing-prototypes
     check_cflags -Werror=return-type
 elif enabled cparser; then
