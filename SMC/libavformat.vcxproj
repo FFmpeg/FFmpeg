@@ -1007,6 +1007,9 @@
     <ClCompile Include="..\libavformat\srtenc.c">
       <ObjectFileName>$(IntDir)\libavformat_srtenc.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavformat\stldec.c">
+      <ObjectFileName>$(IntDir)\libavformat_stldec.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavformat\psxstr.c">
       <ObjectFileName>$(IntDir)\libavformat_psxstr.obj</ObjectFileName>
     </ClCompile>

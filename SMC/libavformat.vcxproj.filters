@@ -966,6 +966,9 @@
     <ClCompile Include="..\libavformat\srtenc.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavformat\stldec.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavformat\psxstr.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
