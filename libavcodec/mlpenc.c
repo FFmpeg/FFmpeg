@@ -1920,7 +1920,7 @@ return 0;
 }
 AVCodec ff_mlp_encoder = {
 .name              ="mlp",
-.long_name         = NULL_IF_CONFIG_SMALL("MLP (Meridian Lossless P
+.long_name 		    = NULL_IF_CONFIG_SMALL("MLP (Meridian Lossless Packing)"),
 .type              =AVMEDIA_TYPE_AUDIO,
 .id                =CODEC_ID_MLP,
 .priv_data_size    =sizeof(MLPEncodeContext),
