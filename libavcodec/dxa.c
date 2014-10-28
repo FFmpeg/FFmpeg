@@ -306,6 +306,11 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     avctx->pix_fmt = AV_PIX_FMT_PAL8;
 
+    if (avctx->width%4 || avctx->height%4) {
+        avpriv_request_sample(avctx, "dimensions are not a multiple of 4");
+        return AVERROR_INVALIDDATA;
+    }
+
     c->prev = av_frame_alloc();
     if (!c->prev)
         return AVERROR(ENOMEM);
