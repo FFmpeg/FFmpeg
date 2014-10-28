@@ -204,11 +204,7 @@ static int write_manifest(AVFormatContext *s, int final)
     avio_printf(out, "</manifest>\n");
     avio_flush(out);
     avio_close(out);
-    if (rename(temp_filename, filename) == -1) {
-        av_log(s, AV_LOG_ERROR, "failed to rename file %s to %s\n", temp_filename, filename);
-        return AVERROR(errno);
-    }
-    return 0;
+    return ff_rename(temp_filename, filename, s);
 }
 
 static void update_size(AVIOContext *out, int64_t pos)
@@ -289,11 +285,7 @@ static int write_abst(AVFormatContext *s, OutputStream *os, int final)
     update_size(out, afrt_pos);
     update_size(out, 0);
     avio_close(out);
-    if (rename(temp_filename, filename) == -1) {
-        av_log(s, AV_LOG_ERROR, "failed to rename file %s to %s\n", temp_filename, filename);
-        return AVERROR(errno);
-    }
-    return 0;
+    return ff_rename(temp_filename, filename, s);
 }
 
 static int init_file(AVFormatContext *s, OutputStream *os, int64_t start_ts)
@@ -330,8 +322,8 @@ static int hds_write_header(AVFormatContext *s)
     AVOutputFormat *oformat;
 
     if (mkdir(s->filename, 0777) == -1 && errno != EEXIST) {
-        av_log(s, AV_LOG_ERROR , "Failed to create directory %s\n", s->filename);
         ret = AVERROR(errno);
+        av_log(s, AV_LOG_ERROR , "Failed to create directory %s\n", s->filename);
         goto fail;
     }
 
@@ -488,10 +480,9 @@ static int hds_flush(AVFormatContext *s, OutputStream *os, int final,
 
     snprintf(target_filename, sizeof(target_filename),
              "%s/stream%dSeg1-Frag%d", s->filename, index, os->fragment_index);
-    if (rename(os->temp_filename, target_filename) == -1) {
-        av_log(s, AV_LOG_ERROR, "failed to rename file %s to %s\n", os->temp_filename, target_filename);
-        return AVERROR(errno);
-    }
+    ret = ff_rename(os->temp_filename, target_filename, s);
+    if (ret < 0)
+        return ret;
     add_fragment(os, target_filename, os->frag_start_ts, end_ts - os->frag_start_ts);
 
     if (!final) {

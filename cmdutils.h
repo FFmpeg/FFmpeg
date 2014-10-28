@@ -443,6 +443,20 @@ int show_formats(void *optctx, const char *opt, const char *arg);
  */
 int show_devices(void *optctx, const char *opt, const char *arg);
 
+#if CONFIG_AVDEVICE
+/**
+ * Print a listing containing audodetected sinks of the output device.
+ * Device name with options may be passed as an argument to limit results.
+ */
+int show_sinks(void *optctx, const char *opt, const char *arg);
+
+/**
+ * Print a listing containing audodetected sources of the input device.
+ * Device name with options may be passed as an argument to limit results.
+ */
+int show_sources(void *optctx, const char *opt, const char *arg);
+#endif
+
 /**
  * Print a listing containing all the codecs supported by the
  * program.

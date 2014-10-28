@@ -250,6 +250,8 @@ redo:
 fail:
     if (s->hd)
         ffurl_closep(&s->hd);
+    if (location_changed < 0)
+        return location_changed;
     return ff_http_averror(s->http_code, AVERROR(EIO));
 }
 

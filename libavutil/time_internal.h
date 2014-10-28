@@ -1,7 +1,4 @@
 /*
- * various simple utilities for libavformat
- * Copyright (c) 2000, 2001, 2002 Fabrice Bellard
- *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -19,21 +16,32 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/time_internal.h"
-#include "avformat.h"
-#include "internal.h"
+#ifndef AVUTIL_TIME_INTERNAL_H
+#define AVUTIL_TIME_INTERNAL_H
 
-#define ISLEAP(y) (((y) % 4 == 0) && (((y) % 100) != 0 || ((y) % 400) == 0))
-#define LEAPS_COUNT(y) ((y)/4 - (y)/100 + (y)/400)
+#include <time.h>
+#include "config.h"
 
-/* This is our own gmtime_r. It differs from its POSIX counterpart in a
-   couple of places, though. */
-struct tm *ff_brktimegm(time_t secs, struct tm *tm)
+#if !HAVE_GMTIME_R
+static inline struct tm *gmtime_r(const time_t* clock, struct tm *result)
 {
-    tm = gmtime_r(&secs, tm);
-
-    tm->tm_year += 1900; /* unlike gmtime_r we store complete year here */
-    tm->tm_mon  += 1;    /* unlike gmtime_r tm_mon is from 1 to 12 */
-
-    return tm;
+    struct tm *ptr = gmtime(clock);
+    if (!ptr)
+        return NULL;
+    *result = *ptr;
+    return result;
 }
+#endif
+
+#if !HAVE_LOCALTIME_R
+static inline struct tm *localtime_r(const time_t* clock, struct tm *result)
+{
+    struct tm *ptr = localtime(clock);
+    if (!ptr)
+        return NULL;
+    *result = *ptr;
+    return result;
+}
+#endif
+
+#endif /* AVUTIL_TIME_INTERNAL_H */

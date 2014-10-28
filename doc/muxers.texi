@@ -592,28 +592,37 @@ ffmpeg -re @var{<normal input/transcoding options>} -movflags isml+frag_keyframe
 
 @section mp3
 
-The MP3 muxer writes a raw MP3 stream with an ID3v2 header at the beginning and
-optionally an ID3v1 tag at the end. ID3v2.3 and ID3v2.4 are supported, the
-@code{id3v2_version} option controls which one is used. Setting
-@code{id3v2_version} to 0 will disable the ID3v2 header completely. The legacy
-ID3v1 tag is not written by default, but may be enabled with the
-@code{write_id3v1} option.
+The MP3 muxer writes a raw MP3 stream with the following optional features:
+@itemize @bullet
+@item
+An ID3v2 metadata header at the beginning (enabled by default). Versions 2.3 and
+2.4 are supported, the @code{id3v2_version} private option controls which one is
+used (3 or 4). Setting @code{id3v2_version} to 0 disables the ID3v2 header
+completely.
 
-The muxer may also write a Xing frame at the beginning, which contains the
-number of frames in the file. It is useful for computing duration of VBR files.
-The Xing frame is written if the output stream is seekable and if the
-@code{write_xing} option is set to 1 (the default).
-
-The muxer supports writing ID3v2 attached pictures (APIC frames). The pictures
-are supplied to the muxer in form of a video stream with a single packet. There
-can be any number of those streams, each will correspond to a single APIC frame.
-The stream metadata tags @var{title} and @var{comment} map to APIC
-@var{description} and @var{picture type} respectively. See
+The muxer supports writing attached pictures (APIC frames) to the ID3v2 header.
+The pictures are supplied to the muxer in form of a video stream with a single
+packet. There can be any number of those streams, each will correspond to a
+single APIC frame.  The stream metadata tags @var{title} and @var{comment} map
+to APIC @var{description} and @var{picture type} respectively. See
 @url{http://id3.org/id3v2.4.0-frames} for allowed picture types.
 
 Note that the APIC frames must be written at the beginning, so the muxer will
 buffer the audio frames until it gets all the pictures. It is therefore advised
 to provide the pictures as soon as possible to avoid excessive buffering.
+
+@item
+A Xing/LAME frame right after the ID3v2 header (if present). It is enabled by
+default, but will be written only if the output is seekable. The
+@code{write_xing} private option can be used to disable it.  The frame contains
+various information that may be useful to the decoder, like the audio duration
+or encoder delay.
+
+@item
+A legacy ID3v1 tag at the end of the file (disabled by default). It may be
+enabled with the @code{write_id3v1} private option, but as its capabilities are
+very limited, its usage is not recommended.
+@end itemize
 
 Examples:
 

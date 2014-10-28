@@ -1509,8 +1509,8 @@ static void matroska_metadata_creation_time(AVDictionary **metadata, int64_t dat
     time_t creation_time = date_utc / 1000000000 + 978307200;
     struct tm *ptm = gmtime(&creation_time);
     if (!ptm) return;
-    strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", ptm);
-    av_dict_set(metadata, "creation_time", buffer, 0);
+    if (strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", ptm))
+        av_dict_set(metadata, "creation_time", buffer, 0);
 }
 
 static int matroska_parse_flac(AVFormatContext *s,
@@ -2328,10 +2328,15 @@ static int matroska_parse_rm_audio(MatroskaDemuxContext *matroska,
     }
 
     while (track->audio.pkt_cnt) {
-        AVPacket *pkt = NULL;
-        if (!(pkt = av_mallocz(sizeof(AVPacket))) || av_new_packet(pkt, a) < 0) {
-            av_free(pkt);
+        int ret;
+        AVPacket *pkt = av_mallocz(sizeof(AVPacket));
+        if (!pkt)
             return AVERROR(ENOMEM);
+
+        ret = av_new_packet(pkt, a);
+        if (ret < 0) {
+            av_free(pkt);
+            return ret;
         }
         memcpy(pkt->data,
                track->audio.buf + a * (h * w / a - track->audio.pkt_cnt--),
@@ -2921,11 +2926,11 @@ static int matroska_read_seek(AVFormatContext *s, int stream_index,
         goto err;
     timestamp = FFMAX(timestamp, st->index_entries[0].timestamp);
 
-    if ((index = av_index_search_timestamp(st, timestamp, flags)) < 0) {
+    if ((index = av_index_search_timestamp(st, timestamp, flags)) < 0 || index == st->nb_index_entries - 1) {
         avio_seek(s->pb, st->index_entries[st->nb_index_entries - 1].pos,
                   SEEK_SET);
         matroska->current_id = 0;
-        while ((index = av_index_search_timestamp(st, timestamp, flags)) < 0) {
+        while ((index = av_index_search_timestamp(st, timestamp, flags)) < 0 || index == st->nb_index_entries - 1) {
             matroska_clear_queue(matroska);
             if (matroska_parse_cluster(matroska) < 0)
                 break;

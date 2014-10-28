@@ -1183,7 +1183,7 @@ start:
         }
         ffurl_write(rt->rtsp_hd_out, ptr, strlen(ptr));
 
-        rt->last_cmd_time = av_gettime();
+        rt->last_cmd_time = av_gettime_relative();
         /* Even if the request from the server had data, it is not the data
          * that the caller wants or expects. The memory could also be leaked
          * if the actual following reply has content data. */
@@ -1280,7 +1280,7 @@ static int rtsp_send_cmd_with_content_async(AVFormatContext *s,
         }
         ffurl_write(rt->rtsp_hd_out, send_content, send_content_length);
     }
-    rt->last_cmd_time = av_gettime();
+    rt->last_cmd_time = av_gettime_relative();
 
     return 0;
 }
@@ -1737,13 +1737,14 @@ redirect:
             goto fail;
         }
     } else {
+        int ret;
         /* open the tcp connection */
         ff_url_join(tcpname, sizeof(tcpname), lower_rtsp_proto, NULL,
                     host, port,
                     "?timeout=%d", rt->stimeout);
-        if (ffurl_open(&rt->rtsp_hd, tcpname, AVIO_FLAG_READ_WRITE,
-                       &s->interrupt_callback, NULL) < 0) {
-            err = AVERROR(EIO);
+        if ((ret = ffurl_open(&rt->rtsp_hd, tcpname, AVIO_FLAG_READ_WRITE,
+                       &s->interrupt_callback, NULL)) < 0) {
+            err = ret;
             goto fail;
         }
         rt->rtsp_hd_out = rt->rtsp_hd;
@@ -1797,6 +1798,8 @@ redirect:
         err = ff_rtsp_setup_input_streams(s, reply);
     else if (CONFIG_RTSP_MUXER)
         err = ff_rtsp_setup_output_streams(s, host);
+    else
+        av_assert0(0);
     if (err)
         goto fail;
 
@@ -1855,7 +1858,7 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
     for (;;) {
         if (ff_check_interrupt(&s->interrupt_callback))
             return AVERROR_EXIT;
-        if (wait_end && wait_end - av_gettime() < 0)
+        if (wait_end && wait_end - av_gettime_relative() < 0)
             return AVERROR(EAGAIN);
         max_p = 0;
         if (rt->rtsp_hd) {
@@ -2054,7 +2057,7 @@ redo:
         break;
     case RTSP_LOWER_TRANSPORT_CUSTOM:
         if (first_queue_st && rt->transport == RTSP_TRANSPORT_RTP &&
-            wait_end && wait_end < av_gettime())
+            wait_end && wait_end < av_gettime_relative())
             len = AVERROR(EAGAIN);
         else
             len = ffio_read_partial(s->pb, rt->recvbuf, RECVBUF_SIZE);

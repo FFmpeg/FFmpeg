@@ -35,6 +35,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/intfloat.h"
 #include "libavutil/mathematics.h"
+#include "libavutil/time_internal.h"
 #include "libavutil/avstring.h"
 #include "libavutil/dict.h"
 #include "libavutil/opt.h"
@@ -809,15 +810,15 @@ static void mov_metadata_creation_time(AVDictionary **metadata, int64_t time)
 {
     char buffer[32];
     if (time) {
-        struct tm *ptm;
+        struct tm *ptm, tmbuf;
         time_t timet;
         if(time >= 2082844800)
             time -= 2082844800;  /* seconds between 1904-01-01 and Epoch */
         timet = time;
-        ptm = gmtime(&timet);
+        ptm = gmtime_r(&timet, &tmbuf);
         if (!ptm) return;
-        strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", ptm);
-        av_dict_set(metadata, "creation_time", buffer, 0);
+        if (strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", ptm))
+            av_dict_set(metadata, "creation_time", buffer, 0);
     }
 }
 
@@ -3923,7 +3924,7 @@ static int mov_read_header(AVFormatContext *s)
             av_reduce(&st->avg_frame_rate.num, &st->avg_frame_rate.den,
                       sc->time_scale*(int64_t)sc->nb_frames_for_fps, sc->duration_for_fps, INT_MAX);
         if (st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE) {
-            if (st->codec->width <= 0 && st->codec->height <= 0) {
+            if (st->codec->width <= 0 || st->codec->height <= 0) {
                 st->codec->width  = sc->width;
                 st->codec->height = sc->height;
             }

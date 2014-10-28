@@ -2622,6 +2622,26 @@ static int transcode_init(void)
             av_reduce(&enc_ctx->time_base.num, &enc_ctx->time_base.den,
                         enc_ctx->time_base.num, enc_ctx->time_base.den, INT_MAX);
 
+            if (ist->st->nb_side_data) {
+                ost->st->side_data = av_realloc_array(NULL, ist->st->nb_side_data,
+                                                      sizeof(*ist->st->side_data));
+                if (!ost->st->side_data)
+                    return AVERROR(ENOMEM);
+
+                for (j = 0; j < ist->st->nb_side_data; j++) {
+                    const AVPacketSideData *sd_src = &ist->st->side_data[j];
+                    AVPacketSideData *sd_dst = &ost->st->side_data[j];
+
+                    sd_dst->data = av_malloc(sd_src->size);
+                    if (!sd_dst->data)
+                        return AVERROR(ENOMEM);
+                    memcpy(sd_dst->data, sd_src->data, sd_src->size);
+                    sd_dst->size = sd_src->size;
+                    sd_dst->type = sd_src->type;
+                    ost->st->nb_side_data++;
+                }
+            }
+
             ost->parser = av_parser_init(enc_ctx->codec_id);
 
             switch (enc_ctx->codec_type) {
@@ -3090,9 +3110,9 @@ static OutputStream *choose_output(void)
         OutputStream *ost = output_streams[i];
         int64_t opts = av_rescale_q(ost->st->cur_dts, ost->st->time_base,
                                     AV_TIME_BASE_Q);
-        if (!ost->unavailable && !ost->finished && opts < opts_min) {
+        if (!ost->finished && opts < opts_min) {
             opts_min = opts;
-            ost_min  = ost;
+            ost_min  = ost->unavailable ? NULL : ost;
         }
     }
     return ost_min;
@@ -3780,7 +3800,7 @@ static int64_t getutime(void)
     GetProcessTimes(proc, &c, &e, &k, &u);
     return ((int64_t) u.dwHighDateTime << 32 | u.dwLowDateTime) / 10;
 #else
-    return av_gettime();
+    return av_gettime_relative();
 #endif
 }
 

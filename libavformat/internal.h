@@ -372,6 +372,24 @@ AVRational ff_choose_timebase(AVFormatContext *s, AVStream *st, int min_precisio
 int ff_generate_avci_extradata(AVStream *st);
 
 /**
+ * Wrap errno on rename() error.
+ *
+ * @param oldpath source path
+ * @param newpath destination path
+ * @return        0 or AVERROR on failure
+ */
+static inline int ff_rename(const char *oldpath, const char *newpath, void *logctx)
+{
+    int ret = 0;
+    if (rename(oldpath, newpath) == -1) {
+        ret = AVERROR(errno);
+        if (logctx)
+            av_log(logctx, AV_LOG_ERROR, "failed to rename file %s to %s\n", oldpath, newpath);
+    }
+    return ret;
+}
+
+/**
  * Allocate extradata with additional FF_INPUT_BUFFER_PADDING_SIZE at end
  * which is always set to 0.
  *
@@ -412,5 +430,9 @@ enum AVWriteUncodedFrameFlags {
 
 };
 
+/**
+ * Copies the whilelists from one context to the other
+ */
+int ff_copy_whitelists(AVFormatContext *dst, AVFormatContext *src);
 
 #endif /* AVFORMAT_INTERNAL_H */

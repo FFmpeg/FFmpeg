@@ -404,22 +404,21 @@ end:
 
 int av_match_list(const char *name, const char *list, char separator)
 {
-    const char *p;
-    char ext1[128], *q;
-    int i;
+    const char *p, *q;
 
-    p = list;
-    for (i = 1;; i++) {
-        q = ext1;
-        while (*p != '\0' && *p != separator  && q - ext1 < sizeof(ext1) - 1)
-            *q++ = *p++;
-        *q = '\0';
-        if (!av_strcasecmp(ext1, name))
-            return i;
-        if (*p == '\0')
-            break;
-        p++;
+    for (p = name; p && *p; ) {
+        for (q = list; q && *q; ) {
+            int k;
+            for (k = 0; p[k] == q[k] || (p[k]*q[k] == 0 && p[k]+q[k] == separator); k++)
+                if (k && (!p[k] || p[k] == separator))
+                    return 1;
+            q = strchr(q, separator);
+            q += !!q;
+        }
+        p = strchr(p, separator);
+        p += !!p;
     }
+
     return 0;
 }
 

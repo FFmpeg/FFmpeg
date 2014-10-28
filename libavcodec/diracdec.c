@@ -612,10 +612,10 @@ static av_always_inline void decode_subband_internal(DiracContext *s, SubBand *b
 
     top = 0;
     for (cb_y = 0; cb_y < cb_height; cb_y++) {
-        bottom = (b->height * (cb_y+1)) / cb_height;
+        bottom = (b->height * (cb_y+1LL)) / cb_height;
         left = 0;
         for (cb_x = 0; cb_x < cb_width; cb_x++) {
-            right = (b->width * (cb_x+1)) / cb_width;
+            right = (b->width * (cb_x+1LL)) / cb_width;
             codeblock(s, b, &gb, &c, left, right, top, bottom, blockcnt_one, is_arith);
             left = right;
         }
@@ -1004,8 +1004,8 @@ static int dirac_unpack_idwt_params(DiracContext *s)
         /* Codeblock parameters (core syntax only) */
         if (get_bits1(gb)) {
             for (i = 0; i <= s->wavelet_depth; i++) {
-                CHECKEDREAD(s->codeblock[i].width , tmp < 1, "codeblock width invalid\n")
-                CHECKEDREAD(s->codeblock[i].height, tmp < 1, "codeblock height invalid\n")
+                CHECKEDREAD(s->codeblock[i].width , tmp < 1 || tmp > (s->avctx->width >>s->wavelet_depth-i), "codeblock width invalid\n")
+                CHECKEDREAD(s->codeblock[i].height, tmp < 1 || tmp > (s->avctx->height>>s->wavelet_depth-i), "codeblock height invalid\n")
             }
 
             CHECKEDREAD(s->codeblock_mode, tmp > 1, "unknown codeblock mode\n")

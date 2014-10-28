@@ -194,6 +194,9 @@ static int read_frame(BVID_DemuxContext *vid, AVIOContext *pb, AVPacket *pkt,
                                                  BVID_PALETTE_SIZE);
         if (pdata)
             memcpy(pdata, vid->palette, BVID_PALETTE_SIZE);
+        else
+            av_log(s, AV_LOG_ERROR, "Failed to allocate palette side data\n");
+
         av_freep(&vid->palette);
     }
 

@@ -50,6 +50,7 @@ typedef struct {
     ff_idet_filter_func filter_line;
 
     const AVPixFmtDescriptor *csp;
+    int eof;
 } IDETContext;
 
 void ff_idet_init_x86(IDETContext *idet, int for_16b);

@@ -683,6 +683,7 @@ static int vobsub_read_header(AVFormatContext *s)
     int stream_id = -1;
     char id[64] = {0};
     char alt[MAX_LINE_SIZE] = {0};
+    AVInputFormat *iformat;
 
     sub_name = av_strdup(s->filename);
     fname_len = strlen(sub_name);
@@ -695,7 +696,18 @@ static int vobsub_read_header(AVFormatContext *s)
     }
     memcpy(ext, !strncmp(ext, "IDX", 3) ? "SUB" : "sub", 3);
     av_log(s, AV_LOG_VERBOSE, "IDX/SUB: %s -> %s\n", s->filename, sub_name);
-    ret = avformat_open_input(&vobsub->sub_ctx, sub_name, &ff_mpegps_demuxer, NULL);
+
+    if (!(iformat = av_find_input_format("mpeg")))
+        return AVERROR_DEMUXER_NOT_FOUND;
+
+    vobsub->sub_ctx = avformat_alloc_context();
+    if (!vobsub->sub_ctx)
+        return AVERROR(ENOMEM);
+
+    if ((ret = ff_copy_whitelists(vobsub->sub_ctx, s)) < 0)
+        goto end;
+
+    ret = avformat_open_input(&vobsub->sub_ctx, sub_name, iformat, NULL);
     if (ret < 0) {
         av_log(s, AV_LOG_ERROR, "Unable to open %s as MPEG subtitles\n", sub_name);
         goto end;

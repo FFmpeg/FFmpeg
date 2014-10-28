@@ -887,7 +887,7 @@ retry:
 
     if (!(rt->rtsp_flags & RTSP_FLAG_LISTEN)) {
         /* send dummy request to keep TCP connection alive */
-        if ((av_gettime() - rt->last_cmd_time) / 1000000 >= rt->timeout / 2 ||
+        if ((av_gettime_relative() - rt->last_cmd_time) / 1000000 >= rt->timeout / 2 ||
             rt->auth_state.stale) {
             if (rt->server_type == RTSP_SERVER_WMS ||
                 (rt->server_type != RTSP_SERVER_REAL &&
