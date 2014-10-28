@@ -33,7 +33,7 @@
 #include "version.h"
 #include "me_cmp.h"
 
-#if FF_API_DSPUTIL
+#define FF_API_DSPUTIL
 
 /* minimum alignment rules ;)
  * If you notice errors in the align stuff, need more alignment for some ASM code
