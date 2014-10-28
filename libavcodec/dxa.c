@@ -308,6 +308,11 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     avctx->pix_fmt = AV_PIX_FMT_PAL8;
 
+    if (avctx->width%4 || avctx->height%4) {
+        av_log(avctx, AV_LOG_ERROR, "dimensions are not a multiple of 4");
+        return AVERROR_INVALIDDATA;
+    }
+
     avcodec_get_frame_defaults(&c->pic);
     avcodec_get_frame_defaults(&c->prev);
 
