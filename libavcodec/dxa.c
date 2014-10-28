@@ -290,6 +290,11 @@ static av_cold int decode_init(AVCodecContext *avctx)
 {
     DxaDecContext * const c = avctx->priv_data;
 
+    if (avctx->width%4 || avctx->height%4) {
+        av_log(avctx, AV_LOG_ERROR, "dimensions are not a multiple of 4");
+        return AVERROR_INVALIDDATA;
+    }
+
     c->avctx = avctx;
     avctx->pix_fmt = PIX_FMT_PAL8;
 
