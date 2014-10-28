@@ -209,10 +209,10 @@ static int vdpau_h264_init(AVCodecContext *avctx)
     uint32_t level = avctx->level;
 
     switch (avctx->profile & ~FF_PROFILE_H264_INTRA) {
-    case FF_PROFILE_H264_CONSTRAINED_BASELINE:
     case FF_PROFILE_H264_BASELINE:
         profile = VDP_DECODER_PROFILE_H264_BASELINE;
         break;
+    case FF_PROFILE_H264_CONSTRAINED_BASELINE:
     case FF_PROFILE_H264_MAIN:
         profile = VDP_DECODER_PROFILE_H264_MAIN;
         break;
