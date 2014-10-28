@@ -171,6 +171,10 @@ static inline int dirac_get_arith_uint(DiracArith *c, int follow_ctx, int data_c
 {
     int ret = 1;
     while (!dirac_get_arith_bit(c, follow_ctx)) {
+        if (ret >= 0x40000000) {
+            av_log(NULL, AV_LOG_ERROR, "dirac_get_arith_uint overflow\n");
+            return -1;
+        }
         ret <<= 1;
         ret += dirac_get_arith_bit(c, data_ctx);
         follow_ctx = ff_dirac_next_ctx[follow_ctx];
