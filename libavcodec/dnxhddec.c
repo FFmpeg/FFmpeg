@@ -35,6 +35,7 @@ typedef struct DNXHDContext {
     GetBitContext gb;
     int64_t cid;                        ///< compression id
     unsigned int width, height;
+    enum AVPixelFormat pix_fmt;
     unsigned int mb_width, mb_height;
     uint32_t mb_scan_index[68];         /* max for 1080p */
     int cur_field;                      ///< current interlaced field
@@ -128,7 +129,7 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
     av_dlog(ctx->avctx, "width %d, height %d\n", ctx->width, ctx->height);
 
     if (buf[0x21] & 0x40) {
-        ctx->avctx->pix_fmt = AV_PIX_FMT_YUV422P10;
+        ctx->pix_fmt = AV_PIX_FMT_YUV422P10;
         ctx->avctx->bits_per_raw_sample = 10;
         if (ctx->bit_depth != 10) {
             ff_dsputil_init(&ctx->dsp, ctx->avctx);
@@ -136,7 +137,7 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
             ctx->decode_dct_block = dnxhd_decode_dct_block_10;
         }
     } else {
-        ctx->avctx->pix_fmt = AV_PIX_FMT_YUV422P;
+        ctx->pix_fmt = AV_PIX_FMT_YUV422P;
         ctx->avctx->bits_per_raw_sample = 8;
         if (ctx->bit_depth != 8) {
             ff_dsputil_init(&ctx->dsp, ctx->avctx);
@@ -376,9 +377,15 @@ static int dnxhd_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                avctx->width, avctx->height, ctx->width, ctx->height);
         first_field = 1;
     }
+    if (avctx->pix_fmt != AV_PIX_FMT_NONE && avctx->pix_fmt != ctx->pix_fmt) {
+        av_log(avctx, AV_LOG_WARNING, "pix_fmt changed: %s -> %s\n",
+               av_get_pix_fmt_name(avctx->pix_fmt), av_get_pix_fmt_name(ctx->pix_fmt));
+        first_field = 1;
+    }
 
     if (av_image_check_size(ctx->width, ctx->height, 0, avctx))
         return -1;
+    avctx->pix_fmt = ctx->pix_fmt;
     avcodec_set_dimensions(avctx, ctx->width, ctx->height);
 
     if (first_field) {
