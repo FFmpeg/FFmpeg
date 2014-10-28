@@ -2031,6 +2031,51 @@ static int mxf_read_local_tags(MXFContext *mxf, KLVPacket *klv, MXFMetadataReadF
 }
 
 /**
+ * Matches any partition pack key, in other words:
+ * - HeaderPartition
+ * - BodyPartition
+ * - FooterPartition
+ * @return non-zero if the key is a partition pack key, zero otherwise
+ */
+static int mxf_is_partition_pack_key(UID key)
+{
+    //NOTE: this is a little lax since it doesn't constraint key[14]
+    return !memcmp(key, mxf_header_partition_pack_key, 13) &&
+            key[13] >= 2 && key[13] <= 4;
+}
+
+/**
+ * Parses a metadata KLV
+ * @return <0 on error, 0 otherwise
+ */
+static int mxf_parse_klv(MXFContext *mxf, KLVPacket klv, MXFMetadataReadFunc *read,
+                                     int ctx_size, enum MXFMetadataSetType type)
+{
+    AVFormatContext *s = mxf->fc;
+    int res;
+    if (klv.key[5] == 0x53) {
+        res = mxf_read_local_tags(mxf, &klv, read, ctx_size, type);
+    } else {
+        uint64_t next = avio_tell(s->pb) + klv.length;
+        res = read(mxf, s->pb, 0, klv.length, klv.key, klv.offset);
+
+        /* only seek forward, else this can loop for a long time */
+        if (avio_tell(s->pb) > next) {
+            av_log(s, AV_LOG_ERROR, "read past end of KLV @ %#"PRIx64"\n",
+                   klv.offset);
+            return AVERROR_INVALIDDATA;
+        }
+
+        avio_seek(s->pb, next, SEEK_SET);
+    }
+    if (res < 0) {
+        av_log(s, AV_LOG_ERROR, "error reading header metadata\n");
+        return res;
+    }
+    return 0;
+}
+
+/**
  * Seeks to the previous partition, if possible
  * @return <= 0 if we should stop parsing, > 0 if we should keep going
  */
@@ -2292,8 +2337,7 @@ static int mxf_read_header(AVFormatContext *s)
             if (mxf_parse_handle_essence(mxf) <= 0)
                 break;
             continue;
-        } else if (!memcmp(klv.key, mxf_header_partition_pack_key, 13) &&
-                   klv.key[13] >= 2 && klv.key[13] <= 4 && mxf->current_partition) {
+        } else if (mxf_is_partition_pack_key(klv.key) && mxf->current_partition) {
             /* next partition pack - keep going, seek to previous partition or stop */
             if(mxf_parse_handle_partition_or_eof(mxf) <= 0)
                 break;
@@ -2304,27 +2348,8 @@ static int mxf_read_header(AVFormatContext *s)
 
         for (metadata = mxf_metadata_read_table; metadata->read; metadata++) {
             if (IS_KLV_KEY(klv.key, metadata->key)) {
-                int res;
-                if (klv.key[5] == 0x53) {
-                    res = mxf_read_local_tags(mxf, &klv, metadata->read, metadata->ctx_size, metadata->type);
-                } else {
-                    uint64_t next = avio_tell(s->pb) + klv.length;
-                    res = metadata->read(mxf, s->pb, 0, klv.length, klv.key, klv.offset);
-
-                    /* only seek forward, else this can loop for a long time */
-                    if (avio_tell(s->pb) > next) {
-                        av_log(s, AV_LOG_ERROR, "read past end of KLV @ %#"PRIx64"\n",
-                               klv.offset);
-                        return AVERROR_INVALIDDATA;
-                    }
-
-                    avio_seek(s->pb, next, SEEK_SET);
-                }
-                if (res < 0) {
-                    av_log(s, AV_LOG_ERROR, "error reading header metadata\n");
-                    ret = res;
+                if ((ret = mxf_parse_klv(mxf, klv, metadata->read, metadata->ctx_size, metadata->type)) < 0)
                     goto fail;
-                }
                 break;
             } else {
                 av_log(s, AV_LOG_VERBOSE, "Dark key " PRIxUID "\n",
