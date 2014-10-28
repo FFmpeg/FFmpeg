@@ -89,6 +89,7 @@ typedef struct {
     int64_t header_byte_count;
     int64_t index_byte_count;
     int pack_length;
+    int64_t pack_ofs;               ///< absolute offset of pack in file, including run-in
 } MXFPartition;
 
 typedef struct {
@@ -472,6 +473,7 @@ static int mxf_read_partition_pack(void *arg, AVIOContext *pb, int tag, int size
     memset(partition, 0, sizeof(*partition));
     mxf->partitions_count++;
     partition->pack_length = avio_tell(pb) - klv_offset + size;
+    partition->pack_ofs    = klv_offset;
 
     switch(uid[13]) {
     case 2:
@@ -547,6 +549,7 @@ static int mxf_read_partition_pack(void *arg, AVIOContext *pb, int tag, int size
             partition->index_sid, partition->body_sid);
 
     /* sanity check PreviousPartition if set */
+    //NOTE: this isn't actually enough, see mxf_seek_to_previous_partition()
     if (partition->previous_partition &&
         mxf->run_in + partition->previous_partition >= klv_offset) {
         av_log(mxf->fc, AV_LOG_ERROR,
@@ -2076,22 +2079,52 @@ static int mxf_parse_klv(MXFContext *mxf, KLVPacket klv, MXFMetadataReadFunc *re
 }
 
 /**
- * Seeks to the previous partition, if possible
+ * Seeks to the previous partition and parses it, if possible
  * @return <= 0 if we should stop parsing, > 0 if we should keep going
  */
 static int mxf_seek_to_previous_partition(MXFContext *mxf)
 {
     AVIOContext *pb = mxf->fc->pb;
+    KLVPacket klv;
+    int64_t current_partition_ofs;
+    int ret;
 
     if (!mxf->current_partition ||
         mxf->run_in + mxf->current_partition->previous_partition <= mxf->last_forward_tell)
         return 0;   /* we've parsed all partitions */
 
     /* seek to previous partition */
+    current_partition_ofs = mxf->current_partition->pack_ofs;   //includes run-in
     avio_seek(pb, mxf->run_in + mxf->current_partition->previous_partition, SEEK_SET);
     mxf->current_partition = NULL;
 
     av_dlog(mxf->fc, "seeking to previous partition\n");
+
+    /* Make sure this is actually a PartitionPack, and if so parse it.
+     * See deadlock2.mxf
+     */
+    if ((ret = klv_read_packet(&klv, pb)) < 0) {
+        av_log(mxf->fc, AV_LOG_ERROR, "failed to read PartitionPack KLV\n");
+        return ret;
+    }
+
+    if (!mxf_is_partition_pack_key(klv.key)) {
+        av_log(mxf->fc, AV_LOG_ERROR, "PreviousPartition @ %" PRIx64 " isn't a PartitionPack\n", klv.offset);
+        return AVERROR_INVALIDDATA;
+    }
+
+    /* We can't just check ofs >= current_partition_ofs because PreviousPartition
+     * can point to just before the current partition, causing klv_read_packet()
+     * to sync back up to it. See deadlock3.mxf
+     */
+    if (klv.offset >= current_partition_ofs) {
+        av_log(mxf->fc, AV_LOG_ERROR, "PreviousPartition for PartitionPack @ %"
+               PRIx64 " indirectly points to itself\n", current_partition_ofs);
+        return AVERROR_INVALIDDATA;
+    }
+
+    if ((ret = mxf_parse_klv(mxf, klv, mxf_read_partition_pack, 0, 0)) < 0)
+        return ret;
 
     return 1;
 }
