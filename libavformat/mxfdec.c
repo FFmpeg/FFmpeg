@@ -227,7 +227,6 @@ typedef struct {
     struct AVAES *aesc;
     uint8_t *local_tags;
     int local_tags_count;
-    uint64_t last_partition;
     uint64_t footer_partition;
     KLVPacket current_klv_data;
     int current_klv_index;
@@ -2141,30 +2140,27 @@ static int mxf_parse_handle_essence(MXFContext *mxf)
     if (mxf->parsing_backward) {
         return mxf_seek_to_previous_partition(mxf);
     } else {
-        uint64_t offset = mxf->footer_partition ? mxf->footer_partition
-                                                : mxf->last_partition;
-
-        if (!offset) {
-            av_dlog(mxf->fc, "no last partition\n");
+        if (!mxf->footer_partition) {
+            av_dlog(mxf->fc, "no FooterPartition\n");
             return 0;
         }
 
-        av_dlog(mxf->fc, "seeking to last partition\n");
+        av_dlog(mxf->fc, "seeking to FooterPartition\n");
 
         /* remember where we were so we don't end up seeking further back than this */
         mxf->last_forward_tell = avio_tell(pb);
 
         if (!pb->seekable) {
-            av_log(mxf->fc, AV_LOG_INFO, "file is not seekable - not parsing last partition\n");
+            av_log(mxf->fc, AV_LOG_INFO, "file is not seekable - not parsing FooterPartition\n");
             return -1;
         }
 
-        /* seek to last partition and parse backward */
-        if ((ret = avio_seek(pb, mxf->run_in + offset, SEEK_SET)) < 0) {
+        /* seek to FooterPartition and parse backward */
+        if ((ret = avio_seek(pb, mxf->run_in + mxf->footer_partition, SEEK_SET)) < 0) {
             av_log(mxf->fc, AV_LOG_ERROR,
-                   "failed to seek to last partition @ 0x%" PRIx64
+                   "failed to seek to FooterPartition @ 0x%" PRIx64
                    " (%"PRId64") - partial file?\n",
-                   mxf->run_in + offset, ret);
+                   mxf->run_in + mxf->footer_partition, ret);
             return ret;
         }
 
@@ -2202,7 +2198,7 @@ static void mxf_compute_essence_containers(MXFContext *mxf)
             continue;       /* BodySID == 0 -> no essence */
 
         if (x >= mxf->partitions_count - 1)
-            break;          /* last partition - can't compute length (and we don't need to) */
+            break;          /* FooterPartition - can't compute length (and we don't need to) */
 
         /* essence container spans to the next partition */
         p->essence_length = mxf->partitions[x+1].this_partition - p->essence_offset;
@@ -2283,7 +2279,7 @@ static void mxf_read_random_index_pack(AVFormatContext *s)
         goto end;
 
     avio_skip(s->pb, klv.length - 12);
-    mxf->last_partition = avio_rb64(s->pb);
+    mxf->footer_partition = avio_rb64(s->pb);
 
 end:
     avio_seek(s->pb, mxf->run_in, SEEK_SET);
