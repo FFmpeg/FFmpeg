@@ -615,10 +615,10 @@ static av_always_inline void decode_subband_internal(DiracContext *s, SubBand *b
 
     top = 0;
     for (cb_y = 0; cb_y < cb_height; cb_y++) {
-        bottom = (b->height * (cb_y+1)) / cb_height;
+        bottom = (b->height * (cb_y+1LL)) / cb_height;
         left = 0;
         for (cb_x = 0; cb_x < cb_width; cb_x++) {
-            right = (b->width * (cb_x+1)) / cb_width;
+            right = (b->width * (cb_x+1LL)) / cb_width;
             codeblock(s, b, &gb, &c, left, right, top, bottom, blockcnt_one, is_arith);
             left = right;
         }
