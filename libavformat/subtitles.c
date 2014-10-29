@@ -46,7 +46,7 @@ void ff_text_init_avio(void *s, FFTextReader *r, AVIOContext *pb)
         }
     }
     if (s && (r->type == FF_UTF16LE || r->type == FF_UTF16BE))
-        av_log(s, AV_LOG_WARNING,
+        av_log(s, AV_LOG_INFO,
                "UTF16 is automatically converted to UTF8, do not specify a character encoding\n");
 }
 
