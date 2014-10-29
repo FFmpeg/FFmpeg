@@ -2748,8 +2748,6 @@ static int mov_write_ftyp_tag(AVIOContext *pb, AVFormatContext *s)
         ffio_wfourcc(pb, "qt  ");
     else if (mov->mode == MODE_ISM) {
         ffio_wfourcc(pb, "piff");
-        if (!(mov->flags & FF_MOV_FLAG_DEFAULT_BASE_MOOF))
-            ffio_wfourcc(pb, "iso2");
     } else if (!(mov->flags & FF_MOV_FLAG_DEFAULT_BASE_MOOF)) {
         ffio_wfourcc(pb, "isom");
         ffio_wfourcc(pb, "iso2");
