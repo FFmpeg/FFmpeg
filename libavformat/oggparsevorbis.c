@@ -30,7 +30,7 @@
 #include "libavutil/dict.h"
 #include "libavcodec/bytestream.h"
 #include "libavcodec/get_bits.h"
-#include "libavcodec/vorbis_parser_internal.h"
+#include "libavcodec/vorbis_parser.h"
 #include "avformat.h"
 #include "flac_picture.h"
 #include "internal.h"
@@ -208,7 +208,7 @@ int ff_vorbis_comment(AVFormatContext *as, AVDictionary **m,
 struct oggvorbis_private {
     unsigned int len[3];
     unsigned char *packet[3];
-    AVVorbisParseContext vp;
+    AVVorbisParseContext *vp;
     int64_t final_pts;
     int final_duration;
 };
@@ -245,9 +245,11 @@ static void vorbis_cleanup(AVFormatContext *s, int idx)
     struct ogg_stream *os = ogg->streams + idx;
     struct oggvorbis_private *priv = os->private;
     int i;
-    if (os->private)
+    if (os->private) {
+        av_vorbis_parse_free(&priv->vp);
         for (i = 0; i < 3; i++)
             av_freep(&priv->packet[i]);
+    }
 }
 
 static int vorbis_header(AVFormatContext *s, int idx)
@@ -343,7 +345,9 @@ static int vorbis_header(AVFormatContext *s, int idx)
             return ret;
         }
         st->codec->extradata_size = ret;
-        if ((ret = avpriv_vorbis_parse_extradata(st->codec, &priv->vp))) {
+
+        priv->vp = av_vorbis_parse_init(st->codec->extradata, st->codec->extradata_size);
+        if (!priv->vp) {
             av_freep(&st->codec->extradata);
             st->codec->extradata_size = 0;
             return ret;
@@ -370,11 +374,11 @@ static int vorbis_packet(AVFormatContext *s, int idx)
         uint8_t *next_pkt  = last_pkt;
         int first_duration = 0;
 
-        avpriv_vorbis_parse_reset(&priv->vp);
+        av_vorbis_parse_reset(priv->vp);
         duration = 0;
         for (seg = 0; seg < os->nsegs; seg++) {
             if (os->segments[seg] < 255) {
-                int d = avpriv_vorbis_parse_frame(&priv->vp, last_pkt, 1);
+                int d = av_vorbis_parse_frame(priv->vp, last_pkt, 1);
                 if (d < 0) {
                     duration = os->granule;
                     break;
@@ -393,12 +397,12 @@ static int vorbis_packet(AVFormatContext *s, int idx)
             s->streams[idx]->duration -= s->streams[idx]->start_time;
         s->streams[idx]->cur_dts = AV_NOPTS_VALUE;
         priv->final_pts          = AV_NOPTS_VALUE;
-        avpriv_vorbis_parse_reset(&priv->vp);
+        av_vorbis_parse_reset(priv->vp);
     }
 
     /* parse packet duration */
     if (os->psize > 0) {
-        duration = avpriv_vorbis_parse_frame(&priv->vp, os->buf + os->pstart, 1);
+        duration = av_vorbis_parse_frame(priv->vp, os->buf + os->pstart, 1);
         if (duration <= 0) {
             os->pflags |= AV_PKT_FLAG_CORRUPT;
             return 0;
