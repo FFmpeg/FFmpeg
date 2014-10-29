@@ -25,7 +25,6 @@
 #include "mlp.h"
 #include "dsputil.h"
 #include "lpc.h"
-#include "pcm.c"
 #define MAJOR_HEADER_INTERVAL 16
 #define MLP_MIN_LPC_ORDER 1
 #define MLP_MAX_LPC_ORDER 8
