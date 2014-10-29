@@ -177,7 +177,6 @@ static int read_frame(BVID_DemuxContext *vid, AVIOContext *pb, AVPacket *pkt,
     if ((ret = av_new_packet(pkt, vidbuf_nbytes)) < 0)
         goto fail;
     memcpy(pkt->data, vidbuf_start, vidbuf_nbytes);
-    av_free(vidbuf_start);
 
     pkt->pos = position;
     pkt->stream_index = vid->video_index;
@@ -198,7 +197,6 @@ static int read_frame(BVID_DemuxContext *vid, AVIOContext *pb, AVPacket *pkt,
     }
 
     vid->nframes--;  // used to check if all the frames were read
-    return 0;
 fail:
     av_free(vidbuf_start);
     return ret;
