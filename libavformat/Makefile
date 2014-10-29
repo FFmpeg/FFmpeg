@@ -412,3 +412,4 @@ TOOLS     = aviocat                                                     \
             ismindex                                                    \
             pktdumper                                                   \
             probetest                                                   \
+            sidxindex                                                   \
