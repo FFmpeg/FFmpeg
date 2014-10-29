@@ -337,6 +337,9 @@ Disable Nero chapter markers (chpl atom).  Normally, both Nero chapters
 and a QuickTime chapter track are written to the file. With this option
 set, only the QuickTime chapter track will be written. Nero chapters can
 cause failures when the file is reprocessed with certain tagging programs.
+@item -movflags omit_tfhd_offset
+Do not write any absolute base_data_offset in tfhd atoms. This avoids
+tying fragments to absolute byte positions in the file/streams.
 @end table
 
 Smooth Streaming content can be pushed in real time to a publishing
