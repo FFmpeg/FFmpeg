@@ -94,8 +94,10 @@ static av_cold int utvideo_decode_init(AVCodecContext *avctx)
 
     /* Only allocate the buffer once */
     utv->buf_size = avpicture_get_size(avctx->pix_fmt, avctx->width, avctx->height);
+#ifdef UTVF_UQY2
     if (format == UTVF_v210)
         utv->buf_size += avctx->height * ((avctx->width + 47) / 48) * 128; // the linesize used by the decoder, this does not seem to be exported
+#endif
     utv->buffer = (uint8_t *)av_malloc(utv->buf_size * sizeof(uint8_t));
 
     if (utv->buffer == NULL) {
