@@ -1227,7 +1227,7 @@ static int mkv_blockgroup_size(int pkt_size)
     return size;
 }
 
-static int ass_get_duration(const uint8_t *p)
+static int ass_get_duration(AVFormatContext *s, const uint8_t *p)
 {
     int sh, sm, ss, sc, eh, em, es, ec;
     uint64_t start, end;
@@ -1235,8 +1235,25 @@ static int ass_get_duration(const uint8_t *p)
     if (sscanf(p, "%*[^,],%d:%d:%d%*c%d,%d:%d:%d%*c%d",
                &sh, &sm, &ss, &sc, &eh, &em, &es, &ec) != 8)
         return 0;
+
+    if (sh > 9 || sm > 59 || ss > 59 || sc > 99 ||
+        eh > 9 || em > 59 || es > 59 || ec > 99) {
+        av_log(s, AV_LOG_WARNING,
+               "Non-standard time reference %d:%d:%d.%d,%d:%d:%d.%d\n",
+               sh, sm, ss, sc, eh, em, es, ec);
+        return 0;
+    }
+
     start = 3600000 * sh + 60000 * sm + 1000 * ss + 10 * sc;
     end   = 3600000 * eh + 60000 * em + 1000 * es + 10 * ec;
+
+    if (start > end) {
+        av_log(s, AV_LOG_WARNING,
+               "Unexpected time reference %d:%d:%d.%d,%d:%d:%d.%d\n",
+               sh, sm, ss, sc, eh, em, es, ec);
+        return 0;
+    }
+
     return end - start;
 }
 
@@ -1250,7 +1267,7 @@ static int mkv_write_ass_blocks(AVFormatContext *s, AVIOContext *pb,
     char buffer[2048];
 
     while (data_size) {
-        int duration = ass_get_duration(data);
+        int duration = ass_get_duration(s, data);
         max_duration = FFMAX(duration, max_duration);
         end          = memchr(data, '\n', data_size);
         size         = line_size = end ? end - data + 1 : data_size;
