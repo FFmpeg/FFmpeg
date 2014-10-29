@@ -279,6 +279,12 @@ void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height,
     int i;
     int w_align = 1;
     int h_align = 1;
+    AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(s->pix_fmt);
+
+    if (desc) {
+        w_align = 1 << desc->log2_chroma_w;
+        h_align = 1 << desc->log2_chroma_h;
+    }
 
     switch (s->pix_fmt) {
     case AV_PIX_FMT_YUV420P:
@@ -406,8 +412,6 @@ void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height,
         }
         break;
     default:
-        w_align = 1;
-        h_align = 1;
         break;
     }
 
