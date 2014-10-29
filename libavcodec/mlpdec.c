@@ -359,8 +359,9 @@ static int read_major_sync(MLPDecodeContext *m, GetBitContext *gb)
 
     m->num_substreams        = mh.num_substreams;
 
-    /* limit to decoding 3 substreams, as the 4th is used by Dolby Atmos for non-audio data */
-    m->max_decoded_substream = FFMIN(m->num_substreams - 1, 2);
+    /* limit to decoding 3 substreams, anything above that is an extension stream that we cannot decode */
+    /* if extensions are used, we assume the last stream is for Dolby Atmos data and ignore it */
+    m->max_decoded_substream = FFMIN(2, m->num_substreams - 1 - (mh.num_extensions != 0));
 
     m->avctx->sample_rate    = mh.group1_samplerate;
     m->avctx->frame_size     = mh.access_unit_size;

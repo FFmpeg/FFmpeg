@@ -60,6 +60,8 @@ typedef struct MLPHeaderInfo
     int peak_bitrate;                       ///< Peak bitrate for VBR, actual bitrate (==peak) for CBR
 
     int num_substreams;                     ///< Number of substreams within stream
+
+    int num_extensions;                     ///< Number of extensions, non-zero value indicates Atmos presence
 } MLPHeaderInfo;
 
 
