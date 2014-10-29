@@ -2458,7 +2458,7 @@ static int mov_write_trun_tag(AVIOContext *pb, MOVMuxContext *mov,
     avio_wb32(pb, track->entry); /* sample count */
     if (mov->flags & FF_MOV_FLAG_OMIT_TFHD_OFFSET &&
         !(mov->flags & FF_MOV_FLAG_SEPARATE_MOOF) &&
-        track->track_id != 1)
+        !mov->first_trun)
         avio_wb32(pb, 0); /* Later tracks follow immediately after the previous one */
     else
         avio_wb32(pb, moof_size + 8 + track->data_offset +
@@ -2477,6 +2477,7 @@ static int mov_write_trun_tag(AVIOContext *pb, MOVMuxContext *mov,
             avio_wb32(pb, track->cluster[i].cts);
     }
 
+    mov->first_trun = 0;
     return update_size(pb, pos);
 }
 
@@ -2598,6 +2599,7 @@ static int mov_write_moof_tag_internal(AVIOContext *pb, MOVMuxContext *mov,
 
     avio_wb32(pb, 0); /* size placeholder */
     ffio_wfourcc(pb, "moof");
+    mov->first_trun = 1;
 
     mov_write_mfhd_tag(pb, mov);
     for (i = 0; i < mov->nb_streams; i++) {
