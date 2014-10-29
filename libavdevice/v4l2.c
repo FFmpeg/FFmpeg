@@ -806,6 +806,13 @@ static int device_try_init(AVFormatContext *ctx,
     return ret;
 }
 
+static int v4l2_read_probe(AVProbeData *p)
+{
+    if (av_strstart(p->filename, "/dev/video", NULL))
+        return AVPROBE_SCORE_MAX - 1;
+    return 0;
+}
+
 static int v4l2_read_header(AVFormatContext *ctx)
 {
     struct video_data *s = ctx->priv_data;
@@ -1033,6 +1040,7 @@ AVInputFormat ff_v4l2_demuxer = {
     .name           = "video4linux2,v4l2",
     .long_name      = NULL_IF_CONFIG_SMALL("Video4Linux2 device grab"),
     .priv_data_size = sizeof(struct video_data),
+    .read_probe     = v4l2_read_probe,
     .read_header    = v4l2_read_header,
     .read_packet    = v4l2_read_packet,
     .read_close     = v4l2_read_close,
