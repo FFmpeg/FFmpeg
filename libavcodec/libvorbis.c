@@ -33,7 +33,7 @@
 #include "bytestream.h"
 #include "internal.h"
 #include "vorbis.h"
-#include "vorbis_parser.h"
+#include "vorbis_parser_internal.h"
 
 #undef NDEBUG
 #include <assert.h>

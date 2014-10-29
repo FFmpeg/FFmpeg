@@ -8,6 +8,7 @@ HEADERS = avcodec.h                                                     \
           vda.h                                                         \
           vdpau.h                                                       \
           version.h                                                     \
+          vorbis_parser.h                                               \
           xvmc.h                                                        \
 
 OBJS = allcodecs.o                                                      \
@@ -25,6 +26,7 @@ OBJS = allcodecs.o                                                      \
        parser.o                                                         \
        raw.o                                                            \
        utils.o                                                          \
+       vorbis_parser.o                                                  \
 
 # subsystems
 OBJS-$(CONFIG_AANDCTTABLES)            += aandcttab.o
@@ -566,7 +568,7 @@ OBJS-$(CONFIG_ADTS_MUXER)              += mpeg4audio.o
 OBJS-$(CONFIG_CAF_DEMUXER)             += mpeg4audio.o mpegaudiodata.o  \
                                           ac3tab.o
 OBJS-$(CONFIG_FLAC_DEMUXER)            += flac.o flacdata.o             \
-                                          vorbis_parser.o xiph.o
+                                          xiph.o
 OBJS-$(CONFIG_FLAC_MUXER)              += flac.o flacdata.o
 OBJS-$(CONFIG_FLV_DEMUXER)             += mpeg4audio.o
 OBJS-$(CONFIG_GXF_DEMUXER)             += mpeg12data.o
@@ -576,7 +578,7 @@ OBJS-$(CONFIG_LATM_MUXER)              += mpeg4audio.o
 OBJS-$(CONFIG_MATROSKA_AUDIO_MUXER)    += xiph.o mpeg4audio.o           \
                                           flac.o flacdata.o
 OBJS-$(CONFIG_MATROSKA_DEMUXER)        += mpeg4audio.o mpegaudiodata.o  \
-                                          vorbis_parser.o xiph.o
+                                          xiph.o
 OBJS-$(CONFIG_MATROSKA_MUXER)          += mpeg4audio.o mpegaudiodata.o  \
                                           flac.o flacdata.o xiph.o
 OBJS-$(CONFIG_MP2_MUXER)               += mpegaudiodata.o mpegaudiodecheader.o
@@ -587,7 +589,7 @@ OBJS-$(CONFIG_MPEGTS_MUXER)            += mpeg4audio.o
 OBJS-$(CONFIG_MPEGTS_DEMUXER)          += mpeg4audio.o mpegaudiodata.o
 OBJS-$(CONFIG_NUT_MUXER)               += mpegaudiodata.o
 OBJS-$(CONFIG_OGG_DEMUXER)             += xiph.o flac.o flacdata.o     \
-                                          mpeg12data.o vorbis_parser.o \
+                                          mpeg12data.o \
                                           dirac.o
 OBJS-$(CONFIG_OGG_MUXER)               += xiph.o flac.o flacdata.o
 OBJS-$(CONFIG_RTP_MUXER)               += mpeg4audio.o xiph.o
@@ -630,7 +632,7 @@ OBJS-$(CONFIG_LIBTWOLAME_ENCODER)         += libtwolame.o
 OBJS-$(CONFIG_LIBVO_AACENC_ENCODER)       += libvo-aacenc.o mpeg4audio.o
 OBJS-$(CONFIG_LIBVO_AMRWBENC_ENCODER)     += libvo-amrwbenc.o
 OBJS-$(CONFIG_LIBVORBIS_ENCODER)          += libvorbis.o \
-                                             vorbis_data.o vorbis_parser.o
+                                             vorbis_data.o
 OBJS-$(CONFIG_LIBVPX_VP8_DECODER)         += libvpxdec.o
 OBJS-$(CONFIG_LIBVPX_VP8_ENCODER)         += libvpxenc.o
 OBJS-$(CONFIG_LIBVPX_VP9_DECODER)         += libvpxdec.o libvpx.o
@@ -681,7 +683,7 @@ OBJS-$(CONFIG_TAK_PARSER)              += tak_parser.o tak.o
 OBJS-$(CONFIG_VC1_PARSER)              += vc1_parser.o vc1.o vc1data.o vc1dsp.o \
                                           msmpeg4.o msmpeg4data.o mpeg4video.o \
                                           h263.o
-OBJS-$(CONFIG_VORBIS_PARSER)           += vorbis_parser.o xiph.o
+OBJS-$(CONFIG_VORBIS_PARSER)           += xiph.o
 OBJS-$(CONFIG_VP3_PARSER)              += vp3_parser.o
 OBJS-$(CONFIG_VP8_PARSER)              += vp8_parser.o
 

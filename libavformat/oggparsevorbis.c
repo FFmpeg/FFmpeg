@@ -30,7 +30,7 @@
 #include "libavutil/dict.h"
 #include "libavcodec/bytestream.h"
 #include "libavcodec/get_bits.h"
-#include "libavcodec/vorbis_parser.h"
+#include "libavcodec/vorbis_parser_internal.h"
 #include "avformat.h"
 #include "flac_picture.h"
 #include "internal.h"
