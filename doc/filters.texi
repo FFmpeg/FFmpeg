@@ -4447,9 +4447,9 @@ and VIVTC/VFM (VapourSynth project). The later is a light clone of TFM from
 which @code{fieldmatch} is based on. While the semantic and usage are very
 close, some behaviour and options names can differ.
 
-The filter currently only works for constant frame rate input. Do not use it
-if your input has mixed telecined and progressive content with changing
-framerate.
+The @ref{decimate} filter currently only works for constant frame rate input.
+Do not use @code{fieldmatch} and @ref{decimate} if your input has mixed
+telecined and progressive content with changing framerate.
 
 The filter accepts the following options:
 
