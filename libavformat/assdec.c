@@ -112,7 +112,7 @@ static int ass_read_header(AVFormatContext *s)
     int res = 0;
     AVStream *st;
     FFTextReader tr;
-    ff_text_init_avio(&tr, s->pb);
+    ff_text_init_avio(s, &tr, s->pb);
 
     st = avformat_new_stream(s, NULL);
     if (!st)
