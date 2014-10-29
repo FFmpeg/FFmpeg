@@ -31,7 +31,7 @@
 #include "avcodec.h"
 
 typedef struct VorbisParseContext {
-    AVCodecContext *avctx;      ///< codec context
+    const AVClass *class;
     int extradata_parsed;       ///< we have attempted to parse extradata
     int valid_extradata;        ///< extradata is valid, so we can calculate duration
     int blocksize[2];           ///< short and long window sizes
