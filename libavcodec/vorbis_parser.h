@@ -30,7 +30,7 @@
 
 #include "avcodec.h"
 
-typedef struct VorbisParseContext {
+typedef struct AVVorbisParseContext {
     const AVClass *class;
     int extradata_parsed;       ///< we have attempted to parse extradata
     int valid_extradata;        ///< extradata is valid, so we can calculate duration
@@ -40,7 +40,7 @@ typedef struct VorbisParseContext {
     int mode_count;             ///< number of modes
     int mode_mask;              ///< bitmask used to get the mode in each packet
     int prev_mask;              ///< bitmask used to get the previous mode flag in each packet
-} VorbisParseContext;
+} AVVorbisParseContext;
 
 /**
  * Initialize the Vorbis parser using headers in the extradata.
@@ -48,7 +48,7 @@ typedef struct VorbisParseContext {
  * @param avctx codec context
  * @param s     Vorbis parser context
  */
-int avpriv_vorbis_parse_extradata(AVCodecContext *avctx, VorbisParseContext *s);
+int avpriv_vorbis_parse_extradata(AVCodecContext *avctx, AVVorbisParseContext *s);
 
 /**
  * Get the duration for a Vorbis packet.
@@ -60,9 +60,9 @@ int avpriv_vorbis_parse_extradata(AVCodecContext *avctx, VorbisParseContext *s);
  * @param buf      buffer containing a Vorbis frame
  * @param buf_size size of the buffer
  */
-int avpriv_vorbis_parse_frame(VorbisParseContext *s, const uint8_t *buf,
+int avpriv_vorbis_parse_frame(AVVorbisParseContext *s, const uint8_t *buf,
                               int buf_size);
 
-void avpriv_vorbis_parse_reset(VorbisParseContext *s);
+void avpriv_vorbis_parse_reset(AVVorbisParseContext *s);
 
 #endif /* AVCODEC_VORBIS_PARSER_H */

@@ -58,7 +58,7 @@ typedef struct LibvorbisContext {
     vorbis_comment vc;                  /**< VorbisComment info             */
     ogg_packet op;                      /**< ogg packet                     */
     double iblock;                      /**< impulse block bias option      */
-    VorbisParseContext vp;              /**< parse context to get durations */
+    AVVorbisParseContext vp;            /**< parse context to get durations */
     AudioFrameQueue afq;                /**< frame queue for timestamps     */
 } LibvorbisContext;
 

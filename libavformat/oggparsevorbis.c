@@ -208,7 +208,7 @@ int ff_vorbis_comment(AVFormatContext *as, AVDictionary **m,
 struct oggvorbis_private {
     unsigned int len[3];
     unsigned char *packet[3];
-    VorbisParseContext vp;
+    AVVorbisParseContext vp;
     int64_t final_pts;
     int final_duration;
 };

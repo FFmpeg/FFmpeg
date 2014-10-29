@@ -38,7 +38,7 @@ static const AVClass vorbis_parser_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-static int parse_id_header(VorbisParseContext *s,
+static int parse_id_header(AVVorbisParseContext *s,
                            const uint8_t *buf, int buf_size)
 {
     /* Id header should be 30 bytes */
@@ -70,7 +70,7 @@ static int parse_id_header(VorbisParseContext *s,
     return 0;
 }
 
-static int parse_setup_header(VorbisParseContext *s,
+static int parse_setup_header(AVVorbisParseContext *s,
                               const uint8_t *buf, int buf_size)
 {
     GetBitContext gb, gb0;
@@ -181,7 +181,7 @@ bad_header:
     return ret;
 }
 
-int avpriv_vorbis_parse_extradata(AVCodecContext *avctx, VorbisParseContext *s)
+int avpriv_vorbis_parse_extradata(AVCodecContext *avctx, AVVorbisParseContext *s)
 {
     uint8_t *header_start[3];
     int header_len[3];
@@ -209,7 +209,7 @@ int avpriv_vorbis_parse_extradata(AVCodecContext *avctx, VorbisParseContext *s)
     return 0;
 }
 
-int avpriv_vorbis_parse_frame(VorbisParseContext *s, const uint8_t *buf,
+int avpriv_vorbis_parse_frame(AVVorbisParseContext *s, const uint8_t *buf,
                               int buf_size)
 {
     int duration = 0;
@@ -242,7 +242,7 @@ int avpriv_vorbis_parse_frame(VorbisParseContext *s, const uint8_t *buf,
     return duration;
 }
 
-void avpriv_vorbis_parse_reset(VorbisParseContext *s)
+void avpriv_vorbis_parse_reset(AVVorbisParseContext *s)
 {
     if (s->valid_extradata)
         s->previous_blocksize = s->mode_blocksize[0];
@@ -253,7 +253,7 @@ static int vorbis_parse(AVCodecParserContext *s1, AVCodecContext *avctx,
                         const uint8_t **poutbuf, int *poutbuf_size,
                         const uint8_t *buf, int buf_size)
 {
-    VorbisParseContext *s = s1->priv_data;
+    AVVorbisParseContext *s = s1->priv_data;
     int duration;
 
     if (!s->extradata_parsed && avctx->extradata && avctx->extradata_size)
@@ -273,7 +273,7 @@ end:
 
 AVCodecParser ff_vorbis_parser = {
     .codec_ids      = { AV_CODEC_ID_VORBIS },
-    .priv_data_size = sizeof(VorbisParseContext),
+    .priv_data_size = sizeof(AVVorbisParseContext),
     .parser_parse   = vorbis_parse,
 };
 #endif /* CONFIG_VORBIS_PARSER */
