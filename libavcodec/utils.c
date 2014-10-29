@@ -281,7 +281,7 @@ void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height,
     int i;
     int w_align = 1;
     int h_align = 1;
-    AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(s->pix_fmt);
+    AVPixFmtDescriptor const *desc = av_pix_fmt_desc_get(s->pix_fmt);
 
     if (desc) {
         w_align = 1 << desc->log2_chroma_w;
