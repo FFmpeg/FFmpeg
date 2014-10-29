@@ -49,14 +49,16 @@ typedef struct {
  * Initialize the FFTextReader from the given AVIOContext. This function will
  * read some bytes from pb, and test for UTF-8 or UTF-16 BOMs. Further accesses
  * to FFTextReader will read more data from pb.
+ * If s is not NULL, the user will be warned if a UTF-16 conversion takes place.
  *
  * The purpose of FFTextReader is to transparently convert read data to UTF-8
  * if the stream had a UTF-16 BOM.
  *
+ * @param s Pointer to provide av_log context
  * @param r object which will be initialized
  * @param pb stream to read from (referenced as long as FFTextReader is in use)
  */
-void ff_text_init_avio(FFTextReader *r, AVIOContext *pb);
+void ff_text_init_avio(void *s, FFTextReader *r, AVIOContext *pb);
 
 /**
  * Similar to ff_text_init_avio(), but sets it up to read from a bounded buffer.

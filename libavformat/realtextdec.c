@@ -65,7 +65,7 @@ static int realtext_read_header(AVFormatContext *s)
     char c = 0;
     int res = 0, duration = read_ts("60"); // default duration is 60 seconds
     FFTextReader tr;
-    ff_text_init_avio(&tr, s->pb);
+    ff_text_init_avio(s, &tr, s->pb);
 
     if (!st)
         return AVERROR(ENOMEM);
