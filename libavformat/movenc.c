@@ -2473,7 +2473,7 @@ static int mov_write_trun_tag(AVIOContext *pb, MOVMuxContext *mov,
 
     avio_wb32(pb, track->entry); /* sample count */
     if (mov->flags & FF_MOV_FLAG_OMIT_TFHD_OFFSET &&
-        !(mov->flags & (FF_MOV_FLAG_SEPARATE_MOOF | FF_MOV_FLAG_DEFAULT_BASE_MOOF)) &&
+        !(mov->flags & FF_MOV_FLAG_DEFAULT_BASE_MOOF) &&
         !mov->first_trun)
         avio_wb32(pb, 0); /* Later tracks follow immediately after the previous one */
     else
