@@ -1457,7 +1457,7 @@ static int mxf_parse_physical_source_package(MXFContext *mxf, MXFTrack *source_t
             break;
 
         /* the name of physical source package is name of the reel or tape */
-        if (physical_package->name[0])
+        if (physical_package->name && physical_package->name[0])
             av_dict_set(&st->metadata, "reel_name", physical_package->name, 0);
 
         /* the source timecode is calculated by adding the start_position of the sourceclip from the file source package track
