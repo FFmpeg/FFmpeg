@@ -1586,8 +1586,14 @@ static void sbr_hf_assemble(float Y1[38][64][2],
             memcpy(q_temp[i + 2*ch_data->t_env[0]], sbr->q_m[0],  m_max * sizeof(sbr->q_m[0][0]));
         }
     } else if (h_SL) {
-        memcpy(g_temp[2*ch_data->t_env[0]], g_temp[2*ch_data->t_env_num_env_old], 4*sizeof(g_temp[0]));
-        memcpy(q_temp[2*ch_data->t_env[0]], q_temp[2*ch_data->t_env_num_env_old], 4*sizeof(q_temp[0]));
+        for (i = 0; i < 4; i++) {
+            memcpy(g_temp[i + 2 * ch_data->t_env[0]],
+                   g_temp[i + 2 * ch_data->t_env_num_env_old],
+                   sizeof(g_temp[0]));
+            memcpy(q_temp[i + 2 * ch_data->t_env[0]],
+                   q_temp[i + 2 * ch_data->t_env_num_env_old],
+                   sizeof(q_temp[0]));
+        }
     }
 
     for (e = 0; e < ch_data->bs_num_env; e++) {
