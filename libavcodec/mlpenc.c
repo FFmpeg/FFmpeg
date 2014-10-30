@@ -170,7 +170,7 @@ static int compare_filter_params(FilterParams *prev, FilterParams *fp)
 int i;
 if (prev->order != fp->order)
 return 1;
-if (!prev->order
+if (!prev->order)
 return 0;
 if (prev->shift != fp->shift)
 return 1;
@@ -972,9 +972,10 @@ AV_WB16(frame_header , access_unit_header);
 AV_WB16(frame_header+2, ctx->dts );
 }
 /** Writes an entire access unit to the bitstream. */
-static unsigned int write_access_unit(MLPEncodeContext *ctx, uint8_t *buf,
-int buf_size, int restart_frame)
+static unsigned int write_access_unit(MLPEncodeContext *ctx, AVPacket *pkt, int restart_frame)
 {
+  uint8_t* buf=pkt->data;
+int buf_size=pkt->size;
 uint16_t substream_data_len[MAX_SUBSTREAMS];
 uint8_t *buf2, *buf1, *buf0 = buf;
 unsigned int substr;
@@ -998,7 +999,7 @@ buf += 2;
 buf_size -= 2;
 }
 buf2 = buf;
-buf = write_substrs(ctx, buf, buf_size, restart_frame, substream_data_len);
+buf = write_substrs(ctx, buf2, buf_size, restart_frame, substream_data_len);
 total_length = buf - buf0;
 write_frame_headers(ctx, buf0, buf1, total_length / 2, restart_frame, substream_data_len);
 return total_length;
@@ -1045,7 +1046,7 @@ ctx->max_output_bits[ctx->frame_index] = number_sbits(greatest);
 }
 }
 /** Wrapper function for inputting data in two different bit-depths. */
-static void input_data(MLPEncodeContext *ctx, void *samples)
+static void input_data(MLPEncodeContext *ctx, const uint8_t *samples)
 {
 if (ctx->avctx->sample_fmt == AV_SAMPLE_FMT_S32)
 input_data_internal(ctx, samples, 1);
@@ -1805,9 +1806,11 @@ apply_filter(ctx, channel);
 }
 }
 /****************************************************************************/
-static int mlp_encode_frame(AVCodecContext *avctx, uint8_t *buf, int buf_size,
-void *data)
+static int mlp_encode_frame(AVCodecContext *avctx, AVPacket *pkt, const AVFrame *frame, int *got_packet_ptr)
 {
+const uint8_t* data=frame->data;
+int buf_size=pkt->size;
+uint8_t *buf=pkt->data;
 MLPEncodeContext *ctx = avctx->priv_data;
 unsigned int bytes_written = 0;
 int restart_frame;
@@ -1847,7 +1850,7 @@ process_major_frame(ctx);
 if (ctx->min_restart_interval == ctx->max_restart_interval)
 ctx->write_buffer = ctx->sample_buffer;
 avctx->coded_frame->key_frame = restart_frame;
-bytes_written = write_access_unit(ctx, buf, buf_size, restart_frame);
+bytes_written = write_access_unit(ctx, pkt, restart_frame);
 ctx->timestamp += ctx->frame_size[ctx->frame_index];
 ctx->dts += ctx->frame_size[ctx->frame_index];
 input_and_return:
