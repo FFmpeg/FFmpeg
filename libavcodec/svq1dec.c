@@ -495,7 +495,7 @@ static int svq1_decode_delta_block(AVCodecContext *avctx, HpelDSPContext *hdsp,
     return result;
 }
 
-static void svq1_parse_string(GetBitContext *bitbuf, uint8_t *out)
+static void svq1_parse_string(GetBitContext *bitbuf, uint8_t out[257])
 {
     uint8_t seed;
     int i;
@@ -507,6 +507,7 @@ static void svq1_parse_string(GetBitContext *bitbuf, uint8_t *out)
         out[i] = get_bits(bitbuf, 8) ^ seed;
         seed   = string_table[out[i] ^ seed];
     }
+    out[i] = 0;
 }
 
 static int svq1_decode_frame_header(AVCodecContext *avctx, AVFrame *frame)
@@ -549,12 +550,12 @@ static int svq1_decode_frame_header(AVCodecContext *avctx, AVFrame *frame)
         }
 
         if ((s->frame_code ^ 0x10) >= 0x50) {
-            uint8_t msg[256];
+            uint8_t msg[257];
 
             svq1_parse_string(bitbuf, msg);
 
             av_log(avctx, AV_LOG_INFO,
-                   "embedded message:\n%s\n", (char *)msg);
+                   "embedded message:\n%s\n", ((char *)msg) + 1);
         }
 
         skip_bits(bitbuf, 2);
