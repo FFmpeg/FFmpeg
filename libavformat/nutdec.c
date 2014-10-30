@@ -399,7 +399,6 @@ static int decode_stream_header(NUTContext *nut)
     GET_V(stc->msb_pts_shift, tmp < 16);
     stc->max_pts_distance = ffio_read_varlen(bc);
     GET_V(stc->decode_delay, tmp < 1000); // sanity limit, raise this if Moore's law is true
-    st->codec->has_b_frames = stc->decode_delay;
     ffio_read_varlen(bc); // stream flags
 
     GET_V(st->codec->extradata_size, tmp < (1 << 30));
