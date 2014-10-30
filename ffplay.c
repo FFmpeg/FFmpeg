@@ -185,7 +185,6 @@ typedef struct Decoder {
     AVCodecContext *avctx;
     int pkt_serial;
     int finished;
-    int flushed;
     int packet_pending;
     SDL_cond *empty_queue_cond;
     int64_t start_pts;
@@ -548,8 +547,6 @@ static void decoder_init(Decoder *d, AVCodecContext *avctx, PacketQueue *queue, 
 static int decoder_decode_frame(Decoder *d, AVFrame *frame, AVSubtitle *sub) {
     int got_frame = 0;
 
-    d->flushed = 0;
-
     do {
         int ret = -1;
 
@@ -566,7 +563,6 @@ static int decoder_decode_frame(Decoder *d, AVFrame *frame, AVSubtitle *sub) {
                 if (pkt.data == flush_pkt.data) {
                     avcodec_flush_buffers(d->avctx);
                     d->finished = 0;
-                    d->flushed = 1;
                     d->next_pts = d->start_pts;
                     d->next_pts_tb = d->start_pts_tb;
                 }
