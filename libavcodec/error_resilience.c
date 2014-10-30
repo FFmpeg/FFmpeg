@@ -423,7 +423,7 @@ static void guess_mv(ERContext *s)
                     int best_score         = 256 * 256 * 256 * 64;
                     int best_pred          = 0;
                     const int mot_index    = (mb_x + mb_y * mot_stride) * mot_step;
-                    int prev_x, prev_y, prev_ref;
+                    int prev_x = 0, prev_y = 0, prev_ref = 0;
 
                     if ((mb_x ^ mb_y ^ pass) & 1)
                         continue;
