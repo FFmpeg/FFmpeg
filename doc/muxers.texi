@@ -580,6 +580,9 @@ and a QuickTime chapter track are written to the file. With this option
 set, only the QuickTime chapter track will be written. Nero chapters can
 cause failures when the file is reprocessed with certain tagging programs, like
 mp3Tag 2.61a and iTunes 11.3, most likely other versions are affected as well.
+@item -movflags omit_tfhd_offset
+Do not write any absolute base_data_offset in tfhd atoms. This avoids
+tying fragments to absolute byte positions in the file/streams.
 @end table
 
 @subsection Example
