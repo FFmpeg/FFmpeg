@@ -624,6 +624,9 @@ static void decode_channel_map(uint8_t layout_map[][3],
         case AAC_CHANNEL_LFE:
             syn_ele = TYPE_LFE;
             break;
+        default:
+            // AAC_CHANNEL_OFF has no channel map
+            return;
         }
         layout_map[0][0] = syn_ele;
         layout_map[0][1] = get_bits(gb, 4);
