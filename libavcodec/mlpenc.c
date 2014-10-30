@@ -31,6 +31,11 @@
 #define MLP_MIN_LPC_SHIFT 8
 #define MLP_MAX_LPC_SHIFT 15
 #define FF_LPC_TYPE_DEFAULT -1
+typedef struct MlpLPCContext {
+  int lpc_order;
+  int lpc_coeff[MLP_MAX_LPC_ORDER+1];
+  int lpc_quant;
+} MlpLPCContext;
 typedef struct {
 	uint8_t min_channel; ///< The index of the first channel coded in this substream.
 	uint8_t max_channel; ///< The index of the last channel coded in this substream.
@@ -143,6 +148,8 @@ typedef struct {
 	DecodingParams *seq_decoding_params;
 	unsigned int max_codebook_search;
 	MLPDSPContext dsp;
+	MlpLPCContext lpc[2];
+    	LPCContext lpc_ctx;
 } MLPEncodeContext;
 static ChannelParams restart_channel_params[MAX_CHANNELS];
 static DecodingParams restart_decoding_params[MAX_SUBSTREAMS];
@@ -1157,7 +1164,7 @@ unsigned int substr)
                 *lpc_samples++ = *sample_buffer;
                 sample_buffer += ctx->num_channels;
             }
-            order = ff_lpc_calc_coefs(&ctx->dsp, ctx->lpc_sample_buffer, ctx->number_of_samples,
+            order = ff_lpc_calc_coefs(&ctx->lpc_ctx, ctx->lpc_sample_buffer, ctx->number_of_samples,
             MLP_MIN_LPC_ORDER, max_order, 11,
             coefs, shift, -1, 1,
             ORDER_METHOD_EST, MLP_MIN_LPC_SHIFT, MLP_MAX_LPC_SHIFT, MLP_MIN_LPC_SHIFT);
