@@ -1815,12 +1815,10 @@ unsigned int substr)
             /****************************************************************************/
             static int mlp_encode_frame(AVCodecContext *avctx, AVPacket *pkt, const AVFrame *frame, int *got_packet_ptr)
             {
-                const uint8_t* data=frame->data;
-                int buf_size=pkt->size;
-                uint8_t *buf=pkt->data;
                 MLPEncodeContext *ctx = avctx->priv_data;
                 unsigned int bytes_written = 0;
-                int restart_frame;
+                int restart_frame,ret;
+                 const int16_t *samples = (const int16_t *)frame->data[0];
                 ctx->frame_index = avctx->frame_number % ctx->max_restart_interval;
                 ctx->inout_buffer = ctx->major_inout_buffer
                 + ctx->frame_index * ctx->one_sample_buffer_size;
@@ -1831,7 +1829,7 @@ unsigned int substr)
                 + ctx->frame_index * ctx->one_sample_buffer_size;
                 ctx->write_buffer = ctx->inout_buffer;
                 if (avctx->frame_number < ctx->max_restart_interval) {
-                    if (data) {
+                    if (frame) {
                         goto input_and_return;
                     } else {
                         /* There are less frames than the requested major header interval.
@@ -1861,11 +1859,11 @@ unsigned int substr)
                 ctx->timestamp += ctx->frame_size[ctx->frame_index];
                 ctx->dts += ctx->frame_size[ctx->frame_index];
                 input_and_return:
-                if (data) {
-                    ctx->frame_size[ctx->frame_index] = avctx->frame_size;
-                    ctx->next_major_frame_size += avctx->frame_size;
+                if (frame) {
+                    ctx->frame_size[ctx->frame_index] = frame->nb_samples;
+                    ctx->next_major_frame_size += frame->nb_samples;
                     ctx->next_major_number_of_frames++;
-                    input_data(ctx, data);
+                    input_data(ctx, samples);
                 } else if (!ctx->last_frame) {
                     ctx->last_frame = ctx->inout_buffer;
                 }
@@ -1913,7 +1911,10 @@ unsigned int substr)
                     }
                 }
                 no_data_left:
-                return bytes_written;
+                  // return bytes_written;
+      pkt->size = bytes_written;
+     *got_packet_ptr = 1;
+	 return 0;
             }
             static av_cold int mlp_encode_close(AVCodecContext *avctx)
             {
