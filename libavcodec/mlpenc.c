@@ -23,13 +23,14 @@
 #include "libavutil/crc.h"
 #include "libavutil/avstring.h"
 #include "mlp.h"
-#include "dsputil.h"
+#include "mlpdsp.h"
 #include "lpc.h"
 #define MAJOR_HEADER_INTERVAL 16
 #define MLP_MIN_LPC_ORDER 1
 #define MLP_MAX_LPC_ORDER 8
 #define MLP_MIN_LPC_SHIFT 8
 #define MLP_MAX_LPC_SHIFT 15
+#define FF_LPC_TYPE_DEFAULT -1
 typedef struct {
 uint8_t min_channel; ///< The index of the first channel coded in this substream.
 uint8_t max_channel; ///< The index of the last channel coded in this substream.
@@ -141,7 +142,7 @@ DecodingParams *prev_decoding_params;
 ChannelParams *seq_channel_params;
 DecodingParams *seq_decoding_params;
 unsigned int max_codebook_search;
-DSPContext dsp;
+MLPDSPContext dsp;
 } MLPEncodeContext;
 static ChannelParams restart_channel_params[MAX_CHANNELS];
 static DecodingParams restart_decoding_params[MAX_SUBSTREAMS];
@@ -169,7 +170,7 @@ static int compare_filter_params(FilterParams *prev, FilterParams *fp)
 int i;
 if (prev->order != fp->order)
 return 1;
-if (!prev->order)
+if (!prev->order
 return 0;
 if (prev->shift != fp->shift)
 return 1;
