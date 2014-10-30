@@ -327,10 +327,8 @@ static void delete_region_display_list(DVBSubContext *ctx, DVBSubRegion *region)
 
 static void delete_cluts(DVBSubContext *ctx)
 {
-    DVBSubCLUT *clut;
-
     while (ctx->clut_list) {
-        clut = ctx->clut_list;
+        DVBSubCLUT *clut = ctx->clut_list;
 
         ctx->clut_list = clut->next;
 
@@ -340,10 +338,8 @@ static void delete_cluts(DVBSubContext *ctx)
 
 static void delete_objects(DVBSubContext *ctx)
 {
-    DVBSubObject *object;
-
     while (ctx->object_list) {
-        object = ctx->object_list;
+        DVBSubObject *object = ctx->object_list;
 
         ctx->object_list = object->next;
 
@@ -353,10 +349,8 @@ static void delete_objects(DVBSubContext *ctx)
 
 static void delete_regions(DVBSubContext *ctx)
 {
-    DVBSubRegion *region;
-
     while (ctx->region_list) {
-        region = ctx->region_list;
+        DVBSubRegion *region = ctx->region_list;
 
         ctx->region_list = region->next;
 
