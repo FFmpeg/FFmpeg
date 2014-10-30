@@ -1818,7 +1818,7 @@ unsigned int substr)
                 MLPEncodeContext *ctx = avctx->priv_data;
                 unsigned int bytes_written = 0;
                 int restart_frame,ret;
-                 const int16_t *samples = (const int16_t *)frame->data[0];
+                 const int8_t *samples = (const int8_t *)frame->data[0];
                 ctx->frame_index = avctx->frame_number % ctx->max_restart_interval;
                 ctx->inout_buffer = ctx->major_inout_buffer
                 + ctx->frame_index * ctx->one_sample_buffer_size;
