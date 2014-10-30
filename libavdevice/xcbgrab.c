@@ -47,7 +47,9 @@ typedef struct XCBGrabContext {
     xcb_connection_t *conn;
     xcb_screen_t *screen;
     xcb_window_t window;
+#if CONFIG_LIBXCB_SHM
     xcb_shm_seg_t segment;
+#endif
 
     int64_t time_frame;
     AVRational time_base;
@@ -611,7 +613,9 @@ static av_cold int xcbgrab_read_header(AVFormatContext *s)
         return AVERROR(EIO);
     }
 
+#if CONFIG_LIBXCB_SHM
     c->segment = xcb_generate_id(c->conn);
+#endif
 
     ret = create_stream(s);
 
