@@ -313,14 +313,14 @@ static void delete_region_display_list(DVBSubContext *ctx, DVBSubRegion *region)
 
                     *obj2_ptr = obj2->next;
 
-                    av_free(obj2);
+                    av_freep(&obj2);
                 }
             }
         }
 
         region->display_list = display->region_list_next;
 
-        av_free(display);
+        av_freep(&display);
     }
 
 }
@@ -332,7 +332,7 @@ static void delete_cluts(DVBSubContext *ctx)
 
         ctx->clut_list = clut->next;
 
-        av_free(clut);
+        av_freep(&clut);
     }
 }
 
@@ -343,7 +343,7 @@ static void delete_objects(DVBSubContext *ctx)
 
         ctx->object_list = object->next;
 
-        av_free(object);
+        av_freep(&object);
     }
 }
 
@@ -356,8 +356,8 @@ static void delete_regions(DVBSubContext *ctx)
 
         delete_region_display_list(ctx, region);
 
-        av_free(region->pbuf);
-        av_free(region);
+        av_freep(&region->pbuf);
+        av_freep(&region);
     }
 }
 
@@ -462,7 +462,7 @@ static av_cold int dvbsub_close_decoder(AVCodecContext *avctx)
         display = ctx->display_list;
         ctx->display_list = display->next;
 
-        av_free(display);
+        av_freep(&display);
     }
 
     return 0;
@@ -1312,7 +1312,7 @@ static void dvbsub_parse_page_segment(AVCodecContext *avctx,
 
         tmp_display_list = display->next;
 
-        av_free(display);
+        av_freep(&display);
     }
 
 }
@@ -1406,7 +1406,7 @@ static void save_display_set(DVBSubContext *ctx)
 
         png_save2(filename, pbuf, width, height);
 
-        av_free(pbuf);
+        av_freep(&pbuf);
     }
 
     fileno_index++;
