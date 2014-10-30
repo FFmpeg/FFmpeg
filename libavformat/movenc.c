@@ -3472,6 +3472,11 @@ static int mov_write_ftyp_tag(AVIOContext *pb, AVFormatContext *s)
             ffio_wfourcc(pb, "avc1");
     }
 
+    // We add tfdt atoms when fragmenting, signal this with the iso6 compatible
+    // brand. This is compatible with users that don't understand tfdt.
+    if (mov->flags & FF_MOV_FLAG_FRAGMENT)
+        ffio_wfourcc(pb, "iso6");
+
     if (mov->mode == MODE_3GP)
         ffio_wfourcc(pb, has_h264 ? "3gp6":"3gp4");
     else if (mov->mode & MODE_3G2)
