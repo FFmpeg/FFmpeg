@@ -2583,7 +2583,8 @@ static int mov_write_traf_tag(AVIOContext *pb, MOVMuxContext *mov,
     ffio_wfourcc(pb, "traf");
 
     mov_write_tfhd_tag(pb, mov, track, moof_offset);
-    mov_write_tfdt_tag(pb, track);
+    if (mov->mode != MODE_ISM)
+        mov_write_tfdt_tag(pb, track);
     mov_write_trun_tag(pb, mov, track, moof_size);
     if (mov->mode == MODE_ISM) {
         mov_write_tfxd_tag(pb, track);
@@ -2758,7 +2759,7 @@ static int mov_write_ftyp_tag(AVIOContext *pb, AVFormatContext *s)
 
     // We add tfdt atoms when fragmenting, signal this with the iso6 compatible
     // brand. This is compatible with users that don't understand tfdt.
-    if (mov->flags & FF_MOV_FLAG_FRAGMENT)
+    if (mov->flags & FF_MOV_FLAG_FRAGMENT && mov->mode != MODE_ISM)
         ffio_wfourcc(pb, "iso6");
 
     if (mov->mode == MODE_3GP)
