@@ -31,6 +31,7 @@
 #define MLP_MIN_LPC_SHIFT 8
 #define MLP_MAX_LPC_SHIFT 15
 #define FF_LPC_TYPE_DEFAULT -1
+#define FF_LPC_TYPE_CHOLESKY 3
 typedef struct MlpLPCContext {
   int lpc_order;
   int lpc_coeff[MLP_MAX_LPC_ORDER+1];
@@ -1166,7 +1167,7 @@ unsigned int substr)
             }
             order = ff_lpc_calc_coefs(&ctx->lpc_ctx, ctx->lpc_sample_buffer, ctx->number_of_samples,
             MLP_MIN_LPC_ORDER, max_order, 11,
-            coefs, shift, -1, 1,
+            coefs, shift, FF_LPC_TYPE_CHOLESKY, 1,
             ORDER_METHOD_EST, MLP_MIN_LPC_SHIFT, MLP_MAX_LPC_SHIFT, MLP_MIN_LPC_SHIFT);
             fp->order = order;
             fp->shift = shift[order-1];
