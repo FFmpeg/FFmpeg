@@ -473,9 +473,7 @@ static int ra144_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     energy = ff_energy_tab[quantize(ff_t_sqrt(energy >> 5) >> 10, ff_energy_tab,
                                     32)];
 
-    ff_lpc_calc_coefs(&ractx->lpc_ctx, lpc_data, NBLOCKS * BLOCKSIZE, LPC_ORDER,
-                      LPC_ORDER, 16, lpc_coefs, shift, 0, FF_LPC_TYPE_LEVINSON,
-                      1, ORDER_METHOD_EST, 12, 0);
+   ff_lpc_calc_coefs(&ractx->lpc_ctx, lpc_data, NBLOCKS * BLOCKSIZE, LPC_ORDER,LPC_ORDER, 16, lpc_coefs, shift, FF_LPC_TYPE_LEVINSON,0, ORDER_METHOD_EST, 12, 0, 0);
     for (i = 0; i < LPC_ORDER; i++)
         block_coefs[NBLOCKS - 1][i] = -(lpc_coefs[LPC_ORDER - 1][i] <<
                                         (12 - shift[LPC_ORDER - 1]));
