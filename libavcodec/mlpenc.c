@@ -1018,7 +1018,7 @@ unsigned int substr)
     * appropriately depending on the bit-depth, and calculates the
     * lossless_check_data that will be written to the restart header.
     */
-    static void input_data_internal(MLPEncodeContext *ctx, const uint8_t *samples,
+    static void input_data_internal(MLPEncodeContext *ctx, const uint16_t *samples,
     int is24)
     {
         int32_t *lossless_check_data = ctx->lossless_check_data;
@@ -1053,7 +1053,7 @@ unsigned int substr)
         }
     }
     /** Wrapper function for inputting data in two different bit-depths. */
-    static void input_data(MLPEncodeContext *ctx, const uint8_t *samples)
+    static void input_data(MLPEncodeContext *ctx, const uint16_t *samples)
     {
         if (ctx->avctx->sample_fmt == AV_SAMPLE_FMT_S32)
             input_data_internal(ctx, samples, 1);
@@ -1818,7 +1818,7 @@ unsigned int substr)
                 MLPEncodeContext *ctx = avctx->priv_data;
                 unsigned int bytes_written = 0;
                 int restart_frame,ret;
-                 const int8_t *samples = (const int8_t *)frame->data[0];
+               //  const int8_t *samples = (const int8_t *)frame->data[0];
                 ctx->frame_index = avctx->frame_number % ctx->max_restart_interval;
                 ctx->inout_buffer = ctx->major_inout_buffer
                 + ctx->frame_index * ctx->one_sample_buffer_size;
@@ -1863,7 +1863,7 @@ unsigned int substr)
                     ctx->frame_size[ctx->frame_index] = frame->nb_samples;
                     ctx->next_major_frame_size += frame->nb_samples;
                     ctx->next_major_number_of_frames++;
-                    input_data(ctx, samples);
+                    input_data(ctx, frame->data[0]);
                 } else if (!ctx->last_frame) {
                     ctx->last_frame = ctx->inout_buffer;
                 }
