@@ -71,7 +71,9 @@ Force low delay.
 @item global_header
 Place global headers in extradata instead of every keyframe.
 @item bitexact
-Use only bitexact stuff (except (I)DCT).
+Only write platform-, build- and time-independent data. (except (I)DCT).
+This ensures that file and data checksums are reproducable and match between
+platforms. Its primary use is for regression testing.
 @item aic
 Apply H263 advanced intra coding / mpeg4 ac prediction.
 @item cbp
