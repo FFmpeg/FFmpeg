@@ -583,6 +583,13 @@ mp3Tag 2.61a and iTunes 11.3, most likely other versions are affected as well.
 @item -movflags omit_tfhd_offset
 Do not write any absolute base_data_offset in tfhd atoms. This avoids
 tying fragments to absolute byte positions in the file/streams.
+@item -movflags default_base_moof
+Similarly to the omit_tfhd_offset, this flag avoids writing the
+absolute base_data_offset field in tfhd atoms, but does so by using
+the new default-base-is-moof flag instead. This flag is new from
+14496-12:2012. This may make the fragments easier to parse in certain
+circumstances (avoiding basing track fragment location calculations
+on the implicit end of the previous track fragment).
 @end table
 
 @subsection Example

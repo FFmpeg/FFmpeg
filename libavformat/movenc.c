@@ -63,6 +63,7 @@ static const AVOption options[] = {
     { "faststart", "Run a second pass to put the index (moov atom) at the beginning of the file", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_FASTSTART}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     { "omit_tfhd_offset", "Omit the base data offset in tfhd atoms", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_OMIT_TFHD_OFFSET}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     { "disable_chpl", "Disable Nero chapter atom", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_DISABLE_CHPL}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
+    { "default_base_moof", "Set the default-base-is-moof flag in tfhd atoms", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_DEFAULT_BASE_MOOF}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     FF_RTP_FLAG_OPTS(MOVMuxContext, rtp_flags),
     { "skip_iods", "Skip writing iods atom.", offsetof(MOVMuxContext, iods_skip), AV_OPT_TYPE_INT, {.i64 = 1}, 0, 1, AV_OPT_FLAG_ENCODING_PARAM},
     { "iods_audio_profile", "iods audio profile atom.", offsetof(MOVMuxContext, iods_audio_profile), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 255, AV_OPT_FLAG_ENCODING_PARAM},
@@ -3117,6 +3118,10 @@ static int mov_write_tfhd_tag(AVIOContext *pb, MOVMuxContext *mov,
     }
     if (mov->flags & FF_MOV_FLAG_OMIT_TFHD_OFFSET)
         flags &= ~MOV_TFHD_BASE_DATA_OFFSET;
+    if (mov->flags & FF_MOV_FLAG_DEFAULT_BASE_MOOF) {
+        flags &= ~MOV_TFHD_BASE_DATA_OFFSET;
+        flags |= MOV_TFHD_DEFAULT_BASE_IS_MOOF;
+    }
 
     /* Don't set a default sample size, the silverlight player refuses
      * to play files with that set. Don't set a default sample duration,
@@ -3188,7 +3193,7 @@ static int mov_write_trun_tag(AVIOContext *pb, MOVMuxContext *mov,
 
     avio_wb32(pb, track->entry); /* sample count */
     if (mov->flags & FF_MOV_FLAG_OMIT_TFHD_OFFSET &&
-        !(mov->flags & FF_MOV_FLAG_SEPARATE_MOOF) &&
+        !(mov->flags & (FF_MOV_FLAG_SEPARATE_MOOF | FF_MOV_FLAG_DEFAULT_BASE_MOOF)) &&
         !mov->first_trun)
         avio_wb32(pb, 0); /* Later tracks follow immediately after the previous one */
     else
@@ -3447,6 +3452,8 @@ static int mov_write_ftyp_tag(AVIOContext *pb, AVFormatContext *s)
         minor =     has_h264 ? 0x20000 : 0x10000;
     } else if (mov->mode == MODE_PSP)
         ffio_wfourcc(pb, "MSNV");
+    else if (mov->mode == MODE_MP4 && mov->flags & FF_MOV_FLAG_DEFAULT_BASE_MOOF)
+        ffio_wfourcc(pb, "iso5"); // Required when using default-base-is-moof
     else if (mov->mode == MODE_MP4)
         ffio_wfourcc(pb, "isom");
     else if (mov->mode == MODE_IPOD)
@@ -3464,8 +3471,9 @@ static int mov_write_ftyp_tag(AVIOContext *pb, AVFormatContext *s)
         ffio_wfourcc(pb, "qt  ");
     else if (mov->mode == MODE_ISM) {
         ffio_wfourcc(pb, "piff");
-        ffio_wfourcc(pb, "iso2");
-    } else {
+        if (!(mov->flags & FF_MOV_FLAG_DEFAULT_BASE_MOOF))
+            ffio_wfourcc(pb, "iso2");
+    } else if (!(mov->flags & FF_MOV_FLAG_DEFAULT_BASE_MOOF)) {
         ffio_wfourcc(pb, "isom");
         ffio_wfourcc(pb, "iso2");
         if (has_h264)
