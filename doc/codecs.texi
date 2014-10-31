@@ -1114,6 +1114,10 @@ Interlaced video, bottom coded first, top displayed first
 Set to 1 to disable processing alpha (transparency). This works like the
 @samp{gray} flag in the @option{flags} option which skips chroma information
 instead of alpha. Default is 0.
+
+@item codec_whitelist @var{list} (@emph{input})
+"," separated List of allowed decoders. By default all are allowed.
+
 @end table
 
 @c man end CODEC OPTIONS

@@ -168,6 +168,10 @@ The offset is added by the muxer to the output timestamps.
 Specifying a positive offset means that the corresponding streams are
 delayed bt the time duration specified in @var{offset}. Default value
 is @code{0} (meaning that no offset is applied).
+
+@item format_whitelist @var{list} (@emph{input})
+"," separated List of allowed demuxers. By default all are allowed.
+
 @end table
 
 @c man end FORMAT OPTIONS
