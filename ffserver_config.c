@@ -411,9 +411,7 @@ static int ffserver_parse_config_global(FFServerConfig *config, const char *cmd,
         if (!av_strcasecmp(cmd, "Port"))
             WARNING("Port option is deprecated, use HTTPPort instead\n");
         ffserver_get_arg(arg, sizeof(arg), p);
-        val = atoi(arg);
-        if (val < 1 || val > 65536)
-            ERROR("Invalid port: %s\n", arg);
+        ffserver_set_int_param(&val, arg, 0, 1, 65535, config, line_num, "Invalid port: %s\n", arg);
         if (val < 1024)
             WARNING("Trying to use IETF assigned system port: %d\n", val);
         config->http_addr.sin_port = htons(val);
@@ -422,37 +420,38 @@ static int ffserver_parse_config_global(FFServerConfig *config, const char *cmd,
             WARNING("BindAddress option is deprecated, use HTTPBindAddress instead\n");
         ffserver_get_arg(arg, sizeof(arg), p);
         if (resolve_host(&config->http_addr.sin_addr, arg) != 0)
-            ERROR("%s:%d: Invalid host/IP address: %s\n", arg);
+            ERROR("Invalid host/IP address: %s\n", arg);
     } else if (!av_strcasecmp(cmd, "NoDaemon")) {
         WARNING("NoDaemon option has no effect, you should remove it\n");
     } else if (!av_strcasecmp(cmd, "RTSPPort")) {
         ffserver_get_arg(arg, sizeof(arg), p);
-        val = atoi(arg);
-        if (val < 1 || val > 65536)
-            ERROR("%s:%d: Invalid port: %s\n", arg);
-        config->rtsp_addr.sin_port = htons(atoi(arg));
+        ffserver_set_int_param(&val, arg, 0, 1, 65535, config, line_num, "Invalid port: %s\n", arg);
+        config->rtsp_addr.sin_port = htons(val);
     } else if (!av_strcasecmp(cmd, "RTSPBindAddress")) {
         ffserver_get_arg(arg, sizeof(arg), p);
         if (resolve_host(&config->rtsp_addr.sin_addr, arg) != 0)
             ERROR("Invalid host/IP address: %s\n", arg);
     } else if (!av_strcasecmp(cmd, "MaxHTTPConnections")) {
         ffserver_get_arg(arg, sizeof(arg), p);
-        val = atoi(arg);
-        if (val < 1 || val > 65536)
-            ERROR("Invalid MaxHTTPConnections: %s\n", arg);
+        ffserver_set_int_param(&val, arg, 0, 1, 65535, config, line_num, "Invalid MaxHTTPConnections: %s\n", arg);
         config->nb_max_http_connections = val;
+        if (config->nb_max_connections > config->nb_max_http_connections)
+            ERROR("Inconsistent configuration: MaxClients(%d) > MaxHTTPConnections(%d)\n",
+                  config->nb_max_connections, config->nb_max_http_connections);
     } else if (!av_strcasecmp(cmd, "MaxClients")) {
         ffserver_get_arg(arg, sizeof(arg), p);
-        val = atoi(arg);
-        if (val < 1 || val > config->nb_max_http_connections)
-            ERROR("Invalid MaxClients: %s\n", arg);
-        else
-            config->nb_max_connections = val;
+        ffserver_set_int_param(&val, arg, 0, 1, 65535, config, line_num, "Invalid MaxClients: %s\n", arg);
+        config->nb_max_connections = val;
+        if (config->nb_max_connections > config->nb_max_http_connections)
+            ERROR("Inconsistent configuration: MaxClients(%d) > MaxHTTPConnections(%d)\n",
+                  config->nb_max_connections, config->nb_max_http_connections);
     } else if (!av_strcasecmp(cmd, "MaxBandwidth")) {
         int64_t llval;
+        char *tailp;
         ffserver_get_arg(arg, sizeof(arg), p);
-        llval = strtoll(arg, NULL, 10);
-        if (llval < 10 || llval > 10000000)
+        errno = 0;
+        llval = strtoll(arg, &tailp, 10);
+        if (llval < 10 || llval > 10000000 || tailp[0] || errno)
             ERROR("Invalid MaxBandwidth: %s\n", arg);
         else
             config->max_bandwidth = llval;
@@ -460,7 +459,7 @@ static int ffserver_parse_config_global(FFServerConfig *config, const char *cmd,
         if (!config->debug)
             ffserver_get_arg(config->logfilename, sizeof(config->logfilename), p);
     } else if (!av_strcasecmp(cmd, "LoadModule")) {
-        ERROR("Loadable modules no longer supported\n");
+        ERROR("Loadable modules are no longer supported\n");
     } else
         ERROR("Incorrect keyword: '%s'\n", cmd);
     return 0;
@@ -554,6 +553,9 @@ static int ffserver_parse_config_feed(FFServerConfig *config, const char *cmd, c
             break;
         case 'G':
             fsize *= 1024 * 1024 * 1024;
+            break;
+        default:
+            ERROR("Invalid file size: %s\n", arg);
             break;
         }
         feed->feed_max_size = (int64_t)fsize;
@@ -656,6 +658,7 @@ static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd,
 {
     char arg[1024], arg2[1024];
     FFServerStream *stream;
+    int val;
 
     av_assert0(pstream);
     stream = *pstream;
@@ -948,10 +951,12 @@ static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd,
         stream->loop = 1; /* default is looping */
     } else if (!av_strcasecmp(cmd, "MulticastPort")) {
         ffserver_get_arg(arg, sizeof(arg), p);
-        stream->multicast_port = atoi(arg);
+        ffserver_set_int_param(&val, arg, 0, 1, 65535, config, line_num, "Invalid MulticastPort: %s\n", arg);
+        stream->multicast_port = val;
     } else if (!av_strcasecmp(cmd, "MulticastTTL")) {
         ffserver_get_arg(arg, sizeof(arg), p);
-        stream->multicast_ttl = atoi(arg);
+        ffserver_set_int_param(&val, arg, 0, INT_MIN, INT_MAX, config, line_num, "Invalid MulticastTTL: %s\n", arg);
+        stream->multicast_ttl = val;
     } else if (!av_strcasecmp(cmd, "NoLoop")) {
         stream->loop = 0;
     } else if (!av_strcasecmp(cmd, "</Stream>")) {
