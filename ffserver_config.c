@@ -764,8 +764,8 @@ static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd,
         ffserver_get_arg(arg, sizeof(arg), p);
         stream->max_time = atof(arg) * 1000;
     } else if (!av_strcasecmp(cmd, "AudioBitRate")) {
-        ffserver_get_arg(arg, sizeof(arg), p);
         float f;
+        ffserver_get_arg(arg, sizeof(arg), p);
         ffserver_set_float_param(&f, arg, 1000, 0, FLT_MAX, config, line_num, "Invalid %s: %s\n", cmd, arg);
         if (av_dict_set_int(&config->audio_conf, cmd, lrintf(f), 0) < 0)
             goto nomem;
