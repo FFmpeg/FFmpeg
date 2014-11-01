@@ -36,7 +36,6 @@
 #include "h264dsp.h"
 #include "h264pred.h"
 #include "h264qpel.h"
-#include "internal.h" // for avpriv_find_start_code()
 #include "rectangle.h"
 
 #define MAX_SPS_COUNT          32
@@ -975,7 +974,7 @@ static inline int find_start_code(const uint8_t *buf, int buf_size,
 {
     uint32_t state = -1;
 
-    buf_index = avpriv_find_start_code(buf + buf_index, buf + next_avc + 1, &state) - buf - 1;
+    buf_index = avpriv_mpv_find_start_code(buf + buf_index, buf + next_avc + 1, &state) - buf - 1;
 
     return FFMIN(buf_index, buf_size);
 }
