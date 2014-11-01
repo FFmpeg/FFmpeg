@@ -594,8 +594,11 @@ static int ffserver_apply_stream_config(AVCodecContext *enc, const AVDictionary 
         ffserver_set_int_param(&enc->width, e->value, 0, INT_MIN, INT_MAX, NULL, 0, NULL);
     if ((e = av_dict_get(conf, "VideoSizeHeight", NULL, 0)))
         ffserver_set_int_param(&enc->height, e->value, 0, INT_MIN, INT_MAX, NULL, 0, NULL);
-    if ((e = av_dict_get(conf, "PixelFormat", NULL, 0)))
-        ffserver_set_int_param(&enc->pix_fmt, e->value, 0, INT_MIN, INT_MAX, NULL, 0, NULL);
+    if ((e = av_dict_get(conf, "PixelFormat", NULL, 0))) {
+        int val;
+        ffserver_set_int_param(&val, e->value, 0, INT_MIN, INT_MAX, NULL, 0, NULL);
+        enc->pix_fmt = val;
+    }
     if ((e = av_dict_get(conf, "VideoGopSize", NULL, 0)))
         ffserver_set_int_param(&enc->gop_size, e->value, 0, INT_MIN, INT_MAX, NULL, 0, NULL);
     if ((e = av_dict_get(conf, "VideoFrameRateNum", NULL, 0)))
