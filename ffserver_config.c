@@ -895,8 +895,8 @@ static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd,
         ret = av_parse_video_size(&w, &h, arg);
         if (ret < 0)
             ERROR("Invalid video size '%s'\n", arg);
-        else if ((w % 16) || (h % 16))
-            ERROR("Image size must be a multiple of 16\n");
+        else if ((w % 2) || (h % 2))
+            WARNING("Image size is not a multiple of 2\n");
         if (av_dict_set_int(&config->video_conf, "VideoSizeWidth", w, 0) < 0 ||
             av_dict_set_int(&config->video_conf, "VideoSizeHeight", h, 0) < 0)
             goto nomem;
