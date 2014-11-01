@@ -5577,9 +5577,17 @@ Detect video interlacing type.
 This filter tries to detect if the input is interlaced or progressive,
 top or bottom field first.
 
+Single frame detection considers only immediately adjacent frames when classifying each frame.
+Multiple frame detection incorporates the classification history of previous frames.
+
 The filter will log these metadata values:
 
 @table @option
+@item single.current_frame
+Detected type of current frame using single-frame detection. One of:
+``tff'' (top field first), ``bff'' (bottom field first),
+``progressive'', or ``undetermined''
+
 @item single.tff
 Cumulative number of frames detected as top field first using single-frame detection.
 
@@ -5588,6 +5596,11 @@ Cumulative number of frames detected as top field first using multiple-frame det
 
 @item single.bff
 Cumulative number of frames detected as bottom field first using single-frame detection.
+
+@item multiple.current_frame
+Detected type of current frame using multiple-frame detection. One of:
+``tff'' (top field first), ``bff'' (bottom field first),
+``progressive'', or ``undetermined''
 
 @item multiple.bff
 Cumulative number of frames detected as bottom field first using multiple-frame detection.
