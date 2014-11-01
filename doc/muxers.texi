@@ -569,6 +569,17 @@ experimental, may be renamed or changed, do not use from scripts.
 
 @item write_gama
 write deprecated gama atom
+
+@item hybrid_fragmented
+For recoverability - write the output file as a fragmented file.
+This allows the intermediate file to be read while being written
+(in particular, if the writing process is aborted uncleanly). When
+writing is finished, the file is converted to a regular, non-fragmented
+file, which is more compatible and allows easier and quicker seeking.
+
+If writing is aborted, the intermediate file can manually be
+remuxed to get a regular, non-fragmented file of what had been
+written into the unfinished file.
 @end table
 
 @item movie_timescale @var{scale}

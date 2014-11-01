@@ -85,7 +85,7 @@ typedef struct MOVFragmentInfo {
 
 typedef struct MOVTrack {
     int         mode;
-    int         entry;
+    int         entry, entry_written;
     unsigned    timescale;
     uint64_t    time;
     int64_t     track_duration;
@@ -114,6 +114,7 @@ typedef struct MOVTrack {
     int         vos_len;
     uint8_t     *vos_data;
     MOVIentry   *cluster;
+    MOVIentry   *cluster_written;
     unsigned    cluster_capacity;
     int         audio_vbr;
     int         height; ///< active picture (w/o VBI) height for D-10/IMX
@@ -282,6 +283,7 @@ typedef struct MOVMuxContext {
 #define FF_MOV_FLAG_SKIP_SIDX             (1 << 21)
 #define FF_MOV_FLAG_CMAF                  (1 << 22)
 #define FF_MOV_FLAG_PREFER_ICC            (1 << 23)
+#define FF_MOV_FLAG_HYBRID_FRAGMENTED     (1 << 24)
 
 int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt);
 

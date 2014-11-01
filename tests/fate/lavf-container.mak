@@ -5,7 +5,7 @@ FATE_LAVF_CONTAINER-$(call ENCDEC,  FLV,                   FLV)                +
 FATE_LAVF_CONTAINER-$(call ENCDEC,  RAWVIDEO,              FILMSTRIP)          += flm
 FATE_LAVF_CONTAINER-$(call ENCDEC2, MPEG2VIDEO, PCM_S16LE, GXF)                += gxf gxf_pal gxf_ntsc
 FATE_LAVF_CONTAINER-$(call ENCDEC2, MPEG4,      MP2,       MATROSKA)           += mkv mkv_attachment
-FATE_LAVF_CONTAINER-$(call ENCDEC2, MPEG4,      PCM_ALAW,  MOV)                += mov mov_rtphint ismv
+FATE_LAVF_CONTAINER-$(call ENCDEC2, MPEG4,      PCM_ALAW,  MOV)                += mov mov_rtphint mov_hybrid_frag ismv
 FATE_LAVF_CONTAINER-$(call ENCDEC,  MPEG4,                 MOV)                += mp4
 FATE_LAVF_CONTAINER-$(call ENCDEC2, MPEG1VIDEO, MP2,       MPEG1SYSTEM MPEGPS) += mpg
 FATE_LAVF_CONTAINER-$(call ENCDEC , FFV1,                  MXF)                += mxf_ffv1
@@ -51,6 +51,7 @@ fate-lavf-mkv: CMD = lavf_container "" "-c:a mp2 -c:v mpeg4 -ar 44100 -threads 1
 fate-lavf-mkv_attachment: CMD = lavf_container_attach "-c:a mp2 -c:v mpeg4 -threads 1 -f matroska"
 fate-lavf-mov: CMD = lavf_container_timecode "-movflags +faststart -c:a pcm_alaw -c:v mpeg4 -threads 1"
 fate-lavf-mov_rtphint: CMD = lavf_container "" "-movflags +rtphint -c:a pcm_alaw -c:v mpeg4 -threads 1 -f mov"
+fate-lavf-mov_hybrid_frag: CMD = lavf_container "" "-movflags +hybrid_fragmented -c:a pcm_alaw -c:v mpeg4 -threads 1 -f mov"
 fate-lavf-mp4: CMD = lavf_container_timecode "-c:v mpeg4 -an -threads 1"
 fate-lavf-mpg: CMD = lavf_container_timecode "-ar 44100 -threads 1"
 fate-lavf-mxf: CMD = lavf_container_timecode "-af aresample=48000:tsf=s16p -bf 2 -threads 1"

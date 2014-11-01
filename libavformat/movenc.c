@@ -111,6 +111,7 @@ static const AVOption options[] = {
       { "use_metadata_tags", "Use mdta atom for metadata.", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_USE_MDTA}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, .unit = "movflags" },
       { "write_colr", "Write colr atom even if the color info is unspecified (Experimental, may be renamed or changed, do not use from scripts)", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_WRITE_COLR}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, .unit = "movflags" },
       { "write_gama", "Write deprecated gama atom", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_WRITE_GAMA}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, .unit = "movflags" },
+      { "hybrid_fragmented", "For recoverability, write a fragmented file that is converted to non-fragmented at the end.", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_HYBRID_FRAGMENTED}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, .unit = "movflags" },
     { "min_frag_duration", "Minimum fragment duration", offsetof(MOVMuxContext, min_fragment_duration), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM},
     { "mov_gamma", "gamma value for gama atom", offsetof(MOVMuxContext, gamma), AV_OPT_TYPE_FLOAT, {.dbl = 0.0 }, 0.0, 10, AV_OPT_FLAG_ENCODING_PARAM},
     { "movie_timescale", "set movie timescale", offsetof(MOVMuxContext, movie_timescale), AV_OPT_TYPE_INT, {.i64 = MOV_TIMESCALE}, 1, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM},
@@ -5994,10 +5995,30 @@ static int mov_write_squashed_packets(AVFormatContext *s)
     return 0;
 }
 
-static int mov_finish_fragment(MOVTrack *track)
+static int mov_finish_fragment(MOVMuxContext *mov, MOVTrack *track,
+                               int64_t ref_pos)
 {
+    int i;
     if (!track->entry)
         return 0;
+    if (mov->flags & FF_MOV_FLAG_HYBRID_FRAGMENTED) {
+        for (i = 0; i < track->entry; i++)
+            track->cluster[i].pos += ref_pos + track->data_offset;
+        if (track->cluster_written == 0 && !(mov->flags & FF_MOV_FLAG_EMPTY_MOOV)) {
+            // First flush. If this was a case of not using empty moov, reset chunking.
+            for (i = 0; i < track->entry; i++) {
+                track->cluster[i].chunkNum = 0;
+                track->cluster[i].samples_in_chunk = track->cluster[i].entries;
+            }
+        }
+        if (av_reallocp_array(&track->cluster_written,
+                              track->entry_written + track->entry,
+                              sizeof(*track->cluster)))
+            return AVERROR(ENOMEM);
+        memcpy(&track->cluster_written[track->entry_written],
+               track->cluster, track->entry * sizeof(*track->cluster));
+        track->entry_written += track->entry;
+    }
     track->entry = 0;
     track->entries_flushed = 0;
     track->end_reliable = 0;
@@ -6008,7 +6029,7 @@ static int mov_flush_fragment(AVFormatContext *s, int force)
 {
     MOVMuxContext *mov = s->priv_data;
     int i, first_track = -1;
-    int64_t mdat_size = 0;
+    int64_t mdat_size = 0, mdat_start = 0;
     int ret;
     int has_video = 0, starts_with_key = 0, first_video_track = 1;
 
@@ -6114,7 +6135,7 @@ static int mov_flush_fragment(AVFormatContext *s, int force)
         mov->moov_written = 1;
         mov->mdat_size = 0;
         for (i = 0; i < mov->nb_tracks; i++)
-            mov_finish_fragment(&mov->tracks[i]);
+            mov_finish_fragment(mov, &mov->tracks[i], 0);
         avio_write_marker(s->pb, AV_NOPTS_VALUE, AVIO_DATA_MARKER_FLUSH_POINT);
         return 0;
     }
@@ -6183,9 +6204,10 @@ static int mov_flush_fragment(AVFormatContext *s, int force)
 
             avio_wb32(s->pb, mdat_size + 8);
             ffio_wfourcc(s->pb, "mdat");
+            mdat_start = avio_tell(s->pb);
         }
 
-        mov_finish_fragment(&mov->tracks[i]);
+        mov_finish_fragment(mov, &mov->tracks[i], mdat_start);
         if (!mov->frag_interleave) {
             if (!track->mdat_buf)
                 continue;
@@ -7170,6 +7192,7 @@ static void mov_free(AVFormatContext *s)
         else if (track->tag == MKTAG('t','m','c','d') && mov->nb_meta_tmcd)
             av_freep(&track->par);
         av_freep(&track->cluster);
+        av_freep(&track->cluster_written);
         av_freep(&track->frag_info);
         av_packet_free(&track->cover_image);
 
@@ -7364,6 +7387,9 @@ static int mov_init(AVFormatContext *s)
         mov->flags |= FF_MOV_FLAG_FRAGMENT;
 
     /* Set other implicit flags immediately */
+    if (mov->flags & FF_MOV_FLAG_HYBRID_FRAGMENTED)
+        mov->flags |= FF_MOV_FLAG_FRAGMENT;
+
     if (mov->mode == MODE_ISM)
         mov->flags |= FF_MOV_FLAG_EMPTY_MOOV | FF_MOV_FLAG_SEPARATE_MOOF |
                       FF_MOV_FLAG_FRAGMENT | FF_MOV_FLAG_NEGATIVE_CTS_OFFSETS;
@@ -7888,6 +7914,11 @@ static int mov_write_header(AVFormatContext *s)
                             FF_MOV_FLAG_FRAG_EVERY_FRAME)) &&
             !mov->max_fragment_duration && !mov->max_fragment_size)
             mov->flags |= FF_MOV_FLAG_FRAG_KEYFRAME;
+        if (mov->flags & FF_MOV_FLAG_HYBRID_FRAGMENTED) {
+            avio_wb32(pb, 8); // placeholder for extended size field (64 bit)
+            ffio_wfourcc(pb, mov->mode == MODE_MOV ? "wide" : "free");
+            mov->mdat_pos = avio_tell(pb);
+        }
     } else if (mov->mode != MODE_AVIF) {
         if (mov->flags & FF_MOV_FLAG_FASTSTART)
             mov->reserved_header_pos = avio_tell(pb);
@@ -8091,13 +8122,34 @@ static int mov_write_trailer(AVFormatContext *s)
         }
     }
 
-    if (!(mov->flags & FF_MOV_FLAG_FRAGMENT)) {
+    if (!(mov->flags & FF_MOV_FLAG_FRAGMENT) ||
+        mov->flags & FF_MOV_FLAG_HYBRID_FRAGMENTED) {
+        if (mov->flags & FF_MOV_FLAG_HYBRID_FRAGMENTED) {
+            mov_flush_fragment(s, 1);
+            mov->mdat_size = avio_tell(pb) - mov->mdat_pos - 8;
+            for (i = 0; i < mov->nb_tracks; i++) {
+                MOVTrack *track = &mov->tracks[i];
+                track->data_offset = 0;
+                av_free(track->cluster);
+                track->cluster = track->cluster_written;
+                track->entry   = track->entry_written;
+                track->cluster_written = NULL;
+                track->entry_written   = 0;
+                track->chunkCount = 0; // Force build_chunks to rebuild the list of chunks
+            }
+            // Clear the empty_moov flag, as we do want the moov to include
+            // all the samples at this point.
+            mov->flags &= ~FF_MOV_FLAG_EMPTY_MOOV;
+        }
+
         moov_pos = avio_tell(pb);
 
         /* Write size of mdat tag */
         if (mov->mdat_size + 8 <= UINT32_MAX) {
             avio_seek(pb, mov->mdat_pos, SEEK_SET);
             avio_wb32(pb, mov->mdat_size + 8);
+            if (mov->flags & FF_MOV_FLAG_HYBRID_FRAGMENTED)
+                ffio_wfourcc(pb, "mdat"); // overwrite the original moov into a mdat
         } else {
             /* overwrite 'wide' placeholder atom */
             avio_seek(pb, mov->mdat_pos - 8, SEEK_SET);
