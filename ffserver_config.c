@@ -399,6 +399,27 @@ static int ffserver_set_float_param(float *dest, const char *value, float factor
     return AVERROR(EINVAL);
 }
 
+static int ffserver_save_avoption(const char *opt, const char *arg, AVDictionary **dict,
+                                  int type, FFServerConfig *config, int line_num)
+{
+    int ret = 0;
+    AVDictionaryEntry *e;
+    const AVOption *o = av_opt_find(config->dummy_ctx, opt, NULL, type | AV_OPT_FLAG_ENCODING_PARAM, AV_OPT_SEARCH_CHILDREN);
+    if (!o) {
+        report_config_error(config->filename, line_num, AV_LOG_ERROR, &config->errors, "Option not found: %s\n", opt);
+    } else if ((ret = av_opt_set(config->dummy_ctx, opt, arg, AV_OPT_SEARCH_CHILDREN)) < 0) {
+        report_config_error(config->filename, line_num, AV_LOG_ERROR, &config->errors, "Invalid value for option %s (%s): %s\n", opt, arg, av_err2str(ret));
+    } else if ((e = av_dict_get(*dict, opt, NULL, 0))) {
+        if ((o->type == AV_OPT_TYPE_FLAGS) && arg && (arg[0] == '+' || arg[0] == '-'))
+            return av_dict_set(dict, opt, arg, AV_DICT_APPEND);
+        report_config_error(config->filename, line_num, AV_LOG_ERROR, &config->errors,
+                                "Redeclaring value of the option %s, previous value: %s\n", opt, e->value);
+    } else if (av_dict_set(dict, opt, arg, 0) < 0) {
+        return AVERROR(ENOMEM);
+    }
+    return 0;
+}
+
 #define ERROR(...)   report_config_error(config->filename, line_num, AV_LOG_ERROR,   &config->errors,   __VA_ARGS__)
 #define WARNING(...) report_config_error(config->filename, line_num, AV_LOG_WARNING, &config->warnings, __VA_ARGS__)
 
@@ -569,10 +590,9 @@ static int ffserver_parse_config_feed(FFServerConfig *config, const char *cmd, c
     return 0;
 }
 
-static int ffserver_apply_stream_config(AVCodecContext *enc, const AVDictionary *conf, AVDictionary **opts)
+static void ffserver_apply_stream_config(AVCodecContext *enc, const AVDictionary *conf, AVDictionary **opts)
 {
     AVDictionaryEntry *e;
-    int ret = 0;
 
     /* Return values from ffserver_set_*_param are ignored.
        Values are initially parsed and checked before inserting to AVDictionary. */
@@ -644,13 +664,6 @@ static int ffserver_apply_stream_config(AVCodecContext *enc, const AVDictionary 
         ffserver_set_int_param(&enc->bit_rate, e->value, 0, INT_MIN, INT_MAX, NULL, 0, NULL);
 
     av_opt_set_dict2(enc, opts, AV_OPT_SEARCH_CHILDREN);
-    e = NULL;
-    while (e = av_dict_get(*opts, "", e, AV_DICT_IGNORE_SUFFIX)) {
-        av_log(NULL, AV_LOG_ERROR, "Provided AVOption '%s' doesn't match any existing option.\n", e->key);
-        ret = AVERROR(EINVAL);
-    }
-
-    return ret;
 }
 
 static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd, const char **p,
@@ -669,6 +682,11 @@ static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd,
         stream = av_mallocz(sizeof(FFServerStream));
         if (!stream)
             return AVERROR(ENOMEM);
+        config->dummy_ctx = avcodec_alloc_context3(NULL);
+        if (!config->dummy_ctx) {
+            av_free(stream);
+            return AVERROR(ENOMEM);
+        }
         ffserver_get_arg(stream->filename, sizeof(stream->filename), p);
         q = strrchr(stream->filename, '>');
         if (q)
@@ -864,14 +882,14 @@ static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd,
             goto nomem;
     } else if (!av_strcasecmp(cmd, "AVOptionVideo") ||
                !av_strcasecmp(cmd, "AVOptionAudio")) {
-        AVDictionary **dict;
+        int ret;
         ffserver_get_arg(arg, sizeof(arg), p);
         ffserver_get_arg(arg2, sizeof(arg2), p);
         if (!av_strcasecmp(cmd, "AVOptionVideo"))
-            dict = &config->video_opts;
+            ret = ffserver_save_avoption(arg, arg2, &config->video_opts, AV_OPT_FLAG_VIDEO_PARAM ,config, line_num);
         else
-            dict = &config->audio_opts;
-        if (av_dict_set(dict, arg, arg2, 0) < 0)
+            ret = ffserver_save_avoption(arg, arg2, &config->audio_opts, AV_OPT_FLAG_AUDIO_PARAM ,config, line_num);
+        if (ret < 0)
             goto nomem;
     } else if (!av_strcasecmp(cmd, "AVPresetVideo") ||
                !av_strcasecmp(cmd, "AVPresetAudio")) {
@@ -967,8 +985,7 @@ static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd,
                     ffserver_opt_preset(arg, audio_enc, AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_ENCODING_PARAM,
                                         NULL, NULL) < 0)
                     ERROR("Could not apply preset '%s'\n", arg);
-                if (ffserver_apply_stream_config(audio_enc, config->audio_conf, &config->audio_opts) < 0)
-                    config->errors++;
+                ffserver_apply_stream_config(audio_enc, config->audio_conf, &config->audio_opts);
                 add_codec(stream, audio_enc);
             }
             if (config->video_id != AV_CODEC_ID_NONE) {
@@ -977,8 +994,7 @@ static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd,
                     ffserver_opt_preset(arg, video_enc, AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_ENCODING_PARAM,
                                         NULL, NULL) < 0)
                     ERROR("Could not apply preset '%s'\n", arg);
-                if (ffserver_apply_stream_config(video_enc, config->video_conf, &config->video_opts) < 0)
-                    config->errors++;
+                ffserver_apply_stream_config(video_enc, config->video_conf, &config->video_opts);
                 add_codec(stream, video_enc);
             }
         }
@@ -988,6 +1004,7 @@ static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd,
         av_dict_free(&config->audio_conf);
         av_freep(&config->video_preset);
         av_freep(&config->audio_preset);
+        avcodec_free_context(&config->dummy_ctx);
         *pstream = NULL;
     } else if (!av_strcasecmp(cmd, "File") || !av_strcasecmp(cmd, "ReadOnlyFile")) {
         ffserver_get_arg(stream->feed_filename, sizeof(stream->feed_filename), p);
@@ -1003,6 +1020,7 @@ static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd,
     av_dict_free(&config->audio_conf);
     av_freep(&config->video_preset);
     av_freep(&config->audio_preset);
+    avcodec_free_context(&config->dummy_ctx);
     return AVERROR(ENOMEM);
 }
 
