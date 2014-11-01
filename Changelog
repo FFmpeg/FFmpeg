@@ -3,6 +3,32 @@ releases are sorted from youngest to oldest.
 
 version <next>:
 
+version 2.4.3:
+- avcodec/svq1dec: zero terminate embedded message before printing
+- avcodec/cook: check that the subpacket sizes fit in block_align
+- avcodec/g2meet: check tile dimensions to avoid integer overflow
+- avcodec/utils: Align dimensions by at least their chroma sub-sampling factors.
+- avcodec/dnxhddec: treat pix_fmt like width/height
+- avcodec/dxa: check dimensions
+- avcodec/dirac_arith: fix integer overflow
+- avcodec/diracdec: Tighter checks on CODEBLOCKS_X/Y
+- avcodec/diracdec: Use 64bit in calculation of codeblock coordinates
+- avcodec/sgidec: fix count check
+- avcodec/sgidec: fix linesize for 16bit
+- avcodec/hevc_ps: Check default display window bitstream and skip if invalid
+- avcodec/tiffenc: properly compute packet size
+- lavd: export all symbols with av_ prefix
+- avformat/mxfdec: Fix termination of mxf_data_essence_container_uls
+- postproc: fix qp count
+- postproc/postprocess: fix quant store for fq mode
+- vf_drawtext: add missing clear of pointers after av_expr_free()
+- utvideoenc: properly set slice height/last line
+- swresample: fix sample drop loop end condition
+- resample: Avoid off-by-1 errors in PTS calcs.
+- imc: fix order of operations in coefficients read
+- hevc_mvs: make sure to always initialize the temporal MV fully
+- hevc_mvs: initialize the temporal MV in case of missing reference
+
 version 2.4.2:
 - avcodec/on2avc: Check number of channels
 - avcodec/hevc: fix chroma transform_add size
