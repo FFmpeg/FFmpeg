@@ -5994,6 +5994,16 @@ static int mov_write_squashed_packets(AVFormatContext *s)
     return 0;
 }
 
+static int mov_finish_fragment(MOVTrack *track)
+{
+    if (!track->entry)
+        return 0;
+    track->entry = 0;
+    track->entries_flushed = 0;
+    track->end_reliable = 0;
+    return 0;
+}
+
 static int mov_flush_fragment(AVFormatContext *s, int force)
 {
     MOVMuxContext *mov = s->priv_data;
@@ -6103,10 +6113,8 @@ static int mov_flush_fragment(AVFormatContext *s, int force)
 
         mov->moov_written = 1;
         mov->mdat_size = 0;
-        for (i = 0; i < mov->nb_tracks; i++) {
-            mov->tracks[i].entry = 0;
-            mov->tracks[i].end_reliable = 0;
-        }
+        for (i = 0; i < mov->nb_tracks; i++)
+            mov_finish_fragment(&mov->tracks[i]);
         avio_write_marker(s->pb, AV_NOPTS_VALUE, AVIO_DATA_MARKER_FLUSH_POINT);
         return 0;
     }
@@ -6177,9 +6185,7 @@ static int mov_flush_fragment(AVFormatContext *s, int force)
             ffio_wfourcc(s->pb, "mdat");
         }
 
-        track->entry = 0;
-        track->entries_flushed = 0;
-        track->end_reliable = 0;
+        mov_finish_fragment(&mov->tracks[i]);
         if (!mov->frag_interleave) {
             if (!track->mdat_buf)
                 continue;
