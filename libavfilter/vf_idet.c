@@ -32,6 +32,7 @@
 static const AVOption idet_options[] = {
     { "intl_thres", "set interlacing threshold", OFFSET(interlace_threshold),   AV_OPT_TYPE_FLOAT, {.dbl = 1.04}, -1, FLT_MAX, FLAGS },
     { "prog_thres", "set progressive threshold", OFFSET(progressive_threshold), AV_OPT_TYPE_FLOAT, {.dbl = 1.5},  -1, FLT_MAX, FLAGS },
+    { "rep_thres",  "set repeat threshold",      OFFSET(repeat_threshold),      AV_OPT_TYPE_FLOAT, {.dbl = 3.0},  -1, FLT_MAX, FLAGS },
     { "half_life", "half life of cumulative statistics", OFFSET(half_life),     AV_OPT_TYPE_FLOAT, {.dbl = 0.0},  -1, INT_MAX, FLAGS },
     { NULL }
 };
@@ -72,6 +73,16 @@ static int av_dict_set_fxp(AVDictionary **pm, const char *key, uint64_t value, u
     return av_dict_set(pm, key, valuestr, flags);
 }
 
+static const char *rep2str(RepeatedField repeated_field)
+{
+    switch(repeated_field) {
+        case REPEAT_NONE    : return "neither";
+        case REPEAT_TOP     : return "top";
+        case REPEAT_BOTTOM  : return "bottom";
+    }
+    return NULL;
+}
+
 int ff_idet_filter_line_c(const uint8_t *a, const uint8_t *b, const uint8_t *c, int w)
 {
     int x;
@@ -104,7 +115,9 @@ static void filter(AVFilterContext *ctx)
     int y, i;
     int64_t alpha[2]={0};
     int64_t delta=0;
+    int64_t gamma[2]={0};
     Type type, best_type;
+    RepeatedField repeat;
     int match = 0;
     AVDictionary **metadata = avpriv_frame_get_metadatap(idet->cur);
 
@@ -125,6 +138,7 @@ static void filter(AVFilterContext *ctx)
             alpha[ y   &1] += idet->filter_line(cur-refs, prev, cur+refs, w);
             alpha[(y^1)&1] += idet->filter_line(cur-refs, next, cur+refs, w);
             delta          += idet->filter_line(cur-refs,  cur, cur+refs, w);
+            gamma[(y^1)&1] += idet->filter_line(cur     , prev, cur     , w);
         }
     }
 
@@ -136,6 +150,14 @@ static void filter(AVFilterContext *ctx)
         type = PROGRESSIVE;
     }else{
         type = UNDETERMINED;
+    }
+
+    if ( gamma[0] > idet->repeat_threshold * gamma[1] ){
+        repeat = REPEAT_TOP;
+    } else if ( gamma[1] > idet->repeat_threshold * gamma[0] ){
+        repeat = REPEAT_BOTTOM;
+    } else {
+        repeat = REPEAT_NONE;
     }
 
     memmove(idet->history+1, idet->history, HIST_SIZE-1);
@@ -170,12 +192,16 @@ static void filter(AVFilterContext *ctx)
         idet->cur->interlaced_frame = 0;
     }
 
-
+    for(i=0; i<3; i++)
+        idet->repeats[i]  = av_rescale(idet->repeats [i], idet->decay_coefficient, PRECISION);
 
     for(i=0; i<4; i++){
         idet->prestat [i] = av_rescale(idet->prestat [i], idet->decay_coefficient, PRECISION);
         idet->poststat[i] = av_rescale(idet->poststat[i], idet->decay_coefficient, PRECISION);
     }
+
+    idet->total_repeats [         repeat] ++;
+    idet->repeats       [         repeat] += PRECISION;
 
     idet->total_prestat [           type] ++;
     idet->prestat       [           type] += PRECISION;
@@ -183,7 +209,13 @@ static void filter(AVFilterContext *ctx)
     idet->total_poststat[idet->last_type] ++;
     idet->poststat      [idet->last_type] += PRECISION;
 
-    av_log(ctx, AV_LOG_DEBUG, "Single frame:%12s, Multi frame:%12s\n", type2str(type), type2str(idet->last_type));
+    av_log(ctx, AV_LOG_DEBUG, "Repeated Field:%12s, Single frame:%12s, Multi frame:%12s\n",
+           rep2str(repeat), type2str(type), type2str(idet->last_type));
+
+    av_dict_set    (metadata, "lavfi.idet.repeated.current_frame", rep2str(repeat), 0);
+    av_dict_set_fxp(metadata, "lavfi.idet.repeated.neither",       idet->repeats[REPEAT_NONE], 2, 0);
+    av_dict_set_fxp(metadata, "lavfi.idet.repeated.top",           idet->repeats[REPEAT_TOP], 2, 0);
+    av_dict_set_fxp(metadata, "lavfi.idet.repeated.bottom",        idet->repeats[REPEAT_BOTTOM], 2, 0);
 
     av_dict_set    (metadata, "lavfi.idet.single.current_frame",   type2str(type), 0);
     av_dict_set_fxp(metadata, "lavfi.idet.single.tff",             idet->prestat[TFF], 2 , 0);
@@ -261,6 +293,11 @@ static av_cold void uninit(AVFilterContext *ctx)
 {
     IDETContext *idet = ctx->priv;
 
+    av_log(ctx, AV_LOG_INFO, "Repeated Fields: Neither:%6"PRId64" Top:%6"PRId64" Bottom:%6"PRId64"\n",
+           idet->total_repeats[REPEAT_NONE],
+           idet->total_repeats[REPEAT_TOP],
+           idet->total_repeats[REPEAT_BOTTOM]
+        );
     av_log(ctx, AV_LOG_INFO, "Single frame detection: TFF:%6"PRId64" BFF:%6"PRId64" Progressive:%6"PRId64" Undetermined:%6"PRId64"\n",
            idet->total_prestat[TFF],
            idet->total_prestat[BFF],

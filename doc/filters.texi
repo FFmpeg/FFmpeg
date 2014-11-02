@@ -5574,8 +5574,9 @@ value.
 
 Detect video interlacing type.
 
-This filter tries to detect if the input is interlaced or progressive,
-top or bottom field first.
+This filter tries to detect if the input frames as interlaced, progressive,
+top or bottom field first. It will also try and detect fields that are
+repeated between adjacent frames (a sign of telecine).
 
 Single frame detection considers only immediately adjacent frames when classifying each frame.
 Multiple frame detection incorporates the classification history of previous frames.
@@ -5616,6 +5617,18 @@ Cumulative number of frames that could not be classified using single-frame dete
 
 @item multiple.undetermined
 Cumulative number of frames that could not be classified using multiple-frame detection.
+
+@item repeated.current_frame
+Which field in the current frame is repeated from the last. One of ``neither'', ``top'', or ``bottom''.
+
+@item repeated.neither
+Cumulative number of frames with no repeated field.
+
+@item repeated.top
+Cumulative number of frames with the top field repeated from the previous frame's top field.
+
+@item repeated.bottom
+Cumulative number of frames with the bottom field repeated from the previous frame's bottom field.
 @end table
 
 The filter accepts the following options:
@@ -5625,6 +5638,8 @@ The filter accepts the following options:
 Set interlacing threshold.
 @item prog_thres
 Set progressive threshold.
+@item repeat_thres
+Threshold for repeated field detection.
 @item half_life
 Number of frames after which a given frame's contribution to the
 statistics is halved (i.e., it contributes only 0.5 to it's
