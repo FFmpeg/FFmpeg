@@ -548,6 +548,12 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (sc->last_ts < ts)
         sc->last_ts = ts;
 
+    if (size + flags_size >= 1<<24) {
+        av_log(s, AV_LOG_ERROR, "Too large packet with size %u >= %u\n",
+               size + flags_size, 1<<24);
+        return AVERROR(EINVAL);
+    }
+
     avio_wb24(pb, size + flags_size);
     avio_wb24(pb, ts & 0xFFFFFF);
     avio_w8(pb, (ts >> 24) & 0x7F); // timestamps are 32 bits _signed_
