@@ -1091,6 +1091,9 @@
     <ClCompile Include="..\libavformat\wc3movie.c">
       <ObjectFileName>$(IntDir)\libavformat_wc3movie.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavformat\webpenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_webpenc.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavformat\webvttdec.c">
       <ObjectFileName>$(IntDir)\libavformat_webvttdec.obj</ObjectFileName>
     </ClCompile>

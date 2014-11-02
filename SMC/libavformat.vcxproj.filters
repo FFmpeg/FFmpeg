@@ -1050,6 +1050,9 @@
     <ClCompile Include="..\libavformat\wc3movie.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavformat\webpenc.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavformat\webvttdec.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
