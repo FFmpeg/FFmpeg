@@ -29,6 +29,7 @@
 #include "jacosub.h"
 #include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
+#include "libavutil/time_internal.h"
 
 #undef time
 
@@ -44,11 +45,7 @@ static int insert_datetime(AVBPrint *dst, const char *in, const char *arg)
     time_t now = time(0);
     struct tm ltime;
 
-#if HAVE_LOCALTIME_R
     localtime_r(&now, &ltime);
-#else
-    ltime = *localtime(&now);
-#endif
     strftime(buf, sizeof(buf), arg, &ltime);
     av_bprintf(dst, "%s", buf);
     return 0;
