@@ -1600,6 +1600,17 @@ static int decode_update_thread_context(AVCodecContext *dst,
         memset(&h->me, 0, sizeof(h->me));
         h->avctx = dst;
         h->DPB   = NULL;
+        h->intra4x4_pred_mode= NULL;
+        h->non_zero_count    = NULL;
+        h->slice_table_base  = NULL;
+        h->slice_table       = NULL;
+        h->cbp_table         = NULL;
+        h->chroma_pred_mode_table = NULL;
+        memset(h->mvd_table, 0, sizeof(h->mvd_table));
+        h->direct_table      = NULL;
+        h->list_counts       = NULL;
+        h->mb2b_xy           = NULL;
+        h->mb2br_xy          = NULL;
 
         if (h1->context_initialized) {
         h->context_initialized = 0;
