@@ -308,7 +308,10 @@ static int fic_decode_frame(AVCodecContext *avctx, void *data,
         return AVERROR_INVALIDDATA;
     }
 
-    if (tsize < 32) {
+    if (!tsize)
+        skip_cursor = 1;
+
+    if (!skip_cursor && tsize < 32) {
         av_log(avctx, AV_LOG_WARNING,
                "Cursor data too small. Skipping cursor.\n");
         skip_cursor = 1;
@@ -317,14 +320,14 @@ static int fic_decode_frame(AVCodecContext *avctx, void *data,
     /* Cursor position. */
     cur_x = AV_RL16(src + 33);
     cur_y = AV_RL16(src + 35);
-    if (cur_x > avctx->width || cur_y > avctx->height) {
+    if (!skip_cursor && (cur_x > avctx->width || cur_y > avctx->height)) {
         av_log(avctx, AV_LOG_WARNING,
                "Invalid cursor position: (%d,%d). Skipping cusor.\n",
                cur_x, cur_y);
         skip_cursor = 1;
     }
 
-    if (AV_RL16(src + 37) != 32 || AV_RL16(src + 39) != 32) {
+    if (!skip_cursor && (AV_RL16(src + 37) != 32 || AV_RL16(src + 39) != 32)) {
         av_log(avctx, AV_LOG_WARNING,
                "Invalid cursor size. Skipping cursor.\n");
         skip_cursor = 1;
