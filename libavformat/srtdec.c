@@ -87,7 +87,7 @@ static int srt_read_header(AVFormatContext *s)
     AVStream *st = avformat_new_stream(s, NULL);
     int res = 0;
     FFTextReader tr;
-    ff_text_init_avio(&tr, s->pb);
+    ff_text_init_avio(s, &tr, s->pb);
 
     if (!st)
         return AVERROR(ENOMEM);

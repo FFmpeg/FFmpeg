@@ -287,8 +287,11 @@ static int audio_read_packet(AVFormatContext *context, AVPacket *pkt)
             av_log(context, AV_LOG_ERROR,
                    "Input error: timed out when waiting for JACK process callback output\n");
         } else {
+            char errbuf[128];
+            int ret = AVERROR(errno);
+            av_strerror(ret, errbuf, sizeof(errbuf));
             av_log(context, AV_LOG_ERROR, "Error while waiting for audio packet: %s\n",
-                   strerror(errno));
+                   errbuf);
         }
         if (!self->client)
             av_log(context, AV_LOG_ERROR, "Input error: JACK server is gone\n");

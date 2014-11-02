@@ -24,7 +24,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 
-void ff_text_init_avio(FFTextReader *r, AVIOContext *pb)
+void ff_text_init_avio(void *s, FFTextReader *r, AVIOContext *pb)
 {
     int i;
     r->pb = pb;
@@ -45,13 +45,16 @@ void ff_text_init_avio(FFTextReader *r, AVIOContext *pb)
             r->buf_pos += 3;
         }
     }
+    if (s && (r->type == FF_UTF16LE || r->type == FF_UTF16BE))
+        av_log(s, AV_LOG_INFO,
+               "UTF16 is automatically converted to UTF8, do not specify a character encoding\n");
 }
 
 void ff_text_init_buf(FFTextReader *r, void *buf, size_t size)
 {
     memset(&r->buf_pb, 0, sizeof(r->buf_pb));
     ffio_init_context(&r->buf_pb, buf, size, 0, NULL, NULL, NULL, NULL);
-    ff_text_init_avio(r, &r->buf_pb);
+    ff_text_init_avio(NULL, r, &r->buf_pb);
 }
 
 int64_t ff_text_pos(FFTextReader *r)

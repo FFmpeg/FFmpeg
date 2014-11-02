@@ -53,10 +53,10 @@ struct fmt_map {
     uint32_t v4l2_fmt;
 };
 
-extern av_export const struct fmt_map avpriv_fmt_conversion_table[];
+extern const struct fmt_map ff_fmt_conversion_table[];
 
-uint32_t avpriv_fmt_ff2v4l(enum AVPixelFormat pix_fmt, enum AVCodecID codec_id);
-enum AVPixelFormat avpriv_fmt_v4l2ff(uint32_t v4l2_fmt, enum AVCodecID codec_id);
-enum AVCodecID avpriv_fmt_v4l2codec(uint32_t v4l2_fmt);
+uint32_t ff_fmt_ff2v4l(enum AVPixelFormat pix_fmt, enum AVCodecID codec_id);
+enum AVPixelFormat ff_fmt_v4l2ff(uint32_t v4l2_fmt, enum AVCodecID codec_id);
+enum AVCodecID ff_fmt_v4l2codec(uint32_t v4l2_fmt);
 
 #endif /* AVDEVICE_V4L2_COMMON_H */

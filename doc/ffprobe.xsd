@@ -13,6 +13,7 @@
             <xsd:element name="pixel_formats"    type="ffprobe:pixelFormatsType"    minOccurs="0" maxOccurs="1" />
             <xsd:element name="packets"  type="ffprobe:packetsType" minOccurs="0" maxOccurs="1" />
             <xsd:element name="frames"   type="ffprobe:framesType"  minOccurs="0" maxOccurs="1" />
+            <xsd:element name="packets_and_frames" type="ffprobe:packetsAndFramesType" minOccurs="0" maxOccurs="1" />
             <xsd:element name="programs" type="ffprobe:programsType" minOccurs="0" maxOccurs="1" />
             <xsd:element name="streams"  type="ffprobe:streamsType" minOccurs="0" maxOccurs="1" />
             <xsd:element name="chapters" type="ffprobe:chaptersType" minOccurs="0" maxOccurs="1" />
@@ -30,6 +31,16 @@
     <xsd:complexType name="framesType">
         <xsd:sequence>
             <xsd:choice minOccurs="0" maxOccurs="unbounded">
+                <xsd:element name="frame" type="ffprobe:frameType" minOccurs="0" maxOccurs="unbounded"/>
+                <xsd:element name="subtitle" type="ffprobe:subtitleType" minOccurs="0" maxOccurs="unbounded"/>
+            </xsd:choice>
+        </xsd:sequence>
+    </xsd:complexType>
+
+    <xsd:complexType name="packetsAndFramesType">
+        <xsd:sequence>
+            <xsd:choice minOccurs="0" maxOccurs="unbounded">
+                <xsd:element name="packet" type="ffprobe:packetType" minOccurs="0" maxOccurs="unbounded"/>
                 <xsd:element name="frame" type="ffprobe:frameType" minOccurs="0" maxOccurs="unbounded"/>
                 <xsd:element name="subtitle" type="ffprobe:subtitleType" minOccurs="0" maxOccurs="unbounded"/>
             </xsd:choice>

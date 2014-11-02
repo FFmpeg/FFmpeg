@@ -171,6 +171,7 @@ typedef struct MOVMuxContext {
     int max_fragment_size;
     int ism_lookahead;
     AVIOContext *mdat_buf;
+    int first_trun;
 
     int use_editlist;
     int video_track_timescale;
@@ -194,6 +195,7 @@ typedef struct MOVMuxContext {
 #define FF_MOV_FLAG_FASTSTART 128
 #define FF_MOV_FLAG_OMIT_TFHD_OFFSET 256
 #define FF_MOV_FLAG_DISABLE_CHPL 512
+#define FF_MOV_FLAG_DEFAULT_BASE_MOOF 1024
 
 int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt);
 

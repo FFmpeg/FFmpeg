@@ -106,9 +106,7 @@ static av_cold int mp3lame_encode_init(AVCodecContext *avctx)
     lame_set_out_samplerate(s->gfp, avctx->sample_rate);
 
     /* algorithmic quality */
-    if (avctx->compression_level == FF_COMPRESSION_DEFAULT)
-        lame_set_quality(s->gfp, 5);
-    else
+    if (avctx->compression_level != FF_COMPRESSION_DEFAULT)
         lame_set_quality(s->gfp, avctx->compression_level);
 
     /* rate control */

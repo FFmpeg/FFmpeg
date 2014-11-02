@@ -78,7 +78,7 @@ av_cold int ff_mjpeg_encode_init(MpegEncContext *s)
 
 void ff_mjpeg_encode_close(MpegEncContext *s)
 {
-    av_free(s->mjpeg_ctx);
+    av_freep(&s->mjpeg_ctx);
 }
 
 static void encode_block(MpegEncContext *s, int16_t *block, int n)

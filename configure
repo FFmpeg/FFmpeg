@@ -251,7 +251,7 @@ External library support:
   --enable-libx264         enable H.264 encoding via x264 [no]
   --enable-libx265         enable HEVC encoding via x265 [no]
   --enable-libxavs         enable AVS encoding via xavs [no]
-  --enable-libxcb          enable X11 grabbing using XCB [no]
+  --enable-libxcb          enable X11 grabbing using XCB [auto]
   --enable-libxcb-shm      enable X11 grabbing shm communication [auto]
   --enable-libxcb-xfixes   enable X11 grabbing mouse rendering [auto]
   --enable-libxvid         enable Xvid encoding via xvidcore,
@@ -1602,6 +1602,7 @@ ARCH_FEATURES="
 
 BUILTIN_LIST="
     atomic_cas_ptr
+    atomic_compare_exchange
     machine_rw_barrier
     MemoryBarrier
     mm_empty
@@ -2028,7 +2029,7 @@ simd_align_16_if_any="altivec neon sse"
 symver_if_any="symver_asm_label symver_gnu_asm"
 
 # threading support
-atomics_gcc_if="sync_val_compare_and_swap"
+atomics_gcc_if_any="sync_val_compare_and_swap atomic_compare_exchange"
 atomics_suncc_if="atomic_cas_ptr machine_rw_barrier"
 atomics_win32_if="MemoryBarrier"
 atomics_native_if_any="$ATOMICS_LIST"
@@ -4681,6 +4682,7 @@ if ! disabled network; then
 fi
 
 check_builtin atomic_cas_ptr atomic.h "void **ptr; void *oldval, *newval; atomic_cas_ptr(ptr, oldval, newval)"
+check_builtin atomic_compare_exchange "" "int *ptr, *oldval; int newval; __atomic_compare_exchange_n(ptr, oldval, newval, 0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST)"
 check_builtin machine_rw_barrier mbarrier.h "__machine_rw_barrier()"
 check_builtin MemoryBarrier windows.h "MemoryBarrier()"
 check_builtin sarestart signal.h "SA_RESTART"
@@ -5022,23 +5024,25 @@ fi
 enabled xlib &&
     check_lib X11/Xlib.h XOpenDisplay -lX11 || disable xlib
 
-if enabled libxcb || enabled x11grab && ! disabled libxcb; then
-    check_pkg_config xcb-event xcb/xcb.h xcb_connect || {
+if ! disabled libxcb; then
+    check_pkg_config xcb xcb/xcb.h xcb_connect || {
         enabled libxcb && die "ERROR: libxcb not found";
     } && disable x11grab && enable libxcb
 
-    disabled libxcb_shm ||
+if enabled libxcb; then
+    disabled libxcb_shm || {
         check_pkg_config xcb-shm xcb/shm.h xcb_shm_attach || {
             enabled libxcb_shm && die "ERROR: libxcb_shm not found";
-        } && check_header sys/shm.h && enable libxcb_shm
+        } && check_header sys/shm.h && enable libxcb_shm; }
 
-    disabled libxcb_xfixes ||
+    disabled libxcb_xfixes || {
         check_pkg_config xcb-xfixes xcb/xfixes.h xcb_xfixes_get_cursor_image || {
             enabled libxcb_xfixes && die "ERROR: libxcb_xfixes not found";
-        } && enable libxcb_xfixes
+        } && enable libxcb_xfixes; }
 
-    add_cflags "$xcb_event_cflags $xcb_shm_cflags $xcb_xfixes_cflags"
-    add_extralibs "$xcb_event_libs $xcb_shm_libs $xcb_xfixes_libs"
+    add_cflags $xcb_event_cflags $xcb_shm_cflags $xcb_xfixes_cflags
+    add_extralibs $xcb_event_libs $xcb_shm_libs $xcb_xfixes_libs
+fi
 fi
 
 if enabled x11grab; then

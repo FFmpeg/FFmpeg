@@ -41,11 +41,11 @@ typedef struct CNGContext {
 static av_cold int cng_decode_close(AVCodecContext *avctx)
 {
     CNGContext *p = avctx->priv_data;
-    av_free(p->refl_coef);
-    av_free(p->target_refl_coef);
-    av_free(p->lpc_coef);
-    av_free(p->filter_out);
-    av_free(p->excitation);
+    av_freep(&p->refl_coef);
+    av_freep(&p->target_refl_coef);
+    av_freep(&p->lpc_coef);
+    av_freep(&p->filter_out);
+    av_freep(&p->excitation);
     return 0;
 }
 

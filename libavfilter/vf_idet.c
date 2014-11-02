@@ -40,10 +40,10 @@ AVFILTER_DEFINE_CLASS(idet);
 static const char *type2str(Type type)
 {
     switch(type) {
-        case TFF          : return "Top Field First   ";
-        case BFF          : return "Bottom Field First";
-        case PROGRESSIVE  : return "Progressive       ";
-        case UNDETERMINED : return "Undetermined      ";
+        case TFF          : return "tff";
+        case BFF          : return "bff";
+        case PROGRESSIVE  : return "progressive";
+        case UNDETERMINED : return "undetermined";
     }
     return NULL;
 }
@@ -82,6 +82,7 @@ static void filter(AVFilterContext *ctx)
     int64_t delta=0;
     Type type, best_type;
     int match = 0;
+    AVDictionary **metadata = avpriv_frame_get_metadatap(idet->cur);
 
     for (i = 0; i < idet->csp->nb_components; i++) {
         int w = idet->cur->width;
@@ -147,14 +148,27 @@ static void filter(AVFilterContext *ctx)
 
     idet->prestat [           type] ++;
     idet->poststat[idet->last_type] ++;
-    av_log(ctx, AV_LOG_DEBUG, "Single frame:%s, Multi frame:%s\n", type2str(type), type2str(idet->last_type));
+
+    av_log(ctx, AV_LOG_DEBUG, "Single frame:%12s, Multi frame:%12s\n", type2str(type), type2str(idet->last_type));
+
+    av_dict_set    (metadata, "lavfi.idet.single.current_frame", type2str(type), 0);
+    av_dict_set_int(metadata, "lavfi.idet.single.tff", idet->prestat[TFF], 0);
+    av_dict_set_int(metadata, "lavfi.idet.single.bff", idet->prestat[BFF], 0);
+    av_dict_set_int(metadata, "lavfi.idet.single.progressive", idet->prestat[PROGRESSIVE], 0);
+    av_dict_set_int(metadata, "lavfi.idet.single.undetermined", idet->prestat[UNDETERMINED], 0);
+
+    av_dict_set    (metadata, "lavfi.idet.multiple.current_frame", type2str(idet->last_type), 0);
+    av_dict_set_int(metadata, "lavfi.idet.multiple.tff", idet->poststat[TFF], 0);
+    av_dict_set_int(metadata, "lavfi.idet.multiple.bff", idet->poststat[BFF], 0);
+    av_dict_set_int(metadata, "lavfi.idet.multiple.progressive", idet->poststat[PROGRESSIVE], 0);
+    av_dict_set_int(metadata, "lavfi.idet.multiple.undetermined", idet->poststat[UNDETERMINED], 0);
+
 }
 
 static int filter_frame(AVFilterLink *link, AVFrame *picref)
 {
     AVFilterContext *ctx = link->dst;
     IDETContext *idet = ctx->priv;
-    AVDictionary **metadata = avpriv_frame_get_metadatap(picref);
 
     if (idet->prev)
         av_frame_free(&idet->prev);
@@ -177,16 +191,6 @@ static int filter_frame(AVFilterLink *link, AVFrame *picref)
     }
 
     filter(ctx);
-
-    av_dict_set_int(metadata, "lavfi.idet.single.tff", idet->prestat[TFF], 0);
-    av_dict_set_int(metadata, "lavfi.idet.single.bff", idet->prestat[BFF], 0);
-    av_dict_set_int(metadata, "lavfi.idet.single.progressive", idet->prestat[PROGRESSIVE], 0);
-    av_dict_set_int(metadata, "lavfi.idet.single.undetermined", idet->prestat[UNDETERMINED], 0);
-
-    av_dict_set_int(metadata, "lavfi.idet.multiple.tff", idet->poststat[TFF], 0);
-    av_dict_set_int(metadata, "lavfi.idet.multiple.bff", idet->poststat[BFF], 0);
-    av_dict_set_int(metadata, "lavfi.idet.multiple.progressive", idet->poststat[PROGRESSIVE], 0);
-    av_dict_set_int(metadata, "lavfi.idet.multiple.undetermined", idet->poststat[UNDETERMINED], 0);
 
     return ff_filter_frame(ctx->outputs[0], av_frame_clone(idet->cur));
 }

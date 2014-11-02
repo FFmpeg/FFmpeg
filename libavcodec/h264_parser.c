@@ -547,7 +547,7 @@ static void close(AVCodecParserContext *s)
     H264Context *h   = s->priv_data;
     ParseContext *pc = &h->parse_context;
 
-    av_free(pc->buffer);
+    av_freep(&pc->buffer);
     ff_h264_free_context(h);
 }
 
