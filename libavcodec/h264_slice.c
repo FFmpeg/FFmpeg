@@ -585,6 +585,17 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
         h->mb_type_pool      = NULL;
         h->ref_index_pool    = NULL;
         h->motion_val_pool   = NULL;
+        h->intra4x4_pred_mode= NULL;
+        h->non_zero_count    = NULL;
+        h->slice_table_base  = NULL;
+        h->slice_table       = NULL;
+        h->cbp_table         = NULL;
+        h->chroma_pred_mode_table = NULL;
+        memset(h->mvd_table, 0, sizeof(h->mvd_table));
+        h->direct_table      = NULL;
+        h->list_counts       = NULL;
+        h->mb2b_xy           = NULL;
+        h->mb2br_xy          = NULL;
         for (i = 0; i < 2; i++) {
             h->rbsp_buffer[i] = NULL;
             h->rbsp_buffer_size[i] = 0;
