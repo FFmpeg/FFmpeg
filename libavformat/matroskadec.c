@@ -46,6 +46,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/lzo.h"
 #include "libavutil/mathematics.h"
+#include "libavutil/time_internal.h"
 
 #include "libavcodec/bytestream.h"
 #include "libavcodec/flac.h"
@@ -1507,7 +1508,7 @@ static void matroska_metadata_creation_time(AVDictionary **metadata, int64_t dat
     char buffer[32];
     /* Convert to seconds and adjust by number of seconds between 2001-01-01 and Epoch */
     time_t creation_time = date_utc / 1000000000 + 978307200;
-    struct tm *ptm = gmtime(&creation_time);
+    struct tm tmpbuf, *ptm = gmtime_r(&creation_time, &tmpbuf);
     if (!ptm) return;
     if (strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", ptm))
         av_dict_set(metadata, "creation_time", buffer, 0);
