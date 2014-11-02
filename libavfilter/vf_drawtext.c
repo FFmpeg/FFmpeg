@@ -855,7 +855,7 @@ static int func_strftime(AVFilterContext *ctx, AVBPrint *bp,
     if (tag == 'L')
         localtime_r(&now, &tm);
     else
-        tm = *gmtime(&now);
+        tm = *gmtime_r(&now, &tm);
     av_bprint_strftime(bp, fmt, &tm);
     return 0;
 }
