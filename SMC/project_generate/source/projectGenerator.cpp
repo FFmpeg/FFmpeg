@@ -874,7 +874,7 @@ cd $(ProjectDir)\n\
         return false;
     }
 
-    //Create a test file to read in header declarations
+    //Create a test file to read in definitions
     string sOutDir = "../../../../../msvc32/";
     string sCLExtra = "/I\"" + sOutDir + "include/\"";
     for( StaticList::iterator vitIt = vIncludeDirs.begin( ); vitIt < vIncludeDirs.end( ); vitIt++ )
@@ -1073,6 +1073,11 @@ exit /b 1 \n\
 
                     //Check if this is a define
                     uint uiFindPos3 = sSBRFile.rfind( (char)0x00, uiFindPos-3 );
+                    while( sSBRFile.at( uiFindPos3 - 1 ) == (char)0x00 )
+                    {
+                        //Skip if there was a NULL in ID
+                        --uiFindPos3;
+                    }
                     uint uiFindPosDiff = uiFindPos - uiFindPos3;
                     if( ( sSBRFile.at( uiFindPos3 - 1 ) == '@' ) && 
                         ( ( ( uiFindPosDiff == 3 ) && ( sSBRFile.at( uiFindPos3 - 3 ) == (char)0x03 ) ) ||
@@ -1107,14 +1112,24 @@ exit /b 1 \n\
                 uiFindPos = sSBRFile.find( *itI );
                 //Make sure the match is an exact one
                 uint uiFindPos3;
-                uint uiFindPosDiff;
-                while( ( uiFindPos != string::npos ) && ( ( sSBRFile.at( uiFindPos + itI->length( ) ) != (char)0x00 ) ||
-                    ( ( uiFindPos3 = sSBRFile.rfind( (char)0x00, uiFindPos-3 ) ) == string::npos ) ||
-                    ( ( uiFindPosDiff = uiFindPos - uiFindPos3 ) > 4 ) ||
-                    ( sSBRFile.at( uiFindPos3 - 1 ) != '@' ) ||
-                    ( ( uiFindPosDiff == 3 ) && ( sSBRFile.at( uiFindPos3 - 3 ) != (char)0x03 ) ) ||
-                    ( ( uiFindPosDiff == 4 ) && ( sSBRFile.at( uiFindPos3 - 3 ) != 'C' ) ) ) )
+                while( ( uiFindPos != string::npos ) )
                 {
+                    if( sSBRFile.at( uiFindPos + itI->length( ) ) == (char)0x00 )
+                    {
+                        uiFindPos3 = sSBRFile.rfind( (char)0x00, uiFindPos - 3 );
+                        while( sSBRFile.at( uiFindPos3 - 1 ) == (char)0x00 )
+                        {
+                            //Skip if there was a NULL in ID
+                            --uiFindPos3;
+                        }
+                        uint uiFindPosDiff = uiFindPos - uiFindPos3;
+                        if( ( sSBRFile.at( uiFindPos3 - 1 ) == '@' ) &&
+                            ( ( ( uiFindPosDiff == 3 ) && ( sSBRFile.at( uiFindPos3 - 3 ) == (char)0x03 ) ) ||
+                            ( ( uiFindPosDiff == 4 ) && ( sSBRFile.at( uiFindPos3 - 3 ) == 'C' ) ) ) )
+                        {
+                            break;
+                        }
+                    }
                     uiFindPos = sSBRFile.find( *itI, uiFindPos + 1 );
                 }
                 if( uiFindPos == string::npos )
