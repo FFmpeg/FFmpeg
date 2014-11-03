@@ -37,10 +37,14 @@ typedef struct {
     const AVClass *class;
     float interlace_threshold;
     float progressive_threshold;
+    float half_life;
+    uint64_t decay_coefficient;
 
     Type last_type;
-    int prestat[4];
-    int poststat[4];
+    uint64_t prestat[4];
+    uint64_t poststat[4];
+    uint64_t total_prestat[4];
+    uint64_t total_poststat[4];
 
     uint8_t history[HIST_SIZE];
 

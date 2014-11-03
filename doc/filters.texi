@@ -5625,6 +5625,11 @@ The filter accepts the following options:
 Set interlacing threshold.
 @item prog_thres
 Set progressive threshold.
+@item half_life
+Number of frames after which a given frame's contribution to the
+statistics is halved (i.e., it contributes only 0.5 to it's
+classification). The default of 0 means that all frames seen are given
+full weight of 1.0 forever.
 @end table
 
 @section il
