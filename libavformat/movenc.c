@@ -1771,9 +1771,9 @@ static int mov_write_trak_tag(AVIOContext *pb, MOVMuxContext *mov,
     avio_wb32(pb, 0); /* size */
     ffio_wfourcc(pb, "trak");
     mov_write_tkhd_tag(pb, mov, track, st);
-    if (track->mode == MODE_PSP || track->flags & MOV_TRACK_CTTS ||
-        (track->entry && track->cluster[0].dts) ||
-        is_clcp_track(track)) {
+    if (track->entry &&
+        (track->mode == MODE_PSP || track->flags & MOV_TRACK_CTTS ||
+        track->cluster[0].dts || is_clcp_track(track))) {
         if (mov->use_editlist)
             mov_write_edts_tag(pb, mov, track);  // PSP Movies require edts box
         else if ((track->entry && track->cluster[0].dts) || track->mode == MODE_PSP || is_clcp_track(track))
