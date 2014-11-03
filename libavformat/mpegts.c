@@ -1803,10 +1803,10 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
 
     if (h->tid != PMT_TID)
         return;
-    if (ts->skip_changes)
-        return;
 
-    clear_program(ts, h->id);
+    if (!ts->skip_clear)
+        clear_program(ts, h->id);
+
     pcr_pid = get16(&p, p_end);
     if (pcr_pid < 0)
         return;
