@@ -173,8 +173,8 @@ static void filter(AVFilterContext *ctx)
 
 
     for(i=0; i<4; i++){
-        idet->prestat [i] = (idet->decay_coefficient * idet->prestat [i]) / PRECISION;
-        idet->poststat[i] = (idet->decay_coefficient * idet->poststat[i]) / PRECISION;
+        idet->prestat [i] = av_rescale(idet->prestat [i], idet->decay_coefficient, PRECISION);
+        idet->poststat[i] = av_rescale(idet->poststat[i], idet->decay_coefficient, PRECISION);
     }
 
     idet->total_prestat [           type] ++;
