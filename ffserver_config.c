@@ -214,6 +214,8 @@ static void add_codec(FFServerStream *stream, AVCodecContext *av)
         av->frame_skip_cmp = FF_CMP_DCTMAX;
         if (!av->me_method)
             av->me_method = ME_EPZS;
+
+        /* FIXME: rc_buffer_aggressivity and rc_eq are deprecated */
         av->rc_buffer_aggressivity = 1.0;
 
         if (!av->rc_eq)
