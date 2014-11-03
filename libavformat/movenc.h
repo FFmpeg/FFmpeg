@@ -185,17 +185,17 @@ typedef struct MOVMuxContext {
     AVFormatContext *fc;
 } MOVMuxContext;
 
-#define FF_MOV_FLAG_RTP_HINT 1
-#define FF_MOV_FLAG_FRAGMENT 2
-#define FF_MOV_FLAG_EMPTY_MOOV 4
-#define FF_MOV_FLAG_FRAG_KEYFRAME 8
-#define FF_MOV_FLAG_SEPARATE_MOOF 16
-#define FF_MOV_FLAG_FRAG_CUSTOM 32
-#define FF_MOV_FLAG_ISML 64
-#define FF_MOV_FLAG_FASTSTART 128
-#define FF_MOV_FLAG_OMIT_TFHD_OFFSET 256
-#define FF_MOV_FLAG_DISABLE_CHPL 512
-#define FF_MOV_FLAG_DEFAULT_BASE_MOOF 1024
+#define FF_MOV_FLAG_RTP_HINT              (1 <<  0)
+#define FF_MOV_FLAG_FRAGMENT              (1 <<  1)
+#define FF_MOV_FLAG_EMPTY_MOOV            (1 <<  2)
+#define FF_MOV_FLAG_FRAG_KEYFRAME         (1 <<  3)
+#define FF_MOV_FLAG_SEPARATE_MOOF         (1 <<  4)
+#define FF_MOV_FLAG_FRAG_CUSTOM           (1 <<  5)
+#define FF_MOV_FLAG_ISML                  (1 <<  6)
+#define FF_MOV_FLAG_FASTSTART             (1 <<  7)
+#define FF_MOV_FLAG_OMIT_TFHD_OFFSET      (1 <<  8)
+#define FF_MOV_FLAG_DISABLE_CHPL          (1 <<  9)
+#define FF_MOV_FLAG_DEFAULT_BASE_MOOF     (1 << 10)
 
 int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt);
 
