@@ -119,7 +119,7 @@ void ffserver_parse_acl_row(FFServerStream *stream, FFServerStream* feed,
 
     ffserver_get_arg(arg, sizeof(arg), &p);
 
-    if (resolve_host(&acl.first, arg) != 0) {
+    if (resolve_host(&acl.first, arg)) {
         fprintf(stderr, "%s:%d: ACL refers to invalid host or IP address '%s'\n",
                 filename, line_num, arg);
         errors++;
@@ -129,7 +129,7 @@ void ffserver_parse_acl_row(FFServerStream *stream, FFServerStream* feed,
     ffserver_get_arg(arg, sizeof(arg), &p);
 
     if (arg[0]) {
-        if (resolve_host(&acl.last, arg) != 0) {
+        if (resolve_host(&acl.last, arg)) {
             fprintf(stderr,
                     "%s:%d: ACL refers to invalid host or IP address '%s'\n",
                     filename, line_num, arg);
@@ -451,7 +451,7 @@ static int ffserver_parse_config_global(FFServerConfig *config, const char *cmd,
         if (!av_strcasecmp(cmd, "BindAddress"))
             WARNING("BindAddress option is deprecated, use HTTPBindAddress instead\n");
         ffserver_get_arg(arg, sizeof(arg), p);
-        if (resolve_host(&config->http_addr.sin_addr, arg) != 0)
+        if (resolve_host(&config->http_addr.sin_addr, arg))
             ERROR("Invalid host/IP address: %s\n", arg);
     } else if (!av_strcasecmp(cmd, "NoDaemon")) {
         WARNING("NoDaemon option has no effect, you should remove it\n");
@@ -462,7 +462,7 @@ static int ffserver_parse_config_global(FFServerConfig *config, const char *cmd,
         config->rtsp_addr.sin_port = htons(val);
     } else if (!av_strcasecmp(cmd, "RTSPBindAddress")) {
         ffserver_get_arg(arg, sizeof(arg), p);
-        if (resolve_host(&config->rtsp_addr.sin_addr, arg) != 0)
+        if (resolve_host(&config->rtsp_addr.sin_addr, arg))
             ERROR("Invalid host/IP address: %s\n", arg);
     } else if (!av_strcasecmp(cmd, "MaxHTTPConnections")) {
         ffserver_get_arg(arg, sizeof(arg), p);
@@ -1020,7 +1020,7 @@ static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd,
         stream->rtsp_option = av_strdup(arg);
     } else if (!av_strcasecmp(cmd, "MulticastAddress")) {
         ffserver_get_arg(arg, sizeof(arg), p);
-        if (resolve_host(&stream->multicast_ip, arg) != 0)
+        if (resolve_host(&stream->multicast_ip, arg))
             ERROR("Invalid host/IP address: %s\n", arg);
         stream->is_multicast = 1;
         stream->loop = 1; /* default is looping */
@@ -1037,7 +1037,7 @@ static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd,
     } else if (!av_strcasecmp(cmd, "NoLoop")) {
         stream->loop = 0;
     } else if (!av_strcasecmp(cmd, "</Stream>")) {
-        if (stream->feed && stream->fmt && strcmp(stream->fmt->name, "ffm") != 0) {
+        if (stream->feed && stream->fmt && strcmp(stream->fmt->name, "ffm")) {
             if (config->audio_id != AV_CODEC_ID_NONE) {
                 AVCodecContext *audio_enc = avcodec_alloc_context3(avcodec_find_encoder(config->audio_id));
                 if (config->audio_preset &&
