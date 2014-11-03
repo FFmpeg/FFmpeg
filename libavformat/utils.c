@@ -3286,7 +3286,6 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
             }
         }
     }
-    av_opt_set(ic, "skip_clear", "0", AV_OPT_SEARCH_CHILDREN);
 
     // close codecs which were opened in try_decode_frame()
     for (i = 0; i < ic->nb_streams; i++) {
@@ -3374,6 +3373,8 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
 
     if (probesize)
     estimate_timings(ic, old_offset);
+
+    av_opt_set(ic, "skip_clear", "0", AV_OPT_SEARCH_CHILDREN);
 
     if (ret >= 0 && ic->nb_streams)
         /* We could not have all the codec parameters before EOF. */
