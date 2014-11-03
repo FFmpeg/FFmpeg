@@ -1822,6 +1822,11 @@ static int handle_invoke_error(URLContext *s, RTMPPacket *pkt)
             /* Gracefully ignore Adobe-specific historical artifact errors. */
             level = AV_LOG_WARNING;
             ret = 0;
+        } else if (rt->live &&
+                   tracked_method &&
+                   !strcmp(tracked_method, "getStreamLength")) {
+            level = AV_LOG_DEBUG;
+            ret = 0;
         } else if (tracked_method && !strcmp(tracked_method, "connect")) {
             ret = handle_connect_error(s, tmpstr);
             if (!ret) {
