@@ -1809,7 +1809,7 @@ static int mov_write_iods_tag(AVIOContext *pb, MOVMuxContext *mov)
     int audio_profile = mov->iods_audio_profile;
     int video_profile = mov->iods_video_profile;
     for (i = 0; i < mov->nb_streams; i++) {
-        if (mov->tracks[i].entry > 0) {
+        if (mov->tracks[i].entry > 0 || mov->flags & FF_MOV_FLAG_EMPTY_MOOV) {
             has_audio |= mov->tracks[i].enc->codec_type == AVMEDIA_TYPE_AUDIO;
             has_video |= mov->tracks[i].enc->codec_type == AVMEDIA_TYPE_VIDEO;
         }
