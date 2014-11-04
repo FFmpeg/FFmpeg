@@ -306,7 +306,7 @@ static void add_pid_to_pmt(MpegTSContext *ts, unsigned int programid,
     if (p->nb_pids >= MAX_PIDS_PER_PROGRAM)
         return;
 
-    for (i = 0; i < MAX_PIDS_PER_PROGRAM; i++)
+    for (i = 0; i < p->nb_pids; i++)
         if (p->pids[i] == pid)
             return;
 
