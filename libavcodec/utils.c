@@ -560,9 +560,15 @@ FF_ENABLE_DEPRECATION_WARNINGS
 int ff_decode_frame_props(AVCodecContext *avctx, AVFrame *frame)
 {
     AVPacket *pkt = avctx->internal->pkt;
-    uint8_t *packet_sd;
-    int size;
-    AVFrameSideData *frame_sd;
+    int i;
+    struct {
+        enum AVPacketSideDataType packet;
+        enum AVFrameSideDataType frame;
+    } sd[] = {
+        { AV_PKT_DATA_REPLAYGAIN ,   AV_FRAME_DATA_REPLAYGAIN },
+        { AV_PKT_DATA_DISPLAYMATRIX, AV_FRAME_DATA_DISPLAYMATRIX },
+        { AV_PKT_DATA_STEREO3D,      AV_FRAME_DATA_STEREO3D },
+    };
 
     frame->color_primaries = avctx->color_primaries;
     frame->color_trc       = avctx->color_trc;
@@ -578,32 +584,18 @@ int ff_decode_frame_props(AVCodecContext *avctx, AVFrame *frame)
 
     frame->pkt_pts = pkt->pts;
 
-    /* copy the replaygain data to the output frame */
-    packet_sd = av_packet_get_side_data(pkt, AV_PKT_DATA_REPLAYGAIN, &size);
-    if (packet_sd) {
-        frame_sd = av_frame_new_side_data(frame, AV_FRAME_DATA_REPLAYGAIN, size);
-        if (!frame_sd)
-            return AVERROR(ENOMEM);
+    for (i = 0; i < FF_ARRAY_ELEMS(sd); i++) {
+        int size;
+        uint8_t *packet_sd = av_packet_get_side_data(pkt, sd[i].packet, &size);
+        if (packet_sd) {
+            AVFrameSideData *frame_sd = av_frame_new_side_data(frame,
+                                                               sd[i].frame,
+                                                               size);
+            if (!frame_sd)
+                return AVERROR(ENOMEM);
 
-        memcpy(frame_sd->data, packet_sd, size);
-    }
-    /* copy the displaymatrix to the output frame */
-    packet_sd = av_packet_get_side_data(pkt, AV_PKT_DATA_DISPLAYMATRIX, &size);
-    if (packet_sd) {
-        frame_sd = av_frame_new_side_data(frame, AV_FRAME_DATA_DISPLAYMATRIX, size);
-        if (!frame_sd)
-            return AVERROR(ENOMEM);
-
-        memcpy(frame_sd->data, packet_sd, size);
-    }
-    /* copy the stereo3d format to the output frame */
-    packet_sd = av_packet_get_side_data(pkt, AV_PKT_DATA_STEREO3D, &size);
-    if (packet_sd) {
-        frame_sd = av_frame_new_side_data(frame, AV_FRAME_DATA_STEREO3D, size);
-        if (!frame_sd)
-            return AVERROR(ENOMEM);
-
-        memcpy(frame_sd->data, packet_sd, size);
+            memcpy(frame_sd->data, packet_sd, size);
+        }
     }
 
     return 0;
