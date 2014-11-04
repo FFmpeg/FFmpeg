@@ -908,6 +908,7 @@ int ff_mpeg_update_thread_context(AVCodecContext *dst,
     // FIXME can parameters change on I-frames?
     // in that case dst may need a reinit
     if (!s->context_initialized) {
+        int err;
         memcpy(s, s1, sizeof(MpegEncContext));
 
         s->avctx                 = dst;
@@ -915,7 +916,8 @@ int ff_mpeg_update_thread_context(AVCodecContext *dst,
         s->bitstream_buffer_size = s->allocated_bitstream_buffer_size = 0;
 
         ff_mpv_idct_init(s);
-        ff_mpv_common_init(s);
+        if ((err = ff_mpv_common_init(s)) < 0)
+            return err;
     }
 
     if (s->height != s1->height || s->width != s1->width || s->context_reinit) {
