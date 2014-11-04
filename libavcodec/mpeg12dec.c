@@ -1138,8 +1138,11 @@ static int mpeg_decode_update_thread_context(AVCodecContext *avctx,
     if (err)
         return err;
 
-    if (!ctx->mpeg_enc_ctx_allocated)
-        memcpy(s + 1, s1 + 1, sizeof(Mpeg1Context) - sizeof(MpegEncContext));
+    if (!ctx->mpeg_enc_ctx_allocated) {
+        // copy the whole context after the initial MpegEncContext structure
+        memcpy(ctx, ctx_from, sizeof(*ctx));
+        memset(&ctx->mpeg_enc_ctx, 0, sizeof(ctx->mpeg_enc_ctx));
+    }
 
     if (!(s->pict_type == AV_PICTURE_TYPE_B || s->low_delay))
         s->picture_number++;
