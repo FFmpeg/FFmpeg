@@ -41,6 +41,7 @@ typedef struct {
     struct SwrContext *swr;
     int64_t next_pts;
     int req_fullfilled;
+    int more_data;
 } AResampleContext;
 
 static av_cold int init_dict(AVFilterContext *ctx, AVDictionary **opts)
@@ -186,7 +187,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamplesref)
 
     delay = swr_get_delay(aresample->swr, outlink->sample_rate);
     if (delay > 0)
-        n_out += delay;
+        n_out += FFMIN(delay, FFMAX(4096, n_out));
 
     outsamplesref = ff_get_audio_buffer(outlink, n_out);
 
@@ -214,6 +215,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamplesref)
         av_frame_free(&insamplesref);
         return 0;
     }
+
+    aresample->more_data = outsamplesref->nb_samples == n_out; // Indicate that there is probably more data in our buffers
 
     outsamplesref->nb_samples  = n_out;
 
@@ -261,11 +264,23 @@ static int request_frame(AVFilterLink *outlink)
     AVFilterLink *const inlink = outlink->src->inputs[0];
     int ret;
 
+    // First try to get data from the internal buffers
+    if (aresample->more_data) {
+        AVFrame *outsamplesref;
+
+        if (flush_frame(outlink, 0, &outsamplesref) >= 0) {
+            return ff_filter_frame(outlink, outsamplesref);
+        }
+    }
+    aresample->more_data = 0;
+
+    // Second request more data from the input
     aresample->req_fullfilled = 0;
     do{
         ret = ff_request_frame(ctx->inputs[0]);
     }while(!aresample->req_fullfilled && ret>=0);
 
+    // Third if we hit the end flush
     if (ret == AVERROR_EOF) {
         AVFrame *outsamplesref;
 
