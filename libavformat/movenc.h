@@ -166,6 +166,8 @@ typedef struct MOVMuxContext {
 
     int per_stream_grouping;
     AVFormatContext *fc;
+
+    int use_editlist;
 } MOVMuxContext;
 
 #define FF_MOV_FLAG_RTP_HINT              (1 <<  0)
