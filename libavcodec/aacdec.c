@@ -703,6 +703,7 @@ static void decode_channel_map(uint8_t layout_map[][3],
             syn_ele = TYPE_LFE;
             break;
         default:
+            // AAC_CHANNEL_OFF has no channel map
             av_assert0(0);
         }
         layout_map[0][0] = syn_ele;
