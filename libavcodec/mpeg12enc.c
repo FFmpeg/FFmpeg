@@ -546,7 +546,8 @@ static void mpeg1_encode_motion(MpegEncContext *s, int val, int f_or_b_code)
 
 static inline void encode_dc(MpegEncContext *s, int diff, int component)
 {
-    if (((unsigned) (diff + 255)) >= 511) {
+    unsigned int diff_u = diff + 255;
+    if (diff_u >= 511) {
         int index;
 
         if (diff < 0) {
