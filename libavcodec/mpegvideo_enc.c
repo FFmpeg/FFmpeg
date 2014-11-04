@@ -985,39 +985,29 @@ static int load_input_picture(MpegEncContext *s, const AVFrame *pic_arg)
     }
 
     if (pic_arg) {
-        if (!pic_arg->buf[0]);
-            direct = 0;
-        if (pic_arg->linesize[0] != s->linesize)
-            direct = 0;
-        if (pic_arg->linesize[1] != s->uvlinesize)
-            direct = 0;
-        if (pic_arg->linesize[2] != s->uvlinesize)
+        if (!pic_arg->buf[0] ||
+            pic_arg->linesize[0] != s->linesize ||
+            pic_arg->linesize[1] != s->uvlinesize ||
+            pic_arg->linesize[2] != s->uvlinesize)
             direct = 0;
 
         av_dlog(s->avctx, "%d %d %td %td\n", pic_arg->linesize[0],
                 pic_arg->linesize[1], s->linesize, s->uvlinesize);
 
+        i = ff_find_unused_picture(s, direct);
+        if (i < 0)
+            return i;
+
+        pic = &s->picture[i];
+        pic->reference = 3;
+
         if (direct) {
-            i = ff_find_unused_picture(s, 1);
-            if (i < 0)
-                return i;
-
-            pic = &s->picture[i];
-            pic->reference = 3;
-
             if ((ret = av_frame_ref(pic->f, pic_arg)) < 0)
                 return ret;
             if (ff_alloc_picture(s, pic, 1) < 0) {
                 return -1;
             }
         } else {
-            i = ff_find_unused_picture(s, 0);
-            if (i < 0)
-                return i;
-
-            pic = &s->picture[i];
-            pic->reference = 3;
-
             if (ff_alloc_picture(s, pic, 0) < 0) {
                 return -1;
             }
