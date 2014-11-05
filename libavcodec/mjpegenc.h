@@ -51,6 +51,6 @@ typedef struct MJpegContext {
 
 int  ff_mjpeg_encode_init(MpegEncContext *s);
 void ff_mjpeg_encode_close(MpegEncContext *s);
-void ff_mjpeg_encode_mb(MpegEncContext *s, int16_t block[6][64]);
+void ff_mjpeg_encode_mb(MpegEncContext *s, int16_t block[8][64]);
 
 #endif /* AVCODEC_MJPEGENC_H */
