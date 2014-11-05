@@ -9,6 +9,7 @@ version <next>:
 - STL subtitle demuxer and decoder
 - libutvideo YUV 4:2:2 10bit support
 - XCB-based screen-grabber
+- UDP-Lite support (RFC 3828)
 
 version 2.4:
 - Icecast protocol
