@@ -41,6 +41,7 @@ typedef struct {
     struct SwrContext *swr;
     int64_t next_pts;
     int req_fullfilled;
+    int more_data;
 } AResampleContext;
 
 static av_cold int init_dict(AVFilterContext *ctx, AVDictionary **opts)
@@ -186,7 +187,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamplesref)
 
     delay = swr_get_delay(aresample->swr, outlink->sample_rate);
     if (delay > 0)
-        n_out += delay;
+        n_out += FFMIN(delay, FFMAX(4096, n_out));
 
     outsamplesref = ff_get_audio_buffer(outlink, n_out);
 
@@ -215,12 +216,45 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamplesref)
         return 0;
     }
 
+    aresample->more_data = outsamplesref->nb_samples == n_out; // Indicate that there is probably more data in our buffers
+
     outsamplesref->nb_samples  = n_out;
 
     ret = ff_filter_frame(outlink, outsamplesref);
     aresample->req_fullfilled= 1;
     av_frame_free(&insamplesref);
     return ret;
+}
+
+static int flush_frame(AVFilterLink *outlink, int final, AVFrame **outsamplesref_ret)
+{
+    AVFilterContext *ctx = outlink->src;
+    AResampleContext *aresample = ctx->priv;
+    AVFilterLink *const inlink = outlink->src->inputs[0];
+    AVFrame *outsamplesref;
+    int n_out = 4096;
+    int64_t pts;
+
+    outsamplesref = ff_get_audio_buffer(outlink, n_out);
+    *outsamplesref_ret = outsamplesref;
+    if (!outsamplesref)
+        return AVERROR(ENOMEM);
+
+    pts = swr_next_pts(aresample->swr, INT64_MIN);
+    pts = ROUNDED_DIV(pts, inlink->sample_rate);
+
+    n_out = swr_convert(aresample->swr, outsamplesref->extended_data, n_out, final ? NULL : (void*)outsamplesref->extended_data, 0);
+    if (n_out <= 0) {
+        av_frame_free(&outsamplesref);
+        return (n_out == 0) ? AVERROR_EOF : n_out;
+    }
+
+    outsamplesref->sample_rate = outlink->sample_rate;
+    outsamplesref->nb_samples  = n_out;
+
+    outsamplesref->pts = pts;
+
+    return 0;
 }
 
 static int request_frame(AVFilterLink *outlink)
@@ -230,33 +264,28 @@ static int request_frame(AVFilterLink *outlink)
     AVFilterLink *const inlink = outlink->src->inputs[0];
     int ret;
 
+    // First try to get data from the internal buffers
+    if (aresample->more_data) {
+        AVFrame *outsamplesref;
+
+        if (flush_frame(outlink, 0, &outsamplesref) >= 0) {
+            return ff_filter_frame(outlink, outsamplesref);
+        }
+    }
+    aresample->more_data = 0;
+
+    // Second request more data from the input
     aresample->req_fullfilled = 0;
     do{
         ret = ff_request_frame(ctx->inputs[0]);
     }while(!aresample->req_fullfilled && ret>=0);
 
+    // Third if we hit the end flush
     if (ret == AVERROR_EOF) {
         AVFrame *outsamplesref;
-        int n_out = 4096;
-        int64_t pts;
 
-        outsamplesref = ff_get_audio_buffer(outlink, n_out);
-        if (!outsamplesref)
-            return AVERROR(ENOMEM);
-
-        pts = swr_next_pts(aresample->swr, INT64_MIN);
-        pts = ROUNDED_DIV(pts, inlink->sample_rate);
-
-        n_out = swr_convert(aresample->swr, outsamplesref->extended_data, n_out, 0, 0);
-        if (n_out <= 0) {
-            av_frame_free(&outsamplesref);
-            return (n_out == 0) ? AVERROR_EOF : n_out;
-        }
-
-        outsamplesref->sample_rate = outlink->sample_rate;
-        outsamplesref->nb_samples  = n_out;
-
-        outsamplesref->pts = pts;
+        if ((ret = flush_frame(outlink, 1, &outsamplesref)) < 0)
+            return ret;
 
         return ff_filter_frame(outlink, outsamplesref);
     }

@@ -115,6 +115,7 @@ typedef struct FFServerConfig {
     AVDictionary *audio_conf;     /* Values stored in audio AVCodecContext.fields */
     char *video_preset;
     char *audio_preset;
+    AVCodecContext *dummy_ctx;    /* Used internally to test AVOptions. Not to be used anywhere else */
 } FFServerConfig;
 
 void ffserver_get_arg(char *buf, int buf_size, const char **pp);

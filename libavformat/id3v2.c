@@ -60,8 +60,8 @@ const AVMetadataConv ff_id3v2_34_metadata_conv[] = {
 
 const AVMetadataConv ff_id3v2_4_metadata_conv[] = {
     { "TCMP", "compilation"   },
-    { "TDRL", "date"          },
     { "TDRC", "date"          },
+    { "TDRL", "date"          },
     { "TDEN", "creation_time" },
     { "TSOA", "album-sort"    },
     { "TSOP", "artist-sort"   },

@@ -938,6 +938,8 @@ static int mov_write_audio_tag(AVIOContext *pb, MOVTrack *track)
             if (track->enc->codec_id == AV_CODEC_ID_PCM_U8 ||
                 track->enc->codec_id == AV_CODEC_ID_PCM_S8)
                 avio_wb16(pb, 8); /* bits per sample */
+            else if (track->enc->codec_id == AV_CODEC_ID_ADPCM_G726)
+                avio_wb16(pb, track->enc->bits_per_coded_sample);
             else
                 avio_wb16(pb, 16);
             avio_wb16(pb, track->audio_vbr ? -2 : 0); /* compression ID */

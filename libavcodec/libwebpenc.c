@@ -65,10 +65,9 @@ static av_cold int libwebp_encode_init(AVCodecContext *avctx)
     LibWebPContext *s = avctx->priv_data;
     int ret;
 
-    if (avctx->global_quality < 0)
-        avctx->global_quality = 75 * FF_QP2LAMBDA;
-    s->quality = av_clipf(avctx->global_quality / (float)FF_QP2LAMBDA,
-                          0.0f, 100.0f);
+    if (avctx->global_quality >= 0)
+        s->quality = av_clipf(avctx->global_quality / (float)FF_QP2LAMBDA,
+                              0.0f, 100.0f);
 
     if (avctx->compression_level < 0 || avctx->compression_level > 6) {
         av_log(avctx, AV_LOG_WARNING, "invalid compression level: %d\n",
@@ -327,6 +326,7 @@ static const AVOption options[] = {
     { "text",       "text-like",                                        0, AV_OPT_TYPE_CONST, { .i64 = WEBP_PRESET_TEXT    }, 0, 0, VE, "preset" },
     { "cr_threshold","Conditional replenishment threshold",     OFFSET(cr_threshold), AV_OPT_TYPE_INT, { .i64 =  0  },  0, INT_MAX, VE           },
     { "cr_size"     ,"Conditional replenishment block size",    OFFSET(cr_size)     , AV_OPT_TYPE_INT, { .i64 =  16 },  0, 256,     VE           },
+    { "quality"     ,"Quality",                OFFSET(quality),  AV_OPT_TYPE_FLOAT, { .dbl =  75 }, 0, 100,                         VE           },
     { NULL },
 };
 

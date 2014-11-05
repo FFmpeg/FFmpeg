@@ -752,13 +752,14 @@ int swr_convert(struct SwrContext *s, uint8_t *out_arg[SWR_CH_MAX], int out_coun
 }
 
 int swr_drop_output(struct SwrContext *s, int count){
+    const uint8_t *tmp_arg[SWR_CH_MAX];
     s->drop_output += count;
 
     if(s->drop_output <= 0)
         return 0;
 
     av_log(s, AV_LOG_VERBOSE, "discarding %d audio samples\n", count);
-    return swr_convert(s, NULL, s->drop_output, NULL, 0);
+    return swr_convert(s, NULL, s->drop_output, tmp_arg, 0);
 }
 
 int swr_inject_silence(struct SwrContext *s, int count){

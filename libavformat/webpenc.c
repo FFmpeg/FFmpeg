@@ -114,7 +114,6 @@ static int webp_write_packet(AVFormatContext *s, AVPacket *pkt)
 
 static int webp_write_trailer(AVFormatContext *s)
 {
-    WebpContext *w = s->priv_data;
     unsigned filesize;
     int ret;
 
