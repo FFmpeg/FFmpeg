@@ -119,6 +119,7 @@ static int device_open(AVFormatContext *ctx)
     int fd;
     int res, err;
     int flags = O_RDWR;
+    char errbuf[128];
 
     if (ctx->flags & AVFMT_FLAG_NONBLOCK) {
         flags |= O_NONBLOCK;
@@ -126,19 +127,21 @@ static int device_open(AVFormatContext *ctx)
 
     fd = avpriv_open(ctx->filename, flags);
     if (fd < 0) {
-        err = errno;
+        err = AVERROR(errno);
+        av_strerror(err, errbuf, sizeof(errbuf));
 
         av_log(ctx, AV_LOG_ERROR, "Cannot open video device %s : %s\n",
-               ctx->filename, strerror(err));
+               ctx->filename, errbuf);
 
-        return AVERROR(err);
+        return err;
     }
 
     res = ioctl(fd, VIDIOC_QUERYCAP, &cap);
     if (res < 0) {
         err = errno;
+        av_strerror(AVERROR(err), errbuf, sizeof(errbuf));
         av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_QUERYCAP): %s\n",
-               strerror(err));
+               errbuf);
 
         goto fail;
     }
@@ -401,7 +404,9 @@ static int mmap_init(AVFormatContext *ctx)
                                s->fd, buf.m.offset);
 
         if (s->buf_start[i] == MAP_FAILED) {
-            av_log(ctx, AV_LOG_ERROR, "mmap: %s\n", strerror(errno));
+            char errbuf[128];
+            av_strerror(AVERROR(errno), errbuf, sizeof(errbuf));
+            av_log(ctx, AV_LOG_ERROR, "mmap: %s\n", errbuf);
 
             return AVERROR(errno);
         }
@@ -423,6 +428,7 @@ static void mmap_release_buffer(void *opaque, uint8_t *data)
     int res, fd;
     struct buff_data *buf_descriptor = opaque;
     struct video_data *s = buf_descriptor->s;
+    char errbuf[128];
 
     buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     buf.memory = V4L2_MEMORY_MMAP;
@@ -431,9 +437,11 @@ static void mmap_release_buffer(void *opaque, uint8_t *data)
     av_free(buf_descriptor);
 
     res = ioctl(fd, VIDIOC_QBUF, &buf);
-    if (res < 0)
+    if (res < 0) {
+        av_strerror(AVERROR(errno), errbuf, sizeof(errbuf));
         av_log(NULL, AV_LOG_ERROR, "ioctl(VIDIOC_QBUF): %s\n",
-               strerror(errno));
+               errbuf);
+    }
     avpriv_atomic_int_add_and_fetch(&s->buffers_queued, 1);
 }
 
@@ -457,13 +465,15 @@ static int mmap_read_frame(AVFormatContext *ctx, AVPacket *pkt)
     /* FIXME: Some special treatment might be needed in case of loss of signal... */
     while ((res = ioctl(s->fd, VIDIOC_DQBUF, &buf)) < 0 && (errno == EINTR));
     if (res < 0) {
+        char errbuf[128];
         if (errno == EAGAIN) {
             pkt->size = 0;
 
             return AVERROR(EAGAIN);
         }
+        av_strerror(AVERROR(errno), errbuf, sizeof(errbuf));
         av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_DQBUF): %s\n",
-               strerror(errno));
+               errbuf);
 
         return AVERROR(errno);
     }
@@ -542,7 +552,8 @@ static int mmap_start(AVFormatContext *ctx)
 {
     struct video_data *s = ctx->priv_data;
     enum v4l2_buf_type type;
-    int i, res;
+    int i, res, err;
+    char errbuf[128];
 
     for (i = 0; i < s->buffers; i++) {
         struct v4l2_buffer buf = {
@@ -553,10 +564,12 @@ static int mmap_start(AVFormatContext *ctx)
 
         res = ioctl(s->fd, VIDIOC_QBUF, &buf);
         if (res < 0) {
+            err = AVERROR(errno);
+            av_strerror(err, errbuf, sizeof(errbuf));
             av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_QBUF): %s\n",
-                   strerror(errno));
+                   errbuf);
 
-            return AVERROR(errno);
+            return err;
         }
     }
     s->buffers_queued = s->buffers;
@@ -564,10 +577,12 @@ static int mmap_start(AVFormatContext *ctx)
     type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     res = ioctl(s->fd, VIDIOC_STREAMON, &type);
     if (res < 0) {
+        err = AVERROR(errno);
+        av_strerror(err, errbuf, sizeof(errbuf));
         av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_STREAMON): %s\n",
-               strerror(errno));
+               errbuf);
 
-        return AVERROR(errno);
+        return err;
     }
 
     return 0;
@@ -677,8 +692,10 @@ static int v4l2_set_parameters(AVFormatContext *s1)
         }
     } else {
         if (ioctl(s->fd, VIDIOC_G_PARM, &streamparm) != 0) {
+            char errbuf[128];
+            av_strerror(AVERROR(errno), errbuf, sizeof(errbuf));
             av_log(s1, AV_LOG_ERROR, "ioctl(VIDIOC_G_PARM): %s\n",
-                   strerror(errno));
+                   errbuf);
             return AVERROR(errno);
         }
     }
@@ -779,8 +796,10 @@ static int v4l2_read_header(AVFormatContext *s1)
                "Querying the device for the current frame size\n");
         fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
         if (ioctl(s->fd, VIDIOC_G_FMT, &fmt) < 0) {
+            char errbuf[128];
+            av_strerror(AVERROR(errno), errbuf, sizeof(errbuf));
             av_log(s1, AV_LOG_ERROR, "ioctl(VIDIOC_G_FMT): %s\n",
-                   strerror(errno));
+                   errbuf);
             return AVERROR(errno);
         }
 
