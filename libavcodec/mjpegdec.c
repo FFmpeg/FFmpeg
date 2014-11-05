@@ -964,7 +964,9 @@ static int mjpeg_decode_scan_progressive_ac(MJpegDecodeContext *s, int ss,
         init_get_bits(&mb_bitmask_gb, mb_bitmask, s->mb_width * s->mb_height);
 
     if (!Al) {
-        s->coefs_finished[c] |= (1LL << (se + 1)) - (1LL << ss);
+        // s->coefs_finished is a bitmask for coefficients coded
+        // ss and se are parameters telling start and end coefficients
+        s->coefs_finished[c] |= (~0ULL >> (63 - (se - ss))) << ss;
         last_scan = !~s->coefs_finished[c];
     }
 
