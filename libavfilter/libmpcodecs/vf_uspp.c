@@ -297,10 +297,10 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
         }
     }
 
-#if HAVE_MMX
+#if HAVE_MMX_INLINE
     if(ff_gCpuCaps.hasMMX) __asm__ volatile ("emms\n\t");
 #endif
-#if HAVE_MMX2
+#if HAVE_MMXEXT_INLINE
     if(ff_gCpuCaps.hasMMX2) __asm__ volatile ("sfence\n\t");
 #endif
 
@@ -375,7 +375,7 @@ static int vf_open(vf_instance_t *vf, char *args){
     if(vf->priv->qp < 0)
         vf->priv->qp = 0;
 
-// #if HAVE_MMX
+// #if HAVE_MMX_INLINE
 //     if(ff_gCpuCaps.hasMMX){
 //         store_slice= store_slice_mmx;
 //     }

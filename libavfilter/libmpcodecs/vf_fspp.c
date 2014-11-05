@@ -101,7 +101,7 @@ struct vf_priv_s { //align 16 !
 };
 
 
-#if !HAVE_MMX
+#if !HAVE_MMX_INLINE
 
 //This func reads from 1 slice, 1 and clears 0 & 1
 static void store_slice_c(uint8_t *dst, int16_t *src, int dst_stride, int src_stride, int width, int height, int log2_scale)
@@ -177,7 +177,7 @@ static void row_fdct_c(int16_t *data, const uint8_t *pixels, int line_size, int 
 #define row_idct_s row_idct_c
 #define row_fdct_s row_fdct_c
 
-#else /* HAVE_MMX */
+#else /* HAVE_MMX_INLINE */
 
 //This func reads from 1 slice, 1 and clears 0 & 1
 static void store_slice_mmx(uint8_t *dst, int16_t *src, long dst_stride, long src_stride, long width, long height, long log2_scale)
@@ -404,7 +404,7 @@ static void row_fdct_mmx(int16_t *data,  const uint8_t *pixels,  int line_size, 
 #define column_fidct_s column_fidct_mmx
 #define row_idct_s row_idct_mmx
 #define row_fdct_s row_fdct_mmx
-#endif // HAVE_MMX
+#endif // HAVE_MMX_INLINE
 
 static void filter(struct vf_priv_s *p, uint8_t *dst, uint8_t *src,
                    int dst_stride, int src_stride,
@@ -563,10 +563,10 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
         }
     }
 
-#if HAVE_MMX
+#if HAVE_MMX_INLINE
     if(ff_gCpuCaps.hasMMX) __asm__ volatile ("emms\n\t");
 #endif
-#if HAVE_MMX2
+#if HAVE_MMXEXT_INLINE
     if(ff_gCpuCaps.hasMMX2) __asm__ volatile ("sfence\n\t");
 #endif
     return ff_vf_next_put_image(vf,dmpi, pts);
@@ -707,7 +707,7 @@ const vf_info_t ff_vf_info_fspp = {
 #define THRESHOLD(r,x,t) if(((unsigned)((x)+t))>t*2) r=(x);else r=0;
 #define DESCALE(x,n)  (((x) + (1 << ((n)-1))) >> n)
 
-#if HAVE_MMX
+#if HAVE_MMX_INLINE
 
 DECLARE_ASM_CONST(8, uint64_t, MM_FIX_0_382683433)=FIX64(0.382683433, 14);
 DECLARE_ALIGNED(8, uint64_t, ff_MM_FIX_0_541196100)=FIX64(0.541196100, 14);
@@ -728,7 +728,7 @@ DECLARE_ASM_CONST(8, uint64_t, MM_FIX_0_198912367)=FIX64(0.198912367, 14);
 DECLARE_ASM_CONST(8, uint64_t, MM_DESCALE_RND)=C64(4);
 DECLARE_ASM_CONST(8, uint64_t, MM_2)=C64(2);
 
-#else /* !HAVE_MMX */
+#else /* !HAVE_MMX_INLINE */
 
 typedef int32_t int_simd16_t;
 static const int16_t FIX_0_382683433=FIX(0.382683433, 14);
@@ -743,7 +743,7 @@ static const int16_t FIX_1_082392200=FIX(1.082392200, 13);
 
 #endif
 
-#if !HAVE_MMX
+#if !HAVE_MMX_INLINE
 
 static void column_fidct_c(int16_t* thr_adr, int16_t *data, int16_t *output, int cnt)
 {
@@ -868,7 +868,7 @@ static void column_fidct_c(int16_t* thr_adr, int16_t *data, int16_t *output, int
     }
 }
 
-#else /* HAVE_MMX */
+#else /* HAVE_MMX_INLINE */
 
 static void column_fidct_mmx(int16_t* thr_adr,  int16_t *data,  int16_t *output,  int cnt)
 {
@@ -1605,9 +1605,9 @@ static void column_fidct_mmx(int16_t* thr_adr,  int16_t *data,  int16_t *output,
         );
 }
 
-#endif // HAVE_MMX
+#endif // HAVE_MMX_INLINE
 
-#if !HAVE_MMX
+#if !HAVE_MMX_INLINE
 
 static void row_idct_c(int16_t* workspace,
                        int16_t* output_adr, int output_stride, int cnt)
@@ -1672,7 +1672,7 @@ static void row_idct_c(int16_t* workspace,
     }
 }
 
-#else /* HAVE_MMX */
+#else /* HAVE_MMX_INLINE */
 
 static void row_idct_mmx (int16_t* workspace,
                           int16_t* output_adr,  int output_stride,  int cnt)
@@ -1876,9 +1876,9 @@ static void row_idct_mmx (int16_t* workspace,
         );
 }
 
-#endif // HAVE_MMX
+#endif // HAVE_MMX_INLINE
 
-#if !HAVE_MMX
+#if !HAVE_MMX_INLINE
 
 static void row_fdct_c(int16_t *data, const uint8_t *pixels, int line_size, int cnt)
 {
@@ -1941,7 +1941,7 @@ static void row_fdct_c(int16_t *data, const uint8_t *pixels, int line_size, int 
     }
 }
 
-#else /* HAVE_MMX */
+#else /* HAVE_MMX_INLINE */
 
 static void row_fdct_mmx(int16_t *data,  const uint8_t *pixels,  int line_size,  int cnt)
 {
@@ -2121,4 +2121,4 @@ static void row_fdct_mmx(int16_t *data,  const uint8_t *pixels,  int line_size, 
         : "%"REG_d);
 }
 
-#endif // HAVE_MMX
+#endif // HAVE_MMX_INLINE
