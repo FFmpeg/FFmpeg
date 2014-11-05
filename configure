@@ -4525,7 +4525,7 @@ elif enabled parisc; then
 
     if enabled gcc; then
         case $($cc -dumpversion) in
-            4.[3-8].*) check_cflags -fno-optimize-sibling-calls ;;
+            4.[3-9].*) check_cflags -fno-optimize-sibling-calls ;;
         esac
     fi
 
