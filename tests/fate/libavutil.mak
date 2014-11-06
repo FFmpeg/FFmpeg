@@ -8,6 +8,11 @@ fate-aes: libavutil/aes-test$(EXESUF)
 fate-aes: CMD = run libavutil/aes-test
 fate-aes: REF = /dev/null
 
+FATE_LIBAVUTIL += fate-cast5
+fate-cast5: libavutil/cast5-test$(EXESUF)
+fate-cast5: CMD = run libavutil/cast5-test
+fate-cast5: REF = /dev/null
+
 FATE_LIBAVUTIL += fate-atomic
 fate-atomic: libavutil/atomic-test$(EXESUF)
 fate-atomic: CMD = run libavutil/atomic-test
@@ -53,7 +58,7 @@ fate-fifo: CMD = run libavutil/fifo-test
 
 FATE_LIBAVUTIL += fate-float-dsp
 fate-float-dsp: libavutil/float_dsp-test$(EXESUF)
-fate-float-dsp: CMD = run libavutil/float_dsp-test
+fate-float-dsp: CMD = run libavutil/float_dsp-test $(CPUFLAGS:%=-c%)
 fate-float-dsp: CMP = null
 fate-float-dsp: REF = /dev/null
 

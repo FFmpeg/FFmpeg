@@ -257,7 +257,7 @@ static int decode_frame(AVCodecContext *avctx,
     inter = (chunk_type == MADm_TAG || chunk_type == MADe_TAG);
     bytestream2_skip(&gb, 10);
 
-    av_reduce(&avctx->time_base.num, &avctx->time_base.den,
+    av_reduce(&avctx->framerate.den, &avctx->framerate.num,
               bytestream2_get_le16(&gb), 1000, 1<<30);
 
     width  = bytestream2_get_le16(&gb);
@@ -329,7 +329,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 {
     MadContext *t = avctx->priv_data;
     av_frame_free(&t->last_frame);
-    av_free(t->bitstream_buf);
+    av_freep(&t->bitstream_buf);
     return 0;
 }
 

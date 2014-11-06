@@ -138,8 +138,8 @@ static av_cold int encode_end(AVCodecContext *avctx)
     ff_mdct_end(&s->mdct_ctx);
 
     if (s->avctx->trellis) {
-        av_free(s->opt);
-        av_free(s->path);
+        av_freep(&s->opt);
+        av_freep(&s->path);
     }
     ff_af_queue_close(&s->afq);
 
@@ -165,7 +165,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     }
 
     avctx->frame_size = NELLY_SAMPLES;
-    avctx->delay      = NELLY_BUF_LEN;
+    avctx->initial_padding = NELLY_BUF_LEN;
     ff_af_queue_init(avctx, &s->afq);
     s->avctx = avctx;
     if ((ret = ff_mdct_init(&s->mdct_ctx, 8, 0, 32768.0)) < 0)

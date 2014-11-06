@@ -30,6 +30,7 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/intfloat.h"
+#include "libavutil/time_internal.h"
 #include "avformat.h"
 #include "internal.h"
 #include "wtv.h"
@@ -386,10 +387,12 @@ static int read_probe(AVProbeData *p)
 static int filetime_to_iso8601(char *buf, int buf_size, int64_t value)
 {
     time_t t = (value / 10000000LL) - 11644473600LL;
-    struct tm *tm = gmtime(&t);
+    struct tm tmbuf;
+    struct tm *tm = gmtime_r(&t, &tmbuf);
     if (!tm)
         return -1;
-    strftime(buf, buf_size, "%Y-%m-%d %H:%M:%S", gmtime(&t));
+    if (!strftime(buf, buf_size, "%Y-%m-%d %H:%M:%S", tm))
+        return -1;
     return 0;
 }
 
@@ -400,10 +403,12 @@ static int filetime_to_iso8601(char *buf, int buf_size, int64_t value)
 static int crazytime_to_iso8601(char *buf, int buf_size, int64_t value)
 {
     time_t t = (value / 10000000LL) - 719162LL*86400LL;
-    struct tm *tm = gmtime(&t);
+    struct tm tmbuf;
+    struct tm *tm = gmtime_r(&t, &tmbuf);
     if (!tm)
         return -1;
-    strftime(buf, buf_size, "%Y-%m-%d %H:%M:%S", gmtime(&t));
+    if (!strftime(buf, buf_size, "%Y-%m-%d %H:%M:%S", tm))
+        return -1;
     return 0;
 }
 
@@ -414,10 +419,12 @@ static int crazytime_to_iso8601(char *buf, int buf_size, int64_t value)
 static int oledate_to_iso8601(char *buf, int buf_size, int64_t value)
 {
     time_t t = (av_int2double(value) - 25569.0) * 86400;
-    struct tm *result= gmtime(&t);
-    if (!result)
+    struct tm tmbuf;
+    struct tm *tm= gmtime_r(&t, &tmbuf);
+    if (!tm)
         return -1;
-    strftime(buf, buf_size, "%Y-%m-%d %H:%M:%S", result);
+    if (!strftime(buf, buf_size, "%Y-%m-%d %H:%M:%S", tm))
+        return -1;
     return 0;
 }
 
@@ -789,6 +796,8 @@ static int parse_chunks(AVFormatContext *s, int mode, int64_t seekts, int *len_p
         len = avio_rl32(pb);
         if (len < 32) {
             int ret;
+            if (avio_feof(pb))
+                return AVERROR_EOF;
             av_log(s, AV_LOG_WARNING, "encountered broken chunk\n");
             if ((ret = recover(wtv, avio_tell(pb) - 20)) < 0)
                 return ret;
@@ -972,7 +981,9 @@ static int read_header(AVFormatContext *s)
     avio_skip(s->pb, 4);
     root_sector = avio_rl32(s->pb);
 
-    seek_by_sector(s->pb, root_sector, 0);
+    ret = seek_by_sector(s->pb, root_sector, 0);
+    if (ret < 0)
+        return ret;
     root_size = avio_read(s->pb, root, root_size);
     if (root_size < 0)
         return AVERROR_INVALIDDATA;

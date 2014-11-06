@@ -82,10 +82,10 @@ static int dxtory_decode_v1_410(AVCodecContext *avctx, AVFrame *pic,
     V  = pic->data[2];
     for (h = 0; h < avctx->height; h += 4) {
         for (w = 0; w < avctx->width; w += 4) {
-            AV_COPY32(Y1 + w, src);
-            AV_COPY32(Y2 + w, src + 4);
-            AV_COPY32(Y3 + w, src + 8);
-            AV_COPY32(Y4 + w, src + 12);
+            AV_COPY32U(Y1 + w, src);
+            AV_COPY32U(Y2 + w, src + 4);
+            AV_COPY32U(Y3 + w, src + 8);
+            AV_COPY32U(Y4 + w, src + 12);
             U[w >> 2] = src[16] + 0x80;
             V[w >> 2] = src[17] + 0x80;
             src += 18;

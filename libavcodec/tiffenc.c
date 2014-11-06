@@ -305,7 +305,9 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     strips = (s->height - 1) / s->rps + 1;
 
-    packet_size = avctx->height * ((avctx->width * s->bpp + 7) >> 3) * 2 +
+    bytes_per_row = (((s->width - 1) / s->subsampling[0] + 1) * s->bpp *
+                     s->subsampling[0] * s->subsampling[1] + 7) >> 3;
+    packet_size = avctx->height * bytes_per_row * 2 +
                   avctx->height * 4 + FF_MIN_BUFFER_SIZE;
 
     if ((ret = ff_alloc_packet2(avctx, pkt, packet_size)) < 0)
@@ -333,8 +335,6 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         goto fail;
     }
 
-    bytes_per_row = (((s->width - 1) / s->subsampling[0] + 1) * s->bpp *
-                     s->subsampling[0] * s->subsampling[1] + 7) >> 3;
     if (is_yuv) {
         av_fast_padded_malloc(&s->yuv_line, &s->yuv_line_size, bytes_per_row);
         if (s->yuv_line == NULL) {

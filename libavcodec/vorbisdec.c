@@ -196,7 +196,7 @@ static void vorbis_free(vorbis_context *vc)
 
     if (vc->residues)
         for (i = 0; i < vc->residue_count; i++)
-            av_free(vc->residues[i].classifs);
+            av_freep(&vc->residues[i].classifs);
     av_freep(&vc->residues);
     av_freep(&vc->modes);
 
@@ -205,7 +205,7 @@ static void vorbis_free(vorbis_context *vc)
 
     if (vc->codebooks)
         for (i = 0; i < vc->codebook_count; ++i) {
-            av_free(vc->codebooks[i].codevectors);
+            av_freep(&vc->codebooks[i].codevectors);
             ff_free_vlc(&vc->codebooks[i].vlc);
         }
     av_freep(&vc->codebooks);
@@ -213,21 +213,21 @@ static void vorbis_free(vorbis_context *vc)
     if (vc->floors)
         for (i = 0; i < vc->floor_count; ++i) {
             if (vc->floors[i].floor_type == 0) {
-                av_free(vc->floors[i].data.t0.map[0]);
-                av_free(vc->floors[i].data.t0.map[1]);
-                av_free(vc->floors[i].data.t0.book_list);
-                av_free(vc->floors[i].data.t0.lsp);
+                av_freep(&vc->floors[i].data.t0.map[0]);
+                av_freep(&vc->floors[i].data.t0.map[1]);
+                av_freep(&vc->floors[i].data.t0.book_list);
+                av_freep(&vc->floors[i].data.t0.lsp);
             } else {
-                av_free(vc->floors[i].data.t1.list);
+                av_freep(&vc->floors[i].data.t1.list);
             }
         }
     av_freep(&vc->floors);
 
     if (vc->mappings)
         for (i = 0; i < vc->mapping_count; ++i) {
-            av_free(vc->mappings[i].magnitude);
-            av_free(vc->mappings[i].angle);
-            av_free(vc->mappings[i].mux);
+            av_freep(&vc->mappings[i].magnitude);
+            av_freep(&vc->mappings[i].angle);
+            av_freep(&vc->mappings[i].mux);
         }
     av_freep(&vc->mappings);
 }
@@ -1314,7 +1314,9 @@ static av_always_inline int setup_classifs(vorbis_context *vc,
                                            vorbis_residue *vr,
                                            uint8_t *do_not_decode,
                                            unsigned ch_used,
-                                           int partition_count)
+                                           int partition_count,
+                                           int ptns_to_read
+                                          )
 {
     int p, j, i;
     unsigned c_p_c         = vc->codebooks[vr->classbook].dimensions;
@@ -1336,7 +1338,7 @@ static av_always_inline int setup_classifs(vorbis_context *vc,
                 for (i = partition_count + c_p_c - 1; i >= partition_count; i--) {
                     temp2 = (((uint64_t)temp) * inverse_class) >> 32;
 
-                    if (i < vr->ptns_to_read)
+                    if (i < ptns_to_read)
                         vr->classifs[p + i] = temp - temp2 * vr->classifications;
                     temp = temp2;
                 }
@@ -1344,13 +1346,13 @@ static av_always_inline int setup_classifs(vorbis_context *vc,
                 for (i = partition_count + c_p_c - 1; i >= partition_count; i--) {
                     temp2 = temp / vr->classifications;
 
-                    if (i < vr->ptns_to_read)
+                    if (i < ptns_to_read)
                         vr->classifs[p + i] = temp - temp2 * vr->classifications;
                     temp = temp2;
                 }
             }
         }
-        p += vr->ptns_to_read;
+        p += ptns_to_read;
     }
     return 0;
 }
@@ -1404,7 +1406,7 @@ static av_always_inline int vorbis_residue_decode_internal(vorbis_context *vc,
         for (partition_count = 0; partition_count < ptns_to_read;) {  // SPEC        error
             if (!pass) {
                 int ret;
-                if ((ret = setup_classifs(vc, vr, do_not_decode, ch_used, partition_count)) < 0)
+                if ((ret = setup_classifs(vc, vr, do_not_decode, ch_used, partition_count, ptns_to_read)) < 0)
                     return ret;
             }
             for (i = 0; (i < c_p_c) && (partition_count < ptns_to_read); ++i) {

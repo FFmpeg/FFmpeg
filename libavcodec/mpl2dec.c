@@ -59,7 +59,6 @@ static int mpl2_event_to_ass(AVBPrint *buf, const char *p)
         }
     }
 
-    av_bprintf(buf, "\r\n");
     return 0;
 }
 
@@ -76,7 +75,7 @@ static int mpl2_decode_frame(AVCodecContext *avctx, void *data,
 
     av_bprint_init(&buf, 0, AV_BPRINT_SIZE_UNLIMITED);
     if (ptr && avpkt->size > 0 && *ptr && !mpl2_event_to_ass(&buf, ptr))
-        ret = ff_ass_add_rect_bprint(sub, &buf, ts_start, ts_duration, 0);
+        ret = ff_ass_add_rect_bprint(sub, &buf, ts_start, ts_duration);
     av_bprint_finalize(&buf, NULL);
     if (ret < 0)
         return ret;

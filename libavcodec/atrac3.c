@@ -190,8 +190,8 @@ static av_cold int atrac3_decode_close(AVCodecContext *avctx)
 {
     ATRAC3Context *q = avctx->priv_data;
 
-    av_free(q->units);
-    av_free(q->decoded_bytes_buffer);
+    av_freep(&q->units);
+    av_freep(&q->decoded_bytes_buffer);
 
     ff_mdct_end(&q->mdct_ctx);
 

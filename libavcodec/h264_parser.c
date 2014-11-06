@@ -202,10 +202,10 @@ static int scan_mmco_reset(AVCodecParserContext *s)
  */
 static inline int parse_nal_units(AVCodecParserContext *s,
                                   AVCodecContext *avctx,
-                                  const uint8_t *buf, int buf_size)
+                                  const uint8_t * const buf, int buf_size)
 {
     H264Context *h         = s->priv_data;
-    const uint8_t *buf_end = buf + buf_size;
+    int buf_index, next_avc;
     unsigned int pps_id;
     unsigned int slice_type;
     int state = -1, got_reset = 0;
@@ -225,26 +225,26 @@ static inline int parse_nal_units(AVCodecParserContext *s,
     if (!buf_size)
         return 0;
 
+    buf_index     = 0;
+    next_avc      = h->is_avc ? 0 : buf_size;
     for (;;) {
         int src_length, dst_length, consumed, nalsize = 0;
-        if (h->is_avc) {
-            int i;
-            if (h->nal_length_size >= buf_end - buf) break;
-            nalsize = 0;
-            for (i = 0; i < h->nal_length_size; i++)
-                nalsize = (nalsize << 8) | *buf++;
-            if (nalsize <= 0 || nalsize > buf_end - buf) {
-                av_log(h->avctx, AV_LOG_ERROR, "AVC: nal size %d\n", nalsize);
+
+        if (buf_index >= next_avc) {
+            nalsize = get_avc_nalsize(h, buf, buf_size, &buf_index);
+            if (nalsize < 0)
                 break;
-            }
-            src_length = nalsize;
+            next_avc = buf_index + nalsize;
         } else {
-        buf = avpriv_find_start_code(buf, buf_end, &state);
-        if (buf >= buf_end)
-            break;
-        --buf;
-        src_length = buf_end - buf;
+            buf_index = find_start_code(buf, buf_size, buf_index, next_avc);
+            if (buf_index >= buf_size)
+                break;
+            if (buf_index >= next_avc)
+                continue;
         }
+        src_length = next_avc - buf_index;
+
+        state = buf[buf_index];
         switch (state & 0x1f) {
         case NAL_SLICE:
         case NAL_IDR_SLICE:
@@ -261,9 +261,12 @@ static inline int parse_nal_units(AVCodecParserContext *s,
             }
             break;
         }
-        ptr = ff_h264_decode_nal(h, buf, &dst_length, &consumed, src_length);
+        ptr = ff_h264_decode_nal(h, buf + buf_index, &dst_length,
+                                 &consumed, src_length);
         if (!ptr || dst_length < 0)
             break;
+
+        buf_index += consumed;
 
         init_get_bits(&h->gb, ptr, 8 * dst_length);
         switch (h->nal_unit_type) {
@@ -439,7 +442,6 @@ static inline int parse_nal_units(AVCodecParserContext *s,
 
             return 0; /* no need to evaluate the rest */
         }
-        buf += h->is_avc ? nalsize : consumed;
     }
     if (q264)
         return 0;
@@ -490,6 +492,8 @@ static int h264_parse(AVCodecParserContext *s,
 
     parse_nal_units(s, avctx, buf, buf_size);
 
+    if (avctx->framerate.num)
+        avctx->time_base = av_inv_q(av_mul_q(avctx->framerate, (AVRational){avctx->ticks_per_frame, 1}));
     if (h->sei_cpb_removal_delay >= 0) {
         s->dts_sync_point    = h->sei_buffering_period_present;
         s->dts_ref_dts_delta = h->sei_cpb_removal_delay;
@@ -543,7 +547,7 @@ static void close(AVCodecParserContext *s)
     H264Context *h   = s->priv_data;
     ParseContext *pc = &h->parse_context;
 
-    av_free(pc->buffer);
+    av_freep(&pc->buffer);
     ff_h264_free_context(h);
 }
 

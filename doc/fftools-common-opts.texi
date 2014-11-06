@@ -103,7 +103,10 @@ Print detailed information about the filter name @var{filter_name}. Use the
 Show version.
 
 @item -formats
-Show available formats.
+Show available formats (including devices).
+
+@item -devices
+Show available devices.
 
 @item -codecs
 Show all codecs known to libavcodec.
@@ -137,6 +140,22 @@ Show channel names and standard channel layouts.
 
 @item -colors
 Show recognized color names.
+
+@item -sources @var{device}[,@var{opt1}=@var{val1}[,@var{opt2}=@var{val2}]...]
+Show autodetected sources of the intput device.
+Some devices may provide system-dependent source names that cannot be autodetected.
+The returned list cannot be assumed to be always complete.
+@example
+ffmpeg -sources pulse,server=192.168.0.4
+@end example
+
+@item -sinks @var{device}[,@var{opt1}=@var{val1}[,@var{opt2}=@var{val2}]...]
+Show autodetected sinks of the output device.
+Some devices may provide system-dependent sink names that cannot be autodetected.
+The returned list cannot be assumed to be always complete.
+@example
+ffmpeg -sinks pulse,server=192.168.0.4
+@end example
 
 @item -loglevel [repeat+]@var{loglevel} | -v [repeat+]@var{loglevel}
 Set the logging level used by the library.

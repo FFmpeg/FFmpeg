@@ -41,7 +41,7 @@ OBJS-$(CONFIG_CAVS_DECODER)            += x86/cavsdsp.o
 OBJS-$(CONFIG_DCA_DECODER)             += x86/dcadsp_init.o
 OBJS-$(CONFIG_DNXHD_ENCODER)           += x86/dnxhdenc_init.o
 OBJS-$(CONFIG_HEVC_DECODER)            += x86/hevcdsp_init.o
-OBJS-$(CONFIG_MLP_DECODER)             += x86/mlpdsp.o
+OBJS-$(CONFIG_MLP_DECODER)             += x86/mlpdsp_init.o
 OBJS-$(CONFIG_MPEG4_DECODER)           += x86/xvididct_init.o
 OBJS-$(CONFIG_PNG_DECODER)             += x86/pngdsp_init.o
 OBJS-$(CONFIG_PRORES_DECODER)          += x86/proresdsp_init.o
@@ -52,7 +52,7 @@ OBJS-$(CONFIG_RV40_DECODER)            += x86/rv34dsp_init.o            \
 OBJS-$(CONFIG_SVQ1_ENCODER)            += x86/svq1enc_init.o
 OBJS-$(CONFIG_V210_DECODER)            += x86/v210-init.o
 OBJS-$(CONFIG_TTA_DECODER)             += x86/ttadsp_init.o
-OBJS-$(CONFIG_TRUEHD_DECODER)          += x86/mlpdsp.o
+OBJS-$(CONFIG_TRUEHD_DECODER)          += x86/mlpdsp_init.o
 OBJS-$(CONFIG_VC1_DECODER)             += x86/vc1dsp_init.o
 OBJS-$(CONFIG_VORBIS_DECODER)          += x86/vorbisdsp_init.o
 OBJS-$(CONFIG_VP6_DECODER)             += x86/vp6dsp_init.o
@@ -132,6 +132,7 @@ YASM-OBJS-$(CONFIG_HEVC_DECODER)       += x86/hevc_mc.o                 \
                                           x86/hevc_deblock.o            \
                                           x86/hevc_idct.o               \
                                           x86/hevc_res_add.o
+YASM-OBJS-$(CONFIG_MLP_DECODER)        += x86/mlpdsp.o
 YASM-OBJS-$(CONFIG_PNG_DECODER)        += x86/pngdsp.o
 YASM-OBJS-$(CONFIG_PRORES_DECODER)     += x86/proresdsp.o
 YASM-OBJS-$(CONFIG_PRORES_LGPL_DECODER) += x86/proresdsp.o
@@ -139,6 +140,7 @@ YASM-OBJS-$(CONFIG_RV30_DECODER)       += x86/rv34dsp.o
 YASM-OBJS-$(CONFIG_RV40_DECODER)       += x86/rv34dsp.o                 \
                                           x86/rv40dsp.o
 YASM-OBJS-$(CONFIG_SVQ1_ENCODER)       += x86/svq1enc.o
+YASM-OBJS-$(CONFIG_TRUEHD_DECODER)     += x86/mlpdsp.o
 YASM-OBJS-$(CONFIG_TTA_DECODER)        += x86/ttadsp.o
 YASM-OBJS-$(CONFIG_V210_DECODER)       += x86/v210.o
 YASM-OBJS-$(CONFIG_VC1_DECODER)        += x86/vc1dsp.o

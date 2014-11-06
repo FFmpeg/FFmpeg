@@ -82,7 +82,7 @@ void ff_h263_show_pict_info(MpegEncContext *s){
          s->modified_quant ? " MQ" : "",
          s->loop_filter ? " LOOP" : "",
          s->h263_slice_structured ? " SS" : "",
-         s->avctx->time_base.den, s->avctx->time_base.num
+         s->avctx->framerate.num, s->avctx->framerate.den
     );
     }
 }
@@ -948,7 +948,7 @@ int ff_h263_decode_picture_header(MpegEncContext *s)
         s->width = width;
         s->height = height;
         s->avctx->sample_aspect_ratio= (AVRational){12,11};
-        s->avctx->time_base= (AVRational){1001, 30000};
+        s->avctx->framerate = (AVRational){ 30000, 1001 };
     } else {
         int ufep;
 
@@ -1047,18 +1047,18 @@ int ff_h263_decode_picture_header(MpegEncContext *s)
 
             if(s->custom_pcf){
                 int gcd;
-                s->avctx->time_base.den= 1800000;
-                s->avctx->time_base.num= 1000 + get_bits1(&s->gb);
-                s->avctx->time_base.num*= get_bits(&s->gb, 7);
-                if(s->avctx->time_base.num == 0){
+                s->avctx->framerate.num  = 1800000;
+                s->avctx->framerate.den  = 1000 + get_bits1(&s->gb);
+                s->avctx->framerate.den *= get_bits(&s->gb, 7);
+                if(s->avctx->framerate.den == 0){
                     av_log(s, AV_LOG_ERROR, "zero framerate\n");
                     return -1;
                 }
-                gcd= av_gcd(s->avctx->time_base.den, s->avctx->time_base.num);
-                s->avctx->time_base.den /= gcd;
-                s->avctx->time_base.num /= gcd;
+                gcd= av_gcd(s->avctx->framerate.den, s->avctx->framerate.num);
+                s->avctx->framerate.den /= gcd;
+                s->avctx->framerate.num /= gcd;
             }else{
-                s->avctx->time_base= (AVRational){1001, 30000};
+                s->avctx->framerate = (AVRational){ 30000, 1001 };
             }
         }
 

@@ -24,6 +24,8 @@
 #include <stdint.h>
 #include "common.h"
 
+#include "avassert.h"
+
 #define MIN_EXP -126
 #define MAX_EXP  126
 #define ONE_BITS 29
@@ -57,10 +59,11 @@ static av_const SoftFloat av_normalize_sf(SoftFloat a){
 
 static inline av_const SoftFloat av_normalize1_sf(SoftFloat a){
 #if 1
-    if(a.mant + 0x40000000 < 0){
+    if((int32_t)(a.mant + 0x40000000U) < 0){
         a.exp++;
         a.mant>>=1;
     }
+    av_assert2(a.mant < 0x40000000 && a.mant > -0x40000000);
     return a;
 #elif 1
     int t= a.mant + 0x40000000 < 0;
@@ -78,6 +81,7 @@ static inline av_const SoftFloat av_normalize1_sf(SoftFloat a){
  */
 static inline av_const SoftFloat av_mul_sf(SoftFloat a, SoftFloat b){
     a.exp += b.exp;
+    av_assert2((int32_t)((a.mant * (int64_t)b.mant) >> ONE_BITS) == (a.mant * (int64_t)b.mant) >> ONE_BITS);
     a.mant = (a.mant * (int64_t)b.mant) >> ONE_BITS;
     return av_normalize1_sf(a);
 }
@@ -100,8 +104,10 @@ static inline av_const int av_cmp_sf(SoftFloat a, SoftFloat b){
 
 static inline av_const SoftFloat av_add_sf(SoftFloat a, SoftFloat b){
     int t= a.exp - b.exp;
-    if(t<0) return av_normalize1_sf((SoftFloat){b.exp, b.mant + (a.mant >> (-t))});
-    else    return av_normalize1_sf((SoftFloat){a.exp, a.mant + (b.mant >>   t )});
+    if      (t <-31) return b;
+    else if (t <  0) return av_normalize1_sf((SoftFloat){b.exp, b.mant + (a.mant >> (-t))});
+    else if (t < 32) return av_normalize1_sf((SoftFloat){a.exp, a.mant + (b.mant >>   t )});
+    else             return a;
 }
 
 static inline av_const SoftFloat av_sub_sf(SoftFloat a, SoftFloat b){

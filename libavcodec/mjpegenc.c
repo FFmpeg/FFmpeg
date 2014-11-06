@@ -78,7 +78,7 @@ av_cold int ff_mjpeg_encode_init(MpegEncContext *s)
 
 void ff_mjpeg_encode_close(MpegEncContext *s)
 {
-    av_free(s->mjpeg_ctx);
+    av_freep(&s->mjpeg_ctx);
 }
 
 static void encode_block(MpegEncContext *s, int16_t *block, int n)
@@ -215,6 +215,8 @@ static int amv_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
 }
 
 #if CONFIG_MJPEG_ENCODER
+FF_MPV_GENERIC_CLASS(mjpeg)
+
 AVCodec ff_mjpeg_encoder = {
     .name           = "mjpeg",
     .long_name      = NULL_IF_CONFIG_SMALL("MJPEG (Motion JPEG)"),
@@ -228,9 +230,12 @@ AVCodec ff_mjpeg_encoder = {
     .pix_fmts       = (const enum AVPixelFormat[]){
         AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ422P, AV_PIX_FMT_YUVJ444P, AV_PIX_FMT_NONE
     },
+    .priv_class     = &mjpeg_class,
 };
 #endif
 #if CONFIG_AMV_ENCODER
+FF_MPV_GENERIC_CLASS(amv)
+
 AVCodec ff_amv_encoder = {
     .name           = "amv",
     .long_name      = NULL_IF_CONFIG_SMALL("AMV Video"),
@@ -243,5 +248,6 @@ AVCodec ff_amv_encoder = {
     .pix_fmts       = (const enum AVPixelFormat[]){
         AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_NONE
     },
+    .priv_class     = &amv_class,
 };
 #endif

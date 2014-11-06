@@ -297,8 +297,7 @@ static int microdvd_decode_frame(AVCodecContext *avctx,
             int ts_duration  = duration != -1 ?
                 av_rescale_q(duration, avctx->time_base, (AVRational){1,100}) : -1;
 
-        av_bprintf(&new_line, "\r\n");
-        ret = ff_ass_add_rect_bprint(sub, &new_line, ts_start, ts_duration, 0);
+        ret = ff_ass_add_rect_bprint(sub, &new_line, ts_start, ts_duration);
         av_bprint_finalize(&new_line, NULL);
         if (ret < 0)
             return ret;

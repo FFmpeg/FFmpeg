@@ -585,6 +585,17 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
         h->mb_type_pool      = NULL;
         h->ref_index_pool    = NULL;
         h->motion_val_pool   = NULL;
+        h->intra4x4_pred_mode= NULL;
+        h->non_zero_count    = NULL;
+        h->slice_table_base  = NULL;
+        h->slice_table       = NULL;
+        h->cbp_table         = NULL;
+        h->chroma_pred_mode_table = NULL;
+        memset(h->mvd_table, 0, sizeof(h->mvd_table));
+        h->direct_table      = NULL;
+        h->list_counts       = NULL;
+        h->mb2b_xy           = NULL;
+        h->mb2br_xy          = NULL;
         for (i = 0; i < 2; i++) {
             h->rbsp_buffer[i] = NULL;
             h->rbsp_buffer_size[i] = 0;
@@ -1170,8 +1181,8 @@ static int h264_slice_header_init(H264Context *h, int reinit)
         int64_t den = h->sps.time_scale;
         if (h->x264_build < 44U)
             den *= 2;
-        av_reduce(&h->avctx->time_base.num, &h->avctx->time_base.den,
-                  h->sps.num_units_in_tick, den, 1 << 30);
+        av_reduce(&h->avctx->framerate.den, &h->avctx->framerate.num,
+                  h->sps.num_units_in_tick * h->avctx->ticks_per_frame, den, 1 << 30);
     }
 
     if (reinit)

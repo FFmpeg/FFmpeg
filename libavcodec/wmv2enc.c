@@ -222,6 +222,8 @@ void ff_wmv2_encode_mb(MpegEncContext *s, int16_t block[6][64],
         s->p_tex_bits += get_bits_diff(s);
 }
 
+FF_MPV_GENERIC_CLASS(wmv2)
+
 AVCodec ff_wmv2_encoder = {
     .name           = "wmv2",
     .long_name      = NULL_IF_CONFIG_SMALL("Windows Media Video 8"),
@@ -233,4 +235,5 @@ AVCodec ff_wmv2_encoder = {
     .close          = ff_mpv_encode_end,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV420P,
                                                      AV_PIX_FMT_NONE },
+    .priv_class     = &wmv2_class,
 };

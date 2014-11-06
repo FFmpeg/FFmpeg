@@ -1101,7 +1101,7 @@ static av_cold int encode_close(AVCodecContext *avctx)
 
     if (ctx->tdata) {
         for (i = 0; i < avctx->thread_count; i++)
-            av_free(ctx->tdata[i].nodes);
+            av_freep(&ctx->tdata[i].nodes);
     }
     av_freep(&ctx->tdata);
     av_freep(&ctx->slice_q);
@@ -1148,11 +1148,13 @@ static av_cold int encode_init(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
     if (ctx->profile == PRORES_PROFILE_AUTO) {
-        ctx->profile = av_pix_fmt_desc_get(avctx->pix_fmt)->flags & AV_PIX_FMT_FLAG_ALPHA
+        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
+        ctx->profile = (desc->flags & AV_PIX_FMT_FLAG_ALPHA ||
+                        !(desc->log2_chroma_w + desc->log2_chroma_h))
                      ? PRORES_PROFILE_4444 : PRORES_PROFILE_HQ;
         av_log(avctx, AV_LOG_INFO, "Autoselected %s. It can be overridden "
                "through -profile option.\n", ctx->profile == PRORES_PROFILE_4444
-               ? "4:4:4:4 profile because of the alpha channel"
+               ? "4:4:4:4 profile because of the used input colorspace"
                : "HQ profile to keep best quality");
     }
     if (av_pix_fmt_desc_get(avctx->pix_fmt)->flags & AV_PIX_FMT_FLAG_ALPHA) {

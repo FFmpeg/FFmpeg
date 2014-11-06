@@ -37,6 +37,9 @@ fate-webm-dash-manifest-unaligned-video-streams: CMD = run ffmpeg -f webm_dash_m
 FATE_VP8-$(call DEMDEC, WEBM_DASH_MANIFEST, VP8) += fate-webm-dash-manifest-unaligned-audio-streams
 fate-webm-dash-manifest-unaligned-audio-streams: CMD = run ffmpeg -f webm_dash_manifest -i $(TARGET_SAMPLES)/vp8/dash_audio1.webm -f webm_dash_manifest -i $(TARGET_SAMPLES)/vp8/dash_audio3.webm -c copy -map 0 -map 1 -f webm_dash_manifest -adaptation_sets "id=0,streams=0,1" -
 
+FATE_VP8-$(call DEMDEC, WEBM_DASH_MANIFEST, VP8) += fate-webm-dash-manifest-representations
+fate-webm-dash-manifest-representations: CMD = run ffmpeg -f webm_dash_manifest -i $(TARGET_SAMPLES)/vp8/dash_video1.webm -f webm_dash_manifest -i $(TARGET_SAMPLES)/vp8/dash_video4.webm -c copy -map 0 -map 1 -f webm_dash_manifest -adaptation_sets "id=0,streams=0,1" -
+
 FATE_SAMPLES_AVCONV += $(FATE_VP6-yes)
 fate-vp6: $(FATE_VP6-yes)
 
@@ -95,6 +98,7 @@ $(eval $(call FATE_VP9_SUITE,parallelmode-akiyo,$(1),$(2)))
 $(eval $(call FATE_VP9_SUITE,segmentation-aq-akiyo,$(1),$(2)))
 $(eval $(call FATE_VP9_SUITE,segmentation-sf-akiyo,$(1),$(2)))
 $(eval $(call FATE_VP9_SUITE,tiling-pedestrian,$(1),$(2)))
+$(eval $(call FATE_VP9_SUITE,trac3849,$(1),$(2)))
 endef
 
 $(eval $(call FATE_VP9_FULL))

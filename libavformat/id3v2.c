@@ -60,8 +60,8 @@ const AVMetadataConv ff_id3v2_34_metadata_conv[] = {
 
 const AVMetadataConv ff_id3v2_4_metadata_conv[] = {
     { "TCMP", "compilation"   },
-    { "TDRL", "date"          },
     { "TDRC", "date"          },
+    { "TDRL", "date"          },
     { "TDEN", "creation_time" },
     { "TSOA", "album-sort"    },
     { "TSOP", "artist-sort"   },
@@ -168,6 +168,48 @@ static unsigned int get_size(AVIOContext *s, int len)
     while (len--)
         v = (v << 7) + (avio_r8(s) & 0x7F);
     return v;
+}
+
+static unsigned int size_to_syncsafe(unsigned int size)
+{
+    return (((size) & (0x7f <<  0)) >> 0) +
+           (((size) & (0x7f <<  8)) >> 1) +
+           (((size) & (0x7f << 16)) >> 2) +
+           (((size) & (0x7f << 24)) >> 3);
+}
+
+/* No real verification, only check that the tag consists of
+ * a combination of capital alpha-numerical characters */
+static int is_tag(const char *buf, unsigned int len)
+{
+    if (!len)
+        return 0;
+
+    while (len--)
+        if ((buf[len] < 'A' ||
+             buf[len] > 'Z') &&
+            (buf[len] < '0' ||
+             buf[len] > '9'))
+            return 0;
+
+    return 1;
+}
+
+/**
+ * Return 1 if the tag of length len at the given offset is valid, 0 if not, -1 on error
+ */
+static int check_tag(AVIOContext *s, int offset, unsigned int len)
+{
+    char tag[4];
+
+    if (len > 4 ||
+        avio_seek(s, offset, SEEK_SET) < 0 ||
+        avio_read(s, tag, len) < len)
+        return -1;
+    else if (!AV_RB32(tag) || is_tag(tag, len))
+        return 1;
+
+    return 0;
 }
 
 /**
@@ -726,7 +768,7 @@ static void id3v2_parse(AVIOContext *pb, AVDictionary **metadata,
         int tunsync         = 0;
         int tcomp           = 0;
         int tencr           = 0;
-        unsigned long dlen;
+        unsigned long av_unused dlen;
 
         if (isv34) {
             if (avio_read(pb, tag, 4) < 4)
@@ -734,8 +776,26 @@ static void id3v2_parse(AVIOContext *pb, AVDictionary **metadata,
             tag[4] = 0;
             if (version == 3) {
                 tlen = avio_rb32(pb);
-            } else
-                tlen = get_size(pb, 4);
+            } else {
+                /* some encoders incorrectly uses v3 sizes instead of syncsafe ones
+                 * so check the next tag to see which one to use */
+                tlen = avio_rb32(pb);
+                if (tlen > 0x7f) {
+                    if (tlen < len) {
+                        int64_t cur = avio_tell(pb);
+
+                        if (ffio_ensure_seekback(pb, 2 /* tflags */ + tlen + 4 /* next tag */))
+                            break;
+
+                        if (check_tag(pb, cur + 2 + size_to_syncsafe(tlen), 4) == 1)
+                            tlen = size_to_syncsafe(tlen);
+                        else if (check_tag(pb, cur + 2 + tlen, 4) != 1)
+                            break;
+                        avio_seek(pb, cur, SEEK_SET);
+                    } else
+                        tlen = size_to_syncsafe(tlen);
+                }
+            }
             tflags  = avio_rb16(pb);
             tunsync = tflags & ID3v2_FLAG_UNSYNCH;
         } else {

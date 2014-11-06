@@ -94,9 +94,10 @@ static int check(char *file)
     for (;;) {
         int size = read(fd, buffer, SIZE);
         if (size < 0) {
+            int err = errno;
             close(fd);
             finish();
-            printf("+READ-FAILED: %s", strerror(errno));
+            printf("+READ-FAILED: %s", strerror(err));
             ret = 2;
             goto end;
         } else if(!size)

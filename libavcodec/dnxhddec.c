@@ -38,6 +38,7 @@ typedef struct DNXHDContext {
     BlockDSPContext bdsp;
     int64_t cid;                        ///< compression id
     unsigned int width, height;
+    enum AVPixelFormat pix_fmt;
     unsigned int mb_width, mb_height;
     uint32_t mb_scan_index[68];         /* max for 1080p */
     int cur_field;                      ///< current interlaced field
@@ -141,7 +142,7 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
 
     ctx->is_444 = 0;
     if (buf[0x4] == 0x2) {
-        ctx->avctx->pix_fmt = AV_PIX_FMT_YUV444P10;
+        ctx->pix_fmt = AV_PIX_FMT_YUV444P10;
         ctx->avctx->bits_per_raw_sample = 10;
         if (ctx->bit_depth != 10) {
             ff_blockdsp_init(&ctx->bdsp, ctx->avctx);
@@ -151,7 +152,7 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
         }
         ctx->is_444 = 1;
     } else if (buf[0x21] & 0x40) {
-        ctx->avctx->pix_fmt = AV_PIX_FMT_YUV422P10;
+        ctx->pix_fmt = AV_PIX_FMT_YUV422P10;
         ctx->avctx->bits_per_raw_sample = 10;
         if (ctx->bit_depth != 10) {
             ff_blockdsp_init(&ctx->bdsp, ctx->avctx);
@@ -160,7 +161,7 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
             ctx->decode_dct_block = dnxhd_decode_dct_block_10;
         }
     } else {
-        ctx->avctx->pix_fmt = AV_PIX_FMT_YUV422P;
+        ctx->pix_fmt = AV_PIX_FMT_YUV422P;
         ctx->avctx->bits_per_raw_sample = 8;
         if (ctx->bit_depth != 8) {
             ff_blockdsp_init(&ctx->bdsp, ctx->avctx);
@@ -446,7 +447,13 @@ decode_coding_unit:
                avctx->width, avctx->height, ctx->width, ctx->height);
         first_field = 1;
     }
+    if (avctx->pix_fmt != AV_PIX_FMT_NONE && avctx->pix_fmt != ctx->pix_fmt) {
+        av_log(avctx, AV_LOG_WARNING, "pix_fmt changed: %s -> %s\n",
+               av_get_pix_fmt_name(avctx->pix_fmt), av_get_pix_fmt_name(ctx->pix_fmt));
+        first_field = 1;
+    }
 
+    avctx->pix_fmt = ctx->pix_fmt;
     ret = ff_set_dimensions(avctx, ctx->width, ctx->height);
     if (ret < 0)
         return ret;

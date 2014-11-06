@@ -39,8 +39,8 @@ static av_cold int utvideo_decode_init(AVCodecContext *avctx)
     int format;
     int begin_ret;
 
-    if (avctx->extradata_size != 4*4) {
-        av_log(avctx, AV_LOG_ERROR, "Extradata size mismatch.\n");
+    if (avctx->extradata_size != 16 && avctx->extradata_size != 8 ) {
+        av_log(avctx, AV_LOG_ERROR, "Extradata size (%d) mismatch.\n", avctx->extradata_size);
         return -1;
     }
 
@@ -80,6 +80,12 @@ static av_cold int utvideo_decode_init(AVCodecContext *avctx)
         avctx->pix_fmt = AV_PIX_FMT_RGB32;
         format = UTVF_NFCC_BGRA_BU;
         break;
+#ifdef UTVF_UQY2
+    case MKTAG('U', 'Q', 'Y', '2'):
+        avctx->pix_fmt = AV_PIX_FMT_YUV422P10;
+        format = UTVF_v210;
+        break;
+#endif
     default:
         av_log(avctx, AV_LOG_ERROR,
               "Not a Ut Video FOURCC: %X\n", avctx->codec_tag);
@@ -88,6 +94,10 @@ static av_cold int utvideo_decode_init(AVCodecContext *avctx)
 
     /* Only allocate the buffer once */
     utv->buf_size = avpicture_get_size(avctx->pix_fmt, avctx->width, avctx->height);
+#ifdef UTVF_UQY2
+    if (format == UTVF_v210)
+        utv->buf_size += avctx->height * ((avctx->width + 47) / 48) * 128; // the linesize used by the decoder, this does not seem to be exported
+#endif
     utv->buffer = (uint8_t *)av_malloc(utv->buf_size * sizeof(uint8_t));
 
     if (utv->buffer == NULL) {
@@ -155,6 +165,56 @@ static int utvideo_decode_frame(AVCodecContext *avctx, void *data,
         pic->linesize[0] = w * 2;
         pic->data[0] = utv->buffer;
         break;
+    case AV_PIX_FMT_YUV422P10: {
+        uint16_t *y, *u, *v;
+        int i,j;
+        int linesize = ((w + 47) / 48) * 128;
+
+        pic->linesize[0] = w * 2;
+        pic->linesize[1] =
+        pic->linesize[2] = w;
+        pic->data[0] = utv->buffer + linesize * h;
+        pic->data[1] = pic->data[0] + h*pic->linesize[0];
+        pic->data[2] = pic->data[1] + h*pic->linesize[1];
+        y = (uint16_t*)pic->data[0];
+        u = (uint16_t*)pic->data[1];
+        v = (uint16_t*)pic->data[2];
+        for (j = 0; j < h; j++) {
+            const uint8_t *in = utv->buffer + j * linesize;
+
+            for (i = 0; i + 1 < w; i += 6, in += 4) {
+                unsigned a,b;
+                a = AV_RL32(in);
+                in += 4;
+                b = AV_RL32(in);
+                *u++ = (a    ) & 0x3FF;
+                *y++ = (a>>10) & 0x3FF;
+                *v++ = (a>>20) & 0x3FF;
+                *y++ = (b    ) & 0x3FF;
+
+                if (i + 3 >= w)
+                    break;
+
+                in += 4;
+                a = AV_RL32(in);
+                *u++ = (b>>10) & 0x3FF;
+                *y++ = (b>>20) & 0x3FF;
+                *v++ = (a    ) & 0x3FF;
+                *y++ = (a>>10) & 0x3FF;
+
+                if (i + 5 >= w)
+                    break;
+
+                in += 4;
+                b = AV_RL32(in);
+                *u++ = (a>>20) & 0x3FF;
+                *y++ = (b    ) & 0x3FF;
+                *v++ = (b>>10) & 0x3FF;
+                *y++ = (b>>20) & 0x3FF;
+            }
+        }
+        break;
+    }
     case AV_PIX_FMT_BGR24:
     case AV_PIX_FMT_RGB32:
         /* Make the linesize negative, since Ut Video uses bottom-up BGR */

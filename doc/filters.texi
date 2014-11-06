@@ -282,6 +282,10 @@ sequential number of the input frame, starting from 0
 
 @item pos
 the position in the file of the input frame, NAN if unknown
+
+@item w
+@item h
+width and height of the input frame if video
 @end table
 
 Additionally, these filters support an @option{enable} command that can be used
@@ -4170,7 +4174,7 @@ drawtext='fontfile=Linux Libertine O-40\:style=Semibold:text=FFmpeg'
 @item
 Print the date of a real-time encoding (see strftime(3)):
 @example
-drawtext='fontfile=FreeSans.ttf:text=%@{localtime:%a %b %d %Y@}'
+drawtext='fontfile=FreeSans.ttf:text=%@{localtime\:%a %b %d %Y@}'
 @end example
 
 @item
@@ -4442,6 +4446,10 @@ Note that this filter uses the same algorithms as TIVTC/TFM (AviSynth project)
 and VIVTC/VFM (VapourSynth project). The later is a light clone of TFM from
 which @code{fieldmatch} is based on. While the semantic and usage are very
 close, some behaviour and options names can differ.
+
+The @ref{decimate} filter currently only works for constant frame rate input.
+Do not use @code{fieldmatch} and @ref{decimate} if your input has mixed
+telecined and progressive content with changing framerate.
 
 The filter accepts the following options:
 
@@ -5566,8 +5574,62 @@ value.
 
 Detect video interlacing type.
 
-This filter tries to detect if the input is interlaced or progressive,
-top or bottom field first.
+This filter tries to detect if the input frames as interlaced, progressive,
+top or bottom field first. It will also try and detect fields that are
+repeated between adjacent frames (a sign of telecine).
+
+Single frame detection considers only immediately adjacent frames when classifying each frame.
+Multiple frame detection incorporates the classification history of previous frames.
+
+The filter will log these metadata values:
+
+@table @option
+@item single.current_frame
+Detected type of current frame using single-frame detection. One of:
+``tff'' (top field first), ``bff'' (bottom field first),
+``progressive'', or ``undetermined''
+
+@item single.tff
+Cumulative number of frames detected as top field first using single-frame detection.
+
+@item multiple.tff
+Cumulative number of frames detected as top field first using multiple-frame detection.
+
+@item single.bff
+Cumulative number of frames detected as bottom field first using single-frame detection.
+
+@item multiple.current_frame
+Detected type of current frame using multiple-frame detection. One of:
+``tff'' (top field first), ``bff'' (bottom field first),
+``progressive'', or ``undetermined''
+
+@item multiple.bff
+Cumulative number of frames detected as bottom field first using multiple-frame detection.
+
+@item single.progressive
+Cumulative number of frames detected as progressive using single-frame detection.
+
+@item multiple.progressive
+Cumulative number of frames detected as progressive using multiple-frame detection.
+
+@item single.undetermined
+Cumulative number of frames that could not be classified using single-frame detection.
+
+@item multiple.undetermined
+Cumulative number of frames that could not be classified using multiple-frame detection.
+
+@item repeated.current_frame
+Which field in the current frame is repeated from the last. One of ``neither'', ``top'', or ``bottom''.
+
+@item repeated.neither
+Cumulative number of frames with no repeated field.
+
+@item repeated.top
+Cumulative number of frames with the top field repeated from the previous frame's top field.
+
+@item repeated.bottom
+Cumulative number of frames with the bottom field repeated from the previous frame's bottom field.
+@end table
 
 The filter accepts the following options:
 
@@ -5576,6 +5638,13 @@ The filter accepts the following options:
 Set interlacing threshold.
 @item prog_thres
 Set progressive threshold.
+@item repeat_thres
+Threshold for repeated field detection.
+@item half_life
+Number of frames after which a given frame's contribution to the
+statistics is halved (i.e., it contributes only 0.5 to it's
+classification). The default of 0 means that all frames seen are given
+full weight of 1.0 forever.
 @end table
 
 @section il
@@ -6222,7 +6291,7 @@ values are assumed.
 
 Refer to the official libopencv documentation for more precise
 information:
-@url{http://opencv.willowgarage.com/documentation/c/image_filtering.html}
+@url{http://docs.opencv.org/master/modules/imgproc/doc/filtering.html}
 
 Several libopencv filters are supported; see the following subsections.
 
@@ -6714,6 +6783,9 @@ A description of the accepted parameters follows.
 @item y3
 Set coordinates expression for top left, top right, bottom left and bottom right corners.
 Default values are @code{0:0:W:0:0:H:W:H} with which perspective will remain unchanged.
+If the @code{sense} option is set to @code{source}, then the specified points will be sent
+to the corners of the destination. If the @code{sense} option is set to @code{destination},
+then the corners of the source will be sent to the specified coordinates.
 
 The expressions can use the following variables:
 
@@ -6733,6 +6805,24 @@ It accepts the following values:
 @end table
 
 Default value is @samp{linear}.
+
+@item sense
+Set interpretation of coordinate options.
+
+It accepts the following values:
+@table @samp
+@item 0, source
+
+Send point in the source specified by the given coordinates to
+the corners of the destination.
+
+@item 1, destination
+
+Send the corners of the source to the point in the destination specified
+by the given coordinates.
+
+Default value is @samp{source}.
+@end table
 @end table
 
 @section phase
@@ -8647,6 +8737,7 @@ ffmpeg -i INPUT -vf trim=duration=1
 @end itemize
 
 
+@anchor{unsharp}
 @section unsharp
 
 Sharpen or blur the input video.
@@ -8808,7 +8899,7 @@ Read a file with transform information for each frame and
 apply/compensate them. Together with the @ref{vidstabdetect}
 filter this can be used to deshake videos. See also
 @url{http://public.hronopik.de/vid.stab}. It is important to also use
-the unsharp filter, see below.
+the @ref{unsharp} filter, see below.
 
 To enable compilation of this filter you need to configure FFmpeg with
 @code{--enable-libvidstab}.
@@ -8818,7 +8909,7 @@ To enable compilation of this filter you need to configure FFmpeg with
 @table @option
 @item input
 Set path to the file used to read the transforms. Default value is
-@file{transforms.trf}).
+@file{transforms.trf}.
 
 @item smoothing
 Set the number of frames (value*2 + 1) used for lowpass filtering the
@@ -8826,9 +8917,9 @@ camera movements. Default value is 10.
 
 For example a number of 10 means that 21 frames are used (10 in the
 past and 10 in the future) to smoothen the motion in the video. A
-larger values leads to a smoother video, but limits the acceleration
-of the camera (pan/tilt movements). 0 is a special case where a
-static camera is simulated.
+larger value leads to a smoother video, but limits the acceleration of
+the camera (pan/tilt movements). 0 is a special case where a static
+camera is simulated.
 
 @item optalgo
 Set the camera path optimization algorithm.
@@ -8865,7 +8956,7 @@ fill the border black
 Invert transforms if set to 1. Default value is 0.
 
 @item relative
-Consider transforms as relative to previsou frame if set to 1,
+Consider transforms as relative to previous frame if set to 1,
 absolute if set to 0. Default value is 0.
 
 @item zoom
@@ -8931,7 +9022,7 @@ Use @command{ffmpeg} for a typical stabilization with default values:
 ffmpeg -i inp.mpeg -vf vidstabtransform,unsharp=5:5:0.8:3:3:0.4 inp_stabilized.mpeg
 @end example
 
-Note the use of the unsharp filter which is always recommended.
+Note the use of the @ref{unsharp} filter which is always recommended.
 
 @item
 Zoom in a bit more and load transform data from a given file:

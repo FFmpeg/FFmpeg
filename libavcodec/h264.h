@@ -36,6 +36,7 @@
 #include "h264dsp.h"
 #include "h264pred.h"
 #include "h264qpel.h"
+#include "internal.h" // for avpriv_find_start_code()
 #include "me_cmp.h"
 #include "mpegutils.h"
 #include "parser.h"
@@ -1090,6 +1091,34 @@ static av_always_inline int get_dct8x8_allowed(H264Context *h)
         return !(AV_RN64A(h->sub_mb_type) &
                  ((MB_TYPE_16x8 | MB_TYPE_8x16 | MB_TYPE_8x8 | MB_TYPE_DIRECT2) *
                   0x0001000100010001ULL));
+}
+
+static inline int find_start_code(const uint8_t *buf, int buf_size,
+                           int buf_index, int next_avc)
+{
+    uint32_t state = -1;
+
+    buf_index = avpriv_find_start_code(buf + buf_index, buf + next_avc + 1, &state) - buf - 1;
+
+    return FFMIN(buf_index, buf_size);
+}
+
+static inline int get_avc_nalsize(H264Context *h, const uint8_t *buf,
+                           int buf_size, int *buf_index)
+{
+    int i, nalsize = 0;
+
+    if (*buf_index >= buf_size - h->nal_length_size)
+        return -1;
+
+    for (i = 0; i < h->nal_length_size; i++)
+        nalsize = ((unsigned)nalsize << 8) | buf[(*buf_index)++];
+    if (nalsize <= 0 || nalsize > buf_size - *buf_index) {
+        av_log(h->avctx, AV_LOG_ERROR,
+               "AVC: nal size %d\n", nalsize);
+        return -1;
+    }
+    return nalsize;
 }
 
 int ff_h264_field_end(H264Context *h, int in_setup);

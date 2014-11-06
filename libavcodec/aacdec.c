@@ -621,6 +621,12 @@ static ChannelElement *get_che(AACContext *ac, int type, int elem_id)
          * If we seem to have encountered such a stream, transfer
          * the LFE[0] element to the SCE[1]'s mapping */
         if (ac->tags_mapped == tags_per_config[ac->oc[1].m4ac.chan_config] - 1 && (type == TYPE_LFE || type == TYPE_SCE)) {
+            if (!ac->warned_remapping_once && (type != TYPE_LFE || elem_id != 0)) {
+                av_log(ac->avctx, AV_LOG_WARNING,
+                   "This stream seems to incorrectly report its last channel as %s[%d], mapping to LFE[0]\n",
+                   type == TYPE_SCE ? "SCE" : "LFE", elem_id);
+                ac->warned_remapping_once++;
+            }
             ac->tags_mapped++;
             return ac->tag_che_map[type][elem_id] = ac->che[TYPE_LFE][0];
         }
@@ -630,6 +636,22 @@ static ChannelElement *get_che(AACContext *ac, int type, int elem_id)
             return ac->tag_che_map[TYPE_CPE][elem_id] = ac->che[TYPE_CPE][1];
         }
     case 4:
+        /* Some streams incorrectly code 4.0 audio as
+         * SCE[0] CPE[0] LFE[0]
+         * instead of
+         * SCE[0] CPE[0] SCE[1].
+         * If we seem to have encountered such a stream, transfer
+         * the SCE[1] element to the LFE[0]'s mapping */
+        if (ac->tags_mapped == tags_per_config[ac->oc[1].m4ac.chan_config] - 1 && (type == TYPE_LFE || type == TYPE_SCE)) {
+            if (!ac->warned_remapping_once && (type != TYPE_SCE || elem_id != 1)) {
+                av_log(ac->avctx, AV_LOG_WARNING,
+                   "This stream seems to incorrectly report its last channel as %s[%d], mapping to SCE[1]\n",
+                   type == TYPE_SCE ? "SCE" : "LFE", elem_id);
+                ac->warned_remapping_once++;
+            }
+            ac->tags_mapped++;
+            return ac->tag_che_map[type][elem_id] = ac->che[TYPE_SCE][1];
+        }
         if (ac->tags_mapped == 2 &&
             ac->oc[1].m4ac.chan_config == 4 &&
             type == TYPE_SCE) {
@@ -681,6 +703,7 @@ static void decode_channel_map(uint8_t layout_map[][3],
             syn_ele = TYPE_LFE;
             break;
         default:
+            // AAC_CHANNEL_OFF has no channel map
             av_assert0(0);
         }
         layout_map[0][0] = syn_ele;
@@ -2914,6 +2937,9 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
     // parse
     while ((elem_type = get_bits(gb, 3)) != TYPE_END) {
         elem_id = get_bits(gb, 4);
+
+        if (avctx->debug & FF_DEBUG_STARTCODE)
+            av_log(avctx, AV_LOG_DEBUG, "Elem type:%x id:%x\n", elem_type, elem_id);
 
         if (elem_type < TYPE_DSE) {
             if (!(che=get_che(ac, elem_type, elem_id))) {

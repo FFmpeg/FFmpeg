@@ -31,6 +31,7 @@
 #include "avio.h"
 #include "isom.h"
 #include "avc.h"
+#include "libavcodec/ac3_parser.h"
 #include "libavcodec/get_bits.h"
 #include "libavcodec/put_bits.h"
 #include "libavcodec/vc1_common.h"
@@ -62,6 +63,7 @@ static const AVOption options[] = {
     { "faststart", "Run a second pass to put the index (moov atom) at the beginning of the file", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_FASTSTART}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     { "omit_tfhd_offset", "Omit the base data offset in tfhd atoms", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_OMIT_TFHD_OFFSET}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     { "disable_chpl", "Disable Nero chapter atom", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_DISABLE_CHPL}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
+    { "default_base_moof", "Set the default-base-is-moof flag in tfhd atoms", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_DEFAULT_BASE_MOOF}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     FF_RTP_FLAG_OPTS(MOVMuxContext, rtp_flags),
     { "skip_iods", "Skip writing iods atom.", offsetof(MOVMuxContext, iods_skip), AV_OPT_TYPE_INT, {.i64 = 1}, 0, 1, AV_OPT_FLAG_ENCODING_PARAM},
     { "iods_audio_profile", "iods audio profile atom.", offsetof(MOVMuxContext, iods_audio_profile), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 255, AV_OPT_FLAG_ENCODING_PARAM},
@@ -111,6 +113,7 @@ static int64_t update_size(AVIOContext *pb, int64_t pos)
 static int supports_edts(MOVMuxContext *mov)
 {
     // EDTS with fragments is tricky as we don't know the duration when its written
+    // also we might end up having to write the EDTS before the first packet, which would fail
     return (mov->use_editlist<0 && !(mov->flags & FF_MOV_FLAG_FRAGMENT)) || mov->use_editlist>0;
 }
 
@@ -290,6 +293,212 @@ static int mov_write_ac3_tag(AVIOContext *pb, MOVTrack *track)
     avio_write(pb, buf, sizeof(buf));
 
     return 11;
+}
+
+struct eac3_info {
+    AVPacket pkt;
+    uint8_t ec3_done;
+    uint8_t num_blocks;
+
+    /* Layout of the EC3SpecificBox */
+    /* maximum bitrate */
+    uint16_t data_rate;
+    /* number of independent substreams */
+    uint8_t  num_ind_sub;
+    struct {
+        /* sample rate code (see ff_ac3_sample_rate_tab) 2 bits */
+        uint8_t fscod;
+        /* bit stream identification 5 bits */
+        uint8_t bsid;
+        /* one bit reserved */
+        /* audio service mixing (not supported yet) 1 bit */
+        /* bit stream mode 3 bits */
+        uint8_t bsmod;
+        /* audio coding mode 3 bits */
+        uint8_t acmod;
+        /* sub woofer on 1 bit */
+        uint8_t lfeon;
+        /* 3 bits reserved */
+        /* number of dependent substreams associated with this substream 4 bits */
+        uint8_t num_dep_sub;
+        /* channel locations of the dependent substream(s), if any, 9 bits */
+        uint16_t chan_loc;
+        /* if there is no dependent substream, then one bit reserved instead */
+    } substream[1]; /* TODO: support 8 independent substreams */
+};
+
+static int handle_eac3(MOVMuxContext *mov, AVPacket *pkt, MOVTrack *track)
+{
+    GetBitContext gbc;
+    AC3HeaderInfo tmp, *hdr = &tmp;
+    struct eac3_info *info;
+    int num_blocks;
+
+    if (!track->eac3_priv && !(track->eac3_priv = av_mallocz(sizeof(*info))))
+        return AVERROR(ENOMEM);
+    info = track->eac3_priv;
+
+    init_get_bits(&gbc, pkt->data, pkt->size * 8);
+    if (avpriv_ac3_parse_header2(&gbc, &hdr) < 0) {
+        /* drop the packets until we see a good one */
+        if (!track->entry) {
+            av_log(mov, AV_LOG_WARNING, "Dropping invalid packet from start of the stream\n");
+            return 0;
+        }
+        return AVERROR_INVALIDDATA;
+    }
+
+    info->data_rate = FFMAX(info->data_rate, hdr->bit_rate / 1000);
+    num_blocks = hdr->num_blocks;
+
+    if (!info->ec3_done) {
+        /* AC-3 substream must be the first one */
+        if (hdr->bitstream_id <= 10 && hdr->substreamid != 0)
+            return AVERROR(EINVAL);
+
+        /* this should always be the case, given that our AC-3 parser
+         * concatenates dependent frames to their independent parent */
+        if (hdr->frame_type == EAC3_FRAME_TYPE_INDEPENDENT) {
+            /* substream ids must be incremental */
+            if (hdr->substreamid > info->num_ind_sub + 1)
+                return AVERROR(EINVAL);
+
+            if (hdr->substreamid == info->num_ind_sub + 1) {
+                //info->num_ind_sub++;
+                avpriv_request_sample(track->enc, "Multiple independent substreams");
+                return AVERROR_PATCHWELCOME;
+            } else if (hdr->substreamid < info->num_ind_sub ||
+                       hdr->substreamid == 0 && info->substream[0].bsid) {
+                info->ec3_done = 1;
+                goto concatenate;
+            }
+        }
+
+        /* fill the info needed for the "dec3" atom */
+        info->substream[hdr->substreamid].fscod = hdr->sr_code;
+        info->substream[hdr->substreamid].bsid  = hdr->bitstream_id;
+        info->substream[hdr->substreamid].bsmod = hdr->bitstream_mode;
+        info->substream[hdr->substreamid].acmod = hdr->channel_mode;
+        info->substream[hdr->substreamid].lfeon = hdr->lfe_on;
+
+        /* Parse dependent substream(s), if any */
+        if (pkt->size != hdr->frame_size) {
+            int cumul_size = hdr->frame_size;
+            int parent = hdr->substreamid;
+
+            while (cumul_size != pkt->size) {
+                int i;
+                init_get_bits(&gbc, pkt->data + cumul_size, (pkt->size - cumul_size) * 8);
+                if (avpriv_ac3_parse_header2(&gbc, &hdr) < 0)
+                    return AVERROR_INVALIDDATA;
+                if (hdr->frame_type != EAC3_FRAME_TYPE_DEPENDENT)
+                    return AVERROR(EINVAL);
+                cumul_size += hdr->frame_size;
+                info->substream[parent].num_dep_sub++;
+
+                /* header is parsed up to lfeon, but custom channel map may be needed */
+                /* skip bsid */
+                skip_bits(&gbc, 5);
+                /* skip volume control params */
+                for (i = 0; i < (hdr->channel_mode ? 1 : 2); i++) {
+                    skip_bits(&gbc, 5); // skip dialog normalization
+                    if (get_bits1(&gbc)) {
+                        skip_bits(&gbc, 8); // skip compression gain word
+                    }
+                }
+                /* get the dependent stream channel map, if exists */
+                if (get_bits1(&gbc))
+                    info->substream[parent].chan_loc |= (get_bits(&gbc, 16) >> 5) & 0x1f;
+                else
+                    info->substream[parent].chan_loc |= hdr->channel_mode;
+            }
+        }
+    }
+
+concatenate:
+    if (!info->num_blocks && num_blocks == 6)
+        return pkt->size;
+    else if (info->num_blocks + num_blocks > 6)
+        return AVERROR_INVALIDDATA;
+
+    if (!info->num_blocks) {
+        int ret;
+        if ((ret = av_copy_packet(&info->pkt, pkt)) < 0)
+            return ret;
+        info->num_blocks = num_blocks;
+        return 0;
+    } else {
+        int ret;
+        if ((ret = av_grow_packet(&info->pkt, pkt->size)) < 0)
+            return ret;
+        memcpy(info->pkt.data + info->pkt.size - pkt->size, pkt->data, pkt->size);
+        info->num_blocks += num_blocks;
+        info->pkt.duration += pkt->duration;
+        if ((ret = av_copy_packet_side_data(&info->pkt, pkt)) < 0)
+            return ret;
+        if (info->num_blocks != 6)
+            return 0;
+        av_free_packet(pkt);
+        if ((ret = av_copy_packet(pkt, &info->pkt)) < 0)
+            return ret;
+        av_free_packet(&info->pkt);
+        info->num_blocks = 0;
+    }
+
+    return pkt->size;
+}
+
+static int mov_write_eac3_tag(AVIOContext *pb, MOVTrack *track)
+{
+    PutBitContext pbc;
+    uint8_t *buf;
+    struct eac3_info *info;
+    int size, i;
+
+    if (!track->eac3_priv)
+        return AVERROR(EINVAL);
+
+    info = track->eac3_priv;
+    size = 2 + 4 * (info->num_ind_sub + 1);
+    buf = av_malloc(size);
+    if (!buf) {
+        size = AVERROR(ENOMEM);
+        goto end;
+    }
+
+    init_put_bits(&pbc, buf, size);
+    put_bits(&pbc, 13, info->data_rate);
+    put_bits(&pbc,  3, info->num_ind_sub);
+    for (i = 0; i <= info->num_ind_sub; i++) {
+        put_bits(&pbc, 2, info->substream[i].fscod);
+        put_bits(&pbc, 5, info->substream[i].bsid);
+        put_bits(&pbc, 1, 0); /* reserved */
+        put_bits(&pbc, 1, 0); /* asvc */
+        put_bits(&pbc, 3, info->substream[i].bsmod);
+        put_bits(&pbc, 3, info->substream[i].acmod);
+        put_bits(&pbc, 1, info->substream[i].lfeon);
+        put_bits(&pbc, 5, 0); /* reserved */
+        put_bits(&pbc, 4, info->substream[i].num_dep_sub);
+        if (!info->substream[i].num_dep_sub) {
+            put_bits(&pbc, 1, 0); /* reserved */
+            size--;
+        } else {
+            put_bits(&pbc, 9, info->substream[i].chan_loc);
+        }
+    }
+    flush_put_bits(&pbc);
+
+    avio_wb32(pb, size + 8);
+    ffio_wfourcc(pb, "dec3");
+    avio_write(pb, buf, size);
+
+    av_free(buf);
+
+end:
+    av_free_packet(&info->pkt);
+    av_freep(&track->eac3_priv);
+
+    return size;
 }
 
 /**
@@ -486,6 +695,8 @@ static int mov_write_wave_tag(AVIOContext *pb, MOVTrack *track)
         mov_write_amr_tag(pb, track);
     } else if (track->enc->codec_id == AV_CODEC_ID_AC3) {
         mov_write_ac3_tag(pb, track);
+    } else if (track->enc->codec_id == AV_CODEC_ID_EAC3) {
+        mov_write_eac3_tag(pb, track);
     } else if (track->enc->codec_id == AV_CODEC_ID_ALAC ||
                track->enc->codec_id == AV_CODEC_ID_QDM2) {
         mov_write_extradata_tag(pb, track);
@@ -727,6 +938,8 @@ static int mov_write_audio_tag(AVIOContext *pb, MOVTrack *track)
             if (track->enc->codec_id == AV_CODEC_ID_PCM_U8 ||
                 track->enc->codec_id == AV_CODEC_ID_PCM_S8)
                 avio_wb16(pb, 8); /* bits per sample */
+            else if (track->enc->codec_id == AV_CODEC_ID_ADPCM_G726)
+                avio_wb16(pb, track->enc->bits_per_coded_sample);
             else
                 avio_wb16(pb, 16);
             avio_wb16(pb, track->audio_vbr ? -2 : 0); /* compression ID */
@@ -756,6 +969,7 @@ static int mov_write_audio_tag(AVIOContext *pb, MOVTrack *track)
     if (track->mode == MODE_MOV &&
         (track->enc->codec_id == AV_CODEC_ID_AAC           ||
          track->enc->codec_id == AV_CODEC_ID_AC3           ||
+         track->enc->codec_id == AV_CODEC_ID_EAC3          ||
          track->enc->codec_id == AV_CODEC_ID_AMR_NB        ||
          track->enc->codec_id == AV_CODEC_ID_ALAC          ||
          track->enc->codec_id == AV_CODEC_ID_ADPCM_MS      ||
@@ -770,6 +984,8 @@ static int mov_write_audio_tag(AVIOContext *pb, MOVTrack *track)
         mov_write_amr_tag(pb, track);
     else if (track->enc->codec_id == AV_CODEC_ID_AC3)
         mov_write_ac3_tag(pb, track);
+    else if (track->enc->codec_id == AV_CODEC_ID_EAC3)
+        mov_write_eac3_tag(pb, track);
     else if (track->enc->codec_id == AV_CODEC_ID_ALAC)
         mov_write_extradata_tag(pb, track);
     else if (track->enc->codec_id == AV_CODEC_ID_WMAPRO)
@@ -877,6 +1093,7 @@ static int mp4_get_codec_tag(AVFormatContext *s, MOVTrack *track)
     if      (track->enc->codec_id == AV_CODEC_ID_H264)      tag = MKTAG('a','v','c','1');
     else if (track->enc->codec_id == AV_CODEC_ID_HEVC)      tag = MKTAG('h','e','v','1');
     else if (track->enc->codec_id == AV_CODEC_ID_AC3)       tag = MKTAG('a','c','-','3');
+    else if (track->enc->codec_id == AV_CODEC_ID_EAC3)      tag = MKTAG('e','c','-','3');
     else if (track->enc->codec_id == AV_CODEC_ID_DIRAC)     tag = MKTAG('d','r','a','c');
     else if (track->enc->codec_id == AV_CODEC_ID_MOV_TEXT)  tag = MKTAG('t','x','3','g');
     else if (track->enc->codec_id == AV_CODEC_ID_VC1)       tag = MKTAG('v','c','-','1');
@@ -1017,6 +1234,60 @@ static int mov_get_mpeg2_xdcam_codec_tag(AVFormatContext *s, MOVTrack *track)
     return tag;
 }
 
+static int mov_get_h264_codec_tag(AVFormatContext *s, MOVTrack *track)
+{
+    int tag = track->enc->codec_tag;
+    int interlaced = track->enc->field_order > AV_FIELD_PROGRESSIVE;
+    AVStream *st = track->st;
+    int rate = av_q2d(find_fps(s, st));
+
+    if (!tag)
+        tag = MKTAG('a', 'v', 'c', 'i'); //fallback tag
+
+    if (track->enc->pix_fmt == AV_PIX_FMT_YUV420P10) {
+        if (track->enc->width == 960 && track->enc->height == 720) {
+            if (!interlaced) {
+                if      (rate == 24) tag = MKTAG('a','i','5','p');
+                else if (rate == 25) tag = MKTAG('a','i','5','q');
+                else if (rate == 30) tag = MKTAG('a','i','5','p');
+                else if (rate == 50) tag = MKTAG('a','i','5','q');
+                else if (rate == 60) tag = MKTAG('a','i','5','p');
+            }
+        } else if (track->enc->width == 1440 && track->enc->height == 1080) {
+            if (!interlaced) {
+                if      (rate == 24) tag = MKTAG('a','i','5','3');
+                else if (rate == 25) tag = MKTAG('a','i','5','2');
+                else if (rate == 30) tag = MKTAG('a','i','5','3');
+            } else {
+                if      (rate == 50) tag = MKTAG('a','i','5','5');
+                else if (rate == 60) tag = MKTAG('a','i','5','6');
+            }
+        }
+    } else if (track->enc->pix_fmt == AV_PIX_FMT_YUV422P10) {
+        if (track->enc->width == 1280 && track->enc->height == 720) {
+            if (!interlaced) {
+                if      (rate == 24) tag = MKTAG('a','i','1','p');
+                else if (rate == 25) tag = MKTAG('a','i','1','q');
+                else if (rate == 30) tag = MKTAG('a','i','1','p');
+                else if (rate == 50) tag = MKTAG('a','i','1','q');
+                else if (rate == 60) tag = MKTAG('a','i','1','p');
+            }
+        } else if (track->enc->width == 1920 && track->enc->height == 1080) {
+            if (!interlaced) {
+                if      (rate == 24) tag = MKTAG('a','i','1','3');
+                else if (rate == 25) tag = MKTAG('a','i','1','2');
+                else if (rate == 30) tag = MKTAG('a','i','1','3');
+            } else {
+                if      (rate == 25) tag = MKTAG('a','i','1','5');
+                else if (rate == 50) tag = MKTAG('a','i','1','5');
+                else if (rate == 60) tag = MKTAG('a','i','1','6');
+            }
+        }
+    }
+
+    return tag;
+}
+
 static const struct {
     enum AVPixelFormat pix_fmt;
     uint32_t tag;
@@ -1072,6 +1343,7 @@ static int mov_get_codec_tag(AVFormatContext *s, MOVTrack *track)
                  (track->enc->codec_id == AV_CODEC_ID_DVVIDEO ||
                   track->enc->codec_id == AV_CODEC_ID_RAWVIDEO ||
                   track->enc->codec_id == AV_CODEC_ID_H263 ||
+                  track->enc->codec_id == AV_CODEC_ID_H264 ||
                   track->enc->codec_id == AV_CODEC_ID_MPEG2VIDEO ||
                   av_get_bits_per_sample(track->enc->codec_id)))) { // pcm audio
         if (track->enc->codec_id == AV_CODEC_ID_DVVIDEO)
@@ -1080,6 +1352,8 @@ static int mov_get_codec_tag(AVFormatContext *s, MOVTrack *track)
             tag = mov_get_rawvideo_codec_tag(s, track);
         else if (track->enc->codec_id == AV_CODEC_ID_MPEG2VIDEO)
             tag = mov_get_mpeg2_xdcam_codec_tag(s, track);
+        else if (track->enc->codec_id == AV_CODEC_ID_H264)
+            tag = mov_get_h264_codec_tag(s, track);
         else if (track->enc->codec_type == AVMEDIA_TYPE_VIDEO) {
             tag = ff_codec_get_tag(ff_codec_movvideo_tags, track->enc->codec_id);
             if (!tag) { // if no mac fcc found, try with Microsoft tags
@@ -1294,7 +1568,7 @@ static int mov_write_video_tag(AVIOContext *pb, MOVTrack *track)
         mov_write_avid_tag(pb, track);
     else if (track->enc->codec_id == AV_CODEC_ID_HEVC)
         mov_write_hvcc_tag(pb, track);
-    else if (track->enc->codec_id == AV_CODEC_ID_H264) {
+    else if (track->enc->codec_id == AV_CODEC_ID_H264 && !TAG_IS_AVCI(track->tag)) {
         mov_write_avcc_tag(pb, track);
         if (track->mode == MODE_IPOD)
             mov_write_uuid_tag_ipod(pb);
@@ -1760,7 +2034,8 @@ static int mov_write_minf_tag(AVIOContext *pb, MOVTrack *track)
     return update_size(pb, pos);
 }
 
-static int mov_write_mdhd_tag(AVIOContext *pb, MOVTrack *track)
+static int mov_write_mdhd_tag(AVIOContext *pb, MOVMuxContext *mov,
+                              MOVTrack *track)
 {
     int version = track->track_duration < INT32_MAX ? 0 : 1;
 
@@ -1779,8 +2054,10 @@ static int mov_write_mdhd_tag(AVIOContext *pb, MOVTrack *track)
         avio_wb32(pb, track->time); /* modification time */
     }
     avio_wb32(pb, track->timescale); /* time scale (sample rate for audio) */
-    if (!track->entry)
+    if (!track->entry && mov->mode == MODE_ISM)
         (version == 1) ? avio_wb64(pb, UINT64_C(0xffffffffffffffff)) : avio_wb32(pb, 0xffffffff);
+    else if (!track->entry)
+        (version == 1) ? avio_wb64(pb, 0) : avio_wb32(pb, 0);
     else
         (version == 1) ? avio_wb64(pb, track->track_duration) : avio_wb32(pb, track->track_duration); /* duration */
     avio_wb16(pb, track->language); /* language */
@@ -1796,12 +2073,13 @@ static int mov_write_mdhd_tag(AVIOContext *pb, MOVTrack *track)
     return 32;
 }
 
-static int mov_write_mdia_tag(AVIOContext *pb, MOVTrack *track)
+static int mov_write_mdia_tag(AVIOContext *pb, MOVMuxContext *mov,
+                              MOVTrack *track)
 {
     int64_t pos = avio_tell(pb);
     avio_wb32(pb, 0); /* size */
     ffio_wfourcc(pb, "mdia");
-    mov_write_mdhd_tag(pb, track);
+    mov_write_mdhd_tag(pb, mov, track);
     mov_write_hdlr_tag(pb, track);
     mov_write_minf_tag(pb, track);
     return update_size(pb, pos);
@@ -1862,8 +2140,10 @@ static int mov_write_tkhd_tag(AVIOContext *pb, MOVMuxContext *mov,
     }
     avio_wb32(pb, track->track_id); /* track-id */
     avio_wb32(pb, 0); /* reserved */
-    if (!track->entry)
+    if (!track->entry && mov->mode == MODE_ISM)
         (version == 1) ? avio_wb64(pb, UINT64_C(0xffffffffffffffff)) : avio_wb32(pb, 0xffffffff);
+    else if (!track->entry)
+        (version == 1) ? avio_wb64(pb, 0) : avio_wb32(pb, 0);
     else
         (version == 1) ? avio_wb64(pb, duration) : avio_wb32(pb, duration);
 
@@ -1944,7 +2224,8 @@ static int mov_write_tapt_tag(AVIOContext *pb, MOVTrack *track)
 }
 
 // This box seems important for the psp playback ... without it the movie seems to hang
-static int mov_write_edts_tag(AVIOContext *pb, MOVTrack *track)
+static int mov_write_edts_tag(AVIOContext *pb, MOVMuxContext *mov,
+                              MOVTrack *track)
 {
     int64_t duration = av_rescale_rnd(track->track_duration, MOV_TIMESCALE,
                                       track->timescale, AV_ROUND_UP);
@@ -1969,6 +2250,11 @@ static int mov_write_edts_tag(AVIOContext *pb, MOVTrack *track)
 
     avio_wb32(pb, entry_count);
     if (delay > 0) { /* add an empty edit to delay presentation */
+        /* In the positive delay case, the delay includes the cts
+         * offset, and the second edit list entry below trims out
+         * the same amount from the actual content. This makes sure
+         * that the offsetted last sample is included in the edit
+         * list duration as well. */
         if (version == 1) {
             avio_wb64(pb, delay);
             avio_wb64(pb, -1);
@@ -1978,10 +2264,24 @@ static int mov_write_edts_tag(AVIOContext *pb, MOVTrack *track)
         }
         avio_wb32(pb, 0x00010000);
     } else {
+        /* Avoid accidentally ending up with start_ct = -1 which has got a
+         * special meaning. Normally start_ct should end up positive or zero
+         * here, but use FFMIN in case dts is a a small positive integer
+         * rounded to 0 when represented in MOV_TIMESCALE units. */
         av_assert0(av_rescale_rnd(track->cluster[0].dts, MOV_TIMESCALE, track->timescale, AV_ROUND_DOWN) <= 0);
-        start_ct  = -FFMIN(track->cluster[0].dts, 0); //FFMIN needed due to rounding
+        start_ct  = -FFMIN(track->cluster[0].dts, 0);
+        /* Note, this delay is calculated from the pts of the first sample,
+         * ensuring that we don't reduce the duration for cases with
+         * dts<0 pts=0. */
         duration += delay;
     }
+
+    /* For fragmented files, we don't know the full length yet. Setting
+     * duration to 0 allows us to only specify the offset, including
+     * the rest of the content (from all future fragments) without specifying
+     * an explicit duration. */
+    if (mov->flags & FF_MOV_FLAG_FRAGMENT)
+        duration = 0;
 
     /* duration */
     if (version == 1) {
@@ -2094,10 +2394,10 @@ static int mov_write_trak_tag(AVIOContext *pb, MOVMuxContext *mov,
     ffio_wfourcc(pb, "trak");
     mov_write_tkhd_tag(pb, mov, track, st);
     if (supports_edts(mov))
-        mov_write_edts_tag(pb, track);  // PSP Movies and several other cases require edts box
+        mov_write_edts_tag(pb, mov, track);  // PSP Movies and several other cases require edts box
     if (track->tref_tag)
         mov_write_tref_tag(pb, track);
-    mov_write_mdia_tag(pb, track);
+    mov_write_mdia_tag(pb, mov, track);
     if (track->mode == MODE_PSP)
         mov_write_uuid_tag_psp(pb, track); // PSP Movies require this uuid box
     if (track->tag == MKTAG('r','t','p',' '))
@@ -2826,6 +3126,10 @@ static int mov_write_tfhd_tag(AVIOContext *pb, MOVMuxContext *mov,
     }
     if (mov->flags & FF_MOV_FLAG_OMIT_TFHD_OFFSET)
         flags &= ~MOV_TFHD_BASE_DATA_OFFSET;
+    if (mov->flags & FF_MOV_FLAG_DEFAULT_BASE_MOOF) {
+        flags &= ~MOV_TFHD_BASE_DATA_OFFSET;
+        flags |= MOV_TFHD_DEFAULT_BASE_IS_MOOF;
+    }
 
     /* Don't set a default sample size, the silverlight player refuses
      * to play files with that set. Don't set a default sample duration,
@@ -2897,8 +3201,8 @@ static int mov_write_trun_tag(AVIOContext *pb, MOVMuxContext *mov,
 
     avio_wb32(pb, track->entry); /* sample count */
     if (mov->flags & FF_MOV_FLAG_OMIT_TFHD_OFFSET &&
-        !(mov->flags & FF_MOV_FLAG_SEPARATE_MOOF) &&
-        track->track_id != 1)
+        !(mov->flags & (FF_MOV_FLAG_SEPARATE_MOOF | FF_MOV_FLAG_DEFAULT_BASE_MOOF)) &&
+        !mov->first_trun)
         avio_wb32(pb, 0); /* Later tracks follow immediately after the previous one */
     else
         avio_wb32(pb, moof_size + 8 + track->data_offset +
@@ -2917,6 +3221,7 @@ static int mov_write_trun_tag(AVIOContext *pb, MOVMuxContext *mov,
             avio_wb32(pb, track->cluster[i].cts);
     }
 
+    mov->first_trun = 0;
     return update_size(pb, pos);
 }
 
@@ -2989,6 +3294,18 @@ static int mov_write_tfrf_tags(AVIOContext *pb, MOVMuxContext *mov,
     return 0;
 }
 
+static int mov_write_tfdt_tag(AVIOContext *pb, MOVTrack *track)
+{
+    int64_t pos = avio_tell(pb);
+
+    avio_wb32(pb, 0); /* size */
+    ffio_wfourcc(pb, "tfdt");
+    avio_w8(pb, 1); /* version */
+    avio_wb24(pb, 0);
+    avio_wb64(pb, track->frag_start);
+    return update_size(pb, pos);
+}
+
 static int mov_write_traf_tag(AVIOContext *pb, MOVMuxContext *mov,
                               MOVTrack *track, int64_t moof_offset,
                               int moof_size)
@@ -2998,6 +3315,8 @@ static int mov_write_traf_tag(AVIOContext *pb, MOVMuxContext *mov,
     ffio_wfourcc(pb, "traf");
 
     mov_write_tfhd_tag(pb, mov, track, moof_offset);
+    if (mov->mode != MODE_ISM)
+        mov_write_tfdt_tag(pb, track);
     mov_write_trun_tag(pb, mov, track, moof_size);
     if (mov->mode == MODE_ISM) {
         mov_write_tfxd_tag(pb, track);
@@ -3024,6 +3343,7 @@ static int mov_write_moof_tag_internal(AVIOContext *pb, MOVMuxContext *mov,
 
     avio_wb32(pb, 0); /* size placeholder */
     ffio_wfourcc(pb, "moof");
+    mov->first_trun = 1;
 
     mov_write_mfhd_tag(pb, mov);
     for (i = 0; i < mov->nb_streams; i++) {
@@ -3141,6 +3461,8 @@ static int mov_write_ftyp_tag(AVIOContext *pb, AVFormatContext *s)
         minor =     has_h264 ? 0x20000 : 0x10000;
     } else if (mov->mode == MODE_PSP)
         ffio_wfourcc(pb, "MSNV");
+    else if (mov->mode == MODE_MP4 && mov->flags & FF_MOV_FLAG_DEFAULT_BASE_MOOF)
+        ffio_wfourcc(pb, "iso5"); // Required when using default-base-is-moof
     else if (mov->mode == MODE_MP4)
         ffio_wfourcc(pb, "isom");
     else if (mov->mode == MODE_IPOD)
@@ -3158,13 +3480,17 @@ static int mov_write_ftyp_tag(AVIOContext *pb, AVFormatContext *s)
         ffio_wfourcc(pb, "qt  ");
     else if (mov->mode == MODE_ISM) {
         ffio_wfourcc(pb, "piff");
-        ffio_wfourcc(pb, "iso2");
-    } else {
+    } else if (!(mov->flags & FF_MOV_FLAG_DEFAULT_BASE_MOOF)) {
         ffio_wfourcc(pb, "isom");
         ffio_wfourcc(pb, "iso2");
         if (has_h264)
             ffio_wfourcc(pb, "avc1");
     }
+
+    // We add tfdt atoms when fragmenting, signal this with the iso6 compatible
+    // brand. This is compatible with users that don't understand tfdt.
+    if (mov->flags & FF_MOV_FLAG_FRAGMENT && mov->mode != MODE_ISM)
+        ffio_wfourcc(pb, "iso6");
 
     if (mov->mode == MODE_3GP)
         ffio_wfourcc(pb, has_h264 ? "3gp6":"3gp4");
@@ -3413,7 +3739,7 @@ static int mov_flush_fragment(AVFormatContext *s)
             }
             info = &track->frag_info[track->nb_frag_info - 1];
             info->offset   = avio_tell(s->pb);
-            info->time     = mov->tracks[i].frag_start;
+            info->time     = track->frag_start;
             info->duration = duration;
             mov_write_tfrf_tags(s->pb, mov, track);
 
@@ -3508,7 +3834,7 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
         samples_in_chunk = 1;
 
     /* copy extradata if it exists */
-    if (trk->vos_len == 0 && enc->extradata_size > 0) {
+    if (trk->vos_len == 0 && enc->extradata_size > 0 && !TAG_IS_AVCI(trk->tag)) {
         trk->vos_len  = enc->extradata_size;
         trk->vos_data = av_malloc(trk->vos_len);
         memcpy(trk->vos_data, enc->extradata, trk->vos_len);
@@ -3524,7 +3850,7 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
         }
         av_log(s, AV_LOG_WARNING, "aac bitstream error\n");
     }
-    if (enc->codec_id == AV_CODEC_ID_H264 && trk->vos_len > 0 && *(uint8_t *)trk->vos_data != 1) {
+    if (enc->codec_id == AV_CODEC_ID_H264 && trk->vos_len > 0 && *(uint8_t *)trk->vos_data != 1 && !TAG_IS_AVCI(trk->tag)) {
         /* from x264 or from bytestream h264 */
         /* nal reformating needed */
         if (trk->hint_track >= 0 && trk->hint_track < mov->nb_streams) {
@@ -3543,6 +3869,13 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
         } else {
             size = ff_hevc_annexb2mp4(pb, pkt->data, pkt->size, 0, NULL);
         }
+    } else if (enc->codec_id == AV_CODEC_ID_EAC3) {
+        size = handle_eac3(mov, pkt, trk);
+        if (size < 0)
+            return size;
+        else if (!size)
+            goto end;
+        avio_write(pb, pkt->data, size);
     } else {
         avio_write(pb, pkt->data, size);
     }
@@ -3581,8 +3914,14 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (!trk->entry && trk->start_dts == AV_NOPTS_VALUE && !supports_edts(mov)) {
         trk->cluster[trk->entry].dts = trk->start_dts = 0;
     }
-    if (trk->start_dts == AV_NOPTS_VALUE)
+    if (trk->start_dts == AV_NOPTS_VALUE) {
         trk->start_dts = pkt->dts;
+        if (pkt->dts && mov->flags & FF_MOV_FLAG_EMPTY_MOOV)
+            av_log(s, AV_LOG_WARNING,
+                   "Track %d starts with a nonzero dts %"PRId64". This "
+                   "currently isn't handled correctly in combination with "
+                   "empty_moov.\n", pkt->stream_index, pkt->dts);
+    }
     trk->track_duration = pkt->dts - trk->start_dts + pkt->duration;
     trk->last_sample_is_subtitle_end = 0;
 
@@ -3615,6 +3954,7 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (trk->hint_track >= 0 && trk->hint_track < mov->nb_streams)
         ff_mov_add_hinted_packet(s, pkt, trk->hint_track, trk->entry,
                                  reformatted_data, size);
+end:
     av_free(reformatted_data);
     return 0;
 }
@@ -4037,10 +4377,9 @@ static int mov_write_header(AVFormatContext *s)
 
     /* faststart: moov at the beginning of the file, if supported */
     if (mov->flags & FF_MOV_FLAG_FASTSTART) {
-        if ((mov->flags & FF_MOV_FLAG_FRAGMENT) ||
-            (s->flags & AVFMT_FLAG_CUSTOM_IO)) {
+        if (mov->flags & FF_MOV_FLAG_FRAGMENT) {
             av_log(s, AV_LOG_WARNING, "The faststart flag is incompatible "
-                   "with fragmentation and custom IO, disabling faststart\n");
+                   "with fragmentation, disabling faststart\n");
             mov->flags &= ~FF_MOV_FLAG_FASTSTART;
         } else
             mov->reserved_moov_size = -1;
@@ -4227,7 +4566,7 @@ static int mov_write_header(AVFormatContext *s)
         if (st->codec->extradata_size) {
             if (st->codec->codec_id == AV_CODEC_ID_DVD_SUBTITLE)
                 mov_create_dvd_sub_decoder_specific_info(track, st);
-            else {
+            else if (!TAG_IS_AVCI(track->tag)){
                 track->vos_len  = st->codec->extradata_size;
                 track->vos_data = av_malloc(track->vos_len);
                 memcpy(track->vos_data, st->codec->extradata, track->vos_len);
@@ -4497,7 +4836,7 @@ static int mov_write_trailer(AVFormatContext *s)
             av_log(s, AV_LOG_INFO, "Starting second pass: moving the moov atom to the beginning of the file\n");
             res = shift_data(s);
             if (res == 0) {
-                avio_seek(s->pb, mov->reserved_moov_pos, SEEK_SET);
+                avio_seek(pb, mov->reserved_moov_pos, SEEK_SET);
                 mov_write_moov_tag(pb, mov, s);
             }
         } else if (mov->reserved_moov_size > 0) {

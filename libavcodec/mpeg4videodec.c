@@ -1760,23 +1760,24 @@ static int decode_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
 
     check_marker(gb, "before time_increment_resolution");
 
-    s->avctx->time_base.den = get_bits(gb, 16);
-    if (!s->avctx->time_base.den) {
-        av_log(s->avctx, AV_LOG_ERROR, "time_base.den==0\n");
-        s->avctx->time_base.num = 0;
+    s->avctx->framerate.num = get_bits(gb, 16);
+    if (!s->avctx->framerate.num) {
+        av_log(s->avctx, AV_LOG_ERROR, "framerate==0\n");
         return -1;
     }
 
-    ctx->time_increment_bits = av_log2(s->avctx->time_base.den - 1) + 1;
+    ctx->time_increment_bits = av_log2(s->avctx->framerate.num - 1) + 1;
     if (ctx->time_increment_bits < 1)
         ctx->time_increment_bits = 1;
 
     check_marker(gb, "before fixed_vop_rate");
 
     if (get_bits1(gb) != 0)     /* fixed_vop_rate  */
-        s->avctx->time_base.num = get_bits(gb, ctx->time_increment_bits);
+        s->avctx->framerate.den = get_bits(gb, ctx->time_increment_bits);
     else
-        s->avctx->time_base.num = 1;
+        s->avctx->framerate.den = 1;
+
+    s->avctx->time_base = av_inv_q(av_mul_q(s->avctx->framerate, (AVRational){s->avctx->ticks_per_frame, 1}));
 
     ctx->t_frame = 0;
 
@@ -2036,7 +2037,7 @@ no_cplx_est:
 
     if (s->avctx->debug&FF_DEBUG_PICT_INFO) {
         av_log(s->avctx, AV_LOG_DEBUG, "tb %d/%d, tincrbits:%d, qp_prec:%d, ps:%d,  %s%s%s%s\n",
-               s->avctx->time_base.num, s->avctx->time_base.den,
+               s->avctx->framerate.den, s->avctx->framerate.num,
                ctx->time_increment_bits,
                s->quant_precision,
                s->progressive_sequence,
@@ -2264,8 +2265,9 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb)
 
         av_log(s->avctx, AV_LOG_ERROR,
                "my guess is %d bits ;)\n", ctx->time_increment_bits);
-        if (s->avctx->time_base.den && 4*s->avctx->time_base.den < 1<<ctx->time_increment_bits) {
-            s->avctx->time_base.den = 1<<ctx->time_increment_bits;
+        if (s->avctx->framerate.num && 4*s->avctx->framerate.num < 1<<ctx->time_increment_bits) {
+            s->avctx->framerate.num = 1<<ctx->time_increment_bits;
+            s->avctx->time_base = av_inv_q(av_mul_q(s->avctx->framerate, (AVRational){s->avctx->ticks_per_frame, 1}));
         }
     }
 
@@ -2277,19 +2279,19 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb)
     if (s->pict_type != AV_PICTURE_TYPE_B) {
         s->last_time_base = s->time_base;
         s->time_base     += time_incr;
-        s->time = s->time_base * s->avctx->time_base.den + time_increment;
+        s->time = s->time_base * s->avctx->framerate.num + time_increment;
         if (s->workaround_bugs & FF_BUG_UMP4) {
             if (s->time < s->last_non_b_time) {
                 /* header is not mpeg-4-compatible, broken encoder,
                  * trying to workaround */
                 s->time_base++;
-                s->time += s->avctx->time_base.den;
+                s->time += s->avctx->framerate.num;
             }
         }
         s->pp_time         = s->time - s->last_non_b_time;
         s->last_non_b_time = s->time;
     } else {
-        s->time    = (s->last_time_base + time_incr) * s->avctx->time_base.den + time_increment;
+        s->time    = (s->last_time_base + time_incr) * s->avctx->framerate.num + time_increment;
         s->pb_time = s->pp_time - (s->last_non_b_time - s->time);
         if (s->pp_time <= s->pb_time ||
             s->pp_time <= s->pp_time - s->pb_time ||
@@ -2315,8 +2317,8 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb)
         }
     }
 
-    if (s->avctx->time_base.num)
-        pts = ROUNDED_DIV(s->time, s->avctx->time_base.num);
+    if (s->avctx->framerate.den)
+        pts = ROUNDED_DIV(s->time, s->avctx->framerate.den);
     else
         pts = AV_NOPTS_VALUE;
     if (s->avctx->debug&FF_DEBUG_PTS)
@@ -2793,7 +2795,7 @@ AVCodec ff_mpeg4_vdpau_decoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("MPEG-4 part 2 (VDPAU)"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_MPEG4,
-    .priv_data_size = sizeof(MpegEncContext),
+    .priv_data_size = sizeof(Mpeg4DecContext),
     .init           = decode_init,
     .close          = ff_h263_decode_end,
     .decode         = ff_h263_decode_frame,

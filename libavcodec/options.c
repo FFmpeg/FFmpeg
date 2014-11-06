@@ -27,6 +27,7 @@
 #include "avcodec.h"
 #include "internal.h"
 #include "libavutil/avassert.h"
+#include "libavutil/internal.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include <float.h>              /* FLT_MIN, FLT_MAX */
@@ -106,6 +107,7 @@ int avcodec_get_context_defaults3(AVCodecContext *s, const AVCodec *codec)
     av_opt_set_defaults2(s, flags, flags);
 
     s->time_base           = (AVRational){0,1};
+    s->framerate           = (AVRational){ 0, 1 };
     s->get_buffer2         = avcodec_default_get_buffer2;
     s->get_format          = avcodec_default_get_format;
     s->execute             = avcodec_default_execute;
@@ -199,17 +201,21 @@ int avcodec_copy_context(AVCodecContext *dest, const AVCodecContext *src)
     dest->internal        = NULL;
 
     /* reallocate values that should be allocated separately */
-    dest->rc_eq           = NULL;
     dest->extradata       = NULL;
     dest->intra_matrix    = NULL;
     dest->inter_matrix    = NULL;
     dest->rc_override     = NULL;
     dest->subtitle_header = NULL;
+#if FF_API_MPV_OPT
+    FF_DISABLE_DEPRECATION_WARNINGS
+    dest->rc_eq           = NULL;
     if (src->rc_eq) {
         dest->rc_eq = av_strdup(src->rc_eq);
         if (!dest->rc_eq)
             return AVERROR(ENOMEM);
     }
+    FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
 #define alloc_and_copy_or_fail(obj, size, pad) \
     if (src->obj && size > 0) { \
@@ -236,7 +242,11 @@ fail:
     av_freep(&dest->intra_matrix);
     av_freep(&dest->inter_matrix);
     av_freep(&dest->extradata);
+#if FF_API_MPV_OPT
+    FF_DISABLE_DEPRECATION_WARNINGS
     av_freep(&dest->rc_eq);
+    FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     return AVERROR(ENOMEM);
 }
 

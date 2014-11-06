@@ -1009,8 +1009,7 @@ static void do_video_out(AVFormatContext *s,
             mux_enc->field_order = AV_FIELD_PROGRESSIVE;
 
         in_picture->quality = enc->global_quality;
-        if (!enc->me_threshold)
-            in_picture->pict_type = 0;
+        in_picture->pict_type = 0;
 
         pts_time = in_picture->pts != AV_NOPTS_VALUE ?
             in_picture->pts * av_q2d(enc->time_base) : NAN;
@@ -2124,11 +2123,11 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt)
             ret = decode_video    (ist, &avpkt, &got_output);
             if (avpkt.duration) {
                 duration = av_rescale_q(avpkt.duration, ist->st->time_base, AV_TIME_BASE_Q);
-            } else if(ist->dec_ctx->time_base.num != 0 && ist->dec_ctx->time_base.den != 0) {
+            } else if(ist->dec_ctx->framerate.num != 0 && ist->dec_ctx->framerate.den != 0) {
                 int ticks= av_stream_get_parser(ist->st) ? av_stream_get_parser(ist->st)->repeat_pict+1 : ist->dec_ctx->ticks_per_frame;
                 duration = ((int64_t)AV_TIME_BASE *
-                                ist->dec_ctx->time_base.num * ticks) /
-                                ist->dec_ctx->time_base.den;
+                                ist->dec_ctx->framerate.den * ticks) /
+                                ist->dec_ctx->framerate.num / ist->dec_ctx->ticks_per_frame;
             } else
                 duration = 0;
 
@@ -2183,11 +2182,11 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt)
                 ist->next_dts = av_rescale_q(next_dts + 1, av_inv_q(ist->framerate), time_base_q);
             } else if (pkt->duration) {
                 ist->next_dts += av_rescale_q(pkt->duration, ist->st->time_base, AV_TIME_BASE_Q);
-            } else if(ist->dec_ctx->time_base.num != 0) {
+            } else if(ist->dec_ctx->framerate.num != 0) {
                 int ticks= av_stream_get_parser(ist->st) ? av_stream_get_parser(ist->st)->repeat_pict + 1 : ist->dec_ctx->ticks_per_frame;
                 ist->next_dts += ((int64_t)AV_TIME_BASE *
-                                  ist->dec_ctx->time_base.num * ticks) /
-                                  ist->dec_ctx->time_base.den;
+                                  ist->dec_ctx->framerate.den * ticks) /
+                                  ist->dec_ctx->framerate.num / ist->dec_ctx->ticks_per_frame;
             }
             break;
         }
@@ -2623,6 +2622,26 @@ static int transcode_init(void)
             av_reduce(&enc_ctx->time_base.num, &enc_ctx->time_base.den,
                         enc_ctx->time_base.num, enc_ctx->time_base.den, INT_MAX);
 
+            if (ist->st->nb_side_data) {
+                ost->st->side_data = av_realloc_array(NULL, ist->st->nb_side_data,
+                                                      sizeof(*ist->st->side_data));
+                if (!ost->st->side_data)
+                    return AVERROR(ENOMEM);
+
+                for (j = 0; j < ist->st->nb_side_data; j++) {
+                    const AVPacketSideData *sd_src = &ist->st->side_data[j];
+                    AVPacketSideData *sd_dst = &ost->st->side_data[j];
+
+                    sd_dst->data = av_malloc(sd_src->size);
+                    if (!sd_dst->data)
+                        return AVERROR(ENOMEM);
+                    memcpy(sd_dst->data, sd_src->data, sd_src->size);
+                    sd_dst->size = sd_src->size;
+                    sd_dst->type = sd_src->type;
+                    ost->st->nb_side_data++;
+                }
+            }
+
             ost->parser = av_parser_init(enc_ctx->codec_id);
 
             switch (enc_ctx->codec_type) {
@@ -2637,7 +2656,10 @@ static int transcode_init(void)
                 enc_ctx->frame_size         = dec_ctx->frame_size;
                 enc_ctx->audio_service_type = dec_ctx->audio_service_type;
                 enc_ctx->block_align        = dec_ctx->block_align;
+                enc_ctx->initial_padding    = dec_ctx->delay;
+#if FF_API_AUDIOENC_DELAY
                 enc_ctx->delay              = dec_ctx->delay;
+#endif
                 if((enc_ctx->block_align == 1 || enc_ctx->block_align == 1152 || enc_ctx->block_align == 576) && enc_ctx->codec_id == AV_CODEC_ID_MP3)
                     enc_ctx->block_align= 0;
                 if(enc_ctx->codec_id == AV_CODEC_ID_AC3)
@@ -2884,10 +2906,11 @@ static int transcode_init(void)
                 av_log(NULL, AV_LOG_WARNING, "The bitrate parameter is set too low."
                                              " It takes bits/s as argument, not kbits/s\n");
         } else {
-            if (av_opt_set_dict(ost->enc_ctx, &ost->encoder_opts) < 0) {
+            ret = av_opt_set_dict(ost->enc_ctx, &ost->encoder_opts);
+            if (ret < 0) {
                 av_log(NULL, AV_LOG_FATAL,
                     "Error setting up codec context options.\n");
-                exit_program(1);
+                return ret;
             }
         }
 
@@ -3087,9 +3110,9 @@ static OutputStream *choose_output(void)
         OutputStream *ost = output_streams[i];
         int64_t opts = av_rescale_q(ost->st->cur_dts, ost->st->time_base,
                                     AV_TIME_BASE_Q);
-        if (!ost->unavailable && !ost->finished && opts < opts_min) {
+        if (!ost->finished && opts < opts_min) {
             opts_min = opts;
-            ost_min  = ost;
+            ost_min  = ost->unavailable ? NULL : ost;
         }
     }
     return ost_min;
@@ -3777,7 +3800,7 @@ static int64_t getutime(void)
     GetProcessTimes(proc, &c, &e, &k, &u);
     return ((int64_t) u.dwHighDateTime << 32 | u.dwLowDateTime) / 10;
 #else
-    return av_gettime();
+    return av_gettime_relative();
 #endif
 }
 

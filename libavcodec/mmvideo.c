@@ -49,7 +49,7 @@
 typedef struct MmContext {
     AVCodecContext *avctx;
     AVFrame *frame;
-    int palette[AVPALETTE_COUNT];
+    unsigned int palette[AVPALETTE_COUNT];
     GetByteContext gb;
 } MmContext;
 
@@ -109,7 +109,7 @@ static int mm_decode_intra(MmContext * s, int half_horiz, int half_vert)
 
         if (color) {
             memset(s->frame->data[0] + y*s->frame->linesize[0] + x, color, run_length);
-            if (half_vert)
+            if (half_vert && y + half_vert < s->avctx->height)
                 memset(s->frame->data[0] + (y+1)*s->frame->linesize[0] + x, color, run_length);
         }
         x+= run_length;

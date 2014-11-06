@@ -61,7 +61,6 @@ typedef struct HLSContext {
     uint32_t flags;        // enum HLSFlags
 
     int allowcache;
-
     int64_t recording_time;
     int has_video;
     int64_t start_pts;
@@ -86,14 +85,16 @@ static int hls_mux_init(AVFormatContext *s)
 {
     HLSContext *hls = s->priv_data;
     AVFormatContext *oc;
-    int i;
+    int i, ret;
 
-    hls->avf = oc = avformat_alloc_context();
-    if (!oc)
-        return AVERROR(ENOMEM);
+    ret = avformat_alloc_output_context2(&hls->avf, hls->oformat, NULL, NULL);
+    if (ret < 0)
+        return ret;
+    oc = hls->avf;
 
     oc->oformat            = hls->oformat;
     oc->interrupt_callback = s->interrupt_callback;
+    oc->max_delay          = s->max_delay;
     av_dict_copy(&oc->metadata, s->metadata, 0);
 
     for (i = 0; i < s->nb_streams; i++) {
@@ -102,6 +103,7 @@ static int hls_mux_init(AVFormatContext *s)
             return AVERROR(ENOMEM);
         avcodec_copy_context(st->codec, s->streams[i]->codec);
         st->sample_aspect_ratio = s->streams[i]->sample_aspect_ratio;
+        st->time_base = s->streams[i]->time_base;
     }
     hls->start_pos = 0;
 

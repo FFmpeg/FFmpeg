@@ -2635,6 +2635,13 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .props     = AV_CODEC_PROP_TEXT_SUB,
     },
     {
+        .id        = AV_CODEC_ID_STL,
+        .type      = AVMEDIA_TYPE_SUBTITLE,
+        .name      = "stl",
+        .long_name = NULL_IF_CONFIG_SMALL("Spruce subtitle format"),
+        .props     = AV_CODEC_PROP_TEXT_SUB,
+    },
+    {
         .id        = AV_CODEC_ID_SUBVIEWER1,
         .type      = AVMEDIA_TYPE_SUBTITLE,
         .name      = "subviewer1",

@@ -34,6 +34,7 @@
 
 #include "libavutil/opt.h"
 #include "libavutil/avstring.h"
+#include "libavutil/file.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/intreadwrite.h"
 
@@ -282,8 +283,7 @@ static int write_manifest(AVFormatContext *s, int final)
     avio_printf(out, "</SmoothStreamingMedia>\n");
     avio_flush(out);
     avio_close(out);
-    rename(temp_filename, filename);
-    return 0;
+    return ff_rename(temp_filename, filename, s);
 }
 
 static int ism_write_header(AVFormatContext *s)
@@ -293,8 +293,8 @@ static int ism_write_header(AVFormatContext *s)
     AVOutputFormat *oformat;
 
     if (mkdir(s->filename, 0777) == -1 && errno != EEXIST) {
-        av_log(s, AV_LOG_ERROR, "mkdir failed\n");
         ret = AVERROR(errno);
+        av_log(s, AV_LOG_ERROR, "mkdir failed\n");
         goto fail;
     }
 
@@ -343,6 +343,7 @@ static int ism_write_header(AVFormatContext *s)
         }
         avcodec_copy_context(st->codec, s->streams[i]->codec);
         st->sample_aspect_ratio = s->streams[i]->sample_aspect_ratio;
+        st->time_base = s->streams[i]->time_base;
 
         ctx->pb = avio_alloc_context(os->iobuf, sizeof(os->iobuf), AVIO_FLAG_WRITE, os, NULL, ism_write, ism_seek);
         if (!ctx->pb) {
@@ -515,7 +516,7 @@ static int ism_flush(AVFormatContext *s, int final)
     for (i = 0; i < s->nb_streams; i++) {
         OutputStream *os = &c->streams[i];
         char filename[1024], target_filename[1024], header_filename[1024];
-        int64_t start_pos = os->tail_pos, size;
+        int64_t size;
         int64_t start_ts, duration, moof_size;
         if (!os->packets_written)
             continue;
@@ -533,14 +534,17 @@ static int ism_flush(AVFormatContext *s, int final)
 
         ffurl_close(os->out);
         os->out = NULL;
-        size = os->tail_pos - start_pos;
+        size = os->tail_pos - os->cur_start_pos;
         if ((ret = parse_fragment(s, filename, &start_ts, &duration, &moof_size, size)) < 0)
             break;
         snprintf(header_filename, sizeof(header_filename), "%s/FragmentInfo(%s=%"PRIu64")", os->dirname, os->stream_type_tag, start_ts);
         snprintf(target_filename, sizeof(target_filename), "%s/Fragments(%s=%"PRIu64")", os->dirname, os->stream_type_tag, start_ts);
         copy_moof(s, filename, header_filename, moof_size);
-        rename(filename, target_filename);
-        add_fragment(os, target_filename, header_filename, start_ts, duration, start_pos, size);
+        ret = ff_rename(filename, target_filename, s);
+        if (ret < 0)
+            break;
+        add_fragment(os, target_filename, header_filename, start_ts, duration,
+                     os->cur_start_pos, size);
     }
 
     if (c->window_size || (final && c->remove_at_exit)) {
@@ -574,7 +578,7 @@ static int ism_write_packet(AVFormatContext *s, AVPacket *pkt)
     SmoothStreamingContext *c = s->priv_data;
     AVStream *st = s->streams[pkt->stream_index];
     OutputStream *os = &c->streams[pkt->stream_index];
-    int64_t end_dts = (c->nb_fragments + 1LL) * c->min_frag_duration;
+    int64_t end_dts = (c->nb_fragments + 1) * (int64_t) c->min_frag_duration;
     int ret;
 
     if (st->first_dts == AV_NOPTS_VALUE)

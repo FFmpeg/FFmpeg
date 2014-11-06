@@ -525,7 +525,11 @@ static void decode_vui(HEVCContext *s, HEVCSPS *sps)
     vui->field_seq_flag                = get_bits1(gb);
     vui->frame_field_info_present_flag = get_bits1(gb);
 
-    vui->default_display_window_flag = get_bits1(gb);
+    if (get_bits_left(gb) >= 68 && show_bits_long(gb, 21) == 0x100000) {
+        vui->default_display_window_flag = 0;
+        av_log(s->avctx, AV_LOG_WARNING, "Invalid default display window\n");
+    } else
+        vui->default_display_window_flag = get_bits1(gb);
     // Backup context in case an alternate header is detected
     memcpy(&backup, gb, sizeof(backup));
 

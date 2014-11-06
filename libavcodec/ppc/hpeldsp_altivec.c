@@ -36,6 +36,38 @@
 
 #if HAVE_ALTIVEC
 /* next one assumes that ((line_size % 16) == 0) */
+#if HAVE_VSX
+void ff_put_pixels16_altivec(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
+{
+  register vector unsigned char pixelsv1;
+  register vector unsigned char pixelsv1B;
+  register vector unsigned char pixelsv1C;
+  register vector unsigned char pixelsv1D;
+
+  int i;
+  register ptrdiff_t line_size_2 = line_size << 1;
+  register ptrdiff_t line_size_3 = line_size + line_size_2;
+  register ptrdiff_t line_size_4 = line_size << 2;
+
+// hand-unrolling the loop by 4 gains about 15%
+// mininum execution time goes from 74 to 60 cycles
+// it's faster than -funroll-loops, but using
+// -funroll-loops w/ this is bad - 74 cycles again.
+// all this is on a 7450, tuning for the 7450
+  for (i = 0; i < h; i += 4) {
+    pixelsv1  = vec_vsx_ld( 0, pixels);
+    pixelsv1B = vec_vsx_ld(line_size, pixels);
+    pixelsv1C = vec_vsx_ld(line_size_2, pixels);
+    pixelsv1D = vec_vsx_ld(line_size_3, pixels);
+    vec_vsx_st(pixelsv1, 0, (unsigned char*)block);
+    vec_vsx_st(pixelsv1B, line_size, (unsigned char*)block);
+    vec_vsx_st(pixelsv1C, line_size_2, (unsigned char*)block);
+    vec_st(pixelsv1D, line_size_3, (unsigned char*)block);
+    pixels+=line_size_4;
+    block +=line_size_4;
+  }
+}
+#else
 void ff_put_pixels16_altivec(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
 {
     register vector unsigned char pixelsv1, pixelsv2;
@@ -75,6 +107,8 @@ void ff_put_pixels16_altivec(uint8_t *block, const uint8_t *pixels, ptrdiff_t li
         block +=line_size_4;
     }
 }
+
+#endif /* HAVE_VSX */
 
 /* next one assumes that ((line_size % 16) == 0) */
 #define op_avg(a,b)  a = ( ((a)|(b)) - ((((a)^(b))&0xFEFEFEFEUL)>>1) )

@@ -193,9 +193,9 @@ static void free_segment_list(struct playlist *pls)
 {
     int i;
     for (i = 0; i < pls->n_segments; i++) {
-        av_free(pls->segments[i]->key);
-        av_free(pls->segments[i]->url);
-        av_free(pls->segments[i]);
+        av_freep(&pls->segments[i]->key);
+        av_freep(&pls->segments[i]->url);
+        av_freep(&pls->segments[i]);
     }
     av_freep(&pls->segments);
     pls->n_segments = 0;
@@ -212,7 +212,7 @@ static void free_playlist_list(HLSContext *c)
         av_dict_free(&pls->id3_initial);
         ff_id3v2_free_extra_meta(&pls->id3_deferred_extra);
         av_free_packet(&pls->pkt);
-        av_free(pls->pb.buffer);
+        av_freep(&pls->pb.buffer);
         if (pls->input)
             ffurl_close(pls->input);
         if (pls->ctx) {
@@ -243,7 +243,7 @@ static void free_rendition_list(HLSContext *c)
 {
     int i;
     for (i = 0; i < c->n_renditions; i++)
-        av_free(c->renditions[i]);
+        av_freep(&c->renditions[i]);
     av_freep(&c->renditions);
     c->n_renditions = 0;
 }
@@ -666,7 +666,7 @@ static int parse_playlist(HLSContext *c, const char *url,
         }
     }
     if (pls)
-        pls->last_load_time = av_gettime();
+        pls->last_load_time = av_gettime_relative();
 
 fail:
     av_free(new_url);
@@ -1035,7 +1035,7 @@ restart:
 
 reload:
         if (!v->finished &&
-            av_gettime() - v->last_load_time >= reload_interval) {
+            av_gettime_relative() - v->last_load_time >= reload_interval) {
             if ((ret = parse_playlist(c, v->url, v, NULL)) < 0) {
                 av_log(v->parent, AV_LOG_WARNING, "Failed to reload playlist %d\n",
                        v->index);
@@ -1055,7 +1055,7 @@ reload:
         if (v->cur_seq_no >= v->start_seq_no + v->n_segments) {
             if (v->finished)
                 return AVERROR_EOF;
-            while (av_gettime() - v->last_load_time < reload_interval) {
+            while (av_gettime_relative() - v->last_load_time < reload_interval) {
                 if (ff_check_interrupt(c->interrupt_callback))
                     return AVERROR_EXIT;
                 av_usleep(100*1000);
@@ -1198,7 +1198,7 @@ static int select_cur_seq_no(HLSContext *c, struct playlist *pls)
     int seq_no;
 
     if (!pls->finished && !c->first_packet &&
-        av_gettime() - pls->last_load_time >= default_reload_interval(pls))
+        av_gettime_relative() - pls->last_load_time >= default_reload_interval(pls))
         /* reload the playlist since it was suspended */
         parse_playlist(c, pls->url, pls, NULL);
 
@@ -1344,6 +1344,10 @@ static int hls_read_header(AVFormatContext *s)
         }
         pls->ctx->pb       = &pls->pb;
         pls->stream_offset = stream_offset;
+
+        if ((ret = ff_copy_whitelists(pls->ctx, s)) < 0)
+            goto fail;
+
         ret = avformat_open_input(&pls->ctx, pls->segments[0]->url, in_fmt, NULL);
         if (ret < 0)
             goto fail;

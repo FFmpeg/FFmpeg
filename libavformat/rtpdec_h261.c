@@ -32,7 +32,7 @@ struct PayloadContext {
     uint32_t     timestamp;
 };
 
-static PayloadContext *h261_new_context(void)
+static av_cold PayloadContext *h261_new_context(void)
 {
     return av_mallocz(sizeof(PayloadContext));
 }
@@ -45,7 +45,7 @@ static void h261_free_dyn_buffer(AVIOContext **dyn_buf)
     *dyn_buf = NULL;
 }
 
-static void h261_free_context(PayloadContext *pl_ctx)
+static av_cold void h261_free_context(PayloadContext *pl_ctx)
 {
     /* return if context is invalid */
     if (!pl_ctx)
@@ -80,16 +80,14 @@ int ff_h261_handle_packet(AVFormatContext *ctx, PayloadContext *data,
     int sbit, ebit, gobn, mbap, quant;
     int res;
 
-    //av_log(ctx, AV_LOG_DEBUG, "got h261 RTP packet with time: %u\n", timestamp);
-
     /* drop data of previous packets in case of non-continuous (loss) packet stream */
     if (data->buf && data->timestamp != *timestamp) {
         h261_free_dyn_buffer(&data->buf);
     }
 
-    /* sanity check for size of input packet */
-    if (len < 5 /* 4 bytes header and 1 byte payload at least */) {
-        av_log(ctx, AV_LOG_ERROR, "Too short H.261 RTP packet\n");
+    /* sanity check for size of input packet: 1 byte payload at least */
+    if (len < RTP_H261_PAYLOAD_HEADER_SIZE + 1) {
+        av_log(ctx, AV_LOG_ERROR, "Too short RTP/H.261 packet, got %d bytes\n", len);
         return AVERROR_INVALIDDATA;
     }
 

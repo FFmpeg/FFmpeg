@@ -33,6 +33,7 @@ enum MXFMetadataSetType {
     SourcePackage,
     SourceClip,
     TimecodeComponent,
+    PulldownComponent,
     Sequence,
     MultipleDescriptor,
     Descriptor,

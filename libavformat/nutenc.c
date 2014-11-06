@@ -1119,6 +1119,7 @@ static int nut_write_packet(AVFormatContext *s, AVPacket *pkt)
         }
     }
     av_assert0(frame_code != -1);
+
     fc           = &nut->frame_code[frame_code];
     flags        = fc->flags;
     needed_flags = get_needed_flags(nut, nus, fc, pkt);

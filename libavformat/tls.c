@@ -168,22 +168,30 @@ static int tls_open(URLContext *h, const char *uri, int flags)
     TLSContext *c = h->priv_data;
     int ret;
     int port;
+    const char *p;
     char buf[200], host[200], opts[50] = "";
     int numerichost = 0;
     struct addrinfo hints = { 0 }, *ai = NULL;
     const char *proxy_path;
     int use_proxy;
-    const char *p = strchr(uri, '?');
 
     ff_tls_init();
 
-    if(p && av_find_info_tag(buf, sizeof(buf), "listen", p))
-        c->listen = 1;
     if (c->listen)
         snprintf(opts, sizeof(opts), "?listen=1");
 
     av_url_split(NULL, 0, NULL, 0, host, sizeof(host), &port, NULL, 0, uri);
-    ff_url_join(buf, sizeof(buf), "tcp", NULL, host, port, "%s", opts);
+
+    p = strchr(uri, '?');
+
+    if (!p) {
+        p = opts;
+    } else {
+        if (av_find_info_tag(opts, sizeof(opts), "listen", p))
+            c->listen = 1;
+    }
+
+    ff_url_join(buf, sizeof(buf), "tcp", NULL, host, port, "%s", p);
 
     hints.ai_flags = AI_NUMERICHOST;
     if (!getaddrinfo(host, NULL, &hints, &ai)) {

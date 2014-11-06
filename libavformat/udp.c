@@ -40,6 +40,20 @@
 #include "os_support.h"
 #include "url.h"
 
+#if HAVE_UDPLITE_H
+#include "udplite.h"
+#else
+/* On many Linux systems, udplite.h is missing but the kernel supports UDP-Lite.
+ * So, we provide a fallback here.
+ */
+#define UDPLITE_SEND_CSCOV                               10
+#define UDPLITE_RECV_CSCOV                               11
+#endif
+
+#ifndef IPPROTO_UDPLITE
+#define IPPROTO_UDPLITE                                  136
+#endif
+
 #if HAVE_PTHREAD_CANCEL
 #include <pthread.h>
 #endif
@@ -55,11 +69,13 @@
 
 #define UDP_TX_BUF_SIZE 32768
 #define UDP_MAX_PKT_SIZE 65536
+#define UDP_HEADER_SIZE 8
 
 typedef struct {
     const AVClass *class;
     int udp_fd;
     int ttl;
+    int udplite_coverage;
     int buffer_size;
     int is_multicast;
     int is_broadcast;
@@ -95,6 +111,7 @@ static const AVOption options[] = {
 {"buffer_size", "set packet buffer size in bytes", OFFSET(buffer_size), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, D|E },
 {"localport", "set local port to bind to", OFFSET(local_port), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, D|E },
 {"localaddr", "choose local IP address", OFFSET(local_addr), AV_OPT_TYPE_STRING, {.str = ""}, 0, 0, D|E },
+{"udplite_coverage", "choose UDPLite head size which should be validated by checksum", OFFSET(udplite_coverage), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, D|E },
 {"pkt_size", "set size of UDP packets", OFFSET(packet_size), AV_OPT_TYPE_INT, {.i64 = 1472}, 0, INT_MAX, D|E },
 {"reuse", "explicitly allow or disallow reusing UDP sockets", OFFSET(reuse_socket), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, D|E },
 {"broadcast", "explicitly allow or disallow broadcast destination", OFFSET(is_broadcast), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, E },
@@ -109,6 +126,13 @@ static const AVOption options[] = {
 
 static const AVClass udp_context_class = {
     .class_name     = "udp",
+    .item_name      = av_default_item_name,
+    .option         = options,
+    .version        = LIBAVUTIL_VERSION_INT,
+};
+
+static const AVClass udplite_context_class = {
+    .class_name     = "udplite",
     .item_name      = av_default_item_name,
     .option         = options,
     .version        = LIBAVUTIL_VERSION_INT,
@@ -335,7 +359,10 @@ static int udp_socket_create(UDPContext *s, struct sockaddr_storage *addr,
     if (!res0)
         goto fail;
     for (res = res0; res; res=res->ai_next) {
-        udp_fd = ff_socket(res->ai_family, SOCK_DGRAM, 0);
+        if (s->udplite_coverage)
+            udp_fd = ff_socket(res->ai_family, SOCK_DGRAM, IPPROTO_UDPLITE);
+        else
+            udp_fd = ff_socket(res->ai_family, SOCK_DGRAM, 0);
         if (udp_fd != -1) break;
         log_net_error(NULL, AV_LOG_ERROR, "socket");
     }
@@ -570,6 +597,9 @@ static int udp_open(URLContext *h, const char *uri, int flags)
         if (av_find_info_tag(buf, sizeof(buf), "ttl", p)) {
             s->ttl = strtol(buf, NULL, 10);
         }
+        if (av_find_info_tag(buf, sizeof(buf), "udplite_coverage", p)) {
+            s->udplite_coverage = strtol(buf, NULL, 10);
+        }
         if (av_find_info_tag(buf, sizeof(buf), "localport", p)) {
             s->local_port = strtol(buf, NULL, 10);
         }
@@ -651,6 +681,18 @@ static int udp_open(URLContext *h, const char *uri, int flags)
         if (setsockopt (udp_fd, SOL_SOCKET, SO_BROADCAST, &(s->is_broadcast), sizeof(s->is_broadcast)) != 0)
 #endif
            goto fail;
+    }
+
+    /* Set the checksum coverage for UDP-Lite (RFC 3828) for sending and receiving.
+     * The receiver coverage has to be less than or equal to the sender coverage.
+     * Otherwise, the receiver will drop all packets.
+     */
+    if (s->udplite_coverage) {
+        if (setsockopt (udp_fd, IPPROTO_UDPLITE, UDPLITE_SEND_CSCOV, &(s->udplite_coverage), sizeof(s->udplite_coverage)) != 0)
+            av_log(h, AV_LOG_WARNING, "socket option UDPLITE_SEND_CSCOV not available");
+
+        if (setsockopt (udp_fd, IPPROTO_UDPLITE, UDPLITE_RECV_CSCOV, &(s->udplite_coverage), sizeof(s->udplite_coverage)) != 0)
+            av_log(h, AV_LOG_WARNING, "socket option UDPLITE_RECV_CSCOV not available");
     }
 
     /* If multicast, try binding the multicast address first, to avoid
@@ -780,6 +822,16 @@ static int udp_open(URLContext *h, const char *uri, int flags)
     return AVERROR(EIO);
 }
 
+static int udplite_open(URLContext *h, const char *uri, int flags)
+{
+    UDPContext *s = h->priv_data;
+
+    // set default checksum coverage
+    s->udplite_coverage = UDP_HEADER_SIZE;
+
+    return udp_open(h, uri, flags);
+}
+
 static int udp_read(URLContext *h, uint8_t *buf, int size)
 {
     UDPContext *s = h->priv_data;
@@ -891,5 +943,17 @@ URLProtocol ff_udp_protocol = {
     .url_get_file_handle = udp_get_file_handle,
     .priv_data_size      = sizeof(UDPContext),
     .priv_data_class     = &udp_context_class,
+    .flags               = URL_PROTOCOL_FLAG_NETWORK,
+};
+
+URLProtocol ff_udplite_protocol = {
+    .name                = "udplite",
+    .url_open            = udplite_open,
+    .url_read            = udp_read,
+    .url_write           = udp_write,
+    .url_close           = udp_close,
+    .url_get_file_handle = udp_get_file_handle,
+    .priv_data_size      = sizeof(UDPContext),
+    .priv_data_class     = &udplite_context_class,
     .flags               = URL_PROTOCOL_FLAG_NETWORK,
 };

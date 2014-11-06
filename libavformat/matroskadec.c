@@ -46,6 +46,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/lzo.h"
 #include "libavutil/mathematics.h"
+#include "libavutil/time_internal.h"
 
 #include "libavcodec/bytestream.h"
 #include "libavcodec/flac.h"
@@ -1507,10 +1508,10 @@ static void matroska_metadata_creation_time(AVDictionary **metadata, int64_t dat
     char buffer[32];
     /* Convert to seconds and adjust by number of seconds between 2001-01-01 and Epoch */
     time_t creation_time = date_utc / 1000000000 + 978307200;
-    struct tm *ptm = gmtime(&creation_time);
+    struct tm tmpbuf, *ptm = gmtime_r(&creation_time, &tmpbuf);
     if (!ptm) return;
-    strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", ptm);
-    av_dict_set(metadata, "creation_time", buffer, 0);
+    if (strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", ptm))
+        av_dict_set(metadata, "creation_time", buffer, 0);
 }
 
 static int matroska_parse_flac(AVFormatContext *s,
@@ -1920,7 +1921,8 @@ static int matroska_parse_tracks(AVFormatContext *s)
                 av_reduce(&st->avg_frame_rate.num, &st->avg_frame_rate.den,
                           1000000000, track->default_duration, 30000);
 #if FF_API_R_FRAME_RATE
-                if (st->avg_frame_rate.num < st->avg_frame_rate.den * 1000L)
+                if (   st->avg_frame_rate.num < st->avg_frame_rate.den * 1000L
+                    && st->avg_frame_rate.num > st->avg_frame_rate.den * 5L)
                     st->r_frame_rate = st->avg_frame_rate;
 #endif
             }
@@ -2327,10 +2329,15 @@ static int matroska_parse_rm_audio(MatroskaDemuxContext *matroska,
     }
 
     while (track->audio.pkt_cnt) {
-        AVPacket *pkt = NULL;
-        if (!(pkt = av_mallocz(sizeof(AVPacket))) || av_new_packet(pkt, a) < 0) {
-            av_free(pkt);
+        int ret;
+        AVPacket *pkt = av_mallocz(sizeof(AVPacket));
+        if (!pkt)
             return AVERROR(ENOMEM);
+
+        ret = av_new_packet(pkt, a);
+        if (ret < 0) {
+            av_free(pkt);
+            return ret;
         }
         memcpy(pkt->data,
                track->audio.buf + a * (h * w / a - track->audio.pkt_cnt--),
@@ -2920,11 +2927,11 @@ static int matroska_read_seek(AVFormatContext *s, int stream_index,
         goto err;
     timestamp = FFMAX(timestamp, st->index_entries[0].timestamp);
 
-    if ((index = av_index_search_timestamp(st, timestamp, flags)) < 0) {
+    if ((index = av_index_search_timestamp(st, timestamp, flags)) < 0 || index == st->nb_index_entries - 1) {
         avio_seek(s->pb, st->index_entries[st->nb_index_entries - 1].pos,
                   SEEK_SET);
         matroska->current_id = 0;
-        while ((index = av_index_search_timestamp(st, timestamp, flags)) < 0) {
+        while ((index = av_index_search_timestamp(st, timestamp, flags)) < 0 || index == st->nb_index_entries - 1) {
             matroska_clear_queue(matroska);
             if (matroska_parse_cluster(matroska) < 0)
                 break;
@@ -3188,55 +3195,57 @@ static int64_t webm_dash_manifest_compute_bandwidth(AVFormatContext *s, int64_t 
         }
         if (desc_end.start_time_ns == -1) {
             // The prebuffer is larger than the duration.
-            return (matroska->duration * matroska->time_scale >= prebuffered_ns) ? -1 : 0;
-        }
+            if (matroska->duration * matroska->time_scale >= prebuffered_ns)
+              return -1;
+            bits_per_second = 0.0;
+        } else {
+            // The prebuffer ends in the last Cue. Estimate how much data was
+            // prebuffered.
+            pre_bytes = desc_end.end_offset - desc_end.start_offset;
+            pre_ns = desc_end.end_time_ns - desc_end.start_time_ns;
+            pre_sec = pre_ns / nano_seconds_per_second;
+            prebuffer_bytes +=
+                pre_bytes * ((temp_prebuffer_ns / nano_seconds_per_second) / pre_sec);
 
-        // The prebuffer ends in the last Cue. Estimate how much data was
-        // prebuffered.
-        pre_bytes = desc_end.end_offset - desc_end.start_offset;
-        pre_ns = desc_end.end_time_ns - desc_end.start_time_ns;
-        pre_sec = pre_ns / nano_seconds_per_second;
-        prebuffer_bytes +=
-            pre_bytes * ((temp_prebuffer_ns / nano_seconds_per_second) / pre_sec);
+            prebuffer = prebuffer_ns / nano_seconds_per_second;
 
-        prebuffer = prebuffer_ns / nano_seconds_per_second;
+            // Set this to 0.0 in case our prebuffer buffers the entire video.
+            bits_per_second = 0.0;
+            do {
+                int64_t desc_bytes = desc_end.end_offset - desc_beg.start_offset;
+                int64_t desc_ns = desc_end.end_time_ns - desc_beg.start_time_ns;
+                double desc_sec = desc_ns / nano_seconds_per_second;
+                double calc_bits_per_second = (desc_bytes * 8) / desc_sec;
 
-        // Set this to 0.0 in case our prebuffer buffers the entire video.
-        bits_per_second = 0.0;
-        do {
-            int64_t desc_bytes = desc_end.end_offset - desc_beg.start_offset;
-            int64_t desc_ns = desc_end.end_time_ns - desc_beg.start_time_ns;
-            double desc_sec = desc_ns / nano_seconds_per_second;
-            double calc_bits_per_second = (desc_bytes * 8) / desc_sec;
+                // Drop the bps by the percentage of bytes buffered.
+                double percent = (desc_bytes - prebuffer_bytes) / desc_bytes;
+                double mod_bits_per_second = calc_bits_per_second * percent;
 
-            // Drop the bps by the percentage of bytes buffered.
-            double percent = (desc_bytes - prebuffer_bytes) / desc_bytes;
-            double mod_bits_per_second = calc_bits_per_second * percent;
+                if (prebuffer < desc_sec) {
+                    double search_sec =
+                        (double)(matroska->duration * matroska->time_scale) / nano_seconds_per_second;
 
-            if (prebuffer < desc_sec) {
-                double search_sec =
-                    (double)(matroska->duration * matroska->time_scale) / nano_seconds_per_second;
+                    // Add 1 so the bits per second should be a little bit greater than file
+                    // datarate.
+                    int64_t bps = (int64_t)(mod_bits_per_second) + 1;
+                    const double min_buffer = 0.0;
+                    double buffer = prebuffer;
+                    double sec_to_download = 0.0;
 
-                // Add 1 so the bits per second should be a little bit greater than file
-                // datarate.
-                int64_t bps = (int64_t)(mod_bits_per_second) + 1;
-                const double min_buffer = 0.0;
-                double buffer = prebuffer;
-                double sec_to_download = 0.0;
-
-                int rv = buffer_size_after_time_downloaded(prebuffered_ns, search_sec, bps,
-                                                           min_buffer, &buffer, &sec_to_download,
-                                                           s, cues_start);
-                if (rv < 0) {
-                    return -1;
-                } else if (rv == 0) {
-                    bits_per_second = (double)(bps);
-                    break;
+                    int rv = buffer_size_after_time_downloaded(prebuffered_ns, search_sec, bps,
+                                                               min_buffer, &buffer, &sec_to_download,
+                                                               s, cues_start);
+                    if (rv < 0) {
+                        return -1;
+                    } else if (rv == 0) {
+                        bits_per_second = (double)(bps);
+                        break;
+                    }
                 }
-            }
 
-            desc_end = get_cue_desc(s, desc_end.end_time_ns, cues_start);
-        } while (desc_end.start_time_ns != -1);
+                desc_end = get_cue_desc(s, desc_end.end_time_ns, cues_start);
+            } while (desc_end.start_time_ns != -1);
+        }
         if (bandwidth < bits_per_second) bandwidth = bits_per_second;
     }
     return (int64_t)bandwidth;
@@ -3261,10 +3270,13 @@ static int webm_dash_manifest_cues(AVFormatContext *s)
     before_pos = avio_tell(matroska->ctx->pb);
     cues_start = seekhead[i].pos + matroska->segment_start;
     if (avio_seek(matroska->ctx->pb, cues_start, SEEK_SET) == cues_start) {
-        uint64_t cues_length = 0, cues_id = 0;
-        ebml_read_num(matroska, matroska->ctx->pb, 4, &cues_id);
-        ebml_read_length(matroska, matroska->ctx->pb, &cues_length);
-        cues_end = cues_start + cues_length + 11; // 11 is the offset of Cues ID.
+        // cues_end is computed as cues_start + cues_length + length of the
+        // Cues element ID + EBML length of the Cues element. cues_end is
+        // inclusive and the above sum is reduced by 1.
+        uint64_t cues_length = 0, cues_id = 0, bytes_read = 0;
+        bytes_read += ebml_read_num(matroska, matroska->ctx->pb, 4, &cues_id);
+        bytes_read += ebml_read_length(matroska, matroska->ctx->pb, &cues_length);
+        cues_end = cues_start + cues_length + bytes_read - 1;
     }
     avio_seek(matroska->ctx->pb, before_pos, SEEK_SET);
     if (cues_start == -1 || cues_end == -1) return -1;
@@ -3320,8 +3332,7 @@ static int webm_dash_manifest_read_header(AVFormatContext *s)
 
     // basename of the file
     buf = strrchr(s->filename, '/');
-    if (!buf) return -1;
-    av_dict_set(&s->streams[0]->metadata, FILENAME, ++buf, 0);
+    av_dict_set(&s->streams[0]->metadata, FILENAME, buf ? ++buf : s->filename, 0);
 
     // duration
     buf = av_asprintf("%g", matroska->duration);

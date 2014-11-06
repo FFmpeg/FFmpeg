@@ -38,6 +38,7 @@
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
 #include "libavutil/time.h"
+#include "libavutil/time_internal.h"
 
 #include "avformat.h"
 #include "avio.h"
@@ -267,10 +268,11 @@ static void peak_write_chunk(AVFormatContext *s)
 
     memset(timestamp, 0, sizeof(timestamp));
     if (!(s->flags & AVFMT_FLAG_BITEXACT)) {
+        struct tm tmpbuf;
         av_log(s, AV_LOG_INFO, "Writing local time and date to Peak Envelope Chunk\n");
         now0 = av_gettime();
         now_secs = now0 / 1000000;
-        strftime(timestamp, sizeof(timestamp), "%Y:%m:%d:%H:%M:%S:", localtime(&now_secs));
+        strftime(timestamp, sizeof(timestamp), "%Y:%m:%d:%H:%M:%S:", localtime_r(&now_secs, &tmpbuf));
         av_strlcatf(timestamp, sizeof(timestamp), "%03d", (int)((now0 / 1000) % 1000));
     }
 

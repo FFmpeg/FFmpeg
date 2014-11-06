@@ -887,14 +887,14 @@ static int imc_decode_block(AVCodecContext *avctx, IMCContext *q, int ch)
 
     flag = get_bits1(&q->gb);
     if (stream_format_code & 0x1)
-        imc_decode_level_coefficients_raw(q, chctx->levlCoeffBuf,
-                                          chctx->flcoeffs1, chctx->flcoeffs2);
-    else if (stream_format_code & 0x1)
         imc_read_level_coeffs_raw(q, stream_format_code, chctx->levlCoeffBuf);
     else
         imc_read_level_coeffs(q, stream_format_code, chctx->levlCoeffBuf);
 
-    if (stream_format_code & 0x4)
+    if (stream_format_code & 0x1)
+        imc_decode_level_coefficients_raw(q, chctx->levlCoeffBuf,
+                                          chctx->flcoeffs1, chctx->flcoeffs2);
+    else if (stream_format_code & 0x4)
         imc_decode_level_coefficients(q, chctx->levlCoeffBuf,
                                       chctx->flcoeffs1, chctx->flcoeffs2);
     else

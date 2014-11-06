@@ -50,7 +50,7 @@
 #include "simple_idct.h"
 
 /* XXX: also include quantization */
-RL_VLC_ELEM ff_dv_rl_vlc[1184];
+RL_VLC_ELEM ff_dv_rl_vlc[1664];
 
 static inline void dv_calc_mb_coordinates(const AVDVProfile *d, int chan,
                                           int seq, int slot, uint16_t *tbl)
@@ -185,8 +185,6 @@ static const uint8_t dv_quant_areas[4] = { 6, 21, 43, 64 };
 int ff_dv_init_dynamic_tables(DVVideoContext *ctx, const AVDVProfile *d)
 {
     int j, i, c, s, p;
-    uint32_t *factor1, *factor2;
-    const int *iweight1, *iweight2;
 
     p = i = 0;
     for (c = 0; c < d->n_difchan; c++) {
@@ -200,38 +198,6 @@ int ff_dv_init_dynamic_tables(DVVideoContext *ctx, const AVDVProfile *d)
                     ctx->work_chunks[i++].buf_offset = p;
                 }
                 p += 5;
-            }
-        }
-    }
-
-    factor1 = &ctx->idct_factor[0];
-    factor2 = &ctx->idct_factor[DV_PROFILE_IS_HD(d) ? 4096 : 2816];
-    if (d->height == 720) {
-        iweight1 = &ff_dv_iweight_720_y[0];
-        iweight2 = &ff_dv_iweight_720_c[0];
-    } else {
-        iweight1 = &ff_dv_iweight_1080_y[0];
-        iweight2 = &ff_dv_iweight_1080_c[0];
-    }
-    if (DV_PROFILE_IS_HD(d)) {
-        for (c = 0; c < 4; c++) {
-            for (s = 0; s < 16; s++) {
-                for (i = 0; i < 64; i++) {
-                    *factor1++ = (dv100_qstep[s] << (c + 9)) * iweight1[i];
-                    *factor2++ = (dv100_qstep[s] << (c + 9)) * iweight2[i];
-                }
-            }
-        }
-    } else {
-        iweight1 = &ff_dv_iweight_88[0];
-        for (j = 0; j < 2; j++, iweight1 = &ff_dv_iweight_248[0]) {
-            for (s = 0; s < 22; s++) {
-                for (i = c = 0; c < 4; c++) {
-                    for (; i < dv_quant_areas[c]; i++) {
-                        *factor1   = iweight1[i] << (ff_dv_quant_shifts[s][c] + 1);
-                        *factor2++ = (*factor1++) << 1;
-                    }
-                }
             }
         }
     }
@@ -277,7 +243,7 @@ av_cold int ff_dvvideo_init(AVCodecContext *avctx)
          * to accelerate the parsing of partial codes */
         init_vlc(&dv_vlc, TEX_VLC_BITS, j, new_dv_vlc_len,
                  1, 1, new_dv_vlc_bits, 2, 2, 0);
-        av_assert1(dv_vlc.table_size == 1184);
+        av_assert1(dv_vlc.table_size == 1664);
 
         for (i = 0; i < dv_vlc.table_size; i++) {
             int code = dv_vlc.table[i][0];

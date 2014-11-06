@@ -236,7 +236,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     s->header.frames_per_packet = s->frames_per_packet;
 
     /* set encoding delay */
-    speex_encoder_ctl(s->enc_state, SPEEX_GET_LOOKAHEAD, &avctx->delay);
+    speex_encoder_ctl(s->enc_state, SPEEX_GET_LOOKAHEAD, &avctx->initial_padding);
     ff_af_queue_init(avctx, &s->afq);
 
     /* create header packet bytes from header struct */

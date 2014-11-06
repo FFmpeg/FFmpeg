@@ -478,28 +478,26 @@ static int decode_sequence_header_adv(VC1Context *v, GetBitContext *gb)
 
         if (get_bits1(gb)) { //framerate stuff
             if (get_bits1(gb)) {
-                v->s.avctx->time_base.num = 32;
-                v->s.avctx->time_base.den = get_bits(gb, 16) + 1;
+                v->s.avctx->framerate.den = 32;
+                v->s.avctx->framerate.num = get_bits(gb, 16) + 1;
             } else {
                 int nr, dr;
                 nr = get_bits(gb, 8);
                 dr = get_bits(gb, 4);
                 if (nr > 0 && nr < 8 && dr > 0 && dr < 3) {
-                    v->s.avctx->time_base.num = ff_vc1_fps_dr[dr - 1];
-                    v->s.avctx->time_base.den = ff_vc1_fps_nr[nr - 1] * 1000;
+                    v->s.avctx->framerate.den = ff_vc1_fps_dr[dr - 1];
+                    v->s.avctx->framerate.num = ff_vc1_fps_nr[nr - 1] * 1000;
                 }
             }
             if (v->broadcast) { // Pulldown may be present
-                v->s.avctx->time_base.den  *= 2;
                 v->s.avctx->ticks_per_frame = 2;
             }
         }
 
         if (get_bits1(gb)) {
-            v->s.avctx->color_primaries = get_bits(gb, 8);
-            v->s.avctx->color_trc       = get_bits(gb, 8);
-            v->s.avctx->colorspace      = get_bits(gb, 8);
-            v->s.avctx->color_range     = AVCOL_RANGE_MPEG;
+            v->color_prim    = get_bits(gb, 8);
+            v->transfer_char = get_bits(gb, 8);
+            v->matrix_coef   = get_bits(gb, 8);
         }
     }
 

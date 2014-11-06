@@ -15,6 +15,7 @@ HEADERS = adler32.h                                                     \
           bprint.h                                                      \
           bswap.h                                                       \
           buffer.h                                                      \
+          cast5.h                                                       \
           channel_layout.h                                              \
           common.h                                                      \
           cpu.h                                                         \
@@ -30,7 +31,6 @@ HEADERS = adler32.h                                                     \
           hmac.h                                                        \
           imgutils.h                                                    \
           intfloat.h                                                    \
-          intfloat_readwrite.h                                          \
           intreadwrite.h                                                \
           lfg.h                                                         \
           log.h                                                         \
@@ -83,6 +83,7 @@ OBJS = adler32.o                                                        \
        blowfish.o                                                       \
        bprint.o                                                         \
        buffer.o                                                         \
+       cast5.o                                                          \
        channel_layout.o                                                 \
        cpu.o                                                            \
        crc.o                                                            \
@@ -100,7 +101,6 @@ OBJS = adler32.o                                                        \
        hash.o                                                           \
        hmac.o                                                           \
        imgutils.o                                                       \
-       intfloat_readwrite.o                                             \
        intmath.o                                                        \
        lfg.o                                                            \
        lls.o                                                            \
@@ -153,6 +153,7 @@ TESTPROGS = adler32                                                     \
             base64                                                      \
             blowfish                                                    \
             bprint                                                      \
+            cast5                                                       \
             cpu                                                         \
             crc                                                         \
             des                                                         \
@@ -177,6 +178,7 @@ TESTPROGS = adler32                                                     \
             ripemd                                                      \
             sha                                                         \
             sha512                                                      \
+            softfloat                                                   \
             tree                                                        \
             utf8                                                        \
             xtea                                                        \

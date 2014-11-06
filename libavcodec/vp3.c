@@ -2269,7 +2269,7 @@ static int theora_decode_header(AVCodecContext *avctx, GetBitContext *gb)
             av_log(avctx, AV_LOG_ERROR, "Invalid framerate\n");
             return AVERROR_INVALIDDATA;
         }
-        av_reduce(&avctx->time_base.num, &avctx->time_base.den,
+        av_reduce(&avctx->framerate.den, &avctx->framerate.num,
                   fps.den, fps.num, 1 << 30);
     }
 

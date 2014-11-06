@@ -683,12 +683,12 @@ static int g2m_decode_frame(AVCodecContext *avctx, void *data,
 
     magic = bytestream2_get_be32(&bc);
     if ((magic & ~0xF) != MKBETAG('G', '2', 'M', '0') ||
-        (magic & 0xF) < 2 || (magic & 0xF) > 4) {
+        (magic & 0xF) < 2 || (magic & 0xF) > 5) {
         av_log(avctx, AV_LOG_ERROR, "Wrong magic %08X\n", magic);
         return AVERROR_INVALIDDATA;
     }
 
-    if ((magic & 0xF) != 4) {
+    if ((magic & 0xF) < 4) {
         av_log(avctx, AV_LOG_ERROR, "G2M2 and G2M3 are not yet supported\n");
         return AVERROR(ENOSYS);
     }
@@ -736,8 +736,10 @@ static int g2m_decode_frame(AVCodecContext *avctx, void *data,
             }
             c->tile_width  = bytestream2_get_be32(&bc);
             c->tile_height = bytestream2_get_be32(&bc);
-            if (!c->tile_width || !c->tile_height ||
-                ((c->tile_width | c->tile_height) & 0xF)) {
+            if (c->tile_width <= 0 || c->tile_height <= 0 ||
+                ((c->tile_width | c->tile_height) & 0xF) ||
+                c->tile_width * 4LL * c->tile_height >= INT_MAX
+            ) {
                 av_log(avctx, AV_LOG_ERROR,
                        "Invalid tile dimensions %dx%d\n",
                        c->tile_width, c->tile_height);

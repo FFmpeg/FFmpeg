@@ -1745,6 +1745,10 @@ Enable calculation and printing SSIM stats after the encoding.
 Enable the use of Periodic Intra Refresh instead of IDR frames when set
 to 1.
 
+@item avcintra-class (@emph{class})
+Configure the encoder to generate AVC-Intra.
+Valid values are 50,100 and 200
+
 @item bluray-compat (@emph{bluray-compat})
 Configure the encoder to be compatible with the bluray standard.
 It is a shorthand for setting "bluray-compat=1 force-cfr=1".
@@ -1881,6 +1885,34 @@ no-fast-pskip=1:subq=6:8x8dct=0:trellis=0 OUTPUT
 
 Encoding ffpresets for common usages are provided so they can be used with the
 general presets system (e.g. passing the @option{pre} option).
+
+@section libx265
+
+x265 H.265/HEVC encoder wrapper.
+
+This encoder requires the presence of the libx265 headers and library
+during configuration. You need to explicitly configure the build with
+@option{--enable-libx265}.
+
+@subsection Options
+
+@table @option
+@item preset
+Set the x265 preset.
+
+@item tune
+Set the x265 tune parameter.
+
+@item x265-params
+Set x265 options using a list of @var{key}=@var{value} couples separated
+by ":". See @command{x265 --help} for a list of options.
+
+For example to specify libx265 encoding options with @option{-x265-params}:
+
+@example
+ffmpeg -i input -c:v libx265 -x265-params crf=26:psy-rd=1 output.mp4
+@end example
+@end table
 
 @section libxvid
 

@@ -138,11 +138,11 @@ av_cold int ff_rate_control_init(MpegEncContext *s)
     }
 
     res = av_expr_parse(&rcc->rc_eq_eval,
-                        s->avctx->rc_eq ? s->avctx->rc_eq : "tex^qComp",
+                        s->rc_eq ? s->rc_eq : "tex^qComp",
                         const_names, func1_names, func1,
                         NULL, NULL, 0, s->avctx);
     if (res < 0) {
-        av_log(s->avctx, AV_LOG_ERROR, "Error parsing rc_eq \"%s\"\n", s->avctx->rc_eq);
+        av_log(s->avctx, AV_LOG_ERROR, "Error parsing rc_eq \"%s\"\n", s->rc_eq);
         return res;
     }
 
@@ -250,9 +250,9 @@ av_cold int ff_rate_control_init(MpegEncContext *s)
             return -1;
         }
         /* init stuff with the user specified complexity */
-        if (s->avctx->rc_initial_cplx) {
+        if (s->rc_initial_cplx) {
             for (i = 0; i < 60 * 30; i++) {
-                double bits = s->avctx->rc_initial_cplx * (i / 10000.0 + 1.0) * s->mb_num;
+                double bits = s->rc_initial_cplx * (i / 10000.0 + 1.0) * s->mb_num;
                 RateControlEntry rce;
 
                 if (i % ((s->gop_size + 3) / 4) == 0)
@@ -399,7 +399,7 @@ static double get_qscale(MpegEncContext *s, RateControlEntry *rce,
 
     bits = av_expr_eval(rcc->rc_eq_eval, const_values, rce);
     if (isnan(bits)) {
-        av_log(s->avctx, AV_LOG_ERROR, "Error evaluating rc_eq \"%s\"\n", s->avctx->rc_eq);
+        av_log(s->avctx, AV_LOG_ERROR, "Error evaluating rc_eq \"%s\"\n", s->rc_eq);
         return -1;
     }
 
@@ -477,8 +477,8 @@ static double get_diff_limited_q(MpegEncContext *s, RateControlEntry *rce, doubl
  */
 static void get_qminmax(int *qmin_ret, int *qmax_ret, MpegEncContext *s, int pict_type)
 {
-    int qmin = s->avctx->lmin;
-    int qmax = s->avctx->lmax;
+    int qmin = s->lmin;
+    int qmax = s->lmax;
 
     assert(qmin <= qmax);
 
@@ -517,10 +517,10 @@ static double modify_qscale(MpegEncContext *s, RateControlEntry *rce,
     get_qminmax(&qmin, &qmax, s, pict_type);
 
     /* modulation */
-    if (s->avctx->rc_qmod_freq &&
-        frame_num % s->avctx->rc_qmod_freq == 0 &&
+    if (s->rc_qmod_freq &&
+        frame_num % s->rc_qmod_freq == 0 &&
         pict_type == AV_PICTURE_TYPE_P)
-        q *= s->avctx->rc_qmod_amp;
+        q *= s->rc_qmod_amp;
 
     /* buffer overflow/underflow protection */
     if (buffer_size) {
@@ -533,7 +533,7 @@ static double modify_qscale(MpegEncContext *s, RateControlEntry *rce,
                 d = 1.0;
             else if (d < 0.0001)
                 d = 0.0001;
-            q *= pow(d, 1.0 / s->avctx->rc_buffer_aggressivity);
+            q *= pow(d, 1.0 / s->rc_buffer_aggressivity);
 
             q_limit = bits2qp(rce,
                               FFMAX((min_rate - buffer_size + rcc->buffer_index) *
@@ -553,7 +553,7 @@ static double modify_qscale(MpegEncContext *s, RateControlEntry *rce,
                 d = 1.0;
             else if (d < 0.0001)
                 d = 0.0001;
-            q /= pow(d, 1.0 / s->avctx->rc_buffer_aggressivity);
+            q /= pow(d, 1.0 / s->rc_buffer_aggressivity);
 
             q_limit = bits2qp(rce,
                               FFMAX(rcc->buffer_index *
@@ -569,8 +569,8 @@ static double modify_qscale(MpegEncContext *s, RateControlEntry *rce,
     }
     av_dlog(s, "q:%f max:%f min:%f size:%f index:%f agr:%f\n",
             q, max_rate, min_rate, buffer_size, rcc->buffer_index,
-            s->avctx->rc_buffer_aggressivity);
-    if (s->avctx->rc_qsquish == 0.0 || qmin == qmax) {
+            s->rc_buffer_aggressivity);
+    if (s->rc_qsquish == 0.0 || qmin == qmax) {
         if (q < qmin)
             q = qmin;
         else if (q > qmax)
@@ -619,7 +619,7 @@ static void adaptive_quantization(MpegEncContext *s, double q)
     const float temp_cplx_masking    = s->avctx->temporal_cplx_masking;
     const float spatial_cplx_masking = s->avctx->spatial_cplx_masking;
     const float p_masking            = s->avctx->p_masking;
-    const float border_masking       = s->avctx->border_masking;
+    const float border_masking       = s->border_masking;
     float bits_sum                   = 0.0;
     float cplx_sum                   = 0.0;
     float *cplx_tab                  = s->cplx_tab;

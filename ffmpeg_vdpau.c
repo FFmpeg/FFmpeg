@@ -42,9 +42,11 @@ typedef struct VDPAUContext {
     VdpGetErrorString                               *get_error_string;
     VdpGetInformationString                         *get_information_string;
     VdpDeviceDestroy                                *device_destroy;
+#if 1 // for ffmpegs older vdpau API, not the oldest though
     VdpDecoderCreate                                *decoder_create;
     VdpDecoderDestroy                               *decoder_destroy;
     VdpDecoderRender                                *decoder_render;
+#endif
     VdpVideoSurfaceCreate                           *video_surface_create;
     VdpVideoSurfaceDestroy                          *video_surface_destroy;
     VdpVideoSurfaceGetBitsYCbCr                     *video_surface_get_bits;
@@ -56,6 +58,8 @@ typedef struct VDPAUContext {
     enum AVPixelFormat pix_fmt;
     VdpYCbCrFormat vdpau_format;
 } VDPAUContext;
+
+int vdpau_api_ver = 2;
 
 static void vdpau_uninit(AVCodecContext *s)
 {
@@ -239,9 +243,11 @@ do {                                                                            
     GET_CALLBACK(VDP_FUNC_ID_GET_ERROR_STRING,               get_error_string);
     GET_CALLBACK(VDP_FUNC_ID_GET_INFORMATION_STRING,         get_information_string);
     GET_CALLBACK(VDP_FUNC_ID_DEVICE_DESTROY,                 device_destroy);
-    GET_CALLBACK(VDP_FUNC_ID_DECODER_CREATE,                 decoder_create);
-    GET_CALLBACK(VDP_FUNC_ID_DECODER_DESTROY,                decoder_destroy);
-    GET_CALLBACK(VDP_FUNC_ID_DECODER_RENDER,                 decoder_render);
+    if (vdpau_api_ver == 1) {
+        GET_CALLBACK(VDP_FUNC_ID_DECODER_CREATE,                 decoder_create);
+        GET_CALLBACK(VDP_FUNC_ID_DECODER_DESTROY,                decoder_destroy);
+        GET_CALLBACK(VDP_FUNC_ID_DECODER_RENDER,                 decoder_render);
+    }
     GET_CALLBACK(VDP_FUNC_ID_VIDEO_SURFACE_CREATE,           video_surface_create);
     GET_CALLBACK(VDP_FUNC_ID_VIDEO_SURFACE_DESTROY,          video_surface_destroy);
     GET_CALLBACK(VDP_FUNC_ID_VIDEO_SURFACE_GET_BITS_Y_CB_CR, video_surface_get_bits);
@@ -270,12 +276,16 @@ do {                                                                            
     ctx->vdpau_format = vdpau_formats[i][0];
     ctx->pix_fmt      = vdpau_formats[i][1];
 
-    vdpau_ctx = av_vdpau_alloc_context();
-    if (!vdpau_ctx)
-        goto fail;
-    vdpau_ctx->render = ctx->decoder_render;
+    if (vdpau_api_ver == 1) {
+        vdpau_ctx = av_vdpau_alloc_context();
+        if (!vdpau_ctx)
+            goto fail;
+        vdpau_ctx->render = ctx->decoder_render;
 
-    s->hwaccel_context = vdpau_ctx;
+        s->hwaccel_context = vdpau_ctx;
+    } else
+    if (av_vdpau_bind_context(s, ctx->device, ctx->get_proc_address, 0))
+        goto fail;
 
     ctx->get_information_string(&vendor);
     av_log(NULL, AV_LOG_VERBOSE, "Using VDPAU -- %s -- on X11 display %s, "
@@ -291,7 +301,7 @@ fail:
     return AVERROR(EINVAL);
 }
 
-int vdpau_init(AVCodecContext *s)
+static int vdpau_old_init(AVCodecContext *s)
 {
     InputStream *ist = s->opaque;
     int loglevel = (ist->hwaccel_id == HWACCEL_AUTO) ? AV_LOG_VERBOSE : AV_LOG_ERROR;
@@ -327,6 +337,25 @@ int vdpau_init(AVCodecContext *s)
     }
 
     vdpau_ctx->decoder = ctx->decoder;
+
+    ist->hwaccel_get_buffer    = vdpau_get_buffer;
+    ist->hwaccel_retrieve_data = vdpau_retrieve_data;
+
+    return 0;
+}
+
+int vdpau_init(AVCodecContext *s)
+{
+    InputStream *ist = s->opaque;
+
+    if (vdpau_api_ver == 1)
+        return vdpau_old_init(s);
+
+    if (!ist->hwaccel_ctx) {
+        int ret = vdpau_alloc(s);
+        if (ret < 0)
+            return ret;
+    }
 
     ist->hwaccel_get_buffer    = vdpau_get_buffer;
     ist->hwaccel_retrieve_data = vdpau_retrieve_data;

@@ -163,7 +163,7 @@ static int decode_frame(AVCodecContext *avctx,
         if(i) {
             AVRational q = av_d2q(av_int2float(i), 4096);
             if (q.num > 0 && q.den > 0)
-                avctx->time_base = av_inv_q(q);
+                avctx->framerate = q;
         }
     }
 

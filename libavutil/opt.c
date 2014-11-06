@@ -40,20 +40,6 @@
 
 #include <float.h>
 
-#if FF_API_FIND_OPT
-//FIXME order them and do a bin search
-const AVOption *av_find_opt(void *v, const char *name, const char *unit, int mask, int flags)
-{
-    const AVOption *o = NULL;
-
-    while ((o = av_next_option(v, o))) {
-        if (!strcmp(o->name, name) && (!unit || (o->unit && !strcmp(o->unit, unit))) && (o->flags & mask) == flags)
-            return o;
-    }
-    return NULL;
-}
-#endif
-
 #if FF_API_OLD_AVOPTIONS
 const AVOption *av_next_option(void *obj, const AVOption *last)
 {

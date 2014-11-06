@@ -39,6 +39,7 @@
 #include "libavutil/parseutils.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/time.h"
+#include "libavutil/time_internal.h"
 #include "libavutil/timestamp.h"
 
 typedef struct SegmentListEntry {
@@ -143,6 +144,7 @@ static int segment_mux_init(AVFormatContext *s)
     oc = seg->avf;
 
     oc->interrupt_callback = s->interrupt_callback;
+    oc->max_delay          = s->max_delay;
     av_dict_copy(&oc->metadata, s->metadata, 0);
 
     for (i = 0; i < s->nb_streams; i++) {
@@ -162,6 +164,7 @@ static int segment_mux_init(AVFormatContext *s)
             ocodec->codec_tag = 0;
         }
         st->sample_aspect_ratio = s->streams[i]->sample_aspect_ratio;
+        st->time_base = s->streams[i]->time_base;
         av_dict_copy(&st->metadata, s->streams[i]->metadata, 0);
     }
 
@@ -714,11 +717,7 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
         if (seg->use_clocktime) {
             int64_t avgt = av_gettime();
             time_t sec = avgt / 1000000;
-#if HAVE_LOCALTIME_R
             localtime_r(&sec, &ti);
-#else
-            ti = *localtime(&sec);
-#endif
             usecs = (int64_t)(ti.tm_hour*3600 + ti.tm_min*60 + ti.tm_sec) * 1000000 + (avgt % 1000000);
             wrapped_val = usecs % seg->time;
             if (seg->last_cut != usecs && wrapped_val < seg->last_val) {

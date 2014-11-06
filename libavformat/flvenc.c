@@ -548,6 +548,12 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (sc->last_ts < ts)
         sc->last_ts = ts;
 
+    if (size + flags_size >= 1<<24) {
+        av_log(s, AV_LOG_ERROR, "Too large packet with size %u >= %u\n",
+               size + flags_size, 1<<24);
+        return AVERROR(EINVAL);
+    }
+
     avio_wb24(pb, size + flags_size);
     avio_wb24(pb, ts & 0xFFFFFF);
     avio_w8(pb, (ts >> 24) & 0x7F); // timestamps are 32 bits _signed_
@@ -556,7 +562,7 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (enc->codec_type == AVMEDIA_TYPE_DATA) {
         int data_size;
         int64_t metadata_size_pos = avio_tell(pb);
-        if (enc->codec_type == AV_CODEC_ID_TEXT) {
+        if (enc->codec_id == AV_CODEC_ID_TEXT) {
             // legacy FFmpeg magic?
             avio_w8(pb, AMF_DATA_TYPE_STRING);
             put_amf_string(pb, "onTextData");
