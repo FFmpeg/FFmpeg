@@ -201,7 +201,7 @@ void ff_flac_set_channel_layout(AVCodecContext *avctx)
         avctx->channel_layout = 0;
 }
 
-void avpriv_flac_parse_streaminfo(AVCodecContext *avctx, struct FLACStreaminfo *s,
+void ff_flac_parse_streaminfo(AVCodecContext *avctx, struct FLACStreaminfo *s,
                               const uint8_t *buffer)
 {
     GetBitContext gb;
@@ -235,3 +235,11 @@ void avpriv_flac_parse_streaminfo(AVCodecContext *avctx, struct FLACStreaminfo *
     skip_bits_long(&gb, 64); /* md5 sum */
     skip_bits_long(&gb, 64); /* md5 sum */
 }
+
+#if LIBAVCODEC_VERSION_MAJOR < 57
+void avpriv_flac_parse_streaminfo(AVCodecContext *avctx, struct FLACStreaminfo *s,
+                              const uint8_t *buffer)
+{
+    ff_flac_parse_streaminfo(avctx, s, buffer);
+}
+#endif

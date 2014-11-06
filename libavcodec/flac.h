@@ -96,8 +96,13 @@ typedef struct FLACFrameInfo {
  * @param[out] s       where parsed information is stored
  * @param[in]  buffer  pointer to start of 34-byte streaminfo data
  */
+void ff_flac_parse_streaminfo(AVCodecContext *avctx, struct FLACStreaminfo *s,
+                              const uint8_t *buffer);
+
+#if LIBAVCODEC_VERSION_MAJOR < 57
 void avpriv_flac_parse_streaminfo(AVCodecContext *avctx, struct FLACStreaminfo *s,
                                   const uint8_t *buffer);
+#endif
 
 /**
  * Validate the FLAC extradata.
