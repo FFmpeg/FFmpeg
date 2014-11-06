@@ -392,7 +392,7 @@ static int vorbis_header(AVFormatContext *s, int idx)
         if (!priv->vp) {
             av_freep(&st->codec->extradata);
             st->codec->extradata_size = 0;
-            return ret;
+            return AVERROR_UNKNOWN;
         }
     }
 
