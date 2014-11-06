@@ -316,18 +316,25 @@ int avpriv_vorbis_parse_frame_flags(AVVorbisParseContext *s, const uint8_t *buf,
 #endif
 
 #if CONFIG_VORBIS_PARSER
+
+typedef struct VorbisParseContext {
+    AVVorbisParseContext *vp;
+} VorbisParseContext;
+
 static int vorbis_parse(AVCodecParserContext *s1, AVCodecContext *avctx,
                         const uint8_t **poutbuf, int *poutbuf_size,
                         const uint8_t *buf, int buf_size)
 {
-    AVVorbisParseContext *s = s1->priv_data;
+    VorbisParseContext *s = s1->priv_data;
     int duration;
 
-    if (!s->extradata_parsed && avctx->extradata && avctx->extradata_size)
-        if (avpriv_vorbis_parse_extradata(avctx, s))
+    if (!s->vp && avctx->extradata && avctx->extradata_size) {
+        s->vp = av_vorbis_parse_init(avctx->extradata, avctx->extradata_size);
+        if (!s->vp)
             goto end;
+    }
 
-    if ((duration = avpriv_vorbis_parse_frame(s, buf, buf_size)) >= 0)
+    if ((duration = av_vorbis_parse_frame(s->vp, buf, buf_size)) >= 0)
         s1->duration = duration;
 
 end:
@@ -338,9 +345,16 @@ end:
     return buf_size;
 }
 
+static void vorbis_parser_close(AVCodecParserContext *ctx)
+{
+    VorbisParseContext *s = ctx->priv_data;
+    av_vorbis_parse_free(&s->vp);
+}
+
 AVCodecParser ff_vorbis_parser = {
     .codec_ids      = { AV_CODEC_ID_VORBIS },
-    .priv_data_size = sizeof(AVVorbisParseContext),
+    .priv_data_size = sizeof(VorbisParseContext),
     .parser_parse   = vorbis_parse,
+    .parser_close   = vorbis_parser_close,
 };
 #endif /* CONFIG_VORBIS_PARSER */
