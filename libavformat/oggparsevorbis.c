@@ -304,13 +304,13 @@ static int vorbis_header(AVFormatContext *s, int idx)
             return AVERROR(ENOMEM);
     }
 
+    priv = os->private;
+
     if (!(pkt_type & 1))
-        return 0;
+        return priv->vp ? 0 : AVERROR_INVALIDDATA;
 
     if (os->psize < 1 || pkt_type > 5)
         return AVERROR_INVALIDDATA;
-
-    priv = os->private;
 
     if (priv->packet[pkt_type >> 1])
         return AVERROR_INVALIDDATA;
