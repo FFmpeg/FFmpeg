@@ -210,8 +210,8 @@ static int vorbis_parse_init(AVVorbisParseContext *s,
     return 0;
 }
 
-int avpriv_vorbis_parse_frame_flags(AVVorbisParseContext *s, const uint8_t *buf,
-                                    int buf_size, int *flags)
+int av_vorbis_parse_frame_flags(AVVorbisParseContext *s, const uint8_t *buf,
+                                int buf_size, int *flags)
 {
     int duration = 0;
 
@@ -262,7 +262,7 @@ bad_packet:
 int av_vorbis_parse_frame(AVVorbisParseContext *s, const uint8_t *buf,
                           int buf_size)
 {
-    return avpriv_vorbis_parse_frame_flags(s, buf, buf_size, NULL);
+    return av_vorbis_parse_frame_flags(s, buf, buf_size, NULL);
 }
 
 void av_vorbis_parse_reset(AVVorbisParseContext *s)
@@ -307,6 +307,11 @@ int avpriv_vorbis_parse_frame(AVVorbisParseContext *s, const uint8_t *buf,
                               int buf_size)
 {
     return av_vorbis_parse_frame(s, buf, buf_size);
+}
+int avpriv_vorbis_parse_frame_flags(AVVorbisParseContext *s, const uint8_t *buf,
+                                    int buf_size, int *flags)
+{
+    return av_vorbis_parse_frame_flags(s, buf, buf_size, flags);
 }
 #endif
 

@@ -56,6 +56,21 @@ int avpriv_vorbis_parse_extradata(AVCodecContext *avctx, AVVorbisParseContext *s
  * Get the duration for a Vorbis packet.
  *
  * avpriv_vorbis_parse_extradata() must have been successfully called prior to
+ * this in order for a correct duration to be returned. If @p flags is @c NULL,
+ * special frames are considered invalid.
+ *
+ * @param s        Vorbis parser context
+ * @param buf      buffer containing a Vorbis frame
+ * @param buf_size size of the buffer
+ * @param flags    flags for special frames
+ */
+int avpriv_vorbis_parse_frame_flags(AVVorbisParseContext *s, const uint8_t *buf,
+                                    int buf_size, int *flags);
+
+/**
+ * Get the duration for a Vorbis packet.
+ *
+ * avpriv_vorbis_parse_extradata() must have been successfully called prior to
  * this in order for a correct duration to be returned.
  *
  * @param s        Vorbis parser context
