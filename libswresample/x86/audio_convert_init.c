@@ -58,7 +58,12 @@ MULTI_CAPS_FUNC(SSE2, sse2)
                 ac->simd_f =  ff_pack_6ch_float_to_float_a_mmx;
         }
     }
-
+    if(EXTERNAL_SSE(mm_flags)) {
+        if(channels == 6) {
+            if(   out_fmt == AV_SAMPLE_FMT_FLT  && in_fmt == AV_SAMPLE_FMT_FLTP || out_fmt == AV_SAMPLE_FMT_S32 && in_fmt == AV_SAMPLE_FMT_S32P)
+                ac->simd_f =  ff_pack_6ch_float_to_float_a_sse;
+        }
+    }
     if(EXTERNAL_SSE2(mm_flags)) {
         if(   out_fmt == AV_SAMPLE_FMT_FLT  && in_fmt == AV_SAMPLE_FMT_S32 || out_fmt == AV_SAMPLE_FMT_FLTP && in_fmt == AV_SAMPLE_FMT_S32P)
             ac->simd_f =  ff_int32_to_float_a_sse2;
@@ -105,6 +110,12 @@ MULTI_CAPS_FUNC(SSE2, sse2)
             if(   out_fmt == AV_SAMPLE_FMT_S16P  && in_fmt == AV_SAMPLE_FMT_FLT)
                 ac->simd_f =  ff_unpack_2ch_float_to_int16_a_sse2;
         }
+        if(channels == 6) {
+            if(   out_fmt == AV_SAMPLE_FMT_FLT  && in_fmt == AV_SAMPLE_FMT_S32P)
+                ac->simd_f =  ff_pack_6ch_int32_to_float_a_sse2;
+            if(   out_fmt == AV_SAMPLE_FMT_S32  && in_fmt == AV_SAMPLE_FMT_FLTP)
+                ac->simd_f =  ff_pack_6ch_float_to_int32_a_sse2;
+        }
     }
     if(EXTERNAL_SSSE3(mm_flags)) {
         if(channels == 2) {
@@ -114,16 +125,6 @@ MULTI_CAPS_FUNC(SSE2, sse2)
                 ac->simd_f =  ff_unpack_2ch_int16_to_int32_a_ssse3;
             if(   out_fmt == AV_SAMPLE_FMT_FLTP  && in_fmt == AV_SAMPLE_FMT_S16)
                 ac->simd_f =  ff_unpack_2ch_int16_to_float_a_ssse3;
-        }
-    }
-    if(EXTERNAL_SSE4(mm_flags)) {
-        if(channels == 6) {
-            if(   out_fmt == AV_SAMPLE_FMT_FLT  && in_fmt == AV_SAMPLE_FMT_FLTP || out_fmt == AV_SAMPLE_FMT_S32 && in_fmt == AV_SAMPLE_FMT_S32P)
-                ac->simd_f =  ff_pack_6ch_float_to_float_a_sse4;
-            if(   out_fmt == AV_SAMPLE_FMT_FLT  && in_fmt == AV_SAMPLE_FMT_S32P)
-                ac->simd_f =  ff_pack_6ch_int32_to_float_a_sse4;
-            if(   out_fmt == AV_SAMPLE_FMT_S32  && in_fmt == AV_SAMPLE_FMT_FLTP)
-                ac->simd_f =  ff_pack_6ch_float_to_int32_a_sse4;
         }
     }
     if(EXTERNAL_AVX(mm_flags)) {
