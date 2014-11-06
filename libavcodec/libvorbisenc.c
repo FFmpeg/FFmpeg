@@ -27,7 +27,7 @@
 #include "audio_frame_queue.h"
 #include "internal.h"
 #include "vorbis.h"
-#include "vorbis_parser.h"
+#include "vorbis_parser_internal.h"
 
 
 /* Number of samples the user should send in each call.

@@ -30,7 +30,7 @@
 #include "get_bits.h"
 #include "parser.h"
 #include "xiph.h"
-#include "vorbis_parser.h"
+#include "vorbis_parser_internal.h"
 
 static const AVClass vorbis_parser_class = {
     .class_name = "Vorbis parser",
@@ -181,7 +181,8 @@ bad_header:
     return ret;
 }
 
-int avpriv_vorbis_parse_extradata(AVCodecContext *avctx, AVVorbisParseContext *s)
+static int vorbis_parse_init(AVVorbisParseContext *s,
+                             const uint8_t *extradata, int extradata_size)
 {
     uint8_t *header_start[3];
     int header_len[3];
@@ -190,8 +191,8 @@ int avpriv_vorbis_parse_extradata(AVCodecContext *avctx, AVVorbisParseContext *s
     s->class = &vorbis_parser_class;
     s->extradata_parsed = 1;
 
-    if ((ret = avpriv_split_xiph_headers(avctx->extradata,
-                                         avctx->extradata_size, 30,
+    if ((ret = avpriv_split_xiph_headers(extradata,
+                                         extradata_size, 30,
                                          header_start, header_len)) < 0) {
         av_log(s, AV_LOG_ERROR, "Extradata corrupt.\n");
         return ret;
@@ -258,17 +259,56 @@ bad_packet:
     return duration;
 }
 
-int avpriv_vorbis_parse_frame(AVVorbisParseContext *s, const uint8_t *buf,
-                              int buf_size)
+int av_vorbis_parse_frame(AVVorbisParseContext *s, const uint8_t *buf,
+                          int buf_size)
 {
     return avpriv_vorbis_parse_frame_flags(s, buf, buf_size, NULL);
 }
 
-void avpriv_vorbis_parse_reset(AVVorbisParseContext *s)
+void av_vorbis_parse_reset(AVVorbisParseContext *s)
 {
     if (s->valid_extradata)
         s->previous_blocksize = s->blocksize[0];
 }
+
+void av_vorbis_parse_free(AVVorbisParseContext **s)
+{
+    av_freep(s);
+}
+
+AVVorbisParseContext *av_vorbis_parse_init(const uint8_t *extradata,
+                                           int extradata_size)
+{
+    AVVorbisParseContext *s = av_mallocz(sizeof(*s));
+    int ret;
+
+    if (!s)
+        return NULL;
+
+    ret = vorbis_parse_init(s, extradata, extradata_size);
+    if (ret < 0) {
+        av_vorbis_parse_free(&s);
+        return NULL;
+    }
+
+    return s;
+}
+
+#if LIBAVCODEC_VERSION_MAJOR < 57
+int avpriv_vorbis_parse_extradata(AVCodecContext *avctx, AVVorbisParseContext *s)
+{
+    return vorbis_parse_init(s, avctx->extradata, avctx->extradata_size);
+}
+void avpriv_vorbis_parse_reset(AVVorbisParseContext *s)
+{
+    av_vorbis_parse_reset(s);
+}
+int avpriv_vorbis_parse_frame(AVVorbisParseContext *s, const uint8_t *buf,
+                              int buf_size)
+{
+    return av_vorbis_parse_frame(s, buf, buf_size);
+}
+#endif
 
 #if CONFIG_VORBIS_PARSER
 static int vorbis_parse(AVCodecParserContext *s1, AVCodecContext *avctx,
