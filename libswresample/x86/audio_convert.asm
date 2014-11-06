@@ -342,10 +342,10 @@ pack_6ch_%2_to_%1_u_int %+ SUFFIX
     mulps %1, %5
     mulps %2, %5
     cvtps2dq  %6, %1
-    cmpnltps %1, %5
+    cmpps %1, %1, %5, 5
     paddd %1, %6
     cvtps2dq  %6, %2
-    cmpnltps %2, %5
+    cmpps %2, %2, %5, 5
     paddd %2, %6
 %endmacro
 
@@ -473,4 +473,10 @@ PACK_6CH int32, float, a, 2, 2, FLOAT_TO_INT32_N, FLOAT_TO_INT32_INIT
 INIT_YMM avx
 CONV float, int32, u, 2, 2, INT32_TO_FLOAT_N, INT32_TO_FLOAT_INIT
 CONV float, int32, a, 2, 2, INT32_TO_FLOAT_N, INT32_TO_FLOAT_INIT
+%endif
+
+%if HAVE_AVX2_EXTERNAL
+INIT_YMM avx2
+CONV int32, float, u, 2, 2, FLOAT_TO_INT32_N, FLOAT_TO_INT32_INIT
+CONV int32, float, a, 2, 2, FLOAT_TO_INT32_N, FLOAT_TO_INT32_INIT
 %endif

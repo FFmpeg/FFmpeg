@@ -25,7 +25,7 @@
 #define PROTO(pre, in, out, cap) void ff ## pre ## in## _to_ ##out## _a_ ##cap(uint8_t **dst, const uint8_t **src, int len);
 #define PROTO2(pre, out, cap) PROTO(pre, int16, out, cap) PROTO(pre, int32, out, cap) PROTO(pre, float, out, cap)
 #define PROTO3(pre, cap) PROTO2(pre, int16, cap) PROTO2(pre, int32, cap) PROTO2(pre, float, cap)
-#define PROTO4(pre) PROTO3(pre, mmx) PROTO3(pre, sse) PROTO3(pre, sse2) PROTO3(pre, ssse3) PROTO3(pre, sse4) PROTO3(pre, avx)
+#define PROTO4(pre) PROTO3(pre, mmx) PROTO3(pre, sse) PROTO3(pre, sse2) PROTO3(pre, ssse3) PROTO3(pre, sse4) PROTO3(pre, avx) PROTO3(pre, avx2)
 PROTO4(_)
 PROTO4(_pack_2ch_)
 PROTO4(_pack_6ch_)
@@ -138,5 +138,9 @@ MULTI_CAPS_FUNC(SSE2, sse2)
             if(   out_fmt == AV_SAMPLE_FMT_S32  && in_fmt == AV_SAMPLE_FMT_FLTP)
                 ac->simd_f =  ff_pack_6ch_float_to_int32_a_avx;
         }
+    }
+    if(EXTERNAL_AVX2(mm_flags)) {
+        if(   out_fmt == AV_SAMPLE_FMT_S32  && in_fmt == AV_SAMPLE_FMT_FLT || out_fmt == AV_SAMPLE_FMT_S32P && in_fmt == AV_SAMPLE_FMT_FLTP)
+            ac->simd_f =  ff_float_to_int32_a_avx2;
     }
 }
