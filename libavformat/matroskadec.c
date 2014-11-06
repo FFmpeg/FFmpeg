@@ -2797,7 +2797,7 @@ static int matroska_read_seek(AVFormatContext *s, int stream_index,
                               int64_t timestamp, int flags)
 {
     MatroskaDemuxContext *matroska = s->priv_data;
-    MatroskaTrack *tracks = matroska->tracks.elem;
+    MatroskaTrack *tracks = NULL;
     AVStream *st = s->streams[stream_index];
     int i, index, index_sub, index_min;
 
@@ -2826,6 +2826,7 @@ static int matroska_read_seek(AVFormatContext *s, int stream_index,
         goto err;
 
     index_min = index;
+    tracks = matroska->tracks.elem;
     for (i=0; i < matroska->tracks.nb_elem; i++) {
         tracks[i].audio.pkt_cnt = 0;
         tracks[i].audio.sub_packet_cnt = 0;
