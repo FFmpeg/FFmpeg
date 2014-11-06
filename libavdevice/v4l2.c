@@ -138,8 +138,8 @@ static int device_open(AVFormatContext *ctx)
 
     res = ioctl(fd, VIDIOC_QUERYCAP, &cap);
     if (res < 0) {
-        err = errno;
-        av_strerror(AVERROR(err), errbuf, sizeof(errbuf));
+        err = AVERROR(errno);
+        av_strerror(err, errbuf, sizeof(errbuf));
         av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_QUERYCAP): %s\n",
                errbuf);
 
@@ -151,7 +151,7 @@ static int device_open(AVFormatContext *ctx)
 
     if (!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE)) {
         av_log(ctx, AV_LOG_ERROR, "Not a video capture device.\n");
-        err = ENODEV;
+        err = AVERROR(ENODEV);
 
         goto fail;
     }
@@ -159,7 +159,7 @@ static int device_open(AVFormatContext *ctx)
     if (!(cap.capabilities & V4L2_CAP_STREAMING)) {
         av_log(ctx, AV_LOG_ERROR,
                "The device does not support the streaming I/O method.\n");
-        err = ENOSYS;
+        err = AVERROR(ENOSYS);
 
         goto fail;
     }
@@ -168,7 +168,7 @@ static int device_open(AVFormatContext *ctx)
 
 fail:
     close(fd);
-    return AVERROR(err);
+    return err;
 }
 
 static int device_init(AVFormatContext *ctx, int *width, int *height,
@@ -348,13 +348,14 @@ static int mmap_init(AVFormatContext *ctx)
 
     res = ioctl(s->fd, VIDIOC_REQBUFS, &req);
     if (res < 0) {
+        res = errno;
         if (errno == EINVAL) {
             av_log(ctx, AV_LOG_ERROR, "Device does not support mmap\n");
         } else {
             av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_REQBUFS)\n");
         }
 
-        return AVERROR(errno);
+        return AVERROR(res);
     }
 
     if (req.count < 2) {
@@ -386,9 +387,10 @@ static int mmap_init(AVFormatContext *ctx)
 
         res = ioctl(s->fd, VIDIOC_QUERYBUF, &buf);
         if (res < 0) {
+            res = AVERROR(errno);
             av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_QUERYBUF)\n");
 
-            return AVERROR(errno);
+            return res;
         }
 
         s->buf_len[i] = buf.length;
@@ -405,10 +407,11 @@ static int mmap_init(AVFormatContext *ctx)
 
         if (s->buf_start[i] == MAP_FAILED) {
             char errbuf[128];
-            av_strerror(AVERROR(errno), errbuf, sizeof(errbuf));
+            res = AVERROR(errno);
+            av_strerror(res, errbuf, sizeof(errbuf));
             av_log(ctx, AV_LOG_ERROR, "mmap: %s\n", errbuf);
 
-            return AVERROR(errno);
+            return res;
         }
     }
 
@@ -471,11 +474,12 @@ static int mmap_read_frame(AVFormatContext *ctx, AVPacket *pkt)
 
             return AVERROR(EAGAIN);
         }
-        av_strerror(AVERROR(errno), errbuf, sizeof(errbuf));
+        res = AVERROR(errno);
+        av_strerror(res, errbuf, sizeof(errbuf));
         av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_DQBUF): %s\n",
                errbuf);
 
-        return AVERROR(errno);
+        return res;
     }
 
     if (buf.index >= s->buffers) {
@@ -506,9 +510,10 @@ static int mmap_read_frame(AVFormatContext *ctx, AVPacket *pkt)
 
         res = ioctl(s->fd, VIDIOC_QBUF, &buf);
         if (res < 0) {
+            res = AVERROR(errno);
             av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_QBUF)\n");
             av_free_packet(pkt);
-            return AVERROR(errno);
+            return res;
         }
         avpriv_atomic_int_add_and_fetch(&s->buffers_queued, 1);
     } else {
@@ -693,10 +698,11 @@ static int v4l2_set_parameters(AVFormatContext *s1)
     } else {
         if (ioctl(s->fd, VIDIOC_G_PARM, &streamparm) != 0) {
             char errbuf[128];
-            av_strerror(AVERROR(errno), errbuf, sizeof(errbuf));
+            ret = AVERROR(errno);
+            av_strerror(ret, errbuf, sizeof(errbuf));
             av_log(s1, AV_LOG_ERROR, "ioctl(VIDIOC_G_PARM): %s\n",
                    errbuf);
-            return AVERROR(errno);
+            return ret;
         }
     }
     s1->streams[0]->avg_frame_rate.num = tpf->denominator;
@@ -797,10 +803,11 @@ static int v4l2_read_header(AVFormatContext *s1)
         fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
         if (ioctl(s->fd, VIDIOC_G_FMT, &fmt) < 0) {
             char errbuf[128];
-            av_strerror(AVERROR(errno), errbuf, sizeof(errbuf));
+            res = AVERROR(errno);
+            av_strerror(res, errbuf, sizeof(errbuf));
             av_log(s1, AV_LOG_ERROR, "ioctl(VIDIOC_G_FMT): %s\n",
                    errbuf);
-            return AVERROR(errno);
+            return res;
         }
 
         s->width  = fmt.fmt.pix.width;
