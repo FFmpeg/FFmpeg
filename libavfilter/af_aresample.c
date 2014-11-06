@@ -261,7 +261,6 @@ static int request_frame(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
     AResampleContext *aresample = ctx->priv;
-    AVFilterLink *const inlink = outlink->src->inputs[0];
     int ret;
 
     // First try to get data from the internal buffers
