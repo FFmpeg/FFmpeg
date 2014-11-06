@@ -199,7 +199,7 @@ static int validate_codec_tag(AVFormatContext *s, AVStream *st)
     }
     if (id != AV_CODEC_ID_NONE)
         return 0;
-    if (tag >= 0 && (st->codec->strict_std_compliance >= FF_COMPLIANCE_NORMAL))
+    if (tag >= 0 && (s->strict_std_compliance >= FF_COMPLIANCE_NORMAL))
         return 0;
     return 1;
 }

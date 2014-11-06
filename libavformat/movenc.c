@@ -1339,7 +1339,7 @@ static int mov_get_codec_tag(AVFormatContext *s, MOVTrack *track)
 {
     int tag = track->enc->codec_tag;
 
-    if (!tag || (track->enc->strict_std_compliance >= FF_COMPLIANCE_NORMAL &&
+    if (!tag || (s->strict_std_compliance >= FF_COMPLIANCE_NORMAL &&
                  (track->enc->codec_id == AV_CODEC_ID_DVVIDEO ||
                   track->enc->codec_id == AV_CODEC_ID_RAWVIDEO ||
                   track->enc->codec_id == AV_CODEC_ID_H263 ||
