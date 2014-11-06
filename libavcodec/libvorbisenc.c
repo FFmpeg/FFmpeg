@@ -49,7 +49,7 @@ typedef struct LibvorbisEncContext {
     int dsp_initialized;                /**< vd has been initialized        */
     vorbis_comment vc;                  /**< VorbisComment info             */
     double iblock;                      /**< impulse block bias option      */
-    VorbisParseContext vp;              /**< parse context to get durations */
+    AVVorbisParseContext vp;            /**< parse context to get durations */
     AudioFrameQueue afq;                /**< frame queue for timestamps     */
 } LibvorbisEncContext;
 
