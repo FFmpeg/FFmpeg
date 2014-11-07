@@ -96,7 +96,7 @@ do { \
 /** @brief loads unaligned vector @a *src with offset @a offset
     and returns it */
 #if HAVE_BIGENDIAN
-static inline vector unsigned char unaligned_load(int offset, uint8_t *src)
+static inline vector unsigned char unaligned_load(int offset, const uint8_t *src)
 {
     register vector unsigned char first = vec_ld(offset, src);
     register vector unsigned char second = vec_ld(offset+15, src);
@@ -112,7 +112,7 @@ static inline vector unsigned char unaligned_load(int offset, uint8_t *src)
  * loads vector known misalignment
  * @param perm_vec the align permute vector to combine the two loads from lvsl
  */
-static inline vec_u8 load_with_perm_vec(int offset, uint8_t *src, vec_u8 perm_vec)
+static inline vec_u8 load_with_perm_vec(int offset, const uint8_t *src, vec_u8 perm_vec)
 {
     vec_u8 a = vec_ld(offset, src);
     vec_u8 b = vec_ld(offset+15, src);
