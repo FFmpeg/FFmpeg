@@ -579,8 +579,9 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
         av_assert2(pkt->dts == AV_NOPTS_VALUE || pkt->dts >= 0 || s->max_interleave_delta > 0);
         if (pkt->dts != AV_NOPTS_VALUE && pkt->dts < 0) {
             av_log(s, AV_LOG_WARNING,
-                   "Packets poorly interleaved, failed to avoid negative timestamp %s in stream %d\n"
-                   "try -max_interleave_delta 0 as a possible workaround\n",
+                   "Packets poorly interleaved, failed to avoid negative "
+                   "timestamp %s in stream %d.\n"
+                   "Try -max_interleave_delta 0 as a possible workaround.\n",
                    av_ts2str(pkt->dts),
                    pkt->stream_index
             );
