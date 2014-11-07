@@ -27,6 +27,8 @@
 #ifndef AVCODEC_VORBIS_PARSE_H
 #define AVCODEC_VORBIS_PARSE_H
 
+#include <stdint.h>
+
 typedef struct AVVorbisParseContext AVVorbisParseContext;
 
 /**
