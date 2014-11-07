@@ -87,7 +87,7 @@ do { \
 
 #if HAVE_BIGENDIAN
 #define VEC_LD(offset,b)                                   \
-    vec_perm(vec_ld(offset, b), vec_ld(offset+15, b), vec_lvsl(offset, b))
+    vec_perm(vec_ld(offset, b), vec_ld((offset)+15, b), vec_lvsl(offset, b))
 #else
 #define VEC_LD(offset,b)                                   \
     vec_vsx_ld(offset, b)
