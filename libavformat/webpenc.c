@@ -58,25 +58,39 @@ static int flush(AVFormatContext *s, int trailer, int64_t pts)
 
     if (w->last_pkt.size) {
         int skip = 0;
+        unsigned flags = 0;
+        int vp8x = 0;
 
         if (AV_RL32(w->last_pkt.data) == AV_RL32("RIFF"))
             skip = 12;
-        if (AV_RL32(w->last_pkt.data + skip) == AV_RL32("VP8X"))
+        if (AV_RL32(w->last_pkt.data + skip) == AV_RL32("VP8X")) {
+            flags |= w->last_pkt.data[skip + 4 + 4];
+            vp8x = 1;
             skip += AV_RL32(w->last_pkt.data + skip + 4) + 8;
+        }
 
         w->frame_count ++;
-        if (w->frame_count == 1 && !trailer) {
-            avio_write(s->pb, "VP8X", 4);
-            avio_wl32(s->pb, 10);
-            avio_w8(s->pb, 2+16);
-            avio_wl24(s->pb, 0);
-            avio_wl24(s->pb, st->codec->width - 1);
-            avio_wl24(s->pb, st->codec->height - 1);
 
-            avio_write(s->pb, "ANIM", 4);
-            avio_wl32(s->pb, 6);
-            avio_wl32(s->pb, 0xFFFFFFFF);
-            avio_wl16(s->pb, w->loop);
+        if (w->frame_count == 1) {
+            if (!trailer) {
+                vp8x = 1;
+                flags |= 2 + 16;
+            }
+
+            if (vp8x) {
+                avio_write(s->pb, "VP8X", 4);
+                avio_wl32(s->pb, 10);
+                avio_w8(s->pb, flags);
+                avio_wl24(s->pb, 0);
+                avio_wl24(s->pb, st->codec->width - 1);
+                avio_wl24(s->pb, st->codec->height - 1);
+            }
+            if (!trailer) {
+                avio_write(s->pb, "ANIM", 4);
+                avio_wl32(s->pb, 6);
+                avio_wl32(s->pb, 0xFFFFFFFF);
+                avio_wl16(s->pb, w->loop);
+            }
         }
 
         if (w->frame_count > trailer) {
