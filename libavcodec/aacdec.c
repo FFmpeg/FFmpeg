@@ -2291,7 +2291,12 @@ static int decode_extension_payload(AACContext *ac, GetBitContext *gb, int cnt,
 {
     int crc_flag = 0;
     int res = cnt;
-    switch (get_bits(gb, 4)) { // extension type
+    int type = get_bits(gb, 4);
+
+    if (ac->avctx->debug & FF_DEBUG_STARTCODE)
+        av_log(ac->avctx, AV_LOG_DEBUG, "extension type: %d len:%d\n", type, cnt);
+
+    switch (type) { // extension type
     case EXT_SBR_DATA_CRC:
         crc_flag++;
     case EXT_SBR_DATA:
