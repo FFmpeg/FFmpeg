@@ -72,9 +72,9 @@ static const AVOption options[] = {
     { "min_frag_duration", "Minimum fragment duration", offsetof(MOVMuxContext, min_fragment_duration), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM},
     { "frag_size", "Maximum fragment size", offsetof(MOVMuxContext, max_fragment_size), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM},
     { "ism_lookahead", "Number of lookahead entries for ISM files", offsetof(MOVMuxContext, ism_lookahead), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM},
-    { "use_editlist", "use edit list", offsetof(MOVMuxContext, use_editlist), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 1, AV_OPT_FLAG_ENCODING_PARAM},
     { "video_track_timescale", "set timescale of all video tracks", offsetof(MOVMuxContext, video_track_timescale), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM},
     { "brand",    "Override major brand", offsetof(MOVMuxContext, major_brand),   AV_OPT_TYPE_STRING, {.str = NULL}, .flags = AV_OPT_FLAG_ENCODING_PARAM },
+    { "use_editlist", "use edit list", offsetof(MOVMuxContext, use_editlist), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 1, AV_OPT_FLAG_ENCODING_PARAM},
     { NULL },
 };
 
@@ -108,13 +108,6 @@ static int64_t update_size(AVIOContext *pb, int64_t pos)
     avio_seek(pb, curpos, SEEK_SET);
 
     return curpos - pos;
-}
-
-static int supports_edts(MOVMuxContext *mov)
-{
-    // EDTS with fragments is tricky as we don't know the duration when its written
-    // also we might end up having to write the EDTS before the first packet, which would fail
-    return (mov->use_editlist<0 && !(mov->flags & FF_MOV_FLAG_FRAGMENT)) || mov->use_editlist>0;
 }
 
 static int co64_required(const MOVTrack *track)
@@ -2393,8 +2386,15 @@ static int mov_write_trak_tag(AVIOContext *pb, MOVMuxContext *mov,
     avio_wb32(pb, 0); /* size */
     ffio_wfourcc(pb, "trak");
     mov_write_tkhd_tag(pb, mov, track, st);
-    if (supports_edts(mov))
+
+    av_assert2(mov->use_editlist >= 0);
+
+    if (mov->use_editlist)
         mov_write_edts_tag(pb, mov, track);  // PSP Movies and several other cases require edts box
+    else if ((track->entry && track->cluster[0].dts) || track->mode == MODE_PSP || is_clcp_track(track))
+        av_log(mov->fc, AV_LOG_WARNING,
+               "Not writing any edit list even though one would have been required\n");
+
     if (track->tref_tag)
         mov_write_tref_tag(pb, track);
     mov_write_mdia_tag(pb, mov, track);
@@ -3911,7 +3911,14 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
          * of this packet to be what the previous packets duration implies. */
         trk->cluster[trk->entry].dts = trk->start_dts + trk->track_duration;
     }
-    if (!trk->entry && trk->start_dts == AV_NOPTS_VALUE && !supports_edts(mov)) {
+
+    if (!trk->entry && trk->start_dts == AV_NOPTS_VALUE && !mov->use_editlist &&
+        s->avoid_negative_ts == AVFMT_AVOID_NEG_TS_MAKE_ZERO) {
+        /* Not using edit lists and shifting the first track to start from zero.
+         * If the other streams start from a later timestamp, we won't be able
+         * to signal the difference in starting time without an edit list.
+         * Thus move the timestamp for this first sample to 0, increasing
+         * its duration instead. */
         trk->cluster[trk->entry].dts = trk->start_dts = 0;
     }
     if (trk->start_dts == AV_NOPTS_VALUE) {
@@ -4385,9 +4392,22 @@ static int mov_write_header(AVFormatContext *s)
             mov->reserved_moov_size = -1;
     }
 
-    if (!supports_edts(mov) && s->avoid_negative_ts < 0) {
-        s->avoid_negative_ts = 2;
+    if (mov->use_editlist < 0) {
+        mov->use_editlist = 1;
+        if (mov->flags & FF_MOV_FLAG_FRAGMENT) {
+            // If we can avoid needing an edit list by shifting the
+            // tracks, prefer that over (trying to) write edit lists
+            // in fragmented output.
+            if (s->avoid_negative_ts == AVFMT_AVOID_NEG_TS_AUTO ||
+                s->avoid_negative_ts == AVFMT_AVOID_NEG_TS_MAKE_ZERO)
+                mov->use_editlist = 0;
+        }
     }
+    if (mov->flags & FF_MOV_FLAG_EMPTY_MOOV && mov->use_editlist)
+        av_log(s, AV_LOG_WARNING, "No meaningful edit list will be written when using empty_moov\n");
+
+    if (!mov->use_editlist && s->avoid_negative_ts == AVFMT_AVOID_NEG_TS_AUTO)
+        s->avoid_negative_ts = AVFMT_AVOID_NEG_TS_MAKE_ZERO;
 
     /* Non-seekable output is ok if using fragmentation. If ism_lookahead
      * is enabled, we don't support non-seekable output at all. */

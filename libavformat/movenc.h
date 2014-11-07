@@ -173,7 +173,6 @@ typedef struct MOVMuxContext {
     AVIOContext *mdat_buf;
     int first_trun;
 
-    int use_editlist;
     int video_track_timescale;
 
     int reserved_moov_size; ///< 0 for disabled, -1 for automatic, size otherwise
@@ -183,6 +182,8 @@ typedef struct MOVMuxContext {
 
     int per_stream_grouping;
     AVFormatContext *fc;
+
+    int use_editlist;
 } MOVMuxContext;
 
 #define FF_MOV_FLAG_RTP_HINT              (1 <<  0)
