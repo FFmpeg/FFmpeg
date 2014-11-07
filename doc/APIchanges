@@ -899,6 +899,9 @@ lavd 54.4.100 / 54.0.0, lavfi 3.5.0
   avresample_read() are now uint8_t** instead of void**.
   Libavresample is now stable.
 
+2012-09-26 - 3ba0dab7 / 1384df64 - lavf 54.29.101 / 56.06.3 - avformat.h
+  Add AVFormatContext.avoid_negative_ts.
+
 2012-09-24 - 46a3595 / a42aada - lavc 54.59.100 / 54.28.0 - avcodec.h
   Add avcodec_free_frame(). This function must now
   be used for freeing an AVFrame.
