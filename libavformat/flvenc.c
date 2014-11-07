@@ -192,7 +192,7 @@ static void put_amf_bool(AVIOContext *pb, int b)
     avio_w8(pb, !!b);
 }
 
-static void write_metadata(AVFormatContext *s)
+static void write_metadata(AVFormatContext *s, unsigned int ts)
 {
     AVIOContext *pb = s->pb;
     FLVContext *flv = s->priv_data;
@@ -204,7 +204,7 @@ static void write_metadata(AVFormatContext *s)
     avio_w8(pb, 18);            // tag type META
     metadata_size_pos = avio_tell(pb);
     avio_wb24(pb, 0);           // size of data part (sum of all parts below)
-    avio_wb24(pb, 0);           // timestamp
+    avio_wb24(pb, ts);          // timestamp
     avio_wb32(pb, 0);           // reserved
 
     /* now data of data_size size */
@@ -373,7 +373,7 @@ static int flv_write_header(AVFormatContext *s)
             flv->reserved = 5;
         }
 
-    write_metadata(s);
+    write_metadata(s, 0);
 
     for (i = 0; i < s->nb_streams; i++) {
         AVCodecContext *enc = s->streams[i]->codec;
@@ -459,6 +459,22 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
     else
         flags_size = 1;
 
+    if (flv->delay == AV_NOPTS_VALUE)
+        flv->delay = -pkt->dts;
+
+    if (pkt->dts < -flv->delay) {
+        av_log(s, AV_LOG_WARNING,
+               "Packets are not in the proper order with respect to DTS\n");
+        return AVERROR(EINVAL);
+    }
+
+    ts = pkt->dts + flv->delay; // add delay to force positive dts
+
+    if (s->event_flags & AVSTREAM_EVENT_FLAG_METADATA_UPDATED) {
+        write_metadata(s, ts);
+        s->event_flags &= ~AVSTREAM_EVENT_FLAG_METADATA_UPDATED;
+    }
+
     switch (enc->codec_type) {
     case AVMEDIA_TYPE_VIDEO:
         avio_w8(pb, FLV_TAG_TYPE_VIDEO);
@@ -492,17 +508,6 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
         if (enc->extradata_size > 0 && *(uint8_t*)enc->extradata != 1)
             if (ff_avc_parse_nal_units_buf(pkt->data, &data, &size) < 0)
                 return -1;
-
-    if (flv->delay == AV_NOPTS_VALUE)
-        flv->delay = -pkt->dts;
-
-    if (pkt->dts < -flv->delay) {
-        av_log(s, AV_LOG_WARNING,
-               "Packets are not in the proper order with respect to DTS\n");
-        return AVERROR(EINVAL);
-    }
-
-    ts = pkt->dts + flv->delay; // add delay to force positive dts
 
     /* check Speex packet duration */
     if (enc->codec_id == AV_CODEC_ID_SPEEX && ts - sc->last_ts > 160)
