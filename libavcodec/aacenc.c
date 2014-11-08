@@ -567,6 +567,10 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                 ics->group_len[w] = wi[ch].grouping[w];
 
             apply_window_and_mdct(s, &cpe->ch[ch], overlap);
+            if (isnan(cpe->ch->coeffs[0])) {
+                av_log(avctx, AV_LOG_ERROR, "Input contains NaN\n");
+                return AVERROR(EINVAL);
+            }
         }
         start_ch += chans;
     }
