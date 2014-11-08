@@ -1595,6 +1595,15 @@ int av_opt_copy(void *dst, void *src)
             *(int*)(field_dst8 + 1) = len;
         } else if (o->type == AV_OPT_TYPE_CONST) {
             // do nothing
+        } else if (o->type == AV_OPT_TYPE_DICT) {
+            AVDictionary **sdict = (AVDictionary **) field_src;
+            AVDictionary **ddict = (AVDictionary **) field_dst;
+            if (*sdict != *ddict)
+                av_dict_free(ddict);
+            *ddict = NULL;
+            av_dict_copy(ddict, *sdict, 0);
+            if (av_dict_count(*sdict) != av_dict_count(*ddict))
+                ret = AVERROR(ENOMEM);
         } else {
             memcpy(field_dst, field_src, opt_size(o->type));
         }
