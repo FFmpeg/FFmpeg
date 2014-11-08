@@ -1208,6 +1208,8 @@ int ffserver_parse_ffconfig(const char *filename, FFServerConfig *config)
             ffserver_parse_config_global(config, cmd, &p, line_num);
         }
     }
+    if (stream || feed || redirect)
+        ERROR("Not closed tag %s\n", stream ? "<Stream>" : (feed ? "<Feed>" : "<Redirect>"));
 
     fclose(f);
     if (ret < 0)
