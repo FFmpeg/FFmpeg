@@ -2389,11 +2389,14 @@ static int mov_write_trak_tag(AVIOContext *pb, MOVMuxContext *mov,
 
     av_assert2(mov->use_editlist >= 0);
 
-    if (mov->use_editlist)
-        mov_write_edts_tag(pb, mov, track);  // PSP Movies and several other cases require edts box
-    else if ((track->entry && track->cluster[0].dts) || track->mode == MODE_PSP || is_clcp_track(track))
-        av_log(mov->fc, AV_LOG_WARNING,
-               "Not writing any edit list even though one would have been required\n");
+
+    if (track->entry) {
+        if (mov->use_editlist)
+            mov_write_edts_tag(pb, mov, track);  // PSP Movies and several other cases require edts box
+        else if ((track->entry && track->cluster[0].dts) || track->mode == MODE_PSP || is_clcp_track(track))
+            av_log(mov->fc, AV_LOG_WARNING,
+                   "Not writing any edit list even though one would have been required\n");
+    }
 
     if (track->tref_tag)
         mov_write_tref_tag(pb, track);
