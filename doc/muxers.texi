@@ -559,7 +559,6 @@ a short portion of the file. With this option set, there is no initial
 mdat atom, and the moov atom only describes the tracks but has
 a zero duration.
 
-Files written with this option set do not work in QuickTime.
 This option is implicitly set when writing ismv (Smooth Streaming) files.
 @item -movflags separate_moof
 Write a separate moof (movie fragment) atom for each track. Normally,
