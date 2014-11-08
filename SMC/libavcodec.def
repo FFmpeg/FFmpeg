@@ -91,6 +91,11 @@ EXPORTS
     av_resample_compensate
     av_resample_init
     av_shrink_packet
+    av_vorbis_parse_frame
+    av_vorbis_parse_frame_flags
+    av_vorbis_parse_free
+    av_vorbis_parse_init
+    av_vorbis_parse_reset
     av_xiphlacing
     avcodec_align_dimensions
     avcodec_align_dimensions2

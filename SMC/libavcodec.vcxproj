@@ -113,6 +113,9 @@
     <ClCompile Include="..\libavcodec\utils.c">
       <ObjectFileName>$(IntDir)\libavcodec_utils.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\vorbis_parser.c">
+      <ObjectFileName>$(IntDir)\libavcodec_vorbis_parser.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\aandcttab.c">
       <ObjectFileName>$(IntDir)\libavcodec_aandcttab.obj</ObjectFileName>
     </ClCompile>
@@ -1844,9 +1847,6 @@
     <ClCompile Include="..\libavcodec\dxva2_vc1.c">
       <ObjectFileName>$(IntDir)\libavcodec_dxva2_vc1.obj</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="..\libavcodec\vorbis_parser.c">
-      <ObjectFileName>$(IntDir)\libavcodec_vorbis_parser.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\libfdk-aacdec.c">
       <ObjectFileName>$(IntDir)\libavcodec_libfdk-aacdec.obj</ObjectFileName>
     </ClCompile>
@@ -2239,6 +2239,7 @@
     <ClInclude Include="..\libavcodec\vda.h" />
     <ClInclude Include="..\libavcodec\vdpau.h" />
     <ClInclude Include="..\libavcodec\version.h" />
+    <ClInclude Include="..\libavcodec\vorbis_parser.h" />
     <ClInclude Include="..\libavcodec\xvmc.h" />
   </ItemGroup>
   <ItemGroup>
@@ -2564,6 +2565,7 @@ copy ..\libavcodec\vaapi.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vda.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vdpau.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\version.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\vorbis_parser.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\xvmc.h $(OutDir)\include\libavcodec
 mkdir $(OutDir)\licenses
 copy ..\COPYING.GPLv3 $(OutDir)\licenses\ffmpeg.txt</Command>
@@ -2636,6 +2638,7 @@ copy ..\libavcodec\vaapi.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vda.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vdpau.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\version.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\vorbis_parser.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\xvmc.h $(OutDir)\include\libavcodec
 mkdir $(OutDir)\licenses
 copy ..\COPYING.GPLv3 $(OutDir)\licenses\ffmpeg.txt</Command>
@@ -2712,6 +2715,7 @@ copy ..\libavcodec\vaapi.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vda.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vdpau.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\version.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\vorbis_parser.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\xvmc.h $(OutDir)\include\libavcodec
 mkdir $(OutDir)\licenses
 copy ..\COPYING.GPLv3 $(OutDir)\licenses\ffmpeg.txt</Command>
@@ -2787,6 +2791,7 @@ copy ..\libavcodec\vaapi.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vda.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vdpau.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\version.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\vorbis_parser.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\xvmc.h $(OutDir)\include\libavcodec
 mkdir $(OutDir)\licenses
 copy ..\COPYING.GPLv3 $(OutDir)\licenses\ffmpeg.txt</Command>
@@ -2863,6 +2868,7 @@ copy ..\libavcodec\vaapi.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vda.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vdpau.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\version.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\vorbis_parser.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\xvmc.h $(OutDir)\include\libavcodec
 mkdir $(OutDir)\licenses
 copy ..\COPYING.GPLv3 $(OutDir)\licenses\ffmpeg.txt</Command>
@@ -2938,6 +2944,7 @@ copy ..\libavcodec\vaapi.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vda.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vdpau.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\version.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\vorbis_parser.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\xvmc.h $(OutDir)\include\libavcodec
 mkdir $(OutDir)\licenses
 copy ..\COPYING.GPLv3 $(OutDir)\licenses\ffmpeg.txt</Command>
@@ -3017,6 +3024,7 @@ copy ..\libavcodec\vaapi.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vda.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vdpau.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\version.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\vorbis_parser.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\xvmc.h $(OutDir)\include\libavcodec
 mkdir $(OutDir)\licenses
 copy ..\COPYING.GPLv3 $(OutDir)\licenses\ffmpeg.txt</Command>
@@ -3096,6 +3104,7 @@ copy ..\libavcodec\vaapi.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vda.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vdpau.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\version.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\vorbis_parser.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\xvmc.h $(OutDir)\include\libavcodec
 mkdir $(OutDir)\licenses
 copy ..\COPYING.GPLv3 $(OutDir)\licenses\ffmpeg.txt</Command>
@@ -3181,6 +3190,7 @@ copy ..\libavcodec\vaapi.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vda.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vdpau.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\version.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\vorbis_parser.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\xvmc.h $(OutDir)\include\libavcodec
 mkdir $(OutDir)\licenses
 copy ..\COPYING.GPLv3 $(OutDir)\licenses\ffmpeg.txt</Command>
@@ -3265,6 +3275,7 @@ copy ..\libavcodec\vaapi.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vda.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vdpau.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\version.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\vorbis_parser.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\xvmc.h $(OutDir)\include\libavcodec
 mkdir $(OutDir)\licenses
 copy ..\COPYING.GPLv3 $(OutDir)\licenses\ffmpeg.txt</Command>
@@ -3350,6 +3361,7 @@ copy ..\libavcodec\vaapi.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vda.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vdpau.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\version.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\vorbis_parser.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\xvmc.h $(OutDir)\include\libavcodec
 mkdir $(OutDir)\licenses
 copy ..\COPYING.GPLv3 $(OutDir)\licenses\ffmpeg.txt</Command>
@@ -3434,6 +3446,7 @@ copy ..\libavcodec\vaapi.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vda.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vdpau.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\version.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\vorbis_parser.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\xvmc.h $(OutDir)\include\libavcodec
 mkdir $(OutDir)\licenses
 copy ..\COPYING.GPLv3 $(OutDir)\licenses\ffmpeg.txt</Command>
@@ -3512,6 +3525,7 @@ copy ..\libavcodec\vaapi.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vda.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vdpau.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\version.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\vorbis_parser.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\xvmc.h $(OutDir)\include\libavcodec
 mkdir $(OutDir)\licenses
 copy ..\COPYING.GPLv3 $(OutDir)\licenses\ffmpeg.txt</Command>
@@ -3590,6 +3604,7 @@ copy ..\libavcodec\vaapi.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vda.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\vdpau.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\version.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\vorbis_parser.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\xvmc.h $(OutDir)\include\libavcodec
 mkdir $(OutDir)\licenses
 copy ..\COPYING.GPLv3 $(OutDir)\licenses\ffmpeg.txt</Command>

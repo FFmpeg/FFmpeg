@@ -75,6 +75,9 @@
     <ClCompile Include="..\libavcodec\utils.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\vorbis_parser.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\aandcttab.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
@@ -1806,9 +1809,6 @@
     <ClCompile Include="..\libavcodec\dxva2_vc1.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavcodec\vorbis_parser.c">
-      <Filter>Source Files\libavcodec</Filter>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\libfdk-aacdec.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
@@ -2217,6 +2217,9 @@
       <Filter>Header Files\libavcodec</Filter>
     </ClInclude>
     <ClInclude Include="..\libavcodec\version.h">
+      <Filter>Header Files\libavcodec</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libavcodec\vorbis_parser.h">
       <Filter>Header Files\libavcodec</Filter>
     </ClInclude>
     <ClInclude Include="..\libavcodec\xvmc.h">
