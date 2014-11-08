@@ -3787,7 +3787,7 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     MOVTrack *trk = &mov->tracks[pkt->stream_index];
     AVCodecContext *enc = trk->enc;
     unsigned int samples_in_chunk = 0;
-    int size = pkt->size;
+    int size = pkt->size, ret = 0;
     uint8_t *reformatted_data = NULL;
 
     if (trk->entry) {
@@ -3896,16 +3896,20 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
         /* copy frame to create needed atoms */
         trk->vos_len  = size;
         trk->vos_data = av_malloc(size);
-        if (!trk->vos_data)
-            return AVERROR(ENOMEM);
+        if (!trk->vos_data) {
+            ret = AVERROR(ENOMEM);
+            goto err;
+        }
         memcpy(trk->vos_data, pkt->data, size);
     }
 
     if (trk->entry >= trk->cluster_capacity) {
         unsigned new_capacity = 2 * (trk->entry + MOV_INDEX_CLUSTER_SIZE);
         if (av_reallocp_array(&trk->cluster, new_capacity,
-                              sizeof(*trk->cluster)))
-            return AVERROR(ENOMEM);
+                              sizeof(*trk->cluster))) {
+            ret = AVERROR(ENOMEM);
+            goto err;
+        }
         trk->cluster_capacity = new_capacity;
     }
 
@@ -3972,9 +3976,12 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (trk->hint_track >= 0 && trk->hint_track < mov->nb_streams)
         ff_mov_add_hinted_packet(s, pkt, trk->hint_track, trk->entry,
                                  reformatted_data, size);
+
 end:
+err:
+
     av_free(reformatted_data);
-    return 0;
+    return ret;
 }
 
 static int mov_write_single_packet(AVFormatContext *s, AVPacket *pkt)
