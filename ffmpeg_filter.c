@@ -619,6 +619,7 @@ static int sub2video_prepare(InputStream *ist)
     ist->sub2video.frame = av_frame_alloc();
     if (!ist->sub2video.frame)
         return AVERROR(ENOMEM);
+    ist->sub2video.last_pts = INT64_MIN;
     return 0;
 }
 

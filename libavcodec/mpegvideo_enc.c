@@ -96,41 +96,40 @@ void ff_convert_matrix(MpegEncContext *s, int (*qmat)[64],
             fdsp->fdct == ff_jpeg_fdct_islow_10) {
             for (i = 0; i < 64; i++) {
                 const int j = s->idsp.idct_permutation[i];
+                int64_t den = (int64_t) qscale * quant_matrix[j];
                 /* 16 <= qscale * quant_matrix[i] <= 7905
                  * Assume x = ff_aanscales[i] * qscale * quant_matrix[i]
                  *             19952 <=              x  <= 249205026
                  * (1 << 36) / 19952 >= (1 << 36) / (x) >= (1 << 36) / 249205026
                  *           3444240 >= (1 << 36) / (x) >= 275 */
 
-                qmat[qscale][i] = (int)((UINT64_C(1) << QMAT_SHIFT) /
-                                        (qscale * quant_matrix[j]));
+                qmat[qscale][i] = (int)((UINT64_C(1) << QMAT_SHIFT) / den);
             }
         } else if (fdsp->fdct == ff_fdct_ifast) {
             for (i = 0; i < 64; i++) {
                 const int j = s->idsp.idct_permutation[i];
+                int64_t den = ff_aanscales[i] * (int64_t) qscale * quant_matrix[j];
                 /* 16 <= qscale * quant_matrix[i] <= 7905
                  * Assume x = ff_aanscales[i] * qscale * quant_matrix[i]
                  *             19952 <=              x  <= 249205026
                  * (1 << 36) / 19952 >= (1 << 36) / (x) >= (1 << 36) / 249205026
                  *           3444240 >= (1 << 36) / (x) >= 275 */
 
-                qmat[qscale][i] = (int)((UINT64_C(1) << (QMAT_SHIFT + 14)) /
-                                        (ff_aanscales[i] * (int64_t)qscale * quant_matrix[j]));
+                qmat[qscale][i] = (int)((UINT64_C(1) << (QMAT_SHIFT + 14)) / den);
             }
         } else {
             for (i = 0; i < 64; i++) {
                 const int j = s->idsp.idct_permutation[i];
+                int64_t den = (int64_t) qscale * quant_matrix[j];
                 /* We can safely suppose that 16 <= quant_matrix[i] <= 255
                  * Assume x = qscale * quant_matrix[i]
                  * So             16 <=              x  <= 7905
                  * so (1 << 19) / 16 >= (1 << 19) / (x) >= (1 << 19) / 7905
                  * so          32768 >= (1 << 19) / (x) >= 67 */
-                qmat[qscale][i] = (int)((UINT64_C(1) << QMAT_SHIFT) /
-                                        (qscale * quant_matrix[j]));
+                qmat[qscale][i] = (int)((UINT64_C(1) << QMAT_SHIFT) / den);
                 //qmat  [qscale][i] = (1 << QMAT_SHIFT_MMX) /
                 //                    (qscale * quant_matrix[i]);
-                qmat16[qscale][0][i] = (1 << QMAT_SHIFT_MMX) /
-                                       (qscale * quant_matrix[j]);
+                qmat16[qscale][0][i] = (1 << QMAT_SHIFT_MMX) / den;
 
                 if (qmat16[qscale][0][i] == 0 ||
                     qmat16[qscale][0][i] == 128 * 256)
@@ -1116,13 +1115,10 @@ static int load_input_picture(MpegEncContext *s, const AVFrame *pic_arg)
     }
 
     if (pic_arg) {
-        if (!pic_arg->buf[0])
-            direct = 0;
-        if (pic_arg->linesize[0] != s->linesize)
-            direct = 0;
-        if (pic_arg->linesize[1] != s->uvlinesize)
-            direct = 0;
-        if (pic_arg->linesize[2] != s->uvlinesize)
+        if (!pic_arg->buf[0] ||
+            pic_arg->linesize[0] != s->linesize ||
+            pic_arg->linesize[1] != s->uvlinesize ||
+            pic_arg->linesize[2] != s->uvlinesize)
             direct = 0;
         if ((s->width & 15) || (s->height & 15))
             direct = 0;
@@ -1134,27 +1130,20 @@ static int load_input_picture(MpegEncContext *s, const AVFrame *pic_arg)
         av_dlog(s->avctx, "%d %d %"PTRDIFF_SPECIFIER" %"PTRDIFF_SPECIFIER"\n", pic_arg->linesize[0],
                 pic_arg->linesize[1], s->linesize, s->uvlinesize);
 
+        i = ff_find_unused_picture(s, direct);
+        if (i < 0)
+            return i;
+
+        pic = &s->picture[i];
+        pic->reference = 3;
+
         if (direct) {
-            i = ff_find_unused_picture(s, 1);
-            if (i < 0)
-                return i;
-
-            pic = &s->picture[i];
-            pic->reference = 3;
-
             if ((ret = av_frame_ref(pic->f, pic_arg)) < 0)
                 return ret;
             if (ff_alloc_picture(s, pic, 1) < 0) {
                 return -1;
             }
         } else {
-            i = ff_find_unused_picture(s, 0);
-            if (i < 0)
-                return i;
-
-            pic = &s->picture[i];
-            pic->reference = 3;
-
             if (ff_alloc_picture(s, pic, 0) < 0) {
                 return -1;
             }

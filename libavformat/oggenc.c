@@ -307,12 +307,10 @@ static int ogg_build_flac_headers(AVCodecContext *avctx,
                                   OGGStreamContext *oggstream, int bitexact,
                                   AVDictionary **m)
 {
-    enum FLACExtradataFormat format;
-    uint8_t *streaminfo;
     uint8_t *p;
 
-    if (!avpriv_flac_is_extradata_valid(avctx, &format, &streaminfo))
-        return -1;
+    if (avctx->extradata_size < FLAC_STREAMINFO_SIZE)
+        return AVERROR(EINVAL);
 
     // first packet: STREAMINFO
     oggstream->header_len[0] = 51;
@@ -328,7 +326,7 @@ static int ogg_build_flac_headers(AVCodecContext *avctx,
     bytestream_put_buffer(&p, "fLaC", 4);
     bytestream_put_byte(&p, 0x00); // streaminfo
     bytestream_put_be24(&p, 34);
-    bytestream_put_buffer(&p, streaminfo, FLAC_STREAMINFO_SIZE);
+    bytestream_put_buffer(&p, avctx->extradata, FLAC_STREAMINFO_SIZE);
 
     // second packet: VorbisComment
     p = ogg_write_vorbiscomment(4, bitexact, &oggstream->header_len[1], m, 0);

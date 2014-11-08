@@ -73,20 +73,21 @@ static int mpegaudio_parse(AVCodecParserContext *s1,
                     if (i > 4)
                         s->header_count = -2;
                 } else {
+                    int header_threshold = avctx->codec_id != AV_CODEC_ID_NONE && avctx->codec_id != codec_id;
                     if((state&SAME_HEADER_MASK) != (s->header&SAME_HEADER_MASK) && s->header)
                         s->header_count= -3;
                     s->header= state;
                     s->header_count++;
                     s->frame_size = ret-4;
 
-                    if (s->header_count > 0 + (avctx->codec_id != AV_CODEC_ID_NONE && avctx->codec_id != codec_id)) {
+                    if (s->header_count > header_threshold) {
                         avctx->sample_rate= sr;
                         avctx->channels   = channels;
                         s1->duration      = frame_size;
                         avctx->codec_id   = codec_id;
                         if (s->no_bitrate || !avctx->bit_rate) {
                             s->no_bitrate = 1;
-                            avctx->bit_rate += (bit_rate - avctx->bit_rate) / s->header_count;
+                            avctx->bit_rate += (bit_rate - avctx->bit_rate) / (s->header_count - header_threshold);
                         }
                     }
                     break;

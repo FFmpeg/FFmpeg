@@ -1659,6 +1659,7 @@ HEADERS_LIST="
     sys_un_h
     sys_videoio_h
     termios_h
+    udplite_h
     unistd_h
     windows_h
     winsock2_h
@@ -2542,6 +2543,7 @@ tcp_protocol_select="network"
 tls_protocol_deps_any="openssl gnutls"
 tls_protocol_select="tcp_protocol"
 udp_protocol_select="network"
+udplite_protocol_select="network"
 unix_protocol_deps="sys_un_h"
 unix_protocol_select="network"
 
@@ -4745,6 +4747,7 @@ check_header io.h
 check_header libcrystalhd/libcrystalhd_if.h
 check_header mach/mach_time.h
 check_header malloc.h
+check_header net/udplite.h
 check_header poll.h
 check_header sys/mman.h
 check_header sys/param.h

@@ -199,7 +199,7 @@ static int validate_codec_tag(AVFormatContext *s, AVStream *st)
     }
     if (id != AV_CODEC_ID_NONE)
         return 0;
-    if (tag >= 0 && (st->codec->strict_std_compliance >= FF_COMPLIANCE_NORMAL))
+    if (tag >= 0 && (s->strict_std_compliance >= FF_COMPLIANCE_NORMAL))
         return 0;
     return 1;
 }
@@ -419,10 +419,11 @@ int avformat_write_header(AVFormatContext *s, AVDictionary **options)
         return ret;
 
     if (s->avoid_negative_ts < 0) {
+        av_assert2(s->avoid_negative_ts == AVFMT_AVOID_NEG_TS_AUTO);
         if (s->oformat->flags & (AVFMT_TS_NEGATIVE | AVFMT_NOTIMESTAMPS)) {
             s->avoid_negative_ts = 0;
         } else
-            s->avoid_negative_ts = 1;
+            s->avoid_negative_ts = AVFMT_AVOID_NEG_TS_MAKE_NON_NEGATIVE;
     }
 
     return 0;
@@ -556,7 +557,8 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
         AVStream *st = s->streams[pkt->stream_index];
         int64_t offset = st->mux_ts_offset;
 
-        if ((pkt->dts < 0 || s->avoid_negative_ts == 2) && pkt->dts != AV_NOPTS_VALUE && !s->offset) {
+        if (!s->offset && pkt->dts != AV_NOPTS_VALUE &&
+            (pkt->dts < 0 || s->avoid_negative_ts == AVFMT_AVOID_NEG_TS_MAKE_ZERO)) {
             s->offset = -pkt->dts;
             s->offset_timebase = st->time_base;
         }
@@ -577,8 +579,9 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
         av_assert2(pkt->dts == AV_NOPTS_VALUE || pkt->dts >= 0 || s->max_interleave_delta > 0);
         if (pkt->dts != AV_NOPTS_VALUE && pkt->dts < 0) {
             av_log(s, AV_LOG_WARNING,
-                   "Packets poorly interleaved, failed to avoid negative timestamp %s in stream %d\n"
-                   "try -max_interleave_delta 0 as a possible workaround\n",
+                   "Packets poorly interleaved, failed to avoid negative "
+                   "timestamp %s in stream %d.\n"
+                   "Try -max_interleave_delta 0 as a possible workaround.\n",
                    av_ts2str(pkt->dts),
                    pkt->stream_index
             );

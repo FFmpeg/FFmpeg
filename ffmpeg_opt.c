@@ -1649,6 +1649,10 @@ static int read_ffserver_streams(OptionsContext *o, AVFormatContext *s, const ch
         else if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO && !ost->stream_copy)
             choose_pixel_fmt(st, st->codec, codec, st->codec->pix_fmt);
         avcodec_copy_context(ost->enc_ctx, st->codec);
+        if (ost->enc_ctx->priv_data) {
+            av_opt_free(ost->enc_ctx->priv_data);
+            av_freep(&ost->enc_ctx->priv_data);
+        }
     }
 
     avformat_close_input(&ic);
@@ -2815,7 +2819,7 @@ const OptionDef options[] = {
         "add metadata", "string=string" },
     { "dframes",        HAS_ARG | OPT_PERFILE | OPT_EXPERT |
                         OPT_OUTPUT,                                  { .func_arg = opt_data_frames },
-        "set the number of data frames to record", "number" },
+        "set the number of data frames to output", "number" },
     { "benchmark",      OPT_BOOL | OPT_EXPERT,                       { &do_benchmark },
         "add timings for benchmarking" },
     { "benchmark_all",  OPT_BOOL | OPT_EXPERT,                       { &do_benchmark_all },
@@ -2866,7 +2870,7 @@ const OptionDef options[] = {
     { "copypriorss",    OPT_INT | HAS_ARG | OPT_EXPERT | OPT_SPEC | OPT_OUTPUT,   { .off = OFFSET(copy_prior_start) },
         "copy or discard frames before start time" },
     { "frames",         OPT_INT64 | HAS_ARG | OPT_SPEC | OPT_OUTPUT, { .off = OFFSET(max_frames) },
-        "set the number of frames to record", "number" },
+        "set the number of frames to output", "number" },
     { "tag",            OPT_STRING | HAS_ARG | OPT_SPEC |
                         OPT_EXPERT | OPT_OUTPUT | OPT_INPUT,         { .off = OFFSET(codec_tags) },
         "force codec tag/fourcc", "fourcc/tag" },
@@ -2908,7 +2912,7 @@ const OptionDef options[] = {
 
     /* video options */
     { "vframes",      OPT_VIDEO | HAS_ARG  | OPT_PERFILE | OPT_OUTPUT,           { .func_arg = opt_video_frames },
-        "set the number of video frames to record", "number" },
+        "set the number of video frames to output", "number" },
     { "r",            OPT_VIDEO | HAS_ARG  | OPT_STRING | OPT_SPEC |
                       OPT_INPUT | OPT_OUTPUT,                                    { .off = OFFSET(frame_rates) },
         "set frame rate (Hz value, fraction or abbreviation)", "rate" },
@@ -2996,7 +3000,7 @@ const OptionDef options[] = {
 
     /* audio options */
     { "aframes",        OPT_AUDIO | HAS_ARG  | OPT_PERFILE | OPT_OUTPUT,           { .func_arg = opt_audio_frames },
-        "set the number of audio frames to record", "number" },
+        "set the number of audio frames to output", "number" },
     { "aq",             OPT_AUDIO | HAS_ARG  | OPT_PERFILE | OPT_OUTPUT,           { .func_arg = opt_audio_qscale },
         "set audio quality (codec-specific)", "quality", },
     { "ar",             OPT_AUDIO | HAS_ARG  | OPT_INT | OPT_SPEC |

@@ -85,29 +85,56 @@ do { \
 } while (0)
 
 
+#if HAVE_BIGENDIAN
+#define VEC_LD(offset,b)                                   \
+    vec_perm(vec_ld(offset, b), vec_ld((offset)+15, b), vec_lvsl(offset, b))
+#else
+#define VEC_LD(offset,b)                                   \
+    vec_vsx_ld(offset, b)
+#endif
+
 /** @brief loads unaligned vector @a *src with offset @a offset
     and returns it */
-static inline vector unsigned char unaligned_load(int offset, uint8_t *src)
+#if HAVE_BIGENDIAN
+static inline vector unsigned char unaligned_load(int offset, const uint8_t *src)
 {
     register vector unsigned char first = vec_ld(offset, src);
     register vector unsigned char second = vec_ld(offset+15, src);
     register vector unsigned char mask = vec_lvsl(offset, src);
     return vec_perm(first, second, mask);
 }
+#else
+#define unaligned_load(a,b) VEC_LD(a,b)
+#endif
+
 
 /**
  * loads vector known misalignment
  * @param perm_vec the align permute vector to combine the two loads from lvsl
  */
-static inline vec_u8 load_with_perm_vec(int offset, uint8_t *src, vec_u8 perm_vec)
+static inline vec_u8 load_with_perm_vec(int offset, const uint8_t *src, vec_u8 perm_vec)
 {
     vec_u8 a = vec_ld(offset, src);
     vec_u8 b = vec_ld(offset+15, src);
     return vec_perm(a, b, perm_vec);
 }
 
-#define vec_unaligned_load(b)                                   \
-    vec_perm(vec_ld(0, b), vec_ld(15, b), vec_lvsl(0, b));
+#define vec_unaligned_load(b)  VEC_LD(0, b)
+
+#if HAVE_BIGENDIAN
+#define VEC_MERGEH(a, b) vec_mergeh(a, b)
+#define VEC_MERGEL(a, b) vec_mergel(a, b)
+#else
+#define VEC_MERGEH(a, b) vec_mergeh(b, a)
+#define VEC_MERGEL(a, b) vec_mergel(b, a)
+#endif
+
+#if HAVE_BIGENDIAN
+#define VEC_ST(a,b,c) vec_st(a,b,c)
+#else
+#define VEC_ST(a,b,c) vec_vsx_st(a,b,c)
+#endif
+
 
 #endif /* HAVE_ALTIVEC */
 

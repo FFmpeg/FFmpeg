@@ -2291,7 +2291,12 @@ static int decode_extension_payload(AACContext *ac, GetBitContext *gb, int cnt,
 {
     int crc_flag = 0;
     int res = cnt;
-    switch (get_bits(gb, 4)) { // extension type
+    int type = get_bits(gb, 4);
+
+    if (ac->avctx->debug & FF_DEBUG_STARTCODE)
+        av_log(ac->avctx, AV_LOG_DEBUG, "extension type: %d len:%d\n", type, cnt);
+
+    switch (type) { // extension type
     case EXT_SBR_DATA_CRC:
         crc_flag++;
     case EXT_SBR_DATA:
@@ -3466,6 +3471,18 @@ static const AVClass aac_decoder_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
+static const AVProfile profiles[] = {
+    { FF_PROFILE_AAC_MAIN,  "Main"     },
+    { FF_PROFILE_AAC_LOW,   "LC"       },
+    { FF_PROFILE_AAC_SSR,   "SSR"      },
+    { FF_PROFILE_AAC_LTP,   "LTP"      },
+    { FF_PROFILE_AAC_HE,    "HE-AAC"   },
+    { FF_PROFILE_AAC_HE_V2, "HE-AACv2" },
+    { FF_PROFILE_AAC_LD,    "LD"       },
+    { FF_PROFILE_AAC_ELD,   "ELD"      },
+    { FF_PROFILE_UNKNOWN },
+};
+
 AVCodec ff_aac_decoder = {
     .name            = "aac",
     .long_name       = NULL_IF_CONFIG_SMALL("AAC (Advanced Audio Coding)"),
@@ -3482,6 +3499,7 @@ AVCodec ff_aac_decoder = {
     .channel_layouts = aac_channel_layout,
     .flush = flush,
     .priv_class      = &aac_decoder_class,
+    .profiles        = profiles,
 };
 
 /*
@@ -3504,4 +3522,5 @@ AVCodec ff_aac_latm_decoder = {
     .capabilities    = CODEC_CAP_CHANNEL_CONF | CODEC_CAP_DR1,
     .channel_layouts = aac_channel_layout,
     .flush = flush,
+    .profiles        = profiles,
 };

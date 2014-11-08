@@ -82,7 +82,7 @@ static int mmf_write_header(AVFormatContext *s)
 
     mmf->stereo = s->streams[0]->codec->channels > 1;
     if (mmf->stereo &&
-        s->streams[0]->codec->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
+        s->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
         av_log(s, AV_LOG_ERROR, "Yamaha SMAF stereo is experimental, "
                "add '-strict %d' if you want to use it.\n",
                FF_COMPLIANCE_EXPERIMENTAL);

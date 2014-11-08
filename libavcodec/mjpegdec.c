@@ -440,14 +440,15 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         av_assert0(s->nb_components == 4);
         break;
     case 0x22111122:
+    case 0x22111111:
         if (s->adobe_transform == 0 && s->bits <= 8) {
             s->avctx->pix_fmt = AV_PIX_FMT_GBRAP;
-            s->upscale_v = 6;
-            s->upscale_h = 6;
+            s->upscale_v |= 6;
+            s->upscale_h |= 6;
         } else if (s->adobe_transform == 2 && s->bits <= 8) {
             s->avctx->pix_fmt = AV_PIX_FMT_YUVA444P;
-            s->upscale_v = 6;
-            s->upscale_h = 6;
+            s->upscale_v |= 6;
+            s->upscale_h |= 6;
             s->avctx->color_range = s->cs_itu601 ? AVCOL_RANGE_MPEG : AVCOL_RANGE_JPEG;
         } else {
             if (s->bits <= 8) s->avctx->pix_fmt = AV_PIX_FMT_YUVA420P;
@@ -1295,6 +1296,8 @@ static int mjpeg_decode_scan_progressive_ac(MJpegDecodeContext *s, int ss,
     }
 
     if (!Al) {
+        // s->coefs_finished is a bitmask for coefficients coded
+        // ss and se are parameters telling start and end coefficients
         s->coefs_finished[c] |= (2ULL << se) - (1ULL << ss);
         last_scan = !~s->coefs_finished[c];
     }

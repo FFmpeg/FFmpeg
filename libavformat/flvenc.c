@@ -223,7 +223,7 @@ static int flv_write_header(AVFormatContext *s)
             }
             if (enc->codec_id == AV_CODEC_ID_MPEG4 ||
                 enc->codec_id == AV_CODEC_ID_H263) {
-                int error = enc->strict_std_compliance > FF_COMPLIANCE_UNOFFICIAL;
+                int error = s->strict_std_compliance > FF_COMPLIANCE_UNOFFICIAL;
                 av_log(s, error ? AV_LOG_ERROR : AV_LOG_WARNING,
                        "Codec %s is not supported in the official FLV specification,\n", avcodec_get_name(enc->codec_id));
 

@@ -67,7 +67,7 @@ static const int desired_video_buffers = 256;
 struct video_data {
     AVClass *class;
     int fd;
-    int frame_format; /* V4L2_PIX_FMT_* */
+    int pixelformat; /* V4L2_PIX_FMT_* */
     int width, height;
     int frame_size;
     int interlaced;
@@ -183,18 +183,19 @@ fail:
 }
 
 static int device_init(AVFormatContext *ctx, int *width, int *height,
-                       uint32_t pix_fmt)
+                       uint32_t pixelformat)
 {
     struct video_data *s = ctx->priv_data;
     struct v4l2_format fmt = { .type = V4L2_BUF_TYPE_VIDEO_CAPTURE };
-    struct v4l2_pix_format *pix = &fmt.fmt.pix;
     int res = 0;
 
-    pix->width = *width;
-    pix->height = *height;
-    pix->pixelformat = pix_fmt;
-    pix->field = V4L2_FIELD_ANY;
+    fmt.fmt.pix.width = *width;
+    fmt.fmt.pix.height = *height;
+    fmt.fmt.pix.pixelformat = pixelformat;
+    fmt.fmt.pix.field = V4L2_FIELD_ANY;
 
+    /* Some drivers will fail and return EINVAL when the pixelformat
+       is not supported (even if type field is valid and supported) */
     if (v4l2_ioctl(s->fd, VIDIOC_S_FMT, &fmt) < 0)
         res = AVERROR(errno);
 
@@ -206,11 +207,11 @@ static int device_init(AVFormatContext *ctx, int *width, int *height,
         *height = fmt.fmt.pix.height;
     }
 
-    if (pix_fmt != fmt.fmt.pix.pixelformat) {
+    if (pixelformat != fmt.fmt.pix.pixelformat) {
         av_log(ctx, AV_LOG_DEBUG,
                "The V4L2 driver changed the pixel format "
                "from 0x%08X to 0x%08X\n",
-               pix_fmt, fmt.fmt.pix.pixelformat);
+               pixelformat, fmt.fmt.pix.pixelformat);
         res = AVERROR(EINVAL);
     }
 
@@ -931,7 +932,7 @@ static int v4l2_read_header(AVFormatContext *ctx)
     if ((res = av_image_check_size(s->width, s->height, 0, ctx)) < 0)
         goto fail;
 
-    s->frame_format = desired_format;
+    s->pixelformat = desired_format;
 
     st->codec->pix_fmt = ff_fmt_v4l2ff(desired_format, codec_id);
     s->frame_size =
