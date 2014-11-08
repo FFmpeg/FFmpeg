@@ -1668,7 +1668,6 @@ MATH_FUNCS="
     exp2
     exp2f
     expf
-    fminf
     isinf
     isnan
     ldexpf
@@ -4782,7 +4781,6 @@ disabled crystalhd || check_lib libcrystalhd/libcrystalhd_if.h DtsCrystalHDVersi
 atan2f_args=2
 ldexpf_args=2
 powf_args=2
-fminf_args=2
 
 for func in $MATH_FUNCS; do
     eval check_mathfunc $func \${${func}_args:-1}
