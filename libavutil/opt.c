@@ -1225,6 +1225,8 @@ void av_opt_set_defaults2(void *s, int mask, int flags)
                 write_number(s, opt, dst, 1, 1, opt->default_val.i64);
                 break;
             case AV_OPT_TYPE_BINARY:
+                set_string_binary(s, opt, opt->default_val.str, dst);
+                break;
             case AV_OPT_TYPE_DICT:
                 /* Cannot set defaults for these types */
             break;
