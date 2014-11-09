@@ -27,7 +27,7 @@
 #include "cabac_functions.h"
 #include "hevc.h"
 
-#define CABAC_MAX_BIN 100
+#define CABAC_MAX_BIN 31
 
 /**
  * number of bin by SyntaxElement.
