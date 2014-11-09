@@ -36,7 +36,7 @@ typedef struct PNGParseContext {
     ParseContext pc;
 
     int chunk_pos;          ///< position inside current chunk
-    int chunk_length;       ///< length of the current chunk
+    uint32_t chunk_length;  ///< length of the current chunk
     int remaining_size;     ///< remaining size of the current chunk
 } PNGParseContext;
 
