@@ -157,7 +157,7 @@ inline static int push_frame(AVFilterLink *outlink)
         showwaves->req_fullfilled = 1;
     showwaves->outpicref = NULL;
     showwaves->buf_idx = 0;
-    for (i = 0; i <= nb_channels; i++)
+    for (i = 0; i < nb_channels; i++)
         showwaves->buf_idy[i] = 0;
     return ret;
 }
