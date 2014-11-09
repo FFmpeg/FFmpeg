@@ -312,8 +312,8 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     offset = ptr;
     bytestream_put_le32(&ptr, 0);
 
-    strip_sizes   = av_mallocz(sizeof(*strip_sizes)   * strips);
-    strip_offsets = av_mallocz(sizeof(*strip_offsets) * strips);
+    strip_sizes   = av_mallocz_array(strips, sizeof(*strip_sizes));
+    strip_offsets = av_mallocz_array(strips, sizeof(*strip_offsets));
     if (!strip_sizes || !strip_offsets) {
         ret = AVERROR(ENOMEM);
         goto fail;
