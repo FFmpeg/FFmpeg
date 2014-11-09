@@ -107,6 +107,10 @@ FATE_LIBAVUTIL += fate-xtea
 fate-xtea: libavutil/xtea-test$(EXESUF)
 fate-xtea: CMD = run libavutil/xtea-test
 
+FATE_LIBAVUTIL += fate-opt
+fate-opt: libavutil/opt-test$(EXESUF)
+fate-opt: CMD = run libavutil/opt-test
+
 FATE_LIBAVUTIL += $(FATE_LIBAVUTIL-yes)
 FATE-$(CONFIG_AVUTIL) += $(FATE_LIBAVUTIL)
 fate-libavutil: $(FATE_LIBAVUTIL)
