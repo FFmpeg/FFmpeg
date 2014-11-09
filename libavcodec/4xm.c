@@ -820,9 +820,6 @@ static int decode_frame(AVCodecContext *avctx, void *data,
         const int data_size  = buf_size - 20;
         CFrameBuffer *cfrm;
 
-        if (data_size < 0)
-            return AVERROR_INVALIDDATA;
-
         id         = AV_RL32(buf + 12);
         whole_size = AV_RL32(buf + 16);
 
