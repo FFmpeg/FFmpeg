@@ -239,7 +239,11 @@ static av_cold int fdk_aac_decode_init(AVCodecContext *avctx)
         }
 
         if (downmix_channels != -1) {
+#ifdef AACDECODER_LIB_VL2
+            if (aacDecoder_SetParam(s->handle, AAC_PCM_MAX_OUTPUT_CHANNELS,
+#else
             if (aacDecoder_SetParam(s->handle, AAC_PCM_OUTPUT_CHANNELS,
+#endif
                                     downmix_channels) != AAC_DEC_OK) {
                av_log(avctx, AV_LOG_WARNING, "Unable to set output channels in the decoder\n");
             } else {
