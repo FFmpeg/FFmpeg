@@ -2744,7 +2744,7 @@ static void spectral_to_sample(AACContext *ac)
     for (type = 3; type >= 0; type--) {
         for (i = 0; i < MAX_ELEM_ID; i++) {
             ChannelElement *che = ac->che[type][i];
-            if (che) {
+            if (che && che->present) {
                 if (type <= TYPE_CPE)
                     apply_channel_coupling(ac, che, type, i, BEFORE_TNS, apply_dependent_coupling);
                 if (ac->oc[1].m4ac.object_type == AOT_AAC_LTP) {
@@ -2776,6 +2776,9 @@ static void spectral_to_sample(AACContext *ac)
                 }
                 if (type <= TYPE_CCE)
                     apply_channel_coupling(ac, che, type, i, AFTER_IMDCT, apply_independent_coupling);
+                che->present = 0;
+            } else if (che) {
+                av_log(ac->avctx, AV_LOG_WARNING, "ChannelElement %d.%d missing \n", type, i);
             }
         }
     }
@@ -2880,6 +2883,7 @@ static int aac_decode_er_frame(AVCodecContext *avctx, void *data,
                    elem_type, elem_id);
             return AVERROR_INVALIDDATA;
         }
+        che->present = 1;
         if (aot != AOT_ER_AAC_ELD)
             skip_bits(gb, 4);
         switch (elem_type) {
@@ -2954,6 +2958,7 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
                 goto fail;
             }
             samples = 1024;
+            che->present = 1;
         }
 
         switch (elem_type) {
