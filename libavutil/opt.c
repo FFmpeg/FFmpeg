@@ -126,10 +126,13 @@ static int set_string_binary(void *obj, const AVOption *o, const char *val, uint
 {
     int *lendst = (int *)(dst + 1);
     uint8_t *bin, *ptr;
-    int len = strlen(val);
+    int len;
 
     av_freep(dst);
     *lendst = 0;
+
+    if (!val || !(len = strlen(val)))
+        return 0;
 
     if (len & 1)
         return AVERROR(EINVAL);
