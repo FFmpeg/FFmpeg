@@ -693,26 +693,19 @@ static int dvbsub_read_8bit_string(uint8_t *destbuf, int dbuf_len,
                 if (run_length == 0) {
                     return pixels_read;
                 }
-
-                if (map_table)
-                    bits = map_table[0];
-                else
-                    bits = 0;
-                while (run_length-- > 0 && pixels_read < dbuf_len) {
-                    *destbuf++ = bits;
-                    pixels_read++;
-                }
             } else {
                 bits = *(*srcbuf)++;
 
                 if (non_mod == 1 && bits == 1)
                     pixels_read += run_length;
-                if (map_table)
-                    bits = map_table[bits];
-                else while (run_length-- > 0 && pixels_read < dbuf_len) {
-                    *destbuf++ = bits;
-                    pixels_read++;
-                }
+            }
+            if (map_table)
+                bits = map_table[0];
+            else
+                bits = 0;
+            while (run_length-- > 0 && pixels_read < dbuf_len) {
+                *destbuf++ = bits;
+                pixels_read++;
             }
         }
     }
