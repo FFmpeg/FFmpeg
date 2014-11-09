@@ -169,7 +169,7 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
     }
     if (ctx->swfurl) {
         av_strlcat(filename, " swfUrl=", len);
-        av_strlcat(filename, ctx->pageurl, len);
+        av_strlcat(filename, ctx->swfurl, len);
     }
     if (ctx->flashver) {
         av_strlcat(filename, " flashVer=", len);
