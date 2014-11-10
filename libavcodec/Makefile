@@ -27,6 +27,7 @@ OBJS = allcodecs.o                                                      \
        raw.o                                                            \
        utils.o                                                          \
        vorbis_parser.o                                                  \
+       xiph.o                                                           \
 
 # subsystems
 OBJS-$(CONFIG_AANDCTTABLES)            += aandcttab.o
@@ -369,7 +370,6 @@ OBJS-$(CONFIG_SVQ3_DECODER)            += svq3.o svq13.o mpegutils.o
 OBJS-$(CONFIG_TAK_DECODER)             += takdec.o tak.o
 OBJS-$(CONFIG_TARGA_DECODER)           += targa.o
 OBJS-$(CONFIG_TARGA_ENCODER)           += targaenc.o rle.o
-OBJS-$(CONFIG_THEORA_DECODER)          += xiph.o
 OBJS-$(CONFIG_TIERTEXSEQVIDEO_DECODER) += tiertexseqv.o
 OBJS-$(CONFIG_TIFF_DECODER)            += tiff.o lzw.o faxcompr.o
 OBJS-$(CONFIG_TIFF_ENCODER)            += tiffenc.o rle.o lzwenc.o
@@ -401,7 +401,7 @@ OBJS-$(CONFIG_VMDAUDIO_DECODER)        += vmdaudio.o
 OBJS-$(CONFIG_VMDVIDEO_DECODER)        += vmdvideo.o
 OBJS-$(CONFIG_VMNC_DECODER)            += vmnc.o
 OBJS-$(CONFIG_VORBIS_DECODER)          += vorbisdec.o vorbisdsp.o vorbis.o \
-                                          vorbis_data.o xiph.o
+                                          vorbis_data.o
 OBJS-$(CONFIG_VORBIS_ENCODER)          += vorbisenc.o vorbis.o \
                                           vorbis_data.o
 OBJS-$(CONFIG_VP3_DECODER)             += vp3.o
@@ -573,12 +573,11 @@ OBJS-$(CONFIG_GXF_DEMUXER)             += mpeg12data.o
 OBJS-$(CONFIG_IFF_DEMUXER)             += iff.o
 OBJS-$(CONFIG_ISMV_MUXER)              += mpeg4audio.o mpegaudiodata.o
 OBJS-$(CONFIG_LATM_MUXER)              += mpeg4audio.o
-OBJS-$(CONFIG_MATROSKA_AUDIO_MUXER)    += xiph.o mpeg4audio.o           \
+OBJS-$(CONFIG_MATROSKA_AUDIO_MUXER)    += mpeg4audio.o                  \
                                           flac.o flacdata.o
-OBJS-$(CONFIG_MATROSKA_DEMUXER)        += mpeg4audio.o mpegaudiodata.o  \
-                                          xiph.o
+OBJS-$(CONFIG_MATROSKA_DEMUXER)        += mpeg4audio.o mpegaudiodata.o
 OBJS-$(CONFIG_MATROSKA_MUXER)          += mpeg4audio.o mpegaudiodata.o  \
-                                          flac.o flacdata.o xiph.o
+                                          flac.o flacdata.o
 OBJS-$(CONFIG_MP2_MUXER)               += mpegaudiodata.o mpegaudiodecheader.o
 OBJS-$(CONFIG_MP3_MUXER)               += mpegaudiodata.o mpegaudiodecheader.o
 OBJS-$(CONFIG_MOV_DEMUXER)             += mpeg4audio.o mpegaudiodata.o ac3tab.o
@@ -586,17 +585,16 @@ OBJS-$(CONFIG_MOV_MUXER)               += mpeg4audio.o mpegaudiodata.o
 OBJS-$(CONFIG_MPEGTS_MUXER)            += mpeg4audio.o
 OBJS-$(CONFIG_MPEGTS_DEMUXER)          += mpeg4audio.o mpegaudiodata.o
 OBJS-$(CONFIG_NUT_MUXER)               += mpegaudiodata.o
-OBJS-$(CONFIG_OGG_DEMUXER)             += xiph.o       \
-                                          mpeg12data.o \
+OBJS-$(CONFIG_OGG_DEMUXER)             += mpeg12data.o \
                                           dirac.o
-OBJS-$(CONFIG_OGG_MUXER)               += xiph.o flac.o flacdata.o
-OBJS-$(CONFIG_RTP_MUXER)               += mpeg4audio.o xiph.o
+OBJS-$(CONFIG_OGG_MUXER)               += flac.o flacdata.o
+OBJS-$(CONFIG_RTP_MUXER)               += mpeg4audio.o
 OBJS-$(CONFIG_RTPDEC)                  += mjpeg.o
 OBJS-$(CONFIG_SPDIF_DEMUXER)           += aacadtsdec.o mpeg4audio.o
 OBJS-$(CONFIG_SPDIF_MUXER)             += dca.o
 OBJS-$(CONFIG_TAK_DEMUXER)             += tak.o
 OBJS-$(CONFIG_WEBM_MUXER)              += mpeg4audio.o mpegaudiodata.o  \
-                                          xiph.o flac.o flacdata.o
+                                          flac.o flacdata.o
 OBJS-$(CONFIG_WTV_DEMUXER)             += mpeg4audio.o mpegaudiodata.o
 
 # external codec libraries
@@ -681,7 +679,6 @@ OBJS-$(CONFIG_TAK_PARSER)              += tak_parser.o tak.o
 OBJS-$(CONFIG_VC1_PARSER)              += vc1_parser.o vc1.o vc1data.o vc1dsp.o \
                                           msmpeg4.o msmpeg4data.o mpeg4video.o \
                                           h263.o
-OBJS-$(CONFIG_VORBIS_PARSER)           += xiph.o
 OBJS-$(CONFIG_VP3_PARSER)              += vp3_parser.o
 OBJS-$(CONFIG_VP8_PARSER)              += vp8_parser.o
 
