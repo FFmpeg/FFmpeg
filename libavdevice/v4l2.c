@@ -506,7 +506,8 @@ static int mmap_read_frame(AVFormatContext *ctx, AVPacket *pkt)
             return AVERROR(EAGAIN);
         }
         res = AVERROR(errno);
-        av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_DQBUF): %s\n", av_err2str(res));
+        av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_DQBUF): %s\n",
+               av_err2str(res));
         return res;
     }
 
@@ -602,7 +603,8 @@ static int mmap_start(AVFormatContext *ctx)
 
         if (v4l2_ioctl(s->fd, VIDIOC_QBUF, &buf) < 0) {
             res = AVERROR(errno);
-            av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_QBUF): %s\n", av_err2str(res));
+            av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_QBUF): %s\n",
+                   av_err2str(res));
             return res;
         }
     }
@@ -611,7 +613,8 @@ static int mmap_start(AVFormatContext *ctx)
     type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     if (v4l2_ioctl(s->fd, VIDIOC_STREAMON, &type) < 0) {
         res = AVERROR(errno);
-        av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_STREAMON): %s\n", av_err2str(res));
+        av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_STREAMON): %s\n",
+               av_err2str(res));
         return res;
     }
 
@@ -728,7 +731,8 @@ static int v4l2_set_parameters(AVFormatContext *ctx)
 
             if (v4l2_ioctl(s->fd, VIDIOC_S_PARM, &streamparm) < 0) {
                 ret = AVERROR(errno);
-                av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_S_PARM): %s\n", av_err2str(ret));
+                av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_S_PARM): %s\n",
+                       av_err2str(ret));
                 return ret;
             }
 
