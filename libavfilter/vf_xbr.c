@@ -749,7 +749,7 @@ static const AVFilterPad xbr_outputs[] = {
 
 AVFilter ff_vf_xbr = {
     .name          = "xbr",
-    .description   = NULL_IF_CONFIG_SMALL("Scale the input by 2 using xbr algorithm."),
+    .description   = NULL_IF_CONFIG_SMALL("Scale the input using xBR algorithm."),
     .inputs        = xbr_inputs,
     .outputs       = xbr_outputs,
     .query_formats = query_formats,
