@@ -348,14 +348,14 @@ static int mmap_init(AVFormatContext *ctx)
 
     res = ioctl(s->fd, VIDIOC_REQBUFS, &req);
     if (res < 0) {
-        res = errno;
-        if (errno == EINVAL) {
+        res = AVERROR(errno);
+        if (res == AVERROR(EINVAL)) {
             av_log(ctx, AV_LOG_ERROR, "Device does not support mmap\n");
         } else {
             av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_REQBUFS)\n");
         }
 
-        return AVERROR(res);
+        return res;
     }
 
     if (req.count < 2) {
