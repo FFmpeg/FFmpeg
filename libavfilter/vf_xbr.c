@@ -23,7 +23,7 @@
 /**
  * @file
  * XBR Filter is used for depixelization of image.
- * This is based on Hyllian's 2xBR shader.
+ * This is based on Hyllian's xBR shader.
  *
  * @see http://www.libretro.com/forums/viewtopic.php?f=6&t=134
  * @see https://github.com/yoyofr/iFBA/blob/master/fba_src/src/intf/video/scalers/xbr.cpp
