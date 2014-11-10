@@ -222,7 +222,7 @@ static void restore_median(uint8_t *src, int step, int stride,
             A        = bsrc[i];
         }
         bsrc += stride;
-        if (slice_height == 1)
+        if (slice_height <= 1)
             continue;
         // second line - first element has top prediction, the rest uses median
         C        = bsrc[-stride];
@@ -282,7 +282,7 @@ static void restore_median_il(uint8_t *src, int step, int stride,
             A                 = bsrc[stride + i];
         }
         bsrc += stride2;
-        if (slice_height == 1)
+        if (slice_height <= 1)
             continue;
         // second line - first element has top prediction, the rest uses median
         C        = bsrc[-stride2];
