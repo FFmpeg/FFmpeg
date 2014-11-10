@@ -3023,8 +3023,8 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
             if (enc->colorspace != AVCOL_SPC_UNSPECIFIED ||
                 enc->color_primaries != AVCOL_PRI_UNSPECIFIED ||
                 enc->color_trc != AVCOL_TRC_UNSPECIFIED) {
-                if (enc->colorspace != enc->color_primaries ||
-                    enc->colorspace != enc->color_trc) {
+                if (enc->colorspace != (int)enc->color_primaries ||
+                    enc->colorspace != (int)enc->color_trc) {
                     new_line = 1;
                     av_strlcatf(detail, sizeof(detail), "%s/%s/%s, ",
                                 av_color_space_name(enc->colorspace),
