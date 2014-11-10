@@ -27,7 +27,8 @@
  *
  * @see http://www.libretro.com/forums/viewtopic.php?f=6&t=134
  * @see https://github.com/yoyofr/iFBA/blob/master/fba_src/src/intf/video/scalers/xbr.cpp
- * Future work : To implement x3 and x4 scale, and threading.
+ *
+ * @todo add threading and FATE test
  */
 
 #include "libavutil/opt.h"
