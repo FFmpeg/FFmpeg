@@ -44,9 +44,9 @@ typedef struct {
     const AVClass *class;
     int n;
     uint32_t rgbtoyuv[1<<24];
-} xBRContext;
+} XBRContext;
 
-#define OFFSET(x) offsetof(xBRContext, x)
+#define OFFSET(x) offsetof(XBRContext, x)
 static const AVOption xbr_options[] = {
     { "n", "set scale factor", OFFSET(n), AV_OPT_TYPE_INT, {.i64 = 3}, 2, 4, },
     { NULL }
@@ -658,7 +658,7 @@ static void xbr4x(AVFrame * input, AVFrame * output, const uint32_t * r2y)
 static int config_output(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
-    xBRContext *xbr = ctx->priv;
+    XBRContext *xbr = ctx->priv;
     AVFilterLink *inlink = ctx->inputs[0];
 
     outlink->w = inlink->w * xbr->n;
@@ -680,7 +680,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
-    xBRContext *xbr = ctx->priv;
+    XBRContext *xbr = ctx->priv;
     const uint32_t *r2y = xbr->rgbtoyuv;
 
     AVFrame *out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
@@ -706,7 +706,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
 static int init(AVFilterContext *ctx)
 {
-    xBRContext *xbr = ctx->priv;
+    XBRContext *xbr = ctx->priv;
     uint32_t c;
     int bg, rg, g;
 
@@ -752,7 +752,7 @@ AVFilter ff_vf_xbr = {
     .inputs        = xbr_inputs,
     .outputs       = xbr_outputs,
     .query_formats = query_formats,
-    .priv_size     = sizeof(xBRContext),
+    .priv_size     = sizeof(XBRContext),
     .priv_class    = &xbr_class,
     .init          = init,
 };
