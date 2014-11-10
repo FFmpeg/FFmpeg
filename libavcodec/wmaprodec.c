@@ -420,6 +420,9 @@ static av_cold int decode_init(AVCodecContext *avctx)
             offset &= ~3;
             if (offset > s->sfb_offsets[i][band - 1])
                 s->sfb_offsets[i][band++] = offset;
+
+            if (offset >= subframe_len)
+                break;
         }
         s->sfb_offsets[i][band - 1] = subframe_len;
         s->num_sfb[i]               = band - 1;
