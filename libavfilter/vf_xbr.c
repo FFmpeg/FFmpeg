@@ -328,7 +328,7 @@ static void xbr2x(AVFrame * input, AVFrame * output, const uint32_t * r2y)
           }\
      }\
 
-static void xbr3x(AVFrame * input, AVFrame * output, const uint32_t * r2y)
+static void xbr3x(AVFrame *input, AVFrame *output, const uint32_t *r2y)
 {
     const int nl = output->linesize[0]>>2;
     const int nl1 = nl + nl;
@@ -521,7 +521,7 @@ static void xbr3x(AVFrame * input, AVFrame * output, const uint32_t * r2y)
           }\
      }\
 
-static void xbr4x(AVFrame * input, AVFrame * output, const uint32_t * r2y)
+static void xbr4x(AVFrame *input, AVFrame *output, const uint32_t *r2y)
 {
 
     const int nl = output->linesize[0]>>2;
@@ -535,9 +535,9 @@ static void xbr4x(AVFrame * input, AVFrame * output, const uint32_t * r2y)
     uint32_t pprev;
     uint32_t pprev2;
 
-    int x,y;
+    int x, y;
 
-    for (y = 0; y < input->height; y++){
+    for (y = 0; y < input->height; y++) {
 
         uint32_t * E = (uint32_t *)(output->data[0] + y * output->linesize[0] * 4);
 
@@ -552,23 +552,23 @@ static void xbr4x(AVFrame * input, AVFrame * output, const uint32_t * r2y)
         /* down two */
         uint32_t * sa4 = sa3 + (input->linesize[0]>>2);
 
-        if (y <= 1){
+        if (y <= 1) {
             sa0 = sa1;
-            if (y == 0){
+            if (y == 0) {
                 sa0 = sa1 = sa2;
             }
         }
 
-        if (y >= input->height - 2){
+        if (y >= input->height - 2) {
             sa4 = sa3;
-            if (y == input->height - 1){
+            if (y == input->height - 1) {
                 sa4 = sa3 = sa2;
             }
         }
 
         pprev = pprev2 = 2;
 
-        for (x = 0; x < input->width; x++){
+        for (x = 0; x < input->width; x++) {
             uint32_t B1 = sa0[2];
             uint32_t PB = sa1[2];
             uint32_t PE = sa2[2];
@@ -595,8 +595,8 @@ static void xbr4x(AVFrame * input, AVFrame * output, const uint32_t * r2y)
             uint32_t F4 = 0;
             uint32_t I4 = 0;
 
-            if (x >= input->width - 2){
-                if (x == input->width - 1){
+            if (x >= input->width - 2) {
+                if (x == input->width - 1) {
                     C1 = sa0[2];
                     PC = sa1[2];
                     PF = sa2[2];
@@ -691,12 +691,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     }
 
     av_frame_copy_props(out, in);
-    if(xbr->n == 4)
-        xbr4x(in,out,r2y);
-    else if(xbr->n == 3)
-        xbr3x(in,out,r2y);
+    if (xbr->n == 4)
+        xbr4x(in, out, r2y);
+    else if (xbr->n == 3)
+        xbr3x(in, out, r2y);
     else
-        xbr2x(in,out,r2y);
+        xbr2x(in, out, r2y);
 
     out->width  = outlink->w;
     out->height = outlink->h;
@@ -711,8 +711,8 @@ static int init(AVFilterContext *ctx)
     uint32_t c;
     int bg, rg, g;
 
-    for (bg=-255; bg<256; bg++) {
-        for (rg=-255; rg<256; rg++) {
+    for (bg = -255; bg < 256; bg++) {
+        for (rg = -255; rg < 256; rg++) {
             const uint32_t u = (uint32_t)((-169*rg + 500*bg)/1000) + 128;
             const uint32_t v = (uint32_t)(( 500*rg -  81*bg)/1000) + 128;
             int startg = FFMAX3(-bg, -rg, 0);
