@@ -197,12 +197,14 @@ pixfmts(){
     $showfiltfmts $filter | awk -F '[ \r]' '/^INPUT/{ fmt=substr($3, 5); print fmt }' | sort >$in_fmts
     pix_fmts=$(comm -12 $scale_exclude_fmts $in_fmts)
 
+    outertest=$test
     for pix_fmt in $pix_fmts; do
         test=$pix_fmt
         video_filter "${prefilter_chain}format=$pix_fmt,$filter=$filter_args" -pix_fmt $pix_fmt
     done
 
     rm $in_fmts $scale_in_fmts $scale_out_fmts $scale_exclude_fmts
+    test=$outertest
 }
 
 mkdir -p "$outdir"
