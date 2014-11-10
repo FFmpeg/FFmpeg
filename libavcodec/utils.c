@@ -736,7 +736,7 @@ int ff_init_buffer_info(AVCodecContext *avctx, AVFrame *frame)
 {
     AVPacket *pkt = avctx->internal->pkt;
     int i;
-    struct {
+    static const struct {
         enum AVPacketSideDataType packet;
         enum AVFrameSideDataType frame;
     } sd[] = {
