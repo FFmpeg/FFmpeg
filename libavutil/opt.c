@@ -37,6 +37,7 @@
 #include "pixdesc.h"
 #include "mathematics.h"
 #include "samplefmt.h"
+#include "bprint.h"
 
 #include <float.h>
 
@@ -1835,6 +1836,44 @@ int av_opt_is_set_to_default_by_name(void *obj, const char *name, int search_fla
     return av_opt_is_set_to_default(target, o);
 }
 
+int av_opt_serialize(void *obj, int opt_flags, int flags, char **buffer,
+                     const char key_val_sep, const char pairs_sep)
+{
+    const AVOption *o = NULL;
+    uint8_t *buf;
+    AVBPrint bprint;
+    int ret, cnt = 0;
+
+    if (!obj || !buffer)
+        return AVERROR(EINVAL);
+
+    *buffer = NULL;
+    av_bprint_init(&bprint, 64, AV_BPRINT_SIZE_UNLIMITED);
+
+    while (o = av_opt_next(obj, o)) {
+        if (o->type == AV_OPT_TYPE_CONST)
+            continue;
+        if ((flags & AV_OPT_SERIALIZE_OPT_FLAGS_EXACT) && o->flags != opt_flags)
+            continue;
+        else if (((o->flags & opt_flags) != opt_flags))
+            continue;
+        if (flags & AV_OPT_SERIALIZE_SKIP_DEFAULTS && av_opt_is_set_to_default(obj, o) > 0)
+            continue;
+        if ((ret = av_opt_get(obj, o->name, 0, &buf)) < 0) {
+            av_bprint_finalize(&bprint, NULL);
+            return ret;
+        }
+        if (buf) {
+            if (cnt++)
+                av_bprint_append_data(&bprint, &pairs_sep, 1);
+            av_bprintf(&bprint, "%s%c%s", o->name, key_val_sep, buf);
+            av_freep(&buf);
+        }
+    }
+    av_bprint_finalize(&bprint, buffer);
+    return 0;
+}
+
 #ifdef TEST
 
 typedef struct TestContext
@@ -1854,6 +1893,10 @@ typedef struct TestContext
     int64_t channel_layout;
     void *binary;
     int binary_size;
+    void *binary1;
+    int binary_size1;
+    void *binary2;
+    int binary_size2;
     int64_t num64;
     float flt;
     double dbl;
@@ -1882,6 +1925,8 @@ static const AVOption test_options[]= {
 {"color", "set color",   OFFSET(color), AV_OPT_TYPE_COLOR, {.str = "pink"}, 0, 0},
 {"cl", "set channel layout", OFFSET(channel_layout), AV_OPT_TYPE_CHANNEL_LAYOUT, {.i64 = AV_CH_LAYOUT_HEXAGONAL}, 0, INT64_MAX},
 {"bin", "set binary value",    OFFSET(binary),   AV_OPT_TYPE_BINARY,   {.str="62696e00"}, 0,        0 },
+{"bin1", "set binary value",   OFFSET(binary1),  AV_OPT_TYPE_BINARY,   {.str=NULL},       0,        0 },
+{"bin2", "set binary value",   OFFSET(binary2),  AV_OPT_TYPE_BINARY,   {.str=""},         0,        0 },
 {"num64",    "set num 64bit",  OFFSET(num64),    AV_OPT_TYPE_INT64,    {.i64 = 1},        0,        100 },
 {"flt",      "set float",      OFFSET(flt),      AV_OPT_TYPE_FLOAT,    {.dbl = 1.0/3},    0,        100 },
 {"dbl",      "set double",     OFFSET(dbl),      AV_OPT_TYPE_DOUBLE,   {.dbl = 1.0/3},    0,        100 },
@@ -1947,6 +1992,30 @@ int main(void)
         while (o = av_opt_next(&test_ctx, o)) {
             ret = av_opt_is_set_to_default_by_name(&test_ctx, o->name, 0);
             printf("name:%10s default:%d error:%s\n", o->name, !!ret, ret < 0 ? av_err2str(ret) : "");
+        }
+        av_opt_free(&test_ctx);
+    }
+
+    printf("\nTest av_opt_serialize()\n");
+    {
+        TestContext test_ctx = { 0 };
+        char *buf;
+        test_ctx.class = &test_class;
+
+        av_log_set_level(AV_LOG_QUIET);
+
+        av_opt_set_defaults(&test_ctx);
+        if (av_opt_serialize(&test_ctx, 0, 0, &buf, '=', ',') >= 0) {
+            printf("%s\n", buf);
+            av_opt_free(&test_ctx);
+            memset(&test_ctx, 0, sizeof(test_ctx));
+            test_ctx.class = &test_class;
+            av_set_options_string(&test_ctx, buf, "=", ",");
+            av_free(buf);
+            if (av_opt_serialize(&test_ctx, 0, 0, &buf, '=', ',') >= 0) {
+                printf("%s\n", buf);
+                av_free(buf);
+            }
         }
         av_opt_free(&test_ctx);
     }

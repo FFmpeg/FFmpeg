@@ -34,6 +34,8 @@ name:  duration default:0 error:
 name:     color default:0 error:
 name:        cl default:0 error:
 name:       bin default:0 error:
+name:      bin1 default:1 error:
+name:      bin2 default:1 error:
 name:     num64 default:0 error:
 name:       flt default:0 error:
 name:       dbl default:0 error:
@@ -53,9 +55,15 @@ name:  duration default:1 error:
 name:     color default:1 error:
 name:        cl default:1 error:
 name:       bin default:1 error:
+name:      bin1 default:1 error:
+name:      bin2 default:1 error:
 name:     num64 default:1 error:
 name:       flt default:1 error:
 name:       dbl default:1 error:
+
+Test av_opt_serialize()
+num=0,toggle=1,rational=1/1,string=default,flags=0x00000001,size=200x300,pix_fmt=0bgr,sample_fmt=s16,video_rate=25/1,duration=0:00:00.001000,color=0xffc0cbff,cl=0x137,bin=62696E00,bin1=,bin2=,num64=1,flt=0.333333,dbl=0.333333
+num=0,toggle=1,rational=1/1,string=default,flags=0x00000001,size=200x300,pix_fmt=0bgr,sample_fmt=s16,video_rate=25/1,duration=0:00:00.001000,color=0xffc0cbff,cl=0x137,bin=62696E00,bin1=,bin2=,num64=1,flt=0.333333,dbl=0.333333
 
 Testing av_set_options_string()
 OK    ''
