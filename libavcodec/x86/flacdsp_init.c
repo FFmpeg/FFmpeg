@@ -35,15 +35,22 @@ av_cold void ff_flacdsp_init_x86(FLACDSPContext *c, enum AVSampleFormat fmt,
 #if HAVE_YASM
     int cpu_flags = av_get_cpu_flags();
 
+#if CONFIG_FLAC_DECODER
     if (EXTERNAL_SSE4(cpu_flags)) {
-        if (bps > 16 && CONFIG_FLAC_DECODER)
+        if (bps > 16)
             c->lpc = ff_flac_lpc_32_sse4;
-        if (bps == 16 && CONFIG_FLAC_ENCODER && CONFIG_GPL)
-            c->lpc_encode = ff_flac_enc_lpc_16_sse4;
     }
     if (EXTERNAL_XOP(cpu_flags)) {
-        if (bps > 16 && CONFIG_FLAC_DECODER)
+        if (bps > 16)
             c->lpc = ff_flac_lpc_32_xop;
     }
 #endif
+
+#if CONFIG_FLAC_ENCODER
+    if (EXTERNAL_SSE4(cpu_flags)) {
+        if (CONFIG_GPL && bps == 16)
+            c->lpc_encode = ff_flac_enc_lpc_16_sse4;
+    }
+#endif
+#endif /* HAVE_YASM */
 }
