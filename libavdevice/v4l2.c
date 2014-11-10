@@ -108,7 +108,7 @@ static int device_open(AVFormatContext *ctx)
     struct video_data *s = ctx->priv_data;
     struct v4l2_capability cap;
     int fd;
-    int ret;
+    int err;
     int flags = O_RDWR;
 
 #define SET_WRAPPERS(prefix) do {       \
@@ -146,16 +146,16 @@ static int device_open(AVFormatContext *ctx)
 
     fd = v4l2_open(ctx->filename, flags, 0);
     if (fd < 0) {
-        ret = AVERROR(errno);
+        err = AVERROR(errno);
         av_log(ctx, AV_LOG_ERROR, "Cannot open video device %s: %s\n",
-               ctx->filename, av_err2str(ret));
-        return ret;
+               ctx->filename, av_err2str(err));
+        return err;
     }
 
     if (v4l2_ioctl(fd, VIDIOC_QUERYCAP, &cap) < 0) {
-        ret = AVERROR(errno);
+        err = AVERROR(errno);
         av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_QUERYCAP): %s\n",
-               av_err2str(ret));
+               av_err2str(err));
         goto fail;
     }
 
@@ -164,14 +164,14 @@ static int device_open(AVFormatContext *ctx)
 
     if (!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE)) {
         av_log(ctx, AV_LOG_ERROR, "Not a video capture device.\n");
-        ret = AVERROR(ENODEV);
+        err = AVERROR(ENODEV);
         goto fail;
     }
 
     if (!(cap.capabilities & V4L2_CAP_STREAMING)) {
         av_log(ctx, AV_LOG_ERROR,
                "The device does not support the streaming I/O method.\n");
-        ret = AVERROR(ENOSYS);
+        err = AVERROR(ENOSYS);
         goto fail;
     }
 
@@ -179,7 +179,7 @@ static int device_open(AVFormatContext *ctx)
 
 fail:
     v4l2_close(fd);
-    return ret;
+    return err;
 }
 
 static int device_init(AVFormatContext *ctx, int *width, int *height,
@@ -909,7 +909,8 @@ static int v4l2_read_header(AVFormatContext *ctx)
                "Querying the device for the current frame size\n");
         if (v4l2_ioctl(s->fd, VIDIOC_G_FMT, &fmt) < 0) {
             res = AVERROR(errno);
-            av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_G_FMT): %s\n", av_err2str(res));
+            av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_G_FMT): %s\n",
+                   av_err2str(res));
             goto fail;
         }
 
