@@ -23,6 +23,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "libavutil/intfloat.h"
+#include "libavutil/opt.h"
 #include "avformat.h"
 #include "internal.h"
 #include "ffm.h"
@@ -237,6 +238,8 @@ static int ffm2_read_header(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     AVCodecContext *codec;
     int ret;
+    int f_main = 0, f_cprv, f_stvi, f_stau;
+    AVCodec *enc;
 
     ffm->packet_size = avio_rb32(pb);
     if (ffm->packet_size != FFM_PACKET_SIZE) {
@@ -267,10 +270,15 @@ static int ffm2_read_header(AVFormatContext *s)
 
         switch(id) {
         case MKBETAG('M', 'A', 'I', 'N'):
+            if (f_main++) {
+                ret = AVERROR(EINVAL);
+                goto fail;
+            }
             avio_rb32(pb); /* nb_streams */
             avio_rb32(pb); /* total bitrate */
             break;
         case MKBETAG('C', 'O', 'M', 'M'):
+            f_cprv = f_stvi = f_stau = 0;
             st = avformat_new_stream(s, NULL);
             if (!st) {
                 ret = AVERROR(ENOMEM);
@@ -291,12 +299,13 @@ static int ffm2_read_header(AVFormatContext *s)
                 if (ff_get_extradata(codec, pb, avio_rb32(pb)) < 0)
                     return AVERROR(ENOMEM);
             }
-            avio_seek(pb, next, SEEK_SET);
-            id = avio_rb32(pb);
-            size = avio_rb32(pb);
-            next = avio_tell(pb) + size;
-            switch(id) {
+            break;
+            //TODO: reident
             case MKBETAG('S', 'T', 'V', 'I'):
+                if (f_stvi++) {
+                    ret = AVERROR(EINVAL);
+                    goto fail;
+                }
                 codec->time_base.num = avio_rb32(pb);
                 codec->time_base.den = avio_rb32(pb);
                 codec->width = avio_rb16(pb);
@@ -343,10 +352,27 @@ static int ffm2_read_header(AVFormatContext *s)
                 codec->refs = avio_rb32(pb);
                 break;
             case MKBETAG('S', 'T', 'A', 'U'):
+                if (f_stau++) {
+                    ret = AVERROR(EINVAL);
+                    goto fail;
+                }
                 codec->sample_rate = avio_rb32(pb);
                 codec->channels = avio_rl16(pb);
                 codec->frame_size = avio_rl16(pb);
                 break;
+        case MKBETAG('C', 'P', 'R', 'V'):
+            if (f_cprv++) {
+                ret = AVERROR(EINVAL);
+                goto fail;
+            }
+            enc = avcodec_find_encoder(codec->codec_id);
+            if (enc && enc->priv_data_size && enc->priv_class) {
+                st->recommended_encoder_configuration = av_malloc(size + 1);
+                if (!st->recommended_encoder_configuration) {
+                    ret = AVERROR(ENOMEM);
+                    goto fail;
+                }
+                avio_get_str(pb, size, st->recommended_encoder_configuration, size + 1);
             }
             break;
         }

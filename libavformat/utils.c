@@ -103,6 +103,7 @@ static int64_t wrap_timestamp(AVStream *st, int64_t timestamp)
 }
 
 MAKE_ACCESSORS(AVStream, stream, AVRational, r_frame_rate)
+MAKE_ACCESSORS(AVStream, stream, char *, recommended_encoder_configuration)
 MAKE_ACCESSORS(AVFormatContext, format, AVCodec *, video_codec)
 MAKE_ACCESSORS(AVFormatContext, format, AVCodec *, audio_codec)
 MAKE_ACCESSORS(AVFormatContext, format, AVCodec *, subtitle_codec)
@@ -3537,6 +3538,7 @@ void ff_free_stream(AVFormatContext *s, AVStream *st) {
     if (st->info)
         av_freep(&st->info->duration_error);
     av_freep(&st->info);
+    av_freep(&st->recommended_encoder_configuration);
     av_freep(&s->streams[ --s->nb_streams ]);
 }
 
