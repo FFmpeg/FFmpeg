@@ -30,6 +30,7 @@
 
 #include "libavutil/pixdesc.h"
 #include "libavutil/opt.h"
+#include "libavutil/avstring.h"
 #include "libavformat/internal.h"
 #include "libavutil/internal.h"
 #include "libavutil/time.h"
@@ -253,12 +254,13 @@ static void parse_device_name(AVFormatContext *s)
 {
     AVFContext *ctx = (AVFContext*)s->priv_data;
     char *tmp = av_strdup(s->filename);
+    char *save;
 
     if (tmp[0] != ':') {
-        ctx->video_filename = strtok(tmp,  ":");
-        ctx->audio_filename = strtok(NULL, ":");
+        ctx->video_filename = av_strtok(tmp,  ":", &save);
+        ctx->audio_filename = av_strtok(NULL, ":", &save);
     } else {
-        ctx->audio_filename = strtok(tmp,  ":");
+        ctx->audio_filename = av_strtok(tmp,  ":", &save);
     }
 }
 
