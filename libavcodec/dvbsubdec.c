@@ -757,7 +757,7 @@ static int dvbsub_read_8bit_string(uint8_t *destbuf, int dbuf_len,
     return pixels_read;
 }
 
-static void save_subtitle_set(AVCodecContext *avctx, AVSubtitle *sub, int *got_output)
+static int save_subtitle_set(AVCodecContext *avctx, AVSubtitle *sub, int *got_output)
 {
     DVBSubContext *ctx = avctx->priv_data;
     DVBSubRegionDisplay *display;
@@ -778,7 +778,7 @@ static void save_subtitle_set(AVCodecContext *avctx, AVSubtitle *sub, int *got_o
     /* Not touching AVSubtitles again*/
     if(sub->num_rects) {
         avpriv_request_sample(ctx, "Different Version of Segment asked Twice\n");
-        return;
+        return AVERROR_PATCHWELCOME;
     }
     for (display = ctx->display_list; display; display = display->next) {
         region = get_region(ctx, display->region_id);
@@ -846,6 +846,8 @@ static void save_subtitle_set(AVCodecContext *avctx, AVSubtitle *sub, int *got_o
             i++;
         }
     }
+
+    return 0;
 }
 
 static void dvbsub_parse_pixel_data_block(AVCodecContext *avctx, DVBSubObjectDisplay *display,
