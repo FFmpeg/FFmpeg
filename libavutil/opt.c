@@ -725,6 +725,10 @@ int av_opt_get(void *obj, const char *name, int search_flags, uint8_t **out_val)
             return AVERROR(EINVAL);
         if (!(*out_val = av_malloc(len*2 + 1)))
             return AVERROR(ENOMEM);
+        if (!len) {
+            *out_val[0] = '\0';
+            return 0;
+        }
         bin = *(uint8_t**)dst;
         for (i = 0; i < len; i++)
             snprintf(*out_val + i*2, 3, "%02X", bin[i]);
@@ -740,12 +744,14 @@ int av_opt_get(void *obj, const char *name, int search_flags, uint8_t **out_val)
         break;
     case AV_OPT_TYPE_DURATION:
         i64 = *(int64_t *)dst;
-        ret = snprintf(buf, sizeof(buf), "%"PRIi64"d:%02d:%02d.%06d",
+        ret = snprintf(buf, sizeof(buf), "%"PRIi64":%02d:%02d.%06d",
                        i64 / 3600000000, (int)((i64 / 60000000) % 60),
                        (int)((i64 / 1000000) % 60), (int)(i64 % 1000000));
         break;
     case AV_OPT_TYPE_COLOR:
-        ret = snprintf(buf, sizeof(buf), "0x%02x%02x%02x%02x", ((int *)dst)[0], ((int *)dst)[1], ((int *)dst)[2], ((int *)dst)[3]);
+        ret = snprintf(buf, sizeof(buf), "0x%02x%02x%02x%02x",
+                       (int)((uint8_t *)dst)[0], (int)((uint8_t *)dst)[1],
+                       (int)((uint8_t *)dst)[2], (int)((uint8_t *)dst)[3]);
         break;
     case AV_OPT_TYPE_CHANNEL_LAYOUT:
         i64 = *(int64_t *)dst;
