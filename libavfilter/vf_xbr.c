@@ -112,16 +112,19 @@ static uint32_t pixel_diff(uint32_t x, uint32_t y, const uint32_t *r2y)
 #define eq(A, B)\
     (df(A, B) < 155)\
 
-#define FILTRO(PE, PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, N0, N1, N2, N3) \
-     ex   = (PE!=PH && PE!=PF); \
+#define FILTRO(PE, PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, N0, N1, N2, N3) do { \
+     unsigned ex = (PE!=PH && PE!=PF); \
      if ( ex )\
      {\
-          e = (df(PE,PC)+df(PE,PG)+df(PI,H5)+df(PI,F4))+(df(PH,PF)<<2); \
-          i = (df(PH,PD)+df(PH,I5)+df(PF,I4)+df(PF,PB))+(df(PE,PI)<<2); \
+          unsigned e = (df(PE,PC)+df(PE,PG)+df(PI,H5)+df(PI,F4))+(df(PH,PF)<<2); \
+          unsigned i = (df(PH,PD)+df(PH,I5)+df(PF,I4)+df(PF,PB))+(df(PE,PI)<<2); \
           if ((e<i)  && ( !eq(PF,PB) && !eq(PH,PD) || eq(PE,PI) && (!eq(PF,I4) && !eq(PH,I5)) || eq(PE,PG) || eq(PE,PC)) )\
           {\
-              ke=df(PF,PG); ki=df(PH,PC); \
-              ex2 = (PE!=PC && PB!=PC); ex3 = (PE!=PG && PD!=PG); px = (df(PE,PF) <= df(PE,PH)) ? PF : PH; \
+              unsigned ke = df(PF,PG); \
+              unsigned ki = df(PH,PC); \
+              unsigned ex2 = (PE!=PC && PB!=PC); \
+              unsigned ex3 = (PE!=PG && PD!=PG); \
+              unsigned px = (df(PE,PF) <= df(PE,PH)) ? PF : PH; \
               if ( ((ke<<1)<=ki) && ex3 && (ke>=(ki<<1)) && ex2 ) \
               {\
                      LEFT_UP_2_2X(N3, N2, N1, px)\
@@ -144,14 +147,11 @@ static uint32_t pixel_diff(uint32_t x, uint32_t y, const uint32_t *r2y)
                ALPHA_BLEND_128_W( E[N3], ((df(PE,PF) <= df(PE,PH)) ? PF : PH)); \
           }\
      }\
+} while (0)
 
 static void xbr2x(AVFrame * input, AVFrame * output, const uint32_t * r2y)
 {
-    unsigned int e, i,px;
-    unsigned int ex, ex2, ex3;
-    unsigned int ke, ki;
     int x,y;
-
     int next_line = output->linesize[0]>>2;
 
     for (y = 0; y < input->height; y++) {
@@ -297,16 +297,19 @@ static void xbr2x(AVFrame * input, AVFrame * output, const uint32_t * r2y)
     ALPHA_BLEND_32_W(E[N5], PIXEL); \
     ALPHA_BLEND_32_W(E[N7], PIXEL); \
 
-#define FILTRO(PE, PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, N0, N1, N2, N3, N4, N5, N6, N7, N8) \
-     ex   = (PE!=PH && PE!=PF); \
+#define FILTRO(PE, PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, N0, N1, N2, N3, N4, N5, N6, N7, N8) do { \
+     unsigned ex = (PE!=PH && PE!=PF); \
      if ( ex )\
      {\
-          e = (df(PE,PC)+df(PE,PG)+df(PI,H5)+df(PI,F4))+(df(PH,PF)<<2); \
-          i = (df(PH,PD)+df(PH,I5)+df(PF,I4)+df(PF,PB))+(df(PE,PI)<<2); \
+          unsigned e = (df(PE,PC)+df(PE,PG)+df(PI,H5)+df(PI,F4))+(df(PH,PF)<<2); \
+          unsigned i = (df(PH,PD)+df(PH,I5)+df(PF,I4)+df(PF,PB))+(df(PE,PI)<<2); \
           if ((e<i)  && ( !eq(PF,PB) && !eq(PF,PC) || !eq(PH,PD) && !eq(PH,PG) || eq(PE,PI) && (!eq(PF,F4) && !eq(PF,I4) || !eq(PH,H5) && !eq(PH,I5)) || eq(PE,PG) || eq(PE,PC)) )\
           {\
-              ke=df(PF,PG); ki=df(PH,PC); \
-              ex2 = (PE!=PC && PB!=PC); ex3 = (PE!=PG && PD!=PG); px = (df(PE,PF) <= df(PE,PH)) ? PF : PH; \
+              unsigned ke = df(PF,PG); \
+              unsigned ki = df(PH,PC); \
+              unsigned ex2 = (PE!=PC && PB!=PC); \
+              unsigned ex3 = (PE!=PG && PD!=PG); \
+              unsigned px = (df(PE,PF) <= df(PE,PH)) ? PF : PH; \
               if ( ((ke<<1)<=ki) && ex3 && (ke>=(ki<<1)) && ex2 ) \
               {\
                      LEFT_UP_2_3X(N7, N5, N6, N2, N8, px)\
@@ -329,16 +332,12 @@ static void xbr2x(AVFrame * input, AVFrame * output, const uint32_t * r2y)
                ALPHA_BLEND_128_W( E[N8], ((df(PE,PF) <= df(PE,PH)) ? PF : PH)); \
           }\
      }\
+} while (0)
 
 static void xbr3x(AVFrame *input, AVFrame *output, const uint32_t *r2y)
 {
     const int nl = output->linesize[0]>>2;
     const int nl1 = nl + nl;
-
-    unsigned int e, i,px;
-    unsigned int ex, ex2, ex3;
-    unsigned int ke, ki;
-
     uint32_t pprev;
     uint32_t pprev2;
 
@@ -490,16 +489,19 @@ static void xbr3x(AVFrame *input, AVFrame *output, const uint32_t *r2y)
     ALPHA_BLEND_128_W(E[N14], PIXEL); \
     E[N15] = PIXEL; \
 
-#define FILTRO(PE, PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, N15, N14, N11, N3, N7, N10, N13, N12, N9, N6, N2, N1, N5, N8, N4, N0) \
-     ex   = (PE!=PH && PE!=PF); \
+#define FILTRO(PE, PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, N15, N14, N11, N3, N7, N10, N13, N12, N9, N6, N2, N1, N5, N8, N4, N0) do { \
+     unsigned ex   = (PE!=PH && PE!=PF); \
      if ( ex )\
      {\
-          e = (df(PE,PC)+df(PE,PG)+df(PI,H5)+df(PI,F4))+(df(PH,PF)<<2); \
-          i = (df(PH,PD)+df(PH,I5)+df(PF,I4)+df(PF,PB))+(df(PE,PI)<<2); \
+          unsigned e = (df(PE,PC)+df(PE,PG)+df(PI,H5)+df(PI,F4))+(df(PH,PF)<<2); \
+          unsigned i = (df(PH,PD)+df(PH,I5)+df(PF,I4)+df(PF,PB))+(df(PE,PI)<<2); \
           if ((e<i)  && ( !eq(PF,PB) && !eq(PH,PD) || eq(PE,PI) && (!eq(PF,I4) && !eq(PH,I5)) || eq(PE,PG) || eq(PE,PC)) )\
           {\
-              ke=df(PF,PG); ki=df(PH,PC); \
-              ex2 = (PE!=PC && PB!=PC); ex3 = (PE!=PG && PD!=PG); px = (df(PE,PF) <= df(PE,PH)) ? PF : PH; \
+              unsigned ke = df(PF,PG); \
+              unsigned ki = df(PH,PC); \
+              unsigned ex2 = (PE!=PC && PB!=PC); \
+              unsigned ex3 = (PE!=PG && PD!=PG); \
+              unsigned px = (df(PE,PF) <= df(PE,PH)) ? PF : PH; \
               if ( ((ke<<1)<=ki) && ex3 && (ke>=(ki<<1)) && ex2 ) \
               {\
                      LEFT_UP_2(N15, N14, N11, N13, N12, N10, N7, N3, px)\
@@ -522,6 +524,7 @@ static void xbr3x(AVFrame *input, AVFrame *output, const uint32_t *r2y)
                ALPHA_BLEND_128_W( E[N15], ((df(PE,PF) <= df(PE,PH)) ? PF : PH)); \
           }\
      }\
+} while (0)
 
 static void xbr4x(AVFrame *input, AVFrame *output, const uint32_t *r2y)
 {
@@ -529,11 +532,6 @@ static void xbr4x(AVFrame *input, AVFrame *output, const uint32_t *r2y)
     const int nl = output->linesize[0]>>2;
     const int nl1 = nl + nl;
     const int nl2 = nl1 + nl;
-
-    unsigned int e, i, px;
-    unsigned int ex, ex2, ex3;
-    unsigned int ke, ki;
-
     uint32_t pprev;
     uint32_t pprev2;
 
