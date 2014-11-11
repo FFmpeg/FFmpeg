@@ -510,6 +510,8 @@ static int shorten_decode_frame(AVCodecContext *avctx, void *data,
                 break;
             case FN_BITSHIFT:
                 s->bitshift = get_ur_golomb_shorten(&s->gb, BITSHIFTSIZE);
+                if (s->bitshift < 0)
+                    return AVERROR_INVALIDDATA;
                 break;
             case FN_BLOCKSIZE: {
                 unsigned blocksize = get_uint(s, av_log2(s->blocksize));
