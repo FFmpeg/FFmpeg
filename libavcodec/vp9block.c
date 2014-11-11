@@ -71,7 +71,8 @@ static void decode_mode(VP9Context *s, VP9Block *const b)
                 vp56_rac_get_prob_branchy(&s->c,
                                           s->prob.segpred[s->above_segpred_ctx[col] +
                                                           s->left_segpred_ctx[row7]]))) {
-        int pred = 8, x;
+        int pred = MAX_SEGMENT - 1;
+        int x;
 
         for (y = 0; y < h4; y++)
             for (x = 0; x < w4; x++)
