@@ -308,7 +308,9 @@ static int libopus_encode(AVCodecContext *avctx, AVPacket *avpkt,
     int ret;
 
     if (frame) {
-        ff_af_queue_add(&opus->afq, frame);
+        ret = ff_af_queue_add(&opus->afq, frame);
+        if (ret < 0)
+            return ret;
         if (frame->nb_samples < opus->opts.packet_size) {
             audio = opus->samples;
             memcpy(audio, frame->data[0], frame->nb_samples * sample_size);
