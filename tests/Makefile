@@ -38,7 +38,7 @@ tests/data/vsynth3.yuv: tests/videogen$(HOSTEXESUF) | tests/data
 
 tests/test_copy.ffmeta: TAG = COPY
 tests/test_copy.ffmeta: tests/data
-	$(M)cp -f $(SRC_PATH)/tests/test.ffmeta $(TARGET_PATH)/tests/test_copy.ffmeta
+	$(M)cp -f $(SRC_PATH)/tests/test.ffmeta tests/test_copy.ffmeta
 
 tests/data/ffprobe-test.nut: ffmpeg$(EXESUF) tests/test_copy.ffmeta
 	$(M)$(TARGET_EXEC) ./$< \
