@@ -1617,6 +1617,31 @@ static int copy_chapters(InputFile *ifile, OutputFile *ofile, int copy_metadata)
     return 0;
 }
 
+static int ffserver_streams_copy_context(AVCodecContext *dest, const AVCodecContext *src,
+                                         const char *configuration)
+{
+    int ret;
+    if ((ret = avcodec_copy_context(dest, src)) < 0)
+        return ret;
+    dest->codec = avcodec_find_encoder(src->codec_id);
+    if (!dest->codec)
+        return AVERROR(EINVAL);
+    if (!dest->codec->priv_class || !dest->codec->priv_data_size)
+        return 0;
+    if (!dest->priv_data) {
+        dest->priv_data = av_mallocz(dest->codec->priv_data_size);
+        if (!dest->priv_data)
+            return AVERROR(ENOMEM);
+        *(const AVClass**)dest->priv_data = dest->codec->priv_class;
+    }
+    av_opt_set_defaults(dest->priv_data);
+    if (av_set_options_string(dest->priv_data, configuration, "=", ",") < 0) {
+        av_log(dest, AV_LOG_WARNING, "Cannot copy private codec options. Using defaults.\n");
+        av_opt_set_defaults(dest->priv_data);
+    }
+    return 0;
+}
+
 static int read_ffserver_streams(OptionsContext *o, AVFormatContext *s, const char *filename)
 {
     int i, err;
@@ -1631,35 +1656,28 @@ static int read_ffserver_streams(OptionsContext *o, AVFormatContext *s, const ch
         AVStream *st;
         OutputStream *ost;
         AVCodec *codec;
-        AVCodecContext *avctx;
 
         codec = avcodec_find_encoder(ic->streams[i]->codec->codec_id);
         if (!codec) {
             av_log(s, AV_LOG_ERROR, "no encoder found for codec id %i\n", ic->streams[i]->codec->codec_id);
             return AVERROR(EINVAL);
         }
+        if (codec->type == AVMEDIA_TYPE_AUDIO)
+            opt_audio_codec(o, "c:a", codec->name);
+        else if (codec->type == AVMEDIA_TYPE_VIDEO)
+            opt_video_codec(o, "c:v", codec->name);
         ost   = new_output_stream(o, s, codec->type, -1);
         st    = ost->st;
-        avctx = st->codec;
-        ost->enc = codec;
 
-        // FIXME: a more elegant solution is needed
-        memcpy(st, ic->streams[i], sizeof(AVStream));
-        st->cur_dts = 0;
-        st->info = av_malloc(sizeof(*st->info));
-        memcpy(st->info, ic->streams[i]->info, sizeof(*st->info));
-        st->codec= avctx;
-        avcodec_copy_context(st->codec, ic->streams[i]->codec);
+        ffserver_streams_copy_context(st->codec, ic->streams[i]->codec,
+                                      av_stream_get_recommended_encoder_configuration(ic->streams[i]));
 
         if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO && !ost->stream_copy)
             choose_sample_fmt(st, codec);
         else if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO && !ost->stream_copy)
             choose_pixel_fmt(st, st->codec, codec, st->codec->pix_fmt);
-        avcodec_copy_context(ost->enc_ctx, st->codec);
-        if (ost->enc_ctx->priv_data) {
-            av_opt_free(ost->enc_ctx->priv_data);
-            av_freep(&ost->enc_ctx->priv_data);
-        }
+        ffserver_streams_copy_context(ost->enc_ctx, st->codec,
+                                      av_stream_get_recommended_encoder_configuration(ic->streams[i]));
     }
 
     avformat_close_input(&ic);
