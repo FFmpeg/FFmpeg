@@ -240,6 +240,7 @@ static int ffm2_read_header(AVFormatContext *s)
     int ret;
     int f_main = 0, f_cprv, f_stvi, f_stau;
     AVCodec *enc;
+    char *buffer;
 
     ffm->packet_size = avio_rb32(pb);
     if (ffm->packet_size != FFM_PACKET_SIZE) {
@@ -374,6 +375,34 @@ static int ffm2_read_header(AVFormatContext *s)
                 }
                 avio_get_str(pb, size, st->recommended_encoder_configuration, size + 1);
             }
+            break;
+        case MKBETAG('S', '2', 'V', 'I'):
+            if (f_stvi++) {
+                ret = AVERROR(EINVAL);
+                goto fail;
+            }
+            buffer = av_malloc(size);
+            if (!buffer) {
+                ret = AVERROR(ENOMEM);
+                goto fail;
+            }
+            avio_get_str(pb, INT_MAX, buffer, size);
+            av_set_options_string(codec, buffer, "=", ",");
+            av_freep(&buffer);
+            break;
+        case MKBETAG('S', '2', 'A', 'U'):
+            if (f_stau++) {
+                ret = AVERROR(EINVAL);
+                goto fail;
+            }
+            buffer = av_malloc(size);
+            if (!buffer) {
+                ret = AVERROR(ENOMEM);
+                goto fail;
+            }
+            avio_get_str(pb, INT_MAX, buffer, size);
+            av_set_options_string(codec, buffer, "=", ",");
+            av_freep(&buffer);
             break;
         }
         avio_seek(pb, next, SEEK_SET);
