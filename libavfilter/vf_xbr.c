@@ -91,22 +91,6 @@ static uint32_t pixel_diff(uint32_t x, uint32_t y, const uint32_t *r2y)
           (dst & RED_BLUE_MASK)) * 7) >>3))) | (GREEN_MASK & ((dst & GREEN_MASK) + \
           ((((src & GREEN_MASK) - (dst & GREEN_MASK)) * 7) >>3))))
 
-#define LEFT_UP_2_2X(N3, N2, N1, PIXEL)\
-    ALPHA_BLEND_224_W(E[N3], PIXEL); \
-    ALPHA_BLEND_64_W( E[N2], PIXEL); \
-    E[N1] = E[N2]; \
-
-#define LEFT_2_2X(N3, N2, PIXEL)\
-    ALPHA_BLEND_192_W(E[N3], PIXEL); \
-    ALPHA_BLEND_64_W( E[N2], PIXEL); \
-
-#define UP_2_2X(N3, N1, PIXEL)\
-    ALPHA_BLEND_192_W(E[N3], PIXEL); \
-    ALPHA_BLEND_64_W( E[N1], PIXEL); \
-
-#define DIA_2X(N3, PIXEL)\
-    ALPHA_BLEND_128_W(E[N3], PIXEL); \
-
 #define df(A, B) pixel_diff(A, B, r2y)
 
 #define eq(A, B)\
@@ -125,21 +109,18 @@ static uint32_t pixel_diff(uint32_t x, uint32_t y, const uint32_t *r2y)
               unsigned ex2 = (PE!=PC && PB!=PC); \
               unsigned ex3 = (PE!=PG && PD!=PG); \
               unsigned px = (df(PE,PF) <= df(PE,PH)) ? PF : PH; \
-              if ( ((ke<<1)<=ki) && ex3 && (ke>=(ki<<1)) && ex2 ) \
-              {\
-                     LEFT_UP_2_2X(N3, N2, N1, px)\
-              }\
-              else if ( ((ke<<1)<=ki) && ex3 ) \
-              {\
-                     LEFT_2_2X(N3, N2, px);\
-              }\
-              else if ( (ke>=(ki<<1)) && ex2 ) \
-              {\
-                     UP_2_2X(N3, N1, px);\
-              }\
-              else \
-              {\
-                     DIA_2X(N3, px);\
+              if (ke<<1 <= ki && ex3 && ke >= ki<<1 && ex2) { /* left-up */ \
+                  ALPHA_BLEND_224_W(E[N3], px); \
+                  ALPHA_BLEND_64_W( E[N2], px); \
+                  E[N1] = E[N2]; \
+              } else if (ke<<1 <= ki && ex3) { /* left */ \
+                  ALPHA_BLEND_192_W(E[N3], px); \
+                  ALPHA_BLEND_64_W( E[N2], px); \
+              } else if (ke >= ki<<1 && ex2) { /* up */ \
+                  ALPHA_BLEND_192_W(E[N3], px); \
+                  ALPHA_BLEND_64_W( E[N1], px); \
+              } else { /* diagonal */ \
+                  ALPHA_BLEND_128_W(E[N3], px); \
               }\
           }\
           else if (e<=i)\
@@ -273,30 +254,6 @@ static void xbr2x(AVFrame * input, AVFrame * output, const uint32_t * r2y)
 }
 #undef FILTRO
 
-#define LEFT_UP_2_3X(N7, N5, N6, N2, N8, PIXEL)\
-    ALPHA_BLEND_192_W(E[N7], PIXEL); \
-    ALPHA_BLEND_64_W( E[N6], PIXEL); \
-    E[N5] = E[N7]; \
-    E[N2] = E[N6]; \
-    E[N8] =  PIXEL;\
-
-#define LEFT_2_3X(N7, N5, N6, N8, PIXEL)\
-    ALPHA_BLEND_192_W(E[N7], PIXEL); \
-    ALPHA_BLEND_64_W( E[N5], PIXEL); \
-    ALPHA_BLEND_64_W( E[N6], PIXEL); \
-    E[N8] =  PIXEL;\
-
-#define UP_2_3X(N5, N7, N2, N8, PIXEL)\
-    ALPHA_BLEND_192_W(E[N5], PIXEL); \
-    ALPHA_BLEND_64_W( E[N7], PIXEL); \
-    ALPHA_BLEND_64_W( E[N2], PIXEL); \
-    E[N8] =  PIXEL;\
-
-#define DIA_3X(N8, N5, N7, PIXEL)\
-    ALPHA_BLEND_224_W(E[N8], PIXEL); \
-    ALPHA_BLEND_32_W(E[N5], PIXEL); \
-    ALPHA_BLEND_32_W(E[N7], PIXEL); \
-
 #define FILTRO(PE, PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, N0, N1, N2, N3, N4, N5, N6, N7, N8) do { \
      unsigned ex = (PE!=PH && PE!=PF); \
      if ( ex )\
@@ -310,21 +267,26 @@ static void xbr2x(AVFrame * input, AVFrame * output, const uint32_t * r2y)
               unsigned ex2 = (PE!=PC && PB!=PC); \
               unsigned ex3 = (PE!=PG && PD!=PG); \
               unsigned px = (df(PE,PF) <= df(PE,PH)) ? PF : PH; \
-              if ( ((ke<<1)<=ki) && ex3 && (ke>=(ki<<1)) && ex2 ) \
-              {\
-                     LEFT_UP_2_3X(N7, N5, N6, N2, N8, px)\
-              }\
-              else if ( ((ke<<1)<=ki) && ex3 ) \
-              {\
-                     LEFT_2_3X(N7, N5, N6, N8, px);\
-              }\
-              else if ( (ke>=(ki<<1)) && ex2 ) \
-              {\
-                     UP_2_3X(N5, N7, N2, N8, px);\
-              }\
-              else \
-              {\
-                     DIA_3X(N8, N5, N7, px);\
+              if (ke<<1 <= ki && ex3 && ke >= ki<<1 && ex2) { /* left-up */ \
+                  ALPHA_BLEND_192_W(E[N7], px); \
+                  ALPHA_BLEND_64_W( E[N6], px); \
+                  E[N5] = E[N7]; \
+                  E[N2] = E[N6]; \
+                  E[N8] = px;\
+              } else if (ke<<1 <= ki && ex3) { /* left */ \
+                  ALPHA_BLEND_192_W(E[N7], px); \
+                  ALPHA_BLEND_64_W( E[N5], px); \
+                  ALPHA_BLEND_64_W( E[N6], px); \
+                  E[N8] = px;\
+              } else if (ke >= ki<<1 && ex2) { /* up */ \
+                  ALPHA_BLEND_192_W(E[N5], px); \
+                  ALPHA_BLEND_64_W( E[N7], px); \
+                  ALPHA_BLEND_64_W( E[N2], px); \
+                  E[N8] = px;\
+              } else { /* diagonal */ \
+                  ALPHA_BLEND_224_W(E[N8], px); \
+                  ALPHA_BLEND_32_W(E[N5], px); \
+                  ALPHA_BLEND_32_W(E[N7], px); \
               }\
           }\
           else if (e<=i)\
@@ -461,34 +423,6 @@ static void xbr3x(AVFrame *input, AVFrame *output, const uint32_t *r2y)
 }
 #undef FILTRO
 
-#define LEFT_UP_2(N15, N14, N11, N13, N12, N10, N7, N3, PIXEL)\
-    ALPHA_BLEND_192_W(E[N13], PIXEL); \
-    ALPHA_BLEND_64_W( E[N12], PIXEL); \
-    E[N15] = E[N14] = E[N11] = PIXEL; \
-    E[N10] = E[N3] = E[N12]; \
-    E[N7]  = E[N13]; \
-
-#define LEFT_2(N15, N14, N11, N13, N12, N10, PIXEL)\
-    ALPHA_BLEND_192_W(E[N11], PIXEL); \
-    ALPHA_BLEND_192_W(E[N13], PIXEL); \
-    ALPHA_BLEND_64_W( E[N10], PIXEL); \
-    ALPHA_BLEND_64_W( E[N12], PIXEL); \
-    E[N14] = PIXEL; \
-    E[N15] = PIXEL; \
-
-#define UP_2(N15, N14, N11, N3, N7, N10, PIXEL)\
-    ALPHA_BLEND_192_W(E[N14], PIXEL); \
-    ALPHA_BLEND_192_W(E[N7 ], PIXEL); \
-    ALPHA_BLEND_64_W( E[N10], PIXEL); \
-    ALPHA_BLEND_64_W( E[N3 ], PIXEL); \
-    E[N11] = PIXEL; \
-    E[N15] = PIXEL; \
-
-#define DIA(N15, N14, N11, PIXEL)\
-    ALPHA_BLEND_128_W(E[N11], PIXEL); \
-    ALPHA_BLEND_128_W(E[N14], PIXEL); \
-    E[N15] = PIXEL; \
-
 #define FILTRO(PE, PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, N15, N14, N11, N3, N7, N10, N13, N12, N9, N6, N2, N1, N5, N8, N4, N0) do { \
      unsigned ex   = (PE!=PH && PE!=PF); \
      if ( ex )\
@@ -502,21 +436,30 @@ static void xbr3x(AVFrame *input, AVFrame *output, const uint32_t *r2y)
               unsigned ex2 = (PE!=PC && PB!=PC); \
               unsigned ex3 = (PE!=PG && PD!=PG); \
               unsigned px = (df(PE,PF) <= df(PE,PH)) ? PF : PH; \
-              if ( ((ke<<1)<=ki) && ex3 && (ke>=(ki<<1)) && ex2 ) \
-              {\
-                     LEFT_UP_2(N15, N14, N11, N13, N12, N10, N7, N3, px)\
-              }\
-              else if ( ((ke<<1)<=ki) && ex3 ) \
-              {\
-                     LEFT_2(N15, N14, N11, N13, N12, N10, px)\
-              }\
-              else if ( (ke>=(ki<<1)) && ex2 ) \
-              {\
-                     UP_2(N15, N14, N11, N3, N7, N10, px)\
-              }\
-              else \
-              {\
-                     DIA(N15, N14, N11, px)\
+              if (ke<<1 <= ki && ex3 && ke >= ki<<1 && ex2) { /* left-up */ \
+                  ALPHA_BLEND_192_W(E[N13], px); \
+                  ALPHA_BLEND_64_W( E[N12], px); \
+                  E[N15] = E[N14] = E[N11] = px; \
+                  E[N10] = E[N3] = E[N12]; \
+                  E[N7]  = E[N13]; \
+              } else if (ke<<1 <= ki && ex3) { /* left */ \
+                  ALPHA_BLEND_192_W(E[N11], px); \
+                  ALPHA_BLEND_192_W(E[N13], px); \
+                  ALPHA_BLEND_64_W( E[N10], px); \
+                  ALPHA_BLEND_64_W( E[N12], px); \
+                  E[N14] = px; \
+                  E[N15] = px; \
+              } else if (ke >= ki<<1 && ex2) { /* up */ \
+                  ALPHA_BLEND_192_W(E[N14], px); \
+                  ALPHA_BLEND_192_W(E[N7 ], px); \
+                  ALPHA_BLEND_64_W( E[N10], px); \
+                  ALPHA_BLEND_64_W( E[N3 ], px); \
+                  E[N11] = px; \
+                  E[N15] = px; \
+              } else { /* diagonal */ \
+                  ALPHA_BLEND_128_W(E[N11], px); \
+                  ALPHA_BLEND_128_W(E[N14], px); \
+                  E[N15] = px; \
               }\
           }\
           else if (e<=i)\
