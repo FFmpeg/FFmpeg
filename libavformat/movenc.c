@@ -1501,7 +1501,7 @@ static int mov_write_pasp_tag(AVIOContext *pb, MOVTrack *track)
 
 static int mov_write_colr_tag(AVIOContext *pb, MOVTrack *track)
 {
-	// Ref: https://developer.apple.com/library/mac/technotes/tn2162/_index.html#//apple_ref/doc/uid/DTS40013070-CH1-TNTAG9
+    // Ref: https://developer.apple.com/library/mac/technotes/tn2162/_index.html#//apple_ref/doc/uid/DTS40013070-CH1-TNTAG9
 
     if (track->enc->color_primaries == AVCOL_PRI_UNSPECIFIED &&
         track->enc->color_trc == AVCOL_TRC_UNSPECIFIED &&
@@ -1672,8 +1672,8 @@ static int mov_write_video_tag(AVIOContext *pb, MOVTrack *track)
         mov_write_pasp_tag(pb, track);
     }
 
-   	//avio_wb32(pb, 0); // padding for FCP - this is optional according to
-   	// http://hackipedia.org/File%20formats/Containers/QuickTime%20(multimedia)/pdf/Quicktime%20File%20Format%20(2012-08-14).pdf
+    //avio_wb32(pb, 0); // padding for FCP - this is optional according to
+    // http://hackipedia.org/File%20formats/Containers/QuickTime%20(multimedia)/pdf/Quicktime%20File%20Format%20(2012-08-14).pdf
 
     return update_size(pb, pos);
 }
