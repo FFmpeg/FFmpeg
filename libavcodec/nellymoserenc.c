@@ -231,7 +231,7 @@ static void get_exponent_dynamic(NellyMoserEncodeContext *s, float *cand, int *i
     float  (*opt )[OPT_SIZE] = s->opt ;
     uint8_t(*path)[OPT_SIZE] = s->path;
 
-    for (i = 0; i < NELLY_BANDS * OPT_SIZE; i++) {
+    for (i = 0; i < OPT_SIZE; i++) {
         opt[0][i] = INFINITY;
     }
 
