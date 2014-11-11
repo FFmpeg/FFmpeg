@@ -552,7 +552,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             ch_assign = av_get_channel_layout_channel_index(s->ch_layout,
                                                             channel);
         }
-        if (ch_assign > s->max_matrix_channel) {
+        if (ch_assign < 0 || ch_assign > s->max_matrix_channel) {
             avpriv_request_sample(m->avctx,
                                   "Assignment of matrix channel %d to invalid output channel %d",
                                   ch, ch_assign);
