@@ -147,10 +147,11 @@ static MacroBlock decode_macroblock(Escape124Context* s, GetBitContext* gb,
     // This function reads a maximum of 22 bits; the callers
     // guard this function appropriately
     unsigned block_index, depth;
-
-    if (get_bits1(gb)) {
+    int value = get_bits1(gb);
+    if (value) {
         static const char transitions[3][2] = { {2, 1}, {0, 2}, {1, 0} };
-        *codebook_index = transitions[*codebook_index][get_bits1(gb)];
+        value = get_bits1(gb);
+        *codebook_index = transitions[*codebook_index][value];
     }
 
     depth = s->codebooks[*codebook_index].depth;
