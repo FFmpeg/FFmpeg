@@ -302,7 +302,7 @@ void ff_vc1_mc_4mv_luma(VC1Context *v, int n, int dir, int avg)
     if (s->pict_type == AV_PICTURE_TYPE_P && n == 3 && v->field_mode) {
         int same_count = 0, opp_count = 0, k;
         int chosen_mv[2][4][2], f;
-        int tx, ty;
+        int tx = 0, ty = 0;
         for (k = 0; k < 4; k++) {
             f = v->mv_f[0][s->block_index[k] + v->blocks_off];
             chosen_mv[f][f ? opp_count : same_count][0] = s->mv[0][k][0];
