@@ -837,7 +837,7 @@ static void decode_postinit(H264Context *h, int setup_finished)
 
         av_display_rotation_set((int32_t *)rotation->data, angle);
         av_display_matrix_flip((int32_t *)rotation->data,
-                               h->sei_vflip, h->sei_hflip);
+                               h->sei_hflip, h->sei_vflip);
     }
 
     // FIXME do something with unavailable reference frames
