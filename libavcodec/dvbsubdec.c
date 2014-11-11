@@ -796,6 +796,9 @@ static int save_subtitle_set(AVCodecContext *avctx, AVSubtitle *sub, int *got_ou
     if (sub->num_rects > 0) {
 
         sub->rects = av_mallocz_array(sizeof(*sub->rects), sub->num_rects);
+        if (!sub->rects)
+            return AVERROR(ENOMEM);
+
         for(i=0; i<sub->num_rects; i++)
             sub->rects[i] = av_mallocz(sizeof(*sub->rects[i]));
 
@@ -838,9 +841,19 @@ static int save_subtitle_set(AVCodecContext *avctx, AVSubtitle *sub, int *got_ou
             }
 
             rect->pict.data[1] = av_mallocz(AVPALETTE_SIZE);
+            if (!rect->pict.data[1]) {
+                av_free(sub->rects);
+                return AVERROR(ENOMEM);
+            }
             memcpy(rect->pict.data[1], clut_table, (1 << region->depth) * sizeof(uint32_t));
 
             rect->pict.data[0] = av_malloc(region->buf_size);
+            if (!rect->pict.data[0]) {
+                av_free(rect->pict.data[1]);
+                av_free(sub->rects);
+                return AVERROR(ENOMEM);
+            }
+
             memcpy(rect->pict.data[0], region->pbuf, region->buf_size);
 
             i++;
