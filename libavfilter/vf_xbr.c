@@ -55,7 +55,7 @@ static const AVOption xbr_options[] = {
 
 AVFILTER_DEFINE_CLASS(xbr);
 
-static uint32_t df(uint32_t x, uint32_t y, const uint32_t *r2y)
+static uint32_t pixel_diff(uint32_t x, uint32_t y, const uint32_t *r2y)
 {
 #define YMASK 0xff0000
 #define UMASK 0x00ff00
@@ -107,19 +107,21 @@ static uint32_t df(uint32_t x, uint32_t y, const uint32_t *r2y)
 #define DIA_2X(N3, PIXEL)\
     ALPHA_BLEND_128_W(E[N3], PIXEL); \
 
-#define eq(A, B, r2y)\
-    (df(A, B, r2y) < 155)\
+#define df(A, B) pixel_diff(A, B, r2y)
 
-#define FILTRO(PE, PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, N0, N1, N2, N3,r2y) \
+#define eq(A, B)\
+    (df(A, B) < 155)\
+
+#define FILTRO(PE, PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, N0, N1, N2, N3) \
      ex   = (PE!=PH && PE!=PF); \
      if ( ex )\
      {\
-          e = (df(PE,PC,r2y)+df(PE,PG,r2y)+df(PI,H5,r2y)+df(PI,F4,r2y))+(df(PH,PF,r2y)<<2); \
-          i = (df(PH,PD,r2y)+df(PH,I5,r2y)+df(PF,I4,r2y)+df(PF,PB,r2y))+(df(PE,PI,r2y)<<2); \
-          if ((e<i)  && ( !eq(PF,PB,r2y) && !eq(PH,PD,r2y) || eq(PE,PI,r2y) && (!eq(PF,I4,r2y) && !eq(PH,I5,r2y)) || eq(PE,PG,r2y) || eq(PE,PC,r2y)) )\
+          e = (df(PE,PC)+df(PE,PG)+df(PI,H5)+df(PI,F4))+(df(PH,PF)<<2); \
+          i = (df(PH,PD)+df(PH,I5)+df(PF,I4)+df(PF,PB))+(df(PE,PI)<<2); \
+          if ((e<i)  && ( !eq(PF,PB) && !eq(PH,PD) || eq(PE,PI) && (!eq(PF,I4) && !eq(PH,I5)) || eq(PE,PG) || eq(PE,PC)) )\
           {\
-              ke=df(PF,PG,r2y); ki=df(PH,PC,r2y); \
-              ex2 = (PE!=PC && PB!=PC); ex3 = (PE!=PG && PD!=PG); px = (df(PE,PF,r2y) <= df(PE,PH,r2y)) ? PF : PH; \
+              ke=df(PF,PG); ki=df(PH,PC); \
+              ex2 = (PE!=PC && PB!=PC); ex3 = (PE!=PG && PD!=PG); px = (df(PE,PF) <= df(PE,PH)) ? PF : PH; \
               if ( ((ke<<1)<=ki) && ex3 && (ke>=(ki<<1)) && ex2 ) \
               {\
                      LEFT_UP_2_2X(N3, N2, N1, px)\
@@ -139,7 +141,7 @@ static uint32_t df(uint32_t x, uint32_t y, const uint32_t *r2y)
           }\
           else if (e<=i)\
           {\
-               ALPHA_BLEND_128_W( E[N3], ((df(PE,PF,r2y) <= df(PE,PH,r2y)) ? PF : PH)); \
+               ALPHA_BLEND_128_W( E[N3], ((df(PE,PF) <= df(PE,PH)) ? PF : PH)); \
           }\
      }\
 
@@ -249,10 +251,10 @@ static void xbr2x(AVFrame * input, AVFrame * output, const uint32_t * r2y)
 
             E[0] = E[1] = E[next_line] = E[next_line + 1] = PE; // 0, 1, 2, 3
 
-            FILTRO(PE, PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, 0, 1, next_line, next_line+1,r2y);
-            FILTRO(PE, PC, PF, PB, PI, PA, PH, PD, PG, I4, A1, I5, H5, A0, D0, B1, C1, F4, C4, G5, G0, next_line, 0, next_line+1, 1,r2y);
-            FILTRO(PE, PA, PB, PD, PC, PG, PF, PH, PI, C1, G0, C4, F4, G5, H5, D0, A0, B1, A1, I4, I5, next_line+1, next_line, 1, 0,r2y);
-            FILTRO(PE, PG, PD, PH, PA, PI, PB, PF, PC, A0, I5, A1, B1, I4, F4, H5, G5, D0, G0, C1, C4, 1, next_line+1, 0, next_line,r2y);
+            FILTRO(PE, PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, 0, 1, next_line, next_line+1);
+            FILTRO(PE, PC, PF, PB, PI, PA, PH, PD, PG, I4, A1, I5, H5, A0, D0, B1, C1, F4, C4, G5, G0, next_line, 0, next_line+1, 1);
+            FILTRO(PE, PA, PB, PD, PC, PG, PF, PH, PI, C1, G0, C4, F4, G5, H5, D0, A0, B1, A1, I4, I5, next_line+1, next_line, 1, 0);
+            FILTRO(PE, PG, PD, PH, PA, PI, PB, PF, PC, A0, I5, A1, B1, I4, F4, H5, G5, D0, G0, C1, C4, 1, next_line+1, 0, next_line);
 
             sa0 += 1;
             sa1 += 1;
@@ -295,16 +297,16 @@ static void xbr2x(AVFrame * input, AVFrame * output, const uint32_t * r2y)
     ALPHA_BLEND_32_W(E[N5], PIXEL); \
     ALPHA_BLEND_32_W(E[N7], PIXEL); \
 
-#define FILTRO(PE, PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, N0, N1, N2, N3, N4, N5, N6, N7, N8,r2y) \
+#define FILTRO(PE, PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, N0, N1, N2, N3, N4, N5, N6, N7, N8) \
      ex   = (PE!=PH && PE!=PF); \
      if ( ex )\
      {\
-          e = (df(PE,PC,r2y)+df(PE,PG,r2y)+df(PI,H5,r2y)+df(PI,F4,r2y))+(df(PH,PF,r2y)<<2); \
-          i = (df(PH,PD,r2y)+df(PH,I5,r2y)+df(PF,I4,r2y)+df(PF,PB,r2y))+(df(PE,PI,r2y)<<2); \
-          if ((e<i)  && ( !eq(PF,PB,r2y) && !eq(PF,PC,r2y) || !eq(PH,PD,r2y) && !eq(PH,PG,r2y) || eq(PE,PI,r2y) && (!eq(PF,F4,r2y) && !eq(PF,I4,r2y) || !eq(PH,H5,r2y) && !eq(PH,I5,r2y)) || eq(PE,PG,r2y) || eq(PE,PC,r2y)) )\
+          e = (df(PE,PC)+df(PE,PG)+df(PI,H5)+df(PI,F4))+(df(PH,PF)<<2); \
+          i = (df(PH,PD)+df(PH,I5)+df(PF,I4)+df(PF,PB))+(df(PE,PI)<<2); \
+          if ((e<i)  && ( !eq(PF,PB) && !eq(PF,PC) || !eq(PH,PD) && !eq(PH,PG) || eq(PE,PI) && (!eq(PF,F4) && !eq(PF,I4) || !eq(PH,H5) && !eq(PH,I5)) || eq(PE,PG) || eq(PE,PC)) )\
           {\
-              ke=df(PF,PG,r2y); ki=df(PH,PC,r2y); \
-              ex2 = (PE!=PC && PB!=PC); ex3 = (PE!=PG && PD!=PG); px = (df(PE,PF,r2y) <= df(PE,PH,r2y)) ? PF : PH; \
+              ke=df(PF,PG); ki=df(PH,PC); \
+              ex2 = (PE!=PC && PB!=PC); ex3 = (PE!=PG && PD!=PG); px = (df(PE,PF) <= df(PE,PH)) ? PF : PH; \
               if ( ((ke<<1)<=ki) && ex3 && (ke>=(ki<<1)) && ex2 ) \
               {\
                      LEFT_UP_2_3X(N7, N5, N6, N2, N8, px)\
@@ -324,7 +326,7 @@ static void xbr2x(AVFrame * input, AVFrame * output, const uint32_t * r2y)
           }\
           else if (e<=i)\
           {\
-               ALPHA_BLEND_128_W( E[N8], ((df(PE,PF,r2y) <= df(PE,PH,r2y)) ? PF : PH)); \
+               ALPHA_BLEND_128_W( E[N8], ((df(PE,PF) <= df(PE,PH)) ? PF : PH)); \
           }\
      }\
 
@@ -438,10 +440,10 @@ static void xbr3x(AVFrame *input, AVFrame *output, const uint32_t *r2y)
             E[nl]  = E[nl+1]  = E[nl+2]  = PE; // 3, 4, 5
             E[nl1] = E[nl1+1] = E[nl1+2] = PE; // 6, 7, 8
 
-            FILTRO(PE, PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, 0, 1, 2, nl, nl+1, nl+2, nl1, nl1+1, nl1+2,r2y);
-            FILTRO(PE, PC, PF, PB, PI, PA, PH, PD, PG, I4, A1, I5, H5, A0, D0, B1, C1, F4, C4, G5, G0, nl1, nl, 0, nl1+1, nl+1, 1, nl1+2, nl+2, 2,r2y);
-            FILTRO(PE, PA, PB, PD, PC, PG, PF, PH, PI, C1, G0, C4, F4, G5, H5, D0, A0, B1, A1, I4, I5, nl1+2, nl1+1, nl1, nl+2, nl+1, nl, 2, 1, 0,r2y);
-            FILTRO(PE, PG, PD, PH, PA, PI, PB, PF, PC, A0, I5, A1, B1, I4, F4, H5, G5, D0, G0, C1, C4, 2, nl+2, nl1+2, 1, nl+1, nl1+1, 0, nl, nl1,r2y);
+            FILTRO(PE, PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, 0, 1, 2, nl, nl+1, nl+2, nl1, nl1+1, nl1+2);
+            FILTRO(PE, PC, PF, PB, PI, PA, PH, PD, PG, I4, A1, I5, H5, A0, D0, B1, C1, F4, C4, G5, G0, nl1, nl, 0, nl1+1, nl+1, 1, nl1+2, nl+2, 2);
+            FILTRO(PE, PA, PB, PD, PC, PG, PF, PH, PI, C1, G0, C4, F4, G5, H5, D0, A0, B1, A1, I4, I5, nl1+2, nl1+1, nl1, nl+2, nl+1, nl, 2, 1, 0);
+            FILTRO(PE, PG, PD, PH, PA, PI, PB, PF, PC, A0, I5, A1, B1, I4, F4, H5, G5, D0, G0, C1, C4, 2, nl+2, nl1+2, 1, nl+1, nl1+1, 0, nl, nl1);
 
             sa0 += 1;
             sa1 += 1;
@@ -488,16 +490,16 @@ static void xbr3x(AVFrame *input, AVFrame *output, const uint32_t *r2y)
     ALPHA_BLEND_128_W(E[N14], PIXEL); \
     E[N15] = PIXEL; \
 
-#define FILTRO(PE, PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, N15, N14, N11, N3, N7, N10, N13, N12, N9, N6, N2, N1, N5, N8, N4, N0,r2y) \
+#define FILTRO(PE, PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, N15, N14, N11, N3, N7, N10, N13, N12, N9, N6, N2, N1, N5, N8, N4, N0) \
      ex   = (PE!=PH && PE!=PF); \
      if ( ex )\
      {\
-          e = (df(PE,PC,r2y)+df(PE,PG,r2y)+df(PI,H5,r2y)+df(PI,F4,r2y))+(df(PH,PF,r2y)<<2); \
-          i = (df(PH,PD,r2y)+df(PH,I5,r2y)+df(PF,I4,r2y)+df(PF,PB,r2y))+(df(PE,PI,r2y)<<2); \
-          if ((e<i)  && ( !eq(PF,PB,r2y) && !eq(PH,PD,r2y) || eq(PE,PI,r2y) && (!eq(PF,I4,r2y) && !eq(PH,I5,r2y)) || eq(PE,PG,r2y) || eq(PE,PC,r2y)) )\
+          e = (df(PE,PC)+df(PE,PG)+df(PI,H5)+df(PI,F4))+(df(PH,PF)<<2); \
+          i = (df(PH,PD)+df(PH,I5)+df(PF,I4)+df(PF,PB))+(df(PE,PI)<<2); \
+          if ((e<i)  && ( !eq(PF,PB) && !eq(PH,PD) || eq(PE,PI) && (!eq(PF,I4) && !eq(PH,I5)) || eq(PE,PG) || eq(PE,PC)) )\
           {\
-              ke=df(PF,PG,r2y); ki=df(PH,PC,r2y); \
-              ex2 = (PE!=PC && PB!=PC); ex3 = (PE!=PG && PD!=PG); px = (df(PE,PF,r2y) <= df(PE,PH,r2y)) ? PF : PH; \
+              ke=df(PF,PG); ki=df(PH,PC); \
+              ex2 = (PE!=PC && PB!=PC); ex3 = (PE!=PG && PD!=PG); px = (df(PE,PF) <= df(PE,PH)) ? PF : PH; \
               if ( ((ke<<1)<=ki) && ex3 && (ke>=(ki<<1)) && ex2 ) \
               {\
                      LEFT_UP_2(N15, N14, N11, N13, N12, N10, N7, N3, px)\
@@ -517,7 +519,7 @@ static void xbr3x(AVFrame *input, AVFrame *output, const uint32_t *r2y)
           }\
           else if (e<=i)\
           {\
-               ALPHA_BLEND_128_W( E[N15], ((df(PE,PF,r2y) <= df(PE,PH,r2y)) ? PF : PH)); \
+               ALPHA_BLEND_128_W( E[N15], ((df(PE,PF) <= df(PE,PH)) ? PF : PH)); \
           }\
      }\
 
@@ -634,10 +636,10 @@ static void xbr4x(AVFrame *input, AVFrame *output, const uint32_t *r2y)
             E[nl1] = E[nl1+1] = E[nl1+2] = E[nl1+3] = PE; //  8,  9, 10, 11
             E[nl2] = E[nl2+1] = E[nl2+2] = E[nl2+3] = PE; // 12, 13, 14, 15
 
-            FILTRO(PE, PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, nl2+3, nl2+2, nl1+3,  3,  nl+3, nl1+2, nl2+1, nl2,  nl1+1,  nl+2, 2,  1, nl+1, nl1, nl, 0,r2y);
-            FILTRO(PE, PC, PF, PB, PI, PA, PH, PD, PG, I4, A1, I5, H5, A0, D0, B1, C1, F4, C4, G5, G0,  3,  nl+3,  2,  0,  1,  nl+2, nl1+3, nl2+3, nl1+2,  nl+1, nl,  nl1, nl1+1,nl2+2,nl2+1,nl2,r2y);
-            FILTRO(PE, PA, PB, PD, PC, PG, PF, PH, PI, C1, G0, C4, F4, G5, H5, D0, A0, B1, A1, I4, I5,  0,  1,  nl, nl2,  nl1,  nl+1,  2,  3,  nl+2,  nl1+1, nl2+1,nl2+2,nl1+2, nl+3,nl1+3,nl2+3,r2y);
-            FILTRO(PE, PG, PD, PH, PA, PI, PB, PF, PC, A0, I5, A1, B1, I4, F4, H5, G5, D0, G0, C1, C4, nl2,  nl1, nl2+1, nl2+3, nl2+2,  nl1+1,  nl,  0,  nl+1, nl1+2, nl1+3, nl+3, nl+2, 1, 2, 3,r2y);
+            FILTRO(PE, PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, nl2+3, nl2+2, nl1+3,  3,  nl+3, nl1+2, nl2+1, nl2,  nl1+1,  nl+2, 2,  1, nl+1, nl1, nl, 0);
+            FILTRO(PE, PC, PF, PB, PI, PA, PH, PD, PG, I4, A1, I5, H5, A0, D0, B1, C1, F4, C4, G5, G0,  3,  nl+3,  2,  0,  1,  nl+2, nl1+3, nl2+3, nl1+2,  nl+1, nl,  nl1, nl1+1,nl2+2,nl2+1,nl2);
+            FILTRO(PE, PA, PB, PD, PC, PG, PF, PH, PI, C1, G0, C4, F4, G5, H5, D0, A0, B1, A1, I4, I5,  0,  1,  nl, nl2,  nl1,  nl+1,  2,  3,  nl+2,  nl1+1, nl2+1,nl2+2,nl1+2, nl+3,nl1+3,nl2+3);
+            FILTRO(PE, PG, PD, PH, PA, PI, PB, PF, PC, A0, I5, A1, B1, I4, F4, H5, G5, D0, G0, C1, C4, nl2,  nl1, nl2+1, nl2+3, nl2+2,  nl1+1,  nl,  0,  nl+1, nl1+2, nl1+3, nl+3, nl+2, 1, 2, 3);
 
             sa0 += 1;
             sa1 += 1;
