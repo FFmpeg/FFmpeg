@@ -497,6 +497,7 @@ Protocols:
   libssh.c                              Lukasz Marek
   mms*.c                                Ronald S. Bultje
   udp.c                                 Luca Abeni
+  icecast.c                             Marvin Scholz
 
 
 libswresample
