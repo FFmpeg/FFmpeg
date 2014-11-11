@@ -128,7 +128,7 @@ static int lag_decode_prob(GetBitContext *gb, uint32_t *value)
     }
 
     val  = get_bits_long(gb, bits);
-    val |= 1 << bits;
+    val |= 1U << bits;
 
     *value = val - 1;
 
