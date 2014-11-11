@@ -315,14 +315,13 @@ static int sad8_altivec(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
 static int sse8_altivec(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
                         int line_size, int h)
 {
-    int i, s;
+    int i;
+    int  __attribute__((aligned(16))) s;
     const vector unsigned int zero =
         (const vector unsigned int) vec_splat_u32(0);
     const vector unsigned char permclear =
         (vector unsigned char)
         { 255, 255, 255, 255, 255, 255, 255, 255, 0, 0, 0, 0, 0, 0, 0, 0 };
-    vector unsigned char perm1 = vec_lvsl(0, pix1);
-    vector unsigned char perm2 = vec_lvsl(0, pix2);
     vector unsigned int sum = (vector unsigned int) vec_splat_u32(0);
     vector signed int sumsqr;
 
@@ -330,14 +329,8 @@ static int sse8_altivec(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
         /* Read potentially unaligned pixels into t1 and t2.
          * Since we're reading 16 pixels, and actually only want 8,
          * mask out the last 8 pixels. The 0s don't change the sum. */
-        vector unsigned char pix1l = vec_ld(0, pix1);
-        vector unsigned char pix1r = vec_ld(7, pix1);
-        vector unsigned char pix2l = vec_ld(0, pix2);
-        vector unsigned char pix2r = vec_ld(7, pix2);
-        vector unsigned char t1 = vec_and(vec_perm(pix1l, pix1r, perm1),
-                                          permclear);
-        vector unsigned char t2 = vec_and(vec_perm(pix2l, pix2r, perm2),
-                                          permclear);
+        vector unsigned char t1 = vec_and(VEC_LD(0, pix1), permclear);
+        vector unsigned char t2 = vec_and(VEC_LD(0, pix2), permclear);
 
         /* Since we want to use unsigned chars, we can take advantage
          * of the fact that abs(a - b) ^ 2 = (a - b) ^ 2. */
@@ -405,7 +398,7 @@ static int sse16_altivec(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
 static int hadamard8_diff8x8_altivec(MpegEncContext *s, uint8_t *dst,
                                      uint8_t *src, int stride, int h)
 {
-    int sum;
+    int __attribute__((aligned(16))) sum;
     register const vector unsigned char vzero =
         (const vector unsigned char) vec_splat_u8(0);
     register vector signed short temp0, temp1, temp2, temp3, temp4,
@@ -430,24 +423,19 @@ static int hadamard8_diff8x8_altivec(MpegEncContext *s, uint8_t *dst,
             { 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F,
               0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07 };
 
+
 #define ONEITERBUTTERFLY(i, res)                                            \
     {                                                                       \
-        register vector unsigned char src1 = vec_ld(stride * i, src);       \
-        register vector unsigned char src2 = vec_ld(stride * i + 15, src);  \
-        register vector unsigned char srcO =                                \
-            vec_perm(src1, src2, vec_lvsl(stride * i, src));                \
-        register vector unsigned char dst1 = vec_ld(stride * i, dst);       \
-        register vector unsigned char dst2 = vec_ld(stride * i + 15, dst);  \
-        register vector unsigned char dstO =                                \
-            vec_perm(dst1, dst2, vec_lvsl(stride * i, dst));                \
+        register vector unsigned char srcO =  unaligned_load(stride * i, src);  \
+        register vector unsigned char dstO = unaligned_load(stride * i, dst);\
                                                                             \
         /* Promote the unsigned chars to signed shorts. */                  \
         /* We're in the 8x8 function, we only care for the first 8. */      \
         register vector signed short srcV =                                 \
-            (vector signed short) vec_mergeh((vector signed char) vzero,    \
+            (vector signed short) VEC_MERGEH((vector signed char) vzero,    \
                                              (vector signed char) srcO);    \
         register vector signed short dstV =                                 \
-            (vector signed short) vec_mergeh((vector signed char) vzero,    \
+            (vector signed short) VEC_MERGEH((vector signed char) vzero,    \
                                              (vector signed char) dstO);    \
                                                                             \
         /* subtractions inside the first butterfly */                       \
@@ -459,6 +447,7 @@ static int hadamard8_diff8x8_altivec(MpegEncContext *s, uint8_t *dst,
         register vector signed short op3  = vec_perm(but2, but2, perm3);    \
         res  = vec_mladd(but2, vprod3, op3);                                \
     }
+
         ONEITERBUTTERFLY(0, temp0);
         ONEITERBUTTERFLY(1, temp1);
         ONEITERBUTTERFLY(2, temp2);
@@ -508,6 +497,7 @@ static int hadamard8_diff8x8_altivec(MpegEncContext *s, uint8_t *dst,
         vsum = vec_sum4s(vec_abs(line7C), vsum);
         vsum = vec_sums(vsum, (vector signed int) vzero);
         vsum = vec_splat(vsum, 3);
+
         vec_ste(vsum, 0, &sum);
     }
     return sum;
@@ -534,7 +524,7 @@ static int hadamard8_diff8x8_altivec(MpegEncContext *s, uint8_t *dst,
 static int hadamard8_diff16x8_altivec(MpegEncContext *s, uint8_t *dst,
                                       uint8_t *src, int stride, int h)
 {
-    int sum;
+    int __attribute__((aligned(16))) sum;
     register vector signed short
         temp0 __asm__ ("v0"),
         temp1 __asm__ ("v1"),
@@ -582,31 +572,23 @@ static int hadamard8_diff16x8_altivec(MpegEncContext *s, uint8_t *dst,
 
 #define ONEITERBUTTERFLY(i, res1, res2)                                     \
     {                                                                       \
-        register vector unsigned char src1 __asm__ ("v22") =                \
-            vec_ld(stride * i, src);                                        \
-        register vector unsigned char src2 __asm__ ("v23") =                \
-            vec_ld(stride * i + 16, src);                                   \
         register vector unsigned char srcO __asm__ ("v22") =                \
-            vec_perm(src1, src2, vec_lvsl(stride * i, src));                \
-        register vector unsigned char dst1 __asm__ ("v24") =                \
-            vec_ld(stride * i, dst);                                        \
-        register vector unsigned char dst2 __asm__ ("v25") =                \
-            vec_ld(stride * i + 16, dst);                                   \
+            unaligned_load(stride * i, src);                                    \
         register vector unsigned char dstO __asm__ ("v23") =                \
-            vec_perm(dst1, dst2, vec_lvsl(stride * i, dst));                \
+            unaligned_load(stride * i, dst);\
                                                                             \
         /* Promote the unsigned chars to signed shorts. */                  \
         register vector signed short srcV __asm__ ("v24") =                 \
-            (vector signed short) vec_mergeh((vector signed char) vzero,    \
+            (vector signed short) VEC_MERGEH((vector signed char) vzero,    \
                                              (vector signed char) srcO);    \
         register vector signed short dstV __asm__ ("v25") =                 \
-            (vector signed short) vec_mergeh((vector signed char) vzero,    \
+            (vector signed short) VEC_MERGEH((vector signed char) vzero,    \
                                              (vector signed char) dstO);    \
         register vector signed short srcW __asm__ ("v26") =                 \
-            (vector signed short) vec_mergel((vector signed char) vzero,    \
+            (vector signed short) VEC_MERGEL((vector signed char) vzero,    \
                                              (vector signed char) srcO);    \
         register vector signed short dstW __asm__ ("v27") =                 \
-            (vector signed short) vec_mergel((vector signed char) vzero,    \
+            (vector signed short) VEC_MERGEL((vector signed char) vzero,    \
                                              (vector signed char) dstO);    \
                                                                             \
         /* subtractions inside the first butterfly */                       \
@@ -637,6 +619,7 @@ static int hadamard8_diff16x8_altivec(MpegEncContext *s, uint8_t *dst,
         res1 = vec_mladd(but2, vprod3, op3);                                \
         res2 = vec_mladd(but2S, vprod3, op3S);                              \
     }
+
         ONEITERBUTTERFLY(0, temp0, temp0S);
         ONEITERBUTTERFLY(1, temp1, temp1S);
         ONEITERBUTTERFLY(2, temp2, temp2S);
@@ -723,6 +706,7 @@ static int hadamard8_diff16x8_altivec(MpegEncContext *s, uint8_t *dst,
         vsum = vec_sum4s(vec_abs(line7CS), vsum);
         vsum = vec_sums(vsum, (vector signed int) vzero);
         vsum = vec_splat(vsum, 3);
+
         vec_ste(vsum, 0, &sum);
     }
     return sum;
