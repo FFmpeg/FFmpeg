@@ -2434,7 +2434,7 @@ static int set_side_data(HEVCContext *s)
 
         av_display_rotation_set((int32_t *)rotation->data, angle);
         av_display_matrix_flip((int32_t *)rotation->data,
-                               s->sei_vflip, s->sei_hflip);
+                               s->sei_hflip, s->sei_vflip);
     }
 
     return 0;
