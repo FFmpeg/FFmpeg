@@ -54,6 +54,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
         break;
     case AV_PIX_FMT_RGB48LE:
         s->big_endian = 0;
+        /* fall-through */
     case AV_PIX_FMT_RGB48BE:
         s->bits_per_component = avctx->bits_per_raw_sample ? avctx->bits_per_raw_sample : 16;
         break;
