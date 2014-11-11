@@ -130,6 +130,8 @@ static int icecast_open(URLContext *h, const char *uri, int flags)
     av_dict_set(&opt_dict, "send_expect_100", s->legacy_icecast ? "0" : "1", 0);
     if (NOT_EMPTY(s->content_type))
         av_dict_set(&opt_dict, "content_type", s->content_type, 0);
+    else
+        av_dict_set(&opt_dict, "content_type", "audio/mpeg", 0);
     if (NOT_EMPTY(s->user_agent))
         av_dict_set(&opt_dict, "user_agent", s->user_agent, 0);
 
