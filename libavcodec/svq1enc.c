@@ -580,8 +580,12 @@ static int svq1_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     }
 
     if (!s->current_picture->data[0]) {
-        ff_get_buffer(avctx, s->current_picture, 0);
-        ff_get_buffer(avctx, s->last_picture, 0);
+        ret = ff_get_buffer(avctx, s->current_picture, 0);
+        if (ret < 0)
+            return ret;
+        ret = ff_get_buffer(avctx, s->last_picture, 0);
+        if (ret < 0)
+            return ret;
         s->scratchbuf = av_malloc(s->current_picture->linesize[0] * 16 * 2);
     }
 
