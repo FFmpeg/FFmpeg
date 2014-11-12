@@ -1424,6 +1424,27 @@ static int mxf_add_timecode_metadata(AVDictionary **pm, const char *key, AVTimec
     return 0;
 }
 
+static MXFTimecodeComponent* mxf_resolve_timecode_component(MXFContext *mxf, UID *strong_ref)
+{
+    MXFStructuralComponent *component = NULL;
+    MXFPulldownComponent *pulldown = NULL;
+
+    component = mxf_resolve_strong_ref(mxf, strong_ref, AnyType);
+    if (!component)
+        return NULL;
+
+    switch (component->type) {
+    case TimecodeComponent:
+        return (MXFTimecodeComponent*)component;
+    case PulldownComponent: /* timcode component may be located on a pulldown component */
+        pulldown = (MXFPulldownComponent*)component;
+        return mxf_resolve_strong_ref(mxf, &pulldown->input_segment_ref, TimecodeComponent);
+    default:
+        break;
+    }
+    return NULL;
+}
+
 static int mxf_parse_physical_source_package(MXFContext *mxf, MXFTrack *source_track, AVStream *st)
 {
     MXFPackage *temp_package = NULL;
@@ -1432,7 +1453,6 @@ static int mxf_parse_physical_source_package(MXFContext *mxf, MXFTrack *source_t
     MXFStructuralComponent *component = NULL;
     MXFStructuralComponent *sourceclip = NULL;
     MXFTimecodeComponent *mxf_tc = NULL;
-    MXFPulldownComponent *mxf_pulldown = NULL;
     int i, j, k;
     AVTimecode tc;
     int flags;
@@ -1475,19 +1495,9 @@ static int mxf_parse_physical_source_package(MXFContext *mxf, MXFTrack *source_t
             }
 
             for (k = 0; k < physical_track->sequence->structural_components_count; k++) {
-                component = mxf_resolve_strong_ref(mxf, &physical_track->sequence->structural_components_refs[k], TimecodeComponent);
-                if (!component){
-                    /* timcode component may be located on a pulldown component */
-                    component = mxf_resolve_strong_ref(mxf, &physical_track->sequence->structural_components_refs[k], PulldownComponent);
-                    if (!component)
-                        continue;
-                    mxf_pulldown = (MXFPulldownComponent*)component;
-                    component = mxf_resolve_strong_ref(mxf, &mxf_pulldown->input_segment_ref, TimecodeComponent);
-                    if (!component)
-                        continue;
-                }
+                if (!(mxf_tc = mxf_resolve_timecode_component(mxf, &physical_track->sequence->structural_components_refs[k])))
+                    continue;
 
-                mxf_tc = (MXFTimecodeComponent*)component;
                 flags = mxf_tc->drop_frame == 1 ? AV_TIMECODE_FLAG_DROPFRAME : 0;
                 /* scale sourceclip start_position to match physical track edit rate */
                 start_position = av_rescale_q(sourceclip->start_position,
