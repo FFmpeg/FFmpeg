@@ -3950,6 +3950,9 @@ case "$arch" in
     ;;
     x86)
         check_64bit x86_32 x86_64 'sizeof(void *) > 4'
+        # Treat x32 as x64 for now. Note it also needs spic=$shared
+        test "$subarch" = "x86_32" && check_cpp_condition stddef.h 'defined(__x86_64__)' &&
+            subarch=x86_64
         if test "$subarch" = "x86_64"; then
             spic=$shared
         fi
