@@ -88,9 +88,11 @@ static av_cold int decode_init(AVCodecContext *avctx)
     s->fg          = DEFAULT_FG_COLOR;
     s->bg          = DEFAULT_BG_COLOR;
 
-    if (!avctx->width || !avctx->height)
-        ff_set_dimensions(avctx, 80 << 3, 25 << 4);
-
+    if (!avctx->width || !avctx->height) {
+        int ret = ff_set_dimensions(avctx, 80 << 3, 25 << 4);
+        if (ret < 0)
+            return ret;
+    }
     return 0;
 }
 
