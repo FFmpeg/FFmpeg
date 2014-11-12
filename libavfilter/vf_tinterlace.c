@@ -187,6 +187,7 @@ void copy_picture_field(uint8_t *dst[4], int dst_linesize[4],
 
     for (plane = 0; plane < desc->nb_components; plane++) {
         int lines = plane == 1 || plane == 2 ? FF_CEIL_RSHIFT(src_h, vsub) : src_h;
+        int cols  = plane == 1 || plane == 2 ? FF_CEIL_RSHIFT(    w, desc->log2_chroma_w) : w;
         int linesize = av_image_get_linesize(format, w, plane);
         uint8_t *dstp = dst[plane];
         const uint8_t *srcp = src[plane];
@@ -210,7 +211,7 @@ void copy_picture_field(uint8_t *dst[4], int dst_linesize[4],
                 const uint8_t *srcp_below = srcp + src_linesize[plane];
                 if (h == lines) srcp_above = srcp; // there is no line above
                 if (h == 1) srcp_below = srcp;     // there is no line below
-                for (i = 0; i < linesize; i++) {
+                for (i = 0; i < cols; i++) {
                     // this calculation is an integer representation of
                     // '0.5 * current + 0.25 * above + 0.25 * below'
                     // '1 +' is for rounding. */
