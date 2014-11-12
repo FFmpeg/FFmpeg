@@ -1217,6 +1217,31 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
         }
     }
 
+    if (isBayer(srcFormat)) {
+        if (!unscaled ||
+            (dstFormat != AV_PIX_FMT_RGB24 && dstFormat != AV_PIX_FMT_YUV420P)) {
+            enum AVPixelFormat tmpFormat = AV_PIX_FMT_RGB24;
+
+            ret = av_image_alloc(c->cascaded_tmp, c->cascaded_tmpStride,
+                                srcW, srcH, tmpFormat, 64);
+            if (ret < 0)
+                return ret;
+
+            c->cascaded_context[0] = sws_getContext(srcW, srcH, srcFormat,
+                                                    srcW, srcH, tmpFormat,
+                                                    flags, srcFilter, NULL, c->param);
+            if (!c->cascaded_context[0])
+                return -1;
+
+            c->cascaded_context[1] = sws_getContext(srcW, srcH, tmpFormat,
+                                                    dstW, dstH, dstFormat,
+                                                    flags, NULL, dstFilter, c->param);
+            if (!c->cascaded_context[1])
+                return -1;
+            return 0;
+        }
+    }
+
 #define USE_MMAP (HAVE_MMAP && HAVE_MPROTECT && defined MAP_ANONYMOUS)
 
     /* precalculate horizontal scaler filter coefficients */
