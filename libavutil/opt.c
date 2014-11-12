@@ -1818,6 +1818,7 @@ int main(void)
         printf("num64=%"PRId64"\n", test_ctx.num64);
         printf("flt=%.6f\n", test_ctx.flt);
         printf("dbl=%.6f\n", test_ctx.dbl);
+        av_opt_free(&test_ctx);
     }
 
     printf("\nTesting av_set_options_string()\n");
