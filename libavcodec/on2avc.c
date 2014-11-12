@@ -172,7 +172,7 @@ static int on2avc_decode_band_scales(On2AVCContext *c, GetBitContext *gb)
             } else {
                 scale += get_vlc2(gb, c->scale_diff.table, 9, 3) - 60;
             }
-            if (scale < 0 || scale > 128) {
+            if (scale < 0 || scale > 127) {
                 av_log(c->avctx, AV_LOG_ERROR, "Invalid scale value %d\n",
                        scale);
                 return AVERROR_INVALIDDATA;
