@@ -762,6 +762,7 @@ static int save_subtitle_set(AVCodecContext *avctx, AVSubtitle *sub, int *got_ou
     uint32_t *clut_table;
     int i;
     int offset_x=0, offset_y=0;
+    int ret = 0;
 
 
     if (display_def) {
@@ -790,8 +791,10 @@ static int save_subtitle_set(AVCodecContext *avctx, AVSubtitle *sub, int *got_ou
     if (sub->num_rects > 0) {
 
         sub->rects = av_mallocz_array(sizeof(*sub->rects), sub->num_rects);
-        if (!sub->rects)
-            return AVERROR(ENOMEM);
+        if (!sub->rects) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
 
         for(i=0; i<sub->num_rects; i++)
             sub->rects[i] = av_mallocz(sizeof(*sub->rects[i]));
@@ -836,16 +839,15 @@ static int save_subtitle_set(AVCodecContext *avctx, AVSubtitle *sub, int *got_ou
 
             rect->pict.data[1] = av_mallocz(AVPALETTE_SIZE);
             if (!rect->pict.data[1]) {
-                av_freep(&sub->rects);
-                return AVERROR(ENOMEM);
+                ret = AVERROR(ENOMEM);
+                goto fail;
             }
             memcpy(rect->pict.data[1], clut_table, (1 << region->depth) * sizeof(uint32_t));
 
             rect->pict.data[0] = av_malloc(region->buf_size);
             if (!rect->pict.data[0]) {
-                av_freep(&rect->pict.data[1]);
-                av_freep(&sub->rects);
-                return AVERROR(ENOMEM);
+                ret = AVERROR(ENOMEM);
+                goto fail;
             }
 
             memcpy(rect->pict.data[0], region->pbuf, region->buf_size);
@@ -855,6 +857,20 @@ static int save_subtitle_set(AVCodecContext *avctx, AVSubtitle *sub, int *got_ou
     }
 
     return 0;
+fail:
+    if (sub->rects) {
+        for(i=0; i<sub->num_rects; i++) {
+            rect = sub->rects[i];
+            if (rect) {
+                av_freep(&rect->pict.data[0]);
+                av_freep(&rect->pict.data[1]);
+            }
+            av_freep(&sub->rects[i]);
+        }
+        av_freep(&sub->rects);
+    }
+    sub->num_rects = 0;
+    return ret;
 }
 
 static void dvbsub_parse_pixel_data_block(AVCodecContext *avctx, DVBSubObjectDisplay *display,
