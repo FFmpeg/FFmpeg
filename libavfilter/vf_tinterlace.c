@@ -149,6 +149,8 @@ static int config_out_props(AVFilterLink *outlink)
         outlink->time_base.num = inlink->time_base.num;
         outlink->time_base.den = inlink->time_base.den * 2;
         outlink->frame_rate = av_mul_q(inlink->frame_rate, (AVRational){2,1});
+    } else if (tinterlace->mode != MODE_PAD) {
+        outlink->frame_rate = av_mul_q(inlink->frame_rate, (AVRational){1,2});
     }
 
     av_log(ctx, AV_LOG_VERBOSE, "mode:%d filter:%s h:%d -> h:%d\n",
