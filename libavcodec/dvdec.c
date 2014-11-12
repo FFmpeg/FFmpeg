@@ -383,8 +383,8 @@ static int dvvideo_decode_frame(AVCodecContext *avctx, void *data,
     vsc_pack = buf + 80 * 5 + 48 + 5;
     if (*vsc_pack == dv_video_control) {
         apt    = buf[4] & 0x07;
-        is16_9 = (vsc_pack && ((vsc_pack[2] & 0x07) == 0x02 ||
-                               (!apt && (vsc_pack[2] & 0x07) == 0x07)));
+        is16_9 = (vsc_pack[2] & 0x07) == 0x02 ||
+                 (!apt && (vsc_pack[2] & 0x07) == 0x07);
         ff_set_sar(avctx, s->sys->sar[is16_9]);
     }
 
