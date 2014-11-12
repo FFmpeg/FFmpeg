@@ -306,7 +306,7 @@ static void delete_region_display_list(DVBSubContext *ctx, DVBSubRegion *region)
                     obj2 = *obj2_ptr;
 
                     while (obj2 != object) {
-                        assert(obj2);
+                        av_assert0(obj2);
                         obj2_ptr = &obj2->next;
                         obj2 = *obj2_ptr;
                     }
