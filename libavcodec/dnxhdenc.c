@@ -314,6 +314,7 @@ static av_cold int dnxhd_encode_init(AVCodecContext *avctx)
 
     index = ff_dnxhd_get_cid_table(ctx->cid);
     av_assert0(index >= 0);
+
     ctx->cid_table = &ff_dnxhd_cid_table[index];
 
     ctx->m.avctx    = avctx;
