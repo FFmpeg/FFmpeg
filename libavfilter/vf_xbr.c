@@ -139,15 +139,15 @@ static void xbr2x(AVFrame * input, AVFrame * output, const uint32_t * r2y)
         uint32_t * E = (uint32_t *)(output->data[0] + y * output->linesize[0] * 2);
 
         /* middle. Offset of -8 is given */
-        uint32_t * sa2 = (uint32_t *)(input->data[0] + y * input->linesize[0] - 8);
+        const uint32_t *sa2 = (uint32_t *)(input->data[0] + y * input->linesize[0] - 8);
         /* up one */
-        uint32_t * sa1 = sa2 - (input->linesize[0]>>2);
+        const uint32_t *sa1 = sa2 - (input->linesize[0]>>2);
         /* up two */
-        uint32_t * sa0 = sa1 - (input->linesize[0]>>2);
+        const uint32_t *sa0 = sa1 - (input->linesize[0]>>2);
         /* down one */
-        uint32_t * sa3 = sa2 + (input->linesize[0]>>2);
+        const uint32_t *sa3 = sa2 + (input->linesize[0]>>2);
         /* down two */
-        uint32_t * sa4 = sa3 + (input->linesize[0]>>2);
+        const uint32_t *sa4 = sa3 + (input->linesize[0]>>2);
 
         if (y <= 1) {
             sa0 = sa1;
@@ -265,15 +265,15 @@ static void xbr3x(AVFrame *input, AVFrame *output, const uint32_t *r2y)
         uint32_t * E = (uint32_t *)(output->data[0] + y * output->linesize[0] * 3);
 
         /* middle. Offset of -8 is given */
-        uint32_t * sa2 = (uint32_t *)(input->data[0] + y * input->linesize[0] - 8);
+        const uint32_t *sa2 = (uint32_t *)(input->data[0] + y * input->linesize[0] - 8);
         /* up one */
-        uint32_t * sa1 = sa2 - (input->linesize[0]>>2);
+        const uint32_t *sa1 = sa2 - (input->linesize[0]>>2);
         /* up two */
-        uint32_t * sa0 = sa1 - (input->linesize[0]>>2);
+        const uint32_t *sa0 = sa1 - (input->linesize[0]>>2);
         /* down one */
-        uint32_t * sa3 = sa2 + (input->linesize[0]>>2);
+        const uint32_t *sa3 = sa2 + (input->linesize[0]>>2);
         /* down two */
-        uint32_t * sa4 = sa3 + (input->linesize[0]>>2);
+        const uint32_t *sa4 = sa3 + (input->linesize[0]>>2);
 
         if (y <= 1){
             sa0 = sa1;
@@ -399,15 +399,15 @@ static void xbr4x(AVFrame *input, AVFrame *output, const uint32_t *r2y)
         uint32_t * E = (uint32_t *)(output->data[0] + y * output->linesize[0] * 4);
 
         /* middle. Offset of -8 is given */
-        uint32_t * sa2 = (uint32_t *)(input->data[0] + y * input->linesize[0] - 8);
+        const uint32_t *sa2 = (uint32_t *)(input->data[0] + y * input->linesize[0] - 8);
         /* up one */
-        uint32_t * sa1 = sa2 - (input->linesize[0]>>2);
+        const uint32_t *sa1 = sa2 - (input->linesize[0]>>2);
         /* up two */
-        uint32_t * sa0 = sa1 - (input->linesize[0]>>2);
+        const uint32_t *sa0 = sa1 - (input->linesize[0]>>2);
         /* down one */
-        uint32_t * sa3 = sa2 + (input->linesize[0]>>2);
+        const uint32_t *sa3 = sa2 + (input->linesize[0]>>2);
         /* down two */
-        uint32_t * sa4 = sa3 + (input->linesize[0]>>2);
+        const uint32_t *sa4 = sa3 + (input->linesize[0]>>2);
 
         if (y <= 1) {
             sa0 = sa1;
