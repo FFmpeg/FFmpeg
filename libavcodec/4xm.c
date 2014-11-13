@@ -346,7 +346,7 @@ static int decode_p_block(FourXContext *f, uint16_t *dst, const uint16_t *src,
     uint16_t *start, *end;
     unsigned dc = 0;
 
-    av_assert0(code >= 0 && code <= 6 && log2w >= 0 && log2h >= 0);
+    av_assert0(log2w >= 0 && log2h >= 0);
 
     index = size2index[log2h][log2w];
     av_assert0(index >= 0);
