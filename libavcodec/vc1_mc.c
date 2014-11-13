@@ -802,11 +802,9 @@ void ff_vc1_interp_mc(VC1Context *v)
     my   = s->mv[1][0][1];
     uvmx = (mx + ((mx & 3) == 3)) >> 1;
     uvmy = (my + ((my & 3) == 3)) >> 1;
-    if (v->field_mode) {
-        if (v->cur_field_type != v->ref_field_type[1]) {
-            my   = my   - 2 + 4 * v->cur_field_type;
-            uvmy = uvmy - 2 + 4 * v->cur_field_type;
-        }
+    if (v->field_mode && v->cur_field_type != v->ref_field_type[1]) {
+        my   = my   - 2 + 4 * v->cur_field_type;
+        uvmy = uvmy - 2 + 4 * v->cur_field_type;
     }
     if (v->fastuvmc) {
         uvmx = uvmx + ((uvmx < 0) ? -(uvmx & 1) : (uvmx & 1));
