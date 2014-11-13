@@ -44,8 +44,8 @@ fate-nellymoser-aref-encode: $(AREF) ./tests/data/asynth-16000-1.wav
 fate-nellymoser-aref-encode: CMD = enc_dec_pcm flv wav s16le $(REF) -c:a nellymoser
 fate-nellymoser-aref-encode: CMP = stddev
 fate-nellymoser-aref-encode: REF = ./tests/data/asynth-16000-1.wav
-fate-nellymoser-aref-encode: CMP_SHIFT = -244
-fate-nellymoser-aref-encode: CMP_TARGET = 9612
+fate-nellymoser-aref-encode: CMP_SHIFT = -256
+fate-nellymoser-aref-encode: CMP_TARGET = 3863
 fate-nellymoser-aref-encode: SIZE_TOLERANCE = 268
 
 FATE_SAMPLES_AUDIO-$(call DEMDEC, AVI, ON2AVC) += fate-on2avc
