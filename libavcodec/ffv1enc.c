@@ -166,7 +166,7 @@ static void find_best_state(uint8_t best_state[256][256],
                     best_len[k]      = len;
                     best_state[i][k] = j;
                 }
-                for (m = 0; m < 256; m++)
+                for (m = 1; m < 256; m++)
                     if (occ[m]) {
                         newocc[      one_state[      m]] += occ[m] * p;
                         newocc[256 - one_state[256 - m]] += occ[m] * (1 - p);
