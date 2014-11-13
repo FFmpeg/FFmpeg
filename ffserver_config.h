@@ -110,9 +110,7 @@ typedef struct FFServerConfig {
     enum AVCodecID guessed_audio_codec_id;
     enum AVCodecID guessed_video_codec_id;
     AVDictionary *video_opts;     /* AVOptions for video encoder */
-    AVDictionary *video_conf;     /* Values stored in video AVCodecContext.fields */
     AVDictionary *audio_opts;     /* AVOptions for audio encoder */
-    AVDictionary *audio_conf;     /* Values stored in audio AVCodecContext.fields */
     AVCodecContext *dummy_actx;   /* Used internally to test audio AVOptions. */
     AVCodecContext *dummy_vctx;   /* Used internally to test video AVOptions. */
     int no_audio;

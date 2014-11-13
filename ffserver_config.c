@@ -470,6 +470,9 @@ static int ffserver_save_avoption(const char *opt, const char *arg, int type, FF
     }
 
     o = av_opt_find(ctx, option, NULL, type | AV_OPT_FLAG_ENCODING_PARAM, AV_OPT_SEARCH_CHILDREN);
+    if (!o && (!strcmp(option, "time_base")  || !strcmp(option, "pixel_format") ||
+               !strcmp(option, "video_size") || !strcmp(option, "codec_tag")))
+        o = av_opt_find(ctx, option, NULL, 0, 0);
     if (!o) {
         report_config_error(config->filename, config->line_num, AV_LOG_ERROR,
                             &config->errors, "Option not found: %s\n", opt);
@@ -495,6 +498,14 @@ static int ffserver_save_avoption(const char *opt, const char *arg, int type, FF
         return AVERROR(ENOMEM);
     }
     return 0;
+}
+
+static int ffserver_save_avoption_int(const char *opt, int64_t arg,
+                                      int type, FFServerConfig *config)
+{
+    char buf[22];
+    snprintf(buf, sizeof(buf), "%"PRId64, arg);
+    return ffserver_save_avoption(opt, buf, type, config);
 }
 
 #define ERROR(...)   report_config_error(config->filename, config->line_num, AV_LOG_ERROR,   &config->errors,   __VA_ARGS__)
@@ -673,105 +684,10 @@ static int ffserver_parse_config_feed(FFServerConfig *config, const char *cmd, c
     return 0;
 }
 
-static void ffserver_apply_stream_config(AVCodecContext *enc, const AVDictionary *conf, AVDictionary **opts)
+static void ffserver_apply_stream_config(AVCodecContext *enc, AVDictionary **opts)
 {
-    AVDictionaryEntry *e;
-
-    /* Return values from ffserver_set_*_param are ignored.
-       Values are initially parsed and checked before inserting to
-       AVDictionary. */
-
-    //video params
-    if ((e = av_dict_get(conf, "VideoBitRateRangeMin", NULL, 0)))
-        ffserver_set_int_param(&enc->rc_min_rate, e->value, 1000, INT_MIN,
-                INT_MAX, NULL, 0, NULL);
-    if ((e = av_dict_get(conf, "VideoBitRateRangeMax", NULL, 0)))
-        ffserver_set_int_param(&enc->rc_max_rate, e->value, 1000, INT_MIN,
-                INT_MAX, NULL, 0, NULL);
-    if ((e = av_dict_get(conf, "Debug", NULL, 0)))
-        ffserver_set_int_param(&enc->debug, e->value, 0, INT_MIN, INT_MAX,
-                NULL, 0, NULL);
-    if ((e = av_dict_get(conf, "Strict", NULL, 0)))
-        ffserver_set_int_param(&enc->strict_std_compliance, e->value, 0,
-                INT_MIN, INT_MAX, NULL, 0, NULL);
-    if ((e = av_dict_get(conf, "VideoBufferSize", NULL, 0)))
-        ffserver_set_int_param(&enc->rc_buffer_size, e->value, 8*1024,
-                INT_MIN, INT_MAX, NULL, 0, NULL);
-    if ((e = av_dict_get(conf, "VideoBitRateTolerance", NULL, 0)))
-        ffserver_set_int_param(&enc->bit_rate_tolerance, e->value, 1000,
-                INT_MIN, INT_MAX, NULL, 0, NULL);
-    if ((e = av_dict_get(conf, "VideoBitRate", NULL, 0)))
-        ffserver_set_int_param(&enc->bit_rate, e->value, 1000, INT_MIN,
-                INT_MAX, NULL, 0, NULL);
-    if ((e = av_dict_get(conf, "VideoSizeWidth", NULL, 0)))
-        ffserver_set_int_param(&enc->width, e->value, 0, INT_MIN, INT_MAX,
-                NULL, 0, NULL);
-    if ((e = av_dict_get(conf, "VideoSizeHeight", NULL, 0)))
-        ffserver_set_int_param(&enc->height, e->value, 0, INT_MIN, INT_MAX,
-                NULL, 0, NULL);
-    if ((e = av_dict_get(conf, "PixelFormat", NULL, 0))) {
-        int val;
-        ffserver_set_int_param(&val, e->value, 0, INT_MIN, INT_MAX, NULL, 0,
-                NULL);
-        enc->pix_fmt = val;
-    }
-    if ((e = av_dict_get(conf, "VideoGopSize", NULL, 0)))
-        ffserver_set_int_param(&enc->gop_size, e->value, 0, INT_MIN, INT_MAX,
-                NULL, 0, NULL);
-    if ((e = av_dict_get(conf, "VideoFrameRateNum", NULL, 0)))
-        ffserver_set_int_param(&enc->time_base.num, e->value, 0, INT_MIN,
-                INT_MAX, NULL, 0, NULL);
-    if ((e = av_dict_get(conf, "VideoFrameRateDen", NULL, 0)))
-        ffserver_set_int_param(&enc->time_base.den, e->value, 0, INT_MIN,
-                INT_MAX, NULL, 0, NULL);
-    if ((e = av_dict_get(conf, "VideoQDiff", NULL, 0)))
-        ffserver_set_int_param(&enc->max_qdiff, e->value, 0, INT_MIN, INT_MAX,
-                NULL, 0, NULL);
-    if ((e = av_dict_get(conf, "VideoQMax", NULL, 0)))
-        ffserver_set_int_param(&enc->qmax, e->value, 0, INT_MIN, INT_MAX, NULL,
-                0, NULL);
-    if ((e = av_dict_get(conf, "VideoQMin", NULL, 0)))
-        ffserver_set_int_param(&enc->qmin, e->value, 0, INT_MIN, INT_MAX, NULL,
-                0, NULL);
-    if ((e = av_dict_get(conf, "LumiMask", NULL, 0)))
-        ffserver_set_float_param(&enc->lumi_masking, e->value, 0, -FLT_MAX,
-                FLT_MAX, NULL, 0, NULL);
-    if ((e = av_dict_get(conf, "DarkMask", NULL, 0)))
-        ffserver_set_float_param(&enc->dark_masking, e->value, 0, -FLT_MAX,
-                FLT_MAX, NULL, 0, NULL);
-    if (av_dict_get(conf, "BitExact", NULL, 0))
-        enc->flags |= CODEC_FLAG_BITEXACT;
-    if (av_dict_get(conf, "DctFastint", NULL, 0))
-        enc->dct_algo  = FF_DCT_FASTINT;
-    if (av_dict_get(conf, "IdctSimple", NULL, 0))
-        enc->idct_algo = FF_IDCT_SIMPLE;
-    if (av_dict_get(conf, "VideoHighQuality", NULL, 0))
-        enc->mb_decision = FF_MB_DECISION_BITS;
-    if ((e = av_dict_get(conf, "VideoTag", NULL, 0)))
-        enc->codec_tag = MKTAG(e->value[0], e->value[1], e->value[2], e->value[3]);
-    if ((e = av_dict_get(conf, "Qscale", NULL, 0))) {
-        enc->flags |= CODEC_FLAG_QSCALE;
-        ffserver_set_int_param(&enc->global_quality, e->value, FF_QP2LAMBDA,
-                INT_MIN, INT_MAX, NULL, 0, NULL);
-    }
-    if (av_dict_get(conf, "Video4MotionVector", NULL, 0)) {
-        enc->mb_decision = FF_MB_DECISION_BITS; //FIXME remove
-        enc->flags |= CODEC_FLAG_4MV;
-    }
-    //audio params
-    if ((e = av_dict_get(conf, "AudioChannels", NULL, 0)))
-        ffserver_set_int_param(&enc->channels, e->value, 0, INT_MIN, INT_MAX,
-                NULL, 0, NULL);
-    if ((e = av_dict_get(conf, "AudioSampleRate", NULL, 0)))
-        ffserver_set_int_param(&enc->sample_rate, e->value, 0, INT_MIN,
-                INT_MAX, NULL, 0, NULL);
-    if ((e = av_dict_get(conf, "AudioBitRate", NULL, 0)))
-        ffserver_set_int_param(&enc->bit_rate, e->value, 0, INT_MIN, INT_MAX,
-                NULL, 0, NULL);
-
     av_opt_set_dict2(enc->priv_data, opts, AV_OPT_SEARCH_CHILDREN);
     av_opt_set_dict2(enc, opts, AV_OPT_SEARCH_CHILDREN);
-
     if (av_dict_count(*opts))
         av_log(NULL, AV_LOG_ERROR, "Something went wrong, %d options not set!!!\n", av_dict_count(*opts));
 }
@@ -903,61 +819,62 @@ static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd,
     } else if (!av_strcasecmp(cmd, "AudioBitRate")) {
         float f;
         ffserver_get_arg(arg, sizeof(arg), p);
-        ffserver_set_float_param(&f, arg, 1000, 0, FLT_MAX, config,
+        ffserver_set_float_param(&f, arg, 1000, -FLT_MAX, FLT_MAX, config,
                 "Invalid %s: %s\n", cmd, arg);
-        if (av_dict_set_int(&config->audio_conf, cmd, lrintf(f), 0) < 0)
+        if (ffserver_save_avoption_int("ab", (int64_t)lrintf(f), AV_OPT_FLAG_AUDIO_PARAM, config) < 0)
             goto nomem;
     } else if (!av_strcasecmp(cmd, "AudioChannels")) {
         ffserver_get_arg(arg, sizeof(arg), p);
-        ffserver_set_int_param(NULL, arg, 0, 1, 8, config,
-                "Invalid %s: %s, valid range is 1-8.", cmd, arg);
-        if (av_dict_set(&config->audio_conf, cmd, arg, 0) < 0)
+        if (ffserver_save_avoption("ac", arg, AV_OPT_FLAG_AUDIO_PARAM, config) < 0)
             goto nomem;
     } else if (!av_strcasecmp(cmd, "AudioSampleRate")) {
         ffserver_get_arg(arg, sizeof(arg), p);
-        ffserver_set_int_param(NULL, arg, 0, 0, INT_MAX, config,
-                "Invalid %s: %s", cmd, arg);
-        if (av_dict_set(&config->audio_conf, cmd, arg, 0) < 0)
+        if (ffserver_save_avoption("ar", arg, AV_OPT_FLAG_AUDIO_PARAM, config) < 0)
             goto nomem;
     } else if (!av_strcasecmp(cmd, "VideoBitRateRange")) {
         int minrate, maxrate;
+        char *dash;
         ffserver_get_arg(arg, sizeof(arg), p);
-        if (sscanf(arg, "%d-%d", &minrate, &maxrate) == 2) {
-            if (av_dict_set_int(&config->video_conf, "VideoBitRateRangeMin", minrate, 0) < 0 ||
-                av_dict_set_int(&config->video_conf, "VideoBitRateRangeMax", maxrate, 0) < 0)
+        dash = strchr(arg, '-');
+        if (dash) {
+            *dash = '\0';
+            dash++;
+            if (ffserver_set_int_param(&minrate, arg,  1000, 0, INT_MAX, config, "Invalid %s: %s", cmd, arg) >= 0 &&
+                ffserver_set_int_param(&maxrate, dash, 1000, 0, INT_MAX, config, "Invalid %s: %s", cmd, arg) >= 0) {
+                if (ffserver_save_avoption_int("minrate", minrate, AV_OPT_FLAG_VIDEO_PARAM, config) < 0 ||
+                    ffserver_save_avoption_int("maxrate", maxrate, AV_OPT_FLAG_VIDEO_PARAM, config) < 0)
                 goto nomem;
+            }
         } else
             ERROR("Incorrect format for VideoBitRateRange -- should be "
                     "<min>-<max>: %s\n", arg);
     } else if (!av_strcasecmp(cmd, "Debug")) {
         ffserver_get_arg(arg, sizeof(arg), p);
-        ffserver_set_int_param(NULL, arg, 0, INT_MIN, INT_MAX, config,
-                "Invalid %s: %s", cmd, arg);
-        if (av_dict_set(&config->video_conf, cmd, arg, 0) < 0)
+        if (ffserver_save_avoption("debug", arg, AV_OPT_FLAG_AUDIO_PARAM, config) < 0 ||
+            ffserver_save_avoption("debug", arg, AV_OPT_FLAG_VIDEO_PARAM, config) < 0)
             goto nomem;
     } else if (!av_strcasecmp(cmd, "Strict")) {
         ffserver_get_arg(arg, sizeof(arg), p);
-        ffserver_set_int_param(NULL, arg, 0, INT_MIN, INT_MAX, config,
-                "Invalid %s: %s", cmd, arg);
-        if (av_dict_set(&config->video_conf, cmd, arg, 0) < 0)
+        if (ffserver_save_avoption("strict", arg, AV_OPT_FLAG_AUDIO_PARAM, config) < 0 ||
+            ffserver_save_avoption("strict", arg, AV_OPT_FLAG_VIDEO_PARAM, config) < 0)
             goto nomem;
     } else if (!av_strcasecmp(cmd, "VideoBufferSize")) {
         ffserver_get_arg(arg, sizeof(arg), p);
-        ffserver_set_int_param(NULL, arg, 8*1024, 0, INT_MAX, config,
+        ffserver_set_int_param(&val, arg, 8*1024, 0, INT_MAX, config,
                 "Invalid %s: %s", cmd, arg);
-        if (av_dict_set(&config->video_conf, cmd, arg, 0) < 0)
+        if (ffserver_save_avoption_int("bufsize", val, AV_OPT_FLAG_VIDEO_PARAM, config) < 0)
             goto nomem;
     } else if (!av_strcasecmp(cmd, "VideoBitRateTolerance")) {
         ffserver_get_arg(arg, sizeof(arg), p);
-        ffserver_set_int_param(NULL, arg, 1000, INT_MIN, INT_MAX, config,
+        ffserver_set_int_param(&val, arg, 1000, INT_MIN, INT_MAX, config,
                 "Invalid %s: %s", cmd, arg);
-        if (av_dict_set(&config->video_conf, cmd, arg, 0) < 0)
+        if (ffserver_save_avoption_int("bt", val, AV_OPT_FLAG_VIDEO_PARAM, config) < 0)
             goto nomem;
     } else if (!av_strcasecmp(cmd, "VideoBitRate")) {
         ffserver_get_arg(arg, sizeof(arg), p);
-        ffserver_set_int_param(NULL, arg, 1000, 0, INT_MAX, config,
+        ffserver_set_int_param(&val, arg, 1000, INT_MIN, INT_MAX, config,
                 "Invalid %s: %s", cmd, arg);
-        if (av_dict_set(&config->video_conf, cmd, arg, 0) < 0)
+        if (ffserver_save_avoption_int("b", val, AV_OPT_FLAG_VIDEO_PARAM, config) < 0)
            goto nomem;
     } else if (!av_strcasecmp(cmd, "VideoSize")) {
         int ret, w, h;
@@ -965,43 +882,38 @@ static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd,
         ret = av_parse_video_size(&w, &h, arg);
         if (ret < 0)
             ERROR("Invalid video size '%s'\n", arg);
-        else if ((w % 2) || (h % 2))
-            WARNING("Image size is not a multiple of 2\n");
-        if (av_dict_set_int(&config->video_conf, "VideoSizeWidth", w, 0) < 0 ||
-            av_dict_set_int(&config->video_conf, "VideoSizeHeight", h, 0) < 0)
-            goto nomem;
-    } else if (!av_strcasecmp(cmd, "VideoFrameRate")) {
-        AVRational frame_rate;
-        ffserver_get_arg(arg, sizeof(arg), p);
-        if (av_parse_video_rate(&frame_rate, arg) < 0) {
-            ERROR("Incorrect frame rate: %s\n", arg);
-        } else {
-            if (av_dict_set_int(&config->video_conf, "VideoFrameRateNum", frame_rate.num, 0) < 0 ||
-                av_dict_set_int(&config->video_conf, "VideoFrameRateDen", frame_rate.den, 0) < 0)
+        else {
+            if (w % 2 || h % 2)
+                WARNING("Image size is not a multiple of 2\n");
+            if (ffserver_save_avoption("video_size", arg, AV_OPT_FLAG_VIDEO_PARAM, config) < 0)
                 goto nomem;
         }
+    } else if (!av_strcasecmp(cmd, "VideoFrameRate")) {
+        ffserver_get_arg(&arg[2], sizeof(arg) - 2, p);
+        arg[0] = '1'; arg[1] = '/';
+        if (ffserver_save_avoption("time_base", arg, AV_OPT_FLAG_VIDEO_PARAM, config) < 0)
+            goto nomem;
     } else if (!av_strcasecmp(cmd, "PixelFormat")) {
         enum AVPixelFormat pix_fmt;
         ffserver_get_arg(arg, sizeof(arg), p);
         pix_fmt = av_get_pix_fmt(arg);
         if (pix_fmt == AV_PIX_FMT_NONE)
             ERROR("Unknown pixel format: %s\n", arg);
-        if (av_dict_set_int(&config->video_conf, cmd, pix_fmt, 0) < 0)
+        else if (ffserver_save_avoption("pixel_format", arg, AV_OPT_FLAG_VIDEO_PARAM, config) < 0)
             goto nomem;
     } else if (!av_strcasecmp(cmd, "VideoGopSize")) {
         ffserver_get_arg(arg, sizeof(arg), p);
-        ffserver_set_int_param(NULL, arg, 0, INT_MIN, INT_MAX, config,
-                "Invalid %s: %s", cmd, arg);
-        if (av_dict_set(&config->video_conf, cmd, arg, 0) < 0)
+        if (ffserver_save_avoption("g", arg, AV_OPT_FLAG_VIDEO_PARAM, config) < 0)
             goto nomem;
     } else if (!av_strcasecmp(cmd, "VideoIntraOnly")) {
-        if (av_dict_set(&config->video_conf, "VideoGopSize", "1", 0) < 0)
+        if (ffserver_save_avoption("g", "1", AV_OPT_FLAG_VIDEO_PARAM, config) < 0)
             goto nomem;
     } else if (!av_strcasecmp(cmd, "VideoHighQuality")) {
-        if (av_dict_set(&config->video_conf, cmd, "", 0) < 0)
+        if (ffserver_save_avoption("mbd", "+bits", AV_OPT_FLAG_VIDEO_PARAM, config) < 0)
             goto nomem;
     } else if (!av_strcasecmp(cmd, "Video4MotionVector")) {
-        if (av_dict_set(&config->video_conf, cmd, "", 0) < 0)
+        if (ffserver_save_avoption("mbd", "+bits",  AV_OPT_FLAG_VIDEO_PARAM, config) < 0 || //FIXME remove
+            ffserver_save_avoption("flags", "+mv4", AV_OPT_FLAG_VIDEO_PARAM, config) < 0)
             goto nomem;
     } else if (!av_strcasecmp(cmd, "AVOptionVideo") ||
                !av_strcasecmp(cmd, "AVOptionAudio")) {
@@ -1023,52 +935,46 @@ static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd,
             ffserver_opt_preset(arg, AV_OPT_FLAG_AUDIO_PARAM, config);
     } else if (!av_strcasecmp(cmd, "VideoTag")) {
         ffserver_get_arg(arg, sizeof(arg), p);
-        if (strlen(arg) == 4) {
-            if (av_dict_set(&config->video_conf, "VideoTag", arg, 0) < 0)
-                goto nomem;
-        }
+        if (strlen(arg) == 4 &&
+            ffserver_save_avoption_int("codec_tag", MKTAG(arg[0], arg[1], arg[2], arg[3]),
+                                       AV_OPT_FLAG_VIDEO_PARAM, config) < 0)
+            goto nomem;
     } else if (!av_strcasecmp(cmd, "BitExact")) {
-        if (av_dict_set(&config->video_conf, cmd, "", 0) < 0)
+        if (ffserver_save_avoption("flags", "+bitexact", AV_OPT_FLAG_VIDEO_PARAM, config) < 0)
             goto nomem;
     } else if (!av_strcasecmp(cmd, "DctFastint")) {
-        if (av_dict_set(&config->video_conf, cmd, "", 0) < 0)
+        if (ffserver_save_avoption("dct", "fastint", AV_OPT_FLAG_VIDEO_PARAM, config) < 0)
             goto nomem;
     } else if (!av_strcasecmp(cmd, "IdctSimple")) {
-        if (av_dict_set(&config->video_conf, cmd, "", 0) < 0)
+        if (ffserver_save_avoption("idct", "simple", AV_OPT_FLAG_VIDEO_PARAM, config) < 0)
             goto nomem;
     } else if (!av_strcasecmp(cmd, "Qscale")) {
         ffserver_get_arg(arg, sizeof(arg), p);
-        if (av_dict_set(&config->video_conf, cmd, arg, 0) < 0)
+        ffserver_set_int_param(&val, arg, 0, INT_MIN, INT_MAX, config,
+                               "Invalid Qscale: %s\n", arg);
+        if (ffserver_save_avoption("flags", "+qscale", AV_OPT_FLAG_VIDEO_PARAM, config) < 0 ||
+            ffserver_save_avoption_int("global_quality", FF_QP2LAMBDA * val,
+                                       AV_OPT_FLAG_VIDEO_PARAM, config) < 0)
             goto nomem;
     } else if (!av_strcasecmp(cmd, "VideoQDiff")) {
         ffserver_get_arg(arg, sizeof(arg), p);
-        ffserver_set_int_param(NULL, arg, 0, 1, 31, config,
-                "%s out of range\n", cmd);
-        if (av_dict_set(&config->video_conf, cmd, arg, 0) < 0)
+        if (ffserver_save_avoption("qdiff", arg, AV_OPT_FLAG_VIDEO_PARAM, config) < 0)
             goto nomem;
     } else if (!av_strcasecmp(cmd, "VideoQMax")) {
         ffserver_get_arg(arg, sizeof(arg), p);
-        ffserver_set_int_param(NULL, arg, 0, 1, 31, config,
-                "%s out of range\n", cmd);
-        if (av_dict_set(&config->video_conf, cmd, arg, 0) < 0)
+        if (ffserver_save_avoption("qmax", arg, AV_OPT_FLAG_VIDEO_PARAM, config) < 0)
             goto nomem;
     } else if (!av_strcasecmp(cmd, "VideoQMin")) {
         ffserver_get_arg(arg, sizeof(arg), p);
-        ffserver_set_int_param(NULL, arg, 0, 1, 31, config,
-                "%s out of range\n", cmd);
-        if (av_dict_set(&config->video_conf, cmd, arg, 0) < 0)
+        if (ffserver_save_avoption("qmin", arg, AV_OPT_FLAG_VIDEO_PARAM, config) < 0)
             goto nomem;
     } else if (!av_strcasecmp(cmd, "LumiMask")) {
         ffserver_get_arg(arg, sizeof(arg), p);
-        ffserver_set_float_param(NULL, arg, 0, -FLT_MAX, FLT_MAX, config,
-                "Invalid %s: %s", cmd, arg);
-        if (av_dict_set(&config->video_conf, cmd, arg, 0) < 0)
+        if (ffserver_save_avoption("lumi_mask", arg, AV_OPT_FLAG_VIDEO_PARAM, config) < 0)
             goto nomem;
     } else if (!av_strcasecmp(cmd, "DarkMask")) {
         ffserver_get_arg(arg, sizeof(arg), p);
-        ffserver_set_float_param(NULL, arg, 0, -FLT_MAX, FLT_MAX, config,
-                "Invalid %s: %s", cmd, arg);
-        if (av_dict_set(&config->video_conf, cmd, arg, 0) < 0)
+        if (ffserver_save_avoption("dark_mask", arg, AV_OPT_FLAG_VIDEO_PARAM, config) < 0)
             goto nomem;
     } else if (!av_strcasecmp(cmd, "NoVideo")) {
         config->no_video = 1;
@@ -1107,21 +1013,19 @@ static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd,
                 config->dummy_actx->codec_id = config->guessed_audio_codec_id;
             if (!config->no_audio && config->dummy_actx->codec_id != AV_CODEC_ID_NONE) {
                 AVCodecContext *audio_enc = avcodec_alloc_context3(avcodec_find_encoder(config->dummy_actx->codec_id));
-                ffserver_apply_stream_config(audio_enc, config->audio_conf, &config->audio_opts);
+                ffserver_apply_stream_config(audio_enc, &config->audio_opts);
                 add_codec(stream, audio_enc);
             }
             if (config->dummy_vctx->codec_id == AV_CODEC_ID_NONE)
                 config->dummy_vctx->codec_id = config->guessed_video_codec_id;
             if (!config->no_video && config->dummy_vctx->codec_id != AV_CODEC_ID_NONE) {
                 AVCodecContext *video_enc = avcodec_alloc_context3(avcodec_find_encoder(config->dummy_vctx->codec_id));
-                ffserver_apply_stream_config(video_enc, config->video_conf, &config->video_opts);
+                ffserver_apply_stream_config(video_enc, &config->video_opts);
                 add_codec(stream, video_enc);
             }
         }
         av_dict_free(&config->video_opts);
-        av_dict_free(&config->video_conf);
         av_dict_free(&config->audio_opts);
-        av_dict_free(&config->audio_conf);
         avcodec_free_context(&config->dummy_vctx);
         avcodec_free_context(&config->dummy_actx);
         *pstream = NULL;
@@ -1135,9 +1039,7 @@ static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd,
   nomem:
     av_log(NULL, AV_LOG_ERROR, "Out of memory. Aborting.\n");
     av_dict_free(&config->video_opts);
-    av_dict_free(&config->video_conf);
     av_dict_free(&config->audio_opts);
-    av_dict_free(&config->audio_conf);
     avcodec_free_context(&config->dummy_vctx);
     avcodec_free_context(&config->dummy_actx);
     return AVERROR(ENOMEM);
