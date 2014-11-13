@@ -342,6 +342,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *picref)
             return AVERROR(ENOMEM);
         av_frame_copy_props(out, next);
         out->interlaced_frame = 1;
+        out->top_field_first = !tff;
 
         if (next->pts != AV_NOPTS_VALUE && cur->pts != AV_NOPTS_VALUE)
             out->pts = cur->pts + next->pts;
