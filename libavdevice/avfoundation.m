@@ -604,7 +604,10 @@ static int avf_read_header(AVFormatContext *s)
             goto fail;
         }
     } else if (ctx->video_filename &&
-               strncmp(ctx->video_filename, "default", 7)) {
+               strncmp(ctx->video_filename, "none", 4)) {
+        if (!strncmp(ctx->video_filename, "default", 7)) {
+            video_device = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeVideo];
+        } else {
         // looking for video inputs
         for (AVCaptureDevice *device in video_devices) {
             if (!strncmp(ctx->video_filename, [[device localizedName] UTF8String], strlen(ctx->video_filename))) {
@@ -626,13 +629,12 @@ static int avf_read_header(AVFormatContext *s)
             }
         }
 #endif
+        }
 
         if (!video_device) {
             av_log(ctx, AV_LOG_ERROR, "Video device not found\n");
             goto fail;
         }
-    } else {
-        video_device = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeVideo];
     }
 
     // get audio device
@@ -646,7 +648,10 @@ static int avf_read_header(AVFormatContext *s)
 
         audio_device = [devices objectAtIndex:ctx->audio_device_index];
     } else if (ctx->audio_filename &&
-               strncmp(ctx->audio_filename, "default", 7)) {
+               strncmp(ctx->audio_filename, "none", 4)) {
+        if (!strncmp(ctx->audio_filename, "default", 7)) {
+            audio_device = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeAudio];
+        } else {
         NSArray *devices = [AVCaptureDevice devicesWithMediaType:AVMediaTypeAudio];
 
         for (AVCaptureDevice *device in devices) {
@@ -655,13 +660,12 @@ static int avf_read_header(AVFormatContext *s)
                 break;
             }
         }
+        }
 
         if (!audio_device) {
             av_log(ctx, AV_LOG_ERROR, "Audio device not found\n");
              goto fail;
         }
-    } else {
-        audio_device = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeAudio];
     }
 
     // Video nor Audio capture device not found, looking for AVMediaTypeVideo/Audio
