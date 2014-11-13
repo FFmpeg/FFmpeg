@@ -31,8 +31,8 @@
 #include "cmdutils.h"
 #include "ffserver_config.h"
 
-static int ffserver_save_avoption(AVCodecContext *ctx, const char *opt, const char *arg,
-                                  AVDictionary **dict, int type, FFServerConfig *config, int line_num);
+static int ffserver_save_avoption(const char *opt, const char *arg, int type,
+                                  FFServerConfig *config, int line_num);
 static void vreport_config_error(const char *filename, int line_num, int log_level,
                                  int *errors, const char *fmt, va_list vl);
 static void report_config_error(const char *filename, int line_num, int log_level,
@@ -274,12 +274,25 @@ static int ffserver_set_codec(AVCodecContext *ctx, const char *codec_name, FFSer
     return 0;
 }
 
-static int ffserver_opt_preset(const char *arg, AVCodecContext *avctx, FFServerConfig *config, int line_num)
+static int ffserver_opt_preset(const char *arg, int type, FFServerConfig *config, int line_num)
 {
     FILE *f=NULL;
     char filename[1000], tmp[1000], tmp2[1000], line[1000];
     int ret = 0;
-    AVCodec *codec = avcodec_find_encoder(avctx->codec_id);
+    AVCodecContext *avctx;
+    const AVCodec *codec;
+
+    switch(type) {
+    case AV_OPT_FLAG_AUDIO_PARAM:
+        avctx = config->dummy_actx;
+        break;
+    case AV_OPT_FLAG_VIDEO_PARAM:
+        avctx = config->dummy_vctx;
+        break;
+    default:
+        av_assert0(0);
+    }
+    codec = avcodec_find_encoder(avctx->codec_id);
 
     if (!(f = get_preset_file(filename, sizeof(filename), arg, 0,
                               codec ? codec->name : NULL))) {
@@ -306,29 +319,10 @@ static int ffserver_opt_preset(const char *arg, AVCodecContext *avctx, FFServerC
             av_log(NULL, AV_LOG_ERROR, "Subtitles preset found.\n");
             ret = AVERROR(EINVAL);
             break;
-        } else {
-            int type;
-            AVDictionary **opts;
-
-            switch(avctx->codec_type) {
-            case AVMEDIA_TYPE_AUDIO:
-                type = AV_OPT_FLAG_AUDIO_PARAM;
-                opts = &config->audio_opts;
-                break;
-            case AVMEDIA_TYPE_VIDEO:
-                type = AV_OPT_FLAG_VIDEO_PARAM;
-                opts = &config->video_opts;
-                break;
-            default:
-                ret = AVERROR(EINVAL);
-                goto exit;
-            }
-            if (ffserver_save_avoption(avctx, tmp, tmp2, opts, type, config, line_num) < 0)
-                break;
-        }
+        } else if (ffserver_save_avoption(tmp, tmp2, type, config, line_num) < 0)
+            break;
     }
 
-  exit:
     fclose(f);
 
     return ret;
@@ -430,8 +424,7 @@ static int ffserver_set_float_param(float *dest, const char *value, float factor
     return AVERROR(EINVAL);
 }
 
-static int ffserver_save_avoption(AVCodecContext *ctx, const char *opt, const char *arg, AVDictionary **dict,
-                                  int type, FFServerConfig *config, int line_num)
+static int ffserver_save_avoption(const char *opt, const char *arg, int type, FFServerConfig *config, int line_num)
 {
     static int hinted = 0;
     int ret = 0;
@@ -440,6 +433,26 @@ static int ffserver_save_avoption(AVCodecContext *ctx, const char *opt, const ch
     const char *option = NULL;
     const char *codec_name = NULL;
     char buff[1024];
+    AVCodecContext *ctx;
+    AVDictionary **dict;
+    enum AVCodecID guessed_codec_id;
+
+    switch (type) {
+    case AV_OPT_FLAG_VIDEO_PARAM:
+        ctx = config->dummy_vctx;
+        dict = &config->video_opts;
+        guessed_codec_id = config->guessed_video_codec_id != AV_CODEC_ID_NONE ?
+                           config->guessed_video_codec_id : AV_CODEC_ID_H264;
+        break;
+    case AV_OPT_FLAG_AUDIO_PARAM:
+        ctx = config->dummy_actx;
+        dict = &config->audio_opts;
+        guessed_codec_id = config->guessed_audio_codec_id != AV_CODEC_ID_NONE ?
+                           config->guessed_audio_codec_id : AV_CODEC_ID_AAC;
+        break;
+    default:
+        av_assert0(0);
+    }
 
     if (strchr(opt, ':')) {
         //explicit private option
@@ -461,23 +474,11 @@ static int ffserver_save_avoption(AVCodecContext *ctx, const char *opt, const ch
         report_config_error(config->filename, line_num, AV_LOG_ERROR,
                             &config->errors, "Option not found: %s\n", opt);
         if (!hinted && ctx->codec_id == AV_CODEC_ID_NONE) {
-            enum AVCodecID id;
             hinted = 1;
-            switch(ctx->codec_type) {
-            case AVMEDIA_TYPE_AUDIO:
-                id = config->guessed_audio_codec_id != AV_CODEC_ID_NONE ? config->guessed_audio_codec_id : AV_CODEC_ID_AAC;
-                break;
-            case AVMEDIA_TYPE_VIDEO:
-                id = config->guessed_video_codec_id != AV_CODEC_ID_NONE ? config->guessed_video_codec_id : AV_CODEC_ID_H264;
-                break;
-            default:
-                break;
-            }
             report_config_error(config->filename, line_num, AV_LOG_ERROR, NULL,
                                 "If '%s' is a codec private option, then prefix it with codec name, "
                                 "for example '%s:%s %s' or define codec earlier.\n",
-                                opt, avcodec_get_name(id) ,opt, arg);
-
+                                opt, avcodec_get_name(guessed_codec_id) ,opt, arg);
         }
     } else if ((ret = av_opt_set(ctx, option, arg, AV_OPT_SEARCH_CHILDREN)) < 0) {
         report_config_error(config->filename, line_num, AV_LOG_ERROR,
@@ -1008,20 +1009,18 @@ static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd,
         ffserver_get_arg(arg, sizeof(arg), p);
         ffserver_get_arg(arg2, sizeof(arg2), p);
         if (!av_strcasecmp(cmd, "AVOptionVideo"))
-            ret = ffserver_save_avoption(config->dummy_vctx, arg, arg2, &config->video_opts,
-                                         AV_OPT_FLAG_VIDEO_PARAM ,config, line_num);
+            ret = ffserver_save_avoption(arg, arg2, AV_OPT_FLAG_VIDEO_PARAM, config, line_num);
         else
-            ret = ffserver_save_avoption(config->dummy_actx, arg, arg2, &config->audio_opts,
-                                         AV_OPT_FLAG_AUDIO_PARAM ,config, line_num);
+            ret = ffserver_save_avoption(arg, arg2, AV_OPT_FLAG_AUDIO_PARAM, config, line_num);
         if (ret < 0)
             goto nomem;
     } else if (!av_strcasecmp(cmd, "AVPresetVideo") ||
                !av_strcasecmp(cmd, "AVPresetAudio")) {
         ffserver_get_arg(arg, sizeof(arg), p);
         if (!av_strcasecmp(cmd, "AVPresetVideo"))
-            ffserver_opt_preset(arg, config->dummy_vctx, config, line_num);
+            ffserver_opt_preset(arg, AV_OPT_FLAG_VIDEO_PARAM, config, line_num);
         else
-            ffserver_opt_preset(arg, config->dummy_actx, config, line_num);
+            ffserver_opt_preset(arg, AV_OPT_FLAG_AUDIO_PARAM, config, line_num);
     } else if (!av_strcasecmp(cmd, "VideoTag")) {
         ffserver_get_arg(arg, sizeof(arg), p);
         if (strlen(arg) == 4) {
