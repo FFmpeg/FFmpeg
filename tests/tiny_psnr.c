@@ -180,8 +180,7 @@ static int run_psnr(FILE *f[2], int len, int shift, int skip_bytes)
             switch (len) {
             case 1:
             case 2: {
-                int64_t a = buf[0][j];
-                int64_t b = buf[1][j];
+                int64_t a, b;
                 int dist;
                 if (len == 2) {
                     a = get_s16l(buf[0] + j);
