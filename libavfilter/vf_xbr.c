@@ -136,10 +136,6 @@ static void xbr2x(AVFrame * input, AVFrame * output, const uint32_t * r2y)
     int next_line = output->linesize[0]>>2;
 
     for (y = 0; y < input->height; y++) {
-
-        uint32_t pprev;
-        uint32_t pprev2;
-
         uint32_t * E = (uint32_t *)(output->data[0] + y * output->linesize[0] * 2);
 
         /* middle. Offset of -8 is given */
@@ -167,8 +163,6 @@ static void xbr2x(AVFrame * input, AVFrame * output, const uint32_t * r2y)
             }
         }
 
-        pprev = pprev2 = 2;
-
         for (x = 0; x < input->width; x++) {
             uint32_t B1 = sa0[2];
             uint32_t PB = sa1[2];
@@ -176,59 +170,29 @@ static void xbr2x(AVFrame * input, AVFrame * output, const uint32_t * r2y)
             uint32_t PH = sa3[2];
             uint32_t H5 = sa4[2];
 
+            const int pprev = 2 - (x > 0);
             uint32_t A1 = sa0[pprev];
             uint32_t PA = sa1[pprev];
             uint32_t PD = sa2[pprev];
             uint32_t PG = sa3[pprev];
             uint32_t G5 = sa4[pprev];
 
+            const int pprev2 = pprev - (x > 1);
             uint32_t A0 = sa1[pprev2];
             uint32_t D0 = sa2[pprev2];
             uint32_t G0 = sa3[pprev2];
 
-            uint32_t C1 = 0;
-            uint32_t PC = 0;
-            uint32_t PF = 0;
-            uint32_t PI = 0;
-            uint32_t I5 = 0;
+            const int pnext = 3 - (x == input->width - 1);
+            uint32_t C1 = sa0[pnext];
+            uint32_t PC = sa1[pnext];
+            uint32_t PF = sa2[pnext];
+            uint32_t PI = sa3[pnext];
+            uint32_t I5 = sa4[pnext];
 
-            uint32_t C4 = 0;
-            uint32_t F4 = 0;
-            uint32_t I4 = 0;
-
-            if (x >= input->width - 2) {
-                if (x == input->width - 1) {
-                    C1 = sa0[2];
-                    PC = sa1[2];
-                    PF = sa2[2];
-                    PI = sa3[2];
-                    I5 = sa4[2];
-
-                    C4 = sa1[2];
-                    F4 = sa2[2];
-                    I4 = sa3[2];
-                } else {
-                    C1 = sa0[3];
-                    PC = sa1[3];
-                    PF = sa2[3];
-                    PI = sa3[3];
-                    I5 = sa4[3];
-
-                    C4 = sa1[3];
-                    F4 = sa2[3];
-                    I4 = sa3[3];
-                }
-            } else {
-                C1 = sa0[3];
-                PC = sa1[3];
-                PF = sa2[3];
-                PI = sa3[3];
-                I5 = sa4[3];
-
-                C4 = sa1[4];
-                F4 = sa2[4];
-                I4 = sa3[4];
-            }
+            const int pnext2 = pnext + 1 - (x >= input->width - 2);
+            uint32_t C4 = sa1[pnext2];
+            uint32_t F4 = sa2[pnext2];
+            uint32_t I4 = sa3[pnext2];
 
             E[0] = E[1] = E[next_line] = E[next_line + 1] = PE; // 0, 1, 2, 3
 
@@ -244,11 +208,6 @@ static void xbr2x(AVFrame * input, AVFrame * output, const uint32_t * r2y)
             sa4 += 1;
 
             E += 2;
-
-            if (pprev2){
-                pprev2--;
-                pprev = 1;
-            }
         }
     }
 }
@@ -299,9 +258,6 @@ static void xbr3x(AVFrame *input, AVFrame *output, const uint32_t *r2y)
 {
     const int nl = output->linesize[0]>>2;
     const int nl1 = nl + nl;
-    uint32_t pprev;
-    uint32_t pprev2;
-
     int x,y;
 
     for (y = 0; y < input->height; y++) {
@@ -333,8 +289,6 @@ static void xbr3x(AVFrame *input, AVFrame *output, const uint32_t *r2y)
             }
         }
 
-        pprev = pprev2 = 2;
-
         for (x = 0; x < input->width; x++){
             uint32_t B1 = sa0[2];
             uint32_t PB = sa1[2];
@@ -342,59 +296,29 @@ static void xbr3x(AVFrame *input, AVFrame *output, const uint32_t *r2y)
             uint32_t PH = sa3[2];
             uint32_t H5 = sa4[2];
 
+            const int pprev = 2 - (x > 0);
             uint32_t A1 = sa0[pprev];
             uint32_t PA = sa1[pprev];
             uint32_t PD = sa2[pprev];
             uint32_t PG = sa3[pprev];
             uint32_t G5 = sa4[pprev];
 
+            const int pprev2 = pprev - (x > 1);
             uint32_t A0 = sa1[pprev2];
             uint32_t D0 = sa2[pprev2];
             uint32_t G0 = sa3[pprev2];
 
-            uint32_t C1 = 0;
-            uint32_t PC = 0;
-            uint32_t PF = 0;
-            uint32_t PI = 0;
-            uint32_t I5 = 0;
+            const int pnext = 3 - (x == input->width - 1);
+            uint32_t C1 = sa0[pnext];
+            uint32_t PC = sa1[pnext];
+            uint32_t PF = sa2[pnext];
+            uint32_t PI = sa3[pnext];
+            uint32_t I5 = sa4[pnext];
 
-            uint32_t C4 = 0;
-            uint32_t F4 = 0;
-            uint32_t I4 = 0;
-
-            if (x >= input->width - 2){
-                if (x == input->width - 1){
-                    C1 = sa0[2];
-                    PC = sa1[2];
-                    PF = sa2[2];
-                    PI = sa3[2];
-                    I5 = sa4[2];
-
-                    C4 = sa1[2];
-                    F4 = sa2[2];
-                    I4 = sa3[2];
-                } else {
-                    C1 = sa0[3];
-                    PC = sa1[3];
-                    PF = sa2[3];
-                    PI = sa3[3];
-                    I5 = sa4[3];
-
-                    C4 = sa1[3];
-                    F4 = sa2[3];
-                    I4 = sa3[3];
-                }
-            } else {
-                C1 = sa0[3];
-                PC = sa1[3];
-                PF = sa2[3];
-                PI = sa3[3];
-                I5 = sa4[3];
-
-                C4 = sa1[4];
-                F4 = sa2[4];
-                I4 = sa3[4];
-            }
+            const int pnext2 = pnext + 1 - (x >= input->width - 2);
+            uint32_t C4 = sa1[pnext2];
+            uint32_t F4 = sa2[pnext2];
+            uint32_t I4 = sa3[pnext2];
 
             E[0]   = E[1]     = E[2]     = PE;
             E[nl]  = E[nl+1]  = E[nl+2]  = PE; // 3, 4, 5
@@ -412,11 +336,6 @@ static void xbr3x(AVFrame *input, AVFrame *output, const uint32_t *r2y)
             sa4 += 1;
 
             E += 3;
-
-            if (pprev2){
-                pprev2--;
-                pprev = 1;
-            }
         }
     }
 }
@@ -473,9 +392,6 @@ static void xbr4x(AVFrame *input, AVFrame *output, const uint32_t *r2y)
     const int nl = output->linesize[0]>>2;
     const int nl1 = nl + nl;
     const int nl2 = nl1 + nl;
-    uint32_t pprev;
-    uint32_t pprev2;
-
     int x, y;
 
     for (y = 0; y < input->height; y++) {
@@ -507,8 +423,6 @@ static void xbr4x(AVFrame *input, AVFrame *output, const uint32_t *r2y)
             }
         }
 
-        pprev = pprev2 = 2;
-
         for (x = 0; x < input->width; x++) {
             uint32_t B1 = sa0[2];
             uint32_t PB = sa1[2];
@@ -516,59 +430,29 @@ static void xbr4x(AVFrame *input, AVFrame *output, const uint32_t *r2y)
             uint32_t PH = sa3[2];
             uint32_t H5 = sa4[2];
 
+            const int pprev = 2 - (x > 0);
             uint32_t A1 = sa0[pprev];
             uint32_t PA = sa1[pprev];
             uint32_t PD = sa2[pprev];
             uint32_t PG = sa3[pprev];
             uint32_t G5 = sa4[pprev];
 
+            const int pprev2 = pprev - (x > 1);
             uint32_t A0 = sa1[pprev2];
             uint32_t D0 = sa2[pprev2];
             uint32_t G0 = sa3[pprev2];
 
-            uint32_t C1 = 0;
-            uint32_t PC = 0;
-            uint32_t PF = 0;
-            uint32_t PI = 0;
-            uint32_t I5 = 0;
+            const int pnext = 3 - (x == input->width - 1);
+            uint32_t C1 = sa0[pnext];
+            uint32_t PC = sa1[pnext];
+            uint32_t PF = sa2[pnext];
+            uint32_t PI = sa3[pnext];
+            uint32_t I5 = sa4[pnext];
 
-            uint32_t C4 = 0;
-            uint32_t F4 = 0;
-            uint32_t I4 = 0;
-
-            if (x >= input->width - 2) {
-                if (x == input->width - 1) {
-                    C1 = sa0[2];
-                    PC = sa1[2];
-                    PF = sa2[2];
-                    PI = sa3[2];
-                    I5 = sa4[2];
-
-                    C4 = sa1[2];
-                    F4 = sa2[2];
-                    I4 = sa3[2];
-                } else {
-                    C1 = sa0[3];
-                    PC = sa1[3];
-                    PF = sa2[3];
-                    PI = sa3[3];
-                    I5 = sa4[3];
-
-                    C4 = sa1[3];
-                    F4 = sa2[3];
-                    I4 = sa3[3];
-                }
-            } else {
-                C1 = sa0[3];
-                PC = sa1[3];
-                PF = sa2[3];
-                PI = sa3[3];
-                I5 = sa4[3];
-
-                C4 = sa1[4];
-                F4 = sa2[4];
-                I4 = sa3[4];
-            }
+            const int pnext2 = pnext + 1 - (x >= input->width - 2);
+            uint32_t C4 = sa1[pnext2];
+            uint32_t F4 = sa2[pnext2];
+            uint32_t I4 = sa3[pnext2];
 
             E[0]   = E[1]     = E[2]     = E[3]     = PE;
             E[nl]  = E[nl+1]  = E[nl+2]  = E[nl+3]  = PE; //  4,  5,  6,  7
@@ -587,11 +471,6 @@ static void xbr4x(AVFrame *input, AVFrame *output, const uint32_t *r2y)
             sa4 += 1;
 
             E += 4;
-
-            if (pprev2){
-                pprev2--;
-                pprev = 1;
-            }
         }
     }
 }
