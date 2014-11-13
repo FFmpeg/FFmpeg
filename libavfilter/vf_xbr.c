@@ -96,6 +96,28 @@ static uint32_t pixel_diff(uint32_t x, uint32_t y, const uint32_t *r2y)
 #define eq(A, B)\
     (df(A, B) < 155)\
 
+#define INIT_SRC_DST_POINTERS(level)                                                                    \
+    uint32_t *E = (uint32_t *)(output->data[0] + y * output->linesize[0] * (level));                    \
+    const uint32_t *sa2 = (uint32_t *)(input->data[0] + y * input->linesize[0] - 8); /* center */       \
+    const uint32_t *sa1 = sa2 - (input->linesize[0]>>2); /* up x1 */                                    \
+    const uint32_t *sa0 = sa1 - (input->linesize[0]>>2); /* up x2 */                                    \
+    const uint32_t *sa3 = sa2 + (input->linesize[0]>>2); /* down x1 */                                  \
+    const uint32_t *sa4 = sa3 + (input->linesize[0]>>2); /* down x2 */                                  \
+                                                                                                        \
+    if (y <= 1) {                                                                                       \
+        sa0 = sa1;                                                                                      \
+        if (y == 0) {                                                                                   \
+            sa0 = sa1 = sa2;                                                                            \
+        }                                                                                               \
+    }                                                                                                   \
+                                                                                                        \
+    if (y >= input->height - 2) {                                                                       \
+        sa4 = sa3;                                                                                      \
+        if (y == input->height - 1) {                                                                   \
+            sa4 = sa3 = sa2;                                                                            \
+        }                                                                                               \
+    }
+
 #define INIT_21_PIXELS                                      \
     const uint32_t B1 = sa0[2];                             \
     const uint32_t PB = sa1[2];                             \
@@ -167,32 +189,7 @@ static void xbr2x(AVFrame * input, AVFrame * output, const uint32_t * r2y)
     int next_line = output->linesize[0]>>2;
 
     for (y = 0; y < input->height; y++) {
-        uint32_t * E = (uint32_t *)(output->data[0] + y * output->linesize[0] * 2);
-
-        /* middle. Offset of -8 is given */
-        const uint32_t *sa2 = (uint32_t *)(input->data[0] + y * input->linesize[0] - 8);
-        /* up one */
-        const uint32_t *sa1 = sa2 - (input->linesize[0]>>2);
-        /* up two */
-        const uint32_t *sa0 = sa1 - (input->linesize[0]>>2);
-        /* down one */
-        const uint32_t *sa3 = sa2 + (input->linesize[0]>>2);
-        /* down two */
-        const uint32_t *sa4 = sa3 + (input->linesize[0]>>2);
-
-        if (y <= 1) {
-            sa0 = sa1;
-            if (y == 0) {
-                sa0 = sa1 = sa2;
-            }
-        }
-
-        if (y >= input->height - 2) {
-            sa4 = sa3;
-            if (y == input->height - 1) {
-                sa4 = sa3 = sa2;
-            }
-        }
+        INIT_SRC_DST_POINTERS(2)
 
         for (x = 0; x < input->width; x++) {
             INIT_21_PIXELS
@@ -264,33 +261,7 @@ static void xbr3x(AVFrame *input, AVFrame *output, const uint32_t *r2y)
     int x,y;
 
     for (y = 0; y < input->height; y++) {
-
-        uint32_t * E = (uint32_t *)(output->data[0] + y * output->linesize[0] * 3);
-
-        /* middle. Offset of -8 is given */
-        const uint32_t *sa2 = (uint32_t *)(input->data[0] + y * input->linesize[0] - 8);
-        /* up one */
-        const uint32_t *sa1 = sa2 - (input->linesize[0]>>2);
-        /* up two */
-        const uint32_t *sa0 = sa1 - (input->linesize[0]>>2);
-        /* down one */
-        const uint32_t *sa3 = sa2 + (input->linesize[0]>>2);
-        /* down two */
-        const uint32_t *sa4 = sa3 + (input->linesize[0]>>2);
-
-        if (y <= 1){
-            sa0 = sa1;
-            if (y == 0){
-                sa0 = sa1 = sa2;
-            }
-        }
-
-        if (y >= input->height - 2){
-            sa4 = sa3;
-            if (y == input->height - 1){
-                sa4 = sa3 = sa2;
-            }
-        }
+        INIT_SRC_DST_POINTERS(3)
 
         for (x = 0; x < input->width; x++){
             INIT_21_PIXELS
@@ -370,33 +341,7 @@ static void xbr4x(AVFrame *input, AVFrame *output, const uint32_t *r2y)
     int x, y;
 
     for (y = 0; y < input->height; y++) {
-
-        uint32_t * E = (uint32_t *)(output->data[0] + y * output->linesize[0] * 4);
-
-        /* middle. Offset of -8 is given */
-        const uint32_t *sa2 = (uint32_t *)(input->data[0] + y * input->linesize[0] - 8);
-        /* up one */
-        const uint32_t *sa1 = sa2 - (input->linesize[0]>>2);
-        /* up two */
-        const uint32_t *sa0 = sa1 - (input->linesize[0]>>2);
-        /* down one */
-        const uint32_t *sa3 = sa2 + (input->linesize[0]>>2);
-        /* down two */
-        const uint32_t *sa4 = sa3 + (input->linesize[0]>>2);
-
-        if (y <= 1) {
-            sa0 = sa1;
-            if (y == 0) {
-                sa0 = sa1 = sa2;
-            }
-        }
-
-        if (y >= input->height - 2) {
-            sa4 = sa3;
-            if (y == input->height - 1) {
-                sa4 = sa3 = sa2;
-            }
-        }
+        INIT_SRC_DST_POINTERS(4)
 
         for (x = 0; x < input->width; x++) {
             INIT_21_PIXELS
