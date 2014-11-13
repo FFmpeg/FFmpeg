@@ -510,7 +510,7 @@ static int shorten_decode_frame(AVCodecContext *avctx, void *data,
                 if (bitshift > 31) {
                     av_log(avctx, AV_LOG_ERROR, "bitshift %d is invalid\n",
                            bitshift);
-                    return AVERROR_PATCHWELCOME;
+                    return AVERROR_INVALIDDATA;
                 }
                 s->bitshift = bitshift;
                 break;
