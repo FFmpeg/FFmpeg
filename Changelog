@@ -11,6 +11,7 @@ version <next>:
 - XCB-based screen-grabber
 - UDP-Lite support (RFC 3828)
 - xBR scaling filter
+- AVFoundation screen capturing support
 
 version 2.4:
 - Icecast protocol
