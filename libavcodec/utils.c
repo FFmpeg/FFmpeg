@@ -3312,6 +3312,7 @@ int av_get_audio_frame_duration(AVCodecContext *avctx, int frame_bytes)
     case AV_CODEC_ID_MP1:          return  384;
     case AV_CODEC_ID_ATRAC1:       return  512;
     case AV_CODEC_ID_ATRAC3:       return 1024;
+    case AV_CODEC_ID_ATRAC3P:      return 2048;
     case AV_CODEC_ID_MP2:
     case AV_CODEC_ID_MUSEPACK7:    return 1152;
     case AV_CODEC_ID_AC3:          return 1536;
