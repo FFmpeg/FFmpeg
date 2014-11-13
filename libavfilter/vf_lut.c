@@ -161,15 +161,32 @@ static double compute_gammaval(void *opaque, double gamma)
     return pow((val-minval)/(maxval-minval), gamma) * (maxval-minval)+minval;
 }
 
+/**
+ * Compute Rec.709 gama correction of value val
+ */
+static double compute_gammaval709(void *opaque, double gamma)
+{
+    LutContext *s = opaque;
+    double val    = s->var_values[VAR_CLIPVAL];
+    double minval = s->var_values[VAR_MINVAL];
+    double maxval = s->var_values[VAR_MAXVAL];
+    double level = (val - minval) / (maxval - minval);
+    level = level < 0.018 ? 4.5 * level
+                          : 1.099 * pow(level, 1.0 / gamma) - 0.099;
+    return level * (maxval - minval) + minval;
+}
+
 static double (* const funcs1[])(void *, double) = {
     (void *)clip,
     (void *)compute_gammaval,
+    (void *)compute_gammaval709,
     NULL
 };
 
 static const char * const funcs1_names[] = {
     "clip",
     "gammaval",
+    "gammaval709",
     NULL
 };
 
