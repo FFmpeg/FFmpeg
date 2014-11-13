@@ -96,6 +96,37 @@ static uint32_t pixel_diff(uint32_t x, uint32_t y, const uint32_t *r2y)
 #define eq(A, B)\
     (df(A, B) < 155)\
 
+#define INIT_21_PIXELS                                      \
+    const uint32_t B1 = sa0[2];                             \
+    const uint32_t PB = sa1[2];                             \
+    const uint32_t PE = sa2[2];                             \
+    const uint32_t PH = sa3[2];                             \
+    const uint32_t H5 = sa4[2];                             \
+                                                            \
+    const int pprev = 2 - (x > 0);                          \
+    const uint32_t A1 = sa0[pprev];                         \
+    const uint32_t PA = sa1[pprev];                         \
+    const uint32_t PD = sa2[pprev];                         \
+    const uint32_t PG = sa3[pprev];                         \
+    const uint32_t G5 = sa4[pprev];                         \
+                                                            \
+    const int pprev2 = pprev - (x > 1);                     \
+    const uint32_t A0 = sa1[pprev2];                        \
+    const uint32_t D0 = sa2[pprev2];                        \
+    const uint32_t G0 = sa3[pprev2];                        \
+                                                            \
+    const int pnext = 3 - (x == input->width - 1);          \
+    const uint32_t C1 = sa0[pnext];                         \
+    const uint32_t PC = sa1[pnext];                         \
+    const uint32_t PF = sa2[pnext];                         \
+    const uint32_t PI = sa3[pnext];                         \
+    const uint32_t I5 = sa4[pnext];                         \
+                                                            \
+    const int pnext2 = pnext + 1 - (x >= input->width - 2); \
+    const uint32_t C4 = sa1[pnext2];                        \
+    const uint32_t F4 = sa2[pnext2];                        \
+    const uint32_t I4 = sa3[pnext2];
+
 #define FILT2(PE, PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, N0, N1, N2, N3) do { \
      unsigned ex = (PE!=PH && PE!=PF); \
      if ( ex )\
@@ -164,35 +195,7 @@ static void xbr2x(AVFrame * input, AVFrame * output, const uint32_t * r2y)
         }
 
         for (x = 0; x < input->width; x++) {
-            uint32_t B1 = sa0[2];
-            uint32_t PB = sa1[2];
-            uint32_t PE = sa2[2];
-            uint32_t PH = sa3[2];
-            uint32_t H5 = sa4[2];
-
-            const int pprev = 2 - (x > 0);
-            uint32_t A1 = sa0[pprev];
-            uint32_t PA = sa1[pprev];
-            uint32_t PD = sa2[pprev];
-            uint32_t PG = sa3[pprev];
-            uint32_t G5 = sa4[pprev];
-
-            const int pprev2 = pprev - (x > 1);
-            uint32_t A0 = sa1[pprev2];
-            uint32_t D0 = sa2[pprev2];
-            uint32_t G0 = sa3[pprev2];
-
-            const int pnext = 3 - (x == input->width - 1);
-            uint32_t C1 = sa0[pnext];
-            uint32_t PC = sa1[pnext];
-            uint32_t PF = sa2[pnext];
-            uint32_t PI = sa3[pnext];
-            uint32_t I5 = sa4[pnext];
-
-            const int pnext2 = pnext + 1 - (x >= input->width - 2);
-            uint32_t C4 = sa1[pnext2];
-            uint32_t F4 = sa2[pnext2];
-            uint32_t I4 = sa3[pnext2];
+            INIT_21_PIXELS
 
             E[0] = E[1] = E[next_line] = E[next_line + 1] = PE; // 0, 1, 2, 3
 
@@ -290,35 +293,7 @@ static void xbr3x(AVFrame *input, AVFrame *output, const uint32_t *r2y)
         }
 
         for (x = 0; x < input->width; x++){
-            uint32_t B1 = sa0[2];
-            uint32_t PB = sa1[2];
-            uint32_t PE = sa2[2];
-            uint32_t PH = sa3[2];
-            uint32_t H5 = sa4[2];
-
-            const int pprev = 2 - (x > 0);
-            uint32_t A1 = sa0[pprev];
-            uint32_t PA = sa1[pprev];
-            uint32_t PD = sa2[pprev];
-            uint32_t PG = sa3[pprev];
-            uint32_t G5 = sa4[pprev];
-
-            const int pprev2 = pprev - (x > 1);
-            uint32_t A0 = sa1[pprev2];
-            uint32_t D0 = sa2[pprev2];
-            uint32_t G0 = sa3[pprev2];
-
-            const int pnext = 3 - (x == input->width - 1);
-            uint32_t C1 = sa0[pnext];
-            uint32_t PC = sa1[pnext];
-            uint32_t PF = sa2[pnext];
-            uint32_t PI = sa3[pnext];
-            uint32_t I5 = sa4[pnext];
-
-            const int pnext2 = pnext + 1 - (x >= input->width - 2);
-            uint32_t C4 = sa1[pnext2];
-            uint32_t F4 = sa2[pnext2];
-            uint32_t I4 = sa3[pnext2];
+            INIT_21_PIXELS
 
             E[0]   = E[1]     = E[2]     = PE;
             E[nl]  = E[nl+1]  = E[nl+2]  = PE; // 3, 4, 5
@@ -424,35 +399,7 @@ static void xbr4x(AVFrame *input, AVFrame *output, const uint32_t *r2y)
         }
 
         for (x = 0; x < input->width; x++) {
-            uint32_t B1 = sa0[2];
-            uint32_t PB = sa1[2];
-            uint32_t PE = sa2[2];
-            uint32_t PH = sa3[2];
-            uint32_t H5 = sa4[2];
-
-            const int pprev = 2 - (x > 0);
-            uint32_t A1 = sa0[pprev];
-            uint32_t PA = sa1[pprev];
-            uint32_t PD = sa2[pprev];
-            uint32_t PG = sa3[pprev];
-            uint32_t G5 = sa4[pprev];
-
-            const int pprev2 = pprev - (x > 1);
-            uint32_t A0 = sa1[pprev2];
-            uint32_t D0 = sa2[pprev2];
-            uint32_t G0 = sa3[pprev2];
-
-            const int pnext = 3 - (x == input->width - 1);
-            uint32_t C1 = sa0[pnext];
-            uint32_t PC = sa1[pnext];
-            uint32_t PF = sa2[pnext];
-            uint32_t PI = sa3[pnext];
-            uint32_t I5 = sa4[pnext];
-
-            const int pnext2 = pnext + 1 - (x >= input->width - 2);
-            uint32_t C4 = sa1[pnext2];
-            uint32_t F4 = sa2[pnext2];
-            uint32_t I4 = sa3[pnext2];
+            INIT_21_PIXELS
 
             E[0]   = E[1]     = E[2]     = E[3]     = PE;
             E[nl]  = E[nl+1]  = E[nl+2]  = E[nl+3]  = PE; //  4,  5,  6,  7
