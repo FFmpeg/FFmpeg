@@ -694,6 +694,25 @@ static int decode_plte_chunk(AVCodecContext *avctx, PNGDecContext *s,
     return 0;
 }
 
+static int decode_trns_chunk(AVCodecContext *avctx, PNGDecContext *s,
+                             uint32_t length)
+{
+    int v, i;
+
+    /* read the transparency. XXX: Only palette mode supported */
+    if (s->color_type != PNG_COLOR_TYPE_PALETTE ||
+            length > 256 ||
+            !(s->state & PNG_PLTE))
+        return AVERROR_INVALIDDATA;
+    for (i = 0; i < length; i++) {
+        v = bytestream2_get_byte(&s->gb);
+        s->palette[i] = (s->palette[i] & 0x00ffffff) | (v << 24);
+    }
+    bytestream2_skip(&s->gb, 4);     /* crc */
+
+    return 0;
+}
+
 static int decode_frame_png(AVCodecContext *avctx,
                         void *data, int *got_frame,
                         AVPacket *avpkt)
@@ -771,20 +790,8 @@ static int decode_frame_png(AVCodecContext *avctx,
                 goto skip_tag;
         break;
         case MKTAG('t', 'R', 'N', 'S'):
-        {
-            int v, i;
-
-            /* read the transparency. XXX: Only palette mode supported */
-            if (s->color_type != PNG_COLOR_TYPE_PALETTE ||
-                length > 256 ||
-                !(s->state & PNG_PLTE))
+            if (decode_trns_chunk(avctx, s, length) < 0)
                 goto skip_tag;
-            for (i = 0; i < length; i++) {
-                v = bytestream2_get_byte(&s->gb);
-                s->palette[i] = (s->palette[i] & 0x00ffffff) | (v << 24);
-            }
-            bytestream2_skip(&s->gb, 4);     /* crc */
-        }
         break;
         case MKTAG('t', 'E', 'X', 't'):
             if (decode_text_chunk(s, length, 0, &metadata) < 0)
