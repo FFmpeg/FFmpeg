@@ -56,7 +56,7 @@
 typedef struct NellyMoserEncodeContext {
     AVCodecContext  *avctx;
     int             last_frame;
-    AVFloatDSPContext fdsp;
+    AVFloatDSPContext *fdsp;
     FFTContext      mdct_ctx;
     AudioFrameQueue afq;
     DECLARE_ALIGNED(32, float, mdct_out)[NELLY_SAMPLES];
@@ -122,12 +122,12 @@ static void apply_mdct(NellyMoserEncodeContext *s)
     float *in1 = s->buf + NELLY_BUF_LEN;
     float *in2 = s->buf + 2 * NELLY_BUF_LEN;
 
-    s->fdsp.vector_fmul        (s->in_buff,                 in0, ff_sine_128, NELLY_BUF_LEN);
-    s->fdsp.vector_fmul_reverse(s->in_buff + NELLY_BUF_LEN, in1, ff_sine_128, NELLY_BUF_LEN);
+    s->fdsp->vector_fmul        (s->in_buff,                 in0, ff_sine_128, NELLY_BUF_LEN);
+    s->fdsp->vector_fmul_reverse(s->in_buff + NELLY_BUF_LEN, in1, ff_sine_128, NELLY_BUF_LEN);
     s->mdct_ctx.mdct_calc(&s->mdct_ctx, s->mdct_out, s->in_buff);
 
-    s->fdsp.vector_fmul        (s->in_buff,                 in1, ff_sine_128, NELLY_BUF_LEN);
-    s->fdsp.vector_fmul_reverse(s->in_buff + NELLY_BUF_LEN, in2, ff_sine_128, NELLY_BUF_LEN);
+    s->fdsp->vector_fmul        (s->in_buff,                 in1, ff_sine_128, NELLY_BUF_LEN);
+    s->fdsp->vector_fmul_reverse(s->in_buff + NELLY_BUF_LEN, in2, ff_sine_128, NELLY_BUF_LEN);
     s->mdct_ctx.mdct_calc(&s->mdct_ctx, s->mdct_out + NELLY_BUF_LEN, s->in_buff);
 }
 
@@ -142,6 +142,7 @@ static av_cold int encode_end(AVCodecContext *avctx)
         av_freep(&s->path);
     }
     ff_af_queue_close(&s->afq);
+    av_freep(&s->fdsp);
 
     return 0;
 }
@@ -170,7 +171,11 @@ static av_cold int encode_init(AVCodecContext *avctx)
     s->avctx = avctx;
     if ((ret = ff_mdct_init(&s->mdct_ctx, 8, 0, 32768.0)) < 0)
         goto error;
-    avpriv_float_dsp_init(&s->fdsp, avctx->flags & CODEC_FLAG_BITEXACT);
+    s->fdsp = avpriv_float_dsp_alloc(avctx->flags & CODEC_FLAG_BITEXACT);
+    if (!s->fdsp) {
+        ret = AVERROR(ENOMEM);
+        goto error;
+    }
 
     /* Generate overlap window */
     ff_init_ff_sine_windows(7);
