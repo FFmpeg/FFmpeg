@@ -543,6 +543,23 @@ static int decode_ihdr_chunk(AVCodecContext *avctx, PNGDecContext *s,
                 "compression_type=%d filter_type=%d interlace_type=%d\n",
                 s->width, s->height, s->bit_depth, s->color_type,
                 s->compression_type, s->filter_type, s->interlace_type);
+
+    return 0;
+}
+
+static int decode_phys_chunk(AVCodecContext *avctx, PNGDecContext *s)
+{
+    if (s->state & PNG_IDAT) {
+        av_log(avctx, AV_LOG_ERROR, "pHYs after IDAT\n");
+        return AVERROR_INVALIDDATA;
+    }
+    avctx->sample_aspect_ratio.num = bytestream2_get_be32(&s->gb);
+    avctx->sample_aspect_ratio.den = bytestream2_get_be32(&s->gb);
+    if (avctx->sample_aspect_ratio.num < 0 || avctx->sample_aspect_ratio.den < 0)
+        avctx->sample_aspect_ratio = (AVRational){ 0, 1 };
+    bytestream2_skip(&s->gb, 1); /* unit specifier */
+    bytestream2_skip(&s->gb, 4); /* crc */
+
     return 0;
 }
 
@@ -611,16 +628,8 @@ static int decode_frame_png(AVCodecContext *avctx,
                 goto fail;
             break;
         case MKTAG('p', 'H', 'Y', 's'):
-            if (s->state & PNG_IDAT) {
-                av_log(avctx, AV_LOG_ERROR, "pHYs after IDAT\n");
+            if (decode_phys_chunk(avctx, s) < 0)
                 goto fail;
-            }
-            avctx->sample_aspect_ratio.num = bytestream2_get_be32(&s->gb);
-            avctx->sample_aspect_ratio.den = bytestream2_get_be32(&s->gb);
-            if (avctx->sample_aspect_ratio.num < 0 || avctx->sample_aspect_ratio.den < 0)
-                avctx->sample_aspect_ratio = (AVRational){ 0, 1 };
-            bytestream2_skip(&s->gb, 1); /* unit specifier */
-            bytestream2_skip(&s->gb, 4); /* crc */
             break;
         case MKTAG('I', 'D', 'A', 'T'):
             if (!(s->state & PNG_IHDR)) {
