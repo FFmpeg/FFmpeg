@@ -761,7 +761,7 @@ static int decode_frame_png(AVCodecContext *avctx,
         }
 
         length = bytestream2_get_be32(&s->gb);
-        if (length > 0x7fffffff || length > bytestream2_get_bytes_left(&s->gb))  {
+        if (length > 0x7fffffff || length > bytestream2_get_bytes_left(&s->gb)) {
             av_log(avctx, AV_LOG_ERROR, "chunk too big\n");
             goto fail;
         }
@@ -788,11 +788,11 @@ static int decode_frame_png(AVCodecContext *avctx,
         case MKTAG('P', 'L', 'T', 'E'):
             if (decode_plte_chunk(avctx, s, length) < 0)
                 goto skip_tag;
-        break;
+            break;
         case MKTAG('t', 'R', 'N', 'S'):
             if (decode_trns_chunk(avctx, s, length) < 0)
                 goto skip_tag;
-        break;
+            break;
         case MKTAG('t', 'E', 'X', 't'):
             if (decode_text_chunk(s, length, 0, &metadata) < 0)
                 av_log(avctx, AV_LOG_WARNING, "Broken tEXt chunk\n");
@@ -820,7 +820,7 @@ skip_tag:
     }
 exit_loop:
 
-    if (s->bits_per_pixel == 1 && s->color_type == PNG_COLOR_TYPE_PALETTE){
+    if (s->bits_per_pixel == 1 && s->color_type == PNG_COLOR_TYPE_PALETTE) {
         int i, j, k;
         uint8_t *pd = p->data[0];
         for (j = 0; j < s->height; j++) {
@@ -846,7 +846,7 @@ exit_loop:
         uint8_t *pd = p->data[0];
         for (j = 0; j < s->height; j++) {
             i = s->width / 4;
-            if (s->color_type == PNG_COLOR_TYPE_PALETTE){
+            if (s->color_type == PNG_COLOR_TYPE_PALETTE) {
                 if ((s->width&3) >= 3) pd[4*i + 2]= (pd[i] >> 2) & 3;
                 if ((s->width&3) >= 2) pd[4*i + 1]= (pd[i] >> 4) & 3;
                 if ((s->width&3) >= 1) pd[4*i + 0]=  pd[i] >> 6;
@@ -875,12 +875,12 @@ exit_loop:
         uint8_t *pd = p->data[0];
         for (j = 0; j < s->height; j++) {
             i = s->width/2;
-            if (s->color_type == PNG_COLOR_TYPE_PALETTE){
+            if (s->color_type == PNG_COLOR_TYPE_PALETTE) {
                 if (s->width&1) pd[2*i+0]= pd[i]>>4;
                 for (i--; i >= 0; i--) {
-                pd[2*i + 1] = pd[i] & 15;
-                pd[2*i + 0] = pd[i] >> 4;
-            }
+                    pd[2*i + 1] = pd[i] & 15;
+                    pd[2*i + 0] = pd[i] >> 4;
+                }
             } else {
                 if (s->width & 1) pd[2*i + 0]= (pd[i] >> 4) * 0x11;
                 for (i--; i >= 0; i--) {
