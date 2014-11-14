@@ -2047,8 +2047,7 @@ static int decode_user_data(Mpeg4DecContext *ctx, GetBitContext *gb)
         ctx->xvid_build = build;
 
     if (ctx->xvid_build == -1 && ctx->divx_version == -1 && ctx->lavc_build == -1) {
-        if (s->stream_codec_tag == AV_RL32("XVID") ||
-            s->codec_tag        == AV_RL32("XVID") ||
+        if (s->codec_tag        == AV_RL32("XVID") ||
             s->codec_tag        == AV_RL32("XVIX") ||
             s->codec_tag        == AV_RL32("RMP4") ||
             s->codec_tag        == AV_RL32("ZMP4") ||

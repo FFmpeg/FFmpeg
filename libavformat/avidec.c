@@ -42,6 +42,7 @@ typedef struct AVIStream {
     int remaining;
     int packet_size;
 
+    uint32_t handler;
     uint32_t scale;
     uint32_t rate;
     int sample_size;        /* size of one sample (or packet)
@@ -515,7 +516,7 @@ static int avi_read_header(AVFormatContext *s)
             }
 
             assert(stream_index < s->nb_streams);
-            st->codec->stream_codec_tag = handler;
+            ast->handler = handler;
 
             avio_rl32(pb); /* flags */
             avio_rl16(pb); /* priority */
@@ -650,6 +651,11 @@ static int avi_read_header(AVFormatContext *s)
                     /* This is needed to get the pict type which is necessary
                      * for generating correct pts. */
                     st->need_parsing = AVSTREAM_PARSE_HEADERS;
+
+                    if (st->codec->codec_id == AV_CODEC_ID_MPEG4 &&
+                        ast->handler == MKTAG('X', 'V', 'I', 'D'))
+                        st->codec->codec_tag = MKTAG('X', 'V', 'I', 'D');
+
                     // Support "Resolution 1:1" for Avid AVI Codec
                     if (tag1 == MKTAG('A', 'V', 'R', 'n') &&
                         st->codec->extradata_size >= 31   &&
@@ -701,7 +707,7 @@ static int avi_read_header(AVFormatContext *s)
                         st->need_parsing = AVSTREAM_PARSE_NONE;
                     /* AVI files with Xan DPCM audio (wrongly) declare PCM
                      * audio in the header but have Axan as stream_code_tag. */
-                    if (st->codec->stream_codec_tag == AV_RL32("Axan")) {
+                    if (ast->handler == AV_RL32("Axan")) {
                         st->codec->codec_id  = AV_CODEC_ID_XAN_DPCM;
                         st->codec->codec_tag = 0;
                     }
