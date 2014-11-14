@@ -519,7 +519,7 @@ static int decode_text_chunk(PNGDecContext *s, uint32_t length, int compressed,
     return 0;
 }
 
-static int decode_frame(AVCodecContext *avctx,
+static int decode_frame_png(AVCodecContext *avctx,
                         void *data, int *got_frame,
                         AVPacket *avpkt)
 {
@@ -952,7 +952,7 @@ AVCodec ff_png_decoder = {
     .priv_data_size = sizeof(PNGDecContext),
     .init           = png_dec_init,
     .close          = png_dec_end,
-    .decode         = decode_frame,
+    .decode         = decode_frame_png,
     .init_thread_copy = ONLY_IF_THREADS_ENABLED(png_dec_init),
     .update_thread_context = ONLY_IF_THREADS_ENABLED(update_thread_context),
     .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_FRAME_THREADS /*| CODEC_CAP_DRAW_HORIZ_BAND*/,
