@@ -840,8 +840,7 @@ exit_loop:
             }
             pd += s->image_linesize;
         }
-    }
-    if (s->bits_per_pixel == 2){
+    } else if (s->bits_per_pixel == 2) {
         int i, j;
         uint8_t *pd = p->data[0];
         for (j = 0; j < s->height; j++) {
@@ -869,8 +868,7 @@ exit_loop:
             }
             pd += s->image_linesize;
         }
-    }
-    if (s->bits_per_pixel == 4){
+    } else if (s->bits_per_pixel == 4) {
         int i, j;
         uint8_t *pd = p->data[0];
         for (j = 0; j < s->height; j++) {
