@@ -87,6 +87,12 @@ enum AVFrameSideDataType {
      * in ETSI TS 101 154 using enum AVActiveFormatDescription.
      */
     AV_FRAME_DATA_AFD,
+
+    /**
+     * This side data must be associated with an audio frame and corresponds to
+     * enum AVAudioServiceType defined in avcodec.h.
+     */
+    AV_FRAME_DATA_AUDIO_SERVICE_TYPE,
 };
 
 enum AVActiveFormatDescription {

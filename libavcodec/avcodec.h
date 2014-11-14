@@ -917,6 +917,12 @@ enum AVPacketSideDataType {
      * Stereoscopic 3D information in form of the AVStereo3D struct.
      */
     AV_PKT_DATA_STEREO3D,
+
+    /**
+     * This side data should be associated with an audio stream and corresponds
+     * to enum AVAudioServiceType.
+     */
+    AV_PKT_DATA_AUDIO_SERVICE_TYPE,
 };
 
 typedef struct AVPacketSideData {
