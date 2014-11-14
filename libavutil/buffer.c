@@ -23,6 +23,7 @@
 #include "buffer_internal.h"
 #include "common.h"
 #include "mem.h"
+#include "thread.h"
 
 AVBufferRef *av_buffer_create(uint8_t *data, int size,
                               void (*free)(void *opaque, uint8_t *data),
@@ -199,6 +200,8 @@ AVBufferPool *av_buffer_pool_init(int size, AVBufferRef* (*alloc)(int size))
     if (!pool)
         return NULL;
 
+    ff_mutex_init(&pool->mutex, NULL);
+
     pool->size     = size;
     pool->alloc    = alloc ? alloc : av_buffer_alloc;
 
@@ -220,6 +223,7 @@ static void buffer_pool_free(AVBufferPool *pool)
         buf->free(buf->opaque, buf->data);
         av_freep(&buf);
     }
+    ff_mutex_destroy(&pool->mutex);
     av_freep(&pool);
 }
 
@@ -236,47 +240,16 @@ void av_buffer_pool_uninit(AVBufferPool **ppool)
         buffer_pool_free(pool);
 }
 
-/* remove the whole buffer list from the pool and return it */
-static BufferPoolEntry *get_pool(AVBufferPool *pool)
-{
-    BufferPoolEntry *cur = NULL, *last = NULL;
-
-    do {
-        FFSWAP(BufferPoolEntry*, cur, last);
-        cur = avpriv_atomic_ptr_cas((void * volatile *)&pool->pool, last, NULL);
-        if (!cur)
-            return NULL;
-    } while (cur != last);
-
-    return cur;
-}
-
-static void add_to_pool(BufferPoolEntry *buf)
-{
-    AVBufferPool *pool;
-    BufferPoolEntry *cur, *end = buf;
-
-    if (!buf)
-        return;
-    pool = buf->pool;
-
-    while (end->next)
-        end = end->next;
-
-    while ((cur = avpriv_atomic_ptr_cas((void * volatile *)&pool->pool, NULL, buf))) {
-        /* pool is not empty, retrieve it and append it to our list */
-        cur = get_pool(pool);
-        end->next = cur;
-        while (end->next)
-            end = end->next;
-    }
-}
-
 static void pool_release_buffer(void *opaque, uint8_t *data)
 {
     BufferPoolEntry *buf = opaque;
     AVBufferPool *pool = buf->pool;
-    add_to_pool(buf);
+
+    ff_mutex_lock(&pool->mutex);
+    buf->next = pool->pool;
+    pool->pool = buf;
+    ff_mutex_unlock(&pool->mutex);
+
     if (!avpriv_atomic_int_add_and_fetch(&pool->refcount, -1))
         buffer_pool_free(pool);
 }
@@ -306,8 +279,6 @@ static AVBufferRef *pool_alloc_buffer(AVBufferPool *pool)
     ret->buffer->opaque = buf;
     ret->buffer->free   = pool_release_buffer;
 
-    avpriv_atomic_int_add_and_fetch(&pool->refcount, 1);
-
     return ret;
 }
 
@@ -316,22 +287,22 @@ AVBufferRef *av_buffer_pool_get(AVBufferPool *pool)
     AVBufferRef *ret;
     BufferPoolEntry *buf;
 
-    /* check whether the pool is empty */
-    buf = get_pool(pool);
-    if (!buf)
-        return pool_alloc_buffer(pool);
-
-    /* keep the first entry, return the rest of the list to the pool */
-    add_to_pool(buf->next);
-    buf->next = NULL;
-
-    ret = av_buffer_create(buf->data, pool->size, pool_release_buffer,
-                           buf, 0);
-    if (!ret) {
-        add_to_pool(buf);
-        return NULL;
+    ff_mutex_lock(&pool->mutex);
+    buf = pool->pool;
+    if (buf) {
+        ret = av_buffer_create(buf->data, pool->size, pool_release_buffer,
+                               buf, 0);
+        if (ret) {
+            pool->pool = buf->next;
+            buf->next = NULL;
+        }
+    } else {
+        ret = pool_alloc_buffer(pool);
     }
-    avpriv_atomic_int_add_and_fetch(&pool->refcount, 1);
+    ff_mutex_unlock(&pool->mutex);
+
+    if (ret)
+        avpriv_atomic_int_add_and_fetch(&pool->refcount, 1);
 
     return ret;
 }
