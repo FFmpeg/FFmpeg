@@ -1288,8 +1288,6 @@ av_cold int ff_mpv_common_init(MpegEncContext *s)
     /* convert fourcc to upper case */
     s->codec_tag          = avpriv_toupper4(s->avctx->codec_tag);
 
-    s->stream_codec_tag   = avpriv_toupper4(s->avctx->stream_codec_tag);
-
     FF_ALLOCZ_OR_GOTO(s->avctx, s->picture,
                       MAX_PICTURE_COUNT * sizeof(Picture), fail);
     for (i = 0; i < MAX_PICTURE_COUNT; i++) {
