@@ -196,7 +196,7 @@ static void mp3_write_xing(AVFormatContext *s)
 
     avpriv_mpegaudio_decode_header(&mpah, header);
 
-    av_assert0(mpah.frame_size >= XING_MAX_SIZE);
+    av_assert0(mpah.frame_size >= bytes_needed);
 
     ffio_fill(s->pb, 0, xing_offset);
     mp3->xing_offset = avio_tell(s->pb);
