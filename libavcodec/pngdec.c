@@ -519,6 +519,33 @@ static int decode_text_chunk(PNGDecContext *s, uint32_t length, int compressed,
     return 0;
 }
 
+static int decode_ihdr_chunk(AVCodecContext *avctx, PNGDecContext *s,
+                             uint32_t length)
+{
+    if (length != 13)
+        return AVERROR_INVALIDDATA;
+    s->width  = bytestream2_get_be32(&s->gb);
+    s->height = bytestream2_get_be32(&s->gb);
+    if (av_image_check_size(s->width, s->height, 0, avctx)) {
+        s->width = s->height = 0;
+        av_log(avctx, AV_LOG_ERROR, "Invalid image size\n");
+        return AVERROR_INVALIDDATA;
+    }
+    s->bit_depth        = bytestream2_get_byte(&s->gb);
+    s->color_type       = bytestream2_get_byte(&s->gb);
+    s->compression_type = bytestream2_get_byte(&s->gb);
+    s->filter_type      = bytestream2_get_byte(&s->gb);
+    s->interlace_type   = bytestream2_get_byte(&s->gb);
+    bytestream2_skip(&s->gb, 4); /* crc */
+    s->state |= PNG_IHDR;
+    if (avctx->debug & FF_DEBUG_PICT_INFO)
+        av_log(avctx, AV_LOG_DEBUG, "width=%d height=%d depth=%d color_type=%d "
+                "compression_type=%d filter_type=%d interlace_type=%d\n",
+                s->width, s->height, s->bit_depth, s->color_type,
+                s->compression_type, s->filter_type, s->interlace_type);
+    return 0;
+}
+
 static int decode_frame_png(AVCodecContext *avctx,
                         void *data, int *got_frame,
                         AVPacket *avpkt)
@@ -580,27 +607,8 @@ static int decode_frame_png(AVCodecContext *avctx,
                 ((tag >> 24) & 0xff), length);
         switch (tag) {
         case MKTAG('I', 'H', 'D', 'R'):
-            if (length != 13)
+            if (decode_ihdr_chunk(avctx, s, length) < 0)
                 goto fail;
-            s->width  = bytestream2_get_be32(&s->gb);
-            s->height = bytestream2_get_be32(&s->gb);
-            if (av_image_check_size(s->width, s->height, 0, avctx)) {
-                s->width = s->height = 0;
-                av_log(avctx, AV_LOG_ERROR, "Invalid image size\n");
-                goto fail;
-            }
-            s->bit_depth        = bytestream2_get_byte(&s->gb);
-            s->color_type       = bytestream2_get_byte(&s->gb);
-            s->compression_type = bytestream2_get_byte(&s->gb);
-            s->filter_type      = bytestream2_get_byte(&s->gb);
-            s->interlace_type   = bytestream2_get_byte(&s->gb);
-            bytestream2_skip(&s->gb, 4); /* crc */
-            s->state |= PNG_IHDR;
-            if (avctx->debug & FF_DEBUG_PICT_INFO)
-                av_log(avctx, AV_LOG_DEBUG, "width=%d height=%d depth=%d color_type=%d "
-                           "compression_type=%d filter_type=%d interlace_type=%d\n",
-                    s->width, s->height, s->bit_depth, s->color_type,
-                    s->compression_type, s->filter_type, s->interlace_type);
             break;
         case MKTAG('p', 'H', 'Y', 's'):
             if (s->state & PNG_IDAT) {
