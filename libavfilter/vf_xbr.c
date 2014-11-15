@@ -26,8 +26,6 @@
  *
  * @see http://www.libretro.com/forums/viewtopic.php?f=6&t=134
  * @see https://github.com/yoyofr/iFBA/blob/master/fba_src/src/intf/video/scalers/xbr.cpp
- *
- * @todo add threading
  */
 
 #include "libavutil/opt.h"
@@ -40,7 +38,7 @@
 #define RED_BLUE_MASK 0x00FF00FF
 #define GREEN_MASK    0x0000FF00
 
-typedef void (*xbrfunc_t)(AVFrame *input, AVFrame *output, const uint32_t *r2y);
+typedef int (*xbrfunc_t)(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs);
 
 typedef struct {
     const AVClass *class;
@@ -48,6 +46,11 @@ typedef struct {
     xbrfunc_t func;
     uint32_t rgbtoyuv[1<<24];
 } XBRContext;
+
+typedef struct ThreadData {
+    AVFrame *in, *out;
+    const uint32_t *rgbtoyuv;
+} ThreadData;
 
 #define OFFSET(x) offsetof(XBRContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
@@ -182,12 +185,18 @@ static uint32_t pixel_diff(uint32_t x, uint32_t y, const uint32_t *r2y)
     }                                                                                               \
 } while (0)
 
-static void xbr2x(AVFrame * input, AVFrame * output, const uint32_t * r2y)
+static int xbr2x(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
     int x, y;
+    const ThreadData *td = arg;
+    const AVFrame *input = td->in;
+    AVFrame *output = td->out;
+    const uint32_t *r2y = td->rgbtoyuv;
+    const int slice_start = (input->height *  jobnr   ) / nb_jobs;
+    const int slice_end   = (input->height * (jobnr+1)) / nb_jobs;
     const int nl = output->linesize[0] >> 2;
 
-    for (y = 0; y < input->height; y++) {
+    for (y = slice_start; y < slice_end; y++) {
         INIT_SRC_DST_POINTERS(2)
 
         for (x = 0; x < input->width; x++) {
@@ -209,6 +218,7 @@ static void xbr2x(AVFrame * input, AVFrame * output, const uint32_t * r2y)
             E += 2;
         }
     }
+    return 0;
 }
 
 #define FILT3(PE, PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1,   \
@@ -251,13 +261,19 @@ static void xbr2x(AVFrame * input, AVFrame * output, const uint32_t * r2y)
     }                                                                                               \
 } while (0)
 
-static void xbr3x(AVFrame *input, AVFrame *output, const uint32_t *r2y)
+static int xbr3x(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
     int x, y;
+    const ThreadData *td = arg;
+    const AVFrame *input = td->in;
+    AVFrame *output = td->out;
+    const uint32_t *r2y = td->rgbtoyuv;
+    const int slice_start = (input->height *  jobnr   ) / nb_jobs;
+    const int slice_end   = (input->height * (jobnr+1)) / nb_jobs;
     const int nl = output->linesize[0] >> 2;
     const int nl1 = nl + nl;
 
-    for (y = 0; y < input->height; y++) {
+    for (y = slice_start; y < slice_end; y++) {
         INIT_SRC_DST_POINTERS(3)
 
         for (x = 0; x < input->width; x++) {
@@ -281,6 +297,7 @@ static void xbr3x(AVFrame *input, AVFrame *output, const uint32_t *r2y)
             E += 3;
         }
     }
+    return 0;
 }
 
 #define FILT4(PE, PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1,   \
@@ -327,14 +344,20 @@ static void xbr3x(AVFrame *input, AVFrame *output, const uint32_t *r2y)
     }                                                                                               \
 } while (0)
 
-static void xbr4x(AVFrame *input, AVFrame *output, const uint32_t *r2y)
+static int xbr4x(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
     int x, y;
+    const ThreadData *td = arg;
+    const AVFrame *input = td->in;
+    AVFrame *output = td->out;
+    const uint32_t *r2y = td->rgbtoyuv;
+    const int slice_start = (input->height *  jobnr   ) / nb_jobs;
+    const int slice_end   = (input->height * (jobnr+1)) / nb_jobs;
     const int nl = output->linesize[0] >> 2;
     const int nl1 = nl + nl;
     const int nl2 = nl1 + nl;
 
-    for (y = 0; y < input->height; y++) {
+    for (y = slice_start; y < slice_end; y++) {
         INIT_SRC_DST_POINTERS(4)
 
         for (x = 0; x < input->width; x++) {
@@ -359,6 +382,7 @@ static void xbr4x(AVFrame *input, AVFrame *output, const uint32_t *r2y)
             E += 4;
         }
     }
+    return 0;
 }
 
 static int config_output(AVFilterLink *outlink)
@@ -387,7 +411,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
     XBRContext *xbr = ctx->priv;
-    const uint32_t *r2y = xbr->rgbtoyuv;
+    ThreadData td;
 
     AVFrame *out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {
@@ -396,7 +420,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     }
 
     av_frame_copy_props(out, in);
-    xbr->func(in, out, r2y);
+
+    td.in = in;
+    td.out = out;
+    td.rgbtoyuv = xbr->rgbtoyuv;
+    ctx->internal->execute(ctx, xbr->func, &td, NULL, FFMIN(inlink->h, ctx->graph->nb_threads));
 
     out->width  = outlink->w;
     out->height = outlink->h;
@@ -459,4 +487,5 @@ AVFilter ff_vf_xbr = {
     .priv_size     = sizeof(XBRContext),
     .priv_class    = &xbr_class,
     .init          = init,
+    .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };
