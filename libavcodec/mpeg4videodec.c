@@ -1763,7 +1763,7 @@ static int decode_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
     s->avctx->framerate.num = get_bits(gb, 16);
     if (!s->avctx->framerate.num) {
         av_log(s->avctx, AV_LOG_ERROR, "framerate==0\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     ctx->time_increment_bits = av_log2(s->avctx->framerate.num - 1) + 1;
@@ -1829,7 +1829,7 @@ static int decode_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
                        "%d sprite_warping_points\n",
                        ctx->num_sprite_warping_points);
                 ctx->num_sprite_warping_points = 0;
-                return -1;
+                return AVERROR_INVALIDDATA;
             }
             s->sprite_warping_accuracy  = get_bits(gb, 2);
             ctx->sprite_brightness_change = get_bits1(gb);
@@ -2374,7 +2374,7 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb)
 
         if (get_bits_left(gb) < 3) {
             av_log(s->avctx, AV_LOG_ERROR, "Header truncated\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         ctx->intra_dc_threshold = ff_mpeg4_dc_threshold[get_bits(gb, 3)];
         if (!s->progressive_sequence) {
@@ -2413,7 +2413,7 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb)
         if (s->qscale == 0) {
             av_log(s->avctx, AV_LOG_ERROR,
                    "Error, header damaged or not MPEG4 header (qscale=0)\n");
-            return -1;  // makes no sense to continue, as there is nothing left from the image then
+            return AVERROR_INVALIDDATA;  // makes no sense to continue, as there is nothing left from the image then
         }
 
         if (s->pict_type != AV_PICTURE_TYPE_I) {
@@ -2422,7 +2422,7 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb)
                 av_log(s->avctx, AV_LOG_ERROR,
                        "Error, header damaged or not MPEG4 header (f_code=0)\n");
                 s->f_code = 1;
-                return -1;  // makes no sense to continue, as there is nothing left from the image then
+                return AVERROR_INVALIDDATA;  // makes no sense to continue, as there is nothing left from the image then
             }
         } else
             s->f_code = 1;
@@ -2433,7 +2433,7 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb)
                 av_log(s->avctx, AV_LOG_ERROR,
                        "Error, header damaged or not MPEG4 header (b_code=0)\n");
                 s->b_code=1;
-                return -1; // makes no sense to continue, as the MV decoding will break very quickly
+                return AVERROR_INVALIDDATA; // makes no sense to continue, as the MV decoding will break very quickly
             }
         } else
             s->b_code = 1;
