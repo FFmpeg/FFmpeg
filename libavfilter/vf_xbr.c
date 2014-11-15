@@ -40,9 +40,12 @@
 #define RED_BLUE_MASK 0x00FF00FF
 #define GREEN_MASK    0x0000FF00
 
+typedef void (*xbrfunc_t)(AVFrame *input, AVFrame *output, const uint32_t *r2y);
+
 typedef struct {
     const AVClass *class;
     int n;
+    xbrfunc_t func;
     uint32_t rgbtoyuv[1<<24];
 } XBRContext;
 
@@ -392,12 +395,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     }
 
     av_frame_copy_props(out, in);
-    if (xbr->n == 4)
-        xbr4x(in, out, r2y);
-    else if (xbr->n == 3)
-        xbr3x(in, out, r2y);
-    else
-        xbr2x(in, out, r2y);
+    xbr->func(in, out, r2y);
 
     out->width  = outlink->w;
     out->height = outlink->h;
@@ -409,6 +407,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 static int init(AVFilterContext *ctx)
 {
     XBRContext *xbr = ctx->priv;
+    static const xbrfunc_t xbrfuncs[] = {xbr2x, xbr3x, xbr4x};
+
     uint32_t c;
     int bg, rg, g;
 
@@ -427,6 +427,7 @@ static int init(AVFilterContext *ctx)
         }
     }
 
+    xbr->func = xbrfuncs[xbr->n - 2];
     return 0;
 }
 
