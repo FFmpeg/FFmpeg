@@ -1295,7 +1295,7 @@ static const UID mxf_mpeg2_codec_uls[] = {
 
 static const UID *mxf_get_mpeg2_codec_ul(AVCodecContext *avctx)
 {
-    int long_gop = avctx->gop_size > 1 || avctx->has_b_frames;
+    int long_gop = 1;
 
     if (avctx->profile == 4) { // Main
         if (avctx->level == 8) // Main
