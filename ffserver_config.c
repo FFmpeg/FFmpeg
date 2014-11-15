@@ -1017,18 +1017,11 @@ static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd,
             goto nomem;
     } else if (!av_strcasecmp(cmd, "AVPresetVideo") ||
                !av_strcasecmp(cmd, "AVPresetAudio")) {
-        char **preset = NULL;
         ffserver_get_arg(arg, sizeof(arg), p);
-        if (!av_strcasecmp(cmd, "AVPresetVideo")) {
-            preset = &config->video_preset;
+        if (!av_strcasecmp(cmd, "AVPresetVideo"))
             ffserver_opt_preset(arg, config->dummy_vctx, config, line_num);
-        } else {
-            preset = &config->audio_preset;
+        else
             ffserver_opt_preset(arg, config->dummy_actx, config, line_num);
-        }
-        *preset = av_strdup(arg);
-        if (!preset)
-            return AVERROR(ENOMEM);
     } else if (!av_strcasecmp(cmd, "VideoTag")) {
         ffserver_get_arg(arg, sizeof(arg), p);
         if (strlen(arg) == 4) {
@@ -1130,8 +1123,6 @@ static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd,
         av_dict_free(&config->video_conf);
         av_dict_free(&config->audio_opts);
         av_dict_free(&config->audio_conf);
-        av_freep(&config->video_preset);
-        av_freep(&config->audio_preset);
         avcodec_free_context(&config->dummy_vctx);
         avcodec_free_context(&config->dummy_actx);
         *pstream = NULL;
@@ -1148,8 +1139,6 @@ static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd,
     av_dict_free(&config->video_conf);
     av_dict_free(&config->audio_opts);
     av_dict_free(&config->audio_conf);
-    av_freep(&config->video_preset);
-    av_freep(&config->audio_preset);
     avcodec_free_context(&config->dummy_vctx);
     avcodec_free_context(&config->dummy_actx);
     return AVERROR(ENOMEM);
