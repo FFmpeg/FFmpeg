@@ -1575,7 +1575,7 @@ static void decode_tones_amplitude(GetBitContext *gb, Atrac3pChanUnitCtx *ctx,
 {
     int mode, sb, j, i, diff, maxdiff, fi, delta, pred;
     Atrac3pWaveParam *wsrc, *wref;
-    int refwaves[48];
+    int refwaves[48] = { 0 };
     Atrac3pWavesData *dst = ctx->channels[ch_num].tones_info;
     Atrac3pWavesData *ref = ctx->channels[0].tones_info;
 
