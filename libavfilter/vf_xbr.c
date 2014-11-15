@@ -50,8 +50,9 @@ typedef struct {
 } XBRContext;
 
 #define OFFSET(x) offsetof(XBRContext, x)
+#define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
 static const AVOption xbr_options[] = {
-    { "n", "set scale factor", OFFSET(n), AV_OPT_TYPE_INT, {.i64 = 3}, 2, 4, },
+    { "n", "set scale factor", OFFSET(n), AV_OPT_TYPE_INT, {.i64 = 3}, 2, 4, .flags = FLAGS },
     { NULL }
 };
 
