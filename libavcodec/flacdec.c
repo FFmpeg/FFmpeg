@@ -111,7 +111,7 @@ static av_cold int flac_decode_init(AVCodecContext *avctx)
     if (ret < 0)
         return ret;
     flac_set_bps(s);
-    ff_flacdsp_init(&s->dsp, avctx->sample_fmt, s->bps);
+    ff_flacdsp_init(&s->dsp, avctx->sample_fmt, s->channels, s->bps);
     s->got_streaminfo = 1;
 
     return 0;
@@ -173,7 +173,7 @@ static int parse_streaminfo(FLACContext *s, const uint8_t *buf, int buf_size)
     if (ret < 0)
         return ret;
     flac_set_bps(s);
-    ff_flacdsp_init(&s->dsp, s->avctx->sample_fmt, s->bps);
+    ff_flacdsp_init(&s->dsp, s->avctx->sample_fmt, s->channels, s->bps);
     s->got_streaminfo = 1;
 
     return 0;
@@ -472,7 +472,7 @@ static int decode_frame(FLACContext *s)
         ret = allocate_buffers(s);
         if (ret < 0)
             return ret;
-        ff_flacdsp_init(&s->dsp, s->avctx->sample_fmt, s->bps);
+        ff_flacdsp_init(&s->dsp, s->avctx->sample_fmt, s->channels, s->bps);
         s->got_streaminfo = 1;
         dump_headers(s->avctx, (FLACStreaminfo *)s);
     }

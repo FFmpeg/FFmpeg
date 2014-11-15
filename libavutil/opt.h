@@ -456,7 +456,7 @@ void av_opt_set_defaults2(void *s, int mask, int flags);
  * @return the number of successfully set key/value pairs, or a negative
  * value corresponding to an AVERROR code in case of error:
  * AVERROR(EINVAL) if opts cannot be parsed,
- * the error code issued by av_set_string3() if a key/value pair
+ * the error code issued by av_opt_set() if a key/value pair
  * cannot be set
  */
 int av_set_options_string(void *ctx, const char *opts,
@@ -633,7 +633,7 @@ int av_opt_eval_q     (void *obj, const AVOption *o, const char *val, AVRational
  *         was found.
  *
  * @note Options found with AV_OPT_SEARCH_CHILDREN flag may not be settable
- * directly with av_set_string3(). Use special calls which take an options
+ * directly with av_opt_set(). Use special calls which take an options
  * AVDictionary (e.g. avformat_open_input()) to set options found with this
  * flag.
  */
@@ -815,6 +815,16 @@ void av_opt_freep_ranges(AVOptionRanges **ranges);
  */
 int av_opt_query_ranges(AVOptionRanges **, void *obj, const char *key, int flags);
 
+/**
+ * Copy options from src object into dest object.
+ *
+ * Options that require memory allocation (e.g. string or binary) are malloc'ed in dest object.
+ * Original memory allocated for such options is freed unless both src and dest options points to the same memory.
+ *
+ * @param dest Object to copy from
+ * @param src  Object to copy into
+ * @return 0 on success, negative on error
+ */
 int av_opt_copy(void *dest, void *src);
 
 /**

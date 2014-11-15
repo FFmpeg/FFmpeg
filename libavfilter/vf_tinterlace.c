@@ -30,29 +30,7 @@
 #include "libavutil/avassert.h"
 #include "avfilter.h"
 #include "internal.h"
-
-enum TInterlaceMode {
-    MODE_MERGE = 0,
-    MODE_DROP_EVEN,
-    MODE_DROP_ODD,
-    MODE_PAD,
-    MODE_INTERLEAVE_TOP,
-    MODE_INTERLEAVE_BOTTOM,
-    MODE_INTERLACEX2,
-    MODE_NB,
-};
-
-typedef struct {
-    const AVClass *class;
-    enum TInterlaceMode mode;   ///< interlace mode selected
-    int flags;                  ///< flags affecting interlacing algorithm
-    int frame;                  ///< number of the output frame
-    int vsub;                   ///< chroma vertical subsampling
-    AVFrame *cur;
-    AVFrame *next;
-    uint8_t *black_data[4];     ///< buffer used to fill padded lines
-    int black_linesize[4];
-} TInterlaceContext;
+#include "tinterlace.h"
 
 #define OFFSET(x) offsetof(TInterlaceContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
@@ -97,6 +75,18 @@ static int query_formats(AVFilterContext *ctx)
 
     ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
     return 0;
+}
+
+static void lowpass_line_c(uint8_t *dstp, ptrdiff_t width, const uint8_t *srcp,
+                           const uint8_t *srcp_above, const uint8_t *srcp_below)
+{
+    int i;
+    for (i = 0; i < width; i++) {
+        // this calculation is an integer representation of
+        // '0.5 * current + 0.25 * above + 0.25 * below'
+        // '1 +' is for rounding.
+        dstp[i] = (1 + srcp[i] + srcp[i] + srcp_above[i] + srcp_below[i]) >> 2;
+    }
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
@@ -149,6 +139,14 @@ static int config_out_props(AVFilterLink *outlink)
         outlink->time_base.num = inlink->time_base.num;
         outlink->time_base.den = inlink->time_base.den * 2;
         outlink->frame_rate = av_mul_q(inlink->frame_rate, (AVRational){2,1});
+    } else if (tinterlace->mode != MODE_PAD) {
+        outlink->frame_rate = av_mul_q(inlink->frame_rate, (AVRational){1,2});
+    }
+
+    if (tinterlace->flags & TINTERLACE_FLAG_VLPF) {
+        tinterlace->lowpass_line = lowpass_line_c;
+        if (ARCH_X86)
+            ff_tinterlace_init_x86(tinterlace);
     }
 
     av_log(ctx, AV_LOG_VERBOSE, "mode:%d filter:%s h:%d -> h:%d\n",
@@ -172,7 +170,8 @@ static int config_out_props(AVFilterLink *outlink)
  * @param flags context flags
  */
 static inline
-void copy_picture_field(uint8_t *dst[4], int dst_linesize[4],
+void copy_picture_field(TInterlaceContext *tinterlace,
+                        uint8_t *dst[4], int dst_linesize[4],
                         const uint8_t *src[4], int src_linesize[4],
                         enum AVPixelFormat format, int w, int src_h,
                         int src_field, int interleave, int dst_field,
@@ -185,6 +184,7 @@ void copy_picture_field(uint8_t *dst[4], int dst_linesize[4],
 
     for (plane = 0; plane < desc->nb_components; plane++) {
         int lines = plane == 1 || plane == 2 ? FF_CEIL_RSHIFT(src_h, vsub) : src_h;
+        int cols  = plane == 1 || plane == 2 ? FF_CEIL_RSHIFT(    w, desc->log2_chroma_w) : w;
         int linesize = av_image_get_linesize(format, w, plane);
         uint8_t *dstp = dst[plane];
         const uint8_t *srcp = src[plane];
@@ -208,12 +208,8 @@ void copy_picture_field(uint8_t *dst[4], int dst_linesize[4],
                 const uint8_t *srcp_below = srcp + src_linesize[plane];
                 if (h == lines) srcp_above = srcp; // there is no line above
                 if (h == 1) srcp_below = srcp;     // there is no line below
-                for (i = 0; i < linesize; i++) {
-                    // this calculation is an integer representation of
-                    // '0.5 * current + 0.25 * above + 0.25 * below'
-                    // '1 +' is for rounding. */
-                    dstp[i] = (1 + srcp[i] + srcp[i] + srcp_above[i] + srcp_below[i]) >> 2;
-                }
+
+                tinterlace->lowpass_line(dstp, cols, srcp, srcp_above, srcp_below);
                 dstp += dstp_linesize;
                 srcp += srcp_linesize;
             }
@@ -254,12 +250,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *picref)
         out->top_field_first = 1;
 
         /* write odd frame lines into the upper field of the new frame */
-        copy_picture_field(out->data, out->linesize,
+        copy_picture_field(tinterlace, out->data, out->linesize,
                            (const uint8_t **)cur->data, cur->linesize,
                            inlink->format, inlink->w, inlink->h,
                            FIELD_UPPER_AND_LOWER, 1, FIELD_UPPER, tinterlace->flags);
         /* write even frame lines into the lower field of the new frame */
-        copy_picture_field(out->data, out->linesize,
+        copy_picture_field(tinterlace, out->data, out->linesize,
                            (const uint8_t **)next->data, next->linesize,
                            inlink->format, inlink->w, inlink->h,
                            FIELD_UPPER_AND_LOWER, 1, FIELD_LOWER, tinterlace->flags);
@@ -284,12 +280,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *picref)
 
         field = (1 + tinterlace->frame) & 1 ? FIELD_UPPER : FIELD_LOWER;
         /* copy upper and lower fields */
-        copy_picture_field(out->data, out->linesize,
+        copy_picture_field(tinterlace, out->data, out->linesize,
                            (const uint8_t **)cur->data, cur->linesize,
                            inlink->format, inlink->w, inlink->h,
                            FIELD_UPPER_AND_LOWER, 1, field, tinterlace->flags);
         /* pad with black the other field */
-        copy_picture_field(out->data, out->linesize,
+        copy_picture_field(tinterlace, out->data, out->linesize,
                            (const uint8_t **)tinterlace->black_data, tinterlace->black_linesize,
                            inlink->format, inlink->w, inlink->h,
                            FIELD_UPPER_AND_LOWER, 1, !field, tinterlace->flags);
@@ -308,13 +304,13 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *picref)
         out->top_field_first = tff;
 
         /* copy upper/lower field from cur */
-        copy_picture_field(out->data, out->linesize,
+        copy_picture_field(tinterlace, out->data, out->linesize,
                            (const uint8_t **)cur->data, cur->linesize,
                            inlink->format, inlink->w, inlink->h,
                            tff ? FIELD_UPPER : FIELD_LOWER, 1, tff ? FIELD_UPPER : FIELD_LOWER,
                            tinterlace->flags);
         /* copy lower/upper field from next */
-        copy_picture_field(out->data, out->linesize,
+        copy_picture_field(tinterlace, out->data, out->linesize,
                            (const uint8_t **)next->data, next->linesize,
                            inlink->format, inlink->w, inlink->h,
                            tff ? FIELD_LOWER : FIELD_UPPER, 1, tff ? FIELD_LOWER : FIELD_UPPER,
@@ -340,19 +336,20 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *picref)
             return AVERROR(ENOMEM);
         av_frame_copy_props(out, next);
         out->interlaced_frame = 1;
+        out->top_field_first = !tff;
 
         if (next->pts != AV_NOPTS_VALUE && cur->pts != AV_NOPTS_VALUE)
             out->pts = cur->pts + next->pts;
         else
             out->pts = AV_NOPTS_VALUE;
         /* write current frame second field lines into the second field of the new frame */
-        copy_picture_field(out->data, out->linesize,
+        copy_picture_field(tinterlace, out->data, out->linesize,
                            (const uint8_t **)cur->data, cur->linesize,
                            inlink->format, inlink->w, inlink->h,
                            tff ? FIELD_LOWER : FIELD_UPPER, 1, tff ? FIELD_LOWER : FIELD_UPPER,
                            tinterlace->flags);
         /* write next frame first field lines into the first field of the new frame */
-        copy_picture_field(out->data, out->linesize,
+        copy_picture_field(tinterlace, out->data, out->linesize,
                            (const uint8_t **)next->data, next->linesize,
                            inlink->format, inlink->w, inlink->h,
                            tff ? FIELD_UPPER : FIELD_LOWER, 1, tff ? FIELD_UPPER : FIELD_LOWER,

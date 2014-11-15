@@ -38,7 +38,7 @@ tests/data/vsynth3.yuv: tests/videogen$(HOSTEXESUF) | tests/data
 
 tests/test_copy.ffmeta: TAG = COPY
 tests/test_copy.ffmeta: tests/data
-	$(M)cp -f $(SRC_PATH)/tests/test.ffmeta $(TARGET_PATH)/tests/test_copy.ffmeta
+	$(M)cp -f $(SRC_PATH)/tests/test.ffmeta tests/test_copy.ffmeta
 
 tests/data/ffprobe-test.nut: ffmpeg$(EXESUF) tests/test_copy.ffmeta
 	$(M)$(TARGET_EXEC) ./$< \
@@ -47,7 +47,7 @@ tests/data/ffprobe-test.nut: ffmpeg$(EXESUF) tests/test_copy.ffmeta
         -flags +bitexact -map 0:0 -map 0:1 -map 0:2 -map_metadata 1 \
         -map_metadata:s:0 1:s:0 -map_metadata:s:1 1:s:1 \
         -vcodec rawvideo -acodec pcm_s16le \
-        -y $@ 2>/dev/null
+        -y $(TARGET_PATH)/$@ 2>/dev/null
 
 tests/data/%.sw tests/data/asynth% tests/data/vsynth%.yuv tests/vsynth%/00.pgm tests/data/%.nut: TAG = GEN
 

@@ -1571,7 +1571,7 @@ static void chroma_mc_bi(HEVCContext *s, uint8_t *dst0, ptrdiff_t dststride, AVF
 static void hevc_await_progress(HEVCContext *s, HEVCFrame *ref,
                                 const Mv *mv, int y0, int height)
 {
-    int y = (mv->y >> 2) + y0 + height + 9;
+    int y = FFMAX(0, (mv->y >> 2) + y0 + height + 9);
 
     if (s->threads_type == FF_THREAD_FRAME )
         ff_thread_await_progress(&ref->tf, y, 0);
@@ -2530,7 +2530,7 @@ static int set_side_data(HEVCContext *s)
 
         av_display_rotation_set((int32_t *)rotation->data, angle);
         av_display_matrix_flip((int32_t *)rotation->data,
-                               s->sei_vflip, s->sei_hflip);
+                               s->sei_hflip, s->sei_vflip);
     }
 
     return 0;

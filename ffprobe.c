@@ -2386,12 +2386,19 @@ static int open_input_file(AVFormatContext **fmt_ctx_ptr, const char *filename)
     AVFormatContext *fmt_ctx = NULL;
     AVDictionaryEntry *t;
     AVDictionary **opts;
+    int scan_all_pmts_set = 0;
 
+    if (!av_dict_get(format_opts, "scan_all_pmts", NULL, AV_DICT_MATCH_CASE)) {
+        av_dict_set(&format_opts, "scan_all_pmts", "1", AV_DICT_DONT_OVERWRITE);
+        scan_all_pmts_set = 1;
+    }
     if ((err = avformat_open_input(&fmt_ctx, filename,
                                    iformat, &format_opts)) < 0) {
         print_error(filename, err);
         return err;
     }
+    if (scan_all_pmts_set)
+        av_dict_set(&format_opts, "scan_all_pmts", NULL, AV_DICT_MATCH_CASE);
     if ((t = av_dict_get(format_opts, "", NULL, AV_DICT_IGNORE_SUFFIX))) {
         av_log(NULL, AV_LOG_ERROR, "Option %s not found.\n", t->key);
         return AVERROR_OPTION_NOT_FOUND;

@@ -30,6 +30,7 @@
 
 #include "libavutil/pixdesc.h"
 #include "libavutil/opt.h"
+#include "libavutil/avstring.h"
 #include "libavformat/internal.h"
 #include "libavutil/internal.h"
 #include "libavutil/time.h"
@@ -80,7 +81,6 @@ typedef struct
 {
     AVClass*        class;
 
-    float           frame_rate;
     int             frames_captured;
     int             audio_frames_captured;
     int64_t         first_pts;
@@ -253,12 +253,13 @@ static void parse_device_name(AVFormatContext *s)
 {
     AVFContext *ctx = (AVFContext*)s->priv_data;
     char *tmp = av_strdup(s->filename);
+    char *save;
 
     if (tmp[0] != ':') {
-        ctx->video_filename = strtok(tmp,  ":");
-        ctx->audio_filename = strtok(NULL, ":");
+        ctx->video_filename = av_strtok(tmp,  ":", &save);
+        ctx->audio_filename = av_strtok(NULL, ":", &save);
     } else {
-        ctx->audio_filename = strtok(tmp,  ":");
+        ctx->audio_filename = av_strtok(tmp,  ":", &save);
     }
 }
 
@@ -603,7 +604,10 @@ static int avf_read_header(AVFormatContext *s)
             goto fail;
         }
     } else if (ctx->video_filename &&
-               strncmp(ctx->video_filename, "default", 7)) {
+               strncmp(ctx->video_filename, "none", 4)) {
+        if (!strncmp(ctx->video_filename, "default", 7)) {
+            video_device = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeVideo];
+        } else {
         // looking for video inputs
         for (AVCaptureDevice *device in video_devices) {
             if (!strncmp(ctx->video_filename, [[device localizedName] UTF8String], strlen(ctx->video_filename))) {
@@ -625,13 +629,12 @@ static int avf_read_header(AVFormatContext *s)
             }
         }
 #endif
+        }
 
         if (!video_device) {
             av_log(ctx, AV_LOG_ERROR, "Video device not found\n");
             goto fail;
         }
-    } else {
-        video_device = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeVideo];
     }
 
     // get audio device
@@ -645,7 +648,10 @@ static int avf_read_header(AVFormatContext *s)
 
         audio_device = [devices objectAtIndex:ctx->audio_device_index];
     } else if (ctx->audio_filename &&
-               strncmp(ctx->audio_filename, "default", 7)) {
+               strncmp(ctx->audio_filename, "none", 4)) {
+        if (!strncmp(ctx->audio_filename, "default", 7)) {
+            audio_device = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeAudio];
+        } else {
         NSArray *devices = [AVCaptureDevice devicesWithMediaType:AVMediaTypeAudio];
 
         for (AVCaptureDevice *device in devices) {
@@ -654,13 +660,12 @@ static int avf_read_header(AVFormatContext *s)
                 break;
             }
         }
+        }
 
         if (!audio_device) {
             av_log(ctx, AV_LOG_ERROR, "Audio device not found\n");
              goto fail;
         }
-    } else {
-        audio_device = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeAudio];
     }
 
     // Video nor Audio capture device not found, looking for AVMediaTypeVideo/Audio
@@ -821,7 +826,6 @@ static int avf_close(AVFormatContext *s)
 }
 
 static const AVOption options[] = {
-    { "frame_rate", "set frame rate", offsetof(AVFContext, frame_rate), AV_OPT_TYPE_FLOAT, { .dbl = 30.0 }, 0.1, 30.0, AV_OPT_TYPE_VIDEO_RATE, NULL },
     { "list_devices", "list available devices", offsetof(AVFContext, list_devices), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, AV_OPT_FLAG_DECODING_PARAM, "list_devices" },
     { "true", "", 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, AV_OPT_FLAG_DECODING_PARAM, "list_devices" },
     { "false", "", 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, AV_OPT_FLAG_DECODING_PARAM, "list_devices" },

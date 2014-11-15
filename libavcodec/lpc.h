@@ -153,7 +153,7 @@ static inline int compute_lpc_coefs(const LPC_TYPE *autoc, int max_order,
                                     int normalize)
 {
     int i, j;
-    LPC_TYPE err;
+    LPC_TYPE err = 0;
     LPC_TYPE *lpc_last = lpc;
 
     av_assert2(normalize || !fail);

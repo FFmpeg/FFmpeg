@@ -9196,6 +9196,20 @@ Only deinterlace frames marked as interlaced.
 Default value is @samp{all}.
 @end table
 
+@section xbr
+Apply the xBR high-quality magnification filter which is designed for pixel
+art. It follows a set of edge-detection rules, see
+@url{http://www.libretro.com/forums/viewtopic.php?f=6&t=134}.
+
+It accepts the following option:
+
+@table @option
+@item n
+Set the scaling dimension: @code{2} for @code{2xBR}, @code{3} for
+@code{3xBR} and @code{4} for @code{4xBR}.
+Default is @code{3}.
+@end table
+
 @anchor{yadif}
 @section yadif
 

@@ -1678,7 +1678,6 @@ MATH_FUNCS="
     exp2
     exp2f
     expf
-    fminf
     isinf
     isnan
     ldexpf
@@ -2609,6 +2608,7 @@ vidstabtransform_filter_deps="libvidstab"
 pixfmts_super2xsai_test_deps="super2xsai_filter"
 tinterlace_merge_test_deps="tinterlace_filter"
 tinterlace_pad_test_deps="tinterlace_filter"
+xbr_filter_deps="gpl"
 zmq_filter_deps="libzmq"
 zoompan_filter_deps="swscale"
 
@@ -3950,6 +3950,9 @@ case "$arch" in
     ;;
     x86)
         check_64bit x86_32 x86_64 'sizeof(void *) > 4'
+        # Treat x32 as x64 for now. Note it also needs spic=$shared
+        test "$subarch" = "x86_32" && check_cpp_condition stddef.h 'defined(__x86_64__)' &&
+            subarch=x86_64
         if test "$subarch" = "x86_64"; then
             spic=$shared
         fi
@@ -4813,7 +4816,6 @@ disabled crystalhd || check_lib libcrystalhd/libcrystalhd_if.h DtsCrystalHDVersi
 atan2f_args=2
 ldexpf_args=2
 powf_args=2
-fminf_args=2
 
 for func in $MATH_FUNCS; do
     eval check_mathfunc $func \${${func}_args:-1}

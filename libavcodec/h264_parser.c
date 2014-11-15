@@ -519,17 +519,22 @@ static int h264_split(AVCodecContext *avctx,
     int i;
     uint32_t state = -1;
     int has_sps    = 0;
+    int has_pps    = 0;
 
     for (i = 0; i <= buf_size; i++) {
         if ((state & 0xFFFFFF1F) == 0x107)
             has_sps = 1;
+        if ((state & 0xFFFFFF1F) == 0x108)
+            has_pps = 1;
         /*  if ((state&0xFFFFFF1F) == 0x101 ||
          *     (state&0xFFFFFF1F) == 0x102 ||
          *     (state&0xFFFFFF1F) == 0x105) {
          *  }
          */
-        if ((state & 0xFFFFFF00) == 0x100 && (state & 0xFFFFFF1F) != 0x107 &&
-            (state & 0xFFFFFF1F) != 0x108 && (state & 0xFFFFFF1F) != 0x109) {
+        if ((state & 0xFFFFFF00) == 0x100 && ((state & 0xFFFFFF1F) != 0x106 || has_pps) &&
+            (state & 0xFFFFFF1F) != 0x107 && (state & 0xFFFFFF1F) != 0x108 &&
+            (state & 0xFFFFFF1F) != 0x109 && (state & 0xFFFFFF1F) != 0x10d &&
+            (state & 0xFFFFFF1F) != 0x10f) {
             if (has_sps) {
                 while (i > 4 && buf[i - 5] == 0)
                     i--;

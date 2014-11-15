@@ -25,6 +25,12 @@
 #include "avcodec.h"
 #include "internal.h"
 
+/* The version macro is introduced the same time as the setting enum was
+ * changed, so this check should suffice. */
+#ifndef AACDECODER_LIB_VL0
+#define AAC_PCM_MAX_OUTPUT_CHANNELS AAC_PCM_OUTPUT_CHANNELS
+#endif
+
 enum ConcealMethod {
     CONCEAL_METHOD_SPECTRAL_MUTING      =  0,
     CONCEAL_METHOD_NOISE_SUBSTITUTION   =  1,
@@ -76,7 +82,7 @@ static int get_stream_info(AVCodecContext *avctx)
 {
     FDKAACDecContext *s   = avctx->priv_data;
     CStreamInfo *info     = aacDecoder_GetStreamInfo(s->handle);
-    int channel_counts[9] = { 0 };
+    int channel_counts[0x24] = { 0 };
     int i, ch_error       = 0;
     uint64_t ch_layout    = 0;
 
@@ -94,7 +100,7 @@ static int get_stream_info(AVCodecContext *avctx)
 
     for (i = 0; i < info->numChannels; i++) {
         AUDIO_CHANNEL_TYPE ctype = info->pChannelType[i];
-        if (ctype <= ACT_NONE || ctype > ACT_TOP) {
+        if (ctype <= ACT_NONE || ctype > FF_ARRAY_ELEMS(channel_counts)) {
             av_log(avctx, AV_LOG_WARNING, "unknown channel type\n");
             break;
         }
@@ -239,7 +245,7 @@ static av_cold int fdk_aac_decode_init(AVCodecContext *avctx)
         }
 
         if (downmix_channels != -1) {
-            if (aacDecoder_SetParam(s->handle, AAC_PCM_OUTPUT_CHANNELS,
+            if (aacDecoder_SetParam(s->handle, AAC_PCM_MAX_OUTPUT_CHANNELS,
                                     downmix_channels) != AAC_DEC_OK) {
                av_log(avctx, AV_LOG_WARNING, "Unable to set output channels in the decoder\n");
             } else {

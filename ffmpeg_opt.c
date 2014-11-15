@@ -794,6 +794,7 @@ static int open_input_file(OptionsContext *o, const char *filename)
     char *   video_codec_name = NULL;
     char *   audio_codec_name = NULL;
     char *subtitle_codec_name = NULL;
+    int scan_all_pmts_set = 0;
 
     if (o->format) {
         if (!(file_iformat = av_find_input_format(o->format))) {
@@ -864,12 +865,18 @@ static int open_input_file(OptionsContext *o, const char *filename)
     ic->flags |= AVFMT_FLAG_NONBLOCK;
     ic->interrupt_callback = int_cb;
 
+    if (!av_dict_get(o->g->format_opts, "scan_all_pmts", NULL, AV_DICT_MATCH_CASE)) {
+        av_dict_set(&o->g->format_opts, "scan_all_pmts", "1", AV_DICT_DONT_OVERWRITE);
+        scan_all_pmts_set = 1;
+    }
     /* open the input file with generic avformat function */
     err = avformat_open_input(&ic, filename, file_iformat, &o->g->format_opts);
     if (err < 0) {
         print_error(filename, err);
         exit_program(1);
     }
+    if (scan_all_pmts_set)
+        av_dict_set(&o->g->format_opts, "scan_all_pmts", NULL, AV_DICT_MATCH_CASE);
     remove_avoptions(&o->g->format_opts, o->g->codec_opts);
     assert_avoptions(o->g->format_opts);
 

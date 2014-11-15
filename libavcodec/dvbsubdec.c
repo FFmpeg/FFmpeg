@@ -306,7 +306,7 @@ static void delete_region_display_list(DVBSubContext *ctx, DVBSubRegion *region)
                     obj2 = *obj2_ptr;
 
                     while (obj2 != object) {
-                        assert(obj2);
+                        av_assert0(obj2);
                         obj2_ptr = &obj2->next;
                         obj2 = *obj2_ptr;
                     }
@@ -728,22 +728,16 @@ static int dvbsub_read_8bit_string(uint8_t *destbuf, int dbuf_len,
                     return pixels_read;
                 }
 
-                if (map_table)
-                    bits = map_table[0];
-                else
-                    bits = 0;
-                while (run_length-- > 0 && pixels_read < dbuf_len) {
-                    *destbuf++ = bits;
-                    pixels_read++;
-                }
+                bits = 0;
             } else {
                 bits = *(*srcbuf)++;
-
-                if (non_mod == 1 && bits == 1)
-                    pixels_read += run_length;
+            }
+            if (non_mod == 1 && bits == 1)
+                pixels_read += run_length;
+            else {
                 if (map_table)
                     bits = map_table[bits];
-                else while (run_length-- > 0 && pixels_read < dbuf_len) {
+                while (run_length-- > 0 && pixels_read < dbuf_len) {
                     *destbuf++ = bits;
                     pixels_read++;
                 }
@@ -757,7 +751,7 @@ static int dvbsub_read_8bit_string(uint8_t *destbuf, int dbuf_len,
     return pixels_read;
 }
 
-static void save_subtitle_set(AVCodecContext *avctx, AVSubtitle *sub, int *got_output)
+static int save_subtitle_set(AVCodecContext *avctx, AVSubtitle *sub, int *got_output)
 {
     DVBSubContext *ctx = avctx->priv_data;
     DVBSubRegionDisplay *display;
@@ -768,6 +762,7 @@ static void save_subtitle_set(AVCodecContext *avctx, AVSubtitle *sub, int *got_o
     uint32_t *clut_table;
     int i;
     int offset_x=0, offset_y=0;
+    int ret = 0;
 
 
     if (display_def) {
@@ -778,7 +773,7 @@ static void save_subtitle_set(AVCodecContext *avctx, AVSubtitle *sub, int *got_o
     /* Not touching AVSubtitles again*/
     if(sub->num_rects) {
         avpriv_request_sample(ctx, "Different Version of Segment asked Twice\n");
-        return;
+        return AVERROR_PATCHWELCOME;
     }
     for (display = ctx->display_list; display; display = display->next) {
         region = get_region(ctx, display->region_id);
@@ -796,6 +791,11 @@ static void save_subtitle_set(AVCodecContext *avctx, AVSubtitle *sub, int *got_o
     if (sub->num_rects > 0) {
 
         sub->rects = av_mallocz_array(sizeof(*sub->rects), sub->num_rects);
+        if (!sub->rects) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
+
         for(i=0; i<sub->num_rects; i++)
             sub->rects[i] = av_mallocz(sizeof(*sub->rects[i]));
 
@@ -838,14 +838,39 @@ static void save_subtitle_set(AVCodecContext *avctx, AVSubtitle *sub, int *got_o
             }
 
             rect->pict.data[1] = av_mallocz(AVPALETTE_SIZE);
+            if (!rect->pict.data[1]) {
+                ret = AVERROR(ENOMEM);
+                goto fail;
+            }
             memcpy(rect->pict.data[1], clut_table, (1 << region->depth) * sizeof(uint32_t));
 
             rect->pict.data[0] = av_malloc(region->buf_size);
+            if (!rect->pict.data[0]) {
+                ret = AVERROR(ENOMEM);
+                goto fail;
+            }
+
             memcpy(rect->pict.data[0], region->pbuf, region->buf_size);
 
             i++;
         }
     }
+
+    return 0;
+fail:
+    if (sub->rects) {
+        for(i=0; i<sub->num_rects; i++) {
+            rect = sub->rects[i];
+            if (rect) {
+                av_freep(&rect->pict.data[0]);
+                av_freep(&rect->pict.data[1]);
+            }
+            av_freep(&sub->rects[i]);
+        }
+        av_freep(&sub->rects);
+    }
+    sub->num_rects = 0;
+    return ret;
 }
 
 static void dvbsub_parse_pixel_data_block(AVCodecContext *avctx, DVBSubObjectDisplay *display,

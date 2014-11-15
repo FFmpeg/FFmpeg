@@ -408,7 +408,7 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
     // temporal motion vector candidate
     if (s->sh.slice_temporal_mvp_enabled_flag &&
         nb_merge_cand < s->sh.max_num_merge_cand) {
-        Mv mv_l0_col, mv_l1_col;
+        Mv mv_l0_col = { 0 }, mv_l1_col = { 0 };
         int available_l0 = temporal_luma_motion_vector(s, x0, y0, nPbW, nPbH,
                                                        0, &mv_l0_col, 0);
         int available_l1 = (s->sh.slice_type == B_SLICE) ?

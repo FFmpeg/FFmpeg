@@ -10,6 +10,8 @@ version <next>:
 - libutvideo YUV 4:2:2 10bit support
 - XCB-based screen-grabber
 - UDP-Lite support (RFC 3828)
+- xBR scaling filter
+- AVFoundation screen capturing support
 
 version 2.4:
 - Icecast protocol

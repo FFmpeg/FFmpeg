@@ -141,6 +141,8 @@ struct MpegTSContext {
     int skip_changes;
     int skip_clear;
 
+    int scan_all_pmts;
+
     int resync_size;
 
     /******************************************/
@@ -165,6 +167,8 @@ static const AVOption options[] = {
      {.i64 = 1}, 0, 1, AV_OPT_FLAG_DECODING_PARAM },
     {"ts_packetsize", "Output option carrying the raw packet size.", offsetof(MpegTSContext, raw_packet_size), AV_OPT_TYPE_INT,
      {.i64 = 0}, 0, 0, AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_EXPORT | AV_OPT_FLAG_READONLY },
+    {"scan_all_pmts",   "Scan and combine all PMTs", offsetof(MpegTSContext, scan_all_pmts), AV_OPT_TYPE_INT,
+     { .i64 =  -1}, -1, 1,  AV_OPT_FLAG_DECODING_PARAM },
     {"skip_changes", "Skip changing / adding streams / programs.", offsetof(MpegTSContext, skip_changes), AV_OPT_TYPE_INT,
      {.i64 = 0}, 0, 1, 0 },
     {"skip_clear", "Skip clearing programs.", offsetof(MpegTSContext, skip_clear), AV_OPT_TYPE_INT,
@@ -1803,6 +1807,8 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
 
     if (h->tid != PMT_TID)
         return;
+    if (!ts->scan_all_pmts && ts->skip_changes)
+        return;
 
     if (!ts->skip_clear)
         clear_program(ts, h->id);
@@ -2194,14 +2200,19 @@ static int handle_packet(MpegTSContext *ts, const uint8_t *packet)
 
         // stop find_stream_info from waiting for more streams
         // when all programs have received a PMT
-        if (ts->stream->ctx_flags & AVFMTCTX_NOHEADER) {
+        if (ts->stream->ctx_flags & AVFMTCTX_NOHEADER && ts->scan_all_pmts <= 0) {
             int i;
             for (i = 0; i < ts->nb_prg; i++) {
                 if (!ts->prg[i].pmt_found)
                     break;
             }
             if (i == ts->nb_prg && ts->nb_prg > 0) {
-                if (ts->stream->nb_streams > 1 || pos > 100000) {
+                int types = 0;
+                for (i = 0; i < ts->stream->nb_streams; i++) {
+                    AVStream *st = ts->stream->streams[i];
+                    types |= 1<<st->codec->codec_type;
+                }
+                if ((types & (1<<AVMEDIA_TYPE_AUDIO) && types & (1<<AVMEDIA_TYPE_VIDEO)) || pos > 100000) {
                     av_log(ts->stream, AV_LOG_DEBUG, "All programs have pmt, headers found\n");
                     ts->stream->ctx_flags &= ~AVFMTCTX_NOHEADER;
                 }

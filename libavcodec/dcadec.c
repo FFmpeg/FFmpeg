@@ -1637,7 +1637,7 @@ static int dca_exss_parse_asset_header(DCAContext *s)
     int embedded_stereo = 0;
     int embedded_6ch    = 0;
     int drc_code_present;
-    int av_uninit(extensions_mask);
+    int extensions_mask = 0;
     int i, j;
 
     if (get_bits_left(&s->gb) < 16)

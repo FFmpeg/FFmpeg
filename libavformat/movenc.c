@@ -55,7 +55,7 @@ static const AVOption options[] = {
     { "movflags", "MOV muxer flags", offsetof(MOVMuxContext, flags), AV_OPT_TYPE_FLAGS, {.i64 = 0}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     { "rtphint", "Add RTP hint tracks", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_RTP_HINT}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     { "moov_size", "maximum moov size so it can be placed at the begin", offsetof(MOVMuxContext, reserved_moov_size), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, 0 },
-    { "empty_moov", "Make the initial moov atom empty (not supported by QuickTime)", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_EMPTY_MOOV}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
+    { "empty_moov", "Make the initial moov atom empty", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_EMPTY_MOOV}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     { "frag_keyframe", "Fragment at video keyframes", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_FRAG_KEYFRAME}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     { "separate_moof", "Write separate moof/mdat atoms for each track", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_SEPARATE_MOOF}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     { "frag_custom", "Flush fragments on caller requests", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_FRAG_CUSTOM}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
@@ -2389,11 +2389,14 @@ static int mov_write_trak_tag(AVIOContext *pb, MOVMuxContext *mov,
 
     av_assert2(mov->use_editlist >= 0);
 
-    if (mov->use_editlist)
-        mov_write_edts_tag(pb, mov, track);  // PSP Movies and several other cases require edts box
-    else if ((track->entry && track->cluster[0].dts) || track->mode == MODE_PSP || is_clcp_track(track))
-        av_log(mov->fc, AV_LOG_WARNING,
-               "Not writing any edit list even though one would have been required\n");
+
+    if (track->entry) {
+        if (mov->use_editlist)
+            mov_write_edts_tag(pb, mov, track);  // PSP Movies and several other cases require edts box
+        else if ((track->entry && track->cluster[0].dts) || track->mode == MODE_PSP || is_clcp_track(track))
+            av_log(mov->fc, AV_LOG_WARNING,
+                   "Not writing any edit list even though one would have been required\n");
+    }
 
     if (track->tref_tag)
         mov_write_tref_tag(pb, track);
@@ -3787,7 +3790,7 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     MOVTrack *trk = &mov->tracks[pkt->stream_index];
     AVCodecContext *enc = trk->enc;
     unsigned int samples_in_chunk = 0;
-    int size = pkt->size;
+    int size = pkt->size, ret = 0;
     uint8_t *reformatted_data = NULL;
 
     if (trk->entry) {
@@ -3896,16 +3899,20 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
         /* copy frame to create needed atoms */
         trk->vos_len  = size;
         trk->vos_data = av_malloc(size);
-        if (!trk->vos_data)
-            return AVERROR(ENOMEM);
+        if (!trk->vos_data) {
+            ret = AVERROR(ENOMEM);
+            goto err;
+        }
         memcpy(trk->vos_data, pkt->data, size);
     }
 
     if (trk->entry >= trk->cluster_capacity) {
         unsigned new_capacity = 2 * (trk->entry + MOV_INDEX_CLUSTER_SIZE);
         if (av_reallocp_array(&trk->cluster, new_capacity,
-                              sizeof(*trk->cluster)))
-            return AVERROR(ENOMEM);
+                              sizeof(*trk->cluster))) {
+            ret = AVERROR(ENOMEM);
+            goto err;
+        }
         trk->cluster_capacity = new_capacity;
     }
 
@@ -3972,9 +3979,12 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (trk->hint_track >= 0 && trk->hint_track < mov->nb_streams)
         ff_mov_add_hinted_packet(s, pkt, trk->hint_track, trk->entry,
                                  reformatted_data, size);
+
 end:
+err:
+
     av_free(reformatted_data);
-    return 0;
+    return ret;
 }
 
 static int mov_write_single_packet(AVFormatContext *s, AVPacket *pkt)

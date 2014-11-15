@@ -170,10 +170,11 @@ static av_cold int libopus_encode_init(AVCodecContext *avctx)
 
     /* FIXME: Opus can handle up to 255 channels. However, the mapping for
      * anything greater than 8 is undefined. */
-    if (avctx->channels > 8)
-        av_log(avctx, AV_LOG_WARNING,
+    if (avctx->channels > 8) {
+        av_log(avctx, AV_LOG_ERROR,
                "Channel layout undefined for %d channels.\n", avctx->channels);
-
+        return AVERROR_PATCHWELCOME;
+    }
     if (!avctx->bit_rate) {
         /* Sane default copied from opusenc */
         avctx->bit_rate = 64000 * opus->stream_count +
@@ -316,7 +317,9 @@ static int libopus_encode(AVCodecContext *avctx, AVPacket *avpkt,
     int discard_padding;
 
     if (frame) {
-        ff_af_queue_add(&opus->afq, frame);
+        ret = ff_af_queue_add(&opus->afq, frame);
+        if (ret < 0)
+            return ret;
         if (frame->nb_samples < opus->opts.packet_size) {
             audio = opus->samples;
             memcpy(audio, frame->data[0], frame->nb_samples * sample_size);

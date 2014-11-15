@@ -46,6 +46,7 @@ typedef struct WebMDashMuxContext {
     char *adaptation_sets;
     AdaptationSet *as;
     int nb_as;
+    int representation_id;
 } WebMDashMuxContext;
 
 static const char *get_codec_name(int codec_id)
@@ -259,7 +260,7 @@ static int write_adaptation_set(AVFormatContext *s, int as_index)
     avio_printf(s->pb, ">\n");
 
     for (i = 0; i < as->nb_streams; i++) {
-        write_representation(s, s->streams[as->streams[i]], i,
+        write_representation(s, s->streams[as->streams[i]], w->representation_id++,
                              !width_in_as, !height_in_as, !sample_rate_in_as);
     }
     avio_printf(s->pb, "</AdaptationSet>\n");

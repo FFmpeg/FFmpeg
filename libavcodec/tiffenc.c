@@ -327,6 +327,10 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     offset = ptr;
     bytestream_put_le32(&ptr, 0);
 
+    if (strips > INT_MAX / FFMAX(sizeof(s->strip_sizes[0]), sizeof(s->strip_offsets[0]))) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
     av_fast_padded_mallocz(&s->strip_sizes  , &s->strip_sizes_size  , sizeof(s->strip_sizes  [0]) * strips);
     av_fast_padded_mallocz(&s->strip_offsets, &s->strip_offsets_size, sizeof(s->strip_offsets[0]) * strips);
 

@@ -382,8 +382,9 @@ static int huf_unpack_enc_table(GetByteContext *gb,
                                 int32_t im, int32_t iM, uint64_t *hcode)
 {
     GetBitContext gbit;
-
-    init_get_bits8(&gbit, gb->buffer, bytestream2_get_bytes_left(gb));
+    int ret = init_get_bits8(&gbit, gb->buffer, bytestream2_get_bytes_left(gb));
+    if (ret < 0)
+        return ret;
 
     for (; im <= iM; im++) {
         uint64_t l = hcode[im] = get_bits(&gbit, 6);
