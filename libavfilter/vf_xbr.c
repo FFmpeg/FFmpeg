@@ -283,15 +283,16 @@ static av_always_inline void xbr_filter(const ThreadData *td, int jobnr, int nb_
             const uint32_t I4 = sa3[pnext2];
 
             if (n == 2) {
-                E[0] = E[1] = E[nl] = E[nl + 1] = PE; // 0, 1, 2, 3
+                E[0]  = E[1]      =     // 0, 1
+                E[nl] = E[nl + 1] = PE; // 2, 3
 
                 FILT2(PE, PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, 0, 1, nl, nl+1);
                 FILT2(PE, PC, PF, PB, PI, PA, PH, PD, PG, I4, A1, I5, H5, A0, D0, B1, C1, F4, C4, G5, G0, nl, 0, nl+1, 1);
                 FILT2(PE, PA, PB, PD, PC, PG, PF, PH, PI, C1, G0, C4, F4, G5, H5, D0, A0, B1, A1, I4, I5, nl+1, nl, 1, 0);
                 FILT2(PE, PG, PD, PH, PA, PI, PB, PF, PC, A0, I5, A1, B1, I4, F4, H5, G5, D0, G0, C1, C4, 1, nl+1, 0, nl);
             } else if (n == 3) {
-                E[0]   = E[1]     = E[2]     = PE;
-                E[nl]  = E[nl+1]  = E[nl+2]  = PE; // 3, 4, 5
+                E[0]   = E[1]     = E[2]     =     // 0, 1, 2
+                E[nl]  = E[nl+1]  = E[nl+2]  =     // 3, 4, 5
                 E[nl1] = E[nl1+1] = E[nl1+2] = PE; // 6, 7, 8
 
                 FILT3(PE, PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, 0, 1, 2, nl, nl+1, nl+2, nl1, nl1+1, nl1+2);
@@ -299,9 +300,9 @@ static av_always_inline void xbr_filter(const ThreadData *td, int jobnr, int nb_
                 FILT3(PE, PA, PB, PD, PC, PG, PF, PH, PI, C1, G0, C4, F4, G5, H5, D0, A0, B1, A1, I4, I5, nl1+2, nl1+1, nl1, nl+2, nl+1, nl, 2, 1, 0);
                 FILT3(PE, PG, PD, PH, PA, PI, PB, PF, PC, A0, I5, A1, B1, I4, F4, H5, G5, D0, G0, C1, C4, 2, nl+2, nl1+2, 1, nl+1, nl1+1, 0, nl, nl1);
             } else if (n == 4) {
-                E[0]   = E[1]     = E[2]     = E[3]     = PE;
-                E[nl]  = E[nl+1]  = E[nl+2]  = E[nl+3]  = PE; //  4,  5,  6,  7
-                E[nl1] = E[nl1+1] = E[nl1+2] = E[nl1+3] = PE; //  8,  9, 10, 11
+                E[0]   = E[1]     = E[2]     = E[3]     =     //  0,  1,  2,  3
+                E[nl]  = E[nl+1]  = E[nl+2]  = E[nl+3]  =     //  4,  5,  6,  7
+                E[nl1] = E[nl1+1] = E[nl1+2] = E[nl1+3] =     //  8,  9, 10, 11
                 E[nl2] = E[nl2+1] = E[nl2+2] = E[nl2+3] = PE; // 12, 13, 14, 15
 
                 FILT4(PE, PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, nl2+3, nl2+2, nl1+3,  3,  nl+3, nl1+2, nl2+1, nl2,  nl1+1,  nl+2, 2,  1, nl+1, nl1, nl, 0);
