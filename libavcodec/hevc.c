@@ -2078,7 +2078,6 @@ static int hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
     if (s->sh.slice_type != I_SLICE) {
         uint8_t skip_flag = ff_hevc_skip_flag_decode(s, x0, y0, x_cb, y_cb);
 
-        lc->cu.pred_mode = MODE_SKIP;
         x = y_cb * min_cb_width + x_cb;
         for (y = 0; y < length; y++) {
             memset(&s->skip_flag[x], skip_flag, length);
