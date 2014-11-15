@@ -55,4 +55,6 @@ typedef struct {
                          const uint8_t *srcp_above, const uint8_t *srcp_below);
 } TInterlaceContext;
 
+void ff_tinterlace_init_x86(TInterlaceContext *interlace);
+
 #endif /* AVFILTER_TINTERLACE_H */

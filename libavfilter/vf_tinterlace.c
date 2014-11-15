@@ -145,6 +145,8 @@ static int config_out_props(AVFilterLink *outlink)
 
     if (tinterlace->flags & TINTERLACE_FLAG_VLPF) {
         tinterlace->lowpass_line = lowpass_line_c;
+        if (ARCH_X86)
+            ff_tinterlace_init_x86(tinterlace);
     }
 
     av_log(ctx, AV_LOG_VERBOSE, "mode:%d filter:%s h:%d -> h:%d\n",
