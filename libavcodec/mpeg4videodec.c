@@ -2502,6 +2502,7 @@ int ff_mpeg4_decode_picture_header(Mpeg4DecContext *ctx, GetBitContext *gb)
 {
     MpegEncContext *s = &ctx->m;
     unsigned startcode, v;
+    int ret;
 
     /* search next start code */
     align_get_bits(gb);
@@ -2590,8 +2591,8 @@ int ff_mpeg4_decode_picture_header(Mpeg4DecContext *ctx, GetBitContext *gb)
         }
 
         if (startcode >= 0x120 && startcode <= 0x12F) {
-            if (decode_vol_header(ctx, gb) < 0)
-                return -1;
+            if ((ret = decode_vol_header(ctx, gb)) < 0)
+                return ret;
         } else if (startcode == USER_DATA_STARTCODE) {
             decode_user_data(ctx, gb);
         } else if (startcode == GOP_STARTCODE) {
