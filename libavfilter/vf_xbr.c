@@ -149,38 +149,36 @@ static uint32_t pixel_diff(uint32_t x, uint32_t y, const uint32_t *r2y)
     const uint32_t F4 = sa2[pnext2];                        \
     const uint32_t I4 = sa3[pnext2];
 
-#define FILT2(PE, PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, N0, N1, N2, N3) do { \
-     unsigned ex = (PE!=PH && PE!=PF); \
-     if ( ex )\
-     {\
-          unsigned e = (df(PE,PC)+df(PE,PG)+df(PI,H5)+df(PI,F4))+(df(PH,PF)<<2); \
-          unsigned i = (df(PH,PD)+df(PH,I5)+df(PF,I4)+df(PF,PB))+(df(PE,PI)<<2); \
-          if ((e<i)  && ( !eq(PF,PB) && !eq(PH,PD) || eq(PE,PI) && (!eq(PF,I4) && !eq(PH,I5)) || eq(PE,PG) || eq(PE,PC)) )\
-          {\
-              unsigned ke = df(PF,PG); \
-              unsigned ki = df(PH,PC); \
-              unsigned ex2 = (PE!=PC && PB!=PC); \
-              unsigned ex3 = (PE!=PG && PD!=PG); \
-              unsigned px = (df(PE,PF) <= df(PE,PH)) ? PF : PH; \
-              if (ke<<1 <= ki && ex3 && ke >= ki<<1 && ex2) { /* left-up */ \
-                  ALPHA_BLEND_224_W(E[N3], px); \
-                  ALPHA_BLEND_64_W( E[N2], px); \
-                  E[N1] = E[N2]; \
-              } else if (ke<<1 <= ki && ex3) { /* left */ \
-                  ALPHA_BLEND_192_W(E[N3], px); \
-                  ALPHA_BLEND_64_W( E[N2], px); \
-              } else if (ke >= ki<<1 && ex2) { /* up */ \
-                  ALPHA_BLEND_192_W(E[N3], px); \
-                  ALPHA_BLEND_64_W( E[N1], px); \
-              } else { /* diagonal */ \
-                  ALPHA_BLEND_128_W(E[N3], px); \
-              }\
-          }\
-          else if (e<=i)\
-          {\
-               ALPHA_BLEND_128_W( E[N3], ((df(PE,PF) <= df(PE,PH)) ? PF : PH)); \
-          }\
-     }\
+#define FILT2(PE, PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1,   \
+              N0, N1, N2, N3) do {                                                                  \
+    if (PE != PH && PE != PF) {                                                                     \
+        const unsigned e = df(PE,PC) + df(PE,PG) + df(PI,H5) + df(PI,F4) + (df(PH,PF)<<2);          \
+        const unsigned i = df(PH,PD) + df(PH,I5) + df(PF,I4) + df(PF,PB) + (df(PE,PI)<<2);          \
+        if (e < i && (!eq(PF,PB) && !eq(PH,PD) || eq(PE,PI)                                         \
+                      && (!eq(PF,I4) && !eq(PH,I5))                                                 \
+                      || eq(PE,PG) || eq(PE,PC))) {                                                 \
+            const unsigned ke  = df(PF,PG);                                                         \
+            const unsigned ki  = df(PH,PC);                                                         \
+            const unsigned ex2 = PE != PC && PB != PC;                                              \
+            const unsigned ex3 = PE != PG && PD != PG;                                              \
+            const unsigned px  = df(PE,PF) <= df(PE,PH) ? PF : PH;                                  \
+            if (ke<<1 <= ki && ex3 && ke >= ki<<1 && ex2) { /* left-up */                           \
+                ALPHA_BLEND_224_W(E[N3], px);                                                       \
+                ALPHA_BLEND_64_W( E[N2], px);                                                       \
+                E[N1] = E[N2];                                                                      \
+            } else if (ke<<1 <= ki && ex3) { /* left */                                             \
+                ALPHA_BLEND_192_W(E[N3], px);                                                       \
+                ALPHA_BLEND_64_W( E[N2], px);                                                       \
+            } else if (ke >= ki<<1 && ex2) { /* up */                                               \
+                ALPHA_BLEND_192_W(E[N3], px);                                                       \
+                ALPHA_BLEND_64_W( E[N1], px);                                                       \
+            } else { /* diagonal */                                                                 \
+                ALPHA_BLEND_128_W(E[N3], px);                                                       \
+            }                                                                                       \
+        } else if (e <= i) {                                                                        \
+            ALPHA_BLEND_128_W( E[N3], ((df(PE,PF) <= df(PE,PH)) ? PF : PH));                        \
+        }                                                                                           \
+    }                                                                                               \
 } while (0)
 
 static void xbr2x(AVFrame * input, AVFrame * output, const uint32_t * r2y)
@@ -212,46 +210,44 @@ static void xbr2x(AVFrame * input, AVFrame * output, const uint32_t * r2y)
     }
 }
 
-#define FILT3(PE, PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, N0, N1, N2, N3, N4, N5, N6, N7, N8) do { \
-     unsigned ex = (PE!=PH && PE!=PF); \
-     if ( ex )\
-     {\
-          unsigned e = (df(PE,PC)+df(PE,PG)+df(PI,H5)+df(PI,F4))+(df(PH,PF)<<2); \
-          unsigned i = (df(PH,PD)+df(PH,I5)+df(PF,I4)+df(PF,PB))+(df(PE,PI)<<2); \
-          if ((e<i)  && ( !eq(PF,PB) && !eq(PF,PC) || !eq(PH,PD) && !eq(PH,PG) || eq(PE,PI) && (!eq(PF,F4) && !eq(PF,I4) || !eq(PH,H5) && !eq(PH,I5)) || eq(PE,PG) || eq(PE,PC)) )\
-          {\
-              unsigned ke = df(PF,PG); \
-              unsigned ki = df(PH,PC); \
-              unsigned ex2 = (PE!=PC && PB!=PC); \
-              unsigned ex3 = (PE!=PG && PD!=PG); \
-              unsigned px = (df(PE,PF) <= df(PE,PH)) ? PF : PH; \
-              if (ke<<1 <= ki && ex3 && ke >= ki<<1 && ex2) { /* left-up */ \
-                  ALPHA_BLEND_192_W(E[N7], px); \
-                  ALPHA_BLEND_64_W( E[N6], px); \
-                  E[N5] = E[N7]; \
-                  E[N2] = E[N6]; \
-                  E[N8] = px;\
-              } else if (ke<<1 <= ki && ex3) { /* left */ \
-                  ALPHA_BLEND_192_W(E[N7], px); \
-                  ALPHA_BLEND_64_W( E[N5], px); \
-                  ALPHA_BLEND_64_W( E[N6], px); \
-                  E[N8] = px;\
-              } else if (ke >= ki<<1 && ex2) { /* up */ \
-                  ALPHA_BLEND_192_W(E[N5], px); \
-                  ALPHA_BLEND_64_W( E[N7], px); \
-                  ALPHA_BLEND_64_W( E[N2], px); \
-                  E[N8] = px;\
-              } else { /* diagonal */ \
-                  ALPHA_BLEND_224_W(E[N8], px); \
-                  ALPHA_BLEND_32_W(E[N5], px); \
-                  ALPHA_BLEND_32_W(E[N7], px); \
-              }\
-          }\
-          else if (e<=i)\
-          {\
-               ALPHA_BLEND_128_W( E[N8], ((df(PE,PF) <= df(PE,PH)) ? PF : PH)); \
-          }\
-     }\
+#define FILT3(PE, PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1,   \
+              N0, N1, N2, N3, N4, N5, N6, N7, N8) do {                                              \
+    if (PE != PH && PE != PF) {                                                                     \
+        const unsigned e = df(PE,PC) + df(PE,PG) + df(PI,H5) + df(PI,F4) + (df(PH,PF)<<2);          \
+        const unsigned i = df(PH,PD) + df(PH,I5) + df(PF,I4) + df(PF,PB) + (df(PE,PI)<<2);          \
+        if (e < i && (!eq(PF,PB) && !eq(PF,PC) || !eq(PH,PD) && !eq(PH,PG) || eq(PE,PI)             \
+                      && (!eq(PF,F4) && !eq(PF,I4) || !eq(PH,H5) && !eq(PH,I5))                     \
+                      || eq(PE,PG) || eq(PE,PC))) {                                                 \
+            const unsigned ke  = df(PF,PG);                                                         \
+            const unsigned ki  = df(PH,PC);                                                         \
+            const unsigned ex2 = PE != PC && PB != PC;                                              \
+            const unsigned ex3 = PE != PG && PD != PG;                                              \
+            const unsigned px  = df(PE,PF) <= df(PE,PH) ? PF : PH;                                  \
+            if (ke<<1 <= ki && ex3 && ke >= ki<<1 && ex2) { /* left-up */                           \
+                ALPHA_BLEND_192_W(E[N7], px);                                                       \
+                ALPHA_BLEND_64_W( E[N6], px);                                                       \
+                E[N5] = E[N7];                                                                      \
+                E[N2] = E[N6];                                                                      \
+                E[N8] = px;                                                                         \
+            } else if (ke<<1 <= ki && ex3) { /* left */                                             \
+                ALPHA_BLEND_192_W(E[N7], px);                                                       \
+                ALPHA_BLEND_64_W( E[N5], px);                                                       \
+                ALPHA_BLEND_64_W( E[N6], px);                                                       \
+                E[N8] = px;                                                                         \
+            } else if (ke >= ki<<1 && ex2) { /* up */                                               \
+                ALPHA_BLEND_192_W(E[N5], px);                                                       \
+                ALPHA_BLEND_64_W( E[N7], px);                                                       \
+                ALPHA_BLEND_64_W( E[N2], px);                                                       \
+                E[N8] = px;                                                                         \
+            } else { /* diagonal */                                                                 \
+                ALPHA_BLEND_224_W(E[N8], px);                                                       \
+                ALPHA_BLEND_32_W( E[N5], px);                                                       \
+                ALPHA_BLEND_32_W( E[N7], px);                                                       \
+            }                                                                                       \
+        } else if (e <= i) {                                                                        \
+            ALPHA_BLEND_128_W(E[N8], ((df(PE,PF) <= df(PE,PH)) ? PF : PH));                         \
+        }                                                                                           \
+    }                                                                                               \
 } while (0)
 
 static void xbr3x(AVFrame *input, AVFrame *output, const uint32_t *r2y)
@@ -286,50 +282,48 @@ static void xbr3x(AVFrame *input, AVFrame *output, const uint32_t *r2y)
     }
 }
 
-#define FILT4(PE, PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, N15, N14, N11, N3, N7, N10, N13, N12, N9, N6, N2, N1, N5, N8, N4, N0) do { \
-     unsigned ex   = (PE!=PH && PE!=PF); \
-     if ( ex )\
-     {\
-          unsigned e = (df(PE,PC)+df(PE,PG)+df(PI,H5)+df(PI,F4))+(df(PH,PF)<<2); \
-          unsigned i = (df(PH,PD)+df(PH,I5)+df(PF,I4)+df(PF,PB))+(df(PE,PI)<<2); \
-          if ((e<i)  && ( !eq(PF,PB) && !eq(PH,PD) || eq(PE,PI) && (!eq(PF,I4) && !eq(PH,I5)) || eq(PE,PG) || eq(PE,PC)) )\
-          {\
-              unsigned ke = df(PF,PG); \
-              unsigned ki = df(PH,PC); \
-              unsigned ex2 = (PE!=PC && PB!=PC); \
-              unsigned ex3 = (PE!=PG && PD!=PG); \
-              unsigned px = (df(PE,PF) <= df(PE,PH)) ? PF : PH; \
-              if (ke<<1 <= ki && ex3 && ke >= ki<<1 && ex2) { /* left-up */ \
-                  ALPHA_BLEND_192_W(E[N13], px); \
-                  ALPHA_BLEND_64_W( E[N12], px); \
-                  E[N15] = E[N14] = E[N11] = px; \
-                  E[N10] = E[N3] = E[N12]; \
-                  E[N7]  = E[N13]; \
-              } else if (ke<<1 <= ki && ex3) { /* left */ \
-                  ALPHA_BLEND_192_W(E[N11], px); \
-                  ALPHA_BLEND_192_W(E[N13], px); \
-                  ALPHA_BLEND_64_W( E[N10], px); \
-                  ALPHA_BLEND_64_W( E[N12], px); \
-                  E[N14] = px; \
-                  E[N15] = px; \
-              } else if (ke >= ki<<1 && ex2) { /* up */ \
-                  ALPHA_BLEND_192_W(E[N14], px); \
-                  ALPHA_BLEND_192_W(E[N7 ], px); \
-                  ALPHA_BLEND_64_W( E[N10], px); \
-                  ALPHA_BLEND_64_W( E[N3 ], px); \
-                  E[N11] = px; \
-                  E[N15] = px; \
-              } else { /* diagonal */ \
-                  ALPHA_BLEND_128_W(E[N11], px); \
-                  ALPHA_BLEND_128_W(E[N14], px); \
-                  E[N15] = px; \
-              }\
-          }\
-          else if (e<=i)\
-          {\
-               ALPHA_BLEND_128_W( E[N15], ((df(PE,PF) <= df(PE,PH)) ? PF : PH)); \
-          }\
-     }\
+#define FILT4(PE, PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1,   \
+              N15, N14, N11, N3, N7, N10, N13, N12, N9, N6, N2, N1, N5, N8, N4, N0) do {            \
+    if (PE != PH && PE != PF) {                                                                     \
+        const unsigned e = df(PE,PC) + df(PE,PG) + df(PI,H5) + df(PI,F4) + (df(PH,PF)<<2);          \
+        const unsigned i = df(PH,PD) + df(PH,I5) + df(PF,I4) + df(PF,PB) + (df(PE,PI)<<2);          \
+        if (e < i && (!eq(PF,PB) && !eq(PH,PD) || eq(PE,PI)                                         \
+                      && (!eq(PF,I4) && !eq(PH,I5))                                                 \
+                      || eq(PE,PG) || eq(PE,PC))) {                                                 \
+            const unsigned ke  = df(PF,PG);                                                         \
+            const unsigned ki  = df(PH,PC);                                                         \
+            const unsigned ex2 = PE != PC && PB != PC;                                              \
+            const unsigned ex3 = PE != PG && PD != PG;                                              \
+            const unsigned px  = df(PE,PF) <= df(PE,PH) ? PF : PH;                                  \
+            if (ke<<1 <= ki && ex3 && ke >= ki<<1 && ex2) { /* left-up */                           \
+                ALPHA_BLEND_192_W(E[N13], px);                                                      \
+                ALPHA_BLEND_64_W( E[N12], px);                                                      \
+                E[N15] = E[N14] = E[N11] = px;                                                      \
+                E[N10] = E[N3]  = E[N12];                                                           \
+                E[N7]  = E[N13];                                                                    \
+            } else if (ke<<1 <= ki && ex3) { /* left */                                             \
+                ALPHA_BLEND_192_W(E[N11], px);                                                      \
+                ALPHA_BLEND_192_W(E[N13], px);                                                      \
+                ALPHA_BLEND_64_W( E[N10], px);                                                      \
+                ALPHA_BLEND_64_W( E[N12], px);                                                      \
+                E[N14] = px;                                                                        \
+                E[N15] = px;                                                                        \
+            } else if (ke >= ki<<1 && ex2) { /* up */                                               \
+                ALPHA_BLEND_192_W(E[N14], px);                                                      \
+                ALPHA_BLEND_192_W(E[N7 ], px);                                                      \
+                ALPHA_BLEND_64_W( E[N10], px);                                                      \
+                ALPHA_BLEND_64_W( E[N3 ], px);                                                      \
+                E[N11] = px;                                                                        \
+                E[N15] = px;                                                                        \
+            } else { /* diagonal */                                                                 \
+                ALPHA_BLEND_128_W(E[N11], px);                                                      \
+                ALPHA_BLEND_128_W(E[N14], px);                                                      \
+                E[N15] = px;                                                                        \
+            }                                                                                       \
+        } else if (e <= i) {                                                                        \
+            ALPHA_BLEND_128_W( E[N15], ((df(PE,PF) <= df(PE,PH)) ? PF : PH));                       \
+        }                                                                                           \
+    }                                                                                               \
 } while (0)
 
 static void xbr4x(AVFrame *input, AVFrame *output, const uint32_t *r2y)
