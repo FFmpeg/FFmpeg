@@ -30,29 +30,7 @@
 #include "libavutil/avassert.h"
 #include "avfilter.h"
 #include "internal.h"
-
-enum TInterlaceMode {
-    MODE_MERGE = 0,
-    MODE_DROP_EVEN,
-    MODE_DROP_ODD,
-    MODE_PAD,
-    MODE_INTERLEAVE_TOP,
-    MODE_INTERLEAVE_BOTTOM,
-    MODE_INTERLACEX2,
-    MODE_NB,
-};
-
-typedef struct {
-    const AVClass *class;
-    enum TInterlaceMode mode;   ///< interlace mode selected
-    int flags;                  ///< flags affecting interlacing algorithm
-    int frame;                  ///< number of the output frame
-    int vsub;                   ///< chroma vertical subsampling
-    AVFrame *cur;
-    AVFrame *next;
-    uint8_t *black_data[4];     ///< buffer used to fill padded lines
-    int black_linesize[4];
-} TInterlaceContext;
+#include "tinterlace.h"
 
 #define OFFSET(x) offsetof(TInterlaceContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
