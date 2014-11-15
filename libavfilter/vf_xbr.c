@@ -181,8 +181,8 @@ static uint32_t pixel_diff(uint32_t x, uint32_t y, const uint32_t *r2y)
 
 static void xbr2x(AVFrame * input, AVFrame * output, const uint32_t * r2y)
 {
-    int x,y;
-    int next_line = output->linesize[0]>>2;
+    int x, y;
+    const int nl = output->linesize[0] >> 2;
 
     for (y = 0; y < input->height; y++) {
         INIT_SRC_DST_POINTERS(2)
@@ -190,12 +190,12 @@ static void xbr2x(AVFrame * input, AVFrame * output, const uint32_t * r2y)
         for (x = 0; x < input->width; x++) {
             INIT_21_PIXELS
 
-            E[0] = E[1] = E[next_line] = E[next_line + 1] = PE; // 0, 1, 2, 3
+            E[0] = E[1] = E[nl] = E[nl + 1] = PE; // 0, 1, 2, 3
 
-            FILT2(PE, PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, 0, 1, next_line, next_line+1);
-            FILT2(PE, PC, PF, PB, PI, PA, PH, PD, PG, I4, A1, I5, H5, A0, D0, B1, C1, F4, C4, G5, G0, next_line, 0, next_line+1, 1);
-            FILT2(PE, PA, PB, PD, PC, PG, PF, PH, PI, C1, G0, C4, F4, G5, H5, D0, A0, B1, A1, I4, I5, next_line+1, next_line, 1, 0);
-            FILT2(PE, PG, PD, PH, PA, PI, PB, PF, PC, A0, I5, A1, B1, I4, F4, H5, G5, D0, G0, C1, C4, 1, next_line+1, 0, next_line);
+            FILT2(PE, PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, 0, 1, nl, nl+1);
+            FILT2(PE, PC, PF, PB, PI, PA, PH, PD, PG, I4, A1, I5, H5, A0, D0, B1, C1, F4, C4, G5, G0, nl, 0, nl+1, 1);
+            FILT2(PE, PA, PB, PD, PC, PG, PF, PH, PI, C1, G0, C4, F4, G5, H5, D0, A0, B1, A1, I4, I5, nl+1, nl, 1, 0);
+            FILT2(PE, PG, PD, PH, PA, PI, PB, PF, PC, A0, I5, A1, B1, I4, F4, H5, G5, D0, G0, C1, C4, 1, nl+1, 0, nl);
 
             sa0 += 1;
             sa1 += 1;
@@ -250,14 +250,14 @@ static void xbr2x(AVFrame * input, AVFrame * output, const uint32_t * r2y)
 
 static void xbr3x(AVFrame *input, AVFrame *output, const uint32_t *r2y)
 {
-    const int nl = output->linesize[0]>>2;
+    int x, y;
+    const int nl = output->linesize[0] >> 2;
     const int nl1 = nl + nl;
-    int x,y;
 
     for (y = 0; y < input->height; y++) {
         INIT_SRC_DST_POINTERS(3)
 
-        for (x = 0; x < input->width; x++){
+        for (x = 0; x < input->width; x++) {
             INIT_21_PIXELS
 
             E[0]   = E[1]     = E[2]     = PE;
@@ -326,11 +326,10 @@ static void xbr3x(AVFrame *input, AVFrame *output, const uint32_t *r2y)
 
 static void xbr4x(AVFrame *input, AVFrame *output, const uint32_t *r2y)
 {
-
-    const int nl = output->linesize[0]>>2;
+    int x, y;
+    const int nl = output->linesize[0] >> 2;
     const int nl1 = nl + nl;
     const int nl2 = nl1 + nl;
-    int x, y;
 
     for (y = 0; y < input->height; y++) {
         INIT_SRC_DST_POINTERS(4)
