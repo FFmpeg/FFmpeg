@@ -483,6 +483,9 @@
     <ClCompile Include="..\libavfilter\vf_w3fdif.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_xbr.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\vf_yadif.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
@@ -567,6 +570,9 @@
     <ClCompile Include="..\libavfilter\x86\vf_idet_init.c">
       <Filter>Source Files\libavfilter\x86</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\x86\vf_interlace_init.c">
+      <Filter>Source Files\libavfilter\x86</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\x86\vf_noise.c">
       <Filter>Source Files\libavfilter\x86</Filter>
     </ClCompile>
@@ -574,6 +580,9 @@
       <Filter>Source Files\libavfilter\x86</Filter>
     </ClCompile>
     <ClCompile Include="..\libavfilter\x86\vf_spp.c">
+      <Filter>Source Files\libavfilter\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\x86\vf_tinterlace_init.c">
       <Filter>Source Files\libavfilter\x86</Filter>
     </ClCompile>
     <ClCompile Include="..\libavfilter\x86\af_volume_init.c">
@@ -614,6 +623,9 @@
       <Filter>Source Files\libavfilter\x86</Filter>
     </YASM>
     <YASM Include="..\libavfilter\x86\vf_idet.asm">
+      <Filter>Source Files\libavfilter\x86</Filter>
+    </YASM>
+    <YASM Include="..\libavfilter\x86\vf_interlace.asm">
       <Filter>Source Files\libavfilter\x86</Filter>
     </YASM>
     <YASM Include="..\libavfilter\x86\vf_pullup.asm">
