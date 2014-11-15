@@ -181,7 +181,6 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>MaxSpeed</Optimization>
-      <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;inline=__inline;strtod=avpriv_strtod;_LIB;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>..\compat\msvcrt\snprintf.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
@@ -224,7 +223,6 @@ del ..\libavutil\ffversion.h
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>MaxSpeed</Optimization>
-      <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;inline=__inline;strtod=avpriv_strtod;_LIB;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>..\compat\msvcrt\snprintf.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
@@ -266,7 +264,6 @@ del ..\libavutil\ffversion.h
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>MaxSpeed</Optimization>
-      <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;inline=__inline;strtod=avpriv_strtod;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>..\compat\msvcrt\snprintf.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
@@ -309,7 +306,6 @@ del ..\libavutil\ffversion.h
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>MaxSpeed</Optimization>
-      <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;inline=__inline;strtod=avpriv_strtod;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>..\compat\msvcrt\snprintf.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
@@ -351,7 +347,6 @@ del ..\libavutil\ffversion.h
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
-      <SDLCheck>false</SDLCheck>
       <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;inline=__inline;strtod=avpriv_strtod;_LIB;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -404,14 +399,12 @@ del ..\libavutil\ffversion.h
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
-      <SDLCheck>false</SDLCheck>
       <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;inline=__inline;strtod=avpriv_strtod;_LIB;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <BufferSecurityCheck>false</BufferSecurityCheck>
-      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <C99Support>true</C99Support>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <AdditionalIncludeDirectories>.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -455,7 +448,6 @@ del ..\libavutil\ffversion.h
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDLL|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <SDLCheck>false</SDLCheck>
       <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;inline=__inline;strtod=avpriv_strtod;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -508,14 +500,12 @@ del ..\libavutil\ffversion.h
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDLL|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <SDLCheck>false</SDLCheck>
       <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;inline=__inline;strtod=avpriv_strtod;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <StringPooling>true</StringPooling>
       <BufferSecurityCheck>false</BufferSecurityCheck>
-      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <C99Support>true</C99Support>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <AdditionalIncludeDirectories>.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -561,7 +551,6 @@ del ..\libavutil\ffversion.h
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
-      <SDLCheck>false</SDLCheck>
       <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;inline=__inline;strtod=avpriv_strtod;_LIB;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -613,14 +602,12 @@ del ..\libavutil\ffversion.h
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
-      <SDLCheck>false</SDLCheck>
       <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;inline=__inline;strtod=avpriv_strtod;_LIB;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <BufferSecurityCheck>false</BufferSecurityCheck>
-      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <C99Support>true</C99Support>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <AdditionalIncludeDirectories>.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
