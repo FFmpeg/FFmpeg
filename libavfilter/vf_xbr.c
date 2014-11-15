@@ -159,17 +159,17 @@ static uint32_t pixel_diff(uint32_t x, uint32_t y, const uint32_t *r2y)
                       || eq(PE,PG) || eq(PE,PC))) {                                                 \
             const unsigned ke  = df(PF,PG);                                                         \
             const unsigned ki  = df(PH,PC);                                                         \
-            const unsigned ex2 = PE != PC && PB != PC;                                              \
-            const unsigned ex3 = PE != PG && PD != PG;                                              \
+            const int left = ke<<1 <= ki && PE != PG && PD != PG;                                   \
+            const int up   = ke >= ki<<1 && PE != PC && PB != PC;                                   \
             const unsigned px  = df(PE,PF) <= df(PE,PH) ? PF : PH;                                  \
-            if (ke<<1 <= ki && ex3 && ke >= ki<<1 && ex2) { /* left-up */                           \
+            if (left && up) {                                                                       \
                 ALPHA_BLEND_224_W(E[N3], px);                                                       \
                 ALPHA_BLEND_64_W( E[N2], px);                                                       \
                 E[N1] = E[N2];                                                                      \
-            } else if (ke<<1 <= ki && ex3) { /* left */                                             \
+            } else if (left) {                                                                      \
                 ALPHA_BLEND_192_W(E[N3], px);                                                       \
                 ALPHA_BLEND_64_W( E[N2], px);                                                       \
-            } else if (ke >= ki<<1 && ex2) { /* up */                                               \
+            } else if (up) {                                                                        \
                 ALPHA_BLEND_192_W(E[N3], px);                                                       \
                 ALPHA_BLEND_64_W( E[N1], px);                                                       \
             } else { /* diagonal */                                                                 \
@@ -220,21 +220,21 @@ static void xbr2x(AVFrame * input, AVFrame * output, const uint32_t * r2y)
                       || eq(PE,PG) || eq(PE,PC))) {                                                 \
             const unsigned ke  = df(PF,PG);                                                         \
             const unsigned ki  = df(PH,PC);                                                         \
-            const unsigned ex2 = PE != PC && PB != PC;                                              \
-            const unsigned ex3 = PE != PG && PD != PG;                                              \
+            const int left = ke<<1 <= ki && PE != PG && PD != PG;                                   \
+            const int up   = ke >= ki<<1 && PE != PC && PB != PC;                                   \
             const unsigned px  = df(PE,PF) <= df(PE,PH) ? PF : PH;                                  \
-            if (ke<<1 <= ki && ex3 && ke >= ki<<1 && ex2) { /* left-up */                           \
+            if (left && up) {                                                                       \
                 ALPHA_BLEND_192_W(E[N7], px);                                                       \
                 ALPHA_BLEND_64_W( E[N6], px);                                                       \
                 E[N5] = E[N7];                                                                      \
                 E[N2] = E[N6];                                                                      \
                 E[N8] = px;                                                                         \
-            } else if (ke<<1 <= ki && ex3) { /* left */                                             \
+            } else if (left) {                                                                      \
                 ALPHA_BLEND_192_W(E[N7], px);                                                       \
                 ALPHA_BLEND_64_W( E[N5], px);                                                       \
                 ALPHA_BLEND_64_W( E[N6], px);                                                       \
                 E[N8] = px;                                                                         \
-            } else if (ke >= ki<<1 && ex2) { /* up */                                               \
+            } else if (up) {                                                                        \
                 ALPHA_BLEND_192_W(E[N5], px);                                                       \
                 ALPHA_BLEND_64_W( E[N7], px);                                                       \
                 ALPHA_BLEND_64_W( E[N2], px);                                                       \
@@ -292,23 +292,23 @@ static void xbr3x(AVFrame *input, AVFrame *output, const uint32_t *r2y)
                       || eq(PE,PG) || eq(PE,PC))) {                                                 \
             const unsigned ke  = df(PF,PG);                                                         \
             const unsigned ki  = df(PH,PC);                                                         \
-            const unsigned ex2 = PE != PC && PB != PC;                                              \
-            const unsigned ex3 = PE != PG && PD != PG;                                              \
+            const int left = ke<<1 <= ki && PE != PG && PD != PG;                                   \
+            const int up   = ke >= ki<<1 && PE != PC && PB != PC;                                   \
             const unsigned px  = df(PE,PF) <= df(PE,PH) ? PF : PH;                                  \
-            if (ke<<1 <= ki && ex3 && ke >= ki<<1 && ex2) { /* left-up */                           \
+            if (left && up) {                                                                       \
                 ALPHA_BLEND_192_W(E[N13], px);                                                      \
                 ALPHA_BLEND_64_W( E[N12], px);                                                      \
                 E[N15] = E[N14] = E[N11] = px;                                                      \
                 E[N10] = E[N3]  = E[N12];                                                           \
                 E[N7]  = E[N13];                                                                    \
-            } else if (ke<<1 <= ki && ex3) { /* left */                                             \
+            } else if (left) {                                                                      \
                 ALPHA_BLEND_192_W(E[N11], px);                                                      \
                 ALPHA_BLEND_192_W(E[N13], px);                                                      \
                 ALPHA_BLEND_64_W( E[N10], px);                                                      \
                 ALPHA_BLEND_64_W( E[N12], px);                                                      \
                 E[N14] = px;                                                                        \
                 E[N15] = px;                                                                        \
-            } else if (ke >= ki<<1 && ex2) { /* up */                                               \
+            } else if (up) {                                                                        \
                 ALPHA_BLEND_192_W(E[N14], px);                                                      \
                 ALPHA_BLEND_192_W(E[N7 ], px);                                                      \
                 ALPHA_BLEND_64_W( E[N10], px);                                                      \
