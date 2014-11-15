@@ -5,10 +5,6 @@
  *
  * Copyright (c) 2014 Arwa Arif <arwaarif1994@gmail.com>
  *
- * Changed from GPL to LGPL, in accordance with Hyllian's message:
- *     On Tue, Nov 11, 2014 at 11:52 PM, Sérgio <sergiogdb@gmail.com> wrote:
- *         > Hi, Put lgpl on this and use it as you wish. It's free!
- *
  * FFmpeg is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
