@@ -191,6 +191,8 @@ static void add_codec(FFServerStream *stream, AVCodecContext *av,
         av_log(NULL, AV_LOG_WARNING,
                "Something is wrong, %d options are not set!\n", av_dict_count(*opts));
 
+    if (config->stream_use_defaults) {
+    //TODO: reident
     /* compute default parameters */
     switch(av->codec_type) {
     case AVMEDIA_TYPE_AUDIO:
@@ -254,6 +256,25 @@ static void add_codec(FFServerStream *stream, AVCodecContext *av,
         break;
     default:
         abort();
+    }
+    } else {
+        switch(av->codec_type) {
+        case AVMEDIA_TYPE_AUDIO:
+            if (av->bit_rate == 0)
+                report_config_error(config->filename, config->line_num, AV_LOG_ERROR,
+                                    &config->errors, "audio bit rate is not set\n");
+            if (av->sample_rate == 0)
+                report_config_error(config->filename, config->line_num, AV_LOG_ERROR,
+                                    &config->errors, "audio sample rate is not set\n");
+            break;
+        case AVMEDIA_TYPE_VIDEO:
+            if (av->width == 0 || av->height == 0)
+                report_config_error(config->filename, config->line_num, AV_LOG_ERROR,
+                                    &config->errors, "video size is not set\n");
+            break;
+        default:
+            av_assert0(0);
+        }
     }
 
     st = av_mallocz(sizeof(AVStream));
@@ -583,6 +604,10 @@ static int ffserver_parse_config_global(FFServerConfig *config, const char *cmd,
             ffserver_get_arg(config->logfilename, sizeof(config->logfilename), p);
     } else if (!av_strcasecmp(cmd, "LoadModule")) {
         ERROR("Loadable modules are no longer supported\n");
+    } else if (!av_strcasecmp(cmd, "NoDefaults")) {
+        config->use_defaults = 0;
+    } else if (!av_strcasecmp(cmd, "UseDefaults")) {
+        config->use_defaults = 1;
     } else
         ERROR("Incorrect keyword: '%s'\n", cmd);
     return 0;
@@ -738,6 +763,7 @@ static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd,
             config->guessed_audio_codec_id = AV_CODEC_ID_NONE;
             config->guessed_video_codec_id = AV_CODEC_ID_NONE;
         }
+        config->stream_use_defaults = config->use_defaults;
         *pstream = stream;
         return 0;
     }
@@ -1010,6 +1036,7 @@ static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd,
     } else if (!av_strcasecmp(cmd, "NoLoop")) {
         stream->loop = 0;
     } else if (!av_strcasecmp(cmd, "</Stream>")) {
+        config->stream_use_defaults &= 1;
         if (stream->feed && stream->fmt && strcmp(stream->fmt->name, "ffm")) {
             if (config->dummy_actx->codec_id == AV_CODEC_ID_NONE)
                 config->dummy_actx->codec_id = config->guessed_audio_codec_id;
@@ -1032,6 +1059,14 @@ static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd,
     } else if (!av_strcasecmp(cmd, "File") || !av_strcasecmp(cmd, "ReadOnlyFile")) {
         ffserver_get_arg(stream->feed_filename, sizeof(stream->feed_filename),
                 p);
+    } else if (!av_strcasecmp(cmd, "UseDefaults")) {
+        if (config->stream_use_defaults > 1)
+            WARNING("Multiple UseDefaults/NoDefaults entries.\n");
+        config->stream_use_defaults = 3;
+    } else if (!av_strcasecmp(cmd, "NoDefaults")) {
+        if (config->stream_use_defaults > 1)
+            WARNING("Multiple UseDefaults/NoDefaults entries.\n");
+        config->stream_use_defaults = 2;
     } else {
         ERROR("Invalid entry '%s' inside <Stream></Stream>\n", cmd);
     }

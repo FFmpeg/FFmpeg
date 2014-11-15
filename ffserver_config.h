@@ -106,6 +106,7 @@ typedef struct FFServerConfig {
     struct sockaddr_in rtsp_addr;
     int errors;
     int warnings;
+    int use_defaults;
     // Following variables MUST NOT be used outside configuration parsing code.
     enum AVCodecID guessed_audio_codec_id;
     enum AVCodecID guessed_video_codec_id;
@@ -116,6 +117,7 @@ typedef struct FFServerConfig {
     int no_audio;
     int no_video;
     int line_num;
+    int stream_use_defaults;
 } FFServerConfig;
 
 void ffserver_get_arg(char *buf, int buf_size, const char **pp);

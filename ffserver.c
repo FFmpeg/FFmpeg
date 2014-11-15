@@ -201,6 +201,7 @@ static FFServerConfig config = {
     .nb_max_http_connections = 2000,
     .nb_max_connections = 5,
     .max_bandwidth = 1000,
+    .use_defaults = 1,
 };
 
 static void new_connection(int server_fd, int is_rtsp);
