@@ -73,28 +73,26 @@ static uint32_t pixel_diff(uint32_t x, uint32_t y, const uint32_t *r2y)
 
 #define ALPHA_BLEND_32_W(dst, src) \
     dst = ((RED_BLUE_MASK & ((dst & RED_BLUE_MASK) + ((((src & RED_BLUE_MASK) - \
-          (dst & RED_BLUE_MASK))) >>3))) | (GREEN_MASK & ((dst & GREEN_MASK) + \
-          ((((src & GREEN_MASK) - (dst & GREEN_MASK))) >>3))))
+          (dst & RED_BLUE_MASK))) >> 3))) | (GREEN_MASK & ((dst & GREEN_MASK) + \
+          ((((src & GREEN_MASK) - (dst & GREEN_MASK))) >> 3))))
 
 #define ALPHA_BLEND_64_W(dst, src) \
     dst = ((RED_BLUE_MASK & ((dst & RED_BLUE_MASK) + ((((src & RED_BLUE_MASK) - \
-          (dst & RED_BLUE_MASK))) >>2))) | (GREEN_MASK & ((dst & GREEN_MASK) + \
-          ((((src & GREEN_MASK) - (dst & GREEN_MASK))) >>2))))
+          (dst & RED_BLUE_MASK))) >> 2))) | (GREEN_MASK & ((dst & GREEN_MASK) + \
+          ((((src & GREEN_MASK) - (dst & GREEN_MASK))) >> 2))))
 
 #define ALPHA_BLEND_192_W(dst, src) \
     dst = ((RED_BLUE_MASK & ((dst & RED_BLUE_MASK) + ((((src & RED_BLUE_MASK) - \
-          (dst & RED_BLUE_MASK)) * 3) >>2))) | (GREEN_MASK & ((dst & GREEN_MASK) + \
-          ((((src & GREEN_MASK) - (dst & GREEN_MASK)) * 3) >>2))))
+          (dst & RED_BLUE_MASK)) * 3) >> 2))) | (GREEN_MASK & ((dst & GREEN_MASK) + \
+          ((((src & GREEN_MASK) - (dst & GREEN_MASK)) * 3) >> 2))))
 
 #define ALPHA_BLEND_224_W(dst, src) \
     dst = ((RED_BLUE_MASK & ((dst & RED_BLUE_MASK) + ((((src & RED_BLUE_MASK) - \
-          (dst & RED_BLUE_MASK)) * 7) >>3))) | (GREEN_MASK & ((dst & GREEN_MASK) + \
-          ((((src & GREEN_MASK) - (dst & GREEN_MASK)) * 7) >>3))))
+          (dst & RED_BLUE_MASK)) * 7) >> 3))) | (GREEN_MASK & ((dst & GREEN_MASK) + \
+          ((((src & GREEN_MASK) - (dst & GREEN_MASK)) * 7) >> 3))))
 
 #define df(A, B) pixel_diff(A, B, r2y)
-
-#define eq(A, B)\
-    (df(A, B) < 155)\
+#define eq(A, B) (df(A, B) < 155)
 
 #define INIT_SRC_DST_POINTERS(level)                                                                    \
     uint32_t *E = (uint32_t *)(output->data[0] + y * output->linesize[0] * (level));                    \
@@ -157,11 +155,11 @@ static uint32_t pixel_diff(uint32_t x, uint32_t y, const uint32_t *r2y)
         if (e < i && (!eq(PF,PB) && !eq(PH,PD) || eq(PE,PI)                                         \
                       && (!eq(PF,I4) && !eq(PH,I5))                                                 \
                       || eq(PE,PG) || eq(PE,PC))) {                                                 \
-            const unsigned ke  = df(PF,PG);                                                         \
-            const unsigned ki  = df(PH,PC);                                                         \
-            const int left = ke<<1 <= ki && PE != PG && PD != PG;                                   \
-            const int up   = ke >= ki<<1 && PE != PC && PB != PC;                                   \
-            const unsigned px  = df(PE,PF) <= df(PE,PH) ? PF : PH;                                  \
+            const unsigned ke = df(PF,PG);                                                          \
+            const unsigned ki = df(PH,PC);                                                          \
+            const int left    = ke<<1 <= ki && PE != PG && PD != PG;                                \
+            const int up      = ke >= ki<<1 && PE != PC && PB != PC;                                \
+            const unsigned px = df(PE,PF) <= df(PE,PH) ? PF : PH;                                   \
             if (left && up) {                                                                       \
                 ALPHA_BLEND_224_W(E[N3], px);                                                       \
                 ALPHA_BLEND_64_W( E[N2], px);                                                       \
@@ -218,11 +216,11 @@ static void xbr2x(AVFrame * input, AVFrame * output, const uint32_t * r2y)
         if (e < i && (!eq(PF,PB) && !eq(PF,PC) || !eq(PH,PD) && !eq(PH,PG) || eq(PE,PI)             \
                       && (!eq(PF,F4) && !eq(PF,I4) || !eq(PH,H5) && !eq(PH,I5))                     \
                       || eq(PE,PG) || eq(PE,PC))) {                                                 \
-            const unsigned ke  = df(PF,PG);                                                         \
-            const unsigned ki  = df(PH,PC);                                                         \
-            const int left = ke<<1 <= ki && PE != PG && PD != PG;                                   \
-            const int up   = ke >= ki<<1 && PE != PC && PB != PC;                                   \
-            const unsigned px  = df(PE,PF) <= df(PE,PH) ? PF : PH;                                  \
+            const unsigned ke = df(PF,PG);                                                          \
+            const unsigned ki = df(PH,PC);                                                          \
+            const int left    = ke<<1 <= ki && PE != PG && PD != PG;                                \
+            const int up      = ke >= ki<<1 && PE != PC && PB != PC;                                \
+            const unsigned px = df(PE,PF) <= df(PE,PH) ? PF : PH;                                   \
             if (left && up) {                                                                       \
                 ALPHA_BLEND_192_W(E[N7], px);                                                       \
                 ALPHA_BLEND_64_W( E[N6], px);                                                       \
@@ -290,11 +288,11 @@ static void xbr3x(AVFrame *input, AVFrame *output, const uint32_t *r2y)
         if (e < i && (!eq(PF,PB) && !eq(PH,PD) || eq(PE,PI)                                         \
                       && (!eq(PF,I4) && !eq(PH,I5))                                                 \
                       || eq(PE,PG) || eq(PE,PC))) {                                                 \
-            const unsigned ke  = df(PF,PG);                                                         \
-            const unsigned ki  = df(PH,PC);                                                         \
-            const int left = ke<<1 <= ki && PE != PG && PD != PG;                                   \
-            const int up   = ke >= ki<<1 && PE != PC && PB != PC;                                   \
-            const unsigned px  = df(PE,PF) <= df(PE,PH) ? PF : PH;                                  \
+            const unsigned ke = df(PF,PG);                                                          \
+            const unsigned ki = df(PH,PC);                                                          \
+            const int left    = ke<<1 <= ki && PE != PG && PD != PG;                                \
+            const int up      = ke >= ki<<1 && PE != PC && PB != PC;                                \
+            const unsigned px = df(PE,PF) <= df(PE,PH) ? PF : PH;                                   \
             if (left && up) {                                                                       \
                 ALPHA_BLEND_192_W(E[N13], px);                                                      \
                 ALPHA_BLEND_64_W( E[N12], px);                                                      \
