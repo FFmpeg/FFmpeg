@@ -2061,7 +2061,6 @@ static int hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
 
     lc->cu.x                = x0;
     lc->cu.y                = y0;
-    lc->cu.rqt_root_cbf     = 1;
     lc->cu.pred_mode        = MODE_INTRA;
     lc->cu.part_mode        = PART_2Nx2N;
     lc->cu.intra_split_flag = 0;
@@ -2163,11 +2162,13 @@ static int hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
         }
 
         if (!pcm_flag) {
+            int rqt_root_cbf = 1;
+
             if (lc->cu.pred_mode != MODE_INTRA &&
                 !(lc->cu.part_mode == PART_2Nx2N && lc->pu.merge_flag)) {
-                lc->cu.rqt_root_cbf = ff_hevc_no_residual_syntax_flag_decode(s);
+                rqt_root_cbf = ff_hevc_no_residual_syntax_flag_decode(s);
             }
-            if (lc->cu.rqt_root_cbf) {
+            if (rqt_root_cbf) {
                 lc->cu.max_trafo_depth = lc->cu.pred_mode == MODE_INTRA ?
                                          s->sps->max_transform_hierarchy_depth_intra + lc->cu.intra_split_flag :
                                          s->sps->max_transform_hierarchy_depth_inter;
