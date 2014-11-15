@@ -51,6 +51,8 @@ typedef struct {
     AVFrame *next;
     uint8_t *black_data[4];     ///< buffer used to fill padded lines
     int black_linesize[4];
+    void (*lowpass_line)(uint8_t *dstp, ptrdiff_t width, const uint8_t *srcp,
+                         const uint8_t *srcp_above, const uint8_t *srcp_below);
 } TInterlaceContext;
 
 #endif /* AVFILTER_TINTERLACE_H */
