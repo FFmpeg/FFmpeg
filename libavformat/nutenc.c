@@ -170,6 +170,7 @@ static void build_frame_code(AVFormatContext *s)
         int start2 = start + (end - start) * stream_id       / s->nb_streams;
         int end2   = start + (end - start) * (stream_id + 1) / s->nb_streams;
         AVCodecContext *codec = s->streams[stream_id]->codec;
+        const AVCodecDescriptor *desc = avcodec_descriptor_get(codec->codec_id);
         int is_audio          = codec->codec_type == AVMEDIA_TYPE_AUDIO;
         int intra_only        = /*codec->intra_only || */ is_audio;
         int pred_count;
@@ -212,7 +213,7 @@ static void build_frame_code(AVFormatContext *s)
             start2++;
         }
 
-        if (codec->has_b_frames) {
+        if (desc && desc->props & AV_CODEC_PROP_REORDER) {
             pred_count    = 5;
             pred_table[0] = -2;
             pred_table[1] = -1;
@@ -417,6 +418,7 @@ static int write_streamheader(AVFormatContext *avctx, AVIOContext *bc,
 {
     NUTContext *nut       = avctx->priv_data;
     AVCodecContext *codec = st->codec;
+    const AVCodecDescriptor *desc = avcodec_descriptor_get(codec->codec_id);
     unsigned codec_tag    = av_codec_get_tag(ff_nut_codec_tags, codec->codec_id);
 
     ff_put_v(bc, i);
@@ -449,7 +451,7 @@ static int write_streamheader(AVFormatContext *avctx, AVIOContext *bc,
     ff_put_v(bc, nut->stream[i].time_base - nut->time_base);
     ff_put_v(bc, nut->stream[i].msb_pts_shift);
     ff_put_v(bc, nut->stream[i].max_pts_distance);
-    ff_put_v(bc, codec->has_b_frames);
+    ff_put_v(bc, (desc && desc->props & AV_CODEC_PROP_REORDER) ? 16 : 0);
     avio_w8(bc, 0); /* flags: 0x1 - fixed_fps, 0x2 - index_present */
 
     ff_put_v(bc, codec->extradata_size);
