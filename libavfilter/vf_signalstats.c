@@ -294,8 +294,10 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
 
     prev = s->frame_prev;
 
-    if (s->outfilter != FILTER_NONE)
+    if (s->outfilter != FILTER_NONE) {
         out = av_frame_clone(in);
+        av_frame_make_writable(out);
+    }
 
     for (fil = 0; fil < FILT_NUMB; fil ++)
         if ((s->filters & 1<<fil) && filters_def[fil].init)
