@@ -76,26 +76,12 @@ static uint32_t pixel_diff(uint32_t x, uint32_t y, const uint32_t *r2y)
 }
 
 #define ALPHA_BLEND_128_W(dst, src) dst = ((src & LB_MASK) >> 1) + ((dst & LB_MASK) >> 1)
-
-#define ALPHA_BLEND_32_W(dst, src) \
-    dst = ((RED_BLUE_MASK & ((dst & RED_BLUE_MASK) + ((((src & RED_BLUE_MASK) - \
-          (dst & RED_BLUE_MASK))) >> 3))) | (GREEN_MASK & ((dst & GREEN_MASK) + \
-          ((((src & GREEN_MASK) - (dst & GREEN_MASK))) >> 3))))
-
-#define ALPHA_BLEND_64_W(dst, src) \
-    dst = ((RED_BLUE_MASK & ((dst & RED_BLUE_MASK) + ((((src & RED_BLUE_MASK) - \
-          (dst & RED_BLUE_MASK))) >> 2))) | (GREEN_MASK & ((dst & GREEN_MASK) + \
-          ((((src & GREEN_MASK) - (dst & GREEN_MASK))) >> 2))))
-
-#define ALPHA_BLEND_192_W(dst, src) \
-    dst = ((RED_BLUE_MASK & ((dst & RED_BLUE_MASK) + ((((src & RED_BLUE_MASK) - \
-          (dst & RED_BLUE_MASK)) * 3) >> 2))) | (GREEN_MASK & ((dst & GREEN_MASK) + \
-          ((((src & GREEN_MASK) - (dst & GREEN_MASK)) * 3) >> 2))))
-
-#define ALPHA_BLEND_224_W(dst, src) \
-    dst = ((RED_BLUE_MASK & ((dst & RED_BLUE_MASK) + ((((src & RED_BLUE_MASK) - \
-          (dst & RED_BLUE_MASK)) * 7) >> 3))) | (GREEN_MASK & ((dst & GREEN_MASK) + \
-          ((((src & GREEN_MASK) - (dst & GREEN_MASK)) * 7) >> 3))))
+#define ALPHA_BLEND_BASE(a, b, m, s) (  (RED_BLUE_MASK & (((a) & RED_BLUE_MASK) + (((((b) & RED_BLUE_MASK) - ((a) & RED_BLUE_MASK)) * (m)) >> (s)))) \
+                                      | (GREEN_MASK    & (((a) & GREEN_MASK)    + (((((b) & GREEN_MASK)    - ((a) & GREEN_MASK))    * (m)) >> (s)))))
+#define ALPHA_BLEND_32_W(dst, src)  dst = ALPHA_BLEND_BASE(dst, src, 1, 3)
+#define ALPHA_BLEND_64_W(dst, src)  dst = ALPHA_BLEND_BASE(dst, src, 1, 2)
+#define ALPHA_BLEND_192_W(dst, src) dst = ALPHA_BLEND_BASE(dst, src, 3, 2)
+#define ALPHA_BLEND_224_W(dst, src) dst = ALPHA_BLEND_BASE(dst, src, 7, 3)
 
 #define df(A, B) pixel_diff(A, B, r2y)
 #define eq(A, B) (df(A, B) < 155)
