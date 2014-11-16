@@ -1355,7 +1355,7 @@ static int http_parse_request(HTTPContext *c)
         redir_type = REDIR_ASX;
         filename[strlen(filename)-1] = 'f';
     } else if (av_match_ext(filename, "asf") &&
-        (!useragent || av_strncasecmp(useragent, "NSPlayer", 8) != 0)) {
+        (!useragent || av_strncasecmp(useragent, "NSPlayer", 8))) {
         /* if this isn't WMP or lookalike, return the redirector file */
         redir_type = REDIR_ASF;
     } else if (av_match_ext(filename, "rpm,ram")) {
@@ -2303,7 +2303,7 @@ static int http_send_data(HTTPContext *c)
             ret = http_prepare_data(c);
             if (ret < 0)
                 return -1;
-            else if (ret != 0)
+            else if (ret)
                 /* state change requested */
                 break;
         } else {
@@ -2686,7 +2686,7 @@ static int rtsp_parse_request(HTTPContext *c)
     }
 
     /* check version name */
-    if (strcmp(protocol, "RTSP/1.0") != 0) {
+    if (strcmp(protocol, "RTSP/1.0")) {
         rtsp_reply_error(c, RTSP_STATUS_VERSION);
         goto the_end;
     }
