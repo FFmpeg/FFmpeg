@@ -35,6 +35,8 @@
 
 #define FF_SANE_NB_CHANNELS 63U
 
+#define FF_SIGNBIT(x) (x >> CHAR_BIT * sizeof(x) - 1)
+
 typedef struct FramePool {
     /**
      * Pools for each data plane. For audio all the planes have the same size,

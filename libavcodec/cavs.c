@@ -30,6 +30,7 @@
 #include "golomb.h"
 #include "h264chroma.h"
 #include "idctdsp.h"
+#include "internal.h"
 #include "mathops.h"
 #include "qpeldsp.h"
 #include "cavs.h"
@@ -529,8 +530,8 @@ static inline void scale_mv(AVSContext *h, int *d_x, int *d_y,
 {
     int den = h->scale_den[src->ref];
 
-    *d_x = (src->x * distp * den + 256 + (src->x >> 31)) >> 9;
-    *d_y = (src->y * distp * den + 256 + (src->y >> 31)) >> 9;
+    *d_x = (src->x * distp * den + 256 + FF_SIGNBIT(src->x)) >> 9;
+    *d_y = (src->y * distp * den + 256 + FF_SIGNBIT(src->y)) >> 9;
 }
 
 static inline void mv_pred_median(AVSContext *h,
