@@ -45,7 +45,14 @@ typedef struct {
     AVFrame *frame_prev;
     uint8_t rgba_color[4];
     int yuv_color[3];
+    int nb_jobs;
+    int *jobs_rets;
 } SignalstatsContext;
+
+typedef struct ThreadData {
+    const AVFrame *in;
+    AVFrame *out;
+} ThreadData;
 
 #define OFFSET(x) offsetof(SignalstatsContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
@@ -87,6 +94,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 {
     SignalstatsContext *s = ctx->priv;
     av_frame_free(&s->frame_prev);
+    av_freep(&s->jobs_rets);
 }
 
 static int query_formats(AVFilterContext *ctx)
@@ -122,10 +130,14 @@ static int config_props(AVFilterLink *outlink)
     s->fs = inlink->w * inlink->h;
     s->cfs = s->chromaw * s->chromah;
 
+    s->nb_jobs   = FFMAX(1, FFMIN(inlink->h, ctx->graph->nb_threads));
+    s->jobs_rets = av_malloc_array(s->nb_jobs, sizeof(*s->jobs_rets));
+    if (!s->jobs_rets)
+        return AVERROR(ENOMEM);
     return 0;
 }
 
-static void burn_frame(SignalstatsContext *s, AVFrame *f, int x, int y)
+static void burn_frame(const SignalstatsContext *s, AVFrame *f, int x, int y)
 {
     const int chromax = x >> s->hsub;
     const int chromay = y >> s->vsub;
@@ -134,11 +146,19 @@ static void burn_frame(SignalstatsContext *s, AVFrame *f, int x, int y)
     f->data[2][chromay * f->linesize[2] + chromax] = s->yuv_color[2];
 }
 
-static int filter_brng(SignalstatsContext *s, const AVFrame *in, AVFrame *out, int w, int h)
+static int filter_brng(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
+    ThreadData *td = arg;
+    const SignalstatsContext *s = ctx->priv;
+    const AVFrame *in = td->in;
+    AVFrame *out = td->out;
+    const int w = in->width;
+    const int h = in->height;
+    const int slice_start = (h *  jobnr   ) / nb_jobs;
+    const int slice_end   = (h * (jobnr+1)) / nb_jobs;
     int x, y, score = 0;
 
-    for (y = 0; y < h; y++) {
+    for (y = slice_start; y < slice_end; y++) {
         const int yc = y >> s->vsub;
         const uint8_t *pluma    = &in->data[0][y  * in->linesize[0]];
         const uint8_t *pchromau = &in->data[1][yc * in->linesize[1]];
@@ -165,13 +185,21 @@ static int filter_tout_outlier(uint8_t x, uint8_t y, uint8_t z)
     return ((abs(x - y) + abs (z - y)) / 2) - abs(z - x) > 4; // make 4 configurable?
 }
 
-static int filter_tout(SignalstatsContext *s, const AVFrame *in, AVFrame *out, int w, int h)
+static int filter_tout(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
+    ThreadData *td = arg;
+    const SignalstatsContext *s = ctx->priv;
+    const AVFrame *in = td->in;
+    AVFrame *out = td->out;
+    const int w = in->width;
+    const int h = in->height;
+    const int slice_start = (h *  jobnr   ) / nb_jobs;
+    const int slice_end   = (h * (jobnr+1)) / nb_jobs;
     const uint8_t *p = in->data[0];
     int lw = in->linesize[0];
     int x, y, score = 0, filt;
 
-    for (y = 0; y < h; y++) {
+    for (y = slice_start; y < slice_end; y++) {
 
         if (y - 1 < 0 || y + 1 >= h)
             continue;
@@ -207,16 +235,27 @@ static int filter_tout(SignalstatsContext *s, const AVFrame *in, AVFrame *out, i
 
 #define VREP_START 4
 
-static int filter_vrep(SignalstatsContext *s, const AVFrame *in, AVFrame *out, int w, int h)
+static int filter_vrep(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
+    ThreadData *td = arg;
+    const SignalstatsContext *s = ctx->priv;
+    const AVFrame *in = td->in;
+    AVFrame *out = td->out;
+    const int w = in->width;
+    const int h = in->height;
+    const int slice_start = (h *  jobnr   ) / nb_jobs;
+    const int slice_end   = (h * (jobnr+1)) / nb_jobs;
     const uint8_t *p = in->data[0];
     const int lw = in->linesize[0];
     int x, y, score = 0;
 
-    for (y = VREP_START; y < h; y++) {
+    for (y = slice_start; y < slice_end; y++) {
         const int y2lw = (y - VREP_START) * lw;
         const int ylw  =  y               * lw;
         int filt, totdiff = 0;
+
+        if (y < VREP_START)
+            continue;
 
         for (x = 0; x < w; x++)
             totdiff += abs(p[y2lw + x] - p[ylw + x]);
@@ -232,7 +271,7 @@ static int filter_vrep(SignalstatsContext *s, const AVFrame *in, AVFrame *out, i
 
 static const struct {
     const char *name;
-    int (*process)(SignalstatsContext *s, const AVFrame *in, AVFrame *out, int w, int h);
+    int (*process)(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs);
 } filters_def[] = {
     {"TOUT", filter_tout},
     {"VREP", filter_vrep},
@@ -244,8 +283,9 @@ static const struct {
 
 static int filter_frame(AVFilterLink *link, AVFrame *in)
 {
-    SignalstatsContext *s = link->dst->priv;
-    AVFilterLink *outlink = link->dst->outputs[0];
+    AVFilterContext *ctx = link->dst;
+    SignalstatsContext *s = ctx->priv;
+    AVFilterLink *outlink = ctx->outputs[0];
     AVFrame *out = in;
     int i, j;
     int  w = 0,  cw = 0, // in
@@ -319,8 +359,15 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
 
     for (fil = 0; fil < FILT_NUMB; fil ++) {
         if (s->filters & 1<<fil) {
-            AVFrame *dbg = out != in && s->outfilter == fil ? out : NULL;
-            filtot[fil] = filters_def[fil].process(s, in, dbg, link->w, link->h);
+            ThreadData td = {
+                .in = in,
+                .out = out != in && s->outfilter == fil ? out : NULL,
+            };
+            memset(s->jobs_rets, 0, s->nb_jobs * sizeof(*s->jobs_rets));
+            ctx->internal->execute(ctx, filters_def[fil].process,
+                                   &td, s->jobs_rets, s->nb_jobs);
+            for (i = 0; i < s->nb_jobs; i++)
+                filtot[fil] += s->jobs_rets[i];
         }
     }
 
@@ -459,4 +506,5 @@ AVFilter ff_vf_signalstats = {
     .inputs        = signalstats_inputs,
     .outputs       = signalstats_outputs,
     .priv_class    = &signalstats_class,
+    .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };
