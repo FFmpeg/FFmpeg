@@ -54,6 +54,7 @@ T const fft_tab_vfp
         .word   fft32768_vfp
         .word   fft65536_vfp
 A endfunc
+T endconst
 
 function fft4_vfp
         vldr    d0, [a1, #0*2*4]   @ s0,s1   = z[0]
