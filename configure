@@ -1543,6 +1543,7 @@ HAVE_LIST="
     libdc1394_1
     libdc1394_2
     sdl
+    section_data_rel_ro
     threads
     vdpau_x11
     xlib
@@ -3415,6 +3416,7 @@ case $target_os in
         ;;
     android)
         disable symver
+        enable section_data_rel_ro
         SLIB_INSTALL_NAME='$(SLIBNAME)'
         SLIB_INSTALL_LINKS=
         # soname not set on purpose
@@ -3549,6 +3551,7 @@ case $target_os in
         ;;
     linux)
         enable dv1394
+        enable section_data_rel_ro
         ;;
     irix*)
         target_os=irix
