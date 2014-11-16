@@ -172,6 +172,24 @@ void av_dict_copy(AVDictionary **dst, FF_CONST_AVUTIL53 AVDictionary *src, int f
 void av_dict_free(AVDictionary **m);
 
 /**
+ * Get dictionary entries as a string.
+ *
+ * Create a string containing dictionary's entries.
+ * Such string may be passed back to av_dict_parse_string().
+ * @note String is escaped with backslashes ('\').
+ *
+ * @param[in]  m             dictionary
+ * @param[out] buffer        Pointer to buffer that will be allocated with string containg entries.
+ *                           Buffer must be freed by the caller when is no longer needed.
+ * @param[in]  key_val_sep   character used to separate key from value
+ * @param[in]  pairs_sep     character used to separate two pairs from each other
+ * @return                   >= 0 on success, negative on error
+ * @warning Separators cannot be neither '\\' nor '\0'. They also cannot be the same.
+ */
+int av_dict_get_string(const AVDictionary *m, char **buffer,
+                       const char key_val_sep, const char pairs_sep);
+
+/**
  * @}
  */
 

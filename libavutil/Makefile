@@ -157,6 +157,7 @@ TESTPROGS = adler32                                                     \
             cpu                                                         \
             crc                                                         \
             des                                                         \
+            dict                                                        \
             error                                                       \
             eval                                                        \
             file                                                        \
