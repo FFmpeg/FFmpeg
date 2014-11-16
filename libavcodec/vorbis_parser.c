@@ -330,9 +330,9 @@ static int vorbis_parse(AVCodecParserContext *s1, AVCodecContext *avctx,
 
     if (!s->vp && avctx->extradata && avctx->extradata_size) {
         s->vp = av_vorbis_parse_init(avctx->extradata, avctx->extradata_size);
-        if (!s->vp)
-            goto end;
     }
+    if (!s->vp)
+        goto end;
 
     if ((duration = av_vorbis_parse_frame(s->vp, buf, buf_size)) >= 0)
         s1->duration = duration;
