@@ -33,7 +33,6 @@
 #include "libavutil/pixdesc.h"
 #include "internal.h"
 
-#define RGB_MASK      0x00FFFFFF
 #define LB_MASK       0x00FEFEFE
 #define RED_BLUE_MASK 0x00FF00FF
 #define GREEN_MASK    0x0000FF00
