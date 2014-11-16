@@ -301,66 +301,65 @@ static int ffm2_read_header(AVFormatContext *s)
                     return AVERROR(ENOMEM);
             }
             break;
-            //TODO: reident
-            case MKBETAG('S', 'T', 'V', 'I'):
-                if (f_stvi++) {
-                    ret = AVERROR(EINVAL);
-                    goto fail;
-                }
-                codec->time_base.num = avio_rb32(pb);
-                codec->time_base.den = avio_rb32(pb);
-                codec->width = avio_rb16(pb);
-                codec->height = avio_rb16(pb);
-                codec->gop_size = avio_rb16(pb);
-                codec->pix_fmt = avio_rb32(pb);
-                codec->qmin = avio_r8(pb);
-                codec->qmax = avio_r8(pb);
-                codec->max_qdiff = avio_r8(pb);
-                codec->qcompress = avio_rb16(pb) / 10000.0;
-                codec->qblur = avio_rb16(pb) / 10000.0;
-                codec->bit_rate_tolerance = avio_rb32(pb);
-                avio_get_str(pb, INT_MAX, rc_eq_buf, sizeof(rc_eq_buf));
-                codec->rc_eq = av_strdup(rc_eq_buf);
-                codec->rc_max_rate = avio_rb32(pb);
-                codec->rc_min_rate = avio_rb32(pb);
-                codec->rc_buffer_size = avio_rb32(pb);
-                codec->i_quant_factor = av_int2double(avio_rb64(pb));
-                codec->b_quant_factor = av_int2double(avio_rb64(pb));
-                codec->i_quant_offset = av_int2double(avio_rb64(pb));
-                codec->b_quant_offset = av_int2double(avio_rb64(pb));
-                codec->dct_algo = avio_rb32(pb);
-                codec->strict_std_compliance = avio_rb32(pb);
-                codec->max_b_frames = avio_rb32(pb);
-                codec->mpeg_quant = avio_rb32(pb);
-                codec->intra_dc_precision = avio_rb32(pb);
-                codec->me_method = avio_rb32(pb);
-                codec->mb_decision = avio_rb32(pb);
-                codec->nsse_weight = avio_rb32(pb);
-                codec->frame_skip_cmp = avio_rb32(pb);
-                codec->rc_buffer_aggressivity = av_int2double(avio_rb64(pb));
-                codec->codec_tag = avio_rb32(pb);
-                codec->thread_count = avio_r8(pb);
-                codec->coder_type = avio_rb32(pb);
-                codec->me_cmp = avio_rb32(pb);
-                codec->me_subpel_quality = avio_rb32(pb);
-                codec->me_range = avio_rb32(pb);
-                codec->keyint_min = avio_rb32(pb);
-                codec->scenechange_threshold = avio_rb32(pb);
-                codec->b_frame_strategy = avio_rb32(pb);
-                codec->qcompress = av_int2double(avio_rb64(pb));
-                codec->qblur = av_int2double(avio_rb64(pb));
-                codec->max_qdiff = avio_rb32(pb);
-                codec->refs = avio_rb32(pb);
-                break;
-            case MKBETAG('S', 'T', 'A', 'U'):
-                if (f_stau++) {
-                    ret = AVERROR(EINVAL);
-                    goto fail;
-                }
-                codec->sample_rate = avio_rb32(pb);
-                codec->channels = avio_rl16(pb);
-                codec->frame_size = avio_rl16(pb);
-                break;
+        case MKBETAG('S', 'T', 'V', 'I'):
+            if (f_stvi++) {
+                ret = AVERROR(EINVAL);
+                goto fail;
+            }
+            codec->time_base.num = avio_rb32(pb);
+            codec->time_base.den = avio_rb32(pb);
+            codec->width = avio_rb16(pb);
+            codec->height = avio_rb16(pb);
+            codec->gop_size = avio_rb16(pb);
+            codec->pix_fmt = avio_rb32(pb);
+            codec->qmin = avio_r8(pb);
+            codec->qmax = avio_r8(pb);
+            codec->max_qdiff = avio_r8(pb);
+            codec->qcompress = avio_rb16(pb) / 10000.0;
+            codec->qblur = avio_rb16(pb) / 10000.0;
+            codec->bit_rate_tolerance = avio_rb32(pb);
+            avio_get_str(pb, INT_MAX, rc_eq_buf, sizeof(rc_eq_buf));
+            codec->rc_eq = av_strdup(rc_eq_buf);
+            codec->rc_max_rate = avio_rb32(pb);
+            codec->rc_min_rate = avio_rb32(pb);
+            codec->rc_buffer_size = avio_rb32(pb);
+            codec->i_quant_factor = av_int2double(avio_rb64(pb));
+            codec->b_quant_factor = av_int2double(avio_rb64(pb));
+            codec->i_quant_offset = av_int2double(avio_rb64(pb));
+            codec->b_quant_offset = av_int2double(avio_rb64(pb));
+            codec->dct_algo = avio_rb32(pb);
+            codec->strict_std_compliance = avio_rb32(pb);
+            codec->max_b_frames = avio_rb32(pb);
+            codec->mpeg_quant = avio_rb32(pb);
+            codec->intra_dc_precision = avio_rb32(pb);
+            codec->me_method = avio_rb32(pb);
+            codec->mb_decision = avio_rb32(pb);
+            codec->nsse_weight = avio_rb32(pb);
+            codec->frame_skip_cmp = avio_rb32(pb);
+            codec->rc_buffer_aggressivity = av_int2double(avio_rb64(pb));
+            codec->codec_tag = avio_rb32(pb);
+            codec->thread_count = avio_r8(pb);
+            codec->coder_type = avio_rb32(pb);
+            codec->me_cmp = avio_rb32(pb);
+            codec->me_subpel_quality = avio_rb32(pb);
+            codec->me_range = avio_rb32(pb);
+            codec->keyint_min = avio_rb32(pb);
+            codec->scenechange_threshold = avio_rb32(pb);
+            codec->b_frame_strategy = avio_rb32(pb);
+            codec->qcompress = av_int2double(avio_rb64(pb));
+            codec->qblur = av_int2double(avio_rb64(pb));
+            codec->max_qdiff = avio_rb32(pb);
+            codec->refs = avio_rb32(pb);
+            break;
+        case MKBETAG('S', 'T', 'A', 'U'):
+            if (f_stau++) {
+                ret = AVERROR(EINVAL);
+                goto fail;
+            }
+            codec->sample_rate = avio_rb32(pb);
+            codec->channels = avio_rl16(pb);
+            codec->frame_size = avio_rl16(pb);
+            break;
         case MKBETAG('C', 'P', 'R', 'V'):
             if (f_cprv++) {
                 ret = AVERROR(EINVAL);
