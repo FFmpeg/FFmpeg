@@ -43,7 +43,6 @@ typedef struct {
     enum FilterMode outfilter;
     int filters;
     AVFrame *frame_prev;
-    char *vrep_line;
     uint8_t rgba_color[4];
     int yuv_color[3];
 } SignalstatsContext;
@@ -88,7 +87,6 @@ static av_cold void uninit(AVFilterContext *ctx)
 {
     SignalstatsContext *s = ctx->priv;
     av_frame_free(&s->frame_prev);
-    av_freep(&s->vrep_line);
 }
 
 static int query_formats(AVFilterContext *ctx)
@@ -123,12 +121,6 @@ static int config_props(AVFilterLink *outlink)
 
     s->fs = inlink->w * inlink->h;
     s->cfs = s->chromaw * s->chromah;
-
-    if (s->filters & 1<<FILTER_VREP) {
-        s->vrep_line = av_malloc(inlink->h * sizeof(*s->vrep_line));
-        if (!s->vrep_line)
-            return AVERROR(ENOMEM);
-    }
 
     return 0;
 }
@@ -209,49 +201,34 @@ filter_tout_outlier(p[(y-j) * lw + x + i], \
 
 #define VREP_START 4
 
-static void filter_init_vrep(SignalstatsContext *s, const AVFrame *p, int w, int h)
-{
-    int i, y;
-    int lw = p->linesize[0];
-
-    for (y = VREP_START; y < h; y++) {
-        int totdiff = 0;
-        int y2lw = (y - VREP_START) * lw;
-        int ylw = y * lw;
-
-        for (i = 0; i < w; i++)
-            totdiff += abs(p->data[0][y2lw + i] - p->data[0][ylw + i]);
-
-        /* this value should be definable */
-        s->vrep_line[y] = totdiff < w;
-    }
-}
-
 static int filter_vrep(SignalstatsContext *s, const AVFrame *in, AVFrame *out, int y, int w, int h)
 {
-    int x, score = 0;
+    const uint8_t *p = in->data[0];
+    const int lw = in->linesize[0];
+    int x, score, totdiff = 0;
+    const int y2lw = (y - VREP_START) * lw;
+    const int ylw  =  y               * lw;
 
     if (y < VREP_START)
         return 0;
 
-    for (x = 0; x < w; x++) {
-        if (s->vrep_line[y]) {
-            score++;
-            if (out)
-                burn_frame(s, out, x, y);
-        }
-    }
+    for (x = 0; x < w; x++)
+        totdiff += abs(p[y2lw + x] - p[ylw + x]);
+
+    score = (totdiff < w) * w;
+    if (score && out)
+        for (x = 0; x < w; x++)
+            burn_frame(s, out, x, y);
     return score;
 }
 
 static const struct {
     const char *name;
-    void (*init)(SignalstatsContext *s, const AVFrame *p, int w, int h);
     int (*process)(SignalstatsContext *s, const AVFrame *in, AVFrame *out, int y, int w, int h);
 } filters_def[] = {
-    {"TOUT", NULL,              filter_tout},
-    {"VREP", filter_init_vrep,  filter_vrep},
-    {"BRNG", NULL,              filter_brng},
+    {"TOUT", filter_tout},
+    {"VREP", filter_vrep},
+    {"BRNG", filter_brng},
     {NULL}
 };
 
@@ -298,10 +275,6 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
         out = av_frame_clone(in);
         av_frame_make_writable(out);
     }
-
-    for (fil = 0; fil < FILT_NUMB; fil ++)
-        if ((s->filters & 1<<fil) && filters_def[fil].init)
-            filters_def[fil].init(s, in, link->w, link->h);
 
     // Calculate luma histogram and difference with previous frame or field.
     for (j = 0; j < link->h; j++) {
