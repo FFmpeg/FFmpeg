@@ -748,7 +748,7 @@ static void ffserver_apply_stream_config(AVCodecContext *enc, const AVDictionary
         enc->mb_decision = FF_MB_DECISION_BITS;
     if ((e = av_dict_get(conf, "VideoTag", NULL, 0)))
         enc->codec_tag = MKTAG(e->value[0], e->value[1], e->value[2], e->value[3]);
-    if (av_dict_get(conf, "Qscale", NULL, 0)) {
+    if ((e = av_dict_get(conf, "Qscale", NULL, 0))) {
         enc->flags |= CODEC_FLAG_QSCALE;
         ffserver_set_int_param(&enc->global_quality, e->value, FF_QP2LAMBDA,
                 INT_MIN, INT_MAX, NULL, 0, NULL);
@@ -994,7 +994,7 @@ static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd,
         if (av_dict_set(&config->video_conf, cmd, arg, 0) < 0)
             goto nomem;
     } else if (!av_strcasecmp(cmd, "VideoIntraOnly")) {
-        if (av_dict_set(&config->video_conf, cmd, "1", 0) < 0)
+        if (av_dict_set(&config->video_conf, "VideoGopSize", "1", 0) < 0)
             goto nomem;
     } else if (!av_strcasecmp(cmd, "VideoHighQuality")) {
         if (av_dict_set(&config->video_conf, cmd, "", 0) < 0)
@@ -1025,7 +1025,7 @@ static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd,
     } else if (!av_strcasecmp(cmd, "VideoTag")) {
         ffserver_get_arg(arg, sizeof(arg), p);
         if (strlen(arg) == 4) {
-            if (av_dict_set(&config->video_conf, "VideoTag", "arg", 0) < 0)
+            if (av_dict_set(&config->video_conf, "VideoTag", arg, 0) < 0)
                 goto nomem;
         }
     } else if (!av_strcasecmp(cmd, "BitExact")) {
