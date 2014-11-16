@@ -562,6 +562,7 @@ static int seg_write_header(AVFormatContext *s)
     SegmentContext *seg = s->priv_data;
     AVFormatContext *oc = NULL;
     int ret;
+    int i;
 
     seg->segment_count = 0;
     if (!seg->write_header_trailer)
@@ -648,6 +649,13 @@ static int seg_write_header(AVFormatContext *s)
         goto fail;
     }
     seg->is_first_pkt = 1;
+
+    av_assert0(s->nb_streams == oc->nb_streams);
+    for (i = 0; i < s->nb_streams; i++) {
+        AVStream *inner_st  = oc->streams[i];
+        AVStream *outer_st = s->streams[i];
+        avpriv_set_pts_info(outer_st, inner_st->pts_wrap_bits, inner_st->time_base.num, inner_st->time_base.den);
+    }
 
     if (oc->avoid_negative_ts > 0 && s->avoid_negative_ts < 0)
         s->avoid_negative_ts = 1;
