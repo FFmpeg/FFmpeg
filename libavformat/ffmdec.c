@@ -24,6 +24,8 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/intfloat.h"
 #include "libavutil/opt.h"
+#include "libavutil/avassert.h"
+#include "libavutil/avstring.h"
 #include "avformat.h"
 #include "internal.h"
 #include "ffm.h"
@@ -231,6 +233,27 @@ static int ffm_close(AVFormatContext *s)
     return 0;
 }
 
+static int ffm_append_recommended_configuration(AVStream *st, char **conf)
+{
+    int ret;
+    size_t newsize;
+    av_assert0(conf && st);
+    if (!*conf)
+        return 0;
+    if (!st->recommended_encoder_configuration) {
+        st->recommended_encoder_configuration = *conf;
+        *conf = 0;
+        return 0;
+    }
+    newsize = strlen(*conf) + strlen(st->recommended_encoder_configuration) + 2;
+    if ((ret = av_reallocp(&st->recommended_encoder_configuration, newsize)) < 0)
+        return ret;
+    av_strlcat(st->recommended_encoder_configuration, ",", newsize);
+    av_strlcat(st->recommended_encoder_configuration, *conf, newsize);
+    av_freep(conf);
+    return 0;
+}
+
 static int ffm2_read_header(AVFormatContext *s)
 {
     FFMContext *ffm = s->priv_data;
@@ -367,12 +390,14 @@ static int ffm2_read_header(AVFormatContext *s)
             }
             enc = avcodec_find_encoder(codec->codec_id);
             if (enc && enc->priv_data_size && enc->priv_class) {
-                st->recommended_encoder_configuration = av_malloc(size + 1);
-                if (!st->recommended_encoder_configuration) {
+                buffer = av_malloc(size + 1);
+                if (!buffer) {
                     ret = AVERROR(ENOMEM);
                     goto fail;
                 }
-                avio_get_str(pb, size, st->recommended_encoder_configuration, size + 1);
+                avio_get_str(pb, size, buffer, size + 1);
+                if ((ret = ffm_append_recommended_configuration(st, &buffer)) < 0)
+                    goto fail;
             }
             break;
         case MKBETAG('S', '2', 'V', 'I'):
@@ -387,7 +412,8 @@ static int ffm2_read_header(AVFormatContext *s)
             }
             avio_get_str(pb, INT_MAX, buffer, size);
             av_set_options_string(codec, buffer, "=", ",");
-            av_freep(&buffer);
+            if ((ret = ffm_append_recommended_configuration(st, &buffer)) < 0)
+                goto fail;
             break;
         case MKBETAG('S', '2', 'A', 'U'):
             if (f_stau++) {
@@ -401,7 +427,7 @@ static int ffm2_read_header(AVFormatContext *s)
             }
             avio_get_str(pb, INT_MAX, buffer, size);
             av_set_options_string(codec, buffer, "=", ",");
-            av_freep(&buffer);
+            ffm_append_recommended_configuration(st, &buffer);
             break;
         }
         avio_seek(pb, next, SEEK_SET);
