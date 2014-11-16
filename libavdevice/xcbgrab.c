@@ -596,21 +596,19 @@ static av_cold int xcbgrab_read_header(AVFormatContext *s)
     const xcb_setup_t *setup;
     char *display_name = av_strdup(s->filename);
 
-    if (s->filename) {
-        if (!display_name)
-            return AVERROR(ENOMEM);
+    if (!display_name)
+        return AVERROR(ENOMEM);
 
-        if (!sscanf(s->filename, "%[^+]+%d,%d", display_name, &c->x, &c->y)) {
-            *display_name = 0;
-            sscanf(s->filename, "+%d,%d", &c->x, &c->y);
-        }
+    if (!sscanf(s->filename, "%[^+]+%d,%d", display_name, &c->x, &c->y)) {
+        *display_name = 0;
+        sscanf(s->filename, "+%d,%d", &c->x, &c->y);
     }
 
     c->conn = xcb_connect(display_name, &screen_num);
     av_freep(&display_name);
     if ((ret = xcb_connection_has_error(c->conn))) {
         av_log(s, AV_LOG_ERROR, "Cannot open display %s, error %d.\n",
-               s->filename ? s->filename : "default", ret);
+               (*s->filename) ? s->filename : "default", ret);
         return AVERROR(EIO);
     }
     setup = xcb_get_setup(c->conn);
