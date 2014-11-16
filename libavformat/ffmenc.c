@@ -162,6 +162,60 @@ static int ffm_write_header_codec_ctx(AVIOContext *pb, AVCodecContext *ctx, unsi
 #undef ENC
 }
 
+static int ffm_write_recommended_config(AVIOContext *pb, AVCodecContext *ctx, unsigned tag,
+                                        const char *configuration)
+{
+    int ret;
+    const AVCodec *enc = ctx->codec ? ctx->codec : avcodec_find_encoder(ctx->codec_id);
+    AVIOContext *tmp;
+    AVDictionaryEntry *t = NULL;
+    AVDictionary *all = NULL, *comm = NULL, *prv = NULL;
+    char *buf = NULL;
+
+    if (!enc || !enc->priv_class || !enc->priv_data_size) {
+        /* codec is not known/has no private options, so save everything as common options */
+        if (avio_open_dyn_buf(&tmp) < 0)
+            return AVERROR(ENOMEM);
+        avio_put_str(tmp, configuration);
+        write_header_chunk(pb, tmp, tag);
+        return 0;
+    }
+
+    if ((ret = av_dict_parse_string(&all, configuration, "=", ",", 0)) < 0)
+        return ret;
+
+    while ((t = av_dict_get(all, "", t, AV_DICT_IGNORE_SUFFIX))) {
+        if (av_opt_find((void *)&enc->priv_class, t->key, NULL, 0, AV_OPT_SEARCH_FAKE_OBJ)) {
+            if ((ret = av_dict_set(&prv, t->key, t->value, 0)) < 0)
+                goto fail;
+        } else if ((ret = av_dict_set(&comm, t->key, t->value, 0)) < 0)
+            goto fail;
+    }
+
+    if (comm) {
+        if ((ret = av_dict_get_string(comm, &buf, '=', ',')) < 0 ||
+            (ret = avio_open_dyn_buf(&tmp)) < 0)
+            goto fail;
+        avio_put_str(tmp, buf);
+        av_freep(&buf);
+        write_header_chunk(pb, tmp, tag);
+    }
+    if (prv) {
+        if ((ret = av_dict_get_string(prv, &buf, '=', ',')) < 0 ||
+            (ret = avio_open_dyn_buf(&tmp)) < 0)
+            goto fail;
+        avio_put_str(tmp, buf);
+        write_header_chunk(pb, tmp, MKBETAG('C', 'P', 'R', 'V'));
+    }
+
+  fail:
+    av_free(buf);
+    av_dict_free(&all);
+    av_dict_free(&comm);
+    av_dict_free(&prv);
+    return ret;
+}
+
 static int ffm_write_header(AVFormatContext *s)
 {
     FFMContext *ffm = s->priv_data;
@@ -220,13 +274,25 @@ static int ffm_write_header(AVFormatContext *s)
         /* specific info */
         switch(codec->codec_type) {
         case AVMEDIA_TYPE_VIDEO:
-            if ((ret = ffm_write_header_codec_ctx(s->pb, codec, MKBETAG('S', '2', 'V', 'I'), AV_OPT_FLAG_VIDEO_PARAM)) < 0 ||
-                (ret = ffm_write_header_codec_private_ctx(s->pb, codec, AV_OPT_FLAG_VIDEO_PARAM)) < 0)
+            if (st->recommended_encoder_configuration) {
+                av_log(NULL, AV_LOG_DEBUG, "writing recommended configuration: %s\n",
+                       st->recommended_encoder_configuration);
+                if ((ret = ffm_write_recommended_config(s->pb, codec, MKBETAG('S', '2', 'V', 'I'),
+                                                        st->recommended_encoder_configuration)) < 0)
+                return ret;
+            } else if ((ret = ffm_write_header_codec_ctx(s->pb, codec, MKBETAG('S', '2', 'V', 'I'), AV_OPT_FLAG_VIDEO_PARAM)) < 0 ||
+                       (ret = ffm_write_header_codec_private_ctx(s->pb, codec, AV_OPT_FLAG_VIDEO_PARAM)) < 0)
                 return ret;
             break;
         case AVMEDIA_TYPE_AUDIO:
-            if ((ret = ffm_write_header_codec_ctx(s->pb, codec, MKBETAG('S', '2', 'A', 'U'), AV_OPT_FLAG_AUDIO_PARAM)) < 0 ||
-                (ret = ffm_write_header_codec_private_ctx(s->pb, codec, AV_OPT_FLAG_AUDIO_PARAM)) < 0)
+            if (st->recommended_encoder_configuration) {
+                av_log(NULL, AV_LOG_DEBUG, "writing recommended configuration: %s\n",
+                       st->recommended_encoder_configuration);
+                if ((ret = ffm_write_recommended_config(s->pb, codec, MKBETAG('S', '2', 'A', 'U'),
+                                                        st->recommended_encoder_configuration)) < 0)
+                return ret;
+            } else if ((ret = ffm_write_header_codec_ctx(s->pb, codec, MKBETAG('S', '2', 'A', 'U'), AV_OPT_FLAG_AUDIO_PARAM)) < 0 ||
+                     (ret = ffm_write_header_codec_private_ctx(s->pb, codec, AV_OPT_FLAG_AUDIO_PARAM)) < 0)
                 return ret;
             break;
         default:
