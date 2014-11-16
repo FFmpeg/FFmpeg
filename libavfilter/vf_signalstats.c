@@ -139,23 +139,23 @@ static int filter_brng(SignalstatsContext *s, const AVFrame *in, AVFrame *out, i
     int x, y, score = 0;
 
     for (y = 0; y < h; y++) {
-    const int yc = y >> s->vsub;
-    const uint8_t *pluma    = &in->data[0][y  * in->linesize[0]];
-    const uint8_t *pchromau = &in->data[1][yc * in->linesize[1]];
-    const uint8_t *pchromav = &in->data[2][yc * in->linesize[2]];
+        const int yc = y >> s->vsub;
+        const uint8_t *pluma    = &in->data[0][y  * in->linesize[0]];
+        const uint8_t *pchromau = &in->data[1][yc * in->linesize[1]];
+        const uint8_t *pchromav = &in->data[2][yc * in->linesize[2]];
 
-    for (x = 0; x < w; x++) {
-        const int xc = x >> s->hsub;
-        const int luma    = pluma[x];
-        const int chromau = pchromau[xc];
-        const int chromav = pchromav[xc];
-        const int filt = luma    < 16 || luma    > 235 ||
-                         chromau < 16 || chromau > 240 ||
-                         chromav < 16 || chromav > 240;
-        score += filt;
-        if (out && filt)
-            burn_frame(s, out, x, y);
-    }
+        for (x = 0; x < w; x++) {
+            const int xc = x >> s->hsub;
+            const int luma    = pluma[x];
+            const int chromau = pchromau[xc];
+            const int chromav = pchromav[xc];
+            const int filt = luma    < 16 || luma    > 235 ||
+                chromau < 16 || chromau > 240 ||
+                chromav < 16 || chromav > 240;
+            score += filt;
+            if (out && filt)
+                burn_frame(s, out, x, y);
+        }
     }
     return score;
 }
@@ -173,34 +173,34 @@ static int filter_tout(SignalstatsContext *s, const AVFrame *in, AVFrame *out, i
 
     for (y = 0; y < h; y++) {
 
-    if (y - 1 < 0 || y + 1 >= h)
-        continue;
+        if (y - 1 < 0 || y + 1 >= h)
+            continue;
 
-    // detect two pixels above and below (to eliminate interlace artefacts)
-    // should check that video format is infact interlaced.
+        // detect two pixels above and below (to eliminate interlace artefacts)
+        // should check that video format is infact interlaced.
 
 #define FILTER(i, j) \
-filter_tout_outlier(p[(y-j) * lw + x + i], \
-                    p[    y * lw + x + i], \
-                    p[(y+j) * lw + x + i])
+        filter_tout_outlier(p[(y-j) * lw + x + i], \
+                            p[    y * lw + x + i], \
+                            p[(y+j) * lw + x + i])
 
 #define FILTER3(j) (FILTER(-1, j) && FILTER(0, j) && FILTER(1, j))
 
-    if (y - 2 >= 0 && y + 2 < h) {
-        for (x = 1; x < w - 1; x++) {
-            filt = FILTER3(2) && FILTER3(1);
-            score += filt;
-            if (filt && out)
-                burn_frame(s, out, x, y);
+        if (y - 2 >= 0 && y + 2 < h) {
+            for (x = 1; x < w - 1; x++) {
+                filt = FILTER3(2) && FILTER3(1);
+                score += filt;
+                if (filt && out)
+                    burn_frame(s, out, x, y);
+            }
+        } else {
+            for (x = 1; x < w - 1; x++) {
+                filt = FILTER3(1);
+                score += filt;
+                if (filt && out)
+                    burn_frame(s, out, x, y);
+            }
         }
-    } else {
-        for (x = 1; x < w - 1; x++) {
-            filt = FILTER3(1);
-            score += filt;
-            if (filt && out)
-                burn_frame(s, out, x, y);
-        }
-    }
     }
     return score;
 }
@@ -214,18 +214,18 @@ static int filter_vrep(SignalstatsContext *s, const AVFrame *in, AVFrame *out, i
     int x, y, score = 0;
 
     for (y = VREP_START; y < h; y++) {
-    const int y2lw = (y - VREP_START) * lw;
-    const int ylw  =  y               * lw;
-    int filt, totdiff = 0;
+        const int y2lw = (y - VREP_START) * lw;
+        const int ylw  =  y               * lw;
+        int filt, totdiff = 0;
 
-    for (x = 0; x < w; x++)
-        totdiff += abs(p[y2lw + x] - p[ylw + x]);
-    filt = totdiff < w;
-
-    score += filt;
-    if (filt && out)
         for (x = 0; x < w; x++)
-            burn_frame(s, out, x, y);
+            totdiff += abs(p[y2lw + x] - p[ylw + x]);
+        filt = totdiff < w;
+
+        score += filt;
+        if (filt && out)
+            for (x = 0; x < w; x++)
+                burn_frame(s, out, x, y);
     }
     return score * w;
 }
@@ -317,12 +317,12 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
         cpw += prev->linesize[1];
     }
 
-        for (fil = 0; fil < FILT_NUMB; fil ++) {
-            if (s->filters & 1<<fil) {
-                AVFrame *dbg = out != in && s->outfilter == fil ? out : NULL;
-                filtot[fil] = filters_def[fil].process(s, in, dbg, link->w, link->h);
-            }
+    for (fil = 0; fil < FILT_NUMB; fil ++) {
+        if (s->filters & 1<<fil) {
+            AVFrame *dbg = out != in && s->outfilter == fil ? out : NULL;
+            filtot[fil] = filters_def[fil].process(s, in, dbg, link->w, link->h);
         }
+    }
 
     // find low / high based on histogram percentile
     // these only need to be calculated once.
