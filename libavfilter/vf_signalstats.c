@@ -134,9 +134,11 @@ static void burn_frame(SignalstatsContext *s, AVFrame *f, int x, int y)
     f->data[2][chromay * f->linesize[2] + chromax] = s->yuv_color[2];
 }
 
-static int filter_brng(SignalstatsContext *s, const AVFrame *in, AVFrame *out, int y, int w, int h)
+static int filter_brng(SignalstatsContext *s, const AVFrame *in, AVFrame *out, int w, int h)
 {
-    int x, score = 0;
+    int x, y, score = 0;
+
+    for (y = 0; y < h; y++) {
     const int yc = y >> s->vsub;
     const uint8_t *pluma    = &in->data[0][y  * in->linesize[0]];
     const uint8_t *pchromau = &in->data[1][yc * in->linesize[1]];
@@ -154,6 +156,7 @@ static int filter_brng(SignalstatsContext *s, const AVFrame *in, AVFrame *out, i
         if (out && filt)
             burn_frame(s, out, x, y);
     }
+    }
     return score;
 }
 
@@ -162,14 +165,16 @@ static int filter_tout_outlier(uint8_t x, uint8_t y, uint8_t z)
     return ((abs(x - y) + abs (z - y)) / 2) - abs(z - x) > 4; // make 4 configurable?
 }
 
-static int filter_tout(SignalstatsContext *s, const AVFrame *in, AVFrame *out, int y, int w, int h)
+static int filter_tout(SignalstatsContext *s, const AVFrame *in, AVFrame *out, int w, int h)
 {
     const uint8_t *p = in->data[0];
     int lw = in->linesize[0];
-    int x, score = 0, filt;
+    int x, y, score = 0, filt;
+
+    for (y = 0; y < h; y++) {
 
     if (y - 1 < 0 || y + 1 >= h)
-        return 0;
+        continue;
 
     // detect two pixels above and below (to eliminate interlace artefacts)
     // should check that video format is infact interlaced.
@@ -196,35 +201,38 @@ filter_tout_outlier(p[(y-j) * lw + x + i], \
                 burn_frame(s, out, x, y);
         }
     }
+    }
     return score;
 }
 
 #define VREP_START 4
 
-static int filter_vrep(SignalstatsContext *s, const AVFrame *in, AVFrame *out, int y, int w, int h)
+static int filter_vrep(SignalstatsContext *s, const AVFrame *in, AVFrame *out, int w, int h)
 {
     const uint8_t *p = in->data[0];
     const int lw = in->linesize[0];
-    int x, score, totdiff = 0;
+    int x, y, score = 0;
+
+    for (y = VREP_START; y < h; y++) {
     const int y2lw = (y - VREP_START) * lw;
     const int ylw  =  y               * lw;
-
-    if (y < VREP_START)
-        return 0;
+    int filt, totdiff = 0;
 
     for (x = 0; x < w; x++)
         totdiff += abs(p[y2lw + x] - p[ylw + x]);
+    filt = totdiff < w;
 
-    score = (totdiff < w) * w;
-    if (score && out)
+    score += filt;
+    if (filt && out)
         for (x = 0; x < w; x++)
             burn_frame(s, out, x, y);
-    return score;
+    }
+    return score * w;
 }
 
 static const struct {
     const char *name;
-    int (*process)(SignalstatsContext *s, const AVFrame *in, AVFrame *out, int y, int w, int h);
+    int (*process)(SignalstatsContext *s, const AVFrame *in, AVFrame *out, int w, int h);
 } filters_def[] = {
     {"TOUT", filter_tout},
     {"VREP", filter_vrep},
@@ -309,14 +317,12 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
         cpw += prev->linesize[1];
     }
 
-    for (j = 0; j < link->h; j++) {
         for (fil = 0; fil < FILT_NUMB; fil ++) {
             if (s->filters & 1<<fil) {
                 AVFrame *dbg = out != in && s->outfilter == fil ? out : NULL;
-                filtot[fil] += filters_def[fil].process(s, in, dbg, j, link->w, link->h);
+                filtot[fil] = filters_def[fil].process(s, in, dbg, link->w, link->h);
             }
         }
-    }
 
     // find low / high based on histogram percentile
     // these only need to be calculated once.
