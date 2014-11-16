@@ -605,13 +605,22 @@ static int parse_ifo_palette(DVDSubContext *ctx, char *p)
         ret = AVERROR_INVALIDDATA;
         goto end;
     }
-    fseek(ifo, 0xCC, SEEK_SET);
+    if (fseek(ifo, 0xCC, SEEK_SET) == -1) {
+        ret = AVERROR(errno);
+        goto end;
+    }
     if (fread(&sp_pgci, 4, 1, ifo) == 1) {
         pgci = av_be2ne32(sp_pgci) * 2048;
-        fseek(ifo, pgci + 0x0C, SEEK_SET);
+        if (fseek(ifo, pgci + 0x0C, SEEK_SET) == -1) {
+            ret = AVERROR(errno);
+            goto end;
+        }
         if (fread(&off_pgc, 4, 1, ifo) == 1) {
             pgc = pgci + av_be2ne32(off_pgc);
-            fseek(ifo, pgc + 0xA4, SEEK_SET);
+            if (fseek(ifo, pgc + 0xA4, SEEK_SET) == -1) {
+                ret = AVERROR(errno);
+                goto end;
+            }
             if (fread(yuv, 64, 1, ifo) == 1) {
                 buf = yuv;
                 for(i=0; i<16; i++) {
