@@ -329,9 +329,10 @@ static int hls_write_trailer(struct AVFormatContext *s)
 
     av_write_trailer(oc);
     avio_closep(&oc->pb);
-    avformat_free_context(oc);
     av_free(hls->basename);
     hls_append_segment(hls, hls->duration);
+    avformat_free_context(oc);
+    hls->avf = NULL;
     hls_window(s, 1);
 
     hls_free_segments(hls);
