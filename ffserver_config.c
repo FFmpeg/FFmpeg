@@ -174,12 +174,22 @@ void ffserver_parse_acl_row(FFServerStream *stream, FFServerStream* feed,
 }
 
 /* add a codec and set the default parameters */
-static void add_codec(FFServerStream *stream, AVCodecContext *av)
+static void add_codec(FFServerStream *stream, AVCodecContext *av,
+                      FFServerConfig *config)
 {
     AVStream *st;
+    AVDictionary **opts;
 
     if(stream->nb_streams >= FF_ARRAY_ELEMS(stream->streams))
         return;
+
+    opts = av->codec_type == AVMEDIA_TYPE_AUDIO ?
+           &config->audio_opts : &config->video_opts;
+    av_opt_set_dict2(av->priv_data, opts, AV_OPT_SEARCH_CHILDREN);
+    av_opt_set_dict2(av, opts, AV_OPT_SEARCH_CHILDREN);
+    if (av_dict_count(*opts))
+        av_log(NULL, AV_LOG_WARNING,
+               "Something is wrong, %d options are not set!\n", av_dict_count(*opts));
 
     /* compute default parameters */
     switch(av->codec_type) {
@@ -684,14 +694,6 @@ static int ffserver_parse_config_feed(FFServerConfig *config, const char *cmd, c
     return 0;
 }
 
-static void ffserver_apply_stream_config(AVCodecContext *enc, AVDictionary **opts)
-{
-    av_opt_set_dict2(enc->priv_data, opts, AV_OPT_SEARCH_CHILDREN);
-    av_opt_set_dict2(enc, opts, AV_OPT_SEARCH_CHILDREN);
-    if (av_dict_count(*opts))
-        av_log(NULL, AV_LOG_ERROR, "Something went wrong, %d options not set!!!\n", av_dict_count(*opts));
-}
-
 static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd, const char **p,
                                         FFServerStream **pstream)
 {
@@ -1013,15 +1015,13 @@ static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd,
                 config->dummy_actx->codec_id = config->guessed_audio_codec_id;
             if (!config->no_audio && config->dummy_actx->codec_id != AV_CODEC_ID_NONE) {
                 AVCodecContext *audio_enc = avcodec_alloc_context3(avcodec_find_encoder(config->dummy_actx->codec_id));
-                ffserver_apply_stream_config(audio_enc, &config->audio_opts);
-                add_codec(stream, audio_enc);
+                add_codec(stream, audio_enc, config);
             }
             if (config->dummy_vctx->codec_id == AV_CODEC_ID_NONE)
                 config->dummy_vctx->codec_id = config->guessed_video_codec_id;
             if (!config->no_video && config->dummy_vctx->codec_id != AV_CODEC_ID_NONE) {
                 AVCodecContext *video_enc = avcodec_alloc_context3(avcodec_find_encoder(config->dummy_vctx->codec_id));
-                ffserver_apply_stream_config(video_enc, &config->video_opts);
-                add_codec(stream, video_enc);
+                add_codec(stream, video_enc, config);
             }
         }
         av_dict_free(&config->video_opts);
