@@ -188,8 +188,10 @@ do {                                                        \
                                                             \
     fmts = av_realloc((*f)->list,                           \
                       sizeof(*(*f)->list) * ((*f)->nb + 1));\
-    if (!fmts)                                              \
+    if (!fmts) {                                            \
+        av_freep(&f);                                       \
         return AVERROR(ENOMEM);                             \
+    }                                                       \
                                                             \
     (*f)->list = fmts;                                      \
     (*f)->list[(*f)->nb++] = fmt;                           \
