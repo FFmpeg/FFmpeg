@@ -3326,8 +3326,7 @@ static int add_av_stream(FFServerStream *feed, AVStream *st)
 
     av = st->codec;
     for(i=0;i<feed->nb_streams;i++) {
-        st = feed->streams[i];
-        av1 = st->codec;
+        av1 = feed->streams[i]->codec;
         if (av1->codec_id == av->codec_id &&
             av1->codec_type == av->codec_type &&
             av1->bit_rate == av->bit_rate) {
@@ -3355,6 +3354,9 @@ static int add_av_stream(FFServerStream *feed, AVStream *st)
     fst = add_av_stream1(feed, av, 0);
     if (!fst)
         return -1;
+    if (av_stream_get_recommended_encoder_configuration(st))
+        av_stream_set_recommended_encoder_configuration(fst,
+            av_strdup(av_stream_get_recommended_encoder_configuration(st)));
     return feed->nb_streams - 1;
 }
 
