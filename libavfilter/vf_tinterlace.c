@@ -180,7 +180,7 @@ void copy_picture_field(TInterlaceContext *tinterlace,
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(format);
     int plane, vsub = desc->log2_chroma_h;
     int k = src_field == FIELD_UPPER_AND_LOWER ? 1 : 2;
-    int h, i;
+    int h;
 
     for (plane = 0; plane < desc->nb_components; plane++) {
         int lines = plane == 1 || plane == 2 ? FF_CEIL_RSHIFT(src_h, vsub) : src_h;
