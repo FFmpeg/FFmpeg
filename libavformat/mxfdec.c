@@ -1781,6 +1781,8 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
             if (source_track->sequence->origin) {
                 av_dict_set_int(&st->metadata, "source_track_origin", source_track->sequence->origin, 0);
             }
+            if (descriptor->aspect_ratio.num && descriptor->aspect_ratio.den)
+                st->display_aspect_ratio = descriptor->aspect_ratio;
         } else if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
             container_ul = mxf_get_codec_ul(mxf_sound_essence_container_uls, essence_container_ul);
             /* Only overwrite existing codec ID if it is unset or A-law, which is the default according to SMPTE RP 224. */
