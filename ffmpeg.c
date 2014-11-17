@@ -1271,7 +1271,6 @@ static void print_final_stats(int64_t total_size)
     if (data_size && total_size>0 && total_size >= data_size)
         percent = 100.0 * (total_size - data_size) / data_size;
 
-    av_log(NULL, AV_LOG_INFO, "\n");
     av_log(NULL, AV_LOG_INFO, "video:%1.0fkB audio:%1.0fkB subtitle:%1.0fkB other streams:%1.0fkB global headers:%1.0fkB muxing overhead: ",
            video_size / 1024.0,
            audio_size / 1024.0,
@@ -1497,10 +1496,11 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
     av_bprintf(&buf_script, "drop_frames=%d\n", nb_frames_drop);
 
     if (print_stats || is_last_report) {
+        const char *end = is_last_report ? '\n' : '\r';
         if (print_stats==1 && AV_LOG_INFO > av_log_get_level()) {
-            fprintf(stderr, "%s    \r", buf);
+            fprintf(stderr, "%s    %c", buf, end);
         } else
-            av_log(NULL, AV_LOG_INFO, "%s    \r", buf);
+            av_log(NULL, AV_LOG_INFO, "%s    %c", buf, end);
 
     fflush(stderr);
     }
