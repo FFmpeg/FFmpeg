@@ -1604,89 +1604,75 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
     int x_pu, y_pu;
     int i, j;
 
-    if (SAMPLE_CTB(s->skip_flag, x_cb, y_cb)) {
+    int skip_flag = SAMPLE_CTB(s->skip_flag, x_cb, y_cb);
+
+    if (!skip_flag)
+        lc->pu.merge_flag = ff_hevc_merge_flag_decode(s);
+
+    if (skip_flag || lc->pu.merge_flag) {
         if (s->sh.max_num_merge_cand > 1)
             merge_idx = ff_hevc_merge_idx_decode(s);
         else
             merge_idx = 0;
 
-        ff_hevc_luma_mv_merge_mode(s, x0, y0,
-                                   1 << log2_cb_size,
-                                   1 << log2_cb_size,
-                                   log2_cb_size, partIdx,
-                                   merge_idx, &current_mv);
+        ff_hevc_luma_mv_merge_mode(s, x0, y0, nPbW, nPbH, log2_cb_size,
+                                   partIdx, merge_idx, &current_mv);
         x_pu = x0 >> s->sps->log2_min_pu_size;
         y_pu = y0 >> s->sps->log2_min_pu_size;
 
         for (j = 0; j < nPbH >> s->sps->log2_min_pu_size; j++)
             for (i = 0; i < nPbW >> s->sps->log2_min_pu_size; i++)
                 tab_mvf[(y_pu + j) * min_pu_width + x_pu + i] = current_mv;
-    } else { /* MODE_INTER */
-        lc->pu.merge_flag = ff_hevc_merge_flag_decode(s);
-        if (lc->pu.merge_flag) {
-            if (s->sh.max_num_merge_cand > 1)
-                merge_idx = ff_hevc_merge_idx_decode(s);
-            else
-                merge_idx = 0;
+    } else {
+        enum InterPredIdc inter_pred_idc = PRED_L0;
+        ff_hevc_set_neighbour_available(s, x0, y0, nPbW, nPbH);
+        current_mv.pred_flag = 0;
+        if (s->sh.slice_type == B_SLICE)
+            inter_pred_idc = ff_hevc_inter_pred_idc_decode(s, nPbW, nPbH);
 
-            ff_hevc_luma_mv_merge_mode(s, x0, y0, nPbW, nPbH, log2_cb_size,
-                                       partIdx, merge_idx, &current_mv);
-            x_pu = x0 >> s->sps->log2_min_pu_size;
-            y_pu = y0 >> s->sps->log2_min_pu_size;
-
-            for (j = 0; j < nPbH >> s->sps->log2_min_pu_size; j++)
-                for (i = 0; i < nPbW >> s->sps->log2_min_pu_size; i++)
-                    tab_mvf[(y_pu + j) * min_pu_width + x_pu + i] = current_mv;
-        } else {
-            enum InterPredIdc inter_pred_idc = PRED_L0;
-            ff_hevc_set_neighbour_available(s, x0, y0, nPbW, nPbH);
-            current_mv.pred_flag = 0;
-            if (s->sh.slice_type == B_SLICE)
-                inter_pred_idc = ff_hevc_inter_pred_idc_decode(s, nPbW, nPbH);
-
-            if (inter_pred_idc != PRED_L1) {
-                if (s->sh.nb_refs[L0]) {
-                    ref_idx[0] = ff_hevc_ref_idx_lx_decode(s, s->sh.nb_refs[L0]);
-                    current_mv.ref_idx[0] = ref_idx[0];
-                }
-                current_mv.pred_flag = PF_L0;
-                ff_hevc_hls_mvd_coding(s, x0, y0, 0);
-                mvp_flag[0] = ff_hevc_mvp_lx_flag_decode(s);
-                ff_hevc_luma_mv_mvp_mode(s, x0, y0, nPbW, nPbH, log2_cb_size,
-                                         partIdx, merge_idx, &current_mv,
-                                         mvp_flag[0], 0);
-                current_mv.mv[0].x += lc->pu.mvd.x;
-                current_mv.mv[0].y += lc->pu.mvd.y;
+        if (inter_pred_idc != PRED_L1) {
+            if (s->sh.nb_refs[L0]) {
+                ref_idx[0] = ff_hevc_ref_idx_lx_decode(s, s->sh.nb_refs[L0]);
+                current_mv.ref_idx[0] = ref_idx[0];
             }
 
-            if (inter_pred_idc != PRED_L0) {
-                if (s->sh.nb_refs[L1]) {
-                    ref_idx[1] = ff_hevc_ref_idx_lx_decode(s, s->sh.nb_refs[L1]);
-                    current_mv.ref_idx[1] = ref_idx[1];
-                }
-
-                if (s->sh.mvd_l1_zero_flag == 1 && inter_pred_idc == PRED_BI) {
-                    AV_ZERO32(&lc->pu.mvd);
-                } else {
-                    ff_hevc_hls_mvd_coding(s, x0, y0, 1);
-                }
-
-                current_mv.pred_flag += PF_L1;
-                mvp_flag[1] = ff_hevc_mvp_lx_flag_decode(s);
-                ff_hevc_luma_mv_mvp_mode(s, x0, y0, nPbW, nPbH, log2_cb_size,
-                                         partIdx, merge_idx, &current_mv,
-                                         mvp_flag[1], 1);
-                current_mv.mv[1].x += lc->pu.mvd.x;
-                current_mv.mv[1].y += lc->pu.mvd.y;
-            }
-
-            x_pu = x0 >> s->sps->log2_min_pu_size;
-            y_pu = y0 >> s->sps->log2_min_pu_size;
-
-            for(j = 0; j < nPbH >> s->sps->log2_min_pu_size; j++)
-                for (i = 0; i < nPbW >> s->sps->log2_min_pu_size; i++)
-                    tab_mvf[(y_pu + j) * min_pu_width + x_pu + i] = current_mv;
+            current_mv.pred_flag = PF_L0;
+            ff_hevc_hls_mvd_coding(s, x0, y0, 0);
+            mvp_flag[0] = ff_hevc_mvp_lx_flag_decode(s);
+            ff_hevc_luma_mv_mvp_mode(s, x0, y0, nPbW, nPbH, log2_cb_size,
+                                     partIdx, merge_idx, &current_mv,
+                                     mvp_flag[0], 0);
+            current_mv.mv[0].x += lc->pu.mvd.x;
+            current_mv.mv[0].y += lc->pu.mvd.y;
         }
+
+        if (inter_pred_idc != PRED_L0) {
+            if (s->sh.nb_refs[L1]) {
+                ref_idx[1] = ff_hevc_ref_idx_lx_decode(s, s->sh.nb_refs[L1]);
+                current_mv.ref_idx[1] = ref_idx[1];
+            }
+
+            if (s->sh.mvd_l1_zero_flag == 1 && inter_pred_idc == PRED_BI) {
+                AV_ZERO32(&lc->pu.mvd);
+            } else {
+                ff_hevc_hls_mvd_coding(s, x0, y0, 1);
+            }
+
+            current_mv.pred_flag += PF_L1;
+            mvp_flag[1] = ff_hevc_mvp_lx_flag_decode(s);
+            ff_hevc_luma_mv_mvp_mode(s, x0, y0, nPbW, nPbH, log2_cb_size,
+                                     partIdx, merge_idx, &current_mv,
+                                     mvp_flag[1], 1);
+            current_mv.mv[1].x += lc->pu.mvd.x;
+            current_mv.mv[1].y += lc->pu.mvd.y;
+        }
+
+        x_pu = x0 >> s->sps->log2_min_pu_size;
+        y_pu = y0 >> s->sps->log2_min_pu_size;
+
+        for(j = 0; j < nPbH >> s->sps->log2_min_pu_size; j++)
+            for (i = 0; i < nPbW >> s->sps->log2_min_pu_size; i++)
+                tab_mvf[(y_pu + j) * min_pu_width + x_pu + i] = current_mv;
     }
 
     if (current_mv.pred_flag & PF_L0) {
