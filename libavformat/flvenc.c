@@ -200,7 +200,7 @@ static void write_metadata(AVFormatContext *s, unsigned int ts)
 {
     AVIOContext *pb = s->pb;
     FLVContext *flv = s->priv_data;
-    int i, metadata_count = 0;
+    int metadata_count = 0;
     int64_t metadata_size_pos, data_size, metadata_count_pos;
     AVDictionaryEntry *tag = NULL;
 
