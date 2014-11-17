@@ -180,6 +180,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
     int uqvq, ret;
     unsigned int mthread_inlen, mthread_outlen;
     unsigned int len = buf_size;
+    int linesize;
 
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
@@ -191,7 +192,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
     case AV_CODEC_ID_MSZH:
         switch (c->compression) {
         case COMP_MSZH:
-            if (c->imgtype == IMGTYPE_RGB24 && len == width * height * 3 ||
+            if (c->imgtype == IMGTYPE_RGB24 && len == FFALIGN(width * 3, 4) * height ||
                 c->imgtype == IMGTYPE_YUV111 && len == width * height * 3) {
                 ;
             } else if (c->flags & FLAG_MULTITHREAD) {
@@ -411,10 +412,11 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
         }
         break;
     case IMGTYPE_RGB24:
+        linesize = len < FFALIGN(3 * width, 4) * height ? 3 * width : FFALIGN(3 * width, 4);
         for (row = height - 1; row >= 0; row--) {
             pixel_ptr = row * frame->linesize[0];
             memcpy(outptr + pixel_ptr, encoded, 3 * width);
-            encoded += 3 * width;
+            encoded += linesize;
         }
         break;
     case IMGTYPE_YUV411:
