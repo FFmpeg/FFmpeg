@@ -68,7 +68,7 @@ typedef struct OutputStream {
     int init_range_length;
     int nb_segments, segments_size, segment_index;
     Segment **segments;
-    int64_t first_dts, start_dts, end_dts;
+    int64_t first_pts, start_pts, max_pts;
     int bit_rate;
     char bandwidth_str[64];
 
@@ -627,6 +627,7 @@ static int dash_write_header(AVFormatContext *s)
         os->init_start_pos = 0;
 
         av_dict_set(&opts, "movflags", "frag_custom+dash+delay_moov", 0);
+        av_dict_set(&opts, "use_editlist", "1", 0);
         if ((ret = avformat_write_header(ctx, &opts)) < 0) {
              goto fail;
         }
@@ -647,8 +648,8 @@ static int dash_write_header(AVFormatContext *s)
             c->has_audio = 1;
 
         set_codec_str(s, os->ctx->streams[0]->codec, os->codec_str, sizeof(os->codec_str));
-        os->first_dts = AV_NOPTS_VALUE;
-        os->end_dts = AV_NOPTS_VALUE;
+        os->first_pts = AV_NOPTS_VALUE;
+        os->max_pts = AV_NOPTS_VALUE;
         os->segment_index = 1;
     }
 
@@ -687,6 +688,8 @@ static int add_segment(OutputStream *os, const char *file,
         return AVERROR(ENOMEM);
     av_strlcpy(seg->file, file, sizeof(seg->file));
     seg->time = time;
+    if (seg->time < 0) // If pts<0, it is expected to be cut away with an edit list
+        seg->time = 0;
     seg->duration = duration;
     seg->start_pos = start_pos;
     seg->range_length = range_length;
@@ -770,7 +773,7 @@ static int dash_flush(AVFormatContext *s, int final, int stream)
         start_pos = avio_tell(os->ctx->pb);
 
         if (!c->single_file) {
-            dash_fill_tmpl_params(filename, sizeof(filename), c->media_seg_name, i, os->segment_index, os->bit_rate, os->start_dts);
+            dash_fill_tmpl_params(filename, sizeof(filename), c->media_seg_name, i, os->segment_index, os->bit_rate, os->start_pts);
             snprintf(full_path, sizeof(full_path), "%s%s", c->dirname, filename);
             snprintf(temp_path, sizeof(temp_path), "%s.tmp", full_path);
             ret = ffurl_open(&os->out, temp_path, AVIO_FLAG_WRITE, &s->interrupt_callback, NULL);
@@ -795,7 +798,7 @@ static int dash_flush(AVFormatContext *s, int final, int stream)
             if (ret < 0)
                 break;
         }
-        add_segment(os, filename, os->start_dts, os->end_dts - os->start_dts, start_pos, range_length, index_length);
+        add_segment(os, filename, os->start_pts, os->max_pts - os->start_pts, start_pos, range_length, index_length);
         av_log(s, AV_LOG_VERBOSE, "Representation %d media segment %d written to: %s\n", i, os->segment_index, full_path);
     }
 
@@ -834,25 +837,25 @@ static int dash_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     // If forcing the stream to start at 0, the mp4 muxer will set the start
     // timestamps to 0. Do the same here, to avoid mismatches in duration/timestamps.
-    if (os->first_dts == AV_NOPTS_VALUE &&
+    if (os->first_pts == AV_NOPTS_VALUE &&
         s->avoid_negative_ts == AVFMT_AVOID_NEG_TS_MAKE_ZERO) {
         pkt->pts -= pkt->dts;
         pkt->dts  = 0;
     }
 
-    if (os->first_dts == AV_NOPTS_VALUE)
-        os->first_dts = pkt->dts;
+    if (os->first_pts == AV_NOPTS_VALUE)
+        os->first_pts = pkt->pts;
 
     if ((!c->has_video || st->codec->codec_type == AVMEDIA_TYPE_VIDEO) &&
         pkt->flags & AV_PKT_FLAG_KEY && os->packets_written &&
-        av_compare_ts(pkt->dts - os->first_dts, st->time_base,
+        av_compare_ts(pkt->pts - os->first_pts, st->time_base,
                       seg_end_duration, AV_TIME_BASE_Q) >= 0) {
         int64_t prev_duration = c->last_duration;
 
-        c->last_duration = av_rescale_q(pkt->dts - os->start_dts,
+        c->last_duration = av_rescale_q(pkt->pts - os->start_pts,
                                         st->time_base,
                                         AV_TIME_BASE_Q);
-        c->total_duration = av_rescale_q(pkt->dts - os->first_dts,
+        c->total_duration = av_rescale_q(pkt->pts - os->first_pts,
                                          st->time_base,
                                          AV_TIME_BASE_Q);
 
@@ -873,12 +876,15 @@ static int dash_write_packet(AVFormatContext *s, AVPacket *pkt)
         // If we wrote a previous segment, adjust the start time of the segment
         // to the end of the previous one (which is the same as the mp4 muxer
         // does). This avoids gaps in the timeline.
-        if (os->end_dts != AV_NOPTS_VALUE)
-            os->start_dts = os->end_dts;
+        if (os->max_pts != AV_NOPTS_VALUE)
+            os->start_pts = os->max_pts;
         else
-            os->start_dts = pkt->dts;
+            os->start_pts = pkt->pts;
     }
-    os->end_dts = pkt->dts + pkt->duration;
+    if (os->max_pts == AV_NOPTS_VALUE)
+        os->max_pts = pkt->pts + pkt->duration;
+    else
+        os->max_pts = FFMAX(os->max_pts, pkt->pts + pkt->duration);
     os->packets_written++;
     return ff_write_chained(os->ctx, 0, pkt, s);
 }
@@ -892,10 +898,10 @@ static int dash_write_trailer(AVFormatContext *s)
         // If no segments have been written so far, try to do a crude
         // guess of the segment duration
         if (!c->last_duration)
-            c->last_duration = av_rescale_q(os->end_dts - os->start_dts,
+            c->last_duration = av_rescale_q(os->max_pts - os->start_pts,
                                             s->streams[0]->time_base,
                                             AV_TIME_BASE_Q);
-        c->total_duration = av_rescale_q(os->end_dts - os->first_dts,
+        c->total_duration = av_rescale_q(os->max_pts - os->first_pts,
                                          s->streams[0]->time_base,
                                          AV_TIME_BASE_Q);
     }
