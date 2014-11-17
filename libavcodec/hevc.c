@@ -1599,7 +1599,6 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
     int min_cb_width     = s->sps->min_cb_width;
     int x_cb             = x0 >> log2_min_cb_size;
     int y_cb             = y0 >> log2_min_cb_size;
-    int ref_idx[2];
     int x_pu, y_pu;
     int i, j;
 
@@ -1627,8 +1626,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
 
         if (inter_pred_idc != PRED_L1) {
             if (s->sh.nb_refs[L0]) {
-                ref_idx[0] = ff_hevc_ref_idx_lx_decode(s, s->sh.nb_refs[L0]);
-                current_mv.ref_idx[0] = ref_idx[0];
+                current_mv.ref_idx[0]= ff_hevc_ref_idx_lx_decode(s, s->sh.nb_refs[L0]);
             }
             current_mv.pred_flag = PF_L0;
             ff_hevc_hls_mvd_coding(s, x0, y0, 0);
@@ -1642,8 +1640,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
 
         if (inter_pred_idc != PRED_L0) {
             if (s->sh.nb_refs[L1]) {
-                ref_idx[1] = ff_hevc_ref_idx_lx_decode(s, s->sh.nb_refs[L1]);
-                current_mv.ref_idx[1] = ref_idx[1];
+                current_mv.ref_idx[1]= ff_hevc_ref_idx_lx_decode(s, s->sh.nb_refs[L1]);
             }
 
             if (s->sh.mvd_l1_zero_flag == 1 && inter_pred_idc == PRED_BI) {
