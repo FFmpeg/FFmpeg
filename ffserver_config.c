@@ -32,7 +32,7 @@
 #include "ffserver_config.h"
 
 static int ffserver_save_avoption(const char *opt, const char *arg, int type,
-                                  FFServerConfig *config, int line_num);
+                                  FFServerConfig *config);
 static void vreport_config_error(const char *filename, int line_num, int log_level,
                                  int *errors, const char *fmt, va_list vl);
 static void report_config_error(const char *filename, int line_num, int log_level,
@@ -253,12 +253,12 @@ static void add_codec(FFServerStream *stream, AVCodecContext *av)
     stream->streams[stream->nb_streams++] = st;
 }
 
-static int ffserver_set_codec(AVCodecContext *ctx, const char *codec_name, FFServerConfig *config, int line_num)
+static int ffserver_set_codec(AVCodecContext *ctx, const char *codec_name, FFServerConfig *config)
 {
     int ret;
     AVCodec *codec = avcodec_find_encoder_by_name(codec_name);
     if (!codec || codec->type != ctx->codec_type) {
-        report_config_error(config->filename, line_num, AV_LOG_ERROR,
+        report_config_error(config->filename, config->line_num, AV_LOG_ERROR,
                             &config->errors, "Invalid codec name: %s\n", codec_name);
         return 0;
     }
@@ -268,13 +268,13 @@ static int ffserver_set_codec(AVCodecContext *ctx, const char *codec_name, FFSer
         ctx->codec = codec;
     }
     if (ctx->codec_id != codec->id)
-        report_config_error(config->filename, line_num, AV_LOG_ERROR, &config->errors,
+        report_config_error(config->filename, config->line_num, AV_LOG_ERROR, &config->errors,
                             "Inconsistent configuration: trying to set %s codec option, but %s codec is used previously\n",
                             codec_name, avcodec_get_name(ctx->codec_id));
     return 0;
 }
 
-static int ffserver_opt_preset(const char *arg, int type, FFServerConfig *config, int line_num)
+static int ffserver_opt_preset(const char *arg, int type, FFServerConfig *config)
 {
     FILE *f=NULL;
     char filename[1000], tmp[1000], tmp2[1000], line[1000];
@@ -313,13 +313,13 @@ static int ffserver_opt_preset(const char *arg, int type, FFServerConfig *config
         if ((!strcmp(tmp, "acodec") && avctx->codec_type == AVMEDIA_TYPE_AUDIO) ||
              !strcmp(tmp, "vcodec") && avctx->codec_type == AVMEDIA_TYPE_VIDEO)
         {
-            if (ffserver_set_codec(avctx, tmp2, config, line_num) < 0)
+            if (ffserver_set_codec(avctx, tmp2, config) < 0)
                 break;
         } else if (!strcmp(tmp, "scodec")) {
             av_log(NULL, AV_LOG_ERROR, "Subtitles preset found.\n");
             ret = AVERROR(EINVAL);
             break;
-        } else if (ffserver_save_avoption(tmp, tmp2, type, config, line_num) < 0)
+        } else if (ffserver_save_avoption(tmp, tmp2, type, config) < 0)
             break;
     }
 
@@ -364,7 +364,7 @@ static void report_config_error(const char *filename, int line_num, int log_leve
 }
 
 static int ffserver_set_int_param(int *dest, const char *value, int factor, int min, int max,
-                                  FFServerConfig *config, int line_num, const char *error_msg, ...)
+                                  FFServerConfig *config, const char *error_msg, ...)
 {
     int tmp;
     char *tailp;
@@ -388,7 +388,7 @@ static int ffserver_set_int_param(int *dest, const char *value, int factor, int 
     if (config) {
         va_list vl;
         va_start(vl, error_msg);
-        vreport_config_error(config->filename, line_num, AV_LOG_ERROR,
+        vreport_config_error(config->filename, config->line_num, AV_LOG_ERROR,
                 &config->errors, error_msg, vl);
         va_end(vl);
     }
@@ -396,7 +396,7 @@ static int ffserver_set_int_param(int *dest, const char *value, int factor, int 
 }
 
 static int ffserver_set_float_param(float *dest, const char *value, float factor, float min, float max,
-                                    FFServerConfig *config, int line_num, const char *error_msg, ...)
+                                    FFServerConfig *config, const char *error_msg, ...)
 {
     double tmp;
     char *tailp;
@@ -417,14 +417,14 @@ static int ffserver_set_float_param(float *dest, const char *value, float factor
     if (config) {
         va_list vl;
         va_start(vl, error_msg);
-        vreport_config_error(config->filename, line_num, AV_LOG_ERROR,
+        vreport_config_error(config->filename, config->line_num, AV_LOG_ERROR,
                 &config->errors, error_msg, vl);
         va_end(vl);
     }
     return AVERROR(EINVAL);
 }
 
-static int ffserver_save_avoption(const char *opt, const char *arg, int type, FFServerConfig *config, int line_num)
+static int ffserver_save_avoption(const char *opt, const char *arg, int type, FFServerConfig *config)
 {
     static int hinted = 0;
     int ret = 0;
@@ -461,7 +461,7 @@ static int ffserver_save_avoption(const char *opt, const char *arg, int type, FF
         option = strchr(buff, ':');
         buff[option - buff] = '\0';
         option++;
-        if ((ret = ffserver_set_codec(ctx, codec_name, config, line_num)) < 0)
+        if ((ret = ffserver_set_codec(ctx, codec_name, config)) < 0)
             return ret;
         if (!ctx->codec || !ctx->priv_data)
             return -1;
@@ -471,23 +471,23 @@ static int ffserver_save_avoption(const char *opt, const char *arg, int type, FF
 
     o = av_opt_find(ctx, option, NULL, type | AV_OPT_FLAG_ENCODING_PARAM, AV_OPT_SEARCH_CHILDREN);
     if (!o) {
-        report_config_error(config->filename, line_num, AV_LOG_ERROR,
+        report_config_error(config->filename, config->line_num, AV_LOG_ERROR,
                             &config->errors, "Option not found: %s\n", opt);
         if (!hinted && ctx->codec_id == AV_CODEC_ID_NONE) {
             hinted = 1;
-            report_config_error(config->filename, line_num, AV_LOG_ERROR, NULL,
+            report_config_error(config->filename, config->line_num, AV_LOG_ERROR, NULL,
                                 "If '%s' is a codec private option, then prefix it with codec name, "
                                 "for example '%s:%s %s' or define codec earlier.\n",
                                 opt, avcodec_get_name(guessed_codec_id) ,opt, arg);
         }
     } else if ((ret = av_opt_set(ctx, option, arg, AV_OPT_SEARCH_CHILDREN)) < 0) {
-        report_config_error(config->filename, line_num, AV_LOG_ERROR,
+        report_config_error(config->filename, config->line_num, AV_LOG_ERROR,
                 &config->errors, "Invalid value for option %s (%s): %s\n", opt,
                 arg, av_err2str(ret));
     } else if ((e = av_dict_get(*dict, option, NULL, 0))) {
         if ((o->type == AV_OPT_TYPE_FLAGS) && arg && (arg[0] == '+' || arg[0] == '-'))
             return av_dict_set(dict, option, arg, AV_DICT_APPEND);
-        report_config_error(config->filename, line_num, AV_LOG_ERROR,
+        report_config_error(config->filename, config->line_num, AV_LOG_ERROR,
                 &config->errors,
                 "Redeclaring value of the option %s, previous value: %s\n",
                 opt, e->value);
@@ -497,11 +497,11 @@ static int ffserver_save_avoption(const char *opt, const char *arg, int type, FF
     return 0;
 }
 
-#define ERROR(...)   report_config_error(config->filename, line_num, AV_LOG_ERROR,   &config->errors,   __VA_ARGS__)
-#define WARNING(...) report_config_error(config->filename, line_num, AV_LOG_WARNING, &config->warnings, __VA_ARGS__)
+#define ERROR(...)   report_config_error(config->filename, config->line_num, AV_LOG_ERROR,   &config->errors,   __VA_ARGS__)
+#define WARNING(...) report_config_error(config->filename, config->line_num, AV_LOG_WARNING, &config->warnings, __VA_ARGS__)
 
 static int ffserver_parse_config_global(FFServerConfig *config, const char *cmd,
-                                        const char **p, int line_num)
+                                        const char **p)
 {
     int val;
     char arg[1024];
@@ -509,7 +509,7 @@ static int ffserver_parse_config_global(FFServerConfig *config, const char *cmd,
         if (!av_strcasecmp(cmd, "Port"))
             WARNING("Port option is deprecated, use HTTPPort instead\n");
         ffserver_get_arg(arg, sizeof(arg), p);
-        ffserver_set_int_param(&val, arg, 0, 1, 65535, config, line_num,
+        ffserver_set_int_param(&val, arg, 0, 1, 65535, config,
                 "Invalid port: %s\n", arg);
         if (val < 1024)
             WARNING("Trying to use IETF assigned system port: %d\n", val);
@@ -524,7 +524,7 @@ static int ffserver_parse_config_global(FFServerConfig *config, const char *cmd,
         WARNING("NoDaemon option has no effect, you should remove it\n");
     } else if (!av_strcasecmp(cmd, "RTSPPort")) {
         ffserver_get_arg(arg, sizeof(arg), p);
-        ffserver_set_int_param(&val, arg, 0, 1, 65535, config, line_num,
+        ffserver_set_int_param(&val, arg, 0, 1, 65535, config,
                 "Invalid port: %s\n", arg);
         config->rtsp_addr.sin_port = htons(val);
     } else if (!av_strcasecmp(cmd, "RTSPBindAddress")) {
@@ -533,7 +533,7 @@ static int ffserver_parse_config_global(FFServerConfig *config, const char *cmd,
             ERROR("Invalid host/IP address: %s\n", arg);
     } else if (!av_strcasecmp(cmd, "MaxHTTPConnections")) {
         ffserver_get_arg(arg, sizeof(arg), p);
-        ffserver_set_int_param(&val, arg, 0, 1, 65535, config, line_num,
+        ffserver_set_int_param(&val, arg, 0, 1, 65535, config,
                 "Invalid MaxHTTPConnections: %s\n", arg);
         config->nb_max_http_connections = val;
         if (config->nb_max_connections > config->nb_max_http_connections)
@@ -541,7 +541,7 @@ static int ffserver_parse_config_global(FFServerConfig *config, const char *cmd,
                   config->nb_max_connections, config->nb_max_http_connections);
     } else if (!av_strcasecmp(cmd, "MaxClients")) {
         ffserver_get_arg(arg, sizeof(arg), p);
-        ffserver_set_int_param(&val, arg, 0, 1, 65535, config, line_num,
+        ffserver_set_int_param(&val, arg, 0, 1, 65535, config,
                 "Invalid MaxClients: %s\n", arg);
         config->nb_max_connections = val;
         if (config->nb_max_connections > config->nb_max_http_connections)
@@ -568,7 +568,7 @@ static int ffserver_parse_config_global(FFServerConfig *config, const char *cmd,
 }
 
 static int ffserver_parse_config_feed(FFServerConfig *config, const char *cmd, const char **p,
-                                      int line_num, FFServerStream **pfeed)
+                                      FFServerStream **pfeed)
 {
     FFServerStream *feed;
     char arg[1024];
@@ -626,7 +626,7 @@ static int ffserver_parse_config_feed(FFServerConfig *config, const char *cmd, c
             return AVERROR(ENOMEM);
     } else if (!av_strcasecmp(cmd, "ACL")) {
         ffserver_parse_acl_row(NULL, feed, NULL, *p, config->filename,
-                line_num);
+                config->line_num);
     } else if (!av_strcasecmp(cmd, "File") || !av_strcasecmp(cmd, "ReadOnlyFile")) {
         ffserver_get_arg(feed->feed_filename, sizeof(feed->feed_filename), p);
         feed->readonly = !av_strcasecmp(cmd, "ReadOnlyFile");
@@ -777,7 +777,7 @@ static void ffserver_apply_stream_config(AVCodecContext *enc, const AVDictionary
 }
 
 static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd, const char **p,
-                                        int line_num, FFServerStream **pstream)
+                                        FFServerStream **pstream)
 {
     char arg[1024], arg2[1024];
     FFServerStream *stream;
@@ -893,29 +893,29 @@ static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd,
         stream->send_on_key = 1;
     } else if (!av_strcasecmp(cmd, "AudioCodec")) {
         ffserver_get_arg(arg, sizeof(arg), p);
-        ffserver_set_codec(config->dummy_actx, arg, config, line_num);
+        ffserver_set_codec(config->dummy_actx, arg, config);
     } else if (!av_strcasecmp(cmd, "VideoCodec")) {
         ffserver_get_arg(arg, sizeof(arg), p);
-        ffserver_set_codec(config->dummy_vctx, arg, config, line_num);
+        ffserver_set_codec(config->dummy_vctx, arg, config);
     } else if (!av_strcasecmp(cmd, "MaxTime")) {
         ffserver_get_arg(arg, sizeof(arg), p);
         stream->max_time = atof(arg) * 1000;
     } else if (!av_strcasecmp(cmd, "AudioBitRate")) {
         float f;
         ffserver_get_arg(arg, sizeof(arg), p);
-        ffserver_set_float_param(&f, arg, 1000, 0, FLT_MAX, config, line_num,
+        ffserver_set_float_param(&f, arg, 1000, 0, FLT_MAX, config,
                 "Invalid %s: %s\n", cmd, arg);
         if (av_dict_set_int(&config->audio_conf, cmd, lrintf(f), 0) < 0)
             goto nomem;
     } else if (!av_strcasecmp(cmd, "AudioChannels")) {
         ffserver_get_arg(arg, sizeof(arg), p);
-        ffserver_set_int_param(NULL, arg, 0, 1, 8, config, line_num,
+        ffserver_set_int_param(NULL, arg, 0, 1, 8, config,
                 "Invalid %s: %s, valid range is 1-8.", cmd, arg);
         if (av_dict_set(&config->audio_conf, cmd, arg, 0) < 0)
             goto nomem;
     } else if (!av_strcasecmp(cmd, "AudioSampleRate")) {
         ffserver_get_arg(arg, sizeof(arg), p);
-        ffserver_set_int_param(NULL, arg, 0, 0, INT_MAX, config, line_num,
+        ffserver_set_int_param(NULL, arg, 0, 0, INT_MAX, config,
                 "Invalid %s: %s", cmd, arg);
         if (av_dict_set(&config->audio_conf, cmd, arg, 0) < 0)
             goto nomem;
@@ -931,31 +931,31 @@ static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd,
                     "<min>-<max>: %s\n", arg);
     } else if (!av_strcasecmp(cmd, "Debug")) {
         ffserver_get_arg(arg, sizeof(arg), p);
-        ffserver_set_int_param(NULL, arg, 0, INT_MIN, INT_MAX, config, line_num,
+        ffserver_set_int_param(NULL, arg, 0, INT_MIN, INT_MAX, config,
                 "Invalid %s: %s", cmd, arg);
         if (av_dict_set(&config->video_conf, cmd, arg, 0) < 0)
             goto nomem;
     } else if (!av_strcasecmp(cmd, "Strict")) {
         ffserver_get_arg(arg, sizeof(arg), p);
-        ffserver_set_int_param(NULL, arg, 0, INT_MIN, INT_MAX, config, line_num,
+        ffserver_set_int_param(NULL, arg, 0, INT_MIN, INT_MAX, config,
                 "Invalid %s: %s", cmd, arg);
         if (av_dict_set(&config->video_conf, cmd, arg, 0) < 0)
             goto nomem;
     } else if (!av_strcasecmp(cmd, "VideoBufferSize")) {
         ffserver_get_arg(arg, sizeof(arg), p);
-        ffserver_set_int_param(NULL, arg, 8*1024, 0, INT_MAX, config, line_num,
+        ffserver_set_int_param(NULL, arg, 8*1024, 0, INT_MAX, config,
                 "Invalid %s: %s", cmd, arg);
         if (av_dict_set(&config->video_conf, cmd, arg, 0) < 0)
             goto nomem;
     } else if (!av_strcasecmp(cmd, "VideoBitRateTolerance")) {
         ffserver_get_arg(arg, sizeof(arg), p);
         ffserver_set_int_param(NULL, arg, 1000, INT_MIN, INT_MAX, config,
-                line_num, "Invalid %s: %s", cmd, arg);
+                "Invalid %s: %s", cmd, arg);
         if (av_dict_set(&config->video_conf, cmd, arg, 0) < 0)
             goto nomem;
     } else if (!av_strcasecmp(cmd, "VideoBitRate")) {
         ffserver_get_arg(arg, sizeof(arg), p);
-        ffserver_set_int_param(NULL, arg, 1000, 0, INT_MAX, config, line_num,
+        ffserver_set_int_param(NULL, arg, 1000, 0, INT_MAX, config,
                 "Invalid %s: %s", cmd, arg);
         if (av_dict_set(&config->video_conf, cmd, arg, 0) < 0)
            goto nomem;
@@ -990,7 +990,7 @@ static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd,
             goto nomem;
     } else if (!av_strcasecmp(cmd, "VideoGopSize")) {
         ffserver_get_arg(arg, sizeof(arg), p);
-        ffserver_set_int_param(NULL, arg, 0, INT_MIN, INT_MAX, config, line_num,
+        ffserver_set_int_param(NULL, arg, 0, INT_MIN, INT_MAX, config,
                 "Invalid %s: %s", cmd, arg);
         if (av_dict_set(&config->video_conf, cmd, arg, 0) < 0)
             goto nomem;
@@ -1009,18 +1009,18 @@ static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd,
         ffserver_get_arg(arg, sizeof(arg), p);
         ffserver_get_arg(arg2, sizeof(arg2), p);
         if (!av_strcasecmp(cmd, "AVOptionVideo"))
-            ret = ffserver_save_avoption(arg, arg2, AV_OPT_FLAG_VIDEO_PARAM, config, line_num);
+            ret = ffserver_save_avoption(arg, arg2, AV_OPT_FLAG_VIDEO_PARAM, config);
         else
-            ret = ffserver_save_avoption(arg, arg2, AV_OPT_FLAG_AUDIO_PARAM, config, line_num);
+            ret = ffserver_save_avoption(arg, arg2, AV_OPT_FLAG_AUDIO_PARAM, config);
         if (ret < 0)
             goto nomem;
     } else if (!av_strcasecmp(cmd, "AVPresetVideo") ||
                !av_strcasecmp(cmd, "AVPresetAudio")) {
         ffserver_get_arg(arg, sizeof(arg), p);
         if (!av_strcasecmp(cmd, "AVPresetVideo"))
-            ffserver_opt_preset(arg, AV_OPT_FLAG_VIDEO_PARAM, config, line_num);
+            ffserver_opt_preset(arg, AV_OPT_FLAG_VIDEO_PARAM, config);
         else
-            ffserver_opt_preset(arg, AV_OPT_FLAG_AUDIO_PARAM, config, line_num);
+            ffserver_opt_preset(arg, AV_OPT_FLAG_AUDIO_PARAM, config);
     } else if (!av_strcasecmp(cmd, "VideoTag")) {
         ffserver_get_arg(arg, sizeof(arg), p);
         if (strlen(arg) == 4) {
@@ -1042,32 +1042,32 @@ static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd,
             goto nomem;
     } else if (!av_strcasecmp(cmd, "VideoQDiff")) {
         ffserver_get_arg(arg, sizeof(arg), p);
-        ffserver_set_int_param(NULL, arg, 0, 1, 31, config, line_num,
+        ffserver_set_int_param(NULL, arg, 0, 1, 31, config,
                 "%s out of range\n", cmd);
         if (av_dict_set(&config->video_conf, cmd, arg, 0) < 0)
             goto nomem;
     } else if (!av_strcasecmp(cmd, "VideoQMax")) {
         ffserver_get_arg(arg, sizeof(arg), p);
-        ffserver_set_int_param(NULL, arg, 0, 1, 31, config, line_num,
+        ffserver_set_int_param(NULL, arg, 0, 1, 31, config,
                 "%s out of range\n", cmd);
         if (av_dict_set(&config->video_conf, cmd, arg, 0) < 0)
             goto nomem;
     } else if (!av_strcasecmp(cmd, "VideoQMin")) {
         ffserver_get_arg(arg, sizeof(arg), p);
-        ffserver_set_int_param(NULL, arg, 0, 1, 31, config, line_num,
+        ffserver_set_int_param(NULL, arg, 0, 1, 31, config,
                 "%s out of range\n", cmd);
         if (av_dict_set(&config->video_conf, cmd, arg, 0) < 0)
             goto nomem;
     } else if (!av_strcasecmp(cmd, "LumiMask")) {
         ffserver_get_arg(arg, sizeof(arg), p);
         ffserver_set_float_param(NULL, arg, 0, -FLT_MAX, FLT_MAX, config,
-                line_num, "Invalid %s: %s", cmd, arg);
+                "Invalid %s: %s", cmd, arg);
         if (av_dict_set(&config->video_conf, cmd, arg, 0) < 0)
             goto nomem;
     } else if (!av_strcasecmp(cmd, "DarkMask")) {
         ffserver_get_arg(arg, sizeof(arg), p);
         ffserver_set_float_param(NULL, arg, 0, -FLT_MAX, FLT_MAX, config,
-                line_num, "Invalid %s: %s", cmd, arg);
+                "Invalid %s: %s", cmd, arg);
         if (av_dict_set(&config->video_conf, cmd, arg, 0) < 0)
             goto nomem;
     } else if (!av_strcasecmp(cmd, "NoVideo")) {
@@ -1076,7 +1076,7 @@ static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd,
         config->no_audio = 1;
     } else if (!av_strcasecmp(cmd, "ACL")) {
         ffserver_parse_acl_row(stream, NULL, NULL, *p, config->filename,
-                line_num);
+                config->line_num);
     } else if (!av_strcasecmp(cmd, "DynamicACL")) {
         ffserver_get_arg(stream->dynamic_acl, sizeof(stream->dynamic_acl), p);
     } else if (!av_strcasecmp(cmd, "RTSPOption")) {
@@ -1091,13 +1091,13 @@ static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd,
         stream->loop = 1; /* default is looping */
     } else if (!av_strcasecmp(cmd, "MulticastPort")) {
         ffserver_get_arg(arg, sizeof(arg), p);
-        ffserver_set_int_param(&val, arg, 0, 1, 65535, config, line_num,
+        ffserver_set_int_param(&val, arg, 0, 1, 65535, config,
                 "Invalid MulticastPort: %s\n", arg);
         stream->multicast_port = val;
     } else if (!av_strcasecmp(cmd, "MulticastTTL")) {
         ffserver_get_arg(arg, sizeof(arg), p);
         ffserver_set_int_param(&val, arg, 0, INT_MIN, INT_MAX, config,
-                line_num, "Invalid MulticastTTL: %s\n", arg);
+                "Invalid MulticastTTL: %s\n", arg);
         stream->multicast_ttl = val;
     } else if (!av_strcasecmp(cmd, "NoLoop")) {
         stream->loop = 0;
@@ -1144,7 +1144,7 @@ static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd,
 }
 
 static int ffserver_parse_config_redirect(FFServerConfig *config, const char *cmd, const char **p,
-                                          int line_num, FFServerStream **predirect)
+                                          FFServerStream **predirect)
 {
     FFServerStream *redirect;
     av_assert0(predirect);
@@ -1184,13 +1184,13 @@ int ffserver_parse_ffconfig(const char *filename, FFServerConfig *config)
     char line[1024];
     char cmd[64];
     const char *p;
-    int line_num = 0;
     FFServerStream **last_stream, *stream = NULL, *redirect = NULL;
     FFServerStream **last_feed, *feed = NULL;
     int ret = 0;
 
     av_assert0(config);
 
+    config->line_num = 0;
     f = fopen(filename, "r");
     if (!f) {
         ret = AVERROR(errno);
@@ -1208,7 +1208,7 @@ int ffserver_parse_ffconfig(const char *filename, FFServerConfig *config)
     for(;;) {
         if (fgets(line, sizeof(line), f) == NULL)
             break;
-        line_num++;
+        config->line_num++;
         p = line;
         while (av_isspace(*p))
             p++;
@@ -1222,7 +1222,7 @@ int ffserver_parse_ffconfig(const char *filename, FFServerConfig *config)
             if (opening && (stream || feed || redirect)) {
                 ERROR("Already in a tag\n");
             } else {
-                if ((ret = ffserver_parse_config_feed(config, cmd, &p, line_num, &feed)) < 0)
+                if ((ret = ffserver_parse_config_feed(config, cmd, &p, &feed)) < 0)
                     break;
                 if (opening) {
                     /* add in stream list */
@@ -1238,7 +1238,7 @@ int ffserver_parse_ffconfig(const char *filename, FFServerConfig *config)
             if (opening && (stream || feed || redirect)) {
                 ERROR("Already in a tag\n");
             } else {
-                if ((ret = ffserver_parse_config_stream(config, cmd, &p, line_num, &stream)) < 0)
+                if ((ret = ffserver_parse_config_stream(config, cmd, &p, &stream)) < 0)
                     break;
                 if (opening) {
                     /* add in stream list */
@@ -1251,7 +1251,7 @@ int ffserver_parse_ffconfig(const char *filename, FFServerConfig *config)
             if (opening && (stream || feed || redirect))
                 ERROR("Already in a tag\n");
             else {
-                if ((ret = ffserver_parse_config_redirect(config, cmd, &p, line_num, &redirect)) < 0)
+                if ((ret = ffserver_parse_config_redirect(config, cmd, &p, &redirect)) < 0)
                     break;
                 if (opening) {
                     /* add in stream list */
@@ -1260,7 +1260,7 @@ int ffserver_parse_ffconfig(const char *filename, FFServerConfig *config)
                 }
             }
         } else {
-            ffserver_parse_config_global(config, cmd, &p, line_num);
+            ffserver_parse_config_global(config, cmd, &p);
         }
     }
     if (stream || feed || redirect)

@@ -117,6 +117,7 @@ typedef struct FFServerConfig {
     AVCodecContext *dummy_vctx;   /* Used internally to test video AVOptions. */
     int no_audio;
     int no_video;
+    int line_num;
 } FFServerConfig;
 
 void ffserver_get_arg(char *buf, int buf_size, const char **pp);
