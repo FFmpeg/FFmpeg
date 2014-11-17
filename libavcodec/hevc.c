@@ -1600,7 +1600,6 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
     int x_cb             = x0 >> log2_min_cb_size;
     int y_cb             = y0 >> log2_min_cb_size;
     int ref_idx[2];
-    int mvp_flag[2];
     int x_pu, y_pu;
     int i, j;
 
@@ -1619,6 +1618,8 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
                                    partIdx, merge_idx, &current_mv);
     } else {
         enum InterPredIdc inter_pred_idc = PRED_L0;
+        int mvp_flag;
+
         ff_hevc_set_neighbour_available(s, x0, y0, nPbW, nPbH);
         current_mv.pred_flag = 0;
         if (s->sh.slice_type == B_SLICE)
@@ -1629,13 +1630,12 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
                 ref_idx[0] = ff_hevc_ref_idx_lx_decode(s, s->sh.nb_refs[L0]);
                 current_mv.ref_idx[0] = ref_idx[0];
             }
-
             current_mv.pred_flag = PF_L0;
             ff_hevc_hls_mvd_coding(s, x0, y0, 0);
-            mvp_flag[0] = ff_hevc_mvp_lx_flag_decode(s);
+            mvp_flag = ff_hevc_mvp_lx_flag_decode(s);
             ff_hevc_luma_mv_mvp_mode(s, x0, y0, nPbW, nPbH, log2_cb_size,
                                      partIdx, merge_idx, &current_mv,
-                                     mvp_flag[0], 0);
+                                     mvp_flag, 0);
             current_mv.mv[0].x += lc->pu.mvd.x;
             current_mv.mv[0].y += lc->pu.mvd.y;
         }
@@ -1653,10 +1653,10 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
             }
 
             current_mv.pred_flag += PF_L1;
-            mvp_flag[1] = ff_hevc_mvp_lx_flag_decode(s);
+            mvp_flag = ff_hevc_mvp_lx_flag_decode(s);
             ff_hevc_luma_mv_mvp_mode(s, x0, y0, nPbW, nPbH, log2_cb_size,
                                      partIdx, merge_idx, &current_mv,
-                                     mvp_flag[1], 1);
+                                     mvp_flag, 1);
             current_mv.mv[1].x += lc->pu.mvd.x;
             current_mv.mv[1].y += lc->pu.mvd.y;
         }
