@@ -637,8 +637,10 @@ void ff_snow_release_buffer(AVCodecContext *avctx)
     if(s->last_picture[s->max_ref_frames-1]->data[0]){
         av_frame_unref(s->last_picture[s->max_ref_frames-1]);
         for(i=0; i<9; i++)
-            if(s->halfpel_plane[s->max_ref_frames-1][1+i/3][i%3])
+            if(s->halfpel_plane[s->max_ref_frames-1][1+i/3][i%3]) {
                 av_free(s->halfpel_plane[s->max_ref_frames-1][1+i/3][i%3] - EDGE_WIDTH*(1+s->current_picture->linesize[i%3]));
+                s->halfpel_plane[s->max_ref_frames-1][1+i/3][i%3] = NULL;
+            }
     }
 }
 

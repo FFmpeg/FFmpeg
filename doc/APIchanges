@@ -15,6 +15,15 @@ libavutil:     2014-08-09
 
 API changes, most recent first:
 
+2014-11-16 - xxxxxxx - lavf 56.13.0 - avformat.h
+  Add AVStream.recommended_encoder_configuration with accessors.
+
+2014-11-16 - xxxxxxx - lavu 54.13.0 - opt.h
+  Add av_opt_serialize().
+
+2014-11-16 - xxxxxxx - lavu 54.12.0 - opt.h
+  Add av_opt_is_set_to_default().
+
 2014-11-xx - xxxxxxx - lavc 56.6.0 - vorbis_parser.h
   Add a public API for parsing vorbis packets.
 

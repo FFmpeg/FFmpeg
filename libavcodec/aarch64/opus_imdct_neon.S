@@ -438,8 +438,8 @@ function fft_b15_calc_neon
         uzp1            v12.4s, v4.4s,  v5.4s   // exp[11 - 14].re
         uzp2            v13.4s, v4.4s,  v5.4s   // exp[11 - 14].im
         zip1            v14.4s, v6.4s,  v7.4s   // exp[5,10].re/exp[5,10].im
-        add             x5,  x5,  x3,  lsl #3
-        ldr             x5,  [x5]
+        ldr             x6,  [x5, x3, lsl #3]
+        add             x5,  x5,  x6
         mov             x10, x0
         blr             x5
         ldp             x20, x30, [sp]
@@ -452,13 +452,13 @@ function fft_b15_calc_neon
 endfunc
 
 const   fft_tab_neon
-        .quad fft15_neon
-        .quad fft30_neon
-        .quad fft60_neon
-        .quad fft120_neon
-        .quad fft240_neon
-        .quad fft480_neon
-        .quad fft960_neon
+        .quad fft15_neon  - fft_tab_neon
+        .quad fft30_neon  - fft_tab_neon
+        .quad fft60_neon  - fft_tab_neon
+        .quad fft120_neon - fft_tab_neon
+        .quad fft240_neon - fft_tab_neon
+        .quad fft480_neon - fft_tab_neon
+        .quad fft960_neon - fft_tab_neon
 endconst
 
 function ff_celt_imdct_half_neon, export=1

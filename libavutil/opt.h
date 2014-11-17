@@ -844,6 +844,53 @@ int av_opt_copy(void *dest, void *src);
 int av_opt_query_ranges_default(AVOptionRanges **, void *obj, const char *key, int flags);
 
 /**
+ * Check if given option is set to its default value.
+ *
+ * Options o must belong to the obj. This function must not be called to check child's options state.
+ * @see av_opt_is_set_to_default_by_name().
+ *
+ * @param obj  AVClass object to check option on
+ * @param o    option to be checked
+ * @return     >0 when option is set to its default,
+ *              0 when option is not set its default,
+ *             <0 on error
+ */
+int av_opt_is_set_to_default(void *obj, const AVOption *o);
+
+/**
+ * Check if given option is set to its default value.
+ *
+ * @param obj          AVClass object to check option on
+ * @param name         option name
+ * @param search_flags combination of AV_OPT_SEARCH_*
+ * @return             >0 when option is set to its default,
+ *                     0 when option is not set its default,
+ *                     <0 on error
+ */
+int av_opt_is_set_to_default_by_name(void *obj, const char *name, int search_flags);
+
+
+#define AV_OPT_SERIALIZE_SKIP_DEFAULTS              0x00000001  ///< Serialize options that are not set to default values only.
+#define AV_OPT_SERIALIZE_OPT_FLAGS_EXACT            0x00000002  ///< Serialize options that exactly match opt_flags only.
+
+/**
+ * Serialize object's options.
+ *
+ * Create a string containing object's serialized options.
+ * Such string may be passed back to av_opt_set_from_string() in order to restore option values.
+ *
+ * @param[in]  obj           AVClass object to serialize
+ * @param[in]  opt_flags     serialize options with all the specified flags set (AV_OPT_FLAG)
+ * @param[in]  flags         combination of AV_OPT_SERIALIZE_* flags
+ * @param[out] buffer        Pointer to buffer that will be allocated with string containg serialized options.
+ *                           Buffer must be freed by the caller when is no longer needed.
+ * @param[in]  key_val_sep   character used to separate key from value
+ * @param[in]  pairs_sep     character used to separate two pairs from each other
+ * @return                   >= 0 on success, negative on error
+ */
+int av_opt_serialize(void *obj, int opt_flags, int flags, char **buffer,
+                     const char key_val_sep, const char pairs_sep);
+/**
  * @}
  */
 

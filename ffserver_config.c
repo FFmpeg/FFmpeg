@@ -31,6 +31,13 @@
 #include "cmdutils.h"
 #include "ffserver_config.h"
 
+static int ffserver_save_avoption(AVCodecContext *ctx, const char *opt, const char *arg,
+                                  AVDictionary **dict, int type, FFServerConfig *config, int line_num);
+static void vreport_config_error(const char *filename, int line_num, int log_level,
+                                 int *errors, const char *fmt, va_list vl);
+static void report_config_error(const char *filename, int line_num, int log_level,
+                                int *errors, const char *fmt, ...);
+
 /* FIXME: make ffserver work with IPv6 */
 /* resolve host with also IP address parsing */
 static int resolve_host(struct in_addr *sin_addr, const char *hostname)
@@ -246,40 +253,37 @@ static void add_codec(FFServerStream *stream, AVCodecContext *av)
     stream->streams[stream->nb_streams++] = st;
 }
 
-static enum AVCodecID opt_codec(const char *name, enum AVMediaType type)
+static int ffserver_set_codec(AVCodecContext *ctx, const char *codec_name, FFServerConfig *config, int line_num)
 {
-    AVCodec *codec = avcodec_find_encoder_by_name(name);
-
-    if (!codec || codec->type != type)
-        return AV_CODEC_ID_NONE;
-    return codec->id;
+    int ret;
+    AVCodec *codec = avcodec_find_encoder_by_name(codec_name);
+    if (!codec || codec->type != ctx->codec_type) {
+        report_config_error(config->filename, line_num, AV_LOG_ERROR,
+                            &config->errors, "Invalid codec name: %s\n", codec_name);
+        return 0;
+    }
+    if (ctx->codec_id == AV_CODEC_ID_NONE && !ctx->priv_data) {
+        if ((ret = avcodec_get_context_defaults3(ctx, codec)) < 0)
+            return ret;
+        ctx->codec = codec;
+    }
+    if (ctx->codec_id != codec->id)
+        report_config_error(config->filename, line_num, AV_LOG_ERROR, &config->errors,
+                            "Inconsistent configuration: trying to set %s codec option, but %s codec is used previously\n",
+                            codec_name, avcodec_get_name(ctx->codec_id));
+    return 0;
 }
 
-static int ffserver_opt_default(const char *opt, const char *arg,
-                       AVCodecContext *avctx, int type)
-{
-    int ret = 0;
-    const AVOption *o = av_opt_find(avctx, opt, NULL, type, 0);
-    if(o)
-        ret = av_opt_set(avctx, opt, arg, 0);
-    return ret;
-}
-
-static int ffserver_opt_preset(const char *arg,
-                       AVCodecContext *avctx, int type,
-                       enum AVCodecID *audio_id, enum AVCodecID *video_id)
+static int ffserver_opt_preset(const char *arg, AVCodecContext *avctx, FFServerConfig *config, int line_num)
 {
     FILE *f=NULL;
     char filename[1000], tmp[1000], tmp2[1000], line[1000];
     int ret = 0;
-    AVCodec *codec = NULL;
-
-    if (avctx)
-        codec = avcodec_find_encoder(avctx->codec_id);
+    AVCodec *codec = avcodec_find_encoder(avctx->codec_id);
 
     if (!(f = get_preset_file(filename, sizeof(filename), arg, 0,
                               codec ? codec->name : NULL))) {
-        fprintf(stderr, "File for preset '%s' not found\n", arg);
+        av_log(NULL, AV_LOG_ERROR, "File for preset '%s' not found\n", arg);
         return AVERROR(EINVAL);
     }
 
@@ -289,23 +293,42 @@ static int ffserver_opt_preset(const char *arg,
             continue;
         e|= sscanf(line, "%999[^=]=%999[^\n]\n", tmp, tmp2) - 2;
         if(e){
-            fprintf(stderr, "%s: Invalid syntax: '%s'\n", filename, line);
+            av_log(NULL, AV_LOG_ERROR, "%s: Invalid syntax: '%s'\n", filename, line);
             ret = AVERROR(EINVAL);
             break;
         }
-        if (audio_id && !strcmp(tmp, "acodec")) {
-            *audio_id = opt_codec(tmp2, AVMEDIA_TYPE_AUDIO);
-        } else if (video_id && !strcmp(tmp, "vcodec")){
-            *video_id = opt_codec(tmp2, AVMEDIA_TYPE_VIDEO);
-        } else if(!strcmp(tmp, "scodec")) {
-            /* opt_subtitle_codec(tmp2); */
-        } else if (avctx && (ret = ffserver_opt_default(tmp, tmp2, avctx, type)) < 0) {
-            fprintf(stderr, "%s: Invalid option or argument: '%s', parsed as "
-                    "'%s' = '%s'\n", filename, line, tmp, tmp2);
+        if ((!strcmp(tmp, "acodec") && avctx->codec_type == AVMEDIA_TYPE_AUDIO) ||
+             !strcmp(tmp, "vcodec") && avctx->codec_type == AVMEDIA_TYPE_VIDEO)
+        {
+            if (ffserver_set_codec(avctx, tmp2, config, line_num) < 0)
+                break;
+        } else if (!strcmp(tmp, "scodec")) {
+            av_log(NULL, AV_LOG_ERROR, "Subtitles preset found.\n");
+            ret = AVERROR(EINVAL);
             break;
+        } else {
+            int type;
+            AVDictionary **opts;
+
+            switch(avctx->codec_type) {
+            case AVMEDIA_TYPE_AUDIO:
+                type = AV_OPT_FLAG_AUDIO_PARAM;
+                opts = &config->audio_opts;
+                break;
+            case AVMEDIA_TYPE_VIDEO:
+                type = AV_OPT_FLAG_VIDEO_PARAM;
+                opts = &config->video_opts;
+                break;
+            default:
+                ret = AVERROR(EINVAL);
+                goto exit;
+            }
+            if (ffserver_save_avoption(avctx, tmp, tmp2, opts, type, config, line_num) < 0)
+                break;
         }
     }
 
+  exit:
     fclose(f);
 
     return ret;
@@ -334,7 +357,8 @@ static void vreport_config_error(const char *filename, int line_num, int log_lev
 {
     av_log(NULL, log_level, "%s:%d: ", filename, line_num);
     av_vlog(NULL, log_level, fmt, vl);
-    (*errors)++;
+    if (errors)
+        (*errors)++;
 }
 
 static void report_config_error(const char *filename, int line_num, int log_level, int *errors, const char *fmt, ...)
@@ -406,27 +430,67 @@ static int ffserver_set_float_param(float *dest, const char *value, float factor
     return AVERROR(EINVAL);
 }
 
-static int ffserver_save_avoption(const char *opt, const char *arg, AVDictionary **dict,
+static int ffserver_save_avoption(AVCodecContext *ctx, const char *opt, const char *arg, AVDictionary **dict,
                                   int type, FFServerConfig *config, int line_num)
 {
+    static int hinted = 0;
     int ret = 0;
     AVDictionaryEntry *e;
-    const AVOption *o = av_opt_find(config->dummy_ctx, opt, NULL, type | AV_OPT_FLAG_ENCODING_PARAM, AV_OPT_SEARCH_CHILDREN);
+    const AVOption *o = NULL;
+    const char *option = NULL;
+    const char *codec_name = NULL;
+    char buff[1024];
+
+    if (strchr(opt, ':')) {
+        //explicit private option
+        snprintf(buff, sizeof(buff), "%s", opt);
+        codec_name = buff;
+        option = strchr(buff, ':');
+        buff[option - buff] = '\0';
+        option++;
+        if ((ret = ffserver_set_codec(ctx, codec_name, config, line_num)) < 0)
+            return ret;
+        if (!ctx->codec || !ctx->priv_data)
+            return -1;
+    } else {
+        option = opt;
+    }
+
+    o = av_opt_find(ctx, option, NULL, type | AV_OPT_FLAG_ENCODING_PARAM, AV_OPT_SEARCH_CHILDREN);
     if (!o) {
         report_config_error(config->filename, line_num, AV_LOG_ERROR,
-                &config->errors, "Option not found: %s\n", opt);
-    } else if ((ret = av_opt_set(config->dummy_ctx, opt, arg, AV_OPT_SEARCH_CHILDREN)) < 0) {
+                            &config->errors, "Option not found: %s\n", opt);
+        if (!hinted && ctx->codec_id == AV_CODEC_ID_NONE) {
+            enum AVCodecID id;
+            hinted = 1;
+            switch(ctx->codec_type) {
+            case AVMEDIA_TYPE_AUDIO:
+                id = config->guessed_audio_codec_id != AV_CODEC_ID_NONE ? config->guessed_audio_codec_id : AV_CODEC_ID_AAC;
+                break;
+            case AVMEDIA_TYPE_VIDEO:
+                id = config->guessed_video_codec_id != AV_CODEC_ID_NONE ? config->guessed_video_codec_id : AV_CODEC_ID_H264;
+                break;
+            default:
+                break;
+            }
+            report_config_error(config->filename, line_num, AV_LOG_ERROR, NULL,
+                                "If '%s' is a codec private option, then prefix it with codec name, "
+                                "for example '%s:%s %s' or define codec earlier.\n",
+                                opt, avcodec_get_name(id) ,opt, arg);
+
+        }
+    } else if ((ret = av_opt_set(ctx, option, arg, AV_OPT_SEARCH_CHILDREN)) < 0) {
         report_config_error(config->filename, line_num, AV_LOG_ERROR,
                 &config->errors, "Invalid value for option %s (%s): %s\n", opt,
                 arg, av_err2str(ret));
-    } else if ((e = av_dict_get(*dict, opt, NULL, 0))) {
+    } else if ((e = av_dict_get(*dict, option, NULL, 0))) {
         if ((o->type == AV_OPT_TYPE_FLAGS) && arg && (arg[0] == '+' || arg[0] == '-'))
-            return av_dict_set(dict, opt, arg, AV_DICT_APPEND);
+            return av_dict_set(dict, option, arg, AV_DICT_APPEND);
         report_config_error(config->filename, line_num, AV_LOG_ERROR,
                 &config->errors,
                 "Redeclaring value of the option %s, previous value: %s\n",
                 opt, e->value);
-    } else if (av_dict_set(dict, opt, arg, 0) < 0) {
+    } else if (av_dict_set(dict, option, arg, 0) < 0) {
         return AVERROR(ENOMEM);
     }
     return 0;
@@ -684,7 +748,7 @@ static void ffserver_apply_stream_config(AVCodecContext *enc, const AVDictionary
         enc->mb_decision = FF_MB_DECISION_BITS;
     if ((e = av_dict_get(conf, "VideoTag", NULL, 0)))
         enc->codec_tag = MKTAG(e->value[0], e->value[1], e->value[2], e->value[3]);
-    if (av_dict_get(conf, "Qscale", NULL, 0)) {
+    if ((e = av_dict_get(conf, "Qscale", NULL, 0))) {
         enc->flags |= CODEC_FLAG_QSCALE;
         ffserver_set_int_param(&enc->global_quality, e->value, FF_QP2LAMBDA,
                 INT_MIN, INT_MAX, NULL, 0, NULL);
@@ -704,7 +768,11 @@ static void ffserver_apply_stream_config(AVCodecContext *enc, const AVDictionary
         ffserver_set_int_param(&enc->bit_rate, e->value, 0, INT_MIN, INT_MAX,
                 NULL, 0, NULL);
 
+    av_opt_set_dict2(enc->priv_data, opts, AV_OPT_SEARCH_CHILDREN);
     av_opt_set_dict2(enc, opts, AV_OPT_SEARCH_CHILDREN);
+
+    if (av_dict_count(*opts))
+        av_log(NULL, AV_LOG_ERROR, "Something went wrong, %d options not set!!!\n", av_dict_count(*opts));
 }
 
 static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd, const char **p,
@@ -723,11 +791,16 @@ static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd,
         stream = av_mallocz(sizeof(FFServerStream));
         if (!stream)
             return AVERROR(ENOMEM);
-        config->dummy_ctx = avcodec_alloc_context3(NULL);
-        if (!config->dummy_ctx) {
+        config->dummy_actx = avcodec_alloc_context3(NULL);
+        config->dummy_vctx = avcodec_alloc_context3(NULL);
+        if (!config->dummy_vctx || !config->dummy_actx) {
             av_free(stream);
+            avcodec_free_context(&config->dummy_vctx);
+            avcodec_free_context(&config->dummy_actx);
             return AVERROR(ENOMEM);
         }
+        config->dummy_actx->codec_type = AVMEDIA_TYPE_AUDIO;
+        config->dummy_vctx->codec_type = AVMEDIA_TYPE_VIDEO;
         ffserver_get_arg(stream->filename, sizeof(stream->filename), p);
         q = strrchr(stream->filename, '>');
         if (q)
@@ -740,11 +813,11 @@ static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd,
 
         stream->fmt = ffserver_guess_format(NULL, stream->filename, NULL);
         if (stream->fmt) {
-            config->audio_id = stream->fmt->audio_codec;
-            config->video_id = stream->fmt->video_codec;
+            config->guessed_audio_codec_id = stream->fmt->audio_codec;
+            config->guessed_video_codec_id = stream->fmt->video_codec;
         } else {
-            config->audio_id = AV_CODEC_ID_NONE;
-            config->video_id = AV_CODEC_ID_NONE;
+            config->guessed_audio_codec_id = AV_CODEC_ID_NONE;
+            config->guessed_video_codec_id = AV_CODEC_ID_NONE;
         }
         *pstream = stream;
         return 0;
@@ -779,8 +852,8 @@ static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd,
                 ERROR("Unknown Format: %s\n", arg);
         }
         if (stream->fmt) {
-            config->audio_id = stream->fmt->audio_codec;
-            config->video_id = stream->fmt->video_codec;
+            config->guessed_audio_codec_id = stream->fmt->audio_codec;
+            config->guessed_video_codec_id = stream->fmt->video_codec;
         }
     } else if (!av_strcasecmp(cmd, "InputFormat")) {
         ffserver_get_arg(arg, sizeof(arg), p);
@@ -819,14 +892,10 @@ static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd,
         stream->send_on_key = 1;
     } else if (!av_strcasecmp(cmd, "AudioCodec")) {
         ffserver_get_arg(arg, sizeof(arg), p);
-        config->audio_id = opt_codec(arg, AVMEDIA_TYPE_AUDIO);
-        if (config->audio_id == AV_CODEC_ID_NONE)
-            ERROR("Unknown AudioCodec: %s\n", arg);
+        ffserver_set_codec(config->dummy_actx, arg, config, line_num);
     } else if (!av_strcasecmp(cmd, "VideoCodec")) {
         ffserver_get_arg(arg, sizeof(arg), p);
-        config->video_id = opt_codec(arg, AVMEDIA_TYPE_VIDEO);
-        if (config->video_id == AV_CODEC_ID_NONE)
-            ERROR("Unknown VideoCodec: %s\n", arg);
+        ffserver_set_codec(config->dummy_vctx, arg, config, line_num);
     } else if (!av_strcasecmp(cmd, "MaxTime")) {
         ffserver_get_arg(arg, sizeof(arg), p);
         stream->max_time = atof(arg) * 1000;
@@ -925,7 +994,7 @@ static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd,
         if (av_dict_set(&config->video_conf, cmd, arg, 0) < 0)
             goto nomem;
     } else if (!av_strcasecmp(cmd, "VideoIntraOnly")) {
-        if (av_dict_set(&config->video_conf, cmd, "1", 0) < 0)
+        if (av_dict_set(&config->video_conf, "VideoGopSize", "1", 0) < 0)
             goto nomem;
     } else if (!av_strcasecmp(cmd, "VideoHighQuality")) {
         if (av_dict_set(&config->video_conf, cmd, "", 0) < 0)
@@ -939,29 +1008,24 @@ static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd,
         ffserver_get_arg(arg, sizeof(arg), p);
         ffserver_get_arg(arg2, sizeof(arg2), p);
         if (!av_strcasecmp(cmd, "AVOptionVideo"))
-            ret = ffserver_save_avoption(arg, arg2, &config->video_opts, AV_OPT_FLAG_VIDEO_PARAM ,config, line_num);
+            ret = ffserver_save_avoption(config->dummy_vctx, arg, arg2, &config->video_opts,
+                                         AV_OPT_FLAG_VIDEO_PARAM ,config, line_num);
         else
-            ret = ffserver_save_avoption(arg, arg2, &config->audio_opts, AV_OPT_FLAG_AUDIO_PARAM ,config, line_num);
+            ret = ffserver_save_avoption(config->dummy_actx, arg, arg2, &config->audio_opts,
+                                         AV_OPT_FLAG_AUDIO_PARAM ,config, line_num);
         if (ret < 0)
             goto nomem;
     } else if (!av_strcasecmp(cmd, "AVPresetVideo") ||
                !av_strcasecmp(cmd, "AVPresetAudio")) {
-        char **preset = NULL;
         ffserver_get_arg(arg, sizeof(arg), p);
-        if (!av_strcasecmp(cmd, "AVPresetVideo")) {
-            preset = &config->video_preset;
-            ffserver_opt_preset(arg, NULL, 0, NULL, &config->video_id);
-        } else {
-            preset = &config->audio_preset;
-            ffserver_opt_preset(arg, NULL, 0, &config->audio_id, NULL);
-        }
-        *preset = av_strdup(arg);
-        if (!preset)
-            return AVERROR(ENOMEM);
+        if (!av_strcasecmp(cmd, "AVPresetVideo"))
+            ffserver_opt_preset(arg, config->dummy_vctx, config, line_num);
+        else
+            ffserver_opt_preset(arg, config->dummy_actx, config, line_num);
     } else if (!av_strcasecmp(cmd, "VideoTag")) {
         ffserver_get_arg(arg, sizeof(arg), p);
         if (strlen(arg) == 4) {
-            if (av_dict_set(&config->video_conf, "VideoTag", "arg", 0) < 0)
+            if (av_dict_set(&config->video_conf, "VideoTag", arg, 0) < 0)
                 goto nomem;
         }
     } else if (!av_strcasecmp(cmd, "BitExact")) {
@@ -1008,9 +1072,9 @@ static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd,
         if (av_dict_set(&config->video_conf, cmd, arg, 0) < 0)
             goto nomem;
     } else if (!av_strcasecmp(cmd, "NoVideo")) {
-        config->video_id = AV_CODEC_ID_NONE;
+        config->no_video = 1;
     } else if (!av_strcasecmp(cmd, "NoAudio")) {
-        config->audio_id = AV_CODEC_ID_NONE;
+        config->no_audio = 1;
     } else if (!av_strcasecmp(cmd, "ACL")) {
         ffserver_parse_acl_row(stream, NULL, NULL, *p, config->filename,
                 line_num);
@@ -1040,24 +1104,18 @@ static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd,
         stream->loop = 0;
     } else if (!av_strcasecmp(cmd, "</Stream>")) {
         if (stream->feed && stream->fmt && strcmp(stream->fmt->name, "ffm")) {
-            if (config->audio_id != AV_CODEC_ID_NONE) {
-                AVCodecContext *audio_enc = avcodec_alloc_context3(avcodec_find_encoder(config->audio_id));
-                if (config->audio_preset &&
-                    ffserver_opt_preset(arg, audio_enc, AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_ENCODING_PARAM,
-                                        NULL, NULL) < 0)
-                    ERROR("Could not apply preset '%s'\n", arg);
-                ffserver_apply_stream_config(audio_enc, config->audio_conf,
-                        &config->audio_opts);
+            if (config->dummy_actx->codec_id == AV_CODEC_ID_NONE)
+                config->dummy_actx->codec_id = config->guessed_audio_codec_id;
+            if (!config->no_audio && config->dummy_actx->codec_id != AV_CODEC_ID_NONE) {
+                AVCodecContext *audio_enc = avcodec_alloc_context3(avcodec_find_encoder(config->dummy_actx->codec_id));
+                ffserver_apply_stream_config(audio_enc, config->audio_conf, &config->audio_opts);
                 add_codec(stream, audio_enc);
             }
-            if (config->video_id != AV_CODEC_ID_NONE) {
-                AVCodecContext *video_enc = avcodec_alloc_context3(avcodec_find_encoder(config->video_id));
-                if (config->video_preset &&
-                    ffserver_opt_preset(arg, video_enc, AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_ENCODING_PARAM,
-                                        NULL, NULL) < 0)
-                    ERROR("Could not apply preset '%s'\n", arg);
-                ffserver_apply_stream_config(video_enc, config->video_conf,
-                        &config->video_opts);
+            if (config->dummy_vctx->codec_id == AV_CODEC_ID_NONE)
+                config->dummy_vctx->codec_id = config->guessed_video_codec_id;
+            if (!config->no_video && config->dummy_vctx->codec_id != AV_CODEC_ID_NONE) {
+                AVCodecContext *video_enc = avcodec_alloc_context3(avcodec_find_encoder(config->dummy_vctx->codec_id));
+                ffserver_apply_stream_config(video_enc, config->video_conf, &config->video_opts);
                 add_codec(stream, video_enc);
             }
         }
@@ -1065,9 +1123,8 @@ static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd,
         av_dict_free(&config->video_conf);
         av_dict_free(&config->audio_opts);
         av_dict_free(&config->audio_conf);
-        av_freep(&config->video_preset);
-        av_freep(&config->audio_preset);
-        avcodec_free_context(&config->dummy_ctx);
+        avcodec_free_context(&config->dummy_vctx);
+        avcodec_free_context(&config->dummy_actx);
         *pstream = NULL;
     } else if (!av_strcasecmp(cmd, "File") || !av_strcasecmp(cmd, "ReadOnlyFile")) {
         ffserver_get_arg(stream->feed_filename, sizeof(stream->feed_filename),
@@ -1082,9 +1139,8 @@ static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd,
     av_dict_free(&config->video_conf);
     av_dict_free(&config->audio_opts);
     av_dict_free(&config->audio_conf);
-    av_freep(&config->video_preset);
-    av_freep(&config->audio_preset);
-    avcodec_free_context(&config->dummy_ctx);
+    avcodec_free_context(&config->dummy_vctx);
+    avcodec_free_context(&config->dummy_actx);
     return AVERROR(ENOMEM);
 }
 

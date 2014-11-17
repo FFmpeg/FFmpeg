@@ -66,7 +66,7 @@ typedef struct NellyMoserEncodeContext {
     uint8_t         (*path)[OPT_SIZE];
 } NellyMoserEncodeContext;
 
-static float pow_table[POW_TABLE_SIZE];     ///< -pow(2, -i / 2048.0 - 3.0);
+static float pow_table[POW_TABLE_SIZE];     ///< pow(2, -i / 2048.0 - 3.0);
 
 static const uint8_t sf_lut[96] = {
      0,  1,  1,  1,  1,  1,  1,  2,  2,  2,  2,  3,  3,  3,  4,  4,

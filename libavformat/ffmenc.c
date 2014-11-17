@@ -23,6 +23,7 @@
 #include "libavutil/intfloat.h"
 #include "libavutil/avassert.h"
 #include "libavutil/parseutils.h"
+#include "libavutil/opt.h"
 #include "avformat.h"
 #include "internal.h"
 #include "ffm.h"
@@ -93,6 +94,74 @@ static void write_header_chunk(AVIOContext *pb, AVIOContext *dpb, unsigned id)
     av_free(dyn_buf);
 }
 
+static int ffm_write_header_codec_private_ctx(AVIOContext *pb, AVCodecContext *ctx, int type)
+{
+    AVIOContext *tmp;
+    char *buf = NULL;
+    int ret;
+    const AVCodec *enc = ctx->codec ? ctx->codec : avcodec_find_encoder(ctx->codec_id);
+
+    if (!enc)
+        return AVERROR(EINVAL);
+    if (ctx->priv_data && enc->priv_class && enc->priv_data_size) {
+        if ((ret = av_opt_serialize(ctx->priv_data, AV_OPT_FLAG_ENCODING_PARAM | type,
+                                    AV_OPT_SERIALIZE_SKIP_DEFAULTS, &buf, '=', ',')) < 0)
+            return ret;
+        if (buf && strlen(buf)) {
+            if (avio_open_dyn_buf(&tmp) < 0) {
+                av_free(buf);
+                return AVERROR(ENOMEM);
+            }
+            avio_put_str(tmp, buf);
+            write_header_chunk(pb, tmp, MKBETAG('C', 'P', 'R', 'V'));
+        }
+        av_free(buf);
+    }
+    return 0;
+}
+
+static int ffm_write_header_codec_ctx(AVIOContext *pb, AVCodecContext *ctx, unsigned tag, int type)
+{
+    AVIOContext *tmp;
+    char *buf = NULL;
+    uint8_t *p = NULL;
+    int ret, need_coma = 0;
+
+#define SKIP_DEFAULTS   AV_OPT_SERIALIZE_SKIP_DEFAULTS
+#define OPT_FLAGS_EXACT AV_OPT_SERIALIZE_OPT_FLAGS_EXACT
+#define ENC             AV_OPT_FLAG_ENCODING_PARAM
+
+    if (avio_open_dyn_buf(&tmp) < 0)
+        return AVERROR(ENOMEM);
+    if ((ret = av_opt_serialize(ctx, ENC | type, SKIP_DEFAULTS, &buf, '=', ',')) < 0)
+        goto fail;
+    if (buf && strlen(buf)) {
+        avio_write(tmp, buf, strlen(buf));
+        av_free(buf);
+        need_coma = 1;
+    }
+    if ((ret = av_opt_serialize(ctx, 0, SKIP_DEFAULTS | OPT_FLAGS_EXACT, &buf, '=', ',')) < 0)
+        goto fail;
+    if (buf && strlen(buf)) {
+        if (need_coma)
+            avio_w8(tmp, ',');
+        avio_write(tmp, buf, strlen(buf));
+        av_free(buf);
+    }
+    avio_w8(tmp, 0);
+    write_header_chunk(pb, tmp, tag);
+    return 0;
+  fail:
+    av_free(buf);
+    avio_close_dyn_buf(tmp, &p);
+    av_free(p);
+    return ret;
+
+#undef SKIP_DEFAULTS
+#undef OPT_FLAGS_EXACT
+#undef ENC
+}
+
 static int ffm_write_header(AVFormatContext *s)
 {
     FFMContext *ffm = s->priv_data;
@@ -100,10 +169,10 @@ static int ffm_write_header(AVFormatContext *s)
     AVStream *st;
     AVIOContext *pb = s->pb;
     AVCodecContext *codec;
-    int bit_rate, i;
+    int bit_rate, i, ret;
 
     if (t = av_dict_get(s->metadata, "creation_time", NULL, 0)) {
-        int ret = av_parse_time(&ffm->start_time, t->value, 0);
+        ret = av_parse_time(&ffm->start_time, t->value, 0);
         if (ret < 0)
             return ret;
     }
@@ -153,56 +222,14 @@ static int ffm_write_header(AVFormatContext *s)
         /* specific info */
         switch(codec->codec_type) {
         case AVMEDIA_TYPE_VIDEO:
-            avio_wb32(pb, codec->time_base.num);
-            avio_wb32(pb, codec->time_base.den);
-            avio_wb16(pb, codec->width);
-            avio_wb16(pb, codec->height);
-            avio_wb16(pb, codec->gop_size);
-            avio_wb32(pb, codec->pix_fmt);
-            avio_w8(pb, codec->qmin);
-            avio_w8(pb, codec->qmax);
-            avio_w8(pb, codec->max_qdiff);
-            avio_wb16(pb, (int) (codec->qcompress * 10000.0));
-            avio_wb16(pb, (int) (codec->qblur * 10000.0));
-            avio_wb32(pb, codec->bit_rate_tolerance);
-            avio_put_str(pb, codec->rc_eq ? codec->rc_eq : "tex^qComp");
-            avio_wb32(pb, codec->rc_max_rate);
-            avio_wb32(pb, codec->rc_min_rate);
-            avio_wb32(pb, codec->rc_buffer_size);
-            avio_wb64(pb, av_double2int(codec->i_quant_factor));
-            avio_wb64(pb, av_double2int(codec->b_quant_factor));
-            avio_wb64(pb, av_double2int(codec->i_quant_offset));
-            avio_wb64(pb, av_double2int(codec->b_quant_offset));
-            avio_wb32(pb, codec->dct_algo);
-            avio_wb32(pb, codec->strict_std_compliance);
-            avio_wb32(pb, codec->max_b_frames);
-            avio_wb32(pb, codec->mpeg_quant);
-            avio_wb32(pb, codec->intra_dc_precision);
-            avio_wb32(pb, codec->me_method);
-            avio_wb32(pb, codec->mb_decision);
-            avio_wb32(pb, codec->nsse_weight);
-            avio_wb32(pb, codec->frame_skip_cmp);
-            avio_wb64(pb, av_double2int(codec->rc_buffer_aggressivity));
-            avio_wb32(pb, codec->codec_tag);
-            avio_w8(pb, codec->thread_count);
-            avio_wb32(pb, codec->coder_type);
-            avio_wb32(pb, codec->me_cmp);
-            avio_wb32(pb, codec->me_subpel_quality);
-            avio_wb32(pb, codec->me_range);
-            avio_wb32(pb, codec->keyint_min);
-            avio_wb32(pb, codec->scenechange_threshold);
-            avio_wb32(pb, codec->b_frame_strategy);
-            avio_wb64(pb, av_double2int(codec->qcompress));
-            avio_wb64(pb, av_double2int(codec->qblur));
-            avio_wb32(pb, codec->max_qdiff);
-            avio_wb32(pb, codec->refs);
-            write_header_chunk(s->pb, pb, MKBETAG('S', 'T', 'V', 'I'));
+            if ((ret = ffm_write_header_codec_ctx(s->pb, codec, MKBETAG('S', '2', 'V', 'I'), AV_OPT_FLAG_VIDEO_PARAM)) < 0 ||
+                (ret = ffm_write_header_codec_private_ctx(s->pb, codec, AV_OPT_FLAG_VIDEO_PARAM)) < 0)
+                return ret;
             break;
         case AVMEDIA_TYPE_AUDIO:
-            avio_wb32(pb, codec->sample_rate);
-            avio_wl16(pb, codec->channels);
-            avio_wl16(pb, codec->frame_size);
-            write_header_chunk(s->pb, pb, MKBETAG('S', 'T', 'A', 'U'));
+            if ((ret = ffm_write_header_codec_ctx(s->pb, codec, MKBETAG('S', '2', 'A', 'U'), AV_OPT_FLAG_AUDIO_PARAM)) < 0 ||
+                (ret = ffm_write_header_codec_private_ctx(s->pb, codec, AV_OPT_FLAG_AUDIO_PARAM)) < 0)
+                return ret;
             break;
         default:
             return -1;

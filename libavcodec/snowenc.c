@@ -1862,7 +1862,7 @@ static av_cold int encode_end(AVCodecContext *avctx)
     ff_snow_common_end(s);
     ff_rate_control_uninit(&s->m);
     av_frame_free(&s->input_picture);
-    av_free(avctx->stats_out);
+    av_freep(&avctx->stats_out);
 
     return 0;
 }

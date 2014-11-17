@@ -697,12 +697,16 @@ static int vobsub_read_header(AVFormatContext *s)
     memcpy(ext, !strncmp(ext, "IDX", 3) ? "SUB" : "sub", 3);
     av_log(s, AV_LOG_VERBOSE, "IDX/SUB: %s -> %s\n", s->filename, sub_name);
 
-    if (!(iformat = av_find_input_format("mpeg")))
-        return AVERROR_DEMUXER_NOT_FOUND;
+    if (!(iformat = av_find_input_format("mpeg"))) {
+        ret = AVERROR_DEMUXER_NOT_FOUND;
+        goto end;
+    }
 
     vobsub->sub_ctx = avformat_alloc_context();
-    if (!vobsub->sub_ctx)
-        return AVERROR(ENOMEM);
+    if (!vobsub->sub_ctx) {
+        ret = AVERROR(ENOMEM);
+        goto end;
+    }
 
     if ((ret = ff_copy_whitelists(vobsub->sub_ctx, s)) < 0)
         goto end;

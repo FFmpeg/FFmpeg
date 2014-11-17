@@ -17,6 +17,54 @@ num64=1
 flt=0.333333
 dbl=0.333333
 
+Testing av_opt_is_set_to_default()
+name:       num default:1 error:
+name:    toggle default:0 error:
+name:  rational default:0 error:
+name:    string default:0 error:
+name:     flags default:0 error:
+name:      cool default:1 error:Option not found
+name:      lame default:1 error:Option not found
+name:        mu default:1 error:Option not found
+name:      size default:0 error:
+name:   pix_fmt default:0 error:
+name:sample_fmt default:0 error:
+name:video_rate default:0 error:
+name:  duration default:0 error:
+name:     color default:0 error:
+name:        cl default:0 error:
+name:       bin default:0 error:
+name:      bin1 default:1 error:
+name:      bin2 default:1 error:
+name:     num64 default:0 error:
+name:       flt default:0 error:
+name:       dbl default:0 error:
+name:       num default:1 error:
+name:    toggle default:1 error:
+name:  rational default:1 error:
+name:    string default:1 error:
+name:     flags default:1 error:
+name:      cool default:1 error:Option not found
+name:      lame default:1 error:Option not found
+name:        mu default:1 error:Option not found
+name:      size default:1 error:
+name:   pix_fmt default:1 error:
+name:sample_fmt default:1 error:
+name:video_rate default:1 error:
+name:  duration default:1 error:
+name:     color default:1 error:
+name:        cl default:1 error:
+name:       bin default:1 error:
+name:      bin1 default:1 error:
+name:      bin2 default:1 error:
+name:     num64 default:1 error:
+name:       flt default:1 error:
+name:       dbl default:1 error:
+
+Test av_opt_serialize()
+num=0,toggle=1,rational=1/1,string=default,flags=0x00000001,size=200x300,pix_fmt=0bgr,sample_fmt=s16,video_rate=25/1,duration=0:00:00.001000,color=0xffc0cbff,cl=0x137,bin=62696E00,bin1=,bin2=,num64=1,flt=0.333333,dbl=0.333333
+num=0,toggle=1,rational=1/1,string=default,flags=0x00000001,size=200x300,pix_fmt=0bgr,sample_fmt=s16,video_rate=25/1,duration=0:00:00.001000,color=0xffc0cbff,cl=0x137,bin=62696E00,bin1=,bin2=,num64=1,flt=0.333333,dbl=0.333333
+
 Testing av_set_options_string()
 OK    ''
 Error ':'

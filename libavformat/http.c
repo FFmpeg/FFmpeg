@@ -207,6 +207,8 @@ static int http_open_cnx(URLContext *h, AVDictionary **options)
     HTTPContext *s = h->priv_data;
     int location_changed, attempts = 0, redirects = 0;
 redo:
+    av_dict_copy(options, s->chained_options, 0);
+
     cur_auth_type       = s->auth_state.auth_type;
     cur_proxy_auth_type = s->auth_state.auth_type;
 
@@ -268,7 +270,6 @@ int ff_http_do_new_request(URLContext *h, const char *uri)
     if (!s->location)
         return AVERROR(ENOMEM);
 
-    av_dict_copy(&options, s->chained_options, 0);
     ret = http_open_cnx(h, &options);
     av_dict_free(&options);
     return ret;
@@ -1136,7 +1137,6 @@ static int64_t http_seek(URLContext *h, int64_t off, int whence)
     s->hd = NULL;
 
     /* if it fails, continue on old connection */
-    av_dict_copy(&options, s->chained_options, 0);
     if ((ret = http_open_cnx(h, &options)) < 0) {
         av_dict_free(&options);
         memcpy(s->buffer, old_buf, old_buf_size);

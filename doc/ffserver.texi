@@ -589,8 +589,9 @@ Set sampling frequency for audio. When using low bitrates, you should
 lower this frequency to 22050 or 11025. The supported frequencies
 depend on the selected audio codec.
 
-@item AVOptionAudio @var{option} @var{value} (@emph{encoding,audio})
-Set generic option for audio stream.
+@item AVOptionAudio [@var{codec}:]@var{option} @var{value} (@emph{encoding,audio})
+Set generic or private option for audio stream.
+Private option must be prefixed with codec name or codec must be defined before.
 
 @item AVPresetAudio @var{preset} (@emph{encoding,audio})
 Set preset for audio stream.
@@ -667,8 +668,9 @@ Set video @option{qdiff} encoding option.
 @item DarkMask @var{float} (@emph{encoding,video})
 Set @option{lumi_mask}/@option{dark_mask} encoding options.
 
-@item AVOptionVideo @var{option} @var{value} (@emph{encoding,video})
-Set generic option for video stream.
+@item AVOptionVideo [@var{codec}:]@var{option} @var{value} (@emph{encoding,video})
+Set generic or private option for video stream.
+Private option must be prefixed with codec name or codec must be defined before.
 
 @item AVPresetVideo @var{preset} (@emph{encoding,video})
 Set preset for video stream.
