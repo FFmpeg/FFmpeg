@@ -329,12 +329,12 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
         AVRational time_base = s->streams[pkt->stream_index]->time_base;
         int64_t offset = 0;
 
-        if (!s->offset && pkt->dts != AV_NOPTS_VALUE &&
+        if (s->offset == AV_NOPTS_VALUE && pkt->dts != AV_NOPTS_VALUE &&
             (pkt->dts < 0 || s->avoid_negative_ts == AVFMT_AVOID_NEG_TS_MAKE_ZERO)) {
             s->offset = -pkt->dts;
             s->offset_timebase = time_base;
         }
-        if (s->offset)
+        if (s->offset != AV_NOPTS_VALUE)
             offset = av_rescale_q(s->offset, s->offset_timebase, time_base);
 
         if (pkt->dts != AV_NOPTS_VALUE)
