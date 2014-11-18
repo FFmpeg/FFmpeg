@@ -174,7 +174,7 @@ static int write_manifest(AVFormatContext *s, int final)
     ret = avio_open2(&out, temp_filename, AVIO_FLAG_WRITE,
                      &s->interrupt_callback, NULL);
     if (ret < 0) {
-        av_log(s, AV_LOG_ERROR, "Unable to open %s for writing\n", filename);
+        av_log(s, AV_LOG_ERROR, "Unable to open %s for writing\n", temp_filename);
         return ret;
     }
     avio_printf(out, "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
