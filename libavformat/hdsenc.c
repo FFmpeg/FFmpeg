@@ -395,6 +395,7 @@ static int hds_write_header(AVFormatContext *s)
             goto fail;
         }
         avcodec_copy_context(st->codec, s->streams[i]->codec);
+        st->codec->codec_tag = 0;
         st->sample_aspect_ratio = s->streams[i]->sample_aspect_ratio;
         st->time_base = s->streams[i]->time_base;
     }
