@@ -365,4 +365,10 @@ static inline int ff_rename(const char *oldpath, const char *newpath)
     return 0;
 }
 
+#ifndef _WIN32
+#define USE_RENAME_REPLACE 1
+#else
+#define USE_RENAME_REPLACE 0
+#endif
+
 #endif /* AVFORMAT_INTERNAL_H */
