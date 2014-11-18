@@ -1916,8 +1916,8 @@ void inter_predict(VP8Context *s, VP8ThreadData *td, uint8_t *dst[3],
                          mb->bmv[2 * y       * 4 + 2 * x + 1].y +
                          mb->bmv[(2 * y + 1) * 4 + 2 * x    ].y +
                          mb->bmv[(2 * y + 1) * 4 + 2 * x + 1].y;
-                uvmv.x = (uvmv.x + 2 + (uvmv.x >> (INT_BIT - 1))) >> 2;
-                uvmv.y = (uvmv.y + 2 + (uvmv.y >> (INT_BIT - 1))) >> 2;
+                uvmv.x = (uvmv.x + 2 + FF_SIGNBIT(uvmv.x)) >> 2;
+                uvmv.y = (uvmv.y + 2 + FF_SIGNBIT(uvmv.y)) >> 2;
                 if (s->profile == 3) {
                     uvmv.x &= ~7;
                     uvmv.y &= ~7;
