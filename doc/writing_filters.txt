@@ -16,9 +16,7 @@ outputs the modified frame. The most simple way of doing this is to take a
 similar filter.  We'll pick edgedetect, but any other should do. You can look
 for others using the `./ffmpeg -v 0 -filters|grep ' V->V '` command.
 
- - cp libavfilter/vf_{edgedetect,foobar}.c
- - sed -i s/edgedetect/foobar/g -i libavfilter/vf_foobar.c
- - sed -i s/EdgeDetect/Foobar/g -i libavfilter/vf_foobar.c
+ - sed 's/edgedetect/foobar/g;s/EdgeDetect/Foobar/g' libavfilter/vf_edgedetect.c > libavfilter/vf_foobar.c
  - edit libavfilter/Makefile, and add an entry for "foobar" following the
    pattern of the other filters.
  - edit libavfilter/allfilters.c, and add an entry for "foobar" following the
