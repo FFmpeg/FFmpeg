@@ -214,10 +214,10 @@ API changes, most recent first:
 2014-05-11 - 14aef38 / 66e6c8a - lavu 52.83.100 / 53.14.0 - pixfmt.h
   Add AV_PIX_FMT_VDA for new-style VDA acceleration.
 
-2014-05-xx - xxxxxxx - lavu 52.82.0 - fifo.h
+2014-05-xx - xxxxxxx - lavu 52.82.100 - fifo.h
   Add av_fifo_freep() function.
 
-2014-05-02 - ba52fb11 - lavu 52.81.0 - opt.h
+2014-05-02 - ba52fb11 - lavu 52.81.100 - opt.h
   Add av_opt_set_dict2() function.
 
 2014-05-01 - e77b985 / a2941c8 - lavc 55.60.103 / 55.50.3 - avcodec.h
