@@ -4469,7 +4469,7 @@ enabled_all dxva2 CoTaskMemFree &&
     enable dxva2_lib
 
 ! enabled_any memalign posix_memalign aligned_malloc &&
-    enabled $simd_align_16 && enable memalign_hack
+    enabled simd_align_16 && enable memalign_hack
 
 map 'enabled $v && intrinsics=${v#intrinsics_}' $INTRINSICS_LIST
 
