@@ -23,7 +23,7 @@ for others using the `./ffmpeg -v 0 -filters|grep ' V->V '` command.
    pattern of the other filters.
  - ./configure ...
  - make -j<whatever> ffmpeg
- - ./ffmpeg -i http://upload.wikimedia.org/wikipedia/en/2/24/Lenna.png -vf foobar foobar.png
+ - ./ffmpeg -i http://samples.ffmpeg.org/image-samples/lena.pnm -vf foobar foobar.png
    Note here: you can obviously use a random local image instead of a remote URL.
 
 If everything went right, you should get a foobar.png with Lena edge-detected.
