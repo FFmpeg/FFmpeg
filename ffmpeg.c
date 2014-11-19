@@ -956,7 +956,7 @@ static void do_video_out(AVFormatContext *s,
         nb_frames_drop++;
         av_log(NULL, AV_LOG_VERBOSE,
                "*** dropping frame %d from stream %d at ts %"PRId64"\n",
-               ost->frame_number, ost->st->index, next_picture->pts);
+               ost->frame_number, ost->st->index, ost->last_frame->pts);
     }
     if (nb_frames > (nb0_frames && ost->last_droped) + (nb_frames > nb0_frames)) {
         if (nb_frames > dts_error_threshold * 30) {
