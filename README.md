@@ -3,12 +3,6 @@ FFmpeg for WinRT ARM
 
 This project can be used for building ffmpeg in WinRT ARM platform.
 
-## Summary
-
-As there is no suitable GCC for ARM-COFF which WinRT ARM platform, if we want to build ffmpeg for this platform, we need to change the assembly codes in ffmpeg, especially the neon part. The assembly codes in this project can be built with armasm, which is the assember in Visual Studio. 
-The ffmpeg version is 2.4 release.
-This project is not finished, I can built it but not test. I hope someone can work together with me.
-
 ## Build
 
 1. You need to prepare MinGW+MSYS environment, install msys-make, msys-bash, msys-m4, msys-perl. 
@@ -16,13 +10,6 @@ This project is not finished, I can built it but not test. I hope someone can wo
 3. Run VS2013 ARM Cross Tools Command Prompt first, and then run the msys from the command prompt.
 4. make sure cl, lib is in the Visual Studio, not from MinGW. You can rename the cl or lib in MinGW folder.
 5. Run build_ffmpeg_msvc.sh
-
-## Issues
-
-This project is not finished, these issues should be fixed.
-1. vc1dspneon.asm , mlpdsparmv6.S not finish. So this ffmpeg doesn't support vc1 and mlp decode.
-2. \libswscale\arm not finish.
-3. No network support.
 
 ## Libraries
 
