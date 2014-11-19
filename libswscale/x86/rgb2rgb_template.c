@@ -1623,6 +1623,16 @@ static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_
 #define BGR2V_IDX "16*4+16*34"
     int y;
     const x86_reg chromWidth= width>>1;
+
+    if (height > 2) {
+        ff_rgb24toyv12_c(src, ydst, udst, vdst, width, 2, lumStride, chromStride, srcStride, rgb2yuv);
+        src  += 2*srcStride;
+        ydst += 2*lumStride;
+        udst += chromStride;
+        vdst += chromStride;
+        height -= 2;
+    }
+
     for (y=0; y<height-2; y+=2) {
         int i;
         for (i=0; i<2; i++) {
