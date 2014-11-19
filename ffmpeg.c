@@ -904,6 +904,13 @@ static void do_video_out(AVFormatContext *s,
     sync_ipts = next_picture->pts;
     delta0 = sync_ipts - ost->sync_opts;
     delta  = delta0 + duration;
+    if (delta0 < 0 && delta > 0) {
+        double cor = FFMIN(-delta0, duration);
+        av_log(NULL, AV_LOG_WARNING, "Past duration %f too large\n", -delta0);
+        sync_ipts += cor;
+        duration -= cor;
+        delta0 += cor;
+    }
 
     /* by default, we output a single frame */
     nb0_frames = 0;
