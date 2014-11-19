@@ -47,7 +47,7 @@ configure() (
     --disable-devices               \
     --disable-filters               \
     --disable-protocols             \
-    --disable-network               \
+    --enable-network                \
     --disable-muxers                \
     --disable-hwaccels              \
     --enable-avresample             \

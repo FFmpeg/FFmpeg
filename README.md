@@ -1,7 +1,7 @@
 FFmpeg for WinRT ARM
 =============
 
-This project can be used for building ffmpeg in WinRT ARM platform.
+This project can be used for building ffmpeg in WinRT ARM platform. You can use this project to build static library, or dynamic library which linked as static library, because of the WinRT project cannot load non-WinRT dynamic library.  
 
 ## Build
 
