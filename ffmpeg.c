@@ -475,6 +475,7 @@ static void ffmpeg_cleanup(int ret)
         }
         ost->bitstream_filters = NULL;
         av_frame_free(&ost->filtered_frame);
+        av_frame_free(&ost->last_frame);
 
         av_parser_close(ost->parser);
 
@@ -874,14 +875,14 @@ static void do_subtitle_out(AVFormatContext *s,
 
 static void do_video_out(AVFormatContext *s,
                          OutputStream *ost,
-                         AVFrame *in_picture)
+                         AVFrame *next_picture)
 {
     int ret, format_video_sync;
     AVPacket pkt;
     AVCodecContext *enc = ost->enc_ctx;
     AVCodecContext *mux_enc = ost->st->codec;
-    int nb_frames, i;
-    double sync_ipts, delta;
+    int nb_frames, nb0_frames, i;
+    double sync_ipts, delta, delta0;
     double duration = 0;
     int frame_size = 0;
     InputStream *ist = NULL;
@@ -892,10 +893,12 @@ static void do_video_out(AVFormatContext *s,
     if(ist && ist->st->start_time != AV_NOPTS_VALUE && ist->st->first_dts != AV_NOPTS_VALUE && ost->frame_rate.num)
         duration = 1/(av_q2d(ost->frame_rate) * av_q2d(enc->time_base));
 
-    sync_ipts = in_picture->pts;
-    delta = sync_ipts - ost->sync_opts + duration;
+    sync_ipts = next_picture->pts;
+    delta0 = sync_ipts - ost->sync_opts;
+    delta  = delta0 + duration;
 
     /* by default, we output a single frame */
+    nb0_frames = 0;
     nb_frames = 1;
 
     format_video_sync = video_sync_method;
@@ -920,14 +923,18 @@ static void do_video_out(AVFormatContext *s,
         if (ost->frame_number == 0 && delta - duration >= 0.5) {
             av_log(NULL, AV_LOG_DEBUG, "Not duplicating %d initial frames\n", (int)lrintf(delta - duration));
             delta = duration;
+            delta0 = 0;
             ost->sync_opts = lrint(sync_ipts);
         }
     case VSYNC_CFR:
         // FIXME set to 0.5 after we fix some dts/pts bugs like in avidec.c
         if (delta < -1.1)
             nb_frames = 0;
-        else if (delta > 1.1)
+        else if (delta > 1.1) {
             nb_frames = lrintf(delta);
+            if (delta0 > 1.1)
+                nb0_frames = lrintf(delta0 - 0.6);
+        }
         break;
     case VSYNC_VFR:
         if (delta <= -0.6)
@@ -944,27 +951,35 @@ static void do_video_out(AVFormatContext *s,
     }
 
     nb_frames = FFMIN(nb_frames, ost->max_frames - ost->frame_number);
-    if (nb_frames == 0) {
+    nb0_frames = FFMIN(nb0_frames, nb_frames);
+    if (nb0_frames == 0 && ost->last_droped) {
         nb_frames_drop++;
         av_log(NULL, AV_LOG_VERBOSE,
                "*** dropping frame %d from stream %d at ts %"PRId64"\n",
-               ost->frame_number, ost->st->index, in_picture->pts);
-        return;
-    } else if (nb_frames > 1) {
+               ost->frame_number, ost->st->index, next_picture->pts);
+    }
+    if (nb_frames > (nb0_frames && ost->last_droped) + (nb_frames > nb0_frames)) {
         if (nb_frames > dts_error_threshold * 30) {
             av_log(NULL, AV_LOG_ERROR, "%d frame duplication too large, skipping\n", nb_frames - 1);
             nb_frames_drop++;
             return;
         }
-        nb_frames_dup += nb_frames - 1;
+        nb_frames_dup += nb_frames - (nb0_frames && ost->last_droped) - (nb_frames > nb0_frames);
         av_log(NULL, AV_LOG_VERBOSE, "*** %d dup!\n", nb_frames - 1);
     }
+    ost->last_droped = nb_frames == nb0_frames;
 
   /* duplicates frame if needed */
   for (i = 0; i < nb_frames; i++) {
+    AVFrame *in_picture;
     av_init_packet(&pkt);
     pkt.data = NULL;
     pkt.size = 0;
+
+    if (i < nb0_frames && ost->last_frame) {
+        in_picture = ost->last_frame;
+    } else
+        in_picture = next_picture;
 
     in_picture->pts = ost->sync_opts;
 
@@ -1103,6 +1118,11 @@ static void do_video_out(AVFormatContext *s,
     if (vstats_filename && frame_size)
         do_video_stats(ost, frame_size);
   }
+
+    if (!ost->last_frame)
+        ost->last_frame = av_frame_alloc();
+    av_frame_unref(ost->last_frame);
+    av_frame_ref(ost->last_frame, next_picture);
 }
 
 static double psnr(double d)
@@ -1461,6 +1481,8 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
         if (av_stream_get_end_pts(ost->st) != AV_NOPTS_VALUE)
             pts = FFMAX(pts, av_rescale_q(av_stream_get_end_pts(ost->st),
                                           ost->st->time_base, AV_TIME_BASE_Q));
+        if (is_last_report)
+            nb_frames_drop += ost->last_droped;
     }
 
     secs = pts / AV_TIME_BASE;

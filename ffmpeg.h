@@ -388,6 +388,8 @@ typedef struct OutputStream {
     AVCodec *enc;
     int64_t max_frames;
     AVFrame *filtered_frame;
+    AVFrame *last_frame;
+    int last_droped;
 
     /* video only */
     AVRational frame_rate;
