@@ -59,6 +59,7 @@ typedef struct OutputStream {
     int nb_segments, segments_size, segment_index;
     Segment **segments;
     int64_t first_dts, start_dts, end_dts;
+    char bandwidth_str[64];
 
     char codec_str[100];
 } OutputStream;
@@ -368,7 +369,7 @@ static int write_manifest(AVFormatContext *s, int final)
             OutputStream *os = &c->streams[i];
             if (s->streams[i]->codec->codec_type != AVMEDIA_TYPE_VIDEO)
                 continue;
-            avio_printf(out, "\t\t\t<Representation id=\"%d\" mimeType=\"video/mp4\" codecs=\"%s\" bandwidth=\"%d\" width=\"%d\" height=\"%d\">\n", i, os->codec_str, st->codec->bit_rate, st->codec->width, st->codec->height);
+            avio_printf(out, "\t\t\t<Representation id=\"%d\" mimeType=\"video/mp4\" codecs=\"%s\"%s width=\"%d\" height=\"%d\">\n", i, os->codec_str, os->bandwidth_str, st->codec->width, st->codec->height);
             output_segment_list(&c->streams[i], out, c);
             avio_printf(out, "\t\t\t</Representation>\n");
         }
@@ -381,7 +382,7 @@ static int write_manifest(AVFormatContext *s, int final)
             OutputStream *os = &c->streams[i];
             if (s->streams[i]->codec->codec_type != AVMEDIA_TYPE_AUDIO)
                 continue;
-            avio_printf(out, "\t\t\t<Representation id=\"%d\" mimeType=\"audio/mp4\" codecs=\"%s\" bandwidth=\"%d\" audioSamplingRate=\"%d\">\n", i, os->codec_str, st->codec->bit_rate, st->codec->sample_rate);
+            avio_printf(out, "\t\t\t<Representation id=\"%d\" mimeType=\"audio/mp4\" codecs=\"%s\"%s audioSamplingRate=\"%d\">\n", i, os->codec_str, os->bandwidth_str, st->codec->sample_rate);
             avio_printf(out, "\t\t\t\t<AudioChannelConfiguration schemeIdUri=\"urn:mpeg:dash:23003:3:audio_channel_configuration:2011\" value=\"%d\" />\n", st->codec->channels);
             output_segment_list(&c->streams[i], out, c);
             avio_printf(out, "\t\t\t</Representation>\n");
@@ -439,10 +440,17 @@ static int dash_write_header(AVFormatContext *s)
         AVDictionary *opts = NULL;
         char filename[1024];
 
-        if (!s->streams[i]->codec->bit_rate) {
-            av_log(s, AV_LOG_ERROR, "No bit rate set for stream %d\n", i);
-            ret = AVERROR(EINVAL);
-            goto fail;
+        if (s->streams[i]->codec->bit_rate) {
+            snprintf(os->bandwidth_str, sizeof(os->bandwidth_str),
+                     " bandwidth=\"%d\"", s->streams[i]->codec->bit_rate);
+        } else {
+            int level = s->strict_std_compliance >= FF_COMPLIANCE_STRICT ?
+                        AV_LOG_ERROR : AV_LOG_WARNING;
+            av_log(s, level, "No bit rate set for stream %d\n", i);
+            if (s->strict_std_compliance >= FF_COMPLIANCE_STRICT) {
+                ret = AVERROR(EINVAL);
+                goto fail;
+            }
         }
 
         ctx = avformat_alloc_context();
