@@ -51,7 +51,6 @@ configure() (
     --disable-muxers                \
     --disable-hwaccels              \
     --enable-avresample             \
-    --enable-avisynth               \
     --disable-encoders              \
     --disable-programs              \
     --enable-debug                  \

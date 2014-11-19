@@ -4734,9 +4734,11 @@ check_func_headers windows.h Sleep
 check_func_headers windows.h VirtualAlloc
 check_struct windows.h "CONDITION_VARIABLE" Ptr
 if enabled winrtapi; then
-	disable VirtualAlloc
+    disable SetConsoleTextAttribute
+    disable GetProcessAffinityMask
+    disable VirtualAlloc
 fi
-	
+    
 check_func_headers glob.h glob
 enabled xlib &&
     check_func_headers "X11/Xlib.h X11/extensions/Xvlib.h" XvGetPortAttribute -lXv -lX11 -lXext
@@ -4771,9 +4773,9 @@ check_lib2 "windows.h shellapi.h" CommandLineToArgvW -lshell32
 check_lib2 "windows.h wincrypt.h" CryptGenRandom -ladvapi32
 check_lib2 "windows.h psapi.h" GetProcessMemoryInfo -lpsapi
 if enabled winrtapi; then
-	disable CryptGenRandom
+    disable CryptGenRandom
 fi
-	
+    
 check_struct "sys/time.h sys/resource.h" "struct rusage" ru_maxrss
 
 if ! disabled w32threads && ! enabled pthreads; then
