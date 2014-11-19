@@ -67,6 +67,8 @@ typedef struct  {
     int entry;
     int max_size;
 
+    int64_t last_dts;
+
     AVIIndex indexes;
 } AVIStream;
 
@@ -614,6 +616,9 @@ static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
     if ((ret = write_skip_frames(s, stream_index, pkt->dts)) < 0)
         return ret;
 
+    if (pkt->dts != AV_NOPTS_VALUE)
+        avist->last_dts = pkt->dts + pkt->duration;
+
     avist->packet_count++;
 
     // Make sure to put an OpenDML chunk when the file size exceeds the limits
@@ -676,6 +681,11 @@ static int avi_write_trailer(AVFormatContext *s)
     int res = 0;
     int i, j, n, nb_frames;
     int64_t file_size;
+
+    for (i = 0; i < s->nb_streams; i++) {
+        AVIStream *avist = s->streams[i]->priv_data;
+        write_skip_frames(s, i, avist->last_dts);
+    }
 
     if (pb->seekable) {
         if (avi->riff_id == 1) {
