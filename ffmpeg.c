@@ -60,6 +60,7 @@
 #include "libavutil/bprint.h"
 #include "libavutil/time.h"
 #include "libavutil/threadmessage.h"
+#include "libavcodec/mathops.h"
 #include "libavformat/os_support.h"
 
 # include "libavfilter/avcodec.h"
@@ -914,6 +915,12 @@ static void do_video_out(AVFormatContext *s,
         duration = lrintf(av_frame_get_pkt_duration(next_picture) * av_q2d(ist->st->time_base) / av_q2d(enc->time_base));
     }
 
+    if (!next_picture) {
+        //end, flushing
+        nb0_frames = nb_frames = mid_pred(ost->last_nb0_frames[0],
+                                          ost->last_nb0_frames[1],
+                                          ost->last_nb0_frames[2]);
+    } else {
     delta0 = sync_ipts - ost->sync_opts;
     delta  = delta0 + duration;
 
@@ -985,9 +992,16 @@ static void do_video_out(AVFormatContext *s,
     default:
         av_assert0(0);
     }
+    }
 
     nb_frames = FFMIN(nb_frames, ost->max_frames - ost->frame_number);
     nb0_frames = FFMIN(nb0_frames, nb_frames);
+
+    memmove(ost->last_nb0_frames + 1,
+            ost->last_nb0_frames,
+            sizeof(ost->last_nb0_frames[0]) * (FF_ARRAY_ELEMS(ost->last_nb0_frames) - 1));
+    ost->last_nb0_frames[0] = nb0_frames;
+
     if (nb0_frames == 0 && ost->last_droped) {
         nb_frames_drop++;
         av_log(NULL, AV_LOG_VERBOSE,
@@ -1003,7 +1017,7 @@ static void do_video_out(AVFormatContext *s,
         nb_frames_dup += nb_frames - (nb0_frames && ost->last_droped) - (nb_frames > nb0_frames);
         av_log(NULL, AV_LOG_VERBOSE, "*** %d dup!\n", nb_frames - 1);
     }
-    ost->last_droped = nb_frames == nb0_frames;
+    ost->last_droped = nb_frames == nb0_frames && next_picture;
 
   /* duplicates frame if needed */
   for (i = 0; i < nb_frames; i++) {
@@ -1156,6 +1170,7 @@ static void do_video_out(AVFormatContext *s,
     if (!ost->last_frame)
         ost->last_frame = av_frame_alloc();
     av_frame_unref(ost->last_frame);
+    if (next_picture)
     av_frame_ref(ost->last_frame, next_picture);
 }
 
@@ -1219,7 +1234,7 @@ static void finish_output_stream(OutputStream *ost)
  *
  * @return  0 for success, <0 for severe errors
  */
-static int reap_filters(void)
+static int reap_filters(int flush)
 {
     AVFrame *filtered_frame = NULL;
     int i;
@@ -1249,6 +1264,9 @@ static int reap_filters(void)
                 if (ret != AVERROR(EAGAIN) && ret != AVERROR_EOF) {
                     av_log(NULL, AV_LOG_WARNING,
                            "Error in av_buffersink_get_frame_flags(): %s\n", av_err2str(ret));
+                } else if (flush) {
+                    if (filter->inputs[0]->type == AVMEDIA_TYPE_VIDEO)
+                        do_video_out(of->ctx, ost, NULL, AV_NOPTS_VALUE);
                 }
                 break;
             }
@@ -3741,10 +3759,10 @@ static int transcode_from_filter(FilterGraph *graph, InputStream **best_ist)
     *best_ist = NULL;
     ret = avfilter_graph_request_oldest(graph->graph);
     if (ret >= 0)
-        return reap_filters();
+        return reap_filters(0);
 
     if (ret == AVERROR_EOF) {
-        ret = reap_filters();
+        ret = reap_filters(1);
         for (i = 0; i < graph->nb_outputs; i++)
             close_output_stream(graph->outputs[i]->ost);
         return ret;
@@ -3810,10 +3828,11 @@ static int transcode_step(void)
             ost->unavailable = 1;
         return 0;
     }
+
     if (ret < 0)
         return ret == AVERROR_EOF ? 0 : ret;
 
-    return reap_filters();
+    return reap_filters(0);
 }
 
 /*
