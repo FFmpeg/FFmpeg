@@ -31,6 +31,8 @@
 #include "cmdutils.h"
 #include "ffserver_config.h"
 
+#define MAX_CHILD_ARGS 64
+
 static int ffserver_save_avoption(const char *opt, const char *arg, int type,
                                   FFServerConfig *config);
 static void vreport_config_error(const char *filename, int line_num, int log_level,
@@ -691,10 +693,10 @@ static int ffserver_parse_config_feed(FFServerConfig *config, const char *cmd, c
     if (!av_strcasecmp(cmd, "Launch")) {
         int i;
 
-        feed->child_argv = av_mallocz(64 * sizeof(char *));
+        feed->child_argv = av_mallocz_array(MAX_CHILD_ARGS, sizeof(char *));
         if (!feed->child_argv)
             return AVERROR(ENOMEM);
-        for (i = 0; i < 62; i++) {
+        for (i = 0; i < MAX_CHILD_ARGS - 2; i++) {
             ffserver_get_arg(arg, sizeof(arg), p);
             if (!arg[0])
                 break;
@@ -1255,3 +1257,17 @@ int ffserver_parse_ffconfig(const char *filename, FFServerConfig *config)
 
 #undef ERROR
 #undef WARNING
+
+void ffserver_free_child_args(void *argsp)
+{
+    int i;
+    char **args;
+    if (!argsp)
+        return;
+    args = *(char ***)argsp;
+    if (!args)
+        return;
+    for (i = 0; i < MAX_CHILD_ARGS; i++)
+        av_free(args[i]);
+    av_freep(argsp);
+}

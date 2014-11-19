@@ -128,4 +128,6 @@ void ffserver_parse_acl_row(FFServerStream *stream, FFServerStream* feed,
 
 int ffserver_parse_ffconfig(const char *filename, FFServerConfig *config);
 
+void ffserver_free_child_args(void *argsp);
+
 #endif /* FFSERVER_CONFIG_H */

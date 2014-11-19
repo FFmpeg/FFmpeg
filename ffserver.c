@@ -3663,7 +3663,7 @@ static void handle_child_exit(int sig)
 
                 if (uptime < 30)
                     /* Turn off any more restarts */
-                    feed->child_argv = 0;
+                    ffserver_free_child_args(&feed->child_argv);
             }
         }
     }
