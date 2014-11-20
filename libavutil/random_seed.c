@@ -30,6 +30,9 @@
 #include <windows.h>
 #include <wincrypt.h>
 #endif
+#if HAVE_WINRTAPI
+#include <stdlib.h>
+#endif
 #include <fcntl.h>
 #include <math.h>
 #include <time.h>
@@ -119,6 +122,10 @@ uint32_t av_get_random_seed(void)
         if (ret)
             return seed;
     }
+#endif
+
+#if HAVE_WINRTAPI
+	return rand();
 #endif
 
     if (read_random(&seed, "/dev/urandom") == sizeof(seed))
