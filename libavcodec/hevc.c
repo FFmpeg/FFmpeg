@@ -2460,7 +2460,7 @@ static int hevc_frame_start(HEVCContext *s)
 
 fail:
     if (s->ref)
-        ff_thread_report_progress(&s->ref->tf, INT_MAX, 0);
+        ff_hevc_unref_frame(s, s->ref, ~0);
     s->ref = NULL;
     return ret;
 }
