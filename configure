@@ -3470,6 +3470,7 @@ probe_cc(){
         if [ $pfx = hostcc ]; then
             append _cflags -Dsnprintf=_snprintf
         fi
+        disable stripping
     elif $_cc 2>&1 | grep -q Microsoft; then
         _type=msvc
         _ident=$($cc 2>&1 | head -n1)
