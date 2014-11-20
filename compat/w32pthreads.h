@@ -38,7 +38,9 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <process.h>
-
+#if HAVE_WINRTAPI
+#include "winrtapiconvert.h"
+#endif
 #include "libavutil/attributes.h"
 #include "libavutil/common.h"
 #include "libavutil/internal.h"

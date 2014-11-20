@@ -121,7 +121,7 @@ libavformat) as DLLs.
 
 @end itemize
 
-@section Microsoft Visual C++ or Intel C++ Compiler for Windows
+@section Microsoft Visual C++ or Intel C++ Compiler for Windows, Windows Store App or Windows phone
 
 FFmpeg can be built with MSVC 2012 or earlier using a C99-to-C89 conversion utility
 and wrapper, or with MSVC 2013 and ICL natively.
@@ -137,6 +137,8 @@ You will need the following prerequisites:
 @item @uref{http://yasm.tortall.net/, YASM}
 @item @uref{http://gnuwin32.sourceforge.net/packages/bc.htm, bc for Windows} if
 you want to run @uref{fate.html, FATE}.
+@item @uref{https://github.com/FFmpeg/gas-preprocessor/, gas-preprocessor.pl} if
+you want to build ARM version, for Windows Store App ARM or Windows Phone.
 @end itemize
 
 To set up a proper environment in MSYS, you need to run @code{msys.bat} from
@@ -144,7 +146,7 @@ the Visual Studio or Intel Compiler command prompt.
 
 Place @code{yasm.exe} somewhere in your @code{PATH}. If using MSVC 2012 or
 earlier, place @code{c99wrap.exe} and @code{c99conv.exe} somewhere in your
-@code{PATH} as well.
+@code{PATH} as well. Place gas-preprocessor.pl somewhere in your @code{PATH}.
 
 Next, make sure any other headers and libs you want to use, such as zlib, are
 located in a spot that the compiler can see. Do so by modifying the @code{LIB}
@@ -196,6 +198,10 @@ erroneously included when building FFmpeg.
 @item Move @code{zlib.lib}, @code{zconf.h}, and @code{zlib.h} to somewhere MSVC
 can see.
 @end enumerate
+
+@item If you wish to comiple for Windows Runtime, which used for Windows Store or 
+Windows Phone, add @code{--enable-winrtapi} to your configure options. you must to
+use static library ffmpeg for Windows Runtime.
 
 @item FFmpeg has been tested with the following on i686 and x86_64:
 @itemize

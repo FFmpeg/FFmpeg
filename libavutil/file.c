@@ -33,6 +33,9 @@
 #include <sys/mman.h>
 #elif HAVE_MAPVIEWOFFILE
 #include <windows.h>
+#if HAVE_WINRTAPI
+#include "compat/winrtapiconvert.h"
+#endif
 #endif
 
 typedef struct {
