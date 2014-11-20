@@ -31,6 +31,9 @@
 #endif
 #if HAVE_WINDOWS_H
 #include <windows.h>
+#if HAVE_WINRTAPI
+#include "compat/winrtapiconvert.h"
+#endif
 #endif
 
 #include "time.h"

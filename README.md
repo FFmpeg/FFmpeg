@@ -1,8 +1,15 @@
-FFmpeg README
+FFmpeg for WinRT ARM
 =============
 
-FFmpeg is a collection of libraries and tools to process multimedia content
-such as audio, video, subtitles and related metadata.
+This project can be used for building ffmpeg in WinRT ARM platform. You can use this project to build static library, or dynamic library which linked as static library, because of the WinRT project cannot load non-WinRT dynamic library.  
+
+## Build
+
+1. You need to prepare MinGW+MSYS environment, install msys-make, msys-bash, msys-m4, msys-perl. 
+2. Download gas-preprocessor.pl from https://github.com/FFmpeg/gas-preprocessor , and copy it into  msys bin folder. 
+3. Run VS2013 ARM Cross Tools Command Prompt first, and then run the msys from the command prompt.
+4. make sure cl, lib is in the Visual Studio, not from MinGW. You can rename the cl or lib in MinGW folder.
+5. Run build_ffmpeg_msvc.sh
 
 ## Libraries
 
