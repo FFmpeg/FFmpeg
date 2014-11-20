@@ -390,7 +390,7 @@ int ff_hevc_frame_rps(HEVCContext *s)
     const ShortTermRPS *short_rps = s->sh.short_term_rps;
     const LongTermRPS  *long_rps  = &s->sh.long_term_rps;
     RefPicList               *rps = s->rps;
-    int i, ret;
+    int i, ret = 0;
 
     if (!short_rps) {
         rps[0].nb_refs = rps[1].nb_refs = 0;
@@ -424,7 +424,7 @@ int ff_hevc_frame_rps(HEVCContext *s)
 
         ret = add_candidate_ref(s, &rps[list], poc, HEVC_FRAME_FLAG_SHORT_REF);
         if (ret < 0)
-            return ret;
+            goto fail;
     }
 
     /* add the long refs */
@@ -434,14 +434,15 @@ int ff_hevc_frame_rps(HEVCContext *s)
 
         ret = add_candidate_ref(s, &rps[list], poc, HEVC_FRAME_FLAG_LONG_REF);
         if (ret < 0)
-            return ret;
+            goto fail;
     }
 
+fail:
     /* release any frames that are now unused */
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++)
         ff_hevc_unref_frame(s, &s->DPB[i], 0);
 
-    return 0;
+    return ret;
 }
 
 int ff_hevc_compute_poc(HEVCContext *s, int poc_lsb)
