@@ -14,6 +14,8 @@ version <next>:
 - AVFoundation screen capturing support
 - ffserver supports codec private options
 - creating DASH compatible fragmented MP4, MPEG-DASH segmenting muxer
+- WebP muxer with animated WebP support
+
 
 version 2.4:
 - Icecast protocol
