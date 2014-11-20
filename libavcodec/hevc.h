@@ -638,10 +638,6 @@ typedef struct CodingUnit {
     enum PredMode pred_mode;    ///< PredMode
     enum PartMode part_mode;    ///< PartMode
 
-    uint8_t rqt_root_cbf;
-
-    uint8_t pcm_flag;
-
     // Inferred parameters
     uint8_t intra_split_flag;   ///< IntraSplitFlag
     uint8_t max_trafo_depth;    ///< MaxTrafoDepth

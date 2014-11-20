@@ -755,13 +755,13 @@ av_cold int ff_twinvq_decode_close(AVCodecContext *avctx)
 
     for (i = 0; i < 3; i++) {
         ff_mdct_end(&tctx->mdct_ctx[i]);
-        av_free(tctx->cos_tabs[i]);
+        av_freep(&tctx->cos_tabs[i]);
     }
 
-    av_free(tctx->curr_frame);
-    av_free(tctx->spectrum);
-    av_free(tctx->prev_frame);
-    av_free(tctx->tmp_buf);
+    av_freep(&tctx->curr_frame);
+    av_freep(&tctx->spectrum);
+    av_freep(&tctx->prev_frame);
+    av_freep(&tctx->tmp_buf);
 
     return 0;
 }

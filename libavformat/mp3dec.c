@@ -457,6 +457,10 @@ static int mp3_seek(AVFormatContext *s, int stream_index, int64_t timestamp,
         int64_t pos = ie->pos + (dir > 0 ? i - 1024 : -i);
         int64_t candidate = -1;
         int score = 999;
+
+        if (pos < 0)
+            continue;
+
         for(j=0; j<MIN_VALID; j++) {
             ret = check(s, pos);
             if(ret < 0)

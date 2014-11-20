@@ -23,6 +23,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
+#include "libavutil/timestamp.h"
 #include "avformat.h"
 #include "internal.h"
 #include "url.h"
@@ -479,6 +480,7 @@ static int concat_read_packet(AVFormatContext *avf, AVPacket *pkt)
     int ret;
     int64_t delta;
     ConcatStream *cs;
+    AVStream *st;
 
     while (1) {
         ret = av_read_frame(cat->avf, pkt);
@@ -504,6 +506,12 @@ static int concat_read_packet(AVFormatContext *avf, AVPacket *pkt)
     if ((ret = filter_packet(avf, cs, pkt)))
         return ret;
 
+    st = cat->avf->streams[pkt->stream_index];
+    av_log(avf, AV_LOG_DEBUG, "file:%d stream:%d pts:%s pts_time:%s dts:%s dts_time:%s",
+           (unsigned)(cat->cur_file - cat->files), pkt->stream_index,
+           av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, &st->time_base),
+           av_ts2str(pkt->dts), av_ts2timestr(pkt->dts, &st->time_base));
+
     delta = av_rescale_q(cat->cur_file->start_time - cat->avf->start_time,
                          AV_TIME_BASE_Q,
                          cat->avf->streams[pkt->stream_index]->time_base);
@@ -511,6 +519,9 @@ static int concat_read_packet(AVFormatContext *avf, AVPacket *pkt)
         pkt->pts += delta;
     if (pkt->dts != AV_NOPTS_VALUE)
         pkt->dts += delta;
+    av_log(avf, AV_LOG_DEBUG, " -> pts:%s pts_time:%s dts:%s dts_time:%s\n",
+           av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, &st->time_base),
+           av_ts2str(pkt->dts), av_ts2timestr(pkt->dts, &st->time_base));
     return ret;
 }
 

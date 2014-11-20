@@ -67,8 +67,12 @@ typedef struct  {
     int entry;
     int max_size;
 
+    int64_t last_dts;
+
     AVIIndex indexes;
 } AVIStream;
+
+static int avi_write_packet(AVFormatContext *s, AVPacket *pkt);
 
 static inline AVIIentry *avi_get_ientry(const AVIIndex *idx, int ent_id)
 {
@@ -565,6 +569,32 @@ static int avi_write_idx1(AVFormatContext *s)
     return 0;
 }
 
+static int write_skip_frames(AVFormatContext *s, int stream_index, int64_t dts)
+{
+    AVIStream *avist    = s->streams[stream_index]->priv_data;
+    AVCodecContext *enc = s->streams[stream_index]->codec;
+
+    av_dlog(s, "dts:%s packet_count:%d stream_index:%d\n", av_ts2str(dts), avist->packet_count, stream_index);
+    while (enc->block_align == 0 && dts != AV_NOPTS_VALUE &&
+           dts > avist->packet_count && enc->codec_id != AV_CODEC_ID_XSUB && avist->packet_count) {
+        AVPacket empty_packet;
+
+        if (dts - avist->packet_count > 60000) {
+            av_log(s, AV_LOG_ERROR, "Too large number of skipped frames %"PRId64" > 60000\n", dts - avist->packet_count);
+            return AVERROR(EINVAL);
+        }
+
+        av_init_packet(&empty_packet);
+        empty_packet.size         = 0;
+        empty_packet.data         = NULL;
+        empty_packet.stream_index = stream_index;
+        avi_write_packet(s, &empty_packet);
+        av_dlog(s, "dup dts:%s packet_count:%d\n", av_ts2str(dts), avist->packet_count);
+    }
+
+    return 0;
+}
+
 static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     unsigned char tag[5];
@@ -575,29 +605,20 @@ static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
     AVIOContext *pb     = s->pb;
     AVIStream *avist    = s->streams[stream_index]->priv_data;
     AVCodecContext *enc = s->streams[stream_index]->codec;
+    int ret;
 
     if (enc->codec_id == AV_CODEC_ID_H264 && enc->codec_tag == MKTAG('H','2','6','4') && pkt->size) {
-        int ret = ff_check_h264_startcode(s, s->streams[stream_index], pkt);
+        ret = ff_check_h264_startcode(s, s->streams[stream_index], pkt);
         if (ret < 0)
             return ret;
     }
-    av_dlog(s, "dts:%s packet_count:%d stream_index:%d\n", av_ts2str(pkt->dts), avist->packet_count, stream_index);
-    while (enc->block_align == 0 && pkt->dts != AV_NOPTS_VALUE &&
-           pkt->dts > avist->packet_count && enc->codec_id != AV_CODEC_ID_XSUB && avist->packet_count) {
-        AVPacket empty_packet;
 
-        if (pkt->dts - avist->packet_count > 60000) {
-            av_log(s, AV_LOG_ERROR, "Too large number of skipped frames %"PRId64" > 60000\n", pkt->dts - avist->packet_count);
-            return AVERROR(EINVAL);
-        }
+    if ((ret = write_skip_frames(s, stream_index, pkt->dts)) < 0)
+        return ret;
 
-        av_init_packet(&empty_packet);
-        empty_packet.size         = 0;
-        empty_packet.data         = NULL;
-        empty_packet.stream_index = stream_index;
-        avi_write_packet(s, &empty_packet);
-        av_dlog(s, "dup dts:%s packet_count:%d\n", av_ts2str(pkt->dts), avist->packet_count);
-    }
+    if (pkt->dts != AV_NOPTS_VALUE)
+        avist->last_dts = pkt->dts + pkt->duration;
+
     avist->packet_count++;
 
     // Make sure to put an OpenDML chunk when the file size exceeds the limits
@@ -660,6 +681,11 @@ static int avi_write_trailer(AVFormatContext *s)
     int res = 0;
     int i, j, n, nb_frames;
     int64_t file_size;
+
+    for (i = 0; i < s->nb_streams; i++) {
+        AVIStream *avist = s->streams[i]->priv_data;
+        write_skip_frames(s, i, avist->last_dts);
+    }
 
     if (pb->seekable) {
         if (avi->riff_id == 1) {

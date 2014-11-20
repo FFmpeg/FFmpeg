@@ -13,6 +13,7 @@ version <next>:
 - xBR scaling filter
 - AVFoundation screen capturing support
 - ffserver supports codec private options
+- creating DASH compatible fragmented MP4, MPEG-DASH segmenting muxer
 
 version 2.4:
 - Icecast protocol

@@ -22,6 +22,7 @@
 #include "config.h"
 #include "attributes.h"
 #include "float_dsp.h"
+#include "mem.h"
 
 static void vector_fmul_c(float *dst, const float *src0, const float *src1,
                           int len)
@@ -139,6 +140,15 @@ av_cold void avpriv_float_dsp_init(AVFloatDSPContext *fdsp, int bit_exact)
         ff_float_dsp_init_mips(fdsp);
 }
 
+av_cold AVFloatDSPContext *avpriv_float_dsp_alloc(int bit_exact)
+{
+    AVFloatDSPContext *ret = av_mallocz(sizeof(AVFloatDSPContext));
+    if (ret)
+        avpriv_float_dsp_init(ret, bit_exact);
+    return ret;
+}
+
+
 #ifdef TEST
 
 #include <float.h>
@@ -158,7 +168,6 @@ av_cold void avpriv_float_dsp_init(AVFloatDSPContext *fdsp, int bit_exact)
 #include "internal.h"
 #include "lfg.h"
 #include "log.h"
-#include "mem.h"
 #include "random_seed.h"
 
 #define LEN 240

@@ -42,72 +42,45 @@ static void FUNC(put_pcm)(uint8_t *_dst, ptrdiff_t stride, int width, int height
     }
 }
 
-static void FUNC(transform_add4x4)(uint8_t *_dst, int16_t *coeffs,
-                                       ptrdiff_t stride)
+static av_always_inline void FUNC(transquant_bypass)(uint8_t *_dst, int16_t *coeffs,
+                                                     ptrdiff_t stride, int size)
 {
     int x, y;
     pixel *dst = (pixel *)_dst;
 
     stride /= sizeof(pixel);
 
-    for (y = 0; y < 4; y++) {
-        for (x = 0; x < 4; x++) {
+    for (y = 0; y < size; y++) {
+        for (x = 0; x < size; x++) {
             dst[x] = av_clip_pixel(dst[x] + *coeffs);
             coeffs++;
         }
         dst += stride;
     }
+}
+
+static void FUNC(transform_add4x4)(uint8_t *_dst, int16_t *coeffs,
+                                       ptrdiff_t stride)
+{
+    FUNC(transquant_bypass)(_dst, coeffs, stride, 4);
 }
 
 static void FUNC(transform_add8x8)(uint8_t *_dst, int16_t *coeffs,
                                        ptrdiff_t stride)
 {
-    int x, y;
-    pixel *dst = (pixel *)_dst;
-
-    stride /= sizeof(pixel);
-
-    for (y = 0; y < 8; y++) {
-        for (x = 0; x < 8; x++) {
-            dst[x] = av_clip_pixel(dst[x] + *coeffs);
-            coeffs++;
-        }
-        dst += stride;
-    }
+    FUNC(transquant_bypass)(_dst, coeffs, stride, 8);
 }
 
 static void FUNC(transform_add16x16)(uint8_t *_dst, int16_t *coeffs,
                                          ptrdiff_t stride)
 {
-    int x, y;
-    pixel *dst = (pixel *)_dst;
-
-    stride /= sizeof(pixel);
-
-    for (y = 0; y < 16; y++) {
-        for (x = 0; x < 16; x++) {
-            dst[x] = av_clip_pixel(dst[x] + *coeffs);
-            coeffs++;
-        }
-        dst += stride;
-    }
+    FUNC(transquant_bypass)(_dst, coeffs, stride, 16);
 }
 
 static void FUNC(transform_add32x32)(uint8_t *_dst, int16_t *coeffs,
                                          ptrdiff_t stride)
 {
-    int x, y;
-    pixel *dst = (pixel *)_dst;
-
-    stride /= sizeof(pixel);
-
-    for (y = 0; y < 32; y++) {
-        for (x = 0; x < 32; x++) {
-            dst[x] = av_clip_pixel(dst[x] + *coeffs);
-            coeffs++;
-        }
-        dst += stride;
-    }
+    FUNC(transquant_bypass)(_dst, coeffs, stride, 32);
 }
 
 

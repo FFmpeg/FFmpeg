@@ -217,8 +217,6 @@ static int ffm_write_header(AVFormatContext *s)
             avio_write(pb, codec->extradata, codec->extradata_size);
         }
         write_header_chunk(s->pb, pb, MKBETAG('C', 'O', 'M', 'M'));
-        if(avio_open_dyn_buf(&pb) < 0)
-            return AVERROR(ENOMEM);
         /* specific info */
         switch(codec->codec_type) {
         case AVMEDIA_TYPE_VIDEO:
