@@ -209,16 +209,6 @@ int avcodec_copy_context(AVCodecContext *dest, const AVCodecContext *src)
     dest->inter_matrix    = NULL;
     dest->rc_override     = NULL;
     dest->subtitle_header = NULL;
-#if FF_API_MPV_OPT
-    FF_DISABLE_DEPRECATION_WARNINGS
-    dest->rc_eq           = NULL;
-    if (src->rc_eq) {
-        dest->rc_eq = av_strdup(src->rc_eq);
-        if (!dest->rc_eq)
-            return AVERROR(ENOMEM);
-    }
-    FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
 #define alloc_and_copy_or_fail(obj, size, pad) \
     if (src->obj && size > 0) { \
