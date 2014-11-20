@@ -1,8 +1,7 @@
 /*
- * Copyright (C) 2010-2011 FFmpeg for WinRT ARM project
- *
- * Authors: Jesse Jiang <qyljcy@163.com>
- *          PPLive Inc. <http://www.pptv.com/>
+ * Windows Runtime API convert
+ * Copyright (c) 2014 Jesse Jiang <qyljcy@163.com>
+ * Copyright (c) 2014 PPLive Inc. <http://www.pptv.com>
  *
  * This file is part of FFmpeg.
  *
