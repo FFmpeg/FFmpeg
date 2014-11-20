@@ -360,6 +360,9 @@
     <ClCompile Include="..\libavformat\crcenc.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavformat\dashenc.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavformat\dauddec.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>

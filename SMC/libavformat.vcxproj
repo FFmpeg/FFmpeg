@@ -401,6 +401,9 @@
     <ClCompile Include="..\libavformat\crcenc.c">
       <ObjectFileName>$(IntDir)\libavformat_crcenc.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavformat\dashenc.c">
+      <ObjectFileName>$(IntDir)\libavformat_dashenc.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavformat\dauddec.c">
       <ObjectFileName>$(IntDir)\libavformat_dauddec.obj</ObjectFileName>
     </ClCompile>

@@ -303,10 +303,13 @@ EXPORTS
     av_opt_get_q
     av_opt_get_sample_fmt
     av_opt_get_video_rate
+    av_opt_is_set_to_default
+    av_opt_is_set_to_default_by_name
     av_opt_next
     av_opt_ptr
     av_opt_query_ranges
     av_opt_query_ranges_default
+    av_opt_serialize
     av_opt_set
     av_opt_set_bin
     av_opt_set_channel_layout
@@ -424,6 +427,7 @@ EXPORTS
     av_xtea_crypt
     av_xtea_init
     avpriv_alloc_fixed_dsp
+    avpriv_float_dsp_alloc
     avpriv_float_dsp_init
     avpriv_frame_get_metadatap
     avpriv_init_lls
