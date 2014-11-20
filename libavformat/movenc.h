@@ -121,6 +121,7 @@ typedef struct MOVTrack {
     AVIOContext *mdat_buf;
     int64_t     data_offset;
     int64_t     frag_start;
+    int         frag_discont;
 
     int         nb_frag_info;
     MOVFragmentInfo *frag_info;
@@ -182,6 +183,7 @@ typedef struct MOVMuxContext {
 #define FF_MOV_FLAG_DISABLE_CHPL          (1 <<  9)
 #define FF_MOV_FLAG_DEFAULT_BASE_MOOF     (1 << 10)
 #define FF_MOV_FLAG_DASH                  (1 << 11)
+#define FF_MOV_FLAG_FRAG_DISCONT          (1 << 12)
 
 int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt);
 
