@@ -147,7 +147,8 @@ Component options:
   --disable-fft            disable FFT code
   --disable-faan           disable floating point AAN (I)DCT code
   --disable-pixelutils     disable pixel utils in libavutil
-
+  --disable-winrtapi       disable windows runtime API
+  
 Hardware accelerators:
   --disable-dxva2          disable DXVA2 code [autodetect]
   --disable-vaapi          disable VAAPI code [autodetect]
@@ -1823,6 +1824,7 @@ HAVE_LIST="
     threads
     vdpau_x11
     xlib
+    winrtapi
 "
 
 # options emitted with CONFIG_ prefix but not available on the command line
@@ -1895,6 +1897,7 @@ CMDLINE_SELECT="
     optimizations
     rpath
     stripping
+    winrtapi
 "
 
 PATHS_LIST="
@@ -2397,7 +2400,6 @@ avi_muxer_select="riffenc"
 avisynth_demuxer_deps="avisynth"
 avisynth_demuxer_select="riffdec"
 caf_demuxer_select="riffdec"
-dash_muxer_select="mp4_muxer"
 dirac_demuxer_select="dirac_parser"
 dts_demuxer_select="dca_parser"
 dtshd_demuxer_select="dca_parser"
@@ -2578,7 +2580,7 @@ ladspa_filter_deps="ladspa dlopen"
 ladspa_filter_extralibs='$ldl'
 mcdeint_filter_deps="avcodec gpl"
 movie_filter_deps="avcodec avformat"
-mp_filter_deps="gpl avcodec swscale"
+mp_filter_deps="gpl avcodec swscale inline_asm"
 mpdecimate_filter_deps="gpl"
 mpdecimate_filter_select="pixelutils"
 mptestsrc_filter_deps="gpl"
@@ -2609,6 +2611,7 @@ vidstabtransform_filter_deps="libvidstab"
 pixfmts_super2xsai_test_deps="super2xsai_filter"
 tinterlace_merge_test_deps="tinterlace_filter"
 tinterlace_pad_test_deps="tinterlace_filter"
+xbr_filter_deps="gpl"
 zmq_filter_deps="libzmq"
 zoompan_filter_deps="swscale"
 
@@ -3902,7 +3905,6 @@ if test "$?" != 0; then
 fi
 
 add_cppflags -D_ISOC99_SOURCE
-add_cxxflags -D__STDC_CONSTANT_MACROS
 check_cflags -std=c99
 check_cc -D_FILE_OFFSET_BITS=64 <<EOF && add_cppflags -D_FILE_OFFSET_BITS=64
 #include <stdlib.h>
@@ -3950,9 +3952,6 @@ case "$arch" in
     ;;
     x86)
         check_64bit x86_32 x86_64 'sizeof(void *) > 4'
-        # Treat x32 as x64 for now. Note it also needs spic=$shared
-        test "$subarch" = "x86_32" && check_cpp_condition stddef.h 'defined(__x86_64__)' &&
-            subarch=x86_64
         if test "$subarch" = "x86_64"; then
             spic=$shared
         fi
@@ -4440,9 +4439,8 @@ if enabled_any arm aarch64 || enabled_all ppc altivec && enabled asm; then
 
     [ $target_os = "darwin" ] && gaspp_as_type="apple-$gaspp_as_type"
 
-    test "${as#*gas-preprocessor.pl}" != "$as" ||
-    check_cmd gas-preprocessor.pl -arch $arch -as-type $gaspp_as_type -- ${as:=$cc} $as_noop &&
-        gas="${gas:=gas-preprocessor.pl} -arch $arch -as-type $gaspp_as_type -- ${as:=$cc}"
+    check_cmd gas-preprocessor.pl -arch $arch -as-type $gaspp_as_type -- $as $as_noop &&
+        gas="gas-preprocessor.pl -arch $arch -as-type $gaspp_as_type -- $as"
 
     if ! check_gas ; then
         as=${gas:=$as}
@@ -4457,8 +4455,6 @@ EOF
 fi
 
 check_inline_asm inline_asm_labels '"1:\n"'
-
-check_inline_asm inline_asm_nonlocal_labels '"Label:\n"'
 
 if enabled aarch64; then
     enabled armv8 && check_insn armv8 'prfm   pldl1strm, [x0]'
@@ -4737,6 +4733,12 @@ check_func_headers windows.h SetConsoleTextAttribute
 check_func_headers windows.h Sleep
 check_func_headers windows.h VirtualAlloc
 check_struct windows.h "CONDITION_VARIABLE" Ptr
+if enabled winrtapi; then
+    disable SetConsoleTextAttribute
+    disable GetProcessAffinityMask
+    disable VirtualAlloc
+fi
+    
 check_func_headers glob.h glob
 enabled xlib &&
     check_func_headers "X11/Xlib.h X11/extensions/Xvlib.h" XvGetPortAttribute -lXv -lX11 -lXext
@@ -4770,7 +4772,10 @@ check_header asm/types.h
 check_lib2 "windows.h shellapi.h" CommandLineToArgvW -lshell32
 check_lib2 "windows.h wincrypt.h" CryptGenRandom -ladvapi32
 check_lib2 "windows.h psapi.h" GetProcessMemoryInfo -lpsapi
-
+if enabled winrtapi; then
+    disable CryptGenRandom
+fi
+    
 check_struct "sys/time.h sys/resource.h" "struct rusage" ru_maxrss
 
 if ! disabled w32threads && ! enabled pthreads; then
