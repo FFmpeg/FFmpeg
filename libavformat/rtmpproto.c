@@ -2956,7 +2956,7 @@ static int rtmp_write(URLContext *s, const uint8_t *buf, int size)
     int size_temp = size;
     int pktsize, pkttype;
     uint32_t ts;
-    const uint8_t *buf_temp = buf, *pktdata;
+    const uint8_t *buf_temp = buf;
     uint8_t c;
     int ret;
 
@@ -2974,9 +2974,6 @@ static int rtmp_write(URLContext *s, const uint8_t *buf, int size)
             const uint8_t *header = rt->flv_header;
             int copy = FFMIN(RTMP_HEADER - rt->flv_header_bytes, size_temp);
             int channel = RTMP_AUDIO_CHANNEL;
-
-            // save the pointer to the actual packet data (after the header data)
-            pktdata = buf_temp + copy;
 
             bytestream_get_buffer(&buf_temp, rt->flv_header + rt->flv_header_bytes, copy);
             rt->flv_header_bytes += copy;
@@ -3000,10 +2997,11 @@ static int rtmp_write(URLContext *s, const uint8_t *buf, int size)
                 // However, definitely not *all* RTMP_PT_NOTIFY packets (e.g.,
                 // onTextData and onCuePoint).
                 uint8_t commandbuffer[64];
-                int stringlen = 0, pktdatasize = size - rt->flv_header_bytes;
+                int stringlen = 0, commandsize = size - rt->flv_header_bytes;
                 GetByteContext gbc;
 
-                bytestream2_init(&gbc, pktdata, pktdatasize);
+                // buf_temp at this point should be pointing to the RTMP command
+                bytestream2_init(&gbc, buf_temp, commandsize);
                 if (ff_amf_read_string(&gbc, commandbuffer, sizeof(commandbuffer),
                                        &stringlen))
                     return AVERROR_INVALIDDATA;
