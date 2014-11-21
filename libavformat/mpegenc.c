@@ -1052,7 +1052,7 @@ retry:
         es_size              -= stream->premux_packet->unwritten_size;
         stream->premux_packet = stream->premux_packet->next;
     }
-    if (es_size)
+    if (stream->premux_packet && es_size)
         stream->premux_packet->unwritten_size -= es_size;
 
     if (remove_decoded_packets(ctx, s->last_scr) < 0)
