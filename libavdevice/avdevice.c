@@ -219,11 +219,11 @@ void avdevice_free_list_devices(AVDeviceInfoList **device_list)
     for (i = 0; i < list->nb_devices; i++) {
         dev = list->devices[i];
         if (dev) {
-            av_free(dev->device_name);
-            av_free(dev->device_description);
+            av_freep(&dev->device_name);
+            av_freep(&dev->device_description);
             av_free(dev);
         }
     }
-    av_free(list->devices);
+    av_freep(&list->devices);
     av_freep(device_list);
 }
