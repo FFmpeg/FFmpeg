@@ -494,7 +494,7 @@ void ff_formats_changeref(AVFilterFormats **oldref, AVFilterFormats **newref)
 }
 
 #define SET_COMMON_FORMATS(ctx, fmts, in_fmts, out_fmts, ref, list) \
-{                                                                   \
+if (fmts) {                                                         \
     int count = 0, i;                                               \
                                                                     \
     for (i = 0; i < ctx->nb_inputs; i++) {                          \
