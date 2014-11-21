@@ -2743,10 +2743,16 @@ static void compute_chapters_end(AVFormatContext *s)
 
 static int get_std_framerate(int i)
 {
-    if (i < 60 * 12)
+    if (i < 30*12)
         return (i + 1) * 1001;
-    else
-        return ((const int[]) { 24, 30, 60, 12, 15, 48 })[i - 60 * 12] * 1000 * 12;
+    i -= 30*12;
+
+    if (i < 7)
+        return ((const int[]) { 40, 48, 50, 60, 80, 120, 240})[i] * 1001 * 12;
+
+    i -= 7;
+
+    return ((const int[]) { 24, 30, 60, 12, 15, 48 })[i] * 1000 * 12;
 }
 
 /* Is the time base unreliable?
