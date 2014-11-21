@@ -59,7 +59,7 @@ static av_cold int libspeex_decode_init(AVCodecContext *avctx)
 
         quality = avctx->extradata[37];
         if (quality > 10) {
-            av_log(avctx, AV_LOG_ERROR, "Unsupported quality mode.\n");
+            av_log(avctx, AV_LOG_ERROR, "Unsupported quality mode %d.\n", quality);
             return AVERROR_PATCHWELCOME;
         }
 
