@@ -26,6 +26,7 @@
  */
 
 #define CABAC(h) 1
+#define INT_BIT (CHAR_BIT * sizeof(int))
 
 #include "libavutil/attributes.h"
 #include "libavutil/timer.h"

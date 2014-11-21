@@ -77,10 +77,6 @@
 #    define FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
-#ifndef INT_BIT
-#    define INT_BIT (CHAR_BIT * sizeof(int))
-#endif
-
 // Some broken preprocessors need a second expansion
 // to be forced to tokenize __VA_ARGS__
 #define E1(x) x
