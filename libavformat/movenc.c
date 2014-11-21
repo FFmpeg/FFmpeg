@@ -2192,6 +2192,8 @@ static int mov_write_udta_tag(AVIOContext *pb, MOVMuxContext *mov,
         mov_write_string_metadata(s, pb_buf, "\251des", "comment",     0);
         mov_write_string_metadata(s, pb_buf, "\251gen", "genre",       0);
         mov_write_string_metadata(s, pb_buf, "\251cpy", "copyright",   0);
+        mov_write_string_metadata(s, pb_buf, "\251mak", "make",        0);
+        mov_write_string_metadata(s, pb_buf, "\251mod", "model",       0);
     } else {
         /* iTunes meta data */
         mov_write_meta_tag(pb_buf, mov, s);
