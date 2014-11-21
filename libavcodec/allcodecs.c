@@ -240,7 +240,6 @@ void avcodec_register_all(void)
     REGISTER_DECODER(SVQ3,              svq3);
     REGISTER_ENCDEC (TARGA,             targa);
     REGISTER_DECODER(THEORA,            theora);
-    REGISTER_ENCODER(LIBTWOLAME,        libtwolame);
     REGISTER_DECODER(THP,               thp);
     REGISTER_DECODER(TIERTEXSEQVIDEO,   tiertexseqvideo);
     REGISTER_ENCDEC (TIFF,              tiff);
@@ -448,6 +447,7 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC (LIBSCHROEDINGER,   libschroedinger);
     REGISTER_ENCDEC (LIBSPEEX,          libspeex);
     REGISTER_ENCODER(LIBTHEORA,         libtheora);
+    REGISTER_ENCODER(LIBTWOLAME,        libtwolame);
     REGISTER_ENCODER(LIBVO_AACENC,      libvo_aacenc);
     REGISTER_ENCODER(LIBVO_AMRWBENC,    libvo_amrwbenc);
     REGISTER_ENCODER(LIBVORBIS,         libvorbis);
