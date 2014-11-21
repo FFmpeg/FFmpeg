@@ -27,7 +27,7 @@
 uint32_t ff_square_tab[512] = { 0, };
 
 static int sse4_c(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
-                  int line_size, int h)
+                  ptrdiff_t stride, int h)
 {
     int s = 0, i;
     uint32_t *sq = ff_square_tab + 256;
@@ -37,14 +37,14 @@ static int sse4_c(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
         s    += sq[pix1[1] - pix2[1]];
         s    += sq[pix1[2] - pix2[2]];
         s    += sq[pix1[3] - pix2[3]];
-        pix1 += line_size;
-        pix2 += line_size;
+        pix1 += stride;
+        pix2 += stride;
     }
     return s;
 }
 
 static int sse8_c(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
-                  int line_size, int h)
+                  ptrdiff_t stride, int h)
 {
     int s = 0, i;
     uint32_t *sq = ff_square_tab + 256;
@@ -58,14 +58,14 @@ static int sse8_c(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
         s    += sq[pix1[5] - pix2[5]];
         s    += sq[pix1[6] - pix2[6]];
         s    += sq[pix1[7] - pix2[7]];
-        pix1 += line_size;
-        pix2 += line_size;
+        pix1 += stride;
+        pix2 += stride;
     }
     return s;
 }
 
 static int sse16_c(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
-                   int line_size, int h)
+                   ptrdiff_t stride, int h)
 {
     int s = 0, i;
     uint32_t *sq = ff_square_tab + 256;
@@ -88,8 +88,8 @@ static int sse16_c(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
         s += sq[pix1[14] - pix2[14]];
         s += sq[pix1[15] - pix2[15]];
 
-        pix1 += line_size;
-        pix2 += line_size;
+        pix1 += stride;
+        pix2 += stride;
     }
     return s;
 }
@@ -107,7 +107,7 @@ static int sum_abs_dctelem_c(int16_t *block)
 #define avg4(a, b, c, d) ((a + b + c + d + 2) >> 2)
 
 static inline int pix_abs16_c(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
-                              int line_size, int h)
+                              ptrdiff_t stride, int h)
 {
     int s = 0, i;
 
@@ -128,14 +128,14 @@ static inline int pix_abs16_c(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
         s    += abs(pix1[13] - pix2[13]);
         s    += abs(pix1[14] - pix2[14]);
         s    += abs(pix1[15] - pix2[15]);
-        pix1 += line_size;
-        pix2 += line_size;
+        pix1 += stride;
+        pix2 += stride;
     }
     return s;
 }
 
 static int pix_abs16_x2_c(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
-                          int line_size, int h)
+                          ptrdiff_t stride, int h)
 {
     int s = 0, i;
 
@@ -156,17 +156,17 @@ static int pix_abs16_x2_c(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
         s    += abs(pix1[13] - avg2(pix2[13], pix2[14]));
         s    += abs(pix1[14] - avg2(pix2[14], pix2[15]));
         s    += abs(pix1[15] - avg2(pix2[15], pix2[16]));
-        pix1 += line_size;
-        pix2 += line_size;
+        pix1 += stride;
+        pix2 += stride;
     }
     return s;
 }
 
 static int pix_abs16_y2_c(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
-                          int line_size, int h)
+                          ptrdiff_t stride, int h)
 {
     int s = 0, i;
-    uint8_t *pix3 = pix2 + line_size;
+    uint8_t *pix3 = pix2 + stride;
 
     for (i = 0; i < h; i++) {
         s    += abs(pix1[0]  - avg2(pix2[0],  pix3[0]));
@@ -185,18 +185,18 @@ static int pix_abs16_y2_c(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
         s    += abs(pix1[13] - avg2(pix2[13], pix3[13]));
         s    += abs(pix1[14] - avg2(pix2[14], pix3[14]));
         s    += abs(pix1[15] - avg2(pix2[15], pix3[15]));
-        pix1 += line_size;
-        pix2 += line_size;
-        pix3 += line_size;
+        pix1 += stride;
+        pix2 += stride;
+        pix3 += stride;
     }
     return s;
 }
 
 static int pix_abs16_xy2_c(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
-                           int line_size, int h)
+                           ptrdiff_t stride, int h)
 {
     int s = 0, i;
-    uint8_t *pix3 = pix2 + line_size;
+    uint8_t *pix3 = pix2 + stride;
 
     for (i = 0; i < h; i++) {
         s    += abs(pix1[0]  - avg4(pix2[0],  pix2[1],  pix3[0],  pix3[1]));
@@ -215,15 +215,15 @@ static int pix_abs16_xy2_c(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
         s    += abs(pix1[13] - avg4(pix2[13], pix2[14], pix3[13], pix3[14]));
         s    += abs(pix1[14] - avg4(pix2[14], pix2[15], pix3[14], pix3[15]));
         s    += abs(pix1[15] - avg4(pix2[15], pix2[16], pix3[15], pix3[16]));
-        pix1 += line_size;
-        pix2 += line_size;
-        pix3 += line_size;
+        pix1 += stride;
+        pix2 += stride;
+        pix3 += stride;
     }
     return s;
 }
 
 static inline int pix_abs8_c(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
-                             int line_size, int h)
+                             ptrdiff_t stride, int h)
 {
     int s = 0, i;
 
@@ -236,14 +236,14 @@ static inline int pix_abs8_c(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
         s    += abs(pix1[5] - pix2[5]);
         s    += abs(pix1[6] - pix2[6]);
         s    += abs(pix1[7] - pix2[7]);
-        pix1 += line_size;
-        pix2 += line_size;
+        pix1 += stride;
+        pix2 += stride;
     }
     return s;
 }
 
 static int pix_abs8_x2_c(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
-                         int line_size, int h)
+                         ptrdiff_t stride, int h)
 {
     int s = 0, i;
 
@@ -256,17 +256,17 @@ static int pix_abs8_x2_c(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
         s    += abs(pix1[5] - avg2(pix2[5], pix2[6]));
         s    += abs(pix1[6] - avg2(pix2[6], pix2[7]));
         s    += abs(pix1[7] - avg2(pix2[7], pix2[8]));
-        pix1 += line_size;
-        pix2 += line_size;
+        pix1 += stride;
+        pix2 += stride;
     }
     return s;
 }
 
 static int pix_abs8_y2_c(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
-                         int line_size, int h)
+                         ptrdiff_t stride, int h)
 {
     int s = 0, i;
-    uint8_t *pix3 = pix2 + line_size;
+    uint8_t *pix3 = pix2 + stride;
 
     for (i = 0; i < h; i++) {
         s    += abs(pix1[0] - avg2(pix2[0], pix3[0]));
@@ -277,18 +277,18 @@ static int pix_abs8_y2_c(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
         s    += abs(pix1[5] - avg2(pix2[5], pix3[5]));
         s    += abs(pix1[6] - avg2(pix2[6], pix3[6]));
         s    += abs(pix1[7] - avg2(pix2[7], pix3[7]));
-        pix1 += line_size;
-        pix2 += line_size;
-        pix3 += line_size;
+        pix1 += stride;
+        pix2 += stride;
+        pix3 += stride;
     }
     return s;
 }
 
 static int pix_abs8_xy2_c(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
-                          int line_size, int h)
+                          ptrdiff_t stride, int h)
 {
     int s = 0, i;
-    uint8_t *pix3 = pix2 + line_size;
+    uint8_t *pix3 = pix2 + stride;
 
     for (i = 0; i < h; i++) {
         s    += abs(pix1[0] - avg4(pix2[0], pix2[1], pix3[0], pix3[1]));
@@ -299,14 +299,15 @@ static int pix_abs8_xy2_c(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
         s    += abs(pix1[5] - avg4(pix2[5], pix2[6], pix3[5], pix3[6]));
         s    += abs(pix1[6] - avg4(pix2[6], pix2[7], pix3[6], pix3[7]));
         s    += abs(pix1[7] - avg4(pix2[7], pix2[8], pix3[7], pix3[8]));
-        pix1 += line_size;
-        pix2 += line_size;
-        pix3 += line_size;
+        pix1 += stride;
+        pix2 += stride;
+        pix3 += stride;
     }
     return s;
 }
 
-static int nsse16_c(MpegEncContext *c, uint8_t *s1, uint8_t *s2, int stride, int h)
+static int nsse16_c(MpegEncContext *c, uint8_t *s1, uint8_t *s2,
+                    ptrdiff_t stride, int h)
 {
     int score1 = 0, score2 = 0, x, y;
 
@@ -330,7 +331,8 @@ static int nsse16_c(MpegEncContext *c, uint8_t *s1, uint8_t *s2, int stride, int
         return score1 + FFABS(score2) * 8;
 }
 
-static int nsse8_c(MpegEncContext *c, uint8_t *s1, uint8_t *s2, int stride, int h)
+static int nsse8_c(MpegEncContext *c, uint8_t *s1, uint8_t *s2,
+                   ptrdiff_t stride, int h)
 {
     int score1 = 0, score2 = 0, x, y;
 
@@ -355,7 +357,7 @@ static int nsse8_c(MpegEncContext *c, uint8_t *s1, uint8_t *s2, int stride, int 
 }
 
 static int zero_cmp(MpegEncContext *s, uint8_t *a, uint8_t *b,
-                    int stride, int h)
+                    ptrdiff_t stride, int h)
 {
     return 0;
 }
@@ -430,7 +432,7 @@ void ff_set_cmp(MECmpContext *c, me_cmp_func *cmp, int type)
 #define BUTTERFLYA(x, y) (FFABS((x) + (y)) + FFABS((x) - (y)))
 
 static int hadamard8_diff8x8_c(MpegEncContext *s, uint8_t *dst,
-                               uint8_t *src, int stride, int h)
+                               uint8_t *src, ptrdiff_t stride, int h)
 {
     int i, temp[64], sum = 0;
 
@@ -482,7 +484,7 @@ static int hadamard8_diff8x8_c(MpegEncContext *s, uint8_t *dst,
 }
 
 static int hadamard8_intra8x8_c(MpegEncContext *s, uint8_t *src,
-                                uint8_t *dummy, int stride, int h)
+                                uint8_t *dummy, ptrdiff_t stride, int h)
 {
     int i, temp[64], sum = 0;
 
@@ -534,7 +536,7 @@ static int hadamard8_intra8x8_c(MpegEncContext *s, uint8_t *src,
 }
 
 static int dct_sad8x8_c(MpegEncContext *s, uint8_t *src1,
-                        uint8_t *src2, int stride, int h)
+                        uint8_t *src2, ptrdiff_t stride, int h)
 {
     LOCAL_ALIGNED_16(int16_t, temp, [64]);
 
@@ -575,7 +577,7 @@ static int dct_sad8x8_c(MpegEncContext *s, uint8_t *src1,
     }
 
 static int dct264_sad8x8_c(MpegEncContext *s, uint8_t *src1,
-                           uint8_t *src2, int stride, int h)
+                           uint8_t *src2, ptrdiff_t stride, int h)
 {
     int16_t dct[8][8];
     int i, sum = 0;
@@ -600,7 +602,7 @@ static int dct264_sad8x8_c(MpegEncContext *s, uint8_t *src1,
 #endif
 
 static int dct_max8x8_c(MpegEncContext *s, uint8_t *src1,
-                        uint8_t *src2, int stride, int h)
+                        uint8_t *src2, ptrdiff_t stride, int h)
 {
     LOCAL_ALIGNED_16(int16_t, temp, [64]);
     int sum = 0, i;
@@ -617,7 +619,7 @@ static int dct_max8x8_c(MpegEncContext *s, uint8_t *src1,
 }
 
 static int quant_psnr8x8_c(MpegEncContext *s, uint8_t *src1,
-                           uint8_t *src2, int stride, int h)
+                           uint8_t *src2, ptrdiff_t stride, int h)
 {
     LOCAL_ALIGNED_16(int16_t, temp, [64 * 2]);
     int16_t *const bak = temp + 64;
@@ -642,7 +644,7 @@ static int quant_psnr8x8_c(MpegEncContext *s, uint8_t *src1,
 }
 
 static int rd8x8_c(MpegEncContext *s, uint8_t *src1, uint8_t *src2,
-                   int stride, int h)
+                   ptrdiff_t stride, int h)
 {
     const uint8_t *scantable = s->intra_scantable.permutated;
     LOCAL_ALIGNED_16(int16_t, temp, [64]);
@@ -719,7 +721,7 @@ static int rd8x8_c(MpegEncContext *s, uint8_t *src1, uint8_t *src2,
 }
 
 static int bit8x8_c(MpegEncContext *s, uint8_t *src1, uint8_t *src2,
-                    int stride, int h)
+                    ptrdiff_t stride, int h)
 {
     const uint8_t *scantable = s->intra_scantable.permutated;
     LOCAL_ALIGNED_16(int16_t, temp, [64]);
@@ -782,7 +784,7 @@ static int bit8x8_c(MpegEncContext *s, uint8_t *src1, uint8_t *src2,
 #define VSAD_INTRA(size)                                                \
 static int vsad_intra ## size ## _c(MpegEncContext *c,                  \
                                     uint8_t *s, uint8_t *dummy,         \
-                                    int stride, int h)                  \
+                                    ptrdiff_t stride, int h)            \
 {                                                                       \
     int score = 0, x, y;                                                \
                                                                         \
@@ -802,7 +804,7 @@ VSAD_INTRA(8)
 VSAD_INTRA(16)
 
 static int vsad16_c(MpegEncContext *c, uint8_t *s1, uint8_t *s2,
-                    int stride, int h)
+                    ptrdiff_t stride, int h)
 {
     int score = 0, x, y;
 
@@ -820,7 +822,7 @@ static int vsad16_c(MpegEncContext *c, uint8_t *s1, uint8_t *s2,
 #define VSSE_INTRA(size)                                                \
 static int vsse_intra ## size ## _c(MpegEncContext *c,                  \
                                     uint8_t *s, uint8_t *dummy,         \
-                                    int stride, int h)                  \
+                                    ptrdiff_t stride, int h)            \
 {                                                                       \
     int score = 0, x, y;                                                \
                                                                         \
@@ -840,7 +842,7 @@ VSSE_INTRA(8)
 VSSE_INTRA(16)
 
 static int vsse16_c(MpegEncContext *c, uint8_t *s1, uint8_t *s2,
-                    int stride, int h)
+                    ptrdiff_t stride, int h)
 {
     int score = 0, x, y;
 
@@ -856,7 +858,7 @@ static int vsse16_c(MpegEncContext *c, uint8_t *s1, uint8_t *s2,
 
 #define WRAPPER8_16_SQ(name8, name16)                                   \
 static int name16(MpegEncContext *s, uint8_t *dst, uint8_t *src,        \
-                  int stride, int h)                                    \
+                  ptrdiff_t stride, int h)                              \
 {                                                                       \
     int score = 0;                                                      \
                                                                         \

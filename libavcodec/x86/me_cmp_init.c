@@ -32,7 +32,7 @@
 #if HAVE_INLINE_ASM
 
 static int sse8_mmx(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
-                    int line_size, int h)
+                    ptrdiff_t stride, int h)
 {
     int tmp;
 
@@ -74,8 +74,8 @@ static int sse8_mmx(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
         "pmaddwd   %%mm1, %%mm1          \n"
         "pmaddwd   %%mm3, %%mm3          \n"
 
-        "lea (%0, %3, 2), %0             \n" /* pix1 += 2 * line_size */
-        "lea (%1, %3, 2), %1             \n" /* pix2 += 2 * line_size */
+        "lea (%0, %3, 2), %0             \n" /* pix1 += 2 * stride */
+        "lea (%1, %3, 2), %1             \n" /* pix2 += 2 * stride */
 
         "paddd     %%mm2, %%mm1          \n"
         "paddd     %%mm4, %%mm3          \n"
@@ -90,14 +90,14 @@ static int sse8_mmx(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
         "paddd     %%mm7, %%mm1          \n"
         "movd      %%mm1, %2             \n"
         : "+r" (pix1), "+r" (pix2), "=r" (tmp)
-        : "r" ((x86_reg) line_size), "m" (h)
+        : "r" (stride), "m" (h)
         : "%ecx");
 
     return tmp;
 }
 
 static int sse16_mmx(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
-                     int line_size, int h)
+                     ptrdiff_t stride, int h)
 {
     int tmp;
 
@@ -154,13 +154,13 @@ static int sse16_mmx(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
         "paddd %%mm7, %%mm1\n"
         "movd %%mm1, %2\n"
         : "+r" (pix1), "+r" (pix2), "=r" (tmp)
-        : "r" ((x86_reg) line_size), "m" (h)
+        : "r" (stride), "m" (h)
         : "%ecx");
 
     return tmp;
 }
 
-static int hf_noise8_mmx(uint8_t *pix1, int line_size, int h)
+static int hf_noise8_mmx(uint8_t *pix1, ptrdiff_t stride, int h)
 {
     int tmp;
 
@@ -282,13 +282,13 @@ static int hf_noise8_mmx(uint8_t *pix1, int line_size, int h)
         "paddd %%mm6, %%mm0\n"
         "movd  %%mm0, %1\n"
         : "+r" (pix1), "=r" (tmp)
-        : "r" ((x86_reg) line_size), "g" (h - 2)
+        : "r" (stride), "g" (h - 2)
         : "%ecx");
 
     return tmp;
 }
 
-static int hf_noise16_mmx(uint8_t *pix1, int line_size, int h)
+static int hf_noise16_mmx(uint8_t *pix1, ptrdiff_t stride, int h)
 {
     int tmp;
     uint8_t *pix = pix1;
@@ -399,23 +399,23 @@ static int hf_noise16_mmx(uint8_t *pix1, int line_size, int h)
         "paddd %%mm6, %%mm0\n"
         "movd %%mm0, %1\n"
         : "+r" (pix1), "=r" (tmp)
-        : "r" ((x86_reg) line_size), "g" (h - 2)
+        : "r" (stride), "g" (h - 2)
         : "%ecx");
 
-    return tmp + hf_noise8_mmx(pix + 8, line_size, h);
+    return tmp + hf_noise8_mmx(pix + 8, stride, h);
 }
 
 static int nsse16_mmx(MpegEncContext *c, uint8_t *pix1, uint8_t *pix2,
-                      int line_size, int h)
+                      ptrdiff_t stride, int h)
 {
     int score1, score2;
 
     if (c)
-        score1 = c->mecc.sse[0](c, pix1, pix2, line_size, h);
+        score1 = c->mecc.sse[0](c, pix1, pix2, stride, h);
     else
-        score1 = sse16_mmx(c, pix1, pix2, line_size, h);
-    score2 = hf_noise16_mmx(pix1, line_size, h) -
-             hf_noise16_mmx(pix2, line_size, h);
+        score1 = sse16_mmx(c, pix1, pix2, stride, h);
+    score2 = hf_noise16_mmx(pix1, stride, h) -
+             hf_noise16_mmx(pix2, stride, h);
 
     if (c)
         return score1 + FFABS(score2) * c->avctx->nsse_weight;
@@ -424,11 +424,11 @@ static int nsse16_mmx(MpegEncContext *c, uint8_t *pix1, uint8_t *pix2,
 }
 
 static int nsse8_mmx(MpegEncContext *c, uint8_t *pix1, uint8_t *pix2,
-                     int line_size, int h)
+                     ptrdiff_t stride, int h)
 {
-    int score1 = sse8_mmx(c, pix1, pix2, line_size, h);
-    int score2 = hf_noise8_mmx(pix1, line_size, h) -
-                 hf_noise8_mmx(pix2, line_size, h);
+    int score1 = sse8_mmx(c, pix1, pix2, stride, h);
+    int score2 = hf_noise8_mmx(pix1, stride, h) -
+                 hf_noise8_mmx(pix2, stride, h);
 
     if (c)
         return score1 + FFABS(score2) * c->avctx->nsse_weight;
@@ -437,12 +437,12 @@ static int nsse8_mmx(MpegEncContext *c, uint8_t *pix1, uint8_t *pix2,
 }
 
 static int vsad_intra16_mmx(MpegEncContext *v, uint8_t *pix, uint8_t *dummy,
-                            int line_size, int h)
+                            ptrdiff_t stride, int h)
 {
     int tmp;
 
     assert((((int) pix) & 7) == 0);
-    assert((line_size & 7) == 0);
+    assert((stride & 7) == 0);
 
 #define SUM(in0, in1, out0, out1)               \
     "movq (%0), %%mm2\n"                        \
@@ -493,7 +493,7 @@ static int vsad_intra16_mmx(MpegEncContext *v, uint8_t *pix, uint8_t *dummy,
         "paddw %%mm6, %%mm0\n"
         "movd  %%mm0, %1\n"
         : "+r" (pix), "=r" (tmp)
-        : "r" ((x86_reg) line_size), "m" (h)
+        : "r" (stride), "m" (h)
         : "%ecx");
 
     return tmp & 0xFFFF;
@@ -501,12 +501,12 @@ static int vsad_intra16_mmx(MpegEncContext *v, uint8_t *pix, uint8_t *dummy,
 #undef SUM
 
 static int vsad_intra16_mmxext(MpegEncContext *v, uint8_t *pix, uint8_t *dummy,
-                               int line_size, int h)
+                               ptrdiff_t stride, int h)
 {
     int tmp;
 
     assert((((int) pix) & 7) == 0);
-    assert((line_size & 7) == 0);
+    assert((stride & 7) == 0);
 
 #define SUM(in0, in1, out0, out1)               \
     "movq (%0), " #out0 "\n"                    \
@@ -536,7 +536,7 @@ static int vsad_intra16_mmxext(MpegEncContext *v, uint8_t *pix, uint8_t *dummy,
 
         "movd %%mm6, %1\n"
         : "+r" (pix), "=r" (tmp)
-        : "r" ((x86_reg) line_size), "m" (h)
+        : "r" (stride), "m" (h)
         : "%ecx");
 
     return tmp;
@@ -544,13 +544,13 @@ static int vsad_intra16_mmxext(MpegEncContext *v, uint8_t *pix, uint8_t *dummy,
 #undef SUM
 
 static int vsad16_mmx(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
-                      int line_size, int h)
+                      ptrdiff_t stride, int h)
 {
     int tmp;
 
     assert((((int) pix1) & 7) == 0);
     assert((((int) pix2) & 7) == 0);
-    assert((line_size & 7) == 0);
+    assert((stride & 7) == 0);
 
 #define SUM(in0, in1, out0, out1)       \
     "movq (%0), %%mm2\n"                \
@@ -617,7 +617,7 @@ static int vsad16_mmx(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
         "paddw %%mm6, %%mm0\n"
         "movd %%mm0, %2\n"
         : "+r" (pix1), "+r" (pix2), "=r" (tmp)
-        : "r" ((x86_reg) line_size), "m" (h)
+        : "r" (stride), "m" (h)
         : "%ecx");
 
     return tmp & 0x7FFF;
@@ -625,13 +625,13 @@ static int vsad16_mmx(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
 #undef SUM
 
 static int vsad16_mmxext(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
-                         int line_size, int h)
+                         ptrdiff_t stride, int h)
 {
     int tmp;
 
     assert((((int) pix1) & 7) == 0);
     assert((((int) pix2) & 7) == 0);
-    assert((line_size & 7) == 0);
+    assert((stride & 7) == 0);
 
 #define SUM(in0, in1, out0, out1)               \
     "movq (%0), " #out0 "\n"                    \
@@ -677,7 +677,7 @@ static int vsad16_mmxext(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
 
         "movd %%mm6, %2\n"
         : "+r" (pix1), "+r" (pix2), "=r" (tmp)
-        : "r" ((x86_reg) line_size), "m" (h)
+        : "r" (stride), "m" (h)
         : "%ecx");
 
     return tmp;
@@ -805,7 +805,8 @@ DECLARE_ASM_CONST(8, uint64_t, round_tab)[3] = {
 
 DECLARE_ASM_CONST(8, uint64_t, bone) = 0x0101010101010101LL;
 
-static inline void sad8_1_mmx(uint8_t *blk1, uint8_t *blk2, int stride, int h)
+static inline void sad8_1_mmx(uint8_t *blk1, uint8_t *blk2,
+                              ptrdiff_t stride, int h)
 {
     x86_reg len = -(stride * h);
     __asm__ volatile (
@@ -837,11 +838,11 @@ static inline void sad8_1_mmx(uint8_t *blk1, uint8_t *blk2, int stride, int h)
         "add %3, %%"REG_a"              \n\t"
         " js 1b                         \n\t"
         : "+a" (len)
-        : "r" (blk1 - len), "r" (blk2 - len), "r" ((x86_reg) stride));
+        : "r" (blk1 - len), "r" (blk2 - len), "r" (stride));
 }
 
 static inline void sad8_1_mmxext(uint8_t *blk1, uint8_t *blk2,
-                                 int stride, int h)
+                                 ptrdiff_t stride, int h)
 {
     __asm__ volatile (
         ".p2align 4                     \n\t"
@@ -857,11 +858,11 @@ static inline void sad8_1_mmxext(uint8_t *blk1, uint8_t *blk2,
         "sub $2, %0                     \n\t"
         " jg 1b                         \n\t"
         : "+r" (h), "+r" (blk1), "+r" (blk2)
-        : "r" ((x86_reg) stride));
+        : "r" (stride));
 }
 
 static int sad16_sse2(MpegEncContext *v, uint8_t *blk2, uint8_t *blk1,
-                      int stride, int h)
+                      ptrdiff_t stride, int h)
 {
     int ret;
     __asm__ volatile (
@@ -882,12 +883,12 @@ static int sad16_sse2(MpegEncContext *v, uint8_t *blk2, uint8_t *blk1,
         "paddw   %%xmm0, %%xmm2         \n\t"
         "movd    %%xmm2, %3             \n\t"
         : "+r" (h), "+r" (blk1), "+r" (blk2), "=r" (ret)
-        : "r" ((x86_reg) stride));
+        : "r" (stride));
     return ret;
 }
 
 static inline void sad8_x2a_mmxext(uint8_t *blk1, uint8_t *blk2,
-                                   int stride, int h)
+                                   ptrdiff_t stride, int h)
 {
     __asm__ volatile (
         ".p2align 4                     \n\t"
@@ -905,11 +906,11 @@ static inline void sad8_x2a_mmxext(uint8_t *blk1, uint8_t *blk2,
         "sub $2, %0                     \n\t"
         " jg 1b                         \n\t"
         : "+r" (h), "+r" (blk1), "+r" (blk2)
-        : "r" ((x86_reg) stride));
+        : "r" (stride));
 }
 
 static inline void sad8_y2a_mmxext(uint8_t *blk1, uint8_t *blk2,
-                                   int stride, int h)
+                                   ptrdiff_t stride, int h)
 {
     __asm__ volatile (
         "movq (%1), %%mm0               \n\t"
@@ -930,11 +931,11 @@ static inline void sad8_y2a_mmxext(uint8_t *blk1, uint8_t *blk2,
         "sub $2, %0                     \n\t"
         " jg 1b                         \n\t"
         : "+r" (h), "+r" (blk1), "+r" (blk2)
-        : "r" ((x86_reg) stride));
+        : "r" (stride));
 }
 
 static inline void sad8_4_mmxext(uint8_t *blk1, uint8_t *blk2,
-                                 int stride, int h)
+                                 ptrdiff_t stride, int h)
 {
     __asm__ volatile (
         "movq "MANGLE(bone)", %%mm5     \n\t"
@@ -960,11 +961,11 @@ static inline void sad8_4_mmxext(uint8_t *blk1, uint8_t *blk2,
         "sub $2, %0                     \n\t"
         " jg 1b                         \n\t"
         : "+r" (h), "+r" (blk1), "+r" (blk2)
-        : "r" ((x86_reg) stride));
+        : "r" (stride));
 }
 
 static inline void sad8_2_mmx(uint8_t *blk1a, uint8_t *blk1b, uint8_t *blk2,
-                              int stride, int h)
+                              ptrdiff_t stride, int h)
 {
     x86_reg len = -(stride * h);
     __asm__ volatile (
@@ -999,10 +1000,11 @@ static inline void sad8_2_mmx(uint8_t *blk1a, uint8_t *blk1b, uint8_t *blk2,
         " js 1b                         \n\t"
         : "+a" (len)
         : "r" (blk1a - len), "r" (blk1b - len), "r" (blk2 - len),
-          "r" ((x86_reg) stride));
+          "r" (stride));
 }
 
-static inline void sad8_4_mmx(uint8_t *blk1, uint8_t *blk2, int stride, int h)
+static inline void sad8_4_mmx(uint8_t *blk1, uint8_t *blk2,
+                              ptrdiff_t stride, int h)
 {
     x86_reg len = -(stride * h);
     __asm__ volatile (
@@ -1052,7 +1054,7 @@ static inline void sad8_4_mmx(uint8_t *blk1, uint8_t *blk2, int stride, int h)
         " js 1b                         \n\t"
         : "+a" (len)
         : "r" (blk1 - len), "r" (blk1 - len + stride), "r" (blk2 - len),
-          "r" ((x86_reg) stride));
+          "r" (stride));
 }
 
 static inline int sum_mmx(void)
@@ -1079,19 +1081,21 @@ static inline int sum_mmxext(void)
     return ret;
 }
 
-static inline void sad8_x2a_mmx(uint8_t *blk1, uint8_t *blk2, int stride, int h)
+static inline void sad8_x2a_mmx(uint8_t *blk1, uint8_t *blk2,
+                                ptrdiff_t stride, int h)
 {
     sad8_2_mmx(blk1, blk1 + 1, blk2, stride, h);
 }
 
-static inline void sad8_y2a_mmx(uint8_t *blk1, uint8_t *blk2, int stride, int h)
+static inline void sad8_y2a_mmx(uint8_t *blk1, uint8_t *blk2,
+                                ptrdiff_t stride, int h)
 {
     sad8_2_mmx(blk1, blk1 + stride, blk2, stride, h);
 }
 
 #define PIX_SAD(suf)                                                    \
 static int sad8_ ## suf(MpegEncContext *v, uint8_t *blk2,               \
-                        uint8_t *blk1, int stride, int h)               \
+                        uint8_t *blk1, ptrdiff_t stride, int h)         \
 {                                                                       \
     assert(h == 8);                                                     \
     __asm__ volatile (                                                  \
@@ -1105,7 +1109,7 @@ static int sad8_ ## suf(MpegEncContext *v, uint8_t *blk2,               \
 }                                                                       \
                                                                         \
 static int sad8_x2_ ## suf(MpegEncContext *v, uint8_t *blk2,            \
-                           uint8_t *blk1, int stride, int h)            \
+                           uint8_t *blk1, ptrdiff_t stride, int h)      \
 {                                                                       \
     assert(h == 8);                                                     \
     __asm__ volatile (                                                  \
@@ -1120,7 +1124,7 @@ static int sad8_x2_ ## suf(MpegEncContext *v, uint8_t *blk2,            \
 }                                                                       \
                                                                         \
 static int sad8_y2_ ## suf(MpegEncContext *v, uint8_t *blk2,            \
-                           uint8_t *blk1, int stride, int h)            \
+                           uint8_t *blk1, ptrdiff_t stride, int h)      \
 {                                                                       \
     assert(h == 8);                                                     \
     __asm__ volatile (                                                  \
@@ -1135,7 +1139,7 @@ static int sad8_y2_ ## suf(MpegEncContext *v, uint8_t *blk2,            \
 }                                                                       \
                                                                         \
 static int sad8_xy2_ ## suf(MpegEncContext *v, uint8_t *blk2,           \
-                            uint8_t *blk1, int stride, int h)           \
+                            uint8_t *blk1, ptrdiff_t stride, int h)     \
 {                                                                       \
     assert(h == 8);                                                     \
     __asm__ volatile (                                                  \
@@ -1149,7 +1153,7 @@ static int sad8_xy2_ ## suf(MpegEncContext *v, uint8_t *blk2,           \
 }                                                                       \
                                                                         \
 static int sad16_ ## suf(MpegEncContext *v, uint8_t *blk2,              \
-                         uint8_t *blk1, int stride, int h)              \
+                         uint8_t *blk1, ptrdiff_t stride, int h)        \
 {                                                                       \
     __asm__ volatile (                                                  \
         "pxor %%mm7, %%mm7     \n\t"                                    \
@@ -1163,7 +1167,7 @@ static int sad16_ ## suf(MpegEncContext *v, uint8_t *blk2,              \
 }                                                                       \
                                                                         \
 static int sad16_x2_ ## suf(MpegEncContext *v, uint8_t *blk2,           \
-                            uint8_t *blk1, int stride, int h)           \
+                            uint8_t *blk1, ptrdiff_t stride, int h)     \
 {                                                                       \
     __asm__ volatile (                                                  \
         "pxor %%mm7, %%mm7     \n\t"                                    \
@@ -1178,7 +1182,7 @@ static int sad16_x2_ ## suf(MpegEncContext *v, uint8_t *blk2,           \
 }                                                                       \
                                                                         \
 static int sad16_y2_ ## suf(MpegEncContext *v, uint8_t *blk2,           \
-                            uint8_t *blk1, int stride, int h)           \
+                            uint8_t *blk1, ptrdiff_t stride, int h)     \
 {                                                                       \
     __asm__ volatile (                                                  \
         "pxor %%mm7, %%mm7     \n\t"                                    \
@@ -1193,7 +1197,7 @@ static int sad16_y2_ ## suf(MpegEncContext *v, uint8_t *blk2,           \
 }                                                                       \
                                                                         \
 static int sad16_xy2_ ## suf(MpegEncContext *v, uint8_t *blk2,          \
-                             uint8_t *blk1, int stride, int h)          \
+                             uint8_t *blk1, ptrdiff_t stride, int h)    \
 {                                                                       \
     __asm__ volatile (                                                  \
         "pxor %%mm7, %%mm7     \n\t"                                    \
@@ -1212,13 +1216,13 @@ PIX_SAD(mmxext)
 #endif /* HAVE_INLINE_ASM */
 
 int ff_sse16_sse2(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
-                  int line_size, int h);
+                  ptrdiff_t stride, int h);
 
-#define hadamard_func(cpu)                                              \
-    int ff_hadamard8_diff_ ## cpu(MpegEncContext *s, uint8_t *src1,     \
-                                  uint8_t *src2, int stride, int h);    \
-    int ff_hadamard8_diff16_ ## cpu(MpegEncContext *s, uint8_t *src1,   \
-                                    uint8_t *src2, int stride, int h);
+#define hadamard_func(cpu)                                                    \
+    int ff_hadamard8_diff_ ## cpu(MpegEncContext *s, uint8_t *src1,           \
+                                  uint8_t *src2, ptrdiff_t stride, int h);    \
+    int ff_hadamard8_diff16_ ## cpu(MpegEncContext *s, uint8_t *src1,         \
+                                    uint8_t *src2, ptrdiff_t stride, int h);
 
 hadamard_func(mmx)
 hadamard_func(mmxext)
