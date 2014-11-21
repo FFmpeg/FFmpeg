@@ -786,15 +786,55 @@ static void handle_small_bpp(PNGDecContext *s, AVFrame *p)
     }
 }
 
+static int decode_fctl_chunk(AVCodecContext *avctx, PNGDecContext *s,
+                             uint32_t length)
+{
+    uint32_t sequence_number, width, height, x_offset, y_offset;
+
+    if (length != 26)
+        return AVERROR_INVALIDDATA;
+
+    sequence_number = bytestream2_get_be32(&s->gb);
+    width           = bytestream2_get_be32(&s->gb);
+    height          = bytestream2_get_be32(&s->gb);
+    x_offset        = bytestream2_get_be32(&s->gb);
+    y_offset        = bytestream2_get_be32(&s->gb);
+    bytestream2_skip(&s->gb, 10); /* delay_num  (2)
+                                   * delay_den  (2)
+                                   * dispose_op (1)
+                                   * blend_op   (1)
+                                   * crc        (4)
+                                   */
+
+    if (width != s->width || height != s->height ||
+        x_offset != 0 || y_offset != 0) {
+        if (sequence_number == 0)
+            return AVERROR_INVALIDDATA;
+        avpriv_request_sample(avctx, "non key frames");
+        return AVERROR_PATCHWELCOME;
+    }
+
+    return 0;
+}
+
 static int decode_frame_common(AVCodecContext *avctx, PNGDecContext *s,
                                AVFrame *p, AVPacket *avpkt)
 {
     AVDictionary *metadata  = NULL;
     uint32_t tag, length;
+    int decode_next_dat = 0;
+    int ret = AVERROR_INVALIDDATA;
 
     for (;;) {
-        if (bytestream2_get_bytes_left(&s->gb) <= 0) {
-            av_log(avctx, AV_LOG_ERROR, "%d bytes left\n", bytestream2_get_bytes_left(&s->gb));
+        length = bytestream2_get_bytes_left(&s->gb);
+        if (length <= 0) {
+            if (avctx->codec_id == AV_CODEC_ID_APNG && length == 0) {
+                if (!(s->state & PNG_IDAT))
+                    return 0;
+                else
+                    goto exit_loop;
+            }
+            av_log(avctx, AV_LOG_ERROR, "%d bytes left\n", length);
             if (   s->state & PNG_ALLIMAGE
                 && avctx->strict_std_compliance <= FF_COMPLIANCE_NORMAL)
                 goto exit_loop;
@@ -822,7 +862,24 @@ static int decode_frame_common(AVCodecContext *avctx, PNGDecContext *s,
             if (decode_phys_chunk(avctx, s) < 0)
                 goto fail;
             break;
+        case MKTAG('f', 'c', 'T', 'L'):
+            if (avctx->codec_id != AV_CODEC_ID_APNG)
+                goto skip_tag;
+            if ((ret = decode_fctl_chunk(avctx, s, length)) < 0)
+                goto fail;
+            decode_next_dat = 1;
+            break;
+        case MKTAG('f', 'd', 'A', 'T'):
+            if (avctx->codec_id != AV_CODEC_ID_APNG)
+                goto skip_tag;
+            if (!decode_next_dat)
+                goto fail;
+            bytestream2_get_be32(&s->gb);
+            length -= 4;
+            /* fallthrough */
         case MKTAG('I', 'D', 'A', 'T'):
+            if (avctx->codec_id == AV_CODEC_ID_APNG && !decode_next_dat)
+                goto skip_tag;
             if (decode_idat_chunk(avctx, s, length, p) < 0)
                 goto fail;
             break;
@@ -894,9 +951,10 @@ exit_loop:
 fail:
     av_dict_free(&metadata);
     ff_thread_report_progress(&s->picture, INT_MAX, 0);
-    return AVERROR_INVALIDDATA;
+    return ret;
 }
 
+#if CONFIG_PNG_DECODER
 static int decode_frame_png(AVCodecContext *avctx,
                         void *data, int *got_frame,
                         AVPacket *avpkt)
@@ -948,6 +1006,63 @@ the_end:
     s->crow_buf = NULL;
     return ret;
 }
+#endif
+
+#if CONFIG_APNG_DECODER
+static int decode_frame_apng(AVCodecContext *avctx,
+                        void *data, int *got_frame,
+                        AVPacket *avpkt)
+{
+    PNGDecContext *const s = avctx->priv_data;
+    int ret;
+    AVFrame *p;
+
+    ff_thread_release_buffer(avctx, &s->last_picture);
+    FFSWAP(ThreadFrame, s->picture, s->last_picture);
+    p = s->picture.f;
+
+    if (!(s->state & PNG_IHDR)) {
+        if (!avctx->extradata_size)
+            return AVERROR_INVALIDDATA;
+
+        /* only init fields, there is no zlib use in extradata */
+        s->zstream.zalloc = ff_png_zalloc;
+        s->zstream.zfree  = ff_png_zfree;
+
+        bytestream2_init(&s->gb, avctx->extradata, avctx->extradata_size);
+        if ((ret = decode_frame_common(avctx, s, p, avpkt)) < 0)
+            goto end;
+    }
+
+    /* reset state for a new frame */
+    if ((ret = inflateInit(&s->zstream)) != Z_OK) {
+        av_log(avctx, AV_LOG_ERROR, "inflateInit returned error %d\n", ret);
+        ret = AVERROR_EXTERNAL;
+        goto end;
+    }
+    s->y = 0;
+    s->state &= ~(PNG_IDAT | PNG_ALLIMAGE);
+    bytestream2_init(&s->gb, avpkt->data, avpkt->size);
+    if ((ret = decode_frame_common(avctx, s, p, avpkt)) < 0)
+        goto end;
+
+    if (!(s->state & PNG_ALLIMAGE))
+        av_log(avctx, AV_LOG_WARNING, "Frame did not contain a complete image\n");
+    if (!(s->state & (PNG_ALLIMAGE|PNG_IDAT))) {
+        ret = AVERROR_INVALIDDATA;
+        goto end;
+    }
+    if ((ret = av_frame_ref(data, s->picture.f)) < 0)
+        goto end;
+
+    *got_frame = 1;
+    ret = bytestream2_tell(&s->gb);
+
+end:
+    inflateEnd(&s->zstream);
+    return ret;
+}
+#endif
 
 static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
 {
@@ -1000,6 +1115,23 @@ static av_cold int png_dec_end(AVCodecContext *avctx)
     return 0;
 }
 
+#if CONFIG_APNG_DECODER
+AVCodec ff_apng_decoder = {
+    .name           = "apng",
+    .long_name      = NULL_IF_CONFIG_SMALL("APNG (Animated Portable Network Graphics) image"),
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = AV_CODEC_ID_APNG,
+    .priv_data_size = sizeof(PNGDecContext),
+    .init           = png_dec_init,
+    .close          = png_dec_end,
+    .decode         = decode_frame_apng,
+    .init_thread_copy = ONLY_IF_THREADS_ENABLED(png_dec_init),
+    .update_thread_context = ONLY_IF_THREADS_ENABLED(update_thread_context),
+    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_FRAME_THREADS /*| CODEC_CAP_DRAW_HORIZ_BAND*/,
+};
+#endif
+
+#if CONFIG_PNG_DECODER
 AVCodec ff_png_decoder = {
     .name           = "png",
     .long_name      = NULL_IF_CONFIG_SMALL("PNG (Portable Network Graphics) image"),
@@ -1013,3 +1145,4 @@ AVCodec ff_png_decoder = {
     .update_thread_context = ONLY_IF_THREADS_ENABLED(update_thread_context),
     .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_FRAME_THREADS /*| CODEC_CAP_DRAW_HORIZ_BAND*/,
 };
+#endif
