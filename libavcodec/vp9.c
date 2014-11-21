@@ -145,6 +145,7 @@ typedef struct VP9Context {
     uint8_t yac_qi;
     int8_t ydc_qdelta, uvdc_qdelta, uvac_qdelta;
     uint8_t lossless;
+#define MAX_SEGMENT 8
     struct {
         uint8_t enabled;
         uint8_t temporal;
@@ -160,7 +161,7 @@ typedef struct VP9Context {
             int8_t lf_val;
             int16_t qmul[2][2];
             uint8_t lflvl[4][2];
-        } feat[8];
+        } feat[MAX_SEGMENT];
     } segmentation;
     struct {
         unsigned log2_tile_cols, log2_tile_rows;
