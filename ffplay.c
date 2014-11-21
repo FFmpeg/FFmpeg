@@ -3169,8 +3169,9 @@ static int read_thread(void *arg)
         stream_component_close(is, is->video_stream);
     if (is->subtitle_stream >= 0)
         stream_component_close(is, is->subtitle_stream);
-    if (is->ic) {
-        avformat_close_input(&is->ic);
+    if (ic) {
+        avformat_close_input(&ic);
+        is->ic = NULL;
     }
 
     if (ret != 0) {
