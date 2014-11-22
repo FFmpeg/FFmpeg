@@ -360,7 +360,6 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     int i, j;
     int  w = 0,  cw = 0, // in
         pw = 0, cpw = 0; // prev
-    int yuv, yuvu, yuvv;
     int fil;
     char metabuf[128];
     unsigned int histy[DEPTH] = {0},
@@ -412,7 +411,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     // Calculate luma histogram and difference with previous frame or field.
     for (j = 0; j < link->h; j++) {
         for (i = 0; i < link->w; i++) {
-            yuv = in->data[0][w + i];
+            const int yuv = in->data[0][w + i];
             histy[yuv]++;
             dify += abs(in->data[0][w + i] - prev->data[0][pw + i]);
         }
@@ -423,8 +422,8 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     // Calculate chroma histogram and difference with previous frame or field.
     for (j = 0; j < s->chromah; j++) {
         for (i = 0; i < s->chromaw; i++) {
-            yuvu = in->data[1][cw+i];
-            yuvv = in->data[2][cw+i];
+            const int yuvu = in->data[1][cw+i];
+            const int yuvv = in->data[2][cw+i];
             histu[yuvu]++;
             difu += abs(in->data[1][cw+i] - prev->data[1][cpw+i]);
             histv[yuvv]++;
