@@ -47,6 +47,9 @@ typedef struct {
     int yuv_color[3];
     int nb_jobs;
     int *jobs_rets;
+
+    AVFrame *frame_sat;
+    AVFrame *frame_hue;
 } SignalstatsContext;
 
 typedef struct ThreadData {
@@ -94,6 +97,8 @@ static av_cold void uninit(AVFilterContext *ctx)
 {
     SignalstatsContext *s = ctx->priv;
     av_frame_free(&s->frame_prev);
+    av_frame_free(&s->frame_sat);
+    av_frame_free(&s->frame_hue);
     av_freep(&s->jobs_rets);
 }
 
@@ -110,6 +115,22 @@ static int query_formats(AVFilterContext *ctx)
 
     ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
     return 0;
+}
+
+static AVFrame *alloc_frame(enum AVPixelFormat pixfmt, int w, int h)
+{
+    AVFrame *frame = av_frame_alloc();
+    if (!frame)
+        return NULL;
+
+    frame->format = pixfmt;
+    frame->width  = w;
+    frame->height = h;
+
+    if (av_frame_get_buffer(frame, 32) < 0)
+        return NULL;
+
+    return frame;
 }
 
 static int config_props(AVFilterLink *outlink)
@@ -134,6 +155,12 @@ static int config_props(AVFilterLink *outlink)
     s->jobs_rets = av_malloc_array(s->nb_jobs, sizeof(*s->jobs_rets));
     if (!s->jobs_rets)
         return AVERROR(ENOMEM);
+
+    s->frame_sat = alloc_frame(AV_PIX_FMT_GRAY8,  inlink->w, inlink->h);
+    s->frame_hue = alloc_frame(AV_PIX_FMT_GRAY16, inlink->w, inlink->h);
+    if (!s->frame_sat || !s->frame_hue)
+        return AVERROR(ENOMEM);
+
     return 0;
 }
 
@@ -281,6 +308,36 @@ static const struct {
 
 #define DEPTH 256
 
+static void compute_sat_hue_metrics(const SignalstatsContext *s,
+                                    const AVFrame *src,
+                                    AVFrame *dst_sat, AVFrame *dst_hue)
+{
+    int i, j;
+
+    const uint8_t *p_u = src->data[1];
+    const uint8_t *p_v = src->data[2];
+    const int lsz_u = src->linesize[1];
+    const int lsz_v = src->linesize[2];
+
+    uint8_t *p_sat = dst_sat->data[0];
+    uint8_t *p_hue = dst_hue->data[0];
+    const int lsz_sat = dst_sat->linesize[0];
+    const int lsz_hue = dst_hue->linesize[0];
+
+    for (j = 0; j < s->chromah; j++) {
+        for (i = 0; i < s->chromaw; i++) {
+            const int yuvu = p_u[i];
+            const int yuvv = p_v[i];
+            p_sat[i] = hypot(yuvu - 128, yuvv - 128); // int or round?
+            ((int16_t*)p_hue)[i] = floor((180 / M_PI) * atan2f(yuvu-128, yuvv-128) + 180);
+        }
+        p_u   += lsz_u;
+        p_v   += lsz_v;
+        p_sat += lsz_sat;
+        p_hue += lsz_hue;
+    }
+}
+
 static int filter_frame(AVFilterLink *link, AVFrame *in)
 {
     AVFilterContext *ctx = link->dst;
@@ -314,6 +371,13 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     int filtot[FILT_NUMB] = {0};
     AVFrame *prev;
 
+    AVFrame *sat = s->frame_sat;
+    AVFrame *hue = s->frame_hue;
+    const uint8_t *p_sat = sat->data[0];
+    const uint8_t *p_hue = hue->data[0];
+    const int lsz_sat = sat->linesize[0];
+    const int lsz_hue = hue->linesize[0];
+
     if (!s->frame_prev)
         s->frame_prev = av_frame_clone(in);
 
@@ -323,6 +387,8 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
         out = av_frame_clone(in);
         av_frame_make_writable(out);
     }
+
+    compute_sat_hue_metrics(s, in, sat, hue);
 
     // Calculate luma histogram and difference with previous frame or field.
     for (j = 0; j < link->h; j++) {
@@ -338,8 +404,6 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     // Calculate chroma histogram and difference with previous frame or field.
     for (j = 0; j < s->chromah; j++) {
         for (i = 0; i < s->chromaw; i++) {
-            int sat, hue;
-
             yuvu = in->data[1][cw+i];
             yuvv = in->data[2][cw+i];
             histu[yuvu]++;
@@ -347,14 +411,13 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
             histv[yuvv]++;
             difv += abs(in->data[2][cw+i] - prev->data[2][cpw+i]);
 
-            // int or round?
-            sat = hypot(yuvu - 128, yuvv - 128);
-            histsat[sat]++;
-            hue = floor((180 / M_PI) * atan2f(yuvu-128, yuvv-128) + 180);
-            histhue[hue]++;
+            histsat[p_sat[i]]++;
+            histhue[((int16_t*)p_hue)[i]]++;
         }
         cw  += in->linesize[1];
         cpw += prev->linesize[1];
+        p_sat += lsz_sat;
+        p_hue += lsz_hue;
     }
 
     for (fil = 0; fil < FILT_NUMB; fil ++) {
