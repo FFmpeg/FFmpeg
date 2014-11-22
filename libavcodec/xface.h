@@ -85,8 +85,8 @@ enum XFaceColor { XFACE_COLOR_BLACK = 0, XFACE_COLOR_GREY, XFACE_COLOR_WHITE };
  * The probability of the data determines the range of possible encodings.
  * Offset gives the first possible encoding of the range. */
 typedef struct {
-    int range;
-    int offset;
+    uint8_t range;
+    uint8_t offset;
 } ProbRange;
 
 extern const ProbRange ff_xface_probranges_per_level[4][3];
