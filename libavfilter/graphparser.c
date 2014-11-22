@@ -241,8 +241,8 @@ static int link_filter_inouts(AVFilterContext *filt_ctx,
 
         if (p->filter_ctx) {
             ret = link_filter(p->filter_ctx, p->pad_idx, filt_ctx, pad, log_ctx);
-            av_free(p->name);
-            av_free(p);
+            av_freep(&p->name);
+            av_freep(&p);
             if (ret < 0)
                 return ret;
         } else {
@@ -344,10 +344,10 @@ static int parse_outputs(const char **buf, AVFilterInOut **curr_inputs,
                 av_free(name);
                 return ret;
             }
-            av_free(match->name);
-            av_free(name);
-            av_free(match);
-            av_free(input);
+            av_freep(&match->name);
+            av_freep(&name);
+            av_freep(&match);
+            av_freep(&input);
         } else {
             /* Not in the list, so add the first input as a open_output */
             input->name = name;
