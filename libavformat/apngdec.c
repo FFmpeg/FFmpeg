@@ -283,7 +283,7 @@ static int decode_fctl_chunk(AVFormatContext *s, APNGDemuxContext *ctx, AVPacket
             "delay_den: %"PRIu16", "
             "dispose_op: %d, "
             "blend_op: %d\n",
-            __func__,
+            __FUNCTION__,
             sequence_number,
             width,
             height,
