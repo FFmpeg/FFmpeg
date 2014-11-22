@@ -57,6 +57,11 @@ typedef struct ThreadData {
     AVFrame *out;
 } ThreadData;
 
+typedef struct ThreadDataHueSatMetrics {
+    const AVFrame *src;
+    AVFrame *dst_sat, *dst_hue;
+} ThreadDataHueSatMetrics;
+
 #define OFFSET(x) offsetof(SignalstatsContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
 
@@ -308,23 +313,29 @@ static const struct {
 
 #define DEPTH 256
 
-static void compute_sat_hue_metrics(const SignalstatsContext *s,
-                                    const AVFrame *src,
-                                    AVFrame *dst_sat, AVFrame *dst_hue)
+static int compute_sat_hue_metrics(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
     int i, j;
+    ThreadDataHueSatMetrics *td = arg;
+    const SignalstatsContext *s = ctx->priv;
+    const AVFrame *src = td->src;
+    AVFrame *dst_sat = td->dst_sat;
+    AVFrame *dst_hue = td->dst_hue;
 
-    const uint8_t *p_u = src->data[1];
-    const uint8_t *p_v = src->data[2];
+    const int slice_start = (s->chromah *  jobnr   ) / nb_jobs;
+    const int slice_end   = (s->chromah * (jobnr+1)) / nb_jobs;
+
     const int lsz_u = src->linesize[1];
     const int lsz_v = src->linesize[2];
+    const uint8_t *p_u = src->data[1] + slice_start * lsz_u;
+    const uint8_t *p_v = src->data[2] + slice_start * lsz_v;
 
-    uint8_t *p_sat = dst_sat->data[0];
-    uint8_t *p_hue = dst_hue->data[0];
     const int lsz_sat = dst_sat->linesize[0];
     const int lsz_hue = dst_hue->linesize[0];
+    uint8_t *p_sat = dst_sat->data[0] + slice_start * lsz_sat;
+    uint8_t *p_hue = dst_hue->data[0] + slice_start * lsz_hue;
 
-    for (j = 0; j < s->chromah; j++) {
+    for (j = slice_start; j < slice_end; j++) {
         for (i = 0; i < s->chromaw; i++) {
             const int yuvu = p_u[i];
             const int yuvv = p_v[i];
@@ -336,6 +347,8 @@ static void compute_sat_hue_metrics(const SignalstatsContext *s,
         p_sat += lsz_sat;
         p_hue += lsz_hue;
     }
+
+    return 0;
 }
 
 static int filter_frame(AVFilterLink *link, AVFrame *in)
@@ -377,6 +390,11 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     const uint8_t *p_hue = hue->data[0];
     const int lsz_sat = sat->linesize[0];
     const int lsz_hue = hue->linesize[0];
+    ThreadDataHueSatMetrics td_huesat = {
+        .src     = in,
+        .dst_sat = sat,
+        .dst_hue = hue,
+    };
 
     if (!s->frame_prev)
         s->frame_prev = av_frame_clone(in);
@@ -388,7 +406,8 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
         av_frame_make_writable(out);
     }
 
-    compute_sat_hue_metrics(s, in, sat, hue);
+    ctx->internal->execute(ctx, compute_sat_hue_metrics, &td_huesat,
+                           NULL, FFMIN(s->chromah, ctx->graph->nb_threads));
 
     // Calculate luma histogram and difference with previous frame or field.
     for (j = 0; j < link->h; j++) {
