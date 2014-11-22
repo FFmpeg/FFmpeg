@@ -28,7 +28,9 @@ SECTION_TEXT
 cglobal scalarproduct_and_madd_int16, 4,4,8, v1, v2, v3, order, mul
 %if mmsize == 16
     test orderq, 8
-        jnz scalarproduct_and_madd_int16_mmxext;
+        jnz scalarproduct_and_madd_int16_fallback
+%else
+    scalarproduct_and_madd_int16_fallback
 %endif
     shl orderq, 1
     movd    m7, mulm
@@ -122,7 +124,7 @@ align 16
 INIT_XMM ssse3
 cglobal scalarproduct_and_madd_int16, 4,5,10, v1, v2, v3, order, mul
     test orderq, 8
-        jnz scalarproduct_and_madd_int16_mmxext;
+        jnz scalarproduct_and_madd_int16_fallback
     shl orderq, 1
     movd    m7, mulm
     pshuflw m7, m7, 0
