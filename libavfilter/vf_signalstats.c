@@ -413,7 +413,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
         for (i = 0; i < link->w; i++) {
             const int yuv = in->data[0][w + i];
             histy[yuv]++;
-            dify += abs(in->data[0][w + i] - prev->data[0][pw + i]);
+            dify += abs(yuv - prev->data[0][pw + i]);
         }
         w  += in->linesize[0];
         pw += prev->linesize[0];
@@ -425,9 +425,9 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
             const int yuvu = in->data[1][cw+i];
             const int yuvv = in->data[2][cw+i];
             histu[yuvu]++;
-            difu += abs(in->data[1][cw+i] - prev->data[1][cpw+i]);
+            difu += abs(yuvu - prev->data[1][cpw+i]);
             histv[yuvv]++;
-            difv += abs(in->data[2][cw+i] - prev->data[2][cpw+i]);
+            difv += abs(yuvv - prev->data[2][cpw+i]);
 
             histsat[p_sat[i]]++;
             histhue[((int16_t*)p_hue)[i]]++;
