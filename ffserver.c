@@ -3297,13 +3297,8 @@ static AVStream *add_av_stream1(FFServerStream *stream, AVCodecContext *codec, i
     if (!fst)
         return NULL;
     if (copy) {
-        fst->codec = avcodec_alloc_context3(NULL);
-        memcpy(fst->codec, codec, sizeof(AVCodecContext));
-        if (codec->extradata_size) {
-            fst->codec->extradata = av_mallocz(codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
-            memcpy(fst->codec->extradata, codec->extradata,
-                codec->extradata_size);
-        }
+        fst->codec = avcodec_alloc_context3(codec->codec);
+        avcodec_copy_context(fst->codec, codec);
     } else {
         /* live streams must use the actual feed's codec since it may be
          * updated later to carry extradata needed by them.
