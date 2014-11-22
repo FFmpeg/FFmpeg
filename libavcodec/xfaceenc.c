@@ -27,6 +27,7 @@
 #include "xface.h"
 #include "avcodec.h"
 #include "internal.h"
+#include "libavutil/avassert.h"
 
 typedef struct XFaceContext {
     AVClass *class;
@@ -196,9 +197,11 @@ static int xface_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     /* write the inverted big integer in b to intbuf */
     i = 0;
+    av_assert0(b.nb_words < XFACE_MAX_WORDS);
     while (b.nb_words) {
         uint8_t r;
         ff_big_div(&b, XFACE_PRINTS, &r);
+        av_assert0(i < sizeof(intbuf));
         intbuf[i++] = r + XFACE_FIRST_PRINT;
     }
 
