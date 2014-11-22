@@ -1440,6 +1440,14 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
         .mime_types= MT("image/x-xwindowdump"),
     },
+    {
+        .id        = AV_CODEC_ID_APNG,
+        .type      = AVMEDIA_TYPE_VIDEO,
+        .name      = "apng",
+        .long_name = NULL_IF_CONFIG_SMALL("APNG (Animated Portable Network Graphics) image"),
+        .props     = AV_CODEC_PROP_LOSSLESS,
+        .mime_types= MT("image/png"),
+    },
 
     /* various PCM "codecs" */
     {

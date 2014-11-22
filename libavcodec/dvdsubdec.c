@@ -649,6 +649,7 @@ static int dvdsub_parse_extradata(AVCodecContext *avctx)
 {
     DVDSubContext *ctx = (DVDSubContext*) avctx->priv_data;
     char *dataorig, *data;
+    int ret = 1;
 
     if (!avctx->extradata || !avctx->extradata_size)
         return 1;
@@ -669,11 +670,9 @@ static int dvdsub_parse_extradata(AVCodecContext *avctx)
         } else if (strncmp("size:", data, 5) == 0) {
             int w, h;
             if (sscanf(data + 5, "%dx%d", &w, &h) == 2) {
-               int ret = ff_set_dimensions(avctx, w, h);
-               if (ret < 0) {
-                   av_free(dataorig);
-                   return ret;
-               }
+               ret = ff_set_dimensions(avctx, w, h);
+               if (ret < 0)
+                   goto fail;
             }
         }
 
@@ -681,8 +680,9 @@ static int dvdsub_parse_extradata(AVCodecContext *avctx)
         data += strspn(data, "\n\r");
     }
 
+fail:
     av_free(dataorig);
-    return 1;
+    return ret;
 }
 
 static av_cold int dvdsub_init(AVCodecContext *avctx)

@@ -218,7 +218,7 @@ typedef struct AC3DecodeContext {
 #if USE_FIXED
     AVFixedDSPContext *fdsp;
 #else
-    AVFloatDSPContext fdsp;
+    AVFloatDSPContext *fdsp;
 #endif
     AC3DSPContext ac3dsp;
     FmtConvertContext fmt_conv;             ///< optimized conversion functions

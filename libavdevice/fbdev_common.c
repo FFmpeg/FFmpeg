@@ -121,8 +121,8 @@ int ff_fbdev_get_device_list(AVDeviceInfoList *device_list)
 
       fail_device:
         if (device) {
-            av_free(device->device_name);
-            av_free(device->device_description);
+            av_freep(&device->device_name);
+            av_freep(&device->device_description);
             av_freep(&device);
         }
         if (fd >= 0)

@@ -15,6 +15,9 @@ libavutil:     2014-08-09
 
 API changes, most recent first:
 
+2014-11-21 - xxxxxxx - lavu 54.15.100 - dict.h
+   Add av_dict_get_string().
+
 2014-11-18 - xxxxxxx - lavu 54.14.100 - float_dsp.h
   Add avpriv_float_dsp_alloc().
 

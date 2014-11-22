@@ -651,7 +651,7 @@ static av_cold int vp6_decode_free(AVCodecContext *avctx)
     if (s->alpha_context) {
         ff_vp56_free_context(s->alpha_context);
         vp6_decode_free_context(s->alpha_context);
-        av_free(s->alpha_context);
+        av_freep(&s->alpha_context);
     }
 
     return 0;

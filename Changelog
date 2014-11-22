@@ -15,6 +15,7 @@ version <next>:
 - ffserver supports codec private options
 - creating DASH compatible fragmented MP4, MPEG-DASH segmenting muxer
 - WebP muxer with animated WebP support
+- zygoaudio decoding support
 
 
 version 2.4:

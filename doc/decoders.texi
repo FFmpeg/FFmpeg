@@ -192,7 +192,7 @@ ee450d, 101010, eaeaea, 0ce60b, ec14ed, ebff0b, 0d617a, 7b7b7b, d1d1d1,
 7b2a0e, 0d950c, 0f007b, cf0dec, cfa80c, 7c127b}.
 
 @item ifo_palette
-Specify the the IFO file from which the global palette is obtained.
+Specify the IFO file from which the global palette is obtained.
 (experimental)
 
 @item forced_subs_only

@@ -750,7 +750,7 @@ port will be used for the local RTP and RTCP ports.
 
 @item
 If @option{localrtcpport} (the local RTCP port) is not set it will be
-set to the the local RTP port value plus 1.
+set to the local RTP port value plus 1.
 @end enumerate
 
 @section rtsp

@@ -306,7 +306,7 @@ static int decode_audio_frame(AVFrame *frame,
 
     /** Read one audio frame from the input file into a temporary packet. */
     if ((error = av_read_frame(input_format_context, &input_packet)) < 0) {
-        /** If we are the the end of the file, flush the decoder below. */
+        /** If we are at the end of the file, flush the decoder below. */
         if (error == AVERROR_EOF)
             *finished = 1;
         else {

@@ -472,7 +472,7 @@ typedef struct {
     int profile;
 
     int debug_flag;             ///< used for suppressing repeated error messages output
-    AVFloatDSPContext fdsp;
+    AVFloatDSPContext *fdsp;
     FFTContext imdct;
     SynthFilterContext synth;
     DCADSPContext dcadsp;
@@ -2519,8 +2519,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
             float *back_chan = s->samples_chanptr[s->channel_order_tab[s->xch_base_channel]];
             float *lt_chan   = s->samples_chanptr[s->channel_order_tab[s->xch_base_channel - 2]];
             float *rt_chan   = s->samples_chanptr[s->channel_order_tab[s->xch_base_channel - 1]];
-            s->fdsp.vector_fmac_scalar(lt_chan, back_chan, -M_SQRT1_2, 256);
-            s->fdsp.vector_fmac_scalar(rt_chan, back_chan, -M_SQRT1_2, 256);
+            s->fdsp->vector_fmac_scalar(lt_chan, back_chan, -M_SQRT1_2, 256);
+            s->fdsp->vector_fmac_scalar(rt_chan, back_chan, -M_SQRT1_2, 256);
         }
 
         /* If stream contains XXCH, we might need to undo an embedded downmix */
@@ -2540,7 +2540,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
                             scale = s->xxch_dmix_coeff[j][k];
                             if (scale != 0.0) {
                                 dst_chan = s->samples_chanptr[achan];
-                                s->fdsp.vector_fmac_scalar(dst_chan, src_chan,
+                                s->fdsp->vector_fmac_scalar(dst_chan, src_chan,
                                                            -scale, 256);
                             }
                         }
@@ -2603,7 +2603,10 @@ static av_cold int dca_decode_init(AVCodecContext *avctx)
     s->avctx = avctx;
     dca_init_vlcs();
 
-    avpriv_float_dsp_init(&s->fdsp, avctx->flags & CODEC_FLAG_BITEXACT);
+    s->fdsp = avpriv_float_dsp_alloc(avctx->flags & CODEC_FLAG_BITEXACT);
+    if (!s->fdsp)
+        return AVERROR(ENOMEM);
+
     ff_mdct_init(&s->imdct, 6, 1, 1.0);
     ff_synth_filter_init(&s->synth);
     ff_dcadsp_init(&s->dcadsp);
@@ -2630,6 +2633,7 @@ static av_cold int dca_decode_end(AVCodecContext *avctx)
     DCAContext *s = avctx->priv_data;
     ff_mdct_end(&s->imdct);
     av_freep(&s->extra_channels_buffer);
+    av_freep(&s->fdsp);
     return 0;
 }
 

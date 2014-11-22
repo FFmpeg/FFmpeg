@@ -96,7 +96,7 @@ typedef struct {
     GetBitContext gb;
 
     BswapDSPContext bdsp;
-    AVFloatDSPContext fdsp;
+    AVFloatDSPContext *fdsp;
     FFTContext fft;
     DECLARE_ALIGNED(32, FFTComplex, samples)[COEFFS / 2];
     float *out_samples;
@@ -256,7 +256,13 @@ static av_cold int imc_decode_init(AVCodecContext *avctx)
         return ret;
     }
     ff_bswapdsp_init(&q->bdsp);
-    avpriv_float_dsp_init(&q->fdsp, avctx->flags & CODEC_FLAG_BITEXACT);
+    q->fdsp = avpriv_float_dsp_alloc(avctx->flags & CODEC_FLAG_BITEXACT);
+    if (!q->fdsp) {
+        ff_fft_end(&q->fft);
+
+        return AVERROR(ENOMEM);
+    }
+
     avctx->sample_fmt     = AV_SAMPLE_FMT_FLTP;
     avctx->channel_layout = avctx->channels == 1 ? AV_CH_LAYOUT_MONO
                                                  : AV_CH_LAYOUT_STEREO;
@@ -1044,7 +1050,7 @@ static int imc_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     if (avctx->channels == 2) {
-        q->fdsp.butterflies_float((float *)frame->extended_data[0],
+        q->fdsp->butterflies_float((float *)frame->extended_data[0],
                                   (float *)frame->extended_data[1], COEFFS);
     }
 
@@ -1053,12 +1059,12 @@ static int imc_decode_frame(AVCodecContext *avctx, void *data,
     return IMC_BLOCK_SIZE * avctx->channels;
 }
 
-
 static av_cold int imc_decode_close(AVCodecContext * avctx)
 {
     IMCContext *q = avctx->priv_data;
 
     ff_fft_end(&q->fft);
+    av_freep(&q->fdsp);
 
     return 0;
 }
