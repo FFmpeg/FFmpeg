@@ -40,7 +40,7 @@ static int oggvorbis_decode_init(AVCodecContext *avccontext) {
 
     if(! avccontext->extradata_size || ! p) {
         av_log(avccontext, AV_LOG_ERROR, "vorbis extradata absent\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
 
     vorbis_info_init(&context->vi) ;
@@ -65,7 +65,7 @@ static int oggvorbis_decode_init(AVCodecContext *avccontext) {
             if(offset >= avccontext->extradata_size - 1) {
                 av_log(avccontext, AV_LOG_ERROR,
                        "vorbis header sizes damaged\n");
-                ret = -1;
+                ret = AVERROR_INVALIDDATA;
                 goto error;
             }
             hsizes[i] += *p;
@@ -84,7 +84,7 @@ static int oggvorbis_decode_init(AVCodecContext *avccontext) {
     } else {
         av_log(avccontext, AV_LOG_ERROR,
                "vorbis initial header len is wrong: %d\n", *p);
-        ret = -1;
+        ret = AVERROR_INVALIDDATA;
         goto error;
     }
 
@@ -94,7 +94,7 @@ static int oggvorbis_decode_init(AVCodecContext *avccontext) {
         context->op.packet = headers[i];
         if(vorbis_synthesis_headerin(&context->vi, &context->vc, &context->op)<0){
             av_log(avccontext, AV_LOG_ERROR, "%d. vorbis header damaged\n", i+1);
-            ret = -1;
+            ret = AVERROR_INVALIDDATA;
             goto error;
         }
     }
