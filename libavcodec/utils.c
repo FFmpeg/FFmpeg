@@ -1690,6 +1690,8 @@ end:
     return ret;
 free_and_end:
     av_dict_free(&tmp);
+    if (codec->priv_class && codec->priv_data_size)
+        av_opt_free(avctx->priv_data);
     av_freep(&avctx->priv_data);
     if (avctx->internal) {
         av_frame_free(&avctx->internal->to_free);
