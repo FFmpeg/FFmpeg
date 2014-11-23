@@ -355,6 +355,9 @@ static int flv_write_header(AVFormatContext *s)
                            "use vstrict=-1 / -strict -1 to use it anyway.\n");
                     return AVERROR(EINVAL);
                 }
+            } else if (enc->codec_id == AV_CODEC_ID_VP6) {
+                av_log(s, AV_LOG_WARNING,
+                       "Muxing VP6 in flv will produce flipped video on playback.\n");
             }
             break;
         case AVMEDIA_TYPE_AUDIO:
