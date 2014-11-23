@@ -224,14 +224,14 @@ static av_always_inline void vc1_apply_p_v_loop_filter(VC1Context *v, int block_
 
         if (block_num > 3) {
             bottom_cbp      = v->cbp[s->mb_x]      >> (block_num * 4);
-            bottom_is_intra = v->is_intra[s->mb_x] >> (block_num * 4);
+            bottom_is_intra = v->is_intra[s->mb_x] >> block_num;
             mv              = &v->luma_mv[s->mb_x - s->mb_stride];
             mv_stride       = s->mb_stride;
         } else {
             bottom_cbp      = (block_num < 2) ? (mb_cbp               >> ((block_num + 2) * 4))
                                               : (v->cbp[s->mb_x]      >> ((block_num - 2) * 4));
-            bottom_is_intra = (block_num < 2) ? (mb_is_intra          >> ((block_num + 2) * 4))
-                                              : (v->is_intra[s->mb_x] >> ((block_num - 2) * 4));
+            bottom_is_intra = (block_num < 2) ? (mb_is_intra          >> (block_num + 2))
+                                              : (v->is_intra[s->mb_x] >> (block_num - 2));
             mv_stride       = s->b8_stride;
             mv              = &s->current_picture.motion_val[0][s->block_index[block_num] - 2 * mv_stride];
         }
@@ -273,7 +273,7 @@ static av_always_inline void vc1_apply_p_h_loop_filter(VC1Context *v, int block_
     int mb_cbp         = v->cbp[s->mb_x - 1 - s->mb_stride],
         block_cbp      = mb_cbp      >> (block_num * 4), right_cbp,
         mb_is_intra    = v->is_intra[s->mb_x - 1 - s->mb_stride],
-        block_is_intra = mb_is_intra >> (block_num * 4), right_is_intra;
+        block_is_intra = mb_is_intra >> block_num, right_is_intra;
     int idx, linesize  = block_num > 3 ? s->uvlinesize : s->linesize, ttblk;
     uint8_t *dst;
 
@@ -288,13 +288,13 @@ static av_always_inline void vc1_apply_p_h_loop_filter(VC1Context *v, int block_
 
         if (block_num > 3) {
             right_cbp      = v->cbp[s->mb_x - s->mb_stride] >> (block_num * 4);
-            right_is_intra = v->is_intra[s->mb_x - s->mb_stride] >> (block_num * 4);
+            right_is_intra = v->is_intra[s->mb_x - s->mb_stride] >> block_num;
             mv             = &v->luma_mv[s->mb_x - s->mb_stride - 1];
         } else {
             right_cbp      = (block_num & 1) ? (v->cbp[s->mb_x - s->mb_stride]      >> ((block_num - 1) * 4))
                                              : (mb_cbp                              >> ((block_num + 1) * 4));
-            right_is_intra = (block_num & 1) ? (v->is_intra[s->mb_x - s->mb_stride] >> ((block_num - 1) * 4))
-                                             : (mb_is_intra                         >> ((block_num + 1) * 4));
+            right_is_intra = (block_num & 1) ? (v->is_intra[s->mb_x - s->mb_stride] >> (block_num - 1))
+                                             : (mb_is_intra                         >> (block_num + 1));
             mv             = &s->current_picture.motion_val[0][s->block_index[block_num] - s->b8_stride * 2 - 2];
         }
         if (block_is_intra & 1 || right_is_intra & 1 || mv[0][0] != mv[1][0] || mv[0][1] != mv[1][1]) {
