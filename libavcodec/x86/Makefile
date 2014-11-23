@@ -50,9 +50,9 @@ OBJS-$(CONFIG_RV30_DECODER)            += x86/rv34dsp_init.o
 OBJS-$(CONFIG_RV40_DECODER)            += x86/rv34dsp_init.o            \
                                           x86/rv40dsp_init.o
 OBJS-$(CONFIG_SVQ1_ENCODER)            += x86/svq1enc_init.o
-OBJS-$(CONFIG_V210_DECODER)            += x86/v210-init.o
-OBJS-$(CONFIG_TTA_DECODER)             += x86/ttadsp_init.o
 OBJS-$(CONFIG_TRUEHD_DECODER)          += x86/mlpdsp_init.o
+OBJS-$(CONFIG_TTA_DECODER)             += x86/ttadsp_init.o
+OBJS-$(CONFIG_V210_DECODER)            += x86/v210-init.o
 OBJS-$(CONFIG_VC1_DECODER)             += x86/vc1dsp_init.o
 OBJS-$(CONFIG_VORBIS_DECODER)          += x86/vorbisdsp_init.o
 OBJS-$(CONFIG_VP6_DECODER)             += x86/vp6dsp_init.o
