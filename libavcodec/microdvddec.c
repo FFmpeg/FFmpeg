@@ -101,7 +101,7 @@ static char *microdvd_load_tags(struct microdvd_tag *tags, char *s)
         case 'C':
             tag.persistent = MICRODVD_PERSISTENT_ON;
         case 'c':
-            if (*s == '$')
+            while (*s == '$' || *s == '#')
                 s++;
             tag.data1 = strtol(s, &s, 16) & 0x00ffffff;
             if (*s != '}')
