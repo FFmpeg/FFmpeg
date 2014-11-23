@@ -409,7 +409,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     }
     for (i = 0; i < ctx->nb_outputs; i++)
         av_freep(&ctx->output_pads[i].name);
-    av_free(cat->in);
+    av_freep(&cat->in);
 }
 
 AVFilter ff_avf_concat = {

@@ -59,6 +59,8 @@ typedef struct SVQ1EncContext {
     int c_block_width;
     int c_block_height;
 
+    DECLARE_ALIGNED(16, int16_t, encoded_block_levels)[6][7][256];
+
     uint16_t *mb_type;
     uint32_t *dummy;
     int16_t (*motion_val8[3])[2];

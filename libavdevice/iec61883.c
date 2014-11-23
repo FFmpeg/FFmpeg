@@ -219,8 +219,8 @@ static int iec61883_parse_queue_hdv(struct iec61883_data *dv, AVPacket *pkt)
         size = avpriv_mpegts_parse_packet(dv->mpeg_demux, pkt, packet->buf,
                                           packet->len);
         dv->queue_first = packet->next;
-        av_free(packet->buf);
-        av_free(packet);
+        av_freep(&packet->buf);
+        av_freep(&packet);
         dv->packets--;
 
         if (size > 0)
@@ -455,8 +455,8 @@ static int iec61883_close(AVFormatContext *context)
     while (dv->queue_first) {
         DVPacket *packet = dv->queue_first;
         dv->queue_first = packet->next;
-        av_free(packet->buf);
-        av_free(packet);
+        av_freep(&packet->buf);
+        av_freep(&packet);
     }
 
     iec61883_cmp_disconnect(dv->raw1394, dv->node, dv->output_port,

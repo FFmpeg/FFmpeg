@@ -283,7 +283,7 @@ static int decode_fctl_chunk(AVFormatContext *s, APNGDemuxContext *ctx, AVPacket
             "delay_den: %"PRIu16", "
             "dispose_op: %d, "
             "blend_op: %d\n",
-            __func__,
+            __FUNCTION__,
             sequence_number,
             width,
             height,
@@ -373,6 +373,7 @@ static int apng_read_packet(AVFormatContext *s, AVPacket *pkt)
         return 0;
     default:
         avpriv_request_sample(s, "In-stream tag=%#08X len=%"PRId64"", tag, avio_tell(pb));
+        avio_skip(pb, len + 4);
     }
 
     /* Handle the unsupported yet cases */

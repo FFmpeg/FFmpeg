@@ -294,6 +294,11 @@ fate-vsynth%-wmv2:               ENCOPTS = -qscale 10
 FATE_VCODEC-$(call ENCDEC, RAWVIDEO, AVI) += yuv
 fate-vsynth%-yuv:                CODEC = rawvideo
 
+FATE_VCODEC-$(call ENCDEC, XFACE, NUT) += xface
+fate-vsynth%-xface:              ENCOPTS = -s 48x48 -sws_flags neighbor+bitexact
+fate-vsynth%-xface:              DECOPTS = -sws_flags neighbor+bitexact
+fate-vsynth%-xface:              FMT = nut
+
 FATE_VCODEC-$(call ENCDEC, YUV4, AVI) += yuv4
 
 FATE_VCODEC-$(call ENCDEC, Y41P, AVI) += y41p

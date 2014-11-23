@@ -490,6 +490,7 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         break;
     case 0x12111100:
     case 0x14121200:
+    case 0x14111100:
     case 0x22211100:
     case 0x22112100:
         if (s->component_id[0] == 'Q' && s->component_id[1] == 'F' && s->component_id[2] == 'A') {
@@ -498,6 +499,8 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
                 goto unk_pixfmt;
             s->upscale_v |= 3;
         } else {
+            if (pix_fmt_id == 0x14111100)
+                s->upscale_v |= 6;
             if (s->bits <= 8) s->avctx->pix_fmt = s->cs_itu601 ? AV_PIX_FMT_YUV440P : AV_PIX_FMT_YUVJ440P;
             else
                 goto unk_pixfmt;
@@ -2146,6 +2149,8 @@ the_end:
                    avctx->pix_fmt == AV_PIX_FMT_YUV422P  ||
                    avctx->pix_fmt == AV_PIX_FMT_YUVJ420P ||
                    avctx->pix_fmt == AV_PIX_FMT_YUV420P  ||
+                   avctx->pix_fmt == AV_PIX_FMT_YUV440P  ||
+                   avctx->pix_fmt == AV_PIX_FMT_YUVJ440P ||
                    avctx->pix_fmt == AV_PIX_FMT_YUVA444P ||
                    avctx->pix_fmt == AV_PIX_FMT_GBRP     ||
                    avctx->pix_fmt == AV_PIX_FMT_GBRAP

@@ -63,7 +63,7 @@ static av_cold int libspeex_decode_init(AVCodecContext *avctx)
             return AVERROR_PATCHWELCOME;
         }
 
-        s->pktsize = ((int[]){5,10,15,20,20,28,28,38,38,46,62})[quality];
+        s->pktsize = ((const int[]){5,10,15,20,20,28,28,38,38,46,62})[quality];
 
         spx_mode           = 0;
     } else if (header) {

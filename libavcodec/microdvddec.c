@@ -66,8 +66,24 @@ static void microdvd_set_tag(struct microdvd_tag *tags, struct microdvd_tag tag)
 // italic, bold, underline, strike-through
 #define MICRODVD_STYLES "ibus"
 
+/* some samples have lines that start with a / indicating non persistent italic
+ * marker */
+static char *check_for_italic_slash_marker(struct microdvd_tag *tags, char *s)
+{
+    if (*s == '/') {
+        struct microdvd_tag tag = tags[indexof(MICRODVD_TAGS, 'y')];
+        tag.key = 'y';
+        tag.data1 |= 1 << 0 /* 'i' position in MICRODVD_STYLES */;
+        microdvd_set_tag(tags, tag);
+        s++;
+    }
+    return s;
+}
+
 static char *microdvd_load_tags(struct microdvd_tag *tags, char *s)
 {
+    s = check_for_italic_slash_marker(tags, s);
+
     while (*s == '{') {
         char *start = s;
         char tag_char = *(s + 1);
@@ -101,7 +117,7 @@ static char *microdvd_load_tags(struct microdvd_tag *tags, char *s)
         case 'C':
             tag.persistent = MICRODVD_PERSISTENT_ON;
         case 'c':
-            if (*s == '$')
+            while (*s == '$' || *s == '#')
                 s++;
             tag.data1 = strtol(s, &s, 16) & 0x00ffffff;
             if (*s != '}')
@@ -178,7 +194,7 @@ static char *microdvd_load_tags(struct microdvd_tag *tags, char *s)
         microdvd_set_tag(tags, tag);
         s++;
     }
-    return s;
+    return check_for_italic_slash_marker(tags, s);
 }
 
 static void microdvd_open_tags(AVBPrint *new_line, struct microdvd_tag *tags)

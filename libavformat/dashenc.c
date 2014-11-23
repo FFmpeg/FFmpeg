@@ -445,10 +445,15 @@ static int dash_write_header(AVFormatContext *s)
                        s->streams[i]->codec->rc_max_rate;
         if (bit_rate) {
             snprintf(os->bandwidth_str, sizeof(os->bandwidth_str),
-                     " bandwidth=\"%i\"", bit_rate);
+                     " bandwidth=\"%d\"", bit_rate);
         } else {
-            av_log(s, AV_LOG_WARNING, "No bit rate set for stream %d\n", i);
-            os->bandwidth_str[0] = 0;
+            int level = s->strict_std_compliance >= FF_COMPLIANCE_STRICT ?
+                        AV_LOG_ERROR : AV_LOG_WARNING;
+            av_log(s, level, "No bit rate set for stream %d\n", i);
+            if (s->strict_std_compliance >= FF_COMPLIANCE_STRICT) {
+                ret = AVERROR(EINVAL);
+                goto fail;
+            }
         }
 
         ctx = avformat_alloc_context();
