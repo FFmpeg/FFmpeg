@@ -37,6 +37,7 @@ OBJS-$(CONFIG_XMM_CLOBBER_TEST)        += x86/w64xmmtest.o
 
 # decoders/encoders
 OBJS-$(CONFIG_AAC_DECODER)             += x86/sbrdsp_init.o
+OBJS-$(CONFIG_APNG_DECODER)            += x86/pngdsp_init.o
 OBJS-$(CONFIG_CAVS_DECODER)            += x86/cavsdsp.o
 OBJS-$(CONFIG_DCA_DECODER)             += x86/dcadsp_init.o
 OBJS-$(CONFIG_DNXHD_ENCODER)           += x86/dnxhdenc_init.o
@@ -127,6 +128,7 @@ YASM-OBJS-$(CONFIG_VP3DSP)             += x86/vp3dsp.o
 
 # decoders/encoders
 YASM-OBJS-$(CONFIG_AAC_DECODER)        += x86/sbrdsp.o
+YASM-OBJS-$(CONFIG_APNG_DECODER)       += x86/pngdsp.o
 YASM-OBJS-$(CONFIG_DCA_DECODER)        += x86/dcadsp.o
 YASM-OBJS-$(CONFIG_HEVC_DECODER)       += x86/hevc_mc.o                 \
                                           x86/hevc_deblock.o            \
