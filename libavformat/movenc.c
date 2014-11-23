@@ -3290,6 +3290,11 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
              * which might not exactly match our dts. Therefore adjust the dts
              * of this packet to be what the previous packets duration implies. */
             trk->cluster[trk->entry].dts = trk->start_dts + trk->track_duration;
+            /* We also may have written the pts and the corresponding duration
+             * in sidx tags; make sure the sidx pts and duration match up with
+             * the next fragment. This means the cts of the first sample must
+             * be the same in all fragments. */
+            pkt->pts = pkt->dts + trk->start_cts;
         } else {
             /* New fragment, but discontinuous from previous fragments.
              * Pretend the duration sum of the earlier fragments is
@@ -3331,6 +3336,9 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
         trk->flags |= MOV_TRACK_CTTS;
     trk->cluster[trk->entry].cts   = pkt->pts - pkt->dts;
     trk->cluster[trk->entry].flags = 0;
+    if (trk->start_cts == AV_NOPTS_VALUE)
+        trk->start_cts = pkt->pts - pkt->dts;
+
     if (enc->codec_id == AV_CODEC_ID_VC1) {
         mov_parse_vc1_frame(pkt, trk, mov->fragments);
     } else if (pkt->flags & AV_PKT_FLAG_KEY) {
@@ -3708,6 +3716,7 @@ static int mov_write_header(AVFormatContext *s)
          * this is updated. */
         track->hint_track = -1;
         track->start_dts  = AV_NOPTS_VALUE;
+        track->start_cts  = AV_NOPTS_VALUE;
         if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
             if (track->tag == MKTAG('m','x','3','p') || track->tag == MKTAG('m','x','3','n') ||
                 track->tag == MKTAG('m','x','4','p') || track->tag == MKTAG('m','x','4','n') ||
