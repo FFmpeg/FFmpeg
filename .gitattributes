@@ -1,2 +1,3 @@
-#* text=auto
-SMC/*       text=auto
+*.sln              text=auto
+*.vcxproj          text=auto
+*.vcxproj.filters  text=auto
