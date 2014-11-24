@@ -2970,9 +2970,11 @@ static int rtmp_write(URLContext *s, const uint8_t *buf, int size)
         }
 
         if (rt->flv_header_bytes < RTMP_HEADER) {
+            int set_data_frame = 0;
             const uint8_t *header = rt->flv_header;
             int copy = FFMIN(RTMP_HEADER - rt->flv_header_bytes, size_temp);
             int channel = RTMP_AUDIO_CHANNEL;
+
             bytestream_get_buffer(&buf_temp, rt->flv_header + rt->flv_header_bytes, copy);
             rt->flv_header_bytes += copy;
             size_temp            -= copy;
@@ -2989,10 +2991,31 @@ static int rtmp_write(URLContext *s, const uint8_t *buf, int size)
             if (pkttype == RTMP_PT_VIDEO)
                 channel = RTMP_VIDEO_CHANNEL;
 
-            //force 12bytes header
+            if (pkttype == RTMP_PT_NOTIFY) {
+                // For onMetaData and |RtmpSampleAccess packets, we want
+                // @setDataFrame prepended to the packet before it gets sent.
+                // However, definitely not *all* RTMP_PT_NOTIFY packets (e.g.,
+                // onTextData and onCuePoint).
+                uint8_t commandbuffer[64];
+                int stringlen = 0, commandsize = size - rt->flv_header_bytes;
+                GetByteContext gbc;
+
+                // buf_temp at this point should be pointing to the RTMP command
+                bytestream2_init(&gbc, buf_temp, commandsize);
+                if (ff_amf_read_string(&gbc, commandbuffer, sizeof(commandbuffer),
+                                       &stringlen))
+                    return AVERROR_INVALIDDATA;
+
+                if (!strcmp(commandbuffer, "onMetaData") ||
+                    !strcmp(commandbuffer, "|RtmpSampleAccess")) {
+                    set_data_frame = 1;
+                }
+            }
+
             if (((pkttype == RTMP_PT_VIDEO || pkttype == RTMP_PT_AUDIO) && ts == 0) ||
                 pkttype == RTMP_PT_NOTIFY) {
-                if (pkttype == RTMP_PT_NOTIFY)
+                // add 12 bytes header if passing @setDataFrame
+                if (set_data_frame)
                     pktsize += 16;
                 if ((ret = ff_rtmp_check_alloc_array(&rt->prev_pkt[1],
                                                      &rt->nb_prev_pkt[1],
@@ -3009,8 +3032,9 @@ static int rtmp_write(URLContext *s, const uint8_t *buf, int size)
             rt->out_pkt.extra = rt->stream_id;
             rt->flv_data = rt->out_pkt.data;
 
-            if (pkttype == RTMP_PT_NOTIFY)
+            if (set_data_frame) {
                 ff_amf_write_string(&rt->flv_data, "@setDataFrame");
+            }
         }
 
         if (rt->flv_size - rt->flv_off > size_temp) {

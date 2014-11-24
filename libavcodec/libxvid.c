@@ -359,7 +359,7 @@ static void xvid_correct_framerate(AVCodecContext *avctx)
 
 static av_cold int xvid_encode_init(AVCodecContext *avctx)
 {
-    int xerr, i;
+    int xerr, i, ret = -1;
     int xvid_flags = avctx->flags;
     struct xvid_context *x = avctx->priv_data;
     uint16_t *intra, *inter;
@@ -659,13 +659,15 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)
 
     x->encoder_handle  = xvid_enc_create.handle;
     avctx->coded_frame = av_frame_alloc();
-    if (!avctx->coded_frame)
-        return AVERROR(ENOMEM);
+    if (!avctx->coded_frame) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
 
     return 0;
 fail:
     xvid_encode_close(avctx);
-    return -1;
+    return ret;
 }
 
 static int xvid_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
@@ -812,6 +814,7 @@ static av_cold int xvid_encode_close(AVCodecContext *avctx)
     av_freep(&x->twopassfile);
     av_freep(&x->intra_matrix);
     av_freep(&x->inter_matrix);
+    av_frame_free(&avctx->coded_frame);
 
     return 0;
 }

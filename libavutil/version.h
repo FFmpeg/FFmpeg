@@ -121,14 +121,6 @@
 #endif
 
 
-#ifndef FF_CONST_AVUTIL53
-#if LIBAVUTIL_VERSION_MAJOR >= 53
-#define FF_CONST_AVUTIL53 const
-#else
-#define FF_CONST_AVUTIL53
-#endif
-#endif
-
 /**
  * @}
  */

@@ -75,6 +75,20 @@ static inline void smv_img_pnt(uint8_t *dst_data[4], uint8_t *src_data[4],
         dst_data[1] = src_data[1];
 }
 
+static av_cold int smvjpeg_decode_end(AVCodecContext *avctx)
+{
+    SMVJpegDecodeContext *s = avctx->priv_data;
+    MJpegDecodeContext *jpg = &s->jpg;
+    int ret;
+
+    jpg->picture_ptr = NULL;
+    av_frame_free(&s->picture[0]);
+    av_frame_free(&s->picture[1]);
+    ret = avcodec_close(s->avctx);
+    av_freep(&s->avctx);
+    return ret;
+}
+
 static av_cold int smvjpeg_decode_init(AVCodecContext *avctx)
 {
     SMVJpegDecodeContext *s = avctx->priv_data;
@@ -89,8 +103,10 @@ static av_cold int smvjpeg_decode_init(AVCodecContext *avctx)
         return AVERROR(ENOMEM);
 
     s->picture[1] = av_frame_alloc();
-    if (!s->picture[1])
+    if (!s->picture[1]) {
+        av_frame_free(&s->picture[0]);
         return AVERROR(ENOMEM);
+    }
 
     s->jpg.picture_ptr      = s->picture[0];
 
@@ -120,6 +136,8 @@ static av_cold int smvjpeg_decode_init(AVCodecContext *avctx)
     }
     av_dict_free(&thread_opt);
 
+    if (ret < 0)
+        smvjpeg_decode_end(avctx);
     return ret;
 }
 
@@ -173,20 +191,6 @@ static int smvjpeg_decode_frame(AVCodecContext *avctx, void *data, int *data_siz
         ret = av_frame_ref(data, s->picture[1]);
     }
 
-    return ret;
-}
-
-static av_cold int smvjpeg_decode_end(AVCodecContext *avctx)
-{
-    SMVJpegDecodeContext *s = avctx->priv_data;
-    MJpegDecodeContext *jpg = &s->jpg;
-    int ret;
-
-    jpg->picture_ptr = NULL;
-    av_frame_free(&s->picture[0]);
-    av_frame_free(&s->picture[1]);
-    ret = avcodec_close(s->avctx);
-    av_freep(&s->avctx);
     return ret;
 }
 
