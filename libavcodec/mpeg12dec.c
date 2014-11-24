@@ -149,7 +149,7 @@ static inline int mpeg1_decode_block_intra(MpegEncContext *s,
     component = (n <= 3 ? 0 : n - 4 + 1);
     diff = decode_dc(&s->gb, component);
     if (diff >= 0xffff)
-        return -1;
+        return AVERROR_INVALIDDATA;
     dc  = s->last_dc[component];
     dc += diff;
     s->last_dc[component] = dc;
@@ -545,7 +545,7 @@ static inline int mpeg2_decode_block_intra(MpegEncContext *s,
     }
     diff = decode_dc(&s->gb, component);
     if (diff >= 0xffff)
-        return -1;
+        return AVERROR_INVALIDDATA;
     dc  = s->last_dc[component];
     dc += diff;
     s->last_dc[component] = dc;
@@ -625,7 +625,7 @@ static inline int mpeg2_fast_decode_block_intra(MpegEncContext *s,
     }
     diff = decode_dc(&s->gb, component);
     if (diff >= 0xffff)
-        return -1;
+        return AVERROR_INVALIDDATA;
     dc = s->last_dc[component];
     dc += diff;
     s->last_dc[component] = dc;
@@ -711,6 +711,7 @@ static int mpeg_decode_mb(MpegEncContext *s, int16_t block[12][64])
 {
     int i, j, k, cbp, val, mb_type, motion_type;
     const int mb_block_count = 4 + (1 << s->chroma_format);
+    int ret;
 
     av_dlog(s->avctx, "decode_mb: x=%d y=%d\n", s->mb_x, s->mb_y);
 
@@ -730,7 +731,7 @@ static int mpeg_decode_mb(MpegEncContext *s, int16_t block[12][64])
                 // FIXME not sure if this is allowed in MPEG at all
                 mb_type = s->current_picture.mb_type[s->mb_width + (s->mb_y - 1) * s->mb_stride - 1];
             if (IS_INTRA(mb_type))
-                return -1;
+                return AVERROR_INVALIDDATA;
             s->current_picture.mb_type[s->mb_x + s->mb_y * s->mb_stride] =
                 mb_type | MB_TYPE_SKIP;
 //            assert(s->current_picture.mb_type[s->mb_x + s->mb_y * s->mb_stride - 1] & (MB_TYPE_16x16 | MB_TYPE_16x8));
@@ -750,7 +751,7 @@ static int mpeg_decode_mb(MpegEncContext *s, int16_t block[12][64])
                 av_log(s->avctx, AV_LOG_ERROR,
                        "invalid mb type in I Frame at %d %d\n",
                        s->mb_x, s->mb_y);
-                return -1;
+                return AVERROR_INVALIDDATA;
             }
             mb_type = MB_TYPE_QUANT | MB_TYPE_INTRA;
         } else {
@@ -762,7 +763,7 @@ static int mpeg_decode_mb(MpegEncContext *s, int16_t block[12][64])
         if (mb_type < 0) {
             av_log(s->avctx, AV_LOG_ERROR,
                    "invalid mb type in P Frame at %d %d\n", s->mb_x, s->mb_y);
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         mb_type = ptype2mb_type[mb_type];
         break;
@@ -771,7 +772,7 @@ static int mpeg_decode_mb(MpegEncContext *s, int16_t block[12][64])
         if (mb_type < 0) {
             av_log(s->avctx, AV_LOG_ERROR,
                    "invalid mb type in B Frame at %d %d\n", s->mb_x, s->mb_y);
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         mb_type = btype2mb_type[mb_type];
         break;
@@ -827,13 +828,13 @@ FF_ENABLE_DEPRECATION_WARNINGS
                     mpeg2_fast_decode_block_intra(s, *s->pblocks[i], i);
             } else {
                 for (i = 0; i < mb_block_count; i++)
-                    if (mpeg2_decode_block_intra(s, *s->pblocks[i], i) < 0)
-                        return -1;
+                    if ((ret = mpeg2_decode_block_intra(s, *s->pblocks[i], i)) < 0)
+                        return ret;
             }
         } else {
             for (i = 0; i < 6; i++)
-                if (mpeg1_decode_block_intra(s, *s->pblocks[i], i) < 0)
-                    return -1;
+                if ((ret = mpeg1_decode_block_intra(s, *s->pblocks[i], i)) < 0)
+                    return ret;
         }
     } else {
         if (mb_type & MB_TYPE_ZERO_MV) {
@@ -1011,7 +1012,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             default:
                 av_log(s->avctx, AV_LOG_ERROR,
                        "00 motion_type at %d %d\n", s->mb_x, s->mb_y);
-                return -1;
+                return AVERROR_INVALIDDATA;
             }
         }
 
@@ -1028,7 +1029,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             if (cbp <= 0) {
                 av_log(s->avctx, AV_LOG_ERROR,
                        "invalid cbp at %d %d\n", s->mb_x, s->mb_y);
-                return -1;
+                return AVERROR_INVALIDDATA;
             }
 
 #if FF_API_XVMC
@@ -1053,8 +1054,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
                     for (i = 0; i < mb_block_count; i++) {
                         if (cbp & (1 << 11)) {
-                            if (mpeg2_decode_block_non_intra(s, *s->pblocks[i], i) < 0)
-                                return -1;
+                            if ((ret = mpeg2_decode_block_non_intra(s, *s->pblocks[i], i)) < 0)
+                                return ret;
                         } else {
                             s->block_last_index[i] = -1;
                         }
@@ -1073,8 +1074,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 } else {
                     for (i = 0; i < 6; i++) {
                         if (cbp & 32) {
-                            if (mpeg1_decode_block_inter(s, *s->pblocks[i], i) < 0)
-                                return -1;
+                            if ((ret = mpeg1_decode_block_inter(s, *s->pblocks[i], i)) < 0)
+                                return ret;
                         } else {
                             s->block_last_index[i] = -1;
                         }
@@ -1241,9 +1242,6 @@ static int mpeg_decode_postinit(AVCodecContext *avctx)
             s->parse_context = pc;
         }
 
-        if ((s->width == 0) || (s->height == 0))
-            return -2;
-
         ret = ff_set_dimensions(avctx, s->width, s->height);
         if (ret < 0)
             return ret;
@@ -1327,8 +1325,8 @@ static int mpeg_decode_postinit(AVCodecContext *avctx)
         memcpy(old_permutation, s->idsp.idct_permutation, 64 * sizeof(uint8_t));
 
         ff_mpv_idct_init(s);
-        if (ff_mpv_common_init(s) < 0)
-            return -2;
+        if ((ret = ff_mpv_common_init(s)) < 0)
+            return ret;
 
         quant_matrix_rebuild(s->intra_matrix,        old_permutation, s->idsp.idct_permutation);
         quant_matrix_rebuild(s->inter_matrix,        old_permutation, s->idsp.idct_permutation);
@@ -1352,7 +1350,7 @@ static int mpeg1_decode_picture(AVCodecContext *avctx, const uint8_t *buf,
     ref = get_bits(&s->gb, 10); /* temporal ref */
     s->pict_type = get_bits(&s->gb, 3);
     if (s->pict_type == 0 || s->pict_type > 3)
-        return -1;
+        return AVERROR_INVALIDDATA;
 
     vbv_delay = get_bits(&s->gb, 16);
     if (s->pict_type == AV_PICTURE_TYPE_P ||
@@ -1360,7 +1358,7 @@ static int mpeg1_decode_picture(AVCodecContext *avctx, const uint8_t *buf,
         s->full_pel[0] = get_bits1(&s->gb);
         f_code = get_bits(&s->gb, 3);
         if (f_code == 0 && (avctx->err_recognition & AV_EF_BITSTREAM))
-            return -1;
+            return AVERROR_INVALIDDATA;
         s->mpeg_f_code[0][0] = f_code;
         s->mpeg_f_code[0][1] = f_code;
     }
@@ -1368,7 +1366,7 @@ static int mpeg1_decode_picture(AVCodecContext *avctx, const uint8_t *buf,
         s->full_pel[1] = get_bits1(&s->gb);
         f_code = get_bits(&s->gb, 3);
         if (f_code == 0 && (avctx->err_recognition & AV_EF_BITSTREAM))
-            return -1;
+            return AVERROR_INVALIDDATA;
         s->mpeg_f_code[1][0] = f_code;
         s->mpeg_f_code[1][1] = f_code;
     }
@@ -1489,7 +1487,7 @@ static int load_matrix(MpegEncContext *s, uint16_t matrix0[64],
         int v = get_bits(&s->gb, 8);
         if (v == 0) {
             av_log(s->avctx, AV_LOG_ERROR, "matrix damaged\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         if (intra && i == 0 && v != 8) {
             av_log(s->avctx, AV_LOG_ERROR, "intra matrix invalid, ignoring\n");
@@ -1600,13 +1598,14 @@ static int mpeg_field_start(MpegEncContext *s, const uint8_t *buf, int buf_size)
 {
     AVCodecContext *avctx = s->avctx;
     Mpeg1Context *s1      = (Mpeg1Context *) s;
+    int ret;
 
     /* start frame decoding */
     if (s->first_field || s->picture_structure == PICT_FRAME) {
         AVFrameSideData *pan_scan;
 
-        if (ff_mpv_frame_start(s, avctx) < 0)
-            return -1;
+        if ((ret = ff_mpv_frame_start(s, avctx)) < 0)
+            return ret;
 
         ff_mpeg_er_frame_start(s);
 
@@ -1666,7 +1665,7 @@ static int mpeg_field_start(MpegEncContext *s, const uint8_t *buf, int buf_size)
 
         if (!s->current_picture_ptr) {
             av_log(s->avctx, AV_LOG_ERROR, "first field missing\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
 
         if (s->avctx->hwaccel &&
@@ -1685,8 +1684,8 @@ static int mpeg_field_start(MpegEncContext *s, const uint8_t *buf, int buf_size)
     }
 
     if (avctx->hwaccel) {
-        if (avctx->hwaccel->start_frame(avctx, buf, buf_size) < 0)
-            return -1;
+        if ((ret = avctx->hwaccel->start_frame(avctx, buf, buf_size)) < 0)
+            return ret;
     }
 
 #if FF_API_XVMC
@@ -1716,6 +1715,7 @@ static int mpeg_decode_slice(MpegEncContext *s, int mb_y,
 {
     AVCodecContext *avctx = s->avctx;
     const int field_pic   = s->picture_structure != PICT_FRAME;
+    int ret;
 
     s->resync_mb_x =
     s->resync_mb_y = -1;
@@ -1731,7 +1731,7 @@ static int mpeg_decode_slice(MpegEncContext *s, int mb_y,
 
     if (s->qscale == 0) {
         av_log(s->avctx, AV_LOG_ERROR, "qscale == 0\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     /* extra slice info */
@@ -1748,7 +1748,7 @@ static int mpeg_decode_slice(MpegEncContext *s, int mb_y,
                                 MBINCR_VLC_BITS, 2);
             if (code < 0) {
                 av_log(s->avctx, AV_LOG_ERROR, "first mb_incr damaged\n");
-                return -1;
+                return AVERROR_INVALIDDATA;
             }
             if (code >= 33) {
                 if (code == 33)
@@ -1763,7 +1763,7 @@ static int mpeg_decode_slice(MpegEncContext *s, int mb_y,
 
     if (s->mb_x >= (unsigned) s->mb_width) {
         av_log(s->avctx, AV_LOG_ERROR, "initial skip overflow\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     if (avctx->hwaccel) {
@@ -1814,8 +1814,8 @@ FF_DISABLE_DEPRECATION_WARNINGS
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif /* FF_API_XVMC */
 
-        if (mpeg_decode_mb(s, s->block) < 0)
-            return -1;
+        if ((ret = mpeg_decode_mb(s, s->block)) < 0)
+            return ret;
 
         // Note motion_val is normally NULL unless we want to extract the MVs.
         if (s->current_picture.motion_val[0] && !s->encoding) {
@@ -1882,7 +1882,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
                     ((avctx->err_recognition & AV_EF_BUFFER) && left > 8)) {
                     av_log(avctx, AV_LOG_ERROR, "end mismatch left=%d %0X\n",
                            left, show_bits(&s->gb, FFMIN(left, 23)));
-                    return -1;
+                    return AVERROR_INVALIDDATA;
                 } else
                     goto eos;
             }
@@ -1899,7 +1899,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
                                     MBINCR_VLC_BITS, 2);
                 if (code < 0) {
                     av_log(s->avctx, AV_LOG_ERROR, "mb incr damaged\n");
-                    return -1;
+                    return AVERROR_INVALIDDATA;
                 }
                 if (code >= 33) {
                     if (code == 33) {
@@ -1907,7 +1907,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
                     } else if (code == 35) {
                         if (s->mb_skip_run != 0 || show_bits(&s->gb, 15) != 0) {
                             av_log(s->avctx, AV_LOG_ERROR, "slice mismatch\n");
-                            return -1;
+                            return AVERROR_INVALIDDATA;
                         }
                         goto eos; /* end of slice */
                     }
@@ -1922,7 +1922,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 if (s->pict_type == AV_PICTURE_TYPE_I) {
                     av_log(s->avctx, AV_LOG_ERROR,
                            "skipped MB in I frame at %d %d\n", s->mb_x, s->mb_y);
-                    return -1;
+                    return AVERROR_INVALIDDATA;
                 }
 
                 /* skip mb */
@@ -1996,7 +1996,7 @@ static int slice_decode_thread(AVCodecContext *c, void *arg)
         if (s->picture_structure == PICT_BOTTOM_FIELD)
             mb_y++;
         if (mb_y < 0 || mb_y >= s->end_mb_y)
-            return -1;
+            return AVERROR_INVALIDDATA;
     }
 }
 
@@ -2079,18 +2079,18 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
     if (s->aspect_ratio_info == 0) {
         av_log(avctx, AV_LOG_ERROR, "aspect ratio has forbidden 0 value\n");
         if (avctx->err_recognition & AV_EF_BITSTREAM)
-            return -1;
+            return AVERROR_INVALIDDATA;
     }
     s->frame_rate_index = get_bits(&s->gb, 4);
     if (s->frame_rate_index == 0 || s->frame_rate_index > 13) {
         av_log(avctx, AV_LOG_WARNING,
                "frame_rate_index %d is invalid\n", s->frame_rate_index);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     s->bit_rate = get_bits(&s->gb, 18) * 400;
     if (get_bits1(&s->gb) == 0) { /* marker */
         av_log(avctx, AV_LOG_ERROR, "Marker in sequence header missing\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     s->width  = width;
     s->height = height;
@@ -2122,7 +2122,7 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
 
     if (show_bits(&s->gb, 23) != 0) {
         av_log(s->avctx, AV_LOG_ERROR, "sequence header damaged\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     /* We set MPEG-2 parameters so that it emulates MPEG-1. */
@@ -2148,7 +2148,7 @@ static int vcr2_init_sequence(AVCodecContext *avctx)
 {
     Mpeg1Context *s1  = avctx->priv_data;
     MpegEncContext *s = &s1->mpeg_enc_ctx;
-    int i, v;
+    int i, v, ret;
 
     /* start new MPEG-1 context decoding */
     s->out_format = FMT_MPEG1;
@@ -2171,8 +2171,8 @@ static int vcr2_init_sequence(AVCodecContext *avctx)
         avctx->idct_algo = FF_IDCT_SIMPLE;
 
     ff_mpv_idct_init(s);
-    if (ff_mpv_common_init(s) < 0)
-        return -1;
+    if ((ret = ff_mpv_common_init(s)) < 0)
+        return ret;
     s1->mpeg_enc_ctx_allocated = 1;
 
     for (i = 0; i < 64; i++) {
@@ -2505,7 +2505,7 @@ static int decode_chunks(AVCodecContext *avctx, AVFrame *picture,
                 if (mb_y >= s2->mb_height) {
                     av_log(s2->avctx, AV_LOG_ERROR,
                            "slice below image (%d >= %d)\n", mb_y, s2->mb_height);
-                    return -1;
+                    return AVERROR_INVALIDDATA;
                 }
 
                 if (!s2->last_picture_ptr) {
@@ -2556,8 +2556,8 @@ static int decode_chunks(AVCodecContext *avctx, AVFrame *picture,
                 if (s->first_slice) {
                     skip_frame     = 0;
                     s->first_slice = 0;
-                    if (mpeg_field_start(s2, buf, buf_size) < 0)
-                        return -1;
+                    if ((ret = mpeg_field_start(s2, buf, buf_size)) < 0)
+                        return ret;
                 }
                 if (!s2->current_picture_ptr) {
                     av_log(avctx, AV_LOG_ERROR,
