@@ -2968,7 +2968,6 @@ static int rtmp_write(URLContext *s, const uint8_t *buf, int size)
             if (pkttype == RTMP_PT_VIDEO)
                 channel = RTMP_VIDEO_CHANNEL;
 
-            //force 12bytes header
             if (((pkttype == RTMP_PT_VIDEO || pkttype == RTMP_PT_AUDIO) && ts == 0) ||
                 pkttype == RTMP_PT_NOTIFY) {
                 if (pkttype == RTMP_PT_NOTIFY)
@@ -2977,6 +2976,9 @@ static int rtmp_write(URLContext *s, const uint8_t *buf, int size)
                                                      &rt->nb_prev_pkt[1],
                                                      channel)) < 0)
                     return ret;
+                // Force sending a full 12 bytes header by cleaing the
+                // channel id, to make it not match a potential earlier
+                // packet in the same channel.
                 rt->prev_pkt[1][channel].channel_id = 0;
             }
 
