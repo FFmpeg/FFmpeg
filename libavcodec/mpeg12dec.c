@@ -2082,11 +2082,16 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
             return -1;
     }
     s->frame_rate_index = get_bits(&s->gb, 4);
-    if (s->frame_rate_index == 0 || s->frame_rate_index > 13)
+    if (s->frame_rate_index == 0 || s->frame_rate_index > 13) {
+        av_log(avctx, AV_LOG_WARNING,
+               "frame_rate_index %d is invalid\n", s->frame_rate_index);
         return -1;
+    }
     s->bit_rate = get_bits(&s->gb, 18) * 400;
-    if (get_bits1(&s->gb) == 0) /* marker */
+    if (get_bits1(&s->gb) == 0) { /* marker */
+        av_log(avctx, AV_LOG_ERROR, "Marker in sequence header missing\n");
         return -1;
+    }
     s->width  = width;
     s->height = height;
 
