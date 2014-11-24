@@ -234,6 +234,9 @@
     <ClCompile Include="..\libavformat\ape.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavformat\apngdec.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavformat\aqtitledec.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>

@@ -494,6 +494,15 @@
     <ClCompile Include="..\libavcodec\apedec.c">
       <ObjectFileName>$(IntDir)\libavcodec_apedec.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\png.c">
+      <ObjectFileName>$(IntDir)\libavcodec_png.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\pngdec.c">
+      <ObjectFileName>$(IntDir)\libavcodec_pngdec.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\pngdsp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_pngdsp.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\assdec.c">
       <ObjectFileName>$(IntDir)\libavcodec_assdec.obj</ObjectFileName>
     </ClCompile>
@@ -1270,15 +1279,6 @@
     </ClCompile>
     <ClCompile Include="..\libavcodec\textdec.c">
       <ObjectFileName>$(IntDir)\libavcodec_textdec.obj</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="..\libavcodec\png.c">
-      <ObjectFileName>$(IntDir)\libavcodec_png.obj</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="..\libavcodec\pngdec.c">
-      <ObjectFileName>$(IntDir)\libavcodec_pngdec.obj</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="..\libavcodec\pngdsp.c">
-      <ObjectFileName>$(IntDir)\libavcodec_pngdsp.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavcodec\pngenc.c">
       <ObjectFileName>$(IntDir)\libavcodec_pngenc.obj</ObjectFileName>
@@ -2999,7 +2999,7 @@ cd $(ProjectDir)
       <TargetMachine>MachineX86</TargetMachine>
       <SubSystem>Windows</SubSystem>
       <OutputFile>$(OutDir)\lib\$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalDependencies>libbz2.lib;libiconv.lib;libfdk-aac.lib;libilbc.lib;libmp3lame.lib;libopus.lib;libspeex.lib;libtheora.lib;libvorbis.lib;libvpx.lib;libx264.lib;libx265.lib;libxvidcore.lib;liblzma.lib;libz.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libbz2.lib;libiconv.lib;libfdk-aac.lib;libilbc.lib;libmp3lame.lib;libopus.lib;libspeex.lib;libtheora.lib;libvorbis.lib;libvpx.lib;libx264.lib;libx265.lib;libxvidcore.lib;liblzma.a;libz.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Lib>
     <PostBuildEvent>
@@ -3077,7 +3077,7 @@ cd $(ProjectDir)
       <TargetMachine>MachineX64</TargetMachine>
       <SubSystem>Windows</SubSystem>
       <OutputFile>$(OutDir)\lib\$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalDependencies>libbz2.lib;libiconv.lib;libfdk-aac.lib;libilbc.lib;libmp3lame.lib;libopus.lib;libspeex.lib;libtheora.lib;libvorbis.lib;libvpx.lib;libx264.lib;libx265.lib;libxvidcore.lib;liblzma.lib;libz.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libbz2.lib;libiconv.lib;libfdk-aac.lib;libilbc.lib;libmp3lame.lib;libopus.lib;libspeex.lib;libtheora.lib;libvorbis.lib;libvpx.lib;libx264.lib;libx265.lib;libxvidcore.lib;liblzma.a;libz.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Lib>
     <PostBuildEvent>

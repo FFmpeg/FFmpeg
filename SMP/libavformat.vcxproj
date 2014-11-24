@@ -275,6 +275,9 @@
     <ClCompile Include="..\libavformat\ape.c">
       <ObjectFileName>$(IntDir)\libavformat_ape.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavformat\apngdec.c">
+      <ObjectFileName>$(IntDir)\libavformat_apngdec.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavformat\aqtitledec.c">
       <ObjectFileName>$(IntDir)\libavformat_aqtitledec.obj</ObjectFileName>
     </ClCompile>
