@@ -380,7 +380,7 @@ del ..\libavutil\ffversion.h
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <FloatingPointModel>Precise</FloatingPointModel>
       <AdditionalOptions>/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
-	  <InterproceduralOptimization>SingleFile</InterproceduralOptimization>
+      <InterproceduralOptimization>SingleFile</InterproceduralOptimization>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -431,7 +431,7 @@ del ..\libavutil\ffversion.h
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <FloatingPointModel>Precise</FloatingPointModel>
       <AdditionalOptions>/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
-	  <InterproceduralOptimization>SingleFile</InterproceduralOptimization>
+      <InterproceduralOptimization>SingleFile</InterproceduralOptimization>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -482,7 +482,7 @@ del ..\libavutil\ffversion.h
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <FloatingPointModel>Precise</FloatingPointModel>
       <AdditionalOptions>/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
-	  <InterproceduralOptimization>SingleFile</InterproceduralOptimization>
+      <InterproceduralOptimization>SingleFile</InterproceduralOptimization>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -533,7 +533,7 @@ del ..\libavutil\ffversion.h
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <FloatingPointModel>Precise</FloatingPointModel>
       <AdditionalOptions>/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
-	  <InterproceduralOptimization>SingleFile</InterproceduralOptimization>
+      <InterproceduralOptimization>SingleFile</InterproceduralOptimization>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>

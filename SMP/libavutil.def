@@ -75,6 +75,7 @@ EXPORTS
     av_dict_count
     av_dict_free
     av_dict_get
+    av_dict_get_string
     av_dict_parse_string
     av_dict_set
     av_dict_set_int

@@ -2150,6 +2150,9 @@
     <ClCompile Include="..\libavcodec\x86\sbrdsp_init.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_sbrdsp_init.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\x86\pngdsp_init.c">
+      <ObjectFileName>$(IntDir)\libavcodec_x86_pngdsp_init.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\x86\cavsdsp.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_cavsdsp.obj</ObjectFileName>
     </ClCompile>
@@ -2168,9 +2171,6 @@
     <ClCompile Include="..\libavcodec\x86\xvididct_init.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_xvididct_init.obj</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="..\libavcodec\x86\pngdsp_init.c">
-      <ObjectFileName>$(IntDir)\libavcodec_x86_pngdsp_init.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\x86\proresdsp_init.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_proresdsp_init.obj</ObjectFileName>
     </ClCompile>
@@ -2183,11 +2183,11 @@
     <ClCompile Include="..\libavcodec\x86\svq1enc_init.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_svq1enc_init.obj</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="..\libavcodec\x86\v210-init.c">
-      <ObjectFileName>$(IntDir)\libavcodec_x86_v210-init.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\x86\ttadsp_init.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_ttadsp_init.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\x86\v210-init.c">
+      <ObjectFileName>$(IntDir)\libavcodec_x86_v210-init.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavcodec\x86\vc1dsp_init.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_vc1dsp_init.obj</ObjectFileName>
@@ -2284,13 +2284,13 @@
     <YASM Include="..\libavcodec\x86\videodsp.asm" />
     <YASM Include="..\libavcodec\x86\vp3dsp.asm" />
     <YASM Include="..\libavcodec\x86\sbrdsp.asm" />
+    <YASM Include="..\libavcodec\x86\pngdsp.asm" />
     <YASM Include="..\libavcodec\x86\dcadsp.asm" />
     <YASM Include="..\libavcodec\x86\hevc_mc.asm" />
     <YASM Include="..\libavcodec\x86\hevc_deblock.asm" />
     <YASM Include="..\libavcodec\x86\hevc_idct.asm" />
     <YASM Include="..\libavcodec\x86\hevc_res_add.asm" />
     <YASM Include="..\libavcodec\x86\mlpdsp.asm" />
-    <YASM Include="..\libavcodec\x86\pngdsp.asm" />
     <YASM Include="..\libavcodec\x86\proresdsp.asm" />
     <YASM Include="..\libavcodec\x86\rv34dsp.asm" />
     <YASM Include="..\libavcodec\x86\rv40dsp.asm" />
@@ -2999,7 +2999,7 @@ cd $(ProjectDir)
       <TargetMachine>MachineX86</TargetMachine>
       <SubSystem>Windows</SubSystem>
       <OutputFile>$(OutDir)\lib\$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalDependencies>libbz2.lib;libiconv.lib;libfdk-aac.lib;libilbc.lib;libmp3lame.lib;libopus.lib;libspeex.lib;libtheora.lib;libvorbis.lib;libvpx.lib;libx264.lib;libx265.lib;libxvidcore.lib;liblzma.a;libz.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libbz2.lib;libiconv.lib;libfdk-aac.lib;libilbc.lib;libmp3lame.lib;libopus.lib;libspeex.lib;libtheora.lib;libvorbis.lib;libvpx.lib;libx264.lib;libx265.lib;libxvidcore.lib;liblzma.lib;libz.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Lib>
     <PostBuildEvent>
@@ -3077,7 +3077,7 @@ cd $(ProjectDir)
       <TargetMachine>MachineX64</TargetMachine>
       <SubSystem>Windows</SubSystem>
       <OutputFile>$(OutDir)\lib\$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalDependencies>libbz2.lib;libiconv.lib;libfdk-aac.lib;libilbc.lib;libmp3lame.lib;libopus.lib;libspeex.lib;libtheora.lib;libvorbis.lib;libvpx.lib;libx264.lib;libx265.lib;libxvidcore.lib;liblzma.a;libz.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libbz2.lib;libiconv.lib;libfdk-aac.lib;libilbc.lib;libmp3lame.lib;libopus.lib;libspeex.lib;libtheora.lib;libvorbis.lib;libvpx.lib;libx264.lib;libx265.lib;libxvidcore.lib;liblzma.lib;libz.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Lib>
     <PostBuildEvent>
