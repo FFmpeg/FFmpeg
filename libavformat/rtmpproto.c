@@ -2933,7 +2933,7 @@ static int rtmp_write(URLContext *s, const uint8_t *buf, int size)
 {
     RTMPContext *rt = s->priv_data;
     int size_temp = size;
-    int pktsize, pkttype;
+    int pktsize, pkttype, copy;
     uint32_t ts;
     const uint8_t *buf_temp = buf;
     uint8_t c;
@@ -2950,8 +2950,8 @@ static int rtmp_write(URLContext *s, const uint8_t *buf, int size)
 
         if (rt->flv_header_bytes < RTMP_HEADER) {
             const uint8_t *header = rt->flv_header;
-            int copy = FFMIN(RTMP_HEADER - rt->flv_header_bytes, size_temp);
             int channel = RTMP_AUDIO_CHANNEL;
+            copy = FFMIN(RTMP_HEADER - rt->flv_header_bytes, size_temp);
             bytestream_get_buffer(&buf_temp, rt->flv_header + rt->flv_header_bytes, copy);
             rt->flv_header_bytes += copy;
             size_temp            -= copy;
@@ -2994,15 +2994,10 @@ static int rtmp_write(URLContext *s, const uint8_t *buf, int size)
                 ff_amf_write_string(&rt->flv_data, "@setDataFrame");
         }
 
-        if (rt->flv_size - rt->flv_off > size_temp) {
-            bytestream_get_buffer(&buf_temp, rt->flv_data + rt->flv_off, size_temp);
-            rt->flv_off += size_temp;
-            size_temp = 0;
-        } else {
-            bytestream_get_buffer(&buf_temp, rt->flv_data + rt->flv_off, rt->flv_size - rt->flv_off);
-            size_temp   -= rt->flv_size - rt->flv_off;
-            rt->flv_off += rt->flv_size - rt->flv_off;
-        }
+        copy = FFMIN(rt->flv_size - rt->flv_off, size_temp);
+        bytestream_get_buffer(&buf_temp, rt->flv_data + rt->flv_off, copy);
+        rt->flv_off += copy;
+        size_temp   -= copy;
 
         if (rt->flv_off == rt->flv_size) {
             rt->skip_bytes = 4;
