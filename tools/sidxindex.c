@@ -327,7 +327,7 @@ static int output_mpd(struct Tracks *tracks, const char *filename)
         for (i = 0; i < nb_tracks[set]; ) {
             struct Track *first_track = adaptation_sets[set][i];
             int width = 0, height = 0, sample_rate = 0, channels = 0, bitrate = 0;
-            fprintf(out, "\t\t\t<Representation id=\"%d\" mimeType=\"video/mp4\" codecs=\"", i);
+            fprintf(out, "\t\t\t<Representation id=\"%d\" codecs=\"", i);
             for (j = i; j < nb_tracks[set]; j++) {
                 struct Track *track = adaptation_sets[set][j];
                 if (strcmp(track->name, first_track->name))
@@ -345,7 +345,8 @@ static int output_mpd(struct Tracks *tracks, const char *filename)
                     fprintf(out, ",");
                 fprintf(out, "%s", track->codec_str);
             }
-            fprintf(out, "\" bandwidth=\"%d\"", bitrate);
+            fprintf(out, "\" mimeType=\"%s/mp4\" bandwidth=\"%d\"",
+                    width ? "video" : "audio", bitrate);
             if (width > 0 && height > 0)
                 fprintf(out, " width=\"%d\" height=\"%d\"", width, height);
             if (sample_rate > 0)
