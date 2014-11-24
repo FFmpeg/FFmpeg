@@ -1436,8 +1436,8 @@ int ff_mpv_common_frame_size_change(MpegEncContext *s)
         s->mb_height = (s->height + 15) / 16;
 
     if ((s->width || s->height) &&
-        av_image_check_size(s->width, s->height, 0, s->avctx))
-        return AVERROR_INVALIDDATA;
+        (err = av_image_check_size(s->width, s->height, 0, s->avctx)) < 0)
+        goto fail;
 
     if ((err = init_context_frame(s)))
         goto fail;
@@ -1453,7 +1453,7 @@ int ff_mpv_common_frame_size_change(MpegEncContext *s)
             }
 
             for (i = 0; i < nb_slices; i++) {
-                if (init_duplicate_context(s->thread_context[i]) < 0)
+                if ((err = init_duplicate_context(s->thread_context[i])) < 0)
                     goto fail;
                     s->thread_context[i]->start_mb_y =
                         (s->mb_height * (i) + nb_slices / 2) / nb_slices;
