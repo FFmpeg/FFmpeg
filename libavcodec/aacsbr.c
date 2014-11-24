@@ -326,7 +326,7 @@ static int check_n_master(AVCodecContext *avctx, int n_master, int bs_xover_band
 static int sbr_make_f_master(AACContext *ac, SpectralBandReplication *sbr,
                              SpectrumParameters *spectrum)
 {
-    unsigned int temp, max_qmf_subbands;
+    unsigned int temp, max_qmf_subbands = 0;
     unsigned int start_min, stop_min;
     int k;
     const int8_t *sbr_offset_ptr;
