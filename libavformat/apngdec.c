@@ -24,10 +24,6 @@
  * APNG demuxer.
  * @see https://wiki.mozilla.org/APNG_Specification
  * @see http://www.w3.org/TR/PNG
- *
- * Not supported (yet):
- *     - streams with chunks other than fcTL / fdAT / IEND after the first fcTL
- *     - streams with multiple fdAT chunks after an fcTL one
  */
 
 #include "avformat.h"
@@ -325,8 +321,6 @@ static int apng_read_packet(AVFormatContext *s, AVPacket *pkt)
      * and needed next:
      *  4 (length)
      *  4 (tag (must be fdAT or IDAT))
-     *
-     *  TODO: support multiple fdAT following an fcTL
      */
     /* if num_play is not 1, then the seekback is already guaranteed */
     if (ctx->num_play == 1 && (ret = ffio_ensure_seekback(pb, 46)) < 0)
@@ -350,15 +344,35 @@ static int apng_read_packet(AVFormatContext *s, AVPacket *pkt)
             tag != MKTAG('I', 'D', 'A', 'T'))
             return AVERROR_INVALIDDATA;
 
-        if ((ret = avio_seek(pb, -46, SEEK_CUR)) < 0)
-            return ret;
-
         size = 38 /* fcTL */ + 8 /* len, tag */ + len + 4 /* crc */;
         if (size > INT_MAX)
             return AVERROR(EINVAL);
 
-        if ((ret = av_get_packet(pb, pkt, size)) < 0)
+        if ((ret = avio_seek(pb, -46, SEEK_CUR)) < 0 ||
+            (ret = av_append_packet(pb, pkt, size)) < 0)
             return ret;
+
+        if (ctx->num_play == 1 && (ret = ffio_ensure_seekback(pb, 8)) < 0)
+            return ret;
+
+        len = avio_rb32(pb);
+        tag = avio_rl32(pb);
+        while (tag &&
+               tag != MKTAG('f', 'c', 'T', 'L') &&
+               tag != MKTAG('I', 'E', 'N', 'D')) {
+            if (len > 0x7fffffff)
+                return AVERROR_INVALIDDATA;
+            if ((ret = avio_seek(pb, -8, SEEK_CUR)) < 0 ||
+                (ret = av_append_packet(pb, pkt, len + 12)) < 0)
+                return ret;
+            if (ctx->num_play == 1 && (ret = ffio_ensure_seekback(pb, 8)) < 0)
+                return ret;
+            len = avio_rb32(pb);
+            tag = avio_rl32(pb);
+        }
+        if ((ret = avio_seek(pb, -8, SEEK_CUR)) < 0)
+            return ret;
+
         if (ctx->is_key_frame)
             pkt->flags |= AV_PKT_FLAG_KEY;
         return ret;
