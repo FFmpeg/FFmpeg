@@ -1356,7 +1356,7 @@ av_cold int ff_mpv_common_init(MpegEncContext *s)
  * Is used during resolution changes to avoid a full reinitialization of the
  * codec.
  */
-static int free_context_frame(MpegEncContext *s)
+static void free_context_frame(MpegEncContext *s)
 {
     int i, j, k;
 
@@ -1402,8 +1402,6 @@ static int free_context_frame(MpegEncContext *s)
     av_freep(&s->bits_tab);
 
     s->linesize = s->uvlinesize = 0;
-
-    return 0;
 }
 
 int ff_mpv_common_frame_size_change(MpegEncContext *s)
@@ -1420,8 +1418,7 @@ int ff_mpv_common_frame_size_change(MpegEncContext *s)
     } else
         free_duplicate_context(s);
 
-    if ((err = free_context_frame(s)) < 0)
-        return err;
+    free_context_frame(s);
 
     if (s->picture)
         for (i = 0; i < MAX_PICTURE_COUNT; i++) {
