@@ -75,7 +75,6 @@ typedef struct DASHContext {
     int single_file;
     OutputStream *streams;
     int has_video, has_audio;
-    int nb_segments;
     int last_duration;
     int total_duration;
     char availability_start_time[100];
@@ -598,10 +597,13 @@ static void find_index_range(AVFormatContext *s, const char *dirname,
     *index_length = AV_RB32(&buf[0]);
 }
 
-static int dash_flush(AVFormatContext *s, int final)
+static int dash_flush(AVFormatContext *s, int final, int stream)
 {
     DASHContext *c = s->priv_data;
     int i, ret = 0;
+    int cur_flush_segment_index = 0;
+    if (stream >= 0)
+        cur_flush_segment_index = c->streams[stream].segment_index;
 
     for (i = 0; i < s->nb_streams; i++) {
         OutputStream *os = &c->streams[i];
@@ -611,6 +613,18 @@ static int dash_flush(AVFormatContext *s, int final)
 
         if (!os->packets_written)
             continue;
+
+        // Flush the single stream that got a keyframe right now.
+        // Flush all audio streams as well, in sync with video keyframes,
+        // but not the other video streams.
+        if (stream >= 0 && i != stream) {
+            if (s->streams[i]->codec->codec_type != AVMEDIA_TYPE_AUDIO)
+                continue;
+            // Make sure we don't flush audio streams multiple times, when
+            // all video streams are flushed one at a time.
+            if (c->has_video && os->segment_index > cur_flush_segment_index)
+                continue;
+        }
 
         if (!c->single_file) {
             snprintf(filename, sizeof(filename), "chunk-stream%d-%05d.m4s", i, os->segment_index);
@@ -668,7 +682,7 @@ static int dash_write_packet(AVFormatContext *s, AVPacket *pkt)
     DASHContext *c = s->priv_data;
     AVStream *st = s->streams[pkt->stream_index];
     OutputStream *os = &c->streams[pkt->stream_index];
-    int64_t seg_end_duration = (c->nb_segments + 1) * (int64_t) c->min_seg_duration;
+    int64_t seg_end_duration = (os->segment_index) * (int64_t) c->min_seg_duration;
     int ret;
 
     // If forcing the stream to start at 0, the mp4 muxer will set the start
@@ -704,9 +718,8 @@ static int dash_write_packet(AVFormatContext *s, AVPacket *pkt)
             }
         }
 
-        if ((ret = dash_flush(s, 0)) < 0)
+        if ((ret = dash_flush(s, 0, pkt->stream_index)) < 0)
             return ret;
-        c->nb_segments++;
     }
 
     if (!os->packets_written)
@@ -732,7 +745,7 @@ static int dash_write_trailer(AVFormatContext *s)
                                          s->streams[0]->time_base,
                                          AV_TIME_BASE_Q);
     }
-    dash_flush(s, 1);
+    dash_flush(s, 1, -1);
 
     if (c->remove_at_exit) {
         char filename[1024];
