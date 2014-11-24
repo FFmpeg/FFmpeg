@@ -235,7 +235,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     int bytes_per_row;
     uint32_t res[2] = { s->dpi, 1 };    // image resolution (72/1)
     uint16_t bpp_tab[4];
-    int ret = -1;
+    int ret = 0;
     int is_yuv = 0, alpha = 0;
     int shift_h, shift_v;
     int packet_size;
