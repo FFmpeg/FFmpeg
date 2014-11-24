@@ -940,12 +940,15 @@ goto MSVCVarsDone \n\
 exit /b 1 \n\
 ) \n\
 :MSVCVarsDone \n";
-    _mkdir( sProjectNameShort.c_str() );
+    sCLLaunchBat += "mkdir " + sProjectNameShort + " > nul 2>&1\n";
     for( map<string, StaticList>::iterator itI = mDirectoryObjects.begin( ); itI != mDirectoryObjects.end( ); itI++ )
     {
         //Need to make output directory so cl doesnt fail outputting objs
-        _mkdir( ( sProjectNameShort + "/" + itI->first ).c_str( ) );
-        uint uiNumCLCalls = (uint)ceilf( (float)itI->second.size( ) / 50.0f );
+        string sDirName = itI->first;
+        replace( sDirName.begin( ), sDirName.end( ), '/', '\\' );
+        sCLLaunchBat += "mkdir " + sProjectNameShort + "\\" + sDirName + " > nul 2>&1\n";
+        const uint uiRowSize = 32;
+        uint uiNumCLCalls = (uint)ceilf( (float)itI->second.size( ) / (float)uiRowSize );
         uint uiTotalPos = 0;
         //Split calls into groups of 50 to prevent batch file length limit
         for( uint uiI = 0; uiI < uiNumCLCalls; uiI++ )
@@ -953,14 +956,15 @@ exit /b 1 \n\
             sCLLaunchBat += "cl.exe";
             sCLLaunchBat += " /I\"../../\" /I\"../../../\" " + sCLExtra + " /Fo\"" + sProjectNameShort + "/" + itI->first + "/\" /D\"_DEBUG\" /D\"WIN32\" /D\"_WINDOWS\" /D\"HAVE_AV_CONFIG_H\" /D\"inline=__inline\" /D\"strtod=avpriv_strtod\" /FI\"compat\\msvcrt\\snprintf.h\" /FR\"" + sProjectNameShort + "/" + itI->first + "/\" /c /MP /nologo";
             uint uiStartPos = uiTotalPos;
-            for( uiTotalPos; uiTotalPos < min( uiStartPos + 50, itI->second.size( ) ); uiTotalPos++ )
+            for( uiTotalPos; uiTotalPos < min( uiStartPos + uiRowSize, itI->second.size( ) ); uiTotalPos++ )
             {
                 sCLLaunchBat += " \"../../" + itI->second[uiTotalPos] + "\"";
             }
-            sCLLaunchBat += " >nul \nif %errorlevel% neq 0 exit / b 1\n";
+            sCLLaunchBat += " >nul\nif %errorlevel% neq 0 goto exitFail\n";
         }
     }
-    sCLLaunchBat += "exit /b %errorlevel%";
+    sCLLaunchBat += "del /F /S /Q *.obj > nul 2>&1\n";
+    sCLLaunchBat += "exit /b 0\n:exitFail\nrmdir /S /Q " + sProjectNameShort + "\nexit /b 1";
     ofstream ofBatFile( "test.bat" );
     if( !ofBatFile.is_open( ) )
     {
@@ -972,11 +976,10 @@ exit /b 1 \n\
 
     if( 0 != system( "test.bat" ) )
     {
-        cout << "  Error: Failed calling temp.bat. Make sure you have Visual Studio or the Microsoft compiler installed" << endl;
+        cout << "  Error: Failed calling temp.bat. Ensure you have Visual Studio or the Microsoft compiler installed and that any required dependency libs/headers are available" << endl;
         //Remove the test header files
         deleteFile( "test.bat" );
         StaticList vDeleteFiles;
-        findFiles( sProjectNameShort + "/*.obj", vDeleteFiles );
         findFiles( sProjectNameShort + "/*.sbr", vDeleteFiles );
         for( StaticList::iterator itI = vDeleteFiles.begin( ); itI < vDeleteFiles.end( ); itI++ )
         {
@@ -985,7 +988,7 @@ exit /b 1 \n\
         for( map<string, StaticList>::iterator itI = mDirectoryObjects.end( ); itI != mDirectoryObjects.begin( );  )
         {
             --itI;
-            _rmdir( itI->first.c_str( ) );
+            _rmdir( ( sProjectNameShort + "/" + itI->first ).c_str( ) );
         }
         _rmdir( sProjectNameShort.c_str( ) );
         return false;
@@ -993,12 +996,6 @@ exit /b 1 \n\
 
     //Remove the compilation objects
     deleteFile( "test.bat" );
-    StaticList vDeleteFiles;
-    findFiles( sProjectNameShort + "/*.obj", vDeleteFiles );
-    for( StaticList::iterator itI = vDeleteFiles.begin( ); itI < vDeleteFiles.end( ); itI++ )
-    {
-        deleteFile( *itI );
-    }
 
     //Loaded in the compiler passed files
     StaticList vSBRFiles;
@@ -1019,7 +1016,7 @@ exit /b 1 \n\
             for( map<string, StaticList>::iterator itI = mDirectoryObjects.end( ); itI != mDirectoryObjects.begin( ); )
             {
                 --itI;
-                _rmdir( itI->first.c_str( ) );
+                _rmdir( ( sProjectNameShort + "/" + itI->first ).c_str( ) );
             }
             _rmdir( sProjectNameShort.c_str( ) );
             return false;
@@ -1165,7 +1162,7 @@ exit /b 1 \n\
     for( map<string, StaticList>::iterator itI = mDirectoryObjects.end( ); itI != mDirectoryObjects.begin( ); )
     {
         --itI;
-        _rmdir( itI->first.c_str( ) );
+        _rmdir( ( sProjectNameShort + "/" + itI->first ).c_str( ) );
     }
     _rmdir( sProjectNameShort.c_str( ) );
 
