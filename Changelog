@@ -16,6 +16,7 @@ version <next>:
 - creating DASH compatible fragmented MP4, MPEG-DASH segmenting muxer
 - WebP muxer with animated WebP support
 - zygoaudio decoding support
+- APNG demuxer
 
 
 version 2.4:
