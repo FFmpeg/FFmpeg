@@ -26,6 +26,7 @@
  * @see http://www.w3.org/TR/PNG
  */
 
+#include "apng.h"
 #include "avformat.h"
 #include "avio_internal.h"
 #include "internal.h"
@@ -298,7 +299,10 @@ static int decode_fctl_chunk(AVFormatContext *s, APNGDemuxContext *ctx, AVPacket
             return AVERROR_INVALIDDATA;
         ctx->is_key_frame = 0;
     } else {
-        ctx->is_key_frame = 1;
+        if (sequence_number == 0 && dispose_op == APNG_DISPOSE_OP_PREVIOUS)
+            dispose_op = APNG_DISPOSE_OP_BACKGROUND;
+        ctx->is_key_frame = dispose_op == APNG_DISPOSE_OP_BACKGROUND ||
+                            blend_op   == APNG_BLEND_OP_SOURCE;
     }
 
     return 0;
