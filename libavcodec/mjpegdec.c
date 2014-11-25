@@ -550,7 +550,7 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         break;
     default:
 unk_pixfmt:
-        av_log(s->avctx, AV_LOG_ERROR, "Unhandled pixel format 0x%x\n", pix_fmt_id);
+        av_log(s->avctx, AV_LOG_ERROR, "Unhandled pixel format 0x%x bits:%d\n", pix_fmt_id, s->bits);
         s->upscale_h = s->upscale_v = 0;
         return AVERROR_PATCHWELCOME;
     }
