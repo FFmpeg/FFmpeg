@@ -435,4 +435,10 @@ enum AVWriteUncodedFrameFlags {
  */
 int ff_copy_whitelists(AVFormatContext *dst, AVFormatContext *src);
 
+#ifndef _WIN32
+#define USE_RENAME_REPLACE 1
+#else
+#define USE_RENAME_REPLACE 0
+#endif
+
 #endif /* AVFORMAT_INTERNAL_H */
