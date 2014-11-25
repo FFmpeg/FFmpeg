@@ -4297,7 +4297,7 @@ fi
 check_lib X11/Xlib.h XOpenDisplay -lX11 && enable xlib
 
 if enabled libxcb || enabled x11grab && ! disabled libxcb; then
-    check_pkg_config xcb xcb/xcb.h xcb_connect || {
+    check_pkg_config xcb-shape xcb/shape.h xcb_shape_rectangles || {
         enabled libxcb && die "ERROR: libxcb not found";
     } && disable x11grab && enable libxcb
 
