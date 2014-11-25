@@ -23,6 +23,7 @@
 
 #include <stdint.h>
 #include "avformat.h"
+#include "os_support.h"
 
 #define MAX_URL_SIZE 4096
 
