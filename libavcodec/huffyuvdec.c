@@ -1202,11 +1202,10 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                     if (s->predictor == PLANE) {
                         if (s->bitstream_bpp != 32)
                             left[A] = 0;
-                        if ((y & s->interlaced) == 0 &&
-                            y < s->height - 1 - s->interlaced) {
+                        if (y < s->height - 1 - s->interlaced) {
                             s->hdsp.add_bytes(p->data[0] + p->linesize[0] * y,
                                               p->data[0] + p->linesize[0] * y +
-                                              fake_ystride, fake_ystride);
+                                              fake_ystride, 4 * width);
                         }
                     }
                 }
