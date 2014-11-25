@@ -514,6 +514,8 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         else              s->avctx->pix_fmt = AV_PIX_FMT_YUV420P16;
         s->avctx->color_range = s->cs_itu601 ? AVCOL_RANGE_MPEG : AVCOL_RANGE_JPEG;
         if (pix_fmt_id == 0x42111100) {
+            if (s->bits > 8)
+                goto unk_pixfmt;
             s->upscale_h = 6;
             s->chroma_height = (s->height + 1) / 2;
         }
