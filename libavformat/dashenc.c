@@ -296,15 +296,13 @@ static int write_manifest(AVFormatContext *s, int final)
     DASHContext *c = s->priv_data;
     AVIOContext *out;
     char temp_filename[1024];
-    const char *write_filename;
     int ret, i;
     AVDictionaryEntry *title = av_dict_get(s->metadata, "title", NULL, 0);
 
     snprintf(temp_filename, sizeof(temp_filename), "%s.tmp", s->filename);
-    write_filename = USE_RENAME_REPLACE ? temp_filename : s->filename;
-    ret = avio_open2(&out, write_filename, AVIO_FLAG_WRITE, &s->interrupt_callback, NULL);
+    ret = avio_open2(&out, temp_filename, AVIO_FLAG_WRITE, &s->interrupt_callback, NULL);
     if (ret < 0) {
-        av_log(s, AV_LOG_ERROR, "Unable to open %s for writing\n", write_filename);
+        av_log(s, AV_LOG_ERROR, "Unable to open %s for writing\n", temp_filename);
         return ret;
     }
     avio_printf(out, "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
@@ -394,7 +392,7 @@ static int write_manifest(AVFormatContext *s, int final)
     avio_printf(out, "</MPD>\n");
     avio_flush(out);
     avio_close(out);
-    return USE_RENAME_REPLACE ? ff_rename(temp_filename, s->filename) : 0;
+    return ff_rename(temp_filename, s->filename);
 }
 
 static int dash_write_header(AVFormatContext *s)
@@ -607,7 +605,6 @@ static int dash_flush(AVFormatContext *s, int final, int stream)
     for (i = 0; i < s->nb_streams; i++) {
         OutputStream *os = &c->streams[i];
         char filename[1024] = "", full_path[1024], temp_path[1024];
-        const char *write_path;
         int64_t start_pos = avio_tell(os->ctx->pb);
         int range_length, index_length = 0;
 
@@ -630,8 +627,7 @@ static int dash_flush(AVFormatContext *s, int final, int stream)
             snprintf(filename, sizeof(filename), "chunk-stream%d-%05d.m4s", i, os->segment_index);
             snprintf(full_path, sizeof(full_path), "%s%s", c->dirname, filename);
             snprintf(temp_path, sizeof(temp_path), "%s.tmp", full_path);
-            write_path = USE_RENAME_REPLACE ? temp_path : full_path;
-            ret = ffurl_open(&os->out, write_path, AVIO_FLAG_WRITE, &s->interrupt_callback, NULL);
+            ret = ffurl_open(&os->out, temp_path, AVIO_FLAG_WRITE, &s->interrupt_callback, NULL);
             if (ret < 0)
                 break;
             write_styp(os->ctx->pb);
@@ -646,7 +642,7 @@ static int dash_flush(AVFormatContext *s, int final, int stream)
         } else {
             ffurl_close(os->out);
             os->out = NULL;
-            ret = USE_RENAME_REPLACE ? ff_rename(temp_path, full_path) : 0;
+            ret = ff_rename(temp_path, full_path);
             if (ret < 0)
                 break;
         }
