@@ -154,7 +154,7 @@ static inline int utf8towchar(const char *filename_utf8, wchar_t **filename_w)
         *filename_w = NULL;
         return 0;
     }
-    *filename_w = av_mallocz(sizeof(wchar_t) * num_chars);
+    *filename_w = (wchar_t *)av_mallocz(sizeof(wchar_t) * num_chars);
     if (!*filename_w) {
         errno = ENOMEM;
         return -1;
