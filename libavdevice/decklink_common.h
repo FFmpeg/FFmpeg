@@ -84,7 +84,6 @@ typedef enum { DIRECTION_IN, DIRECTION_OUT} decklink_direction_t;
 #ifdef _WIN32
 typedef unsigned long buffercount_type;
 IDeckLinkIterator *CreateDeckLinkIteratorInstance(void);
-char *dup_wchar_to_utf8(wchar_t *w);
 #else
 typedef uint32_t buffercount_type;
 #endif
