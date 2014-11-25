@@ -170,14 +170,31 @@ static inline int win32_rename(const char *src_utf8, const char *dest_utf8)
         goto fallback;
     }
 
-    ret = _wrename(src_w, dest_w);
+    ret = MoveFileExW(src_w, dest_w, MOVEFILE_REPLACE_EXISTING);
     av_free(src_w);
     av_free(dest_w);
+    // Lacking proper mapping from GetLastError() error codes to errno codes
+    if (ret)
+        errno = EPERM;
     return ret;
 
 fallback:
     /* filename may be be in CP_ACP */
-    return rename(src_utf8, dest_utf8);
+#if HAVE_MOVEFILEEXA
+    ret = MoveFileExA(src_utf8, dest_utf8, MOVEFILE_REPLACE_EXISTING);
+    if (ret)
+        errno = EPERM;
+#else
+    /* Windows Phone doesn't have MoveFileExA. However, it's unlikely
+     * that anybody would input filenames in CP_ACP there, so this
+     * fallback is kept mostly for completeness. Alternatively we could
+     * do MultiByteToWideChar(CP_ACP) and use MoveFileExW, but doing
+     * explicit conversions with CP_ACP is allegedly forbidden in windows
+     * store apps (or windows phone), and the notion of a native code page
+     * doesn't make much sense there. */
+    ret = rename(src_utf8, dest_utf8);
+#endif
+    return ret;
 }
 
 #define mkdir(a, b) win32_mkdir(a)
