@@ -1846,6 +1846,13 @@ int av_opt_serialize(void *obj, int opt_flags, int flags, char **buffer,
     uint8_t *buf;
     AVBPrint bprint;
     int ret, cnt = 0;
+    const char special_chars[] = {pairs_sep, key_val_sep, '\0'};
+
+    if (pairs_sep == '\0' || key_val_sep == '\0' || pairs_sep == key_val_sep ||
+        pairs_sep == '\\' || key_val_sep == '\\') {
+        av_log(obj, AV_LOG_ERROR, "Invalid separator(s) found.");
+        return AVERROR(EINVAL);
+    }
 
     if (!obj || !buffer)
         return AVERROR(EINVAL);
@@ -1869,7 +1876,9 @@ int av_opt_serialize(void *obj, int opt_flags, int flags, char **buffer,
         if (buf) {
             if (cnt++)
                 av_bprint_append_data(&bprint, &pairs_sep, 1);
-            av_bprintf(&bprint, "%s%c%s", o->name, key_val_sep, buf);
+            av_bprint_escape(&bprint, o->name, special_chars, AV_ESCAPE_MODE_BACKSLASH, 0);
+            av_bprint_append_data(&bprint, &key_val_sep, 1);
+            av_bprint_escape(&bprint, buf, special_chars, AV_ESCAPE_MODE_BACKSLASH, 0);
             av_freep(&buf);
         }
     }
@@ -1903,6 +1912,7 @@ typedef struct TestContext
     int64_t num64;
     float flt;
     double dbl;
+    char *escape;
 } TestContext;
 
 #define OFFSET(x) offsetof(TestContext, x)
@@ -1916,6 +1926,7 @@ static const AVOption test_options[]= {
 {"toggle",   "set toggle",     OFFSET(toggle),   AV_OPT_TYPE_INT,      {.i64 = 1},       0,        1                   },
 {"rational", "set rational",   OFFSET(rational), AV_OPT_TYPE_RATIONAL, {.dbl = 1},       0,        10                  },
 {"string",   "set string",     OFFSET(string),   AV_OPT_TYPE_STRING,   {.str = "default"}, CHAR_MIN, CHAR_MAX          },
+{"escape",   "set escape str", OFFSET(escape),   AV_OPT_TYPE_STRING,   {.str = "\\=,"}, CHAR_MIN, CHAR_MAX             },
 {"flags",    "set flags",      OFFSET(flags),    AV_OPT_TYPE_FLAGS,    {.i64 = 1},       0,        INT_MAX, 0, "flags" },
 {"cool",     "set cool flag ", 0,                AV_OPT_TYPE_CONST,    {.i64 = TEST_FLAG_COOL}, INT_MIN,  INT_MAX, 0, "flags" },
 {"lame",     "set lame flag ", 0,                AV_OPT_TYPE_CONST,    {.i64 = TEST_FLAG_LAME}, INT_MIN,  INT_MAX, 0, "flags" },
@@ -1960,6 +1971,7 @@ int main(void)
         printf("num=%d\n", test_ctx.num);
         printf("toggle=%d\n", test_ctx.toggle);
         printf("string=%s\n", test_ctx.string);
+        printf("escape=%s\n", test_ctx.escape);
         printf("flags=%d\n", test_ctx.flags);
         printf("rational=%d/%d\n", test_ctx.rational.num, test_ctx.rational.den);
         printf("video_rate=%d/%d\n", test_ctx.video_rate.num, test_ctx.video_rate.den);

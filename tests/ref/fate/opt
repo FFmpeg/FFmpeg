@@ -2,6 +2,7 @@ Testing default values
 num=0
 toggle=1
 string=default
+escape=\=,
 flags=1
 rational=1/1
 video_rate=25/1
@@ -22,6 +23,7 @@ name:       num default:1 error:
 name:    toggle default:0 error:
 name:  rational default:0 error:
 name:    string default:0 error:
+name:    escape default:0 error:
 name:     flags default:0 error:
 name:      cool default:1 error:Option not found
 name:      lame default:1 error:Option not found
@@ -43,6 +45,7 @@ name:       num default:1 error:
 name:    toggle default:1 error:
 name:  rational default:1 error:
 name:    string default:1 error:
+name:    escape default:1 error:
 name:     flags default:1 error:
 name:      cool default:1 error:Option not found
 name:      lame default:1 error:Option not found
@@ -62,8 +65,8 @@ name:       flt default:1 error:
 name:       dbl default:1 error:
 
 Test av_opt_serialize()
-num=0,toggle=1,rational=1/1,string=default,flags=0x00000001,size=200x300,pix_fmt=0bgr,sample_fmt=s16,video_rate=25/1,duration=0:00:00.001000,color=0xffc0cbff,cl=0x137,bin=62696E00,bin1=,bin2=,num64=1,flt=0.333333,dbl=0.333333
-num=0,toggle=1,rational=1/1,string=default,flags=0x00000001,size=200x300,pix_fmt=0bgr,sample_fmt=s16,video_rate=25/1,duration=0:00:00.001000,color=0xffc0cbff,cl=0x137,bin=62696E00,bin1=,bin2=,num64=1,flt=0.333333,dbl=0.333333
+num=0,toggle=1,rational=1/1,string=default,escape=\\\=\,,flags=0x00000001,size=200x300,pix_fmt=0bgr,sample_fmt=s16,video_rate=25/1,duration=0:00:00.001000,color=0xffc0cbff,cl=0x137,bin=62696E00,bin1=,bin2=,num64=1,flt=0.333333,dbl=0.333333
+num=0,toggle=1,rational=1/1,string=default,escape=\\\=\,,flags=0x00000001,size=200x300,pix_fmt=0bgr,sample_fmt=s16,video_rate=25/1,duration=0:00:00.001000,color=0xffc0cbff,cl=0x137,bin=62696E00,bin1=,bin2=,num64=1,flt=0.333333,dbl=0.333333
 
 Testing av_set_options_string()
 OK    ''
