@@ -186,6 +186,9 @@ int avio_check(const char *url, int flags);
  *
  * @param buffer Memory block for input/output operations via AVIOContext.
  *        The buffer must be allocated with av_malloc() and friends.
+ *        It may be freed and replaced with a new buffer by libavformat.
+ *        AVIOContext.buffer holds the buffer currently in use,
+ *        which must be later freed with av_free().
  * @param buffer_size The buffer size is very important for performance.
  *        For protocols with fixed blocksize it should be set to this blocksize.
  *        For others a typical size is a cache page, e.g. 4kb.
