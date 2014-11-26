@@ -200,51 +200,51 @@ static void add_codec(FFServerStream *stream, AVCodecContext *av,
     /* compute default parameters */
     switch(av->codec_type) {
     case AVMEDIA_TYPE_AUDIO:
-        if (av->bit_rate == 0) {
+        if (!av_dict_get(recommended, "ab", NULL, 0)) {
             av->bit_rate = 64000;
             av_dict_set_int(&recommended, "ab", av->bit_rate, 0);
         }
-        if (av->sample_rate == 0) {
+        if (!av_dict_get(recommended, "ar", NULL, 0)) {
             av->sample_rate = 22050;
             av_dict_set_int(&recommended, "ar", av->sample_rate, 0);
         }
-        if (av->channels == 0) {
+        if (!av_dict_get(recommended, "ac", NULL, 0)) {
             av->channels = 1;
             av_dict_set_int(&recommended, "ac", av->channels, 0);
         }
         break;
     case AVMEDIA_TYPE_VIDEO:
-        if (av->bit_rate == 0) {
+        if (!av_dict_get(recommended, "b", NULL, 0)) {
             av->bit_rate = 64000;
             av_dict_set_int(&recommended, "b", av->bit_rate, 0);
         }
-        if (av->time_base.num == 0){
+        if (!av_dict_get(recommended, "time_base", NULL, 0)){
             av->time_base.den = 5;
             av->time_base.num = 1;
             av_dict_set(&recommended, "time_base", "1/5", 0);
         }
-        if (av->width == 0 || av->height == 0) {
+        if (!av_dict_get(recommended, "video_size", NULL, 0)) {
             av->width = 160;
             av->height = 128;
             av_dict_set(&recommended, "video_size", "160x128", 0);
         }
         /* Bitrate tolerance is less for streaming */
-        if (av->bit_rate_tolerance == 0) {
+        if (!av_dict_get(recommended, "bt", NULL, 0)) {
             av->bit_rate_tolerance = FFMAX(av->bit_rate / 4,
                       (int64_t)av->bit_rate*av->time_base.num/av->time_base.den);
             av_dict_set_int(&recommended, "bt", av->bit_rate_tolerance, 0);
         }
 
-        if (!av->rc_eq) {
+        if (!av_dict_get(recommended, "rc_eq", NULL, 0)) {
             av->rc_eq = av_strdup("tex^qComp");
             av_dict_set(&recommended, "rc_eq", "tex^qComp", 0);
         }
-        if (!av->rc_max_rate) {
+        if (!av_dict_get(recommended, "maxrate", NULL, 0)) {
             av->rc_max_rate = av->bit_rate * 2;
             av_dict_set_int(&recommended, "maxrate", av->rc_max_rate, 0);
         }
 
-        if (av->rc_max_rate && !av->rc_buffer_size) {
+        if (av->rc_max_rate && !av_dict_get(recommended, "bufsize", NULL, 0)) {
             av->rc_buffer_size = av->rc_max_rate;
             av_dict_set_int(&recommended, "bufsize", av->rc_buffer_size, 0);
         }
