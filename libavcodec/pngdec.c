@@ -524,6 +524,12 @@ static int decode_ihdr_chunk(AVCodecContext *avctx, PNGDecContext *s,
 {
     if (length != 13)
         return AVERROR_INVALIDDATA;
+
+    if (s->state & PNG_IDAT) {
+        av_log(avctx, AV_LOG_ERROR, "IHDR after IDAT\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     s->width  = bytestream2_get_be32(&s->gb);
     s->height = bytestream2_get_be32(&s->gb);
     if (av_image_check_size(s->width, s->height, 0, avctx)) {
