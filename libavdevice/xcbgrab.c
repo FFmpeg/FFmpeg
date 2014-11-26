@@ -594,10 +594,10 @@ static av_cold int xcbgrab_read_header(AVFormatContext *s)
     int screen_num, ret;
     const xcb_setup_t *setup;
 
-    c->conn = xcb_connect(s->filename, &screen_num);
+    c->conn = xcb_connect(s->filename[0] ? s->filename : NULL, &screen_num);
     if ((ret = xcb_connection_has_error(c->conn))) {
         av_log(s, AV_LOG_ERROR, "Cannot open display %s, error %d.\n",
-               s->filename ? s->filename : "default", ret);
+               s->filename[0] ? s->filename : "default", ret);
         return AVERROR(EIO);
     }
     setup = xcb_get_setup(c->conn);
