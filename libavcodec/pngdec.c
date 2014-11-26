@@ -418,6 +418,12 @@ static int decode_frame(AVCodecContext *avctx,
         case MKTAG('I', 'H', 'D', 'R'):
             if (length != 13)
                 goto fail;
+
+            if (s->state & PNG_IDAT) {
+                av_log(avctx, AV_LOG_ERROR, "IHDR after IDAT\n");
+                goto fail;
+            }
+
             s->width = bytestream_get_be32(&s->bytestream);
             s->height = bytestream_get_be32(&s->bytestream);
             if(av_image_check_size(s->width, s->height, 0, avctx)){
