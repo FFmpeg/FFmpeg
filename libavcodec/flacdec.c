@@ -465,10 +465,10 @@ static int decode_frame(FLACContext *s)
         ret = allocate_buffers(s);
         if (ret < 0)
             return ret;
-        ff_flacdsp_init(&s->dsp, s->avctx->sample_fmt, s->bps);
         s->got_streaminfo = 1;
         dump_headers(s->avctx, (FLACStreaminfo *)s);
     }
+    ff_flacdsp_init(&s->dsp, s->avctx->sample_fmt, s->bps);
 
 //    dump_headers(s->avctx, (FLACStreaminfo *)s);
 
