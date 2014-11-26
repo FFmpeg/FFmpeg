@@ -40,6 +40,11 @@ static void vreport_config_error(const char *filename, int line_num, int log_lev
 static void report_config_error(const char *filename, int line_num, int log_level,
                                 int *errors, const char *fmt, ...);
 
+#define ERROR(...)   report_config_error(config->filename, config->line_num,\
+                                         AV_LOG_ERROR, &config->errors,  __VA_ARGS__)
+#define WARNING(...) report_config_error(config->filename, config->line_num,\
+                                         AV_LOG_WARNING, &config->warnings, __VA_ARGS__)
+
 /* FIXME: make ffserver work with IPv6 */
 /* resolve host with also IP address parsing */
 static int resolve_host(struct in_addr *sin_addr, const char *hostname)
@@ -203,50 +208,80 @@ static void add_codec(FFServerStream *stream, AVCodecContext *av,
         if (!av_dict_get(recommended, "ab", NULL, 0)) {
             av->bit_rate = 64000;
             av_dict_set_int(&recommended, "ab", av->bit_rate, 0);
+            WARNING("Setting default value for audio bit rate = %d. "
+                    "Use NoDefaults to disable it.\n",
+                    av->bit_rate);
         }
         if (!av_dict_get(recommended, "ar", NULL, 0)) {
             av->sample_rate = 22050;
             av_dict_set_int(&recommended, "ar", av->sample_rate, 0);
+            WARNING("Setting default value for audio sample rate = %d. "
+                    "Use NoDefaults to disable it.\n",
+                    av->sample_rate);
         }
         if (!av_dict_get(recommended, "ac", NULL, 0)) {
             av->channels = 1;
             av_dict_set_int(&recommended, "ac", av->channels, 0);
+            WARNING("Setting default value for audio channel count = %d. "
+                    "Use NoDefaults to disable it.\n",
+                    av->channels);
         }
         break;
     case AVMEDIA_TYPE_VIDEO:
         if (!av_dict_get(recommended, "b", NULL, 0)) {
             av->bit_rate = 64000;
             av_dict_set_int(&recommended, "b", av->bit_rate, 0);
+            WARNING("Setting default value for video bit rate = %d. "
+                    "Use NoDefaults to disable it.\n",
+                    av->bit_rate);
         }
         if (!av_dict_get(recommended, "time_base", NULL, 0)){
             av->time_base.den = 5;
             av->time_base.num = 1;
             av_dict_set(&recommended, "time_base", "1/5", 0);
+            WARNING("Setting default value for video frame rate = %d. "
+                    "Use NoDefaults to disable it.\n",
+                    av->time_base.den);
         }
         if (!av_dict_get(recommended, "video_size", NULL, 0)) {
             av->width = 160;
             av->height = 128;
             av_dict_set(&recommended, "video_size", "160x128", 0);
+            WARNING("Setting default value for video size = %dx%d. "
+                    "Use NoDefaults to disable it.\n",
+                    av->width, av->height);
         }
         /* Bitrate tolerance is less for streaming */
         if (!av_dict_get(recommended, "bt", NULL, 0)) {
             av->bit_rate_tolerance = FFMAX(av->bit_rate / 4,
                       (int64_t)av->bit_rate*av->time_base.num/av->time_base.den);
             av_dict_set_int(&recommended, "bt", av->bit_rate_tolerance, 0);
+            WARNING("Setting default value for video bit rate tolerance = %d. "
+                    "Use NoDefaults to disable it.\n",
+                    av->bit_rate_tolerance);
         }
 
         if (!av_dict_get(recommended, "rc_eq", NULL, 0)) {
             av->rc_eq = av_strdup("tex^qComp");
             av_dict_set(&recommended, "rc_eq", "tex^qComp", 0);
+            WARNING("Setting default value for video rate control equation = %s. "
+                    "Use NoDefaults to disable it.\n",
+                    av->rc_eq);
         }
         if (!av_dict_get(recommended, "maxrate", NULL, 0)) {
             av->rc_max_rate = av->bit_rate * 2;
             av_dict_set_int(&recommended, "maxrate", av->rc_max_rate, 0);
+            WARNING("Setting default value for video max rate = %d. "
+                    "Use NoDefaults to disable it.\n",
+                    av->rc_max_rate);
         }
 
         if (av->rc_max_rate && !av_dict_get(recommended, "bufsize", NULL, 0)) {
             av->rc_buffer_size = av->rc_max_rate;
             av_dict_set_int(&recommended, "bufsize", av->rc_buffer_size, 0);
+            WARNING("Setting default value for video buffer size = %d. "
+                    "Use NoDefaults to disable it.\n",
+                    av->rc_buffer_size);
         }
         break;
     default:
@@ -536,9 +571,6 @@ static int ffserver_save_avoption_int(const char *opt, int64_t arg,
     snprintf(buf, sizeof(buf), "%"PRId64, arg);
     return ffserver_save_avoption(opt, buf, type, config);
 }
-
-#define ERROR(...)   report_config_error(config->filename, config->line_num, AV_LOG_ERROR,   &config->errors,   __VA_ARGS__)
-#define WARNING(...) report_config_error(config->filename, config->line_num, AV_LOG_WARNING, &config->warnings, __VA_ARGS__)
 
 static int ffserver_parse_config_global(FFServerConfig *config, const char *cmd,
                                         const char **p)
