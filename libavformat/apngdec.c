@@ -44,6 +44,9 @@ typedef struct APNGDemuxContext {
     int max_fps;
     int default_fps;
 
+    int64_t pkt_pts;
+    int pkt_duration;
+
     int is_key_frame;
 
     /*
@@ -163,6 +166,9 @@ static int apng_read_header(AVFormatContext *s)
     if (!st)
         return AVERROR(ENOMEM);
 
+    /* set the timebase to something large enough (1/100,000 of second)
+     * to hopefully cope with all sane frame durations */
+    avpriv_set_pts_info(st, 64, 1, 100000);
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id   = AV_CODEC_ID_APNG;
     st->codec->width      = avio_rb32(pb);
@@ -266,9 +272,9 @@ static int decode_fctl_chunk(AVFormatContext *s, APNGDemuxContext *ctx, AVPacket
         delay_num = 1;
         delay_den = ctx->default_fps;
     }
-    s->streams[0]->r_frame_rate.num = delay_den;
-    s->streams[0]->r_frame_rate.den = delay_num;
-    pkt->duration = 1;
+    ctx->pkt_duration = av_rescale_q(delay_num,
+                                     (AVRational){ 1, delay_den },
+                                     s->streams[0]->time_base);
 
     av_log(s, AV_LOG_DEBUG, "%s: "
             "sequence_number: %"PRId32", "
@@ -379,6 +385,9 @@ static int apng_read_packet(AVFormatContext *s, AVPacket *pkt)
 
         if (ctx->is_key_frame)
             pkt->flags |= AV_PKT_FLAG_KEY;
+        pkt->pts = ctx->pkt_pts;
+        pkt->duration = ctx->pkt_duration;
+        ctx->pkt_pts += ctx->pkt_duration;
         return ret;
     case MKTAG('I', 'E', 'N', 'D'):
         ctx->cur_loop++;
