@@ -301,7 +301,11 @@ static int decode_fctl_chunk(AVFormatContext *s, APNGDemuxContext *ctx, AVPacket
         height != s->streams[0]->codec->height ||
         x_offset != 0 ||
         y_offset != 0) {
-        if (sequence_number == 0)
+        if (sequence_number == 0 ||
+            x_offset >= s->streams[0]->codec->width ||
+            width > s->streams[0]->codec->width - x_offset ||
+            y_offset >= s->streams[0]->codec->height ||
+            height > s->streams[0]->codec->height - y_offset)
             return AVERROR_INVALIDDATA;
         ctx->is_key_frame = 0;
     } else {
