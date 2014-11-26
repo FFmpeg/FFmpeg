@@ -144,6 +144,9 @@ static av_cold int raw_init_decoder(AVCodecContext *avctx)
         context->frame_size = avpicture_get_size(avctx->pix_fmt, avctx->width,
                                                  avctx->height);
     }
+    if (context->frame_size < 0)
+        return context->frame_size;
+
 
     if ((avctx->extradata_size >= 9 &&
          !memcmp(avctx->extradata + avctx->extradata_size - 9, "BottomUp", 9)) ||
