@@ -34,7 +34,7 @@
 #include "log.h"
 #include "mathematics.h"
 
-const AVOption *av_opt_next(void *obj, const AVOption *last)
+const AVOption *av_opt_next(const void *obj, const AVOption *last)
 {
     AVClass *class = *(AVClass**)obj;
     if (!last && class->option && class->option[0].name)
@@ -44,7 +44,7 @@ const AVOption *av_opt_next(void *obj, const AVOption *last)
     return NULL;
 }
 
-static int read_number(const AVOption *o, void *dst, double *num, int *den, int64_t *intnum)
+static int read_number(const AVOption *o, const void *dst, double *num, int *den, int64_t *intnum)
 {
     switch (o->type) {
     case AV_OPT_TYPE_FLAGS:     *intnum = *(unsigned int*)dst;return 0;
