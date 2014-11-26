@@ -1177,6 +1177,10 @@ static int mov_read_stco(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     if (entries >= UINT_MAX/sizeof(int64_t))
         return AVERROR_INVALIDDATA;
 
+    if (sc->chunk_offsets)
+        av_log(c->fc, AV_LOG_WARNING, "Duplicate STCO atom\n");
+    av_free(sc->chunk_offsets);
+    sc->chunk_count = 0;
     sc->chunk_offsets = av_malloc(entries * sizeof(int64_t));
     if (!sc->chunk_offsets)
         return AVERROR(ENOMEM);
@@ -1625,6 +1629,10 @@ static int mov_read_stsc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return 0;
     if (entries >= UINT_MAX / sizeof(*sc->stsc_data))
         return AVERROR_INVALIDDATA;
+    if (sc->stsc_data)
+        av_log(c->fc, AV_LOG_WARNING, "Duplicate STSC atom\n");
+    av_free(sc->stsc_data);
+    sc->stsc_count = 0;
     sc->stsc_data = av_malloc(entries * sizeof(*sc->stsc_data));
     if (!sc->stsc_data)
         return AVERROR(ENOMEM);
