@@ -33,6 +33,7 @@
 #include "log.h"
 #include "pixfmt.h"
 #include "samplefmt.h"
+#include "version.h"
 
 /**
  * @defgroup avoptions AVOptions
@@ -416,7 +417,7 @@ double av_get_double(void *obj, const char *name, const AVOption **o_out);
 AVRational av_get_q(void *obj, const char *name, const AVOption **o_out);
 int64_t av_get_int(void *obj, const char *name, const AVOption **o_out);
 attribute_deprecated const char *av_get_string(void *obj, const char *name, const AVOption **o_out, char *buf, int buf_len);
-attribute_deprecated const AVOption *av_next_option(void *obj, const AVOption *last);
+attribute_deprecated const AVOption *av_next_option(FF_CONST_AVUTIL55 void *obj, const AVOption *last);
 #endif
 
 /**
@@ -673,7 +674,7 @@ const AVOption *av_opt_find2(void *obj, const char *name, const char *unit,
  *             or NULL
  * @return next AVOption or NULL
  */
-const AVOption *av_opt_next(void *obj, const AVOption *prev);
+const AVOption *av_opt_next(FF_CONST_AVUTIL55 void *obj, const AVOption *prev);
 
 /**
  * Iterate over AVOptions-enabled children of obj.
@@ -825,7 +826,7 @@ int av_opt_query_ranges(AVOptionRanges **, void *obj, const char *key, int flags
  * @param src  Object to copy into
  * @return 0 on success, negative on error
  */
-int av_opt_copy(void *dest, void *src);
+int av_opt_copy(void *dest, FF_CONST_AVUTIL55 void *src);
 
 /**
  * Get a default list of allowed ranges for the given option.
