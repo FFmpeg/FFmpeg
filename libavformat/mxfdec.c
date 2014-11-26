@@ -1771,6 +1771,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
                         avpriv_request_sample(mxf->fc,
                                               "Field dominance %d support",
                                               descriptor->field_dominance);
+                    case 0: // we already have many samples with field_dominance == unknown
                         break;
                     }
                     /* Turn field height into frame height. */
