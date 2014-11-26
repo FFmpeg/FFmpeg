@@ -234,55 +234,10 @@ static void add_codec(FFServerStream *stream, AVCodecContext *av,
                       (int64_t)av->bit_rate*av->time_base.num/av->time_base.den);
             av_dict_set_int(&recommended, "bt", av->bit_rate_tolerance, 0);
         }
-        if (av->qmin == 0) {
-            av->qmin = 3;
-            av_dict_set_int(&recommended, "qmin", av->qmin, 0);
-        }
-        if (av->qmax == 0) {
-            av->qmax = 31;
-            av_dict_set_int(&recommended, "qmax", av->qmax, 0);
-        }
-        if (av->max_qdiff == 0) {
-            av->max_qdiff = 3;
-            av_dict_set_int(&recommended, "qdiff", av->max_qdiff, 0);
-        }
-        /*FIXME: 0.5 is a default for these two, it is a dead code */
-        av->qcompress = 0.5;
-        av_dict_set(&recommended, "qcomp", "0.5", 0);
-        av->qblur = 0.5;
-        av_dict_set(&recommended, "qblur", "0.5", 0);
-
-        if (!av->nsse_weight) {
-            av->nsse_weight = 8;
-            av_dict_set_int(&recommended, "nssew", av->nsse_weight, 0);
-        }
-
-        av->frame_skip_cmp = FF_CMP_DCTMAX;
-        av_dict_set_int(&recommended, "skipcmp", FF_CMP_DCTMAX, 0);
-        if (!av->me_method) {
-            av->me_method = ME_EPZS;
-            av_dict_set_int(&recommended, "me_method", ME_EPZS, 0);
-        }
-
-        /* FIXME: rc_buffer_aggressivity and rc_eq are deprecated */
-        av->rc_buffer_aggressivity = 1.0;
-        av_dict_set(&recommended, "rc_buf_aggressivity", "1.0", 0);
 
         if (!av->rc_eq) {
             av->rc_eq = av_strdup("tex^qComp");
             av_dict_set(&recommended, "rc_eq", "tex^qComp", 0);
-        }
-        if (!av->i_quant_factor) {
-            av->i_quant_factor = -0.8;
-            av_dict_set(&recommended, "i_qfactor", "-0.8", 0);
-        }
-        if (!av->b_quant_factor) {
-            av->b_quant_factor = 1.25;
-            av_dict_set(&recommended, "b_qfactor", "1.25", 0);
-        }
-        if (!av->b_quant_offset) {
-            av->b_quant_offset = 1.25;
-            av_dict_set(&recommended, "b_qoffset", "1.25", 0);
         }
         if (!av->rc_max_rate) {
             av->rc_max_rate = av->bit_rate * 2;
