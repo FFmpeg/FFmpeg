@@ -42,12 +42,10 @@ cglobal lowpass_line, 5, 5, 7
     mova m1, [r3+r1+mmsize]
     pavgb m0, [r4+r1]
     pavgb m1, [r4+r1+mmsize]
-    mova m2, [r2+r1]
-    mova m3, [r2+r1+mmsize]
     pxor m0, m6
     pxor m1, m6
-    pxor m2, m6
-    pxor m3, m6
+    pxor m2, m6, [r2+r1]
+    pxor m3, m6, [r2+r1+mmsize]
     pavgb m0, m2
     pavgb m1, m3
     pxor m0, m6

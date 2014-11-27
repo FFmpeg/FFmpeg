@@ -31,6 +31,15 @@
 
 #include <sys/stat.h>
 
+#ifdef _WIN32
+#if HAVE_DIRECT_H
+#include <direct.h>
+#endif
+#if HAVE_IO_H
+#include <io.h>
+#endif
+#endif
+
 #if defined(_WIN32) && !defined(__MINGW32CE__)
 #  include <fcntl.h>
 #  ifdef lseek
@@ -47,14 +56,6 @@
 #  define fstat(f,s) _fstati64((f), (s))
 #endif /* defined(_WIN32) && !defined(__MINGW32CE__) */
 
-#ifdef _WIN32
-#if HAVE_DIRECT_H
-#include <direct.h>
-#elif HAVE_IO_H
-#include <io.h>
-#endif
-#define mkdir(a, b) _mkdir(a)
-#endif
 
 #ifdef __ANDROID__
 #  if HAVE_UNISTD_H
@@ -137,5 +138,87 @@ int ff_poll(struct pollfd *fds, nfds_t numfds, int timeout);
 #define poll ff_poll
 #endif /* HAVE_POLL_H */
 #endif /* CONFIG_NETWORK */
+
+#if defined(__MINGW32CE__)
+#define mkdir(a, b) _mkdir(a)
+#elif defined(_WIN32)
+#include <stdio.h>
+#include <windows.h>
+#include "libavutil/mem.h"
+
+static inline int utf8towchar(const char *filename_utf8, wchar_t **filename_w)
+{
+    int num_chars;
+    num_chars = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, filename_utf8, -1, NULL, 0);
+    if (num_chars <= 0) {
+        *filename_w = NULL;
+        return 0;
+    }
+    *filename_w = (wchar_t *)av_mallocz(sizeof(wchar_t) * num_chars);
+    if (!*filename_w) {
+        errno = ENOMEM;
+        return -1;
+    }
+    MultiByteToWideChar(CP_UTF8, 0, filename_utf8, -1, *filename_w, num_chars);
+    return 0;
+}
+
+#define DEF_FS_FUNCTION(name, wfunc, afunc)               \
+static inline int win32_##name(const char *filename_utf8) \
+{                                                         \
+    wchar_t *filename_w;                                  \
+    int ret;                                              \
+                                                          \
+    if (utf8towchar(filename_utf8, &filename_w))          \
+        return -1;                                        \
+    if (!filename_w)                                      \
+        goto fallback;                                    \
+                                                          \
+    ret = wfunc(filename_w);                              \
+    av_free(filename_w);                                  \
+    return ret;                                           \
+                                                          \
+fallback:                                                 \
+    /* filename may be be in CP_ACP */                    \
+    return afunc(filename_utf8);                          \
+}
+
+DEF_FS_FUNCTION(unlink, _wunlink, _unlink)
+DEF_FS_FUNCTION(mkdir,  _wmkdir,  _mkdir)
+DEF_FS_FUNCTION(rmdir,  _wrmdir , _rmdir)
+
+static inline int win32_rename(const char *src_utf8, const char *dest_utf8)
+{
+    wchar_t *src_w, *dest_w;
+    int ret;
+
+    if (utf8towchar(src_utf8, &src_w))
+        return -1;
+    if (utf8towchar(dest_utf8, &dest_w)) {
+        av_free(src_w);
+        return -1;
+    }
+    if (!src_w || !dest_w) {
+        av_free(src_w);
+        av_free(dest_w);
+        goto fallback;
+    }
+
+    ret = _wrename(src_w, dest_w);
+    av_free(src_w);
+    av_free(dest_w);
+    return ret;
+
+fallback:
+    /* filename may be be in CP_ACP */
+    return rename(src_utf8, dest_utf8);
+}
+
+#define mkdir(a, b) win32_mkdir(a)
+#define rename      win32_rename
+#define rmdir       win32_rmdir
+#define unlink      win32_unlink
+
+#endif
 
 #endif /* AVFORMAT_OS_SUPPORT_H */

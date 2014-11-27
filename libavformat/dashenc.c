@@ -75,7 +75,6 @@ typedef struct DASHContext {
     int single_file;
     OutputStream *streams;
     int has_video, has_audio;
-    int nb_segments;
     int last_duration;
     int total_duration;
     char availability_start_time[100];
@@ -297,13 +296,15 @@ static int write_manifest(AVFormatContext *s, int final)
     DASHContext *c = s->priv_data;
     AVIOContext *out;
     char temp_filename[1024];
+    const char *write_filename;
     int ret, i;
     AVDictionaryEntry *title = av_dict_get(s->metadata, "title", NULL, 0);
 
     snprintf(temp_filename, sizeof(temp_filename), "%s.tmp", s->filename);
-    ret = avio_open2(&out, temp_filename, AVIO_FLAG_WRITE, &s->interrupt_callback, NULL);
+    write_filename = USE_RENAME_REPLACE ? temp_filename : s->filename;
+    ret = avio_open2(&out, write_filename, AVIO_FLAG_WRITE, &s->interrupt_callback, NULL);
     if (ret < 0) {
-        av_log(s, AV_LOG_ERROR, "Unable to open %s for writing\n", temp_filename);
+        av_log(s, AV_LOG_ERROR, "Unable to open %s for writing\n", write_filename);
         return ret;
     }
     avio_printf(out, "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
@@ -393,7 +394,7 @@ static int write_manifest(AVFormatContext *s, int final)
     avio_printf(out, "</MPD>\n");
     avio_flush(out);
     avio_close(out);
-    return ff_rename(temp_filename, s->filename, s);
+    return USE_RENAME_REPLACE ? ff_rename(temp_filename, s->filename, s) : 0;
 }
 
 static int dash_write_header(AVFormatContext *s)
@@ -598,25 +599,42 @@ static void find_index_range(AVFormatContext *s, const char *dirname,
     *index_length = AV_RB32(&buf[0]);
 }
 
-static int dash_flush(AVFormatContext *s, int final)
+static int dash_flush(AVFormatContext *s, int final, int stream)
 {
     DASHContext *c = s->priv_data;
     int i, ret = 0;
+    int cur_flush_segment_index = 0;
+    if (stream >= 0)
+        cur_flush_segment_index = c->streams[stream].segment_index;
 
     for (i = 0; i < s->nb_streams; i++) {
         OutputStream *os = &c->streams[i];
         char filename[1024] = "", full_path[1024], temp_path[1024];
+        const char *write_path;
         int64_t start_pos = avio_tell(os->ctx->pb);
         int range_length, index_length = 0;
 
         if (!os->packets_written)
             continue;
 
+        // Flush the single stream that got a keyframe right now.
+        // Flush all audio streams as well, in sync with video keyframes,
+        // but not the other video streams.
+        if (stream >= 0 && i != stream) {
+            if (s->streams[i]->codec->codec_type != AVMEDIA_TYPE_AUDIO)
+                continue;
+            // Make sure we don't flush audio streams multiple times, when
+            // all video streams are flushed one at a time.
+            if (c->has_video && os->segment_index > cur_flush_segment_index)
+                continue;
+        }
+
         if (!c->single_file) {
             snprintf(filename, sizeof(filename), "chunk-stream%d-%05d.m4s", i, os->segment_index);
             snprintf(full_path, sizeof(full_path), "%s%s", c->dirname, filename);
             snprintf(temp_path, sizeof(temp_path), "%s.tmp", full_path);
-            ret = ffurl_open(&os->out, temp_path, AVIO_FLAG_WRITE, &s->interrupt_callback, NULL);
+            write_path = USE_RENAME_REPLACE ? temp_path : full_path;
+            ret = ffurl_open(&os->out, write_path, AVIO_FLAG_WRITE, &s->interrupt_callback, NULL);
             if (ret < 0)
                 break;
             write_styp(os->ctx->pb);
@@ -631,7 +649,7 @@ static int dash_flush(AVFormatContext *s, int final)
         } else {
             ffurl_close(os->out);
             os->out = NULL;
-            ret = ff_rename(temp_path, full_path, s);
+            ret = USE_RENAME_REPLACE ? ff_rename(temp_path, full_path, s) : 0;
             if (ret < 0)
                 break;
         }
@@ -668,7 +686,7 @@ static int dash_write_packet(AVFormatContext *s, AVPacket *pkt)
     DASHContext *c = s->priv_data;
     AVStream *st = s->streams[pkt->stream_index];
     OutputStream *os = &c->streams[pkt->stream_index];
-    int64_t seg_end_duration = (c->nb_segments + 1) * (int64_t) c->min_seg_duration;
+    int64_t seg_end_duration = (os->segment_index) * (int64_t) c->min_seg_duration;
     int ret;
 
     // If forcing the stream to start at 0, the mp4 muxer will set the start
@@ -704,9 +722,8 @@ static int dash_write_packet(AVFormatContext *s, AVPacket *pkt)
             }
         }
 
-        if ((ret = dash_flush(s, 0)) < 0)
+        if ((ret = dash_flush(s, 0, pkt->stream_index)) < 0)
             return ret;
-        c->nb_segments++;
     }
 
     if (!os->packets_written)
@@ -732,7 +749,7 @@ static int dash_write_trailer(AVFormatContext *s)
                                          s->streams[0]->time_base,
                                          AV_TIME_BASE_Q);
     }
-    dash_flush(s, 1);
+    dash_flush(s, 1, -1);
 
     if (c->remove_at_exit) {
         char filename[1024];

@@ -24,12 +24,9 @@
  * APNG demuxer.
  * @see https://wiki.mozilla.org/APNG_Specification
  * @see http://www.w3.org/TR/PNG
- *
- * Not supported (yet):
- *     - streams with chunks other than fcTL / fdAT / IEND after the first fcTL
- *     - streams with multiple fdAT chunks after an fcTL one
  */
 
+#include "apng.h"
 #include "avformat.h"
 #include "avio_internal.h"
 #include "internal.h"
@@ -46,6 +43,9 @@ typedef struct APNGDemuxContext {
 
     int max_fps;
     int default_fps;
+
+    int64_t pkt_pts;
+    int pkt_duration;
 
     int is_key_frame;
 
@@ -166,6 +166,9 @@ static int apng_read_header(AVFormatContext *s)
     if (!st)
         return AVERROR(ENOMEM);
 
+    /* set the timebase to something large enough (1/100,000 of second)
+     * to hopefully cope with all sane frame durations */
+    avpriv_set_pts_info(st, 64, 1, 100000);
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id   = AV_CODEC_ID_APNG;
     st->codec->width      = avio_rb32(pb);
@@ -269,9 +272,9 @@ static int decode_fctl_chunk(AVFormatContext *s, APNGDemuxContext *ctx, AVPacket
         delay_num = 1;
         delay_den = ctx->default_fps;
     }
-    s->streams[0]->r_frame_rate.num = delay_den;
-    s->streams[0]->r_frame_rate.den = delay_num;
-    pkt->duration = 1;
+    ctx->pkt_duration = av_rescale_q(delay_num,
+                                     (AVRational){ 1, delay_den },
+                                     s->streams[0]->time_base);
 
     av_log(s, AV_LOG_DEBUG, "%s: "
             "sequence_number: %"PRId32", "
@@ -298,11 +301,18 @@ static int decode_fctl_chunk(AVFormatContext *s, APNGDemuxContext *ctx, AVPacket
         height != s->streams[0]->codec->height ||
         x_offset != 0 ||
         y_offset != 0) {
-        if (sequence_number == 0)
+        if (sequence_number == 0 ||
+            x_offset >= s->streams[0]->codec->width ||
+            width > s->streams[0]->codec->width - x_offset ||
+            y_offset >= s->streams[0]->codec->height ||
+            height > s->streams[0]->codec->height - y_offset)
             return AVERROR_INVALIDDATA;
         ctx->is_key_frame = 0;
     } else {
-        ctx->is_key_frame = 1;
+        if (sequence_number == 0 && dispose_op == APNG_DISPOSE_OP_PREVIOUS)
+            dispose_op = APNG_DISPOSE_OP_BACKGROUND;
+        ctx->is_key_frame = dispose_op == APNG_DISPOSE_OP_BACKGROUND ||
+                            blend_op   == APNG_BLEND_OP_SOURCE;
     }
 
     return 0;
@@ -325,8 +335,6 @@ static int apng_read_packet(AVFormatContext *s, AVPacket *pkt)
      * and needed next:
      *  4 (length)
      *  4 (tag (must be fdAT or IDAT))
-     *
-     *  TODO: support multiple fdAT following an fcTL
      */
     /* if num_play is not 1, then the seekback is already guaranteed */
     if (ctx->num_play == 1 && (ret = ffio_ensure_seekback(pb, 46)) < 0)
@@ -350,17 +358,40 @@ static int apng_read_packet(AVFormatContext *s, AVPacket *pkt)
             tag != MKTAG('I', 'D', 'A', 'T'))
             return AVERROR_INVALIDDATA;
 
-        if ((ret = avio_seek(pb, -46, SEEK_CUR)) < 0)
-            return ret;
-
         size = 38 /* fcTL */ + 8 /* len, tag */ + len + 4 /* crc */;
         if (size > INT_MAX)
             return AVERROR(EINVAL);
 
-        if ((ret = av_get_packet(pb, pkt, size)) < 0)
+        if ((ret = avio_seek(pb, -46, SEEK_CUR)) < 0 ||
+            (ret = av_append_packet(pb, pkt, size)) < 0)
             return ret;
+
+        if (ctx->num_play == 1 && (ret = ffio_ensure_seekback(pb, 8)) < 0)
+            return ret;
+
+        len = avio_rb32(pb);
+        tag = avio_rl32(pb);
+        while (tag &&
+               tag != MKTAG('f', 'c', 'T', 'L') &&
+               tag != MKTAG('I', 'E', 'N', 'D')) {
+            if (len > 0x7fffffff)
+                return AVERROR_INVALIDDATA;
+            if ((ret = avio_seek(pb, -8, SEEK_CUR)) < 0 ||
+                (ret = av_append_packet(pb, pkt, len + 12)) < 0)
+                return ret;
+            if (ctx->num_play == 1 && (ret = ffio_ensure_seekback(pb, 8)) < 0)
+                return ret;
+            len = avio_rb32(pb);
+            tag = avio_rl32(pb);
+        }
+        if ((ret = avio_seek(pb, -8, SEEK_CUR)) < 0)
+            return ret;
+
         if (ctx->is_key_frame)
             pkt->flags |= AV_PKT_FLAG_KEY;
+        pkt->pts = ctx->pkt_pts;
+        pkt->duration = ctx->pkt_duration;
+        ctx->pkt_pts += ctx->pkt_duration;
         return ret;
     case MKTAG('I', 'E', 'N', 'D'):
         ctx->cur_loop++;

@@ -641,6 +641,11 @@
 %endif
 %endmacro
 
+%macro CLIPUB 3 ;(dst, min, max)
+    pmaxub %1, %2
+    pminub %1, %3
+%endmacro
+
 %macro CLIPW 3 ;(dst, min, max)
     pmaxsw %1, %2
     pminsw %1, %3

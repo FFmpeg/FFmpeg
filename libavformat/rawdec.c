@@ -119,6 +119,7 @@ AVInputFormat ff_data_demuxer = {
     .read_header    = ff_raw_data_read_header,
     .read_packet    = ff_raw_read_partial_packet,
     .raw_codec_id   = AV_CODEC_ID_NONE,
+    .flags          = AVFMT_NOTIMESTAMPS,
 };
 #endif
 
@@ -129,7 +130,7 @@ AVInputFormat ff_latm_demuxer = {
     .long_name      = NULL_IF_CONFIG_SMALL("raw LOAS/LATM"),
     .read_header    = ff_raw_audio_read_header,
     .read_packet    = ff_raw_read_partial_packet,
-    .flags          = AVFMT_GENERIC_INDEX,
+    .flags          = AVFMT_GENERIC_INDEX | AVFMT_NOTIMESTAMPS,
     .extensions     = "latm",
     .raw_codec_id   = AV_CODEC_ID_AAC_LATM,
 };
@@ -211,7 +212,7 @@ AVInputFormat ff_mlp_demuxer = {
     .long_name      = NULL_IF_CONFIG_SMALL("raw MLP"),
     .read_header    = ff_raw_audio_read_header,
     .read_packet    = ff_raw_read_partial_packet,
-    .flags          = AVFMT_GENERIC_INDEX,
+    .flags          = AVFMT_GENERIC_INDEX | AVFMT_NOTIMESTAMPS,
     .extensions     = "mlp",
     .raw_codec_id   = AV_CODEC_ID_MLP,
 };
@@ -223,7 +224,7 @@ AVInputFormat ff_truehd_demuxer = {
     .long_name      = NULL_IF_CONFIG_SMALL("raw TrueHD"),
     .read_header    = ff_raw_audio_read_header,
     .read_packet    = ff_raw_read_partial_packet,
-    .flags          = AVFMT_GENERIC_INDEX,
+    .flags          = AVFMT_GENERIC_INDEX | AVFMT_NOTIMESTAMPS,
     .extensions     = "thd",
     .raw_codec_id   = AV_CODEC_ID_TRUEHD,
 };
@@ -235,7 +236,7 @@ AVInputFormat ff_shorten_demuxer = {
     .long_name      = NULL_IF_CONFIG_SMALL("raw Shorten"),
     .read_header    = ff_raw_audio_read_header,
     .read_packet    = ff_raw_read_partial_packet,
-    .flags          = AVFMT_NOBINSEARCH | AVFMT_NOGENSEARCH | AVFMT_NO_BYTE_SEEK,
+    .flags          = AVFMT_NOBINSEARCH | AVFMT_NOGENSEARCH | AVFMT_NO_BYTE_SEEK|AVFMT_NOTIMESTAMPS,
     .extensions     = "shn",
     .raw_codec_id   = AV_CODEC_ID_SHORTEN,
 };

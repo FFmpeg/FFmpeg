@@ -29,6 +29,26 @@ the caller can decide which variant streams to actually receive.
 The total bitrate of the variant that the stream belongs to is
 available in a metadata key named "variant_bitrate".
 
+@section apng
+
+Animated Portable Network Graphics demuxer.
+
+This demuxer is used to demux APNG files.
+All headers, but the PNG signature, up to (but not including) the first
+fcTL chunk are transmitted as extradata.
+Frames are then split as being all the chunks between two fcTL ones, or
+between the last fcTL and IEND chunks.
+
+@table @option
+@item -ignore_loop @var{bool}
+Ignore the loop variable in the file if set.
+@item -max_fps @var{int}
+Maximum framerate in frames per second (0 for no limit).
+@item -default_fps @var{int}
+Default framerate in frames per second when none is specified in the file
+(0 meaning as fast as possible).
+@end table
+
 @section asf
 
 Advanced Systems Format demuxer.

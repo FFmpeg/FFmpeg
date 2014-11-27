@@ -366,7 +366,7 @@ static inline int decode_subframe(FLACContext *s, int channel)
 
     if (get_bits1(&s->gb)) {
         int left = get_bits_left(&s->gb);
-        if ( left < 0 ||
+        if ( left <= 0 ||
             (left < bps && !show_bits_long(&s->gb, left)) ||
                            !show_bits_long(&s->gb, bps)) {
             av_log(s->avctx, AV_LOG_ERROR,
@@ -472,10 +472,10 @@ static int decode_frame(FLACContext *s)
         ret = allocate_buffers(s);
         if (ret < 0)
             return ret;
-        ff_flacdsp_init(&s->dsp, s->avctx->sample_fmt, s->channels, s->bps);
         s->got_streaminfo = 1;
         dump_headers(s->avctx, (FLACStreaminfo *)s);
     }
+    ff_flacdsp_init(&s->dsp, s->avctx->sample_fmt, s->channels, s->bps);
 
 //    dump_headers(s->avctx, (FLACStreaminfo *)s);
 

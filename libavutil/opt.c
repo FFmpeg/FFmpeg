@@ -50,7 +50,10 @@ const AVOption *av_next_option(void *obj, const AVOption *last)
 
 const AVOption *av_opt_next(void *obj, const AVOption *last)
 {
-    AVClass *class = *(AVClass**)obj;
+    const AVClass *class;
+    if (!obj)
+        return NULL;
+    class = *(const AVClass**)obj;
     if (!last && class && class->option && class->option[0].name)
         return class->option;
     if (last && last[1].name)

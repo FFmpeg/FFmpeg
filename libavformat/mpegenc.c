@@ -1080,8 +1080,10 @@ retry:
         es_size              -= stream->premux_packet->unwritten_size;
         stream->premux_packet = stream->premux_packet->next;
     }
-    if (es_size)
+    if (es_size) {
+        av_assert0(stream->premux_packet);
         stream->premux_packet->unwritten_size -= es_size;
+    }
 
     if (remove_decoded_packets(ctx, s->last_scr) < 0)
         return -1;

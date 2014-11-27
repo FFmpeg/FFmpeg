@@ -408,6 +408,12 @@ ignored, and the log is written to standard output.
 Set no-daemon mode. This option is currently ignored since now
 @command{ffserver} will always work in no-daemon mode, and is
 deprecated.
+
+@item UseDefaults
+@item NoDefaults
+Control whether default codec options are used for the all streams or not.
+Each stream may overwrite this setting for its own. Default is @var{UseDefaults}.
+The lastest occurrence overrides previous if multiple definitions.
 @end table
 
 @section Feed section
@@ -570,6 +576,11 @@ deprecated in favor of @option{Metadata}.
 
 @item Metadata @var{key} @var{value}
 Set metadata value on the output stream.
+
+@item UseDefaults
+@item NoDefaults
+Control whether default codec options are used for the stream or not.
+Default is @var{UseDefaults} unless disabled globally.
 
 @item NoAudio
 @item NoVideo

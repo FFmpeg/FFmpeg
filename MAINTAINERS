@@ -386,6 +386,7 @@ Muxers/Demuxers:
   aiffdec.c                             Baptiste Coudurier, Matthieu Bouron
   aiffenc.c                             Baptiste Coudurier, Matthieu Bouron
   ape.c                                 Kostya Shishkov
+  apngdec.c                             Benoit Fouet
   ass*                                  Aurelien Jacobs
   astdec.c                              Paul B Mahol
   astenc.c                              James Almer

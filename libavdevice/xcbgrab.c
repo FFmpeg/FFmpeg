@@ -33,6 +33,10 @@
 #include <xcb/shm.h>
 #endif
 
+#if CONFIG_LIBXCB_SHAPE
+#include <xcb/shape.h>
+#endif
+
 #include "libavformat/avformat.h"
 #include "libavformat/internal.h"
 
@@ -576,7 +580,7 @@ static void setup_window(AVFormatContext *s)
                       XCB_COPY_FROM_PARENT,
                       mask, values);
 
-#if XCB_SHAPE_RECTANGLES
+#if CONFIG_LIBXCB_SHAPE
     xcb_shape_rectangles(c->conn, XCB_SHAPE_SO_SUBTRACT,
                          XCB_SHAPE_SK_BOUNDING, XCB_CLIP_ORDERING_UNSORTED,
                          c->window,

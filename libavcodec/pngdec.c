@@ -267,8 +267,10 @@ static void png_filter_row(PNGDSPContext *dsp, uint8_t *dst, int filter_type,
             /* would write off the end of the array if we let it process
              * the last pixel with bpp=3 */
             int w = bpp == 4 ? size : size - 3;
-            dsp->add_paeth_prediction(dst + i, src + i, last + i, w - i, bpp);
-            i = w;
+            if (w > i) {
+                dsp->add_paeth_prediction(dst + i, src + i, last + i, w - i, bpp);
+                i = w;
+            }
         }
         ff_add_png_paeth_prediction(dst + i, src + i, last + i, size - i, bpp);
         break;
@@ -524,6 +526,12 @@ static int decode_ihdr_chunk(AVCodecContext *avctx, PNGDecContext *s,
 {
     if (length != 13)
         return AVERROR_INVALIDDATA;
+
+    if (s->state & PNG_IDAT) {
+        av_log(avctx, AV_LOG_ERROR, "IHDR after IDAT\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     s->width  = bytestream2_get_be32(&s->gb);
     s->height = bytestream2_get_be32(&s->gb);
     if (av_image_check_size(s->width, s->height, 0, avctx)) {

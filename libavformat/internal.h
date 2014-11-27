@@ -23,6 +23,7 @@
 
 #include <stdint.h>
 #include "avformat.h"
+#include "os_support.h"
 
 #define MAX_URL_SIZE 4096
 
@@ -434,5 +435,11 @@ enum AVWriteUncodedFrameFlags {
  * Copies the whilelists from one context to the other
  */
 int ff_copy_whitelists(AVFormatContext *dst, AVFormatContext *src);
+
+#ifndef _WIN32
+#define USE_RENAME_REPLACE 1
+#else
+#define USE_RENAME_REPLACE 0
+#endif
 
 #endif /* AVFORMAT_INTERNAL_H */

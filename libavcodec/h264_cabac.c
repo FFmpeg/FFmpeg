@@ -27,6 +27,7 @@
 
 #define CABAC(h) 1
 #define UNCHECKED_BITSTREAM_READER 1
+#define INT_BIT (CHAR_BIT * sizeof(int))
 
 #include "libavutil/attributes.h"
 #include "libavutil/avassert.h"

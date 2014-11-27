@@ -55,7 +55,7 @@
 }
 #endif
 static int sad16_x2_altivec(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
-                            int line_size, int h)
+                            ptrdiff_t stride, int h)
 {
     int i;
     int __attribute__((aligned(16))) s = 0;
@@ -83,8 +83,8 @@ static int sad16_x2_altivec(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
         /* Add each 4 pixel group together and put 4 results into sad. */
         sad = vec_sum4s(t5, sad);
 
-        pix1 += line_size;
-        pix2 += line_size;
+        pix1 += stride;
+        pix2 += stride;
     }
     /* Sum up the four partial sums, and put the result into s. */
     sumdiffs = vec_sums((vector signed int) sad, (vector signed int) zero);
@@ -95,7 +95,7 @@ static int sad16_x2_altivec(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
 }
 
 static int sad16_y2_altivec(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
-                            int line_size, int h)
+                            ptrdiff_t stride, int h)
 {
     int i;
     int  __attribute__((aligned(16))) s = 0;
@@ -105,9 +105,9 @@ static int sad16_y2_altivec(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
     vector unsigned int sad = (vector unsigned int) vec_splat_u32(0);
     vector signed int sumdiffs;
 
-    uint8_t *pix3 = pix2 + line_size;
+    uint8_t *pix3 = pix2 + stride;
 
-    /* Due to the fact that pix3 = pix2 + line_size, the pix3 of one
+    /* Due to the fact that pix3 = pix2 + stride, the pix3 of one
      * iteration becomes pix2 in the next iteration. We can use this
      * fact to avoid a potentially expensive unaligned read, each
      * time around the loop.
@@ -132,9 +132,9 @@ static int sad16_y2_altivec(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
         /* Add each 4 pixel group together and put 4 results into sad. */
         sad = vec_sum4s(t5, sad);
 
-        pix1 += line_size;
+        pix1 += stride;
         pix2v = pix3v;
-        pix3 += line_size;
+        pix3 += stride;
     }
 
     /* Sum up the four partial sums, and put the result into s. */
@@ -145,11 +145,11 @@ static int sad16_y2_altivec(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
 }
 
 static int sad16_xy2_altivec(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
-                             int line_size, int h)
+                             ptrdiff_t stride, int h)
 {
     int i;
     int  __attribute__((aligned(16))) s = 0;
-    uint8_t *pix3 = pix2 + line_size;
+    uint8_t *pix3 = pix2 + stride;
     const vector unsigned char zero =
         (const vector unsigned char) vec_splat_u8(0);
     const vector unsigned short two =
@@ -163,7 +163,7 @@ static int sad16_xy2_altivec(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
     vector unsigned char perm1, perm2, pix2v, pix2iv;
     GET_PERM(perm1, perm2, pix2);
 
-    /* Due to the fact that pix3 = pix2 + line_size, the pix3 of one
+    /* Due to the fact that pix3 = pix2 + stride, the pix3 of one
      * iteration becomes pix2 in the next iteration. We can use this
      * fact to avoid a potentially expensive unaligned read, as well
      * as some splitting, and vector addition each time around the loop.
@@ -219,8 +219,8 @@ static int sad16_xy2_altivec(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
         /* Add each 4 pixel group together and put 4 results into sad. */
         sad = vec_sum4s(t5, sad);
 
-        pix1 += line_size;
-        pix3 += line_size;
+        pix1 += stride;
+        pix3 += stride;
         /* Transfer the calculated values for pix3 into pix2. */
         t1 = t3;
         t2 = t4;
@@ -234,7 +234,7 @@ static int sad16_xy2_altivec(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
 }
 
 static int sad16_altivec(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
-                         int line_size, int h)
+                         ptrdiff_t stride, int h)
 {
     int i;
     int  __attribute__((aligned(16))) s;
@@ -256,8 +256,8 @@ static int sad16_altivec(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
         /* Add each 4 pixel group together and put 4 results into sad. */
         sad = vec_sum4s(t5, sad);
 
-        pix1 += line_size;
-        pix2 += line_size;
+        pix1 += stride;
+        pix2 += stride;
     }
 
     /* Sum up the four partial sums, and put the result into s. */
@@ -269,7 +269,7 @@ static int sad16_altivec(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
 }
 
 static int sad8_altivec(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
-                        int line_size, int h)
+                        ptrdiff_t stride, int h)
 {
     int i;
     int  __attribute__((aligned(16))) s;
@@ -298,8 +298,8 @@ static int sad8_altivec(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
         /* Add each 4 pixel group together and put 4 results into sad. */
         sad = vec_sum4s(t5, sad);
 
-        pix1 += line_size;
-        pix2 += line_size;
+        pix1 += stride;
+        pix2 += stride;
     }
 
     /* Sum up the four partial sums, and put the result into s. */
@@ -313,7 +313,7 @@ static int sad8_altivec(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
 /* Sum of Squared Errors for an 8x8 block, AltiVec-enhanced.
  * It's the sad8_altivec code above w/ squaring added. */
 static int sse8_altivec(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
-                        int line_size, int h)
+                        ptrdiff_t stride, int h)
 {
     int i;
     int  __attribute__((aligned(16))) s;
@@ -343,8 +343,8 @@ static int sse8_altivec(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
         /* Square the values and add them to our sum. */
         sum = vec_msum(t5, t5, sum);
 
-        pix1 += line_size;
-        pix2 += line_size;
+        pix1 += stride;
+        pix2 += stride;
     }
 
     /* Sum up the four partial sums, and put the result into s. */
@@ -358,7 +358,7 @@ static int sse8_altivec(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
 /* Sum of Squared Errors for a 16x16 block, AltiVec-enhanced.
  * It's the sad16_altivec code above w/ squaring added. */
 static int sse16_altivec(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
-                         int line_size, int h)
+                         ptrdiff_t stride, int h)
 {
     int i;
     int  __attribute__((aligned(16))) s;
@@ -383,8 +383,8 @@ static int sse16_altivec(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
         /* Square the values and add them to our sum. */
         sum = vec_msum(t5, t5, sum);
 
-        pix1 += line_size;
-        pix2 += line_size;
+        pix1 += stride;
+        pix2 += stride;
     }
 
     /* Sum up the four partial sums, and put the result into s. */
@@ -396,7 +396,7 @@ static int sse16_altivec(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
 }
 
 static int hadamard8_diff8x8_altivec(MpegEncContext *s, uint8_t *dst,
-                                     uint8_t *src, int stride, int h)
+                                     uint8_t *src, ptrdiff_t stride, int h)
 {
     int __attribute__((aligned(16))) sum;
     register const vector unsigned char vzero =
@@ -522,7 +522,7 @@ static int hadamard8_diff8x8_altivec(MpegEncContext *s, uint8_t *dst,
  * but xlc goes to around 660 on the regular C code...
  */
 static int hadamard8_diff16x8_altivec(MpegEncContext *s, uint8_t *dst,
-                                      uint8_t *src, int stride, int h)
+                                      uint8_t *src, ptrdiff_t stride, int h)
 {
     int __attribute__((aligned(16))) sum;
     register vector signed short
@@ -713,7 +713,7 @@ static int hadamard8_diff16x8_altivec(MpegEncContext *s, uint8_t *dst,
 }
 
 static int hadamard8_diff16_altivec(MpegEncContext *s, uint8_t *dst,
-                                    uint8_t *src, int stride, int h)
+                                    uint8_t *src, ptrdiff_t stride, int h)
 {
     int score = hadamard8_diff16x8_altivec(s, dst, src, stride, 8);
 

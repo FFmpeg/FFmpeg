@@ -1635,11 +1635,9 @@ static int vc1_decode_p_mb_intfr(VC1Context *v)
                 s->current_picture.motion_val[1][s->block_index[i]][0] = 0;
                 s->current_picture.motion_val[1][s->block_index[i]][1] = 0;
             }
-            s->current_picture.mb_type[mb_pos]                     = MB_TYPE_INTRA;
-            s->mb_intra = 1;
-            v->is_intra[s->mb_x] = 0x3F;
-            for (i = 0; i < 6; i++)
-                v->mb_type[0][s->block_index[i]] = 1;
+            v->is_intra[s->mb_x] = 0x3f; // Set the bitfield to all 1.
+            s->mb_intra          = 1;
+            s->current_picture.mb_type[mb_pos] = MB_TYPE_INTRA;
             fieldtx = v->fieldtx_plane[mb_pos] = get_bits1(gb);
             mb_has_coeffs = get_bits1(gb);
             if (mb_has_coeffs)
@@ -1652,11 +1650,11 @@ static int vc1_decode_p_mb_intfr(VC1Context *v)
             s->c_dc_scale = s->c_dc_scale_table[mquant];
             dst_idx = 0;
             for (i = 0; i < 6; i++) {
-                s->dc_val[0][s->block_index[i]] = 0;
+                v->a_avail = v->c_avail          = 0;
+                v->mb_type[0][s->block_index[i]] = 1;
+                s->dc_val[0][s->block_index[i]]  = 0;
                 dst_idx += i >> 2;
                 val = ((cbp >> (5 - i)) & 1);
-                v->mb_type[0][s->block_index[i]] = s->mb_intra;
-                v->a_avail = v->c_avail = 0;
                 if (i == 2 || i == 3 || !s->first_slice_line)
                     v->a_avail = v->mb_type[0][s->block_index[i] - s->block_wrap[i]];
                 if (i == 1 || i == 3 || s->mb_x)
@@ -1806,8 +1804,8 @@ static int vc1_decode_p_mb_intfi(VC1Context *v)
 
     idx_mbmode = get_vlc2(gb, v->mbmode_vlc->table, VC1_IF_MBMODE_VLC_BITS, 2);
     if (idx_mbmode <= 1) { // intra MB
-        s->mb_intra = 1;
-        v->is_intra[s->mb_x] = 0x3F;
+        v->is_intra[s->mb_x] = 0x3f; // Set the bitfield to all 1.
+        s->mb_intra          = 1;
         s->current_picture.motion_val[1][s->block_index[0] + v->blocks_off][0] = 0;
         s->current_picture.motion_val[1][s->block_index[0] + v->blocks_off][1] = 0;
         s->current_picture.mb_type[mb_pos + v->mb_off] = MB_TYPE_INTRA;
@@ -1822,11 +1820,11 @@ static int vc1_decode_p_mb_intfi(VC1Context *v)
             cbp = 1 + get_vlc2(&v->s.gb, v->cbpcy_vlc->table, VC1_ICBPCY_VLC_BITS, 2);
         dst_idx = 0;
         for (i = 0; i < 6; i++) {
-            s->dc_val[0][s->block_index[i]]  = 0;
+            v->a_avail = v->c_avail          = 0;
             v->mb_type[0][s->block_index[i]] = 1;
+            s->dc_val[0][s->block_index[i]]  = 0;
             dst_idx += i >> 2;
             val = ((cbp >> (5 - i)) & 1);
-            v->a_avail = v->c_avail = 0;
             if (i == 2 || i == 3 || !s->first_slice_line)
                 v->a_avail = v->mb_type[0][s->block_index[i] - s->block_wrap[i]];
             if (i == 1 || i == 3 || s->mb_x)
@@ -2084,8 +2082,8 @@ static void vc1_decode_b_mb_intfi(VC1Context *v)
 
     idx_mbmode = get_vlc2(gb, v->mbmode_vlc->table, VC1_IF_MBMODE_VLC_BITS, 2);
     if (idx_mbmode <= 1) { // intra MB
-        s->mb_intra = 1;
-        v->is_intra[s->mb_x] = 0x3F;
+        v->is_intra[s->mb_x] = 0x3f; // Set the bitfield to all 1.
+        s->mb_intra          = 1;
         s->current_picture.motion_val[1][s->block_index[0]][0] = 0;
         s->current_picture.motion_val[1][s->block_index[0]][1] = 0;
         s->current_picture.mb_type[mb_pos + v->mb_off]         = MB_TYPE_INTRA;
@@ -2100,11 +2098,11 @@ static void vc1_decode_b_mb_intfi(VC1Context *v)
             cbp = 1 + get_vlc2(&v->s.gb, v->cbpcy_vlc->table, VC1_ICBPCY_VLC_BITS, 2);
         dst_idx = 0;
         for (i = 0; i < 6; i++) {
-            s->dc_val[0][s->block_index[i]] = 0;
+            v->a_avail = v->c_avail          = 0;
+            v->mb_type[0][s->block_index[i]] = 1;
+            s->dc_val[0][s->block_index[i]]  = 0;
             dst_idx += i >> 2;
             val = ((cbp >> (5 - i)) & 1);
-            v->mb_type[0][s->block_index[i]] = s->mb_intra;
-            v->a_avail                       = v->c_avail = 0;
             if (i == 2 || i == 3 || !s->first_slice_line)
                 v->a_avail = v->mb_type[0][s->block_index[i] - s->block_wrap[i]];
             if (i == 1 || i == 3 || s->mb_x)
@@ -2310,11 +2308,9 @@ static int vc1_decode_b_mb_intfr(VC1Context *v)
             s->mv[1][i][0] = s->current_picture.motion_val[1][s->block_index[i]][0] = 0;
             s->mv[1][i][1] = s->current_picture.motion_val[1][s->block_index[i]][1] = 0;
         }
+        v->is_intra[s->mb_x] = 0x3f; // Set the bitfield to all 1.
+        s->mb_intra          = 1;
         s->current_picture.mb_type[mb_pos] = MB_TYPE_INTRA;
-        s->mb_intra = 1;
-        v->is_intra[s->mb_x] = 0x3F;
-        for (i = 0; i < 6; i++)
-            v->mb_type[0][s->block_index[i]] = 1;
         fieldtx = v->fieldtx_plane[mb_pos] = get_bits1(gb);
         mb_has_coeffs = get_bits1(gb);
         if (mb_has_coeffs)
@@ -2327,11 +2323,11 @@ static int vc1_decode_b_mb_intfr(VC1Context *v)
         s->c_dc_scale = s->c_dc_scale_table[mquant];
         dst_idx = 0;
         for (i = 0; i < 6; i++) {
-            s->dc_val[0][s->block_index[i]] = 0;
+            v->a_avail = v->c_avail          = 0;
+            v->mb_type[0][s->block_index[i]] = 1;
+            s->dc_val[0][s->block_index[i]]  = 0;
             dst_idx += i >> 2;
             val = ((cbp >> (5 - i)) & 1);
-            v->mb_type[0][s->block_index[i]] = s->mb_intra;
-            v->a_avail = v->c_avail = 0;
             if (i == 2 || i == 3 || !s->first_slice_line)
                 v->a_avail = v->mb_type[0][s->block_index[i] - s->block_wrap[i]];
             if (i == 1 || i == 3 || s->mb_x)

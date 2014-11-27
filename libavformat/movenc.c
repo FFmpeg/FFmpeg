@@ -65,6 +65,7 @@ static const AVOption options[] = {
     { "disable_chpl", "Disable Nero chapter atom", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_DISABLE_CHPL}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     { "default_base_moof", "Set the default-base-is-moof flag in tfhd atoms", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_DEFAULT_BASE_MOOF}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     { "dash", "Write DASH compatible fragmented MP4", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_DASH}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
+    { "frag_discont", "Signal that the next fragment is discontinuous from earlier ones", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_FRAG_DISCONT}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     FF_RTP_FLAG_OPTS(MOVMuxContext, rtp_flags),
     { "skip_iods", "Skip writing iods atom.", offsetof(MOVMuxContext, iods_skip), AV_OPT_TYPE_INT, {.i64 = 1}, 0, 1, AV_OPT_FLAG_ENCODING_PARAM},
     { "iods_audio_profile", "iods audio profile atom.", offsetof(MOVMuxContext, iods_audio_profile), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 255, AV_OPT_FLAG_ENCODING_PARAM},
@@ -76,6 +77,7 @@ static const AVOption options[] = {
     { "video_track_timescale", "set timescale of all video tracks", offsetof(MOVMuxContext, video_track_timescale), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM},
     { "brand",    "Override major brand", offsetof(MOVMuxContext, major_brand),   AV_OPT_TYPE_STRING, {.str = NULL}, .flags = AV_OPT_FLAG_ENCODING_PARAM },
     { "use_editlist", "use edit list", offsetof(MOVMuxContext, use_editlist), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 1, AV_OPT_FLAG_ENCODING_PARAM},
+    { "fragment_index", "Fragment number of the next fragment", offsetof(MOVMuxContext, fragments), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM},
     { NULL },
 };
 
@@ -4043,11 +4045,19 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     trk->cluster[trk->entry].entries          = samples_in_chunk;
     trk->cluster[trk->entry].dts              = pkt->dts;
     if (!trk->entry && trk->start_dts != AV_NOPTS_VALUE) {
-        /* First packet of a new fragment. We already wrote the duration
-         * of the last packet of the previous fragment based on track_duration,
-         * which might not exactly match our dts. Therefore adjust the dts
-         * of this packet to be what the previous packets duration implies. */
-        trk->cluster[trk->entry].dts = trk->start_dts + trk->track_duration;
+        if (!trk->frag_discont) {
+            /* First packet of a new fragment. We already wrote the duration
+             * of the last packet of the previous fragment based on track_duration,
+             * which might not exactly match our dts. Therefore adjust the dts
+             * of this packet to be what the previous packets duration implies. */
+            trk->cluster[trk->entry].dts = trk->start_dts + trk->track_duration;
+        } else {
+            /* New fragment, but discontinuous from previous fragments.
+             * Pretend the duration sum of the earlier fragments is
+             * pkt->dts - trk->start_dts. */
+            trk->frag_start = pkt->dts - trk->start_dts;
+            trk->frag_discont = 0;
+        }
     }
 
     if (!trk->entry && trk->start_dts == AV_NOPTS_VALUE && !mov->use_editlist &&
@@ -4061,7 +4071,13 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     }
     if (trk->start_dts == AV_NOPTS_VALUE) {
         trk->start_dts = pkt->dts;
-        if (pkt->dts && mov->flags & FF_MOV_FLAG_EMPTY_MOOV)
+        if (trk->frag_discont) {
+            /* Pretend the whole stream started at dts=0, with earlier framgents
+             * already written, with a duration summing up to pkt->dts. */
+            trk->frag_start   = pkt->dts;
+            trk->start_dts    = 0;
+            trk->frag_discont = 0;
+        } else if (pkt->dts && mov->flags & FF_MOV_FLAG_EMPTY_MOOV)
             av_log(s, AV_LOG_WARNING,
                    "Track %d starts with a nonzero dts %"PRId64". This "
                    "currently isn't handled correctly in combination with "
@@ -4117,6 +4133,13 @@ static int mov_write_single_packet(AVFormatContext *s, AVPacket *pkt)
 
         if (!pkt->size)
             return 0;             /* Discard 0 sized packets */
+
+        if (mov->flags & FF_MOV_FLAG_FRAG_DISCONT) {
+            int i;
+            for (i = 0; i < s->nb_streams; i++)
+                mov->tracks[i].frag_discont = 1;
+            mov->flags &= ~FF_MOV_FLAG_FRAG_DISCONT;
+        }
 
         if (trk->entry && pkt->stream_index < s->nb_streams)
             frag_duration = av_rescale_q(pkt->dts - trk->cluster[0].dts,

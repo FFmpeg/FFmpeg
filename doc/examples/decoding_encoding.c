@@ -288,6 +288,7 @@ static void audio_decode_example(const char *outfilename, const char *filename)
     avpkt.size = fread(inbuf, 1, AUDIO_INBUF_SIZE, f);
 
     while (avpkt.size > 0) {
+        int i, ch;
         int got_frame = 0;
 
         if (!decoded_frame) {
@@ -304,15 +305,15 @@ static void audio_decode_example(const char *outfilename, const char *filename)
         }
         if (got_frame) {
             /* if a frame has been decoded, output it */
-            int data_size = av_samples_get_buffer_size(NULL, c->channels,
-                                                       decoded_frame->nb_samples,
-                                                       c->sample_fmt, 1);
+            int data_size = av_get_bytes_per_sample(c->sample_fmt);
             if (data_size < 0) {
                 /* This should not occur, checking just for paranoia */
                 fprintf(stderr, "Failed to calculate data size\n");
                 exit(1);
             }
-            fwrite(decoded_frame->data[0], 1, data_size, outfile);
+            for (i=0; i<decoded_frame->nb_samples; i++)
+                for (ch=0; ch<c->channels; ch++)
+                    fwrite(decoded_frame->data[ch] + data_size*i, 1, data_size, outfile);
         }
         avpkt.size -= len;
         avpkt.data += len;
@@ -650,7 +651,7 @@ int main(int argc, char **argv)
         video_encode_example("test.h264", AV_CODEC_ID_H264);
     } else if (!strcmp(output_type, "mp2")) {
         audio_encode_example("test.mp2");
-        audio_decode_example("test.sw", "test.mp2");
+        audio_decode_example("test.pcm", "test.mp2");
     } else if (!strcmp(output_type, "mpg")) {
         video_encode_example("test.mpg", AV_CODEC_ID_MPEG1VIDEO);
         video_decode_example("test%02d.pgm", "test.mpg");
