@@ -2570,16 +2570,13 @@ drawtext_filter_deps="libfreetype"
 ebur128_filter_deps="gpl"
 flite_filter_deps="libflite"
 frei0r_filter_deps="frei0r dlopen"
-frei0r_filter_extralibs='$ldl'
 frei0r_src_filter_deps="frei0r dlopen"
-frei0r_src_filter_extralibs='$ldl'
 geq_filter_deps="gpl"
 histeq_filter_deps="gpl"
 hqdn3d_filter_deps="gpl"
 interlace_filter_deps="gpl"
 kerndeint_filter_deps="gpl"
 ladspa_filter_deps="ladspa dlopen"
-ladspa_filter_extralibs='$ldl'
 mcdeint_filter_deps="avcodec gpl"
 movie_filter_deps="avcodec avformat"
 mp_filter_deps="gpl avcodec swscale"
@@ -4650,6 +4647,10 @@ if check_func dlopen; then
 elif check_func dlopen -ldl; then
     ldl=-ldl
 fi
+
+frei0r_filter_extralibs='$ldl'
+frei0r_src_filter_extralibs='$ldl'
+ladspa_filter_extralibs='$ldl'
 
 if ! disabled network; then
     check_func getaddrinfo $network_extralibs
