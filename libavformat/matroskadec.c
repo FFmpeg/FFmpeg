@@ -32,12 +32,6 @@
 
 #include <inttypes.h>
 #include <stdio.h>
-#if CONFIG_BZLIB
-#include <bzlib.h>
-#endif
-#if CONFIG_ZLIB
-#include <zlib.h>
-#endif
 
 #include "libavutil/avstring.h"
 #include "libavutil/base64.h"
@@ -61,6 +55,13 @@
 /* For ff_codec_get_id(). */
 #include "riff.h"
 #include "rmsipr.h"
+
+#if CONFIG_BZLIB
+#include <bzlib.h>
+#endif
+#if CONFIG_ZLIB
+#include <zlib.h>
+#endif
 
 typedef enum {
     EBML_NONE,
