@@ -1,4 +1,4 @@
-fe3db3dd385b8e5dc43cccc17b50f7f0 *tests/data/fate/vsynth2-qtrle.mov
-14798419 tests/data/fate/vsynth2-qtrle.mov
-b2418e0e3a9a8619b31219cbcf24dc82 *tests/data/fate/vsynth2-qtrle.out.rawvideo
-stddev:    1.26 PSNR: 46.06 MAXDIFF:   13 bytes:  7603200/  7603200
+3ad59e9e4586a67328d0642dea77782e *tests/data/fate/vsynth2-qtrle.mov
+14036000 tests/data/fate/vsynth2-qtrle.mov
+abbfc86dbfdac158525addbf48cbb15f *tests/data/fate/vsynth2-qtrle.out.rawvideo
+stddev:    1.54 PSNR: 44.34 MAXDIFF:   17 bytes:  7603200/  7603200
