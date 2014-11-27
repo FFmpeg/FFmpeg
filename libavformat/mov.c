@@ -1274,7 +1274,7 @@ static int mov_read_stco(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return 0;
 
     if (sc->chunk_offsets)
-        av_log(c->fc, AV_LOG_WARNING, "Duplicate STCO atom\n");
+        av_log(c->fc, AV_LOG_WARNING, "Duplicated STCO atom\n");
     av_free(sc->chunk_offsets);
     sc->chunk_count = 0;
     sc->chunk_offsets = av_malloc_array(entries, sizeof(*sc->chunk_offsets));
@@ -1872,7 +1872,7 @@ static int mov_read_stsc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     if (!entries)
         return 0;
     if (sc->stsc_data)
-        av_log(c->fc, AV_LOG_WARNING, "Duplicate STSC atom\n");
+        av_log(c->fc, AV_LOG_WARNING, "Duplicated STSC atom\n");
     av_free(sc->stsc_data);
     sc->stsc_count = 0;
     sc->stsc_data = av_malloc_array(entries, sizeof(*sc->stsc_data));
@@ -1908,7 +1908,7 @@ static int mov_read_stps(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     entries = avio_rb32(pb);
     if (sc->stps_data)
-        av_log(c->fc, AV_LOG_WARNING, "Duplicate STPS atom\n");
+        av_log(c->fc, AV_LOG_WARNING, "Duplicated STPS atom\n");
     av_free(sc->stps_data);
     sc->stps_count = 0;
     sc->stps_data = av_malloc_array(entries, sizeof(*sc->stps_data));
@@ -1954,7 +1954,7 @@ static int mov_read_stss(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return 0;
     }
     if (sc->keyframes)
-        av_log(c->fc, AV_LOG_WARNING, "Duplicate STSS atom\n");
+        av_log(c->fc, AV_LOG_WARNING, "Duplicated STSS atom\n");
     av_free(sc->keyframes);
     sc->keyframe_count = 0;
     sc->keyframes = av_malloc_array(entries, sizeof(*sc->keyframes));
@@ -2019,7 +2019,7 @@ static int mov_read_stsz(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     if (entries >= (UINT_MAX - 4) / field_size)
         return AVERROR_INVALIDDATA;
     if (sc->sample_sizes)
-        av_log(c->fc, AV_LOG_WARNING, "Duplicate STSZ atom\n");
+        av_log(c->fc, AV_LOG_WARNING, "Duplicated STSZ atom\n");
     av_free(sc->sample_sizes);
     sc->sample_count = 0;
     sc->sample_sizes = av_malloc_array(entries, sizeof(*sc->sample_sizes));
@@ -2077,7 +2077,7 @@ static int mov_read_stts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             c->fc->nb_streams-1, entries);
 
     if (sc->stts_data)
-        av_log(c->fc, AV_LOG_WARNING, "Duplicate STTS atom\n");
+        av_log(c->fc, AV_LOG_WARNING, "Duplicated STTS atom\n");
     av_free(sc->stts_data);
     sc->stts_count = 0;
     sc->stts_data = av_malloc_array(entries, sizeof(*sc->stts_data));
@@ -2220,7 +2220,7 @@ static int mov_read_sbgp(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     if (!entries)
         return 0;
     if (sc->rap_group)
-        av_log(c->fc, AV_LOG_WARNING, "Duplicate SBGP atom\n");
+        av_log(c->fc, AV_LOG_WARNING, "Duplicated SBGP atom\n");
     av_free(sc->rap_group);
     sc->rap_group_count = 0;
     sc->rap_group = av_malloc_array(entries, sizeof(*sc->rap_group));
