@@ -1,4 +1,4 @@
-1ba5efeb53fab7b4b71edc96d86f6c91 *tests/data/fate/vsynth2-mpeg2-ivlc-qprd.mpeg2video
-244694 tests/data/fate/vsynth2-mpeg2-ivlc-qprd.mpeg2video
-b26e21599dee48a174bdbc40b2817e55 *tests/data/fate/vsynth2-mpeg2-ivlc-qprd.out.rawvideo
-stddev:    4.15 PSNR: 35.76 MAXDIFF:   74 bytes:  7603200/  7603200
+85933176f843eec48a84aa62b56447ca *tests/data/fate/vsynth2-mpeg2-ivlc-qprd.mpeg2video
+269721 tests/data/fate/vsynth2-mpeg2-ivlc-qprd.mpeg2video
+322bf95092c06d32e993fca9b3eb41f0 *tests/data/fate/vsynth2-mpeg2-ivlc-qprd.out.rawvideo
+stddev:    5.54 PSNR: 33.25 MAXDIFF:   94 bytes:  7603200/  7603200
