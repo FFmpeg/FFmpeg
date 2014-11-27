@@ -1289,7 +1289,8 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
         if (sps->ptl.general_ptl.profile_idc == FF_PROFILE_HEVC_REXT && pps_range_extensions_flag) {
             av_log(s->avctx, AV_LOG_ERROR,
                    "PPS extension flag is partially implemented.\n");
-            pps_range_extensions(s, pps, sps);
+            if ((ret = pps_range_extensions(s, pps, sps)) < 0)
+                goto err;
         }
     }
 
