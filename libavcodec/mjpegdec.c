@@ -244,7 +244,8 @@ int ff_mjpeg_decode_dht(MJpegDecodeContext *s)
 
 int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
 {
-    int len, nb_components, i, width, height, bits, pix_fmt_id, ret;
+    int len, nb_components, i, width, height, bits, ret;
+    unsigned pix_fmt_id;
     int h_count[MAX_COMPONENTS];
     int v_count[MAX_COMPONENTS];
 
@@ -383,7 +384,7 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         else if (!s->lossless)
             s->rgb = 0;
     /* XXX: not complete test ! */
-    pix_fmt_id = (s->h_count[0] << 28) | (s->v_count[0] << 24) |
+    pix_fmt_id = ((unsigned)s->h_count[0] << 28) | (s->v_count[0] << 24) |
                  (s->h_count[1] << 20) | (s->v_count[1] << 16) |
                  (s->h_count[2] << 12) | (s->v_count[2] <<  8) |
                  (s->h_count[3] <<  4) |  s->v_count[3];
