@@ -1375,7 +1375,8 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
         int pps_range_extensions_flag = get_bits1(gb);
         /* int pps_extension_7bits = */ get_bits(gb, 7);
         if (sps->ptl.general_ptl.profile_idc == FF_PROFILE_HEVC_REXT && pps_range_extensions_flag) {
-            pps_range_extensions(s, pps, sps);
+            if ((ret = pps_range_extensions(s, pps, sps)) < 0)
+                goto err;
         }
     }
 
