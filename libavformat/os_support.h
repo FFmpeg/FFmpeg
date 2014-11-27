@@ -144,24 +144,7 @@ int ff_poll(struct pollfd *fds, nfds_t numfds, int timeout);
 #elif defined(_WIN32)
 #include <stdio.h>
 #include <windows.h>
-#include "libavutil/mem.h"
-
-static inline int utf8towchar(const char *filename_utf8, wchar_t **filename_w)
-{
-    int num_chars;
-    num_chars = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, filename_utf8, -1, NULL, 0);
-    if (num_chars <= 0) {
-        *filename_w = NULL;
-        return 0;
-    }
-    *filename_w = (wchar_t *)av_mallocz(sizeof(wchar_t) * num_chars);
-    if (!*filename_w) {
-        errno = ENOMEM;
-        return -1;
-    }
-    MultiByteToWideChar(CP_UTF8, 0, filename_utf8, -1, *filename_w, num_chars);
-    return 0;
-}
+#include "libavutil/wchar_filename.h"
 
 #define DEF_FS_FUNCTION(name, wfunc, afunc)               \
 static inline int win32_##name(const char *filename_utf8) \
