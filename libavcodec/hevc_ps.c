@@ -951,6 +951,11 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
     sps->long_term_ref_pics_present_flag = get_bits1(gb);
     if (sps->long_term_ref_pics_present_flag) {
         sps->num_long_term_ref_pics_sps = get_ue_golomb_long(gb);
+        if (sps->num_long_term_ref_pics_sps > 31U) {
+            av_log(0, AV_LOG_ERROR, "num_long_term_ref_pics_sps %d is out of range.\n",
+                   sps->num_long_term_ref_pics_sps);
+            goto err;
+        }
         for (i = 0; i < sps->num_long_term_ref_pics_sps; i++) {
             sps->lt_ref_pic_poc_lsb_sps[i]       = get_bits(gb, sps->log2_max_poc_lsb);
             sps->used_by_curr_pic_lt_sps_flag[i] = get_bits1(gb);
