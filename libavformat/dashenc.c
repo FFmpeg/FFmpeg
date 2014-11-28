@@ -308,8 +308,7 @@ static void dash_fill_tmpl_params(char *dst, size_t buffer_size,
     int dst_pos = 0;
     const char *t_cur = template;
     while (dst_pos < buffer_size - 1 && *t_cur) {
-        int format_tag_size = 7;
-        char format_tag[format_tag_size]; // May be "%d", "%0Xd", or "%0Xlld" (for $Time$), where X is in [0-9]
+        char format_tag[7]; // May be "%d", "%0Xd", or "%0Xlld" (for $Time$), where X is in [0-9]
         int n = 0;
         DASHTmplId id_type;
         const char *t_next = strchr(t_cur, '$'); // copy over everything up to the first '$' character
@@ -328,7 +327,7 @@ static void dash_fill_tmpl_params(char *dst, size_t buffer_size,
             break;
 
         // t_cur is now pointing to a '$' character
-        id_type = dash_read_tmpl_id(t_cur, format_tag, format_tag_size, &t_next);
+        id_type = dash_read_tmpl_id(t_cur, format_tag, sizeof(format_tag), &t_next);
         switch (id_type) {
         case DASH_TMPL_ID_ESCAPE:
             av_strlcpy(&dst[dst_pos], "$", 2);
