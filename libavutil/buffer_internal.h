@@ -69,12 +69,12 @@ typedef struct BufferPoolEntry {
     void (*free)(void *opaque, uint8_t *data);
 
     AVBufferPool *pool;
-    struct BufferPoolEntry *next;
+    struct BufferPoolEntry * volatile next;
 } BufferPoolEntry;
 
 struct AVBufferPool {
     AVMutex mutex;
-    BufferPoolEntry *pool;
+    BufferPoolEntry * volatile pool;
 
     /*
      * This is used to track when the pool is to be freed.
