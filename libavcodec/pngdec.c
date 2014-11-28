@@ -674,10 +674,6 @@ static int decode_idat_chunk(AVCodecContext *avctx, PNGDecContext *s,
         s->crow_buf          = s->buffer + 15;
         s->zstream.avail_out = s->crow_size;
         s->zstream.next_out  = s->crow_buf;
-
-        if (avctx->codec_id == AV_CODEC_ID_APNG &&
-            s->dispose_op == APNG_DISPOSE_OP_BACKGROUND)
-            memset(s->zstream.next_out, 0, s->zstream.avail_out);
     }
     s->state |= PNG_IDAT;
     if ((ret = png_decode_idat(s, length)) < 0)
@@ -887,7 +883,7 @@ static int handle_p_frame_apng(AVCodecContext *avctx, PNGDecContext *s,
         pd_last += s->image_linesize;
     }
 
-    if (s->blend_op == APNG_BLEND_OP_OVER) {
+    if (s->dispose_op != APNG_DISPOSE_OP_BACKGROUND && s->blend_op == APNG_BLEND_OP_OVER) {
         uint8_t ri, gi, bi, ai;
 
         if (avctx->pix_fmt == AV_PIX_FMT_RGBA) {
