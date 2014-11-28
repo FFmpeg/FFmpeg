@@ -927,7 +927,17 @@ static int handle_p_frame_apng(AVCodecContext *avctx, PNGDecContext *s,
             pd      += s->image_linesize;
             pd_last += s->image_linesize;
         }
+    } else {
+        for (j = s->y_offset; j < s->y_offset + s->cur_h; j++) {
+            for (i = 0; i < s->x_offset * s->bpp; i++)
+                pd[i] = pd_last[i];
+            for (i = (s->x_offset + s->cur_w) * s->bpp; i < ls; i++)
+                pd[i] = pd_last[i];
+            pd      += s->image_linesize;
+            pd_last += s->image_linesize;
+        }
     }
+
     for (j = s->y_offset + s->cur_h; j < s->height; j++) {
         for (i = 0; i < ls; i++)
             pd[i] = pd_last[i];
