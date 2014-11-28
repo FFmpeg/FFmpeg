@@ -87,16 +87,3 @@
 /tools/seek_print
 /tools/uncoded_frame
 /tools/zmqsend
-*.suo
-*.user
-*.sdf
-*.opensdf
-*.obj
-*.pdb
-*.idb
-*.log
-*.tlog
-*.res
-*.manifest
-!/SMC/*.def
-!/SMC/project_generate/templates/*.*
