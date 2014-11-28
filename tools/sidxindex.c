@@ -252,7 +252,6 @@ static int output_mpd(struct Tracks *tracks, const char *filename)
     int nb_tracks_buf[2] = { 0 };
     int *nb_tracks;
     int set, nb_sets;
-    int64_t latest_start = 0;
 
     if (!tracks->multiple_tracks_per_file) {
         adaptation_sets = adaptation_sets_buf;
@@ -299,17 +298,7 @@ static int output_mpd(struct Tracks *tracks, const char *filename)
     fprintf(out, "\"\n");
     fprintf(out, "\tminBufferTime=\"PT5S\">\n");
 
-    for (i = 0; i < tracks->nb_tracks; i++) {
-        int64_t start = av_rescale_rnd(tracks->tracks[i]->earliest_presentation,
-                                       AV_TIME_BASE,
-                                       tracks->tracks[i]->earliest_presentation_timescale,
-                                       AV_ROUND_UP);
-        latest_start = FFMAX(start, latest_start);
-    }
-    fprintf(out, "\t<Period start=\"");
-    write_time(out, latest_start, 3, AV_ROUND_UP);
-    fprintf(out, "\">\n");
-
+    fprintf(out, "\t<Period start=\"PT0.0S\">\n");
 
     for (set = 0; set < nb_sets; set++) {
         if (nb_tracks[set] == 0)
