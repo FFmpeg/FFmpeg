@@ -43,8 +43,6 @@ struct Track {
     int timescale;
     char codec_str[30];
     int64_t sidx_start, sidx_length;
-    int64_t  earliest_presentation;
-    uint32_t earliest_presentation_timescale;
 };
 
 struct Tracks {
@@ -95,14 +93,6 @@ static int find_sidx(struct Tracks *tracks, int start_index,
         if (size < 8)
             break;
         if (tag == MKBETAG('s', 'i', 'd', 'x')) {
-            int version, track_id;
-            uint32_t timescale;
-            int64_t earliest_presentation;
-            version = avio_r8(f);
-            avio_rb24(f); /* flags */
-            track_id = avio_rb32(f);
-            timescale = avio_rb32(f);
-            earliest_presentation = version ? avio_rb64(f) : avio_rb32(f);
             for (i = start_index; i < tracks->nb_tracks; i++) {
                 struct Track *track = tracks->tracks[i];
                 if (!track->sidx_start) {
@@ -110,10 +100,6 @@ static int find_sidx(struct Tracks *tracks, int start_index,
                     track->sidx_length = size;
                 } else if (pos == track->sidx_start + track->sidx_length) {
                     track->sidx_length = pos + size - track->sidx_start;
-                }
-                if (track->track_id == track_id) {
-                    track->earliest_presentation = earliest_presentation;
-                    track->earliest_presentation_timescale = timescale;
                 }
             }
         }
