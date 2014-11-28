@@ -241,11 +241,12 @@ static int filter_frame(AVFilterLink *link, AVFrame *picref)
     idet->cur  = idet->next;
     idet->next = picref;
 
-    if (!idet->cur)
-        return 0;
+    if (!idet->cur &&
+        !(idet->cur = av_frame_clone(idet->next)))
+        return AVERROR(ENOMEM);
 
     if (!idet->prev)
-        idet->prev = av_frame_clone(idet->cur);
+        return 0;
 
     if (!idet->csp)
         idet->csp = av_pix_fmt_desc_get(link->format);
@@ -284,7 +285,7 @@ static int request_frame(AVFilterLink *link)
         } else if (ret < 0) {
             return ret;
         }
-    } while (!idet->cur);
+    } while (!idet->prev);
 
     return 0;
 }
