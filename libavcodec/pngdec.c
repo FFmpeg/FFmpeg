@@ -949,7 +949,7 @@ static int decode_frame_common(AVCodecContext *avctx, PNGDecContext *s,
     for (;;) {
         length = bytestream2_get_bytes_left(&s->gb);
         if (length <= 0) {
-            if (avctx->codec_id == AV_CODEC_ID_APNG && length == 0) {
+            if (CONFIG_APNG_DECODER && avctx->codec_id == AV_CODEC_ID_APNG && length == 0) {
                 if (!(s->state & PNG_IDAT))
                     return 0;
                 else
@@ -984,14 +984,14 @@ static int decode_frame_common(AVCodecContext *avctx, PNGDecContext *s,
                 goto fail;
             break;
         case MKTAG('f', 'c', 'T', 'L'):
-            if (avctx->codec_id != AV_CODEC_ID_APNG)
+            if (!CONFIG_APNG_DECODER || avctx->codec_id != AV_CODEC_ID_APNG)
                 goto skip_tag;
             if ((ret = decode_fctl_chunk(avctx, s, length)) < 0)
                 goto fail;
             decode_next_dat = 1;
             break;
         case MKTAG('f', 'd', 'A', 'T'):
-            if (avctx->codec_id != AV_CODEC_ID_APNG)
+            if (!CONFIG_APNG_DECODER || avctx->codec_id != AV_CODEC_ID_APNG)
                 goto skip_tag;
             if (!decode_next_dat)
                 goto fail;
@@ -999,7 +999,7 @@ static int decode_frame_common(AVCodecContext *avctx, PNGDecContext *s,
             length -= 4;
             /* fallthrough */
         case MKTAG('I', 'D', 'A', 'T'):
-            if (avctx->codec_id == AV_CODEC_ID_APNG && !decode_next_dat)
+            if (CONFIG_APNG_DECODER && avctx->codec_id == AV_CODEC_ID_APNG && !decode_next_dat)
                 goto skip_tag;
             if (decode_idat_chunk(avctx, s, length, p) < 0)
                 goto fail;
