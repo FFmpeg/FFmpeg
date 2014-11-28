@@ -208,20 +208,24 @@ static void output_segment_list(OutputStream *os, AVIOContext *out, DASHContext 
             avio_printf(out, "duration=\"%"PRId64"\" ", c->last_duration);
         avio_printf(out, "initialization=\"%s\" media=\"%s\" startNumber=\"%d\">\n", c->init_seg_name, c->media_seg_name, c->use_timeline ? start_number : 1);
         if (c->use_timeline) {
+            int64_t cur_time = 0;
             avio_printf(out, "\t\t\t\t\t<SegmentTimeline>\n");
             for (i = start_index; i < os->nb_segments; ) {
                 Segment *seg = os->segments[i];
                 int repeat = 0;
                 avio_printf(out, "\t\t\t\t\t\t<S ");
-                if (i == start_index)
+                if (i == start_index || seg->time != cur_time)
                     avio_printf(out, "t=\"%"PRId64"\" ", seg->time);
                 avio_printf(out, "d=\"%d\" ", seg->duration);
-                while (i + repeat + 1 < os->nb_segments && os->segments[i + repeat + 1]->duration == seg->duration)
+                while (i + repeat + 1 < os->nb_segments &&
+                       os->segments[i + repeat + 1]->duration == seg->duration &&
+                       os->segments[i + repeat + 1]->time == os->segments[i + repeat]->time + os->segments[i + repeat]->duration)
                     repeat++;
                 if (repeat > 0)
                     avio_printf(out, "r=\"%d\" ", repeat);
                 avio_printf(out, "/>\n");
                 i += 1 + repeat;
+                cur_time += (1 + repeat) * seg->duration;
             }
             avio_printf(out, "\t\t\t\t\t</SegmentTimeline>\n");
         }
