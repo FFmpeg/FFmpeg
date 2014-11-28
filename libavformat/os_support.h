@@ -144,24 +144,7 @@ int ff_poll(struct pollfd *fds, nfds_t numfds, int timeout);
 #elif defined(_WIN32)
 #include <stdio.h>
 #include <windows.h>
-#include "libavutil/mem.h"
-
-static inline int utf8towchar(const char *filename_utf8, wchar_t **filename_w)
-{
-    int num_chars;
-    num_chars = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, filename_utf8, -1, NULL, 0);
-    if (num_chars <= 0) {
-        *filename_w = NULL;
-        return 0;
-    }
-    *filename_w = (wchar_t *)av_mallocz(sizeof(wchar_t) * num_chars);
-    if (!*filename_w) {
-        errno = ENOMEM;
-        return -1;
-    }
-    MultiByteToWideChar(CP_UTF8, 0, filename_utf8, -1, *filename_w, num_chars);
-    return 0;
-}
+#include "libavutil/wchar_filename.h"
 
 #define DEF_FS_FUNCTION(name, wfunc, afunc)               \
 static inline int win32_##name(const char *filename_utf8) \
@@ -204,14 +187,31 @@ static inline int win32_rename(const char *src_utf8, const char *dest_utf8)
         goto fallback;
     }
 
-    ret = _wrename(src_w, dest_w);
+    ret = MoveFileExW(src_w, dest_w, MOVEFILE_REPLACE_EXISTING);
     av_free(src_w);
     av_free(dest_w);
+    // Lacking proper mapping from GetLastError() error codes to errno codes
+    if (ret)
+        errno = EPERM;
     return ret;
 
 fallback:
     /* filename may be be in CP_ACP */
-    return rename(src_utf8, dest_utf8);
+#if HAVE_MOVEFILEEXA
+    ret = MoveFileExA(src_utf8, dest_utf8, MOVEFILE_REPLACE_EXISTING);
+    if (ret)
+        errno = EPERM;
+#else
+    /* Windows Phone doesn't have MoveFileExA. However, it's unlikely
+     * that anybody would input filenames in CP_ACP there, so this
+     * fallback is kept mostly for completeness. Alternatively we could
+     * do MultiByteToWideChar(CP_ACP) and use MoveFileExW, but doing
+     * explicit conversions with CP_ACP is allegedly forbidden in windows
+     * store apps (or windows phone), and the notion of a native code page
+     * doesn't make much sense there. */
+    ret = rename(src_utf8, dest_utf8);
+#endif
+    return ret;
 }
 
 #define mkdir(a, b) win32_mkdir(a)

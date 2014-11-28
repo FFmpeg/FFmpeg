@@ -192,6 +192,7 @@ static void build_udp_url(char *buf, int buf_size,
                           const char *hostname, int port,
                           int local_port, int ttl,
                           int max_packet_size, int connect,
+                          int dscp,
                           const char *include_sources,
                           const char *exclude_sources)
 {
@@ -204,6 +205,8 @@ static void build_udp_url(char *buf, int buf_size,
         url_add_option(buf, buf_size, "pkt_size=%d", max_packet_size);
     if (connect)
         url_add_option(buf, buf_size, "connect=1");
+    if (dscp >= 0)
+        url_add_option(buf, buf_size, "dscp=%d", dscp);
     url_add_option(buf, buf_size, "fifo_size=0");
     if (include_sources && include_sources[0])
         url_add_option(buf, buf_size, "sources=%s", include_sources);
@@ -264,6 +267,7 @@ static void rtp_parse_addr_list(URLContext *h, char *buf,
  *         'sources=ip[,ip]'  : list allowed source IP addresses
  *         'block=ip[,ip]'    : list disallowed source IP addresses
  *         'write_to_source=0/1' : send packets to the source address of the latest received packet
+ *         'dscp=n'           : set DSCP value to n (QoS)
  * deprecated option:
  *         'localport=n'      : set the local port to n
  *
@@ -278,7 +282,7 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
     RTPContext *s = h->priv_data;
     int rtp_port, rtcp_port,
         ttl, connect,
-        local_rtp_port, local_rtcp_port, max_packet_size;
+        local_rtp_port, local_rtcp_port, max_packet_size, dscp;
     char hostname[256], include_sources[1024] = "", exclude_sources[1024] = "";
     char buf[1024];
     char path[1024];
@@ -294,6 +298,7 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
     local_rtcp_port = -1;
     max_packet_size = -1;
     connect = 0;
+    dscp = -1;
 
     p = strchr(uri, '?');
     if (p) {
@@ -321,6 +326,9 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
         if (av_find_info_tag(buf, sizeof(buf), "write_to_source", p)) {
             s->write_to_source = strtol(buf, NULL, 10);
         }
+        if (av_find_info_tag(buf, sizeof(buf), "dscp", p)) {
+            dscp = strtol(buf, NULL, 10);
+        }
         if (av_find_info_tag(buf, sizeof(buf), "sources", p)) {
             av_strlcpy(include_sources, buf, sizeof(include_sources));
             rtp_parse_addr_list(h, buf, &s->ssm_include_addrs, &s->nb_ssm_include_addrs);
@@ -334,7 +342,7 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
     for (i = 0;i < max_retry_count;i++) {
         build_udp_url(buf, sizeof(buf),
                       hostname, rtp_port, local_rtp_port, ttl, max_packet_size,
-                      connect, include_sources, exclude_sources);
+                      connect, dscp, include_sources, exclude_sources);
         if (ffurl_open(&s->rtp_hd, buf, flags, &h->interrupt_callback, NULL) < 0)
             goto fail;
         local_rtp_port = ff_udp_get_local_port(s->rtp_hd);
@@ -346,7 +354,7 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
             local_rtcp_port = local_rtp_port + 1;
             build_udp_url(buf, sizeof(buf),
                           hostname, rtcp_port, local_rtcp_port, ttl, max_packet_size,
-                          connect, include_sources, exclude_sources);
+                          connect, dscp, include_sources, exclude_sources);
             if (ffurl_open(&s->rtcp_hd, buf, flags, &h->interrupt_callback, NULL) < 0) {
                 local_rtp_port = local_rtcp_port = -1;
                 continue;
@@ -355,7 +363,7 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
         }
         build_udp_url(buf, sizeof(buf),
                       hostname, rtcp_port, local_rtcp_port, ttl, max_packet_size,
-                      connect, include_sources, exclude_sources);
+                      connect, dscp, include_sources, exclude_sources);
         if (ffurl_open(&s->rtcp_hd, buf, flags, &h->interrupt_callback, NULL) < 0)
             goto fail;
         break;

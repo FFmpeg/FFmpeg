@@ -215,16 +215,14 @@ static int write_manifest(AVFormatContext *s, int final)
     SmoothStreamingContext *c = s->priv_data;
     AVIOContext *out;
     char filename[1024], temp_filename[1024];
-    const char *write_filename;
     int ret, i, video_chunks = 0, audio_chunks = 0, video_streams = 0, audio_streams = 0;
     int64_t duration = 0;
 
     snprintf(filename, sizeof(filename), "%s/Manifest", s->filename);
     snprintf(temp_filename, sizeof(temp_filename), "%s/Manifest.tmp", s->filename);
-    write_filename = USE_RENAME_REPLACE ? temp_filename : filename;
-    ret = avio_open2(&out, write_filename, AVIO_FLAG_WRITE, &s->interrupt_callback, NULL);
+    ret = avio_open2(&out, temp_filename, AVIO_FLAG_WRITE, &s->interrupt_callback, NULL);
     if (ret < 0) {
-        av_log(s, AV_LOG_ERROR, "Unable to open %s for writing\n", write_filename);
+        av_log(s, AV_LOG_ERROR, "Unable to open %s for writing\n", temp_filename);
         return ret;
     }
     avio_printf(out, "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
@@ -285,7 +283,7 @@ static int write_manifest(AVFormatContext *s, int final)
     avio_printf(out, "</SmoothStreamingMedia>\n");
     avio_flush(out);
     avio_close(out);
-    return USE_RENAME_REPLACE ? ff_rename(temp_filename, filename, s) : 0;
+    return ff_rename(temp_filename, filename, s);
 }
 
 static int ism_write_header(AVFormatContext *s)

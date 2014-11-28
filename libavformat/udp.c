@@ -556,7 +556,7 @@ static int parse_source_list(char *buf, char **sources, int *num_sources,
 static int udp_open(URLContext *h, const char *uri, int flags)
 {
     char hostname[1024], localaddr[1024] = "";
-    int port, udp_fd = -1, tmp, bind_ret = -1;
+    int port, udp_fd = -1, tmp, bind_ret = -1, dscp = -1;
     UDPContext *s = h->priv_data;
     int is_output;
     const char *p;
@@ -611,6 +611,9 @@ static int udp_open(URLContext *h, const char *uri, int flags)
         }
         if (av_find_info_tag(buf, sizeof(buf), "connect", p)) {
             s->is_connected = strtol(buf, NULL, 10);
+        }
+        if (av_find_info_tag(buf, sizeof(buf), "dscp", p)) {
+            dscp = strtol(buf, NULL, 10);
         }
         if (av_find_info_tag(buf, sizeof(buf), "fifo_size", p)) {
             s->circular_buffer_size = strtol(buf, NULL, 10);
@@ -693,6 +696,12 @@ static int udp_open(URLContext *h, const char *uri, int flags)
 
         if (setsockopt (udp_fd, IPPROTO_UDPLITE, UDPLITE_RECV_CSCOV, &(s->udplite_coverage), sizeof(s->udplite_coverage)) != 0)
             av_log(h, AV_LOG_WARNING, "socket option UDPLITE_RECV_CSCOV not available");
+    }
+
+    if (dscp >= 0) {
+        dscp <<= 2;
+        if (setsockopt (udp_fd, IPPROTO_IP, IP_TOS, &dscp, sizeof(dscp)) != 0)
+            goto fail;
     }
 
     /* If multicast, try binding the multicast address first, to avoid
