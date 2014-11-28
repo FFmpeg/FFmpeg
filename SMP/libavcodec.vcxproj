@@ -2189,6 +2189,9 @@
     <ClCompile Include="..\libavcodec\x86\v210-init.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_v210-init.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\x86\v210enc_init.c">
+      <ObjectFileName>$(IntDir)\libavcodec_x86_v210enc_init.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\x86\vc1dsp_init.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_vc1dsp_init.obj</ObjectFileName>
     </ClCompile>
@@ -2296,6 +2299,7 @@
     <YASM Include="..\libavcodec\x86\rv40dsp.asm" />
     <YASM Include="..\libavcodec\x86\svq1enc.asm" />
     <YASM Include="..\libavcodec\x86\ttadsp.asm" />
+    <YASM Include="..\libavcodec\x86\v210enc.asm" />
     <YASM Include="..\libavcodec\x86\v210.asm" />
     <YASM Include="..\libavcodec\x86\vc1dsp.asm" />
     <YASM Include="..\libavcodec\x86\vorbisdsp.asm" />
