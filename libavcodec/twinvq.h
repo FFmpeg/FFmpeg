@@ -136,7 +136,7 @@ typedef struct TwinVQModeTab {
 
 typedef struct TwinVQContext {
     AVCodecContext *avctx;
-    AVFloatDSPContext fdsp;
+    AVFloatDSPContext *fdsp;
     FFTContext mdct_ctx[3];
 
     const TwinVQModeTab *mtab;
