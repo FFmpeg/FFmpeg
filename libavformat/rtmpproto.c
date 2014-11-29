@@ -2954,7 +2954,7 @@ static int rtmp_write(URLContext *s, const uint8_t *buf, int size)
 {
     RTMPContext *rt = s->priv_data;
     int size_temp = size;
-    int pktsize, pkttype;
+    int pktsize, pkttype, copy;
     uint32_t ts;
     const uint8_t *buf_temp = buf;
     uint8_t c;
@@ -2970,11 +2970,10 @@ static int rtmp_write(URLContext *s, const uint8_t *buf, int size)
         }
 
         if (rt->flv_header_bytes < RTMP_HEADER) {
-            int set_data_frame = 0;
             const uint8_t *header = rt->flv_header;
-            int copy = FFMIN(RTMP_HEADER - rt->flv_header_bytes, size_temp);
             int channel = RTMP_AUDIO_CHANNEL;
 
+            copy = FFMIN(RTMP_HEADER - rt->flv_header_bytes, size_temp);
             bytestream_get_buffer(&buf_temp, rt->flv_header + rt->flv_header_bytes, copy);
             rt->flv_header_bytes += copy;
             size_temp            -= copy;
@@ -2991,36 +2990,15 @@ static int rtmp_write(URLContext *s, const uint8_t *buf, int size)
             if (pkttype == RTMP_PT_VIDEO)
                 channel = RTMP_VIDEO_CHANNEL;
 
-            if (pkttype == RTMP_PT_NOTIFY) {
-                // For onMetaData and |RtmpSampleAccess packets, we want
-                // @setDataFrame prepended to the packet before it gets sent.
-                // However, definitely not *all* RTMP_PT_NOTIFY packets (e.g.,
-                // onTextData and onCuePoint).
-                uint8_t commandbuffer[64];
-                int stringlen = 0, commandsize = size - rt->flv_header_bytes;
-                GetByteContext gbc;
-
-                // buf_temp at this point should be pointing to the RTMP command
-                bytestream2_init(&gbc, buf_temp, commandsize);
-                if (ff_amf_read_string(&gbc, commandbuffer, sizeof(commandbuffer),
-                                       &stringlen))
-                    return AVERROR_INVALIDDATA;
-
-                if (!strcmp(commandbuffer, "onMetaData") ||
-                    !strcmp(commandbuffer, "|RtmpSampleAccess")) {
-                    set_data_frame = 1;
-                }
-            }
-
             if (((pkttype == RTMP_PT_VIDEO || pkttype == RTMP_PT_AUDIO) && ts == 0) ||
                 pkttype == RTMP_PT_NOTIFY) {
-                // add 12 bytes header if passing @setDataFrame
-                if (set_data_frame)
-                    pktsize += 16;
                 if ((ret = ff_rtmp_check_alloc_array(&rt->prev_pkt[1],
                                                      &rt->nb_prev_pkt[1],
                                                      channel)) < 0)
                     return ret;
+                // Force sending a full 12 bytes header by clearing the
+                // channel id, to make it not match a potential earlier
+                // packet in the same channel.
                 rt->prev_pkt[1][channel].channel_id = 0;
             }
 
@@ -3031,24 +3009,42 @@ static int rtmp_write(URLContext *s, const uint8_t *buf, int size)
 
             rt->out_pkt.extra = rt->stream_id;
             rt->flv_data = rt->out_pkt.data;
-
-            if (set_data_frame) {
-                ff_amf_write_string(&rt->flv_data, "@setDataFrame");
-            }
         }
 
-        if (rt->flv_size - rt->flv_off > size_temp) {
-            bytestream_get_buffer(&buf_temp, rt->flv_data + rt->flv_off, size_temp);
-            rt->flv_off += size_temp;
-            size_temp = 0;
-        } else {
-            bytestream_get_buffer(&buf_temp, rt->flv_data + rt->flv_off, rt->flv_size - rt->flv_off);
-            size_temp   -= rt->flv_size - rt->flv_off;
-            rt->flv_off += rt->flv_size - rt->flv_off;
-        }
+        copy = FFMIN(rt->flv_size - rt->flv_off, size_temp);
+        bytestream_get_buffer(&buf_temp, rt->flv_data + rt->flv_off, copy);
+        rt->flv_off += copy;
+        size_temp   -= copy;
 
         if (rt->flv_off == rt->flv_size) {
             rt->skip_bytes = 4;
+
+            if (rt->out_pkt.type == RTMP_PT_NOTIFY) {
+                // For onMetaData and |RtmpSampleAccess packets, we want
+                // @setDataFrame prepended to the packet before it gets sent.
+                // However, not all RTMP_PT_NOTIFY packets (e.g., onTextData
+                // and onCuePoint).
+                uint8_t commandbuffer[64];
+                int stringlen = 0;
+                GetByteContext gbc;
+
+                bytestream2_init(&gbc, rt->flv_data, rt->flv_size);
+                if (!ff_amf_read_string(&gbc, commandbuffer, sizeof(commandbuffer),
+                                        &stringlen)) {
+                    if (!strcmp(commandbuffer, "onMetaData") ||
+                        !strcmp(commandbuffer, "|RtmpSampleAccess")) {
+                        uint8_t *ptr;
+                        if ((ret = av_reallocp(&rt->out_pkt.data, rt->out_pkt.size + 16)) < 0) {
+                            rt->flv_size = rt->flv_off = rt->flv_header_bytes = 0;
+                            return ret;
+                        }
+                        memmove(rt->out_pkt.data + 16, rt->out_pkt.data, rt->out_pkt.size);
+                        rt->out_pkt.size += 16;
+                        ptr = rt->out_pkt.data;
+                        ff_amf_write_string(&ptr, "@setDataFrame");
+                    }
+                }
+            }
 
             if ((ret = rtmp_send_packet(rt, &rt->out_pkt, 0)) < 0)
                 return ret;

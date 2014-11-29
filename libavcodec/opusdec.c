@@ -499,6 +499,12 @@ static int opus_decode_packet(AVCodecContext *avctx, void *data,
                 av_log(avctx, AV_LOG_ERROR, "Error parsing the packet header.\n");
                 return ret;
             }
+            if (coded_samples != s->packet.frame_count * s->packet.frame_duration) {
+                av_log(avctx, AV_LOG_ERROR,
+                       "Mismatching coded sample count in substream %d.\n", i);
+                return AVERROR_INVALIDDATA;
+            }
+
             s->silk_samplerate = get_silk_samplerate(s->packet.config);
         }
 

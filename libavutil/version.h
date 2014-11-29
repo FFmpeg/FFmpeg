@@ -120,6 +120,13 @@
 #define FF_API_OPT_TYPE_METADATA        (LIBAVUTIL_VERSION_MAJOR < 55)
 #endif
 
+#ifndef FF_CONST_AVUTIL55
+#if LIBAVUTIL_VERSION_MAJOR >= 55
+#define FF_CONST_AVUTIL55 const
+#else
+#define FF_CONST_AVUTIL55
+#endif
+#endif
 
 /**
  * @}
