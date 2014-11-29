@@ -27,8 +27,6 @@
 #include <limits.h>
 #include <stdint.h>
 
-//#define MOV_EXPORT_ALL_METADATA
-
 #include "libavutil/attributes.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
@@ -37,6 +35,7 @@
 #include "libavutil/time_internal.h"
 #include "libavutil/avstring.h"
 #include "libavutil/dict.h"
+#include "libavutil/opt.h"
 #include "libavcodec/ac3tab.h"
 #include "avformat.h"
 #include "internal.h"
@@ -253,9 +252,7 @@ static int mov_metadata_loci(MOVContext *c, AVIOContext *pb, unsigned len)
 
 static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
-#ifdef MOV_EXPORT_ALL_METADATA
     char tmp_key[5];
-#endif
     char str[1024], key2[32], language[4] = {0};
     const char *key = NULL;
     uint16_t langcode = 0;
@@ -329,12 +326,10 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     } else
         str_size = atom.size;
 
-#ifdef MOV_EXPORT_ALL_METADATA
-    if (!key) {
+    if (c->export_all && !key) {
         snprintf(tmp_key, 5, "%.4s", (char*)&atom.type);
         key = tmp_key;
     }
-#endif
 
     if (!key)
         return 0;
@@ -3420,9 +3415,25 @@ static int mov_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
     return 0;
 }
 
+#define OFFSET(x) offsetof(MOVContext, x)
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM
+static const AVOption mov_options[] = {
+    { "export_all", "Export unrecognized metadata entries", OFFSET(export_all),
+        AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, .flags = FLAGS },
+    { NULL },
+};
+
+static const AVClass mov_class = {
+    .class_name = "mov,mp4,m4a,3gp,3g2,mj2",
+    .item_name  = av_default_item_name,
+    .option     = mov_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVInputFormat ff_mov_demuxer = {
     .name           = "mov,mp4,m4a,3gp,3g2,mj2",
     .long_name      = NULL_IF_CONFIG_SMALL("QuickTime / MOV"),
+    .priv_class     = &mov_class,
     .priv_data_size = sizeof(MOVContext),
     .extensions     = "mov,mp4,m4a,3gp,3g2,mj2",
     .read_probe     = mov_probe,
