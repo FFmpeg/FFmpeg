@@ -24,10 +24,12 @@
 
 #include "config.h"
 
-#if HAVE_PTHREADS || HAVE_W32THREADS
+#if HAVE_PTHREADS || HAVE_W32THREADS || HAVE_OS2THREADS
 
 #if HAVE_PTHREADS
 #include <pthread.h>
+#elif HAVE_OS2THREADS
+#include "compat/os2threads.h"
 #else
 #include <compat/w32pthreads.h>
 #endif
