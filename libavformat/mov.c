@@ -253,10 +253,10 @@ static int mov_metadata_loci(MOVContext *c, AVIOContext *pb, unsigned len)
 static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     char tmp_key[5];
-    char str[1024], key2[32], language[4] = {0};
+    char *str, key2[32], language[4] = {0};
     const char *key = NULL;
     uint16_t langcode = 0;
-    uint32_t data_type = 0, str_size;
+    uint32_t data_type = 0, str_size, str_size_alloc;
     int (*parse)(MOVContext*, AVIOContext*, unsigned, const char*) = NULL;
 
     switch (atom.type) {
@@ -336,13 +336,17 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     if (atom.size < 0)
         return AVERROR_INVALIDDATA;
 
-    str_size = FFMIN3(sizeof(str)-1, str_size, atom.size);
+    // allocate twice as much as worst-case
+    str_size_alloc = str_size * 2;
+    str = av_malloc(str_size_alloc);
+    if (!str)
+        return AVERROR(ENOMEM);
 
     if (parse)
         parse(c, pb, str_size, key);
     else {
         if (data_type == 3 || (data_type == 0 && (langcode < 0x400 || langcode == 0x7fff))) { // MAC Encoded
-            mov_read_mac_string(c, pb, str_size, str, sizeof(str));
+            mov_read_mac_string(c, pb, str_size, str, str_size_alloc);
         } else {
             avio_read(pb, str, str_size);
             str[str_size] = 0;
@@ -356,8 +360,9 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     }
     av_dlog(c->fc, "lang \"%3s\" ", language);
     av_dlog(c->fc, "tag \"%s\" value \"%s\" atom \"%.4s\" %d %"PRId64"\n",
-            key, str, (char*)&atom.type, str_size, atom.size);
+            key, str, (char*)&atom.type, str_size_alloc, atom.size);
 
+    av_freep(&str);
     return 0;
 }
 
