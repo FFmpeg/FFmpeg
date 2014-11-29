@@ -252,7 +252,7 @@ static void apply_window_and_mdct(AACEncContext *s, SingleChannelElement *sce,
     int i;
     float *output = sce->ret_buf;
 
-    apply_window[sce->ics.window_sequence[0]](&s->fdsp, sce, audio);
+    apply_window[sce->ics.window_sequence[0]](s->fdsp, sce, audio);
 
     if (sce->ics.window_sequence[0] != EIGHT_SHORT_SEQUENCE)
         s->mdct1024.mdct_calc(&s->mdct1024, sce->coeffs, output);
@@ -682,6 +682,7 @@ static av_cold int aac_encode_end(AVCodecContext *avctx)
         ff_psy_preprocess_end(s->psypp);
     av_freep(&s->buffer.samples);
     av_freep(&s->cpe);
+    av_freep(&s->fdsp);
     ff_af_queue_close(&s->afq);
     return 0;
 }
@@ -690,7 +691,9 @@ static av_cold int dsp_init(AVCodecContext *avctx, AACEncContext *s)
 {
     int ret = 0;
 
-    avpriv_float_dsp_init(&s->fdsp, avctx->flags & CODEC_FLAG_BITEXACT);
+    s->fdsp = avpriv_float_dsp_alloc(avctx->flags & CODEC_FLAG_BITEXACT);
+    if (!s->fdsp)
+        return AVERROR(ENOMEM);
 
     // window init
     ff_kbd_window_init(ff_aac_kbd_long_1024, 4.0, 1024);
