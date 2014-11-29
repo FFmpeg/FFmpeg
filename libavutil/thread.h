@@ -31,7 +31,7 @@
 #elif HAVE_OS2THREADS
 #include "compat/os2threads.h"
 #else
-#include <compat/w32pthreads.h>
+#include "compat/w32pthreads.h"
 #endif
 
 #define AVMutex pthread_mutex_t
