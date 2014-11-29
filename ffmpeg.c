@@ -623,7 +623,11 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
 
     while (bsfc) {
         AVPacket new_pkt = *pkt;
-        int a = av_bitstream_filter_filter(bsfc, avctx, NULL,
+        AVDictionaryEntry *bsf_arg = av_dict_get(ost->bsf_args,
+                                                 bsfc->filter->name,
+                                                 NULL, 0);
+        int a = av_bitstream_filter_filter(bsfc, avctx,
+                                           bsf_arg ? bsf_arg->value : NULL,
                                            &new_pkt.data, &new_pkt.size,
                                            pkt->data, pkt->size,
                                            pkt->flags & AV_PKT_FLAG_KEY);
@@ -3834,6 +3838,7 @@ static int transcode(void)
                 av_dict_free(&ost->encoder_opts);
                 av_dict_free(&ost->swr_opts);
                 av_dict_free(&ost->resample_opts);
+                av_dict_free(&ost->bsf_args);
             }
         }
     }

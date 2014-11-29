@@ -1138,8 +1138,11 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
 
     MATCH_PER_STREAM_OPT(bitstream_filters, str, bsf, oc, st);
     while (bsf) {
+        char *arg = NULL;
         if (next = strchr(bsf, ','))
             *next++ = 0;
+        if (arg = strchr(bsf, '='))
+            *arg++ = 0;
         if (!(bsfc = av_bitstream_filter_init(bsf))) {
             av_log(NULL, AV_LOG_FATAL, "Unknown bitstream filter %s\n", bsf);
             exit_program(1);
@@ -1148,6 +1151,7 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
             bsfc_prev->next = bsfc;
         else
             ost->bitstream_filters = bsfc;
+        av_dict_set(&ost->bsf_args, bsfc->filter->name, arg, 0);
 
         bsfc_prev = bsfc;
         bsf       = next;
