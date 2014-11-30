@@ -64,6 +64,7 @@ There are a handful of files under other licensing terms, namely:
   documentation accompanying your program if you only distribute executables.
   You must also indicate any changes including additions and deletions to
   those three files in the documentation.
+  tests/reference.pnm is under the expat license
 
 
 external libraries
