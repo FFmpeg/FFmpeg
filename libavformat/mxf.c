@@ -94,6 +94,7 @@ static const struct {
     {AV_PIX_FMT_RGB565BE,{'R', 5,  'G', 6,  'B', 5                         }},
     {AV_PIX_FMT_RGBA,    {'R', 8,  'G', 8,  'B', 8, 'A', 8                 }},
     {AV_PIX_FMT_PAL8,    {'P', 8                                           }},
+    {AV_PIX_FMT_GRAY8,   {'A', 8                                           }},
 };
 
 static const int num_pixel_layouts = FF_ARRAY_ELEMS(ff_mxf_pixel_layouts);
