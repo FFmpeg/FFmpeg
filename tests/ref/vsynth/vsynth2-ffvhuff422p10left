@@ -1,0 +1,4 @@
+e6aac4b4faafac27aa3ae76ef84519e5 *tests/data/fate/vsynth2-ffvhuff422p10left.avi
+9870624 tests/data/fate/vsynth2-ffvhuff422p10left.avi
+8bb1c449e1a2a94fd0d98841c04246bb *tests/data/fate/vsynth2-ffvhuff422p10left.out.rawvideo
+stddev:    0.39 PSNR: 56.17 MAXDIFF:    9 bytes:  7603200/  7603200

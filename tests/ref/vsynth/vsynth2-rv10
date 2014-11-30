@@ -1,0 +1,4 @@
+45a1e6800af36b7e2d42cadd2b6d1447 *tests/data/fate/vsynth2-rv10.rm
+210679 tests/data/fate/vsynth2-rv10.rm
+d77291a0611eeec0667bbc3aba7190b8 *tests/data/fate/vsynth2-rv10.out.rawvideo
+stddev:    6.12 PSNR: 32.39 MAXDIFF:   83 bytes:  7603200/  7603200

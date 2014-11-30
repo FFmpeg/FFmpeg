@@ -1,0 +1,4 @@
+98afd6e384f6c0dad8d5e713be157cf3 *tests/data/fate/vsynth2-mjpeg-422.avi
+920360 tests/data/fate/vsynth2-mjpeg-422.avi
+4a1b18eeb8b0f3dccc2c0e6a9f8c876d *tests/data/fate/vsynth2-mjpeg-422.out.rawvideo
+stddev:    4.69 PSNR: 34.69 MAXDIFF:   55 bytes:  7603200/  7603200

@@ -1,0 +1,4 @@
+7c95be46992866b930e24fa96deb7fe4 *tests/data/fate/vsynth2-msmpeg4.avi
+170436 tests/data/fate/vsynth2-msmpeg4.avi
+81135454c184b78040c49a2aadca6394 *tests/data/fate/vsynth2-msmpeg4.out.rawvideo
+stddev:    6.02 PSNR: 32.53 MAXDIFF:   89 bytes:  7603200/  7603200
