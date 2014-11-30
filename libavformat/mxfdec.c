@@ -742,8 +742,10 @@ static int mxf_read_sequence(void *arg, AVIOContext *pb, int tag, int size, UID 
     case 0x1001:
         sequence->structural_components_count = avio_rb32(pb);
         sequence->structural_components_refs = av_calloc(sequence->structural_components_count, sizeof(UID));
-        if (!sequence->structural_components_refs)
+        if (!sequence->structural_components_refs) {
+            sequence->structural_components_count = 0;
             return AVERROR(ENOMEM);
+        }
         avio_skip(pb, 4); /* useless size of objects, always 16 according to specs */
         avio_read(pb, (uint8_t *)sequence->structural_components_refs, sequence->structural_components_count * sizeof(UID));
         break;
@@ -761,8 +763,10 @@ static int mxf_read_essence_group(void *arg, AVIOContext *pb, int tag, int size,
     case 0x0501:
         essence_group->structural_components_count = avio_rb32(pb);
         essence_group->structural_components_refs = av_calloc(essence_group->structural_components_count, sizeof(UID));
-        if (!essence_group->structural_components_refs)
+        if (!essence_group->structural_components_refs) {
+            essence_group->structural_components_count = 0;
             return AVERROR(ENOMEM);
+        }
         avio_skip(pb, 4); /* useless size of objects, always 16 according to specs */
         avio_read(pb, (uint8_t *)essence_group->structural_components_refs, essence_group->structural_components_count * sizeof(UID));
         break;
