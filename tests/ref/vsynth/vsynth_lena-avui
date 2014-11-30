@@ -1,0 +1,4 @@
+df5efcfd2170df82e466be4deb7ce4a9 *tests/data/fate/vsynth_lena-avui.mov
+42624917 tests/data/fate/vsynth_lena-avui.mov
+dde5895817ad9d219f79a52d0bdfb001 *tests/data/fate/vsynth_lena-avui.out.rawvideo
+stddev:    0.00 PSNR:999.99 MAXDIFF:    0 bytes:  7603200/  7603200

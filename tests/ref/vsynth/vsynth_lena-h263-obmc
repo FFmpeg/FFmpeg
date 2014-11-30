@@ -1,0 +1,4 @@
+d242b7948697014abcaaff50551400ac *tests/data/fate/vsynth_lena-h263-obmc.avi
+154726 tests/data/fate/vsynth_lena-h263-obmc.avi
+588d992d9d8096da8bdc5027268da914 *tests/data/fate/vsynth_lena-h263-obmc.out.rawvideo
+stddev:    5.39 PSNR: 33.49 MAXDIFF:   82 bytes:  7603200/  7603200

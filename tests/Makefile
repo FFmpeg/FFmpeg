@@ -30,7 +30,7 @@ tests/data/asynth-%.wav: tests/audiogen$(HOSTEXESUF) | tests/data
 tests/data/vsynth1.yuv: tests/videogen$(HOSTEXESUF) | tests/data
 	$(M)$< $@
 
-tests/data/vsynth2.yuv: tests/rotozoom$(HOSTEXESUF) | tests/data
+tests/data/vsynth_lena.yuv: tests/rotozoom$(HOSTEXESUF) | tests/data
 	$(M)$< $(SAMPLES)/lena.pnm $@
 
 tests/data/vsynth3.yuv: tests/videogen$(HOSTEXESUF) | tests/data

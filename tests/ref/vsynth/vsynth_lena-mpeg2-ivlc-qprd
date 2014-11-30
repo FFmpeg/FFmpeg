@@ -1,0 +1,4 @@
+5731a196498d4e8097c0ebe57e383ef6 *tests/data/fate/vsynth_lena-mpeg2-ivlc-qprd.mpeg2video
+244694 tests/data/fate/vsynth_lena-mpeg2-ivlc-qprd.mpeg2video
+b26e21599dee48a174bdbc40b2817e55 *tests/data/fate/vsynth_lena-mpeg2-ivlc-qprd.out.rawvideo
+stddev:    4.15 PSNR: 35.76 MAXDIFF:   74 bytes:  7603200/  7603200

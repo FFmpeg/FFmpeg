@@ -1,0 +1,4 @@
+1a43cd71c91f2ef42d11a81419bff3bd *tests/data/fate/vsynth_lena-roqvideo.roq
+94810 tests/data/fate/vsynth_lena-roqvideo.roq
+97cda6096430c0ab7a43a0e120cd3e91 *tests/data/fate/vsynth_lena-roqvideo.out.rawvideo
+stddev:    3.81 PSNR: 36.50 MAXDIFF:   49 bytes:  7603200/   760320
