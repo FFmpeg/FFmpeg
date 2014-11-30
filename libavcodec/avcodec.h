@@ -3115,7 +3115,7 @@ typedef struct AVCodecContext {
     uint8_t *dump_separator;
 
     /**
-     * ',' seperated list of allowed decoders.
+     * ',' separated list of allowed decoders.
      * If NULL then all are allowed
      * - encoding: unused
      * - decoding: set by user through AVOPtions (NO direct access)

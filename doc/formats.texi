@@ -57,7 +57,7 @@ Enable RTP MP4A-LATM payload.
 Reduce the latency introduced by optional buffering
 @item bitexact
 Only write platform-, build- and time-independent data.
-This ensures that file and data checksums are reproducable and match between
+This ensures that file and data checksums are reproducible and match between
 platforms. Its primary use is for regression testing.
 @end table
 
