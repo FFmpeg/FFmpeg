@@ -193,7 +193,13 @@ static av_always_inline int cmp_inline(MpegEncContext *s, const int x, const int
         int uvdxy;              /* no, it might not be used uninitialized */
         if(dxy){
             if(qpel){
-                c->qpel_put[size][dxy](c->temp, ref[0] + x + y*stride, stride); //FIXME prototype (add h)
+                if (h << size == 16) {
+                    c->qpel_put[size][dxy](c->temp, ref[0] + x + y*stride, stride); //FIXME prototype (add h)
+                } else if (size == 0 && h == 8) {
+                    c->qpel_put[1][dxy](c->temp    , ref[0] + x + y*stride    , stride);
+                    c->qpel_put[1][dxy](c->temp + 8, ref[0] + x + y*stride + 8, stride);
+                } else
+                    av_assert2(0);
                 if(chroma){
                     int cx= hx/2;
                     int cy= hy/2;
