@@ -171,7 +171,7 @@ typedef struct {
 typedef struct WMAProDecodeCtx {
     /* generic decoder variables */
     AVCodecContext*  avctx;                         ///< codec context for av_log
-    AVFloatDSPContext fdsp;
+    AVFloatDSPContext *fdsp;
     uint8_t          frame_data[MAX_FRAMESIZE +
                       FF_INPUT_BUFFER_PADDING_SIZE];///< compressed frame data
     PutBitContext    pb;                            ///< context for filling the frame_data buffer
@@ -260,6 +260,8 @@ static av_cold int decode_end(AVCodecContext *avctx)
     WMAProDecodeCtx *s = avctx->priv_data;
     int i;
 
+    av_freep(&s->fdsp);
+
     for (i = 0; i < WMAPRO_BLOCK_SIZES; i++)
         ff_mdct_end(&s->mdct_ctx[i]);
 
@@ -286,7 +288,9 @@ static av_cold int decode_init(AVCodecContext *avctx)
     }
 
     s->avctx = avctx;
-    avpriv_float_dsp_init(&s->fdsp, avctx->flags & CODEC_FLAG_BITEXACT);
+    s->fdsp = avpriv_float_dsp_alloc(avctx->flags & CODEC_FLAG_BITEXACT);
+    if (!s->fdsp)
+        return AVERROR(ENOMEM);
 
     init_put_bits(&s->pb, s->frame_data, MAX_FRAMESIZE);
 
@@ -1037,10 +1041,10 @@ static void inverse_channel_transform(WMAProDecodeCtx *s)
                     }
                 } else if (s->avctx->channels == 2) {
                     int len = FFMIN(sfb[1], s->subframe_len) - sfb[0];
-                    s->fdsp.vector_fmul_scalar(ch_data[0] + sfb[0],
+                    s->fdsp->vector_fmul_scalar(ch_data[0] + sfb[0],
                                                ch_data[0] + sfb[0],
                                                181.0 / 128, len);
-                    s->fdsp.vector_fmul_scalar(ch_data[1] + sfb[0],
+                    s->fdsp->vector_fmul_scalar(ch_data[1] + sfb[0],
                                                ch_data[1] + sfb[0],
                                                181.0 / 128, len);
                 }
@@ -1071,7 +1075,7 @@ static void wmapro_window(WMAProDecodeCtx *s)
 
         winlen >>= 1;
 
-        s->fdsp.vector_fmul_window(start, start, start + winlen,
+        s->fdsp->vector_fmul_window(start, start, start + winlen,
                                    window, winlen);
 
         s->channel[c].prev_block_len = s->subframe_len;
@@ -1291,7 +1295,7 @@ static int decode_subframe(WMAProDecodeCtx *s)
                             s->channel[c].scale_factor_step;
                 const float quant = pow(10.0, exp / 20.0);
                 int start = s->cur_sfb_offsets[b];
-                s->fdsp.vector_fmul_scalar(s->tmp + start,
+                s->fdsp->vector_fmul_scalar(s->tmp + start,
                                            s->channel[c].coeffs + start,
                                            quant, end - start);
             }
