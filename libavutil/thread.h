@@ -29,7 +29,7 @@
 #if HAVE_PTHREADS
 #include <pthread.h>
 #else
-#include <compat/w32pthreads.h>
+#include "compat/w32pthreads.h"
 #endif
 
 #define AVMutex pthread_mutex_t
