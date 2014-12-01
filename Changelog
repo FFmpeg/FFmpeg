@@ -3,6 +3,43 @@ releases are sorted from youngest to oldest.
 
 version <next>:
 
+version 2.4.4:
+- avformat: replace some odd 30-60 rates by higher less odd ones in  get_std_framerate()
+- swscale: fix yuv2yuvX_8 assembly on x86
+- avcodec/hevc_ps: Check num_long_term_ref_pics_sps
+- avcodec/mjpegdec: Fix integer overflow in shift
+- avcodec/hevc_ps: Check return code from pps_range_extensions()
+- avcodec/rawdec: Check the return code of avpicture_get_size()
+- avcodec/pngdec: Check IHDR/IDAT order
+- avcodec/flacdec: Call ff_flacdsp_init() unconditionally
+- avcodec/utils: Check that the data is complete in avpriv_bprint_to_extradata()
+- avcodec/mjpegdec: Fix context fields becoming inconsistent
+- avcodec/mjpegdec: Check for pixfmtid 0x42111100 || 0x24111100 with more than 8 bits
+- swscale/x86/rgb2rgb_template: handle the first 2 lines with C in rgb24toyv12_*()
+- doc/APIchanges: Fix some wrong versions
+- avformat/hlsenc: Free context after hls_append_segment
+- avcodec/mpeg4video_parser: fix spurious extradata parse warnings
+- lavu/opt: fix av_opt_get function
+- avcodec/wmaprodec: Fix integer overflow in sfb_offsets initialization
+- avcodec/utvideodec: fix assumtation that slice_height >= 1
+- avcodec/options_table fix min of audio channels and sample rate
+- libavutil/thread.h: Support OS/2 threads
+- fix Makefile objects for pulseaudio support
+- opusdec: make sure all substreams have the same number of coded samples
+- lavu: add wrappers for the pthreads mutex API
+- avformat/avidec: fix handling dv in avi
+- avfilter/vf_lut: gammaval709()
+- cinedec: report white balance gain coefficients using metadata
+- swscale/utils: support bayer input + scaling, and bayer input + any supported output
+- swscale: support internal scaler cascades
+- avformat/dtsdec: dts_probe: check reserved bit, check lfe, check sr_code similarity
+- avformat/segment: export inner muxer timebase
+- Remove fminf() emulation, fix build issues
+- avcodec/mpegaudio_parser: fix off by 1 error in bitrate calculation
+- Use -fno-optimize-sibling-calls on parisc also for gcc 4.9.
+- ffmpeg_opt: store canvas size in decoder context
+- avcodec/mpeg12dec: do not trust AVCodecContext input dimensions
+
 version 2.4.3:
 - avcodec/svq1dec: zero terminate embedded message before printing
 - avcodec/cook: check that the subpacket sizes fit in block_align
