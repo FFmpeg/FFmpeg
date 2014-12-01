@@ -62,7 +62,7 @@ struct CeltContext {
     // constant values that do not change during context lifetime
     AVCodecContext    *avctx;
     CeltIMDCTContext  *imdct[4];
-    AVFloatDSPContext  dsp;
+    AVFloatDSPContext  *dsp;
     int output_channels;
 
     // values that have inter-frame effect and must be reset on flush
@@ -2072,7 +2072,7 @@ int ff_celt_decode_frame(CeltContext *s, OpusRangeCoder *rc,
 
     /* stereo -> mono downmix */
     if (s->output_channels < s->coded_channels) {
-        s->dsp.vector_fmac_scalar(s->coeffs[0], s->coeffs[1], 1.0, FFALIGN(frame_size, 16));
+        s->dsp->vector_fmac_scalar(s->coeffs[0], s->coeffs[1], 1.0, FFALIGN(frame_size, 16));
         imdct_scale = 0.5;
     } else if (s->output_channels > s->coded_channels)
         memcpy(s->coeffs[1], s->coeffs[0], frame_size * sizeof(float));
@@ -2098,7 +2098,7 @@ int ff_celt_decode_frame(CeltContext *s, OpusRangeCoder *rc,
 
             imdct->imdct_half(imdct, dst + CELT_OVERLAP / 2, s->coeffs[i] + j,
                               s->blocks, imdct_scale);
-            s->dsp.vector_fmul_window(dst, dst, dst + CELT_OVERLAP / 2,
+            s->dsp->vector_fmul_window(dst, dst, dst + CELT_OVERLAP / 2,
                                       celt_window, CELT_OVERLAP / 2);
         }
 
@@ -2181,6 +2181,7 @@ void ff_celt_free(CeltContext **ps)
     for (i = 0; i < FF_ARRAY_ELEMS(s->imdct); i++)
         ff_celt_imdct_uninit(&s->imdct[i]);
 
+    av_freep(&s->dsp);
     av_freep(ps);
 }
 
@@ -2208,7 +2209,11 @@ int ff_celt_init(AVCodecContext *avctx, CeltContext **ps, int output_channels)
             goto fail;
     }
 
-    avpriv_float_dsp_init(&s->dsp, avctx->flags & CODEC_FLAG_BITEXACT);
+    s->dsp = avpriv_float_dsp_alloc(avctx->flags & CODEC_FLAG_BITEXACT);
+    if (!s->dsp) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
 
     ff_celt_flush(s);
 
