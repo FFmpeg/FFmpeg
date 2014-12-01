@@ -44,6 +44,7 @@ enum TInterlaceMode {
 typedef struct {
     const AVClass *class;
     enum TInterlaceMode mode;   ///< interlace mode selected
+    AVRational preout_time_base;
     int flags;                  ///< flags affecting interlacing algorithm
     int frame;                  ///< number of the output frame
     int vsub;                   ///< chroma vertical subsampling
