@@ -2289,20 +2289,20 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
             av_log(mov->fc, AV_LOG_WARNING, "multiple edit list entries, "
                    "a/v desync might occur, patch welcome\n");
 
-    /* adjust first dts according to edit list */
-    if ((empty_duration || start_time) && mov->time_scale > 0) {
-        if (empty_duration)
-            empty_duration = av_rescale(empty_duration, sc->time_scale, mov->time_scale);
-        sc->time_offset = start_time - empty_duration;
-        current_dts = -sc->time_offset;
-        if (sc->ctts_count>0 && sc->stts_count>0 &&
-            sc->ctts_data[0].duration / FFMAX(sc->stts_data[0].duration, 1) > 16) {
-            /* more than 16 frames delay, dts are likely wrong
-               this happens with files created by iMovie */
-            sc->wrong_dts = 1;
-            st->codec->has_b_frames = 1;
+        /* adjust first dts according to edit list */
+        if ((empty_duration || start_time) && mov->time_scale > 0) {
+            if (empty_duration)
+                empty_duration = av_rescale(empty_duration, sc->time_scale, mov->time_scale);
+            sc->time_offset = start_time - empty_duration;
+            current_dts = -sc->time_offset;
+            if (sc->ctts_count>0 && sc->stts_count>0 &&
+                sc->ctts_data[0].duration / FFMAX(sc->stts_data[0].duration, 1) > 16) {
+                /* more than 16 frames delay, dts are likely wrong
+                   this happens with files created by iMovie */
+                sc->wrong_dts = 1;
+                st->codec->has_b_frames = 1;
+            }
         }
-    }
     }
 
     /* only use old uncompressed audio chunk demuxing when stts specifies it */
