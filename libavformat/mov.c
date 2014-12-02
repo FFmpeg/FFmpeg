@@ -263,7 +263,7 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 #ifdef MOV_EXPORT_ALL_METADATA
     char tmp_key[5];
 #endif
-    char key2[16], language[4] = {0};
+    char key2[32], language[4] = {0};
     char *str = NULL;
     const char *key = NULL;
     uint16_t langcode = 0;
