@@ -1,6 +1,25 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 11.1:
+
+- Replace lena.pnm (debian#771126)
+- Treat all '*.pnm' files as non-text file
+- opusdec: make sure all substreams have the same number of coded samples
+- lavu: fix memory leaks by using a mutex instead of atomics
+- lavu: add wrappers for the pthreads mutex API
+- mp3enc: fix a triggerable assert
+- resample: Avoid off-by-1 errors in PTS calcs. (libav#753)
+- imc: fix order of operations in coefficients read
+- hevc_mvs: make sure to always initialize the temporal MV fully
+- hevc_mvs: initialize the temporal MV in case of missing ref
+- h264: reset ret to avoid propagating minor failures (libav#750 / lp#905753)
+- hevc: Initialize mergecand_list to 0
+- mpeg12: Always invoke the get_format() callback
+- h264: Always invoke the get_format() callback
+- Update default FATE URL for release/11
+- apetag: Fix APE tag size check
+
 version 11:
 - libx265 encoder
 - shuffleplanes filter
