@@ -164,7 +164,7 @@ typedef struct MOVStreamContext {
 } MOVStreamContext;
 
 typedef struct MOVContext {
-    AVClass *avclass;
+    const AVClass *class; ///< class for private options
     AVFormatContext *fc;
     int time_scale;
     int64_t duration;     ///< duration of the longest track
@@ -181,6 +181,7 @@ typedef struct MOVContext {
     int use_absolute_path;
     int ignore_editlist;
     int64_t next_root_atom; ///< offset of the next root atom
+    int export_all;
     int *bitrates;          ///< bitrates read before streams creation
     int bitrates_count;
     int moov_retry;
