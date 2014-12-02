@@ -30,6 +30,7 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "riff.h"
 
 typedef struct {
     uint32_t data_size;                     ///< size of data chunk
@@ -106,7 +107,8 @@ static int qcp_read_header(AVFormatContext *s)
     } else if (!memcmp(buf, guid_smv, 16)) {
         st->codec->codec_id = AV_CODEC_ID_SMV;
     } else {
-        av_log(s, AV_LOG_ERROR, "Unknown codec GUID.\n");
+        av_log(s, AV_LOG_ERROR, "Unknown codec GUID "FF_PRI_GUID".\n",
+               FF_ARG_GUID(buf));
         return AVERROR_INVALIDDATA;
     }
     avio_skip(pb, 2 + 80); // codec-version + codec-name
