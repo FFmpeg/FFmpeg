@@ -109,6 +109,7 @@ static int config_out_props(AVFilterLink *outlink)
     outlink->time_base = inlink->time_base;
     outlink->frame_rate = inlink->frame_rate;
     // half framerate
+    outlink->time_base.num *= 2;
     outlink->frame_rate.den *= 2;
     outlink->flags |= FF_LINK_FLAG_REQUEST_LOOP;
 
@@ -204,6 +205,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
     av_frame_copy_props(out, s->cur);
     out->interlaced_frame = 1;
     out->top_field_first  = tff;
+    out->pts             /= 2;  // adjust pts to new framerate
 
     /* copy upper/lower field from cur */
     copy_picture_field(s, s->cur, out, inlink, tff ? FIELD_UPPER : FIELD_LOWER, s->lowpass);
