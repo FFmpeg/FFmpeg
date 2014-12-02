@@ -91,10 +91,9 @@ static int set_aes_arg(CryptoContext *c, uint8_t **buf, int *buf_len,
                    desc, default_buf_len, BLOCKSIZE);
             return AVERROR(EINVAL);
         }
-        *buf = av_malloc(default_buf_len);
+        *buf = av_memdup(default_buf, default_buf_len);
         if (!*buf)
             return AVERROR(ENOMEM);
-        memcpy(*buf, default_buf, default_buf_len);
         *buf_len = default_buf_len;
     } else if (*buf_len != BLOCKSIZE) {
         av_log(c, AV_LOG_ERROR,
