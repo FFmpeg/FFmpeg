@@ -87,7 +87,7 @@ static int apng_probe(AVProbeData *p)
         /* we don't check IDAT size, as this is the last tag
          * we check, and it may be larger than the probe buffer */
         if (tag != MKTAG('I', 'D', 'A', 'T') &&
-            len > bytestream2_get_bytes_left(&gb))
+            len + 4 > bytestream2_get_bytes_left(&gb))
             return 0;
 
         switch (tag) {
