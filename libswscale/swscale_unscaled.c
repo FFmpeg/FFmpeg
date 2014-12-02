@@ -786,6 +786,7 @@ static int planarCopyWrapper(SwsContext *c, const uint8_t *src[],
         int height = (plane == 0 || plane == 3) ? srcSliceH: -((-srcSliceH) >> c->chrDstVSubSample);
         const uint8_t *srcPtr = src[plane];
         uint8_t *dstPtr = dst[plane] + dstStride[plane] * y;
+        int shiftonly = plane == 1 || plane == 2 || (!c->srcRange && plane == 0);
 
         if (!dst[plane])
             continue;
@@ -812,13 +813,24 @@ static int planarCopyWrapper(SwsContext *c, const uint8_t *src[],
                 if (is16BPS(c->dstFormat)) {
                     uint16_t *dstPtr2 = (uint16_t *) dstPtr;
 #define COPY9_OR_10TO16(rfunc, wfunc) \
-                    for (i = 0; i < height; i++) { \
-                        for (j = 0; j < length; j++) { \
-                            int srcpx = rfunc(&srcPtr2[j]); \
-                            wfunc(&dstPtr2[j], (srcpx << (16 - src_depth)) | (srcpx >> (2 * src_depth - 16))); \
+                    if (shiftonly) { \
+                        for (i = 0; i < height; i++) { \
+                            for (j = 0; j < length; j++) { \
+                                int srcpx = rfunc(&srcPtr2[j]); \
+                                wfunc(&dstPtr2[j], srcpx << (16 - src_depth)); \
+                            } \
+                            dstPtr2 += dstStride[plane] / 2; \
+                            srcPtr2 += srcStride[plane] / 2; \
                         } \
-                        dstPtr2 += dstStride[plane] / 2; \
-                        srcPtr2 += srcStride[plane] / 2; \
+                    } else { \
+                        for (i = 0; i < height; i++) { \
+                            for (j = 0; j < length; j++) { \
+                                int srcpx = rfunc(&srcPtr2[j]); \
+                                wfunc(&dstPtr2[j], (srcpx << (16 - src_depth)) | (srcpx >> (2 * src_depth - 16))); \
+                            } \
+                            dstPtr2 += dstStride[plane] / 2; \
+                            srcPtr2 += srcStride[plane] / 2; \
+                        } \
                     }
                     if (isBE(c->dstFormat)) {
                         if (isBE(c->srcFormat)) {
@@ -916,13 +928,24 @@ static int planarCopyWrapper(SwsContext *c, const uint8_t *src[],
                     }
                 } else /* 8bit */ {
 #define COPY8TO9_OR_10(wfunc) \
-                    for (i = 0; i < height; i++) { \
-                        for (j = 0; j < length; j++) { \
-                            const int srcpx = srcPtr[j]; \
-                            wfunc(&dstPtr2[j], (srcpx << (dst_depth - 8)) | (srcpx >> (16 - dst_depth))); \
+                    if (shiftonly) { \
+                        for (i = 0; i < height; i++) { \
+                            for (j = 0; j < length; j++) { \
+                                const int srcpx = srcPtr[j]; \
+                                wfunc(&dstPtr2[j], srcpx << (dst_depth - 8)); \
+                            } \
+                            dstPtr2 += dstStride[plane] / 2; \
+                            srcPtr  += srcStride[plane]; \
                         } \
-                        dstPtr2 += dstStride[plane] / 2; \
-                        srcPtr  += srcStride[plane]; \
+                    } else { \
+                        for (i = 0; i < height; i++) { \
+                            for (j = 0; j < length; j++) { \
+                                const int srcpx = srcPtr[j]; \
+                                wfunc(&dstPtr2[j], (srcpx << (dst_depth - 8)) | (srcpx >> (16 - dst_depth))); \
+                            } \
+                            dstPtr2 += dstStride[plane] / 2; \
+                            srcPtr  += srcStride[plane]; \
+                        } \
                     }
                     if (isBE(c->dstFormat)) {
                         COPY8TO9_OR_10(AV_WB16);
