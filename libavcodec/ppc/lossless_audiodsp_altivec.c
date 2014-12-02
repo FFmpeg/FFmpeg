@@ -29,6 +29,20 @@
 #include "libavutil/ppc/types_altivec.h"
 #include "libavcodec/lossless_audiodsp.h"
 
+#if HAVE_BIGENDIAN
+#define GET_T(tt0,tt1,src,a,b){       \
+        a = vec_ld(16, src);          \
+        tt0 = vec_perm(b, a, align);  \
+        b = vec_ld(32, src);          \
+        tt1 = vec_perm(a, b, align);  \
+ }
+#else
+#define GET_T(tt0,tt1,src,a,b){       \
+        tt0 = vec_vsx_ld(0, src);     \
+        tt1 = vec_vsx_ld(16, src);    \
+ }
+#endif
+
 #if HAVE_ALTIVEC
 static int32_t scalarproduct_and_madd_int16_altivec(int16_t *v1,
                                                     const int16_t *v2,
@@ -38,26 +52,23 @@ static int32_t scalarproduct_and_madd_int16_altivec(int16_t *v1,
     LOAD_ZERO;
     vec_s16 *pv1 = (vec_s16 *) v1;
     register vec_s16 muls = { mul, mul, mul, mul, mul, mul, mul, mul };
-    register vec_s16 t0, t1, i0, i1, i4;
-    register vec_s16 i2 = vec_ld(0, v2), i3 = vec_ld(0, v3);
+    register vec_s16 t0, t1, i0, i1, i4, i2, i3;
     register vec_s32 res = zero_s32v;
+#if HAVE_BIGENDIAN
     register vec_u8 align = vec_lvsl(0, v2);
+    i2 = vec_ld(0, v2);
+    i3 = vec_ld(0, v3);
+#endif
     int32_t ires;
 
     order >>= 4;
     do {
-        i1     = vec_ld(16, v2);
-        t0     = vec_perm(i2, i1, align);
-        i2     = vec_ld(32, v2);
-        t1     = vec_perm(i1, i2, align);
+        GET_T(t0,t1,v2,i1,i2);
         i0     = pv1[0];
         i1     = pv1[1];
         res    = vec_msum(t0, i0, res);
         res    = vec_msum(t1, i1, res);
-        i4     = vec_ld(16, v3);
-        t0     = vec_perm(i3, i4, align);
-        i3     = vec_ld(32, v3);
-        t1     = vec_perm(i4, i3, align);
+        GET_T(t0,t1,v3,i4,i3);
         pv1[0] = vec_mladd(t0, muls, i0);
         pv1[1] = vec_mladd(t1, muls, i1);
         pv1   += 2;
