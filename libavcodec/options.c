@@ -195,11 +195,12 @@ int avcodec_copy_context(AVCodecContext *dest, const AVCodecContext *src)
     av_opt_copy(dest, src);
 
     dest->priv_data       = orig_priv_data;
+    dest->codec           = orig_codec;
 
-    if (orig_priv_data)
+    if (orig_priv_data && src->codec && src->codec->priv_class &&
+        dest->codec && dest->codec->priv_class)
         av_opt_copy(orig_priv_data, src->priv_data);
 
-    dest->codec           = orig_codec;
 
     /* set values specific to opened codecs back to their default state */
     dest->slice_offset    = NULL;
