@@ -47,6 +47,7 @@ OBJS-$(CONFIG_RV40_DECODER)            += x86/rv34dsp_init.o            \
                                           x86/rv40dsp_init.o
 OBJS-$(CONFIG_SVQ1_ENCODER)            += x86/svq1enc.o
 OBJS-$(CONFIG_TRUEHD_DECODER)          += x86/mlpdsp.o
+OBJS-$(CONFIG_V210_ENCODER)            += x86/v210enc_init.o
 OBJS-$(CONFIG_VC1_DECODER)             += x86/vc1dsp_init.o
 OBJS-$(CONFIG_VORBIS_DECODER)          += x86/vorbisdsp_init.o
 OBJS-$(CONFIG_VP6_DECODER)             += x86/vp6dsp_init.o
@@ -107,6 +108,7 @@ YASM-OBJS-$(CONFIG_PIXBLOCKDSP)        += x86/pixblockdsp.o
 YASM-OBJS-$(CONFIG_QPELDSP)            += x86/qpeldsp.o                 \
                                           x86/fpel.o                    \
                                           x86/qpel.o
+YASM-OBJS-$(CONFIG_V210_ENCODER)       += x86/v210enc.o
 YASM-OBJS-$(CONFIG_VIDEODSP)           += x86/videodsp.o
 YASM-OBJS-$(CONFIG_VP3DSP)             += x86/vp3dsp.o
 
