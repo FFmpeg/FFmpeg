@@ -1211,7 +1211,7 @@ use_pkg_config(){
 }
 
 require_pkg_config(){
-    use_pkg_config "$@" || die "ERROR: $pkg not found"
+    use_pkg_config "$@" || die "ERROR: $pkg not found using pkg-config$pkg_config_fail_message"
 }
 
 require_libfreetype(){
@@ -3070,9 +3070,13 @@ set_default arch cc cxx doxygen pkg_config ranlib strip sysinclude \
 enabled cross_compile || host_cc_default=$cc
 set_default host_cc
 
+pkg_config_fail_message=""
 if ! $pkg_config --version >/dev/null 2>&1; then
     warn "$pkg_config not found, library detection may fail."
     pkg_config=false
+elif is_in -static $cc $LDFLAGS && ! is_in --static $pkg_config $pkg_config_flags; then
+    pkg_config_fail_message="
+Note: When building a static binary, add --pkg-config-flags=\"--static\"."
 fi
 
 if test $doxygen != $doxygen_default && \
