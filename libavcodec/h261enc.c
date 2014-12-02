@@ -64,7 +64,7 @@ void ff_h261_encode_picture_header(MpegEncContext *s, int picture_number)
 
     put_bits(&s->pb, 1, 0); /* split screen off */
     put_bits(&s->pb, 1, 0); /* camera  off */
-    put_bits(&s->pb, 1, 0); /* freeze picture release off */
+    put_bits(&s->pb, 1, s->pict_type == AV_PICTURE_TYPE_I); /* freeze picture release on/off */
 
     format = ff_h261_get_picture_format(s->width, s->height);
 
