@@ -26,10 +26,10 @@
 #include "avcodec.h"
 #include "bytestream.h"
 #include "internal.h"
+#include "apng.h"
 #include "png.h"
 #include "pngdsp.h"
 #include "thread.h"
-#include "libavformat/apng.h"
 
 #include <zlib.h>
 

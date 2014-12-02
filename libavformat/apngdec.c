@@ -26,13 +26,13 @@
  * @see http://www.w3.org/TR/PNG
  */
 
-#include "apng.h"
 #include "avformat.h"
 #include "avio_internal.h"
 #include "internal.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/opt.h"
+#include "libavcodec/apng.h"
 #include "libavcodec/png.h"
 #include "libavcodec/bytestream.h"
 
