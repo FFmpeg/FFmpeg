@@ -385,7 +385,6 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             key, str, (char*)&atom.type, str_size_alloc, atom.size);
 
     av_freep(&str);
-
     return 0;
 }
 
