@@ -169,7 +169,7 @@ static const AVOption drawtext_options[]= {
     { "boxcolor",    NULL,                   OFFSET(boxcolor_string),    AV_OPT_TYPE_STRING, { .str = "white" },          .flags = FLAGS },
     { "shadowcolor", NULL,                   OFFSET(shadowcolor_string), AV_OPT_TYPE_STRING, { .str = "black" },          .flags = FLAGS },
     { "box",         NULL,                   OFFSET(draw_box),           AV_OPT_TYPE_INT,    { .i64 = 0       }, 0,       1,       FLAGS },
-    { "fontsize",    NULL,                   OFFSET(fontsize),           AV_OPT_TYPE_INT,    { .i64 = 16      }, 1,       72,      FLAGS },
+    { "fontsize",    NULL,                   OFFSET(fontsize),           AV_OPT_TYPE_INT,    { .i64 = 16      }, 1,       1024,    FLAGS },
     { "x",           NULL,                   OFFSET(x_expr),             AV_OPT_TYPE_STRING, { .str = "0"     },          .flags = FLAGS },
     { "y",           NULL,                   OFFSET(y_expr),             AV_OPT_TYPE_STRING, { .str = "0"     },          .flags = FLAGS },
     { "shadowx",     NULL,                   OFFSET(shadowx),            AV_OPT_TYPE_INT,    { .i64 = 0       }, INT_MIN, INT_MAX, FLAGS },
