@@ -348,7 +348,7 @@ static int ogg_build_speex_headers(AVCodecContext *avctx,
     uint8_t *p;
 
     if (avctx->extradata_size < SPEEX_HEADER_SIZE)
-        return -1;
+        return AVERROR_INVALIDDATA;
 
     // first packet: Speex header
     p = av_mallocz(SPEEX_HEADER_SIZE);
@@ -377,7 +377,7 @@ static int ogg_build_opus_headers(AVCodecContext *avctx,
     uint8_t *p;
 
     if (avctx->extradata_size < OPUS_HEADER_SIZE)
-        return -1;
+        return AVERROR_INVALIDDATA;
 
     /* first packet: Opus header */
     p = av_mallocz(avctx->extradata_size);
@@ -446,12 +446,12 @@ static int ogg_write_header(AVFormatContext *s)
             st->codec->codec_id != AV_CODEC_ID_FLAC   &&
             st->codec->codec_id != AV_CODEC_ID_OPUS) {
             av_log(s, AV_LOG_ERROR, "Unsupported codec id in stream %d\n", i);
-            return -1;
+            return AVERROR(EINVAL);
         }
 
         if (!st->codec->extradata || !st->codec->extradata_size) {
             av_log(s, AV_LOG_ERROR, "No extradata present\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         oggstream = av_mallocz(sizeof(*oggstream));
         if (!oggstream)
@@ -511,7 +511,7 @@ static int ogg_write_header(AVFormatContext *s)
                                       oggstream->header, oggstream->header_len) < 0) {
                 av_log(s, AV_LOG_ERROR, "Extradata corrupted\n");
                 av_freep(&st->priv_data);
-                return -1;
+                return AVERROR_INVALIDDATA;
             }
 
             p = ogg_write_vorbiscomment(7, s->flags & AVFMT_FLAG_BITEXACT,
