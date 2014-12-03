@@ -258,8 +258,11 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     uint16_t langcode = 0;
     uint32_t data_type = 0, str_size, str_size_alloc;
     int (*parse)(MOVContext*, AVIOContext*, unsigned, const char*) = NULL;
+    int raw = 0;
 
     switch (atom.type) {
+    case MKTAG( '@','P','R','M'): key = "premiere_version"; raw = 1; break;
+    case MKTAG( '@','P','R','Q'): key = "quicktime_version"; raw = 1; break;
     case MKTAG( 'a','A','R','T'): key = "album_artist";    break;
     case MKTAG( 'c','p','r','t'): key = "copyright"; break;
     case MKTAG( 'd','e','s','c'): key = "description"; break;
@@ -318,7 +321,7 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                 }
             }
         } else return 0;
-    } else if (atom.size > 4 && key && !c->itunes_metadata) {
+    } else if (atom.size > 4 && key && !c->itunes_metadata && !raw) {
         str_size = avio_rb16(pb); // string length
         langcode = avio_rb16(pb);
         ff_mov_lang_to_iso639(langcode, language);
@@ -337,7 +340,7 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return AVERROR_INVALIDDATA;
 
     // allocate twice as much as worst-case
-    str_size_alloc = str_size * 2;
+    str_size_alloc = raw ? str_size + 1 : str_size * 2;
     str = av_malloc(str_size_alloc);
     if (!str)
         return AVERROR(ENOMEM);
@@ -345,7 +348,7 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     if (parse)
         parse(c, pb, str_size, key);
     else {
-        if (data_type == 3 || (data_type == 0 && (langcode < 0x400 || langcode == 0x7fff))) { // MAC Encoded
+        if (!raw && (data_type == 3 || (data_type == 0 && (langcode < 0x400 || langcode == 0x7fff)))) { // MAC Encoded
             mov_read_mac_string(c, pb, str_size, str, str_size_alloc);
         } else {
             avio_read(pb, str, str_size);
