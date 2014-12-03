@@ -2245,7 +2245,7 @@ enable static
 enable swscale_alpha
 
 # By default, enable only those hwaccels that have no external dependencies.
-enable dxva2 vdpau
+enable dxva2 vda vdpau
 
 # build settings
 SHFLAGS='-shared -Wl,-soname,$$(@F)'
