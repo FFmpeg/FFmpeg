@@ -1137,7 +1137,10 @@ static av_cold int aac_decode_init(AVCodecContext *avctx)
     ff_aac_sbr_init();
 
     ff_fmt_convert_init(&ac->fmt_conv, avctx);
-    avpriv_float_dsp_init(&ac->fdsp, avctx->flags & CODEC_FLAG_BITEXACT);
+    ac->fdsp = avpriv_float_dsp_alloc(avctx->flags & CODEC_FLAG_BITEXACT);
+    if (!ac->fdsp) {
+        return AVERROR(ENOMEM);
+    }
 
     ac->random_state = 0x1f2e3d4c;
 
@@ -1513,13 +1516,12 @@ static void decode_mid_side_stereo(ChannelElement *cpe, GetBitContext *gb,
                                    int ms_present)
 {
     int idx;
+    int max_idx = cpe->ch[0].ics.num_window_groups * cpe->ch[0].ics.max_sfb;
     if (ms_present == 1) {
-        for (idx = 0;
-             idx < cpe->ch[0].ics.num_window_groups * cpe->ch[0].ics.max_sfb;
-             idx++)
+        for (idx = 0; idx < max_idx; idx++)
             cpe->ms_mask[idx] = get_bits1(gb);
     } else if (ms_present == 2) {
-        memset(cpe->ms_mask, 1,  sizeof(cpe->ms_mask[0]) * cpe->ch[0].ics.num_window_groups * cpe->ch[0].ics.max_sfb);
+        memset(cpe->ms_mask, 1, max_idx * sizeof(cpe->ms_mask[0]));
     }
 }
 
@@ -1641,9 +1643,9 @@ static int decode_spectrum_and_dequant(AACContext *ac, float coef[1024],
                         cfo[k] = ac->random_state;
                     }
 
-                    band_energy = ac->fdsp.scalarproduct_float(cfo, cfo, off_len);
+                    band_energy = ac->fdsp->scalarproduct_float(cfo, cfo, off_len);
                     scale = sf[idx] / sqrtf(band_energy);
-                    ac->fdsp.vector_fmul_scalar(cfo, cfo, scale, off_len);
+                    ac->fdsp->vector_fmul_scalar(cfo, cfo, scale, off_len);
                 }
             } else {
                 const float *vq = ff_aac_codebook_vector_vals[cbt_m1];
@@ -1789,7 +1791,7 @@ static int decode_spectrum_and_dequant(AACContext *ac, float coef[1024],
                             }
                         } while (len -= 2);
 
-                        ac->fdsp.vector_fmul_scalar(cfo, cfo, sf[idx], off_len);
+                        ac->fdsp->vector_fmul_scalar(cfo, cfo, sf[idx], off_len);
                     }
                 }
 
@@ -2002,7 +2004,7 @@ static void apply_mid_side_stereo(AACContext *ac, ChannelElement *cpe)
                 cpe->ch[0].band_type[idx] < NOISE_BT &&
                 cpe->ch[1].band_type[idx] < NOISE_BT) {
                 for (group = 0; group < ics->group_len[g]; group++) {
-                    ac->fdsp.butterflies_float(ch0 + group * 128 + offsets[i],
+                    ac->fdsp->butterflies_float(ch0 + group * 128 + offsets[i],
                                                ch1 + group * 128 + offsets[i],
                                                offsets[i+1] - offsets[i]);
                 }
@@ -2041,7 +2043,7 @@ static void apply_intensity_stereo(AACContext *ac,
                         c *= 1 - 2 * cpe->ms_mask[idx];
                     scale = c * sce1->sf[idx];
                     for (group = 0; group < ics->group_len[g]; group++)
-                        ac->fdsp.vector_fmul_scalar(coef1 + group * 128 + offsets[i],
+                        ac->fdsp->vector_fmul_scalar(coef1 + group * 128 + offsets[i],
                                                     coef0 + group * 128 + offsets[i],
                                                     scale,
                                                     offsets[i + 1] - offsets[i]);
@@ -2409,15 +2411,15 @@ static void windowing_and_mdct_ltp(AACContext *ac, float *out,
     const float *swindow_prev = ics->use_kb_window[1] ? ff_aac_kbd_short_128 : ff_sine_128;
 
     if (ics->window_sequence[0] != LONG_STOP_SEQUENCE) {
-        ac->fdsp.vector_fmul(in, in, lwindow_prev, 1024);
+        ac->fdsp->vector_fmul(in, in, lwindow_prev, 1024);
     } else {
         memset(in, 0, 448 * sizeof(float));
-        ac->fdsp.vector_fmul(in + 448, in + 448, swindow_prev, 128);
+        ac->fdsp->vector_fmul(in + 448, in + 448, swindow_prev, 128);
     }
     if (ics->window_sequence[0] != LONG_START_SEQUENCE) {
-        ac->fdsp.vector_fmul_reverse(in + 1024, in + 1024, lwindow, 1024);
+        ac->fdsp->vector_fmul_reverse(in + 1024, in + 1024, lwindow, 1024);
     } else {
-        ac->fdsp.vector_fmul_reverse(in + 1024 + 448, in + 1024 + 448, swindow, 128);
+        ac->fdsp->vector_fmul_reverse(in + 1024 + 448, in + 1024 + 448, swindow, 128);
         memset(in + 1024 + 576, 0, 448 * sizeof(float));
     }
     ac->mdct_ltp.mdct_calc(&ac->mdct_ltp, out, in);
@@ -2470,17 +2472,17 @@ static void update_ltp(AACContext *ac, SingleChannelElement *sce)
     if (ics->window_sequence[0] == EIGHT_SHORT_SEQUENCE) {
         memcpy(saved_ltp,       saved, 512 * sizeof(float));
         memset(saved_ltp + 576, 0,     448 * sizeof(float));
-        ac->fdsp.vector_fmul_reverse(saved_ltp + 448, ac->buf_mdct + 960,     &swindow[64],      64);
+        ac->fdsp->vector_fmul_reverse(saved_ltp + 448, ac->buf_mdct + 960,     &swindow[64],      64);
         for (i = 0; i < 64; i++)
             saved_ltp[i + 512] = ac->buf_mdct[1023 - i] * swindow[63 - i];
     } else if (ics->window_sequence[0] == LONG_START_SEQUENCE) {
         memcpy(saved_ltp,       ac->buf_mdct + 512, 448 * sizeof(float));
         memset(saved_ltp + 576, 0,                  448 * sizeof(float));
-        ac->fdsp.vector_fmul_reverse(saved_ltp + 448, ac->buf_mdct + 960,     &swindow[64],      64);
+        ac->fdsp->vector_fmul_reverse(saved_ltp + 448, ac->buf_mdct + 960,     &swindow[64],      64);
         for (i = 0; i < 64; i++)
             saved_ltp[i + 512] = ac->buf_mdct[1023 - i] * swindow[63 - i];
     } else { // LONG_STOP or ONLY_LONG
-        ac->fdsp.vector_fmul_reverse(saved_ltp,       ac->buf_mdct + 512,     &lwindow[512],     512);
+        ac->fdsp->vector_fmul_reverse(saved_ltp,       ac->buf_mdct + 512,     &lwindow[512],     512);
         for (i = 0; i < 512; i++)
             saved_ltp[i + 512] = ac->buf_mdct[1023 - i] * lwindow[511 - i];
     }
@@ -2521,19 +2523,19 @@ static void imdct_and_windowing(AACContext *ac, SingleChannelElement *sce)
      */
     if ((ics->window_sequence[1] == ONLY_LONG_SEQUENCE || ics->window_sequence[1] == LONG_STOP_SEQUENCE) &&
             (ics->window_sequence[0] == ONLY_LONG_SEQUENCE || ics->window_sequence[0] == LONG_START_SEQUENCE)) {
-        ac->fdsp.vector_fmul_window(    out,               saved,            buf,         lwindow_prev, 512);
+        ac->fdsp->vector_fmul_window(    out,               saved,            buf,         lwindow_prev, 512);
     } else {
         memcpy(                         out,               saved,            448 * sizeof(float));
 
         if (ics->window_sequence[0] == EIGHT_SHORT_SEQUENCE) {
-            ac->fdsp.vector_fmul_window(out + 448 + 0*128, saved + 448,      buf + 0*128, swindow_prev, 64);
-            ac->fdsp.vector_fmul_window(out + 448 + 1*128, buf + 0*128 + 64, buf + 1*128, swindow,      64);
-            ac->fdsp.vector_fmul_window(out + 448 + 2*128, buf + 1*128 + 64, buf + 2*128, swindow,      64);
-            ac->fdsp.vector_fmul_window(out + 448 + 3*128, buf + 2*128 + 64, buf + 3*128, swindow,      64);
-            ac->fdsp.vector_fmul_window(temp,              buf + 3*128 + 64, buf + 4*128, swindow,      64);
+            ac->fdsp->vector_fmul_window(out + 448 + 0*128, saved + 448,      buf + 0*128, swindow_prev, 64);
+            ac->fdsp->vector_fmul_window(out + 448 + 1*128, buf + 0*128 + 64, buf + 1*128, swindow,      64);
+            ac->fdsp->vector_fmul_window(out + 448 + 2*128, buf + 1*128 + 64, buf + 2*128, swindow,      64);
+            ac->fdsp->vector_fmul_window(out + 448 + 3*128, buf + 2*128 + 64, buf + 3*128, swindow,      64);
+            ac->fdsp->vector_fmul_window(temp,              buf + 3*128 + 64, buf + 4*128, swindow,      64);
             memcpy(                     out + 448 + 4*128, temp, 64 * sizeof(float));
         } else {
-            ac->fdsp.vector_fmul_window(out + 448,         saved + 448,      buf,         swindow_prev, 64);
+            ac->fdsp->vector_fmul_window(out + 448,         saved + 448,      buf,         swindow_prev, 64);
             memcpy(                     out + 576,         buf + 64,         448 * sizeof(float));
         }
     }
@@ -2541,9 +2543,9 @@ static void imdct_and_windowing(AACContext *ac, SingleChannelElement *sce)
     // buffer update
     if (ics->window_sequence[0] == EIGHT_SHORT_SEQUENCE) {
         memcpy(                     saved,       temp + 64,         64 * sizeof(float));
-        ac->fdsp.vector_fmul_window(saved + 64,  buf + 4*128 + 64, buf + 5*128, swindow, 64);
-        ac->fdsp.vector_fmul_window(saved + 192, buf + 5*128 + 64, buf + 6*128, swindow, 64);
-        ac->fdsp.vector_fmul_window(saved + 320, buf + 6*128 + 64, buf + 7*128, swindow, 64);
+        ac->fdsp->vector_fmul_window(saved + 64,  buf + 4*128 + 64, buf + 5*128, swindow, 64);
+        ac->fdsp->vector_fmul_window(saved + 192, buf + 5*128 + 64, buf + 6*128, swindow, 64);
+        ac->fdsp->vector_fmul_window(saved + 320, buf + 6*128 + 64, buf + 7*128, swindow, 64);
         memcpy(                     saved + 448, buf + 7*128 + 64,  64 * sizeof(float));
     } else if (ics->window_sequence[0] == LONG_START_SEQUENCE) {
         memcpy(                     saved,       buf + 512,        448 * sizeof(float));
@@ -2568,10 +2570,10 @@ static void imdct_and_windowing_ld(AACContext *ac, SingleChannelElement *sce)
     if (ics->use_kb_window[1]) {
         // AAC LD uses a low overlap sine window instead of a KBD window
         memcpy(out, saved, 192 * sizeof(float));
-        ac->fdsp.vector_fmul_window(out + 192, saved + 192, buf, ff_sine_128, 64);
+        ac->fdsp->vector_fmul_window(out + 192, saved + 192, buf, ff_sine_128, 64);
         memcpy(                     out + 320, buf + 64, 192 * sizeof(float));
     } else {
-        ac->fdsp.vector_fmul_window(out, saved, buf, ff_sine_512, 256);
+        ac->fdsp->vector_fmul_window(out, saved, buf, ff_sine_512, 256);
     }
 
     // buffer update
@@ -3167,6 +3169,7 @@ static av_cold int aac_decode_close(AVCodecContext *avctx)
     ff_mdct_end(&ac->mdct_small);
     ff_mdct_end(&ac->mdct_ld);
     ff_mdct_end(&ac->mdct_ltp);
+    av_freep(&ac->fdsp);
     return 0;
 }
 

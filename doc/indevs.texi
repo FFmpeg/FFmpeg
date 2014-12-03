@@ -86,7 +86,7 @@ Select the AVFoundation default device of the corresponding type.
 
 @item none
 Do not record the corresponding media type.
-This is equivalent to specifiying an empty device name or index.
+This is equivalent to specifying an empty device name or index.
 
 @end table
 

@@ -26,6 +26,8 @@
 
 #if HAVE_PTHREADS || HAVE_W32THREADS || HAVE_OS2THREADS
 
+#define USE_ATOMICS 0
+
 #if HAVE_PTHREADS
 #include <pthread.h>
 #elif HAVE_OS2THREADS
@@ -42,6 +44,8 @@
 #define ff_mutex_destroy pthread_mutex_destroy
 
 #else
+
+#define USE_ATOMICS 1
 
 #define AVMutex char
 

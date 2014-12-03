@@ -295,7 +295,7 @@ struct AACContext {
     FFTContext mdct_ld;
     FFTContext mdct_ltp;
     FmtConvertContext fmt_conv;
-    AVFloatDSPContext fdsp;
+    AVFloatDSPContext *fdsp;
     int random_state;
     /** @} */
 

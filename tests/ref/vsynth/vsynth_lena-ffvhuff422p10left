@@ -1,0 +1,4 @@
+d7d321c3b1ed3378e03b2f618f248d86 *tests/data/fate/vsynth_lena-ffvhuff422p10left.avi
+10041832 tests/data/fate/vsynth_lena-ffvhuff422p10left.avi
+a627fb50c8276200fd71383977d87ca3 *tests/data/fate/vsynth_lena-ffvhuff422p10left.out.rawvideo
+stddev:    0.34 PSNR: 57.43 MAXDIFF:    6 bytes:  7603200/  7603200

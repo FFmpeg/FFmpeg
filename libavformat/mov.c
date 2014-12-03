@@ -27,8 +27,6 @@
 #include <limits.h>
 #include <stdint.h>
 
-//#define MOV_EXPORT_ALL_METADATA
-
 #include "libavutil/attributes.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/display.h"
@@ -260,10 +258,8 @@ static int mov_metadata_loci(MOVContext *c, AVIOContext *pb, unsigned len)
 
 static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
-#ifdef MOV_EXPORT_ALL_METADATA
     char tmp_key[5];
-#endif
-    char key2[16], language[4] = {0};
+    char key2[32], language[4] = {0};
     char *str = NULL;
     const char *key = NULL;
     uint16_t langcode = 0;
@@ -349,12 +345,10 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     } else
         str_size = atom.size;
 
-#ifdef MOV_EXPORT_ALL_METADATA
-    if (!key) {
+    if (c->export_all && !key) {
         snprintf(tmp_key, 5, "%.4s", (char*)&atom.type);
         key = tmp_key;
     }
-#endif
 
     if (!key)
         return 0;
@@ -391,7 +385,6 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             key, str, (char*)&atom.type, str_size_alloc, atom.size);
 
     av_freep(&str);
-
     return 0;
 }
 
@@ -4199,7 +4192,9 @@ static int mov_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
     return 0;
 }
 
-static const AVOption options[] = {
+#define OFFSET(x) offsetof(MOVContext, x)
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM
+static const AVOption mov_options[] = {
     {"use_absolute_path",
         "allow using absolute path when opening alias, this is a possible security issue",
         offsetof(MOVContext, use_absolute_path), FF_OPT_TYPE_INT, {.i64 = 0},
@@ -4217,19 +4212,22 @@ static const AVOption options[] = {
         AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_DECODING_PARAM, "use_mfra_for" },
     {"pts", "pts", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_MFRA_PTS}, 0, 0,
         AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_DECODING_PARAM, "use_mfra_for" },
-    {NULL}
+    { "export_all", "Export unrecognized metadata entries", OFFSET(export_all),
+        AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, .flags = FLAGS },
+    { NULL },
 };
 
 static const AVClass mov_class = {
     .class_name = "mov,mp4,m4a,3gp,3g2,mj2",
     .item_name  = av_default_item_name,
-    .option     = options,
+    .option     = mov_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
 AVInputFormat ff_mov_demuxer = {
     .name           = "mov,mp4,m4a,3gp,3g2,mj2",
     .long_name      = NULL_IF_CONFIG_SMALL("QuickTime / MOV"),
+    .priv_class     = &mov_class,
     .priv_data_size = sizeof(MOVContext),
     .extensions     = "mov,mp4,m4a,3gp,3g2,mj2",
     .read_probe     = mov_probe,
@@ -4237,6 +4235,5 @@ AVInputFormat ff_mov_demuxer = {
     .read_packet    = mov_read_packet,
     .read_close     = mov_read_close,
     .read_seek      = mov_read_seek,
-    .priv_class     = &mov_class,
     .flags          = AVFMT_NO_BYTE_SEEK,
 };

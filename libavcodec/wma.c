@@ -86,7 +86,6 @@ av_cold int ff_wma_init(AVCodecContext *avctx, int flags2)
         return -1;
 
     ff_fmt_convert_init(&s->fmt_conv, avctx);
-    avpriv_float_dsp_init(&s->fdsp, avctx->flags & CODEC_FLAG_BITEXACT);
 
     if (avctx->codec->id == AV_CODEC_ID_WMAV1)
         s->version = 1;
@@ -333,6 +332,10 @@ av_cold int ff_wma_init(AVCodecContext *avctx, int flags2)
 #endif /* TRACE */
     }
 
+    s->fdsp = avpriv_float_dsp_alloc(avctx->flags & CODEC_FLAG_BITEXACT);
+    if (!s->fdsp)
+        return AVERROR(ENOMEM);
+
     /* choose the VLC tables for the coefficients */
     coef_vlc_table = 2;
     if (avctx->sample_rate >= 32000) {
@@ -383,6 +386,7 @@ int ff_wma_end(AVCodecContext *avctx)
         av_freep(&s->level_table[i]);
         av_freep(&s->int_table[i]);
     }
+    av_freep(&s->fdsp);
 
     return 0;
 }

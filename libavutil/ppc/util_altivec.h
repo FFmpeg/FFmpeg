@@ -149,7 +149,7 @@ static inline vec_u8 load_with_perm_vec(int offset, const uint8_t *src, vec_u8 p
 #endif
 
 #if HAVE_BIGENDIAN
-#define VEC_SPLAT16(a,b) vec_splat((vec_s16)a, b)
+#define VEC_SPLAT16(a,b) vec_splat((vec_s16)(a), b)
 #else
 #define VEC_SPLAT16(a,b) vec_splat((vec_s16)(vec_perm(a, a, vcswapi2s(0,1,2,3))), b)
 #endif

@@ -165,7 +165,7 @@ typedef struct AC3EncodeContext {
     AVCodecContext *avctx;                  ///< parent AVCodecContext
     PutBitContext pb;                       ///< bitstream writer context
     AudioDSPContext adsp;
-    AVFloatDSPContext fdsp;
+    AVFloatDSPContext *fdsp;
     MECmpContext mecc;
     AC3DSPContext ac3dsp;                   ///< AC-3 optimized functions
     FFTContext mdct;                        ///< FFT context for MDCT calculation

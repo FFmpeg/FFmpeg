@@ -69,9 +69,12 @@ static char *dup_wchar_to_utf8(wchar_t *w)
 }
 #define DECKLINK_STR    OLECHAR *
 #define DECKLINK_STRDUP dup_wchar_to_utf8
+#define DECKLINK_FREE(s) SysFreeString(s)
 #else
 #define DECKLINK_STR    const char *
 #define DECKLINK_STRDUP av_strdup
+/* free() is needed for a string returned by the DeckLink SDL. */
+#define DECKLINK_FREE(s) free((void *) s)
 #endif
 
 HRESULT ff_decklink_get_display_name(IDeckLink *This, const char **displayName)
@@ -81,8 +84,7 @@ HRESULT ff_decklink_get_display_name(IDeckLink *This, const char **displayName)
     if (hr != S_OK)
         return hr;
     *displayName = DECKLINK_STRDUP(tmpDisplayName);
-    /* free() is needed for a string returned by the DeckLink SDL. */
-    free((void *) tmpDisplayName);
+    DECKLINK_FREE(tmpDisplayName);
     return hr;
 }
 

@@ -24,8 +24,8 @@
  * APNG common header
  */
 
-#ifndef AVFORMAT_APNG_H
-#define AVFORMAT_APNG_H
+#ifndef AVCODEC_APNG_H
+#define AVCODEC_APNG_H
 
 enum {
    APNG_DISPOSE_OP_NONE       = 0,
@@ -38,4 +38,4 @@ enum {
     APNG_BLEND_OP_OVER   = 1,
 };
 
-#endif /* AVFORMAT_APNG_H */
+#endif /* AVCODEC_APNG_H */

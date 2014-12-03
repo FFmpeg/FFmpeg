@@ -577,7 +577,7 @@ static void mpegts_prefix_m2ts_header(AVFormatContext *s)
         uint32_t tp_extra_header = pcr % 0x3fffffff;
         tp_extra_header = AV_RB32(&tp_extra_header);
         avio_write(s->pb, (unsigned char *) &tp_extra_header,
-                sizeof(tp_extra_header));
+                   sizeof(tp_extra_header));
     }
 }
 

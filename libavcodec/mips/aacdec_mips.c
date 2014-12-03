@@ -90,7 +90,7 @@ static void imdct_and_windowing_mips(AACContext *ac, SingleChannelElement *sce)
      */
     if ((ics->window_sequence[1] == ONLY_LONG_SEQUENCE || ics->window_sequence[1] == LONG_STOP_SEQUENCE) &&
             (ics->window_sequence[0] == ONLY_LONG_SEQUENCE || ics->window_sequence[0] == LONG_START_SEQUENCE)) {
-        ac->fdsp.vector_fmul_window(    out,               saved,            buf,         lwindow_prev, 512);
+        ac->fdsp->vector_fmul_window(    out,               saved,            buf,         lwindow_prev, 512);
     } else {
         {
             float *buf1 = saved;
@@ -199,7 +199,7 @@ static void imdct_and_windowing_mips(AACContext *ac, SingleChannelElement *sce)
                 }
             }
         } else {
-            ac->fdsp.vector_fmul_window(out + 448,         saved + 448,      buf,         swindow_prev, 64);
+            ac->fdsp->vector_fmul_window(out + 448,         saved + 448,      buf,         swindow_prev, 64);
             {
                 float *buf1 = buf + 64;
                 float *buf2 = out + 576;
@@ -248,9 +248,9 @@ static void imdct_and_windowing_mips(AACContext *ac, SingleChannelElement *sce)
 
     // buffer update
     if (ics->window_sequence[0] == EIGHT_SHORT_SEQUENCE) {
-        ac->fdsp.vector_fmul_window(saved + 64,  buf + 4*128 + 64, buf + 5*128, swindow, 64);
-        ac->fdsp.vector_fmul_window(saved + 192, buf + 5*128 + 64, buf + 6*128, swindow, 64);
-        ac->fdsp.vector_fmul_window(saved + 320, buf + 6*128 + 64, buf + 7*128, swindow, 64);
+        ac->fdsp->vector_fmul_window(saved + 64,  buf + 4*128 + 64, buf + 5*128, swindow, 64);
+        ac->fdsp->vector_fmul_window(saved + 192, buf + 5*128 + 64, buf + 6*128, swindow, 64);
+        ac->fdsp->vector_fmul_window(saved + 320, buf + 6*128 + 64, buf + 7*128, swindow, 64);
         {
             float *buf1 = buf + 7*128 + 64;
             float *buf2 = saved + 448;
@@ -561,7 +561,7 @@ static void update_ltp_mips(AACContext *ac, SingleChannelElement *sce)
             : "memory"
         );
 
-        ac->fdsp.vector_fmul_reverse(saved_ltp + 448, ac->buf_mdct + 960,     &swindow[64],      64);
+        ac->fdsp->vector_fmul_reverse(saved_ltp + 448, ac->buf_mdct + 960,     &swindow[64],      64);
         for (i = 0; i < 16; i++){
             /* loop unrolled 4 times */
             __asm__ volatile (
@@ -646,7 +646,7 @@ static void update_ltp_mips(AACContext *ac, SingleChannelElement *sce)
             : [loop_end]"r"(loop_end)
             : "memory"
         );
-        ac->fdsp.vector_fmul_reverse(saved_ltp + 448, ac->buf_mdct + 960,     &swindow[64],      64);
+        ac->fdsp->vector_fmul_reverse(saved_ltp + 448, ac->buf_mdct + 960,     &swindow[64],      64);
         for (i = 0; i < 16; i++){
             /* loop unrolled 8 times */
             __asm__ volatile (
@@ -683,7 +683,7 @@ static void update_ltp_mips(AACContext *ac, SingleChannelElement *sce)
         }
     } else { // LONG_STOP or ONLY_LONG
         float *ptr1, *ptr2, *ptr3;
-        ac->fdsp.vector_fmul_reverse(saved_ltp,       ac->buf_mdct + 512,     &lwindow[512],     512);
+        ac->fdsp->vector_fmul_reverse(saved_ltp,       ac->buf_mdct + 512,     &lwindow[512],     512);
 
         ptr1 = &saved_ltp[512];
         ptr2 = &ac->buf_mdct[1023];

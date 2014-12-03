@@ -342,6 +342,9 @@ static int filter_frame(AVFilterLink *link, AVFrame *frame)
         return -1;
     }
 
+    if (!yadif->prev)
+        return 0;
+
     if ((yadif->deint && !yadif->cur->interlaced_frame) || ctx->is_disabled) {
         yadif->out  = av_frame_clone(yadif->cur);
         if (!yadif->out)
@@ -352,9 +355,6 @@ static int filter_frame(AVFilterLink *link, AVFrame *frame)
             yadif->out->pts *= 2;
         return ff_filter_frame(ctx->outputs[0], yadif->out);
     }
-
-    if (!yadif->prev)
-        return 0;
 
     yadif->out = ff_get_video_buffer(ctx->outputs[0], link->w, link->h);
     if (!yadif->out)

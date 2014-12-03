@@ -127,7 +127,7 @@ typedef struct vorbis_context_s {
     AVCodecContext *avctx;
     GetBitContext gb;
     VorbisDSPContext dsp;
-    AVFloatDSPContext fdsp;
+    AVFloatDSPContext *fdsp;
     FmtConvertContext fmt_conv;
 
     FFTContext mdct[2];
@@ -193,6 +193,7 @@ static void vorbis_free(vorbis_context *vc)
 
     av_freep(&vc->channel_residues);
     av_freep(&vc->saved);
+    av_freep(&vc->fdsp);
 
     if (vc->residues)
         for (i = 0; i < vc->residue_count; i++)
@@ -992,6 +993,9 @@ static int vorbis_parse_id_hdr(vorbis_context *vc)
 
     ff_mdct_init(&vc->mdct[0], bl0, 1, -1.0);
     ff_mdct_init(&vc->mdct[1], bl1, 1, -1.0);
+    vc->fdsp = avpriv_float_dsp_alloc(vc->avctx->flags & CODEC_FLAG_BITEXACT);
+    if (!vc->fdsp)
+        return AVERROR(ENOMEM);
 
     av_dlog(NULL, " vorbis version %d \n audio_channels %d \n audio_samplerate %d \n bitrate_max %d \n bitrate_nom %d \n bitrate_min %d \n blk_0 %d blk_1 %d \n ",
             vc->version, vc->audio_channels, vc->audio_samplerate, vc->bitrate_maximum, vc->bitrate_nominal, vc->bitrate_minimum, vc->blocksize[0], vc->blocksize[1]);
@@ -1020,7 +1024,6 @@ static av_cold int vorbis_decode_init(AVCodecContext *avctx)
 
     vc->avctx = avctx;
     ff_vorbisdsp_init(&vc->dsp);
-    avpriv_float_dsp_init(&vc->fdsp, avctx->flags & CODEC_FLAG_BITEXACT);
     ff_fmt_convert_init(&vc->fmt_conv, avctx);
 
     avctx->sample_fmt = AV_SAMPLE_FMT_FLTP;
@@ -1688,7 +1691,7 @@ static int vorbis_parse_audio_packet(vorbis_context *vc, float **floor_ptr)
 
     for (j = vc->audio_channels-1;j >= 0; j--) {
         ch_res_ptr   = vc->channel_residues + res_chan[j] * blocksize / 2;
-        vc->fdsp.vector_fmul(floor_ptr[j], floor_ptr[j], ch_res_ptr, blocksize / 2);
+        vc->fdsp->vector_fmul(floor_ptr[j], floor_ptr[j], ch_res_ptr, blocksize / 2);
         mdct->imdct_half(mdct, ch_res_ptr, floor_ptr[j]);
     }
 
@@ -1705,13 +1708,13 @@ static int vorbis_parse_audio_packet(vorbis_context *vc, float **floor_ptr)
         const float *win  = vc->win[blockflag & previous_window];
 
         if (blockflag == previous_window) {
-            vc->fdsp.vector_fmul_window(ret, saved, buf, win, blocksize / 4);
+            vc->fdsp->vector_fmul_window(ret, saved, buf, win, blocksize / 4);
         } else if (blockflag > previous_window) {
-            vc->fdsp.vector_fmul_window(ret, saved, buf, win, bs0 / 4);
+            vc->fdsp->vector_fmul_window(ret, saved, buf, win, bs0 / 4);
             memcpy(ret+bs0/2, buf+bs0/4, ((bs1-bs0)/4) * sizeof(float));
         } else {
             memcpy(ret, saved, ((bs1 - bs0) / 4) * sizeof(float));
-            vc->fdsp.vector_fmul_window(ret + (bs1 - bs0) / 4, saved + (bs1 - bs0) / 4, buf, win, bs0 / 4);
+            vc->fdsp->vector_fmul_window(ret + (bs1 - bs0) / 4, saved + (bs1 - bs0) / 4, buf, win, bs0 / 4);
         }
         memcpy(saved, buf + blocksize / 4, blocksize / 4 * sizeof(float));
     }

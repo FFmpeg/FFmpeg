@@ -26,7 +26,7 @@
 #include <string.h>
 #include <float.h>
 
-// print_options is build for the host, os_support.h isnt needed and is setup
+// print_options is build for the host, os_support.h isn't needed and is setup
 // for the target. without this build breaks on mingw
 #define AVFORMAT_OS_SUPPORT_H
 

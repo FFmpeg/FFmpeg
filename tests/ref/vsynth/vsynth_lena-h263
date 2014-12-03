@@ -1,0 +1,4 @@
+b5ea141b794ad88019507375ec092ad7 *tests/data/fate/vsynth_lena-h263.avi
+160102 tests/data/fate/vsynth_lena-h263.avi
+b7d733ebedbaa04f49bf7493a907e223 *tests/data/fate/vsynth_lena-h263.out.rawvideo
+stddev:    5.43 PSNR: 33.42 MAXDIFF:   77 bytes:  7603200/  7603200

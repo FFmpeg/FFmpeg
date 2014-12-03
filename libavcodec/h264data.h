@@ -167,4 +167,23 @@ static const PMbInfo b_sub_mb_type_info[13] = {
     { MB_TYPE_8x8   | MB_TYPE_P0L0 | MB_TYPE_P0L1 | MB_TYPE_P1L0 | MB_TYPE_P1L1, 4, },
 };
 
+static const AVRational ff_h264_pixel_aspect[17] = {
+    {   0,  1 },
+    {   1,  1 },
+    {  12, 11 },
+    {  10, 11 },
+    {  16, 11 },
+    {  40, 33 },
+    {  24, 11 },
+    {  20, 11 },
+    {  32, 11 },
+    {  80, 33 },
+    {  18, 11 },
+    {  15, 11 },
+    {  64, 33 },
+    { 160, 99 },
+    {   4,  3 },
+    {   3,  2 },
+    {   2,  1 },
+};
 #endif /* AVCODEC_H264DATA_H */

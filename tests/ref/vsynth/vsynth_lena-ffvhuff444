@@ -1,0 +1,4 @@
+68e78dc89bb596f93a14e7f4a7a24365 *tests/data/fate/vsynth_lena-ffvhuff444.avi
+7530714 tests/data/fate/vsynth_lena-ffvhuff444.avi
+d43cb310c130c69214332d74f6ee5f9a *tests/data/fate/vsynth_lena-ffvhuff444.out.rawvideo
+stddev:    0.41 PSNR: 55.80 MAXDIFF:    7 bytes:  7603200/  7603200

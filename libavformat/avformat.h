@@ -1601,7 +1601,7 @@ typedef struct AVFormatContext {
     int format_probesize;
 
     /**
-     * ',' seperated list of allowed decoders.
+     * ',' separated list of allowed decoders.
      * If NULL then all are allowed
      * - encoding: unused
      * - decoding: set by user through AVOptions (NO direct access)
@@ -1609,7 +1609,7 @@ typedef struct AVFormatContext {
     char *codec_whitelist;
 
     /**
-     * ',' seperated list of allowed demuxers.
+     * ',' separated list of allowed demuxers.
      * If NULL then all are allowed
      * - encoding: unused
      * - decoding: set by user through AVOptions (NO direct access)
