@@ -42,7 +42,7 @@ IDeckLinkIterator *CreateDeckLinkIteratorInstance(void)
 {
     IDeckLinkIterator *iter;
 
-    if (CoInitialize(NULL) != S_OK) {
+    if (CoInitialize(NULL) < 0) {
         av_log(NULL, AV_LOG_ERROR, "COM initialization failed.\n");
         return NULL;
     }
