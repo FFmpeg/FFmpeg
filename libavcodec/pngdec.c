@@ -307,13 +307,13 @@ static void png_handle_row(PNGDecContext *s)
 
     if (!s->interlace_type) {
         ptr = s->image_buf + s->image_linesize * (s->y + s->y_offset) + s->x_offset * s->bpp;
-            if (s->y == 0)
-                last_row = s->last_row;
-            else
-                last_row = ptr - s->image_linesize;
+        if (s->y == 0)
+            last_row = s->last_row;
+        else
+            last_row = ptr - s->image_linesize;
 
-            png_filter_row(&s->dsp, ptr, s->crow_buf[0], s->crow_buf + 1,
-                           last_row, s->row_size, s->bpp);
+        png_filter_row(&s->dsp, ptr, s->crow_buf[0], s->crow_buf + 1,
+                       last_row, s->row_size, s->bpp);
         /* loco lags by 1 row so that it doesn't interfere with top prediction */
         if (s->filter_type == PNG_FILTER_TYPE_LOCO && s->y > 0) {
             if (s->bit_depth == 16) {
