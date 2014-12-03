@@ -17,6 +17,7 @@ version <next>:
 - WebP muxer with animated WebP support
 - zygoaudio decoding support
 - APNG demuxer
+- postproc visualization support
 
 
 version 2.4:
