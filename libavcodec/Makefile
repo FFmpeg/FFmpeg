@@ -858,6 +858,8 @@ SKIPHEADERS-$(CONFIG_VDA)              += vda.h vda_internal.h
 SKIPHEADERS-$(CONFIG_VDPAU)            += vdpau.h vdpau_internal.h
 
 TESTPROGS = imgconvert                                                  \
+            options                                                     \
+
 
 TESTPROGS-$(CONFIG_CABAC)                 += cabac
 TESTPROGS-$(CONFIG_FFT)                   += fft fft-fixed fft-fixed32
