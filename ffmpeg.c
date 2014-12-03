@@ -1018,10 +1018,8 @@ static void do_video_out(AVFormatContext *s,
         /* raw pictures are written as AVPicture structure to
            avoid any copies. We support temporarily the older
            method. */
-        mux_enc->coded_frame->interlaced_frame = in_picture->interlaced_frame;
-        mux_enc->coded_frame->top_field_first  = in_picture->top_field_first;
-        if (mux_enc->coded_frame->interlaced_frame)
-            mux_enc->field_order = mux_enc->coded_frame->top_field_first ? AV_FIELD_TB:AV_FIELD_BT;
+        if (in_picture->interlaced_frame)
+            mux_enc->field_order = in_picture->top_field_first ? AV_FIELD_TB:AV_FIELD_BT;
         else
             mux_enc->field_order = AV_FIELD_PROGRESSIVE;
         pkt.data   = (uint8_t *)in_picture;
