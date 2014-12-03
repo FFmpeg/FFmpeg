@@ -884,8 +884,7 @@ static int handle_p_frame_apng(AVCodecContext *avctx, PNGDecContext *s,
         ff_thread_await_progress(&s->previous_picture, INT_MAX, 0);
 
     for (j = 0; j < s->y_offset; j++) {
-        for (i = 0; i < ls; i++)
-            pd[i] = pd_last[i];
+        memcpy(pd, pd_last, ls);
         pd      += s->image_linesize;
         pd_last += s->image_linesize;
     }
@@ -907,8 +906,9 @@ static int handle_p_frame_apng(AVCodecContext *avctx, PNGDecContext *s,
         }
 
         for (j = s->y_offset; j < s->y_offset + s->cur_h; j++) {
-            for (i = 0; i < s->x_offset * s->bpp; i++)
-                pd[i] = pd_last[i];
+            i = s->x_offset * s->bpp;
+            if (i)
+                memcpy(pd, pd_last, i);
             for (; i < (s->x_offset + s->cur_w) * s->bpp; i += s->bpp) {
                 uint8_t alpha = pd[i+ai];
 
@@ -930,26 +930,27 @@ static int handle_p_frame_apng(AVCodecContext *avctx, PNGDecContext *s,
                     break;
                 }
             }
-            for (; i < ls; i++)
-                pd[i] = pd_last[i];
+            if (ls - i)
+                memcpy(pd+i, pd_last+i, ls - i);
             pd      += s->image_linesize;
             pd_last += s->image_linesize;
             pd_last_region += s->image_linesize;
         }
     } else {
         for (j = s->y_offset; j < s->y_offset + s->cur_h; j++) {
-            for (i = 0; i < s->x_offset * s->bpp; i++)
-                pd[i] = pd_last[i];
-            for (i = (s->x_offset + s->cur_w) * s->bpp; i < ls; i++)
-                pd[i] = pd_last[i];
+            int end_offset = (s->x_offset + s->cur_w) * s->bpp;
+            int end_len    = ls - end_offset;
+            if (s->x_offset)
+                memcpy(pd, pd_last, s->x_offset * s->bpp);
+            if (end_len)
+                memcpy(pd+end_offset, pd_last+end_offset, end_len);
             pd      += s->image_linesize;
             pd_last += s->image_linesize;
         }
     }
 
     for (j = s->y_offset + s->cur_h; j < s->height; j++) {
-        for (i = 0; i < ls; i++)
-            pd[i] = pd_last[i];
+        memcpy(pd, pd_last, ls);
         pd      += s->image_linesize;
         pd_last += s->image_linesize;
     }
