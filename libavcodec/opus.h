@@ -176,7 +176,7 @@ typedef struct OpusContext {
     int             nb_streams;
     int      nb_stereo_streams;
 
-    AVFloatDSPContext fdsp;
+    AVFloatDSPContext *fdsp;
     int16_t gain_i;
     float   gain;
 

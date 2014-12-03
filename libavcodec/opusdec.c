@@ -535,7 +535,7 @@ static int opus_decode_packet(AVCodecContext *avctx, void *data,
         }
 
         if (c->gain_i) {
-            c->fdsp.vector_fmul_scalar((float*)frame->extended_data[i],
+            c->fdsp->vector_fmul_scalar((float*)frame->extended_data[i],
                                        (float*)frame->extended_data[i],
                                        c->gain, FFALIGN(decoded_samples, 8));
         }
@@ -589,6 +589,7 @@ static av_cold int opus_decode_close(AVCodecContext *avctx)
     c->nb_streams = 0;
 
     av_freep(&c->channel_maps);
+    av_freep(&c->fdsp);
 
     return 0;
 }
@@ -601,7 +602,9 @@ static av_cold int opus_decode_init(AVCodecContext *avctx)
     avctx->sample_fmt  = AV_SAMPLE_FMT_FLTP;
     avctx->sample_rate = 48000;
 
-    avpriv_float_dsp_init(&c->fdsp, 0);
+    c->fdsp = avpriv_float_dsp_alloc(0);
+    if (!c->fdsp)
+        return AVERROR(ENOMEM);
 
     /* find out the channel configuration */
     ret = ff_opus_parse_extradata(avctx, c);
@@ -630,7 +633,7 @@ static av_cold int opus_decode_init(AVCodecContext *avctx)
             s->redundancy_output[j] = s->redundancy_buf[j];
         }
 
-        s->fdsp = &c->fdsp;
+        s->fdsp = c->fdsp;
 
         s->swr =swr_alloc();
         if (!s->swr)
