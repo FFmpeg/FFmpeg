@@ -40,11 +40,15 @@ API changes, most recent first:
   Add av_vdpau_bind_context(). This function should now be used for creating
   (or resetting) a AVVDPAUContext instead of av_vdpau_alloc_context().
 
-2014-08-xx - xxxxxxx - lavc 56.1.0 - avcodec.h
-  Add AV_PKT_DATA_STEREO3D to export container-level stereo3d information.
-
 2014-08-xx - xxxxxxx - lavf 56.03.0 - avformat.h
   Add AVFormatContext.max_ts_probe.
+
+------------------------------8<-------------------------------------
+                   11 branch was cut here
+----------------------------->8--------------------------------------
+
+2014-08-28 - 9301486 - lavc 56.1.0 - avcodec.h
+  Add AV_PKT_DATA_STEREO3D to export container-level stereo3d information.
 
 2014-08-13 - 8ddc326 - lavu 54.03.0 - mem.h
   Add av_strndup().
