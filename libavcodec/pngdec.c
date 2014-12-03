@@ -1237,8 +1237,12 @@ static av_cold int png_dec_init(AVCodecContext *avctx)
     s->previous_picture.f = av_frame_alloc();
     s->last_picture.f = av_frame_alloc();
     s->picture.f = av_frame_alloc();
-    if (!s->previous_picture.f || !s->last_picture.f || !s->picture.f)
+    if (!s->previous_picture.f || !s->last_picture.f || !s->picture.f) {
+        av_frame_free(&s->previous_picture.f);
+        av_frame_free(&s->last_picture.f);
+        av_frame_free(&s->picture.f);
         return AVERROR(ENOMEM);
+    }
 
     if (!avctx->internal->is_copy) {
         avctx->internal->allocate_progress = 1;
