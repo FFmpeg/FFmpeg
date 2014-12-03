@@ -178,7 +178,7 @@ static int decode_significance_8x8_x86(CABACContext *c,
 
         "mov %2, %0                             \n\t"
         "mov %1, %6                             \n\t"
-        "mov %6, (%0)                           \n\t"
+        "mov %k6, (%0)                          \n\t"
 
         "test $1, %4                            \n\t"
         " jnz 5f                                \n\t"
@@ -191,7 +191,7 @@ static int decode_significance_8x8_x86(CABACContext *c,
         "cmp $63, %6                            \n\t"
         " jb 3b                                 \n\t"
         "mov %2, %0                             \n\t"
-        "mov %6, (%0)                           \n\t"
+        "mov %k6, (%0)                          \n\t"
         "5:                                     \n\t"
         "addl %8, %k0                           \n\t"
         "shr $2, %k0                            \n\t"
