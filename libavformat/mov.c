@@ -263,6 +263,8 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     switch (atom.type) {
     case MKTAG( '@','P','R','M'): key = "premiere_version"; raw = 1; break;
     case MKTAG( '@','P','R','Q'): key = "quicktime_version"; raw = 1; break;
+    case MKTAG( 'X','M','P','_'):
+        if (c->export_xmp) { key = "xmp"; raw = 1; } break;
     case MKTAG( 'a','A','R','T'): key = "album_artist";    break;
     case MKTAG( 'c','p','r','t'): key = "copyright"; break;
     case MKTAG( 'd','e','s','c'): key = "description"; break;
@@ -3430,6 +3432,8 @@ static int mov_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM
 static const AVOption mov_options[] = {
     { "export_all", "Export unrecognized metadata entries", OFFSET(export_all),
+        AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, .flags = FLAGS },
+    { "export_xmp", "Export full XMP metadata", OFFSET(export_xmp),
         AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, .flags = FLAGS },
     { NULL },
 };
