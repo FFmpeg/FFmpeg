@@ -282,9 +282,9 @@ static int rm_read_audio_stream_info(AVFormatContext *s, AVIOContext *pb,
     return 0;
 }
 
-int
-ff_rm_read_mdpr_codecdata (AVFormatContext *s, AVIOContext *pb,
-                           AVStream *st, RMStream *rst, int codec_data_size)
+int ff_rm_read_mdpr_codecdata(AVFormatContext *s, AVIOContext *pb,
+                              AVStream *st, RMStream *rst,
+                              unsigned int codec_data_size)
 {
     unsigned int v;
     int size;

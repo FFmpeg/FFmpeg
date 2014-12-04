@@ -50,7 +50,7 @@ extern AVInputFormat ff_rdt_demuxer;
  */
 int ff_rm_read_mdpr_codecdata (AVFormatContext *s, AVIOContext *pb,
                                AVStream *st, RMStream *rst,
-                               int codec_data_size);
+                               unsigned int codec_data_size);
 
 /**
  * Parse one rm-stream packet from the input bytestream.
