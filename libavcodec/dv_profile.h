@@ -83,4 +83,10 @@ const AVDVProfile *av_dv_frame_profile(const AVDVProfile *sys,
  */
 const AVDVProfile *av_dv_codec_profile(int width, int height, enum AVPixelFormat pix_fmt);
 
+/**
+ * Get a DV profile for the provided stream parameters.
+ * The frame rate is used as a best-effort parameter.
+ */
+const AVDVProfile *av_dv_codec_profile2(int width, int height, enum AVPixelFormat pix_fmt, AVRational frame_rate);
+
 #endif /* AVCODEC_DV_PROFILE_H */
