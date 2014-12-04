@@ -16,7 +16,7 @@ version 2.5:
 - creating DASH compatible fragmented MP4, MPEG-DASH segmenting muxer
 - WebP muxer with animated WebP support
 - zygoaudio decoding support
-- APNG demuxer
+- APNG decoder and demuxer
 - postproc visualization support
 
 
