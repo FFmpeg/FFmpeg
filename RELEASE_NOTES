@@ -2,9 +2,13 @@
  │ RELEASE NOTES for FFmpeg 2.5 "Bohr"    │
  └────────────────────────────────────────┘
 
-   The FFmpeg Project proudly presents FFmpeg 2.5 "Bohr", just 2.5 months
-   after the release of 2.4. Since this wasn't a long time ago, the Changelog
-   is a bit short this time.
+   The FFmpeg Project proudly presents FFmpeg 2.5 "Bohr", 2.5 months after the
+   release of 2.4.
+
+   The most important new features are AVFoundation screen-grabbing support,
+   animated WebP decoding support, and Animated PNG support. In addition, many
+   exciting features for video streaming are also implemented, including MPEG-
+   DASH fragmenting muxer, HEVC RTP payload muxer, and UDP Lite support.
 
    As usual, if you have any question on this release or any FFmpeg related
    topic, feel free to join us on the #ffmpeg IRC channel (on
@@ -73,7 +77,8 @@
     • SUP/PGS subtitle demuxer
     • STL subtitle demuxer
     • UDP-Lite support (RFC 3828)
-    • creating DASH compatible fragmented MP4, MPEG-DASH segmenting muxer
+    • MPEG-DASH segmenting muxer, which allows creating DASH compatible
+      fragmented MP4
     • WebP muxer
     • APNG demuxer
 
@@ -94,7 +99,3 @@
    └────────────────────────────┘
 
     • visualization support
-
- ┌────────────────────────────┐
- │ ⚠  Behaviour changes       │
- └────────────────────────────┘
