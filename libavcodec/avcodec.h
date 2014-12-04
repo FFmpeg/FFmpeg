@@ -3285,6 +3285,9 @@ void avcodec_free_frame(AVFrame **frame);
  *
  * @warning This function is not thread safe!
  *
+ * @note Always call this function before using decoding routines (such as
+ * @ref avcodec_decode_video2()).
+ *
  * @code
  * avcodec_register_all();
  * av_dict_set(&opts, "b", "2.5M", 0);
@@ -3614,6 +3617,9 @@ void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height,
  *          larger than the actual read bytes because some optimized bitstream
  *          readers read 32 or 64 bits at once and could read over the end.
  *
+ * @note The AVCodecContext MUST have been opened with @ref avcodec_open2()
+ * before packets may be fed to the decoder.
+ *
  * @param      avctx the codec context
  * @param[out] frame The AVFrame in which to store decoded audio samples.
  *                   The decoder will allocate a buffer for the decoded frame by
@@ -3658,6 +3664,9 @@ int avcodec_decode_audio4(AVCodecContext *avctx, AVFrame *frame,
  * between input and output, these need to be fed with avpkt->data=NULL,
  * avpkt->size=0 at the end to return the remaining frames.
  *
+ * @note The AVCodecContext MUST have been opened with @ref avcodec_open2()
+ * before packets may be fed to the decoder.
+ *
  * @param avctx the codec context
  * @param[out] picture The AVFrame in which the decoded video frame will be stored.
  *             Use av_frame_alloc() to get an AVFrame. The codec will
@@ -3695,6 +3704,9 @@ int avcodec_decode_video2(AVCodecContext *avctx, AVFrame *picture,
  * simplicity, because the performance difference is expect to be negligible
  * and reusing a get_buffer written for video codecs would probably perform badly
  * due to a potentially very different allocation pattern.
+ *
+ * @note The AVCodecContext MUST have been opened with @ref avcodec_open2()
+ * before packets may be fed to the decoder.
  *
  * @param avctx the codec context
  * @param[out] sub The AVSubtitle in which the decoded subtitle will be stored, must be
