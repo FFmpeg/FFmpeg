@@ -2634,13 +2634,17 @@ The threshold below which a pixel value is considered black; it defaults to
 
 @end table
 
-@section blend
+@section blend, tblend
 
 Blend two video frames into each other.
 
-It takes two input streams and outputs one stream, the first input is the
-"top" layer and second input is "bottom" layer.
-Output terminates when shortest input terminates.
+The @code{blend} filter takes two input streams and outputs one
+stream, the first input is the "top" layer and second input is
+"bottom" layer.  Output terminates when shortest input terminates.
+
+The @code{tblend} (time blend) filter takes two consecutive frames
+from one single stream, and outputs the result obtained by blending
+the new frame on top of the old frame.
 
 A description of the accepted options follows.
 
@@ -2730,11 +2734,13 @@ Value of pixel component at current location for second video frame (bottom laye
 @end table
 
 @item shortest
-Force termination when the shortest input terminates. Default is @code{0}.
+Force termination when the shortest input terminates. Default is
+@code{0}. This option is only defined for the @code{blend} filter.
+
 @item repeatlast
 Continue applying the last bottom frame after the end of the stream. A value of
 @code{0} disable the filter after the last frame of the bottom layer is reached.
-Default is @code{1}.
+Default is @code{1}. This option is only defined for the @code{blend} filter.
 @end table
 
 @subsection Examples
@@ -2768,6 +2774,12 @@ blend=all_expr='if(gte(Y-N*SH,0),A,B)'
 Apply uncover up-left effect:
 @example
 blend=all_expr='if(gte(T*SH*40+Y,H)*gte((T*40*SW+X)*W/H,W),A,B)'
+@end example
+
+@item
+Display differences between the current and the previous frame:
+@example
+tblend=all_mode=difference128
 @end example
 @end itemize
 

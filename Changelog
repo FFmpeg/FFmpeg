@@ -8,6 +8,7 @@ version <next>:
 - RIFX format for *.wav files
 - RTP/mpegts muxer
 - non continuous cache protocol support
+- tblend filter
 
 
 version 2.5:
