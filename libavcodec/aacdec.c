@@ -2780,7 +2780,7 @@ static void spectral_to_sample(AACContext *ac)
                     apply_channel_coupling(ac, che, type, i, AFTER_IMDCT, apply_independent_coupling);
                 che->present = 0;
             } else if (che) {
-                av_log(ac->avctx, AV_LOG_WARNING, "ChannelElement %d.%d missing \n", type, i);
+                av_log(ac->avctx, AV_LOG_VERBOSE, "ChannelElement %d.%d missing \n", type, i);
             }
         }
     }

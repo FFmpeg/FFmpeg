@@ -350,7 +350,7 @@ static int iec61883_read_header(AVFormatContext *context)
     if (!dv->max_packets)
         dv->max_packets = 100;
 
-    if (dv->type == IEC61883_HDV) {
+    if (CONFIG_MPEGTS_DEMUXER && dv->type == IEC61883_HDV) {
 
         /* Init HDV receive */
 
@@ -444,7 +444,7 @@ static int iec61883_close(AVFormatContext *context)
     pthread_mutex_destroy(&dv->mutex);
 #endif
 
-    if (dv->type == IEC61883_HDV) {
+    if (CONFIG_MPEGTS_DEMUXER && dv->type == IEC61883_HDV) {
         iec61883_mpeg2_recv_stop(dv->iec61883_mpeg2);
         iec61883_mpeg2_close(dv->iec61883_mpeg2);
         avpriv_mpegts_parse_close(dv->mpeg_demux);

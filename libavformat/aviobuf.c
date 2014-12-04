@@ -676,7 +676,7 @@ int ff_get_line(AVIOContext *s, char *buf, int maxlen)
         if (c && i < maxlen-1)
             buf[i++] = c;
     } while (c != '\n' && c != '\r' && c);
-    if (c == '\r' && avio_r8(s) != '\n')
+    if (c == '\r' && avio_r8(s) != '\n' && !avio_feof(s))
         avio_skip(s, -1);
 
     buf[i] = 0;

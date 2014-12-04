@@ -15,56 +15,58 @@ libavutil:     2014-08-09
 
 API changes, most recent first:
 
-2014-11-21 - xxxxxxx - lavu 54.15.100 - dict.h
+-------- 8< --------- FFmpeg 2.5 was cut here -------- 8< ---------
+
+2014-11-21 - ab922f9 - lavu 54.15.100 - dict.h
    Add av_dict_get_string().
 
-2014-11-18 - xxxxxxx - lavu 54.14.100 - float_dsp.h
+2014-11-18 - a54a51c - lavu 54.14.100 - float_dsp.h
   Add avpriv_float_dsp_alloc().
 
-2014-11-16 - xxxxxxx - lavf 56.13.100 - avformat.h
+2014-11-16 - 6690d4c3 - lavf 56.13.100 - avformat.h
   Add AVStream.recommended_encoder_configuration with accessors.
 
-2014-11-16 - xxxxxxx - lavu 54.13.100 - opt.h
+2014-11-16 - bee5844d - lavu 54.13.100 - opt.h
   Add av_opt_serialize().
 
-2014-11-16 - xxxxxxx - lavu 54.12.100 - opt.h
+2014-11-16 - eec69332 - lavu 54.12.100 - opt.h
   Add av_opt_is_set_to_default().
 
-2014-11-xx - xxxxxxx - lavc 56.6.0 - vorbis_parser.h
+2014-11-06 - 44fa267 / 5e80fb7 - lavc 56.11.100 / 56.6.0 - vorbis_parser.h
   Add a public API for parsing vorbis packets.
 
-2014-10-xx - xxxxxxx - lavc 56.5.0 - avcodec.h
+2014-10-15 - 17085a0 / 7ea1b34 - lavc 56.7.100 / 56.5.0 - avcodec.h
   Replace AVCodecContext.time_base used for decoding
   with AVCodecContext.framerate.
 
-2014-10-xx - xxxxxxx - lavc 56.4.0 - avcodec.h
+2014-10-15 - 51c810e / d565fef1 - lavc 56.6.100 / 56.4.0 - avcodec.h
   Add AV_HWACCEL_FLAG_IGNORE_LEVEL flag to av_vdpau_bind_context().
 
-2014-10-13 - xxxxxxx - lavc 56.03.0 - avcodec.h
+2014-10-13 - da21895 / 2df0c32e - lavc 56.5.100 / 56.3.0 - avcodec.h
   Add AVCodecContext.initial_padding. Deprecate the use of AVCodecContext.delay
   for audio encoding.
 
-2014-09-xx - xxxxxxx - lavu 54.04.0 - pixdesc.h
+2014-10-08 - bb44f7d / 5a419b2 - lavu 54.10.100 / 54.4.0 - pixdesc.h
   Add API to return the name of frame and context color properties.
 
-2014-09-xx - xxxxxxx - lavc 56.2.0 - vdpau.h
+2014-10-06 - a61899a / e3e158e - lavc 56.3.100 / 56.2.0 - vdpau.h
   Add av_vdpau_bind_context(). This function should now be used for creating
   (or resetting) a AVVDPAUContext instead of av_vdpau_alloc_context().
 
-2014-10-02 - xxxxxxx - lavc 56.2.100 - avcodec.h
-2014-10-02 - xxxxxxx - lavu 54.9.100 - frame.h
+2014-10-02 - cdd6f05 - lavc 56.2.100 - avcodec.h
+2014-10-02 - cdd6f05 - lavu 54.9.100 - frame.h
   Add AV_FRAME_DATA_SKIP_SAMPLES. Add lavc CODEC_FLAG2_SKIP_MANUAL and
   AVOption "skip_manual", which makes lavc export skip information via
   AV_FRAME_DATA_SKIP_SAMPLES AVFrame side data, instead of skipping and
   discarding samples automatically.
 
-2014-10-02 - xxxxxxx - lavu 54.8.100 - avstring.h
+2014-10-02 - 0d92b0d - lavu 54.8.100 - avstring.h
   Add av_match_list()
 
-2014-09-24 - xxxxxxx - libpostproc 53.1.100
+2014-09-24 - ac68295 - libpostproc 53.1.100
   Add visualization support
 
-2014-09-xx - xxxxxxx - lavc 56.1.101 - dv_profile.h
+2014-09-19 - 6edd6a4 - lavc 56.1.101 - dv_profile.h
   deprecate avpriv_dv_frame_profile2(), which was made public by accident.
 
 
