@@ -116,6 +116,10 @@ static int open_output_file(const char *filename)
                 || dec_ctx->codec_type == AVMEDIA_TYPE_AUDIO) {
             /* in this example, we choose transcoding to same codec */
             encoder = avcodec_find_encoder(dec_ctx->codec_id);
+            if (!encoder) {
+                av_log(NULL, AV_LOG_FATAL, "Neccessary encoder not found\n");
+                return AVERROR_INVALIDDATA;
+            }
 
             /* In this example, we transcode to same properties (picture size,
              * sample rate etc.). These properties can be changed for output
