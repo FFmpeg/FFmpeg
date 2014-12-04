@@ -803,14 +803,15 @@ static void imc_get_coeffs(AVCodecContext *avctx,
                 cw_len = chctx->CWlengthT[j];
                 cw = 0;
 
-                if (get_bits_count(&q->gb) + cw_len > 512) {
-                    av_log(avctx, AV_LOG_WARNING,
-                           "Potential problem on band %i, coefficient %i"
-                           ": cw_len=%i\n", i, j, cw_len);
-                }
+                if (cw_len && (!chctx->bandFlagsBuf[i] || !chctx->skipFlags[j])) {
+                    if (get_bits_count(&q->gb) + cw_len > 512) {
+                        av_log(avctx, AV_LOG_WARNING,
+                            "Potential problem on band %i, coefficient %i"
+                            ": cw_len=%i\n", i, j, cw_len);
+                    }
 
-                if (cw_len && (!chctx->bandFlagsBuf[i] || !chctx->skipFlags[j]))
                     cw = get_bits(&q->gb, cw_len);
+                }
 
                 chctx->codewords[j] = cw;
             }
