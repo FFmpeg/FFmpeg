@@ -2661,6 +2661,7 @@ Available values for component modes are:
 @item burn
 @item darken
 @item difference
+@item difference128
 @item divide
 @item dodge
 @item exclusion

@@ -41,6 +41,7 @@ enum BlendMode {
     BLEND_BURN,
     BLEND_DARKEN,
     BLEND_DIFFERENCE,
+    BLEND_DIFFERENCE128,
     BLEND_DIVIDE,
     BLEND_DODGE,
     BLEND_EXCLUSION,
@@ -112,6 +113,7 @@ static const AVOption blend_options[] = {
     { "burn",       "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_BURN},       0, 0, FLAGS, "mode" },
     { "darken",     "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_DARKEN},     0, 0, FLAGS, "mode" },
     { "difference", "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_DIFFERENCE}, 0, 0, FLAGS, "mode" },
+    { "difference128", "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_DIFFERENCE128}, 0, 0, FLAGS, "mode" },
     { "divide",     "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_DIVIDE},     0, 0, FLAGS, "mode" },
     { "dodge",      "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_DODGE},      0, 0, FLAGS, "mode" },
     { "exclusion",  "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_EXCLUSION},  0, 0, FLAGS, "mode" },
@@ -190,6 +192,7 @@ DEFINE_BLEND(subtract,   FFMAX(0, A - B))
 DEFINE_BLEND(multiply,   MULTIPLY(1, A, B))
 DEFINE_BLEND(negation,   255 - FFABS(255 - A - B))
 DEFINE_BLEND(difference, FFABS(A - B))
+DEFINE_BLEND(difference128, av_clip_uint8(128 + A - B))
 DEFINE_BLEND(screen,     SCREEN(1, A, B))
 DEFINE_BLEND(overlay,    (A < 128) ? MULTIPLY(2, A, B) : SCREEN(2, A, B))
 DEFINE_BLEND(hardlight,  (B < 128) ? MULTIPLY(2, B, A) : SCREEN(2, B, A))
@@ -310,6 +313,7 @@ static av_cold int init(AVFilterContext *ctx)
         case BLEND_BURN:       param->blend = blend_burn;       break;
         case BLEND_DARKEN:     param->blend = blend_darken;     break;
         case BLEND_DIFFERENCE: param->blend = blend_difference; break;
+        case BLEND_DIFFERENCE128: param->blend = blend_difference128; break;
         case BLEND_DIVIDE:     param->blend = blend_divide;     break;
         case BLEND_DODGE:      param->blend = blend_dodge;      break;
         case BLEND_EXCLUSION:  param->blend = blend_exclusion;  break;
