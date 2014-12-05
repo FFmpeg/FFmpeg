@@ -165,27 +165,27 @@ omitted. "repeat" can also be used alone.
 If "repeat" is used alone, and with no prior loglevel set, the default
 loglevel will be used. If multiple loglevel parameters are given, using
 'repeat' will not change the loglevel.
-@var{loglevel} is a number or a string containing one of the following values:
+@var{loglevel} is a string or a number containing one of the following values:
 @table @samp
-@item quiet
+@item quiet, -8
 Show nothing at all; be silent.
-@item panic
+@item panic, 0
 Only show fatal errors which could lead the process to crash, such as
 and assert failure. This is not currently used for anything.
-@item fatal
+@item fatal, 8
 Only show fatal errors. These are errors after which the process absolutely
 cannot continue after.
-@item error
+@item error, 16
 Show all errors, including ones which can be recovered from.
-@item warning
+@item warning, 24
 Show all warnings and errors. Any message related to possibly
 incorrect or unexpected events will be shown.
-@item info
+@item info, 32
 Show informative messages during processing. This is in addition to
 warnings and errors. This is the default value.
-@item verbose
+@item verbose, 40
 Same as @code{info}, except more verbose.
-@item debug
+@item debug, 48
 Show everything, including debugging information.
 @end table
 
