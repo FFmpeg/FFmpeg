@@ -1157,7 +1157,6 @@ int ffserver_parse_ffconfig(const char *filename, FFServerConfig *config)
 
     av_assert0(config);
 
-    config->line_num = 0;
     f = fopen(filename, "r");
     if (!f) {
         ret = AVERROR(errno);
@@ -1167,14 +1166,14 @@ int ffserver_parse_ffconfig(const char *filename, FFServerConfig *config)
     }
 
     config->first_stream = NULL;
-    last_stream = &config->first_stream;
     config->first_feed = NULL;
-    last_feed = &config->first_feed;
     config->errors = config->warnings = 0;
 
-    for(;;) {
-        if (fgets(line, sizeof(line), f) == NULL)
-            break;
+    last_stream = &config->first_stream;
+    last_feed = &config->first_feed;
+
+    config->line_num = 0;
+    while (fgets(line, sizeof(line), f) != NULL) {
         config->line_num++;
         p = line;
         while (av_isspace(*p))
@@ -1189,14 +1188,14 @@ int ffserver_parse_ffconfig(const char *filename, FFServerConfig *config)
             if (opening && (stream || feed || redirect)) {
                 ERROR("Already in a tag\n");
             } else {
-                if ((ret = ffserver_parse_config_feed(config, cmd, &p, &feed)) < 0)
+                ret = ffserver_parse_config_feed(config, cmd, &p, &feed);
+                if (ret < 0)
                     break;
                 if (opening) {
-                    /* add in stream list */
+                    /* add in stream & feed list */
                     *last_stream = feed;
-                    last_stream = &feed->next;
-                    /* add in feed list */
                     *last_feed = feed;
+                    last_stream = &feed->next;
                     last_feed = &feed->next_feed;
                 }
             }
@@ -1205,7 +1204,8 @@ int ffserver_parse_ffconfig(const char *filename, FFServerConfig *config)
             if (opening && (stream || feed || redirect)) {
                 ERROR("Already in a tag\n");
             } else {
-                if ((ret = ffserver_parse_config_stream(config, cmd, &p, &stream)) < 0)
+                ret = ffserver_parse_config_stream(config, cmd, &p, &stream);
+                if (ret < 0)
                     break;
                 if (opening) {
                     /* add in stream list */
@@ -1218,7 +1218,9 @@ int ffserver_parse_ffconfig(const char *filename, FFServerConfig *config)
             if (opening && (stream || feed || redirect))
                 ERROR("Already in a tag\n");
             else {
-                if ((ret = ffserver_parse_config_redirect(config, cmd, &p, &redirect)) < 0)
+                ret = ffserver_parse_config_redirect(config, cmd, &p,
+                                                     &redirect);
+                if (ret < 0)
                     break;
                 if (opening) {
                     /* add in stream list */
