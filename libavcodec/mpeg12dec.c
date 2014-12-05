@@ -2125,7 +2125,8 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
     }
     s->frame_rate_index = get_bits(&s->gb, 4);
     if (s->frame_rate_index == 0 || s->frame_rate_index > 13) {
-        av_log(avctx, AV_LOG_WARNING, "frame_rate_index %d is invalid\n", s->frame_rate_index);
+        av_log(avctx, AV_LOG_WARNING,
+               "frame_rate_index %d is invalid\n", s->frame_rate_index);
         s->frame_rate_index = 1;
     }
     s->bit_rate = get_bits(&s->gb, 18) * 400;
