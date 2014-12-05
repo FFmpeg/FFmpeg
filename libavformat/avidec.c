@@ -151,7 +151,7 @@ static int read_braindead_odml_indx(AVFormatContext *s, int frame_num)
     AVIStream *ast;
     int i;
     int64_t last_pos = -1;
-    int64_t filesize = avio_size(s->pb);
+    int64_t filesize = avi->fsize;
 
     av_dlog(s,
             "longs_pre_entry:%d index_type:%d entries_in_use:%d "
@@ -374,7 +374,7 @@ static int avi_read_header(AVFormatContext *s)
         return ret;
 
     avi->fsize = avio_size(pb);
-    if (avi->fsize <= 0)
+    if (avi->fsize <= 0 || avi->fsize < avi->riff_end)
         avi->fsize = avi->riff_end == 8 ? INT64_MAX : avi->riff_end;
 
     /* first list tag */
@@ -402,7 +402,7 @@ static int avi_read_header(AVFormatContext *s)
                 if (size)
                     avi->movi_end = avi->movi_list + size + (size & 1);
                 else
-                    avi->movi_end = avio_size(pb);
+                    avi->movi_end = avi->fsize;
                 av_dlog(NULL, "movi end=%"PRIx64"\n", avi->movi_end);
                 goto end_of_header;
             } else if (tag1 == MKTAG('I', 'N', 'F', 'O'))
@@ -774,7 +774,7 @@ static int avi_read_header(AVFormatContext *s)
                 if (s->error_recognition & AV_EF_EXPLODE)
                     goto fail;
                 avi->movi_list = avio_tell(pb) - 4;
-                avi->movi_end  = avio_size(pb);
+                avi->movi_end  = avi->fsize;
                 goto end_of_header;
             }
             /* skip tag */
