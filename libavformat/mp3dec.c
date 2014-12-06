@@ -81,7 +81,10 @@ static int mp3_read_probe(AVProbeData *p)
     }
     // keep this in sync with ac3 probe, both need to avoid
     // issues with MPEG-files!
-    if (first_frames >= 4) return AVPROBE_SCORE_EXTENSION + 1;
+    if (first_frames >= 10)
+        return AVPROBE_SCORE_EXTENSION + 5;
+    if (first_frames >= 4)
+        return AVPROBE_SCORE_EXTENSION + 1;
 
     if (max_frames) {
         int pes = 0, i;
