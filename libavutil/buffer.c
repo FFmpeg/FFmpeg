@@ -250,6 +250,7 @@ void av_buffer_pool_uninit(AVBufferPool **ppool)
         buffer_pool_free(pool);
 }
 
+#if USE_ATOMICS
 /* remove the whole buffer list from the pool and return it */
 static BufferPoolEntry *get_pool(AVBufferPool *pool)
 {
@@ -285,6 +286,7 @@ static void add_to_pool(BufferPoolEntry *buf)
             end = end->next;
     }
 }
+#endif
 
 static void pool_release_buffer(void *opaque, uint8_t *data)
 {
