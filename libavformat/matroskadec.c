@@ -1384,13 +1384,17 @@ static void matroska_execute_seekhead(MatroskaDemuxContext *matroska)
     EbmlList *seekhead_list = &matroska->seekhead;
     int64_t before_pos = avio_tell(matroska->ctx->pb);
     int i;
+    int nb_elem;
 
     // we should not do any seeking in the streaming case
     if (!matroska->ctx->pb->seekable ||
         (matroska->ctx->flags & AVFMT_FLAG_IGNIDX))
         return;
 
-    for (i = 0; i < seekhead_list->nb_elem; i++) {
+    // do not read entries that are added while parsing seekhead entries
+    nb_elem = seekhead_list->nb_elem;
+
+    for (i = 0; i < nb_elem; i++) {
         MatroskaSeekhead *seekhead = seekhead_list->elem;
         if (seekhead[i].pos <= before_pos)
             continue;
