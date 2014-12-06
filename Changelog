@@ -7,6 +7,7 @@ version <next>:
 - avplay now exits by default at the end of playback
 - XCB-based screen-grabber
 - creating DASH compatible fragmented MP4, MPEG-DASH segmenting muxer
+- H.261 RTP payload format (RFC 4587) depacketizer and experimental packetizer
 
 
 version 11:

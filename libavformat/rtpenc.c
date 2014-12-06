@@ -49,6 +49,7 @@ static const AVClass rtp_muxer_class = {
 static int is_supported(enum AVCodecID id)
 {
     switch(id) {
+    case AV_CODEC_ID_H261:
     case AV_CODEC_ID_H263:
     case AV_CODEC_ID_H263P:
     case AV_CODEC_ID_H264:
@@ -88,7 +89,7 @@ static int is_supported(enum AVCodecID id)
 static int rtp_write_header(AVFormatContext *s1)
 {
     RTPMuxContext *s = s1->priv_data;
-    int n;
+    int n, ret = AVERROR(EINVAL);
     AVStream *st;
 
     if (s1->nb_streams != 1) {
@@ -191,6 +192,17 @@ static int rtp_write_header(AVFormatContext *s1)
         s->max_payload_size = n * TS_PACKET_SIZE;
         s->buf_ptr = s->buf;
         break;
+    case AV_CODEC_ID_H261:
+        if (s1->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
+            av_log(s, AV_LOG_ERROR,
+                   "Packetizing H261 is experimental and produces incorrect "
+                   "packetization for cases where GOBs don't fit into packets "
+                   "(even though most receivers may handle it just fine). "
+                   "Please set -f_strict experimental in order to enable it.\n");
+            ret = AVERROR_EXPERIMENTAL;
+            goto fail;
+        }
+        break;
     case AV_CODEC_ID_H264:
         /* check for H.264 MP4 syntax */
         if (st->codec->extradata_size > 4 && st->codec->extradata[0] == 1) {
@@ -273,7 +285,7 @@ defaultcase:
 
 fail:
     av_freep(&s->buf);
-    return AVERROR(EINVAL);
+    return ret;
 }
 
 /* send an rtcp sender report packet */
@@ -566,6 +578,9 @@ static int rtp_write_packet(AVFormatContext *s1, AVPacket *pkt)
         break;
     case AV_CODEC_ID_H264:
         ff_rtp_send_h264(s1, pkt->data, size);
+        break;
+    case AV_CODEC_ID_H261:
+        ff_rtp_send_h261(s1, pkt->data, size);
         break;
     case AV_CODEC_ID_H263:
         if (s->flags & FF_RTP_FLAG_RFC2190) {
