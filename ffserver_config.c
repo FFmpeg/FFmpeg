@@ -35,10 +35,12 @@
 
 static int ffserver_save_avoption(const char *opt, const char *arg, int type,
                                   FFServerConfig *config);
-static void vreport_config_error(const char *filename, int line_num, int log_level,
-                                 int *errors, const char *fmt, va_list vl);
-static void report_config_error(const char *filename, int line_num, int log_level,
-                                int *errors, const char *fmt, ...);
+static void vreport_config_error(const char *filename, int line_num,
+                                 int log_level, int *errors, const char *fmt,
+                                 va_list vl);
+static void report_config_error(const char *filename, int line_num,
+                                int log_level, int *errors, const char *fmt,
+                                ...);
 
 #define ERROR(...)   report_config_error(config->filename, config->line_num,\
                                          AV_LOG_ERROR, &config->errors,  __VA_ARGS__)
