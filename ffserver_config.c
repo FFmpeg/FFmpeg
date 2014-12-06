@@ -84,28 +84,24 @@ void ffserver_get_arg(char *buf, int buf_size, const char **pp)
 {
     const char *p;
     char *q;
-    int quote;
+    int quote = 0;
 
     p = *pp;
-    while (av_isspace(*p)) p++;
     q = buf;
-    quote = 0;
+
+    while (av_isspace(*p)) p++;
+
     if (*p == '\"' || *p == '\'')
         quote = *p++;
-    for(;;) {
-        if (quote) {
-            if (*p == quote)
-                break;
-        } else {
-            if (av_isspace(*p))
-                break;
-        }
-        if (*p == '\0')
+
+    while (*p != '\0') {
+        if (quote && *p == quote || !quote && av_isspace(*p))
             break;
         if ((q - buf) < buf_size - 1)
             *q++ = *p;
         p++;
     }
+
     *q = '\0';
     if (quote && *p == quote)
         p++;
