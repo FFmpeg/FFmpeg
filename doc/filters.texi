@@ -2934,6 +2934,75 @@ colorbalance=rs=.3
 @end example
 @end itemize
 
+@section colorlevels
+
+Adjust video input frames using levels.
+
+The filter accepts the following options:
+
+@table @option
+@item rimin
+@item gimin
+@item bimin
+@item aimin
+Adjust red, green, blue and alpha input black point.
+Allowed ranges for options are @code{[-1.0, 1.0]}. Defaults are @code{0}.
+
+@item rimax
+@item gimax
+@item bimax
+@item aimax
+Adjust red, green, blue and alpha input white point.
+Allowed ranges for options are @code{[-1.0, 1.0]}. Defaults are @code{1}.
+
+Input levels are used to lighten highlights (bright tones), darken shadows
+(dark tones), change the balance of bright and dark tones.
+
+@item romin
+@item gomin
+@item bomin
+@item aomin
+Adjust red, green, blue and alpha output black point.
+Allowed ranges for options are @code{[0, 1.0]}. Defaults are @code{0}.
+
+@item romax
+@item gomax
+@item bomax
+@item aomax
+Adjust red, green, blue and alpha output white point.
+Allowed ranges for options are @code{[0, 1.0]}. Defaults are @code{1}.
+
+Output levels allows manual selection of a constrained output level range.
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Make video output darker:
+@example
+colorlevels=rimin=0.058:gimin=0.058:bimin=0.058
+@end example
+
+@item
+Increase contrast:
+@example
+colorlevels=rimin=0.039:gimin=0.039:bimin=0.039:rimax=0.96:gimax=0.96:bimax=0.96
+@end example
+
+@item
+Make video output lighter:
+@example
+colorlevels=rimax=0.902:gimax=0.902:bimax=0.902
+@end example
+
+@item
+Increase brightness:
+@example
+colorlevels=romin=0.5:gomin=0.5:bomin=0.5
+@end example
+@end itemize
+
 @section colorchannelmixer
 
 Adjust video input frames by re-mixing color channels.
