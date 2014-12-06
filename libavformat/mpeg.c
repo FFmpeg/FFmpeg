@@ -70,20 +70,23 @@ static int mpegps_probe(AVProbeData *p)
     int i;
     int sys = 0, pspack = 0, priv1 = 0, vid = 0;
     int audio = 0, invalid = 0, score = 0;
+    int endpes = 0;
 
     for (i = 0; i < p->buf_size; i++) {
         code = (code << 8) + p->buf[i];
         if ((code & 0xffffff00) == 0x100) {
             int len  = p->buf[i + 1] << 8 | p->buf[i + 2];
-            int pes  = check_pes(p->buf + i, p->buf + p->buf_size);
+            int pes  = endpes <= i && check_pes(p->buf + i, p->buf + p->buf_size);
             int pack = check_pack_header(p->buf + i);
 
             if (code == SYSTEM_HEADER_START_CODE)
                 sys++;
             else if (code == PACK_START_CODE && pack)
                 pspack++;
-            else if ((code & 0xf0) == VIDEO_ID && pes)
+            else if ((code & 0xf0) == VIDEO_ID && pes) {
+                endpes = i + len;
                 vid++;
+            }
             // skip pes payload to avoid start code emulation for private
             // and audio streams
             else if ((code & 0xe0) == AUDIO_ID &&  pes) {audio++; i+=len;}
