@@ -569,7 +569,7 @@ static int dvbsub_read_2bit_string(AVCodecContext *avctx,
     }
 
     if (get_bits(&gb, 6))
-        av_log(avctx, AV_LOG_ERROR, "DVBSub error: line overflow\n");
+        av_log(avctx, AV_LOG_ERROR, "line overflow\n");
 
     (*srcbuf) += (get_bits_count(&gb) + 7) >> 3;
 
@@ -692,7 +692,7 @@ static int dvbsub_read_4bit_string(AVCodecContext *avctx, uint8_t *destbuf, int 
     }
 
     if (get_bits(&gb, 8))
-        av_log(avctx, AV_LOG_ERROR, "DVBSub error: line overflow\n");
+        av_log(avctx, AV_LOG_ERROR, "line overflow\n");
 
     (*srcbuf) += (get_bits_count(&gb) + 7) >> 3;
 
@@ -748,7 +748,7 @@ static int dvbsub_read_8bit_string(AVCodecContext *avctx,
     }
 
     if (*(*srcbuf)++)
-        av_log(avctx, AV_LOG_ERROR, "DVBSub error: line overflow\n");
+        av_log(avctx, AV_LOG_ERROR, "line overflow\n");
 
     return pixels_read;
 }
