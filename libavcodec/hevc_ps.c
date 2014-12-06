@@ -952,7 +952,7 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
     if (sps->long_term_ref_pics_present_flag) {
         sps->num_long_term_ref_pics_sps = get_ue_golomb_long(gb);
         if (sps->num_long_term_ref_pics_sps > 31U) {
-            av_log(0, AV_LOG_ERROR, "num_long_term_ref_pics_sps %d is out of range.\n",
+            av_log(s->avctx, AV_LOG_ERROR, "num_long_term_ref_pics_sps %d is out of range.\n",
                    sps->num_long_term_ref_pics_sps);
             goto err;
         }
