@@ -1441,6 +1441,9 @@ static void matroska_execute_seekhead(MatroskaDemuxContext *matroska)
             break;
         }
     }
+    if (nb_elem != seekhead_list->nb_elem) {
+        avpriv_request_sample(matroska->ctx, "recursive SeekHead elements");
+    }
 }
 
 static void matroska_add_index_entries(MatroskaDemuxContext *matroska)
