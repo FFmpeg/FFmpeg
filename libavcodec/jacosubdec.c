@@ -46,8 +46,8 @@ static int insert_datetime(AVBPrint *dst, const char *in, const char *arg)
     struct tm ltime;
 
     localtime_r(&now, &ltime);
-    strftime(buf, sizeof(buf), arg, &ltime);
-    av_bprintf(dst, "%s", buf);
+    if (strftime(buf, sizeof(buf), arg, &ltime))
+        av_bprintf(dst, "%s", buf);
     return 0;
 }
 
