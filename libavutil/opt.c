@@ -1788,9 +1788,9 @@ int av_opt_is_set_to_default(void *obj, const AVOption *o)
         } tmp = {0};
         int opt_size = *(int *)((void **)dst + 1);
         void *opt_ptr = *(void **)dst;
-        if (!opt_ptr && (!o->default_val.str || !strlen(o->default_val.str)))
+        if (!opt_size && (!o->default_val.str || !strlen(o->default_val.str)))
             return 1;
-        if (opt_ptr && o->default_val.str && !strlen(o->default_val.str))
+        if (!opt_size ||  !o->default_val.str || !strlen(o->default_val.str ))
             return 0;
         if (opt_size != strlen(o->default_val.str) / 2)
             return 0;
