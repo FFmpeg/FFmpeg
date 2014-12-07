@@ -1816,8 +1816,10 @@ int av_opt_is_set_to_default(void *obj, const AVOption *o)
         return !av_cmp_q(*(AVRational*)dst, q);
     case AV_OPT_TYPE_COLOR: {
         uint8_t color[4] = {0, 0, 0, 0};
-        if (o->default_val.str)
-            av_parse_color(color, o->default_val.str, -1, NULL);
+        if (o->default_val.str) {
+            if ((ret = av_parse_color(color, o->default_val.str, -1, NULL)) < 0)
+                return ret;
+        }
         return !memcmp(color, dst, sizeof(color));
     }
     default:
