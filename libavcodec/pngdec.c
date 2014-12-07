@@ -272,7 +272,8 @@ static void png_filter_row(PNGDSPContext *dsp, uint8_t *dst, int filter_type,
         if (bpp > 2 && size > 4) {
             /* would write off the end of the array if we let it process
              * the last pixel with bpp=3 */
-            int w = bpp == 4 ? size : size - 3;
+            int w = (bpp & 3) ? size - 3 : size;
+
             if (w > i) {
                 dsp->add_paeth_prediction(dst + i, src + i, last + i, size - i, bpp);
                 i = w;
