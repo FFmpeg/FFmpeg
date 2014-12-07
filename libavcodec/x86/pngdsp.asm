@@ -157,7 +157,7 @@ cglobal add_png_paeth_prediction, 5, 7, %1, dst, src, top, w, bpp, end, cntr
     movh            [dstq], m3
     add               dstq, bppq
     cmp               dstq, endq
-    jle .loop
+    jl .loop
 
     mov               dstq, [rsp]
     dec              cntrq
