@@ -2088,6 +2088,9 @@ int attribute_align_arg avcodec_encode_video2(AVCodecContext *avctx,
     if (av_image_check_size(avctx->width, avctx->height, 0, avctx))
         return AVERROR(EINVAL);
 
+    if (frame && frame->format == AV_PIX_FMT_NONE)
+        av_log(avctx, AV_LOG_WARNING, "AVFrame.format is not set\n");
+
     av_assert0(avctx->codec->encode2);
 
     ret = avctx->codec->encode2(avctx, avpkt, frame, got_packet_ptr);
