@@ -194,9 +194,16 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
         AVDictionary *dict    = NULL;
         AVDictionaryEntry *en = NULL;
 
-        if (!av_dict_parse_string(&dict, ctx->x265_opts, "=", ":", 0)) {
+        int parse_ret = av_dict_parse_string(&dict, ctx->x265_opts, "=", ":", 0);
+        if (parse_ret) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "can't split '%s' into key=value:key=value pairs\n", ctx->x265_opts);
+            return parse_ret;
+        } else {
             while ((en = av_dict_get(dict, "", en, AV_DICT_IGNORE_SUFFIX))) {
-                int parse_ret = ctx->api->param_parse(ctx->params, en->key, en->value);
+                char *tmpval = en->value;  // x265 wants NULLs, not empty strings,
+                if ('\0' == *tmpval) tmpval = NULL; // for the no-value case
+                parse_ret = ctx->api->param_parse(ctx->params, en->key, tmpval);
 
                 switch (parse_ret) {
                 case X265_PARAM_BAD_NAME:
