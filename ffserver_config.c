@@ -520,7 +520,13 @@ static int ffserver_save_avoption(const char *opt, const char *arg, int type, FF
         //explicit private option
         snprintf(buff, sizeof(buff), "%s", opt);
         codec_name = buff;
-        option = strchr(buff, ':');
+        if(!(option = strchr(buff, ':'))){
+            report_config_error(config->filename, config->line_num,
+                                AV_LOG_ERROR, &config->errors,
+                                "Syntax error. Unmatched ':'\n");
+            return -1;
+
+        }
         buff[option - buff] = '\0';
         option++;
         if ((ret = ffserver_set_codec(ctx, codec_name, config)) < 0)
