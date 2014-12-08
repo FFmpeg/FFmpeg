@@ -195,13 +195,38 @@ static void add_codec(FFServerStream *stream, AVCodecContext *av,
     av_dict_copy(&recommended, *opts, 0);
     av_opt_set_dict2(av->priv_data, opts, AV_OPT_SEARCH_CHILDREN);
     av_opt_set_dict2(av, opts, AV_OPT_SEARCH_CHILDREN);
+
     if (av_dict_count(*opts))
         av_log(NULL, AV_LOG_WARNING,
                "Something is wrong, %d options are not set!\n",
                av_dict_count(*opts));
 
-    if (config->stream_use_defaults) {
-    //TODO: reident
+    if (!config->stream_use_defaults) {
+        switch(av->codec_type) {
+        case AVMEDIA_TYPE_AUDIO:
+            if (av->bit_rate == 0)
+                report_config_error(config->filename, config->line_num,
+                                    AV_LOG_ERROR, &config->errors,
+                                    "audio bit rate is not set\n");
+            if (av->sample_rate == 0)
+                report_config_error(config->filename, config->line_num,
+                                    AV_LOG_ERROR, &config->errors,
+                                    "audio sample rate is not set\n");
+            break;
+        case AVMEDIA_TYPE_VIDEO:
+            if (av->width == 0 || av->height == 0)
+                report_config_error(config->filename, config->line_num,
+                                    AV_LOG_ERROR, &config->errors,
+                                    "video size is not set\n");
+            break;
+        default:
+            av_assert0(0);
+        }
+        goto done;
+    }
+
+    /* stream_use_defaults = true */
+
     /* compute default parameters */
     switch(av->codec_type) {
     case AVMEDIA_TYPE_AUDIO:
@@ -287,29 +312,8 @@ static void add_codec(FFServerStream *stream, AVCodecContext *av,
     default:
         abort();
     }
-    } else {
-        switch(av->codec_type) {
-        case AVMEDIA_TYPE_AUDIO:
-            if (av->bit_rate == 0)
-                report_config_error(config->filename, config->line_num,
-                                    AV_LOG_ERROR, &config->errors,
-                                    "audio bit rate is not set\n");
-            if (av->sample_rate == 0)
-                report_config_error(config->filename, config->line_num,
-                                    AV_LOG_ERROR, &config->errors,
-                                    "audio sample rate is not set\n");
-            break;
-        case AVMEDIA_TYPE_VIDEO:
-            if (av->width == 0 || av->height == 0)
-                report_config_error(config->filename, config->line_num,
-                                    AV_LOG_ERROR, &config->errors,
-                                    "video size is not set\n");
-            break;
-        default:
-            av_assert0(0);
-        }
-    }
 
+done:
     st = av_mallocz(sizeof(AVStream));
     if (!st)
         return;
