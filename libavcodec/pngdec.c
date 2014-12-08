@@ -872,6 +872,9 @@ static int handle_p_frame_apng(AVCodecContext *avctx, PNGDecContext *s,
                                 s->previous_picture.f->data[0] : s->last_picture.f->data[0];
     int ls = FFMIN(av_image_get_linesize(p->format, s->width, 0), s->width * s->bpp);
 
+    if (ls < 0)
+        return ls;
+
     if (s->blend_op == APNG_BLEND_OP_OVER &&
         avctx->pix_fmt != AV_PIX_FMT_RGBA && avctx->pix_fmt != AV_PIX_FMT_ARGB) {
         avpriv_request_sample(avctx, "Blending with pixel format %s",
