@@ -207,17 +207,6 @@ static int mov_read_covr(MOVContext *c, AVIOContext *pb, int type, int len)
     return 0;
 }
 
-static int mov_metadata_raw(MOVContext *c, AVIOContext *pb,
-                            unsigned len, const char *key)
-{
-    char *value = av_malloc(len + 1);
-    if (!value)
-        return AVERROR(ENOMEM);
-    avio_read(pb, value, len);
-    value[len] = 0;
-    return av_dict_set(&c->fc->metadata, key, value, AV_DICT_DONT_STRDUP_VAL);
-}
-
 static int mov_metadata_loci(MOVContext *c, AVIOContext *pb, unsigned len)
 {
     char language[4] = { 0 };
@@ -270,6 +259,8 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     switch (atom.type) {
     case MKTAG( '@','P','R','M'): key = "premiere_version"; raw = 1; break;
     case MKTAG( '@','P','R','Q'): key = "quicktime_version"; raw = 1; break;
+    case MKTAG( 'X','M','P','_'):
+        if (c->export_xmp) { key = "xmp"; raw = 1; } break;
     case MKTAG( 'a','A','R','T'): key = "album_artist";    break;
     case MKTAG( 'c','p','i','l'): key = "compilation";
         parse = mov_metadata_int8_no_padding; break;
@@ -297,8 +288,6 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     case MKTAG( 't','v','s','h'): key = "show";      break;
     case MKTAG( 't','v','s','n'): key = "season_number";
         parse = mov_metadata_int8_bypass_padding; break;
-    case MKTAG( 'X','M','P','_'):
-        return mov_metadata_raw(c, pb, atom.size, "xmp");
     case MKTAG(0xa9,'A','R','T'): key = "artist";    break;
     case MKTAG(0xa9,'a','l','b'): key = "album";     break;
     case MKTAG(0xa9,'a','u','t'): key = "artist";    break;
@@ -4214,6 +4203,8 @@ static const AVOption mov_options[] = {
         AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_DECODING_PARAM, "use_mfra_for" },
     { "export_all", "Export unrecognized metadata entries", OFFSET(export_all),
         AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, .flags = FLAGS },
+    { "export_xmp", "Export full XMP metadata", OFFSET(export_xmp),
+        AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, .flags = FLAGS },
     { NULL },
 };
 
