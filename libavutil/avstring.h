@@ -171,7 +171,7 @@ char *av_d2str(double d);
  * @param buf the buffer to parse, buf will be updated to point to the
  * terminating char
  * @param term a 0-terminated list of terminating chars
- * @return the malloced unescaped string, which must be av_freed by
+ * @return the av_realloced unescaped string, which must be av_freed by
  * the user, NULL in case of allocation failure
  */
 char *av_get_token(const char **buf, const char *term);
