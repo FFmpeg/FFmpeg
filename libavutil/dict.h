@@ -137,6 +137,8 @@ int av_dict_set_int(AVDictionary **pm, const char *key, int64_t value, int flags
 
 /**
  * Parse the key/value pairs list and add the parsed entries to a dictionary.
+ * keys with no value will have av_mallo()ced empty strings as their value.
+ * (e.g. key1:key2=val2:key3) parsed with "=", ":"
  *
  * In case of failure, all the successfully set entries are stored in
  * *pm. You may need to manually free the created dictionary.
@@ -145,6 +147,7 @@ int av_dict_set_int(AVDictionary **pm, const char *key, int64_t value, int flags
  *                     key from value
  * @param pairs_sep    a 0-terminated list of characters used to separate
  *                     two pairs from each other
+ *                     strlen(key_val_sep) + strlen(pairs_sep) must be < 16
  * @param flags        flags to use when adding to dictionary.
  *                     AV_DICT_DONT_STRDUP_KEY and AV_DICT_DONT_STRDUP_VAL
  *                     are ignored since the key/value tokens will always
