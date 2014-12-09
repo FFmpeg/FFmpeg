@@ -1102,6 +1102,14 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
                 st->last_IP_duration = pkt->duration;
             if (pkt->dts != AV_NOPTS_VALUE)
                 st->cur_dts = pkt->dts + st->last_IP_duration;
+            if (pkt->dts != AV_NOPTS_VALUE &&
+                pkt->pts == AV_NOPTS_VALUE &&
+                st->last_IP_duration > 0 &&
+                (st->cur_dts - next_dts) <= 1 &&
+                next_dts != next_pts &&
+                next_pts != AV_NOPTS_VALUE)
+                pkt->pts = next_dts;
+
             st->last_IP_duration = pkt->duration;
             st->last_IP_pts      = pkt->pts;
             /* Cannot compute PTS if not present (we can compute it only
