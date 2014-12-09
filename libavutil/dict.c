@@ -161,14 +161,13 @@ static int parse_key_value_pair(AVDictionary **pm, const char **buf,
         if (strchr(key_val_sep, **buf))
             (*buf)++;    // skip over the = to get to val
         val = av_get_token(buf, pairs_sep); // will be "" if a sep is next
+    }
 
-        if (val) // av_get_token reallocs to the min length needed, so don't re-dup
+    if (val) // av_get_token reallocs to the min length needed, so don't re-dup
             ret = av_dict_set(pm, key, val, flags | AV_DICT_DONT_STRDUP_KEY | AV_DICT_DONT_STRDUP_VAL);
-        else {
-            ret = AVERROR(EINVAL);
-            av_freep(&key);
-            av_freep(&val);
-        }
+    else {
+        ret = AVERROR(EINVAL);
+        av_freep(&key);
     }
 
     return ret;
@@ -191,7 +190,7 @@ int av_dict_parse_string(AVDictionary **pm, const char *str,
         if ((ret = parse_key_value_pair(pm, &str, key_val_sep, pairs_sep, all_sep, flags)) < 0)
             return ret;
 
-        if (*str)
+        if (*str) // allows a trailing pairs_sep
             str++;
     }
 
