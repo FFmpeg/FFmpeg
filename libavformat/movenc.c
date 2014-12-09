@@ -4009,7 +4009,7 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
         } else {
             size = ff_hevc_annexb2mp4(pb, pkt->data, pkt->size, 0, NULL);
         }
-    } else if (enc->codec_id == AV_CODEC_ID_EAC3) {
+    } else if (CONFIG_AC3_PARSER && enc->codec_id == AV_CODEC_ID_EAC3) {
         size = handle_eac3(mov, pkt, trk);
         if (size < 0)
             return size;
