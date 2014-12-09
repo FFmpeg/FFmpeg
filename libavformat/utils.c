@@ -1924,7 +1924,7 @@ int64_t ff_gen_search(AVFormatContext *s, int stream_index, int64_t target_ts,
         av_dlog(s,
                 "pos_min=0x%"PRIx64" pos_max=0x%"PRIx64" dts_min=%s dts_max=%s\n",
                 pos_min, pos_max, av_ts2str(ts_min), av_ts2str(ts_max));
-        assert(pos_limit <= pos_max);
+        av_assert0(pos_limit <= pos_max);
 
         if (no_change == 0) {
             int64_t approximate_keyframe_distance = pos_max - pos_limit;
