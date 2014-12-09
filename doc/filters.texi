@@ -8537,26 +8537,138 @@ Available values are:
 @item merge, 0
 Move odd frames into the upper field, even into the lower field,
 generating a double height frame at half frame rate.
+@example
+ ------> time
+Input:
+Frame 1         Frame 2         Frame 3         Frame 4
+
+11111           22222           33333           44444
+11111           22222           33333           44444
+11111           22222           33333           44444
+11111           22222           33333           44444
+
+Output:
+11111                           33333
+22222                           44444
+11111                           33333
+22222                           44444
+11111                           33333
+22222                           44444
+11111                           33333
+22222                           44444
+@end example
 
 @item drop_odd, 1
 Only output even frames, odd frames are dropped, generating a frame with
 unchanged height at half frame rate.
 
+@example
+ ------> time
+Input:
+Frame 1         Frame 2         Frame 3         Frame 4
+
+11111           22222           33333           44444
+11111           22222           33333           44444
+11111           22222           33333           44444
+11111           22222           33333           44444
+
+Output:
+                22222                           44444
+                22222                           44444
+                22222                           44444
+                22222                           44444
+@end example
+
 @item drop_even, 2
 Only output odd frames, even frames are dropped, generating a frame with
 unchanged height at half frame rate.
+
+@example
+ ------> time
+Input:
+Frame 1         Frame 2         Frame 3         Frame 4
+
+11111           22222           33333           44444
+11111           22222           33333           44444
+11111           22222           33333           44444
+11111           22222           33333           44444
+
+Output:
+11111                           33333
+11111                           33333
+11111                           33333
+11111                           33333
+@end example
 
 @item pad, 3
 Expand each frame to full height, but pad alternate lines with black,
 generating a frame with double height at the same input frame rate.
 
+@example
+ ------> time
+Input:
+Frame 1         Frame 2         Frame 3         Frame 4
+
+11111           22222           33333           44444
+11111           22222           33333           44444
+11111           22222           33333           44444
+11111           22222           33333           44444
+
+Output:
+11111           .....           33333           .....
+.....           22222           .....           44444
+11111           .....           33333           .....
+.....           22222           .....           44444
+11111           .....           33333           .....
+.....           22222           .....           44444
+11111           .....           33333           .....
+.....           22222           .....           44444
+@end example
+
+
 @item interleave_top, 4
 Interleave the upper field from odd frames with the lower field from
 even frames, generating a frame with unchanged height at half frame rate.
 
+@example
+ ------> time
+Input:
+Frame 1         Frame 2         Frame 3         Frame 4
+
+11111<-         22222           33333<-         44444
+11111           22222<-         33333           44444<-
+11111<-         22222           33333<-         44444
+11111           22222<-         33333           44444<-
+
+Output:
+11111                           33333
+22222                           44444
+11111                           33333
+22222                           44444
+@end example
+
+
 @item interleave_bottom, 5
 Interleave the lower field from odd frames with the upper field from
 even frames, generating a frame with unchanged height at half frame rate.
+
+@example
+ ------> time
+Input:
+Frame 1         Frame 2         Frame 3         Frame 4
+
+11111           22222<-         33333           44444<-
+11111<-         22222           33333<-         44444
+11111           22222<-         33333           44444<-
+11111<-         22222           33333<-         44444
+
+Output:
+22222                           44444
+11111                           33333
+22222                           44444
+11111                           33333
+@end example
+
 
 @item interlacex2, 6
 Double frame rate with unchanged height. Frames are inserted each
@@ -8564,6 +8676,25 @@ containing the second temporal field from the previous input frame and
 the first temporal field from the next input frame. This mode relies on
 the top_field_first flag. Useful for interlaced video displays with no
 field synchronisation.
+
+@example
+ ------> time
+Input:
+Frame 1         Frame 2         Frame 3         Frame 4
+
+11111           22222           33333           44444
+ 11111           22222           33333           44444
+11111           22222           33333           44444
+ 11111           22222           33333           44444
+
+Output:
+11111   22222   22222   33333   33333   44444   44444
+ 11111   11111   22222   22222   33333   33333   44444
+11111   22222   22222   33333   33333   44444   44444
+ 11111   11111   22222   22222   33333   33333   44444
+@end example
+
+
 @end table
 
 Numeric values are deprecated but are accepted for backward

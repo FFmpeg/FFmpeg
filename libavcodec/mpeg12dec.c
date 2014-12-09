@@ -151,7 +151,7 @@ static inline int mpeg1_decode_block_intra(MpegEncContext *s,
     component = (n <= 3 ? 0 : n - 4 + 1);
     diff = decode_dc(&s->gb, component);
     if (diff >= 0xffff)
-        return -1;
+        return AVERROR_INVALIDDATA;
     dc  = s->last_dc[component];
     dc += diff;
     s->last_dc[component] = dc;
@@ -563,7 +563,7 @@ static inline int mpeg2_decode_block_intra(MpegEncContext *s,
     }
     diff = decode_dc(&s->gb, component);
     if (diff >= 0xffff)
-        return -1;
+        return AVERROR_INVALIDDATA;
     dc  = s->last_dc[component];
     dc += diff;
     s->last_dc[component] = dc;
@@ -648,7 +648,7 @@ static inline int mpeg2_fast_decode_block_intra(MpegEncContext *s,
     }
     diff = decode_dc(&s->gb, component);
     if (diff >= 0xffff)
-        return -1;
+        return AVERROR_INVALIDDATA;
     dc = s->last_dc[component];
     dc += diff;
     s->last_dc[component] = dc;
@@ -1289,9 +1289,6 @@ static int mpeg_decode_postinit(AVCodecContext *avctx)
             s1->mpeg_enc_ctx_allocated = 0;
         }
 
-        if ((s->width == 0) || (s->height == 0))
-            return -2;
-
         ret = ff_set_dimensions(avctx, s->width, s->height);
         if (ret < 0)
             return ret;
@@ -1373,8 +1370,8 @@ static int mpeg_decode_postinit(AVCodecContext *avctx)
         memcpy(old_permutation, s->idsp.idct_permutation, 64 * sizeof(uint8_t));
 
         ff_mpv_idct_init(s);
-        if (ff_mpv_common_init(s) < 0)
-            return -2;
+        if ((ret = ff_mpv_common_init(s)) < 0)
+            return ret;
 
         quant_matrix_rebuild(s->intra_matrix,        old_permutation, s->idsp.idct_permutation);
         quant_matrix_rebuild(s->inter_matrix,        old_permutation, s->idsp.idct_permutation);
@@ -1695,7 +1692,7 @@ static int mpeg_field_start(MpegEncContext *s, const uint8_t *buf, int buf_size)
 
         if (!s->current_picture_ptr) {
             av_log(s->avctx, AV_LOG_ERROR, "first field missing\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
 
         if (s->avctx->hwaccel &&
@@ -1910,7 +1907,7 @@ static int mpeg_decode_slice(MpegEncContext *s, int mb_y,
                     ((avctx->err_recognition & (AV_EF_BITSTREAM | AV_EF_AGGRESSIVE)) && left > 8)) {
                     av_log(avctx, AV_LOG_ERROR, "end mismatch left=%d %0X\n",
                            left, show_bits(&s->gb, FFMIN(left, 23)));
-                    return -1;
+                    return AVERROR_INVALIDDATA;
                 } else
                     goto eos;
             }
@@ -1947,7 +1944,7 @@ static int mpeg_decode_slice(MpegEncContext *s, int mb_y,
                     } else if (code == 35) {
                         if (s->mb_skip_run != 0 || show_bits(&s->gb, 15) != 0) {
                             av_log(s->avctx, AV_LOG_ERROR, "slice mismatch\n");
-                            return -1;
+                            return AVERROR_INVALIDDATA;
                         }
                         goto eos; /* end of slice */
                     }
@@ -2043,7 +2040,7 @@ static int slice_decode_thread(AVCodecContext *c, void *arg)
         if (s->picture_structure == PICT_BOTTOM_FIELD)
             mb_y++;
         if (mb_y < 0 || mb_y >= s->end_mb_y)
-            return -1;
+            return AVERROR_INVALIDDATA;
     }
 }
 
@@ -2125,7 +2122,8 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
     }
     s->frame_rate_index = get_bits(&s->gb, 4);
     if (s->frame_rate_index == 0 || s->frame_rate_index > 13) {
-        av_log(avctx, AV_LOG_WARNING, "frame_rate_index %d is invalid\n", s->frame_rate_index);
+        av_log(avctx, AV_LOG_WARNING,
+               "frame_rate_index %d is invalid\n", s->frame_rate_index);
         s->frame_rate_index = 1;
     }
     s->bit_rate = get_bits(&s->gb, 18) * 400;
@@ -2191,8 +2189,7 @@ static int vcr2_init_sequence(AVCodecContext *avctx)
 {
     Mpeg1Context *s1  = avctx->priv_data;
     MpegEncContext *s = &s1->mpeg_enc_ctx;
-    int i, v;
-    int ret;
+    int i, v, ret;
 
     /* start new MPEG-1 context decoding */
     s->out_format = FMT_MPEG1;

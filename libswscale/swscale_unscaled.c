@@ -1402,7 +1402,7 @@ static int planarCopyWrapper(SwsContext *c, const uint8_t *src[],
         int height = (plane == 0 || plane == 3) ? srcSliceH: FF_CEIL_RSHIFT(srcSliceH, c->chrDstVSubSample);
         const uint8_t *srcPtr = src[plane];
         uint8_t *dstPtr = dst[plane] + dstStride[plane] * y;
-        int shiftonly= plane==1 || plane==2 || (!c->srcRange && plane==0);
+        int shiftonly = plane == 1 || plane == 2 || (!c->srcRange && plane == 0);
 
         if (!dst[plane])
             continue;
@@ -1435,10 +1435,10 @@ static int planarCopyWrapper(SwsContext *c, const uint8_t *src[],
                 } else if (src_depth == 8) {
                     for (i = 0; i < height; i++) {
                         #define COPY816(w)\
-                        if(shiftonly){\
+                        if (shiftonly) {\
                             for (j = 0; j < length; j++)\
                                 w(&dstPtr2[j], srcPtr[j]<<(dst_depth-8));\
-                        }else{\
+                        } else {\
                             for (j = 0; j < length; j++)\
                                 w(&dstPtr2[j], (srcPtr[j]<<(dst_depth-8)) |\
                                                (srcPtr[j]>>(2*8-dst_depth)));\

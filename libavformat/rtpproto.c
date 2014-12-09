@@ -437,6 +437,10 @@ static int rtp_write(URLContext *h, const uint8_t *buf, int size)
     if (size < 2)
         return AVERROR(EINVAL);
 
+    if (buf[0] != (RTP_VERSION << 6))
+        av_log(h, AV_LOG_WARNING, "Data doesn't look like RTP packets, "
+                                  "make sure the RTP muxer is used\n");
+
     if (s->write_to_source) {
         int fd;
         struct sockaddr_storage *source, temp_source;

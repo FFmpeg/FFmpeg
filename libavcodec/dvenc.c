@@ -47,7 +47,7 @@ static av_cold int dvvideo_encode_init(AVCodecContext *avctx)
     PixblockDSPContext pdsp;
     int ret;
 
-    s->sys = av_dv_codec_profile(avctx->width, avctx->height, avctx->pix_fmt);
+    s->sys = av_dv_codec_profile2(avctx->width, avctx->height, avctx->pix_fmt, avctx->time_base);
     if (!s->sys) {
         av_log(avctx, AV_LOG_ERROR, "Found no DV profile for %ix%i %s video. "
                                     "Valid DV profiles are:\n",

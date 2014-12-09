@@ -468,7 +468,8 @@ static av_cold int dvbsub_close_decoder(AVCodecContext *avctx)
     return 0;
 }
 
-static int dvbsub_read_2bit_string(uint8_t *destbuf, int dbuf_len,
+static int dvbsub_read_2bit_string(AVCodecContext *avctx,
+                                   uint8_t *destbuf, int dbuf_len,
                                    const uint8_t **srcbuf, int buf_size,
                                    int non_mod, uint8_t *map_table, int x_pos)
 {
@@ -568,14 +569,14 @@ static int dvbsub_read_2bit_string(uint8_t *destbuf, int dbuf_len,
     }
 
     if (get_bits(&gb, 6))
-        av_log(0, AV_LOG_ERROR, "DVBSub error: line overflow\n");
+        av_log(avctx, AV_LOG_ERROR, "line overflow\n");
 
     (*srcbuf) += (get_bits_count(&gb) + 7) >> 3;
 
     return pixels_read;
 }
 
-static int dvbsub_read_4bit_string(uint8_t *destbuf, int dbuf_len,
+static int dvbsub_read_4bit_string(AVCodecContext *avctx, uint8_t *destbuf, int dbuf_len,
                                    const uint8_t **srcbuf, int buf_size,
                                    int non_mod, uint8_t *map_table, int x_pos)
 {
@@ -691,14 +692,15 @@ static int dvbsub_read_4bit_string(uint8_t *destbuf, int dbuf_len,
     }
 
     if (get_bits(&gb, 8))
-        av_log(0, AV_LOG_ERROR, "DVBSub error: line overflow\n");
+        av_log(avctx, AV_LOG_ERROR, "line overflow\n");
 
     (*srcbuf) += (get_bits_count(&gb) + 7) >> 3;
 
     return pixels_read;
 }
 
-static int dvbsub_read_8bit_string(uint8_t *destbuf, int dbuf_len,
+static int dvbsub_read_8bit_string(AVCodecContext *avctx,
+                                   uint8_t *destbuf, int dbuf_len,
                                     const uint8_t **srcbuf, int buf_size,
                                     int non_mod, uint8_t *map_table, int x_pos)
 {
@@ -746,7 +748,7 @@ static int dvbsub_read_8bit_string(uint8_t *destbuf, int dbuf_len,
     }
 
     if (*(*srcbuf)++)
-        av_log(0, AV_LOG_ERROR, "DVBSub error: line overflow\n");
+        av_log(avctx, AV_LOG_ERROR, "line overflow\n");
 
     return pixels_read;
 }
@@ -933,7 +935,7 @@ static void dvbsub_parse_pixel_data_block(AVCodecContext *avctx, DVBSubObjectDis
             else
                 map_table = NULL;
 
-            x_pos = dvbsub_read_2bit_string(pbuf + (y_pos * region->width),
+            x_pos = dvbsub_read_2bit_string(avctx, pbuf + (y_pos * region->width),
                                             region->width, &buf, buf_end - buf,
                                             non_mod, map_table, x_pos);
             break;
@@ -948,7 +950,7 @@ static void dvbsub_parse_pixel_data_block(AVCodecContext *avctx, DVBSubObjectDis
             else
                 map_table = NULL;
 
-            x_pos = dvbsub_read_4bit_string(pbuf + (y_pos * region->width),
+            x_pos = dvbsub_read_4bit_string(avctx, pbuf + (y_pos * region->width),
                                             region->width, &buf, buf_end - buf,
                                             non_mod, map_table, x_pos);
             break;
@@ -958,7 +960,7 @@ static void dvbsub_parse_pixel_data_block(AVCodecContext *avctx, DVBSubObjectDis
                 return;
             }
 
-            x_pos = dvbsub_read_8bit_string(pbuf + (y_pos * region->width),
+            x_pos = dvbsub_read_8bit_string(avctx, pbuf + (y_pos * region->width),
                                             region->width, &buf, buf_end - buf,
                                             non_mod, NULL, x_pos);
             break;

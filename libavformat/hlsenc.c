@@ -59,6 +59,7 @@ typedef struct HLSContext {
     int max_nb_segments;   // Set by a private option.
     int  wrap;             // Set by a private option.
     uint32_t flags;        // enum HLSFlags
+    char *segment_filename;
 
     int allowcache;
     int64_t recording_time;
@@ -237,14 +238,11 @@ static int hls_write_header(AVFormatContext *s)
     char *p;
     const char *pattern = "%d.ts";
     AVDictionary *options = NULL;
-    int basename_size = strlen(s->filename) + strlen(pattern) + 1;
+    int basename_size;
 
     hls->sequence       = hls->start_sequence;
     hls->recording_time = hls->time * AV_TIME_BASE;
     hls->start_pts      = AV_NOPTS_VALUE;
-
-    if (hls->flags & HLS_SINGLE_FILE)
-        pattern = ".ts";
 
     if (hls->format_options_str) {
         ret = av_dict_parse_string(&hls->format_options, hls->format_options_str, "=", ":", 0);
@@ -270,21 +268,30 @@ static int hls_write_header(AVFormatContext *s)
         goto fail;
     }
 
-    hls->basename = av_malloc(basename_size);
+    if (hls->segment_filename) {
+        hls->basename = av_strdup(hls->segment_filename);
+        if (!hls->basename) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
+    } else {
+        if (hls->flags & HLS_SINGLE_FILE)
+            pattern = ".ts";
 
-    if (!hls->basename) {
-        ret = AVERROR(ENOMEM);
-        goto fail;
+        basename_size = strlen(s->filename) + strlen(pattern) + 1;
+        hls->basename = av_malloc(basename_size);
+        if (!hls->basename) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
+
+        av_strlcpy(hls->basename, s->filename, basename_size);
+
+        p = strrchr(hls->basename, '.');
+        if (p)
+            *p = '\0';
+        av_strlcat(hls->basename, pattern, basename_size);
     }
-
-    strcpy(hls->basename, s->filename);
-
-    p = strrchr(hls->basename, '.');
-
-    if (p)
-        *p = '\0';
-
-    av_strlcat(hls->basename, pattern, basename_size);
 
     if ((ret = hls_mux_init(s)) < 0)
         goto fail;
@@ -410,6 +417,7 @@ static const AVOption options[] = {
     {"hls_wrap",      "set number after which the index wraps",  OFFSET(wrap),    AV_OPT_TYPE_INT,    {.i64 = 0},     0, INT_MAX, E},
     {"hls_allow_cache", "explicitly set whether the client MAY (1) or MUST NOT (0) cache media segments", OFFSET(allowcache), AV_OPT_TYPE_INT, {.i64 = -1}, INT_MIN, INT_MAX, E},
     {"hls_base_url",  "url to prepend to each playlist entry",   OFFSET(baseurl), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       E},
+    {"hls_segment_filename", "filename template for segment files", OFFSET(segment_filename),   AV_OPT_TYPE_STRING, {.str = NULL},            0,       0,         E},
     {"hls_flags",     "set flags affecting HLS playlist and media file generation", OFFSET(flags), AV_OPT_TYPE_FLAGS, {.i64 = 0 }, 0, UINT_MAX, E, "flags"},
     {"single_file",   "generate a single media file indexed with byte ranges", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_SINGLE_FILE }, 0, UINT_MAX,   E, "flags"},
 

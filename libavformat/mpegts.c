@@ -1758,10 +1758,9 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
                 if (channel_config_code <= 0x8) {
                     st->codec->extradata[9]  = channels = channel_config_code ? channel_config_code : 2;
                     st->codec->extradata[18] = channels > 2;
-                    st->codec->extradata[19] = channel_config_code;
+                    st->codec->extradata[19] = channels - opus_coupled_stream_cnt[channel_config_code];
                     if (channel_config_code == 0) { /* Dual Mono */
                         st->codec->extradata[18] = 255; /* Mapping */
-                        st->codec->extradata[19] = 2;   /* Stream Count */
                     }
                     st->codec->extradata[20] = opus_coupled_stream_cnt[channel_config_code];
                     memcpy(&st->codec->extradata[21], opus_channel_map[channels - 1], channels);
@@ -2455,7 +2454,8 @@ static int mpegts_read_header(AVFormatContext *s)
     int len;
     int64_t pos, probesize = s->probesize ? s->probesize : s->probesize2;
 
-    ffio_ensure_seekback(pb, probesize);
+    if (ffio_ensure_seekback(pb, probesize) < 0)
+        av_log(s, AV_LOG_WARNING, "Failed to allocate buffers for seekback\n");
 
     /* read the first 8192 bytes to get packet size */
     pos = avio_tell(pb);

@@ -207,17 +207,6 @@ static int mov_read_covr(MOVContext *c, AVIOContext *pb, int type, int len)
     return 0;
 }
 
-static int mov_metadata_raw(MOVContext *c, AVIOContext *pb,
-                            unsigned len, const char *key)
-{
-    char *value = av_malloc(len + 1);
-    if (!value)
-        return AVERROR(ENOMEM);
-    avio_read(pb, value, len);
-    value[len] = 0;
-    return av_dict_set(&c->fc->metadata, key, value, AV_DICT_DONT_STRDUP_VAL);
-}
-
 static int mov_metadata_loci(MOVContext *c, AVIOContext *pb, unsigned len)
 {
     char language[4] = { 0 };
@@ -265,59 +254,77 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     uint16_t langcode = 0;
     uint32_t data_type = 0, str_size, str_size_alloc;
     int (*parse)(MOVContext*, AVIOContext*, unsigned, const char*) = NULL;
+    int raw = 0;
 
     switch (atom.type) {
-    case MKTAG(0xa9,'n','a','m'): key = "title";     break;
-    case MKTAG(0xa9,'a','u','t'):
-    case MKTAG(0xa9,'A','R','T'): key = "artist";    break;
+    case MKTAG( '@','P','R','M'): key = "premiere_version"; raw = 1; break;
+    case MKTAG( '@','P','R','Q'): key = "quicktime_version"; raw = 1; break;
+    case MKTAG( 'X','M','P','_'):
+        if (c->export_xmp) { key = "xmp"; raw = 1; } break;
     case MKTAG( 'a','A','R','T'): key = "album_artist";    break;
-    case MKTAG(0xa9,'w','r','t'): key = "composer";  break;
+    case MKTAG( 'a','k','I','D'): key = "account_type";
+        parse = mov_metadata_int8_no_padding; break;
+    case MKTAG( 'a','p','I','D'): key = "account_id"; break;
+    case MKTAG( 'c','a','t','g'): key = "category"; break;
     case MKTAG( 'c','p','i','l'): key = "compilation";
         parse = mov_metadata_int8_no_padding; break;
-    case MKTAG( 'c','p','r','t'):
-    case MKTAG(0xa9,'c','p','y'): key = "copyright"; break;
-    case MKTAG(0xa9,'g','r','p'): key = "grouping"; break;
-    case MKTAG(0xa9,'l','y','r'): key = "lyrics"; break;
-    case MKTAG(0xa9,'c','m','t'):
-    case MKTAG(0xa9,'i','n','f'): key = "comment";   break;
-    case MKTAG(0xa9,'a','l','b'): key = "album";     break;
-    case MKTAG(0xa9,'d','a','y'): key = "date";      break;
-    case MKTAG(0xa9,'g','e','n'): key = "genre";     break;
-    case MKTAG( 'g','n','r','e'): key = "genre";
-        parse = mov_metadata_gnre; break;
-    case MKTAG(0xa9,'t','o','o'):
-    case MKTAG(0xa9,'s','w','r'): key = "encoder";   break;
-    case MKTAG(0xa9,'e','n','c'): key = "encoder";   break;
-    case MKTAG(0xa9,'m','a','k'): key = "make";      break;
-    case MKTAG(0xa9,'m','o','d'): key = "model";     break;
-    case MKTAG(0xa9,'x','y','z'): key = "location";  break;
-    case MKTAG( 'd','e','s','c'): key = "description";break;
-    case MKTAG( 'l','d','e','s'): key = "synopsis";  break;
-    case MKTAG( 't','v','s','h'): key = "show";      break;
-    case MKTAG( 't','v','e','n'): key = "episode_id";break;
-    case MKTAG( 't','v','n','n'): key = "network";   break;
-    case MKTAG( 't','r','k','n'): key = "track";
-        parse = mov_metadata_track_or_disc_number; break;
+    case MKTAG( 'c','p','r','t'): key = "copyright"; break;
+    case MKTAG( 'd','e','s','c'): key = "description"; break;
     case MKTAG( 'd','i','s','k'): key = "disc";
         parse = mov_metadata_track_or_disc_number; break;
-    case MKTAG( 't','v','e','s'): key = "episode_sort";
-        parse = mov_metadata_int8_bypass_padding; break;
-    case MKTAG( 't','v','s','n'): key = "season_number";
-        parse = mov_metadata_int8_bypass_padding; break;
-    case MKTAG( 's','t','i','k'): key = "media_type";
+    case MKTAG( 'e','g','i','d'): key = "episode_uid";
         parse = mov_metadata_int8_no_padding; break;
+    case MKTAG( 'g','n','r','e'): key = "genre";
+        parse = mov_metadata_gnre; break;
     case MKTAG( 'h','d','v','d'): key = "hd_video";
+        parse = mov_metadata_int8_no_padding; break;
+    case MKTAG( 'k','e','y','w'): key = "keywords";  break;
+    case MKTAG( 'l','d','e','s'): key = "synopsis";  break;
+    case MKTAG( 'l','o','c','i'):
+        return mov_metadata_loci(c, pb, atom.size);
+    case MKTAG( 'p','c','s','t'): key = "podcast";
         parse = mov_metadata_int8_no_padding; break;
     case MKTAG( 'p','g','a','p'): key = "gapless_playback";
         parse = mov_metadata_int8_no_padding; break;
-    case MKTAG( '@','P','R','M'):
-        return mov_metadata_raw(c, pb, atom.size, "premiere_version");
-    case MKTAG( '@','P','R','Q'):
-        return mov_metadata_raw(c, pb, atom.size, "quicktime_version");
-    case MKTAG( 'l','o','c','i'):
-        return mov_metadata_loci(c, pb, atom.size);
-    case MKTAG( 'X','M','P','_'):
-        return mov_metadata_raw(c, pb, atom.size, "xmp");
+    case MKTAG( 'p','u','r','d'): key = "purchase_date"; break;
+    case MKTAG( 'r','t','n','g'): key = "rating";
+        parse = mov_metadata_int8_no_padding; break;
+    case MKTAG( 's','o','a','a'): key = "sort_album_artist"; break;
+    case MKTAG( 's','o','a','l'): key = "sort_album";   break;
+    case MKTAG( 's','o','a','r'): key = "sort_artist";  break;
+    case MKTAG( 's','o','c','o'): key = "sort_composer"; break;
+    case MKTAG( 's','o','n','m'): key = "sort_name";    break;
+    case MKTAG( 's','o','s','n'): key = "sort_show";    break;
+    case MKTAG( 's','t','i','k'): key = "media_type";
+        parse = mov_metadata_int8_no_padding; break;
+    case MKTAG( 't','r','k','n'): key = "track";
+        parse = mov_metadata_track_or_disc_number; break;
+    case MKTAG( 't','v','e','n'): key = "episode_id"; break;
+    case MKTAG( 't','v','e','s'): key = "episode_sort";
+        parse = mov_metadata_int8_bypass_padding; break;
+    case MKTAG( 't','v','n','n'): key = "network";   break;
+    case MKTAG( 't','v','s','h'): key = "show";      break;
+    case MKTAG( 't','v','s','n'): key = "season_number";
+        parse = mov_metadata_int8_bypass_padding; break;
+    case MKTAG(0xa9,'A','R','T'): key = "artist";    break;
+    case MKTAG(0xa9,'a','l','b'): key = "album";     break;
+    case MKTAG(0xa9,'a','u','t'): key = "artist";    break;
+    case MKTAG(0xa9,'c','m','t'): key = "comment";   break;
+    case MKTAG(0xa9,'c','p','y'): key = "copyright"; break;
+    case MKTAG(0xa9,'d','a','y'): key = "date";      break;
+    case MKTAG(0xa9,'e','n','c'): key = "encoder";   break;
+    case MKTAG(0xa9,'g','e','n'): key = "genre";     break;
+    case MKTAG(0xa9,'g','r','p'): key = "grouping";  break;
+    case MKTAG(0xa9,'i','n','f'): key = "comment";   break;
+    case MKTAG(0xa9,'l','y','r'): key = "lyrics";    break;
+    case MKTAG(0xa9,'m','a','k'): key = "make";      break;
+    case MKTAG(0xa9,'m','o','d'): key = "model";     break;
+    case MKTAG(0xa9,'n','a','m'): key = "title";     break;
+    case MKTAG(0xa9,'s','t','3'): key = "subtitle";  break;
+    case MKTAG(0xa9,'s','w','r'): key = "encoder";   break;
+    case MKTAG(0xa9,'t','o','o'): key = "encoder";   break;
+    case MKTAG(0xa9,'w','r','t'): key = "composer";  break;
+    case MKTAG(0xa9,'x','y','z'): key = "location";  break;
     }
 
     if (c->itunes_metadata && atom.size > 8) {
@@ -337,7 +344,7 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                 return ret;
             }
         } else return 0;
-    } else if (atom.size > 4 && key && !c->itunes_metadata) {
+    } else if (atom.size > 4 && key && !c->itunes_metadata && !raw) {
         str_size = avio_rb16(pb); // string length
         langcode = avio_rb16(pb);
         ff_mov_lang_to_iso639(langcode, language);
@@ -355,7 +362,8 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     if (atom.size < 0)
         return AVERROR_INVALIDDATA;
 
-    str_size_alloc = str_size << 1; // worst-case requirement for output string in case of utf8 coded input
+    // worst-case requirement for output string in case of utf8 coded input
+    str_size_alloc = raw ? str_size + 1 : str_size * 2;
     str = av_malloc(str_size_alloc);
     if (!str)
         return AVERROR(ENOMEM);
@@ -363,7 +371,7 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     if (parse)
         parse(c, pb, str_size, key);
     else {
-        if (data_type == 3 || (data_type == 0 && (langcode < 0x400 || langcode == 0x7fff))) { // MAC Encoded
+        if (!raw && (data_type == 3 || (data_type == 0 && (langcode < 0x400 || langcode == 0x7fff)))) { // MAC Encoded
             mov_read_mac_string(c, pb, str_size, str, str_size_alloc);
         } else {
             int ret = avio_read(pb, str, str_size);
@@ -4214,6 +4222,8 @@ static const AVOption mov_options[] = {
         AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_DECODING_PARAM, "use_mfra_for" },
     { "export_all", "Export unrecognized metadata entries", OFFSET(export_all),
         AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, .flags = FLAGS },
+    { "export_xmp", "Export full XMP metadata", OFFSET(export_xmp),
+        AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, .flags = FLAGS },
     { NULL },
 };
 

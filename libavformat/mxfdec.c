@@ -1508,6 +1508,32 @@ static MXFPackage* mxf_resolve_source_package(MXFContext *mxf, UID package_uid)
     return NULL;
 }
 
+static MXFDescriptor* mxf_resolve_multidescriptor(MXFContext *mxf, MXFDescriptor *descriptor, int track_id)
+{
+    MXFDescriptor *sub_descriptor = NULL;
+    int i;
+
+    if (!descriptor)
+        return NULL;
+
+    if (descriptor->type == MultipleDescriptor) {
+        for (i = 0; i < descriptor->sub_descriptors_count; i++) {
+            sub_descriptor = mxf_resolve_strong_ref(mxf, &descriptor->sub_descriptors_refs[i], Descriptor);
+
+            if (!sub_descriptor) {
+                av_log(mxf->fc, AV_LOG_ERROR, "could not resolve sub descriptor strong ref\n");
+                continue;
+            }
+            if (sub_descriptor->linked_track_id == track_id) {
+                return sub_descriptor;
+            }
+        }
+    } else if (descriptor->type == Descriptor)
+        return descriptor;
+
+    return NULL;
+}
+
 static MXFStructuralComponent* mxf_resolve_essence_group_choice(MXFContext *mxf, MXFEssenceGroup *essence_group)
 {
     MXFStructuralComponent *component = NULL;
@@ -1529,12 +1555,8 @@ static MXFStructuralComponent* mxf_resolve_essence_group_choice(MXFContext *mxf,
             continue;
 
         descriptor = mxf_resolve_strong_ref(mxf, &package->descriptor_ref, Descriptor);
-        if (descriptor){
-            /* HACK: force the duration of the component to match the duration of the descriptor */
-            if (descriptor->duration != AV_NOPTS_VALUE)
-                component->duration = descriptor->duration;
+        if (descriptor)
             return component;
-        }
     }
     return NULL;
 }
@@ -1735,7 +1757,17 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
         }
         st->id = source_track->track_id;
         st->priv_data = source_track;
-        source_track->original_duration = st->duration = component->duration;
+
+        source_package->descriptor = mxf_resolve_strong_ref(mxf, &source_package->descriptor_ref, AnyType);
+        descriptor = mxf_resolve_multidescriptor(mxf, source_package->descriptor, source_track->track_id);
+
+        /* A SourceClip from a EssenceGroup may only be a single frame of essence data. The clips duration is then how many
+         * frames its suppose to repeat for. Descriptor->duration, if present, contains the real duration of the essence data */
+        if (descriptor && descriptor->duration != AV_NOPTS_VALUE)
+            source_track->original_duration = st->duration = FFMIN(descriptor->duration, component->duration);
+        else
+            source_track->original_duration = st->duration = component->duration;
+
         if (st->duration == -1)
             st->duration = AV_NOPTS_VALUE;
         st->start_time = component->start_position;
@@ -1758,24 +1790,6 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
         codec_ul = mxf_get_codec_ul(ff_mxf_data_definition_uls, &source_track->sequence->data_definition_ul);
         st->codec->codec_type = codec_ul->id;
 
-        source_package->descriptor = mxf_resolve_strong_ref(mxf, &source_package->descriptor_ref, AnyType);
-        if (source_package->descriptor) {
-            if (source_package->descriptor->type == MultipleDescriptor) {
-                for (j = 0; j < source_package->descriptor->sub_descriptors_count; j++) {
-                    MXFDescriptor *sub_descriptor = mxf_resolve_strong_ref(mxf, &source_package->descriptor->sub_descriptors_refs[j], Descriptor);
-
-                    if (!sub_descriptor) {
-                        av_log(mxf->fc, AV_LOG_ERROR, "could not resolve sub descriptor strong ref\n");
-                        continue;
-                    }
-                    if (sub_descriptor->linked_track_id == source_track->track_id) {
-                        descriptor = sub_descriptor;
-                        break;
-                    }
-                }
-            } else if (source_package->descriptor->type == Descriptor)
-                descriptor = source_package->descriptor;
-        }
         if (!descriptor) {
             av_log(mxf->fc, AV_LOG_INFO, "source track %d: stream %d, no descriptor found\n", source_track->track_id, st->index);
             continue;

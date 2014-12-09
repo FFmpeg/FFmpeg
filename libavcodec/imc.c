@@ -790,7 +790,8 @@ static int inverse_quant_coeff(IMCContext *q, IMCChannel *chctx,
 }
 
 
-static int imc_get_coeffs(IMCContext *q, IMCChannel *chctx)
+static void imc_get_coeffs(AVCodecContext *avctx,
+                           IMCContext *q, IMCChannel *chctx)
 {
     int i, j, cw_len, cw;
 
@@ -802,19 +803,20 @@ static int imc_get_coeffs(IMCContext *q, IMCChannel *chctx)
                 cw_len = chctx->CWlengthT[j];
                 cw = 0;
 
-                if (get_bits_count(&q->gb) + cw_len > 512) {
-                    av_dlog(NULL, "Band %i coeff %i cw_len %i\n", i, j, cw_len);
-                    return AVERROR_INVALIDDATA;
-                }
+                if (cw_len && (!chctx->bandFlagsBuf[i] || !chctx->skipFlags[j])) {
+                    if (get_bits_count(&q->gb) + cw_len > 512) {
+                        av_log(avctx, AV_LOG_WARNING,
+                            "Potential problem on band %i, coefficient %i"
+                            ": cw_len=%i\n", i, j, cw_len);
+                    }
 
-                if (cw_len && (!chctx->bandFlagsBuf[i] || !chctx->skipFlags[j]))
                     cw = get_bits(&q->gb, cw_len);
+                }
 
                 chctx->codewords[j] = cw;
             }
         }
     }
-    return 0;
 }
 
 static void imc_refine_bit_allocation(IMCContext *q, IMCChannel *chctx)
@@ -995,11 +997,7 @@ static int imc_decode_block(AVCodecContext *avctx, IMCContext *q, int ch)
 
     memset(chctx->codewords, 0, sizeof(chctx->codewords));
 
-    if (imc_get_coeffs(q, chctx) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Read coefficients failed\n");
-        chctx->decoder_reset = 1;
-        return AVERROR_INVALIDDATA;
-    }
+    imc_get_coeffs(avctx, q, chctx);
 
     if (inverse_quant_coeff(q, chctx, stream_format_code) < 0) {
         av_log(avctx, AV_LOG_ERROR, "Inverse quantization of coefficients failed\n");

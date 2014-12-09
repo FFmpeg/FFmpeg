@@ -86,8 +86,10 @@ static void get_str8(AVIOContext *pb, char *buf, int buf_size)
 
 static int rm_read_extradata(AVIOContext *pb, AVCodecContext *avctx, unsigned size)
 {
-    if (size >= 1<<24)
+    if (size >= 1<<24) {
+        av_log(avctx, AV_LOG_ERROR, "extradata size %u too large\n", size);
         return -1;
+    }
     if (ff_get_extradata(avctx, pb, size) < 0)
         return AVERROR(ENOMEM);
     return 0;
@@ -303,16 +305,16 @@ static int rm_read_audio_stream_info(AVFormatContext *s, AVIOContext *pb,
     return 0;
 }
 
-int
-ff_rm_read_mdpr_codecdata (AVFormatContext *s, AVIOContext *pb,
-                           AVStream *st, RMStream *rst, int codec_data_size, const uint8_t *mime)
+int ff_rm_read_mdpr_codecdata(AVFormatContext *s, AVIOContext *pb,
+                              AVStream *st, RMStream *rst,
+                              unsigned int codec_data_size, const uint8_t *mime)
 {
     unsigned int v;
     int size;
     int64_t codec_pos;
     int ret;
 
-    if (codec_data_size < 0)
+    if (codec_data_size > INT_MAX)
         return AVERROR_INVALIDDATA;
 
     avpriv_set_pts_info(st, 64, 1, 1000);
@@ -412,7 +414,11 @@ ff_rm_read_mdpr_codecdata (AVFormatContext *s, AVIOContext *pb,
 skip:
     /* skip codec info */
     size = avio_tell(pb) - codec_pos;
-    avio_skip(pb, codec_data_size - size);
+    if (codec_data_size >= size) {
+        avio_skip(pb, codec_data_size - size);
+    } else {
+        av_log(s, AV_LOG_WARNING, "codec_data_size %u < size %d\n", codec_data_size, size);
+    }
 
     return 0;
 }

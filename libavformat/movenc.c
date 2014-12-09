@@ -1279,7 +1279,8 @@ static int mov_get_h264_codec_tag(AVFormatContext *s, MOVTrack *track)
                 else if (rate == 60) tag = MKTAG('a','i','1','6');
             }
         } else if (   track->enc->width == 4096 && track->enc->height == 2160
-                   || track->enc->width == 3840 && track->enc->height == 2160) {
+                   || track->enc->width == 3840 && track->enc->height == 2160
+                   || track->enc->width == 2048 && track->enc->height == 1080) {
             tag = MKTAG('a','i','v','x');
         }
     }

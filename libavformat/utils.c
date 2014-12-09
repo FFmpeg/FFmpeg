@@ -974,7 +974,8 @@ static void update_initial_durations(AVFormatContext *s, AVStream *st,
 }
 
 static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
-                               AVCodecParserContext *pc, AVPacket *pkt)
+                               AVCodecParserContext *pc, AVPacket *pkt,
+                               int64_t next_dts, int64_t next_pts)
 {
     int num, den, presentation_delayed, delay, i;
     int64_t offset;
@@ -1101,6 +1102,14 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
                 st->last_IP_duration = pkt->duration;
             if (pkt->dts != AV_NOPTS_VALUE)
                 st->cur_dts = pkt->dts + st->last_IP_duration;
+            if (pkt->dts != AV_NOPTS_VALUE &&
+                pkt->pts == AV_NOPTS_VALUE &&
+                st->last_IP_duration > 0 &&
+                ((uint64_t)st->cur_dts - (uint64_t)next_dts + 1) <= 2 &&
+                next_dts != next_pts &&
+                next_pts != AV_NOPTS_VALUE)
+                pkt->pts = next_dts;
+
             st->last_IP_duration = pkt->duration;
             st->last_IP_pts      = pkt->pts;
             /* Cannot compute PTS if not present (we can compute it only
@@ -1176,11 +1185,13 @@ static int parse_packet(AVFormatContext *s, AVPacket *pkt, int stream_index)
         got_output = 1;
     } else if (!size && st->parser->flags & PARSER_FLAG_COMPLETE_FRAMES) {
         // preserve 0-size sync packets
-        compute_pkt_fields(s, st, st->parser, pkt);
+        compute_pkt_fields(s, st, st->parser, pkt, AV_NOPTS_VALUE, AV_NOPTS_VALUE);
     }
 
     while (size > 0 || (pkt == &flush_pkt && got_output)) {
         int len;
+        int64_t next_pts = pkt->pts;
+        int64_t next_dts = pkt->dts;
 
         av_init_packet(&out_pkt);
         len = av_parser_parse2(st->parser, st->codec,
@@ -1233,7 +1244,7 @@ static int parse_packet(AVFormatContext *s, AVPacket *pkt, int stream_index)
         if (st->parser->key_frame == -1 && st->parser->pict_type ==AV_PICTURE_TYPE_NONE && (pkt->flags&AV_PKT_FLAG_KEY))
             out_pkt.flags |= AV_PKT_FLAG_KEY;
 
-        compute_pkt_fields(s, st, st->parser, &out_pkt);
+        compute_pkt_fields(s, st, st->parser, &out_pkt, next_dts, next_pts);
 
         if (out_pkt.data == pkt->data && out_pkt.size == pkt->size) {
             out_pkt.buf = pkt->buf;
@@ -1352,7 +1363,7 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
         if (!st->need_parsing || !st->parser) {
             /* no parsing needed: we just output the packet as is */
             *pkt = cur_pkt;
-            compute_pkt_fields(s, st, NULL, pkt);
+            compute_pkt_fields(s, st, NULL, pkt, AV_NOPTS_VALUE, AV_NOPTS_VALUE);
             if ((s->iformat->flags & AVFMT_GENERIC_INDEX) &&
                 (pkt->flags & AV_PKT_FLAG_KEY) && pkt->dts != AV_NOPTS_VALUE) {
                 ff_reduce_index(s, st->index);

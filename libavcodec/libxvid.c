@@ -471,6 +471,19 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)
     xvid_enc_create.num_zones = 0;
 
     xvid_enc_create.num_threads = avctx->thread_count;
+#if (XVID_VERSION <= 0x010303) && (XVID_VERSION >= 0x010300)
+    /* workaround for a bug in libxvidcore */
+    if (avctx->height <= 16) {
+        if (avctx->thread_count < 2) {
+            xvid_enc_create.num_threads = 0;
+        } else {
+            av_log(avctx, AV_LOG_ERROR,
+                   "Too small height for threads > 1.");
+            ret = AVERROR(EINVAL);
+            goto fail;
+        }
+    }
+#endif
 
     xvid_enc_create.plugins     = plugins;
     xvid_enc_create.num_plugins = 0;

@@ -1788,9 +1788,9 @@ int av_opt_is_set_to_default(void *obj, const AVOption *o)
         } tmp = {0};
         int opt_size = *(int *)((void **)dst + 1);
         void *opt_ptr = *(void **)dst;
-        if (!opt_ptr && (!o->default_val.str || !strlen(o->default_val.str)))
+        if (!opt_size && (!o->default_val.str || !strlen(o->default_val.str)))
             return 1;
-        if (opt_ptr && o->default_val.str && !strlen(o->default_val.str))
+        if (!opt_size ||  !o->default_val.str || !strlen(o->default_val.str ))
             return 0;
         if (opt_size != strlen(o->default_val.str) / 2)
             return 0;
@@ -1811,13 +1811,17 @@ int av_opt_is_set_to_default(void *obj, const AVOption *o)
         return (w == *(int *)dst) && (h == *((int *)dst+1));
     case AV_OPT_TYPE_VIDEO_RATE:
         q = (AVRational){0, 0};
-        if (o->default_val.str)
-            av_parse_video_rate(&q, o->default_val.str);
+        if (o->default_val.str) {
+            if ((ret = av_parse_video_rate(&q, o->default_val.str)) < 0)
+                return ret;
+        }
         return !av_cmp_q(*(AVRational*)dst, q);
     case AV_OPT_TYPE_COLOR: {
         uint8_t color[4] = {0, 0, 0, 0};
-        if (o->default_val.str)
-            av_parse_color(color, o->default_val.str, -1, NULL);
+        if (o->default_val.str) {
+            if ((ret = av_parse_color(color, o->default_val.str, -1, NULL)) < 0)
+                return ret;
+        }
         return !memcmp(color, dst, sizeof(color));
     }
     default:

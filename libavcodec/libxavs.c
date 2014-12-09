@@ -362,7 +362,7 @@ static av_cold int XAVS_init(AVCodecContext *avctx)
 
     /* TAG: Do we have GLOBAL HEADER in AVS */
     /* We Have PPS and SPS in AVS */
-    if (avctx->flags & CODEC_FLAG_GLOBAL_HEADER) {
+    if (avctx->flags & CODEC_FLAG_GLOBAL_HEADER && 0) {
         xavs_nal_t *nal;
         int nnal, s, i, size;
         uint8_t *p;

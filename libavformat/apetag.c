@@ -62,15 +62,19 @@ static int ape_tag_read_field(AVFormatContext *s)
     if (flags & APE_TAG_FLAG_IS_BINARY) {
         uint8_t filename[1024];
         enum AVCodecID id;
+        int ret;
         AVStream *st = avformat_new_stream(s, NULL);
         if (!st)
             return AVERROR(ENOMEM);
 
-        size -= avio_get_str(pb, size, filename, sizeof(filename));
-        if (size <= 0) {
+        ret = avio_get_str(pb, size, filename, sizeof(filename));
+        if (ret < 0)
+            return ret;
+        if (size <= ret) {
             av_log(s, AV_LOG_WARNING, "Skipping binary tag '%s'.\n", key);
             return 0;
         }
+        size -= ret;
 
         av_dict_set(&st->metadata, key, filename, 0);
 
