@@ -122,7 +122,7 @@ static int crypto_open2(URLContext *h, const char *uri, int flags, AVDictionary 
                                c->key, c->keylen, "decryption key")) < 0)
             goto err;
         if ((ret = set_aes_arg(c, &c->decrypt_iv, &c->decrypt_ivlen,
-                               c->key, c->keylen, "decryption IV")) < 0)
+                               c->iv, c->ivlen, "decryption IV")) < 0)
             goto err;
     }
 
@@ -132,7 +132,7 @@ static int crypto_open2(URLContext *h, const char *uri, int flags, AVDictionary 
         if (ret < 0)
             goto err;
         if ((ret = set_aes_arg(c, &c->encrypt_iv, &c->encrypt_ivlen,
-                               c->key, c->keylen, "encryption IV")) < 0)
+                               c->iv, c->ivlen, "encryption IV")) < 0)
             goto err;
     }
 
