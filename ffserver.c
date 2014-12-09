@@ -407,43 +407,41 @@ static void start_children(FFServerStream *feed)
         if (!feed->child_argv || feed->pid)
             continue;
 
-            feed->pid_start = time(0);
+        feed->pid_start = time(0);
 
-            feed->pid = fork();
+        feed->pid = fork();
+        if (feed->pid < 0) {
+            http_log("Unable to create children\n");
+            exit(1);
+        }
 
-            if (feed->pid < 0) {
-                http_log("Unable to create children\n");
-                exit(1);
-            }
+        if (feed->pid)
+            continue;
 
-            if (feed->pid)
-                continue;
+        /* In child */
 
-                /* In child */
+        http_log("Launch command line: ");
+        http_log("%s ", pathname);
 
-                http_log("Launch command line: ");
-                http_log("%s ", pathname);
-                for (i = 1; feed->child_argv[i] && feed->child_argv[i][0]; i++)
-                    http_log("%s ", feed->child_argv[i]);
-                http_log("\n");
+        for (i = 1; feed->child_argv[i] && feed->child_argv[i][0]; i++)
+            http_log("%s ", feed->child_argv[i]);
+        http_log("\n");
 
-                for (i = 3; i < 256; i++)
-                    close(i);
+        for (i = 3; i < 256; i++)
+            close(i);
 
-                if (!config.debug) {
-                    if (!freopen("/dev/null", "r", stdin))
-                        http_log("failed to redirect STDIN to /dev/null\n;");
-                    if (!freopen("/dev/null", "w", stdout))
-                        http_log("failed to redirect STDOUT to /dev/null\n;");
-                    if (!freopen("/dev/null", "w", stderr))
-                        http_log("failed to redirect STDERR to /dev/null\n;");
-                }
+        if (!config.debug) {
+            if (!freopen("/dev/null", "r", stdin))
+                http_log("failed to redirect STDIN to /dev/null\n;");
+            if (!freopen("/dev/null", "w", stdout))
+                http_log("failed to redirect STDOUT to /dev/null\n;");
+            if (!freopen("/dev/null", "w", stderr))
+                http_log("failed to redirect STDERR to /dev/null\n;");
+        }
 
-                signal(SIGPIPE, SIG_DFL);
-
-                execvp(pathname, feed->child_argv);
-
-                _exit(1);
+        signal(SIGPIPE, SIG_DFL);
+        execvp(pathname, feed->child_argv);
+        _exit(1);
     }
 }
 
