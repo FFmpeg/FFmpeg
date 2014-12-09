@@ -220,9 +220,12 @@ static int http_receive_data(HTTPContext *c);
 static int rtsp_parse_request(HTTPContext *c);
 static void rtsp_cmd_describe(HTTPContext *c, const char *url);
 static void rtsp_cmd_options(HTTPContext *c, const char *url);
-static void rtsp_cmd_setup(HTTPContext *c, const char *url, RTSPMessageHeader *h);
-static void rtsp_cmd_play(HTTPContext *c, const char *url, RTSPMessageHeader *h);
-static void rtsp_cmd_interrupt(HTTPContext *c, const char *url, RTSPMessageHeader *h, int pause_only);
+static void rtsp_cmd_setup(HTTPContext *c, const char *url,
+                           RTSPMessageHeader *h);
+static void rtsp_cmd_play(HTTPContext *c, const char *url,
+                          RTSPMessageHeader *h);
+static void rtsp_cmd_interrupt(HTTPContext *c, const char *url,
+                               RTSPMessageHeader *h, int pause_only);
 
 /* SDP handling */
 static int prepare_sdp_description(FFServerStream *stream, uint8_t **pbuffer,
@@ -230,7 +233,8 @@ static int prepare_sdp_description(FFServerStream *stream, uint8_t **pbuffer,
 
 /* RTP handling */
 static HTTPContext *rtp_new_connection(struct sockaddr_in *from_addr,
-                                       FFServerStream *stream, const char *session_id,
+                                       FFServerStream *stream,
+                                       const char *session_id,
                                        enum RTSPLowerTransport rtp_protocol);
 static int rtp_new_av_stream(HTTPContext *c,
                              int stream_index, struct sockaddr_in *dest_addr,
