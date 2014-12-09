@@ -122,6 +122,8 @@ private:
     static bool copyFile( const string & sSourceFile, const string & sDestinationFile );
 
     static void deleteFile( const string & sDestinationFile );
+
+    static void deleteFolder( const string & sDestinationFolder );
 };
 
 #endif

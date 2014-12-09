@@ -998,18 +998,7 @@ exit /b 1 \n\
         cout << "  Error: Failed calling temp.bat. Ensure you have Visual Studio or the Microsoft compiler installed and that any required dependency libs/headers are available" << endl;
         //Remove the test header files
         deleteFile( "test.bat" );
-        StaticList vDeleteFiles;
-        findFiles( sProjectNameShort + "/*.sbr", vDeleteFiles );
-        for( StaticList::iterator itI = vDeleteFiles.begin( ); itI < vDeleteFiles.end( ); itI++ )
-        {
-            deleteFile( *itI );
-        }
-        for( map<string, StaticList>::iterator itI = mDirectoryObjects.end( ); itI != mDirectoryObjects.begin( );  )
-        {
-            --itI;
-            _rmdir( ( sProjectNameShort + "/" + itI->first ).c_str( ) );
-        }
-        _rmdir( sProjectNameShort.c_str( ) );
+        deleteFolder( sProjectNameShort );
         return false;
     }
 
@@ -1027,17 +1016,7 @@ exit /b 1 \n\
         if( !m_ifInputFile.is_open( ) )
         {
             cout << "  Error: Failed opening compiler output (" + *itSBR + ")" << endl;
-            //Remove the test sbr files
-            for( StaticList::iterator itI = vSBRFiles.begin( ); itI < vSBRFiles.end( ); itI++ )
-            {
-                deleteFile( *itI );
-            }
-            for( map<string, StaticList>::iterator itI = mDirectoryObjects.end( ); itI != mDirectoryObjects.begin( ); )
-            {
-                --itI;
-                _rmdir( ( sProjectNameShort + "/" + itI->first ).c_str( ) );
-            }
-            _rmdir( sProjectNameShort.c_str( ) );
+            deleteFolder( sProjectNameShort );
             return false;
         }
         string sSBRFile;
@@ -1174,16 +1153,7 @@ exit /b 1 \n\
     }
 
     //Remove the test header files
-    for( StaticList::iterator itI = vSBRFiles.begin( ); itI < vSBRFiles.end( ); itI++ )
-    {
-        deleteFile( *itI );
-    }
-    for( map<string, StaticList>::iterator itI = mDirectoryObjects.end( ); itI != mDirectoryObjects.begin( ); )
-    {
-        --itI;
-        _rmdir( ( sProjectNameShort + "/" + itI->first ).c_str( ) );
-    }
-    _rmdir( sProjectNameShort.c_str( ) );
+    deleteFolder( sProjectNameShort );
 
     //Sort the exports
     sort( vModuleExports.begin( ), vModuleExports.end( ) );
@@ -2426,6 +2396,7 @@ bool projectGenerator::findFiles( const string & sFileSearch, vector<string> & V
             }
             bCont = FindNextFile( SearchHandle, &SearchFile );
         }
+        FindClose( SearchHandle );
     }
     return ( VRetFiles.size( ) - uiStartSize ) > 0;
 }
@@ -2462,4 +2433,11 @@ bool projectGenerator::copyFile( const string & sSourceFile, const string & sDes
 void projectGenerator::deleteFile( const string & sDestinationFile )
 {
     DeleteFile( sDestinationFile.c_str() );
+}
+
+void projectGenerator::deleteFolder( const string & sDestinationFolder )
+{
+    string delFolder = sDestinationFolder + '\0';
+    SHFILEOPSTRUCT file_op = { NULL, FO_DELETE, delFolder.c_str( ), "", FOF_NO_UI, false, 0, "" };
+    SHFileOperation( &file_op );
 }
