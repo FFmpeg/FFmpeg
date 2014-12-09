@@ -384,11 +384,29 @@ static int compute_datarate(DataRateData *drd, int64_t count)
 
 static void start_children(FFServerStream *feed)
 {
+    char pathname[1024];
+    char *slash;
+    int i;
+
     if (no_launch)
         return;
 
+   /* replace "ffserver" with "ffmpeg" in the path of current
+    * program. Ignore user provided path */
+    av_strlcpy(pathname, my_program_name, sizeof(pathname));
+
+    slash = strrchr(pathname, '/');
+    if (!slash)
+        slash = pathname;
+    else
+        slash++;
+    strcpy(slash, "ffmpeg");
+
     for (; feed; feed = feed->next) {
-        if (feed->child_argv && !feed->pid) {
+
+        if (!feed->child_argv || feed->pid)
+            continue;
+
             feed->pid_start = time(0);
 
             feed->pid = fork();
@@ -397,21 +415,11 @@ static void start_children(FFServerStream *feed)
                 http_log("Unable to create children\n");
                 exit(1);
             }
-            if (!feed->pid) {
-                /* In child */
-                char pathname[1024];
-                char *slash;
-                int i;
 
-                /* replace "ffserver" with "ffmpeg" in the path of current
-                 * program. Ignore user provided path */
-                av_strlcpy(pathname, my_program_name, sizeof(pathname));
-                slash = strrchr(pathname, '/');
-                if (!slash)
-                    slash = pathname;
-                else
-                    slash++;
-                strcpy(slash, "ffmpeg");
+            if (feed->pid)
+                continue;
+
+                /* In child */
 
                 http_log("Launch command line: ");
                 http_log("%s ", pathname);
@@ -436,8 +444,6 @@ static void start_children(FFServerStream *feed)
                 execvp(pathname, feed->child_argv);
 
                 _exit(1);
-            }
-        }
     }
 }
 
