@@ -1917,10 +1917,7 @@ int64_t ff_gen_search(AVFormatContext *s, int stream_index, int64_t target_ts,
         return pos_max;
     }
 
-    if (ts_min > ts_max)
-        return -1;
-    else if (ts_min == ts_max)
-        pos_limit = pos_min;
+    av_assert0(ts_min < ts_max);
 
     no_change = 0;
     while (pos_min < pos_limit) {
