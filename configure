@@ -1829,6 +1829,7 @@ HAVE_LIST="
     perl
     pod2man
     sdl
+    section_data_rel_ro
     texi2html
     threads
     vdpau_x11
@@ -3990,6 +3991,7 @@ case $target_os in
         ;;
     android)
         disable symver
+        enable section_data_rel_ro
         SLIB_INSTALL_NAME='$(SLIBNAME)'
         SLIB_INSTALL_LINKS=
         # soname not set on purpose
@@ -4138,6 +4140,7 @@ case $target_os in
         ;;
     linux)
         enable dv1394
+        enable section_data_rel_ro
         ;;
     irix*)
         target_os=irix
