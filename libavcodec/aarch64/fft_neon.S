@@ -376,8 +376,7 @@ function ff_fft_calc_neon, export=1
         ld1             {v30.16b}, [x10]
         mov             x7,  #-8
         movrel          x12, pmmp
-        ldr             x4,  [x3, x2, lsl #3]
-        add             x3,  x3,  x4
+        ldr             x3,  [x3, x2, lsl #3]
         movrel          x13, mppm
         movrel          x14, X(ff_cos_16)
         ld1             {v31.16b}, [x11]
@@ -416,22 +415,22 @@ function ff_fft_permute_neon, export=1
         ret
 endfunc
 
-const   fft_tab_neon
-        .quad fft4_neon     - fft_tab_neon
-        .quad fft8_neon     - fft_tab_neon
-        .quad fft16_neon    - fft_tab_neon
-        .quad fft32_neon    - fft_tab_neon
-        .quad fft64_neon    - fft_tab_neon
-        .quad fft128_neon   - fft_tab_neon
-        .quad fft256_neon   - fft_tab_neon
-        .quad fft512_neon   - fft_tab_neon
-        .quad fft1024_neon  - fft_tab_neon
-        .quad fft2048_neon  - fft_tab_neon
-        .quad fft4096_neon  - fft_tab_neon
-        .quad fft8192_neon  - fft_tab_neon
-        .quad fft16384_neon - fft_tab_neon
-        .quad fft32768_neon - fft_tab_neon
-        .quad fft65536_neon - fft_tab_neon
+const   fft_tab_neon, relocate=1
+        .quad fft4_neon
+        .quad fft8_neon
+        .quad fft16_neon
+        .quad fft32_neon
+        .quad fft64_neon
+        .quad fft128_neon
+        .quad fft256_neon
+        .quad fft512_neon
+        .quad fft1024_neon
+        .quad fft2048_neon
+        .quad fft4096_neon
+        .quad fft8192_neon
+        .quad fft16384_neon
+        .quad fft32768_neon
+        .quad fft65536_neon
 endconst
 
 const   pmmp, align=4
