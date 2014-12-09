@@ -43,6 +43,14 @@ I       .req    ip
 PSAMP   .req    lr
 
 
+.macro branch_pic_label first, remainder:vararg
+A       .word           \first   - 4
+T       .hword          (\first) / 2
+.ifnb   \remainder
+        branch_pic_label \remainder
+.endif
+.endm
+
 // Some macros that do loads/multiplies where the register number is determined
 // from an assembly-time expression. Boy is GNU assembler's syntax ugly...
 
@@ -342,20 +350,16 @@ A       ldr     CO0, [pc, a3, lsl #2]   // firorder is in range 0-(8-iir_taps)
 A       add     pc,  pc,  CO0
 T       tbh     [pc, a3, lsl #1]
 0:
-A       .word   (70f - 0b) - 4, (71f - 0b) - 4, (72f - 0b) - 4, (73f - 0b) - 4, (74f - 0b) - 4
-T       .hword  (70f - 0b) / 2, (71f - 0b) / 2, (72f - 0b) / 2, (73f - 0b) / 2, (74f - 0b) / 2
+        branch_pic_label (70f - 0b), (71f - 0b), (72f - 0b), (73f - 0b)
+        branch_pic_label (74f - 0b)
  .if \iir_taps <= 3
-A       .word   (75f - 0b) - 4
-T       .hword  (75f - 0b) / 2
+        branch_pic_label (75f - 0b)
   .if \iir_taps <= 2
-A       .word   (76f - 0b) - 4
-T       .hword  (76f - 0b) / 2
+        branch_pic_label (76f - 0b)
    .if \iir_taps <= 1
-A       .word   (77f - 0b) - 4
-T       .hword  (77f - 0b) / 2
+        branch_pic_label (77f - 0b)
     .if \iir_taps == 0
-A       .word   (78f - 0b) - 4
-T       .hword  (78f - 0b) / 2
+        branch_pic_label (78f - 0b)
     .endif
    .endif
   .endif
@@ -384,8 +388,8 @@ A       ldr     CO0, [pc, a4, lsl #2]   // irorder is in range 0-4
 A       add     pc,  pc,  CO0
 T       tbh     [pc, a4, lsl #1]
 0:
-A       .word   (60f - 0b) - 4, (61f - 0b) - 4, (62f - 0b) - 4, (63f - 0b) - 4, (64f - 0b) - 4
-T       .hword  (60f - 0b) / 2, (61f - 0b) / 2, (62f - 0b) / 2, (63f - 0b) / 2, (64f - 0b) / 2
+        branch_pic_label (60f - 0b), (61f - 0b), (62f - 0b), (63f - 0b)
+        branch_pic_label (64f - 0b)
 60:     switch_on_fir_taps  \mask_minus1, \shift_0, \shift_8, 0
 61:     switch_on_fir_taps  \mask_minus1, \shift_0, \shift_8, 1
 62:     switch_on_fir_taps  \mask_minus1, \shift_0, \shift_8, 2
@@ -610,10 +614,10 @@ A       ldr     v5,  [pc,  v5,  lsl #2]
 A       add     pc,  pc,  v5
 T       tbh     [pc, v5, lsl #1]
 0:
-A       .word   0, 0, (12f - 0b) - 4, (13f - 0b) - 4, (14f - 0b) - 4, (15f - 0b) - 4, (16f - 0b) - 4, (17f - 0b) - 4, (18f - 0b) - 4, (19f - 0b) - 4, (20f - 0b) - 4, (21f - 0b) - 4, (22f - 0b) - 4, (23f - 0b) - 4, (24f - 0b) - 4, (25f - 0b) - 4
-T       .hword  0, 0, (12f - 0b) / 2, (13f - 0b) / 2, (14f - 0b) / 2, (15f - 0b) / 2
-T       .hword  (16f - 0b) / 2, (17f - 0b) / 2, (18f - 0b) / 2, (19f - 0b) / 2
-T       .hword  (20f - 0b) / 2, (21f - 0b) / 2, (22f - 0b) / 2, (23f - 0b) / 2, (24f - 0b) / 2, (25f - 0b) / 2
+        branch_pic_label          0,          0, (12f - 0b), (13f - 0b)
+        branch_pic_label (14f - 0b), (15f - 0b), (16f - 0b), (17f - 0b)
+        branch_pic_label (18f - 0b), (19f - 0b), (20f - 0b), (21f - 0b)
+        branch_pic_label (22f - 0b), (23f - 0b), (24f - 0b), (25f - 0b)
 10:     switch_on_au_size  0
 11:     switch_on_au_size  1
 12:     switch_on_au_size  2
