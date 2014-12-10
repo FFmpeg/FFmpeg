@@ -22,6 +22,10 @@ API changes, most recent first:
 201x-xx-xx - xxxxxxx - lavc 56.8.0 - avcodec.h
   Add AVCodecContext.sw_pix_fmt.
 
+2014-11-xx - xxxxxxx - lavu 54.6.0 - imgutils.h
+  Add utility functions for image manipulation: av_image_get_buffer_size()
+  av_image_fill_arrays() and av_image_copy_to_buffer().
+
 2014-11-xx - xxxxxxx - lavf 56.06.3 - avformat.h
   Add AVFormatContext.avoid_negative_ts.
 

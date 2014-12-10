@@ -34,68 +34,22 @@
 int avpicture_fill(AVPicture *picture, uint8_t *ptr,
                    enum AVPixelFormat pix_fmt, int width, int height)
 {
-    int ret;
-
-    if ((ret = av_image_check_size(width, height, 0, NULL)) < 0)
-        return ret;
-
-    if ((ret = av_image_fill_linesizes(picture->linesize, pix_fmt, width)) < 0)
-        return ret;
-
-    return av_image_fill_pointers(picture->data, pix_fmt,
-                                  height, ptr, picture->linesize);
+    return av_image_fill_arrays(picture->data, picture->linesize,
+                                ptr, pix_fmt, width, height, 1);
 }
 
 int avpicture_layout(const AVPicture* src, enum AVPixelFormat pix_fmt,
                      int width, int height,
                      unsigned char *dest, int dest_size)
 {
-    int i, j, nb_planes = 0, linesizes[4];
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
-    int size = avpicture_get_size(pix_fmt, width, height);
-
-    if (size > dest_size || size < 0)
-        return AVERROR(EINVAL);
-
-    for (i = 0; i < desc->nb_components; i++)
-        nb_planes = FFMAX(desc->comp[i].plane, nb_planes);
-
-    nb_planes++;
-
-    av_image_fill_linesizes(linesizes, pix_fmt, width);
-    for (i = 0; i < nb_planes; i++) {
-        int h, shift = (i == 1 || i == 2) ? desc->log2_chroma_h : 0;
-        const unsigned char *s = src->data[i];
-        h = (height + (1 << shift) - 1) >> shift;
-
-        for (j = 0; j < h; j++) {
-            memcpy(dest, s, linesizes[i]);
-            dest += linesizes[i];
-            s += src->linesize[i];
-        }
-    }
-
-    if (desc->flags & AV_PIX_FMT_FLAG_PAL)
-        memcpy((unsigned char *)(((size_t)dest + 3) & ~3),
-               src->data[1], 256 * 4);
-
-    return size;
+    return av_image_copy_to_buffer(dest, dest_size,
+                                   src->data, src->linesize,
+                                   pix_fmt, width, height, 1);
 }
 
 int avpicture_get_size(enum AVPixelFormat pix_fmt, int width, int height)
 {
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
-    AVPicture dummy_pict;
-    int ret;
-
-    if (!desc)
-        return AVERROR(EINVAL);
-    if ((ret = av_image_check_size(width, height, 0, NULL)) < 0)
-        return ret;
-    if (desc->flags & AV_PIX_FMT_FLAG_PSEUDOPAL)
-        // do not include palette for these pseudo-paletted formats
-        return width * height;
-    return avpicture_fill(&dummy_pict, NULL, pix_fmt, width, height);
+    return av_image_get_buffer_size(pix_fmt, width, height, 1);
 }
 
 int avpicture_alloc(AVPicture *picture,

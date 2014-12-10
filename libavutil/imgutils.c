@@ -24,6 +24,7 @@
 #include "common.h"
 #include "imgutils.h"
 #include "internal.h"
+#include "intreadwrite.h"
 #include "log.h"
 #include "mathematics.h"
 #include "pixdesc.h"
@@ -297,4 +298,84 @@ void av_image_copy(uint8_t *dst_data[4], int dst_linesizes[4],
                                 bwidth, h);
         }
     }
+}
+
+int av_image_fill_arrays(uint8_t *dst_data[4], int dst_linesize[4],
+                         const uint8_t *src, enum AVPixelFormat pix_fmt,
+                         int width, int height, int align)
+{
+    int ret, i;
+
+    ret = av_image_check_size(width, height, 0, NULL);
+    if (ret < 0)
+        return ret;
+
+    ret = av_image_fill_linesizes(dst_linesize, pix_fmt, width);
+    if (ret < 0)
+        return ret;
+
+    for (i = 0; i < 4; i++)
+        dst_linesize[i] = FFALIGN(dst_linesize[i], align);
+
+    return av_image_fill_pointers(dst_data, pix_fmt, height, src, dst_linesize);
+}
+
+int av_image_get_buffer_size(enum AVPixelFormat pix_fmt,
+                             int width, int height, int align)
+{
+    uint8_t *data[4];
+    int linesize[4];
+    int ret;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+    if (!desc)
+        return AVERROR_BUG;
+
+    ret = av_image_check_size(width, height, 0, NULL);
+    if (ret < 0)
+        return ret;
+
+    // do not include palette for these pseudo-paletted formats
+    if (desc->flags & AV_PIX_FMT_FLAG_PSEUDOPAL)
+        return width * height;
+
+    return av_image_fill_arrays(data, linesize, NULL, pix_fmt,
+                                width, height, align);
+}
+
+int av_image_copy_to_buffer(uint8_t *dst, int dst_size,
+                            const uint8_t * const src_data[4],
+                            const int src_linesize[4],
+                            enum AVPixelFormat pix_fmt,
+                            int width, int height, int align)
+{
+    int i, j, nb_planes = 0, linesize[4];
+    int size = av_image_get_buffer_size(pix_fmt, width, height, align);
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+
+    if (size > dst_size || size < 0 || !desc)
+        return AVERROR(EINVAL);
+
+    for (i = 0; i < desc->nb_components; i++)
+        nb_planes = FFMAX(desc->comp[i].plane, nb_planes);
+
+    nb_planes++;
+
+    av_image_fill_linesizes(linesize, pix_fmt, width);
+    for (i = 0; i < nb_planes; i++) {
+        int h, shift = (i == 1 || i == 2) ? desc->log2_chroma_h : 0;
+        const uint8_t *src = src_data[i];
+        h = (height + (1 << shift) - 1) >> shift;
+
+        for (j = 0; j < h; j++) {
+            memcpy(dst, src, linesize[i]);
+            dst += FFALIGN(linesize[i], align);
+            src += src_linesize[i];
+        }
+    }
+
+    if (desc->flags & AV_PIX_FMT_FLAG_PAL)
+        memcpy((unsigned char *)(((size_t)dst + 3) & ~3),
+               src_data[1], 256 * 4);
+
+    return size;
 }
