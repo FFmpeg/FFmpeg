@@ -59,203 +59,148 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <YASM Include="..\libavutil\x86\cpuid.asm" />
+    <YASM Include="..\libavutil\x86\emms.asm" />
+    <YASM Include="..\libavutil\x86\float_dsp.asm" />
+    <YASM Include="..\libavutil\x86\lls.asm" />
+    <YASM Include="..\libavutil\x86\pixelutils.asm" />
+  </ItemGroup>
+  <ItemGroup>
     <ClCompile Include="..\libavutil\..\compat\msvcrt\snprintf.c">
-      <ObjectFileName>$(IntDir)\compat_msvcrt_snprintf.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\..\compat\strtod.c">
-      <ObjectFileName>$(IntDir)\compat_strtod.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\..\compat\getopt.c">
-      <ObjectFileName>$(IntDir)\compat_getopt.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\adler32.c">
-      <ObjectFileName>$(IntDir)\libavutil_adler32.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\aes.c">
-      <ObjectFileName>$(IntDir)\libavutil_aes.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\atomic.c">
-      <ObjectFileName>$(IntDir)\libavutil_atomic.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\audio_fifo.c">
-      <ObjectFileName>$(IntDir)\libavutil_audio_fifo.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\avstring.c">
-      <ObjectFileName>$(IntDir)\libavutil_avstring.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\base64.c">
-      <ObjectFileName>$(IntDir)\libavutil_base64.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\blowfish.c">
-      <ObjectFileName>$(IntDir)\libavutil_blowfish.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\bprint.c">
-      <ObjectFileName>$(IntDir)\libavutil_bprint.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\buffer.c">
-      <ObjectFileName>$(IntDir)\libavutil_buffer.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\cast5.c">
-      <ObjectFileName>$(IntDir)\libavutil_cast5.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\channel_layout.c">
-      <ObjectFileName>$(IntDir)\libavutil_channel_layout.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\cpu.c">
-      <ObjectFileName>$(IntDir)\libavutil_cpu.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\crc.c">
-      <ObjectFileName>$(IntDir)\libavutil_crc.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\des.c">
-      <ObjectFileName>$(IntDir)\libavutil_des.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\display.c">
-      <ObjectFileName>$(IntDir)\libavutil_display.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\downmix_info.c">
-      <ObjectFileName>$(IntDir)\libavutil_downmix_info.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\error.c">
-      <ObjectFileName>$(IntDir)\libavutil_error.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\eval.c">
-      <ObjectFileName>$(IntDir)\libavutil_eval.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\fifo.c">
-      <ObjectFileName>$(IntDir)\libavutil_fifo.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\file.c">
-      <ObjectFileName>$(IntDir)\libavutil_file.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\file_open.c">
-      <ObjectFileName>$(IntDir)\libavutil_file_open.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\float_dsp.c">
       <ObjectFileName>$(IntDir)\libavutil_float_dsp.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\fixed_dsp.c">
-      <ObjectFileName>$(IntDir)\libavutil_fixed_dsp.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\frame.c">
-      <ObjectFileName>$(IntDir)\libavutil_frame.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\hash.c">
-      <ObjectFileName>$(IntDir)\libavutil_hash.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\hmac.c">
-      <ObjectFileName>$(IntDir)\libavutil_hmac.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\imgutils.c">
-      <ObjectFileName>$(IntDir)\libavutil_imgutils.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\intmath.c">
-      <ObjectFileName>$(IntDir)\libavutil_intmath.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\lfg.c">
-      <ObjectFileName>$(IntDir)\libavutil_lfg.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\lls.c">
       <ObjectFileName>$(IntDir)\libavutil_lls.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\log.c">
-      <ObjectFileName>$(IntDir)\libavutil_log.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\log2_tab.c">
-      <ObjectFileName>$(IntDir)\libavutil_log2_tab.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\mathematics.c">
-      <ObjectFileName>$(IntDir)\libavutil_mathematics.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\md5.c">
-      <ObjectFileName>$(IntDir)\libavutil_md5.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\mem.c">
-      <ObjectFileName>$(IntDir)\libavutil_mem.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\murmur3.c">
-      <ObjectFileName>$(IntDir)\libavutil_murmur3.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\dict.c">
-      <ObjectFileName>$(IntDir)\libavutil_dict.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\opt.c">
-      <ObjectFileName>$(IntDir)\libavutil_opt.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\parseutils.c">
-      <ObjectFileName>$(IntDir)\libavutil_parseutils.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\pixdesc.c">
-      <ObjectFileName>$(IntDir)\libavutil_pixdesc.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\pixelutils.c">
       <ObjectFileName>$(IntDir)\libavutil_pixelutils.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\random_seed.c">
-      <ObjectFileName>$(IntDir)\libavutil_random_seed.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\rational.c">
-      <ObjectFileName>$(IntDir)\libavutil_rational.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\rc4.c">
-      <ObjectFileName>$(IntDir)\libavutil_rc4.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\ripemd.c">
-      <ObjectFileName>$(IntDir)\libavutil_ripemd.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\samplefmt.c">
-      <ObjectFileName>$(IntDir)\libavutil_samplefmt.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\sha.c">
-      <ObjectFileName>$(IntDir)\libavutil_sha.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\sha512.c">
-      <ObjectFileName>$(IntDir)\libavutil_sha512.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\stereo3d.c">
-      <ObjectFileName>$(IntDir)\libavutil_stereo3d.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\threadmessage.c">
-      <ObjectFileName>$(IntDir)\libavutil_threadmessage.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\time.c">
-      <ObjectFileName>$(IntDir)\libavutil_time.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\timecode.c">
-      <ObjectFileName>$(IntDir)\libavutil_timecode.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\tree.c">
-      <ObjectFileName>$(IntDir)\libavutil_tree.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\utils.c">
-      <ObjectFileName>$(IntDir)\libavutil_utils.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\xga_font_data.c">
-      <ObjectFileName>$(IntDir)\libavutil_xga_font_data.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\xtea.c">
-      <ObjectFileName>$(IntDir)\libavutil_xtea.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\lzo.c">
-      <ObjectFileName>$(IntDir)\libavutil_lzo.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\opencl.c">
-      <ObjectFileName>$(IntDir)\libavutil_opencl.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\opencl_internal.c">
-      <ObjectFileName>$(IntDir)\libavutil_opencl_internal.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\x86\cpu.c">
       <ObjectFileName>$(IntDir)\libavutil_x86_cpu.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\x86\float_dsp_init.c">
-      <ObjectFileName>$(IntDir)\libavutil_x86_float_dsp_init.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\x86\lls_init.c">
-      <ObjectFileName>$(IntDir)\libavutil_x86_lls_init.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavutil\x86\pixelutils_init.c">
-      <ObjectFileName>$(IntDir)\libavutil_x86_pixelutils_init.obj</ObjectFileName>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -320,13 +265,6 @@
     <ClInclude Include="..\libavutil\xtea.h" />
     <ClInclude Include="..\libavutil\lzo.h" />
     <ClInclude Include="..\libavutil\opencl.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <YASM Include="..\libavutil\x86\cpuid.asm" />
-    <YASM Include="..\libavutil\x86\emms.asm" />
-    <YASM Include="..\libavutil\x86\float_dsp.asm" />
-    <YASM Include="..\libavutil\x86\lls.asm" />
-    <YASM Include="..\libavutil\x86\pixelutils.asm" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".\libavutil.def" />

@@ -60,7 +60,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\libpostproc\postprocess.c">
-      <ObjectFileName>$(IntDir)\libpostproc_postprocess.obj</ObjectFileName>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

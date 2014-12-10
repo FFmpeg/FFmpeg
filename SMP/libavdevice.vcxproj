@@ -60,46 +60,32 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\libavdevice\alldevices.c">
-      <ObjectFileName>$(IntDir)\libavdevice_alldevices.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavdevice\avdevice.c">
-      <ObjectFileName>$(IntDir)\libavdevice_avdevice.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavdevice\dshow.c">
-      <ObjectFileName>$(IntDir)\libavdevice_dshow.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavdevice\dshow_enummediatypes.c">
-      <ObjectFileName>$(IntDir)\libavdevice_dshow_enummediatypes.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavdevice\dshow_enumpins.c">
-      <ObjectFileName>$(IntDir)\libavdevice_dshow_enumpins.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavdevice\dshow_filter.c">
-      <ObjectFileName>$(IntDir)\libavdevice_dshow_filter.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavdevice\dshow_pin.c">
-      <ObjectFileName>$(IntDir)\libavdevice_dshow_pin.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavdevice\dshow_common.c">
-      <ObjectFileName>$(IntDir)\libavdevice_dshow_common.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavdevice\lavfi.c">
-      <ObjectFileName>$(IntDir)\libavdevice_lavfi.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavdevice\opengl_enc.c">
-      <ObjectFileName>$(IntDir)\libavdevice_opengl_enc.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavdevice\sdl.c">
-      <ObjectFileName>$(IntDir)\libavdevice_sdl.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavdevice\vfwcap.c">
-      <ObjectFileName>$(IntDir)\libavdevice_vfwcap.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavdevice\libcdio.c">
-      <ObjectFileName>$(IntDir)\libavdevice_libcdio.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavdevice\file_open.c">
-      <ObjectFileName>$(IntDir)\libavdevice_file_open.obj</ObjectFileName>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

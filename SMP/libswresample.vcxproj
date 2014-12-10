@@ -59,14 +59,16 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <YASM Include="..\libswresample\x86\audio_convert.asm" />
+    <YASM Include="..\libswresample\x86\rematrix.asm" />
+    <YASM Include="..\libswresample\x86\resample.asm" />
+  </ItemGroup>
+  <ItemGroup>
     <ClCompile Include="..\libswresample\audioconvert.c">
-      <ObjectFileName>$(IntDir)\libswresample_audioconvert.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libswresample\dither.c">
-      <ObjectFileName>$(IntDir)\libswresample_dither.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libswresample\options.c">
-      <ObjectFileName>$(IntDir)\libswresample_options.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libswresample\rematrix.c">
       <ObjectFileName>$(IntDir)\libswresample_rematrix.obj</ObjectFileName>
@@ -75,38 +77,25 @@
       <ObjectFileName>$(IntDir)\libswresample_resample.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libswresample\resample_dsp.c">
-      <ObjectFileName>$(IntDir)\libswresample_resample_dsp.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libswresample\swresample.c">
-      <ObjectFileName>$(IntDir)\libswresample_swresample.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libswresample\swresample_frame.c">
-      <ObjectFileName>$(IntDir)\libswresample_swresample_frame.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libswresample\soxr_resample.c">
-      <ObjectFileName>$(IntDir)\libswresample_soxr_resample.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libswresample\log2_tab.c">
-      <ObjectFileName>$(IntDir)\libswresample_log2_tab.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libswresample\x86\audio_convert_init.c">
-      <ObjectFileName>$(IntDir)\libswresample_x86_audio_convert_init.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libswresample\x86\rematrix_init.c">
-      <ObjectFileName>$(IntDir)\libswresample_x86_rematrix_init.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libswresample\x86\resample_init.c">
-      <ObjectFileName>$(IntDir)\libswresample_x86_resample_init.obj</ObjectFileName>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\libswresample\swresample.h" />
     <ClInclude Include="..\libswresample\version.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <YASM Include="..\libswresample\x86\audio_convert.asm" />
-    <YASM Include="..\libswresample\x86\rematrix.asm" />
-    <YASM Include="..\libswresample\x86\resample.asm" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".\libswresample.def" />

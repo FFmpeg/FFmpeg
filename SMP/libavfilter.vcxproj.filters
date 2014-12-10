@@ -24,6 +24,35 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <YASM Include="..\libavfilter\x86\vf_gradfun.asm">
+      <Filter>Source Files\libavfilter\x86</Filter>
+    </YASM>
+    <YASM Include="..\libavfilter\x86\vf_hqdn3d.asm">
+      <Filter>Source Files\libavfilter\x86</Filter>
+    </YASM>
+    <YASM Include="..\libavfilter\x86\vf_idet.asm">
+      <Filter>Source Files\libavfilter\x86</Filter>
+    </YASM>
+    <YASM Include="..\libavfilter\x86\vf_interlace.asm">
+      <Filter>Source Files\libavfilter\x86</Filter>
+    </YASM>
+    <YASM Include="..\libavfilter\x86\vf_pullup.asm">
+      <Filter>Source Files\libavfilter\x86</Filter>
+    </YASM>
+    <YASM Include="..\libavfilter\x86\af_volume.asm">
+      <Filter>Source Files\libavfilter\x86</Filter>
+    </YASM>
+    <YASM Include="..\libavfilter\x86\vf_yadif.asm">
+      <Filter>Source Files\libavfilter\x86</Filter>
+    </YASM>
+    <YASM Include="..\libavfilter\x86\yadif-16.asm">
+      <Filter>Source Files\libavfilter\x86</Filter>
+    </YASM>
+    <YASM Include="..\libavfilter\x86\yadif-10.asm">
+      <Filter>Source Files\libavfilter\x86</Filter>
+    </YASM>
+  </ItemGroup>
+  <ItemGroup>
     <ClCompile Include="..\libavfilter\allfilters.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
@@ -614,35 +643,6 @@
     <ClInclude Include="..\libavfilter\version.h">
       <Filter>Header Files\libavfilter</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <YASM Include="..\libavfilter\x86\vf_gradfun.asm">
-      <Filter>Source Files\libavfilter\x86</Filter>
-    </YASM>
-    <YASM Include="..\libavfilter\x86\vf_hqdn3d.asm">
-      <Filter>Source Files\libavfilter\x86</Filter>
-    </YASM>
-    <YASM Include="..\libavfilter\x86\vf_idet.asm">
-      <Filter>Source Files\libavfilter\x86</Filter>
-    </YASM>
-    <YASM Include="..\libavfilter\x86\vf_interlace.asm">
-      <Filter>Source Files\libavfilter\x86</Filter>
-    </YASM>
-    <YASM Include="..\libavfilter\x86\vf_pullup.asm">
-      <Filter>Source Files\libavfilter\x86</Filter>
-    </YASM>
-    <YASM Include="..\libavfilter\x86\af_volume.asm">
-      <Filter>Source Files\libavfilter\x86</Filter>
-    </YASM>
-    <YASM Include="..\libavfilter\x86\vf_yadif.asm">
-      <Filter>Source Files\libavfilter\x86</Filter>
-    </YASM>
-    <YASM Include="..\libavfilter\x86\yadif-16.asm">
-      <Filter>Source Files\libavfilter\x86</Filter>
-    </YASM>
-    <YASM Include="..\libavfilter\x86\yadif-10.asm">
-      <Filter>Source Files\libavfilter\x86</Filter>
-    </YASM>
   </ItemGroup>
   <ItemGroup>
     <None Include=".\libavfilter.def">

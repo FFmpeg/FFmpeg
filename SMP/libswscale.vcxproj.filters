@@ -21,6 +21,17 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <YASM Include="..\libswscale\x86\input.asm">
+      <Filter>Source Files\libswscale\x86</Filter>
+    </YASM>
+    <YASM Include="..\libswscale\x86\output.asm">
+      <Filter>Source Files\libswscale\x86</Filter>
+    </YASM>
+    <YASM Include="..\libswscale\x86\scale.asm">
+      <Filter>Source Files\libswscale\x86</Filter>
+    </YASM>
+  </ItemGroup>
+  <ItemGroup>
     <ClCompile Include="..\libswscale\hscale_fast_bilinear.c">
       <Filter>Source Files\libswscale</Filter>
     </ClCompile>
@@ -71,17 +82,6 @@
     <ClInclude Include="..\libswscale\version.h">
       <Filter>Header Files\libswscale</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <YASM Include="..\libswscale\x86\input.asm">
-      <Filter>Source Files\libswscale\x86</Filter>
-    </YASM>
-    <YASM Include="..\libswscale\x86\output.asm">
-      <Filter>Source Files\libswscale\x86</Filter>
-    </YASM>
-    <YASM Include="..\libswscale\x86\scale.asm">
-      <Filter>Source Files\libswscale\x86</Filter>
-    </YASM>
   </ItemGroup>
   <ItemGroup>
     <None Include=".\libswscale.def">

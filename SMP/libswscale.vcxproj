@@ -59,35 +59,32 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <YASM Include="..\libswscale\x86\input.asm" />
+    <YASM Include="..\libswscale\x86\output.asm" />
+    <YASM Include="..\libswscale\x86\scale.asm" />
+  </ItemGroup>
+  <ItemGroup>
     <ClCompile Include="..\libswscale\hscale_fast_bilinear.c">
-      <ObjectFileName>$(IntDir)\libswscale_hscale_fast_bilinear.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libswscale\input.c">
       <ObjectFileName>$(IntDir)\libswscale_input.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libswscale\options.c">
-      <ObjectFileName>$(IntDir)\libswscale_options.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libswscale\output.c">
       <ObjectFileName>$(IntDir)\libswscale_output.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libswscale\rgb2rgb.c">
-      <ObjectFileName>$(IntDir)\libswscale_rgb2rgb.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libswscale\swscale.c">
-      <ObjectFileName>$(IntDir)\libswscale_swscale.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libswscale\swscale_unscaled.c">
-      <ObjectFileName>$(IntDir)\libswscale_swscale_unscaled.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libswscale\utils.c">
-      <ObjectFileName>$(IntDir)\libswscale_utils.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libswscale\yuv2rgb.c">
-      <ObjectFileName>$(IntDir)\libswscale_yuv2rgb.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libswscale\log2_tab.c">
-      <ObjectFileName>$(IntDir)\libswscale_log2_tab.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libswscale\x86\rgb2rgb.c">
       <ObjectFileName>$(IntDir)\libswscale_x86_rgb2rgb.obj</ObjectFileName>
@@ -99,17 +96,11 @@
       <ObjectFileName>$(IntDir)\libswscale_x86_yuv2rgb.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libswscale\x86\hscale_fast_bilinear_simd.c">
-      <ObjectFileName>$(IntDir)\libswscale_x86_hscale_fast_bilinear_simd.obj</ObjectFileName>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\libswscale\swscale.h" />
     <ClInclude Include="..\libswscale\version.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <YASM Include="..\libswscale\x86\input.asm" />
-    <YASM Include="..\libswscale\x86\output.asm" />
-    <YASM Include="..\libswscale\x86\scale.asm" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".\libswscale.def" />

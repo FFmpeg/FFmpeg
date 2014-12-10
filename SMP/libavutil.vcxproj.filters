@@ -27,6 +27,23 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <YASM Include="..\libavutil\x86\cpuid.asm">
+      <Filter>Source Files\libavutil\x86</Filter>
+    </YASM>
+    <YASM Include="..\libavutil\x86\emms.asm">
+      <Filter>Source Files\libavutil\x86</Filter>
+    </YASM>
+    <YASM Include="..\libavutil\x86\float_dsp.asm">
+      <Filter>Source Files\libavutil\x86</Filter>
+    </YASM>
+    <YASM Include="..\libavutil\x86\lls.asm">
+      <Filter>Source Files\libavutil\x86</Filter>
+    </YASM>
+    <YASM Include="..\libavutil\x86\pixelutils.asm">
+      <Filter>Source Files\libavutil\x86</Filter>
+    </YASM>
+  </ItemGroup>
+  <ItemGroup>
     <ClCompile Include="..\libavutil\..\compat\msvcrt\snprintf.c">
       <Filter>Source Files\compat\msvcrt</Filter>
     </ClCompile>
@@ -410,23 +427,6 @@
     <ClInclude Include="..\libavutil\opencl.h">
       <Filter>Header Files\libavutil</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <YASM Include="..\libavutil\x86\cpuid.asm">
-      <Filter>Source Files\libavutil\x86</Filter>
-    </YASM>
-    <YASM Include="..\libavutil\x86\emms.asm">
-      <Filter>Source Files\libavutil\x86</Filter>
-    </YASM>
-    <YASM Include="..\libavutil\x86\float_dsp.asm">
-      <Filter>Source Files\libavutil\x86</Filter>
-    </YASM>
-    <YASM Include="..\libavutil\x86\lls.asm">
-      <Filter>Source Files\libavutil\x86</Filter>
-    </YASM>
-    <YASM Include="..\libavutil\x86\pixelutils.asm">
-      <Filter>Source Files\libavutil\x86</Filter>
-    </YASM>
   </ItemGroup>
   <ItemGroup>
     <None Include=".\libavutil.def">

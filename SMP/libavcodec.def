@@ -31,6 +31,7 @@ EXPORTS
     av_destruct_packet
     av_dup_packet
     av_dv_codec_profile
+    av_dv_codec_profile2
     av_dv_frame_profile
     av_fast_padded_malloc
     av_fast_padded_mallocz

@@ -21,6 +21,17 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <YASM Include="..\libswresample\x86\audio_convert.asm">
+      <Filter>Source Files\libswresample\x86</Filter>
+    </YASM>
+    <YASM Include="..\libswresample\x86\rematrix.asm">
+      <Filter>Source Files\libswresample\x86</Filter>
+    </YASM>
+    <YASM Include="..\libswresample\x86\resample.asm">
+      <Filter>Source Files\libswresample\x86</Filter>
+    </YASM>
+  </ItemGroup>
+  <ItemGroup>
     <ClCompile Include="..\libswresample\audioconvert.c">
       <Filter>Source Files\libswresample</Filter>
     </ClCompile>
@@ -68,17 +79,6 @@
     <ClInclude Include="..\libswresample\version.h">
       <Filter>Header Files\libswresample</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <YASM Include="..\libswresample\x86\audio_convert.asm">
-      <Filter>Source Files\libswresample\x86</Filter>
-    </YASM>
-    <YASM Include="..\libswresample\x86\rematrix.asm">
-      <Filter>Source Files\libswresample\x86</Filter>
-    </YASM>
-    <YASM Include="..\libswresample\x86\resample.asm">
-      <Filter>Source Files\libswresample\x86</Filter>
-    </YASM>
   </ItemGroup>
   <ItemGroup>
     <None Include=".\libswresample.def">
