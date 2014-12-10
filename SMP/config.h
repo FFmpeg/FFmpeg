@@ -379,6 +379,7 @@
 #define HAVE_PERL 0
 #define HAVE_POD2MAN 0
 #define HAVE_SDL 1
+#define HAVE_SECTION_DATA_REL_RO 0
 #define HAVE_TEXI2HTML 0
 #define HAVE_THREADS 1
 #define HAVE_VDPAU_X11 0
