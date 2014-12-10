@@ -127,13 +127,8 @@ QPEL_TABLE 12, 4, w, sse4
 %endif
     sub              %2q, 1
     shl              %2q, 5                      ; multiply by 32
-%if %0 == 2
-    movdqa           m14, [rfilterq + %2q]        ; get 2 first values of filters
-    movdqa           m15, [rfilterq + %2q+16]     ; get 2 last values of filters
-%else
     movdqa           %3, [rfilterq + %2q]        ; get 2 first values of filters
     movdqa           %4, [rfilterq + %2q+16]     ; get 2 last values of filters
-%endif
 %endmacro
 
 %macro EPEL_HV_FILTER 1
