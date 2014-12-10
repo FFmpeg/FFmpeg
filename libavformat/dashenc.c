@@ -86,8 +86,8 @@ typedef struct DASHContext {
     int single_file;
     OutputStream *streams;
     int has_video, has_audio;
-    int last_duration;
-    int total_duration;
+    int64_t last_duration;
+    int64_t total_duration;
     char availability_start_time[100];
     char dirname[1024];
     const char *single_file_name;
@@ -205,7 +205,7 @@ static void output_segment_list(OutputStream *os, AVIOContext *out, DASHContext 
         int timescale = c->use_timeline ? os->ctx->streams[0]->time_base.den : AV_TIME_BASE;
         avio_printf(out, "\t\t\t\t<SegmentTemplate timescale=\"%d\" ", timescale);
         if (!c->use_timeline)
-            avio_printf(out, "duration=\"%d\" ", c->last_duration);
+            avio_printf(out, "duration=\"%"PRId64"\" ", c->last_duration);
         avio_printf(out, "initialization=\"%s\" media=\"%s\" startNumber=\"%d\">\n", c->init_seg_name, c->media_seg_name, c->use_timeline ? start_number : 1);
         if (c->use_timeline) {
             avio_printf(out, "\t\t\t\t\t<SegmentTimeline>\n");
@@ -228,7 +228,7 @@ static void output_segment_list(OutputStream *os, AVIOContext *out, DASHContext 
         avio_printf(out, "\t\t\t\t</SegmentTemplate>\n");
     } else if (c->single_file) {
         avio_printf(out, "\t\t\t\t<BaseURL>%s</BaseURL>\n", os->initfile);
-        avio_printf(out, "\t\t\t\t<SegmentList timescale=\"%d\" duration=\"%d\" startNumber=\"%d\">\n", AV_TIME_BASE, c->last_duration, start_number);
+        avio_printf(out, "\t\t\t\t<SegmentList timescale=\"%d\" duration=\"%"PRId64"\" startNumber=\"%d\">\n", AV_TIME_BASE, c->last_duration, start_number);
         avio_printf(out, "\t\t\t\t\t<Initialization range=\"%"PRId64"-%"PRId64"\" />\n", os->init_start_pos, os->init_start_pos + os->init_range_length - 1);
         for (i = start_index; i < os->nb_segments; i++) {
             Segment *seg = os->segments[i];
@@ -239,7 +239,7 @@ static void output_segment_list(OutputStream *os, AVIOContext *out, DASHContext 
         }
         avio_printf(out, "\t\t\t\t</SegmentList>\n");
     } else {
-        avio_printf(out, "\t\t\t\t<SegmentList timescale=\"%d\" duration=\"%d\" startNumber=\"%d\">\n", AV_TIME_BASE, c->last_duration, start_number);
+        avio_printf(out, "\t\t\t\t<SegmentList timescale=\"%d\" duration=\"%"PRId64"\" startNumber=\"%d\">\n", AV_TIME_BASE, c->last_duration, start_number);
         avio_printf(out, "\t\t\t\t\t<Initialization sourceURL=\"%s\" />\n", os->initfile);
         for (i = start_index; i < os->nb_segments; i++) {
             Segment *seg = os->segments[i];
@@ -444,11 +444,11 @@ static int write_manifest(AVFormatContext *s, int final)
         write_time(out, c->total_duration);
         avio_printf(out, "\"\n");
     } else {
-        int update_period = c->last_duration / AV_TIME_BASE;
+        int64_t update_period = c->last_duration / AV_TIME_BASE;
         if (c->use_template && !c->use_timeline)
             update_period = 500;
-        avio_printf(out, "\tminimumUpdatePeriod=\"PT%dS\"\n", update_period);
-        avio_printf(out, "\tsuggestedPresentationDelay=\"PT%dS\"\n", c->last_duration / AV_TIME_BASE);
+        avio_printf(out, "\tminimumUpdatePeriod=\"PT%"PRId64"S\"\n", update_period);
+        avio_printf(out, "\tsuggestedPresentationDelay=\"PT%"PRId64"S\"\n", c->last_duration / AV_TIME_BASE);
         if (!c->availability_start_time[0] && s->nb_streams > 0 && c->streams[0].nb_segments > 0) {
             time_t t = time(NULL);
             struct tm *ptm, tmbuf;
