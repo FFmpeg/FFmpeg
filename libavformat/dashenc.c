@@ -636,6 +636,7 @@ static int dash_write_header(AVFormatContext *s)
             ffurl_close(os->out);
             os->out = NULL;
         }
+        av_log(s, AV_LOG_VERBOSE, "Representation %d init segment written to: %s\n", i, filename);
 
         s->streams[i]->time_base = st->time_base;
         // If the muxer wants to shift timestamps, request to have them shifted
@@ -657,6 +658,8 @@ static int dash_write_header(AVFormatContext *s)
         ret = AVERROR(EINVAL);
     }
     ret = write_manifest(s, 0);
+    if (!ret)
+        av_log(s, AV_LOG_VERBOSE, "Manifest written to: %s\n", s->filename);
 
 fail:
     if (ret)
@@ -704,16 +707,13 @@ static void write_styp(AVIOContext *pb)
     ffio_wfourcc(pb, "msix");
 }
 
-static void find_index_range(AVFormatContext *s, const char *dirname,
-                             const char *filename, int64_t pos,
-                             int *index_length)
+static void find_index_range(AVFormatContext *s, const char *full_path,
+                             int64_t pos, int *index_length)
 {
-    char full_path[1024];
     uint8_t buf[8];
     URLContext *fd;
     int ret;
 
-    snprintf(full_path, sizeof(full_path), "%s%s", dirname, filename);
     ret = ffurl_open(&fd, full_path, AVIO_FLAG_READ, &s->interrupt_callback, NULL);
     if (ret < 0)
         return;
@@ -767,14 +767,17 @@ static int dash_flush(AVFormatContext *s, int final, int stream)
             if (ret < 0)
                 break;
             write_styp(os->ctx->pb);
+        } else {
+            snprintf(full_path, sizeof(full_path), "%s%s", c->dirname, os->initfile);
         }
+
         av_write_frame(os->ctx, NULL);
         avio_flush(os->ctx->pb);
         os->packets_written = 0;
 
         range_length = avio_tell(os->ctx->pb) - start_pos;
         if (c->single_file) {
-            find_index_range(s, c->dirname, os->initfile, start_pos, &index_length);
+            find_index_range(s, full_path, start_pos, &index_length);
         } else {
             ffurl_close(os->out);
             os->out = NULL;
@@ -783,6 +786,7 @@ static int dash_flush(AVFormatContext *s, int final, int stream)
                 break;
         }
         add_segment(os, filename, os->start_dts, os->end_dts - os->start_dts, start_pos, range_length, index_length);
+        av_log(s, AV_LOG_VERBOSE, "Representation %d media segment %d written to: %s\n", i, os->segment_index, full_path);
     }
 
     if (c->window_size || (final && c->remove_at_exit)) {

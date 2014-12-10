@@ -33,7 +33,7 @@ function ff_fft_calc_vfp, export=1
         movrel  a2, (fft_tab_vfp - 8)
         ldr     pc, [a2, ip, lsl #2]
 endfunc
-const fft_tab_vfp
+const   fft_tab_vfp, relocate=1
         .word   fft4_vfp
         .word   fft8_vfp
         .word   X(ff_fft16_vfp)     @ this one alone is exported
