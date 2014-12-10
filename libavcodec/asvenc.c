@@ -107,7 +107,7 @@ static inline void asv1_encode_block(ASV1Context *a, int16_t block[64])
     put_bits(&a->pb, ff_asv_ccp_tab[16][1], ff_asv_ccp_tab[16][0]);
 }
 
-static inline void asv2_encode_block(ASV1Context *a, int16_t block[64])
+static inline int asv2_encode_block(ASV1Context *a, int16_t block[64])
 {
     int i;
     int count = 0;
@@ -141,7 +141,8 @@ static inline void asv2_encode_block(ASV1Context *a, int16_t block[64])
                                  a->q_intra_matrix[index + 9] + (1 << 15)) >> 16))
             ccp |= 1;
 
-        assert(i || ccp < 8);
+        if (!i && ccp >= 8)
+            return AVERROR_BUG;
         if (i)
             put_bits(&a->pb, ff_asv_ac_ccp_tab[ccp][1], ff_asv_ac_ccp_tab[ccp][0]);
         else
@@ -158,13 +159,15 @@ static inline void asv2_encode_block(ASV1Context *a, int16_t block[64])
                 asv2_put_level(&a->pb, block[index + 9]);
         }
     }
+
+    return 0;
 }
 
 #define MAX_MB_SIZE (30 * 16 * 16 * 3 / 2 / 8)
 
 static inline int encode_mb(ASV1Context *a, int16_t block[6][64])
 {
-    int i;
+    int i, ret;
 
     if (a->pb.buf_end - a->pb.buf - (put_bits_count(&a->pb) >> 3) < MAX_MB_SIZE) {
         av_log(a->avctx, AV_LOG_ERROR, "encoded frame too large\n");
@@ -175,8 +178,11 @@ static inline int encode_mb(ASV1Context *a, int16_t block[6][64])
         for (i = 0; i < 6; i++)
             asv1_encode_block(a, block[i]);
     } else {
-        for (i = 0; i < 6; i++)
-            asv2_encode_block(a, block[i]);
+        for (i = 0; i < 6; i++) {
+            ret = asv2_encode_block(a, block[i]);
+            if (ret < 0)
+                return ret;
+        }
     }
     return 0;
 }
