@@ -273,6 +273,9 @@ static int init_image(TiffContext *s, AVFrame *frame)
     case 483:
         s->avctx->pix_fmt = s->le ? AV_PIX_FMT_RGB48LE : AV_PIX_FMT_RGB48BE;
         break;
+    case 644:
+        s->avctx->pix_fmt = s->le ? AV_PIX_FMT_RGBA64LE : AV_PIX_FMT_RGBA64BE;
+        break;
     default:
         av_log(s->avctx, AV_LOG_ERROR,
                "This format is not supported (bpp=%d, bppcount=%d)\n",
@@ -636,13 +639,15 @@ static int decode_frame(AVCodecContext *avctx,
         dst   = p->data[0];
         soff  = s->bpp >> 3;
         ssize = s->width * soff;
-        if (s->avctx->pix_fmt == AV_PIX_FMT_RGB48LE) {
+        if (s->avctx->pix_fmt == AV_PIX_FMT_RGB48LE ||
+            s->avctx->pix_fmt == AV_PIX_FMT_RGBA64LE) {
             for (i = 0; i < s->height; i++) {
                 for (j = soff; j < ssize; j += 2)
                     AV_WL16(dst + j, AV_RL16(dst + j) + AV_RL16(dst + j - soff));
                 dst += stride;
             }
-        } else if (s->avctx->pix_fmt == AV_PIX_FMT_RGB48BE) {
+        } else if (s->avctx->pix_fmt == AV_PIX_FMT_RGB48BE ||
+                   s->avctx->pix_fmt == AV_PIX_FMT_RGBA64BE) {
             for (i = 0; i < s->height; i++) {
                 for (j = soff; j < ssize; j += 2)
                     AV_WB16(dst + j, AV_RB16(dst + j) + AV_RB16(dst + j - soff));
