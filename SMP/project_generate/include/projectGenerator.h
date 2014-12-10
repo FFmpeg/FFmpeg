@@ -103,9 +103,11 @@ private:
 
     static bool findFile( const string & sFileName, string & sRetFileName );
 
-    static bool findFiles( const string & sFileSearch, vector<string> & VRetFiles );
+    static bool findFiles( const string & sFileSearch, vector<string> & vRetFiles );
 
     bool findSourceFile( const string & sFile, const string & sExtension, string & sRetFileName );
+
+    bool findSourceFiles( const string & sFile, const string & sExtension, vector<string> & vRetFiles );
 
     void buildInterDependenciesHelper( const StaticList & vConfigOptions, const StaticList & vAddDeps, StaticList & vLibs );
 

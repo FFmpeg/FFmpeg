@@ -36,7 +36,7 @@ bool projectGenerator::passAllMake( )
         //Check if library is enabled
         if( m_ConfigHelper.getConfigOption( *vitLib )->m_sValue.compare("1") == 0 )
         {
-            m_sProjectDir = "../../../lib" + *vitLib + "/";
+            m_sProjectDir = "..\\..\\..\\lib" + *vitLib + "\\";
             //Locate the project dir for specified library
             string sRetFileName;
             if( !findFile( m_sProjectDir + "MakeFile", sRetFileName ) )
@@ -50,7 +50,7 @@ bool projectGenerator::passAllMake( )
                 return false;
             }
             //Check for any sub directories
-            m_sProjectDir += "x86/";
+            m_sProjectDir += "x86\\";
             if( findFile( m_sProjectDir + "MakeFile", sRetFileName ) )
             {
                 //Pass the sub directory
@@ -86,7 +86,7 @@ bool projectGenerator::passAllMake( )
 bool projectGenerator::outputProject( )
 {
     //Output the generated files
-    uint uiSPos = m_sProjectDir.rfind( '/', m_sProjectDir.length( ) - 2 ) + 1;
+    uint uiSPos = m_sProjectDir.rfind( '\\', m_sProjectDir.length( ) - 2 ) + 1;
     string sProjectName = m_sProjectDir.substr( uiSPos, m_sProjectDir.length( ) - 1 - uiSPos );
     //Check that all headers are correct
     for( StaticList::iterator itIt=m_vHIncludes.begin( ); itIt!=m_vHIncludes.end( ); itIt++ )
@@ -98,7 +98,7 @@ bool projectGenerator::outputProject( )
             return false;
         }
         //Update the entry with the found file with complete path
-        *itIt = sRetFileName.substr( 6 ); //Remove the preceding ../../ so the file is up 2 directories
+        *itIt = sRetFileName.substr( 6 ); //Remove the preceding ..\..\ so the file is up 2 directories
     }
 
     //Check that all C Source are correct
@@ -111,7 +111,7 @@ bool projectGenerator::outputProject( )
             return false;
         }
         //Update the entry with the found file with complete path
-        *itIt = sRetFileName.substr( 6 ); //Remove the preceding ../../ so the file is up 2 directories
+        *itIt = sRetFileName.substr( 6 ); //Remove the preceding ..\..\ so the file is up 2 directories
     }
 
     //Check that all CPP Source are correct
@@ -124,7 +124,7 @@ bool projectGenerator::outputProject( )
             return false;
         }
         //Update the entry with the found file with complete path
-        *itIt = sRetFileName.substr( 6 ); //Remove the preceding ../../ so the file is up 2 directories
+        *itIt = sRetFileName.substr( 6 ); //Remove the preceding ..\..\ so the file is up 2 directories
     }
 
     //Check that all ASM Source are correct
@@ -137,7 +137,7 @@ bool projectGenerator::outputProject( )
             return false;
         }
         //Update the entry with the found file with complete path
-        *itIt = sRetFileName.substr( 6 ); //Remove the preceding ../../ so the file is up 2 directories
+        *itIt = sRetFileName.substr( 6 ); //Remove the preceding ..\..\ so the file is up 2 directories
     }
 
     //Check the output Unknown Includes and find there corresponding file
@@ -152,7 +152,7 @@ bool projectGenerator::outputProject( )
                 //skip this item
                 continue;
             }
-            m_vCIncludes.push_back( sRetFileName.substr( 6 ) ); //Remove the preceding ../../ so the file is up 2 directories
+            m_vCIncludes.push_back( sRetFileName.substr( 6 ) ); //Remove the preceding ..\..\ so the file is up 2 directories
         }
         else if( findSourceFile( *itIt, ".cpp", sRetFileName ) )
         {
@@ -162,7 +162,7 @@ bool projectGenerator::outputProject( )
                 //skip this item
                 continue;
             }
-            m_vCPPIncludes.push_back( sRetFileName.substr( 6 ) ); //Remove the preceding ../../ so the file is up 2 directories
+            m_vCPPIncludes.push_back( sRetFileName.substr( 6 ) ); //Remove the preceding ..\..\ so the file is up 2 directories
         }
         else if( findSourceFile( *itIt, ".asm", sRetFileName ) )
         {
@@ -172,7 +172,7 @@ bool projectGenerator::outputProject( )
                 //skip this item
                 continue;
             }
-            m_vYASMIncludes.push_back( sRetFileName.substr( 6 ) ); //Remove the preceding ../../ so the file is up 2 directories
+            m_vYASMIncludes.push_back( sRetFileName.substr( 6 ) ); //Remove the preceding ..\..\ so the file is up 2 directories
         }
         else
         {
@@ -308,6 +308,59 @@ bool projectGenerator::outputProject( )
     string sSource = "Source Files";
     string sFilterEnd = "</Filter>";
     set<string> vSubFilters;
+    StaticList vFoundObjects;
+
+    //Output ASM files in specific item group (must go first as asm does not allow for custom obj filename)
+    if( m_vYASMIncludes.size( ) > 0 )
+    {
+        if( m_ConfigHelper.getConfigOptionPrefixed( "HAVE_YASM" )->m_sValue.compare( "1" ) == 0 )
+        {
+            string sYASMInclude = "\n    <YASM Include=\"";
+            string sYASMIncludeEnd = "\" />";
+            string sYASMIncludeEndFilt = "\">";
+            string sYASMIncludeClose = "\n    </YASM>";
+            string sYASMFiles = sItemGroup;
+            string sYASMFilesFilt = sItemGroup;
+            for( StaticList::iterator vitInclude = m_vYASMIncludes.begin( ); vitInclude < m_vYASMIncludes.end( ); vitInclude++ )
+            {
+                //Output YASM objects
+                sYASMFiles += sYASMInclude;
+                sYASMFilesFilt += sYASMInclude;
+                //Add the fileName
+                replace( vitInclude->begin( ), vitInclude->end( ), '/', '\\' );
+                uint uiPos = vitInclude->rfind( '\\' ) + 1;
+                string sObjectName = vitInclude->substr( uiPos );
+                uint uiPos2 = sObjectName.rfind( '.' );
+                sObjectName.resize( uiPos2 );
+                vFoundObjects.push_back( sObjectName );
+                sYASMFiles += *vitInclude;
+                sYASMFilesFilt += *vitInclude;
+                //Close the current item
+                sYASMFiles += sYASMIncludeEnd;
+                sYASMFilesFilt += sYASMIncludeEndFilt;
+                //Add the filters Filter
+                sYASMFilesFilt += sFilterSource;
+                uiPos = vitInclude->rfind( "..\\" );
+                uiPos = ( uiPos == string::npos ) ? 0 : uiPos + 3;
+                string sFolderName = vitInclude->substr( uiPos, vitInclude->rfind( '\\' ) - uiPos );
+                if( sFolderName.length( ) > 0 )
+                {
+                    sFolderName = "\\" + sFolderName;
+                    vSubFilters.insert( sSource + sFolderName );
+                    sYASMFilesFilt += sFolderName;
+                }
+                sYASMFilesFilt += sFilterEnd;
+                sYASMFilesFilt += sYASMIncludeClose;
+            }
+            sYASMFiles += sItemGroupEnd;
+            sYASMFilesFilt += sItemGroupEnd;
+            //Insert into output file
+            sProjectFile.insert( uiFindPos, sYASMFiles );
+            uiFindPos += sYASMFiles.length( );
+            sFiltersFile.insert( uiFindPosFilt, sYASMFilesFilt );
+            uiFindPosFilt += sYASMFilesFilt.length( );
+        }
+    }
 
     //Output C files
     if( m_vCIncludes.size() > 0 )
@@ -320,26 +373,37 @@ bool projectGenerator::outputProject( )
             sCFiles += sCLCompile;
             sCFilesFilt += sCLCompile;
             //Add the fileName
-            string sFileName = *vitInclude;
-            replace( sFileName.begin(), sFileName.end(), '/', '\\' );
-            sCFiles += sFileName;
-            sCFilesFilt += sFileName;
+            replace( vitInclude->begin( ), vitInclude->end( ), '/', '\\' );
+            sCFiles += *vitInclude;
+            sCFilesFilt += *vitInclude;
             sCFiles += sCLCompileClose;
             sCFilesFilt += sCLCompileClose;
             //Several input source files have the same name so we need to explicitly specify an output object file otherwise they will clash
-            uint uiPos = sFileName.rfind( "..\\" );
-            uiPos = (uiPos == string::npos)? 0 : uiPos+3;
-            string sObjectName = sFileName.substr( uiPos );
-            replace( sObjectName.begin(), sObjectName.end(), '\\', '_' );
-            //Replace the extension with obj
+            uint uiPos = vitInclude->rfind( '\\' ) + 1;
+            string sObjectName = vitInclude->substr( uiPos );
             uint uiPos2 = sObjectName.rfind( '.' );
             sObjectName.resize( uiPos2 );
-            sCFiles += sCLCompileObject;
-            sCFiles += sObjectName;
-            sCFiles += sCLCompileObjectClose;
+            string sPath = vitInclude->substr( 0, uiPos );
+            uiPos = vitInclude->rfind( "..\\" );
+            uiPos = ( uiPos == string::npos ) ? 0 : uiPos + 3;
+            if( find( vFoundObjects.begin( ), vFoundObjects.end( ), sObjectName ) != vFoundObjects.end() )
+            {
+                sObjectName = vitInclude->substr( uiPos );
+                replace( sObjectName.begin( ), sObjectName.end( ), '\\', '_' );
+                //Replace the extension with obj
+                uiPos2 = sObjectName.rfind( '.' );
+                sObjectName.resize( uiPos2 );
+                sCFiles += sCLCompileObject;
+                sCFiles += sObjectName;
+                sCFiles += sCLCompileObjectClose;
+            }
+            else
+            {
+                vFoundObjects.push_back( sObjectName );
+            }
             //Add the filters Filter
             sCFilesFilt += sFilterSource;
-            string sFolderName = sFileName.substr( uiPos, sFileName.rfind( '\\' )-uiPos );
+            string sFolderName = vitInclude->substr( uiPos, vitInclude->rfind( '\\' ) - uiPos );
             if( sFolderName.length() > 0 )
             {
                 sFolderName = "\\" + sFolderName;
@@ -371,26 +435,38 @@ bool projectGenerator::outputProject( )
             sCPPFiles += sCLCompile;
             sCPPFilesFilt += sCLCompile;
             //Add the fileName
-            string sFileName = *vitInclude;
-            replace( sFileName.begin(), sFileName.end(), '/', '\\' );
-            sCPPFiles += sFileName;
-            sCPPFilesFilt += sFileName;
+            replace( vitInclude->begin( ), vitInclude->end( ), '/', '\\' );
+            sCPPFiles += *vitInclude;
+            sCPPFilesFilt += *vitInclude;
             sCPPFiles += sCLCompileClose;
             sCPPFilesFilt += sCLCompileClose;
             //Several input source files have the same name so we need to explicitly specify an output object file otherwise they will clash
-            uint uiPos = sFileName.rfind( "..\\" );
-            uiPos = (uiPos == string::npos)? 0 : uiPos+3;
-            string sObjectName = sFileName.substr( uiPos );
-            replace( sObjectName.begin(), sObjectName.end(), '\\', '_');
-            //Replace the extension with obj
+            uint uiPos = vitInclude->rfind( '\\' ) + 1;
+            string sObjectName = vitInclude->substr( uiPos );
             uint uiPos2 = sObjectName.rfind( '.' );
-            sObjectName.resize( uiPos );
-            sCPPFiles += sCLCompileObject;
-            sCPPFiles += sObjectName;
-            sCPPFiles += sCLCompileObjectClose;
+            sObjectName.resize( uiPos2 );
+            uiPos = vitInclude->rfind( '\\' );
+            string sPath = vitInclude->substr( 0, uiPos + 1 );
+            uiPos = vitInclude->rfind( "..\\" );
+            uiPos = ( uiPos == string::npos ) ? 0 : uiPos + 3;
+            if( find( vFoundObjects.begin( ), vFoundObjects.end( ), sObjectName ) != vFoundObjects.end( ) )
+            {
+                sObjectName = vitInclude->substr( uiPos );
+                replace( sObjectName.begin( ), sObjectName.end( ), '\\', '_' );
+                //Replace the extension with obj
+                uiPos2 = sObjectName.rfind( '.' );
+                sObjectName.resize( uiPos2 );
+                sCPPFiles += sCLCompileObject;
+                sCPPFiles += sObjectName;
+                sCPPFiles += sCLCompileObjectClose;
+            }
+            else
+            {
+                vFoundObjects.push_back( sObjectName );
+            }
             //Add the filters Filter
             sCPPFilesFilt += sFilterSource;
-            string sFolderName = sFileName.substr( uiPos, sFileName.rfind( '\\' )-uiPos );
+            string sFolderName = vitInclude->substr( uiPos, vitInclude->rfind( '\\' ) - uiPos );
             if( sFolderName.length() > 0 )
             {
                 sFolderName = "\\" + sFolderName;
@@ -428,18 +504,17 @@ bool projectGenerator::outputProject( )
             sHFiles += sCLInclude;
             sHFilesFilt += sCLInclude;
             //Add the fileName
-            string sFileName = *vitInclude;
-            replace( sFileName.begin(), sFileName.end(), '/', '\\' );
-            sHFiles += sFileName;
-            sHFilesFilt += sFileName;
+            replace( vitInclude->begin( ), vitInclude->end( ), '/', '\\' );
+            sHFiles += *vitInclude;
+            sHFilesFilt += *vitInclude;
             //Close the current item
             sHFiles += sCLIncludeEnd;
             sHFilesFilt += sCLIncludeEndFilt;
             //Add the filters Filter
             sHFilesFilt += sFilterHeader;
-            uint uiPos = sFileName.rfind( "..\\" );
+            uint uiPos = vitInclude->rfind( "..\\" );
             uiPos = (uiPos == string::npos)? 0 : uiPos+3;
-            string sFolderName = sFileName.substr( uiPos, sFileName.rfind( '\\' )-uiPos );
+            string sFolderName = vitInclude->substr( uiPos, vitInclude->rfind( '\\' ) - uiPos );
             if( sFolderName.length() > 0 )
             {
                 sFolderName = "\\" + sFolderName;
@@ -456,54 +531,6 @@ bool projectGenerator::outputProject( )
         uiFindPos += sHFiles.length( );
         sFiltersFile.insert( uiFindPosFilt, sHFilesFilt );
         uiFindPosFilt += sHFilesFilt.length( );
-    }
-
-    //Output ASM files in specific item group
-    if( m_vYASMIncludes.size() > 0 )
-    {
-        if( m_ConfigHelper.getConfigOptionPrefixed("HAVE_YASM")->m_sValue.compare("1") == 0 )
-        {
-            string sYASMInclude = "\n    <YASM Include=\"";
-            string sYASMIncludeEnd = "\" />";
-            string sYASMIncludeEndFilt = "\">";
-            string sYASMIncludeClose = "\n    </YASM>";
-            string sYASMFiles = sItemGroup;
-            string sYASMFilesFilt = sItemGroup;
-            for( StaticList::iterator vitInclude=m_vYASMIncludes.begin(); vitInclude<m_vYASMIncludes.end(); vitInclude++ )
-            {
-                //Output YASM objects
-                sYASMFiles += sYASMInclude;
-                sYASMFilesFilt += sYASMInclude;
-                //Add the fileName
-                string sFileName = *vitInclude;
-                replace( sFileName.begin(), sFileName.end(), '/', '\\' );
-                sYASMFiles += sFileName;
-                sYASMFilesFilt += sFileName;
-                //Close the current item
-                sYASMFiles += sYASMIncludeEnd;
-                sYASMFilesFilt += sYASMIncludeEndFilt;
-                //Add the filters Filter
-                sYASMFilesFilt += sFilterSource;
-                uint uiPos = sFileName.rfind( "..\\" );
-                uiPos = (uiPos == string::npos)? 0 : uiPos+3;
-                string sFolderName = sFileName.substr( uiPos, sFileName.rfind( '\\' )-uiPos );
-                if( sFolderName.length() > 0 )
-                {
-                    sFolderName = "\\" + sFolderName;
-                    vSubFilters.insert( sSource + sFolderName );
-                    sYASMFilesFilt += sFolderName;
-                }
-                sYASMFilesFilt += sFilterEnd;
-                sYASMFilesFilt += sYASMIncludeClose;
-            }
-            sYASMFiles += sItemGroupEnd;
-            sYASMFilesFilt += sItemGroupEnd;
-            //Insert into output file
-            sProjectFile.insert( uiFindPos, sYASMFiles );
-            uiFindPos += sYASMFiles.length( );
-            sFiltersFile.insert( uiFindPosFilt, sYASMFilesFilt );
-            uiFindPosFilt += sYASMFilesFilt.length( );
-        }
     }
 
     //After </Lib> and </Link> and the post and then pre build events
@@ -827,7 +854,7 @@ cd $(ProjectDir)\n\
     //Open the exports files and get export names
     cout << "  Generating project exports file (" << sProjectName << ")..." << endl;
     string sExportList;
-    if( !findFile( this->m_sProjectDir + "/*.v", sExportList ) )
+    if( !findFile( this->m_sProjectDir + "\\*.v", sExportList ) )
     {
         cout << "  Error: Failed finding project exports (" << sProjectName << ")" << endl;
         return false;
@@ -923,9 +950,9 @@ cd $(ProjectDir)\n\
     for( StaticList::iterator itI = m_vCIncludes.begin( ); itI < m_vCIncludes.end( ); itI++ )
     {
         //Several input source files have the same name so we need to explicitly specify an output object file otherwise they will clash
-        uint uiPos = itI->rfind( "../" );
+        uint uiPos = itI->rfind( "..\\" );
         uiPos = ( uiPos == string::npos ) ? 0 : uiPos + 3;
-        uint uiPos2 = itI->rfind( "/" );
+        uint uiPos2 = itI->rfind( '\\' );
         uiPos2 = ( uiPos2 == string::npos ) ? string::npos : uiPos2 - uiPos;
         string sFolderName = itI->substr( uiPos, uiPos2 );
         mDirectoryObjects[sFolderName].push_back( *itI );
@@ -933,9 +960,9 @@ cd $(ProjectDir)\n\
     for( StaticList::iterator itI = m_vCPPIncludes.begin( ); itI < m_vCPPIncludes.end( ); itI++ )
     {
         //Several input source files have the same name so we need to explicitly specify an output object file otherwise they will clash
-        uint uiPos = itI->rfind( "../" );
+        uint uiPos = itI->rfind( "..\\" );
         uiPos = ( uiPos == string::npos ) ? 0 : uiPos + 3;
-        uint uiPos2 = itI->rfind( "/" );
+        uint uiPos2 = itI->rfind( '\\' );
         uiPos2 = ( uiPos2 == string::npos ) ? string::npos : uiPos2 - uiPos;
         string sFolderName = itI->substr( uiPos, uiPos2 );
         mDirectoryObjects[sFolderName].push_back( *itI );
@@ -964,7 +991,6 @@ exit /b 1 \n\
     {
         //Need to make output directory so cl doesnt fail outputting objs
         string sDirName = itI->first;
-        replace( sDirName.begin( ), sDirName.end( ), '/', '\\' );
         sCLLaunchBat += "mkdir " + sProjectNameShort + "\\" + sDirName + " > nul 2>&1\n";
         const uint uiRowSize = 32;
         uint uiNumCLCalls = (uint)ceilf( (float)itI->second.size( ) / (float)uiRowSize );
@@ -1009,7 +1035,7 @@ exit /b 1 \n\
     StaticList vSBRFiles;
     StaticList vModuleExports;
     StaticList vModuleDataExports;
-    findFiles( sProjectNameShort + "/*.sbr", vSBRFiles );
+    findFiles( sProjectNameShort + "\\*.sbr", vSBRFiles );
     for( StaticList::iterator itSBR = vSBRFiles.begin( ); itSBR < vSBRFiles.end( ); itSBR++ )
     {
         m_ifInputFile.open( *itSBR, ios_base::in | ios_base::binary );
@@ -2353,11 +2379,16 @@ bool projectGenerator::findFile( const string & sFileName, string & sRetFileName
     return false;
 }
 
-bool projectGenerator::findFiles( const string & sFileSearch, vector<string> & VRetFiles )
+bool projectGenerator::findFiles( const string & sFileSearch, vector<string> & vRetFiles )
 {
     WIN32_FIND_DATA SearchFile;
-    uint uiStartSize = VRetFiles.size( );
-    uint uiPos = sFileSearch.rfind( "/" );
+    uint uiStartSize = vRetFiles.size( );
+    uint uiPos = sFileSearch.rfind( '\\' );
+    if( sFileSearch.rfind( '/' ) != string::npos )
+    {
+        cout << "Fuck" << endl;
+        return false;
+    }
     string sPath;
     string sSearchTerm = sFileSearch;
     if( uiPos != string::npos )
@@ -2370,10 +2401,10 @@ bool projectGenerator::findFiles( const string & sFileSearch, vector<string> & V
     if( SearchHandle != INVALID_HANDLE_VALUE )
     {
         //Update the return filename list
-        VRetFiles.push_back( sPath + SearchFile.cFileName );
+        vRetFiles.push_back( sPath + SearchFile.cFileName );
         while( FindNextFile( SearchHandle, &SearchFile ) != 0 )
         {
-            VRetFiles.push_back( sPath + SearchFile.cFileName );
+            vRetFiles.push_back( sPath + SearchFile.cFileName );
         }
         FindClose( SearchHandle );
     }
@@ -2390,26 +2421,28 @@ bool projectGenerator::findFiles( const string & sFileSearch, vector<string> & V
                 // this is a directory
                 if( strcmp( SearchFile.cFileName, "." ) != 0 && strcmp( SearchFile.cFileName, ".." ) != 0 )
                 {
-                    string sNewPath = sPath + SearchFile.cFileName + "/" + sSearchTerm;
-                    findFiles( sNewPath, VRetFiles );
+                    string sNewPath = sPath + SearchFile.cFileName + '\\' + sSearchTerm;
+                    findFiles( sNewPath, vRetFiles );
                 }
             }
             bCont = FindNextFile( SearchHandle, &SearchFile );
         }
         FindClose( SearchHandle );
     }
-    return ( VRetFiles.size( ) - uiStartSize ) > 0;
+    return ( vRetFiles.size( ) - uiStartSize ) > 0;
 }
 
 bool projectGenerator::findSourceFile( const string & sFile, const string & sExtension, string & sRetFileName )
 {
     string sFileName;
     sRetFileName = m_sProjectDir + sFile + sExtension;
-    if( !findFile( sRetFileName, sFileName ) )
-    {
-        return false;
-    }
-    return true;
+    return findFile( sRetFileName, sFileName );
+}
+
+bool projectGenerator::findSourceFiles( const string & sFile, const string & sExtension, vector<string> & vRetFiles )
+{
+    string sFileName = m_sProjectDir + sFile + sExtension;
+    return findFiles( sFileName, vRetFiles );
 }
 
 bool projectGenerator::copyFile( const string & sSourceFile, const string & sDestinationFile )
