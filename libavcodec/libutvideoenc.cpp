@@ -100,6 +100,7 @@ static av_cold int utvideo_encode_init(AVCodecContext *avctx)
 
     if (utv->buffer == NULL) {
         av_log(avctx, AV_LOG_ERROR, "Could not allocate output buffer.\n");
+        av_free(info);
         return AVERROR(ENOMEM);
     }
 
