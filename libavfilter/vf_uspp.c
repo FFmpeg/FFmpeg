@@ -54,15 +54,14 @@ typedef struct {
     uint8_t *non_b_qp_table;
     int non_b_qp_alloc_size;
     int use_bframe_qp;
-
 } USPPContext;
 
 #define OFFSET(x) offsetof(USPPContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
 static const AVOption uspp_options[] = {
-    { "quality" , "set quality" , OFFSET(log2_count) , AV_OPT_TYPE_INT , {.i64 = 3} , 0 , MAX_LEVEL , FLAGS },
-    { "qp" , "force a constant quantizer parameter" , OFFSET(qp) , AV_OPT_TYPE_INT , {.i64 = 0} , 0 , 63 , FLAGS },
-    { "use_bframe_qp" , "use B-frames' QP" , OFFSET(use_bframe_qp) , AV_OPT_TYPE_INT , {.i64 = 0} , 0 , 1 , FLAGS },
+    { "quality",       "set quality",                          OFFSET(log2_count),    AV_OPT_TYPE_INT, {.i64 = 3}, 0, MAX_LEVEL, FLAGS },
+    { "qp",            "force a constant quantizer parameter", OFFSET(qp),            AV_OPT_TYPE_INT, {.i64 = 0}, 0, 63,        FLAGS },
+    { "use_bframe_qp", "use B-frames' QP",                     OFFSET(use_bframe_qp), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1,         FLAGS },
     { NULL }
 };
 
@@ -74,7 +73,6 @@ static const AVClass uspp_class = {
     .category         = AV_CLASS_CATEGORY_FILTER,
 };
 
-//===========================================================================//
 DECLARE_ALIGNED(8, static const uint8_t, dither)[8][8] = {
     {  0*4,  48*4,  12*4,  60*4,   3*4,  51*4,  15*4,  63*4, },
     { 32*4,  16*4,  44*4,  28*4,  35*4,  19*4,  47*4,  31*4, },
@@ -86,7 +84,7 @@ DECLARE_ALIGNED(8, static const uint8_t, dither)[8][8] = {
     { 42*4,  26*4,  38*4,  22*4,  41*4,  25*4,  37*4,  21*4, },
 };
 
-static const uint8_t offset[511][2]= {
+static const uint8_t offset[511][2] = {
     { 0, 0},
     { 0, 0}, { 8, 8},                                                              // quality 1
     { 0, 0}, { 4, 4}, {12, 8}, { 8,12},                                            // quality 2
@@ -161,20 +159,20 @@ static const uint8_t offset[511][2]= {
 };
 
 static void store_slice_c(uint8_t *dst, int16_t *src,
-                         int dst_stride, int src_stride,
-                         int width, int height, int log2_scale )
+                          int dst_stride, int src_stride,
+                          int width, int height, int log2_scale)
 {
     int y, x;
 
-#define STORE(pos) do {                                                  \
-    temp = ((src[x + y * src_stride + pos] << log2_scale) + d[pos]) >> 8;  \
-    if (temp & 0x100) temp = ~(temp >> 31);                              \
-    dst[x + y * dst_stride + pos] = temp;                                  \
-} while (0);
+#define STORE(pos) do {                                                     \
+    temp = ((src[x + y * src_stride + pos] << log2_scale) + d[pos]) >> 8;   \
+    if (temp & 0x100) temp = ~(temp >> 31);                                 \
+    dst[x + y * dst_stride + pos] = temp;                                   \
+} while (0)
 
-    for (y = 0 ; y < height ; y++) {
-    const uint8_t *d = dither[y&7];
-        for (x = 0 ; x < width ; x += 8) {
+    for (y = 0; y < height; y++) {
+        const uint8_t *d = dither[y&7];
+        for (x = 0; x < width; x += 8) {
             int temp;
             STORE(0);
             STORE(1);
@@ -200,12 +198,13 @@ static inline int norm_qscale(int qscale, int type)
 }
 
 static void filter(USPPContext *p, uint8_t *dst[3], uint8_t *src[3],
-                 int dst_stride[3], int src_stride[3], int width,
-                 int height, uint8_t *qp_store, int qp_stride)
+                   int dst_stride[3], int src_stride[3], int width,
+                   int height, uint8_t *qp_store, int qp_stride)
 {
     int x, y, i, j;
     const int count = 1<<p->log2_count;
-    for (i = 0 ; i < 3 ; i++) {
+
+    for (i = 0; i < 3; i++) {
         int is_chroma = !!i;
         int w = width  >> is_chroma;
         int h = height >> is_chroma;
@@ -214,32 +213,33 @@ static void filter(USPPContext *p, uint8_t *dst[3], uint8_t *src[3],
 
         if (!src[i] || !dst[i])
             continue;
-        for (y = 0 ; y < h ; y++) {
+        for (y = 0; y < h; y++) {
             int index = block + block * stride + y * stride;
-            memcpy( p->src[i] + index , src[i] + y * src_stride[i] , w );
-            for (x = 0 ; x < block ; x++) {
-                p->src[i][index     - x - 1]= p->src[i][index +     x    ];
-                p->src[i][index + w + x    ]= p->src[i][index + w - x - 1];
+
+            memcpy(p->src[i] + index, src[i] + y * src_stride[i], w );
+            for (x = 0; x < block; x++) {
+                p->src[i][index     - x - 1] = p->src[i][index +     x    ];
+                p->src[i][index + w + x    ] = p->src[i][index + w - x - 1];
             }
         }
-        for (y = 0 ; y < block ; y++){
-            memcpy(p->src[i] + (  block-1-y) * stride , p->src[i] + (  y+block  ) * stride , stride);
-            memcpy(p->src[i] + (h+block  +y) * stride , p->src[i] + (h-y+block-1) * stride , stride);
+        for (y = 0; y < block; y++) {
+            memcpy(p->src[i] + (  block-1-y) * stride, p->src[i] + (  y+block  ) * stride, stride);
+            memcpy(p->src[i] + (h+block  +y) * stride, p->src[i] + (h-y+block-1) * stride, stride);
         }
 
         p->frame->linesize[i] = stride;
-        memset(p->temp[i] , 0 , (h + 2 * block) * stride * sizeof(int16_t));
+        memset(p->temp[i], 0, (h + 2 * block) * stride * sizeof(int16_t));
     }
 
     if (p->qp)
         p->frame->quality = p->qp * FF_QP2LAMBDA;
     else
-        p->frame->quality = norm_qscale(qp_store[0] , p->qscale_type) * FF_QP2LAMBDA;
+        p->frame->quality = norm_qscale(qp_store[0], p->qscale_type) * FF_QP2LAMBDA;
 //    init per MB qscale stuff FIXME
     p->frame->height = height;
     p->frame->width  = width;
 
-    for (i = 0 ; i < count ; i++) {
+    for (i = 0; i < count; i++) {
         const int x1 = offset[i+count-1][0];
         const int y1 = offset[i+count-1][1];
         int offset;
@@ -255,31 +255,31 @@ static void filter(USPPContext *p, uint8_t *dst[3], uint8_t *src[3],
         p->frame->data[2] = p->src[2] + x1/2 + y1/2 * p->frame->linesize[2];
         p->frame->format  = p->avctx_enc[i]->pix_fmt;
 
-        avcodec_encode_video2(p->avctx_enc[i] , &pkt , p->frame , &got_pkt_ptr);
+        avcodec_encode_video2(p->avctx_enc[i], &pkt, p->frame, &got_pkt_ptr);
         p->frame_dec = p->avctx_enc[i]->coded_frame;
 
         offset = (BLOCK-x1) + (BLOCK-y1) * p->frame_dec->linesize[0];
 
-        for (y = 0 ; y < height ; y++)
-            for (x = 0 ; x < width ; x++)
-                p->temp[0][ x + y * p->temp_stride[0] ] += p->frame_dec->data[0][ x + y * p->frame_dec->linesize[0] + offset ];
+        for (y = 0; y < height; y++)
+            for (x = 0; x < width; x++)
+                p->temp[0][x + y * p->temp_stride[0]] += p->frame_dec->data[0][x + y * p->frame_dec->linesize[0] + offset];
 
         offset = (BLOCK/2-x1/2) + (BLOCK/2-y1/2) * p->frame_dec->linesize[1];
 
-        for (y = 0 ; y < height/2 ; y++) {
-            for (x = 0; x < width/2 ; x++) {
-                p->temp[1][ x + y * p->temp_stride[1] ] += p->frame_dec->data[1][ x + y * p->frame_dec->linesize[1] + offset ];
-                p->temp[2][ x + y * p->temp_stride[2] ] += p->frame_dec->data[2][ x + y * p->frame_dec->linesize[2] + offset ];
+        for (y = 0; y < height/2; y++) {
+            for (x = 0; x < width/2; x++) {
+                p->temp[1][x + y * p->temp_stride[1]] += p->frame_dec->data[1][x + y * p->frame_dec->linesize[1] + offset];
+                p->temp[2][x + y * p->temp_stride[2]] += p->frame_dec->data[2][x + y * p->frame_dec->linesize[2] + offset];
             }
         }
     }
 
-    for (j = 0 ; j < 3 ; j++) {
+    for (j = 0; j < 3; j++) {
         int is_chroma = !!j;
         if (!dst[j])
             continue;
-        store_slice_c(dst[j] , p->temp[j] , dst_stride[j] , p->temp_stride[j] ,
-             width >> is_chroma , height >> is_chroma , 8-p->log2_count);
+        store_slice_c(dst[j], p->temp[j], dst_stride[j], p->temp_stride[j],
+                      width >> is_chroma, height >> is_chroma, 8-p->log2_count);
     }
 }
 
@@ -307,8 +307,7 @@ static int config_input(AVFilterLink *inlink)
     int i;
 
     AVCodec *enc = avcodec_find_encoder(AV_CODEC_ID_SNOW);
-    if(!enc)
-    {
+    if (!enc) {
         av_log(ctx, AV_LOG_ERROR, "SNOW encoder not found.\n");
         return AVERROR(EINVAL);
     }
@@ -322,7 +321,7 @@ static int config_input(AVFilterLink *inlink)
             return AVERROR(ENOMEM);
     }
 
-    for (i = 0 ; i < 3; i++) {
+    for (i = 0; i < 3; i++) {
         int is_chroma = !!i;
         int w = ((width  + 4 * BLOCK-1) & (~(2 * BLOCK-1))) >> is_chroma;
         int h = ((height + 4 * BLOCK-1) & (~(2 * BLOCK-1))) >> is_chroma;
@@ -334,7 +333,7 @@ static int config_input(AVFilterLink *inlink)
             return AVERROR(ENOMEM);
     }
 
-    for (i = 0 ; i < (1<<uspp->log2_count) ; i++) {
+    for (i = 0; i < (1<<uspp->log2_count); i++) {
         AVCodecContext *avctx_enc;
         AVDictionary *opts = NULL;
         int ret;
@@ -362,9 +361,9 @@ static int config_input(AVFilterLink *inlink)
 
     uspp->outbuf_size = (width + BLOCK) * (height + BLOCK) * 10;
     if (!(uspp->frame = av_frame_alloc()))
-            return AVERROR(ENOMEM);
+        return AVERROR(ENOMEM);
     if (!(uspp->outbuf = av_malloc(uspp->outbuf_size)))
-            return AVERROR(ENOMEM);
+        return AVERROR(ENOMEM);
 
     return 0;
 }
@@ -399,7 +398,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                 h = FF_CEIL_RSHIFT(inlink->h, 4);
             }
             av_assert0(w * h <= uspp->non_b_qp_alloc_size);
-            memcpy(uspp->non_b_qp_table , qp_table , w * h);
+            memcpy(uspp->non_b_qp_table, qp_table, w * h);
         }
     }
 
@@ -425,7 +424,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                 out->height = in->height;
             }
 
-            filter(uspp , out->data , in->data , out->linesize , in->linesize , inlink->w , inlink->h , qp_table , qp_stride);
+            filter(uspp, out->data, in->data, out->linesize, in->linesize,
+                   inlink->w, inlink->h, qp_table, qp_stride);
         }
     }
 
@@ -444,12 +444,12 @@ static av_cold void uninit(AVFilterContext *ctx)
     USPPContext *uspp = ctx->priv;
     int i;
 
-    for (i = 0 ; i < 3 ; i++) {
+    for (i = 0; i < 3; i++) {
         av_freep(&uspp->temp[i]);
         av_freep(&uspp->src[i]);
     }
 
-    for (i = 0 ; i < (1 << uspp->log2_count) ; i++) {
+    for (i = 0; i < (1 << uspp->log2_count); i++) {
         avcodec_close(uspp->avctx_enc[i]);
         av_freep(&uspp->avctx_enc[i]);
     }
