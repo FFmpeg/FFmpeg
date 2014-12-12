@@ -65,13 +65,7 @@ static const AVOption uspp_options[] = {
     { NULL }
 };
 
-static const AVClass uspp_class = {
-    .class_name       = "uspp",
-    .item_name        = av_default_item_name,
-    .option           = uspp_options,
-    .version          = LIBAVUTIL_VERSION_INT,
-    .category         = AV_CLASS_CATEGORY_FILTER,
-};
+AVFILTER_DEFINE_CLASS(uspp);
 
 DECLARE_ALIGNED(8, static const uint8_t, dither)[8][8] = {
     {  0*4,  48*4,  12*4,  60*4,   3*4,  51*4,  15*4,  63*4, },
