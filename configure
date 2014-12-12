@@ -5416,6 +5416,7 @@ enabled scale_filter    && prepend avfilter_deps "swscale"
 enabled showspectrum_filter && prepend avfilter_deps "avcodec"
 enabled smartblur_filter    && prepend avfilter_deps "swscale"
 enabled subtitles_filter    && prepend avfilter_deps "avformat avcodec"
+enabled uspp_filter         && prepend avfilter_deps "avcodec"
 
 enabled lavfi_indev         && prepend avdevice_deps "avfilter"
 
