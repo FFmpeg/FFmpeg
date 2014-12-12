@@ -306,15 +306,6 @@ static int config_input(AVFilterLink *inlink)
         return AVERROR(EINVAL);
     }
 
-    if (!uspp->use_bframe_qp) {
-        /* we are assuming here the qp blocks will not be smaller that 16x16 */
-        uspp->non_b_qp_alloc_size = FF_CEIL_RSHIFT(width, 4) * FF_CEIL_RSHIFT(height, 4);
-        uspp->non_b_qp_table = av_calloc(uspp->non_b_qp_alloc_size, sizeof(*uspp->non_b_qp_table));
-
-        if (!uspp->non_b_qp_table)
-            return AVERROR(ENOMEM);
-    }
-
     for (i = 0; i < 3; i++) {
         int is_chroma = !!i;
         int w = ((width  + 4 * BLOCK-1) & (~(2 * BLOCK-1))) >> is_chroma;
@@ -391,6 +382,16 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                 w = FF_CEIL_RSHIFT(qp_stride, 4);
                 h = FF_CEIL_RSHIFT(inlink->h, 4);
             }
+
+            if (w * h > uspp->non_b_qp_alloc_size) {
+                int ret = av_reallocp_array(&uspp->non_b_qp_table, w, h);
+                if (ret < 0) {
+                    uspp->non_b_qp_alloc_size = 0;
+                    return ret;
+                }
+                uspp->non_b_qp_alloc_size = w * h;
+            }
+
             av_assert0(w * h <= uspp->non_b_qp_alloc_size);
             memcpy(uspp->non_b_qp_table, qp_table, w * h);
         }
