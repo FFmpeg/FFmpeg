@@ -131,8 +131,6 @@ extern const vf_info_t ff_vf_info_fspp;
 extern const vf_info_t ff_vf_info_ilpack;
 extern const vf_info_t ff_vf_info_pp7;
 extern const vf_info_t ff_vf_info_softpulldown;
-extern const vf_info_t ff_vf_info_uspp;
-
 
 static const vf_info_t* const filters[]={
     &ff_vf_info_eq2,
@@ -141,8 +139,6 @@ static const vf_info_t* const filters[]={
     &ff_vf_info_ilpack,
     &ff_vf_info_pp7,
     &ff_vf_info_softpulldown,
-    &ff_vf_info_uspp,
-
     NULL
 };
 

@@ -6120,7 +6120,6 @@ The list of the currently supported filters follows:
 @item ilpack
 @item pp7
 @item softpulldown
-@item uspp
 @end table
 
 The parameter syntax and behavior for the listed filters are the same
