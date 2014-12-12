@@ -45,7 +45,7 @@ typedef struct {
     int qscale_type;
     int temp_stride[3];
     uint8_t *src[3];
-    int16_t *temp[3];
+    uint16_t *temp[3];
     int outbuf_size;
     uint8_t *outbuf;
     AVCodecContext *avctx_enc[BLOCK*BLOCK];
@@ -152,7 +152,7 @@ static const uint8_t offset[511][2] = {
     { 3, 4}, {11, 4}, { 3,12}, {11,12}, { 7, 0}, {15, 0}, { 7, 8}, {15, 8},
 };
 
-static void store_slice_c(uint8_t *dst, const int16_t *src,
+static void store_slice_c(uint8_t *dst, const uint16_t *src,
                           int dst_stride, int src_stride,
                           int width, int height, int log2_scale)
 {
