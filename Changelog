@@ -9,6 +9,7 @@ version <next>:
 - creating DASH compatible fragmented MP4, MPEG-DASH segmenting muxer
 - H.261 RTP payload format (RFC 4587) depacketizer and experimental packetizer
 - RTP/mpegts muxer
+- VP8 in Ogg demuxing
 
 
 version 11:
