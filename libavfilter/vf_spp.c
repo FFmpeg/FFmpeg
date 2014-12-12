@@ -321,7 +321,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                 w = FF_CEIL_RSHIFT(inlink->w, 4);
                 h = 1;
             } else {
-                w = FF_CEIL_RSHIFT(qp_stride, 4);
+                w = qp_stride;
                 h = FF_CEIL_RSHIFT(inlink->h, 4);
             }
 
