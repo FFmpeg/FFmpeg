@@ -360,6 +360,9 @@ void configGenerator::buildReservedValues( vector<string> & vReservedItems )
     vReservedItems.push_back( "shared" );
     vReservedItems.push_back( "static" );
     vReservedItems.push_back( "aligned_stack" );
+    vReservedItems.push_back( "fast_64bit" );
+    vReservedItems.push_back( "ebp_available" );
+    vReservedItems.push_back( "ebx_available" );
 }
 
 void configGenerator::buildAdditionalDependencies( DependencyList & mAdditionalDependencies )
