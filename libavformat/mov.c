@@ -4239,7 +4239,7 @@ static const AVOption mov_options[] = {
     { "export_all", "Export unrecognized metadata entries", OFFSET(export_all),
         AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, .flags = FLAGS },
     { "export_xmp", "Export full XMP metadata", OFFSET(export_xmp),
-        AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, .flags = FLAGS },
+        AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, .flags = FLAGS },
     { NULL },
 };
 

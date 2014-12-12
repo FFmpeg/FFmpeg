@@ -1636,7 +1636,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
 
     MvField *tab_mvf = s->ref->tab_mvf;
     RefPicList  *refPicList = s->ref->refPicList;
-    HEVCFrame *ref0, *ref1;
+    HEVCFrame *ref0 = NULL, *ref1 = NULL;
     uint8_t *dst0 = POS(0, x0, y0);
     uint8_t *dst1 = POS(1, x0, y0);
     uint8_t *dst2 = POS(2, x0, y0);

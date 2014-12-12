@@ -263,6 +263,7 @@ External library support:
   --enable-libzvbi         enable teletext support via libzvbi [no]
   --disable-lzma           disable lzma [autodetect]
   --enable-decklink        enable Blackmagick DeckLink I/O support [no]
+  --enable-nvenc           enable NVIDIA NVENC support [no]
   --enable-openal          enable OpenAL 1.1 capture support [no]
   --enable-opencl          enable OpenCL code
   --enable-opengl          enable OpenGL rendering [no]
@@ -1400,6 +1401,7 @@ EXTERNAL_LIBRARY_LIST="
     libzmq
     libzvbi
     lzma
+    nvenc
     openal
     opencl
     opengl
@@ -2399,6 +2401,7 @@ libxvid_encoder_deps="libxvid"
 libutvideo_decoder_deps="libutvideo"
 libutvideo_encoder_deps="libutvideo"
 libzvbi_teletext_decoder_deps="libzvbi"
+nvenc_encoder_deps="nvenc"
 
 # demuxers / muxers
 ac3_demuxer_select="ac3_parser"
@@ -2619,6 +2622,7 @@ vidstabtransform_filter_deps="libvidstab"
 pixfmts_super2xsai_test_deps="super2xsai_filter"
 tinterlace_merge_test_deps="tinterlace_filter"
 tinterlace_pad_test_deps="tinterlace_filter"
+uspp_filter_deps="gpl avcodec"
 zmq_filter_deps="libzmq"
 zoompan_filter_deps="swscale"
 
@@ -4357,6 +4361,7 @@ die_license_disabled gpl x11grab
 
 die_license_disabled nonfree libaacplus
 die_license_disabled nonfree libfaac
+die_license_disabled nonfree nvenc
 enabled gpl && die_license_disabled_gpl nonfree libfdk_aac
 enabled gpl && die_license_disabled_gpl nonfree openssl
 
@@ -4666,6 +4671,7 @@ fi
 frei0r_filter_extralibs='$ldl'
 frei0r_src_filter_extralibs='$ldl'
 ladspa_filter_extralibs='$ldl'
+nvenc_encoder_extralibs='$ldl'
 
 if ! disabled network; then
     check_func getaddrinfo $network_extralibs
@@ -4929,6 +4935,8 @@ enabled libxavs           && require libxavs xavs.h xavs_encoder_encode -lxavs
 enabled libxvid           && require libxvid xvid.h xvid_global -lxvidcore
 enabled libzmq            && require_pkg_config libzmq zmq.h zmq_ctx_new
 enabled libzvbi           && require libzvbi libzvbi.h vbi_decoder_new -lzvbi
+enabled nvenc             && { check_header nvEncodeAPI.h || die "ERROR: nvEncodeAPI.h not found."; } &&
+                             { [ $target_os != cygwin ] || die "ERROR: NVENC is not supported on Cygwin currently."; }
 enabled openal            && { { for al_libs in "${OPENAL_LIBS}" "-lopenal" "-lOpenAL32"; do
                                check_lib 'AL/al.h' alGetError "${al_libs}" && break; done } ||
                                die "ERROR: openal not found"; } &&
@@ -5408,6 +5416,7 @@ enabled scale_filter    && prepend avfilter_deps "swscale"
 enabled showspectrum_filter && prepend avfilter_deps "avcodec"
 enabled smartblur_filter    && prepend avfilter_deps "swscale"
 enabled subtitles_filter    && prepend avfilter_deps "avformat avcodec"
+enabled uspp_filter         && prepend avfilter_deps "avcodec"
 
 enabled lavfi_indev         && prepend avdevice_deps "avfilter"
 

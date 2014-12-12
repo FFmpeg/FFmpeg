@@ -659,7 +659,7 @@ static int avi_read_header(AVFormatContext *s)
             avio_rl32(pb); /* quality */
             if (ast->cum_len*ast->scale/ast->rate > 3600) {
                 av_log(s, AV_LOG_ERROR, "crazy start time, iam scared, giving up\n");
-                return AVERROR_INVALIDDATA;
+                ast->cum_len = 0;
             }
             ast->sample_size = avio_rl32(pb); /* sample ssize */
             ast->cum_len    *= FFMAX(1, ast->sample_size);

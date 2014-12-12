@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/eval.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/pixdesc.h"
@@ -202,6 +203,8 @@ static int config_input(AVFilterLink *inlink)
         x8 = t1 * t2 * (ref[0][1] * ref[1][0] - ref[0][0] * ref[1][1]) +
              t0 * t3 * (ref[2][0] * ref[3][1] - ref[2][1] * ref[3][0]);
         break;
+    default:
+        av_assert0(0);
     }
 
     for (y = 0; y < h; y++){

@@ -173,7 +173,7 @@ int ff_hevc_output_frame(HEVCContext *s, AVFrame *out, int flush)
             if ((frame->flags & HEVC_FRAME_FLAG_OUTPUT) &&
                 frame->sequence == s->seq_output) {
                 nb_output++;
-                if (frame->poc < min_poc) {
+                if (frame->poc < min_poc || nb_output == 1) {
                     min_poc = frame->poc;
                     min_idx = i;
                 }

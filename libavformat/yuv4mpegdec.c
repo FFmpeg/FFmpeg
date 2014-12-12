@@ -39,7 +39,7 @@ static int yuv4_read_header(AVFormatContext *s)
     enum AVPixelFormat pix_fmt = AV_PIX_FMT_NONE, alt_pix_fmt = AV_PIX_FMT_NONE;
     enum AVChromaLocation chroma_sample_location = AVCHROMA_LOC_UNSPECIFIED;
     AVStream *st;
-    enum AVFieldOrder field_order;
+    enum AVFieldOrder field_order = AV_FIELD_UNKNOWN;
 
     for (i = 0; i < MAX_YUV4_HEADER; i++) {
         header[i] = avio_r8(pb);

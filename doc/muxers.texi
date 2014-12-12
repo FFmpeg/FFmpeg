@@ -273,6 +273,10 @@ ffmpeg -i in.nut -hls_flags single_file out.m3u8
 @end example
 Will produce the playlist, @file{out.m3u8}, and a single segment file,
 @file{out.ts}.
+
+@item hls_flags delete_segments
+Segment files removed from the playlist are deleted after a period of time
+equal to the duration of the segment plus the duration of the playlist.
 @end table
 
 @anchor{ico}

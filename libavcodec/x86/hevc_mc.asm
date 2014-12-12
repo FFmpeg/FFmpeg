@@ -127,13 +127,8 @@ QPEL_TABLE 12, 4, w, sse4
 %endif
     sub              %2q, 1
     shl              %2q, 5                      ; multiply by 32
-%if %0 == 2
-    movdqa           m14, [rfilterq + %2q]        ; get 2 first values of filters
-    movdqa           m15, [rfilterq + %2q+16]     ; get 2 last values of filters
-%else
     movdqa           %3, [rfilterq + %2q]        ; get 2 first values of filters
     movdqa           %4, [rfilterq + %2q+16]     ; get 2 last values of filters
-%endif
 %endmacro
 
 %macro EPEL_HV_FILTER 1
@@ -591,7 +586,7 @@ cglobal hevc_put_hevc_bi_pel_pixels%1_%2, 6, 6, 6, dst, dststride, src, srcstrid
 
 
 %macro HEVC_PUT_HEVC_EPEL 2
-cglobal hevc_put_hevc_epel_h%1_%2, 5, 6, 6, dst, src, srcstride, height, mx, rfilter
+cglobal hevc_put_hevc_epel_h%1_%2, 5, 6, 11, dst, src, srcstride, height, mx, rfilter
 %assign %%stride ((%2 + 7)/8)
     EPEL_FILTER       %2, mx, m4, m5
 .loop
@@ -601,7 +596,7 @@ cglobal hevc_put_hevc_epel_h%1_%2, 5, 6, 6, dst, src, srcstride, height, mx, rfi
     LOOP_END         dst, src, srcstride
     RET
 
-cglobal hevc_put_hevc_uni_epel_h%1_%2, 6, 7, 7, dst, dststride, src, srcstride, height, mx, rfilter
+cglobal hevc_put_hevc_uni_epel_h%1_%2, 6, 7, 11, dst, dststride, src, srcstride, height, mx, rfilter
 %assign %%stride ((%2 + 7)/8)
     movdqa            m6, [pw_%2]
     EPEL_FILTER       %2, mx, m4, m5
@@ -616,7 +611,7 @@ cglobal hevc_put_hevc_uni_epel_h%1_%2, 6, 7, 7, dst, dststride, src, srcstride, 
     jnz               .loop                      ; height loop
     RET
 
-cglobal hevc_put_hevc_bi_epel_h%1_%2, 7, 8, 7, dst, dststride, src, srcstride, src2, height, mx, rfilter
+cglobal hevc_put_hevc_bi_epel_h%1_%2, 7, 8, 11, dst, dststride, src, srcstride, src2, height, mx, rfilter
     movdqa            m6, [pw_bi_%2]
     EPEL_FILTER       %2, mx, m4, m5
 .loop
@@ -639,7 +634,7 @@ cglobal hevc_put_hevc_bi_epel_h%1_%2, 7, 8, 7, dst, dststride, src, srcstride, s
 ;                      int16_t* mcbuffer)
 ; ******************************
 
-cglobal hevc_put_hevc_epel_v%1_%2, 6, 7, 6, dst, src, srcstride, height, r3src, my, rfilter
+cglobal hevc_put_hevc_epel_v%1_%2, 6, 7, 11, dst, src, srcstride, height, r3src, my, rfilter
     lea           r3srcq, [srcstrideq*3]
     sub             srcq, srcstrideq
     EPEL_FILTER       %2, my, m4, m5
@@ -650,7 +645,7 @@ cglobal hevc_put_hevc_epel_v%1_%2, 6, 7, 6, dst, src, srcstride, height, r3src, 
     LOOP_END          dst, src, srcstride
     RET
 
-cglobal hevc_put_hevc_uni_epel_v%1_%2, 7, 8, 7, dst, dststride, src, srcstride, height, r3src, my, rfilter
+cglobal hevc_put_hevc_uni_epel_v%1_%2, 7, 8, 11, dst, dststride, src, srcstride, height, r3src, my, rfilter
     lea           r3srcq, [srcstrideq*3]
     movdqa            m6, [pw_%2]
     sub             srcq, srcstrideq
@@ -667,7 +662,7 @@ cglobal hevc_put_hevc_uni_epel_v%1_%2, 7, 8, 7, dst, dststride, src, srcstride, 
     RET
 
 
-cglobal hevc_put_hevc_bi_epel_v%1_%2, 8, 9, 7, dst, dststride, src, srcstride, src2, height, r3src, my, rfilter
+cglobal hevc_put_hevc_bi_epel_v%1_%2, 8, 9, 11, dst, dststride, src, srcstride, src2, height, r3src, my, rfilter
     lea           r3srcq, [srcstrideq*3]
     movdqa            m6, [pw_bi_%2]
     sub             srcq, srcstrideq
@@ -694,7 +689,7 @@ cglobal hevc_put_hevc_bi_epel_v%1_%2, 8, 9, 7, dst, dststride, src, srcstride, s
 ; ******************************
 
 %macro HEVC_PUT_HEVC_EPEL_HV 2
-cglobal hevc_put_hevc_epel_hv%1_%2, 6, 8, 12 , dst, src, srcstride, height, mx, my, r3src, rfilter
+cglobal hevc_put_hevc_epel_hv%1_%2, 6, 8, 16 , dst, src, srcstride, height, mx, my, r3src, rfilter
 %assign %%stride ((%2 + 7)/8)
     sub             srcq, srcstrideq
     EPEL_HV_FILTER    %2
@@ -728,7 +723,7 @@ cglobal hevc_put_hevc_epel_hv%1_%2, 6, 8, 12 , dst, src, srcstride, height, mx, 
     LOOP_END         dst, src, srcstride
     RET
 
-cglobal hevc_put_hevc_uni_epel_hv%1_%2, 7, 9, 12 , dst, dststride, src, srcstride, height, mx, my, r3src, rfilter
+cglobal hevc_put_hevc_uni_epel_hv%1_%2, 7, 9, 16 , dst, dststride, src, srcstride, height, mx, my, r3src, rfilter
 %assign %%stride ((%2 + 7)/8)
     sub             srcq, srcstrideq
     EPEL_HV_FILTER    %2
@@ -815,7 +810,7 @@ cglobal hevc_put_hevc_bi_epel_hv%1_%2, 8, 10, 16, dst, dststride, src, srcstride
 ; ******************************
 
 %macro HEVC_PUT_HEVC_QPEL 2
-cglobal hevc_put_hevc_qpel_h%1_%2, 5, 6, 15, dst, src, srcstride, height, mx, rfilter
+cglobal hevc_put_hevc_qpel_h%1_%2, 5, 6, 16, dst, src, srcstride, height, mx, rfilter
     QPEL_FILTER       %2, mx
 .loop
     QPEL_H_LOAD       %2, srcq, %1, 10
@@ -827,7 +822,7 @@ cglobal hevc_put_hevc_qpel_h%1_%2, 5, 6, 15, dst, src, srcstride, height, mx, rf
     LOOP_END          dst, src, srcstride
     RET
 
-cglobal hevc_put_hevc_uni_qpel_h%1_%2, 6, 7, 15 , dst, dststride, src, srcstride, height, mx, rfilter
+cglobal hevc_put_hevc_uni_qpel_h%1_%2, 6, 7, 16 , dst, dststride, src, srcstride, height, mx, rfilter
     movdqa            m9, [pw_%2]
     QPEL_FILTER       %2, mx
 .loop
@@ -870,7 +865,7 @@ cglobal hevc_put_hevc_bi_qpel_h%1_%2, 7, 8, 16 , dst, dststride, src, srcstride,
 ;                       int width, int height, int mx, int my)
 ; ******************************
 
-cglobal hevc_put_hevc_qpel_v%1_%2, 6, 8, 15, dst, src, srcstride, height, r3src, my, rfilter
+cglobal hevc_put_hevc_qpel_v%1_%2, 6, 8, 16, dst, src, srcstride, height, r3src, my, rfilter
     lea           r3srcq, [srcstrideq*3]
     QPEL_FILTER       %2, my
 .loop
@@ -883,7 +878,7 @@ cglobal hevc_put_hevc_qpel_v%1_%2, 6, 8, 15, dst, src, srcstride, height, r3src,
     LOOP_END         dst, src, srcstride
     RET
 
-cglobal hevc_put_hevc_uni_qpel_v%1_%2, 7, 9, 15, dst, dststride, src, srcstride, height, r3src, my, rfilter
+cglobal hevc_put_hevc_uni_qpel_v%1_%2, 7, 9, 16, dst, dststride, src, srcstride, height, r3src, my, rfilter
     movdqa            m9, [pw_%2]
     lea           r3srcq, [srcstrideq*3]
     QPEL_FILTER       %2, my
@@ -929,7 +924,7 @@ cglobal hevc_put_hevc_bi_qpel_v%1_%2, 8, 10, 16, dst, dststride, src, srcstride,
 ;                       int height, int mx, int my)
 ; ******************************
 %macro HEVC_PUT_HEVC_QPEL_HV 2
-cglobal hevc_put_hevc_qpel_hv%1_%2, 6, 8, 12, dst, src, srcstride, height, mx, my, r3src, rfilter
+cglobal hevc_put_hevc_qpel_hv%1_%2, 6, 8, 16, dst, src, srcstride, height, mx, my, r3src, rfilter
     lea              mxq, [mxq*8-8]
     lea              myq, [myq*8-8]
     lea           r3srcq, [srcstrideq*3]
@@ -998,7 +993,7 @@ cglobal hevc_put_hevc_qpel_hv%1_%2, 6, 8, 12, dst, src, srcstride, height, mx, m
     LOOP_END         dst, src, srcstride
     RET
 
-cglobal hevc_put_hevc_uni_qpel_hv%1_%2, 7, 9, 12 , dst, dststride, src, srcstride, height, mx, my, r3src, rfilter
+cglobal hevc_put_hevc_uni_qpel_hv%1_%2, 7, 9, 16 , dst, dststride, src, srcstride, height, mx, my, r3src, rfilter
     lea              mxq, [mxq*8-8]
     lea              myq, [myq*8-8]
     lea           r3srcq, [srcstrideq*3]

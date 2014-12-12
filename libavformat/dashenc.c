@@ -444,10 +444,10 @@ static int write_manifest(AVFormatContext *s, int final)
         write_time(out, c->total_duration);
         avio_printf(out, "\"\n");
     } else {
-        int update_period = c->last_duration / AV_TIME_BASE;
+        int64_t update_period = c->last_duration / AV_TIME_BASE;
         if (c->use_template && !c->use_timeline)
             update_period = 500;
-        avio_printf(out, "\tminimumUpdatePeriod=\"PT%dS\"\n", update_period);
+        avio_printf(out, "\tminimumUpdatePeriod=\"PT%"PRId64"S\"\n", update_period);
         avio_printf(out, "\tsuggestedPresentationDelay=\"PT%"PRId64"S\"\n", c->last_duration / AV_TIME_BASE);
         if (!c->availability_start_time[0] && s->nb_streams > 0 && c->streams[0].nb_segments > 0) {
             time_t t = time(NULL);

@@ -97,3 +97,5 @@
  ┌────────────────────────────┐
  │ ⚠  Behaviour changes       │
  └────────────────────────────┘
+    • XMP metadata is not exported by default anymore as it can be huge.
+      see the export_xmp option

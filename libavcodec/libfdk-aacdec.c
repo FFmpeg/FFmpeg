@@ -100,7 +100,7 @@ static int get_stream_info(AVCodecContext *avctx)
 
     for (i = 0; i < info->numChannels; i++) {
         AUDIO_CHANNEL_TYPE ctype = info->pChannelType[i];
-        if (ctype <= ACT_NONE || ctype > FF_ARRAY_ELEMS(channel_counts)) {
+        if (ctype <= ACT_NONE || ctype >= FF_ARRAY_ELEMS(channel_counts)) {
             av_log(avctx, AV_LOG_WARNING, "unknown channel type\n");
             break;
         }
