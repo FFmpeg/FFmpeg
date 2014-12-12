@@ -156,7 +156,7 @@ static void softthresh_c(int16_t dst[64], const int16_t src[64],
     }
 }
 
-static void store_slice_c(uint8_t *dst, const int16_t *src,
+static void store_slice_c(uint8_t *dst, const uint16_t *src,
                           int dst_linesize, int src_linesize,
                           int width, int height, int log2_scale,
                           const uint8_t dither[8][8])
@@ -186,7 +186,7 @@ static void store_slice_c(uint8_t *dst, const int16_t *src,
     }
 }
 
-static inline void add_block(int16_t *dst, int linesize, const int16_t block[64])
+static inline void add_block(uint16_t *dst, int linesize, const int16_t block[64])
 {
     int y;
 
