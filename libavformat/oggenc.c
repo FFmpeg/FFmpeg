@@ -508,7 +508,7 @@ static int ogg_write_header(AVFormatContext *s)
 
             if (avpriv_split_xiph_headers(st->codec->extradata, st->codec->extradata_size,
                                       st->codec->codec_id == AV_CODEC_ID_VORBIS ? 30 : 42,
-                                      oggstream->header, oggstream->header_len) < 0) {
+                                      (const uint8_t**)oggstream->header, oggstream->header_len) < 0) {
                 av_log(s, AV_LOG_ERROR, "Extradata corrupted\n");
                 av_freep(&st->priv_data);
                 return AVERROR_INVALIDDATA;

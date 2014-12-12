@@ -491,7 +491,7 @@ static int64_t mkv_write_cues(AVFormatContext *s, mkv_cues *cues, mkv_track *tra
 
 static int put_xiph_codecpriv(AVFormatContext *s, AVIOContext *pb, AVCodecContext *codec)
 {
-    uint8_t *header_start[3];
+    const uint8_t *header_start[3];
     int header_len[3];
     int first_header_size;
     int j;
