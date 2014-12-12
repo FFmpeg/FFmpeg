@@ -158,7 +158,7 @@ static const uint8_t offset[511][2] = {
     { 3, 4}, {11, 4}, { 3,12}, {11,12}, { 7, 0}, {15, 0}, { 7, 8}, {15, 8},
 };
 
-static void store_slice_c(uint8_t *dst, int16_t *src,
+static void store_slice_c(uint8_t *dst, const int16_t *src,
                           int dst_stride, int src_stride,
                           int width, int height, int log2_scale)
 {
