@@ -227,8 +227,16 @@ static void filter(USPPContext *p, uint8_t *dst[3], uint8_t *src[3],
 
     if (p->qp)
         p->frame->quality = p->qp * FF_QP2LAMBDA;
-    else
-        p->frame->quality = norm_qscale(qp_store[0], p->qscale_type) * FF_QP2LAMBDA;
+    else {
+        int qpsum=0;
+        int qpcount = (height>>4) * (height>>4);
+
+        for (y = 0; y < (height>>4); y++) {
+            for (x = 0; x < (width>>4); x++)
+                qpsum += qp_store[x + y * qp_stride];
+        }
+        p->frame->quality = norm_qscale((qpsum + qpcount/2) / qpcount, p->qscale_type) * FF_QP2LAMBDA;
+    }
 //    init per MB qscale stuff FIXME
     p->frame->height = height;
     p->frame->width  = width;
