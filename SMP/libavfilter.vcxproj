@@ -376,6 +376,8 @@
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_unsharp.c">
     </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_uspp.c">
+    </ClCompile>
     <ClCompile Include="..\libavfilter\vf_vflip.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_vignette.c">
@@ -418,6 +420,7 @@
     <ClCompile Include="..\libavfilter\libmpcodecs\vf_softpulldown.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\libmpcodecs\vf_uspp.c">
+      <ObjectFileName>$(IntDir)\libavfilter_libmpcodecs_vf_uspp.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavfilter\avf_avectorscope.c">
     </ClCompile>
