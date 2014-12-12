@@ -16,7 +16,11 @@ LOCAL_C_INCLUDES +=		\
 	external/zlib
 
 LOCAL_SHARED_LIBRARIES +=	\
-	libz
+	libz \
+	libavutil \
+	libswresample
+
+LOCAL_SRC_FILES += neon/mpegvideo.c
 
 # It's strange wmalosslessdec.c can't be compiled by -O3 for armv7-a-neon. A gcc bug?
 $(intermediates)/wmalosslessdec.o: PRIVATE_CFLAGS += $(if $(filter arm,$(TARGET_ARCH)),-Os)

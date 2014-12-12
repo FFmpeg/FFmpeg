@@ -42,7 +42,7 @@ S_FILES := $(S_OBJS:%.o=%.$(ASM_SUFFIX))
 LOCAL_MODULE := lib$(NAME)
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE_CLASS := SHARED_LIBRARIES
-LOCAL_ARM_MODE := $(if $(filter yes,$(CONFIG_THUMB)),thumb,arm)
+LOCAL_ARM_MODE := arm
 
 LOCAL_SRC_FILES := $(C_FILES) $(if $(filter S,$(ASM_SUFFIX)),$(S_FILES))
 
@@ -58,12 +58,13 @@ LOCAL_GENERATED_SOURCES += $(GEN)
 endif
 
 LOCAL_CFLAGS += \
-	-O3 -std=c99 -ftree-vectorize -fomit-frame-pointer \
-	-fpredictive-commoning -fgcse-after-reload -fipa-cp-clone \
-	-Wno-missing-field-initializers -Wno-parentheses \
-	-Wno-pointer-sign -Wno-sign-compare -Wno-switch \
-	$(if $(filter x86,$(TARGET_ARCH)),-fno-pic -fno-pie) \
-	$(if $(filter armv7-a-neon,$(TARGET_ARCH_VARIANT)),-mvectorize-with-neon-quad) \
+	-O3 -std=c99 -fno-math-errno -fno-signed-zeros -fno-tree-vectorize -fomit-frame-pointer \
+	-Wdisabled-optimization -Wpointer-arith \
+	-Wwrite-strings -Wtype-limits -Wundef -Wmissing-prototypes \
+	-Wno-pointer-to-int-cast -Wstrict-prototypes -Wempty-body -Wno-parentheses \
+	-Wno-switch -Wno-format-zero-length -Wno-pointer-sign \
+	-Werror=format-security -Werror=implicit-function-declaration -Werror=missing-prototypes \
+	-Werror=return-type -Werror=vla -Wformat -Wno-maybe-uninitialized
 
 LOCAL_LDFLAGS := -Wl,--no-fatal-warnings
 

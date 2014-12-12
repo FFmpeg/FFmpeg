@@ -12,4 +12,7 @@ LOCAL_PATH := $(call my-dir)
 
 include $(LOCAL_PATH)/../android/build.mk
 
+LOCAL_SHARED_LIBRARIES += \
+	libavutil
+
 include $(BUILD_SHARED_LIBRARY)

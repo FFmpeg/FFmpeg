@@ -19,6 +19,8 @@ LOCAL_C_INCLUDES +=			\
 LOCAL_SHARED_LIBRARIES +=		\
 	libcrypto			\
 	libssl				\
-	libz
+	libz                \
+	libavutil           \
+	libavcodec
 
 include $(BUILD_SHARED_LIBRARY)
