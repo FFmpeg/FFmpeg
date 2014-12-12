@@ -187,6 +187,10 @@ void projectGenerator::buildDependencies( const string & sProjectName, StaticLis
             {
                 vAddLibs.push_back( "OpenAL32" ); //Add the additional required libs
             }
+            else if( vitLib->compare( "nvenc" ) == 0 )
+            {
+                //Doesnt require any additional libs
+            }
             else
             {
                 //By default just use the lib name and prefix with lib if not already
@@ -277,6 +281,17 @@ void projectGenerator::buildDependencies( const string & sProjectName, StaticLis
                 vLib32Dirs.push_back( "$(OPENAL_SDK)\\libs\\Win32" );
                 vLib64Dirs.push_back( "$(CUDA_PATH)\\lib\\Win64" );
             }
+            else if( vitLib->compare( "nvenc" ) == 0 )
+            {
+                //Need to check for the existence of environment variables
+                if( !GetEnvironmentVariable( "CUDA_PATH", NULL, 0 ) )
+                {
+                    cout << "  Warning: Could not find the CUDA SDK environment variable." << endl;
+                    cout << "    Either the CUDA SDK is not installed or the environment variable is missing." << endl;
+                    cout << "    NVENC requires CUDA to be installed with NVENC headers made available in the CUDA SDK include path." << endl;
+                }
+                vIncludeDirs.push_back( "$(CUDA_PATH)\\include\\" );
+            }
         }
     }
 }
@@ -343,6 +358,7 @@ void projectGenerator::buildProjectDependencies( const string & sProjectName, ma
     mProjectDeps["libzmq"] = ( sProjectName.compare("libavfilter") == 0 );//??
     mProjectDeps["libzvbi"] = ( sProjectName.compare( "libavcodec" ) == 0 );
     mProjectDeps["lzma"] = ( sProjectName.compare( "libavcodec" ) == 0 );
+    mProjectDeps["nvenc"] = ( sProjectName.compare( "libavcodec" ) == 0 );
     mProjectDeps["openal"] = ( sProjectName.compare("libavdevice") == 0 );//?
     mProjectDeps["opencl"] = ( sProjectName.compare( "libavutil" ) == 0 ) || ( sProjectName.compare( "libavfilter" ) == 0 );
     mProjectDeps["opengl"] = ( sProjectName.compare( "libavdevice" ) == 0 );
