@@ -76,8 +76,12 @@ static int process(
         AudioData *src, int src_size, int *consumed){
     size_t idone, odone;
     soxr_error_t error = soxr_set_error((soxr_t)c, soxr_set_num_channels((soxr_t)c, src->ch_count));
-    error = soxr_process((soxr_t)c, src->ch, (size_t)src_size,
-            &idone, dst->ch, (size_t)dst_size, &odone);
+    if (!error)
+        error = soxr_process((soxr_t)c, src->ch, (size_t)src_size,
+                             &idone, dst->ch, (size_t)dst_size, &odone);
+    else
+        idone = 0;
+
     *consumed = (int)idone;
     return error? -1 : odone;
 }
