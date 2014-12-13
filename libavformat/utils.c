@@ -2328,6 +2328,11 @@ static void estimate_timings_from_bit_rate(AVFormatContext *ic)
                     break;
                 }
                 bit_rate += st->codec->bit_rate;
+            } else if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO && st->codec_info_nb_frames > 1) {
+                // If we have a videostream with packets but without a bitrate
+                // than consider the sum not known
+                bit_rate = 0;
+                break;
             }
         }
         ic->bit_rate = bit_rate;
