@@ -219,6 +219,11 @@ static int vdpau_h264_init(AVCodecContext *avctx)
     case FF_PROFILE_H264_HIGH:
         profile = VDP_DECODER_PROFILE_H264_HIGH;
         break;
+#ifdef VDP_DECODER_PROFILE_H264_EXTENDED
+    case FF_PROFILE_H264_EXTENDED:
+        profile = VDP_DECODER_PROFILE_H264_EXTENDED;
+        break;
+#endif
     default:
         return AVERROR(ENOTSUP);
     }
