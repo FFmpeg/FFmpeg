@@ -597,7 +597,7 @@ static int parse_ifo_palette(DVDSubContext *ctx, char *p)
 
     ctx->has_palette = 0;
     if ((ifo = fopen(p, "r")) == NULL) {
-        av_log(ctx, AV_LOG_WARNING, "Unable to open IFO file \"%s\": %s\n", p, strerror(errno));
+        av_log(ctx, AV_LOG_WARNING, "Unable to open IFO file \"%s\": %s\n", p, av_err2str(AVERROR(errno)));
         return AVERROR_EOF;
     }
     if (fread(ifostr, 12, 1, ifo) != 1 || memcmp(ifostr, "DVDVIDEO-VTS", 12)) {
