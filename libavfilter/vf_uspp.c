@@ -271,6 +271,9 @@ static void filter(USPPContext *p, uint8_t *dst[3], uint8_t *src[3],
             for (x = 0; x < width; x++)
                 p->temp[0][x + y * p->temp_stride[0]] += p->frame_dec->data[0][x + y * p->frame_dec->linesize[0] + offset];
 
+        if (!src[2] || !dst[2])
+            continue;
+
         offset = (BLOCKc-x1c) + (BLOCKc-y1c) * p->frame_dec->linesize[1];
 
         for (y = 0; y < height>>p->vsub; y++) {
