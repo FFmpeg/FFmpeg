@@ -3451,7 +3451,7 @@ typedef struct AVSubtitleRect {
 
     /**
      * data+linesize for the bitmap of this subtitle.
-     * can be set for text/ass as well once they where rendered
+     * can be set for text/ass as well once they are rendered
      */
     AVPicture pict;
     enum AVSubtitleType type;
