@@ -28,7 +28,11 @@
 #include <vector>
 
 using namespace std;
+#if defined(__x86_64) || defined(_M_X64)
+typedef unsigned __int64 uint;
+#else
 typedef unsigned int uint;
+#endif
 
 class configGenerator
 {
