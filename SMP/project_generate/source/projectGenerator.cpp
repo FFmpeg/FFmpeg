@@ -1177,9 +1177,77 @@ exit /b 1 \n\
             }
         }
     }
-
-    //Remove the test header files
+    //Remove the test sbr files
     deleteFolder( sProjectNameShort );
+
+    //Check for any exported functions in asm files
+    for( StaticList::iterator itASM = m_vYASMIncludes.begin(); itASM < m_vYASMIncludes.end( ); itASM++ )
+    {
+        m_ifInputFile.open( "../../" + *itASM, ios_base::in | ios_base::binary );
+        if( !m_ifInputFile.is_open( ) )
+        {
+            cout << "  Error: Failed opening asm input file (" + *itASM + ")" << endl;
+            return false;
+        }
+        string sASMFile;
+        m_ifInputFile.seekg( 0, m_ifInputFile.end );
+        uiBufferSize = (uint)m_ifInputFile.tellg( );
+        m_ifInputFile.seekg( 0, m_ifInputFile.beg );
+        sASMFile.resize( uiBufferSize );
+        m_ifInputFile.read( &sASMFile[0], uiBufferSize );
+        if( uiBufferSize != m_ifInputFile.gcount( ) )
+        {
+            sASMFile.resize( (uint)m_ifInputFile.gcount( ) );
+        }
+        m_ifInputFile.close( );
+
+        //Search through file for module exports
+        for( StaticList::iterator itI = vExportStrings.begin( ); itI < vExportStrings.end( ); itI++ )
+        {
+            //Check if it is a wild card search
+            uiFindPos = itI->find( '*' );
+            string sInvalidChars = ",.(){}[]`'\"+-*/!@#$%^&*<>|;\\= \n\t\0";
+            if( uiFindPos != string::npos )
+            {
+                //Strip the wild card (Note: assumes wild card is at the end!)
+                string sSearch = ' ' + itI->substr( 0, uiFindPos );
+                //Search for all occurrences
+                uiFindPos = sASMFile.find( sSearch );
+                while( ( uiFindPos != string::npos ) && ( uiFindPos > 0 ) )
+                {
+                    //Find end of name signaled by first non valid character
+                    uint uiFindPos2 = sASMFile.find_first_of( sInvalidChars, uiFindPos + 1 );
+                    //Check this is valid function definition
+                    if( ( sASMFile.at( uiFindPos2 ) == '(' ) && ( sInvalidChars.find( sASMFile.at( uiFindPos-1 ) ) == string::npos ) )
+                    {
+                        string sFoundName = sASMFile.substr( uiFindPos, uiFindPos2 - uiFindPos );
+                        if( find( vModuleExports.begin( ), vModuleExports.end( ), sFoundName ) == vModuleExports.end( ) )
+                        {
+                            vModuleExports.push_back( sFoundName.substr( 1 ) );
+                        }
+                    }
+
+                    //Get next
+                    uiFindPos = sASMFile.find( sSearch, uiFindPos2 + 1 );
+                }
+            }
+            else
+            {
+                string sSearch = ' ' + *itI + '(';
+                uiFindPos = sASMFile.find( *itI );
+                //Make sure the match is an exact one
+                if( ( uiFindPos != string::npos ) && ( uiFindPos > 0 ) && ( sInvalidChars.find( sASMFile.at( uiFindPos - 1 ) ) == string::npos ) )
+                {
+                    //Check this is valid function definition
+                    if( find( vModuleExports.begin( ), vModuleExports.end( ), *itI ) == vModuleExports.end( ) )
+                    {
+                        vModuleExports.push_back( *itI );
+                    }
+                }
+            }
+        }
+    }
+
 
     //Sort the exports
     sort( vModuleExports.begin( ), vModuleExports.end( ) );

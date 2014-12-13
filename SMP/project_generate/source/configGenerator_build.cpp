@@ -296,6 +296,12 @@ void configGenerator::buildReplaceValues( DefaultValuesList & mReplaceValues, De
 #else\n\
 #   define HAVE_INLINE_ASM 0\n\
 #endif";
+    mReplaceValues["HAVE_MM_EMPTY"] = "#if defined(__INTEL_COMPILER) || ARCH_X86_32\n\
+#   define HAVE_MM_EMPTY 1\n\
+#else\n\
+#   define HAVE_MM_EMPTY 0\n\
+#endif";
+
     //Build replace values for all inline asm
     vector<string> vInlineList;
     getConfigList( "ARCH_EXT_LIST", vInlineList );
@@ -361,6 +367,7 @@ void configGenerator::buildReservedValues( vector<string> & vReservedItems )
     vReservedItems.push_back( "static" );
     vReservedItems.push_back( "aligned_stack" );
     vReservedItems.push_back( "fast_64bit" );
+    vReservedItems.push_back( "mm_empty" );
     vReservedItems.push_back( "ebp_available" );
     vReservedItems.push_back( "ebx_available" );
 }
