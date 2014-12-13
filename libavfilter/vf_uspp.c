@@ -41,6 +41,7 @@
 typedef struct {
     const AVClass *av_class;
     int log2_count;
+    int hsub, vsub;
     int qp;
     int qscale_type;
     int temp_stride[3];
@@ -201,10 +202,10 @@ static void filter(USPPContext *p, uint8_t *dst[3], uint8_t *src[3],
 
     for (i = 0; i < 3; i++) {
         int is_chroma = !!i;
-        int w = width  >> is_chroma;
-        int h = height >> is_chroma;
+        int w = width  >> (is_chroma ? p->hsub : 0);
+        int h = height >> (is_chroma ? p->vsub : 0);
         int stride = p->temp_stride[i];
-        int block = BLOCK >> is_chroma;
+        int block = BLOCK >> (is_chroma ? p->hsub : 0);
 
         if (!src[i] || !dst[i])
             continue;
@@ -245,6 +246,9 @@ static void filter(USPPContext *p, uint8_t *dst[3], uint8_t *src[3],
     for (i = 0; i < count; i++) {
         const int x1 = offset[i+count-1][0];
         const int y1 = offset[i+count-1][1];
+        const int x1c = x1 >> p->hsub;
+        const int y1c = y1 >> p->vsub;
+        const int BLOCKc = BLOCK >> p->hsub;
         int offset;
         AVPacket pkt;
         int got_pkt_ptr;
@@ -254,8 +258,8 @@ static void filter(USPPContext *p, uint8_t *dst[3], uint8_t *src[3],
         pkt.size = p->outbuf_size;
 
         p->frame->data[0] = p->src[0] + x1   + y1   * p->frame->linesize[0];
-        p->frame->data[1] = p->src[1] + x1/2 + y1/2 * p->frame->linesize[1];
-        p->frame->data[2] = p->src[2] + x1/2 + y1/2 * p->frame->linesize[2];
+        p->frame->data[1] = p->src[1] + x1c  + y1c  * p->frame->linesize[1];
+        p->frame->data[2] = p->src[2] + x1c  + y1c  * p->frame->linesize[2];
         p->frame->format  = p->avctx_enc[i]->pix_fmt;
 
         avcodec_encode_video2(p->avctx_enc[i], &pkt, p->frame, &got_pkt_ptr);
@@ -267,10 +271,10 @@ static void filter(USPPContext *p, uint8_t *dst[3], uint8_t *src[3],
             for (x = 0; x < width; x++)
                 p->temp[0][x + y * p->temp_stride[0]] += p->frame_dec->data[0][x + y * p->frame_dec->linesize[0] + offset];
 
-        offset = (BLOCK/2-x1/2) + (BLOCK/2-y1/2) * p->frame_dec->linesize[1];
+        offset = (BLOCKc-x1c) + (BLOCKc-y1c) * p->frame_dec->linesize[1];
 
-        for (y = 0; y < height/2; y++) {
-            for (x = 0; x < width/2; x++) {
+        for (y = 0; y < height>>p->vsub; y++) {
+            for (x = 0; x < width>>p->hsub; x++) {
                 p->temp[1][x + y * p->temp_stride[1]] += p->frame_dec->data[1][x + y * p->frame_dec->linesize[1] + offset];
                 p->temp[2][x + y * p->temp_stride[2]] += p->frame_dec->data[2][x + y * p->frame_dec->linesize[2] + offset];
             }
@@ -282,7 +286,9 @@ static void filter(USPPContext *p, uint8_t *dst[3], uint8_t *src[3],
         if (!dst[j])
             continue;
         store_slice_c(dst[j], p->temp[j], dst_stride[j], p->temp_stride[j],
-                      width >> is_chroma, height >> is_chroma, 8-p->log2_count);
+                      width  >> (is_chroma ? p->hsub : 0),
+                      height >> (is_chroma ? p->vsub : 0),
+                      8-p->log2_count);
     }
 }
 
@@ -308,6 +314,7 @@ static int config_input(AVFilterLink *inlink)
     USPPContext *uspp = ctx->priv;
     const int height = inlink->h;
     const int width  = inlink->w;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
     int i;
 
     AVCodec *enc = avcodec_find_encoder(AV_CODEC_ID_SNOW);
@@ -316,10 +323,13 @@ static int config_input(AVFilterLink *inlink)
         return AVERROR(EINVAL);
     }
 
+    uspp->hsub = desc->log2_chroma_w;
+    uspp->vsub = desc->log2_chroma_h;
+
     for (i = 0; i < 3; i++) {
         int is_chroma = !!i;
-        int w = ((width  + 4 * BLOCK-1) & (~(2 * BLOCK-1))) >> is_chroma;
-        int h = ((height + 4 * BLOCK-1) & (~(2 * BLOCK-1))) >> is_chroma;
+        int w = ((width  + 4 * BLOCK-1) & (~(2 * BLOCK-1))) >> (is_chroma ? uspp->hsub : 0);
+        int h = ((height + 4 * BLOCK-1) & (~(2 * BLOCK-1))) >> (is_chroma ? uspp->vsub : 0);
 
         uspp->temp_stride[i] = w;
         if (!(uspp->temp[i] = av_malloc(uspp->temp_stride[i] * h * sizeof(int16_t))))
