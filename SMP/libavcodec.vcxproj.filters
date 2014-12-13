@@ -1382,6 +1382,9 @@
     <ClCompile Include="..\libavcodec\rtjpeg.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\nvenc.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\on2avc.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
