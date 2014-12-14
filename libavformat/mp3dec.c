@@ -58,7 +58,7 @@ typedef struct {
 static int mp3_read_probe(AVProbeData *p)
 {
     int max_frames, first_frames = 0;
-    int fsize, frames, sample_rate;
+    int fsize, frames;
     uint32_t header;
     const uint8_t *buf, *buf0, *buf2, *end;
     AVCodecContext avctx;
@@ -77,8 +77,9 @@ static int mp3_read_probe(AVProbeData *p)
             continue;
 
         for(frames = 0; buf2 < end; frames++) {
+            int dummy;
             header = AV_RB32(buf2);
-            fsize = avpriv_mpa_decode_header(&avctx, header, &sample_rate, &sample_rate, &sample_rate, &sample_rate);
+            fsize = avpriv_mpa_decode_header(&avctx, header, &dummy, &dummy, &dummy, &dummy);
             if(fsize < 0)
                 break;
             buf2 += fsize;
