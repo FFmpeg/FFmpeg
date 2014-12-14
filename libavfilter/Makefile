@@ -227,7 +227,6 @@ OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_fspp.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_ilpack.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_pp7.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_softpulldown.o
-OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_uspp.o
 
 # multimedia filters
 OBJS-$(CONFIG_AVECTORSCOPE_FILTER)           += avf_avectorscope.o

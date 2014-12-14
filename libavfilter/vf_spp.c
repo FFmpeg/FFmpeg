@@ -290,13 +290,7 @@ static int config_input(AVFilterLink *inlink)
     spp->temp_linesize = FFALIGN(inlink->w + 16, 16);
     spp->temp = av_malloc_array(spp->temp_linesize, h * sizeof(*spp->temp));
     spp->src  = av_malloc_array(spp->temp_linesize, h * sizeof(*spp->src));
-    if (!spp->use_bframe_qp) {
-        /* we are assuming here the qp blocks will not be smaller that 16x16 */
-        spp->non_b_qp_alloc_size = FF_CEIL_RSHIFT(inlink->w, 4) * FF_CEIL_RSHIFT(inlink->h, 4);
-        spp->non_b_qp_table = av_calloc(spp->non_b_qp_alloc_size, sizeof(*spp->non_b_qp_table));
-        if (!spp->non_b_qp_table)
-            return AVERROR(ENOMEM);
-    }
+
     if (!spp->temp || !spp->src)
         return AVERROR(ENOMEM);
     return 0;
@@ -327,9 +321,19 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                 w = FF_CEIL_RSHIFT(inlink->w, 4);
                 h = 1;
             } else {
-                w = FF_CEIL_RSHIFT(qp_stride, 4);
+                w = qp_stride;
                 h = FF_CEIL_RSHIFT(inlink->h, 4);
             }
+
+            if (w * h > spp->non_b_qp_alloc_size) {
+                int ret = av_reallocp_array(&spp->non_b_qp_table, w, h);
+                if (ret < 0) {
+                    spp->non_b_qp_alloc_size = 0;
+                    return ret;
+                }
+                spp->non_b_qp_alloc_size = w * h;
+            }
+
             av_assert0(w * h <= spp->non_b_qp_alloc_size);
             memcpy(spp->non_b_qp_table, qp_table, w * h);
         }

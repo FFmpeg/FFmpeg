@@ -2740,6 +2740,7 @@ static int transcode_init(void)
                     sar = dec_ctx->sample_aspect_ratio;
                 ost->st->sample_aspect_ratio = enc_ctx->sample_aspect_ratio = sar;
                 ost->st->avg_frame_rate = ist->st->avg_frame_rate;
+                ost->st->r_frame_rate = ist->st->r_frame_rate;
                 break;
             case AVMEDIA_TYPE_SUBTITLE:
                 enc_ctx->width  = dec_ctx->width;
