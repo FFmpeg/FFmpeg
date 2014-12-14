@@ -419,9 +419,6 @@
     </ClCompile>
     <ClCompile Include="..\libavfilter\libmpcodecs\vf_softpulldown.c">
     </ClCompile>
-    <ClCompile Include="..\libavfilter\libmpcodecs\vf_uspp.c">
-      <ObjectFileName>$(IntDir)\libavfilter_libmpcodecs_vf_uspp.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavfilter\avf_avectorscope.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\avf_concat.c">
