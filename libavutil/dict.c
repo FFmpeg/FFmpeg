@@ -166,7 +166,7 @@ static int parse_key_value_pair(AVDictionary **pm, const char **buf,
     if (val) // av_get_token reallocs to the min length needed, so don't re-dup
             ret = av_dict_set(pm, key, val, flags | AV_DICT_DONT_STRDUP_KEY | AV_DICT_DONT_STRDUP_VAL);
     else {
-        ret = AVERROR(EINVAL);
+        ret = AVERROR(EINVAL);  // error only on empty key or malloc fail
         av_freep(&key);
     }
 
