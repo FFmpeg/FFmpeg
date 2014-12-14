@@ -431,11 +431,11 @@ static av_cold void uninit(AVFilterContext *ctx)
         Interval *interval = &sendcmd->intervals[i];
         for (j = 0; j < interval->nb_commands; j++) {
             Command *cmd = &interval->commands[j];
-            av_free(cmd->target);
-            av_free(cmd->command);
-            av_free(cmd->arg);
+            av_freep(&cmd->target);
+            av_freep(&cmd->command);
+            av_freep(&cmd->arg);
         }
-        av_free(interval->commands);
+        av_freep(&interval->commands);
     }
     av_freep(&sendcmd->intervals);
 }
