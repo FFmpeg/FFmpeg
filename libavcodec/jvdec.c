@@ -43,6 +43,13 @@ static av_cold int decode_init(AVCodecContext *avctx)
 {
     JvContext *s = avctx->priv_data;
 
+    if (!avctx->width || !avctx->height ||
+        (avctx->width & 7) || (avctx->height & 7)) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid video dimensions: %dx%d\n",
+               avctx->width, avctx->height);
+        return AVERROR(EINVAL);
+    }
+
     s->frame = av_frame_alloc();
     if (!s->frame)
         return AVERROR(ENOMEM);
