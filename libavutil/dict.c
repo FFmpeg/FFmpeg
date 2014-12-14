@@ -158,7 +158,7 @@ static int parse_key_value_pair(AVDictionary **pm, const char **buf,
 
     key = av_get_token(buf, all_sep);
     if (key && *key) {
-        if (strchr(key_val_sep, **buf))
+        if (**buf && strchr(key_val_sep, **buf))
             (*buf)++;    // skip over the = to get to val
         val = av_get_token(buf, pairs_sep); // will be "" if a sep is next
     }
