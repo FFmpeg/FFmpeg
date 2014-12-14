@@ -1825,7 +1825,7 @@ static int opt_target(void *optctx, const char *opt, const char *arg)
         opt_default(NULL, "maxrate", "2516000");
         opt_default(NULL, "minrate", "0"); // 1145000;
         opt_default(NULL, "bufsize", "1835008"); // 224*1024*8;
-        opt_default(NULL, "flags", "+scan_offset");
+        opt_default(NULL, "scan_offset", "1");
 
 
         opt_default(NULL, "b:a", "224000");
