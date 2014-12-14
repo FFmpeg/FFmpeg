@@ -171,15 +171,16 @@ char *av_get_token(const char **buf, const char *term)
             *out++ = c;
         }
     }
+    *buf = p;  // advance caller's position to the end of the returned token
 
-    do
+    do  // kill non-quoted trailing whitespace
         *out-- = 0;
     while (out >= end_quote && strchr(WHITESPACES, *out));
 
-    *buf = p;
-    // +1 for nul byte, +1 to counteract do {} while extra decrement
-    ret = av_realloc(ret, out - ret + 2);
-    // if realloc fails to shrink, we're hosed anyway; just leak the old buffer
+    // +1 for nul byte, +1 to counteract the do {} while extra decrement
+    out = av_realloc(ret, out - ret + 2);
+    if (out)  // we're only ever shrinking, so we don't have to error on fail
+        ret = out;
     return ret;
 }
 
