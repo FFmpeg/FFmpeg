@@ -580,7 +580,7 @@ static int dv_read_seek(AVFormatContext *s, int stream_index,
 static int dv_read_close(AVFormatContext *s)
 {
     RawDVContext *c = s->priv_data;
-    av_free(c->dv_demux);
+    av_freep(&c->dv_demux);
     return 0;
 }
 
