@@ -282,6 +282,38 @@ static const uint8_t mxf_sony_mpeg4_extradata[]            = { 0x06,0x0e,0x2b,0x
 
 #define IS_KLV_KEY(x, y) (!memcmp(x, y, sizeof(y)))
 
+static void mxf_free_metadataset(MXFMetadataSet **ctx)
+{
+    MXFIndexTableSegment *seg;
+    switch ((*ctx)->type) {
+    case Descriptor:
+        av_freep(&((MXFDescriptor *)*ctx)->extradata);
+        break;
+    case MultipleDescriptor:
+        av_freep(&((MXFDescriptor *)*ctx)->sub_descriptors_refs);
+        break;
+    case Sequence:
+        av_freep(&((MXFSequence *)*ctx)->structural_components_refs);
+        break;
+    case EssenceGroup:
+        av_freep(&((MXFEssenceGroup *)*ctx)->structural_components_refs);
+        break;
+    case SourcePackage:
+    case MaterialPackage:
+        av_freep(&((MXFPackage *)*ctx)->tracks_refs);
+        av_freep(&((MXFPackage *)*ctx)->name);
+        break;
+    case IndexTableSegment:
+        seg = (MXFIndexTableSegment *)*ctx;
+        av_freep(&seg->temporal_offset_entries);
+        av_freep(&seg->flag_entries);
+        av_freep(&seg->stream_offset_entries);
+    default:
+        break;
+    }
+    av_freep(ctx);
+}
+
 static int64_t klv_decode_ber_length(AVIOContext *pb)
 {
     uint64_t size = avio_r8(pb);
@@ -2831,7 +2863,6 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
 static int mxf_read_close(AVFormatContext *s)
 {
     MXFContext *mxf = s->priv_data;
-    MXFIndexTableSegment *seg;
     int i;
 
     av_freep(&mxf->packages_refs);
@@ -2840,34 +2871,7 @@ static int mxf_read_close(AVFormatContext *s)
         s->streams[i]->priv_data = NULL;
 
     for (i = 0; i < mxf->metadata_sets_count; i++) {
-        switch (mxf->metadata_sets[i]->type) {
-        case Descriptor:
-            av_freep(&((MXFDescriptor *)mxf->metadata_sets[i])->extradata);
-            break;
-        case MultipleDescriptor:
-            av_freep(&((MXFDescriptor *)mxf->metadata_sets[i])->sub_descriptors_refs);
-            break;
-        case Sequence:
-            av_freep(&((MXFSequence *)mxf->metadata_sets[i])->structural_components_refs);
-            break;
-        case EssenceGroup:
-            av_freep(&((MXFEssenceGroup *)mxf->metadata_sets[i])->structural_components_refs);
-            break;
-        case SourcePackage:
-        case MaterialPackage:
-            av_freep(&((MXFPackage *)mxf->metadata_sets[i])->tracks_refs);
-            av_freep(&((MXFPackage *)mxf->metadata_sets[i])->name);
-            break;
-        case IndexTableSegment:
-            seg = (MXFIndexTableSegment *)mxf->metadata_sets[i];
-            av_freep(&seg->temporal_offset_entries);
-            av_freep(&seg->flag_entries);
-            av_freep(&seg->stream_offset_entries);
-            break;
-        default:
-            break;
-        }
-        av_freep(&mxf->metadata_sets[i]);
+        mxf_free_metadataset(mxf->metadata_sets + i);
     }
     av_freep(&mxf->partitions);
     av_freep(&mxf->metadata_sets);
