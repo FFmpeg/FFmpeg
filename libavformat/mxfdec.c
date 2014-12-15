@@ -863,8 +863,11 @@ static int mxf_read_index_entry_array(AVIOContext *pb, MXFIndexTableSegment *seg
 
     if (!(segment->temporal_offset_entries=av_calloc(segment->nb_index_entries, sizeof(*segment->temporal_offset_entries))) ||
         !(segment->flag_entries          = av_calloc(segment->nb_index_entries, sizeof(*segment->flag_entries))) ||
-        !(segment->stream_offset_entries = av_calloc(segment->nb_index_entries, sizeof(*segment->stream_offset_entries))))
+        !(segment->stream_offset_entries = av_calloc(segment->nb_index_entries, sizeof(*segment->stream_offset_entries)))) {
+        av_freep(&segment->temporal_offset_entries);
+        av_freep(&segment->flag_entries);
         return AVERROR(ENOMEM);
+    }
 
     for (i = 0; i < segment->nb_index_entries; i++) {
         segment->temporal_offset_entries[i] = avio_r8(pb);
@@ -2168,16 +2171,20 @@ static int mxf_read_local_tags(MXFContext *mxf, KLVPacket *klv, MXFMetadataReadF
                 }
             }
         }
-        if (ctx_size && tag == 0x3C0A)
+        if (ctx_size && tag == 0x3C0A) {
             avio_read(pb, ctx->uid, 16);
-        else if ((ret = read_child(ctx, pb, tag, size, uid, -1)) < 0)
+        } else if ((ret = read_child(ctx, pb, tag, size, uid, -1)) < 0) {
+            mxf_free_metadataset(&ctx);
             return ret;
+        }
 
         /* Accept the 64k local set limit being exceeded (Avid). Don't accept
          * it extending past the end of the KLV though (zzuf5.mxf). */
         if (avio_tell(pb) > klv_end) {
-            if (ctx_size)
-                av_free(ctx);
+            if (ctx_size) {
+                ctx->type = type;
+                mxf_free_metadataset(&ctx);
+            }
 
             av_log(mxf->fc, AV_LOG_ERROR,
                    "local tag %#04x extends past end of local set @ %#"PRIx64"\n",
@@ -2565,7 +2572,8 @@ static int mxf_read_header(AVFormatContext *s)
     /* FIXME avoid seek */
     if (!essence_offset)  {
         av_log(s, AV_LOG_ERROR, "no essence\n");
-        return AVERROR_INVALIDDATA;
+        ret = AVERROR_INVALIDDATA;
+        goto fail;
     }
     avio_seek(s->pb, essence_offset, SEEK_SET);
 
