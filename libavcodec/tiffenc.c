@@ -486,13 +486,13 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         ADD_ENTRY(s, TIFF_PAL, TIFF_SHORT, 256 * 3, pal);
     }
     if (alpha)
-        add_entry1(s,TIFF_EXTRASAMPLES,      TIFF_SHORT,            2);
+        ADD_ENTRY1(s,TIFF_EXTRASAMPLES,      TIFF_SHORT,            2);
     if (is_yuv) {
         /** according to CCIR Recommendation 601.1 */
         uint32_t refbw[12] = { 15, 1, 235, 1, 128, 1, 240, 1, 128, 1, 240, 1 };
         ADD_ENTRY(s, TIFF_YCBCR_SUBSAMPLING, TIFF_SHORT,    2, s->subsampling);
         if (avctx->chroma_sample_location == AVCHROMA_LOC_TOPLEFT)
-            add_entry1(s, TIFF_YCBCR_POSITIONING, TIFF_SHORT, 2);
+            ADD_ENTRY1(s, TIFF_YCBCR_POSITIONING, TIFF_SHORT, 2);
         ADD_ENTRY(s, TIFF_REFERENCE_BW,      TIFF_RATIONAL, 6, refbw);
     }
     // write offset to dir
