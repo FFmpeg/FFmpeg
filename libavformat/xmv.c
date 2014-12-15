@@ -381,7 +381,7 @@ static int xmv_process_packet_header(AVFormatContext *s)
                 av_assert0(xmv->video.stream_index < s->nb_streams);
 
                 if (vst->codec->extradata_size < 4) {
-                    av_free(vst->codec->extradata);
+                    av_freep(&vst->codec->extradata);
 
                     ff_alloc_extradata(vst->codec, 4);
                 }
