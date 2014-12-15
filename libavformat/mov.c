@@ -383,7 +383,7 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return AVERROR_INVALIDDATA;
 
     // allocate twice as much as worst-case
-    str_size_alloc = raw ? str_size + 1 : str_size * 2;
+    str_size_alloc = (raw ? str_size : str_size * 2) + 1;
     str = av_malloc(str_size_alloc);
     if (!str)
         return AVERROR(ENOMEM);
