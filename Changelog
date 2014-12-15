@@ -1,6 +1,22 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 2.5.1:
+- lavu/frame: fix malloc error path in av_frame_copy_props()
+- avformat/aviobuf: Check that avio_seek() target is non negative
+- swresample/soxr_resample: fix error handling
+- avformat/flvdec: fix potential use of uninitialized variables
+- avformat/crypto: fix key vs iv typo
+- configure: use use_pkg_config() instead of check_pkg_config() for libsmbclient
+- avcodec/ppc/vp3dsp_altivec: POWER LE support to vp3_idct_add_altivec()
+- avformat/matroskadec: fix handling of recursive SeekHead elements
+- doc/examples/filtering_video: fix frame rate
+- avcodec/mpegaudiodec_template: only allocate fdsp when its used
+- doc/examples/transcoding: check encoder before using it
+- update MAINTAINERS file
+- POWER LE support in put_vp8_epel_h_altivec_core() put_vp8_epel_v_altivec_core() put_vp8_pixels16_altivec()
+- POWER LE support in vc1_inv_trans_8x4_altivec()
+
 version 2.5:
 - HEVC/H.265 RTP payload format (draft v6) packetizer
 - SUP/PGS subtitle demuxer
