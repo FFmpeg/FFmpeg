@@ -334,8 +334,10 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     s->buf       = &ptr;
     s->buf_size  = pkt->size;
 
-    if (check_size(s, 8))
+    if (check_size(s, 8)) {
+        ret = AVERROR(EINVAL);
         goto fail;
+    }
 
     // write header
     bytestream_put_le16(&ptr, 0x4949);
