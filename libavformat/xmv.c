@@ -294,6 +294,7 @@ static int xmv_process_packet_header(AVFormatContext *s)
 {
     XMVDemuxContext *xmv = s->priv_data;
     AVIOContext     *pb  = s->pb;
+    int ret;
 
     uint8_t  data[8];
     uint16_t audio_track;
@@ -383,7 +384,8 @@ static int xmv_process_packet_header(AVFormatContext *s)
                 if (vst->codec->extradata_size < 4) {
                     av_freep(&vst->codec->extradata);
 
-                    ff_alloc_extradata(vst->codec, 4);
+                    if ((ret = ff_alloc_extradata(vst->codec, 4)) < 0)
+                        return ret;
                 }
 
                 memcpy(vst->codec->extradata, xmv->video.extradata, 4);
