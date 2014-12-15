@@ -124,9 +124,6 @@ master clock is used to control audio-video synchronization. Most media
 players use audio as master clock, but in some cases (streaming or high
 quality broadcast) it is necessary to change that. This option is mainly
 used for debugging purposes.
-@item -threads @var{count}
-Set the thread count. By default, @command{ffplay} automatically detects a
-suitable number of threads to use.
 @item -ast @var{audio_stream_number}
 Select the desired audio stream number, counting from 0. The number
 refers to the list of all the input audio streams. If it is greater
