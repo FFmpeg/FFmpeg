@@ -503,6 +503,7 @@ int av_frame_copy_props(AVFrame *dst, const AVFrame *src)
                 free_side_data(&dst->side_data[i]);
             }
             av_freep(&dst->side_data);
+            dst->nb_side_data = 0;
             return AVERROR(ENOMEM);
         }
         memcpy(sd_dst->data, sd_src->data, sd_src->size);
