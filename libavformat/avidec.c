@@ -1847,12 +1847,12 @@ static int avi_read_close(AVFormatContext *s)
                 av_freep(&ast->sub_ctx->pb);
                 avformat_close_input(&ast->sub_ctx);
             }
-            av_free(ast->sub_buffer);
+            av_freep(&ast->sub_buffer);
             av_free_packet(&ast->sub_pkt);
         }
     }
 
-    av_free(avi->dv_demux);
+    av_freep(&avi->dv_demux);
 
     return 0;
 }
