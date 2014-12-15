@@ -478,7 +478,7 @@ static int concat_read_packet(AVFormatContext *avf, AVPacket *pkt)
 {
     ConcatContext *cat = avf->priv_data;
     int ret;
-    int64_t delta;
+    int64_t file_start_time, delta;
     ConcatStream *cs;
     AVStream *st;
 
@@ -512,7 +512,10 @@ static int concat_read_packet(AVFormatContext *avf, AVPacket *pkt)
            av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, &st->time_base),
            av_ts2str(pkt->dts), av_ts2timestr(pkt->dts, &st->time_base));
 
-    delta = av_rescale_q(cat->cur_file->start_time - cat->avf->start_time,
+    file_start_time = cat->avf->start_time;
+    if (file_start_time == AV_NOPTS_VALUE)
+        file_start_time = 0;
+    delta = av_rescale_q(cat->cur_file->start_time - file_start_time,
                          AV_TIME_BASE_Q,
                          cat->avf->streams[pkt->stream_index]->time_base);
     if (pkt->pts != AV_NOPTS_VALUE)
