@@ -824,10 +824,9 @@ static int find_slice_quant(AVCodecContext *avctx, const AVFrame *pic,
         if (ctx->alpha_bits)
             bits += estimate_alpha_plane(ctx, &error, src, linesize[3],
                                          mbs_per_slice, q, td->blocks[3]);
-        if (bits > 65000 * 8) {
+        if (bits > 65000 * 8)
             error = SCORE_LIMIT;
-            break;
-        }
+
         slice_bits[q]  = bits;
         slice_score[q] = error;
     }
