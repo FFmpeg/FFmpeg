@@ -60,7 +60,7 @@ int av_cast5_init(struct AVCAST5 *ctx, const uint8_t *key, int key_bits);
   * @param count number of 8 byte blocks
   * @param decrypt 0 for encryption, 1 for decryption
  */
-void av_cast5_crypt(struct AVCAST5 *ctx, uint8_t *dst, const uint8_t *src, int count,int decrypt);
+void av_cast5_crypt(struct AVCAST5 *ctx, uint8_t *dst, const uint8_t *src, int count, int decrypt);
 /**
  * @}
  */
