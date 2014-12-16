@@ -71,9 +71,12 @@ int av_dict_set(AVDictionary **pm, const char *key, const char *value,
     AVDictionary *m = *pm;
     AVDictionaryEntry *tag = av_dict_get(m, key, NULL, flags);
     char *oldval = NULL;
+    int allocated = !!m;
 
     if (!m)
         m = *pm = av_mallocz(sizeof(*m));
+    if (!m)
+        return AVERROR(ENOMEM);
 
     if (tag) {
         if (flags & AV_DICT_DONT_OVERWRITE) {
@@ -88,12 +91,14 @@ int av_dict_set(AVDictionary **pm, const char *key, const char *value,
         av_free(tag->key);
         *tag = m->elems[--m->count];
     } else {
-        AVDictionaryEntry *tmp = av_realloc(m->elems,
-                                            (m->count + 1) * sizeof(*m->elems));
-        if (tmp)
-            m->elems = tmp;
-        else
-            return AVERROR(ENOMEM);
+        int ret = av_reallocp_array(&m->elems,
+                                    m->count + 1, sizeof(*m->elems));
+        if (ret < 0) {
+            if (allocated)
+                av_freep(pm);
+
+            return ret;
+        }
     }
     if (value) {
         if (flags & AV_DICT_DONT_STRDUP_KEY)
