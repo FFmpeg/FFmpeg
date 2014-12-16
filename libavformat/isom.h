@@ -189,6 +189,7 @@ typedef struct MOVContext {
     int has_looked_for_mfra;
     MOVFragmentIndex** fragment_index_data;
     unsigned fragment_index_count;
+    int atom_depth;
 } MOVContext;
 
 int ff_mp4_read_descr_len(AVIOContext *pb);
