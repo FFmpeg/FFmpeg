@@ -340,8 +340,12 @@ static int vmd_decode(VmdVideoContext *s)
                         len = rle_unpack(gb.buffer, &dp[ofs],
                                          len, bytestream2_get_bytes_left(&gb),
                                          frame_width - ofs);
-                    else
+                    else {
+                        if (ofs + len > frame_width ||
+                            bytestream2_get_bytes_left(&gb) < len)
+                            return AVERROR_INVALIDDATA;
                         bytestream2_get_buffer(&gb, &dp[ofs], len);
+                    }
                     bytestream2_skip(&gb, len);
                 } else {
                     /* interframe pixel copy */
