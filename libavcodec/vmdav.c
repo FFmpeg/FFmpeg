@@ -343,7 +343,7 @@ static void vmd_decode(VmdVideoContext *s)
                         if (*pb++ == 0xFF)
                             len = rle_unpack(pb, pb_end - pb, len, &dp[ofs], frame_width - ofs);
                         else {
-                        if (pb_end - pb < len)
+                        if (ofs + len > frame_width || pb_end - pb < len)
                             return;
                             memcpy(&dp[ofs], pb, len);
                         }
