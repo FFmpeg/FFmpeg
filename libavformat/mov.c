@@ -1480,7 +1480,7 @@ static void mov_parse_stsd_audio(MOVContext *c, AVIOContext *pb,
 
 static void mov_parse_stsd_subtitle(MOVContext *c, AVIOContext *pb,
                                     AVStream *st, MOVStreamContext *sc,
-                                    int size)
+                                    int64_t size)
 {
     // ttxt stsd contains display flags, justification, background
     // color, fonts, and default styles, so fake an atom to read it
@@ -1494,10 +1494,10 @@ static void mov_parse_stsd_subtitle(MOVContext *c, AVIOContext *pb,
 
 static int mov_parse_stsd_data(MOVContext *c, AVIOContext *pb,
                                 AVStream *st, MOVStreamContext *sc,
-                                int size)
+                                int64_t size)
 {
     if (st->codec->codec_tag == MKTAG('t','m','c','d')) {
-        if (ff_get_extradata(st->codec, pb, size) < 0)
+        if ((int)size != size || ff_get_extradata(st->codec, pb, size) < 0)
             return AVERROR(ENOMEM);
         if (size > 16) {
             MOVStreamContext *tmcd_ctx = st->priv_data;
