@@ -2893,6 +2893,12 @@ static int mov_read_default(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     MOVAtom a;
     int i;
 
+    if (c->atom_depth > 10) {
+        av_log(c->fc, AV_LOG_ERROR, "Atoms too deeply nested\n");
+        return AVERROR_INVALIDDATA;
+    }
+    c->atom_depth ++;
+
     if (atom.size < 0)
         atom.size = INT64_MAX;
     while (total_size + 8 <= atom.size && !url_feof(pb)) {
@@ -2909,6 +2915,7 @@ static int mov_read_default(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                 {
                     av_log(c->fc, AV_LOG_ERROR, "Broken file, trak/mdat not at top-level\n");
                     avio_skip(pb, -8);
+                    c->atom_depth --;
                     return 0;
                 }
             }
@@ -2945,13 +2952,16 @@ static int mov_read_default(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             int64_t start_pos = avio_tell(pb);
             int64_t left;
             int err = parse(c, pb, a);
-            if (err < 0)
+            if (err < 0) {
+                c->atom_depth --;
                 return err;
+            }
             if (c->found_moov && c->found_mdat &&
                 ((!pb->seekable || c->fc->flags & AVFMT_FLAG_IGNIDX) ||
                  start_pos + a.size == avio_size(pb))) {
                 if (!pb->seekable || c->fc->flags & AVFMT_FLAG_IGNIDX)
                     c->next_root_atom = start_pos + a.size;
+                c->atom_depth --;
                 return 0;
             }
             left = a.size - avio_tell(pb) + start_pos;
@@ -2969,6 +2979,7 @@ static int mov_read_default(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     if (total_size < atom.size && atom.size < 0x7ffff)
         avio_skip(pb, atom.size - total_size);
 
+    c->atom_depth --;
     return 0;
 }
 
