@@ -164,6 +164,7 @@ typedef struct MOVContext {
     int64_t next_root_atom; ///< offset of the next root atom
     int *bitrates;          ///< bitrates read before streams creation
     int bitrates_count;
+    int atom_depth;
 } MOVContext;
 
 int ff_mp4_read_descr_len(AVIOContext *pb);
