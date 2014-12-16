@@ -282,6 +282,8 @@ int av_cpu_count(void)
 
     if (sysctl(mib, 2, &nb_cpus, &len, NULL, 0) == -1)
         nb_cpus = 0;
+#elif defined(__ANDROID__) && HAVE_SYSCONF && defined(_SC_NPROCESSORS_CONF)
+    nb_cpus = sysconf(_SC_NPROCESSORS_CONF);
 #elif HAVE_SYSCONF && defined(_SC_NPROC_ONLN)
     nb_cpus = sysconf(_SC_NPROC_ONLN);
 #elif HAVE_SYSCONF && defined(_SC_NPROCESSORS_ONLN)
