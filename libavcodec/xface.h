@@ -41,17 +41,17 @@
 /*
  * Image is encoded as a big integer, using characters from '~' to
  * '!', for a total of 94 symbols. In order to express
- * 48x48*2=8*XFACE_MAX_WORDS=4608
- * bits, we need a total of 704 digits, as given by:
- * ceil(lg_94(2^4608)) = 704
+ * 48x48 pixels with the worst case encoding 666 symbols should
+ * be sufficient.
  */
-#define XFACE_MAX_DIGITS 704
+#define XFACE_MAX_DIGITS 666
 
 #define XFACE_BITSPERWORD 8
 #define XFACE_WORDCARRY (1 << XFACE_BITSPERWORD)
 #define XFACE_WORDMASK (XFACE_WORDCARRY - 1)
 
-#define XFACE_MAX_WORDS ((XFACE_PIXELS * 2 + XFACE_BITSPERWORD - 1) / XFACE_BITSPERWORD)
+// This must be larger or equal to log256(94^XFACE_MAX_DIGITS)
+#define XFACE_MAX_WORDS 546
 
 /* Portable, very large unsigned integer arithmetic is needed.
  * Implementation uses arrays of WORDs. */
