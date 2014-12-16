@@ -42,8 +42,8 @@ typedef struct SRTPProtoContext {
 static const AVOption options[] = {
     { "srtp_out_suite", "", offsetof(SRTPProtoContext, out_suite), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, E },
     { "srtp_out_params", "", offsetof(SRTPProtoContext, out_params), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, E },
-    { "srtp_in_suite", "", offsetof(SRTPProtoContext, in_suite), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, E },
-    { "srtp_in_params", "", offsetof(SRTPProtoContext, in_params), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, E },
+    { "srtp_in_suite", "", offsetof(SRTPProtoContext, in_suite), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, D },
+    { "srtp_in_params", "", offsetof(SRTPProtoContext, in_params), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, D },
     { NULL }
 };
 
