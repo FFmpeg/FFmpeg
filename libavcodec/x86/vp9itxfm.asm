@@ -2526,7 +2526,8 @@ IADST16_FN iadst, IADST16, iadst, IADST16, avx
 
 %macro VP9_IDCT_IDCT_32x32_ADD_XMM 1
 INIT_XMM %1
-cglobal vp9_idct_idct_32x32_add, 4, 7 + ARCH_X86_64 * 2, 16, 2048, dst, stride, block, eob
+cglobal vp9_idct_idct_32x32_add, 0, 6 + ARCH_X86_64 * 3, 16, 2048, dst, stride, block, eob
+    movifnidn         eobd, dword eobm
 %if cpuflag(ssse3)
     cmp eobd, 135
     jg .idctfull
@@ -2540,6 +2541,9 @@ cglobal vp9_idct_idct_32x32_add, 4, 7 + ARCH_X86_64 * 2, 16, 2048, dst, stride, 
 %endif
 
     ; dc-only case
+    movifnidn       blockq, blockmp
+    movifnidn         dstq, dstmp
+    movifnidn      strideq, stridemp
 %if cpuflag(ssse3)
     movd                m0, [blockq]
     mova                m1, [pw_11585x2]
@@ -2572,15 +2576,22 @@ cglobal vp9_idct_idct_32x32_add, 4, 7 + ARCH_X86_64 * 2, 16, 2048, dst, stride, 
 %if ARCH_X86_64
     DEFINE_ARGS dst_bak, stride, block, cnt, dst, stride30, dst_end, stride2, tmp
 %else
-    DEFINE_ARGS dst, stride, block, stride30, dst_end, stride2, tmp
-%define cntd dword r4m
 %define dst_bakq r0mp
 %endif
 %if cpuflag(ssse3)
 .idct8x8:
+%if ARCH_X86_32
+    DEFINE_ARGS block, u1, u2, u3, u4, tmp
+    mov             blockq, r2mp
+%endif
     mov               tmpq, rsp
     VP9_IDCT32_1D   blockq, 1, 8
 
+%if ARCH_X86_32
+    DEFINE_ARGS dst, stride, stride30, dst_end, stride2, tmp
+    mov            strideq, r1mp
+%define cntd dword r3m
+%endif
     mov          stride30q, strideq         ; stride
     lea           stride2q, [strideq*2]     ; stride*2
     shl          stride30q, 5               ; stride*32
@@ -2597,10 +2608,18 @@ cglobal vp9_idct_idct_32x32_add, 4, 7 + ARCH_X86_64 * 2, 16, 2048, dst, stride, 
 
     ; at the end of the loop, m7 should still be zero
     ; use that to zero out block coefficients
+%if ARCH_X86_32
+    DEFINE_ARGS block
+    mov             blockq, r2mp
+%endif
     ZERO_BLOCK      blockq, 64,  8, m1
     RET
 
 .idct16x16:
+%if ARCH_X86_32
+    DEFINE_ARGS block, tmp, cnt
+    mov             blockq, r2mp
+%endif
     mov               cntd, 2
     mov               tmpq, rsp
 .loop1_16x16:
@@ -2609,7 +2628,14 @@ cglobal vp9_idct_idct_32x32_add, 4, 7 + ARCH_X86_64 * 2, 16, 2048, dst, stride, 
     add               tmpq, 512
     dec               cntd
     jg .loop1_16x16
+
+%if ARCH_X86_64
     sub             blockq, 32
+%else
+    DEFINE_ARGS dst, stride, stride30, dst_end, stride2, tmp
+    mov            strideq, r1mp
+%define cntd dword r3m
+%endif
 
     mov          stride30q, strideq         ; stride
     lea           stride2q, [strideq*2]     ; stride*2
@@ -2628,11 +2654,19 @@ cglobal vp9_idct_idct_32x32_add, 4, 7 + ARCH_X86_64 * 2, 16, 2048, dst, stride, 
 
     ; at the end of the loop, m7 should still be zero
     ; use that to zero out block coefficients
+%if ARCH_X86_32
+    DEFINE_ARGS block
+    mov             blockq, r2mp
+%endif
     ZERO_BLOCK      blockq, 64, 16, m1
     RET
 %endif
 
 .idctfull:
+%if ARCH_X86_32
+    DEFINE_ARGS block, tmp, cnt
+    mov             blockq, r2mp
+%endif
     mov               cntd, 4
     mov               tmpq, rsp
 .loop1_full:
@@ -2641,7 +2675,14 @@ cglobal vp9_idct_idct_32x32_add, 4, 7 + ARCH_X86_64 * 2, 16, 2048, dst, stride, 
     add               tmpq, 512
     dec               cntd
     jg .loop1_full
+
+%if ARCH_X86_64
     sub             blockq, 64
+%else
+    DEFINE_ARGS dst, stride, stride30, dst_end, stride2, tmp
+    mov            strideq, r1mp
+%define cntd dword r3m
+%endif
 
     mov          stride30q, strideq         ; stride
     lea           stride2q, [strideq*2]     ; stride*2
@@ -2660,6 +2701,10 @@ cglobal vp9_idct_idct_32x32_add, 4, 7 + ARCH_X86_64 * 2, 16, 2048, dst, stride, 
 
     ; at the end of the loop, m7 should still be zero
     ; use that to zero out block coefficients
+%if ARCH_X86_32
+    DEFINE_ARGS block
+    mov             blockq, r2mp
+%endif
     ZERO_BLOCK      blockq, 64, 32, m1
     RET
 %endmacro
