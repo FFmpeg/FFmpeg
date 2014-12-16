@@ -34,7 +34,7 @@
 
 #define STR(s) AV_TOSTRING(s) // AV_STRINGIFY is too long
 
-#define YUVRGB_TABLE_HEADROOM 128
+#define YUVRGB_TABLE_HEADROOM 256
 
 #define FAST_BGR2YV12 // use 7-bit instead of 15-bit coefficients
 
