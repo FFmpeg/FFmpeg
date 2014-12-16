@@ -244,11 +244,13 @@ typedef struct RoqTempData
 /**
  * Initialize cel evaluators and set their source coordinates
  */
-static void create_cel_evals(RoqContext *enc, RoqTempdata *tempData)
+static int create_cel_evals(RoqContext *enc, RoqTempdata *tempData)
 {
     int n=0, x, y, i;
 
     tempData->cel_evals = av_malloc(enc->width*enc->height/64 * sizeof(CelEvaluation));
+    if (!tempData->cel_evals)
+        return AVERROR(ENOMEM);
 
     /* Map to the ROQ quadtree order */
     for (y=0; y<enc->height; y+=16)
@@ -257,6 +259,8 @@ static void create_cel_evals(RoqContext *enc, RoqTempdata *tempData)
                 tempData->cel_evals[n  ].sourceX = x + (i&1)*8;
                 tempData->cel_evals[n++].sourceY = y + (i&2)*4;
             }
+
+    return 0;
 }
 
 /**
@@ -791,26 +795,36 @@ static void create_clusters(const AVFrame *frame, int w, int h, uint8_t *yuvClus
         }
 }
 
-static void generate_codebook(RoqContext *enc, RoqTempdata *tempdata,
-                              int *points, int inputCount, roq_cell *results,
-                              int size, int cbsize)
+static int generate_codebook(RoqContext *enc, RoqTempdata *tempdata,
+                             int *points, int inputCount, roq_cell *results,
+                             int size, int cbsize)
 {
-    int i, j, k;
+    int i, j, k, ret = 0;
     int c_size = size*size/4;
     int *buf;
     int *codebook = av_malloc(6*c_size*cbsize*sizeof(int));
     int *closest_cb;
 
-    if (size == 4)
+    if (!codebook)
+        return AVERROR(ENOMEM);
+
+    if (size == 4) {
         closest_cb = av_malloc(6*c_size*inputCount*sizeof(int));
-    else
+        if (!closest_cb) {
+            ret = AVERROR(ENOMEM);
+            goto out;
+        }
+    } else
         closest_cb = tempdata->closest_cb2;
 
-    ff_init_elbg(points, 6*c_size, inputCount, codebook, cbsize, 1, closest_cb, &enc->randctx);
-    ff_do_elbg(points, 6*c_size, inputCount, codebook, cbsize, 1, closest_cb, &enc->randctx);
-
-    if (size == 4)
-        av_free(closest_cb);
+    ret = ff_init_elbg(points, 6 * c_size, inputCount, codebook,
+                       cbsize, 1, closest_cb, &enc->randctx);
+    if (ret < 0)
+        goto out;
+    ret = ff_do_elbg(points, 6 * c_size, inputCount, codebook,
+                     cbsize, 1, closest_cb, &enc->randctx);
+    if (ret < 0)
+        goto out;
 
     buf = codebook;
     for (i=0; i<cbsize; i++)
@@ -822,13 +836,16 @@ static void generate_codebook(RoqContext *enc, RoqTempdata *tempdata,
             results->v =    (*buf++ + CHROMA_BIAS/2)/CHROMA_BIAS;
             results++;
         }
-
+out:
+    if (size == 4)
+        av_free(closest_cb);
     av_free(codebook);
+    return ret;
 }
 
-static void generate_new_codebooks(RoqContext *enc, RoqTempdata *tempData)
+static int generate_new_codebooks(RoqContext *enc, RoqTempdata *tempData)
 {
-    int i,j;
+    int i, j, ret = 0;
     RoqCodebooks *codebooks = &tempData->codebooks;
     int max = enc->width*enc->height/16;
     uint8_t mb2[3*4];
@@ -836,6 +853,11 @@ static void generate_new_codebooks(RoqContext *enc, RoqTempdata *tempData)
     uint8_t *yuvClusters=av_malloc(sizeof(int)*max*6*4);
     int *points = av_malloc(max*6*4*sizeof(int));
     int bias;
+
+    if (!results4 || !yuvClusters || !points) {
+        ret = AVERROR(ENOMEM);
+        goto out;
+    }
 
     /* Subsample YUV data */
     create_clusters(enc->frame_to_enc, enc->width, enc->height, yuvClusters);
@@ -847,14 +869,22 @@ static void generate_new_codebooks(RoqContext *enc, RoqTempdata *tempData)
     }
 
     /* Create 4x4 codebooks */
-    generate_codebook(enc, tempData, points, max, results4, 4, MAX_CBS_4x4);
+    if ((ret = generate_codebook(enc, tempData, points, max,
+                                 results4, 4, MAX_CBS_4x4)) < 0)
+        goto out;
 
     codebooks->numCB4 = MAX_CBS_4x4;
 
     tempData->closest_cb2 = av_malloc(max*4*sizeof(int));
+    if (!tempData->closest_cb2) {
+        ret = AVERROR(ENOMEM);
+        goto out;
+    }
 
     /* Create 2x2 codebooks */
-    generate_codebook(enc, tempData, points, max*4, enc->cb2x2, 2, MAX_CBS_2x2);
+    if ((ret = generate_codebook(enc, tempData, points, max * 4,
+                                 enc->cb2x2, 2, MAX_CBS_2x2)) < 0)
+        goto out;
 
     codebooks->numCB2 = MAX_CBS_2x2;
 
@@ -874,22 +904,27 @@ static void generate_new_codebooks(RoqContext *enc, RoqTempdata *tempData)
         enlarge_roq_mb4(codebooks->unpacked_cb4 + i*4*4*3,
                         codebooks->unpacked_cb4_enlarged + i*8*8*3);
     }
-
+out:
     av_free(yuvClusters);
     av_free(points);
     av_free(results4);
+    return ret;
 }
 
-static void roq_encode_video(RoqContext *enc)
+static int roq_encode_video(RoqContext *enc)
 {
     RoqTempdata *tempData = enc->tmpData;
-    int i;
+    int i, ret;
 
     memset(tempData, 0, sizeof(*tempData));
 
-    create_cel_evals(enc, tempData);
+    ret = create_cel_evals(enc, tempData);
+    if (ret < 0)
+        return ret;
 
-    generate_new_codebooks(enc, tempData);
+    ret = generate_new_codebooks(enc, tempData);
+    if (ret < 0)
+        return ret;
 
     if (enc->framesSinceKeyframe >= 1) {
         motion_search(enc, 8);
@@ -935,6 +970,8 @@ static void roq_encode_video(RoqContext *enc)
     av_free(tempData->closest_cb2);
 
     enc->framesSinceKeyframe++;
+
+    return 0;
 }
 
 static av_cold int roq_encode_end(AVCodecContext *avctx)
@@ -1067,7 +1104,9 @@ static int roq_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     }
 
     /* Encode the actual frame */
-    roq_encode_video(enc);
+    ret = roq_encode_video(enc);
+    if (ret < 0)
+        return ret;
 
     pkt->size   = enc->out_buf - pkt->data;
     if (enc->framesSinceKeyframe == 1)
