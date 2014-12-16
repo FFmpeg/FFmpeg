@@ -396,7 +396,7 @@ fail:
 
     av_dict_free(&options);
     if (ret) {
-        av_free(hls->basename);
+        av_freep(&hls->basename);
         if (hls->avf)
             avformat_free_context(hls->avf);
     }
@@ -479,7 +479,7 @@ static int hls_write_trailer(struct AVFormatContext *s)
         avio_closep(&oc->pb);
         hls_append_segment(hls, hls->duration, hls->start_pos, hls->size);
     }
-    av_free(hls->basename);
+    av_freep(&hls->basename);
     avformat_free_context(oc);
     hls->avf = NULL;
     hls_window(s, 1);
