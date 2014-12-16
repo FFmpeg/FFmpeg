@@ -63,13 +63,11 @@ pb_6xm1_246_8toE: times 6 db -1
 pb_6xm1_BDF_0to6: times 6 db -1
                   db 11, 13, 15, 0, 1, 2, 3, 4, 5, 6
 pb_02468ACE_13579BDF: db 0, 2, 4, 6, 8, 10, 12, 14, 1, 3, 5, 7, 9, 11, 13, 15
-pb_7to1_9x0:  db 7, 6, 5, 4
-pb_3to1_5x0:  db 3, 2, 1
-              times 9 db 0
-pb_Fto0:      db 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0
 
 pb_2:  times 32 db 2
 pb_15: times 16 db 15
+pb_0to2_5x3: db 0, 1, 2
+             times 5 db 3
 
 cextern pb_1
 cextern pb_3
@@ -1420,7 +1418,7 @@ HD_XMM_FUNCS avx
 INIT_MMX ssse3
 cglobal vp9_ipred_hu_4x4, 3, 3, 0, dst, stride, l
     movd                    m0, [lq]
-    pshufb                  m0, [pb_3to1_5x0]
+    pshufb                  m0, [pb_0to2_5x3]
     psrlq                   m1, m0, 8
     psrlq                   m2, m1, 8
     LOWPASS                  2,  1, 0, 3
@@ -1441,7 +1439,7 @@ cglobal vp9_ipred_hu_4x4, 3, 3, 0, dst, stride, l
 INIT_XMM %1
 cglobal vp9_ipred_hu_8x8, 3, 4, 4, dst, stride, l
     movq                    m0, [lq]
-    pshufb                  m0, [pb_7to1_9x0]
+    pshufb                  m0, [pb_0to6_9x7]
     psrldq                  m1, m0, 1
     psrldq                  m2, m1, 1
     LOWPASS                  2,  1, 0, 3
@@ -1466,7 +1464,6 @@ cglobal vp9_ipred_hu_8x8, 3, 4, 4, dst, stride, l
 INIT_XMM %1
 cglobal vp9_ipred_hu_16x16, 3, 4, 5, dst, stride, l
     mova                    m0, [lq]
-    pshufb                  m0, [pb_Fto0]
     mova                    m3, [pb_2toE_3xF]
     pshufb                  m1, m0, [pb_1toE_2xF]
     pshufb                  m2, m0, m3
@@ -1494,12 +1491,9 @@ cglobal vp9_ipred_hu_16x16, 3, 4, 5, dst, stride, l
 
 INIT_XMM %1
 cglobal vp9_ipred_hu_32x32, 3, 7, 7, dst, stride, l
-    mova                    m0, [lq]
-    mova                    m1, [lq+16]
-    mova                    m2, [pb_Fto0]
+    mova                    m1, [lq]
+    mova                    m0, [lq+16]
     mova                    m4, [pb_2toE_3xF]
-    pshufb                  m0, m2
-    pshufb                  m1, m2
     palignr                 m2, m0, m1,  1
     palignr                 m3, m0, m1,  2
     LOWPASS                  3,  2,  1,  5

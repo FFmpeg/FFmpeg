@@ -786,7 +786,7 @@ def_vert_left(32)
 static void hor_up_4x4_c(uint8_t *dst, ptrdiff_t stride,
                          const uint8_t *left, const uint8_t *top)
 {
-    int l0 = left[3], l1 = left[2], l2 = left[1], l3 = left[0];
+    int l0 = left[0], l1 = left[1], l2 = left[2], l3 = left[3];
 
     DST(0,0) = (l0 + l1 + 1) >> 1;
     DST(1,0) = (l0 + l1 * 2 + l2 + 2) >> 2;
@@ -805,17 +805,17 @@ static void hor_up_##size##x##size##_c(uint8_t *dst, ptrdiff_t stride, \
     uint8_t v[size*2 - 2]; \
 \
     for (i = 0; i < size - 2; i++) { \
-        v[i*2    ] = (left[size - i - 1] + left[size - i - 2] + 1) >> 1; \
-        v[i*2 + 1] = (left[size - i - 1] + left[size - i - 2] * 2 + left[size - i - 3] + 2) >> 2; \
+        v[i*2    ] = (left[i] + left[i + 1] + 1) >> 1; \
+        v[i*2 + 1] = (left[i] + left[i + 1] * 2 + left[i + 2] + 2) >> 2; \
     } \
-    v[size*2 - 4] = (left[1] + left[0] + 1) >> 1; \
-    v[size*2 - 3] = (left[1] + left[0] * 3 + 2) >> 2; \
+    v[size*2 - 4] = (left[size - 2] + left[size - 1] + 1) >> 1; \
+    v[size*2 - 3] = (left[size - 2] + left[size - 1] * 3 + 2) >> 2; \
 \
     for (j = 0; j < size / 2; j++) \
         memcpy(dst + j*stride, v + j*2, size); \
     for (j = size / 2; j < size; j++) { \
         memcpy(dst + j*stride, v + j*2, size*2 - 2 - j*2); \
-        memset(dst + j*stride + size*2 - 2 - j*2, left[0], \
+        memset(dst + j*stride + size*2 - 2 - j*2, left[size - 1], \
                2 + j*2 - size); \
     } \
 }

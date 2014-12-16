@@ -2347,6 +2347,7 @@ static av_always_inline int check_intra_mode(VP9Context *s, int mode, uint8_t **
         uint8_t needs_top:1;
         uint8_t needs_topleft:1;
         uint8_t needs_topright:1;
+        uint8_t invert_left:1;
     } edges[N_INTRA_PRED_MODES] = {
         [VERT_PRED]            = { .needs_top  = 1 },
         [HOR_PRED]             = { .needs_left = 1 },
@@ -2356,7 +2357,7 @@ static av_always_inline int check_intra_mode(VP9Context *s, int mode, uint8_t **
         [VERT_RIGHT_PRED]      = { .needs_left = 1, .needs_top = 1, .needs_topleft = 1 },
         [HOR_DOWN_PRED]        = { .needs_left = 1, .needs_top = 1, .needs_topleft = 1 },
         [VERT_LEFT_PRED]       = { .needs_top  = 1, .needs_topright = 1 },
-        [HOR_UP_PRED]          = { .needs_left = 1 },
+        [HOR_UP_PRED]          = { .needs_left = 1, .invert_left = 1 },
         [TM_VP8_PRED]          = { .needs_left = 1, .needs_top = 1, .needs_topleft = 1 },
         [LEFT_DC_PRED]         = { .needs_left = 1 },
         [TOP_DC_PRED]          = { .needs_top  = 1 },
@@ -2429,13 +2430,24 @@ static av_always_inline int check_intra_mode(VP9Context *s, int mode, uint8_t **
             uint8_t *dst = x == 0 ? dst_edge : dst_inner;
             ptrdiff_t stride = x == 0 ? stride_edge : stride_inner;
 
-            if (n_px_need <= n_px_have) {
-                for (i = 0; i < n_px_need; i++)
-                    l[n_px_need - 1 - i] = dst[i * stride - 1];
+            if (edges[mode].invert_left) {
+                if (n_px_need <= n_px_have) {
+                    for (i = 0; i < n_px_need; i++)
+                        l[i] = dst[i * stride - 1];
+                } else {
+                    for (i = 0; i < n_px_have; i++)
+                        l[i] = dst[i * stride - 1];
+                    memset(&l[n_px_have], l[n_px_have - 1], n_px_need - n_px_have);
+                }
             } else {
-                for (i = 0; i < n_px_have; i++)
-                    l[n_px_need - 1 - i] = dst[i * stride - 1];
-                memset(l, l[n_px_need - n_px_have], n_px_need - n_px_have);
+                if (n_px_need <= n_px_have) {
+                    for (i = 0; i < n_px_need; i++)
+                        l[n_px_need - 1 - i] = dst[i * stride - 1];
+                } else {
+                    for (i = 0; i < n_px_have; i++)
+                        l[n_px_need - 1 - i] = dst[i * stride - 1];
+                    memset(l, l[n_px_need - n_px_have], n_px_need - n_px_have);
+                }
             }
         } else {
             memset(l, 129, 4 << tx);
