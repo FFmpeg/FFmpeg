@@ -37,7 +37,7 @@
 
 #define STR(s) AV_TOSTRING(s) // AV_STRINGIFY is too long
 
-#define YUVRGB_TABLE_HEADROOM 128
+#define YUVRGB_TABLE_HEADROOM 256
 
 #define MAX_FILTER_SIZE 256
 
