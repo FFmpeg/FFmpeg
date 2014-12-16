@@ -162,6 +162,7 @@ typedef struct MOVContext {
     int use_absolute_path;
     int ignore_editlist;
     int64_t next_root_atom; ///< offset of the next root atom
+    int atom_depth;
 } MOVContext;
 
 int ff_mp4_read_descr_len(AVIOContext *pb);
