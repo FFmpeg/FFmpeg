@@ -83,6 +83,7 @@ static int h263_handle_packet(AVFormatContext *ctx, PayloadContext *data,
         avio_close_dyn_buf(data->buf, &p);
         av_free(p);
         data->buf = NULL;
+        data->endbyte_bits = 0;
     }
 
     if (len < 4) {
