@@ -177,9 +177,10 @@ static int config_props(AVFilterLink *outlink)
     var_values[VAR_VSUB]  = 1 << desc->log2_chroma_h;
 
     /* evaluate width and height */
-    av_expr_parse_and_eval(&res, (expr = scale->w_expr),
-                           var_names, var_values,
-                           NULL, NULL, NULL, NULL, NULL, 0, ctx);
+    if ((ret = av_expr_parse_and_eval(&res, (expr = scale->w_expr),
+                                      var_names, var_values,
+                                      NULL, NULL, NULL, NULL, NULL, 0, ctx)) < 0)
+        goto fail;
     scale->w = var_values[VAR_OUT_W] = var_values[VAR_OW] = res;
     if ((ret = av_expr_parse_and_eval(&res, (expr = scale->h_expr),
                                       var_names, var_values,

@@ -158,9 +158,10 @@ static int config_input(AVFilterLink *inlink)
     var_values[VAR_VSUB]  = 1<<s->vsub;
 
     /* evaluate width and height */
-    av_expr_parse_and_eval(&res, (expr = s->w_expr),
-                           var_names, var_values,
-                           NULL, NULL, NULL, NULL, NULL, 0, ctx);
+    if ((ret = av_expr_parse_and_eval(&res, (expr = s->w_expr),
+                                      var_names, var_values,
+                                      NULL, NULL, NULL, NULL, NULL, 0, ctx)) < 0)
+        goto eval_fail;
     s->w = var_values[VAR_OUT_W] = var_values[VAR_OW] = res;
     if ((ret = av_expr_parse_and_eval(&res, (expr = s->h_expr),
                                       var_names, var_values,
@@ -175,9 +176,10 @@ static int config_input(AVFilterLink *inlink)
     s->w = var_values[VAR_OUT_W] = var_values[VAR_OW] = res;
 
     /* evaluate x and y */
-    av_expr_parse_and_eval(&res, (expr = s->x_expr),
-                           var_names, var_values,
-                           NULL, NULL, NULL, NULL, NULL, 0, ctx);
+    if ((ret = av_expr_parse_and_eval(&res, (expr = s->x_expr),
+                                      var_names, var_values,
+                                      NULL, NULL, NULL, NULL, NULL, 0, ctx)) < 0)
+        goto eval_fail;
     s->x = var_values[VAR_X] = res;
     if ((ret = av_expr_parse_and_eval(&res, (expr = s->y_expr),
                                       var_names, var_values,
