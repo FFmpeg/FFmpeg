@@ -654,6 +654,7 @@ static int dash_write_header(AVFormatContext *s)
 
         set_codec_str(s, os->ctx->streams[0]->codec, os->codec_str, sizeof(os->codec_str));
         os->first_dts = AV_NOPTS_VALUE;
+        os->end_dts = AV_NOPTS_VALUE;
         os->segment_index = 1;
     }
 
@@ -863,8 +864,15 @@ static int dash_write_packet(AVFormatContext *s, AVPacket *pkt)
             return ret;
     }
 
-    if (!os->packets_written)
-        os->start_dts = pkt->dts;
+    if (!os->packets_written) {
+        // If we wrote a previous segment, adjust the start time of the segment
+        // to the end of the previous one (which is the same as the mp4 muxer
+        // does). This avoids gaps in the timeline.
+        if (os->end_dts != AV_NOPTS_VALUE)
+            os->start_dts = os->end_dts;
+        else
+            os->start_dts = pkt->dts;
+    }
     os->end_dts = pkt->dts + pkt->duration;
     os->packets_written++;
     return ff_write_chained(os->ctx, 0, pkt, s, 0);
