@@ -99,11 +99,15 @@ static int xcbgrab_reposition(AVFormatContext *s,
                               xcb_get_geometry_reply_t *geo)
 {
     XCBGrabContext *c = s->priv_data;
-    int x = c->x, y = c->y, p_x = p->win_x, p_y = p->win_y;
+    int x = c->x, y = c->y;
     int w = c->width, h = c->height, f = c->follow_mouse;
+    int p_x, p_y;
 
     if (!p || !geo)
         return AVERROR(EIO);
+
+    p_x = p->win_x;
+    p_y = p->win_y;
 
     if (f == FOLLOW_CENTER) {
         x = p_x - w / 2;
