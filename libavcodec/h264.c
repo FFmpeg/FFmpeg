@@ -1131,6 +1131,7 @@ static void free_tables(H264Context *h, int free_rbsp)
     av_buffer_pool_uninit(&h->ref_index_pool);
 
     if (free_rbsp && h->DPB) {
+        memset(h->delayed_pic, 0, sizeof(h->delayed_pic));
         for (i = 0; i < MAX_PICTURE_COUNT; i++)
             unref_picture(h, &h->DPB[i]);
         av_freep(&h->DPB);
