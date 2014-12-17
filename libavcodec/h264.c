@@ -1043,6 +1043,7 @@ static void free_tables(H264Context *h, int free_rbsp)
         av_freep(&h->visualization_buffer[i]);
 
     if (free_rbsp) {
+        memset(h->delayed_pic, 0, sizeof(h->delayed_pic));
         for (i = 0; i < h->picture_count && !h->avctx->internal->is_copy; i++)
             free_picture(h, &h->DPB[i]);
         av_freep(&h->DPB);
