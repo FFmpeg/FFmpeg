@@ -1343,6 +1343,8 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
     switch (desc_tag) {
     case 0x1E: /* SL descriptor */
         desc_es_id = get16(pp, desc_end);
+        if (desc_es_id < 0)
+            break;
         if (ts && ts->pids[pid])
             ts->pids[pid]->es_id = desc_es_id;
         for (i = 0; i < mp4_descr_count; i++)
@@ -1361,7 +1363,8 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
             }
         break;
     case 0x1F: /* FMC descriptor */
-        get16(pp, desc_end);
+        if (get16(pp, desc_end) < 0)
+            break;
         if (mp4_descr_count > 0 &&
             st->codec->codec_id == AV_CODEC_ID_AAC_LATM &&
             mp4_descr->dec_config_descr_len && mp4_descr->es_id == pid) {
