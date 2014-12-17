@@ -338,6 +338,7 @@ typedef struct H264Picture {
  * H264Context
  */
 typedef struct H264Context {
+    AVClass *av_class;
     AVCodecContext *avctx;
     MECmpContext mecc;
     VideoDSPContext vdsp;
