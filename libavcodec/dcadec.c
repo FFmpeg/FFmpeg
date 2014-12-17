@@ -2360,6 +2360,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
 #else
             if (s->xch_present && !s->xch_disable) {
 #endif
+                if (avctx->channel_layout & AV_CH_BACK_CENTER) {
+                    avpriv_request_sample(avctx, "XCh with Back center channel");
+                    return AVERROR_INVALIDDATA;
+                }
                 avctx->channel_layout |= AV_CH_BACK_CENTER;
                 if (s->lfe) {
                     avctx->channel_layout |= AV_CH_LOW_FREQUENCY;
