@@ -5,6 +5,7 @@ version <next>:
 - nvenc encoder
 - 10bit spp filter
 - colorlevels filter
+- RIFX format for *.wav files
 
 
 version 2.5:
