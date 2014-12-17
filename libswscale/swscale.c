@@ -269,6 +269,9 @@ static av_always_inline void hyscale(SwsContext *c, int16_t *dst, int dstWidth,
     } else if (c->readLumPlanar && !isAlpha) {
         c->readLumPlanar(formatConvBuffer, src_in, srcW);
         src = formatConvBuffer;
+    } else if (c->readAlpPlanar && isAlpha) {
+        c->readAlpPlanar(formatConvBuffer, src_in, srcW);
+        src = formatConvBuffer;
     }
 
     if (!c->hyscale_fast) {

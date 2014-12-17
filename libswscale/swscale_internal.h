@@ -458,12 +458,13 @@ typedef struct SwsContext {
 
     /**
      * Functions to read planar input, such as planar RGB, and convert
-     * internally to Y/UV.
+     * internally to Y/UV/A.
      */
     /** @{ */
     void (*readLumPlanar)(uint8_t *dst, const uint8_t *src[4], int width);
     void (*readChrPlanar)(uint8_t *dstU, uint8_t *dstV, const uint8_t *src[4],
                           int width);
+    void (*readAlpPlanar)(uint8_t *dst, const uint8_t *src[4], int width);
     /** @} */
 
     /**
