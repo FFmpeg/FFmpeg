@@ -284,6 +284,7 @@ typedef struct MMCO {
  * H264Context
  */
 typedef struct H264Context {
+    AVClass *av_class;
     AVCodecContext *avctx;
     VideoDSPContext vdsp;
     H264DSPContext h264dsp;
