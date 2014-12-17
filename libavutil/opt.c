@@ -138,7 +138,7 @@ static int set_string(void *obj, const AVOption *o, const char *val, uint8_t **d
 {
     av_freep(dst);
     *dst = av_strdup(val);
-    return 0;
+    return *dst ? 0 : AVERROR(ENOMEM);
 }
 
 #define DEFAULT_NUMVAL(opt) ((opt->type == AV_OPT_TYPE_INT64 || \
@@ -350,7 +350,7 @@ int av_opt_get(void *obj, const char *name, int search_flags, uint8_t **out_val)
             *out_val = av_strdup(*(uint8_t**)dst);
         else
             *out_val = av_strdup("");
-        return 0;
+        return *out_val ? 0 : AVERROR(ENOMEM);
     case AV_OPT_TYPE_BINARY:
         len = *(int*)(((uint8_t *)dst) + sizeof(uint8_t *));
         if ((uint64_t)len*2 + 1 > INT_MAX)
@@ -368,7 +368,7 @@ int av_opt_get(void *obj, const char *name, int search_flags, uint8_t **out_val)
     if (ret >= sizeof(buf))
         return AVERROR(EINVAL);
     *out_val = av_strdup(buf);
-    return 0;
+    return *out_val ? 0 : AVERROR(ENOMEM);
 }
 
 static int get_number(void *obj, const char *name, double *num, int *den, int64_t *intnum,
@@ -828,6 +828,8 @@ int main(void)
         test_ctx.class = &test_class;
         av_opt_set_defaults(&test_ctx);
         test_ctx.string = av_strdup("default");
+        if (!test_ctx.string)
+            return AVERROR(ENOMEM);
 
         av_log_set_level(AV_LOG_DEBUG);
 

@@ -302,6 +302,8 @@ static void old_print_object_header(const char *name)
         return;
 
     str = p = av_strdup(name);
+    if (!str)
+        return;
     while (*p) {
         *p = av_toupper(*p);
         p++;
@@ -319,6 +321,8 @@ static void old_print_object_footer(const char *name)
         return;
 
     str = p = av_strdup(name);
+    if (!str)
+        return;
     while (*p) {
         *p = av_toupper(*p);
         p++;

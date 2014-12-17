@@ -261,10 +261,14 @@ static int write_option(void *optctx, const OptionDef *po, const char *opt,
     if (po->flags & OPT_SPEC) {
         SpecifierOpt **so = dst;
         char *p = strchr(opt, ':');
+        char *str;
 
         dstcount = (int *)(so + 1);
         *so = grow_array(*so, sizeof(**so), dstcount, *dstcount + 1);
-        (*so)[*dstcount - 1].specifier = av_strdup(p ? p + 1 : "");
+        str = av_strdup(p ? p + 1 : "");
+        if (!str)
+            return AVERROR(ENOMEM);
+        (*so)[*dstcount - 1].specifier = str;
         dst = &(*so)[*dstcount - 1].u;
     }
 
@@ -272,6 +276,8 @@ static int write_option(void *optctx, const OptionDef *po, const char *opt,
         char *str;
         str = av_strdup(arg);
         av_freep(dst);
+        if (!str)
+            return AVERROR(ENOMEM);
         *(char **)dst = str;
     } else if (po->flags & OPT_BOOL || po->flags & OPT_INT) {
         *(int *)dst = parse_number_or_die(opt, arg, OPT_INT64, INT_MIN, INT_MAX);
@@ -1350,6 +1356,8 @@ int show_help(void *optctx, const char *opt, const char *arg)
     av_log_set_callback(log_callback_help);
 
     topic = av_strdup(arg ? arg : "");
+    if (!topic)
+        return AVERROR(ENOMEM);
     par = strchr(topic, '=');
     if (par)
         *par++ = 0;
