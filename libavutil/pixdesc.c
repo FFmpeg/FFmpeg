@@ -1451,6 +1451,45 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
         },
         .flags = AV_PIX_FMT_FLAG_BE | AV_PIX_FMT_FLAG_PLANAR | AV_PIX_FMT_FLAG_RGB,
     },
+    [AV_PIX_FMT_GBRAP] = {
+        .name = "gbrap",
+        .nb_components = 4,
+        .log2_chroma_w = 0,
+        .log2_chroma_h = 0,
+        .comp = {
+            { 0, 0, 1, 0, 7 },        /* G */
+            { 1, 0, 1, 0, 7 },        /* B */
+            { 2, 0, 1, 0, 7 },        /* R */
+            { 3, 0, 1, 0, 7 },        /* A */
+        },
+        .flags = PIX_FMT_PLANAR | PIX_FMT_RGB | PIX_FMT_ALPHA,
+    },
+    [AV_PIX_FMT_GBRAP16LE] = {
+        .name = "gbrap16le",
+        .nb_components = 4,
+        .log2_chroma_w = 0,
+        .log2_chroma_h = 0,
+        .comp = {
+            { 0, 1, 1, 0, 15 },       /* G */
+            { 1, 1, 1, 0, 15 },       /* B */
+            { 2, 1, 1, 0, 15 },       /* R */
+            { 3, 1, 1, 0, 15 },       /* A */
+        },
+        .flags = PIX_FMT_PLANAR | PIX_FMT_RGB | PIX_FMT_ALPHA,
+    },
+    [AV_PIX_FMT_GBRAP16BE] = {
+        .name = "gbrap16be",
+        .nb_components = 4,
+        .log2_chroma_w = 0,
+        .log2_chroma_h = 0,
+        .comp = {
+            { 0, 1, 1, 0, 15 },       /* G */
+            { 1, 1, 1, 0, 15 },       /* B */
+            { 2, 1, 1, 0, 15 },       /* R */
+            { 3, 1, 1, 0, 15 },       /* A */
+        },
+        .flags = PIX_FMT_BE | PIX_FMT_PLANAR | PIX_FMT_RGB | PIX_FMT_ALPHA,
+    },
     [AV_PIX_FMT_VDPAU] = {
         .name = "vdpau",
         .log2_chroma_w = 1,

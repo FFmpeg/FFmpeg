@@ -206,6 +206,10 @@ enum AVPixelFormat {
     AV_PIX_FMT_YA16BE,       ///< 16bit gray, 16bit alpha (big-endian)
     AV_PIX_FMT_YA16LE,       ///< 16bit gray, 16bit alpha (little-endian)
 
+    AV_PIX_FMT_GBRAP,        ///< planar GBRA 4:4:4:4 32bpp
+    AV_PIX_FMT_GBRAP16BE,    ///< planar GBRA 4:4:4:4 64bpp, big-endian
+    AV_PIX_FMT_GBRAP16LE,    ///< planar GBRA 4:4:4:4 64bpp, little-endian
+
     AV_PIX_FMT_NB,        ///< number of pixel formats, DO NOT USE THIS if you want to link with shared libav* because the number of formats might differ between versions
 
 #if FF_API_PIX_FMT
@@ -250,6 +254,8 @@ enum AVPixelFormat {
 #define AV_PIX_FMT_GBRP9     AV_PIX_FMT_NE(GBRP9BE ,    GBRP9LE)
 #define AV_PIX_FMT_GBRP10    AV_PIX_FMT_NE(GBRP10BE,    GBRP10LE)
 #define AV_PIX_FMT_GBRP16    AV_PIX_FMT_NE(GBRP16BE,    GBRP16LE)
+
+#define AV_PIX_FMT_GBRAP16   AV_PIX_FMT_NE(GBRAP16BE,   GBRAP16LE)
 
 #define AV_PIX_FMT_YUVA420P9  AV_PIX_FMT_NE(YUVA420P9BE , YUVA420P9LE)
 #define AV_PIX_FMT_YUVA422P9  AV_PIX_FMT_NE(YUVA422P9BE , YUVA422P9LE)
