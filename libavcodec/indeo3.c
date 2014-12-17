@@ -94,7 +94,7 @@ typedef struct Indeo3DecodeContext {
 
     int16_t         width, height;
     uint32_t        frame_num;      ///< current frame number (zero-based)
-    uint32_t        data_size;      ///< size of the frame data in bytes
+    int             data_size;      ///< size of the frame data in bytes
     uint16_t        frame_flags;    ///< frame properties
     uint8_t         cb_offset;      ///< needed for selecting VQ tables
     uint8_t         buf_sel;        ///< active frame buffer: 0 - primary, 1 -secondary
@@ -899,7 +899,8 @@ static int decode_frame_headers(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
     GetByteContext gb;
     const uint8_t   *bs_hdr;
     uint32_t        frame_num, word2, check_sum, data_size;
-    uint32_t        y_offset, u_offset, v_offset, starts[3], ends[3];
+    int             y_offset, u_offset, v_offset;
+    uint32_t        starts[3], ends[3];
     uint16_t        height, width;
     int             i, j;
 
