@@ -443,7 +443,7 @@ static void clone_tables(H264Context *dst, H264Context *src, int i)
 }
 
 #define IN_RANGE(a, b, size) (((a) >= (b)) && ((a) < ((b) + (size))))
-#undef REBASE_PICTURE
+
 #define REBASE_PICTURE(pic, new_ctx, old_ctx)             \
     (((pic) && (pic) >= (old_ctx)->DPB &&                       \
       (pic) < (old_ctx)->DPB + H264_MAX_PICTURE_COUNT) ?          \

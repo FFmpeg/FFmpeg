@@ -379,6 +379,8 @@ int ff_alsa_get_device_list(AVDeviceInfoList *device_list, snd_pcm_stream_t stre
                                               &device_list->nb_devices, new_device)) < 0) {
                 goto fail;
             }
+            if (!strcmp(new_device->device_name, "default"))
+                device_list->default_device = device_list->nb_devices - 1;
             new_device = NULL;
         }
       fail:

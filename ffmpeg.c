@@ -819,6 +819,10 @@ static void do_subtitle_out(AVFormatContext *s,
 
     if (!subtitle_out) {
         subtitle_out = av_malloc(subtitle_out_max_size);
+        if (!subtitle_out) {
+            av_log(NULL, AV_LOG_FATAL, "Failed to allocate subtitle_out\n");
+            exit_program(1);
+        }
     }
 
     /* Note: DVB subtitle need one packet to draw them and one other

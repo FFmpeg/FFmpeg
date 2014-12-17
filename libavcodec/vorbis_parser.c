@@ -184,7 +184,7 @@ bad_header:
 static int vorbis_parse_init(AVVorbisParseContext *s,
                              const uint8_t *extradata, int extradata_size)
 {
-    uint8_t *header_start[3];
+    const uint8_t *header_start[3];
     int header_len[3];
     int ret;
 

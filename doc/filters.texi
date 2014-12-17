@@ -922,7 +922,7 @@ It accepts the following option:
 @table @option
 @item length
 Short window length in seconds, used for peak and trough RMS measurement.
-Default is @code{0.05} (50 miliseconds). Allowed range is @code{[0.1 - 10]}.
+Default is @code{0.05} (50 milliseconds). Allowed range is @code{[0.1 - 10]}.
 @end table
 
 A description of each shown parameter follows:
@@ -1465,12 +1465,12 @@ Set base delay in milliseconds. Range from 0 to 30. Default value is 0.
 Set added swep delay in milliseconds. Range from 0 to 10. Default value is 2.
 
 @item regen
-Set percentage regeneneration (delayed signal feedback). Range from -95 to 95.
+Set percentage regeneration (delayed signal feedback). Range from -95 to 95.
 Default value is 0.
 
 @item width
 Set percentage of delayed signal mixed with original. Range from 0 to 100.
-Default valu is 71.
+Default value is 71.
 
 @item speed
 Set sweeps per second (Hz). Range from 0.1 to 10. Default value is 0.5.
@@ -1875,7 +1875,7 @@ or amplitude ratio. Default value is @code{0}.
 @item stop_periods
 Set the count for trimming silence from the end of audio.
 To remove silence from the middle of a file, specify a @var{stop_periods}
-that is negative. This value is then threated as a positive value and is
+that is negative. This value is then treated as a positive value and is
 used to indicate the effect should restart processing as specified by
 @var{start_periods}, making it suitable for removing periods of silence
 in the middle of the audio.
@@ -2169,7 +2169,7 @@ The sample rate of the incoming audio buffers.
 
 @item sample_fmt
 The sample format of the incoming audio buffers.
-Either a sample format name or its corresponging integer representation from
+Either a sample format name or its corresponding integer representation from
 the enum AVSampleFormat in @file{libavutil/samplefmt.h}
 
 @item channel_layout
@@ -2378,7 +2378,7 @@ Set the voice to use for the speech synthesis. Default value is
 
 @itemize
 @item
-Read from file @file{speech.txt}, and synthetize the text using the
+Read from file @file{speech.txt}, and synthesize the text using the
 standard flite voice:
 @example
 flite=textfile=speech.txt
@@ -2934,6 +2934,75 @@ colorbalance=rs=.3
 @end example
 @end itemize
 
+@section colorlevels
+
+Adjust video input frames using levels.
+
+The filter accepts the following options:
+
+@table @option
+@item rimin
+@item gimin
+@item bimin
+@item aimin
+Adjust red, green, blue and alpha input black point.
+Allowed ranges for options are @code{[-1.0, 1.0]}. Defaults are @code{0}.
+
+@item rimax
+@item gimax
+@item bimax
+@item aimax
+Adjust red, green, blue and alpha input white point.
+Allowed ranges for options are @code{[-1.0, 1.0]}. Defaults are @code{1}.
+
+Input levels are used to lighten highlights (bright tones), darken shadows
+(dark tones), change the balance of bright and dark tones.
+
+@item romin
+@item gomin
+@item bomin
+@item aomin
+Adjust red, green, blue and alpha output black point.
+Allowed ranges for options are @code{[0, 1.0]}. Defaults are @code{0}.
+
+@item romax
+@item gomax
+@item bomax
+@item aomax
+Adjust red, green, blue and alpha output white point.
+Allowed ranges for options are @code{[0, 1.0]}. Defaults are @code{1}.
+
+Output levels allows manual selection of a constrained output level range.
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Make video output darker:
+@example
+colorlevels=rimin=0.058:gimin=0.058:bimin=0.058
+@end example
+
+@item
+Increase contrast:
+@example
+colorlevels=rimin=0.039:gimin=0.039:bimin=0.039:rimax=0.96:gimax=0.96:bimax=0.96
+@end example
+
+@item
+Make video output lighter:
+@example
+colorlevels=rimax=0.902:gimax=0.902:bimax=0.902
+@end example
+
+@item
+Increase brightness:
+@example
+colorlevels=romin=0.5:gomin=0.5:bomin=0.5
+@end example
+@end itemize
+
 @section colorchannelmixer
 
 Adjust video input frames by re-mixing color channels.
@@ -3189,7 +3258,7 @@ crop=in_w:1/PHI*in_w
 @end example
 
 @item
-Appply trembling effect:
+Apply trembling effect:
 @example
 crop=in_w/2:in_h/2:(in_w-out_w)/2+((in_w-out_w)/2)*sin(n/10):(in_h-out_h)/2 +((in_h-out_h)/2)*sin(n/7)
 @end example
@@ -5792,11 +5861,11 @@ The filter accepts the following options:
 @table @option
 @item cx
 Relative x-coordinate of the focal point of the image, and thereby the center of the
-distrortion. This value has a range [0,1] and is expressed as fractions of the image
+distortion. This value has a range [0,1] and is expressed as fractions of the image
 width.
 @item cy
 Relative y-coordinate of the focal point of the image, and thereby the center of the
-distrortion. This value has a range [0,1] and is expressed as fractions of the image
+distortion. This value has a range [0,1] and is expressed as fractions of the image
 height.
 @item k1
 Coefficient of the quadratic correction term. 0.5 means no correction.
@@ -6378,7 +6447,7 @@ libopencv function @code{cvSmooth}.
 Overlay one video on top of another.
 
 It takes two inputs and has one output. The first input is the "main"
-video on which the second input is overlayed.
+video on which the second input is overlaid.
 
 It accepts the following parameters:
 
@@ -6387,7 +6456,7 @@ A description of the accepted options follows.
 @table @option
 @item x
 @item y
-Set the expression for the x and y coordinates of the overlayed video
+Set the expression for the x and y coordinates of the overlaid video
 on the main video. Default value is "0" for both expressions. In case
 the expression is invalid, it is set to a huge value (meaning that the
 overlay will not be displayed within the output visible area).
@@ -7264,7 +7333,7 @@ it. Default value is 1.
 
 @item fillcolor, c
 Set the color used to fill the output area not covered by the rotated
-image. For the generalsyntax of this option, check the "Color" section in the
+image. For the general syntax of this option, check the "Color" section in the
 ffmpeg-utils manual. If the special value "none" is selected then no
 background is printed (useful for example if the background is never shown).
 
@@ -8489,7 +8558,7 @@ more advanced padding options (such as having different values for the edges),
 refer to the pad video filter.
 
 @item color
-Specify the color of the unused areaFor the syntax of this option, check the
+Specify the color of the unused area. For the syntax of this option, check the
 "Color" section in the ffmpeg-utils manual. The default value of @var{color}
 is "black".
 @end table
@@ -9850,7 +9919,7 @@ A '|'-separated list of parameters to pass to the frei0r source.
 @end table
 
 For example, to generate a frei0r partik0l source with size 200x200
-and frame rate 10 which is overlayed on the overlay filter main input:
+and frame rate 10 which is overlaid on the overlay filter main input:
 @example
 frei0r_src=size=200x200:framerate=10:filter_name=partik0l:filter_params=1234 [overlay]; [in][overlay] overlay
 @end example
@@ -10841,7 +10910,7 @@ The previous output PTS.
 previous output time in seconds
 
 @item RTCTIME
-The wallclock (RTC) time in microseconds.. This is deprecated, use time(0)
+The wallclock (RTC) time in microseconds. This is deprecated, use time(0)
 instead.
 
 @item RTCSTART

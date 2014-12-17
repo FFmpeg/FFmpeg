@@ -396,7 +396,7 @@ fail:
 
     av_dict_free(&options);
     if (ret) {
-        av_free(hls->basename);
+        av_freep(&hls->basename);
         if (hls->avf)
             avformat_free_context(hls->avf);
     }
@@ -449,7 +449,7 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
                 av_opt_set(hls->avf->priv_data, "mpegts_flags", "resend_headers", 0);
             hls->number++;
         } else {
-            avio_close(oc->pb);
+            avio_closep(&oc->pb);
 
             ret = hls_start(s);
         }
@@ -474,10 +474,12 @@ static int hls_write_trailer(struct AVFormatContext *s)
     AVFormatContext *oc = hls->avf;
 
     av_write_trailer(oc);
-    hls->size = avio_tell(hls->avf->pb) - hls->start_pos;
-    avio_closep(&oc->pb);
-    av_free(hls->basename);
-    hls_append_segment(hls, hls->duration, hls->start_pos, hls->size);
+    if (oc->pb) {
+        hls->size = avio_tell(hls->avf->pb) - hls->start_pos;
+        avio_closep(&oc->pb);
+        hls_append_segment(hls, hls->duration, hls->start_pos, hls->size);
+    }
+    av_freep(&hls->basename);
     avformat_free_context(oc);
     hls->avf = NULL;
     hls_window(s, 1);

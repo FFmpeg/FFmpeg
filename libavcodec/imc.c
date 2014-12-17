@@ -808,9 +808,8 @@ static void imc_get_coeffs(AVCodecContext *avctx,
                         av_log(avctx, AV_LOG_WARNING,
                             "Potential problem on band %i, coefficient %i"
                             ": cw_len=%i\n", i, j, cw_len);
-                    }
-
-                    cw = get_bits(&q->gb, cw_len);
+                    } else
+                        cw = get_bits(&q->gb, cw_len);
                 }
 
                 chctx->codewords[j] = cw;

@@ -213,12 +213,21 @@ static int vdpau_h264_init(AVCodecContext *avctx)
         profile = VDP_DECODER_PROFILE_H264_BASELINE;
         break;
     case FF_PROFILE_H264_CONSTRAINED_BASELINE:
+#ifdef VDP_DECODER_PROFILE_H264_CONSTRAINED_BASELINE
+        profile = VDP_DECODER_PROFILE_H264_CONSTRAINED_BASELINE;
+        break;
+#endif
     case FF_PROFILE_H264_MAIN:
         profile = VDP_DECODER_PROFILE_H264_MAIN;
         break;
     case FF_PROFILE_H264_HIGH:
         profile = VDP_DECODER_PROFILE_H264_HIGH;
         break;
+#ifdef VDP_DECODER_PROFILE_H264_EXTENDED
+    case FF_PROFILE_H264_EXTENDED:
+        profile = VDP_DECODER_PROFILE_H264_EXTENDED;
+        break;
+#endif
     default:
         return AVERROR(ENOTSUP);
     }

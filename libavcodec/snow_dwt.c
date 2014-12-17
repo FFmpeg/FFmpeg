@@ -91,6 +91,10 @@ void ff_slice_buffer_release(slice_buffer *buf, int line)
 void ff_slice_buffer_flush(slice_buffer *buf)
 {
     int i;
+
+    if (!buf->line)
+        return;
+
     for (i = 0; i < buf->line_count; i++)
         if (buf->line[i])
             ff_slice_buffer_release(buf, i);
@@ -101,8 +105,9 @@ void ff_slice_buffer_destroy(slice_buffer *buf)
     int i;
     ff_slice_buffer_flush(buf);
 
-    for (i = buf->data_count - 1; i >= 0; i--)
-        av_freep(&buf->data_stack[i]);
+    if (buf->data_stack)
+        for (i = buf->data_count - 1; i >= 0; i--)
+            av_freep(&buf->data_stack[i]);
     av_freep(&buf->data_stack);
     av_freep(&buf->line);
 }

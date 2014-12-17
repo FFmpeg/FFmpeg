@@ -182,8 +182,9 @@ static inline int encode_mb(ASV1Context *a, int16_t block[6][64])
         for (i = 0; i < 6; i++)
             asv1_encode_block(a, block[i]);
     } else {
-        for (i = 0; i < 6; i++)
+        for (i = 0; i < 6; i++) {
             asv2_encode_block(a, block[i]);
+        }
     }
     return 0;
 }

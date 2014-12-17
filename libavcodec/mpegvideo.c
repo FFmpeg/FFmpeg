@@ -1016,6 +1016,11 @@ do {\
     UPDATE_PICTURE(last_picture);
     UPDATE_PICTURE(next_picture);
 
+#define REBASE_PICTURE(pic, new_ctx, old_ctx)                                 \
+    ((pic && pic >= old_ctx->picture &&                                       \
+      pic < old_ctx->picture + MAX_PICTURE_COUNT) ?                           \
+        &new_ctx->picture[pic - old_ctx->picture] : NULL)
+
     s->last_picture_ptr    = REBASE_PICTURE(s1->last_picture_ptr,    s, s1);
     s->current_picture_ptr = REBASE_PICTURE(s1->current_picture_ptr, s, s1);
     s->next_picture_ptr    = REBASE_PICTURE(s1->next_picture_ptr,    s, s1);

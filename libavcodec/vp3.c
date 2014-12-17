@@ -2437,7 +2437,7 @@ static av_cold int theora_decode_init(AVCodecContext *avctx)
     Vp3DecodeContext *s = avctx->priv_data;
     GetBitContext gb;
     int ptype;
-    uint8_t *header_start[3];
+    const uint8_t *header_start[3];
     int header_len[3];
     int i;
 

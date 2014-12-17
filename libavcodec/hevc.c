@@ -143,8 +143,12 @@ static void pred_weight_table(HEVCContext *s, GetBitContext *gb)
     uint8_t chroma_weight_l0_flag[16];
     uint8_t luma_weight_l1_flag[16];
     uint8_t chroma_weight_l1_flag[16];
+    int luma_log2_weight_denom;
 
-    s->sh.luma_log2_weight_denom = get_ue_golomb_long(gb);
+    luma_log2_weight_denom = get_ue_golomb_long(gb);
+    if (luma_log2_weight_denom < 0 || luma_log2_weight_denom > 7)
+        av_log(s->avctx, AV_LOG_ERROR, "luma_log2_weight_denom %d is invalid\n", luma_log2_weight_denom);
+    s->sh.luma_log2_weight_denom = av_clip_c(luma_log2_weight_denom, 0, 7);
     if (s->sps->chroma_format_idc != 0) {
         int delta = get_se_golomb(gb);
         s->sh.chroma_log2_weight_denom = av_clip(s->sh.luma_log2_weight_denom + delta, 0, 7);

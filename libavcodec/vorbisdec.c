@@ -1017,7 +1017,7 @@ static av_cold int vorbis_decode_init(AVCodecContext *avctx)
     vorbis_context *vc = avctx->priv_data;
     uint8_t *headers   = avctx->extradata;
     int headers_len    = avctx->extradata_size;
-    uint8_t *header_start[3];
+    const uint8_t *header_start[3];
     int header_len[3];
     GetBitContext *gb = &vc->gb;
     int hdr_type, ret;

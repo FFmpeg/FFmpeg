@@ -1213,12 +1213,7 @@ static int is_device(const AVClass *avclass)
 {
     if (!avclass)
         return 0;
-    return avclass->category == AV_CLASS_CATEGORY_DEVICE_VIDEO_OUTPUT ||
-           avclass->category == AV_CLASS_CATEGORY_DEVICE_VIDEO_INPUT ||
-           avclass->category == AV_CLASS_CATEGORY_DEVICE_AUDIO_OUTPUT ||
-           avclass->category == AV_CLASS_CATEGORY_DEVICE_AUDIO_INPUT ||
-           avclass->category == AV_CLASS_CATEGORY_DEVICE_OUTPUT ||
-           avclass->category == AV_CLASS_CATEGORY_DEVICE_INPUT;
+    return AV_IS_INPUT_DEVICE(avclass->category) || AV_IS_OUTPUT_DEVICE(avclass->category);
 }
 
 static int show_formats_devices(void *optctx, const char *opt, const char *arg, int device_only)

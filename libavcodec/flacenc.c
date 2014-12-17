@@ -609,10 +609,10 @@ static uint64_t calc_optimal_rice_params(RiceContext *rc, int porder,
 }
 
 
-static void calc_sums(int pmin, int pmax, uint32_t *data, int n, int pred_order,
-                      uint64_t sums[][MAX_PARTITIONS])
+static void calc_sum_top(int pmax, uint32_t *data, int n, int pred_order,
+                         uint64_t sums[MAX_PARTITIONS])
 {
-    int i, j;
+    int i;
     int parts;
     uint32_t *res, *res_end;
 
@@ -624,17 +624,18 @@ static void calc_sums(int pmin, int pmax, uint32_t *data, int n, int pred_order,
         uint64_t sum = 0;
         while (res < res_end)
             sum += *(res++);
-        sums[pmax][i] = sum;
+        sums[i] = sum;
         res_end += n >> pmax;
-    }
-    /* sums for lower levels */
-    for (i = pmax - 1; i >= pmin; i--) {
-        parts = (1 << i);
-        for (j = 0; j < parts; j++)
-            sums[i][j] = sums[i+1][2*j] + sums[i+1][2*j+1];
     }
 }
 
+static void calc_sum_next(int level, uint64_t sums[MAX_PARTITIONS])
+{
+    int i;
+    int parts = (1 << level);
+    for (i = 0; i < parts; i++)
+        sums[i] = sums[2*i] + sums[2*i+1];
+}
 
 static uint64_t calc_rice_params(RiceContext *rc, int pmin, int pmax,
                                  int32_t *data, int n, int pred_order)
@@ -644,7 +645,7 @@ static uint64_t calc_rice_params(RiceContext *rc, int pmin, int pmax,
     int opt_porder;
     RiceContext tmp_rc;
     uint32_t *udata;
-    uint64_t sums[MAX_PARTITION_ORDER+1][MAX_PARTITIONS];
+    uint64_t sums[MAX_PARTITIONS];
 
     av_assert1(pmin >= 0 && pmin <= MAX_PARTITION_ORDER);
     av_assert1(pmax >= 0 && pmax <= MAX_PARTITION_ORDER);
@@ -656,16 +657,19 @@ static uint64_t calc_rice_params(RiceContext *rc, int pmin, int pmax,
     for (i = 0; i < n; i++)
         udata[i] = (2*data[i]) ^ (data[i]>>31);
 
-    calc_sums(pmin, pmax, udata, n, pred_order, sums);
+    calc_sum_top(pmax, udata, n, pred_order, sums);
 
     opt_porder = pmin;
     bits[pmin] = UINT32_MAX;
-    for (i = pmin; i <= pmax; i++) {
-        bits[i] = calc_optimal_rice_params(&tmp_rc, i, sums[i], n, pred_order);
-        if (bits[i] <= bits[opt_porder]) {
+    for (i = pmax; ; ) {
+        bits[i] = calc_optimal_rice_params(&tmp_rc, i, sums, n, pred_order);
+        if (bits[i] < bits[opt_porder]) {
             opt_porder = i;
             *rc = tmp_rc;
         }
+        if (i == pmin)
+            break;
+        calc_sum_next(--i, sums);
     }
 
     av_freep(&udata);
