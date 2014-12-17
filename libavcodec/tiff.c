@@ -52,6 +52,7 @@ typedef struct TiffContext {
     int le;
     enum TiffCompr compr;
     enum TiffPhotometric photometric;
+    int planar;
     int fax_opts;
     int predictor;
     int fill_order;
@@ -172,6 +173,9 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t *dst, int stride,
     int c, line, pixels, code, ret;
     int width = ((s->width * s->bpp) + 7) >> 3;
 
+    if (s->planar)
+        width /= s->bppcount;
+
     if (size <= 0)
         return AVERROR_INVALIDDATA;
 
@@ -248,7 +252,7 @@ static int init_image(TiffContext *s, AVFrame *frame)
 {
     int ret;
 
-    switch (s->bpp * 10 + s->bppcount) {
+    switch (s->planar * 1000 + s->bpp * 10 + s->bppcount) {
     case 11:
         s->avctx->pix_fmt = AV_PIX_FMT_MONOBLACK;
         break;
@@ -275,6 +279,18 @@ static int init_image(TiffContext *s, AVFrame *frame)
         break;
     case 644:
         s->avctx->pix_fmt = s->le ? AV_PIX_FMT_RGBA64LE : AV_PIX_FMT_RGBA64BE;
+        break;
+    case 1243:
+        s->avctx->pix_fmt = AV_PIX_FMT_GBRP;
+        break;
+    case 1324:
+        s->avctx->pix_fmt = AV_PIX_FMT_GBRAP;
+        break;
+    case 1483:
+        s->avctx->pix_fmt = s->le ? AV_PIX_FMT_GBRP16LE : AV_PIX_FMT_GBRP16BE;
+        break;
+    case 1644:
+        s->avctx->pix_fmt = s->le ? AV_PIX_FMT_GBRAP16LE : AV_PIX_FMT_GBRAP16BE;
         break;
     default:
         av_log(s->avctx, AV_LOG_ERROR,
@@ -507,10 +523,7 @@ static int tiff_decode_tag(TiffContext *s)
         break;
     }
     case TIFF_PLANAR:
-        if (value == 2) {
-            avpriv_report_missing_feature(s->avctx, "Planar format");
-            return AVERROR_PATCHWELCOME;
-        }
+        s->planar = value == 2;
         break;
     case TIFF_T4OPTIONS:
         if (s->compr == TIFF_G3)
@@ -538,7 +551,7 @@ static int decode_frame(AVCodecContext *avctx,
     TiffContext *const s = avctx->priv_data;
     AVFrame *const p = data;
     unsigned off;
-    int id, le, ret;
+    int id, le, ret, plane, planes;
     int i, j, entries, stride;
     unsigned soff, ssize;
     uint8_t *dst;
@@ -596,8 +609,6 @@ static int decode_frame(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_WARNING, "Image data size missing\n");
         s->stripsize = avpkt->size - s->stripoff;
     }
-    stride = p->linesize[0];
-    dst    = p->data[0];
 
     if (s->stripsizesoff) {
         if (s->stripsizesoff >= avpkt->size)
@@ -612,64 +623,77 @@ static int decode_frame(AVCodecContext *avctx,
                          avpkt->size - s->strippos);
     }
 
-    for (i = 0; i < s->height; i += s->rps) {
-        if (s->stripsizesoff)
-            ssize = tget(&stripsizes, s->sstype, le);
-        else
-            ssize = s->stripsize;
+    planes = s->planar ? s->bppcount : 1;
+    for (plane = 0; plane < planes; plane++) {
+        stride = p->linesize[plane];
+        dst = p->data[plane];
+        for (i = 0; i < s->height; i += s->rps) {
+            if (s->stripsizesoff)
+                ssize = tget(&stripsizes, s->sstype, le);
+            else
+                ssize = s->stripsize;
 
-        if (s->strippos)
-            soff = tget(&stripdata, s->sot, le);
-        else
-            soff = s->stripoff;
+            if (s->strippos)
+                soff = tget(&stripdata, s->sot, le);
+            else
+                soff = s->stripoff;
 
-        if (soff > avpkt->size || ssize > avpkt->size - soff) {
-            av_log(avctx, AV_LOG_ERROR, "Invalid strip size/offset\n");
-            return AVERROR_INVALIDDATA;
+            if (soff > avpkt->size || ssize > avpkt->size - soff) {
+                av_log(avctx, AV_LOG_ERROR, "Invalid strip size/offset\n");
+                return AVERROR_INVALIDDATA;
+            }
+            if ((ret = tiff_unpack_strip(s, dst, stride, avpkt->data + soff, ssize,
+                                         FFMIN(s->rps, s->height - i))) < 0) {
+                if (avctx->err_recognition & AV_EF_EXPLODE)
+                    return ret;
+                break;
+            }
+            dst += s->rps * stride;
         }
-        if ((ret = tiff_unpack_strip(s, dst, stride, avpkt->data + soff, ssize,
-                                     FFMIN(s->rps, s->height - i))) < 0) {
-            if (avctx->err_recognition & AV_EF_EXPLODE)
-                return ret;
-            break;
+        if (s->predictor == 2) {
+            dst   = p->data[plane];
+            soff  = s->bpp >> 3;
+            ssize = s->width * soff;
+            if (s->avctx->pix_fmt == AV_PIX_FMT_RGB48LE ||
+                s->avctx->pix_fmt == AV_PIX_FMT_RGBA64LE) {
+                for (i = 0; i < s->height; i++) {
+                    for (j = soff; j < ssize; j += 2)
+                        AV_WL16(dst + j, AV_RL16(dst + j) + AV_RL16(dst + j - soff));
+                    dst += stride;
+                }
+            } else if (s->avctx->pix_fmt == AV_PIX_FMT_RGB48BE ||
+                       s->avctx->pix_fmt == AV_PIX_FMT_RGBA64BE) {
+                for (i = 0; i < s->height; i++) {
+                    for (j = soff; j < ssize; j += 2)
+                        AV_WB16(dst + j, AV_RB16(dst + j) + AV_RB16(dst + j - soff));
+                    dst += stride;
+                }
+            } else {
+                for (i = 0; i < s->height; i++) {
+                    for (j = soff; j < ssize; j++)
+                        dst[j] += dst[j - soff];
+                    dst += stride;
+                }
+            }
         }
-        dst += s->rps * stride;
-    }
-    if (s->predictor == 2) {
-        dst   = p->data[0];
-        soff  = s->bpp >> 3;
-        ssize = s->width * soff;
-        if (s->avctx->pix_fmt == AV_PIX_FMT_RGB48LE ||
-            s->avctx->pix_fmt == AV_PIX_FMT_RGBA64LE) {
+
+        if (s->photometric == TIFF_PHOTOMETRIC_WHITE_IS_ZERO) {
+            dst = p->data[plane];
             for (i = 0; i < s->height; i++) {
-                for (j = soff; j < ssize; j += 2)
-                    AV_WL16(dst + j, AV_RL16(dst + j) + AV_RL16(dst + j - soff));
+                for (j = 0; j < stride; j++)
+                    dst[j] = 255 - dst[j];
                 dst += stride;
             }
-        } else if (s->avctx->pix_fmt == AV_PIX_FMT_RGB48BE ||
-                   s->avctx->pix_fmt == AV_PIX_FMT_RGBA64BE) {
-            for (i = 0; i < s->height; i++) {
-                for (j = soff; j < ssize; j += 2)
-                    AV_WB16(dst + j, AV_RB16(dst + j) + AV_RB16(dst + j - soff));
-                dst += stride;
-            }
-        } else {
-            for (i = 0; i < s->height; i++) {
-                for (j = soff; j < ssize; j++)
-                    dst[j] += dst[j - soff];
-                dst += stride;
-            }
         }
     }
 
-    if (s->photometric == TIFF_PHOTOMETRIC_WHITE_IS_ZERO) {
-        dst = p->data[0];
-        for (i = 0; i < s->height; i++) {
-            for (j = 0; j < p->linesize[0]; j++)
-                dst[j] = 255 - dst[j];
-            dst += stride;
-        }
+    if (s->planar && s->bppcount > 2) {
+        FFSWAP(uint8_t*, p->data[0],     p->data[2]);
+        FFSWAP(int,      p->linesize[0], p->linesize[2]);
+        FFSWAP(uint8_t*, p->data[0],     p->data[1]);
+        FFSWAP(int,      p->linesize[0], p->linesize[1]);
     }
+
     *got_frame = 1;
 
     return avpkt->size;
