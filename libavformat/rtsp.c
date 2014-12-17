@@ -1751,6 +1751,10 @@ redirect:
     rt->seq = 0;
 
     tcp_fd = ffurl_get_file_handle(rt->rtsp_hd);
+    if (tcp_fd < 0) {
+        err = tcp_fd;
+        goto fail;
+    }
     if (!getpeername(tcp_fd, (struct sockaddr*) &peer, &peer_len)) {
         getnameinfo((struct sockaddr*) &peer, peer_len, host, sizeof(host),
                     NULL, 0, NI_NUMERICHOST);
