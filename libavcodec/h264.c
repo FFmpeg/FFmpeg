@@ -392,6 +392,7 @@ void ff_h264_free_tables(H264Context *h, int free_rbsp)
     if (free_rbsp && h->DPB) {
         for (i = 0; i < H264_MAX_PICTURE_COUNT; i++)
             ff_h264_unref_picture(h, &h->DPB[i]);
+        memset(h->delayed_pic, 0, sizeof(h->delayed_pic));
         av_freep(&h->DPB);
     } else if (h->DPB) {
         for (i = 0; i < H264_MAX_PICTURE_COUNT; i++)
