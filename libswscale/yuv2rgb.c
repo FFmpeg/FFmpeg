@@ -736,9 +736,13 @@ av_cold int ff_yuv2rgb_c_init_tables(SwsContext *c, const int inv_table[4],
 
     av_free(c->yuvTable);
 
+#define ALLOC_YUV_TABLE(x)          \
+        c->yuvTable = av_malloc(x); \
+        if (!c->yuvTable)           \
+            return AVERROR(ENOMEM);
     switch (bpp) {
     case 1:
-        c->yuvTable = av_malloc(1024);
+        ALLOC_YUV_TABLE(1024);
         y_table     = c->yuvTable;
         yb = -(384 << 16) - oy;
         for (i = 0; i < 1024 - 110; i++) {
@@ -753,7 +757,7 @@ av_cold int ff_yuv2rgb_c_init_tables(SwsContext *c, const int inv_table[4],
         rbase       = isRgb ? 3 : 0;
         gbase       = 1;
         bbase       = isRgb ? 0 : 3;
-        c->yuvTable = av_malloc(1024 * 3);
+        ALLOC_YUV_TABLE(1024 * 3);
         y_table     = c->yuvTable;
         yb = -(384 << 16) - oy;
         for (i = 0; i < 1024 - 110; i++) {
@@ -772,7 +776,7 @@ av_cold int ff_yuv2rgb_c_init_tables(SwsContext *c, const int inv_table[4],
         rbase       = isRgb ? 5 : 0;
         gbase       = isRgb ? 2 : 3;
         bbase       = isRgb ? 0 : 6;
-        c->yuvTable = av_malloc(1024 * 3);
+        ALLOC_YUV_TABLE(1024 * 3);
         y_table     = c->yuvTable;
         yb = -(384 << 16) - oy;
         for (i = 0; i < 1024 - 38; i++) {
@@ -791,7 +795,7 @@ av_cold int ff_yuv2rgb_c_init_tables(SwsContext *c, const int inv_table[4],
         rbase       = isRgb ? 8 : 0;
         gbase       = 4;
         bbase       = isRgb ? 0 : 8;
-        c->yuvTable = av_malloc(1024 * 3 * 2);
+        ALLOC_YUV_TABLE(1024 * 3 * 2);
         y_table16   = c->yuvTable;
         yb = -(384 << 16) - oy;
         for (i = 0; i < 1024; i++) {
@@ -814,7 +818,7 @@ av_cold int ff_yuv2rgb_c_init_tables(SwsContext *c, const int inv_table[4],
         rbase       = isRgb ? bpp - 5 : 0;
         gbase       = 5;
         bbase       = isRgb ? 0 : (bpp - 5);
-        c->yuvTable = av_malloc(1024 * 3 * 2);
+        ALLOC_YUV_TABLE(1024 * 3 * 2);
         y_table16   = c->yuvTable;
         yb = -(384 << 16) - oy;
         for (i = 0; i < 1024; i++) {
@@ -834,7 +838,7 @@ av_cold int ff_yuv2rgb_c_init_tables(SwsContext *c, const int inv_table[4],
         break;
     case 24:
     case 48:
-        c->yuvTable = av_malloc(1024);
+        ALLOC_YUV_TABLE(1024);
         y_table     = c->yuvTable;
         yb = -(384 << 16) - oy;
         for (i = 0; i < 1024; i++) {
@@ -855,7 +859,7 @@ av_cold int ff_yuv2rgb_c_init_tables(SwsContext *c, const int inv_table[4],
         needAlpha = CONFIG_SWSCALE_ALPHA && isALPHA(c->srcFormat);
         if (!needAlpha)
             abase = (base + 24) & 31;
-        c->yuvTable = av_malloc(1024 * 3 * 4);
+        ALLOC_YUV_TABLE(1024 * 3 * 4);
         y_table32   = c->yuvTable;
         yb = -(384 << 16) - oy;
         for (i = 0; i < 1024; i++) {
