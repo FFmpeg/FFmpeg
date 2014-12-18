@@ -246,6 +246,10 @@ static inline short adpcm_ms_expand_nibble(ADPCMChannelStatus *c, int nibble)
     c->sample1 = av_clip_int16(predictor);
     c->idelta = (ff_adpcm_AdaptationTable[(int)nibble] * c->idelta) >> 8;
     if (c->idelta < 16) c->idelta = 16;
+    if (c->idelta > INT_MAX/768) {
+        av_log(NULL, AV_LOG_WARNING, "idelta overflow\n");
+        c->idelta = INT_MAX/768;
+    }
 
     return c->sample1;
 }
