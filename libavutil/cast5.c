@@ -416,7 +416,7 @@ static void encipher(AVCAST5* cs, uint8_t* dst, const uint8_t* src)
     AV_WB32(dst + 4, l);
 }
 
-static void decipher(AVCAST5* cs, uint8_t* dst, const uint8_t* src)
+static void decipher(AVCAST5* cs, uint8_t* dst, const uint8_t* src, uint8_t *iv)
 {
     uint32_t f, I, r, l;
     l = AV_RB32(src);
@@ -439,6 +439,11 @@ static void decipher(AVCAST5* cs, uint8_t* dst, const uint8_t* src)
     F3(r, l, 3);
     F2(l, r, 2);
     F1(r, l, 1);
+    if (iv) {
+        r ^= AV_RB32(iv);
+        l ^= AV_RB32(iv + 4);
+        memcpy(iv, src, 8);
+    }
     AV_WB32(dst, r);
     AV_WB32(dst + 4, l);
 }
@@ -468,11 +473,31 @@ av_cold int av_cast5_init(AVCAST5* cs, const uint8_t *key, int key_bits)
     return 0;
 }
 
+void av_cast5_crypt2(AVCAST5* cs, uint8_t* dst, const uint8_t* src, int count, uint8_t *iv, int decrypt)
+{
+    int i;
+    while (count--) {
+        if (decrypt) {
+            decipher(cs, dst, src, iv);
+        } else {
+            if (iv) {
+                for (i = 0; i < 8; i++)
+                    dst[i] = src[i] ^ iv[i];
+                encipher(cs, dst, dst);
+                memcpy(iv, dst, 8);
+            } else {
+                encipher(cs, dst, src);
+            }
+        }
+        src = src + 8;
+        dst = dst + 8;
+    }
+}
 void av_cast5_crypt(AVCAST5* cs, uint8_t* dst, const uint8_t* src, int count, int decrypt)
 {
     while (count--) {
         if (decrypt){
-            decipher(cs, dst, src);
+            decipher(cs, dst, src, NULL);
         } else {
             encipher(cs, dst, src);
         }
@@ -504,6 +529,7 @@ int main(int argc, char** argv)
         {0xee, 0xa9, 0xd0, 0xa2, 0x49, 0xfd, 0x3b, 0xa6, 0xb3, 0x43, 0x6f, 0xb8, 0x9d, 0x6d, 0xca, 0x92},
         {0xb2, 0xc9, 0x5e, 0xb0, 0x0c, 0x31, 0xad, 0x71, 0x80, 0xac, 0x05, 0xb8, 0xe8, 0x3d, 0x69, 0x6e}
     };
+    const uint8_t iv[8] = {0xee, 0xa9, 0xd0, 0xa2, 0x49, 0xfd, 0x3b, 0xa6};
     static uint8_t rpt2[2][16];
     int i, j, err = 0;
     static int key_bits[3] = {128, 80, 40};
@@ -543,6 +569,20 @@ int main(int argc, char** argv)
         for (i = 0; i < 16; i++) {
             if (rct2[j][i] != rpt2[j][i]) {
                 av_log(NULL, AV_LOG_ERROR, "%d %02x %02x\n", i, rct2[j][i], rpt2[j][i]);
+                err = 1;
+            }
+        }
+    }
+    for (j = 0; j < 3; j++) {
+
+        av_cast5_init(cs, Key[j], key_bits[j]);
+        memcpy(temp, iv, 8);
+        av_cast5_crypt2(cs, rpt2[0], rct2[0], 2, temp, 0);
+        memcpy(temp, iv, 8);
+        av_cast5_crypt2(cs, rpt2[0], rpt2[0], 2, temp, 1);
+        for (i = 0; i < 16; i++) {
+            if (rct2[0][i] != rpt2[0][i]) {
+                av_log(NULL, AV_LOG_ERROR, "%d %02x %02x\n", i, rct2[0][i], rpt2[0][i]);
                 err = 1;
             }
         }
