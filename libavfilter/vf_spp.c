@@ -302,7 +302,7 @@ static void filter(SPPContext *p, uint8_t *dst, uint8_t *src,
                                FFMIN(8, height + 8 - y), MAX_LEVEL - p->log2_count,
                                ldither);
             } else {
-                store_slice16_c(dst + (y - 8) * dst_linesize, p->temp + 8 + y*linesize,
+                store_slice16_c((uint16_t*)(dst + (y - 8) * dst_linesize), p->temp + 8 + y*linesize,
                                 dst_linesize/2, linesize, width,
                                 FFMIN(8, height + 8 - y), MAX_LEVEL - p->log2_count,
                                 ldither);
