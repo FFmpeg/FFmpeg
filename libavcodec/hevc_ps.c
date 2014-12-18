@@ -1255,6 +1255,14 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
     if (pps->cu_qp_delta_enabled_flag)
         pps->diff_cu_qp_delta_depth = get_ue_golomb_long(gb);
 
+    if (pps->diff_cu_qp_delta_depth < 0 ||
+        pps->diff_cu_qp_delta_depth > sps->log2_diff_max_min_coding_block_size) {
+        av_log(s->avctx, AV_LOG_ERROR, "diff_cu_qp_delta_depth %d is invalid\n",
+               pps->diff_cu_qp_delta_depth);
+        ret = AVERROR_INVALIDDATA;
+        goto err;
+    }
+
     pps->cb_qp_offset = get_se_golomb(gb);
     if (pps->cb_qp_offset < -12 || pps->cb_qp_offset > 12) {
         av_log(s->avctx, AV_LOG_ERROR, "pps_cb_qp_offset out of range: %d\n",
