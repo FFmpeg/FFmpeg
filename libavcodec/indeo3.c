@@ -981,7 +981,8 @@ static int decode_frame_headers(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
     ctx->y_data_size = ends[0] - starts[0];
     ctx->v_data_size = ends[1] - starts[1];
     ctx->u_data_size = ends[2] - starts[2];
-    if (FFMAX3(y_offset, v_offset, u_offset) >= ctx->data_size - 16 ||
+    if (FFMIN3(y_offset, v_offset, u_offset) < 0 ||
+        FFMAX3(y_offset, v_offset, u_offset) >= ctx->data_size - 16 ||
         FFMIN3(y_offset, v_offset, u_offset) < gb.buffer - bs_hdr + 16 ||
         FFMIN3(ctx->y_data_size, ctx->v_data_size, ctx->u_data_size) <= 0) {
         av_log(avctx, AV_LOG_ERROR, "One of the y/u/v offsets is invalid\n");
