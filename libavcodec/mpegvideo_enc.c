@@ -728,6 +728,7 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
         s->out_format = FMT_H261;
         avctx->delay  = 0;
         s->low_delay  = 1;
+        s->rtp_mode   = 0; /* Sliced encoding not supported */
         break;
     case AV_CODEC_ID_H263:
         if (!CONFIG_H263_ENCODER)
