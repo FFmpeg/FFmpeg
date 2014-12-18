@@ -293,8 +293,8 @@ static void encode_plane(FFV1Context *s, uint8_t *src, int w, int h,
     }
 }
 
-static void encode_rgb_frame(FFV1Context *s, uint8_t *src[3], int w, int h,
-                             int stride[3])
+static void encode_rgb_frame(FFV1Context *s, const uint8_t *src[3],
+                             int w, int h, const int stride[3])
 {
     int x, y, p, i;
     const int ring_size = s->avctx->context_model ? 3 : 2;
@@ -320,15 +320,15 @@ static void encode_rgb_frame(FFV1Context *s, uint8_t *src[3], int w, int h,
         for (x = 0; x < w; x++) {
             int b, g, r, av_uninit(a);
             if (lbd) {
-                unsigned v = *((uint32_t *)(src[0] + x * 4 + stride[0] * y));
+                unsigned v = *((const uint32_t *)(src[0] + x * 4 + stride[0] * y));
                 b = v & 0xFF;
                 g = (v >> 8) & 0xFF;
                 r = (v >> 16) & 0xFF;
                 a = v >> 24;
             } else {
-                b = *((uint16_t *)(src[0] + x * 2 + stride[0] * y));
-                g = *((uint16_t *)(src[1] + x * 2 + stride[1] * y));
-                r = *((uint16_t *)(src[2] + x * 2 + stride[2] * y));
+                b = *((const uint16_t *)(src[0] + x * 2 + stride[0] * y));
+                g = *((const uint16_t *)(src[1] + x * 2 + stride[1] * y));
+                r = *((const uint16_t *)(src[2] + x * 2 + stride[2] * y));
             }
 
             b -= g;
@@ -916,9 +916,9 @@ static int encode_slice(AVCodecContext *c, void *arg)
             encode_plane(fs, p->data[3] + ps * x + y * p->linesize[3], width,
                          height, p->linesize[3], 2);
     } else {
-        uint8_t *planes[3] = { p->data[0] + ps * x + y * p->linesize[0],
-                               p->data[1] + ps * x + y * p->linesize[1],
-                               p->data[2] + ps * x + y * p->linesize[2] };
+        const uint8_t *planes[3] = { p->data[0] + ps * x + y * p->linesize[0],
+                                     p->data[1] + ps * x + y * p->linesize[1],
+                                     p->data[2] + ps * x + y * p->linesize[2] };
         encode_rgb_frame(fs, planes, width, height, p->linesize);
     }
     emms_c();
