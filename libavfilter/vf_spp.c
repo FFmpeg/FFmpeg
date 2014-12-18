@@ -321,6 +321,7 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ440P,
         AV_PIX_FMT_YUV444P10,  AV_PIX_FMT_YUV422P10,
         AV_PIX_FMT_YUV420P10,
+        AV_PIX_FMT_GRAY8,
         AV_PIX_FMT_NONE
     };
     ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
@@ -421,8 +422,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             }
 
             filter(spp, out->data[0], in->data[0], out->linesize[0], in->linesize[0], inlink->w, inlink->h, qp_table, qp_stride, 1, sample_bytes);
-            filter(spp, out->data[1], in->data[1], out->linesize[1], in->linesize[1], cw,        ch,        qp_table, qp_stride, 0, sample_bytes);
-            filter(spp, out->data[2], in->data[2], out->linesize[2], in->linesize[2], cw,        ch,        qp_table, qp_stride, 0, sample_bytes);
+
+            if (out->data[2]) {
+                filter(spp, out->data[1], in->data[1], out->linesize[1], in->linesize[1], cw,        ch,        qp_table, qp_stride, 0, sample_bytes);
+                filter(spp, out->data[2], in->data[2], out->linesize[2], in->linesize[2], cw,        ch,        qp_table, qp_stride, 0, sample_bytes);
+            }
             emms_c();
         }
     }
