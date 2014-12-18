@@ -299,26 +299,31 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     if (s->is_rgb) {
         /* packed */
+        const int w = inlink->w;
+        const int h = in->height;
+        const uint8_t (*tab)[256] = (const uint8_t (*)[256])s->lut;
+        const int in_linesize  =  in->linesize[0];
+        const int out_linesize = out->linesize[0];
+        const int step = s->step;
+
         inrow0  = in ->data[0];
         outrow0 = out->data[0];
 
-        for (i = 0; i < in->height; i ++) {
-            int w = inlink->w;
-            const uint8_t (*tab)[256] = (const uint8_t (*)[256])s->lut;
+        for (i = 0; i < h; i ++) {
             inrow  = inrow0;
             outrow = outrow0;
             for (j = 0; j < w; j++) {
-                switch (s->step) {
+                switch (step) {
                 case 4:  outrow[3] = tab[3][inrow[3]]; // Fall-through
                 case 3:  outrow[2] = tab[2][inrow[2]]; // Fall-through
                 case 2:  outrow[1] = tab[1][inrow[1]]; // Fall-through
                 default: outrow[0] = tab[0][inrow[0]];
                 }
-                outrow += s->step;
-                inrow  += s->step;
+                outrow += step;
+                inrow  += step;
             }
-            inrow0  += in ->linesize[0];
-            outrow0 += out->linesize[0];
+            inrow0  += in_linesize;
+            outrow0 += out_linesize;
         }
     } else {
         /* planar */
@@ -327,16 +332,18 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             int hsub = plane == 1 || plane == 2 ? s->hsub : 0;
             int h = FF_CEIL_RSHIFT(inlink->h, vsub);
             int w = FF_CEIL_RSHIFT(inlink->w, hsub);
+            const uint8_t *tab = s->lut[plane];
+            const int in_linesize  =  in->linesize[plane];
+            const int out_linesize = out->linesize[plane];
 
             inrow  = in ->data[plane];
             outrow = out->data[plane];
 
             for (i = 0; i < h; i++) {
-                const uint8_t *tab = s->lut[plane];
                 for (j = 0; j < w; j++)
                     outrow[j] = tab[inrow[j]];
-                inrow  += in ->linesize[plane];
-                outrow += out->linesize[plane];
+                inrow  += in_linesize;
+                outrow += out_linesize;
             }
         }
     }
