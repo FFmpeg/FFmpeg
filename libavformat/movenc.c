@@ -2988,6 +2988,20 @@ static void mov_write_uuidprof_tag(AVIOContext *pb, AVFormatContext *s)
     avio_wb32(pb, 0x010001); /* ? */
 }
 
+static int mov_write_identification(AVIOContext *pb, AVFormatContext *s)
+{
+    MOVMuxContext *mov = s->priv_data;
+    mov_write_ftyp_tag(pb,s);
+    if (mov->mode == MODE_PSP) {
+        if (s->nb_streams != 2) {
+            av_log(s, AV_LOG_ERROR, "PSP mode need one video and one audio stream\n");
+            return AVERROR(EINVAL);
+        }
+        mov_write_uuidprof_tag(pb, s);
+    }
+    return 0;
+}
+
 static int mov_parse_mpeg2_frame(AVPacket *pkt, uint32_t *flags)
 {
     uint32_t c = -1;
@@ -3605,7 +3619,7 @@ static int mov_write_header(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     MOVMuxContext *mov = s->priv_data;
     AVDictionaryEntry *t;
-    int i, hint_track = 0;
+    int i, ret, hint_track = 0;
 
     mov->fc = s;
 
@@ -3664,14 +3678,8 @@ static int mov_write_header(AVFormatContext *s)
     }
 
 
-    mov_write_ftyp_tag(pb,s);
-    if (mov->mode == MODE_PSP) {
-        if (s->nb_streams != 2) {
-            av_log(s, AV_LOG_ERROR, "PSP mode need one video and one audio stream\n");
-            return AVERROR(EINVAL);
-        }
-        mov_write_uuidprof_tag(pb, s);
-    }
+    if ((ret = mov_write_identification(pb, s)) < 0)
+        return ret;
 
     mov->nb_streams = s->nb_streams;
     if (mov->mode & (MODE_MP4|MODE_MOV|MODE_IPOD) && s->nb_chapters)
