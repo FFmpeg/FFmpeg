@@ -2517,6 +2517,16 @@ static int pred_weight_table(H264Context *h)
     h->luma_log2_weight_denom = get_ue_golomb(&h->gb);
     if (h->sps.chroma_format_idc)
         h->chroma_log2_weight_denom = get_ue_golomb(&h->gb);
+
+    if (h->luma_log2_weight_denom > 7U) {
+        av_log(h->avctx, AV_LOG_ERROR, "luma_log2_weight_denom %d is out of range\n", h->luma_log2_weight_denom);
+        h->luma_log2_weight_denom = 0;
+    }
+    if (h->chroma_log2_weight_denom > 7U) {
+        av_log(h->avctx, AV_LOG_ERROR, "chroma_log2_weight_denom %d is out of range\n", h->chroma_log2_weight_denom);
+        h->chroma_log2_weight_denom = 0;
+    }
+
     luma_def   = 1 << h->luma_log2_weight_denom;
     chroma_def = 1 << h->chroma_log2_weight_denom;
 
