@@ -255,8 +255,11 @@ static int rtp_write_header(AVFormatContext *s1)
             av_log(s1, AV_LOG_ERROR, "Only mono is supported\n");
             goto fail;
         }
+        s->num_frames = 0;
+        goto defaultcase;
     case AV_CODEC_ID_AAC:
         s->num_frames = 0;
+        goto defaultcase;
     default:
 defaultcase:
         if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
