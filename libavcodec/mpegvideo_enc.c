@@ -2852,9 +2852,6 @@ static int encode_thread(AVCodecContext *c, void *arg){
                 if(s->start_mb_y == mb_y && mb_y > 0 && mb_x==0) is_gob_start=1;
 
                 switch(s->codec_id){
-                case AV_CODEC_ID_H261:
-                    is_gob_start=0;//FIXME
-                    break;
                 case AV_CODEC_ID_H263:
                 case AV_CODEC_ID_H263P:
                     if(!s->h263_slice_structured)
