@@ -643,4 +643,5 @@ AVOutputFormat ff_rtp_muxer = {
     .write_packet      = rtp_write_packet,
     .write_trailer     = rtp_write_trailer,
     .priv_class        = &rtp_muxer_class,
+    .flags             = AVFMT_TS_NONSTRICT,
 };
