@@ -108,7 +108,7 @@ static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
     if (!s->tab_ipm || !s->cbf_luma || !s->is_pcm)
         goto fail;
 
-    s->filter_slice_edges = av_malloc(ctb_count);
+    s->filter_slice_edges = av_mallocz(ctb_count);
     s->tab_slice_address  = av_malloc_array(pic_size_in_ctb,
                                       sizeof(*s->tab_slice_address));
     s->qp_y_tab           = av_malloc_array(pic_size_in_ctb,
@@ -2102,7 +2102,6 @@ static int hls_coding_quadtree(HEVCContext *s, int x0, int y0,
     HEVCLocalContext *lc = s->HEVClc;
     const int cb_size    = 1 << log2_cb_size;
     int ret;
-    int qp_block_mask = (1<<(s->sps->log2_ctb_size - s->pps->diff_cu_qp_delta_depth)) - 1;
     int split_cu;
 
     lc->ct_depth = cb_depth;
@@ -2125,6 +2124,7 @@ static int hls_coding_quadtree(HEVCContext *s, int x0, int y0,
     }
 
     if (split_cu) {
+        int qp_block_mask = (1<<(s->sps->log2_ctb_size - s->pps->diff_cu_qp_delta_depth)) - 1;
         const int cb_size_split = cb_size >> 1;
         const int x1 = x0 + cb_size_split;
         const int y1 = y0 + cb_size_split;

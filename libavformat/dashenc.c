@@ -208,20 +208,24 @@ static void output_segment_list(OutputStream *os, AVIOContext *out, DASHContext 
             avio_printf(out, "duration=\"%"PRId64"\" ", c->last_duration);
         avio_printf(out, "initialization=\"%s\" media=\"%s\" startNumber=\"%d\">\n", c->init_seg_name, c->media_seg_name, c->use_timeline ? start_number : 1);
         if (c->use_timeline) {
+            int64_t cur_time = 0;
             avio_printf(out, "\t\t\t\t\t<SegmentTimeline>\n");
             for (i = start_index; i < os->nb_segments; ) {
                 Segment *seg = os->segments[i];
                 int repeat = 0;
                 avio_printf(out, "\t\t\t\t\t\t<S ");
-                if (i == start_index)
+                if (i == start_index || seg->time != cur_time)
                     avio_printf(out, "t=\"%"PRId64"\" ", seg->time);
                 avio_printf(out, "d=\"%d\" ", seg->duration);
-                while (i + repeat + 1 < os->nb_segments && os->segments[i + repeat + 1]->duration == seg->duration)
+                while (i + repeat + 1 < os->nb_segments &&
+                       os->segments[i + repeat + 1]->duration == seg->duration &&
+                       os->segments[i + repeat + 1]->time == os->segments[i + repeat]->time + os->segments[i + repeat]->duration)
                     repeat++;
                 if (repeat > 0)
                     avio_printf(out, "r=\"%d\" ", repeat);
                 avio_printf(out, "/>\n");
                 i += 1 + repeat;
+                cur_time += (1 + repeat) * seg->duration;
             }
             avio_printf(out, "\t\t\t\t\t</SegmentTimeline>\n");
         }
@@ -650,6 +654,7 @@ static int dash_write_header(AVFormatContext *s)
 
         set_codec_str(s, os->ctx->streams[0]->codec, os->codec_str, sizeof(os->codec_str));
         os->first_dts = AV_NOPTS_VALUE;
+        os->end_dts = AV_NOPTS_VALUE;
         os->segment_index = 1;
     }
 
@@ -859,8 +864,15 @@ static int dash_write_packet(AVFormatContext *s, AVPacket *pkt)
             return ret;
     }
 
-    if (!os->packets_written)
-        os->start_dts = pkt->dts;
+    if (!os->packets_written) {
+        // If we wrote a previous segment, adjust the start time of the segment
+        // to the end of the previous one (which is the same as the mp4 muxer
+        // does). This avoids gaps in the timeline.
+        if (os->end_dts != AV_NOPTS_VALUE)
+            os->start_dts = os->end_dts;
+        else
+            os->start_dts = pkt->dts;
+    }
     os->end_dts = pkt->dts + pkt->duration;
     os->packets_written++;
     return ff_write_chained(os->ctx, 0, pkt, s, 0);
