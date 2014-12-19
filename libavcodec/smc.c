@@ -70,7 +70,7 @@ typedef struct SmcContext {
         row_ptr += stride * 4; \
     } \
     total_blocks--; \
-    if (total_blocks < 0 + !!n_blocks) \
+    if (total_blocks < !!n_blocks) \
     { \
         av_log(s->avctx, AV_LOG_INFO, "warning: block counter just went negative (this should not happen)\n"); \
         return; \
