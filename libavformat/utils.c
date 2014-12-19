@@ -53,6 +53,9 @@
 #include "riff.h"
 #include "url.h"
 
+#include "libavutil/ffversion.h"
+const char av_format_ffversion[] = "FFmpeg version " FFMPEG_VERSION;
+
 /**
  * @file
  * various utility functions for use within FFmpeg
