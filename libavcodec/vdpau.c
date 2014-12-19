@@ -142,6 +142,10 @@ int ff_vdpau_common_init(AVCodecContext *avctx, VdpDecoderProfile profile,
     if (av_vdpau_get_surface_parameters(avctx, &type, &width, &height))
         return AVERROR(ENOSYS);
 
+    if (!(hwctx->flags & AV_HWACCEL_FLAG_ALLOW_HIGH_DEPTH) &&
+        type != VDP_CHROMA_TYPE_420)
+        return AVERROR(ENOSYS);
+
     status = vdctx->get_proc_address(vdctx->device,
                                      VDP_FUNC_ID_VIDEO_SURFACE_QUERY_CAPABILITIES,
                                      &func);
@@ -371,7 +375,7 @@ int av_vdpau_bind_context(AVCodecContext *avctx, VdpDevice device,
 {
     VDPAUHWContext *hwctx;
 
-    if (flags & ~AV_HWACCEL_FLAG_IGNORE_LEVEL)
+    if (flags & ~(AV_HWACCEL_FLAG_IGNORE_LEVEL|AV_HWACCEL_FLAG_ALLOW_HIGH_DEPTH))
         return AVERROR(EINVAL);
 
     if (av_reallocp(&avctx->hwaccel_context, sizeof(*hwctx)))
