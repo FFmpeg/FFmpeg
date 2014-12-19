@@ -64,6 +64,46 @@ static int vdpau_error(VdpStatus status)
     }
 }
 
+int av_vdpau_get_surface_parameters(AVCodecContext *avctx,
+                                    VdpChromaType *type,
+                                    uint32_t *width, uint32_t *height)
+{
+    VdpChromaType t;
+    uint32_t w = avctx->coded_width;
+    uint32_t h = avctx->coded_height;
+
+    /* See <vdpau/vdpau.h> for per-type alignment constraints. */
+    switch (avctx->sw_pix_fmt) {
+    case AV_PIX_FMT_YUV420P:
+    case AV_PIX_FMT_YUVJ420P:
+        t = VDP_CHROMA_TYPE_420;
+        w = (w + 1) & ~1;
+        h = (h + 3) & ~3;
+        break;
+    case AV_PIX_FMT_YUV422P:
+    case AV_PIX_FMT_YUVJ422P:
+        t = VDP_CHROMA_TYPE_422;
+        w = (w + 1) & ~1;
+        h = (h + 1) & ~1;
+        break;
+    case AV_PIX_FMT_YUV444P:
+    case AV_PIX_FMT_YUVJ444P:
+        t = VDP_CHROMA_TYPE_444;
+        h = (h + 1) & ~1;
+        break;
+    default:
+        return AVERROR(ENOSYS);
+    }
+
+    if (type)
+        *type = t;
+    if (width)
+        *width = w;
+    if (height)
+        *height = h;
+    return 0;
+}
+
 int ff_vdpau_common_init(AVCodecContext *avctx, VdpDecoderProfile profile,
                          int level)
 {
@@ -76,9 +116,9 @@ int ff_vdpau_common_init(AVCodecContext *avctx, VdpDecoderProfile profile,
     VdpStatus status;
     VdpBool supported;
     uint32_t max_level, max_mb, max_width, max_height;
-    /* See vdpau/vdpau.h for alignment constraints. */
-    uint32_t width  = (avctx->coded_width + 1) & ~1;
-    uint32_t height = (avctx->coded_height + 3) & ~3;
+    VdpChromaType type;
+    uint32_t width;
+    uint32_t height;
 
     vdctx->width            = UINT32_MAX;
     vdctx->height           = UINT32_MAX;
@@ -99,6 +139,9 @@ int ff_vdpau_common_init(AVCodecContext *avctx, VdpDecoderProfile profile,
     else if (level < 0)
         return AVERROR(ENOTSUP);
 
+    if (av_vdpau_get_surface_parameters(avctx, &type, &width, &height))
+        return AVERROR(ENOSYS);
+
     status = vdctx->get_proc_address(vdctx->device,
                                      VDP_FUNC_ID_VIDEO_SURFACE_QUERY_CAPABILITIES,
                                      &func);
@@ -107,7 +150,7 @@ int ff_vdpau_common_init(AVCodecContext *avctx, VdpDecoderProfile profile,
     else
         surface_query_caps = func;
 
-    status = surface_query_caps(vdctx->device, VDP_CHROMA_TYPE_420, &supported,
+    status = surface_query_caps(vdctx->device, type, &supported,
                                 &max_width, &max_height);
     if (status != VDP_STATUS_OK)
         return vdpau_error(status);
