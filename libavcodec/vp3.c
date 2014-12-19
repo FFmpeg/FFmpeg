@@ -177,6 +177,7 @@ typedef struct Vp3DecodeContext {
     int data_offset[3];
     uint8_t offset_x;
     uint8_t offset_y;
+    int offset_x_warned;
 
     int8_t (*motion_val[2])[2];
 
@@ -2322,8 +2323,7 @@ static int theora_decode_header(AVCodecContext *avctx, GetBitContext *gb)
     ret = ff_set_dimensions(avctx, s->width, s->height);
     if (ret < 0)
         return ret;
-    if (!(avctx->flags2 & CODEC_FLAG2_IGNORE_CROP) &&
-        (visible_width != s->width || visible_height != s->height)) {
+    if (!(avctx->flags2 & CODEC_FLAG2_IGNORE_CROP)) {
         avctx->width  = visible_width;
         avctx->height = visible_height;
         // translate offsets from theora axis ([0,0] lower left)
@@ -2333,9 +2333,12 @@ static int theora_decode_header(AVCodecContext *avctx, GetBitContext *gb)
 
         if ((s->offset_x & 0x1F) && !(avctx->flags & CODEC_FLAG_UNALIGNED)) {
             s->offset_x &= ~0x1F;
-            av_log(avctx, AV_LOG_WARNING, "Reducing offset_x from %d to %d"
-                   "chroma samples to preserve alignment.\n",
-                   offset_x, s->offset_x);
+            if (!s->offset_x_warned) {
+                s->offset_x_warned = 1;
+                av_log(avctx, AV_LOG_WARNING, "Reducing offset_x from %d to %d"
+                    "chroma samples to preserve alignment.\n",
+                    offset_x, s->offset_x);
+            }
         }
     }
 
