@@ -282,7 +282,7 @@ static int gif_read_image(GifState *s, AVFrame *frame)
                 break;
             }
             while (y1 >= height) {
-                y1 = 4 >> pass;
+                y1  = 4 >> pass;
                 ptr = ptr1 + linesize * y1;
                 pass++;
             }
