@@ -35,9 +35,6 @@
 
 #define MAX_PAYLOAD_SIZE 4096
 
-#undef NDEBUG
-#include <assert.h>
-
 typedef struct PacketDesc {
     int64_t pts;
     int64_t dts;
@@ -874,7 +871,7 @@ static int flush_packet(AVFormatContext *ctx, int stream_index,
         }
 
         /* output data */
-        assert(payload_size - stuffing_size <= av_fifo_size(stream->fifo));
+        av_assert0(payload_size - stuffing_size <= av_fifo_size(stream->fifo));
         av_fifo_generic_read(stream->fifo, ctx->pb,
                              payload_size - stuffing_size,
                              (void (*)(void*, void*, int))avio_write);
@@ -1028,14 +1025,14 @@ retry:
         goto retry;
     }
 
-    assert(best_i >= 0);
+    av_assert0(best_i >= 0);
 
     st     = ctx->streams[best_i];
     stream = st->priv_data;
 
-    assert(av_fifo_size(stream->fifo) > 0);
+    av_assert0(av_fifo_size(stream->fifo) > 0);
 
-    assert(avail_space >= s->packet_size || ignore_constraints);
+    av_assert0(avail_space >= s->packet_size || ignore_constraints);
 
     timestamp_packet = stream->premux_packet;
     if (timestamp_packet->unwritten_size == timestamp_packet->size) {
@@ -1053,7 +1050,7 @@ retry:
         es_size = flush_packet(ctx, best_i, timestamp_packet->pts,
                                timestamp_packet->dts, scr, trailer_size);
     } else {
-        assert(av_fifo_size(stream->fifo) == trailer_size);
+        av_assert0(av_fifo_size(stream->fifo) == trailer_size);
         es_size = flush_packet(ctx, best_i, AV_NOPTS_VALUE, AV_NOPTS_VALUE, scr,
                                trailer_size);
     }
@@ -1186,7 +1183,7 @@ static int mpeg_mux_end(AVFormatContext *ctx)
     for (i = 0; i < ctx->nb_streams; i++) {
         stream = ctx->streams[i]->priv_data;
 
-        assert(av_fifo_size(stream->fifo) == 0);
+        av_assert0(av_fifo_size(stream->fifo) == 0);
         av_fifo_freep(&stream->fifo);
     }
     return 0;
