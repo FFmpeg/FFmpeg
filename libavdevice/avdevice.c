@@ -20,6 +20,9 @@
 #include "avdevice.h"
 #include "config.h"
 
+#include "libavutil/ffversion.h"
+const char av_device_ffversion[] = "FFmpeg version " FFMPEG_VERSION;
+
 unsigned avdevice_version(void)
 {
     av_assert0(LIBAVDEVICE_VERSION_MICRO >= 100);

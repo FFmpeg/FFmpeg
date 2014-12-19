@@ -27,6 +27,9 @@
  * various utility functions
  */
 
+#include "libavutil/ffversion.h"
+const char av_util_ffversion[] = "FFmpeg version " FFMPEG_VERSION;
+
 unsigned avutil_version(void)
 {
     static int checks_done;
