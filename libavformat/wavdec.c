@@ -249,6 +249,7 @@ static int wav_read_header(AVFormatContext *s)
     int64_t size, av_uninit(data_size);
     int64_t sample_count = 0;
     int rf64 = 0;
+    char start_code[5];
     uint32_t tag;
     AVIOContext *pb      = s->pb;
     AVStream *st         = NULL;
@@ -272,7 +273,8 @@ static int wav_read_header(AVFormatContext *s)
         rf64 = 1;
         break;
     default:
-        av_log(s, AV_LOG_ERROR, "invalid start code %c%c%c%c in RIFF header\n", tag & 0xFF, (tag >> 8) & 0xFF, (tag >> 16) & 0xFF, (tag >> 24) & 0xFF);
+        av_get_codec_tag_string(start_code, 5, tag);
+        av_log(s, AV_LOG_ERROR, "invalid start code %s in RIFF header\n", start_code);
         return AVERROR_INVALIDDATA;
     }
 
