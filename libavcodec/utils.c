@@ -66,6 +66,9 @@
 #include "compat/os2threads.h"
 #endif
 
+#include "libavutil/ffversion.h"
+const char av_codec_ffversion[] = "FFmpeg version " FFMPEG_VERSION;
+
 #if HAVE_PTHREADS || HAVE_W32THREADS || HAVE_OS2THREADS
 static int default_lockmgr_cb(void **arg, enum AVLockOp op)
 {
