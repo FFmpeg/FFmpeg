@@ -1192,7 +1192,8 @@ static int mpegts_write_end(AVFormatContext *s)
     MpegTSService *service;
     int i;
 
-    mpegts_write_flush(s);
+    if (s->pb)
+        mpegts_write_flush(s);
 
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
