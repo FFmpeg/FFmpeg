@@ -908,8 +908,8 @@ static void stereo_processing(PSContext *ps, float (*l)[32][2], float (*r)[32][2
 
 int ff_ps_apply(AVCodecContext *avctx, PSContext *ps, float L[2][38][64], float R[2][38][64], int top)
 {
-    LOCAL_ALIGNED_16(float, Lbuf, [91], [32][2]);
-    LOCAL_ALIGNED_16(float, Rbuf, [91], [32][2]);
+    float (*Lbuf)[32][2] = ps->Lbuf;
+    float (*Rbuf)[32][2] = ps->Rbuf;
     const int len = 32;
     int is34 = ps->is34bands;
 

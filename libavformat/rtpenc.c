@@ -456,6 +456,7 @@ static void rtp_send_mpegts_raw(AVFormatContext *s1,
     RTPMuxContext *s = s1->priv_data;
     int len, out_len;
 
+    s->timestamp = s->cur_timestamp;
     while (size >= TS_PACKET_SIZE) {
         len = s->max_payload_size - (s->buf_ptr - s->buf);
         if (len > size)
@@ -642,4 +643,5 @@ AVOutputFormat ff_rtp_muxer = {
     .write_packet      = rtp_write_packet,
     .write_trailer     = rtp_write_trailer,
     .priv_class        = &rtp_muxer_class,
+    .flags             = AVFMT_TS_NONSTRICT,
 };
