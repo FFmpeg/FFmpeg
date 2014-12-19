@@ -89,6 +89,9 @@ try to unroll inner for(x=0 ... loop to avoid these damn if(x ... checks
 #include "postprocess_internal.h"
 #include "libavutil/avstring.h"
 
+#include "libavutil/ffversion.h"
+const char postproc_ffversion[] = "FFmpeg version " FFMPEG_VERSION;
+
 unsigned postproc_version(void)
 {
     av_assert0(LIBPOSTPROC_VERSION_MICRO >= 100);

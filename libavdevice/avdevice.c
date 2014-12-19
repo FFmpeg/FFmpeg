@@ -23,6 +23,9 @@
 #include "avdevice.h"
 #include "config.h"
 
+#include "libavutil/ffversion.h"
+const char av_device_ffversion[] = "FFmpeg version " FFMPEG_VERSION;
+
 #define E AV_OPT_FLAG_ENCODING_PARAM
 #define D AV_OPT_FLAG_DECODING_PARAM
 #define A AV_OPT_FLAG_AUDIO_PARAM
