@@ -231,6 +231,8 @@ static int opt_map(void *optctx, const char *opt, const char *arg)
         arg++;
     }
     map = av_strdup(arg);
+    if (!map)
+        return AVERROR(ENOMEM);
 
     /* parse sync stream first, just pick first matching stream */
     if (sync = strchr(map, ',')) {

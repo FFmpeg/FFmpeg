@@ -1084,12 +1084,15 @@ static int mkv_write_chapters(AVFormatContext *s)
     return 0;
 }
 
-static void mkv_write_simpletag(AVIOContext *pb, AVDictionaryEntry *t)
+static int mkv_write_simpletag(AVIOContext *pb, AVDictionaryEntry *t)
 {
     uint8_t *key = av_strdup(t->key);
     uint8_t *p   = key;
     const uint8_t *lang = NULL;
     ebml_master tag;
+
+    if (!key)
+        return AVERROR(ENOMEM);
 
     if ((p = strrchr(p, '-')) &&
         (lang = av_convert_lang_to(p + 1, AV_LANG_ISO639_2_BIBL)))
@@ -1112,6 +1115,7 @@ static void mkv_write_simpletag(AVIOContext *pb, AVDictionaryEntry *t)
     end_ebml_master(pb, tag);
 
     av_freep(&key);
+    return 0;
 }
 
 static int mkv_write_tag(AVFormatContext *s, AVDictionary *m, unsigned int elementid,
@@ -1135,11 +1139,15 @@ static int mkv_write_tag(AVFormatContext *s, AVDictionary *m, unsigned int eleme
         put_ebml_uint(s->pb, elementid, uid);
     end_ebml_master(s->pb, targets);
 
-    while ((t = av_dict_get(m, "", t, AV_DICT_IGNORE_SUFFIX)))
+    while ((t = av_dict_get(m, "", t, AV_DICT_IGNORE_SUFFIX))) {
         if (av_strcasecmp(t->key, "title") &&
             av_strcasecmp(t->key, "stereo_mode") &&
-            av_strcasecmp(t->key, "encoding_tool"))
-            mkv_write_simpletag(s->pb, t);
+            av_strcasecmp(t->key, "encoding_tool")) {
+            ret = mkv_write_simpletag(s->pb, t);
+            if (ret < 0)
+                return ret;
+        }
+    }
 
     end_ebml_master(s->pb, tag);
     return 0;
