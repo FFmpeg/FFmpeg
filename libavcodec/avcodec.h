@@ -3052,6 +3052,12 @@ typedef struct AVHWAccel {
 #define AV_HWACCEL_FLAG_IGNORE_LEVEL (1 << 0)
 
 /**
+ * Hardware acceleration can output YUV pixel formats with a different chroma
+ * sampling than 4:2:0 and/or other than 8 bits per component.
+ */
+#define AV_HWACCEL_FLAG_ALLOW_HIGH_DEPTH (1 << 1)
+
+/**
  * @}
  */
 
