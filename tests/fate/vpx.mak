@@ -1,6 +1,9 @@
 FATE_VP3-$(call DEMDEC, MATROSKA, THEORA) += fate-theora-coeff-level64
 fate-theora-coeff-level64: CMD = framecrc -flags +bitexact -i $(TARGET_SAMPLES)/vp3/coeff_level64.mkv
 
+FATE_VP3-$(call DEMDEC, OGG, THEORA) += fate-theora-offset
+fate-theora-offset: CMD = framecrc -flags +bitexact -i $(TARGET_SAMPLES)/vp3/offset_test.ogv
+
 FATE_VP3-$(call DEMDEC, AVI, VP3) += fate-vp31
 fate-vp31: CMD = framecrc -flags +bitexact -i $(TARGET_SAMPLES)/vp3/vp31.avi
 
