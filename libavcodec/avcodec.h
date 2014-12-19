@@ -2800,6 +2800,13 @@ typedef struct AVCodecContext {
      * - encoding: unused
      */
     AVRational framerate;
+
+    /**
+     * Nominal unaccelerated pixel format, see AV_PIX_FMT_xxx.
+     * - encoding: unused.
+     * - decoding: Set by libavcodec before calling get_format()
+     */
+    enum AVPixelFormat sw_pix_fmt;
 } AVCodecContext;
 
 /**
