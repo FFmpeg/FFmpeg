@@ -32,11 +32,9 @@ static int rtp_mpegts_write_close(AVFormatContext *s)
     struct MuxChain *chain = s->priv_data;
 
     if (chain->mpegts_ctx) {
-        if (!chain->mpegts_ctx->pb)
-            avio_open_dyn_buf(&chain->mpegts_ctx->pb);
+        av_write_trailer(chain->mpegts_ctx);
         if (chain->mpegts_ctx->pb) {
             uint8_t *buf;
-            av_write_trailer(chain->mpegts_ctx);
             avio_close_dyn_buf(chain->mpegts_ctx->pb, &buf);
             av_free(buf);
         }
