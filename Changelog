@@ -6,6 +6,7 @@ version <next>:
 - 10bit spp filter
 - colorlevels filter
 - RIFX format for *.wav files
+- RTP/mpegts muxer
 
 
 version 2.5:
