@@ -248,7 +248,7 @@ static int wav_read_header(AVFormatContext *s)
 {
     int64_t size, av_uninit(data_size);
     int64_t sample_count = 0;
-    int rf64;
+    int rf64 = 0;
     uint32_t tag;
     AVIOContext *pb      = s->pb;
     AVStream *st         = NULL;
@@ -260,17 +260,30 @@ static int wav_read_header(AVFormatContext *s)
 
     wav->smv_data_ofs = -1;
 
-    /* check RIFF header */
+    /* read chunk ID */
     tag = avio_rl32(pb);
+    switch (tag) {
+    case MKTAG('R', 'I', 'F', 'F'):
+        break;
+    case MKTAG('R', 'I', 'F', 'X'):
+        wav->rifx = 1;
+        break;
+    case MKTAG('R', 'F', '6', '4'):
+        rf64 = 1;
+        break;
+    default:
+        av_log(s, AV_LOG_ERROR, "invalid start code %c%c%c%c in RIFF header\n", tag & 0xFF, (tag >> 8) & 0xFF, (tag >> 16) & 0xFF, (tag >> 24) & 0xFF);
+        return AVERROR_INVALIDDATA;
+    }
 
-    rf64 = tag == MKTAG('R', 'F', '6', '4');
-    wav->rifx = tag == MKTAG('R', 'I', 'F', 'X');
-    if (!rf64 && !wav->rifx && tag != MKTAG('R', 'I', 'F', 'F'))
+    /* read chunk size */
+    avio_rl32(pb);
+
+    /* read format */
+    if (avio_rl32(pb) != MKTAG('W', 'A', 'V', 'E')) {
+        av_log(s, AV_LOG_ERROR, "invalid format in RIFF header\n");
         return AVERROR_INVALIDDATA;
-    avio_rl32(pb); /* file size */
-    tag = avio_rl32(pb);
-    if (tag != MKTAG('W', 'A', 'V', 'E'))
-        return AVERROR_INVALIDDATA;
+    }
 
     if (rf64) {
         if (avio_rl32(pb) != MKTAG('d', 's', '6', '4'))
