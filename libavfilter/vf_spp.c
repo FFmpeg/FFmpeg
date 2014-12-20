@@ -321,8 +321,12 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ440P,
         AV_PIX_FMT_YUV444P10,  AV_PIX_FMT_YUV422P10,
         AV_PIX_FMT_YUV420P10,
+        AV_PIX_FMT_YUV444P9,  AV_PIX_FMT_YUV422P9,
+        AV_PIX_FMT_YUV420P9,
         AV_PIX_FMT_GRAY8,
         AV_PIX_FMT_GBRP,
+        AV_PIX_FMT_GBRP9,
+        AV_PIX_FMT_GBRP10,
         AV_PIX_FMT_NONE
     };
     ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
