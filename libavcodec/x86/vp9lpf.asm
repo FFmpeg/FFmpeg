@@ -725,34 +725,34 @@ cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3, dst, stride, mstride, dst2, stri
     SBUTTERFLY  bw, 2, 3, 8
     SBUTTERFLY  wd, 0, 2, 8
     SBUTTERFLY  wd, 1, 3, 8
-    SBUTTERFLY  dq, 0, 4, 8
-    SBUTTERFLY  dq, 1, 5, 8
-    SBUTTERFLY  dq, 2, 6, 8
-    SBUTTERFLY  dq, 3, 7, 8
     movd  [P7], m0
-    punpckhqdq m0, m8
-    movd  [P6], m0
-    movd  [Q0], m1
-    punpckhqdq  m1, m9
-    movd  [Q1], m1
     movd  [P3], m2
-    punpckhqdq  m2, m10
-    movd  [P2], m2
+    movd  [Q0], m1
     movd  [Q4], m3
-    punpckhqdq m3, m11
+    psrldq  m0, 4
+    psrldq  m1, 4
+    psrldq  m2, 4
+    psrldq  m3, 4
+    movd  [P6], m0
+    movd  [P2], m2
+    movd  [Q1], m1
     movd  [Q5], m3
-    movd  [P5], m4
-    punpckhqdq m4, m12
-    movd  [P4], m4
-    movd  [Q2], m5
-    punpckhqdq m5, m13
-    movd  [Q3], m5
-    movd  [P1], m6
-    punpckhqdq m6, m14
-    movd  [P0], m6
-    movd  [Q6], m7
-    punpckhqdq m7, m8
-    movd  [Q7], m7
+    psrldq  m0, 4
+    psrldq  m1, 4
+    psrldq  m2, 4
+    psrldq  m3, 4
+    movd  [P5], m0
+    movd  [P1], m2
+    movd  [Q2], m1
+    movd  [Q6], m3
+    psrldq  m0, 4
+    psrldq  m1, 4
+    psrldq  m2, 4
+    psrldq  m3, 4
+    movd  [P4], m0
+    movd  [P0], m2
+    movd  [Q3], m1
+    movd  [Q7], m3
 %else
     ; the following code do a transpose of 8 full lines to 16 half
     ; lines (high part). It is inlined to avoid the need of a staging area
@@ -777,30 +777,22 @@ cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3, dst, stride, mstride, dst2, stri
     SBUTTERFLY  dq,  1,  5, 8
     SBUTTERFLY  dq,  2,  6, 8
     SBUTTERFLY  dq,  3,  7, 8
-    movh  [P7], m0
-    punpckhqdq m0, m8
-    movh  [P6], m0
-    movh  [Q0], m1
-    punpckhqdq  m1, m9
-    movh  [Q1], m1
-    movh  [P3], m2
-    punpckhqdq  m2, m10
-    movh  [P2], m2
-    movh  [Q4], m3
-    punpckhqdq m3, m11
-    movh  [Q5], m3
-    movh  [P5], m4
-    punpckhqdq m4, m12
-    movh  [P4], m4
-    movh  [Q2], m5
-    punpckhqdq m5, m13
-    movh  [Q3], m5
-    movh  [P1], m6
-    punpckhqdq m6, m14
-    movh  [P0], m6
-    movh  [Q6], m7
-    punpckhqdq m7, m8
-    movh  [Q7], m7
+    movh   [P7], m0
+    movhps [P6], m0
+    movh   [Q0], m1
+    movhps [Q1], m1
+    movh   [P3], m2
+    movhps [P2], m2
+    movh   [Q4], m3
+    movhps [Q5], m3
+    movh   [P5], m4
+    movhps [P4], m4
+    movh   [Q2], m5
+    movhps [Q3], m5
+    movh   [P1], m6
+    movhps [P0], m6
+    movh   [Q6], m7
+    movhps [Q7], m7
 %endif
 %endif
 
