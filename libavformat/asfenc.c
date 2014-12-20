@@ -485,7 +485,7 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size,
     /* chapters using ASF markers */
     if (!asf->is_streamed && s->nb_chapters) {
         int ret;
-        if (ret = asf_write_markers(s))
+        if ((ret = asf_write_markers(s)) < 0)
             return ret;
     }
     /* stream headers */
