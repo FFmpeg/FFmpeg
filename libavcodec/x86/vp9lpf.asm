@@ -70,9 +70,9 @@ SECTION .text
 %endmacro
 
 ; %1 = abs(%2-%3) <= %4
-%macro ABSSUB_CMP 6-7 [pb_80]; dst, src1, src2, cmp, tmp1, tmp2, [pb_80]
-    ABSSUB              %1, %2, %3, %6      ; dst = abs(src1-src2)
-    CMP_LTE             %1, %4, %6, %7      ; dst <= cmp
+%macro ABSSUB_CMP 5-6 [pb_80]; dst, src1, src2, cmp, tmp, [pb_80]
+    ABSSUB              %1, %2, %3, %5      ; dst = abs(src1-src2)
+    CMP_LTE             %1, %4, %5, %6      ; dst <= cmp
 %endmacro
 
 %macro MASK_APPLY 4 ; %1=new_data/dst %2=old_data %3=mask %4=tmp
@@ -439,16 +439,16 @@ cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3, dst, stride, mstride, dst2, stri
     SWAP                10,  6, 14
     SWAP                11,  7, 15
 %endif
-    ABSSUB_CMP          m5,  m8,  m9, m2, m6, m7, m0    ; m5 = abs(p3-p2) <= I
-    ABSSUB_CMP          m1,  m9, m10, m2, m6, m7, m0    ; m1 = abs(p2-p1) <= I
+    ABSSUB_CMP          m5,  m8,  m9, m2, m7, m0        ; m5 = abs(p3-p2) <= I
+    ABSSUB_CMP          m1,  m9, m10, m2, m7, m0        ; m1 = abs(p2-p1) <= I
     pand                m5, m1
-    ABSSUB_CMP          m1, m10, m11, m2, m6, m7, m0    ; m1 = abs(p1-p0) <= I
+    ABSSUB_CMP          m1, m10, m11, m2, m7, m0        ; m1 = abs(p1-p0) <= I
     pand                m5, m1
-    ABSSUB_CMP          m1, m12, m13, m2, m6, m7, m0    ; m1 = abs(q1-q0) <= I
+    ABSSUB_CMP          m1, m12, m13, m2, m7, m0        ; m1 = abs(q1-q0) <= I
     pand                m5, m1
-    ABSSUB_CMP          m1, m13, m14, m2, m6, m7, m0    ; m1 = abs(q2-q1) <= I
+    ABSSUB_CMP          m1, m13, m14, m2, m7, m0        ; m1 = abs(q2-q1) <= I
     pand                m5, m1
-    ABSSUB_CMP          m1, m14, m15, m2, m6, m7, m0    ; m1 = abs(q3-q2) <= I
+    ABSSUB_CMP          m1, m14, m15, m2, m7, m0        ; m1 = abs(q3-q2) <= I
     pand                m5, m1
     ABSSUB              m1, m11, m12, m7                ; abs(p0-q0)
     paddusb             m1, m1                          ; abs(p0-q0) * 2
@@ -466,9 +466,9 @@ cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3, dst, stride, mstride, dst2, stri
     ; calc flat8in (if not 44_16) and hev masks
     mova                m6, [pb_81]                     ; [1 1 1 1 ...] ^ 0x80
 %if %2 != 44
-    ABSSUB_CMP          m2, m8, m11, m6, m4, m5         ; abs(p3 - p0) <= 1
+    ABSSUB_CMP          m2, m8, m11, m6, m5             ; abs(p3 - p0) <= 1
     mova                m8, [pb_80]
-    ABSSUB_CMP          m1, m9, m11, m6, m4, m5, m8     ; abs(p2 - p0) <= 1
+    ABSSUB_CMP          m1, m9, m11, m6, m5, m8         ; abs(p2 - p0) <= 1
     pand                m2, m1
     ABSSUB              m4, m10, m11, m5                ; abs(p1 - p0)
 %if %2 == 16
@@ -491,9 +491,9 @@ cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3, dst, stride, mstride, dst2, stri
     por                 m0, m5                          ; hev final value
     CMP_LTE             m4, m6, m5                      ; abs(q1 - q0) <= 1
     pand                m2, m4                          ; (flat8in)
-    ABSSUB_CMP          m1, m14, m12, m6, m4, m5, m8    ; abs(q2 - q0) <= 1
+    ABSSUB_CMP          m1, m14, m12, m6, m5, m8        ; abs(q2 - q0) <= 1
     pand                m2, m1
-    ABSSUB_CMP          m1, m15, m12, m6, m4, m5, m8    ; abs(q3 - q0) <= 1
+    ABSSUB_CMP          m1, m15, m12, m6, m5, m8        ; abs(q3 - q0) <= 1
     pand                m2, m1                          ; flat8in final value
 %if %2 == 84 || %2 == 48
     pand                m2, [mask_mix%2]
@@ -517,26 +517,26 @@ cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3, dst, stride, mstride, dst2, stri
     ; calc flat8out mask
     mova                m8, [P7]
     mova                m9, [P6]
-    ABSSUB_CMP          m1, m8, m11, m6, m4, m5         ; abs(p7 - p0) <= 1
-    ABSSUB_CMP          m7, m9, m11, m6, m4, m5         ; abs(p6 - p0) <= 1
+    ABSSUB_CMP          m1, m8, m11, m6, m5             ; abs(p7 - p0) <= 1
+    ABSSUB_CMP          m7, m9, m11, m6, m5             ; abs(p6 - p0) <= 1
     pand                m1, m7
     mova                m8, [P5]
     mova                m9, [P4]
-    ABSSUB_CMP          m7, m8, m11, m6, m4, m5         ; abs(p5 - p0) <= 1
+    ABSSUB_CMP          m7, m8, m11, m6, m5             ; abs(p5 - p0) <= 1
     pand                m1, m7
-    ABSSUB_CMP          m7, m9, m11, m6, m4, m5         ; abs(p4 - p0) <= 1
+    ABSSUB_CMP          m7, m9, m11, m6, m5             ; abs(p4 - p0) <= 1
     pand                m1, m7
     mova                m14, [Q4]
     mova                m15, [Q5]
-    ABSSUB_CMP          m7, m14, m12, m6, m4, m5        ; abs(q4 - q0) <= 1
+    ABSSUB_CMP          m7, m14, m12, m6, m5            ; abs(q4 - q0) <= 1
     pand                m1, m7
-    ABSSUB_CMP          m7, m15, m12, m6, m4, m5        ; abs(q5 - q0) <= 1
+    ABSSUB_CMP          m7, m15, m12, m6, m5            ; abs(q5 - q0) <= 1
     pand                m1, m7
     mova                m14, [Q6]
     mova                m15, [Q7]
-    ABSSUB_CMP          m7, m14, m12, m6, m4, m5        ; abs(q4 - q0) <= 1
+    ABSSUB_CMP          m7, m14, m12, m6, m5            ; abs(q4 - q0) <= 1
     pand                m1, m7
-    ABSSUB_CMP          m7, m15, m12, m6, m4, m5        ; abs(q5 - q0) <= 1
+    ABSSUB_CMP          m7, m15, m12, m6, m5            ; abs(q5 - q0) <= 1
     pand                m1, m7                          ; flat8out final value
 %endif
 
