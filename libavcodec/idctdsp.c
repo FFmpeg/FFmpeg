@@ -258,7 +258,7 @@ av_cold void ff_idctdsp_init(IDCTDSPContext *c, AVCodecContext *avctx)
         c->idct      = ff_j_rev_dct1;
         c->perm_type = FF_IDCT_PERM_NONE;
     } else {
-        if (avctx->bits_per_raw_sample == 10) {
+        if (avctx->bits_per_raw_sample == 10 || avctx->bits_per_raw_sample == 9) {
             c->idct_put              = ff_simple_idct_put_10;
             c->idct_add              = ff_simple_idct_add_10;
             c->idct                  = ff_simple_idct_10;
