@@ -3,6 +3,39 @@ releases are sorted from youngest to oldest.
 
 version <next>:
 
+version 2.4.5:
+- lavu/frame: fix malloc error path in av_frame_copy_props()
+- avformat/utils: Do not update programs streams from program-less streams in update_wrap_reference()
+- avformat/aviobuf: Check that avio_seek() target is non negative
+- swresample/soxr_resample: fix error handling
+- avformat/flvdec: fix potential use of uninitialized variables
+- avformat/matroskadec: fix handling of recursive SeekHead elements
+- doc/examples/transcoding: check encoder before using it
+- swscale/x86/rgb2rgb_template: fix crash with tiny size and nv12 output
+- avformat/rmdec: Check codec_data_size
+- avformat/aviobuf: Fix infinite loop in ff_get_line()
+- vc1: Do not assume seek happens after decoding
+- mmvideo: check frame dimensions
+- jvdec: check frame dimensions
+- avcodec/indeo3: ensure offsets are non negative
+- avcodec/h264: Check *log2_weight_denom
+- avcodec/hevc_ps: Check diff_cu_qp_delta_depth
+- avcodec/h264: Clear delayed_pic on deallocation
+- avcodec/hevc: clear filter_slice_edges() on allocation
+- avcodec/dcadec: Check that the added xch channel isnt already there
+- avcodec/indeo3: use signed variables to avoid underflow
+- swscale: increase yuv2rgb table headroom
+- avformat/mov: fix integer overflow of size
+- avformat/mov: check atom nesting depth
+- avcodec/utvideodec: Fix handling of slice_height=0
+- avcodec/vmdvideo: Check len before using it in method 3
+- avformat/flvdec: Use av_freep() avoid leaving stale pointers in memory
+- avformat/hdsenc: Use av_freep() avoid leaving stale pointers in memory
+- configure: create the tests directory like the doc directory
+- v4l2: Make use of the VIDIOC_ENUM_FRAMESIZES ioctl on OpenBSD
+- avcodec/motion_est: use 2x8x8 for interlaced qpel
+- Treat all '*.pnm' files as non-text file
+
 version 2.4.4:
 - avformat: replace some odd 30-60 rates by higher less odd ones in  get_std_framerate()
 - swscale: fix yuv2yuvX_8 assembly on x86
