@@ -2959,6 +2959,9 @@ static int read_thread(void *arg)
 
     is->realtime = is_realtime(ic);
 
+    if (show_status)
+        av_dump_format(ic, 0, is->filename, 0);
+
     for (i = 0; i < ic->nb_streams; i++) {
         AVStream *st = ic->streams[i];
         enum AVMediaType type = st->codec->codec_type;
@@ -2992,9 +2995,6 @@ static int read_thread(void *arg)
                                  st_index[AVMEDIA_TYPE_AUDIO] :
                                  st_index[AVMEDIA_TYPE_VIDEO]),
                                 NULL, 0);
-    if (show_status) {
-        av_dump_format(ic, 0, is->filename, 0);
-    }
 
     is->show_mode = show_mode;
     if (st_index[AVMEDIA_TYPE_VIDEO] >= 0) {
