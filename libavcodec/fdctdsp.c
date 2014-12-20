@@ -27,7 +27,7 @@ av_cold void ff_fdctdsp_init(FDCTDSPContext *c, AVCodecContext *avctx)
 {
     const unsigned high_bit_depth = avctx->bits_per_raw_sample > 8;
 
-    if (avctx->bits_per_raw_sample == 10) {
+    if (avctx->bits_per_raw_sample == 10 || avctx->bits_per_raw_sample == 9) {
         c->fdct    = ff_jpeg_fdct_islow_10;
         c->fdct248 = ff_fdct248_islow_10;
     } else if (avctx->dct_algo == FF_DCT_FASTINT) {
