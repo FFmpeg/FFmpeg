@@ -307,7 +307,20 @@ SECTION .text
 %endif
 %endmacro
 
-%macro LOOPFILTER 2 ; %1=v/h %2=size1
+%macro LOOPFILTER 3 ; %1=v/h %2=size1 %3=stack
+%if UNIX64
+cglobal vp9_loop_filter_%1_%2_16, 5, 9, 16, %3, dst, stride, E, I, H, mstride, dst2, stride3, mstride3
+%else
+%if WIN64
+cglobal vp9_loop_filter_%1_%2_16, 4, 8, 16, %3, dst, stride, E, I, mstride, dst2, stride3, mstride3
+%else
+cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3, dst, stride, mstride, dst2, stride3, mstride3
+%define Ed dword r2m
+%define Id dword r3m
+%endif
+%define Hd dword r4m
+%endif
+
     mov               mstrideq, strideq
     neg               mstrideq
 
@@ -795,10 +808,8 @@ SECTION .text
 
 %macro LPF_16_VH 2
 INIT_XMM %2
-cglobal vp9_loop_filter_v_%1_16, 5,10,16,      dst, stride, E, I, H, mstride, dst2, stride3, mstride3
-    LOOPFILTER v, %1
-cglobal vp9_loop_filter_h_%1_16, 5,10,16, 256, dst, stride, E, I, H, mstride, dst2, stride3, mstride3
-    LOOPFILTER h, %1
+LOOPFILTER v, %1, 0
+LOOPFILTER h, %1, 256
 %endmacro
 
 %macro LPF_16_VH_ALL_OPTS 1
