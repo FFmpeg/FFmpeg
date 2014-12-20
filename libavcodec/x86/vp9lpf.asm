@@ -279,22 +279,22 @@ SECTION .text
 %endmacro
 
 %macro DEFINE_REAL_P7_TO_Q7 0-1 0
-%define P7 dst1q + 2*mstrideq  + %1
-%define P6 dst1q +   mstrideq  + %1
-%define P5 dst1q               + %1
-%define P4 dst1q +    strideq  + %1
-%define P3 dstq  + 4*mstrideq  + %1
-%define P2 dstq  +   mstride3q + %1
-%define P1 dstq  + 2*mstrideq  + %1
-%define P0 dstq  +   mstrideq  + %1
-%define Q0 dstq                + %1
-%define Q1 dstq  +   strideq   + %1
-%define Q2 dstq  + 2*strideq   + %1
-%define Q3 dstq  +   stride3q  + %1
-%define Q4 dstq  + 4*strideq   + %1
-%define Q5 dst2q + mstrideq    + %1
-%define Q6 dst2q               + %1
-%define Q7 dst2q +  strideq    + %1
+%define P7 dstq  + 4*mstrideq  + %1
+%define P6 dstq  +   mstride3q + %1
+%define P5 dstq  + 2*mstrideq  + %1
+%define P4 dstq  +   mstrideq  + %1
+%define P3 dstq                + %1
+%define P2 dstq  +    strideq  + %1
+%define P1 dstq  + 2* strideq  + %1
+%define P0 dstq  +    stride3q + %1
+%define Q0 dstq  + 4* strideq  + %1
+%define Q1 dst2q +   mstride3q + %1
+%define Q2 dst2q + 2*mstrideq  + %1
+%define Q3 dst2q +   mstrideq  + %1
+%define Q4 dst2q               + %1
+%define Q5 dst2q +    strideq  + %1
+%define Q6 dst2q + 2* strideq  + %1
+%define Q7 dst2q +    stride3q + %1
 %endmacro
 
 ; ..............AB -> AAAAAAAABBBBBBBB
@@ -309,25 +309,25 @@ SECTION .text
 %endmacro
 
 %macro LOOPFILTER 2 ; %1=v/h %2=size1
-    lea mstrideq, [strideq]
-    neg mstrideq
+    mov               mstrideq, strideq
+    neg               mstrideq
 
-    lea stride3q, [strideq+2*strideq]
-    mov mstride3q, stride3q
-    neg mstride3q
+    lea               stride3q, [strideq*3]
+    lea              mstride3q, [mstrideq*3]
 
 %ifidn %1, h
 %if %2 > 16
 %define movx movh
-    lea dstq, [dstq + 8*strideq - 4]
+    lea                   dstq, [dstq + 4*strideq - 4]
 %else
 %define movx movu
-    lea dstq, [dstq + 8*strideq - 8] ; go from top center (h pos) to center left (v pos)
+    lea                   dstq, [dstq + 4*strideq - 8] ; go from top center (h pos) to center left (v pos)
 %endif
+    lea                  dst2q, [dstq + 8*strideq]
+%else
+    lea                   dstq, [dstq + 4*mstrideq]
+    lea                  dst2q, [dstq + 8*strideq]
 %endif
-
-    lea dst1q, [dstq + 2*mstride3q]                         ; dst1q = &dst[stride * -6]
-    lea dst2q, [dstq + 2* stride3q]                         ; dst2q = &dst[stride * +6]
 
     DEFINE_REAL_P7_TO_Q7
 
@@ -796,9 +796,9 @@ SECTION .text
 
 %macro LPF_16_VH 2
 INIT_XMM %2
-cglobal vp9_loop_filter_v_%1_16, 5,10,16,      dst, stride, E, I, H, mstride, dst1, dst2, stride3, mstride3
+cglobal vp9_loop_filter_v_%1_16, 5,10,16,      dst, stride, E, I, H, mstride, dst2, stride3, mstride3
     LOOPFILTER v, %1
-cglobal vp9_loop_filter_h_%1_16, 5,10,16, 256, dst, stride, E, I, H, mstride, dst1, dst2, stride3, mstride3
+cglobal vp9_loop_filter_h_%1_16, 5,10,16, 256, dst, stride, E, I, H, mstride, dst2, stride3, mstride3
     LOOPFILTER h, %1
 %endmacro
 
