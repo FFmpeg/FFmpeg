@@ -290,10 +290,14 @@ static int write_option(void *optctx, const OptionDef *po, const char *opt,
     if (po->flags & OPT_SPEC) {
         SpecifierOpt **so = dst;
         char *p = strchr(opt, ':');
+        char *str;
 
         dstcount = (int *)(so + 1);
         *so = grow_array(*so, sizeof(**so), dstcount, *dstcount + 1);
-        (*so)[*dstcount - 1].specifier = av_strdup(p ? p + 1 : "");
+        str = av_strdup(p ? p + 1 : "");
+        if (!str)
+            return AVERROR(ENOMEM);
+        (*so)[*dstcount - 1].specifier = str;
         dst = &(*so)[*dstcount - 1].u;
     }
 
@@ -301,6 +305,8 @@ static int write_option(void *optctx, const OptionDef *po, const char *opt,
         char *str;
         str = av_strdup(arg);
         av_freep(dst);
+        if (!str)
+            return AVERROR(ENOMEM);
         *(char **)dst = str;
     } else if (po->flags & OPT_BOOL || po->flags & OPT_INT) {
         *(int *)dst = parse_number_or_die(opt, arg, OPT_INT64, INT_MIN, INT_MAX);
@@ -1816,6 +1822,8 @@ int show_help(void *optctx, const char *opt, const char *arg)
     av_log_set_callback(log_callback_help);
 
     topic = av_strdup(arg ? arg : "");
+    if (!topic)
+        return AVERROR(ENOMEM);
     par = strchr(topic, '=');
     if (par)
         *par++ = 0;
@@ -1864,20 +1872,31 @@ int cmdutils_read_file(const char *filename, char **bufptr, size_t *size)
                strerror(errno));
         return ret;
     }
-    fseek(f, 0, SEEK_END);
-    *size = ftell(f);
-    fseek(f, 0, SEEK_SET);
-    if (*size == (size_t)-1) {
+
+    ret = fseek(f, 0, SEEK_END);
+    if (ret == -1) {
         ret = AVERROR(errno);
-        av_log(NULL, AV_LOG_ERROR, "IO error: %s\n", strerror(errno));
-        fclose(f);
-        return ret;
+        goto out;
     }
+
+    ret = ftell(f);
+    if (ret < 0) {
+        ret = AVERROR(errno);
+        goto out;
+    }
+    *size = ret;
+
+    ret = fseek(f, 0, SEEK_SET);
+    if (ret == -1) {
+        ret = AVERROR(errno);
+        goto out;
+    }
+
     *bufptr = av_malloc(*size + 1);
     if (!*bufptr) {
         av_log(NULL, AV_LOG_ERROR, "Could not allocate file buffer\n");
-        fclose(f);
-        return AVERROR(ENOMEM);
+        ret = AVERROR(ENOMEM);
+        goto out;
     }
     ret = fread(*bufptr, 1, *size, f);
     if (ret < *size) {
@@ -1893,6 +1912,8 @@ int cmdutils_read_file(const char *filename, char **bufptr, size_t *size)
         (*bufptr)[(*size)++] = '\0';
     }
 
+out:
+    av_log(NULL, AV_LOG_ERROR, "IO error: %s\n", av_err2str(ret));
     fclose(f);
     return ret;
 }

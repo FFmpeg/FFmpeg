@@ -156,7 +156,7 @@ static void softthresh_c(int16_t dst[64], const int16_t src[64],
     }
 }
 
-static void store_slice_c(uint8_t *dst, const uint16_t *src,
+static void store_slice_c(uint8_t *dst, const int16_t *src,
                           int dst_linesize, int src_linesize,
                           int width, int height, int log2_scale,
                           const uint8_t dither[8][8])
@@ -186,16 +186,17 @@ static void store_slice_c(uint8_t *dst, const uint16_t *src,
     }
 }
 
-static void store_slice16_c(uint16_t *dst, const uint16_t *src,
+static void store_slice16_c(uint16_t *dst, const int16_t *src,
                             int dst_linesize, int src_linesize,
                             int width, int height, int log2_scale,
-                            const uint8_t dither[8][8])
+                            const uint8_t dither[8][8], int depth)
 {
     int y, x;
+    unsigned int mask = -1<<depth;
 
 #define STORE16(pos) do {                                                   \
     temp = ((src[x + y*src_linesize + pos] << log2_scale) + (d[pos]>>1)) >> 5;   \
-    if (temp & 0x400)                                                       \
+    if (temp & mask )                                                       \
         temp = ~(temp >> 31);                                               \
     dst[x + y*dst_linesize + pos] = temp;                                   \
 } while (0)
@@ -242,7 +243,7 @@ static inline int norm_qscale(int qscale, int type)
 
 static void filter(SPPContext *p, uint8_t *dst, uint8_t *src,
                    int dst_linesize, int src_linesize, int width, int height,
-                   const uint8_t *qp_table, int qp_stride, int is_luma, int sample_bytes)
+                   const uint8_t *qp_table, int qp_stride, int is_luma, int depth)
 {
     int x, y, i;
     const int count = 1 << p->log2_count;
@@ -251,6 +252,7 @@ static void filter(SPPContext *p, uint8_t *dst, uint8_t *src,
     int16_t *block  = (int16_t *)block_align;
     int16_t *block2 = (int16_t *)(block_align + 16);
     uint16_t *psrc16 = (uint16_t*)p->src;
+    const int sample_bytes = (depth+7) / 8;
 
     for (y = 0; y < height; y++) {
         int index = 8 + 8*linesize + y*linesize;
@@ -305,7 +307,7 @@ static void filter(SPPContext *p, uint8_t *dst, uint8_t *src,
                 store_slice16_c((uint16_t*)(dst + (y - 8) * dst_linesize), p->temp + 8 + y*linesize,
                                 dst_linesize/2, linesize, width,
                                 FFMIN(8, height + 8 - y), MAX_LEVEL - p->log2_count,
-                                ldither);
+                                ldither, depth);
             }
         }
     }
@@ -321,8 +323,12 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ440P,
         AV_PIX_FMT_YUV444P10,  AV_PIX_FMT_YUV422P10,
         AV_PIX_FMT_YUV420P10,
+        AV_PIX_FMT_YUV444P9,  AV_PIX_FMT_YUV422P9,
+        AV_PIX_FMT_YUV420P9,
         AV_PIX_FMT_GRAY8,
         AV_PIX_FMT_GBRP,
+        AV_PIX_FMT_GBRP9,
+        AV_PIX_FMT_GBRP10,
         AV_PIX_FMT_NONE
     };
     ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
@@ -362,7 +368,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     int qp_stride = 0;
     const int8_t *qp_table = NULL;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
-    const int sample_bytes = desc->comp[0].depth_minus1 < 8 ? 1 : 2;
+    const int depth = desc->comp[0].depth_minus1 + 1;
 
     /* if we are not in a constant user quantizer mode and we don't want to use
      * the quantizers from the B-frames (B-frames often have a higher QP), we
@@ -422,11 +428,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                 out->height = in->height;
             }
 
-            filter(spp, out->data[0], in->data[0], out->linesize[0], in->linesize[0], inlink->w, inlink->h, qp_table, qp_stride, 1, sample_bytes);
+            filter(spp, out->data[0], in->data[0], out->linesize[0], in->linesize[0], inlink->w, inlink->h, qp_table, qp_stride, 1, depth);
 
             if (out->data[2]) {
-                filter(spp, out->data[1], in->data[1], out->linesize[1], in->linesize[1], cw,        ch,        qp_table, qp_stride, 0, sample_bytes);
-                filter(spp, out->data[2], in->data[2], out->linesize[2], in->linesize[2], cw,        ch,        qp_table, qp_stride, 0, sample_bytes);
+                filter(spp, out->data[1], in->data[1], out->linesize[1], in->linesize[1], cw,        ch,        qp_table, qp_stride, 0, depth);
+                filter(spp, out->data[2], in->data[2], out->linesize[2], in->linesize[2], cw,        ch,        qp_table, qp_stride, 0, depth);
             }
             emms_c();
         }

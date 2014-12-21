@@ -348,7 +348,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 
     if (s->uninit)
         s->uninit(ctx);
-    av_free(s->priv);
+    av_freep(&s->priv);
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)

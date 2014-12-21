@@ -218,10 +218,10 @@ static int check_tag(AVIOContext *s, int offset, unsigned int len)
 static void free_geobtag(void *obj)
 {
     ID3v2ExtraMetaGEOB *geob = obj;
-    av_free(geob->mime_type);
-    av_free(geob->file_name);
-    av_free(geob->description);
-    av_free(geob->data);
+    av_freep(&geob->mime_type);
+    av_freep(&geob->file_name);
+    av_freep(&geob->description);
+    av_freep(&geob->data);
     av_free(geob);
 }
 

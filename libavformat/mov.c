@@ -1972,7 +1972,9 @@ static int mov_read_stss(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     }
     if (sc->keyframes)
         av_log(c->fc, AV_LOG_WARNING, "Duplicated STSS atom\n");
-    av_free(sc->keyframes);
+    if (entries >= UINT_MAX / sizeof(int))
+        return AVERROR_INVALIDDATA;
+    av_freep(&sc->keyframes);
     sc->keyframe_count = 0;
     sc->keyframes = av_malloc_array(entries, sizeof(*sc->keyframes));
     if (!sc->keyframes)

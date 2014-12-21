@@ -37,6 +37,9 @@
 #include "formats.h"
 #include "internal.h"
 
+#include "libavutil/ffversion.h"
+const char av_filter_ffversion[] = "FFmpeg version " FFMPEG_VERSION;
+
 static int ff_filter_frame_framed(AVFilterLink *link, AVFrame *frame);
 
 void ff_tlog_ref(void *ctx, AVFrame *ref, int end)

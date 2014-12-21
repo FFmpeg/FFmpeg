@@ -243,40 +243,58 @@ lpf_funcs(88, 16, avx);
 void ff_vp9_ipred_##type##_##size##x##size##_##opt(uint8_t *dst, ptrdiff_t stride, \
                                                    const uint8_t *l, const uint8_t *a)
 
-#define ipred_funcs(type, opt) \
-ipred_func(4, type, opt); \
-ipred_func(8, type, opt); \
-ipred_func(16, type, opt); \
-ipred_func(32, type, opt)
-
-ipred_funcs(dc, ssse3);
-ipred_funcs(dc_left, ssse3);
-ipred_funcs(dc_top, ssse3);
-
-#undef ipred_funcs
-
 ipred_func(8, v, mmx);
-ipred_func(16, v, sse2);
-ipred_func(32, v, sse2);
 
-#define ipred_func_set(size, type, opt1, opt2) \
-ipred_func(size, type, opt1); \
-ipred_func(size, type, opt2)
+#define ipred_dc_funcs(size, opt) \
+ipred_func(size, dc, opt); \
+ipred_func(size, dc_left, opt); \
+ipred_func(size, dc_top, opt)
 
-#define ipred_funcs(type, opt1, opt2) \
-ipred_func(4, type, opt1); \
-ipred_func_set(8, type, opt1, opt2); \
-ipred_func_set(16, type, opt1, opt2); \
-ipred_func_set(32, type, opt1, opt2)
+ipred_dc_funcs(4, mmxext);
+ipred_dc_funcs(8, mmxext);
 
-ipred_funcs(h, ssse3, avx);
-ipred_funcs(tm, ssse3, avx);
-ipred_funcs(dl, ssse3, avx);
-ipred_funcs(dr, ssse3, avx);
-ipred_funcs(hu, ssse3, avx);
-ipred_funcs(hd, ssse3, avx);
-ipred_funcs(vl, ssse3, avx);
-ipred_funcs(vr, ssse3, avx);
+#define ipred_dir_tm_funcs(size, opt) \
+ipred_func(size, tm, opt); \
+ipred_func(size, dl, opt); \
+ipred_func(size, dr, opt); \
+ipred_func(size, hd, opt); \
+ipred_func(size, hu, opt); \
+ipred_func(size, vl, opt); \
+ipred_func(size, vr, opt)
+
+ipred_dir_tm_funcs(4, mmxext);
+
+ipred_func(16, v, sse);
+ipred_func(32, v, sse);
+
+ipred_dc_funcs(16, sse2);
+ipred_dc_funcs(32, sse2);
+
+#define ipred_dir_tm_h_funcs(size, opt) \
+ipred_dir_tm_funcs(size, opt); \
+ipred_func(size, h, opt)
+
+ipred_dir_tm_h_funcs(8, sse2);
+ipred_dir_tm_h_funcs(16, sse2);
+ipred_dir_tm_h_funcs(32, sse2);
+
+ipred_func(4, h, sse2);
+
+#define ipred_all_funcs(size, opt) \
+ipred_dc_funcs(size, opt); \
+ipred_dir_tm_h_funcs(size, opt)
+
+// FIXME hd/vl_4x4_ssse3 does not exist
+ipred_all_funcs(4, ssse3);
+ipred_all_funcs(8, ssse3);
+ipred_all_funcs(16, ssse3);
+ipred_all_funcs(32, ssse3);
+
+ipred_dir_tm_h_funcs(8, avx);
+ipred_dir_tm_h_funcs(16, avx);
+ipred_dir_tm_h_funcs(32, avx);
+
+ipred_func(32, v, avx);
 
 ipred_func(32, dc, avx2);
 ipred_func(32, dc_left, avx2);
@@ -285,9 +303,14 @@ ipred_func(32, v, avx2);
 ipred_func(32, h, avx2);
 ipred_func(32, tm, avx2);
 
-#undef ipred_funcs
-#undef ipred_func_set
+ipred_dc_funcs(32, avx2);
+ipred_func(32, h, avx2);
+ipred_func(32, tm, avx2);
+
 #undef ipred_func
+#undef ipred_dir_tm_h_funcs
+#undef ipred_dir_tm_funcs
+#undef ipred_dc_funcs
 
 #endif /* HAVE_YASM */
 
@@ -340,23 +363,32 @@ av_cold void ff_vp9dsp_init_x86(VP9DSPContext *dsp)
     } \
 } while (0)
 
-#define init_ipred(tx, sz, opt) do { \
-    dsp->intra_pred[tx][HOR_PRED]             = ff_vp9_ipred_h_##sz##x##sz##_##opt; \
-    dsp->intra_pred[tx][DIAG_DOWN_LEFT_PRED]  = ff_vp9_ipred_dl_##sz##x##sz##_##opt; \
-    dsp->intra_pred[tx][DIAG_DOWN_RIGHT_PRED] = ff_vp9_ipred_dr_##sz##x##sz##_##opt; \
-    dsp->intra_pred[tx][HOR_DOWN_PRED]        = ff_vp9_ipred_hd_##sz##x##sz##_##opt; \
-    dsp->intra_pred[tx][VERT_LEFT_PRED]       = ff_vp9_ipred_vl_##sz##x##sz##_##opt; \
-    dsp->intra_pred[tx][HOR_UP_PRED]          = ff_vp9_ipred_hu_##sz##x##sz##_##opt; \
-    if (ARCH_X86_64 || tx != TX_32X32) { \
-        dsp->intra_pred[tx][VERT_RIGHT_PRED]      = ff_vp9_ipred_vr_##sz##x##sz##_##opt; \
-        dsp->intra_pred[tx][TM_VP8_PRED]          = ff_vp9_ipred_tm_##sz##x##sz##_##opt; \
-    } \
+#define init_ipred(sz, opt, t, e) \
+    dsp->intra_pred[TX_##sz##X##sz][e##_PRED] = ff_vp9_ipred_##t##_##sz##x##sz##_##opt
+
+#define ff_vp9_ipred_hd_4x4_ssse3 ff_vp9_ipred_hd_4x4_mmxext
+#define ff_vp9_ipred_vl_4x4_ssse3 ff_vp9_ipred_vl_4x4_mmxext
+#define init_dir_tm_ipred(sz, opt) do { \
+    init_ipred(sz, opt, dl, DIAG_DOWN_LEFT); \
+    init_ipred(sz, opt, dr, DIAG_DOWN_RIGHT); \
+    init_ipred(sz, opt, hd, HOR_DOWN); \
+    init_ipred(sz, opt, vl, VERT_LEFT); \
+    init_ipred(sz, opt, hu, HOR_UP); \
+    init_ipred(sz, opt, tm, TM_VP8); \
+    init_ipred(sz, opt, vr, VERT_RIGHT); \
 } while (0)
-#define init_dc_ipred(tx, sz, opt) do { \
-    init_ipred(tx, sz, opt); \
-    dsp->intra_pred[tx][DC_PRED]              = ff_vp9_ipred_dc_##sz##x##sz##_##opt; \
-    dsp->intra_pred[tx][LEFT_DC_PRED]         = ff_vp9_ipred_dc_left_##sz##x##sz##_##opt; \
-    dsp->intra_pred[tx][TOP_DC_PRED]          = ff_vp9_ipred_dc_top_##sz##x##sz##_##opt; \
+#define init_dir_tm_h_ipred(sz, opt) do { \
+    init_dir_tm_ipred(sz, opt); \
+    init_ipred(sz, opt, h,  HOR); \
+} while (0)
+#define init_dc_ipred(sz, opt) do { \
+    init_ipred(sz, opt, dc,      DC); \
+    init_ipred(sz, opt, dc_left, LEFT_DC); \
+    init_ipred(sz, opt, dc_top,  TOP_DC); \
+} while (0)
+#define init_all_ipred(sz, opt) do { \
+    init_dc_ipred(sz, opt); \
+    init_dir_tm_h_ipred(sz, opt); \
 } while (0)
 
     if (EXTERNAL_MMX(cpu_flags)) {
@@ -366,7 +398,7 @@ av_cold void ff_vp9dsp_init_x86(VP9DSPContext *dsp)
         dsp->itxfm_add[4 /* lossless */][ADST_DCT] =
         dsp->itxfm_add[4 /* lossless */][DCT_ADST] =
         dsp->itxfm_add[4 /* lossless */][ADST_ADST] = ff_vp9_iwht_iwht_4x4_add_mmx;
-        dsp->intra_pred[TX_8X8][VERT_PRED] = ff_vp9_ipred_v_8x8_mmx;
+        init_ipred(8, mmx, v, VERT);
     }
 
     if (EXTERNAL_MMXEXT(cpu_flags)) {
@@ -375,12 +407,17 @@ av_cold void ff_vp9dsp_init_x86(VP9DSPContext *dsp)
         init_fpel(4, 1,  4, avg, mmxext);
         init_fpel(3, 1,  8, avg, mmxext);
         dsp->itxfm_add[TX_4X4][DCT_DCT] = ff_vp9_idct_idct_4x4_add_mmxext;
+        init_dc_ipred(4, mmxext);
+        init_dc_ipred(8, mmxext);
+        init_dir_tm_ipred(4, mmxext);
     }
 
     if (EXTERNAL_SSE(cpu_flags)) {
         init_fpel(2, 0, 16, put, sse);
         init_fpel(1, 0, 32, put, sse);
         init_fpel(0, 0, 64, put, sse);
+        init_ipred(16, sse, v, VERT);
+        init_ipred(32, sse, v, VERT);
     }
 
     if (EXTERNAL_SSE2(cpu_flags)) {
@@ -405,8 +442,12 @@ av_cold void ff_vp9dsp_init_x86(VP9DSPContext *dsp)
         dsp->itxfm_add[TX_32X32][ADST_DCT] =
         dsp->itxfm_add[TX_32X32][DCT_ADST] =
         dsp->itxfm_add[TX_32X32][DCT_DCT] = ff_vp9_idct_idct_32x32_add_sse2;
-        dsp->intra_pred[TX_16X16][VERT_PRED] = ff_vp9_ipred_v_16x16_sse2;
-        dsp->intra_pred[TX_32X32][VERT_PRED] = ff_vp9_ipred_v_32x32_sse2;
+        init_dc_ipred(16, sse2);
+        init_dc_ipred(32, sse2);
+        init_dir_tm_h_ipred(8, sse2);
+        init_dir_tm_h_ipred(16, sse2);
+        init_dir_tm_h_ipred(32, sse2);
+        init_ipred(4, sse2, h, HOR);
     }
 
     if (EXTERNAL_SSSE3(cpu_flags)) {
@@ -429,10 +470,10 @@ av_cold void ff_vp9dsp_init_x86(VP9DSPContext *dsp)
         dsp->itxfm_add[TX_32X32][DCT_ADST] =
         dsp->itxfm_add[TX_32X32][DCT_DCT] = ff_vp9_idct_idct_32x32_add_ssse3;
         init_lpf(ssse3);
-        init_dc_ipred(TX_4X4,    4, ssse3);
-        init_dc_ipred(TX_8X8,    8, ssse3);
-        init_dc_ipred(TX_16X16, 16, ssse3);
-        init_dc_ipred(TX_32X32, 32, ssse3);
+        init_all_ipred(4, ssse3);
+        init_all_ipred(8, ssse3);
+        init_all_ipred(16, ssse3);
+        init_all_ipred(32, ssse3);
     }
 
     if (EXTERNAL_AVX(cpu_flags)) {
@@ -451,9 +492,10 @@ av_cold void ff_vp9dsp_init_x86(VP9DSPContext *dsp)
         init_fpel(1, 0, 32, put, avx);
         init_fpel(0, 0, 64, put, avx);
         init_lpf(avx);
-        init_ipred(TX_8X8,    8, avx);
-        init_ipred(TX_16X16, 16, avx);
-        init_ipred(TX_32X32, 32, avx);
+        init_dir_tm_h_ipred(8, avx);
+        init_dir_tm_h_ipred(16, avx);
+        init_dir_tm_h_ipred(32, avx);
+        init_ipred(32, avx, v, VERT);
     }
 
     if (EXTERNAL_AVX2(cpu_flags)) {
@@ -465,12 +507,9 @@ av_cold void ff_vp9dsp_init_x86(VP9DSPContext *dsp)
             init_subpel3_32_64(1, avg, avx2);
 #endif
         }
-        dsp->intra_pred[TX_32X32][DC_PRED] = ff_vp9_ipred_dc_32x32_avx2;
-        dsp->intra_pred[TX_32X32][LEFT_DC_PRED] = ff_vp9_ipred_dc_left_32x32_avx2;
-        dsp->intra_pred[TX_32X32][TOP_DC_PRED] = ff_vp9_ipred_dc_top_32x32_avx2;
-        dsp->intra_pred[TX_32X32][VERT_PRED] = ff_vp9_ipred_v_32x32_avx2;
-        dsp->intra_pred[TX_32X32][HOR_PRED] = ff_vp9_ipred_h_32x32_avx2;
-        dsp->intra_pred[TX_32X32][TM_VP8_PRED] = ff_vp9_ipred_tm_32x32_avx2;
+        init_dc_ipred(32, avx2);
+        init_ipred(32, avx2, h,  HOR);
+        init_ipred(32, avx2, tm, TM_VP8);
     }
 
 #undef init_fpel

@@ -923,6 +923,7 @@ static av_cold int on2avc_decode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "0x500 version should be mono\n");
         return AVERROR_INVALIDDATA;
     }
+
     if (avctx->channels == 2)
         av_log(avctx, AV_LOG_WARNING,
                "Stereo mode support is not good, patch is welcome\n");

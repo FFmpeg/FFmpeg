@@ -363,6 +363,7 @@ OBJS-$(CONFIG_RSD_DEMUXER)               += rsd.o
 OBJS-$(CONFIG_RSO_DEMUXER)               += rsodec.o rso.o pcm.o
 OBJS-$(CONFIG_RSO_MUXER)                 += rsoenc.o rso.o
 OBJS-$(CONFIG_RPL_DEMUXER)               += rpl.o
+OBJS-$(CONFIG_RTP_MPEGTS_MUXER)          += rtpenc_mpegts.o
 OBJS-$(CONFIG_RTP_MUXER)                 += rtp.o         \
                                             rtpenc_aac.o     \
                                             rtpenc_latm.o    \

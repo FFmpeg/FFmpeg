@@ -196,8 +196,8 @@ static int init_pattern_from_file(AVFilterContext *ctx)
 
     if (!(life->buf[0] = av_calloc(life->h * life->w, sizeof(*life->buf[0]))) ||
         !(life->buf[1] = av_calloc(life->h * life->w, sizeof(*life->buf[1])))) {
-        av_free(life->buf[0]);
-        av_free(life->buf[1]);
+        av_freep(&life->buf[0]);
+        av_freep(&life->buf[1]);
         return AVERROR(ENOMEM);
     }
 
@@ -238,8 +238,8 @@ static av_cold int init(AVFilterContext *ctx)
 
         if (!(life->buf[0] = av_calloc(life->h * life->w, sizeof(*life->buf[0]))) ||
             !(life->buf[1] = av_calloc(life->h * life->w, sizeof(*life->buf[1])))) {
-            av_free(life->buf[0]);
-            av_free(life->buf[1]);
+            av_freep(&life->buf[0]);
+            av_freep(&life->buf[1]);
             return AVERROR(ENOMEM);
         }
         if (life->random_seed == -1)

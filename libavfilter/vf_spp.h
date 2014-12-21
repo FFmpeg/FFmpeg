@@ -45,7 +45,7 @@ typedef struct {
     int use_bframe_qp;
     int hsub, vsub;
 
-    void (*store_slice)(uint8_t *dst, const uint16_t *src,
+    void (*store_slice)(uint8_t *dst, const int16_t *src,
                         int dst_stride, int src_stride,
                         int width, int height, int log2_scale,
                         const uint8_t dither[8][8]);

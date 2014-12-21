@@ -31,10 +31,6 @@
  */
 int ff_wms_parse_sdp_a_line(AVFormatContext *s, const char *p);
 
-int ff_h261_handle_packet(AVFormatContext *ctx, PayloadContext *data,
-                          AVStream *st, AVPacket *pkt, uint32_t *timestamp,
-                          const uint8_t *buf, int len, uint16_t seq, int flags);
-
 int ff_h263_handle_packet(AVFormatContext *ctx, PayloadContext *data,
                           AVStream *st, AVPacket *pkt, uint32_t *timestamp,
                           const uint8_t *buf, int len, uint16_t seq, int flags);

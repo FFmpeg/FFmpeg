@@ -26,9 +26,9 @@
  */
 
 #include "avcodec.h"
+#include "bytestream.h"
 #include "opus.h"
 #include "parser.h"
-#include "bytestream.h"
 
 typedef struct OpusParseContext {
     OpusContext ctx;

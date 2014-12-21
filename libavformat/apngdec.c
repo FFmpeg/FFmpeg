@@ -404,7 +404,7 @@ static int apng_read_packet(AVFormatContext *s, AVPacket *pkt)
         return 0;
     default:
         {
-        char tag_buf[5];
+        char tag_buf[32];
 
         av_get_codec_tag_string(tag_buf, sizeof(tag_buf), tag);
         avpriv_request_sample(s, "In-stream tag=%s (0x%08X) len=%"PRIu32, tag_buf, tag, len);

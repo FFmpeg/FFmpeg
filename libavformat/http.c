@@ -643,9 +643,9 @@ static int get_cookies(HTTPContext *s, char **cookies, const char *path,
         }
 
         done_cookie:
-        av_free(cdomain);
-        av_free(cpath);
-        av_free(cvalue);
+        av_freep(&cdomain);
+        av_freep(&cpath);
+        av_freep(&cvalue);
         if (ret < 0) {
             if (*cookies) av_freep(cookies);
             av_free(cset_cookies);

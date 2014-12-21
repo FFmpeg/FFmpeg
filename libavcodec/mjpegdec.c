@@ -246,8 +246,8 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
 {
     int len, nb_components, i, width, height, bits, ret;
     unsigned pix_fmt_id;
-    int h_count[MAX_COMPONENTS];
-    int v_count[MAX_COMPONENTS];
+    int h_count[MAX_COMPONENTS] = { 0 };
+    int v_count[MAX_COMPONENTS] = { 0 };
 
     s->cur_scan = 0;
     s->upscale_h = s->upscale_v = 0;
@@ -255,7 +255,7 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
     /* XXX: verify len field validity */
     len     = get_bits(&s->gb, 16);
     s->avctx->bits_per_raw_sample =
-    bits = get_bits(&s->gb, 8);
+    bits    = get_bits(&s->gb, 8);
 
     if (bits > 16 || bits < 1) {
         av_log(s->avctx, AV_LOG_ERROR, "bits %d is invalid\n", bits);
@@ -306,8 +306,6 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
     s->nb_components = nb_components;
     s->h_max         = 1;
     s->v_max         = 1;
-    memset(h_count, 0, sizeof(h_count));
-    memset(v_count, 0, sizeof(v_count));
     for (i = 0; i < nb_components; i++) {
         /* component id */
         s->component_id[i] = get_bits(&s->gb, 8) - 1;
@@ -342,10 +340,9 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
 
 
     /* if different size, realloc/alloc picture */
-    if (   width != s->width || height != s->height
-        || bits != s->bits
-        || memcmp(s->h_count, h_count, sizeof(h_count))
-        || memcmp(s->v_count, v_count, sizeof(v_count))) {
+    if (width != s->width || height != s->height || bits != s->bits ||
+        memcmp(s->h_count, h_count, sizeof(h_count))                ||
+        memcmp(s->v_count, v_count, sizeof(v_count))) {
 
         s->width      = width;
         s->height     = height;
