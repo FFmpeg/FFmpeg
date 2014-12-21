@@ -21,6 +21,7 @@
 #include "libavutil/pixfmt.h"
 #include "libavcodec/avcodec.h"
 #include "avdevice.h"
+#include "internal.h"
 #include "config.h"
 
 #include "libavutil/ffversion.h"
@@ -206,6 +207,44 @@ int avdevice_list_devices(AVFormatContext *s, AVDeviceInfoList **device_list)
     if (ret < 0)
         avdevice_free_list_devices(device_list);
     return ret;
+}
+
+static int list_devices_for_context(AVFormatContext *s, AVDictionary *options,
+                                    AVDeviceInfoList **device_list)
+{
+    AVDictionary *tmp = NULL;
+    int ret;
+
+    av_dict_copy(&tmp, options, 0);
+    if ((ret = av_opt_set_dict2(s, &tmp, AV_OPT_SEARCH_CHILDREN)) < 0)
+        goto fail;
+    ret = avdevice_list_devices(s, device_list);
+  fail:
+    av_dict_free(&tmp);
+    avformat_free_context(s);
+    return ret;
+}
+
+int avdevice_list_input_sources(AVInputFormat *device, const char *device_name,
+                                AVDictionary *device_options, AVDeviceInfoList **device_list)
+{
+    AVFormatContext *s = NULL;
+    int ret;
+
+    if ((ret = ff_alloc_input_device_context(&s, device, device_name)) < 0)
+        return ret;
+    return list_devices_for_context(s, device_options, device_list);
+}
+
+int avdevice_list_output_sinks(AVOutputFormat *device, const char *device_name,
+                               AVDictionary *device_options, AVDeviceInfoList **device_list)
+{
+    AVFormatContext *s = NULL;
+    int ret;
+
+    if ((ret = avformat_alloc_output_context2(&s, device, device_name, NULL)) < 0)
+        return ret;
+    return list_devices_for_context(s, device_options, device_list);
 }
 
 void avdevice_free_list_devices(AVDeviceInfoList **device_list)
