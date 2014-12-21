@@ -2173,7 +2173,7 @@ int show_sources(void *optctx, const char *opt, const char *arg)
         if (fmt) {
             if (!strcmp(fmt->name, "lavfi"))
                 continue; //it's pointless to probe lavfi
-            if (dev && strcmp(fmt->name, dev))
+            if (dev && !av_match_name(dev, fmt->name))
                 continue;
             print_device_sources(fmt, opts);
         }
@@ -2181,7 +2181,7 @@ int show_sources(void *optctx, const char *opt, const char *arg)
     do {
         fmt = av_input_video_device_next(fmt);
         if (fmt) {
-            if (dev && strcmp(fmt->name, dev))
+            if (dev && !av_match_name(dev, fmt->name))
                 continue;
             print_device_sources(fmt, opts);
         }
@@ -2209,7 +2209,7 @@ int show_sinks(void *optctx, const char *opt, const char *arg)
     do {
         fmt = av_output_audio_device_next(fmt);
         if (fmt) {
-            if (dev && strcmp(fmt->name, dev))
+            if (dev && !av_match_name(dev, fmt->name))
                 continue;
             print_device_sinks(fmt, opts);
         }
@@ -2217,7 +2217,7 @@ int show_sinks(void *optctx, const char *opt, const char *arg)
     do {
         fmt = av_output_video_device_next(fmt);
         if (fmt) {
-            if (dev && strcmp(fmt->name, dev))
+            if (dev && !av_match_name(dev, fmt->name))
                 continue;
             print_device_sinks(fmt, opts);
         }
