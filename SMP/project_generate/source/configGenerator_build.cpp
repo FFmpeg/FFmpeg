@@ -159,7 +159,6 @@ bool configGenerator::buildDefaultValues( )
     fastToggleConfigValue( "malloc_h", true );
     fastToggleConfigValue( "MapViewOfFile", true );
     fastToggleConfigValue( "MemoryBarrier", true );
-    fastToggleConfigValue( "MoveFileExA", true );
     fastToggleConfigValue( "mm_empty", true );
     fastToggleConfigValue( "PeekNamedPipe", true );
     fastToggleConfigValue( "rdtsc", true );
