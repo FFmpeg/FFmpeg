@@ -2688,7 +2688,6 @@ docdir_default='${prefix}/share/doc/ffmpeg'
 incdir_default='${prefix}/include'
 libdir_default='${prefix}/lib'
 mandir_default='${prefix}/share/man'
-shlibdir_default='${LIBDIR}'
 
 # toolchain
 ar_default="ar"
@@ -4328,6 +4327,9 @@ esc(){
 echo "config:$arch:$subarch:$cpu:$target_os:$(esc $cc_ident):$(esc $FFMPEG_CONFIGURATION)" >config.fate
 
 check_cpp_condition stdlib.h "defined(__PIC__) || defined(__pic__) || defined(PIC)" && enable_weak pic
+
+set_default libdir
+: ${shlibdir_default:="$libdir"}
 
 set_default $PATHS_LIST
 set_default nm
