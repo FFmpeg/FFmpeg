@@ -156,7 +156,7 @@ static void softthresh_c(int16_t dst[64], const int16_t src[64],
     }
 }
 
-static void store_slice_c(uint8_t *dst, const uint16_t *src,
+static void store_slice_c(uint8_t *dst, const int16_t *src,
                           int dst_linesize, int src_linesize,
                           int width, int height, int log2_scale,
                           const uint8_t dither[8][8])
