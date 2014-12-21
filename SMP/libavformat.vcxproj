@@ -615,6 +615,8 @@
     </ClCompile>
     <ClCompile Include="..\libavformat\rpl.c">
     </ClCompile>
+    <ClCompile Include="..\libavformat\rtpenc_mpegts.c">
+    </ClCompile>
     <ClCompile Include="..\libavformat\rtpenc_aac.c">
     </ClCompile>
     <ClCompile Include="..\libavformat\rtpenc_latm.c">

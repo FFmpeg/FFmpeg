@@ -7,4 +7,5 @@ EXPORTS
     pp_get_context
     pp_get_mode_by_name_and_quality
     pp_postprocess
+    postproc_ffversion DATA
     pp_help DATA

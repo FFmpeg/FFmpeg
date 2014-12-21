@@ -50,6 +50,7 @@ EXPORTS
     av_calloc
     av_cast5_alloc
     av_cast5_crypt
+    av_cast5_crypt2
     av_cast5_init
     av_channel_layout_extract_channel
     av_chroma_location_name
@@ -454,5 +455,6 @@ EXPORTS
     av_sha512_size DATA
     av_sha_size DATA
     av_tree_node_size DATA
+    av_util_ffversion DATA
     avpriv_cga_font DATA
     avpriv_vga16_font DATA

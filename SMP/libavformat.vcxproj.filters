@@ -852,6 +852,9 @@
     <ClCompile Include="..\libavformat\rpl.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavformat\rtpenc_mpegts.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavformat\rtpenc_aac.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>

@@ -159,3 +159,4 @@ EXPORTS
     ffurl_size
     ffurl_write
     url_feof
+    av_format_ffversion DATA

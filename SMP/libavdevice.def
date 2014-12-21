@@ -15,3 +15,4 @@ EXPORTS
     avdevice_register_all
     avdevice_version
     av_device_capabilities DATA
+    av_device_ffversion DATA

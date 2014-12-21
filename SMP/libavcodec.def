@@ -201,6 +201,7 @@ EXPORTS
     avpriv_vorbis_parse_frame_flags
     avpriv_vorbis_parse_reset
     avsubtitle_free
+    av_codec_ffversion DATA
     avpriv_ac3_channel_layout_tab DATA
     avpriv_dca_sample_rates DATA
     avpriv_mjpeg_bits_ac_chrominance DATA

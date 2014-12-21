@@ -77,4 +77,5 @@ EXPORTS
     avfilter_unref_buffer
     avfilter_unref_bufferp
     avfilter_version
+    av_filter_ffversion DATA
     avfilter_all_channel_layouts DATA

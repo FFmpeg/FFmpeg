@@ -19,3 +19,4 @@ EXPORTS
     swresample_configuration
     swresample_license
     swresample_version
+    swr_ffversion DATA
