@@ -517,7 +517,7 @@ static av_cold int mpeg_mux_init(AVFormatContext *ctx)
 
 fail:
     for (i = 0; i < ctx->nb_streams; i++)
-        av_free(ctx->streams[i]->priv_data);
+        av_freep(&ctx->streams[i]->priv_data);
     return AVERROR(ENOMEM);
 }
 
