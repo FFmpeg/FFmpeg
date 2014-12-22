@@ -114,7 +114,7 @@ int ff_get_wav_header(AVIOContext *pb, AVCodecContext *codec, int size)
             size   -= 22;
         }
         if (cbSize > 0) {
-            av_free(codec->extradata);
+            av_freep(&codec->extradata);
             if (ff_get_extradata(codec, pb, cbSize) < 0)
                 return AVERROR(ENOMEM);
             size -= cbSize;
