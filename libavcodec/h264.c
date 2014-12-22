@@ -762,7 +762,10 @@ static void decode_postinit(H264Context *h, int setup_finished)
          * yet, so we assume the worst for now. */
         // if (setup_finished)
         //    ff_thread_finish_setup(h->avctx);
-        return;
+        if (cur->field_poc[0] == INT_MAX && cur->field_poc[1] == INT_MAX)
+            return;
+        if (h->avctx->hwaccel || !(h->avctx->flags2 & CODEC_FLAG2_SHOW_ALL))
+            return;
     }
 
     cur->f.interlaced_frame = 0;
