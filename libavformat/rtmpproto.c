@@ -217,9 +217,8 @@ static void free_tracked_methods(RTMPContext *rt)
     int i;
 
     for (i = 0; i < rt->nb_tracked_methods; i ++)
-        av_free(rt->tracked_methods[i].name);
-    av_free(rt->tracked_methods);
-    rt->tracked_methods      = NULL;
+        av_freep(&rt->tracked_methods[i].name);
+    av_freep(&rt->tracked_methods);
     rt->tracked_methods_size = 0;
     rt->nb_tracked_methods   = 0;
 }
@@ -2552,7 +2551,7 @@ static int inject_fake_duration_metadata(RTMPContext *rt)
     // Increase the size by the injected packet
     rt->flv_size += 55;
     // Delete the old FLV data
-    av_free(old_flv_data);
+    av_freep(&old_flv_data);
 
     p = rt->flv_data + 13;
     bytestream_put_byte(&p, FLV_TAG_TYPE_META);
