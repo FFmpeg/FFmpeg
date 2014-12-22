@@ -254,25 +254,17 @@ int ff_thread_video_encode_frame(AVCodecContext *avctx, AVPacket *pkt, const AVF
     av_assert1(!*got_packet_ptr);
 
     if(frame){
-        if(!(avctx->flags & CODEC_FLAG_INPUT_PRESERVED)){
-            AVFrame *new = av_frame_alloc();
-            if(!new)
-                return AVERROR(ENOMEM);
-            pthread_mutex_lock(&c->buffer_mutex);
-            ret = ff_get_buffer(c->parent_avctx, new, 0);
-            pthread_mutex_unlock(&c->buffer_mutex);
-            if(ret<0)
-                return ret;
-            new->pts = frame->pts;
-            new->quality = frame->quality;
-            new->pict_type = frame->pict_type;
-            av_image_copy(new->data, new->linesize, (const uint8_t **)frame->data, frame->linesize,
-                          avctx->pix_fmt, avctx->width, avctx->height);
-            frame = new;
+        AVFrame *new = av_frame_alloc();
+        if(!new)
+            return AVERROR(ENOMEM);
+        ret = av_frame_ref(new, frame);
+        if(ret < 0) {
+            av_frame_free(&new);
+            return ret;
         }
 
         task.index = c->task_index;
-        task.indata = (void*)frame;
+        task.indata = (void*)new;
         pthread_mutex_lock(&c->task_fifo_mutex);
         av_fifo_generic_write(c->task_fifo, &task, sizeof(task), NULL);
         pthread_cond_signal(&c->task_fifo_cond);
