@@ -159,9 +159,9 @@ void ff_freeaddrinfo(struct addrinfo *res)
     }
 #endif /* HAVE_WINSOCK2_H */
 
-    av_free(res->ai_canonname);
-    av_free(res->ai_addr);
-    av_free(res);
+    av_freep(&res->ai_canonname);
+    av_freep(&res->ai_addr);
+    av_freep(&res);
 }
 
 int ff_getnameinfo(const struct sockaddr *sa, int salen,
