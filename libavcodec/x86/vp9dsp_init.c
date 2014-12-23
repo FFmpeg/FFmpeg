@@ -296,13 +296,6 @@ ipred_dir_tm_h_funcs(32, avx);
 
 ipred_func(32, v, avx);
 
-ipred_func(32, dc, avx2);
-ipred_func(32, dc_left, avx2);
-ipred_func(32, dc_top, avx2);
-ipred_func(32, v, avx2);
-ipred_func(32, h, avx2);
-ipred_func(32, tm, avx2);
-
 ipred_dc_funcs(32, avx2);
 ipred_func(32, h, avx2);
 ipred_func(32, tm, avx2);
