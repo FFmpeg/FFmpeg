@@ -142,6 +142,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER(FRAMEPACK,      framepack,      vf);
     REGISTER_FILTER(FRAMESTEP,      framestep,      vf);
     REGISTER_FILTER(FREI0R,         frei0r,         vf);
+    REGISTER_FILTER(FSPP,           fspp,           vf);
     REGISTER_FILTER(GEQ,            geq,            vf);
     REGISTER_FILTER(GRADFUN,        gradfun,        vf);
     REGISTER_FILTER(HALDCLUT,       haldclut,       vf);

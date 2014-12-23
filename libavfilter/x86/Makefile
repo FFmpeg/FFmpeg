@@ -1,3 +1,4 @@
+OBJS-$(CONFIG_FSPP_FILTER)                   += x86/vf_fspp.o
 OBJS-$(CONFIG_GRADFUN_FILTER)                += x86/vf_gradfun_init.o
 OBJS-$(CONFIG_HQDN3D_FILTER)                 += x86/vf_hqdn3d_init.o
 OBJS-$(CONFIG_IDET_FILTER)                   += x86/vf_idet_init.o

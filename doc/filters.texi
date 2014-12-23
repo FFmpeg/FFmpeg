@@ -5066,6 +5066,37 @@ frei0r=perspective:0.2/0.2|0.8/0.2
 For more information, see
 @url{http://frei0r.dyne.org}
 
+@section fspp
+
+Apply fast and simple postprocessing. It is a faster version of @ref{spp}.
+
+It splits (I)DCT into horizontal/vertical passes. Unlike the simple post-
+processing filter, one of them is performed once per block, not per pixel.
+This allows for much higher speed.
+
+The filter accepts the following options:
+
+@table @option
+@item quality
+Set quality. This option defines the number of levels for averaging. It accepts
+an integer in the range 4-5. Default value is @code{4}.
+
+@item qp
+Force a constant quantization parameter. It accepts an integer in range 0-63.
+If not set, the filter will use the QP from the video stream (if available).
+
+@item strength
+Set filter strength. It accepts an integer in range -15 to 32. Lower values mean
+more details but also more artifacts, while higher values make the image smoother
+but also blurrier. Default value is @code{0} − PSNR optimal.
+
+@item use_bframe_qp
+Enable the use of the QP from the B-Frames if set to @code{1}. Using this
+option may cause flicker since the B-Frames have often larger QP. Default is
+@code{0} (not enabled).
+
+@end table
+
 @section geq
 
 The filter accepts the following options:
@@ -8361,6 +8392,7 @@ stereo3d=abl:sbsr
 @end example
 @end itemize
 
+@anchor{spp}
 @section spp
 
 Apply a simple postprocessing filter that compresses and decompresses the image
