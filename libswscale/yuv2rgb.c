@@ -557,7 +557,27 @@ YUV2RGBFUNC(yuv2rgb_c_4_ordered_dither, uint8_t, 0)
     LOADCHROMA(3);
     PUTRGB4D(dst_2, py_2, 3, 6 + 8);
     PUTRGB4D(dst_1, py_1, 3, 6);
-CLOSEYUV2RGBFUNC(4)
+
+ENDYUV2RGBLINE(4, 0)
+    const uint8_t * d64 = ff_dither_8x8_73[y & 7];
+    const uint8_t *d128 = ff_dither_8x8_220[y & 7];
+    int acc;
+    LOADCHROMA(0);
+    PUTRGB4D(dst_1, py_1, 0, 0);
+    PUTRGB4D(dst_2, py_2, 0, 0 + 8);
+
+    LOADCHROMA(1);
+    PUTRGB4D(dst_2, py_2, 1, 2 + 8);
+    PUTRGB4D(dst_1, py_1, 1, 2);
+
+ENDYUV2RGBLINE(4, 1)
+    const uint8_t * d64 = ff_dither_8x8_73[y & 7];
+    const uint8_t *d128 = ff_dither_8x8_220[y & 7];
+    int acc;
+    LOADCHROMA(0);
+    PUTRGB4D(dst_1, py_1, 0, 0);
+    PUTRGB4D(dst_2, py_2, 0, 0 + 8);
+ENDYUV2RGBFUNC()
 
 YUV2RGBFUNC(yuv2rgb_c_4b_ordered_dither, uint8_t, 0)
     const uint8_t *d64  = ff_dither_8x8_73[y & 7];
