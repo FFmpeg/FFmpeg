@@ -1,6 +1,24 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 2.5.2:
+- avcodec/indeo3: ensure offsets are non negative
+- avcodec/h264: Check *log2_weight_denom
+- avcodec/hevc_ps: Check diff_cu_qp_delta_depth
+- avcodec/h264: Clear delayed_pic on deallocation
+- avcodec/hevc: clear filter_slice_edges() on allocation
+- avcodec/dcadec: Check that the added xch channel isnt already there
+- avcodec/indeo3: use signed variables to avoid underflow
+- swscale: increase yuv2rgb table headroom
+- avformat/mov: fix integer overflow of size
+- avformat/mov: check atom nesting depth
+- avcodec/utvideodec: Fix handling of slice_height=0
+- avcodec/xface: correct the XFACE_MAX_* values
+- avcodec/vmdvideo: Check len before using it in method 3
+- configure: create the tests directory like the doc directory
+- mmvideo: check frame dimensions
+- jvdec: check frame dimensions
+
 version 2.5.1:
 - lavu/frame: fix malloc error path in av_frame_copy_props()
 - avformat/aviobuf: Check that avio_seek() target is non negative
