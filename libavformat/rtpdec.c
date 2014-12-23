@@ -666,8 +666,8 @@ void ff_rtp_reset_packet_queue(RTPDemuxContext *s)
 {
     while (s->queue) {
         RTPPacket *next = s->queue->next;
-        av_free(s->queue->buf);
-        av_free(s->queue);
+        av_freep(&s->queue->buf);
+        av_freep(&s->queue);
         s->queue = next;
     }
     s->seq       = 0;
@@ -725,8 +725,8 @@ static int rtp_parse_queued_packet(RTPDemuxContext *s, AVPacket *pkt)
     /* Parse the first packet in the queue, and dequeue it */
     rv   = rtp_parse_packet_internal(s, pkt, s->queue->buf, s->queue->len);
     next = s->queue->next;
-    av_free(s->queue->buf);
-    av_free(s->queue);
+    av_freep(&s->queue->buf);
+    av_freep(&s->queue);
     s->queue = next;
     s->queue_len--;
     return rv;
