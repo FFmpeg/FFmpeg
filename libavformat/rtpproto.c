@@ -510,10 +510,10 @@ static int rtp_close(URLContext *h)
     int i;
 
     for (i = 0; i < s->nb_ssm_include_addrs; i++)
-        av_free(s->ssm_include_addrs[i]);
+        av_freep(&s->ssm_include_addrs[i]);
     av_freep(&s->ssm_include_addrs);
     for (i = 0; i < s->nb_ssm_exclude_addrs; i++)
-        av_free(s->ssm_exclude_addrs[i]);
+        av_freep(&s->ssm_exclude_addrs[i]);
     av_freep(&s->ssm_exclude_addrs);
 
     ffurl_close(s->rtp_hd);
