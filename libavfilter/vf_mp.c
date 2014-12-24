@@ -127,7 +127,6 @@ static const struct {
 
 extern const vf_info_t ff_vf_info_eq2;
 extern const vf_info_t ff_vf_info_eq;
-extern const vf_info_t ff_vf_info_fspp;
 extern const vf_info_t ff_vf_info_ilpack;
 extern const vf_info_t ff_vf_info_pp7;
 extern const vf_info_t ff_vf_info_softpulldown;
@@ -135,7 +134,6 @@ extern const vf_info_t ff_vf_info_softpulldown;
 static const vf_info_t* const filters[]={
     &ff_vf_info_eq2,
     &ff_vf_info_eq,
-    &ff_vf_info_fspp,
     &ff_vf_info_ilpack,
     &ff_vf_info_pp7,
     &ff_vf_info_softpulldown,
