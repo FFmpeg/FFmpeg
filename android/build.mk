@@ -12,19 +12,50 @@ ifndef FFDROID_DIR
 FFDROID_DIR := $(call my-dir)
 endif
 
+define RESET
+$(1) :=
+$(1)-yes :=
+endef
+
+FF_VARS := FFLIBS OBJS ARMV5TE-OBJS ARMV6-OBJS VFP-OBJS NEON-OBJS MIPSFPU-OBJS MIPS32R2-OBJS MIPSDSPR1-OBJS MIPSDSPR2-OBJS ALTIVEC-OBJS VIS-OBJS MMX-OBJS YASM-OBJS
+
+FFMPEG_ARCH := $(TARGET_ARCH)
+
+FFMPEG_2ND_ARCH := false
+ifneq ($(TARGET_2ND_ARCH_VARIANT),)
+   ifeq ($(TARGET_PREFER_32_BIT_APPS),true)
+       ifeq ($(FFMPEG_MULTILIB),64)
+          FFMPEG_2ND_ARCH := true
+       endif
+   else
+       ifeq ($(FFMPEG_MULTILIB),32)
+          FFMPEG_2ND_ARCH := true
+       endif
+   endif
+endif
+
+ifeq ($(FFMPEG_2ND_ARCH), true)
+    FFMPEG_ARCH := $(TARGET_2ND_ARCH)
+endif
+
+ifeq ($(FFMPEG_ARCH),arm64)
+    FFMPEG_ARCH := aarch64
+endif
+
 $(foreach V,$(FF_VARS),$(eval $(call RESET,$(V))))
+#$(warning INCLUDING $(wildcard $(LOCAL_PATH)/$(FFMPEG_ARCH)/Makefile) for $(FFMPEG_2ND_ARCH) - $(NEON-OBJS) - $(FF_VARS))
 
 include $(CLEAR_VARS)
 include $(FFDROID_DIR)/ffmpeg.mk
 SUBDIR := $(FFDROID_DIR)/include/
-include $(LOCAL_PATH)/Makefile $(wildcard $(LOCAL_PATH)/$(TARGET_ARCH)/Makefile)
+include $(LOCAL_PATH)/Makefile $(wildcard $(LOCAL_PATH)/$(FFMPEG_ARCH)/Makefile)
 include $(FFMPEG_DIR)arch.mak
 
 # remove duplicate objects
 OBJS := $(sort $(OBJS) $(OBJS-yes))
 
-ASM_SUFFIX := $(if $(filter x86,$(TARGET_ARCH)),asm,S)
-ALL_S_FILES := $(subst $(LOCAL_PATH)/,,$(wildcard $(LOCAL_PATH)/$(TARGET_ARCH)/*.$(ASM_SUFFIX)))
+ASM_SUFFIX := $(if $(filter x86,$(FFMPEG_ARCH)),asm,S)
+ALL_S_FILES := $(subst $(LOCAL_PATH)/,,$(wildcard $(LOCAL_PATH)/$(FFMPEG_ARCH)/*.$(ASM_SUFFIX)))
 ALL_S_FILES := $(if $(filter S,$(ASM_SUFFIX)),$(ALL_S_FILES),$(filter $(patsubst %.o,%.asm,$(YASM-OBJS) $(YASM-OBJS-yes)),$(ALL_S_FILES)))
 
 ifneq ($(ALL_S_FILES),)
@@ -42,12 +73,11 @@ S_FILES := $(S_OBJS:%.o=%.$(ASM_SUFFIX))
 LOCAL_MODULE := lib$(NAME)
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE_CLASS := SHARED_LIBRARIES
-LOCAL_ARM_MODE := arm
 
 LOCAL_SRC_FILES := $(C_FILES) $(if $(filter S,$(ASM_SUFFIX)),$(S_FILES))
 
 intermediates := $(local-intermediates-dir)
-ifeq ($(TARGET_ARCH),x86)
+ifeq ($(FFMPEG_ARCH),x86)
 GEN := $(S_OBJS:%=$(intermediates)/%)
 $(GEN): YASM := yasm
 $(GEN): YASMFLAGS := -felf -DPIC $(LOCAL_C_INCLUDES:%=-I%)

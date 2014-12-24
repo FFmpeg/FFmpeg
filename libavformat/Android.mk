@@ -10,6 +10,7 @@
 
 LOCAL_PATH := $(call my-dir)
 
+FFMPEG_MULTILIB := 32
 include $(LOCAL_PATH)/../android/build.mk
 
 LOCAL_C_INCLUDES +=			\
@@ -23,4 +24,22 @@ LOCAL_SHARED_LIBRARIES +=		\
 	libavutil           \
 	libavcodec
 
+LOCAL_MULTILIB := $(FFMPEG_MULTILIB)
+include $(BUILD_SHARED_LIBRARY)
+
+FFMPEG_MULTILIB := 64
+include $(LOCAL_PATH)/../android/build.mk
+
+LOCAL_C_INCLUDES +=			\
+	external/openssl/include	\
+	external/zlib
+
+LOCAL_SHARED_LIBRARIES +=		\
+	libcrypto			\
+	libssl				\
+	libz                \
+	libavutil           \
+	libavcodec
+
+LOCAL_MULTILIB := $(FFMPEG_MULTILIB)
 include $(BUILD_SHARED_LIBRARY)
