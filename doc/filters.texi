@@ -11741,6 +11741,33 @@ aevalsrc=sin(1*2*PI*t)*sin(880*2*PI*t):cos(2*PI*200*t),asplit[out0],showwaves=r=
 @end example
 @end itemize
 
+@section showwavespic
+
+Convert input audio to a single video frame, representing the samples waves.
+
+The filter accepts the following options:
+
+@table @option
+@item size, s
+Specify the video size for the output. For the syntax of this option, check the
+@ref{video size syntax,,"Video size" section in the ffmpeg-utils manual,ffmpeg-utils}.
+Default value is @code{600x240}.
+
+@item split_channels
+Set if channels should be drawn separately or overlap. Default value is 0.
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Extract a channel split representation of the wave form of a whole audio track
+in a 1024x800 picture using @command{ffmpeg}:
+@example
+ffmpeg -i audio.flac -lavfi showwavespic=split_channels=1:s=1024x800 waveform.png
+@end example
+@end itemize
+
 @section split, asplit
 
 Split input into several identical outputs.
