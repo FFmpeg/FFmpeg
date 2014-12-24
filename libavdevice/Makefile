@@ -16,7 +16,6 @@ OBJS-$(CONFIG_ALSA_OUTDEV)               += alsa-audio-common.o \
 OBJS-$(CONFIG_AVFOUNDATION_INDEV)        += avfoundation.o
 OBJS-$(CONFIG_BKTR_INDEV)                += bktr.o
 OBJS-$(CONFIG_CACA_OUTDEV)               += caca.o
-OBJS-$(CONFIG_SIXEL_OUTDEV)              += sixel.o
 OBJS-$(CONFIG_DECKLINK_OUTDEV)           += decklink_enc.o decklink_enc_c.o
 OBJS-$(CONFIG_DSHOW_INDEV)               += dshow.o dshow_enummediatypes.o \
                                             dshow_enumpins.o dshow_filter.o \
