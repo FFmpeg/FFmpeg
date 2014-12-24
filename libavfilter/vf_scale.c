@@ -373,6 +373,17 @@ static int config_props(AVFilterLink *outlink)
             av_opt_set_int(*s, "dst_format", outfmt, 0);
             av_opt_set_int(*s, "sws_flags", scale->flags, 0);
 
+            /* Override YUV420P settings to have the correct (MPEG-2) chroma positions
+             * MPEG-2 chroma positions are used by convention
+             * XXX: support other 4:2:0 pixel formats */
+            if (inlink->format == AV_PIX_FMT_YUV420P) {
+                scale->in_v_chr_pos = (i == 0) ? 128 : (i == 1) ? 64 : 192;
+            }
+
+            if (outlink->format == AV_PIX_FMT_YUV420P) {
+                scale->out_v_chr_pos = (i == 0) ? 128 : (i == 1) ? 64 : 192;
+            }
+
             av_opt_set_int(*s, "src_h_chr_pos", scale->in_h_chr_pos, 0);
             av_opt_set_int(*s, "src_v_chr_pos", scale->in_v_chr_pos, 0);
             av_opt_set_int(*s, "dst_h_chr_pos", scale->out_h_chr_pos, 0);
