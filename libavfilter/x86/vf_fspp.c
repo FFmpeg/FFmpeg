@@ -25,6 +25,7 @@
 #include "libavutil/x86/asm.h"
 #include "libavfilter/vf_fspp.h"
 
+#if HAVE_MMX_INLINE
 DECLARE_ALIGNED(32, static const uint8_t, dither)[8][8] = {
     {  0,  48,  12,  60,   3,  51,  15,  63, },
     { 32,  16,  44,  28,  35,  19,  47,  31, },
@@ -1389,9 +1390,11 @@ static void row_fdct_mmx(int16_t *data, const uint8_t *pixels, int line_size, in
         NAMED_CONSTRAINTS_ADD(ff_MM_FIX_0_707106781, ff_MM_FIX_0_541196100, MM_FIX_0_382683433, MM_FIX_1_306562965)
         : "%"REG_d);
 }
+#endif
 
 av_cold void ff_fspp_init_x86(FSPPContext *s)
 {
+#if HAVE_MMX_INLINE
     int cpu_flags = av_get_cpu_flags();
 
     if (HAVE_MMX_INLINE && cpu_flags & AV_CPU_FLAG_MMX) {
@@ -1402,4 +1405,5 @@ av_cold void ff_fspp_init_x86(FSPPContext *s)
         s->row_idct     = row_idct_mmx;
         s->row_fdct     = row_fdct_mmx;
     }
+#endif
 }
