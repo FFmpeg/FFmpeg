@@ -371,6 +371,77 @@ SDL window, forcing its size to the qcif format:
 ffmpeg -i INPUT -vcodec rawvideo -pix_fmt yuv420p -window_size qcif -f sdl "SDL output"
 @end example
 
+@section SIXEL
+
+SIXEL output device.
+
+This output device allows one to show a video stream in SIXEL terminals.
+Only one SIXEL window is allowed per application, so you can
+have only one instance of this output device in an application.
+
+To enable this output device you need to configure FFmpeg with
+@code{--enable-libsixel}.
+libsixel is a graphics library that outputs SIXEL control sequences.
+
+For more information about libsixel, check:
+@url{http://saitoha.github.io/libsixel/}
+
+@subsection Options
+
+@table @option
+
+@item col
+Set the left position in cells to display @command{ffmpeg} output. The default value is 1.
+
+@item row
+Set the top position in cells to display @command{ffmpeg} output. The default value is 1.
+
+@item reqcolors
+Set the limit number of colors.
+
+@item fixedpal
+If set to @option{true}, built-in fixed palette is used to apply color quantization.
+
+@item diffuse
+Select dithering algorithm.
+@option{none}
+@option{fs}
+@option{atkinson}
+@option{jajuni}
+@option{stucki}
+@option{burkes}
+
+@item scene-threshold
+
+@item dropframe
+
+@item ignoredelay
+
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+The following command shows the @command{ffmpeg} output is a
+SIXEL terminal,
+@example
+ffmpeg -i INPUT -vcodec rawvideo -pix_fmt rgb24 -s 640x480 -f sixel -
+@end example
+
+@item
+Show the list of available drivers and exit:
+@example
+ffmpeg -i INPUT -vcodec rawvideo -pix_fmt rgb24 -s 640x480 -reqcolors 16 -f sixel -
+@end example
+
+@item
+Show the list of available dither colors and exit:
+@example
+ffmpeg -i INPUT -pix_fmt rgb24 -f caca -list_dither colors -
+@end example
+@end itemize
+
 @section sndio
 
 sndio audio output device.
