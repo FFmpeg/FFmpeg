@@ -463,8 +463,8 @@ cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3, dst, stride, mstride, dst2, stri
 
     ; (m3: fm, m8..15: p3 p2 p1 p0 q0 q1 q2 q3)
     ; calc flat8in (if not 44_16) and hev masks
-    mova                m6, [pb_81]                     ; [1 1 1 1 ...] ^ 0x80
 %if %2 != 44
+    mova                m6, [pb_81]                     ; [1 1 1 1 ...] ^ 0x80
     ABSSUB_GT           m2, m8, m11, m6, m5             ; abs(p3 - p0) <= 1
     mova                m8, [pb_80]
     ABSSUB_GT           m1, m9, m11, m6, m5, m8         ; abs(p2 - p0) <= 1
