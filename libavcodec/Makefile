@@ -848,6 +848,7 @@ SKIPHEADERS                            += %_tablegen.h                  \
                                           libutvideo.h                  \
                                           old_codec_ids.h               \
                                           tableprint.h                  \
+                                          tableprint_vlc.h              \
                                           $(ARCH)/vp56_arith.h          \
 
 SKIPHEADERS-$(CONFIG_DXVA2)            += dxva2.h dxva2_internal.h
