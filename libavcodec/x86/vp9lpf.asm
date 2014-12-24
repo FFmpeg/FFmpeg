@@ -79,39 +79,42 @@ SECTION .text
     por                 %1, %4              ; new&mask | old&~mask
 %endmacro
 
-%macro FILTER_SUBx2_ADDx2 8 ; %1=dst %2=h/l %3=cache %4=sub1 %5=sub2 %6=add1 %7=add2 %8=rshift
-    punpck%2bw          %3, %4, m0
-    psubw               %1, %3
-    punpck%2bw          %3, %5, m0
-    psubw               %1, %3
-    punpck%2bw          %3, %6, m0
-    paddw               %1, %3
-    punpck%2bw          %3, %7, m0
+%macro FILTER_SUBx2_ADDx2 9-10 "" ; %1=dst %2=h/l %3=cache %4=stack_off %5=sub1 %6=sub2 %7=add1 %8=add2 %9=rshift, [unpack]
+    psubw               %3, [rsp+%4+%5*32]
+    psubw               %3, [rsp+%4+%6*32]
+    paddw               %3, [rsp+%4+%7*32]
+%ifnidn %10, ""
+    punpck%2bw          %1, %10, m0
+    mova    [rsp+%4+%8*32], %1
     paddw               %3, %1
-    psraw               %1, %3, %8
+%else
+    paddw               %3, [rsp+%4+%8*32]
+%endif
+    psraw               %1, %3, %9
 %endmacro
 
-%macro FILTER_INIT 8 ; tmp1, tmp2, cacheL, cacheH, dstp, filterid, mask, source
-    FILTER%6_INIT       %1, l, %3
-    FILTER%6_INIT       %2, h, %4
+; FIXME interleave l/h better (for instruction pairing)
+%macro FILTER_INIT 9 ; tmp1, tmp2, cacheL, cacheH, dstp, stack_off, filterid, mask, source
+    FILTER%7_INIT       %1, l, %3, %6 +  0
+    FILTER%7_INIT       %2, h, %4, %6 + 16
     packuswb            %1, %2
-    MASK_APPLY          %1, %8, %7, %2
+    MASK_APPLY          %1, %9, %8, %2
     mova                %5, %1
 %endmacro
 
-%macro FILTER_UPDATE 11-14 ; tmp1, tmp2, cacheL, cacheH, dstp, -, -, +, +, rshift, mask, [source], [preload reg + value]
-%if %0 == 13 ; no source + preload
-    mova                %12, %13
-%elif %0 == 14 ; source + preload
-    mova                %13, %14
+
+%macro FILTER_UPDATE 12-15 "", "" ; tmp1, tmp2, cacheL, cacheH, dstp, stack_off, -, -, +, +, rshift, mask, [source], [unpack]
+; FIXME interleave this properly with the subx2/addx2
+%if %0 == 15
+    mova               %14, %15
 %endif
-    FILTER_SUBx2_ADDx2  %1, l, %3, %6, %7, %8, %9, %10
-    FILTER_SUBx2_ADDx2  %2, h, %4, %6, %7, %8, %9, %10
+    FILTER_SUBx2_ADDx2  %1, l, %3, %6 +  0, %7, %8, %9, %10, %11, %14
+    FILTER_SUBx2_ADDx2  %2, h, %4, %6 + 16, %7, %8, %9, %10, %11, %14
     packuswb            %1, %2
-%if %0 == 12 || %0 == 14
-    MASK_APPLY          %1, %12, %11, %2
+%ifnidn %13, ""
+    MASK_APPLY          %1, %13, %12, %2
 %else
-    MASK_APPLY          %1, %5, %11, %2
+    MASK_APPLY          %1, %5, %12, %2
 %endif
     mova                %5, %1
 %endmacro
@@ -151,44 +154,48 @@ SECTION .text
     paddusb             %1, %4                          ; add the negatives
 %endmacro
 
-%macro FILTER6_INIT 3 ; %1=dst %2=h/l %3=cache
+%macro FILTER6_INIT 4 ; %1=dst %2=h/l %3=cache, %4=stack_off
     punpck%2bw          %1, m14, m0                     ; p3: B->W
+    mova     [rsp+%4+0*32], %1
     paddw               %3, %1, %1                      ; p3*2
     paddw               %3, %1                          ; p3*3
     punpck%2bw          %1, m15, m0                     ; p2: B->W
+    mova     [rsp+%4+1*32], %1
     paddw               %3, %1                          ; p3*3 + p2
     paddw               %3, %1                          ; p3*3 + p2*2
     punpck%2bw          %1, m10, m0                     ; p1: B->W
+    mova     [rsp+%4+2*32], %1
     paddw               %3, %1                          ; p3*3 + p2*2 + p1
     punpck%2bw          %1, m11, m0                     ; p0: B->W
+    mova     [rsp+%4+3*32], %1
     paddw               %3, %1                          ; p3*3 + p2*2 + p1 + p0
     punpck%2bw          %1, m12, m0                     ; q0: B->W
+    mova     [rsp+%4+4*32], %1
     paddw               %3, %1                          ; p3*3 + p2*2 + p1 + p0 + q0
     paddw               %3, [pw_4]                      ; p3*3 + p2*2 + p1 + p0 + q0 + 4
     psraw               %1, %3, 3                       ; (p3*3 + p2*2 + p1 + p0 + q0 + 4) >> 3
 %endmacro
 
-%macro FILTER14_INIT 3 ; %1=dst %2=h/l %3=cache
+%macro FILTER14_INIT 4 ; %1=dst %2=h/l %3=cache, %4=stack_off
     punpck%2bw          %1, m2, m0                      ; p7: B->W
+    mova    [rsp+%4+ 8*32], %1
     psllw               %3, %1, 3                       ; p7*8
     psubw               %3, %1                          ; p7*7
     punpck%2bw          %1, m3, m0                      ; p6: B->W
+    mova    [rsp+%4+ 9*32], %1
     paddw               %3, %1                          ; p7*7 + p6
     paddw               %3, %1                          ; p7*7 + p6*2
     punpck%2bw          %1, m8, m0                      ; p5: B->W
+    mova    [rsp+%4+10*32], %1
     paddw               %3, %1                          ; p7*7 + p6*2 + p5
     punpck%2bw          %1, m9, m0                      ; p4: B->W
+    mova    [rsp+%4+11*32], %1
     paddw               %3, %1                          ; p7*7 + p6*2 + p5 + p4
-    punpck%2bw          %1, m14, m0                     ; p3: B->W
-    paddw               %3, %1                          ; p7*7 + p6*2 + p5 + p4 + p3
-    punpck%2bw          %1, m15, m0                     ; p2: B->W
-    paddw               %3, %1                          ; p7*7 + p6*2 + p5 + .. + p2
-    punpck%2bw          %1, m10, m0                     ; p1: B->W
-    paddw               %3, %1                          ; p7*7 + p6*2 + p5 + .. + p1
-    punpck%2bw          %1, m11, m0                     ; p0: B->W
-    paddw               %3, %1                          ; p7*7 + p6*2 + p5 + .. + p0
-    punpck%2bw          %1, m12, m0                     ; q0: B->W
-    paddw               %3, %1                          ; p7*7 + p6*2 + p5 + .. + p0 + q0
+    paddw               %3, [rsp+%4+ 0*32]              ; p7*7 + p6*2 + p5 + p4 + p3
+    paddw               %3, [rsp+%4+ 1*32]              ; p7*7 + p6*2 + p5 + .. + p2
+    paddw               %3, [rsp+%4+ 2*32]              ; p7*7 + p6*2 + p5 + .. + p1
+    paddw               %3, [rsp+%4+ 3*32]              ; p7*7 + p6*2 + p5 + .. + p0
+    paddw               %3, [rsp+%4+ 4*32]              ; p7*7 + p6*2 + p5 + .. + p0 + q0
     paddw               %3, [pw_8]                      ; p7*7 + p6*2 + p5 + .. + p0 + q0 + 8
     psraw               %1, %3, 4                       ; (p7*7 + p6*2 + p5 + .. + p0 + q0 + 8) >> 4
 %endmacro
@@ -306,14 +313,14 @@ SECTION .text
 %endif
 %endmacro
 
-%macro LOOPFILTER 3 ; %1=v/h %2=size1 %3=stack
+%macro LOOPFILTER 4 ; %1=v/h %2=size1 %3+%4=stack
 %if UNIX64
-cglobal vp9_loop_filter_%1_%2_16, 5, 9, 16, %3, dst, stride, E, I, H, mstride, dst2, stride3, mstride3
+cglobal vp9_loop_filter_%1_%2_16, 5, 9, 16, %3 + %4, dst, stride, E, I, H, mstride, dst2, stride3, mstride3
 %else
 %if WIN64
-cglobal vp9_loop_filter_%1_%2_16, 4, 8, 16, %3, dst, stride, E, I, mstride, dst2, stride3, mstride3
+cglobal vp9_loop_filter_%1_%2_16, 4, 8, 16, %3 + %4, dst, stride, E, I, mstride, dst2, stride3, mstride3
 %else
-cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3, dst, stride, mstride, dst2, stride3, mstride3
+cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3 + %4, dst, stride, mstride, dst2, stride3, mstride3
 %define Ed dword r2m
 %define Id dword r3m
 %endif
@@ -630,12 +637,12 @@ cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3, dst, stride, mstride, dst2, stri
     mova               m15, [P2]
     mova                m8, [Q2]
     mova                m9, [Q3]
-    FILTER_INIT         m4, m5, m6, m7, [P2], 6,                     m3, m15    ; [p2]
-    FILTER_UPDATE       m6, m7, m4, m5, [P1], m14, m15, m10, m13, 3, m3         ; [p1] -p3 -p2 +p1 +q1
-    FILTER_UPDATE       m4, m5, m6, m7, [P0], m14, m10, m11,  m8, 3, m3         ; [p0] -p3 -p1 +p0 +q2
-    FILTER_UPDATE       m6, m7, m4, m5, [Q0], m14, m11, m12,  m9, 3, m3         ; [q0] -p3 -p0 +q0 +q3
-    FILTER_UPDATE       m4, m5, m6, m7, [Q1], m15, m12, m13,  m9, 3, m3         ; [q1] -p2 -q0 +q1 +q3
-    FILTER_UPDATE       m6, m7, m4, m5, [Q2], m10, m13,  m8,  m9, 3, m3,  m8    ; [q2] -p1 -q1 +q2 +q3
+    FILTER_INIT         m4, m5, m6, m7, [P2], %4, 6,             m3, m15      ; [p2]
+    FILTER_UPDATE       m4, m5, m6, m7, [P1], %4, 0, 1, 2, 5, 3, m3,  "", m13 ; [p1] -p3 -p2 +p1 +q1
+    FILTER_UPDATE       m4, m5, m6, m7, [P0], %4, 0, 2, 3, 6, 3, m3,  "", m8  ; [p0] -p3 -p1 +p0 +q2
+    FILTER_UPDATE       m4, m5, m6, m7, [Q0], %4, 0, 3, 4, 7, 3, m3,  "", m9  ; [q0] -p3 -p0 +q0 +q3
+    FILTER_UPDATE       m4, m5, m6, m7, [Q1], %4, 1, 4, 5, 7, 3, m3,  ""      ; [q1] -p2 -q0 +q1 +q3
+    FILTER_UPDATE       m4, m5, m6, m7, [Q2], %4, 2, 5, 6, 7, 3, m3,  m8      ; [q2] -p1 -q1 +q2 +q3
 %endif
 
     ; (m0: 0, [m1: flat8out], m2: fm & flat8in, m8..15: q2 q3 p1 p0 q0 q1 p3 p2)
@@ -665,20 +672,20 @@ cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3, dst, stride, mstride, dst2, stri
     mova            m3, [P6]
     mova            m8, [P5]
     mova            m9, [P4]
-    FILTER_INIT     m4, m5, m6, m7, [P6],  14,                   m1,  m3
-    FILTER_UPDATE   m6, m7, m4, m5, [P5],  m2,  m3,  m8, m13, 4, m1,  m8                ; [p5] -p7 -p6 +p5 +q1
-    FILTER_UPDATE   m4, m5, m6, m7, [P4],  m2,  m8,  m9, m13, 4, m1,  m9, m13, [Q2]     ; [p4] -p7 -p5 +p4 +q2
-    FILTER_UPDATE   m6, m7, m4, m5, [P3],  m2,  m9, m14, m13, 4, m1, m14, m13, [Q3]     ; [p3] -p7 -p4 +p3 +q3
-    FILTER_UPDATE   m4, m5, m6, m7, [P2],  m2, m14, m15, m13, 4, m1,      m13, [Q4]     ; [p2] -p7 -p3 +p2 +q4
-    FILTER_UPDATE   m6, m7, m4, m5, [P1],  m2, m15, m10, m13, 4, m1,      m13, [Q5]     ; [p1] -p7 -p2 +p1 +q5
-    FILTER_UPDATE   m4, m5, m6, m7, [P0],  m2, m10, m11, m13, 4, m1,      m13, [Q6]     ; [p0] -p7 -p1 +p0 +q6
-    FILTER_UPDATE   m6, m7, m4, m5, [Q0],  m2, m11, m12, m13, 4, m1,      m13, [Q7]     ; [q0] -p7 -p0 +q0 +q7
-    FILTER_UPDATE   m4, m5, m6, m7, [Q1],  m3, m12,  m2, m13, 4, m1,       m2, [Q1]     ; [q1] -p6 -q0 +q1 +q7
-    FILTER_UPDATE   m6, m7, m4, m5, [Q2],  m8,  m2,  m3, m13, 4, m1,       m3, [Q2]     ; [q2] -p5 -q1 +q2 +q7
-    FILTER_UPDATE   m4, m5, m6, m7, [Q3],  m9,  m3,  m8, m13, 4, m1,  m8,  m8, [Q3]     ; [q3] -p4 -q2 +q3 +q7
-    FILTER_UPDATE   m6, m7, m4, m5, [Q4], m14,  m8,  m9, m13, 4, m1,  m9,  m9, [Q4]     ; [q4] -p3 -q3 +q4 +q7
-    FILTER_UPDATE   m4, m5, m6, m7, [Q5], m15,  m9, m14, m13, 4, m1, m14, m14, [Q5]     ; [q5] -p2 -q4 +q5 +q7
-    FILTER_UPDATE   m6, m7, m4, m5, [Q6], m10, m14, m15, m13, 4, m1, m15, m15, [Q6]     ; [q6] -p1 -q5 +q6 +q7
+    FILTER_INIT     m4, m5, m6, m7, [P6], %4, 14,                m1,  m3            ; [p6]
+    FILTER_UPDATE   m4, m5, m6, m7, [P5], %4,  8,  9, 10,  5, 4, m1,  m8            ; [p5] -p7 -p6 +p5 +q1
+    FILTER_UPDATE   m4, m5, m6, m7, [P4], %4,  8, 10, 11,  6, 4, m1,  m9            ; [p4] -p7 -p5 +p4 +q2
+    FILTER_UPDATE   m4, m5, m6, m7, [P3], %4,  8, 11,  0,  7, 4, m1, m14            ; [p3] -p7 -p4 +p3 +q3
+    FILTER_UPDATE   m4, m5, m6, m7, [P2], %4,  8,  0,  1, 12, 4, m1,  "",  m8, [Q4] ; [p2] -p7 -p3 +p2 +q4
+    FILTER_UPDATE   m4, m5, m6, m7, [P1], %4,  8,  1,  2, 13, 4, m1,  "",  m9, [Q5] ; [p1] -p7 -p2 +p1 +q5
+    FILTER_UPDATE   m4, m5, m6, m7, [P0], %4,  8,  2,  3, 14, 4, m1,  "", m14, [Q6] ; [p0] -p7 -p1 +p0 +q6
+    FILTER_UPDATE   m4, m5, m6, m7, [Q0], %4,  8,  3,  4, 15, 4, m1,  "", m15, [Q7] ; [q0] -p7 -p0 +q0 +q7
+    FILTER_UPDATE   m4, m5, m6, m7, [Q1], %4,  9,  4,  5, 15, 4, m1,  ""            ; [q1] -p6 -q0 +q1 +q7
+    FILTER_UPDATE   m4, m5, m6, m7, [Q2], %4, 10,  5,  6, 15, 4, m1,  ""            ; [q2] -p5 -q1 +q2 +q7
+    FILTER_UPDATE   m4, m5, m6, m7, [Q3], %4, 11,  6,  7, 15, 4, m1,  ""            ; [q3] -p4 -q2 +q3 +q7
+    FILTER_UPDATE   m4, m5, m6, m7, [Q4], %4,  0,  7, 12, 15, 4, m1,  m8            ; [q4] -p3 -q3 +q4 +q7
+    FILTER_UPDATE   m4, m5, m6, m7, [Q5], %4,  1, 12, 13, 15, 4, m1,  m9            ; [q5] -p2 -q4 +q5 +q7
+    FILTER_UPDATE   m4, m5, m6, m7, [Q6], %4,  2, 13, 14, 15, 4, m1, m14            ; [q6] -p1 -q5 +q6 +q7
 %endif
 
 %ifidn %1, h
@@ -799,22 +806,22 @@ cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3, dst, stride, mstride, dst2, stri
     RET
 %endmacro
 
-%macro LPF_16_VH 2
-INIT_XMM %2
-LOOPFILTER v, %1, 0
-LOOPFILTER h, %1, 256
+%macro LPF_16_VH 3
+INIT_XMM %3
+LOOPFILTER v, %1, %2, 0
+LOOPFILTER h, %1, %2, 256
 %endmacro
 
-%macro LPF_16_VH_ALL_OPTS 1
-LPF_16_VH %1, sse2
-LPF_16_VH %1, ssse3
-LPF_16_VH %1, avx
+%macro LPF_16_VH_ALL_OPTS 2
+LPF_16_VH %1, %2, sse2
+LPF_16_VH %1, %2, ssse3
+LPF_16_VH %1, %2, avx
 %endmacro
 
-LPF_16_VH_ALL_OPTS 16
-LPF_16_VH_ALL_OPTS 44
-LPF_16_VH_ALL_OPTS 48
-LPF_16_VH_ALL_OPTS 84
-LPF_16_VH_ALL_OPTS 88
+LPF_16_VH_ALL_OPTS 16, 512
+LPF_16_VH_ALL_OPTS 44, 0
+LPF_16_VH_ALL_OPTS 48, 256
+LPF_16_VH_ALL_OPTS 84, 256
+LPF_16_VH_ALL_OPTS 88, 256
 
 %endif ; x86-64
