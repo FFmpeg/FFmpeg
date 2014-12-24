@@ -476,9 +476,8 @@ void ff_restore_parser_state(AVFormatContext *s, AVParserState *state)
 
 static void free_packet_list(AVPacketList *pktl)
 {
-    AVPacketList *cur;
     while (pktl) {
-        cur = pktl;
+        AVPacketList *cur = pktl;
         pktl = cur->next;
         av_free_packet(&cur->pkt);
         av_free(cur);
