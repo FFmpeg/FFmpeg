@@ -263,6 +263,8 @@
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_framepack.c">
     </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_fspp.c">
+    </ClCompile>
     <ClCompile Include="..\libavfilter\vf_geq.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_gradfun.c">
@@ -413,8 +415,6 @@
     </ClCompile>
     <ClCompile Include="..\libavfilter\libmpcodecs\vf_eq.c">
     </ClCompile>
-    <ClCompile Include="..\libavfilter\libmpcodecs\vf_fspp.c">
-    </ClCompile>
     <ClCompile Include="..\libavfilter\libmpcodecs\vf_ilpack.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\libmpcodecs\vf_pp7.c">
@@ -436,6 +436,9 @@
     <ClCompile Include="..\libavfilter\pthread.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\log2_tab.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\x86\vf_fspp.c">
+      <ObjectFileName>$(IntDir)\libavfilter_x86_vf_fspp.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavfilter\x86\vf_gradfun_init.c">
     </ClCompile>
