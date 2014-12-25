@@ -4,6 +4,7 @@ OBJS-$(CONFIG_HQDN3D_FILTER)                 += x86/vf_hqdn3d_init.o
 OBJS-$(CONFIG_IDET_FILTER)                   += x86/vf_idet_init.o
 OBJS-$(CONFIG_INTERLACE_FILTER)              += x86/vf_interlace_init.o
 OBJS-$(CONFIG_NOISE_FILTER)                  += x86/vf_noise.o
+OBJS-$(CONFIG_PP7_FILTER)                    += x86/vf_pp7.o
 OBJS-$(CONFIG_PULLUP_FILTER)                 += x86/vf_pullup_init.o
 OBJS-$(CONFIG_SPP_FILTER)                    += x86/vf_spp.o
 OBJS-$(CONFIG_TINTERLACE_FILTER)             += x86/vf_tinterlace_init.o
