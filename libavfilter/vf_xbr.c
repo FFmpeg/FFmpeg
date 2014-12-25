@@ -90,6 +90,8 @@ static uint32_t pixel_diff(uint32_t x, uint32_t y, const uint32_t *r2y)
     if (PE != PH && PE != PF) {                                                                     \
         const unsigned e = df(PE,PC) + df(PE,PG) + df(PI,H5) + df(PI,F4) + (df(PH,PF)<<2);          \
         const unsigned i = df(PH,PD) + df(PH,I5) + df(PF,I4) + df(PF,PB) + (df(PE,PI)<<2);          \
+        if (e <= i) {                                                                               \
+            const unsigned px = df(PE,PF) <= df(PE,PH) ? PF : PH;                                   \
         if (e < i && (!eq(PF,PB) && !eq(PH,PD) || eq(PE,PI)                                         \
                       && (!eq(PF,I4) && !eq(PH,I5))                                                 \
                       || eq(PE,PG) || eq(PE,PC))) {                                                 \
@@ -97,7 +99,6 @@ static uint32_t pixel_diff(uint32_t x, uint32_t y, const uint32_t *r2y)
             const unsigned ki = df(PH,PC);                                                          \
             const int left    = ke<<1 <= ki && PE != PG && PD != PG;                                \
             const int up      = ke >= ki<<1 && PE != PC && PB != PC;                                \
-            const unsigned px = df(PE,PF) <= df(PE,PH) ? PF : PH;                                   \
             if (left && up) {                                                                       \
                 E[N3] = ALPHA_BLEND_224_W(E[N3], px);                                               \
                 E[N2] = ALPHA_BLEND_64_W( E[N2], px);                                               \
@@ -111,8 +112,9 @@ static uint32_t pixel_diff(uint32_t x, uint32_t y, const uint32_t *r2y)
             } else { /* diagonal */                                                                 \
                 E[N3] = ALPHA_BLEND_128_W(E[N3], px);                                               \
             }                                                                                       \
-        } else if (e <= i) {                                                                        \
-            E[N3] = ALPHA_BLEND_128_W(E[N3], ((df(PE,PF) <= df(PE,PH)) ? PF : PH));                 \
+        } else {                                                                                    \
+            E[N3] = ALPHA_BLEND_128_W(E[N3], px);                                                   \
+        }                                                                                           \
         }                                                                                           \
     }                                                                                               \
 } while (0)
@@ -122,6 +124,8 @@ static uint32_t pixel_diff(uint32_t x, uint32_t y, const uint32_t *r2y)
     if (PE != PH && PE != PF) {                                                                     \
         const unsigned e = df(PE,PC) + df(PE,PG) + df(PI,H5) + df(PI,F4) + (df(PH,PF)<<2);          \
         const unsigned i = df(PH,PD) + df(PH,I5) + df(PF,I4) + df(PF,PB) + (df(PE,PI)<<2);          \
+        if (e <= i) {                                                                               \
+            const unsigned px = df(PE,PF) <= df(PE,PH) ? PF : PH;                                   \
         if (e < i && (!eq(PF,PB) && !eq(PF,PC) || !eq(PH,PD) && !eq(PH,PG) || eq(PE,PI)             \
                       && (!eq(PF,F4) && !eq(PF,I4) || !eq(PH,H5) && !eq(PH,I5))                     \
                       || eq(PE,PG) || eq(PE,PC))) {                                                 \
@@ -129,7 +133,6 @@ static uint32_t pixel_diff(uint32_t x, uint32_t y, const uint32_t *r2y)
             const unsigned ki = df(PH,PC);                                                          \
             const int left    = ke<<1 <= ki && PE != PG && PD != PG;                                \
             const int up      = ke >= ki<<1 && PE != PC && PB != PC;                                \
-            const unsigned px = df(PE,PF) <= df(PE,PH) ? PF : PH;                                   \
             if (left && up) {                                                                       \
                 E[N7] = ALPHA_BLEND_192_W(E[N7], px);                                               \
                 E[N6] = ALPHA_BLEND_64_W( E[N6], px);                                               \
@@ -151,8 +154,9 @@ static uint32_t pixel_diff(uint32_t x, uint32_t y, const uint32_t *r2y)
                 E[N5] = ALPHA_BLEND_32_W( E[N5], px);                                               \
                 E[N7] = ALPHA_BLEND_32_W( E[N7], px);                                               \
             }                                                                                       \
-        } else if (e <= i) {                                                                        \
-            E[N8] = ALPHA_BLEND_128_W(E[N8], ((df(PE,PF) <= df(PE,PH)) ? PF : PH));                 \
+        } else {                                                                                    \
+            E[N8] = ALPHA_BLEND_128_W(E[N8], px);                                                   \
+        }                                                                                           \
         }                                                                                           \
     }                                                                                               \
 } while (0)
@@ -162,6 +166,8 @@ static uint32_t pixel_diff(uint32_t x, uint32_t y, const uint32_t *r2y)
     if (PE != PH && PE != PF) {                                                                     \
         const unsigned e = df(PE,PC) + df(PE,PG) + df(PI,H5) + df(PI,F4) + (df(PH,PF)<<2);          \
         const unsigned i = df(PH,PD) + df(PH,I5) + df(PF,I4) + df(PF,PB) + (df(PE,PI)<<2);          \
+        if (e <= i) {                                                                               \
+            const unsigned px = df(PE,PF) <= df(PE,PH) ? PF : PH;                                   \
         if (e < i && (!eq(PF,PB) && !eq(PH,PD) || eq(PE,PI)                                         \
                       && (!eq(PF,I4) && !eq(PH,I5))                                                 \
                       || eq(PE,PG) || eq(PE,PC))) {                                                 \
@@ -169,7 +175,6 @@ static uint32_t pixel_diff(uint32_t x, uint32_t y, const uint32_t *r2y)
             const unsigned ki = df(PH,PC);                                                          \
             const int left    = ke<<1 <= ki && PE != PG && PD != PG;                                \
             const int up      = ke >= ki<<1 && PE != PC && PB != PC;                                \
-            const unsigned px = df(PE,PF) <= df(PE,PH) ? PF : PH;                                   \
             if (left && up) {                                                                       \
                 E[N13] = ALPHA_BLEND_192_W(E[N13], px);                                             \
                 E[N12] = ALPHA_BLEND_64_W( E[N12], px);                                             \
@@ -195,8 +200,9 @@ static uint32_t pixel_diff(uint32_t x, uint32_t y, const uint32_t *r2y)
                 E[N14] = ALPHA_BLEND_128_W(E[N14], px);                                             \
                 E[N15] = px;                                                                        \
             }                                                                                       \
-        } else if (e <= i) {                                                                        \
-            E[N15] = ALPHA_BLEND_128_W(E[N15], ((df(PE,PF) <= df(PE,PH)) ? PF : PH));               \
+        } else {                                                                                    \
+            E[N15] = ALPHA_BLEND_128_W(E[N15], px);                                                 \
+        }                                                                                           \
         }                                                                                           \
     }                                                                                               \
 } while (0)
