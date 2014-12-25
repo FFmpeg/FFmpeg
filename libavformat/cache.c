@@ -30,6 +30,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/file.h"
+#include "libavutil/opt.h"
 #include "libavutil/tree.h"
 #include "avformat.h"
 #include <fcntl.h>
@@ -51,6 +52,7 @@ typedef struct CacheEntry {
 } CacheEntry;
 
 typedef struct Context {
+    AVClass *class;
     int fd;
     struct AVTreeNode *root;
     int64_t logical_pos;
@@ -60,6 +62,7 @@ typedef struct Context {
     int is_true_eof;
     URLContext *inner;
     int64_t cache_hit, cache_miss;
+    int read_ahead_limit;
 } Context;
 
 static int cmp(void *key, const void *node)
@@ -214,6 +217,7 @@ static int64_t cache_seek(URLContext *h, int64_t pos, int whence)
         whence = SEEK_SET;
         pos += c->logical_pos;
     } else if (whence == SEEK_END && c->is_true_eof) {
+resolve_eof:
         whence = SEEK_SET;
         pos += c->end;
     }
@@ -226,6 +230,27 @@ static int64_t cache_seek(URLContext *h, int64_t pos, int whence)
 
     //cache miss
     ret= ffurl_seek(c->inner, pos, whence);
+    if ((whence == SEEK_SET && pos >= c->logical_pos ||
+         whence == SEEK_END && pos <= 0) && ret < 0) {
+        if (   (whence == SEEK_SET && c->read_ahead_limit >= pos - c->logical_pos)
+            || c->read_ahead_limit < 0) {
+            uint8_t tmp[32768];
+            while (c->logical_pos < pos || whence == SEEK_END) {
+                int size = sizeof(tmp);
+                if (whence == SEEK_SET)
+                    size = FFMIN(sizeof(tmp), pos - c->logical_pos);
+                ret = cache_read(h, tmp, size);
+                if (ret == 0 && whence == SEEK_END) {
+                    av_assert0(c->is_true_eof);
+                    goto resolve_eof;
+                }
+                if (ret < 0) {
+                    return ret;
+                }
+            }
+            return c->logical_pos;
+        }
+    }
 
     if (ret >= 0) {
         c->logical_pos = ret;
@@ -246,9 +271,23 @@ static int cache_close(URLContext *h)
     ffurl_close(c->inner);
     av_tree_destroy(c->root);
 
-
     return 0;
 }
+
+#define OFFSET(x) offsetof(Context, x)
+#define D AV_OPT_FLAG_DECODING_PARAM
+
+static const AVOption options[] = {
+    { "read_ahead_limit", "Amount in bytes that may be read ahead when seeking isnt supported, -1 for unlimited", OFFSET(read_ahead_limit), AV_OPT_TYPE_INT, { .i64 = 65536 }, -1, INT_MAX, D },
+    {NULL},
+};
+
+static const AVClass cache_context_class = {
+    .class_name = "Cache",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
 
 URLProtocol ff_cache_protocol = {
     .name                = "cache",
@@ -257,4 +296,5 @@ URLProtocol ff_cache_protocol = {
     .url_seek            = cache_seek,
     .url_close           = cache_close,
     .priv_data_size      = sizeof(Context),
+    .priv_data_class     = &cache_context_class,
 };
