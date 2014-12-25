@@ -195,6 +195,7 @@ static int cache_read(URLContext *h, unsigned char *buf, int size)
 static int64_t cache_seek(URLContext *h, int64_t pos, int whence)
 {
     Context *c= h->priv_data;
+    int64_t ret;
 
     if (whence == AVSEEK_SIZE) {
         pos= ffurl_seek(c->inner, pos, whence);
@@ -224,13 +225,14 @@ static int64_t cache_seek(URLContext *h, int64_t pos, int whence)
     }
 
     //cache miss
-    pos = lseek(c->fd, pos, whence);
-    if (pos >= 0) {
-        c->logical_pos = pos;
-        c->end = FFMAX(c->end, pos);
+    ret= ffurl_seek(c->inner, pos, whence);
+
+    if (ret >= 0) {
+        c->logical_pos = ret;
+        c->end = FFMAX(c->end, ret);
     }
 
-    return pos;
+    return ret;
 }
 
 static int cache_close(URLContext *h)
