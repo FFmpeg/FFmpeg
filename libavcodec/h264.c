@@ -1456,6 +1456,8 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size,
                 buf_index = find_start_code(buf, buf_size, buf_index, next_avc);
                 if (buf_index >= buf_size)
                     break;
+                if (buf_index >= next_avc)
+                    continue;
             }
 
             hx = h->thread_context[context_count];
