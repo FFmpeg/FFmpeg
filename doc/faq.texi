@@ -90,6 +90,56 @@ To build FFmpeg, you need to install the development package. It is usually
 called @file{libfoo-dev} or @file{libfoo-devel}. You can remove it after the
 build is finished, but be sure to keep the main package.
 
+@section How do I make @command{pkg-config} find my libraries?
+
+Somewhere along with your libraries, there is a @file{.pc} file (or several)
+in a @file{pkgconfig} directory. You need to set environment variables to
+point @command{pkg-config} to these files.
+
+If you need to @emph{add} directories to @command{pkg-config}'s search list
+(typical use case: library installed separately), add it to
+@code{$PKG_CONFIG_PATH}:
+
+@example
+export PKG_CONFIG_PATH=/opt/x264/lib/pkgconfig:/opt/opus/lib/pkgconfig
+@end example
+
+If you need to @emph{replace} @command{pkg-config}'s search list
+(typical use case: cross-compiling), set it in
+@code{$PKG_CONFIG_LIBDIR}:
+
+@example
+export PKG_CONFIG_LIBDIR=/home/me/cross/usr/lib/pkgconfig:/home/me/cross/usr/local/lib/pkgconfig
+@end example
+
+If you need to know the library's internal dependencies (typical use: static
+linking), add the @code{--static} option to @command{pkg-config}:
+
+@example
+./configure --pkg-config-flags=--static
+@end example
+
+@section How do I use @command{pkg-config} when cross-compiling?
+
+The best way is to install @command{pkg-config} in your cross-compilation
+environment. It will automatically use the cross-compilation libraries.
+
+You can also use @command{pkg-config} from the host environment by
+specifying explicitly @code{--pkg-config=pkg-config} to @command{configure}.
+In that case, you must point @command{pkg-config} to the correct directories
+using the @code{PKG_CONFIG_LIBDIR}, as explained in the previous entry.
+
+As an intermediate solution, you can place in your cross-compilation
+environment a script that calls the host @command{pkg-config} with
+@code{PKG_CONFIG_LIBDIR} set. That script can look like that:
+
+@example
+#!/bin/sh
+PKG_CONFIG_LIBDIR=/path/to/cross/lib/pkgconfig
+export PKG_CONFIG_LIBDIR
+exec /usr/bin/pkg-config "$@@"
+@end example
+
 @chapter Usage
 
 @section ffmpeg does not work; what is wrong?

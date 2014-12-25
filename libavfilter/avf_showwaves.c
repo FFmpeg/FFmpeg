@@ -178,12 +178,10 @@ static int request_frame(AVFilterLink *outlink)
     return ret;
 }
 
-#define MAX_INT16 ((1<<15) -1)
-
 static void draw_sample_point(uint8_t *buf, int height, int linesize,
                               int16_t sample, int16_t *prev_y, int intensity)
 {
-    const int h = height/2 - av_rescale(sample, height/2, MAX_INT16);
+    const int h = height/2 - av_rescale(sample, height/2, INT16_MAX);
     if (h >= 0 && h < height)
         buf[h * linesize] += intensity;
 }
@@ -192,7 +190,7 @@ static void draw_sample_line(uint8_t *buf, int height, int linesize,
                              int16_t sample, int16_t *prev_y, int intensity)
 {
     int k;
-    const int h = height/2 - av_rescale(sample, height/2, MAX_INT16);
+    const int h = height/2 - av_rescale(sample, height/2, INT16_MAX);
     int start   = height/2;
     int end     = av_clip(h, 0, height-1);
     if (start > end)
@@ -205,7 +203,7 @@ static void draw_sample_p2p(uint8_t *buf, int height, int linesize,
                             int16_t sample, int16_t *prev_y, int intensity)
 {
     int k;
-    const int h = height/2 - av_rescale(sample, height/2, MAX_INT16);
+    const int h = height/2 - av_rescale(sample, height/2, INT16_MAX);
     if (h >= 0 && h < height) {
         buf[h * linesize] += intensity;
         if (*prev_y && h != *prev_y) {
@@ -224,7 +222,7 @@ static void draw_sample_cline(uint8_t *buf, int height, int linesize,
                               int16_t sample, int16_t *prev_y, int intensity)
 {
     int k;
-    const int h     = av_rescale(abs(sample), height, UINT16_MAX);
+    const int h     = av_rescale(abs(sample), height, INT16_MAX);
     const int start = (height - h) / 2;
     const int end   = start + h;
     for (k = start; k < end; k++)

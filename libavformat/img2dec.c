@@ -606,8 +606,17 @@ static int bmp_probe(AVProbeData *p)
 static int dpx_probe(AVProbeData *p)
 {
     const uint8_t *b = p->buf;
+    int w, h;
+    int is_big = (AV_RN32(b) == AV_RN32("SDPX"));
 
-    if (AV_RN32(b) == AV_RN32("SDPX") || AV_RN32(b) == AV_RN32("XPDS"))
+    if (p->buf_size < 0x304+8)
+        return 0;
+    w = is_big ? AV_RB32(p->buf + 0x304) : AV_RL32(p->buf + 0x304);
+    h = is_big ? AV_RB32(p->buf + 0x308) : AV_RL32(p->buf + 0x308);
+    if (w <= 0 || h <= 0)
+        return 0;
+
+    if (is_big || AV_RN32(b) == AV_RN32("XPDS"))
         return AVPROBE_SCORE_EXTENSION + 1;
     return 0;
 }

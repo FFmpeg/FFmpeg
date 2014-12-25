@@ -45,7 +45,7 @@ static void latm_free_context(PayloadContext *data)
         avio_close_dyn_buf(data->dyn_buf, &p);
         av_free(p);
     }
-    av_free(data->buf);
+    av_freep(&data->buf);
     av_free(data);
 }
 
@@ -72,7 +72,7 @@ static int latm_parse_packet(AVFormatContext *ctx, PayloadContext *data,
 
         if (!(flags & RTP_FLAG_MARKER))
             return AVERROR(EAGAIN);
-        av_free(data->buf);
+        av_freep(&data->buf);
         data->len = avio_close_dyn_buf(data->dyn_buf, &data->buf);
         data->dyn_buf = NULL;
         data->pos = 0;

@@ -37,6 +37,7 @@ typedef struct CDXLDemuxContext {
     uint8_t     header[CDXL_HEADER_SIZE];
     int         video_stream_index;
     int         audio_stream_index;
+    int64_t     filesize;
 } CDXLDemuxContext;
 
 static int cdxl_read_probe(AVProbeData *p)
@@ -96,6 +97,8 @@ static int cdxl_read_header(AVFormatContext *s)
     cdxl->video_stream_index = -1;
     cdxl->audio_stream_index = -1;
 
+    cdxl->filesize = avio_size(s->pb);
+
     s->ctx_flags |= AVFMTCTX_NOHEADER;
 
     return 0;
@@ -108,7 +111,7 @@ static int cdxl_read_packet(AVFormatContext *s, AVPacket *pkt)
     uint32_t current_size, video_size, image_size;
     uint16_t audio_size, palette_size, width, height;
     int64_t  pos;
-    int      ret;
+    int      frames, ret;
 
     if (avio_feof(pb))
         return AVERROR_EOF;
@@ -175,6 +178,15 @@ static int cdxl_read_packet(AVFormatContext *s, AVPacket *pkt)
             st->codec->codec_id      = AV_CODEC_ID_CDXL;
             st->codec->width         = width;
             st->codec->height        = height;
+
+            if (audio_size + video_size && cdxl->filesize > 0) {
+                frames = cdxl->filesize / (audio_size + video_size);
+
+                if(cdxl->framerate)
+                    st->duration = frames;
+                else
+                    st->duration = frames * audio_size;
+            }
             st->start_time           = 0;
             cdxl->video_stream_index = st->index;
             if (cdxl->framerate)

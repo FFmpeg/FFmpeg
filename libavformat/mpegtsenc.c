@@ -814,9 +814,9 @@ fail:
         service = ts->services[i];
         av_freep(&service->provider_name);
         av_freep(&service->name);
-        av_free(service);
+        av_freep(&service);
     }
-    av_free(ts->services);
+    av_freep(&ts->services);
     return ret;
 }
 
@@ -1417,9 +1417,9 @@ static int mpegts_write_end(AVFormatContext *s)
         service = ts->services[i];
         av_freep(&service->provider_name);
         av_freep(&service->name);
-        av_free(service);
+        av_freep(&service);
     }
-    av_free(ts->services);
+    av_freep(&ts->services);
 
     return 0;
 }

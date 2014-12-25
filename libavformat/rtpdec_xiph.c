@@ -67,8 +67,8 @@ static inline void free_fragment_if_needed(PayloadContext * data)
 static void xiph_free_context(PayloadContext * data)
 {
     free_fragment_if_needed(data);
-    av_free(data->split_buf);
-    av_free(data);
+    av_freep(&data->split_buf);
+    av_freep(&data);
 }
 
 static av_cold int xiph_vorbis_init(AVFormatContext *ctx, int st_index,
