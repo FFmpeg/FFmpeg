@@ -201,7 +201,7 @@ static int64_t cache_seek(URLContext *h, int64_t pos, int whence)
         if(pos <= 0){
             pos= ffurl_seek(c->inner, -1, SEEK_END);
             if (ffurl_seek(c->inner, c->inner_pos, SEEK_SET) < 0)
-                av_log(h, AV_LOG_ERROR, "Inner protocol failed to seekback\n");
+                av_log(h, AV_LOG_ERROR, "Inner protocol failed to seekback end : %"PRId64"\n", pos);
         }
         if (pos > 0)
             c->is_true_eof = 1;
