@@ -470,6 +470,7 @@ extern FilterGraph **filtergraphs;
 extern int        nb_filtergraphs;
 
 extern char *vstats_filename;
+extern char *sdp_filename;
 
 extern float audio_drift_threshold;
 extern float dts_delta_threshold;
