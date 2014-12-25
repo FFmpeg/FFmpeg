@@ -57,6 +57,7 @@ typedef struct Context {
     int64_t cache_pos;
     int64_t inner_pos;
     int64_t end;
+    int is_true_eof;
     URLContext *inner;
     int64_t cache_hit, cache_miss;
 } Context;
@@ -174,6 +175,10 @@ static int cache_read(URLContext *h, unsigned char *buf, int size)
     }
 
     r = ffurl_read(c->inner, buf, size);
+    if (r == 0 && size>0) {
+        c->is_true_eof = 1;
+        av_assert0(c->end >= c->logical_pos);
+    }
     if (r<=0)
         return r;
     c->inner_pos += r;
@@ -198,6 +203,8 @@ static int64_t cache_seek(URLContext *h, int64_t pos, int whence)
             if (ffurl_seek(c->inner, c->inner_pos, SEEK_SET) < 0)
                 av_log(h, AV_LOG_ERROR, "Inner protocol failed to seekback\n");
         }
+        if (pos > 0)
+            c->is_true_eof = 1;
         c->end = FFMAX(c->end, pos);
         return pos;
     }
@@ -205,6 +212,9 @@ static int64_t cache_seek(URLContext *h, int64_t pos, int whence)
     if (whence == SEEK_CUR) {
         whence = SEEK_SET;
         pos += c->logical_pos;
+    } else if (whence == SEEK_END && c->is_true_eof) {
+        whence = SEEK_SET;
+        pos += c->end;
     }
 
     if (whence == SEEK_SET && pos >= 0 && pos < c->end) {
