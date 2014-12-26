@@ -156,8 +156,12 @@ static int cache_read(URLContext *h, unsigned char *buf, int size)
         av_assert0(entry->logical_pos <= c->logical_pos);
         if (in_block_pos < entry->size) {
             int64_t physical_target = entry->physical_pos + in_block_pos;
-            //FIXME avoid seek if unneeded
-            r = lseek(c->fd, physical_target, SEEK_SET);
+
+            if (c->cache_pos != physical_target) {
+                r = lseek(c->fd, physical_target, SEEK_SET);
+            } else
+                r = c->cache_pos;
+
             if (r >= 0) {
                 c->cache_pos = r;
                 r = read(c->fd, buf, FFMIN(size, entry->size - in_block_pos));
