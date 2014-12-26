@@ -77,11 +77,11 @@ cglobal store_slice, 2, 7, 0, dst, src, width, dither_height, dither, tmp, tmp2
     mov       src_strideq, tmp2q
     shl       tmpq, 4
     lea       dither_heightq, [ditherq+dither_heightq*8]
+    pxor      m7, m7
 
 .loop_height:
     movq      m3, [ditherq]
     movq      m4, m3
-    pxor      m7, m7
     punpcklbw m3, m7
     punpckhbw m4, m7
     mov       tmp2q, widthq
@@ -143,11 +143,11 @@ cglobal store_slice2, 0, 7, 0, dst, src, width, dither_height, dither, tmp, tmp2
     mov       src_strideq, tmp2q
     shl       tmpq, 5
     lea       dither_heightq, [ditherq+dither_heightq*8]
+    pxor      m7, m7
 
 .loop_height:
     movq      m3, [ditherq]
     movq      m4, m3
-    pxor      m7, m7
     punpcklbw m3, m7
     punpckhbw m4, m7
     mov       tmp2q,widthq
