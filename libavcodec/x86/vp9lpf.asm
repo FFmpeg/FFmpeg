@@ -291,38 +291,6 @@ SECTION .text
     SWAP %12, %14
 %endmacro
 
-; transpose 16 half lines (high part) to 8 full centered lines
-%macro TRANSPOSE16x8B 16
-    punpcklbw   m%1,  m%2
-    punpcklbw   m%3,  m%4
-    punpcklbw   m%5,  m%6
-    punpcklbw   m%7,  m%8
-    punpcklbw   m%9,  m%10
-    punpcklbw   m%11, m%12
-    punpcklbw   m%13, m%14
-    punpcklbw   m%15, m%16
-    SBUTTERFLY  wd,  %1,  %3,  %2
-    SBUTTERFLY  wd,  %5,  %7,  %2
-    SBUTTERFLY  wd,  %9,  %11, %2
-    SBUTTERFLY  wd,  %13, %15, %2
-    SBUTTERFLY  dq,  %1,  %5,  %2
-    SBUTTERFLY  dq,  %3,  %7,  %2
-    SBUTTERFLY  dq,  %9,  %13, %2
-    SBUTTERFLY  dq,  %11, %15, %2
-    SBUTTERFLY  qdq, %1,  %9,  %2
-    SBUTTERFLY  qdq, %3,  %11, %2
-    SBUTTERFLY  qdq, %5,  %13, %2
-    SBUTTERFLY  qdq, %7,  %15, %2
-    SWAP %5, %1
-    SWAP %6, %9
-    SWAP %7, %1
-    SWAP %8, %13
-    SWAP %9, %3
-    SWAP %10, %11
-    SWAP %11, %1
-    SWAP %12, %15
-%endmacro
-
 %macro DEFINE_REAL_P7_TO_Q7 0-1 0
 %define P7 dstq  + 4*mstrideq  + %1
 %define P6 dstq  +   mstride3q + %1
@@ -398,6 +366,7 @@ cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3 + %4 + %5, dst, stride, mstride, 
     movx                    m5, [P2]
     movx                    m6, [P1]
     movx                    m7, [P0]
+%if ARCH_X86_64
     movx                    m8, [Q0]
     movx                    m9, [Q1]
     movx                   m10, [Q2]
@@ -406,32 +375,67 @@ cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3 + %4 + %5, dst, stride, mstride, 
     movx                   m13, [Q5]
     movx                   m14, [Q6]
     movx                   m15, [Q7]
-%define P7 rsp +   0
-%define P6 rsp +  16
-%define P5 rsp +  32
-%define P4 rsp +  48
-%define P3 rsp +  64
-%define P2 rsp +  80
-%define P1 rsp +  96
-%define P0 rsp + 112
-%define Q0 rsp + 128
-%define Q1 rsp + 144
-%define Q2 rsp + 160
-%define Q3 rsp + 176
+%if %2 == 16
+    TRANSPOSE16x16B 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, [rsp]
+%define P7 rsp + 128
+%define P6 rsp + 144
+%define P5 rsp + 160
+%define P4 rsp + 176
 %define Q4 rsp + 192
 %define Q5 rsp + 208
 %define Q6 rsp + 224
 %define Q7 rsp + 240
-
-%if %2 == 16
-    TRANSPOSE16x16B 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, [rsp]
     mova           [P7],  m0
     mova           [P6],  m1
     mova           [P5],  m2
     mova           [P4],  m3
 %else
-    TRANSPOSE16x8B 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
+    ; 8x16 transpose
+    punpcklbw        m0,  m1
+    punpcklbw        m2,  m3
+    punpcklbw        m4,  m5
+    punpcklbw        m6,  m7
+    punpcklbw        m8,  m9
+    punpcklbw       m10, m11
+    punpcklbw       m12, m13
+    punpcklbw       m14, m15
+    TRANSPOSE8x8W     0, 2, 4, 6, 8, 10, 12, 14, 15
+    SWAP              0,  4
+    SWAP              2,  5
+    SWAP              0,  6
+    SWAP              0,  7
+    SWAP             10,  9
+    SWAP             12, 10
+    SWAP             14, 11
 %endif
+%else ; x86-32
+    punpcklbw        m0, m1
+    punpcklbw        m2, m3
+    punpcklbw        m4, m5
+    punpcklbw        m6, m7
+    movx             m1, [Q0]
+    movx             m3, [Q1]
+    movx             m5, [Q2]
+    movx             m7, [Q3]
+    punpcklbw        m1, m3
+    punpcklbw        m5, m7
+    movx             m3, [Q4]
+    movx             m7, [Q5]
+    punpcklbw        m3, m7
+    mova          [rsp], m3
+    movx             m3, [Q6]
+    movx             m7, [Q7]
+    punpcklbw        m3, m7
+%endif
+%define P3 rsp +   0
+%define P2 rsp +  16
+%define P1 rsp +  32
+%define P0 rsp +  48
+%define Q0 rsp +  64
+%define Q1 rsp +  80
+%define Q2 rsp +  96
+%define Q3 rsp + 112
+%if ARCH_X86_64
     mova           [P3],  m4
     mova           [P2],  m5
     mova           [P1],  m6
@@ -446,7 +450,17 @@ cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3 + %4 + %5, dst, stride, mstride, 
     mova           [Q6], m14
     mova           [Q7], m15
 %endif
+%else ; x86-32
+    TRANSPOSE8x8W     0, 2, 4, 6, 1, 5, 7, 3, [rsp], [Q0], 1
+    mova           [P3],  m0
+    mova           [P2],  m2
+    mova           [P1],  m4
+    mova           [P0],  m6
+    mova           [Q1],  m5
+    mova           [Q2],  m7
+    mova           [Q3],  m3
 %endif
+%endif ; %1 == h
 
     ; calc fm mask
 %if %2 == 16
@@ -962,22 +976,22 @@ cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3 + %4 + %5, dst, stride, mstride, 
     RET
 %endmacro
 
-%macro LPF_16_VH 4
-INIT_XMM %4
-LOOPFILTER v, %1, %2,   0, %3
-%if ARCH_X86_64
-LOOPFILTER h, %1, %2, 256, %3
+%macro LPF_16_VH 5
+INIT_XMM %5
+LOOPFILTER v, %1, %2,  0, %4
+%if ARCH_X86_64 || %1 == 44
+LOOPFILTER h, %1, %2, %3, %4
 %endif
 %endmacro
 
-%macro LPF_16_VH_ALL_OPTS 2-3 0
-LPF_16_VH %1, %2, %3, sse2
-LPF_16_VH %1, %2, %3, ssse3
-LPF_16_VH %1, %2, %3, avx
+%macro LPF_16_VH_ALL_OPTS 4
+LPF_16_VH %1, %2, %3, %4, sse2
+LPF_16_VH %1, %2, %3, %4, ssse3
+LPF_16_VH %1, %2, %3, %4, avx
 %endmacro
 
-LPF_16_VH_ALL_OPTS 16, 512, 32
-LPF_16_VH_ALL_OPTS 44,   0,  0
-LPF_16_VH_ALL_OPTS 48, 256, 16
-LPF_16_VH_ALL_OPTS 84, 256, 16
-LPF_16_VH_ALL_OPTS 88, 256, 16
+LPF_16_VH_ALL_OPTS 16, 512, 256, 32
+LPF_16_VH_ALL_OPTS 44,   0, 128,  0
+LPF_16_VH_ALL_OPTS 48, 256, 128, 16
+LPF_16_VH_ALL_OPTS 84, 256, 128, 16
+LPF_16_VH_ALL_OPTS 88, 256, 128, 16
