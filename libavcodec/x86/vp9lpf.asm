@@ -142,7 +142,9 @@ SECTION .text
                                          ; mask, [source], [unpack + src], [unpack_is_mem_on_x86_32]
 ; FIXME interleave this properly with the subx2/addx2
 %ifnidn %15, ""
+%if %16 == 0 || ARCH_X86_64
     mova               %14, %15
+%endif
 %endif
     FILTER_SUBx2_ADDx2  %1, l, %3, %6 +  0, %7, %8, %9, %10, %11, %14, %16
     FILTER_SUBx2_ADDx2  %2, h, %4, %6 + 16, %7, %8, %9, %10, %11, %14, %16
@@ -195,7 +197,7 @@ SECTION .text
     mova     [rsp+%4+0*32], %1
     paddw               %3, %1, %1                      ; p3*2
     paddw               %3, %1                          ; p3*3
-    punpck%2bw          %1, m2,  m0                     ; p2: B->W
+    punpck%2bw          %1, m1,  m0                     ; p2: B->W
     mova     [rsp+%4+1*32], %1
     paddw               %3, %1                          ; p3*3 + p2
     paddw               %3, %1                          ; p3*3 + p2*2
@@ -221,10 +223,10 @@ SECTION .text
     mova    [rsp+%4+ 9*32], %1
     paddw               %3, %1                          ; p7*7 + p6
     paddw               %3, %1                          ; p7*7 + p6*2
-    punpck%2bw          %1, m8, m0                      ; p5: B->W
+    UNPACK          %2, %1, rp5, m0                     ; p5: B->W
     mova    [rsp+%4+10*32], %1
     paddw               %3, %1                          ; p7*7 + p6*2 + p5
-    punpck%2bw          %1, m9, m0                      ; p4: B->W
+    UNPACK          %2, %1, rp4, m0                     ; p4: B->W
     mova    [rsp+%4+11*32], %1
     paddw               %3, %1                          ; p7*7 + p6*2 + p5 + p4
     paddw               %3, [rsp+%4+ 0*32]              ; p7*7 + p6*2 + p5 + p4 + p3
@@ -581,28 +583,56 @@ cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3 + %4 + %5, dst, stride, mstride, 
 %if %2 == 16
     ; (m0: hev, m2: flat8in, m3: fm, m6: pb_81, m9..15: p2 p1 p0 q0 q1 q2 q3)
     ; calc flat8out mask
+%if ARCH_X86_64
     mova                m8, [P7]
     mova                m9, [P6]
-    ABSSUB_GT           m1, m8, m11, m6, m5             ; abs(p7 - p0) <= 1
-    ABSSUB_GT           m7, m9, m11, m6, m5             ; abs(p6 - p0) <= 1
+%define rp7 m8
+%define rp6 m9
+%else
+%define rp7 [P7]
+%define rp6 [P6]
+%endif
+    ABSSUB_GT           m1, rp7, rp0, m6, m5            ; abs(p7 - p0) <= 1
+    ABSSUB_GT           m7, rp6, rp0, m6, m5            ; abs(p6 - p0) <= 1
     por                 m1, m7
+%if ARCH_X86_64
     mova                m8, [P5]
     mova                m9, [P4]
-    ABSSUB_GT           m7, m8, m11, m6, m5             ; abs(p5 - p0) <= 1
+%define rp5 m8
+%define rp4 m9
+%else
+%define rp5 [P5]
+%define rp4 [P4]
+%endif
+    ABSSUB_GT           m7, rp5, rp0, m6, m5            ; abs(p5 - p0) <= 1
     por                 m1, m7
-    ABSSUB_GT           m7, m9, m11, m6, m5             ; abs(p4 - p0) <= 1
+    ABSSUB_GT           m7, rp4, rp0, m6, m5            ; abs(p4 - p0) <= 1
     por                 m1, m7
+%if ARCH_X86_64
     mova                m14, [Q4]
     mova                m15, [Q5]
-    ABSSUB_GT           m7, m14, m12, m6, m5            ; abs(q4 - q0) <= 1
+%define rq4 m14
+%define rq5 m15
+%else
+%define rq4 [Q4]
+%define rq5 [Q5]
+%endif
+    ABSSUB_GT           m7, rq4, rq0, m6, m5            ; abs(q4 - q0) <= 1
     por                 m1, m7
-    ABSSUB_GT           m7, m15, m12, m6, m5            ; abs(q5 - q0) <= 1
+    ABSSUB_GT           m7, rq5, rq0, m6, m5            ; abs(q5 - q0) <= 1
     por                 m1, m7
+%if ARCH_X86_64
     mova                m14, [Q6]
     mova                m15, [Q7]
-    ABSSUB_GT           m7, m14, m12, m6, m5            ; abs(q4 - q0) <= 1
+%define rq6 m14
+%define rq7 m15
+%else
+%define rq6 [Q6]
+%define rq7 [Q7]
+%endif
+    ABSSUB_GT           m7, rq6, rq0, m6, m5            ; abs(q4 - q0) <= 1
     por                 m1, m7
-    ABSSUB_GT           m7, m15, m12, m6, m5            ; abs(q5 - q0) <= 1
+    ABSSUB_GT           m7, rq7, rq0, m6, m5            ; abs(q5 - q0) <= 1
     por                 m1, m7                          ; flat8out final value
     pxor                m1, [pb_ff]
 %endif
@@ -625,7 +655,7 @@ cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3 + %4 + %5, dst, stride, mstride, 
     mova                m6, [pb_80]                     ; already in m6 if 44_16
     SCRATCH              2, 15, rsp+%3+%4
 %if %2 == 16
-    SWAP 1, 8
+    SCRATCH              1,  8, rsp+%3+%4+16
 %endif
 %endif
     pxor                m2, m6, rq0                     ; q0 ^ 0x80
@@ -698,19 +728,24 @@ cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3 + %4 + %5, dst, stride, mstride, 
     mova                [P1], m1
     mova                [Q1], m4
 
+%if %2 != 44
+    UNSCRATCH            2, 15, rsp+%3+%4
+%endif
+
     ; ([m1: flat8out], m2: flat8in, m3: fm, m10..13: p1 p0 q0 q1)
     ; filter6()
 %if %2 != 44
     pxor                m0, m0
 %if %2 > 16
+    pand                m3, m2
+%else
+    pand                m2, m3                          ;               mask(fm) & mask(in)
 %if ARCH_X86_64
-    pand                m3, m15
+    pandn               m3, m8, m2                      ; ~mask(out) & (mask(fm) & mask(in))
 %else
-    pand                m3, [rsp+%3+%4]
+    mova                m3, [rsp+%3+%4+16]
+    pandn               m3, m2
 %endif
-%else
-    pand               m15, m3                          ;               mask(fm) & mask(in)
-    pandn               m3, m8, m15                     ; ~mask(out) & (mask(fm) & mask(in))
 %endif
 %if ARCH_X86_64
     mova               m14, [P3]
@@ -721,21 +756,18 @@ cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3 + %4 + %5, dst, stride, mstride, 
 %define rp3 [P3]
 %define rq3 [Q3]
 %endif
-    mova                m2, [P2]
+    mova                m1, [P2]
+    FILTER_INIT         m4, m5, m6, m7, [P2], %4, 6,             m3,  m1             ; [p2]
     mova                m1, [Q2]
-    FILTER_INIT         m4, m5, m6, m7, [P2], %4, 6,             m3,  m2      ; [p2]
     FILTER_UPDATE       m4, m5, m6, m7, [P1], %4, 0, 1, 2, 5, 3, m3,  "", rq1, "", 1 ; [p1] -p3 -p2 +p1 +q1
-    FILTER_UPDATE       m4, m5, m6, m7, [P0], %4, 0, 2, 3, 6, 3, m3,  "", m1  ; [p0] -p3 -p1 +p0 +q2
+    FILTER_UPDATE       m4, m5, m6, m7, [P0], %4, 0, 2, 3, 6, 3, m3,  "", m1         ; [p0] -p3 -p1 +p0 +q2
     FILTER_UPDATE       m4, m5, m6, m7, [Q0], %4, 0, 3, 4, 7, 3, m3,  "", rq3, "", 1 ; [q0] -p3 -p0 +q0 +q3
-    FILTER_UPDATE       m4, m5, m6, m7, [Q1], %4, 1, 4, 5, 7, 3, m3,  ""      ; [q1] -p2 -q0 +q1 +q3
-    FILTER_UPDATE       m4, m5, m6, m7, [Q2], %4, 2, 5, 6, 7, 3, m3,  m1      ; [q2] -p1 -q1 +q2 +q3
+    FILTER_UPDATE       m4, m5, m6, m7, [Q1], %4, 1, 4, 5, 7, 3, m3,  ""             ; [q1] -p2 -q0 +q1 +q3
+    FILTER_UPDATE       m4, m5, m6, m7, [Q2], %4, 2, 5, 6, 7, 3, m3,  m1             ; [q2] -p1 -q1 +q2 +q3
 %endif
 
-%if %2 != 44
 %if %2 == 16
-SWAP 1, 8
-%endif
-SWAP 2, 15
+    UNSCRATCH            1,  8, rsp+%3+%4+16
 %endif
 
     ; (m0: 0, [m1: flat8out], m2: fm & flat8in, m8..15: q2 q3 p1 p0 q0 q1 p3 p2)
@@ -763,22 +795,49 @@ SWAP 2, 15
     pand            m1, m2                                                              ; mask(out) & (mask(fm) & mask(in))
     mova            m2, [P7]
     mova            m3, [P6]
+%if ARCH_X86_64
     mova            m8, [P5]
     mova            m9, [P4]
+%define rp5 m8
+%define rp4 m9
+%define rp5s m8
+%define rp4s m9
+%define rp3s m14
+%define rq4 m8
+%define rq5 m9
+%define rq6 m14
+%define rq7 m15
+%define rq4s m8
+%define rq5s m9
+%define rq6s m14
+%else
+%define rp5 [P5]
+%define rp4 [P4]
+%define rp5s ""
+%define rp4s ""
+%define rp3s ""
+%define rq4 [Q4]
+%define rq5 [Q5]
+%define rq6 [Q6]
+%define rq7 [Q7]
+%define rq4s ""
+%define rq5s ""
+%define rq6s ""
+%endif
     FILTER_INIT     m4, m5, m6, m7, [P6], %4, 14,                m1,  m3            ; [p6]
-    FILTER_UPDATE   m4, m5, m6, m7, [P5], %4,  8,  9, 10,  5, 4, m1,  m8            ; [p5] -p7 -p6 +p5 +q1
-    FILTER_UPDATE   m4, m5, m6, m7, [P4], %4,  8, 10, 11,  6, 4, m1,  m9            ; [p4] -p7 -p5 +p4 +q2
-    FILTER_UPDATE   m4, m5, m6, m7, [P3], %4,  8, 11,  0,  7, 4, m1, m14            ; [p3] -p7 -p4 +p3 +q3
-    FILTER_UPDATE   m4, m5, m6, m7, [P2], %4,  8,  0,  1, 12, 4, m1,  "",  m8, [Q4] ; [p2] -p7 -p3 +p2 +q4
-    FILTER_UPDATE   m4, m5, m6, m7, [P1], %4,  8,  1,  2, 13, 4, m1,  "",  m9, [Q5] ; [p1] -p7 -p2 +p1 +q5
-    FILTER_UPDATE   m4, m5, m6, m7, [P0], %4,  8,  2,  3, 14, 4, m1,  "", m14, [Q6] ; [p0] -p7 -p1 +p0 +q6
-    FILTER_UPDATE   m4, m5, m6, m7, [Q0], %4,  8,  3,  4, 15, 4, m1,  "", m15, [Q7] ; [q0] -p7 -p0 +q0 +q7
+    FILTER_UPDATE   m4, m5, m6, m7, [P5], %4,  8,  9, 10,  5, 4, m1, rp5s           ; [p5] -p7 -p6 +p5 +q1
+    FILTER_UPDATE   m4, m5, m6, m7, [P4], %4,  8, 10, 11,  6, 4, m1, rp4s           ; [p4] -p7 -p5 +p4 +q2
+    FILTER_UPDATE   m4, m5, m6, m7, [P3], %4,  8, 11,  0,  7, 4, m1, rp3s           ; [p3] -p7 -p4 +p3 +q3
+    FILTER_UPDATE   m4, m5, m6, m7, [P2], %4,  8,  0,  1, 12, 4, m1,  "", rq4, [Q4], 1 ; [p2] -p7 -p3 +p2 +q4
+    FILTER_UPDATE   m4, m5, m6, m7, [P1], %4,  8,  1,  2, 13, 4, m1,  "", rq5, [Q5], 1 ; [p1] -p7 -p2 +p1 +q5
+    FILTER_UPDATE   m4, m5, m6, m7, [P0], %4,  8,  2,  3, 14, 4, m1,  "", rq6, [Q6], 1 ; [p0] -p7 -p1 +p0 +q6
+    FILTER_UPDATE   m4, m5, m6, m7, [Q0], %4,  8,  3,  4, 15, 4, m1,  "", rq7, [Q7], 1 ; [q0] -p7 -p0 +q0 +q7
     FILTER_UPDATE   m4, m5, m6, m7, [Q1], %4,  9,  4,  5, 15, 4, m1,  ""            ; [q1] -p6 -q0 +q1 +q7
     FILTER_UPDATE   m4, m5, m6, m7, [Q2], %4, 10,  5,  6, 15, 4, m1,  ""            ; [q2] -p5 -q1 +q2 +q7
     FILTER_UPDATE   m4, m5, m6, m7, [Q3], %4, 11,  6,  7, 15, 4, m1,  ""            ; [q3] -p4 -q2 +q3 +q7
-    FILTER_UPDATE   m4, m5, m6, m7, [Q4], %4,  0,  7, 12, 15, 4, m1,  m8            ; [q4] -p3 -q3 +q4 +q7
-    FILTER_UPDATE   m4, m5, m6, m7, [Q5], %4,  1, 12, 13, 15, 4, m1,  m9            ; [q5] -p2 -q4 +q5 +q7
-    FILTER_UPDATE   m4, m5, m6, m7, [Q6], %4,  2, 13, 14, 15, 4, m1, m14            ; [q6] -p1 -q5 +q6 +q7
+    FILTER_UPDATE   m4, m5, m6, m7, [Q4], %4,  0,  7, 12, 15, 4, m1, rq4s           ; [q4] -p3 -q3 +q4 +q7
+    FILTER_UPDATE   m4, m5, m6, m7, [Q5], %4,  1, 12, 13, 15, 4, m1, rq5s           ; [q5] -p2 -q4 +q5 +q7
+    FILTER_UPDATE   m4, m5, m6, m7, [Q6], %4,  2, 13, 14, 15, 4, m1, rq6s           ; [q6] -p1 -q5 +q6 +q7
 %endif
 
 %ifidn %1, h
@@ -915,9 +974,7 @@ LPF_16_VH %1, %2, %3, ssse3
 LPF_16_VH %1, %2, %3, avx
 %endmacro
 
-%if ARCH_X86_64
-LPF_16_VH_ALL_OPTS 16, 512
-%endif
+LPF_16_VH_ALL_OPTS 16, 512, 32
 LPF_16_VH_ALL_OPTS 44,   0,  0
 LPF_16_VH_ALL_OPTS 48, 256, 16
 LPF_16_VH_ALL_OPTS 84, 256, 16
