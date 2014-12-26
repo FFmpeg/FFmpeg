@@ -92,7 +92,7 @@ static int cache_open(URLContext *h, const char *arg, int flags)
 static int add_entry(URLContext *h, const unsigned char *buf, int size)
 {
     Context *c= h->priv_data;
-    int64_t pos;
+    int64_t pos = -1;
     int ret;
     CacheEntry *entry = av_malloc(sizeof(*entry));
     CacheEntry *entry_ret;
@@ -132,6 +132,8 @@ static int add_entry(URLContext *h, const unsigned char *buf, int size)
 
     return 0;
 fail:
+    if (pos >= 0)
+        ftruncate(c->fd, pos);
     av_free(entry);
     av_free(node);
     return ret;
