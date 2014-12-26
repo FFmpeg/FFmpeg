@@ -94,14 +94,9 @@ static int add_entry(URLContext *h, const unsigned char *buf, int size)
     Context *c= h->priv_data;
     int64_t pos = -1;
     int ret;
-    CacheEntry *entry = av_malloc(sizeof(*entry));
+    CacheEntry *entry = NULL, *next[2] = {NULL, NULL};
     CacheEntry *entry_ret;
-    struct AVTreeNode *node = av_tree_node_alloc();
-
-    if (!entry || !node) {
-        ret = AVERROR(ENOMEM);
-        goto fail;
-    }
+    struct AVTreeNode *node = NULL;
 
     //FIXME avoid lseek
     pos = lseek(c->fd, 0, SEEK_END);
@@ -118,18 +113,35 @@ static int add_entry(URLContext *h, const unsigned char *buf, int size)
         av_log(h, AV_LOG_ERROR, "write in cache failed\n");
         goto fail;
     }
+    c->cache_pos += ret;
 
-    entry->logical_pos = c->logical_pos;
-    entry->physical_pos = pos;
-    entry->size = ret;
-    c->cache_pos = entry->physical_pos + entry->size;
+    entry = av_tree_find(c->root, &c->logical_pos, cmp, (void**)next);
 
-    entry_ret = av_tree_insert(&c->root, entry, cmp, &node);
-    if (entry_ret && entry_ret != entry) {
-        ret = -1;
-        av_log(h, AV_LOG_ERROR, "av_tree_insert failed\n");
-        goto fail;
-    }
+    if (!entry)
+        entry = next[0];
+
+    if (!entry ||
+        entry->logical_pos  + entry->size != c->logical_pos ||
+        entry->physical_pos + entry->size != pos
+    ) {
+        entry = av_malloc(sizeof(*entry));
+        node = av_tree_node_alloc();
+        if (!entry || !node) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
+        entry->logical_pos = c->logical_pos;
+        entry->physical_pos = pos;
+        entry->size = ret;
+
+        entry_ret = av_tree_insert(&c->root, entry, cmp, &node);
+        if (entry_ret && entry_ret != entry) {
+            ret = -1;
+            av_log(h, AV_LOG_ERROR, "av_tree_insert failed\n");
+            goto fail;
+        }
+    } else
+        entry->size += ret;
 
     return 0;
 fail:
