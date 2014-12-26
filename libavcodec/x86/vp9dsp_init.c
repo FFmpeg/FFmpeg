@@ -281,7 +281,9 @@ av_cold void ff_vp9dsp_init_x86(VP9DSPContext *dsp)
 #define init_lpf(opt) do { \
     if (ARCH_X86_64) { \
         dsp->loop_filter_16[0] = ff_vp9_loop_filter_h_16_16_##opt; \
-        dsp->loop_filter_16[1] = ff_vp9_loop_filter_v_16_16_##opt; \
+    } \
+    dsp->loop_filter_16[1] = ff_vp9_loop_filter_v_16_16_##opt; \
+    if (ARCH_X86_64) { \
         dsp->loop_filter_mix2[0][0][0] = ff_vp9_loop_filter_h_44_16_##opt; \
     } \
     dsp->loop_filter_mix2[0][0][1] = ff_vp9_loop_filter_v_44_16_##opt; \
