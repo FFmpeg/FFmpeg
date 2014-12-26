@@ -289,6 +289,30 @@ SECTION .text
     SWAP %12, %14
 %endmacro
 
+%macro TRANSPOSE8x8B 13
+    SBUTTERFLY bw,  %1, %2, %7
+    movdq%10 m%7, %9
+    movdqa %11, m%2
+    SBUTTERFLY bw,  %3, %4, %2
+    SBUTTERFLY bw,  %5, %6, %2
+    SBUTTERFLY bw,  %7, %8, %2
+    SBUTTERFLY wd,  %1, %3, %2
+    movdqa m%2, %11
+    movdqa %11, m%3
+    SBUTTERFLY wd,  %2, %4, %3
+    SBUTTERFLY wd,  %5, %7, %3
+    SBUTTERFLY wd,  %6, %8, %3
+    SBUTTERFLY dq, %1, %5, %3
+    SBUTTERFLY dq, %2, %6, %3
+    movdqa m%3, %11
+    movh   %12, m%2
+    movhps %13, m%2
+    SBUTTERFLY dq, %3, %7, %2
+    SBUTTERFLY dq, %4, %8, %2
+    SWAP %2, %5
+    SWAP %4, %7
+%endmacro
+
 %macro DEFINE_REAL_P7_TO_Q7 0-1 0
 %define P7 dstq  + 4*mstrideq  + %1
 %define P6 dstq  +   mstride3q + %1
@@ -306,6 +330,25 @@ SECTION .text
 %define Q5 dst2q +    strideq  + %1
 %define Q6 dst2q + 2* strideq  + %1
 %define Q7 dst2q +    stride3q + %1
+%endmacro
+
+%macro DEFINE_TRANSPOSED_P7_TO_Q7 0-1 0
+%define P3 rsp +   0 + %1
+%define P2 rsp +  16 + %1
+%define P1 rsp +  32 + %1
+%define P0 rsp +  48 + %1
+%define Q0 rsp +  64 + %1
+%define Q1 rsp +  80 + %1
+%define Q2 rsp +  96 + %1
+%define Q3 rsp + 112 + %1
+%define P7 rsp + 128 + %1
+%define P6 rsp + 144 + %1
+%define P5 rsp + 160 + %1
+%define P4 rsp + 176 + %1
+%define Q4 rsp + 192 + %1
+%define Q5 rsp + 208 + %1
+%define Q6 rsp + 224 + %1
+%define Q7 rsp + 240 + %1
 %endmacro
 
 ; ..............AB -> AAAAAAAABBBBBBBB
@@ -362,7 +405,9 @@ cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3 + %4 + %5, dst, stride, mstride, 
     movx                    m3, [P4]
     movx                    m4, [P3]
     movx                    m5, [P2]
+%if ARCH_X86_64 || %2 != 16
     movx                    m6, [P1]
+%endif
     movx                    m7, [P0]
 %if ARCH_X86_64
     movx                    m8, [Q0]
@@ -373,21 +418,14 @@ cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3 + %4 + %5, dst, stride, mstride, 
     movx                   m13, [Q5]
     movx                   m14, [Q6]
     movx                   m15, [Q7]
+    DEFINE_TRANSPOSED_P7_TO_Q7
 %if %2 == 16
     TRANSPOSE16x16B 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, [rsp]
-%define P7 rsp + 128
-%define P6 rsp + 144
-%define P5 rsp + 160
-%define P4 rsp + 176
-%define Q4 rsp + 192
-%define Q5 rsp + 208
-%define Q6 rsp + 224
-%define Q7 rsp + 240
     mova           [P7],  m0
     mova           [P6],  m1
     mova           [P5],  m2
     mova           [P4],  m3
-%else
+%else ; %2 == 44/48/84/88
     ; 8x16 transpose
     punpcklbw        m0,  m1
     punpcklbw        m2,  m3
@@ -405,8 +443,65 @@ cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3 + %4 + %5, dst, stride, mstride, 
     SWAP             10,  9
     SWAP             12, 10
     SWAP             14, 11
-%endif
+%endif ; %2
+    mova           [P3],  m4
+    mova           [P2],  m5
+    mova           [P1],  m6
+    mova           [P0],  m7
+    mova           [Q0],  m8
+    mova           [Q1],  m9
+    mova           [Q2], m10
+    mova           [Q3], m11
+%if %2 == 16
+    mova           [Q4], m12
+    mova           [Q5], m13
+    mova           [Q6], m14
+    mova           [Q7], m15
+%endif ; %2
 %else ; x86-32
+%if %2 == 16
+    TRANSPOSE8x8B    0, 1, 2, 3, 4, 5, 6, 7, [P1], u, [rsp+%3+%4], [rsp+64], [rsp+80]
+    DEFINE_TRANSPOSED_P7_TO_Q7
+    movh          [P7], m0
+    movh          [P5], m1
+    movh          [P3], m2
+    movh          [P1], m3
+    movh          [Q2], m5
+    movh          [Q4], m6
+    movh          [Q6], m7
+    movhps        [P6], m0
+    movhps        [P4], m1
+    movhps        [P2], m2
+    movhps        [P0], m3
+    movhps        [Q3], m5
+    movhps        [Q5], m6
+    movhps        [Q7], m7
+    DEFINE_REAL_P7_TO_Q7
+    movx                    m0, [Q0]
+    movx                    m1, [Q1]
+    movx                    m2, [Q2]
+    movx                    m3, [Q3]
+    movx                    m4, [Q4]
+    movx                    m5, [Q5]
+    movx                    m7, [Q7]
+    TRANSPOSE8x8B 0, 1, 2, 3, 4, 5, 6, 7, [Q6], u, [rsp+%3+%4], [rsp+72], [rsp+88]
+    DEFINE_TRANSPOSED_P7_TO_Q7 8
+    movh          [P7], m0
+    movh          [P5], m1
+    movh          [P3], m2
+    movh          [P1], m3
+    movh          [Q2], m5
+    movh          [Q4], m6
+    movh          [Q6], m7
+    movhps        [P6], m0
+    movhps        [P4], m1
+    movhps        [P2], m2
+    movhps        [P0], m3
+    movhps        [Q3], m5
+    movhps        [Q5], m6
+    movhps        [Q7], m7
+    DEFINE_TRANSPOSED_P7_TO_Q7
+%else ; %2 == 44/48/84/88
     punpcklbw        m0, m1
     punpcklbw        m2, m3
     punpcklbw        m4, m5
@@ -424,31 +519,7 @@ cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3 + %4 + %5, dst, stride, mstride, 
     movx             m3, [Q6]
     movx             m7, [Q7]
     punpcklbw        m3, m7
-%endif
-%define P3 rsp +   0
-%define P2 rsp +  16
-%define P1 rsp +  32
-%define P0 rsp +  48
-%define Q0 rsp +  64
-%define Q1 rsp +  80
-%define Q2 rsp +  96
-%define Q3 rsp + 112
-%if ARCH_X86_64
-    mova           [P3],  m4
-    mova           [P2],  m5
-    mova           [P1],  m6
-    mova           [P0],  m7
-    mova           [Q0],  m8
-    mova           [Q1],  m9
-    mova           [Q2], m10
-    mova           [Q3], m11
-%if %2 == 16
-    mova           [Q4], m12
-    mova           [Q5], m13
-    mova           [Q6], m14
-    mova           [Q7], m15
-%endif
-%else ; x86-32
+    DEFINE_TRANSPOSED_P7_TO_Q7
     TRANSPOSE8x8W     0, 2, 4, 6, 1, 5, 7, 3, [rsp], [Q0], 1
     mova           [P3],  m0
     mova           [P2],  m2
@@ -457,7 +528,8 @@ cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3 + %4 + %5, dst, stride, mstride, 
     mova           [Q1],  m5
     mova           [Q2],  m7
     mova           [Q3],  m3
-%endif
+%endif ; %2
+%endif ; x86-32/64
 %endif ; %1 == h
 
     ; calc fm mask
@@ -862,8 +934,11 @@ cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3 + %4 + %5, dst, stride, mstride, 
     mova                    m3, [P4]
     mova                    m4, [P3]
     mova                    m5, [P2]
+%if ARCH_X86_64
     mova                    m6, [P1]
+%endif
     mova                    m7, [P0]
+%if ARCH_X86_64
     mova                    m8, [Q0]
     mova                    m9, [Q1]
     mova                   m10, [Q2]
@@ -890,6 +965,48 @@ cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3 + %4 + %5, dst, stride, mstride, 
     movu  [Q5], m13
     movu  [Q6], m14
     movu  [Q7], m15
+%else
+    DEFINE_REAL_P7_TO_Q7
+    TRANSPOSE8x8B 0, 1, 2, 3, 4, 5, 6, 7, [rsp+32], a, [rsp+%3+%4], [Q0], [Q1]
+    movh   [P7],  m0
+    movh   [P5],  m1
+    movh   [P3],  m2
+    movh   [P1],  m3
+    movh   [Q2],  m5
+    movh   [Q4],  m6
+    movh   [Q6],  m7
+    movhps [P6],  m0
+    movhps [P4],  m1
+    movhps [P2],  m2
+    movhps [P0],  m3
+    movhps [Q3],  m5
+    movhps [Q5],  m6
+    movhps [Q7],  m7
+    DEFINE_TRANSPOSED_P7_TO_Q7
+    mova                    m0, [Q0]
+    mova                    m1, [Q1]
+    mova                    m2, [Q2]
+    mova                    m3, [Q3]
+    mova                    m4, [Q4]
+    mova                    m5, [Q5]
+    mova                    m7, [Q7]
+    DEFINE_REAL_P7_TO_Q7 8
+    TRANSPOSE8x8B 0, 1, 2, 3, 4, 5, 6, 7, [rsp+224], a, [rsp+%3+%4], [Q0], [Q1]
+    movh   [P7],  m0
+    movh   [P5],  m1
+    movh   [P3],  m2
+    movh   [P1],  m3
+    movh   [Q2],  m5
+    movh   [Q4],  m6
+    movh   [Q6],  m7
+    movhps [P6],  m0
+    movhps [P4],  m1
+    movhps [P2],  m2
+    movhps [P0],  m3
+    movhps [Q3],  m5
+    movhps [Q5],  m6
+    movhps [Q7],  m7
+%endif
 %elif %2 == 44
     SWAP 0, 1   ; m0 = p1
     SWAP 1, 7   ; m1 = p0
@@ -1005,9 +1122,7 @@ cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3 + %4 + %5, dst, stride, mstride, 
 %macro LPF_16_VH 5
 INIT_XMM %5
 LOOPFILTER v, %1, %2,  0, %4
-%if ARCH_X86_64 || %1 != 16
 LOOPFILTER h, %1, %2, %3, %4
-%endif
 %endmacro
 
 %macro LPF_16_VH_ALL_OPTS 4
