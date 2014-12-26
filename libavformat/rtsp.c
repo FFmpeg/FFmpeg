@@ -652,10 +652,10 @@ int ff_sdp_parse(AVFormatContext *s, const char *content)
     }
 
     for (i = 0; i < s1->nb_default_include_source_addrs; i++)
-        av_free(s1->default_include_source_addrs[i]);
+        av_freep(&s1->default_include_source_addrs[i]);
     av_freep(&s1->default_include_source_addrs);
     for (i = 0; i < s1->nb_default_exclude_source_addrs; i++)
-        av_free(s1->default_exclude_source_addrs[i]);
+        av_freep(&s1->default_exclude_source_addrs[i]);
     av_freep(&s1->default_exclude_source_addrs);
 
     rt->p = av_malloc_array(rt->nb_rtsp_streams + 1, sizeof(struct pollfd) * 2);
@@ -714,23 +714,23 @@ void ff_rtsp_close_streams(AVFormatContext *s)
                 rtsp_st->dynamic_handler->free(
                     rtsp_st->dynamic_protocol_context);
             for (j = 0; j < rtsp_st->nb_include_source_addrs; j++)
-                av_free(rtsp_st->include_source_addrs[j]);
+                av_freep(&rtsp_st->include_source_addrs[j]);
             av_freep(&rtsp_st->include_source_addrs);
             for (j = 0; j < rtsp_st->nb_exclude_source_addrs; j++)
-                av_free(rtsp_st->exclude_source_addrs[j]);
+                av_freep(&rtsp_st->exclude_source_addrs[j]);
             av_freep(&rtsp_st->exclude_source_addrs);
 
-            av_free(rtsp_st);
+            av_freep(&rtsp_st);
         }
     }
-    av_free(rt->rtsp_streams);
+    av_freep(&rt->rtsp_streams);
     if (rt->asf_ctx) {
         avformat_close_input(&rt->asf_ctx);
     }
     if (CONFIG_RTPDEC && rt->ts)
         avpriv_mpegts_parse_close(rt->ts);
-    av_free(rt->p);
-    av_free(rt->recvbuf);
+    av_freep(&rt->p);
+    av_freep(&rt->recvbuf);
 }
 
 int ff_rtsp_open_transport_ctx(AVFormatContext *s, RTSPStream *rtsp_st)
@@ -1158,7 +1158,7 @@ start:
     if (content_ptr)
         *content_ptr = content;
     else
-        av_free(content);
+        av_freep(&content);
 
     if (request) {
         char buf[1024];
@@ -1889,7 +1889,7 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
                     p[max_p].fd       = fds[fdsidx];
                     p[max_p++].events = POLLIN;
                 }
-                av_free(fds);
+                av_freep(&fds);
             }
         }
         n = poll(p, max_p, POLL_TIMEOUT_MS);
@@ -2221,7 +2221,7 @@ static int sdp_read_header(AVFormatContext *s)
     content[size] ='\0';
 
     err = ff_sdp_parse(s, content);
-    av_free(content);
+    av_freep(&content);
     if (err) goto fail;
 
     /* open each RTP stream */
