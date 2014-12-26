@@ -1,4 +1,4 @@
-OBJS-$(CONFIG_FSPP_FILTER)                   += x86/vf_fspp.o
+OBJS-$(CONFIG_FSPP_FILTER)                   += x86/vf_fspp_init.o
 OBJS-$(CONFIG_GRADFUN_FILTER)                += x86/vf_gradfun_init.o
 OBJS-$(CONFIG_HQDN3D_FILTER)                 += x86/vf_hqdn3d_init.o
 OBJS-$(CONFIG_IDET_FILTER)                   += x86/vf_idet_init.o
@@ -10,6 +10,7 @@ OBJS-$(CONFIG_TINTERLACE_FILTER)             += x86/vf_tinterlace_init.o
 OBJS-$(CONFIG_VOLUME_FILTER)                 += x86/af_volume_init.o
 OBJS-$(CONFIG_YADIF_FILTER)                  += x86/vf_yadif_init.o
 
+YASM-OBJS-$(CONFIG_FSPP_FILTER)              += x86/vf_fspp.o
 YASM-OBJS-$(CONFIG_GRADFUN_FILTER)           += x86/vf_gradfun.o
 YASM-OBJS-$(CONFIG_HQDN3D_FILTER)            += x86/vf_hqdn3d.o
 YASM-OBJS-$(CONFIG_IDET_FILTER)              += x86/vf_idet.o

@@ -151,11 +151,11 @@ static void store_slice2_c(uint8_t *dst, int16_t *src,
     }
 }
 
-static void mul_thrmat_c(FSPPContext *p, int q)
+static void mul_thrmat_c(int16_t *thr_adr_noq, int16_t *thr_adr, int q)
 {
     int a;
     for (a = 0; a < 64; a++)
-        ((int16_t *)p->threshold_mtx)[a] = q * ((int16_t *)p->threshold_mtx_noq)[a];//ints faster in C
+        thr_adr[a] = q * thr_adr_noq[a];
 }
 
 static void filter(FSPPContext *p, uint8_t *dst, uint8_t *src,
@@ -220,7 +220,7 @@ static void filter(FSPPContext *p, uint8_t *dst, uint8_t *src,
                     t = qp_store[qy + (t >> qpsh)];
                     t = norm_qscale(t, p->qscale_type);
 
-                    if (t != p->prev_q) p->prev_q = t, p->mul_thrmat(p, t);
+                    if (t != p->prev_q) p->prev_q = t, p->mul_thrmat((int16_t *)(&p->threshold_mtx_noq[0]), (int16_t *)(&p->threshold_mtx[0]), t);
                     p->column_fidct((int16_t *)(&p->threshold_mtx[0]), block + x * 8, block3 + x * 8, 8); //yes, this is a HOTSPOT
                 }
             p->row_idct(block3 + 0 * 8, p->temp + (y & 15) * stride + x0 + 2 - (y & 1), stride, 2 * (BLOCKSZ - 1));
@@ -378,7 +378,7 @@ static void column_fidct_c(int16_t *thr_adr, int16_t *data, int16_t *output, int
     }
 }
 
-static void row_idct_c(int16_t *workspace, int16_t *output_adr, int output_stride, int cnt)
+static void row_idct_c(int16_t *workspace, int16_t *output_adr, ptrdiff_t output_stride, int cnt)
 {
     int_simd16_t tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7;
     int_simd16_t tmp10, tmp11, tmp12, tmp13;
@@ -440,7 +440,7 @@ static void row_idct_c(int16_t *workspace, int16_t *output_adr, int output_strid
     }
 }
 
-static void row_fdct_c(int16_t *data, const uint8_t *pixels, int line_size, int cnt)
+static void row_fdct_c(int16_t *data, const uint8_t *pixels, ptrdiff_t line_size, int cnt)
 {
     int_simd16_t tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7;
     int_simd16_t tmp10, tmp11, tmp12, tmp13;
@@ -582,7 +582,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     }
 
     if (fspp->qp)
-        fspp->prev_q = fspp->qp, fspp->mul_thrmat(fspp, fspp->qp);
+        fspp->prev_q = fspp->qp, fspp->mul_thrmat((int16_t *)(&fspp->threshold_mtx_noq[0]), (int16_t *)(&fspp->threshold_mtx[0]), fspp->qp);
 
     /* if we are not in a constant user quantizer mode and we don't want to use
      * the quantizers from the B-frames (B-frames often have a higher QP), we
