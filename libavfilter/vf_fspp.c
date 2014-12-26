@@ -245,7 +245,7 @@ static void filter(FSPPContext *p, uint8_t *dst, uint8_t *src,
         }
     }
 
-    if (y & 7) {  // == height & 7
+    if (y & 7) {  // height % 8 != 0
         if (y & 8)
             p->store_slice(dst + ((y - 8) & ~7) * dst_stride, p->temp + 8 + 8 * stride,
                            dst_stride, stride, width, y&7, 5 - p->log2_count);
