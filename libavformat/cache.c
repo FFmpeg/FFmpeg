@@ -110,6 +110,7 @@ static int add_entry(URLContext *h, const unsigned char *buf, int size)
         av_log(h, AV_LOG_ERROR, "seek in cache failed\n");
         goto fail;
     }
+    c->cache_pos = pos;
 
     ret = write(c->fd, buf, size);
     if (ret < 0) {
@@ -121,6 +122,7 @@ static int add_entry(URLContext *h, const unsigned char *buf, int size)
     entry->logical_pos = c->logical_pos;
     entry->physical_pos = pos;
     entry->size = ret;
+    c->cache_pos = entry->physical_pos + entry->size;
 
     entry_ret = av_tree_insert(&c->root, entry, cmp, &node);
     if (entry_ret && entry_ret != entry) {
@@ -128,7 +130,6 @@ static int add_entry(URLContext *h, const unsigned char *buf, int size)
         av_log(h, AV_LOG_ERROR, "av_tree_insert failed\n");
         goto fail;
     }
-    c->cache_pos = entry->physical_pos + entry->size;
 
     return 0;
 fail:
@@ -157,10 +158,13 @@ static int cache_read(URLContext *h, unsigned char *buf, int size)
             int64_t physical_target = entry->physical_pos + in_block_pos;
             //FIXME avoid seek if unneeded
             r = lseek(c->fd, physical_target, SEEK_SET);
-            if (r >= 0)
+            if (r >= 0) {
+                c->cache_pos = r;
                 r = read(c->fd, buf, FFMIN(size, entry->size - in_block_pos));
+            }
 
             if (r > 0) {
+                c->cache_pos += r;
                 c->logical_pos += r;
                 c->cache_hit ++;
                 return r;
