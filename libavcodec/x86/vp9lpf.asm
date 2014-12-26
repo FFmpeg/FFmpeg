@@ -937,9 +937,12 @@ cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3 + %4 + %5, dst, stride, mstride, 
     mova                    m3, [P0]
     mova                    m4, [Q0]
     mova                    m5, [Q1]
+%if ARCH_X86_64
     mova                    m6, [Q2]
+%endif
     mova                    m7, [Q3]
     DEFINE_REAL_P7_TO_Q7
+%if ARCH_X86_64
     SBUTTERFLY  bw,  0,  1, 8
     SBUTTERFLY  bw,  2,  3, 8
     SBUTTERFLY  bw,  4,  5, 8
@@ -952,22 +955,47 @@ cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3 + %4 + %5, dst, stride, mstride, 
     SBUTTERFLY  dq,  1,  5, 8
     SBUTTERFLY  dq,  2,  6, 8
     SBUTTERFLY  dq,  3,  7, 8
-    movh   [P7], m0
-    movhps [P6], m0
-    movh   [Q0], m1
-    movhps [Q1], m1
-    movh   [P3], m2
-    movhps [P2], m2
-    movh   [Q4], m3
-    movhps [Q5], m3
-    movh   [P5], m4
-    movhps [P4], m4
-    movh   [Q2], m5
-    movhps [Q3], m5
-    movh   [P1], m6
-    movhps [P0], m6
-    movh   [Q6], m7
-    movhps [Q7], m7
+%else
+    SBUTTERFLY  bw,  0,  1, 6
+    mova  [rsp+64], m1
+    mova        m6, [rsp+96]
+    SBUTTERFLY  bw,  2,  3, 1
+    SBUTTERFLY  bw,  4,  5, 1
+    SBUTTERFLY  bw,  6,  7, 1
+    SBUTTERFLY  wd,  0,  2, 1
+    mova  [rsp+96], m2
+    mova        m1, [rsp+64]
+    SBUTTERFLY  wd,  1,  3, 2
+    SBUTTERFLY  wd,  4,  6, 2
+    SBUTTERFLY  wd,  5,  7, 2
+    SBUTTERFLY  dq,  0,  4, 2
+    SBUTTERFLY  dq,  1,  5, 2
+    movh      [Q0], m1
+    movhps    [Q1], m1
+    mova        m2, [rsp+96]
+    SBUTTERFLY  dq,  2,  6, 1
+    SBUTTERFLY  dq,  3,  7, 1
+%endif
+    SWAP         3, 6
+    SWAP         1, 4
+    movh      [P7], m0
+    movhps    [P6], m0
+    movh      [P5], m1
+    movhps    [P4], m1
+    movh      [P3], m2
+    movhps    [P2], m2
+    movh      [P1], m3
+    movhps    [P0], m3
+%if ARCH_X86_64
+    movh      [Q0], m4
+    movhps    [Q1], m4
+%endif
+    movh      [Q2], m5
+    movhps    [Q3], m5
+    movh      [Q4], m6
+    movhps    [Q5], m6
+    movh      [Q6], m7
+    movhps    [Q7], m7
 %endif
 %endif
 
@@ -977,7 +1005,7 @@ cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3 + %4 + %5, dst, stride, mstride, 
 %macro LPF_16_VH 5
 INIT_XMM %5
 LOOPFILTER v, %1, %2,  0, %4
-%if ARCH_X86_64 || %1 == 44
+%if ARCH_X86_64 || %1 != 16
 LOOPFILTER h, %1, %2, %3, %4
 %endif
 %endmacro
