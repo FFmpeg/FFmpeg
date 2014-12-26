@@ -1199,9 +1199,7 @@ static FFServerIPAddressACL* parse_dynamic_acl(FFServerStream *stream, HTTPConte
     acl = av_mallocz(sizeof(FFServerIPAddressACL));
 
     /* Build ACL */
-    for(;;) {
-        if (fgets(line, sizeof(line), f) == NULL)
-            break;
+    while (fgets(line, sizeof(line), f)) {
         line_num++;
         p = line;
         while (av_isspace(*p))
