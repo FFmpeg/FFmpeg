@@ -137,33 +137,19 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
             s->frame_nb = 1;
         }
 
-        for (y = 0; y < s->y1; y++) {
-            if (checkline(ctx, frame->data[0] + frame->linesize[0] * y, bpp, frame->width, bpp) > s->limit) {
-                s->y1 = y;
-                break;
-            }
+#define FIND(DST, FROM, NOEND, INC, STEP0, STEP1, LEN) \
+        for (y = FROM; NOEND; INC) {\
+            if (checkline(ctx, frame->data[0] + STEP0 * y, STEP1, LEN, bpp) > s->limit) {\
+                DST = y;\
+                break;\
+            }\
         }
 
-        for (y = frame->height - 1; y > FFMAX(s->y2, s->y1); y--) {
-            if (checkline(ctx, frame->data[0] + frame->linesize[0] * y, bpp, frame->width, bpp) > s->limit) {
-                s->y2 = y;
-                break;
-            }
-        }
+        FIND(s->y1,                 0,               y < s->y1, y++, frame->linesize[0], bpp, frame->width);
+        FIND(s->y2, frame->height - 1, y > FFMAX(s->y2, s->y1), y--, frame->linesize[0], bpp, frame->width);
+        FIND(s->x1,                 0,               y < s->x1, y++, bpp, frame->linesize[0], frame->height);
+        FIND(s->x2,  frame->width - 1, y > FFMAX(s->x2, s->x1), y--, bpp, frame->linesize[0], frame->height);
 
-        for (y = 0; y < s->x1; y++) {
-            if (checkline(ctx, frame->data[0] + bpp*y, frame->linesize[0], frame->height, bpp) > s->limit) {
-                s->x1 = y;
-                break;
-            }
-        }
-
-        for (y = frame->width - 1; y > FFMAX(s->x2, s->x1); y--) {
-            if (checkline(ctx, frame->data[0] + bpp*y, frame->linesize[0], frame->height, bpp) > s->limit) {
-                s->x2 = y;
-                break;
-            }
-        }
 
         // round x and y (up), important for yuv colorspaces
         // make sure they stay rounded!
