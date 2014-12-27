@@ -104,10 +104,14 @@ detected:
 static int prepare_static_palette(SIXELContext *const c,
                                   AVCodecContext *const codec)
 {
-    c->dither = sixel_dither_get(BUILTIN_XTERM256);
-    if (c->dither == NULL)
-        return (-1);
-    sixel_dither_set_diffusion_type(c->dither, c->diffuse);
+    if (c->dither) {
+        sixel_dither_set_body_only(c->dither, 1);
+    } else {
+        c->dither = sixel_dither_get(BUILTIN_XTERM256);
+        if (c->dither == NULL)
+            return (-1);
+        sixel_dither_set_diffusion_type(c->dither, c->diffuse);
+    }
     return 0;
 }
 
@@ -134,6 +138,8 @@ static int prepare_dynamic_palette(SIXELContext *const c,
         c->dither = c->testdither;
         c->testdither = sixel_dither_create(c->reqcolors);
         sixel_dither_set_diffusion_type(c->dither, c->diffuse);
+    } else {
+        sixel_dither_set_body_only(c->dither, 1);
     }
     return 0;
 }
@@ -174,8 +180,9 @@ static int sixel_write_header(AVFormatContext *s)
     }
     if (isatty(fileno(sixel_output_file))) {
         fprintf(sixel_output_file,
-                "\0337"       /* save cursor position */
-                "\033[?25l"); /* hide cursor */
+                "\0337"            /* save cursor position */
+                "\033[?25;1070l"); /* hide cursor and don't use private
+                                      color registers for each graphic. */
     } else {
         c->ignoredelay = 1;
     }
@@ -190,12 +197,6 @@ static int sixel_write_header(AVFormatContext *s)
     c->reset_position = reset_position;
     c->time_base = s->streams[0]->codec->time_base;
     c->time_frame = av_gettime() / av_q2d(c->time_base);
-
-    if (c->fixedpal) {
-        ret = prepare_static_palette(c, codec);
-        if (ret != 0)
-            return ret;
-    }
 
     return ret;
 }
@@ -230,7 +231,11 @@ static int sixel_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     fprintf(sixel_output_file, "%s", c->reset_position);
 
-    if (!c->fixedpal) {
+    if (c->fixedpal) {
+        ret = prepare_static_palette(c, codec);
+        if (ret != 0)
+            return ret;
+    } else {
         ret = prepare_dynamic_palette(c, codec, pkt);
         if (ret != 0)
             return ret;
