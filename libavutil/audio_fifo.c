@@ -51,7 +51,7 @@ void av_audio_fifo_free(AVAudioFifo *af)
                 if (af->buf[i])
                     av_fifo_free(af->buf[i]);
             }
-            av_free(af->buf);
+            av_freep(&af->buf);
         }
         av_free(af);
     }
