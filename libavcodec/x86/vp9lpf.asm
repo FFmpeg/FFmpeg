@@ -2,6 +2,7 @@
 ;* VP9 loop filter SIMD optimizations
 ;*
 ;* Copyright (C) 2013-2014 Clément Bœsch <u pkh me>
+;* Copyright (C) 2014 Ronald S. Bultje <rsbultje@gmail.com>
 ;*
 ;* This file is part of FFmpeg.
 ;*
