@@ -100,8 +100,13 @@ static int vdpau_get_buffer(AVCodecContext *s, AVFrame *frame, int flags)
     VDPAUContext        *ctx = ist->hwaccel_ctx;
     VdpVideoSurface *surface;
     VdpStatus err;
+    VdpChromaType chroma;
+    uint32_t width, height;
 
     av_assert0(frame->format == AV_PIX_FMT_VDPAU);
+
+    if (av_vdpau_get_surface_parameters(s, &chroma, &width, &height))
+        return AVERROR(ENOSYS);
 
     surface = av_malloc(sizeof(*surface));
     if (!surface)
@@ -118,8 +123,8 @@ static int vdpau_get_buffer(AVCodecContext *s, AVFrame *frame, int flags)
     // properly we should keep a pool of surfaces instead of creating
     // them anew for each frame, but since we don't care about speed
     // much in this code, we don't bother
-    err = ctx->video_surface_create(ctx->device, VDP_CHROMA_TYPE_420,
-                                    frame->width, frame->height, surface);
+    err = ctx->video_surface_create(ctx->device, chroma, width, height,
+                                    surface);
     if (err != VDP_STATUS_OK) {
         av_log(NULL, AV_LOG_ERROR, "Error allocating a VDPAU video surface: %s\n",
                ctx->get_error_string(err));
