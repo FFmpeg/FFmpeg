@@ -3005,6 +3005,13 @@ typedef struct AVCodecContext {
     AVRational framerate;
 
     /**
+     * Nominal unaccelerated pixel format, see AV_PIX_FMT_xxx.
+     * - encoding: unused.
+     * - decoding: Set by libavcodec before calling get_format()
+     */
+    enum AVPixelFormat sw_pix_fmt;
+
+    /**
      * Timebase in which pkt_dts/pts and AVPacket.dts/pts are.
      * Code outside libavcodec should access this field using:
      * av_codec_{get,set}_pkt_timebase(avctx)
