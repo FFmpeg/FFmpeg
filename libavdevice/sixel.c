@@ -181,11 +181,13 @@ static int sixel_write_header(AVFormatContext *s)
     if (isatty(fileno(sixel_output_file))) {
         fprintf(sixel_output_file,
                 "\0337"            /* save cursor position */
-                "\033[?25;1070l"); /* hide cursor and don't use private
-                                      color registers for each graphic. */
+                "\033[?25l");      /* hide cursor */
     } else {
         c->ignoredelay = 1;
     }
+
+    /* don't use private color registers for each frame. */
+    fprintf(sixel_output_file, "\033[?1070l");
 
     c->dither = NULL;
     c->testdither = sixel_dither_create(c->reqcolors);
