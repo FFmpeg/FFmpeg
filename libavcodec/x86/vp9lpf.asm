@@ -52,6 +52,22 @@ mask_mix48: times 8 db 0x00
 
 SECTION .text
 
+%macro SCRATCH 3
+%if ARCH_X86_64
+    SWAP                %1, %2
+%else
+    mova              [%3], m%1
+%endif
+%endmacro
+
+%macro UNSCRATCH 3
+%if ARCH_X86_64
+    SWAP                %1, %2
+%else
+    mova               m%1, [%3]
+%endif
+%endmacro
+
 ; %1 = abs(%2-%3)
 %macro ABSSUB 4 ; dst, src1 (RO), src2 (RO), tmp
 %if ARCH_X86_64
@@ -86,12 +102,26 @@ SECTION .text
     por                 %1, %4              ; new&mask | old&~mask
 %endmacro
 
-%macro FILTER_SUBx2_ADDx2 9-10 "" ; %1=dst %2=h/l %3=cache %4=stack_off %5=sub1 %6=sub2 %7=add1 %8=add2 %9=rshift, [unpack]
+%macro UNPACK 4
+%if ARCH_X86_64
+    punpck%1bw          %2, %3, %4
+%else
+    mova                %2, %3
+    punpck%1bw          %2, %4
+%endif
+%endmacro
+
+%macro FILTER_SUBx2_ADDx2 11 ; %1=dst %2=h/l %3=cache %4=stack_off %5=sub1 %6=sub2 %7=add1
+                             ; %8=add2 %9=rshift, [unpack], [unpack_is_mem_on_x86_32]
     psubw               %3, [rsp+%4+%5*32]
     psubw               %3, [rsp+%4+%6*32]
     paddw               %3, [rsp+%4+%7*32]
 %ifnidn %10, ""
+%if %11 == 0
     punpck%2bw          %1, %10, m0
+%else
+    UNPACK          %2, %1, %10, m0
+%endif
     mova    [rsp+%4+%8*32], %1
     paddw               %3, %1
 %else
@@ -110,13 +140,14 @@ SECTION .text
 %endmacro
 
 
-%macro FILTER_UPDATE 12-15 "", "" ; tmp1, tmp2, cacheL, cacheH, dstp, stack_off, -, -, +, +, rshift, mask, [source], [unpack]
+%macro FILTER_UPDATE 12-16 "", "", "", 0 ; tmp1, tmp2, cacheL, cacheH, dstp, stack_off, -, -, +, +, rshift,
+                                         ; mask, [source], [unpack + src], [unpack_is_mem_on_x86_32]
 ; FIXME interleave this properly with the subx2/addx2
-%if %0 == 15
+%ifnidn %15, ""
     mova               %14, %15
 %endif
-    FILTER_SUBx2_ADDx2  %1, l, %3, %6 +  0, %7, %8, %9, %10, %11, %14
-    FILTER_SUBx2_ADDx2  %2, h, %4, %6 + 16, %7, %8, %9, %10, %11, %14
+    FILTER_SUBx2_ADDx2  %1, l, %3, %6 +  0, %7, %8, %9, %10, %11, %14, %16
+    FILTER_SUBx2_ADDx2  %2, h, %4, %6 + 16, %7, %8, %9, %10, %11, %14, %16
     packuswb            %1, %2
 %ifnidn %13, ""
     MASK_APPLY          %1, %13, %12, %2
@@ -162,21 +193,21 @@ SECTION .text
 %endmacro
 
 %macro FILTER6_INIT 4 ; %1=dst %2=h/l %3=cache, %4=stack_off
-    punpck%2bw          %1, m14, m0                     ; p3: B->W
+    UNPACK          %2, %1, rp3, m0                     ; p3: B->W
     mova     [rsp+%4+0*32], %1
     paddw               %3, %1, %1                      ; p3*2
     paddw               %3, %1                          ; p3*3
-    punpck%2bw          %1, m15, m0                     ; p2: B->W
+    punpck%2bw          %1, m2,  m0                     ; p2: B->W
     mova     [rsp+%4+1*32], %1
     paddw               %3, %1                          ; p3*3 + p2
     paddw               %3, %1                          ; p3*3 + p2*2
-    punpck%2bw          %1, m10, m0                     ; p1: B->W
+    UNPACK          %2, %1, rp1, m0                     ; p1: B->W
     mova     [rsp+%4+2*32], %1
     paddw               %3, %1                          ; p3*3 + p2*2 + p1
-    punpck%2bw          %1, m11, m0                     ; p0: B->W
+    UNPACK          %2, %1, rp0, m0                     ; p0: B->W
     mova     [rsp+%4+3*32], %1
     paddw               %3, %1                          ; p3*3 + p2*2 + p1 + p0
-    punpck%2bw          %1, m12, m0                     ; q0: B->W
+    UNPACK          %2, %1, rq0, m0                     ; q0: B->W
     mova     [rsp+%4+4*32], %1
     paddw               %3, %1                          ; p3*3 + p2*2 + p1 + p0 + q0
     paddw               %3, [pw_4]                      ; p3*3 + p2*2 + p1 + p0 + q0 + 4
@@ -320,14 +351,14 @@ SECTION .text
 %endif
 %endmacro
 
-%macro LOOPFILTER 4 ; %1=v/h %2=size1 %3+%4=stack
+%macro LOOPFILTER 5 ; %1=v/h %2=size1 %3+%4=stack, %5=32bit stack only
 %if UNIX64
 cglobal vp9_loop_filter_%1_%2_16, 5, 9, 16, %3 + %4, dst, stride, E, I, H, mstride, dst2, stride3, mstride3
 %else
 %if WIN64
 cglobal vp9_loop_filter_%1_%2_16, 4, 8, 16, %3 + %4, dst, stride, E, I, mstride, dst2, stride3, mstride3
 %else
-cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3 + %4, dst, stride, mstride, dst2, stride3, mstride3
+cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3 + %4 + %5, dst, stride, mstride, dst2, stride3, mstride3
 %define Ed dword r2m
 %define Id dword r3m
 %endif
@@ -497,11 +528,16 @@ cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3 + %4, dst, stride, mstride, dst2,
     ; calc flat8in (if not 44_16) and hev masks
 %if %2 != 44
     mova                m6, [pb_81]                     ; [1 1 1 1 ...] ^ 0x80
-    ABSSUB_GT           m2, m8, m11, m6, m5             ; abs(p3 - p0) <= 1
+    ABSSUB_GT           m2, rp3, rp0, m6, m5            ; abs(p3 - p0) <= 1
+%if ARCH_X86_64
     mova                m8, [pb_80]
-    ABSSUB_GT           m1, m9, m11, m6, m5, m8         ; abs(p2 - p0) <= 1
+%define rb80 m8
+%else
+%define rb80 [pb_80]
+%endif
+    ABSSUB_GT           m1, rp2, rp0, m6, m5, rb80      ; abs(p2 - p0) <= 1
     por                 m2, m1
-    ABSSUB              m4, m10, m11, m5                ; abs(p1 - p0)
+    ABSSUB              m4, rp1, rp0, m5                ; abs(p1 - p0)
 %if %2 == 16
 %if cpuflag(ssse3)
     pxor                m0, m0
@@ -511,20 +547,20 @@ cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3 + %4, dst, stride, mstride, dst2,
     movd                m7, Hd
     SPLATB_MIX          m7
 %endif
-    pxor                m7, m8
-    pxor                m4, m8
+    pxor                m7, rb80
+    pxor                m4, rb80
     pcmpgtb             m0, m4, m7                      ; abs(p1 - p0) > H (1/2 hev condition)
     CMP_GT              m4, m6                          ; abs(p1 - p0) <= 1
     por                 m2, m4                          ; (flat8in)
-    ABSSUB              m4, m13, m12, m1                ; abs(q1 - q0)
-    pxor                m4, m8
+    ABSSUB              m4, rq1, rq0, m1                ; abs(q1 - q0)
+    pxor                m4, rb80
     pcmpgtb             m5, m4, m7                      ; abs(q1 - q0) > H (2/2 hev condition)
     por                 m0, m5                          ; hev final value
     CMP_GT              m4, m6                          ; abs(q1 - q0) <= 1
     por                 m2, m4                          ; (flat8in)
-    ABSSUB_GT           m1, m14, m12, m6, m5, m8        ; abs(q2 - q0) <= 1
+    ABSSUB_GT           m1, rq2, rq0, m6, m5, rb80      ; abs(q2 - q0) <= 1
     por                 m2, m1
-    ABSSUB_GT           m1, m15, m12, m6, m5, m8        ; abs(q3 - q0) <= 1
+    ABSSUB_GT           m1, rq3, rq0, m6, m5, rb80      ; abs(q3 - q0) <= 1
     por                 m2, m1                          ; flat8in final value
     pxor                m2, [pb_ff]
 %if %2 == 84 || %2 == 48
@@ -589,8 +625,10 @@ cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3 + %4, dst, stride, mstride, dst2,
     ; filter2()
 %if %2 != 44
     mova                m6, [pb_80]                     ; already in m6 if 44_16
-    SWAP 2, 15
+    SCRATCH              2, 15, rsp+%3+%4
+%if %2 == 16
     SWAP 1, 8
+%endif
 %endif
     pxor                m2, m6, rq0                     ; q0 ^ 0x80
     pxor                m4, m6, rp0                     ; p0 ^ 0x80
@@ -613,7 +651,12 @@ cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3 + %4, dst, stride, mstride, dst2,
     SIGN_SUB            m7, rq0, m6, m5                 ; m7 = q0 - f1
     SIGN_ADD            m1, rp0, m4, m5                 ; m1 = p0 + f2
 %if %2 != 44
+%if ARCH_X86_64
     pandn               m6, m15, m3                     ;  ~mask(in) & mask(fm)
+%else
+    mova                m6, [rsp+%3+%4]
+    pandn               m6, m3
+%endif
     pand                m6, m0                          ; (~mask(in) & mask(fm)) & mask(hev)
 %else
     pand                m6, m3, m0
@@ -630,7 +673,12 @@ cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3 + %4, dst, stride, mstride, dst2,
     paddsb              m2, [pb_3]                      ; m2: f2 = clip(f + 3, 127)
     SRSHIFT3B_2X        m6, m2, rb10, m4                ; f1 and f2 sign byte shift by 3
 %if %2 != 44
+%if ARCH_X86_64
     pandn               m5, m15, m3                     ;               ~mask(in) & mask(fm)
+%else
+    mova                m5, [rsp+%3+%4]
+    pandn               m5, m3
+%endif
     pandn               m0, m5                          ; ~mask(hev) & (~mask(in) & mask(fm))
 %else
     pandn               m0, m3
@@ -652,31 +700,44 @@ cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3 + %4, dst, stride, mstride, dst2,
     mova                [P1], m1
     mova                [Q1], m4
 
-%if %2 != 44
-SWAP 1, 8
-SWAP 2, 15
-%endif
-
     ; ([m1: flat8out], m2: flat8in, m3: fm, m10..13: p1 p0 q0 q1)
     ; filter6()
 %if %2 != 44
     pxor                m0, m0
 %if %2 > 16
-    pand                m3, m2
+%if ARCH_X86_64
+    pand                m3, m15
 %else
-    pand                m2, m3                          ;               mask(fm) & mask(in)
-    pandn               m3, m1, m2                      ; ~mask(out) & (mask(fm) & mask(in))
+    pand                m3, [rsp+%3+%4]
 %endif
+%else
+    pand               m15, m3                          ;               mask(fm) & mask(in)
+    pandn               m3, m8, m15                     ; ~mask(out) & (mask(fm) & mask(in))
+%endif
+%if ARCH_X86_64
     mova               m14, [P3]
-    mova               m15, [P2]
-    mova                m8, [Q2]
     mova                m9, [Q3]
-    FILTER_INIT         m4, m5, m6, m7, [P2], %4, 6,             m3, m15      ; [p2]
-    FILTER_UPDATE       m4, m5, m6, m7, [P1], %4, 0, 1, 2, 5, 3, m3,  "", m13 ; [p1] -p3 -p2 +p1 +q1
-    FILTER_UPDATE       m4, m5, m6, m7, [P0], %4, 0, 2, 3, 6, 3, m3,  "", m8  ; [p0] -p3 -p1 +p0 +q2
-    FILTER_UPDATE       m4, m5, m6, m7, [Q0], %4, 0, 3, 4, 7, 3, m3,  "", m9  ; [q0] -p3 -p0 +q0 +q3
+%define rp3 m14
+%define rq3 m9
+%else
+%define rp3 [P3]
+%define rq3 [Q3]
+%endif
+    mova                m2, [P2]
+    mova                m1, [Q2]
+    FILTER_INIT         m4, m5, m6, m7, [P2], %4, 6,             m3,  m2      ; [p2]
+    FILTER_UPDATE       m4, m5, m6, m7, [P1], %4, 0, 1, 2, 5, 3, m3,  "", rq1, "", 1 ; [p1] -p3 -p2 +p1 +q1
+    FILTER_UPDATE       m4, m5, m6, m7, [P0], %4, 0, 2, 3, 6, 3, m3,  "", m1  ; [p0] -p3 -p1 +p0 +q2
+    FILTER_UPDATE       m4, m5, m6, m7, [Q0], %4, 0, 3, 4, 7, 3, m3,  "", rq3, "", 1 ; [q0] -p3 -p0 +q0 +q3
     FILTER_UPDATE       m4, m5, m6, m7, [Q1], %4, 1, 4, 5, 7, 3, m3,  ""      ; [q1] -p2 -q0 +q1 +q3
-    FILTER_UPDATE       m4, m5, m6, m7, [Q2], %4, 2, 5, 6, 7, 3, m3,  m8      ; [q2] -p1 -q1 +q2 +q3
+    FILTER_UPDATE       m4, m5, m6, m7, [Q2], %4, 2, 5, 6, 7, 3, m3,  m1      ; [q2] -p1 -q1 +q2 +q3
+%endif
+
+%if %2 != 44
+%if %2 == 16
+SWAP 1, 8
+%endif
+SWAP 2, 15
 %endif
 
     ; (m0: 0, [m1: flat8out], m2: fm & flat8in, m8..15: q2 q3 p1 p0 q0 q1 p3 p2)
@@ -842,26 +903,26 @@ SWAP 2, 15
     RET
 %endmacro
 
-%macro LPF_16_VH 3
-INIT_XMM %3
-LOOPFILTER v, %1, %2, 0
+%macro LPF_16_VH 4
+INIT_XMM %4
+LOOPFILTER v, %1, %2,   0, %3
 %if ARCH_X86_64
-LOOPFILTER h, %1, %2, 256
+LOOPFILTER h, %1, %2, 256, %3
 %endif
 %endmacro
 
-%macro LPF_16_VH_ALL_OPTS 2
-LPF_16_VH %1, %2, sse2
-LPF_16_VH %1, %2, ssse3
-LPF_16_VH %1, %2, avx
+%macro LPF_16_VH_ALL_OPTS 2-3 0
+LPF_16_VH %1, %2, %3, sse2
+LPF_16_VH %1, %2, %3, ssse3
+LPF_16_VH %1, %2, %3, avx
 %endmacro
 
 %if ARCH_X86_64
 LPF_16_VH_ALL_OPTS 16, 512
 %endif
-LPF_16_VH_ALL_OPTS 44, 0
+LPF_16_VH_ALL_OPTS 44,   0, 0
 %if ARCH_X86_64
 LPF_16_VH_ALL_OPTS 48, 256
 LPF_16_VH_ALL_OPTS 84, 256
-LPF_16_VH_ALL_OPTS 88, 256
 %endif
+LPF_16_VH_ALL_OPTS 88, 256, 16
