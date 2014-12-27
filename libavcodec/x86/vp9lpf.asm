@@ -142,17 +142,17 @@ SECTION .text
 %endmacro
 
 ; clip_u8(u8 + i8)
-%macro SIGN_ADD 5 ; dst, u8, i8, tmp1, tmp2
-    EXTRACT_POS_NEG     %3, %4, %5
-    psubusb             %1, %2, %4                      ; sub the negatives
-    paddusb             %1, %5                          ; add the positives
+%macro SIGN_ADD 4 ; dst, u8, i8, tmp1
+    EXTRACT_POS_NEG     %3, %4, %1
+    paddusb             %1, %2                          ; add the positives
+    psubusb             %1, %4                          ; sub the negatives
 %endmacro
 
 ; clip_u8(u8 - i8)
-%macro SIGN_SUB 5 ; dst, u8, i8, tmp1, tmp2
-    EXTRACT_POS_NEG     %3, %4, %5
-    psubusb             %1, %2, %5                      ; sub the positives
-    paddusb             %1, %4                          ; add the negatives
+%macro SIGN_SUB 4 ; dst, u8, i8, tmp1
+    EXTRACT_POS_NEG     %3, %1, %4
+    paddusb             %1, %2                          ; add the negatives
+    psubusb             %1, %4                          ; sub the positives
 %endmacro
 
 %macro FILTER6_INIT 4 ; %1=dst %2=h/l %3=cache, %4=stack_off
@@ -578,8 +578,8 @@ cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3 + %4, dst, stride, mstride, dst2,
     paddsb              m4, [pb_3]                      ; m4: f2 = clip(f + 3, 127)
     mova                m14, [pb_10]                    ; will be reused in filter4()
     SRSHIFT3B_2X        m6, m4, m14, m7                 ; f1 and f2 sign byte shift by 3
-    SIGN_SUB            m7, m12, m6, m5, m9             ; m7 = q0 - f1
-    SIGN_ADD            m8, m11, m4, m5, m9             ; m8 = p0 + f2
+    SIGN_SUB            m7, m12, m6, m5                 ; m7 = q0 - f1
+    SIGN_ADD            m8, m11, m4, m5                 ; m8 = p0 + f2
 %if %2 != 44
     pandn               m6, m2, m3                      ;  ~mask(in) & mask(fm)
     pand                m6, m0                          ; (~mask(in) & mask(fm)) & mask(hev)
@@ -607,18 +607,18 @@ cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3 + %4, dst, stride, mstride, dst2,
 %define q0tmp m2
     pandn               m0, m3
 %endif
-    SIGN_SUB            q0tmp, m12, m6, m4, m14         ; q0 - f1
+    SIGN_SUB            q0tmp, m12, m6, m4              ; q0 - f1
     MASK_APPLY          q0tmp, m7, m0, m5               ; filter4(q0) & mask
     mova                [Q0], q0tmp
-    SIGN_ADD            p0tmp, m11, m15, m4, m14        ; p0 + f2
+    SIGN_ADD            p0tmp, m11, m15, m4             ; p0 + f2
     MASK_APPLY          p0tmp, m8, m0, m5               ; filter4(p0) & mask
     mova                [P0], p0tmp
     paddb               m6, [pb_80]                     ;
     pxor                m8, m8                          ;   f=(f1+1)>>1
     pavgb               m6, m8                          ;
     psubb               m6, [pb_40]                     ;
-    SIGN_ADD            m7, m10, m6, m8, m9             ; p1 + f
-    SIGN_SUB            m4, m13, m6, m8, m9             ; q1 - f
+    SIGN_ADD            m7, m10, m6, m8                 ; p1 + f
+    SIGN_SUB            m4, m13, m6, m8                 ; q1 - f
     MASK_APPLY          m7, m10, m0, m14                ; m7 = filter4(p1)
     MASK_APPLY          m4, m13, m0, m14                ; m4 = filter4(q1)
     mova                [P1], m7
