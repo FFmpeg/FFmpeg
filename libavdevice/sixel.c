@@ -61,7 +61,7 @@ static int detect_scene_change(SIXELContext *const c)
     int palette_colors = 0;
     unsigned char const* palette;
 
-    histgram_colors = sixel_dither_get_num_of_histgram_colors(c->testdither);
+    histgram_colors = sixel_dither_get_num_of_histogram_colors(c->testdither);
 
     if (c->dither == NULL)
         goto detected;
