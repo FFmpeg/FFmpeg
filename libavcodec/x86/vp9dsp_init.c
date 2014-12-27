@@ -342,18 +342,16 @@ av_cold void ff_vp9dsp_init_x86(VP9DSPContext *dsp)
     init_subpel2(4, idx,  4, type, opt)
 
 #define init_lpf(opt) do { \
-    if (ARCH_X86_64) { \
-        dsp->loop_filter_16[0] = ff_vp9_loop_filter_h_16_16_##opt; \
-        dsp->loop_filter_16[1] = ff_vp9_loop_filter_v_16_16_##opt; \
-        dsp->loop_filter_mix2[0][0][0] = ff_vp9_loop_filter_h_44_16_##opt; \
-        dsp->loop_filter_mix2[0][0][1] = ff_vp9_loop_filter_v_44_16_##opt; \
-        dsp->loop_filter_mix2[0][1][0] = ff_vp9_loop_filter_h_48_16_##opt; \
-        dsp->loop_filter_mix2[0][1][1] = ff_vp9_loop_filter_v_48_16_##opt; \
-        dsp->loop_filter_mix2[1][0][0] = ff_vp9_loop_filter_h_84_16_##opt; \
-        dsp->loop_filter_mix2[1][0][1] = ff_vp9_loop_filter_v_84_16_##opt; \
-        dsp->loop_filter_mix2[1][1][0] = ff_vp9_loop_filter_h_88_16_##opt; \
-        dsp->loop_filter_mix2[1][1][1] = ff_vp9_loop_filter_v_88_16_##opt; \
-    } \
+    dsp->loop_filter_16[0] = ff_vp9_loop_filter_h_16_16_##opt; \
+    dsp->loop_filter_16[1] = ff_vp9_loop_filter_v_16_16_##opt; \
+    dsp->loop_filter_mix2[0][0][0] = ff_vp9_loop_filter_h_44_16_##opt; \
+    dsp->loop_filter_mix2[0][0][1] = ff_vp9_loop_filter_v_44_16_##opt; \
+    dsp->loop_filter_mix2[0][1][0] = ff_vp9_loop_filter_h_48_16_##opt; \
+    dsp->loop_filter_mix2[0][1][1] = ff_vp9_loop_filter_v_48_16_##opt; \
+    dsp->loop_filter_mix2[1][0][0] = ff_vp9_loop_filter_h_84_16_##opt; \
+    dsp->loop_filter_mix2[1][0][1] = ff_vp9_loop_filter_v_84_16_##opt; \
+    dsp->loop_filter_mix2[1][1][0] = ff_vp9_loop_filter_h_88_16_##opt; \
+    dsp->loop_filter_mix2[1][1][1] = ff_vp9_loop_filter_v_88_16_##opt; \
 } while (0)
 
 #define init_ipred(sz, opt, t, e) \
