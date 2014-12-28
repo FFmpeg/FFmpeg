@@ -206,7 +206,7 @@ static int dv1394_close(AVFormatContext * context)
         av_log(context, AV_LOG_ERROR, "Failed to munmap DV1394 ring buffer: %s\n", strerror(errno));
 
     close(dv->fd);
-    av_free(dv->dv_demux);
+    av_freep(&dv->dv_demux);
 
     return 0;
 }
