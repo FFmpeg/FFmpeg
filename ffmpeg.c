@@ -516,7 +516,7 @@ static void ffmpeg_cleanup(int ret)
 
     if (vstats_file)
         fclose(vstats_file);
-    av_free(vstats_filename);
+    av_freep(&vstats_filename);
 
     av_freep(&input_streams);
     av_freep(&input_files);
@@ -2294,7 +2294,7 @@ static void print_sdp(void)
         } else {
             avio_printf(sdp_pb, "SDP:\n%s", sdp);
             avio_close(sdp_pb);
-            av_free(sdp_filename);
+            av_freep(&sdp_filename);
         }
     }
 
