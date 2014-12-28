@@ -170,6 +170,26 @@ int av_vdpau_bind_context(AVCodecContext *avctx, VdpDevice device,
                           VdpGetProcAddress *get_proc_address, unsigned flags);
 
 /**
+ * Gets the parameters to create an adequate VDPAU video surface for the codec
+ * context using VDPAU hardware decoding acceleration.
+ *
+ * @note Behavior is undefined if the context was not successfully bound to a
+ * VDPAU device using av_vdpau_bind_context().
+ *
+ * @param avctx the codec context being used for decoding the stream
+ * @param type storage space for the VDPAU video surface chroma type
+ *              (or NULL to ignore)
+ * @param width storage space for the VDPAU video surface pixel width
+ *              (or NULL to ignore)
+ * @param height storage space for the VDPAU video surface pixel height
+ *              (or NULL to ignore)
+ *
+ * @return 0 on success, a negative AVERROR code on failure.
+ */
+int av_vdpau_get_surface_parameters(AVCodecContext *avctx, VdpChromaType *type,
+                                    uint32_t *width, uint32_t *height);
+
+/**
  * Allocate an AVVDPAUContext.
  *
  * @return Newly-allocated AVVDPAUContext or NULL on failure.

@@ -33,7 +33,6 @@
 #include "libavutil/pixdesc.h"
 #include "internal.h"
 
-#define RGB_MASK      0x00FFFFFF
 #define LB_MASK       0x00FEFEFE
 #define RED_BLUE_MASK 0x00FF00FF
 #define GREEN_MASK    0x0000FF00
@@ -75,27 +74,13 @@ static uint32_t pixel_diff(uint32_t x, uint32_t y, const uint32_t *r2y)
            abs((yuv1 & VMASK) - (yuv2 & VMASK));
 }
 
-#define ALPHA_BLEND_128_W(dst, src) dst = ((src & LB_MASK) >> 1) + ((dst & LB_MASK) >> 1)
-
-#define ALPHA_BLEND_32_W(dst, src) \
-    dst = ((RED_BLUE_MASK & ((dst & RED_BLUE_MASK) + ((((src & RED_BLUE_MASK) - \
-          (dst & RED_BLUE_MASK))) >> 3))) | (GREEN_MASK & ((dst & GREEN_MASK) + \
-          ((((src & GREEN_MASK) - (dst & GREEN_MASK))) >> 3))))
-
-#define ALPHA_BLEND_64_W(dst, src) \
-    dst = ((RED_BLUE_MASK & ((dst & RED_BLUE_MASK) + ((((src & RED_BLUE_MASK) - \
-          (dst & RED_BLUE_MASK))) >> 2))) | (GREEN_MASK & ((dst & GREEN_MASK) + \
-          ((((src & GREEN_MASK) - (dst & GREEN_MASK))) >> 2))))
-
-#define ALPHA_BLEND_192_W(dst, src) \
-    dst = ((RED_BLUE_MASK & ((dst & RED_BLUE_MASK) + ((((src & RED_BLUE_MASK) - \
-          (dst & RED_BLUE_MASK)) * 3) >> 2))) | (GREEN_MASK & ((dst & GREEN_MASK) + \
-          ((((src & GREEN_MASK) - (dst & GREEN_MASK)) * 3) >> 2))))
-
-#define ALPHA_BLEND_224_W(dst, src) \
-    dst = ((RED_BLUE_MASK & ((dst & RED_BLUE_MASK) + ((((src & RED_BLUE_MASK) - \
-          (dst & RED_BLUE_MASK)) * 7) >> 3))) | (GREEN_MASK & ((dst & GREEN_MASK) + \
-          ((((src & GREEN_MASK) - (dst & GREEN_MASK)) * 7) >> 3))))
+#define ALPHA_BLEND_128_W(a, b) ((((a) & LB_MASK) >> 1) + (((b) & LB_MASK) >> 1))
+#define ALPHA_BLEND_BASE(a, b, m, s) (  (RED_BLUE_MASK & (((a) & RED_BLUE_MASK) + (((((b) & RED_BLUE_MASK) - ((a) & RED_BLUE_MASK)) * (m)) >> (s)))) \
+                                      | (GREEN_MASK    & (((a) & GREEN_MASK)    + (((((b) & GREEN_MASK)    - ((a) & GREEN_MASK))    * (m)) >> (s)))))
+#define ALPHA_BLEND_32_W(a, b)  ALPHA_BLEND_BASE(a, b, 1, 3)
+#define ALPHA_BLEND_64_W(a, b)  ALPHA_BLEND_BASE(a, b, 1, 2)
+#define ALPHA_BLEND_192_W(a, b) ALPHA_BLEND_BASE(a, b, 3, 2)
+#define ALPHA_BLEND_224_W(a, b) ALPHA_BLEND_BASE(a, b, 7, 3)
 
 #define df(A, B) pixel_diff(A, B, r2y)
 #define eq(A, B) (df(A, B) < 155)
@@ -105,29 +90,31 @@ static uint32_t pixel_diff(uint32_t x, uint32_t y, const uint32_t *r2y)
     if (PE != PH && PE != PF) {                                                                     \
         const unsigned e = df(PE,PC) + df(PE,PG) + df(PI,H5) + df(PI,F4) + (df(PH,PF)<<2);          \
         const unsigned i = df(PH,PD) + df(PH,I5) + df(PF,I4) + df(PF,PB) + (df(PE,PI)<<2);          \
-        if (e < i && (!eq(PF,PB) && !eq(PH,PD) || eq(PE,PI)                                         \
-                      && (!eq(PF,I4) && !eq(PH,I5))                                                 \
-                      || eq(PE,PG) || eq(PE,PC))) {                                                 \
-            const unsigned ke = df(PF,PG);                                                          \
-            const unsigned ki = df(PH,PC);                                                          \
-            const int left    = ke<<1 <= ki && PE != PG && PD != PG;                                \
-            const int up      = ke >= ki<<1 && PE != PC && PB != PC;                                \
+        if (e <= i) {                                                                               \
             const unsigned px = df(PE,PF) <= df(PE,PH) ? PF : PH;                                   \
-            if (left && up) {                                                                       \
-                ALPHA_BLEND_224_W(E[N3], px);                                                       \
-                ALPHA_BLEND_64_W( E[N2], px);                                                       \
-                E[N1] = E[N2];                                                                      \
-            } else if (left) {                                                                      \
-                ALPHA_BLEND_192_W(E[N3], px);                                                       \
-                ALPHA_BLEND_64_W( E[N2], px);                                                       \
-            } else if (up) {                                                                        \
-                ALPHA_BLEND_192_W(E[N3], px);                                                       \
-                ALPHA_BLEND_64_W( E[N1], px);                                                       \
-            } else { /* diagonal */                                                                 \
-                ALPHA_BLEND_128_W(E[N3], px);                                                       \
+            if (e < i && (!eq(PF,PB) && !eq(PH,PD) || eq(PE,PI)                                     \
+                          && (!eq(PF,I4) && !eq(PH,I5))                                             \
+                          || eq(PE,PG) || eq(PE,PC))) {                                             \
+                const unsigned ke = df(PF,PG);                                                      \
+                const unsigned ki = df(PH,PC);                                                      \
+                const int left    = ke<<1 <= ki && PE != PG && PD != PG;                            \
+                const int up      = ke >= ki<<1 && PE != PC && PB != PC;                            \
+                if (left && up) {                                                                   \
+                    E[N3] = ALPHA_BLEND_224_W(E[N3], px);                                           \
+                    E[N2] = ALPHA_BLEND_64_W( E[N2], px);                                           \
+                    E[N1] = E[N2];                                                                  \
+                } else if (left) {                                                                  \
+                    E[N3] = ALPHA_BLEND_192_W(E[N3], px);                                           \
+                    E[N2] = ALPHA_BLEND_64_W( E[N2], px);                                           \
+                } else if (up) {                                                                    \
+                    E[N3] = ALPHA_BLEND_192_W(E[N3], px);                                           \
+                    E[N1] = ALPHA_BLEND_64_W( E[N1], px);                                           \
+                } else { /* diagonal */                                                             \
+                    E[N3] = ALPHA_BLEND_128_W(E[N3], px);                                           \
+                }                                                                                   \
+            } else {                                                                                \
+                E[N3] = ALPHA_BLEND_128_W(E[N3], px);                                               \
             }                                                                                       \
-        } else if (e <= i) {                                                                        \
-            ALPHA_BLEND_128_W( E[N3], ((df(PE,PF) <= df(PE,PH)) ? PF : PH));                        \
         }                                                                                           \
     }                                                                                               \
 } while (0)
@@ -137,37 +124,39 @@ static uint32_t pixel_diff(uint32_t x, uint32_t y, const uint32_t *r2y)
     if (PE != PH && PE != PF) {                                                                     \
         const unsigned e = df(PE,PC) + df(PE,PG) + df(PI,H5) + df(PI,F4) + (df(PH,PF)<<2);          \
         const unsigned i = df(PH,PD) + df(PH,I5) + df(PF,I4) + df(PF,PB) + (df(PE,PI)<<2);          \
-        if (e < i && (!eq(PF,PB) && !eq(PF,PC) || !eq(PH,PD) && !eq(PH,PG) || eq(PE,PI)             \
-                      && (!eq(PF,F4) && !eq(PF,I4) || !eq(PH,H5) && !eq(PH,I5))                     \
-                      || eq(PE,PG) || eq(PE,PC))) {                                                 \
-            const unsigned ke = df(PF,PG);                                                          \
-            const unsigned ki = df(PH,PC);                                                          \
-            const int left    = ke<<1 <= ki && PE != PG && PD != PG;                                \
-            const int up      = ke >= ki<<1 && PE != PC && PB != PC;                                \
+        if (e <= i) {                                                                               \
             const unsigned px = df(PE,PF) <= df(PE,PH) ? PF : PH;                                   \
-            if (left && up) {                                                                       \
-                ALPHA_BLEND_192_W(E[N7], px);                                                       \
-                ALPHA_BLEND_64_W( E[N6], px);                                                       \
-                E[N5] = E[N7];                                                                      \
-                E[N2] = E[N6];                                                                      \
-                E[N8] = px;                                                                         \
-            } else if (left) {                                                                      \
-                ALPHA_BLEND_192_W(E[N7], px);                                                       \
-                ALPHA_BLEND_64_W( E[N5], px);                                                       \
-                ALPHA_BLEND_64_W( E[N6], px);                                                       \
-                E[N8] = px;                                                                         \
-            } else if (up) {                                                                        \
-                ALPHA_BLEND_192_W(E[N5], px);                                                       \
-                ALPHA_BLEND_64_W( E[N7], px);                                                       \
-                ALPHA_BLEND_64_W( E[N2], px);                                                       \
-                E[N8] = px;                                                                         \
-            } else { /* diagonal */                                                                 \
-                ALPHA_BLEND_224_W(E[N8], px);                                                       \
-                ALPHA_BLEND_32_W( E[N5], px);                                                       \
-                ALPHA_BLEND_32_W( E[N7], px);                                                       \
+            if (e < i && (!eq(PF,PB) && !eq(PF,PC) || !eq(PH,PD) && !eq(PH,PG) || eq(PE,PI)         \
+                          && (!eq(PF,F4) && !eq(PF,I4) || !eq(PH,H5) && !eq(PH,I5))                 \
+                          || eq(PE,PG) || eq(PE,PC))) {                                             \
+                const unsigned ke = df(PF,PG);                                                      \
+                const unsigned ki = df(PH,PC);                                                      \
+                const int left    = ke<<1 <= ki && PE != PG && PD != PG;                            \
+                const int up      = ke >= ki<<1 && PE != PC && PB != PC;                            \
+                if (left && up) {                                                                   \
+                    E[N7] = ALPHA_BLEND_192_W(E[N7], px);                                           \
+                    E[N6] = ALPHA_BLEND_64_W( E[N6], px);                                           \
+                    E[N5] = E[N7];                                                                  \
+                    E[N2] = E[N6];                                                                  \
+                    E[N8] = px;                                                                     \
+                } else if (left) {                                                                  \
+                    E[N7] = ALPHA_BLEND_192_W(E[N7], px);                                           \
+                    E[N5] = ALPHA_BLEND_64_W( E[N5], px);                                           \
+                    E[N6] = ALPHA_BLEND_64_W( E[N6], px);                                           \
+                    E[N8] = px;                                                                     \
+                } else if (up) {                                                                    \
+                    E[N5] = ALPHA_BLEND_192_W(E[N5], px);                                           \
+                    E[N7] = ALPHA_BLEND_64_W( E[N7], px);                                           \
+                    E[N2] = ALPHA_BLEND_64_W( E[N2], px);                                           \
+                    E[N8] = px;                                                                     \
+                } else { /* diagonal */                                                             \
+                    E[N8] = ALPHA_BLEND_224_W(E[N8], px);                                           \
+                    E[N5] = ALPHA_BLEND_32_W( E[N5], px);                                           \
+                    E[N7] = ALPHA_BLEND_32_W( E[N7], px);                                           \
+                }                                                                                   \
+            } else {                                                                                \
+                E[N8] = ALPHA_BLEND_128_W(E[N8], px);                                               \
             }                                                                                       \
-        } else if (e <= i) {                                                                        \
-            ALPHA_BLEND_128_W(E[N8], ((df(PE,PF) <= df(PE,PH)) ? PF : PH));                         \
         }                                                                                           \
     }                                                                                               \
 } while (0)
@@ -177,41 +166,43 @@ static uint32_t pixel_diff(uint32_t x, uint32_t y, const uint32_t *r2y)
     if (PE != PH && PE != PF) {                                                                     \
         const unsigned e = df(PE,PC) + df(PE,PG) + df(PI,H5) + df(PI,F4) + (df(PH,PF)<<2);          \
         const unsigned i = df(PH,PD) + df(PH,I5) + df(PF,I4) + df(PF,PB) + (df(PE,PI)<<2);          \
-        if (e < i && (!eq(PF,PB) && !eq(PH,PD) || eq(PE,PI)                                         \
-                      && (!eq(PF,I4) && !eq(PH,I5))                                                 \
-                      || eq(PE,PG) || eq(PE,PC))) {                                                 \
-            const unsigned ke = df(PF,PG);                                                          \
-            const unsigned ki = df(PH,PC);                                                          \
-            const int left    = ke<<1 <= ki && PE != PG && PD != PG;                                \
-            const int up      = ke >= ki<<1 && PE != PC && PB != PC;                                \
+        if (e <= i) {                                                                               \
             const unsigned px = df(PE,PF) <= df(PE,PH) ? PF : PH;                                   \
-            if (left && up) {                                                                       \
-                ALPHA_BLEND_192_W(E[N13], px);                                                      \
-                ALPHA_BLEND_64_W( E[N12], px);                                                      \
-                E[N15] = E[N14] = E[N11] = px;                                                      \
-                E[N10] = E[N3]  = E[N12];                                                           \
-                E[N7]  = E[N13];                                                                    \
-            } else if (left) {                                                                      \
-                ALPHA_BLEND_192_W(E[N11], px);                                                      \
-                ALPHA_BLEND_192_W(E[N13], px);                                                      \
-                ALPHA_BLEND_64_W( E[N10], px);                                                      \
-                ALPHA_BLEND_64_W( E[N12], px);                                                      \
-                E[N14] = px;                                                                        \
-                E[N15] = px;                                                                        \
-            } else if (up) {                                                                        \
-                ALPHA_BLEND_192_W(E[N14], px);                                                      \
-                ALPHA_BLEND_192_W(E[N7 ], px);                                                      \
-                ALPHA_BLEND_64_W( E[N10], px);                                                      \
-                ALPHA_BLEND_64_W( E[N3 ], px);                                                      \
-                E[N11] = px;                                                                        \
-                E[N15] = px;                                                                        \
-            } else { /* diagonal */                                                                 \
-                ALPHA_BLEND_128_W(E[N11], px);                                                      \
-                ALPHA_BLEND_128_W(E[N14], px);                                                      \
-                E[N15] = px;                                                                        \
+            if (e < i && (!eq(PF,PB) && !eq(PH,PD) || eq(PE,PI)                                     \
+                          && (!eq(PF,I4) && !eq(PH,I5))                                             \
+                          || eq(PE,PG) || eq(PE,PC))) {                                             \
+                const unsigned ke = df(PF,PG);                                                      \
+                const unsigned ki = df(PH,PC);                                                      \
+                const int left    = ke<<1 <= ki && PE != PG && PD != PG;                            \
+                const int up      = ke >= ki<<1 && PE != PC && PB != PC;                            \
+                if (left && up) {                                                                   \
+                    E[N13] = ALPHA_BLEND_192_W(E[N13], px);                                         \
+                    E[N12] = ALPHA_BLEND_64_W( E[N12], px);                                         \
+                    E[N15] = E[N14] = E[N11] = px;                                                  \
+                    E[N10] = E[N3]  = E[N12];                                                       \
+                    E[N7]  = E[N13];                                                                \
+                } else if (left) {                                                                  \
+                    E[N11] = ALPHA_BLEND_192_W(E[N11], px);                                         \
+                    E[N13] = ALPHA_BLEND_192_W(E[N13], px);                                         \
+                    E[N10] = ALPHA_BLEND_64_W( E[N10], px);                                         \
+                    E[N12] = ALPHA_BLEND_64_W( E[N12], px);                                         \
+                    E[N14] = px;                                                                    \
+                    E[N15] = px;                                                                    \
+                } else if (up) {                                                                    \
+                    E[N14] = ALPHA_BLEND_192_W(E[N14], px);                                         \
+                    E[N7 ] = ALPHA_BLEND_192_W(E[N7 ], px);                                         \
+                    E[N10] = ALPHA_BLEND_64_W( E[N10], px);                                         \
+                    E[N3 ] = ALPHA_BLEND_64_W( E[N3 ], px);                                         \
+                    E[N11] = px;                                                                    \
+                    E[N15] = px;                                                                    \
+                } else { /* diagonal */                                                             \
+                    E[N11] = ALPHA_BLEND_128_W(E[N11], px);                                         \
+                    E[N14] = ALPHA_BLEND_128_W(E[N14], px);                                         \
+                    E[N15] = px;                                                                    \
+                }                                                                                   \
+            } else {                                                                                \
+                E[N15] = ALPHA_BLEND_128_W(E[N15], px);                                             \
             }                                                                                       \
-        } else if (e <= i) {                                                                        \
-            ALPHA_BLEND_128_W( E[N15], ((df(PE,PF) <= df(PE,PH)) ? PF : PH));                       \
         }                                                                                           \
     }                                                                                               \
 } while (0)

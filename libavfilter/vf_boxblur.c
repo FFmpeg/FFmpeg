@@ -117,20 +117,18 @@ static av_cold void uninit(AVFilterContext *ctx)
 
 static int query_formats(AVFilterContext *ctx)
 {
-    static const enum AVPixelFormat pix_fmts[] = {
-        AV_PIX_FMT_YUV444P,  AV_PIX_FMT_YUV422P,  AV_PIX_FMT_YUV420P,
-        AV_PIX_FMT_YUV411P,  AV_PIX_FMT_YUV410P,  AV_PIX_FMT_YUVA420P,
-        AV_PIX_FMT_YUV440P,  AV_PIX_FMT_GRAY8,
-        AV_PIX_FMT_YUVJ444P, AV_PIX_FMT_YUVJ422P, AV_PIX_FMT_YUVJ420P,
-        AV_PIX_FMT_YUVJ440P,
-        AV_PIX_FMT_GBRP,
-        AV_PIX_FMT_YUV444P10,  AV_PIX_FMT_YUV422P10,  AV_PIX_FMT_YUV420P10,
-        AV_PIX_FMT_YUVA420P10,
-        AV_PIX_FMT_GBRP10,
-        AV_PIX_FMT_NONE
-    };
+    AVFilterFormats *formats = NULL;
+    int fmt;
 
-    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
+    for (fmt = 0; av_pix_fmt_desc_get(fmt); fmt++) {
+        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(fmt);
+        if (!(desc->flags & (AV_PIX_FMT_FLAG_HWACCEL | AV_PIX_FMT_FLAG_BITSTREAM | AV_PIX_FMT_FLAG_PAL)) &&
+            (desc->flags & AV_PIX_FMT_FLAG_PLANAR || desc->nb_components == 1) &&
+            !(desc->flags & AV_PIX_FMT_FLAG_BE) == !HAVE_BIGENDIAN)
+            ff_add_format(&formats, fmt);
+    }
+
+    ff_set_common_formats(ctx, formats);
     return 0;
 }
 

@@ -15,6 +15,15 @@ libavutil:     2014-08-09
 
 API changes, most recent first:
 
+201x-xx-xx - xxxxxxx - lavc 56.10.0 - vdpau.h
+  Add av_vdpau_get_surface_parameters().
+
+201x-xx-xx - xxxxxxx - lavc 56.9.0 - avcodec.h
+  Add AV_HWACCEL_FLAG_ALLOW_HIGH_DEPTH flag to av_vdpau_bind_context().
+
+201x-xx-xx - xxxxxxx - lavc 56.8.0 - avcodec.h
+  Add AVCodecContext.sw_pix_fmt.
+
 2014-12-04 - xxxxxxx - lavc 56.14.100 - dv_profile.h
   Add av_dv_codec_profile2().
 

@@ -77,6 +77,7 @@ const HWAccel hwaccels[] = {
 };
 
 char *vstats_filename;
+char *sdp_filename;
 
 float audio_drift_threshold = 0.1;
 float dts_delta_threshold   = 10;
@@ -378,6 +379,13 @@ static int opt_map_channel(void *optctx, const char *opt, const char *arg)
                m->file_idx, m->stream_idx, m->channel_idx);
         exit_program(1);
     }
+    return 0;
+}
+
+static int opt_sdp_file(void *optctx, const char *opt, const char *arg)
+{
+    av_free(sdp_filename);
+    sdp_filename = av_strdup(arg);
     return 0;
 }
 
@@ -3070,6 +3078,8 @@ const OptionDef options[] = {
         "set the initial demux-decode delay", "seconds" },
     { "override_ffserver", OPT_BOOL | OPT_EXPERT | OPT_OUTPUT, { &override_ffserver },
         "override the options from ffserver", "" },
+    { "sdp_file", HAS_ARG | OPT_EXPERT | OPT_OUTPUT, { opt_sdp_file },
+        "specify a file in which to print sdp information", "file" },
 
     { "bsf", HAS_ARG | OPT_STRING | OPT_SPEC | OPT_EXPERT | OPT_OUTPUT, { .off = OFFSET(bitstream_filters) },
         "A comma-separated list of bitstream filters", "bitstream_filters" },

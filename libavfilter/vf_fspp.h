@@ -79,16 +79,16 @@ typedef struct FSPPContext {
                          ptrdiff_t dst_stride, ptrdiff_t src_stride,
                          ptrdiff_t width, ptrdiff_t height, ptrdiff_t log2_scale);
 
-    void (*mul_thrmat)(struct FSPPContext *fspp, int q);
+    void (*mul_thrmat)(int16_t *thr_adr_noq, int16_t *thr_adr, int q);
 
     void (*column_fidct)(int16_t *thr_adr, int16_t *data,
                          int16_t *output, int cnt);
 
     void (*row_idct)(int16_t *workspace, int16_t *output_adr,
-                     int output_stride, int cnt);
+                     ptrdiff_t output_stride, int cnt);
 
     void (*row_fdct)(int16_t *data, const uint8_t *pixels,
-                     int line_size, int cnt);
+                     ptrdiff_t line_size, int cnt);
 
 } FSPPContext;
 

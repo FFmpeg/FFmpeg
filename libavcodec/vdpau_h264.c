@@ -123,6 +123,9 @@ static int vdpau_h264_start_frame(AVCodecContext *avctx,
     H264Picture *pic = h->cur_pic_ptr;
     struct vdpau_picture_context *pic_ctx = pic->hwaccel_picture_private;
     VdpPictureInfoH264 *info = &pic_ctx->info.h264;
+#ifdef VDP_DECODER_PROFILE_H264_HIGH_444_PREDICTIVE
+    VdpPictureInfoH264Predictive *info2 = &pic_ctx->info.h264_predictive;
+#endif
 
     /* init VdpPictureInfoH264 */
     info->slice_count                            = 0;
@@ -149,6 +152,10 @@ static int vdpau_h264_start_frame(AVCodecContext *avctx,
     info->log2_max_pic_order_cnt_lsb_minus4      = h->sps.poc_type ? 0 : h->sps.log2_max_poc_lsb - 4;
     info->delta_pic_order_always_zero_flag       = h->sps.delta_pic_order_always_zero_flag;
     info->direct_8x8_inference_flag              = h->sps.direct_8x8_inference_flag;
+#ifdef VDP_DECODER_PROFILE_H264_HIGH_444_PREDICTIVE
+    info2->qpprime_y_zero_transform_bypass_flag  = h->sps.transform_bypass;
+    info2->separate_colour_plane_flag            = h->sps.residual_color_transform_flag;
+#endif
     info->entropy_coding_mode_flag               = h->pps.cabac;
     info->pic_order_present_flag                 = h->pps.pic_order_present;
     info->deblocking_filter_control_present_flag = h->pps.deblocking_filter_parameters_present;
@@ -226,6 +233,18 @@ static int vdpau_h264_init(AVCodecContext *avctx)
 #ifdef VDP_DECODER_PROFILE_H264_EXTENDED
     case FF_PROFILE_H264_EXTENDED:
         profile = VDP_DECODER_PROFILE_H264_EXTENDED;
+        break;
+#endif
+    case FF_PROFILE_H264_HIGH_10:
+        /* XXX: High 10 can be treated as High so long as only 8-bits per
+         * formats are supported. */
+        profile = VDP_DECODER_PROFILE_H264_HIGH;
+        break;
+#ifdef VDP_DECODER_PROFILE_H264_HIGH_444_PREDICTIVE
+    case FF_PROFILE_H264_HIGH_422:
+    case FF_PROFILE_H264_HIGH_444_PREDICTIVE:
+    case FF_PROFILE_H264_CAVLC_444:
+        profile = VDP_DECODER_PROFILE_H264_HIGH_444_PREDICTIVE;
         break;
 #endif
     default:

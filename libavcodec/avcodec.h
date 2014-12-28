@@ -3005,6 +3005,13 @@ typedef struct AVCodecContext {
     AVRational framerate;
 
     /**
+     * Nominal unaccelerated pixel format, see AV_PIX_FMT_xxx.
+     * - encoding: unused.
+     * - decoding: Set by libavcodec before calling get_format()
+     */
+    enum AVPixelFormat sw_pix_fmt;
+
+    /**
      * Timebase in which pkt_dts/pts and AVPacket.dts/pts are.
      * Code outside libavcodec should access this field using:
      * av_codec_{get,set}_pkt_timebase(avctx)
@@ -3395,6 +3402,12 @@ typedef struct AVHWAccel {
  * hardware driver.
  */
 #define AV_HWACCEL_FLAG_IGNORE_LEVEL (1 << 0)
+
+/**
+ * Hardware acceleration can output YUV pixel formats with a different chroma
+ * sampling than 4:2:0 and/or other than 8 bits per component.
+ */
+#define AV_HWACCEL_FLAG_ALLOW_HIGH_DEPTH (1 << 1)
 
 /**
  * @}

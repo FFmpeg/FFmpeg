@@ -220,9 +220,12 @@ static int http_receive_data(HTTPContext *c);
 static int rtsp_parse_request(HTTPContext *c);
 static void rtsp_cmd_describe(HTTPContext *c, const char *url);
 static void rtsp_cmd_options(HTTPContext *c, const char *url);
-static void rtsp_cmd_setup(HTTPContext *c, const char *url, RTSPMessageHeader *h);
-static void rtsp_cmd_play(HTTPContext *c, const char *url, RTSPMessageHeader *h);
-static void rtsp_cmd_interrupt(HTTPContext *c, const char *url, RTSPMessageHeader *h, int pause_only);
+static void rtsp_cmd_setup(HTTPContext *c, const char *url,
+                           RTSPMessageHeader *h);
+static void rtsp_cmd_play(HTTPContext *c, const char *url,
+                          RTSPMessageHeader *h);
+static void rtsp_cmd_interrupt(HTTPContext *c, const char *url,
+                               RTSPMessageHeader *h, int pause_only);
 
 /* SDP handling */
 static int prepare_sdp_description(FFServerStream *stream, uint8_t **pbuffer,
@@ -230,7 +233,8 @@ static int prepare_sdp_description(FFServerStream *stream, uint8_t **pbuffer,
 
 /* RTP handling */
 static HTTPContext *rtp_new_connection(struct sockaddr_in *from_addr,
-                                       FFServerStream *stream, const char *session_id,
+                                       FFServerStream *stream,
+                                       const char *session_id,
                                        enum RTSPLowerTransport rtp_protocol);
 static int rtp_new_av_stream(HTTPContext *c,
                              int stream_index, struct sockaddr_in *dest_addr,
@@ -380,60 +384,64 @@ static int compute_datarate(DataRateData *drd, int64_t count)
 
 static void start_children(FFServerStream *feed)
 {
+    char pathname[1024];
+    char *slash;
+    int i;
+
     if (no_launch)
         return;
 
+   /* replace "ffserver" with "ffmpeg" in the path of current
+    * program. Ignore user provided path */
+    av_strlcpy(pathname, my_program_name, sizeof(pathname));
+
+    slash = strrchr(pathname, '/');
+    if (!slash)
+        slash = pathname;
+    else
+        slash++;
+    strcpy(slash, "ffmpeg");
+
     for (; feed; feed = feed->next) {
-        if (feed->child_argv && !feed->pid) {
-            feed->pid_start = time(0);
 
-            feed->pid = fork();
+        if (!feed->child_argv || feed->pid)
+            continue;
 
-            if (feed->pid < 0) {
-                http_log("Unable to create children\n");
-                exit(1);
-            }
-            if (!feed->pid) {
-                /* In child */
-                char pathname[1024];
-                char *slash;
-                int i;
+        feed->pid_start = time(0);
 
-                /* replace "ffserver" with "ffmpeg" in the path of current
-                 * program. Ignore user provided path */
-                av_strlcpy(pathname, my_program_name, sizeof(pathname));
-                slash = strrchr(pathname, '/');
-                if (!slash)
-                    slash = pathname;
-                else
-                    slash++;
-                strcpy(slash, "ffmpeg");
-
-                http_log("Launch command line: ");
-                http_log("%s ", pathname);
-                for (i = 1; feed->child_argv[i] && feed->child_argv[i][0]; i++)
-                    http_log("%s ", feed->child_argv[i]);
-                http_log("\n");
-
-                for (i = 3; i < 256; i++)
-                    close(i);
-
-                if (!config.debug) {
-                    if (!freopen("/dev/null", "r", stdin))
-                        http_log("failed to redirect STDIN to /dev/null\n;");
-                    if (!freopen("/dev/null", "w", stdout))
-                        http_log("failed to redirect STDOUT to /dev/null\n;");
-                    if (!freopen("/dev/null", "w", stderr))
-                        http_log("failed to redirect STDERR to /dev/null\n;");
-                }
-
-                signal(SIGPIPE, SIG_DFL);
-
-                execvp(pathname, feed->child_argv);
-
-                _exit(1);
-            }
+        feed->pid = fork();
+        if (feed->pid < 0) {
+            http_log("Unable to create children\n");
+            exit(1);
         }
+
+        if (feed->pid)
+            continue;
+
+        /* In child */
+
+        http_log("Launch command line: ");
+        http_log("%s ", pathname);
+
+        for (i = 1; feed->child_argv[i] && feed->child_argv[i][0]; i++)
+            http_log("%s ", feed->child_argv[i]);
+        http_log("\n");
+
+        for (i = 3; i < 256; i++)
+            close(i);
+
+        if (!config.debug) {
+            if (!freopen("/dev/null", "r", stdin))
+                http_log("failed to redirect STDIN to /dev/null\n;");
+            if (!freopen("/dev/null", "w", stdout))
+                http_log("failed to redirect STDOUT to /dev/null\n;");
+            if (!freopen("/dev/null", "w", stderr))
+                http_log("failed to redirect STDERR to /dev/null\n;");
+        }
+
+        signal(SIGPIPE, SIG_DFL);
+        execvp(pathname, feed->child_argv);
+        _exit(1);
     }
 }
 
@@ -481,51 +489,56 @@ static void start_multicast(void)
     HTTPContext *rtp_c;
     struct sockaddr_in dest_addr = {0};
     int default_port, stream_index;
+    unsigned int random0, random1;
 
     default_port = 6000;
     for(stream = config.first_stream; stream; stream = stream->next) {
-        if (stream->is_multicast) {
-            unsigned random0 = av_lfg_get(&random_state);
-            unsigned random1 = av_lfg_get(&random_state);
-            /* open the RTP connection */
-            snprintf(session_id, sizeof(session_id), "%08x%08x",
-                     random0, random1);
 
-            /* choose a port if none given */
-            if (stream->multicast_port == 0) {
-                stream->multicast_port = default_port;
-                default_port += 100;
-            }
+        if (!stream->is_multicast)
+            continue;
 
-            dest_addr.sin_family = AF_INET;
-            dest_addr.sin_addr = stream->multicast_ip;
-            dest_addr.sin_port = htons(stream->multicast_port);
+        random0 = av_lfg_get(&random_state);
+        random1 = av_lfg_get(&random_state);
 
-            rtp_c = rtp_new_connection(&dest_addr, stream, session_id,
-                                       RTSP_LOWER_TRANSPORT_UDP_MULTICAST);
-            if (!rtp_c)
-                continue;
+        /* open the RTP connection */
+        snprintf(session_id, sizeof(session_id), "%08x%08x",
+                 random0, random1);
 
-            if (open_input_stream(rtp_c, "") < 0) {
-                http_log("Could not open input stream for stream '%s'\n",
-                         stream->filename);
-                continue;
-            }
-
-            /* open each RTP stream */
-            for(stream_index = 0; stream_index < stream->nb_streams;
-                stream_index++) {
-                dest_addr.sin_port = htons(stream->multicast_port +
-                                           2 * stream_index);
-                if (rtp_new_av_stream(rtp_c, stream_index, &dest_addr, NULL) < 0) {
-                    http_log("Could not open output stream '%s/streamid=%d'\n",
-                             stream->filename, stream_index);
-                    exit(1);
-                }
-            }
-
-            rtp_c->state = HTTPSTATE_SEND_DATA;
+        /* choose a port if none given */
+        if (stream->multicast_port == 0) {
+            stream->multicast_port = default_port;
+            default_port += 100;
         }
+
+        dest_addr.sin_family = AF_INET;
+        dest_addr.sin_addr = stream->multicast_ip;
+        dest_addr.sin_port = htons(stream->multicast_port);
+
+        rtp_c = rtp_new_connection(&dest_addr, stream, session_id,
+                                   RTSP_LOWER_TRANSPORT_UDP_MULTICAST);
+        if (!rtp_c)
+            continue;
+
+        if (open_input_stream(rtp_c, "") < 0) {
+            http_log("Could not open input stream for stream '%s'\n",
+                     stream->filename);
+            continue;
+        }
+
+        /* open each RTP stream */
+        for(stream_index = 0; stream_index < stream->nb_streams;
+            stream_index++) {
+            dest_addr.sin_port = htons(stream->multicast_port +
+                                       2 * stream_index);
+            if (rtp_new_av_stream(rtp_c, stream_index, &dest_addr, NULL) >= 0)
+                continue;
+
+            http_log("Could not open output stream '%s/streamid=%d'\n",
+                     stream->filename, stream_index);
+            exit(1);
+        }
+
+        rtp_c->state = HTTPSTATE_SEND_DATA;
     }
 }
 
@@ -537,8 +550,11 @@ static int http_server(void)
     struct pollfd *poll_table, *poll_entry;
     HTTPContext *c, *c_next;
 
-    if(!(poll_table = av_mallocz_array(config.nb_max_http_connections + 2, sizeof(*poll_table)))) {
-        http_log("Impossible to allocate a poll table handling %d connections.\n", config.nb_max_http_connections);
+    poll_table = av_mallocz_array(config.nb_max_http_connections + 2,
+                                  sizeof(*poll_table));
+    if(!poll_table) {
+        http_log("Impossible to allocate a poll table handling %d "
+                 "connections.\n", config.nb_max_http_connections);
         return -1;
     }
 
@@ -820,13 +836,11 @@ static void close_connection(HTTPContext *c)
     ctx = &c->fmt_ctx;
 
     if (!c->last_packet_sent && c->state == HTTPSTATE_SEND_DATA_TRAILER) {
-        if (ctx->oformat) {
-            /* prepare header */
-            if (avio_open_dyn_buf(&ctx->pb) >= 0) {
-                av_write_trailer(ctx);
-                av_freep(&c->pb_buffer);
-                avio_close_dyn_buf(ctx->pb, &c->pb_buffer);
-            }
+        /* prepare header */
+        if (ctx->oformat && avio_open_dyn_buf(&ctx->pb) >= 0) {
+            av_write_trailer(ctx);
+            av_freep(&c->pb_buffer);
+            avio_close_dyn_buf(ctx->pb, &c->pb_buffer);
         }
     }
 
@@ -1185,9 +1199,7 @@ static FFServerIPAddressACL* parse_dynamic_acl(FFServerStream *stream, HTTPConte
     acl = av_mallocz(sizeof(FFServerIPAddressACL));
 
     /* Build ACL */
-    for(;;) {
-        if (fgets(line, sizeof(line), f) == NULL)
-            break;
+    while (fgets(line, sizeof(line), f)) {
         line_num++;
         p = line;
         while (av_isspace(*p))

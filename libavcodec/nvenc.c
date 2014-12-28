@@ -19,24 +19,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#if defined(_WIN32) && !defined(__CYGWIN__)
+#if defined(_WIN32)
 #include <windows.h>
 #else
 #include <dlfcn.h>
 #endif
 
-/* NVENC API is stdcall in cygwin, as it's still Windows */
-#if defined(__CYGWIN__) && !defined(_WIN32)
-#define _WIN32
-#define TEMP_WIN32
-#endif
-
 #include <nvEncodeAPI.h>
-
-#if defined(TEMP_WIN32)
-#undef _WIN32
-#endif
-
 
 #include "libavutil/internal.h"
 #include "libavutil/imgutils.h"
@@ -47,13 +36,13 @@
 #include "internal.h"
 #include "thread.h"
 
-#if defined(_WIN32) || defined(__CYGWIN__)
+#if defined(_WIN32)
 #define CUDAAPI __stdcall
 #else
 #define CUDAAPI
 #endif
 
-#if defined(_WIN32) && !defined(__CYGWIN__)
+#if defined(_WIN32)
 #define LOAD_FUNC(l, s) GetProcAddress(l, s)
 #define DL_CLOSE_FUNC(l) FreeLibrary(l)
 #else
@@ -133,7 +122,7 @@ typedef struct NvencDynLoadFunctions
     int nvenc_device_count;
     CUdevice nvenc_devices[16];
 
-#if defined(_WIN32) && !defined(__CYGWIN__)
+#if defined(_WIN32)
     HMODULE cuda_lib;
     HMODULE nvenc_lib;
 #else
@@ -290,8 +279,6 @@ static av_cold int nvenc_dyload_cuda(AVCodecContext *avctx)
 
 #if defined(_WIN32)
     dl_fn->cuda_lib = LoadLibrary(TEXT("nvcuda.dll"));
-#elif defined(__CYGWIN__)
-    dl_fn->cuda_lib = dlopen("nvcuda.dll", RTLD_LAZY);
 #else
     dl_fn->cuda_lib = dlopen("libcuda.so", RTLD_LAZY);
 #endif
@@ -408,12 +395,6 @@ static av_cold int nvenc_dyload_nvenc(AVCodecContext *avctx)
         dl_fn->nvenc_lib = LoadLibrary(TEXT("nvEncodeAPI64.dll"));
     } else {
         dl_fn->nvenc_lib = LoadLibrary(TEXT("nvEncodeAPI.dll"));
-    }
-#elif defined(__CYGWIN__)
-    if (sizeof(void*) == 8) {
-        dl_fn->nvenc_lib = dlopen("nvEncodeAPI64.dll", RTLD_LAZY);
-    } else {
-        dl_fn->nvenc_lib = dlopen("nvEncodeAPI.dll", RTLD_LAZY);
     }
 #else
     dl_fn->nvenc_lib = dlopen("libnvidia-encode.so.1", RTLD_LAZY);
