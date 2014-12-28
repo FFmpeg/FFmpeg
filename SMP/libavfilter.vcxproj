@@ -59,6 +59,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <YASM Include="..\libavfilter\x86\vf_fspp.asm" />
     <YASM Include="..\libavfilter\x86\vf_gradfun.asm" />
     <YASM Include="..\libavfilter\x86\vf_hqdn3d.asm" />
     <YASM Include="..\libavfilter\x86\vf_idet.asm" />
@@ -264,6 +265,7 @@
     <ClCompile Include="..\libavfilter\vf_framepack.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_fspp.c">
+      <ObjectFileName>$(IntDir)\libavfilter_vf_fspp.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_geq.c">
     </ClCompile>
@@ -437,8 +439,7 @@
     </ClCompile>
     <ClCompile Include="..\libavfilter\log2_tab.c">
     </ClCompile>
-    <ClCompile Include="..\libavfilter\x86\vf_fspp.c">
-      <ObjectFileName>$(IntDir)\libavfilter_x86_vf_fspp.obj</ObjectFileName>
+    <ClCompile Include="..\libavfilter\x86\vf_fspp_init.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\x86\vf_gradfun_init.c">
     </ClCompile>

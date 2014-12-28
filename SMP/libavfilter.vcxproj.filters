@@ -24,6 +24,9 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <YASM Include="..\libavfilter\x86\vf_fspp.asm">
+      <Filter>Source Files\libavfilter\x86</Filter>
+    </YASM>
     <YASM Include="..\libavfilter\x86\vf_gradfun.asm">
       <Filter>Source Files\libavfilter\x86</Filter>
     </YASM>
@@ -593,7 +596,7 @@
     <ClCompile Include="..\libavfilter\log2_tab.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavfilter\x86\vf_fspp.c">
+    <ClCompile Include="..\libavfilter\x86\vf_fspp_init.c">
       <Filter>Source Files\libavfilter\x86</Filter>
     </ClCompile>
     <ClCompile Include="..\libavfilter\x86\vf_gradfun_init.c">
