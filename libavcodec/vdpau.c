@@ -288,9 +288,8 @@ int ff_vdpau_common_end_frame(AVCodecContext *avctx, AVFrame *frame,
 
 #if FF_API_BUFS_VDPAU
 FF_DISABLE_DEPRECATION_WARNINGS
-    av_assert0(sizeof(hwctx->info) >= sizeof(pic_ctx->info));
-    memset(&hwctx->info, 0, sizeof(hwctx->info));
-    memcpy(&hwctx->info, &pic_ctx->info, sizeof(pic_ctx->info));
+    av_assert0(sizeof(hwctx->info) <= sizeof(pic_ctx->info));
+    memcpy(&hwctx->info, &pic_ctx->info, sizeof(hwctx->info));
     hwctx->bitstream_buffers = pic_ctx->bitstream_buffers;
     hwctx->bitstream_buffers_used = pic_ctx->bitstream_buffers_used;
     hwctx->bitstream_buffers_allocated = pic_ctx->bitstream_buffers_allocated;
