@@ -70,7 +70,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                 g = (pixel >>  4) & 0xffc0;
                 r = (pixel >> 14) & 0xffc0;
             } else {
-                b =  pixel <<  4;
+                b = (pixel <<  4) & 0xffc0;
                 g = (pixel >>  6) & 0xffc0;
                 r = (pixel >> 16) & 0xffc0;
             }
