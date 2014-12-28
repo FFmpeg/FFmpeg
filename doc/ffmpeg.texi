@@ -1160,6 +1160,11 @@ requested by @command{ffserver}.
 The option is intended for cases where features are needed that cannot be
 specified to @command{ffserver} but can be to @command{ffmpeg}.
 
+@item -sdp_file @var{file} (@emph{global})
+Print sdp information to @var{file}.
+This allows dumping sdp information when at least one output isn't an
+rtp stream.
+
 @item -discard (@emph{input})
 Allows discarding specific streams or frames of streams at the demuxer.
 Not all demuxers support this.
