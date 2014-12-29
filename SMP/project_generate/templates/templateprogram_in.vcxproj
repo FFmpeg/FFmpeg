@@ -180,7 +180,6 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <Optimization>MaxSpeed</Optimization>
       <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;inline=__inline;strtod=avpriv_strtod;_LIB;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>..\compat\msvcrt\snprintf.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
@@ -201,6 +200,7 @@
       <IgnoreSpecificDefaultLibraries>LIBCMT.lib</IgnoreSpecificDefaultLibraries>
       <LargeAddressAware>true</LargeAddressAware>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <ForceFileOutput>UndefinedSymbolOnly</ForceFileOutput>
     </Link>
     <PreBuildEvent>
       <Command>if exist ..\config.h (
@@ -223,7 +223,6 @@ del ..\libavutil\ffversion.h
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <Optimization>MaxSpeed</Optimization>
       <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;inline=__inline;strtod=avpriv_strtod;_LIB;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>..\compat\msvcrt\snprintf.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
@@ -243,6 +242,7 @@ del ..\libavutil\ffversion.h
       <ProgramDatabaseFile>$(OutDir)\bin\$(TargetName).pdb</ProgramDatabaseFile>
       <IgnoreSpecificDefaultLibraries>LIBCMT.lib</IgnoreSpecificDefaultLibraries>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <ForceFileOutput>UndefinedSymbolOnly</ForceFileOutput>
     </Link>
     <PreBuildEvent>
       <Command>if exist ..\config.h (
@@ -265,7 +265,6 @@ del ..\libavutil\ffversion.h
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugDLL|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <Optimization>MaxSpeed</Optimization>
       <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;inline=__inline;strtod=avpriv_strtod;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>..\compat\msvcrt\snprintf.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
@@ -286,6 +285,7 @@ del ..\libavutil\ffversion.h
       <IgnoreSpecificDefaultLibraries>LIBCMT.lib</IgnoreSpecificDefaultLibraries>
       <LargeAddressAware>true</LargeAddressAware>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <ForceFileOutput>UndefinedSymbolOnly</ForceFileOutput>
     </Link>
     <PreBuildEvent>
       <Command>if exist ..\config.h (
@@ -304,11 +304,15 @@ if exist ..\libavutil\ffversion.h (
 del ..\libavutil\ffversion.h
 )</Command>
     </PreBuildEvent>
+    <PreLinkEvent>
+      <Command>echo Note: Any linker warning about missing symbols can be ignored!
+echo            A output file will be generated anyway.
+echo            These errors are the result of dead code elimination not being performed in debug builds.</Command>
+    </PreLinkEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugDLL|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <Optimization>MaxSpeed</Optimization>
       <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;inline=__inline;strtod=avpriv_strtod;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>..\compat\msvcrt\snprintf.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
@@ -328,6 +332,7 @@ del ..\libavutil\ffversion.h
       <ProgramDatabaseFile>$(OutDir)\bin\$(TargetName).pdb</ProgramDatabaseFile>
       <IgnoreSpecificDefaultLibraries>LIBCMT.lib</IgnoreSpecificDefaultLibraries>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <ForceFileOutput>UndefinedSymbolOnly</ForceFileOutput>
     </Link>
     <PreBuildEvent>
       <Command>if exist ..\config.h (
@@ -346,6 +351,11 @@ if exist ..\libavutil\ffversion.h (
 del ..\libavutil\ffversion.h
 )</Command>
     </PreBuildEvent>
+    <PreLinkEvent>
+      <Command>echo Note: Any linker warning about missing symbols can be ignored!
+echo            A output file will be generated anyway.
+echo            These errors are the result of dead code elimination not being performed in debug builds.</Command>
+    </PreLinkEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
