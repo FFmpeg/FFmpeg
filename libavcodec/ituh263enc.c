@@ -88,7 +88,7 @@ static const uint8_t wrong_run[102] = {
 av_const int ff_h263_aspect_to_info(AVRational aspect){
     int i;
 
-    if(aspect.num==0) aspect= (AVRational){1,1};
+    if(aspect.num==0 || aspect.den==0) aspect= (AVRational){1,1};
 
     for(i=1; i<6; i++){
         if(av_cmp_q(ff_h263_pixel_aspect[i], aspect) == 0){
