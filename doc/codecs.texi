@@ -863,6 +863,14 @@ Possible values:
 
 @item mpeg2_aac_he
 
+@item mpeg4_sp
+
+@item mpeg4_core
+
+@item mpeg4_main
+
+@item mpeg4_asp
+
 @item dts
 
 @item dts_es
