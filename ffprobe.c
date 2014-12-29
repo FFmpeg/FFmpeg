@@ -2141,6 +2141,7 @@ static int show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_id
             } else {
                 print_str_opt("timecode", "N/A");
             }
+            print_int("refs", dec_ctx->refs);
             break;
 
         case AVMEDIA_TYPE_AUDIO:
