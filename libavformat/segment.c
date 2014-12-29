@@ -90,6 +90,7 @@ typedef struct {
     AVIOContext *list_pb;  ///< list file put-byte context
     char *time_str;        ///< segment duration specification string
     int64_t time;          ///< segment duration
+    int use_strftime;      ///< flag to expand filename with strftime
 
     char *times_str;       ///< segment times specification string
     int64_t *times;        ///< list of segment interval specification
@@ -179,8 +180,17 @@ static int set_segment_filename(AVFormatContext *s)
 
     if (seg->segment_idx_wrap)
         seg->segment_idx %= seg->segment_idx_wrap;
-    if (av_get_frame_filename(oc->filename, sizeof(oc->filename),
-                              s->filename, seg->segment_idx) < 0) {
+    if (seg->use_strftime) {
+        time_t now0;
+        struct tm *tm, tmpbuf;
+        time(&now0);
+        tm = localtime_r(&now0, &tmpbuf);
+        if (!strftime(oc->filename, sizeof(oc->filename), s->filename, tm)) {
+            av_log(oc, AV_LOG_ERROR, "Could not get segment filename with strftime\n");
+            return AVERROR(EINVAL);
+        }
+    } else if (av_get_frame_filename(oc->filename, sizeof(oc->filename),
+                                     s->filename, seg->segment_idx) < 0) {
         av_log(oc, AV_LOG_ERROR, "Invalid segment filename template '%s'\n", s->filename);
         return AVERROR(EINVAL);
     }
@@ -876,6 +886,7 @@ static const AVOption options[] = {
     { "segment_list_entry_prefix", "set base url prefix for segments", OFFSET(entry_prefix), AV_OPT_TYPE_STRING,  {.str = NULL}, 0, 0, E },
     { "segment_start_number", "set the sequence number of the first segment", OFFSET(segment_idx), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, E },
     { "segment_wrap_number", "set the number of wrap before the first segment", OFFSET(segment_idx_wrap_nb), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, E },
+    { "strftime",          "set filename expansion with strftime at segment creation", OFFSET(use_strftime), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, 1, E },
 
     { "individual_header_trailer", "write header/trailer to each segment", OFFSET(individual_header_trailer), AV_OPT_TYPE_INT, {.i64 = 1}, 0, 1, E },
     { "write_header_trailer", "write a header to the first segment and a trailer to the last one", OFFSET(write_header_trailer), AV_OPT_TYPE_INT, {.i64 = 1}, 0, 1, E },

@@ -40,6 +40,7 @@ typedef struct CropDetectContext {
     int reset_count;
     int frame_nb;
     int max_pixsteps[4];
+    int max_outliers;
 } CropDetectContext;
 
 static int query_formats(AVFilterContext *ctx)
@@ -123,6 +124,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     int bpp = s->max_pixsteps[0];
     int w, h, x, y, shrink_by;
     AVDictionary **metadata;
+    int outliers, last_y;
 
     // ignore first 2 frames - they may be empty
     if (++s->frame_nb > 0) {
@@ -138,17 +140,21 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
         }
 
 #define FIND(DST, FROM, NOEND, INC, STEP0, STEP1, LEN) \
-        for (y = FROM; NOEND; INC) {\
+        outliers = 0;\
+        for (last_y = y = FROM; NOEND; y = y INC) {\
             if (checkline(ctx, frame->data[0] + STEP0 * y, STEP1, LEN, bpp) > s->limit) {\
-                DST = y;\
-                break;\
-            }\
+                if (++outliers > s->max_outliers) { \
+                    DST = last_y;\
+                    break;\
+                }\
+            } else\
+                last_y = y INC;\
         }
 
-        FIND(s->y1,                 0,               y < s->y1, y++, frame->linesize[0], bpp, frame->width);
-        FIND(s->y2, frame->height - 1, y > FFMAX(s->y2, s->y1), y--, frame->linesize[0], bpp, frame->width);
-        FIND(s->x1,                 0,               y < s->x1, y++, bpp, frame->linesize[0], frame->height);
-        FIND(s->x2,  frame->width - 1, y > FFMAX(s->x2, s->x1), y--, bpp, frame->linesize[0], frame->height);
+        FIND(s->y1,                 0,               y < s->y1, +1, frame->linesize[0], bpp, frame->width);
+        FIND(s->y2, frame->height - 1, y > FFMAX(s->y2, s->y1), -1, frame->linesize[0], bpp, frame->width);
+        FIND(s->x1,                 0,               y < s->x1, +1, bpp, frame->linesize[0], frame->height);
+        FIND(s->x2,  frame->width - 1, y > FFMAX(s->x2, s->x1), -1, bpp, frame->linesize[0], frame->height);
 
 
         // round x and y (up), important for yuv colorspaces
@@ -201,6 +207,7 @@ static const AVOption cropdetect_options[] = {
     { "round", "Value by which the width/height should be divisible", OFFSET(round),       AV_OPT_TYPE_INT, { .i64 = 16 }, 0, INT_MAX, FLAGS },
     { "reset", "Recalculate the crop area after this many frames",    OFFSET(reset_count), AV_OPT_TYPE_INT, { .i64 = 0 },  0, INT_MAX, FLAGS },
     { "reset_count", "Recalculate the crop area after this many frames",OFFSET(reset_count),AV_OPT_TYPE_INT,{ .i64 = 0 },  0, INT_MAX, FLAGS },
+    { "max_outliers", "Threshold count of outliers",                  OFFSET(max_outliers),AV_OPT_TYPE_INT, { .i64 = 0 },  0, INT_MAX, FLAGS },
     { NULL }
 };
 
