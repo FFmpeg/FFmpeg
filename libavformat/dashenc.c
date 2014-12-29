@@ -214,8 +214,10 @@ static void output_segment_list(OutputStream *os, AVIOContext *out, DASHContext 
                 Segment *seg = os->segments[i];
                 int repeat = 0;
                 avio_printf(out, "\t\t\t\t\t\t<S ");
-                if (i == start_index || seg->time != cur_time)
+                if (i == start_index || seg->time != cur_time) {
+                    cur_time = seg->time;
                     avio_printf(out, "t=\"%"PRId64"\" ", seg->time);
+                }
                 avio_printf(out, "d=\"%d\" ", seg->duration);
                 while (i + repeat + 1 < os->nb_segments &&
                        os->segments[i + repeat + 1]->duration == seg->duration &&
