@@ -185,7 +185,7 @@ static int cdxl_read_packet(AVFormatContext *s, AVPacket *pkt)
                 if(cdxl->framerate)
                     st->duration = frames;
                 else
-                    st->duration = frames * audio_size;
+                    st->duration = frames * (int64_t)audio_size;
             }
             st->start_time           = 0;
             cdxl->video_stream_index = st->index;
