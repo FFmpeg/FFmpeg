@@ -68,6 +68,12 @@ static int checkline(void *ctx, const unsigned char *src, int stride, int len, i
 
     switch (bpp) {
     case 1:
+        while (len >= 8) {
+            total += src[       0] + src[  stride] + src[2*stride] + src[3*stride]
+                  +  src[4*stride] + src[5*stride] + src[6*stride] + src[7*stride];
+            src += 8*stride;
+            len -= 8;
+        }
         while (--len >= 0) {
             total += src[0];
             src += stride;
