@@ -175,19 +175,6 @@ FLAC_DECORRELATE_32 ms, 2, 0, 1, add
 ;void ff_flac_decorrelate_indep<ch>_<bps>_<opt>(uint8_t **out, int32_t **in, int channels,
 ;                                            int len, int shift);
 ;-----------------------------------------------------------------------------------------
-%macro TRANSPOSE8x4D 9
-    SBUTTERFLY dq,  %1, %2, %9
-    SBUTTERFLY dq,  %3, %4, %9
-    SBUTTERFLY dq,  %5, %6, %9
-    SBUTTERFLY dq,  %7, %8, %9
-    SBUTTERFLY qdq, %1, %3, %9
-    SBUTTERFLY qdq, %2, %4, %9
-    SBUTTERFLY qdq, %5, %7, %9
-    SBUTTERFLY qdq, %6, %8, %9
-    SWAP %2, %5
-    SWAP %4, %7
-%endmacro
-
 ;%1 = bps
 ;%2 = channels
 ;%3 = last xmm reg used
