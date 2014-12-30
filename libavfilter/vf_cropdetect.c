@@ -35,7 +35,7 @@
 typedef struct CropDetectContext {
     const AVClass *class;
     int x1, y1, x2, y2;
-    int limit;
+    float limit;
     int round;
     int reset_count;
     int frame_nb;
@@ -127,7 +127,7 @@ static av_cold int init(AVFilterContext *ctx)
 
     s->frame_nb = -2;
 
-    av_log(ctx, AV_LOG_VERBOSE, "limit:%d round:%d reset_count:%d\n",
+    av_log(ctx, AV_LOG_VERBOSE, "limit:%f round:%d reset_count:%d\n",
            s->limit, s->round, s->reset_count);
 
     return 0;
@@ -137,9 +137,12 @@ static int config_input(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
     CropDetectContext *s = ctx->priv;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
 
-    av_image_fill_max_pixsteps(s->max_pixsteps, NULL,
-                               av_pix_fmt_desc_get(inlink->format));
+    av_image_fill_max_pixsteps(s->max_pixsteps, NULL, desc);
+
+    if (s->limit < 1.0)
+        s->limit *= (1 << (desc->comp[0].depth_minus1 + 1)) - 1;
 
     s->x1 = inlink->w - 1;
     s->y1 = inlink->h - 1;
@@ -160,6 +163,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     int w, h, x, y, shrink_by;
     AVDictionary **metadata;
     int outliers, last_y;
+    int limit = round(s->limit);
 
     // ignore first 2 frames - they may be empty
     if (++s->frame_nb > 0) {
@@ -177,7 +181,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 #define FIND(DST, FROM, NOEND, INC, STEP0, STEP1, LEN) \
         outliers = 0;\
         for (last_y = y = FROM; NOEND; y = y INC) {\
-            if (checkline(ctx, frame->data[0] + STEP0 * y, STEP1, LEN, bpp) > s->limit) {\
+            if (checkline(ctx, frame->data[0] + STEP0 * y, STEP1, LEN, bpp) > limit) {\
                 if (++outliers > s->max_outliers) { \
                     DST = last_y;\
                     break;\
@@ -238,7 +242,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 
 static const AVOption cropdetect_options[] = {
-    { "limit", "Threshold below which the pixel is considered black", OFFSET(limit),       AV_OPT_TYPE_INT, { .i64 = 24 }, 0, 65535, FLAGS },
+    { "limit", "Threshold below which the pixel is considered black", OFFSET(limit),       AV_OPT_TYPE_FLOAT, { .dbl = 24.0/255 }, 0, 65535, FLAGS },
     { "round", "Value by which the width/height should be divisible", OFFSET(round),       AV_OPT_TYPE_INT, { .i64 = 16 }, 0, INT_MAX, FLAGS },
     { "reset", "Recalculate the crop area after this many frames",    OFFSET(reset_count), AV_OPT_TYPE_INT, { .i64 = 0 },  0, INT_MAX, FLAGS },
     { "reset_count", "Recalculate the crop area after this many frames",OFFSET(reset_count),AV_OPT_TYPE_INT,{ .i64 = 0 },  0, INT_MAX, FLAGS },
