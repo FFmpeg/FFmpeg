@@ -52,6 +52,8 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUV411P, AV_PIX_FMT_GRAY8,
         AV_PIX_FMT_YUV440P, AV_PIX_FMT_YUV410P,
         AV_PIX_FMT_NV12,    AV_PIX_FMT_NV21,
+        AV_PIX_FMT_RGB24,   AV_PIX_FMT_BGR24,
+        AV_PIX_FMT_RGBA,    AV_PIX_FMT_BGRA,
         AV_PIX_FMT_NONE
     };
 
