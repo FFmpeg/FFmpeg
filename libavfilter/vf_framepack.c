@@ -144,8 +144,8 @@ static void horizontal_frame_pack(FramepackContext *s,
         uint8_t *dstp         = dst->data[plane];
 
         if (plane == 1 || plane == 2) {
-            length = -(-(dst->width / 2) >> s->pix_desc->log2_chroma_w);
-            lines  = -(-(dst->height)    >> s->pix_desc->log2_chroma_h);
+            length = FF_CEIL_RSHIFT(dst->width / 2, s->pix_desc->log2_chroma_w);
+            lines  = FF_CEIL_RSHIFT(dst->height,    s->pix_desc->log2_chroma_h);
         }
 
         if (interleaved) {
