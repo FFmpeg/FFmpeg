@@ -69,6 +69,7 @@ int av_reduce(int *dst_num, int *dst_den,
         den = next_den;
     }
     av_assert2(av_gcd(a1.num, a1.den) <= 1U);
+    av_assert2(a1.num <= max && a1.den <= max);
 
     *dst_num = sign ? -a1.num : a1.num;
     *dst_den = a1.den;
