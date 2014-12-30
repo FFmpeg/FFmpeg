@@ -1754,6 +1754,7 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
     int bitrate;
     int new_line = 0;
     AVRational display_aspect_ratio;
+    const AVCodecDescriptor *desc = avcodec_descriptor_get(enc->codec_id);
 
     if (enc->codec)
         p = enc->codec;
@@ -1762,9 +1763,11 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
     else
         p = avcodec_find_decoder(enc->codec_id);
 
-    if (p) {
-        codec_name = p->name;
+    if (p)
         profile = av_get_profile_name(p, enc->profile);
+
+    if (desc) {
+        codec_name = desc->name;
     } else if (enc->codec_id == AV_CODEC_ID_MPEG2TS) {
         /* fake mpeg2 transport stream codec (currently not
          * registered) */
