@@ -43,7 +43,6 @@ typedef struct PacketDesc {
     int64_t dts;
     int size;
     int unwritten_size;
-    int flags;
     struct PacketDesc *next;
 } PacketDesc;
 
