@@ -102,8 +102,8 @@ static int checkline(void *ctx, const unsigned char *src, int stride, int len, i
     case 4:
         while (len >= 4) {
             total += src[0]        + src[1         ] + src[2         ]
-                  +  src[  stride] + src[1+  stride] + src[2+  stride];
-                  +  src[2*stride] + src[1+2*stride] + src[2+2*stride];
+                  +  src[  stride] + src[1+  stride] + src[2+  stride]
+                  +  src[2*stride] + src[1+2*stride] + src[2+2*stride]
                   +  src[3*stride] + src[1+3*stride] + src[2+3*stride];
             src += 4*stride;
             len -= 4;
