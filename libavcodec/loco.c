@@ -46,7 +46,7 @@ enum LOCO_MODE {
 typedef struct LOCOContext {
     AVCodecContext *avctx;
     int lossy;
-    int mode;
+    enum LOCO_MODE mode;
 } LOCOContext;
 
 typedef struct RICEContext {
