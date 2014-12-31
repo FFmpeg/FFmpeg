@@ -16,6 +16,7 @@ HEADERS = adler32.h                                                     \
           bswap.h                                                       \
           buffer.h                                                      \
           cast5.h                                                       \
+          camellia.h                                                    \
           channel_layout.h                                              \
           common.h                                                      \
           cpu.h                                                         \
@@ -84,6 +85,7 @@ OBJS = adler32.o                                                        \
        bprint.o                                                         \
        buffer.o                                                         \
        cast5.o                                                          \
+       camellia.o                                                       \
        channel_layout.o                                                 \
        cpu.o                                                            \
        crc.o                                                            \
@@ -154,6 +156,7 @@ TESTPROGS = adler32                                                     \
             blowfish                                                    \
             bprint                                                      \
             cast5                                                       \
+            camellia                                                    \
             cpu                                                         \
             crc                                                         \
             des                                                         \
