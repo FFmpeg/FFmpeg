@@ -3303,8 +3303,10 @@ It accepts the following parameters:
 
 @item limit
 Set higher black value threshold, which can be optionally specified
-from nothing (0) to everything (255). An intensity value greater
-to the set value is considered non-black. It defaults to 24.
+from nothing (0) to everything (255 for 8bit based formats). An intensity
+value greater to the set value is considered non-black. It defaults to 24.
+You can also specify a value between 0.0 and 1.0 which will be scaled depending
+on the bitdepth of the pixel format.
 
 @item round
 The value which the width/height should be divisible by. It defaults to

@@ -250,7 +250,7 @@ static void filter(USPPContext *p, uint8_t *dst[3], uint8_t *src[3],
         const int y1c = y1 >> p->vsub;
         const int BLOCKc = BLOCK >> p->hsub;
         int offset;
-        AVPacket pkt;
+        AVPacket pkt = {0};
         int got_pkt_ptr;
 
         av_init_packet(&pkt);

@@ -182,6 +182,7 @@
       <xsd:attribute name="color_primaries"      type="xsd:string"/>
       <xsd:attribute name="chroma_location"      type="xsd:string"/>
       <xsd:attribute name="timecode"             type="xsd:string"/>
+      <xsd:attribute name="refs"                 type="xsd:int"/>
 
       <!-- audio attributes -->
       <xsd:attribute name="sample_fmt"       type="xsd:string"/>
