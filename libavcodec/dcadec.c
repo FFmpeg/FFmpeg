@@ -49,6 +49,7 @@
 #include "get_bits.h"
 #include "internal.h"
 #include "mathops.h"
+#include "profiles.h"
 #include "put_bits.h"
 #include "synth_filter.h"
 
@@ -1566,15 +1567,6 @@ static av_cold int dca_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-static const AVProfile profiles[] = {
-    { FF_PROFILE_DTS,        "DTS"        },
-    { FF_PROFILE_DTS_ES,     "DTS-ES"     },
-    { FF_PROFILE_DTS_96_24,  "DTS 96/24"  },
-    { FF_PROFILE_DTS_HD_HRA, "DTS-HD HRA" },
-    { FF_PROFILE_DTS_HD_MA,  "DTS-HD MA"  },
-    { FF_PROFILE_UNKNOWN },
-};
-
 static const AVOption options[] = {
     { "disable_xch", "disable decoding of the XCh extension", offsetof(DCAContext, xch_disable), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_AUDIO_PARAM },
     { "disable_xll", "disable decoding of the XLL extension", offsetof(DCAContext, xll_disable), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_AUDIO_PARAM },
@@ -1600,6 +1592,6 @@ AVCodec ff_dca_decoder = {
     .capabilities    = AV_CODEC_CAP_CHANNEL_CONF | AV_CODEC_CAP_DR1,
     .sample_fmts     = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
                                                        AV_SAMPLE_FMT_NONE },
-    .profiles        = NULL_IF_CONFIG_SMALL(profiles),
+    .profiles        = NULL_IF_CONFIG_SMALL(ff_dca_profiles),
     .priv_class      = &dca_decoder_class,
 };

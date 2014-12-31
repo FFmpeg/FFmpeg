@@ -21,6 +21,7 @@
 #include "libavutil/common.h"
 #include "libavutil/internal.h"
 #include "avcodec.h"
+#include "profiles.h"
 #include "version.h"
 
 static const AVCodecDescriptor codec_descriptors[] = {
@@ -38,6 +39,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .name      = "mpeg2video",
         .long_name = NULL_IF_CONFIG_SMALL("MPEG-2 video"),
         .props     = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_REORDER,
+        .profiles  = NULL_IF_CONFIG_SMALL(ff_mpeg2_video_profiles),
     },
 #if FF_API_XVMC
     {
@@ -96,6 +98,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .name      = "mpeg4",
         .long_name = NULL_IF_CONFIG_SMALL("MPEG-4 part 2"),
         .props     = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_REORDER,
+        .profiles  = NULL_IF_CONFIG_SMALL(ff_mpeg4_video_profiles),
     },
     {
         .id        = AV_CODEC_ID_RAWVIDEO,
@@ -201,6 +204,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .name      = "h264",
         .long_name = NULL_IF_CONFIG_SMALL("H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10"),
         .props     = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_LOSSLESS | AV_CODEC_PROP_REORDER,
+        .profiles  = NULL_IF_CONFIG_SMALL(ff_h264_profiles),
     },
     {
         .id        = AV_CODEC_ID_INDEO3,
@@ -460,6 +464,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .name      = "vc1",
         .long_name = NULL_IF_CONFIG_SMALL("SMPTE VC-1"),
         .props     = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_REORDER,
+        .profiles  = NULL_IF_CONFIG_SMALL(ff_vc1_profiles),
     },
     {
         .id        = AV_CODEC_ID_WMV3,
@@ -467,6 +472,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .name      = "wmv3",
         .long_name = NULL_IF_CONFIG_SMALL("Windows Media Video 9"),
         .props     = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_REORDER,
+        .profiles  = NULL_IF_CONFIG_SMALL(ff_vc1_profiles),
     },
     {
         .id        = AV_CODEC_ID_LOCO,
@@ -587,6 +593,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .long_name = NULL_IF_CONFIG_SMALL("JPEG 2000"),
         .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY |
                      AV_CODEC_PROP_LOSSLESS,
+        .profiles  = NULL_IF_CONFIG_SMALL(ff_jpeg2000_profiles),
     },
     {
         .id        = AV_CODEC_ID_VMNC,
@@ -1098,6 +1105,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .name      = "hevc",
         .long_name = NULL_IF_CONFIG_SMALL("HEVC (High Efficiency Video Coding)"),
         .props     = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_REORDER,
+        .profiles  = NULL_IF_CONFIG_SMALL(ff_hevc_profiles),
     },
     {
         .id        = AV_CODEC_ID_FIC,
@@ -1912,6 +1920,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .name      = "aac",
         .long_name = NULL_IF_CONFIG_SMALL("AAC (Advanced Audio Coding)"),
         .props     = AV_CODEC_PROP_LOSSY,
+        .profiles  = NULL_IF_CONFIG_SMALL(ff_aac_profiles),
     },
     {
         .id        = AV_CODEC_ID_AC3,
@@ -1926,6 +1935,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .name      = "dts",
         .long_name = NULL_IF_CONFIG_SMALL("DCA (DTS Coherent Acoustics)"),
         .props     = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_LOSSLESS,
+        .profiles  = NULL_IF_CONFIG_SMALL(ff_dca_profiles),
     },
     {
         .id        = AV_CODEC_ID_VORBIS,

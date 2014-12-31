@@ -37,6 +37,7 @@
 #include "cabac_functions.h"
 #include "golomb.h"
 #include "hevc.h"
+#include "profiles.h"
 
 const uint8_t ff_hevc_qpel_extra_before[4] = { 0, 3, 3, 3 };
 const uint8_t ff_hevc_qpel_extra_after[4]  = { 0, 4, 4, 4 };
@@ -3027,13 +3028,6 @@ static void hevc_decode_flush(AVCodecContext *avctx)
 #define OFFSET(x) offsetof(HEVCContext, x)
 #define PAR (AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_VIDEO_PARAM)
 
-static const AVProfile profiles[] = {
-    { FF_PROFILE_HEVC_MAIN,                 "Main"                },
-    { FF_PROFILE_HEVC_MAIN_10,              "Main 10"             },
-    { FF_PROFILE_HEVC_MAIN_STILL_PICTURE,   "Main Still Picture"  },
-    { FF_PROFILE_UNKNOWN },
-};
-
 static const AVOption options[] = {
     { "apply_defdispwin", "Apply default display window from VUI", OFFSET(apply_defdispwin),
         AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, PAR },
@@ -3062,5 +3056,5 @@ AVCodec ff_hevc_decoder = {
     .init_thread_copy      = hevc_init_thread_copy,
     .capabilities          = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
                              AV_CODEC_CAP_FRAME_THREADS,
-    .profiles              = NULL_IF_CONFIG_SMALL(profiles),
+    .profiles              = NULL_IF_CONFIG_SMALL(ff_hevc_profiles),
 };

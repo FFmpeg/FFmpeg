@@ -36,6 +36,7 @@
 #include "thread.h"
 #include "jpeg2000.h"
 #include "jpeg2000dsp.h"
+#include "profiles.h"
 
 #define JP2_SIG_TYPE    0x6A502020
 #define JP2_SIG_VALUE   0x0D0A870A
@@ -1457,15 +1458,6 @@ static const AVOption options[] = {
     { NULL },
 };
 
-static const AVProfile profiles[] = {
-    { FF_PROFILE_JPEG2000_CSTREAM_RESTRICTION_0,  "JPEG 2000 codestream restriction 0"   },
-    { FF_PROFILE_JPEG2000_CSTREAM_RESTRICTION_1,  "JPEG 2000 codestream restriction 1"   },
-    { FF_PROFILE_JPEG2000_CSTREAM_NO_RESTRICTION, "JPEG 2000 no codestream restrictions" },
-    { FF_PROFILE_JPEG2000_DCINEMA_2K,             "JPEG 2000 digital cinema 2K"          },
-    { FF_PROFILE_JPEG2000_DCINEMA_4K,             "JPEG 2000 digital cinema 4K"          },
-    { FF_PROFILE_UNKNOWN },
-};
-
 static const AVClass class = {
     .class_name = "jpeg2000",
     .item_name  = av_default_item_name,
@@ -1484,5 +1476,5 @@ AVCodec ff_jpeg2000_decoder = {
     .init             = jpeg2000_decode_init,
     .decode           = jpeg2000_decode_frame,
     .priv_class       = &class,
-    .profiles         = NULL_IF_CONFIG_SMALL(profiles)
+    .profiles         = NULL_IF_CONFIG_SMALL(ff_jpeg2000_profiles)
 };

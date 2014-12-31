@@ -503,6 +503,11 @@ typedef struct AVCodecDescriptor {
      * Codec properties, a combination of AV_CODEC_PROP_* flags.
      */
     int             props;
+    /**
+     * If non-NULL, an array of profiles recognized for this codec.
+     * Terminated with FF_PROFILE_UNKNOWN.
+     */
+    const struct AVProfile *profiles;
 } AVCodecDescriptor;
 
 /**
@@ -4453,6 +4458,19 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode);
  * @return A name for the profile if found, NULL otherwise.
  */
 const char *av_get_profile_name(const AVCodec *codec, int profile);
+
+/**
+ * Return a name for the specified profile, if available.
+ *
+ * @param codec_id the ID of the codec to which the requested profile belongs
+ * @param profile the profile value for which a name is requested
+ * @return A name for the profile if found, NULL otherwise.
+ *
+ * @note unlike av_get_profile_name(), which searches a list of profiles
+ *       supported by a specific decoder or encoder implementation, this
+ *       function searches the list of profiles from the AVCodecDescriptor
+ */
+const char *avcodec_profile_name(enum AVCodecID codec_id, int profile);
 
 int avcodec_default_execute(AVCodecContext *c, int (*func)(AVCodecContext *c2, void *arg2),void *arg, int *ret, int count, int size);
 int avcodec_default_execute2(AVCodecContext *c, int (*func)(AVCodecContext *c2, void *arg2, int, int),void *arg, int *ret, int count);
