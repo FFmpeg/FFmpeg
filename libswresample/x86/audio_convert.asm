@@ -221,6 +221,8 @@ cglobal pack_6ch_%2_to_%1_%3, 2,8,7, dst, src, src1, src2, src3, src4, src5, len
         jne pack_6ch_%2_to_%1_u_int %+ SUFFIX
     test srcq, mmsize-1
         jne pack_6ch_%2_to_%1_u_int %+ SUFFIX
+    test src1q, mmsize-1
+        jne pack_6ch_%2_to_%1_u_int %+ SUFFIX
     test src2q, mmsize-1
         jne pack_6ch_%2_to_%1_u_int %+ SUFFIX
     test src3q, mmsize-1
