@@ -546,6 +546,9 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream,
     return 0;
 }
 
+#define TYPE_ONTEXTDATA 1
+#define TYPE_UNKNOWN 2
+
 static int flv_read_metabody(AVFormatContext *s, int64_t next_pos)
 {
     AMFDataType type;
@@ -566,13 +569,13 @@ static int flv_read_metabody(AVFormatContext *s, int64_t next_pos)
     type = avio_r8(ioc);
     if (type != AMF_DATA_TYPE_STRING ||
         amf_get_string(ioc, buffer, sizeof(buffer)) < 0)
-        return 2;
+        return TYPE_UNKNOWN;
 
     if (!strcmp(buffer, "onTextData"))
-        return 1;
+        return TYPE_ONTEXTDATA;
 
     if (strcmp(buffer, "onMetaData") && strcmp(buffer, "onCuePoint"))
-        return 2;
+        return TYPE_UNKNOWN;
 
     // find the streams now so that amf_parse_object doesn't need to do
     // the lookup every time it is called.
