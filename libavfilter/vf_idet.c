@@ -285,7 +285,7 @@ static int request_frame(AVFilterLink *link)
         } else if (ret < 0) {
             return ret;
         }
-    } while (!idet->prev);
+    } while (link->frame_requested);
 
     return 0;
 }
