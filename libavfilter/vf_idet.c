@@ -285,7 +285,7 @@ static int request_frame(AVFilterLink *link)
         } else if (ret < 0) {
             return ret;
         }
-    } while (!idet->prev);
+    } while (link->frame_requested);
 
     return 0;
 }
@@ -332,9 +332,18 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_GRAY16,
         AV_PIX_FMT_YUV440P,
         AV_PIX_FMT_YUVJ440P,
+        AV_PIX_FMT_YUV420P9,
+        AV_PIX_FMT_YUV422P9,
+        AV_PIX_FMT_YUV444P9,
         AV_PIX_FMT_YUV420P10,
         AV_PIX_FMT_YUV422P10,
         AV_PIX_FMT_YUV444P10,
+        AV_PIX_FMT_YUV420P12,
+        AV_PIX_FMT_YUV422P12,
+        AV_PIX_FMT_YUV444P12,
+        AV_PIX_FMT_YUV420P14,
+        AV_PIX_FMT_YUV422P14,
+        AV_PIX_FMT_YUV444P14,
         AV_PIX_FMT_YUV420P16,
         AV_PIX_FMT_YUV422P16,
         AV_PIX_FMT_YUV444P16,
