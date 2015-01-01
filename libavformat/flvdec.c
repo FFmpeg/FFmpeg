@@ -483,13 +483,13 @@ static int flv_read_metabody(AVFormatContext *s, int64_t next_pos) {
     type = avio_r8(ioc);
     if (type != AMF_DATA_TYPE_STRING ||
         amf_get_string(ioc, buffer, sizeof(buffer)) < 0)
-        return -1;
+        return 2;
 
     if (!strcmp(buffer, "onTextData"))
         return 1;
 
     if (strcmp(buffer, "onMetaData"))
-        return -1;
+        return 2;
 
     //find the streams now so that amf_parse_object doesn't need to do the lookup every time it is called.
     for(i = 0; i < s->nb_streams; i++) {
@@ -706,7 +706,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
         stream_type=FLV_STREAM_TYPE_DATA;
         if (size > 13+1+4 && dts == 0) { // Header-type metadata stuff
             meta_pos = avio_tell(s->pb);
-            if (flv_read_metabody(s, next) == 0){
+            if (flv_read_metabody(s, next) <= 0){
                 goto skip;
             }
             avio_seek(s->pb, meta_pos, SEEK_SET);
