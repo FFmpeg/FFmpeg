@@ -333,7 +333,7 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream, AVStream *vst
     FLVContext *flv = s->priv_data;
     AVIOContext *ioc;
     AMFDataType amf_type;
-    char str_val[256];
+    char str_val[1024];
     double num_val;
 
     num_val = 0;
