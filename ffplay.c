@@ -185,7 +185,6 @@ typedef struct Decoder {
     AVCodecContext *avctx;
     int pkt_serial;
     int finished;
-    int flushed;
     int packet_pending;
     SDL_cond *empty_queue_cond;
     int64_t start_pts;
@@ -199,7 +198,6 @@ typedef struct VideoState {
     SDL_Thread *video_tid;
     SDL_Thread *audio_tid;
     AVInputFormat *iformat;
-    int no_background;
     int abort_request;
     int force_refresh;
     int paused;
@@ -314,11 +312,7 @@ static int screen_height = 0;
 static int audio_disable;
 static int video_disable;
 static int subtitle_disable;
-static int wanted_stream[AVMEDIA_TYPE_NB] = {
-    [AVMEDIA_TYPE_AUDIO]    = -1,
-    [AVMEDIA_TYPE_VIDEO]    = -1,
-    [AVMEDIA_TYPE_SUBTITLE] = -1,
-};
+static const char* wanted_stream_spec[AVMEDIA_TYPE_NB] = {0};
 static int seek_by_bytes = -1;
 static int display_disable;
 static int show_status = 1;
@@ -548,8 +542,6 @@ static void decoder_init(Decoder *d, AVCodecContext *avctx, PacketQueue *queue, 
 static int decoder_decode_frame(Decoder *d, AVFrame *frame, AVSubtitle *sub) {
     int got_frame = 0;
 
-    d->flushed = 0;
-
     do {
         int ret = -1;
 
@@ -566,7 +558,6 @@ static int decoder_decode_frame(Decoder *d, AVFrame *frame, AVSubtitle *sub) {
                 if (pkt.data == flush_pkt.data) {
                     avcodec_flush_buffers(d->avctx);
                     d->finished = 0;
-                    d->flushed = 1;
                     d->next_pts = d->start_pts;
                     d->next_pts_tb = d->start_pts_tb;
                 }
@@ -2968,29 +2959,42 @@ static int read_thread(void *arg)
 
     is->realtime = is_realtime(ic);
 
-    for (i = 0; i < ic->nb_streams; i++)
-        ic->streams[i]->discard = AVDISCARD_ALL;
+    if (show_status)
+        av_dump_format(ic, 0, is->filename, 0);
+
+    for (i = 0; i < ic->nb_streams; i++) {
+        AVStream *st = ic->streams[i];
+        enum AVMediaType type = st->codec->codec_type;
+        st->discard = AVDISCARD_ALL;
+        if (wanted_stream_spec[type] && st_index[type] == -1)
+            if (avformat_match_stream_specifier(ic, st, wanted_stream_spec[type]) > 0)
+                st_index[type] = i;
+    }
+    for (i = 0; i < AVMEDIA_TYPE_NB; i++) {
+        if (wanted_stream_spec[i] && st_index[i] == -1) {
+            av_log(NULL, AV_LOG_ERROR, "Stream specifier %s does not match any %s stream\n", wanted_stream_spec[i], av_get_media_type_string(i));
+            st_index[i] = INT_MAX;
+        }
+    }
+
     if (!video_disable)
         st_index[AVMEDIA_TYPE_VIDEO] =
             av_find_best_stream(ic, AVMEDIA_TYPE_VIDEO,
-                                wanted_stream[AVMEDIA_TYPE_VIDEO], -1, NULL, 0);
+                                st_index[AVMEDIA_TYPE_VIDEO], -1, NULL, 0);
     if (!audio_disable)
         st_index[AVMEDIA_TYPE_AUDIO] =
             av_find_best_stream(ic, AVMEDIA_TYPE_AUDIO,
-                                wanted_stream[AVMEDIA_TYPE_AUDIO],
+                                st_index[AVMEDIA_TYPE_AUDIO],
                                 st_index[AVMEDIA_TYPE_VIDEO],
                                 NULL, 0);
     if (!video_disable && !subtitle_disable)
         st_index[AVMEDIA_TYPE_SUBTITLE] =
             av_find_best_stream(ic, AVMEDIA_TYPE_SUBTITLE,
-                                wanted_stream[AVMEDIA_TYPE_SUBTITLE],
+                                st_index[AVMEDIA_TYPE_SUBTITLE],
                                 (st_index[AVMEDIA_TYPE_AUDIO] >= 0 ?
                                  st_index[AVMEDIA_TYPE_AUDIO] :
                                  st_index[AVMEDIA_TYPE_VIDEO]),
                                 NULL, 0);
-    if (show_status) {
-        av_dump_format(ic, 0, is->filename, 0);
-    }
 
     is->show_mode = show_mode;
     if (st_index[AVMEDIA_TYPE_VIDEO] >= 0) {
@@ -3674,9 +3678,9 @@ static const OptionDef options[] = {
     { "an", OPT_BOOL, { &audio_disable }, "disable audio" },
     { "vn", OPT_BOOL, { &video_disable }, "disable video" },
     { "sn", OPT_BOOL, { &subtitle_disable }, "disable subtitling" },
-    { "ast", OPT_INT | HAS_ARG | OPT_EXPERT, { &wanted_stream[AVMEDIA_TYPE_AUDIO] }, "select desired audio stream", "stream_number" },
-    { "vst", OPT_INT | HAS_ARG | OPT_EXPERT, { &wanted_stream[AVMEDIA_TYPE_VIDEO] }, "select desired video stream", "stream_number" },
-    { "sst", OPT_INT | HAS_ARG | OPT_EXPERT, { &wanted_stream[AVMEDIA_TYPE_SUBTITLE] }, "select desired subtitle stream", "stream_number" },
+    { "ast", OPT_STRING | HAS_ARG | OPT_EXPERT, { &wanted_stream_spec[AVMEDIA_TYPE_AUDIO] }, "select desired audio stream", "stream_specifier" },
+    { "vst", OPT_STRING | HAS_ARG | OPT_EXPERT, { &wanted_stream_spec[AVMEDIA_TYPE_VIDEO] }, "select desired video stream", "stream_specifier" },
+    { "sst", OPT_STRING | HAS_ARG | OPT_EXPERT, { &wanted_stream_spec[AVMEDIA_TYPE_SUBTITLE] }, "select desired subtitle stream", "stream_specifier" },
     { "ss", HAS_ARG, { .func_arg = opt_seek }, "seek to a given position in seconds", "pos" },
     { "t", HAS_ARG, { .func_arg = opt_duration }, "play  \"duration\" seconds of audio/video", "duration" },
     { "bytes", OPT_INT | HAS_ARG, { &seek_by_bytes }, "seek by bytes 0=off 1=on -1=auto", "val" },
