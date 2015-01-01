@@ -5760,6 +5760,13 @@ Number of frames after which a given frame's contribution to the
 statistics is halved (i.e., it contributes only 0.5 to it's
 classification). The default of 0 means that all frames seen are given
 full weight of 1.0 forever.
+@item analyze_interlaced_flag
+When this is not 0 then idet will use the specified number of frames to determine
+if the interlaced flag is accurate, it will not count undetermined frames.
+If the flag is found to be accurate it will be used without any further
+computations, if it is found to be inaccuarte it will be cleared without any
+further computations. This allows inserting the idet filter as a low computational
+method to clean up the interlaced flag
 @end table
 
 @section il
