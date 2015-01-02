@@ -126,14 +126,14 @@ static const uint8_t SBOX4[256] =
 
 const int av_camellia_size = sizeof(AVCAMELLIA);
 
-static void LR128(uint64_t* d, uint64_t *K, int x)
+static void LR128(uint64_t d[2], const uint64_t K[2], int x)
 {
     int i = 0;
     if (x >=64 && x < 128) {
         i = 1;
         x -= 64;
     }
-    if (!x || x == 128) {
+    if (x <= 0 || x >= 128) {
         d[0] = K[i];
         d[1] = K[!i];
         return;
