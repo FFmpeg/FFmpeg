@@ -190,7 +190,7 @@ static const uint8_t vars[2][12] = {
     {3,1,2,3,0,2,1,3,0,1,2,0}
 };
 
-static void generate_round_keys(AVCAMELLIA* cs, uint64_t *Ka, uint64_t *Kb, uint64_t *Kl, uint64_t *Kr)
+static void generate_round_keys(AVCAMELLIA* cs, uint64_t Kl[2], uint64_t Kr[2], uint64_t Ka[2], uint64_t Kb[2])
 {
     int i;
     uint64_t *Kd[4], d[2];
@@ -374,7 +374,7 @@ av_cold int av_camellia_init(AVCAMELLIA* cs, const uint8_t *key, int key_bits)
         Kb[0] = D1;
         Kb[1] = D2;
     }
-    generate_round_keys(cs, Ka, Kb, Kl, Kr);
+    generate_round_keys(cs, Kl, Kr, Ka, Kb);
     return 0;
 }
 
