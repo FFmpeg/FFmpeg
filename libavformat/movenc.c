@@ -3696,7 +3696,8 @@ static int mov_write_header(AVFormatContext *s)
 
     if (mov->use_editlist < 0) {
         mov->use_editlist = 1;
-        if (mov->flags & FF_MOV_FLAG_FRAGMENT) {
+        if (mov->flags & FF_MOV_FLAG_FRAGMENT &&
+            !(mov->flags & FF_MOV_FLAG_DELAY_MOOV)) {
             // If we can avoid needing an edit list by shifting the
             // tracks, prefer that over (trying to) write edit lists
             // in fragmented output.
