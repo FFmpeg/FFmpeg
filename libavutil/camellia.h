@@ -58,7 +58,7 @@ int av_camellia_init(struct AVCAMELLIA *ctx, const uint8_t *key, int key_bits);
   * @param ctx an AVCAMELLIA context
   * @param dst destination array, can be equal to src
   * @param src source array, can be equal to dst
-  * @param count number of 8 byte blocks
+  * @param count number of 16 byte blocks
   * @paran iv initialization vector for CBC mode, NULL for ECB mode
   * @param decrypt 0 for encryption, 1 for decryption
  */
