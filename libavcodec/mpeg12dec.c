@@ -2299,19 +2299,21 @@ static void mpeg_decode_user_data(AVCodecContext *avctx,
     const uint8_t *buf_end = p + buf_size;
     Mpeg1Context *s1 = avctx->priv_data;
 
+#if 0
+    int i;
+    for(i=0; !(!p[i-2] && !p[i-1] && p[i]==1) && i<buf_size; i++){
+        av_log(avctx, AV_LOG_ERROR, "%c", p[i]);
+    }
+    av_log(avctx, AV_LOG_ERROR, "\n");
+#endif
+
     if (buf_size > 29){
         int i;
         for(i=0; i<20; i++)
             if (!memcmp(p+i, "\0TMPGEXS\0", 9)){
                 s->tmpgexs= 1;
             }
-
-/*        for(i=0; !(!p[i-2] && !p[i-1] && p[i]==1) && i<buf_size; i++){
-            av_log(avctx, AV_LOG_ERROR, "%c", p[i]);
-        }
-            av_log(avctx, AV_LOG_ERROR, "\n");*/
     }
-
     /* we parse the DTG active format information */
     if (buf_end - p >= 5 &&
         p[0] == 'D' && p[1] == 'T' && p[2] == 'G' && p[3] == '1') {
