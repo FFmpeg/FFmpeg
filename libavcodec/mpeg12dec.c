@@ -1273,6 +1273,50 @@ static int mpeg_decode_postinit(AVCodecContext *avctx)
     uint8_t old_permutation[64];
     int ret;
 
+    if (avctx->codec_id == AV_CODEC_ID_MPEG1VIDEO) {
+        // MPEG-1 aspect
+        avctx->sample_aspect_ratio = av_d2q(1.0 / ff_mpeg1_aspect[s->aspect_ratio_info], 255);
+    } else { // MPEG-2
+        // MPEG-2 aspect
+        if (s->aspect_ratio_info > 1) {
+            AVRational dar =
+                av_mul_q(av_div_q(ff_mpeg2_aspect[s->aspect_ratio_info],
+                                  (AVRational) { s1->pan_scan.width,
+                                                 s1->pan_scan.height }),
+                         (AVRational) { s->width, s->height });
+
+            /* We ignore the spec here and guess a bit as reality does not
+             * match the spec, see for example res_change_ffmpeg_aspect.ts
+             * and sequence-display-aspect.mpg.
+             * issue1613, 621, 562 */
+            if ((s1->pan_scan.width == 0) || (s1->pan_scan.height == 0) ||
+                (av_cmp_q(dar, (AVRational) { 4, 3 }) &&
+                 av_cmp_q(dar, (AVRational) { 16, 9 }))) {
+                s->avctx->sample_aspect_ratio =
+                    av_div_q(ff_mpeg2_aspect[s->aspect_ratio_info],
+                             (AVRational) { s->width, s->height });
+            } else {
+                s->avctx->sample_aspect_ratio =
+                    av_div_q(ff_mpeg2_aspect[s->aspect_ratio_info],
+                             (AVRational) { s1->pan_scan.width, s1->pan_scan.height });
+// issue1613 4/3 16/9 -> 16/9
+// res_change_ffmpeg_aspect.ts 4/3 225/44 ->4/3
+// widescreen-issue562.mpg 4/3 16/9 -> 16/9
+//                s->avctx->sample_aspect_ratio = av_mul_q(s->avctx->sample_aspect_ratio, (AVRational) {s->width, s->height});
+                av_dlog(avctx, "A %d/%d\n",
+                        ff_mpeg2_aspect[s->aspect_ratio_info].num,
+                        ff_mpeg2_aspect[s->aspect_ratio_info].den);
+                av_dlog(avctx, "B %d/%d\n", s->avctx->sample_aspect_ratio.num,
+                        s->avctx->sample_aspect_ratio.den);
+            }
+        } else {
+            s->avctx->sample_aspect_ratio =
+                ff_mpeg2_aspect[s->aspect_ratio_info];
+        }
+    } // MPEG-2
+
+    ff_set_sar(s->avctx, s->avctx->sample_aspect_ratio);
+
     if ((s1->mpeg_enc_ctx_allocated == 0)                   ||
         avctx->coded_width       != s->width                ||
         avctx->coded_height      != s->height               ||
@@ -1311,8 +1355,6 @@ static int mpeg_decode_postinit(AVCodecContext *avctx)
         if (avctx->codec_id == AV_CODEC_ID_MPEG1VIDEO) {
             // MPEG-1 fps
             avctx->framerate = ff_mpeg12_frame_rate_tab[s->frame_rate_index];
-            // MPEG-1 aspect
-            avctx->sample_aspect_ratio = av_d2q(1.0 / ff_mpeg1_aspect[s->aspect_ratio_info], 255);
             avctx->ticks_per_frame     = 1;
         } else { // MPEG-2
             // MPEG-2 fps
@@ -1322,45 +1364,7 @@ static int mpeg_decode_postinit(AVCodecContext *avctx)
                       ff_mpeg12_frame_rate_tab[s->frame_rate_index].den * s1->frame_rate_ext.den,
                       1 << 30);
             avctx->ticks_per_frame = 2;
-            // MPEG-2 aspect
-            if (s->aspect_ratio_info > 1) {
-                AVRational dar =
-                    av_mul_q(av_div_q(ff_mpeg2_aspect[s->aspect_ratio_info],
-                                      (AVRational) { s1->pan_scan.width,
-                                                     s1->pan_scan.height }),
-                             (AVRational) { s->width, s->height });
-
-                /* We ignore the spec here and guess a bit as reality does not
-                 * match the spec, see for example res_change_ffmpeg_aspect.ts
-                 * and sequence-display-aspect.mpg.
-                 * issue1613, 621, 562 */
-                if ((s1->pan_scan.width == 0) || (s1->pan_scan.height == 0) ||
-                    (av_cmp_q(dar, (AVRational) { 4, 3 }) &&
-                     av_cmp_q(dar, (AVRational) { 16, 9 }))) {
-                    s->avctx->sample_aspect_ratio =
-                        av_div_q(ff_mpeg2_aspect[s->aspect_ratio_info],
-                                 (AVRational) { s->width, s->height });
-                } else {
-                    s->avctx->sample_aspect_ratio =
-                        av_div_q(ff_mpeg2_aspect[s->aspect_ratio_info],
-                                 (AVRational) { s1->pan_scan.width, s1->pan_scan.height });
-// issue1613 4/3 16/9 -> 16/9
-// res_change_ffmpeg_aspect.ts 4/3 225/44 ->4/3
-// widescreen-issue562.mpg 4/3 16/9 -> 16/9
-//                    s->avctx->sample_aspect_ratio = av_mul_q(s->avctx->sample_aspect_ratio, (AVRational) {s->width, s->height});
-                    av_dlog(avctx, "A %d/%d\n",
-                            ff_mpeg2_aspect[s->aspect_ratio_info].num,
-                            ff_mpeg2_aspect[s->aspect_ratio_info].den);
-                    av_dlog(avctx, "B %d/%d\n", s->avctx->sample_aspect_ratio.num,
-                            s->avctx->sample_aspect_ratio.den);
-                }
-            } else {
-                s->avctx->sample_aspect_ratio =
-                    ff_mpeg2_aspect[s->aspect_ratio_info];
-            }
         } // MPEG-2
-
-        ff_set_sar(s->avctx, s->avctx->sample_aspect_ratio);
 
         avctx->pix_fmt = mpeg_get_pixelformat(avctx);
         setup_hwaccel_for_pixfmt(avctx);
