@@ -59,7 +59,7 @@ typedef struct Mpeg1Context {
     uint8_t afd;
     int has_afd;
     int slice_count;
-    int save_aspect_info;
+    AVRational save_aspect;
     int save_width, save_height, save_progressive_seq;
     AVRational frame_rate_ext;  /* MPEG-2 specific framerate modificator */
     int sync;                   /* Did we reach a sync point like a GOP/SEQ/KEYFrame? */
@@ -1322,7 +1322,7 @@ static int mpeg_decode_postinit(AVCodecContext *avctx)
         avctx->coded_height      != s->height               ||
         s1->save_width           != s->width                ||
         s1->save_height          != s->height               ||
-        s1->save_aspect_info     != s->aspect_ratio_info    ||
+        av_cmp_q(s1->save_aspect, s->avctx->sample_aspect_ratio) ||
         (s1->save_progressive_seq != s->progressive_sequence && FFALIGN(s->height, 16) != FFALIGN(s->height, 32)) ||
         0) {
         if (s1->mpeg_enc_ctx_allocated) {
@@ -1343,7 +1343,7 @@ static int mpeg_decode_postinit(AVCodecContext *avctx)
                    (s->bit_rate != 0x3FFFF*400 || s->vbv_delay != 0xFFFF)) {
             avctx->bit_rate = s->bit_rate;
         }
-        s1->save_aspect_info     = s->aspect_ratio_info;
+        s1->save_aspect          = s->avctx->sample_aspect_ratio;
         s1->save_width           = s->width;
         s1->save_height          = s->height;
         s1->save_progressive_seq = s->progressive_sequence;
