@@ -2435,8 +2435,8 @@ static int http_send_data(HTTPContext *c)
                         return -1;
                     else
                         return 0;
-                } else
-                    c->buffer_ptr += len;
+                }
+                c->buffer_ptr += len;
 
                 c->data_count += len;
                 update_datarate(&c->datarate, c->data_count);
