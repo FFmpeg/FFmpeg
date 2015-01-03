@@ -293,6 +293,8 @@ static av_cold int ljpeg_encode_init(AVCodecContext *avctx)
     avctx->coded_frame->key_frame = 1;
 
     s->scratch = av_malloc_array(avctx->width + 1, sizeof(*s->scratch));
+    if (!s->scratch)
+        goto fail;
 
     ff_idctdsp_init(&s->idsp, avctx);
     ff_init_scantable(s->idsp.idct_permutation, &s->scantable,
@@ -310,6 +312,9 @@ static av_cold int ljpeg_encode_init(AVCodecContext *avctx)
                                  avpriv_mjpeg_val_dc);
 
     return 0;
+fail:
+    ljpeg_encode_close(avctx);
+    return AVERROR(ENOMEM);
 }
 
 AVCodec ff_ljpeg_encoder = {
