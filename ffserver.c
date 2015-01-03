@@ -1770,7 +1770,10 @@ static void compute_status(HTTPContext *c)
         char sfilename[1024];
         char *eosf;
 
-        if (stream->feed != stream) {
+        if (stream->feed == stream) {
+            stream = stream->next;
+            continue;
+        }
             av_strlcpy(sfilename, stream->filename, sizeof(sfilename) - 10);
             eosf = sfilename + strlen(sfilename);
             if (eosf - sfilename >= 4) {
@@ -1849,14 +1852,16 @@ static void compute_status(HTTPContext *c)
                 avio_printf(pb, "<td align=center> - <td align=right> - <td align=right> - <td><td align=right> - <td>\n");
                 break;
             }
-        }
         stream = stream->next;
     }
     avio_printf(pb, "</table>\n");
 
     stream = config.first_stream;
     while (stream) {
-        if (stream->feed == stream) {
+        if (stream->feed != stream) {
+            stream = stream->next;
+            continue;
+        }
             avio_printf(pb, "<h2>Feed %s</h2>", stream->filename);
             if (stream->pid) {
                 avio_printf(pb, "Running as pid %d.\n", stream->pid);
@@ -1916,7 +1921,6 @@ static void compute_status(HTTPContext *c)
             }
             avio_printf(pb, "</table>\n");
 
-        }
         stream = stream->next;
     }
 
