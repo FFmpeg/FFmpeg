@@ -287,6 +287,8 @@ static int xvid_strip_vol_header(AVCodecContext *avctx, AVPacket *pkt,
         /* We need to store the header, so extract it */
         if (!avctx->extradata) {
             avctx->extradata = av_malloc(vo_len);
+            if (!avctx->extradata)
+                return AVERROR(ENOMEM);
             memcpy(avctx->extradata, pkt->data, vo_len);
             avctx->extradata_size = vo_len;
         }
@@ -625,11 +627,19 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)
         if (avctx->intra_matrix) {
             intra           = avctx->intra_matrix;
             x->intra_matrix = av_malloc(sizeof(unsigned char) * 64);
+            if (!x->intra_matrix) {
+                ret = AVERROR(ENOMEM);
+                goto fail;
+            }
         } else
             intra = NULL;
         if (avctx->inter_matrix) {
             inter           = avctx->inter_matrix;
             x->inter_matrix = av_malloc(sizeof(unsigned char) * 64);
+            if (!x->inter_matrix) {
+                ret = AVERROR(ENOMEM);
+                goto fail;
+            }
         } else
             inter = NULL;
 
