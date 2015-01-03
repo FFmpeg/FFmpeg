@@ -628,7 +628,7 @@ static int dash_write_header(AVFormatContext *s)
             goto fail;
         os->init_start_pos = 0;
 
-        av_dict_set(&opts, "movflags", "frag_custom+dash", 0);
+        av_dict_set(&opts, "movflags", "frag_custom+dash+delay_moov", 0);
         if ((ret = avformat_write_header(ctx, &opts)) < 0) {
              goto fail;
         }
@@ -636,13 +636,7 @@ static int dash_write_header(AVFormatContext *s)
         avio_flush(ctx->pb);
         av_dict_free(&opts);
 
-        if (c->single_file) {
-            os->init_range_length = avio_tell(ctx->pb);
-        } else {
-            ffurl_close(os->out);
-            os->out = NULL;
-        }
-        av_log(s, AV_LOG_VERBOSE, "Representation %d init segment written to: %s\n", i, filename);
+        av_log(s, AV_LOG_VERBOSE, "Representation %d init segment will be written to: %s\n", i, filename);
 
         s->streams[i]->time_base = st->time_base;
         // If the muxer wants to shift timestamps, request to have them shifted
@@ -748,7 +742,7 @@ static int dash_flush(AVFormatContext *s, int final, int stream)
     for (i = 0; i < s->nb_streams; i++) {
         OutputStream *os = &c->streams[i];
         char filename[1024] = "", full_path[1024], temp_path[1024];
-        int64_t start_pos = avio_tell(os->ctx->pb);
+        int64_t start_pos;
         int range_length, index_length = 0;
 
         if (!os->packets_written)
@@ -765,6 +759,17 @@ static int dash_flush(AVFormatContext *s, int final, int stream)
             if (c->has_video && os->segment_index > cur_flush_segment_index)
                 continue;
         }
+
+        if (!os->init_range_length) {
+            av_write_frame(os->ctx, NULL);
+            os->init_range_length = avio_tell(os->ctx->pb);
+            if (!c->single_file) {
+                ffurl_close(os->out);
+                os->out = NULL;
+            }
+        }
+
+        start_pos = avio_tell(os->ctx->pb);
 
         if (!c->single_file) {
             dash_fill_tmpl_params(filename, sizeof(filename), c->media_seg_name, i, os->segment_index, os->bit_rate, os->start_dts);
