@@ -288,6 +288,14 @@ static void write_metadata(AVFormatContext *s, unsigned int ts)
             ||!strcmp(tag->key, "audiocodecid")
             ||!strcmp(tag->key, "duration")
             ||!strcmp(tag->key, "onMetaData")
+            ||!strcmp(tag->key, "datasize")
+            ||!strcmp(tag->key, "lasttimestamp")
+            ||!strcmp(tag->key, "totalframes")
+            ||!strcmp(tag->key, "hasAudio")
+            ||!strcmp(tag->key, "hasVideo")
+            ||!strcmp(tag->key, "hasCuePoints")
+            ||!strcmp(tag->key, "hasMetadata")
+            ||!strcmp(tag->key, "hasKeyframes")
         ){
             av_log(s, AV_LOG_DEBUG, "Ignoring metadata for %s\n", tag->key);
             continue;
