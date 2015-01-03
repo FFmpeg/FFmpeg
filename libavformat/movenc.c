@@ -3836,7 +3836,7 @@ static int mov_flush_fragment(AVFormatContext *s)
     if (!(mov->flags & FF_MOV_FLAG_FRAGMENT))
         return 0;
 
-    if (!(mov->flags & FF_MOV_FLAG_EMPTY_MOOV) && mov->fragments == 0) {
+    if (mov->fragments == 0) {
         int64_t pos = avio_tell(s->pb);
         uint8_t *buf;
         int buf_size, moov_size;
