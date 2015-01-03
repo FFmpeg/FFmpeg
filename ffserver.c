@@ -2941,23 +2941,23 @@ static void rtsp_cmd_setup(HTTPContext *c, const char *url,
             strcmp(stream->fmt->name, "rtp")) {
             continue;
         }
-            /* accept aggregate filenames only if single stream */
-            if (!strcmp(path, stream->filename)) {
-                if (stream->nb_streams != 1) {
-                    rtsp_reply_error(c, RTSP_STATUS_AGGREGATE);
-                    return;
-                }
-                stream_index = 0;
-                goto found;
+        /* accept aggregate filenames only if single stream */
+        if (!strcmp(path, stream->filename)) {
+            if (stream->nb_streams != 1) {
+                rtsp_reply_error(c, RTSP_STATUS_AGGREGATE);
+                return;
             }
+            stream_index = 0;
+            goto found;
+        }
 
-            for(stream_index = 0; stream_index < stream->nb_streams;
-                stream_index++) {
-                snprintf(buf, sizeof(buf), "%s/streamid=%d",
-                         stream->filename, stream_index);
-                if (!strcmp(path, buf))
-                    goto found;
-            }
+        for(stream_index = 0; stream_index < stream->nb_streams;
+            stream_index++) {
+            snprintf(buf, sizeof(buf), "%s/streamid=%d",
+                     stream->filename, stream_index);
+            if (!strcmp(path, buf))
+                goto found;
+        }
     }
     /* no stream found */
     rtsp_reply_error(c, RTSP_STATUS_SERVICE); /* XXX: right error ? */
