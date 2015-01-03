@@ -53,6 +53,12 @@ typedef struct MOVStsc {
     int id;
 } MOVStsc;
 
+typedef struct MOVElst {
+    int64_t duration;
+    int64_t time;
+    float rate;
+} MOVElst;
+
 typedef struct MOVDref {
     uint32_t type;
     char *path;
@@ -121,6 +127,8 @@ typedef struct MOVStreamContext {
     MOVStsc *stsc_data;
     unsigned int stps_count;
     unsigned *stps_data;  ///< partial sync sample for mpeg-2 open gop
+    MOVElst *elst_data;
+    unsigned int elst_count;
     int ctts_index;
     int ctts_sample;
     unsigned int sample_size; ///< may contain value calculated from stsd or value from stsz atom
@@ -131,8 +139,6 @@ typedef struct MOVStreamContext {
     unsigned int keyframe_count;
     int *keyframes;
     int time_scale;
-    int64_t empty_duration; ///< empty duration of the first edit list entry
-    int64_t start_time;   ///< start time of the media
     int64_t time_offset;  ///< time offset of the edit list entries
     int current_sample;
     unsigned int bytes_per_frame;

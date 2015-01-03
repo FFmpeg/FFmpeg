@@ -9,6 +9,8 @@ version <next>:
 - RTP/mpegts muxer
 - non continuous cache protocol support
 - tblend filter
+- cropdetect support for non 8bpp, absolute (if limit >= 1) and relative (if limit < 1.0) threshold
+- Camellia symmetric block cipher
 
 
 version 2.5:

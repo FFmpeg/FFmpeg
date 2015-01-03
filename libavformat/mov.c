@@ -2268,18 +2268,40 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
     unsigned int i, j;
     uint64_t stream_size = 0;
 
-    /* adjust first dts according to edit list */
-    if ((sc->empty_duration || sc->start_time) && mov->time_scale > 0) {
-        if (sc->empty_duration)
-            sc->empty_duration = av_rescale(sc->empty_duration, sc->time_scale, mov->time_scale);
-        sc->time_offset = sc->start_time - sc->empty_duration;
-        current_dts = -sc->time_offset;
-        if (sc->ctts_count>0 && sc->stts_count>0 &&
-            sc->ctts_data[0].duration / FFMAX(sc->stts_data[0].duration, 1) > 16) {
-            /* more than 16 frames delay, dts are likely wrong
-               this happens with files created by iMovie */
-            sc->wrong_dts = 1;
-            st->codec->has_b_frames = 1;
+    if (sc->elst_count) {
+        int i, edit_start_index = 0, unsupported = 0;
+        int64_t empty_duration = 0; // empty duration of the first edit list entry
+        int64_t start_time = 0; // start time of the media
+
+        for (i = 0; i < sc->elst_count; i++) {
+            const MOVElst *e = &sc->elst_data[i];
+            if (i == 0 && e->time == -1) {
+                /* if empty, the first entry is the start time of the stream
+                 * relative to the presentation itself */
+                empty_duration = e->duration;
+                edit_start_index = 1;
+            } else if (i == edit_start_index && e->time >= 0) {
+                start_time = e->time;
+            } else
+                unsupported = 1;
+        }
+        if (unsupported)
+            av_log(mov->fc, AV_LOG_WARNING, "multiple edit list entries, "
+                   "a/v desync might occur, patch welcome\n");
+
+        /* adjust first dts according to edit list */
+        if ((empty_duration || start_time) && mov->time_scale > 0) {
+            if (empty_duration)
+                empty_duration = av_rescale(empty_duration, sc->time_scale, mov->time_scale);
+            sc->time_offset = start_time - empty_duration;
+            current_dts = -sc->time_offset;
+            if (sc->ctts_count>0 && sc->stts_count>0 &&
+                sc->ctts_data[0].duration / FFMAX(sc->stts_data[0].duration, 1) > 16) {
+                /* more than 16 frames delay, dts are likely wrong
+                   this happens with files created by iMovie */
+                sc->wrong_dts = 1;
+                st->codec->has_b_frames = 1;
+            }
         }
     }
 
@@ -2626,6 +2648,7 @@ static int mov_read_trak(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     av_freep(&sc->keyframes);
     av_freep(&sc->stts_data);
     av_freep(&sc->stps_data);
+    av_freep(&sc->elst_data);
     av_freep(&sc->rap_group);
 
     return 0;
@@ -3190,8 +3213,7 @@ free_and_return:
 static int mov_read_elst(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     MOVStreamContext *sc;
-    int i, edit_count, version, edit_start_index = 0;
-    int unsupported = 0;
+    int i, edit_count, version;
 
     if (c->fc->nb_streams < 1 || c->ignore_editlist)
         return 0;
@@ -3201,37 +3223,32 @@ static int mov_read_elst(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     avio_rb24(pb); /* flags */
     edit_count = avio_rb32(pb); /* entries */
 
-    if ((uint64_t)edit_count*12+8 > atom.size)
-        return AVERROR_INVALIDDATA;
+    if (!edit_count)
+        return 0;
+    if (sc->elst_data)
+        av_log(c->fc, AV_LOG_WARNING, "Duplicated ELST atom\n");
+    av_free(sc->elst_data);
+    sc->elst_count = 0;
+    sc->elst_data = av_malloc_array(edit_count, sizeof(*sc->elst_data));
+    if (!sc->elst_data)
+        return AVERROR(ENOMEM);
 
     av_dlog(c->fc, "track[%i].edit_count = %i\n", c->fc->nb_streams-1, edit_count);
-    for (i=0; i<edit_count; i++){
-        int64_t time;
-        int64_t duration;
-        int rate;
+    for (i = 0; i < edit_count && !pb->eof_reached; i++) {
+        MOVElst *e = &sc->elst_data[i];
+
         if (version == 1) {
-            duration = avio_rb64(pb);
-            time     = avio_rb64(pb);
+            e->duration = avio_rb64(pb);
+            e->time     = avio_rb64(pb);
         } else {
-            duration = avio_rb32(pb); /* segment duration */
-            time     = (int32_t)avio_rb32(pb); /* media time */
+            e->duration = avio_rb32(pb); /* segment duration */
+            e->time     = (int32_t)avio_rb32(pb); /* media time */
         }
-        rate = avio_rb32(pb);
-        if (i == 0 && time == -1) {
-            sc->empty_duration = duration;
-            edit_start_index = 1;
-        } else if (i == edit_start_index && time >= 0)
-            sc->start_time = time;
-        else
-            unsupported = 1;
-
+        e->rate = avio_rb32(pb) / 65536.0;
         av_dlog(c->fc, "duration=%"PRId64" time=%"PRId64" rate=%f\n",
-                duration, time, rate / 65536.0);
+                e->duration, e->time, e->rate);
     }
-
-    if (unsupported)
-        av_log(c->fc, AV_LOG_WARNING, "multiple edit list entries, "
-               "a/v desync might occur, patch welcome\n");
+    sc->elst_count = i;
 
     return 0;
 }
@@ -3746,6 +3763,7 @@ static int mov_read_close(AVFormatContext *s)
         av_freep(&sc->keyframes);
         av_freep(&sc->stts_data);
         av_freep(&sc->stps_data);
+        av_freep(&sc->elst_data);
         av_freep(&sc->rap_group);
         av_freep(&sc->display_matrix);
     }
