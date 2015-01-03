@@ -721,9 +721,11 @@ static int mov_write_dvc1_structs(MOVTrack *track, uint8_t *buf)
 
     if (track->start_dts == AV_NOPTS_VALUE) {
         /* No packets written yet, vc1_info isn't authoritative yet. */
-        /* Assume inline sequence and entry headers. This will be
-         * overwritten at the end if the file is seekable. */
+        /* Assume inline sequence and entry headers. */
         packet_seq = packet_entry = 1;
+        av_log(NULL, AV_LOG_WARNING,
+               "moov atom written before any packets, unable to write correct "
+               "dvc1 atom. Set the delay_moov flag to fix this.\n");
     }
 
     unescaped = av_mallocz(track->vos_len + FF_INPUT_BUFFER_PADDING_SIZE);
@@ -799,7 +801,6 @@ static int mov_write_dvc1_tag(AVIOContext *pb, MOVTrack *track)
 
     avio_wb32(pb, track->vos_len + 8 + sizeof(buf));
     ffio_wfourcc(pb, "dvc1");
-    track->vc1_info.struct_offset = avio_tell(pb);
     avio_write(pb, buf, sizeof(buf));
     avio_write(pb, track->vos_data, track->vos_len);
 
@@ -5164,19 +5165,6 @@ static int mov_write_trailer(AVFormatContext *s)
             }
         } else {
             mov_write_mfra_tag(pb, mov);
-        }
-    }
-
-    for (i = 0; i < mov->nb_streams; i++) {
-        if (mov->flags & FF_MOV_FLAG_FRAGMENT &&
-            mov->tracks[i].vc1_info.struct_offset && s->pb->seekable) {
-            int64_t off = avio_tell(pb);
-            uint8_t buf[7];
-            if (mov_write_dvc1_structs(&mov->tracks[i], buf) >= 0) {
-                avio_seek(pb, mov->tracks[i].vc1_info.struct_offset, SEEK_SET);
-                avio_write(pb, buf, 7);
-                avio_seek(pb, off, SEEK_SET);
-            }
         }
     }
 
