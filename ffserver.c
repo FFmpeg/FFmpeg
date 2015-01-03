@@ -2937,8 +2937,10 @@ static void rtsp_cmd_setup(HTTPContext *c, const char *url,
 
     /* now check each stream */
     for(stream = config.first_stream; stream; stream = stream->next) {
-        if (!stream->is_feed &&
-            stream->fmt && !strcmp(stream->fmt->name, "rtp")) {
+        if (stream->is_feed || !stream->fmt ||
+            strcmp(stream->fmt->name, "rtp")) {
+            continue;
+        }
             /* accept aggregate filenames only if single stream */
             if (!strcmp(path, stream->filename)) {
                 if (stream->nb_streams != 1) {
@@ -2956,7 +2958,6 @@ static void rtsp_cmd_setup(HTTPContext *c, const char *url,
                 if (!strcmp(path, buf))
                     goto found;
             }
-        }
     }
     /* no stream found */
     rtsp_reply_error(c, RTSP_STATUS_SERVICE); /* XXX: right error ? */
