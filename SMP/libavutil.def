@@ -48,6 +48,9 @@ EXPORTS
     av_buffer_ref
     av_buffer_unref
     av_calloc
+    av_camellia_alloc
+    av_camellia_crypt
+    av_camellia_init
     av_cast5_alloc
     av_cast5_crypt
     av_cast5_crypt2
@@ -447,6 +450,7 @@ EXPORTS
     avutil_license
     avutil_version
     av_aes_size DATA
+    av_camellia_size DATA
     av_cast5_size DATA
     av_md5_size DATA
     av_pix_fmt_descriptors DATA

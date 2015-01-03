@@ -92,6 +92,8 @@
     </ClCompile>
     <ClCompile Include="..\libavutil\cast5.c">
     </ClCompile>
+    <ClCompile Include="..\libavutil\camellia.c">
+    </ClCompile>
     <ClCompile Include="..\libavutil\channel_layout.c">
     </ClCompile>
     <ClCompile Include="..\libavutil\cpu.c">
@@ -218,6 +220,7 @@
     <ClInclude Include="..\libavutil\bswap.h" />
     <ClInclude Include="..\libavutil\buffer.h" />
     <ClInclude Include="..\libavutil\cast5.h" />
+    <ClInclude Include="..\libavutil\camellia.h" />
     <ClInclude Include="..\libavutil\channel_layout.h" />
     <ClInclude Include="..\libavutil\common.h" />
     <ClInclude Include="..\libavutil\cpu.h" />
@@ -528,6 +531,7 @@ copy ..\libavutil\bprint.h $(OutDir)\include\libavutil
 copy ..\libavutil\bswap.h $(OutDir)\include\libavutil
 copy ..\libavutil\buffer.h $(OutDir)\include\libavutil
 copy ..\libavutil\cast5.h $(OutDir)\include\libavutil
+copy ..\libavutil\camellia.h $(OutDir)\include\libavutil
 copy ..\libavutil\channel_layout.h $(OutDir)\include\libavutil
 copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
@@ -649,6 +653,7 @@ copy ..\libavutil\bprint.h $(OutDir)\include\libavutil
 copy ..\libavutil\bswap.h $(OutDir)\include\libavutil
 copy ..\libavutil\buffer.h $(OutDir)\include\libavutil
 copy ..\libavutil\cast5.h $(OutDir)\include\libavutil
+copy ..\libavutil\camellia.h $(OutDir)\include\libavutil
 copy ..\libavutil\channel_layout.h $(OutDir)\include\libavutil
 copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
@@ -777,6 +782,7 @@ copy ..\libavutil\bprint.h $(OutDir)\include\libavutil
 copy ..\libavutil\bswap.h $(OutDir)\include\libavutil
 copy ..\libavutil\buffer.h $(OutDir)\include\libavutil
 copy ..\libavutil\cast5.h $(OutDir)\include\libavutil
+copy ..\libavutil\camellia.h $(OutDir)\include\libavutil
 copy ..\libavutil\channel_layout.h $(OutDir)\include\libavutil
 copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
@@ -908,6 +914,7 @@ copy ..\libavutil\bprint.h $(OutDir)\include\libavutil
 copy ..\libavutil\bswap.h $(OutDir)\include\libavutil
 copy ..\libavutil\buffer.h $(OutDir)\include\libavutil
 copy ..\libavutil\cast5.h $(OutDir)\include\libavutil
+copy ..\libavutil\camellia.h $(OutDir)\include\libavutil
 copy ..\libavutil\channel_layout.h $(OutDir)\include\libavutil
 copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
@@ -1041,6 +1048,7 @@ copy ..\libavutil\bprint.h $(OutDir)\include\libavutil
 copy ..\libavutil\bswap.h $(OutDir)\include\libavutil
 copy ..\libavutil\buffer.h $(OutDir)\include\libavutil
 copy ..\libavutil\cast5.h $(OutDir)\include\libavutil
+copy ..\libavutil\camellia.h $(OutDir)\include\libavutil
 copy ..\libavutil\channel_layout.h $(OutDir)\include\libavutil
 copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
@@ -1172,6 +1180,7 @@ copy ..\libavutil\bprint.h $(OutDir)\include\libavutil
 copy ..\libavutil\bswap.h $(OutDir)\include\libavutil
 copy ..\libavutil\buffer.h $(OutDir)\include\libavutil
 copy ..\libavutil\cast5.h $(OutDir)\include\libavutil
+copy ..\libavutil\camellia.h $(OutDir)\include\libavutil
 copy ..\libavutil\channel_layout.h $(OutDir)\include\libavutil
 copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
@@ -1307,6 +1316,7 @@ copy ..\libavutil\bprint.h $(OutDir)\include\libavutil
 copy ..\libavutil\bswap.h $(OutDir)\include\libavutil
 copy ..\libavutil\buffer.h $(OutDir)\include\libavutil
 copy ..\libavutil\cast5.h $(OutDir)\include\libavutil
+copy ..\libavutil\camellia.h $(OutDir)\include\libavutil
 copy ..\libavutil\channel_layout.h $(OutDir)\include\libavutil
 copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
@@ -1436,6 +1446,7 @@ copy ..\libavutil\bprint.h $(OutDir)\include\libavutil
 copy ..\libavutil\bswap.h $(OutDir)\include\libavutil
 copy ..\libavutil\buffer.h $(OutDir)\include\libavutil
 copy ..\libavutil\cast5.h $(OutDir)\include\libavutil
+copy ..\libavutil\camellia.h $(OutDir)\include\libavutil
 copy ..\libavutil\channel_layout.h $(OutDir)\include\libavutil
 copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
@@ -1572,6 +1583,7 @@ copy ..\libavutil\bprint.h $(OutDir)\include\libavutil
 copy ..\libavutil\bswap.h $(OutDir)\include\libavutil
 copy ..\libavutil\buffer.h $(OutDir)\include\libavutil
 copy ..\libavutil\cast5.h $(OutDir)\include\libavutil
+copy ..\libavutil\camellia.h $(OutDir)\include\libavutil
 copy ..\libavutil\channel_layout.h $(OutDir)\include\libavutil
 copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
@@ -1706,6 +1718,7 @@ copy ..\libavutil\bprint.h $(OutDir)\include\libavutil
 copy ..\libavutil\bswap.h $(OutDir)\include\libavutil
 copy ..\libavutil\buffer.h $(OutDir)\include\libavutil
 copy ..\libavutil\cast5.h $(OutDir)\include\libavutil
+copy ..\libavutil\camellia.h $(OutDir)\include\libavutil
 copy ..\libavutil\channel_layout.h $(OutDir)\include\libavutil
 copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
@@ -1842,6 +1855,7 @@ copy ..\libavutil\bprint.h $(OutDir)\include\libavutil
 copy ..\libavutil\bswap.h $(OutDir)\include\libavutil
 copy ..\libavutil\buffer.h $(OutDir)\include\libavutil
 copy ..\libavutil\cast5.h $(OutDir)\include\libavutil
+copy ..\libavutil\camellia.h $(OutDir)\include\libavutil
 copy ..\libavutil\channel_layout.h $(OutDir)\include\libavutil
 copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
@@ -1976,6 +1990,7 @@ copy ..\libavutil\bprint.h $(OutDir)\include\libavutil
 copy ..\libavutil\bswap.h $(OutDir)\include\libavutil
 copy ..\libavutil\buffer.h $(OutDir)\include\libavutil
 copy ..\libavutil\cast5.h $(OutDir)\include\libavutil
+copy ..\libavutil\camellia.h $(OutDir)\include\libavutil
 copy ..\libavutil\channel_layout.h $(OutDir)\include\libavutil
 copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
@@ -2105,6 +2120,7 @@ copy ..\libavutil\bprint.h $(OutDir)\include\libavutil
 copy ..\libavutil\bswap.h $(OutDir)\include\libavutil
 copy ..\libavutil\buffer.h $(OutDir)\include\libavutil
 copy ..\libavutil\cast5.h $(OutDir)\include\libavutil
+copy ..\libavutil\camellia.h $(OutDir)\include\libavutil
 copy ..\libavutil\channel_layout.h $(OutDir)\include\libavutil
 copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
@@ -2233,6 +2249,7 @@ copy ..\libavutil\bprint.h $(OutDir)\include\libavutil
 copy ..\libavutil\bswap.h $(OutDir)\include\libavutil
 copy ..\libavutil\buffer.h $(OutDir)\include\libavutil
 copy ..\libavutil\cast5.h $(OutDir)\include\libavutil
+copy ..\libavutil\camellia.h $(OutDir)\include\libavutil
 copy ..\libavutil\channel_layout.h $(OutDir)\include\libavutil
 copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
