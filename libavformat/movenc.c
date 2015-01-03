@@ -2231,8 +2231,8 @@ static int mov_write_edts_tag(AVIOContext *pb, MOVMuxContext *mov,
                                       track->timescale, AV_ROUND_UP);
     int version = duration < INT32_MAX ? 0 : 1;
     int entry_size, entry_count, size;
-    int64_t delay, start_ct = track->cluster[0].cts;
-    delay = av_rescale_rnd(track->cluster[0].dts + start_ct, MOV_TIMESCALE,
+    int64_t delay, start_ct = track->start_cts;
+    delay = av_rescale_rnd(track->start_dts + start_ct, MOV_TIMESCALE,
                            track->timescale, AV_ROUND_DOWN);
     version |= delay < INT32_MAX ? 0 : 1;
 
@@ -2268,8 +2268,8 @@ static int mov_write_edts_tag(AVIOContext *pb, MOVMuxContext *mov,
          * special meaning. Normally start_ct should end up positive or zero
          * here, but use FFMIN in case dts is a a small positive integer
          * rounded to 0 when represented in MOV_TIMESCALE units. */
-        av_assert0(av_rescale_rnd(track->cluster[0].dts, MOV_TIMESCALE, track->timescale, AV_ROUND_DOWN) <= 0);
-        start_ct  = -FFMIN(track->cluster[0].dts, 0);
+        av_assert0(av_rescale_rnd(track->start_dts, MOV_TIMESCALE, track->timescale, AV_ROUND_DOWN) <= 0);
+        start_ct  = -FFMIN(track->start_dts, 0);
         /* Note, this delay is calculated from the pts of the first sample,
          * ensuring that we don't reduce the duration for cases with
          * dts<0 pts=0. */
@@ -2396,8 +2396,7 @@ static int mov_write_trak_tag(AVIOContext *pb, MOVMuxContext *mov,
 
     av_assert2(mov->use_editlist >= 0);
 
-
-    if (track->entry) {
+    if (track->start_dts != AV_NOPTS_VALUE) {
         if (mov->use_editlist)
             mov_write_edts_tag(pb, mov, track);  // PSP Movies and several other cases require edts box
         else if ((track->entry && track->cluster[0].dts) || track->mode == MODE_PSP || is_clcp_track(track))
