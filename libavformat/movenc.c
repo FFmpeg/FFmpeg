@@ -2407,10 +2407,11 @@ static int mov_write_trak_tag(AVIOContext *pb, MOVMuxContext *mov,
 {
     int64_t pos = avio_tell(pb);
     int entry_backup = track->entry;
+    int chunk_backup = track->chunkCount;
     /* If we want to have an empty moov, but some samples already have been
      * buffered (delay_moov), pretend that no samples have been written yet. */
     if (mov->flags & FF_MOV_FLAG_EMPTY_MOOV)
-        track->entry = 0;
+        track->chunkCount = track->entry = 0;
 
     avio_wb32(pb, 0); /* size */
     ffio_wfourcc(pb, "trak");
@@ -2446,6 +2447,7 @@ static int mov_write_trak_tag(AVIOContext *pb, MOVMuxContext *mov,
     }
     mov_write_track_udta_tag(pb, mov, st);
     track->entry = entry_backup;
+    track->chunkCount = chunk_backup;
     return update_size(pb, pos);
 }
 
