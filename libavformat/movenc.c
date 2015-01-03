@@ -3722,6 +3722,33 @@ static void mov_write_uuidprof_tag(AVIOContext *pb, AVFormatContext *s)
     avio_wb32(pb, 0x010001); /* ? */
 }
 
+static int mov_write_identification(AVIOContext *pb, AVFormatContext *s)
+{
+    MOVMuxContext *mov = s->priv_data;
+    int i;
+
+    mov_write_ftyp_tag(pb,s);
+    if (mov->mode == MODE_PSP) {
+        int video_streams_nb = 0, audio_streams_nb = 0, other_streams_nb = 0;
+        for (i = 0; i < s->nb_streams; i++) {
+            AVStream *st = s->streams[i];
+            if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO)
+                video_streams_nb++;
+            else if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO)
+                audio_streams_nb++;
+            else
+                other_streams_nb++;
+            }
+
+        if (video_streams_nb != 1 || audio_streams_nb != 1 || other_streams_nb) {
+            av_log(s, AV_LOG_ERROR, "PSP mode need one video and one audio stream\n");
+            return AVERROR(EINVAL);
+        }
+        mov_write_uuidprof_tag(pb, s);
+    }
+    return 0;
+}
+
 static int mov_parse_mpeg2_frame(AVPacket *pkt, uint32_t *flags)
 {
     uint32_t c = -1;
@@ -4590,25 +4617,8 @@ static int mov_write_header(AVFormatContext *s)
         return AVERROR(EINVAL);
     }
 
-    mov_write_ftyp_tag(pb,s);
-    if (mov->mode == MODE_PSP) {
-        int video_streams_nb = 0, audio_streams_nb = 0, other_streams_nb = 0;
-        for (i = 0; i < s->nb_streams; i++) {
-            AVStream *st = s->streams[i];
-            if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO)
-                video_streams_nb++;
-            else if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO)
-                audio_streams_nb++;
-            else
-                other_streams_nb++;
-            }
-
-        if (video_streams_nb != 1 || audio_streams_nb != 1 || other_streams_nb) {
-            av_log(s, AV_LOG_ERROR, "PSP mode need one video and one audio stream\n");
-            return AVERROR(EINVAL);
-        }
-        mov_write_uuidprof_tag(pb, s);
-    }
+    if ((ret = mov_write_identification(pb, s)) < 0)
+        return ret;
 
     mov->nb_streams = s->nb_streams;
     if (mov->mode & (MODE_MP4|MODE_MOV|MODE_IPOD) && s->nb_chapters)
