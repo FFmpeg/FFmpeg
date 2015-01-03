@@ -66,6 +66,7 @@ static const AVOption options[] = {
     { "default_base_moof", "Set the default-base-is-moof flag in tfhd atoms", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_DEFAULT_BASE_MOOF}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     { "dash", "Write DASH compatible fragmented MP4", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_DASH}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     { "frag_discont", "Signal that the next fragment is discontinuous from earlier ones", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_FRAG_DISCONT}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
+    { "delay_moov", "Delay writing the initial moov until the first fragment is cut, or until the first fragment flush", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_DELAY_MOOV}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     FF_RTP_FLAG_OPTS(MOVMuxContext, rtp_flags),
     { "skip_iods", "Skip writing iods atom.", offsetof(MOVMuxContext, iods_skip), AV_OPT_TYPE_INT, {.i64 = 1}, 0, 1, AV_OPT_FLAG_ENCODING_PARAM},
     { "iods_audio_profile", "iods audio profile atom.", offsetof(MOVMuxContext, iods_audio_profile), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 255, AV_OPT_FLAG_ENCODING_PARAM},
@@ -1801,7 +1802,7 @@ static int mov_write_stbl_tag(AVIOContext *pb, MOVTrack *track)
     if (track->mode == MODE_MOV && track->flags & MOV_TRACK_STPS)
         mov_write_stss_tag(pb, track, MOV_PARTIAL_SYNC_SAMPLE);
     if (track->enc->codec_type == AVMEDIA_TYPE_VIDEO &&
-        track->flags & MOV_TRACK_CTTS)
+        track->flags & MOV_TRACK_CTTS && track->entry)
         mov_write_ctts_tag(pb, track);
     mov_write_stsc_tag(pb, track);
     mov_write_stsz_tag(pb, track);
@@ -2404,6 +2405,12 @@ static int mov_write_trak_tag(AVIOContext *pb, MOVMuxContext *mov,
                               MOVTrack *track, AVStream *st)
 {
     int64_t pos = avio_tell(pb);
+    int entry_backup = track->entry;
+    /* If we want to have an empty moov, but some samples already have been
+     * buffered (delay_moov), pretend that no samples have been written yet. */
+    if (mov->flags & FF_MOV_FLAG_EMPTY_MOOV)
+        track->entry = 0;
+
     avio_wb32(pb, 0); /* size */
     ffio_wfourcc(pb, "trak");
     mov_write_tkhd_tag(pb, mov, track, st);
@@ -2437,6 +2444,7 @@ static int mov_write_trak_tag(AVIOContext *pb, MOVMuxContext *mov,
         }
     }
     mov_write_track_udta_tag(pb, mov, st);
+    track->entry = entry_backup;
     return update_size(pb, pos);
 }
 
@@ -2510,6 +2518,12 @@ static int mov_write_mvhd_tag(AVIOContext *pb, MOVMuxContext *mov)
             if (max_track_id < mov->tracks[i].track_id)
                 max_track_id = mov->tracks[i].track_id;
         }
+    }
+    /* If using delay_moov, make sure the output is the same as if no
+     * samples had been written yet. */
+    if (mov->flags & FF_MOV_FLAG_EMPTY_MOOV) {
+        max_track_len = 0;
+        max_track_id  = 1;
     }
 
     version = max_track_len < UINT32_MAX ? 0 : 1;
@@ -3865,7 +3879,17 @@ static int mov_flush_fragment(AVFormatContext *s)
         for (i = 0; i < mov->nb_streams; i++)
             mov->tracks[i].data_offset = pos + moov_size + 8;
 
+        if (mov->flags & FF_MOV_FLAG_DELAY_MOOV)
+            mov_write_identification(s->pb, s);
         mov_write_moov_tag(s->pb, mov, s);
+
+        if (mov->flags & FF_MOV_FLAG_DELAY_MOOV) {
+            if (mov->flags & FF_MOV_FLAG_FASTSTART)
+                mov->reserved_moov_pos = avio_tell(s->pb);
+            avio_flush(s->pb);
+            mov->fragments++;
+            return 0;
+        }
 
         buf_size = avio_close_dyn_buf(mov->mdat_buf, &buf);
         mov->mdat_buf = NULL;
@@ -3949,6 +3973,19 @@ static int mov_flush_fragment(AVFormatContext *s)
     return 0;
 }
 
+static int mov_auto_flush_fragment(AVFormatContext *s)
+{
+    MOVMuxContext *mov = s->priv_data;
+    int ret = mov_flush_fragment(s);
+    if (ret < 0)
+        return ret;
+    // If using delay_moov, the first flush only wrote the moov,
+    // not the actual moof+mdat pair, thus flush once again.
+    if (mov->fragments == 1 && mov->flags & FF_MOV_FLAG_DELAY_MOOV)
+        ret = mov_flush_fragment(s);
+    return ret;
+}
+
 int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     MOVMuxContext *mov = s->priv_data;
@@ -3976,7 +4013,7 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     }
     if (mov->flags & FF_MOV_FLAG_FRAGMENT) {
         int ret;
-        if (mov->fragments > 0) {
+        if (mov->fragments > 0 || mov->flags & FF_MOV_FLAG_EMPTY_MOOV) {
             if (!trk->mdat_buf) {
                 if ((ret = avio_open_dyn_buf(&trk->mdat_buf)) < 0)
                     return ret;
@@ -4126,11 +4163,12 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
             trk->frag_start   = pkt->dts;
             trk->start_dts    = 0;
             trk->frag_discont = 0;
-        } else if (pkt->dts && mov->flags & FF_MOV_FLAG_EMPTY_MOOV)
+        } else if (mov->fragments >= 1)
             av_log(s, AV_LOG_WARNING,
-                   "Track %d starts with a nonzero dts %"PRId64". This "
-                   "currently isn't handled correctly in combination with "
-                   "empty_moov.\n", pkt->stream_index, pkt->dts);
+                   "Track %d starts with a nonzero dts %"PRId64", while the moov "
+                   "already has been written. Set the delay_moov flag to handle "
+                   "this case.\n",
+                   pkt->stream_index, pkt->dts);
     }
     trk->track_duration = pkt->dts - trk->start_dts + pkt->duration;
     trk->last_sample_is_subtitle_end = 0;
@@ -4204,7 +4242,7 @@ static int mov_write_single_packet(AVFormatContext *s, AVPacket *pkt)
               enc->codec_type == AVMEDIA_TYPE_VIDEO &&
               trk->entry && pkt->flags & AV_PKT_FLAG_KEY)) {
             if (frag_duration >= mov->min_fragment_duration)
-                mov_flush_fragment(s);
+                mov_auto_flush_fragment(s);
         }
 
         return ff_mov_write_packet(s, pkt);
@@ -4585,6 +4623,9 @@ static int mov_write_header(AVFormatContext *s)
     if (s->flags & AVFMT_FLAG_BITEXACT)
         mov->exact = 1;
 
+    if (mov->flags & FF_MOV_FLAG_DELAY_MOOV)
+        mov->flags |= FF_MOV_FLAG_EMPTY_MOOV;
+
     /* Set the FRAGMENT flag if any of the fragmentation methods are
      * enabled. */
     if (mov->max_fragment_duration || mov->max_fragment_size ||
@@ -4616,8 +4657,9 @@ static int mov_write_header(AVFormatContext *s)
                 mov->use_editlist = 0;
         }
     }
-    if (mov->flags & FF_MOV_FLAG_EMPTY_MOOV && mov->use_editlist)
-        av_log(s, AV_LOG_WARNING, "No meaningful edit list will be written when using empty_moov\n");
+    if (mov->flags & FF_MOV_FLAG_EMPTY_MOOV &&
+        !(mov->flags & FF_MOV_FLAG_DELAY_MOOV) && mov->use_editlist)
+        av_log(s, AV_LOG_WARNING, "No meaningful edit list will be written when using empty_moov without delay_moov\n");
 
     if (!mov->use_editlist && s->avoid_negative_ts == AVFMT_AVOID_NEG_TS_AUTO)
         s->avoid_negative_ts = AVFMT_AVOID_NEG_TS_MAKE_ZERO;
@@ -4630,8 +4672,10 @@ static int mov_write_header(AVFormatContext *s)
         return AVERROR(EINVAL);
     }
 
-    if ((ret = mov_write_identification(pb, s)) < 0)
-        return ret;
+    if (!(mov->flags & FF_MOV_FLAG_DELAY_MOOV)) {
+        if ((ret = mov_write_identification(pb, s)) < 0)
+            return ret;
+    }
 
     mov->nb_streams = s->nb_streams;
     if (mov->mode & (MODE_MP4|MODE_MOV|MODE_IPOD) && s->nb_chapters)
@@ -4882,7 +4926,8 @@ static int mov_write_header(AVFormatContext *s)
     if (mov->flags & FF_MOV_FLAG_ISML)
         mov_write_isml_manifest(pb, mov);
 
-    if (mov->flags & FF_MOV_FLAG_EMPTY_MOOV) {
+    if (mov->flags & FF_MOV_FLAG_EMPTY_MOOV &&
+        !(mov->flags & FF_MOV_FLAG_DELAY_MOOV)) {
         mov_write_moov_tag(pb, mov, s);
         mov->fragments++;
         if (mov->flags & FF_MOV_FLAG_FASTSTART)
@@ -5104,7 +5149,7 @@ static int mov_write_trailer(AVFormatContext *s)
             mov_write_moov_tag(pb, mov, s);
         }
     } else {
-        mov_flush_fragment(s);
+        mov_auto_flush_fragment(s);
         for (i = 0; i < mov->nb_streams; i++)
            mov->tracks[i].data_offset = 0;
         if (mov->flags & FF_MOV_FLAG_FASTSTART) {
