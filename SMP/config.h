@@ -3,7 +3,7 @@
 #define FFMPEG_CONFIG_H
 #define FFMPEG_CONFIGURATION "--enable-gpl --enable-version3 --enable-avisynth --enable-nonfree --enable-libmp3lame --enable-libvorbis --enable-libspeex --enable-libopus --enable-libilbc --enable-libfdk-aac --enable-libtheora --enable-libx264 --enable-libx265 --enable-libxvid --enable-libvpx --enable-libgme --enable-libmodplug --enable-libsoxr --enable-libfreetype --enable-fontconfig --enable-libfribidi --enable-libass --enable-gnutls --enable-librtmp --enable-libssh --enable-libcdio --enable-libbluray --enable-opengl --enable-opencl --enable-nvenc --toolchain=msvc"
 #define FFMPEG_LICENSE "nonfree and unredistributable"
-#define CONFIG_THIS_YEAR 2014
+#define CONFIG_THIS_YEAR 2015
 #define FFMPEG_DATADIR "."
 #define AVCONV_DATADIR "."
 #if defined(__INTEL_COMPILER)
