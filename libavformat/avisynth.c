@@ -43,7 +43,7 @@
       #define AVISYNTH_LIB "libavxsynth.so"
     #endif
 
-  #define LoadLibrary(x) dlopen(x, RTLD_NOW | RTLD_GLOBAL)
+  #define LoadLibrary(x) dlopen(x, RTLD_NOW | RTLD_LOCAL)
   #define GetProcAddress dlsym
   #define FreeLibrary dlclose
 #endif

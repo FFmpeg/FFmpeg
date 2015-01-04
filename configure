@@ -5057,8 +5057,8 @@ enabled xlib &&
     check_lib X11/Xlib.h XOpenDisplay -lX11 || disable xlib
 
 if ! disabled libxcb; then
-    check_pkg_config xcb xcb/xcb.h xcb_connect || {
-        enabled libxcb && die "ERROR: libxcb not found";
+    check_pkg_config "xcb >= 1.4" xcb/xcb.h xcb_connect || {
+        enabled libxcb && die "ERROR: libxcb >= 1.4 not found";
     } && disable x11grab && enable libxcb
 
 if enabled libxcb; then
@@ -5693,7 +5693,7 @@ cat > $TMPH <<EOF
 #define FFMPEG_CONFIG_H
 #define FFMPEG_CONFIGURATION "$(c_escape $FFMPEG_CONFIGURATION)"
 #define FFMPEG_LICENSE "$(c_escape $license)"
-#define CONFIG_THIS_YEAR 2014
+#define CONFIG_THIS_YEAR 2015
 #define FFMPEG_DATADIR "$(eval c_escape $datadir)"
 #define AVCONV_DATADIR "$(eval c_escape $datadir)"
 #define CC_IDENT "$(c_escape ${cc_ident:-Unknown compiler})"

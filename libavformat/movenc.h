@@ -137,7 +137,6 @@ typedef struct MOVTrack {
     unsigned    frag_info_capacity;
 
     struct {
-        int64_t struct_offset;
         int     first_packet_seq;
         int     first_packet_entry;
         int     packet_seq;
@@ -201,6 +200,7 @@ typedef struct MOVMuxContext {
 #define FF_MOV_FLAG_DEFAULT_BASE_MOOF     (1 << 10)
 #define FF_MOV_FLAG_DASH                  (1 << 11)
 #define FF_MOV_FLAG_FRAG_DISCONT          (1 << 12)
+#define FF_MOV_FLAG_DELAY_MOOV            (1 << 13)
 
 int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt);
 
