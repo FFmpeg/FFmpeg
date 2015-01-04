@@ -41,6 +41,8 @@ int ff_raw_audio_read_header(AVFormatContext *s);
 
 int ff_raw_video_read_header(AVFormatContext *s);
 
+int ff_raw_data_read_header(AVFormatContext *s);
+
 #define FF_RAWVIDEO_DEMUXER_CLASS(name)\
 static const AVClass name ## _demuxer_class = {\
     .class_name = #name " demuxer",\
