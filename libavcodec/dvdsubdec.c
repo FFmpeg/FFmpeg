@@ -98,6 +98,9 @@ static int decode_rle(uint8_t *bitmap, int linesize, int w, int h,
     int x, y, len, color;
     uint8_t *d;
 
+    if (start >= buf_size)
+        return -1;
+
     bit_len = (buf_size - start) * 8;
     init_get_bits(&gb, buf + start, bit_len);
 
@@ -339,10 +342,12 @@ static int decode_dvd_subtitles(DVDSubContext *ctx, AVSubtitle *sub_header,
                 sub_header->rects[0] = av_mallocz(sizeof(AVSubtitleRect));
                 sub_header->num_rects = 1;
                 sub_header->rects[0]->pict.data[0] = bitmap;
-                decode_rle(bitmap, w * 2, w, (h + 1) / 2,
-                           buf, offset1, buf_size, is_8bit);
-                decode_rle(bitmap + w, w * 2, w, h / 2,
-                           buf, offset2, buf_size, is_8bit);
+                if (decode_rle(bitmap, w * 2, w, (h + 1) / 2,
+                               buf, offset1, buf_size, is_8bit) < 0)
+                    goto fail;
+                if (decode_rle(bitmap + w, w * 2, w, h / 2,
+                               buf, offset2, buf_size, is_8bit) < 0)
+                    goto fail;
                 sub_header->rects[0]->pict.data[1] = av_mallocz(AVPALETTE_SIZE);
                 if (is_8bit) {
                     if (yuv_palette == 0)
