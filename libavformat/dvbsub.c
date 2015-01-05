@@ -33,6 +33,7 @@ static int dvbsub_probe(AVProbeData *p)
     int max_score = 0;
 
     for(i=0; i<p->buf_size; i++){
+        if (p->buf[i] == 0x0f) {
         const uint8_t *ptr = p->buf + i;
         uint8_t histogram[6] = {0};
         int min = 255;
@@ -55,6 +56,7 @@ static int dvbsub_probe(AVProbeData *p)
         }
         if (min && j > max_score)
             max_score = j;
+        }
     }
 
     if (max_score > 5)
