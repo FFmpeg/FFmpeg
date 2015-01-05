@@ -629,7 +629,6 @@ static int dash_write_header(AVFormatContext *s)
         os->init_start_pos = 0;
 
         av_dict_set(&opts, "movflags", "frag_custom+dash+delay_moov", 0);
-        av_dict_set(&opts, "use_editlist", "1", 0);
         if ((ret = avformat_write_header(ctx, &opts)) < 0) {
              goto fail;
         }

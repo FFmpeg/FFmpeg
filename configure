@@ -3219,6 +3219,7 @@ msvc_common_flags(){
             -lavifil32)           echo vfw32.lib ;;
             -lavicap32)           echo vfw32.lib user32.lib ;;
             -l*)                  echo ${flag#-l}.lib ;;
+            -L*)                  echo -libpath:${flag#-L} ;;
             *)                    echo $flag ;;
         esac
     done

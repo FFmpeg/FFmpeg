@@ -1214,7 +1214,10 @@ awkward to specify on the command line. Lines starting with the hash
 ('#') character are ignored and are used to provide comments. Check
 the @file{presets} directory in the FFmpeg source tree for examples.
 
-Preset files are specified with the @code{vpre}, @code{apre},
+There are two types of preset files: ffpreset and avpreset files.
+
+@subsection ffpreset files
+ffpreset files are specified with the @code{vpre}, @code{apre},
 @code{spre}, and @code{fpre} options. The @code{fpre} option takes the
 filename of the preset instead of a preset name as input and can be
 used for any kind of codec. For the @code{vpre}, @code{apre}, and
@@ -1239,6 +1242,26 @@ directories, where @var{codec_name} is the name of the codec to which
 the preset file options will be applied. For example, if you select
 the video codec with @code{-vcodec libvpx} and use @code{-vpre 1080p},
 then it will search for the file @file{libvpx-1080p.ffpreset}.
+
+@subsection avpreset files
+avpreset files are specified with the @code{pre} option. They work similar to
+ffpreset files, but they only allow encoder- specific options. Therefore, an
+@var{option}=@var{value} pair specifying an encoder cannot be used.
+
+When the @code{pre} option is specified, ffmpeg will look for files with the
+suffix .avpreset in the directories @file{$AVCONV_DATADIR} (if set), and
+@file{$HOME/.avconv}, and in the datadir defined at configuration time (usually
+@file{PREFIX/share/ffmpeg}), in that order.
+
+First ffmpeg searches for a file named @var{codec_name}-@var{arg}.avpreset in
+the above-mentioned directories, where @var{codec_name} is the name of the codec
+to which the preset file options will be applied. For example, if you select the
+video codec with @code{-vcodec libvpx} and use @code{-pre 1080p}, then it will
+search for the file @file{libvpx-1080p.avpreset}.
+
+If no such file is found, then ffmpeg will search for a file named
+@var{arg}.avpreset in the same directories.
+
 @c man end OPTIONS
 
 @chapter Tips
@@ -1284,21 +1307,6 @@ quality).
 
 @chapter Examples
 @c man begin EXAMPLES
-
-@section Preset files
-
-A preset file contains a sequence of @var{option=value} pairs, one for
-each line, specifying a sequence of options which can be specified also on
-the command line. Lines starting with the hash ('#') character are ignored and
-are used to provide comments. Empty lines are also ignored. Check the
-@file{presets} directory in the FFmpeg source tree for examples.
-
-Preset files are specified with the @code{pre} option, this option takes a
-preset name as input.  FFmpeg searches for a file named @var{preset_name}.avpreset in
-the directories @file{$AVCONV_DATADIR} (if set), and @file{$HOME/.ffmpeg}, and in
-the data directory defined at configuration time (usually @file{$PREFIX/share/ffmpeg})
-in that order.  For example, if the argument is @code{libx264-max}, it will
-search for the file @file{libx264-max.avpreset}.
 
 @section Video and Audio grabbing
 

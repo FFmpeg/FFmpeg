@@ -41,6 +41,8 @@ int ff_raw_audio_read_header(AVFormatContext *s);
 
 int ff_raw_video_read_header(AVFormatContext *s);
 
+int ff_raw_data_read_header(AVFormatContext *s);
+
 #define FF_RAWVIDEO_DEMUXER_CLASS(name)\
 static const AVClass name ## _demuxer_class = {\
     .class_name = #name " demuxer",\
@@ -66,5 +68,28 @@ AVInputFormat ff_ ## shortname ## _demuxer = {\
 
 #define FF_DEF_RAWVIDEO_DEMUXER(shortname, longname, probe, ext, id)\
 FF_DEF_RAWVIDEO_DEMUXER2(shortname, longname, probe, ext, id, AVFMT_GENERIC_INDEX)
+
+#define FF_RAWSUB_DEMUXER_CLASS(name)\
+static const AVClass name ## _demuxer_class = {\
+    .class_name = #name " demuxer",\
+    .item_name  = av_default_item_name,\
+    .option     = NULL,\
+    .version    = LIBAVUTIL_VERSION_INT,\
+};
+
+#define FF_DEF_RAWSUB_DEMUXER(shortname, longname, probe, ext, id, flag)\
+FF_RAWVIDEO_DEMUXER_CLASS(shortname)\
+AVInputFormat ff_ ## shortname ## _demuxer = {\
+    .name           = #shortname,\
+    .long_name      = NULL_IF_CONFIG_SMALL(longname),\
+    .read_probe     = probe,\
+    .read_header    = ff_raw_data_read_header,\
+    .read_packet    = ff_raw_read_partial_packet,\
+    .extensions     = ext,\
+    .flags          = flag,\
+    .raw_codec_id   = id,\
+    .priv_data_size = 0,\
+    .priv_class     = &shortname ## _demuxer_class,\
+};
 
 #endif /* AVFORMAT_RAWDEC_H */
