@@ -60,7 +60,7 @@ static int dvbsub_probe(AVProbeData *p)
     }
 
     if (max_score > 5)
-        return AVPROBE_SCORE_EXTENSION/2;
+        return AVPROBE_SCORE_EXTENSION;
 
     return 0;
 }
