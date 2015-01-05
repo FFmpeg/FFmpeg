@@ -313,6 +313,8 @@
     </ClCompile>
     <ClCompile Include="..\libavformat\dvenc.c">
     </ClCompile>
+    <ClCompile Include="..\libavformat\dvbsub.c">
+    </ClCompile>
     <ClCompile Include="..\libavformat\dxa.c">
     </ClCompile>
     <ClCompile Include="..\libavformat\eacdata.c">

@@ -399,6 +399,9 @@
     <ClCompile Include="..\libavformat\dvenc.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavformat\dvbsub.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavformat\dxa.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
