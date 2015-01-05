@@ -184,6 +184,13 @@ static void close_null_ctx(AVIOContext *pb)
     av_free(pb);
 }
 
+static void seg_free_context(SegmentContext *seg)
+{
+    avio_closep(&seg->pb);
+    avformat_free_context(seg->avf);
+    seg->avf = NULL;
+}
+
 static int seg_write_header(AVFormatContext *s)
 {
     SegmentContext *seg = s->priv_data;
@@ -265,12 +272,9 @@ static int seg_write_header(AVFormatContext *s)
     }
 
 fail:
-    if (ret) {
-        if (seg->list)
-            avio_close(seg->pb);
-        if (seg->avf)
-            avformat_free_context(seg->avf);
-    }
+    if (ret < 0)
+        seg_free_context(seg);
+
     return ret;
 }
 
@@ -281,6 +285,9 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
     AVStream *st = s->streams[pkt->stream_index];
     int64_t end_pts = seg->recording_time * seg->number;
     int ret, can_split = 1;
+
+    if (!oc)
+        return AVERROR(EINVAL);
 
     if (seg->has_video) {
         can_split = st->codec->codec_type == AVMEDIA_TYPE_VIDEO &&
@@ -322,11 +329,8 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
     ret = ff_write_chained(oc, pkt->stream_index, pkt, s);
 
 fail:
-    if (ret < 0) {
-        if (seg->list)
-            avio_close(seg->pb);
-        avformat_free_context(oc);
-    }
+    if (ret < 0)
+        seg_free_context(seg);
 
     return ret;
 }
@@ -335,7 +339,11 @@ static int seg_write_trailer(struct AVFormatContext *s)
 {
     SegmentContext *seg = s->priv_data;
     AVFormatContext *oc = seg->avf;
-    int ret;
+    int ret = 0;
+
+    if (!oc)
+        goto fail;
+
     if (!seg->write_header_trailer) {
         if ((ret = segment_end(oc, 0)) < 0)
             goto fail;
