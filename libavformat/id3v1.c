@@ -179,7 +179,7 @@ static void get_string(AVFormatContext *s, const char *key,
                        const uint8_t *buf, int buf_size)
 {
     int i, c;
-    char *q, str[512];
+    char *q, str[512], *first_free_space = NULL;
 
     q = str;
     for(i = 0; i < buf_size; i++) {
@@ -188,9 +188,18 @@ static void get_string(AVFormatContext *s, const char *key,
             break;
         if ((q - str) >= sizeof(str) - 1)
             break;
+        if (c == ' ') {
+            if (!first_free_space)
+                first_free_space = q;
+        } else {
+            first_free_space = NULL;
+        }
         *q++ = c;
     }
     *q = '\0';
+
+    if (first_free_space)
+        *first_free_space = '\0';
 
     if (*str)
         av_dict_set(&s->metadata, key, str, 0);
