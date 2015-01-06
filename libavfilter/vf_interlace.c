@@ -145,10 +145,10 @@ static void copy_picture_field(InterlaceContext *s,
         av_assert0(cols >= 0 || lines >= 0);
 
         lines = (lines + (field_type == FIELD_UPPER)) / 2;
-        if (field_type == FIELD_LOWER)
+        if (field_type == FIELD_LOWER) {
             srcp += src_frame->linesize[plane];
-        if (field_type == FIELD_LOWER)
             dstp += dst_frame->linesize[plane];
+        }
         if (lowpass) {
             int srcp_linesize = src_frame->linesize[plane] * 2;
             int dstp_linesize = dst_frame->linesize[plane] * 2;
