@@ -345,7 +345,11 @@ static int filter_frame(AVFilterLink *link, AVFrame *frame)
     if (!yadif->prev)
         return 0;
 
-    if ((yadif->deint && !yadif->cur->interlaced_frame) || ctx->is_disabled) {
+    if ((yadif->deint && !yadif->cur->interlaced_frame) ||
+        ctx->is_disabled ||
+        (yadif->deint && !yadif->prev->interlaced_frame && yadif->prev->repeat_pict) ||
+        (yadif->deint && !yadif->next->interlaced_frame && yadif->next->repeat_pict)
+    ) {
         yadif->out  = av_frame_clone(yadif->cur);
         if (!yadif->out)
             return AVERROR(ENOMEM);

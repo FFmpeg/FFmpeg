@@ -63,6 +63,10 @@ typedef struct {
     AVFrame *prev;
     ff_idet_filter_func filter_line;
 
+    int interlaced_flag_accuracy;
+    int analyze_interlaced_flag;
+    int analyze_interlaced_flag_done;
+
     const AVPixFmtDescriptor *csp;
     int eof;
 } IDETContext;

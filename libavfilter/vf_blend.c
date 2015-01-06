@@ -373,6 +373,20 @@ static int query_formats(AVFilterContext *ctx)
     return 0;
 }
 
+static av_cold void uninit(AVFilterContext *ctx)
+{
+    BlendContext *b = ctx->priv;
+    int i;
+
+    ff_dualinput_uninit(&b->dinput);
+    av_freep(&b->prev_frame);
+
+    for (i = 0; i < FF_ARRAY_ELEMS(b->params); i++)
+        av_expr_free(b->params[i].e);
+}
+
+#if CONFIG_BLEND_FILTER
+
 static int config_output(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
@@ -416,18 +430,6 @@ static int config_output(AVFilterLink *outlink)
         return ret;
 
     return 0;
-}
-
-static av_cold void uninit(AVFilterContext *ctx)
-{
-    BlendContext *b = ctx->priv;
-    int i;
-
-    ff_dualinput_uninit(&b->dinput);
-    av_freep(&b->prev_frame);
-
-    for (i = 0; i < FF_ARRAY_ELEMS(b->params); i++)
-        av_expr_free(b->params[i].e);
 }
 
 static int request_frame(AVFilterLink *outlink)
@@ -477,6 +479,10 @@ AVFilter ff_vf_blend = {
     .priv_class    = &blend_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
 };
+
+#endif
+
+#if CONFIG_TBLEND_FILTER
 
 static int tblend_config_output(AVFilterLink *outlink)
 {
@@ -545,3 +551,5 @@ AVFilter ff_vf_tblend = {
     .outputs       = tblend_outputs,
     .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };
+
+#endif
