@@ -142,7 +142,7 @@ static void copy_picture_field(InterlaceContext *s,
         uint8_t *dstp = dst_frame->data[plane];
         const uint8_t *srcp = src_frame->data[plane];
 
-        av_assert0(cols >= 0);
+        av_assert0(cols >= 0 || lines >= 0);
 
         lines = (lines + (field_type == FIELD_UPPER)) / 2;
         if (field_type == FIELD_LOWER)
