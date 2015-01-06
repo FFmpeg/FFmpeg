@@ -13,6 +13,7 @@ version <next>:
 - Camellia symmetric block cipher
 - OpenH264 encoder wrapper
 - VOC seeking support
+- Closed caption Decoder
 
 
 version 2.5:
