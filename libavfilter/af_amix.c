@@ -496,6 +496,8 @@ static av_cold int init(AVFilterContext *ctx)
         snprintf(name, sizeof(name), "input%d", i);
         pad.type           = AVMEDIA_TYPE_AUDIO;
         pad.name           = av_strdup(name);
+        if (!pad.name)
+            return AVERROR(ENOMEM);
         pad.filter_frame   = filter_frame;
 
         ff_insert_inpad(ctx, i, &pad);
