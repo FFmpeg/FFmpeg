@@ -1017,7 +1017,7 @@ static void encode_slice_header(FFV1Context *f, FFV1Context *fs)
     }
 }
 
-static void choose_rct_params(FFV1Context *fs, uint8_t *src[3], const int stride[3], int w, int h)
+static void choose_rct_params(FFV1Context *fs, const uint8_t *src[3], const int stride[3], int w, int h)
 {
 #define NB_Y_COEFF 15
     static const int rct_y_coeff[15][2] = {
@@ -1053,14 +1053,14 @@ static void choose_rct_params(FFV1Context *fs, uint8_t *src[3], const int stride
             int b, g, r;
             int ab, ag, ar;
             if (lbd) {
-                unsigned v = *((uint32_t*)(src[0] + x*4 + stride[0]*y));
+                unsigned v = *((const uint32_t*)(src[0] + x*4 + stride[0]*y));
                 b =  v        & 0xFF;
                 g = (v >>  8) & 0xFF;
                 r = (v >> 16) & 0xFF;
             } else {
-                b = *((uint16_t*)(src[0] + x*2 + stride[0]*y));
-                g = *((uint16_t*)(src[1] + x*2 + stride[1]*y));
-                r = *((uint16_t*)(src[2] + x*2 + stride[2]*y));
+                b = *((const uint16_t*)(src[0] + x*2 + stride[0]*y));
+                g = *((const uint16_t*)(src[1] + x*2 + stride[1]*y));
+                r = *((const uint16_t*)(src[2] + x*2 + stride[2]*y));
             }
 
             ar = r - lastr;
