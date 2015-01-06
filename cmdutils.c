@@ -1860,7 +1860,7 @@ int read_yesno(void)
 
 int cmdutils_read_file(const char *filename, char **bufptr, size_t *size)
 {
-    int ret;
+    int64_t ret;
     FILE *f = av_fopen_utf8(filename, "rb");
 
     if (!f) {
