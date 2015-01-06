@@ -1009,7 +1009,7 @@ static void ebml_free(EbmlSyntax *syntax, void *data)
                 char *ptr = list->elem;
                 for (j=0; j<list->nb_elem; j++, ptr+=syntax[i].list_elem_size)
                     ebml_free(syntax[i].def.n, ptr);
-                av_free(list->elem);
+                av_freep(&list->elem);
             } else
                 ebml_free(syntax[i].def.n, data_off);
         default:  break;
@@ -1938,7 +1938,7 @@ static int matroska_deliver_packet(MatroskaDemuxContext *matroska,
 {
     if (matroska->num_packets > 0) {
         memcpy(pkt, matroska->packets[0], sizeof(AVPacket));
-        av_free(matroska->packets[0]);
+        av_freep(&matroska->packets[0]);
         if (matroska->num_packets > 1) {
             void *newpackets;
             memmove(&matroska->packets[0], &matroska->packets[1],
@@ -1968,7 +1968,7 @@ static void matroska_clear_queue(MatroskaDemuxContext *matroska)
         int n;
         for (n = 0; n < matroska->num_packets; n++) {
             av_free_packet(matroska->packets[n]);
-            av_free(matroska->packets[n]);
+            av_freep(&matroska->packets[n]);
         }
         av_freep(&matroska->packets);
         matroska->num_packets = 0;
@@ -2668,7 +2668,7 @@ static int matroska_read_close(AVFormatContext *s)
 
     for (n=0; n < matroska->tracks.nb_elem; n++)
         if (tracks[n].type == MATROSKA_TRACK_TYPE_AUDIO)
-            av_free(tracks[n].audio.buf);
+            av_freep(&tracks[n].audio.buf);
     ebml_free(matroska_cluster, &matroska->current_cluster);
     ebml_free(matroska_segment, matroska);
 
