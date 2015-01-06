@@ -380,24 +380,25 @@ static int vda_h264_end_frame(AVCodecContext *avctx)
 
     CFRelease(coded_frame);
 
+    if (!vda->frame)
+        return AVERROR_UNKNOWN;
+
     if (status != kVDADecoderNoErr) {
         av_log(avctx, AV_LOG_ERROR, "Failed to decode frame (%d)\n", status);
         return AVERROR_UNKNOWN;
     }
 
-    if (vda->frame) {
-        av_buffer_unref(&frame->buf[0]);
+    av_buffer_unref(&frame->buf[0]);
 
-        frame->buf[0] = av_buffer_create((uint8_t*)vda->frame,
-                                         sizeof(vda->frame),
-                                         release_buffer, NULL,
-                                         AV_BUFFER_FLAG_READONLY);
-        if (!frame->buf)
-            return AVERROR(ENOMEM);
+    frame->buf[0] = av_buffer_create((uint8_t*)vda->frame,
+                                     sizeof(vda->frame),
+                                     release_buffer, NULL,
+                                     AV_BUFFER_FLAG_READONLY);
+    if (!frame->buf)
+        return AVERROR(ENOMEM);
 
-        frame->data[3] = (uint8_t*)vda->frame;
-        vda->frame = NULL;
-    }
+    frame->data[3] = (uint8_t*)vda->frame;
+    vda->frame = NULL;
 
     return 0;
 }
