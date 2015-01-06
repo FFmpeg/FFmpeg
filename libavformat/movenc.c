@@ -4166,7 +4166,7 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
             trk->frag_start   = pkt->dts;
             trk->start_dts    = 0;
             trk->frag_discont = 0;
-        } else if (mov->fragments >= 1)
+        } else if (pkt->dts && mov->fragments >= 1)
             av_log(s, AV_LOG_WARNING,
                    "Track %d starts with a nonzero dts %"PRId64", while the moov "
                    "already has been written. Set the delay_moov flag to handle "
