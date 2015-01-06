@@ -2931,7 +2931,7 @@ static int mov_read_default(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                 }
             }
             total_size += 8;
-            if (a.size == 1) { /* 64 bit extended size */
+            if (a.size == 1 && total_size + 8 <= atom.size) { /* 64 bit extended size */
                 a.size = avio_rb64(pb) - 8;
                 total_size += 8;
             }
