@@ -100,7 +100,7 @@ static int config_out_props(AVFilterLink *outlink)
     }
 
     if (!s->lowpass)
-        av_log(ctx, AV_LOG_WARNING, "***warning*** Lowpass filter is disabled, "
+        av_log(ctx, AV_LOG_WARNING, "Lowpass filter is disabled, "
                "the resulting video will be aliased rather than interlaced.\n");
 
     // same input size
