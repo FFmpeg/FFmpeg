@@ -194,7 +194,7 @@ static int img_read_header(AVFormatContext *s1)
             return AVERROR(ENOENT);
         s->img_first  = first_index;
         s->img_last   = last_index;
-        s->img_number = first_index;
+        s->img_number = s->start_number != 1 ? s->start_number : first_index;
         /* compute duration */
         st->start_time = 0;
         st->duration   = last_index - first_index + 1;
