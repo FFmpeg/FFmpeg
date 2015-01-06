@@ -280,6 +280,7 @@ typedef struct VideoState {
     struct SwsContext *img_convert_ctx;
 #endif
     SDL_Rect last_display_rect;
+    int eof;
 
     char filename[1024];
     int width, height, xleft, ytop;
@@ -2687,6 +2688,7 @@ static int stream_component_open(VideoState *is, int stream_index)
         goto fail;
     }
 
+    is->eof = 0;
     ic->streams[stream_index]->discard = AVDISCARD_DEFAULT;
     switch (avctx->codec_type) {
     case AVMEDIA_TYPE_AUDIO:
@@ -2873,7 +2875,6 @@ static int read_thread(void *arg)
     int err, i, ret;
     int st_index[AVMEDIA_TYPE_NB];
     AVPacket pkt1, *pkt = &pkt1;
-    int eof = 0;
     int64_t stream_start_time;
     int pkt_in_play_range = 0;
     AVDictionaryEntry *t;
@@ -2887,6 +2888,7 @@ static int read_thread(void *arg)
     is->last_video_stream = is->video_stream = -1;
     is->last_audio_stream = is->audio_stream = -1;
     is->last_subtitle_stream = is->subtitle_stream = -1;
+    is->eof = 0;
 
     ic = avformat_alloc_context();
     ic->interrupt_callback.callback = decode_interrupt_cb;
@@ -3084,7 +3086,7 @@ static int read_thread(void *arg)
             }
             is->seek_req = 0;
             is->queue_attachments_req = 1;
-            eof = 0;
+            is->eof = 0;
             if (is->paused)
                 step_to_next_frame(is);
         }
@@ -3124,14 +3126,14 @@ static int read_thread(void *arg)
         }
         ret = av_read_frame(ic, pkt);
         if (ret < 0) {
-            if ((ret == AVERROR_EOF || avio_feof(ic->pb)) && !eof) {
+            if ((ret == AVERROR_EOF || avio_feof(ic->pb)) && !is->eof) {
                 if (is->video_stream >= 0)
                     packet_queue_put_nullpacket(&is->videoq, is->video_stream);
                 if (is->audio_stream >= 0)
                     packet_queue_put_nullpacket(&is->audioq, is->audio_stream);
                 if (is->subtitle_stream >= 0)
                     packet_queue_put_nullpacket(&is->subtitleq, is->subtitle_stream);
-                eof = 1;
+                is->eof = 1;
             }
             if (ic->pb && ic->pb->error)
                 break;
@@ -3140,7 +3142,7 @@ static int read_thread(void *arg)
             SDL_UnlockMutex(wait_mutex);
             continue;
         } else {
-            eof = 0;
+            is->eof = 0;
         }
         /* check if packet is in play range specified by user, then queue, otherwise discard */
         stream_start_time = ic->streams[pkt->stream_index]->start_time;
