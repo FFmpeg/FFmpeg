@@ -2829,6 +2829,7 @@ int ff_alloc_extradata(AVCodecContext *avctx, int size)
     int ret;
 
     if (size < 0 || size >= INT32_MAX - FF_INPUT_BUFFER_PADDING_SIZE) {
+        avctx->extradata = NULL;
         avctx->extradata_size = 0;
         return AVERROR(EINVAL);
     }
