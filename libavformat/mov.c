@@ -355,7 +355,7 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     if (!key)
         return 0;
-    if (atom.size < 0)
+    if (atom.size < 0 || str_size >= INT_MAX/2)
         return AVERROR_INVALIDDATA;
 
     str_size_alloc = str_size << 1; // worst-case requirement for output string in case of utf8 coded input
