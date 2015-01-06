@@ -197,19 +197,16 @@ void copy_picture_field(TInterlaceContext *tinterlace,
                         int flags)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(format);
+    int hsub = desc->log2_chroma_w;
     int plane, vsub = desc->log2_chroma_h;
     int k = src_field == FIELD_UPPER_AND_LOWER ? 1 : 2;
     int h;
 
     for (plane = 0; plane < desc->nb_components; plane++) {
         int lines = plane == 1 || plane == 2 ? FF_CEIL_RSHIFT(src_h, vsub) : src_h;
-        int cols  = plane == 1 || plane == 2 ? FF_CEIL_RSHIFT(    w, desc->log2_chroma_w) : w;
-        int linesize = av_image_get_linesize(format, w, plane);
+        int cols  = plane == 1 || plane == 2 ? FF_CEIL_RSHIFT(    w, hsub) : w;
         uint8_t *dstp = dst[plane];
         const uint8_t *srcp = src[plane];
-
-        if (linesize < 0)
-            return;
 
         lines = (lines + (src_field == FIELD_UPPER)) / k;
         if (src_field == FIELD_LOWER)
@@ -234,7 +231,7 @@ void copy_picture_field(TInterlaceContext *tinterlace,
             }
         } else {
             av_image_copy_plane(dstp, dst_linesize[plane] * (interleave ? 2 : 1),
-                            srcp, src_linesize[plane]*k, linesize, lines);
+                                srcp, src_linesize[plane]*k, cols, lines);
         }
     }
 }
