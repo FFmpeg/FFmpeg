@@ -278,6 +278,9 @@ static int mov_read_covr(MOVContext *c, AVIOContext *pb, int type, int len)
 static int mov_metadata_raw(MOVContext *c, AVIOContext *pb,
                             unsigned len, const char *key)
 {
+    // Check for overflow.
+    if (len >= INT_MAX)
+        return AVERROR(EINVAL);
     char *value = av_malloc(len + 1);
     if (!value)
         return AVERROR(ENOMEM);
