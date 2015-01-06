@@ -380,7 +380,7 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     // worst-case requirement for output string in case of utf8 coded input
     str_size_alloc = (raw ? str_size : str_size * 2) + 1;
-    str = av_malloc(str_size_alloc);
+    str = av_mallocz(str_size_alloc);
     if (!str)
         return AVERROR(ENOMEM);
 
