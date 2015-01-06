@@ -2060,7 +2060,7 @@ void *grow_array(void *array, int elem_size, int *size, int new_size)
         exit_program(1);
     }
     if (*size < new_size) {
-        uint8_t *tmp = av_realloc(array, new_size*elem_size);
+        uint8_t *tmp = av_realloc_array(array, new_size, elem_size);
         if (!tmp) {
             av_log(NULL, AV_LOG_ERROR, "Could not alloc buffer.\n");
             exit_program(1);
