@@ -1526,10 +1526,15 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
     snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf),
              "%02d:%02d:%02d.%02d ", hours, mins, secs,
              (100 * us) / AV_TIME_BASE);
-    if (bitrate < 0) snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf),
-                              "bitrate=N/A");
-    else             snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf),
-                              "bitrate=%6.1fkbits/s", bitrate);
+
+    if (bitrate < 0) {
+        snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf),"bitrate=N/A");
+        av_bprintf(&buf_script, "bitrate=N/A\n");
+    }else{
+        snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf),"bitrate=%6.1fkbits/s", bitrate);
+        av_bprintf(&buf_script, "bitrate=%6.1fkbits/s\n", bitrate);
+    }
+    
     if (total_size < 0) av_bprintf(&buf_script, "total_size=N/A\n");
     else                av_bprintf(&buf_script, "total_size=%"PRId64"\n", total_size);
     av_bprintf(&buf_script, "out_time_ms=%"PRId64"\n", pts);
@@ -2494,7 +2499,7 @@ static void report_new_stream(int input_index, AVPacket *pkt)
            input_index, pkt->stream_index,
            pkt->pos, av_ts2timestr(pkt->dts, &st->time_base));
     file->nb_streams_warn = pkt->stream_index + 1;
-}
+}b
 
 static void set_encoder_id(OutputFile *of, OutputStream *ost)
 {
