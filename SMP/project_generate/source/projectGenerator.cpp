@@ -990,8 +990,8 @@ exit /b 1 \n\
     for( map<string, StaticList>::iterator itI = mDirectoryObjects.begin( ); itI != mDirectoryObjects.end( ); itI++ )
     {
         //Need to make output directory so cl doesnt fail outputting objs
-        string sDirName = itI->first;
-        sCLLaunchBat += "mkdir " + sProjectNameShort + "\\" + sDirName + " > nul 2>&1\n";
+        string sDirName = sProjectNameShort + "\\" + itI->first;
+        sCLLaunchBat += "mkdir " + sDirName + " > nul 2>&1\n";
         const uint uiRowSize = 32;
         uint uiNumCLCalls = (uint)ceilf( (float)itI->second.size( ) / (float)uiRowSize );
         uint uiTotalPos = 0;
@@ -999,16 +999,16 @@ exit /b 1 \n\
         for( uint uiI = 0; uiI < uiNumCLCalls; uiI++ )
         {
             sCLLaunchBat += "cl.exe";
-            sCLLaunchBat += " /I\"../../\" /I\"../../../\" " + sCLExtra + " /Fo\"" + sProjectNameShort + "/" + itI->first + "/\" /D\"_DEBUG\" /D\"WIN32\" /D\"_WINDOWS\" /D\"HAVE_AV_CONFIG_H\" /D\"inline=__inline\" /D\"strtod=avpriv_strtod\" /FI\"compat\\msvcrt\\snprintf.h\" /FR\"" + sProjectNameShort + "/" + itI->first + "/\" /c /MP /w /nologo";
+            sCLLaunchBat += " /I\"../../\" /I\"../../../\" " + sCLExtra + " /Fo\"" + sDirName + "/\" /D\"_DEBUG\" /D\"WIN32\" /D\"_WINDOWS\" /D\"HAVE_AV_CONFIG_H\" /D\"inline=__inline\" /D\"strtod=avpriv_strtod\" /FI\"compat\\msvcrt\\snprintf.h\" /FR\"" + sDirName + "/\" /c /MP /w /nologo";
             uint uiStartPos = uiTotalPos;
             for( uiTotalPos; uiTotalPos < min( uiStartPos + uiRowSize, itI->second.size( ) ); uiTotalPos++ )
             {
                 sCLLaunchBat += " \"../../" + itI->second[uiTotalPos] + "\"";
             }
-            sCLLaunchBat += " >nul\nif %errorlevel% neq 0 goto exitFail\n";
+            sCLLaunchBat += " > log.txt\nif %errorlevel% neq 0 goto exitFail\n";
         }
     }
-    sCLLaunchBat += "del /F /S /Q *.obj > nul 2>&1\n";
+    sCLLaunchBat += "del /F /S /Q *.obj > nul 2>&1\ndel log.txt > nul 2>&1\n";
     sCLLaunchBat += "exit /b 0\n:exitFail\nrmdir /S /Q " + sProjectNameShort + "\nexit /b 1";
     ofstream ofBatFile( "test.bat" );
     if( !ofBatFile.is_open( ) )
@@ -1021,7 +1021,7 @@ exit /b 1 \n\
 
     if( 0 != system( "test.bat" ) )
     {
-        cout << "  Error: Failed calling temp.bat. Ensure you have Visual Studio or the Microsoft compiler installed and that any required dependency libs/headers are available" << endl;
+        cout << "  Error: Failed calling temp.bat. Ensure you have Visual Studio or the Microsoft compiler installed and that any required dependencies are available.\nSee error.txt for further details." << endl;
         //Remove the test header files
         deleteFile( "test.bat" );
         deleteFolder( sProjectNameShort );
