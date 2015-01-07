@@ -511,7 +511,6 @@ void avcodec_register_all(void)
     REGISTER_ENCODER(LIBMP3LAME,        libmp3lame);
     REGISTER_ENCDEC (LIBOPENCORE_AMRNB, libopencore_amrnb);
     REGISTER_DECODER(LIBOPENCORE_AMRWB, libopencore_amrwb);
-    REGISTER_ENCODER(LIBOPENH264,       libopenh264);
     REGISTER_ENCDEC (LIBOPENJPEG,       libopenjpeg);
     REGISTER_ENCDEC (LIBOPUS,           libopus);
     REGISTER_ENCDEC (LIBSCHROEDINGER,   libschroedinger);
@@ -535,6 +534,7 @@ void avcodec_register_all(void)
     REGISTER_ENCODER(LIBXVID,           libxvid);
     REGISTER_DECODER(LIBZVBI_TELETEXT,  libzvbi_teletext);
     REGISTER_ENCODER(LIBAACPLUS,        libaacplus);
+    REGISTER_ENCODER(LIBOPENH264,       libopenh264);
 
     /* text */
     REGISTER_DECODER(BINTEXT,           bintext);
