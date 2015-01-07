@@ -657,7 +657,12 @@ static av_cold int nvenc_encode_init(AVCodecContext *avctx)
     }
 
     if (ctx->gobpattern >= 0) {
-        ctx->encode_config.frameIntervalP = 1;
+        ctx->encode_config.frameIntervalP = ctx->gobpattern;
+    }
+
+    // when there're b frames, set dts offset
+    if (ctx->encode_config.frameIntervalP >= 2) {
+        ctx->last_dts = -2;
     }
 
     ctx->encode_config.encodeCodecConfig.h264Config.h264VUIParameters.colourDescriptionPresentFlag = 1;
@@ -904,6 +909,10 @@ static int process_output_surface(AVCodecContext *avctx, AVPacket *pkt, AVFrame 
 
     pkt->pts = lock_params.outputTimeStamp;
     pkt->dts = timestamp_queue_dequeue(&ctx->timestamp_list);
+
+    // when there're b frame(s), set dts offset
+    if (ctx->encode_config.frameIntervalP >= 2)
+        pkt->dts -= 1;
 
     if (pkt->dts > pkt->pts)
         pkt->dts = pkt->pts;
