@@ -182,7 +182,7 @@ static int svc_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         return 0;
     }
     first_layer = 0;
-    // Normal frames are returned with one single layers, while IDR
+    // Normal frames are returned with one single layer, while IDR
     // frames have two layers, where the first layer contains the SPS/PPS.
     // If using global headers, don't include the SPS/PPS in the returned
     // packet - thus, only return one layer.
@@ -214,6 +214,7 @@ static int svc_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
 AVCodec ff_libopenh264_encoder = {
     .name           = "libopenh264",
+    .long_name      = NULL_IF_CONFIG_SMALL("OpenH264 H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_H264,
     .priv_data_size = sizeof(SVCContext),
@@ -223,6 +224,5 @@ AVCodec ff_libopenh264_encoder = {
     .capabilities   = CODEC_CAP_AUTO_THREADS,
     .pix_fmts       = (const enum PixelFormat[]){ AV_PIX_FMT_YUV420P,
                                                   AV_PIX_FMT_NONE },
-    .long_name      = NULL_IF_CONFIG_SMALL("OpenH264"),
     .priv_class     = &class,
 };
