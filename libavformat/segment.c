@@ -357,7 +357,7 @@ static int segment_end(AVFormatContext *s, int write_trailer, int is_last)
                 av_freep(&entry);
             }
 
-            avio_close(seg->list_pb);
+            avio_closep(&seg->list_pb);
             if ((ret = segment_list_open(s)) < 0)
                 goto end;
             for (entry = seg->segment_list_entries; entry; entry = entry->next)
@@ -375,7 +375,7 @@ static int segment_end(AVFormatContext *s, int write_trailer, int is_last)
     seg->segment_count++;
 
 end:
-    avio_close(oc->pb);
+    avio_closep(&oc->pb);
 
     return ret;
 }
@@ -688,7 +688,7 @@ static int seg_write_header(AVFormatContext *s)
     }
 
     if (ret < 0) {
-        avio_close(oc->pb);
+        avio_closep(&oc->pb);
         goto fail;
     }
     seg->segment_frame_count = 0;
@@ -849,7 +849,7 @@ static int seg_write_trailer(struct AVFormatContext *s)
     }
 fail:
     if (seg->list)
-        avio_close(seg->list_pb);
+        avio_closep(&seg->list_pb);
 
     av_dict_free(&seg->format_options);
     av_opt_free(seg);
@@ -865,6 +865,7 @@ fail:
     }
 
     avformat_free_context(oc);
+    seg->avf = NULL;
     return ret;
 }
 
