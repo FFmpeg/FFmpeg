@@ -143,6 +143,8 @@ static int set_string_binary(void *obj, const AVOption *o, const char *val, uint
     len /= 2;
 
     ptr = bin = av_malloc(len);
+    if (!ptr)
+        return AVERROR(ENOMEM);
     while (*val) {
         int a = hexchar2int(*val++);
         int b = hexchar2int(*val++);

@@ -380,7 +380,7 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     // worst-case requirement for output string in case of utf8 coded input
     str_size_alloc = (raw ? str_size : str_size * 2) + 1;
-    str = av_malloc(str_size_alloc);
+    str = av_mallocz(str_size_alloc);
     if (!str)
         return AVERROR(ENOMEM);
 
@@ -1174,7 +1174,7 @@ static int mov_read_wave(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         st->codec->codec_id == AV_CODEC_ID_QDMC ||
         st->codec->codec_id == AV_CODEC_ID_SPEEX) {
         // pass all frma atom to codec, needed at least for QDMC and QDM2
-        av_free(st->codec->extradata);
+        av_freep(&st->codec->extradata);
         if (ff_get_extradata(st->codec, pb, atom.size) < 0)
             return AVERROR(ENOMEM);
     } else if (atom.size > 8) { /* to read frma, esds atoms */
@@ -1214,7 +1214,7 @@ static int mov_read_glbl(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         av_log(c, AV_LOG_WARNING, "ignoring multiple glbl\n");
         return 0;
     }
-    av_free(st->codec->extradata);
+    av_freep(&st->codec->extradata);
     if (ff_get_extradata(st->codec, pb, atom.size) < 0)
         return AVERROR(ENOMEM);
 
@@ -1239,7 +1239,7 @@ static int mov_read_dvc1(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return 0;
 
     avio_seek(pb, 6, SEEK_CUR);
-    av_free(st->codec->extradata);
+    av_freep(&st->codec->extradata);
     if ((ret = ff_get_extradata(st->codec, pb, atom.size - 7)) < 0)
         return ret;
 
@@ -1265,7 +1265,7 @@ static int mov_read_strf(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return AVERROR_INVALIDDATA;
 
     avio_skip(pb, 40);
-    av_free(st->codec->extradata);
+    av_freep(&st->codec->extradata);
     if (ff_get_extradata(st->codec, pb, atom.size - 40) < 0)
         return AVERROR(ENOMEM);
     return 0;
@@ -4154,7 +4154,7 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
 #if CONFIG_DV_DEMUXER
         if (mov->dv_demux && sc->dv_audio_container) {
             avpriv_dv_produce_packet(mov->dv_demux, pkt, pkt->data, pkt->size, pkt->pos);
-            av_free(pkt->data);
+            av_freep(&pkt->data);
             pkt->size = 0;
             ret = avpriv_dv_get_packet(mov->dv_demux, pkt);
             if (ret < 0)

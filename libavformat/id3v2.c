@@ -55,6 +55,7 @@ const AVMetadataConv ff_id3v2_34_metadata_conv[] = {
     { "TPUB", "publisher"    },
     { "TRCK", "track"        },
     { "TSSE", "encoder"      },
+    { "USLT", "lyrics"       },
     { 0 }
 };
 
@@ -351,6 +352,52 @@ static void read_ttag(AVFormatContext *s, AVIOContext *pb, int taglen,
 
     if (dst)
         av_dict_set(metadata, key, dst, dict_flags);
+}
+
+static void read_uslt(AVFormatContext *s, AVIOContext *pb, int taglen,
+                      AVDictionary **metadata)
+{
+    uint8_t lang[4];
+    uint8_t *descriptor = NULL; // 'Content descriptor'
+    uint8_t *text = NULL;
+    char *key = NULL;
+    int encoding;
+    unsigned genre;
+    int ok = 0;
+
+    if (taglen < 1)
+        goto error;
+
+    encoding = avio_r8(pb);
+    taglen--;
+
+    if (avio_read(pb, lang, 3) < 3)
+        goto error;
+    lang[3] = '\0';
+    taglen -= 3;
+
+    if (decode_str(s, pb, encoding, &descriptor, &taglen) < 0)
+        goto error;
+
+    if (decode_str(s, pb, encoding, &text, &taglen) < 0)
+        goto error;
+
+    // FFmpeg does not support hierarchical metadata, so concatenate the keys.
+    key = av_asprintf("lyrics-%s%s%s", descriptor[0] ? (char *)descriptor : "",
+                                       descriptor[0] ? "-" : "",
+                                       lang);
+    if (!key)
+        goto error;
+
+    av_dict_set(metadata, key, text, 0);
+
+    ok = 1;
+error:
+    if (!ok)
+        av_log(s, AV_LOG_ERROR, "Error reading lyrics, skipped\n");
+    av_free(descriptor);
+    av_free(text);
+    av_free(key);
 }
 
 /**
@@ -845,6 +892,7 @@ static void id3v2_parse(AVIOContext *pb, AVDictionary **metadata,
             avio_skip(pb, tlen);
         /* check for text tag or supported special meta tag */
         } else if (tag[0] == 'T' ||
+                   !memcmp(tag, "USLT", 4) ||
                    (extra_meta &&
                     (extra_func = get_extra_meta_func(tag, isv34)))) {
             pbx = pb;
@@ -910,6 +958,8 @@ static void id3v2_parse(AVIOContext *pb, AVDictionary **metadata,
             if (tag[0] == 'T')
                 /* parse text tag */
                 read_ttag(s, pbx, tlen, metadata, tag);
+            else if (!memcmp(tag, "USLT", 4))
+                read_uslt(s, pbx, tlen, metadata);
             else
                 /* parse special meta tag */
                 extra_func->read(s, pbx, tlen, tag, extra_meta, isv34);
