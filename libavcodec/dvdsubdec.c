@@ -101,6 +101,9 @@ static int decode_rle(uint8_t *bitmap, int linesize, int w, int h,
     if (start >= buf_size)
         return -1;
 
+    if (w <= 0 || h <= 0)
+        return -1;
+
     bit_len = (buf_size - start) * 8;
     init_get_bits(&gb, buf + start, bit_len);
 
