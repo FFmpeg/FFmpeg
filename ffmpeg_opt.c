@@ -1383,8 +1383,8 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc, in
             }
             /* FIXME realloc failure */
             video_enc->rc_override =
-                av_realloc(video_enc->rc_override,
-                           sizeof(RcOverride) * (i + 1));
+                av_realloc_array(video_enc->rc_override,
+                                 i + 1, sizeof(RcOverride));
             video_enc->rc_override[i].start_frame = start;
             video_enc->rc_override[i].end_frame   = end;
             if (q > 0) {
