@@ -445,7 +445,7 @@ static int read_close(AVFormatContext *s)
     int i;
     for (i = 0; i < 100; i++)
         if (mlv->pb[i])
-            avio_close(mlv->pb[i]);
+            avio_closep(&mlv->pb[i]);
     return 0;
 }
 
