@@ -469,7 +469,7 @@ int ff_img_read_packet(AVFormatContext *s1, AVPacket *pkt)
                 }
             }
             if (!s->is_pipe)
-                avio_close(f[i]);
+                avio_closep(&f[i]);
             if (ret[i] > 0)
                 pkt->size += ret[i];
         }
