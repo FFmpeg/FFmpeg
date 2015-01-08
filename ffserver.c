@@ -3630,7 +3630,7 @@ static void build_feed_streams(void)
             }
             /* XXX: need better API */
             av_freep(&s->priv_data);
-            avio_close(s->pb);
+            avio_closep(&s->pb);
             s->streams = NULL;
             s->nb_streams = 0;
             avformat_free_context(s);
