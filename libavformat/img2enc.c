@@ -123,11 +123,11 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
         avio_write(pb[0], pkt->data                , ysize);
         avio_write(pb[1], pkt->data + ysize        , usize);
         avio_write(pb[2], pkt->data + ysize + usize, usize);
-        avio_close(pb[1]);
-        avio_close(pb[2]);
+        avio_closep(&pb[1]);
+        avio_closep(&pb[2]);
         if (desc->nb_components > 3) {
             avio_write(pb[3], pkt->data + ysize + 2*usize, ysize);
-            avio_close(pb[3]);
+            avio_closep(&pb[3]);
         }
     } else if (img->muxer) {
         int ret;
@@ -165,7 +165,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     }
     avio_flush(pb[0]);
     if (!img->is_pipe) {
-        avio_close(pb[0]);
+        avio_closep(&pb[0]);
     }
 
     img->img_number++;
