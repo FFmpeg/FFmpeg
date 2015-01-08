@@ -108,6 +108,14 @@ Go to @url{http://www.wavpack.com/} and follow the instructions for
 installing the library. Then pass @code{--enable-libwavpack} to configure to
 enable it.
 
+@section OpenH264
+
+FFmpeg can make use of the OpenH264 library for H.264 encoding.
+
+Go to @url{http://www.openh264.org/} and follow the instructions for
+installing the library. Then pass @code{--enable-libopenh264} to configure to
+enable it.
+
 @section x264
 
 FFmpeg can make use of the x264 library for H.264 encoding.
@@ -653,7 +661,7 @@ following image formats are supported:
 @item H.263 / H.263-1996     @tab  X  @tab  X
 @item H.263+ / H.263-1998 / H.263 version 2  @tab  X  @tab  X
 @item H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10  @tab  E  @tab  X
-    @tab encoding supported through external library libx264
+    @tab encoding supported through external library libx264 and OpenH264
 @item HEVC                   @tab  X  @tab  X
     @tab encoding supported through the external library libx265
 @item HNM version 4          @tab     @tab  X
