@@ -390,7 +390,7 @@ not work and result in undefined behavior.
 The values @option{auto}, @option{dv} and @option{hdv} are supported.
 
 @item dvbuffer
-Set maxiumum size of buffer for incoming data, in frames. For DV, this
+Set maximum size of buffer for incoming data, in frames. For DV, this
 is an exact value. For HDV, it is not frame exact, since HDV does
 not have a fixed frame size.
 

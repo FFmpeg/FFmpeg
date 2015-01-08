@@ -7,7 +7,7 @@ all the encoders and decoders. In addition each codec may support
 so-called private options, which are specific for a given codec.
 
 Sometimes, a global option may only affect a specific kind of codec,
-and may be unsensical or ignored by another, so you need to be aware
+and may be nonsensical or ignored by another, so you need to be aware
 of the meaning of the specified options. Also some options are
 meant only for decoding or encoding.
 

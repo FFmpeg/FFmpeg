@@ -781,7 +781,7 @@ Change the syncpoint usage in nut:
     sensitive and seeking is not possible. Also in general the overhead from
     syncpoints is negligible. Note, -@code{write_index} 0 can be used to disable
     all growing data tables, allowing to mux endless streams with limited memory
-    and wihout these disadvantages.
+    and without these disadvantages.
 @item @var{timestamped} extend the syncpoint with a wallclock field.
 @end table
 The @var{none} and @var{timestamped} flags are experimental.
