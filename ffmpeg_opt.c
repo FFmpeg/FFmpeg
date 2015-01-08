@@ -1121,7 +1121,7 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
                 av_dict_set(&ost->encoder_opts, buf, arg, AV_DICT_DONT_OVERWRITE);
                 av_free(buf);
             } while (!s->eof_reached);
-            avio_close(s);
+            avio_closep(&s);
         }
         if (ret) {
             av_log(NULL, AV_LOG_FATAL,
@@ -2017,7 +2017,7 @@ loop_end:
 
         p = strrchr(o->attachments[i], '/');
         av_dict_set(&ost->st->metadata, "filename", (p && *p) ? p + 1 : o->attachments[i], AV_DICT_DONT_OVERWRITE);
-        avio_close(pb);
+        avio_closep(&pb);
     }
 
     for (i = nb_output_streams - oc->nb_streams; i < nb_output_streams; i++) { //for all streams of this output file
