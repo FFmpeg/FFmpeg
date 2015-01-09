@@ -570,20 +570,21 @@ static int put_flac_codecpriv(AVFormatContext *s,
     return 0;
 }
 
-static void get_aac_sample_rates(AVFormatContext *s, AVCodecContext *codec,
-                                 int *sample_rate, int *output_sample_rate)
+static int get_aac_sample_rates(AVFormatContext *s, AVCodecContext *codec,
+                                int *sample_rate, int *output_sample_rate)
 {
     MPEG4AudioConfig mp4ac;
 
     if (avpriv_mpeg4audio_get_config(&mp4ac, codec->extradata,
                                      codec->extradata_size * 8, 1) < 0) {
-        av_log(s, AV_LOG_WARNING,
+        av_log(s, AV_LOG_ERROR,
                "Error parsing AAC extradata, unable to determine samplerate.\n");
-        return;
+        return AVERROR(EINVAL);
     }
 
     *sample_rate        = mp4ac.sample_rate;
     *output_sample_rate = mp4ac.ext_sample_rate;
+    return 0;
 }
 
 static int mkv_write_native_codecprivate(AVFormatContext *s,
@@ -822,8 +823,11 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
     if (!bit_depth)
         bit_depth = codec->bits_per_coded_sample;
 
-    if (codec->codec_id == AV_CODEC_ID_AAC)
-        get_aac_sample_rates(s, codec, &sample_rate, &output_sample_rate);
+    if (codec->codec_id == AV_CODEC_ID_AAC) {
+        ret = get_aac_sample_rates(s, codec, &sample_rate, &output_sample_rate);
+        if (ret < 0)
+            return ret;
+    }
 
     track = start_ebml_master(pb, MATROSKA_ID_TRACKENTRY, 0);
     put_ebml_uint (pb, MATROSKA_ID_TRACKNUMBER,
