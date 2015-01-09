@@ -35,6 +35,7 @@
 #include "libavutil/time_internal.h"
 #include "libavutil/avstring.h"
 #include "libavutil/dict.h"
+#include "libavutil/display.h"
 #include "libavutil/opt.h"
 #include "libavcodec/ac3tab.h"
 #include "avformat.h"
@@ -2578,15 +2579,10 @@ static int mov_read_tkhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     }
 
     // transform the display width/height according to the matrix
-    // skip this if the display matrix is the default identity matrix
-    // or if it is rotating the picture, ex iPhone 3GS
+    // skip this if the rotation angle is 0 degrees
     // to keep the same scale, use [width height 1<<16]
-    if (width && height &&
-        ((display_matrix[0][0] != 65536  ||
-          display_matrix[1][1] != 65536) &&
-         !display_matrix[0][1] &&
-         !display_matrix[1][0] &&
-         !display_matrix[2][0] && !display_matrix[2][1])) {
+    if (width && height && sc->display_matrix &&
+        av_display_rotation_get(sc->display_matrix) != 0.0f) {
         for (i = 0; i < 2; i++)
             disp_transform[i] =
                 (int64_t)  width  * display_matrix[0][i] +
