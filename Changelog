@@ -1,6 +1,23 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 2.5.3:
+- vp9: fix parser return values in error case
+- ffmpeg: Clear error message array at init.
+- avcodec/dvdsubdec: fix accessing dangling pointers
+- avcodec/dvdsubdec: error on bitmaps with size 0
+- cmdutils: Use 64bit for file size/offset related variable in cmdutils_read_file()
+- mov: Fix negative size calculation in mov_read_default().
+- avformat/mov: fix integer overflow in mov_read_udta_string()
+- mov: Fix overflow and error handling in read_tfra().
+- mov: Avoid overflow with mov_metadata_raw()
+- avcodec/dvdsubdec: fix out of bounds accesses
+- avfilter/vf_sab: fix filtering tiny images
+- avformat/flvdec: Increase string array size
+- avformat/flvdec: do not inject dts=0 metadata packets which failed to be parsed into a new data stream
+- avformat/cdxl: Fix integer overflow of image_size
+- libavformat: Build hevc.o when building the RTP muxer
+
 version 2.5.2:
 - avcodec/indeo3: ensure offsets are non negative
 - avcodec/h264: Check *log2_weight_denom
