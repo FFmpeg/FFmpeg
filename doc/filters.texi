@@ -6239,7 +6239,6 @@ The list of the currently supported filters follows:
 @item eq2
 @item eq
 @item ilpack
-@item pp7
 @item softpulldown
 @end table
 
