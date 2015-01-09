@@ -139,11 +139,10 @@ static void hds_free(AVFormatContext *s)
         return;
     for (i = 0; i < s->nb_streams; i++) {
         OutputStream *os = &c->streams[i];
-        if (os->out)
-            avio_closep(&os->out);
+        avio_closep(&os->out);
         if (os->ctx && os->ctx_inited)
             av_write_trailer(os->ctx);
-        if (os->ctx && os->ctx->pb)
+        if (os->ctx)
             av_freep(&os->ctx->pb);
         if (os->ctx)
             avformat_free_context(os->ctx);
