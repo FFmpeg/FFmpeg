@@ -39,7 +39,7 @@ typedef struct DVDSubContext
   int      has_palette;
   uint8_t  colormap[4];
   uint8_t  alpha[256];
-  uint8_t *buf;
+  uint8_t  buf[0x10000];
   int      buf_size;
   int      forced_subs_only;
 #ifdef DEBUG
@@ -109,6 +109,9 @@ static int decode_rle(uint8_t *bitmap, int linesize, int w, int h,
     uint8_t *d;
 
     if (start >= buf_size)
+        return -1;
+
+    if (w <= 0 || h <= 0)
         return -1;
 
     bit_len = (buf_size - start) * 8;
@@ -506,15 +509,11 @@ static int append_to_cached_buf(AVCodecContext *avctx,
 {
     DVDSubContext *ctx = avctx->priv_data;
 
-    if (ctx->buf_size > 0xffff - buf_size) {
+    if (ctx->buf_size >= sizeof(ctx->buf) - buf_size) {
         av_log(avctx, AV_LOG_WARNING, "Attempt to reconstruct "
                "too large SPU packets aborted.\n");
-        av_freep(&ctx->buf);
         return AVERROR_INVALIDDATA;
     }
-    ctx->buf = av_realloc(ctx->buf, ctx->buf_size + buf_size);
-    if (!ctx->buf)
-        return AVERROR(ENOMEM);
     memcpy(ctx->buf + ctx->buf_size, buf, buf_size);
     ctx->buf_size += buf_size;
     return 0;
@@ -530,7 +529,7 @@ static int dvdsub_decode(AVCodecContext *avctx,
     AVSubtitle *sub = data;
     int is_menu;
 
-    if (ctx->buf) {
+    if (ctx->buf_size) {
         int ret = append_to_cached_buf(avctx, buf, buf_size);
         if (ret < 0) {
             *data_size = 0;
@@ -572,7 +571,6 @@ static int dvdsub_decode(AVCodecContext *avctx,
     }
 #endif
 
-    av_freep(&ctx->buf);
     ctx->buf_size = 0;
     *data_size = 1;
     return buf_size;
@@ -716,7 +714,6 @@ static av_cold int dvdsub_init(AVCodecContext *avctx)
 static av_cold int dvdsub_close(AVCodecContext *avctx)
 {
     DVDSubContext *ctx = avctx->priv_data;
-    av_freep(&ctx->buf);
     ctx->buf_size = 0;
     return 0;
 }

@@ -342,16 +342,14 @@ static int read_header(AVFormatContext *avctx)
                 break;
             if (check_file_header(mlv->pb[i], guid) < 0) {
                 av_log(avctx, AV_LOG_WARNING, "ignoring %s; bad format or guid mismatch\n", filename);
-                avio_close(mlv->pb[i]);
-                mlv->pb[i] = NULL;
+                avio_closep(&mlv->pb[i]);
                 continue;
             }
             av_log(avctx, AV_LOG_INFO, "scanning %s\n", filename);
             ret = scan_file(avctx, vst, ast, i);
             if (ret < 0) {
                 av_log(avctx, AV_LOG_WARNING, "ignoring %s; %s\n", filename, av_err2str(ret));
-                avio_close(mlv->pb[i]);
-                mlv->pb[i] = NULL;
+                avio_closep(&mlv->pb[i]);
                 continue;
             }
         }
@@ -447,7 +445,7 @@ static int read_close(AVFormatContext *s)
     int i;
     for (i = 0; i < 100; i++)
         if (mlv->pb[i])
-            avio_close(mlv->pb[i]);
+            avio_closep(&mlv->pb[i]);
     return 0;
 }
 

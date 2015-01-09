@@ -459,7 +459,7 @@ static void ffmpeg_cleanup(int ret)
         OutputFile *of = output_files[i];
         AVFormatContext *s = of->ctx;
         if (s && s->oformat && !(s->oformat->flags & AVFMT_NOFILE) && s->pb)
-            avio_close(s->pb);
+            avio_closep(&s->pb);
         avformat_free_context(s);
         av_dict_free(&of->opts);
 
@@ -1560,8 +1560,7 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
         avio_flush(progress_avio);
         av_bprint_finalize(&buf_script, NULL);
         if (is_last_report) {
-            avio_close(progress_avio);
-            progress_avio = NULL;
+            avio_closep(&progress_avio);
         }
     }
 
@@ -2293,7 +2292,7 @@ static void print_sdp(void)
             av_log(NULL, AV_LOG_ERROR, "Failed to open sdp file '%s'\n", sdp_filename);
         } else {
             avio_printf(sdp_pb, "SDP:\n%s", sdp);
-            avio_close(sdp_pb);
+            avio_closep(&sdp_pb);
             av_freep(&sdp_filename);
         }
     }
@@ -2543,7 +2542,7 @@ static int transcode_init(void)
     AVFormatContext *oc;
     OutputStream *ost;
     InputStream *ist;
-    char error[1024];
+    char error[1024] = {0};
     int want_sdp = 1;
 
     for (i = 0; i < nb_filtergraphs; i++) {

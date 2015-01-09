@@ -661,7 +661,7 @@ int main(int argc, char **argv)
 
     if (!(fmt->flags & AVFMT_NOFILE))
         /* Close the output file. */
-        avio_close(oc->pb);
+        avio_closep(&oc->pb);
 
     /* free the stream */
     avformat_free_context(oc);

@@ -469,7 +469,7 @@ int ff_img_read_packet(AVFormatContext *s1, AVPacket *pkt)
                 }
             }
             if (!s->is_pipe)
-                avio_close(f[i]);
+                avio_closep(&f[i]);
             if (ret[i] > 0)
                 pkt->size += ret[i];
         }
@@ -643,14 +643,18 @@ static int j2k_probe(AVProbeData *p)
 static int jpeg_probe(AVProbeData *p)
 {
     const uint8_t *b = p->buf;
-    int i, state = 0xD8;
+    int i, state = 0xD8, exif_size = 0;
 
     if (AV_RB16(b) != 0xFFD8 ||
         AV_RB32(b) == 0xFFD8FFF7)
     return 0;
 
     b += 2;
-    for (i = 0; i < p->buf_size - 2; i++) {
+    if (AV_RB16(b) == 0xFFE1 && AV_RB32(b + 4) == AV_RB32("Exif")) {
+        exif_size = AV_RB16(b + 2) + 2;
+        b += exif_size;
+    }
+    for (i = 0; i + exif_size < p->buf_size - 2; i++) {
         int c;
         if (b[i] != 0xFF)
             continue;

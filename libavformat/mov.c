@@ -3754,7 +3754,7 @@ static int mov_read_close(AVFormatContext *s)
         sc->drefs_count = 0;
 
         if (!sc->pb_is_copied)
-            avio_close(sc->pb);
+            avio_closep(&sc->pb);
 
         sc->pb = NULL;
         av_freep(&sc->chunk_offsets);

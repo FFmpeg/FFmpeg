@@ -684,7 +684,7 @@ void ff_rtsp_undo_setup(AVFormatContext *s, int send_packets)
                     avio_close_dyn_buf(rtpctx->pb, &ptr);
                     av_free(ptr);
                 } else {
-                    avio_close(rtpctx->pb);
+                    avio_closep(&rtpctx->pb);
                 }
                 avformat_free_context(rtpctx);
             } else if (CONFIG_RTPDEC && rt->transport == RTSP_TRANSPORT_RDT)

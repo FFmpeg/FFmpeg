@@ -29,7 +29,7 @@ static int dvbsub_probe(AVProbeData *p)
 {
     int i, j, k;
     const uint8_t *end = p->buf + p->buf_size;
-    int type, page_id, len;
+    int type, len;
     int max_score = 0;
 
     for(i=0; i<p->buf_size; i++){
@@ -41,7 +41,7 @@ static int dvbsub_probe(AVProbeData *p)
                 if (*ptr != 0x0f)
                     break;
                 type    = ptr[1];
-                page_id = AV_RB16(ptr + 2);
+                //page_id = AV_RB16(ptr + 2);
                 len     = AV_RB16(ptr + 4);
                 if (type == 0x80) {
                     ;

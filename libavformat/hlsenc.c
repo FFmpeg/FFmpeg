@@ -486,7 +486,7 @@ static int hls_write_trailer(struct AVFormatContext *s)
 
     hls_free_segments(hls->segments);
     hls_free_segments(hls->old_segments);
-    avio_close(hls->pb);
+    avio_closep(&hls->pb);
     return 0;
 }
 

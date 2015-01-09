@@ -1121,7 +1121,7 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
                 av_dict_set(&ost->encoder_opts, buf, arg, AV_DICT_DONT_OVERWRITE);
                 av_free(buf);
             } while (!s->eof_reached);
-            avio_close(s);
+            avio_closep(&s);
         }
         if (ret) {
             av_log(NULL, AV_LOG_FATAL,
@@ -1381,10 +1381,11 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc, in
                 av_log(NULL, AV_LOG_FATAL, "error parsing rc_override\n");
                 exit_program(1);
             }
-            /* FIXME realloc failure */
             video_enc->rc_override =
-                av_realloc(video_enc->rc_override,
-                           sizeof(RcOverride) * (i + 1));
+                av_realloc_array(video_enc->rc_override,
+                                 i + 1, sizeof(RcOverride));
+            if (!video_enc->rc_override)
+                exit_program(1);
             video_enc->rc_override[i].start_frame = start;
             video_enc->rc_override[i].end_frame   = end;
             if (q > 0) {
@@ -2016,7 +2017,7 @@ loop_end:
 
         p = strrchr(o->attachments[i], '/');
         av_dict_set(&ost->st->metadata, "filename", (p && *p) ? p + 1 : o->attachments[i], AV_DICT_DONT_OVERWRITE);
-        avio_close(pb);
+        avio_closep(&pb);
     }
 
     for (i = nb_output_streams - oc->nb_streams; i < nb_output_streams; i++) { //for all streams of this output file

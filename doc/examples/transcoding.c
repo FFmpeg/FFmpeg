@@ -573,7 +573,7 @@ end:
     av_free(filter_ctx);
     avformat_close_input(&ifmt_ctx);
     if (ofmt_ctx && !(ofmt_ctx->oformat->flags & AVFMT_NOFILE))
-        avio_close(ofmt_ctx->pb);
+        avio_closep(&ofmt_ctx->pb);
     avformat_free_context(ofmt_ctx);
 
     if (ret < 0)

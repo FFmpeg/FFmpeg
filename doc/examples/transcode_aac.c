@@ -199,7 +199,7 @@ static int open_output_file(const char *filename,
     return 0;
 
 cleanup:
-    avio_close((*output_format_context)->pb);
+    avio_closep(&(*output_format_context)->pb);
     avformat_free_context(*output_format_context);
     *output_format_context = NULL;
     return error < 0 ? error : AVERROR_EXIT;
@@ -743,7 +743,7 @@ cleanup:
     if (output_codec_context)
         avcodec_close(output_codec_context);
     if (output_format_context) {
-        avio_close(output_format_context->pb);
+        avio_closep(&output_format_context->pb);
         avformat_free_context(output_format_context);
     }
     if (input_codec_context)
