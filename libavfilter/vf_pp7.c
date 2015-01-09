@@ -33,7 +33,6 @@
 #include "libavutil/pixdesc.h"
 #include "internal.h"
 #include "vf_pp7.h"
-#include "libavcodec/avcodec.h"
 
 enum mode {
     MODE_HARD,
@@ -86,17 +85,6 @@ static const int thres[16] = {
     N / (SN0 * SN0), N / (SN0 * SN2), N / (SN0 * SN0), N / (SN0 * SN2),
     N / (SN2 * SN0), N / (SN2 * SN2), N / (SN2 * SN0), N / (SN2 * SN2),
 };
-
-static inline int norm_qscale(int qscale, int type)
-{
-    switch (type) {
-    case FF_QSCALE_TYPE_MPEG1: return qscale;
-    case FF_QSCALE_TYPE_MPEG2: return qscale >> 1;
-    case FF_QSCALE_TYPE_H264:  return qscale >> 2;
-    case FF_QSCALE_TYPE_VP56:  return (63 - qscale + 2) >> 2;
-    }
-    return qscale;
-}
 
 static void init_thres2(PP7Context *p)
 {
@@ -259,7 +247,7 @@ static void filter(PP7Context *p, uint8_t *dst, uint8_t *src,
                 qp = p->qp;
             else {
                 qp = qp_store[ (FFMIN(x, width - 1) >> qps) + (FFMIN(y, height - 1) >> qps) * qp_stride];
-                qp = norm_qscale(qp, p->qscale_type);
+                qp = ff_norm_qscale(qp, p->qscale_type);
             }
             for (; x < end; x++) {
                 const int index = x + y * stride + (8 - 3) * (1 + stride) + 8; //FIXME silly offset
