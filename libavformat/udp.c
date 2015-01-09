@@ -57,46 +57,9 @@
 #if HAVE_PTHREADS
 #include <pthread.h>
 
-#ifndef HAVE_PTHREAD_CANCEL
+#if !defined(HAVE_PTHREAD_CANCEL) || HAVE_PTHREAD_CANCEL == 0
 #define NO_PTHREAD_CANCEL
-/* Alternative cancel implementation that is used on non POSIX compliant
-   platforms such as Android.
-   We will send a user-defined signal to a thread, then check for
-   thread_canceled to trigger thread teardown. 
- 
-   Attention: It's the user's duty to implement a proper 
-              clean-up handler! */
-#include <signal.h>
-/* Signals are on a per-process base.
-   SIGUSR1 is already in use by video grab interface*/
-#define SIG_CANCEL_SIGNAL SIGUSR2
-#define PTHREAD_CANCEL_ENABLE 1
-#define PTHREAD_CANCEL_DISABLE 0
-static int pthread_setcancelstate(int state, int *oldstate) {
-    sigset_t   new, old;
-    int ret;
-    sigemptyset (&new);
-    sigaddset (&new, SIG_CANCEL_SIGNAL);
-    /* We block CANCEL signal to see it in ispending and unblock it to be discarded */
-    ret = pthread_sigmask(state == PTHREAD_CANCEL_ENABLE ? SIG_BLOCK : SIG_UNBLOCK, &new , &old);
-    if(oldstate != NULL)
-    {
-        *oldstate = sigismember(old,SIG_CANCEL_SIGNAL) == 0 ? PTHREAD_CANCEL_DISABLE : PTHREAD_CANCEL_ENABLE;
-    }
-    return ret;
-}
-
-static inline int pthread_cancel(pthread_t thread) {
-    /* Send cancel signal that is ignored (PTHREAD_CANCEL_DISABLE) 
-     or enqueued as blocked and pending (thread canceled)*/
-    pthread_kill(thread, SIG_CANCEL_SIGNAL);
-}
-
-static inline bool thread_canceled() {
-    sigset_t  waiting_mask;
-    sigpending(&waiting_mask);
-    return sigismember(&waiting_mask,SIG_CANCEL_SIGNAL) == 0;
-}
+#include "../compat/bionic/pthread_cancel.h"
 #endif
 
 #endif /*HAVE_PTHREADS*/
