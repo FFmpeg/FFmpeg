@@ -496,7 +496,7 @@ fail:
     ff_id3v2_free_extra_meta(&id3v2_extra_meta);
     av_dict_free(&tmp);
     if (s->pb && !(s->flags & AVFMT_FLAG_CUSTOM_IO))
-        avio_close(s->pb);
+        avio_closep(&s->pb);
     avformat_free_context(s);
     *ps = NULL;
     return ret;

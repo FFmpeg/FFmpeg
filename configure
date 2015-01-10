@@ -2600,6 +2600,7 @@ mpdecimate_filter_select="pixelutils"
 mptestsrc_filter_deps="gpl"
 negate_filter_deps="lut_filter"
 perspective_filter_deps="gpl"
+pp7_filter_deps="gpl"
 ocv_filter_deps="libopencv"
 owdenoise_filter_deps="gpl"
 pan_filter_deps="swresample"
@@ -2688,7 +2689,6 @@ docdir_default='${prefix}/share/doc/ffmpeg'
 incdir_default='${prefix}/include'
 libdir_default='${prefix}/lib'
 mandir_default='${prefix}/share/man'
-shlibdir_default='${LIBDIR}'
 
 # toolchain
 ar_default="ar"
@@ -4329,6 +4329,9 @@ echo "config:$arch:$subarch:$cpu:$target_os:$(esc $cc_ident):$(esc $FFMPEG_CONFI
 
 check_cpp_condition stdlib.h "defined(__PIC__) || defined(__pic__) || defined(PIC)" && enable_weak pic
 
+set_default libdir
+: ${shlibdir_default:="$libdir"}
+
 set_default $PATHS_LIST
 set_default nm
 
@@ -4429,7 +4432,7 @@ unsigned int endian = 'B' << 24 | 'I' << 16 | 'G' << 8 | 'E';
 EOF
 od -t x1 $TMPO | grep -q '42 *49 *47 *45' && enable bigendian
 
-if  [ "$cpu" = "power7" ] || [ "$cpu" = "power8" ] ;then
+if  [ "$cpu" = "power7" ] || [ "$cpu" = "power8" ] || enabled ppc64; then
     if ! enabled bigendian && enabled altivec ;then
         enable vsx
     fi

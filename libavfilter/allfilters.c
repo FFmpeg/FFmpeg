@@ -179,6 +179,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER(PHASE,          phase,          vf);
     REGISTER_FILTER(PIXDESCTEST,    pixdesctest,    vf);
     REGISTER_FILTER(PP,             pp,             vf);
+    REGISTER_FILTER(PP7,            pp7,            vf);
     REGISTER_FILTER(PSNR,           psnr,           vf);
     REGISTER_FILTER(PULLUP,         pullup,         vf);
     REGISTER_FILTER(REMOVELOGO,     removelogo,     vf);

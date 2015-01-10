@@ -2810,11 +2810,9 @@ static int prepare_sdp_description(FFServerStream *stream, uint8_t **pbuffer,
         snprintf(avc->filename, 1024, "rtp://0.0.0.0");
     }
 
-    if (avc->nb_streams >= INT_MAX/sizeof(*avc->streams) ||
-        !(avc->streams = av_malloc(avc->nb_streams * sizeof(*avc->streams))))
+    if (!(avc->streams = av_malloc_array(avc->nb_streams, sizeof(*avc->streams))))
         goto sdp_done;
-    if (avc->nb_streams >= INT_MAX/sizeof(*avs) ||
-        !(avs = av_malloc(avc->nb_streams * sizeof(*avs))))
+    if (!(avs = av_malloc_array(avc->nb_streams, sizeof(*avs))))
         goto sdp_done;
 
     for(i = 0; i < stream->nb_streams; i++) {

@@ -116,12 +116,12 @@ static unsigned int get_aiff_header(AVFormatContext *s, int size,
     size -= 18;
 
     /* get codec id for AIFF-C */
-    if (version == AIFF_C_VERSION1 && size >= 4) {
+    if (size < 4) {
+        version = AIFF;
+    } else if (version == AIFF_C_VERSION1) {
         codec->codec_tag = avio_rl32(pb);
         codec->codec_id  = ff_codec_get_id(ff_codec_aiff_tags, codec->codec_tag);
         size -= 4;
-    } else {
-        version = AIFF;
     }
 
     if (version != AIFF_C_VERSION1 || codec->codec_id == AV_CODEC_ID_PCM_S16BE) {

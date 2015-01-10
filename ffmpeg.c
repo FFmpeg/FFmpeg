@@ -458,7 +458,7 @@ static void ffmpeg_cleanup(int ret)
     for (i = 0; i < nb_output_files; i++) {
         OutputFile *of = output_files[i];
         AVFormatContext *s = of->ctx;
-        if (s && s->oformat && !(s->oformat->flags & AVFMT_NOFILE) && s->pb)
+        if (s && s->oformat && !(s->oformat->flags & AVFMT_NOFILE))
             avio_closep(&s->pb);
         avformat_free_context(s);
         av_dict_free(&of->opts);

@@ -7193,6 +7193,32 @@ pp=hb|y/vb|a
 @end example
 @end itemize
 
+@section pp7
+Apply Postprocessing filter 7. It is variant of the @ref{spp} filter,
+similar to spp = 6 with 7 point DCT, where only the center sample is
+used after IDCT.
+
+The filter accepts the following options:
+
+@table @option
+@item qp
+Force a constant quantization parameter. It accepts an integer in range
+0 to 63. If not set, the filter will use the QP from the video stream
+(if available).
+
+@item mode
+Set thresholding mode. Available modes are:
+
+@table @samp
+@item hard
+Set hard thresholding.
+@item soft
+Set soft thresholding (better de-ringing effect, but likely blurrier).
+@item medium
+Set medium thresholding (good results, default).
+@end table
+@end table
+
 @section psnr
 
 Obtain the average, maximum and minimum PSNR (Peak Signal to Noise

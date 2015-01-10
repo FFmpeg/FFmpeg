@@ -2507,12 +2507,12 @@ static int mov_write_mvex_tag(AVIOContext *pb, MOVMuxContext *mov)
 static int mov_write_mvhd_tag(AVIOContext *pb, MOVMuxContext *mov)
 {
     int max_track_id = 1, i;
-    int64_t max_track_len_temp, max_track_len = 0;
+    int64_t max_track_len = 0;
     int version;
 
     for (i = 0; i < mov->nb_streams; i++) {
         if (mov->tracks[i].entry > 0 && mov->tracks[i].timescale) {
-            max_track_len_temp = av_rescale_rnd(mov->tracks[i].track_duration,
+            int64_t max_track_len_temp = av_rescale_rnd(mov->tracks[i].track_duration,
                                                 MOV_TIMESCALE,
                                                 mov->tracks[i].timescale,
                                                 AV_ROUND_UP);
@@ -2530,7 +2530,8 @@ static int mov_write_mvhd_tag(AVIOContext *pb, MOVMuxContext *mov)
     }
 
     version = max_track_len < UINT32_MAX ? 0 : 1;
-    (version == 1) ? avio_wb32(pb, 120) : avio_wb32(pb, 108); /* size */
+    avio_wb32(pb, version == 1 ? 120 : 108); /* size */
+
     ffio_wfourcc(pb, "mvhd");
     avio_w8(pb, version);
     avio_wb24(pb, 0); /* flags */

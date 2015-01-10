@@ -43,6 +43,7 @@ Specifically, the GPL parts of FFmpeg are:
     - vf_perspective.c
     - vf_phase.c
     - vf_pp.c
+    - vf_pp7.c
     - vf_pullup.c
     - vf_sab.c
     - vf_smartblur.c
