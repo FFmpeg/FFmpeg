@@ -300,7 +300,7 @@ static void read_ttag(AVFormatContext *s, AVIOContext *pb, int taglen,
  * Parse GEOB tag into a ID3v2ExtraMetaGEOB struct.
  */
 static void read_geobtag(AVFormatContext *s, AVIOContext *pb, int taglen,
-                         char *tag, ID3v2ExtraMeta **extra_meta)
+                         const char *tag, ID3v2ExtraMeta **extra_meta)
 {
     ID3v2ExtraMetaGEOB *geob_data = NULL;
     ID3v2ExtraMeta *new_extra     = NULL;
@@ -432,7 +432,7 @@ static void free_apic(void *obj)
 }
 
 static void read_apic(AVFormatContext *s, AVIOContext *pb, int taglen,
-                      char *tag, ID3v2ExtraMeta **extra_meta)
+                      const char *tag, ID3v2ExtraMeta **extra_meta)
 {
     int enc, pic_type;
     char mimetype[64];
@@ -508,7 +508,7 @@ fail:
 typedef struct ID3v2EMFunc {
     const char *tag3;
     const char *tag4;
-    void (*read)(AVFormatContext *, AVIOContext *, int, char *,
+    void (*read)(AVFormatContext *, AVIOContext *, int, const char *,
                  ID3v2ExtraMeta **);
     void (*free)(void *obj);
 } ID3v2EMFunc;
