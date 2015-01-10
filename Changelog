@@ -12,6 +12,7 @@ version <next>:
 - cropdetect support for non 8bpp, absolute (if limit >= 1) and relative (if limit < 1.0) threshold
 - Camellia symmetric block cipher
 - OpenH264 encoder wrapper
+- VOC seeking support
 
 
 version 2.5:
