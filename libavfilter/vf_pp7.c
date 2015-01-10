@@ -295,7 +295,7 @@ static int config_input(AVFilterLink *inlink)
     pp7->vsub = desc->log2_chroma_h;
 
     pp7->temp_stride = FFALIGN(inlink->w + 16, 16);
-    pp7->src = av_malloc(pp7->temp_stride * (h + 8) * sizeof(uint8_t));
+    pp7->src = av_malloc_array(pp7->temp_stride,  (h + 8) * sizeof(uint8_t));
 
     if (!pp7->src)
         return AVERROR(ENOMEM);
