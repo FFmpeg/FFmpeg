@@ -377,6 +377,8 @@ void ff_filter_graph_remove_filter(AVFilterGraph *graph, AVFilterContext *filter
 
 /**
  * Normalize the qscale factor
+ * FIXME the H264 qscale is a log based scale, mpeg1/2 is not, the code below
+ *       cannot be optimal
  */
 static inline int ff_norm_qscale(int qscale, int type)
 {
