@@ -239,6 +239,7 @@ pack_6ch_%2_to_%1_u_int %+ SUFFIX
     sub    src3q, srcq
     sub    src4q, srcq
     sub    src5q, srcq
+    %7 x,x,x,x,m7,x
 .loop:
     mov%3     m0, [srcq      ]
     mov%3     m1, [srcq+src1q]
@@ -246,7 +247,6 @@ pack_6ch_%2_to_%1_u_int %+ SUFFIX
     mov%3     m3, [srcq+src3q]
     mov%3     m4, [srcq+src4q]
     mov%3     m5, [srcq+src5q]
-    %7 x,x,x,x,m7,x
 %if cpuflag(sse)
     SBUTTERFLYPS 0, 1, 6
     SBUTTERFLYPS 2, 3, 6
