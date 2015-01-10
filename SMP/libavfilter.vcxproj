@@ -64,6 +64,7 @@
     <YASM Include="..\libavfilter\x86\vf_hqdn3d.asm" />
     <YASM Include="..\libavfilter\x86\vf_idet.asm" />
     <YASM Include="..\libavfilter\x86\vf_interlace.asm" />
+    <YASM Include="..\libavfilter\x86\vf_pp7.asm" />
     <YASM Include="..\libavfilter\x86\vf_pullup.asm" />
     <YASM Include="..\libavfilter\x86\af_volume.asm" />
     <YASM Include="..\libavfilter\x86\vf_yadif.asm" />
@@ -331,6 +332,9 @@
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_pp.c">
     </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_pp7.c">
+      <ObjectFileName>$(IntDir)\libavfilter_vf_pp7.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\vf_psnr.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_pullup.c">
@@ -420,6 +424,7 @@
     <ClCompile Include="..\libavfilter\libmpcodecs\vf_ilpack.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\libmpcodecs\vf_pp7.c">
+      <ObjectFileName>$(IntDir)\libavfilter_libmpcodecs_vf_pp7.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavfilter\libmpcodecs\vf_softpulldown.c">
     </ClCompile>
@@ -451,6 +456,8 @@
     </ClCompile>
     <ClCompile Include="..\libavfilter\x86\vf_noise.c">
       <ObjectFileName>$(IntDir)\libavfilter_x86_vf_noise.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\x86\vf_pp7_init.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\x86\vf_pullup_init.c">
     </ClCompile>
