@@ -1082,6 +1082,8 @@ static int dvbsub_parse_clut_segment(AVCodecContext *avctx,
 
     if (!clut) {
         clut = av_malloc(sizeof(DVBSubCLUT));
+        if (!clut)
+            return AVERROR(ENOMEM);
 
         memcpy(clut, &default_clut, sizeof(DVBSubCLUT));
 
@@ -1169,6 +1171,8 @@ static void dvbsub_parse_region_segment(AVCodecContext *avctx,
 
     if (!region) {
         region = av_mallocz(sizeof(DVBSubRegion));
+        if (!region)
+            return;
 
         region->id = region_id;
         region->version = -1;
