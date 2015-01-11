@@ -166,7 +166,7 @@ static int decode_rle(AVCodecContext *avctx, AVSubtitleRect *rect,
 
     rle_bitmap_end = buf + buf_size;
 
-    rect->pict.data[0] = av_malloc(rect->w * rect->h);
+    rect->pict.data[0] = av_malloc_array(rect->w, rect->h);
 
     if (!rect->pict.data[0])
         return AVERROR(ENOMEM);
@@ -509,7 +509,7 @@ static int display_end_segment(AVCodecContext *avctx, void *data,
     // Blank if last object_count was 0.
     if (!ctx->presentation.object_count)
         return 1;
-    sub->rects = av_mallocz(sizeof(*sub->rects) * ctx->presentation.object_count);
+    sub->rects = av_mallocz_array(ctx->presentation.object_count, sizeof(*sub->rects));
     if (!sub->rects) {
         return AVERROR(ENOMEM);
     }
