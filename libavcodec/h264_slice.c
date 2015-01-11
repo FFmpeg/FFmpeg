@@ -542,6 +542,7 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
         memset(&h->mb_luma_dc, 0, sizeof(h->mb_luma_dc));
         memset(&h->mb_padding, 0, sizeof(h->mb_padding));
         memset(&h->cur_pic, 0, sizeof(h->cur_pic));
+        memset(&h->last_pic_for_ec, 0, sizeof(h->last_pic_for_ec));
 
         h->avctx             = dst;
         h->DPB               = NULL;
@@ -1959,7 +1960,12 @@ int ff_h264_decode_slice_header(H264Context *h, H264Context *h0)
                              (h->ref_list[j][i].reference & 3);
     }
 
-    if (h->ref_count[0]) ff_h264_set_erpic(&h->er.last_pic, &h->ref_list[0][0]);
+    if (h->ref_count[0]) {
+        ff_h264_set_erpic(&h->er.last_pic, &h->ref_list[0][0]);
+    } else if (h->last_pic_for_ec.f.buf[0]) {
+        ff_h264_set_erpic(&h->er.last_pic, &h->last_pic_for_ec);
+    }
+
     if (h->ref_count[1]) ff_h264_set_erpic(&h->er.next_pic, &h->ref_list[1][0]);
 
     h->er.ref_count = h->ref_count[0];

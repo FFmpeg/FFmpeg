@@ -493,6 +493,10 @@ void ff_h264_remove_all_refs(H264Context *h)
     }
     assert(h->long_ref_count == 0);
 
+    ff_h264_unref_picture(h, &h->last_pic_for_ec);
+    if (h->short_ref_count)
+        ff_h264_ref_picture(h, &h->last_pic_for_ec, h->short_ref[0]);
+
     for (i = 0; i < h->short_ref_count; i++) {
         unreference_pic(h, h->short_ref[i], 0);
         h->short_ref[i] = NULL;
