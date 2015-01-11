@@ -278,6 +278,7 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUV410P,  AV_PIX_FMT_YUV440P,
         AV_PIX_FMT_YUVJ444P, AV_PIX_FMT_YUVJ422P,
         AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ440P,
+        AV_PIX_FMT_GBRP,
         AV_PIX_FMT_GRAY8,    AV_PIX_FMT_NONE
     };
     ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
@@ -295,7 +296,7 @@ static int config_input(AVFilterLink *inlink)
     pp7->vsub = desc->log2_chroma_h;
 
     pp7->temp_stride = FFALIGN(inlink->w + 16, 16);
-    pp7->src = av_malloc(pp7->temp_stride * (h + 8) * sizeof(uint8_t));
+    pp7->src = av_malloc_array(pp7->temp_stride,  (h + 8) * sizeof(uint8_t));
 
     if (!pp7->src)
         return AVERROR(ENOMEM);

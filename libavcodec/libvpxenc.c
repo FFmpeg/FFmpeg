@@ -855,7 +855,7 @@ static const AVCodecDefault defaults[] = {
 #if CONFIG_LIBVPX_VP8_ENCODER
 static av_cold int vp8_init(AVCodecContext *avctx)
 {
-    return vpx_init(avctx, &vpx_codec_vp8_cx_algo);
+    return vpx_init(avctx, vpx_codec_vp8_cx());
 }
 
 static const AVClass class_vp8 = {
@@ -884,7 +884,7 @@ AVCodec ff_libvpx_vp8_encoder = {
 #if CONFIG_LIBVPX_VP9_ENCODER
 static av_cold int vp9_init(AVCodecContext *avctx)
 {
-    return vpx_init(avctx, &vpx_codec_vp9_cx_algo);
+    return vpx_init(avctx, vpx_codec_vp9_cx());
 }
 
 static const AVClass class_vp9 = {

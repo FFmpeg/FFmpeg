@@ -1151,7 +1151,7 @@ static int decode_seq_header(AVSContext *h)
     h->avctx->width  = h->width;
     h->avctx->height = h->height;
     if (!h->top_qp)
-        ff_cavs_init_top_lines(h);
+        return ff_cavs_init_top_lines(h);
     return 0;
 }
 

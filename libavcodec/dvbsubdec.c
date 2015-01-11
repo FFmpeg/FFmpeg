@@ -1082,6 +1082,8 @@ static int dvbsub_parse_clut_segment(AVCodecContext *avctx,
 
     if (!clut) {
         clut = av_malloc(sizeof(DVBSubCLUT));
+        if (!clut)
+            return AVERROR(ENOMEM);
 
         memcpy(clut, &default_clut, sizeof(DVBSubCLUT));
 
@@ -1147,7 +1149,7 @@ static int dvbsub_parse_clut_segment(AVCodecContext *avctx,
 }
 
 
-static void dvbsub_parse_region_segment(AVCodecContext *avctx,
+static int dvbsub_parse_region_segment(AVCodecContext *avctx,
                                         const uint8_t *buf, int buf_size)
 {
     DVBSubContext *ctx = avctx->priv_data;
@@ -1161,7 +1163,7 @@ static void dvbsub_parse_region_segment(AVCodecContext *avctx,
     int fill;
 
     if (buf_size < 10)
-        return;
+        return AVERROR_INVALIDDATA;
 
     region_id = *buf++;
 
@@ -1169,6 +1171,8 @@ static void dvbsub_parse_region_segment(AVCodecContext *avctx,
 
     if (!region) {
         region = av_mallocz(sizeof(DVBSubRegion));
+        if (!region)
+            return AVERROR(ENOMEM);
 
         region->id = region_id;
         region->version = -1;
@@ -1261,9 +1265,11 @@ static void dvbsub_parse_region_segment(AVCodecContext *avctx,
         display->object_list_next = object->display_list;
         object->display_list = display;
     }
+
+    return 0;
 }
 
-static void dvbsub_parse_page_segment(AVCodecContext *avctx,
+static int dvbsub_parse_page_segment(AVCodecContext *avctx,
                                         const uint8_t *buf, int buf_size, AVSubtitle *sub, int *got_output)
 {
     DVBSubContext *ctx = avctx->priv_data;
@@ -1277,14 +1283,14 @@ static void dvbsub_parse_page_segment(AVCodecContext *avctx,
     int version;
 
     if (buf_size < 1)
-        return;
+        return AVERROR_INVALIDDATA;
 
     timeout = *buf++;
     version = ((*buf)>>4) & 15;
     page_state = ((*buf++) >> 2) & 3;
 
     if (ctx->version == version) {
-        return;
+        return 0;
     }
 
     ctx->time_out = timeout;
@@ -1342,6 +1348,7 @@ static void dvbsub_parse_page_segment(AVCodecContext *avctx,
         av_freep(&display);
     }
 
+    return 0;
 }
 
 
@@ -1440,7 +1447,7 @@ static void save_display_set(DVBSubContext *ctx)
 }
 #endif
 
-static void dvbsub_parse_display_definition_segment(AVCodecContext *avctx,
+static int dvbsub_parse_display_definition_segment(AVCodecContext *avctx,
                                                     const uint8_t *buf,
                                                     int buf_size)
 {
@@ -1449,19 +1456,19 @@ static void dvbsub_parse_display_definition_segment(AVCodecContext *avctx,
     int dds_version, info_byte;
 
     if (buf_size < 5)
-        return;
+        return AVERROR_INVALIDDATA;
 
     info_byte   = bytestream_get_byte(&buf);
     dds_version = info_byte >> 4;
     if (display_def && display_def->version == dds_version)
-        return; // already have this display definition version
+        return 0; // already have this display definition version
 
     if (!display_def) {
         display_def             = av_mallocz(sizeof(*display_def));
         ctx->display_definition = display_def;
     }
     if (!display_def)
-        return;
+        return AVERROR(ENOMEM);
 
     display_def->version = dds_version;
     display_def->x       = 0;
@@ -1474,7 +1481,7 @@ static void dvbsub_parse_display_definition_segment(AVCodecContext *avctx,
     }
 
     if (buf_size < 13)
-        return;
+        return 0;
 
     if (info_byte & 1<<3) { // display_window_flag
         display_def->x = bytestream_get_be16(&buf);
@@ -1482,6 +1489,8 @@ static void dvbsub_parse_display_definition_segment(AVCodecContext *avctx,
         display_def->y = bytestream_get_be16(&buf);
         display_def->height = bytestream_get_be16(&buf) - display_def->y + 1;
     }
+
+    return 0;
 }
 
 static void dvbsub_display_end_segment(AVCodecContext *avctx, const uint8_t *buf,

@@ -175,6 +175,8 @@ av_cold int ff_rate_control_init(MpegEncContext *s)
         if (i <= 0 || i >= INT_MAX / sizeof(RateControlEntry))
             return -1;
         rcc->entry       = av_mallocz(i * sizeof(RateControlEntry));
+        if (!rcc->entry)
+            return AVERROR(ENOMEM);
         rcc->num_entries = i;
 
         /* init all to skipped p frames
@@ -953,6 +955,11 @@ static int init_pass2(MpegEncContext *s)
 
     qscale         = av_malloc_array(rcc->num_entries, sizeof(double));
     blurred_qscale = av_malloc_array(rcc->num_entries, sizeof(double));
+    if (!qscale || !blurred_qscale) {
+        av_free(qscale);
+        av_free(blurred_qscale);
+        return AVERROR(ENOMEM);
+    }
     toobig = 0;
 
     for (step = 256 * 256; step > 0.0000001; step *= 0.5) {
