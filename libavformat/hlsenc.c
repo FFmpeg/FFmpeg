@@ -395,7 +395,7 @@ static int hls_write_header(AVFormatContext *s)
 fail:
 
     av_dict_free(&options);
-    if (ret) {
+    if (ret < 0) {
         av_freep(&hls->basename);
         if (hls->avf)
             avformat_free_context(hls->avf);
@@ -438,7 +438,7 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
         hls->size = new_start_pos - hls->start_pos;
         ret = hls_append_segment(hls, hls->duration, hls->start_pos, hls->size);
         hls->start_pos = new_start_pos;
-        if (ret)
+        if (ret < 0)
             return ret;
 
         hls->end_pts = pkt->pts;
@@ -454,7 +454,7 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
             ret = hls_start(s);
         }
 
-        if (ret)
+        if (ret < 0)
             return ret;
 
         oc = hls->avf;
