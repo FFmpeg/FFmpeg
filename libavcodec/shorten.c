@@ -136,12 +136,12 @@ static int allocate_buffers(ShortenContext *s)
             return AVERROR_INVALIDDATA;
         }
 
-        if ((err = av_reallocp(&s->offset[chan],
-                               sizeof(int32_t) *
+        if ((err = av_reallocp_array(&s->offset[chan],
+                               sizeof(int32_t),
                                FFMAX(1, s->nmean))) < 0)
             return err;
 
-        if ((err = av_reallocp(&s->decoded_base[chan], (s->blocksize + s->nwrap) *
+        if ((err = av_reallocp_array(&s->decoded_base[chan], (s->blocksize + s->nwrap),
                                sizeof(s->decoded_base[0][0]))) < 0)
             return err;
         for (i = 0; i < s->nwrap; i++)
@@ -149,7 +149,7 @@ static int allocate_buffers(ShortenContext *s)
         s->decoded[chan] = s->decoded_base[chan] + s->nwrap;
     }
 
-    if ((err = av_reallocp(&s->coeffs, s->nwrap * sizeof(*s->coeffs))) < 0)
+    if ((err = av_reallocp_array(&s->coeffs, s->nwrap, sizeof(*s->coeffs))) < 0)
         return err;
 
     return 0;
