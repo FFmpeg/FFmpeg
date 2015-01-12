@@ -42,7 +42,7 @@
 #define NB_LSP_COEFS 10
 
 /* XXX: is it a suitable value ? */
-#define MAX_CODED_SUPERFRAME_SIZE 16384
+#define MAX_CODED_SUPERFRAME_SIZE 32768
 
 #define MAX_CHANNELS 2
 

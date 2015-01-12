@@ -840,8 +840,29 @@ static int wma_decode_superframe(AVCodecContext *avctx, void *data,
         skip_bits(&s->gb, 4); /* super frame index */
         nb_frames = get_bits(&s->gb, 4) - (s->last_superframe_len <= 0);
         if (nb_frames <= 0) {
-            av_log(avctx, AV_LOG_ERROR, "nb_frames is %d\n", nb_frames);
-            return AVERROR_INVALIDDATA;
+            int is_error = nb_frames < 0 || get_bits_left(&s->gb) <= 8;
+            av_log(avctx, is_error ? AV_LOG_ERROR : AV_LOG_WARNING,
+                   "nb_frames is %d bits left %d\n",
+                   nb_frames, get_bits_left(&s->gb));
+            if (is_error)
+                return AVERROR_INVALIDDATA;
+
+            if ((s->last_superframe_len + buf_size - 1) >
+                MAX_CODED_SUPERFRAME_SIZE)
+                goto fail;
+
+            q   = s->last_superframe + s->last_superframe_len;
+            len = buf_size - 1;
+            while (len > 0) {
+                *q++ = get_bits (&s->gb, 8);
+                len --;
+            }
+            memset(q, 0, FF_INPUT_BUFFER_PADDING_SIZE);
+
+            s->last_superframe_len += 8*buf_size - 8;
+//             s->reset_block_lengths = 1; //XXX is this needed ?
+            *got_frame_ptr = 0;
+            return buf_size;
         }
     } else
         nb_frames = 1;

@@ -352,6 +352,7 @@ typedef struct H264Context {
     H264Picture *DPB;
     H264Picture *cur_pic_ptr;
     H264Picture cur_pic;
+    H264Picture last_pic_for_ec;
 
     int pixel_shift;    ///< 0 for 8-bit H264, 1 for high-bit-depth H264
     int chroma_qp[2];   // QPc

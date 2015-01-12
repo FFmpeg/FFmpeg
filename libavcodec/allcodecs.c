@@ -481,6 +481,7 @@ void avcodec_register_all(void)
     /* subtitles */
     REGISTER_ENCDEC (SSA,               ssa);
     REGISTER_ENCDEC (ASS,               ass);
+    REGISTER_DECODER(CCAPTION,          ccaption);
     REGISTER_ENCDEC (DVBSUB,            dvbsub);
     REGISTER_ENCDEC (DVDSUB,            dvdsub);
     REGISTER_DECODER(JACOSUB,           jacosub);

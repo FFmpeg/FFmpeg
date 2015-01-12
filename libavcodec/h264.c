@@ -1838,6 +1838,8 @@ static int h264_decode_frame(AVCodecContext *avctx, void *data,
      * packets do not get used. */
     h->data_partitioning = 0;
 
+    ff_h264_unref_picture(h, &h->last_pic_for_ec);
+
     /* end of stream, output what is still in the buffers */
     if (buf_size == 0) {
  out:
@@ -1930,6 +1932,8 @@ static int h264_decode_frame(AVCodecContext *avctx, void *data,
 
     assert(pict->buf[0] || !*got_frame);
 
+    ff_h264_unref_picture(h, &h->last_pic_for_ec);
+
     return get_consumed_bytes(buf_index, buf_size);
 }
 
@@ -1954,6 +1958,7 @@ static av_cold int h264_decode_end(AVCodecContext *avctx)
     ff_h264_free_context(h);
 
     ff_h264_unref_picture(h, &h->cur_pic);
+    ff_h264_unref_picture(h, &h->last_pic_for_ec);
 
     return 0;
 }

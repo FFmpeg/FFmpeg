@@ -15,6 +15,10 @@ libavutil:     2014-08-09
 
 API changes, most recent first:
 
+2015-01-11 - xxxxxxx - lavd 56.4.100 - avdevice.h
+  Add avdevice_list_input_sources().
+  Add avdevice_list_output_sinks().
+
 201x-xx-xx - xxxxxxx - lavc 56.10.0 - vdpau.h
   Add av_vdpau_get_surface_parameters().
 

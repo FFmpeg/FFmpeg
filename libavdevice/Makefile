@@ -7,6 +7,7 @@ HEADERS = avdevice.h                                                    \
 
 OBJS    = alldevices.o                                                  \
           avdevice.o                                                    \
+          utils.o                                                       \
 
 # input/output devices
 OBJS-$(CONFIG_ALSA_INDEV)                += alsa-audio-common.o \

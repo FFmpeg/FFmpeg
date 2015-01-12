@@ -697,9 +697,6 @@ static int is_intra_more_likely(ERContext *s)
             undamaged_count++;
     }
 
-    if (s->avctx->codec_id == AV_CODEC_ID_H264 && s->ref_count <= 0)
-        return 1;
-
     if (undamaged_count < 5)
         return 0; // almost all MBs damaged -> use temporal prediction
 

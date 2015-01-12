@@ -263,7 +263,7 @@ static int decode_picture_header(ProresContext *ctx, const uint8_t *buf,
 
     if (ctx->total_slices != num_slices) {
         av_freep(&ctx->slice_data);
-        ctx->slice_data = av_malloc((num_slices + 1) * sizeof(ctx->slice_data[0]));
+        ctx->slice_data = av_malloc_array(num_slices + 1, sizeof(ctx->slice_data[0]));
         if (!ctx->slice_data)
             return AVERROR(ENOMEM);
         ctx->total_slices = num_slices;

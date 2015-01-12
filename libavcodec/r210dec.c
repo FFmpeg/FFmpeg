@@ -47,6 +47,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                                 avctx->codec_id == AV_CODEC_ID_R10K ? 1 : 64);
     uint8_t *dst_line;
     int r10 = (avctx->codec_tag & 0xFFFFFF) == MKTAG('r', '1', '0', 0);
+    int le = avctx->codec_tag == MKTAG('R', '1', '0', 'k') &&
+             avctx->extradata_size >= 12 && !memcmp(&avctx->extradata[4], "DpxE", 4) &&
+             !avctx->extradata[11];
 
     if (avpkt->size < 4 * aligned_width * avctx->height) {
         av_log(avctx, AV_LOG_ERROR, "packet too small\n");
@@ -65,7 +68,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         for (w = 0; w < avctx->width; w++) {
             uint32_t pixel;
             uint16_t r, g, b;
-            if (avctx->codec_id == AV_CODEC_ID_AVRP || r10) {
+            if (avctx->codec_id == AV_CODEC_ID_AVRP || r10 || le) {
                 pixel = av_le2ne32(*src++);
             } else {
                 pixel = av_be2ne32(*src++);
