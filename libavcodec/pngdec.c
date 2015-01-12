@@ -415,9 +415,10 @@ static int decode_frame(AVCodecContext *avctx,
 
     /* check signature */
     if (buf_size < 8 ||
-        memcmp(buf, ff_pngsig, 8) != 0 &&
-        memcmp(buf, ff_mngsig, 8) != 0)
-        return -1;
+        (memcmp(buf, ff_pngsig, 8) != 0 && memcmp(buf, ff_mngsig, 8) != 0)) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid PNG signature (%d).\n", buf_size);
+        return AVERROR_INVALIDDATA;
+    }
 
     bytestream2_init(&s->gb, buf + 8, buf_size - 8);
     s->y = s->state = 0;
