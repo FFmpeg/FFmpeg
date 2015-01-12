@@ -594,9 +594,9 @@ static int halfpel_interpol(SnowContext *s, uint8_t *halfpel[4][4], AVFrame *fra
         int ls= frame->linesize[p];
         uint8_t *src= frame->data[p];
 
-        halfpel[1][p] = (uint8_t*) av_malloc(ls * (h + 2 * EDGE_WIDTH)) + EDGE_WIDTH * (1 + ls);
-        halfpel[2][p] = (uint8_t*) av_malloc(ls * (h + 2 * EDGE_WIDTH)) + EDGE_WIDTH * (1 + ls);
-        halfpel[3][p] = (uint8_t*) av_malloc(ls * (h + 2 * EDGE_WIDTH)) + EDGE_WIDTH * (1 + ls);
+        halfpel[1][p] = (uint8_t*) av_malloc_array(ls, (h + 2 * EDGE_WIDTH)) + EDGE_WIDTH * (1 + ls);
+        halfpel[2][p] = (uint8_t*) av_malloc_array(ls, (h + 2 * EDGE_WIDTH)) + EDGE_WIDTH * (1 + ls);
+        halfpel[3][p] = (uint8_t*) av_malloc_array(ls, (h + 2 * EDGE_WIDTH)) + EDGE_WIDTH * (1 + ls);
         if (!halfpel[1][p] || !halfpel[2][p] || !halfpel[3][p])
             return AVERROR(ENOMEM);
 
