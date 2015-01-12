@@ -104,7 +104,8 @@ static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
 
     s->cbf_luma = av_malloc_array(sps->min_tb_width, sps->min_tb_height);
     s->tab_ipm  = av_mallocz(min_pu_size);
-    s->is_pcm   = av_malloc_array(sps->min_pu_width + 1, sps->min_pu_height + 1);
+    s->is_pcm   = av_mallocz_array(sps->min_pu_width + 1, sps->min_pu_height + 1);
+
     if (!s->tab_ipm || !s->cbf_luma || !s->is_pcm)
         goto fail;
 
@@ -353,9 +354,34 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps)
     ff_videodsp_init (&s->vdsp,    sps->bit_depth);
 
     if (sps->sao_enabled && !s->avctx->hwaccel) {
+#ifdef USE_SAO_SMALL_BUFFER
+        {
+            int ctb_size = 1 << sps->log2_ctb_size;
+            int c_count = (sps->chroma_format_idc != 0) ? 3 : 1;
+            int c_idx, i;
+
+            for (i = 0; i < s->threads_number ; i++) {
+                HEVCLocalContext    *lc = s->HEVClcList[i];
+                lc->sao_pixel_buffer =
+                    av_malloc(((ctb_size + 2) * (ctb_size + 2)) <<
+                              sps->pixel_shift);
+            }
+            for(c_idx = 0; c_idx < c_count; c_idx++) {
+                int w = sps->width >> sps->hshift[c_idx];
+                int h = sps->height >> sps->vshift[c_idx];
+                s->sao_pixel_buffer_h[c_idx] =
+                av_malloc((w * 2 * sps->ctb_height) <<
+                          sps->pixel_shift);
+                s->sao_pixel_buffer_v[c_idx] =
+                av_malloc((h * 2 * sps->ctb_width) <<
+                          sps->pixel_shift);
+            }
+        }
+#else
         av_frame_unref(s->tmp_frame);
         ret = get_buffer_sao(s, s->tmp_frame, sps);
         s->sao_frame = s->tmp_frame;
+#endif
     }
 
     s->sps = sps;
@@ -3186,7 +3212,17 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
 
     av_freep(&s->cabac_state);
 
+#ifdef USE_SAO_SMALL_BUFFER
+    for (i = 0; i < s->threads_number; i++) {
+        av_freep(&s->HEVClcList[i]->sao_pixel_buffer);
+    }
+    for (i = 0; i < 3; i++) {
+        av_freep(&s->sao_pixel_buffer_h[i]);
+        av_freep(&s->sao_pixel_buffer_v[i]);
+    }
+#else
     av_frame_free(&s->tmp_frame);
+#endif
     av_frame_free(&s->output_frame);
 
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
@@ -3246,9 +3282,11 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
     if (!s->cabac_state)
         goto fail;
 
+#ifndef USE_SAO_SMALL_BUFFER
     s->tmp_frame = av_frame_alloc();
     if (!s->tmp_frame)
         goto fail;
+#endif
 
     s->output_frame = av_frame_alloc();
     if (!s->output_frame)
