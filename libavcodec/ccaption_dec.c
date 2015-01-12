@@ -55,7 +55,7 @@ enum cc_color_code
     CCCOL_MAGENTA,
     CCCOL_USERDEFINED,
     CCCOL_BLACK,
-    CCCOL_TRANSPARENT
+    CCCOL_TRANSPARENT,
 };
 
 enum cc_font
@@ -63,7 +63,7 @@ enum cc_font
     CCFONT_REGULAR,
     CCFONT_ITALICS,
     CCFONT_UNDERLINED,
-    CCFONT_UNDERLINED_ITALICS
+    CCFONT_UNDERLINED_ITALICS,
 };
 
 static const unsigned char pac2_attribs[][3] = // Color, font, ident
@@ -100,9 +100,9 @@ static const unsigned char pac2_attribs[][3] = // Color, font, ident
     { CCCOL_WHITE, CCFONT_UNDERLINED, 24 }, // 0x5d || 0x7d
     { CCCOL_WHITE, CCFONT_REGULAR, 28 }, // 0x5e || 0x7e
     { CCCOL_WHITE, CCFONT_UNDERLINED, 28 }  // 0x5f || 0x7f
-    /* total 32 entry */
+    /* total 32 entries */
 };
-/* 0-255 needs 256 space */
+/* 0-255 needs 256 spaces */
 static const uint8_t parity_table[256] = { 0, 1, 1, 0, 1, 0, 0, 1,
                                            1, 0, 0, 1, 0, 1, 1, 0,
                                            1, 0, 0, 1, 0, 1, 1, 0,
@@ -141,7 +141,7 @@ struct Screen {
     /*
      * Bitmask of used rows; if a bit is not set, the
      * corresponding row is not used.
-     * for setting row 1  use row | (0 << 1)
+     * for setting row 1  use row | (1 << 0)
      * for setting row 15 use row | (1 << 14)
      */
     int16_t  row_used;
@@ -212,7 +212,7 @@ static int write_char (CCaptionSubContext *ctx, char *row,uint8_t col, char ch)
         return 0;
     }
     else {
-        av_log(ctx, AV_LOG_WARNING,"Data Ignored since exciding screen width\n");
+        av_log(ctx, AV_LOG_WARNING,"Data Ignored since exceeding screen width\n");
         return AVERROR_INVALIDDATA;
     }
 }
