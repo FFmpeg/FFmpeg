@@ -63,6 +63,8 @@
     </ClCompile>
     <ClCompile Include="..\libavdevice\avdevice.c">
     </ClCompile>
+    <ClCompile Include="..\libavdevice\utils.c">
+    </ClCompile>
     <ClCompile Include="..\libavdevice\dshow.c">
     </ClCompile>
     <ClCompile Include="..\libavdevice\dshow_enummediatypes.c">

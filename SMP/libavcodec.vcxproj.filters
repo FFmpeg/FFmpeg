@@ -779,6 +779,9 @@
     <ClCompile Include="..\libavcodec\cavsdata.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\ccaption_dec.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\cdgraphics.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>

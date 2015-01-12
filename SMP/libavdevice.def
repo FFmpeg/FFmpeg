@@ -12,6 +12,8 @@ EXPORTS
     avdevice_free_list_devices
     avdevice_license
     avdevice_list_devices
+    avdevice_list_input_sources
+    avdevice_list_output_sinks
     avdevice_register_all
     avdevice_version
     av_device_capabilities DATA

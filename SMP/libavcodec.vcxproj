@@ -519,6 +519,8 @@
     </ClCompile>
     <ClCompile Include="..\libavcodec\cavsdata.c">
     </ClCompile>
+    <ClCompile Include="..\libavcodec\ccaption_dec.c">
+    </ClCompile>
     <ClCompile Include="..\libavcodec\cdgraphics.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\cdxl.c">
