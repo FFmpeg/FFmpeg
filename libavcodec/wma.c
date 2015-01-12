@@ -487,7 +487,11 @@ int ff_wma_run_level_decode(AVCodecContext *avctx, GetBitContext *gb,
     }
     /** NOTE: EOB can be omitted */
     if (offset > num_coefs) {
-        av_log(avctx, AV_LOG_ERROR, "overflow in spectral RLE, ignoring\n");
+        av_log(avctx, AV_LOG_ERROR,
+               "overflow (%d > %d) in spectral RLE, ignoring\n",
+               offset,
+               num_coefs
+              );
         return -1;
     }
 
