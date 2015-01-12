@@ -1,6 +1,29 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 11.2:
+
+- h264: restore a block mistakenly removed in e10fd08a (libav #781)
+- on2avc: check number of channels (CVE-2014-8549)
+- smc: fix the bounds check (CVE-2014-8548)
+- gifdec: refactor interleave end handling (CVE-2014-8547)
+- mmvideo: check frame dimensions (CVE-2014-8543)
+- jvdec: check frame dimensions (CVE-2014-8542)
+- mjpegdec: check for pixel format changes (CVE-2014-8541)
+- mov: avoid a memleak when multiple stss boxes are present
+- vc1: Do not assume seek happens after decoding
+- avconv: Use the mpeg12 private option scan_offset (debian/773055)
+- xsub: Support DXSA subtitles
+- mp3dec: fix reading the Xing tag
+- matroskaenc: write correct Display{Width, Height} in stereo encoding
+- configure: Fix enabling memalign_hack automatically
+- mp3enc: fix a triggerable assert
+- latm: Do not give a score for a single instance
+- mp3: Tweak the probe scores
+- matroskaenc: write correct Display{Width, Height} in stereo encoding
+- configure: Fix enabling memalign_hack automatically
+- coverity: Fix most of the reported warnings and issues
+
 version 11.1:
 
 - Replace lena.pnm (debian#771126)
