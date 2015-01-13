@@ -1042,6 +1042,12 @@ static av_cold int roq_encode_init(AVCodecContext *avctx)
     enc->last_motion8 =
         av_malloc_array ((enc->width*enc->height/64), sizeof(motion_vect));
 
+    if (!enc->tmpData || !enc->this_motion4 || !enc->last_motion4 ||
+        !enc->this_motion8 || !enc->last_motion8) {
+        roq_encode_end(avctx);
+        return AVERROR(ENOMEM);
+    }
+
     return 0;
 }
 
