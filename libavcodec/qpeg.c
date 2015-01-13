@@ -120,12 +120,13 @@ static void av_noinline qpeg_decode_inter(QpegContext *qctx, uint8_t *dst,
     int filled = 0;
     int orig_height;
 
-    if(!refdata)
-        refdata= dst;
-
-    /* copy prev frame */
-    for(i = 0; i < height; i++)
-        memcpy(dst + (i * stride), refdata + (i * stride), width);
+    if (refdata) {
+        /* copy prev frame */
+        for (i = 0; i < height; i++)
+            memcpy(dst + (i * stride), refdata + (i * stride), width);
+    } else {
+        refdata = dst;
+    }
 
     orig_height = height;
     height--;
