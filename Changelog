@@ -3,6 +3,31 @@ releases are sorted from youngest to oldest.
 
 version <next>:
 
+
+version 2.4.6:
+- doc/examples: fix lib math dep for decoding_encoding
+- avformat/movenc: workaround bug in "PathScale EKOPath(tm) Compiler Suite Version 4.0.12.1"
+- vp9: fix parser return values in error case
+- ffmpeg: Clear error message array at init.
+- avcodec/dvdsubdec: fix accessing dangling pointers
+- avcodec/dvdsubdec: error on bitmaps with size 0
+- avformat/mov: Fix mixed declaration and statement warning
+- cmdutils: Use 64bit for file size/offset related variable in cmdutils_read_file()
+- avformat/utils: Clear pointer in ff_alloc_extradata() to avoid leaving a stale pointer in memory
+- avformat/matroskadec: Use av_freep() to avoid leaving stale pointers in memory
+- lavfi: check av_strdup() return value
+- mov: Fix negative size calculation in mov_read_default().
+- avformat/mov: fix integer overflow in mov_read_udta_string()
+- mov: Avoid overflow with mov_metadata_raw()
+- avcodec/dvdsubdec: fix out of bounds accesses
+- avfilter/vf_sab: fix filtering tiny images
+- avformat/flvdec: Increase string array size
+- avformat/flvdec: do not inject dts=0 metadata packets which failed to be parsed into a new data stream
+- avformat/cdxl: Fix integer overflow of image_size
+- avformat/segment: Use av_freep() avoid leaving stale pointers in memory
+- avformat/mov: Fix memleaks for duplicate STCO/CO64/STSC atoms
+- mov: avoid a memleak when multiple stss boxes are presen
+
 version 2.4.5:
 - lavu/frame: fix malloc error path in av_frame_copy_props()
 - avformat/utils: Do not update programs streams from program-less streams in update_wrap_reference()
