@@ -200,6 +200,7 @@ typedef struct {
     UID uid;
     enum MXFMetadataSetType type;
     UID package_uid;
+    UID package_ul;
     UID *tracks_refs;
     int tracks_count;
     MXFDescriptor *descriptor; /* only one */
@@ -279,6 +280,7 @@ static const uint8_t mxf_encrypted_triplet_key[]           = { 0x06,0x0e,0x2b,0x
 static const uint8_t mxf_encrypted_essence_container[]     = { 0x06,0x0e,0x2b,0x34,0x04,0x01,0x01,0x07,0x0d,0x01,0x03,0x01,0x02,0x0b,0x01,0x00 };
 static const uint8_t mxf_random_index_pack_key[]           = { 0x06,0x0e,0x2b,0x34,0x02,0x05,0x01,0x01,0x0d,0x01,0x02,0x01,0x01,0x11,0x01,0x00 };
 static const uint8_t mxf_sony_mpeg4_extradata[]            = { 0x06,0x0e,0x2b,0x34,0x04,0x01,0x01,0x01,0x0e,0x06,0x06,0x02,0x02,0x01,0x00,0x00 };
+static const uint8_t mxf_avid_project_name[]               = { 0xa5,0xfb,0x7b,0x25,0xf6,0x15,0x94,0xb9,0x62,0xfc,0x37,0x17,0x49,0x2d,0x42,0xbf };
 
 #define IS_KLV_KEY(x, y) (!memcmp(x, y, sizeof(y)))
 
@@ -840,8 +842,8 @@ static int mxf_read_package(void *arg, AVIOContext *pb, int tag, int size, UID u
         avio_read(pb, (uint8_t *)package->tracks_refs, package->tracks_count * sizeof(UID));
         break;
     case 0x4401:
-        /* UMID, only get last 16 bytes */
-        avio_skip(pb, 16);
+        /* UMID */
+        avio_read(pb, package->package_ul, 16);
         avio_read(pb, package->package_uid, 16);
         break;
     case 0x4701:
@@ -1488,11 +1490,34 @@ static int mxf_uid_to_str(UID uid, char **str)
     return 0;
 }
 
-static int mxf_add_uid_metadata(AVDictionary **pm, const char *key, UID uid)
+static int mxf_umid_to_str(UID ul, UID uid, char **str)
+{
+    int i;
+    char *p;
+    p = *str = av_mallocz(sizeof(UID) * 4 + 2 + 1);
+    if (!p)
+        return AVERROR(ENOMEM);
+    snprintf(p, 2 + 1, "0x");
+    p += 2;
+    for (i = 0; i < sizeof(UID); i++) {
+        snprintf(p, 2 + 1, "%.2X", ul[i]);
+        p += 2;
+
+    }
+    for (i = 0; i < sizeof(UID); i++) {
+        snprintf(p, 2 + 1, "%.2X", uid[i]);
+        p += 2;
+    }
+    return 0;
+}
+
+static int mxf_add_umid_metadata(AVDictionary **pm, const char *key, MXFPackage* package)
 {
     char *str;
     int ret;
-    if ((ret = mxf_uid_to_str(uid, &str)) < 0)
+    if (!package)
+        return 0;
+    if ((ret = mxf_umid_to_str(package->package_ul, package->package_uid, &str)) < 0)
         return ret;
     av_dict_set(pm, key, str, AV_DICT_DONT_STRDUP_VAL);
     return 0;
@@ -1633,7 +1658,7 @@ static int mxf_parse_physical_source_package(MXFContext *mxf, MXFTrack *source_t
         if (!(physical_package = mxf_resolve_source_package(mxf, sourceclip->source_package_uid)))
             break;
 
-        mxf_add_uid_metadata(&st->metadata, "reel_uid", physical_package->package_uid);
+        mxf_add_umid_metadata(&st->metadata, "reel_umid", physical_package);
 
         /* the name of physical source package is name of the reel or tape */
         if (physical_package->name && physical_package->name[0])
@@ -1690,7 +1715,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
         return AVERROR_INVALIDDATA;
     }
 
-    mxf_add_uid_metadata(&mxf->fc->metadata, "material_package_uid", material_package->package_uid);
+    mxf_add_umid_metadata(&mxf->fc->metadata, "material_package_umid", material_package);
     if (material_package->name && material_package->name[0])
         av_dict_set(&mxf->fc->metadata, "material_package_name", material_package->name, 0);
 
@@ -1858,7 +1883,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
         }
         av_log(mxf->fc, AV_LOG_VERBOSE, "\n");
 
-        mxf_add_uid_metadata(&st->metadata, "file_package_uid", source_package->package_uid);
+        mxf_add_umid_metadata(&st->metadata, "file_package_umid", source_package);
         if (source_package->name && source_package->name[0])
             av_dict_set(&st->metadata, "file_package_name", source_package->name, 0);
 
@@ -2087,6 +2112,19 @@ static int mxf_read_identification_metadata(void *arg, AVIOContext *pb, int tag,
     return 0;
 }
 
+static int mxf_read_preface_metadata(void *arg, AVIOContext *pb, int tag, int size, UID uid, int64_t klv_offset)
+{
+    MXFContext *mxf = arg;
+    AVFormatContext *s = mxf->fc;
+    int ret;
+    char *str = NULL;
+
+    if (tag >= 0x8000 && (IS_KLV_KEY(uid, mxf_avid_project_name))) {
+        SET_STR_METADATA(pb, "project_name", str);
+    }
+    return 0;
+}
+
 static const MXFMetadataReadTableEntry mxf_metadata_read_table[] = {
     { { 0x06,0x0e,0x2b,0x34,0x02,0x05,0x01,0x01,0x0d,0x01,0x02,0x01,0x01,0x05,0x01,0x00 }, mxf_read_primer_pack },
     { { 0x06,0x0e,0x2b,0x34,0x02,0x05,0x01,0x01,0x0d,0x01,0x02,0x01,0x01,0x02,0x01,0x00 }, mxf_read_partition_pack },
@@ -2099,6 +2137,7 @@ static const MXFMetadataReadTableEntry mxf_metadata_read_table[] = {
     { { 0x06,0x0e,0x2b,0x34,0x02,0x05,0x01,0x01,0x0d,0x01,0x02,0x01,0x01,0x03,0x04,0x00 }, mxf_read_partition_pack },
     { { 0x06,0x0e,0x2b,0x34,0x02,0x05,0x01,0x01,0x0d,0x01,0x02,0x01,0x01,0x04,0x02,0x00 }, mxf_read_partition_pack },
     { { 0x06,0x0e,0x2b,0x34,0x02,0x05,0x01,0x01,0x0d,0x01,0x02,0x01,0x01,0x04,0x04,0x00 }, mxf_read_partition_pack },
+    { { 0x06,0x0e,0x2b,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x2f,0x00 }, mxf_read_preface_metadata },
     { { 0x06,0x0e,0x2b,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x30,0x00 }, mxf_read_identification_metadata },
     { { 0x06,0x0e,0x2b,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x18,0x00 }, mxf_read_content_storage, 0, AnyType },
     { { 0x06,0x0e,0x2b,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x37,0x00 }, mxf_read_package, sizeof(MXFPackage), SourcePackage },

@@ -105,11 +105,11 @@ av_cold int ff_celt_imdct_init(CeltIMDCTContext **ps, int N)
     s->len4 = len2 / 2;
     s->len2 = len2;
 
-    s->tmp  = av_malloc(len * 2 * sizeof(*s->tmp));
+    s->tmp  = av_malloc_array(len, 2 * sizeof(*s->tmp));
     if (!s->tmp)
         goto fail;
 
-    s->twiddle_exptab  = av_malloc(s->len4 * sizeof(*s->twiddle_exptab));
+    s->twiddle_exptab  = av_malloc_array(s->len4, sizeof(*s->twiddle_exptab));
     if (!s->twiddle_exptab)
         goto fail;
 

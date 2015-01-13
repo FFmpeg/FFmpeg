@@ -305,6 +305,79 @@ pack_6ch_%2_to_%1_u_int %+ SUFFIX
 %endif
 %endmacro
 
+%macro UNPACK_6CH 5-7
+cglobal unpack_6ch_%2_to_%1_%3, 2, 8, 8, dst, src, dst1, dst2, dst3, dst4, dst5, len
+%if ARCH_X86_64
+    mov     lend, r2d
+%else
+    %define lend dword r2m
+%endif
+    mov    dst1q, [dstq+1*gprsize]
+    mov    dst2q, [dstq+2*gprsize]
+    mov    dst3q, [dstq+3*gprsize]
+    mov    dst4q, [dstq+4*gprsize]
+    mov    dst5q, [dstq+5*gprsize]
+    mov     dstq, [dstq]
+    mov     srcq, [srcq]
+%ifidn %3, a
+    test dstq, mmsize-1
+        jne unpack_6ch_%2_to_%1_u_int %+ SUFFIX
+    test srcq, mmsize-1
+        jne unpack_6ch_%2_to_%1_u_int %+ SUFFIX
+    test dst1q, mmsize-1
+        jne unpack_6ch_%2_to_%1_u_int %+ SUFFIX
+    test dst2q, mmsize-1
+        jne unpack_6ch_%2_to_%1_u_int %+ SUFFIX
+    test dst3q, mmsize-1
+        jne unpack_6ch_%2_to_%1_u_int %+ SUFFIX
+    test dst4q, mmsize-1
+        jne unpack_6ch_%2_to_%1_u_int %+ SUFFIX
+    test dst5q, mmsize-1
+        jne unpack_6ch_%2_to_%1_u_int %+ SUFFIX
+%else
+unpack_6ch_%2_to_%1_u_int %+ SUFFIX
+%endif
+    sub    dst1q, dstq
+    sub    dst2q, dstq
+    sub    dst3q, dstq
+    sub    dst4q, dstq
+    sub    dst5q, dstq
+    %7 x,x,x,x,m7,x
+.loop:
+    mov%3     m0, [srcq   ]
+    mov%3     m1, [srcq+16]
+    mov%3     m2, [srcq+32]
+    mov%3     m3, [srcq+48]
+    mov%3     m4, [srcq+64]
+    mov%3     m5, [srcq+80]
+
+    SBUTTERFLYPS 0, 3, 6
+    SBUTTERFLYPS 1, 4, 6
+    SBUTTERFLYPS 2, 5, 6
+    SBUTTERFLYPS 0, 4, 6
+    SBUTTERFLYPS 3, 2, 6
+    SBUTTERFLYPS 1, 5, 6
+    SWAP 1, 4
+    SWAP 2, 3
+
+    %6 m0,m1,x,x,m7,m6
+    %6 m2,m3,x,x,m7,m6
+    %6 m4,m5,x,x,m7,m6
+
+    mov %+ %3 %+ ps [dstq      ], m0
+    mov %+ %3 %+ ps [dstq+dst1q], m1
+    mov %+ %3 %+ ps [dstq+dst2q], m2
+    mov %+ %3 %+ ps [dstq+dst3q], m3
+    mov %+ %3 %+ ps [dstq+dst4q], m4
+    mov %+ %3 %+ ps [dstq+dst5q], m5
+
+    add      srcq, mmsize*6
+    add      dstq, mmsize
+    sub      lend, mmsize/4
+    jg .loop
+    REP_RET
+%endmacro
+
 %macro PACK_8CH 5-7
 cglobal pack_8ch_%2_to_%1_%3, 2,10,10, ARCH_X86_32*32, dst, src, len, src1, src2, src3, src4, src5, src6, src7
     mov     dstq, [dstq]
@@ -527,6 +600,9 @@ INIT_XMM sse
 PACK_6CH float, float, u, 2, 2, NOP_N, NOP_N
 PACK_6CH float, float, a, 2, 2, NOP_N, NOP_N
 
+UNPACK_6CH float, float, u, 2, 2, NOP_N, NOP_N
+UNPACK_6CH float, float, a, 2, 2, NOP_N, NOP_N
+
 INIT_XMM sse2
 CONV int32, int16, u, 2, 1, INT16_TO_INT32_N, NOP_N
 CONV int32, int16, a, 2, 1, INT16_TO_INT32_N, NOP_N
@@ -583,6 +659,11 @@ PACK_6CH float, int32, a, 2, 2, INT32_TO_FLOAT_N, INT32_TO_FLOAT_INIT
 PACK_6CH int32, float, u, 2, 2, FLOAT_TO_INT32_N, FLOAT_TO_INT32_INIT
 PACK_6CH int32, float, a, 2, 2, FLOAT_TO_INT32_N, FLOAT_TO_INT32_INIT
 
+UNPACK_6CH float, int32, u, 2, 2, INT32_TO_FLOAT_N, INT32_TO_FLOAT_INIT
+UNPACK_6CH float, int32, a, 2, 2, INT32_TO_FLOAT_N, INT32_TO_FLOAT_INIT
+UNPACK_6CH int32, float, u, 2, 2, FLOAT_TO_INT32_N, FLOAT_TO_INT32_INIT
+UNPACK_6CH int32, float, a, 2, 2, FLOAT_TO_INT32_N, FLOAT_TO_INT32_INIT
+
 %if HAVE_ALIGNED_STACK
 PACK_8CH float, float, u, 2, 2, NOP_N, NOP_N
 PACK_8CH float, float, a, 2, 2, NOP_N, NOP_N
@@ -606,10 +687,18 @@ INIT_XMM avx
 PACK_6CH float, float, u, 2, 2, NOP_N, NOP_N
 PACK_6CH float, float, a, 2, 2, NOP_N, NOP_N
 
+UNPACK_6CH float, float, u, 2, 2, NOP_N, NOP_N
+UNPACK_6CH float, float, a, 2, 2, NOP_N, NOP_N
+
 PACK_6CH float, int32, u, 2, 2, INT32_TO_FLOAT_N, INT32_TO_FLOAT_INIT
 PACK_6CH float, int32, a, 2, 2, INT32_TO_FLOAT_N, INT32_TO_FLOAT_INIT
 PACK_6CH int32, float, u, 2, 2, FLOAT_TO_INT32_N, FLOAT_TO_INT32_INIT
 PACK_6CH int32, float, a, 2, 2, FLOAT_TO_INT32_N, FLOAT_TO_INT32_INIT
+
+UNPACK_6CH float, int32, u, 2, 2, INT32_TO_FLOAT_N, INT32_TO_FLOAT_INIT
+UNPACK_6CH float, int32, a, 2, 2, INT32_TO_FLOAT_N, INT32_TO_FLOAT_INIT
+UNPACK_6CH int32, float, u, 2, 2, FLOAT_TO_INT32_N, FLOAT_TO_INT32_INIT
+UNPACK_6CH int32, float, a, 2, 2, FLOAT_TO_INT32_N, FLOAT_TO_INT32_INIT
 
 %if HAVE_ALIGNED_STACK
 PACK_8CH float, float, u, 2, 2, NOP_N, NOP_N

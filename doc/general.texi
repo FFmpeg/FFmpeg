@@ -151,7 +151,7 @@ by Google as part of the WebRTC project. libilbc is a packaging friendly
 copy of the iLBC codec. FFmpeg can make use of the libilbc library for
 iLBC encoding and decoding.
 
-Go to @url{https://github.com/dekkers/libilbc} and follow the instructions for
+Go to @url{https://github.com/TimothyGu/libilbc} and follow the instructions for
 installing the library. Then pass @code{--enable-libilbc} to configure to
 enable it.
 

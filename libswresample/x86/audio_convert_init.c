@@ -31,6 +31,7 @@ PROTO4(_pack_2ch_)
 PROTO4(_pack_6ch_)
 PROTO4(_pack_8ch_)
 PROTO4(_unpack_2ch_)
+PROTO4(_unpack_6ch_)
 
 av_cold void swri_audio_convert_init_x86(struct AudioConvert *ac,
                                  enum AVSampleFormat out_fmt,
@@ -63,6 +64,9 @@ MULTI_CAPS_FUNC(SSE2, sse2)
         if(channels == 6) {
             if(   out_fmt == AV_SAMPLE_FMT_FLT  && in_fmt == AV_SAMPLE_FMT_FLTP || out_fmt == AV_SAMPLE_FMT_S32 && in_fmt == AV_SAMPLE_FMT_S32P)
                 ac->simd_f =  ff_pack_6ch_float_to_float_a_sse;
+
+            if(   out_fmt == AV_SAMPLE_FMT_FLTP  && in_fmt == AV_SAMPLE_FMT_FLT || out_fmt == AV_SAMPLE_FMT_S32P && in_fmt == AV_SAMPLE_FMT_S32)
+                ac->simd_f =  ff_unpack_6ch_float_to_float_a_sse;
         }
     }
     if(EXTERNAL_SSE2(mm_flags)) {
@@ -116,6 +120,11 @@ MULTI_CAPS_FUNC(SSE2, sse2)
                 ac->simd_f =  ff_pack_6ch_int32_to_float_a_sse2;
             if(   out_fmt == AV_SAMPLE_FMT_S32  && in_fmt == AV_SAMPLE_FMT_FLTP)
                 ac->simd_f =  ff_pack_6ch_float_to_int32_a_sse2;
+
+            if(   out_fmt == AV_SAMPLE_FMT_FLTP  && in_fmt == AV_SAMPLE_FMT_S32)
+                ac->simd_f =  ff_unpack_6ch_int32_to_float_a_sse2;
+            if(   out_fmt == AV_SAMPLE_FMT_S32P  && in_fmt == AV_SAMPLE_FMT_FLT)
+                ac->simd_f =  ff_unpack_6ch_float_to_int32_a_sse2;
         }
         if(HAVE_ALIGNED_STACK && channels == 8) {
             if(   out_fmt == AV_SAMPLE_FMT_FLT  && in_fmt == AV_SAMPLE_FMT_FLTP || out_fmt == AV_SAMPLE_FMT_S32 && in_fmt == AV_SAMPLE_FMT_S32P)
@@ -146,6 +155,13 @@ MULTI_CAPS_FUNC(SSE2, sse2)
                 ac->simd_f =  ff_pack_6ch_int32_to_float_a_avx;
             if(   out_fmt == AV_SAMPLE_FMT_S32  && in_fmt == AV_SAMPLE_FMT_FLTP)
                 ac->simd_f =  ff_pack_6ch_float_to_int32_a_avx;
+
+            if(   out_fmt == AV_SAMPLE_FMT_FLTP  && in_fmt == AV_SAMPLE_FMT_FLT || out_fmt == AV_SAMPLE_FMT_S32P && in_fmt == AV_SAMPLE_FMT_S32)
+                ac->simd_f =  ff_unpack_6ch_float_to_float_a_avx;
+            if(   out_fmt == AV_SAMPLE_FMT_FLTP  && in_fmt == AV_SAMPLE_FMT_S32)
+                ac->simd_f =  ff_unpack_6ch_int32_to_float_a_avx;
+            if(   out_fmt == AV_SAMPLE_FMT_S32P  && in_fmt == AV_SAMPLE_FMT_FLT)
+                ac->simd_f =  ff_unpack_6ch_float_to_int32_a_avx;
         }
         if(HAVE_ALIGNED_STACK && channels == 8) {
             if(   out_fmt == AV_SAMPLE_FMT_FLT  && in_fmt == AV_SAMPLE_FMT_FLTP || out_fmt == AV_SAMPLE_FMT_S32 && in_fmt == AV_SAMPLE_FMT_S32P)
