@@ -1922,6 +1922,11 @@ int main(void){
     s.temp_dwt_buffer  = av_mallocz(width * sizeof(DWTELEM));
     s.temp_idwt_buffer = av_mallocz(width * sizeof(IDWTELEM));
 
+    if (!s.temp_dwt_buffer || !s.temp_idwt_buffer) {
+        fprintf(stderr, "Failed to allocate memory\n");
+        return 1;
+    }
+
     av_lfg_init(&prng, 1);
 
     printf("testing 5/3 DWT\n");
