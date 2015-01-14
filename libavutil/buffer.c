@@ -201,8 +201,7 @@ int av_buffer_realloc(AVBufferRef **pbuf, int size)
 
         memcpy(new->data, buf->data, FFMIN(size, buf->size));
 
-        av_buffer_unref(pbuf);
-        *pbuf = new;
+        buffer_replace(pbuf, &new);
         return 0;
     }
 
