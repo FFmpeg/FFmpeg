@@ -41,7 +41,7 @@ typedef struct OpusParseContext {
 static const uint8_t *parse_opus_ts_header(const uint8_t *start, int *payload_len, int buf_len)
 {
     const uint8_t *buf = start + 1;
-    int start_trim_flag, end_trim_flag, control_extension_flag, control_extension_length, i;
+    int start_trim_flag, end_trim_flag, control_extension_flag, control_extension_length;
     uint8_t flags;
 
     GetByteContext gb;
