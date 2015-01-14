@@ -159,8 +159,8 @@ int av_buffer_make_writable(AVBufferRef **pbuf)
         return AVERROR(ENOMEM);
 
     memcpy(newbuf->data, buf->data, buf->size);
-    av_buffer_unref(pbuf);
-    *pbuf = newbuf;
+
+    buffer_replace(pbuf, &newbuf);
 
     return 0;
 }
