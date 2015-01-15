@@ -717,8 +717,8 @@ fail:
 typedef struct ID3v2EMFunc {
     const char *tag3;
     const char *tag4;
-    void (*read)(AVFormatContext *, AVIOContext *, int, const char *,
-                 ID3v2ExtraMeta **, int isv34);
+    void (*read)(AVFormatContext *s, AVIOContext *pb, int taglen,
+                 const char *tag, ID3v2ExtraMeta **extra_meta, int isv34);
     void (*free)(void *obj);
 } ID3v2EMFunc;
 
