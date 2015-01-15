@@ -362,7 +362,6 @@ static void read_uslt(AVFormatContext *s, AVIOContext *pb, int taglen,
     uint8_t *text = NULL;
     char *key = NULL;
     int encoding;
-    unsigned genre;
     int ok = 0;
 
     if (taglen < 1)
