@@ -403,6 +403,11 @@ static av_cold int init(AVFilterContext *ctx)
                                sendcmd->commands_str, ctx)) < 0)
         return ret;
 
+    if (sendcmd->nb_intervals == 0) {
+        av_log(ctx, AV_LOG_ERROR, "No commands\n");
+        return AVERROR(EINVAL);
+    }
+
     qsort(sendcmd->intervals, sendcmd->nb_intervals, sizeof(Interval), cmp_intervals);
 
     av_log(ctx, AV_LOG_DEBUG, "Parsed commands:\n");
