@@ -200,6 +200,8 @@ int av_parser_change(AVCodecParserContext *s, AVCodecContext *avctx,
 
             *poutbuf_size = size;
             *poutbuf      = av_malloc(size + FF_INPUT_BUFFER_PADDING_SIZE);
+            if (!*poutbuf)
+                return AVERROR(ENOMEM);
 
             memcpy(*poutbuf, avctx->extradata, avctx->extradata_size);
             memcpy(*poutbuf + avctx->extradata_size, buf,
