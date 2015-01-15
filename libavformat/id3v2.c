@@ -614,7 +614,7 @@ fail:
     avio_seek(pb, end, SEEK_SET);
 }
 
-static void read_chapter(AVFormatContext *s, AVIOContext *pb, int len, char *ttag, ID3v2ExtraMeta **extra_meta, int isv34)
+static void read_chapter(AVFormatContext *s, AVIOContext *pb, int len, const char *ttag, ID3v2ExtraMeta **extra_meta, int isv34)
 {
     AVRational time_base = {1, 1000};
     uint32_t start, end;
@@ -678,7 +678,7 @@ static void free_priv(void *obj)
 }
 
 static void read_priv(AVFormatContext *s, AVIOContext *pb, int taglen,
-                      char *tag, ID3v2ExtraMeta **extra_meta, int isv34)
+                      const char *tag, ID3v2ExtraMeta **extra_meta, int isv34)
 {
     ID3v2ExtraMeta *meta;
     ID3v2ExtraMetaPRIV *priv;
