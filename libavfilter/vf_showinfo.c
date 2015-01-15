@@ -104,7 +104,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     }
 
     av_log(ctx, AV_LOG_INFO,
-           "n:%"PRId64" pts:%s pts_time:%s pos:%"PRId64" "
+           "n:%4"PRId64" pts:%7s pts_time:%-7s pos:%9"PRId64" "
            "fmt:%s sar:%d/%d s:%dx%d i:%c iskey:%d type:%c "
            "checksum:%08"PRIX32" plane_checksum:[%08"PRIX32,
            inlink->frame_count,
