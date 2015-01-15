@@ -462,7 +462,7 @@ static int g2m_init_buffers(G2MContext *c)
         c->framebuf_stride = FFALIGN(c->width + 15, 16) * 3;
         aligned_height     = c->height + 15;
         av_free(c->framebuf);
-        c->framebuf = av_mallocz(c->framebuf_stride * aligned_height);
+        c->framebuf = av_mallocz_array(c->framebuf_stride, aligned_height);
         if (!c->framebuf)
             return AVERROR(ENOMEM);
     }
