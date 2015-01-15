@@ -6885,6 +6885,19 @@ pad="2*iw:2*ih:ow-iw:oh-ih"
 @end example
 @end itemize
 
+@section showpalette
+
+Displays the 256 colors palette of each frame. This filter is only relevant for
+@var{pal8} pixel format frames.
+
+It accepts the following option:
+
+@table @option
+@item s
+Set the size of the box used to represent one palette color entry. Default is
+@code{30} (for a @code{30x30} pixel box).
+@end table
+
 @section perspective
 
 Correct perspective of video not recorded perpendicular to the screen.
