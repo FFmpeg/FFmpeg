@@ -32,7 +32,6 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "internal.h"
-#include "libavcodec/avcodec.h"
 #include "avfilter.h"
 
 #define MAX_LEVEL 8 /* quality levels */
@@ -181,18 +180,6 @@ static void store_slice_c(uint8_t *dst, const uint16_t *src,
     }
 }
 
-static inline int norm_qscale(int qscale, int type)
-{
-    switch (type) {
-    case FF_QSCALE_TYPE_MPEG1: return qscale;
-    case FF_QSCALE_TYPE_MPEG2: return qscale >> 1;
-    case FF_QSCALE_TYPE_H264:  return qscale >> 2;
-    case FF_QSCALE_TYPE_VP56:  return (63 - qscale + 2) >> 2;
-    default: av_assert0(0);
-    }
-    return qscale;
-}
-
 static void filter(USPPContext *p, uint8_t *dst[3], uint8_t *src[3],
                    int dst_stride[3], int src_stride[3], int width,
                    int height, uint8_t *qp_store, int qp_stride)
@@ -237,7 +224,7 @@ static void filter(USPPContext *p, uint8_t *dst[3], uint8_t *src[3],
             for (x = 0; x < (width>>4); x++)
                 qpsum += qp_store[x + y * qp_stride];
         }
-        p->frame->quality = norm_qscale((qpsum + qpcount/2) / qpcount, p->qscale_type) * FF_QP2LAMBDA;
+        p->frame->quality = ff_norm_qscale((qpsum + qpcount/2) / qpcount, p->qscale_type) * FF_QP2LAMBDA;
     }
 //    init per MB qscale stuff FIXME
     p->frame->height = height;

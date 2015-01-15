@@ -1008,6 +1008,10 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
             }
 
             buf = av_malloc(buf_len);
+            if (!buf) {
+                ret = AVERROR(ENOMEM);
+                goto fail;
+            }
             av_log(avctx, AV_LOG_DEBUG, "watermark size: %ux%u\n",
                    watermark_width, watermark_height);
             av_log(avctx, AV_LOG_DEBUG,
@@ -1106,7 +1110,7 @@ static int get_buffer(AVCodecContext *avctx, H264Picture *pic)
         goto fail;
 
     if (!h->edge_emu_buffer) {
-        h->edge_emu_buffer = av_mallocz(pic->f.linesize[0] * 17);
+        h->edge_emu_buffer = av_mallocz_array(pic->f.linesize[0], 17);
         if (!h->edge_emu_buffer)
             return AVERROR(ENOMEM);
     }

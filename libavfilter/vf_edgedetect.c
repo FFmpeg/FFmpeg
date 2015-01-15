@@ -368,16 +368,16 @@ static const AVFilterPad edgedetect_inputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .config_props = config_props,
         .filter_frame = filter_frame,
-     },
-     { NULL }
+    },
+    { NULL }
 };
 
 static const AVFilterPad edgedetect_outputs[] = {
-     {
-         .name = "default",
-         .type = AVMEDIA_TYPE_VIDEO,
-     },
-     { NULL }
+    {
+        .name = "default",
+        .type = AVMEDIA_TYPE_VIDEO,
+    },
+    { NULL }
 };
 
 AVFilter ff_vf_edgedetect = {

@@ -167,6 +167,7 @@ OBJS-$(CONFIG_PP_FILTER)                     += vf_pp.o
 OBJS-$(CONFIG_PP7_FILTER)                    += vf_pp7.o
 OBJS-$(CONFIG_PSNR_FILTER)                   += vf_psnr.o dualinput.o framesync.o
 OBJS-$(CONFIG_PULLUP_FILTER)                 += vf_pullup.o
+OBJS-$(CONFIG_QP_FILTER)                     += vf_qp.o
 OBJS-$(CONFIG_REMOVELOGO_FILTER)             += bbox.o lswsutils.o lavfutils.o vf_removelogo.o
 OBJS-$(CONFIG_ROTATE_FILTER)                 += vf_rotate.o
 OBJS-$(CONFIG_SEPARATEFIELDS_FILTER)         += vf_separatefields.o
@@ -228,7 +229,6 @@ OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/img_format.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_eq2.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_eq.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_ilpack.o
-OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_pp7.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_softpulldown.o
 
 # multimedia filters

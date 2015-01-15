@@ -256,6 +256,9 @@ fate-filter-pp5: CMD = video_filter "pp=md"
 FATE_FILTER_VSYNTH-$(CONFIG_PP_FILTER) += fate-filter-pp6
 fate-filter-pp6: CMD = video_filter "pp=be/fd"
 
+FATE_FILTER_VSYNTH-$(call ALLYES, QP_FILTER PP_FILTER) += fate-filter-qp
+fate-filter-qp: CMD = video_filter "qp=17,pp=be/hb/vb/tn/l5/al"
+
 FATE_FILTER_VSYNTH-$(CONFIG_SELECT_FILTER) += fate-filter-select
 fate-filter-select: CMD = video_filter "select=not(eq(mod(n\,2)\,0)+eq(mod(n\,3)\,0))"
 

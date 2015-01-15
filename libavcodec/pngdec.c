@@ -1118,7 +1118,7 @@ static int decode_frame_png(AVCodecContext *avctx,
     sig = bytestream2_get_be64(&s->gb);
     if (sig != PNGSIG &&
         sig != MNGSIG) {
-        av_log(avctx, AV_LOG_ERROR, "Missing png signature\n");
+        av_log(avctx, AV_LOG_ERROR, "Invalid PNG signature (%d).\n", buf_size);
         return AVERROR_INVALIDDATA;
     }
 

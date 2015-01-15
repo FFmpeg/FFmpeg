@@ -130,7 +130,7 @@ void av_image_copy(uint8_t *dst_data[4], int dst_linesizes[4],
  * line sizes will be set.  If a planar format is specified, several
  * pointers will be set pointing to the different picture planes and
  * the line sizes of the different planes will be stored in the
- * lines_sizes array. Call with !src to get the required
+ * lines_sizes array. Call with src == NULL to get the required
  * size for the src buffer.
  *
  * To allocate the buffer and fill in the dst_data and dst_linesize in

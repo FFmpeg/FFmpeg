@@ -229,18 +229,6 @@ static inline void add_block(uint16_t *dst, int linesize, const int16_t block[64
     }
 }
 
-// XXX: export the function?
-static inline int norm_qscale(int qscale, int type)
-{
-    switch (type) {
-    case FF_QSCALE_TYPE_MPEG1: return qscale;
-    case FF_QSCALE_TYPE_MPEG2: return qscale >> 1;
-    case FF_QSCALE_TYPE_H264:  return qscale >> 2;
-    case FF_QSCALE_TYPE_VP56:  return (63 - qscale + 2) >> 2;
-    }
-    return qscale;
-}
-
 static void filter(SPPContext *p, uint8_t *dst, uint8_t *src,
                    int dst_linesize, int src_linesize, int width, int height,
                    const uint8_t *qp_table, int qp_stride, int is_luma, int depth)
@@ -284,7 +272,7 @@ static void filter(SPPContext *p, uint8_t *dst, uint8_t *src,
             } else{
                 const int qps = 3 + is_luma;
                 qp = qp_table[(FFMIN(x, width - 1) >> qps) + (FFMIN(y, height - 1) >> qps) * qp_stride];
-                qp = FFMAX(1, norm_qscale(qp, p->qscale_type));
+                qp = FFMAX(1, ff_norm_qscale(qp, p->qscale_type));
             }
             for (i = 0; i < count; i++) {
                 const int x1 = x + offset[i + count - 1][0];

@@ -29,13 +29,13 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/channel_layout.h"
-#include "libavutil/display.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/intfloat.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/time_internal.h"
 #include "libavutil/avstring.h"
 #include "libavutil/dict.h"
+#include "libavutil/display.h"
 #include "libavutil/opt.h"
 #include "libavutil/timecode.h"
 #include "libavcodec/ac3tab.h"
@@ -2784,7 +2784,6 @@ static int mov_read_tkhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     int i;
     int width;
     int height;
-    int64_t disp_transform[2];
     int display_matrix[3][3];
     AVStream *st;
     MOVStreamContext *sc;
@@ -2867,25 +2866,19 @@ static int mov_read_tkhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     }
 
     // transform the display width/height according to the matrix
-    // skip this if the display matrix is the default identity matrix
-    // or if it is rotating the picture, ex iPhone 3GS
     // to keep the same scale, use [width height 1<<16]
-    if (width && height &&
-        ((display_matrix[0][0] != 65536  ||
-          display_matrix[1][1] != 65536) &&
-         !display_matrix[0][1] &&
-         !display_matrix[1][0] &&
-         !display_matrix[2][0] && !display_matrix[2][1])) {
-        for (i = 0; i < 2; i++)
-            disp_transform[i] =
-                (int64_t)  width  * display_matrix[0][i] +
-                (int64_t)  height * display_matrix[1][i] +
-                ((int64_t) display_matrix[2][i] << 16);
+    if (width && height && sc->display_matrix) {
+        double disp_transform[2];
 
-        //sample aspect ratio is new width/height divided by old width/height
-        st->sample_aspect_ratio = av_d2q(
-            ((double) disp_transform[0] * height) /
-            ((double) disp_transform[1] * width), INT_MAX);
+#define SQR(a) ((a)*(double)(a))
+        for (i = 0; i < 2; i++)
+            disp_transform[i] = sqrt(SQR(display_matrix[i][0]) + SQR(display_matrix[i][1]));
+
+        if (disp_transform[0] > 0 && disp_transform[1] > 0 &&
+            fabs((disp_transform[0] / disp_transform[1]) - 1.0) > 0.01)
+            st->sample_aspect_ratio = av_d2q(
+                disp_transform[0] / disp_transform[1],
+                INT_MAX);
     }
     return 0;
 }

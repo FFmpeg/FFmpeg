@@ -6239,7 +6239,6 @@ The list of the currently supported filters follows:
 @item eq2
 @item eq
 @item ilpack
-@item pp7
 @item softpulldown
 @end table
 
@@ -7351,6 +7350,38 @@ telecine NTSC input:
 @example
 ffmpeg -i input -vf pullup -r 24000/1001 ...
 @end example
+
+@section qp
+
+Change video quantization parameters (QP).
+
+The filter accepts the following option:
+
+@table @option
+@item qp
+Set expression for quantization parameter.
+@end table
+
+The expression is evaluated through the eval API and can contain, among others,
+the following constants:
+
+@table @var
+@item known
+1 if index is not 129, 0 otherwise.
+
+@item qp
+Sequentional index starting from -129 to 128.
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Some equation like:
+@example
+qp=2+2*sin(PI*qp)
+@end example
+@end itemize
 
 @section removelogo
 

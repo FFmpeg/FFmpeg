@@ -40,7 +40,6 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "internal.h"
-#include "libavcodec/avcodec.h" //for reference to FF_QSCALE_TYPE
 #include "vf_fspp.h"
 
 #define OFFSET(x) offsetof(FSPPContext, x)
@@ -79,17 +78,6 @@ static const short custom_threshold[64] = {
      38,  53,  50,  45,  38,  30,  21,  11,
      20,  27,  26,  23,  20,  15,  11,   5
 };
-
-static inline int norm_qscale(int qscale, int type)
-{
-    switch (type) {
-    case FF_QSCALE_TYPE_MPEG1: return qscale;
-    case FF_QSCALE_TYPE_MPEG2: return qscale >> 1;
-    case FF_QSCALE_TYPE_H264:  return qscale >> 2;
-    case FF_QSCALE_TYPE_VP56:  return (63 - qscale + 2) >> 2;
-    }
-    return qscale;
-}
 
 //This func reads from 1 slice, 1 and clears 0 & 1
 static void store_slice_c(uint8_t *dst, int16_t *src,
@@ -218,7 +206,7 @@ static void filter(FSPPContext *p, uint8_t *dst, uint8_t *src,
                     if (t < 0) t = 0;                   //t always < width-2
 
                     t = qp_store[qy + (t >> qpsh)];
-                    t = norm_qscale(t, p->qscale_type);
+                    t = ff_norm_qscale(t, p->qscale_type);
 
                     if (t != p->prev_q) p->prev_q = t, p->mul_thrmat((int16_t *)(&p->threshold_mtx_noq[0]), (int16_t *)(&p->threshold_mtx[0]), t);
                     p->column_fidct((int16_t *)(&p->threshold_mtx[0]), block + x * 8, block3 + x * 8, 8); //yes, this is a HOTSPOT
