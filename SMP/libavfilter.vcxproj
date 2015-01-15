@@ -340,6 +340,8 @@
     <ClCompile Include="..\libavfilter\vf_pullup.c">
       <ObjectFileName>$(IntDir)\libavfilter_vf_pullup.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_qp.c">
+    </ClCompile>
     <ClCompile Include="..\libavfilter\lswsutils.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\lavfutils.c">
@@ -422,9 +424,6 @@
     <ClCompile Include="..\libavfilter\libmpcodecs\vf_eq.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\libmpcodecs\vf_ilpack.c">
-    </ClCompile>
-    <ClCompile Include="..\libavfilter\libmpcodecs\vf_pp7.c">
-      <ObjectFileName>$(IntDir)\libavfilter_libmpcodecs_vf_pp7.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavfilter\libmpcodecs\vf_softpulldown.c">
     </ClCompile>
