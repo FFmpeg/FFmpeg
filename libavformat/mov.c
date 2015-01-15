@@ -2874,7 +2874,8 @@ static int mov_read_tkhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         for (i = 0; i < 2; i++)
             disp_transform[i] = sqrt(SQR(display_matrix[i][0]) + SQR(display_matrix[i][1]));
 
-        if (fabs((disp_transform[0] / disp_transform[1]) - 1.0) > 0.01)
+        if (disp_transform[0] > 0 && disp_transform[1] > 0 &&
+            fabs((disp_transform[0] / disp_transform[1]) - 1.0) > 0.01)
             st->sample_aspect_ratio = av_d2q(
                 disp_transform[0] / disp_transform[1],
                 INT_MAX);
