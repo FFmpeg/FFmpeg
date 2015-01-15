@@ -239,6 +239,10 @@ enum AVPixelFormat {
     AV_PIX_FMT_YA16BE,       ///< 16bit gray, 16bit alpha (big-endian)
     AV_PIX_FMT_YA16LE,       ///< 16bit gray, 16bit alpha (little-endian)
 
+    AV_PIX_FMT_GBRAP_LIBAV,        ///< planar GBRA 4:4:4:4 32bpp
+    AV_PIX_FMT_GBRAP16BE_LIBAV,    ///< planar GBRA 4:4:4:4 64bpp, big-endian
+    AV_PIX_FMT_GBRAP16LE_LIBAV,    ///< planar GBRA 4:4:4:4 64bpp, little-endian
+
 
 #ifndef AV_PIX_FMT_ABI_GIT_MASTER
     AV_PIX_FMT_RGBA64BE=0x123,  ///< packed RGBA 16:16:16:16, 64bpp, 16R, 16G, 16B, 16A, the 2-byte value for each R/G/B/A component is stored as big-endian
