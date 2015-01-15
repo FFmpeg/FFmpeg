@@ -126,7 +126,6 @@ bool configGenerator::buildDefaultValues( )
     fastToggleConfigValue( "access", true );
     fastToggleConfigValue( "aligned_malloc", true );
 
-    fastToggleConfigValue( "CL_cl_h", true );
     fastToggleConfigValue( "closesocket", true );
     fastToggleConfigValue( "CommandLineToArgvW", true );
     fastToggleConfigValue( "CoTaskMemFree", true );
