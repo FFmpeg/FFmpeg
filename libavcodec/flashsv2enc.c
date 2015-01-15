@@ -806,8 +806,8 @@ static int reconfigure_at_keyframe(FlashSV2Context * s, const uint8_t * image,
         s->block_width  = block_width;
         s->block_height = block_height;
         if (s->rows * s->cols > s->blocks_size / sizeof(Block)) {
-            s->frame_blocks = av_realloc(s->frame_blocks, s->rows * s->cols * sizeof(Block));
-            s->key_blocks = av_realloc(s->key_blocks, s->cols * s->rows * sizeof(Block));
+            s->frame_blocks = av_realloc_array(s->frame_blocks, s->rows, s->cols * sizeof(Block));
+            s->key_blocks = av_realloc_array(s->key_blocks, s->cols, s->rows * sizeof(Block));
             if (!s->frame_blocks || !s->key_blocks) {
                 av_log(s->avctx, AV_LOG_ERROR, "Memory allocation failed.\n");
                 return -1;
