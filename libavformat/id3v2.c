@@ -404,7 +404,8 @@ error:
  * Parse GEOB tag into a ID3v2ExtraMetaGEOB struct.
  */
 static void read_geobtag(AVFormatContext *s, AVIOContext *pb, int taglen,
-                         const char *tag, ID3v2ExtraMeta **extra_meta, int isv34)
+                         const char *tag, ID3v2ExtraMeta **extra_meta,
+                         int isv34)
 {
     ID3v2ExtraMetaGEOB *geob_data = NULL;
     ID3v2ExtraMeta *new_extra     = NULL;
@@ -536,7 +537,8 @@ static void free_apic(void *obj)
 }
 
 static void read_apic(AVFormatContext *s, AVIOContext *pb, int taglen,
-                      const char *tag, ID3v2ExtraMeta **extra_meta, int isv34)
+                      const char *tag, ID3v2ExtraMeta **extra_meta,
+                      int isv34)
 {
     int enc, pic_type;
     char mimetype[64];
@@ -546,7 +548,7 @@ static void read_apic(AVFormatContext *s, AVIOContext *pb, int taglen,
     ID3v2ExtraMeta *new_extra = NULL;
     int64_t end               = avio_tell(pb) + taglen;
 
-    if (taglen <= 4)
+    if (taglen <= 4 || (!isv34 && taglen <= 6))
         goto fail;
 
     new_extra = av_mallocz(sizeof(*new_extra));
@@ -559,11 +561,13 @@ static void read_apic(AVFormatContext *s, AVIOContext *pb, int taglen,
 
     /* mimetype */
     if (isv34) {
-    taglen -= avio_get_str(pb, taglen, mimetype, sizeof(mimetype));
+        taglen -= avio_get_str(pb, taglen, mimetype, sizeof(mimetype));
     } else {
         avio_read(pb, mimetype, 3);
         mimetype[3] = 0;
+        taglen    -= 3;
     }
+
     while (mime->id != AV_CODEC_ID_NONE) {
         if (!av_strncasecmp(mime->str, mimetype, sizeof(mimetype))) {
             id = mime->id;
@@ -718,7 +722,8 @@ typedef struct ID3v2EMFunc {
     const char *tag3;
     const char *tag4;
     void (*read)(AVFormatContext *s, AVIOContext *pb, int taglen,
-                 const char *tag, ID3v2ExtraMeta **extra_meta, int isv34);
+                 const char *tag, ID3v2ExtraMeta **extra_meta,
+                 int isv34);
     void (*free)(void *obj);
 } ID3v2EMFunc;
 
