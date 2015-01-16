@@ -551,6 +551,7 @@ typedef struct AVOutputFormat {
      * @see avdevice_capabilities_free() for more details.
      */
     int (*free_device_capabilities)(struct AVFormatContext *s, struct AVDeviceCapabilitiesQuery *caps);
+    enum AVCodecID data_codec; /**< default data codec */
 } AVOutputFormat;
 /**
  * @}
@@ -1705,6 +1706,14 @@ typedef struct AVFormatContext {
     AVCodec *subtitle_codec;
 
     /**
+     * Forced data codec.
+     * This allows forcing a specific decoder, even when there are multiple with
+     * the same codec_id.
+     * Demuxing: Set by user via av_format_set_data_codec (NO direct access).
+     */
+    AVCodec *data_codec;
+
+    /**
      * Number of bytes to be written as padding in a metadata header.
      * Demuxing: Unused.
      * Muxing: Set by user via av_format_set_metadata_header_padding.
@@ -1755,6 +1764,12 @@ typedef struct AVFormatContext {
      * - demuxing: Set by user.
      */
     uint8_t *dump_separator;
+
+    /**
+     * Forced Data codec_id.
+     * Demuxing: Set by user.
+     */
+    enum AVCodecID data_codec_id;
 } AVFormatContext;
 
 int av_format_get_probe_score(const AVFormatContext *s);
@@ -1764,6 +1779,8 @@ AVCodec * av_format_get_audio_codec(const AVFormatContext *s);
 void      av_format_set_audio_codec(AVFormatContext *s, AVCodec *c);
 AVCodec * av_format_get_subtitle_codec(const AVFormatContext *s);
 void      av_format_set_subtitle_codec(AVFormatContext *s, AVCodec *c);
+AVCodec * av_format_get_data_codec(const AVFormatContext *s);
+void      av_format_set_data_codec(AVFormatContext *s, AVCodec *c);
 int       av_format_get_metadata_header_padding(const AVFormatContext *s);
 void      av_format_set_metadata_header_padding(AVFormatContext *s, int c);
 void *    av_format_get_opaque(const AVFormatContext *s);
