@@ -1241,7 +1241,7 @@ static int reap_filters(void)
         filtered_frame = ost->filtered_frame;
 
         while (1) {
-            double float_pts = AV_NOPTS_VALUE; // this is identical to filtered_frame.pts but with higher precission
+            double float_pts = AV_NOPTS_VALUE; // this is identical to filtered_frame.pts but with higher precision
             ret = av_buffersink_get_frame_flags(filter, filtered_frame,
                                                AV_BUFFERSINK_FLAG_NO_REQUEST);
             if (ret < 0) {
