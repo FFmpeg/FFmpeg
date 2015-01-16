@@ -883,14 +883,15 @@ static void do_subtitle_out(AVFormatContext *s,
 
 static void do_video_out(AVFormatContext *s,
                          OutputStream *ost,
-                         AVFrame *next_picture)
+                         AVFrame *next_picture,
+                         double sync_ipts)
 {
     int ret, format_video_sync;
     AVPacket pkt;
     AVCodecContext *enc = ost->enc_ctx;
     AVCodecContext *mux_enc = ost->st->codec;
     int nb_frames, nb0_frames, i;
-    double sync_ipts, delta, delta0;
+    double delta, delta0;
     double duration = 0;
     int frame_size = 0;
     InputStream *ist = NULL;
@@ -909,7 +910,6 @@ static void do_video_out(AVFormatContext *s,
         duration = lrintf(av_frame_get_pkt_duration(next_picture) * av_q2d(ist->st->time_base) / av_q2d(enc->time_base));
     }
 
-    sync_ipts = next_picture->pts;
     delta0 = sync_ipts - ost->sync_opts;
     delta  = delta0 + duration;
 
@@ -1233,6 +1233,7 @@ static int reap_filters(void)
         filtered_frame = ost->filtered_frame;
 
         while (1) {
+            double float_pts = AV_NOPTS_VALUE; // this is identical to filtered_frame.pts but with higher precission
             ret = av_buffersink_get_frame_flags(filter, filtered_frame,
                                                AV_BUFFERSINK_FLAG_NO_REQUEST);
             if (ret < 0) {
@@ -1246,9 +1247,19 @@ static int reap_filters(void)
                 av_frame_unref(filtered_frame);
                 continue;
             }
-
             if (filtered_frame->pts != AV_NOPTS_VALUE) {
                 int64_t start_time = (of->start_time == AV_NOPTS_VALUE) ? 0 : of->start_time;
+                AVRational tb = enc->time_base;
+                int extra_bits = av_clip(29 - av_log2(tb.den), 0, 16);
+
+                tb.den <<= extra_bits;
+                float_pts =
+                    av_rescale_q(filtered_frame->pts, filter->inputs[0]->time_base, tb) -
+                    av_rescale_q(start_time, AV_TIME_BASE_Q, tb);
+                float_pts /= 1 << extra_bits;
+                // avoid exact midoints to reduce the chance of rounding differences, this can be removed in case the fps code is changed to work with integers
+                float_pts += FFSIGN(float_pts) * 1.0 / (1<<17);
+
                 filtered_frame->pts =
                     av_rescale_q(filtered_frame->pts, filter->inputs[0]->time_base, enc->time_base) -
                     av_rescale_q(start_time, AV_TIME_BASE_Q, enc->time_base);
@@ -1262,12 +1273,13 @@ static int reap_filters(void)
                     enc->sample_aspect_ratio = filtered_frame->sample_aspect_ratio;
 
                 if (debug_ts) {
-                    av_log(NULL, AV_LOG_INFO, "filter -> pts:%s pts_time:%s time_base:%d/%d\n",
+                    av_log(NULL, AV_LOG_INFO, "filter -> pts:%s pts_time:%s exact:%f time_base:%d/%d\n",
                             av_ts2str(filtered_frame->pts), av_ts2timestr(filtered_frame->pts, &enc->time_base),
+                            float_pts,
                             enc->time_base.num, enc->time_base.den);
                 }
 
-                do_video_out(of->ctx, ost, filtered_frame);
+                do_video_out(of->ctx, ost, filtered_frame, float_pts);
                 break;
             case AVMEDIA_TYPE_AUDIO:
                 if (!(enc->codec->capabilities & CODEC_CAP_PARAM_CHANGE) &&
