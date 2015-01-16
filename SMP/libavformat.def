@@ -16,6 +16,7 @@ EXPORTS
     av_fopen_utf8
     av_format_get_audio_codec
     av_format_get_control_message_cb
+    av_format_get_data_codec
     av_format_get_metadata_header_padding
     av_format_get_opaque
     av_format_get_probe_score
@@ -24,6 +25,7 @@ EXPORTS
     av_format_inject_global_side_data
     av_format_set_audio_codec
     av_format_set_control_message_cb
+    av_format_set_data_codec
     av_format_set_metadata_header_padding
     av_format_set_opaque
     av_format_set_subtitle_codec

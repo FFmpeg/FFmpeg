@@ -362,6 +362,8 @@
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_showinfo.c">
     </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_showpalette.c">
+    </ClCompile>
     <ClCompile Include="..\libavfilter\vf_shuffleplanes.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_signalstats.c">
