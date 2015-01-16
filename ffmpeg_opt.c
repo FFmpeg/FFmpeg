@@ -804,6 +804,7 @@ static int open_input_file(OptionsContext *o, const char *filename)
     char *   video_codec_name = NULL;
     char *   audio_codec_name = NULL;
     char *subtitle_codec_name = NULL;
+    char *    data_codec_name = NULL;
     int scan_all_pmts_set = 0;
 
     if (o->format) {
@@ -864,6 +865,8 @@ static int open_input_file(OptionsContext *o, const char *filename)
         find_codec_or_die(audio_codec_name   , AVMEDIA_TYPE_AUDIO   , 0)->id : AV_CODEC_ID_NONE;
     ic->subtitle_codec_id= subtitle_codec_name ?
         find_codec_or_die(subtitle_codec_name, AVMEDIA_TYPE_SUBTITLE, 0)->id : AV_CODEC_ID_NONE;
+    ic->data_codec_id    = data_codec_name ?
+        find_codec_or_die(data_codec_name, AVMEDIA_TYPE_DATA, 0)->id : AV_CODEC_ID_NONE;
 
     if (video_codec_name)
         av_format_set_video_codec   (ic, find_codec_or_die(video_codec_name   , AVMEDIA_TYPE_VIDEO   , 0));
@@ -871,6 +874,8 @@ static int open_input_file(OptionsContext *o, const char *filename)
         av_format_set_audio_codec   (ic, find_codec_or_die(audio_codec_name   , AVMEDIA_TYPE_AUDIO   , 0));
     if (subtitle_codec_name)
         av_format_set_subtitle_codec(ic, find_codec_or_die(subtitle_codec_name, AVMEDIA_TYPE_SUBTITLE, 0));
+    if (data_codec_name)
+        av_format_set_data_codec(ic, find_codec_or_die(data_codec_name, AVMEDIA_TYPE_DATA, 0));
 
     ic->flags |= AVFMT_FLAG_NONBLOCK;
     ic->interrupt_callback = int_cb;

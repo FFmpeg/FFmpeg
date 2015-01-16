@@ -2911,6 +2911,8 @@ static int transcode_init(void)
                     enc_ctx->height    = input_streams[ost->source_index]->st->codec->height;
                 }
                 break;
+            case AVMEDIA_TYPE_DATA:
+                break;
             default:
                 abort();
                 break;
