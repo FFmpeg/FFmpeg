@@ -944,7 +944,10 @@ static void do_video_out(AVFormatContext *s,
         format_video_sync != VSYNC_PASSTHROUGH &&
         format_video_sync != VSYNC_DROP) {
         double cor = FFMIN(-delta0, duration);
-        av_log(NULL, AV_LOG_WARNING, "Past duration %f too large\n", -delta0);
+        if (delta0 < -0.6) {
+            av_log(NULL, AV_LOG_WARNING, "Past duration %f too large\n", -delta0);
+        } else
+            av_log(NULL, AV_LOG_DEBUG, "Cliping frame in rate conversion by %f\n", -delta0);
         sync_ipts += cor;
         duration -= cor;
         delta0 += cor;
