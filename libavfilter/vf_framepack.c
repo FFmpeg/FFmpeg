@@ -82,6 +82,7 @@ static int config_output(AVFilterLink *outlink)
     int width            = ctx->inputs[LEFT]->w;
     int height           = ctx->inputs[LEFT]->h;
     AVRational time_base = ctx->inputs[LEFT]->time_base;
+    AVRational frame_rate = ctx->inputs[LEFT]->frame_rate;
 
     // check size and fps match on the other input
     if (width  != ctx->inputs[RIGHT]->w ||
@@ -93,10 +94,17 @@ static int config_output(AVFilterLink *outlink)
         return AVERROR_INVALIDDATA;
     } else if (av_cmp_q(time_base, ctx->inputs[RIGHT]->time_base) != 0) {
         av_log(ctx, AV_LOG_ERROR,
-               "Left and right framerates differ (%d/%d vs %d/%d).\n",
+               "Left and right time bases differ (%d/%d vs %d/%d).\n",
                time_base.num, time_base.den,
                ctx->inputs[RIGHT]->time_base.num,
                ctx->inputs[RIGHT]->time_base.den);
+        return AVERROR_INVALIDDATA;
+    } else if (av_cmp_q(frame_rate, ctx->inputs[RIGHT]->frame_rate) != 0) {
+        av_log(ctx, AV_LOG_ERROR,
+               "Left and right framerates differ (%d/%d vs %d/%d).\n",
+               frame_rate.num, frame_rate.den,
+               ctx->inputs[RIGHT]->frame_rate.num,
+               ctx->inputs[RIGHT]->frame_rate.den);
         return AVERROR_INVALIDDATA;
     }
 
@@ -108,6 +116,8 @@ static int config_output(AVFilterLink *outlink)
     switch (s->format) {
     case AV_STEREO3D_FRAMESEQUENCE:
         time_base.den *= 2;
+        frame_rate.num *= 2;
+
         s->double_pts = AV_NOPTS_VALUE;
         break;
     case AV_STEREO3D_COLUMNS:
@@ -126,6 +136,7 @@ static int config_output(AVFilterLink *outlink)
     outlink->w         = width;
     outlink->h         = height;
     outlink->time_base = time_base;
+    outlink->frame_rate= frame_rate;
 
     return 0;
 }
