@@ -895,12 +895,20 @@ static void do_video_out(AVFormatContext *s,
     double duration = 0;
     int frame_size = 0;
     InputStream *ist = NULL;
+    AVFilterContext *filter = ost->filter->filter;
 
     if (ost->source_index >= 0)
         ist = input_streams[ost->source_index];
 
     if(ist && ist->st->start_time != AV_NOPTS_VALUE && ist->st->first_dts != AV_NOPTS_VALUE && ost->frame_rate.num)
         duration = 1/(av_q2d(ost->frame_rate) * av_q2d(enc->time_base));
+
+    // We take the conservative approuch here and take the minimum even though
+    // this should be correct on its own but a value too small is harmless, one
+    // too big can lead to errors
+    if (filter->inputs[0]->frame_rate.num > 0 &&
+        filter->inputs[0]->frame_rate.den > 0)
+        duration = FFMIN(duration, 1/(av_q2d(filter->inputs[0]->frame_rate) * av_q2d(enc->time_base)));
 
     if (!ost->filters_script &&
         !ost->filters &&
