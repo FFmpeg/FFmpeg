@@ -15,6 +15,7 @@ version <next>:
 - VOC seeking support
 - Closed caption Decoder
 - fspp, uspp, pp7 MPlayer postprocessing filters ported to native filters
+- showpalette filter
 
 
 version 2.5:

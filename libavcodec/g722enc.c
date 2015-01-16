@@ -75,9 +75,9 @@ static av_cold int g722_encode_init(AVCodecContext * avctx)
         int max_paths = frontier * FREEZE_INTERVAL;
         int i;
         for (i = 0; i < 2; i++) {
-            c->paths[i] = av_mallocz(max_paths * sizeof(**c->paths));
-            c->node_buf[i] = av_mallocz(2 * frontier * sizeof(**c->node_buf));
-            c->nodep_buf[i] = av_mallocz(2 * frontier * sizeof(**c->nodep_buf));
+            c->paths[i] = av_mallocz_array(max_paths, sizeof(**c->paths));
+            c->node_buf[i] = av_mallocz_array(frontier, 2 * sizeof(**c->node_buf));
+            c->nodep_buf[i] = av_mallocz_array(frontier, 2 * sizeof(**c->nodep_buf));
             if (!c->paths[i] || !c->node_buf[i] || !c->nodep_buf[i]) {
                 ret = AVERROR(ENOMEM);
                 goto error;

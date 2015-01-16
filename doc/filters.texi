@@ -8069,6 +8069,19 @@ The Adler-32 checksum (printed in hexadecimal) of each plane of the input frame,
 expressed in the form "[@var{c0} @var{c1} @var{c2} @var{c3}]".
 @end table
 
+@section showpalette
+
+Displays the 256 colors palette of each frame. This filter is only relevant for
+@var{pal8} pixel format frames.
+
+It accepts the following option:
+
+@table @option
+@item s
+Set the size of the box used to represent one palette color entry. Default is
+@code{30} (for a @code{30x30} pixel box).
+@end table
+
 @section shuffleplanes
 
 Reorder and/or duplicate video planes.

@@ -176,18 +176,24 @@ int update_dimensions(VP8Context *s, int width, int height, int is_vp7)
     s->top_border  = av_mallocz((s->mb_width + 1) * sizeof(*s->top_border));
     s->thread_data = av_mallocz(MAX_THREADS * sizeof(VP8ThreadData));
 
+    if (!s->macroblocks_base || !s->top_nnz || !s->top_border ||
+        !s->thread_data || (!s->intra4x4_pred_mode_top && !s->mb_layout)) {
+        free_buffers(s);
+        return AVERROR(ENOMEM);
+    }
+
     for (i = 0; i < MAX_THREADS; i++) {
         s->thread_data[i].filter_strength =
             av_mallocz(s->mb_width * sizeof(*s->thread_data[0].filter_strength));
+        if (!s->thread_data[i].filter_strength) {
+            free_buffers(s);
+            return AVERROR(ENOMEM);
+        }
 #if HAVE_THREADS
         pthread_mutex_init(&s->thread_data[i].lock, NULL);
         pthread_cond_init(&s->thread_data[i].cond, NULL);
 #endif
     }
-
-    if (!s->macroblocks_base || !s->top_nnz || !s->top_border ||
-        (!s->intra4x4_pred_mode_top && !s->mb_layout))
-        return AVERROR(ENOMEM);
 
     s->macroblocks = s->macroblocks_base + 1;
 

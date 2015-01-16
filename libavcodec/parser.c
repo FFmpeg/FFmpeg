@@ -23,6 +23,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "libavutil/avassert.h"
 #include "libavutil/atomic.h"
 #include "libavutil/mem.h"
 
@@ -163,6 +164,7 @@ int av_parser_parse2(AVCodecParserContext *s, AVCodecContext *avctx,
     /* WARNING: the returned index can be negative */
     index = s->parser->parser_parse(s, avctx, (const uint8_t **) poutbuf,
                                     poutbuf_size, buf, buf_size);
+    av_assert0(index > -0x20000000); // The API does not allow returning AVERROR codes
     /* update the file pointer */
     if (*poutbuf_size) {
         /* fill the data for the current frame */
@@ -200,6 +202,8 @@ int av_parser_change(AVCodecParserContext *s, AVCodecContext *avctx,
 
             *poutbuf_size = size;
             *poutbuf      = av_malloc(size + FF_INPUT_BUFFER_PADDING_SIZE);
+            if (!*poutbuf)
+                return AVERROR(ENOMEM);
 
             memcpy(*poutbuf, avctx->extradata, avctx->extradata_size);
             memcpy(*poutbuf + avctx->extradata_size, buf,
