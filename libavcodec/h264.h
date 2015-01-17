@@ -342,6 +342,9 @@ typedef struct H264SliceContext {
     unsigned int topright_samples_available;
     unsigned int left_samples_available;
 
+    ptrdiff_t mb_linesize;  ///< may be equal to s->linesize or s->linesize * 2, for mbaff
+    ptrdiff_t mb_uvlinesize;
+
     /**
      * number of neighbors (top and/or left) that used 8x8 dct
      */
@@ -412,9 +415,6 @@ typedef struct H264Context {
     uint32_t *mb2b_xy;  // FIXME are these 4 a good idea?
     uint32_t *mb2br_xy;
     int b_stride;       // FIXME use s->b4_stride
-
-    ptrdiff_t mb_linesize;  ///< may be equal to s->linesize or s->linesize * 2, for mbaff
-    ptrdiff_t mb_uvlinesize;
 
     SPS sps; ///< current sps
     PPS pps; ///< current pps

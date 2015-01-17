@@ -95,11 +95,11 @@ static void MCFUNC(hl_motion)(H264Context *h, H264SliceContext *sl,
                 weight_op, weight_avg,
                 IS_DIR(mb_type, 1, 0), IS_DIR(mb_type, 1, 1));
     } else if (IS_8X16(mb_type)) {
-        mc_part(h, sl, 0, 0, 16, 8 * h->mb_linesize, dest_y, dest_cb, dest_cr, 0, 0,
+        mc_part(h, sl, 0, 0, 16, 8 * sl->mb_linesize, dest_y, dest_cb, dest_cr, 0, 0,
                 qpix_put[1], chroma_put[1], qpix_avg[1], chroma_avg[1],
                 &weight_op[1], &weight_avg[1],
                 IS_DIR(mb_type, 0, 0), IS_DIR(mb_type, 0, 1));
-        mc_part(h, sl, 4, 0, 16, 8 * h->mb_linesize, dest_y, dest_cb, dest_cr, 4, 0,
+        mc_part(h, sl, 4, 0, 16, 8 * sl->mb_linesize, dest_y, dest_cb, dest_cr, 4, 0,
                 qpix_put[1], chroma_put[1], qpix_avg[1], chroma_avg[1],
                 &weight_op[1], &weight_avg[1],
                 IS_DIR(mb_type, 1, 0), IS_DIR(mb_type, 1, 1));
@@ -132,12 +132,12 @@ static void MCFUNC(hl_motion)(H264Context *h, H264SliceContext *sl,
                         &weight_op[1], &weight_avg[1],
                         IS_DIR(sub_mb_type, 0, 0), IS_DIR(sub_mb_type, 0, 1));
             } else if (IS_SUB_4X8(sub_mb_type)) {
-                mc_part(h, sl, n, 0, 8, 4 * h->mb_linesize,
+                mc_part(h, sl, n, 0, 8, 4 * sl->mb_linesize,
                         dest_y, dest_cb, dest_cr, x_offset, y_offset,
                         qpix_put[2], chroma_put[2], qpix_avg[2], chroma_avg[2],
                         &weight_op[2], &weight_avg[2],
                         IS_DIR(sub_mb_type, 0, 0), IS_DIR(sub_mb_type, 0, 1));
-                mc_part(h, sl, n + 1, 0, 8, 4 * h->mb_linesize,
+                mc_part(h, sl, n + 1, 0, 8, 4 * sl->mb_linesize,
                         dest_y, dest_cb, dest_cr, x_offset + 2, y_offset,
                         qpix_put[2], chroma_put[2], qpix_avg[2], chroma_avg[2],
                         &weight_op[2], &weight_avg[2],
