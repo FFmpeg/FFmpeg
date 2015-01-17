@@ -761,7 +761,7 @@ static int svq3_decode_mb(SVQ3Context *s, unsigned int mb_type)
         }
     }
 
-    h->cbp                              = cbp;
+    sl->cbp                   = cbp;
     h->cur_pic.mb_type[mb_xy] = mb_type;
 
     if (IS_INTRA(mb_type))
