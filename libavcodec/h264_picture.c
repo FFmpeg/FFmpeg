@@ -144,7 +144,7 @@ static void h264_set_erpic(ERPicture *dst, H264Picture *src)
 }
 #endif /* CONFIG_ERROR_RESILIENCE */
 
-int ff_h264_field_end(H264Context *h, int in_setup)
+int ff_h264_field_end(H264Context *h, H264SliceContext *sl, int in_setup)
 {
     AVCodecContext *const avctx = h->avctx;
     int err = 0;
@@ -187,9 +187,9 @@ int ff_h264_field_end(H264Context *h, int in_setup)
     if (!FIELD_PICTURE(h)) {
         h264_set_erpic(&h->er.cur_pic, h->cur_pic_ptr);
         h264_set_erpic(&h->er.last_pic,
-                       h->ref_count[0] ? &h->ref_list[0][0] : NULL);
+                       sl->ref_count[0] ? &sl->ref_list[0][0] : NULL);
         h264_set_erpic(&h->er.next_pic,
-                       h->ref_count[1] ? &h->ref_list[1][0] : NULL);
+                       sl->ref_count[1] ? &sl->ref_list[1][0] : NULL);
         ff_er_frame_end(&h->er);
     }
 #endif /* CONFIG_ERROR_RESILIENCE */

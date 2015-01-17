@@ -198,6 +198,7 @@ static int vdpau_h264_decode_slice(AVCodecContext *avctx,
 static int vdpau_h264_end_frame(AVCodecContext *avctx)
 {
     H264Context *h = avctx->priv_data;
+    H264SliceContext *sl = &h->slice_ctx[0];
     H264Picture *pic = h->cur_pic_ptr;
     struct vdpau_picture_context *pic_ctx = pic->hwaccel_picture_private;
     int val;
@@ -206,7 +207,7 @@ static int vdpau_h264_end_frame(AVCodecContext *avctx)
     if (val < 0)
         return val;
 
-    ff_h264_draw_horiz_band(h, 0, h->avctx->height);
+    ff_h264_draw_horiz_band(h, sl, 0, h->avctx->height);
     return 0;
 }
 

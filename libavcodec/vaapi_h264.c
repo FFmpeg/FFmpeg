@@ -198,7 +198,7 @@ static void fill_vaapi_plain_pred_weight_table(H264Context   *h,
     *luma_weight_flag    = sl->luma_weight_flag[list];
     *chroma_weight_flag  = sl->chroma_weight_flag[list];
 
-    for (i = 0; i < h->ref_count[list]; i++) {
+    for (i = 0; i < sl->ref_count[list]; i++) {
         /* VA API also wants the inferred (default) values, not
            only what is available in the bitstream (7.4.3.2). */
         if (sl->luma_weight_flag[list]) {
@@ -293,6 +293,7 @@ static int vaapi_h264_end_frame(AVCodecContext *avctx)
 {
     struct vaapi_context * const vactx = avctx->hwaccel_context;
     H264Context * const h = avctx->priv_data;
+    H264SliceContext *sl = &h->slice_ctx[0];
     int ret;
 
     av_dlog(avctx, "vaapi_h264_end_frame()\n");
@@ -304,7 +305,7 @@ static int vaapi_h264_end_frame(AVCodecContext *avctx)
     if (ret < 0)
         goto finish;
 
-    ff_h264_draw_horiz_band(h, 0, h->avctx->height);
+    ff_h264_draw_horiz_band(h, sl, 0, h->avctx->height);
 
 finish:
     ff_vaapi_common_end_frame(avctx);
@@ -331,8 +332,8 @@ static int vaapi_h264_decode_slice(AVCodecContext *avctx,
     slice_param->first_mb_in_slice              = (h->mb_y >> FIELD_OR_MBAFF_PICTURE(h)) * h->mb_width + h->mb_x;
     slice_param->slice_type                     = ff_h264_get_slice_type(sl);
     slice_param->direct_spatial_mv_pred_flag    = sl->slice_type == AV_PICTURE_TYPE_B ? sl->direct_spatial_mv_pred : 0;
-    slice_param->num_ref_idx_l0_active_minus1   = h->list_count > 0 ? h->ref_count[0] - 1 : 0;
-    slice_param->num_ref_idx_l1_active_minus1   = h->list_count > 1 ? h->ref_count[1] - 1 : 0;
+    slice_param->num_ref_idx_l0_active_minus1   = sl->list_count > 0 ? sl->ref_count[0] - 1 : 0;
+    slice_param->num_ref_idx_l1_active_minus1   = sl->list_count > 1 ? sl->ref_count[1] - 1 : 0;
     slice_param->cabac_init_idc                 = h->cabac_init_idc;
     slice_param->slice_qp_delta                 = sl->qscale - h->pps.init_qp;
     slice_param->disable_deblocking_filter_idc  = h->deblocking_filter < 2 ? !h->deblocking_filter : h->deblocking_filter;
@@ -341,8 +342,8 @@ static int vaapi_h264_decode_slice(AVCodecContext *avctx,
     slice_param->luma_log2_weight_denom         = sl->luma_log2_weight_denom;
     slice_param->chroma_log2_weight_denom       = sl->chroma_log2_weight_denom;
 
-    fill_vaapi_RefPicList(slice_param->RefPicList0, h->ref_list[0], h->list_count > 0 ? h->ref_count[0] : 0);
-    fill_vaapi_RefPicList(slice_param->RefPicList1, h->ref_list[1], h->list_count > 1 ? h->ref_count[1] : 0);
+    fill_vaapi_RefPicList(slice_param->RefPicList0, sl->ref_list[0], sl->list_count > 0 ? sl->ref_count[0] : 0);
+    fill_vaapi_RefPicList(slice_param->RefPicList1, sl->ref_list[1], sl->list_count > 1 ? sl->ref_count[1] : 0);
 
     fill_vaapi_plain_pred_weight_table(h, 0,
                                        &slice_param->luma_weight_l0_flag,   slice_param->luma_weight_l0,   slice_param->luma_offset_l0,

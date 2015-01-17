@@ -141,8 +141,8 @@ int ff_h264_fill_default_ref_list(H264Context *h, H264SliceContext *sl)
                                   FF_ARRAY_ELEMS(h->default_ref_list[0]) - len,
                                   h->long_ref, 16, 1, h->picture_structure);
 
-            if (len < h->ref_count[list])
-                memset(&h->default_ref_list[list][len], 0, sizeof(H264Picture) * (h->ref_count[list] - len));
+            if (len < sl->ref_count[list])
+                memset(&h->default_ref_list[list][len], 0, sizeof(H264Picture) * (sl->ref_count[list] - len));
             lens[list] = len;
         }
 
@@ -164,18 +164,18 @@ int ff_h264_fill_default_ref_list(H264Context *h, H264SliceContext *sl)
                               FF_ARRAY_ELEMS(h->default_ref_list[0]) - len,
                               h-> long_ref, 16, 1, h->picture_structure);
 
-        if (len < h->ref_count[0])
-            memset(&h->default_ref_list[0][len], 0, sizeof(H264Picture) * (h->ref_count[0] - len));
+        if (len < sl->ref_count[0])
+            memset(&h->default_ref_list[0][len], 0, sizeof(H264Picture) * (sl->ref_count[0] - len));
     }
 #ifdef TRACE
-    for (i = 0; i < h->ref_count[0]; i++) {
+    for (i = 0; i < sl->ref_count[0]; i++) {
         tprintf(h->avctx, "List0: %s fn:%d 0x%p\n",
                 (h->default_ref_list[0][i].long_ref ? "LT" : "ST"),
                 h->default_ref_list[0][i].pic_id,
                 h->default_ref_list[0][i].f.data[0]);
     }
     if (sl->slice_type_nos == AV_PICTURE_TYPE_B) {
-        for (i = 0; i < h->ref_count[1]; i++) {
+        for (i = 0; i < sl->ref_count[1]; i++) {
             tprintf(h->avctx, "List1: %s fn:%d 0x%p\n",
                     (h->default_ref_list[1][i].long_ref ? "LT" : "ST"),
                     h->default_ref_list[1][i].pic_id,
@@ -212,16 +212,16 @@ static int pic_num_extract(H264Context *h, int pic_num, int *structure)
     return pic_num;
 }
 
-int ff_h264_decode_ref_pic_list_reordering(H264Context *h)
+int ff_h264_decode_ref_pic_list_reordering(H264Context *h, H264SliceContext *sl)
 {
     int list, index, pic_structure, i;
 
     print_short_term(h);
     print_long_term(h);
 
-    for (list = 0; list < h->list_count; list++) {
-        for (i = 0; i < h->ref_count[list]; i++)
-            COPY_PICTURE(&h->ref_list[list][i], &h->default_ref_list[list][i]);
+    for (list = 0; list < sl->list_count; list++) {
+        for (i = 0; i < sl->ref_count[list]; i++)
+            COPY_PICTURE(&sl->ref_list[list][i], &h->default_ref_list[list][i]);
 
         if (get_bits1(&h->gb)) {    // ref_pic_list_modification_flag_l[01]
             int pred = h->curr_pic_num;
@@ -235,7 +235,7 @@ int ff_h264_decode_ref_pic_list_reordering(H264Context *h)
                 if (modification_of_pic_nums_idc == 3)
                     break;
 
-                if (index >= h->ref_count[list]) {
+                if (index >= sl->ref_count[list]) {
                     av_log(h->avctx, AV_LOG_ERROR, "reference count overflow\n");
                     return -1;
                 }
@@ -304,30 +304,30 @@ int ff_h264_decode_ref_pic_list_reordering(H264Context *h)
                 if (i < 0) {
                     av_log(h->avctx, AV_LOG_ERROR,
                            "reference picture missing during reorder\n");
-                    memset(&h->ref_list[list][index], 0, sizeof(H264Picture)); // FIXME
+                    memset(&sl->ref_list[list][index], 0, sizeof(H264Picture)); // FIXME
                 } else {
-                    for (i = index; i + 1 < h->ref_count[list]; i++) {
-                        if (ref->long_ref == h->ref_list[list][i].long_ref &&
-                            ref->pic_id   == h->ref_list[list][i].pic_id)
+                    for (i = index; i + 1 < sl->ref_count[list]; i++) {
+                        if (ref->long_ref == sl->ref_list[list][i].long_ref &&
+                            ref->pic_id   == sl->ref_list[list][i].pic_id)
                             break;
                     }
                     for (; i > index; i--) {
-                        COPY_PICTURE(&h->ref_list[list][i], &h->ref_list[list][i - 1]);
+                        COPY_PICTURE(&sl->ref_list[list][i], &sl->ref_list[list][i - 1]);
                     }
-                    COPY_PICTURE(&h->ref_list[list][index], ref);
+                    COPY_PICTURE(&sl->ref_list[list][index], ref);
                     if (FIELD_PICTURE(h)) {
-                        pic_as_field(&h->ref_list[list][index], pic_structure);
+                        pic_as_field(&sl->ref_list[list][index], pic_structure);
                     }
                 }
             }
         }
     }
-    for (list = 0; list < h->list_count; list++) {
-        for (index = 0; index < h->ref_count[list]; index++) {
-            if (!h->ref_list[list][index].f.buf[0]) {
+    for (list = 0; list < sl->list_count; list++) {
+        for (index = 0; index < sl->ref_count[list]; index++) {
+            if (!sl->ref_list[list][index].f.buf[0]) {
                 av_log(h->avctx, AV_LOG_ERROR, "Missing reference picture\n");
                 if (h->default_ref_list[list][0].f.buf[0])
-                    COPY_PICTURE(&h->ref_list[list][index], &h->default_ref_list[list][0]);
+                    COPY_PICTURE(&sl->ref_list[list][index], &h->default_ref_list[list][0]);
                 else
                     return -1;
             }
@@ -341,9 +341,9 @@ void ff_h264_fill_mbaff_ref_list(H264Context *h, H264SliceContext *sl)
 {
     int list, i, j;
     for (list = 0; list < 2; list++) { //FIXME try list_count
-        for (i = 0; i < h->ref_count[list]; i++) {
-            H264Picture *frame = &h->ref_list[list][i];
-            H264Picture *field = &h->ref_list[list][16 + 2 * i];
+        for (i = 0; i < sl->ref_count[list]; i++) {
+            H264Picture *frame = &sl->ref_list[list][i];
+            H264Picture *field = &sl->ref_list[list][16 + 2 * i];
             COPY_PICTURE(field, frame);
             for (j = 0; j < 3; j++)
                 field[0].f.linesize[j] <<= 1;

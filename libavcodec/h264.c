@@ -67,7 +67,7 @@ static void h264_er_decode_mb(void *opaque, int ref, int mv_dir, int mv_type,
      * differ between slices. We take the easy approach and ignore
      * it for now. If this turns out to have any relevance in
      * practice then correct remapping should be added. */
-    if (ref >= h->ref_count[0])
+    if (ref >= sl->ref_count[0])
         ref = 0;
     fill_rectangle(&h->cur_pic.ref_index[0][4 * h->mb_xy],
                    2, 2, 2, ref, 1);
@@ -78,11 +78,12 @@ static void h264_er_decode_mb(void *opaque, int ref, int mv_dir, int mv_type,
     ff_h264_hl_decode_mb(h, &h->slice_ctx[0]);
 }
 
-void ff_h264_draw_horiz_band(H264Context *h, int y, int height)
+void ff_h264_draw_horiz_band(H264Context *h, H264SliceContext *sl,
+                             int y, int height)
 {
     AVCodecContext *avctx = h->avctx;
     AVFrame *cur  = &h->cur_pic.f;
-    AVFrame *last = h->ref_list[0][0].f.data[0] ? &h->ref_list[0][0].f : NULL;
+    AVFrame *last = sl->ref_list[0][0].f.data[0] ? &sl->ref_list[0][0].f : NULL;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
     int vshift = desc->log2_chroma_h;
     const int field_pic = h->picture_structure != PICT_FRAME;
@@ -1019,7 +1020,7 @@ int ff_pred_weight_table(H264Context *h, H264SliceContext *sl)
     for (list = 0; list < 2; list++) {
         sl->luma_weight_flag[list]   = 0;
         sl->chroma_weight_flag[list] = 0;
-        for (i = 0; i < h->ref_count[list]; i++) {
+        for (i = 0; i < sl->ref_count[list]; i++) {
             int luma_weight_flag, chroma_weight_flag;
 
             luma_weight_flag = get_bits1(&h->gb);
@@ -1297,16 +1298,16 @@ int ff_set_ref_count(H264Context *h, H264SliceContext *sl)
 
     if (ref_count[0] > max_refs || ref_count[1] > max_refs) {
         av_log(h->avctx, AV_LOG_ERROR, "reference overflow\n");
-        h->ref_count[0] = h->ref_count[1] = 0;
+        sl->ref_count[0] = sl->ref_count[1] = 0;
         return AVERROR_INVALIDDATA;
     }
 
-    if (list_count != h->list_count ||
-        ref_count[0] != h->ref_count[0] ||
-        ref_count[1] != h->ref_count[1]) {
-        h->ref_count[0] = ref_count[0];
-        h->ref_count[1] = ref_count[1];
-        h->list_count   = list_count;
+    if (list_count   != sl->list_count   ||
+        ref_count[0] != sl->ref_count[0] ||
+        ref_count[1] != sl->ref_count[1]) {
+        sl->ref_count[0] = ref_count[0];
+        sl->ref_count[1] = ref_count[1];
+        sl->list_count   = list_count;
         return 1;
     }
 
@@ -1642,7 +1643,7 @@ again:
 
             if (err < 0) {
                 av_log(h->avctx, AV_LOG_ERROR, "decode_slice_header error\n");
-                h->ref_count[0] = h->ref_count[1] = h->list_count = 0;
+                sl->ref_count[0] = sl->ref_count[1] = sl->list_count = 0;
             } else if (err == 1) {
                 /* Slice could not be decoded in parallel mode, copy down
                  * NAL unit stuff to context 0 and restart. Note that
@@ -1773,7 +1774,7 @@ out:
         if (avctx->flags2 & CODEC_FLAG2_CHUNKS)
             decode_postinit(h, 1);
 
-        ff_h264_field_end(h, 0);
+        ff_h264_field_end(h, &h->slice_ctx[0], 0);
 
         *got_frame = 0;
         if (h->next_output_pic && ((avctx->flags & CODEC_FLAG_OUTPUT_CORRUPT) ||
