@@ -21,7 +21,9 @@ LOCAL_SHARED_LIBRARIES +=	\
 	libavutil \
 	libswresample
 
-LOCAL_SRC_FILES += neon/mpegvideo.c
+ifneq ($(ARCH_ARM_HAVE_NEON),)
+  LOCAL_SRC_FILES += neon/mpegvideo.c
+endif
 
 # It's strange wmalosslessdec.c can't be compiled by -O3 for armv7-a-neon. A gcc bug?
 $(intermediates)/wmalosslessdec.o: PRIVATE_CFLAGS += $(if $(filter arm,$(TARGET_ARCH)),-Os)
@@ -40,7 +42,9 @@ LOCAL_SHARED_LIBRARIES +=	\
 	libavutil \
 	libswresample
 
-LOCAL_SRC_FILES += neon/mpegvideo.c
+ifneq ($(ARCH_ARM_HAVE_NEON),)
+  LOCAL_SRC_FILES += neon/mpegvideo.c
+endif
 
 # It's strange wmalosslessdec.c can't be compiled by -O3 for armv7-a-neon. A gcc bug?
 $(intermediates)/wmalosslessdec.o: PRIVATE_CFLAGS += $(if $(filter arm,$(TARGET_ARCH)),-Os)
