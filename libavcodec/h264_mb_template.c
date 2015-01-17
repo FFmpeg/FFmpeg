@@ -159,7 +159,7 @@ static av_noinline void FUNC(hl_decode_mb)(H264Context *h, H264SliceContext *sl)
     } else {
         if (IS_INTRA(mb_type)) {
             if (h->deblocking_filter)
-                xchg_mb_border(h, dest_y, dest_cb, dest_cr, linesize,
+                xchg_mb_border(h, sl, dest_y, dest_cb, dest_cr, linesize,
                                uvlinesize, 1, 0, SIMPLE, PIXEL_SHIFT);
 
             if (SIMPLE || !CONFIG_GRAY || !(h->flags & CODEC_FLAG_GRAY)) {
@@ -172,7 +172,7 @@ static av_noinline void FUNC(hl_decode_mb)(H264Context *h, H264SliceContext *sl)
                                       block_offset, linesize, dest_y, 0);
 
             if (h->deblocking_filter)
-                xchg_mb_border(h, dest_y, dest_cb, dest_cr, linesize,
+                xchg_mb_border(h, sl, dest_y, dest_cb, dest_cr, linesize,
                                uvlinesize, 0, 0, SIMPLE, PIXEL_SHIFT);
         } else if (is_h264) {
             if (chroma422) {
@@ -343,7 +343,7 @@ static av_noinline void FUNC(hl_decode_mb_444)(H264Context *h, H264SliceContext 
     } else {
         if (IS_INTRA(mb_type)) {
             if (h->deblocking_filter)
-                xchg_mb_border(h, dest[0], dest[1], dest[2], linesize,
+                xchg_mb_border(h, sl, dest[0], dest[1], dest[2], linesize,
                                linesize, 1, 1, SIMPLE, PIXEL_SHIFT);
 
             for (p = 0; p < plane_count; p++)
@@ -352,7 +352,7 @@ static av_noinline void FUNC(hl_decode_mb_444)(H264Context *h, H264SliceContext 
                                           block_offset, linesize, dest[p], p);
 
             if (h->deblocking_filter)
-                xchg_mb_border(h, dest[0], dest[1], dest[2], linesize,
+                xchg_mb_border(h, sl, dest[0], dest[1], dest[2], linesize,
                                linesize, 0, 1, SIMPLE, PIXEL_SHIFT);
         } else {
             FUNC(hl_motion_444)(h, sl, dest[0], dest[1], dest[2],
