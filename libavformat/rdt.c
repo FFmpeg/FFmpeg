@@ -132,7 +132,7 @@ static int
 rdt_load_mdpr (PayloadContext *rdt, AVStream *st, int rule_nr)
 {
     AVIOContext pb;
-    int size;
+    unsigned int size;
     uint32_t tag;
 
     /**
