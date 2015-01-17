@@ -379,8 +379,6 @@ void ff_h264_free_tables(H264Context *h, int free_rbsp)
         hx = h->thread_context[i];
         if (!hx)
             continue;
-        av_freep(&hx->top_borders[1]);
-        av_freep(&hx->top_borders[0]);
         av_freep(&hx->dc_val_base);
         av_freep(&hx->er.mb_index2xy);
         av_freep(&hx->er.error_status_table);
@@ -401,9 +399,13 @@ void ff_h264_free_tables(H264Context *h, int free_rbsp)
 
         av_freep(&sl->bipred_scratchpad);
         av_freep(&sl->edge_emu_buffer);
+        av_freep(&sl->top_borders[0]);
+        av_freep(&sl->top_borders[1]);
 
         sl->bipred_scratchpad_allocated = 0;
         sl->edge_emu_buffer_allocated   = 0;
+        sl->top_borders_allocated[0]    = 0;
+        sl->top_borders_allocated[1]    = 0;
     }
 }
 
@@ -485,11 +487,6 @@ int ff_h264_context_init(H264Context *h)
     int c_size  = h->mb_stride * (h->mb_height + 1);
     int yc_size = y_size + 2   * c_size;
     int x, y, i;
-
-    FF_ALLOCZ_OR_GOTO(h->avctx, h->top_borders[0],
-                      h->mb_width * 16 * 3 * sizeof(uint8_t) * 2, fail)
-    FF_ALLOCZ_OR_GOTO(h->avctx, h->top_borders[1],
-                      h->mb_width * 16 * 3 * sizeof(uint8_t) * 2, fail)
 
     for (i = 0; i < h->nb_slice_ctx; i++) {
         h->slice_ctx[i].ref_cache[0][scan8[5]  + 1] =

@@ -535,8 +535,8 @@ static av_always_inline void xchg_mb_border(const H264Context *h, H264SliceConte
     src_cb -= uvlinesize + 1 + pixel_shift;
     src_cr -= uvlinesize + 1 + pixel_shift;
 
-    top_border_m1 = h->top_borders[top_idx][sl->mb_x - 1];
-    top_border    = h->top_borders[top_idx][sl->mb_x];
+    top_border_m1 = sl->top_borders[top_idx][sl->mb_x - 1];
+    top_border    = sl->top_borders[top_idx][sl->mb_x];
 
 #define XCHG(a, b, xchg)                        \
     if (pixel_shift) {                          \
@@ -559,7 +559,7 @@ static av_always_inline void xchg_mb_border(const H264Context *h, H264SliceConte
         XCHG(top_border + (0 << pixel_shift), src_y + (1 << pixel_shift), xchg);
         XCHG(top_border + (8 << pixel_shift), src_y + (9 << pixel_shift), 1);
         if (sl->mb_x + 1 < h->mb_width) {
-            XCHG(h->top_borders[top_idx][sl->mb_x + 1],
+            XCHG(sl->top_borders[top_idx][sl->mb_x + 1],
                  src_y + (17 << pixel_shift), 1);
         }
     }
@@ -575,8 +575,8 @@ static av_always_inline void xchg_mb_border(const H264Context *h, H264SliceConte
                 XCHG(top_border + (32 << pixel_shift), src_cr + (1 << pixel_shift), xchg);
                 XCHG(top_border + (40 << pixel_shift), src_cr + (9 << pixel_shift), 1);
                 if (sl->mb_x + 1 < h->mb_width) {
-                    XCHG(h->top_borders[top_idx][sl->mb_x + 1] + (16 << pixel_shift), src_cb + (17 << pixel_shift), 1);
-                    XCHG(h->top_borders[top_idx][sl->mb_x + 1] + (32 << pixel_shift), src_cr + (17 << pixel_shift), 1);
+                    XCHG(sl->top_borders[top_idx][sl->mb_x + 1] + (16 << pixel_shift), src_cb + (17 << pixel_shift), 1);
+                    XCHG(sl->top_borders[top_idx][sl->mb_x + 1] + (32 << pixel_shift), src_cr + (17 << pixel_shift), 1);
                 }
             }
         } else {
