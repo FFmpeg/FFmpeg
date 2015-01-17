@@ -381,7 +381,6 @@ static av_cold int dct_init(MpegEncContext *s)
 {
     ff_blockdsp_init(&s->bdsp, s->avctx);
     ff_hpeldsp_init(&s->hdsp, s->avctx->flags);
-    ff_me_cmp_init(&s->mecc, s->avctx);
     ff_mpegvideodsp_init(&s->mdsp);
     ff_videodsp_init(&s->vdsp, s->avctx->bits_per_raw_sample);
 
@@ -1068,7 +1067,6 @@ static int init_er(MpegEncContext *s)
     int i;
 
     er->avctx       = s->avctx;
-    er->mecc        = &s->mecc;
 
     er->mb_index2xy = s->mb_index2xy;
     er->mb_num      = s->mb_num;
