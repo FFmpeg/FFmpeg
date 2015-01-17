@@ -279,7 +279,7 @@ static void fill_slice_long(AVCodecContext *avctx, DXVA_Slice_H264_Long *slice,
     slice->slice_qp_delta    = sl->qscale - h->pps.init_qp;
     slice->redundant_pic_cnt = h->redundant_pic_count;
     if (sl->slice_type == AV_PICTURE_TYPE_B)
-        slice->direct_spatial_mv_pred_flag = h->direct_spatial_mv_pred;
+        slice->direct_spatial_mv_pred_flag = sl->direct_spatial_mv_pred;
     slice->cabac_init_idc = h->pps.cabac ? h->cabac_init_idc : 0;
     if (h->deblocking_filter < 2)
         slice->disable_deblocking_filter_idc = 1 - h->deblocking_filter;

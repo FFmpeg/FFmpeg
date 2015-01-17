@@ -1646,7 +1646,7 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl, H264Contex
         }
     }
 
-    if (sl->slice_type_nos == AV_PICTURE_TYPE_B && !h->direct_spatial_mv_pred)
+    if (sl->slice_type_nos == AV_PICTURE_TYPE_B && !sl->direct_spatial_mv_pred)
         ff_h264_direct_dist_scale_factor(h);
     ff_h264_direct_ref_list_init(h, sl);
 
@@ -1797,7 +1797,7 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl, H264Contex
                h->slice_alpha_c0_offset, h->slice_beta_offset,
                sl->use_weight,
                sl->use_weight == 1 && sl->use_weight_chroma ? "c" : "",
-               sl->slice_type == AV_PICTURE_TYPE_B ? (h->direct_spatial_mv_pred ? "SPAT" : "TEMP") : "");
+               sl->slice_type == AV_PICTURE_TYPE_B ? (sl->direct_spatial_mv_pred ? "SPAT" : "TEMP") : "");
     }
 
     return 0;
