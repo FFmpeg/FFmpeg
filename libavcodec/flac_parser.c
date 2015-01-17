@@ -646,7 +646,7 @@ static int flac_parse(AVCodecParserContext *s, AVCodecContext *avctx,
 handle_error:
     *poutbuf      = NULL;
     *poutbuf_size = 0;
-    return read_end - buf;
+    return buf_size ? read_end - buf : 0;
 }
 
 static int flac_parse_init(AVCodecParserContext *c)
