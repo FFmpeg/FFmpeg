@@ -135,11 +135,14 @@ static int config_output(AVFilterLink *outlink)
         return AVERROR(ENOMEM);
 
     if (s->options) {
+        int ret;
         AVDictionaryEntry *e = NULL;
         while ((e = av_dict_get(s->options, "", e, AV_DICT_IGNORE_SUFFIX)))
             av_log(ctx, AV_LOG_VERBOSE, "lavr option: %s=%s\n", e->key, e->value);
 
-        av_opt_set_dict(s->avr, &s->options);
+        ret = av_opt_set_dict(s->avr, &s->options);
+        if (ret < 0)
+            return ret;
     }
 
     av_opt_set_int(s->avr,  "in_channel_layout", inlink ->channel_layout, 0);
