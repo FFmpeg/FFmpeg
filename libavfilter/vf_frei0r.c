@@ -175,7 +175,7 @@ static int set_params(AVFilterContext *ctx, const char *params)
         switch (info.type) {
             void *v;
             double d;
-            char s[128];
+            char str[128];
             f0r_param_color_t col;
             f0r_param_position_t pos;
 
@@ -200,9 +200,9 @@ static int set_params(AVFilterContext *ctx, const char *params)
             av_log(ctx, AV_LOG_DEBUG, "%f/%f", pos.x, pos.y);
             break;
         default: /* F0R_PARAM_STRING */
-            v = s;
+            v = str;
             s->get_param_value(s->instance, v, i);
-            av_log(ctx, AV_LOG_DEBUG, "'%s'", s);
+            av_log(ctx, AV_LOG_DEBUG, "'%s'", str);
             break;
         }
 #endif
