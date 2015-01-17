@@ -355,7 +355,7 @@ zeromv:
 
 static void fill_decode_neighbors(H264Context *h, H264SliceContext *sl, int mb_type)
 {
-    const int mb_xy = h->mb_xy;
+    const int mb_xy = sl->mb_xy;
     int topleft_xy, top_xy, topright_xy, left_xy[LEFT_MBS];
     static const uint8_t left_block_options[4][32] = {
         { 0, 1, 2, 3, 7, 10, 8, 11, 3 + 0 * 4, 3 + 1 * 4, 3 + 2 * 4, 3 + 3 * 4, 1 + 4 * 4, 1 + 8 * 4, 1 + 5 * 4, 1 + 9 * 4 },
@@ -802,7 +802,7 @@ static void fill_decode_caches(H264Context *h, H264SliceContext *sl, int mb_type
  */
 static void av_unused decode_mb_skip(H264Context *h, H264SliceContext *sl)
 {
-    const int mb_xy = h->mb_xy;
+    const int mb_xy = sl->mb_xy;
     int mb_type     = 0;
 
     memset(h->non_zero_count[mb_xy], 0, 48);
