@@ -962,7 +962,9 @@ static void do_video_out(AVFormatContext *s,
         }
     case VSYNC_CFR:
         // FIXME set to 0.5 after we fix some dts/pts bugs like in avidec.c
-        if (delta < -1.1)
+        if (frame_drop_threshold && delta < frame_drop_threshold && ost->frame_number) {
+            nb_frames = 0;
+        } else if (delta < -1.1)
             nb_frames = 0;
         else if (delta > 1.1) {
             nb_frames = lrintf(delta);
