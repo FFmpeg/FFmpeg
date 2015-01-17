@@ -49,7 +49,7 @@ static void mc_part(H264Context *h, H264SliceContext *sl,
                     int list0, int list1)
 {
     if ((sl->use_weight == 2 && list0 && list1 &&
-         (sl->implicit_weight[sl->ref_cache[0][scan8[n]]][sl->ref_cache[1][scan8[n]]][h->mb_y & 1] != 32)) ||
+         (sl->implicit_weight[sl->ref_cache[0][scan8[n]]][sl->ref_cache[1][scan8[n]]][sl->mb_y & 1] != 32)) ||
         sl->use_weight == 1)
         mc_part_weighted(h, sl, n, square, height, delta, dest_y, dest_cb, dest_cr,
                          x_offset, y_offset, qpix_put, chroma_put,

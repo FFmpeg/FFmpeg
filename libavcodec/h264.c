@@ -58,8 +58,8 @@ static void h264_er_decode_mb(void *opaque, int ref, int mv_dir, int mv_type,
     H264Context *h = opaque;
     H264SliceContext *sl = &h->slice_ctx[0];
 
-    h->mb_x  = mb_x;
-    h->mb_y  = mb_y;
+    sl->mb_x = mb_x;
+    sl->mb_y = mb_y;
     sl->mb_xy = mb_x + mb_y * h->mb_stride;
     memset(sl->non_zero_count_cache, 0, sizeof(sl->non_zero_count_cache));
     assert(ref >= 0);
@@ -143,7 +143,7 @@ int ff_h264_check_intra4x4_pred_mode(H264Context *h, H264SliceContext *sl)
             if (status < 0) {
                 av_log(h->avctx, AV_LOG_ERROR,
                        "top block unavailable for requested intra4x4 mode %d at %d %d\n",
-                       status, h->mb_x, h->mb_y);
+                       status, sl->mb_x, sl->mb_y);
                 return AVERROR_INVALIDDATA;
             } else if (status) {
                 sl->intra4x4_pred_mode_cache[scan8[0] + i] = status;
@@ -159,7 +159,7 @@ int ff_h264_check_intra4x4_pred_mode(H264Context *h, H264SliceContext *sl)
                 if (status < 0) {
                     av_log(h->avctx, AV_LOG_ERROR,
                            "left block unavailable for requested intra4x4 mode %d at %d %d\n",
-                           status, h->mb_x, h->mb_y);
+                           status, sl->mb_x, sl->mb_y);
                     return AVERROR_INVALIDDATA;
                 } else if (status) {
                     sl->intra4x4_pred_mode_cache[scan8[0] + 8 * i] = status;
@@ -183,7 +183,7 @@ int ff_h264_check_intra_pred_mode(H264Context *h, H264SliceContext *sl,
     if (mode > 3U) {
         av_log(h->avctx, AV_LOG_ERROR,
                "out of range intra chroma pred mode at %d %d\n",
-               h->mb_x, h->mb_y);
+               sl->mb_x, sl->mb_y);
         return AVERROR_INVALIDDATA;
     }
 
@@ -192,7 +192,7 @@ int ff_h264_check_intra_pred_mode(H264Context *h, H264SliceContext *sl,
         if (mode < 0) {
             av_log(h->avctx, AV_LOG_ERROR,
                    "top block unavailable for requested intra mode at %d %d\n",
-                   h->mb_x, h->mb_y);
+                   sl->mb_x, sl->mb_y);
             return AVERROR_INVALIDDATA;
         }
     }
@@ -208,7 +208,7 @@ int ff_h264_check_intra_pred_mode(H264Context *h, H264SliceContext *sl,
         if (mode < 0) {
             av_log(h->avctx, AV_LOG_ERROR,
                    "left block unavailable for requested intra mode at %d %d\n",
-                   h->mb_x, h->mb_y);
+                   sl->mb_x, sl->mb_y);
             return AVERROR_INVALIDDATA;
         }
     }
@@ -1114,7 +1114,7 @@ static void flush_dpb(AVCodecContext *avctx)
     h->cur_pic_ptr = NULL;
     ff_h264_unref_picture(h, &h->cur_pic);
 
-    h->mb_x = h->mb_y = 0;
+    h->mb_y = 0;
 
     ff_h264_free_tables(h, 1);
     h->context_initialized = 0;
