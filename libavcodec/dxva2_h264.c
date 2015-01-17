@@ -232,8 +232,8 @@ static void fill_slice_long(AVCodecContext *avctx, DXVA_Slice_H264_Long *slice,
         slice->num_ref_idx_l0_active_minus1 = sl->ref_count[0] - 1;
     if (sl->list_count > 1)
         slice->num_ref_idx_l1_active_minus1 = sl->ref_count[1] - 1;
-    slice->slice_alpha_c0_offset_div2   = h->slice_alpha_c0_offset / 2;
-    slice->slice_beta_offset_div2       = h->slice_beta_offset     / 2;
+    slice->slice_alpha_c0_offset_div2   = sl->slice_alpha_c0_offset / 2;
+    slice->slice_beta_offset_div2       = sl->slice_beta_offset     / 2;
     slice->Reserved8Bits                = 0;
 
     for (list = 0; list < 2; list++) {
@@ -281,10 +281,10 @@ static void fill_slice_long(AVCodecContext *avctx, DXVA_Slice_H264_Long *slice,
     if (sl->slice_type == AV_PICTURE_TYPE_B)
         slice->direct_spatial_mv_pred_flag = sl->direct_spatial_mv_pred;
     slice->cabac_init_idc = h->pps.cabac ? h->cabac_init_idc : 0;
-    if (h->deblocking_filter < 2)
-        slice->disable_deblocking_filter_idc = 1 - h->deblocking_filter;
+    if (sl->deblocking_filter < 2)
+        slice->disable_deblocking_filter_idc = 1 - sl->deblocking_filter;
     else
-        slice->disable_deblocking_filter_idc = h->deblocking_filter;
+        slice->disable_deblocking_filter_idc = sl->deblocking_filter;
     slice->slice_id = h->current_slice - 1;
 }
 

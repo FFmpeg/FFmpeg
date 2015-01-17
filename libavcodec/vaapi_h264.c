@@ -336,9 +336,9 @@ static int vaapi_h264_decode_slice(AVCodecContext *avctx,
     slice_param->num_ref_idx_l1_active_minus1   = sl->list_count > 1 ? sl->ref_count[1] - 1 : 0;
     slice_param->cabac_init_idc                 = h->cabac_init_idc;
     slice_param->slice_qp_delta                 = sl->qscale - h->pps.init_qp;
-    slice_param->disable_deblocking_filter_idc  = h->deblocking_filter < 2 ? !h->deblocking_filter : h->deblocking_filter;
-    slice_param->slice_alpha_c0_offset_div2     = h->slice_alpha_c0_offset / 2;
-    slice_param->slice_beta_offset_div2         = h->slice_beta_offset     / 2;
+    slice_param->disable_deblocking_filter_idc  = sl->deblocking_filter < 2 ? !sl->deblocking_filter : sl->deblocking_filter;
+    slice_param->slice_alpha_c0_offset_div2     = sl->slice_alpha_c0_offset / 2;
+    slice_param->slice_beta_offset_div2         = sl->slice_beta_offset     / 2;
     slice_param->luma_log2_weight_denom         = sl->luma_log2_weight_denom;
     slice_param->chroma_log2_weight_denom       = sl->chroma_log2_weight_denom;
 
