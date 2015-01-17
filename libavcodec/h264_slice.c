@@ -484,6 +484,8 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
     }
 
     if (!inited) {
+        H264SliceContext *orig_slice_ctx = h->slice_ctx;
+
         for (i = 0; i < MAX_SPS_COUNT; i++)
             av_freep(h->sps_buffers + i);
 
@@ -502,6 +504,8 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
         memset(&h->cur_pic, 0, sizeof(h->cur_pic));
         av_frame_unref(&h->cur_pic.f);
         h->cur_pic.tf.f = &h->cur_pic.f;
+
+        h->slice_ctx = orig_slice_ctx;
 
         h->avctx             = dst;
         h->DPB               = NULL;
@@ -814,13 +818,13 @@ static av_always_inline void backup_mb_border(H264Context *h, uint8_t *src_y,
  * @param field  0/1 initialize the weight for interlaced MBAFF
  *                -1 initializes the rest
  */
-static void implicit_weight_table(H264Context *h, int field)
+static void implicit_weight_table(H264Context *h, H264SliceContext *sl, int field)
 {
     int ref0, ref1, i, cur_poc, ref_start, ref_count0, ref_count1;
 
     for (i = 0; i < 2; i++) {
-        h->luma_weight_flag[i]   = 0;
-        h->chroma_weight_flag[i] = 0;
+        sl->luma_weight_flag[i]   = 0;
+        sl->chroma_weight_flag[i] = 0;
     }
 
     if (field < 0) {
@@ -831,8 +835,8 @@ static void implicit_weight_table(H264Context *h, int field)
         }
         if (h->ref_count[0] == 1 && h->ref_count[1] == 1 && !FRAME_MBAFF(h) &&
             h->ref_list[0][0].poc + h->ref_list[1][0].poc == 2 * cur_poc) {
-            h->use_weight        = 0;
-            h->use_weight_chroma = 0;
+            sl->use_weight        = 0;
+            sl->use_weight_chroma = 0;
             return;
         }
         ref_start  = 0;
@@ -845,10 +849,10 @@ static void implicit_weight_table(H264Context *h, int field)
         ref_count1 = 16 + 2 * h->ref_count[1];
     }
 
-    h->use_weight               = 2;
-    h->use_weight_chroma        = 2;
-    h->luma_log2_weight_denom   = 5;
-    h->chroma_log2_weight_denom = 5;
+    sl->use_weight               = 2;
+    sl->use_weight_chroma        = 2;
+    sl->luma_log2_weight_denom   = 5;
+    sl->chroma_log2_weight_denom = 5;
 
     for (ref0 = ref_start; ref0 < ref_count0; ref0++) {
         int poc0 = h->ref_list[0][ref0].poc;
@@ -866,10 +870,10 @@ static void implicit_weight_table(H264Context *h, int field)
                 }
             }
             if (field < 0) {
-                h->implicit_weight[ref0][ref1][0] =
-                h->implicit_weight[ref0][ref1][1] = w;
+                sl->implicit_weight[ref0][ref1][0] =
+                sl->implicit_weight[ref0][ref1][1] = w;
             } else {
-                h->implicit_weight[ref0][ref1][field] = w;
+                sl->implicit_weight[ref0][ref1][field] = w;
             }
         }
     }
@@ -1139,6 +1143,8 @@ static int h264_slice_header_init(H264Context *h, int reinit)
             c->workaround_bugs   = h->workaround_bugs;
             c->pict_type         = h->pict_type;
 
+            h->slice_ctx[i].h264 = c;
+
             init_scan_tables(c);
             clone_tables(c, h, i);
             c->context_initialized = 1;
@@ -1166,7 +1172,7 @@ static int h264_slice_header_init(H264Context *h, int reinit)
  *
  * @return 0 if okay, <0 if an error occurred, 1 if decoding must not be multithreaded
  */
-int ff_h264_decode_slice_header(H264Context *h, H264Context *h0)
+int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl, H264Context *h0)
 {
     unsigned int first_mb_in_slice;
     unsigned int pps_id;
@@ -1606,15 +1612,15 @@ int ff_h264_decode_slice_header(H264Context *h, H264Context *h0)
     if ((h->pps.weighted_pred && h->slice_type_nos == AV_PICTURE_TYPE_P) ||
         (h->pps.weighted_bipred_idc == 1 &&
          h->slice_type_nos == AV_PICTURE_TYPE_B))
-        ff_pred_weight_table(h);
+        ff_pred_weight_table(h, sl);
     else if (h->pps.weighted_bipred_idc == 2 &&
              h->slice_type_nos == AV_PICTURE_TYPE_B) {
-        implicit_weight_table(h, -1);
+        implicit_weight_table(h, sl, -1);
     } else {
-        h->use_weight = 0;
+        sl->use_weight = 0;
         for (i = 0; i < 2; i++) {
-            h->luma_weight_flag[i]   = 0;
-            h->chroma_weight_flag[i] = 0;
+            sl->luma_weight_flag[i]   = 0;
+            sl->chroma_weight_flag[i] = 0;
         }
     }
 
@@ -1632,11 +1638,11 @@ int ff_h264_decode_slice_header(H264Context *h, H264Context *h0)
     }
 
     if (FRAME_MBAFF(h)) {
-        ff_h264_fill_mbaff_ref_list(h);
+        ff_h264_fill_mbaff_ref_list(h, sl);
 
         if (h->pps.weighted_bipred_idc == 2 && h->slice_type_nos == AV_PICTURE_TYPE_B) {
-            implicit_weight_table(h, 0);
-            implicit_weight_table(h, 1);
+            implicit_weight_table(h, sl, 0);
+            implicit_weight_table(h, sl, 1);
         }
     }
 
@@ -1789,8 +1795,8 @@ int ff_h264_decode_slice_header(H264Context *h, H264Context *h0)
                h->qscale,
                h->deblocking_filter,
                h->slice_alpha_c0_offset, h->slice_beta_offset,
-               h->use_weight,
-               h->use_weight == 1 && h->use_weight_chroma ? "c" : "",
+               sl->use_weight,
+               sl->use_weight == 1 && sl->use_weight_chroma ? "c" : "",
                h->slice_type == AV_PICTURE_TYPE_B ? (h->direct_spatial_mv_pred ? "SPAT" : "TEMP") : "");
     }
 
@@ -2170,7 +2176,8 @@ static void er_add_slice(H264Context *h, int startx, int starty,
 
 static int decode_slice(struct AVCodecContext *avctx, void *arg)
 {
-    H264Context *h = *(void **)arg;
+    H264SliceContext *sl = arg;
+    H264Context       *h = sl->h264;
     int lf_x_start = h->mb_x;
 
     h->mb_skip_run = -1;
@@ -2197,7 +2204,7 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
             // STOP_TIMER("decode_mb_cabac")
 
             if (ret >= 0)
-                ff_h264_hl_decode_mb(h);
+                ff_h264_hl_decode_mb(h, sl);
 
             // FIXME optimal? or let mb_decode decode 16x32 ?
             if (ret >= 0 && FRAME_MBAFF(h)) {
@@ -2206,7 +2213,7 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
                 ret = ff_h264_decode_mb_cabac(h);
 
                 if (ret >= 0)
-                    ff_h264_hl_decode_mb(h);
+                    ff_h264_hl_decode_mb(h, sl);
                 h->mb_y--;
             }
             eos = get_cabac_terminate(&h->cabac);
@@ -2256,7 +2263,7 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
             int ret = ff_h264_decode_mb_cavlc(h);
 
             if (ret >= 0)
-                ff_h264_hl_decode_mb(h);
+                ff_h264_hl_decode_mb(h, sl);
 
             // FIXME optimal? or let mb_decode decode 16x32 ?
             if (ret >= 0 && FRAME_MBAFF(h)) {
@@ -2264,7 +2271,7 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
                 ret = ff_h264_decode_mb_cavlc(h);
 
                 if (ret >= 0)
-                    ff_h264_hl_decode_mb(h);
+                    ff_h264_hl_decode_mb(h, sl);
                 h->mb_y--;
             }
 
@@ -2341,15 +2348,15 @@ int ff_h264_execute_decode_slices(H264Context *h, unsigned context_count)
     if (h->avctx->hwaccel)
         return 0;
     if (context_count == 1) {
-        return decode_slice(avctx, &h);
+        return decode_slice(avctx, &h->slice_ctx[0]);
     } else {
         for (i = 1; i < context_count; i++) {
             hx                 = h->thread_context[i];
             hx->er.error_count = 0;
         }
 
-        avctx->execute(avctx, decode_slice, h->thread_context,
-                       NULL, context_count, sizeof(void *));
+        avctx->execute(avctx, decode_slice, h->slice_ctx,
+                       NULL, context_count, sizeof(h->slice_ctx[0]));
 
         /* pull back stuff from slices to master context */
         hx                   = h->thread_context[context_count - 1];
