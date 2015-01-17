@@ -721,7 +721,7 @@ static void fill_decode_caches(H264Context *h, H264SliceContext *sl, int mb_type
                     AV_ZERO16(mvd_cache[2 + 8 * 0]);
                     AV_ZERO16(mvd_cache[2 + 8 * 2]);
                     if (sl->slice_type_nos == AV_PICTURE_TYPE_B) {
-                        uint8_t *direct_cache = &h->direct_cache[scan8[0]];
+                        uint8_t *direct_cache = &sl->direct_cache[scan8[0]];
                         uint8_t *direct_table = h->direct_table;
                         fill_rectangle(direct_cache, 4, 4, 8, MB_TYPE_16x16 >> 1, 1);
 
