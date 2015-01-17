@@ -2183,7 +2183,7 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
     H264Context       *h = sl->h264;
     int lf_x_start = h->mb_x;
 
-    h->mb_skip_run = -1;
+    sl->mb_skip_run = -1;
 
     h->is_complex = FRAME_MBAFF(h) || h->picture_structure != PICT_FRAME ||
                     avctx->codec_id != AV_CODEC_ID_H264 ||
@@ -2314,7 +2314,7 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
                 }
             }
 
-            if (get_bits_left(&h->gb) <= 0 && h->mb_skip_run <= 0) {
+            if (get_bits_left(&h->gb) <= 0 && sl->mb_skip_run <= 0) {
                 tprintf(h->avctx, "slice end %d %d\n",
                         get_bits_count(&h->gb), h->gb.size_in_bits);
 
