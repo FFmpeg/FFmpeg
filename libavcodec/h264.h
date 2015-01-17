@@ -343,6 +343,11 @@ typedef struct H264SliceContext {
     unsigned int left_samples_available;
 
     /**
+     * number of neighbors (top and/or left) that used 8x8 dct
+     */
+    int neighbor_transform_size;
+
+    /**
      * non zero coeff count cache.
      * is 64 if not available.
      */
@@ -397,11 +402,6 @@ typedef struct H264Context {
 
 #define LIST_NOT_USED -1 // FIXME rename?
 #define PART_NOT_AVAILABLE -2
-
-    /**
-     * number of neighbors (top and/or left) that used 8x8 dct
-     */
-    int neighbor_transform_size;
 
     /**
      * block_offset[ 0..23] for frame macroblocks
