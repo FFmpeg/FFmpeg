@@ -561,6 +561,13 @@ static int select_reference_stream(AVFormatContext *s)
     return 0;
 }
 
+static void seg_free_context(SegmentContext *seg)
+{
+    avio_closep(&seg->list_pb);
+    avformat_free_context(seg->avf);
+    seg->avf = NULL;
+}
+
 static int seg_write_header(AVFormatContext *s)
 {
     SegmentContext *seg = s->priv_data;
@@ -692,12 +699,9 @@ static int seg_write_header(AVFormatContext *s)
 
 fail:
     av_dict_free(&options);
-    if (ret) {
-        if (seg->list)
-            avio_close(seg->list_pb);
-        if (seg->avf)
-            avformat_free_context(seg->avf);
-    }
+    if (ret < 0)
+        seg_free_context(seg);
+
     return ret;
 }
 
@@ -711,6 +715,9 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
     struct tm ti;
     int64_t usecs;
     int64_t wrapped_val;
+
+    if (!seg->avf)
+        return AVERROR(EINVAL);
 
     if (seg->times) {
         end_pts = seg->segment_count < seg->nb_times ?
@@ -806,6 +813,9 @@ fail:
         seg->segment_frame_count++;
     }
 
+    if (ret < 0)
+        seg_free_context(seg);
+
     return ret;
 }
 
@@ -814,8 +824,11 @@ static int seg_write_trailer(struct AVFormatContext *s)
     SegmentContext *seg = s->priv_data;
     AVFormatContext *oc = seg->avf;
     SegmentListEntry *cur, *next;
+    int ret = 0;
 
-    int ret;
+    if (!oc)
+        goto fail;
+
     if (!seg->write_header_trailer) {
         if ((ret = segment_end(s, 0, 1)) < 0)
             goto fail;
