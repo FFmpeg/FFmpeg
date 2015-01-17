@@ -364,6 +364,8 @@ typedef struct H264SliceContext {
     int mb_skip_run;
     int is_complex;
 
+    int mb_field_decoding_flag;
+
     int redundant_pic_count;
 
     /**
@@ -494,7 +496,6 @@ typedef struct H264Context {
 
     // interlacing specific flags
     int mb_aff_frame;
-    int mb_field_decoding_flag;
     int mb_mbaff;               ///< mb_aff_frame && mb_field_decoding_flag
     int picture_structure;
     int first_field;

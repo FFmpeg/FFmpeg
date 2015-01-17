@@ -57,7 +57,7 @@ static inline void get_lowest_part_y(const H264Context *h, H264SliceContext *sl,
 {
     int my;
 
-    y_offset += 16 * (sl->mb_y >> MB_FIELD(h));
+    y_offset += 16 * (sl->mb_y >> MB_FIELD(sl));
 
     if (list0) {
         int ref_n = sl->ref_cache[0][scan8[n]];
@@ -225,7 +225,7 @@ static av_always_inline void mc_dir_part(const H264Context *h, H264SliceContext 
     const int full_mx    = mx >> 2;
     const int full_my    = my >> 2;
     const int pic_width  = 16 * h->mb_width;
-    const int pic_height = 16 * h->mb_height >> MB_FIELD(h);
+    const int pic_height = 16 * h->mb_height >> MB_FIELD(sl);
     int ysh;
 
     if (mx & 7)
@@ -285,7 +285,7 @@ static av_always_inline void mc_dir_part(const H264Context *h, H264SliceContext 
     }
 
     ysh = 3 - (chroma_idc == 2 /* yuv422 */);
-    if (chroma_idc == 1 /* yuv420 */ && MB_FIELD(h)) {
+    if (chroma_idc == 1 /* yuv420 */ && MB_FIELD(sl)) {
         // chroma offset when predicting from a field of opposite parity
         my  += 2 * ((sl->mb_y & 1) - (pic->reference - 1));
         emu |= (my >> 3) < 0 || (my >> 3) + 8 >= (pic_height >> 1);
@@ -346,7 +346,7 @@ static av_always_inline void mc_part_std(const H264Context *h, H264SliceContext 
         dest_cr += (x_offset << pixel_shift) + y_offset * sl->mb_uvlinesize;
     }
     x_offset += 8 * sl->mb_x;
-    y_offset += 8 * (sl->mb_y >> MB_FIELD(h));
+    y_offset += 8 * (sl->mb_y >> MB_FIELD(sl));
 
     if (list0) {
         H264Picture *ref = &sl->ref_list[0][sl->ref_cache[0][scan8[n]]];
@@ -400,7 +400,7 @@ static av_always_inline void mc_part_weighted(const H264Context *h, H264SliceCon
         dest_cr      += (x_offset << pixel_shift) + y_offset * sl->mb_uvlinesize;
     }
     x_offset += 8 * sl->mb_x;
-    y_offset += 8 * (sl->mb_y >> MB_FIELD(h));
+    y_offset += 8 * (sl->mb_y >> MB_FIELD(sl));
 
     if (list0 && list1) {
         /* don't optimize for luma-only case, since B-frames usually
@@ -528,7 +528,7 @@ static av_always_inline void xchg_mb_border(const H264Context *h, H264SliceConte
         deblock_top     = sl->top_type;
     } else {
         deblock_topleft = (sl->mb_x > 0);
-        deblock_top     = (sl->mb_y > !!MB_FIELD(h));
+        deblock_top     = (sl->mb_y > !!MB_FIELD(sl));
     }
 
     src_y  -= linesize   + 1 + pixel_shift;

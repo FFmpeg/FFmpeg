@@ -1288,7 +1288,7 @@ static int decode_cabac_field_decoding_flag(H264Context *h, H264SliceContext *sl
 
     unsigned long ctx = 0;
 
-    ctx += h->mb_field_decoding_flag & !!sl->mb_x; //for FMO:(s->current_picture.mb_type[mba_xy] >> 7) & (h->slice_table[mba_xy] == h->slice_num);
+    ctx += sl->mb_field_decoding_flag & !!sl->mb_x; //for FMO:(s->current_picture.mb_type[mba_xy] >> 7) & (h->slice_table[mba_xy] == h->slice_num);
     ctx += (h->cur_pic.mb_type[mbb_xy] >> 7) & (h->slice_table[mbb_xy] == sl->slice_num);
 
     return get_cabac_noinline( &sl->cabac, &(sl->cabac_state+70)[ctx] );
@@ -1337,9 +1337,9 @@ static int decode_cabac_mb_skip(H264Context *h, H264SliceContext *sl,
         mba_xy = mb_xy - 1;
         if( (mb_y&1)
             && h->slice_table[mba_xy] == sl->slice_num
-            && MB_FIELD(h) == !!IS_INTERLACED( h->cur_pic.mb_type[mba_xy] ) )
+            && MB_FIELD(sl) == !!IS_INTERLACED( h->cur_pic.mb_type[mba_xy] ) )
             mba_xy += h->mb_stride;
-        if (MB_FIELD(h)) {
+        if (MB_FIELD(sl)) {
             mbb_xy = mb_xy - h->mb_stride;
             if( !(mb_y&1)
                 && h->slice_table[mbb_xy] == sl->slice_num
@@ -1646,9 +1646,9 @@ decode_cabac_residual_internal(H264Context *h, H264SliceContext *sl,
 #endif
 
     significant_coeff_ctx_base = sl->cabac_state
-        + significant_coeff_flag_offset[MB_FIELD(h)][cat];
+        + significant_coeff_flag_offset[MB_FIELD(sl)][cat];
     last_coeff_ctx_base = sl->cabac_state
-        + last_coeff_flag_offset[MB_FIELD(h)][cat];
+        + last_coeff_flag_offset[MB_FIELD(sl)][cat];
     abs_level_m1_ctx_base = sl->cabac_state
         + coeff_abs_level_m1_offset[cat];
 
@@ -1668,7 +1668,7 @@ decode_cabac_residual_internal(H264Context *h, H264SliceContext *sl,
         if( last == max_coeff -1 ) {\
             index[coeff_count++] = last;\
         }
-        const uint8_t *sig_off = significant_coeff_flag_offset_8x8[MB_FIELD(h)];
+        const uint8_t *sig_off = significant_coeff_flag_offset_8x8[MB_FIELD(sl)];
 #ifdef decode_significance
         coeff_count = decode_significance_8x8(CC, significant_coeff_ctx_base, index,
                                                  last_coeff_ctx_base, sig_off);
@@ -1930,7 +1930,7 @@ int ff_h264_decode_mb_cabac(H264Context *h, H264SliceContext *sl)
                 h->cur_pic.mb_type[mb_xy] = MB_TYPE_SKIP;
                 sl->next_mb_skipped = decode_cabac_mb_skip(h, sl, sl->mb_x, sl->mb_y+1 );
                 if(!sl->next_mb_skipped)
-                    h->mb_mbaff = h->mb_field_decoding_flag = decode_cabac_field_decoding_flag(h, sl);
+                    h->mb_mbaff = sl->mb_field_decoding_flag = decode_cabac_field_decoding_flag(h, sl);
             }
 
             decode_mb_skip(h, sl);
@@ -1946,12 +1946,12 @@ int ff_h264_decode_mb_cabac(H264Context *h, H264SliceContext *sl)
     if (FRAME_MBAFF(h)) {
         if ((sl->mb_y & 1) == 0)
             h->mb_mbaff =
-            h->mb_field_decoding_flag = decode_cabac_field_decoding_flag(h, sl);
+            sl->mb_field_decoding_flag = decode_cabac_field_decoding_flag(h, sl);
     }
 
     sl->prev_mb_skipped = 0;
 
-    fill_decode_neighbors(h, sl, -(MB_FIELD(h)));
+    fill_decode_neighbors(h, sl, -(MB_FIELD(sl)));
 
     if (sl->slice_type_nos == AV_PICTURE_TYPE_B) {
         int ctx = 0;
@@ -2015,7 +2015,7 @@ decode_intra_mb:
         sl->intra16x16_pred_mode = i_mb_type_info[mb_type].pred_mode;
         mb_type= i_mb_type_info[mb_type].type;
     }
-    if(MB_FIELD(h))
+    if (MB_FIELD(sl))
         mb_type |= MB_TYPE_INTERLACED;
 
     h->slice_table[mb_xy] = sl->slice_num;

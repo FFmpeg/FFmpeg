@@ -62,11 +62,11 @@ static av_always_inline int fetch_diagonal_mv(const H264Context *h, H264SliceCon
             AV_ZERO32(sl->mv_cache[list][scan8[0] - 2]);
             *C = sl->mv_cache[list][scan8[0] - 2];
 
-            if (!MB_FIELD(h) && IS_INTERLACED(sl->left_type[0])) {
+            if (!MB_FIELD(sl) && IS_INTERLACED(sl->left_type[0])) {
                 SET_DIAG_MV(* 2, >> 1, sl->left_mb_xy[0] + h->mb_stride,
                             (sl->mb_y & 1) * 2 + (i >> 5));
             }
-            if (MB_FIELD(h) && !IS_INTERLACED(sl->left_type[0])) {
+            if (MB_FIELD(sl) && !IS_INTERLACED(sl->left_type[0])) {
                 // left shift will turn LIST_NOT_USED into PART_NOT_AVAILABLE, but that's OK.
                 SET_DIAG_MV(/ 2, << 1, sl->left_mb_xy[i >= 36], ((i >> 2)) & 3);
             }
@@ -237,7 +237,7 @@ static av_always_inline void pred_8x16_motion(const H264Context *const h,
 
 #define FIX_MV_MBAFF(type, refn, mvn, idx)      \
     if (FRAME_MBAFF(h)) {                       \
-        if (MB_FIELD(h)) {                      \
+        if (MB_FIELD(sl)) {                     \
             if (!IS_INTERLACED(type)) {         \
                 refn <<= 1;                     \
                 AV_COPY32(mvbuf[idx], mvn);     \
@@ -366,7 +366,7 @@ static void fill_decode_neighbors(const H264Context *h, H264SliceContext *sl, in
 
     sl->topleft_partition = -1;
 
-    top_xy = mb_xy - (h->mb_stride << MB_FIELD(h));
+    top_xy = mb_xy - (h->mb_stride << MB_FIELD(sl));
 
     /* Wow, what a mess, why didn't they simplify the interlacing & intra
      * stuff, I can't imagine that these complex rules are worth it. */
@@ -767,7 +767,7 @@ static void fill_decode_caches(const H264Context *h, H264SliceContext *sl, int m
     MAP_F2F(scan8[0] - 1 + 3 * 8, left_type[LBOT])
 
             if (FRAME_MBAFF(h)) {
-                if (MB_FIELD(h)) {
+                if (MB_FIELD(sl)) {
 
 #define MAP_F2F(idx, mb_type)                                           \
     if (!IS_INTERLACED(mb_type) && sl->ref_cache[list][idx] >= 0) {     \
@@ -807,7 +807,7 @@ static void av_unused decode_mb_skip(const H264Context *h, H264SliceContext *sl)
 
     memset(h->non_zero_count[mb_xy], 0, 48);
 
-    if (MB_FIELD(h))
+    if (MB_FIELD(sl))
         mb_type |= MB_TYPE_INTERLACED;
 
     if (sl->slice_type_nos == AV_PICTURE_TYPE_B) {
