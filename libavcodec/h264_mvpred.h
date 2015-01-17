@@ -688,7 +688,7 @@ static void fill_decode_caches(H264Context *h, H264SliceContext *sl, int mb_type
                 continue;
 
             if (!(mb_type & (MB_TYPE_SKIP | MB_TYPE_DIRECT2))) {
-                uint8_t(*mvd_cache)[2]   = &h->mvd_cache[list][scan8[0]];
+                uint8_t(*mvd_cache)[2]   = &sl->mvd_cache[list][scan8[0]];
                 uint8_t(*mvd)[2]         = sl->mvd_table[list];
                 ref_cache[2 + 8 * 0] =
                 ref_cache[2 + 8 * 2] = PART_NOT_AVAILABLE;
@@ -773,7 +773,7 @@ static void fill_decode_caches(H264Context *h, H264SliceContext *sl, int mb_type
     if (!IS_INTERLACED(mb_type) && sl->ref_cache[list][idx] >= 0) {     \
         sl->ref_cache[list][idx]    <<= 1;                              \
         sl->mv_cache[list][idx][1]   /= 2;                              \
-        h->mvd_cache[list][idx][1] >>= 1;                               \
+        sl->mvd_cache[list][idx][1] >>= 1;                              \
     }
 
                     MAP_MVS
@@ -784,7 +784,7 @@ static void fill_decode_caches(H264Context *h, H264SliceContext *sl, int mb_type
     if (IS_INTERLACED(mb_type) && sl->ref_cache[list][idx] >= 0) {      \
         sl->ref_cache[list][idx]    >>= 1;                              \
         sl->mv_cache[list][idx][1]  <<= 1;                              \
-        h->mvd_cache[list][idx][1] <<= 1;                               \
+        sl->mvd_cache[list][idx][1] <<= 1;                              \
     }
 
                     MAP_MVS
