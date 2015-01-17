@@ -2185,9 +2185,9 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
 
     sl->mb_skip_run = -1;
 
-    h->is_complex = FRAME_MBAFF(h) || h->picture_structure != PICT_FRAME ||
-                    avctx->codec_id != AV_CODEC_ID_H264 ||
-                    (CONFIG_GRAY && (h->flags & CODEC_FLAG_GRAY));
+    sl->is_complex = FRAME_MBAFF(h) || h->picture_structure != PICT_FRAME ||
+                     avctx->codec_id != AV_CODEC_ID_H264 ||
+                     (CONFIG_GRAY && (h->flags & CODEC_FLAG_GRAY));
 
     if (h->pps.cabac) {
         /* realign */

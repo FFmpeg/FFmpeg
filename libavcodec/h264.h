@@ -357,6 +357,7 @@ typedef struct H264SliceContext {
     ptrdiff_t mb_uvlinesize;
 
     int mb_skip_run;
+    int is_complex;
 
     int redundant_pic_count;
 
@@ -531,8 +532,6 @@ typedef struct H264Context {
     int mb_stride;
     int mb_num;
     int mb_xy;
-
-    int is_complex;
 
     // =============================================================
     // Things below are not used in the MB or more inner code
