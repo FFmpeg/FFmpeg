@@ -381,8 +381,6 @@ void ff_h264_free_tables(H264Context *h, int free_rbsp)
             continue;
         av_freep(&hx->top_borders[1]);
         av_freep(&hx->top_borders[0]);
-        av_freep(&hx->bipred_scratchpad);
-        av_freep(&hx->edge_emu_buffer);
         av_freep(&hx->dc_val_base);
         av_freep(&hx->er.mb_index2xy);
         av_freep(&hx->er.error_status_table);
@@ -396,6 +394,16 @@ void ff_h264_free_tables(H264Context *h, int free_rbsp)
         }
         if (i)
             av_freep(&h->thread_context[i]);
+    }
+
+    for (i = 0; i < h->nb_slice_ctx; i++) {
+        H264SliceContext *sl = &h->slice_ctx[i];
+
+        av_freep(&sl->bipred_scratchpad);
+        av_freep(&sl->edge_emu_buffer);
+
+        sl->bipred_scratchpad_allocated = 0;
+        sl->edge_emu_buffer_allocated   = 0;
     }
 }
 

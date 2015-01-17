@@ -237,12 +237,12 @@ static av_always_inline void mc_dir_part(const H264Context *h, H264SliceContext 
         full_my                <          0 - extra_height ||
         full_mx + 16 /*FIXME*/ > pic_width  + extra_width  ||
         full_my + 16 /*FIXME*/ > pic_height + extra_height) {
-        h->vdsp.emulated_edge_mc(h->edge_emu_buffer,
+        h->vdsp.emulated_edge_mc(sl->edge_emu_buffer,
                                  src_y - (2 << pixel_shift) - 2 * sl->mb_linesize,
                                  sl->mb_linesize, sl->mb_linesize,
                                  16 + 5, 16 + 5 /*FIXME*/, full_mx - 2,
                                  full_my - 2, pic_width, pic_height);
-        src_y = h->edge_emu_buffer + (2 << pixel_shift) + 2 * sl->mb_linesize;
+        src_y = sl->edge_emu_buffer + (2 << pixel_shift) + 2 * sl->mb_linesize;
         emu   = 1;
     }
 
@@ -256,13 +256,13 @@ static av_always_inline void mc_dir_part(const H264Context *h, H264SliceContext 
     if (chroma_idc == 3 /* yuv444 */) {
         src_cb = pic->f.data[1] + offset;
         if (emu) {
-            h->vdsp.emulated_edge_mc(h->edge_emu_buffer,
+            h->vdsp.emulated_edge_mc(sl->edge_emu_buffer,
                                      src_cb - (2 << pixel_shift) - 2 * sl->mb_linesize,
                                      sl->mb_linesize, sl->mb_linesize,
                                      16 + 5, 16 + 5 /*FIXME*/,
                                      full_mx - 2, full_my - 2,
                                      pic_width, pic_height);
-            src_cb = h->edge_emu_buffer + (2 << pixel_shift) + 2 * sl->mb_linesize;
+            src_cb = sl->edge_emu_buffer + (2 << pixel_shift) + 2 * sl->mb_linesize;
         }
         qpix_op[luma_xy](dest_cb, src_cb, sl->mb_linesize); // FIXME try variable height perhaps?
         if (!square)
@@ -270,13 +270,13 @@ static av_always_inline void mc_dir_part(const H264Context *h, H264SliceContext 
 
         src_cr = pic->f.data[2] + offset;
         if (emu) {
-            h->vdsp.emulated_edge_mc(h->edge_emu_buffer,
+            h->vdsp.emulated_edge_mc(sl->edge_emu_buffer,
                                      src_cr - (2 << pixel_shift) - 2 * sl->mb_linesize,
                                      sl->mb_linesize, sl->mb_linesize,
                                      16 + 5, 16 + 5 /*FIXME*/,
                                      full_mx - 2, full_my - 2,
                                      pic_width, pic_height);
-            src_cr = h->edge_emu_buffer + (2 << pixel_shift) + 2 * sl->mb_linesize;
+            src_cr = sl->edge_emu_buffer + (2 << pixel_shift) + 2 * sl->mb_linesize;
         }
         qpix_op[luma_xy](dest_cr, src_cr, sl->mb_linesize); // FIXME try variable height perhaps?
         if (!square)
@@ -297,22 +297,22 @@ static av_always_inline void mc_dir_part(const H264Context *h, H264SliceContext 
              (my >> ysh) * sl->mb_uvlinesize;
 
     if (emu) {
-        h->vdsp.emulated_edge_mc(h->edge_emu_buffer, src_cb,
+        h->vdsp.emulated_edge_mc(sl->edge_emu_buffer, src_cb,
                                  sl->mb_uvlinesize, sl->mb_uvlinesize,
                                  9, 8 * chroma_idc + 1, (mx >> 3), (my >> ysh),
                                  pic_width >> 1, pic_height >> (chroma_idc == 1 /* yuv420 */));
-        src_cb = h->edge_emu_buffer;
+        src_cb = sl->edge_emu_buffer;
     }
     chroma_op(dest_cb, src_cb, sl->mb_uvlinesize,
               height >> (chroma_idc == 1 /* yuv420 */),
               mx & 7, (my << (chroma_idc == 2 /* yuv422 */)) & 7);
 
     if (emu) {
-        h->vdsp.emulated_edge_mc(h->edge_emu_buffer, src_cr,
+        h->vdsp.emulated_edge_mc(sl->edge_emu_buffer, src_cr,
                                  sl->mb_uvlinesize, sl->mb_uvlinesize,
                                  9, 8 * chroma_idc + 1, (mx >> 3), (my >> ysh),
                                  pic_width >> 1, pic_height >> (chroma_idc == 1 /* yuv420 */));
-        src_cr = h->edge_emu_buffer;
+        src_cr = sl->edge_emu_buffer;
     }
     chroma_op(dest_cr, src_cr, sl->mb_uvlinesize, height >> (chroma_idc == 1 /* yuv420 */),
               mx & 7, (my << (chroma_idc == 2 /* yuv422 */)) & 7);
@@ -405,9 +405,9 @@ static av_always_inline void mc_part_weighted(const H264Context *h, H264SliceCon
     if (list0 && list1) {
         /* don't optimize for luma-only case, since B-frames usually
          * use implicit weights => chroma too. */
-        uint8_t *tmp_cb = h->bipred_scratchpad;
-        uint8_t *tmp_cr = h->bipred_scratchpad + (16 << pixel_shift);
-        uint8_t *tmp_y  = h->bipred_scratchpad + 16 * sl->mb_uvlinesize;
+        uint8_t *tmp_cb = sl->bipred_scratchpad;
+        uint8_t *tmp_cr = sl->bipred_scratchpad + (16 << pixel_shift);
+        uint8_t *tmp_y  = sl->bipred_scratchpad + 16 * sl->mb_uvlinesize;
         int refn0       = sl->ref_cache[0][scan8[n]];
         int refn1       = sl->ref_cache[1][scan8[n]];
 

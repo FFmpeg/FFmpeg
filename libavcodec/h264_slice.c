@@ -157,21 +157,20 @@ static void release_unused_pictures(H264Context *h, int remove_current)
     }
 }
 
-static int alloc_scratch_buffers(H264Context *h, int linesize)
+static int alloc_scratch_buffers(H264SliceContext *sl, int linesize)
 {
     int alloc_size = FFALIGN(FFABS(linesize) + 32, 32);
 
-    if (h->bipred_scratchpad)
-        return 0;
-
-    h->bipred_scratchpad = av_malloc(16 * 6 * alloc_size);
+    av_fast_malloc(&sl->bipred_scratchpad, &sl->bipred_scratchpad_allocated, 16 * 6 * alloc_size);
     // edge emu needs blocksize + filter length - 1
     // (= 21x21 for  h264)
-    h->edge_emu_buffer = av_mallocz(alloc_size * 2 * 21);
+    av_fast_malloc(&sl->edge_emu_buffer, &sl->edge_emu_buffer_allocated, alloc_size * 2 * 21);
 
-    if (!h->bipred_scratchpad || !h->edge_emu_buffer) {
-        av_freep(&h->bipred_scratchpad);
-        av_freep(&h->edge_emu_buffer);
+    if (!sl->bipred_scratchpad || !sl->edge_emu_buffer) {
+        av_freep(&sl->bipred_scratchpad);
+        av_freep(&sl->edge_emu_buffer);
+        sl->bipred_scratchpad_allocated = 0;
+        sl->edge_emu_buffer_allocated   = 0;
         return AVERROR(ENOMEM);
     }
 
@@ -381,8 +380,6 @@ static void clone_tables(H264Context *dst, H264SliceContext *sl,
     dst->DPB                    = src->DPB;
     dst->cur_pic_ptr            = src->cur_pic_ptr;
     dst->cur_pic                = src->cur_pic;
-    dst->bipred_scratchpad      = NULL;
-    dst->edge_emu_buffer        = NULL;
     ff_h264_pred_init(&dst->hpc, src->avctx->codec_id, src->sps.bit_depth_luma,
                       src->sps.chroma_format_idc);
 }
@@ -460,8 +457,6 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
          * the current value */
         h->avctx->bits_per_raw_sample = h->sps.bit_depth_luma;
 
-        av_freep(&h->bipred_scratchpad);
-
         h->width     = h1->width;
         h->height    = h1->height;
         h->mb_height = h1->mb_height;
@@ -530,8 +525,6 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
 
         h->rbsp_buffer      = NULL;
         h->rbsp_buffer_size = 0;
-        h->bipred_scratchpad = NULL;
-        h->edge_emu_buffer   = NULL;
 
         h->thread_context[0] = h;
 
@@ -566,12 +559,6 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
     h->workaround_bugs = h1->workaround_bugs;
     h->low_delay       = h1->low_delay;
     h->droppable       = h1->droppable;
-
-    /* frame_start may not be called for the next thread (if it's decoding
-     * a bottom field) so this has to be allocated here */
-    err = alloc_scratch_buffers(h, h1->linesize);
-    if (err < 0)
-        return err;
 
     // extradata/NAL handling
     h->is_avc = h1->is_avc;
@@ -687,15 +674,6 @@ static int h264_frame_start(H264Context *h)
         h->block_offset[48 + 16 + i] =
         h->block_offset[48 + 32 + i] = (4 * ((scan8[i] - scan8[0]) & 7) << pixel_shift) + 8 * h->uvlinesize * ((scan8[i] - scan8[0]) >> 3);
     }
-
-    /* can't be in alloc_tables because linesize isn't known there.
-     * FIXME: redo bipred weight to not require extra buffer? */
-    for (i = 0; i < h->slice_context_count; i++)
-        if (h->thread_context[i]) {
-            ret = alloc_scratch_buffers(h->thread_context[i], h->linesize);
-            if (ret < 0)
-                return ret;
-        }
 
     /* Some macroblocks can be accessed before they're available in case
      * of lost slices, MBAFF or threading. */
@@ -2181,6 +2159,11 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
     H264SliceContext *sl = arg;
     H264Context       *h = sl->h264;
     int lf_x_start = sl->mb_x;
+    int ret;
+
+    ret = alloc_scratch_buffers(sl, h->linesize);
+    if (ret < 0)
+        return ret;
 
     sl->mb_skip_run = -1;
 
