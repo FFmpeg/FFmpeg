@@ -535,9 +535,6 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
             return ret;
         }
 
-        h->rbsp_buffer      = NULL;
-        h->rbsp_buffer_size = 0;
-
         h->thread_context[0] = h;
 
         h->context_initialized = 1;

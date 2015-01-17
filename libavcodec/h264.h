@@ -439,6 +439,10 @@ typedef struct H264SliceContext {
     CABACContext cabac;
     uint8_t cabac_state[1024];
     int cabac_init_idc;
+
+    // rbsp buffer used for this slice
+    uint8_t *rbsp_buffer;
+    unsigned int rbsp_buffer_size;
 } H264SliceContext;
 
 /**
@@ -542,8 +546,6 @@ typedef struct H264Context {
 
     int nal_ref_idc;
     int nal_unit_type;
-    uint8_t *rbsp_buffer;
-    unsigned int rbsp_buffer_size;
 
     /**
      * Used to parse AVC variant of h264
@@ -757,7 +759,7 @@ int ff_h264_decode_picture_parameter_set(H264Context *h, int bit_length);
  *                   or a decode rbsp tailing?
  * @return decoded bytes, might be src+1 if no escapes
  */
-const uint8_t *ff_h264_decode_nal(H264Context *h, const uint8_t *src,
+const uint8_t *ff_h264_decode_nal(H264Context *h, H264SliceContext *sl, const uint8_t *src,
                                   int *dst_length, int *consumed, int length);
 
 /**
