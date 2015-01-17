@@ -29,6 +29,7 @@
 #include <limits.h>
 #include <signal.h>
 #include <stdint.h>
+#include <stdio.h>
 
 #include "libavutil/avstring.h"
 #include "libavutil/colorspace.h"
@@ -341,6 +342,8 @@ static AVPacket flush_pkt;
 #define FF_QUIT_EVENT    (SDL_USEREVENT + 2)
 
 static SDL_Surface *screen;
+
+SDL_Thread *ipc_thread = NULL;
 
 #if CONFIG_AVFILTER
 static int opt_add_vfilter(void *optctx, const char *opt, const char *arg)
@@ -3260,6 +3263,26 @@ static void seek_chapter(VideoState *is, int incr)
                                  AV_TIME_BASE_Q), 0, 0);
 }
 
+static int ipc_loop(void *arg)
+{
+  VideoState *cur_stream = arg;
+  char input[4096];
+  for (;;) {
+    // Read from stdin
+    if (fgets(input, sizeof(input), stdin) == NULL) continue;
+    switch(input[0]) {
+      case 'p':
+	// Need to lock mutex here
+	toggle_pause(cur_stream);
+	// Unlock
+	break;
+      default:
+	break;
+    }
+  }
+  return 0;
+}
+
 /* handle an event sent by the GUI */
 static void event_loop(VideoState *cur_stream)
 {
@@ -3733,6 +3756,7 @@ int main(int argc, char **argv)
         do_exit(NULL);
     }
 
+    ipc_thread = SDL_CreateThread(ipc_loop, is);
     event_loop(is);
 
     /* never returns */
