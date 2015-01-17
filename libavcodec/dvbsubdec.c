@@ -1373,6 +1373,9 @@ static void save_display_set(DVBSubContext *ctx)
     for (display = ctx->display_list; display; display = display->next) {
         region = get_region(ctx, display->region_id);
 
+        if (!region)
+            return;
+
         if (x_pos == -1) {
             x_pos = display->x_pos;
             y_pos = display->y_pos;
@@ -1405,6 +1408,9 @@ static void save_display_set(DVBSubContext *ctx)
 
         for (display = ctx->display_list; display; display = display->next) {
             region = get_region(ctx, display->region_id);
+
+            if (!region)
+                return;
 
             x_off = display->x_pos - x_pos;
             y_off = display->y_pos - y_pos;
