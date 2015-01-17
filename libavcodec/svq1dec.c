@@ -636,8 +636,9 @@ static int svq1_decode_frame(AVCodecContext *avctx, void *data,
             return AVERROR_INVALIDDATA;
         }
 
-        av_fast_padded_malloc(&s->pkt_swapped, &s->pkt_swapped_allocated,
-                       buf_size);
+        av_fast_padded_malloc(&s->pkt_swapped,
+                              &s->pkt_swapped_allocated,
+                              buf_size);
         if (!s->pkt_swapped)
             return AVERROR(ENOMEM);
 
