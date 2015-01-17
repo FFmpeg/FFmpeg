@@ -78,7 +78,7 @@ static int aea_read_header(AVFormatContext *s)
 
     if (st->codec->channels != 1 && st->codec->channels != 2) {
         av_log(s,AV_LOG_ERROR,"Channels %d not supported!\n",st->codec->channels);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     st->codec->channel_layout = (st->codec->channels == 1) ? AV_CH_LAYOUT_MONO : AV_CH_LAYOUT_STEREO;
