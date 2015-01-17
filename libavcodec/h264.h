@@ -299,6 +299,7 @@ typedef struct H264Picture {
 typedef struct H264SliceContext {
     struct H264Context *h264;
     GetBitContext gb;
+    ERContext er;
 
     int slice_num;
     int slice_type;
@@ -398,6 +399,7 @@ typedef struct H264SliceContext {
     int ref2frm[MAX_SLICES][2][64];     ///< reference to frame number lists, used in the loop filter, the first 2 are for -2,-1
 
     const uint8_t *intra_pcm_ptr;
+    int16_t *dc_val_base;
 
     uint8_t *bipred_scratchpad;
     uint8_t *edge_emu_buffer;
@@ -449,7 +451,6 @@ typedef struct H264Context {
     H264ChromaContext h264chroma;
     H264QpelContext h264qpel;
     GetBitContext gb;
-    ERContext er;
 
     H264Picture *DPB;
     H264Picture *cur_pic_ptr;
@@ -714,7 +715,6 @@ typedef struct H264Context {
     int initial_cpb_removal_delay[32];  ///< Initial timestamps for CPBs
 
     int cur_chroma_format_idc;
-    int16_t *dc_val_base;
 
     AVBufferPool *qscale_table_pool;
     AVBufferPool *mb_type_pool;
@@ -1060,7 +1060,7 @@ int ff_h264_field_end(H264Context *h, H264SliceContext *sl, int in_setup);
 int ff_h264_ref_picture(H264Context *h, H264Picture *dst, H264Picture *src);
 void ff_h264_unref_picture(H264Context *h, H264Picture *pic);
 
-int ff_h264_context_init(H264Context *h);
+int ff_h264_slice_context_init(H264Context *h, H264SliceContext *sl);
 int ff_h264_set_parameter_from_sps(H264Context *h);
 
 void ff_h264_draw_horiz_band(const H264Context *h, H264SliceContext *sl, int y, int height);

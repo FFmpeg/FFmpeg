@@ -185,12 +185,12 @@ int ff_h264_field_end(H264Context *h, H264SliceContext *sl, int in_setup)
      * causes problems for the first MB line, too.
      */
     if (!FIELD_PICTURE(h)) {
-        h264_set_erpic(&h->er.cur_pic, h->cur_pic_ptr);
-        h264_set_erpic(&h->er.last_pic,
+        h264_set_erpic(&sl->er.cur_pic, h->cur_pic_ptr);
+        h264_set_erpic(&sl->er.last_pic,
                        sl->ref_count[0] ? &sl->ref_list[0][0] : NULL);
-        h264_set_erpic(&h->er.next_pic,
+        h264_set_erpic(&sl->er.next_pic,
                        sl->ref_count[1] ? &sl->ref_list[1][0] : NULL);
-        ff_er_frame_end(&h->er);
+        ff_er_frame_end(&sl->er);
     }
 #endif /* CONFIG_ERROR_RESILIENCE */
 
