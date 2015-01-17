@@ -1570,7 +1570,7 @@ again:
                         return ret;
                 }
 
-                if (hx->redundant_pic_count == 0 &&
+                if (sl->redundant_pic_count == 0 &&
                     (avctx->skip_frame < AVDISCARD_NONREF ||
                      hx->nal_ref_idc) &&
                     (avctx->skip_frame < AVDISCARD_BIDIR  ||
