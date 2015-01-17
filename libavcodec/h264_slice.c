@@ -498,9 +498,6 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
         memset(h->sps_buffers, 0, sizeof(h->sps_buffers));
         memset(h->pps_buffers, 0, sizeof(h->pps_buffers));
         memset(&h->er, 0, sizeof(h->er));
-        memset(&h->mb, 0, sizeof(h->mb));
-        memset(&h->mb_luma_dc, 0, sizeof(h->mb_luma_dc));
-        memset(&h->mb_padding, 0, sizeof(h->mb_padding));
         h->context_initialized = 0;
 
         memset(&h->cur_pic, 0, sizeof(h->cur_pic));
@@ -508,6 +505,10 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
         h->cur_pic.tf.f = &h->cur_pic.f;
 
         h->slice_ctx = orig_slice_ctx;
+
+        memset(&h->slice_ctx[0].mb,         0, sizeof(h->slice_ctx[0].mb));
+        memset(&h->slice_ctx[0].mb_luma_dc, 0, sizeof(h->slice_ctx[0].mb_luma_dc));
+        memset(&h->slice_ctx[0].mb_padding, 0, sizeof(h->slice_ctx[0].mb_padding));
 
         h->avctx             = dst;
         h->DPB               = NULL;

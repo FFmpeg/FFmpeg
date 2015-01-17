@@ -632,11 +632,11 @@ static av_always_inline int decode_luma_residual(H264Context *h, H264SliceContex
     int i4x4, i8x8;
     int qscale = p == 0 ? sl->qscale : sl->chroma_qp[p - 1];
     if(IS_INTRA16x16(mb_type)){
-        AV_ZERO128(h->mb_luma_dc[p]+0);
-        AV_ZERO128(h->mb_luma_dc[p]+8);
-        AV_ZERO128(h->mb_luma_dc[p]+16);
-        AV_ZERO128(h->mb_luma_dc[p]+24);
-        if( decode_residual(h, sl, h->intra_gb_ptr, h->mb_luma_dc[p], LUMA_DC_BLOCK_INDEX+p, scan, NULL, 16) < 0){
+        AV_ZERO128(sl->mb_luma_dc[p]+0);
+        AV_ZERO128(sl->mb_luma_dc[p]+8);
+        AV_ZERO128(sl->mb_luma_dc[p]+16);
+        AV_ZERO128(sl->mb_luma_dc[p]+24);
+        if( decode_residual(h, sl, h->intra_gb_ptr, sl->mb_luma_dc[p], LUMA_DC_BLOCK_INDEX+p, scan, NULL, 16) < 0){
             return -1; //FIXME continue if partitioned and other return -1 too
         }
 
@@ -646,7 +646,7 @@ static av_always_inline int decode_luma_residual(H264Context *h, H264SliceContex
             for(i8x8=0; i8x8<4; i8x8++){
                 for(i4x4=0; i4x4<4; i4x4++){
                     const int index= i4x4 + 4*i8x8 + p*16;
-                    if( decode_residual(h, sl, h->intra_gb_ptr, h->mb + (16*index << pixel_shift),
+                    if( decode_residual(h, sl, h->intra_gb_ptr, sl->mb + (16*index << pixel_shift),
                         index, scan + 1, h->dequant4_coeff[p][qscale], 15) < 0 ){
                         return -1;
                     }
@@ -664,7 +664,7 @@ static av_always_inline int decode_luma_residual(H264Context *h, H264SliceContex
         for(i8x8=0; i8x8<4; i8x8++){
             if(cbp & (1<<i8x8)){
                 if(IS_8x8DCT(mb_type)){
-                    int16_t *buf = &h->mb[64*i8x8+256*p << pixel_shift];
+                    int16_t *buf = &sl->mb[64*i8x8+256*p << pixel_shift];
                     uint8_t *nnz;
                     for(i4x4=0; i4x4<4; i4x4++){
                         const int index= i4x4 + 4*i8x8 + p*16;
@@ -678,7 +678,7 @@ static av_always_inline int decode_luma_residual(H264Context *h, H264SliceContex
                 }else{
                     for(i4x4=0; i4x4<4; i4x4++){
                         const int index= i4x4 + 4*i8x8 + p*16;
-                        if( decode_residual(h, sl, gb, h->mb + (16*index << pixel_shift), index,
+                        if( decode_residual(h, sl, gb, sl->mb + (16*index << pixel_shift), index,
                                             scan, h->dequant4_coeff[cqm][qscale], 16) < 0 ){
                             return -1;
                         }
@@ -1125,7 +1125,7 @@ decode_intra_mb:
         } else if (CHROMA422(h)) {
             if(cbp&0x30){
                 for(chroma_idx=0; chroma_idx<2; chroma_idx++)
-                    if (decode_residual(h, sl, gb, h->mb + ((256 + 16*16*chroma_idx) << pixel_shift),
+                    if (decode_residual(h, sl, gb, sl->mb + ((256 + 16*16*chroma_idx) << pixel_shift),
                                         CHROMA_DC_BLOCK_INDEX+chroma_idx, chroma422_dc_scan,
                                         NULL, 8) < 0) {
                         return -1;
@@ -1135,7 +1135,7 @@ decode_intra_mb:
             if(cbp&0x20){
                 for(chroma_idx=0; chroma_idx<2; chroma_idx++){
                     const uint32_t *qmul = h->dequant4_coeff[chroma_idx+1+(IS_INTRA( mb_type ) ? 0:3)][sl->chroma_qp[chroma_idx]];
-                    int16_t *mb = h->mb + (16*(16 + 16*chroma_idx) << pixel_shift);
+                    int16_t *mb = sl->mb + (16*(16 + 16*chroma_idx) << pixel_shift);
                     for (i8x8 = 0; i8x8 < 2; i8x8++) {
                         for (i4x4 = 0; i4x4 < 4; i4x4++) {
                             const int index = 16 + 16*chroma_idx + 8*i8x8 + i4x4;
@@ -1152,7 +1152,7 @@ decode_intra_mb:
         } else /* yuv420 */ {
             if(cbp&0x30){
                 for(chroma_idx=0; chroma_idx<2; chroma_idx++)
-                    if( decode_residual(h, sl, gb, h->mb + ((256 + 16*16*chroma_idx) << pixel_shift), CHROMA_DC_BLOCK_INDEX+chroma_idx, chroma_dc_scan, NULL, 4) < 0){
+                    if( decode_residual(h, sl, gb, sl->mb + ((256 + 16*16*chroma_idx) << pixel_shift), CHROMA_DC_BLOCK_INDEX+chroma_idx, chroma_dc_scan, NULL, 4) < 0){
                         return -1;
                     }
             }
@@ -1162,7 +1162,7 @@ decode_intra_mb:
                     const uint32_t *qmul = h->dequant4_coeff[chroma_idx+1+(IS_INTRA( mb_type ) ? 0:3)][sl->chroma_qp[chroma_idx]];
                     for(i4x4=0; i4x4<4; i4x4++){
                         const int index= 16 + 16*chroma_idx + i4x4;
-                        if( decode_residual(h, sl, gb, h->mb + (16*index << pixel_shift), index, scan + 1, qmul, 15) < 0){
+                        if( decode_residual(h, sl, gb, sl->mb + (16*index << pixel_shift), index, scan + 1, qmul, 15) < 0){
                             return -1;
                         }
                     }
