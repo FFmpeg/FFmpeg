@@ -301,6 +301,7 @@ typedef struct H264SliceContext {
 
     int qscale;
     int chroma_qp[2];   // QPc
+    int qp_thresh;      ///< QP threshold to skip loopfilter
 
     // Weighted pred stuff
     int use_weight;
@@ -335,8 +336,6 @@ typedef struct H264Context {
     int            nb_slice_ctx;
 
     int pixel_shift;    ///< 0 for 8-bit H264, 1 for high-bit-depth H264
-
-    int qp_thresh;      ///< QP threshold to skip loopfilter
 
     /* coded dimensions -- 16 * mb w/h */
     int width, height;
