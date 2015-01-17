@@ -423,22 +423,22 @@ static void fill_decode_neighbors(H264Context *h, H264SliceContext *sl, int mb_t
     sl->left_type[LBOT] = h->cur_pic.mb_type[left_xy[LBOT]];
 
     if (FMO) {
-        if (h->slice_table[topleft_xy] != h->slice_num)
+        if (h->slice_table[topleft_xy] != sl->slice_num)
             sl->topleft_type = 0;
-        if (h->slice_table[top_xy] != h->slice_num)
+        if (h->slice_table[top_xy] != sl->slice_num)
             sl->top_type = 0;
-        if (h->slice_table[left_xy[LTOP]] != h->slice_num)
+        if (h->slice_table[left_xy[LTOP]] != sl->slice_num)
             sl->left_type[LTOP] = sl->left_type[LBOT] = 0;
     } else {
-        if (h->slice_table[topleft_xy] != h->slice_num) {
+        if (h->slice_table[topleft_xy] != sl->slice_num) {
             sl->topleft_type = 0;
-            if (h->slice_table[top_xy] != h->slice_num)
+            if (h->slice_table[top_xy] != sl->slice_num)
                 sl->top_type = 0;
-            if (h->slice_table[left_xy[LTOP]] != h->slice_num)
+            if (h->slice_table[left_xy[LTOP]] != sl->slice_num)
                 sl->left_type[LTOP] = sl->left_type[LBOT] = 0;
         }
     }
-    if (h->slice_table[topright_xy] != h->slice_num)
+    if (h->slice_table[topright_xy] != sl->slice_num)
         sl->topright_type = 0;
 }
 
@@ -720,7 +720,7 @@ static void fill_decode_caches(H264Context *h, H264SliceContext *sl, int mb_type
                     }
                     AV_ZERO16(mvd_cache[2 + 8 * 0]);
                     AV_ZERO16(mvd_cache[2 + 8 * 2]);
-                    if (h->slice_type_nos == AV_PICTURE_TYPE_B) {
+                    if (sl->slice_type_nos == AV_PICTURE_TYPE_B) {
                         uint8_t *direct_cache = &h->direct_cache[scan8[0]];
                         uint8_t *direct_table = h->direct_table;
                         fill_rectangle(direct_cache, 4, 4, 8, MB_TYPE_16x16 >> 1, 1);
@@ -810,7 +810,7 @@ static void av_unused decode_mb_skip(H264Context *h, H264SliceContext *sl)
     if (MB_FIELD(h))
         mb_type |= MB_TYPE_INTERLACED;
 
-    if (h->slice_type_nos == AV_PICTURE_TYPE_B) {
+    if (sl->slice_type_nos == AV_PICTURE_TYPE_B) {
         // just for fill_caches. pred_direct_motion will set the real mb_type
         mb_type |= MB_TYPE_L0L1 | MB_TYPE_DIRECT2 | MB_TYPE_SKIP;
         if (h->direct_spatial_mv_pred) {
@@ -829,7 +829,7 @@ static void av_unused decode_mb_skip(H264Context *h, H264SliceContext *sl)
     write_back_motion(h, sl, mb_type);
     h->cur_pic.mb_type[mb_xy]      = mb_type;
     h->cur_pic.qscale_table[mb_xy] = sl->qscale;
-    h->slice_table[mb_xy]            = h->slice_num;
+    h->slice_table[mb_xy]          = sl->slice_num;
     sl->prev_mb_skipped            = 1;
 }
 

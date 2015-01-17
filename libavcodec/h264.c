@@ -1058,7 +1058,7 @@ int ff_pred_weight_table(H264Context *h, H264SliceContext *sl)
                 }
             }
         }
-        if (h->slice_type_nos != AV_PICTURE_TYPE_B)
+        if (sl->slice_type_nos != AV_PICTURE_TYPE_B)
             break;
     }
     sl->use_weight = sl->use_weight || sl->use_weight_chroma;
@@ -1259,7 +1259,7 @@ int ff_h264_set_parameter_from_sps(H264Context *h)
     return 0;
 }
 
-int ff_set_ref_count(H264Context *h)
+int ff_set_ref_count(H264Context *h, H264SliceContext *sl)
 {
     int ref_count[2], list_count;
     int num_ref_idx_active_override_flag, max_refs;
@@ -1268,8 +1268,8 @@ int ff_set_ref_count(H264Context *h)
     ref_count[0] = h->pps.ref_count[0];
     ref_count[1] = h->pps.ref_count[1];
 
-    if (h->slice_type_nos != AV_PICTURE_TYPE_I) {
-        if (h->slice_type_nos == AV_PICTURE_TYPE_B)
+    if (sl->slice_type_nos != AV_PICTURE_TYPE_I) {
+        if (sl->slice_type_nos == AV_PICTURE_TYPE_B)
             h->direct_spatial_mv_pred = get_bits1(&h->gb);
         num_ref_idx_active_override_flag = get_bits1(&h->gb);
 
@@ -1277,14 +1277,14 @@ int ff_set_ref_count(H264Context *h)
             ref_count[0] = get_ue_golomb(&h->gb) + 1;
             if (ref_count[0] < 1)
                 return AVERROR_INVALIDDATA;
-            if (h->slice_type_nos == AV_PICTURE_TYPE_B) {
+            if (sl->slice_type_nos == AV_PICTURE_TYPE_B) {
                 ref_count[1] = get_ue_golomb(&h->gb) + 1;
                 if (ref_count[1] < 1)
                     return AVERROR_INVALIDDATA;
             }
         }
 
-        if (h->slice_type_nos == AV_PICTURE_TYPE_B)
+        if (sl->slice_type_nos == AV_PICTURE_TYPE_B)
             list_count = 2;
         else
             list_count = 1;
@@ -1570,9 +1570,9 @@ again:
                     (avctx->skip_frame < AVDISCARD_NONREF ||
                      hx->nal_ref_idc) &&
                     (avctx->skip_frame < AVDISCARD_BIDIR  ||
-                     hx->slice_type_nos != AV_PICTURE_TYPE_B) &&
+                     sl->slice_type_nos != AV_PICTURE_TYPE_B) &&
                     (avctx->skip_frame < AVDISCARD_NONKEY ||
-                     hx->slice_type_nos == AV_PICTURE_TYPE_I) &&
+                     sl->slice_type_nos == AV_PICTURE_TYPE_I) &&
                     avctx->skip_frame < AVDISCARD_ALL) {
                     if (avctx->hwaccel) {
                         ret = avctx->hwaccel->decode_slice(avctx,
