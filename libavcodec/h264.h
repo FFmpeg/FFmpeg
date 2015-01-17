@@ -358,6 +358,8 @@ typedef struct H264SliceContext {
 
     int mb_x, mb_y;
     int mb_xy;
+    int resync_mb_x;
+    int resync_mb_y;
     int mb_skip_run;
     int is_complex;
 
@@ -528,8 +530,6 @@ typedef struct H264Context {
     int x264_build;
 
     int mb_y;
-    int resync_mb_x;
-    int resync_mb_y;
     int mb_height, mb_width;
     int mb_stride;
     int mb_num;
