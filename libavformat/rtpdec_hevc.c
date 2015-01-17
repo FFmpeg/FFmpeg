@@ -20,6 +20,7 @@
  *
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/base64.h"
 
@@ -104,7 +105,8 @@ static av_cold int hevc_sdp_parse_fmtp_config(AVFormatContext *s,
         } else if (!strcmp(attr, "sprop-sei")) {
             data_ptr = &hevc_data->sei;
             size_ptr = &hevc_data->sei_size;
-        }
+        } else
+            av_assert0(0);
 
         while (*value) {
             char base64packet[1024];
