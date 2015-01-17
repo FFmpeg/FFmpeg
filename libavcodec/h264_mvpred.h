@@ -794,7 +794,7 @@ static void fill_decode_caches(H264Context *h, int mb_type)
 /**
  * decodes a P_SKIP or B_SKIP macroblock
  */
-static void av_unused decode_mb_skip(H264Context *h)
+static void av_unused decode_mb_skip(H264Context *h, H264SliceContext *sl)
 {
     const int mb_xy = h->mb_xy;
     int mb_type     = 0;
@@ -822,7 +822,7 @@ static void av_unused decode_mb_skip(H264Context *h)
 
     write_back_motion(h, mb_type);
     h->cur_pic.mb_type[mb_xy]      = mb_type;
-    h->cur_pic.qscale_table[mb_xy] = h->qscale;
+    h->cur_pic.qscale_table[mb_xy] = sl->qscale;
     h->slice_table[mb_xy]            = h->slice_num;
     h->prev_mb_skipped               = 1;
 }
