@@ -173,7 +173,7 @@ static void await_references(const H264Context *h, H264SliceContext *sl)
                 int ref_field_picture = ref_pic->field_picture;
                 int pic_height        = 16 * h->mb_height >> ref_field_picture;
 
-                row <<= MB_MBAFF(h);
+                row <<= MB_MBAFF(sl);
                 nrefs[list]--;
 
                 if (!FIELD_PICTURE(h) && ref_field_picture) { // frame referencing two fields
@@ -516,10 +516,10 @@ static av_always_inline void xchg_mb_border(const H264Context *h, H264SliceConte
 
     if (!simple && FRAME_MBAFF(h)) {
         if (sl->mb_y & 1) {
-            if (!MB_MBAFF(h))
+            if (!MB_MBAFF(sl))
                 return;
         } else {
-            top_idx = MB_MBAFF(h) ? 0 : 1;
+            top_idx = MB_MBAFF(sl) ? 0 : 1;
         }
     }
 

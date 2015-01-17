@@ -715,7 +715,7 @@ int ff_h264_decode_mb_cavlc(H264Context *h, H264SliceContext *sl)
         if (sl->mb_skip_run--) {
             if (FRAME_MBAFF(h) && (sl->mb_y & 1) == 0) {
                 if (sl->mb_skip_run == 0)
-                    h->mb_mbaff = sl->mb_field_decoding_flag = get_bits1(&sl->gb);
+                    sl->mb_mbaff = sl->mb_field_decoding_flag = get_bits1(&sl->gb);
             }
             decode_mb_skip(h, sl);
             return 0;
@@ -723,7 +723,7 @@ int ff_h264_decode_mb_cavlc(H264Context *h, H264SliceContext *sl)
     }
     if (FRAME_MBAFF(h)) {
         if ((sl->mb_y & 1) == 0)
-            h->mb_mbaff = sl->mb_field_decoding_flag = get_bits1(&sl->gb);
+            sl->mb_mbaff = sl->mb_field_decoding_flag = get_bits1(&sl->gb);
     }
 
     sl->prev_mb_skipped = 0;
@@ -865,7 +865,7 @@ decode_intra_mb:
         }
 
         for (list = 0; list < sl->list_count; list++) {
-            int ref_count = IS_REF0(mb_type) ? 1 : sl->ref_count[list] << MB_MBAFF(h);
+            int ref_count = IS_REF0(mb_type) ? 1 : sl->ref_count[list] << MB_MBAFF(sl);
             for(i=0; i<4; i++){
                 if(IS_DIRECT(sl->sub_mb_type[i])) continue;
                 if(IS_DIR(sl->sub_mb_type[i], 0, list)){
@@ -945,7 +945,7 @@ decode_intra_mb:
             for (list = 0; list < sl->list_count; list++) {
                     unsigned int val;
                     if(IS_DIR(mb_type, 0, list)){
-                        int rc = sl->ref_count[list] << MB_MBAFF(h);
+                        int rc = sl->ref_count[list] << MB_MBAFF(sl);
                         if (rc == 1) {
                             val= 0;
                         } else if (rc == 2) {
@@ -976,7 +976,7 @@ decode_intra_mb:
                     for(i=0; i<2; i++){
                         unsigned int val;
                         if(IS_DIR(mb_type, i, list)){
-                            int rc = sl->ref_count[list] << MB_MBAFF(h);
+                            int rc = sl->ref_count[list] << MB_MBAFF(sl);
                             if (rc == 1) {
                                 val= 0;
                             } else if (rc == 2) {
@@ -1014,7 +1014,7 @@ decode_intra_mb:
                     for(i=0; i<2; i++){
                         unsigned int val;
                         if(IS_DIR(mb_type, i, list)){ //FIXME optimize
-                            int rc = sl->ref_count[list] << MB_MBAFF(h);
+                            int rc = sl->ref_count[list] << MB_MBAFF(sl);
                             if (rc == 1) {
                                 val= 0;
                             } else if (rc == 2) {

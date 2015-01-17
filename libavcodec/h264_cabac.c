@@ -1930,7 +1930,7 @@ int ff_h264_decode_mb_cabac(H264Context *h, H264SliceContext *sl)
                 h->cur_pic.mb_type[mb_xy] = MB_TYPE_SKIP;
                 sl->next_mb_skipped = decode_cabac_mb_skip(h, sl, sl->mb_x, sl->mb_y+1 );
                 if(!sl->next_mb_skipped)
-                    h->mb_mbaff = sl->mb_field_decoding_flag = decode_cabac_field_decoding_flag(h, sl);
+                    sl->mb_mbaff = sl->mb_field_decoding_flag = decode_cabac_field_decoding_flag(h, sl);
             }
 
             decode_mb_skip(h, sl);
@@ -1945,7 +1945,7 @@ int ff_h264_decode_mb_cabac(H264Context *h, H264SliceContext *sl)
     }
     if (FRAME_MBAFF(h)) {
         if ((sl->mb_y & 1) == 0)
-            h->mb_mbaff =
+            sl->mb_mbaff =
             sl->mb_field_decoding_flag = decode_cabac_field_decoding_flag(h, sl);
     }
 
@@ -2122,7 +2122,7 @@ decode_intra_mb:
                 for( i = 0; i < 4; i++ ) {
                     if(IS_DIRECT(sl->sub_mb_type[i])) continue;
                     if(IS_DIR(sl->sub_mb_type[i], 0, list)){
-                        int rc = sl->ref_count[list] << MB_MBAFF(h);
+                        int rc = sl->ref_count[list] << MB_MBAFF(sl);
                         if (rc > 1) {
                             ref[list][i] = decode_cabac_mb_ref(h, sl, list, 4 * i);
                             if (ref[list][i] >= (unsigned) rc) {
@@ -2208,7 +2208,7 @@ decode_intra_mb:
         if(IS_16X16(mb_type)){
             for (list = 0; list < sl->list_count; list++) {
                 if(IS_DIR(mb_type, 0, list)){
-                    int ref, rc = sl->ref_count[list] << MB_MBAFF(h);
+                    int ref, rc = sl->ref_count[list] << MB_MBAFF(sl);
                     if (rc > 1) {
                         ref= decode_cabac_mb_ref(h, sl, list, 0);
                         if (ref >= (unsigned) rc) {
@@ -2236,7 +2236,7 @@ decode_intra_mb:
             for (list = 0; list < sl->list_count; list++) {
                     for(i=0; i<2; i++){
                         if(IS_DIR(mb_type, i, list)){
-                            int ref, rc = sl->ref_count[list] << MB_MBAFF(h);
+                            int ref, rc = sl->ref_count[list] << MB_MBAFF(sl);
                             if (rc > 1) {
                                 ref= decode_cabac_mb_ref(h, sl, list, 8 * i);
                                 if (ref >= (unsigned) rc) {
@@ -2271,7 +2271,7 @@ decode_intra_mb:
             for (list = 0; list < sl->list_count; list++) {
                     for(i=0; i<2; i++){
                         if(IS_DIR(mb_type, i, list)){ //FIXME optimize
-                            int ref, rc = sl->ref_count[list] << MB_MBAFF(h);
+                            int ref, rc = sl->ref_count[list] << MB_MBAFF(sl);
                             if (rc > 1) {
                                 ref= decode_cabac_mb_ref(h, sl, list, 4 * i);
                                 if (ref >= (unsigned) rc) {
