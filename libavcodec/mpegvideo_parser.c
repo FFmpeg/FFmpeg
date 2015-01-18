@@ -90,8 +90,8 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
                         pc->progressive_sequence = buf[1] & (1 << 3);
                         avctx->has_b_frames= !(buf[5] >> 7);
 
-                        pc->width  |=(horiz_size_ext << 12);
-                        pc->height |=( vert_size_ext << 12);
+                        pc->width  = (pc->width & 0xFFF) | (horiz_size_ext << 12);
+                        pc->height = (pc->height& 0xFFF) | ( vert_size_ext << 12);
                         bit_rate = (bit_rate&0x3FFFF) | (bit_rate_ext << 18);
                         if(did_set_size)
                             ff_set_dimensions(avctx, pc->width, pc->height);
