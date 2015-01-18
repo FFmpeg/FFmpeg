@@ -230,14 +230,14 @@ static void pack_yuv(TiffEncoderContext *s, const AVFrame *p,
         ret = add_entry(s, tag, type, count, ptr_val);  \
         if (ret < 0)                                    \
             goto fail;                                  \
-    } while(0);
+    } while (0)
 
 #define ADD_ENTRY1(s, tag, type, val)           \
     do {                                        \
         ret = add_entry1(s, tag, type, val);    \
         if (ret < 0)                            \
             goto fail;                          \
-    } while(0);
+    } while (0)
 
 static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                         const AVFrame *pict, int *got_packet)

@@ -146,7 +146,7 @@ static av_cold int mp3lame_encode_init(AVCodecContext *avctx)
     if (avctx->sample_fmt == AV_SAMPLE_FMT_FLTP) {
         int ch;
         for (ch = 0; ch < avctx->channels; ch++) {
-            s->samples_flt[ch] = av_malloc(avctx->frame_size *
+            s->samples_flt[ch] = av_malloc_array(avctx->frame_size,
                                            sizeof(*s->samples_flt[ch]));
             if (!s->samples_flt[ch]) {
                 ret = AVERROR(ENOMEM);

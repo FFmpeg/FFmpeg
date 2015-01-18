@@ -2238,7 +2238,7 @@ static void vp8_decode_mv_mb_modes(AVCodecContext *avctx, VP8Frame *cur_frame,
             td->wait_mb_pos = INT_MAX;                                        \
             pthread_mutex_unlock(&otd->lock);                                 \
         }                                                                     \
-    } while (0);
+    } while (0)
 
 #define update_pos(td, mb_y, mb_x)                                            \
     do {                                                                      \
@@ -2257,7 +2257,7 @@ static void vp8_decode_mv_mb_modes(AVCodecContext *avctx, VP8Frame *cur_frame,
             pthread_cond_broadcast(&td->cond);                                \
             pthread_mutex_unlock(&td->lock);                                  \
         }                                                                     \
-    } while (0);
+    } while (0)
 #else
 #define check_thread_pos(td, otd, mb_x_check, mb_y_check)
 #define update_pos(td, mb_y, mb_x)

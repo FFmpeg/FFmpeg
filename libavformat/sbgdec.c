@@ -317,7 +317,7 @@ static int lex_time(struct sbg_parser *p, int64_t *rt)
         int errcode = c; \
         if (errcode <= 0) \
             return errcode ? errcode : AVERROR_INVALIDDATA; \
-    } while(0);
+    } while (0)
 
 static int parse_immediate(struct sbg_parser *p)
 {

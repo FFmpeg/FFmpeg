@@ -67,7 +67,9 @@ typedef CUresult(CUDAAPI *PCUCTXDESTROY)(CUcontext ctx);
 
 typedef NVENCSTATUS (NVENCAPI* PNVENCODEAPICREATEINSTANCE)(NV_ENCODE_API_FUNCTION_LIST *functionList);
 
+#if NVENCAPI_MAJOR_VERSION < 5
 static const GUID dummy_license = { 0x0, 0x0, 0x0, { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 } };
+#endif
 
 typedef struct NvencInputSurface
 {
@@ -466,12 +468,15 @@ static av_cold int nvenc_encode_init(AVCodecContext *avctx)
     CUcontext cu_context_curr;
     CUresult cu_res;
     GUID encoder_preset = NV_ENC_PRESET_HQ_GUID;
-    GUID license = dummy_license;
     NVENCSTATUS nv_status = NV_ENC_SUCCESS;
     int surfaceCount = 0;
     int i, num_mbs;
     int isLL = 0;
     int res = 0;
+
+#if NVENCAPI_MAJOR_VERSION < 5
+    GUID license = dummy_license;
+#endif
 
     NvencContext *ctx = avctx->priv_data;
     NvencDynLoadFunctions *dl_fn = &ctx->nvenc_dload_funcs;
@@ -494,7 +499,10 @@ static av_cold int nvenc_encode_init(AVCodecContext *avctx)
     preset_config.presetCfg.version = NV_ENC_CONFIG_VER;
     encode_session_params.version = NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS_VER;
     encode_session_params.apiVersion = NVENCAPI_VERSION;
+
+#if NVENCAPI_MAJOR_VERSION < 5
     encode_session_params.clientKeyPtr = &license;
+#endif
 
     if (ctx->gpu >= dl_fn->nvenc_device_count) {
         av_log(avctx, AV_LOG_FATAL, "Requested GPU %d, but only %d GPUs are available!\n", ctx->gpu, dl_fn->nvenc_device_count);
@@ -1065,7 +1073,10 @@ static int nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         pic_params.inputDuration = 0;
         pic_params.codecPicParams.h264PicParams.sliceMode = ctx->encode_config.encodeCodecConfig.h264Config.sliceMode;
         pic_params.codecPicParams.h264PicParams.sliceModeData = ctx->encode_config.encodeCodecConfig.h264Config.sliceModeData;
+
+#if NVENCAPI_MAJOR_VERSION < 5
         memcpy(&pic_params.rcParams, &ctx->encode_config.rcParams, sizeof(NV_ENC_RC_PARAMS));
+#endif
 
         res = timestamp_queue_enqueue(&ctx->timestamp_list, frame->pts);
 
