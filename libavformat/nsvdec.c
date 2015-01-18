@@ -539,6 +539,7 @@ static int nsv_read_chunk(AVFormatContext *s, int fill_header)
     uint32_t vsize;
     uint16_t asize;
     uint16_t auxsize;
+    int ret;
 
     av_dlog(s, "%s(%d)\n", __FUNCTION__, fill_header);
 
@@ -595,7 +596,6 @@ null_chunk_retry:
         st[s->streams[1]->id] = s->streams[1];
 
     if (vsize && st[NSV_ST_VIDEO]) {
-        int ret;
         nst = st[NSV_ST_VIDEO]->priv_data;
         pkt = &nsv->ahead[NSV_ST_VIDEO];
         if ((ret = av_get_packet(pb, pkt, vsize)) < 0)
@@ -641,7 +641,8 @@ null_chunk_retry:
                 av_dlog(s, "NSV RAWAUDIO: bps %d, nchan %d, srate %d\n", bps, channels, samplerate);
             }
         }
-        av_get_packet(pb, pkt, asize);
+        if ((ret = av_get_packet(pb, pkt, asize)) < 0)
+            return ret;
         pkt->stream_index = st[NSV_ST_AUDIO]->index;//NSV_ST_AUDIO;
         pkt->flags |= nsv->state == NSV_HAS_READ_NSVS ? AV_PKT_FLAG_KEY : 0; /* keyframe only likely on a sync frame */
         if( nsv->state == NSV_HAS_READ_NSVS && st[NSV_ST_VIDEO] ) {
