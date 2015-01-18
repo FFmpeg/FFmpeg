@@ -372,6 +372,20 @@ AVRational ff_choose_timebase(AVFormatContext *s, AVStream *st, int min_precisio
 int ff_generate_avci_extradata(AVStream *st);
 
 /**
+ * Wrap errno on rename() error.
+ *
+ * @param oldpath source path
+ * @param newpath destination path
+ * @return        0 or AVERROR on failure
+ */
+static inline int ff_rename(const char *oldpath, const char *newpath)
+{
+    if (rename(oldpath, newpath) == -1)
+        return AVERROR(errno);
+    return 0;
+}
+
+/**
  * Allocate extradata with additional FF_INPUT_BUFFER_PADDING_SIZE at end
  * which is always set to 0.
  *
