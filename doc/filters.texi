@@ -4335,6 +4335,49 @@ edgedetect=mode=colormix:high=0
 @end example
 @end itemize
 
+@section eq
+Set brightness, contrast, saturation and approximate gamma adjustment.
+
+The filter accepts the following options:
+
+@table @option
+@item contrast
+Set the contrast value. It accepts a float value in range @code{-2.0} to
+@code{2.0}. The default value is @code{0.0}.
+
+@item brightness
+Set the brightness value. It accepts a float value in range @code{-1.0} to
+@code{1.0}. The default value is @code{0.0}.
+
+@item saturation
+Set the saturation value. It accepts a float value in range @code{0.0} to
+@code{3.0}. The default value is @code{1.0}.
+
+@item gamma
+Set the gamma value. It accepts a float value in range @code{0.1} to @code{10.0}.
+The default value is @code{1.0}.
+
+@item gamma_r
+Set the gamma value for red. It accepts a float value in range
+@code{0.1} to @code{10.0}. The default value is @code{1.0}.
+
+@item gamma_g
+Set the gamma value for green. It accepts a float value in range
+@code{0.1} to @code{10.0}. The default value is @code{1.0}.
+
+@item gamma_b
+Set the gamma value for blue. It accepts a float value in range
+@code{0.1} to @code{10.0}. The default value is @code{1.0}.
+
+@item gamma_weight
+Can be used to reduce the effect of a high gamma value on bright image areas,
+e.g. keep them from getting overamplified and just plain white. It accepts a
+float value in range @code{0.0} to @code{1.0}.A value of @code{0.0} turns the
+gamma correction all the way down while @code{1.0} leaves it at its full strength.
+Default is @code{1.0}.
+
+@end table
+
 @section extractplanes
 
 Extract color channel components from input video stream into
