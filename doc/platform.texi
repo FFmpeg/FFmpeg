@@ -130,8 +130,6 @@ You will need the following prerequisites:
 @item @uref{http://msys2.github.io/, MSYS2}
 @item @uref{http://yasm.tortall.net/, YASM}
 (Also available via MSYS2's package manager.)
-@item @uref{http://gnuwin32.sourceforge.net/packages/bc.htm, bc for Windows} if
-you want to run @uref{fate.html, FATE}.
 @end itemize
 
 To set up a proper environment in MSYS2, you need to run @code{msys_shell.bat} from
@@ -278,7 +276,7 @@ binutils, gcc4-core, make, git, mingw-runtime, texi2html
 
 In order to run FATE you will also need the following "Utils" packages:
 @example
-bc, diffutils
+diffutils
 @end example
 
 If you want to build Libav with additional libraries, download Cygwin
