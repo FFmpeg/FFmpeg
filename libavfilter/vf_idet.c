@@ -249,6 +249,18 @@ static int filter_frame(AVFilterLink *link, AVFrame *picref)
         return ff_filter_frame(ctx->outputs[0], picref);
     }
 
+    if(   picref->width  != link->w
+       || picref->height != link->h
+       || picref->format != link->format) {
+        link->dst->inputs[0]->format = picref->format;
+        link->dst->inputs[0]->w      = picref->width;
+        link->dst->inputs[0]->h      = picref->height;
+
+        av_frame_free(&idet->prev);
+        av_frame_free(&idet->cur );
+        av_frame_free(&idet->next);
+    }
+
     if (idet->prev)
         av_frame_free(&idet->prev);
     idet->prev = idet->cur;
