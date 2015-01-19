@@ -1127,7 +1127,6 @@ static int h264_slice_header_init(H264Context *h, int reinit)
             c->chroma_y_shift    = h->chroma_y_shift;
             c->qscale            = h->qscale;
             c->droppable         = h->droppable;
-            c->data_partitioning = h->data_partitioning;
             c->low_delay         = h->low_delay;
             c->mb_width          = h->mb_width;
             c->mb_height         = h->mb_height;
