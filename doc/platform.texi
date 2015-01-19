@@ -121,8 +121,6 @@ You will need the following prerequisites:
 (if using MSVC 2012 or earlier)
 @item @uref{http://www.mingw.org/, MSYS}
 @item @uref{http://yasm.tortall.net/, YASM}
-@item @uref{http://gnuwin32.sourceforge.net/packages/bc.htm, bc for Windows} if
-you want to run @uref{fate.html, FATE}.
 @end itemize
 
 To set up a proper environment in MSYS, you need to run @code{msys.bat} from
@@ -269,7 +267,7 @@ binutils, gcc4-core, make, git, mingw-runtime, texi2html
 
 In order to run FATE you will also need the following "Utils" packages:
 @example
-bc, diffutils
+diffutils
 @end example
 
 If you want to build FFmpeg with additional libraries, download Cygwin
