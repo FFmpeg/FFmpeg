@@ -567,8 +567,8 @@ static int xan_decode_frame(AVCodecContext *avctx,
                 return AVERROR_INVALIDDATA;
             if (s->palettes_count >= PALETTES_MAX)
                 return AVERROR_INVALIDDATA;
-            tmpptr = av_realloc(s->palettes,
-                                (s->palettes_count + 1) * AVPALETTE_SIZE);
+            tmpptr = av_realloc_array(s->palettes,
+                                      s->palettes_count + 1, AVPALETTE_SIZE);
             if (!tmpptr)
                 return AVERROR(ENOMEM);
             s->palettes = tmpptr;
