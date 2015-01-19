@@ -83,6 +83,7 @@ static int h264_find_frame_end(H264ParseContext *p, const uint8_t *buf,
             }
             state = 7;
         } else {
+            // first_mb_in_slice is 0, probably the first nal of a new slice
             if (buf[i] & 0x80)
                 goto found;
             state = 7;
