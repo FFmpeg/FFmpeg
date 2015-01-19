@@ -11205,6 +11205,10 @@ Specify gamma. Lower gamma makes the spectrum more contrast, higher gamma
 makes the spectrum having more range. Acceptable value is [1.0, 7.0].
 Default value is @code{3.0}.
 
+@item gamma2
+Specify gamma of bargraph. Acceptable value is [1.0, 7.0].
+Default value is @code{1.0}.
+
 @item fontfile
 Specify font file for use with freetype. If not specified, use embedded font.
 
@@ -11293,6 +11297,12 @@ tlength=100/f*tc/(100/f+tc)
 Custom fontcolor, C-note is colored green, others are colored blue
 @example
 fontcolor='if(mod(floor(midi(f)+0.5),12), 0x0000FF, g(1))'
+@end example
+
+@item
+Custom gamma, now spectrum is linear to the amplitude.
+@example
+gamma=2:gamma2=2
 @end example
 
 @end itemize

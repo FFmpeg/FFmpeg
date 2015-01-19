@@ -900,15 +900,12 @@ static void do_video_out(AVFormatContext *s,
     if (ost->source_index >= 0)
         ist = input_streams[ost->source_index];
 
-    if(ist && ist->st->start_time != AV_NOPTS_VALUE && ist->st->first_dts != AV_NOPTS_VALUE && ost->frame_rate.num)
-        duration = 1/(av_q2d(ost->frame_rate) * av_q2d(enc->time_base));
-
-    // We take the conservative approuch here and take the minimum even though
-    // this should be correct on its own but a value too small is harmless, one
-    // too big can lead to errors
     if (filter->inputs[0]->frame_rate.num > 0 &&
         filter->inputs[0]->frame_rate.den > 0)
-        duration = FFMIN(duration, 1/(av_q2d(filter->inputs[0]->frame_rate) * av_q2d(enc->time_base)));
+        duration = 1/(av_q2d(filter->inputs[0]->frame_rate) * av_q2d(enc->time_base));
+
+    if(ist && ist->st->start_time != AV_NOPTS_VALUE && ist->st->first_dts != AV_NOPTS_VALUE && ost->frame_rate.num)
+        duration = FFMIN(duration, 1/(av_q2d(ost->frame_rate) * av_q2d(enc->time_base)));
 
     if (!ost->filters_script &&
         !ost->filters &&
@@ -947,7 +944,10 @@ static void do_video_out(AVFormatContext *s,
         format_video_sync != VSYNC_PASSTHROUGH &&
         format_video_sync != VSYNC_DROP) {
         double cor = FFMIN(-delta0, duration);
-        av_log(NULL, AV_LOG_WARNING, "Past duration %f too large\n", -delta0);
+        if (delta0 < -0.6) {
+            av_log(NULL, AV_LOG_WARNING, "Past duration %f too large\n", -delta0);
+        } else
+            av_log(NULL, AV_LOG_DEBUG, "Cliping frame in rate conversion by %f\n", -delta0);
         sync_ipts += cor;
         duration -= cor;
         delta0 += cor;
