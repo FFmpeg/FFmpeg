@@ -280,7 +280,7 @@ av_cold int ff_alsa_open(AVFormatContext *ctx, snd_pcm_stream_t mode,
         }
         if (s->reorder_func) {
             s->reorder_buf_size = buffer_size;
-            s->reorder_buf = av_malloc(s->reorder_buf_size * s->frame_size);
+            s->reorder_buf = av_malloc_array(s->reorder_buf_size, s->frame_size);
             if (!s->reorder_buf)
                 goto fail1;
         }
@@ -336,7 +336,7 @@ int ff_alsa_extend_reorder_buf(AlsaData *s, int min_size)
     av_assert0(size != 0);
     while (size < min_size)
         size *= 2;
-    r = av_realloc(s->reorder_buf, size * s->frame_size);
+    r = av_realloc_array(s->reorder_buf, size, s->frame_size);
     if (!r)
         return AVERROR(ENOMEM);
     s->reorder_buf = r;
