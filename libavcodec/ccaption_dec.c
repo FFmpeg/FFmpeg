@@ -23,7 +23,6 @@
 #include "ass.h"
 #include "libavutil/opt.h"
 
-#define CHAR_DEBUG
 #define SCREEN_ROWS 15
 #define SCREEN_COLUMNS 32
 
@@ -400,9 +399,10 @@ static void handle_char(CCaptionSubContext *ctx, char hi, char lo, int64_t pts)
     /* reset prev command since character can repeat */
     ctx->prev_cmd[0] = 0;
     ctx->prev_cmd[1] = 0;
-#ifdef CHAR_DEBUG
-    av_log(ctx, AV_LOG_DEBUG,"(%c,%c)\n",hi,lo);
-#endif
+    if (lo)
+       av_dlog(ctx, "(%c,%c)\n",hi,lo);
+    else
+       av_dlog(ctx, "(%c)\n",hi);
 }
 
 static int process_cc608(CCaptionSubContext *ctx, int64_t pts, uint8_t hi, uint8_t lo)
@@ -499,9 +499,7 @@ static int decode(AVCodecContext *avctx, void *data, int *got_sub, AVPacket *avp
         {
             int start_time = av_rescale_q(ctx->start_time, avctx->time_base, (AVRational){ 1, 100 });
             int end_time = av_rescale_q(ctx->end_time, avctx->time_base, (AVRational){ 1, 100 });
-#ifdef CHAR_DEBUG
-            av_log(ctx, AV_LOG_DEBUG,"cdp writing data (%s)\n",ctx->buffer.str);
-#endif
+            av_dlog(ctx, "cdp writing data (%s)\n",ctx->buffer.str);
             ret = ff_ass_add_rect(sub, ctx->buffer.str, start_time, end_time - start_time , 0);
             if (ret < 0)
                 return ret;
