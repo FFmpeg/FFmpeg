@@ -389,6 +389,14 @@ static int flv_write_header(AVFormatContext *s)
             }
             flv->data_enc = enc;
             break;
+        case AVMEDIA_TYPE_SUBTITLE:
+            if (enc->codec_id != AV_CODEC_ID_TEXT) {
+                av_log(s, AV_LOG_ERROR, "Subtitle codec '%s' for stream %d is not compatible with FLV\n",
+                       avcodec_get_name(enc->codec_id), i);
+                return AVERROR_INVALIDDATA;
+            }
+            flv->data_enc = enc;
+            break;
         default:
             av_log(s, AV_LOG_ERROR, "Codec type '%s' for stream %d is not compatible with FLV\n",
                    av_get_media_type_string(enc->codec_type), i);
@@ -545,6 +553,7 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
 
         avio_w8(pb, FLV_TAG_TYPE_AUDIO);
         break;
+    case AVMEDIA_TYPE_SUBTITLE:
     case AVMEDIA_TYPE_DATA:
         avio_w8(pb, FLV_TAG_TYPE_META);
         break;
@@ -588,7 +597,8 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
     avio_w8(pb, (ts >> 24) & 0x7F); // timestamps are 32 bits _signed_
     avio_wb24(pb, flv->reserved);
 
-    if (enc->codec_type == AVMEDIA_TYPE_DATA) {
+    if (enc->codec_type == AVMEDIA_TYPE_DATA ||
+        enc->codec_type == AVMEDIA_TYPE_SUBTITLE ) {
         int data_size;
         int64_t metadata_size_pos = avio_tell(pb);
         if (enc->codec_id == AV_CODEC_ID_TEXT) {
