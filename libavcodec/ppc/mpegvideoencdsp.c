@@ -55,7 +55,7 @@ static int pix_norm1_altivec(uint8_t *pix, int line_size)
     /* Sum up the four partial sums, and put the result into s. */
     sum = vec_sums((vector signed int) sv, (vector signed int) zero);
     sum = vec_splat(sum, 3);
-    vec_vsx_st(sum, 0, &s);
+    vec_ste(sum, 0, &s);
     return s;
 }
 #else
@@ -113,7 +113,7 @@ static int pix_sum_altivec(uint8_t *pix, int line_size)
     /* Sum up the four partial sums, and put the result into s. */
     sumdiffs = vec_sums((vector signed int) sad, (vector signed int) zero);
     sumdiffs = vec_splat(sumdiffs, 3);
-    vec_vsx_st(sumdiffs, 0, &s);
+    vec_ste(sumdiffs, 0, &s);
     return s;
 }
 #else
