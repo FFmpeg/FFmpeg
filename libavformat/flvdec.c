@@ -830,10 +830,15 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
                 goto skip;
         } else if (type == FLV_TAG_TYPE_META) {
             stream_type=FLV_STREAM_TYPE_DATA;
-            if (size > 13 + 1 + 4 && dts == 0) { // Header-type metadata stuff
+            if (size > 13 + 1 + 4) { // Header-type metadata stuff
+                int type;
                 meta_pos = avio_tell(s->pb);
-                if (flv_read_metabody(s, next) <= 0) {
+                type = flv_read_metabody(s, next);
+                if (type == 0 && dts == 0 || type < 0) {
                     goto skip;
+                } else if (type == TYPE_ONTEXTDATA) {
+                    avpriv_request_sample(s, "OnTextData packet");
+                    return flv_data_packet(s, pkt, dts, next);
                 }
                 avio_seek(s->pb, meta_pos, SEEK_SET);
             }
