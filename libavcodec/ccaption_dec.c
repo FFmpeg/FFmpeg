@@ -63,7 +63,7 @@ enum cc_font {
     CCFONT_UNDERLINED_ITALICS,
 };
 
-static const unsigned char pac2_attribs[][3] = // Color, font, ident
+static const unsigned char pac2_attribs[32][3] = // Color, font, ident
 {
     { CCCOL_WHITE,   CCFONT_REGULAR,            0 },  // 0x40 || 0x60
     { CCCOL_WHITE,   CCFONT_UNDERLINED,         0 },  // 0x41 || 0x61
