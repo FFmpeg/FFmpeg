@@ -28,6 +28,7 @@
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
 #include "avformat.h"
+#include "network.h"
 #include "url.h"
 
 #include <librtmp/rtmp.h>
@@ -48,6 +49,7 @@ typedef struct LibRTMPContext {
     char *client_buffer_time;
     int live;
     char *temp_filename;
+    int buffer_size;
 } LibRTMPContext;
 
 static void rtmp_log(int level, const char *fmt, va_list args)
@@ -230,6 +232,11 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
         goto fail;
     }
 
+    if (ctx->buffer_size >= 0 && (flags & AVIO_FLAG_WRITE)) {
+        int tmp = ctx->buffer_size;
+        setsockopt(r->m_sb.sb_socket, SOL_SOCKET, SO_SNDBUF, &tmp, sizeof(tmp));
+    }
+
     s->is_streamed = 1;
     return 0;
 fail:
@@ -311,6 +318,7 @@ static const AVOption options[] = {
     {"rtmp_swfurl", "URL of the SWF player. By default no value will be sent", OFFSET(swfurl), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
     {"rtmp_swfverify", "URL to player swf file, compute hash/size automatically. (unimplemented)", OFFSET(swfverify), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC},
     {"rtmp_tcurl", "URL of the target stream. Defaults to proto://host[:port]/app.", OFFSET(tcurl), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
+    {"rtmp_buffer_size", "set buffer size in bytes", OFFSET(buffer_size), AV_OPT_TYPE_INT, {.i64 = -1}, -1, INT_MAX, DEC|ENC },
     { NULL },
 };
 
