@@ -159,7 +159,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
     int data_size   = buf->nb_samples * block_align;
     int planes      = planar ? channels : 1;
     int i;
-    void *tmp_ptr = av_realloc(s->plane_checksums, channels * sizeof(*s->plane_checksums));
+    void *tmp_ptr = av_realloc_array(s->plane_checksums, channels, sizeof(*s->plane_checksums));
 
     if (!tmp_ptr)
         return AVERROR(ENOMEM);
