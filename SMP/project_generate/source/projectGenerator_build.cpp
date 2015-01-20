@@ -308,7 +308,7 @@ void projectGenerator::buildProjectDependencies( const string & sProjectName, ma
     mProjectDeps["ladspa"] = ( sProjectName.compare("libavfilter") == 0 );//?
     mProjectDeps["libaacplus"] = ( sProjectName.compare("libavcodec") == 0 );
     mProjectDeps["libass"] = ( sProjectName.compare("libavfilter") == 0 );
-    mProjectDeps["libbluray"] = ( sProjectName.compare("libavformat") == 0 );//?
+    mProjectDeps["libbluray"] = ( sProjectName.compare("libavformat") == 0 );
     mProjectDeps["libbs2b"] = ( sProjectName.compare( "libavfilter" ) == 0 );//?
     mProjectDeps["libcaca"] = ( sProjectName.compare("libavdevice") == 0 );//????
     mProjectDeps["libcdio"] = ( sProjectName.compare("libavdevice") == 0 );
