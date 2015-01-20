@@ -442,6 +442,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
     if((res = ff_snow_frame_start(s)) < 0)
         return res;
+
+    s->current_picture->pict_type = s->keyframe ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
+
     //keyframe flag duplication mess FIXME
     if(avctx->debug&FF_DEBUG_PICT_INFO)
         av_log(avctx, AV_LOG_ERROR,
