@@ -227,8 +227,10 @@ int ff_img_read_header(AVFormatContext *s1)
         if (s->pattern_type == PT_GLOB_SEQUENCE) {
         s->use_glob = is_glob(s->path);
         if (s->use_glob) {
+#if HAVE_GLOB
             char *p = s->path, *q, *dup;
             int gerr;
+#endif
 
             av_log(s1, AV_LOG_WARNING, "Pattern type 'glob_sequence' is deprecated: "
                    "use pattern_type 'glob' instead\n");
@@ -494,8 +496,8 @@ int ff_img_read_packet(AVFormatContext *s1, AVPacket *pkt)
 
 static int img_read_close(struct AVFormatContext* s1)
 {
-    VideoDemuxData *s = s1->priv_data;
 #if HAVE_GLOB
+    VideoDemuxData *s = s1->priv_data;
     if (s->use_glob) {
         globfree(&s->globstate);
     }
