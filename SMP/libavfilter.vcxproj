@@ -425,8 +425,6 @@
     </ClCompile>
     <ClCompile Include="..\libavfilter\libmpcodecs\vf_eq.c">
     </ClCompile>
-    <ClCompile Include="..\libavfilter\libmpcodecs\vf_ilpack.c">
-    </ClCompile>
     <ClCompile Include="..\libavfilter\libmpcodecs\vf_softpulldown.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\avf_avectorscope.c">
