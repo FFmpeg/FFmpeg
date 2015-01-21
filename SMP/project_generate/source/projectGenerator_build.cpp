@@ -67,32 +67,75 @@ void projectGenerator::buildInterDependencies( const string & sProjectName, Stat
     //Hard coded configuration checks for inter dependencies between different source libs.
     if( sProjectName.compare( "libavfilter" ) == 0 )
     {
-        buildInterDependenciesHelper( { "amovie_filter" }, { "avformat", "avcodec" }, vLibs );
-        buildInterDependenciesHelper( { "aresample_filter" }, { "swresample" }, vLibs );
-        buildInterDependenciesHelper( { "asyncts_filter" }, { "avresample" }, vLibs );
-        buildInterDependenciesHelper( { "atempo_filter" }, { "avcodec" }, vLibs );
-        buildInterDependenciesHelper( { "ebur128_filter", "swresample" }, { "swresample" }, vLibs );
-        buildInterDependenciesHelper( { "elbg_filter" }, { "avcodec" }, vLibs );
-        buildInterDependenciesHelper( { "mcdeint_filter" }, { "avcodec" }, vLibs );
-        buildInterDependenciesHelper( { "movie_filter" }, { "avformat", "avcodec" }, vLibs );
-        buildInterDependenciesHelper( { "mp_filter" }, { "avcodec" }, vLibs );
-        buildInterDependenciesHelper( { "pan_filter" }, { "swresample" }, vLibs );
-        buildInterDependenciesHelper( { "pp_filter" }, { "postproc" }, vLibs );
-        buildInterDependenciesHelper( { "removelogo_filter" }, { "avformat", "avcodec", "swscale" }, vLibs );
-        buildInterDependenciesHelper( { "resample_filter" }, { "avresample" }, vLibs );
-        buildInterDependenciesHelper( { "sab_filter" }, { "swscale" }, vLibs );
-        buildInterDependenciesHelper( { "scale_filter" }, { "swscale" }, vLibs );
-        buildInterDependenciesHelper( { "showspectrum_filter" }, { "avcodec" }, vLibs );
-        buildInterDependenciesHelper( { "smartblur_filter" }, { "swscale" }, vLibs );
-        buildInterDependenciesHelper( { "subtitles_filter" }, { "avformat", "avcodec" }, vLibs );
+        StaticList vConfigOptions, vAddDeps;
+        vConfigOptions.push_back( "amovie_filter" ); vAddDeps.push_back( "avformat" ); vAddDeps.push_back( "avcodec" );
+        buildInterDependenciesHelper( vConfigOptions, vAddDeps, vLibs );
+        vConfigOptions.clear( ); vAddDeps.clear( );
+        vConfigOptions.push_back( "aresample_filter" ); vAddDeps.push_back( "swresample" );
+        buildInterDependenciesHelper( vConfigOptions, vAddDeps, vLibs );
+        vConfigOptions.clear( ); vAddDeps.clear( );
+        vConfigOptions.push_back( "asyncts_filter" ); vAddDeps.push_back( "avresample" );
+        buildInterDependenciesHelper( vConfigOptions, vAddDeps, vLibs );
+        vConfigOptions.clear( ); vAddDeps.clear( );
+        vConfigOptions.push_back( "atempo_filter" ); vAddDeps.push_back( "avcodec" );
+        buildInterDependenciesHelper( vConfigOptions, vAddDeps, vLibs );
+        vConfigOptions.clear( ); vAddDeps.clear( );
+        vConfigOptions.push_back( "ebur128_filter" ); vConfigOptions.push_back( "swresample" ); vAddDeps.push_back( "swresample" );
+        buildInterDependenciesHelper( vConfigOptions, vAddDeps, vLibs );
+        vConfigOptions.clear( ); vAddDeps.clear( );
+        vConfigOptions.push_back( "elbg_filter" ); vAddDeps.push_back( "avcodec" );
+        buildInterDependenciesHelper( vConfigOptions, vAddDeps, vLibs );
+        vConfigOptions.clear( ); vAddDeps.clear( );
+        vConfigOptions.push_back( "mcdeint_filter" ); vAddDeps.push_back( "avcodec" );
+        buildInterDependenciesHelper( vConfigOptions, vAddDeps, vLibs );
+        vConfigOptions.clear( ); vAddDeps.clear( );
+        vConfigOptions.push_back( "movie_filter" ); vAddDeps.push_back( "avformat" ); vAddDeps.push_back( "avcodec" );
+        buildInterDependenciesHelper( vConfigOptions, vAddDeps, vLibs );
+        vConfigOptions.clear( ); vAddDeps.clear( );
+        vConfigOptions.push_back( "mp_filter" ); vAddDeps.push_back( "avcodec" );
+        buildInterDependenciesHelper( vConfigOptions, vAddDeps, vLibs );
+        vConfigOptions.clear( ); vAddDeps.clear( );
+        vConfigOptions.push_back( "pan_filter" ); vAddDeps.push_back( "swresample" );
+        buildInterDependenciesHelper( vConfigOptions, vAddDeps, vLibs );
+        vConfigOptions.clear( ); vAddDeps.clear( );
+        vConfigOptions.push_back( "pp_filter" ); vAddDeps.push_back( "postproc" );
+        buildInterDependenciesHelper( vConfigOptions, vAddDeps, vLibs );
+        vConfigOptions.clear( ); vAddDeps.clear( );
+        vConfigOptions.push_back( "removelogo_filter" ); vAddDeps.push_back( "avformat" ); vAddDeps.push_back( "avcodec" ); vAddDeps.push_back( "swscale" );
+        buildInterDependenciesHelper( vConfigOptions, vAddDeps, vLibs );
+        vConfigOptions.clear( ); vAddDeps.clear( );
+        vConfigOptions.push_back( "resample_filter" ); vAddDeps.push_back( "avresample" );
+        buildInterDependenciesHelper( vConfigOptions, vAddDeps, vLibs );
+        vConfigOptions.clear( ); vAddDeps.clear( );
+        vConfigOptions.push_back( "sab_filter" ); vAddDeps.push_back( "swscale" );
+        buildInterDependenciesHelper( vConfigOptions, vAddDeps, vLibs );
+        vConfigOptions.clear( ); vAddDeps.clear( );
+        vConfigOptions.push_back( "scale_filter" ); vAddDeps.push_back( "swscale" );
+        buildInterDependenciesHelper( vConfigOptions, vAddDeps, vLibs );
+        vConfigOptions.clear( ); vAddDeps.clear( );
+        vConfigOptions.push_back( "showspectrum_filter" ); vAddDeps.push_back( "avcodec" );
+        buildInterDependenciesHelper( vConfigOptions, vAddDeps, vLibs );
+        vConfigOptions.clear( ); vAddDeps.clear( );
+        vConfigOptions.push_back( "smartblur_filter" ); vAddDeps.push_back( "swscale" );
+        buildInterDependenciesHelper( vConfigOptions, vAddDeps, vLibs );
+        vConfigOptions.clear( ); vAddDeps.clear( );
+        vConfigOptions.push_back( "subtitles_filter" ); vAddDeps.push_back( "avformat" ); vAddDeps.push_back( "avcodec" );
+        buildInterDependenciesHelper( vConfigOptions, vAddDeps, vLibs );
+        vConfigOptions.clear( ); vAddDeps.clear( );
+        vConfigOptions.push_back( "uspp_filter" ); vAddDeps.push_back( "avcodec" );
+        buildInterDependenciesHelper( vConfigOptions, vAddDeps, vLibs );
     }
     else if( sProjectName.compare( "libavdevice" ) == 0 )
     {
-        buildInterDependenciesHelper( { "lavfi_indev" }, { "avfilter" }, vLibs );
+        StaticList vConfigOptions, vAddDeps;
+        vConfigOptions.push_back( "lavfi_indev" ); vAddDeps.push_back( "avfilter" );
+        buildInterDependenciesHelper( vConfigOptions, vAddDeps, vLibs );
     }
     else if( sProjectName.compare( "libavcodec" ) == 0 )
     {
-        buildInterDependenciesHelper( { "opus_decoder" }, { "swresample" }, vLibs );
+        StaticList vConfigOptions, vAddDeps;
+        vConfigOptions.push_back( "opus_decoder" ); vAddDeps.push_back( "swresample" );
+        buildInterDependenciesHelper( vConfigOptions, vAddDeps, vLibs );
     }
 }
 
