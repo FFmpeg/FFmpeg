@@ -6238,7 +6238,6 @@ The list of the currently supported filters follows:
 @table @var
 @item eq2
 @item eq
-@item ilpack
 @item softpulldown
 @end table
 

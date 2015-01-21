@@ -69,14 +69,12 @@ static av_cold int svc_encode_init(AVCodecContext *avctx)
     SVCContext *s = avctx->priv_data;
     SEncParamExt param = { 0 };
     int err = AVERROR_UNKNOWN;
-    av_unused OpenH264Version libver;
-    (void)g_strCodecVer; // Avoid warnings due to unused static members from codec_ver.h
 
     // Mingw GCC < 4.7 on x86_32 uses an incorrect/buggy ABI for the WelsGetCodecVersion
     // function (for functions returning larger structs), thus skip the check in those
     // configurations.
 #if !defined(_WIN32) || !defined(__GNUC__) || !ARCH_X86_32 || AV_GCC_VERSION_AT_LEAST(4, 7)
-    libver = WelsGetCodecVersion();
+    OpenH264Version libver = WelsGetCodecVersion();
     if (memcmp(&libver, &g_stCodecVersion, sizeof(libver))) {
         av_log(avctx, AV_LOG_ERROR, "Incorrect library version loaded\n");
         return AVERROR(EINVAL);

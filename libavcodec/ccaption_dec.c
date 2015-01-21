@@ -23,13 +23,12 @@
 #include "ass.h"
 #include "libavutil/opt.h"
 
-#define CHAR_DEBUG
 #define SCREEN_ROWS 15
 #define SCREEN_COLUMNS 32
 
-#define SET_FLAG(var, val) ( var |= ( 1 << (val) ) )
-#define UNSET_FLAG(var, val) ( var &=  ~( 1 << (val)) )
-#define CHECK_FLAG(var, val) ( (var) & (1 << (val) ) )
+#define SET_FLAG(var, val)   ( (var) |=   ( 1 << (val)) )
+#define UNSET_FLAG(var, val) ( (var) &=  ~( 1 << (val)) )
+#define CHECK_FLAG(var, val) ( (var) &    ( 1 << (val)) )
 
 /*
  * TODO list
@@ -44,8 +43,7 @@ enum cc_mode {
     CCMODE_TEXT,
 };
 
-enum cc_color_code
-{
+enum cc_color_code {
     CCCOL_WHITE,
     CCCOL_GREEN,
     CCCOL_BLUE,
@@ -58,50 +56,50 @@ enum cc_color_code
     CCCOL_TRANSPARENT,
 };
 
-enum cc_font
-{
+enum cc_font {
     CCFONT_REGULAR,
     CCFONT_ITALICS,
     CCFONT_UNDERLINED,
     CCFONT_UNDERLINED_ITALICS,
 };
 
-static const unsigned char pac2_attribs[][3] = // Color, font, ident
+static const unsigned char pac2_attribs[32][3] = // Color, font, ident
 {
-    { CCCOL_WHITE, CCFONT_REGULAR, 0 },  // 0x40 || 0x60
-    { CCCOL_WHITE, CCFONT_UNDERLINED, 0 },  // 0x41 || 0x61
-    { CCCOL_GREEN, CCFONT_REGULAR, 0 },  // 0x42 || 0x62
-    { CCCOL_GREEN, CCFONT_UNDERLINED, 0 },  // 0x43 || 0x63
-    { CCCOL_BLUE, CCFONT_REGULAR, 0 },  // 0x44 || 0x64
-    { CCCOL_BLUE, CCFONT_UNDERLINED, 0 },  // 0x45 || 0x65
-    { CCCOL_CYAN, CCFONT_REGULAR, 0 },  // 0x46 || 0x66
-    { CCCOL_CYAN, CCFONT_UNDERLINED, 0 },  // 0x47 || 0x67
-    { CCCOL_RED, CCFONT_REGULAR, 0 },  // 0x48 || 0x68
-    { CCCOL_RED, CCFONT_UNDERLINED, 0 },  // 0x49 || 0x69
-    { CCCOL_YELLOW, CCFONT_REGULAR, 0 },  // 0x4a || 0x6a
-    { CCCOL_YELLOW, CCFONT_UNDERLINED, 0 },  // 0x4b || 0x6b
-    { CCCOL_MAGENTA, CCFONT_REGULAR, 0 },  // 0x4c || 0x6c
-    { CCCOL_MAGENTA, CCFONT_UNDERLINED, 0 },  // 0x4d || 0x6d
-    { CCCOL_WHITE, CCFONT_ITALICS, 0 },  // 0x4e || 0x6e
-    { CCCOL_WHITE, CCFONT_UNDERLINED_ITALICS, 0 },  // 0x4f || 0x6f
-    { CCCOL_WHITE, CCFONT_REGULAR, 0 },  // 0x50 || 0x70
-    { CCCOL_WHITE, CCFONT_UNDERLINED, 0 },  // 0x51 || 0x71
-    { CCCOL_WHITE, CCFONT_REGULAR, 4 },  // 0x52 || 0x72
-    { CCCOL_WHITE, CCFONT_UNDERLINED, 4 },  // 0x53 || 0x73
-    { CCCOL_WHITE, CCFONT_REGULAR, 8 },  // 0x54 || 0x74
-    { CCCOL_WHITE, CCFONT_UNDERLINED, 8 },  // 0x55 || 0x75
-    { CCCOL_WHITE, CCFONT_REGULAR, 12 }, // 0x56 || 0x76
-    { CCCOL_WHITE, CCFONT_UNDERLINED, 12 }, // 0x57 || 0x77
-    { CCCOL_WHITE, CCFONT_REGULAR, 16 }, // 0x58 || 0x78
-    { CCCOL_WHITE, CCFONT_UNDERLINED, 16 }, // 0x59 || 0x79
-    { CCCOL_WHITE, CCFONT_REGULAR, 20 }, // 0x5a || 0x7a
-    { CCCOL_WHITE, CCFONT_UNDERLINED, 20 }, // 0x5b || 0x7b
-    { CCCOL_WHITE, CCFONT_REGULAR, 24 }, // 0x5c || 0x7c
-    { CCCOL_WHITE, CCFONT_UNDERLINED, 24 }, // 0x5d || 0x7d
-    { CCCOL_WHITE, CCFONT_REGULAR, 28 }, // 0x5e || 0x7e
-    { CCCOL_WHITE, CCFONT_UNDERLINED, 28 }  // 0x5f || 0x7f
+    { CCCOL_WHITE,   CCFONT_REGULAR,            0 },  // 0x40 || 0x60
+    { CCCOL_WHITE,   CCFONT_UNDERLINED,         0 },  // 0x41 || 0x61
+    { CCCOL_GREEN,   CCFONT_REGULAR,            0 },  // 0x42 || 0x62
+    { CCCOL_GREEN,   CCFONT_UNDERLINED,         0 },  // 0x43 || 0x63
+    { CCCOL_BLUE,    CCFONT_REGULAR,            0 },  // 0x44 || 0x64
+    { CCCOL_BLUE,    CCFONT_UNDERLINED,         0 },  // 0x45 || 0x65
+    { CCCOL_CYAN,    CCFONT_REGULAR,            0 },  // 0x46 || 0x66
+    { CCCOL_CYAN,    CCFONT_UNDERLINED,         0 },  // 0x47 || 0x67
+    { CCCOL_RED,     CCFONT_REGULAR,            0 },  // 0x48 || 0x68
+    { CCCOL_RED,     CCFONT_UNDERLINED,         0 },  // 0x49 || 0x69
+    { CCCOL_YELLOW,  CCFONT_REGULAR,            0 },  // 0x4a || 0x6a
+    { CCCOL_YELLOW,  CCFONT_UNDERLINED,         0 },  // 0x4b || 0x6b
+    { CCCOL_MAGENTA, CCFONT_REGULAR,            0 },  // 0x4c || 0x6c
+    { CCCOL_MAGENTA, CCFONT_UNDERLINED,         0 },  // 0x4d || 0x6d
+    { CCCOL_WHITE,   CCFONT_ITALICS,            0 },  // 0x4e || 0x6e
+    { CCCOL_WHITE,   CCFONT_UNDERLINED_ITALICS, 0 },  // 0x4f || 0x6f
+    { CCCOL_WHITE,   CCFONT_REGULAR,            0 },  // 0x50 || 0x70
+    { CCCOL_WHITE,   CCFONT_UNDERLINED,         0 },  // 0x51 || 0x71
+    { CCCOL_WHITE,   CCFONT_REGULAR,            4 },  // 0x52 || 0x72
+    { CCCOL_WHITE,   CCFONT_UNDERLINED,         4 },  // 0x53 || 0x73
+    { CCCOL_WHITE,   CCFONT_REGULAR,            8 },  // 0x54 || 0x74
+    { CCCOL_WHITE,   CCFONT_UNDERLINED,         8 },  // 0x55 || 0x75
+    { CCCOL_WHITE,   CCFONT_REGULAR,           12 },  // 0x56 || 0x76
+    { CCCOL_WHITE,   CCFONT_UNDERLINED,        12 },  // 0x57 || 0x77
+    { CCCOL_WHITE,   CCFONT_REGULAR,           16 },  // 0x58 || 0x78
+    { CCCOL_WHITE,   CCFONT_UNDERLINED,        16 },  // 0x59 || 0x79
+    { CCCOL_WHITE,   CCFONT_REGULAR,           20 },  // 0x5a || 0x7a
+    { CCCOL_WHITE,   CCFONT_UNDERLINED,        20 },  // 0x5b || 0x7b
+    { CCCOL_WHITE,   CCFONT_REGULAR,           24 },  // 0x5c || 0x7c
+    { CCCOL_WHITE,   CCFONT_UNDERLINED,        24 },  // 0x5d || 0x7d
+    { CCCOL_WHITE,   CCFONT_REGULAR,           28 },  // 0x5e || 0x7e
+    { CCCOL_WHITE,   CCFONT_UNDERLINED,        28 }   // 0x5f || 0x7f
     /* total 32 entries */
 };
+
 /* 0-255 needs 256 spaces */
 static const uint8_t parity_table[256] = { 0, 1, 1, 0, 1, 0, 0, 1,
                                            1, 0, 0, 1, 0, 1, 1, 0,
@@ -135,6 +133,7 @@ static const uint8_t parity_table[256] = { 0, 1, 1, 0, 1, 0, 0, 1,
                                            0, 1, 1, 0, 1, 0, 0, 1,
                                            0, 1, 1, 0, 1, 0, 0, 1,
                                            1, 0, 0, 1, 0, 1, 1, 0 };
+
 struct Screen {
     /* +1 is used to compensate null character of string */
     uint8_t characters[SCREEN_ROWS][SCREEN_COLUMNS+1];
@@ -158,7 +157,7 @@ typedef struct CCaptionSubContext {
     uint8_t cursor_color;
     uint8_t cursor_font;
     AVBPrint buffer;
-    int erase_display_memory;
+    int screen_changed;
     int rollup;
     enum  cc_mode mode;
     int64_t start_time;
@@ -197,6 +196,7 @@ static av_cold int close_decoder(AVCodecContext *avctx)
     av_buffer_unref(&ctx->pktbuf);
     return 0;
 }
+
 /**
  * @param ctx closed caption context just to print log
  */
@@ -216,6 +216,7 @@ static int write_char (CCaptionSubContext *ctx, char *row,uint8_t col, char ch)
         return AVERROR_INVALIDDATA;
     }
 }
+
 /**
  * This function after validating parity bit, also remove it from data pair.
  * The first byte doesn't pass parity, we replace it with a solid blank
@@ -295,6 +296,7 @@ static void handle_textattr( CCaptionSubContext *ctx, uint8_t hi, uint8_t lo )
     if(ret == 0)
         ctx->cursor_column++;
 }
+
 static void handle_pac( CCaptionSubContext *ctx, uint8_t hi, uint8_t lo )
 {
     static const int8_t row_map[] = {
@@ -353,10 +355,11 @@ static int handle_edm(CCaptionSubContext *ctx,int64_t pts)
 
     }
     ctx->startv_time = pts;
-    ctx->erase_display_memory = 1;
+    ctx->screen_changed = 1;
     ctx->end_time = pts;
     return ret;
 }
+
 static int handle_eoc(CCaptionSubContext *ctx, int64_t pts)
 {
     int ret;
@@ -365,6 +368,7 @@ static int handle_eoc(CCaptionSubContext *ctx, int64_t pts)
     ctx->cursor_column = 0;
     return ret;
 }
+
 static void handle_delete_end_of_row( CCaptionSubContext *ctx, char hi, char lo)
 {
     struct Screen *screen = get_writing_screen(ctx);
@@ -372,6 +376,7 @@ static void handle_delete_end_of_row( CCaptionSubContext *ctx, char hi, char lo)
     write_char(ctx, row, ctx->cursor_column, 0);
 
 }
+
 static void handle_char(CCaptionSubContext *ctx, char hi, char lo, int64_t pts)
 {
     struct Screen *screen = get_writing_screen(ctx);
@@ -394,10 +399,12 @@ static void handle_char(CCaptionSubContext *ctx, char hi, char lo, int64_t pts)
     /* reset prev command since character can repeat */
     ctx->prev_cmd[0] = 0;
     ctx->prev_cmd[1] = 0;
-#ifdef CHAR_DEBUG
-    av_log(ctx, AV_LOG_DEBUG,"(%c,%c)\n",hi,lo);
-#endif
+    if (lo)
+       av_dlog(ctx, "(%c,%c)\n",hi,lo);
+    else
+       av_dlog(ctx, "(%c)\n",hi);
 }
+
 static int process_cc608(CCaptionSubContext *ctx, int64_t pts, uint8_t hi, uint8_t lo)
 {
     int ret = 0;
@@ -457,6 +464,7 @@ static int process_cc608(CCaptionSubContext *ctx, int64_t pts, uint8_t hi, uint8
     return ret;
 
 }
+
 static int decode(AVCodecContext *avctx, void *data, int *got_sub, AVPacket *avpkt)
 {
     CCaptionSubContext *ctx = avctx->priv_data;
@@ -487,18 +495,16 @@ static int decode(AVCodecContext *avctx, void *data, int *got_sub, AVPacket *avp
             continue;
         else
             process_cc608(ctx, avpkt->pts, *(bptr + i + 1) & 0x7f, *(bptr + i + 2) & 0x7f);
-        if(ctx->erase_display_memory && *ctx->buffer.str)
+        if(ctx->screen_changed && *ctx->buffer.str)
         {
             int start_time = av_rescale_q(ctx->start_time, avctx->time_base, (AVRational){ 1, 100 });
             int end_time = av_rescale_q(ctx->end_time, avctx->time_base, (AVRational){ 1, 100 });
-#ifdef CHAR_DEBUG
-            av_log(ctx, AV_LOG_DEBUG,"cdp writing data (%s)\n",ctx->buffer.str);
-#endif
+            av_dlog(ctx, "cdp writing data (%s)\n",ctx->buffer.str);
             ret = ff_ass_add_rect(sub, ctx->buffer.str, start_time, end_time - start_time , 0);
             if (ret < 0)
                 return ret;
             sub->pts = av_rescale_q(ctx->start_time, avctx->time_base, AV_TIME_BASE_Q);
-            ctx->erase_display_memory = 0;
+            ctx->screen_changed = 0;
             av_bprint_clear(&ctx->buffer);
         }
     }
@@ -506,9 +512,11 @@ static int decode(AVCodecContext *avctx, void *data, int *got_sub, AVPacket *avp
     *got_sub = sub->num_rects > 0;
     return ret;
 }
+
 static const AVOption options[] = {
     {NULL}
 };
+
 static const AVClass ccaption_dec_class = {
     .class_name = "Closed caption Decoder",
     .item_name  = av_default_item_name,
