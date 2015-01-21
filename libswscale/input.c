@@ -1249,11 +1249,9 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
 #endif
     case AV_PIX_FMT_YA16LE:
         c->lumToYV12 = read_ya16le_gray_c;
-        c->alpToYV12 = read_ya16le_alpha_c;
         break;
     case AV_PIX_FMT_YA16BE:
         c->lumToYV12 = read_ya16be_gray_c;
-        c->alpToYV12 = read_ya16be_alpha_c;
         break;
     case AV_PIX_FMT_YUYV422:
     case AV_PIX_FMT_YVYU422:
@@ -1374,6 +1372,12 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
             break;
         case AV_PIX_FMT_YA8:
             c->alpToYV12 = uyvyToY_c;
+            break;
+        case AV_PIX_FMT_YA16LE:
+            c->alpToYV12 = read_ya16le_alpha_c;
+            break;
+        case AV_PIX_FMT_YA16BE:
+            c->alpToYV12 = read_ya16be_alpha_c;
             break;
         case AV_PIX_FMT_PAL8 :
             c->alpToYV12 = palToA_c;
