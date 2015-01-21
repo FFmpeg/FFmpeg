@@ -749,8 +749,8 @@ static int mov_read_pasp(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                st->sample_aspect_ratio.num, st->sample_aspect_ratio.den,
                num, den);
     } else if (den != 0) {
-        st->sample_aspect_ratio.num = num;
-        st->sample_aspect_ratio.den = den;
+        av_reduce(&st->sample_aspect_ratio.num, &st->sample_aspect_ratio.den,
+                  num, den, 32767);
     }
     return 0;
 }
