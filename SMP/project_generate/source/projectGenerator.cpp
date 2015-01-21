@@ -2394,13 +2394,9 @@ bool projectGenerator::passToolchain( string & sToolchain )
         {
             sToolchain = "v120";
         }
-        else if( GetEnvironmentVariable( "VS110COMNTOOLS", NULL, 0 ) )
-        {
-            sToolchain = "v110";
-        }
         else
         {
-            cout << "  Error: Failed finding valid MSVC compiler (Requires VS2012 or higher)." << endl;
+            cout << "  Error: Failed finding valid MSVC compiler (Requires VS2013 or higher)." << endl;
             return false;
         }
     }

@@ -132,8 +132,8 @@ hand in the generated projects properties "Project Configuration->General->Platf
 also supports use of the Intel compiler. The --toolchain= option can be used to change between standard Microsoft compiler (msvc)
 and the Intel compiler (icl).
 
-Note: FFmpeg requires C99 support in order to compile. Only Visual Studio 2012 or newer supports required C99 functionality and so any 
-older version is not supported. Visual Studio 2013 or newer is recommended. If using an older unsupported version of Visual Studio the
+Note: FFmpeg requires C99 support in order to compile. Only Visual Studio 2013 or newer supports required C99 functionality and so any 
+older version is not supported. Visual Studio 2013 or newer is required. If using an older unsupported version of Visual Studio the
 Intel compiler can be used to add in the required C99 capability.
 
 To be able to build ffplay the SDL libs must be available in the OutputDir. If SDL is disabled then ffplay will also be disabled.
