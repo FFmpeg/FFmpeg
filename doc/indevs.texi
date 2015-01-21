@@ -627,19 +627,46 @@ ffmpeg -f lavfi -i "movie=test.ts[out0+subcc]" -map v frame%08d.png -map s -c co
 
 @section libcdio
 
-Audio-CD input device based on cdio.
+Audio-CD input device based on libcdio.
 
 To enable this input device during configuration you need libcdio
-installed on your system. Requires the configure option
+installed on your system. It requires the configure option
 @code{--enable-libcdio}.
 
 This device allows playing and grabbing from an Audio-CD.
 
-For example to copy with @command{ffmpeg} the entire Audio-CD in /dev/sr0,
+For example to copy with @command{ffmpeg} the entire Audio-CD in @file{/dev/sr0},
 you may run the command:
 @example
 ffmpeg -f libcdio -i /dev/sr0 cd.wav
 @end example
+
+@subsection Options
+@table @option
+@item speed
+Set drive reading speed. Default value is 0.
+
+The speed is specified CD-ROM speed units. The speed is set through
+the libcdio @code{cdio_cddap_speed_set} function. On many CD-ROM
+drives, specifying a value too large will result in using the fastest
+speed.
+
+@item paranoia_mode
+Set paranoia recovery mode flags. It accepts one of the following values:
+
+@table @samp
+@item disable
+@item verify
+@item overlap
+@item neverskip
+@item full
+@end table
+
+Default value is @samp{disable}.
+
+For more information about the available recovery modes, consult the
+paranoia project documentation.
+@end table
 
 @section libdc1394
 
