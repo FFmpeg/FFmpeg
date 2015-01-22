@@ -2138,8 +2138,6 @@ static int add_mb(AVMotionVector *mb, uint32_t mb_type,
                   int src_x, int src_y,
                   int direction)
 {
-    if (dst_x == src_x && dst_y == src_y)
-        return 0;
     mb->w = IS_8X8(mb_type) || IS_8X16(mb_type) ? 8 : 16;
     mb->h = IS_8X8(mb_type) || IS_16X8(mb_type) ? 8 : 16;
     mb->src_x = src_x;

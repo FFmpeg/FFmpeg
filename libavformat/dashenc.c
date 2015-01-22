@@ -282,7 +282,7 @@ static DASHTmplId dash_read_tmpl_id(const char *identifier, char *format_tag,
         // next parse the dash format-tag and generate a c-string format tag
         // (next_ptr now points at the first '%' at the beginning of the format-tag)
         if (id_type != DASH_TMPL_ID_UNDEFINED) {
-            const char *number_format = DASH_TMPL_ID_TIME ? "lld" : "d";
+            const char *number_format = (id_type == DASH_TMPL_ID_TIME) ? PRId64 : "d";
             if (next_ptr[0] == '$') { // no dash format-tag
                 snprintf(format_tag, format_tag_size, "%%%s", number_format);
                 *ptr = &next_ptr[1];

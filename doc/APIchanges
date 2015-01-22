@@ -218,7 +218,7 @@ API changes, most recent first:
   Increase FF_INPUT_BUFFER_PADDING_SIZE to 32 due to some corner cases needing
   it
 
-2014-06-10 - xxxxxxx - lavf 55.43.100 - avformat.h
+2014-06-10 - 5482780 - lavf 55.43.100 - avformat.h
   New field int64_t max_analyze_duration2 instead of deprecated
   int max_analyze_duration.
 
@@ -242,7 +242,7 @@ API changes, most recent first:
   Add strict_std_compliance and related AVOptions to support experimental
   muxing.
 
-2014-05-26 - xxxxxxx - lavu 52.87.100 - threadmessage.h
+2014-05-26 - 55cc60c - lavu 52.87.100 - threadmessage.h
   Add thread message queue API.
 
 2014-05-26 - c37d179 - lavf 55.41.100 - avformat.h
@@ -252,7 +252,7 @@ API changes, most recent first:
   Add av_stream_get_side_data() to access stream-level side data
   in the same way as av_packet_get_side_data().
 
-2014-05-xx - xxxxxxx - lavu 52.86.100 - fifo.h
+2014-05-xx - 7336e39 - lavu 52.86.100 - fifo.h
   Add av_fifo_alloc_array() function.
 
 2014-05-19 - ef1d4ee / bddd8cb - lavu 52.85.100 / 53.15.0 - frame.h, display.h
@@ -284,7 +284,7 @@ API changes, most recent first:
 2014-05-11 - 14aef38 / 66e6c8a - lavu 52.83.100 / 53.14.0 - pixfmt.h
   Add AV_PIX_FMT_VDA for new-style VDA acceleration.
 
-2014-05-xx - xxxxxxx - lavu 52.82.100 - fifo.h
+2014-05-07 - 351f611 - lavu 52.82.100 - fifo.h
   Add av_fifo_freep() function.
 
 2014-05-02 - ba52fb11 - lavu 52.81.100 - opt.h
@@ -306,10 +306,14 @@ API changes, most recent first:
   Deprecate CODEC_FLAG_INPUT_PRESERVED. Its functionality is replaced by passing
   reference-counted frames to encoders.
 
+2014-04-30 - 617e866 - lavu 52.81.100 - pixdesc.h
+  Add av_find_best_pix_fmt_of_2(), av_get_pix_fmt_loss()
+  Deprecate avcodec_get_pix_fmt_loss(), avcodec_find_best_pix_fmt_of_2()
+
 2014-04-29 - 1bf6396 - lavc 55.60.100 - avcodec.h
   Add AVCodecDescriptor.mime_types field.
 
-2014-04-29 - xxxxxxx - lavu 52.80.0 - hash.h
+2014-04-29 - b804eb4 - lavu 52.80.100 - hash.h
   Add av_hash_final_bin(), av_hash_final_hex() and av_hash_final_b64().
 
 2014-03-07 - 8b2a130 - lavc 55.50.0 / 55.53.100 - dxva2.h
@@ -321,7 +325,7 @@ API changes, most recent first:
 2014-04-17 - a8d01a7 / 0983d48 - lavu 53.12.0 / 52.77.100 - crc.h
   Add AV_CRC_16_ANSI_LE crc variant.
 
-2014-04-XX - xxxxxxx - lavf xx.xx.1xx - avformat.h
+2014-04-15 - ef818d8 - lavf 55.37.101 - avformat.h
   Add av_format_inject_global_side_data()
 
 2014-04-12 - 4f698be - lavu 52.76.100 - log.h

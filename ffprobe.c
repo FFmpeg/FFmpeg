@@ -2398,6 +2398,7 @@ static int open_input_file(AVFormatContext **fmt_ctx_ptr, const char *filename)
         print_error(filename, err);
         return err;
     }
+    *fmt_ctx_ptr = fmt_ctx;
     if (scan_all_pmts_set)
         av_dict_set(&format_opts, "scan_all_pmts", NULL, AV_DICT_MATCH_CASE);
     if ((t = av_dict_get(format_opts, "", NULL, AV_DICT_IGNORE_SUFFIX))) {
@@ -2409,13 +2410,16 @@ static int open_input_file(AVFormatContext **fmt_ctx_ptr, const char *filename)
     opts = setup_find_stream_info_opts(fmt_ctx, codec_opts);
     orig_nb_streams = fmt_ctx->nb_streams;
 
-    if ((err = avformat_find_stream_info(fmt_ctx, opts)) < 0) {
-        print_error(filename, err);
-        return err;
-    }
+    err = avformat_find_stream_info(fmt_ctx, opts);
+
     for (i = 0; i < orig_nb_streams; i++)
         av_dict_free(&opts[i]);
     av_freep(&opts);
+
+    if (err < 0) {
+        print_error(filename, err);
+        return err;
+    }
 
     av_dump_format(fmt_ctx, 0, filename, 0);
 
@@ -2466,7 +2470,7 @@ static void close_input_file(AVFormatContext **ctx_ptr)
 
 static int probe_file(WriterContext *wctx, const char *filename)
 {
-    AVFormatContext *fmt_ctx;
+    AVFormatContext *fmt_ctx = NULL;
     int ret, i;
     int section_id;
 
@@ -2475,7 +2479,7 @@ static int probe_file(WriterContext *wctx, const char *filename)
 
     ret = open_input_file(&fmt_ctx, filename);
     if (ret < 0)
-        return ret;
+        goto end;
 
 #define CHECK_END if (ret < 0) goto end
 
@@ -2533,7 +2537,8 @@ static int probe_file(WriterContext *wctx, const char *filename)
     }
 
 end:
-    close_input_file(&fmt_ctx);
+    if (fmt_ctx)
+        close_input_file(&fmt_ctx);
     av_freep(&nb_streams_frames);
     av_freep(&nb_streams_packets);
     av_freep(&selected_streams);
