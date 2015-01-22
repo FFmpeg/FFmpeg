@@ -35,7 +35,6 @@
 #include "libavutil/time_internal.h"
 #include "libavutil/avstring.h"
 #include "libavutil/dict.h"
-#include "libavutil/display.h"
 #include "libavutil/opt.h"
 #include "libavcodec/ac3tab.h"
 #include "avformat.h"
@@ -2579,10 +2578,9 @@ static int mov_read_tkhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     }
 
     // transform the display width/height according to the matrix
-    // skip this if the rotation angle is 0 degrees
+    // skip this when the display matrix is the identity one
     // to keep the same scale, use [width height 1<<16]
-    if (width && height && sc->display_matrix &&
-        av_display_rotation_get(sc->display_matrix) != 0.0f) {
+    if (width && height && sc->display_matrix) {
         for (i = 0; i < 2; i++)
             disp_transform[i] =
                 (int64_t)  width  * display_matrix[0][i] +
@@ -2590,9 +2588,10 @@ static int mov_read_tkhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                 ((int64_t) display_matrix[2][i] << 16);
 
         //sample aspect ratio is new width/height divided by old width/height
-        st->sample_aspect_ratio = av_d2q(
-            ((double) disp_transform[0] * height) /
-            ((double) disp_transform[1] * width), INT_MAX);
+        if (disp_transform[0] > 0 && disp_transform[1] > 0)
+            st->sample_aspect_ratio = av_d2q(
+                ((double) disp_transform[0] * height) /
+                ((double) disp_transform[1] * width), INT_MAX);
     }
     return 0;
 }
