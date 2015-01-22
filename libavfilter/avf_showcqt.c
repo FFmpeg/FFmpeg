@@ -205,7 +205,7 @@ static void load_freetype_font(AVFilterContext *ctx)
     if (FT_Set_Char_Size(face, 16*64 * linear_hori_advance / face->glyph->linearHoriAdvance, 0, 0, 0))
         goto fail;
 
-    s->font_alpha = av_malloc(font_height * video_width);
+    s->font_alpha = av_malloc_array(font_height, video_width);
     if (!s->font_alpha)
         goto fail;
 
