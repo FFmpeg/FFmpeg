@@ -2457,7 +2457,7 @@ static void imdct_and_windowing_eld(AACContext *ac, SingleChannelElement *sce)
     float *in    = sce->coeffs;
     float *out   = sce->ret;
     float *saved = sce->saved;
-    const float *const window = ff_aac_eld_window;
+    const float *const window = ff_aac_eld_window_512;
     float *buf  = ac->buf_mdct;
     int i;
     const int n  = 512;
