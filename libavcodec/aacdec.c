@@ -3235,7 +3235,17 @@ static int latm_decode_frame(AVCodecContext *avctx, void *out,
         return AVERROR_INVALIDDATA;
     }
 
-    if ((err = aac_decode_frame_int(avctx, out, got_frame_ptr, &gb)) < 0)
+    switch (latmctx->aac_ctx.oc[1].m4ac.object_type) {
+    case AOT_ER_AAC_LC:
+    case AOT_ER_AAC_LTP:
+    case AOT_ER_AAC_LD:
+    case AOT_ER_AAC_ELD:
+        err = aac_decode_er_frame(avctx, out, got_frame_ptr, &gb);
+        break;
+    default:
+        err = aac_decode_frame_int(avctx, out, got_frame_ptr, &gb);
+    }
+    if (err < 0)
         return err;
 
     return muxlength;
