@@ -218,7 +218,7 @@ API changes, most recent first:
   Increase FF_INPUT_BUFFER_PADDING_SIZE to 32 due to some corner cases needing
   it
 
-2014-06-10 - xxxxxxx - lavf 55.43.100 - avformat.h
+2014-06-10 - 5482780 - lavf 55.43.100 - avformat.h
   New field int64_t max_analyze_duration2 instead of deprecated
   int max_analyze_duration.
 
@@ -242,7 +242,7 @@ API changes, most recent first:
   Add strict_std_compliance and related AVOptions to support experimental
   muxing.
 
-2014-05-26 - xxxxxxx - lavu 52.87.100 - threadmessage.h
+2014-05-26 - 55cc60c - lavu 52.87.100 - threadmessage.h
   Add thread message queue API.
 
 2014-05-26 - c37d179 - lavf 55.41.100 - avformat.h
@@ -252,7 +252,7 @@ API changes, most recent first:
   Add av_stream_get_side_data() to access stream-level side data
   in the same way as av_packet_get_side_data().
 
-2014-05-xx - xxxxxxx - lavu 52.86.100 - fifo.h
+2014-05-xx - 7336e39 - lavu 52.86.100 - fifo.h
   Add av_fifo_alloc_array() function.
 
 2014-05-19 - ef1d4ee / bddd8cb - lavu 52.85.100 / 53.15.0 - frame.h, display.h
