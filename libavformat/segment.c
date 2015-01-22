@@ -105,7 +105,11 @@ static int segment_hls_window(AVFormatContext *s, int last)
         if (seg->entry_prefix) {
             avio_printf(seg->pb, "%s", seg->entry_prefix);
         }
-        av_get_frame_filename(buf, sizeof(buf), s->filename, i);
+        ret = av_get_frame_filename(buf, sizeof(buf), s->filename, i);
+        if (ret < 0) {
+            ret = AVERROR(EINVAL);
+            goto fail;
+        }
         avio_printf(seg->pb, "%s\n", buf);
     }
 
