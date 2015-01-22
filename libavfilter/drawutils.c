@@ -75,7 +75,7 @@ int ff_fill_line_with_color(uint8_t *line[4], int pixel_step[4], int w, uint8_t 
         for (i = 0; i < 4; i++)
             dst_color[rgba_map[i]] = rgba_color[i];
 
-        line[0] = av_malloc(w * pixel_step[0]);
+        line[0] = av_malloc_array(w, pixel_step[0]);
         for (i = 0; i < w; i++)
             memcpy(line[0] + i * pixel_step[0], dst_color, pixel_step[0]);
         if (rgba_map_ptr)
