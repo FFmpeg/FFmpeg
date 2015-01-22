@@ -1755,7 +1755,7 @@ mpegvideo_select="blockdsp hpeldsp idctdsp me_cmp videodsp"
 mpegvideoenc_select="me_cmp mpegvideo pixblockdsp qpeldsp"
 
 # decoders / encoders
-aac_decoder_select="mdct sinewin"
+aac_decoder_select="imdct15 mdct sinewin"
 aac_encoder_select="audio_frame_queue iirfilter mdct sinewin"
 aac_latm_decoder_select="aac_decoder aac_latm_parser"
 ac3_decoder_select="ac3_parser ac3dsp bswapdsp mdct"
