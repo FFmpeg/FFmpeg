@@ -121,8 +121,10 @@ static int parse_playlist(URLContext *h, const char *url)
         return ret;
 
     read_chomp_line(in, line, sizeof(line));
-    if (strcmp(line, "#EXTM3U"))
-        return AVERROR_INVALIDDATA;
+    if (strcmp(line, "#EXTM3U")) {
+        ret = AVERROR_INVALIDDATA;
+        goto fail;
+    }
 
     free_segment_list(s);
     s->finished = 0;
