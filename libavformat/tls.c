@@ -175,7 +175,8 @@ static int tls_open(URLContext *h, const char *uri, int flags)
     const char *proxy_path;
     int use_proxy;
 
-    ff_tls_init();
+    if ((ret = ff_tls_init()) < 0)
+        return ret;
 
     if (c->listen)
         snprintf(opts, sizeof(opts), "?listen=1");

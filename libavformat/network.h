@@ -78,7 +78,7 @@ extern int ff_network_inited_globally;
 int ff_network_init(void);
 void ff_network_close(void);
 
-void ff_tls_init(void);
+int ff_tls_init(void);
 void ff_tls_deinit(void);
 
 int ff_network_wait_fd(int fd, int write);
