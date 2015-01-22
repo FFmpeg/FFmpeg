@@ -1137,7 +1137,9 @@ static void decode_ltp(LongTermPrediction *ltp,
 static int decode_ics_info(AACContext *ac, IndividualChannelStream *ics,
                            GetBitContext *gb)
 {
-    int aot = ac->oc[1].m4ac.object_type;
+    const MPEG4AudioConfig *const m4ac = &ac->oc[1].m4ac;
+    const int aot = m4ac->object_type;
+    const int sampling_index = m4ac->sampling_index;
     if (aot != AOT_ER_AAC_ELD) {
         if (get_bits1(gb)) {
             av_log(ac->avctx, AV_LOG_ERROR, "Reserved bit set.\n");
@@ -1170,23 +1172,23 @@ static int decode_ics_info(AACContext *ac, IndividualChannelStream *ics,
             }
         }
         ics->num_windows       = 8;
-        ics->swb_offset        =    ff_swb_offset_128[ac->oc[1].m4ac.sampling_index];
-        ics->num_swb           =   ff_aac_num_swb_128[ac->oc[1].m4ac.sampling_index];
-        ics->tns_max_bands     = ff_tns_max_bands_128[ac->oc[1].m4ac.sampling_index];
+        ics->swb_offset        =    ff_swb_offset_128[sampling_index];
+        ics->num_swb           =   ff_aac_num_swb_128[sampling_index];
+        ics->tns_max_bands     = ff_tns_max_bands_128[sampling_index];
         ics->predictor_present = 0;
     } else {
-        ics->max_sfb               = get_bits(gb, 6);
-        ics->num_windows           = 1;
+        ics->max_sfb           = get_bits(gb, 6);
+        ics->num_windows       = 1;
         if (aot == AOT_ER_AAC_LD || aot == AOT_ER_AAC_ELD) {
-            ics->swb_offset        =     ff_swb_offset_512[ac->oc[1].m4ac.sampling_index];
-            ics->num_swb           =    ff_aac_num_swb_512[ac->oc[1].m4ac.sampling_index];
-            ics->tns_max_bands     =  ff_tns_max_bands_512[ac->oc[1].m4ac.sampling_index];
+            ics->swb_offset    =     ff_swb_offset_512[sampling_index];
+            ics->num_swb       =    ff_aac_num_swb_512[sampling_index];
+            ics->tns_max_bands =  ff_tns_max_bands_512[sampling_index];
             if (!ics->num_swb || !ics->swb_offset)
                 return AVERROR_BUG;
         } else {
-            ics->swb_offset        =    ff_swb_offset_1024[ac->oc[1].m4ac.sampling_index];
-            ics->num_swb           =   ff_aac_num_swb_1024[ac->oc[1].m4ac.sampling_index];
-            ics->tns_max_bands     = ff_tns_max_bands_1024[ac->oc[1].m4ac.sampling_index];
+            ics->swb_offset    =    ff_swb_offset_1024[sampling_index];
+            ics->num_swb       =   ff_aac_num_swb_1024[sampling_index];
+            ics->tns_max_bands = ff_tns_max_bands_1024[sampling_index];
         }
         if (aot != AOT_ER_AAC_ELD) {
             ics->predictor_present     = get_bits1(gb);
