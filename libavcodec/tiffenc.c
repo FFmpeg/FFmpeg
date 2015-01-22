@@ -277,7 +277,8 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     case AV_PIX_FMT_GRAY8:
         avctx->bits_per_coded_sample = 0x28;
     case AV_PIX_FMT_GRAY8A:
-        alpha = avctx->pix_fmt == AV_PIX_FMT_GRAY8A;
+    case AV_PIX_FMT_YA16LE:
+        alpha = avctx->pix_fmt == AV_PIX_FMT_GRAY8A || avctx->pix_fmt == AV_PIX_FMT_YA16LE;
     case AV_PIX_FMT_GRAY16LE:
     case AV_PIX_FMT_MONOBLACK:
         s->photometric_interpretation = TIFF_PHOTOMETRIC_BLACK_IS_ZERO;
@@ -575,7 +576,7 @@ AVCodec ff_tiff_encoder = {
     .pix_fmts       = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_RGB24, AV_PIX_FMT_RGB48LE, AV_PIX_FMT_PAL8,
         AV_PIX_FMT_RGBA, AV_PIX_FMT_RGBA64LE,
-        AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY8A, AV_PIX_FMT_GRAY16LE,
+        AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY8A, AV_PIX_FMT_GRAY16LE, AV_PIX_FMT_YA16LE,
         AV_PIX_FMT_MONOBLACK, AV_PIX_FMT_MONOWHITE,
         AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV440P, AV_PIX_FMT_YUV444P,
         AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUV411P,
