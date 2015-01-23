@@ -167,7 +167,7 @@ The input name should be in the format:
 @end example
 
 where @var{TYPE} can be either @var{audio} or @var{video},
-and @var{NAME} is the device's name.
+and @var{NAME} is the device's name or alternative name..
 
 @subsection Options
 
@@ -220,6 +220,12 @@ Setting this value too low can degrade performance.
 See also
 @url{http://msdn.microsoft.com/en-us/library/windows/desktop/dd377582(v=vs.85).aspx}
 
+@item video_pin_name
+Select video capture pin to use by name or alternative name.
+
+@item audio_pin_name
+Select audio capture pin to use by name or alternative name.
+
 @end table
 
 @subsection Examples
@@ -254,6 +260,12 @@ $ ffmpeg -f dshow -i video="Camera":audio="Microphone"
 Print the list of supported options in selected device and exit:
 @example
 $ ffmpeg -list_options true -f dshow -i video="Camera"
+@end example
+
+@item
+Specify pin names to capture by name or alternative name, specify alternative device name:
+@example
+$ ffmpeg -f dshow -audio_pin_name "Audio Out" -video_pin_name 2 -i video=video="@device_pnp_\\?\pci#ven_1a0a&dev_6200&subsys_62021461&rev_01#4&e2c7dd6&0&00e1#{65e8773d-8f56-11d0-a3b9-00a0c9223196}\{ca465100-deb0-4d59-818f-8c477184adf6}":audio="Microphone"
 @end example
 
 @end itemize

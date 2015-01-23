@@ -40,6 +40,8 @@ struct dshow_ctx {
     int   list_options;
     int   list_devices;
     int   audio_buffer_size;
+    char *video_pin_name;
+    char *audio_pin_name;
 
     IBaseFilter *device_filter[2];
     IPin        *device_pin[2];
@@ -269,8 +271,31 @@ dshow_cycle_devices(AVFormatContext *avctx, ICreateDevEnum *devenum,
 
     while (!device_filter && IEnumMoniker_Next(classenum, 1, &m, NULL) == S_OK) {
         IPropertyBag *bag = NULL;
-        char *buf = NULL;
+        char *friendly_name = NULL;
+        char *unique_name = NULL;
         VARIANT var;
+        IBindCtx *bind_ctx = NULL;
+        LPOLESTR olestr = NULL;
+        LPMALLOC co_malloc = NULL;
+        int i;
+
+        r = CoGetMalloc(1, &co_malloc);
+        if (r = S_OK)
+            goto fail1;
+        r = CreateBindCtx(0, &bind_ctx);
+        if (r != S_OK)
+            goto fail1;
+        /* GetDisplayname works for both video and audio, DevicePath doesn't */
+        r = IMoniker_GetDisplayName(m, bind_ctx, NULL, &olestr);
+        if (r != S_OK)
+            goto fail1;
+        unique_name = dup_wchar_to_utf8(olestr);
+        /* replace ':' with '_' since we use : to delineate between sources */
+        for (i = 0; i < strlen(unique_name); i++) {
+            if (unique_name[i] == ':')
+                unique_name[i] = '_';
+        }
+
 
         r = IMoniker_BindToStorage(m, 0, 0, &IID_IPropertyBag, (void *) &bag);
         if (r != S_OK)
@@ -281,23 +306,35 @@ dshow_cycle_devices(AVFormatContext *avctx, ICreateDevEnum *devenum,
         if (r != S_OK)
             goto fail1;
 
-        buf = dup_wchar_to_utf8(var.bstrVal);
+        friendly_name = dup_wchar_to_utf8(var.bstrVal);
 
-        if (pfilter) {
-            if (strcmp(device_name, buf))
+         if (pfilter) {
+            if (strcmp(device_name, friendly_name) && strcmp(device_name, unique_name))
                 goto fail1;
 
-            if (!skip--)
-                IMoniker_BindToObject(m, 0, 0, &IID_IBaseFilter, (void *) &device_filter);
+            if (!skip--) {
+                r = IMoniker_BindToObject(m, 0, 0, &IID_IBaseFilter, (void *) &device_filter);
+                if (r != S_OK) {
+                    av_log(avctx, AV_LOG_ERROR, "Unable to BindToObject for %s\n", device_name);
+                    goto fail1;
+                }
+            }
         } else {
-            av_log(avctx, AV_LOG_INFO, " \"%s\"\n", buf);
+            av_log(avctx, AV_LOG_INFO, " \"%s\"\n", friendly_name);
+            av_log(avctx, AV_LOG_INFO, "    Alternative name \"%s\"\n", unique_name);
         }
 
 fail1:
-        av_free(buf);
+        if (olestr && co_malloc)
+            IMalloc_Free(co_malloc, olestr);
+        if (bind_ctx)
+            IBindCtx_Release(bind_ctx);
+        av_free(friendly_name);
+        av_free(unique_name);
         if (bag)
             IPropertyBag_Release(bag);
         IMoniker_Release(m);
+
     }
 
     IEnumMoniker_Release(classenum);
@@ -550,6 +587,10 @@ dshow_cycle_pins(AVFormatContext *avctx, enum dshowDeviceType devtype,
         AM_MEDIA_TYPE *type;
         GUID category;
         DWORD r2;
+        char *name_buf = NULL;
+        wchar_t *pin_id = NULL;
+        char *pin_buf = NULL;
+        char *desired_pin_name = devtype == VideoDevice ? ctx->video_pin_name : ctx->audio_pin_name;
 
         IPin_QueryPinInfo(pin, &info);
         IBaseFilter_Release(info.pFilter);
@@ -563,14 +604,29 @@ dshow_cycle_pins(AVFormatContext *avctx, enum dshowDeviceType devtype,
             goto next;
         if (!IsEqualGUID(&category, &PIN_CATEGORY_CAPTURE))
             goto next;
+        name_buf = dup_wchar_to_utf8(info.achName);
+
+        r = IPin_QueryId(pin, &pin_id);
+        if (r != S_OK) {
+            av_log(avctx, AV_LOG_ERROR, "Could not query pin id\n");
+            return AVERROR(EIO);
+        }
+        pin_buf = dup_wchar_to_utf8(pin_id);
+
 
         if (!ppin) {
-            char *buf = dup_wchar_to_utf8(info.achName);
-            av_log(avctx, AV_LOG_INFO, " Pin \"%s\"\n", buf);
-            av_free(buf);
+            av_log(avctx, AV_LOG_INFO, " Pin \"%s\" (alternative pin name \"%s\")\n", name_buf, pin_buf);
             dshow_cycle_formats(avctx, devtype, pin, NULL);
             goto next;
         }
+        if (desired_pin_name) {
+            if(strcmp(name_buf, desired_pin_name) && strcmp(pin_buf, desired_pin_name)) {
+                av_log(avctx, AV_LOG_DEBUG, "skipping pin \"%s\" (\"%s\") != requested \"%s\"\n",
+                    name_buf, pin_buf, desired_pin_name);
+                goto next;
+            }
+        }
+
         if (set_format) {
             dshow_cycle_formats(avctx, devtype, pin, &format_set);
             if (!format_set) {
@@ -590,6 +646,7 @@ dshow_cycle_pins(AVFormatContext *avctx, enum dshowDeviceType devtype,
         while (!device_pin && IEnumMediaTypes_Next(types, 1, &type, NULL) == S_OK) {
             if (IsEqualGUID(&type->majortype, mediatype[devtype])) {
                 device_pin = pin;
+                av_log(avctx, AV_LOG_DEBUG, "Selecting pin %s on %s\n", name_buf, devtypename);
                 goto next;
             }
             CoTaskMemFree(type);
@@ -602,6 +659,11 @@ next:
             IKsPropertySet_Release(p);
         if (device_pin != pin)
             IPin_Release(pin);
+        av_free(name_buf);
+        av_free(pin_buf);
+        if (pin_id)
+            CoTaskMemFree(pin_id);
+
     }
 
     IEnumPins_Release(pins);
@@ -1066,6 +1128,7 @@ static const AVOption options[] = {
     { "sample_rate", "set audio sample rate", OFFSET(sample_rate), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, DEC },
     { "sample_size", "set audio sample size", OFFSET(sample_size), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 16, DEC },
     { "channels", "set number of audio channels, such as 1 or 2", OFFSET(channels), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, DEC },
+    { "audio_buffer_size", "set audio device buffer latency size in milliseconds (default is the device's default)", OFFSET(audio_buffer_size), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, DEC },
     { "list_devices", "list available devices", OFFSET(list_devices), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, DEC, "list_devices" },
     { "true", "", 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, DEC, "list_devices" },
     { "false", "", 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, DEC, "list_devices" },
@@ -1074,7 +1137,8 @@ static const AVOption options[] = {
     { "false", "", 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, DEC, "list_options" },
     { "video_device_number", "set video device number for devices with same name (starts at 0)", OFFSET(video_device_number), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, DEC },
     { "audio_device_number", "set audio device number for devices with same name (starts at 0)", OFFSET(audio_device_number), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, DEC },
-    { "audio_buffer_size", "set audio device buffer latency size in milliseconds (default is the device's default)", OFFSET(audio_buffer_size), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, DEC },
+    { "video_pin_name", "select video capture pin by name", OFFSET(video_pin_name),AV_OPT_TYPE_STRING, {.str = NULL},  0, 0, AV_OPT_FLAG_ENCODING_PARAM },
+    { "audio_pin_name", "select audio capture pin by name", OFFSET(audio_pin_name),AV_OPT_TYPE_STRING, {.str = NULL},  0, 0, AV_OPT_FLAG_ENCODING_PARAM },
     { NULL },
 };
 
