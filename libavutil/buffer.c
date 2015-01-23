@@ -103,19 +103,30 @@ AVBufferRef *av_buffer_ref(AVBufferRef *buf)
     return ret;
 }
 
-void av_buffer_unref(AVBufferRef **buf)
+static void buffer_replace(AVBufferRef **dst, AVBufferRef **src)
 {
     AVBuffer *b;
 
-    if (!buf || !*buf)
-        return;
-    b = (*buf)->buffer;
-    av_freep(buf);
+    b = (*dst)->buffer;
+
+    if (src) {
+        **dst = **src;
+        av_freep(src);
+    } else
+        av_freep(dst);
 
     if (!avpriv_atomic_int_add_and_fetch(&b->refcount, -1)) {
         b->free(b->opaque, b->data);
         av_freep(&b);
     }
+}
+
+void av_buffer_unref(AVBufferRef **buf)
+{
+    if (!buf || !*buf)
+        return;
+
+    buffer_replace(buf, NULL);
 }
 
 int av_buffer_is_writable(const AVBufferRef *buf)

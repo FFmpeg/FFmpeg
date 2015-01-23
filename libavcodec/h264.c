@@ -762,7 +762,10 @@ static void decode_postinit(H264Context *h, int setup_finished)
          * yet, so we assume the worst for now. */
         // if (setup_finished)
         //    ff_thread_finish_setup(h->avctx);
-        return;
+        if (cur->field_poc[0] == INT_MAX && cur->field_poc[1] == INT_MAX)
+            return;
+        if (h->avctx->hwaccel || h->missing_fields <=1)
+            return;
     }
 
     cur->f.interlaced_frame = 0;
@@ -1911,6 +1914,29 @@ static int h264_decode_frame(AVCodecContext *avctx, void *data,
                                    h->next_output_pic->recovered)) {
             if (!h->next_output_pic->recovered)
                 h->next_output_pic->f.flags |= AV_FRAME_FLAG_CORRUPT;
+
+            if (!h->avctx->hwaccel &&
+                 (h->next_output_pic->field_poc[0] == INT_MAX ||
+                  h->next_output_pic->field_poc[1] == INT_MAX)
+            ) {
+                int p;
+                AVFrame *f = &h->next_output_pic->f;
+                int field = h->next_output_pic->field_poc[0] == INT_MAX;
+                uint8_t *dst_data[4];
+                int linesizes[4];
+                const uint8_t *src_data[4];
+
+                av_log(h->avctx, AV_LOG_DEBUG, "Duplicating field %d to fill missing\n", field);
+
+                for (p = 0; p<4; p++) {
+                    dst_data[p] = f->data[p] + (field^1)*f->linesize[p];
+                    src_data[p] = f->data[p] +  field   *f->linesize[p];
+                    linesizes[p] = 2*f->linesize[p];
+                }
+
+                av_image_copy(dst_data, linesizes, src_data, linesizes,
+                              f->format, f->width, f->height>>1);
+            }
 
             ret = output_frame(h, pict, h->next_output_pic);
             if (ret < 0)

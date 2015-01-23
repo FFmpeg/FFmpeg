@@ -224,6 +224,11 @@ static int libx265_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
         x265pic.pts      = pic->pts;
         x265pic.bitDepth = av_pix_fmt_desc_get(avctx->pix_fmt)->comp[0].depth_minus1 + 1;
+
+        x265pic.sliceType = pic->pict_type == AV_PICTURE_TYPE_I ? X265_TYPE_I :
+                            pic->pict_type == AV_PICTURE_TYPE_P ? X265_TYPE_P :
+                            pic->pict_type == AV_PICTURE_TYPE_B ? X265_TYPE_B :
+                            X265_TYPE_AUTO;
     }
 
     ret = x265_encoder_encode(ctx->encoder, &nal, &nnal,

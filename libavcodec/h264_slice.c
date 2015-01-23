@@ -1663,9 +1663,11 @@ int ff_h264_decode_slice_header(H264Context *h, H264Context *h0)
             if (!FIELD_PICTURE(h) || h->picture_structure == last_pic_structure) {
                 /* Previous field is unmatched. Don't display it, but let it
                  * remain for reference if marked as such. */
+                h0->missing_fields ++;
                 h0->cur_pic_ptr = NULL;
                 h0->first_field = FIELD_PICTURE(h);
             } else {
+                h0->missing_fields = 0;
                 if (h0->cur_pic_ptr->frame_num != h->frame_num) {
                     ff_thread_report_progress(&h0->cur_pic_ptr->tf, INT_MAX,
                                               h0->picture_structure==PICT_BOTTOM_FIELD);
