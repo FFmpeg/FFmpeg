@@ -233,14 +233,6 @@ static av_cold int libopenjpeg_encode_init(AVCodecContext *avctx)
         err = AVERROR(EINVAL);
         goto fail;
     }
-    opj_setup_encoder(ctx->compress, &ctx->enc_params, ctx->image);
-
-    ctx->stream = opj_cio_open((opj_common_ptr) ctx->compress, NULL, 0);
-    if (!ctx->stream) {
-        av_log(avctx, AV_LOG_ERROR, "Error creating the cio stream\n");
-        err = AVERROR(ENOMEM);
-        goto fail;
-    }
 
     avctx->coded_frame = av_frame_alloc();
     if (!avctx->coded_frame) {
@@ -257,8 +249,6 @@ static av_cold int libopenjpeg_encode_init(AVCodecContext *avctx)
     return 0;
 
 fail:
-    opj_cio_close(ctx->stream);
-    ctx->stream = NULL;
     opj_destroy_compress(ctx->compress);
     ctx->compress = NULL;
     opj_image_destroy(ctx->image);
@@ -569,7 +559,14 @@ static int libopenjpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         return -1;
     }
 
-    cio_seek(stream, 0);
+    opj_setup_encoder(compress, &ctx->enc_params, image);
+
+    stream = opj_cio_open((opj_common_ptr) compress, NULL, 0);
+    if (!stream) {
+        av_log(avctx, AV_LOG_ERROR, "Error creating the cio stream\n");
+        return AVERROR(ENOMEM);
+    }
+
     if (!opj_encode(compress, stream, image, NULL)) {
         av_log(avctx, AV_LOG_ERROR, "Error during the opj encode\n");
         return -1;
