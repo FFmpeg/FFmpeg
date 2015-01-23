@@ -139,6 +139,7 @@ HRESULT
 dshow_try_setup_crossbar_options(ICaptureGraphBuilder2 *graph_builder2,
     IBaseFilter *device_filter, enum dshowDeviceType devtype, AVFormatContext *avctx)
 {
+    struct dshow_ctx *ctx = avctx->priv_data;
     IAMCrossbar *cross_bar = NULL;
     IBaseFilter *cross_bar_filter = NULL;
     HRESULT hr;
@@ -151,6 +152,12 @@ dshow_try_setup_crossbar_options(ICaptureGraphBuilder2 *graph_builder2,
         goto end;
     }
 
+    if (ctx->show_crossbar_connection_dialog) {
+        hr = IAMCrossbar_QueryInterface(cross_bar, &IID_IBaseFilter, (void **) &cross_bar_filter);
+        if (hr != S_OK)
+            goto end;
+        dshow_show_filter_properties(cross_bar_filter, avctx);
+    }
     hr = setup_crossbar_options(cross_bar, devtype, avctx);
     if (hr != S_OK)
         goto end;

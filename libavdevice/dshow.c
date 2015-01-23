@@ -503,6 +503,53 @@ end:
 }
 
 /**
+ * Pops up a user dialog allowing them to adjust properties for the given filter, if possible.
+ */
+void
+dshow_show_filter_properties(IBaseFilter *device_filter, AVFormatContext *avctx) {
+    ISpecifyPropertyPages *property_pages = NULL;
+    IUnknown *device_filter_iunknown = NULL;
+    HRESULT hr;
+    FILTER_INFO filter_info = {0}; /* a warning on this line is false positive GCC bug 53119 */
+    CAUUID ca_guid = {0};
+
+    hr  = IBaseFilter_QueryInterface(device_filter, &IID_ISpecifyPropertyPages, (void **)&property_pages);
+    if (hr != S_OK) {
+        av_log(avctx, AV_LOG_WARNING, "requested filter does not have a property page to show");
+        goto end;
+    }
+    hr = IBaseFilter_QueryFilterInfo(device_filter, &filter_info);
+    if (hr != S_OK) {
+        goto fail;
+    }
+    hr = IBaseFilter_QueryInterface(device_filter, &IID_IUnknown, (void **)&device_filter_iunknown);
+    if (hr != S_OK) {
+        goto fail;
+    }
+    hr = ISpecifyPropertyPages_GetPages(property_pages, &ca_guid);
+    if (hr != S_OK) {
+        goto fail;
+    }
+    hr = OleCreatePropertyFrame(NULL, 0, 0, filter_info.achName, 1, &device_filter_iunknown, ca_guid.cElems,
+        ca_guid.pElems, 0, 0, NULL);
+    if (hr != S_OK) {
+        goto fail;
+    }
+    goto end;
+fail:
+    av_log(avctx, AV_LOG_ERROR, "Failure showing property pages for filter");
+end:
+    if (property_pages)
+        ISpecifyPropertyPages_Release(property_pages);
+    if (device_filter_iunknown)
+        IUnknown_Release(device_filter_iunknown);
+    if (filter_info.pGraph)
+        IFilterGraph_Release(filter_info.pGraph);
+    if (ca_guid.pElems)
+        CoTaskMemFree(ca_guid.pElems);
+}
+
+/**
  * Cycle through available pins using the device_filter device, of type
  * devtype, retrieve the first output pin and return the pointer to the
  * object found in *ppin.
@@ -527,6 +574,10 @@ dshow_cycle_pins(AVFormatContext *avctx, enum dshowDeviceType devtype,
                                                  ctx->video_codec_id != AV_CODEC_ID_RAWVIDEO))
                   || (devtype == AudioDevice && (ctx->channels || ctx->sample_rate));
     int format_set = 0;
+    int should_show_properties = (devtype == VideoDevice) ? ctx->show_video_device_dialog : ctx->show_audio_device_dialog;
+
+    if (should_show_properties)
+        dshow_show_filter_properties(device_filter, avctx);
 
     r = IBaseFilter_EnumPins(device_filter, &pins);
     if (r != S_OK) {
@@ -1133,6 +1184,15 @@ static const AVOption options[] = {
     { "audio_pin_name", "select audio capture pin by name", OFFSET(audio_pin_name),AV_OPT_TYPE_STRING, {.str = NULL},  0, 0, AV_OPT_FLAG_ENCODING_PARAM },
     { "crossbar_video_input_pin_number", "set video input pin number for crossbar device", OFFSET(crossbar_video_input_pin_number), AV_OPT_TYPE_INT, {.i64 = -1}, -1, INT_MAX, DEC },
     { "crossbar_audio_input_pin_number", "set audio input pin number for crossbar device", OFFSET(crossbar_audio_input_pin_number), AV_OPT_TYPE_INT, {.i64 = -1}, -1, INT_MAX, DEC },
+    { "show_video_device_dialog", "display property dialog for video capture device", OFFSET(show_video_device_dialog), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, DEC, "show_video_device_dialog" },
+    { "true", "", 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, DEC, "show_video_device_dialog" },
+    { "false", "", 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, DEC, "show_video_device_dialog" },
+    { "show_audio_device_dialog", "display property dialog for audio capture device", OFFSET(show_audio_device_dialog), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, DEC, "show_audio_device_dialog" },
+    { "true", "", 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, DEC, "show_audio_device_dialog" },
+    { "false", "", 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, DEC, "show_audio_device_dialog" },
+    { "show_crossbar_connection_dialog", "display property dialog for crossbar connecting pins filter", OFFSET(show_crossbar_connection_dialog), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, DEC, "show_crossbar_connection_dialog" },
+    { "true", "", 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, DEC, "show_crossbar_connection_dialog" },
+    { "false", "", 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, DEC, "show_crossbar_connection_dialog" },
     { NULL },
 };
 
