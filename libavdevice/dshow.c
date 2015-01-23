@@ -162,7 +162,7 @@ dshow_read_close(AVFormatContext *s)
     pktl = ctx->pktl;
     while (pktl) {
         AVPacketList *next = pktl->next;
-        av_destruct_packet(&pktl->pkt);
+        av_free_packet(&pktl->pkt);
         av_free(pktl);
         pktl = next;
     }
