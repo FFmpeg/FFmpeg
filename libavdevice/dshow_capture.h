@@ -65,6 +65,11 @@ enum dshowDeviceType {
     AudioDevice = 1,
 };
 
+enum dshowSourceFilterType {
+    VideoSourceDevice = 0,
+    AudioSourceDevice = 1,
+};
+
 #define DECLARE_QUERYINTERFACE(class, ...)                                   \
 long WINAPI                                                                  \
 class##_QueryInterface(class *this, const GUID *riid, void **ppvObject)      \

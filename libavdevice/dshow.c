@@ -203,7 +203,7 @@ fail:
  */
 static int
 dshow_cycle_devices(AVFormatContext *avctx, ICreateDevEnum *devenum,
-                    enum dshowDeviceType devtype, IBaseFilter **pfilter)
+                    enum dshowDeviceType devtype, enum dshowSourceFilterType sourcetype, IBaseFilter **pfilter)
 {
     struct dshow_ctx *ctx = avctx->priv_data;
     IBaseFilter *device_filter = NULL;
@@ -216,12 +216,13 @@ dshow_cycle_devices(AVFormatContext *avctx, ICreateDevEnum *devenum,
 
     const GUID *device_guid[2] = { &CLSID_VideoInputDeviceCategory,
                                    &CLSID_AudioInputDeviceCategory };
-    const char *devtypename = (devtype == VideoDevice) ? "video" : "audio";
+    const char *devtypename = (devtype == VideoDevice) ? "video" : "audio only";
+    const char *sourcetypename = (sourcetype == VideoSourceDevice) ? "video" : "audio";
 
-    r = ICreateDevEnum_CreateClassEnumerator(devenum, device_guid[devtype],
+    r = ICreateDevEnum_CreateClassEnumerator(devenum, device_guid[sourcetype],
                                              (IEnumMoniker **) &classenum, 0);
     if (r != S_OK) {
-        av_log(avctx, AV_LOG_ERROR, "Could not enumerate %s devices.\n",
+        av_log(avctx, AV_LOG_ERROR, "Could not enumerate %s devices (or none found).\n",
                devtypename);
         return AVERROR(EIO);
     }
@@ -253,7 +254,6 @@ dshow_cycle_devices(AVFormatContext *avctx, ICreateDevEnum *devenum,
                 unique_name[i] = '_';
         }
 
-
         r = IMoniker_BindToStorage(m, 0, 0, &IID_IPropertyBag, (void *) &bag);
         if (r != S_OK)
             goto fail1;
@@ -262,10 +262,9 @@ dshow_cycle_devices(AVFormatContext *avctx, ICreateDevEnum *devenum,
         r = IPropertyBag_Read(bag, L"FriendlyName", &var, NULL);
         if (r != S_OK)
             goto fail1;
-
         friendly_name = dup_wchar_to_utf8(var.bstrVal);
 
-         if (pfilter) {
+        if (pfilter) {
             if (strcmp(device_name, friendly_name) && strcmp(device_name, unique_name))
                 goto fail1;
 
@@ -291,15 +290,14 @@ fail1:
         if (bag)
             IPropertyBag_Release(bag);
         IMoniker_Release(m);
-
     }
 
     IEnumMoniker_Release(classenum);
 
     if (pfilter) {
         if (!device_filter) {
-            av_log(avctx, AV_LOG_ERROR, "Could not find %s device.\n",
-                   devtypename);
+            av_log(avctx, AV_LOG_ERROR, "Could not find %s device with name [%s] among source devices of type %s.\n",
+                   devtypename, device_name, sourcetypename);
             return AVERROR(EIO);
         }
         *pfilter = device_filter;
@@ -510,7 +508,7 @@ dshow_show_filter_properties(IBaseFilter *device_filter, AVFormatContext *avctx)
     ISpecifyPropertyPages *property_pages = NULL;
     IUnknown *device_filter_iunknown = NULL;
     HRESULT hr;
-    FILTER_INFO filter_info = {0}; /* a warning on this line is false positive GCC bug 53119 */
+    FILTER_INFO filter_info = {0}; /* a warning on this line is false positive GCC bug 53119 AFAICT */
     CAUUID ca_guid = {0};
 
     hr  = IBaseFilter_QueryInterface(device_filter, &IID_ISpecifyPropertyPages, (void **)&property_pages);
@@ -557,7 +555,7 @@ end:
  */
 static int
 dshow_cycle_pins(AVFormatContext *avctx, enum dshowDeviceType devtype,
-                 IBaseFilter *device_filter, IPin **ppin)
+                 enum dshowSourceFilterType sourcetype, IBaseFilter *device_filter, IPin **ppin)
 {
     struct dshow_ctx *ctx = avctx->priv_data;
     IEnumPins *pins = 0;
@@ -566,7 +564,8 @@ dshow_cycle_pins(AVFormatContext *avctx, enum dshowDeviceType devtype,
     int r;
 
     const GUID *mediatype[2] = { &MEDIATYPE_Video, &MEDIATYPE_Audio };
-    const char *devtypename = (devtype == VideoDevice) ? "video" : "audio";
+    const char *devtypename = (devtype == VideoDevice) ? "video" : "audio only";
+    const char *sourcetypename = (sourcetype == VideoSourceDevice) ? "video" : "audio";
 
     int set_format = (devtype == VideoDevice && (ctx->framerate ||
                                                 (ctx->requested_width && ctx->requested_height) ||
@@ -586,9 +585,10 @@ dshow_cycle_pins(AVFormatContext *avctx, enum dshowDeviceType devtype,
     }
 
     if (!ppin) {
-        av_log(avctx, AV_LOG_INFO, "DirectShow %s device options\n",
-               devtypename);
+        av_log(avctx, AV_LOG_INFO, "DirectShow %s device options (from %s devices)\n",
+               devtypename, sourcetypename);
     }
+
     while (!device_pin && IEnumPins_Next(pins, 1, &pin, NULL) == S_OK) {
         IKsPropertySet *p = NULL;
         IEnumMediaTypes *types = NULL;
@@ -622,12 +622,12 @@ dshow_cycle_pins(AVFormatContext *avctx, enum dshowDeviceType devtype,
         }
         pin_buf = dup_wchar_to_utf8(pin_id);
 
-
         if (!ppin) {
             av_log(avctx, AV_LOG_INFO, " Pin \"%s\" (alternative pin name \"%s\")\n", name_buf, pin_buf);
             dshow_cycle_formats(avctx, devtype, pin, NULL);
             goto next;
         }
+
         if (desired_pin_name) {
             if(strcmp(name_buf, desired_pin_name) && strcmp(pin_buf, desired_pin_name)) {
                 av_log(avctx, AV_LOG_DEBUG, "skipping pin \"%s\" (\"%s\") != requested \"%s\"\n",
@@ -694,29 +694,30 @@ next:
 }
 
 /**
- * List options for device with type devtype.
+ * List options for device with type devtype, source filter type sourcetype
  *
  * @param devenum device enumerator used for accessing the device
  */
 static int
 dshow_list_device_options(AVFormatContext *avctx, ICreateDevEnum *devenum,
-                          enum dshowDeviceType devtype)
+                          enum dshowDeviceType devtype, enum dshowSourceFilterType sourcetype)
 {
     struct dshow_ctx *ctx = avctx->priv_data;
     IBaseFilter *device_filter = NULL;
     int r;
 
-    if ((r = dshow_cycle_devices(avctx, devenum, devtype, &device_filter)) < 0)
+    if ((r = dshow_cycle_devices(avctx, devenum, devtype, sourcetype, &device_filter)) < 0)
         return r;
     ctx->device_filter[devtype] = device_filter;
-    if ((r = dshow_cycle_pins(avctx, devtype, device_filter, NULL)) < 0)
+    if ((r = dshow_cycle_pins(avctx, devtype, sourcetype, device_filter, NULL)) < 0)
         return r;
 
     return 0;
 }
 
 static int
-dshow_open_device(AVFormatContext *avctx, ICreateDevEnum *devenum, enum dshowDeviceType devtype)
+dshow_open_device(AVFormatContext *avctx, ICreateDevEnum *devenum,
+                  enum dshowDeviceType devtype, enum dshowSourceFilterType sourcetype)
 {
     struct dshow_ctx *ctx = avctx->priv_data;
     IBaseFilter *device_filter = NULL;
@@ -730,7 +731,7 @@ dshow_open_device(AVFormatContext *avctx, ICreateDevEnum *devenum, enum dshowDev
 
     const wchar_t *filter_name[2] = { L"Audio capture filter", L"Video capture filter" };
 
-    if ((r = dshow_cycle_devices(avctx, devenum, devtype, &device_filter)) < 0) {
+    if ((r = dshow_cycle_devices(avctx, devenum, devtype, sourcetype, &device_filter)) < 0) {
         ret = r;
         goto error;
     }
@@ -743,7 +744,7 @@ dshow_open_device(AVFormatContext *avctx, ICreateDevEnum *devenum, enum dshowDev
         goto error;
     }
 
-    if ((r = dshow_cycle_pins(avctx, devtype, device_filter, &device_pin)) < 0) {
+    if ((r = dshow_cycle_pins(avctx, devtype, sourcetype, device_filter, &device_pin)) < 0) {
         ret = r;
         goto error;
     }
@@ -1010,38 +1011,46 @@ static int dshow_read_header(AVFormatContext *avctx)
     }
 
     if (ctx->list_devices) {
-        av_log(avctx, AV_LOG_INFO, "DirectShow video devices\n");
-        dshow_cycle_devices(avctx, devenum, VideoDevice, NULL);
+        av_log(avctx, AV_LOG_INFO, "DirectShow video devices (some may be both video and audio devices)\n");
+        dshow_cycle_devices(avctx, devenum, VideoDevice, VideoSourceDevice, NULL);
         av_log(avctx, AV_LOG_INFO, "DirectShow audio devices\n");
-        dshow_cycle_devices(avctx, devenum, AudioDevice, NULL);
+        dshow_cycle_devices(avctx, devenum, AudioDevice, AudioSourceDevice, NULL);
         ret = AVERROR_EXIT;
         goto error;
     }
     if (ctx->list_options) {
         if (ctx->device_name[VideoDevice])
-            if ((r = dshow_list_device_options(avctx, devenum, VideoDevice))) {
+            if ((r = dshow_list_device_options(avctx, devenum, VideoDevice, VideoSourceDevice))) {
                 ret = r;
                 goto error;
             }
-        if (ctx->device_name[AudioDevice])
-            if ((r = dshow_list_device_options(avctx, devenum, AudioDevice))) {
-                ret = r;
-                goto error;
+        if (ctx->device_name[AudioDevice]) {
+            if (dshow_list_device_options(avctx, devenum, AudioDevice, AudioSourceDevice)) {
+                /* show audio options from combined video+audio sources as fallback */
+                if ((r = dshow_list_device_options(avctx, devenum, AudioDevice, VideoSourceDevice))) {
+                    ret = r;
+                    goto error;
+                }
             }
+        }
     }
-
     if (ctx->device_name[VideoDevice]) {
-        if ((r = dshow_open_device(avctx, devenum, VideoDevice)) < 0 ||
+        if ((r = dshow_open_device(avctx, devenum, VideoDevice, VideoSourceDevice)) < 0 ||
             (r = dshow_add_device(avctx, VideoDevice)) < 0) {
             ret = r;
             goto error;
         }
     }
     if (ctx->device_name[AudioDevice]) {
-        if ((r = dshow_open_device(avctx, devenum, AudioDevice)) < 0 ||
+        if ((r = dshow_open_device(avctx, devenum, AudioDevice, AudioSourceDevice)) < 0 ||
             (r = dshow_add_device(avctx, AudioDevice)) < 0) {
-            ret = r;
-            goto error;
+            av_log(avctx, AV_LOG_INFO, "Searching for audio device within video devices %s\n", ctx->device_name[AudioDevice]);
+            /* see if there's a video source with an audio pin with the given audio name */
+            if ((r = dshow_open_device(avctx, devenum, AudioDevice, VideoSourceDevice)) < 0 ||
+                (r = dshow_add_device(avctx, AudioDevice)) < 0) {
+                ret = r;
+                goto error;
+            }
         }
     }
     if (ctx->list_options) {
