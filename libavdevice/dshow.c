@@ -188,10 +188,12 @@ static int shall_we_drop(AVFormatContext *s, int index, enum dshowDeviceType dev
     static const uint8_t dropscore[] = {62, 75, 87, 100};
     const int ndropscores = FF_ARRAY_ELEMS(dropscore);
     unsigned int buffer_fullness = (ctx->curbufsize[index]*100)/s->max_picture_buffer;
+    const char *devtypename = (devtype == VideoDevice) ? "video" : "audio";
 
     if(dropscore[++ctx->video_frame_num%ndropscores] <= buffer_fullness) {
         av_log(s, AV_LOG_ERROR,
-              "real-time buffer[%s] too full (%d%% of size: %d)! frame dropped!\n", ctx->device_name[devtype], buffer_fullness, s->max_picture_buffer);
+              "real-time buffer [%s] [%s input] too full or near too full (%d%% of size: %d [rtbufsize parameter])! frame dropped!\n",
+              ctx->device_name[devtype], devtypename, buffer_fullness, s->max_picture_buffer);
         return 1;
     }
 
@@ -366,7 +368,7 @@ dshow_cycle_formats(AVFormatContext *avctx, enum dshowDeviceType devtype,
     AM_MEDIA_TYPE *type = NULL;
     int format_set = 0;
     void *caps = NULL;
-    int i, n, size;
+    int i, n, size, r;
 
     if (IPin_QueryInterface(pin, &IID_IAMStreamConfig, (void **) &config) != S_OK)
         return;
@@ -378,8 +380,9 @@ dshow_cycle_formats(AVFormatContext *avctx, enum dshowDeviceType devtype,
         goto end;
 
     for (i = 0; i < n && !format_set; i++) {
-        IAMStreamConfig_GetStreamCaps(config, i, &type, (void *) caps);
-
+        r = IAMStreamConfig_GetStreamCaps(config, i, &type, (void *) caps);
+        if (r != S_OK)
+            goto next;
 #if DSHOWDEBUG
         ff_print_AM_MEDIA_TYPE(type);
 #endif
@@ -643,6 +646,7 @@ dshow_cycle_pins(AVFormatContext *avctx, enum dshowDeviceType devtype,
             goto next;
 
         IEnumMediaTypes_Reset(types);
+        /* in case format_set was not called, just verify the majortype */
         while (!device_pin && IEnumMediaTypes_Next(types, 1, &type, NULL) == S_OK) {
             if (IsEqualGUID(&type->majortype, mediatype[devtype])) {
                 device_pin = pin;
@@ -663,7 +667,6 @@ next:
         av_free(pin_buf);
         if (pin_id)
             CoTaskMemFree(pin_id);
-
     }
 
     IEnumPins_Release(pins);

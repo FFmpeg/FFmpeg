@@ -223,7 +223,7 @@ libAVEnumPins       *libAVEnumPins_Create (libAVPin *pin, libAVFilter *filter);
  * libAVEnumMediaTypes
  ****************************************************************************/
 struct libAVEnumMediaTypes {
-    IEnumPinsVtbl *vtbl;
+    IEnumMediaTypesVtbl *vtbl;
     long ref;
     int pos;
     AM_MEDIA_TYPE type;
