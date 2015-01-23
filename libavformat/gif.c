@@ -28,6 +28,28 @@
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 
+/* XXX: random value that shouldn't be taken into effect if there is no
+ * transparent color in the palette (the transparency bit will be set to 0) */
+#define DEFAULT_TRANSPARENCY_INDEX 0x1f
+
+static int get_palette_transparency_index(const uint32_t *palette)
+{
+    int transparent_color_index = -1;
+    unsigned i, smallest_alpha = 0xff;
+
+    if (!palette)
+        return -1;
+
+    for (i = 0; i < AVPALETTE_COUNT; i++) {
+        const uint32_t v = palette[i];
+        if (v >> 24 < smallest_alpha) {
+            smallest_alpha = v >> 24;
+            transparent_color_index = i;
+        }
+    }
+    return smallest_alpha < 128 ? transparent_color_index : -1;
+}
+
 static int gif_image_write_header(AVIOContext *pb, const AVCodecContext *avctx,
                                   int loop_count, uint32_t *palette)
 {
@@ -47,8 +69,10 @@ static int gif_image_write_header(AVIOContext *pb, const AVCodecContext *avctx,
     avio_wl16(pb, avctx->height);
 
     if (palette) {
+        const int bcid = get_palette_transparency_index(palette);
+
         avio_w8(pb, 0xf7); /* flags: global clut, 256 entries */
-        avio_w8(pb, 0x1f); /* background color index */
+        avio_w8(pb, bcid < 0 ? DEFAULT_TRANSPARENCY_INDEX : bcid); /* background color index */
         avio_w8(pb, aspect);
         for (i = 0; i < 256; i++) {
             const uint32_t v = palette[i] & 0xffffff;
@@ -73,6 +97,7 @@ static int gif_image_write_header(AVIOContext *pb, const AVCodecContext *avctx,
         avio_w8(pb, 0x00); /* Data Sub-block Terminator */
     }
 
+    avio_flush(pb);
     return 0;
 }
 
@@ -103,21 +128,20 @@ static int gif_write_header(AVFormatContext *s)
     avpriv_set_pts_info(s->streams[0], 64, 1, 100);
     if (avpriv_set_systematic_pal2(palette, video_enc->pix_fmt) < 0) {
         av_assert0(video_enc->pix_fmt == AV_PIX_FMT_PAL8);
-        gif_image_write_header(s->pb, video_enc, gif->loop, NULL);
+        /* delay header writing: we wait for the first palette to put it
+         * globally */
     } else {
         gif_image_write_header(s->pb, video_enc, gif->loop, palette);
     }
 
-    avio_flush(s->pb);
     return 0;
 }
 
 static int flush_packet(AVFormatContext *s, AVPacket *new)
 {
     GIFContext *gif = s->priv_data;
-    int size;
+    int size, bcid;
     AVIOContext *pb = s->pb;
-    uint8_t flags = 0x4, transparent_color_index = 0x1f;
     const uint32_t *palette;
     AVPacket *pkt = gif->prev_pkt;
 
@@ -131,19 +155,7 @@ static int flush_packet(AVFormatContext *s, AVPacket *new)
         av_log(s, AV_LOG_ERROR, "Invalid palette extradata\n");
         return AVERROR_INVALIDDATA;
     }
-    if (palette) {
-        unsigned i, smallest_alpha = 0xff;
-
-        for (i = 0; i < AVPALETTE_COUNT; i++) {
-            const uint32_t v = palette[i];
-            if (v >> 24 < smallest_alpha) {
-                smallest_alpha = v >> 24;
-                transparent_color_index = i;
-            }
-        }
-        if (smallest_alpha < 128)
-            flags |= 0x1; /* Transparent Color Flag */
-    }
+    bcid = get_palette_transparency_index(palette);
 
     if (new && new->pts != AV_NOPTS_VALUE)
         gif->duration = av_clip_uint16(new->pts - gif->prev_pkt->pts);
@@ -154,9 +166,9 @@ static int flush_packet(AVFormatContext *s, AVPacket *new)
     avio_w8(pb, 0x21);
     avio_w8(pb, 0xf9);
     avio_w8(pb, 0x04); /* block size */
-    avio_w8(pb, flags);
+    avio_w8(pb, 1<<2 | (bcid >= 0));
     avio_wl16(pb, gif->duration);
-    avio_w8(pb, transparent_color_index);
+    avio_w8(pb, bcid < 0 ? DEFAULT_TRANSPARENCY_INDEX : bcid);
     avio_w8(pb, 0x00);
 
     avio_write(pb, pkt->data, pkt->size);
@@ -171,11 +183,29 @@ static int flush_packet(AVFormatContext *s, AVPacket *new)
 static int gif_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     GIFContext *gif = s->priv_data;
+    const AVCodecContext *video_enc = s->streams[0]->codec;
 
     if (!gif->prev_pkt) {
         gif->prev_pkt = av_malloc(sizeof(*gif->prev_pkt));
         if (!gif->prev_pkt)
             return AVERROR(ENOMEM);
+
+        /* Write the first palette as global palette */
+        if (video_enc->pix_fmt == AV_PIX_FMT_PAL8) {
+            int size;
+            void *palette = av_packet_get_side_data(pkt, AV_PKT_DATA_PALETTE, &size);
+
+            if (!palette) {
+                av_log(s, AV_LOG_ERROR, "PAL8 packet is missing palette in extradata\n");
+                return AVERROR_INVALIDDATA;
+            }
+            if (size != AVPALETTE_SIZE) {
+                av_log(s, AV_LOG_ERROR, "Invalid palette extradata\n");
+                return AVERROR_INVALIDDATA;
+            }
+            gif_image_write_header(s->pb, video_enc, gif->loop, palette);
+        }
+
         return av_copy_packet(gif->prev_pkt, pkt);
     }
     return flush_packet(s, pkt);
