@@ -620,6 +620,8 @@ null_chunk_retry:
             bps = avio_r8(pb);
             channels = avio_r8(pb);
             samplerate = avio_rl16(pb);
+            if (!channels || !samplerate)
+                return AVERROR_INVALIDDATA;
             asize-=4;
             av_dlog(s, "NSV RAWAUDIO: bps %d, nchan %d, srate %d\n", bps, channels, samplerate);
             if (fill_header) {
