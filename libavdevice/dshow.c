@@ -28,51 +28,6 @@
 #include "avdevice.h"
 #include "libavcodec/raw.h"
 
-struct dshow_ctx {
-    const AVClass *class;
-
-    IGraphBuilder *graph;
-
-    char *device_name[2];
-    int video_device_number;
-    int audio_device_number;
-
-    int   list_options;
-    int   list_devices;
-    int   audio_buffer_size;
-    char *video_pin_name;
-    char *audio_pin_name;
-
-    IBaseFilter *device_filter[2];
-    IPin        *device_pin[2];
-    libAVFilter *capture_filter[2];
-    libAVPin    *capture_pin[2];
-
-    HANDLE mutex;
-    HANDLE event[2]; /* event[0] is set by DirectShow
-                      * event[1] is set by callback() */
-    AVPacketList *pktl;
-
-    int eof;
-
-    int64_t curbufsize[2];
-    unsigned int video_frame_num;
-
-    IMediaControl *control;
-    IMediaEvent *media_event;
-
-    enum AVPixelFormat pixel_format;
-    enum AVCodecID video_codec_id;
-    char *framerate;
-
-    int requested_width;
-    int requested_height;
-    AVRational requested_framerate;
-
-    int sample_rate;
-    int sample_size;
-    int channels;
-};
 
 static enum AVPixelFormat dshow_pixfmt(DWORD biCompression, WORD biBitCount)
 {
@@ -710,8 +665,7 @@ dshow_list_device_options(AVFormatContext *avctx, ICreateDevEnum *devenum,
 }
 
 static int
-dshow_open_device(AVFormatContext *avctx, ICreateDevEnum *devenum,
-                  enum dshowDeviceType devtype)
+dshow_open_device(AVFormatContext *avctx, ICreateDevEnum *devenum, enum dshowDeviceType devtype)
 {
     struct dshow_ctx *ctx = avctx->priv_data;
     IBaseFilter *device_filter = NULL;
@@ -719,6 +673,7 @@ dshow_open_device(AVFormatContext *avctx, ICreateDevEnum *devenum,
     IPin *device_pin = NULL;
     libAVPin *capture_pin = NULL;
     libAVFilter *capture_filter = NULL;
+    ICaptureGraphBuilder2 *graph_builder2 = NULL;
     int ret = AVERROR(EIO);
     int r;
 
@@ -741,6 +696,7 @@ dshow_open_device(AVFormatContext *avctx, ICreateDevEnum *devenum,
         ret = r;
         goto error;
     }
+
     ctx->device_pin[devtype] = device_pin;
 
     capture_filter = libAVFilter_Create(avctx, callback, devtype);
@@ -761,15 +717,39 @@ dshow_open_device(AVFormatContext *avctx, ICreateDevEnum *devenum,
     capture_pin = capture_filter->pin;
     ctx->capture_pin[devtype] = capture_pin;
 
-    r = IGraphBuilder_ConnectDirect(graph, device_pin, (IPin *) capture_pin, NULL);
+    r = CoCreateInstance(&CLSID_CaptureGraphBuilder2, NULL, CLSCTX_INPROC_SERVER,
+                         &IID_ICaptureGraphBuilder2, (void **) &graph_builder2);
     if (r != S_OK) {
-        av_log(avctx, AV_LOG_ERROR, "Could not connect pins\n");
+        av_log(avctx, AV_LOG_ERROR, "Could not create CaptureGraphBuilder2\n");
+        goto error;
+    }
+    ICaptureGraphBuilder2_SetFiltergraph(graph_builder2, graph);
+    if (r != S_OK) {
+        av_log(avctx, AV_LOG_ERROR, "Could not set graph for CaptureGraphBuilder2\n");
+        goto error;
+    }
+
+    r = ICaptureGraphBuilder2_RenderStream(graph_builder2, NULL, NULL, (IUnknown *) device_pin, NULL /* no intermediate filter */,
+        (IBaseFilter *) capture_filter); /* connect pins, optionally insert intermediate filters like crossbar if necessary */
+
+    if (r != S_OK) {
+        av_log(avctx, AV_LOG_ERROR, "Could not RenderStream to connect pins\n");
+        goto error;
+    }
+
+    r = dshow_try_setup_crossbar_options(graph_builder2, device_filter, devtype, avctx);
+
+    if (r != S_OK) {
+        av_log(avctx, AV_LOG_ERROR, "Could not setup CrossBar\n");
         goto error;
     }
 
     ret = 0;
 
 error:
+    if (graph_builder2 != NULL)
+        ICaptureGraphBuilder2_Release(graph_builder2);
+
     return ret;
 }
 
@@ -988,11 +968,15 @@ static int dshow_read_header(AVFormatContext *avctx)
     }
     if (ctx->list_options) {
         if (ctx->device_name[VideoDevice])
-            dshow_list_device_options(avctx, devenum, VideoDevice);
+            if ((r = dshow_list_device_options(avctx, devenum, VideoDevice))) {
+                ret = r;
+                goto error;
+            }
         if (ctx->device_name[AudioDevice])
-            dshow_list_device_options(avctx, devenum, AudioDevice);
-        ret = AVERROR_EXIT;
-        goto error;
+            if ((r = dshow_list_device_options(avctx, devenum, AudioDevice))) {
+                ret = r;
+                goto error;
+            }
     }
 
     if (ctx->device_name[VideoDevice]) {
@@ -1008,6 +992,11 @@ static int dshow_read_header(AVFormatContext *avctx)
             ret = r;
             goto error;
         }
+    }
+    if (ctx->list_options) {
+        /* allow it to list crossbar options in dshow_open_device */
+        ret = AVERROR_EXIT;
+        goto error;
     }
     ctx->curbufsize[0] = 0;
     ctx->curbufsize[1] = 0;
@@ -1142,6 +1131,8 @@ static const AVOption options[] = {
     { "audio_device_number", "set audio device number for devices with same name (starts at 0)", OFFSET(audio_device_number), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, DEC },
     { "video_pin_name", "select video capture pin by name", OFFSET(video_pin_name),AV_OPT_TYPE_STRING, {.str = NULL},  0, 0, AV_OPT_FLAG_ENCODING_PARAM },
     { "audio_pin_name", "select audio capture pin by name", OFFSET(audio_pin_name),AV_OPT_TYPE_STRING, {.str = NULL},  0, 0, AV_OPT_FLAG_ENCODING_PARAM },
+    { "crossbar_video_input_pin_number", "set video input pin number for crossbar device", OFFSET(crossbar_video_input_pin_number), AV_OPT_TYPE_INT, {.i64 = -1}, -1, INT_MAX, DEC },
+    { "crossbar_audio_input_pin_number", "set audio input pin number for crossbar device", OFFSET(crossbar_audio_input_pin_number), AV_OPT_TYPE_INT, {.i64 = -1}, -1, INT_MAX, DEC },
     { NULL },
 };
 

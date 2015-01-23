@@ -226,6 +226,14 @@ Select video capture pin to use by name or alternative name.
 @item audio_pin_name
 Select audio capture pin to use by name or alternative name.
 
+@item crossbar_video_input_pin_number
+Select video input pin number for crossbar device. This will be
+routed to the crossbar device's Video Decoder output pin.
+
+@item crossbar_audio_input_pin_number
+Select audio input pin number for crossbar device. This will be
+routed to the crossbar device's Audio Decoder output pin.
+
 @end table
 
 @subsection Examples
