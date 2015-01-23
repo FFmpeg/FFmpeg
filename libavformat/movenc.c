@@ -64,6 +64,7 @@ static const AVOption options[] = {
     { "omit_tfhd_offset", "Omit the base data offset in tfhd atoms", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_OMIT_TFHD_OFFSET}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     { "disable_chpl", "Disable Nero chapter atom", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_DISABLE_CHPL}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     { "default_base_moof", "Set the default-base-is-moof flag in tfhd atoms", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_DEFAULT_BASE_MOOF}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
+    { "write_colr", "write colr atom", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_WRITE_COLR}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     FF_RTP_FLAG_OPTS(MOVMuxContext, rtp_flags),
     { "skip_iods", "Skip writing iods atom.", offsetof(MOVMuxContext, iods_skip), AV_OPT_TYPE_INT, {.i64 = 1}, 0, 1, AV_OPT_FLAG_ENCODING_PARAM},
     { "iods_audio_profile", "iods audio profile atom.", offsetof(MOVMuxContext, iods_audio_profile), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 255, AV_OPT_FLAG_ENCODING_PARAM},
@@ -1565,7 +1566,7 @@ static void find_compressor(char * compressor_name, int len, MOVTrack *track)
     }
 }
 
-static int mov_write_video_tag(AVIOContext *pb, MOVTrack *track)
+static int mov_write_video_tag(AVIOContext *pb, MOVMuxContext *mov, MOVTrack *track)
 {
     int64_t pos = avio_tell(pb);
     char compressor_name[32] = { 0 };
@@ -1640,7 +1641,8 @@ static int mov_write_video_tag(AVIOContext *pb, MOVTrack *track)
         if (track->enc->field_order != AV_FIELD_UNKNOWN)
             mov_write_fiel_tag(pb, track);
 
-    mov_write_colr_tag(pb, track);
+    if (mov->flags & FF_MOV_FLAG_WRITE_COLR)
+        mov_write_colr_tag(pb, track);
 
     if (track->enc->sample_aspect_ratio.den && track->enc->sample_aspect_ratio.num &&
         track->enc->sample_aspect_ratio.den != track->enc->sample_aspect_ratio.num) {
@@ -1735,7 +1737,7 @@ static int mov_write_tmcd_tag(AVIOContext *pb, MOVTrack *track)
     return update_size(pb, pos);
 }
 
-static int mov_write_stsd_tag(AVIOContext *pb, MOVTrack *track)
+static int mov_write_stsd_tag(AVIOContext *pb, MOVMuxContext *mov, MOVTrack *track)
 {
     int64_t pos = avio_tell(pb);
     avio_wb32(pb, 0); /* size */
@@ -1743,7 +1745,7 @@ static int mov_write_stsd_tag(AVIOContext *pb, MOVTrack *track)
     avio_wb32(pb, 0); /* version & flags */
     avio_wb32(pb, 1); /* entry count */
     if (track->enc->codec_type == AVMEDIA_TYPE_VIDEO)
-        mov_write_video_tag(pb, track);
+        mov_write_video_tag(pb, mov,  track);
     else if (track->enc->codec_type == AVMEDIA_TYPE_AUDIO)
         mov_write_audio_tag(pb, track);
     else if (track->enc->codec_type == AVMEDIA_TYPE_SUBTITLE)
@@ -1845,12 +1847,12 @@ static int mov_write_dref_tag(AVIOContext *pb)
     return 28;
 }
 
-static int mov_write_stbl_tag(AVIOContext *pb, MOVTrack *track)
+static int mov_write_stbl_tag(AVIOContext *pb, MOVMuxContext *mov, MOVTrack *track)
 {
     int64_t pos = avio_tell(pb);
     avio_wb32(pb, 0); /* size */
     ffio_wfourcc(pb, "stbl");
-    mov_write_stsd_tag(pb, track);
+    mov_write_stsd_tag(pb, mov, track);
     mov_write_stts_tag(pb, track);
     if ((track->enc->codec_type == AVMEDIA_TYPE_VIDEO ||
          track->enc->codec_tag == MKTAG('r','t','p',' ')) &&
@@ -2065,7 +2067,7 @@ static int mov_write_hmhd_tag(AVIOContext *pb)
     return 28;
 }
 
-static int mov_write_minf_tag(AVIOContext *pb, MOVTrack *track)
+static int mov_write_minf_tag(AVIOContext *pb, MOVMuxContext *mov, MOVTrack *track)
 {
     int64_t pos = avio_tell(pb);
     avio_wb32(pb, 0); /* size */
@@ -2088,7 +2090,7 @@ static int mov_write_minf_tag(AVIOContext *pb, MOVTrack *track)
     if (track->mode == MODE_MOV) /* FIXME: Why do it for MODE_MOV only ? */
         mov_write_hdlr_tag(pb, NULL);
     mov_write_dinf_tag(pb);
-    mov_write_stbl_tag(pb, track);
+    mov_write_stbl_tag(pb, mov, track);
     return update_size(pb, pos);
 }
 
@@ -2139,7 +2141,7 @@ static int mov_write_mdia_tag(AVIOContext *pb, MOVMuxContext *mov,
     ffio_wfourcc(pb, "mdia");
     mov_write_mdhd_tag(pb, mov, track);
     mov_write_hdlr_tag(pb, track);
-    mov_write_minf_tag(pb, track);
+    mov_write_minf_tag(pb, mov, track);
     return update_size(pb, pos);
 }
 
