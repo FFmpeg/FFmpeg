@@ -1658,6 +1658,13 @@ static int mov_parse_stsd_data(MOVContext *c, AVIOContext *pb,
                 st->codec->flags2 |= CODEC_FLAG2_DROP_FRAME_TIMECODE;
             st->codec->time_base.den = st->codec->extradata[16]; /* number of frame */
             st->codec->time_base.num = 1;
+            /* adjust for per frame dur in counter mode */
+            if (tmcd_ctx->tmcd_flags & 0x0008) {
+                int timescale = AV_RB32(st->codec->extradata + 8);
+                int framedur = AV_RB32(st->codec->extradata + 12);
+                st->codec->time_base.den *= timescale;
+                st->codec->time_base.num *= framedur;
+            }
             if (size > 30) {
                 uint32_t len = AV_RB32(st->codec->extradata + 18); /* name atom length */
                 uint32_t format = AV_RB32(st->codec->extradata + 22);

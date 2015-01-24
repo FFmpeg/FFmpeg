@@ -472,6 +472,9 @@ static int dv_read_timecode(AVFormatContext *s) {
                                         partial_frame_size);
 
     RawDVContext *c = s->priv_data;
+    if (!partial_frame)
+        return AVERROR(ENOMEM);
+
     ret = avio_read(s->pb, partial_frame, partial_frame_size);
     if (ret < 0)
         goto finish;

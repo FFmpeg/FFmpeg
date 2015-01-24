@@ -167,7 +167,7 @@ The input name should be in the format:
 @end example
 
 where @var{TYPE} can be either @var{audio} or @var{video},
-and @var{NAME} is the device's name.
+and @var{NAME} is the device's name or alternative name..
 
 @subsection Options
 
@@ -220,6 +220,39 @@ Setting this value too low can degrade performance.
 See also
 @url{http://msdn.microsoft.com/en-us/library/windows/desktop/dd377582(v=vs.85).aspx}
 
+@item video_pin_name
+Select video capture pin to use by name or alternative name.
+
+@item audio_pin_name
+Select audio capture pin to use by name or alternative name.
+
+@item crossbar_video_input_pin_number
+Select video input pin number for crossbar device. This will be
+routed to the crossbar device's Video Decoder output pin.
+
+@item crossbar_audio_input_pin_number
+Select audio input pin number for crossbar device. This will be
+routed to the crossbar device's Audio Decoder output pin.
+
+@item show_video_device_dialog
+If set to @option{true}, before capture starts, popup a display dialog
+to the end user, allowing them to change video filter properties
+and configurations manually.
+Note that for crossbar devices, this may be needed at times to toggle
+between PAL and NTSC input frame rates and sizes, etc.  Possibly
+enabling different scan rates/frame rates and avoiding green bars at
+the bottom, etc.
+
+@item show_audio_device_dialog
+If set to @option{true}, before capture starts, popup a display dialog
+to the end user, allowing them to change audio filter properties
+and configurations manually.
+
+@item show_crossbar_connection_dialog
+If set to @option{true}, before capture starts, popup a display
+dialog to the end user, allowing them to manually
+modify crossbar pin routings.
+
 @end table
 
 @subsection Examples
@@ -254,6 +287,19 @@ $ ffmpeg -f dshow -i video="Camera":audio="Microphone"
 Print the list of supported options in selected device and exit:
 @example
 $ ffmpeg -list_options true -f dshow -i video="Camera"
+@end example
+
+@item
+Specify pin names to capture by name or alternative name, specify alternative device name:
+@example
+$ ffmpeg -f dshow -audio_pin_name "Audio Out" -video_pin_name 2 -i video=video="@@device_pnp_\\?\pci#ven_1a0a&dev_6200&subsys_62021461&rev_01#4&e2c7dd6&0&00e1#@{65e8773d-8f56-11d0-a3b9-00a0c9223196@}\@{ca465100-deb0-4d59-818f-8c477184adf6@}":audio="Microphone"
+@end example
+
+@item
+Configure a crossbar device, specifying crossbar pins, allow user to adjust video capture properties at startup:
+@example
+$ ffmpeg -f dshow -show_video_device_dialog true -crossbar_video_input_pin_number 0
+     -crossbar_audio_input_pin_number 3 -i video="AVerMedia BDA Analog Capture":audio="AVerMedia BDA Analog Capture"
 @end example
 
 @end itemize

@@ -114,7 +114,7 @@ static int rtsp_send_reply(AVFormatContext *s, enum RTSPStatusCode code,
         av_strlcat(message, extracontent, sizeof(message));
     av_strlcat(message, "\r\n", sizeof(message));
     av_dlog(s, "Sending response:\n%s", message);
-    ffurl_write(rt->rtsp_hd, message, strlen(message));
+    ffurl_write(rt->rtsp_hd_out, message, strlen(message));
 
     return 0;
 }

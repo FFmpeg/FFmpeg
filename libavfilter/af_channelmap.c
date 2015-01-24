@@ -93,6 +93,8 @@ static int get_channel_idx(char **map, int *ch, char delim, int max_ch)
     int n = 0;
     if (!next && delim == '-')
         return AVERROR(EINVAL);
+    if (!*map)
+        return AVERROR(EINVAL);
     len = strlen(*map);
     sscanf(*map, "%d%n", ch, &n);
     if (n != len)
