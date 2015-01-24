@@ -314,7 +314,10 @@ static char *ctime1(char *buf2, int buf_size)
 static void http_vlog(const char *fmt, va_list vargs)
 {
     static int print_prefix = 1;
-    if (logfile) {
+
+    if (!logfile)
+        return;
+
         if (print_prefix) {
             char buf[32];
             ctime1(buf, sizeof(buf));
@@ -323,7 +326,6 @@ static void http_vlog(const char *fmt, va_list vargs)
         print_prefix = strstr(fmt, "\n") != NULL;
         vfprintf(logfile, fmt, vargs);
         fflush(logfile);
-    }
 }
 
 #ifdef __GNUC__
