@@ -318,14 +318,14 @@ static void http_vlog(const char *fmt, va_list vargs)
     if (!logfile)
         return;
 
-        if (print_prefix) {
-            char buf[32];
-            ctime1(buf, sizeof(buf));
-            fprintf(logfile, "%s ", buf);
-        }
-        print_prefix = strstr(fmt, "\n") != NULL;
-        vfprintf(logfile, fmt, vargs);
-        fflush(logfile);
+    if (print_prefix) {
+        char buf[32];
+        ctime1(buf, sizeof(buf));
+        fprintf(logfile, "%s ", buf);
+    }
+    print_prefix = strstr(fmt, "\n") != NULL;
+    vfprintf(logfile, fmt, vargs);
+    fflush(logfile);
 }
 
 #ifdef __GNUC__
