@@ -1117,14 +1117,13 @@ static int find_stream_in_feed(FFServerStream *feed, AVCodecContext *codec, int 
                 best_bitrate = feed_codec->bit_rate;
                 best = i;
             }
-        } else {
-            if (feed_codec->bit_rate < best_bitrate) {
-                best_bitrate = feed_codec->bit_rate;
-                best = i;
-            }
+            continue;
+        }
+        if (feed_codec->bit_rate < best_bitrate) {
+            best_bitrate = feed_codec->bit_rate;
+            best = i;
         }
     }
-
     return best;
 }
 
