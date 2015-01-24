@@ -895,23 +895,23 @@ static int handle_connection(HTTPContext *c)
                 return -1;
             break;
         }
-            /* search for end of request. */
-            c->buffer_ptr += len;
-            ptr = c->buffer_ptr;
-            if ((ptr >= c->buffer + 2 && !memcmp(ptr-2, "\n\n", 2)) ||
-                (ptr >= c->buffer + 4 && !memcmp(ptr-4, "\r\n\r\n", 4))) {
-                /* request found : parse it and reply */
-                if (c->state == HTTPSTATE_WAIT_REQUEST) {
-                    ret = http_parse_request(c);
-                } else {
-                    ret = rtsp_parse_request(c);
-                }
-                if (ret < 0)
-                    return -1;
-            } else if (ptr >= c->buffer_end) {
-                /* request too long: cannot do anything */
+        /* search for end of request. */
+        c->buffer_ptr += len;
+        ptr = c->buffer_ptr;
+        if ((ptr >= c->buffer + 2 && !memcmp(ptr-2, "\n\n", 2)) ||
+            (ptr >= c->buffer + 4 && !memcmp(ptr-4, "\r\n\r\n", 4))) {
+            /* request found : parse it and reply */
+            if (c->state == HTTPSTATE_WAIT_REQUEST) {
+                ret = http_parse_request(c);
+            } else {
+                ret = rtsp_parse_request(c);
+            }
+            if (ret < 0)
                 return -1;
-            } else goto read_loop;
+        } else if (ptr >= c->buffer_end) {
+            /* request too long: cannot do anything */
+            return -1;
+        } else goto read_loop;
 
         break;
 
@@ -930,20 +930,20 @@ static int handle_connection(HTTPContext *c)
             }
             break;
         }
-            c->buffer_ptr += len;
-            if (c->stream)
-                c->stream->bytes_served += len;
-            c->data_count += len;
-            if (c->buffer_ptr >= c->buffer_end) {
-                av_freep(&c->pb_buffer);
-                /* if error, exit */
-                if (c->http_error)
-                    return -1;
-                /* all the buffer was sent : synchronize to the incoming
-                 * stream */
-                c->state = HTTPSTATE_SEND_DATA_HEADER;
-                c->buffer_ptr = c->buffer_end = c->buffer;
-            }
+        c->buffer_ptr += len;
+        if (c->stream)
+            c->stream->bytes_served += len;
+        c->data_count += len;
+        if (c->buffer_ptr >= c->buffer_end) {
+            av_freep(&c->pb_buffer);
+            /* if error, exit */
+            if (c->http_error)
+                return -1;
+            /* all the buffer was sent : synchronize to the incoming
+             * stream */
+            c->state = HTTPSTATE_SEND_DATA_HEADER;
+            c->buffer_ptr = c->buffer_end = c->buffer;
+        }
         break;
 
     case HTTPSTATE_SEND_DATA:
@@ -997,13 +997,13 @@ static int handle_connection(HTTPContext *c)
             }
             break;
         }
-            c->buffer_ptr += len;
-            c->data_count += len;
-            if (c->buffer_ptr >= c->buffer_end) {
-                /* all the buffer was sent : wait for a new request */
-                av_freep(&c->pb_buffer);
-                start_wait_request(c, 1);
-            }
+        c->buffer_ptr += len;
+        c->data_count += len;
+        if (c->buffer_ptr >= c->buffer_end) {
+            /* all the buffer was sent : wait for a new request */
+            av_freep(&c->pb_buffer);
+            start_wait_request(c, 1);
+        }
         break;
     case RTSPSTATE_SEND_PACKET:
         if (c->poll_entry->revents & (POLLERR | POLLHUP)) {
@@ -1024,12 +1024,12 @@ static int handle_connection(HTTPContext *c)
             }
             break;
         }
-            c->packet_buffer_ptr += len;
-            if (c->packet_buffer_ptr >= c->packet_buffer_end) {
-                /* all the buffer was sent : wait for a new request */
-                av_freep(&c->packet_buffer);
-                c->state = RTSPSTATE_WAIT_REQUEST;
-            }
+        c->packet_buffer_ptr += len;
+        if (c->packet_buffer_ptr >= c->packet_buffer_end) {
+            /* all the buffer was sent : wait for a new request */
+            av_freep(&c->packet_buffer);
+            c->state = RTSPSTATE_WAIT_REQUEST;
+        }
         break;
     case HTTPSTATE_READY:
         /* nothing to do */
