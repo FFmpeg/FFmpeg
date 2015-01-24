@@ -2580,13 +2580,13 @@ fail:
     return ret;
 }
 
-static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
+static int decode_nal_unit(HEVCContext *s, const HEVCNAL *nal)
 {
     HEVCLocalContext *lc = s->HEVClc;
     GetBitContext *gb    = &lc->gb;
     int ctb_addr_ts, ret;
 
-    ret = init_get_bits8(gb, nal, length);
+    ret = init_get_bits8(gb, nal->data, nal->size);
     if (ret < 0)
         return ret;
 
@@ -2685,7 +2685,7 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
         }
 
         if (s->threads_number > 1 && s->sh.num_entry_point_offsets > 0)
-            ctb_addr_ts = hls_slice_data_wpp(s, nal, length);
+            ctb_addr_ts = hls_slice_data_wpp(s, nal->data, nal->size);
         else
             ctb_addr_ts = hls_slice_data(s);
         if (ctb_addr_ts >= (s->sps->ctb_width * s->sps->ctb_height)) {
@@ -2937,7 +2937,7 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
         s->skipped_bytes = s->skipped_bytes_nal[i];
         s->skipped_bytes_pos = s->skipped_bytes_pos_nal[i];
 
-        ret = decode_nal_unit(s, s->nals[i].data, s->nals[i].size);
+        ret = decode_nal_unit(s, &s->nals[i]);
         if (ret < 0) {
             av_log(s->avctx, AV_LOG_WARNING,
                    "Error parsing NAL unit #%d.\n", i);
