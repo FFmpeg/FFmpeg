@@ -3313,7 +3313,7 @@ static int webm_dash_manifest_cues(AVFormatContext *s)
 
     // store cue point timestamps as a comma separated list for checking subsegment alignment in
     // the muxer. assumes that each timestamp cannot be more than 20 characters long.
-    buf = av_malloc(s->streams[0]->nb_index_entries * 20 * sizeof(char));
+    buf = av_malloc_array(s->streams[0]->nb_index_entries, 20 * sizeof(char));
     if (!buf) return -1;
     strcpy(buf, "");
     for (i = 0; i < s->streams[0]->nb_index_entries; i++) {
