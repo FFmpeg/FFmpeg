@@ -870,6 +870,7 @@ static void close_connection(HTTPContext *c)
 static int handle_connection(HTTPContext *c)
 {
     int len, ret;
+    uint8_t *ptr;
 
     switch(c->state) {
     case HTTPSTATE_WAIT_REQUEST:
@@ -885,16 +886,16 @@ static int handle_connection(HTTPContext *c)
             return 0;
         /* read the data */
     read_loop:
-        len = recv(c->fd, c->buffer_ptr, 1, 0);
+        if (!(len = recv(c->fd, c->buffer_ptr, 1, 0)))
+            return -1;
+
         if (len < 0) {
             if (ff_neterrno() != AVERROR(EAGAIN) &&
                 ff_neterrno() != AVERROR(EINTR))
                 return -1;
-        } else if (len == 0) {
-            return -1;
-        } else {
+            break;
+        }
             /* search for end of request. */
-            uint8_t *ptr;
             c->buffer_ptr += len;
             ptr = c->buffer_ptr;
             if ((ptr >= c->buffer + 2 && !memcmp(ptr-2, "\n\n", 2)) ||
@@ -911,7 +912,7 @@ static int handle_connection(HTTPContext *c)
                 /* request too long: cannot do anything */
                 return -1;
             } else goto read_loop;
-        }
+
         break;
 
     case HTTPSTATE_SEND_HEADER:
@@ -927,7 +928,8 @@ static int handle_connection(HTTPContext *c)
                 ff_neterrno() != AVERROR(EINTR)) {
                 goto close_connection;
             }
-        } else {
+            break;
+        }
             c->buffer_ptr += len;
             if (c->stream)
                 c->stream->bytes_served += len;
@@ -942,7 +944,6 @@ static int handle_connection(HTTPContext *c)
                 c->state = HTTPSTATE_SEND_DATA_HEADER;
                 c->buffer_ptr = c->buffer_end = c->buffer;
             }
-        }
         break;
 
     case HTTPSTATE_SEND_DATA:
@@ -994,7 +995,8 @@ static int handle_connection(HTTPContext *c)
                 ff_neterrno() != AVERROR(EINTR)) {
                 goto close_connection;
             }
-        } else {
+            break;
+        }
             c->buffer_ptr += len;
             c->data_count += len;
             if (c->buffer_ptr >= c->buffer_end) {
@@ -1002,7 +1004,6 @@ static int handle_connection(HTTPContext *c)
                 av_freep(&c->pb_buffer);
                 start_wait_request(c, 1);
             }
-        }
         break;
     case RTSPSTATE_SEND_PACKET:
         if (c->poll_entry->revents & (POLLERR | POLLHUP)) {
@@ -1021,14 +1022,14 @@ static int handle_connection(HTTPContext *c)
                 av_freep(&c->packet_buffer);
                 return -1;
             }
-        } else {
+            break;
+        }
             c->packet_buffer_ptr += len;
             if (c->packet_buffer_ptr >= c->packet_buffer_end) {
                 /* all the buffer was sent : wait for a new request */
                 av_freep(&c->packet_buffer);
                 c->state = RTSPSTATE_WAIT_REQUEST;
             }
-        }
         break;
     case HTTPSTATE_READY:
         /* nothing to do */
