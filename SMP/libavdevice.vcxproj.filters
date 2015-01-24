@@ -27,6 +27,9 @@
     <ClCompile Include="..\libavdevice\utils.c">
       <Filter>Source Files\libavdevice</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavdevice\dshow_crossbar.c">
+      <Filter>Source Files\libavdevice</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavdevice\dshow.c">
       <Filter>Source Files\libavdevice</Filter>
     </ClCompile>
