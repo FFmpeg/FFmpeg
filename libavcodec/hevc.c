@@ -2465,13 +2465,13 @@ fail:
     return ret;
 }
 
-static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
+static int decode_nal_unit(HEVCContext *s, const HEVCNAL *nal)
 {
     HEVCLocalContext *lc = &s->HEVClc;
     GetBitContext *gb    = &lc->gb;
     int ctb_addr_ts, ret;
 
-    ret = init_get_bits8(gb, nal, length);
+    ret = init_get_bits8(gb, nal->data, nal->size);
     if (ret < 0)
         return ret;
 
@@ -2777,7 +2777,7 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
 
     /* parse the NAL units */
     for (i = 0; i < s->nb_nals; i++) {
-        int ret = decode_nal_unit(s, s->nals[i].data, s->nals[i].size);
+        int ret = decode_nal_unit(s, &s->nals[i]);
         if (ret < 0) {
             av_log(s->avctx, AV_LOG_WARNING,
                    "Error parsing NAL unit #%d.\n", i);
