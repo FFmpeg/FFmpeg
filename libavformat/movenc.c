@@ -5160,7 +5160,8 @@ static int mov_write_trailer(AVFormatContext *s)
             size = mov->reserved_moov_size - (avio_tell(pb) - mov->reserved_moov_pos);
             if (size < 8){
                 av_log(s, AV_LOG_ERROR, "reserved_moov_size is too small, needed %"PRId64" additional\n", 8-size);
-                return -1;
+                res = AVERROR(EINVAL);
+                goto error;
             }
             avio_wb32(pb, size);
             ffio_wfourcc(pb, "free");
