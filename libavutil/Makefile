@@ -60,6 +60,7 @@ HEADERS = adler32.h                                                     \
           time.h                                                        \
           timecode.h                                                    \
           timestamp.h                                                   \
+          twofish.h                                                     \
           version.h                                                     \
           xtea.h                                                        \
 
@@ -129,6 +130,7 @@ OBJS = adler32.o                                                        \
        time.o                                                           \
        timecode.o                                                       \
        tree.o                                                           \
+       twofish.o                                                        \
        utils.o                                                          \
        xga_font_data.o                                                  \
        xtea.o                                                           \
@@ -184,6 +186,7 @@ TESTPROGS = adler32                                                     \
             sha512                                                      \
             softfloat                                                   \
             tree                                                        \
+            twofish                                                     \
             utf8                                                        \
             xtea                                                        \
 
