@@ -21,6 +21,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/pixdesc.h"
 
 #include "internal.h"
@@ -46,6 +47,9 @@ void ff_hevc_unref_frame(HEVCContext *s, HEVCFrame *frame, int flags)
         frame->refPicList = NULL;
 
         frame->collocated_ref = NULL;
+
+        av_buffer_unref(&frame->hwaccel_priv_buf);
+        frame->hwaccel_picture_private = NULL;
     }
 }
 
@@ -104,6 +108,17 @@ static HEVCFrame *alloc_frame(HEVCContext *s)
         frame->ctb_count = s->sps->ctb_width * s->sps->ctb_height;
         for (j = 0; j < frame->ctb_count; j++)
             frame->rpl_tab[j] = (RefPicListTab *)frame->rpl_buf->data;
+
+        if (s->avctx->hwaccel) {
+            const AVHWAccel *hwaccel = s->avctx->hwaccel;
+            av_assert0(!frame->hwaccel_picture_private);
+            if (hwaccel->frame_priv_data_size) {
+                frame->hwaccel_priv_buf = av_buffer_allocz(hwaccel->frame_priv_data_size);
+                if (!frame->hwaccel_priv_buf)
+                    goto fail;
+                frame->hwaccel_picture_private = frame->hwaccel_priv_buf->data;
+            }
+        }
 
         return frame;
 
@@ -340,6 +355,7 @@ static HEVCFrame *generate_missing_ref(HEVCContext *s, int poc)
     if (!frame)
         return NULL;
 
+    if (!s->avctx->hwaccel) {
     if (!s->sps->pixel_shift) {
         for (i = 0; frame->frame->buf[i]; i++)
             memset(frame->frame->buf[i]->data, 1 << (s->sps->bit_depth - 1),
@@ -351,6 +367,7 @@ static HEVCFrame *generate_missing_ref(HEVCContext *s, int poc)
                     AV_WN16(frame->frame->data[i] + y * frame->frame->linesize[i] + 2 * x,
                             1 << (s->sps->bit_depth - 1));
                 }
+    }
     }
 
     frame->poc      = poc;
