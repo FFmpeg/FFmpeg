@@ -1788,6 +1788,7 @@ TOOLCHAIN_FEATURES="
 
 TYPES_LIST="
     CONDITION_VARIABLE_Ptr
+    DXVA_PicParams_HEVC
     socklen_t
     struct_addrinfo
     struct_group_source_req
@@ -2293,6 +2294,8 @@ h264_vdpau_decoder_deps="vdpau"
 h264_vdpau_decoder_select="h264_decoder"
 h264_vdpau_hwaccel_deps="vdpau"
 h264_vdpau_hwaccel_select="h264_decoder"
+hevc_dxva2_hwaccel_deps="dxva2 DXVA_PicParams_HEVC"
+hevc_dxva2_hwaccel_select="hevc_decoder"
 mpeg_vdpau_decoder_deps="vdpau"
 mpeg_vdpau_decoder_select="mpeg2video_decoder"
 mpeg_xvmc_hwaccel_deps="xvmc"
@@ -4812,6 +4815,8 @@ check_lib2 "windows.h wincrypt.h" CryptGenRandom -ladvapi32
 check_lib2 "windows.h psapi.h" GetProcessMemoryInfo -lpsapi
 
 check_struct "sys/time.h sys/resource.h" "struct rusage" ru_maxrss
+
+check_type "windows.h dxva.h" "DXVA_PicParams_HEVC"
 
 if ! disabled w32threads && ! enabled pthreads; then
     check_func_headers "windows.h process.h" _beginthreadex &&
