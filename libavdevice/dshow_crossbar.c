@@ -75,6 +75,7 @@ setup_crossbar_options(IAMCrossbar *cross_bar, enum dshowDeviceType devtype, AVF
 
     for (i = 0; i < count_output_pins; i++)
     {
+        int j;
         long related_pin, pin_type, route_to_pin;
         hr = IAMCrossbar_get_CrossbarPinInfo(cross_bar, FALSE, i, &related_pin, &pin_type);
         if (pin_type == PhysConn_Video_VideoDecoder) {
@@ -109,7 +110,7 @@ setup_crossbar_options(IAMCrossbar *cross_bar, enum dshowDeviceType devtype, AVF
         av_log(avctx, log_level, "current input pin: %ld ", route_to_pin);
         av_log(avctx, log_level, "compatible input pins: ");
 
-        for (int j = 0; j < count_input_pins; j++)
+        for (j = 0; j < count_input_pins; j++)
         {
             hr = IAMCrossbar_CanRoute(cross_bar, i, j);
             if (hr == S_OK)

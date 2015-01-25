@@ -519,7 +519,7 @@ static int opt_recording_timestamp(void *optctx, const char *opt, const char *ar
     char buf[128];
     int64_t recording_timestamp = parse_time_or_die(opt, arg, 0) / 1E6;
     struct tm time = *gmtime((time_t*)&recording_timestamp);
-    if (!strftime(buf, sizeof(buf), "creation_time=%FT%T%z", &time))
+    if (!strftime(buf, sizeof(buf), "creation_time=%Y-%m-%dT%H:%M:%S%z", &time))
         return -1;
     parse_option(o, "metadata", buf, options);
 
@@ -1185,6 +1185,9 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
         ost->enc_ctx->flags |= CODEC_FLAG_QSCALE;
         ost->enc_ctx->global_quality = FF_QP2LAMBDA * qscale;
     }
+
+    MATCH_PER_STREAM_OPT(disposition, str, ost->disposition, oc, st);
+    ost->disposition = av_strdup(ost->disposition);
 
     if (oc->oformat->flags & AVFMT_GLOBALHEADER)
         ost->enc_ctx->flags |= CODEC_FLAG_GLOBAL_HEADER;
@@ -2937,6 +2940,9 @@ const OptionDef options[] = {
     { "discard",        OPT_STRING | HAS_ARG | OPT_SPEC |
                         OPT_INPUT,                                   { .off = OFFSET(discard) },
         "discard", "" },
+    { "disposition",    OPT_STRING | HAS_ARG | OPT_SPEC |
+                        OPT_OUTPUT,                                  { .off = OFFSET(disposition) },
+        "disposition", "" },
 
     /* video options */
     { "vframes",      OPT_VIDEO | HAS_ARG  | OPT_PERFILE | OPT_OUTPUT,           { .func_arg = opt_video_frames },

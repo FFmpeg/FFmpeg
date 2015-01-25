@@ -590,6 +590,11 @@ static av_cold int nvenc_encode_init(AVCodecContext *avctx)
     memcpy(&ctx->encode_config, &preset_config.presetCfg, sizeof(ctx->encode_config));
     ctx->encode_config.version = NV_ENC_CONFIG_VER;
 
+    if (avctx->refs >= 0) {
+        /* 0 means "let the hardware decide" */
+        ctx->encode_config.encodeCodecConfig.h264Config.maxNumRefFrames = avctx->refs;
+    }
+
     if (avctx->gop_size >= 0) {
         ctx->encode_config.gopLength = avctx->gop_size;
         ctx->encode_config.encodeCodecConfig.h264Config.idrPeriod = avctx->gop_size;

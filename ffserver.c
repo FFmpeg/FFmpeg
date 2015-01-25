@@ -314,16 +314,18 @@ static char *ctime1(char *buf2, int buf_size)
 static void http_vlog(const char *fmt, va_list vargs)
 {
     static int print_prefix = 1;
-    if (logfile) {
-        if (print_prefix) {
-            char buf[32];
-            ctime1(buf, sizeof(buf));
-            fprintf(logfile, "%s ", buf);
-        }
-        print_prefix = strstr(fmt, "\n") != NULL;
-        vfprintf(logfile, fmt, vargs);
-        fflush(logfile);
+
+    if (!logfile)
+        return;
+
+    if (print_prefix) {
+        char buf[32];
+        ctime1(buf, sizeof(buf));
+        fprintf(logfile, "%s ", buf);
     }
+    print_prefix = strstr(fmt, "\n") != NULL;
+    vfprintf(logfile, fmt, vargs);
+    fflush(logfile);
 }
 
 #ifdef __GNUC__
@@ -868,6 +870,7 @@ static void close_connection(HTTPContext *c)
 static int handle_connection(HTTPContext *c)
 {
     int len, ret;
+    uint8_t *ptr;
 
     switch(c->state) {
     case HTTPSTATE_WAIT_REQUEST:
@@ -883,33 +886,33 @@ static int handle_connection(HTTPContext *c)
             return 0;
         /* read the data */
     read_loop:
-        len = recv(c->fd, c->buffer_ptr, 1, 0);
+        if (!(len = recv(c->fd, c->buffer_ptr, 1, 0)))
+            return -1;
+
         if (len < 0) {
             if (ff_neterrno() != AVERROR(EAGAIN) &&
                 ff_neterrno() != AVERROR(EINTR))
                 return -1;
-        } else if (len == 0) {
-            return -1;
-        } else {
-            /* search for end of request. */
-            uint8_t *ptr;
-            c->buffer_ptr += len;
-            ptr = c->buffer_ptr;
-            if ((ptr >= c->buffer + 2 && !memcmp(ptr-2, "\n\n", 2)) ||
-                (ptr >= c->buffer + 4 && !memcmp(ptr-4, "\r\n\r\n", 4))) {
-                /* request found : parse it and reply */
-                if (c->state == HTTPSTATE_WAIT_REQUEST) {
-                    ret = http_parse_request(c);
-                } else {
-                    ret = rtsp_parse_request(c);
-                }
-                if (ret < 0)
-                    return -1;
-            } else if (ptr >= c->buffer_end) {
-                /* request too long: cannot do anything */
-                return -1;
-            } else goto read_loop;
+            break;
         }
+        /* search for end of request. */
+        c->buffer_ptr += len;
+        ptr = c->buffer_ptr;
+        if ((ptr >= c->buffer + 2 && !memcmp(ptr-2, "\n\n", 2)) ||
+            (ptr >= c->buffer + 4 && !memcmp(ptr-4, "\r\n\r\n", 4))) {
+            /* request found : parse it and reply */
+            if (c->state == HTTPSTATE_WAIT_REQUEST) {
+                ret = http_parse_request(c);
+            } else {
+                ret = rtsp_parse_request(c);
+            }
+            if (ret < 0)
+                return -1;
+        } else if (ptr >= c->buffer_end) {
+            /* request too long: cannot do anything */
+            return -1;
+        } else goto read_loop;
+
         break;
 
     case HTTPSTATE_SEND_HEADER:
@@ -925,21 +928,21 @@ static int handle_connection(HTTPContext *c)
                 ff_neterrno() != AVERROR(EINTR)) {
                 goto close_connection;
             }
-        } else {
-            c->buffer_ptr += len;
-            if (c->stream)
-                c->stream->bytes_served += len;
-            c->data_count += len;
-            if (c->buffer_ptr >= c->buffer_end) {
-                av_freep(&c->pb_buffer);
-                /* if error, exit */
-                if (c->http_error)
-                    return -1;
-                /* all the buffer was sent : synchronize to the incoming
-                 * stream */
-                c->state = HTTPSTATE_SEND_DATA_HEADER;
-                c->buffer_ptr = c->buffer_end = c->buffer;
-            }
+            break;
+        }
+        c->buffer_ptr += len;
+        if (c->stream)
+            c->stream->bytes_served += len;
+        c->data_count += len;
+        if (c->buffer_ptr >= c->buffer_end) {
+            av_freep(&c->pb_buffer);
+            /* if error, exit */
+            if (c->http_error)
+                return -1;
+            /* all the buffer was sent : synchronize to the incoming
+             * stream */
+            c->state = HTTPSTATE_SEND_DATA_HEADER;
+            c->buffer_ptr = c->buffer_end = c->buffer;
         }
         break;
 
@@ -992,14 +995,14 @@ static int handle_connection(HTTPContext *c)
                 ff_neterrno() != AVERROR(EINTR)) {
                 goto close_connection;
             }
-        } else {
-            c->buffer_ptr += len;
-            c->data_count += len;
-            if (c->buffer_ptr >= c->buffer_end) {
-                /* all the buffer was sent : wait for a new request */
-                av_freep(&c->pb_buffer);
-                start_wait_request(c, 1);
-            }
+            break;
+        }
+        c->buffer_ptr += len;
+        c->data_count += len;
+        if (c->buffer_ptr >= c->buffer_end) {
+            /* all the buffer was sent : wait for a new request */
+            av_freep(&c->pb_buffer);
+            start_wait_request(c, 1);
         }
         break;
     case RTSPSTATE_SEND_PACKET:
@@ -1019,13 +1022,13 @@ static int handle_connection(HTTPContext *c)
                 av_freep(&c->packet_buffer);
                 return -1;
             }
-        } else {
-            c->packet_buffer_ptr += len;
-            if (c->packet_buffer_ptr >= c->packet_buffer_end) {
-                /* all the buffer was sent : wait for a new request */
-                av_freep(&c->packet_buffer);
-                c->state = RTSPSTATE_WAIT_REQUEST;
-            }
+            break;
+        }
+        c->packet_buffer_ptr += len;
+        if (c->packet_buffer_ptr >= c->packet_buffer_end) {
+            /* all the buffer was sent : wait for a new request */
+            av_freep(&c->packet_buffer);
+            c->state = RTSPSTATE_WAIT_REQUEST;
         }
         break;
     case HTTPSTATE_READY:
@@ -1114,14 +1117,13 @@ static int find_stream_in_feed(FFServerStream *feed, AVCodecContext *codec, int 
                 best_bitrate = feed_codec->bit_rate;
                 best = i;
             }
-        } else {
-            if (feed_codec->bit_rate < best_bitrate) {
-                best_bitrate = feed_codec->bit_rate;
-                best = i;
-            }
+            continue;
+        }
+        if (feed_codec->bit_rate < best_bitrate) {
+            best_bitrate = feed_codec->bit_rate;
+            best = i;
         }
     }
-
     return best;
 }
 
