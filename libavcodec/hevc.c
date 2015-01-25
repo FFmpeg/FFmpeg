@@ -2706,18 +2706,18 @@ static int decode_nal_unit(HEVCContext *s, const HEVCNAL *nal)
             if (ret < 0)
                 goto fail;
         } else {
-        if (s->threads_number > 1 && s->sh.num_entry_point_offsets > 0)
-            ctb_addr_ts = hls_slice_data_wpp(s, nal->data, nal->size);
-        else
-            ctb_addr_ts = hls_slice_data(s);
-        if (ctb_addr_ts >= (s->sps->ctb_width * s->sps->ctb_height)) {
-            s->is_decoded = 1;
-        }
+            if (s->threads_number > 1 && s->sh.num_entry_point_offsets > 0)
+                ctb_addr_ts = hls_slice_data_wpp(s, nal->data, nal->size);
+            else
+                ctb_addr_ts = hls_slice_data(s);
+            if (ctb_addr_ts >= (s->sps->ctb_width * s->sps->ctb_height)) {
+                s->is_decoded = 1;
+            }
 
-        if (ctb_addr_ts < 0) {
-            ret = ctb_addr_ts;
-            goto fail;
-        }
+            if (ctb_addr_ts < 0) {
+                ret = ctb_addr_ts;
+                goto fail;
+            }
         }
         break;
     case NAL_EOS_NUT:
@@ -3077,15 +3077,15 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
             av_log(avctx, AV_LOG_ERROR,
                    "hardware accelerator failed to decode picture\n");
     } else {
-    /* verify the SEI checksum */
-    if (avctx->err_recognition & AV_EF_CRCCHECK && s->is_decoded &&
-        s->is_md5) {
-        ret = verify_md5(s, s->ref->frame);
-        if (ret < 0 && avctx->err_recognition & AV_EF_EXPLODE) {
-            ff_hevc_unref_frame(s, s->ref, ~0);
-            return ret;
+        /* verify the SEI checksum */
+        if (avctx->err_recognition & AV_EF_CRCCHECK && s->is_decoded &&
+            s->is_md5) {
+            ret = verify_md5(s, s->ref->frame);
+            if (ret < 0 && avctx->err_recognition & AV_EF_EXPLODE) {
+                ff_hevc_unref_frame(s, s->ref, ~0);
+                return ret;
+            }
         }
-    }
     }
     s->is_md5 = 0;
 
