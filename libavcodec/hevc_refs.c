@@ -356,18 +356,18 @@ static HEVCFrame *generate_missing_ref(HEVCContext *s, int poc)
         return NULL;
 
     if (!s->avctx->hwaccel) {
-    if (!s->sps->pixel_shift) {
-        for (i = 0; frame->frame->buf[i]; i++)
-            memset(frame->frame->buf[i]->data, 1 << (s->sps->bit_depth - 1),
-                   frame->frame->buf[i]->size);
-    } else {
-        for (i = 0; frame->frame->data[i]; i++)
-            for (y = 0; y < (s->sps->height >> s->sps->vshift[i]); y++)
-                for (x = 0; x < (s->sps->width >> s->sps->hshift[i]); x++) {
-                    AV_WN16(frame->frame->data[i] + y * frame->frame->linesize[i] + 2 * x,
-                            1 << (s->sps->bit_depth - 1));
-                }
-    }
+        if (!s->sps->pixel_shift) {
+            for (i = 0; frame->frame->buf[i]; i++)
+                memset(frame->frame->buf[i]->data, 1 << (s->sps->bit_depth - 1),
+                       frame->frame->buf[i]->size);
+        } else {
+            for (i = 0; frame->frame->data[i]; i++)
+                for (y = 0; y < (s->sps->height >> s->sps->vshift[i]); y++)
+                    for (x = 0; x < (s->sps->width >> s->sps->hshift[i]); x++) {
+                        AV_WN16(frame->frame->data[i] + y * frame->frame->linesize[i] + 2 * x,
+                                1 << (s->sps->bit_depth - 1));
+                    }
+        }
     }
 
     frame->poc      = poc;
