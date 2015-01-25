@@ -253,6 +253,16 @@ If set to @option{true}, before capture starts, popup a display
 dialog to the end user, allowing them to manually
 modify crossbar pin routings.
 
+@item show_analog_tv_tuner_dialog
+If set to @option{true}, before capture starts, popup a display
+dialog to the end user, allowing them to manually
+modify TV channels and frequencies.
+
+@item show_analog_tv_tuner_audio_dialog
+If set to @option{true}, before capture starts, popup a display
+dialog to the end user, allowing them to manually
+modify TV audio (like mono vs. stereo, Language A,B or C).
+
 @end table
 
 @subsection Examples

@@ -1202,6 +1202,12 @@ static const AVOption options[] = {
     { "show_crossbar_connection_dialog", "display property dialog for crossbar connecting pins filter", OFFSET(show_crossbar_connection_dialog), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, DEC, "show_crossbar_connection_dialog" },
     { "true", "", 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, DEC, "show_crossbar_connection_dialog" },
     { "false", "", 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, DEC, "show_crossbar_connection_dialog" },
+    { "show_analog_tv_tuner_dialog", "display property dialog for analog tuner filter", OFFSET(show_analog_tv_tuner_dialog), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, DEC, "show_analog_tv_tuner_dialog" },
+    { "true", "", 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, DEC, "show_analog_tv_tuner_dialog" },
+    { "false", "", 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, DEC, "show_analog_tv_tuner_dialog" },
+    { "show_analog_tv_tuner_audio_dialog", "display property dialog for analog tuner audio filter", OFFSET(show_analog_tv_tuner_audio_dialog), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, DEC, "show_analog_tv_tuner_dialog" },
+    { "true", "", 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, DEC, "show_analog_tv_tuner_audio_dialog" },
+    { "false", "", 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, DEC, "show_analog_tv_tuner_audio_dialog" },
     { NULL },
 };
 
