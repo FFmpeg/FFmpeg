@@ -52,6 +52,7 @@ DEFINE_GUID(DXVA2_ModeH264_F,         0x1b81be69, 0xa0c7,0x11d3,0xb9,0x84,0x00,0
 DEFINE_GUID(DXVADDI_Intel_ModeH264_E, 0x604F8E68, 0x4951,0x4C54,0x88,0xFE,0xAB,0xD2,0x5C,0x15,0xB3,0xD6);
 DEFINE_GUID(DXVA2_ModeVC1_D,          0x1b81beA3, 0xa0c7,0x11d3,0xb9,0x84,0x00,0xc0,0x4f,0x2e,0x73,0xc5);
 DEFINE_GUID(DXVA2_ModeVC1_D2010,      0x1b81beA4, 0xa0c7,0x11d3,0xb9,0x84,0x00,0xc0,0x4f,0x2e,0x73,0xc5);
+DEFINE_GUID(DXVA2_ModeHEVC_VLD_Main,  0x5b11d51b, 0x2f4c,0x4452,0xbc,0xc3,0x09,0xf2,0xa1,0x16,0x0c,0xc0);
 DEFINE_GUID(DXVA2_NoEncrypt,          0x1b81beD0, 0xa0c7,0x11d3,0xb9,0x84,0x00,0xc0,0x4f,0x2e,0x73,0xc5);
 DEFINE_GUID(GUID_NULL,                0x00000000, 0x0000,0x0000,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00);
 
@@ -79,6 +80,9 @@ static const dxva2_mode dxva2_modes[] = {
     { &DXVA2_ModeVC1_D2010,      AV_CODEC_ID_WMV3 },
     { &DXVA2_ModeVC1_D,          AV_CODEC_ID_VC1  },
     { &DXVA2_ModeVC1_D,          AV_CODEC_ID_WMV3 },
+
+    /* HEVC/H.265 */
+    { &DXVA2_ModeHEVC_VLD_Main,  AV_CODEC_ID_HEVC },
 
     { NULL,                      0 },
 };
@@ -526,6 +530,10 @@ static int dxva2_create_decoder(AVCodecContext *s)
        but it causes issues for H.264 on certain AMD GPUs..... */
     if (s->codec_id == AV_CODEC_ID_MPEG2VIDEO)
         surface_alignment = 32;
+    /* the HEVC DXVA2 spec asks for 128 pixel aligned surfaces to ensure
+       all coding features have enough room to work with */
+    else if  (s->codec_id == AV_CODEC_ID_HEVC)
+        surface_alignment = 128;
     else
         surface_alignment = 16;
 
@@ -533,7 +541,7 @@ static int dxva2_create_decoder(AVCodecContext *s)
     ctx->num_surfaces = 4;
 
     /* add surfaces based on number of possible refs */
-    if (s->codec_id == AV_CODEC_ID_H264)
+    if (s->codec_id == AV_CODEC_ID_H264 || s->codec_id == AV_CODEC_ID_HEVC)
         ctx->num_surfaces += 16;
     else
         ctx->num_surfaces += 2;
