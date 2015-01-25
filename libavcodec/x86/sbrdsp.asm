@@ -454,13 +454,15 @@ cglobal sbr_autocorrelate, 2,3,8,32, x, phi, cnt
     neg   cntq
 
 %if cpuflag(sse3)
+%define   MOVH  movsd
     movddup m5, [xq+cntq]
 %else
+%define   MOVH  movlps
     movlps  m5, [xq+cntq]
     movlhps m5, m5
 %endif
-    movlps  m7, [xq+cntq+8 ]
-    movlps  m1, [xq+cntq+16]
+    MOVH    m7, [xq+cntq+8 ]
+    MOVH    m1, [xq+cntq+16]
     shufps  m7, m7, q0110
     shufps  m1, m1, q0110
     mulps   m3, m5, m7   ;              x[0][0] * x[1][0], x[0][1] * x[1][1], x[0][0] * x[1][1], x[0][1] * x[1][0]
@@ -470,7 +472,7 @@ cglobal sbr_autocorrelate, 2,3,8,32, x, phi, cnt
     movaps  [rsp+16], m4
     add   cntq, 8
 
-    movlps  m2, [xq+cntq+16]
+    MOVH    m2, [xq+cntq+16]
     movlhps m7, m7
     shufps  m2, m2, q0110
     mulps   m6, m7, m1   ; real_sum1  = x[1][0] * x[2][0], x[1][1] * x[2][1]; imag_sum1 += x[1][0] * x[2][1], x[1][1] * x[2][0]
@@ -481,7 +483,7 @@ cglobal sbr_autocorrelate, 2,3,8,32, x, phi, cnt
 align 16
 .loop:
     add   cntq, 8
-    movlps  m0, [xq+cntq+16]
+    MOVH    m0, [xq+cntq+16]
     movlhps m1, m1
     shufps  m0, m0, q0110
     mulps   m3, m1, m2
@@ -491,7 +493,7 @@ align 16
     addps   m5, m4       ; real_sum2 += x[i][0] * x[i + 2][0], x[i][1] * x[i + 2][1]; imag_sum2 += x[i][0] * x[i + 2][1], x[i][1] * x[i + 2][0];
     addps   m7, m1       ; real_sum0 += x[i][0] * x[i][0],     x[i][1] * x[i][1];
     add   cntq, 8
-    movlps  m1, [xq+cntq+16]
+    MOVH    m1, [xq+cntq+16]
     movlhps m2, m2
     shufps  m1, m1, q0110
     mulps   m3, m2, m0
@@ -501,7 +503,7 @@ align 16
     addps   m5, m4       ; real_sum2 += x[i][0] * x[i + 2][0], x[i][1] * x[i + 2][1]; imag_sum2 += x[i][0] * x[i + 2][1], x[i][1] * x[i + 2][0];
     addps   m7, m2       ; real_sum0 += x[i][0] * x[i][0],     x[i][1] * x[i][1];
     add   cntq, 8
-    movlps  m2, [xq+cntq+16]
+    MOVH    m2, [xq+cntq+16]
     movlhps m0, m0
     shufps  m2, m2, q0110
     mulps   m3, m0, m1
