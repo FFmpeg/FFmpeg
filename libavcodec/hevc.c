@@ -2657,8 +2657,10 @@ static int extract_rbsp(const uint8_t *src, int length,
 #endif /* HAVE_FAST_UNALIGNED */
 
     if (i >= length - 1) { // no escaped 0
-        nal->data = src;
-        nal->size = length;
+        nal->data     =
+        nal->raw_data = src;
+        nal->size     =
+        nal->raw_size = length;
         return length;
     }
 
@@ -2697,6 +2699,8 @@ nsc:
 
     nal->data = dst;
     nal->size = di;
+    nal->raw_data = src;
+    nal->raw_size = si;
     return si;
 }
 

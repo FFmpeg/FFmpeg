@@ -692,6 +692,9 @@ typedef struct HEVCNAL {
 
     int size;
     const uint8_t *data;
+
+    int raw_size;
+    const uint8_t *raw_data;
 } HEVCNAL;
 
 struct HEVCContext;
