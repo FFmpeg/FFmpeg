@@ -345,7 +345,7 @@ static int config_input(AVFilterLink *inlink)
         avctx_enc->width = width + BLOCK;
         avctx_enc->height = height + BLOCK;
         avctx_enc->time_base = (AVRational){1,25};  // meaningless
-        avctx_enc->gop_size = 300;
+        avctx_enc->gop_size = INT_MAX;
         avctx_enc->max_b_frames = 0;
         avctx_enc->pix_fmt = inlink->format;
         avctx_enc->flags = CODEC_FLAG_QSCALE | CODEC_FLAG_LOW_DELAY;
