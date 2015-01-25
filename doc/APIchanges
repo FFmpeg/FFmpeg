@@ -19,13 +19,13 @@ API changes, most recent first:
   Add avdevice_list_input_sources().
   Add avdevice_list_output_sinks().
 
-201x-xx-xx - d7aaeea / c220a60 - lavc 56.19.100 / 56.10.0 - vdpau.h
+2014-12-27 - d7aaeea / c220a60 - lavc 56.19.100 / 56.10.0 - vdpau.h
   Add av_vdpau_get_surface_parameters().
 
-201x-xx-xx - ddb9a24 / 6c99c92 - lavc 56.18.100 / 56.9.0 - avcodec.h
+2014-12-27 - ddb9a24 / 6c99c92 - lavc 56.18.100 / 56.9.0 - avcodec.h
   Add AV_HWACCEL_FLAG_ALLOW_HIGH_DEPTH flag to av_vdpau_bind_context().
 
-201x-xx-xx - d16079a / 57b6704 - lavc 56.17.100 / 56.8.0 - avcodec.h
+2014-12-27 - d16079a / 57b6704 - lavc 56.17.100 / 56.8.0 - avcodec.h
   Add AVCodecContext.sw_pix_fmt.
 
 2014-12-04 - 6e9ac02 - lavc 56.14.100 - dv_profile.h
