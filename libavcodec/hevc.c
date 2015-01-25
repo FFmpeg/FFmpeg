@@ -552,7 +552,7 @@ static int hls_slice_header(HEVCContext *s)
             sh->colour_plane_id = get_bits(gb, 2);
 
         if (!IS_IDR(s)) {
-            int short_term_ref_pic_set_sps_flag, poc;
+            int poc;
 
             sh->pic_order_cnt_lsb = get_bits(gb, s->sps->log2_max_poc_lsb);
             poc = ff_hevc_compute_poc(s, sh->pic_order_cnt_lsb);
@@ -565,12 +565,14 @@ static int hls_slice_header(HEVCContext *s)
             }
             s->poc = poc;
 
-            short_term_ref_pic_set_sps_flag = get_bits1(gb);
-            if (!short_term_ref_pic_set_sps_flag) {
+            sh->short_term_ref_pic_set_sps_flag = get_bits1(gb);
+            if (!sh->short_term_ref_pic_set_sps_flag) {
+                int pos = get_bits_left(gb);
                 ret = ff_hevc_decode_short_term_rps(s, &sh->slice_rps, s->sps, 1);
                 if (ret < 0)
                     return ret;
 
+                sh->short_term_ref_pic_set_size = pos - get_bits_left(gb);
                 sh->short_term_rps = &sh->slice_rps;
             } else {
                 int numbits, rps_idx;
