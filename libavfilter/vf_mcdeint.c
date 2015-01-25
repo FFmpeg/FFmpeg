@@ -126,6 +126,7 @@ static int config_props(AVFilterLink *inlink)
     enc_ctx->me_cmp = enc_ctx->me_sub_cmp = FF_CMP_SAD;
     enc_ctx->mb_cmp = FF_CMP_SSE;
     av_dict_set(&opts, "memc_only", "1", 0);
+    av_dict_set(&opts, "no_bitstream", "1", 0);
 
     switch (mcdeint->mode) {
     case MODE_EXTRA_SLOW:
