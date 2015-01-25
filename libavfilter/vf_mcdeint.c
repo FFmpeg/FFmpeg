@@ -117,7 +117,7 @@ static int config_props(AVFilterLink *inlink)
     enc_ctx->width  = inlink->w;
     enc_ctx->height = inlink->h;
     enc_ctx->time_base = (AVRational){1,25};  // meaningless
-    enc_ctx->gop_size = 300;
+    enc_ctx->gop_size = INT_MAX;
     enc_ctx->max_b_frames = 0;
     enc_ctx->pix_fmt = AV_PIX_FMT_YUV420P;
     enc_ctx->flags = CODEC_FLAG_QSCALE | CODEC_FLAG_LOW_DELAY;
