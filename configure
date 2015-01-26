@@ -2702,7 +2702,7 @@ ln_s="ln -s -f"
 nm_default="nm -g"
 objformat="elf"
 pkg_config_default=pkg-config
-ranlib_default="ranlib -D"
+ranlib_default="ranlib"
 strip_default="strip"
 yasmexe_default="yasm"
 windres_default="windres"
@@ -3601,7 +3601,7 @@ elif $ar 2>&1 | grep -q 'Usage: ar.*-X.*any'; then
     arflags='-Xany -r -c'
     ar_o='$@'
 else
-    arflags="Drc"
+    arflags="rc"
     ar_o='$@'
 fi
 
