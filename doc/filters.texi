@@ -6279,24 +6279,12 @@ the named filter.
 
 The list of the currently supported filters follows:
 @table @var
-@item eq2
-@item eq
 @item softpulldown
 @end table
 
 The parameter syntax and behavior for the listed filters are the same
 of the corresponding MPlayer filters. For detailed instructions check
 the "VIDEO FILTERS" section in the MPlayer manual.
-
-@subsection Examples
-
-@itemize
-@item
-Adjust gamma, brightness, contrast:
-@example
-mp=eq2=1.0:2:0.5
-@end example
-@end itemize
 
 See also mplayer(1), @url{http://www.mplayerhq.hu/}.
 
