@@ -157,7 +157,6 @@ typedef struct NvencContext
     char *preset;
     int cbr;
     int twopass;
-    int gobpattern;
     int gpu;
 } NvencContext;
 
@@ -595,10 +594,23 @@ static av_cold int nvenc_encode_init(AVCodecContext *avctx)
         ctx->encode_config.encodeCodecConfig.h264Config.maxNumRefFrames = avctx->refs;
     }
 
-    if (avctx->gop_size >= 0) {
+    if (avctx->gop_size > 0) {
+        if (avctx->max_b_frames >= 0) {
+            /* 0 is intra-only, 1 is I/P only, 2 is one B Frame, 3 two B frames, and so on. */
+            ctx->encode_config.frameIntervalP = avctx->max_b_frames + 1;
+        }
+
         ctx->encode_config.gopLength = avctx->gop_size;
         ctx->encode_config.encodeCodecConfig.h264Config.idrPeriod = avctx->gop_size;
+    } else if (avctx->gop_size == 0) {
+        ctx->encode_config.frameIntervalP = 0;
+        ctx->encode_config.gopLength = 1;
+        ctx->encode_config.encodeCodecConfig.h264Config.idrPeriod = 1;
     }
+
+    /* when there're b frames, set dts offset */
+    if (ctx->encode_config.frameIntervalP >= 2)
+        ctx->last_dts = -2;
 
     if (avctx->bit_rate > 0)
         ctx->encode_config.rcParams.averageBitRate = avctx->bit_rate;
@@ -667,15 +679,6 @@ static av_cold int nvenc_encode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_WARNING, "Unsupported h264 profile requested, falling back to high\n");
         ctx->encode_config.profileGUID = NV_ENC_H264_PROFILE_HIGH_GUID;
         break;
-    }
-
-    if (ctx->gobpattern >= 0) {
-        ctx->encode_config.frameIntervalP = ctx->gobpattern;
-    }
-
-    // when there're b frames, set dts offset
-    if (ctx->encode_config.frameIntervalP >= 2) {
-        ctx->last_dts = -2;
     }
 
     ctx->encode_config.encodeCodecConfig.h264Config.h264VUIParameters.colourDescriptionPresentFlag = 1;
@@ -924,7 +927,7 @@ static int process_output_surface(AVCodecContext *avctx, AVPacket *pkt, AVFrame 
     pkt->pts = lock_params.outputTimeStamp;
     pkt->dts = timestamp_queue_dequeue(&ctx->timestamp_list);
 
-    // when there're b frame(s), set dts offset
+    /* when there're b frame(s), set dts offset */
     if (ctx->encode_config.frameIntervalP >= 2)
         pkt->dts -= 1;
 
@@ -1158,7 +1161,6 @@ static const AVOption options[] = {
     { "preset", "Set the encoding preset (one of hq, hp, bd, ll, llhq, llhp, default)", OFFSET(preset), AV_OPT_TYPE_STRING, { .str = "hq" }, 0, 0, VE },
     { "cbr", "Use cbr encoding mode", OFFSET(cbr), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VE },
     { "2pass", "Use 2pass cbr encoding mode (low latency mode only)", OFFSET(twopass), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 1, VE },
-    { "goppattern", "Specifies the GOP pattern as follows: 0: I, 1: IPP, 2: IBP, 3: IBBP", OFFSET(gobpattern), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 3, VE },
     { "gpu", "Selects which NVENC capable GPU to use. First GPU is 0, second is 1, and so on.", OFFSET(gpu), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE },
     { NULL }
 };
