@@ -2702,7 +2702,11 @@ ln_s="ln -s -f"
 nm_default="nm -g"
 objformat="elf"
 pkg_config_default=pkg-config
-ranlib_default="ranlib"
+if ranlib 2>&1 | grep -q "\-D "; then
+    ranlib_default="ranlib -D"
+else
+    ranlib_default="ranlib"
+fi
 strip_default="strip"
 yasmexe_default="yasm"
 windres_default="windres"
@@ -3599,6 +3603,9 @@ elif $ar 2>&1 | grep -q 'Texas Instruments'; then
     ar_o='$@'
 elif $ar 2>&1 | grep -q 'Usage: ar.*-X.*any'; then
     arflags='-Xany -r -c'
+    ar_o='$@'
+elif $ar 2>&1 | grep -q "\[D\] "; then
+    arflags="rcD"
     ar_o='$@'
 else
     arflags="rc"
