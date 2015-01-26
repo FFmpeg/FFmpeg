@@ -255,10 +255,15 @@ If set to @option{true}, before capture starts, popup a display dialog
 to the end user, allowing them to change audio filter properties
 and configurations manually.
 
-@item show_crossbar_connection_dialog
+@item show_video_crossbar_connection_dialog
 If set to @option{true}, before capture starts, popup a display
 dialog to the end user, allowing them to manually
-modify crossbar pin routings.
+modify crossbar pin routings, when it opens a video device.
+
+@item show_audio_crossbar_connection_dialog
+If set to @option{true}, before capture starts, popup a display
+dialog to the end user, allowing them to manually
+modify crossbar pin routings, when it opens an audio device.
 
 @item show_analog_tv_tuner_dialog
 If set to @option{true}, before capture starts, popup a display

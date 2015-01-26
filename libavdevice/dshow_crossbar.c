@@ -158,7 +158,8 @@ dshow_try_setup_crossbar_options(ICaptureGraphBuilder2 *graph_builder2,
     }
     /* TODO some TV tuners apparently have multiple crossbars? */
 
-    if (ctx->show_crossbar_connection_dialog) {
+    if (devtype == VideoDevice && ctx->show_video_crossbar_connection_dialog ||
+        devtype == AudioDevice && ctx->show_audio_crossbar_connection_dialog) {
         hr = IAMCrossbar_QueryInterface(cross_bar, &IID_IBaseFilter, (void **) &cross_bar_base_filter);
         if (hr != S_OK)
             goto end;
