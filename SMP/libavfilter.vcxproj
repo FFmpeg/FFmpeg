@@ -249,6 +249,8 @@
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_edgedetect.c">
     </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_eq.c">
+    </ClCompile>
     <ClCompile Include="..\libavfilter\vf_fade.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_field.c">
@@ -424,6 +426,7 @@
     <ClCompile Include="..\libavfilter\libmpcodecs\vf_eq2.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\libmpcodecs\vf_eq.c">
+      <ObjectFileName>$(IntDir)\libavfilter_libmpcodecs_vf_eq.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavfilter\libmpcodecs\vf_softpulldown.c">
     </ClCompile>
@@ -442,6 +445,9 @@
     <ClCompile Include="..\libavfilter\pthread.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\log2_tab.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\x86\vf_eq.c">
+      <ObjectFileName>$(IntDir)\libavfilter_x86_vf_eq.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavfilter\x86\vf_fspp_init.c">
     </ClCompile>
