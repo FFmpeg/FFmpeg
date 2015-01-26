@@ -472,6 +472,7 @@ static av_cold int nvenc_encode_init(AVCodecContext *avctx)
     int i, num_mbs;
     int isLL = 0;
     int res = 0;
+    int dw, dh;
 
 #if NVENCAPI_MAJOR_VERSION < 5
     GUID license = dummy_license;
@@ -572,8 +573,20 @@ static av_cold int nvenc_encode_init(AVCodecContext *avctx)
     ctx->init_encode_params.encodeGUID = NV_ENC_CODEC_H264_GUID;
     ctx->init_encode_params.encodeHeight = avctx->height;
     ctx->init_encode_params.encodeWidth = avctx->width;
-    ctx->init_encode_params.darHeight = avctx->height;
-    ctx->init_encode_params.darWidth = avctx->width;
+
+    if (avctx->sample_aspect_ratio.num && avctx->sample_aspect_ratio.den &&
+        (avctx->sample_aspect_ratio.num != 1 || avctx->sample_aspect_ratio.num != 1)) {
+        av_reduce(&dw, &dh,
+                  avctx->width * avctx->sample_aspect_ratio.num,
+                  avctx->height * avctx->sample_aspect_ratio.den,
+                  1024 * 1024);
+        ctx->init_encode_params.darHeight = dh;
+        ctx->init_encode_params.darWidth = dw;
+    } else {
+        ctx->init_encode_params.darHeight = avctx->height;
+        ctx->init_encode_params.darWidth = avctx->width;
+    }
+
     ctx->init_encode_params.frameRateNum = avctx->time_base.den;
     ctx->init_encode_params.frameRateDen = avctx->time_base.num * avctx->ticks_per_frame;
 
