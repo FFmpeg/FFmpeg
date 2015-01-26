@@ -214,6 +214,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                                 in->data[i], in->linesize[i], w, h);
     }
 
+    av_frame_free(&in);
     return ff_filter_frame(outlink, out);
 }
 static const AVFilterPad eq_inputs[] = {
