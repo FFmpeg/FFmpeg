@@ -21,7 +21,7 @@
 
 /**
  * @file
- * Fieldmatching filter, ported from VFM filter (VapouSsynth) by Clément.
+ * Fieldmatching filter, ported from VFM filter (VapourSynth) by Clément.
  * Fredrik Mellbin is the author of the VIVTC/VFM filter, which is itself a
  * light clone of the TIVTC/TFM (AviSynth) filter written by Kevin Stone
  * (tritical), the original author.
