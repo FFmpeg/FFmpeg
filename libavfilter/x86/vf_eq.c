@@ -72,7 +72,7 @@ static void process_MMX(EQParameters *param, uint8_t *dst, int dst_stride,
 
                 for (i = w&7; i; i--) {
                         pel = ((*src++ * contrast) >> 12) + brightness;
-                        if (pel & 768)
+                        if (pel & ~255)
                             pel = (-pel) >> 31;
                         *dst++ = pel;
                 }

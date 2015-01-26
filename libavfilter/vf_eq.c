@@ -91,7 +91,7 @@ static void process_c(EQParameters *param, uint8_t *dst, int dst_stride,
         for (x = 0; x < w; x++) {
             pel = ((src[y * src_stride + x] * contrast) >> 12) + brightness;
 
-            if (pel & 768)
+            if (pel & ~255)
                 pel = (-pel) >> 31;
 
             dst[y * dst_stride + x] = pel;
