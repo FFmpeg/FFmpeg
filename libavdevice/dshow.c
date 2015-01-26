@@ -1044,7 +1044,7 @@ static int dshow_read_header(AVFormatContext *avctx)
     if (ctx->device_name[AudioDevice]) {
         if ((r = dshow_open_device(avctx, devenum, AudioDevice, AudioSourceDevice)) < 0 ||
             (r = dshow_add_device(avctx, AudioDevice)) < 0) {
-            av_log(avctx, AV_LOG_INFO, "Searching for audio device within video devices %s\n", ctx->device_name[AudioDevice]);
+            av_log(avctx, AV_LOG_INFO, "Searching for audio device within video devices for %s\n", ctx->device_name[AudioDevice]);
             /* see if there's a video source with an audio pin with the given audio name */
             if ((r = dshow_open_device(avctx, devenum, AudioDevice, VideoSourceDevice)) < 0 ||
                 (r = dshow_add_device(avctx, AudioDevice)) < 0) {
@@ -1104,7 +1104,7 @@ static int dshow_read_header(AVFormatContext *avctx)
         r = IMediaControl_GetState(control, 0, &pfs);
     }
     if (r != S_OK) {
-        av_log(avctx, AV_LOG_ERROR, "Could not run filter\n");
+        av_log(avctx, AV_LOG_ERROR, "Could not run graph (sometimes caused by a device already in use by other application)\n");
         goto error;
     }
 
@@ -1199,9 +1199,18 @@ static const AVOption options[] = {
     { "show_audio_device_dialog", "display property dialog for audio capture device", OFFSET(show_audio_device_dialog), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, DEC, "show_audio_device_dialog" },
     { "true", "", 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, DEC, "show_audio_device_dialog" },
     { "false", "", 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, DEC, "show_audio_device_dialog" },
-    { "show_crossbar_connection_dialog", "display property dialog for crossbar connecting pins filter", OFFSET(show_crossbar_connection_dialog), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, DEC, "show_crossbar_connection_dialog" },
-    { "true", "", 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, DEC, "show_crossbar_connection_dialog" },
-    { "false", "", 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, DEC, "show_crossbar_connection_dialog" },
+    { "show_video_crossbar_connection_dialog", "display property dialog for crossbar connecting pins filter on video device", OFFSET(show_video_crossbar_connection_dialog), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, DEC, "show_video_crossbar_connection_dialog" },
+    { "true", "", 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, DEC, "show_video_crossbar_connection_dialog" },
+    { "false", "", 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, DEC, "show_video_crossbar_connection_dialog" },
+    { "show_audio_crossbar_connection_dialog", "display property dialog for crossbar connecting pins filter on audio device", OFFSET(show_audio_crossbar_connection_dialog), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, DEC, "show_audio_crossbar_connection_dialog" },
+    { "true", "", 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, DEC, "show_audio_crossbar_connection_dialog" },
+    { "false", "", 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, DEC, "show_audio_crossbar_connection_dialog" },
+    { "show_analog_tv_tuner_dialog", "display property dialog for analog tuner filter", OFFSET(show_analog_tv_tuner_dialog), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, DEC, "show_analog_tv_tuner_dialog" },
+    { "true", "", 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, DEC, "show_analog_tv_tuner_dialog" },
+    { "false", "", 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, DEC, "show_analog_tv_tuner_dialog" },
+    { "show_analog_tv_tuner_audio_dialog", "display property dialog for analog tuner audio filter", OFFSET(show_analog_tv_tuner_audio_dialog), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, DEC, "show_analog_tv_tuner_dialog" },
+    { "true", "", 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, DEC, "show_analog_tv_tuner_audio_dialog" },
+    { "false", "", 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, DEC, "show_analog_tv_tuner_audio_dialog" },
     { NULL },
 };
 
