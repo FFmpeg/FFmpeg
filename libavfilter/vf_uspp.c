@@ -189,8 +189,8 @@ static void filter(USPPContext *p, uint8_t *dst[3], uint8_t *src[3],
 
     for (i = 0; i < 3; i++) {
         int is_chroma = !!i;
-        int w = width  >> (is_chroma ? p->hsub : 0);
-        int h = height >> (is_chroma ? p->vsub : 0);
+        int w = FF_CEIL_RSHIFT(width,  is_chroma ? p->hsub : 0);
+        int h = FF_CEIL_RSHIFT(height, is_chroma ? p->vsub : 0);
         int stride = p->temp_stride[i];
         int block = BLOCK >> (is_chroma ? p->hsub : 0);
 
@@ -263,8 +263,8 @@ static void filter(USPPContext *p, uint8_t *dst[3], uint8_t *src[3],
 
         offset = (BLOCKc-x1c) + (BLOCKc-y1c) * p->frame_dec->linesize[1];
 
-        for (y = 0; y < height>>p->vsub; y++) {
-            for (x = 0; x < width>>p->hsub; x++) {
+        for (y = 0; y < FF_CEIL_RSHIFT(height, p->vsub); y++) {
+            for (x = 0; x < FF_CEIL_RSHIFT(width, p->hsub); x++) {
                 p->temp[1][x + y * p->temp_stride[1]] += p->frame_dec->data[1][x + y * p->frame_dec->linesize[1] + offset];
                 p->temp[2][x + y * p->temp_stride[2]] += p->frame_dec->data[2][x + y * p->frame_dec->linesize[2] + offset];
             }
@@ -276,8 +276,8 @@ static void filter(USPPContext *p, uint8_t *dst[3], uint8_t *src[3],
         if (!dst[j])
             continue;
         store_slice_c(dst[j], p->temp[j], dst_stride[j], p->temp_stride[j],
-                      width  >> (is_chroma ? p->hsub : 0),
-                      height >> (is_chroma ? p->vsub : 0),
+                      FF_CEIL_RSHIFT(width,  is_chroma ? p->hsub : 0),
+                      FF_CEIL_RSHIFT(height, is_chroma ? p->vsub : 0),
                       8-p->log2_count);
     }
 }
@@ -318,8 +318,13 @@ static int config_input(AVFilterLink *inlink)
 
     for (i = 0; i < 3; i++) {
         int is_chroma = !!i;
-        int w = ((width  + 4 * BLOCK-1) & (~(2 * BLOCK-1))) >> (is_chroma ? uspp->hsub : 0);
-        int h = ((height + 4 * BLOCK-1) & (~(2 * BLOCK-1))) >> (is_chroma ? uspp->vsub : 0);
+        int w = (width  + 4 * BLOCK-1) & (~(2 * BLOCK-1));
+        int h = (height + 4 * BLOCK-1) & (~(2 * BLOCK-1));
+
+        if (is_chroma) {
+            w = FF_CEIL_RSHIFT(w, uspp->hsub);
+            h = FF_CEIL_RSHIFT(h, uspp->vsub);
+        }
 
         uspp->temp_stride[i] = w;
         if (!(uspp->temp[i] = av_malloc_array(uspp->temp_stride[i], h * sizeof(int16_t))))
@@ -340,7 +345,7 @@ static int config_input(AVFilterLink *inlink)
         avctx_enc->width = width + BLOCK;
         avctx_enc->height = height + BLOCK;
         avctx_enc->time_base = (AVRational){1,25};  // meaningless
-        avctx_enc->gop_size = 300;
+        avctx_enc->gop_size = INT_MAX;
         avctx_enc->max_b_frames = 0;
         avctx_enc->pix_fmt = inlink->format;
         avctx_enc->flags = CODEC_FLAG_QSCALE | CODEC_FLAG_LOW_DELAY;

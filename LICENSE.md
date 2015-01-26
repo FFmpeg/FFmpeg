@@ -30,6 +30,7 @@ Specifically, the GPL parts of FFmpeg are:
     - vf_colormatrix.c
     - vf_cropdetect.c
     - vf_delogo.c
+    - vf_eq.c
     - vf_fspp.c
     - vf_geq.c
     - vf_histeq.c
