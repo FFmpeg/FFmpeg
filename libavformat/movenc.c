@@ -1674,6 +1674,9 @@ static int mov_write_video_tag(AVIOContext *pb, MOVMuxContext *mov, MOVTrack *tr
         mov_write_pasp_tag(pb, track);
     }
 
+    //avio_wb32(pb, 0); // padding for FCP - this is optional according to
+    // http://hackipedia.org/File%20formats/Containers/QuickTime%20(multimedia)/pdf/Quicktime%20File%20Format%20(2012-08-14).pdf
+
     return update_size(pb, pos);
 }
 
