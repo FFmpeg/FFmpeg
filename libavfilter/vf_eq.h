@@ -29,7 +29,7 @@
 
 typedef struct EQParameters {
     void (*adjust)(struct EQParameters *eq, uint8_t *dst, int dst_stride,
-                   uint8_t *src, int src_stride, int w, int h);
+                   const uint8_t *src, int src_stride, int w, int h);
 
     uint8_t lut[256];
 
@@ -51,7 +51,7 @@ typedef struct {
     double gamma_r, gamma_g, gamma_b;
 
     void (*process)(struct EQParameters *par, uint8_t *dst, int dst_stride,
-                    uint8_t *src, int src_stride, int w, int h);
+                    const uint8_t *src, int src_stride, int w, int h);
 
 } EQContext;
 

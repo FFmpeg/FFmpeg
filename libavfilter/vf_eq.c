@@ -65,7 +65,7 @@ static void create_lut(EQParameters *param)
 }
 
 static void apply_lut(EQParameters *param, uint8_t *dst, int dst_stride,
-                      uint8_t *src, int src_stride, int w, int h)
+                      const uint8_t *src, int src_stride, int w, int h)
 {
     int x, y;
 
@@ -80,7 +80,7 @@ static void apply_lut(EQParameters *param, uint8_t *dst, int dst_stride,
 }
 
 static void process_c(EQParameters *param, uint8_t *dst, int dst_stride,
-                      uint8_t *src, int src_stride, int w, int h)
+                      const uint8_t *src, int src_stride, int w, int h)
 {
     int x, y, pel;
 
