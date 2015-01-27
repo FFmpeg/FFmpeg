@@ -37,7 +37,6 @@
 #include "h264pred.h"
 #include "h264qpel.h"
 #include "internal.h" // for avpriv_find_start_code()
-#include "me_cmp.h"
 #include "mpegutils.h"
 #include "parser.h"
 #include "qpeldsp.h"
@@ -340,7 +339,6 @@ typedef struct H264Picture {
 typedef struct H264Context {
     AVClass *av_class;
     AVCodecContext *avctx;
-    MECmpContext mecc;
     VideoDSPContext vdsp;
     H264DSPContext h264dsp;
     H264ChromaContext h264chroma;

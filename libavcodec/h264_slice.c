@@ -1207,9 +1207,6 @@ static int h264_slice_header_init(H264Context *h, int reinit)
                 goto fail;
             }
             c->avctx             = h->avctx;
-            if (CONFIG_ERROR_RESILIENCE) {
-                c->mecc              = h->mecc;
-            }
             c->vdsp              = h->vdsp;
             c->h264dsp           = h->h264dsp;
             c->h264qpel          = h->h264qpel;
