@@ -583,10 +583,16 @@ static int svq1_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         ret = ff_get_buffer(avctx, s->current_picture, 0);
         if (ret < 0)
             return ret;
+    }
+    if (!s->last_picture->data[0]) {
         ret = ff_get_buffer(avctx, s->last_picture, 0);
         if (ret < 0)
             return ret;
+    }
+    if (!s->scratchbuf) {
         s->scratchbuf = av_malloc(s->current_picture->linesize[0] * 16 * 2);
+        if (!s->scratchbuf)
+            return AVERROR(ENOMEM);
     }
 
     FFSWAP(AVFrame*, s->current_picture, s->last_picture);
