@@ -117,8 +117,9 @@ av_cold int ff_h263_decode_init(AVCodecContext *avctx)
     }
     s->codec_id    = avctx->codec->id;
 
-    if (avctx->stream_codec_tag == AV_RL32("l263") && avctx->extradata_size == 56 && avctx->extradata[0] == 1)
-        s->ehc_mode = 1;
+    if (avctx->codec_tag == AV_RL32("L263") || avctx->codec_tag == AV_RL32("S263"))
+        if (avctx->extradata_size == 56 && avctx->extradata[0] == 1)
+            s->ehc_mode = 1;
 
     /* for h263, we allocate the images after having read the header */
     if (avctx->codec->id != AV_CODEC_ID_H263 &&
