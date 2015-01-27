@@ -78,11 +78,11 @@ static void h264_er_decode_mb(void *opaque, int ref, int mv_dir, int mv_type,
     ff_h264_hl_decode_mb(h, &h->slice_ctx[0]);
 }
 
-void ff_h264_draw_horiz_band(H264Context *h, H264SliceContext *sl,
+void ff_h264_draw_horiz_band(const H264Context *h, H264SliceContext *sl,
                              int y, int height)
 {
     AVCodecContext *avctx = h->avctx;
-    AVFrame *cur  = &h->cur_pic.f;
+    const AVFrame   *cur  = &h->cur_pic.f;
     AVFrame *last = sl->ref_list[0][0].f.data[0] ? &sl->ref_list[0][0].f : NULL;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
     int vshift = desc->log2_chroma_h;
@@ -98,7 +98,7 @@ void ff_h264_draw_horiz_band(H264Context *h, H264SliceContext *sl,
         return;
 
     if (avctx->draw_horiz_band) {
-        AVFrame *src;
+        const AVFrame *src;
         int offset[AV_NUM_DATA_POINTERS];
         int i;
 
@@ -127,7 +127,7 @@ void ff_h264_draw_horiz_band(H264Context *h, H264SliceContext *sl,
  * Check if the top & left blocks are available if needed and
  * change the dc mode so it only uses the available blocks.
  */
-int ff_h264_check_intra4x4_pred_mode(H264Context *h, H264SliceContext *sl)
+int ff_h264_check_intra4x4_pred_mode(const H264Context *h, H264SliceContext *sl)
 {
     static const int8_t top[12] = {
         -1, 0, LEFT_DC_PRED, -1, -1, -1, -1, -1, 0
@@ -174,7 +174,7 @@ int ff_h264_check_intra4x4_pred_mode(H264Context *h, H264SliceContext *sl)
  * Check if the top & left blocks are available if needed and
  * change the dc mode so it only uses the available blocks.
  */
-int ff_h264_check_intra_pred_mode(H264Context *h, H264SliceContext *sl,
+int ff_h264_check_intra_pred_mode(const H264Context *h, H264SliceContext *sl,
                                   int mode, int is_chroma)
 {
     static const int8_t top[4]  = { LEFT_DC_PRED8x8, 1, -1, -1 };
