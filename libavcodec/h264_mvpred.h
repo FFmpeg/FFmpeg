@@ -35,7 +35,7 @@
 
 #include <assert.h>
 
-static av_always_inline int fetch_diagonal_mv(H264Context *h, H264SliceContext *sl,
+static av_always_inline int fetch_diagonal_mv(const H264Context *h, H264SliceContext *sl,
                                               const int16_t **C,
                                               int i, int list, int part_width)
 {
@@ -92,7 +92,7 @@ static av_always_inline int fetch_diagonal_mv(H264Context *h, H264SliceContext *
  * @param mx the x component of the predicted motion vector
  * @param my the y component of the predicted motion vector
  */
-static av_always_inline void pred_motion(H264Context *const h,
+static av_always_inline void pred_motion(const H264Context *const h,
                                          H264SliceContext *sl,
                                          int n,
                                          int part_width, int list, int ref,
@@ -157,7 +157,7 @@ static av_always_inline void pred_motion(H264Context *const h,
  * @param mx the x component of the predicted motion vector
  * @param my the y component of the predicted motion vector
  */
-static av_always_inline void pred_16x8_motion(H264Context *const h,
+static av_always_inline void pred_16x8_motion(const H264Context *const h,
                                               H264SliceContext *sl,
                                               int n, int list, int ref,
                                               int *const mx, int *const my)
@@ -198,7 +198,7 @@ static av_always_inline void pred_16x8_motion(H264Context *const h,
  * @param mx the x component of the predicted motion vector
  * @param my the y component of the predicted motion vector
  */
-static av_always_inline void pred_8x16_motion(H264Context *const h,
+static av_always_inline void pred_8x16_motion(const H264Context *const h,
                                               H264SliceContext *sl,
                                               int n, int list, int ref,
                                               int *const mx, int *const my)
@@ -254,7 +254,7 @@ static av_always_inline void pred_8x16_motion(H264Context *const h,
         }                                       \
     }
 
-static av_always_inline void pred_pskip_motion(H264Context *const h,
+static av_always_inline void pred_pskip_motion(const H264Context *const h,
                                                H264SliceContext *sl)
 {
     DECLARE_ALIGNED(4, static const int16_t, zeromv)[2] = { 0 };
@@ -353,7 +353,7 @@ zeromv:
     return;
 }
 
-static void fill_decode_neighbors(H264Context *h, H264SliceContext *sl, int mb_type)
+static void fill_decode_neighbors(const H264Context *h, H264SliceContext *sl, int mb_type)
 {
     const int mb_xy = sl->mb_xy;
     int topleft_xy, top_xy, topright_xy, left_xy[LEFT_MBS];
@@ -442,7 +442,7 @@ static void fill_decode_neighbors(H264Context *h, H264SliceContext *sl, int mb_t
         sl->topright_type = 0;
 }
 
-static void fill_decode_caches(H264Context *h, H264SliceContext *sl, int mb_type)
+static void fill_decode_caches(const H264Context *h, H264SliceContext *sl, int mb_type)
 {
     int topleft_xy, top_xy, topright_xy, left_xy[LEFT_MBS];
     int topleft_type, top_type, topright_type, left_type[LEFT_MBS];
@@ -800,7 +800,7 @@ static void fill_decode_caches(H264Context *h, H264SliceContext *sl, int mb_type
 /**
  * decodes a P_SKIP or B_SKIP macroblock
  */
-static void av_unused decode_mb_skip(H264Context *h, H264SliceContext *sl)
+static void av_unused decode_mb_skip(const H264Context *h, H264SliceContext *sl)
 {
     const int mb_xy = sl->mb_xy;
     int mb_type     = 0;
