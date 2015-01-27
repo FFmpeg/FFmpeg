@@ -1127,8 +1127,6 @@ void ff_mpv_decode_init(MpegEncContext *s, AVCodecContext *avctx)
 
     /* convert fourcc to upper case */
     s->codec_tag          = avpriv_toupper4(avctx->codec_tag);
-
-    s->stream_codec_tag   = avpriv_toupper4(avctx->stream_codec_tag);
 }
 
 static int init_er(MpegEncContext *s)
