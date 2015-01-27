@@ -13,7 +13,6 @@ configure to activate them. In this case, FFmpeg's license changes to GPL v2+.
 Specifically, the GPL parts of FFmpeg are:
 
 - libpostproc
-- libmpcodecs
 - optional x86 optimizations in the files
   libavcodec/x86/flac_dsp_gpl.asm
   libavcodec/x86/idct_mmx.c
@@ -38,7 +37,6 @@ Specifically, the GPL parts of FFmpeg are:
     - vf_interlace.c
     - vf_kerndeint.c
     - vf_mcdeint.c
-    - vf_mp.c
     - vf_mpdecimate.c
     - vf_owdenoise.c
     - vf_perspective.c

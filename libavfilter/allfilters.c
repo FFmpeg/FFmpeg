@@ -165,7 +165,6 @@ void avfilter_register_all(void)
     REGISTER_FILTER(LUTYUV,         lutyuv,         vf);
     REGISTER_FILTER(MCDEINT,        mcdeint,        vf);
     REGISTER_FILTER(MERGEPLANES,    mergeplanes,    vf);
-    REGISTER_FILTER(MP,             mp,             vf);
     REGISTER_FILTER(MPDECIMATE,     mpdecimate,     vf);
     REGISTER_FILTER(NEGATE,         negate,         vf);
     REGISTER_FILTER(NOFORMAT,       noformat,       vf);
