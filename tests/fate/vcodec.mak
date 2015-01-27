@@ -44,6 +44,7 @@ fate-vsynth%-dnxhd-1080i:        FMT     = mov
 
 fate-vsynth%-dnxhd-1080i-colr:   ENCOPTS = -s hd1080 -b 120M -flags +ildct -movflags write_colr \
                                            -pix_fmt yuv422p -frames 5 -qmax 8
+fate-vsynth%-dnxhd-1080i-colr:   DECOPTS = -sws_flags area+accurate_rnd+bitexact
 fate-vsynth%-dnxhd-1080i-colr:   FMT     = mov
 
 FATE_VCODEC-$(call ENCDEC, DVVIDEO, DV) += dv dv-411 dv-50
