@@ -166,7 +166,7 @@ static int open_output_file(const char *filename,
         goto cleanup;
     }
 
-    /** Save the encoder context for easiert access later. */
+    /** Save the encoder context for easier access later. */
     *output_codec_context = stream->codec;
 
     /**
