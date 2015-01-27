@@ -114,10 +114,11 @@ output pads is called a "sink".
 @anchor{Filtergraph syntax}
 @section Filtergraph syntax
 
-A filtergraph has a textual representation, which is
-recognized by the @option{-filter}/@option{-vf} and @option{-filter_complex}
-options in @command{ffmpeg} and @option{-vf} in @command{ffplay}, and by the
-@code{avfilter_graph_parse()}/@code{avfilter_graph_parse2()} functions defined in
+A filtergraph has a textual representation, which is recognized by the
+@option{-filter}/@option{-vf}/@option{-af} and
+@option{-filter_complex} options in @command{ffmpeg} and
+@option{-vf}/@option{-af} in @command{ffplay}, and by the
+@code{avfilter_graph_parse_ptr()} function defined in
 @file{libavfilter/avfilter.h}.
 
 A filterchain consists of a sequence of connected filters, each one
