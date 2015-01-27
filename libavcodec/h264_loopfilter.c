@@ -103,7 +103,7 @@ static const uint8_t tc0_table[52*3][4] = {
 static av_always_inline void filter_mb_edgev(uint8_t *pix, int stride,
                                              const int16_t bS[4],
                                              unsigned int qp, int a, int b,
-                                             H264Context *h, int intra)
+                                             const H264Context *h, int intra)
 {
     const unsigned int index_a = qp + a;
     const int alpha = alpha_table[index_a];
@@ -125,7 +125,7 @@ static av_always_inline void filter_mb_edgev(uint8_t *pix, int stride,
 static av_always_inline void filter_mb_edgecv(uint8_t *pix, int stride,
                                               const int16_t bS[4],
                                               unsigned int qp, int a, int b,
-                                              H264Context *h, int intra)
+                                              const H264Context *h, int intra)
 {
     const unsigned int index_a = qp + a;
     const int alpha = alpha_table[index_a];
@@ -144,7 +144,7 @@ static av_always_inline void filter_mb_edgecv(uint8_t *pix, int stride,
     }
 }
 
-static av_always_inline void filter_mb_mbaff_edgev(H264Context *h, uint8_t *pix,
+static av_always_inline void filter_mb_mbaff_edgev(const H264Context *h, uint8_t *pix,
                                                    int stride,
                                                    const int16_t bS[7], int bsi,
                                                    int qp, int a, int b,
@@ -167,7 +167,7 @@ static av_always_inline void filter_mb_mbaff_edgev(H264Context *h, uint8_t *pix,
     }
 }
 
-static av_always_inline void filter_mb_mbaff_edgecv(H264Context *h,
+static av_always_inline void filter_mb_mbaff_edgecv(const H264Context *h,
                                                     uint8_t *pix, int stride,
                                                     const int16_t bS[7],
                                                     int bsi, int qp, int a,
@@ -193,7 +193,7 @@ static av_always_inline void filter_mb_mbaff_edgecv(H264Context *h,
 static av_always_inline void filter_mb_edgeh(uint8_t *pix, int stride,
                                              const int16_t bS[4],
                                              unsigned int qp, int a, int b,
-                                             H264Context *h, int intra)
+                                             const H264Context *h, int intra)
 {
     const unsigned int index_a = qp + a;
     const int alpha = alpha_table[index_a];
@@ -215,7 +215,7 @@ static av_always_inline void filter_mb_edgeh(uint8_t *pix, int stride,
 static av_always_inline void filter_mb_edgech(uint8_t *pix, int stride,
                                               const int16_t bS[4],
                                               unsigned int qp, int a, int b,
-                                              H264Context *h, int intra)
+                                              const H264Context *h, int intra)
 {
     const unsigned int index_a = qp + a;
     const int alpha = alpha_table[index_a];
@@ -234,7 +234,7 @@ static av_always_inline void filter_mb_edgech(uint8_t *pix, int stride,
     }
 }
 
-static av_always_inline void h264_filter_mb_fast_internal(H264Context *h,
+static av_always_inline void h264_filter_mb_fast_internal(const H264Context *h,
                                                           H264SliceContext *sl,
                                                           int mb_x, int mb_y,
                                                           uint8_t *img_y,
@@ -416,7 +416,7 @@ static av_always_inline void h264_filter_mb_fast_internal(H264Context *h,
     }
 }
 
-void ff_h264_filter_mb_fast(H264Context *h, H264SliceContext *sl,
+void ff_h264_filter_mb_fast(const H264Context *h, H264SliceContext *sl,
                             int mb_x, int mb_y, uint8_t *img_y,
                             uint8_t *img_cb, uint8_t *img_cr,
                             unsigned int linesize, unsigned int uvlinesize)
@@ -438,7 +438,7 @@ void ff_h264_filter_mb_fast(H264Context *h, H264SliceContext *sl,
 #endif
 }
 
-static int check_mv(H264Context *h, H264SliceContext *sl, long b_idx, long bn_idx, int mvy_limit)
+static int check_mv(H264SliceContext *sl, long b_idx, long bn_idx, int mvy_limit)
 {
     int v;
 
@@ -468,7 +468,7 @@ static int check_mv(H264Context *h, H264SliceContext *sl, long b_idx, long bn_id
     return v;
 }
 
-static av_always_inline void filter_mb_dir(H264Context *h, H264SliceContext *sl,
+static av_always_inline void filter_mb_dir(const H264Context *h, H264SliceContext *sl,
                                            int mb_x, int mb_y,
                                            uint8_t *img_y, uint8_t *img_cb, uint8_t *img_cr,
                                            unsigned int linesize, unsigned int uvlinesize,
@@ -565,7 +565,7 @@ static av_always_inline void filter_mb_dir(H264Context *h, H264SliceContext *sl,
                     int b_idx= 8 + 4;
                     int bn_idx= b_idx - (dir ? 8:1);
 
-                    bS[0] = bS[1] = bS[2] = bS[3] = check_mv(h, sl, 8 + 4, bn_idx, mvy_limit);
+                    bS[0] = bS[1] = bS[2] = bS[3] = check_mv(sl, 8 + 4, bn_idx, mvy_limit);
                     mv_done = 1;
                 }
                 else
@@ -583,7 +583,7 @@ static av_always_inline void filter_mb_dir(H264Context *h, H264SliceContext *sl,
                     }
                     else if(!mv_done)
                     {
-                        bS[i] = check_mv(h, sl, b_idx, bn_idx, mvy_limit);
+                        bS[i] = check_mv(sl, b_idx, bn_idx, mvy_limit);
                     }
                 }
             }
@@ -646,7 +646,7 @@ static av_always_inline void filter_mb_dir(H264Context *h, H264SliceContext *sl,
                 int b_idx= 8 + 4 + edge * (dir ? 8:1);
                 int bn_idx= b_idx - (dir ? 8:1);
 
-                bS[0] = bS[1] = bS[2] = bS[3] = check_mv(h, sl, b_idx, bn_idx, mvy_limit);
+                bS[0] = bS[1] = bS[2] = bS[3] = check_mv(sl, b_idx, bn_idx, mvy_limit);
                 mv_done = 1;
             }
             else
@@ -664,7 +664,7 @@ static av_always_inline void filter_mb_dir(H264Context *h, H264SliceContext *sl,
                 }
                 else if(!mv_done)
                 {
-                    bS[i] = check_mv(h, sl, b_idx, bn_idx, mvy_limit);
+                    bS[i] = check_mv(sl, b_idx, bn_idx, mvy_limit);
                 }
             }
 
@@ -712,7 +712,7 @@ static av_always_inline void filter_mb_dir(H264Context *h, H264SliceContext *sl,
     }
 }
 
-void ff_h264_filter_mb(H264Context *h, H264SliceContext *sl,
+void ff_h264_filter_mb(const H264Context *h, H264SliceContext *sl,
                        int mb_x, int mb_y,
                        uint8_t *img_y, uint8_t *img_cb, uint8_t *img_cr,
                        unsigned int linesize, unsigned int uvlinesize)
