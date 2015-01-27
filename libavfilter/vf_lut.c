@@ -162,7 +162,7 @@ static double compute_gammaval(void *opaque, double gamma)
 }
 
 /**
- * Compute Rec.709 gama correction of value val
+ * Compute ITU Rec.709 gamma correction of value val.
  */
 static double compute_gammaval709(void *opaque, double gamma)
 {
