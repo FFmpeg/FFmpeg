@@ -182,6 +182,7 @@ const AVCodecTag ff_nut_audio_extra_tags[] = {
     { AV_CODEC_ID_PCM_ALAW,         MKTAG('A', 'L', 'A', 'W') },
     { AV_CODEC_ID_PCM_MULAW,        MKTAG('U', 'L', 'A', 'W') },
     { AV_CODEC_ID_MP3,              MKTAG('M', 'P', '3', ' ') },
+    { AV_CODEC_ID_WAVPACK,          MKTAG('w', 'v', 'p', 'k') },
     { AV_CODEC_ID_NONE,             0                         }
 };
 
