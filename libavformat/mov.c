@@ -2099,6 +2099,7 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
     int64_t current_offset;
     int64_t current_dts = 0;
     unsigned int stts_index = 0;
+    unsigned int ctts_index = 0;
     unsigned int stsc_index = 0;
     unsigned int stss_index = 0;
     unsigned int stps_index = 0;
@@ -2124,14 +2125,13 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
           sc->stts_count == 1 && sc->stts_data[0].duration == 1)) {
         unsigned int current_sample = 0;
         unsigned int stts_sample = 0;
+        unsigned int ctts_sample = 0;
         unsigned int sample_size;
         unsigned int distance = 0;
         unsigned int rap_group_index = 0;
         unsigned int rap_group_sample = 0;
         int rap_group_present = sc->rap_group_count && sc->rap_group;
         int key_off = (sc->keyframes && sc->keyframes[0] > 0) || (sc->stps_data && sc->stps_data[0] > 0);
-
-        current_dts -= sc->dts_shift;
 
         if (!sc->sample_count)
             return;
@@ -2180,14 +2180,15 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                 if (sc->pseudo_stream_id == -1 ||
                    sc->stsc_data[stsc_index].id - 1 == sc->pseudo_stream_id) {
                     AVIndexEntry *e = &st->index_entries[st->nb_index_entries++];
+                    int64_t current_cts = current_dts + (sc->ctts_data ? sc->ctts_data[ctts_index].duration : 0);
                     e->pos = current_offset;
-                    e->timestamp = current_dts;
+                    e->timestamp = current_cts;
                     e->size = sample_size;
                     e->min_distance = distance;
                     e->flags = keyframe ? AVINDEX_KEYFRAME : 0;
-                    av_dlog(mov->fc, "AVIndex stream %d, sample %d, offset %"PRIx64", dts %"PRId64", "
+                    av_dlog(mov->fc, "AVIndex stream %d, sample %d, offset %"PRIx64", cts %"PRId64", "
                             "size %d, distance %d, keyframe %d\n", st->index, current_sample,
-                            current_offset, current_dts, sample_size, distance, keyframe);
+                            current_offset, current_cts, sample_size, distance, keyframe);
                 }
 
                 current_offset += sample_size;
@@ -2195,10 +2196,15 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                 current_dts += sc->stts_data[stts_index].duration;
                 distance++;
                 stts_sample++;
+                ctts_sample++;
                 current_sample++;
                 if (stts_index + 1 < sc->stts_count && stts_sample == sc->stts_data[stts_index].count) {
                     stts_sample = 0;
                     stts_index++;
+                }
+                if (ctts_index + 1 < sc->ctts_count && ctts_sample == sc->ctts_data[ctts_index].count) {
+                    ctts_sample = 0;
+                    ctts_index++;
                 }
             }
         }
@@ -2789,13 +2795,16 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         int sample_flags = i ? frag->flags : first_sample_flags;
         unsigned sample_duration = frag->duration;
         int keyframe = 0;
+        int sample_cts = 0;
+        int64_t cts;
 
         if (flags & MOV_TRUN_SAMPLE_DURATION) sample_duration = avio_rb32(pb);
         if (flags & MOV_TRUN_SAMPLE_SIZE)     sample_size     = avio_rb32(pb);
         if (flags & MOV_TRUN_SAMPLE_FLAGS)    sample_flags    = avio_rb32(pb);
-        sc->ctts_data[sc->ctts_count].count = 1;
-        sc->ctts_data[sc->ctts_count].duration = (flags & MOV_TRUN_SAMPLE_CTS) ?
-                                                  avio_rb32(pb) : 0;
+        if (flags & MOV_TRUN_SAMPLE_CTS)      sample_cts      = avio_rb32(pb);
+        sc->ctts_data[sc->ctts_count].count    = 1;
+        sc->ctts_data[sc->ctts_count].duration = sample_cts;
+        cts = dts + sample_cts;
         sc->ctts_count++;
         if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO)
             keyframe = 1;
@@ -2805,11 +2814,11 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                                   MOV_FRAG_SAMPLE_FLAG_DEPENDS_YES));
         if (keyframe)
             distance = 0;
-        av_add_index_entry(st, offset, dts, sample_size, distance,
+        av_add_index_entry(st, offset, cts, sample_size, distance,
                            keyframe ? AVINDEX_KEYFRAME : 0);
-        av_dlog(c->fc, "AVIndex stream %d, sample %d, offset %"PRIx64", dts %"PRId64", "
+        av_dlog(c->fc, "AVIndex stream %d, sample %d, offset %"PRIx64", cts %"PRId64", "
                 "size %d, distance %d, keyframe %d\n", st->index, sc->sample_count+i,
-                offset, dts, sample_size, distance, keyframe);
+                offset, cts, sample_size, distance, keyframe);
         distance++;
         dts += sample_duration;
         offset += sample_size;
@@ -3335,7 +3344,12 @@ static AVIndexEntry *mov_find_next_sample(AVFormatContext *s, AVStream **st)
         MOVStreamContext *msc = avst->priv_data;
         if (msc->pb && msc->current_sample < avst->nb_index_entries) {
             AVIndexEntry *current_sample = &avst->index_entries[msc->current_sample];
-            int64_t dts = av_rescale(current_sample->timestamp, AV_TIME_BASE, msc->time_scale);
+            int64_t dts;
+            if (msc->ctts_data)
+                dts = av_rescale(current_sample->timestamp - msc->dts_shift - msc->ctts_data[msc->ctts_index].duration,
+                                 AV_TIME_BASE, msc->time_scale);
+            else
+                dts = av_rescale(current_sample->timestamp, AV_TIME_BASE, msc->time_scale);
             av_dlog(s, "stream %d, sample %d, dts %"PRId64"\n", i, msc->current_sample, dts);
             if (!sample || (!s->pb->seekable && current_sample->pos < sample->pos) ||
                 (s->pb->seekable &&
@@ -3409,9 +3423,9 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     pkt->stream_index = sc->ffindex;
-    pkt->dts = sample->timestamp;
+    pkt->pts = sample->timestamp;
     if (sc->ctts_data && sc->ctts_index < sc->ctts_count) {
-        pkt->pts = pkt->dts + sc->dts_shift + sc->ctts_data[sc->ctts_index].duration;
+        pkt->dts = pkt->pts - sc->dts_shift - sc->ctts_data[sc->ctts_index].duration;
         /* update ctts context */
         sc->ctts_sample++;
         if (sc->ctts_index < sc->ctts_count &&
@@ -3424,8 +3438,8 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
     } else {
         int64_t next_dts = (sc->current_sample < st->nb_index_entries) ?
             st->index_entries[sc->current_sample].timestamp : st->duration;
+        pkt->dts = pkt->pts;
         pkt->duration = next_dts - pkt->dts;
-        pkt->pts = pkt->dts;
     }
     if (st->discard == AVDISCARD_ALL)
         goto retry;
