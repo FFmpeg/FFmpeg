@@ -710,12 +710,12 @@ int ff_h264_decode_mb_cavlc(H264Context *h, H264SliceContext *sl)
                 down the code */
     if (sl->slice_type_nos != AV_PICTURE_TYPE_I) {
         if (sl->mb_skip_run == -1)
-            sl->mb_skip_run = get_ue_golomb(&h->gb);
+            sl->mb_skip_run = get_ue_golomb(&sl->gb);
 
         if (sl->mb_skip_run--) {
             if (FRAME_MBAFF(h) && (sl->mb_y & 1) == 0) {
                 if (sl->mb_skip_run == 0)
-                    h->mb_mbaff = h->mb_field_decoding_flag = get_bits1(&h->gb);
+                    h->mb_mbaff = h->mb_field_decoding_flag = get_bits1(&sl->gb);
             }
             decode_mb_skip(h, sl);
             return 0;
@@ -723,12 +723,12 @@ int ff_h264_decode_mb_cavlc(H264Context *h, H264SliceContext *sl)
     }
     if (FRAME_MBAFF(h)) {
         if ((sl->mb_y & 1) == 0)
-            h->mb_mbaff = h->mb_field_decoding_flag = get_bits1(&h->gb);
+            h->mb_mbaff = h->mb_field_decoding_flag = get_bits1(&sl->gb);
     }
 
     sl->prev_mb_skipped = 0;
 
-    mb_type= get_ue_golomb(&h->gb);
+    mb_type= get_ue_golomb(&sl->gb);
     if (sl->slice_type_nos == AV_PICTURE_TYPE_B) {
         if(mb_type < 23){
             partition_count= b_mb_type_info[mb_type].partition_count;
@@ -770,12 +770,12 @@ decode_intra_mb:
                             h->sps.bit_depth_luma;
 
         // We assume these blocks are very rare so we do not optimize it.
-        sl->intra_pcm_ptr = align_get_bits(&h->gb);
-        if (get_bits_left(&h->gb) < mb_size) {
+        sl->intra_pcm_ptr = align_get_bits(&sl->gb);
+        if (get_bits_left(&sl->gb) < mb_size) {
             av_log(h->avctx, AV_LOG_ERROR, "Not enough data for an intra PCM block.\n");
             return AVERROR_INVALIDDATA;
         }
-        skip_bits_long(&h->gb, mb_size);
+        skip_bits_long(&sl->gb, mb_size);
 
         // In deblocking, the quantizer is 0
         h->cur_pic.qscale_table[mb_xy] = 0;
@@ -796,7 +796,7 @@ decode_intra_mb:
         if(IS_INTRA4x4(mb_type)){
             int i;
             int di = 1;
-            if(dct8x8_allowed && get_bits1(&h->gb)){
+            if(dct8x8_allowed && get_bits1(&sl->gb)){
                 mb_type |= MB_TYPE_8x8DCT;
                 di = 4;
             }
@@ -805,8 +805,8 @@ decode_intra_mb:
             for(i=0; i<16; i+=di){
                 int mode = pred_intra_mode(h, sl, i);
 
-                if(!get_bits1(&h->gb)){
-                    const int rem_mode= get_bits(&h->gb, 3);
+                if(!get_bits1(&sl->gb)){
+                    const int rem_mode= get_bits(&sl->gb, 3);
                     mode = rem_mode + (rem_mode >= mode);
                 }
 
@@ -824,7 +824,7 @@ decode_intra_mb:
                 return -1;
         }
         if(decode_chroma){
-            pred_mode= ff_h264_check_intra_pred_mode(h, sl, get_ue_golomb_31(&h->gb), 1);
+            pred_mode= ff_h264_check_intra_pred_mode(h, sl, get_ue_golomb_31(&sl->gb), 1);
             if(pred_mode < 0)
                 return -1;
             sl->chroma_pred_mode = pred_mode;
@@ -836,7 +836,7 @@ decode_intra_mb:
 
         if (sl->slice_type_nos == AV_PICTURE_TYPE_B) {
             for(i=0; i<4; i++){
-                sl->sub_mb_type[i]= get_ue_golomb_31(&h->gb);
+                sl->sub_mb_type[i]= get_ue_golomb_31(&sl->gb);
                 if(sl->sub_mb_type[i] >=13){
                     av_log(h->avctx, AV_LOG_ERROR, "B sub_mb_type %u out of range at %d %d\n", sl->sub_mb_type[i], sl->mb_x, sl->mb_y);
                     return -1;
@@ -854,7 +854,7 @@ decode_intra_mb:
         }else{
             assert(sl->slice_type_nos == AV_PICTURE_TYPE_P); //FIXME SP correct ?
             for(i=0; i<4; i++){
-                sl->sub_mb_type[i]= get_ue_golomb_31(&h->gb);
+                sl->sub_mb_type[i]= get_ue_golomb_31(&sl->gb);
                 if(sl->sub_mb_type[i] >=4){
                     av_log(h->avctx, AV_LOG_ERROR, "P sub_mb_type %u out of range at %d %d\n", sl->sub_mb_type[i], sl->mb_x, sl->mb_y);
                     return -1;
@@ -873,9 +873,9 @@ decode_intra_mb:
                     if(ref_count == 1){
                         tmp= 0;
                     }else if(ref_count == 2){
-                        tmp= get_bits1(&h->gb)^1;
+                        tmp= get_bits1(&sl->gb)^1;
                     }else{
-                        tmp= get_ue_golomb_31(&h->gb);
+                        tmp= get_ue_golomb_31(&sl->gb);
                         if(tmp>=ref_count){
                             av_log(h->avctx, AV_LOG_ERROR, "ref %u overflow\n", tmp);
                             return -1;
@@ -909,8 +909,8 @@ decode_intra_mb:
                         const int index= 4*i + block_width*j;
                         int16_t (* mv_cache)[2]= &sl->mv_cache[list][ scan8[index] ];
                         pred_motion(h, sl, index, block_width, list, sl->ref_cache[list][ scan8[index] ], &mx, &my);
-                        mx += get_se_golomb(&h->gb);
-                        my += get_se_golomb(&h->gb);
+                        mx += get_se_golomb(&sl->gb);
+                        my += get_se_golomb(&sl->gb);
                         tprintf(h->avctx, "final mv:%d %d\n", mx, my);
 
                         if(IS_SUB_8X8(sub_mb_type)){
@@ -949,9 +949,9 @@ decode_intra_mb:
                         if (rc == 1) {
                             val= 0;
                         } else if (rc == 2) {
-                            val= get_bits1(&h->gb)^1;
+                            val= get_bits1(&sl->gb)^1;
                         }else{
-                            val= get_ue_golomb_31(&h->gb);
+                            val= get_ue_golomb_31(&sl->gb);
                             if (val >= rc) {
                                 av_log(h->avctx, AV_LOG_ERROR, "ref %u overflow\n", val);
                                 return -1;
@@ -963,8 +963,8 @@ decode_intra_mb:
             for (list = 0; list < sl->list_count; list++) {
                 if(IS_DIR(mb_type, 0, list)){
                     pred_motion(h, sl, 0, 4, list, sl->ref_cache[list][ scan8[0] ], &mx, &my);
-                    mx += get_se_golomb(&h->gb);
-                    my += get_se_golomb(&h->gb);
+                    mx += get_se_golomb(&sl->gb);
+                    my += get_se_golomb(&sl->gb);
                     tprintf(h->avctx, "final mv:%d %d\n", mx, my);
 
                     fill_rectangle(sl->mv_cache[list][ scan8[0] ], 4, 4, 8, pack16to32(mx,my), 4);
@@ -980,9 +980,9 @@ decode_intra_mb:
                             if (rc == 1) {
                                 val= 0;
                             } else if (rc == 2) {
-                                val= get_bits1(&h->gb)^1;
+                                val= get_bits1(&sl->gb)^1;
                             }else{
-                                val= get_ue_golomb_31(&h->gb);
+                                val= get_ue_golomb_31(&sl->gb);
                                 if (val >= rc) {
                                     av_log(h->avctx, AV_LOG_ERROR, "ref %u overflow\n", val);
                                     return -1;
@@ -998,8 +998,8 @@ decode_intra_mb:
                     unsigned int val;
                     if(IS_DIR(mb_type, i, list)){
                         pred_16x8_motion(h, sl, 8*i, list, sl->ref_cache[list][scan8[0] + 16*i], &mx, &my);
-                        mx += get_se_golomb(&h->gb);
-                        my += get_se_golomb(&h->gb);
+                        mx += get_se_golomb(&sl->gb);
+                        my += get_se_golomb(&sl->gb);
                         tprintf(h->avctx, "final mv:%d %d\n", mx, my);
 
                         val= pack16to32(mx,my);
@@ -1018,9 +1018,9 @@ decode_intra_mb:
                             if (rc == 1) {
                                 val= 0;
                             } else if (rc == 2) {
-                                val= get_bits1(&h->gb)^1;
+                                val= get_bits1(&sl->gb)^1;
                             }else{
-                                val= get_ue_golomb_31(&h->gb);
+                                val= get_ue_golomb_31(&sl->gb);
                                 if (val >= rc) {
                                     av_log(h->avctx, AV_LOG_ERROR, "ref %u overflow\n", val);
                                     return -1;
@@ -1036,8 +1036,8 @@ decode_intra_mb:
                     unsigned int val;
                     if(IS_DIR(mb_type, i, list)){
                         pred_8x16_motion(h, sl, i*4, list, sl->ref_cache[list][ scan8[0] + 2*i ], &mx, &my);
-                        mx += get_se_golomb(&h->gb);
-                        my += get_se_golomb(&h->gb);
+                        mx += get_se_golomb(&sl->gb);
+                        my += get_se_golomb(&sl->gb);
                         tprintf(h->avctx, "final mv:%d %d\n", mx, my);
 
                         val= pack16to32(mx,my);
@@ -1053,7 +1053,7 @@ decode_intra_mb:
         write_back_motion(h, sl, mb_type);
 
     if(!IS_INTRA16x16(mb_type)){
-        cbp= get_ue_golomb(&h->gb);
+        cbp= get_ue_golomb(&sl->gb);
 
         if(decode_chroma){
             if(cbp > 47){
@@ -1073,7 +1073,7 @@ decode_intra_mb:
     }
 
     if(dct8x8_allowed && (cbp&15) && !IS_INTRA(mb_type)){
-        mb_type |= MB_TYPE_8x8DCT*get_bits1(&h->gb);
+        mb_type |= MB_TYPE_8x8DCT*get_bits1(&sl->gb);
     }
     sl->cbp=
     h->cbp_table[mb_xy]= cbp;
@@ -1083,7 +1083,7 @@ decode_intra_mb:
         int i4x4, i8x8, chroma_idx;
         int dquant;
         int ret;
-        GetBitContext *gb = &h->gb;
+        GetBitContext *gb = &sl->gb;
         const uint8_t *scan, *scan8x8;
         const int max_qp = 51 + 6*(h->sps.bit_depth_luma-8);
 
@@ -1095,7 +1095,7 @@ decode_intra_mb:
             scan    = sl->qscale ? h->zigzag_scan : h->zigzag_scan_q0;
         }
 
-        dquant= get_se_golomb(&h->gb);
+        dquant= get_se_golomb(&sl->gb);
 
         sl->qscale += dquant;
 

@@ -1007,9 +1007,9 @@ int ff_pred_weight_table(H264Context *h, H264SliceContext *sl)
 
     sl->use_weight             = 0;
     sl->use_weight_chroma      = 0;
-    sl->luma_log2_weight_denom = get_ue_golomb(&h->gb);
+    sl->luma_log2_weight_denom = get_ue_golomb(&sl->gb);
     if (h->sps.chroma_format_idc)
-        sl->chroma_log2_weight_denom = get_ue_golomb(&h->gb);
+        sl->chroma_log2_weight_denom = get_ue_golomb(&sl->gb);
     luma_def   = 1 << sl->luma_log2_weight_denom;
     chroma_def = 1 << sl->chroma_log2_weight_denom;
 
@@ -1019,10 +1019,10 @@ int ff_pred_weight_table(H264Context *h, H264SliceContext *sl)
         for (i = 0; i < sl->ref_count[list]; i++) {
             int luma_weight_flag, chroma_weight_flag;
 
-            luma_weight_flag = get_bits1(&h->gb);
+            luma_weight_flag = get_bits1(&sl->gb);
             if (luma_weight_flag) {
-                sl->luma_weight[i][list][0] = get_se_golomb(&h->gb);
-                sl->luma_weight[i][list][1] = get_se_golomb(&h->gb);
+                sl->luma_weight[i][list][0] = get_se_golomb(&sl->gb);
+                sl->luma_weight[i][list][1] = get_se_golomb(&sl->gb);
                 if (sl->luma_weight[i][list][0] != luma_def ||
                     sl->luma_weight[i][list][1] != 0) {
                     sl->use_weight             = 1;
@@ -1034,12 +1034,12 @@ int ff_pred_weight_table(H264Context *h, H264SliceContext *sl)
             }
 
             if (h->sps.chroma_format_idc) {
-                chroma_weight_flag = get_bits1(&h->gb);
+                chroma_weight_flag = get_bits1(&sl->gb);
                 if (chroma_weight_flag) {
                     int j;
                     for (j = 0; j < 2; j++) {
-                        sl->chroma_weight[i][list][j][0] = get_se_golomb(&h->gb);
-                        sl->chroma_weight[i][list][j][1] = get_se_golomb(&h->gb);
+                        sl->chroma_weight[i][list][j][0] = get_se_golomb(&sl->gb);
+                        sl->chroma_weight[i][list][j][1] = get_se_golomb(&sl->gb);
                         if (sl->chroma_weight[i][list][j][0] != chroma_def ||
                             sl->chroma_weight[i][list][j][1] != 0) {
                             sl->use_weight_chroma        = 1;
@@ -1267,15 +1267,15 @@ int ff_set_ref_count(H264Context *h, H264SliceContext *sl)
 
     if (sl->slice_type_nos != AV_PICTURE_TYPE_I) {
         if (sl->slice_type_nos == AV_PICTURE_TYPE_B)
-            sl->direct_spatial_mv_pred = get_bits1(&h->gb);
-        num_ref_idx_active_override_flag = get_bits1(&h->gb);
+            sl->direct_spatial_mv_pred = get_bits1(&sl->gb);
+        num_ref_idx_active_override_flag = get_bits1(&sl->gb);
 
         if (num_ref_idx_active_override_flag) {
-            ref_count[0] = get_ue_golomb(&h->gb) + 1;
+            ref_count[0] = get_ue_golomb(&sl->gb) + 1;
             if (ref_count[0] < 1)
                 return AVERROR_INVALIDDATA;
             if (sl->slice_type_nos == AV_PICTURE_TYPE_B) {
-                ref_count[1] = get_ue_golomb(&h->gb) + 1;
+                ref_count[1] = get_ue_golomb(&sl->gb) + 1;
                 if (ref_count[1] < 1)
                     return AVERROR_INVALIDDATA;
             }
@@ -1528,7 +1528,7 @@ again:
                 }
                 idr(h); // FIXME ensure we don't lose some frames if there is reordering
             case NAL_SLICE:
-                init_get_bits(&hx->gb, ptr, bit_length);
+                init_get_bits(&sl->gb, ptr, bit_length);
 
                 if ((err = ff_h264_decode_slice_header(hx, sl, h)))
                     break;
