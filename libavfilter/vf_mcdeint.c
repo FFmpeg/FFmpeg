@@ -174,7 +174,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpic)
     MCDeintContext *mcdeint = inlink->dst->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
     AVFrame *outpic, *frame_dec;
-    AVPacket pkt;
+    AVPacket pkt = {0};
     int x, y, i, ret, got_frame = 0;
 
     outpic = ff_get_video_buffer(outlink, outlink->w, outlink->h);
@@ -186,8 +186,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpic)
     inpic->quality = mcdeint->qp * FF_QP2LAMBDA;
 
     av_init_packet(&pkt);
-    pkt.data = NULL;    // packet data will be allocated by the encoder
-    pkt.size = 0;
 
     ret = avcodec_encode_video2(mcdeint->enc_ctx, &pkt, inpic, &got_frame);
     if (ret < 0)
