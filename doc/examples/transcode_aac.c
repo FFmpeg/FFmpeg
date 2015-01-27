@@ -183,6 +183,10 @@ static int open_output_file(const char *filename,
     /** Allow the use of the experimental AAC encoder */
     (*output_codec_context)->strict_std_compliance = FF_COMPLIANCE_EXPERIMENTAL;
 
+    /** Set the sample rate for the container. */
+    stream->time_base.den = input_codec_context->sample_rate;
+    stream->time_base.num = 1;
+
     /**
      * Some container formats (like MP4) require global headers to be present
      * Mark the encoder so that it behaves accordingly.
@@ -539,6 +543,9 @@ static int init_output_frame(AVFrame **frame,
     return 0;
 }
 
+/** Global timestamp for the audio frames */
+static int64_t pts = 0;
+
 /** Encode one frame worth of audio to the output file. */
 static int encode_audio_frame(AVFrame *frame,
                               AVFormatContext *output_format_context,
@@ -549,6 +556,12 @@ static int encode_audio_frame(AVFrame *frame,
     AVPacket output_packet;
     int error;
     init_packet(&output_packet);
+
+    /** Set a timestamp based on the sample rate for the container. */
+    if (frame) {
+        frame->pts = pts;
+        pts += frame->nb_samples;
+    }
 
     /**
      * Encode the audio frame and store it in the temporary packet.
