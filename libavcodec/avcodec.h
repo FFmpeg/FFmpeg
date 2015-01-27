@@ -1032,6 +1032,12 @@ enum AVPacketSideDataType {
     AV_PKT_DATA_STEREO3D,
 
     /**
+     * This side data should be associated with an audio stream and corresponds
+     * to enum AVAudioServiceType.
+     */
+    AV_PKT_DATA_AUDIO_SERVICE_TYPE,
+
+    /**
      * Recommmends skipping the specified number of samples
      * @code
      * u32le number of samples to skip from start of this packet

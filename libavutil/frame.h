@@ -106,6 +106,12 @@ enum AVFrameSideDataType {
      * @endcode
      */
     AV_FRAME_DATA_SKIP_SAMPLES,
+
+    /**
+     * This side data must be associated with an audio frame and corresponds to
+     * enum AVAudioServiceType defined in avcodec.h.
+     */
+    AV_FRAME_DATA_AUDIO_SERVICE_TYPE,
 };
 
 enum AVActiveFormatDescription {
