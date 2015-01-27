@@ -2003,6 +2003,9 @@
     <ClCompile Include="..\libavcodec\dxva2_h264.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\dxva2_hevc.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\dxva2_mpeg2.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>

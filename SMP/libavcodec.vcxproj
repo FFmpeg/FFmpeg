@@ -1349,6 +1349,8 @@
     </ClCompile>
     <ClCompile Include="..\libavcodec\dxva2_h264.c">
     </ClCompile>
+    <ClCompile Include="..\libavcodec\dxva2_hevc.c">
+    </ClCompile>
     <ClCompile Include="..\libavcodec\dxva2_mpeg2.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\dxva2_vc1.c">
