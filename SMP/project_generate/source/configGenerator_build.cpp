@@ -166,6 +166,7 @@ bool configGenerator::buildDefaultValues( )
     fastToggleConfigValue( "setmode", true );
     fastToggleConfigValue( "Sleep", true );
     fastToggleConfigValue( "CONDITION_VARIABLE_Ptr", true );
+    fastToggleConfigValue( "DXVA_PicParams_HEVC", true );
     fastToggleConfigValue( "socklen_t", true );
     fastToggleConfigValue( "struct_addrinfo", true );
     fastToggleConfigValue( "struct_group_source_req", true );
