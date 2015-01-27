@@ -65,7 +65,7 @@ static void create_lut(EQParameters *param)
 }
 
 static void apply_lut(EQParameters *param, uint8_t *dst, int dst_stride,
-                      uint8_t *src, int src_stride, int w, int h)
+                      const uint8_t *src, int src_stride, int w, int h)
 {
     int x, y;
 
@@ -80,7 +80,7 @@ static void apply_lut(EQParameters *param, uint8_t *dst, int dst_stride,
 }
 
 static void process_c(EQParameters *param, uint8_t *dst, int dst_stride,
-                      uint8_t *src, int src_stride, int w, int h)
+                      const uint8_t *src, int src_stride, int w, int h)
 {
     int x, y, pel;
 
@@ -91,7 +91,7 @@ static void process_c(EQParameters *param, uint8_t *dst, int dst_stride,
         for (x = 0; x < w; x++) {
             pel = ((src[y * src_stride + x] * contrast) >> 12) + brightness;
 
-            if (pel & 768)
+            if (pel & ~255)
                 pel = (-pel) >> 31;
 
             dst[y * dst_stride + x] = pel;
@@ -214,6 +214,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                                 in->data[i], in->linesize[i], w, h);
     }
 
+    av_frame_free(&in);
     return ff_filter_frame(outlink, out);
 }
 static const AVFilterPad eq_inputs[] = {

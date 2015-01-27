@@ -300,6 +300,8 @@ static int get_buffer_sao(HEVCContext *s, AVFrame *frame, const HEVCSPS *sps)
 
 static int set_sps(HEVCContext *s, const HEVCSPS *sps)
 {
+    #define HWACCEL_MAX (CONFIG_HEVC_DXVA2_HWACCEL)
+    enum AVPixelFormat pix_fmts[HWACCEL_MAX + 2], *fmt = pix_fmts;
     int ret;
     unsigned int num = 0, den = 0;
 
@@ -312,8 +314,21 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps)
     s->avctx->coded_height        = sps->height;
     s->avctx->width               = sps->output_width;
     s->avctx->height              = sps->output_height;
-    s->avctx->pix_fmt             = sps->pix_fmt;
     s->avctx->has_b_frames        = sps->temporal_layer[sps->max_sub_layers - 1].num_reorder_pics;
+
+    if (sps->pix_fmt == AV_PIX_FMT_YUV420P || sps->pix_fmt == AV_PIX_FMT_YUVJ420P) {
+#if CONFIG_HEVC_DXVA2_HWACCEL
+        *fmt++ = AV_PIX_FMT_DXVA2_VLD;
+#endif
+    }
+
+    *fmt++ = sps->pix_fmt;
+    *fmt = AV_PIX_FMT_NONE;
+
+    ret = ff_thread_get_format(s->avctx, pix_fmts);
+    if (ret < 0)
+        goto fail;
+    s->avctx->pix_fmt = ret;
 
     ff_set_sar(s->avctx, sps->vui.sar);
 
@@ -337,7 +352,7 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps)
     ff_hevc_dsp_init (&s->hevcdsp, sps->bit_depth);
     ff_videodsp_init (&s->vdsp,    sps->bit_depth);
 
-    if (sps->sao_enabled) {
+    if (sps->sao_enabled && !s->avctx->hwaccel) {
         av_frame_unref(s->tmp_frame);
         ret = get_buffer_sao(s, s->tmp_frame, sps);
         s->sao_frame = s->tmp_frame;
@@ -474,7 +489,7 @@ static int hls_slice_header(HEVCContext *s)
             sh->colour_plane_id = get_bits(gb, 2);
 
         if (!IS_IDR(s)) {
-            int short_term_ref_pic_set_sps_flag, poc;
+            int poc;
 
             sh->pic_order_cnt_lsb = get_bits(gb, s->sps->log2_max_poc_lsb);
             poc = ff_hevc_compute_poc(s, sh->pic_order_cnt_lsb);
@@ -487,12 +502,14 @@ static int hls_slice_header(HEVCContext *s)
             }
             s->poc = poc;
 
-            short_term_ref_pic_set_sps_flag = get_bits1(gb);
-            if (!short_term_ref_pic_set_sps_flag) {
+            sh->short_term_ref_pic_set_sps_flag = get_bits1(gb);
+            if (!sh->short_term_ref_pic_set_sps_flag) {
+                int pos = get_bits_left(gb);
                 ret = ff_hevc_decode_short_term_rps(s, &sh->slice_rps, s->sps, 1);
                 if (ret < 0)
                     return ret;
 
+                sh->short_term_ref_pic_set_size = pos - get_bits_left(gb);
                 sh->short_term_rps = &sh->slice_rps;
             } else {
                 int numbits, rps_idx;
@@ -2684,17 +2701,29 @@ static int decode_nal_unit(HEVCContext *s, const HEVCNAL *nal)
             }
         }
 
-        if (s->threads_number > 1 && s->sh.num_entry_point_offsets > 0)
-            ctb_addr_ts = hls_slice_data_wpp(s, nal->data, nal->size);
-        else
-            ctb_addr_ts = hls_slice_data(s);
-        if (ctb_addr_ts >= (s->sps->ctb_width * s->sps->ctb_height)) {
-            s->is_decoded = 1;
+        if (s->sh.first_slice_in_pic_flag && s->avctx->hwaccel) {
+            ret = s->avctx->hwaccel->start_frame(s->avctx, NULL, 0);
+            if (ret < 0)
+                goto fail;
         }
 
-        if (ctb_addr_ts < 0) {
-            ret = ctb_addr_ts;
-            goto fail;
+        if (s->avctx->hwaccel) {
+            ret = s->avctx->hwaccel->decode_slice(s->avctx, nal->raw_data, nal->raw_size);
+            if (ret < 0)
+                goto fail;
+        } else {
+            if (s->threads_number > 1 && s->sh.num_entry_point_offsets > 0)
+                ctb_addr_ts = hls_slice_data_wpp(s, nal->data, nal->size);
+            else
+                ctb_addr_ts = hls_slice_data(s);
+            if (ctb_addr_ts >= (s->sps->ctb_width * s->sps->ctb_height)) {
+                s->is_decoded = 1;
+            }
+
+            if (ctb_addr_ts < 0) {
+                ret = ctb_addr_ts;
+                goto fail;
+            }
         }
         break;
     case NAL_EOS_NUT:
@@ -2772,8 +2801,10 @@ int ff_hevc_extract_rbsp(HEVCContext *s, const uint8_t *src, int length,
 #endif /* HAVE_FAST_UNALIGNED */
 
     if (i >= length - 1) { // no escaped 0
-        nal->data = src;
-        nal->size = length;
+        nal->data     =
+        nal->raw_data = src;
+        nal->size     =
+        nal->raw_size = length;
         return length;
     }
 
@@ -2823,6 +2854,8 @@ nsc:
 
     nal->data = dst;
     nal->size = di;
+    nal->raw_data = src;
+    nal->raw_size = si;
     return si;
 }
 
@@ -3045,13 +3078,19 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
     if (ret < 0)
         return ret;
 
-    /* verify the SEI checksum */
-    if (avctx->err_recognition & AV_EF_CRCCHECK && s->is_decoded &&
-        s->is_md5) {
-        ret = verify_md5(s, s->ref->frame);
-        if (ret < 0 && avctx->err_recognition & AV_EF_EXPLODE) {
-            ff_hevc_unref_frame(s, s->ref, ~0);
-            return ret;
+    if (avctx->hwaccel) {
+        if (s->ref && avctx->hwaccel->end_frame(avctx) < 0)
+            av_log(avctx, AV_LOG_ERROR,
+                   "hardware accelerator failed to decode picture\n");
+    } else {
+        /* verify the SEI checksum */
+        if (avctx->err_recognition & AV_EF_CRCCHECK && s->is_decoded &&
+            s->is_md5) {
+            ret = verify_md5(s, s->ref->frame);
+            if (ret < 0 && avctx->err_recognition & AV_EF_EXPLODE) {
+                ff_hevc_unref_frame(s, s->ref, ~0);
+                return ret;
+            }
         }
     }
     s->is_md5 = 0;
@@ -3096,6 +3135,13 @@ static int hevc_ref_frame(HEVCContext *s, HEVCFrame *dst, HEVCFrame *src)
     dst->window     = src->window;
     dst->flags      = src->flags;
     dst->sequence   = src->sequence;
+
+    if (src->hwaccel_picture_private) {
+        dst->hwaccel_priv_buf = av_buffer_ref(src->hwaccel_priv_buf);
+        if (!dst->hwaccel_priv_buf)
+            goto fail;
+        dst->hwaccel_picture_private = dst->hwaccel_priv_buf->data;
+    }
 
     return 0;
 fail:

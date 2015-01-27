@@ -75,6 +75,7 @@ struct hash_impl {
 #include "libavutil/sha512.h"
 #include "libavutil/ripemd.h"
 #include "libavutil/aes.h"
+#include "libavutil/camellia.h"
 #include "libavutil/cast5.h"
 
 #define IMPL_USE_lavu IMPL_USE
@@ -112,6 +113,16 @@ static void run_lavu_aes128(uint8_t *output,
     av_aes_crypt(aes, output, input, size >> 4, NULL, 0);
 }
 
+static void run_lavu_camellia(uint8_t *output,
+                              const uint8_t *input, unsigned size)
+{
+    static struct AVCAMELLIA *camellia;
+    if (!camellia && !(camellia = av_camellia_alloc()))
+        fatal_error("out of memory");
+    av_camellia_init(camellia, hardcoded_key, 128);
+    av_camellia_crypt(camellia, output, input, size >> 4, NULL, 0);
+}
+
 static void run_lavu_cast128(uint8_t *output,
                              const uint8_t *input, unsigned size)
 {
@@ -132,6 +143,7 @@ static void run_lavu_cast128(uint8_t *output,
 #include <openssl/sha.h>
 #include <openssl/ripemd.h>
 #include <openssl/aes.h>
+#include <openssl/camellia.h>
 #include <openssl/cast.h>
 
 #define DEFINE_CRYPTO_WRAPPER(suffix, function)                              \
@@ -157,6 +169,18 @@ static void run_crypto_aes128(uint8_t *output,
     size -= 15;
     for (i = 0; i < size; i += 16)
         AES_encrypt(input + i, output + i, &aes);
+}
+
+static void run_crypto_camellia(uint8_t *output,
+                                const uint8_t *input, unsigned size)
+{
+    CAMELLIA_KEY camellia;
+    unsigned i;
+
+    Camellia_set_key(hardcoded_key, 128, &camellia);
+    size -= 15;
+    for (i = 0; i < size; i += 16)
+        Camellia_ecb_encrypt(input + i, output + i, &camellia, 1);
 }
 
 static void run_crypto_cast128(uint8_t *output,
@@ -204,6 +228,16 @@ static void run_gcrypt_aes128(uint8_t *output,
         gcry_cipher_open(&aes, GCRY_CIPHER_AES128, GCRY_CIPHER_MODE_ECB, 0);
     gcry_cipher_setkey(aes, hardcoded_key, 16);
     gcry_cipher_encrypt(aes, output, size, input, size);
+}
+
+static void run_gcrypt_camellia(uint8_t *output,
+                                const uint8_t *input, unsigned size)
+{
+    static gcry_cipher_hd_t camellia;
+    if (!camellia)
+        gcry_cipher_open(&camellia, GCRY_CIPHER_CAMELLIA128, GCRY_CIPHER_MODE_ECB, 0);
+    gcry_cipher_setkey(camellia, hardcoded_key, 16);
+    gcry_cipher_encrypt(camellia, output, size, input, size);
 }
 
 static void run_gcrypt_cast128(uint8_t *output,
@@ -255,6 +289,18 @@ static void run_tomcrypt_aes128(uint8_t *output,
     size -= 15;
     for (i = 0; i < size; i += 16)
         aes_ecb_encrypt(input + i, output + i, &aes);
+}
+
+static void run_tomcrypt_camellia(uint8_t *output,
+                                  const uint8_t *input, unsigned size)
+{
+    symmetric_key camellia;
+    unsigned i;
+
+    camellia_setup(hardcoded_key, 16, 0, &camellia);
+    size -= 15;
+    for (i = 0; i < size; i += 16)
+        camellia_ecb_encrypt(input + i, output + i, &camellia);
 }
 
 static void run_tomcrypt_cast128(uint8_t *output,
@@ -350,6 +396,7 @@ struct hash_impl implementations[] = {
                                       "7c25b9e118c200a189fcd5a01ef106a4e200061f3e97dbf50ba065745fd46bef")
     IMPL_ALL("RIPEMD-160", ripemd160, "62a5321e4fc8784903bb43ab7752c75f8b25af00")
     IMPL_ALL("AES-128",    aes128,    "crc:ff6bc888")
+    IMPL_ALL("CAMELLIA",   camellia,  "crc:7abb59a7")
     IMPL_ALL("CAST-128",   cast128,   "crc:456aa584")
 };
 

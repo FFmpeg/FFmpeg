@@ -303,7 +303,10 @@ struct dshow_ctx {
     char *audio_pin_name;
     int   show_video_device_dialog;
     int   show_audio_device_dialog;
-    int   show_crossbar_connection_dialog;
+    int   show_video_crossbar_connection_dialog;
+    int   show_audio_crossbar_connection_dialog;
+    int   show_analog_tv_tuner_dialog;
+    int   show_analog_tv_tuner_audio_dialog;
 
     IBaseFilter *device_filter[2];
     IPin        *device_pin[2];

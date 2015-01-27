@@ -1,0 +1,4 @@
+3b06d8675f9623db77b6a42916663608 *tests/data/fate/vsynth3-dnxhd-1080i-colr.mov
+3031929 tests/data/fate/vsynth3-dnxhd-1080i-colr.mov
+7dd6b261e439cda21df4f01b45336b41 *tests/data/fate/vsynth3-dnxhd-1080i-colr.out.rawvideo
+stddev:    6.92 PSNR: 31.32 MAXDIFF:   50 bytes:    86700/     8670

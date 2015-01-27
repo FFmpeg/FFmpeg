@@ -37,7 +37,6 @@
 #include "libmpcodecs/vf.h"
 #include "libmpcodecs/img_format.h"
 #include "libmpcodecs/cpudetect.h"
-#include "libmpcodecs/av_helpers.h"
 #include "libmpcodecs/libvo/fastmemcpy.h"
 
 #include "libswscale/swscale.h"
@@ -125,13 +124,9 @@ static const struct {
     {0, AV_PIX_FMT_NONE}
 };
 
-extern const vf_info_t ff_vf_info_eq2;
-extern const vf_info_t ff_vf_info_eq;
 extern const vf_info_t ff_vf_info_softpulldown;
 
 static const vf_info_t* const filters[]={
-    &ff_vf_info_eq2,
-    &ff_vf_info_eq,
     &ff_vf_info_softpulldown,
     NULL
 };
@@ -196,11 +191,6 @@ void ff_mp_msg(int mod, int lev, const char *format, ... ){
 
 int ff_mp_msg_test(int mod, int lev){
     return 123;
-}
-
-void ff_init_avcodec(void)
-{
-    //we maybe should init but its kinda 1. unneeded 2. a bit impolite from here
 }
 
 //Exact copy of vf.c

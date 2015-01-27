@@ -229,29 +229,51 @@ Select audio capture pin to use by name or alternative name.
 @item crossbar_video_input_pin_number
 Select video input pin number for crossbar device. This will be
 routed to the crossbar device's Video Decoder output pin.
+Note that changing this value can affect future invocations
+(sets a new default) until system reboot occurs.
 
 @item crossbar_audio_input_pin_number
 Select audio input pin number for crossbar device. This will be
 routed to the crossbar device's Audio Decoder output pin.
+Note that changing this value can affect future invocations
+(sets a new default) until system reboot occurs.
 
 @item show_video_device_dialog
 If set to @option{true}, before capture starts, popup a display dialog
 to the end user, allowing them to change video filter properties
 and configurations manually.
-Note that for crossbar devices, this may be needed at times to toggle
-between PAL and NTSC input frame rates and sizes, etc.  Possibly
-enabling different scan rates/frame rates and avoiding green bars at
-the bottom, etc.
+Note that for crossbar devices, adjusting values in this dialog
+may be needed at times to toggle between PAL (25 fps) and NTSC (29.97)
+input frame rates, sizes, interlacing, etc.  Changing these values can
+enable different scan rates/frame rates and avoiding green bars at
+the bottom, flickering scan lines, etc.
+Note that with some devices, changing these properties can also affect future
+invocations (sets new defaults) until system reboot occurs.
 
 @item show_audio_device_dialog
 If set to @option{true}, before capture starts, popup a display dialog
 to the end user, allowing them to change audio filter properties
 and configurations manually.
 
-@item show_crossbar_connection_dialog
+@item show_video_crossbar_connection_dialog
 If set to @option{true}, before capture starts, popup a display
 dialog to the end user, allowing them to manually
-modify crossbar pin routings.
+modify crossbar pin routings, when it opens a video device.
+
+@item show_audio_crossbar_connection_dialog
+If set to @option{true}, before capture starts, popup a display
+dialog to the end user, allowing them to manually
+modify crossbar pin routings, when it opens an audio device.
+
+@item show_analog_tv_tuner_dialog
+If set to @option{true}, before capture starts, popup a display
+dialog to the end user, allowing them to manually
+modify TV channels and frequencies.
+
+@item show_analog_tv_tuner_audio_dialog
+If set to @option{true}, before capture starts, popup a display
+dialog to the end user, allowing them to manually
+modify TV audio (like mono vs. stereo, Language A,B or C).
 
 @end table
 

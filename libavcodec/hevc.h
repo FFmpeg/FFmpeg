@@ -575,6 +575,8 @@ typedef struct SliceHeader {
     uint8_t colour_plane_id;
 
     ///< RPS coded in the slice header itself is stored here
+    int short_term_ref_pic_set_sps_flag;
+    int short_term_ref_pic_set_size;
     ShortTermRPS slice_rps;
     const ShortTermRPS *short_term_rps;
     LongTermRPS long_term_rps;
@@ -716,6 +718,9 @@ typedef struct HEVCFrame {
     AVBufferRef *rpl_tab_buf;
     AVBufferRef *rpl_buf;
 
+    AVBufferRef *hwaccel_priv_buf;
+    void *hwaccel_picture_private;
+
     /**
      * A sequence counter, so that old frames are output first
      * after a POC reset
@@ -734,6 +739,9 @@ typedef struct HEVCNAL {
 
     int size;
     const uint8_t *data;
+
+    int raw_size;
+    const uint8_t *raw_data;
 } HEVCNAL;
 
 typedef struct HEVCLocalContext {
