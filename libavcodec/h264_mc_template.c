@@ -34,18 +34,18 @@
 #undef  mc_part
 #define mc_part MCFUNC(mc_part)
 
-static void mc_part(H264Context *h, H264SliceContext *sl,
+static void mc_part(const H264Context *h, H264SliceContext *sl,
                     int n, int square,
                     int height, int delta,
                     uint8_t *dest_y, uint8_t *dest_cb,
                     uint8_t *dest_cr,
                     int x_offset, int y_offset,
-                    qpel_mc_func *qpix_put,
+                    const qpel_mc_func *qpix_put,
                     h264_chroma_mc_func chroma_put,
-                    qpel_mc_func *qpix_avg,
+                    const qpel_mc_func *qpix_avg,
                     h264_chroma_mc_func chroma_avg,
-                    h264_weight_func *weight_op,
-                    h264_biweight_func *weight_avg,
+                    const h264_weight_func *weight_op,
+                    const h264_biweight_func *weight_avg,
                     int list0, int list1)
 {
     if ((sl->use_weight == 2 && list0 && list1 &&
@@ -61,15 +61,15 @@ static void mc_part(H264Context *h, H264SliceContext *sl,
                     chroma_avg, list0, list1, PIXEL_SHIFT, CHROMA_IDC);
 }
 
-static void MCFUNC(hl_motion)(H264Context *h, H264SliceContext *sl,
+static void MCFUNC(hl_motion)(const H264Context *h, H264SliceContext *sl,
                               uint8_t *dest_y,
                               uint8_t *dest_cb, uint8_t *dest_cr,
                               qpel_mc_func(*qpix_put)[16],
-                              h264_chroma_mc_func(*chroma_put),
+                              const h264_chroma_mc_func(*chroma_put),
                               qpel_mc_func(*qpix_avg)[16],
-                              h264_chroma_mc_func(*chroma_avg),
-                              h264_weight_func *weight_op,
-                              h264_biweight_func *weight_avg)
+                              const h264_chroma_mc_func(*chroma_avg),
+                              const h264_weight_func *weight_op,
+                              const h264_biweight_func *weight_avg)
 {
     const int mb_xy   = sl->mb_xy;
     const int mb_type = h->cur_pic.mb_type[mb_xy];
