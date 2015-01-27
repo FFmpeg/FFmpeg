@@ -303,8 +303,7 @@ IDCT_DC(32)
 
 static void FUNC(sao_band_filter_0)(uint8_t *_dst, uint8_t *_src,
                                   ptrdiff_t stride_dst, ptrdiff_t stride_src, SAOParams *sao,
-                                  int *borders, int width, int height,
-                                  int c_idx)
+                                  int width, int height, int c_idx)
 {
     pixel *dst = (pixel *)_dst;
     pixel *src = (pixel *)_src;
