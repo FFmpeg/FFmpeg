@@ -528,10 +528,8 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
             return ret;
         }
 
-        for (i = 0; i < 2; i++) {
-            h->rbsp_buffer[i]      = NULL;
-            h->rbsp_buffer_size[i] = 0;
-        }
+        h->rbsp_buffer      = NULL;
+        h->rbsp_buffer_size = 0;
         h->bipred_scratchpad = NULL;
         h->edge_emu_buffer   = NULL;
 
