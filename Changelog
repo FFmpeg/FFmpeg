@@ -11,6 +11,7 @@ version <next>:
 - RTP/mpegts muxer
 - VP8 in Ogg demuxing
 - OpenH264 encoder wrapper
+- Support DNx100 (960x720@8)
 
 
 version 11:

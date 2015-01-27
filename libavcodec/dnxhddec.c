@@ -165,6 +165,15 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
     if ((ret = dnxhd_init_vlc(ctx, cid)) < 0)
         return ret;
 
+    // make sure profile size constraints are respected
+    // DNx100 allows 1920->1440 and 1280->960 subsampling
+    if (ctx->width != ctx->cid_table->width) {
+        av_reduce(&ctx->avctx->sample_aspect_ratio.num,
+                  &ctx->avctx->sample_aspect_ratio.den,
+                  ctx->width, ctx->cid_table->width, 255);
+        ctx->width = ctx->cid_table->width;
+    }
+
     if (buf_size < ctx->cid_table->coding_unit_size) {
         av_log(ctx->avctx, AV_LOG_ERROR, "incorrect frame size (%d < %d).\n",
                buf_size, ctx->cid_table->coding_unit_size);
