@@ -259,7 +259,8 @@ static void sao_filter_CTB(HEVCContext *s, int x, int y)
         case SAO_BAND:
             copy_CTB(dst, src, width << s->sps->pixel_shift, height, stride_dst, stride_src);
             s->hevcdsp.sao_band_filter(src, dst, stride_src, stride_dst,
-                                       sao, width, height, c_idx);
+                                       sao->offset_val[c_idx], sao->band_position[c_idx],
+                                       width, height);
             restore_tqb_pixels(s, x, y, width, height, c_idx);
             sao->type_idx[c_idx] = SAO_APPLIED;
             break;
