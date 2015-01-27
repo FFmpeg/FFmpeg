@@ -363,7 +363,6 @@ typedef struct H264Context {
 
     int qscale;
     int droppable;
-    int data_partitioning;
     int coded_picture_number;
     int low_delay;
 
