@@ -814,7 +814,7 @@ void ff_h264_decode_init_vlc(void);
  * Decode a macroblock
  * @return 0 if OK, ER_AC_ERROR / ER_DC_ERROR / ER_MV_ERROR on error
  */
-int ff_h264_decode_mb_cavlc(H264Context *h, H264SliceContext *sl);
+int ff_h264_decode_mb_cavlc(const H264Context *h, H264SliceContext *sl);
 
 /**
  * Decode a CABAC coded macroblock
