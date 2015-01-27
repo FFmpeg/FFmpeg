@@ -34,15 +34,22 @@
 #include "internal.h"
 #include "mpegutils.h"
 
+typedef struct H264ParseContext {
+    H264Context h;
+    ParseContext pc;
+    int got_first;
+} H264ParseContext;
 
-static int h264_find_frame_end(H264Context *h, const uint8_t *buf,
+
+static int h264_find_frame_end(H264ParseContext *p, const uint8_t *buf,
                                int buf_size)
 {
+    H264Context *h = &p->h;
     int i, j;
     uint32_t state;
-    ParseContext *pc = &h->parse_context;
-    int next_avc= h->is_avc ? 0 : buf_size;
+    ParseContext *pc = &p->pc;
 
+    int next_avc= h->is_avc ? 0 : buf_size;
 //    mb_addr= pc->mb_addr - 1;
     state = pc->state;
     if (state > 13)
@@ -124,7 +131,8 @@ found:
 
 static int scan_mmco_reset(AVCodecParserContext *s)
 {
-    H264Context *h = s->priv_data;
+    H264ParseContext *p = s->priv_data;
+    H264Context      *h = &p->h;
 
     h->slice_type_nos = s->pict_type & 3;
 
@@ -204,7 +212,8 @@ static inline int parse_nal_units(AVCodecParserContext *s,
                                   AVCodecContext *avctx,
                                   const uint8_t * const buf, int buf_size)
 {
-    H264Context *h         = s->priv_data;
+    H264ParseContext *p = s->priv_data;
+    H264Context      *h = &p->h;
     int buf_index, next_avc;
     unsigned int pps_id;
     unsigned int slice_type;
@@ -455,12 +464,13 @@ static int h264_parse(AVCodecParserContext *s,
                       const uint8_t **poutbuf, int *poutbuf_size,
                       const uint8_t *buf, int buf_size)
 {
-    H264Context *h   = s->priv_data;
-    ParseContext *pc = &h->parse_context;
+    H264ParseContext *p = s->priv_data;
+    H264Context      *h = &p->h;
+    ParseContext *pc = &p->pc;
     int next;
 
-    if (!h->got_first) {
-        h->got_first = 1;
+    if (!p->got_first) {
+        p->got_first = 1;
         if (avctx->extradata_size) {
             h->avctx = avctx;
             // must be done like in decoder, otherwise opening the parser,
@@ -476,7 +486,7 @@ static int h264_parse(AVCodecParserContext *s,
     if (s->flags & PARSER_FLAG_COMPLETE_FRAMES) {
         next = buf_size;
     } else {
-        next = h264_find_frame_end(h, buf, buf_size);
+        next = h264_find_frame_end(p, buf, buf_size);
 
         if (ff_combine_frame(pc, next, &buf, &buf_size) < 0) {
             *poutbuf      = NULL;
@@ -486,7 +496,7 @@ static int h264_parse(AVCodecParserContext *s,
 
         if (next < 0 && next != END_NOT_FOUND) {
             av_assert1(pc->last_index + next >= 0);
-            h264_find_frame_end(h, &pc->buffer[pc->last_index + next], -next); // update state
+            h264_find_frame_end(p, &pc->buffer[pc->last_index + next], -next); // update state
         }
     }
 
@@ -549,8 +559,9 @@ static int h264_split(AVCodecContext *avctx,
 
 static void close(AVCodecParserContext *s)
 {
-    H264Context *h   = s->priv_data;
-    ParseContext *pc = &h->parse_context;
+    H264ParseContext *p = s->priv_data;
+    H264Context      *h = &p->h;
+    ParseContext *pc = &p->pc;
 
     av_freep(&pc->buffer);
     ff_h264_free_context(h);
@@ -558,7 +569,8 @@ static void close(AVCodecParserContext *s)
 
 static av_cold int init(AVCodecParserContext *s)
 {
-    H264Context *h = s->priv_data;
+    H264ParseContext *p = s->priv_data;
+    H264Context      *h = &p->h;
     h->thread_context[0]   = h;
     h->slice_context_count = 1;
     ff_h264dsp_init(&h->h264dsp, 8, 1);
@@ -567,7 +579,7 @@ static av_cold int init(AVCodecParserContext *s)
 
 AVCodecParser ff_h264_parser = {
     .codec_ids      = { AV_CODEC_ID_H264 },
-    .priv_data_size = sizeof(H264Context),
+    .priv_data_size = sizeof(H264ParseContext),
     .parser_init    = init,
     .parser_parse   = h264_parse,
     .parser_close   = close,

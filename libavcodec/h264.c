@@ -1116,13 +1116,6 @@ static void flush_dpb(AVCodecContext *avctx)
 
     h->mb_x = h->mb_y = 0;
 
-    h->parse_context.state             = -1;
-    h->parse_context.frame_start_found = 0;
-    h->parse_context.overread          = 0;
-    h->parse_context.overread_index    = 0;
-    h->parse_context.index             = 0;
-    h->parse_context.last_index        = 0;
-
     ff_h264_free_tables(h, 1);
     h->context_initialized = 0;
 }
