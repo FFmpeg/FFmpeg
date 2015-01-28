@@ -617,7 +617,7 @@ static uint64_t calc_rice_params(RiceContext *rc, int pmin, int pmax,
     int opt_porder;
     RiceContext tmp_rc;
     uint32_t *udata;
-    uint64_t sums[MAX_PARTITION_ORDER+1][MAX_PARTITIONS];
+    uint64_t sums[MAX_PARTITION_ORDER + 1][MAX_PARTITIONS] = { { 0 } };
 
     assert(pmin >= 0 && pmin <= MAX_PARTITION_ORDER);
     assert(pmax >= 0 && pmax <= MAX_PARTITION_ORDER);
