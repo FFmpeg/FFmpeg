@@ -344,7 +344,6 @@ static int decode_rbsp_trailing(H264Context *h, const uint8_t *src)
 void ff_h264_free_tables(H264Context *h, int free_rbsp)
 {
     int i;
-    H264Context *hx;
 
     av_freep(&h->intra4x4_pred_mode);
     av_freep(&h->chroma_pred_mode_table);
@@ -375,15 +374,6 @@ void ff_h264_free_tables(H264Context *h, int free_rbsp)
     }
 
     h->cur_pic_ptr = NULL;
-
-    for (i = 0; i < H264_MAX_THREADS; i++) {
-        hx = h->thread_context[i];
-        if (!hx)
-            continue;
-
-        if (i)
-            av_freep(&h->thread_context[i]);
-    }
 
     for (i = 0; i < h->nb_slice_ctx; i++) {
         H264SliceContext *sl = &h->slice_ctx[i];
@@ -653,7 +643,6 @@ av_cold int ff_h264_decode_init(AVCodecContext *avctx)
         return AVERROR(ENOMEM);
     }
 
-    h->thread_context[0] = h;
     for (i = 0; i < h->nb_slice_ctx; i++)
         h->slice_ctx[i].h264 = h;
 

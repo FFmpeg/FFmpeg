@@ -552,7 +552,6 @@ static av_cold int init(AVCodecParserContext *s)
         return 0;
     h->nb_slice_ctx = 1;
 
-    h->thread_context[0]   = h;
     h->slice_context_count = 1;
     ff_h264dsp_init(&h->h264dsp, 8, 1);
     return 0;
