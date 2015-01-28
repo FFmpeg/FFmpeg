@@ -169,6 +169,7 @@ OBJS-$(CONFIG_PSNR_FILTER)                   += vf_psnr.o dualinput.o framesync.
 OBJS-$(CONFIG_PULLUP_FILTER)                 += vf_pullup.o
 OBJS-$(CONFIG_QP_FILTER)                     += vf_qp.o
 OBJS-$(CONFIG_REMOVELOGO_FILTER)             += bbox.o lswsutils.o lavfutils.o vf_removelogo.o
+OBJS-$(CONFIG_REPEATFIELDS_FILTER)           += vf_repeatfields.o
 OBJS-$(CONFIG_ROTATE_FILTER)                 += vf_rotate.o
 OBJS-$(CONFIG_SEPARATEFIELDS_FILTER)         += vf_separatefields.o
 OBJS-$(CONFIG_SAB_FILTER)                    += vf_sab.o

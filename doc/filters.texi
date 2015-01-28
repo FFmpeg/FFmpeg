@@ -7418,6 +7418,11 @@ much, but it will increase the amount of blurring needed to cover over
 the image and will destroy more information than necessary, and extra
 pixels will slow things down on a large logo.
 
+@section repeatfields
+
+This filter uses the repeat_field flag from the Video ES headers and hard repeats
+fields based on its value.
+
 @section rotate
 
 Rotate video by an arbitrary angle expressed in radians.
