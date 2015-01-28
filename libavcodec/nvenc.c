@@ -743,6 +743,15 @@ static int nvenc_setup_encoder(AVCodecContext *avctx)
         ctx->params.darWidth  = avctx->width;
     }
 
+    // De-compensate for hardware, dubiously, trying to compensate for
+    // playback at 704 pixel width.
+    if (avctx->width == 720 && (avctx->height == 480 || avctx->height == 576)) {
+        av_reduce(&ctx->params.darWidth, &ctx->params.darHeight,
+                  ctx->params.darWidth * 44,
+                  ctx->params.darHeight * 45,
+                  1024 * 1024);
+    }
+
     ctx->params.frameRateNum = avctx->time_base.den;
     ctx->params.frameRateDen = avctx->time_base.num * avctx->ticks_per_frame;
 
