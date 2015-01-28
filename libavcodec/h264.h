@@ -1070,7 +1070,7 @@ int ff_init_poc(H264Context *h, int pic_field_poc[2], int *pic_poc);
 int ff_pred_weight_table(H264Context *h, H264SliceContext *sl);
 int ff_set_ref_count(H264Context *h, H264SliceContext *sl);
 
-int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl, H264Context *h0);
+int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl);
 int ff_h264_execute_decode_slices(H264Context *h, unsigned context_count);
 int ff_h264_update_thread_context(AVCodecContext *dst,
                                   const AVCodecContext *src);
