@@ -1207,9 +1207,6 @@ static int h264_slice_header_init(H264Context *h, int reinit)
                 goto fail;
             }
             c->avctx             = h->avctx;
-            if (CONFIG_ERROR_RESILIENCE) {
-                c->mecc              = h->mecc;
-            }
             c->vdsp              = h->vdsp;
             c->h264dsp           = h->h264dsp;
             c->h264qpel          = h->h264qpel;
@@ -1226,7 +1223,6 @@ static int h264_slice_header_init(H264Context *h, int reinit)
             c->chroma_y_shift    = h->chroma_y_shift;
             c->qscale            = h->qscale;
             c->droppable         = h->droppable;
-            c->data_partitioning = h->data_partitioning;
             c->low_delay         = h->low_delay;
             c->mb_width          = h->mb_width;
             c->mb_height         = h->mb_height;

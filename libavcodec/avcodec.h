@@ -1032,6 +1032,12 @@ enum AVPacketSideDataType {
     AV_PKT_DATA_STEREO3D,
 
     /**
+     * This side data should be associated with an audio stream and corresponds
+     * to enum AVAudioServiceType.
+     */
+    AV_PKT_DATA_AUDIO_SERVICE_TYPE,
+
+    /**
      * Recommmends skipping the specified number of samples
      * @code
      * u32le number of samples to skip from start of this packet
@@ -1260,13 +1266,13 @@ typedef struct AVCodecContext {
      */
     unsigned int codec_tag;
 
+#if FF_API_STREAM_CODEC_TAG
     /**
-     * fourcc from the AVI stream header (LSB first, so "ABCD" -> ('D'<<24) + ('C'<<16) + ('B'<<8) + 'A').
-     * This is used to work around some encoder bugs.
-     * - encoding: unused
-     * - decoding: Set by user, will be converted to uppercase by libavcodec during init.
+     * @deprecated this field is unused
      */
+    attribute_deprecated
     unsigned int stream_codec_tag;
+#endif
 
     void *priv_data;
 

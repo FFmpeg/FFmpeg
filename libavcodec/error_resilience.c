@@ -30,6 +30,7 @@
 #include "libavutil/internal.h"
 #include "avcodec.h"
 #include "error_resilience.h"
+#include "me_cmp.h"
 #include "mpegutils.h"
 #include "mpegvideo.h"
 #include "rectangle.h"
@@ -736,12 +737,12 @@ static int is_intra_more_likely(ERContext *s)
                 } else {
                     ff_thread_await_progress(s->last_pic.tf, mb_y, 0);
                 }
-                is_intra_likely += s->mecc->sad[0](NULL, last_mb_ptr, mb_ptr,
-                                                   linesize[0], 16);
+                is_intra_likely += s->mecc.sad[0](NULL, last_mb_ptr, mb_ptr,
+                                                  linesize[0], 16);
                 // FIXME need await_progress() here
-                is_intra_likely -= s->mecc->sad[0](NULL, last_mb_ptr,
-                                                   last_mb_ptr + linesize[0] * 16,
-                                                   linesize[0], 16);
+                is_intra_likely -= s->mecc.sad[0](NULL, last_mb_ptr,
+                                                  last_mb_ptr + linesize[0] * 16,
+                                                  linesize[0], 16);
             } else {
                 if (IS_INTRA(s->cur_pic.mb_type[mb_xy]))
                    is_intra_likely++;
@@ -758,6 +759,11 @@ void ff_er_frame_start(ERContext *s)
 {
     if (!s->avctx->error_concealment)
         return;
+
+    if (!s->mecc_inited) {
+        ff_me_cmp_init(&s->mecc, s->avctx);
+        s->mecc_inited = 1;
+    }
 
     memset(s->error_status_table, ER_MB_ERROR | VP_START | ER_MB_END,
            s->mb_stride * s->mb_height * sizeof(uint8_t));

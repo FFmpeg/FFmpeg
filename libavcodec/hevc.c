@@ -2591,8 +2591,8 @@ static int hevc_frame_start(HEVCContext *s)
     return 0;
 
 fail:
-    if (s->ref && s->threads_type == FF_THREAD_FRAME)
-        ff_thread_report_progress(&s->ref->tf, INT_MAX, 0);
+    if (s->ref)
+        ff_hevc_unref_frame(s, s->ref, ~0);
     s->ref = NULL;
     return ret;
 }

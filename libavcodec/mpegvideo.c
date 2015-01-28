@@ -384,7 +384,6 @@ static av_cold int dct_init(MpegEncContext *s)
     ff_blockdsp_init(&s->bdsp, s->avctx);
     ff_h264chroma_init(&s->h264chroma, 8); //for lowres
     ff_hpeldsp_init(&s->hdsp, s->avctx->flags);
-    ff_me_cmp_init(&s->mecc, s->avctx);
     ff_mpegvideodsp_init(&s->mdsp);
     ff_videodsp_init(&s->vdsp, s->avctx->bits_per_raw_sample);
 
@@ -1128,8 +1127,6 @@ void ff_mpv_decode_init(MpegEncContext *s, AVCodecContext *avctx)
 
     /* convert fourcc to upper case */
     s->codec_tag          = avpriv_toupper4(avctx->codec_tag);
-
-    s->stream_codec_tag   = avpriv_toupper4(avctx->stream_codec_tag);
 }
 
 static int init_er(MpegEncContext *s)
@@ -1139,7 +1136,6 @@ static int init_er(MpegEncContext *s)
     int i;
 
     er->avctx       = s->avctx;
-    er->mecc        = &s->mecc;
 
     er->mb_index2xy = s->mb_index2xy;
     er->mb_num      = s->mb_num;

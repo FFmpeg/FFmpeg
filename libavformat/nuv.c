@@ -20,6 +20,7 @@
  */
 
 #include "libavutil/channel_layout.h"
+#include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/intfloat.h"
 #include "avformat.h"
@@ -184,6 +185,10 @@ static int nuv_header(AVFormatContext *s)
         if (!vst)
             return AVERROR(ENOMEM);
         ctx->v_id = vst->index;
+
+        ret = av_image_check_size(width, height, 0, ctx);
+        if (ret < 0)
+            return ret;
 
         vst->codec->codec_type            = AVMEDIA_TYPE_VIDEO;
         vst->codec->codec_id              = AV_CODEC_ID_NUV;
