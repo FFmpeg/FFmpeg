@@ -284,7 +284,7 @@ static const uint8_t mxf_avid_project_name[]               = { 0xa5,0xfb,0x7b,0x
 
 #define IS_KLV_KEY(x, y) (!memcmp(x, y, sizeof(y)))
 
-static void mxf_free_metadataset(MXFMetadataSet **ctx)
+static void mxf_free_metadataset(MXFMetadataSet **ctx, int freectx)
 {
     MXFIndexTableSegment *seg;
     switch ((*ctx)->type) {
@@ -313,6 +313,7 @@ static void mxf_free_metadataset(MXFMetadataSet **ctx)
     default:
         break;
     }
+    if (freectx)
     av_freep(ctx);
 }
 
@@ -2213,7 +2214,7 @@ static int mxf_read_local_tags(MXFContext *mxf, KLVPacket *klv, MXFMetadataReadF
         if (ctx_size && tag == 0x3C0A) {
             avio_read(pb, ctx->uid, 16);
         } else if ((ret = read_child(ctx, pb, tag, size, uid, -1)) < 0) {
-            mxf_free_metadataset(&ctx);
+            mxf_free_metadataset(&ctx, !!ctx_size);
             return ret;
         }
 
@@ -2222,7 +2223,7 @@ static int mxf_read_local_tags(MXFContext *mxf, KLVPacket *klv, MXFMetadataReadF
         if (avio_tell(pb) > klv_end) {
             if (ctx_size) {
                 ctx->type = type;
-                mxf_free_metadataset(&ctx);
+                mxf_free_metadataset(&ctx, !!ctx_size);
             }
 
             av_log(mxf->fc, AV_LOG_ERROR,
@@ -2504,7 +2505,7 @@ static int mxf_handle_missing_index_segment(MXFContext *mxf)
         return AVERROR(ENOMEM);
 
     if ((ret = mxf_add_metadata_set(mxf, segment))) {
-        mxf_free_metadataset((MXFMetadataSet**)&segment);
+        mxf_free_metadataset((MXFMetadataSet**)&segment, 1);
         return ret;
     }
 
@@ -2977,7 +2978,7 @@ static int mxf_read_close(AVFormatContext *s)
         s->streams[i]->priv_data = NULL;
 
     for (i = 0; i < mxf->metadata_sets_count; i++) {
-        mxf_free_metadataset(mxf->metadata_sets + i);
+        mxf_free_metadataset(mxf->metadata_sets + i, 1);
     }
     av_freep(&mxf->partitions);
     av_freep(&mxf->metadata_sets);
