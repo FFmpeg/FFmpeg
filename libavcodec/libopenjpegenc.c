@@ -73,6 +73,43 @@ static void info_callback(const char *msg, void *data)
     av_log(data, AV_LOG_DEBUG, "%s\n", msg);
 }
 
+static void cinema_parameters(opj_cparameters_t *p)
+{
+    p->tile_size_on = 0;
+    p->cp_tdx = 1;
+    p->cp_tdy = 1;
+
+    /* Tile part */
+    p->tp_flag = 'C';
+    p->tp_on = 1;
+
+    /* Tile and Image shall be at (0, 0) */
+    p->cp_tx0 = 0;
+    p->cp_ty0 = 0;
+    p->image_offset_x0 = 0;
+    p->image_offset_y0 = 0;
+
+    /* Codeblock size= 32 * 32 */
+    p->cblockw_init = 32;
+    p->cblockh_init = 32;
+    p->csty |= 0x01;
+
+    /* The progression order shall be CPRL */
+    p->prog_order = CPRL;
+
+    /* No ROI */
+    p->roi_compno = -1;
+
+    /* No subsampling */
+    p->subsampling_dx = 1;
+    p->subsampling_dy = 1;
+
+    /* 9-7 transform */
+    p->irreversible = 1;
+
+    p->tcp_mct = 1;
+}
+
 static opj_image_t *mj2_create_image(AVCodecContext *avctx, opj_cparameters_t *parameters)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
@@ -194,32 +231,7 @@ static av_cold int libopenjpeg_encode_init(AVCodecContext *avctx)
     ctx->enc_params.tcp_rates[0] = FFMAX(avctx->compression_level, 0) * 2;
 
     if (ctx->cinema_mode > 0) {
-        ctx->enc_params.irreversible = 1;
-        ctx->enc_params.tcp_mct = 1;
-        ctx->enc_params.tile_size_on = 0;
-        /* no subsampling */
-        ctx->enc_params.cp_tdx=1;
-        ctx->enc_params.cp_tdy=1;
-        ctx->enc_params.subsampling_dx = 1;
-        ctx->enc_params.subsampling_dy = 1;
-        /* Tile and Image shall be at (0,0) */
-        ctx->enc_params.cp_tx0 = 0;
-        ctx->enc_params.cp_ty0 = 0;
-        ctx->enc_params.image_offset_x0 = 0;
-        ctx->enc_params.image_offset_y0 = 0;
-        /* Codeblock size= 32*32 */
-        ctx->enc_params.cblockw_init = 32;
-        ctx->enc_params.cblockh_init = 32;
-        ctx->enc_params.csty |= 0x01;
-        /* No ROI */
-        ctx->enc_params.roi_compno = -1;
-
-        if (ctx->enc_params.prog_order != CPRL) {
-            av_log(avctx, AV_LOG_ERROR, "prog_order forced to CPRL\n");
-            ctx->enc_params.prog_order = CPRL;
-        }
-        ctx->enc_params.tp_flag = 'C';
-        ctx->enc_params.tp_on = 1;
+        cinema_parameters(&ctx->enc_params);
     }
 
     ctx->compress = opj_create_compress(ctx->format);
