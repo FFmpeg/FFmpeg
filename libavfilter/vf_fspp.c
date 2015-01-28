@@ -221,7 +221,8 @@ static void filter(FSPPContext *p, uint8_t *dst, uint8_t *src,
             p->row_fdct(block + 8 * 8, p->src + y * stride + 8 + x0 + 2 - (y & 1), stride, (es - 4) >> 2);
 
         p->column_fidct((int16_t *)(&p->threshold_mtx[0]), block, block3, es&(~1));
-        p->row_idct(block3 + 0 * 8, p->temp + (y & 15) * stride + x0 + 2 - (y & 1), stride, es >> 2);
+        if (es > 3)
+            p->row_idct(block3 + 0 * 8, p->temp + (y & 15) * stride + x0 + 2 - (y & 1), stride, es >> 2);
 
         if (!(y1 & 7) && y1) {
             if (y1 & 8)
