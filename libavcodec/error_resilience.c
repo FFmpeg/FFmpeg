@@ -934,7 +934,7 @@ void ff_er_frame_end(ERContext *s)
             const int mb_xy = s->mb_index2xy[i];
             int       error = s->error_status_table[mb_xy];
 
-            if (!s->mbskip_table[mb_xy]) // FIXME partition specific
+            if (s->mbskip_table && !s->mbskip_table[mb_xy]) // FIXME partition specific
                 distance++;
             if (error & (1 << error_type))
                 distance = 0;
@@ -1205,11 +1205,12 @@ ec_clean:
         const int mb_xy = s->mb_index2xy[i];
         int       error = s->error_status_table[mb_xy];
 
-        if (s->cur_pic.f->pict_type != AV_PICTURE_TYPE_B &&
+        if (s->mbskip_table && s->cur_pic.f->pict_type != AV_PICTURE_TYPE_B &&
             (error & (ER_DC_ERROR | ER_MV_ERROR | ER_AC_ERROR))) {
             s->mbskip_table[mb_xy] = 0;
         }
-        s->mbintra_table[mb_xy] = 1;
+        if (s->mbintra_table)
+            s->mbintra_table[mb_xy] = 1;
     }
 
     memset(&s->cur_pic, 0, sizeof(ERPicture));
