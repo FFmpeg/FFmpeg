@@ -347,6 +347,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                 return AVERROR(ENOMEM);
             }
             av_frame_copy_props(out, in);
+            out->width = in->width;
+            out->height = in->height;
         }
 
         if (qp_table || pp7->qp) {
