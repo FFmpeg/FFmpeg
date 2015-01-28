@@ -626,6 +626,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                     return AVERROR(ENOMEM);
                 }
                 av_frame_copy_props(out, in);
+                out->width = in->width;
+                out->height = in->height;
             }
 
             filter(fspp, out->data[0], in->data[0], out->linesize[0], in->linesize[0],
