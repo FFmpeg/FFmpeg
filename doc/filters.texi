@@ -8554,6 +8554,10 @@ useful if not UTF-8.
 
 @item stream_index, si
 Set subtitles stream index. @code{subtitles} filter only.
+
+@item force_style
+Override default style or script info parameters of the subtitles. It accepts a
+string containing ASS style format @code{KEY=VALUE} couples separated by ",".
 @end table
 
 If the first key is not specified, it is assumed that the first value
@@ -8578,6 +8582,12 @@ subtitles=video.mkv
 To render the second subtitles stream from that file, use:
 @example
 subtitles=video.mkv:si=1
+@end example
+
+To make the subtitles stream from @file{sub.srt} appear in transparent green
+@code{DejaVu Serif}, use:
+@example
+subtitles=sub.srt:force_style='FontName=DejaVu Serif,PrimaryColour=&HAA00FF00'
 @end example
 
 @section super2xsai
