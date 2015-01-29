@@ -2398,6 +2398,12 @@ static int hls_slice_data_wpp(HEVCContext *s, const uint8_t *nal, int length)
     int startheader, cmpt = 0;
     int i, j, res = 0;
 
+    if (!ret || !arg) {
+        av_free(ret);
+        av_free(arg);
+        return AVERROR(ENOMEM);
+    }
+
 
     if (!s->sList[1]) {
         ff_alloc_entries(s->avctx, s->sh.num_entry_point_offsets + 1);
@@ -2933,6 +2939,8 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
 
             s->skipped_bytes_pos_size_nal[s->nals_allocated] = 1024; // initial buffer size
             s->skipped_bytes_pos_nal[s->nals_allocated] = av_malloc_array(s->skipped_bytes_pos_size_nal[s->nals_allocated], sizeof(*s->skipped_bytes_pos));
+            if (!s->skipped_bytes_pos_nal[s->nals_allocated])
+                goto fail;
             s->nals_allocated = new_size;
         }
         s->skipped_bytes_pos_size = s->skipped_bytes_pos_size_nal[s->nb_nals];
