@@ -120,8 +120,11 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
     static const uint8_t header_prefix444[] = { 0x00, 0x00, 0x02, 0x80, 0x02 };
     int i, cid, ret;
 
-    if (buf_size < 0x280)
+    if (buf_size < 0x280) {
+        av_log(ctx->avctx, AV_LOG_ERROR, "buffer too small (%d < 640).\n",
+               buf_size);
         return AVERROR_INVALIDDATA;
+    }
 
     if (memcmp(buf, header_prefix, 5) && memcmp(buf, header_prefix444, 5)) {
         av_log(ctx->avctx, AV_LOG_ERROR, "error in header\n");
@@ -178,7 +181,8 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
         return ret;
 
     if (buf_size < ctx->cid_table->coding_unit_size) {
-        av_log(ctx->avctx, AV_LOG_ERROR, "incorrect frame size\n");
+        av_log(ctx->avctx, AV_LOG_ERROR, "incorrect frame size (%d < %d).\n",
+               buf_size, ctx->cid_table->coding_unit_size);
         return AVERROR_INVALIDDATA;
     }
 
@@ -202,7 +206,9 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
         ctx->mb_scan_index[i] = AV_RB32(buf + 0x170 + (i << 2));
         av_dlog(ctx->avctx, "mb scan index %d\n", ctx->mb_scan_index[i]);
         if (buf_size < ctx->mb_scan_index[i] + 0x280LL) {
-            av_log(ctx->avctx, AV_LOG_ERROR, "invalid mb scan index\n");
+            av_log(ctx->avctx, AV_LOG_ERROR,
+                   "invalid mb scan index (%d < %d).\n",
+                   buf_size, ctx->mb_scan_index[i] + 0x280);
             return AVERROR_INVALIDDATA;
         }
     }
