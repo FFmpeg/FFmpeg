@@ -240,7 +240,7 @@ static void fill_slice_long(AVCodecContext *avctx, DXVA_Slice_H264_Long *slice,
         unsigned i;
         for (i = 0; i < FF_ARRAY_ELEMS(slice->RefPicList[list]); i++) {
             if (list < sl->list_count && i < sl->ref_count[list]) {
-                const H264Picture *r = &sl->ref_list[list][i];
+                const H264Picture *r = sl->ref_list[list][i].parent;
                 unsigned plane;
                 unsigned index;
                 if (ctx->workaround & FF_DXVA2_WORKAROUND_INTEL_CLEARVIDEO)
