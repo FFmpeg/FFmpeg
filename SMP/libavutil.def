@@ -424,6 +424,9 @@ EXPORTS
     av_tree_find
     av_tree_insert
     av_tree_node_alloc
+    av_twofish_alloc
+    av_twofish_crypt
+    av_twofish_init
     av_usleep
     av_utf8_decode
     av_vbprintf
@@ -459,6 +462,7 @@ EXPORTS
     av_sha512_size DATA
     av_sha_size DATA
     av_tree_node_size DATA
+    av_twofish_size DATA
     av_util_ffversion DATA
     avpriv_cga_font DATA
     avpriv_vga16_font DATA

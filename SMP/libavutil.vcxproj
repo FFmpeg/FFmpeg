@@ -183,6 +183,8 @@
     </ClCompile>
     <ClCompile Include="..\libavutil\tree.c">
     </ClCompile>
+    <ClCompile Include="..\libavutil\twofish.c">
+    </ClCompile>
     <ClCompile Include="..\libavutil\utils.c">
     </ClCompile>
     <ClCompile Include="..\libavutil\xga_font_data.c">
@@ -264,6 +266,7 @@
     <ClInclude Include="..\libavutil\time.h" />
     <ClInclude Include="..\libavutil\timecode.h" />
     <ClInclude Include="..\libavutil\timestamp.h" />
+    <ClInclude Include="..\libavutil\twofish.h" />
     <ClInclude Include="..\libavutil\version.h" />
     <ClInclude Include="..\libavutil\xtea.h" />
     <ClInclude Include="..\libavutil\lzo.h" />
@@ -575,6 +578,7 @@ copy ..\libavutil\threadmessage.h $(OutDir)\include\libavutil
 copy ..\libavutil\time.h $(OutDir)\include\libavutil
 copy ..\libavutil\timecode.h $(OutDir)\include\libavutil
 copy ..\libavutil\timestamp.h $(OutDir)\include\libavutil
+copy ..\libavutil\twofish.h $(OutDir)\include\libavutil
 copy ..\libavutil\version.h $(OutDir)\include\libavutil
 copy ..\libavutil\xtea.h $(OutDir)\include\libavutil
 copy ..\libavutil\lzo.h $(OutDir)\include\libavutil
@@ -697,6 +701,7 @@ copy ..\libavutil\threadmessage.h $(OutDir)\include\libavutil
 copy ..\libavutil\time.h $(OutDir)\include\libavutil
 copy ..\libavutil\timecode.h $(OutDir)\include\libavutil
 copy ..\libavutil\timestamp.h $(OutDir)\include\libavutil
+copy ..\libavutil\twofish.h $(OutDir)\include\libavutil
 copy ..\libavutil\version.h $(OutDir)\include\libavutil
 copy ..\libavutil\xtea.h $(OutDir)\include\libavutil
 copy ..\libavutil\lzo.h $(OutDir)\include\libavutil
@@ -826,6 +831,7 @@ copy ..\libavutil\threadmessage.h $(OutDir)\include\libavutil
 copy ..\libavutil\time.h $(OutDir)\include\libavutil
 copy ..\libavutil\timecode.h $(OutDir)\include\libavutil
 copy ..\libavutil\timestamp.h $(OutDir)\include\libavutil
+copy ..\libavutil\twofish.h $(OutDir)\include\libavutil
 copy ..\libavutil\version.h $(OutDir)\include\libavutil
 copy ..\libavutil\xtea.h $(OutDir)\include\libavutil
 copy ..\libavutil\lzo.h $(OutDir)\include\libavutil
@@ -958,6 +964,7 @@ copy ..\libavutil\threadmessage.h $(OutDir)\include\libavutil
 copy ..\libavutil\time.h $(OutDir)\include\libavutil
 copy ..\libavutil\timecode.h $(OutDir)\include\libavutil
 copy ..\libavutil\timestamp.h $(OutDir)\include\libavutil
+copy ..\libavutil\twofish.h $(OutDir)\include\libavutil
 copy ..\libavutil\version.h $(OutDir)\include\libavutil
 copy ..\libavutil\xtea.h $(OutDir)\include\libavutil
 copy ..\libavutil\lzo.h $(OutDir)\include\libavutil
@@ -1092,6 +1099,7 @@ copy ..\libavutil\threadmessage.h $(OutDir)\include\libavutil
 copy ..\libavutil\time.h $(OutDir)\include\libavutil
 copy ..\libavutil\timecode.h $(OutDir)\include\libavutil
 copy ..\libavutil\timestamp.h $(OutDir)\include\libavutil
+copy ..\libavutil\twofish.h $(OutDir)\include\libavutil
 copy ..\libavutil\version.h $(OutDir)\include\libavutil
 copy ..\libavutil\xtea.h $(OutDir)\include\libavutil
 copy ..\libavutil\lzo.h $(OutDir)\include\libavutil
@@ -1224,6 +1232,7 @@ copy ..\libavutil\threadmessage.h $(OutDir)\include\libavutil
 copy ..\libavutil\time.h $(OutDir)\include\libavutil
 copy ..\libavutil\timecode.h $(OutDir)\include\libavutil
 copy ..\libavutil\timestamp.h $(OutDir)\include\libavutil
+copy ..\libavutil\twofish.h $(OutDir)\include\libavutil
 copy ..\libavutil\version.h $(OutDir)\include\libavutil
 copy ..\libavutil\xtea.h $(OutDir)\include\libavutil
 copy ..\libavutil\lzo.h $(OutDir)\include\libavutil
@@ -1360,6 +1369,7 @@ copy ..\libavutil\threadmessage.h $(OutDir)\include\libavutil
 copy ..\libavutil\time.h $(OutDir)\include\libavutil
 copy ..\libavutil\timecode.h $(OutDir)\include\libavutil
 copy ..\libavutil\timestamp.h $(OutDir)\include\libavutil
+copy ..\libavutil\twofish.h $(OutDir)\include\libavutil
 copy ..\libavutil\version.h $(OutDir)\include\libavutil
 copy ..\libavutil\xtea.h $(OutDir)\include\libavutil
 copy ..\libavutil\lzo.h $(OutDir)\include\libavutil
@@ -1490,6 +1500,7 @@ copy ..\libavutil\threadmessage.h $(OutDir)\include\libavutil
 copy ..\libavutil\time.h $(OutDir)\include\libavutil
 copy ..\libavutil\timecode.h $(OutDir)\include\libavutil
 copy ..\libavutil\timestamp.h $(OutDir)\include\libavutil
+copy ..\libavutil\twofish.h $(OutDir)\include\libavutil
 copy ..\libavutil\version.h $(OutDir)\include\libavutil
 copy ..\libavutil\xtea.h $(OutDir)\include\libavutil
 copy ..\libavutil\lzo.h $(OutDir)\include\libavutil
@@ -1627,6 +1638,7 @@ copy ..\libavutil\threadmessage.h $(OutDir)\include\libavutil
 copy ..\libavutil\time.h $(OutDir)\include\libavutil
 copy ..\libavutil\timecode.h $(OutDir)\include\libavutil
 copy ..\libavutil\timestamp.h $(OutDir)\include\libavutil
+copy ..\libavutil\twofish.h $(OutDir)\include\libavutil
 copy ..\libavutil\version.h $(OutDir)\include\libavutil
 copy ..\libavutil\xtea.h $(OutDir)\include\libavutil
 copy ..\libavutil\lzo.h $(OutDir)\include\libavutil
@@ -1762,6 +1774,7 @@ copy ..\libavutil\threadmessage.h $(OutDir)\include\libavutil
 copy ..\libavutil\time.h $(OutDir)\include\libavutil
 copy ..\libavutil\timecode.h $(OutDir)\include\libavutil
 copy ..\libavutil\timestamp.h $(OutDir)\include\libavutil
+copy ..\libavutil\twofish.h $(OutDir)\include\libavutil
 copy ..\libavutil\version.h $(OutDir)\include\libavutil
 copy ..\libavutil\xtea.h $(OutDir)\include\libavutil
 copy ..\libavutil\lzo.h $(OutDir)\include\libavutil
@@ -1899,6 +1912,7 @@ copy ..\libavutil\threadmessage.h $(OutDir)\include\libavutil
 copy ..\libavutil\time.h $(OutDir)\include\libavutil
 copy ..\libavutil\timecode.h $(OutDir)\include\libavutil
 copy ..\libavutil\timestamp.h $(OutDir)\include\libavutil
+copy ..\libavutil\twofish.h $(OutDir)\include\libavutil
 copy ..\libavutil\version.h $(OutDir)\include\libavutil
 copy ..\libavutil\xtea.h $(OutDir)\include\libavutil
 copy ..\libavutil\lzo.h $(OutDir)\include\libavutil
@@ -2034,6 +2048,7 @@ copy ..\libavutil\threadmessage.h $(OutDir)\include\libavutil
 copy ..\libavutil\time.h $(OutDir)\include\libavutil
 copy ..\libavutil\timecode.h $(OutDir)\include\libavutil
 copy ..\libavutil\timestamp.h $(OutDir)\include\libavutil
+copy ..\libavutil\twofish.h $(OutDir)\include\libavutil
 copy ..\libavutil\version.h $(OutDir)\include\libavutil
 copy ..\libavutil\xtea.h $(OutDir)\include\libavutil
 copy ..\libavutil\lzo.h $(OutDir)\include\libavutil
@@ -2164,6 +2179,7 @@ copy ..\libavutil\threadmessage.h $(OutDir)\include\libavutil
 copy ..\libavutil\time.h $(OutDir)\include\libavutil
 copy ..\libavutil\timecode.h $(OutDir)\include\libavutil
 copy ..\libavutil\timestamp.h $(OutDir)\include\libavutil
+copy ..\libavutil\twofish.h $(OutDir)\include\libavutil
 copy ..\libavutil\version.h $(OutDir)\include\libavutil
 copy ..\libavutil\xtea.h $(OutDir)\include\libavutil
 copy ..\libavutil\lzo.h $(OutDir)\include\libavutil
@@ -2293,6 +2309,7 @@ copy ..\libavutil\threadmessage.h $(OutDir)\include\libavutil
 copy ..\libavutil\time.h $(OutDir)\include\libavutil
 copy ..\libavutil\timecode.h $(OutDir)\include\libavutil
 copy ..\libavutil\timestamp.h $(OutDir)\include\libavutil
+copy ..\libavutil\twofish.h $(OutDir)\include\libavutil
 copy ..\libavutil\version.h $(OutDir)\include\libavutil
 copy ..\libavutil\xtea.h $(OutDir)\include\libavutil
 copy ..\libavutil\lzo.h $(OutDir)\include\libavutil
