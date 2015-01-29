@@ -539,6 +539,7 @@ bool projectGenerator::outputProject( )
     <YASM>\n\
       <IncludePaths>..\\;.\\;..\\libavcodec;%(IncludePaths)</IncludePaths>\n\
       <PreIncludeFile>config.asm</PreIncludeFile>\n\
+      <Debug>true</Debug>\n\
     </YASM>";
     string sPostbuild = "\n    <PostBuildEvent>\n\
       <Command>";
