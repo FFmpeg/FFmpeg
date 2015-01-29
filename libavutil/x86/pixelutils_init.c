@@ -43,6 +43,12 @@ void ff_pixelutils_sad_init_x86(av_pixelutils_sad_fn *sad, int aligned)
         sad[2] = ff_pixelutils_sad_8x8_mmx;
     }
 
+    // The best way to use SSE2 would be to do 2 SADs in parallel,
+    // but we'd have to modify the pixelutils API to return SIMD functions.
+
+    // It's probably not faster to shuffle data around
+    // to get two lines of 8 pixels into a single 16byte register,
+    // so just use the MMX 8x8 version even when SSE2 is available.
     if (EXTERNAL_MMXEXT(cpu_flags)) {
         sad[2] = ff_pixelutils_sad_8x8_mmxext;
         sad[3] = ff_pixelutils_sad_16x16_mmxext;
