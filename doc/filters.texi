@@ -6284,7 +6284,6 @@ the named filter.
 
 The list of the currently supported filters follows:
 @table @var
-@item softpulldown
 @end table
 
 The parameter syntax and behavior for the listed filters are the same
