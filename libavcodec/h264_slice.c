@@ -228,9 +228,6 @@ static int alloc_picture(H264Context *h, H264Picture *pic)
     if (ret < 0)
         goto fail;
 
-    h->linesize   = pic->f.linesize[0];
-    h->uvlinesize = pic->f.linesize[1];
-
     if (h->avctx->hwaccel) {
         const AVHWAccel *hwaccel = h->avctx->hwaccel;
         av_assert0(!pic->hwaccel_picture_private);
@@ -458,11 +455,6 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
         }
         context_reinitialized = 1;
 
-        /* update linesize on resize. The decoder doesn't
-         * necessarily call h264_frame_start in the new thread */
-        h->linesize   = h1->linesize;
-        h->uvlinesize = h1->uvlinesize;
-
         /* copy block_offset since frame_start may not be called */
         memcpy(h->block_offset, h1->block_offset, sizeof(h->block_offset));
     }
@@ -644,17 +636,15 @@ static int h264_frame_start(H264Context *h)
     if (CONFIG_ERROR_RESILIENCE)
         ff_er_frame_start(&h->slice_ctx[0].er);
 
-    assert(h->linesize && h->uvlinesize);
-
     for (i = 0; i < 16; i++) {
-        h->block_offset[i]           = (4 * ((scan8[i] - scan8[0]) & 7) << pixel_shift) + 4 * h->linesize * ((scan8[i] - scan8[0]) >> 3);
-        h->block_offset[48 + i]      = (4 * ((scan8[i] - scan8[0]) & 7) << pixel_shift) + 8 * h->linesize * ((scan8[i] - scan8[0]) >> 3);
+        h->block_offset[i]           = (4 * ((scan8[i] - scan8[0]) & 7) << pixel_shift) + 4 * pic->f.linesize[0] * ((scan8[i] - scan8[0]) >> 3);
+        h->block_offset[48 + i]      = (4 * ((scan8[i] - scan8[0]) & 7) << pixel_shift) + 8 * pic->f.linesize[0] * ((scan8[i] - scan8[0]) >> 3);
     }
     for (i = 0; i < 16; i++) {
         h->block_offset[16 + i]      =
-        h->block_offset[32 + i]      = (4 * ((scan8[i] - scan8[0]) & 7) << pixel_shift) + 4 * h->uvlinesize * ((scan8[i] - scan8[0]) >> 3);
+        h->block_offset[32 + i]      = (4 * ((scan8[i] - scan8[0]) & 7) << pixel_shift) + 4 * pic->f.linesize[1] * ((scan8[i] - scan8[0]) >> 3);
         h->block_offset[48 + 16 + i] =
-        h->block_offset[48 + 32 + i] = (4 * ((scan8[i] - scan8[0]) & 7) << pixel_shift) + 8 * h->uvlinesize * ((scan8[i] - scan8[0]) >> 3);
+        h->block_offset[48 + 32 + i] = (4 * ((scan8[i] - scan8[0]) & 7) << pixel_shift) + 8 * pic->f.linesize[1] * ((scan8[i] - scan8[0]) >> 3);
     }
 
     /* Some macroblocks can be accessed before they're available in case
@@ -1976,26 +1966,26 @@ static void loop_filter(const H264Context *h, H264SliceContext *sl, int start_x,
                 sl->mb_x = mb_x;
                 sl->mb_y = mb_y;
                 dest_y  = h->cur_pic.f.data[0] +
-                          ((mb_x << pixel_shift) + mb_y * h->linesize) * 16;
+                          ((mb_x << pixel_shift) + mb_y * sl->linesize) * 16;
                 dest_cb = h->cur_pic.f.data[1] +
                           (mb_x << pixel_shift) * (8 << CHROMA444(h)) +
-                          mb_y * h->uvlinesize * block_h;
+                          mb_y * sl->uvlinesize * block_h;
                 dest_cr = h->cur_pic.f.data[2] +
                           (mb_x << pixel_shift) * (8 << CHROMA444(h)) +
-                          mb_y * h->uvlinesize * block_h;
+                          mb_y * sl->uvlinesize * block_h;
                 // FIXME simplify above
 
                 if (MB_FIELD(sl)) {
-                    linesize   = sl->mb_linesize   = h->linesize   * 2;
-                    uvlinesize = sl->mb_uvlinesize = h->uvlinesize * 2;
+                    linesize   = sl->mb_linesize   = sl->linesize   * 2;
+                    uvlinesize = sl->mb_uvlinesize = sl->uvlinesize * 2;
                     if (mb_y & 1) { // FIXME move out of this function?
-                        dest_y  -= h->linesize   * 15;
-                        dest_cb -= h->uvlinesize * (block_h - 1);
-                        dest_cr -= h->uvlinesize * (block_h - 1);
+                        dest_y  -= sl->linesize   * 15;
+                        dest_cb -= sl->uvlinesize * (block_h - 1);
+                        dest_cr -= sl->uvlinesize * (block_h - 1);
                     }
                 } else {
-                    linesize   = sl->mb_linesize   = h->linesize;
-                    uvlinesize = sl->mb_uvlinesize = h->uvlinesize;
+                    linesize   = sl->mb_linesize   = sl->linesize;
+                    uvlinesize = sl->mb_uvlinesize = sl->uvlinesize;
                 }
                 backup_mb_border(h, sl, dest_y, dest_cb, dest_cr, linesize,
                                  uvlinesize, 0);
@@ -2083,7 +2073,10 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
     int lf_x_start = sl->mb_x;
     int ret;
 
-    ret = alloc_scratch_buffers(sl, h->linesize);
+    sl->linesize   = h->cur_pic_ptr->f.linesize[0];
+    sl->uvlinesize = h->cur_pic_ptr->f.linesize[1];
+
+    ret = alloc_scratch_buffers(sl, sl->linesize);
     if (ret < 0)
         return ret;
 

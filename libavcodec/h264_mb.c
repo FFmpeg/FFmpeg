@@ -487,13 +487,13 @@ static av_always_inline void prefetch_motion(const H264Context *h, H264SliceCont
         int off       = (mx << pixel_shift) +
                         (my + (sl->mb_x & 3) * 4) * sl->mb_linesize +
                         (64 << pixel_shift);
-        h->vdsp.prefetch(src[0] + off, h->linesize, 4);
+        h->vdsp.prefetch(src[0] + off, sl->linesize, 4);
         if (chroma_idc == 3 /* yuv444 */) {
-            h->vdsp.prefetch(src[1] + off, h->linesize, 4);
-            h->vdsp.prefetch(src[2] + off, h->linesize, 4);
+            h->vdsp.prefetch(src[1] + off, sl->linesize, 4);
+            h->vdsp.prefetch(src[2] + off, sl->linesize, 4);
         } else {
             off = ((mx >> 1) << pixel_shift) +
-                  ((my >> 1) + (sl->mb_x & 7)) * h->uvlinesize +
+                  ((my >> 1) + (sl->mb_x & 7)) * sl->uvlinesize +
                   (64 << pixel_shift);
             h->vdsp.prefetch(src[1] + off, src[2] - src[1], 2);
         }
