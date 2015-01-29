@@ -630,10 +630,7 @@ null_chunk_retry:
                 if (bps != 16) {
                     av_dlog(s, "NSV AUDIO bit/sample != 16 (%d)!!!\n", bps);
                 }
-                if(channels)
-                    bps /= channels; // ???
-                else
-                    av_log(s, AV_LOG_WARNING, "Channels is 0\n");
+                bps /= channels; // ???
                 if (bps == 8)
                     st[NSV_ST_AUDIO]->codec->codec_id = AV_CODEC_ID_PCM_U8;
                 samplerate /= 4;/* UGH ??? XXX */

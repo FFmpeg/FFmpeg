@@ -472,13 +472,13 @@ cglobal column_fidct, 4, 5, 0, 32, thr, src, out, cnt, tmp
 .fdct2:
     COLUMN_FDCT .idct2, 8, 16
     sub    cntd, 2
-    jnz .fdct1
+    jg .fdct1
     RET
 
 .idct2:
     COLUMN_IDCT 16
     sub    cntd, 2
-    jnz .fdct1
+    jg .fdct1
     RET
 
 ;void ff_row_idct_mmx(int16_t *workspace, int16_t *output_adr, ptrdiff_t output_stride, int cnt);

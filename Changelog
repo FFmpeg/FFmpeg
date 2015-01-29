@@ -16,6 +16,7 @@ version <next>:
 - Closed caption Decoder
 - fspp, uspp, pp7 MPlayer postprocessing filters ported to native filters
 - showpalette filter
+- Twofish symmetric block cipher
 
 
 version 2.5:
