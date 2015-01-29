@@ -375,6 +375,7 @@ cd $(ProjectDir)
     <YASM>
       <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
       <PreIncludeFile>config.asm</PreIncludeFile>
+      <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
       <AdditionalIncludeDirectories>.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -437,6 +438,7 @@ cd $(ProjectDir)
     <YASM>
       <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
       <PreIncludeFile>config.asm</PreIncludeFile>
+      <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
       <AdditionalIncludeDirectories>.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -506,6 +508,7 @@ cd $(ProjectDir)
     <YASM>
       <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
       <PreIncludeFile>config.asm</PreIncludeFile>
+      <Debug>true</Debug>
     </YASM>
     <PreLinkEvent>
       <Command>echo Note: Any linker warning about missing symbols can be ignored!
@@ -578,6 +581,7 @@ cd $(ProjectDir)
     <YASM>
       <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
       <PreIncludeFile>config.asm</PreIncludeFile>
+      <Debug>true</Debug>
     </YASM>
     <PreLinkEvent>
       <Command>echo Note: Any linker warning about missing symbols can be ignored!
@@ -652,6 +656,7 @@ cd $(ProjectDir)
     <YASM>
       <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
       <PreIncludeFile>config.asm</PreIncludeFile>
+      <Debug>true</Debug>
     </YASM>
     <PreLinkEvent>
       <Command>echo Note: Any linker warning about missing symbols can be ignored!
@@ -724,6 +729,7 @@ cd $(ProjectDir)
     <YASM>
       <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
       <PreIncludeFile>config.asm</PreIncludeFile>
+      <Debug>true</Debug>
     </YASM>
     <PreLinkEvent>
       <Command>echo Note: Any linker warning about missing symbols can be ignored!
@@ -800,6 +806,7 @@ cd $(ProjectDir)
     <YASM>
       <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
       <PreIncludeFile>config.asm</PreIncludeFile>
+      <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
       <AdditionalIncludeDirectories>.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -870,6 +877,7 @@ cd $(ProjectDir)
     <YASM>
       <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
       <PreIncludeFile>config.asm</PreIncludeFile>
+      <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
       <AdditionalIncludeDirectories>.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -947,6 +955,7 @@ cd $(ProjectDir)
     <YASM>
       <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
       <PreIncludeFile>config.asm</PreIncludeFile>
+      <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
       <AdditionalIncludeDirectories>.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1022,6 +1031,7 @@ cd $(ProjectDir)
     <YASM>
       <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
       <PreIncludeFile>config.asm</PreIncludeFile>
+      <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
       <AdditionalIncludeDirectories>.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1099,6 +1109,7 @@ cd $(ProjectDir)
     <YASM>
       <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
       <PreIncludeFile>config.asm</PreIncludeFile>
+      <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
       <AdditionalIncludeDirectories>.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1174,6 +1185,7 @@ cd $(ProjectDir)
     <YASM>
       <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
       <PreIncludeFile>config.asm</PreIncludeFile>
+      <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
       <AdditionalIncludeDirectories>.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1244,6 +1256,7 @@ cd $(ProjectDir)
     <YASM>
       <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
       <PreIncludeFile>config.asm</PreIncludeFile>
+      <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
       <AdditionalIncludeDirectories>.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1313,6 +1326,7 @@ cd $(ProjectDir)
     <YASM>
       <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
       <PreIncludeFile>config.asm</PreIncludeFile>
+      <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
       <AdditionalIncludeDirectories>.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
