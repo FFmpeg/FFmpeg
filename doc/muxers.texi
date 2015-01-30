@@ -814,8 +814,9 @@ overhead.
 Basic stream segmenter.
 
 This muxer outputs streams to a number of separate files of nearly
-fixed duration. Output filename pattern can be set in a fashion similar to
-@ref{image2}.
+fixed duration. Output filename pattern can be set in a fashion
+similar to @ref{image2}, or by using a @code{strftime} template if
+the @option{strftime} option is enabled.
 
 @code{stream_segment} is a variant of the muxer used to write to
 streaming output formats, i.e. which do not require global headers,
@@ -994,6 +995,12 @@ Wrap around segment index once it reaches @var{limit}.
 
 @item segment_start_number @var{number}
 Set the sequence number of the first segment. Defaults to @code{0}.
+
+@item strftime @var{1|0}
+Use the @code{strftime} function to define the name of the new
+segments to write. If this is selected, the output segment name must
+contain a @code{strftime} function template. Default value is
+@code{0}.
 
 @item reset_timestamps @var{1|0}
 Reset timestamps at the begin of each segment, so that each segment
