@@ -97,14 +97,14 @@ static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
     if (!s->sao || !s->deblock)
         goto fail;
 
-    s->skip_flag    = av_malloc(sps->min_cb_height * sps->min_cb_width);
+    s->skip_flag    = av_malloc_array(sps->min_cb_height, sps->min_cb_width);
     s->tab_ct_depth = av_malloc_array(sps->min_cb_height, sps->min_cb_width);
     if (!s->skip_flag || !s->tab_ct_depth)
         goto fail;
 
     s->cbf_luma = av_malloc_array(sps->min_tb_width, sps->min_tb_height);
     s->tab_ipm  = av_mallocz(min_pu_size);
-    s->is_pcm   = av_malloc((sps->min_pu_width + 1) * (sps->min_pu_height + 1));
+    s->is_pcm   = av_malloc_array(sps->min_pu_width + 1, sps->min_pu_height + 1);
     if (!s->tab_ipm || !s->cbf_luma || !s->is_pcm)
         goto fail;
 
@@ -2398,6 +2398,12 @@ static int hls_slice_data_wpp(HEVCContext *s, const uint8_t *nal, int length)
     int startheader, cmpt = 0;
     int i, j, res = 0;
 
+    if (!ret || !arg) {
+        av_free(ret);
+        av_free(arg);
+        return AVERROR(ENOMEM);
+    }
+
 
     if (!s->sList[1]) {
         ff_alloc_entries(s->avctx, s->sh.num_entry_point_offsets + 1);
@@ -2933,6 +2939,8 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
 
             s->skipped_bytes_pos_size_nal[s->nals_allocated] = 1024; // initial buffer size
             s->skipped_bytes_pos_nal[s->nals_allocated] = av_malloc_array(s->skipped_bytes_pos_size_nal[s->nals_allocated], sizeof(*s->skipped_bytes_pos));
+            if (!s->skipped_bytes_pos_nal[s->nals_allocated])
+                goto fail;
             s->nals_allocated = new_size;
         }
         s->skipped_bytes_pos_size = s->skipped_bytes_pos_size_nal[s->nb_nals];

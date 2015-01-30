@@ -102,7 +102,6 @@
 #include "aacadtsdec.h"
 #include "libavutil/intfloat.h"
 
-#include <assert.h>
 #include <errno.h>
 #include <math.h>
 #include <stdint.h>

@@ -482,6 +482,9 @@ static int concat_read_packet(AVFormatContext *avf, AVPacket *pkt)
     ConcatStream *cs;
     AVStream *st;
 
+    if (!cat->avf)
+        return AVERROR(EIO);
+
     while (1) {
         ret = av_read_frame(cat->avf, pkt);
         if (ret == AVERROR_EOF) {

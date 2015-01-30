@@ -2725,7 +2725,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
     int mb_x, mb_y, pdif = 0;
     int chr_h= 16>>s->chroma_y_shift;
     int i, j;
-    MpegEncContext best_s, backup_s;
+    MpegEncContext best_s = { 0 }, backup_s;
     uint8_t bit_buf[2][MAX_MB_BYTES];
     uint8_t bit_buf2[2][MAX_MB_BYTES];
     uint8_t bit_buf_tex[2][MAX_MB_BYTES];
