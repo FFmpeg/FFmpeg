@@ -62,8 +62,6 @@
 #include "libavutil/threadmessage.h"
 #include "libavformat/os_support.h"
 
-#include "libavformat/ffm.h" // not public API
-
 # include "libavfilter/avcodec.h"
 # include "libavfilter/avfilter.h"
 # include "libavfilter/buffersrc.h"
