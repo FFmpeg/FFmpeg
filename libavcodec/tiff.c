@@ -1293,6 +1293,8 @@ static int decode_frame(AVCodecContext *avctx,
             ssize = s->width * soff;
             if (s->avctx->pix_fmt == AV_PIX_FMT_RGB48LE ||
                 s->avctx->pix_fmt == AV_PIX_FMT_RGBA64LE ||
+                s->avctx->pix_fmt == AV_PIX_FMT_GRAY16LE ||
+                s->avctx->pix_fmt == AV_PIX_FMT_YA16LE ||
                 s->avctx->pix_fmt == AV_PIX_FMT_GBRP16LE ||
                 s->avctx->pix_fmt == AV_PIX_FMT_GBRAP16LE) {
                 for (i = 0; i < s->height; i++) {
@@ -1302,6 +1304,8 @@ static int decode_frame(AVCodecContext *avctx,
                 }
             } else if (s->avctx->pix_fmt == AV_PIX_FMT_RGB48BE ||
                        s->avctx->pix_fmt == AV_PIX_FMT_RGBA64BE ||
+                       s->avctx->pix_fmt == AV_PIX_FMT_GRAY16BE ||
+                       s->avctx->pix_fmt == AV_PIX_FMT_YA16BE ||
                        s->avctx->pix_fmt == AV_PIX_FMT_GBRP16BE ||
                        s->avctx->pix_fmt == AV_PIX_FMT_GBRAP16BE) {
                 for (i = 0; i < s->height; i++) {
