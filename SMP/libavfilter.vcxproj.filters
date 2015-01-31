@@ -572,9 +572,6 @@
     <ClCompile Include="..\libavfilter\libmpcodecs\img_format.c">
       <Filter>Source Files\libavfilter\libmpcodecs</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavfilter\libmpcodecs\vf_softpulldown.c">
-      <Filter>Source Files\libavfilter\libmpcodecs</Filter>
-    </ClCompile>
     <ClCompile Include="..\libavfilter\avf_avectorscope.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>

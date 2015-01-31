@@ -423,8 +423,6 @@
     </ClCompile>
     <ClCompile Include="..\libavfilter\libmpcodecs\img_format.c">
     </ClCompile>
-    <ClCompile Include="..\libavfilter\libmpcodecs\vf_softpulldown.c">
-    </ClCompile>
     <ClCompile Include="..\libavfilter\avf_avectorscope.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\avf_concat.c">
