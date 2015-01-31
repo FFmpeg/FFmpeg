@@ -250,12 +250,13 @@ void ff_h261_encode_mb(MpegEncContext *s, int16_t block[6][64],
         /* mvd indicates if this block is motion compensated */
         mvd = motion_x | motion_y;
 
-        if ((cbp | mvd | s->dquant) == 0) {
+        if ((cbp | mvd) == 0) {
             /* skip macroblock */
             s->skip_count++;
             s->mb_skip_run++;
             s->last_mv[0][0][0] = 0;
             s->last_mv[0][0][1] = 0;
+            s->qscale -= s->dquant;
             return;
         }
     }
@@ -274,13 +275,15 @@ void ff_h261_encode_mb(MpegEncContext *s, int16_t block[6][64],
             h->mtype += 3;
         if (s->loop_filter)
             h->mtype += 3;
-        if (cbp || s->dquant)
+        if (cbp)
             h->mtype++;
         av_assert1(h->mtype > 1);
     }
 
-    if (s->dquant)
+    if (s->dquant && cbp) {
         h->mtype++;
+    } else
+        s->qscale -= s->dquant;
 
     put_bits(&s->pb,
              ff_h261_mtype_bits[h->mtype],
