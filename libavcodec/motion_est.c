@@ -36,9 +36,6 @@
 #include "mpegutils.h"
 #include "mpegvideo.h"
 
-#undef NDEBUG
-#include <assert.h>
-
 #define P_LEFT P[1]
 #define P_TOP P[2]
 #define P_TOPRIGHT P[3]
