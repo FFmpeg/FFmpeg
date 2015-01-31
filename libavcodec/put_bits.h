@@ -28,7 +28,6 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include <assert.h>
 
 #include "libavutil/intreadwrite.h"
 #include "libavutil/avassert.h"
