@@ -51,8 +51,6 @@
 #include "thread.h"
 #include "vdpau_internal.h"
 
-#include <assert.h>
-
 const uint16_t ff_h264_mb_sizes[4] = { 256, 384, 512, 768 };
 
 int avpriv_h264_has_num_reorder_frames(AVCodecContext *avctx)
@@ -1891,7 +1889,7 @@ static int h264_decode_frame(AVCodecContext *avctx, void *data,
         }
     }
 
-    assert(pict->buf[0] || !*got_frame);
+    av_assert0(pict->buf[0] || !*got_frame);
 
     ff_h264_unref_picture(h, &h->last_pic_for_ec);
 
