@@ -46,7 +46,7 @@ int ff_h261_get_picture_format(int width, int height)
         return 1;
     // ERROR
     else
-        return -1;
+        return AVERROR(EINVAL);
 }
 
 void ff_h261_encode_picture_header(MpegEncContext *s, int picture_number)
