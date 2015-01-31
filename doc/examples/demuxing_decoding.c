@@ -138,7 +138,7 @@ static int decode_packet(int *got_frame, int cached)
 static int open_codec_context(int *stream_idx,
                               AVFormatContext *fmt_ctx, enum AVMediaType type)
 {
-    int ret;
+    int ret, stream_index;
     AVStream *st;
     AVCodecContext *dec_ctx = NULL;
     AVCodec *dec = NULL;
@@ -150,8 +150,8 @@ static int open_codec_context(int *stream_idx,
                 av_get_media_type_string(type), src_filename);
         return ret;
     } else {
-        *stream_idx = ret;
-        st = fmt_ctx->streams[*stream_idx];
+        stream_index = ret;
+        st = fmt_ctx->streams[stream_index];
 
         /* find decoder for the stream */
         dec_ctx = st->codec;
@@ -170,6 +170,7 @@ static int open_codec_context(int *stream_idx,
                     av_get_media_type_string(type));
             return ret;
         }
+        *stream_idx = stream_index;
     }
 
     return 0;
