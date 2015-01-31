@@ -46,10 +46,6 @@
 
 #include "qdm2_tablegen.h"
 
-#undef NDEBUG
-#include <assert.h>
-
-
 #define QDM2_LIST_ADD(list, size, packet) \
 do { \
       if (size > 0) { \

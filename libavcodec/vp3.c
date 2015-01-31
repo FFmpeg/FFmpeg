@@ -1998,7 +1998,8 @@ static int vp3_decode_frame(AVCodecContext *avctx,
     GetBitContext gb;
     int i, ret;
 
-    init_get_bits(&gb, buf, buf_size * 8);
+    if ((ret = init_get_bits8(&gb, buf, buf_size)) < 0)
+        return ret;
 
 #if CONFIG_THEORA_DECODER
     if (s->theora && get_bits1(&gb)) {
@@ -2491,7 +2492,7 @@ static av_cold int theora_decode_init(AVCodecContext *avctx)
     for (i = 0; i < 3; i++) {
         if (header_len[i] <= 0)
             continue;
-        init_get_bits(&gb, header_start[i], header_len[i] * 8);
+        init_get_bits8(&gb, header_start[i], header_len[i]);
 
         ptype = get_bits(&gb, 8);
 

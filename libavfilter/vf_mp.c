@@ -124,10 +124,7 @@ static const struct {
     {0, AV_PIX_FMT_NONE}
 };
 
-extern const vf_info_t ff_vf_info_softpulldown;
-
 static const vf_info_t* const filters[]={
-    &ff_vf_info_softpulldown,
     NULL
 };
 
