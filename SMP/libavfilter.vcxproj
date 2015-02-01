@@ -308,8 +308,6 @@
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_mergeplanes.c">
     </ClCompile>
-    <ClCompile Include="..\libavfilter\vf_mp.c">
-    </ClCompile>
     <ClCompile Include="..\libavfilter\vf_mpdecimate.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_noise.c">
@@ -418,10 +416,6 @@
     <ClCompile Include="..\libavfilter\vsrc_mptestsrc.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\vsink_nullsink.c">
-    </ClCompile>
-    <ClCompile Include="..\libavfilter\libmpcodecs\mp_image.c">
-    </ClCompile>
-    <ClCompile Include="..\libavfilter\libmpcodecs\img_format.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\avf_avectorscope.c">
     </ClCompile>
