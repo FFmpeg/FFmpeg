@@ -2562,8 +2562,6 @@ static void ffprobe_show_program_version(WriterContext *w)
     print_str("version", FFMPEG_VERSION);
     print_fmt("copyright", "Copyright (c) %d-%d the FFmpeg developers",
               program_birth_year, CONFIG_THIS_YEAR);
-    print_str("build_date", __DATE__);
-    print_str("build_time", __TIME__);
     print_str("compiler_ident", CC_IDENT);
     print_str("configuration", FFMPEG_CONFIGURATION);
     writer_print_section_footer(w);

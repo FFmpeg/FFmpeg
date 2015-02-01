@@ -10,4 +10,5 @@ $DOXYGEN - <<EOF
 @INCLUDE        = ${DOXYFILE}
 INPUT           = $@
 EXAMPLE_PATH    = ${SRC_PATH}/doc/examples
+HTML_TIMESTAMP  = NO
 EOF
