@@ -1282,7 +1282,7 @@ void ff_h264_init_cabac_states(H264Context *h) {
 }
 
 static int decode_cabac_field_decoding_flag(H264Context *h) {
-    const long mbb_xy = h->mb_xy - 2L*h->mb_stride;
+    const int mbb_xy = h->mb_xy - 2*h->mb_stride;
 
     unsigned long ctx = 0;
 
