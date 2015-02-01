@@ -309,7 +309,7 @@ static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
                 uint8_t *tmpbuf;
 
                 size = avio_rl32(s->pb) - 4;
-                if(size + 4L > frame_size)
+                if(size + 4LL > frame_size)
                     return AVERROR_INVALIDDATA;
                 frame_size -= size;
                 frame_size -= 4;
