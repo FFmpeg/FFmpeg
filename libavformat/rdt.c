@@ -434,6 +434,8 @@ rdt_parse_sdp_line (AVFormatContext *s, int st_index,
                     rdt->nb_rmst = count;
                 }
                 rdt->rmst[s->streams[n]->index] = ff_rm_alloc_rmstream();
+                if (!rdt->rmst[s->streams[n]->index])
+                    return AVERROR(ENOMEM);
                 rdt_load_mdpr(rdt, s->streams[n], (n - first) * 2);
            }
     }
