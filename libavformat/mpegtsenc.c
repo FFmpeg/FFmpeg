@@ -76,6 +76,7 @@ typedef struct MpegTSWrite {
     int transport_stream_id;
     int original_network_id;
     int service_id;
+    int service_type;
 
     int pmt_start_pid;
     int start_pid;
@@ -521,7 +522,7 @@ static void mpegts_write_sdt(AVFormatContext *s)
         *q++         = 0x48;
         desc_len_ptr = q;
         q++;
-        *q++         = 0x01; /* digital television service */
+        *q++         = ts->service_type;
         putstr8(&q, service->provider_name);
         putstr8(&q, service->name);
         desc_len_ptr[0] = q - desc_len_ptr - 1;
@@ -1434,6 +1435,9 @@ static const AVOption options[] = {
     { "mpegts_service_id", "Set service_id field.",
       offsetof(MpegTSWrite, service_id), AV_OPT_TYPE_INT,
       { .i64 = 0x0001 }, 0x0001, 0xffff, AV_OPT_FLAG_ENCODING_PARAM },
+    { "mpegts_service_type", "Set service_type field.",
+      offsetof(MpegTSWrite, service_type), AV_OPT_TYPE_INT,
+      { .i64 = 0x0001 }, 0x0001, 0xff, AV_OPT_FLAG_ENCODING_PARAM },
     { "mpegts_pmt_start_pid", "Set the first pid of the PMT.",
       offsetof(MpegTSWrite, pmt_start_pid), AV_OPT_TYPE_INT,
       { .i64 = 0x1000 }, 0x0010, 0x1f00, AV_OPT_FLAG_ENCODING_PARAM },
