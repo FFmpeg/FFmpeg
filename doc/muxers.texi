@@ -690,6 +690,9 @@ Set the transport_stream_id (default 0x0001). This identifies a
 transponder in DVB.
 @item -mpegts_service_id @var{number}
 Set the service_id (default 0x0001) also known as program in DVB.
+@item -mpegts_service_type @var{number}
+Set the program service_type (default 0x01 - TV).  For the list of valid 
+values see ETSI 300 468.
 @item -mpegts_pmt_start_pid @var{number}
 Set the first PID for PMT (default 0x1000, max 0x1f00).
 @item -mpegts_start_pid @var{number}
