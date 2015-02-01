@@ -139,15 +139,25 @@ static int get_qPy(HEVCContext *s, int xC, int yC)
     return s->qp_y_tab[x + y * s->sps->min_cb_width];
 }
 
-static void copy_CTB(uint8_t *dst, uint8_t *src,
-                     int width, int height, int stride_dst, int stride_src)
+static void copy_CTB(uint8_t *dst, uint8_t *src, int width, int height,
+                     intptr_t stride_dst, intptr_t stride_src)
 {
-    int i;
+int i, j;
 
-    for (i = 0; i < height; i++) {
-        memcpy(dst, src, width);
-        dst += stride_dst;
-        src += stride_src;
+    if (((intptr_t)dst | (intptr_t)src | stride_dst | stride_src) & 15) {
+        for (i = 0; i < height; i++) {
+            for (j = 0; j < width; j+=8)
+                AV_COPY64(dst+j, src+j);
+            dst += stride_dst;
+            src += stride_src;
+        }
+    } else {
+        for (i = 0; i < height; i++) {
+            for (j = 0; j < width; j+=16)
+                AV_COPY128(dst+j, src+j);
+            dst += stride_dst;
+            src += stride_src;
+        }
     }
 }
 
