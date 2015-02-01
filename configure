@@ -1578,6 +1578,7 @@ CONFIG_EXTRA="
     huffyuvencdsp
     idctdsp
     iirfilter
+    imdct15
     intrax8
     lgplv3
     lpc
@@ -1872,6 +1873,7 @@ nellymoser_encoder_select="audio_frame_queue mdct sinewin"
 nuv_decoder_select="idctdsp lzo"
 on2avc_decoder_select="mdct"
 opus_decoder_deps="avresample"
+opus_decoder_select="imdct15"
 png_decoder_deps="zlib"
 png_encoder_deps="zlib"
 png_encoder_select="huffyuvencdsp"

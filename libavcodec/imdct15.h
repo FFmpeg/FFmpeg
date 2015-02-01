@@ -16,14 +16,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_OPUS_IMDCT_H
-#define AVCODEC_OPUS_IMDCT_H
+#ifndef AVCODEC_IMDCT15_H
+#define AVCODEC_IMDCT15_H
 
 #include <stddef.h>
 
 #include "avfft.h"
 
-typedef struct CeltIMDCTContext {
+typedef struct IMDCT15Context {
     int fft_n;
     int len2;
     int len4;
@@ -37,21 +37,21 @@ typedef struct CeltIMDCTContext {
     /**
      * Calculate the middle half of the iMDCT
      */
-    void (*imdct_half)(struct CeltIMDCTContext *s, float *dst, const float *src,
+    void (*imdct_half)(struct IMDCT15Context *s, float *dst, const float *src,
                        ptrdiff_t src_stride, float scale);
-} CeltIMDCTContext;
+} IMDCT15Context;
 
 /**
  * Init an iMDCT of the length 2 * 15 * (2^N)
  */
-int ff_celt_imdct_init(CeltIMDCTContext **s, int N);
+int ff_imdct15_init(IMDCT15Context **s, int N);
 
 /**
  * Free an iMDCT.
  */
-void ff_celt_imdct_uninit(CeltIMDCTContext **s);
+void ff_imdct15_uninit(IMDCT15Context **s);
 
 
-void ff_celt_imdct_init_aarch64(CeltIMDCTContext *s);
+void ff_imdct15_init_aarch64(IMDCT15Context *s);
 
-#endif /* AVCODEC_OPUS_IMDCT_H */
+#endif /* AVCODEC_IMDCT15_H */
