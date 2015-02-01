@@ -184,21 +184,22 @@ void *av_realloc_f(void *ptr, size_t nelem, size_t elsize)
 
 int av_reallocp(void *ptr, size_t size)
 {
-    void **ptrptr = ptr;
-    void *ret;
+    void *val;
 
     if (!size) {
         av_freep(ptr);
         return 0;
     }
-    ret = av_realloc(*ptrptr, size);
 
-    if (!ret) {
+    memcpy(&val, ptr, sizeof(val));
+    val = av_realloc(val, size);
+
+    if (!val) {
         av_freep(ptr);
         return AVERROR(ENOMEM);
     }
 
-    *ptrptr = ret;
+    memcpy(ptr, &val, sizeof(val));
     return 0;
 }
 
@@ -211,10 +212,14 @@ void *av_realloc_array(void *ptr, size_t nmemb, size_t size)
 
 int av_reallocp_array(void *ptr, size_t nmemb, size_t size)
 {
-    void **ptrptr = ptr;
-    *ptrptr = av_realloc_f(*ptrptr, nmemb, size);
-    if (!*ptrptr && nmemb && size)
+    void *val;
+
+    memcpy(&val, ptr, sizeof(val));
+    val = av_realloc_f(val, nmemb, size);
+    memcpy(ptr, &val, sizeof(val));
+    if (!val && nmemb && size)
         return AVERROR(ENOMEM);
+
     return 0;
 }
 
@@ -235,9 +240,11 @@ void av_free(void *ptr)
 
 void av_freep(void *arg)
 {
-    void **ptr = (void **)arg;
-    av_free(*ptr);
-    *ptr = NULL;
+    void *val;
+
+    memcpy(&val, arg, sizeof(val));
+    memcpy(arg, &(void *){ NULL }, sizeof(val));
+    av_free(val);
 }
 
 void *av_mallocz(size_t size)
