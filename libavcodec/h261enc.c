@@ -46,7 +46,7 @@ int ff_h261_get_picture_format(int width, int height)
         return 1;
     // ERROR
     else
-        return -1;
+        return AVERROR(EINVAL);
 }
 
 void ff_h261_encode_picture_header(MpegEncContext *s, int picture_number)
@@ -61,8 +61,8 @@ void ff_h261_encode_picture_header(MpegEncContext *s, int picture_number)
 
     put_bits(&s->pb, 20, 0x10); /* PSC */
 
-    temp_ref = s->picture_number * (int64_t)30000 * s->avctx->time_base.num /
-               (1001 * (int64_t)s->avctx->time_base.den);   // FIXME maybe this should use a timestamp
+    temp_ref = s->picture_number * 30000L * s->avctx->time_base.num /
+               (1001L * s->avctx->time_base.den);   // FIXME maybe this should use a timestamp
     put_sbits(&s->pb, 5, temp_ref); /* TemporalReference */
 
     put_bits(&s->pb, 1, 0); /* split screen off */

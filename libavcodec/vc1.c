@@ -37,9 +37,6 @@
 #include "unary.h"
 #include "simple_idct.h"
 
-#undef NDEBUG
-#include <assert.h>
-
 /***********************************************************************/
 /**
  * @name VC-1 Bitplane decoding

@@ -44,9 +44,6 @@
 #include "network.h"
 #endif
 
-#undef NDEBUG
-#include <assert.h>
-
 /**
  * @file
  * muxing functions for use within libavformat

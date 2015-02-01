@@ -28,10 +28,6 @@
 #include "riff.h"
 #include "asf.h"
 
-#undef NDEBUG
-#include <assert.h>
-
-
 #define ASF_INDEXED_INTERVAL    10000000
 #define ASF_INDEX_BLOCK         (1<<9)
 #define ASF_PAYLOADS_PER_PACKET 63

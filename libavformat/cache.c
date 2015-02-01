@@ -70,7 +70,7 @@ static int cmp(void *key, const void *node)
     return (*(int64_t *) key) - ((const CacheEntry *) node)->logical_pos;
 }
 
-static int cache_open(URLContext *h, const char *arg, int flags)
+static int cache_open(URLContext *h, const char *arg, int flags, AVDictionary **options)
 {
     char *buffername;
     Context *c= h->priv_data;
@@ -86,7 +86,7 @@ static int cache_open(URLContext *h, const char *arg, int flags)
     unlink(buffername);
     av_freep(&buffername);
 
-    return ffurl_open(&c->inner, arg, flags, &h->interrupt_callback, NULL);
+    return ffurl_open(&c->inner, arg, flags, &h->interrupt_callback, options);
 }
 
 static int add_entry(URLContext *h, const unsigned char *buf, int size)
@@ -313,7 +313,7 @@ static const AVClass cache_context_class = {
 
 URLProtocol ff_cache_protocol = {
     .name                = "cache",
-    .url_open            = cache_open,
+    .url_open2           = cache_open,
     .url_read            = cache_read,
     .url_seek            = cache_seek,
     .url_close           = cache_close,

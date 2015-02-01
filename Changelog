@@ -18,6 +18,7 @@ version <next>:
 - showpalette filter
 - Twofish symmetric block cipher
 - Support DNx100 (960x720@8)
+- removed libmpcodecs
 
 
 version 2.5:

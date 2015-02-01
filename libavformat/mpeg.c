@@ -28,8 +28,6 @@
 # include "libavutil/bprint.h"
 #endif
 
-#undef NDEBUG
-#include <assert.h>
 #include "libavutil/avassert.h"
 
 /*********************************************/
