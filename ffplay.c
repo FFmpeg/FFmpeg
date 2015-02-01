@@ -1494,7 +1494,7 @@ static void stream_seek(VideoState *is, int64_t pos, int64_t rel, int seek_by_by
 static void stream_toggle_pause(VideoState *is)
 {
     if (is->paused) {
-        is->frame_timer += av_gettime_relative() / 1000000.0 + is->vidclk.pts_drift - is->vidclk.pts;
+        is->frame_timer += av_gettime_relative() / 1000000.0 - is->vidclk.last_updated;
         if (is->read_pause_return != AVERROR(ENOSYS)) {
             is->vidclk.paused = 0;
         }
