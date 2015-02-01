@@ -1987,7 +1987,7 @@ wmv3_vdpau_hwaccel_select="vc1_vdpau_hwaccel"
 h264_parser_select="h264_decoder"
 mpegvideo_parser_select="mpegvideo"
 mpeg4video_parser_select="error_resilience h263dsp mpeg_er mpegvideo qpeldsp"
-vc1_parser_select="mpegvideo startcode"
+vc1_parser_select="mpegvideo startcode vc1_decoder"
 
 # external libraries
 libfaac_encoder_deps="libfaac"
