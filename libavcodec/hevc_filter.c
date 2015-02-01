@@ -187,6 +187,7 @@ static void restore_tqb_pixels(HEVCContext *s, int x0, int y0, int width, int he
 
 static void sao_filter_CTB(HEVCContext *s, int x, int y)
 {
+    static const uint8_t band_tab[8] = { 0, 1, 2, 2, 3, 3, 4, 4 };
     int c_idx;
     int edges[4];  // 0 left 1 top 2 right 3 bottom
     int x_ctb                = x >> s->sps->log2_ctb_size;
@@ -252,15 +253,16 @@ static void sao_filter_CTB(HEVCContext *s, int x, int y)
         int ctb_size_v = (1 << (s->sps->log2_ctb_size)) >> s->sps->vshift[c_idx];
         int width    = FFMIN(ctb_size_h, (s->sps->width  >> s->sps->hshift[c_idx]) - x0);
         int height   = FFMIN(ctb_size_v, (s->sps->height >> s->sps->vshift[c_idx]) - y0);
+        int tab      = band_tab[(FFALIGN(width, 8) >> 3) - 1];
         uint8_t *src = &s->frame->data[c_idx][y0 * stride_src + (x0 << s->sps->pixel_shift)];
         uint8_t *dst = &s->sao_frame->data[c_idx][y0 * stride_dst + (x0 << s->sps->pixel_shift)];
 
         switch (sao->type_idx[c_idx]) {
         case SAO_BAND:
             copy_CTB(dst, src, width << s->sps->pixel_shift, height, stride_dst, stride_src);
-            s->hevcdsp.sao_band_filter(src, dst, stride_src, stride_dst,
-                                       sao->offset_val[c_idx], sao->band_position[c_idx],
-                                       width, height);
+            s->hevcdsp.sao_band_filter[tab](src, dst, stride_src, stride_dst,
+                                            sao->offset_val[c_idx], sao->band_position[c_idx],
+                                            width, height);
             restore_tqb_pixels(s, x, y, width, height, c_idx);
             sao->type_idx[c_idx] = SAO_APPLIED;
             break;
