@@ -75,7 +75,6 @@ void projectGenerator::buildInterDependencies( const string & sProjectName, Stat
         buildInterDependenciesHelper( { "elbg_filter" }, { "avcodec" }, vLibs );
         buildInterDependenciesHelper( { "mcdeint_filter" }, { "avcodec" }, vLibs );
         buildInterDependenciesHelper( { "movie_filter" }, { "avformat", "avcodec" }, vLibs );
-        buildInterDependenciesHelper( { "mp_filter" }, { "avcodec" }, vLibs );
         buildInterDependenciesHelper( { "pan_filter" }, { "swresample" }, vLibs );
         buildInterDependenciesHelper( { "pp_filter" }, { "postproc" }, vLibs );
         buildInterDependenciesHelper( { "removelogo_filter" }, { "avformat", "avcodec", "swscale" }, vLibs );
