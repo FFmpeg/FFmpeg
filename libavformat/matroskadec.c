@@ -1926,8 +1926,8 @@ static int matroska_parse_tracks(AVFormatContext *s)
                 av_reduce(&st->avg_frame_rate.num, &st->avg_frame_rate.den,
                           1000000000, track->default_duration, 30000);
 #if FF_API_R_FRAME_RATE
-                if (   st->avg_frame_rate.num < st->avg_frame_rate.den * 1000L
-                    && st->avg_frame_rate.num > st->avg_frame_rate.den * 5L)
+                if (   st->avg_frame_rate.num < st->avg_frame_rate.den * 1000LL
+                    && st->avg_frame_rate.num > st->avg_frame_rate.den * 5LL)
                     st->r_frame_rate = st->avg_frame_rate;
 #endif
             }
