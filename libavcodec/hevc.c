@@ -284,12 +284,12 @@ static int get_buffer_sao(HEVCContext *s, AVFrame *frame, const HEVCSPS *sps)
 {
     int ret, i;
 
-    frame->width  = s->avctx->coded_width  + 2;
-    frame->height = s->avctx->coded_height + 2;
+    frame->width  = FFALIGN(s->avctx->coded_width + 2, FF_INPUT_BUFFER_PADDING_SIZE);
+    frame->height = s->avctx->coded_height + 3;
     if ((ret = ff_get_buffer(s->avctx, frame, AV_GET_BUFFER_FLAG_REF)) < 0)
         return ret;
     for (i = 0; frame->data[i]; i++) {
-        int offset = frame->linesize[i] + (1 << sps->pixel_shift);
+        int offset = frame->linesize[i] + FF_INPUT_BUFFER_PADDING_SIZE;
         frame->data[i] += offset;
     }
     frame->width  = s->avctx->coded_width;

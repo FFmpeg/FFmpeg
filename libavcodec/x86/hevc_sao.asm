@@ -104,26 +104,26 @@ align 16
 
 %assign i 0
 %rep %2
-    movu             m13, [srcq + i]
+    mova             m13, [srcq + i]
     punpcklbw         m8, m13, m14
     HEVC_SAO_BAND_FILTER_COMPUTE 8, m9,  m8
     punpckhbw        m13, m14
     HEVC_SAO_BAND_FILTER_COMPUTE 8, m9, m13
     packuswb          m8, m13
-    movu      [dstq + i], m8
+    mova      [dstq + i], m8
 %assign i i+mmsize
 %endrep
 
 %if %1 == 48
 INIT_XMM cpuname
 
-    movu             m13, [srcq + i]
+    mova             m13, [srcq + i]
     punpcklbw         m8, m13, m14
     HEVC_SAO_BAND_FILTER_COMPUTE 8, m9,  m8
     punpckhbw        m13, m14
     HEVC_SAO_BAND_FILTER_COMPUTE 8, m9, m13
     packuswb          m8, m13
-    movu      [dstq + i], m8
+    mova      [dstq + i], m8
 %assign i i+16
 %endif ; %1 == 48
 
@@ -143,37 +143,37 @@ cglobal hevc_sao_band_filter_%2_%1, 6, 6, 15, dst, src, dststride, srcstride, of
 align 16
 .loop
 %if %2 == 8
-    movu              m8, [srcq]
+    mova              m8, [srcq]
     HEVC_SAO_BAND_FILTER_COMPUTE %1, m9, m8
     CLIPW             m8, m14, m13
-    movu          [dstq], m8
+    mova          [dstq], m8
 %endif
 
 %assign i 0
 %rep %3
-    movu              m8, [srcq + i]
+    mova              m8, [srcq + i]
     HEVC_SAO_BAND_FILTER_COMPUTE %1, m9, m8
     CLIPW             m8, m14, m13
-    movu      [dstq + i], m8
+    mova      [dstq + i], m8
 
-    movu              m9, [srcq + i + mmsize]
+    mova              m9, [srcq + i + mmsize]
     HEVC_SAO_BAND_FILTER_COMPUTE %1, m8, m9
     CLIPW             m9, m14, m13
-    movu      [dstq + i + mmsize], m9
+    mova      [dstq + i + mmsize], m9
 %assign i i+mmsize*2
 %endrep
 
 %if %2 == 48
 INIT_XMM cpuname
-    movu              m8, [srcq + i]
+    mova              m8, [srcq + i]
     HEVC_SAO_BAND_FILTER_COMPUTE %1, m9, m8
     CLIPW             m8, m14, m13
-    movu      [dstq + i], m8
+    mova      [dstq + i], m8
 
-    movu              m9, [srcq + i + mmsize]
+    mova              m9, [srcq + i + mmsize]
     HEVC_SAO_BAND_FILTER_COMPUTE %1, m8, m9
     CLIPW             m9, m14, m13
-    movu      [dstq + i + mmsize], m9
+    mova      [dstq + i + mmsize], m9
 %assign i i+32
 %endif ; %1 == 48
 
