@@ -480,8 +480,8 @@ static void deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
                     }
                 }
 
-            if(!y)
-                 continue;
+                if(!y)
+                    continue;
 
                 // horizontal filtering chroma
                 tc_offset = x0 ? left_tc_offset : cur_tc_offset;
