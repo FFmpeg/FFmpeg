@@ -45,12 +45,14 @@ static int tta_read_header(AVFormatContext *s)
     TTAContext *c = s->priv_data;
     AVStream *st;
     int i, channels, bps, samplerate, datalen;
-    uint64_t framepos, start_offset;
+    int64_t framepos, start_offset;
 
     if (!av_dict_get(s->metadata, "", NULL, AV_DICT_IGNORE_SUFFIX))
         ff_id3v1_read(s);
 
     start_offset = avio_tell(s->pb);
+    if (start_offset < 0)
+        return start_offset;
     if (avio_rl32(s->pb) != AV_RL32("TTA1"))
         return -1; // not tta file
 
@@ -91,7 +93,10 @@ static int tta_read_header(AVFormatContext *s)
     st->start_time = 0;
     st->duration = datalen;
 
-    framepos = avio_tell(s->pb) + 4*c->totalframes + 4;
+    framepos = avio_tell(s->pb);
+    if (framepos < 0)
+        return framepos;
+    framepos += 4 * c->totalframes + 4;
 
     for (i = 0; i < c->totalframes; i++) {
         uint32_t size = avio_rl32(s->pb);
