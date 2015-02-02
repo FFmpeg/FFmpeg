@@ -43,9 +43,7 @@
 typedef struct {
     AVClass *avclass;
     opj_image_t *image;
-    opj_cio_t *stream;
     opj_cparameters_t enc_params;
-    opj_cinfo_t *compress;
     opj_event_mgr_t event_mgr;
     int format;
     int profile;
@@ -234,12 +232,6 @@ static av_cold int libopenjpeg_encode_init(AVCodecContext *avctx)
         cinema_parameters(&ctx->enc_params);
     }
 
-    ctx->compress = opj_create_compress(ctx->format);
-    if (!ctx->compress) {
-        av_log(avctx, AV_LOG_ERROR, "Error creating the compressor\n");
-        return AVERROR(ENOMEM);
-    }
-
     ctx->image = mj2_create_image(avctx, &ctx->enc_params);
     if (!ctx->image) {
         av_log(avctx, AV_LOG_ERROR, "Error creating the mj2 image\n");
@@ -253,17 +245,9 @@ static av_cold int libopenjpeg_encode_init(AVCodecContext *avctx)
         goto fail;
     }
 
-    memset(&ctx->event_mgr, 0, sizeof(opj_event_mgr_t));
-    ctx->event_mgr.info_handler    = info_callback;
-    ctx->event_mgr.error_handler = error_callback;
-    ctx->event_mgr.warning_handler = warning_callback;
-    opj_set_event_mgr((opj_common_ptr) ctx->compress, &ctx->event_mgr, avctx);
-
     return 0;
 
 fail:
-    opj_destroy_compress(ctx->compress);
-    ctx->compress = NULL;
     opj_image_destroy(ctx->image);
     ctx->image = NULL;
     av_freep(&avctx->coded_frame);
@@ -477,9 +461,9 @@ static int libopenjpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                                     const AVFrame *frame, int *got_packet)
 {
     LibOpenJPEGContext *ctx = avctx->priv_data;
-    opj_cinfo_t *compress   = ctx->compress;
     opj_image_t *image      = ctx->image;
-    opj_cio_t *stream       = ctx->stream;
+    opj_cinfo_t *compress   = NULL;
+    opj_cio_t *stream       = NULL;
     int cpyresult = 0;
     int ret, len;
     AVFrame *gbrframe;
@@ -573,6 +557,12 @@ static int libopenjpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         return -1;
     }
 
+    compress = opj_create_compress(ctx->format);
+    if (!compress) {
+        av_log(avctx, AV_LOG_ERROR, "Error creating the compressor\n");
+        return AVERROR(ENOMEM);
+    }
+
     opj_setup_encoder(compress, &ctx->enc_params, image);
 
     stream = opj_cio_open((opj_common_ptr) compress, NULL, 0);
@@ -580,6 +570,12 @@ static int libopenjpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         av_log(avctx, AV_LOG_ERROR, "Error creating the cio stream\n");
         return AVERROR(ENOMEM);
     }
+
+    memset(&ctx->event_mgr, 0, sizeof(opj_event_mgr_t));
+    ctx->event_mgr.info_handler    = info_callback;
+    ctx->event_mgr.error_handler   = error_callback;
+    ctx->event_mgr.warning_handler = warning_callback;
+    opj_set_event_mgr((opj_common_ptr) compress, &ctx->event_mgr, avctx);
 
     if (!opj_encode(compress, stream, image, NULL)) {
         av_log(avctx, AV_LOG_ERROR, "Error during the opj encode\n");
@@ -594,6 +590,12 @@ static int libopenjpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     memcpy(pkt->data, stream->buffer, len);
     pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;
+
+    opj_cio_close(stream);
+    stream = NULL;
+    opj_destroy_compress(compress);
+    compress = NULL;
+
     return 0;
 }
 
@@ -601,10 +603,6 @@ static av_cold int libopenjpeg_encode_close(AVCodecContext *avctx)
 {
     LibOpenJPEGContext *ctx = avctx->priv_data;
 
-    opj_cio_close(ctx->stream);
-    ctx->stream = NULL;
-    opj_destroy_compress(ctx->compress);
-    ctx->compress = NULL;
     opj_image_destroy(ctx->image);
     ctx->image = NULL;
     av_freep(&avctx->coded_frame);
