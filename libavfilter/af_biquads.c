@@ -98,7 +98,7 @@ typedef struct {
     const AVClass *class;
 
     enum FilterType filter_type;
-    enum WidthType width_type;
+    int width_type;
     int poles;
     int csg;
 
