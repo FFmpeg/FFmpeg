@@ -44,7 +44,7 @@ typedef struct FDKAACDecContext {
     int initialized;
     uint8_t *decoder_buffer;
     uint8_t *anc_buffer;
-    enum ConcealMethod conceal_method;
+    int conceal_method;
     int drc_level;
     int drc_boost;
     int drc_heavy;
