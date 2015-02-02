@@ -124,7 +124,9 @@ INIT_XMM cpuname
     HEVC_SAO_BAND_FILTER_COMPUTE 8, m9, m13
     packuswb          m8, m13
     mova      [dstq + i], m8
-%assign i i+16
+%if cpuflag(avx2)
+INIT_YMM cpuname
+%endif
 %endif ; %1 == 48
 
     add             dstq, dststrideq             ; dst += dststride
@@ -174,7 +176,9 @@ INIT_XMM cpuname
     HEVC_SAO_BAND_FILTER_COMPUTE %1, m8, m9
     CLIPW             m9, m14, m13
     mova      [dstq + i + mmsize], m9
-%assign i i+32
+%if cpuflag(avx2)
+INIT_YMM cpuname
+%endif
 %endif ; %1 == 48
 
     add             dstq, dststrideq
@@ -216,7 +220,6 @@ HEVC_SAO_BAND_FILTER_8      16, 1
 INIT_YMM avx2
 HEVC_SAO_BAND_FILTER_8      32, 1
 HEVC_SAO_BAND_FILTER_8      48, 1
-INIT_YMM avx2
 HEVC_SAO_BAND_FILTER_8      64, 2
 
 INIT_XMM avx2
@@ -225,7 +228,6 @@ HEVC_SAO_BAND_FILTER_16 10, 16, 1
 INIT_YMM avx2
 HEVC_SAO_BAND_FILTER_16 10, 32, 1
 HEVC_SAO_BAND_FILTER_16 10, 48, 1
-INIT_YMM avx2
 HEVC_SAO_BAND_FILTER_16 10, 64, 2
 
 INIT_XMM avx2
@@ -234,7 +236,6 @@ HEVC_SAO_BAND_FILTER_16 12, 16, 1
 INIT_YMM avx2
 HEVC_SAO_BAND_FILTER_16 12, 32, 1
 HEVC_SAO_BAND_FILTER_16 12, 48, 1
-INIT_YMM avx2
 HEVC_SAO_BAND_FILTER_16 12, 64, 2
 %endif
 %endif
