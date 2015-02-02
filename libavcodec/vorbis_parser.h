@@ -47,6 +47,7 @@ void av_vorbis_parse_free(AVVorbisParseContext **s);
 
 #define VORBIS_FLAG_HEADER  0x00000001
 #define VORBIS_FLAG_COMMENT 0x00000002
+#define VORBIS_FLAG_SETUP   0x00000004
 
 /**
  * Get the duration for a Vorbis packet.

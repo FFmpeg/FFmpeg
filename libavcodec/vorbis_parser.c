@@ -229,6 +229,8 @@ int av_vorbis_parse_frame_flags(AVVorbisParseContext *s, const uint8_t *buf,
                 *flags |= VORBIS_FLAG_HEADER;
             else if (buf[0] == 3)
                 *flags |= VORBIS_FLAG_COMMENT;
+            else if (buf[0] == 5)
+                *flags |= VORBIS_FLAG_SETUP;
             else
                 goto bad_packet;
 
