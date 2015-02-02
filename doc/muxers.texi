@@ -690,6 +690,9 @@ Set the transport_stream_id (default 0x0001). This identifies a
 transponder in DVB.
 @item -mpegts_service_id @var{number}
 Set the service_id (default 0x0001) also known as program in DVB.
+@item -mpegts_service_type @var{number}
+Set the program service_type (default @var{digital_tv}), see below
+a list of pre defined values.
 @item -mpegts_pmt_start_pid @var{number}
 Set the first PID for PMT (default 0x1000, max 0x1f00).
 @item -mpegts_start_pid @var{number}
@@ -722,6 +725,27 @@ ffmpeg -i source1.ts -codec copy -f mpegts -tables_version 0 udp://1.1.1.1:1111
 ffmpeg -i source2.ts -codec copy -f mpegts -tables_version 1 udp://1.1.1.1:1111
 ...
 @end example
+@end table
+
+Option mpegts_service_type accepts the following values:
+
+@table @option
+@item hex_value
+Any hexdecimal value between 0x01 to 0xff as defined in ETSI 300 468.
+@item digital_tv
+Digital TV service.
+@item digital_radio
+Digital Radio service.
+@item teletext
+Teletext service.
+@item advanced_codec_digital_radio
+Advanced Codec Digital Radio service.
+@item mpeg2_digital_hdtv
+MPEG2 Digital HDTV service.
+@item advanced_codec_digital_sdtv
+Advanced Codec Digital SDTV service.
+@item advanced_codec_digital_hdtv
+Advanced Codec Digital HDTV service.
 @end table
 
 Option mpegts_flags may take a set of such flags:
