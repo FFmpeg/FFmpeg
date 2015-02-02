@@ -324,16 +324,23 @@ static int decode_dvd_subtitles(DVDSubContext *ctx, AVSubtitle *sub_header,
                     sub_header->num_rects = 0;
                 }
 
-                bitmap = av_malloc(w * h);
                 sub_header->rects = av_mallocz(sizeof(*sub_header->rects));
+                if (!sub_header->rects)
+                    goto fail;
                 sub_header->rects[0] = av_mallocz(sizeof(AVSubtitleRect));
+                if (!sub_header->rects[0])
+                    goto fail;
                 sub_header->num_rects = 1;
-                sub_header->rects[0]->pict.data[0] = bitmap;
+                bitmap = sub_header->rects[0]->pict.data[0] = av_malloc(w * h);
+                if (!bitmap)
+                    goto fail;
                 decode_rle(bitmap, w * 2, w, (h + 1) / 2,
                            buf, offset1, buf_size, is_8bit);
                 decode_rle(bitmap + w, w * 2, w, h / 2,
                            buf, offset2, buf_size, is_8bit);
                 sub_header->rects[0]->pict.data[1] = av_mallocz(AVPALETTE_SIZE);
+                if (!sub_header->rects[0]->pict.data[1])
+                    goto fail;
                 if (is_8bit) {
                     if (yuv_palette == 0)
                         goto fail;
