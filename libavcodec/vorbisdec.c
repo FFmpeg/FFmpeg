@@ -369,10 +369,15 @@ static int vorbis_parse_setup_hdr_codebooks(vorbis_context *vc)
             }
 
 // Weed out unused vlcs and build codevector vector
-            codebook_setup->codevectors = used_entries ? av_mallocz(used_entries *
-                                                                    codebook_setup->dimensions *
-                                                                    sizeof(*codebook_setup->codevectors))
-                                                       : NULL;
+            if (used_entries) {
+                codebook_setup->codevectors =
+                    av_mallocz(used_entries * codebook_setup->dimensions *
+                               sizeof(*codebook_setup->codevectors));
+                if (!codebook_setup->codevectors)
+                    return AVERROR(ENOMEM);
+            } else
+                codebook_setup->codevectors = NULL;
+
             for (j = 0, i = 0; i < entries; ++i) {
                 unsigned dim = codebook_setup->dimensions;
 
