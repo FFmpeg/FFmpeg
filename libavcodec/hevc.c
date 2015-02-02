@@ -104,8 +104,7 @@ static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
 
     s->cbf_luma = av_malloc_array(sps->min_tb_width, sps->min_tb_height);
     s->tab_ipm  = av_mallocz(min_pu_size);
-    s->is_pcm   = av_mallocz_array(sps->min_pu_width + 1, sps->min_pu_height + 1);
-
+    s->is_pcm   = av_malloc_array(sps->min_pu_width + 1, sps->min_pu_height + 1);
     if (!s->tab_ipm || !s->cbf_luma || !s->is_pcm)
         goto fail;
 
