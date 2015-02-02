@@ -478,6 +478,27 @@ mc_bi_w_funcs(qpel_v, 12, sse4);
 mc_bi_w_funcs(qpel_hv, 12, sse4);
 #endif //ARCH_X86_64 && HAVE_SSE4_EXTERNAL
 
+#define SAO_BAND_FILTER_FUNCS(bitd, opt)                                                                                   \
+void ff_hevc_sao_band_filter_8_##bitd##_##opt(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride_dst, ptrdiff_t _stride_src,  \
+                                            int16_t *sao_offset_val, int sao_left_class, int width, int height);           \
+void ff_hevc_sao_band_filter_16_##bitd##_##opt(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride_dst, ptrdiff_t _stride_src, \
+                                            int16_t *sao_offset_val, int sao_left_class, int width, int height);           \
+void ff_hevc_sao_band_filter_32_##bitd##_##opt(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride_dst, ptrdiff_t _stride_src, \
+                                            int16_t *sao_offset_val, int sao_left_class, int width, int height);           \
+void ff_hevc_sao_band_filter_48_##bitd##_##opt(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride_dst, ptrdiff_t _stride_src, \
+                                            int16_t *sao_offset_val, int sao_left_class, int width, int height);           \
+void ff_hevc_sao_band_filter_64_##bitd##_##opt(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride_dst, ptrdiff_t _stride_src, \
+                                             int16_t *sao_offset_val, int sao_left_class, int width, int height)
+
+SAO_BAND_FILTER_FUNCS(8,  sse2);
+SAO_BAND_FILTER_FUNCS(10, sse2);
+SAO_BAND_FILTER_FUNCS(12, sse2);
+SAO_BAND_FILTER_FUNCS(8,   avx);
+SAO_BAND_FILTER_FUNCS(10,  avx);
+SAO_BAND_FILTER_FUNCS(12,  avx);
+SAO_BAND_FILTER_FUNCS(8,  avx2);
+SAO_BAND_FILTER_FUNCS(10, avx2);
+SAO_BAND_FILTER_FUNCS(12, avx2);
 
 #define EPEL_LINKS(pointer, my, mx, fname, bitd, opt )           \
         PEL_LINK(pointer, 1, my , mx , fname##4 ,  bitd, opt ); \
@@ -499,6 +520,13 @@ mc_bi_w_funcs(qpel_hv, 12, sse4);
         PEL_LINK(pointer, 8, my , mx , fname##48,  bitd, opt ); \
         PEL_LINK(pointer, 9, my , mx , fname##64,  bitd, opt )
 
+#define SAO_BAND_INIT(bitd, opt) do {                                       \
+    c->sao_band_filter[0]      = ff_hevc_sao_band_filter_8_##bitd##_##opt;  \
+    c->sao_band_filter[1]      = ff_hevc_sao_band_filter_16_##bitd##_##opt; \
+    c->sao_band_filter[2]      = ff_hevc_sao_band_filter_32_##bitd##_##opt; \
+    c->sao_band_filter[3]      = ff_hevc_sao_band_filter_48_##bitd##_##opt; \
+    c->sao_band_filter[4]      = ff_hevc_sao_band_filter_64_##bitd##_##opt; \
+} while (0)
 
 void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
 {
@@ -516,6 +544,8 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             if (ARCH_X86_64) {
                 c->hevc_v_loop_filter_luma = ff_hevc_v_loop_filter_luma_8_sse2;
                 c->hevc_h_loop_filter_luma = ff_hevc_h_loop_filter_luma_8_sse2;
+
+                SAO_BAND_INIT(8, sse2);
             }
             c->idct_dc[1] = ff_hevc_idct8x8_dc_8_sse2;
             c->idct_dc[2] = ff_hevc_idct16x16_dc_8_sse2;
@@ -547,6 +577,8 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             if (ARCH_X86_64) {
                 c->hevc_v_loop_filter_luma = ff_hevc_v_loop_filter_luma_8_avx;
                 c->hevc_h_loop_filter_luma = ff_hevc_h_loop_filter_luma_8_avx;
+
+                SAO_BAND_INIT(8, avx);
             }
             c->transform_add[1]    = ff_hevc_transform_add8_8_avx;
             c->transform_add[2]    = ff_hevc_transform_add16_8_avx;
@@ -555,6 +587,9 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
         if (EXTERNAL_AVX2(cpu_flags)) {
             c->idct_dc[2] = ff_hevc_idct16x16_dc_8_avx2;
             c->idct_dc[3] = ff_hevc_idct32x32_dc_8_avx2;
+            if (ARCH_X86_64) {
+                SAO_BAND_INIT(8, avx2);
+            }
 
             c->transform_add[3]    = ff_hevc_transform_add32_8_avx2;
         }
@@ -570,6 +605,8 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             if (ARCH_X86_64) {
                 c->hevc_v_loop_filter_luma = ff_hevc_v_loop_filter_luma_10_sse2;
                 c->hevc_h_loop_filter_luma = ff_hevc_h_loop_filter_luma_10_sse2;
+
+                SAO_BAND_INIT(10, sse2);
             }
 
             c->idct_dc[1] = ff_hevc_idct8x8_dc_10_sse2;
@@ -601,12 +638,17 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             if (ARCH_X86_64) {
                 c->hevc_v_loop_filter_luma = ff_hevc_v_loop_filter_luma_10_avx;
                 c->hevc_h_loop_filter_luma = ff_hevc_h_loop_filter_luma_10_avx;
+
+                SAO_BAND_INIT(10, avx);
             }
         }
         if (EXTERNAL_AVX2(cpu_flags)) {
 
             c->idct_dc[2] = ff_hevc_idct16x16_dc_10_avx2;
             c->idct_dc[3] = ff_hevc_idct32x32_dc_10_avx2;
+            if (ARCH_X86_64) {
+                SAO_BAND_INIT(10, avx2);
+            }
 
             c->transform_add[2] = ff_hevc_transform_add16_10_avx2;
             c->transform_add[3] = ff_hevc_transform_add32_10_avx2;
@@ -623,6 +665,8 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             if (ARCH_X86_64) {
                 c->hevc_v_loop_filter_luma = ff_hevc_v_loop_filter_luma_12_sse2;
                 c->hevc_h_loop_filter_luma = ff_hevc_h_loop_filter_luma_12_sse2;
+
+                SAO_BAND_INIT(12, sse2);
             }
 
             c->idct_dc[1] = ff_hevc_idct8x8_dc_12_sse2;
@@ -650,11 +694,16 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             if (ARCH_X86_64) {
                 c->hevc_v_loop_filter_luma = ff_hevc_v_loop_filter_luma_12_avx;
                 c->hevc_h_loop_filter_luma = ff_hevc_h_loop_filter_luma_12_avx;
+
+                SAO_BAND_INIT(12, avx);
             }
         }
         if (EXTERNAL_AVX2(cpu_flags)) {
             c->idct_dc[2] = ff_hevc_idct16x16_dc_12_avx2;
             c->idct_dc[3] = ff_hevc_idct32x32_dc_12_avx2;
+            if (ARCH_X86_64) {
+                SAO_BAND_INIT(12, avx2);
+            }
         }
     }
 }

@@ -513,9 +513,9 @@ static int config_input(AVFilterLink *inlink)
 
     s->p_linesize = linesize = FFALIGN(s->pr_width, 32);
     for (i = 0; i < 2; i++) {
-        s->cbuf[i][0] = av_malloc(linesize * s->pr_height * sizeof(*s->cbuf[i][0]));
-        s->cbuf[i][1] = av_malloc(linesize * s->pr_height * sizeof(*s->cbuf[i][1]));
-        s->cbuf[i][2] = av_malloc(linesize * s->pr_height * sizeof(*s->cbuf[i][2]));
+        s->cbuf[i][0] = av_malloc_array(linesize * s->pr_height, sizeof(*s->cbuf[i][0]));
+        s->cbuf[i][1] = av_malloc_array(linesize * s->pr_height, sizeof(*s->cbuf[i][1]));
+        s->cbuf[i][2] = av_malloc_array(linesize * s->pr_height, sizeof(*s->cbuf[i][2]));
         if (!s->cbuf[i][0] || !s->cbuf[i][1] || !s->cbuf[i][2])
             return AVERROR(ENOMEM);
     }

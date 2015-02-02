@@ -271,7 +271,7 @@ static void get_exponent_dynamic(NellyMoserEncodeContext *s, float *cand, int *i
                 }
             }
         }
-        assert(c); //FIXME
+        av_assert1(c); //FIXME
     }
 
     best_val = INFINITY;

@@ -806,6 +806,11 @@ is 1 second. A value of 0 will fill all segments, making pages as large as
 possible. A value of 1 will effectively use 1 packet-per-page in most
 situations, giving a small seek granularity at the cost of additional container
 overhead.
+@item -serial_offset @var{value}
+Serial value from which to set the streams serial number.
+Setting it to different and sufficiently large values ensures that the produced
+ogg files can be safely chained.
+
 @end table
 
 @anchor{segment}

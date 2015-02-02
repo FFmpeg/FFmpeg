@@ -302,17 +302,15 @@ IDCT_DC(32)
 #undef ADD_AND_SCALE
 
 static void FUNC(sao_band_filter_0)(uint8_t *_dst, uint8_t *_src,
-                                  ptrdiff_t stride_dst, ptrdiff_t stride_src, SAOParams *sao,
-                                  int *borders, int width, int height,
-                                  int c_idx)
+                                    ptrdiff_t stride_dst, ptrdiff_t stride_src,
+                                    int16_t *sao_offset_val, int sao_left_class,
+                                    int width, int height)
 {
     pixel *dst = (pixel *)_dst;
     pixel *src = (pixel *)_src;
     int offset_table[32] = { 0 };
     int k, y, x;
     int shift  = BIT_DEPTH - 5;
-    int16_t *sao_offset_val = sao->offset_val[c_idx];
-    int sao_left_class  = sao->band_position[c_idx];
 
     stride_dst /= sizeof(pixel);
     stride_src /= sizeof(pixel);

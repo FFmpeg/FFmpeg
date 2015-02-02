@@ -186,6 +186,23 @@ EOT
 }
 texinfo_register_formatting_function('begin_file', \&ffmpeg_begin_file);
 
+sub ffmpeg_program_string($)
+{
+  my $self = shift;
+  if (defined($self->get_conf('PROGRAM'))
+      and $self->get_conf('PROGRAM') ne ''
+      and defined($self->get_conf('PACKAGE_URL'))) {
+    return $self->convert_tree(
+      $self->gdt('This document was generated using @uref{{program_homepage}, @emph{{program}}}.',
+         { 'program_homepage' => $self->get_conf('PACKAGE_URL'),
+           'program' => $self->get_conf('PROGRAM') }));
+  } else {
+    return $self->convert_tree(
+      $self->gdt('This document was generated automatically.'));
+  }
+}
+texinfo_register_formatting_function('program_string', \&ffmpeg_program_string);
+
 # Customized file ending
 sub ffmpeg_end_file($)
 {
