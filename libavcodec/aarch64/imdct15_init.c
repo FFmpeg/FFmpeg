@@ -21,21 +21,22 @@
 #include "libavutil/cpu.h"
 #include "libavutil/aarch64/cpu.h"
 #include "libavutil/internal.h"
-#include "libavcodec/opus_imdct.h"
+
+#include "libavcodec/imdct15.h"
 
 #include "asm-offsets.h"
 
-AV_CHECK_OFFSET(CeltIMDCTContext, exptab,         CELT_EXPTAB);
-AV_CHECK_OFFSET(CeltIMDCTContext, fft_n,          CELT_FFT_N);
-AV_CHECK_OFFSET(CeltIMDCTContext, len2,           CELT_LEN2);
-AV_CHECK_OFFSET(CeltIMDCTContext, len4,           CELT_LEN4);
-AV_CHECK_OFFSET(CeltIMDCTContext, tmp,            CELT_TMP);
-AV_CHECK_OFFSET(CeltIMDCTContext, twiddle_exptab, CELT_TWIDDLE);
+AV_CHECK_OFFSET(IMDCT15Context, exptab,         CELT_EXPTAB);
+AV_CHECK_OFFSET(IMDCT15Context, fft_n,          CELT_FFT_N);
+AV_CHECK_OFFSET(IMDCT15Context, len2,           CELT_LEN2);
+AV_CHECK_OFFSET(IMDCT15Context, len4,           CELT_LEN4);
+AV_CHECK_OFFSET(IMDCT15Context, tmp,            CELT_TMP);
+AV_CHECK_OFFSET(IMDCT15Context, twiddle_exptab, CELT_TWIDDLE);
 
-void ff_celt_imdct_half_neon(CeltIMDCTContext *s, float *dst, const float *src,
+void ff_celt_imdct_half_neon(IMDCT15Context *s, float *dst, const float *src,
                              ptrdiff_t stride, float scale);
 
-void ff_celt_imdct_init_aarch64(CeltIMDCTContext *s)
+void ff_imdct15_init_aarch64(IMDCT15Context *s)
 {
     int cpu_flags = av_get_cpu_flags();
 
