@@ -221,7 +221,7 @@ static int r3d_read_redv(AVFormatContext *s, AVPacket *pkt, Atom *atom)
     AVStream *st = s->streams[0];
     int tmp;
     int av_unused tmp2;
-    uint64_t pos = avio_tell(s->pb);
+    int64_t pos = avio_tell(s->pb);
     unsigned dts;
     int ret;
 
@@ -276,7 +276,7 @@ static int r3d_read_reda(AVFormatContext *s, AVPacket *pkt, Atom *atom)
     AVStream *st = s->streams[1];
     int av_unused tmp, tmp2;
     int samples, size;
-    uint64_t pos = avio_tell(s->pb);
+    int64_t pos = avio_tell(s->pb);
     unsigned dts;
     int ret;
 
