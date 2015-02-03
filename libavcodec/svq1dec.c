@@ -193,6 +193,7 @@ static int svq1_decode_block_intra(GetBitContext *bitbuf, uint8_t *pixels,
                     stages, level);
             return AVERROR_INVALIDDATA;  /* invalid vector */
         }
+        av_assert0(stages >= 0);
 
         mean = get_vlc2(bitbuf, svq1_intra_mean.table, 8, 3);
 
@@ -255,6 +256,7 @@ static int svq1_decode_block_non_intra(GetBitContext *bitbuf, uint8_t *pixels,
                     stages, level);
             return AVERROR_INVALIDDATA;  /* invalid vector */
         }
+        av_assert0(stages >= 0);
 
         mean = get_vlc2(bitbuf, svq1_inter_mean.table, 9, 3) - 256;
 
