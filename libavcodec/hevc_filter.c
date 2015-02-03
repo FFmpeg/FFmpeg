@@ -319,16 +319,23 @@ static void sao_filter_CTB(HEVCContext *s, int x, int y)
 
         switch (sao->type_idx[c_idx]) {
         case SAO_BAND:
+            copy_CTB_to_hv(s, src, stride_src, x0, y0, width, height, c_idx,
+                           x_ctb, y_ctb);
+            if (s->pps->transquant_bypass_enable_flag ||
+                (s->sps->pcm.loop_filter_disable_flag && s->sps->pcm_enabled_flag)) {
             dst = lc->edge_emu_buffer;
             stride_dst = 2*MAX_PB_SIZE;
             copy_CTB(dst, src, width << s->sps->pixel_shift, height, stride_dst, stride_src);
-            copy_CTB_to_hv(s, src, stride_src, x0, y0, width, height, c_idx,
-                           x_ctb, y_ctb);
             s->hevcdsp.sao_band_filter[tab](src, dst, stride_src, stride_dst,
                                             sao->offset_val[c_idx], sao->band_position[c_idx],
                                             width, height);
             restore_tqb_pixels(s, src, dst, stride_src, stride_dst,
                                x, y, width, height, c_idx);
+            } else {
+            s->hevcdsp.sao_band_filter[tab](src, src, stride_src, stride_src,
+                                            sao->offset_val[c_idx], sao->band_position[c_idx],
+                                            width, height);
+            }
             sao->type_idx[c_idx] = SAO_APPLIED;
             break;
         case SAO_EDGE:
