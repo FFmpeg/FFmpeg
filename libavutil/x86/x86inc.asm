@@ -871,7 +871,7 @@ SECTION .note.GNU-stack noalloc noexec nowrite progbits
     %assign %%i 0
     %rep num_mmregs
     CAT_XDEFINE m, %%i, ymm %+ %%i
-    CAT_XDEFINE nymm, %%i, %%i
+    CAT_XDEFINE nnymm, %%i, %%i
     %assign %%i %%i+1
     %endrep
     INIT_CPUFLAGS %1
