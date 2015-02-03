@@ -3827,6 +3827,8 @@ int av_get_frame_filename(char *buf, int buf_size, const char *path, int number)
                 if (percentd_found)
                     goto fail;
                 percentd_found = 1;
+                if(number < 0)
+                    nd += 1;
                 snprintf(buf1, sizeof(buf1), "%0*d", nd, number);
                 len = strlen(buf1);
                 if ((q - buf + len) > buf_size - 1)
