@@ -1429,7 +1429,8 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data,
         memcpy(s->input_buffer, buf, FFMIN(buf_size, AC3_FRAME_BUFFER_SIZE));
     buf = s->input_buffer;
     /* initialize the GetBitContext with the start of valid AC-3 Frame */
-    init_get_bits(&s->gbc, buf, buf_size * 8);
+    if ((ret = init_get_bits8(&s->gbc, buf, buf_size)) < 0)
+        return ret;
 
     /* parse the syncinfo */
     err = parse_frame_header(s);
