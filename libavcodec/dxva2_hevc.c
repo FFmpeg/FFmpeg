@@ -192,23 +192,29 @@ static void fill_picture_parameters(struct dxva_context *ctx, const HEVCContext 
 
 static void fill_scaling_lists(struct dxva_context *ctx, const HEVCContext *h, DXVA_Qmatrix_HEVC *qm)
 {
-    unsigned i, j;
+    unsigned i, j, pos;
+    const ScalingList *sl = h->pps->scaling_list_data_present_flag ?
+                            &h->pps->scaling_list : &h->sps->scaling_list;
+
     memset(qm, 0, sizeof(*qm));
     for (i = 0; i < 6; i++) {
-        for (j = 0; j < 16; j++)
-            qm->ucScalingLists0[i][j] = h->pps->scaling_list.sl[0][i][j];
-
-        for (j = 0; j < 64; j++) {
-            qm->ucScalingLists1[i][j] = h->pps->scaling_list.sl[1][i][j];
-            qm->ucScalingLists2[i][j] = h->pps->scaling_list.sl[2][i][j];
-
-            if (i < 2)
-                qm->ucScalingLists3[i][j] = h->pps->scaling_list.sl[3][i][j];
+        for (j = 0; j < 16; j++) {
+            pos = 4 * ff_hevc_diag_scan4x4_y[j] + ff_hevc_diag_scan4x4_x[j];
+            qm->ucScalingLists0[i][j] = sl->sl[0][i][pos];
         }
 
-        qm->ucScalingListDCCoefSizeID2[i] = h->pps->scaling_list.sl_dc[0][i];
+        for (j = 0; j < 64; j++) {
+            pos = 8 * ff_hevc_diag_scan8x8_y[j] + ff_hevc_diag_scan8x8_x[j];
+            qm->ucScalingLists1[i][j] = sl->sl[1][i][pos];
+            qm->ucScalingLists2[i][j] = sl->sl[2][i][pos];
+
+            if (i < 2)
+                qm->ucScalingLists3[i][j] = sl->sl[3][i][pos];
+        }
+
+        qm->ucScalingListDCCoefSizeID2[i] = sl->sl_dc[0][i];
         if (i < 2)
-            qm->ucScalingListDCCoefSizeID3[i] = h->pps->scaling_list.sl_dc[1][i];
+            qm->ucScalingListDCCoefSizeID3[i] = sl->sl_dc[1][i];
     }
 }
 
