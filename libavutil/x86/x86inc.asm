@@ -1073,6 +1073,8 @@ INIT_XMM
         %ifdef cpuname
             %if notcpuflag(%2)
                 %error use of ``%1'' %2 instruction in cpuname function: current_function
+            %elif cpuflags_%2 < cpuflags_sse && notcpuflag(sse2) && __sizeofreg > 8
+                %error use of ``%1'' sse2 instruction in cpuname function: current_function
             %endif
         %endif
     %endif
@@ -1209,7 +1211,7 @@ AVX_INSTR minsd, sse2, 1, 0, 1
 AVX_INSTR minss, sse, 1, 0, 1
 AVX_INSTR movapd, sse2
 AVX_INSTR movaps, sse
-AVX_INSTR movd
+AVX_INSTR movd, mmx
 AVX_INSTR movddup, sse3
 AVX_INSTR movdqa, sse2
 AVX_INSTR movdqu, sse2
@@ -1225,7 +1227,7 @@ AVX_INSTR movntdq, sse2
 AVX_INSTR movntdqa, sse4
 AVX_INSTR movntpd, sse2
 AVX_INSTR movntps, sse
-AVX_INSTR movq
+AVX_INSTR movq, mmx
 AVX_INSTR movsd, sse2, 1, 0, 0
 AVX_INSTR movshdup, sse3
 AVX_INSTR movsldup, sse3
