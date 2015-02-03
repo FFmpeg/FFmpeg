@@ -96,8 +96,10 @@ static int tta_read_header(AVFormatContext *s)
 
     for (i = 0; i < c->totalframes; i++) {
         uint32_t size = avio_rl32(s->pb);
-        av_add_index_entry(st, framepos, i * c->frame_size, size, 0,
-                           AVINDEX_KEYFRAME);
+        int r;
+        if ((r = av_add_index_entry(st, framepos, i * c->frame_size, size, 0,
+                                    AVINDEX_KEYFRAME)) < 0)
+            return r;
         framepos += size;
     }
     avio_skip(s->pb, 4); // seektable crc
@@ -134,6 +136,11 @@ static int tta_read_packet(AVFormatContext *s, AVPacket *pkt)
     // FIXME!
     if (c->currentframe >= c->totalframes)
         return AVERROR_EOF;
+
+    if (st->nb_index_entries < c->totalframes) {
+        av_log(s, AV_LOG_ERROR, "Index entry disappeared\n");
+        return AVERROR_INVALIDDATA;
+    }
 
     size = st->index_entries[c->currentframe].size;
 
