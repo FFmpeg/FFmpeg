@@ -137,8 +137,8 @@ static int siff_parse_vbv1(AVFormatContext *s, SIFFContext *c, AVIOContext *pb)
     c->has_video = 1;
     c->has_audio = !!c->rate;
     c->curstrm   = -1;
-    if (c->has_audio && create_audio_stream(s, c) < 0)
-        return AVERROR(ENOMEM);
+    if (c->has_audio)
+        return create_audio_stream(s, c);
     return 0;
 }
 
