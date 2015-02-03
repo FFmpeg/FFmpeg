@@ -1106,7 +1106,7 @@ static int vp8_lossless_decode_frame(AVCodecContext *avctx, AVFrame *p,
         avctx->pix_fmt = AV_PIX_FMT_ARGB;
     }
 
-    ret = init_get_bits(&s->gb, data_start, data_size * 8);
+    ret = init_get_bits8(&s->gb, data_start, data_size);
     if (ret < 0)
         return ret;
 
