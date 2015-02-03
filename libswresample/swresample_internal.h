@@ -53,7 +53,7 @@ typedef struct AudioData{
 } AudioData;
 
 struct DitherContext {
-    enum SwrDitherType method;
+    int method;
     int noise_pos;
     float scale;
     float noise_scale;                              ///< Noise scale
@@ -106,10 +106,10 @@ struct SwrContext {
     float lfe_mix_level;                            ///< LFE mixing level
     float rematrix_volume;                          ///< rematrixing volume coefficient
     float rematrix_maxval;                          ///< maximum value for rematrixing output
-    enum AVMatrixEncoding matrix_encoding;          /**< matrixed stereo encoding */
+    int matrix_encoding;                            /**< matrixed stereo encoding */
     const int *channel_map;                         ///< channel index (or -1 if muted channel) map
     int used_ch_count;                              ///< number of used input channels (mapped channel count if channel_map, otherwise in.ch_count)
-    enum SwrEngine engine;
+    int engine;
 
     struct DitherContext dither;
 
@@ -117,7 +117,7 @@ struct SwrContext {
     int phase_shift;                                /**< log2 of the number of entries in the resampling polyphase filterbank */
     int linear_interp;                              /**< if 1 then the resampling FIR filter will be linearly interpolated */
     double cutoff;                                  /**< resampling cutoff frequency (swr: 6dB point; soxr: 0dB point). 1.0 corresponds to half the output sample rate */
-    enum SwrFilterType filter_type;                 /**< swr resampling filter type */
+    int filter_type;                                /**< swr resampling filter type */
     int kaiser_beta;                                /**< swr beta value for Kaiser window (only applicable if filter_type == AV_FILTER_TYPE_KAISER) */
     double precision;                               /**< soxr resampling precision (in bits) */
     int cheby;                                      /**< soxr: if 1 then passband rolloff will be none (Chebyshev) & irrational ratio approximation precision will be higher */
