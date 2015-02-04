@@ -561,9 +561,12 @@ unk_pixfmt:
     }
     if (s->ls) {
         s->upscale_h = s->upscale_v = 0;
-        if (s->nb_components > 1)
+        if (s->nb_components == 3) {
             s->avctx->pix_fmt = AV_PIX_FMT_RGB24;
-        else if (s->palette_index && s->bits <= 8)
+        } else if (s->nb_components != 1) {
+            av_log(s->avctx, AV_LOG_ERROR, "Unsupported number of components %d\n", s->nb_components);
+            return AVERROR_PATCHWELCOME;
+        } else if (s->palette_index && s->bits <= 8)
             s->avctx->pix_fmt = AV_PIX_FMT_PAL8;
         else if (s->bits <= 8)
             s->avctx->pix_fmt = AV_PIX_FMT_GRAY8;
