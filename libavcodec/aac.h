@@ -32,6 +32,7 @@
 
 #include "libavutil/float_dsp.h"
 #include "avcodec.h"
+#include "imdct15.h"
 #include "fft.h"
 #include "mpeg4audio.h"
 #include "sbr.h"
@@ -294,6 +295,7 @@ struct AACContext {
     FFTContext mdct_small;
     FFTContext mdct_ld;
     FFTContext mdct_ltp;
+    IMDCT15Context *mdct480;
     FmtConvertContext fmt_conv;
     AVFloatDSPContext *fdsp;
     int random_state;
