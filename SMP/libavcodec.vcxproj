@@ -250,6 +250,8 @@
     </ClCompile>
     <ClCompile Include="..\libavcodec\iirfilter.c">
     </ClCompile>
+    <ClCompile Include="..\libavcodec\imdct15.c">
+    </ClCompile>
     <ClCompile Include="..\libavcodec\intrax8.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\intrax8dsp.c">
@@ -939,8 +941,6 @@
     <ClCompile Include="..\libavcodec\opus.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\opus_celt.c">
-    </ClCompile>
-    <ClCompile Include="..\libavcodec\opus_imdct.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\opus_silk.c">
     </ClCompile>
