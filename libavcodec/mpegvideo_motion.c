@@ -178,7 +178,7 @@ static void gmc_motion(MpegEncContext *s,
                 s->sprite_delta[0][0], s->sprite_delta[0][1],
                 s->sprite_delta[1][0], s->sprite_delta[1][1],
                 a + 1, (1 << (2 * a + 1)) - s->no_rounding,
-                s->h_edge_pos >> 1, s->v_edge_pos >> 1);
+                (s->h_edge_pos + 1) >> 1, (s->v_edge_pos + 1) >> 1);
 
     ptr = ref_picture[2];
     s->mdsp.gmc(dest_cr, ptr, uvlinesize, 8,
@@ -186,7 +186,7 @@ static void gmc_motion(MpegEncContext *s,
                 s->sprite_delta[0][0], s->sprite_delta[0][1],
                 s->sprite_delta[1][0], s->sprite_delta[1][1],
                 a + 1, (1 << (2 * a + 1)) - s->no_rounding,
-                s->h_edge_pos >> 1, s->v_edge_pos >> 1);
+                (s->h_edge_pos + 1) >> 1, (s->v_edge_pos + 1) >> 1);
 }
 
 static inline int hpel_motion(MpegEncContext *s,
