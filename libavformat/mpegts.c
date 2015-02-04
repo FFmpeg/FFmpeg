@@ -425,7 +425,8 @@ static void mpegts_close_filter(MpegTSContext *ts, MpegTSFilter *filter)
     ts->pids[pid] = NULL;
 }
 
-static int analyze(const uint8_t *buf, int size, int packet_size, int *index)
+static int analyze(const uint8_t *buf, int size, int packet_size, int *index,
+                   int probe)
 {
     int stat[TS_MAX_PACKET_SIZE];
     int i;
@@ -435,7 +436,8 @@ static int analyze(const uint8_t *buf, int size, int packet_size, int *index)
     memset(stat, 0, packet_size * sizeof(int));
 
     for (x = i = 0; i < size - 3; i++) {
-        if (buf[i] == 0x47 && !(buf[i + 1] & 0x80) && (buf[i + 3] & 0x30)) {
+        if (buf[i] == 0x47 &&
+            (!probe || (!(buf[i + 1] & 0x80) && (buf[i + 3] & 0x30)))) {
             stat[x]++;
             if (stat[x] > best_score) {
                 best_score = stat[x];
@@ -460,9 +462,9 @@ static int get_packet_size(const uint8_t *buf, int size)
     if (size < (TS_FEC_PACKET_SIZE * 5 + 1))
         return AVERROR_INVALIDDATA;
 
-    score      = analyze(buf, size, TS_PACKET_SIZE, NULL);
-    dvhs_score = analyze(buf, size, TS_DVHS_PACKET_SIZE, NULL);
-    fec_score  = analyze(buf, size, TS_FEC_PACKET_SIZE, NULL);
+    score      = analyze(buf, size, TS_PACKET_SIZE,      NULL, 0);
+    dvhs_score = analyze(buf, size, TS_DVHS_PACKET_SIZE, NULL, 0);
+    fec_score  = analyze(buf, size, TS_FEC_PACKET_SIZE,  NULL, 0);
     av_dlog(NULL, "score: %d, dvhs_score: %d, fec_score: %d \n",
             score, dvhs_score, fec_score);
 
@@ -1986,11 +1988,11 @@ static int mpegts_probe(AVProbeData *p)
         return AVERROR_INVALIDDATA;
 
     score = analyze(p->buf, TS_PACKET_SIZE * check_count,
-                    TS_PACKET_SIZE, NULL) * CHECK_COUNT / check_count;
+                    TS_PACKET_SIZE, NULL, 1) * CHECK_COUNT / check_count;
     dvhs_score = analyze(p->buf, TS_DVHS_PACKET_SIZE * check_count,
-                         TS_DVHS_PACKET_SIZE, NULL) * CHECK_COUNT / check_count;
+                         TS_DVHS_PACKET_SIZE, NULL, 1) * CHECK_COUNT / check_count;
     fec_score = analyze(p->buf, TS_FEC_PACKET_SIZE * check_count,
-                        TS_FEC_PACKET_SIZE, NULL) * CHECK_COUNT / check_count;
+                        TS_FEC_PACKET_SIZE, NULL, 1) * CHECK_COUNT / check_count;
     av_dlog(NULL, "score: %d, dvhs_score: %d, fec_score: %d \n",
             score, dvhs_score, fec_score);
 
