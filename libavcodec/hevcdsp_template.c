@@ -328,9 +328,8 @@ static void FUNC(sao_band_filter_0)(uint8_t *_dst, uint8_t *_src,
 #define CMP(a, b) ((a) > (b) ? 1 : ((a) == (b) ? 0 : -1))
 
 static void FUNC(sao_edge_filter)(uint8_t *_dst, uint8_t *_src,
-                                  ptrdiff_t stride_dst, ptrdiff_t stride_src, SAOParams *sao,
-                                  int width, int height,
-                                  int c_idx) {
+                                  ptrdiff_t stride_dst, ptrdiff_t stride_src, int16_t *sao_offset_val,
+                                  int eo, int width, int height) {
 
     static const uint8_t edge_idx[] = { 1, 2, 0, 3, 4 };
     static const int8_t pos[4][2][2] = {
@@ -339,8 +338,6 @@ static void FUNC(sao_edge_filter)(uint8_t *_dst, uint8_t *_src,
         { { -1, -1 }, {  1, 1 } }, // 45 degree
         { {  1, -1 }, { -1, 1 } }, // 135 degree
     };
-    int16_t *sao_offset_val = sao->offset_val[c_idx];
-    int eo     = sao->eo_class[c_idx];
     pixel *dst = (pixel *)_dst;
     pixel *src = (pixel *)_src;
     int a_stride, b_stride;
