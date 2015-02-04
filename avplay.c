@@ -2257,6 +2257,11 @@ static int decode_thread(void *arg)
     global_video_state = is;
 
     ic = avformat_alloc_context();
+    if (!ic) {
+        av_log(NULL, AV_LOG_FATAL, "Could not allocate context.\n");
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
     ic->interrupt_callback.callback = decode_interrupt_cb;
     err = avformat_open_input(&ic, is->filename, is->iformat, &format_opts);
     if (err < 0) {
