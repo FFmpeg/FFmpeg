@@ -1587,6 +1587,9 @@ static int video_thread(void *arg)
     filt_out = is->out_video_filter;
 #endif
 
+    if (!frame)
+        return AVERROR(ENOMEM);
+
     for (;;) {
 #if CONFIG_AVFILTER
         AVRational tb;
