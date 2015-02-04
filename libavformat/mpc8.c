@@ -57,7 +57,7 @@ typedef struct {
 
 static inline int64_t bs_get_v(const uint8_t **bs)
 {
-    int64_t v = 0;
+    uint64_t v = 0;
     int br = 0;
     int c;
 
@@ -108,7 +108,7 @@ static int mpc8_probe(AVProbeData *p)
 
 static inline int64_t gb_get_v(GetBitContext *gb)
 {
-    int64_t v = 0;
+    uint64_t v = 0;
     int bits = 0;
     while(get_bits1(gb) && bits < 64-7){
         v <<= 7;
