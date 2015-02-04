@@ -522,6 +522,10 @@ void ff_hevc_sao_edge_filter_64_##bitd##_##opt(uint8_t *_dst, uint8_t *_src, ptr
 
 SAO_EDGE_FILTER_FUNCS(8, ssse3);
 SAO_EDGE_FILTER_FUNCS(8, avx2);
+SAO_EDGE_FILTER_FUNCS(10, sse2);
+SAO_EDGE_FILTER_FUNCS(10, avx2);
+SAO_EDGE_FILTER_FUNCS(12, sse2);
+SAO_EDGE_FILTER_FUNCS(12, avx2);
 
 #define SAO_EDGE_INIT(bitd, opt) do {                                       \
     c->sao_edge_filter[0]      = ff_hevc_sao_edge_filter_8_##bitd##_##opt;  \
@@ -636,6 +640,7 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                 c->hevc_h_loop_filter_luma = ff_hevc_h_loop_filter_luma_10_sse2;
 
                 SAO_BAND_INIT(10, sse2);
+                SAO_EDGE_INIT(10, sse2);
             }
 
             c->idct_dc[1] = ff_hevc_idct8x8_dc_10_sse2;
@@ -677,6 +682,9 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             c->idct_dc[3] = ff_hevc_idct32x32_dc_10_avx2;
             if (ARCH_X86_64) {
                 SAO_BAND_INIT(10, avx2);
+                c->sao_edge_filter[2] = ff_hevc_sao_edge_filter_32_10_avx2;
+                c->sao_edge_filter[3] = ff_hevc_sao_edge_filter_48_10_avx2;
+                c->sao_edge_filter[4] = ff_hevc_sao_edge_filter_64_10_avx2;
             }
 
             c->transform_add[2] = ff_hevc_transform_add16_10_avx2;
@@ -696,6 +704,7 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                 c->hevc_h_loop_filter_luma = ff_hevc_h_loop_filter_luma_12_sse2;
 
                 SAO_BAND_INIT(12, sse2);
+                SAO_EDGE_INIT(12, sse2);
             }
 
             c->idct_dc[1] = ff_hevc_idct8x8_dc_12_sse2;
@@ -732,6 +741,9 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             c->idct_dc[3] = ff_hevc_idct32x32_dc_12_avx2;
             if (ARCH_X86_64) {
                 SAO_BAND_INIT(12, avx2);
+                c->sao_edge_filter[2] = ff_hevc_sao_edge_filter_32_12_avx2;
+                c->sao_edge_filter[3] = ff_hevc_sao_edge_filter_48_12_avx2;
+                c->sao_edge_filter[4] = ff_hevc_sao_edge_filter_64_12_avx2;
             }
         }
     }

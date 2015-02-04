@@ -28,8 +28,12 @@ SECTION_RODATA 32
 pw_mask10: times 16 dw 0x03FF
 pw_mask12: times 16 dw 0x0FFF
 pb_2:      times 32 db 2
+pw_m2:     times 16 dw -2
 pb_edge_shuffle: times 2 db 1, 2, 0, 3, 4, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
 pb_eo:                   db -1, 0, 1, 0, 0, -1, 0, 1, -1, -1, 1, 1, 1, -1, -1, 1
+cextern pw_m1
+cextern pw_1
+cextern pw_2
 cextern pb_1
 
 SECTION_TEXT
@@ -395,6 +399,158 @@ INIT_YMM cpuname
     RET
 %endmacro
 
+%macro PMINUW 4
+%if cpuflag(sse4)
+    pminuw            %1, %2, %3
+%else
+    psubusw           %4, %2, %3
+    psubw             %1, %2, %4
+%endif
+%endmacro
+
+%macro HEVC_SAO_EDGE_FILTER_COMPUTE_10 0
+    PMINUW            m4, m1, m2, m6
+    PMINUW            m5, m1, m3, m7
+    pcmpeqw           m2, m4
+    pcmpeqw           m3, m5
+    pcmpeqw           m4, m1
+    pcmpeqw           m5, m1
+    psubw             m4, m2
+    psubw             m5, m3
+
+    paddw             m4, m5
+    pcmpeqw           m2, m4, [pw_m2]
+    pcmpeqw           m3, m4, m13
+    pcmpeqw           m5, m4, m0
+    pcmpeqw           m6, m4, m14
+    pcmpeqw           m7, m4, m15
+    pand              m2, m8
+    pand              m3, m9
+    pand              m5, m10
+    pand              m6, m11
+    pand              m7, m12
+    paddw             m2, m3
+    paddw             m5, m6
+    paddw             m2, m7
+    paddw             m2, m1
+    paddw             m2, m5
+%endmacro
+
+;void ff_hevc_sao_edge_filter_<width>_<depth>_<opt>(uint8_t *_dst, uint8_t *_src, ptrdiff_t stride_dst, int16_t *sao_offset_val,
+;                                                   int eo, int width, int height);
+%macro HEVC_SAO_EDGE_FILTER_16 3
+%if WIN64
+cglobal hevc_sao_edge_filter_%2_%1, 4, 8, 16, dst, src, dststride, offset, a_stride, b_stride, height, tmp
+%define  eoq heightq
+    movsxd           eoq, dword r4m
+    movsx      a_strideq, byte [pb_eo+eoq*4+1]
+    movsx      b_strideq, byte [pb_eo+eoq*4+3]
+    imul       a_strideq, EDGE_SRCSTRIDE>>1
+    imul       b_strideq, EDGE_SRCSTRIDE>>1
+    movsx           tmpq, byte [pb_eo+eoq*4]
+    add        a_strideq, tmpq
+    movsx           tmpq, byte [pb_eo+eoq*4+2]
+    add        b_strideq, tmpq
+    mov          heightd, r6m
+    add        a_strideq, a_strideq
+    add        b_strideq, b_strideq
+
+%else ; UNIX64
+cglobal hevc_sao_edge_filter_%2_%1, 5, 9, 16, dst, src, dststride, offset, eo, a_stride, b_stride, height, tmp
+%define tmp2q heightq
+    movsxd           eoq, eod
+    lea            tmp2q, [pb_eo]
+    movsx      a_strideq, byte [tmp2q+eoq*4+1]
+    movsx      b_strideq, byte [tmp2q+eoq*4+3]
+    imul       a_strideq, EDGE_SRCSTRIDE>>1
+    imul       b_strideq, EDGE_SRCSTRIDE>>1
+    movsx           tmpq, byte [tmp2q+eoq*4]
+    add        a_strideq, tmpq
+    movsx           tmpq, byte [tmp2q+eoq*4+2]
+    add        b_strideq, tmpq
+    mov          heightd, r6m
+    add        a_strideq, a_strideq
+    add        b_strideq, b_strideq
+%endif ; ARCH
+
+%if cpuflag(avx2)
+    SPLATW            m8, [offsetq+2]
+    SPLATW            m9, [offsetq+4]
+    SPLATW           m10, [offsetq+0]
+    SPLATW           m11, [offsetq+6]
+    SPLATW           m12, [offsetq+8]
+%else
+    movq             m10, [offsetq+0]
+    movd             m12, [offsetq+6]
+    SPLATW            m8, xm10, 1
+    SPLATW            m9, xm10, 2
+    SPLATW           m10, xm10, 0
+    SPLATW           m11, xm12, 0
+    SPLATW           m12, xm12, 1
+%endif
+    pxor              m0, m0
+    mova             m13, [pw_m1]
+    mova             m14, [pw_1]
+    mova             m15, [pw_2]
+
+align 16
+.loop
+
+%if %2 == 8
+    mova              m1, [srcq]
+    movu              m2, [srcq+a_strideq]
+    movu              m3, [srcq+b_strideq]
+
+    HEVC_SAO_EDGE_FILTER_COMPUTE_10
+    CLIPW             m2, m0, [pw_mask %+ %1]
+    mova          [dstq], m2
+%endif
+
+%assign i 0
+%rep %3
+    mova              m1, [srcq + i]
+    movu              m2, [srcq+a_strideq + i]
+    movu              m3, [srcq+b_strideq + i]
+    HEVC_SAO_EDGE_FILTER_COMPUTE_10
+    CLIPW             m2, m0, [pw_mask %+ %1]
+    mova      [dstq + i], m2
+
+    mova              m1, [srcq + i + mmsize]
+    movu              m2, [srcq+a_strideq + i + mmsize]
+    movu              m3, [srcq+b_strideq + i + mmsize]
+    HEVC_SAO_EDGE_FILTER_COMPUTE_10
+    CLIPW             m2, m0, [pw_mask %+ %1]
+    mova [dstq + i + mmsize], m2
+%assign i i+mmsize*2
+%endrep
+
+%if %2 == 48
+INIT_XMM cpuname
+    mova              m1, [srcq + i]
+    movu              m2, [srcq+a_strideq + i]
+    movu              m3, [srcq+b_strideq + i]
+    HEVC_SAO_EDGE_FILTER_COMPUTE_10
+    CLIPW             m2, m0, [pw_mask %+ %1]
+    mova              [dstq + i], m2
+
+    mova              m1, [srcq + i + mmsize]
+    movu              m2, [srcq+a_strideq + i + mmsize]
+    movu              m3, [srcq+b_strideq + i + mmsize]
+    HEVC_SAO_EDGE_FILTER_COMPUTE_10
+    CLIPW             m2, m0, [pw_mask %+ %1]
+    mova [dstq + i + mmsize], m2
+%if cpuflag(avx2)
+INIT_YMM cpuname
+%endif
+%endif
+
+    add             dstq, dststrideq
+    add             srcq, EDGE_SRCSTRIDE
+    dec          heightd
+    jg .loop
+    RET
+%endmacro
+
 INIT_XMM ssse3
 HEVC_SAO_EDGE_FILTER_8       8, 0
 HEVC_SAO_EDGE_FILTER_8      16, 1, a
@@ -407,4 +563,30 @@ INIT_YMM avx2
 HEVC_SAO_EDGE_FILTER_8      32, 1, a
 HEVC_SAO_EDGE_FILTER_8      48, 1, u
 HEVC_SAO_EDGE_FILTER_8      64, 2, a
+%endif
+
+%if ARCH_X86_64
+INIT_XMM sse2
+HEVC_SAO_EDGE_FILTER_16 10,  8, 0
+HEVC_SAO_EDGE_FILTER_16 10, 16, 1
+HEVC_SAO_EDGE_FILTER_16 10, 32, 2
+HEVC_SAO_EDGE_FILTER_16 10, 48, 2
+HEVC_SAO_EDGE_FILTER_16 10, 64, 4
+
+HEVC_SAO_EDGE_FILTER_16 12,  8, 0
+HEVC_SAO_EDGE_FILTER_16 12, 16, 1
+HEVC_SAO_EDGE_FILTER_16 12, 32, 2
+HEVC_SAO_EDGE_FILTER_16 12, 48, 2
+HEVC_SAO_EDGE_FILTER_16 12, 64, 4
+
+%if HAVE_AVX2_EXTERNAL
+INIT_YMM avx2
+HEVC_SAO_EDGE_FILTER_16 10, 32, 1
+HEVC_SAO_EDGE_FILTER_16 10, 48, 1
+HEVC_SAO_EDGE_FILTER_16 10, 64, 2
+
+HEVC_SAO_EDGE_FILTER_16 12, 32, 1
+HEVC_SAO_EDGE_FILTER_16 12, 48, 1
+HEVC_SAO_EDGE_FILTER_16 12, 64, 2
+%endif
 %endif
