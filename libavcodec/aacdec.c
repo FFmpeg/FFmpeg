@@ -2852,11 +2852,12 @@ static int aac_decode_er_frame(AVCodecContext *avctx, void *data,
                                int *got_frame_ptr, GetBitContext *gb)
 {
     AACContext *ac = avctx->priv_data;
+    const MPEG4AudioConfig *const m4ac = &ac->oc[1].m4ac;
     ChannelElement *che;
     int err, i;
     int samples = 1024;
-    int chan_config = ac->oc[1].m4ac.chan_config;
-    int aot = ac->oc[1].m4ac.object_type;
+    int chan_config = m4ac->chan_config;
+    int aot = m4ac->object_type;
 
     if (aot == AOT_ER_AAC_LD || aot == AOT_ER_AAC_ELD)
         samples >>= 1;
@@ -2868,13 +2869,13 @@ static int aac_decode_er_frame(AVCodecContext *avctx, void *data,
 
     // The FF_PROFILE_AAC_* defines are all object_type - 1
     // This may lead to an undefined profile being signaled
-    ac->avctx->profile = ac->oc[1].m4ac.object_type - 1;
+    ac->avctx->profile = aot - 1;
 
     ac->tags_mapped = 0;
 
     if (chan_config < 0 || chan_config >= 8) {
         avpriv_request_sample(avctx, "Unknown ER channel configuration %d",
-                              ac->oc[1].m4ac.chan_config);
+                              chan_config);
         return AVERROR_INVALIDDATA;
     }
     for (i = 0; i < tags_per_config[chan_config]; i++) {
