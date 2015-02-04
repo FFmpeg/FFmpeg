@@ -61,9 +61,9 @@ typedef struct HEVCDSPContext {
     void (*sao_band_filter[5])(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride_dst, ptrdiff_t _stride_src,
                                int16_t *sao_offset_val, int sao_left_class, int width, int height);
 
-    void (*sao_edge_filter)(uint8_t *_dst, uint8_t *_src, ptrdiff_t stride_dst,
-                            ptrdiff_t stride_src, int16_t *sao_offset_val, int sao_eo_class,
-                            int width, int height);
+    /* implicit stride_src parameter has value of 2 * MAX_PB_SIZE + FF_INPUT_BUFFER_PADDING_SIZE */
+    void (*sao_edge_filter)(uint8_t *_dst, uint8_t *_src, ptrdiff_t stride_dst, int16_t *sao_offset_val,
+                            int sao_eo_class, int width, int height);
 
     void (*sao_edge_restore[2])(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride_dst, ptrdiff_t _stride_src,
                                 struct SAOParams *sao, int *borders, int _width, int _height, int c_idx,
