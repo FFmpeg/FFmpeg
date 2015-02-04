@@ -214,17 +214,14 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
 
     if (delta < 1) {
         /* drop the frame and everything buffered except the first */
-        AVFrame *tmp;
         int drop = av_fifo_size(s->fifo)/sizeof(AVFrame*);
 
         av_log(ctx, AV_LOG_DEBUG, "Dropping %d frame(s).\n", drop);
         s->drop += drop;
 
-        av_fifo_generic_read(s->fifo, &tmp, sizeof(tmp), NULL);
         flush_fifo(s->fifo);
-        ret = write_to_fifo(s->fifo, tmp);
+        ret = write_to_fifo(s->fifo, buf);
 
-        av_frame_free(&buf);
         return ret;
     }
 
