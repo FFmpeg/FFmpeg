@@ -91,7 +91,7 @@ static int mpc8_probe(AVProbeData *p)
         size = bs_get_v(&bs);
         if (size < 2)
             return 0;
-        if (bs + size - 2 >= bs_end)
+        if (size >= bs_end - bs + 2)
             return AVPROBE_SCORE_EXTENSION - 1; // seems to be valid MPC but no header yet
         if (header_found) {
             if (size < 11 || size > 28)
@@ -223,6 +223,10 @@ static int mpc8_read_header(AVFormatContext *s)
     while(!avio_feof(pb)){
         pos = avio_tell(pb);
         mpc8_get_chunk_header(pb, &tag, &size);
+        if (size < 0) {
+            av_log(s, AV_LOG_ERROR, "Invalid chunk length\n");
+            return AVERROR_INVALIDDATA;
+        }
         if(tag == TAG_STREAMHDR)
             break;
         mpc8_handle_chunk(s, tag, pos, size);

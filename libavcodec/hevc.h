@@ -769,6 +769,7 @@ typedef struct HEVCLocalContext {
     int     end_of_tiles_y;
     /* +7 is for subpixel interpolation, *2 for high bit depths */
     DECLARE_ALIGNED(32, uint8_t, edge_emu_buffer)[(MAX_PB_SIZE + 7) * EDGE_EMU_BUFFER_STRIDE * 2];
+    /* The extended size between the new edge emu buffer is abused by SAO */
     DECLARE_ALIGNED(32, uint8_t, edge_emu_buffer2)[(MAX_PB_SIZE + 7) * EDGE_EMU_BUFFER_STRIDE * 2];
     DECLARE_ALIGNED(16, int16_t, tmp [MAX_PB_SIZE * MAX_PB_SIZE]);
 
@@ -807,9 +808,9 @@ typedef struct HEVCContext {
     uint8_t slice_initialized;
 
     AVFrame *frame;
-    AVFrame *sao_frame;
-    AVFrame *tmp_frame;
     AVFrame *output_frame;
+    uint8_t *sao_pixel_buffer_h[3];
+    uint8_t *sao_pixel_buffer_v[3];
 
     const HEVCVPS *vps;
     const HEVCSPS *sps;

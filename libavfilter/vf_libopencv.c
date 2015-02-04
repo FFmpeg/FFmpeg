@@ -261,19 +261,24 @@ static av_cold int dilate_init(AVFilterContext *ctx, const char *args)
     OCVContext *s = ctx->priv;
     DilateContext *dilate = s->priv;
     char default_kernel_str[] = "3x3+0x0/rect";
-    char *kernel_str;
+    char *kernel_str = NULL;
     const char *buf = args;
     int ret;
 
-    if (args)
+    if (args) {
         kernel_str = av_get_token(&buf, "|");
-    else
-        kernel_str = av_strdup(default_kernel_str);
-    if (!kernel_str)
-        return AVERROR(ENOMEM);
-    if ((ret = parse_iplconvkernel(&dilate->kernel, kernel_str, ctx)) < 0)
-        return ret;
+
+        if (!kernel_str)
+            return AVERROR(ENOMEM);
+    }
+
+    ret = parse_iplconvkernel(&dilate->kernel,
+                              (!kernel_str || !*kernel_str) ? default_kernel_str
+                                                            : kernel_str,
+                              ctx);
     av_free(kernel_str);
+    if (ret < 0)
+        return ret;
 
     if (!buf || sscanf(buf, "|%d", &dilate->nb_iterations) != 1)
         dilate->nb_iterations = 1;

@@ -57,6 +57,16 @@ typedef struct MpegTSService {
     int pcr_packet_period;
 } MpegTSService;
 
+// service_type values as defined in ETSI 300 468
+enum {
+    MPEGTS_SERVICE_TYPE_DIGITAL_TV                   = 0x01,
+    MPEGTS_SERVICE_TYPE_DIGITAL_RADIO                = 0x02,
+    MPEGTS_SERVICE_TYPE_TELETEXT                     = 0x03,
+    MPEGTS_SERVICE_TYPE_ADVANCED_CODEC_DIGITAL_RADIO = 0x0A,
+    MPEGTS_SERVICE_TYPE_MPEG2_DIGITAL_HDTV           = 0x11,
+    MPEGTS_SERVICE_TYPE_ADVANCED_CODEC_DIGITAL_SDTV  = 0x16,
+    MPEGTS_SERVICE_TYPE_ADVANCED_CODEC_DIGITAL_HDTV  = 0x19
+};
 typedef struct MpegTSWrite {
     const AVClass *av_class;
     MpegTSSection pat; /* MPEG2 pat table */
@@ -77,16 +87,6 @@ typedef struct MpegTSWrite {
     int original_network_id;
     int service_id;
     int service_type;
-// service_type values as defined in ETSI 300 468
-   enum {
-     MPEGTS_SERVICE_TYPE_DIGITAL_TV                   = 0x01,
-     MPEGTS_SERVICE_TYPE_DIGITAL_RADIO                = 0x02,
-     MPEGTS_SERVICE_TYPE_TELETEXT                     = 0x03,
-     MPEGTS_SERVICE_TYPE_ADVANCED_CODEC_DIGITAL_RADIO = 0x0A,
-     MPEGTS_SERVICE_TYPE_MPEG2_DIGITAL_HDTV           = 0x11,
-     MPEGTS_SERVICE_TYPE_ADVANCED_CODEC_DIGITAL_SDTV  = 0x16,
-     MPEGTS_SERVICE_TYPE_ADVANCED_CODEC_DIGITAL_HDTV  = 0x19
-   };
 
     int pmt_start_pid;
     int start_pid;

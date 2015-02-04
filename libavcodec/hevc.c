@@ -280,24 +280,6 @@ static int decode_lt_rps(HEVCContext *s, LongTermRPS *rps, GetBitContext *gb)
     return 0;
 }
 
-static int get_buffer_sao(HEVCContext *s, AVFrame *frame, const HEVCSPS *sps)
-{
-    int ret, i;
-
-    frame->width  = FFALIGN(s->avctx->coded_width + 2, FF_INPUT_BUFFER_PADDING_SIZE);
-    frame->height = s->avctx->coded_height + 3;
-    if ((ret = ff_get_buffer(s->avctx, frame, AV_GET_BUFFER_FLAG_REF)) < 0)
-        return ret;
-    for (i = 0; frame->data[i]; i++) {
-        int offset = frame->linesize[i] + FF_INPUT_BUFFER_PADDING_SIZE;
-        frame->data[i] += offset;
-    }
-    frame->width  = s->avctx->coded_width;
-    frame->height = s->avctx->coded_height;
-
-    return 0;
-}
-
 static int set_sps(HEVCContext *s, const HEVCSPS *sps)
 {
     #define HWACCEL_MAX (CONFIG_HEVC_DXVA2_HWACCEL)
@@ -353,9 +335,19 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps)
     ff_videodsp_init (&s->vdsp,    sps->bit_depth);
 
     if (sps->sao_enabled && !s->avctx->hwaccel) {
-        av_frame_unref(s->tmp_frame);
-        ret = get_buffer_sao(s, s->tmp_frame, sps);
-        s->sao_frame = s->tmp_frame;
+        int c_count = (sps->chroma_format_idc != 0) ? 3 : 1;
+        int c_idx;
+
+        for(c_idx = 0; c_idx < c_count; c_idx++) {
+            int w = sps->width >> sps->hshift[c_idx];
+            int h = sps->height >> sps->vshift[c_idx];
+            s->sao_pixel_buffer_h[c_idx] =
+                av_malloc((w * 2 * sps->ctb_height) <<
+                          sps->pixel_shift);
+            s->sao_pixel_buffer_v[c_idx] =
+                av_malloc((h * 2 * sps->ctb_width) <<
+                          sps->pixel_shift);
+        }
     }
 
     s->sps = sps;
@@ -3186,7 +3178,10 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
 
     av_freep(&s->cabac_state);
 
-    av_frame_free(&s->tmp_frame);
+    for (i = 0; i < 3; i++) {
+        av_freep(&s->sao_pixel_buffer_h[i]);
+        av_freep(&s->sao_pixel_buffer_v[i]);
+    }
     av_frame_free(&s->output_frame);
 
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
@@ -3244,10 +3239,6 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
 
     s->cabac_state = av_malloc(HEVC_CONTEXTS);
     if (!s->cabac_state)
-        goto fail;
-
-    s->tmp_frame = av_frame_alloc();
-    if (!s->tmp_frame)
         goto fail;
 
     s->output_frame = av_frame_alloc();

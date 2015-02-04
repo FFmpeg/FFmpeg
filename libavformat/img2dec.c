@@ -537,7 +537,7 @@ const AVOption ff_img_options[] = {
     { "sequence",     "select sequence pattern type",        0, AV_OPT_TYPE_CONST,  {.i64=PT_SEQUENCE     }, INT_MIN, INT_MAX, DEC, "pattern_type" },
 
     { "pixel_format", "set video pixel format",              OFFSET(pixel_format), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0,       DEC },
-    { "start_number", "set first number in the sequence",    OFFSET(start_number), AV_OPT_TYPE_INT,    {.i64 = 0   }, 0, INT_MAX, DEC },
+    { "start_number", "set first number in the sequence",    OFFSET(start_number), AV_OPT_TYPE_INT,    {.i64 = 0   }, INT_MIN, INT_MAX, DEC },
     { "start_number_range", "set range for looking at the first sequence number", OFFSET(start_number_range), AV_OPT_TYPE_INT, {.i64 = 5}, 1, INT_MAX, DEC },
     { "video_size",   "set video size",                      OFFSET(width),        AV_OPT_TYPE_IMAGE_SIZE, {.str = NULL}, 0, 0,   DEC },
     { "frame_size",   "force frame size in bytes",           OFFSET(frame_size),   AV_OPT_TYPE_INT,    {.i64 = 0   }, 0, INT_MAX, DEC },
