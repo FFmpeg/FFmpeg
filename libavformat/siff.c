@@ -210,7 +210,7 @@ static int siff_read_packet(AVFormatContext *s, AVPacket *pkt)
         if (!c->curstrm) {
             size = c->pktsize - c->sndsize - c->gmcsize - 2;
             size = ffio_limit(s->pb, size);
-            if(size < 0 || c->pktsize < c->sndsize)
+            if (size < 0 || c->pktsize < c->sndsize)
                 return AVERROR_INVALIDDATA;
             if (av_new_packet(pkt, size + c->gmcsize + 2) < 0)
                 return AVERROR(ENOMEM);
