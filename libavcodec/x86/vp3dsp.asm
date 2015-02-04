@@ -36,11 +36,11 @@ vp3_idct_data: times 8 dw 64277
 pb_7:  times 8 db 0x07
 pb_1F: times 8 db 0x1f
 pb_81: times 8 db 0x81
-pb_FE: times 8 db 0xFE
 
 cextern pb_1
 cextern pb_3
 cextern pb_80
+cextern pb_FE
 
 cextern pw_8
 

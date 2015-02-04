@@ -23,7 +23,8 @@
 
 SECTION_RODATA
 
-v210_enc_min_10: times 8 dw 0x4
+cextern pw_4
+%define v210_enc_min_10 pw_4
 v210_enc_max_10: times 8 dw 0x3fb
 
 v210_enc_luma_mult_10: dw 4,1,16,4,1,16,0,0
@@ -32,8 +33,10 @@ v210_enc_luma_shuf_10: db -1,0,1,-1,2,3,4,5,-1,6,7,-1,8,9,10,11
 v210_enc_chroma_mult_10: dw 1,4,16,0,16,1,4,0
 v210_enc_chroma_shuf_10: db 0,1,8,9,-1,2,3,-1,10,11,4,5,-1,12,13,-1
 
-v210_enc_min_8: times 16 db 0x1
-v210_enc_max_8: times 16 db 0xfe
+cextern pb_1
+%define v210_enc_min_8 pb_1
+cextern pb_FE
+%define v210_enc_max_8 pb_FE
 
 v210_enc_luma_shuf_8: db 6,-1,7,-1,8,-1,9,-1,10,-1,11,-1,-1,-1,-1,-1
 v210_enc_luma_mult_8: dw 16,4,64,16,4,64,0,0

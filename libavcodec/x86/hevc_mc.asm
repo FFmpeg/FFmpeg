@@ -21,14 +21,21 @@
 %include "libavutil/x86/x86util.asm"
 
 SECTION_RODATA 32
-pw_8:                   times 16 dw  (1 <<  9)
-pw_10:                  times 16 dw  (1 << 11)
-pw_12:                  times 16 dw  (1 << 13)
+cextern pw_255
+cextern pw_512
+cextern pw_2048
+cextern pw_8192
+cextern pw_1023
+cextern pw_1024
+cextern pw_4096
+%define pw_8 pw_512
+%define pw_10 pw_2048
+%define pw_12 pw_8192
+%define pw_bi_10 pw_1024
+%define pw_bi_12 pw_4096
+%define max_pixels_8 pw_255
+%define max_pixels_10 pw_1023
 pw_bi_8:                times 16 dw  (1 <<  8)
-pw_bi_10:               times 16 dw  (1 << 10)
-pw_bi_12:               times 16 dw  (1 << 12)
-max_pixels_8:           times 16 dw ((1 <<  8)-1)
-max_pixels_10:          times 16 dw ((1 << 10)-1)
 max_pixels_12:          times 16 dw ((1 << 12)-1)
 cextern pd_1
 cextern pb_0
