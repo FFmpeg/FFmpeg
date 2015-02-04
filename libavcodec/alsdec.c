@@ -1478,7 +1478,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
     int invalid_frame, ret;
     unsigned int c, sample, ra_frame, bytes_read, shift;
 
-    init_get_bits(&ctx->gb, buffer, buffer_size * 8);
+    if ((ret = init_get_bits8(&ctx->gb, buffer, buffer_size)) < 0)
+        return ret;
 
     // In the case that the distance between random access frames is set to zero
     // (sconf->ra_distance == 0) no frame is treated as a random access frame.
