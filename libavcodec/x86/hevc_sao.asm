@@ -23,14 +23,25 @@
 
 %include "libavutil/x86/x86util.asm"
 
-%if ARCH_X86_64
 SECTION_RODATA 32
 
 pw_mask10: times 16 dw 0x03FF
 pw_mask12: times 16 dw 0x0FFF
+pb_2:      times 32 db 2
+pb_edge_shuffle: times 2 db 1, 2, 0, 3, 4, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
+pb_eo:                   db -1, 0, 1, 0, 0, -1, 0, 1, -1, -1, 1, 1, 1, -1, -1, 1
+cextern pb_1
 
 SECTION_TEXT
 
+%define MAX_PB_SIZE  64
+%define PADDING_SIZE 32 ; FF_INPUT_BUFFER_PADDING_SIZE
+
+;******************************************************************************
+;SAO Band Filter
+;******************************************************************************
+
+%if ARCH_X86_64
 %macro HEVC_SAO_BAND_FILTER_INIT 1
     and            leftq, 31
     movd             xm0, leftd
@@ -238,4 +249,162 @@ HEVC_SAO_BAND_FILTER_16 12, 32, 1
 HEVC_SAO_BAND_FILTER_16 12, 48, 1
 HEVC_SAO_BAND_FILTER_16 12, 64, 2
 %endif
+%endif
+
+;******************************************************************************
+;SAO Edge Filter
+;******************************************************************************
+
+%define EDGE_SRCSTRIDE 2 * MAX_PB_SIZE + PADDING_SIZE
+
+%macro HEVC_SAO_EDGE_FILTER_COMPUTE_8 1
+    pminub            m4, m1, m2
+    pminub            m5, m1, m3
+    pcmpeqb           m2, m4
+    pcmpeqb           m3, m5
+    pcmpeqb           m4, m1
+    pcmpeqb           m5, m1
+    psubb             m4, m2
+    psubb             m5, m3
+    paddb             m4, m6
+    paddb             m4, m5
+
+    pshufb            m2, m0, m4
+%if %1 > 8
+    punpckhbw         m5, m7, m1
+    punpckhbw         m4, m2, m7
+    punpcklbw         m3, m7, m1
+    punpcklbw         m2, m7
+    pmaddubsw         m5, m4
+    pmaddubsw         m3, m2
+    packuswb          m3, m5
+%else
+    punpcklbw         m3, m7, m1
+    punpcklbw         m2, m7
+    pmaddubsw         m3, m2
+    packuswb          m3, m3
+%endif
+%endmacro
+
+;void ff_hevc_sao_edge_filter_<width>_8_<opt>(uint8_t *_dst, uint8_t *_src, ptrdiff_t stride_dst, int16_t *sao_offset_val,
+;                                             int eo, int width, int height);
+%macro HEVC_SAO_EDGE_FILTER_8 2-3
+%if WIN64
+cglobal hevc_sao_edge_filter_%1_8, 4, 8, 8, dst, src, dststride, offset, a_stride, b_stride, height, tmp
+%define  eoq heightq
+    movsxd           eoq, dword r4m
+    movsx      a_strideq, byte [pb_eo+eoq*4+1]
+    movsx      b_strideq, byte [pb_eo+eoq*4+3]
+    imul       a_strideq, EDGE_SRCSTRIDE
+    imul       b_strideq, EDGE_SRCSTRIDE
+    movsx           tmpq, byte [pb_eo+eoq*4]
+    add        a_strideq, tmpq
+    movsx           tmpq, byte [pb_eo+eoq*4+2]
+    add        b_strideq, tmpq
+    mov          heightd, r6m
+
+%elif ARCH_X86_64
+cglobal hevc_sao_edge_filter_%1_8, 5, 9, 8, dst, src, dststride, offset, eo, a_stride, b_stride, height, tmp
+%define tmp2q heightq
+    movsxd           eoq, eod
+    lea            tmp2q, [pb_eo]
+    movsx      a_strideq, byte [tmp2q+eoq*4+1]
+    movsx      b_strideq, byte [tmp2q+eoq*4+3]
+    imul       a_strideq, EDGE_SRCSTRIDE
+    imul       b_strideq, EDGE_SRCSTRIDE
+    movsx           tmpq, byte [tmp2q+eoq*4]
+    add        a_strideq, tmpq
+    movsx           tmpq, byte [tmp2q+eoq*4+2]
+    add        b_strideq, tmpq
+    mov          heightd, r6m
+
+%else ; ARCH_X86_32
+cglobal hevc_sao_edge_filter_%1_8, 1, 6, 8, dst, src, dststride, a_stride, b_stride, height
+%define eoq   srcq
+%define tmpq  heightq
+%define tmp2q dststrideq
+%define offsetq heightq
+    mov              eoq, r4m
+    lea            tmp2q, [pb_eo]
+    movsx      a_strideq, byte [tmp2q+eoq*4+1]
+    movsx      b_strideq, byte [tmp2q+eoq*4+3]
+    imul       a_strideq, EDGE_SRCSTRIDE
+    imul       b_strideq, EDGE_SRCSTRIDE
+    movsx           tmpq, byte [tmp2q+eoq*4]
+    add        a_strideq, tmpq
+    movsx           tmpq, byte [tmp2q+eoq*4+2]
+    add        b_strideq, tmpq
+
+    mov             srcq, srcm
+    mov          offsetq, r3m
+    mov       dststrideq, dststridem
+%endif ; ARCH
+
+%if mmsize > 16
+    vbroadcasti128    m0, [offsetq]
+%else
+    movu              m0, [offsetq]
+%endif
+    mova              m1, [pb_edge_shuffle]
+    packsswb          m0, m0
+    mova              m7, [pb_1]
+    pshufb            m0, m1
+    mova              m6, [pb_2]
+%if ARCH_X86_32
+    mov          heightd, r6m
+%endif
+
+align 16
+.loop:
+
+%if %1 == 8
+    movq              m1, [srcq]
+    movq              m2, [srcq + a_strideq]
+    movq              m3, [srcq + b_strideq]
+    HEVC_SAO_EDGE_FILTER_COMPUTE_8 %1
+    movq          [dstq], m3
+%endif
+
+%assign i 0
+%rep %2
+    mova              m1, [srcq + i]
+    movu              m2, [srcq + a_strideq + i]
+    movu              m3, [srcq + b_strideq + i]
+    HEVC_SAO_EDGE_FILTER_COMPUTE_8 %1
+    mov%3     [dstq + i], m3
+%assign i i+mmsize
+%endrep
+
+%if %1 == 48
+INIT_XMM cpuname
+
+    mova              m1, [srcq + i]
+    movu              m2, [srcq + a_strideq + i]
+    movu              m3, [srcq + b_strideq + i]
+    HEVC_SAO_EDGE_FILTER_COMPUTE_8 %1
+    mova      [dstq + i], m3
+%if cpuflag(avx2)
+INIT_YMM cpuname
+%endif
+%endif
+
+    add             dstq, dststrideq
+    add             srcq, EDGE_SRCSTRIDE
+    dec          heightd
+    jg .loop
+    RET
+%endmacro
+
+INIT_XMM ssse3
+HEVC_SAO_EDGE_FILTER_8       8, 0
+HEVC_SAO_EDGE_FILTER_8      16, 1, a
+HEVC_SAO_EDGE_FILTER_8      32, 2, a
+HEVC_SAO_EDGE_FILTER_8      48, 2, a
+HEVC_SAO_EDGE_FILTER_8      64, 4, a
+
+%if HAVE_AVX2_EXTERNAL
+INIT_YMM avx2
+HEVC_SAO_EDGE_FILTER_8      32, 1, a
+HEVC_SAO_EDGE_FILTER_8      48, 1, u
+HEVC_SAO_EDGE_FILTER_8      64, 2, a
 %endif

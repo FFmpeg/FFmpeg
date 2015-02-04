@@ -217,7 +217,11 @@ void ff_hevc_dsp_init(HEVCDSPContext *hevcdsp, int bit_depth)
     hevcdsp->sao_band_filter[2] =                                              \
     hevcdsp->sao_band_filter[3] =                                              \
     hevcdsp->sao_band_filter[4] = FUNC(sao_band_filter_0, depth);              \
-    hevcdsp->sao_edge_filter     = FUNC(sao_edge_filter, depth);               \
+    hevcdsp->sao_edge_filter[0] =                                              \
+    hevcdsp->sao_edge_filter[1] =                                              \
+    hevcdsp->sao_edge_filter[2] =                                              \
+    hevcdsp->sao_edge_filter[3] =                                              \
+    hevcdsp->sao_edge_filter[4] = FUNC(sao_edge_filter, depth);                \
     hevcdsp->sao_edge_restore[0] = FUNC(sao_edge_restore_0, depth);            \
     hevcdsp->sao_edge_restore[1] = FUNC(sao_edge_restore_1, depth);            \
                                                                                \
