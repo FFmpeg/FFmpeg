@@ -1646,6 +1646,10 @@ int ff_mjpeg_find_marker(MJpegDecodeContext *s,
             put_bits(&pb, 8, x);
             if (x == 0xFF) {
                 x = src[b++];
+                if (x & 0x80) {
+                    av_log(s->avctx, AV_LOG_WARNING, "Invalid escape sequence\n");
+                    x &= 0x7f;
+                }
                 put_bits(&pb, 7, x);
                 bit_count--;
             }
