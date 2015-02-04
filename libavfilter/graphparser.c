@@ -62,6 +62,8 @@ static char *parse_link_name(const char **buf, void *log_ctx)
     (*buf)++;
 
     name = av_get_token(buf, "]");
+    if (!name)
+        goto fail;
 
     if (!name[0]) {
         av_log(log_ctx, AV_LOG_ERROR,
