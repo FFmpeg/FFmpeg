@@ -27,9 +27,10 @@
 #include <stdint.h>
 #include <vdpau/vdpau.h>
 
+#include "libavutil/frame.h"
+
 #include "avcodec.h"
-#include "mpegvideo.h"
-#include "version.h"
+#include "vdpau.h"
 
 /** Extract VdpVideoSurface from an AVFrame */
 static inline uintptr_t ff_vdpau_get_surface_id(AVFrame *pic)
