@@ -176,6 +176,8 @@ static int thp_read_packet(AVFormatContext *s,
             thp->frame++;
 
         ret = av_get_packet(pb, pkt, size);
+        if (ret < 0)
+            return ret;
         if (ret != size) {
             av_free_packet(pkt);
             return AVERROR(EIO);
