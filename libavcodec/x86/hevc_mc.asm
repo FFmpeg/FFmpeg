@@ -30,8 +30,8 @@ pw_bi_12:               times 16 dw  (1 << 12)
 max_pixels_8:           times 16 dw ((1 <<  8)-1)
 max_pixels_10:          times 16 dw ((1 << 10)-1)
 max_pixels_12:          times 16 dw ((1 << 12)-1)
-zero:                   times 8  dd 0
-one_per_32:             times 8  dd 1
+cextern pd_1
+cextern pb_0
 
 SECTION_TEXT 32
 %macro EPEL_TABLE 4
@@ -665,9 +665,9 @@ QPEL_TABLE 10, 8, w, avx2
 %if %2 == 8
     packuswb          %3, %4
 %else
-    CLIPW             %3, [zero], [max_pixels_%2]
+    CLIPW             %3, [pb_0], [max_pixels_%2]
 %if (%1 > 8 && notcpuflag(avx)) || %1 > 16
-    CLIPW             %4, [zero], [max_pixels_%2]
+    CLIPW             %4, [pb_0], [max_pixels_%2]
 %endif
 %endif
 %endmacro
@@ -1428,7 +1428,7 @@ cglobal hevc_put_hevc_uni_w%1_%2, 6, 6, 7, dst, dststride, src, srcstride, heigh
     punpcklwd        m2, m2
 %endif
     dec           SHIFT
-    movdqu           m5, [one_per_32]
+    movdqu           m5, [pd_1]
     movd             m6, SHIFT
     pshufd           m2, m2, 0
     mov           SHIFT, oxm
@@ -1465,7 +1465,7 @@ cglobal hevc_put_hevc_uni_w%1_%2, 6, 6, 7, dst, dststride, src, srcstride, heigh
 %if %2 == 8
     packuswb          m0, m0
 %else
-    CLIPW             m0, [zero], [max_pixels_%2]
+    CLIPW             m0, [pb_0], [max_pixels_%2]
 %endif
     PEL_%2STORE%1   dstq, m0, m1
     add             dstq, dststrideq             ; dst += dststride
@@ -1536,7 +1536,7 @@ cglobal hevc_put_hevc_bi_w%1_%2, 5, 7, 10, dst, dststride, src, srcstride, src2,
 %if %2 == 8
     packuswb          m0, m0
 %else
-     CLIPW            m0, [zero], [max_pixels_%2]
+     CLIPW            m0, [pb_0], [max_pixels_%2]
 %endif
     PEL_%2STORE%1   dstq, m0, m1
     add             dstq, dststrideq             ; dst += dststride
