@@ -427,7 +427,10 @@ static void sao_filter_CTB(HEVCContext *s, int x, int y)
 
             copy_CTB_to_hv(s, src, stride_src, x0, y0, width, height, c_idx,
                            x_ctb, y_ctb);
-            s->hevcdsp.sao_edge_filter[restore](src, dst,
+            s->hevcdsp.sao_edge_filter(src, dst, stride_src, stride_dst,
+                                       sao->offset_val[c_idx], sao->eo_class[c_idx],
+                                       width, height);
+            s->hevcdsp.sao_edge_restore[restore](src, dst,
                                                 stride_src, stride_dst,
                                                 sao,
                                                 edges, width,

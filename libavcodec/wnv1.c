@@ -88,7 +88,9 @@ static int decode_frame(AVCodecContext *avctx,
 
     for (i = 8; i < buf_size; i++)
         rbuf[i] = ff_reverse[buf[i]];
-    init_get_bits(&l->gb, rbuf + 8, (buf_size - 8) * 8);
+
+    if ((ret = init_get_bits8(&l->gb, rbuf + 8, buf_size - 8)) < 0)
+        return ret;
 
     if (buf[2] >> 4 == 6)
         l->shift = 2;

@@ -482,6 +482,7 @@ extern float dts_error_threshold;
 extern int audio_volume;
 extern int audio_sync_method;
 extern int video_sync_method;
+extern float frame_drop_threshold;
 extern int do_benchmark;
 extern int do_benchmark_all;
 extern int do_deinterlace;

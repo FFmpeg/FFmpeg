@@ -61,10 +61,13 @@ typedef struct HEVCDSPContext {
     void (*sao_band_filter[5])(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride_dst, ptrdiff_t _stride_src,
                                int16_t *sao_offset_val, int sao_left_class, int width, int height);
 
-    void (*sao_edge_filter[2])(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride_dst, ptrdiff_t _stride_src,
-                               struct SAOParams *sao, int *borders, int _width,
-                               int _height, int c_idx, uint8_t *vert_edge,
-                               uint8_t *horiz_edge, uint8_t *diag_edge);
+    void (*sao_edge_filter)(uint8_t *_dst, uint8_t *_src, ptrdiff_t stride_dst,
+                            ptrdiff_t stride_src, int16_t *sao_offset_val, int sao_eo_class,
+                            int width, int height);
+
+    void (*sao_edge_restore[2])(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride_dst, ptrdiff_t _stride_src,
+                                struct SAOParams *sao, int *borders, int _width, int _height, int c_idx,
+                                uint8_t *vert_edge, uint8_t *horiz_edge, uint8_t *diag_edge);
 
     void (*put_hevc_qpel[10][2][2])(int16_t *dst, uint8_t *src, ptrdiff_t srcstride,
                                     int height, intptr_t mx, intptr_t my, int width);
