@@ -335,10 +335,8 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps)
     ff_videodsp_init (&s->vdsp,    sps->bit_depth);
 
     for (i = 0; i < 3; i++) {
-        if (s->sao_pixel_buffer_h[i])
-            av_freep(&s->sao_pixel_buffer_h[i]);
-        if (s->sao_pixel_buffer_v[i])
-            av_freep(&s->sao_pixel_buffer_v[i]);
+        av_freep(&s->sao_pixel_buffer_h[i]);
+        av_freep(&s->sao_pixel_buffer_v[i]);
     }
 
     if (sps->sao_enabled && !s->avctx->hwaccel) {
