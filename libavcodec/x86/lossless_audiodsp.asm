@@ -122,7 +122,7 @@ align 16
 ; int ff_scalarproduct_and_madd_int16(int16_t *v1, int16_t *v2, int16_t *v3,
 ;                                     int order, int mul)
 INIT_XMM ssse3
-cglobal scalarproduct_and_madd_int16, 4,5,10, v1, v2, v3, order, mul
+cglobal scalarproduct_and_madd_int16, 4,4,10, v1, v2, v3, order, mul
     test orderq, 8
         jnz scalarproduct_and_madd_int16_fallback
     shl orderq, 1
