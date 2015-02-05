@@ -18,6 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stddef.h>
+#include <stdint.h>
 #include <string.h>
 
 #include "attributes.h"
@@ -25,16 +27,25 @@
 #include "md5.h"
 #include "sha.h"
 #include "mem.h"
+#include "version.h"
 
 #define MAX_HASHLEN 32
 #define MAX_BLOCKLEN 64
 
+typedef void (*hmac_final)(void *ctx, uint8_t *dst);
+#if FF_API_CRYPTO_SIZE_T
+typedef void (*hmac_update)(void *ctx, const uint8_t *src, int len);
+#else
+typedef void (*hmac_update)(void *ctx, const uint8_t *src, size_t len);
+#endif
+typedef void (*hmac_init)(void *ctx);
+
 struct AVHMAC {
     void *hash;
     int blocklen, hashlen;
-    void (*final)(void*, uint8_t*);
-    void (*update)(void*, const uint8_t*, int len);
-    void (*init)(void*);
+    hmac_final  final;
+    hmac_update update;
+    hmac_init   init;
     uint8_t key[MAX_BLOCKLEN];
     int keylen;
 };
@@ -58,33 +69,33 @@ AVHMAC *av_hmac_alloc(enum AVHMACType type)
     case AV_HMAC_MD5:
         c->blocklen = 64;
         c->hashlen  = 16;
-        c->init     = av_md5_init;
-        c->update   = av_md5_update;
-        c->final    = av_md5_final;
+        c->init     = (hmac_init) av_md5_init;
+        c->update   = (hmac_update) av_md5_update;
+        c->final    = (hmac_final) av_md5_final;
         c->hash     = av_md5_alloc();
         break;
     case AV_HMAC_SHA1:
         c->blocklen = 64;
         c->hashlen  = 20;
         c->init     = sha160_init;
-        c->update   = av_sha_update;
-        c->final    = av_sha_final;
+        c->update   = (hmac_update) av_sha_update;
+        c->final    = (hmac_final) av_sha_final;
         c->hash     = av_sha_alloc();
         break;
     case AV_HMAC_SHA224:
         c->blocklen = 64;
         c->hashlen  = 28;
         c->init     = sha224_init;
-        c->update   = av_sha_update;
-        c->final    = av_sha_final;
+        c->update   = (hmac_update) av_sha_update;
+        c->final    = (hmac_final) av_sha_final;
         c->hash     = av_sha_alloc();
         break;
     case AV_HMAC_SHA256:
         c->blocklen = 64;
         c->hashlen  = 32;
         c->init     = sha256_init;
-        c->update   = av_sha_update;
-        c->final    = av_sha_final;
+        c->update   = (hmac_update) av_sha_update;
+        c->final    = (hmac_final) av_sha_final;
         c->hash     = av_sha_alloc();
         break;
     default:
