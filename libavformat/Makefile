@@ -517,6 +517,7 @@ OBJS-$(CONFIG_SUBFILE_PROTOCOL)          += subfile.o
 OBJS-$(CONFIG_TCP_PROTOCOL)              += tcp.o
 OBJS-$(CONFIG_TLS_PROTOCOL)              += tls.o
 OBJS-$(CONFIG_UDP_PROTOCOL)              += udp.o
+OBJS-$(CONFIG_UDPLITE_PROTOCOL)          += udp.o
 OBJS-$(CONFIG_UNIX_PROTOCOL)             += unix.o
 
 OBJS-$(HAVE_LIBC_MSVCRT)                 += file_open.o
