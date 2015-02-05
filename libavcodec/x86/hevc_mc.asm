@@ -665,11 +665,9 @@ QPEL_TABLE 10, 8, w, avx2
 %if %2 == 8
     packuswb          %3, %4
 %else
-    pminsw            %3, [max_pixels_%2]
-    pmaxsw            %3, [zero]
+    CLIPW             %3, [zero], [max_pixels_%2]
 %if (%1 > 8 && notcpuflag(avx)) || %1 > 16
-    pminsw            %4, [max_pixels_%2]
-    pmaxsw            %4, [zero]
+    CLIPW             %4, [zero], [max_pixels_%2]
 %endif
 %endif
 %endmacro
@@ -1467,8 +1465,7 @@ cglobal hevc_put_hevc_uni_w%1_%2, 6, 6, 7, dst, dststride, src, srcstride, heigh
 %if %2 == 8
     packuswb          m0, m0
 %else
-    pminsw            m0, [max_pixels_%2]
-    pmaxsw            m0, [zero]
+    CLIPW             m0, [zero], [max_pixels_%2]
 %endif
     PEL_%2STORE%1   dstq, m0, m1
     add             dstq, dststrideq             ; dst += dststride
@@ -1539,8 +1536,7 @@ cglobal hevc_put_hevc_bi_w%1_%2, 5, 7, 10, dst, dststride, src, srcstride, src2,
 %if %2 == 8
     packuswb          m0, m0
 %else
-    pminsw            m0, [max_pixels_%2]
-    pmaxsw            m0, [zero]
+     CLIPW            m0, [zero], [max_pixels_%2]
 %endif
     PEL_%2STORE%1   dstq, m0, m1
     add             dstq, dststrideq             ; dst += dststride
