@@ -42,10 +42,12 @@ typedef struct FileContext {
     const AVClass *class;
     int fd;
     int trunc;
+    int follow;
 } FileContext;
 
 static const AVOption file_options[] = {
     { "truncate", "Truncate existing files on write", offsetof(FileContext, trunc), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, AV_OPT_FLAG_ENCODING_PARAM },
+    { "follow", "Follow a file as it is being written", offsetof(FileContext, follow), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, AV_OPT_FLAG_DECODING_PARAM },
     { NULL }
 };
 
@@ -60,6 +62,8 @@ static int file_read(URLContext *h, unsigned char *buf, int size)
 {
     FileContext *c = h->priv_data;
     int ret = read(c->fd, buf, size);
+    if (ret == 0 && c->follow)
+        return AVERROR(EAGAIN);
     return (ret == -1) ? AVERROR(errno) : ret;
 }
 
