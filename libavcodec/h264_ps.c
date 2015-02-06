@@ -371,7 +371,8 @@ int ff_h264_decode_seq_parameter_set(H264Context *h)
                                   "Different chroma and luma bit depth");
             goto fail;
         }
-        if (sps->bit_depth_luma > 14U || sps->bit_depth_chroma > 14U) {
+        if (sps->bit_depth_luma   < 8 || sps->bit_depth_luma   > 14 ||
+            sps->bit_depth_chroma < 8 || sps->bit_depth_chroma > 14) {
             av_log(h->avctx, AV_LOG_ERROR, "illegal bit depth value (%d, %d)\n",
                    sps->bit_depth_luma, sps->bit_depth_chroma);
             goto fail;
