@@ -994,7 +994,7 @@ static int mov_read_colr(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     if (c->isom) {
         uint8_t color_range = avio_r8(pb) >> 7;
-        av_dlog(c->fc, " full %"PRIu8"", color_range)
+        av_dlog(c->fc, " full %"PRIu8"", color_range);
         if (color_range)
             st->codec->color_range = AVCOL_RANGE_JPEG;
         else
@@ -1031,7 +1031,7 @@ static int mov_read_colr(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         case 7: st->codec->colorspace = AVCOL_SPC_SMPTE240M; break;
         }
     }
-    av_dlog(c->fc, "\n")
+    av_dlog(c->fc, "\n");
 
     return 0;
 }
