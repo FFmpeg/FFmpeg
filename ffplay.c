@@ -1132,11 +1132,24 @@ static void video_audio_display(VideoState *s)
     }
 }
 
+static void stream_component_close(VideoState *is, int stream_index);
+
 static void stream_close(VideoState *is)
 {
     /* XXX: use a special url_shutdown call to abort parse cleanly */
     is->abort_request = 1;
     SDL_WaitThread(is->read_tid, NULL);
+
+    /* close each stream */
+    if (is->audio_stream >= 0)
+        stream_component_close(is, is->audio_stream);
+    if (is->video_stream >= 0)
+        stream_component_close(is, is->video_stream);
+    if (is->subtitle_stream >= 0)
+        stream_component_close(is, is->subtitle_stream);
+
+    avformat_close_input(&is->ic);
+
     packet_queue_destroy(&is->videoq);
     packet_queue_destroy(&is->audioq);
     packet_queue_destroy(&is->subtitleq);
@@ -3111,24 +3124,11 @@ static int read_thread(void *arg)
             av_free_packet(pkt);
         }
     }
-    /* wait until the end */
-    while (!is->abort_request) {
-        SDL_Delay(100);
-    }
 
     ret = 0;
  fail:
-    /* close each stream */
-    if (is->audio_stream >= 0)
-        stream_component_close(is, is->audio_stream);
-    if (is->video_stream >= 0)
-        stream_component_close(is, is->video_stream);
-    if (is->subtitle_stream >= 0)
-        stream_component_close(is, is->subtitle_stream);
-    if (ic) {
+    if (ic && !is->ic)
         avformat_close_input(&ic);
-        is->ic = NULL;
-    }
 
     if (ret != 0) {
         SDL_Event event;
