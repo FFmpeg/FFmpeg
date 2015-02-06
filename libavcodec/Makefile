@@ -862,6 +862,7 @@ SKIPHEADERS-$(CONFIG_VDPAU)            += vdpau.h vdpau_internal.h
 
 TESTPROGS = imgconvert                                                  \
             options                                                     \
+            avfft                                                       \
 
 
 TESTPROGS-$(CONFIG_CABAC)                 += cabac
