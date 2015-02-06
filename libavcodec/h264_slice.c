@@ -1305,6 +1305,8 @@ int ff_h264_decode_slice_header(H264Context *h, H264Context *h0)
     int must_reinit;
     int needs_reinit = 0;
     int field_pic_flag, bottom_field_flag;
+    int first_slice = h == h0 && !h0->current_slice;
+    PPS *pps;
 
     h->qpel_put = h->h264qpel.put_h264_qpel_pixels_tab;
     h->qpel_avg = h->h264qpel.avg_h264_qpel_pixels_tab;
@@ -1378,18 +1380,27 @@ int ff_h264_decode_slice_header(H264Context *h, H264Context *h0)
                h0->au_pps_id, pps_id);
         return AVERROR_INVALIDDATA;
     }
-    h->pps = *h0->pps_buffers[pps_id];
 
-    if (!h0->sps_buffers[h->pps.sps_id]) {
+    pps = h0->pps_buffers[pps_id];
+
+    if (!h0->sps_buffers[pps->sps_id]) {
         av_log(h->avctx, AV_LOG_ERROR,
                "non-existing SPS %u referenced\n",
                h->pps.sps_id);
         return AVERROR_INVALIDDATA;
     }
+    if (first_slice)
+        h->pps = *h0->pps_buffers[pps_id];
 
-    if (h->pps.sps_id != h->sps.sps_id ||
-        h->pps.sps_id != h->current_sps_id ||
-        h0->sps_buffers[h->pps.sps_id]->new) {
+    if (pps->sps_id != h->sps.sps_id ||
+        pps->sps_id != h->current_sps_id ||
+        h0->sps_buffers[pps->sps_id]->new) {
+
+        if (!first_slice) {
+            av_log(h->avctx, AV_LOG_ERROR,
+               "SPS changed in the middle of the frame\n");
+            return AVERROR_INVALIDDATA;
+        }
 
         h->sps = *h0->sps_buffers[h->pps.sps_id];
 
