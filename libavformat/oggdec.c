@@ -414,8 +414,8 @@ static int ogg_packet(AVFormatContext *s, int *str, int *dstart, int *dsize,
 
             // Update the header state for all streams and
             // compute the data_offset.
-            if (!s->data_offset)
-                s->data_offset = os->sync_pos;
+            if (!s->internal->data_offset)
+                s->internal->data_offset = os->sync_pos;
 
             for (i = 0; i < ogg->nstreams; i++) {
                 struct ogg_stream *cur_os = ogg->streams + i;
@@ -423,7 +423,7 @@ static int ogg_packet(AVFormatContext *s, int *str, int *dstart, int *dsize,
                 // if we have a partial non-header packet, its start is
                 // obviously at or after the data start
                 if (cur_os->incomplete)
-                    s->data_offset = FFMIN(s->data_offset, cur_os->sync_pos);
+                    s->internal->data_offset = FFMIN(s->internal->data_offset, cur_os->sync_pos);
             }
         } else {
             os->nb_header++;

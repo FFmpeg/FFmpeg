@@ -329,13 +329,13 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
         AVRational time_base = s->streams[pkt->stream_index]->time_base;
         int64_t offset = 0;
 
-        if (s->offset == AV_NOPTS_VALUE && pkt->dts != AV_NOPTS_VALUE &&
+        if (s->internal->offset == AV_NOPTS_VALUE && pkt->dts != AV_NOPTS_VALUE &&
             (pkt->dts < 0 || s->avoid_negative_ts == AVFMT_AVOID_NEG_TS_MAKE_ZERO)) {
-            s->offset = -pkt->dts;
-            s->offset_timebase = time_base;
+            s->internal->offset = -pkt->dts;
+            s->internal->offset_timebase = time_base;
         }
-        if (s->offset != AV_NOPTS_VALUE)
-            offset = av_rescale_q(s->offset, s->offset_timebase, time_base);
+        if (s->internal->offset != AV_NOPTS_VALUE)
+            offset = av_rescale_q(s->internal->offset, s->internal->offset_timebase, time_base);
 
         if (pkt->dts != AV_NOPTS_VALUE)
             pkt->dts += offset;
@@ -428,20 +428,20 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if (s->streams[pkt->stream_index]->last_in_packet_buffer) {
         next_point = &(s->streams[pkt->stream_index]->last_in_packet_buffer->next);
     } else
-        next_point = &s->packet_buffer;
+        next_point = &s->internal->packet_buffer;
 
     if (*next_point) {
-        if (compare(s, &s->packet_buffer_end->pkt, pkt)) {
+        if (compare(s, &s->internal->packet_buffer_end->pkt, pkt)) {
             while (!compare(s, &(*next_point)->pkt, pkt))
                 next_point = &(*next_point)->next;
             goto next_non_null;
         } else {
-            next_point = &(s->packet_buffer_end->next);
+            next_point = &(s->internal->packet_buffer_end->next);
         }
     }
     assert(!*next_point);
 
-    s->packet_buffer_end = this_pktl;
+    s->internal->packet_buffer_end = this_pktl;
 next_non_null:
 
     this_pktl->next = *next_point;
@@ -477,8 +477,8 @@ int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out,
             return ret;
     }
 
-    if (s->max_interleave_delta > 0 && s->packet_buffer && !flush) {
-        AVPacket *top_pkt = &s->packet_buffer->pkt;
+    if (s->max_interleave_delta > 0 && s->internal->packet_buffer && !flush) {
+        AVPacket *top_pkt = &s->internal->packet_buffer->pkt;
         int64_t delta_dts = INT64_MIN;
         int64_t top_dts = av_rescale_q(top_pkt->dts,
                                        s->streams[top_pkt->stream_index]->time_base,
@@ -512,12 +512,12 @@ int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out,
 
 
     if (stream_count && (s->internal->nb_interleaved_streams == stream_count || flush)) {
-        pktl = s->packet_buffer;
+        pktl = s->internal->packet_buffer;
         *out = pktl->pkt;
 
-        s->packet_buffer = pktl->next;
-        if (!s->packet_buffer)
-            s->packet_buffer_end = NULL;
+        s->internal->packet_buffer = pktl->next;
+        if (!s->internal->packet_buffer)
+            s->internal->packet_buffer_end = NULL;
 
         if (s->streams[out->stream_index]->last_in_packet_buffer == pktl)
             s->streams[out->stream_index]->last_in_packet_buffer = NULL;

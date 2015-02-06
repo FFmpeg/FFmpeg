@@ -1838,7 +1838,7 @@ static int mxf_interleave_get_packet(AVFormatContext *s, AVPacket *out, AVPacket
         stream_count += !!s->streams[i]->last_in_packet_buffer;
 
     if (stream_count && (s->nb_streams == stream_count || flush)) {
-        AVPacketList *pktl = s->packet_buffer;
+        AVPacketList *pktl = s->internal->packet_buffer;
         if (s->nb_streams != stream_count) {
             AVPacketList *last = NULL;
             // find last packet in edit unit
@@ -1862,20 +1862,20 @@ static int mxf_interleave_get_packet(AVFormatContext *s, AVPacket *out, AVPacket
             if (last)
                 last->next = NULL;
             else {
-                s->packet_buffer = NULL;
-                s->packet_buffer_end= NULL;
+                s->internal->packet_buffer = NULL;
+                s->internal->packet_buffer_end= NULL;
                 goto out;
             }
-            pktl = s->packet_buffer;
+            pktl = s->internal->packet_buffer;
         }
 
         *out = pktl->pkt;
         av_dlog(s, "out st:%d dts:%"PRId64"\n", (*out).stream_index, (*out).dts);
-        s->packet_buffer = pktl->next;
+        s->internal->packet_buffer = pktl->next;
         if(s->streams[pktl->pkt.stream_index]->last_in_packet_buffer == pktl)
             s->streams[pktl->pkt.stream_index]->last_in_packet_buffer= NULL;
-        if(!s->packet_buffer)
-            s->packet_buffer_end= NULL;
+        if(!s->internal->packet_buffer)
+            s->internal->packet_buffer_end= NULL;
         av_freep(&pktl);
         return 1;
     } else {
