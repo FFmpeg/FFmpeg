@@ -284,7 +284,7 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps)
 {
     #define HWACCEL_MAX (CONFIG_HEVC_DXVA2_HWACCEL)
     enum AVPixelFormat pix_fmts[HWACCEL_MAX + 2], *fmt = pix_fmts;
-    int ret;
+    int ret, i;
     unsigned int num = 0, den = 0;
 
     pic_arrays_free(s);
@@ -333,6 +333,11 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps)
     ff_hevc_pred_init(&s->hpc,     sps->bit_depth);
     ff_hevc_dsp_init (&s->hevcdsp, sps->bit_depth);
     ff_videodsp_init (&s->vdsp,    sps->bit_depth);
+
+    for (i = 0; i < 3; i++) {
+        av_freep(&s->sao_pixel_buffer_h[i]);
+        av_freep(&s->sao_pixel_buffer_v[i]);
+    }
 
     if (sps->sao_enabled && !s->avctx->hwaccel) {
         int c_count = (sps->chroma_format_idc != 0) ? 3 : 1;

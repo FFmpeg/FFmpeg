@@ -394,7 +394,8 @@ static int cllc_decode_frame(AVCodecContext *avctx, void *data,
     ctx->bdsp.bswap16_buf((uint16_t *) ctx->swapped_buf, (uint16_t *) src,
                           data_size / 2);
 
-    init_get_bits(&gb, ctx->swapped_buf, data_size * 8);
+    if ((ret = init_get_bits8(&gb, ctx->swapped_buf, data_size)) < 0)
+        return ret;
 
     /*
      * Read in coding type. The types are as follows:

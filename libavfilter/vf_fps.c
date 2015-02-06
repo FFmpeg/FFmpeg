@@ -213,7 +213,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
                              outlink->time_base, s->rounding) - s->frames_out ;
 
     if (delta < 1) {
-        /* drop the frame and everything buffered except the first */
+        /* drop everything buffered except the last */
         int drop = av_fifo_size(s->fifo)/sizeof(AVFrame*);
 
         av_log(ctx, AV_LOG_DEBUG, "Dropping %d frame(s).\n", drop);

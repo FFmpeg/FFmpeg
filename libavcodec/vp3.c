@@ -2277,7 +2277,7 @@ static int theora_decode_header(AVCodecContext *avctx, GetBitContext *gb)
     if (av_image_check_size(visible_width, visible_height, 0, avctx) < 0 ||
         visible_width  + offset_x > s->width ||
         visible_height + offset_y > s->height) {
-        av_log(s, AV_LOG_ERROR,
+        av_log(avctx, AV_LOG_ERROR,
                "Invalid frame dimensions - w:%d h:%d x:%d y:%d (%dx%d).\n",
                visible_width, visible_height, offset_x, offset_y,
                s->width, s->height);
