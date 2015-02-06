@@ -599,10 +599,8 @@ static int bmp_probe(AVProbeData *p)
 
     if (!AV_RN32(b + 6)) {
         return AVPROBE_SCORE_EXTENSION + 1;
-    } else {
-        return AVPROBE_SCORE_EXTENSION / 4;
     }
-    return 0;
+    return AVPROBE_SCORE_EXTENSION / 4;
 }
 
 static int dpx_probe(AVProbeData *p)
