@@ -181,13 +181,16 @@ static av_cold int init_decoder(AVCodecContext *avctx)
     ctx->mode = CCMODE_ROLLUP_2;
     ctx->rollup = 2;
     ret = ff_ass_subtitle_header_default(avctx);
+    if(ret < 0) {
+        goto fail;
+    }
     /* allocate pkt buffer */
     ctx->pktbuf = av_buffer_alloc(128);
     if( !ctx->pktbuf) {
         ret = AVERROR(ENOMEM);
     }
 
-
+fail:
     return ret;
 }
 
