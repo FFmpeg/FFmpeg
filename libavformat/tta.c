@@ -84,7 +84,7 @@ static int tta_read_header(AVFormatContext *s)
     }
 
     crc = ffio_get_checksum(s->pb) ^ UINT32_MAX;
-    if (crc != avio_rl32(s->pb)) {
+    if (crc != avio_rl32(s->pb) && s->error_recognition & AV_EF_CRCCHECK) {
         av_log(s, AV_LOG_ERROR, "Header CRC error\n");
         return AVERROR_INVALIDDATA;
     }
@@ -130,7 +130,7 @@ static int tta_read_header(AVFormatContext *s)
         framepos += size;
     }
     crc = ffio_get_checksum(s->pb) ^ UINT32_MAX;
-    if (crc != avio_rl32(s->pb)) {
+    if (crc != avio_rl32(s->pb) && s->error_recognition & AV_EF_CRCCHECK) {
         av_log(s, AV_LOG_ERROR, "Seek table CRC error\n");
         return AVERROR_INVALIDDATA;
     }
