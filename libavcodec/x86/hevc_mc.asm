@@ -136,20 +136,22 @@ QPEL_TABLE 10, 8, w, avx2
 %endmacro
 
 
-%macro EPEL_FILTER 2-4                            ; bit depth, filter index
+%macro EPEL_FILTER 5 ; bit depth, filter index, xmma, xmmb, gprtmp
 %if cpuflag(avx2)
 %assign %%offset 32
 %ifdef PIC
-    lea         rfilterq, [hevc_epel_filters_avx2_%1]
+    lea              %5q, [hevc_epel_filters_avx2_%1]
+    %define FILTER %5q
 %else
-    %define rfilterq hevc_epel_filters_avx2_%1
+    %define FILTER hevc_epel_filters_avx2_%1
 %endif
 %else
 %assign %%offset 16
 %ifdef PIC
-    lea         rfilterq, [hevc_epel_filters_sse4_%1]
+    lea              %5q, [hevc_epel_filters_sse4_%1]
+    %define FILTER %5q
 %else
-    %define rfilterq hevc_epel_filters_sse4_%1
+    %define FILTER hevc_epel_filters_sse4_%1
 %endif
 %endif ;cpuflag(avx2)
     sub              %2q, 1
@@ -158,13 +160,8 @@ QPEL_TABLE 10, 8, w, avx2
   %else
     shl              %2q, 5                      ; multiply by 32
 %endif
-%if %0 == 2
-    mova           m14, [rfilterq + %2q]        ; get 2 first values of filters
-    mova           m15, [rfilterq + %2q+%%offset]     ; get 2 last values of filters
-%else
-    mova           %3, [rfilterq + %2q]        ; get 2 first values of filters
-    mova           %4, [rfilterq + %2q+%%offset]     ; get 2 last values of filters
-%endif
+    mova           %3, [FILTER + %2q]        ; get 2 first values of filters
+    mova           %4, [FILTER + %2q+%%offset]     ; get 2 last values of filters
 %endmacro
 
 %macro EPEL_HV_FILTER 1
@@ -179,17 +176,17 @@ QPEL_TABLE 10, 8, w, avx2
 %endif
 
 %ifdef PIC
-    lea         rfilterq, [%%table]
+    lea           r3srcq, [%%table]
+    %define FILTER r3srcq
 %else
-    %define rfilterq %%table
+    %define FILTER %%table
 %endif
     sub              mxq, 1
     sub              myq, 1
     shl              mxq, %%shift                ; multiply by 32
     shl              myq, %%shift                ; multiply by 32
-    mova             m14, [rfilterq + mxq]        ; get 2 first values of filters
-    mova             m15, [rfilterq + mxq+%%offset]     ; get 2 last values of filters
-    lea           r3srcq, [srcstrideq*3]
+    mova             m14, [FILTER + mxq]        ; get 2 first values of filters
+    mova             m15, [FILTER + mxq+%%offset]     ; get 2 last values of filters
 
 %if cpuflag(avx2)
 %define %%table  hevc_epel_filters_avx2_10
@@ -197,12 +194,14 @@ QPEL_TABLE 10, 8, w, avx2
 %define %%table  hevc_epel_filters_sse4_10
 %endif
 %ifdef PIC
-    lea         rfilterq, [%%table]
+    lea           r3srcq, [%%table]
+    %define FILTER r3srcq
 %else
-    %define rfilterq %%table
+    %define FILTER %%table
 %endif
-    mova             m12, [rfilterq + myq]        ; get 2 first values of filters
-    mova             m13, [rfilterq + myq+%%offset]     ; get 2 last values of filters
+    mova             m12, [FILTER + myq]        ; get 2 first values of filters
+    mova             m13, [FILTER + myq+%%offset]     ; get 2 last values of filters
+    lea           r3srcq, [srcstrideq*3]
 %endmacro
 
 %macro QPEL_FILTER 2
@@ -733,7 +732,7 @@ cglobal hevc_put_hevc_bi_pel_pixels%1_%2, 6, 6, 6, dst, dststride, src, srcstrid
 %macro HEVC_PUT_HEVC_EPEL 2
 cglobal hevc_put_hevc_epel_h%1_%2, 5, 6, 11, dst, src, srcstride, height, mx, rfilter
 %assign %%stride ((%2 + 7)/8)
-    EPEL_FILTER       %2, mx, m4, m5
+    EPEL_FILTER       %2, mx, m4, m5, rfilter
 .loop
     EPEL_LOAD         %2, srcq-%%stride, %%stride, %1
     EPEL_COMPUTE      %2, %1, m4, m5, 1
@@ -744,7 +743,7 @@ cglobal hevc_put_hevc_epel_h%1_%2, 5, 6, 11, dst, src, srcstride, height, mx, rf
 cglobal hevc_put_hevc_uni_epel_h%1_%2, 6, 7, 11, dst, dststride, src, srcstride, height, mx, rfilter
 %assign %%stride ((%2 + 7)/8)
     movdqa            m6, [pw_%2]
-    EPEL_FILTER       %2, mx, m4, m5
+    EPEL_FILTER       %2, mx, m4, m5, rfilter
 .loop
     EPEL_LOAD         %2, srcq-%%stride, %%stride, %1
     EPEL_COMPUTE      %2, %1, m4, m5
@@ -758,7 +757,7 @@ cglobal hevc_put_hevc_uni_epel_h%1_%2, 6, 7, 11, dst, dststride, src, srcstride,
 
 cglobal hevc_put_hevc_bi_epel_h%1_%2, 7, 8, 11, dst, dststride, src, srcstride, src2, height, mx, rfilter
     movdqa            m6, [pw_bi_%2]
-    EPEL_FILTER       %2, mx, m4, m5
+    EPEL_FILTER       %2, mx, m4, m5, rfilter
 .loop
     EPEL_LOAD         %2, srcq-%%stride, %%stride, %1
     EPEL_COMPUTE      %2, %1, m4, m5, 1
@@ -778,11 +777,11 @@ cglobal hevc_put_hevc_bi_epel_h%1_%2, 7, 8, 11, dst, dststride, src, srcstride, 
 ;                      int height, int mx, int my, int width)
 ; ******************************
 
-cglobal hevc_put_hevc_epel_v%1_%2, 4, 7, 11, dst, src, srcstride, height, r3src, my, rfilter
+cglobal hevc_put_hevc_epel_v%1_%2, 4, 6, 11, dst, src, srcstride, height, r3src, my
     movifnidn        myd, mym
-    lea           r3srcq, [srcstrideq*3]
     sub             srcq, srcstrideq
-    EPEL_FILTER       %2, my, m4, m5
+    EPEL_FILTER       %2, my, m4, m5, r3src
+    lea           r3srcq, [srcstrideq*3]
 .loop
     EPEL_LOAD         %2, srcq, srcstride, %1
     EPEL_COMPUTE      %2, %1, m4, m5, 1
@@ -790,12 +789,12 @@ cglobal hevc_put_hevc_epel_v%1_%2, 4, 7, 11, dst, src, srcstride, height, r3src,
     LOOP_END          dst, src, srcstride
     RET
 
-cglobal hevc_put_hevc_uni_epel_v%1_%2, 5, 8, 11, dst, dststride, src, srcstride, height, r3src, my, rfilter
+cglobal hevc_put_hevc_uni_epel_v%1_%2, 5, 7, 11, dst, dststride, src, srcstride, height, r3src, my
     movifnidn        myd, mym
-    lea           r3srcq, [srcstrideq*3]
     movdqa            m6, [pw_%2]
     sub             srcq, srcstrideq
-    EPEL_FILTER       %2, my, m4, m5
+    EPEL_FILTER       %2, my, m4, m5, r3src
+    lea           r3srcq, [srcstrideq*3]
 .loop
     EPEL_LOAD         %2, srcq, srcstride, %1
     EPEL_COMPUTE      %2, %1, m4, m5
@@ -808,12 +807,12 @@ cglobal hevc_put_hevc_uni_epel_v%1_%2, 5, 8, 11, dst, dststride, src, srcstride,
     RET
 
 
-cglobal hevc_put_hevc_bi_epel_v%1_%2, 6, 9, 11, dst, dststride, src, srcstride, src2, height, r3src, my, rfilter
+cglobal hevc_put_hevc_bi_epel_v%1_%2, 6, 8, 11, dst, dststride, src, srcstride, src2, height, r3src, my
     movifnidn        myd, mym
-    lea           r3srcq, [srcstrideq*3]
     movdqa            m6, [pw_bi_%2]
     sub             srcq, srcstrideq
-    EPEL_FILTER       %2, my, m4, m5
+    EPEL_FILTER       %2, my, m4, m5, r3src
+    lea           r3srcq, [srcstrideq*3]
 .loop
     EPEL_LOAD         %2, srcq, srcstride, %1
     EPEL_COMPUTE      %2, %1, m4, m5, 1
@@ -836,7 +835,7 @@ cglobal hevc_put_hevc_bi_epel_v%1_%2, 6, 9, 11, dst, dststride, src, srcstride, 
 ; ******************************
 
 %macro HEVC_PUT_HEVC_EPEL_HV 2
-cglobal hevc_put_hevc_epel_hv%1_%2, 6, 8, 16 , dst, src, srcstride, height, mx, my, r3src, rfilter
+cglobal hevc_put_hevc_epel_hv%1_%2, 6, 7, 16 , dst, src, srcstride, height, mx, my, r3src
 %assign %%stride ((%2 + 7)/8)
     sub             srcq, srcstrideq
     EPEL_HV_FILTER    %2
@@ -902,7 +901,7 @@ cglobal hevc_put_hevc_epel_hv%1_%2, 6, 8, 16 , dst, src, srcstride, height, mx, 
     LOOP_END         dst, src, srcstride
     RET
 
-cglobal hevc_put_hevc_uni_epel_hv%1_%2, 7, 9, 16 , dst, dststride, src, srcstride, height, mx, my, r3src, rfilter
+cglobal hevc_put_hevc_uni_epel_hv%1_%2, 7, 8, 16 , dst, dststride, src, srcstride, height, mx, my, r3src
 %assign %%stride ((%2 + 7)/8)
     sub             srcq, srcstrideq
     EPEL_HV_FILTER    %2
@@ -966,7 +965,7 @@ cglobal hevc_put_hevc_uni_epel_hv%1_%2, 7, 9, 16 , dst, dststride, src, srcstrid
     jnz               .loop                      ; height loop
     RET
 
-cglobal hevc_put_hevc_bi_epel_hv%1_%2, 8, 10, 16, dst, dststride, src, srcstride, src2, height, mx, my, r3src, rfilter
+cglobal hevc_put_hevc_bi_epel_hv%1_%2, 8, 9, 16, dst, dststride, src, srcstride, src2, height, mx, my, r3src
 %assign %%stride ((%2 + 7)/8)
     sub             srcq, srcstrideq
     EPEL_HV_FILTER    %2
