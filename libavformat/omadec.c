@@ -430,7 +430,7 @@ static int oma_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     pkt->stream_index = 0;
 
-    if (pos > 0) {
+    if (pos > 0 && byte_rate > 0) {
         pkt->pts =
         pkt->dts = av_rescale(pos, st->time_base.den,
                               byte_rate * (int64_t)st->time_base.num);
