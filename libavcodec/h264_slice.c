@@ -1480,6 +1480,8 @@ int ff_h264_decode_slice_header(H264Context *h, H264Context *h0)
             return AVERROR_INVALIDDATA;
         }
 
+        av_assert1(first_slice);
+
         ff_h264_flush_change(h);
 
         if ((ret = get_pixel_format(h, 1)) < 0)
