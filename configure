@@ -4069,7 +4069,7 @@ case $target_os in
         SLIBNAME_WITH_MAJOR='$(SLIBPREF)$(FULLNAME).$(LIBMAJOR)$(SLIBSUF)'
         objformat="macho"
         enabled x86_64 && objformat="macho64"
-        enabled_any pic shared ||
+        enabled_any pic shared x86_64 ||
             { check_cflags -mdynamic-no-pic && add_asflags -mdynamic-no-pic; }
         ;;
     mingw32*)
