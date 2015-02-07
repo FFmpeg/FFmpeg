@@ -1285,6 +1285,7 @@ int ff_h264_decode_slice_header(H264Context *h, H264Context *h0)
     int needs_reinit = 0;
     int field_pic_flag, bottom_field_flag;
     int first_slice = h == h0 && !h0->current_slice;
+    int frame_num;
     PPS *pps;
 
     h->qpel_put = h->h264qpel.put_h264_qpel_pixels_tab;
@@ -1494,7 +1495,15 @@ int ff_h264_decode_slice_header(H264Context *h, H264Context *h0)
         h264_init_dequant_tables(h);
     }
 
-    h->frame_num = get_bits(&h->gb, h->sps.log2_max_frame_num);
+    frame_num = get_bits(&h->gb, h->sps.log2_max_frame_num);
+    if (!first_slice) {
+        if (h0->frame_num != frame_num) {
+            av_log(h->avctx, AV_LOG_ERROR, "Frame num change from %d to %d\n",
+                   h0->frame_num, frame_num);
+            return AVERROR_INVALIDDATA;
+        }
+    }
+    h->frame_num = frame_num;
 
     h->mb_mbaff        = 0;
     h->mb_aff_frame    = 0;
