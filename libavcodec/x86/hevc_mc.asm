@@ -231,11 +231,6 @@ QPEL_TABLE 10, 8, w, avx2
 %endmacro
 
 %macro EPEL_LOAD 4
-%ifdef PIC
-    lea rfilterq, [%2]
-%else
-    %define rfilterq %2
-%endif
 %if (%1 == 8 && %4 <= 4)
 %define %%load movd
 %elif (%1 == 8 && %4 <= 8) || (%1 > 8 && %4 <= 4)
@@ -244,15 +239,15 @@ QPEL_TABLE 10, 8, w, avx2
 %define %%load movdqu
 %endif
 
-    %%load            m0, [rfilterq ]
+    %%load            m0, [%2q ]
 %ifnum %3
-    %%load            m1, [rfilterq+  %3]
-    %%load            m2, [rfilterq+2*%3]
-    %%load            m3, [rfilterq+3*%3]
+    %%load            m1, [%2q+  %3]
+    %%load            m2, [%2q+2*%3]
+    %%load            m3, [%2q+3*%3]
 %else
-    %%load            m1, [rfilterq+  %3q]
-    %%load            m2, [rfilterq+2*%3q]
-    %%load            m3, [rfilterq+r3srcq]
+    %%load            m1, [%2q+  %3q]
+    %%load            m2, [%2q+2*%3q]
+    %%load            m3, [%2q+r3srcq]
 %endif
 %if %1 == 8
 %if %4 > 8
