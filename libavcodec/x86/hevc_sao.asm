@@ -27,7 +27,6 @@ SECTION_RODATA 32
 
 pw_mask10: times 16 dw 0x03FF
 pw_mask12: times 16 dw 0x0FFF
-pb_2:      times 32 db 2
 pw_m2:     times 16 dw -2
 pb_edge_shuffle: times 2 db 1, 2, 0, 3, 4, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
 pb_eo:                   db -1, 0, 1, 0, 0, -1, 0, 1, -1, -1, 1, 1, 1, -1, -1, 1
@@ -35,6 +34,7 @@ cextern pw_m1
 cextern pw_1
 cextern pw_2
 cextern pb_1
+cextern pb_2
 
 SECTION_TEXT
 
@@ -293,24 +293,14 @@ HEVC_SAO_BAND_FILTER_16 12, 64, 2
 ;void ff_hevc_sao_edge_filter_<width>_8_<opt>(uint8_t *_dst, uint8_t *_src, ptrdiff_t stride_dst, int16_t *sao_offset_val,
 ;                                             int eo, int width, int height);
 %macro HEVC_SAO_EDGE_FILTER_8 2-3
-%if WIN64
-cglobal hevc_sao_edge_filter_%1_8, 4, 8, 8, dst, src, dststride, offset, a_stride, b_stride, height, tmp
-%define  eoq heightq
-    movsxd           eoq, dword r4m
-    movsx      a_strideq, byte [pb_eo+eoq*4+1]
-    movsx      b_strideq, byte [pb_eo+eoq*4+3]
-    imul       a_strideq, EDGE_SRCSTRIDE
-    imul       b_strideq, EDGE_SRCSTRIDE
-    movsx           tmpq, byte [pb_eo+eoq*4]
-    add        a_strideq, tmpq
-    movsx           tmpq, byte [pb_eo+eoq*4+2]
-    add        b_strideq, tmpq
-    mov          heightd, r6m
-
-%elif ARCH_X86_64
-cglobal hevc_sao_edge_filter_%1_8, 5, 9, 8, dst, src, dststride, offset, eo, a_stride, b_stride, height, tmp
+%if ARCH_X86_64
+cglobal hevc_sao_edge_filter_%1_8, 4, 9, 8, dst, src, dststride, offset, eo, a_stride, b_stride, height, tmp
 %define tmp2q heightq
+%if WIN64
+    movsxd           eoq, dword r4m
+%else
     movsxd           eoq, eod
+%endif
     lea            tmp2q, [pb_eo]
     movsx      a_strideq, byte [tmp2q+eoq*4+1]
     movsx      b_strideq, byte [tmp2q+eoq*4+3]
@@ -439,26 +429,13 @@ INIT_YMM cpuname
 ;void ff_hevc_sao_edge_filter_<width>_<depth>_<opt>(uint8_t *_dst, uint8_t *_src, ptrdiff_t stride_dst, int16_t *sao_offset_val,
 ;                                                   int eo, int width, int height);
 %macro HEVC_SAO_EDGE_FILTER_16 3
-%if WIN64
-cglobal hevc_sao_edge_filter_%2_%1, 4, 8, 16, dst, src, dststride, offset, a_stride, b_stride, height, tmp
-%define  eoq heightq
-    movsxd           eoq, dword r4m
-    movsx      a_strideq, byte [pb_eo+eoq*4+1]
-    movsx      b_strideq, byte [pb_eo+eoq*4+3]
-    imul       a_strideq, EDGE_SRCSTRIDE>>1
-    imul       b_strideq, EDGE_SRCSTRIDE>>1
-    movsx           tmpq, byte [pb_eo+eoq*4]
-    add        a_strideq, tmpq
-    movsx           tmpq, byte [pb_eo+eoq*4+2]
-    add        b_strideq, tmpq
-    mov          heightd, r6m
-    add        a_strideq, a_strideq
-    add        b_strideq, b_strideq
-
-%else ; UNIX64
-cglobal hevc_sao_edge_filter_%2_%1, 5, 9, 16, dst, src, dststride, offset, eo, a_stride, b_stride, height, tmp
+cglobal hevc_sao_edge_filter_%2_%1, 4, 9, 16, dst, src, dststride, offset, eo, a_stride, b_stride, height, tmp
 %define tmp2q heightq
+%if WIN64
+    movsxd           eoq, dword r4m
+%else
     movsxd           eoq, eod
+%endif
     lea            tmp2q, [pb_eo]
     movsx      a_strideq, byte [tmp2q+eoq*4+1]
     movsx      b_strideq, byte [tmp2q+eoq*4+3]
@@ -471,7 +448,6 @@ cglobal hevc_sao_edge_filter_%2_%1, 5, 9, 16, dst, src, dststride, offset, eo, a
     mov          heightd, r6m
     add        a_strideq, a_strideq
     add        b_strideq, b_strideq
-%endif ; ARCH
 
 %if cpuflag(avx2)
     SPLATW            m8, [offsetq+2]

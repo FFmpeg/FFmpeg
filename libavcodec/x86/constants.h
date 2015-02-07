@@ -49,12 +49,16 @@ extern const xmm_reg  ff_pw_2048;
 extern const xmm_reg  ff_pw_8192;
 extern const ymm_reg  ff_pw_m1;
 
+extern const ymm_reg  ff_pb_0;
 extern const ymm_reg  ff_pb_1;
+extern const ymm_reg  ff_pb_2;
 extern const ymm_reg  ff_pb_3;
 extern const xmm_reg  ff_pb_80;
 extern const xmm_reg  ff_pb_F8;
 extern const uint64_t ff_pb_FC;
 
 extern const xmm_reg  ff_ps_neg;
+
+extern const ymm_reg  ff_pd_1;
 
 #endif /* AVCODEC_X86_CONSTANTS_H */

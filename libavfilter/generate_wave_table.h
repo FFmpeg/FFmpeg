@@ -19,6 +19,8 @@
 #ifndef AVFILTER_GENERATE_WAVE_TABLE_H
 #define AVFILTER_GENERATE_WAVE_TABLE_H
 
+#include "libavutil/samplefmt.h"
+
 enum WaveType {
     WAVE_SIN,
     WAVE_TRI,
