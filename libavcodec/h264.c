@@ -3242,6 +3242,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
     int last_pic_structure, last_pic_droppable;
     int must_reinit;
     int needs_reinit = 0;
+    int first_slice = h == h0 && !h0->current_slice;
 
     h->me.qpel_put = h->h264qpel.put_h264_qpel_pixels_tab;
     h->me.qpel_avg = h->h264qpel.avg_h264_qpel_pixels_tab;
@@ -3336,11 +3337,13 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
                      || 16*h->sps.mb_height * (2 - h->sps.frame_mbs_only_flag) != h->avctx->coded_height
                      || h->avctx->bits_per_raw_sample != h->sps.bit_depth_luma
                      || h->cur_chroma_format_idc != h->sps.chroma_format_idc
-                     || av_cmp_q(h->sps.sar, h->avctx->sample_aspect_ratio)
                      || h->mb_width  != h->sps.mb_width
                      || h->mb_height != h->sps.mb_height * (2 - h->sps.frame_mbs_only_flag)
                     ));
     if (h0->avctx->pix_fmt != get_pixel_format(h0, 0))
+        must_reinit = 1;
+
+    if (first_slice && av_cmp_q(h->sps.sar, h->avctx->sample_aspect_ratio))
         must_reinit = 1;
 
     h->mb_width  = h->sps.mb_width;
