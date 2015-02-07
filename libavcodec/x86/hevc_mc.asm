@@ -737,8 +737,7 @@ cglobal hevc_put_hevc_bi_pel_pixels%1_%2, 6, 6, 6, dst, dststride, src, srcstrid
 ; ******************************
 ; void put_hevc_epel_hX(int16_t *dst, ptrdiff_t dststride,
 ;                       uint8_t *_src, ptrdiff_t _srcstride,
-;                       int width, int height, int mx, int my,
-;                       int16_t* mcbuffer)
+;                       int height, int mx, int my, int width);
 ; ******************************
 
 
@@ -787,8 +786,7 @@ cglobal hevc_put_hevc_bi_epel_h%1_%2, 7, 8, 11, dst, dststride, src, srcstride, 
 ; ******************************
 ; void put_hevc_epel_v(int16_t *dst, ptrdiff_t dststride,
 ;                      uint8_t *_src, ptrdiff_t _srcstride,
-;                      int width, int height, int mx, int my,
-;                      int16_t* mcbuffer)
+;                      int height, int mx, int my, int width)
 ; ******************************
 
 cglobal hevc_put_hevc_epel_v%1_%2, 6, 7, 11, dst, src, srcstride, height, r3src, my, rfilter
@@ -842,7 +840,7 @@ cglobal hevc_put_hevc_bi_epel_v%1_%2, 8, 9, 11, dst, dststride, src, srcstride, 
 ; ******************************
 ; void put_hevc_epel_hv(int16_t *dst, ptrdiff_t dststride,
 ;                       uint8_t *_src, ptrdiff_t _srcstride,
-;                       int width, int height, int mx, int my)
+;                       int height, int mx, int my, int width)
 ; ******************************
 
 %macro HEVC_PUT_HEVC_EPEL_HV 2
@@ -1055,7 +1053,7 @@ cglobal hevc_put_hevc_bi_epel_hv%1_%2, 8, 10, 16, dst, dststride, src, srcstride
 ; ******************************
 ; void put_hevc_qpel_hX_X_X(int16_t *dst, ptrdiff_t dststride,
 ;                       uint8_t *_src, ptrdiff_t _srcstride,
-;                       int width, int height, int mx, int my)
+;                       int height, int mx, int my, int width)
 ; ******************************
 
 %macro HEVC_PUT_HEVC_QPEL 2
@@ -1111,7 +1109,7 @@ cglobal hevc_put_hevc_bi_qpel_h%1_%2, 7, 8, 16 , dst, dststride, src, srcstride,
 ; ******************************
 ; void put_hevc_qpel_vX_X_X(int16_t *dst, ptrdiff_t dststride,
 ;                       uint8_t *_src, ptrdiff_t _srcstride,
-;                       int width, int height, int mx, int my)
+;                       int height, int mx, int my, int width)
 ; ******************************
 
 cglobal hevc_put_hevc_qpel_v%1_%2, 6, 8, 16, dst, src, srcstride, height, r3src, my, rfilter
