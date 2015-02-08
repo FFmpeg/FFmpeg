@@ -25,6 +25,9 @@
 #include "avcodec.h"
 #include "libavutil/bprint.h"
 
+#define ASS_DEFAULT_PLAYRESX 384
+#define ASS_DEFAULT_PLAYRESY 288
+
 /**
  * @name Default values for ASS style
  * @{
