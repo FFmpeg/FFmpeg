@@ -20,6 +20,7 @@ version <next>:
 - RTP depacketizer for loss tolerant payload format for MP3 audio (RFC 5219)
 - RTP depacketizer for DV (RFC 6469)
 - Canopus HQX decoder
+- RTP depacketization of T.140 text (RFC 4103)
 
 
 version 11:

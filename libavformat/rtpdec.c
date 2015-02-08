@@ -50,6 +50,12 @@ static RTPDynamicProtocolHandler opus_dynamic_handler = {
     .codec_id   = AV_CODEC_ID_OPUS,
 };
 
+static RTPDynamicProtocolHandler t140_dynamic_handler = { /* RFC 4103 */
+    .enc_name   = "t140",
+    .codec_type = AVMEDIA_TYPE_DATA,
+    .codec_id   = AV_CODEC_ID_TEXT,
+};
+
 static RTPDynamicProtocolHandler *rtp_first_dynamic_payload_handler = NULL;
 
 void ff_register_dynamic_payload_handler(RTPDynamicProtocolHandler *handler)
@@ -98,6 +104,7 @@ void ff_register_rtp_dynamic_payload_handlers(void)
     ff_register_dynamic_payload_handler(&opus_dynamic_handler);
     ff_register_dynamic_payload_handler(&realmedia_mp3_dynamic_handler);
     ff_register_dynamic_payload_handler(&speex_dynamic_handler);
+    ff_register_dynamic_payload_handler(&t140_dynamic_handler);
 }
 
 RTPDynamicProtocolHandler *ff_rtp_handler_find_by_name(const char *name,
