@@ -21,14 +21,21 @@
 %include "libavutil/x86/x86util.asm"
 
 SECTION_RODATA 32
-pw_8:                   times 16 dw  (1 <<  9)
-pw_10:                  times 16 dw  (1 << 11)
-pw_12:                  times 16 dw  (1 << 13)
+cextern pw_255
+cextern pw_512
+cextern pw_2048
+cextern pw_8192
+cextern pw_1023
+cextern pw_1024
+cextern pw_4096
+%define pw_8 pw_512
+%define pw_10 pw_2048
+%define pw_12 pw_8192
+%define pw_bi_10 pw_1024
+%define pw_bi_12 pw_4096
+%define max_pixels_8 pw_255
+%define max_pixels_10 pw_1023
 pw_bi_8:                times 16 dw  (1 <<  8)
-pw_bi_10:               times 16 dw  (1 << 10)
-pw_bi_12:               times 16 dw  (1 << 12)
-max_pixels_8:           times 16 dw ((1 <<  8)-1)
-max_pixels_10:          times 16 dw ((1 << 10)-1)
 max_pixels_12:          times 16 dw ((1 << 12)-1)
 cextern pd_1
 cextern pb_0
@@ -730,8 +737,7 @@ cglobal hevc_put_hevc_bi_pel_pixels%1_%2, 6, 6, 6, dst, dststride, src, srcstrid
 ; ******************************
 ; void put_hevc_epel_hX(int16_t *dst, ptrdiff_t dststride,
 ;                       uint8_t *_src, ptrdiff_t _srcstride,
-;                       int width, int height, int mx, int my,
-;                       int16_t* mcbuffer)
+;                       int height, int mx, int my, int width);
 ; ******************************
 
 
@@ -780,8 +786,7 @@ cglobal hevc_put_hevc_bi_epel_h%1_%2, 7, 8, 11, dst, dststride, src, srcstride, 
 ; ******************************
 ; void put_hevc_epel_v(int16_t *dst, ptrdiff_t dststride,
 ;                      uint8_t *_src, ptrdiff_t _srcstride,
-;                      int width, int height, int mx, int my,
-;                      int16_t* mcbuffer)
+;                      int height, int mx, int my, int width)
 ; ******************************
 
 cglobal hevc_put_hevc_epel_v%1_%2, 6, 7, 11, dst, src, srcstride, height, r3src, my, rfilter
@@ -835,7 +840,7 @@ cglobal hevc_put_hevc_bi_epel_v%1_%2, 8, 9, 11, dst, dststride, src, srcstride, 
 ; ******************************
 ; void put_hevc_epel_hv(int16_t *dst, ptrdiff_t dststride,
 ;                       uint8_t *_src, ptrdiff_t _srcstride,
-;                       int width, int height, int mx, int my)
+;                       int height, int mx, int my, int width)
 ; ******************************
 
 %macro HEVC_PUT_HEVC_EPEL_HV 2
@@ -1048,7 +1053,7 @@ cglobal hevc_put_hevc_bi_epel_hv%1_%2, 8, 10, 16, dst, dststride, src, srcstride
 ; ******************************
 ; void put_hevc_qpel_hX_X_X(int16_t *dst, ptrdiff_t dststride,
 ;                       uint8_t *_src, ptrdiff_t _srcstride,
-;                       int width, int height, int mx, int my)
+;                       int height, int mx, int my, int width)
 ; ******************************
 
 %macro HEVC_PUT_HEVC_QPEL 2
@@ -1104,7 +1109,7 @@ cglobal hevc_put_hevc_bi_qpel_h%1_%2, 7, 8, 16 , dst, dststride, src, srcstride,
 ; ******************************
 ; void put_hevc_qpel_vX_X_X(int16_t *dst, ptrdiff_t dststride,
 ;                       uint8_t *_src, ptrdiff_t _srcstride,
-;                       int width, int height, int mx, int my)
+;                       int height, int mx, int my, int width)
 ; ******************************
 
 cglobal hevc_put_hevc_qpel_v%1_%2, 6, 8, 16, dst, src, srcstride, height, r3src, my, rfilter

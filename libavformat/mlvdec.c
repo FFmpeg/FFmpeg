@@ -242,6 +242,7 @@ static int read_header(AVFormatContext *avctx)
     AVIOContext *pb = avctx->pb;
     AVStream *vst = NULL, *ast = NULL;
     int size, ret;
+    unsigned nb_video_frames, nb_audio_frames;
     uint64_t guid;
     char guidstr[32];
 
@@ -259,11 +260,17 @@ static int read_header(AVFormatContext *avctx)
     avio_skip(pb, 8); //fileNum, fileCount, fileFlags
 
     mlv->class[0] = avio_rl16(pb);
-    if (mlv->class[0]) {
+    mlv->class[1] = avio_rl16(pb);
+
+    nb_video_frames = avio_rl32(pb);
+    nb_audio_frames = avio_rl32(pb);
+
+    if (nb_video_frames && mlv->class[0]) {
         vst = avformat_new_stream(avctx, NULL);
         if (!vst)
             return AVERROR(ENOMEM);
         vst->id = 0;
+        vst->nb_frames = nb_video_frames;
         if ((mlv->class[0] & (MLV_CLASS_FLAG_DELTA|MLV_CLASS_FLAG_LZMA)))
             avpriv_request_sample(avctx, "compression");
         vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
@@ -289,12 +296,12 @@ static int read_header(AVFormatContext *avctx)
         }
     }
 
-    mlv->class[1] = avio_rl16(pb);
-    if (mlv->class[1]) {
+    if (nb_audio_frames && mlv->class[1]) {
         ast = avformat_new_stream(avctx, NULL);
         if (!ast)
             return AVERROR(ENOMEM);
         ast->id = 1;
+        ast->nb_frames = nb_audio_frames;
         if ((mlv->class[1] & MLV_CLASS_FLAG_LZMA))
             avpriv_request_sample(avctx, "compression");
         if ((mlv->class[1] & ~MLV_CLASS_FLAG_LZMA) != MLV_AUDIO_CLASS_WAV)
@@ -303,16 +310,6 @@ static int read_header(AVFormatContext *avctx)
         ast->codec->codec_type = AVMEDIA_TYPE_AUDIO;
         avpriv_set_pts_info(ast, 33, 1, ast->codec->sample_rate);
     }
-
-    if (vst)
-       vst->nb_frames = avio_rl32(pb);
-    else
-       avio_skip(pb, 4);
-
-    if (ast)
-       ast->nb_frames = avio_rl32(pb);
-    else
-       avio_skip(pb, 4);
 
     if (vst) {
        AVRational framerate;

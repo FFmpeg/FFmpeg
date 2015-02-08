@@ -31,28 +31,6 @@ int32_t ff_scalarproduct_and_madd_int16_ssse3(int16_t *v1, const int16_t *v2,
                                               const int16_t *v3,
                                               int order, int mul);
 
-#if HAVE_YASM
-static int32_t scalarproduct_and_madd_int16_sse2(int16_t *v1, const int16_t *v2,
-                                                 const int16_t *v3,
-                                                 int order, int mul)
-{
-    if (order & 8)
-        return ff_scalarproduct_and_madd_int16_mmxext(v1, v2, v3, order, mul);
-    else
-        return ff_scalarproduct_and_madd_int16_sse2(v1, v2, v3, order, mul);
-}
-
-static int32_t scalarproduct_and_madd_int16_ssse3(int16_t *v1, const int16_t *v2,
-                                                  const int16_t *v3,
-                                                  int order, int mul)
-{
-    if (order & 8)
-        return ff_scalarproduct_and_madd_int16_mmxext(v1, v2, v3, order, mul);
-    else
-        return ff_scalarproduct_and_madd_int16_ssse3(v1, v2, v3, order, mul);
-}
-#endif
-
 av_cold void ff_llauddsp_init_x86(LLAudDSPContext *c)
 {
 #if HAVE_YASM
@@ -62,10 +40,10 @@ av_cold void ff_llauddsp_init_x86(LLAudDSPContext *c)
         c->scalarproduct_and_madd_int16 = ff_scalarproduct_and_madd_int16_mmxext;
 
     if (EXTERNAL_SSE2(cpu_flags))
-        c->scalarproduct_and_madd_int16 = scalarproduct_and_madd_int16_sse2;
+        c->scalarproduct_and_madd_int16 = ff_scalarproduct_and_madd_int16_sse2;
 
     if (EXTERNAL_SSSE3(cpu_flags) &&
         !(cpu_flags & (AV_CPU_FLAG_SSE42 | AV_CPU_FLAG_3DNOW))) // cachesplit
-        c->scalarproduct_and_madd_int16 = scalarproduct_and_madd_int16_ssse3;
+        c->scalarproduct_and_madd_int16 = ff_scalarproduct_and_madd_int16_ssse3;
 #endif
 }

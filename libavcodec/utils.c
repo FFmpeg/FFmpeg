@@ -3663,6 +3663,8 @@ int ff_thread_ref_frame(ThreadFrame *dst, ThreadFrame *src)
     if (ret < 0)
         return ret;
 
+    av_assert0(!dst->progress);
+
     if (src->progress &&
         !(dst->progress = av_buffer_ref(src->progress))) {
         ff_thread_release_buffer(dst->owner, dst);

@@ -374,8 +374,10 @@ static void handle_pac( CCaptionSubContext *ctx, uint8_t hi, uint8_t lo )
     char *row;
     int indent,i,ret;
 
-    if( row_map[index] <= 0 )
+    if( row_map[index] <= 0 ) {
+        av_log(ctx, AV_LOG_DEBUG,"Invalid pac index encountered\n");
         return;
+    }
 
     lo &= 0x1f;
 
@@ -489,18 +491,21 @@ static int process_cc608(CCaptionSubContext *ctx, int64_t pts, uint8_t hi, uint8
         ret = handle_edm(ctx, pts);
     } else if ( COR3(hi, 0x14, 0x15, 0x1C) && lo == 0x2D ) {
     /* carriage return */
+        av_dlog(ctx, "carriage return\n");
         reap_screen(ctx, pts);
         roll_up(ctx);
         ctx->screen_changed = 1;
         ctx->cursor_column = 0;
     } else if ( COR3(hi, 0x14, 0x15, 0x1C) && lo == 0x2F ) {
     /* end of caption */
+        av_dlog(ctx, "handle_eoc\n");
         ret = handle_eoc(ctx, pts);
     } else if (hi>=0x20) {
     /* Standard characters (always in pairs) */
         handle_char(ctx, hi, lo, pts);
     } else {
     /* Ignoring all other non data code */
+        av_dlog(ctx, "Unknown command 0x%hhx 0x%hhx\n", hi, lo);
     }
 
     /* set prev command */

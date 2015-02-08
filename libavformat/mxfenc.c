@@ -52,6 +52,7 @@
 #include "config.h"
 
 extern AVOutputFormat ff_mxf_d10_muxer;
+extern AVOutputFormat ff_mxf_opatom_muxer;
 
 #define EDIT_UNITS_PER_BODY 250
 #define KAG_SIZE 512
@@ -320,6 +321,7 @@ static const uint8_t umid_ul[]              = { 0x06,0x0A,0x2B,0x34,0x01,0x01,0x
  * complete key for operation pattern, partitions, and primer pack
  */
 static const uint8_t op1a_ul[]                     = { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x0D,0x01,0x02,0x01,0x01,0x01,0x09,0x00 };
+static const uint8_t opatom_ul[]                   = { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x02,0x0D,0x01,0x02,0x01,0x10,0x03,0x00,0x00 };
 static const uint8_t footer_partition_key[]        = { 0x06,0x0E,0x2B,0x34,0x02,0x05,0x01,0x01,0x0D,0x01,0x02,0x01,0x01,0x04,0x04,0x00 }; // ClosedComplete
 static const uint8_t primer_pack_key[]             = { 0x06,0x0E,0x2B,0x34,0x02,0x05,0x01,0x01,0x0D,0x01,0x02,0x01,0x01,0x05,0x01,0x00 };
 static const uint8_t index_table_segment_key[]     = { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x02,0x01,0x01,0x10,0x01,0x00 };
@@ -483,6 +485,12 @@ static void klv_encode_ber4_length(AVIOContext *pb, int len)
     avio_wb24(pb, len);
 }
 
+static void klv_encode_ber9_length(AVIOContext *pb, uint64_t len)
+{
+    avio_w8(pb, 0x80 + 8);
+    avio_wb64(pb, len);
+}
+
 /*
  * Get essence container ul index
  */
@@ -601,7 +609,10 @@ static void mxf_write_preface(AVFormatContext *s)
 
     // operational pattern
     mxf_write_local_tag(pb, 16, 0x3B09);
-    avio_write(pb, op1a_ul, 16);
+    if (s->oformat == &ff_mxf_opatom_muxer)
+        avio_write(pb, opatom_ul, 16);
+    else
+        avio_write(pb, op1a_ul, 16);
 
     // write essence_container_refs
     mxf_write_local_tag(pb, 8 + 16LL * DESCRIPTOR_COUNT(mxf->essence_container_count), 0x3B0A);
@@ -1362,7 +1373,7 @@ static int mxf_write_partition(AVFormatContext *s, int bodysid,
         index_byte_count += klv_fill_size(index_byte_count);
     }
 
-    if (!memcmp(key, body_partition_key, 16)) {
+    if (key && !memcmp(key, body_partition_key, 16)) {
         if ((err = av_reallocp_array(&mxf->body_partition_offset, mxf->body_partitions_count + 1,
                                      sizeof(*mxf->body_partition_offset))) < 0) {
             mxf->body_partitions_count = 0;
@@ -1372,7 +1383,11 @@ static int mxf_write_partition(AVFormatContext *s, int bodysid,
     }
 
     // write klv
-    avio_write(pb, key, 16);
+    if (key)
+        avio_write(pb, key, 16);
+    else
+        avio_write(pb, body_partition_key, 16);
+
     klv_encode_ber_length(pb, 88 + 16LL * DESCRIPTOR_COUNT(mxf->essence_container_count));
 
     // write partition value
@@ -1382,9 +1397,9 @@ static int mxf_write_partition(AVFormatContext *s, int bodysid,
 
     avio_wb64(pb, partition_offset); // ThisPartition
 
-    if (!memcmp(key, body_partition_key, 16) && mxf->body_partitions_count > 1)
+    if (key && !memcmp(key, body_partition_key, 16) && mxf->body_partitions_count > 1)
         avio_wb64(pb, mxf->body_partition_offset[mxf->body_partitions_count-2]); // PreviousPartition
-    else if (!memcmp(key, footer_partition_key, 16) && mxf->body_partitions_count)
+    else if (key && !memcmp(key, footer_partition_key, 16) && mxf->body_partitions_count)
         avio_wb64(pb, mxf->body_partition_offset[mxf->body_partitions_count-1]); // PreviousPartition
     else
         avio_wb64(pb, 0);
@@ -1400,15 +1415,18 @@ static int mxf_write_partition(AVFormatContext *s, int bodysid,
     avio_wb32(pb, index_byte_count ? indexsid : 0); // indexSID
 
     // BodyOffset
-    if (bodysid && mxf->edit_units_count && mxf->body_partitions_count) {
+    if (bodysid && mxf->edit_units_count && mxf->body_partitions_count && s->oformat != &ff_mxf_opatom_muxer)
         avio_wb64(pb, mxf->body_offset);
-    } else
+    else
         avio_wb64(pb, 0);
 
     avio_wb32(pb, bodysid); // bodySID
 
     // operational pattern
-    avio_write(pb, op1a_ul, 16);
+    if (s->oformat == &ff_mxf_opatom_muxer)
+        avio_write(pb, opatom_ul, 16);
+    else
+        avio_write(pb, op1a_ul, 16);
 
     // essence container
     mxf_write_essence_container_refs(s);
@@ -1431,7 +1449,8 @@ static int mxf_write_partition(AVFormatContext *s, int bodysid,
         avio_seek(pb, pos, SEEK_SET);
     }
 
-    avio_flush(pb);
+    if(key)
+        avio_flush(pb);
 
     return 0;
 }
@@ -1497,6 +1516,11 @@ AVPacket *pkt)
 
     sc->codec_ul = &mxf_essence_container_uls[sc->index].codec_ul;
     sc->aspect_ratio = (AVRational){ 16, 9 };
+
+    if(s->oformat == &ff_mxf_opatom_muxer){
+        mxf->edit_unit_byte_count = frame_size;
+        return 1;
+    }
 
     mxf->edit_unit_byte_count = KAG_SIZE;
     for (i = 0; i < s->nb_streams; i++) {
@@ -1567,6 +1591,11 @@ static int mxf_parse_dv_frame(AVFormatContext *s, AVStream *st, AVPacket *pkt)
 
     sc->index = ul_index + 16;
     sc->codec_ul =  &mxf_essence_container_uls[sc->index].codec_ul;
+
+    if(s->oformat == &ff_mxf_opatom_muxer) {
+        mxf->edit_unit_byte_count = frame_size;
+        return 1;
+    }
 
     mxf->edit_unit_byte_count = KAG_SIZE;
     for (i = 0; i < s->nb_streams; i++) {
@@ -1803,6 +1832,11 @@ static int mxf_write_header(AVFormatContext *s)
     if (!s->nb_streams)
         return -1;
 
+    if (s->oformat == &ff_mxf_opatom_muxer && s->nb_streams !=1){
+        av_log(s, AV_LOG_ERROR, "there must be exactly one stream for mxf opatom\n");
+        return -1;
+    }
+
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
         MXFStreamContext *sc = av_mallocz(sizeof(*sc));
@@ -1901,7 +1935,7 @@ static int mxf_write_header(AVFormatContext *s)
         present[sc->index]++;
     }
 
-    if (s->oformat == &ff_mxf_d10_muxer) {
+    if (s->oformat == &ff_mxf_d10_muxer || s->oformat == &ff_mxf_opatom_muxer) {
         mxf->essence_container_count = 1;
     }
 
@@ -2046,6 +2080,60 @@ static void mxf_write_d10_audio_packet(AVFormatContext *s, AVStream *st, AVPacke
     }
 }
 
+static int mxf_write_opatom_body_partition(AVFormatContext *s)
+{
+    MXFContext *mxf = s->priv_data;
+    AVIOContext *pb = s->pb;
+    AVStream *st = s->streams[0];
+    MXFStreamContext *sc = st->priv_data;
+    const uint8_t *key = NULL;
+
+    int err;
+
+    if (!mxf->header_written)
+        key = body_partition_key;
+
+    if ((err = mxf_write_partition(s, 1, 0, key, 0)) < 0)
+        return err;
+    mxf_write_klv_fill(s);
+    avio_write(pb, sc->track_essence_element_key, 16);
+    klv_encode_ber9_length(pb, mxf->body_offset);
+    return 0;
+}
+
+static int mxf_write_opatom_packet(AVFormatContext *s, AVPacket *pkt, MXFIndexEntry *ie)
+{
+    MXFContext *mxf = s->priv_data;
+    AVIOContext *pb = s->pb;
+    AVStream *st = s->streams[pkt->stream_index];
+    MXFStreamContext *sc = st->priv_data;
+
+    int err;
+
+    if (!mxf->header_written) {
+        if ((err = mxf_write_partition(s, 0, 0, header_open_partition_key, 1)) < 0)
+            return err;
+        mxf_write_klv_fill(s);
+
+        if ((err = mxf_write_opatom_body_partition(s)) < 0)
+            return err;
+        mxf->header_written = 1;
+    }
+
+    if (!mxf->edit_unit_byte_count) {
+        mxf->index_entries[mxf->edit_units_count].offset = mxf->body_offset;
+        mxf->index_entries[mxf->edit_units_count].flags = ie->flags;
+        mxf->index_entries[mxf->edit_units_count].temporal_ref = ie->temporal_ref;
+    }
+    mxf->edit_units_count++;
+    avio_write(pb, pkt->data, pkt->size);
+    mxf->body_offset += pkt->size;
+
+    avio_flush(pb);
+
+    return 0;
+}
+
 static int mxf_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     MXFContext *mxf = s->priv_data;
@@ -2085,6 +2173,9 @@ static int mxf_write_packet(AVFormatContext *s, AVPacket *pkt)
             return -1;
         }
     }
+
+    if (s->oformat == &ff_mxf_opatom_muxer)
+        return mxf_write_opatom_packet(s, pkt, &ie);
 
     if (!mxf->header_written) {
         if (mxf->edit_unit_byte_count) {
@@ -2153,7 +2244,7 @@ static void mxf_write_random_index_pack(AVFormatContext *s)
     avio_write(pb, random_index_pack_key, 16);
     klv_encode_ber_length(pb, 28 + 12LL*mxf->body_partitions_count);
 
-    if (mxf->edit_unit_byte_count)
+    if (mxf->edit_unit_byte_count && s->oformat != &ff_mxf_opatom_muxer)
         avio_wb32(pb, 1); // BodySID of header partition
     else
         avio_wb32(pb, 0);
@@ -2180,7 +2271,7 @@ static int mxf_write_footer(AVFormatContext *s)
 
     mxf_write_klv_fill(s);
     mxf->footer_partition_offset = avio_tell(pb);
-    if (mxf->edit_unit_byte_count) { // no need to repeat index
+    if (mxf->edit_unit_byte_count && s->oformat != &ff_mxf_opatom_muxer) { // no need to repeat index
         if ((err = mxf_write_partition(s, 0, 0, footer_partition_key, 0)) < 0)
             return err;
     } else {
@@ -2194,8 +2285,15 @@ static int mxf_write_footer(AVFormatContext *s)
     mxf_write_random_index_pack(s);
 
     if (s->pb->seekable) {
+        if (s->oformat == &ff_mxf_opatom_muxer){
+            /* rewrite body partition to update lengths */
+            avio_seek(pb, mxf->body_partition_offset[0], SEEK_SET);
+            if ((err = mxf_write_opatom_body_partition(s)) < 0)
+                return err;
+        }
+
         avio_seek(pb, 0, SEEK_SET);
-        if (mxf->edit_unit_byte_count) {
+        if (mxf->edit_unit_byte_count && s->oformat != &ff_mxf_opatom_muxer) {
             if ((err = mxf_write_partition(s, 1, 2, header_closed_partition_key, 1)) < 0)
                 return err;
             mxf_write_klv_fill(s);
@@ -2329,4 +2427,19 @@ AVOutputFormat ff_mxf_d10_muxer = {
     .flags             = AVFMT_NOTIMESTAMPS,
     .interleave_packet = mxf_interleave,
     .priv_class        = &mxf_d10_muxer_class,
+};
+
+AVOutputFormat ff_mxf_opatom_muxer = {
+    .name              = "mxf_opatom",
+    .long_name         = NULL_IF_CONFIG_SMALL("MXF (Material eXchange Format) Operational Pattern Atom"),
+    .mime_type         = "application/mxf",
+    .extensions        = "mxf",
+    .priv_data_size    = sizeof(MXFContext),
+    .audio_codec       = AV_CODEC_ID_PCM_S16LE,
+    .video_codec       = AV_CODEC_ID_DNXHD,
+    .write_header      = mxf_write_header,
+    .write_packet      = mxf_write_packet,
+    .write_trailer     = mxf_write_footer,
+    .flags             = AVFMT_NOTIMESTAMPS,
+    .interleave_packet = mxf_interleave,
 };

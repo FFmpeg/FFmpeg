@@ -36,13 +36,6 @@
 
 #include <assert.h>
 
-#define COPY_PICTURE(dst, src) \
-do {\
-    *(dst) = *(src);\
-    (dst)->f.extended_data = (dst)->f.data;\
-    (dst)->tf.f = &(dst)->f;\
-} while (0)
-
 
 static void pic_as_field(H264Picture *pic, const int parity){
     int i;
