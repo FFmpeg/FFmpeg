@@ -155,7 +155,7 @@ static int denoise_depth(HQDN3DContext *s,
 
 #define denoise(...)                                                          \
     do {                                                                      \
-        int ret = AVERROR_INVALIDDATA;                                        \
+        int ret = AVERROR_BUG;                                                \
         switch (s->depth) {                                                   \
             case  8: ret = denoise_depth(__VA_ARGS__,  8); break;             \
             case  9: ret = denoise_depth(__VA_ARGS__,  9); break;             \
