@@ -1986,15 +1986,6 @@ int ff_h264_decode_slice_header(H264Context *h, H264Context *h0)
                              (h->ref_list[j][i].reference & 3);
     }
 
-    if (h->ref_count[0]) {
-        ff_h264_set_erpic(&h->er.last_pic, &h->ref_list[0][0]);
-    } else if (h->last_pic_for_ec.f.buf[0]) {
-        ff_h264_set_erpic(&h->er.last_pic, &h->last_pic_for_ec);
-    }
-
-    if (h->ref_count[1]) ff_h264_set_erpic(&h->er.next_pic, &h->ref_list[1][0]);
-
-    h->er.ref_count = h->ref_count[0];
     h0->au_pps_id = pps_id;
     h->sps.new =
     h0->sps_buffers[h->pps.sps_id]->new = 0;
