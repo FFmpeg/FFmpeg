@@ -477,6 +477,8 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
                     handler->init(s, st->index,
                                   rtsp_st->dynamic_protocol_context);
             }
+            if (rt->default_lang[0])
+                av_dict_set(&st->metadata, "language", rt->default_lang, 0);
         }
         /* put a default control url */
         av_strlcpy(rtsp_st->control_url, rt->control_uri,
@@ -540,6 +542,16 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
             /* AV_NOPTS_VALUE means live broadcast (and can't seek) */
             s->duration   = (end == AV_NOPTS_VALUE) ?
                             AV_NOPTS_VALUE : end - start;
+        } else if (av_strstart(p, "lang:", &p)) {
+            if (s->nb_streams > 0) {
+                get_word(buf1, sizeof(buf1), &p);
+                rtsp_st = rt->rtsp_streams[rt->nb_rtsp_streams - 1];
+                if (rtsp_st->stream_index >= 0) {
+                    st = s->streams[rtsp_st->stream_index];
+                    av_dict_set(&st->metadata, "language", buf1, 0);
+                }
+            } else
+                get_word(rt->default_lang, sizeof(rt->default_lang), &p);
         } else if (av_strstart(p, "IsRealDataType:integer;",&p)) {
             if (atoi(p) == 1)
                 rt->transport = RTSP_TRANSPORT_RDT;
