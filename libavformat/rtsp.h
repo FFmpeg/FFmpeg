@@ -395,6 +395,8 @@ typedef struct RTSPState {
      * Size of RTP packet reordering queue.
      */
     int reordering_queue_size;
+
+    char default_lang[4];
 } RTSPState;
 
 #define RTSP_FLAG_FILTER_SRC  0x1    /**< Filter incoming UDP packets -
