@@ -534,7 +534,7 @@ static int config_input(AVFilterLink *inlink)
     /* each slice will need to (pre & re)process the top and bottom block of
      * the previous one in in addition to its processing area. This is because
      * each pixel is averaged by all the surrounding blocks */
-    slice_h = (int)ceilf(s->pr_height / s->nb_threads) + (s->bsize - 1) * 2;
+    slice_h = (int)ceilf(s->pr_height / (float)s->nb_threads) + (s->bsize - 1) * 2;
     for (i = 0; i < s->nb_threads; i++) {
         s->slices[i] = av_malloc_array(linesize, slice_h * sizeof(*s->slices[i]));
         if (!s->slices[i])
