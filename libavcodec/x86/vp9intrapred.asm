@@ -64,8 +64,6 @@ pb_6xm1_BDF_0to6: times 6 db -1
                   db 11, 13, 15, 0, 1, 2, 3, 4, 5, 6
 pb_02468ACE_13579BDF: db 0, 2, 4, 6, 8, 10, 12, 14, 1, 3, 5, 7, 9, 11, 13, 15
 
-pb_2:  times 32 db 2
-pb_15: times 16 db 15
 pb_15x0_1xm1: times 15 db 0
               db -1
 pb_0to2_5x3: db 0, 1, 2
@@ -76,7 +74,9 @@ pb_6x0_2xm1: times 6 db 0
              times 2 db -1
 
 cextern pb_1
+cextern pb_2
 cextern pb_3
+cextern pb_15
 cextern pw_2
 cextern pw_4
 cextern pw_8

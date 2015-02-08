@@ -795,7 +795,9 @@ static int on2avc_decode_subframe(On2AVCContext *c, const uint8_t *buf,
     GetBitContext gb;
     int i, ret;
 
-    init_get_bits(&gb, buf, buf_size * 8);
+    if ((ret = init_get_bits8(&gb, buf, buf_size)) < 0)
+        return ret;
+
     if (get_bits1(&gb)) {
         av_log(c->avctx, AV_LOG_ERROR, "enh bit set\n");
         return AVERROR_INVALIDDATA;

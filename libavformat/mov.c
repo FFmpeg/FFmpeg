@@ -55,10 +55,6 @@
 
 #include "qtpalette.h"
 
-
-#undef NDEBUG
-#include <assert.h>
-
 /* those functions parse an atom */
 /* links atom IDs to parse functions */
 typedef struct MOVParseTableEntry {
@@ -560,7 +556,7 @@ static int mov_read_hdlr(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     AVStream *st;
     uint32_t type;
     uint32_t av_unused ctype;
-    int title_size;
+    int64_t title_size;
     char *title_str;
 
     if (c->fc->nb_streams < 1) // meta before first trak
@@ -598,9 +594,10 @@ static int mov_read_hdlr(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             return AVERROR(ENOMEM);
         avio_read(pb, title_str, title_size);
         title_str[title_size] = 0;
-        if (title_str[0])
-            av_dict_set(&st->metadata, "handler_name", title_str +
-                        (!c->isom && title_str[0] == title_size - 1), 0);
+        if (title_str[0]) {
+            int off = (!c->isom && title_str[0] == title_size - 1);
+            av_dict_set(&st->metadata, "handler_name", title_str + off, 0);
+        }
         av_freep(&title_str);
     }
 
@@ -753,8 +750,8 @@ static int mov_read_pasp(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                st->sample_aspect_ratio.num, st->sample_aspect_ratio.den,
                num, den);
     } else if (den != 0) {
-        st->sample_aspect_ratio.num = num;
-        st->sample_aspect_ratio.den = den;
+        av_reduce(&st->sample_aspect_ratio.num, &st->sample_aspect_ratio.den,
+                  num, den, 32767);
     }
     return 0;
 }

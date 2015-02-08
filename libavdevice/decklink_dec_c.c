@@ -31,6 +31,7 @@
 static const AVOption options[] = {
     { "list_devices", "list available devices"  , OFFSET(list_devices), AV_OPT_TYPE_INT   , { .i64 = 0   }, 0, 1, DEC },
     { "list_formats", "list supported formats"  , OFFSET(list_formats), AV_OPT_TYPE_INT   , { .i64 = 0   }, 0, 1, DEC },
+    { "bm_v210",      "v210 10 bit per channel" , OFFSET(v210),         AV_OPT_TYPE_INT   , { .i64 = 0   }, 0, 1, DEC },
     { NULL },
 };
 

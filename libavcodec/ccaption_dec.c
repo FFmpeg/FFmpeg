@@ -137,6 +137,8 @@ static const uint8_t parity_table[256] = { 0, 1, 1, 0, 1, 0, 0, 1,
 struct Screen {
     /* +1 is used to compensate null character of string */
     uint8_t characters[SCREEN_ROWS][SCREEN_COLUMNS+1];
+    uint8_t colors[SCREEN_ROWS][SCREEN_COLUMNS+1];
+    uint8_t fonts[SCREEN_ROWS][SCREEN_COLUMNS+1];
     /*
      * Bitmask of used rows; if a bit is not set, the
      * corresponding row is not used.
@@ -149,7 +151,6 @@ struct Screen {
 
 typedef struct CCaptionSubContext {
     AVClass *class;
-    int row_cnt;
     struct Screen screen[2];
     int active_screen;
     uint8_t cursor_row;
@@ -177,15 +178,19 @@ static av_cold int init_decoder(AVCodecContext *avctx)
 
     av_bprint_init(&ctx->buffer, 0, AV_BPRINT_SIZE_UNLIMITED);
     /* taking by default roll up to 2 */
+    ctx->mode = CCMODE_ROLLUP_2;
     ctx->rollup = 2;
     ret = ff_ass_subtitle_header_default(avctx);
+    if(ret < 0) {
+        goto fail;
+    }
     /* allocate pkt buffer */
     ctx->pktbuf = av_buffer_alloc(128);
     if( !ctx->pktbuf) {
         ret = AVERROR(ENOMEM);
     }
 
-
+fail:
     return ret;
 }
 
@@ -278,6 +283,68 @@ static struct Screen *get_writing_screen(CCaptionSubContext *ctx)
     return NULL;
 }
 
+static void roll_up(CCaptionSubContext *ctx)
+{
+    struct Screen *screen;
+    int i, keep_lines;
+
+    if(ctx->mode == CCMODE_TEXT)
+        return;
+
+    screen = get_writing_screen(ctx);
+
+    /* +1 signify cursor_row starts from 0
+     * Can't keep lines less then row cursor pos
+     */
+    keep_lines = FFMIN(ctx->cursor_row + 1, ctx->rollup);
+
+    for( i = 0; i < ctx->cursor_row - keep_lines; i++ )
+        UNSET_FLAG(screen->row_used, i);
+
+
+    for( i = 0; i < keep_lines && screen->row_used; i++ ) {
+        const int i_row = ctx->cursor_row - keep_lines + i + 1;
+
+        memcpy( screen->characters[i_row], screen->characters[i_row+1], SCREEN_COLUMNS );
+        memcpy( screen->colors[i_row], screen->colors[i_row+1], SCREEN_COLUMNS);
+        memcpy( screen->fonts[i_row], screen->fonts[i_row+1], SCREEN_COLUMNS);
+        if(CHECK_FLAG(screen->row_used, i_row + 1))
+            SET_FLAG(screen->row_used, i_row);
+
+    }
+    UNSET_FLAG(screen->row_used, ctx->cursor_row);
+
+}
+
+static int reap_screen(CCaptionSubContext *ctx, int64_t pts)
+{
+    int i;
+    int ret = 0;
+    struct Screen *screen = ctx->screen + ctx->active_screen;
+    ctx->start_time = ctx->startv_time;
+
+    for( i = 0; screen->row_used && i < SCREEN_ROWS; i++)
+    {
+        if(CHECK_FLAG(screen->row_used,i)) {
+            char *str = screen->characters[i];
+            /* skip space */
+            while (*str == ' ')
+                str++;
+
+            av_bprintf(&ctx->buffer, "%s\\N", str);
+            ret = av_bprint_is_complete(&ctx->buffer);
+            if( ret == 0) {
+                ret = AVERROR(ENOMEM);
+                break;
+            }
+        }
+
+    }
+    ctx->startv_time = pts;
+    ctx->end_time = pts;
+    return ret;
+}
+
 static void handle_textattr( CCaptionSubContext *ctx, uint8_t hi, uint8_t lo )
 {
     int i = lo - 0x20;
@@ -307,8 +374,10 @@ static void handle_pac( CCaptionSubContext *ctx, uint8_t hi, uint8_t lo )
     char *row;
     int indent,i,ret;
 
-    if( row_map[index] <= 0 )
+    if( row_map[index] <= 0 ) {
+        av_log(ctx, AV_LOG_DEBUG,"Invalid pac index encountered\n");
         return;
+    }
 
     lo &= 0x1f;
 
@@ -331,32 +400,12 @@ static void handle_pac( CCaptionSubContext *ctx, uint8_t hi, uint8_t lo )
  */
 static int handle_edm(CCaptionSubContext *ctx,int64_t pts)
 {
-    int i;
     int ret = 0;
     struct Screen *screen = ctx->screen + ctx->active_screen;
 
-    ctx->start_time = ctx->startv_time;
-    for( i = 0; screen->row_used && i < SCREEN_ROWS; i++)
-    {
-        if(CHECK_FLAG(screen->row_used,i)) {
-            char *str = screen->characters[i];
-            /* skip space */
-            while (*str == ' ')
-                str++;
-            av_bprint_append_data(&ctx->buffer, str, strlen(str));
-            av_bprint_append_data(&ctx->buffer, "\\N",2);
-            UNSET_FLAG(screen->row_used, i);
-            ret = av_bprint_is_complete(&ctx->buffer);
-            if( ret == 0) {
-                ret = AVERROR(ENOMEM);
-                break;
-            }
-        }
-
-    }
-    ctx->startv_time = pts;
+    reap_screen(ctx, pts);
+    screen->row_used = 0;
     ctx->screen_changed = 1;
-    ctx->end_time = pts;
     return ret;
 }
 
@@ -424,10 +473,13 @@ static int process_cc608(CCaptionSubContext *ctx, int64_t pts, uint8_t hi, uint8
         handle_delete_end_of_row(ctx, hi, lo);
     } else if ( COR3(hi, 0x14, 0x15, 0x1C) && lo == 0x25 ) {
         ctx->rollup = 2;
+        ctx->mode = CCMODE_ROLLUP_2;
     } else if ( COR3(hi, 0x14, 0x15, 0x1C) && lo == 0x26 ) {
         ctx->rollup = 3;
+        ctx->mode = CCMODE_ROLLUP_3;
     } else if ( COR3(hi, 0x14, 0x15, 0x1C) && lo == 0x27 ) {
         ctx->rollup = 4;
+        ctx->mode = CCMODE_ROLLUP_4;
     } else if ( COR3(hi, 0x14, 0x15, 0x1C) && lo == 0x29 ) {
     /* resume direct captioning */
         ctx->mode = CCMODE_PAINTON;
@@ -439,21 +491,21 @@ static int process_cc608(CCaptionSubContext *ctx, int64_t pts, uint8_t hi, uint8
         ret = handle_edm(ctx, pts);
     } else if ( COR3(hi, 0x14, 0x15, 0x1C) && lo == 0x2D ) {
     /* carriage return */
-        ctx->row_cnt++;
-        if(ctx->row_cnt >= ctx->rollup) {
-            ctx->row_cnt = 0;
-            ret = handle_edm(ctx, pts);
-            ctx->active_screen = !ctx->active_screen;
-        }
+        av_dlog(ctx, "carriage return\n");
+        reap_screen(ctx, pts);
+        roll_up(ctx);
+        ctx->screen_changed = 1;
         ctx->cursor_column = 0;
     } else if ( COR3(hi, 0x14, 0x15, 0x1C) && lo == 0x2F ) {
     /* end of caption */
+        av_dlog(ctx, "handle_eoc\n");
         ret = handle_eoc(ctx, pts);
     } else if (hi>=0x20) {
     /* Standard characters (always in pairs) */
         handle_char(ctx, hi, lo, pts);
     } else {
     /* Ignoring all other non data code */
+        av_dlog(ctx, "Unknown command 0x%hhx 0x%hhx\n", hi, lo);
     }
 
     /* set prev command */

@@ -173,10 +173,15 @@ static int decode_frame(AVCodecContext *avctx,
         break;
     case 52: // ABGR
     case 51: // RGBA
+    case 103: // UYVA4444
         elements = 4;
         break;
     case 50: // RGB
+    case 102: // UYV444
         elements = 3;
+        break;
+    case 100: // UYVY422
+        elements = 2;
         break;
     default:
         avpriv_report_missing_feature(avctx, "Descriptor %d", descriptor);
@@ -280,6 +285,15 @@ static int decode_frame(AVCodecContext *avctx,
     case 51160:
         avctx->pix_fmt = AV_PIX_FMT_RGBA64LE;
         break;
+    case 100081:
+        avctx->pix_fmt = AV_PIX_FMT_UYVY422;
+        break;
+    case 102081:
+        avctx->pix_fmt = AV_PIX_FMT_YUV444P;
+        break;
+    case 103081:
+        avctx->pix_fmt = AV_PIX_FMT_YUVA444P;
+        break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Unsupported format\n");
         return AVERROR_PATCHWELCOME;
@@ -344,9 +358,26 @@ static int decode_frame(AVCodecContext *avctx,
     case 16:
         elements *= 2;
     case 8:
+        if (   avctx->pix_fmt == AV_PIX_FMT_YUVA444P
+            || avctx->pix_fmt == AV_PIX_FMT_YUV444P) {
+            for (x = 0; x < avctx->height; x++) {
+                ptr[0] = p->data[0] + x * p->linesize[0];
+                ptr[1] = p->data[1] + x * p->linesize[1];
+                ptr[2] = p->data[2] + x * p->linesize[2];
+                ptr[3] = p->data[3] + x * p->linesize[3];
+                for (y = 0; y < avctx->width; y++) {
+                    *ptr[1]++ = *buf++;
+                    *ptr[0]++ = *buf++;
+                    *ptr[2]++ = *buf++;
+                    if (avctx->pix_fmt == AV_PIX_FMT_YUVA444P)
+                        *ptr[3]++ = *buf++;
+                }
+            }
+        } else {
         av_image_copy_plane(ptr[0], p->linesize[0],
                             buf, stride,
                             elements * avctx->width, avctx->height);
+        }
         break;
     }
 

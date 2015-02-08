@@ -176,6 +176,8 @@ static int thp_read_packet(AVFormatContext *s,
             thp->frame++;
 
         ret = av_get_packet(pb, pkt, size);
+        if (ret < 0)
+            return ret;
         if (ret != size) {
             av_free_packet(pkt);
             return AVERROR(EIO);
@@ -184,6 +186,8 @@ static int thp_read_packet(AVFormatContext *s,
         pkt->stream_index = thp->video_stream_index;
     } else {
         ret = av_get_packet(pb, pkt, thp->audiosize);
+        if (ret < 0)
+            return ret;
         if (ret != thp->audiosize) {
             av_free_packet(pkt);
             return AVERROR(EIO);

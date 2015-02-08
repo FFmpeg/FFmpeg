@@ -39,9 +39,6 @@
 #include "internal.h"
 #include "wma.h"
 
-#undef NDEBUG
-#include <assert.h>
-
 #define EXPVLCBITS 8
 #define EXPMAX     ((19 + EXPVLCBITS - 1) / EXPVLCBITS)
 

@@ -28,8 +28,8 @@
 
 #include "libavutil/float_dsp.h"
 
+#include "imdct15.h"
 #include "opus.h"
-#include "opus_imdct.h"
 
 enum CeltSpread {
     CELT_SPREAD_NONE,
@@ -61,7 +61,7 @@ typedef struct CeltFrame {
 struct CeltContext {
     // constant values that do not change during context lifetime
     AVCodecContext    *avctx;
-    CeltIMDCTContext  *imdct[4];
+    IMDCT15Context    *imdct[4];
     AVFloatDSPContext  *dsp;
     int output_channels;
 
@@ -1983,7 +1983,7 @@ int ff_celt_decode_frame(CeltContext *s, OpusRangeCoder *rc,
     int silence = 0;
     int transient = 0;
     int anticollapse = 0;
-    CeltIMDCTContext *imdct;
+    IMDCT15Context *imdct;
     float imdct_scale = 1.0;
 
     if (coded_channels != 1 && coded_channels != 2) {
@@ -2179,7 +2179,7 @@ void ff_celt_free(CeltContext **ps)
         return;
 
     for (i = 0; i < FF_ARRAY_ELEMS(s->imdct); i++)
-        ff_celt_imdct_uninit(&s->imdct[i]);
+        ff_imdct15_uninit(&s->imdct[i]);
 
     av_freep(&s->dsp);
     av_freep(ps);
@@ -2204,7 +2204,7 @@ int ff_celt_init(AVCodecContext *avctx, CeltContext **ps, int output_channels)
     s->output_channels = output_channels;
 
     for (i = 0; i < FF_ARRAY_ELEMS(s->imdct); i++) {
-        ret = ff_celt_imdct_init(&s->imdct[i], i + 3);
+        ret = ff_imdct15_init(&s->imdct[i], i + 3);
         if (ret < 0)
             goto fail;
     }

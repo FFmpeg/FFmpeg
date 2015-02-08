@@ -23,15 +23,12 @@
 #include <unistd.h>
 #endif
 
+#include "libavutil/avassert.h"
 #include "libavutil/mem.h"
 #include "libavutil/ppc/types_altivec.h"
 #include "libavutil/ppc/util_altivec.h"
 
-#ifdef DEBUG
-#define ASSERT_ALIGNED(ptr) assert(((unsigned long)ptr&0x0000000F));
-#else
-#define ASSERT_ALIGNED(ptr) ;
-#endif
+#define ASSERT_ALIGNED(ptr) av_assert2(((unsigned long)ptr&0x0000000F));
 
 #if HAVE_BIGENDIAN
 #define load_alignment(s, ali, pm2, pm1, pp0, pp1, pp2, pp3){\

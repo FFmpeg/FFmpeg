@@ -51,8 +51,6 @@
 #include "thread.h"
 #include "vdpau_internal.h"
 
-#include <assert.h>
-
 const uint16_t ff_h264_mb_sizes[4] = { 256, 384, 512, 768 };
 
 int avpriv_h264_has_num_reorder_frames(AVCodecContext *avctx)
@@ -1498,8 +1496,8 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size,
                 continue;
 
 again:
-            if (   !(avctx->active_thread_type & FF_THREAD_FRAME)
-                || nals_needed >= nal_index)
+            if (   (!(avctx->active_thread_type & FF_THREAD_FRAME) || nals_needed >= nal_index)
+                && !h->current_slice)
                 h->au_pps_id = -1;
             /* Ignore per frame NAL unit type during extradata
              * parsing. Decoding slices is not possible in codec init
@@ -1891,7 +1889,7 @@ static int h264_decode_frame(AVCodecContext *avctx, void *data,
         }
     }
 
-    assert(pict->buf[0] || !*got_frame);
+    av_assert0(pict->buf[0] || !*got_frame);
 
     ff_h264_unref_picture(h, &h->last_pic_for_ec);
 

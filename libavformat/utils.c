@@ -19,8 +19,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#undef NDEBUG
-#include <assert.h>
 #include <stdarg.h>
 #include <stdint.h>
 
@@ -2827,8 +2825,8 @@ static int get_std_framerate(int i)
  * And there are "variable" fps files this needs to detect as well. */
 static int tb_unreliable(AVCodecContext *c)
 {
-    if (c->time_base.den >= 101L * c->time_base.num ||
-        c->time_base.den <    5L * c->time_base.num ||
+    if (c->time_base.den >= 101LL * c->time_base.num ||
+        c->time_base.den <    5LL * c->time_base.num ||
         // c->codec_tag == AV_RL32("DIVX") ||
         // c->codec_tag == AV_RL32("XVID") ||
         c->codec_tag == AV_RL32("mp4v") ||
@@ -3829,6 +3827,8 @@ int av_get_frame_filename(char *buf, int buf_size, const char *path, int number)
                 if (percentd_found)
                     goto fail;
                 percentd_found = 1;
+                if (number < 0)
+                    nd += 1;
                 snprintf(buf1, sizeof(buf1), "%0*d", nd, number);
                 len = strlen(buf1);
                 if ((q - buf + len) > buf_size - 1)
@@ -4097,7 +4097,8 @@ int avformat_network_init(void)
     ff_network_inited_globally = 1;
     if ((ret = ff_network_init()) < 0)
         return ret;
-    ff_tls_init();
+    if ((ret = ff_tls_init()) < 0)
+        return ret;
 #endif
     return 0;
 }

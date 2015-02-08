@@ -719,7 +719,8 @@ static int qcelp_decode_frame(AVCodecContext *avctx, void *data,
                                          qcelp_unpacking_bitmaps_lengths[q->bitrate];
         uint8_t *unpacked_data         = (uint8_t *)&q->frame;
 
-        init_get_bits(&q->gb, buf, 8 * buf_size);
+        if ((ret = init_get_bits8(&q->gb, buf, buf_size)) < 0)
+            return ret;
 
         memset(&q->frame, 0, sizeof(QCELPFrame));
 

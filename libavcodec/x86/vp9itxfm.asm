@@ -407,6 +407,9 @@ IDCT_4x4_FN ssse3
 %macro IADST4_FN 5
 INIT_MMX %5
 cglobal vp9_%1_%3_4x4_add, 3, 3, 6 + notcpuflag(ssse3), dst, stride, block, eob
+%if WIN64 && notcpuflag(ssse3)
+WIN64_SPILL_XMM 7
+%endif
     movdqa            xmm5, [pd_8192]
     mova                m0, [blockq+ 0]
     mova                m1, [blockq+ 8]

@@ -197,8 +197,26 @@ int ff_h264_field_end(H264Context *h, int in_setup)
      * causes problems for the first MB line, too.
      */
     if (!FIELD_PICTURE(h) && h->current_slice && !h->sps.new) {
+        int use_last_pic = h->last_pic_for_ec.f.buf[0] && !h->ref_count[0];
+
         ff_h264_set_erpic(&h->er.cur_pic, h->cur_pic_ptr);
+
+        if (use_last_pic) {
+            ff_h264_set_erpic(&h->er.last_pic, &h->last_pic_for_ec);
+            COPY_PICTURE(&h->ref_list[0][0], &h->last_pic_for_ec);
+        } else if (h->ref_count[0]) {
+            ff_h264_set_erpic(&h->er.last_pic, &h->ref_list[0][0]);
+        } else
+            ff_h264_set_erpic(&h->er.last_pic, NULL);
+
+        if (h->ref_count[1])
+            ff_h264_set_erpic(&h->er.next_pic, &h->ref_list[1][0]);
+
+        h->er.ref_count = h->ref_count[0];
+
         ff_er_frame_end(&h->er);
+        if (use_last_pic)
+            memset(&h->ref_list[0][0], 0, sizeof(h->last_pic_for_ec));
     }
 #endif /* CONFIG_ERROR_RESILIENCE */
 

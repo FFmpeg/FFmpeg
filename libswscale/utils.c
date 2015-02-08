@@ -611,14 +611,15 @@ static av_cold int initFilter(int16_t **outFilter, int32_t **filterPos,
         }
 
         if ((*filterPos)[i] + filterSize > srcW) {
-            int shift = (*filterPos)[i] + filterSize - srcW;
+            int shift = (*filterPos)[i] + FFMIN(filterSize - srcW, 0);
+
             // move filter coefficients right to compensate for filterPos
             for (j = filterSize - 2; j >= 0; j--) {
                 int right = FFMIN(j + shift, filterSize - 1);
                 filter[i * filterSize + right] += filter[i * filterSize + j];
                 filter[i * filterSize + j]      = 0;
             }
-            (*filterPos)[i]= srcW - filterSize;
+            (*filterPos)[i]-= shift;
         }
     }
 

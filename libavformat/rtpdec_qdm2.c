@@ -189,7 +189,7 @@ static int qdm2_restore_block(PayloadContext *qdm, AVStream *st, AVPacket *pkt)
     uint8_t *p, *csum_pos = NULL;
 
     /* create packet to hold subpkts into a superblock */
-    assert(qdm->cache > 0);
+    av_assert0(qdm->cache > 0);
     for (n = 0; n < 0x80; n++)
         if (qdm->len[n] > 0)
             break;

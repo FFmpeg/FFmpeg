@@ -149,7 +149,6 @@ OBJS-$(CONFIG_LUTRGB_FILTER)                 += vf_lut.o
 OBJS-$(CONFIG_LUTYUV_FILTER)                 += vf_lut.o
 OBJS-$(CONFIG_MCDEINT_FILTER)                += vf_mcdeint.o
 OBJS-$(CONFIG_MERGEPLANES_FILTER)            += vf_mergeplanes.o framesync.o
-OBJS-$(CONFIG_MP_FILTER)                     += vf_mp.o
 OBJS-$(CONFIG_MPDECIMATE_FILTER)             += vf_mpdecimate.o
 OBJS-$(CONFIG_NEGATE_FILTER)                 += vf_lut.o
 OBJS-$(CONFIG_NOFORMAT_FILTER)               += vf_format.o
@@ -192,7 +191,7 @@ OBJS-$(CONFIG_STEREO3D_FILTER)               += vf_stereo3d.o
 OBJS-$(CONFIG_SUBTITLES_FILTER)              += vf_subtitles.o
 OBJS-$(CONFIG_SUPER2XSAI_FILTER)             += vf_super2xsai.o
 OBJS-$(CONFIG_SWAPUV_FILTER)                 += vf_swapuv.o
-OBJS-$(CONFIG_TBLEND_FILTER)                 += vf_blend.o
+OBJS-$(CONFIG_TBLEND_FILTER)                 += vf_blend.o dualinput.o framesync.o
 OBJS-$(CONFIG_TELECINE_FILTER)               += vf_telecine.o
 OBJS-$(CONFIG_THUMBNAIL_FILTER)              += vf_thumbnail.o
 OBJS-$(CONFIG_TILE_FILTER)                   += vf_tile.o
@@ -225,10 +224,6 @@ OBJS-$(CONFIG_SMPTEHDBARS_FILTER)            += vsrc_testsrc.o
 OBJS-$(CONFIG_TESTSRC_FILTER)                += vsrc_testsrc.o
 
 OBJS-$(CONFIG_NULLSINK_FILTER)               += vsink_nullsink.o
-
-OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/mp_image.o
-OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/img_format.o
-OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_softpulldown.o
 
 # multimedia filters
 OBJS-$(CONFIG_AVECTORSCOPE_FILTER)           += avf_avectorscope.o

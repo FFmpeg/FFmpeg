@@ -17,6 +17,8 @@ version <next>:
 - fspp, uspp, pp7 MPlayer postprocessing filters ported to native filters
 - showpalette filter
 - Twofish symmetric block cipher
+- Support DNx100 (960x720@8)
+- removed libmpcodecs
 
 
 version 2.5:

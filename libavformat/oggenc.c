@@ -71,14 +71,17 @@ typedef struct {
     OGGPageList *page_list;
     int pref_size; ///< preferred page size (0 => fill all segments)
     int64_t pref_duration;      ///< preferred page duration (0 => fill all segments)
+    int serial_offset;
 } OGGContext;
 
 #define OFFSET(x) offsetof(OGGContext, x)
 #define PARAM AV_OPT_FLAG_ENCODING_PARAM
 
 static const AVOption options[] = {
+    { "serial_offset", "serial number offset",
+        OFFSET(serial_offset), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, PARAM },
     { "oggpagesize", "Set preferred Ogg page size.",
-      offsetof(OGGContext, pref_size), AV_OPT_TYPE_INT, {.i64 = 0}, 0, MAX_PAGE_SIZE, AV_OPT_FLAG_ENCODING_PARAM},
+      OFFSET(pref_size), AV_OPT_TYPE_INT, {.i64 = 0}, 0, MAX_PAGE_SIZE, PARAM},
     { "pagesize", "preferred page size in bytes (deprecated)",
         OFFSET(pref_size), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, MAX_PAGE_SIZE, PARAM },
     { "page_duration", "preferred page duration, in microseconds",
@@ -430,7 +433,7 @@ static int ogg_write_header(AVFormatContext *s)
 
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
-        unsigned serial_num = i;
+        unsigned serial_num = i + ogg->serial_offset;
 
         if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
             if (st->codec->codec_id == AV_CODEC_ID_OPUS)

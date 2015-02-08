@@ -640,9 +640,9 @@ static uint32_t log2sample(uint32_t v, int limit, uint32_t *result)
         dbits = nbits_table[v];
         *result += (dbits << 8) + wp_log2_table[(v << (9 - dbits)) & 0xff];
     } else {
-        if (v < (1L << 16))
+        if (v < (1 << 16))
             dbits = nbits_table[v >> 8] + 8;
-        else if (v < (1L << 24))
+        else if (v < (1 << 24))
             dbits = nbits_table[v >> 16] + 16;
         else
             dbits = nbits_table[v >> 24] + 24;
@@ -1967,8 +1967,8 @@ static int wv_stereo(WavPackEncodeContext *s,
 #define count_bits(av) ( \
  (av) < (1 << 8) ? nbits_table[av] : \
   ( \
-   (av) < (1L << 16) ? nbits_table[(av) >> 8] + 8 : \
-   ((av) < (1L << 24) ? nbits_table[(av) >> 16] + 16 : nbits_table[(av) >> 24] + 24) \
+   (av) < (1 << 16) ? nbits_table[(av) >> 8] + 8 : \
+   ((av) < (1 << 24) ? nbits_table[(av) >> 16] + 16 : nbits_table[(av) >> 24] + 24) \
   ) \
 )
 

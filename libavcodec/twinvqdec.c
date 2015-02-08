@@ -256,9 +256,10 @@ static int twinvq_read_bitstream(AVCodecContext *avctx, TwinVQContext *tctx,
     int channels              = tctx->avctx->channels;
     int sub;
     GetBitContext gb;
-    int i, j, k;
+    int i, j, k, ret;
 
-    init_get_bits(&gb, buf, buf_size * 8);
+    if ((ret = init_get_bits8(&gb, buf, buf_size)) < 0)
+        return ret;
     skip_bits(&gb, get_bits(&gb, 8));
 
     bits->window_type = get_bits(&gb, TWINVQ_WINDOW_TYPE_BITS);

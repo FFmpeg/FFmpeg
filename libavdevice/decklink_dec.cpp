@@ -233,6 +233,7 @@ HRESULT decklink_input_callback::VideoInputFrameArrived(
                                   ctx->video_st->time_base.den);
 
         if (videoFrame->GetFlags() & bmdFrameHasNoInputSource) {
+            if (videoFrame->GetPixelFormat() == bmdFormat8BitYUV) {
             unsigned bars[8] = {
                 0xEA80EA80, 0xD292D210, 0xA910A9A5, 0x90229035,
                 0x6ADD6ACA, 0x51EF515A, 0x286D28EF, 0x10801080 };
@@ -243,6 +244,7 @@ HRESULT decklink_input_callback::VideoInputFrameArrived(
             for (int y = 0; y < height; y++) {
                 for (int x = 0; x < width; x += 2)
                     *p++ = bars[(x * 8) / width];
+            }
             }
 
             if (!no_video) {
@@ -466,15 +468,21 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
         goto error;
     }
     st->codec->codec_type  = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id    = AV_CODEC_ID_RAWVIDEO;
     st->codec->width       = ctx->bmd_width;
     st->codec->height      = ctx->bmd_height;
 
-    st->codec->pix_fmt     = AV_PIX_FMT_UYVY422;
     st->codec->time_base.den      = ctx->bmd_tb_den;
     st->codec->time_base.num      = ctx->bmd_tb_num;
     st->codec->bit_rate    = avpicture_get_size(st->codec->pix_fmt, ctx->bmd_width, ctx->bmd_height) * 1/av_q2d(st->codec->time_base) * 8;
-    st->codec->codec_tag   = MKTAG('U', 'Y', 'V', 'Y');
+
+    if (cctx->v210) {
+        st->codec->codec_id    = AV_CODEC_ID_V210;
+        st->codec->codec_tag   = MKTAG('V', '2', '1', '0');
+    } else {
+        st->codec->codec_id    = AV_CODEC_ID_RAWVIDEO;
+        st->codec->pix_fmt     = AV_PIX_FMT_UYVY422;
+        st->codec->codec_tag   = MKTAG('U', 'Y', 'V', 'Y');
+    }
 
     avpriv_set_pts_info(st, 64, 1, 1000000);  /* 64 bits pts in us */
 
@@ -487,7 +495,9 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
         goto error;
     }
 
-    result = ctx->dli->EnableVideoInput(ctx->bmd_mode, bmdFormat8BitYUV, bmdVideoInputFlagDefault);
+    result = ctx->dli->EnableVideoInput(ctx->bmd_mode,
+                                        cctx->v210 ? bmdFormat10BitYUV : bmdFormat8BitYUV,
+                                        bmdVideoInputFlagDefault);
 
     if (result != S_OK) {
         av_log(avctx, AV_LOG_ERROR, "Cannot enable video input\n");

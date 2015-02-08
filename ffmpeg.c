@@ -62,8 +62,6 @@
 #include "libavutil/threadmessage.h"
 #include "libavformat/os_support.h"
 
-#include "libavformat/ffm.h" // not public API
-
 # include "libavfilter/avcodec.h"
 # include "libavfilter/avfilter.h"
 # include "libavfilter/buffersrc.h"
@@ -155,8 +153,9 @@ static struct termios oldtty;
 static int restore_tty;
 #endif
 
+#if HAVE_PTHREADS
 static void free_input_threads(void);
-
+#endif
 
 /* sub2video hack:
    Convert subtitles to video with alpha to insert them in filter graphs.
@@ -963,7 +962,9 @@ static void do_video_out(AVFormatContext *s,
         }
     case VSYNC_CFR:
         // FIXME set to 0.5 after we fix some dts/pts bugs like in avidec.c
-        if (delta < -1.1)
+        if (frame_drop_threshold && delta < frame_drop_threshold && ost->frame_number) {
+            nb_frames = 0;
+        } else if (delta < -1.1)
             nb_frames = 0;
         else if (delta > 1.1) {
             nb_frames = lrintf(delta);

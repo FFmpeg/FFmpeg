@@ -6263,36 +6263,6 @@ Higher values should result in a smoother motion vector field but less
 optimal individual vectors. Default value is 1.
 @end table
 
-@section mp
-
-Apply an MPlayer filter to the input video.
-
-This filter provides a wrapper around some of the filters of
-MPlayer/MEncoder.
-
-This wrapper is considered experimental. Some of the wrapped filters
-may not work properly and we may drop support for them, as they will
-be implemented natively into FFmpeg. Thus you should avoid
-depending on them when writing portable scripts.
-
-The filter accepts the parameters:
-@var{filter_name}[:=]@var{filter_params}
-
-@var{filter_name} is the name of a supported MPlayer filter,
-@var{filter_params} is a string containing the parameters accepted by
-the named filter.
-
-The list of the currently supported filters follows:
-@table @var
-@item softpulldown
-@end table
-
-The parameter syntax and behavior for the listed filters are the same
-of the corresponding MPlayer filters. For detailed instructions check
-the "VIDEO FILTERS" section in the MPlayer manual.
-
-See also mplayer(1), @url{http://www.mplayerhq.hu/}.
-
 @section mpdecimate
 
 Drop frames that do not differ greatly from the previous frame in
@@ -8584,6 +8554,10 @@ useful if not UTF-8.
 
 @item stream_index, si
 Set subtitles stream index. @code{subtitles} filter only.
+
+@item force_style
+Override default style or script info parameters of the subtitles. It accepts a
+string containing ASS style format @code{KEY=VALUE} couples separated by ",".
 @end table
 
 If the first key is not specified, it is assumed that the first value
@@ -8608,6 +8582,12 @@ subtitles=video.mkv
 To render the second subtitles stream from that file, use:
 @example
 subtitles=video.mkv:si=1
+@end example
+
+To make the subtitles stream from @file{sub.srt} appear in transparent green
+@code{DejaVu Serif}, use:
+@example
+subtitles=sub.srt:force_style='FontName=DejaVu Serif,PrimaryColour=&HAA00FF00'
 @end example
 
 @section super2xsai

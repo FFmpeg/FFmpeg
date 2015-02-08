@@ -48,9 +48,6 @@
 #include "rtpenc.h"
 #include "mov_chan.h"
 
-#undef NDEBUG
-#include <assert.h>
-
 static const AVOption options[] = {
     { "movflags", "MOV muxer flags", offsetof(MOVMuxContext, flags), AV_OPT_TYPE_FLAGS, {.i64 = 0}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     { "rtphint", "Add RTP hint tracks", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_RTP_HINT}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
@@ -325,6 +322,7 @@ struct eac3_info {
     } substream[1]; /* TODO: support 8 independent substreams */
 };
 
+#if CONFIG_AC3_PARSER
 static int handle_eac3(MOVMuxContext *mov, AVPacket *pkt, MOVTrack *track)
 {
     GetBitContext gbc;
@@ -445,6 +443,7 @@ concatenate:
 
     return pkt->size;
 }
+#endif
 
 static int mov_write_eac3_tag(AVIOContext *pb, MOVTrack *track)
 {
@@ -4191,13 +4190,15 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
         } else {
             size = ff_hevc_annexb2mp4(pb, pkt->data, pkt->size, 0, NULL);
         }
-    } else if (CONFIG_AC3_PARSER && enc->codec_id == AV_CODEC_ID_EAC3) {
+#if CONFIG_AC3_PARSER
+    } else if (enc->codec_id == AV_CODEC_ID_EAC3) {
         size = handle_eac3(mov, pkt, trk);
         if (size < 0)
             return size;
         else if (!size)
             goto end;
         avio_write(pb, pkt->data, size);
+#endif
     } else {
         avio_write(pb, pkt->data, size);
     }
