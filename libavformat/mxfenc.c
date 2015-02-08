@@ -2105,8 +2105,6 @@ static int mxf_write_opatom_packet(AVFormatContext *s, AVPacket *pkt, MXFIndexEn
 {
     MXFContext *mxf = s->priv_data;
     AVIOContext *pb = s->pb;
-    AVStream *st = s->streams[pkt->stream_index];
-    MXFStreamContext *sc = st->priv_data;
 
     int err;
 
