@@ -650,7 +650,7 @@ static av_cold int mss4_decode_init(AVCodecContext *avctx)
     }
     for (i = 0; i < 3; i++) {
         c->dc_stride[i] = FFALIGN(avctx->width, 16) >> (2 + !!i);
-        c->prev_dc[i]   = av_malloc(sizeof(**c->prev_dc) * c->dc_stride[i]);
+        c->prev_dc[i]   = av_malloc_array(c->dc_stride[i], sizeof(**c->prev_dc));
         if (!c->prev_dc[i]) {
             av_log(avctx, AV_LOG_ERROR, "Cannot allocate buffer\n");
             mss4_free_vlcs(c);
