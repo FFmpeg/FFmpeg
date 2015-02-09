@@ -2630,7 +2630,8 @@ static int mov_read_trak(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     }
 
     if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
-        if (!st->sample_aspect_ratio.num &&
+        if (!st->sample_aspect_ratio.num && st->codec->width && st->codec->height &&
+            sc->height && sc->width &&
             (st->codec->width != sc->width || st->codec->height != sc->height)) {
             st->sample_aspect_ratio = av_d2q(((double)st->codec->height * sc->width) /
                                              ((double)st->codec->width * sc->height), INT_MAX);

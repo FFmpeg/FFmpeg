@@ -19,6 +19,9 @@ API changes, most recent first:
   Add AV_PKT_DATA_AUDIO_SERVICE_TYPE and AV_FRAME_DATA_AUDIO_SERVICE_TYPE for
   storing the audio service type as side data.
 
+2015-01-16 - a47c933 - lavf 56.19.100 - avformat.h
+  Add data_codec and data_codec_id for storing codec of data stream
+
 2015-01-11 - 007c33d - lavd 56.4.100 - avdevice.h
   Add avdevice_list_input_sources().
   Add avdevice_list_output_sinks().
