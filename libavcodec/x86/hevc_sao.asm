@@ -45,7 +45,6 @@ SECTION_TEXT
 ;SAO Band Filter
 ;******************************************************************************
 
-%if ARCH_X86_64
 %macro HEVC_SAO_BAND_FILTER_INIT 1
     and            leftq, 31
     movd             xm0, leftd
@@ -76,17 +75,37 @@ SECTION_TEXT
     SPLATW            m7, m7, 3
 %endif
 
+%if ARCH_X86_64
 %if %1 > 8
     mova             m13, [pw_mask %+ %1]
 %endif
     pxor             m14, m14
 
+%else ; ARCH_X86_32
+    mova  [rsp+mmsize*0], m0
+    mova  [rsp+mmsize*1], m1
+    mova  [rsp+mmsize*2], m2
+    mova  [rsp+mmsize*3], m3
+    mova  [rsp+mmsize*4], m4
+    mova  [rsp+mmsize*5], m5
+    mova  [rsp+mmsize*6], m6
+    pxor              m0, m0
+%if %1 > 8
+    mova              m1, [pw_mask %+ %1]
+%endif
+    %assign MMSIZE mmsize
+    %define m14 m0
+    %define m13 m1
+    %define  m9 m2
+    %define  m8 m3
+%endif ; ARCH
 DEFINE_ARGS dst, src, dststride, srcstride, offset, height
     mov          heightd, r7m
 %endmacro
 
 %macro HEVC_SAO_BAND_FILTER_COMPUTE 3
     psraw             %2, %3, %1-5
+%if ARCH_X86_64
     pcmpeqw          m10, %2, m0
     pcmpeqw          m11, %2, m1
     pcmpeqw          m12, %2, m2
@@ -99,12 +118,26 @@ DEFINE_ARGS dst, src, dststride, srcstride, offset, height
     por              m12, %2
     por              m10, m12
     paddw             %3, m10
+%else ; ARCH_X86_32
+    pcmpeqw           m4, %2, [rsp+MMSIZE*0]
+    pcmpeqw           m5, %2, [rsp+MMSIZE*1]
+    pcmpeqw           m6, %2, [rsp+MMSIZE*2]
+    pcmpeqw           %2, [rsp+MMSIZE*3]
+    pand              m4, [rsp+MMSIZE*4]
+    pand              m5, [rsp+MMSIZE*5]
+    pand              m6, [rsp+MMSIZE*6]
+    pand              %2, m7
+    por               m4, m5
+    por               m6, %2
+    por               m4, m6
+    paddw             %3, m4
+%endif ; ARCH
 %endmacro
 
 ;void ff_hevc_sao_band_filter_<width>_8_<opt>(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride_dst, ptrdiff_t _stride_src,
 ;                                             int16_t *sao_offset_val, int sao_left_class, int width, int height);
 %macro HEVC_SAO_BAND_FILTER_8 2
-cglobal hevc_sao_band_filter_%1_8, 6, 6, 15, dst, src, dststride, srcstride, offset, left
+cglobal hevc_sao_band_filter_%1_8, 6, 6, 15, 7*mmsize*ARCH_X86_32, dst, src, dststride, srcstride, offset, left
     HEVC_SAO_BAND_FILTER_INIT 8
 
 align 16
@@ -154,7 +187,7 @@ INIT_YMM cpuname
 ;void ff_hevc_sao_band_filter_<width>_<depth>_<opt>(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride_dst, ptrdiff_t _stride_src,
 ;                                                   int16_t *sao_offset_val, int sao_left_class, int width, int height);
 %macro HEVC_SAO_BAND_FILTER_16 3
-cglobal hevc_sao_band_filter_%2_%1, 6, 6, 15, dst, src, dststride, srcstride, offset, left
+cglobal hevc_sao_band_filter_%2_%1, 6, 6, 15, 7*mmsize*ARCH_X86_32, dst, src, dststride, srcstride, offset, left
     HEVC_SAO_BAND_FILTER_INIT %1
 
 align 16
@@ -252,7 +285,6 @@ INIT_YMM avx2
 HEVC_SAO_BAND_FILTER_16 12, 32, 1
 HEVC_SAO_BAND_FILTER_16 12, 48, 1
 HEVC_SAO_BAND_FILTER_16 12, 64, 2
-%endif
 %endif
 
 ;******************************************************************************
