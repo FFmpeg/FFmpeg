@@ -62,7 +62,7 @@ int ff_huff_gen_len_table(uint8_t *dst, const uint64_t *stats, int stats_size, i
     int size = 0;
     int ret = 0;
 
-    if (!h || !up || !len) {
+    if (!h || !up || !len || !map) {
         ret = AVERROR(ENOMEM);
         goto end;
     }
