@@ -58,7 +58,7 @@ static int chroma_tc(HEVCContext *s, int qp_y, int c_idx, int tc_offset)
     else
         offset = s->pps->cr_qp_offset;
 
-    qp_i = av_clip_c(qp_y + offset, 0, 57);
+    qp_i = av_clip(qp_y + offset, 0, 57);
     if (qp_i < 30)
         qp = qp_i;
     else if (qp_i > 43)
@@ -66,7 +66,7 @@ static int chroma_tc(HEVCContext *s, int qp_y, int c_idx, int tc_offset)
     else
         qp = qp_c[qp_i - 30];
 
-    idxt = av_clip_c(qp + DEFAULT_INTRA_TC_OFFSET + tc_offset, 0, 53);
+    idxt = av_clip(qp + DEFAULT_INTRA_TC_OFFSET + tc_offset, 0, 53);
     return tctable[idxt];
 }
 

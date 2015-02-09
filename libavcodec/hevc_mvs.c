@@ -141,13 +141,13 @@ static av_always_inline void mv_scale(Mv *dst, Mv *src, int td, int tb)
 {
     int tx, scale_factor;
 
-    td = av_clip_int8_c(td);
-    tb = av_clip_int8_c(tb);
+    td = av_clip_int8(td);
+    tb = av_clip_int8(tb);
     tx = (0x4000 + abs(td / 2)) / td;
-    scale_factor = av_clip_c((tb * tx + 32) >> 6, -4096, 4095);
-    dst->x = av_clip_int16_c((scale_factor * src->x + 127 +
+    scale_factor = av_clip((tb * tx + 32) >> 6, -4096, 4095);
+    dst->x = av_clip_int16((scale_factor * src->x + 127 +
                              (scale_factor * src->x < 0)) >> 8);
-    dst->y = av_clip_int16_c((scale_factor * src->y + 127 +
+    dst->y = av_clip_int16((scale_factor * src->y + 127 +
                              (scale_factor * src->y < 0)) >> 8);
 }
 
