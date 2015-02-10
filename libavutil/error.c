@@ -29,6 +29,7 @@ struct error_entry {
 };
 
 #define ERROR_TAG(tag) AVERROR_##tag, #tag
+#define EERROR_TAG(tag) AVERROR(tag), #tag
 #define AVERROR_INPUT_AND_OUTPUT_CHANGED (AVERROR_INPUT_CHANGED | AVERROR_OUTPUT_CHANGED)
 static const struct error_entry error_entries[] = {
     { ERROR_TAG(BSF_NOT_FOUND),      "Bitstream filter not found"                     },
@@ -59,6 +60,9 @@ static const struct error_entry error_entries[] = {
     { ERROR_TAG(HTTP_NOT_FOUND),     "Server returned 404 Not Found"           },
     { ERROR_TAG(HTTP_OTHER_4XX),     "Server returned 4XX Client Error, but not one of 40{0,1,3,4}" },
     { ERROR_TAG(HTTP_SERVER_ERROR),  "Server returned 5XX Server Error reply" },
+#if !HAVE_STRERROR_R
+    { EERROR_TAG(EINVAL),            "Invalid argument" },
+#endif
 };
 
 int av_strerror(int errnum, char *errbuf, size_t errbuf_size)
