@@ -14,6 +14,7 @@ version <next>:
 - Support DNx100 (960x720@8)
 - DXVA2-accelerated HEVC decoding
 - AAC ELD 480 decoding
+- Intel QSV-accelerated H.264 decoding
 
 
 version 11:
