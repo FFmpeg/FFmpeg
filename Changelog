@@ -19,6 +19,7 @@ version <next>:
 - Twofish symmetric block cipher
 - Support DNx100 (960x720@8)
 - removed libmpcodecs
+- Changed default DNxHD colour range in QuickTime .mov derivatives to mpeg range
 
 
 version 2.5:
