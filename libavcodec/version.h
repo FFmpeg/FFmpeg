@@ -48,6 +48,9 @@
  * the public API and may change, break or disappear at any time.
  */
 
+#ifndef FF_API_VIMA_DECODER
+#define FF_API_VIMA_DECODER     (LIBAVCODEC_VERSION_MAJOR < 57)
+#endif
 #ifndef FF_API_REQUEST_CHANNELS
 #define FF_API_REQUEST_CHANNELS (LIBAVCODEC_VERSION_MAJOR < 57)
 #endif
