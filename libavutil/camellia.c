@@ -37,6 +37,8 @@
 #define Sigma5  0x10E527FADE682D1D
 #define Sigma6  0xB05688C2B3E6C1FD
 
+static uint64_t SP[8][256];
+
 typedef struct AVCAMELLIA {
     uint64_t Kw[4];
     uint64_t Ke[6];
@@ -140,17 +142,11 @@ static void LR128(uint64_t d[2], const uint64_t K[2], int x)
 
 static uint64_t F(uint64_t F_IN, uint64_t KE)
 {
-    uint32_t Zl, Zr;
+    uint8_t y[8];
     KE ^= F_IN;
-    Zl = KE >> 32;
-    Zr = KE & MASK32;
-    Zl = (((uint32_t)SBOX1[(Zl >> 24)] << 24) | ((uint32_t)SBOX2[(Zl >> 16) & MASK8] << 16) | ((uint32_t)SBOX3[(Zl >> 8) & MASK8] << 8) |(SBOX4[Zl & MASK8]));
-    Zr = (((uint32_t)SBOX2[(Zr >> 24)] << 24) | ((uint32_t)SBOX3[(Zr >> 16) & MASK8] << 16) | ((uint32_t)SBOX4[(Zr >> 8) & MASK8] << 8) |(SBOX1[Zr & MASK8]));
-    Zl ^= LR32(Zr, 8);
-    Zr ^= LR32(Zl, 16);
-    Zl ^= RR32(Zr, 8);
-    Zr ^= RR32(Zl, 8);
-    return ((uint64_t)Zr << 32) | (uint64_t)Zl;
+    AV_WB64(y,KE);
+    KE=SP[0][y[0]] ^ SP[1][y[1]] ^ SP[2][y[2]] ^ SP[3][y[3]] ^ SP[4][y[4]] ^ SP[5][y[5]] ^ SP[6][y[6]] ^ SP[7][y[7]];
+    return KE;
 }
 
 static uint64_t FL(uint64_t FL_IN, uint64_t KE)
@@ -330,6 +326,26 @@ static void camellia_decrypt(AVCAMELLIA *cs, uint8_t *dst, const uint8_t *src, u
     AV_WB64(dst + 8, D1);
 }
 
+static void computeSP(void)
+{
+    uint64_t z;
+    int i;
+    for (i = 0; i < 256; i++) {
+        z = SBOX1[i];
+        SP[0][i] = (z << 56) ^ (z << 48) ^ (z << 40) ^ (z << 24) ^ z;
+        SP[7][i] = (z << 56) ^ (z << 48) ^ (z << 40) ^ (z << 24) ^ (z << 16) ^ (z << 8);
+        z = SBOX2[i];
+        SP[1][i] = (z << 48) ^ (z << 40) ^ (z << 32) ^ (z << 24) ^ (z << 16);
+        SP[4][i] = (z << 48) ^ (z << 40) ^ (z << 32) ^ (z << 16) ^ (z << 8) ^ z;
+        z = SBOX3[i];
+        SP[2][i] = (z << 56) ^ (z << 40) ^ (z << 32) ^ (z << 16) ^ (z << 8);
+        SP[5][i] = (z << 56) ^ (z << 40) ^ (z << 32) ^ (z << 24) ^ (z << 8) ^ z;
+        z = SBOX4[i];
+        SP[3][i] = (z << 56) ^ (z << 48) ^ (z << 32) ^ (z << 8) ^ z;
+        SP[6][i] = (z << 56) ^ (z << 48) ^ (z << 32) ^ (z << 24) ^ (z << 16) ^ z;
+    }
+}
+
 struct AVCAMELLIA *av_camellia_alloc(void)
 {
     return av_mallocz(sizeof(struct AVCAMELLIA));
@@ -353,6 +369,7 @@ av_cold int av_camellia_init(AVCAMELLIA *cs, const uint8_t *key, int key_bits)
         Kr[0] = AV_RB64(key + 16);
         Kr[1] = AV_RB64(key + 24);
     }
+    computeSP();
     D1 = Kl[0] ^ Kr[0];
     D2 = Kl[1] ^ Kr[1];
     D2 ^= F(D1, Sigma1);
