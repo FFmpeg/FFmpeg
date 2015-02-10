@@ -1675,7 +1675,7 @@ static int mov_write_video_tag(AVIOContext *pb, MOVMuxContext *mov, MOVTrack *tr
     /* extra padding for stsd needed */
     /* https://developer.apple.com/library/mac/documentation/QuickTime/QTFF/QTFFChap2/qtff2.html#//apple_ref/doc/uid/TP40000939-CH204-61112 */
     /* suggests it is optional */
-    // avio_wb32(pb, 0);
+    /* avio_wb32(pb, 0); */
 
     return update_size(pb, pos);
 }
