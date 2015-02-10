@@ -52,7 +52,7 @@ int ff_tempfile(const char *prefix, char **filename)
     /* -----common section-----*/
     if (!(*filename)) {
         av_log(NULL, AV_LOG_ERROR, "ff_tempfile: Cannot allocate file name\n");
-        return -1;
+        return AVERROR(ENOMEM);
     }
 #if !HAVE_MKSTEMP
     fd = avpriv_open(*filename, O_RDWR | O_BINARY | O_CREAT, 0444);
@@ -67,7 +67,7 @@ int ff_tempfile(const char *prefix, char **filename)
     /* -----common section-----*/
     if (fd < 0) {
         av_log(NULL, AV_LOG_ERROR, "ff_tempfile: Cannot open temporary file %s\n", *filename);
-        return -1;
+        return AVERROR(EIO);
     }
     return fd; /* success */
 }
@@ -80,9 +80,9 @@ av_cold int ff_xvid_rate_control_init(MpegEncContext *s)
     xvid_plugin_2pass2_t xvid_2pass2  = { 0 };
 
     fd = ff_tempfile("xvidrc.", &tmp_name);
-    if (fd == -1) {
+    if (fd < 0) {
         av_log(NULL, AV_LOG_ERROR, "Can't create temporary pass2 file.\n");
-        return -1;
+        return fd;
     }
 
     for (i = 0; i < s->rc_context.num_entries; i++) {

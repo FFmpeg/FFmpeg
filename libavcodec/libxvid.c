@@ -474,7 +474,7 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)
         if (!x->twopassbuffer || !x->old_twopassbuffer) {
             av_log(avctx, AV_LOG_ERROR,
                    "Xvid: Cannot allocate 2-pass log buffers\n");
-            return -1;
+            return AVERROR(ENOMEM);
         }
         x->twopassbuffer[0]     =
         x->old_twopassbuffer[0] = 0;
@@ -487,22 +487,22 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)
         rc2pass2.bitrate = avctx->bit_rate;
 
         fd = ff_tempfile("xvidff.", &x->twopassfile);
-        if (fd == -1) {
+        if (fd < 0) {
             av_log(avctx, AV_LOG_ERROR, "Xvid: Cannot write 2-pass pipe\n");
-            return -1;
+            return fd;
         }
 
         if (!avctx->stats_in) {
             av_log(avctx, AV_LOG_ERROR,
                    "Xvid: No 2-pass information loaded for second pass\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
 
         if (strlen(avctx->stats_in) >
             write(fd, avctx->stats_in, strlen(avctx->stats_in))) {
             close(fd);
             av_log(avctx, AV_LOG_ERROR, "Xvid: Cannot write to 2-pass pipe\n");
-            return -1;
+            return AVERROR(EIO);
         }
 
         close(fd);
@@ -770,7 +770,7 @@ static int xvid_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             return 0;
         av_log(avctx, AV_LOG_ERROR,
                "Xvid: Encoding Error Occurred: %i\n", xerr);
-        return -1;
+        return xerr;
     }
 }
 
