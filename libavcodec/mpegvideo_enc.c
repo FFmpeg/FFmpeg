@@ -3813,8 +3813,13 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
         qmat = n < 4 ? s->q_intra_matrix[qscale] : s->q_chroma_intra_matrix[qscale];
         if(s->mpeg_quant || s->out_format == FMT_MPEG1)
             bias= 1<<(QMAT_SHIFT-1);
-        length     = s->intra_ac_vlc_length;
-        last_length= s->intra_ac_vlc_last_length;
+        if (n > 3 && s->intra_chroma_ac_vlc_length) {
+            length     = s->intra_chroma_ac_vlc_length;
+            last_length= s->intra_chroma_ac_vlc_last_length;
+        } else {
+            length     = s->intra_ac_vlc_length;
+            last_length= s->intra_ac_vlc_last_length;
+        }
     } else {
         start_i = 0;
         last_non_zero = -1;
@@ -4123,8 +4128,13 @@ static int messed_sign=0;
         start_i = 1;
 //        if(s->mpeg_quant || s->out_format == FMT_MPEG1)
 //            bias= 1<<(QMAT_SHIFT-1);
-        length     = s->intra_ac_vlc_length;
-        last_length= s->intra_ac_vlc_last_length;
+        if (n > 3 && s->intra_chroma_ac_vlc_length) {
+            length     = s->intra_chroma_ac_vlc_length;
+            last_length= s->intra_chroma_ac_vlc_last_length;
+        } else {
+            length     = s->intra_ac_vlc_length;
+            last_length= s->intra_ac_vlc_last_length;
+        }
     } else {
         dc= 0;
         start_i = 0;
