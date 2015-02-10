@@ -3811,8 +3811,9 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
         start_i = 1;
         last_non_zero = 0;
         qmat = n < 4 ? s->q_intra_matrix[qscale] : s->q_chroma_intra_matrix[qscale];
-        if(s->mpeg_quant || s->out_format == FMT_MPEG1)
+        if(s->mpeg_quant || s->out_format == FMT_MPEG1 || s->out_format == FMT_MJPEG)
             bias= 1<<(QMAT_SHIFT-1);
+
         if (n > 3 && s->intra_chroma_ac_vlc_length) {
             length     = s->intra_chroma_ac_vlc_length;
             last_length= s->intra_chroma_ac_vlc_last_length;
@@ -3899,6 +3900,9 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
 
             if(s->out_format == FMT_H263 || s->out_format == FMT_H261){
                 unquant_coeff= alevel*qmul + qadd;
+            } else if(s->out_format == FMT_MJPEG) {
+                j = s->idsp.idct_permutation[scantable[i]];
+                unquant_coeff = alevel * s->intra_matrix[j] * 8;
             }else{ //MPEG1
                 j = s->idsp.idct_permutation[scantable[i]]; // FIXME: optimize
                 if(s->mb_intra){

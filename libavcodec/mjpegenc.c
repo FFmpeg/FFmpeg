@@ -38,6 +38,35 @@
 #include "mjpeg.h"
 #include "mjpegenc.h"
 
+static uint8_t uni_ac_vlc_len[64 * 64 * 2];
+static uint8_t uni_chroma_ac_vlc_len[64 * 64 * 2];
+
+static av_cold void init_uni_ac_vlc(const uint8_t huff_size_ac[256], uint8_t *uni_ac_vlc_len)
+{
+    int i;
+
+    for (i = 0; i < 128; i++) {
+        int level = i - 64;
+        int run;
+        if (!level)
+            continue;
+        for (run = 0; run < 64; run++) {
+            int len, code, nbits;
+            int alevel = FFABS(level);
+
+            len = (run >> 4) * huff_size_ac[0xf0];
+
+            nbits= av_log2_16bit(alevel) + 1;
+            code = ((15&run) << 4) | nbits;
+
+            len += huff_size_ac[code] + nbits;
+
+            uni_ac_vlc_len[UNI_AC_ENC_INDEX(run, i)] = len;
+            // We ignore EOB as its just a constant which does not change generally
+        }
+    }
+}
+
 av_cold int ff_mjpeg_encode_init(MpegEncContext *s)
 {
     MJpegContext *m;
@@ -71,6 +100,13 @@ av_cold int ff_mjpeg_encode_init(MpegEncContext *s)
                                  m->huff_code_ac_chrominance,
                                  avpriv_mjpeg_bits_ac_chrominance,
                                  avpriv_mjpeg_val_ac_chrominance);
+
+    init_uni_ac_vlc(m->huff_size_ac_luminance,   uni_ac_vlc_len);
+    init_uni_ac_vlc(m->huff_size_ac_chrominance, uni_chroma_ac_vlc_len);
+    s->intra_ac_vlc_length      =
+    s->intra_ac_vlc_last_length = uni_ac_vlc_len;
+    s->intra_chroma_ac_vlc_length      =
+    s->intra_chroma_ac_vlc_last_length = uni_chroma_ac_vlc_len;
 
     s->mjpeg_ctx = m;
     return 0;
