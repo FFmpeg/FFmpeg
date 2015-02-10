@@ -299,8 +299,6 @@ int av_pix_fmt_get_chroma_sub_sample(enum AVPixelFormat pix_fmt,
  */
 int av_pix_fmt_count_planes(enum AVPixelFormat pix_fmt);
 
-void ff_check_pixfmt_descriptors(void);
-
 /**
  * Utility function to swap the endianness of a pixel format.
  *

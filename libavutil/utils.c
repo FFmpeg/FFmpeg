@@ -20,7 +20,7 @@
 #include "avutil.h"
 #include "avassert.h"
 #include "samplefmt.h"
-#include "pixdesc.h"
+#include "internal.h"
 
 /**
  * @file
