@@ -907,6 +907,7 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
             s->inter_matrix[j] = ff_mpeg1_default_non_intra_matrix[i];
         } else {
             /* mpeg1/2 */
+            s->chroma_intra_matrix[j] =
             s->intra_matrix[j] = ff_mpeg1_default_intra_matrix[i];
             s->inter_matrix[j] = ff_mpeg1_default_non_intra_matrix[i];
         }
