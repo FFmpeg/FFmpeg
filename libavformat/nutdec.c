@@ -790,7 +790,7 @@ static int nut_read_header(AVFormatContext *s)
         decode_info_header(nut);
     }
 
-    s->data_offset = pos - 8;
+    s->internal->data_offset = pos - 8;
 
     if (bc->seekable) {
         int64_t orig_pos = avio_tell(bc);

@@ -909,7 +909,7 @@ static int asf_get_packet(AVFormatContext *s, AVIOContext *pb)
     if (asf->no_resync_search)
         off = 3;
     else if (s->packet_size > 0)
-        off = (avio_tell(pb) - s->data_offset) % s->packet_size + 3;
+        off = (avio_tell(pb) - s->internal->data_offset) % s->packet_size + 3;
 
     c = d = e = -1;
     while (off-- > 0) {
@@ -1445,9 +1445,9 @@ static int64_t asf_read_pts(AVFormatContext *s, int stream_index,
         start_pos[i] = pos;
 
     if (s->packet_size > 0)
-        pos = (pos + s->packet_size - 1 - s->data_offset) /
+        pos = (pos + s->packet_size - 1 - s->internal->data_offset) /
               s->packet_size * s->packet_size +
-              s->data_offset;
+              s->internal->data_offset;
     *ppos = pos;
     if (avio_seek(s->pb, pos, SEEK_SET) < 0)
         return AV_NOPTS_VALUE;
@@ -1526,7 +1526,7 @@ static int asf_build_simple_index(AVFormatContext *s, int stream_index)
         for (i = 0; i < ict; i++) {
             int pktnum        = avio_rl32(s->pb);
             int pktct         = avio_rl16(s->pb);
-            int64_t pos       = s->data_offset + s->packet_size * (int64_t)pktnum;
+            int64_t pos       = s->internal->data_offset + s->packet_size * (int64_t)pktnum;
             int64_t index_pts = FFMAX(av_rescale(itime, i, 10000) - asf->hdr.preroll, 0);
 
             if (pos != last_pos) {
@@ -1569,7 +1569,7 @@ static int asf_read_seek(AVFormatContext *s, int stream_index,
     /* explicitly handle the case of seeking to 0 */
     if (!pts) {
         asf_reset_header(s);
-        avio_seek(s->pb, s->data_offset, SEEK_SET);
+        avio_seek(s->pb, s->internal->data_offset, SEEK_SET);
         return 0;
     }
 

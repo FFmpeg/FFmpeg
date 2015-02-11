@@ -423,18 +423,18 @@ static int mp3_seek(AVFormatContext *s, int stream_index, int64_t timestamp,
 
     if (   mp3->is_cbr
         && st->duration > 0
-        && mp3->header_filesize > s->data_offset
+        && mp3->header_filesize > s->internal->data_offset
         && mp3->frames) {
         int64_t filesize = avio_size(s->pb);
         int64_t duration;
-        if (filesize <= s->data_offset)
+        if (filesize <= s->internal->data_offset)
             filesize = mp3->header_filesize;
-        filesize -= s->data_offset;
-        duration = av_rescale(st->duration, filesize, mp3->header_filesize - s->data_offset);
+        filesize -= s->internal->data_offset;
+        duration = av_rescale(st->duration, filesize, mp3->header_filesize - s->internal->data_offset);
         ie = &ie1;
         timestamp = av_clip64(timestamp, 0, duration);
         ie->timestamp = timestamp;
-        ie->pos       = av_rescale(timestamp, filesize, duration) + s->data_offset;
+        ie->pos       = av_rescale(timestamp, filesize, duration) + s->internal->data_offset;
     } else if (mp3->xing_toc) {
         if (ret < 0)
             return ret;

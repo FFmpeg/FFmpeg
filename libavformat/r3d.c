@@ -185,8 +185,8 @@ static int r3d_read_header(AVFormatContext *s)
         return -1;
     }
 
-    s->data_offset = avio_tell(s->pb);
-    av_dlog(s, "data offset %#"PRIx64"\n", s->data_offset);
+    s->internal->data_offset = avio_tell(s->pb);
+    av_dlog(s, "data offset %#"PRIx64"\n", s->internal->data_offset);
     if (!s->pb->seekable)
         return 0;
     // find REOB/REOF/REOS to load index
@@ -212,7 +212,7 @@ static int r3d_read_header(AVFormatContext *s)
     }
 
  out:
-    avio_seek(s->pb, s->data_offset, SEEK_SET);
+    avio_seek(s->pb, s->internal->data_offset, SEEK_SET);
     return 0;
 }
 
