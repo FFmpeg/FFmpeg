@@ -87,8 +87,6 @@
     </ClCompile>
     <ClCompile Include="..\libavformat\sdp.c">
     </ClCompile>
-    <ClCompile Include="..\libavformat\seek.c">
-    </ClCompile>
     <ClCompile Include="..\libavformat\url.c">
     </ClCompile>
     <ClCompile Include="..\libavformat\utils.c">

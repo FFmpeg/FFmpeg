@@ -60,9 +60,6 @@
     <ClCompile Include="..\libavformat\sdp.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavformat\seek.c">
-      <Filter>Source Files\libavformat</Filter>
-    </ClCompile>
     <ClCompile Include="..\libavformat\url.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
