@@ -1248,13 +1248,18 @@ static int mjpeg_decode_scan(MJpegDecodeContext *s, int nb_components, int Ah,
 
                     if (s->interlaced && s->bottom_field)
                         block_offset += linesize[c] >> 1;
-                    ptr = data[c] + block_offset;
+                    if (   8*(h * mb_x + x) < s->width
+                        && 8*(v * mb_y + y) < s->height) {
+                        ptr = data[c] + block_offset;
+                    } else
+                        ptr = NULL;
                     if (!s->progressive) {
-                        if (copy_mb)
-                            mjpeg_copy_block(s, ptr, reference_data[c] + block_offset,
-                                             linesize[c], s->avctx->lowres);
+                        if (copy_mb) {
+                            if (ptr)
+                                mjpeg_copy_block(s, ptr, reference_data[c] + block_offset,
+                                                linesize[c], s->avctx->lowres);
 
-                        else {
+                        } else {
                             s->bdsp.clear_block(s->block);
                             if (decode_block(s, s->block, i,
                                              s->dc_index[i], s->ac_index[i],
@@ -1263,9 +1268,11 @@ static int mjpeg_decode_scan(MJpegDecodeContext *s, int nb_components, int Ah,
                                        "error y=%d x=%d\n", mb_y, mb_x);
                                 return AVERROR_INVALIDDATA;
                             }
-                            s->idsp.idct_put(ptr, linesize[c], s->block);
-                            if (s->bits & 7)
-                                shift_output(s, ptr, linesize[c]);
+                            if (ptr) {
+                                s->idsp.idct_put(ptr, linesize[c], s->block);
+                                if (s->bits & 7)
+                                    shift_output(s, ptr, linesize[c]);
+                            }
                         }
                     } else {
                         int block_idx  = s->block_stride[c] * (v * mb_y + y) +
