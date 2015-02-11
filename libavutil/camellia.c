@@ -142,11 +142,9 @@ static void LR128(uint64_t d[2], const uint64_t K[2], int x)
 
 static uint64_t F(uint64_t F_IN, uint64_t KE)
 {
-    uint8_t y[8];
     KE ^= F_IN;
-    AV_WB64(y,KE);
-    KE=SP[0][y[0]] ^ SP[1][y[1]] ^ SP[2][y[2]] ^ SP[3][y[3]] ^ SP[4][y[4]] ^ SP[5][y[5]] ^ SP[6][y[6]] ^ SP[7][y[7]];
-    return KE;
+    F_IN=SP[0][KE >> 56]^SP[1][(KE >> 48) & MASK8]^SP[2][(KE >> 40) & MASK8]^SP[3][(KE >> 32) & MASK8]^SP[4][(KE >> 24) & MASK8]^SP[5][(KE >> 16) & MASK8]^SP[6][(KE >> 8) & MASK8]^SP[7][KE & MASK8];
+    return F_IN;
 }
 
 static uint64_t FL(uint64_t FL_IN, uint64_t KE)

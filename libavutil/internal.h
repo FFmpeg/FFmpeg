@@ -273,4 +273,6 @@ static av_always_inline av_const int avpriv_mirror(int x, int w)
 uint64_t ff_get_channel_layout(const char *name, int compat);
 #endif
 
+void ff_check_pixfmt_descriptors(void);
+
 #endif /* AVUTIL_INTERNAL_H */

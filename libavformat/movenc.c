@@ -1037,7 +1037,8 @@ static int mov_write_avid_tag(AVIOContext *pb, MOVTrack *track)
     ffio_wfourcc(pb, "ACLR");
     ffio_wfourcc(pb, "ACLR");
     ffio_wfourcc(pb, "0001");
-    if (track->enc->color_range == AVCOL_RANGE_MPEG) { /* Legal range (16-235) */
+    if (track->enc->color_range == AVCOL_RANGE_MPEG || /* Legal range (16-235) */
+        track->enc->color_range == AVCOL_RANGE_UNSPECIFIED) {
         avio_wb32(pb, 1); /* Corresponds to 709 in official encoder */
     } else { /* Full range (0-255) */
         avio_wb32(pb, 2); /* Corresponds to RGB in official encoder */

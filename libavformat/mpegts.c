@@ -34,7 +34,6 @@
 #include "mpegts.h"
 #include "internal.h"
 #include "avio_internal.h"
-#include "seek.h"
 #include "mpeg.h"
 #include "isom.h"
 
@@ -519,7 +518,8 @@ static void mpegts_close_filter(MpegTSContext *ts, MpegTSFilter *filter)
     ts->pids[pid] = NULL;
 }
 
-static int analyze(const uint8_t *buf, int size, int packet_size, int *index)
+static int analyze(const uint8_t *buf, int size, int packet_size, int *index,
+                   int probe)
 {
     int stat[TS_MAX_PACKET_SIZE];
     int stat_all = 0;
@@ -529,7 +529,8 @@ static int analyze(const uint8_t *buf, int size, int packet_size, int *index)
     memset(stat, 0, packet_size * sizeof(*stat));
 
     for (i = 0; i < size - 3; i++) {
-        if (buf[i] == 0x47 && !(buf[i + 1] & 0x80) && buf[i + 3] != 0x47) {
+        if (buf[i] == 0x47 &&
+            (!probe || (!(buf[i + 1] & 0x80) && buf[i + 3] != 0x47))) {
             int x = i % packet_size;
             stat[x]++;
             stat_all++;
@@ -552,9 +553,9 @@ static int get_packet_size(const uint8_t *buf, int size)
     if (size < (TS_FEC_PACKET_SIZE * 5 + 1))
         return AVERROR_INVALIDDATA;
 
-    score      = analyze(buf, size, TS_PACKET_SIZE, NULL);
-    dvhs_score = analyze(buf, size, TS_DVHS_PACKET_SIZE, NULL);
-    fec_score  = analyze(buf, size, TS_FEC_PACKET_SIZE, NULL);
+    score      = analyze(buf, size, TS_PACKET_SIZE,      NULL, 0);
+    dvhs_score = analyze(buf, size, TS_DVHS_PACKET_SIZE, NULL, 0);
+    fec_score  = analyze(buf, size, TS_FEC_PACKET_SIZE,  NULL, 0);
     av_dlog(NULL, "score: %d, dvhs_score: %d, fec_score: %d \n",
             score, dvhs_score, fec_score);
 
@@ -2395,9 +2396,9 @@ static int mpegts_probe(AVProbeData *p)
 
     for (i = 0; i<check_count; i+=CHECK_BLOCK) {
         int left = FFMIN(check_count - i, CHECK_BLOCK);
-        int score      = analyze(p->buf + TS_PACKET_SIZE     *i, TS_PACKET_SIZE     *left, TS_PACKET_SIZE     , NULL);
-        int dvhs_score = analyze(p->buf + TS_DVHS_PACKET_SIZE*i, TS_DVHS_PACKET_SIZE*left, TS_DVHS_PACKET_SIZE, NULL);
-        int fec_score  = analyze(p->buf + TS_FEC_PACKET_SIZE *i, TS_FEC_PACKET_SIZE *left, TS_FEC_PACKET_SIZE , NULL);
+        int score      = analyze(p->buf + TS_PACKET_SIZE     *i, TS_PACKET_SIZE     *left, TS_PACKET_SIZE     , NULL, 1);
+        int dvhs_score = analyze(p->buf + TS_DVHS_PACKET_SIZE*i, TS_DVHS_PACKET_SIZE*left, TS_DVHS_PACKET_SIZE, NULL, 1);
+        int fec_score  = analyze(p->buf + TS_FEC_PACKET_SIZE *i, TS_FEC_PACKET_SIZE *left, TS_FEC_PACKET_SIZE , NULL, 1);
         score = FFMAX3(score, dvhs_score, fec_score);
         sumscore += score;
         maxscore = FFMAX(maxscore, score);

@@ -1528,8 +1528,8 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
             nb_frames_drop += ost->last_droped;
     }
 
-    secs = pts / AV_TIME_BASE;
-    us = pts % AV_TIME_BASE;
+    secs = FFABS(pts) / AV_TIME_BASE;
+    us = FFABS(pts) % AV_TIME_BASE;
     mins = secs / 60;
     secs %= 60;
     hours = mins / 60;
@@ -1541,6 +1541,8 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
                                  "size=N/A time=");
     else                snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf),
                                  "size=%8.0fkB time=", total_size / 1024.0);
+    if (pts < 0)
+        snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "-");
     snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf),
              "%02d:%02d:%02d.%02d ", hours, mins, secs,
              (100 * us) / AV_TIME_BASE);

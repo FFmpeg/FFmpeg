@@ -139,8 +139,19 @@ typedef struct AVPixFmtDescriptor {
  * An example of a pseudo-paletted format is AV_PIX_FMT_GRAY8
  */
 #define AV_PIX_FMT_FLAG_PSEUDOPAL    (1 << 6)
+
 /**
- * The pixel format has an alpha channel.
+ * The pixel format has an alpha channel. This is set on all formats that
+ * support alpha in some way. The exception is AV_PIX_FMT_PAL8, which can
+ * carry alpha as part of the palette. Details are explained in the
+ * AVPixelFormat enum, and are also encoded in the corresponding
+ * AVPixFmtDescriptor.
+ *
+ * The alpha is always straight, never pre-multiplied.
+ *
+ * If a codec or a filter does not support alpha, it should set all alpha to
+ * opaque, or use the equivalent pixel formats without alpha component, e.g.
+ * AV_PIX_FMT_RGB0 (or AV_PIX_FMT_RGB24 etc.) instead of AV_PIX_FMT_RGBA.
  */
 #define AV_PIX_FMT_FLAG_ALPHA        (1 << 7)
 
@@ -298,8 +309,6 @@ int av_pix_fmt_get_chroma_sub_sample(enum AVPixelFormat pix_fmt,
  * valid pixel format.
  */
 int av_pix_fmt_count_planes(enum AVPixelFormat pix_fmt);
-
-void ff_check_pixfmt_descriptors(void);
 
 /**
  * Utility function to swap the endianness of a pixel format.

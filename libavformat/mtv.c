@@ -200,7 +200,7 @@ static int mtv_read_packet(AVFormatContext *s, AVPacket *pkt)
     AVIOContext *pb = s->pb;
     int ret;
 
-    if((avio_tell(pb) - s->data_offset + mtv->img_segment_size) % mtv->full_segment_size)
+    if((avio_tell(pb) - s->internal->data_offset + mtv->img_segment_size) % mtv->full_segment_size)
     {
         avio_skip(pb, MTV_AUDIO_PADDING_SIZE);
 

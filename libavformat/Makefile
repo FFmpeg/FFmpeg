@@ -20,7 +20,6 @@ OBJS = allformats.o         \
        os_support.o         \
        riff.o               \
        sdp.o                \
-       seek.o               \
        url.o                \
        utils.o              \
 
