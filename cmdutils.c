@@ -1912,7 +1912,8 @@ int cmdutils_read_file(const char *filename, char **bufptr, size_t *size)
     }
 
 out:
-    av_log(NULL, AV_LOG_ERROR, "IO error: %s\n", av_err2str(ret));
+    if (ret < 0)
+        av_log(NULL, AV_LOG_ERROR, "IO error: %s\n", av_err2str(ret));
     fclose(f);
     return ret;
 }
