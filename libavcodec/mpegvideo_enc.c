@@ -3763,6 +3763,7 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
                                   int16_t *block, int n,
                                   int qscale, int *overflow){
     const int *qmat;
+    const uint16_t *matrix;
     const uint8_t *scantable= s->intra_scantable.scantable;
     const uint8_t *perm_scantable= s->intra_scantable.permutated;
     int max=0;
@@ -3811,6 +3812,7 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
         start_i = 1;
         last_non_zero = 0;
         qmat = n < 4 ? s->q_intra_matrix[qscale] : s->q_chroma_intra_matrix[qscale];
+        matrix = n < 4 ? s->intra_matrix : s->chroma_intra_matrix;
         if(s->mpeg_quant || s->out_format == FMT_MPEG1 || s->out_format == FMT_MJPEG)
             bias= 1<<(QMAT_SHIFT-1);
 
@@ -3825,6 +3827,7 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
         start_i = 0;
         last_non_zero = -1;
         qmat = s->q_inter_matrix[qscale];
+        matrix = s->inter_matrix;
         length     = s->inter_ac_vlc_length;
         last_length= s->inter_ac_vlc_last_length;
     }
@@ -3902,14 +3905,14 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
                 unquant_coeff= alevel*qmul + qadd;
             } else if(s->out_format == FMT_MJPEG) {
                 j = s->idsp.idct_permutation[scantable[i]];
-                unquant_coeff = alevel * s->intra_matrix[j] * 8;
+                unquant_coeff = alevel * matrix[j] * 8;
             }else{ //MPEG1
                 j = s->idsp.idct_permutation[scantable[i]]; // FIXME: optimize
                 if(s->mb_intra){
-                        unquant_coeff = (int)(  alevel  * qscale * s->intra_matrix[j]) >> 3;
+                        unquant_coeff = (int)(  alevel  * qscale * matrix[j]) >> 3;
                         unquant_coeff =   (unquant_coeff - 1) | 1;
                 }else{
-                        unquant_coeff = (((  alevel  << 1) + 1) * qscale * ((int) s->inter_matrix[j])) >> 4;
+                        unquant_coeff = (((  alevel  << 1) + 1) * qscale * ((int) matrix[j])) >> 4;
                         unquant_coeff =   (unquant_coeff - 1) | 1;
                 }
                 unquant_coeff<<= 3;
@@ -4025,7 +4028,7 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
             if(s->out_format == FMT_H263 || s->out_format == FMT_H261){
                     unquant_coeff= (alevel*qmul + qadd)>>3;
             }else{ //MPEG1
-                    unquant_coeff = (((  alevel  << 1) + 1) * qscale * ((int) s->inter_matrix[0])) >> 4;
+                    unquant_coeff = (((  alevel  << 1) + 1) * qscale * ((int) matrix[0])) >> 4;
                     unquant_coeff =   (unquant_coeff - 1) | 1;
             }
             unquant_coeff = (unquant_coeff + 4) >> 3;
