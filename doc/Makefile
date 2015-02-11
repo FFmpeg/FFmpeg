@@ -19,6 +19,7 @@ DOC_EXAMPLES-$(CONFIG_AVCODEC_EXAMPLE)          += avcodec
 DOC_EXAMPLES-$(CONFIG_FILTER_AUDIO_EXAMPLE)     += filter_audio
 DOC_EXAMPLES-$(CONFIG_METADATA_EXAMPLE)         += metadata
 DOC_EXAMPLES-$(CONFIG_OUTPUT_EXAMPLE)           += output
+DOC_EXAMPLES-$(CONFIG_QSVDEC_EXAMPLE)           += qsvdec
 DOC_EXAMPLES-$(CONFIG_TRANSCODE_AAC_EXAMPLE)    += transcode_aac
 ALL_DOC_EXAMPLES = avcodec filter_audio metadata output transcode_aac
 

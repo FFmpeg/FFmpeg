@@ -1137,6 +1137,7 @@ EXAMPLE_LIST="
     filter_audio_example
     metadata_example
     output_example
+    qsvdec_example
     transcode_aac_example
 "
 
@@ -1550,6 +1551,7 @@ HAVE_LIST="
     sdl
     section_data_rel_ro
     threads
+    vaapi_x11
     vdpau_x11
     xlib
 "
@@ -2187,6 +2189,7 @@ avcodec_example_deps="avcodec avutil"
 filter_audio_example_deps="avfilter avutil"
 metadata_example_deps="avformat avutil"
 output_example_deps="avcodec avformat avutil swscale"
+qsvdec_example_deps="avcodec avutil libmfx h264_qsv_decoder vaapi_x11"
 transcode_aac_example_deps="avcodec avformat avresample"
 
 # libraries, in linking order
@@ -4329,6 +4332,10 @@ if enabled x11grab; then
     require Xext X11/extensions/XShm.h XShmCreateImage -lXext
     require Xfixes X11/extensions/Xfixes.h XFixesGetCursorImage -lXfixes
 fi
+
+enabled vaapi && enabled xlib &&
+    check_lib2 "va/va.h va/va_x11.h" vaGetDisplay -lva -lva-x11 &&
+    enable vaapi_x11
 
 enabled vdpau &&
     check_cpp_condition vdpau/vdpau.h "defined VDP_DECODER_PROFILE_MPEG4_PART2_ASP" ||
