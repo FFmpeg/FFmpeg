@@ -18,8 +18,10 @@ version <next>:
 - showpalette filter
 - Twofish symmetric block cipher
 - Support DNx100 (960x720@8)
+- eq2 filter ported from libmpcodecs as eq filter
 - removed libmpcodecs
 - Changed default DNxHD colour range in QuickTime .mov derivatives to mpeg range
+- ported softpulldown filter from libmpcodecs as repeatfields filter
 
 
 version 2.5:
