@@ -194,6 +194,9 @@
     <ClCompile Include="..\libavfilter\af_compand.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\af_dcshift.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\af_earwax.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
