@@ -2290,7 +2290,7 @@ libx262_encoder_deps="libx262"
 libx264_encoder_deps="libx264"
 libx265_encoder_deps="libx265"
 libxavs_encoder_deps="libxavs"
-libxvid_encoder_deps="libxvid"
+libxvid_encoder_deps="libxvid mkstemp"
 
 # demuxers / muxers
 ac3_demuxer_select="ac3_parser"
