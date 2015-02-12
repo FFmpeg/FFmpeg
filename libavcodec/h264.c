@@ -727,6 +727,7 @@ static int decode_init_thread_copy(AVCodecContext *avctx)
     memset(h->sps_buffers, 0, sizeof(h->sps_buffers));
     memset(h->pps_buffers, 0, sizeof(h->pps_buffers));
 
+    h->avctx          = avctx;
     h->rbsp_buffer[0] = NULL;
     h->rbsp_buffer[1] = NULL;
     h->rbsp_buffer_size[0] = 0;
