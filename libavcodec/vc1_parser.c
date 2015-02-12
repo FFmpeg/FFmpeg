@@ -29,6 +29,7 @@
 #include "parser.h"
 #include "vc1.h"
 #include "get_bits.h"
+#include "internal.h"
 
 /** The maximum number of bytes of a sequence, entry point or
  *  frame header whose values we pay any attention to */
@@ -250,20 +251,18 @@ static int vc1_parse(AVCodecParserContext *s,
 static int vc1_split(AVCodecContext *avctx,
                            const uint8_t *buf, int buf_size)
 {
-    int i;
-    uint32_t state= -1;
-    int charged=0;
+    uint32_t state = -1;
+    int charged = 0;
+    const uint8_t *ptr = buf, *end = buf + buf_size;
 
-    for(i=0; i<buf_size; i++){
-        state= (state<<8) | buf[i];
-        if(IS_MARKER(state)){
-            if(state == VC1_CODE_SEQHDR || state == VC1_CODE_ENTRYPOINT){
-                charged=1;
-            }else if(charged){
-                return i-3;
-            }
-        }
+    while (ptr < end) {
+        ptr = avpriv_find_start_code(ptr, end, &state);
+        if (state == VC1_CODE_SEQHDR || state == VC1_CODE_ENTRYPOINT) {
+            charged = 1;
+        } else if (charged && IS_MARKER(state))
+            return ptr - 4 - buf;
     }
+
     return 0;
 }
 
