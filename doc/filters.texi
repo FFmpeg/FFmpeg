@@ -917,6 +917,7 @@ audio, the data is treated as if all the planes were concatenated.
 A list of Adler-32 checksums for each data plane.
 @end table
 
+@anchor{astats}
 @section astats
 
 Display time domain statistical information about the audio channels.
@@ -1393,6 +1394,24 @@ than the signal (making it, in some ways, similar to squelch):
 compand=.1|.1:.1|.1:-45.1/-45.1|-45/-900|0/-900:.01:45:-90:.1
 @end example
 @end itemize
+
+@section dcshift
+Apply a DC shift to the audio.
+
+This can be useful to remove a DC offset (caused perhaps by a hardware problem
+in the recording chain) from the audio. The effect of a DC offset is reduced
+headroom and hence volume. The @ref{astats} filter can be used to determine if
+a signal has a DC offset.
+
+@table @option
+@item shift
+Set the DC shift, allowed range is [-1, 1]. It indicates the amount to shift
+the audio.
+
+@item limitergain
+Optional. It should have a value much less than 1 (e.g. 0.05 or 0.02) and is
+used to prevent clipping.
+@end table
 
 @section earwax
 
