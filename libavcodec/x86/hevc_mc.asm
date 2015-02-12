@@ -489,14 +489,12 @@ QPEL_TABLE 10, 8, w, avx2
 %if %1 == 8
 %if cpuflag(avx2) && (%0 == 5)
 %if %2 > 16
-    vextracti128  xm10, m0, 1
-    vinserti128    m10, m1, xm10, 0
+    vperm2i128    m10, m0, m1, q0301
 %endif
     vinserti128    m0, m0, xm1, 1
     mova           m1, m10
 %if %2 > 16
-    vextracti128 xm10, m2, 1
-    vinserti128   m10, m3, xm10, 0
+    vperm2i128    m10, m2, m3, q0301
 %endif
     vinserti128    m2, m2, xm3, 1
     mova           m3, m10
@@ -583,26 +581,22 @@ QPEL_TABLE 10, 8, w, avx2
 %if %2 == 8
 %if cpuflag(avx2) && (%0 == 3)
 
-    vextracti128 xm10, m0, 1
-    vinserti128 m10, m1, xm10, 0
+    vperm2i128 m10, m0,  m1, q0301
     vinserti128 m0, m0, xm1, 1
-    mova m1, m10
+    SWAP 1, 10
 
-    vextracti128 xm10, m2, 1
-    vinserti128 m10, m3, xm10, 0
+    vperm2i128 m10, m2,  m3, q0301
     vinserti128 m2, m2, xm3, 1
-    mova m3, m10
+    SWAP 3, 10
 
 
-    vextracti128 xm10, m4, 1
-    vinserti128 m10, m5, xm10, 0
+    vperm2i128 m10, m4,  m5, q0301
     vinserti128 m4, m4, xm5, 1
-    mova m5, m10
+    SWAP 5, 10
 
-    vextracti128 xm10, m6, 1
-    vinserti128 m10, m7, xm10, 0
+    vperm2i128 m10, m6,  m7, q0301
     vinserti128 m6, m6, xm7, 1
-    mova m7, m10
+    SWAP 7, 10
 %endif
 
     pmaddubsw         m0, m12   ;x1*c1+x2*c2
@@ -889,8 +883,7 @@ cglobal hevc_put_hevc_epel_hv%1_%2, 6, 8, 16 , dst, src, srcstride, height, mx, 
     EPEL_COMPUTE      14, %1, m12, m13, m4, m2, m8, m3
 %if cpuflag(avx2)
     vinserti128       m2, m0, xm4, 1
-    vextracti128      xm3, m0, 1
-    vinserti128       m3, m4, xm3, 0
+    vperm2i128        m3, m0, m4, q0301
     PEL_10STORE%1     dstq, m2, m3
 %else
     PEL_10STORE%1     dstq, m0, m4
@@ -1021,8 +1014,7 @@ cglobal hevc_put_hevc_bi_epel_hv%1_%2, 8, 10, 16, dst, dststride, src, srcstride
     SIMPLE_BILOAD     %1, src2q, m8, m3
 %if cpuflag(avx2)
     vinserti128       m1, m8, xm3, 1
-    vextracti128      xm8, m8, 1
-    vinserti128       m2, m3, xm8, 0
+    vperm2i128        m2, m8, m3, q0301
     BI_COMPUTE        %1, %2, m0, m4, m1, m2, [pw_bi_%2]
 %else
     BI_COMPUTE        %1, %2, m0, m4, m8, m3, [pw_bi_%2]
