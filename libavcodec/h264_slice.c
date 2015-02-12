@@ -589,8 +589,11 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
 
     h->cur_pic_ptr = REBASE_PICTURE(h1->cur_pic_ptr, h, h1);
     ff_h264_unref_picture(h, &h->cur_pic);
-    if ((ret = ff_h264_ref_picture(h, &h->cur_pic, &h1->cur_pic)) < 0)
-        return ret;
+    if (h1->cur_pic.f.buf[0]) {
+        ret = ff_h264_ref_picture(h, &h->cur_pic, &h1->cur_pic);
+        if (ret < 0)
+            return ret;
+    }
 
     h->workaround_bugs = h1->workaround_bugs;
     h->low_delay       = h1->low_delay;
