@@ -13,51 +13,51 @@ libavutil:     2014-08-09
 
 API changes, most recent first:
 
-2014-11-xx - xxxxxxx - lavc 56.12.0, lavu 54.8.0 - avcodec.h, frame.h
+2015-01-27 - 728685f - lavc 56.12.0, lavu 54.8.0 - avcodec.h, frame.h
   Add AV_PKT_DATA_AUDIO_SERVICE_TYPE and AV_FRAME_DATA_AUDIO_SERVICE_TYPE for
   storing the audio service type as side data.
 
-201x-xx-xx - xxxxxxx - lavc 56.10.0 - vdpau.h
-  Add av_vdpau_get_surface_parameters().
-
-201x-xx-xx - xxxxxxx - lavc 56.9.0 - avcodec.h
-  Add AV_HWACCEL_FLAG_ALLOW_HIGH_DEPTH flag to av_vdpau_bind_context().
-
-201x-xx-xx - xxxxxxx - lavc 56.8.0 - avcodec.h
-  Add AVCodecContext.sw_pix_fmt.
-
-2014-11-xx - xxxxxxx - lavu 54.6.0 - imgutils.h
+2015-01-14 - e2ad0b6 - lavu 54.6.0 - imgutils.h
   Add utility functions for image manipulation: av_image_get_buffer_size()
   av_image_fill_arrays() and av_image_copy_to_buffer().
 
-2014-11-xx - xxxxxxx - lavf 56.06.3 - avformat.h
+2014-12-25 - c220a60 - lavc 56.10.0 - vdpau.h
+  Add av_vdpau_get_surface_parameters().
+
+2014-12-25 - 6c99c92 - lavc 56.9.0 - avcodec.h
+  Add AV_HWACCEL_FLAG_ALLOW_HIGH_DEPTH flag to av_vdpau_bind_context().
+
+2014-12-25 - 57b6704 - lavc 56.8.0 - avcodec.h
+  Add AVCodecContext.sw_pix_fmt.
+
+2014-11-07 - 1384df6 - lavf 56.06.3 - avformat.h
   Add AVFormatContext.avoid_negative_ts.
 
-2014-11-xx - xxxxxxx - lavc 56.6.0 - vorbis_parser.h
+2014-11-06 - 5e80fb7 - lavc 56.6.0 - vorbis_parser.h
   Add a public API for parsing vorbis packets.
 
-2014-10-xx - xxxxxxx - lavu 54.5.0 - time.h
+2014-10-24 - 1bd0bdc - lavu 54.5.0 - time.h
   Add av_gettime_relative().
 
-2014-10-xx - xxxxxxx - lavc 56.5.0 - avcodec.h
+2014-10-15 - 7ea1b34 - lavc 56.5.0 - avcodec.h
   Replace AVCodecContext.time_base used for decoding
   with AVCodecContext.framerate.
 
-2014-10-xx - xxxxxxx - lavc 56.4.0 - avcodec.h
+2014-10-15 - d565fef1- lavc 56.4.0 - avcodec.h
   Add AV_HWACCEL_FLAG_IGNORE_LEVEL flag to av_vdpau_bind_context().
 
-2014-10-13 - xxxxxxx - lavc 56.03.0 - avcodec.h
+2014-10-13 - 2df0c32 - lavc 56.03.0 - avcodec.h
   Add AVCodecContext.initial_padding. Deprecate the use of AVCodecContext.delay
   for audio encoding.
 
-2014-09-xx - xxxxxxx - lavu 54.04.0 - pixdesc.h
+2014-10-08 - 5a419b2 - lavu 54.04.0 - pixdesc.h
   Add API to return the name of frame and context color properties.
 
-2014-09-xx - xxxxxxx - lavc 56.2.0 - vdpau.h
+2014-10-06 - e3e158e - lavc 56.2.0 - vdpau.h
   Add av_vdpau_bind_context(). This function should now be used for creating
   (or resetting) a AVVDPAUContext instead of av_vdpau_alloc_context().
 
-2014-08-xx - xxxxxxx - lavf 56.03.0 - avformat.h
+2014-08-25 - b263f8f - lavf 56.03.0 - avformat.h
   Add AVFormatContext.max_ts_probe.
 
 ------------------------------8<-------------------------------------
