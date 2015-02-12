@@ -1,6 +1,46 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 2.5.4:
+- avcodec/arm/videodsp_armv5te: Fix linking failure with shared libs
+- avcodec/mjpegdec: Skip blocks which are outside the visible area
+- avcodec/h264_slice: ignore SAR changes in slices after the first
+- avcodec/h264_slice: Check picture structure before setting the related fields
+- avcodec/h264_slice: Do not change frame_num after the first slice
+- avutil/opt: Fix type used to access AV_OPT_TYPE_SAMPLE_FMT
+- avutil/opt: Fix types used to access AV_OPT_TYPE_PIXEL_FMT
+- avcodec/h264: Be more strict on rejecting pps/sps changes
+- avcodec/h264: Be more strict on rejecting pps_id changes
+- avcodec/h264_ps: More completely check the bit depths
+- avformat/thp: Check av_get_packet() for failure not only for partial output
+- swscale/utils: Limit filter shifting so as not to read from prior the array
+- avcodec/mpegvideo_motion: Fix gmc chroma dimensions
+- avcodec/mjpegdec: Check number of components for JPEG-LS
+- avcodec/mjpegdec: Check escape sequence validity
+- avformat/mpc8: Use uint64_t in *_get_v() to avoid undefined behavior
+- avformat/mpc8: fix broken pointer math
+- avformat/mpc8: fix hang with fuzzed file
+- avformat/tta: fix crash with corrupted files
+- avcodec/ppc/idctdsp.c: POWER LE support in idct_add_altivec()
+- swscale/input: fix rgba64 alpha non native
+- swscale/input: Fix alpha of YA16 input
+- libavcodec/ppc/mpegvideoencdsp.c: fix stack smashing in pix_norm1_altivec() and pix_sum_altivec()
+- avformat/rmdec: Check for overflow in ff_rm_read_mdpr_codecdata()
+- avformat/mpeg: do not count PES packets inside PES packets during probing
+- hevc: always clip luma_log2_weight_denom
+- rtpdec_h263_rfc2190: Clear the stored bits if discarding buffered data
+- aacenc: correctly check returned value
+- swscale: check memory allocations
+- opt: check memory allocation
+- avformat/utils: check for malloc failure
+- avcodec/flac_parser: fix handling EOF if no headers are found
+- avfilter/vf_framepack: Check and update frame_rate
+- vp8: improve memory allocation checks
+- configure: enable vsx together with altivec for ppc64el
+- avcodec/hevc: Fix handling of skipped_bytes() reallocation failures
+- qpeg: avoid pointless invalid memcpy()
+
+
 version 2.5.3:
 - vp9: fix parser return values in error case
 - ffmpeg: Clear error message array at init.
