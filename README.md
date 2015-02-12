@@ -21,6 +21,8 @@ such as audio, video, subtitles and related metadata.
 * [ffplay](http://ffmpeg.org/ffplay.html) is a minimalistic multimedia player.
 * [ffprobe](http://ffmpeg.org/ffprobe.html) is a simple analysis tool to inspect
   multimedia content.
+* [ffserver](http://ffmpeg.org/ffserver.html) is a multimedia streaming server
+  for live broadcasts.
 * Additional small tools such as `aviocat`, `ismindex` and `qt-faststart`.
 
 ## Documentation
