@@ -473,7 +473,7 @@ static int vp56_size_changed(AVCodecContext *avctx)
     if (s->mb_width > 1000 || s->mb_height > 1000) {
         ff_set_dimensions(avctx, 0, 0);
         av_log(avctx, AV_LOG_ERROR, "picture too big\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     s->above_blocks = av_realloc(s->above_blocks,
@@ -501,11 +501,11 @@ int ff_vp56_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
     if (s->has_alpha) {
         if (remaining_buf_size < 3)
-            return -1;
+            return AVERROR_INVALIDDATA;
         alpha_offset = bytestream_get_be24(&buf);
         remaining_buf_size -= 3;
         if (remaining_buf_size < alpha_offset)
-            return -1;
+            return AVERROR_INVALIDDATA;
     }
 
     for (is_alpha=0; is_alpha < 1+s->has_alpha; is_alpha++) {
@@ -530,20 +530,21 @@ int ff_vp56_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                 av_frame_unref(s->frames[i]);
             if (is_alpha) {
                 ff_set_dimensions(avctx, 0, 0);
-                return -1;
+                return AVERROR_INVALIDDATA;
             }
         }
 
         if (!is_alpha) {
-            if (ff_get_buffer(avctx, p, AV_GET_BUFFER_FLAG_REF) < 0) {
+            int ret = ff_get_buffer(avctx, p, AV_GET_BUFFER_FLAG_REF);
+            if (ret < 0) {
                 av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-                return -1;
+                return ret;
             }
 
             if (res == VP56_SIZE_CHANGE)
                 if (vp56_size_changed(avctx)) {
                     av_frame_unref(p);
-                    return -1;
+                    return AVERROR_INVALIDDATA;
                 }
         }
 
