@@ -3,6 +3,32 @@ releases are sorted from youngest to oldest.
 
 version <next>:
 
+version 2.4.7:
+- avcodec/flac_parser: fix handling EOF if no headers are found
+- avfilter/vf_framepack: Check and update frame_rate
+- avcodec/hevc: Fix handling of skipped_bytes() reallocation failures
+- qpeg: avoid pointless invalid memcpy()
+- avcodec/arm/videodsp_armv5te: Fix linking failure with "g++ -shared -D__STDC_CONSTANT_MACROS -o test.so ... libavcodec.a"
+- avcodec/mjpegdec: Skip blocks which are outside the visible area
+- lavc/aarch64: Do not use the neon horizontal chroma loop filter for H.264 4:2:2. (cherry picked from commit 4faea46bd906b3897018736208123aa36c3f45d5)
+- avcodec/h264_slice: assert that reinit does not occur after the first slice
+- avcodec/h264_slice: ignore SAR changes in slices after the first
+- avcodec/h264_slice: Check picture structure before setting the related fields
+- avcodec/h264_slice: Do not change frame_num after the first slice
+- avutil/opt: Fix type used to access AV_OPT_TYPE_SAMPLE_FMT
+- avutil/opt: Fix types used to access AV_OPT_TYPE_PIXEL_FMT
+- avcodec/h264: Be more strict on rejecting pps/sps changes
+- avcodec/h264: Be more strict on rejecting pps_id changes
+- avcodec/h264_ps: More completely check the bit depths
+- avformat/thp: Check av_get_packet() for failure not only for partial output
+- swscale/utils: Limit filter shifting so as not to read from prior the array
+- avcodec/mpegvideo_motion: Fix gmc chroma dimensions
+- avcodec/mjpegdec: Check number of components for JPEG-LS
+- avcodec/mjpegdec: Check escape sequence validity
+- avformat/mpc8: Use uint64_t in *_get_v() to avoid undefined behavior
+- avformat/mpc8: fix broken pointer math
+- avformat/mpc8: fix hang with fuzzed file
+- avformat/tta: fix crash with corrupted files
 
 version 2.4.6:
 - doc/examples: fix lib math dep for decoding_encoding
