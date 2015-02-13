@@ -820,6 +820,7 @@ following image formats are supported:
     @tab Used in Bink and Smacker files in many games.
 @item Delphine Software International CIN audio  @tab     @tab  X
     @tab Codec used in Delphine Software International games.
+@item Digital Speech Standard - Standard Play mode (DSS SP) @tab     @tab  X
 @item Discworld II BMV Audio @tab     @tab  X
 @item COOK                   @tab     @tab  X
     @tab All versions except 5.1 are supported.

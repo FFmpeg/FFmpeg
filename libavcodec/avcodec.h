@@ -444,6 +444,7 @@ enum AVCodecID {
     AV_CODEC_ID_METASOUND,
     AV_CODEC_ID_PAF_AUDIO,
     AV_CODEC_ID_ON2AVC,
+    AV_CODEC_ID_DSS_SP,
 
     /* subtitle codecs */
     AV_CODEC_ID_FIRST_SUBTITLE = 0x17000,          ///< A dummy ID pointing at the start of subtitle codecs.

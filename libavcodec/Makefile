@@ -169,6 +169,7 @@ OBJS-$(CONFIG_DPX_DECODER)             += dpx.o
 OBJS-$(CONFIG_DPX_ENCODER)             += dpxenc.o
 OBJS-$(CONFIG_DSICINAUDIO_DECODER)     += dsicinaudio.o
 OBJS-$(CONFIG_DSICINVIDEO_DECODER)     += dsicinvideo.o
+OBJS-$(CONFIG_DSS_SP_DECODER)          += dss_sp.o
 OBJS-$(CONFIG_DVBSUB_DECODER)          += dvbsubdec.o
 OBJS-$(CONFIG_DVBSUB_ENCODER)          += dvbsub.o
 OBJS-$(CONFIG_DVDSUB_DECODER)          += dvdsubdec.o
