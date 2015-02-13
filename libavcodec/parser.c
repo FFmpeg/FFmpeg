@@ -28,6 +28,7 @@
 #include "libavutil/mem.h"
 
 #include "parser.h"
+#include "internal.h"
 
 static AVCodecParser *av_first_parser = NULL;
 
@@ -308,13 +309,14 @@ void ff_parse_close(AVCodecParserContext *s)
 
 int ff_mpeg4video_split(AVCodecContext *avctx, const uint8_t *buf, int buf_size)
 {
-    int i;
     uint32_t state = -1;
+    const uint8_t *ptr = buf, *end = buf + buf_size;
 
-    for (i = 0; i < buf_size; i++) {
-        state = state << 8 | buf[i];
+    while (ptr < end) {
+        ptr = avpriv_find_start_code(ptr, end, &state);
         if (state == 0x1B3 || state == 0x1B6)
-            return i - 3;
+            return ptr - 4 - buf;
     }
+
     return 0;
 }
