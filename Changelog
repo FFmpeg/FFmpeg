@@ -23,6 +23,7 @@ version <next>:
 - Changed default DNxHD colour range in QuickTime .mov derivatives to mpeg range
 - ported softpulldown filter from libmpcodecs as repeatfields filter
 - dcshift filter
+- RTP parser for loss tolerant payload format for MP3 audio (RFC 5219)
 
 
 version 2.5:

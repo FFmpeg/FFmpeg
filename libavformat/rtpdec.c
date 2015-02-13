@@ -89,6 +89,7 @@ void ff_register_rtp_dynamic_payload_handlers(void)
     ff_register_dynamic_payload_handler(&ff_mp4a_latm_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_mp4v_es_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_mpeg_audio_dynamic_handler);
+    ff_register_dynamic_payload_handler(&ff_mpeg_audio_robust_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_mpeg_video_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_mpeg4_generic_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_mpegts_dynamic_handler);
