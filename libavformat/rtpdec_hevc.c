@@ -30,6 +30,7 @@
 #define RTP_HEVC_PAYLOAD_HEADER_SIZE  2
 #define RTP_HEVC_FU_HEADER_SIZE       1
 #define RTP_HEVC_DONL_FIELD_SIZE      2
+#define RTP_HEVC_DOND_FIELD_SIZE      1
 #define HEVC_SPECIFIED_NAL_UNIT_TYPES 48
 
 /* SDP out-of-band signaling data */
@@ -283,19 +284,6 @@ static int hevc_handle_packet(AVFormatContext *ctx, PayloadContext *rtp_hevc_ctx
     }
 
     switch (nal_type) {
-    /* aggregated packets (AP) */
-    case 48:
-        /* pass the HEVC payload header */
-        buf += RTP_HEVC_PAYLOAD_HEADER_SIZE;
-        len -= RTP_HEVC_PAYLOAD_HEADER_SIZE;
-
-        /* pass the HEVC DONL field */
-        if (rtp_hevc_ctx->using_donl_field) {
-            buf += RTP_HEVC_DONL_FIELD_SIZE;
-            len -= RTP_HEVC_DONL_FIELD_SIZE;
-        }
-
-        /* fall-through */
     /* video parameter set (VPS) */
     case 32:
     /* sequence parameter set (SPS) */
@@ -322,6 +310,19 @@ static int hevc_handle_packet(AVFormatContext *ctx, PayloadContext *rtp_hevc_ctx
         /* A/V packet: copy NAL unit data */
         memcpy(pkt->data + sizeof(start_sequence), buf, len);
 
+        break;
+    /* aggregated packet (AP) - with two or more NAL units */
+    case 48:
+        /* pass the HEVC payload header */
+        buf += RTP_HEVC_PAYLOAD_HEADER_SIZE;
+        len -= RTP_HEVC_PAYLOAD_HEADER_SIZE;
+
+        res = ff_h264_handle_aggregated_packet(ctx, pkt, buf, len,
+                                               rtp_hevc_ctx->using_donl_field ?
+                                               RTP_HEVC_DONL_FIELD_SIZE : 0,
+                                               NULL, 0);
+        if (res < 0)
+            return res;
         break;
     /* fragmentation unit (FU) */
     case 49:
