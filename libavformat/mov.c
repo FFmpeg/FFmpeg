@@ -338,7 +338,7 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     case MKTAG(0xa9,'w','r','t'): key = "composer";  break;
     case MKTAG(0xa9,'x','y','z'): key = "location";  break;
     }
-
+retry:
     if (c->itunes_metadata && atom.size > 8) {
         int data_size = avio_rb32(pb);
         int tag = avio_rl32(pb);
@@ -358,6 +358,11 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         } else return 0;
     } else if (atom.size > 4 && key && !c->itunes_metadata && !raw) {
         str_size = avio_rb16(pb); // string length
+        if (str_size > atom.size) {
+            raw = 1;
+            avio_seek(pb, -2, SEEK_CUR);
+            goto retry;
+        }
         langcode = avio_rb16(pb);
         ff_mov_lang_to_iso639(langcode, language);
         atom.size -= 4;
