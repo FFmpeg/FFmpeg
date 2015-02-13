@@ -134,7 +134,8 @@ int avpriv_mpa_decode_header(AVCodecContext *avctx, uint32_t head, int *sample_r
         break;
     default:
     case 3:
-        avctx->codec_id = AV_CODEC_ID_MP3;
+        if (avctx->codec_id != AV_CODEC_ID_MP3ADU)
+            avctx->codec_id = AV_CODEC_ID_MP3;
         if (s->lsf)
             *frame_size = 576;
         else
