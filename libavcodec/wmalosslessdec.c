@@ -553,10 +553,7 @@ static int decode_channel_residues(WmallDecodeCtx *s, int ch, int tile_size)
         s->ave_sum[ch] = residue + s->ave_sum[ch] -
                          (s->ave_sum[ch] >> s->movave_scaling);
 
-        if (residue & 1)
-            residue = -(residue >> 1) - 1;
-        else
-            residue = residue >> 1;
+        residue = (residue >> 1) ^ -(residue & 1);
         s->channel_residues[ch][i] = residue;
     }
 
@@ -646,12 +643,8 @@ static void mclms_update(WmallDecodeCtx *s, int icoef, int *pred)
 
     for (ich = num_channels - 1; ich >= 0; ich--) {
         s->mclms_recent--;
-        s->mclms_prevvalues[s->mclms_recent] = s->channel_residues[ich][icoef];
-        if (s->channel_residues[ich][icoef] > range - 1)
-            s->mclms_prevvalues[s->mclms_recent] = range - 1;
-        else if (s->channel_residues[ich][icoef] < -range)
-            s->mclms_prevvalues[s->mclms_recent] = -range;
-
+        s->mclms_prevvalues[s->mclms_recent] = av_clip(s->channel_residues[ich][icoef],
+            -range, range - 1);
         s->mclms_updates[s->mclms_recent] = WMASIGN(s->channel_residues[ich][icoef]);
     }
 
@@ -1073,8 +1066,7 @@ static int decode_frame(WmallDecodeCtx *s)
 
     av_dlog(s->avctx, "Frame done\n");
 
-    if (s->skip_frame)
-        s->skip_frame = 0;
+    s->skip_frame = 0;
 
     if (s->len_prefix) {
         if (len != (get_bits_count(gb) - s->frame_offset) + 2) {
