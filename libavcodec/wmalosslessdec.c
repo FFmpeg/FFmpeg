@@ -127,7 +127,7 @@ typedef struct WmallDecodeCtx {
 
     int8_t  acfilter_order;
     int8_t  acfilter_scaling;
-    int64_t acfilter_coeffs[16];
+    int16_t acfilter_coeffs[16];
     int     acfilter_prevvalues[WMALL_MAX_CHANNELS][16];
 
     int8_t  mclms_order;
@@ -818,7 +818,7 @@ static void revert_inter_ch_decorr(WmallDecodeCtx *s, int tile_size)
 static void revert_acfilter(WmallDecodeCtx *s, int tile_size)
 {
     int ich, pred, i, j;
-    int64_t *filter_coeffs = s->acfilter_coeffs;
+    int16_t *filter_coeffs = s->acfilter_coeffs;
     int scaling            = s->acfilter_scaling;
     int order              = s->acfilter_order;
 
