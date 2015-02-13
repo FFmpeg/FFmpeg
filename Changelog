@@ -30,6 +30,9 @@ version <next>:
 - DV RTP payload format (RFC 6469) depacketizer
 - DXVA2-accelerated HEVC decoding
 - AAC ELD 480 decoding
+- Fix stsd atom corruption in DNxHD QuickTimes
+- Add 4 bytes stsd zero padding to video track for all QuickTime outputs
+
 
 version 2.5:
 - HEVC/H.265 RTP payload format (draft v6) packetizer
