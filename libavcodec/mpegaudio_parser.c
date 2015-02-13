@@ -64,7 +64,7 @@ static int mpegaudio_parse(AVCodecParserContext *s1,
         }else{
             while(i<buf_size){
                 int ret, sr, channels, bit_rate, frame_size;
-                enum AVCodecID codec_id;
+                enum AVCodecID codec_id = avctx->codec_id;
 
                 state= (state<<8) + buf[i++];
 
@@ -90,6 +90,16 @@ static int mpegaudio_parse(AVCodecParserContext *s1,
                             avctx->bit_rate += (bit_rate - avctx->bit_rate) / (s->header_count - header_threshold);
                         }
                     }
+
+                    if (s1->flags & PARSER_FLAG_COMPLETE_FRAMES) {
+                        s->frame_size = 0;
+                        next = buf_size;
+                    } else if (codec_id == AV_CODEC_ID_MP3ADU) {
+                        av_log(avctx, AV_LOG_ERROR,
+                            "MP3ADU full parser not implemented");
+                        return AVERROR_PATCHWELCOME;
+                    }
+
                     break;
                 }
             }
@@ -110,7 +120,7 @@ static int mpegaudio_parse(AVCodecParserContext *s1,
 
 
 AVCodecParser ff_mpegaudio_parser = {
-    .codec_ids      = { AV_CODEC_ID_MP1, AV_CODEC_ID_MP2, AV_CODEC_ID_MP3 },
+    .codec_ids      = { AV_CODEC_ID_MP1, AV_CODEC_ID_MP2, AV_CODEC_ID_MP3, AV_CODEC_ID_MP3ADU },
     .priv_data_size = sizeof(MpegAudioParseContext),
     .parser_parse   = mpegaudio_parse,
     .parser_close   = ff_parse_close,
