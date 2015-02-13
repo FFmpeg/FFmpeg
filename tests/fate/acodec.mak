@@ -140,6 +140,10 @@ fate-acodec-roqaudio: CODEC = roq_dpcm
 fate-acodec-roqaudio: ENCOPTS = -ar 22050
 fate-acodec-roqaudio: DECOPTS = -ar 44100
 
+FATE_ACODEC-$(call ENCDEC, WAVPACK, WV) += fate-acodec-wavpack
+fate-acodec-wavpack: FMT = wv
+fate-acodec-wavpack: CODEC = wavpack -compression_level 1
+
 FATE_ACODEC += $(FATE_ACODEC-yes)
 
 $(FATE_ACODEC): tests/data/asynth-44100-2.wav

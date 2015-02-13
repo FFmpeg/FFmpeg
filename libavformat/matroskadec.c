@@ -1464,8 +1464,7 @@ static void matroska_execute_seekhead(MatroskaDemuxContext *matroska)
     int i;
 
     // we should not do any seeking in the streaming case
-    if (!matroska->ctx->pb->seekable ||
-        (matroska->ctx->flags & AVFMT_FLAG_IGNIDX))
+    if (!matroska->ctx->pb->seekable)
         return;
 
     for (i = 0; i < seekhead_list->nb_elem; i++) {
@@ -1500,6 +1499,9 @@ static void matroska_add_index_entries(MatroskaDemuxContext *matroska)
     int index_scale = 1;
     int i, j;
 
+    if (matroska->ctx->flags & AVFMT_FLAG_IGNIDX)
+        return;
+
     index_list = &matroska->index;
     index      = index_list->elem;
     if (index_list->nb_elem &&
@@ -1524,6 +1526,9 @@ static void matroska_add_index_entries(MatroskaDemuxContext *matroska)
 
 static void matroska_parse_cues(MatroskaDemuxContext *matroska) {
     int i;
+
+    if (matroska->ctx->flags & AVFMT_FLAG_IGNIDX)
+        return;
 
     for (i = 0; i < matroska->num_level1_elems; i++) {
         MatroskaLevel1Element *elem = &matroska->level1_elems[i];

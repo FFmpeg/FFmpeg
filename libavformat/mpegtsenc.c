@@ -1270,26 +1270,35 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
     if (st->codec->codec_id == AV_CODEC_ID_H264) {
         const uint8_t *p = buf, *buf_end = p + size;
         uint32_t state = -1;
+        int extradd = (pkt->flags & AV_PKT_FLAG_KEY) ? st->codec->extradata_size : 0;
         int ret = ff_check_h264_startcode(s, st, pkt);
         if (ret < 0)
             return ret;
 
+        if (extradd && AV_RB24(st->codec->extradata) > 1)
+            extradd = 0;
+
         do {
             p = avpriv_find_start_code(p, buf_end, &state);
             av_dlog(s, "nal %d\n", state & 0x1f);
+            if ((state & 0x1f) == 7)
+                extradd = 0;
         } while (p < buf_end && (state & 0x1f) != 9 &&
                  (state & 0x1f) != 5 && (state & 0x1f) != 1);
 
+        if ((state & 0x1f) != 5)
+            extradd = 0;
         if ((state & 0x1f) != 9) { // AUD NAL
-            data = av_malloc(pkt->size + 6);
+            data = av_malloc(pkt->size + 6 + extradd);
             if (!data)
                 return AVERROR(ENOMEM);
-            memcpy(data + 6, pkt->data, pkt->size);
+            memcpy(data + 6, st->codec->extradata, extradd);
+            memcpy(data + 6 + extradd, pkt->data, pkt->size);
             AV_WB32(data, 0x00000001);
             data[4] = 0x09;
             data[5] = 0xf0; // any slice type (0xe) + rbsp stop one bit
             buf     = data;
-            size    = pkt->size + 6;
+            size    = pkt->size + 6 + extradd;
         }
     } else if (st->codec->codec_id == AV_CODEC_ID_AAC) {
         if (pkt->size < 2) {

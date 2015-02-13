@@ -68,10 +68,11 @@
     { "filter_src", "only receive packets from the negotiated peer IP", 0, AV_OPT_TYPE_CONST, {.i64 = RTSP_FLAG_FILTER_SRC}, 0, 0, DEC, "rtsp_flags" }
 
 #define RTSP_MEDIATYPE_OPTS(name, longname) \
-    { name, longname, OFFSET(media_type_mask), AV_OPT_TYPE_FLAGS, { .i64 = (1 << (AVMEDIA_TYPE_DATA+1)) - 1 }, INT_MIN, INT_MAX, DEC, "allowed_media_types" }, \
+    { name, longname, OFFSET(media_type_mask), AV_OPT_TYPE_FLAGS, { .i64 = (1 << (AVMEDIA_TYPE_SUBTITLE+1)) - 1 }, INT_MIN, INT_MAX, DEC, "allowed_media_types" }, \
     { "video", "Video", 0, AV_OPT_TYPE_CONST, {.i64 = 1 << AVMEDIA_TYPE_VIDEO}, 0, 0, DEC, "allowed_media_types" }, \
     { "audio", "Audio", 0, AV_OPT_TYPE_CONST, {.i64 = 1 << AVMEDIA_TYPE_AUDIO}, 0, 0, DEC, "allowed_media_types" }, \
-    { "data", "Data", 0, AV_OPT_TYPE_CONST, {.i64 = 1 << AVMEDIA_TYPE_DATA}, 0, 0, DEC, "allowed_media_types" }
+    { "data", "Data", 0, AV_OPT_TYPE_CONST, {.i64 = 1 << AVMEDIA_TYPE_DATA}, 0, 0, DEC, "allowed_media_types" }, \
+    { "subtitle", "Subtitle", 0, AV_OPT_TYPE_CONST, {.i64 = 1 << AVMEDIA_TYPE_SUBTITLE}, 0, 0, DEC, "allowed_media_types" }
 
 #define RTSP_REORDERING_OPTS() \
     { "reorder_queue_size", "set number of packets to buffer for handling of reordered packets", OFFSET(reordering_queue_size), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, INT_MAX, DEC }
@@ -399,6 +400,8 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
             codec_type = AVMEDIA_TYPE_VIDEO;
         } else if (!strcmp(st_type, "application")) {
             codec_type = AVMEDIA_TYPE_DATA;
+        } else if (!strcmp(st_type, "text")) {
+            codec_type = AVMEDIA_TYPE_SUBTITLE;
         }
         if (codec_type == AVMEDIA_TYPE_UNKNOWN || !(rt->media_type_mask & (1 << codec_type))) {
             s1->skip_media = 1;
@@ -474,6 +477,8 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
                     handler->init(s, st->index,
                                   rtsp_st->dynamic_protocol_context);
             }
+            if (rt->default_lang[0])
+                av_dict_set(&st->metadata, "language", rt->default_lang, 0);
         }
         /* put a default control url */
         av_strlcpy(rtsp_st->control_url, rt->control_uri,
@@ -537,6 +542,16 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
             /* AV_NOPTS_VALUE means live broadcast (and can't seek) */
             s->duration   = (end == AV_NOPTS_VALUE) ?
                             AV_NOPTS_VALUE : end - start;
+        } else if (av_strstart(p, "lang:", &p)) {
+            if (s->nb_streams > 0) {
+                get_word(buf1, sizeof(buf1), &p);
+                rtsp_st = rt->rtsp_streams[rt->nb_rtsp_streams - 1];
+                if (rtsp_st->stream_index >= 0) {
+                    st = s->streams[rtsp_st->stream_index];
+                    av_dict_set(&st->metadata, "language", buf1, 0);
+                }
+            } else
+                get_word(rt->default_lang, sizeof(rt->default_lang), &p);
         } else if (av_strstart(p, "IsRealDataType:integer;",&p)) {
             if (atoi(p) == 1)
                 rt->transport = RTSP_TRANSPORT_RDT;
@@ -2372,7 +2387,7 @@ static int rtp_read_header(AVFormatContext *s)
     /* sdp_read_header initializes this again */
     ff_network_close();
 
-    rt->media_type_mask = (1 << (AVMEDIA_TYPE_DATA+1)) - 1;
+    rt->media_type_mask = (1 << (AVMEDIA_TYPE_SUBTITLE+1)) - 1;
 
     ret = sdp_read_header(s);
     s->pb = NULL;

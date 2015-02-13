@@ -23,14 +23,17 @@
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/base64.h"
+#include "libavcodec/get_bits.h"
 
 #include "avformat.h"
 #include "rtpdec.h"
 
-#define RTP_HEVC_PAYLOAD_HEADER_SIZE  2
-#define RTP_HEVC_FU_HEADER_SIZE       1
-#define RTP_HEVC_DONL_FIELD_SIZE      2
-#define HEVC_SPECIFIED_NAL_UNIT_TYPES 48
+#define RTP_HEVC_PAYLOAD_HEADER_SIZE       2
+#define RTP_HEVC_FU_HEADER_SIZE            1
+#define RTP_HEVC_DONL_FIELD_SIZE           2
+#define RTP_HEVC_DOND_FIELD_SIZE           1
+#define RTP_HEVC_AP_NALU_LENGTH_FIELD_SIZE 2
+#define HEVC_SPECIFIED_NAL_UNIT_TYPES      48
 
 /* SDP out-of-band signaling data */
 struct PayloadContext {
@@ -317,19 +320,6 @@ static int hevc_handle_packet(AVFormatContext *ctx, PayloadContext *rtp_hevc_ctx
     }
 
     switch (nal_type) {
-    /* aggregated packets (AP) */
-    case 48:
-        /* pass the HEVC payload header */
-        buf += RTP_HEVC_PAYLOAD_HEADER_SIZE;
-        len -= RTP_HEVC_PAYLOAD_HEADER_SIZE;
-
-        /* pass the HEVC DONL field */
-        if (rtp_hevc_ctx->using_donl_field) {
-            buf += RTP_HEVC_DONL_FIELD_SIZE;
-            len -= RTP_HEVC_DONL_FIELD_SIZE;
-        }
-
-        /* fall-through */
     /* video parameter set (VPS) */
     case 32:
     /* sequence parameter set (SPS) */
@@ -355,6 +345,73 @@ static int hevc_handle_packet(AVFormatContext *ctx, PayloadContext *rtp_hevc_ctx
         memcpy(pkt->data, start_sequence, sizeof(start_sequence));
         /* A/V packet: copy NAL unit data */
         memcpy(pkt->data + sizeof(start_sequence), buf, len);
+
+        break;
+    /* aggregated packet (AP) - with two or more NAL units */
+    case 48:
+        /* pass the HEVC payload header */
+        buf += RTP_HEVC_PAYLOAD_HEADER_SIZE;
+        len -= RTP_HEVC_PAYLOAD_HEADER_SIZE;
+
+        /* pass the HEVC DONL field */
+        if (rtp_hevc_ctx->using_donl_field) {
+            buf += RTP_HEVC_DONL_FIELD_SIZE;
+            len -= RTP_HEVC_DONL_FIELD_SIZE;
+        }
+
+        /*
+         * pass 0: determine overall size of the A/V packet
+         * pass 1: create resulting A/V packet
+         */
+        {
+            int pass          = 0;
+            int pkt_size      = 0;
+            uint8_t *pkt_data = 0;
+
+            for (pass = 0; pass < 2; pass++) {
+                const uint8_t *buf1 = buf;
+                int len1            = len;
+
+                while (len1 > RTP_HEVC_AP_NALU_LENGTH_FIELD_SIZE) {
+                    uint16_t nalu_size = AV_RB16(buf1);
+
+                    /* pass the NALU length field */
+                    buf1 += RTP_HEVC_AP_NALU_LENGTH_FIELD_SIZE;
+                    len1 -= RTP_HEVC_AP_NALU_LENGTH_FIELD_SIZE;
+
+                    if (nalu_size > 0 && nalu_size <= len1) {
+                        if (pass == 0) {
+                            pkt_size += sizeof(start_sequence) + nalu_size;
+                        } else {
+                            /* A/V packet: copy start sequence */
+                            memcpy(pkt_data, start_sequence, sizeof(start_sequence));
+                            /* A/V packet: copy NAL unit data */
+                            memcpy(pkt_data + sizeof(start_sequence), buf1, nalu_size);
+                            /* shift pointer beyond the current NAL unit */
+                            pkt_data += sizeof(start_sequence) + nalu_size;
+                        }
+                    }
+
+                    /* pass the current NAL unit */
+                    buf1 += nalu_size;
+                    len1 -= nalu_size;
+
+                    /* pass the HEVC DOND field */
+                    if (rtp_hevc_ctx->using_donl_field) {
+                        buf1 += RTP_HEVC_DOND_FIELD_SIZE;
+                        len1 -= RTP_HEVC_DOND_FIELD_SIZE;
+                    }
+                }
+
+                /* create A/V packet */
+                if (pass == 0) {
+                    if ((res = av_new_packet(pkt, pkt_size)) < 0)
+                        return res;
+
+                    pkt_data = pkt->data;
+                }
+            }
+        }
 
         break;
     /* fragmentation unit (FU) */
