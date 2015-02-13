@@ -505,10 +505,7 @@ static inline int ape_decode_value_3860(APEContext *ctx, GetBitContext *gb,
         rice->k++;
 
     /* Convert to signed */
-    if (x & 1)
-        return (x >> 1) + 1;
-    else
-        return -(x >> 1);
+    return ((x >> 1) ^ ((x & 1) - 1)) + 1;
 }
 
 static inline int ape_decode_value_3900(APEContext *ctx, APERice *rice)
@@ -542,10 +539,7 @@ static inline int ape_decode_value_3900(APEContext *ctx, APERice *rice)
     update_rice(rice, x);
 
     /* Convert to signed */
-    if (x & 1)
-        return (x >> 1) + 1;
-    else
-        return -(x >> 1);
+    return ((x >> 1) ^ ((x & 1) - 1)) + 1;
 }
 
 static inline int ape_decode_value_3990(APEContext *ctx, APERice *rice)
@@ -588,10 +582,7 @@ static inline int ape_decode_value_3990(APEContext *ctx, APERice *rice)
     update_rice(rice, x);
 
     /* Convert to signed */
-    if (x & 1)
-        return (x >> 1) + 1;
-    else
-        return -(x >> 1);
+    return ((x >> 1) ^ ((x & 1) - 1)) + 1;
 }
 
 static void decode_array_0000(APEContext *ctx, GetBitContext *gb,
@@ -634,12 +625,8 @@ static void decode_array_0000(APEContext *ctx, GetBitContext *gb,
         }
     }
 
-    for (i = 0; i < blockstodecode; i++) {
-        if (out[i] & 1)
-            out[i] = (out[i] >> 1) + 1;
-        else
-            out[i] = -(out[i] >> 1);
-    }
+    for (i = 0; i < blockstodecode; i++)
+        out[i] = ((out[i] >> 1) ^ ((out[i] & 1) - 1)) + 1;
 }
 
 static void entropy_decode_mono_0000(APEContext *ctx, int blockstodecode)
