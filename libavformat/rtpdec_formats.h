@@ -35,6 +35,7 @@ int ff_h263_handle_packet(AVFormatContext *ctx, PayloadContext *data,
                           AVStream *st, AVPacket *pkt, uint32_t *timestamp,
                           const uint8_t *buf, int len, uint16_t seq, int flags);
 
+extern RTPDynamicProtocolHandler ff_ac3_dynamic_handler;
 extern RTPDynamicProtocolHandler ff_amr_nb_dynamic_handler;
 extern RTPDynamicProtocolHandler ff_amr_wb_dynamic_handler;
 extern RTPDynamicProtocolHandler ff_g726_16_dynamic_handler;
