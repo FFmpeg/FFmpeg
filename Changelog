@@ -16,6 +16,7 @@ version <next>:
 - AAC ELD 480 decoding
 - Intel QSV-accelerated H.264 decoding
 - DSS SP decoder and DSS demuxer
+- RTP depacketizer for AC3 payload format (RFC 4184)
 
 
 version 11:
