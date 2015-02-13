@@ -180,6 +180,66 @@ static int sdp_parse_fmtp_config_h264(AVFormatContext *s,
     return 0;
 }
 
+static int h264_handle_packet_stap_a(AVFormatContext *ctx, AVPacket *pkt,
+                                     const uint8_t *buf, int len)
+{
+    int pass         = 0;
+    int total_length = 0;
+    uint8_t *dst     = NULL;
+    int ret;
+
+    for (pass = 0; pass < 2; pass++) {
+        const uint8_t *src = buf;
+        int src_len        = len;
+
+        while (src_len > 2) {
+            uint16_t nal_size = AV_RB16(src);
+
+            // consume the length of the aggregate
+            src     += 2;
+            src_len -= 2;
+
+            if (nal_size <= src_len) {
+                if (pass == 0) {
+                    // counting
+                    total_length += sizeof(start_sequence) + nal_size;
+                } else {
+                    // copying
+                    assert(dst);
+                    memcpy(dst, start_sequence, sizeof(start_sequence));
+                    dst += sizeof(start_sequence);
+                    memcpy(dst, src, nal_size);
+                    COUNT_NAL_TYPE(data, *src);
+                    dst += nal_size;
+                }
+            } else {
+                av_log(ctx, AV_LOG_ERROR,
+                       "nal size exceeds length: %d %d\n", nal_size, src_len);
+            }
+
+            // eat what we handled
+            src     += nal_size;
+            src_len -= nal_size;
+
+            if (src_len < 0)
+                av_log(ctx, AV_LOG_ERROR,
+                       "Consumed more bytes than we got! (%d)\n", src_len);
+        }
+
+        if (pass == 0) {
+            /* now we know the total size of the packet (with the
+             * start sequences added) */
+            if ((ret = av_new_packet(pkt, total_length)) < 0)
+                return ret;
+            dst = pkt->data;
+        } else {
+            assert(dst - pkt->data == total_length);
+        }
+    }
+
+    return 0;
+}
+
 // return 0 on packet, no more left, 1 on packet, 1 on partial packet
 static int h264_handle_packet(AVFormatContext *ctx, PayloadContext *data,
                               AVStream *st, AVPacket *pkt, uint32_t *timestamp,
@@ -219,60 +279,7 @@ static int h264_handle_packet(AVFormatContext *ctx, PayloadContext *data,
         buf++;
         len--;
         // first we are going to figure out the total size
-        {
-            int pass         = 0;
-            int total_length = 0;
-            uint8_t *dst     = NULL;
-
-            for (pass = 0; pass < 2; pass++) {
-                const uint8_t *src = buf;
-                int src_len        = len;
-
-                while (src_len > 2) {
-                    uint16_t nal_size = AV_RB16(src);
-
-                    // consume the length of the aggregate
-                    src     += 2;
-                    src_len -= 2;
-
-                    if (nal_size <= src_len) {
-                        if (pass == 0) {
-                            // counting
-                            total_length += sizeof(start_sequence) + nal_size;
-                        } else {
-                            // copying
-                            assert(dst);
-                            memcpy(dst, start_sequence, sizeof(start_sequence));
-                            dst += sizeof(start_sequence);
-                            memcpy(dst, src, nal_size);
-                            COUNT_NAL_TYPE(data, *src);
-                            dst += nal_size;
-                        }
-                    } else {
-                        av_log(ctx, AV_LOG_ERROR,
-                               "nal size exceeds length: %d %d\n", nal_size, src_len);
-                    }
-
-                    // eat what we handled
-                    src     += nal_size;
-                    src_len -= nal_size;
-
-                    if (src_len < 0)
-                        av_log(ctx, AV_LOG_ERROR,
-                               "Consumed more bytes than we got! (%d)\n", src_len);
-                }
-
-                if (pass == 0) {
-                    /* now we know the total size of the packet (with the
-                     * start sequences added) */
-                    if ((result = av_new_packet(pkt, total_length)) < 0)
-                        return result;
-                    dst = pkt->data;
-                } else {
-                    assert(dst - pkt->data == total_length);
-                }
-            }
-        }
+        result = h264_handle_packet_stap_a(ctx, pkt, buf, len);
         break;
 
     case 25:                   // STAP-B
