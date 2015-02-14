@@ -879,6 +879,8 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
                 break;
             }
         }
+        if (codec->codec_id == AV_CODEC_ID_RAWVIDEO && !codec->codec_tag)
+            native_id = 0;
     }
 
     if (codec->codec_type == AVMEDIA_TYPE_AUDIO && codec->initial_padding && codec->codec_id == AV_CODEC_ID_OPUS) {
