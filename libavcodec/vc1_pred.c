@@ -392,17 +392,13 @@ void ff_vc1_pred_mv(VC1Context *v, int n, int dmv_x, int dmv_y,
     /* Pullback MV as specified in 8.3.5.3.4 */
     if (!v->field_mode) {
         int qx, qy, X, Y;
+        int MV = mv1 ? -60 : -28;
         qx = (s->mb_x << 6) + ((n == 1 || n == 3) ? 32 : 0);
         qy = (s->mb_y << 6) + ((n == 2 || n == 3) ? 32 : 0);
         X  = (s->mb_width  << 6) - 4;
         Y  = (s->mb_height << 6) - 4;
-        if (mv1) {
-            if (qx + px < -60) px = -60 - qx;
-            if (qy + py < -60) py = -60 - qy;
-        } else {
-            if (qx + px < -28) px = -28 - qx;
-            if (qy + py < -28) py = -28 - qy;
-        }
+        if (qx + px < MV) px = MV - qx;
+        if (qy + py < MV) py = MV - qy;
         if (qx + px > X) px = X - qx;
         if (qy + py > Y) py = Y - qy;
     }
@@ -759,25 +755,16 @@ void ff_vc1_pred_b_mv(VC1Context *v, int dmv_x[2], int dmv_y[2],
         /* Pullback MV as specified in 8.3.5.3.4 */
         {
             int qx, qy, X, Y;
-            if (v->profile < PROFILE_ADVANCED) {
-                qx = (s->mb_x << 5);
-                qy = (s->mb_y << 5);
-                X  = (s->mb_width  << 5) - 4;
-                Y  = (s->mb_height << 5) - 4;
-                if (qx + px < -28) px = -28 - qx;
-                if (qy + py < -28) py = -28 - qy;
-                if (qx + px > X) px = X - qx;
-                if (qy + py > Y) py = Y - qy;
-            } else {
-                qx = (s->mb_x << 6);
-                qy = (s->mb_y << 6);
-                X  = (s->mb_width  << 6) - 4;
-                Y  = (s->mb_height << 6) - 4;
-                if (qx + px < -60) px = -60 - qx;
-                if (qy + py < -60) py = -60 - qy;
-                if (qx + px > X) px = X - qx;
-                if (qy + py > Y) py = Y - qy;
-            }
+            int sh = v->profile < PROFILE_ADVANCED ? 5 : 6;
+            int MV = 4 - (1 << sh);
+            qx = (s->mb_x << sh);
+            qy = (s->mb_y << sh);
+            X  = (s->mb_width  << sh) - 4;
+            Y  = (s->mb_height << sh) - 4;
+            if (qx + px < MV) px = MV - qx;
+            if (qy + py < MV) py = MV - qy;
+            if (qx + px > X) px = X - qx;
+            if (qy + py > Y) py = Y - qy;
         }
         /* Calculate hybrid prediction as specified in 8.3.5.3.5 */
         if (0 && !s->first_slice_line && s->mb_x) {
@@ -838,25 +825,16 @@ void ff_vc1_pred_b_mv(VC1Context *v, int dmv_x[2], int dmv_y[2],
         /* Pullback MV as specified in 8.3.5.3.4 */
         {
             int qx, qy, X, Y;
-            if (v->profile < PROFILE_ADVANCED) {
-                qx = (s->mb_x << 5);
-                qy = (s->mb_y << 5);
-                X  = (s->mb_width  << 5) - 4;
-                Y  = (s->mb_height << 5) - 4;
-                if (qx + px < -28) px = -28 - qx;
-                if (qy + py < -28) py = -28 - qy;
-                if (qx + px > X) px = X - qx;
-                if (qy + py > Y) py = Y - qy;
-            } else {
-                qx = (s->mb_x << 6);
-                qy = (s->mb_y << 6);
-                X  = (s->mb_width  << 6) - 4;
-                Y  = (s->mb_height << 6) - 4;
-                if (qx + px < -60) px = -60 - qx;
-                if (qy + py < -60) py = -60 - qy;
-                if (qx + px > X) px = X - qx;
-                if (qy + py > Y) py = Y - qy;
-            }
+            int sh = v->profile < PROFILE_ADVANCED ? 5 : 6;
+            int MV = 4 - (1 << sh);
+            qx = (s->mb_x << sh);
+            qy = (s->mb_y << sh);
+            X  = (s->mb_width  << sh) - 4;
+            Y  = (s->mb_height << sh) - 4;
+            if (qx + px < MV) px = MV - qx;
+            if (qy + py < MV) py = MV - qy;
+            if (qx + px > X) px = X - qx;
+            if (qy + py > Y) py = Y - qy;
         }
         /* Calculate hybrid prediction as specified in 8.3.5.3.5 */
         if (0 && !s->first_slice_line && s->mb_x) {
