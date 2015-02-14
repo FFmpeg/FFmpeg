@@ -86,7 +86,7 @@ static char *print_format;
 static char *stream_specifier;
 static char *show_data_hash;
 
-typedef struct {
+typedef struct ReadInterval {
     int id;             ///< identifier
     int64_t start, end; ///< start, end in second/AV_TIME_BASE units
     int has_start, has_end;
@@ -1192,7 +1192,7 @@ static const Writer flat_writer = {
 
 /* INI format output */
 
-typedef struct {
+typedef struct INIContext {
     const AVClass *class;
     int hierarchical;
 } INIContext;
@@ -1296,7 +1296,7 @@ static const Writer ini_writer = {
 
 /* JSON output */
 
-typedef struct {
+typedef struct JSONContext {
     const AVClass *class;
     int indent_level;
     int compact;
@@ -1458,7 +1458,7 @@ static const Writer json_writer = {
 
 /* XML output */
 
-typedef struct {
+typedef struct XMLContext {
     const AVClass *class;
     int within_tag;
     int indent_level;
