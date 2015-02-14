@@ -361,6 +361,7 @@ retry:
         if (str_size > atom.size) {
             raw = 1;
             avio_seek(pb, -2, SEEK_CUR);
+            av_log(c->fc, AV_LOG_WARNING, "UDTA parsing failed retrying raw\n");
             goto retry;
         }
         langcode = avio_rb16(pb);
