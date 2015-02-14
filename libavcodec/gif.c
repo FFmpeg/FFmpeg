@@ -39,7 +39,7 @@
 
 #include "put_bits.h"
 
-typedef struct {
+typedef struct GIFContext {
     const AVClass *class;
     LZWState *lzw;
     uint8_t *buf;

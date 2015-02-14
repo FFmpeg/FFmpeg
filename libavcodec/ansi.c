@@ -50,7 +50,7 @@ static const uint8_t ansi_to_cga[16] = {
     0,  4,  2,  6,  1,  5,  3, 7, 8, 12, 10, 14,  9, 13, 11, 15
 };
 
-typedef struct {
+typedef struct AnsiContext {
     AVFrame *frame;
     int x;                /**< x cursor position (pixels) */
     int y;                /**< y cursor position (pixels) */

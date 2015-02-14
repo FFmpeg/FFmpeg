@@ -23,7 +23,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixfmt.h"
 
-typedef struct {
+typedef struct V210EncContext {
     void (*pack_line_8)(const uint8_t *y, const uint8_t *u,
                         const uint8_t *v, uint8_t *dst, ptrdiff_t width);
     void (*pack_line_10)(const uint16_t *y, const uint16_t *u,

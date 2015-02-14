@@ -78,7 +78,7 @@ typedef int8_t sb_int8_array[2][30][64];
 /**
  * Subpacket
  */
-typedef struct {
+typedef struct QDM2SubPacket {
     int type;            ///< subpacket type
     unsigned int size;   ///< subpacket size
     const uint8_t *data; ///< pointer to subpacket data (points to input data buffer, it's not a private copy)
@@ -92,12 +92,12 @@ typedef struct QDM2SubPNode {
     struct QDM2SubPNode *next; ///< pointer to next packet in the list, NULL if leaf node
 } QDM2SubPNode;
 
-typedef struct {
+typedef struct QDM2Complex {
     float re;
     float im;
 } QDM2Complex;
 
-typedef struct {
+typedef struct FFTTone {
     float level;
     QDM2Complex *complex;
     const float *table;
@@ -108,7 +108,7 @@ typedef struct {
     short cutoff;
 } FFTTone;
 
-typedef struct {
+typedef struct FFTCoefficient {
     int16_t sub_packet;
     uint8_t channel;
     int16_t offset;
@@ -116,14 +116,14 @@ typedef struct {
     uint8_t phase;
 } FFTCoefficient;
 
-typedef struct {
+typedef struct QDM2FFT {
     DECLARE_ALIGNED(32, QDM2Complex, complex)[MPA_MAX_CHANNELS][256];
 } QDM2FFT;
 
 /**
  * QDM2 decoder context
  */
-typedef struct {
+typedef struct QDM2Context {
     /// Parameters from codec header, do not change during playback
     int nb_channels;         ///< number of channels
     int channels;            ///< number of channels

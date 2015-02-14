@@ -50,7 +50,7 @@ typedef enum {
     RATE_FULL
 } qcelp_packet_rate;
 
-typedef struct {
+typedef struct QCELPContext {
     GetBitContext     gb;
     qcelp_packet_rate bitrate;
     QCELPFrame        frame;    /**< unpacked data frame */

@@ -44,7 +44,7 @@
 #include "sipr.h"
 #include "siprdata.h"
 
-typedef struct {
+typedef struct SiprModeParam {
     const char *mode_name;
     uint16_t bits_per_frame;
     uint8_t subframe_count;

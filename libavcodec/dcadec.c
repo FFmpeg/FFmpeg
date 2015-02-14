@@ -329,7 +329,7 @@ static const int8_t dca_channel_reorder_nolfe_xch[][9] = {
 #define DCA_NSYNCAUX        0x9A1105A0
 
 /** Bit allocation */
-typedef struct {
+typedef struct BitAlloc {
     int offset;                 ///< code values offset
     int maxbits[8];             ///< max bits in VLC
     int wrap;                   ///< wrap for get_vlc2()
@@ -348,7 +348,7 @@ static av_always_inline int get_bitalloc(GetBitContext *gb, BitAlloc *ba,
            ba->offset;
 }
 
-typedef struct {
+typedef struct DCAContext {
     const AVClass *class;       ///< class for AVOptions
     AVCodecContext *avctx;
     /* Frame header */
