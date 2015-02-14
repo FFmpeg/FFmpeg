@@ -31,10 +31,10 @@
 #endif
 #include "h264.h"
 
+#include "libavutil/frame.h"
+
 #include "avcodec.h"
 #include "mpeg4video.h"
-#include "mpegvideo.h"
-#include "version.h"
 
 /** Extract VdpVideoSurface from an AVFrame */
 static inline uintptr_t ff_vdpau_get_surface_id(AVFrame *pic)
