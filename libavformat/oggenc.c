@@ -444,6 +444,8 @@ static int ogg_write_header(AVFormatContext *s)
             return -1;
         }
         oggstream = av_mallocz(sizeof(*oggstream));
+        if (!oggstream)
+            return AVERROR(ENOMEM);
         oggstream->page.stream_index = i;
 
         if (!(s->flags & AVFMT_FLAG_BITEXACT))
