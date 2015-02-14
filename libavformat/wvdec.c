@@ -47,7 +47,7 @@ static const int wv_rates[16] = {
     32000, 44100, 48000, 64000, 88200, 96000, 192000,    -1
 };
 
-typedef struct {
+typedef struct WVContext {
     uint8_t block_header[WV_HEADER_SIZE];
     WvHeader header;
     int rate, chan, bpp;

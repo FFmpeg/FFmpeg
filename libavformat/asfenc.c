@@ -183,7 +183,7 @@
 
 #define DATA_HEADER_SIZE 50
 
-typedef struct {
+typedef struct ASFContext {
     uint32_t seqno;
     int is_streamed;
     ASFStream streams[128];              ///< it's max number and it's not that big

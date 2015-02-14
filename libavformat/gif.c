@@ -101,7 +101,7 @@ static int gif_image_write_header(AVIOContext *pb, const AVCodecContext *avctx,
     return 0;
 }
 
-typedef struct {
+typedef struct GIFContext {
     AVClass *class;
     int loop;
     int last_delay;

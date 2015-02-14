@@ -38,7 +38,7 @@
 #include "libavutil/mathematics.h"
 #include "libavutil/intreadwrite.h"
 
-typedef struct {
+typedef struct Fragment {
     char file[1024];
     char infofile[1024];
     int64_t start_time, duration;
@@ -46,7 +46,7 @@ typedef struct {
     int64_t start_pos, size;
 } Fragment;
 
-typedef struct {
+typedef struct OutputStream {
     AVFormatContext *ctx;
     int ctx_inited;
     char dirname[1024];
@@ -66,7 +66,7 @@ typedef struct {
     int audio_tag;
 } OutputStream;
 
-typedef struct {
+typedef struct SmoothStreamingContext {
     const AVClass *class;  /* Class for private options. */
     int window_size;
     int extra_window_size;

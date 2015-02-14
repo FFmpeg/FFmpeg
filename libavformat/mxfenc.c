@@ -57,19 +57,19 @@ extern AVOutputFormat ff_mxf_opatom_muxer;
 #define EDIT_UNITS_PER_BODY 250
 #define KAG_SIZE 512
 
-typedef struct {
+typedef struct MXFLocalTagPair {
     int local_tag;
     UID uid;
 } MXFLocalTagPair;
 
-typedef struct {
+typedef struct MXFIndexEntry {
     uint8_t flags;
     uint64_t offset;
     unsigned slice_offset; ///< offset of audio slice
     uint16_t temporal_ref;
 } MXFIndexEntry;
 
-typedef struct {
+typedef struct MXFStreamContext {
     AudioInterleaveContext aic;
     UID track_essence_element_key;
     int index;               ///< index in mxf_essence_container_uls table
@@ -84,7 +84,7 @@ typedef struct {
     int video_bit_rate;
 } MXFStreamContext;
 
-typedef struct {
+typedef struct MXFContainerEssenceEntry {
     UID container_ul;
     UID element_ul;
     UID codec_ul;

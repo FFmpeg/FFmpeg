@@ -656,7 +656,7 @@ static int parse_section_header(SectionHeader *h,
     return 0;
 }
 
-typedef struct {
+typedef struct StreamType {
     uint32_t stream_type;
     enum AVMediaType codec_type;
     enum AVCodecID codec_id;
@@ -1215,7 +1215,7 @@ static PESContext *add_pes_stream(MpegTSContext *ts, int pid, int pcr_pid)
 }
 
 #define MAX_LEVEL 4
-typedef struct {
+typedef struct MP4DescrParseContext {
     AVFormatContext *s;
     AVIOContext pb;
     Mp4Descr *descr;

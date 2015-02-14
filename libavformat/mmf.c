@@ -27,7 +27,7 @@
 #include "rawenc.h"
 #include "riff.h"
 
-typedef struct {
+typedef struct MMFContext {
     int64_t atrpos, atsqpos, awapos;
     int64_t data_end;
     int stereo;

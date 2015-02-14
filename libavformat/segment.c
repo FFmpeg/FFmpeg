@@ -65,7 +65,7 @@ typedef enum {
 #define SEGMENT_LIST_FLAG_CACHE 1
 #define SEGMENT_LIST_FLAG_LIVE  2
 
-typedef struct {
+typedef struct SegmentContext {
     const AVClass *class;  /**< Class for private options. */
     int segment_idx;       ///< index of the segment file to write, starting from 0
     int segment_idx_wrap;  ///< number after which the index wraps

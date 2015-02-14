@@ -46,7 +46,7 @@ enum BinkAudFlags {
 #define BINK_MAX_WIDTH          7680
 #define BINK_MAX_HEIGHT         4800
 
-typedef struct {
+typedef struct BinkDemuxContext {
     uint32_t file_size;
 
     uint32_t num_audio_tracks;

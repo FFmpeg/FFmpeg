@@ -33,7 +33,7 @@ static const AVCodecTag nuv_audio_tags[] = {
     { AV_CODEC_ID_NONE,      0 },
 };
 
-typedef struct {
+typedef struct NUVContext {
     int v_id;
     int a_id;
     int rtjpg_video;

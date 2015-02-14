@@ -30,7 +30,7 @@
  * Demuxer for xWMA, a Microsoft audio container used by XAudio 2.
  */
 
-typedef struct {
+typedef struct XWMAContext {
     int64_t data_end;
 } XWMAContext;
 

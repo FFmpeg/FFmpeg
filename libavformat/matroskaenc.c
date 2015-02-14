@@ -71,7 +71,7 @@ typedef struct mkv_seekhead {
     int                     num_entries;
 } mkv_seekhead;
 
-typedef struct {
+typedef struct mkv_cuepoint {
     uint64_t        pts;
     int             stream_idx;
     int             tracknum;
@@ -80,13 +80,13 @@ typedef struct {
     int64_t         duration;           ///< duration of the block according to time base
 } mkv_cuepoint;
 
-typedef struct {
+typedef struct mkv_cues {
     int64_t         segment_offset;
     mkv_cuepoint    *entries;
     int             num_entries;
 } mkv_cues;
 
-typedef struct {
+typedef struct mkv_track {
     int             write_dts;
     int             has_cue;
     int64_t         ts_offset;

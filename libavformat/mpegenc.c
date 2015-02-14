@@ -43,7 +43,7 @@ typedef struct PacketDesc {
     struct PacketDesc *next;
 } PacketDesc;
 
-typedef struct {
+typedef struct StreamInfo {
     AVFifoBuffer *fifo;
     uint8_t id;
     int max_buffer_size; /* in bytes */
@@ -59,7 +59,7 @@ typedef struct {
     int64_t vobu_start_pts;
 } StreamInfo;
 
-typedef struct {
+typedef struct MpegMuxContext {
     const AVClass *class;
     int packet_size; /* required packet size */
     int packet_number;
