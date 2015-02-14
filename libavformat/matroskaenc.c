@@ -665,7 +665,7 @@ static int mkv_write_codecprivate(AVFormatContext *s, AVIOContext *pb,
             if (!codec->codec_tag)
                 codec->codec_tag = ff_codec_get_tag(ff_codec_bmp_tags,
                                                     codec->codec_id);
-            if (!codec->codec_tag) {
+            if (!codec->codec_tag && codec->codec_id != AV_CODEC_ID_RAWVIDEO) {
                 av_log(s, AV_LOG_ERROR, "No bmp codec tag found for codec %s\n",
                        avcodec_get_name(codec->codec_id));
                 ret = AVERROR(EINVAL);
@@ -917,7 +917,7 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
 
         if (!native_id &&
             ff_codec_get_tag(ff_codec_movvideo_tags, codec->codec_id) &&
-            (!ff_codec_get_tag(ff_codec_bmp_tags,   codec->codec_id) ||
+            ((!ff_codec_get_tag(ff_codec_bmp_tags,   codec->codec_id) && codec->codec_id != AV_CODEC_ID_RAWVIDEO) ||
              codec->codec_id == AV_CODEC_ID_SVQ1 ||
              codec->codec_id == AV_CODEC_ID_SVQ3 ||
              codec->codec_id == AV_CODEC_ID_CINEPAK))
