@@ -123,6 +123,8 @@ typedef struct MatroskaMuxContext {
 
     uint32_t chapter_id_offset;
     int wrote_chapters;
+
+    int allow_raw_vfw;
 } MatroskaMuxContext;
 
 
@@ -879,8 +881,15 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
                 break;
             }
         }
-        if (codec->codec_id == AV_CODEC_ID_RAWVIDEO && !codec->codec_tag)
-            native_id = 0;
+        if (codec->codec_id == AV_CODEC_ID_RAWVIDEO && !codec->codec_tag) {
+            if (mkv->allow_raw_vfw) {
+                native_id = 0;
+            } else {
+                av_log(s, AV_LOG_ERROR, "Raw RGB is not supported Natively in Matroska, you can use AVI or NUT or\n"
+                                        "If you would like to store it anyway using VFW mode, enable allow_raw_vfw (-allow_raw_vfw 1)\n");
+                return AVERROR(EINVAL);
+            }
+        }
     }
 
     if (codec->codec_type == AVMEDIA_TYPE_AUDIO && codec->initial_padding && codec->codec_id == AV_CODEC_ID_OPUS) {
@@ -1992,6 +2001,7 @@ static const AVOption options[] = {
     { "cluster_time_limit",  "Store at most the provided number of milliseconds in a cluster.",                               OFFSET(cluster_time_limit), AV_OPT_TYPE_INT64, { .i64 = -1 }, -1, INT64_MAX, FLAGS },
     { "dash", "Create a WebM file conforming to WebM DASH specification", OFFSET(is_dash), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, FLAGS },
     { "dash_track_number", "Track number for the DASH stream", OFFSET(dash_track_number), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 127, FLAGS },
+    { "allow_raw_vfw", "allow RAW VFW mode", OFFSET(allow_raw_vfw), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, FLAGS },
     { NULL },
 };
 
