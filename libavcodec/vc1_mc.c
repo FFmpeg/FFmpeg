@@ -240,17 +240,6 @@ void ff_vc1_mc_1mv(VC1Context *v, int dir)
     }
 }
 
-static inline int median4(int a, int b, int c, int d)
-{
-    if (a < b) {
-        if (c < d) return (FFMIN(b, d) + FFMAX(a, c)) / 2;
-        else       return (FFMIN(b, c) + FFMAX(a, d)) / 2;
-    } else {
-        if (c < d) return (FFMIN(a, d) + FFMAX(b, c)) / 2;
-        else       return (FFMIN(a, c) + FFMAX(b, d)) / 2;
-    }
-}
-
 /** Do motion compensation for 4-MV macroblock - luminance block
  */
 void ff_vc1_mc_4mv_luma(VC1Context *v, int n, int dir, int avg)
