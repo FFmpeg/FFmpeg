@@ -63,8 +63,8 @@ static void vector_fmul_window_fixed_scaled_c(int16_t *dst, const int32_t *src0,
         s1 = src1[j];
         wi = win[i];
         wj = win[j];
-        dst[i] = av_clip_int16_c(((((int64_t)s0*wj - (int64_t)s1*wi + 0x40000000) >> 31) + round) >> bits);
-        dst[j] = av_clip_int16_c(((((int64_t)s0*wi + (int64_t)s1*wj + 0x40000000) >> 31) + round) >> bits);
+        dst[i] = av_clip_int16(((((int64_t)s0*wj - (int64_t)s1*wi + 0x40000000) >> 31) + round) >> bits);
+        dst[j] = av_clip_int16(((((int64_t)s0*wi + (int64_t)s1*wj + 0x40000000) >> 31) + round) >> bits);
     }
 }
 
