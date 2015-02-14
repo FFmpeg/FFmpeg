@@ -40,7 +40,6 @@
 #include "avformat.h"
 
 #include "network.h"
-#include <assert.h>
 
 #include "rtpdec.h"
 #include "rtpdec_formats.h"
@@ -153,8 +152,6 @@ static int sdp_parse_fmtp_config_h264(AVFormatContext *s,
                                       char *attr, char *value)
 {
     AVCodecContext *codec = stream->codec;
-    assert(codec->codec_id == AV_CODEC_ID_H264);
-    assert(h264_data != NULL);
 
     if (!strcmp(attr, "packetization-mode")) {
         av_log(s, AV_LOG_DEBUG, "RTP Packetization Mode: %d\n", atoi(value));
@@ -205,7 +202,6 @@ static int h264_handle_packet_stap_a(AVFormatContext *ctx, AVPacket *pkt,
                     total_length += sizeof(start_sequence) + nal_size;
                 } else {
                     // copying
-                    assert(dst);
                     memcpy(dst, start_sequence, sizeof(start_sequence));
                     dst += sizeof(start_sequence);
                     memcpy(dst, src, nal_size);
@@ -232,8 +228,6 @@ static int h264_handle_packet_stap_a(AVFormatContext *ctx, AVPacket *pkt,
             if ((ret = av_new_packet(pkt, total_length)) < 0)
                 return ret;
             dst = pkt->data;
-        } else {
-            assert(dst - pkt->data == total_length);
         }
     }
 
@@ -294,9 +288,6 @@ static int h264_handle_packet(AVFormatContext *ctx, PayloadContext *data,
     }
     nal  = buf[0];
     type = nal & 0x1f;
-
-    assert(data);
-    assert(buf);
 
     /* Simplify the case (these are all the nal types used internally by
      * the h264 codec). */
