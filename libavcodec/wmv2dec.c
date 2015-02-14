@@ -173,16 +173,7 @@ int ff_wmv2_decode_secondary_picture_header(MpegEncContext *s)
 
         parse_mb_skip(w);
         cbp_index = decode012(&s->gb);
-        if (s->qscale <= 10) {
-            int map[3]         = { 0, 2, 1 };
-            w->cbp_table_index = map[cbp_index];
-        } else if (s->qscale <= 20) {
-            int map[3]         = { 1, 0, 2 };
-            w->cbp_table_index = map[cbp_index];
-        } else {
-            int map[3]         = {2,1,0};
-            w->cbp_table_index = map[cbp_index];
-        }
+        w->cbp_table_index = wmv2_get_cbp_table_index(s, cbp_index);
 
         if (w->mspel_bit)
             s->mspel = get_bits1(&s->gb);

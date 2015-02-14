@@ -127,7 +127,7 @@ typedef struct WmallDecodeCtx {
 
     int8_t  acfilter_order;
     int8_t  acfilter_scaling;
-    int64_t acfilter_coeffs[16];
+    int16_t acfilter_coeffs[16];
     int     acfilter_prevvalues[WMALL_MAX_CHANNELS][16];
 
     int8_t  mclms_order;
@@ -175,6 +175,8 @@ typedef struct WmallDecodeCtx {
     int channel_coeffs[WMALL_MAX_CHANNELS][WMALL_BLOCK_MAX_SIZE];
 } WmallDecodeCtx;
 
+/** Get sign of integer (1 for positive, -1 for negative and 0 for zero) */
+#define WMASIGN(x) ((x > 0) - (x < 0))
 
 static av_cold int decode_init(AVCodecContext *avctx)
 {
@@ -551,10 +553,7 @@ static int decode_channel_residues(WmallDecodeCtx *s, int ch, int tile_size)
         s->ave_sum[ch] = residue + s->ave_sum[ch] -
                          (s->ave_sum[ch] >> s->movave_scaling);
 
-        if (residue & 1)
-            residue = -(residue >> 1) - 1;
-        else
-            residue = residue >> 1;
+        residue = (residue >> 1) ^ -(residue & 1);
         s->channel_residues[ch][i] = residue;
     }
 
@@ -631,38 +630,22 @@ static void mclms_update(WmallDecodeCtx *s, int icoef, int *pred)
             for (i = 0; i < order * num_channels; i++)
                 s->mclms_coeffs[i + ich * order * num_channels] +=
                     s->mclms_updates[s->mclms_recent + i];
-            for (j = 0; j < ich; j++) {
-                if (s->channel_residues[j][icoef] > 0)
-                    s->mclms_coeffs_cur[ich * num_channels + j] += 1;
-                else if (s->channel_residues[j][icoef] < 0)
-                    s->mclms_coeffs_cur[ich * num_channels + j] -= 1;
-            }
+            for (j = 0; j < ich; j++)
+                s->mclms_coeffs_cur[ich * num_channels + j] += WMASIGN(s->channel_residues[j][icoef]);
         } else if (pred_error < 0) {
             for (i = 0; i < order * num_channels; i++)
                 s->mclms_coeffs[i + ich * order * num_channels] -=
                     s->mclms_updates[s->mclms_recent + i];
-            for (j = 0; j < ich; j++) {
-                if (s->channel_residues[j][icoef] > 0)
-                    s->mclms_coeffs_cur[ich * num_channels + j] -= 1;
-                else if (s->channel_residues[j][icoef] < 0)
-                    s->mclms_coeffs_cur[ich * num_channels + j] += 1;
-            }
+            for (j = 0; j < ich; j++)
+                s->mclms_coeffs_cur[ich * num_channels + j] -= WMASIGN(s->channel_residues[j][icoef]);
         }
     }
 
     for (ich = num_channels - 1; ich >= 0; ich--) {
         s->mclms_recent--;
-        s->mclms_prevvalues[s->mclms_recent] = s->channel_residues[ich][icoef];
-        if (s->channel_residues[ich][icoef] > range - 1)
-            s->mclms_prevvalues[s->mclms_recent] = range - 1;
-        else if (s->channel_residues[ich][icoef] < -range)
-            s->mclms_prevvalues[s->mclms_recent] = -range;
-
-        s->mclms_updates[s->mclms_recent] = 0;
-        if (s->channel_residues[ich][icoef] > 0)
-            s->mclms_updates[s->mclms_recent] = 1;
-        else if (s->channel_residues[ich][icoef] < 0)
-            s->mclms_updates[s->mclms_recent] = -1;
+        s->mclms_prevvalues[s->mclms_recent] = av_clip(s->channel_residues[ich][icoef],
+            -range, range - 1);
+        s->mclms_updates[s->mclms_recent] = WMASIGN(s->channel_residues[ich][icoef]);
     }
 
     if (s->mclms_recent == 0) {
@@ -724,12 +707,7 @@ static void lms_update(WmallDecodeCtx *s, int ich, int ilms, int input)
     }
 
     s->cdlms[ich][ilms].lms_prevvalues[recent] = av_clip(input, -range, range - 1);
-    if (!input)
-        s->cdlms[ich][ilms].lms_updates[recent] = 0;
-    else if (input < 0)
-        s->cdlms[ich][ilms].lms_updates[recent] = -s->update_speed[ich];
-    else
-        s->cdlms[ich][ilms].lms_updates[recent] = s->update_speed[ich];
+    s->cdlms[ich][ilms].lms_updates[recent] = WMASIGN(input) * s->update_speed[ich];
 
     s->cdlms[ich][ilms].lms_updates[recent + (order >> 4)] >>= 2;
     s->cdlms[ich][ilms].lms_updates[recent + (order >> 3)] >>= 1;
@@ -773,9 +751,6 @@ static void use_normal_update_speed(WmallDecodeCtx *s, int ich)
     s->update_speed[ich] = 8;
 }
 
-/** Get sign of integer (1 for positive, -1 for negative and 0 for zero) */
-#define WMASIGN(x) ((x > 0) - (x < 0))
-
 static void revert_cdlms(WmallDecodeCtx *s, int ch,
                          int coef_begin, int coef_end)
 {
@@ -818,7 +793,7 @@ static void revert_inter_ch_decorr(WmallDecodeCtx *s, int tile_size)
 static void revert_acfilter(WmallDecodeCtx *s, int tile_size)
 {
     int ich, pred, i, j;
-    int64_t *filter_coeffs = s->acfilter_coeffs;
+    int16_t *filter_coeffs = s->acfilter_coeffs;
     int scaling            = s->acfilter_scaling;
     int order              = s->acfilter_order;
 
@@ -1091,8 +1066,7 @@ static int decode_frame(WmallDecodeCtx *s)
 
     av_dlog(s->avctx, "Frame done\n");
 
-    if (s->skip_frame)
-        s->skip_frame = 0;
+    s->skip_frame = 0;
 
     if (s->len_prefix) {
         if (len != (get_bits_count(gb) - s->frame_offset) + 2) {

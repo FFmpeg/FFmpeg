@@ -15,7 +15,7 @@ libavutil:     2014-08-09
 
 API changes, most recent first:
 
-2015-01-xx - xxxxxxx - lavc 56.12.0, lavu 54.8.0 - avcodec.h, frame.h
+2015-01-27 - 728685f - lavc 56.12.0, lavu 54.8.0 - avcodec.h, frame.h
   Add AV_PKT_DATA_AUDIO_SERVICE_TYPE and AV_FRAME_DATA_AUDIO_SERVICE_TYPE for
   storing the audio service type as side data.
 
@@ -26,13 +26,13 @@ API changes, most recent first:
   Add avdevice_list_input_sources().
   Add avdevice_list_output_sinks().
 
-2014-12-27 - d7aaeea / c220a60 - lavc 56.19.100 / 56.10.0 - vdpau.h
+2014-12-25 - d7aaeea / c220a60 - lavc 56.19.100 / 56.10.0 - vdpau.h
   Add av_vdpau_get_surface_parameters().
 
-2014-12-27 - ddb9a24 / 6c99c92 - lavc 56.18.100 / 56.9.0 - avcodec.h
+2014-12-25 - ddb9a24 / 6c99c92 - lavc 56.18.100 / 56.9.0 - avcodec.h
   Add AV_HWACCEL_FLAG_ALLOW_HIGH_DEPTH flag to av_vdpau_bind_context().
 
-2014-12-27 - d16079a / 57b6704 - lavc 56.17.100 / 56.8.0 - avcodec.h
+2014-12-25 - d16079a / 57b6704 - lavc 56.17.100 / 56.8.0 - avcodec.h
   Add AVCodecContext.sw_pix_fmt.
 
 2014-12-04 - 6e9ac02 - lavc 56.14.100 - dv_profile.h
@@ -278,7 +278,7 @@ API changes, most recent first:
   Add avcodec_free_context(). From now on it should be used for freeing
   AVCodecContext.
 
-2014-05-17 - 0eec06e - lavu 52.84.100 - time.h
+2014-05-17 - 0eec06e / 1bd0bdc - lavu 52.84.100 / 54.5.0 - time.h
   Add av_gettime_relative() av_gettime_relative_is_monotonic()
 
 2014-05-15 - eacf7d6 / 0c1959b - lavf 55.38.100 / 55.17.0 - avformat.h
