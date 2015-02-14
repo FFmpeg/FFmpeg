@@ -43,7 +43,7 @@
 #define SUBBAND_SAMPLES (SUBFRAMES * SUBSUBFRAMES * 8)
 #define AUBANDS 25
 
-typedef struct DCAContext {
+typedef struct DCAEncContext {
     PutBitContext pb;
     int frame_size;
     int frame_bits;
@@ -73,7 +73,7 @@ typedef struct DCAContext {
     int32_t worst_quantization_noise;
     int32_t worst_noise_ever;
     int consumed_bits;
-} DCAContext;
+} DCAEncContext;
 
 static int32_t cos_table[2048];
 static int32_t band_interpolation[2][512];
@@ -105,7 +105,7 @@ static double gammafilter(int i, double f)
 
 static int encode_init(AVCodecContext *avctx)
 {
-    DCAContext *c = avctx->priv_data;
+    DCAEncContext *c = avctx->priv_data;
     uint64_t layout = avctx->channel_layout;
     int i, min_frame_bits;
 
@@ -235,7 +235,7 @@ static inline int32_t mul32(int32_t a, int32_t b)
     return r >> 32;
 }
 
-static void subband_transform(DCAContext *c, const int32_t *input)
+static void subband_transform(DCAEncContext *c, const int32_t *input)
 {
     int ch, subs, i, k, j;
 
@@ -285,7 +285,7 @@ static void subband_transform(DCAContext *c, const int32_t *input)
     }
 }
 
-static void lfe_downsample(DCAContext *c, const int32_t *input)
+static void lfe_downsample(DCAEncContext *c, const int32_t *input)
 {
     /* FIXME: make 128x LFE downsampling possible */
     int i, j, lfes;
@@ -442,11 +442,11 @@ static void adjust_jnd(int samplerate_index,
         out_cb[j] = add_cb(out_cb[j], -out_cb_unnorm[j] - ca_cb - cs_cb);
 }
 
-typedef void (*walk_band_t)(DCAContext *c, int band1, int band2, int f,
+typedef void (*walk_band_t)(DCAEncContext *c, int band1, int band2, int f,
                             int32_t spectrum1, int32_t spectrum2, int channel,
                             int32_t * arg);
 
-static void walk_band_low(DCAContext *c, int band, int channel,
+static void walk_band_low(DCAEncContext *c, int band, int channel,
                           walk_band_t walk, int32_t *arg)
 {
     int f;
@@ -461,7 +461,7 @@ static void walk_band_low(DCAContext *c, int band, int channel,
     }
 }
 
-static void walk_band_high(DCAContext *c, int band, int channel,
+static void walk_band_high(DCAEncContext *c, int band, int channel,
                            walk_band_t walk, int32_t *arg)
 {
     int f;
@@ -476,7 +476,7 @@ static void walk_band_high(DCAContext *c, int band, int channel,
     }
 }
 
-static void update_band_masking(DCAContext *c, int band1, int band2,
+static void update_band_masking(DCAEncContext *c, int band1, int band2,
                                 int f, int32_t spectrum1, int32_t spectrum2,
                                 int channel, int32_t * arg)
 {
@@ -486,7 +486,7 @@ static void update_band_masking(DCAContext *c, int band1, int band2,
         c->band_masking_cb[band1] = value;
 }
 
-static void calc_masking(DCAContext *c, const int32_t *input)
+static void calc_masking(DCAEncContext *c, const int32_t *input)
 {
     int i, k, band, ch, ssf;
     int32_t data[512];
@@ -519,7 +519,7 @@ static void calc_masking(DCAContext *c, const int32_t *input)
     }
 }
 
-static void find_peaks(DCAContext *c)
+static void find_peaks(DCAEncContext *c)
 {
     int band, ch;
 
@@ -552,7 +552,7 @@ static const int snr_fudge = 128;
 #define USED_NABITS 2
 #define USED_26ABITS 4
 
-static int init_quantization_noise(DCAContext *c, int noise)
+static int init_quantization_noise(DCAEncContext *c, int noise)
 {
     int ch, band, ret = 0;
 
@@ -589,7 +589,7 @@ static int init_quantization_noise(DCAContext *c, int noise)
     return ret;
 }
 
-static void assign_bits(DCAContext *c)
+static void assign_bits(DCAEncContext *c)
 {
     /* Find the bounds where the binary search should work */
     int low, high, down;
@@ -627,7 +627,7 @@ out:
         c->worst_noise_ever = high;
 }
 
-static void shift_history(DCAContext *c, const int32_t *input)
+static void shift_history(DCAEncContext *c, const int32_t *input)
 {
     int k, ch;
 
@@ -677,7 +677,7 @@ static int calc_one_scale(int32_t peak_cb, int abits, softfloat *quant)
     return our_nscale;
 }
 
-static void calc_scales(DCAContext *c)
+static void calc_scales(DCAEncContext *c)
 {
     int band, ch;
 
@@ -691,7 +691,7 @@ static void calc_scales(DCAContext *c)
         c->lfe_scale_factor = calc_one_scale(c->lfe_peak_cb, 11, &c->lfe_quant);
 }
 
-static void quantize_all(DCAContext *c)
+static void quantize_all(DCAEncContext *c)
 {
     int sample, band, ch;
 
@@ -701,7 +701,7 @@ static void quantize_all(DCAContext *c)
                 c->quantized[sample][band][ch] = quantize_value(c->subband[sample][band][ch], c->quant[band][ch]);
 }
 
-static void put_frame_header(DCAContext *c)
+static void put_frame_header(DCAEncContext *c)
 {
     /* SYNC */
     put_bits(&c->pb, 16, 0x7ffe);
@@ -784,7 +784,7 @@ static void put_frame_header(DCAContext *c)
     put_bits(&c->pb, 4, 0);
 }
 
-static void put_primary_audio_header(DCAContext *c)
+static void put_primary_audio_header(DCAEncContext *c)
 {
     static const int bitlen[11] = { 0, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3 };
     static const int thr[11]    = { 0, 1, 3, 3, 3, 3, 7, 7, 7, 7, 7 };
@@ -830,7 +830,7 @@ static void put_primary_audio_header(DCAContext *c)
     /* Audio header CRC check word: not transmitted */
 }
 
-static void put_subframe_samples(DCAContext *c, int ss, int band, int ch)
+static void put_subframe_samples(DCAEncContext *c, int ss, int band, int ch)
 {
     if (c->abits[band][ch] <= 7) {
         int sum, i, j;
@@ -853,7 +853,7 @@ static void put_subframe_samples(DCAContext *c, int ss, int band, int ch)
     }
 }
 
-static void put_subframe(DCAContext *c, int subframe)
+static void put_subframe(DCAEncContext *c, int subframe)
 {
     int i, band, ss, ch;
 
@@ -913,7 +913,7 @@ static void put_subframe(DCAContext *c, int subframe)
 static int encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                         const AVFrame *frame, int *got_packet_ptr)
 {
-    DCAContext *c = avctx->priv_data;
+    DCAEncContext *c = avctx->priv_data;
     const int32_t *samples;
     int ret, i;
 
@@ -958,7 +958,7 @@ AVCodec ff_dca_encoder = {
     .long_name             = NULL_IF_CONFIG_SMALL("DCA (DTS Coherent Acoustics)"),
     .type                  = AVMEDIA_TYPE_AUDIO,
     .id                    = AV_CODEC_ID_DTS,
-    .priv_data_size        = sizeof(DCAContext),
+    .priv_data_size        = sizeof(DCAEncContext),
     .init                  = encode_init,
     .encode2               = encode_frame,
     .capabilities          = CODEC_CAP_EXPERIMENTAL,
