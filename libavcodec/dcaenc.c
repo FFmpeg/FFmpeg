@@ -37,7 +37,7 @@
 #define DCA_HEADER_SIZE 13
 #define DCA_LFE_SAMPLES 8
 
-#define DCA_SUBBANDS 32
+#define DCAENC_SUBBANDS 32
 #define SUBFRAMES 1
 #define SUBSUBFRAMES 2
 #define SUBBAND_SAMPLES (SUBFRAMES * SUBSUBFRAMES * 8)
@@ -60,14 +60,14 @@ typedef struct DCAEncContext {
     int32_t lfe_peak_cb;
 
     int32_t history[512][MAX_CHANNELS]; /* This is a circular buffer */
-    int32_t subband[SUBBAND_SAMPLES][DCA_SUBBANDS][MAX_CHANNELS];
-    int32_t quantized[SUBBAND_SAMPLES][DCA_SUBBANDS][MAX_CHANNELS];
-    int32_t peak_cb[DCA_SUBBANDS][MAX_CHANNELS];
+    int32_t subband[SUBBAND_SAMPLES][DCAENC_SUBBANDS][MAX_CHANNELS];
+    int32_t quantized[SUBBAND_SAMPLES][DCAENC_SUBBANDS][MAX_CHANNELS];
+    int32_t peak_cb[DCAENC_SUBBANDS][MAX_CHANNELS];
     int32_t downsampled_lfe[DCA_LFE_SAMPLES];
     int32_t masking_curve_cb[SUBSUBFRAMES][256];
-    int abits[DCA_SUBBANDS][MAX_CHANNELS];
-    int scale_factor[DCA_SUBBANDS][MAX_CHANNELS];
-    softfloat quant[DCA_SUBBANDS][MAX_CHANNELS];
+    int abits[DCAENC_SUBBANDS][MAX_CHANNELS];
+    int scale_factor[DCAENC_SUBBANDS][MAX_CHANNELS];
+    softfloat quant[DCAENC_SUBBANDS][MAX_CHANNELS];
     int32_t eff_masking_curve_cb[256];
     int32_t band_masking_cb[32];
     int32_t worst_quantization_noise;
@@ -798,11 +798,11 @@ static void put_primary_audio_header(DCAEncContext *c)
 
     /* Subband activity count */
     for (ch = 0; ch < c->fullband_channels; ch++)
-        put_bits(&c->pb, 5, DCA_SUBBANDS - 2);
+        put_bits(&c->pb, 5, DCAENC_SUBBANDS - 2);
 
     /* High frequency VQ start subband */
     for (ch = 0; ch < c->fullband_channels; ch++)
-        put_bits(&c->pb, 5, DCA_SUBBANDS - 1);
+        put_bits(&c->pb, 5, DCAENC_SUBBANDS - 1);
 
     /* Joint intensity coding index: 0, 0 */
     for (ch = 0; ch < c->fullband_channels; ch++)
@@ -865,25 +865,25 @@ static void put_subframe(DCAEncContext *c, int subframe)
 
     /* Prediction mode: no ADPCM, in each channel and subband */
     for (ch = 0; ch < c->fullband_channels; ch++)
-        for (band = 0; band < DCA_SUBBANDS; band++)
+        for (band = 0; band < DCAENC_SUBBANDS; band++)
             put_bits(&c->pb, 1, 0);
 
     /* Prediction VQ address: not transmitted */
     /* Bit allocation index */
     for (ch = 0; ch < c->fullband_channels; ch++)
-        for (band = 0; band < DCA_SUBBANDS; band++)
+        for (band = 0; band < DCAENC_SUBBANDS; band++)
             put_bits(&c->pb, 5, c->abits[band][ch]);
 
     if (SUBSUBFRAMES > 1) {
         /* Transition mode: none for each channel and subband */
         for (ch = 0; ch < c->fullband_channels; ch++)
-            for (band = 0; band < DCA_SUBBANDS; band++)
+            for (band = 0; band < DCAENC_SUBBANDS; band++)
                 put_bits(&c->pb, 1, 0); /* codebook A4 */
     }
 
     /* Scale factors */
     for (ch = 0; ch < c->fullband_channels; ch++)
-        for (band = 0; band < DCA_SUBBANDS; band++)
+        for (band = 0; band < DCAENC_SUBBANDS; band++)
             put_bits(&c->pb, 7, c->scale_factor[band][ch]);
 
     /* Joint subband scale factor codebook select: not transmitted */
@@ -903,7 +903,7 @@ static void put_subframe(DCAEncContext *c, int subframe)
     /* Audio data (subsubframes) */
     for (ss = 0; ss < SUBSUBFRAMES ; ss++)
         for (ch = 0; ch < c->fullband_channels; ch++)
-            for (band = 0; band < DCA_SUBBANDS; band++)
+            for (band = 0; band < DCAENC_SUBBANDS; band++)
                     put_subframe_samples(c, ss, band, ch);
 
     /* DSYNC */
