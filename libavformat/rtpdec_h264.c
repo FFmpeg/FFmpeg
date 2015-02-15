@@ -240,6 +240,44 @@ static int h264_handle_packet_stap_a(AVFormatContext *ctx, AVPacket *pkt,
     return 0;
 }
 
+static int h264_handle_packet_fu_a(AVFormatContext *ctx, AVPacket *pkt,
+                                   const uint8_t *buf, int len)
+{
+    uint8_t fu_indicator, fu_header, start_bit, nal_type, nal;
+    int ret;
+
+    if (len < 3) {
+        av_log(ctx, AV_LOG_ERROR, "Too short data for FU-A H264 RTP packet\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    fu_indicator = buf[0];
+    fu_header    = buf[1];
+    start_bit    = fu_header >> 7;
+    nal_type     = fu_header & 0x1f;
+    nal          = fu_indicator & 0xe0 | nal_type;
+
+    // skip the fu_indicator and fu_header
+    buf += 2;
+    len -= 2;
+
+    if (start_bit) {
+        COUNT_NAL_TYPE(data, nal_type);
+        /* copy in the start sequence, and the reconstructed nal */
+        if ((ret = av_new_packet(pkt, sizeof(start_sequence) + sizeof(nal) + len)) < 0)
+            return ret;
+        memcpy(pkt->data, start_sequence, sizeof(start_sequence));
+        pkt->data[sizeof(start_sequence)] = nal;
+        memcpy(pkt->data + sizeof(start_sequence) + sizeof(nal), buf, len);
+    } else {
+        if ((ret = av_new_packet(pkt, len)) < 0)
+            return ret;
+        memcpy(pkt->data, buf, len);
+    }
+
+    return 0;
+}
+
 // return 0 on packet, no more left, 1 on packet, 1 on partial packet
 static int h264_handle_packet(AVFormatContext *ctx, PayloadContext *data,
                               AVStream *st, AVPacket *pkt, uint32_t *timestamp,
@@ -293,45 +331,7 @@ static int h264_handle_packet(AVFormatContext *ctx, PayloadContext *data,
         break;
 
     case 28:                   // FU-A (fragmented nal)
-        buf++;
-        len--;                 // skip the fu_indicator
-        if (len > 1) {
-            // these are the same as above, we just redo them here for clarity
-            uint8_t fu_indicator      = nal;
-            uint8_t fu_header         = *buf;
-            uint8_t start_bit         = fu_header >> 7;
-            uint8_t av_unused end_bit = (fu_header & 0x40) >> 6;
-            uint8_t nal_type          = fu_header & 0x1f;
-            uint8_t reconstructed_nal;
-
-            // Reconstruct this packet's true nal; only the data follows.
-            /* The original nal forbidden bit and NRI are stored in this
-             * packet's nal. */
-            reconstructed_nal  = fu_indicator & 0xe0;
-            reconstructed_nal |= nal_type;
-
-            // skip the fu_header
-            buf++;
-            len--;
-
-            if (start_bit)
-                COUNT_NAL_TYPE(data, nal_type);
-            if (start_bit) {
-                /* copy in the start sequence, and the reconstructed nal */
-                if ((result = av_new_packet(pkt, sizeof(start_sequence) + sizeof(nal) + len)) < 0)
-                    return result;
-                memcpy(pkt->data, start_sequence, sizeof(start_sequence));
-                pkt->data[sizeof(start_sequence)] = reconstructed_nal;
-                memcpy(pkt->data + sizeof(start_sequence) + sizeof(nal), buf, len);
-            } else {
-                if ((result = av_new_packet(pkt, len)) < 0)
-                    return result;
-                memcpy(pkt->data, buf, len);
-            }
-        } else {
-            av_log(ctx, AV_LOG_ERROR, "Too short data for FU-A H264 RTP packet\n");
-            result = AVERROR_INVALIDDATA;
-        }
+        result = h264_handle_packet_fu_a(ctx, pkt, buf, len);
         break;
 
     case 30:                   // undefined
