@@ -209,10 +209,10 @@ static void close_connection(HTTPContext *c);
 
 /* HTTP handling */
 static int handle_connection(HTTPContext *c);
-static int http_parse_request(HTTPContext *c);
-static int http_send_data(HTTPContext *c);
 static void compute_status(HTTPContext *c);
 static int open_input_stream(HTTPContext *c, const char *info);
+static int http_parse_request(HTTPContext *c);
+static int http_send_data(HTTPContext *c);
 static int http_start_receive_data(HTTPContext *c);
 static int http_receive_data(HTTPContext *c);
 
