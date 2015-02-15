@@ -18,16 +18,18 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_G722DSP_H
-#define AVCODEC_G722DSP_H
-
 #include <stdint.h>
 
-typedef struct G722DSPContext {
-    void (*apply_qmf)(const int16_t *prev_samples, int xout[2]);
-} G722DSPContext;
+#include "libavutil/attributes.h"
+#include "libavutil/arm/cpu.h"
+#include "libavcodec/g722dsp.h"
 
-void ff_g722dsp_init(G722DSPContext *c);
-void ff_g722dsp_init_arm(G722DSPContext *c);
+extern void ff_g722_apply_qmf_neon(const int16_t *prev_samples, int xout[2]);
 
-#endif /* AVCODEC_G722DSP_H */
+av_cold void ff_g722dsp_init_arm(G722DSPContext *dsp)
+{
+    int cpu_flags = av_get_cpu_flags();
+
+    if (have_neon(cpu_flags))
+        dsp->apply_qmf = ff_g722_apply_qmf_neon;
+}

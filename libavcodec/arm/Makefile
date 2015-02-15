@@ -35,6 +35,8 @@ OBJS-$(CONFIG_APE_DECODER)             += arm/apedsp_init_arm.o
 OBJS-$(CONFIG_DCA_DECODER)             += arm/dcadsp_init_arm.o
 OBJS-$(CONFIG_FLAC_DECODER)            += arm/flacdsp_init_arm.o        \
                                           arm/flacdsp_arm.o
+OBJS-$(CONFIG_ADPCM_G722_DECODER)      += arm/g722dsp_init_arm.o
+OBJS-$(CONFIG_ADPCM_G722_ENCODER)      += arm/g722dsp_init_arm.o
 OBJS-$(CONFIG_MLP_DECODER)             += arm/mlpdsp_init_arm.o
 OBJS-$(CONFIG_VC1_DECODER)             += arm/vc1dsp_init_arm.o
 OBJS-$(CONFIG_VORBIS_DECODER)          += arm/vorbisdsp_init_arm.o
@@ -131,6 +133,8 @@ NEON-OBJS-$(CONFIG_AAC_DECODER)        += arm/aacpsdsp_neon.o           \
 NEON-OBJS-$(CONFIG_APE_DECODER)        += arm/apedsp_neon.o
 NEON-OBJS-$(CONFIG_DCA_DECODER)        += arm/dcadsp_neon.o             \
                                           arm/synth_filter_neon.o
+NEON-OBJS-$(CONFIG_ADPCM_G722_DECODER) += arm/g722dsp_neon.o
+NEON-OBJS-$(CONFIG_ADPCM_G722_ENCODER) += arm/g722dsp_neon.o
 NEON-OBJS-$(CONFIG_RV30_DECODER)       += arm/rv34dsp_neon.o
 NEON-OBJS-$(CONFIG_RV40_DECODER)       += arm/rv34dsp_neon.o            \
                                           arm/rv40dsp_neon.o
