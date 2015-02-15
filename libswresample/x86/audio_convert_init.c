@@ -126,7 +126,7 @@ MULTI_CAPS_FUNC(SSE2, sse2)
             if(   out_fmt == AV_SAMPLE_FMT_S32P  && in_fmt == AV_SAMPLE_FMT_FLT)
                 ac->simd_f =  ff_unpack_6ch_float_to_int32_a_sse2;
         }
-        if(HAVE_ALIGNED_STACK && channels == 8) {
+        if(channels == 8) {
             if(   out_fmt == AV_SAMPLE_FMT_FLT  && in_fmt == AV_SAMPLE_FMT_FLTP || out_fmt == AV_SAMPLE_FMT_S32 && in_fmt == AV_SAMPLE_FMT_S32P)
                 ac->simd_f =  ff_pack_8ch_float_to_float_a_sse2;
             if(   out_fmt == AV_SAMPLE_FMT_FLT  && in_fmt == AV_SAMPLE_FMT_S32P)
@@ -163,7 +163,7 @@ MULTI_CAPS_FUNC(SSE2, sse2)
             if(   out_fmt == AV_SAMPLE_FMT_S32P  && in_fmt == AV_SAMPLE_FMT_FLT)
                 ac->simd_f =  ff_unpack_6ch_float_to_int32_a_avx;
         }
-        if(HAVE_ALIGNED_STACK && channels == 8) {
+        if(channels == 8) {
             if(   out_fmt == AV_SAMPLE_FMT_FLT  && in_fmt == AV_SAMPLE_FMT_FLTP || out_fmt == AV_SAMPLE_FMT_S32 && in_fmt == AV_SAMPLE_FMT_S32P)
                 ac->simd_f =  ff_pack_8ch_float_to_float_a_avx;
             if(   out_fmt == AV_SAMPLE_FMT_FLT  && in_fmt == AV_SAMPLE_FMT_S32P)
