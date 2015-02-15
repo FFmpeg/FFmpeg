@@ -84,6 +84,9 @@
     <ClCompile Include="..\libavformat\rtpdec.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavformat\rtpdec_ac3.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavformat\rtpdec_amr.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
@@ -139,6 +142,9 @@
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
     <ClCompile Include="..\libavformat\rtpdec_vp8.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\rtpdec_vp9.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
     <ClCompile Include="..\libavformat\rtpdec_xiph.c">

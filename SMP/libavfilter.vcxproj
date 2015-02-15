@@ -326,6 +326,10 @@
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_pad.c">
     </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_palettegen.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_paletteuse.c">
+    </ClCompile>
     <ClCompile Include="..\libavfilter\vf_perspective.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_phase.c">

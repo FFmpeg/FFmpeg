@@ -103,6 +103,8 @@
     </ClCompile>
     <ClCompile Include="..\libavformat\rtpdec.c">
     </ClCompile>
+    <ClCompile Include="..\libavformat\rtpdec_ac3.c">
+    </ClCompile>
     <ClCompile Include="..\libavformat\rtpdec_amr.c">
     </ClCompile>
     <ClCompile Include="..\libavformat\rtpdec_asf.c">
@@ -140,6 +142,8 @@
     <ClCompile Include="..\libavformat\rtpdec_svq3.c">
     </ClCompile>
     <ClCompile Include="..\libavformat\rtpdec_vp8.c">
+    </ClCompile>
+    <ClCompile Include="..\libavformat\rtpdec_vp9.c">
     </ClCompile>
     <ClCompile Include="..\libavformat\rtpdec_xiph.c">
     </ClCompile>

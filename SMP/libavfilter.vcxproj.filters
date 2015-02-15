@@ -428,6 +428,12 @@
     <ClCompile Include="..\libavfilter\vf_pad.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_palettegen.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_paletteuse.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\vf_perspective.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>

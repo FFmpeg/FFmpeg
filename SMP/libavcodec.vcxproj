@@ -555,6 +555,8 @@
     <ClCompile Include="..\libavcodec\dcadsp.c">
       <ObjectFileName>$(IntDir)\libavcodec_dcadsp.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\dca_exss.c">
+    </ClCompile>
     <ClCompile Include="..\libavcodec\synth_filter.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\dcaenc.c">
