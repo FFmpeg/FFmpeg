@@ -2419,7 +2419,7 @@ static int http_send_data(HTTPContext *c)
 
                     /* send everything we can NOW */
                     len = send(rtsp_c->fd, rtsp_c->packet_buffer_ptr,
-                                rtsp_c->packet_buffer_end - rtsp_c->packet_buffer_ptr, 0);
+                               rtsp_c->packet_buffer_end - rtsp_c->packet_buffer_ptr, 0);
                     if (len > 0)
                         rtsp_c->packet_buffer_ptr += len;
                     if (rtsp_c->packet_buffer_ptr < rtsp_c->packet_buffer_end) {
