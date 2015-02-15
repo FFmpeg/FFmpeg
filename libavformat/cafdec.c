@@ -36,7 +36,7 @@
 #include "libavutil/dict.h"
 #include "caf.h"
 
-typedef struct {
+typedef struct CafContext {
     int bytes_per_packet;           ///< bytes in a packet, or 0 if variable
     int frames_per_packet;          ///< frames in a packet, or 0 if variable
     int64_t num_bytes;              ///< total number of bytes in stream

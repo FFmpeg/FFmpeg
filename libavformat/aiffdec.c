@@ -33,7 +33,7 @@
 #define AIFF                    0
 #define AIFF_C_VERSION1         0xA2805140
 
-typedef struct {
+typedef struct AIFFInputContext {
     int64_t data_end;
     int block_duration;
 } AIFFInputContext;

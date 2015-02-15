@@ -44,7 +44,7 @@ typedef struct cell_s {
 /**
  * ELBG internal data
  */
-typedef struct{
+typedef struct elbg_data {
     int error;
     int dim;
     int numCB;

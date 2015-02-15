@@ -33,7 +33,7 @@
 /* symbol for Huffman tree node */
 #define HNODE -1
 
-typedef struct {
+typedef struct HeapElem {
     uint64_t val;
     int name;
 } HeapElem;

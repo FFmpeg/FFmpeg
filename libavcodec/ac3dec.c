@@ -485,7 +485,7 @@ static void calc_transform_coeffs_cpl(AC3DecodeContext *s)
 /**
  * Grouped mantissas for 3-level 5-level and 11-level quantization
  */
-typedef struct {
+typedef struct mant_groups {
     int b1_mant[2];
     int b2_mant[2];
     int b4_mant;

@@ -1,4 +1,6 @@
 /*
+ * DCA ExSS extension
+ *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -16,20 +18,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCOENC_V210ENC_H
-#define AVCOENC_V210ENC_H
+#ifndef AVCODEC_DCA_EXSS_H
+#define AVCODEC_DCA_EXSS_H
 
-#include "libavutil/log.h"
-#include "libavutil/opt.h"
-#include "libavutil/pixfmt.h"
+#include "dca.h"
 
-typedef struct V210EncContext {
-    void (*pack_line_8)(const uint8_t *y, const uint8_t *u,
-                        const uint8_t *v, uint8_t *dst, ptrdiff_t width);
-    void (*pack_line_10)(const uint16_t *y, const uint16_t *u,
-                         const uint16_t *v, uint8_t *dst, ptrdiff_t width);
-} V210EncContext;
+void ff_dca_exss_parse_header(DCAContext *s);
 
-void ff_v210enc_init_x86(V210EncContext *s);
-
-#endif /* AVCOENC_V210ENC_H */
+#endif /* AVCODEC_DCA_EXSS_H */

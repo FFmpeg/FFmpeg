@@ -28,7 +28,7 @@
 #include "avcodec.h"
 #include "internal.h"
 
-typedef struct {
+typedef struct LibSpeexContext {
     SpeexBits bits;
     SpeexStereoState stereo;
     void *dec_state;

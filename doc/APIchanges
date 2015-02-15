@@ -15,6 +15,9 @@ libavutil:     2014-08-09
 
 API changes, most recent first:
 
+2015-02-xx - xxxxxxx - lavc 56.21.102
+  Deprecate VIMA decoder.
+
 2015-01-27 - 728685f - lavc 56.12.0, lavu 54.8.0 - avcodec.h, frame.h
   Add AV_PKT_DATA_AUDIO_SERVICE_TYPE and AV_FRAME_DATA_AUDIO_SERVICE_TYPE for
   storing the audio service type as side data.

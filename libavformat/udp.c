@@ -71,7 +71,7 @@
 #define UDP_MAX_PKT_SIZE 65536
 #define UDP_HEADER_SIZE 8
 
-typedef struct {
+typedef struct UDPContext {
     const AVClass *class;
     int udp_fd;
     int ttl;

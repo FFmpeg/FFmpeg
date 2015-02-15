@@ -93,7 +93,7 @@
 #include "audio_frame_queue.h"
 
 /* TODO: Think about converting abr, vad, dtx and such flags to a bit field */
-typedef struct {
+typedef struct LibSpeexEncContext {
     AVClass *class;             ///< AVClass for private options
     SpeexBits bits;             ///< libspeex bitwriter context
     SpeexHeader header;         ///< libspeex header struct

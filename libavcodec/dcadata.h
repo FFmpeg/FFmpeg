@@ -7663,4 +7663,182 @@ static const float dca_default_coeffs[10][6][2] = {
  * where Ch(n) represents the subband samples in the (n)th audio channel.
  */
 
+static const uint32_t map_xxch_to_native[28] = {
+    AV_CH_FRONT_CENTER,
+    AV_CH_FRONT_LEFT,
+    AV_CH_FRONT_RIGHT,
+    AV_CH_SIDE_LEFT,
+    AV_CH_SIDE_RIGHT,
+    AV_CH_LOW_FREQUENCY,
+    AV_CH_BACK_CENTER,
+    AV_CH_BACK_LEFT,
+    AV_CH_BACK_RIGHT,
+    AV_CH_SIDE_LEFT,           /* side surround left -- dup sur side L */
+    AV_CH_SIDE_RIGHT,          /* side surround right -- dup sur side R */
+    AV_CH_FRONT_LEFT_OF_CENTER,
+    AV_CH_FRONT_RIGHT_OF_CENTER,
+    AV_CH_TOP_FRONT_LEFT,
+    AV_CH_TOP_FRONT_CENTER,
+    AV_CH_TOP_FRONT_RIGHT,
+    AV_CH_LOW_FREQUENCY,        /* lfe2 -- duplicate lfe1 position */
+    AV_CH_FRONT_LEFT_OF_CENTER, /* side front left -- dup front cntr L */
+    AV_CH_FRONT_RIGHT_OF_CENTER,/* side front right -- dup front cntr R */
+    AV_CH_TOP_CENTER,           /* overhead */
+    AV_CH_TOP_FRONT_LEFT,       /* side high left -- dup */
+    AV_CH_TOP_FRONT_RIGHT,      /* side high right -- dup */
+    AV_CH_TOP_BACK_CENTER,
+    AV_CH_TOP_BACK_LEFT,
+    AV_CH_TOP_BACK_RIGHT,
+    AV_CH_BACK_CENTER,          /* rear low center -- dup */
+    AV_CH_BACK_LEFT,            /* rear low left -- dup */
+    AV_CH_BACK_RIGHT            /* read low right -- dup  */
+};
+
+/* -1 are reserved or unknown */
+static const int dca_ext_audio_descr_mask[] = {
+    DCA_EXT_XCH,
+    -1,
+    DCA_EXT_X96,
+    DCA_EXT_XCH | DCA_EXT_X96,
+    -1,
+    -1,
+    DCA_EXT_XXCH,
+    -1,
+};
+
+/* Tables for mapping dts channel configurations to libavcodec multichannel api.
+ * Some compromises have been made for special configurations. Most configurations
+ * are never used so complete accuracy is not needed.
+ *
+ * L = left, R = right, C = center, S = surround, F = front, R = rear, T = total, OV = overhead.
+ * S  -> side, when both rear and back are configured move one of them to the side channel
+ * OV -> center back
+ * All 2 channel configurations -> AV_CH_LAYOUT_STEREO
+ */
+static const uint64_t dca_core_channel_layout[] = {
+    AV_CH_FRONT_CENTER,                                                     ///< 1, A
+    AV_CH_LAYOUT_STEREO,                                                    ///< 2, A + B (dual mono)
+    AV_CH_LAYOUT_STEREO,                                                    ///< 2, L + R (stereo)
+    AV_CH_LAYOUT_STEREO,                                                    ///< 2, (L + R) + (L - R) (sum-difference)
+    AV_CH_LAYOUT_STEREO,                                                    ///< 2, LT + RT (left and right total)
+    AV_CH_LAYOUT_STEREO | AV_CH_FRONT_CENTER,                               ///< 3, C + L + R
+    AV_CH_LAYOUT_STEREO | AV_CH_BACK_CENTER,                                ///< 3, L + R + S
+    AV_CH_LAYOUT_STEREO | AV_CH_FRONT_CENTER | AV_CH_BACK_CENTER,           ///< 4, C + L + R + S
+    AV_CH_LAYOUT_STEREO | AV_CH_SIDE_LEFT | AV_CH_SIDE_RIGHT,               ///< 4, L + R + SL + SR
+
+    AV_CH_LAYOUT_STEREO | AV_CH_FRONT_CENTER | AV_CH_SIDE_LEFT |
+    AV_CH_SIDE_RIGHT,                                                       ///< 5, C + L + R + SL + SR
+
+    AV_CH_LAYOUT_STEREO | AV_CH_SIDE_LEFT | AV_CH_SIDE_RIGHT |
+    AV_CH_FRONT_LEFT_OF_CENTER | AV_CH_FRONT_RIGHT_OF_CENTER,               ///< 6, CL + CR + L + R + SL + SR
+
+    AV_CH_LAYOUT_STEREO | AV_CH_BACK_LEFT | AV_CH_BACK_RIGHT |
+    AV_CH_FRONT_CENTER  | AV_CH_BACK_CENTER,                                ///< 6, C + L + R + LR + RR + OV
+
+    AV_CH_FRONT_CENTER | AV_CH_FRONT_RIGHT_OF_CENTER |
+    AV_CH_FRONT_LEFT_OF_CENTER | AV_CH_BACK_CENTER   |
+    AV_CH_BACK_LEFT | AV_CH_BACK_RIGHT,                                     ///< 6, CF + CR + LF + RF + LR + RR
+
+    AV_CH_FRONT_LEFT_OF_CENTER | AV_CH_FRONT_CENTER   |
+    AV_CH_FRONT_RIGHT_OF_CENTER | AV_CH_LAYOUT_STEREO |
+    AV_CH_SIDE_LEFT | AV_CH_SIDE_RIGHT,                                     ///< 7, CL + C + CR + L + R + SL + SR
+
+    AV_CH_FRONT_LEFT_OF_CENTER | AV_CH_FRONT_RIGHT_OF_CENTER |
+    AV_CH_LAYOUT_STEREO | AV_CH_SIDE_LEFT | AV_CH_SIDE_RIGHT |
+    AV_CH_BACK_LEFT | AV_CH_BACK_RIGHT,                                     ///< 8, CL + CR + L + R + SL1 + SL2 + SR1 + SR2
+
+    AV_CH_FRONT_LEFT_OF_CENTER | AV_CH_FRONT_CENTER   |
+    AV_CH_FRONT_RIGHT_OF_CENTER | AV_CH_LAYOUT_STEREO |
+    AV_CH_SIDE_LEFT | AV_CH_BACK_CENTER | AV_CH_SIDE_RIGHT,                 ///< 8, CL + C + CR + L + R + SL + S + SR
+};
+
+static const int8_t dca_lfe_index[] = {
+    1, 2, 2, 2, 2, 3, 2, 3, 2, 3, 2, 3, 1, 3, 2, 3
+};
+
+static const int8_t dca_channel_reorder_lfe[][9] = {
+    { 0, -1, -1, -1, -1, -1, -1, -1, -1 },
+    { 0,  1, -1, -1, -1, -1, -1, -1, -1 },
+    { 0,  1, -1, -1, -1, -1, -1, -1, -1 },
+    { 0,  1, -1, -1, -1, -1, -1, -1, -1 },
+    { 0,  1, -1, -1, -1, -1, -1, -1, -1 },
+    { 2,  0,  1, -1, -1, -1, -1, -1, -1 },
+    { 0,  1,  3, -1, -1, -1, -1, -1, -1 },
+    { 2,  0,  1,  4, -1, -1, -1, -1, -1 },
+    { 0,  1,  3,  4, -1, -1, -1, -1, -1 },
+    { 2,  0,  1,  4,  5, -1, -1, -1, -1 },
+    { 3,  4,  0,  1,  5,  6, -1, -1, -1 },
+    { 2,  0,  1,  4,  5,  6, -1, -1, -1 },
+    { 0,  6,  4,  5,  2,  3, -1, -1, -1 },
+    { 4,  2,  5,  0,  1,  6,  7, -1, -1 },
+    { 5,  6,  0,  1,  7,  3,  8,  4, -1 },
+    { 4,  2,  5,  0,  1,  6,  8,  7, -1 },
+};
+
+static const int8_t dca_channel_reorder_lfe_xch[][9] = {
+    { 0,  2, -1, -1, -1, -1, -1, -1, -1 },
+    { 0,  1,  3, -1, -1, -1, -1, -1, -1 },
+    { 0,  1,  3, -1, -1, -1, -1, -1, -1 },
+    { 0,  1,  3, -1, -1, -1, -1, -1, -1 },
+    { 0,  1,  3, -1, -1, -1, -1, -1, -1 },
+    { 2,  0,  1,  4, -1, -1, -1, -1, -1 },
+    { 0,  1,  3,  4, -1, -1, -1, -1, -1 },
+    { 2,  0,  1,  4,  5, -1, -1, -1, -1 },
+    { 0,  1,  4,  5,  3, -1, -1, -1, -1 },
+    { 2,  0,  1,  5,  6,  4, -1, -1, -1 },
+    { 3,  4,  0,  1,  6,  7,  5, -1, -1 },
+    { 2,  0,  1,  4,  5,  6,  7, -1, -1 },
+    { 0,  6,  4,  5,  2,  3,  7, -1, -1 },
+    { 4,  2,  5,  0,  1,  7,  8,  6, -1 },
+    { 5,  6,  0,  1,  8,  3,  9,  4,  7 },
+    { 4,  2,  5,  0,  1,  6,  9,  8,  7 },
+};
+
+static const int8_t dca_channel_reorder_nolfe[][9] = {
+    { 0, -1, -1, -1, -1, -1, -1, -1, -1 },
+    { 0,  1, -1, -1, -1, -1, -1, -1, -1 },
+    { 0,  1, -1, -1, -1, -1, -1, -1, -1 },
+    { 0,  1, -1, -1, -1, -1, -1, -1, -1 },
+    { 0,  1, -1, -1, -1, -1, -1, -1, -1 },
+    { 2,  0,  1, -1, -1, -1, -1, -1, -1 },
+    { 0,  1,  2, -1, -1, -1, -1, -1, -1 },
+    { 2,  0,  1,  3, -1, -1, -1, -1, -1 },
+    { 0,  1,  2,  3, -1, -1, -1, -1, -1 },
+    { 2,  0,  1,  3,  4, -1, -1, -1, -1 },
+    { 2,  3,  0,  1,  4,  5, -1, -1, -1 },
+    { 2,  0,  1,  3,  4,  5, -1, -1, -1 },
+    { 0,  5,  3,  4,  1,  2, -1, -1, -1 },
+    { 3,  2,  4,  0,  1,  5,  6, -1, -1 },
+    { 4,  5,  0,  1,  6,  2,  7,  3, -1 },
+    { 3,  2,  4,  0,  1,  5,  7,  6, -1 },
+};
+
+static const int8_t dca_channel_reorder_nolfe_xch[][9] = {
+    { 0,  1, -1, -1, -1, -1, -1, -1, -1 },
+    { 0,  1,  2, -1, -1, -1, -1, -1, -1 },
+    { 0,  1,  2, -1, -1, -1, -1, -1, -1 },
+    { 0,  1,  2, -1, -1, -1, -1, -1, -1 },
+    { 0,  1,  2, -1, -1, -1, -1, -1, -1 },
+    { 2,  0,  1,  3, -1, -1, -1, -1, -1 },
+    { 0,  1,  2,  3, -1, -1, -1, -1, -1 },
+    { 2,  0,  1,  3,  4, -1, -1, -1, -1 },
+    { 0,  1,  3,  4,  2, -1, -1, -1, -1 },
+    { 2,  0,  1,  4,  5,  3, -1, -1, -1 },
+    { 2,  3,  0,  1,  5,  6,  4, -1, -1 },
+    { 2,  0,  1,  3,  4,  5,  6, -1, -1 },
+    { 0,  5,  3,  4,  1,  2,  6, -1, -1 },
+    { 3,  2,  4,  0,  1,  6,  7,  5, -1 },
+    { 4,  5,  0,  1,  7,  2,  8,  3,  6 },
+    { 3,  2,  4,  0,  1,  5,  8,  7,  6 },
+};
+
+static const uint16_t dca_vlc_offs[] = {
+        0,   512,   640,   768,  1282,  1794,  2436,  3080,  3770,  4454,  5364,
+     5372,  5380,  5388,  5392,  5396,  5412,  5420,  5428,  5460,  5492,  5508,
+     5572,  5604,  5668,  5796,  5860,  5892,  6412,  6668,  6796,  7308,  7564,
+     7820,  8076,  8620,  9132,  9388,  9910, 10166, 10680, 11196, 11726, 12240,
+    12752, 13298, 13810, 14326, 14840, 15500, 16022, 16540, 17158, 17678, 18264,
+    18796, 19352, 19926, 20468, 21472, 22398, 23014, 23622,
+};
+
 #endif /* AVCODEC_DCADATA_H */

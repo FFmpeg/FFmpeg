@@ -184,8 +184,7 @@ static inline int squared_diff_macroblock(uint8_t a[], uint8_t b[], int size)
     return sdiff;
 }
 
-typedef struct
-{
+typedef struct SubcelEvaluation {
     int eval_dist[4];
     int best_bit_use;
     int best_coding;
@@ -195,8 +194,7 @@ typedef struct
     int cbEntry;
 } SubcelEvaluation;
 
-typedef struct
-{
+typedef struct CelEvaluation {
     int eval_dist[4];
     int best_coding;
 
@@ -208,8 +206,7 @@ typedef struct
     int sourceX, sourceY;
 } CelEvaluation;
 
-typedef struct
-{
+typedef struct RoqCodebooks {
     int numCB4;
     int numCB2;
     int usedCB2[MAX_CBS_2x2];
@@ -603,8 +600,7 @@ static inline uint8_t motion_arg(motion_vect mot)
     return ((ax&15)<<4) | (ay&15);
 }
 
-typedef struct
-{
+typedef struct CodingSpool {
     int typeSpool;
     int typeSpoolLength;
     uint8_t argumentSpool[64];

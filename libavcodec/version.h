@@ -29,8 +29,8 @@
 #include "libavutil/version.h"
 
 #define LIBAVCODEC_VERSION_MAJOR 56
-#define LIBAVCODEC_VERSION_MINOR  21
-#define LIBAVCODEC_VERSION_MICRO 102
+#define LIBAVCODEC_VERSION_MINOR  22
+#define LIBAVCODEC_VERSION_MICRO 100
 
 #define LIBAVCODEC_VERSION_INT  AV_VERSION_INT(LIBAVCODEC_VERSION_MAJOR, \
                                                LIBAVCODEC_VERSION_MINOR, \
@@ -48,6 +48,9 @@
  * the public API and may change, break or disappear at any time.
  */
 
+#ifndef FF_API_VIMA_DECODER
+#define FF_API_VIMA_DECODER     (LIBAVCODEC_VERSION_MAJOR < 57)
+#endif
 #ifndef FF_API_REQUEST_CHANNELS
 #define FF_API_REQUEST_CHANNELS (LIBAVCODEC_VERSION_MAJOR < 57)
 #endif

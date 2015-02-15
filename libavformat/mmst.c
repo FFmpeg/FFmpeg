@@ -85,7 +85,7 @@ typedef enum {
     /*@}*/
 } MMSSCPacketType;
 
-typedef struct {
+typedef struct MMSTContext {
     MMSContext  mms;
     int outgoing_packet_seq;             ///< Outgoing packet sequence number.
     char path[256];                      ///< Path of the resource being asked for.

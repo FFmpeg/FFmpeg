@@ -39,7 +39,7 @@
 
 #define VALIDATE_INDEX_TS_THRESH 2500
 
-typedef struct {
+typedef struct FLVContext {
     const AVClass *class; ///< Class for private options.
     int trust_metadata;   ///< configure streams according onMetaData
     int wrong_dts;        ///< wrong dts due to negative cts

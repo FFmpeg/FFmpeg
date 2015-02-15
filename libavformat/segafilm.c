@@ -38,7 +38,7 @@
 #define CVID_TAG MKBETAG('c', 'v', 'i', 'd')
 #define RAW_TAG  MKBETAG('r', 'a', 'w', ' ')
 
-typedef struct {
+typedef struct film_sample {
   int stream;
   int64_t sample_offset;
   unsigned int sample_size;

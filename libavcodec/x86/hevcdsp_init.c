@@ -427,7 +427,7 @@ mc_rep_funcs(qpel_hv,12,  8, 16, sse4);
 mc_rep_funcs(qpel_hv,12,  4, 12, sse4);
 
 #define mc_rep_uni_w(bitd, step, W, opt) \
-void ff_hevc_put_hevc_uni_w##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride,\
+void ff_hevc_put_hevc_uni_w##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t dststride, int16_t *_src, \
                                                int height, int denom,  int _wx, int _ox)                                \
 {                                                                                                                       \
     int i;                                                                                                              \
@@ -436,7 +436,7 @@ void ff_hevc_put_hevc_uni_w##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t dststri
     for (i = 0; i < W; i += step) {                                                                                     \
         src= _src + i;                                                                                                  \
         dst= _dst + (i * ((bitd + 7) / 8));                                                                             \
-        ff_hevc_put_hevc_uni_w##step##_##bitd##_##opt(dst, dststride, src, _srcstride,                                  \
+        ff_hevc_put_hevc_uni_w##step##_##bitd##_##opt(dst, dststride, src,                                   \
                                                      height, denom, _wx, _ox);                                          \
     }                                                                                                                   \
 }
@@ -463,7 +463,7 @@ mc_rep_uni_w(12, 8, 48, sse4);
 mc_rep_uni_w(12, 8, 64, sse4);
 
 #define mc_rep_bi_w(bitd, step, W, opt) \
-void ff_hevc_put_hevc_bi_w##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t dststride, int16_t *_src, ptrdiff_t _srcstride, \
+void ff_hevc_put_hevc_bi_w##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t dststride, int16_t *_src, \
                                               int16_t *_src2, int height,                                               \
                                               int denom,  int _wx0,  int _wx1, int _ox0, int _ox1)                      \
 {                                                                                                                       \
@@ -475,8 +475,8 @@ void ff_hevc_put_hevc_bi_w##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t dststrid
         src  = _src  + i;                                                                                               \
         src2 = _src2 + i;                                                                                               \
         dst  = _dst  + (i * ((bitd + 7) / 8));                                                                          \
-        ff_hevc_put_hevc_bi_w##step##_##bitd##_##opt(dst, dststride, src, _srcstride, src2,                             \
-                                                    height, denom, _wx0, _wx1, _ox0, _ox1);                             \
+        ff_hevc_put_hevc_bi_w##step##_##bitd##_##opt(dst, dststride, src, src2,                             \
+                                                     height, denom, _wx0, _wx1, _ox0, _ox1);                             \
     }                                                                                                                   \
 }
 
@@ -510,7 +510,7 @@ void ff_hevc_put_hevc_uni_w_##name##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t 
 {                                                                                                   \
     LOCAL_ALIGNED_16(int16_t, temp, [71 * MAX_PB_SIZE]);                                            \
     ff_hevc_put_hevc_##name##W##_##bitd##_##opt(temp, _src, _srcstride, height, mx, my, width);     \
-    ff_hevc_put_hevc_uni_w##W##_##bitd##_##opt(_dst, _dststride, temp, MAX_PB_SIZE, height, denom, _wx, _ox);\
+    ff_hevc_put_hevc_uni_w##W##_##bitd##_##opt(_dst, _dststride, temp, height, denom, _wx, _ox);\
 }
 
 #define mc_uni_w_funcs(name, bitd, opt)       \
@@ -569,8 +569,8 @@ void ff_hevc_put_hevc_bi_w_##name##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t _
 {                                                                                                    \
     LOCAL_ALIGNED_16(int16_t, temp, [71 * MAX_PB_SIZE]);                                             \
     ff_hevc_put_hevc_##name##W##_##bitd##_##opt(temp, _src, _srcstride, height, mx, my, width);      \
-    ff_hevc_put_hevc_bi_w##W##_##bitd##_##opt(_dst, _dststride, temp, MAX_PB_SIZE, _src2,            \
-                                             height, denom, _wx0, _wx1, _ox0, _ox1);                 \
+    ff_hevc_put_hevc_bi_w##W##_##bitd##_##opt(_dst, _dststride, temp, _src2,                         \
+                                              height, denom, _wx0, _wx1, _ox0, _ox1);                \
 }
 
 #define mc_bi_w_funcs(name, bitd, opt)       \

@@ -57,7 +57,7 @@
 #include <poll.h>
 #endif
 
-typedef struct {
+typedef struct TLSContext {
     const AVClass *class;
     URLContext *tcp;
 #if CONFIG_GNUTLS

@@ -35,7 +35,7 @@
 #include <windows.h>
 #endif
 
-typedef struct {
+typedef struct FileLogContext {
     const AVClass *class;
     int   log_offset;
     void *log_ctx;

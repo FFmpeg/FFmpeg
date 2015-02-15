@@ -35,7 +35,7 @@
 
 #define MAX_PAGE_SIZE 65025
 
-typedef struct {
+typedef struct OGGPage {
     int64_t start_granule;
     int64_t granule;
     int stream_index;
@@ -46,7 +46,7 @@ typedef struct {
     uint16_t size;
 } OGGPage;
 
-typedef struct {
+typedef struct OGGStreamContext {
     unsigned page_counter;
     uint8_t *header[3];
     int header_len[3];
@@ -66,7 +66,7 @@ typedef struct OGGPageList {
     struct OGGPageList *next;
 } OGGPageList;
 
-typedef struct {
+typedef struct OGGContext {
     const AVClass *class;
     OGGPageList *page_list;
     int pref_size; ///< preferred page size (0 => fill all segments)

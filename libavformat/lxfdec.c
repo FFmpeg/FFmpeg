@@ -46,7 +46,7 @@ static const AVCodecTag lxf_tags[] = {
     { AV_CODEC_ID_NONE,        0 },
 };
 
-typedef struct {
+typedef struct LXFDemuxContext {
     int channels;                       ///< number of audio channels. zero means no audio
     int frame_number;                   ///< current video frame
     uint32_t video_format, packet_type, extended_size;

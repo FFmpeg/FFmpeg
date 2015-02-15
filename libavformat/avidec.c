@@ -64,7 +64,7 @@ typedef struct AVIStream {
     int64_t seek_pos;
 } AVIStream;
 
-typedef struct {
+typedef struct AVIContext {
     const AVClass *class;
     int64_t riff_end;
     int64_t movi_end;

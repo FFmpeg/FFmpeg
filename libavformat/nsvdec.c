@@ -162,7 +162,7 @@ typedef struct NSVStream {
     int cum_len; /* temporary storage (used during seek) */
 } NSVStream;
 
-typedef struct {
+typedef struct NSVContext {
     int  base_offset;
     int  NSVf_end;
     uint32_t *nsvs_file_offset;

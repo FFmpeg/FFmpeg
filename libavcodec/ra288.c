@@ -37,7 +37,7 @@
 #define RA288_BLOCK_SIZE        5
 #define RA288_BLOCKS_PER_FRAME 32
 
-typedef struct {
+typedef struct RA288Context {
     AVFloatDSPContext *fdsp;
     DECLARE_ALIGNED(32, float,   sp_lpc)[FFALIGN(36, 16)];   ///< LPC coefficients for speech data (spec: A)
     DECLARE_ALIGNED(32, float, gain_lpc)[FFALIGN(10, 16)];   ///< LPC coefficients for gain        (spec: GB)

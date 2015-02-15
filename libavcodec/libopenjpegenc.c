@@ -40,7 +40,7 @@
 # include <openjpeg.h>
 #endif
 
-typedef struct {
+typedef struct LibOpenJPEGContext {
     AVClass *avclass;
     opj_image_t *image;
     opj_cparameters_t enc_params;

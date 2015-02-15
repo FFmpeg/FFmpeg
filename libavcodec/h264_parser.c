@@ -526,34 +526,37 @@ static int h264_parse(AVCodecParserContext *s,
 static int h264_split(AVCodecContext *avctx,
                       const uint8_t *buf, int buf_size)
 {
-    int i;
     uint32_t state = -1;
     int has_sps    = 0;
     int has_pps    = 0;
+    const uint8_t *ptr = buf, *end = buf + buf_size;
+    int nalu_type;
 
-    for (i = 0; i <= buf_size; i++) {
-        if ((state & 0xFFFFFF1F) == 0x107)
+    while (ptr < end) {
+        ptr = avpriv_find_start_code(ptr, end, &state);
+        if ((state & 0xFFFFFF00) != 0x100)
+            break;
+        nalu_type = state & 0x1F;
+        if (nalu_type == NAL_SPS) {
             has_sps = 1;
-        if ((state & 0xFFFFFF1F) == 0x108)
+        } else if (nalu_type == NAL_PPS)
             has_pps = 1;
-        /*  if ((state&0xFFFFFF1F) == 0x101 ||
-         *     (state&0xFFFFFF1F) == 0x102 ||
-         *     (state&0xFFFFFF1F) == 0x105) {
+        /* else if (nalu_type == 0x01 ||
+         *     nalu_type == 0x02 ||
+         *     nalu_type == 0x05) {
          *  }
          */
-        if ((state & 0xFFFFFF00) == 0x100 && ((state & 0xFFFFFF1F) != 0x106 || has_pps) &&
-            (state & 0xFFFFFF1F) != 0x107 && (state & 0xFFFFFF1F) != 0x108 &&
-            (state & 0xFFFFFF1F) != 0x109 && (state & 0xFFFFFF1F) != 0x10d &&
-            (state & 0xFFFFFF1F) != 0x10f) {
+        else if ((nalu_type != NAL_SEI || has_pps) &&
+                  nalu_type != NAL_AUD && nalu_type != NAL_SPS_EXT &&
+                  nalu_type != 0x0f) {
             if (has_sps) {
-                while (i > 4 && buf[i - 5] == 0)
-                    i--;
-                return i - 4;
+                while (ptr - 4 > buf && ptr[-5] == 0)
+                    ptr--;
+                return ptr - 4 - buf;
             }
         }
-        if (i < buf_size)
-            state = (state << 8) | buf[i];
     }
+
     return 0;
 }
 

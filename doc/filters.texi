@@ -6909,6 +6909,101 @@ pad="2*iw:2*ih:ow-iw:oh-ih"
 @end example
 @end itemize
 
+@anchor{palettegen}
+@section palettegen
+
+Generate one palette for a whole video stream.
+
+It accepts the following options:
+
+@table @option
+@item max_colors
+Set the maximum number of colors to quantize in the palette.
+Note: the palette will still contain 256 colors; the unused palette entries
+will be black.
+
+@item reserve_transparent
+Create a palette of 255 colors maximum and reserve the last one for
+transparency. Reserving the transparency color is useful for GIF optimization.
+If not set, the maximum of colors in the palette will be 256. You probably want
+to disable this option for a standalone image.
+Set by default.
+
+@item stats_mode
+Set statistics mode.
+
+It accepts the following values:
+@table @samp
+@item full
+Compute full frame histograms.
+@item diff
+Compute histograms only for the part that differs from previous frame. This
+might be relevant to give more importance to the moving part of your input if
+the background is static.
+@end table
+
+Default value is @var{full}.
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Generate a representative palette of a given video using @command{ffmpeg}:
+@example
+ffmpeg -i input.mkv -vf palettegen palette.png
+@end example
+@end itemize
+
+@section paletteuse
+
+Use a palette to downsample an input video stream.
+
+The filter takes two inputs: one video stream and a palette. The palette must
+be a 256 pixels image.
+
+It accepts the following options:
+
+@table @option
+@item dither
+Select dithering mode. Available algorithms are:
+@table @samp
+@item bayer
+Ordered 8x8 bayer dithering (deterministic)
+@item heckbert
+Dithering as defined by Paul Heckbert in 1982 (simple error diffusion).
+Note: this dithering is sometimes considered "wrong" and is included as a
+reference.
+@item floyd_steinberg
+Floyd and Steingberg dithering (error diffusion)
+@item sierra2
+Frankie Sierra dithering v2 (error diffusion)
+@item sierra2_4a
+Frankie Sierra dithering v2 "Lite" (error diffusion)
+@end table
+
+Default is @var{sierra2_4a}.
+
+@item bayer_scale
+When @var{bayer} dithering is selected, this option defines the scale of the
+pattern (how much the crosshatch pattern is visible). A low value means more
+visible pattern for less banding, and higher value means less visible pattern
+at the cost of more banding.
+
+The option must be an integer value in the range [0,5]. Default is @var{2}.
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Use a palette (generated for example with @ref{palettegen}) to encode a GIF
+using @command{ffmpeg}:
+@example
+ffmpeg -i input.mkv -i palette.png -lavfi paletteuse output.gif
+@end example
+@end itemize
+
 @section perspective
 
 Correct perspective of video not recorded perpendicular to the screen.

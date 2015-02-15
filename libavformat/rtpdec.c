@@ -72,6 +72,7 @@ void ff_register_dynamic_payload_handler(RTPDynamicProtocolHandler *handler)
 
 void ff_register_rtp_dynamic_payload_handlers(void)
 {
+    ff_register_dynamic_payload_handler(&ff_ac3_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_amr_nb_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_amr_wb_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_g726_16_dynamic_handler);
@@ -89,6 +90,7 @@ void ff_register_rtp_dynamic_payload_handlers(void)
     ff_register_dynamic_payload_handler(&ff_mp4a_latm_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_mp4v_es_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_mpeg_audio_dynamic_handler);
+    ff_register_dynamic_payload_handler(&ff_mpeg_audio_robust_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_mpeg_video_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_mpeg4_generic_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_mpegts_dynamic_handler);
@@ -105,6 +107,7 @@ void ff_register_rtp_dynamic_payload_handlers(void)
     ff_register_dynamic_payload_handler(&ff_theora_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_vorbis_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_vp8_dynamic_handler);
+    ff_register_dynamic_payload_handler(&ff_vp9_dynamic_handler);
     ff_register_dynamic_payload_handler(&gsm_dynamic_handler);
     ff_register_dynamic_payload_handler(&opus_dynamic_handler);
     ff_register_dynamic_payload_handler(&realmedia_mp3_dynamic_handler);

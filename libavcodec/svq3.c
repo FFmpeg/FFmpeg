@@ -69,7 +69,7 @@
  * svq3 decoder.
  */
 
-typedef struct {
+typedef struct SVQ3Context {
     H264Context h;
     HpelDSPContext hdsp;
     TpelDSPContext tdsp;

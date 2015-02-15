@@ -25,7 +25,7 @@ static const uint8_t frame_sizes[] = {
     1, 4, 8, 17, 35
 };
 
-typedef struct {
+typedef struct InterleavePacket {
     int pos;
     int size;
     /* The largest frame is 35 bytes, only 10 frames are allowed per

@@ -39,7 +39,7 @@
 #define BIT_LINE     0x80
 #define BYTE_LINE    0xC0
 
-typedef struct {
+typedef struct CDXLVideoContext {
     AVCodecContext *avctx;
     int            bpp;
     int            format;

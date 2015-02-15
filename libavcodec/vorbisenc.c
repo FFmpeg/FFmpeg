@@ -39,7 +39,7 @@
 #undef NDEBUG
 #include <assert.h>
 
-typedef struct {
+typedef struct vorbis_enc_codebook {
     int nentries;
     uint8_t *lens;
     uint32_t *codewords;
@@ -53,14 +53,14 @@ typedef struct {
     float *pow2;
 } vorbis_enc_codebook;
 
-typedef struct {
+typedef struct vorbis_enc_floor_class {
     int dim;
     int subclass;
     int masterbook;
     int *books;
 } vorbis_enc_floor_class;
 
-typedef struct {
+typedef struct vorbis_enc_floor {
     int partitions;
     int *partition_to_class;
     int nclasses;
@@ -71,7 +71,7 @@ typedef struct {
     vorbis_floor1_entry *list;
 } vorbis_enc_floor;
 
-typedef struct {
+typedef struct vorbis_enc_residue {
     int type;
     int begin;
     int end;
@@ -82,7 +82,7 @@ typedef struct {
     float (*maxes)[2];
 } vorbis_enc_residue;
 
-typedef struct {
+typedef struct vorbis_enc_mapping {
     int submaps;
     int *mux;
     int *floor;
@@ -92,12 +92,12 @@ typedef struct {
     int *angle;
 } vorbis_enc_mapping;
 
-typedef struct {
+typedef struct vorbis_enc_mode {
     int blockflag;
     int mapping;
 } vorbis_enc_mode;
 
-typedef struct {
+typedef struct vorbis_enc_context {
     int channels;
     int sample_rate;
     int log2_blocksize[2];

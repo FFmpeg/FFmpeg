@@ -35,6 +35,7 @@ int ff_h263_handle_packet(AVFormatContext *ctx, PayloadContext *data,
                           AVStream *st, AVPacket *pkt, uint32_t *timestamp,
                           const uint8_t *buf, int len, uint16_t seq, int flags);
 
+extern RTPDynamicProtocolHandler ff_ac3_dynamic_handler;
 extern RTPDynamicProtocolHandler ff_amr_nb_dynamic_handler;
 extern RTPDynamicProtocolHandler ff_amr_wb_dynamic_handler;
 extern RTPDynamicProtocolHandler ff_g726_16_dynamic_handler;
@@ -52,6 +53,7 @@ extern RTPDynamicProtocolHandler ff_jpeg_dynamic_handler;
 extern RTPDynamicProtocolHandler ff_mp4a_latm_dynamic_handler;
 extern RTPDynamicProtocolHandler ff_mp4v_es_dynamic_handler;
 extern RTPDynamicProtocolHandler ff_mpeg_audio_dynamic_handler;
+extern RTPDynamicProtocolHandler ff_mpeg_audio_robust_dynamic_handler;
 extern RTPDynamicProtocolHandler ff_mpeg_video_dynamic_handler;
 extern RTPDynamicProtocolHandler ff_mpeg4_generic_dynamic_handler;
 extern RTPDynamicProtocolHandler ff_mpegts_dynamic_handler;
@@ -67,5 +69,6 @@ extern RTPDynamicProtocolHandler ff_svq3_dynamic_handler;
 extern RTPDynamicProtocolHandler ff_theora_dynamic_handler;
 extern RTPDynamicProtocolHandler ff_vorbis_dynamic_handler;
 extern RTPDynamicProtocolHandler ff_vp8_dynamic_handler;
+extern RTPDynamicProtocolHandler ff_vp9_dynamic_handler;
 
 #endif /* AVFORMAT_RTPDEC_FORMATS_H */

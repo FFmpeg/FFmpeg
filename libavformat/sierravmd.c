@@ -36,7 +36,7 @@
 #define VMD_HEADER_SIZE 0x0330
 #define BYTES_PER_FRAME_RECORD 16
 
-typedef struct {
+typedef struct vmd_frame {
   int stream_index;
   int64_t frame_offset;
   unsigned int frame_size;
