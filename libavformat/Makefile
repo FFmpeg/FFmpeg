@@ -32,6 +32,7 @@ OBJS-$(CONFIG_RTPDEC)                    += rdt.o                       \
                                             rtpdec_ac3.o                \
                                             rtpdec_amr.o                \
                                             rtpdec_asf.o                \
+                                            rtpdec_dv.o                \
                                             rtpdec_g726.o               \
                                             rtpdec_h261.o               \
                                             rtpdec_h263.o               \
