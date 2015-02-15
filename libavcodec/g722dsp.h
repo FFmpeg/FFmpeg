@@ -24,7 +24,7 @@
 #include <stdint.h>
 
 typedef struct G722DSPContext {
-    void (*apply_qmf)(const int16_t *prev_samples, int *xout1, int *xout2);
+    void (*apply_qmf)(const int16_t *prev_samples, int xout[2]);
 } G722DSPContext;
 
 void ff_g722dsp_init(G722DSPContext *c);
