@@ -67,6 +67,8 @@ static av_cold int g722_decode_init(AVCodecContext * avctx)
     c->band[1].scale_factor = 2;
     c->prev_samples_pos = 22;
 
+    ff_g722dsp_init(&c->dsp);
+
     return 0;
 }
 
@@ -122,8 +124,8 @@ static int g722_decode_frame(AVCodecContext *avctx, void *data,
 
         c->prev_samples[c->prev_samples_pos++] = rlow + rhigh;
         c->prev_samples[c->prev_samples_pos++] = rlow - rhigh;
-        ff_g722_apply_qmf(c->prev_samples + c->prev_samples_pos - 24,
-                          &xout1, &xout2);
+        c->dsp.apply_qmf(c->prev_samples + c->prev_samples_pos - 24,
+                         &xout1, &xout2);
         *out_buf++ = av_clip_int16(xout1 >> 11);
         *out_buf++ = av_clip_int16(xout2 >> 11);
         if (c->prev_samples_pos >= PREV_SAMPLES_BUF_SIZE) {
