@@ -2052,7 +2052,9 @@ static int open_input_stream(HTTPContext *c, const char *info)
     }
 
     /* open stream */
-    if ((ret = avformat_open_input(&s, input_filename, c->stream->ifmt, &c->stream->in_opts)) < 0) {
+    ret = avformat_open_input(&s, input_filename, c->stream->ifmt,
+                              &c->stream->in_opts);
+    if (ret < 0) {
         http_log("Could not open input '%s': %s\n", input_filename, av_err2str(ret));
         return ret;
     }
@@ -3504,7 +3506,9 @@ static void build_file_streams(void)
 
             http_log("Opening feed file '%s' for stream '%s'\n",
                      stream->feed_filename, stream->filename);
-            if ((ret = avformat_open_input(&infile, stream->feed_filename, stream->ifmt, &stream->in_opts)) < 0) {
+            ret = avformat_open_input(&infile, stream->feed_filename,
+                                      stream->ifmt, &stream->in_opts);
+            if (ret < 0) {
                 http_log("Could not open '%s': %s\n", stream->feed_filename,
                          av_err2str(ret));
                 /* remove stream (no need to spend more time on it) */
