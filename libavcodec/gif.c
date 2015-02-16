@@ -105,7 +105,7 @@ static int gif_image_write_image(AVCodecContext *avctx,
         /* skip common columns */
         while (x_start < x_end) {
             int same_column = 1;
-            for (y = y_start; y < y_end; y++) {
+            for (y = y_start; y <= y_end; y++) {
                 if (ref[y*ref_linesize + x_start] != buf[y*linesize + x_start]) {
                     same_column = 0;
                     break;
@@ -117,7 +117,7 @@ static int gif_image_write_image(AVCodecContext *avctx,
         }
         while (x_end > x_start) {
             int same_column = 1;
-            for (y = y_start; y < y_end; y++) {
+            for (y = y_start; y <= y_end; y++) {
                 if (ref[y*ref_linesize + x_end] != buf[y*linesize + x_end]) {
                     same_column = 0;
                     break;
