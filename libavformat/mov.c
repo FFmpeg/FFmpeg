@@ -3153,8 +3153,9 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                                   MOV_FRAG_SAMPLE_FLAG_DEPENDS_YES));
         if (keyframe)
             distance = 0;
-        av_add_index_entry(st, offset, cts, sample_size, distance,
+        av_add_index_entry(st, offset, INT64_MAX/2, sample_size, distance,
                            keyframe ? AVINDEX_KEYFRAME : 0);
+        st->index_entries[st->nb_index_entries - 1].timestamp = cts;
         av_dlog(c->fc, "AVIndex stream %d, sample %d, offset %"PRIx64", cts %"PRId64", "
                 "size %d, distance %d, keyframe %d\n", st->index, sc->sample_count+i,
                 offset, cts, sample_size, distance, keyframe);
