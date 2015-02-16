@@ -32,10 +32,10 @@
 .endm
 
 .macro hevc_loop_filter_chroma_body
-        vsubl.u8  q4, d4, d2
+        vsubl.u8  q3, d4, d2
         vsubl.u8  q11, d18, d19
-        vshl.i16  q4, #2
-        vadd.i16  q11, q4
+        vshl.i16  q3, #2
+        vadd.i16  q11, q3
         vdup.16   d0, r12
         vdup.16   d1, r3
         vrshr.s16 q11, q11, #3
