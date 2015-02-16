@@ -40,7 +40,6 @@
 #include "dcadata.h"
 #include "dcadsp.h"
 #include "dcahuff.h"
-#include "dca_exss.h"
 #include "fft.h"
 #include "fmtconvert.h"
 #include "get_bits.h"

@@ -194,4 +194,6 @@ extern av_export const uint32_t avpriv_dca_sample_rates[16];
 int ff_dca_convert_bitstream(const uint8_t *src, int src_size, uint8_t *dst,
                              int max_size);
 
+void ff_dca_exss_parse_header(DCAContext *s);
+
 #endif /* AVCODEC_DCA_H */
