@@ -25,20 +25,44 @@
  * quadrature mirror filter (QMF) coefficients (ITU-T G.722 Table 11) inlined
  * in code below: 3, -11, 12, 32, -210, 951, 3876, -805, 362, -156, 53, -11
  */
-static const int16_t qmf_coeffs[12] = {
-    3, -11, 12, 32, -210, 951, 3876, -805, 362, -156, 53, -11,
-};
 
 static void g722_apply_qmf(const int16_t *prev_samples, int xout[2])
 {
-    int i;
+    xout[1] = MUL16(*prev_samples++, 3);
+    xout[0] = MUL16(*prev_samples++, -11);
 
-    xout[0] = 0;
-    xout[1] = 0;
-    for (i = 0; i < 12; i++) {
-        MAC16(xout[1], prev_samples[2*i  ], qmf_coeffs[i   ]);
-        MAC16(xout[0], prev_samples[2*i+1], qmf_coeffs[11-i]);
-    }
+    MAC16(xout[1], *prev_samples++, -11);
+    MAC16(xout[0], *prev_samples++, 53);
+
+    MAC16(xout[1], *prev_samples++, 12);
+    MAC16(xout[0], *prev_samples++, -156);
+
+    MAC16(xout[1], *prev_samples++, 32);
+    MAC16(xout[0], *prev_samples++, 362);
+
+    MAC16(xout[1], *prev_samples++, -210);
+    MAC16(xout[0], *prev_samples++, -805);
+
+    MAC16(xout[1], *prev_samples++, 951);
+    MAC16(xout[0], *prev_samples++, 3876);
+
+    MAC16(xout[1], *prev_samples++, 3876);
+    MAC16(xout[0], *prev_samples++, 951);
+
+    MAC16(xout[1], *prev_samples++, -805);
+    MAC16(xout[0], *prev_samples++, -210);
+
+    MAC16(xout[1], *prev_samples++, 362);
+    MAC16(xout[0], *prev_samples++, 32);
+
+    MAC16(xout[1], *prev_samples++, -156);
+    MAC16(xout[0], *prev_samples++, 12);
+
+    MAC16(xout[1], *prev_samples++, 53);
+    MAC16(xout[0], *prev_samples++, -11);
+
+    MAC16(xout[1], *prev_samples++, -11);
+    MAC16(xout[0], *prev_samples++, 3);
 }
 
 av_cold void ff_g722dsp_init(G722DSPContext *c)
