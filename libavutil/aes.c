@@ -62,9 +62,9 @@ static uint32_t dec_multbl[4][256];
 #endif
 
 #if HAVE_BIGENDIAN
-#   define ROT(x, s) ((x >> s) | (x << (32-s)))
+#   define ROT(x, s) (((x) >> (s)) | ((x) << (32-(s))))
 #else
-#   define ROT(x, s) ((x << s) | (x >> (32-s)))
+#   define ROT(x, s) (((x) << (s)) | ((x) >> (32-(s))))
 #endif
 
 static inline void addkey(av_aes_block *dst, const av_aes_block *src,
