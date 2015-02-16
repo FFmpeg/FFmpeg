@@ -104,7 +104,7 @@ static int g722_decode_frame(AVCodecContext *avctx, void *data,
 
     for (j = 0; j < avpkt->size; j++) {
         int ilow, ihigh, rlow, rhigh, dhigh;
-        int xout1, xout2;
+        int xout[2];
 
         ihigh = get_bits(&gb, 2);
         ilow = get_bits(&gb, 6 - skip);
@@ -122,10 +122,9 @@ static int g722_decode_frame(AVCodecContext *avctx, void *data,
 
         c->prev_samples[c->prev_samples_pos++] = rlow + rhigh;
         c->prev_samples[c->prev_samples_pos++] = rlow - rhigh;
-        c->dsp.apply_qmf(c->prev_samples + c->prev_samples_pos - 24,
-                         &xout1, &xout2);
-        *out_buf++ = av_clip_int16(xout1 >> 11);
-        *out_buf++ = av_clip_int16(xout2 >> 11);
+        c->dsp.apply_qmf(c->prev_samples + c->prev_samples_pos - 24, xout);
+        *out_buf++ = av_clip_int16(xout[0] >> 11);
+        *out_buf++ = av_clip_int16(xout[1] >> 11);
         if (c->prev_samples_pos >= PREV_SAMPLES_BUF_SIZE) {
             memmove(c->prev_samples, c->prev_samples + c->prev_samples_pos - 22,
                     22 * sizeof(c->prev_samples[0]));
