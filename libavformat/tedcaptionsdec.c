@@ -51,7 +51,7 @@ static const AVClass tedcaptions_demuxer_class = {
 
 #define HEX_DIGIT_TEST(c) (BETWEEN(c, '0', '9') || BETWEEN((c) | 32, 'a', 'z'))
 #define HEX_DIGIT_VAL(c) ((c) <= '9' ? (c) - '0' : ((c) | 32) - 'a' + 10)
-#define ERR_CODE(c) (c < 0 ? c : AVERROR_INVALIDDATA)
+#define ERR_CODE(c) ((c) < 0 ? (c) : AVERROR_INVALIDDATA)
 
 static void av_bprint_utf8(AVBPrint *bp, unsigned c)
 {
