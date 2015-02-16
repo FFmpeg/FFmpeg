@@ -72,16 +72,6 @@ const int16_t ff_g722_low_inv_quant6[64] = {
 };
 
 /**
- * quadrature mirror filter (QMF) coefficients
- *
- * ITU-T G.722 Table 11
- */
-static const int16_t qmf_coeffs[12] = {
-    3, -11, 12, 32, -210, 951, 3876, -805, 362, -156, 53, -11,
-};
-
-
-/**
  * adaptive predictor
  *
  * @param cur_diff the dequantized and scaled delta calculated from the
@@ -156,16 +146,4 @@ void ff_g722_update_high_predictor(struct G722Band *band, const int dhigh,
     band->log_factor   = av_clip((band->log_factor * 127 >> 7) +
                                  high_log_factor_step[ihigh&1], 0, 22528);
     band->scale_factor = linear_scale_factor(band->log_factor - (10 << 11));
-}
-
-void ff_g722_apply_qmf(const int16_t *prev_samples, int *xout1, int *xout2)
-{
-    int i;
-
-    *xout1 = 0;
-    *xout2 = 0;
-    for (i = 0; i < 12; i++) {
-        MAC16(*xout2, prev_samples[2*i  ], qmf_coeffs[i   ]);
-        MAC16(*xout1, prev_samples[2*i+1], qmf_coeffs[11-i]);
-    }
 }

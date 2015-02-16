@@ -120,6 +120,8 @@ static av_cold int g722_encode_init(AVCodecContext * avctx)
         }
     }
 
+    ff_g722dsp_init(&c->dsp);
+
     return 0;
 error:
     g722_encode_close(avctx);
@@ -139,7 +141,7 @@ static inline void filter_samples(G722Context *c, const int16_t *samples,
     int xout1, xout2;
     c->prev_samples[c->prev_samples_pos++] = samples[0];
     c->prev_samples[c->prev_samples_pos++] = samples[1];
-    ff_g722_apply_qmf(c->prev_samples + c->prev_samples_pos - 24, &xout1, &xout2);
+    c->dsp.apply_qmf(c->prev_samples + c->prev_samples_pos - 24, &xout1, &xout2);
     *xlow  = xout1 + xout2 >> 14;
     *xhigh = xout1 - xout2 >> 14;
     if (c->prev_samples_pos >= PREV_SAMPLES_BUF_SIZE) {
