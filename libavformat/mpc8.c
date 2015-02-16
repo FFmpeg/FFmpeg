@@ -27,7 +27,7 @@
 #include "avio_internal.h"
 
 /// Two-byte MPC tag
-#define MKMPCTAG(a, b) (a | (b << 8))
+#define MKMPCTAG(a, b) ((a) | ((b) << 8))
 
 #define TAG_MPCK MKTAG('M','P','C','K')
 
