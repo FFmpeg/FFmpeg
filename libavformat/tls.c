@@ -30,27 +30,27 @@
 #if CONFIG_GNUTLS
 #include <gnutls/gnutls.h>
 #include <gnutls/x509.h>
-#define TLS_read(c, buf, size)  gnutls_record_recv(c->session, buf, size)
-#define TLS_write(c, buf, size) gnutls_record_send(c->session, buf, size)
-#define TLS_shutdown(c)         gnutls_bye(c->session, GNUTLS_SHUT_RDWR)
+#define TLS_read(c, buf, size)  gnutls_record_recv((c)->session, (buf), (size))
+#define TLS_write(c, buf, size) gnutls_record_send((c)->session, (buf), (size))
+#define TLS_shutdown(c)         gnutls_bye((c)->session, GNUTLS_SHUT_RDWR)
 #define TLS_free(c) do { \
-        if (c->session) \
-            gnutls_deinit(c->session); \
-        if (c->cred) \
-            gnutls_certificate_free_credentials(c->cred); \
+        if ((c)->session) \
+            gnutls_deinit((c)->session); \
+        if ((c)->cred) \
+            gnutls_certificate_free_credentials((c)->cred); \
     } while (0)
 #elif CONFIG_OPENSSL
 #include <openssl/bio.h>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
-#define TLS_read(c, buf, size)  SSL_read(c->ssl,  buf, size)
-#define TLS_write(c, buf, size) SSL_write(c->ssl, buf, size)
-#define TLS_shutdown(c)         SSL_shutdown(c->ssl)
+#define TLS_read(c, buf, size)  SSL_read((c)->ssl,  (buf), (size))
+#define TLS_write(c, buf, size) SSL_write((c)->ssl, (buf), (size))
+#define TLS_shutdown(c)         SSL_shutdown((c)->ssl)
 #define TLS_free(c) do { \
-        if (c->ssl) \
-            SSL_free(c->ssl); \
-        if (c->ctx) \
-            SSL_CTX_free(c->ctx); \
+        if ((c)->ssl) \
+            SSL_free((c)->ssl); \
+        if ((c)->ctx) \
+            SSL_CTX_free((c)->ctx); \
     } while (0)
 #endif
 #if HAVE_POLL_H
