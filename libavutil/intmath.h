@@ -45,7 +45,7 @@
 #endif /* ff_log2 */
 #elif defined( __INTEL_COMPILER )
 #ifndef ff_log2
-#   define ff_log2(x) (_bit_scan_reverse(x|1))
+#   define ff_log2(x) (_bit_scan_reverse((x)|1))
 #   ifndef ff_log2_16bit
 #      define ff_log2_16bit av_log2
 #   endif
