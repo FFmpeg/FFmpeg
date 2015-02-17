@@ -1591,6 +1591,15 @@ SwsFilter *sws_getDefaultFilter(float lumaGBlur, float chromaGBlur,
         filter->chrV = sws_getIdentityVec();
     }
 
+    if (!filter->lumH || !filter->lumV || !filter->chrH || !filter->chrV) {
+        sws_freeVec(filter->lumH);
+        sws_freeVec(filter->lumV);
+        sws_freeVec(filter->chrH);
+        sws_freeVec(filter->chrV);
+        av_freep(&filter);
+        return NULL;
+    }
+
     if (chromaSharpen != 0.0) {
         SwsVector *id = sws_getIdentityVec();
         sws_scaleVec(filter->chrH, -chromaSharpen);
