@@ -49,11 +49,17 @@
 #elif HAVE_ARMV5TE
         .arch           armv5te
 #endif
+#if   HAVE_AS_OBJECT_ARCH
+ELF     .object_arch    armv4
+#endif
 
 #if   HAVE_NEON
         .fpu            neon
+ELF     .eabi_attribute 10, 0           @ suppress Tag_FP_arch
+ELF     .eabi_attribute 12, 0           @ suppress Tag_Advanced_SIMD_arch
 #elif HAVE_VFP
         .fpu            vfp
+ELF     .eabi_attribute 10, 0           @ suppress Tag_FP_arch
 #endif
 
         .syntax unified
