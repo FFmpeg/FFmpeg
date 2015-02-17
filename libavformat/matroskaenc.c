@@ -1074,14 +1074,16 @@ static int mkv_write_chapters(AVFormatContext *s)
     for (i = 0; i < s->nb_chapters; i++) {
         ebml_master chapteratom, chapterdisplay;
         AVChapter *c     = s->chapters[i];
+        int chapterstart = av_rescale_q(c->start, c->time_base, scale);
+        int chapterend   = av_rescale_q(c->end,   c->time_base, scale);
         AVDictionaryEntry *t = NULL;
+        if (chapterstart < 0 || chapterstart > chapterend)
+            return AVERROR_INVALIDDATA;
 
         chapteratom = start_ebml_master(pb, MATROSKA_ID_CHAPTERATOM, 0);
         put_ebml_uint(pb, MATROSKA_ID_CHAPTERUID, c->id + mkv->chapter_id_offset);
-        put_ebml_uint(pb, MATROSKA_ID_CHAPTERTIMESTART,
-                      av_rescale_q(c->start, c->time_base, scale));
-        put_ebml_uint(pb, MATROSKA_ID_CHAPTERTIMEEND,
-                      av_rescale_q(c->end,   c->time_base, scale));
+        put_ebml_uint(pb, MATROSKA_ID_CHAPTERTIMESTART, chapterstart);
+        put_ebml_uint(pb, MATROSKA_ID_CHAPTERTIMEEND, chapterend);
         put_ebml_uint(pb, MATROSKA_ID_CHAPTERFLAGHIDDEN , 0);
         put_ebml_uint(pb, MATROSKA_ID_CHAPTERFLAGENABLED, 1);
         if ((t = av_dict_get(c->metadata, "title", NULL, 0))) {
