@@ -47,9 +47,9 @@ av_cold int ff_xvid_rate_control_init(MpegEncContext *s)
     xvid_plugin_2pass2_t xvid_2pass2  = { 0 };
 
     fd = av_tempfile("xvidrc.", &tmp_name, 0, s->avctx);
-    if (fd == -1) {
+    if (fd < 0) {
         av_log(NULL, AV_LOG_ERROR, "Can't create temporary pass2 file.\n");
-        return -1;
+        return fd;
     }
 
     for (i = 0; i < s->rc_context.num_entries; i++) {
