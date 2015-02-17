@@ -50,7 +50,7 @@ struct color_node {
     int left_id, right_id;
 };
 
-#define NBITS 4
+#define NBITS 5
 #define CACHE_SIZE (1<<(3*NBITS))
 
 struct cached_color {
