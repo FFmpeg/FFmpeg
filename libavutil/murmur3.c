@@ -49,7 +49,7 @@ void av_murmur3_init(AVMurMur3 *c)
 static const uint64_t c1 = UINT64_C(0x87c37b91114253d5);
 static const uint64_t c2 = UINT64_C(0x4cf5ad432745937f);
 
-#define ROT(a, b) ((a << b) | (a >> (64 - b)))
+#define ROT(a, b) (((a) << (b)) | ((a) >> (64 - (b))))
 
 static uint64_t inline get_k1(const uint8_t *src)
 {

@@ -54,7 +54,6 @@ typedef struct XCBGrabContext {
 #if CONFIG_LIBXCB_SHM
     xcb_shm_seg_t segment;
 #endif
-
     int64_t time_frame;
     AVRational time_base;
 
@@ -629,10 +628,6 @@ static av_cold int xcbgrab_read_header(AVFormatContext *s)
         return AVERROR(EIO);
     }
 
-#if CONFIG_LIBXCB_SHM
-    c->segment = xcb_generate_id(c->conn);
-#endif
-
     ret = create_stream(s);
 
     if (ret < 0) {
@@ -641,7 +636,8 @@ static av_cold int xcbgrab_read_header(AVFormatContext *s)
     }
 
 #if CONFIG_LIBXCB_SHM
-    c->has_shm = check_shm(c->conn);
+    if ((c->has_shm = check_shm(c->conn)))
+        c->segment = xcb_generate_id(c->conn);
 #endif
 
 #if CONFIG_LIBXCB_XFIXES

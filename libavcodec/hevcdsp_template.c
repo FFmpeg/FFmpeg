@@ -325,7 +325,7 @@ static void FUNC(sao_band_filter_0)(uint8_t *_dst, uint8_t *_src,
     }
 }
 
-#define CMP(a, b) ((a) > (b) ? 1 : ((a) == (b) ? 0 : -1))
+#define CMP(a, b) (((a) > (b)) - ((a) < (b)))
 
 static void FUNC(sao_edge_filter)(uint8_t *_dst, uint8_t *_src, ptrdiff_t stride_dst, int16_t *sao_offset_val,
                                   int eo, int width, int height) {

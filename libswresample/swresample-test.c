@@ -153,7 +153,7 @@ static void audiogen(void *data, enum AVSampleFormat sample_fmt,
     unsigned static rnd;
 
 #define PUT_SAMPLE set(data, ch, k, channels, sample_fmt, v);
-#define uint_rand(x) (x = x * 1664525 + 1013904223)
+#define uint_rand(x) ((x) = (x) * 1664525 + 1013904223)
 #define dbl_rand(x) (uint_rand(x)*2.0 / (double)UINT_MAX - 1)
     k = 0;
 

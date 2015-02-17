@@ -75,6 +75,7 @@ void ff_register_rtp_dynamic_payload_handlers(void)
     ff_register_dynamic_payload_handler(&ff_ac3_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_amr_nb_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_amr_wb_dynamic_handler);
+    ff_register_dynamic_payload_handler(&ff_dv_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_g726_16_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_g726_24_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_g726_32_dynamic_handler);

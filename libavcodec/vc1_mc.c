@@ -32,6 +32,77 @@
 #include "mpegvideo.h"
 #include "vc1.h"
 
+static av_always_inline void vc1_scale_luma(uint8_t *srcY,
+                                            int k, int linesize)
+{
+    int i, j;
+    for (j = 0; j < k; j++) {
+        for (i = 0; i < k; i++)
+            srcY[i] = ((srcY[i] - 128) >> 1) + 128;
+        srcY += linesize;
+    }
+}
+
+static av_always_inline void vc1_scale_chroma(uint8_t *srcU, uint8_t *srcV,
+                                              int k, int uvlinesize)
+{
+    int i, j;
+    for (j = 0; j < k; j++) {
+        for (i = 0; i < k; i++) {
+            srcU[i] = ((srcU[i] - 128) >> 1) + 128;
+            srcV[i] = ((srcV[i] - 128) >> 1) + 128;
+        }
+        srcU += uvlinesize;
+        srcV += uvlinesize;
+    }
+}
+
+static av_always_inline void vc1_lut_scale_luma(uint8_t *srcY,
+                                                uint8_t *lut1, uint8_t *lut2,
+                                                int k, int linesize)
+{
+    int i, j;
+
+    for (j = 0; j < k; j += 2) {
+        for (i = 0; i < k; i++)
+            srcY[i] = lut1[srcY[i]];
+        srcY += linesize;
+
+        if (j + 1 == k)
+            break;
+
+        for (i = 0; i < k; i++)
+            srcY[i] = lut2[srcY[i]];
+        srcY += linesize;
+    }
+}
+
+static av_always_inline void vc1_lut_scale_chroma(uint8_t *srcU, uint8_t *srcV,
+                                                  uint8_t *lut1, uint8_t *lut2,
+                                                  int k, int uvlinesize)
+{
+    int i, j;
+
+    for (j = 0; j < k; j += 2) {
+        for (i = 0; i < k; i++) {
+            srcU[i] = lut1[srcU[i]];
+            srcV[i] = lut1[srcV[i]];
+        }
+        srcU += uvlinesize;
+        srcV += uvlinesize;
+
+        if (j + 1 == k)
+            break;
+
+        for (i = 0; i < k; i++) {
+            srcU[i] = lut2[srcU[i]];
+            srcV[i] = lut2[srcV[i]];
+        }
+        srcU += uvlinesize;
+        srcV += uvlinesize;
+    }
+}
+
 /** Do motion compensation over 1 macroblock
  * Mostly adapted hpel_motion and qpel_motion from mpegvideo.c
  */
@@ -147,11 +218,12 @@ void ff_vc1_mc_1mv(VC1Context *v, int dir)
         || (unsigned)(src_y - 1)        > v_edge_pos    - (my&3) - 16 - 3) {
         uint8_t *ubuf = s->edge_emu_buffer + 19 * s->linesize;
         uint8_t *vbuf = ubuf + 9 * s->uvlinesize;
+        const int k = 17 + s->mspel * 2;
 
         srcY -= s->mspel * (1 + s->linesize);
         s->vdsp.emulated_edge_mc(s->edge_emu_buffer, srcY,
                                  s->linesize, s->linesize,
-                                 17 + s->mspel * 2, 17 + s->mspel * 2,
+                                 k, k,
                                  src_x - s->mspel, src_y - s->mspel,
                                  s->h_edge_pos, v_edge_pos);
         srcY = s->edge_emu_buffer;
@@ -169,56 +241,26 @@ void ff_vc1_mc_1mv(VC1Context *v, int dir)
         srcV = vbuf;
         /* if we deal with range reduction we need to scale source blocks */
         if (v->rangeredfrm) {
-            int i, j;
-            uint8_t *src, *src2;
-
-            src = srcY;
-            for (j = 0; j < 17 + s->mspel * 2; j++) {
-                for (i = 0; i < 17 + s->mspel * 2; i++)
-                    src[i] = ((src[i] - 128) >> 1) + 128;
-                src += s->linesize;
-            }
-            src  = srcU;
-            src2 = srcV;
-            for (j = 0; j < 9; j++) {
-                for (i = 0; i < 9; i++) {
-                    src[i]  = ((src[i]  - 128) >> 1) + 128;
-                    src2[i] = ((src2[i] - 128) >> 1) + 128;
-                }
-                src  += s->uvlinesize;
-                src2 += s->uvlinesize;
-            }
+            vc1_scale_luma(srcY, k, s->linesize);
+            vc1_scale_chroma(srcU, srcV, 9, s->uvlinesize);
         }
         /* if we deal with intensity compensation we need to scale source blocks */
         if (use_ic) {
-            int i, j;
-            uint8_t *src, *src2;
-
-            src = srcY;
-            for (j = 0; j < 17 + s->mspel * 2; j++) {
-                int f = v->field_mode ? v->ref_field_type[dir] : ((j + src_y - s->mspel) & 1) ;
-                for (i = 0; i < 17 + s->mspel * 2; i++)
-                    src[i] = luty[f][src[i]];
-                src += s->linesize;
-            }
-            src  = srcU;
-            src2 = srcV;
-            for (j = 0; j < 9; j++) {
-                int f = v->field_mode ? v->ref_field_type[dir] : ((j + uvsrc_y) & 1);
-                for (i = 0; i < 9; i++) {
-                    src[i]  = lutuv[f][src[i]];
-                    src2[i] = lutuv[f][src2[i]];
-                }
-                src  += s->uvlinesize;
-                src2 += s->uvlinesize;
-            }
+            vc1_lut_scale_luma(srcY,
+                               luty[v->field_mode ? v->ref_field_type[dir] : ((0 + src_y - s->mspel) & 1)],
+                               luty[v->field_mode ? v->ref_field_type[dir] : ((1 + src_y - s->mspel) & 1)],
+                               k, s->linesize);
+            vc1_lut_scale_chroma(srcU, srcV,
+                                 lutuv[v->field_mode ? v->ref_field_type[dir] : ((0 + uvsrc_y) & 1)],
+                                 lutuv[v->field_mode ? v->ref_field_type[dir] : ((1 + uvsrc_y) & 1)],
+                                 9, s->uvlinesize);
         }
         srcY += s->mspel * (1 + s->linesize);
     }
 
     if (s->mspel) {
         dxy = ((my & 3) << 2) | (mx & 3);
-        v->vc1dsp.put_vc1_mspel_pixels_tab[0][dxy](s->dest[0]    , srcY    , s->linesize, v->rnd);
+        v->vc1dsp.put_vc1_mspel_pixels_tab[0][dxy](s->dest[0], srcY, s->linesize, v->rnd);
     } else { // hpel mc - always used for luma
         dxy = (my & 2) | ((mx & 2) >> 1);
         if (!v->rnd)
@@ -237,17 +279,6 @@ void ff_vc1_mc_1mv(VC1Context *v, int dir)
     } else {
         v->vc1dsp.put_no_rnd_vc1_chroma_pixels_tab[0](s->dest[1], srcU, s->uvlinesize, 8, uvmx, uvmy);
         v->vc1dsp.put_no_rnd_vc1_chroma_pixels_tab[0](s->dest[2], srcV, s->uvlinesize, 8, uvmx, uvmy);
-    }
-}
-
-static inline int median4(int a, int b, int c, int d)
-{
-    if (a < b) {
-        if (c < d) return (FFMIN(b, d) + FFMAX(a, c)) / 2;
-        else       return (FFMIN(b, c) + FFMAX(a, d)) / 2;
-    } else {
-        if (c < d) return (FFMIN(a, d) + FFMAX(b, c)) / 2;
-        else       return (FFMIN(a, c) + FFMAX(b, d)) / 2;
     }
 }
 
@@ -393,38 +424,26 @@ void ff_vc1_mc_4mv_luma(VC1Context *v, int n, int dir, int avg)
         || s->h_edge_pos < 13 || v_edge_pos < 23
         || (unsigned)(src_x - s->mspel) > s->h_edge_pos - (mx & 3) - 8 - s->mspel * 2
         || (unsigned)(src_y - (s->mspel << fieldmv)) > v_edge_pos - (my & 3) - ((8 + s->mspel * 2) << fieldmv)) {
+        const int k = 9 + s->mspel * 2;
+
         srcY -= s->mspel * (1 + (s->linesize << fieldmv));
         /* check emulate edge stride and offset */
         s->vdsp.emulated_edge_mc(s->edge_emu_buffer, srcY,
                                  s->linesize, s->linesize,
-                                 9 + s->mspel * 2, (9 + s->mspel * 2) << fieldmv,
+                                 k, k << fieldmv,
                                  src_x - s->mspel, src_y - (s->mspel << fieldmv),
                                  s->h_edge_pos, v_edge_pos);
         srcY = s->edge_emu_buffer;
         /* if we deal with range reduction we need to scale source blocks */
         if (v->rangeredfrm) {
-            int i, j;
-            uint8_t *src;
-
-            src = srcY;
-            for (j = 0; j < 9 + s->mspel * 2; j++) {
-                for (i = 0; i < 9 + s->mspel * 2; i++)
-                    src[i] = ((src[i] - 128) >> 1) + 128;
-                src += s->linesize << fieldmv;
-            }
+            vc1_scale_luma(srcY, k, s->linesize << fieldmv);
         }
         /* if we deal with intensity compensation we need to scale source blocks */
         if (use_ic) {
-            int i, j;
-            uint8_t *src;
-
-            src = srcY;
-            for (j = 0; j < 9 + s->mspel * 2; j++) {
-                int f = v->field_mode ? v->ref_field_type[dir] : (((j<<fieldmv)+src_y - (s->mspel << fieldmv)) & 1);
-                for (i = 0; i < 9 + s->mspel * 2; i++)
-                    src[i] = luty[f][src[i]];
-                src += s->linesize << fieldmv;
-            }
+            vc1_lut_scale_luma(srcY,
+                               luty[v->field_mode ? v->ref_field_type[dir] : (((0<<fieldmv)+src_y - (s->mspel << fieldmv)) & 1)],
+                               luty[v->field_mode ? v->ref_field_type[dir] : (((1<<fieldmv)+src_y - (s->mspel << fieldmv)) & 1)],
+                               k, s->linesize << fieldmv);
         }
         srcY += s->mspel * (1 + (s->linesize << fieldmv));
     }
@@ -624,36 +643,14 @@ void ff_vc1_mc_4mv_chroma(VC1Context *v, int dir)
 
         /* if we deal with range reduction we need to scale source blocks */
         if (v->rangeredfrm) {
-            int i, j;
-            uint8_t *src, *src2;
-
-            src  = srcU;
-            src2 = srcV;
-            for (j = 0; j < 9; j++) {
-                for (i = 0; i < 9; i++) {
-                    src[i]  = ((src[i]  - 128) >> 1) + 128;
-                    src2[i] = ((src2[i] - 128) >> 1) + 128;
-                }
-                src  += s->uvlinesize;
-                src2 += s->uvlinesize;
-            }
+            vc1_scale_chroma(srcU, srcV, 9, s->uvlinesize);
         }
         /* if we deal with intensity compensation we need to scale source blocks */
         if (use_ic) {
-            int i, j;
-            uint8_t *src, *src2;
-
-            src  = srcU;
-            src2 = srcV;
-            for (j = 0; j < 9; j++) {
-                int f = v->field_mode ? chroma_ref_type : ((j + uvsrc_y) & 1);
-                for (i = 0; i < 9; i++) {
-                    src[i]  = lutuv[f][src[i]];
-                    src2[i] = lutuv[f][src2[i]];
-                }
-                src  += s->uvlinesize;
-                src2 += s->uvlinesize;
-            }
+            vc1_lut_scale_chroma(srcU, srcV,
+                                 lutuv[v->field_mode ? chroma_ref_type : ((0 + uvsrc_y) & 1)],
+                                 lutuv[v->field_mode ? chroma_ref_type : ((1 + uvsrc_y) & 1)],
+                                 9, s->uvlinesize);
         }
     }
 
@@ -747,20 +744,10 @@ void ff_vc1_mc_4mv_chroma4(VC1Context *v, int dir, int dir2, int avg)
 
             /* if we deal with intensity compensation we need to scale source blocks */
             if (use_ic) {
-                int i, j;
-                uint8_t *src, *src2;
-
-                src  = srcU;
-                src2 = srcV;
-                for (j = 0; j < 5; j++) {
-                    int f = (uvsrc_y + (j << fieldmv)) & 1;
-                    for (i = 0; i < 5; i++) {
-                        src[i]  = lutuv[f][src[i]];
-                        src2[i] = lutuv[f][src2[i]];
-                    }
-                    src  += s->uvlinesize << fieldmv;
-                    src2 += s->uvlinesize << fieldmv;
-                }
+                vc1_lut_scale_chroma(srcU, srcV,
+                                     lutuv[(uvsrc_y + (0 << fieldmv)) & 1],
+                                     lutuv[(uvsrc_y + (1 << fieldmv)) & 1],
+                                     5, s->uvlinesize << fieldmv);
             }
         }
         if (avg) {
@@ -852,11 +839,12 @@ void ff_vc1_interp_mc(VC1Context *v)
         || (unsigned)(src_y - 1) > v_edge_pos    - (my & 3) - 16 - 3) {
         uint8_t *ubuf = s->edge_emu_buffer + 19 * s->linesize;
         uint8_t *vbuf = ubuf + 9 * s->uvlinesize;
+        const int k = 17 + s->mspel * 2;
 
         srcY -= s->mspel * (1 + s->linesize);
         s->vdsp.emulated_edge_mc(s->edge_emu_buffer, srcY,
                                  s->linesize, s->linesize,
-                                 17 + s->mspel * 2, 17 + s->mspel * 2,
+                                 k, k,
                                  src_x - s->mspel, src_y - s->mspel,
                                  s->h_edge_pos, v_edge_pos);
         srcY = s->edge_emu_buffer;
@@ -874,51 +862,21 @@ void ff_vc1_interp_mc(VC1Context *v)
         srcV = vbuf;
         /* if we deal with range reduction we need to scale source blocks */
         if (v->rangeredfrm) {
-            int i, j;
-            uint8_t *src, *src2;
-
-            src = srcY;
-            for (j = 0; j < 17 + s->mspel * 2; j++) {
-                for (i = 0; i < 17 + s->mspel * 2; i++)
-                    src[i] = ((src[i] - 128) >> 1) + 128;
-                src += s->linesize;
-            }
-            src = srcU;
-            src2 = srcV;
-            for (j = 0; j < 9; j++) {
-                for (i = 0; i < 9; i++) {
-                    src[i]  = ((src[i]  - 128) >> 1) + 128;
-                    src2[i] = ((src2[i] - 128) >> 1) + 128;
-                }
-                src  += s->uvlinesize;
-                src2 += s->uvlinesize;
-            }
+            vc1_scale_luma(srcY, k, s->linesize);
+            vc1_scale_chroma(srcU, srcV, 9, s->uvlinesize);
         }
 
         if (use_ic) {
             uint8_t (*luty )[256] = v->next_luty;
             uint8_t (*lutuv)[256] = v->next_lutuv;
-            int i, j;
-            uint8_t *src, *src2;
-
-            src = srcY;
-            for (j = 0; j < 17 + s->mspel * 2; j++) {
-                int f = v->field_mode ? v->ref_field_type[1] : ((j+src_y - s->mspel) & 1);
-                for (i = 0; i < 17 + s->mspel * 2; i++)
-                    src[i] = luty[f][src[i]];
-                src += s->linesize;
-            }
-            src  = srcU;
-            src2 = srcV;
-            for (j = 0; j < 9; j++) {
-                int f = v->field_mode ? v->ref_field_type[1] : ((j+uvsrc_y) & 1);
-                for (i = 0; i < 9; i++) {
-                    src[i]  = lutuv[f][src[i]];
-                    src2[i] = lutuv[f][src2[i]];
-                }
-                src  += s->uvlinesize;
-                src2 += s->uvlinesize;
-            }
+            vc1_lut_scale_luma(srcY,
+                               luty[v->field_mode ? v->ref_field_type[1] : ((0+src_y - s->mspel) & 1)],
+                               luty[v->field_mode ? v->ref_field_type[1] : ((1+src_y - s->mspel) & 1)],
+                               k, s->linesize);
+            vc1_lut_scale_chroma(srcU, srcV,
+                                 lutuv[v->field_mode ? v->ref_field_type[1] : ((0+uvsrc_y) & 1)],
+                                 lutuv[v->field_mode ? v->ref_field_type[1] : ((1+uvsrc_y) & 1)],
+                                 9, s->uvlinesize);
         }
         srcY += s->mspel * (1 + s->linesize);
     }

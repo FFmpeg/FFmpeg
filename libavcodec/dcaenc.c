@@ -148,10 +148,10 @@ static int encode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "Bit rate %i not supported.", avctx->bit_rate);
         return AVERROR(EINVAL);
     }
-    for (i = 0; dca_bit_rates[i] < avctx->bit_rate; i++)
+    for (i = 0; ff_dca_bit_rates[i] < avctx->bit_rate; i++)
         ;
     c->bitrate_index = i;
-    avctx->bit_rate = dca_bit_rates[i];
+    avctx->bit_rate = ff_dca_bit_rates[i];
     c->frame_bits = FFALIGN((avctx->bit_rate * 512 + avctx->sample_rate - 1) / avctx->sample_rate, 32);
     min_frame_bits = 132 + (493 + 28 * 32) * c->fullband_channels + c->lfe_channel * 72;
     if (c->frame_bits < min_frame_bits || c->frame_bits > (DCA_MAX_FRAME_SIZE << 3))
@@ -171,13 +171,13 @@ static int encode_init(AVCodecContext *avctx)
 
         /* FIXME: probably incorrect */
         for (i = 0; i < 256; i++) {
-            lfe_fir_64i[i] = (int32_t)(0x01ffffff * lfe_fir_64[i]);
-            lfe_fir_64i[511 - i] = (int32_t)(0x01ffffff * lfe_fir_64[i]);
+            lfe_fir_64i[i] = (int32_t)(0x01ffffff * ff_dca_lfe_fir_64[i]);
+            lfe_fir_64i[511 - i] = (int32_t)(0x01ffffff * ff_dca_lfe_fir_64[i]);
         }
 
         for (i = 0; i < 512; i++) {
-            band_interpolation[0][i] = (int32_t)(0x1000000000ULL * fir_32bands_perfect[i]);
-            band_interpolation[1][i] = (int32_t)(0x1000000000ULL * fir_32bands_nonperfect[i]);
+            band_interpolation[0][i] = (int32_t)(0x1000000000ULL * ff_dca_fir_32bands_perfect[i]);
+            band_interpolation[1][i] = (int32_t)(0x1000000000ULL * ff_dca_fir_32bands_nonperfect[i]);
         }
 
         for (i = 0; i < 9; i++) {
@@ -197,7 +197,7 @@ static int encode_init(AVCodecContext *avctx)
         for (j = 0; j < 8; j++) {
             double accum = 0;
             for (i = 0; i < 512; i++) {
-                double reconst = fir_32bands_perfect[i] * ((i & 64) ? (-1) : 1);
+                double reconst = ff_dca_fir_32bands_perfect[i] * ((i & 64) ? (-1) : 1);
                 accum += reconst * cos(2 * M_PI * (i + 0.5 - 256) * (j + 0.5) / 512);
             }
             band_spectrum[0][j] = (int32_t)(200 * log10(accum));
@@ -205,7 +205,7 @@ static int encode_init(AVCodecContext *avctx)
         for (j = 0; j < 8; j++) {
             double accum = 0;
             for (i = 0; i < 512; i++) {
-                double reconst = fir_32bands_nonperfect[i] * ((i & 64) ? (-1) : 1);
+                double reconst = ff_dca_fir_32bands_nonperfect[i] * ((i & 64) ? (-1) : 1);
                 accum += reconst * cos(2 * M_PI * (i + 0.5 - 256) * (j + 0.5) / 512);
             }
             band_spectrum[1][j] = (int32_t)(200 * log10(accum));

@@ -1313,13 +1313,13 @@ static int hls_read_header(AVFormatContext *s)
         struct playlist *pls = c->playlists[i];
         AVInputFormat *in_fmt = NULL;
 
-        if (pls->n_segments == 0)
-            continue;
-
         if (!(pls->ctx = avformat_alloc_context())) {
             ret = AVERROR(ENOMEM);
             goto fail;
         }
+
+        if (pls->n_segments == 0)
+            continue;
 
         pls->index  = i;
         pls->needed = 1;

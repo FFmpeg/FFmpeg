@@ -209,7 +209,7 @@ typedef struct AVClass {
  * Requires 256color terminal support. Uses outside debugging is not
  * recommended.
  */
-#define AV_LOG_C(x) (x << 8)
+#define AV_LOG_C(x) ((x) << 8)
 
 /**
  * Send the specified message to the log if the level is less than or equal

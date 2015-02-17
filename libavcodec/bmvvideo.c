@@ -51,7 +51,7 @@ typedef struct BMVDecContext {
     const uint8_t *stream;
 } BMVDecContext;
 
-#define NEXT_BYTE(v) v = forward ? v + 1 : v - 1;
+#define NEXT_BYTE(v) (v) = forward ? (v) + 1 : (v) - 1;
 
 static int decode_bmv_frame(const uint8_t *source, int src_len, uint8_t *frame, int frame_off)
 {

@@ -67,8 +67,8 @@
 #define AC3_RENAME(x)           x ## _fixed
 #define AC3_NORM(norm)          (1<<24)/(norm)
 #define AC3_MUL(a,b)            ((((int64_t) (a)) * (b))>>12)
-#define AC3_RANGE(x)            (x|((x&128)<<1))
-#define AC3_HEAVY_RANGE(x)      (x<<1)
+#define AC3_RANGE(x)            ((x)|(((x)&128)<<1))
+#define AC3_HEAVY_RANGE(x)      ((x)<<1)
 #define AC3_DYNAMIC_RANGE(x)    (x)
 #define AC3_SPX_BLEND(x)        (x)
 #define AC3_DYNAMIC_RANGE1      0
