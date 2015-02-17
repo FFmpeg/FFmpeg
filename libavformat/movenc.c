@@ -1824,6 +1824,8 @@ static int mov_write_stts_tag(AVIOContext *pb, MOVTrack *track)
 
     if (track->enc->codec_type == AVMEDIA_TYPE_AUDIO && !track->audio_vbr) {
         stts_entries = av_malloc(sizeof(*stts_entries)); /* one entry */
+        if (!stts_entries)
+            return AVERROR(ENOMEM);
         stts_entries[0].count = track->sample_count;
         stts_entries[0].duration = 1;
         entries = 1;
@@ -1831,6 +1833,8 @@ static int mov_write_stts_tag(AVIOContext *pb, MOVTrack *track)
         stts_entries = track->entry ?
                        av_malloc_array(track->entry, sizeof(*stts_entries)) : /* worst case */
                        NULL;
+        if (!stts_entries)
+            return AVERROR(ENOMEM);
         for (i = 0; i < track->entry; i++) {
             int duration = get_cluster_duration(track, i);
             if (i && duration == stts_entries[entries].duration) {
@@ -4159,6 +4163,10 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (trk->vos_len == 0 && enc->extradata_size > 0 && !TAG_IS_AVCI(trk->tag)) {
         trk->vos_len  = enc->extradata_size;
         trk->vos_data = av_malloc(trk->vos_len);
+        if (!trk->vos_data) {
+            ret = AVERROR(ENOMEM);
+            goto err;
+        }
         memcpy(trk->vos_data, enc->extradata, trk->vos_len);
     }
 
@@ -4938,6 +4946,8 @@ static int mov_write_header(AVFormatContext *s)
             else if (!TAG_IS_AVCI(track->tag)){
                 track->vos_len  = st->codec->extradata_size;
                 track->vos_data = av_malloc(track->vos_len);
+                if (!track->vos_data)
+                    goto error;
                 memcpy(track->vos_data, st->codec->extradata, track->vos_len);
             }
         }
