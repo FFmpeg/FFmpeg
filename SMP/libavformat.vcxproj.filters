@@ -93,6 +93,9 @@
     <ClCompile Include="..\libavformat\rtpdec_asf.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavformat\rtpdec_dv.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavformat\rtpdec_g726.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
