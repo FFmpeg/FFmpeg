@@ -25,6 +25,7 @@
 #endif
 
 #include <x265.h>
+#include <float.h>
 
 #include "libavutil/internal.h"
 #include "libavutil/common.h"
@@ -39,6 +40,7 @@ typedef struct libx265Context {
     x265_encoder *encoder;
     x265_param   *params;
 
+    float crf;
     char *preset;
     char *tune;
     char *x265_opts;
@@ -138,7 +140,15 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
         break;
     }
 
-    if (avctx->bit_rate > 0) {
+    if (ctx->crf >= 0) {
+        char crf[6];
+
+        snprintf(crf, sizeof(crf), "%2.2f", ctx->crf);
+        if (x265_param_parse(ctx->params, "crf", crf) == X265_PARAM_BAD_VALUE) {
+            av_log(avctx, AV_LOG_ERROR, "Invalid crf: %2.2f.\n", ctx->crf);
+            return AVERROR(EINVAL);
+        }
+    } else if (avctx->bit_rate > 0) {
         ctx->params->rc.bitrate         = avctx->bit_rate / 1000;
         ctx->params->rc.rateControlMode = X265_RC_ABR;
     }
@@ -294,6 +304,7 @@ static av_cold void libx265_encode_init_csp(AVCodec *codec)
 #define OFFSET(x) offsetof(libx265Context, x)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
+    { "crf",         "set the x265 crf",                                                            OFFSET(crf),       AV_OPT_TYPE_FLOAT,  { .dbl = -1 }, -1, FLT_MAX, VE },
     { "preset",      "set the x265 preset",                                                         OFFSET(preset),    AV_OPT_TYPE_STRING, { 0 }, 0, 0, VE },
     { "tune",        "set the x265 tune parameter",                                                 OFFSET(tune),      AV_OPT_TYPE_STRING, { 0 }, 0, 0, VE },
     { "x265-params", "set the x265 configuration using a :-separated list of key=value parameters", OFFSET(x265_opts), AV_OPT_TYPE_STRING, { 0 }, 0, 0, VE },
