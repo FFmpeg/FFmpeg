@@ -2230,6 +2230,9 @@ static int video_thread(void *arg)
     int last_vfilter_idx = 0;
 #endif
 
+    if (!frame)
+        return AVERROR(ENOMEM);
+
     for (;;) {
         ret = get_video_frame(is, frame);
         if (ret < 0)
