@@ -76,10 +76,6 @@ static av_cold int libx265_encode_close(AVCodecContext *avctx)
 static av_cold int libx265_encode_init(AVCodecContext *avctx)
 {
     libx265Context *ctx = avctx->priv_data;
-    x265_nal *nal;
-    char sar[12];
-    int sar_num, sar_den;
-    int nnal;
 
     if (avctx->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL &&
         !av_pix_fmt_desc_get(avctx->pix_fmt)->log2_chroma_w) {
@@ -114,6 +110,9 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
     ctx->params->bEnablePsnr     = !!(avctx->flags & CODEC_FLAG_PSNR);
 
     if (avctx->sample_aspect_ratio.num > 0 && avctx->sample_aspect_ratio.den > 0) {
+        char sar[12];
+        int sar_num, sar_den;
+
         av_reduce(&sar_num, &sar_den,
                   avctx->sample_aspect_ratio.num,
                   avctx->sample_aspect_ratio.den, 65535);
@@ -180,6 +179,9 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
     }
 
     if (avctx->flags & CODEC_FLAG_GLOBAL_HEADER) {
+        x265_nal *nal;
+        int nnal;
+
         avctx->extradata_size = x265_encoder_headers(ctx->encoder, &nal, &nnal);
         if (avctx->extradata_size <= 0) {
             av_log(avctx, AV_LOG_ERROR, "Cannot encode headers.\n");
