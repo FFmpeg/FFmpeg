@@ -43,8 +43,6 @@
 #include "libswresample/swresample.h"
 
 #include "avcodec.h"
-#include "celp_filters.h"
-#include "fft.h"
 #include "get_bits.h"
 #include "internal.h"
 #include "mathops.h"
