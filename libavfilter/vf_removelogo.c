@@ -114,7 +114,7 @@ AVFILTER_DEFINE_CLASS(removelogo);
  * opinion. This will calculate only at init-time, so you can put a
  * long expression here without effecting performance.
  */
-#define apply_mask_fudge_factor(x) (((x) >> 2) + x)
+#define apply_mask_fudge_factor(x) (((x) >> 2) + (x))
 
 /**
  * Pre-process an image to give distance information.
