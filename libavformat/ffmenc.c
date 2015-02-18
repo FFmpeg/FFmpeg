@@ -146,8 +146,8 @@ static int ffm_write_header_codec_ctx(AVIOContext *pb, AVCodecContext *ctx, unsi
         if (need_coma)
             avio_w8(tmp, ',');
         avio_write(tmp, buf, strlen(buf));
-        av_free(buf);
     }
+    av_freep(&buf);
     avio_w8(tmp, 0);
     write_header_chunk(pb, tmp, tag);
     return 0;
