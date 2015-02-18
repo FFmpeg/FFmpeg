@@ -4946,8 +4946,10 @@ static int mov_write_header(AVFormatContext *s)
             else if (!TAG_IS_AVCI(track->tag)){
                 track->vos_len  = st->codec->extradata_size;
                 track->vos_data = av_malloc(track->vos_len);
-                if (!track->vos_data)
+                if (!track->vos_data) {
+                    ret = AVERROR(ENOMEM);
                     goto error;
+                }
                 memcpy(track->vos_data, st->codec->extradata, track->vos_len);
             }
         }
