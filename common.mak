@@ -7,10 +7,10 @@ all: all-yes
 
 DEFAULT_YASMD=.dbg
 
-ifndef DBG
-YASMD=
-else
+ifeq (1, DBG)
 YASMD=$(DEFAULT_YASMD)
+else
+YASMD=
 endif
 
 ifndef SUBDIR
@@ -152,11 +152,11 @@ LIBSUFFIXES       = *.a *.lib *.so *.so.* *.dylib *.dll *.def *.dll.a
 
 define RULES
 clean::
-	$(RM) $(OBJS) $(OBJS:.o=.d)
+	$(RM) $(OBJS) $(OBJS:.o=.d) $(OBJS:.o=$(DEFAULT_YASMD).d)
 	$(RM) $(HOSTPROGS)
 	$(RM) $(TOOLS)
 endef
 
 $(eval $(RULES))
 
--include $(wildcard $(OBJS:.o=.d) $(HOSTOBJS:.o=.d) $(TESTOBJS:.o=.d) $(HOBJS:.o=.d) $(SLIBOBJS:.o=.d))
+-include $(wildcard $(OBJS:.o=.d) $(HOSTOBJS:.o=.d) $(TESTOBJS:.o=.d) $(HOBJS:.o=.d) $(SLIBOBJS:.o=.d)) $(OBJS:.o=$(DEFAULT_YASMD).d)
