@@ -134,6 +134,11 @@ static inline void decode_block_intra(MadContext *s, DCTELEM * block)
                 break;
             } else if (level != 0) {
                 i += run;
+                if (i > 63) {
+                    av_log(s->avctx, AV_LOG_ERROR,
+                           "ac-tex damaged at %d %d\n", s->mb_x, s->mb_y);
+                    return;
+                }
                 j = scantable[i];
                 level = (level*quant_matrix[j]) >> 4;
                 level = (level-1)|1;
@@ -148,6 +153,11 @@ static inline void decode_block_intra(MadContext *s, DCTELEM * block)
                 run = SHOW_UBITS(re, &s->gb, 6)+1; LAST_SKIP_BITS(re, &s->gb, 6);
 
                 i += run;
+                if (i > 63) {
+                    av_log(s->avctx, AV_LOG_ERROR,
+                           "ac-tex damaged at %d %d\n", s->mb_x, s->mb_y);
+                    return;
+                }
                 j = scantable[i];
                 if (level < 0) {
                     level = -level;
@@ -158,10 +168,6 @@ static inline void decode_block_intra(MadContext *s, DCTELEM * block)
                     level = (level*quant_matrix[j]) >> 4;
                     level = (level-1)|1;
                 }
-            }
-            if (i > 63) {
-                av_log(s->avctx, AV_LOG_ERROR, "ac-tex damaged at %d %d\n", s->mb_x, s->mb_y);
-                return;
             }
 
             block[j] = level;
