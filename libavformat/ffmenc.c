@@ -137,7 +137,7 @@ static int ffm_write_header_codec_ctx(AVIOContext *pb, AVCodecContext *ctx, unsi
         goto fail;
     if (buf && strlen(buf)) {
         avio_write(tmp, buf, strlen(buf));
-        av_free(buf);
+        av_freep(&buf);
         need_coma = 1;
     }
     if ((ret = av_opt_serialize(ctx, 0, SKIP_DEFAULTS | OPT_FLAGS_EXACT, &buf, '=', ',')) < 0)
