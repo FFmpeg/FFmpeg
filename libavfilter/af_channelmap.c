@@ -88,12 +88,13 @@ static char* split(char *message, char delim) {
 
 static int get_channel_idx(char **map, int *ch, char delim, int max_ch)
 {
-    char *next = split(*map, delim);
+    char *next;
     int len;
     int n = 0;
-    if (!next && delim == '-')
-        return AVERROR(EINVAL);
     if (!*map)
+        return AVERROR(EINVAL);
+    next = split(*map, delim);
+    if (!next && delim == '-')
         return AVERROR(EINVAL);
     len = strlen(*map);
     sscanf(*map, "%d%n", ch, &n);

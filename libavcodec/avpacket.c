@@ -548,8 +548,10 @@ int av_packet_ref(AVPacket *dst, const AVPacket *src)
         memcpy(dst->buf->data, src->data, src->size);
     } else {
         dst->buf = av_buffer_ref(src->buf);
-        if (!dst->buf)
+        if (!dst->buf) {
+            ret = AVERROR(ENOMEM);
             goto fail;
+        }
     }
 
     dst->size = src->size;

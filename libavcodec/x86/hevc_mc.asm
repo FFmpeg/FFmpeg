@@ -730,7 +730,13 @@ cglobal hevc_put_hevc_bi_pel_pixels%1_%2, 6, 6, 6, dst, dststride, src, srcstrid
 
 
 %macro HEVC_PUT_HEVC_EPEL 2
-cglobal hevc_put_hevc_epel_h%1_%2, 5, 6, 11, dst, src, srcstride, height, mx, rfilter
+%if cpuflag(avx2)
+%define XMM_REGS  11
+%else
+%define XMM_REGS  8
+%endif
+
+cglobal hevc_put_hevc_epel_h%1_%2, 5, 6, XMM_REGS, dst, src, srcstride, height, mx, rfilter
 %assign %%stride ((%2 + 7)/8)
     EPEL_FILTER       %2, mx, m4, m5, rfilter
 .loop
@@ -740,7 +746,7 @@ cglobal hevc_put_hevc_epel_h%1_%2, 5, 6, 11, dst, src, srcstride, height, mx, rf
     LOOP_END         dst, src, srcstride
     RET
 
-cglobal hevc_put_hevc_uni_epel_h%1_%2, 6, 7, 11, dst, dststride, src, srcstride, height, mx, rfilter
+cglobal hevc_put_hevc_uni_epel_h%1_%2, 6, 7, XMM_REGS, dst, dststride, src, srcstride, height, mx, rfilter
 %assign %%stride ((%2 + 7)/8)
     movdqa            m6, [pw_%2]
     EPEL_FILTER       %2, mx, m4, m5, rfilter
@@ -755,7 +761,7 @@ cglobal hevc_put_hevc_uni_epel_h%1_%2, 6, 7, 11, dst, dststride, src, srcstride,
     jnz               .loop                      ; height loop
     RET
 
-cglobal hevc_put_hevc_bi_epel_h%1_%2, 7, 8, 11, dst, dststride, src, srcstride, src2, height, mx, rfilter
+cglobal hevc_put_hevc_bi_epel_h%1_%2, 7, 8, XMM_REGS, dst, dststride, src, srcstride, src2, height, mx, rfilter
     movdqa            m6, [pw_bi_%2]
     EPEL_FILTER       %2, mx, m4, m5, rfilter
 .loop
@@ -777,7 +783,7 @@ cglobal hevc_put_hevc_bi_epel_h%1_%2, 7, 8, 11, dst, dststride, src, srcstride, 
 ;                      int height, int mx, int my, int width)
 ; ******************************
 
-cglobal hevc_put_hevc_epel_v%1_%2, 4, 6, 11, dst, src, srcstride, height, r3src, my
+cglobal hevc_put_hevc_epel_v%1_%2, 4, 6, XMM_REGS, dst, src, srcstride, height, r3src, my
     movifnidn        myd, mym
     sub             srcq, srcstrideq
     EPEL_FILTER       %2, my, m4, m5, r3src
@@ -789,7 +795,7 @@ cglobal hevc_put_hevc_epel_v%1_%2, 4, 6, 11, dst, src, srcstride, height, r3src,
     LOOP_END          dst, src, srcstride
     RET
 
-cglobal hevc_put_hevc_uni_epel_v%1_%2, 5, 7, 11, dst, dststride, src, srcstride, height, r3src, my
+cglobal hevc_put_hevc_uni_epel_v%1_%2, 5, 7, XMM_REGS, dst, dststride, src, srcstride, height, r3src, my
     movifnidn        myd, mym
     movdqa            m6, [pw_%2]
     sub             srcq, srcstrideq
@@ -807,7 +813,7 @@ cglobal hevc_put_hevc_uni_epel_v%1_%2, 5, 7, 11, dst, dststride, src, srcstride,
     RET
 
 
-cglobal hevc_put_hevc_bi_epel_v%1_%2, 6, 8, 11, dst, dststride, src, srcstride, src2, height, r3src, my
+cglobal hevc_put_hevc_bi_epel_v%1_%2, 6, 8, XMM_REGS, dst, dststride, src, srcstride, src2, height, r3src, my
     movifnidn        myd, mym
     movdqa            m6, [pw_bi_%2]
     sub             srcq, srcstrideq

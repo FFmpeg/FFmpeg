@@ -52,8 +52,8 @@ namespace avxsynth {
 //
 // Functions
 //
-#define MAKEDWORD(a,b,c,d) ((a << 24) | (b << 16) | (c << 8) | (d))
-#define MAKEWORD(a,b) ((a << 8) | (b))
+#define MAKEDWORD(a,b,c,d) (((a) << 24) | ((b) << 16) | ((c) << 8) | (d))
+#define MAKEWORD(a,b) (((a) << 8) | (b))
 
 #define lstrlen                             strlen
 #define lstrcpy                             strcpy

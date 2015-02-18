@@ -213,4 +213,6 @@ int avpriv_dca_convert_bitstream(const uint8_t *src, int src_size, uint8_t *dst,
 int ff_dca_xbr_parse_frame(DCAContext *s);
 int ff_dca_xxch_decode_frame(DCAContext *s);
 
+void ff_dca_exss_parse_header(DCAContext *s);
+
 #endif /* AVCODEC_DCA_H */

@@ -95,6 +95,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     out = av_frame_clone(in);
     if (!out) {
+        av_buffer_unref(&out_qp_table_buf);
         ret = AVERROR(ENOMEM);
         goto fail;
     }

@@ -176,7 +176,7 @@ typedef struct WmallDecodeCtx {
 } WmallDecodeCtx;
 
 /** Get sign of integer (1 for positive, -1 for negative and 0 for zero) */
-#define WMASIGN(x) ((x > 0) - (x < 0))
+#define WMASIGN(x) (((x) > 0) - ((x) < 0))
 
 static av_cold int decode_init(AVCodecContext *avctx)
 {

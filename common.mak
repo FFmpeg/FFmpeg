@@ -5,6 +5,14 @@
 # first so "all" becomes default target
 all: all-yes
 
+DEFAULT_YASMD=.dbg
+
+ifndef DBG
+YASMD=
+else
+YASMD=$(DEFAULT_YASMD)
+endif
+
 ifndef SUBDIR
 
 ifndef V
@@ -138,7 +146,7 @@ $(TOOLOBJS): | tools
 
 OBJDIRS := $(OBJDIRS) $(dir $(OBJS) $(HOBJS) $(HOSTOBJS) $(SLIBOBJS) $(TESTOBJS))
 
-CLEANSUFFIXES     = *.d *.o *~ *.h.c *.map *.ver *.ho *.gcno *.gcda
+CLEANSUFFIXES     = *.d *.o *~ *.h.c *.map *.ver *.ho *.gcno *.gcda *$(DEFAULT_YASMD).asm
 DISTCLEANSUFFIXES = *.pc
 LIBSUFFIXES       = *.a *.lib *.so *.so.* *.dylib *.dll *.def *.dll.a
 

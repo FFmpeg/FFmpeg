@@ -30,6 +30,10 @@ typedef struct AVTWOFISH {
     uint32_t K[40];
     uint32_t S[4];
     int ksize;
+    uint32_t MDS1[256];
+    uint32_t MDS2[256];
+    uint32_t MDS3[256];
+    uint32_t MDS4[256];
 } AVTWOFISH;
 
 static const uint8_t MD1[256] = {
@@ -142,10 +146,9 @@ static uint32_t tf_RS(uint32_t k0, uint32_t k1)
     return AV_RL32(s);
 }
 
-static uint32_t tf_h(uint32_t X, uint32_t L[4], int k)
+static void tf_h0(uint8_t y[4], uint32_t L[4], int k)
 {
-    uint8_t y[4], l[4];
-    AV_WL32(y, X);
+    uint8_t l[4];
     if (k == 4) {
         AV_WL32(l, L[3]);
         y[0] = q1[y[0]] ^ l[0];
@@ -165,6 +168,13 @@ static uint32_t tf_h(uint32_t X, uint32_t L[4], int k)
     y[1] = q0[q0[q1[y[1]] ^ l[1]] ^ ((L[0] >> 8) & 0xff)];
     y[2] = q1[q1[q0[y[2]] ^ l[2]] ^ ((L[0] >> 16) & 0xff)];
     y[3] = q0[q1[q1[y[3]] ^ l[3]] ^ (L[0] >> 24)];
+}
+
+static uint32_t tf_h(uint32_t X, uint32_t L[4], int k)
+{
+    uint8_t y[4], l[4];
+    AV_WL32(y, X);
+    tf_h0(y, L, k);
 
     l[0] = y[0] ^ MD2[y[1]] ^ MD1[y[2]] ^ MD1[y[3]];
     l[1] = MD1[y[0]] ^ MD2[y[1]] ^ MD2[y[2]] ^ y[3];
@@ -172,6 +182,25 @@ static uint32_t tf_h(uint32_t X, uint32_t L[4], int k)
     l[3] = MD2[y[0]] ^ y[1] ^ MD2[y[2]] ^ MD1[y[3]];
 
     return AV_RL32(l);
+}
+
+static uint32_t MDS_mul(AVTWOFISH *cs, uint32_t X)
+{
+    return cs->MDS1[(X) & 0xff] ^ cs->MDS2[((X) >> 8) & 0xff] ^ cs->MDS3[((X) >> 16) & 0xff] ^ cs->MDS4[(X) >> 24];
+}
+
+static void precomputeMDS(AVTWOFISH *cs)
+{
+    uint8_t y[4];
+    int i;
+    for (i = 0; i < 256; i++) {
+        y[0] = y[1] = y[2] = y[3] = i;
+    tf_h0(y, cs->S, cs->ksize);
+        cs->MDS1[i] = ((uint32_t)y[0]) ^ ((uint32_t)MD1[y[0]] << 8) ^ ((uint32_t)MD2[y[0]] << 16) ^ ((uint32_t)MD2[y[0]] << 24);
+        cs->MDS2[i] = ((uint32_t)MD2[y[1]]) ^ ((uint32_t)MD2[y[1]] << 8) ^ ((uint32_t)MD1[y[1]] << 16) ^ ((uint32_t)y[1] << 24);
+        cs->MDS3[i] = ((uint32_t)MD1[y[2]]) ^ ((uint32_t)MD2[y[2]] << 8) ^ ((uint32_t)y[2] << 16) ^ ((uint32_t)MD2[y[2]] << 24);
+        cs->MDS4[i] = ((uint32_t)MD1[y[3]]) ^ ((uint32_t)y[3] << 8) ^ ((uint32_t)MD2[y[3]] << 16) ^ ((uint32_t)MD1[y[3]] << 24);
+    }
 }
 
 static void twofish_encrypt(AVTWOFISH *cs, uint8_t *dst, const uint8_t *src)
@@ -183,12 +212,12 @@ static void twofish_encrypt(AVTWOFISH *cs, uint8_t *dst, const uint8_t *src)
     P[2] = AV_RL32(src + 8) ^ cs->K[2];
     P[3] = AV_RL32(src + 12) ^ cs->K[3];
     for (i = 0; i < 16; i += 2) {
-        t0 = tf_h(P[0], cs->S, cs->ksize);
-        t1 = tf_h(LR(P[1], 8), cs->S, cs->ksize);
+        t0 = MDS_mul(cs, P[0]);
+        t1 = MDS_mul(cs, LR(P[1], 8));
         P[2] = RR(P[2] ^ (t0 + t1 + cs->K[2 * i + 8]), 1);
         P[3] = LR(P[3], 1) ^ (t0 + 2 * t1 + cs->K[2 * i + 9]);
-        t0 = tf_h(P[2], cs->S, cs->ksize);
-        t1 = tf_h(LR(P[3], 8), cs->S, cs->ksize);
+        t0 = MDS_mul(cs, P[2]);
+        t1 = MDS_mul(cs, LR(P[3], 8));
         P[0] = RR(P[0] ^ (t0 + t1 + cs->K[2 * i + 10]), 1);
         P[1] = LR(P[1], 1) ^ (t0 + 2 * t1 + cs->K[2 * i + 11]);
     }
@@ -211,12 +240,12 @@ static void twofish_decrypt(AVTWOFISH *cs, uint8_t *dst, const uint8_t *src, uin
     P[0] = AV_RL32(src + 8) ^ cs->K[6];
     P[1] = AV_RL32(src + 12) ^ cs->K[7];
     for (i = 15; i >= 0; i -= 2) {
-        t0 = tf_h(P[2], cs->S, cs->ksize);
-        t1 = tf_h(LR(P[3], 8), cs->S, cs->ksize);
+        t0 = MDS_mul(cs, P[2]);
+        t1 = MDS_mul(cs, LR(P[3], 8));
         P[0] = LR(P[0], 1) ^ (t0 + t1 + cs->K[2 * i + 8]);
         P[1] = RR(P[1] ^ (t0 + 2 * t1 + cs->K[2 * i + 9]), 1);
-        t0 = tf_h(P[0], cs->S, cs->ksize);
-        t1 = tf_h(LR(P[1], 8), cs->S, cs->ksize);
+        t0 = MDS_mul(cs, P[0]);
+        t1 = MDS_mul(cs, LR(P[1], 8));
         P[2] = LR(P[2], 1) ^ (t0 + t1 + cs->K[2 * i + 6]);
         P[3] = RR(P[3] ^ (t0 + 2 * t1 + cs->K[2 * i + 7]), 1);
     }
@@ -265,6 +294,7 @@ av_cold int av_twofish_init(AVTWOFISH *cs, const uint8_t *key, int key_bits)
         Mo[i] = Key[2 * i + 1];
         cs->S[cs->ksize - i - 1] = tf_RS(Me[i], Mo[i]);
     }
+    precomputeMDS(cs);
     for (i = 0; i < 20; i++) {
         A = tf_h((2 * i) * rho, Me, cs->ksize);
         B = tf_h((2 * i + 1) * rho, Mo, cs->ksize);

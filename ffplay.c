@@ -2230,6 +2230,9 @@ static int video_thread(void *arg)
     int last_vfilter_idx = 0;
 #endif
 
+    if (!frame)
+        return AVERROR(ENOMEM);
+
     for (;;) {
         ret = get_video_frame(is, frame);
         if (ret < 0)
@@ -2881,6 +2884,11 @@ static int read_thread(void *arg)
     is->eof = 0;
 
     ic = avformat_alloc_context();
+    if (!ic) {
+        av_log(NULL, AV_LOG_FATAL, "Could not allocate context.\n");
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
     ic->interrupt_callback.callback = decode_interrupt_cb;
     ic->interrupt_callback.opaque = is;
     if (!av_dict_get(format_opts, "scan_all_pmts", NULL, AV_DICT_MATCH_CASE)) {

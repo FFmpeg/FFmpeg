@@ -112,6 +112,8 @@ static void rm_read_metadata(AVFormatContext *s, AVIOContext *pb, int wide)
 RMStream *ff_rm_alloc_rmstream (void)
 {
     RMStream *rms = av_mallocz(sizeof(RMStream));
+    if (!rms)
+        return NULL;
     rms->curpic_num = -1;
     return rms;
 }
@@ -493,6 +495,8 @@ static int rm_read_header_old(AVFormatContext *s)
     if (!st)
         return -1;
     st->priv_data = ff_rm_alloc_rmstream();
+    if (!st->priv_data)
+        return AVERROR(ENOMEM);
     return rm_read_audio_stream_info(s, s->pb, st, st->priv_data, 1);
 }
 
@@ -576,6 +580,8 @@ static int rm_read_header(AVFormatContext *s)
             get_str8(pb, mime, sizeof(mime)); /* mimetype */
             st->codec->codec_type = AVMEDIA_TYPE_DATA;
             st->priv_data = ff_rm_alloc_rmstream();
+            if (!st->priv_data)
+                return AVERROR(ENOMEM);
             if (ff_rm_read_mdpr_codecdata(s, s->pb, st, st->priv_data,
                                           avio_rb32(pb), mime) < 0)
                 goto fail;
