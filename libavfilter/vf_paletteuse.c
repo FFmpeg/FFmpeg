@@ -119,8 +119,12 @@ static int query_formats(AVFilterContext *ctx)
     AVFilterFormats *in    = ff_make_format_list(in_fmts);
     AVFilterFormats *inpal = ff_make_format_list(inpal_fmts);
     AVFilterFormats *out   = ff_make_format_list(out_fmts);
-    if (!in || !inpal || !out)
+    if (!in || !inpal || !out) {
+        av_freep(&in);
+        av_freep(&inpal);
+        av_freep(&out);
         return AVERROR(ENOMEM);
+    }
     ff_formats_ref(in,    &ctx->inputs[0]->out_formats);
     ff_formats_ref(inpal, &ctx->inputs[1]->out_formats);
     ff_formats_ref(out,   &ctx->outputs[0]->in_formats);
