@@ -111,14 +111,16 @@ static void check_values(EQParameters *param, EQContext *eq)
 
 static void set_contrast(EQContext *eq)
 {
-    eq->param[0].contrast = eq->contrast;
+    eq->var_values[VAR_CONTRAST] = av_clipf(av_expr_eval(eq->contrast_pexpr, eq->var_values, eq),-2.0, 2.0);
+    eq->param[0].contrast = eq->var_values[VAR_CONTRAST];
     eq->param[0].lut_clean = 0;
     check_values(&eq->param[0], eq);
 }
 
 static void set_brightness(EQContext *eq)
 {
-    eq->param[0].brightness = eq->brightness;
+    eq->var_values[VAR_BRIGHTNESS] =  av_clipf(av_expr_eval(eq->brightness_pexpr, eq->var_values, eq), -1.0, 1.0);
+    eq->param[0].brightness = eq->var_values[VAR_BRIGHTNESS];
     eq->param[0].lut_clean = 0;
     check_values(&eq->param[0], eq);
 }
@@ -126,12 +128,19 @@ static void set_brightness(EQContext *eq)
 static void set_gamma(EQContext *eq)
 {
     int i;
-    eq->param[0].gamma = eq->gamma * eq->gamma_g;
-    eq->param[1].gamma = sqrt(eq->gamma_b / eq->gamma_g);
-    eq->param[2].gamma = sqrt(eq->gamma_r / eq->gamma_g);
+
+    eq->var_values[VAR_GAMMA]        =  av_clipf(av_expr_eval(eq->gamma_pexpr,        eq->var_values, eq),  0.1, 10.0);
+    eq->var_values[VAR_GAMMA_R]      =  av_clipf(av_expr_eval(eq->gamma_r_pexpr,      eq->var_values, eq),  0.1, 10.0);
+    eq->var_values[VAR_GAMMA_G]      =  av_clipf(av_expr_eval(eq->gamma_g_pexpr,      eq->var_values, eq),  0.1, 10.0);
+    eq->var_values[VAR_GAMMA_B]      =  av_clipf(av_expr_eval(eq->gamma_b_pexpr,      eq->var_values, eq),  0.1, 10.0);
+    eq->var_values[VAR_GAMMA_WEIGHT] =  av_clipf(av_expr_eval(eq->gamma_weight_pexpr, eq->var_values, eq),  0.0,  1.0);
+
+    eq->param[0].gamma = eq->var_values[VAR_GAMMA] * eq->var_values[VAR_GAMMA_G];
+    eq->param[1].gamma = sqrt(eq->var_values[VAR_GAMMA_B] / eq->var_values[VAR_GAMMA_G]);
+    eq->param[2].gamma = sqrt(eq->var_values[VAR_GAMMA_R] / eq->var_values[VAR_GAMMA_G]);
 
     for (i = 0; i < 3; i++) {
-        eq->param[i].gamma_weight = eq->gamma_weight;
+        eq->param[i].gamma_weight = eq->var_values[VAR_GAMMA_WEIGHT];
         eq->param[i].lut_clean = 0;
         check_values(&eq->param[i], eq);
     }
@@ -140,18 +149,53 @@ static void set_gamma(EQContext *eq)
 static void set_saturation(EQContext *eq)
 {
     int i;
+
+    eq->var_values[VAR_SATURATION] = av_clipf(av_expr_eval(eq->saturation_pexpr, eq->var_values, eq), 0.0, 3.0);
+
     for (i = 1; i < 3; i++) {
-        eq->param[i].contrast = eq->saturation;
+        eq->param[i].contrast = eq->var_values[VAR_SATURATION];
         eq->param[i].lut_clean = 0;
         check_values(&eq->param[i], eq);
     }
 }
 
+static int set_expr(AVExpr **pexpr, const char *expr, const char *option, void *log_ctx)
+{
+    int ret;
+    AVExpr *old = NULL;
+
+    if (*pexpr)
+        old = *pexpr;
+    ret = av_expr_parse(pexpr, expr, var_names,
+                        NULL, NULL, NULL, NULL, 0, log_ctx);
+    if (ret < 0) {
+        av_log(log_ctx, AV_LOG_ERROR,
+               "Error when evaluating the expression '%s' for %s\n",
+               expr, option);
+        *pexpr = old;
+        return ret;
+    }
+
+    av_expr_free(old);
+    return 0;
+}
+
 static int initialize(AVFilterContext *ctx)
 {
     EQContext *eq = ctx->priv;
+    int ret;
 
     eq->process = process_c;
+
+    if ((ret = set_expr(&eq->contrast_pexpr,     eq->contrast_expr,     "contrast",     ctx)) < 0 ||
+        (ret = set_expr(&eq->brightness_pexpr,   eq->brightness_expr,   "brightness",   ctx)) < 0 ||
+        (ret = set_expr(&eq->saturation_pexpr,   eq->saturation_expr,   "saturation",   ctx)) < 0 ||
+        (ret = set_expr(&eq->gamma_pexpr,        eq->gamma_expr,        "gamma",        ctx)) < 0 ||
+        (ret = set_expr(&eq->gamma_r_pexpr,      eq->gamma_r_expr,      "gamma_r",      ctx)) < 0 ||
+        (ret = set_expr(&eq->gamma_g_pexpr,      eq->gamma_g_expr,      "gamma_g",      ctx)) < 0 ||
+        (ret = set_expr(&eq->gamma_b_pexpr,      eq->gamma_b_expr,      "gamma_b",      ctx)) < 0 ||
+        (ret = set_expr(&eq->gamma_weight_pexpr, eq->gamma_weight_expr, "gamma_weight", ctx)) < 0 )
+        return ret;
 
     if (ARCH_X86)
         ff_eq_init_x86(eq);
@@ -162,6 +206,20 @@ static int initialize(AVFilterContext *ctx)
     set_saturation(eq);
 
     return 0;
+}
+
+static void uninit(AVFilterContext *ctx)
+{
+    EQContext *eq = ctx->priv;
+
+    av_expr_free(eq->contrast_pexpr);     eq->contrast_pexpr     = NULL;
+    av_expr_free(eq->brightness_pexpr);   eq->brightness_pexpr   = NULL;
+    av_expr_free(eq->saturation_pexpr);   eq->saturation_pexpr   = NULL;
+    av_expr_free(eq->gamma_pexpr);        eq->gamma_pexpr        = NULL;
+    av_expr_free(eq->gamma_weight_pexpr); eq->gamma_weight_pexpr = NULL;
+    av_expr_free(eq->gamma_r_pexpr);      eq->gamma_r_pexpr      = NULL;
+    av_expr_free(eq->gamma_g_pexpr);      eq->gamma_g_pexpr      = NULL;
+    av_expr_free(eq->gamma_b_pexpr);      eq->gamma_b_pexpr      = NULL;
 }
 
 static int query_formats(AVFilterContext *ctx)
@@ -217,6 +275,57 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     av_frame_free(&in);
     return ff_filter_frame(outlink, out);
 }
+
+static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
+                           char *res, int res_len, int flags)
+{
+    EQContext *eq = ctx->priv;
+    int ret;
+
+    if (!strcmp(cmd, "contrast")) {
+        ret = set_expr(&eq->contrast_pexpr, args, cmd, ctx);
+        set_contrast(eq);
+        return ret;
+    }
+    else if (!strcmp(cmd, "brightness")) {
+        ret = set_expr(&eq->brightness_pexpr, args, cmd, ctx);
+        set_brightness(eq);
+        return ret;
+    }
+    else if (!strcmp(cmd, "saturation")) {
+        ret = set_expr(&eq->saturation_pexpr, args, cmd, ctx);
+        set_saturation(eq);
+        return ret;
+    }
+    else if (!strcmp(cmd, "gamma")) {
+        ret = set_expr(&eq->gamma_pexpr, args, cmd, ctx);
+        set_gamma(eq);
+        return ret;
+    }
+    else if (!strcmp(cmd, "gamma_r")) {
+        ret = set_expr(&eq->gamma_r_pexpr, args, cmd, ctx);
+        set_gamma(eq);
+        return ret;
+    }
+    else if (!strcmp(cmd, "gamma_g")) {
+        ret = set_expr(&eq->gamma_g_pexpr, args, cmd, ctx);
+        set_gamma(eq);
+        return ret;
+    }
+    else if (!strcmp(cmd, "gamma_b")) {
+        ret = set_expr(&eq->gamma_b_pexpr, args, cmd, ctx);
+        set_gamma(eq);
+        return ret;
+    }
+    else if (!strcmp(cmd, "gamma_weight")) {
+        ret = set_expr(&eq->gamma_weight_pexpr, args, cmd, ctx);
+        set_gamma(eq);
+        return ret;
+    }
+    else
+        return AVERROR(ENOSYS);
+}
+
 static const AVFilterPad eq_inputs[] = {
     {
         .name = "default",
@@ -239,33 +348,35 @@ static const AVFilterPad eq_outputs[] = {
 
 static const AVOption eq_options[] = {
     { "contrast",     "set the contrast adjustment, negative values give a negative image",
-        OFFSET(contrast),     AV_OPT_TYPE_DOUBLE, {.dbl = 1.0}, -2.0, 2.0, FLAGS },
+        OFFSET(contrast_expr),     AV_OPT_TYPE_STRING, {.str = "1.0"}, CHAR_MIN, CHAR_MAX, FLAGS },
     { "brightness",   "set the brightness adjustment",
-        OFFSET(brightness),   AV_OPT_TYPE_DOUBLE, {.dbl = 0.0}, -1.0, 1.0, FLAGS },
+        OFFSET(brightness_expr),   AV_OPT_TYPE_STRING, {.str = "0.0"}, CHAR_MIN, CHAR_MAX, FLAGS },
     { "saturation",   "set the saturation adjustment",
-        OFFSET(saturation),   AV_OPT_TYPE_DOUBLE, {.dbl = 1.0},  0.0, 3.0, FLAGS },
+        OFFSET(saturation_expr),   AV_OPT_TYPE_STRING, {.str = "1.0"}, CHAR_MIN, CHAR_MAX, FLAGS },
     { "gamma",        "set the initial gamma value",
-        OFFSET(gamma),        AV_OPT_TYPE_DOUBLE, {.dbl = 1.0},  0.1, 10.0, FLAGS },
+        OFFSET(gamma_expr),        AV_OPT_TYPE_STRING, {.str = "1.0"}, CHAR_MIN, CHAR_MAX, FLAGS },
     { "gamma_r",      "gamma value for red",
-        OFFSET(gamma_r),      AV_OPT_TYPE_DOUBLE, {.dbl = 1.0},  0.1, 10.0, FLAGS },
+        OFFSET(gamma_r_expr),      AV_OPT_TYPE_STRING, {.str = "1.0"}, CHAR_MIN, CHAR_MAX, FLAGS },
     { "gamma_g",      "gamma value for green",
-        OFFSET(gamma_g),      AV_OPT_TYPE_DOUBLE, {.dbl = 1.0},  0.1, 10.0, FLAGS },
+        OFFSET(gamma_g_expr),      AV_OPT_TYPE_STRING, {.str = "1.0"}, CHAR_MIN, CHAR_MAX, FLAGS },
     { "gamma_b",      "gamma value for blue",
-        OFFSET(gamma_b),      AV_OPT_TYPE_DOUBLE, {.dbl = 1.0},  0.1, 10.0, FLAGS },
+        OFFSET(gamma_b_expr),      AV_OPT_TYPE_STRING, {.str = "1.0"}, CHAR_MIN, CHAR_MAX, FLAGS },
     { "gamma_weight", "set the gamma weight which reduces the effect of gamma on bright areas",
-        OFFSET(gamma_weight), AV_OPT_TYPE_DOUBLE, {.dbl = 1.0},  0.0, 1.0, FLAGS },
+        OFFSET(gamma_weight_expr), AV_OPT_TYPE_STRING, {.str = "1.0"}, CHAR_MIN, CHAR_MAX, FLAGS },
     { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(eq);
 
 AVFilter ff_vf_eq = {
-    .name          = "eq",
-    .description   = NULL_IF_CONFIG_SMALL("Adjust brightness, contrast, gamma, and saturation."),
-    .priv_size     = sizeof(EQContext),
-    .priv_class    = &eq_class,
-    .inputs        = eq_inputs,
-    .outputs       = eq_outputs,
-    .query_formats = query_formats,
-    .init          = initialize,
+    .name            = "eq",
+    .description     = NULL_IF_CONFIG_SMALL("Adjust brightness, contrast, gamma, and saturation."),
+    .priv_size       = sizeof(EQContext),
+    .priv_class      = &eq_class,
+    .inputs          = eq_inputs,
+    .outputs         = eq_outputs,
+    .process_command = process_command,
+    .query_formats   = query_formats,
+    .init            = initialize,
+    .uninit          = uninit,
 };
