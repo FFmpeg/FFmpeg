@@ -104,15 +104,15 @@ typedef struct WvChannel {
 
 // macros for applying weight
 #define UPDATE_WEIGHT_CLIP(weight, delta, samples, in) \
-    if (samples && in) { \
-        if ((samples ^ in) < 0) { \
-            weight -= delta; \
-            if (weight < -1024) \
-                weight = -1024; \
+    if ((samples) && (in)) { \
+        if (((samples) ^ (in)) < 0) { \
+            (weight) -= (delta); \
+            if ((weight) < -1024) \
+                (weight) = -1024; \
         } else { \
-            weight += delta; \
-            if (weight > 1024) \
-                weight = 1024; \
+            (weight) += (delta); \
+            if ((weight) > 1024) \
+                (weight) = 1024; \
         } \
     }
 
