@@ -78,7 +78,8 @@ static int dss_read_metadata_date(AVFormatContext *s, unsigned int offset,
     if (ret < DSS_TIME_SIZE)
         return ret < 0 ? ret : AVERROR_EOF;
 
-    sscanf(string, "%2d%2d%2d%2d%2d%2d", &y, &month, &d, &h, &minute, &sec);
+    if (sscanf(string, "%2d%2d%2d%2d%2d%2d", &y, &month, &d, &h, &minute, &sec) != 6)
+        return AVERROR_INVALIDDATA;
     /* We deal with a two-digit year here, so set the default date to 2000
      * and hope it will never be used in the next century. */
     snprintf(datetime, sizeof(datetime), "%.4d-%.2d-%.2dT%.2d:%.2d:%.2d",
