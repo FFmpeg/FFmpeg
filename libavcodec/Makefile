@@ -7,6 +7,7 @@ HEADERS = avcodec.h                                                     \
           dv_profile.h                                                  \
           dxva2.h                                                       \
           old_codec_ids.h                                               \
+          qsv.h                                                         \
           vaapi.h                                                       \
           vda.h                                                         \
           vdpau.h                                                       \
@@ -28,6 +29,7 @@ OBJS = allcodecs.o                                                      \
        mathtables.o                                                     \
        options.o                                                        \
        parser.o                                                         \
+       qsv_api.o                                                        \
        raw.o                                                            \
        resample.o                                                       \
        resample2.o                                                      \
@@ -89,6 +91,7 @@ OBJS-$(CONFIG_MPEGVIDEOENC)            += mpegvideo_enc.o mpeg12data.o  \
                                           mpegvideoencdsp.o
 OBJS-$(CONFIG_PIXBLOCKDSP)             += pixblockdsp.o
 OBJS-$(CONFIG_QPELDSP)                 += qpeldsp.o
+OBJS-$(CONFIG_QSV)                     += qsv.o
 OBJS-$(CONFIG_RANGECODER)              += rangecoder.o
 RDFT-OBJS-$(CONFIG_HARDCODED_TABLES)   += sin_tables.o
 OBJS-$(CONFIG_RDFT)                    += rdft.o $(RDFT-OBJS-yes)
@@ -263,6 +266,7 @@ OBJS-$(CONFIG_H264_DECODER)            += h264.o h264_cabac.o h264_cavlc.o \
                                           h264_mb.o h264_picture.o h264_ps.o \
                                           h264_refs.o h264_sei.o h264_slice.o
 OBJS-$(CONFIG_H264_VDA_DECODER)        += vda_h264_dec.o
+OBJS-$(CONFIG_H264_QSV_DECODER)        += qsv_h264.o
 OBJS-$(CONFIG_HEVC_DECODER)            += hevc.o hevc_mvs.o hevc_ps.o hevc_sei.o \
                                           hevc_cabac.o hevc_refs.o hevcpred.o    \
                                           hevcdsp.o hevc_filter.o
@@ -856,6 +860,7 @@ SKIPHEADERS                            += %_tablegen.h                  \
 SKIPHEADERS-$(CONFIG_DXVA2)            += dxva2.h dxva2_internal.h
 SKIPHEADERS-$(CONFIG_LIBSCHROEDINGER)  += libschroedinger.h
 SKIPHEADERS-$(CONFIG_LIBUTVIDEO)       += libutvideo.h
+SKIPHEADERS-$(CONFIG_QSV)              += qsv_internal.h
 SKIPHEADERS-$(CONFIG_XVMC)             += xvmc.h
 SKIPHEADERS-$(CONFIG_VAAPI)            += vaapi_internal.h
 SKIPHEADERS-$(CONFIG_VDA)              += vda.h vda_internal.h

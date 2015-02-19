@@ -219,6 +219,7 @@ External library support:
   --enable-libgsm          enable GSM de/encoding via libgsm [no]
   --enable-libiec61883     enable iec61883 via libiec61883 [no]
   --enable-libilbc         enable iLBC de/encoding via libilbc [no]
+  --enable-libmfx          enable HW acceleration through libmfx
   --enable-libmodplug      enable ModPlug via libmodplug [no]
   --enable-libmp3lame      enable MP3 encoding via libmp3lame [no]
   --enable-libnut          enable NUT (de)muxing via libnut,
@@ -1362,6 +1363,7 @@ EXTERNAL_LIBRARY_LIST="
     libgsm
     libiec61883
     libilbc
+    libmfx
     libmodplug
     libmp3lame
     libnut
@@ -1479,6 +1481,7 @@ SUBSYSTEM_LIST="
     mdct
     pixelutils
     network
+    qsv
     rdft
 "
 
@@ -2139,6 +2142,8 @@ h263i_decoder_select="h263_decoder"
 h263p_encoder_select="h263_encoder"
 h264_decoder_select="cabac golomb h264chroma h264dsp h264pred h264qpel startcode videodsp"
 h264_decoder_suggest="error_resilience"
+h264_qsv_decoder_deps="libmfx"
+h264_qsv_decoder_select="h264_mp4toannexb_bsf h264_parser qsv h264_qsv_hwaccel"
 hevc_decoder_select="bswapdsp cabac golomb videodsp"
 huffyuv_decoder_select="bswapdsp huffyuvdsp llviddsp"
 huffyuv_encoder_select="bswapdsp huffman huffyuvencdsp llviddsp"
@@ -4900,6 +4905,7 @@ enabled libgsm            && { for gsm_hdr in "gsm.h" "gsm/gsm.h"; do
                                    check_lib "${gsm_hdr}" gsm_create -lgsm && break;
                                done || die "ERROR: libgsm not found"; }
 enabled libilbc           && require libilbc ilbc.h WebRtcIlbcfix_InitDecode -lilbc
+enabled libmfx            && require_pkg_config libmfx "mfx/mfxvideo.h" MFXInit
 enabled libmodplug        && require_pkg_config libmodplug libmodplug/modplug.h ModPlug_Load
 enabled libmp3lame        && require "libmp3lame >= 3.98.3" lame/lame.h lame_set_VBR_quality -lmp3lame
 enabled libnut            && require libnut libnut.h nut_demuxer_init -lnut

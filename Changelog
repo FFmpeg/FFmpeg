@@ -30,6 +30,7 @@ version <next>:
 - DV RTP payload format (RFC 6469) depacketizer
 - DXVA2-accelerated HEVC decoding
 - AAC ELD 480 decoding
+- Intel QSV-accelerated H.264 decoding
 
 version 2.5:
 - HEVC/H.265 RTP payload format (draft v6) packetizer
