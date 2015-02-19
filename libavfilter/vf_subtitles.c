@@ -153,7 +153,7 @@ static int config_input(AVFilterLink *inlink)
 #define AR(c)  ( (c)>>24)
 #define AG(c)  (((c)>>16)&0xFF)
 #define AB(c)  (((c)>>8) &0xFF)
-#define AA(c)  ((0xFF-c) &0xFF)
+#define AA(c)  ((0xFF-(c)) &0xFF)
 
 static void overlay_ass_image(AssContext *ass, AVFrame *picref,
                               const ASS_Image *image)
