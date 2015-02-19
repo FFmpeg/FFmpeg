@@ -700,9 +700,9 @@ static void lms_update(WmallDecodeCtx *s, int ich, int ilms, int input)
         recent--;
     else {
         memcpy(s->cdlms[ich][ilms].lms_prevvalues + order,
-               s->cdlms[ich][ilms].lms_prevvalues, 2 * order);
+               s->cdlms[ich][ilms].lms_prevvalues, sizeof(*s->cdlms[ich][ilms].lms_prevvalues) * order);
         memcpy(s->cdlms[ich][ilms].lms_updates + order,
-               s->cdlms[ich][ilms].lms_updates, 2 * order);
+               s->cdlms[ich][ilms].lms_updates, sizeof(*s->cdlms[ich][ilms].lms_updates) * order);
         recent = order - 1;
     }
 
