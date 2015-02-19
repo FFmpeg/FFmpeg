@@ -326,7 +326,7 @@ static int dss_read_close(AVFormatContext *s)
 {
     DSSDemuxContext *ctx = s->priv_data;
 
-    av_free(ctx->dss_sp_buf);
+    av_freep(&ctx->dss_sp_buf);
 
     return 0;
 }
