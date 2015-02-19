@@ -378,7 +378,7 @@ static void dss_sp_unpack_coeffs(DssSpContext *p, const uint8_t *src)
                 if (C72_binomials[index] <= combined_pulse_pos) {
                     combined_pulse_pos -= C72_binomials[index];
 
-                    fparam->sf[subframe_idx].pulse_pos[(index ^ 7) - 1] = i;
+                    fparam->sf[subframe_idx].pulse_pos[6 - index] = i;
 
                     if (!index)
                         break;
