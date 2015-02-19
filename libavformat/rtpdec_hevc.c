@@ -91,8 +91,8 @@ static av_cold int hevc_sdp_parse_fmtp_config(AVFormatContext *s,
     /* sprop-sei: [base64] */
     if (!strcmp(attr, "sprop-vps") || !strcmp(attr, "sprop-sps") ||
         !strcmp(attr, "sprop-pps") || !strcmp(attr, "sprop-sei")) {
-        uint8_t **data_ptr;
-        int *size_ptr;
+        uint8_t **data_ptr = NULL;
+        int *size_ptr = NULL;
         if (!strcmp(attr, "sprop-vps")) {
             data_ptr = &hevc_data->vps;
             size_ptr = &hevc_data->vps_size;
