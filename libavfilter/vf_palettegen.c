@@ -52,7 +52,7 @@ enum {
     NB_STATS_MODE
 };
 
-#define NBITS 4
+#define NBITS 5
 #define HIST_SIZE (1<<(3*NBITS))
 
 typedef struct {
