@@ -110,6 +110,7 @@ void av_register_all(void)
     REGISTER_MUXDEMUX(DNXHD,            dnxhd);
     REGISTER_DEMUXER (DSF,              dsf);
     REGISTER_DEMUXER (DSICIN,           dsicin);
+    REGISTER_DEMUXER (DSS,              dss);
     REGISTER_MUXDEMUX(DTS,              dts);
     REGISTER_DEMUXER (DTSHD,            dtshd);
     REGISTER_MUXDEMUX(DV,               dv);
