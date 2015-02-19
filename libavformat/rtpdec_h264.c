@@ -182,6 +182,7 @@ static int h264_handle_packet_stap_a(AVFormatContext *ctx, AVPacket *pkt,
     uint8_t *dst     = NULL;
     int ret;
 
+    // first we are going to figure out the total size
     for (pass = 0; pass < 2; pass++) {
         const uint8_t *src = buf;
         int src_len        = len;
@@ -301,7 +302,6 @@ static int h264_handle_packet(AVFormatContext *ctx, PayloadContext *data,
         // consume the STAP-A NAL
         buf++;
         len--;
-        // first we are going to figure out the total size
         result = h264_handle_packet_stap_a(ctx, pkt, buf, len);
         break;
 
