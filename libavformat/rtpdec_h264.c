@@ -214,10 +214,6 @@ static int h264_handle_packet_stap_a(AVFormatContext *ctx, AVPacket *pkt,
             // eat what we handled
             src     += nal_size;
             src_len -= nal_size;
-
-            if (src_len < 0)
-                av_log(ctx, AV_LOG_ERROR,
-                       "Consumed more bytes than we got! (%d)\n", src_len);
         }
 
         if (pass == 0) {
