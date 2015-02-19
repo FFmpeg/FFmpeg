@@ -327,6 +327,35 @@ static inline int parse_nal_units(AVCodecParserContext *s,
             if(h->sps.ref_frame_count <= 1 && h->pps.ref_count[0] <= 1 && s->pict_type == AV_PICTURE_TYPE_I)
                 s->key_frame = 1;
 
+            s->coded_width  = 16 * h->sps.mb_width;
+            s->coded_height = 16 * h->sps.mb_height;
+            s->width        = s->coded_width  - (h->sps.crop_right + h->sps.crop_left);
+            s->height       = s->coded_height - (h->sps.crop_top   + h->sps.crop_bottom);
+            if (s->width <= 0 || s->height <= 0) {
+                s->width  = s->coded_width;
+                s->height = s->coded_height;
+            }
+
+            switch (h->sps.bit_depth_luma) {
+            case 9:
+                if (CHROMA444(h))      s->format = AV_PIX_FMT_YUV444P9;
+                else if (CHROMA422(h)) s->format = AV_PIX_FMT_YUV422P9;
+                else                   s->format = AV_PIX_FMT_YUV420P9;
+                break;
+            case 10:
+                if (CHROMA444(h))      s->format = AV_PIX_FMT_YUV444P10;
+                else if (CHROMA422(h)) s->format = AV_PIX_FMT_YUV422P10;
+                else                   s->format = AV_PIX_FMT_YUV420P10;
+                break;
+            case 8:
+                if (CHROMA444(h))      s->format = AV_PIX_FMT_YUV444P;
+                else if (CHROMA422(h)) s->format = AV_PIX_FMT_YUV422P;
+                else                   s->format = AV_PIX_FMT_YUV420P;
+                break;
+            default:
+                s->format = AV_PIX_FMT_NONE;
+            }
+
             avctx->profile = ff_h264_get_profile(&h->sps);
             avctx->level   = h->sps.level_idc;
 

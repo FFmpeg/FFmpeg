@@ -4381,6 +4381,28 @@ typedef struct AVCodecParserContext {
      * For example, this corresponds to H.264 PicOrderCnt.
      */
     int output_picture_number;
+
+    /**
+     * Dimensions of the decoded video intended for presentation.
+     */
+    int width;
+    int height;
+
+    /**
+     * Dimensions of the coded video.
+     */
+    int coded_width;
+    int coded_height;
+
+    /**
+     * The format of the coded data, corresponds to enum AVPixelFormat for video
+     * and for enum AVSampleFormat for audio.
+     *
+     * Note that a decoder can have considerable freedom in how exactly it
+     * decodes the data, so the format reported here might be different from the
+     * one returned by a decoder.
+     */
+    int format;
 } AVCodecParserContext;
 
 typedef struct AVCodecParser {
