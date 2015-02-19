@@ -108,6 +108,11 @@ fate-tree: libavutil/tree-test$(EXESUF)
 fate-tree: CMD = run libavutil/tree-test
 fate-tree: REF = /dev/null
 
+FATE_LIBAVUTIL += fate-twofish
+fate-twofish: libavutil/twofish-test$(EXESUF)
+fate-twofish: CMD = run libavutil/twofish-test
+fate-twofish: REF = /dev/null
+
 FATE_LIBAVUTIL += fate-xtea
 fate-xtea: libavutil/xtea-test$(EXESUF)
 fate-xtea: CMD = run libavutil/xtea-test

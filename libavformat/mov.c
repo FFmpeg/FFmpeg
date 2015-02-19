@@ -1079,42 +1079,66 @@ static int mov_read_fiel(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return 0;
 }
 
+static int mov_realloc_extradata(AVCodecContext *codec, MOVAtom atom)
+{
+    int err = 0;
+    uint64_t size = (uint64_t)codec->extradata_size + atom.size + 8 + FF_INPUT_BUFFER_PADDING_SIZE;
+    if (size > INT_MAX || (uint64_t)atom.size > INT_MAX)
+        return AVERROR_INVALIDDATA;
+    if ((err = av_reallocp(&codec->extradata, size)) < 0) {
+        codec->extradata_size = 0;
+        return err;
+    }
+    codec->extradata_size = size - FF_INPUT_BUFFER_PADDING_SIZE;
+    return 0;
+}
+
+/* Read a whole atom into the extradata return the size of the atom read, possibly truncated if != atom.size */
+static int64_t mov_read_atom_into_extradata(MOVContext *c, AVIOContext *pb, MOVAtom atom,
+                                        AVCodecContext *codec, uint8_t *buf)
+{
+    int64_t result = atom.size;
+    int err;
+
+    AV_WB32(buf    , atom.size + 8);
+    AV_WL32(buf + 4, atom.type);
+    err = avio_read(pb, buf + 8, atom.size);
+    if (err < 0) {
+        codec->extradata_size -= atom.size;
+        return err;
+    } else if (err < atom.size) {
+        av_log(c->fc, AV_LOG_WARNING, "truncated extradata\n");
+        codec->extradata_size -= atom.size - err;
+        result = err;
+    }
+    memset(buf + 8 + err, 0, FF_INPUT_BUFFER_PADDING_SIZE);
+    return result;
+}
+
 /* FIXME modify qdm2/svq3/h264 decoders to take full atom as extradata */
 static int mov_read_extradata(MOVContext *c, AVIOContext *pb, MOVAtom atom,
                               enum AVCodecID codec_id)
 {
     AVStream *st;
-    uint64_t size;
-    uint8_t *buf;
+    uint64_t original_size;
     int err;
 
     if (c->fc->nb_streams < 1) // will happen with jp2 files
         return 0;
-    st= c->fc->streams[c->fc->nb_streams-1];
+    st = c->fc->streams[c->fc->nb_streams-1];
 
     if (st->codec->codec_id != codec_id)
         return 0; /* unexpected codec_id - don't mess with extradata */
 
-    size= (uint64_t)st->codec->extradata_size + atom.size + 8 + FF_INPUT_BUFFER_PADDING_SIZE;
-    if (size > INT_MAX || (uint64_t)atom.size > INT_MAX)
-        return AVERROR_INVALIDDATA;
-    if ((err = av_reallocp(&st->codec->extradata, size)) < 0) {
-        st->codec->extradata_size = 0;
+    original_size = st->codec->extradata_size;
+    err = mov_realloc_extradata(st->codec, atom);
+    if (err)
         return err;
-    }
-    buf = st->codec->extradata + st->codec->extradata_size;
-    st->codec->extradata_size= size - FF_INPUT_BUFFER_PADDING_SIZE;
-    AV_WB32(       buf    , atom.size + 8);
-    AV_WL32(       buf + 4, atom.type);
-    err = avio_read(pb, buf + 8, atom.size);
-    if (err < 0) {
+
+    err =  mov_read_atom_into_extradata(c, pb, atom, st->codec,  st->codec->extradata + original_size);
+    if (err < 0)
         return err;
-    } else if (err < atom.size) {
-        av_log(c->fc, AV_LOG_WARNING, "truncated extradata\n");
-        st->codec->extradata_size -= atom.size - err;
-    }
-    memset(buf + 8 + err, 0, FF_INPUT_BUFFER_PADDING_SIZE);
-    return 0;
+    return 0; // Note: this is the original behavior to ignore truncation.
 }
 
 /* wrapper functions for reading ALAC/AVS/MJPEG/MJPEG2000 extradata atoms only for those codecs */
@@ -1176,6 +1200,47 @@ static int mov_read_ares(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     }
 
     return mov_read_avid(c, pb, atom);
+}
+
+static int mov_read_aclr(MOVContext *c, AVIOContext *pb, MOVAtom atom)
+{
+    int ret = 0;
+    int length = 0;
+    uint64_t original_size;
+    if (c->fc->nb_streams >= 1) {
+        AVCodecContext *codec = c->fc->streams[c->fc->nb_streams-1]->codec;
+        if (atom.size == 16) {
+            original_size = codec->extradata_size;
+            ret = mov_realloc_extradata(codec, atom);
+            if (!ret) {
+                length =  mov_read_atom_into_extradata(c, pb, atom, codec, codec->extradata + original_size);
+                if (length == atom.size) {
+                    const uint8_t range_value = codec->extradata[original_size + 19];
+                    switch (range_value) {
+                    case 1:
+                        codec->color_range = AVCOL_RANGE_MPEG;
+                        break;
+                    case 2:
+                        codec->color_range = AVCOL_RANGE_JPEG;
+                        break;
+                    default:
+                        av_log(c, AV_LOG_WARNING, "ignored unknown aclr value (%d)\n", range_value);
+                        break;
+                    }
+                    av_dlog(c, "color_range: %"PRIu8"\n", codec->color_range);
+                } else {
+                  /* For some reason the whole atom was not added to the extradata */
+                  av_log(c, AV_LOG_ERROR, "aclr not decoded - incomplete atom\n");
+                }
+            } else {
+                av_log(c, AV_LOG_ERROR, "aclr not decoded - unable to add atom to extradata\n");
+            }
+        } else {
+            av_log(c, AV_LOG_WARNING, "aclr not decoded - unexpected size %ld\n", atom.size);
+        }
+    }
+
+    return ret;
 }
 
 static int mov_read_svq3(MOVContext *c, AVIOContext *pb, MOVAtom atom)
@@ -3390,7 +3455,7 @@ static int mov_read_free(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 }
 
 static const MOVParseTableEntry mov_default_parse_table[] = {
-{ MKTAG('A','C','L','R'), mov_read_avid },
+{ MKTAG('A','C','L','R'), mov_read_aclr },
 { MKTAG('A','P','R','G'), mov_read_avid },
 { MKTAG('A','A','L','P'), mov_read_avid },
 { MKTAG('A','R','E','S'), mov_read_ares },

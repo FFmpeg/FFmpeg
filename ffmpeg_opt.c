@@ -859,6 +859,7 @@ static int open_input_file(OptionsContext *o, const char *filename)
     MATCH_PER_TYPE_OPT(codec_names, str,    video_codec_name, ic, "v");
     MATCH_PER_TYPE_OPT(codec_names, str,    audio_codec_name, ic, "a");
     MATCH_PER_TYPE_OPT(codec_names, str, subtitle_codec_name, ic, "s");
+    MATCH_PER_TYPE_OPT(codec_names, str,     data_codec_name, ic, "d");
 
     ic->video_codec_id   = video_codec_name ?
         find_codec_or_die(video_codec_name   , AVMEDIA_TYPE_VIDEO   , 0)->id : AV_CODEC_ID_NONE;
