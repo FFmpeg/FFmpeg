@@ -35,6 +35,14 @@ int ff_h263_handle_packet(AVFormatContext *ctx, PayloadContext *data,
                           AVStream *st, AVPacket *pkt, uint32_t *timestamp,
                           const uint8_t *buf, int len, uint16_t seq, int flags);
 
+int ff_h264_parse_sprop_parameter_sets(AVFormatContext *s,
+                                       uint8_t **data_ptr, int *size_ptr,
+                                       const char *value);
+int ff_h264_handle_aggregated_packet(AVFormatContext *ctx, AVPacket *pkt,
+                                     const uint8_t *buf, int len,
+                                     int start_skip, int *nal_counters,
+                                     int nal_mask);
+
 extern RTPDynamicProtocolHandler ff_amr_nb_dynamic_handler;
 extern RTPDynamicProtocolHandler ff_amr_wb_dynamic_handler;
 extern RTPDynamicProtocolHandler ff_g726_16_dynamic_handler;
