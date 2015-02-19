@@ -33,7 +33,7 @@
 
 #define DSS_SP_FRAME_SIZE        42
 #define DSS_SP_SAMPLE_COUNT     (66 * SUBFRAMES)
-#define DSS_SP_FORMULA(a, b, c) ((((a) << 15) + (b) * (c)) + 0x4000) >> 15
+#define DSS_SP_FORMULA(a, b, c) (((((a) << 15) + (b) * (c)) + 0x4000) >> 15)
 
 typedef struct DssSpSubframe {
     int16_t gain;
