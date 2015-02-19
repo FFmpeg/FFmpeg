@@ -1900,6 +1900,10 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
         .name = "vda",
         .flags = AV_PIX_FMT_FLAG_HWACCEL,
     },
+    [AV_PIX_FMT_QSV] = {
+        .name = "qsv",
+        .flags = AV_PIX_FMT_FLAG_HWACCEL,
+    },
 };
 
 static const char *color_range_names[AVCOL_RANGE_NB] = {
