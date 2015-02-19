@@ -94,7 +94,7 @@ static void parse_profile_level_id(AVFormatContext *s,
 
 static int parse_sprop_parameter_sets(AVFormatContext *s,
                                       AVCodecContext *codec,
-                                      char *value)
+                                      const char *value)
 {
     char base64packet[1024];
     uint8_t decoded_packet[1024];
