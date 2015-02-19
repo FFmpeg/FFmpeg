@@ -50,6 +50,7 @@ typedef struct DssSpFrame {
 } DssSpFrame;
 
 typedef struct DssSpContext {
+    AVCodecContext *avctx;
     int32_t excitation[288 + 6];
     int32_t history[187];
     DssSpFrame fparam;
@@ -296,6 +297,7 @@ static av_cold int dss_sp_decode_init(AVCodecContext *avctx)
 
     memset(p->history, 0, sizeof(p->history));
     p->pulse_dec_mode = 1;
+    p->avctx          = avctx;
 
     return 0;
 }
@@ -400,10 +402,15 @@ static void dss_sp_unpack_coeffs(DssSpContext *p, const uint8_t *src)
 
     combined_pitch /= 151;
 
-    for (i = 1; i < SUBFRAMES; i++) {
+    for (i = 1; i < SUBFRAMES - 1; i++) {
         fparam->pitch_lag[i] = combined_pitch % 48;
         combined_pitch      /= 48;
     }
+    if (combined_pitch > 47) {
+        av_log (p->avctx, AV_LOG_WARNING, "combined_pitch was too large\n");
+        combined_pitch = 0;
+    }
+    fparam->pitch_lag[i] = combined_pitch;
 
     pitch_lag = fparam->pitch_lag[0];
     for (i = 1; i < SUBFRAMES; i++) {
