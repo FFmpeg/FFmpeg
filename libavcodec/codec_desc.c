@@ -2366,6 +2366,13 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .props     = AV_CODEC_PROP_LOSSY,
     },
     {
+        .id        = AV_CODEC_ID_DSS_SP,
+        .type      = AVMEDIA_TYPE_AUDIO,
+        .name      = "dss_sp",
+        .long_name = NULL_IF_CONFIG_SMALL("Digital Speech Standard - Standard Play mode (DSS SP)"),
+        .props     = AV_CODEC_PROP_LOSSY,
+    },
+    {
         .id        = AV_CODEC_ID_G729,
         .type      = AVMEDIA_TYPE_AUDIO,
         .name      = "g729",

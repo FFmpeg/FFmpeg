@@ -31,6 +31,7 @@ version <next>:
 - DXVA2-accelerated HEVC decoding
 - AAC ELD 480 decoding
 - Intel QSV-accelerated H.264 decoding
+- DSS SP decoder
 
 version 2.5:
 - HEVC/H.265 RTP payload format (draft v6) packetizer
