@@ -52,6 +52,11 @@ extern const uint16_t ff_dca_dmixtable[242];
 
 extern const float ff_dca_default_coeffs[10][6][2];
 
+extern const uint32_t ff_dca_map_xxch_to_native[28];
+extern const int ff_dca_ext_audio_descr_mask[8];
+
+extern const uint64_t ff_dca_core_channel_layout[16];
+
 extern const int8_t ff_dca_lfe_index[16];
 
 extern const int8_t ff_dca_channel_reorder_lfe[16][9];

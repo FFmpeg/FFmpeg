@@ -26,6 +26,31 @@
 #define AVFILTER_EQ_H
 
 #include "avfilter.h"
+#include "libavutil/eval.h"
+
+static const char * const var_names[] = {
+    "contrast",
+    "brightness",
+    "saturation",
+    "gamma",
+    "gamma_weight",
+    "gamma_r",
+    "gamma_g",
+    "gamma_b",
+    NULL
+};
+
+enum var_name {
+    VAR_CONTRAST ,
+    VAR_BRIGHTNESS ,
+    VAR_SATURATION ,
+    VAR_GAMMA ,
+    VAR_GAMMA_WEIGHT ,
+    VAR_GAMMA_R ,
+    VAR_GAMMA_G ,
+    VAR_GAMMA_B ,
+    VAR_VARS_NB ,
+};
 
 typedef struct EQParameters {
     void (*adjust)(struct EQParameters *eq, uint8_t *dst, int dst_stride,
@@ -35,6 +60,7 @@ typedef struct EQParameters {
 
     double brightness, contrast, gamma, gamma_weight;
     int lut_clean;
+
 } EQParameters;
 
 typedef struct {
@@ -42,13 +68,31 @@ typedef struct {
 
     EQParameters param[3];
 
-    double contrast;
-    double brightness;
-    double saturation;
+    char   *contrast_expr;
+    AVExpr *contrast_pexpr;
 
-    double gamma;
-    double gamma_weight;
-    double gamma_r, gamma_g, gamma_b;
+    char   *brightness_expr;
+    AVExpr *brightness_pexpr;
+
+    char   *saturation_expr;
+    AVExpr *saturation_pexpr;
+
+    char   *gamma_expr;
+    AVExpr *gamma_pexpr;
+
+    char   *gamma_weight_expr;
+    AVExpr *gamma_weight_pexpr;
+
+    char   *gamma_r_expr;
+    AVExpr *gamma_r_pexpr;
+
+    char   *gamma_g_expr;
+    AVExpr *gamma_g_pexpr;
+
+    char   *gamma_b_expr;
+    AVExpr *gamma_b_pexpr;
+
+    double var_values[VAR_VARS_NB];
 
     void (*process)(struct EQParameters *par, uint8_t *dst, int dst_stride,
                     const uint8_t *src, int src_stride, int w, int h);

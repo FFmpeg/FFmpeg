@@ -1,4 +1,5 @@
 \input texinfo @c -*- texinfo -*-
+@documentencoding UTF-8
 
 @settitle FFmpeg FAQ
 @titlepage
@@ -465,6 +466,40 @@ use the options for the encoder you are using to set the quality level to a
 point acceptable for your tastes. The most common options to do that are
 @option{-qscale} and @option{-qmax}, but you should peruse the documentation
 of the encoder you chose.
+
+@section I have a stretched video, why does scaling does not fix it?
+
+A lot of video codecs and formats can store the @emph{aspect ratio} of the
+video: this is the ratio between the width and the height of either the full
+image (DAR, display aspect ratio) or individual pixels (SAR, sample aspect
+ratio). For example, EGA screens at resolution 640×350 had 4:3 DAR and 35:48
+SAR.
+
+Most still image processing work with square pixels, i.e. 1:1 SAR, but a lot
+of video standards, especially from the analogic-numeric transition era, use
+non-square pixels.
+
+Most processing filters in FFmpeg handle the aspect ratio to avoid
+stretching the image: cropping adjusts the DAR to keep the SAR constant,
+scaling adjusts the SAR to keep the DAR constant.
+
+If you want to stretch, or “unstretch”, the image, you need to override the
+information with the
+@url{http://ffmpeg.org/ffmpeg-filters.html#setdar_002c-setsar, @code{setdar or setsar filters}}.
+
+Do not forget to examine carefully the original video to check whether the
+stretching comes from the image or from the aspect ratio information.
+
+For example, to fix a badly encoded EGA capture, use the following commands,
+either the first one to upscale to square pixels or the second one to set
+the correct aspect ratio or the third one to avoid transcoding (may not work
+depending on the format / codec / player / phase of the moon):
+
+@example
+ffmpeg -i ega_screen.nut -vf scale=640:480,setsar=1 ega_screen_scaled.nut
+ffmpeg -i ega_screen.nut -vf setdar=4/3 ega_screen_anamorphic.nut
+ffmpeg -i ega_screen.nut -aspect 4/3 -c copy ega_screen_overridden.nut
+@end example
 
 @chapter Development
 

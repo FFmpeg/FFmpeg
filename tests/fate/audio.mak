@@ -19,6 +19,10 @@ fate-bmv-audio: CMD = framecrc -i $(TARGET_SAMPLES)/bmv/SURFING-partial.BMV -vn
 FATE_SAMPLES_AUDIO-$(call DEMDEC, DSICIN, DSICINAUDIO) += fate-delphine-cin-audio
 fate-delphine-cin-audio: CMD = framecrc -i $(TARGET_SAMPLES)/delphine-cin/LOGO-partial.CIN -vn
 
+FATE_SAMPLES_AUDIO-$(call DEMDEC, DSS, DSS_SP) += fate-dss-lp fate-dss-sp
+fate-dss-lp: CMD = framecrc -i $(TARGET_SAMPLES)/dss/lp.dss -frames 30
+fate-dss-sp: CMD = framecrc -i $(TARGET_SAMPLES)/dss/sp.dss -frames 30
+
 FATE_SAMPLES_AUDIO-$(call DEMDEC, MPEGTS, DCA) += fate-dts
 fate-dts: CMD = pcm -i $(TARGET_SAMPLES)/dts/dts.ts
 fate-dts: CMP = oneoff

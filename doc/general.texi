@@ -1,4 +1,5 @@
 \input texinfo @c -*- texinfo -*-
+@documentencoding UTF-8
 
 @settitle General Documentation
 @titlepage
@@ -251,6 +252,7 @@ library:
     @tab Used in the game Cyberia from Interplay.
 @item Delphine Software International CIN @tab   @tab X
     @tab Multimedia format used by Delphine Software games.
+@item Digital Speech Standard (DSS) @tab   @tab X
 @item CD+G                      @tab   @tab X
     @tab Video format used by CD+G karaoke disks
 @item Phantom Cine              @tab   @tab X
@@ -897,6 +899,7 @@ following image formats are supported:
     @tab decoding supported through external library libcelt
 @item Delphine Software International CIN audio  @tab     @tab  X
     @tab Codec used in Delphine Software International games.
+@item Digital Speech Standard - Standard Play mode (DSS SP) @tab     @tab  X
 @item Discworld II BMV Audio @tab     @tab  X
 @item COOK                   @tab     @tab  X
     @tab All versions except 5.1 are supported.

@@ -4402,6 +4402,41 @@ Default is @code{1.0}.
 
 @end table
 
+@subsection Commands
+The filter supports the following commands:
+
+@table @option
+@item contrast
+Set the contrast expression.
+
+@item brightness
+Set the brightness expression.
+
+@item saturation
+Set the saturation expression.
+
+@item gamma
+Set the gamma expression.
+
+@item gamma_r
+Set the gamma_r expression.
+
+@item gamma_g
+Set gamma_g expression.
+
+@item gamma_b
+Set gamma_b expression.
+
+@item gamma_weight
+Set gamma_weight expression.
+
+The command accepts the same syntax of the corresponding option.
+
+If the specified expression is not valid, it is kept at its current
+value.
+
+@end table
+
 @section extractplanes
 
 Extract color channel components from input video stream into

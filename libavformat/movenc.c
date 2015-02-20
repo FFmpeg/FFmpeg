@@ -1077,8 +1077,6 @@ static int mov_write_avid_tag(AVIOContext *pb, MOVTrack *track)
     for (i = 0; i < 10; i++)
         avio_wb64(pb, 0);
 
-    /* extra padding for stsd needed */
-    avio_wb32(pb, 0);
     return 0;
 }
 
@@ -1592,6 +1590,7 @@ static int mov_write_video_tag(AVIOContext *pb, MOVMuxContext *mov, MOVTrack *tr
 {
     int64_t pos = avio_tell(pb);
     char compressor_name[32] = { 0 };
+    int avid = 0;
 
     avio_wb32(pb, 0); /* size */
     avio_wl32(pb, track->tag); // store it byteswapped
@@ -1640,9 +1639,10 @@ static int mov_write_video_tag(AVIOContext *pb, MOVMuxContext *mov, MOVTrack *tr
             track->enc->codec_id == AV_CODEC_ID_SVQ3) {
         mov_write_extradata_tag(pb, track);
         avio_wb32(pb, 0);
-    } else if (track->enc->codec_id == AV_CODEC_ID_DNXHD)
+    } else if (track->enc->codec_id == AV_CODEC_ID_DNXHD) {
         mov_write_avid_tag(pb, track);
-    else if (track->enc->codec_id == AV_CODEC_ID_HEVC)
+        avid = 1;
+    } else if (track->enc->codec_id == AV_CODEC_ID_HEVC)
         mov_write_hvcc_tag(pb, track);
     else if (track->enc->codec_id == AV_CODEC_ID_H264 && !TAG_IS_AVCI(track->tag)) {
         mov_write_avcc_tag(pb, track);
@@ -1673,6 +1673,11 @@ static int mov_write_video_tag(AVIOContext *pb, MOVMuxContext *mov, MOVTrack *tr
         track->enc->sample_aspect_ratio.den != track->enc->sample_aspect_ratio.num) {
         mov_write_pasp_tag(pb, track);
     }
+
+    /* extra padding for avid stsd */
+    /* https://developer.apple.com/library/mac/documentation/QuickTime/QTFF/QTFFChap2/qtff2.html#//apple_ref/doc/uid/TP40000939-CH204-61112 */
+    if (avid)
+        avio_wb32(pb, 0);
 
     return update_size(pb, pos);
 }
