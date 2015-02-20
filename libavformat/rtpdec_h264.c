@@ -208,6 +208,7 @@ static int h264_handle_packet_stap_a(AVFormatContext *ctx, PayloadContext *data,
             } else {
                 av_log(ctx, AV_LOG_ERROR,
                        "nal size exceeds length: %d %d\n", nal_size, src_len);
+                return AVERROR_INVALIDDATA;
             }
 
             // eat what we handled
