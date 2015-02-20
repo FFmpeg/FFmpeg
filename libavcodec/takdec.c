@@ -487,7 +487,7 @@ static int decode_subframe(TAKDecContext *s, int32_t *decoded,
         v += s->adsp.scalarproduct_int16(&s->residues[i], filter,
                                          FFALIGN(filter_order, 16));
 
-        v = (av_clip(v >> filter_quant, -8192, 8191) << dshift) - *decoded;
+        v = (av_clip_intp2(v >> filter_quant, 13) << dshift) - *decoded;
         *decoded++ = v;
         s->residues[filter_order + i] = v >> dshift;
     }
@@ -657,7 +657,7 @@ static int decorrelate(TAKDecContext *s, int c1, int c2, int length)
             v += s->adsp.scalarproduct_int16(&s->residues[i], filter,
                                              FFALIGN(filter_order, 16));
 
-            p1[i] = (av_clip(v >> 10, -8192, 8191) << dshift) - p1[i];
+            p1[i] = (av_clip_intp2(v >> 10, 13) << dshift) - p1[i];
         }
 
         emms_c();

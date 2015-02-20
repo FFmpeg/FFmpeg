@@ -225,9 +225,9 @@ static void g722_encode_trellis(G722Context *c, int trellis,
                 if (k < 0)
                     continue;
 
-                decoded = av_clip((cur_node->state.scale_factor *
+                decoded = av_clip_intp2((cur_node->state.scale_factor *
                                   ff_g722_low_inv_quant6[k] >> 10)
-                                + cur_node->state.s_predictor, -16384, 16383);
+                                + cur_node->state.s_predictor, 14);
                 dec_diff = xlow - decoded;
 
 #define STORE_NODE(index, UPDATE, VALUE)\
@@ -284,8 +284,7 @@ static void g722_encode_trellis(G722Context *c, int trellis,
 
                 dhigh = cur_node->state.scale_factor *
                         ff_g722_high_inv_quant[ihigh] >> 10;
-                decoded = av_clip(dhigh + cur_node->state.s_predictor,
-                                  -16384, 16383);
+                decoded = av_clip_intp2(dhigh + cur_node->state.s_predictor, 14);
                 dec_diff = xhigh - decoded;
 
                 STORE_NODE(1, ff_g722_update_high_predictor(&node->state, dhigh, ihigh), ihigh);

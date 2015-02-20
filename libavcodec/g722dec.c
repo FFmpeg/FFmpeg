@@ -112,13 +112,13 @@ static int g722_decode_frame(AVCodecContext *avctx, void *data,
         ilow = get_bits(&gb, 6 - skip);
         skip_bits(&gb, skip);
 
-        rlow = av_clip((c->band[0].scale_factor * quantizer_table[ilow] >> 10)
-                      + c->band[0].s_predictor, -16384, 16383);
+        rlow = av_clip_intp2((c->band[0].scale_factor * quantizer_table[ilow] >> 10)
+                      + c->band[0].s_predictor, 14);
 
         ff_g722_update_low_predictor(&c->band[0], ilow >> (2 - skip));
 
         dhigh = c->band[1].scale_factor * ff_g722_high_inv_quant[ihigh] >> 10;
-        rhigh = av_clip(dhigh + c->band[1].s_predictor, -16384, 16383);
+        rhigh = av_clip_intp2(dhigh + c->band[1].s_predictor, 14);
 
         ff_g722_update_high_predictor(&c->band[1], dhigh, ihigh);
 

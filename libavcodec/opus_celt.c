@@ -1909,7 +1909,7 @@ static void celt_decode_bands(CeltContext *s, OpusRangeCoder *rc)
         s->remaining2 = totalbits - consumed - 1;
         if (i <= s->codedbands - 1) {
             int curr_balance = s->remaining / FFMIN(3, s->codedbands-i);
-            b = av_clip(FFMIN(s->remaining2 + 1, s->pulses[i] + curr_balance), 0, 16383);
+            b = av_clip_uintp2(FFMIN(s->remaining2 + 1, s->pulses[i] + curr_balance), 14);
         } else
             b = 0;
 
