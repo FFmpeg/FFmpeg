@@ -324,7 +324,7 @@ static int h264_handle_packet(AVFormatContext *ctx, PayloadContext *data,
     case 27:                   // MTAP-24
     case 29:                   // FU-B
         av_log(ctx, AV_LOG_ERROR,
-               "Unhandled type (%d) (See RFC for implementation details\n",
+               "Unhandled type (%d) (See RFC for implementation details)\n",
                type);
         result = AVERROR(ENOSYS);
         break;
