@@ -242,10 +242,12 @@ static int hls_window(AVFormatContext *s, int last)
     int target_duration = 0;
     int ret = 0;
     AVIOContext *out = NULL;
+    char temp_filename[1024];
     int64_t sequence = FFMAX(hls->start_sequence, hls->sequence - hls->nb_entries);
     int version = hls->flags & HLS_SINGLE_FILE ? 4 : 3;
 
-    if ((ret = avio_open2(&out, s->filename, AVIO_FLAG_WRITE,
+    snprintf(temp_filename, sizeof(temp_filename), "%s.tmp", s->filename);
+    if ((ret = avio_open2(&out, temp_filename, AVIO_FLAG_WRITE,
                           &s->interrupt_callback, NULL)) < 0)
         goto fail;
 
@@ -280,6 +282,8 @@ static int hls_window(AVFormatContext *s, int last)
 
 fail:
     avio_closep(&out);
+    if (ret >= 0)
+        ff_rename(temp_filename, s->filename, s);
     return ret;
 }
 
