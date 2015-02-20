@@ -115,18 +115,16 @@ static int parse_sprop_parameter_sets(AVFormatContext *s,
         packet_size = av_base64_decode(decoded_packet, base64packet,
                                        sizeof(decoded_packet));
         if (packet_size > 0) {
-            uint8_t *dest = av_malloc(packet_size + sizeof(start_sequence) +
-                                      codec->extradata_size +
-                                      FF_INPUT_BUFFER_PADDING_SIZE);
+            uint8_t *dest = av_realloc(codec->extradata,
+                                       packet_size + sizeof(start_sequence) +
+                                       codec->extradata_size +
+                                       FF_INPUT_BUFFER_PADDING_SIZE);
             if (!dest) {
                 av_log(s, AV_LOG_ERROR,
                        "Unable to allocate memory for extradata!\n");
                 return AVERROR(ENOMEM);
             }
-            if (codec->extradata_size) {
-                memcpy(dest, codec->extradata, codec->extradata_size);
-                av_free(codec->extradata);
-            }
+            codec->extradata = dest;
 
             memcpy(dest + codec->extradata_size, start_sequence,
                    sizeof(start_sequence));
@@ -135,7 +133,6 @@ static int parse_sprop_parameter_sets(AVFormatContext *s,
             memset(dest + codec->extradata_size + sizeof(start_sequence) +
                    packet_size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
 
-            codec->extradata       = dest;
             codec->extradata_size += sizeof(start_sequence) + packet_size;
         }
     }
