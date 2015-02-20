@@ -11992,6 +11992,39 @@ ffplay -f lavfi 'amovie=input.mp3, asplit [a][out1];
 @end example
 @end itemize
 
+@section showvolume
+
+Convert input audio volume to a video output.
+
+The filter accepts the following options:
+
+@table @option
+@item rate, r
+Set video rate.
+
+@item b
+Set border width, allowed range is [0, 5]. Default is 1.
+
+@item w
+Set channel width, allowed range is [40, 1080]. Default is 400.
+
+@item h
+Set channel height, allowed range is [1, 100]. Default is 20.
+
+@item f
+Set fade, allowed range is [1, 255]. Default is 20.
+
+@item c
+Set volume color expression.
+
+The expression can use the following variables:
+
+@table @option
+@item VOLUME
+Current max volume of channel in dB.
+@end table
+@end table
+
 @section showwaves
 
 Convert input audio to a video output, representing the samples waves.

@@ -9,6 +9,7 @@ version <next>:
 - DirectDraw Surface image/texture decoder
 - ssim filter
 - rewritten ASF demuxer
+- showvolume filter
 
 
 version 2.7:
