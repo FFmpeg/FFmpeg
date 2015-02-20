@@ -1484,7 +1484,7 @@ static int asf_build_simple_index(AVFormatContext *s, int stream_index)
     ff_asf_guid g;
     ASFContext *asf     = s->priv_data;
     int64_t current_pos = avio_tell(s->pb);
-    int ret = 0;
+    int64_t ret;
 
     if((ret = avio_seek(s->pb, asf->data_object_offset + asf->data_object_size, SEEK_SET)) < 0) {
         return ret;
@@ -1554,7 +1554,7 @@ static int asf_read_seek(AVFormatContext *s, int stream_index,
 
     /* Try using the protocol's read_seek if available */
     if (s->pb) {
-        int ret = avio_seek_time(s->pb, stream_index, pts, flags);
+        int64_t ret = avio_seek_time(s->pb, stream_index, pts, flags);
         if (ret >= 0)
             asf_reset_header(s);
         if (ret != AVERROR(ENOSYS))
