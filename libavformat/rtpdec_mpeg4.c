@@ -171,12 +171,18 @@ static int aac_parse_packet(AVFormatContext *ctx, PayloadContext *data,
     int ret;
 
     if (!buf) {
-        if (data->cur_au_index > data->nb_au_headers)
+        if (data->cur_au_index > data->nb_au_headers) {
+            av_log(ctx, AV_LOG_ERROR, "Invalid parser state\n");
             return AVERROR_INVALIDDATA;
-        if (data->buf_size - data->buf_pos < data->au_headers[data->cur_au_index].size)
+        }
+        if (data->buf_size - data->buf_pos < data->au_headers[data->cur_au_index].size) {
+            av_log(ctx, AV_LOG_ERROR, "Invalid AU size\n");
             return AVERROR_INVALIDDATA;
-        if ((ret = av_new_packet(pkt, data->au_headers[data->cur_au_index].size)) < 0)
+        }
+        if ((ret = av_new_packet(pkt, data->au_headers[data->cur_au_index].size)) < 0) {
+            av_log(ctx, AV_LOG_ERROR, "Out of memory\n");
             return ret;
+        }
         memcpy(pkt->data, &data->buf[data->buf_pos], data->au_headers[data->cur_au_index].size);
         data->buf_pos += data->au_headers[data->cur_au_index].size;
         pkt->stream_index = st->index;
@@ -184,16 +190,22 @@ static int aac_parse_packet(AVFormatContext *ctx, PayloadContext *data,
         return data->cur_au_index < data->nb_au_headers;
     }
 
-    if (rtp_parse_mp4_au(data, buf, len))
+    if (rtp_parse_mp4_au(data, buf, len)) {
+        av_log(ctx, AV_LOG_ERROR, "Error parsing AU headers\n");
         return -1;
+    }
 
     buf += data->au_headers_length_bytes + 2;
     len -= data->au_headers_length_bytes + 2;
 
-    if (len < data->au_headers[0].size)
+    if (len < data->au_headers[0].size) {
+        av_log(ctx, AV_LOG_ERROR, "First AU larger than packet size\n");
         return AVERROR_INVALIDDATA;
-    if ((ret = av_new_packet(pkt, data->au_headers[0].size)) < 0)
+    }
+    if ((ret = av_new_packet(pkt, data->au_headers[0].size)) < 0) {
+        av_log(ctx, AV_LOG_ERROR, "Out of memory\n");
         return ret;
+    }
     memcpy(pkt->data, buf, data->au_headers[0].size);
     len -= data->au_headers[0].size;
     buf += data->au_headers[0].size;
