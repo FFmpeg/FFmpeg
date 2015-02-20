@@ -25,9 +25,26 @@
  * @author Luca Abeni <lucabe72@email.it>
  */
 
+#include "libavutil/intreadwrite.h"
+
 #include "avformat.h"
 #include "avc.h"
 #include "rtpenc.h"
+
+static void flush_buffered(AVFormatContext *s1, int last)
+{
+    RTPMuxContext *s = s1->priv_data;
+    if (s->buf_ptr != s->buf) {
+        // If we're only sending one single NAL unit, send it as such, skip
+        // the STAP-A framing
+        if (s->buffered_nals == 1)
+            ff_rtp_send_data(s1, s->buf + 3, s->buf_ptr - s->buf - 3, last);
+        else
+            ff_rtp_send_data(s1, s->buf, s->buf_ptr - s->buf, last);
+    }
+    s->buf_ptr = s->buf;
+    s->buffered_nals = 0;
+}
 
 static void nal_send(AVFormatContext *s1, const uint8_t *buf, int size, int last)
 {
@@ -35,11 +52,34 @@ static void nal_send(AVFormatContext *s1, const uint8_t *buf, int size, int last
 
     av_log(s1, AV_LOG_DEBUG, "Sending NAL %x of len %d M=%d\n", buf[0] & 0x1F, size, last);
     if (size <= s->max_payload_size) {
-        ff_rtp_send_data(s1, buf, size, last);
+        int buffered_size = s->buf_ptr - s->buf;
+        // Flush buffered NAL units if the current unit doesn't fit
+        if (buffered_size + 2 + size > s->max_payload_size) {
+            flush_buffered(s1, 0);
+            buffered_size = 0;
+        }
+        // If we aren't using mode 0, and the NAL unit fits including the
+        // framing (2 bytes length, plus 1 byte for the STAP-A marker),
+        // write the unit to the buffer as a STAP-A packet, otherwise flush
+        // and send as single NAL.
+        if (buffered_size + 3 + size <= s->max_payload_size &&
+            !(s->flags & FF_RTP_FLAG_H264_MODE0)) {
+            if (buffered_size == 0)
+                *s->buf_ptr++ = 24;
+            AV_WB16(s->buf_ptr, size);
+            s->buf_ptr += 2;
+            memcpy(s->buf_ptr, buf, size);
+            s->buf_ptr += size;
+            s->buffered_nals++;
+        } else {
+            flush_buffered(s1, 0);
+            ff_rtp_send_data(s1, buf, size, last);
+        }
     } else {
         uint8_t type = buf[0] & 0x1F;
         uint8_t nri = buf[0] & 0x60;
 
+        flush_buffered(s1, 0);
         if (s->flags & FF_RTP_FLAG_H264_MODE0) {
             av_log(s1, AV_LOG_ERROR,
                    "NAL size %d > %d, try -slice-max-size %d\n", size,
@@ -72,6 +112,7 @@ void ff_rtp_send_h264(AVFormatContext *s1, const uint8_t *buf1, int size)
     RTPMuxContext *s = s1->priv_data;
 
     s->timestamp = s->cur_timestamp;
+    s->buf_ptr   = s->buf;
     if (s->nal_length_size)
         r = ff_avc_mp4_find_startcode(buf1, end, s->nal_length_size) ? buf1 : end;
     else
@@ -91,4 +132,5 @@ void ff_rtp_send_h264(AVFormatContext *s1, const uint8_t *buf1, int size)
         nal_send(s1, r, r1 - r, r1 == end);
         r = r1;
     }
+    flush_buffered(s1, 1);
 }
