@@ -321,7 +321,7 @@ static int decode_fctl_chunk(AVFormatContext *s, APNGDemuxContext *ctx, AVPacket
 static int apng_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     APNGDemuxContext *ctx = s->priv_data;
-    int ret;
+    int64_t ret;
     int64_t size;
     AVIOContext *pb = s->pb;
     uint32_t len, tag;
