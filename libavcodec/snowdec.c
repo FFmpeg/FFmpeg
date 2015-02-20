@@ -90,13 +90,15 @@ static av_always_inline void predict_slice_buffered(SnowContext *s, slice_buffer
 
     if(s->avmv && mb_y < mb_h && plane_index == 0)
         for(mb_x=0; mb_x<mb_w; mb_x++){
-            AVMotionVector *avmv = s->avmv + (s->avmv_index++);
+            AVMotionVector *avmv = s->avmv + s->avmv_index;
             const int b_width = s->b_width  << s->block_max_depth;
             const int b_stride= b_width;
             BlockNode *bn= &s->block[mb_x + mb_y*b_stride];
 
             if (bn->type)
                 continue;
+
+            s->avmv_index++;
 
             avmv->w = block_w;
             avmv->h = block_h;
