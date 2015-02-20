@@ -291,6 +291,18 @@ void projectGenerator::buildDependencies( const string & sProjectName, StaticLis
                 }
                 vIncludeDirs.push_back( "$(CUDA_PATH)\\include\\" );
             }
+            else if( vitLib->compare( "libmfx" ) == 0 )
+            {
+                if( !GetEnvironmentVariable( "INTELMEDIASDKROOT", NULL, 0 ) )
+                {
+                    cout << "  Warning: Could not find the Intel Media SDK environment variable." << endl;
+                    cout << "    Either the Intel Media is not installed or the environment variable is missing." << endl;
+                    cout << "    Using the default environment variable of 'INTELMEDIASDKROOT'." << endl;
+                }
+                vIncludeDirs.push_back( "$(INTELMEDIASDKROOT)\\include\\" );
+                vLib32Dirs.push_back( "$(INTELMEDIASDKROOT)\\lib\\win32" );
+                vLib64Dirs.push_back( "$(INTELMEDIASDKROOT)\\lib\\x64" );
+            }
         }
     }
 }
@@ -321,6 +333,7 @@ void projectGenerator::buildProjectDependencies( const string & sProjectName, ma
     mProjectDeps["libgme"] = ( sProjectName.compare("libavformat") == 0 );
     mProjectDeps["libgsm"] = ( sProjectName.compare("libavcodec") == 0 );
     mProjectDeps["libiec61883"] = ( sProjectName.compare("libavdevice") == 0 );//?
+    mProjectDeps["libmfx"] = ( sProjectName.compare( "libavcodec" ) == 0 );
     mProjectDeps["libilbc"] = ( sProjectName.compare("libavcodec") == 0 );
     mProjectDeps["libmodplug"] = ( sProjectName.compare("libavformat") == 0 );
     mProjectDeps["libmp3lame"] = ( sProjectName.compare("libavcodec") == 0 );

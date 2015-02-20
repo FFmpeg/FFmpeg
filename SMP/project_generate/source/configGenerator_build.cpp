@@ -198,7 +198,7 @@ bool configGenerator::buildDefaultValues( )
     //Additional (must be explicitly disabled)
     fastToggleConfigValue( "dct", true );
     fastToggleConfigValue( "dwt", true );
-    fastToggleConfigValue( "error-resilience", true );
+    fastToggleConfigValue( "error_resilience", true );
     fastToggleConfigValue( "faan", true );
     fastToggleConfigValue( "faandct", true );
     fastToggleConfigValue( "faanidct", true );
@@ -461,6 +461,10 @@ void configGenerator::buildForcedEnables( string sOptionLower, vector<string> & 
     {
         vForceEnable.push_back( "cdio_paranoia_paranoia_h" );
     }
+    else if( sOptionLower.compare( "libmfx" ) == 0 )
+    {
+        vForceEnable.push_back( "qsv" );
+    }
 }
 
 void configGenerator::buildForcedDisables( string sOptionLower, vector<string> & vForceDisable )
@@ -476,6 +480,10 @@ void configGenerator::buildForcedDisables( string sOptionLower, vector<string> &
     else if( sOptionLower.compare( "libcdio" ) == 0 )
     {
         vForceDisable.push_back( "cdio_paranoia_paranoia_h" );
+    }
+    else if( sOptionLower.compare( "libmfx" ) == 0 )
+    {
+        vForceDisable.push_back( "qsv" );
     }
 }
 
