@@ -108,94 +108,6 @@ enum DCAXxchSpeakerMask {
 
 #define DCA_NSYNCAUX        0x9A1105A0
 
-static const uint32_t map_xxch_to_native[28] = {
-    AV_CH_FRONT_CENTER,
-    AV_CH_FRONT_LEFT,
-    AV_CH_FRONT_RIGHT,
-    AV_CH_SIDE_LEFT,
-    AV_CH_SIDE_RIGHT,
-    AV_CH_LOW_FREQUENCY,
-    AV_CH_BACK_CENTER,
-    AV_CH_BACK_LEFT,
-    AV_CH_BACK_RIGHT,
-    AV_CH_SIDE_LEFT,           /* side surround left -- dup sur side L */
-    AV_CH_SIDE_RIGHT,          /* side surround right -- dup sur side R */
-    AV_CH_FRONT_LEFT_OF_CENTER,
-    AV_CH_FRONT_RIGHT_OF_CENTER,
-    AV_CH_TOP_FRONT_LEFT,
-    AV_CH_TOP_FRONT_CENTER,
-    AV_CH_TOP_FRONT_RIGHT,
-    AV_CH_LOW_FREQUENCY,        /* lfe2 -- duplicate lfe1 position */
-    AV_CH_FRONT_LEFT_OF_CENTER, /* side front left -- dup front cntr L */
-    AV_CH_FRONT_RIGHT_OF_CENTER,/* side front right -- dup front cntr R */
-    AV_CH_TOP_CENTER,           /* overhead */
-    AV_CH_TOP_FRONT_LEFT,       /* side high left -- dup */
-    AV_CH_TOP_FRONT_RIGHT,      /* side high right -- dup */
-    AV_CH_TOP_BACK_CENTER,
-    AV_CH_TOP_BACK_LEFT,
-    AV_CH_TOP_BACK_RIGHT,
-    AV_CH_BACK_CENTER,          /* rear low center -- dup */
-    AV_CH_BACK_LEFT,            /* rear low left -- dup */
-    AV_CH_BACK_RIGHT            /* read low right -- dup  */
-};
-
-/* -1 are reserved or unknown */
-static const int dca_ext_audio_descr_mask[] = {
-    DCA_EXT_XCH,
-    -1,
-    DCA_EXT_X96,
-    DCA_EXT_XCH | DCA_EXT_X96,
-    -1,
-    -1,
-    DCA_EXT_XXCH,
-    -1,
-};
-
-/* Tables for mapping dts channel configurations to libavcodec multichannel api.
- * Some compromises have been made for special configurations. Most configurations
- * are never used so complete accuracy is not needed.
- *
- * L = left, R = right, C = center, S = surround, F = front, R = rear, T = total, OV = overhead.
- * S  -> side, when both rear and back are configured move one of them to the side channel
- * OV -> center back
- * All 2 channel configurations -> AV_CH_LAYOUT_STEREO
- */
-static const uint64_t dca_core_channel_layout[] = {
-    AV_CH_FRONT_CENTER,                                                     ///< 1, A
-    AV_CH_LAYOUT_STEREO,                                                    ///< 2, A + B (dual mono)
-    AV_CH_LAYOUT_STEREO,                                                    ///< 2, L + R (stereo)
-    AV_CH_LAYOUT_STEREO,                                                    ///< 2, (L + R) + (L - R) (sum-difference)
-    AV_CH_LAYOUT_STEREO,                                                    ///< 2, LT + RT (left and right total)
-    AV_CH_LAYOUT_STEREO | AV_CH_FRONT_CENTER,                               ///< 3, C + L + R
-    AV_CH_LAYOUT_STEREO | AV_CH_BACK_CENTER,                                ///< 3, L + R + S
-    AV_CH_LAYOUT_STEREO | AV_CH_FRONT_CENTER | AV_CH_BACK_CENTER,           ///< 4, C + L + R + S
-    AV_CH_LAYOUT_STEREO | AV_CH_SIDE_LEFT | AV_CH_SIDE_RIGHT,               ///< 4, L + R + SL + SR
-
-    AV_CH_LAYOUT_STEREO | AV_CH_FRONT_CENTER | AV_CH_SIDE_LEFT |
-    AV_CH_SIDE_RIGHT,                                                       ///< 5, C + L + R + SL + SR
-
-    AV_CH_LAYOUT_STEREO | AV_CH_SIDE_LEFT | AV_CH_SIDE_RIGHT |
-    AV_CH_FRONT_LEFT_OF_CENTER | AV_CH_FRONT_RIGHT_OF_CENTER,               ///< 6, CL + CR + L + R + SL + SR
-
-    AV_CH_LAYOUT_STEREO | AV_CH_BACK_LEFT | AV_CH_BACK_RIGHT |
-    AV_CH_FRONT_CENTER  | AV_CH_BACK_CENTER,                                ///< 6, C + L + R + LR + RR + OV
-
-    AV_CH_FRONT_CENTER | AV_CH_FRONT_RIGHT_OF_CENTER |
-    AV_CH_FRONT_LEFT_OF_CENTER | AV_CH_BACK_CENTER   |
-    AV_CH_BACK_LEFT | AV_CH_BACK_RIGHT,                                     ///< 6, CF + CR + LF + RF + LR + RR
-
-    AV_CH_FRONT_LEFT_OF_CENTER | AV_CH_FRONT_CENTER   |
-    AV_CH_FRONT_RIGHT_OF_CENTER | AV_CH_LAYOUT_STEREO |
-    AV_CH_SIDE_LEFT | AV_CH_SIDE_RIGHT,                                     ///< 7, CL + C + CR + L + R + SL + SR
-
-    AV_CH_FRONT_LEFT_OF_CENTER | AV_CH_FRONT_RIGHT_OF_CENTER |
-    AV_CH_LAYOUT_STEREO | AV_CH_SIDE_LEFT | AV_CH_SIDE_RIGHT |
-    AV_CH_BACK_LEFT | AV_CH_BACK_RIGHT,                                     ///< 8, CL + CR + L + R + SL1 + SL2 + SR1 + SR2
-
-    AV_CH_FRONT_LEFT_OF_CENTER | AV_CH_FRONT_CENTER   |
-    AV_CH_FRONT_RIGHT_OF_CENTER | AV_CH_LAYOUT_STEREO |
-    AV_CH_SIDE_LEFT | AV_CH_BACK_CENTER | AV_CH_SIDE_RIGHT,                 ///< 8, CL + C + CR + L + R + SL + S + SR
-};
 
 /** Bit allocation */
 typedef struct BitAlloc {
@@ -1505,7 +1417,7 @@ static int dca_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     if (s->ext_coding)
-        s->core_ext_mask = dca_ext_audio_descr_mask[s->ext_descr];
+        s->core_ext_mask = ff_dca_ext_audio_descr_mask[s->ext_descr];
     else
         s->core_ext_mask = 0;
 
@@ -1620,7 +1532,7 @@ static int dca_decode_frame(AVCodecContext *avctx, void *data,
             < num_core_channels + !!s->lfe + s->xxch_chset_nch[0]))
     { /* xxx should also do MA extensions */
         if (s->amode < 16) {
-            avctx->channel_layout = dca_core_channel_layout[s->amode];
+            avctx->channel_layout = ff_dca_core_channel_layout[s->amode];
 
             if (s->prim_channels + !!s->lfe > 2 &&
                 avctx->request_channel_layout == AV_CH_LAYOUT_STEREO) {
@@ -1714,7 +1626,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         channel_layout = 0;
         for (i = 0; i < s->xxch_nbits_spk_mask; ++i) {
             if (channel_mask & (1 << i)) {
-                channel_layout |= map_xxch_to_native[i];
+                channel_layout |= ff_dca_map_xxch_to_native[i];
             }
         }
 
@@ -1735,7 +1647,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
                                   : s->xxch_core_spkmask;
                 for (i = 0; i < s->xxch_nbits_spk_mask; i++) {
                     if (mask & ~(DCA_XXCH_LFE1 | DCA_XXCH_LFE2) & (1 << i)) {
-                        lavc = map_xxch_to_native[i];
+                        lavc = ff_dca_map_xxch_to_native[i];
                         posn = av_popcount(channel_layout & (lavc - 1));
                         s->xxch_order_tab[j++] = posn;
                     }
