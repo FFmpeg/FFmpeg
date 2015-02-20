@@ -58,7 +58,6 @@ typedef struct HLSContext {
     ListEntry *end_list;
     char *basename;
     char *baseurl;
-    AVIOContext *pb;
 } HLSContext;
 
 static int hls_mux_init(AVFormatContext *s)
@@ -134,9 +133,10 @@ static int hls_window(AVFormatContext *s, int last)
     ListEntry *en;
     int target_duration = 0;
     int ret = 0;
+    AVIOContext *out = NULL;
     int64_t sequence = FFMAX(hls->start_sequence, hls->sequence - hls->size);
 
-    if ((ret = avio_open2(&hls->pb, s->filename, AVIO_FLAG_WRITE,
+    if ((ret = avio_open2(&out, s->filename, AVIO_FLAG_WRITE,
                           &s->interrupt_callback, NULL)) < 0)
         goto fail;
 
@@ -145,29 +145,29 @@ static int hls_window(AVFormatContext *s, int last)
             target_duration = en->duration;
     }
 
-    avio_printf(hls->pb, "#EXTM3U\n");
-    avio_printf(hls->pb, "#EXT-X-VERSION:3\n");
+    avio_printf(out, "#EXTM3U\n");
+    avio_printf(out, "#EXT-X-VERSION:3\n");
     if (hls->allowcache == 0 || hls->allowcache == 1) {
-        avio_printf(hls->pb, "#EXT-X-ALLOW-CACHE:%s\n", hls->allowcache == 0 ? "NO" : "YES");
+        avio_printf(out, "#EXT-X-ALLOW-CACHE:%s\n", hls->allowcache == 0 ? "NO" : "YES");
     }
-    avio_printf(hls->pb, "#EXT-X-TARGETDURATION:%d\n", target_duration);
-    avio_printf(hls->pb, "#EXT-X-MEDIA-SEQUENCE:%"PRId64"\n", sequence);
+    avio_printf(out, "#EXT-X-TARGETDURATION:%d\n", target_duration);
+    avio_printf(out, "#EXT-X-MEDIA-SEQUENCE:%"PRId64"\n", sequence);
 
     av_log(s, AV_LOG_VERBOSE, "EXT-X-MEDIA-SEQUENCE:%"PRId64"\n",
            sequence);
 
     for (en = hls->list; en; en = en->next) {
-        avio_printf(hls->pb, "#EXTINF:%d,\n", en->duration);
+        avio_printf(out, "#EXTINF:%d,\n", en->duration);
         if (hls->baseurl)
-            avio_printf(hls->pb, "%s", hls->baseurl);
-        avio_printf(hls->pb, "%s\n", en->name);
+            avio_printf(out, "%s", hls->baseurl);
+        avio_printf(out, "%s\n", en->name);
     }
 
     if (last)
-        avio_printf(hls->pb, "#EXT-X-ENDLIST\n");
+        avio_printf(out, "#EXT-X-ENDLIST\n");
 
 fail:
-    avio_closep(&hls->pb);
+    avio_closep(&out);
     return ret;
 }
 
@@ -319,7 +319,6 @@ static int hls_write_trailer(struct AVFormatContext *s)
     hls_window(s, 1);
 
     free_entries(hls);
-    avio_close(hls->pb);
     return 0;
 }
 
