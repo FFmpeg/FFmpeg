@@ -309,6 +309,8 @@
     </ClCompile>
     <ClCompile Include="..\libavformat\dsicin.c">
     </ClCompile>
+    <ClCompile Include="..\libavformat\dss.c">
+    </ClCompile>
     <ClCompile Include="..\libavformat\dtshddec.c">
     </ClCompile>
     <ClCompile Include="..\libavformat\dtsdec.c">

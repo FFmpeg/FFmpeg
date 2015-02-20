@@ -393,6 +393,9 @@
     <ClCompile Include="..\libavformat\dsicin.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavformat\dss.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavformat\dtshddec.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>

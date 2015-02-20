@@ -81,6 +81,7 @@ EXPORTS
     av_picture_copy
     av_picture_crop
     av_picture_pad
+    av_qsv_alloc_context
     av_rdft_calc
     av_rdft_end
     av_rdft_init
