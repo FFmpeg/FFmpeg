@@ -965,7 +965,7 @@ static int read_header(AVFormatContext *s)
     uint8_t root[WTV_SECTOR_SIZE];
     AVIOContext *pb;
     int64_t timeline_pos;
-    int ret;
+    int64_t ret;
 
     wtv->epoch          =
     wtv->pts            =
