@@ -408,7 +408,7 @@ static int mv_read_packet(AVFormatContext *avctx, AVPacket *pkt)
     AVStream *st = avctx->streams[mv->stream_index];
     const AVIndexEntry *index;
     int frame = mv->frame[mv->stream_index];
-    int ret;
+    int64_t ret;
     uint64_t pos;
 
     if (frame < st->nb_index_entries) {
