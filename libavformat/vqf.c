@@ -256,7 +256,7 @@ static int vqf_read_seek(AVFormatContext *s,
 {
     VqfContext *c = s->priv_data;
     AVStream *st;
-    int ret;
+    int64_t ret;
     int64_t pos;
 
     st = s->streams[stream_index];
