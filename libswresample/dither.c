@@ -72,7 +72,7 @@ void swri_get_dither(SwrContext *s, void *dst, int len, unsigned seed, enum AVSa
     av_free(tmp);
 }
 
-int swri_dither_init(SwrContext *s, enum AVSampleFormat out_fmt, enum AVSampleFormat in_fmt)
+av_cold int swri_dither_init(SwrContext *s, enum AVSampleFormat out_fmt, enum AVSampleFormat in_fmt)
 {
     int i;
     double scale = 0;
