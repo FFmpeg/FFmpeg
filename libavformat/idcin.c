@@ -359,7 +359,7 @@ static int idcin_read_seek(AVFormatContext *s, int stream_index,
     IdcinDemuxContext *idcin = s->priv_data;
 
     if (idcin->first_pkt_pos > 0) {
-        int ret = avio_seek(s->pb, idcin->first_pkt_pos, SEEK_SET);
+        int64_t ret = avio_seek(s->pb, idcin->first_pkt_pos, SEEK_SET);
         if (ret < 0)
             return ret;
         ff_update_cur_dts(s, s->streams[idcin->video_stream_index], 0);
