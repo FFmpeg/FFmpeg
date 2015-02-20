@@ -161,7 +161,7 @@ static int rtcp_parse_packet(RTPDemuxContext *s, const unsigned char *buf,
                 s->first_rtcp_ntp_time = s->last_rtcp_ntp_time;
                 if (!s->base_timestamp)
                     s->base_timestamp = s->last_rtcp_timestamp;
-                s->rtcp_ts_offset = s->last_rtcp_timestamp - s->base_timestamp;
+                s->rtcp_ts_offset = (int32_t)(s->last_rtcp_timestamp - s->base_timestamp);
             }
 
             break;
