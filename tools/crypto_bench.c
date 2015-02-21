@@ -77,6 +77,7 @@ struct hash_impl {
 #include "libavutil/aes.h"
 #include "libavutil/camellia.h"
 #include "libavutil/cast5.h"
+#include "libavutil/twofish.h"
 
 #define IMPL_USE_lavu IMPL_USE
 
@@ -133,6 +134,15 @@ static void run_lavu_cast128(uint8_t *output,
     av_cast5_crypt(cast, output, input, size >> 3, 0);
 }
 
+static void run_lavu_twofish(uint8_t *output,
+                              const uint8_t *input, unsigned size)
+{
+    static struct AVTWOFISH *twofish;
+    if (!twofish && !(twofish = av_twofish_alloc()))
+        fatal_error("out of memory");
+    av_twofish_init(twofish, hardcoded_key, 128);
+    av_twofish_crypt(twofish, output, input, size >> 4, NULL, 0);
+}
 /***************************************************************************
  * crypto: OpenSSL's libcrypto
  ***************************************************************************/
@@ -250,6 +260,16 @@ static void run_gcrypt_cast128(uint8_t *output,
     gcry_cipher_encrypt(cast, output, size, input, size);
 }
 
+static void run_gcrypt_twofish(uint8_t *output,
+                                const uint8_t *input, unsigned size)
+{
+    static gcry_cipher_hd_t twofish;
+    if (!twofish)
+        gcry_cipher_open(&twofish, GCRY_CIPHER_TWOFISH128, GCRY_CIPHER_MODE_ECB, 0);
+    gcry_cipher_setkey(twofish, hardcoded_key, 16);
+    gcry_cipher_encrypt(twofish, output, size, input, size);
+}
+
 #define IMPL_USE_gcrypt(...) IMPL_USE(__VA_ARGS__)
 #else
 #define IMPL_USE_gcrypt(...) /* ignore */
@@ -313,6 +333,19 @@ static void run_tomcrypt_cast128(uint8_t *output,
     for (i = 0; i < size; i += 8)
         cast5_ecb_encrypt(input + i, output + i, &cast);
 }
+
+static void run_tomcrypt_twofish(uint8_t *output,
+                                const uint8_t *input, unsigned size)
+{
+    symmetric_key twofish;
+    unsigned i;
+
+    twofish_setup(hardcoded_key, 16, 0, &twofish);
+    size -= 15;
+    for (i = 0; i < size; i += 16)
+        twofish_ecb_encrypt(input + i, output + i, &twofish);
+}
+
 
 #define IMPL_USE_tomcrypt(...) IMPL_USE(__VA_ARGS__)
 #else
@@ -398,6 +431,9 @@ struct hash_impl implementations[] = {
     IMPL_ALL("AES-128",    aes128,    "crc:ff6bc888")
     IMPL_ALL("CAMELLIA",   camellia,  "crc:7abb59a7")
     IMPL_ALL("CAST-128",   cast128,   "crc:456aa584")
+    IMPL(lavu,     "TWOFISH", twofish, "crc:9edbd5c1")
+    IMPL(gcrypt,   "TWOFISH", twofish, "crc:9edbd5c1")
+    IMPL(tomcrypt, "TWOFISH", twofish, "crc:9edbd5c1")
 };
 
 int main(int argc, char **argv)

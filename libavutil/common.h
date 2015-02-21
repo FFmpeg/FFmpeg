@@ -185,6 +185,20 @@ static av_always_inline av_const int32_t av_clipl_int32_c(int64_t a)
 }
 
 /**
+ * Clip a signed integer into the -(2^p),(2^p-1) range.
+ * @param  a value to clip
+ * @param  p bit position to clip at
+ * @return clipped value
+ */
+static av_always_inline av_const int av_clip_intp2_c(int a, int p)
+{
+    if ((a + (1 << p)) & ~((1 << (p + 1)) - 1))
+        return (a >> 31) ^ ((1 << p) - 1);
+    else
+        return a;
+}
+
+/**
  * Clip a signed integer to an unsigned power of two range.
  * @param  a value to clip
  * @param  p bit position to clip at
@@ -445,6 +459,9 @@ static av_always_inline av_const int av_popcount64_c(uint64_t x)
 #endif
 #ifndef av_clipl_int32
 #   define av_clipl_int32   av_clipl_int32_c
+#endif
+#ifndef av_clip_intp2
+#   define av_clip_intp2    av_clip_intp2_c
 #endif
 #ifndef av_clip_uintp2
 #   define av_clip_uintp2   av_clip_uintp2_c

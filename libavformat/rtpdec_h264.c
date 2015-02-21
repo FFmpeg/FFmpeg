@@ -35,8 +35,8 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/base64.h"
+#include "libavutil/intreadwrite.h"
 #include "libavutil/avstring.h"
-#include "libavcodec/get_bits.h"
 #include "avformat.h"
 
 #include "network.h"
@@ -57,9 +57,12 @@ struct PayloadContext {
 
 #ifdef DEBUG
 #define COUNT_NAL_TYPE(data, nal) data->packet_types_received[(nal) & 0x1f]++
+#define NAL_COUNTERS data->packet_types_received
 #else
 #define COUNT_NAL_TYPE(data, nal) do { } while (0)
+#define NAL_COUNTERS NULL
 #endif
+#define NAL_MASK 0x1f
 
 static const uint8_t start_sequence[] = { 0, 0, 0, 1 };
 
@@ -92,9 +95,9 @@ static void parse_profile_level_id(AVFormatContext *s,
     h264_data->level_idc   = level_idc;
 }
 
-static int parse_sprop_parameter_sets(AVFormatContext *s,
-                                      AVCodecContext *codec,
-                                      char *value)
+int ff_h264_parse_sprop_parameter_sets(AVFormatContext *s,
+                                       uint8_t **data_ptr, int *size_ptr,
+                                       const char *value)
 {
     char base64packet[1024];
     uint8_t decoded_packet[1024];
@@ -115,33 +118,27 @@ static int parse_sprop_parameter_sets(AVFormatContext *s,
         packet_size = av_base64_decode(decoded_packet, base64packet,
                                        sizeof(decoded_packet));
         if (packet_size > 0) {
-            uint8_t *dest = av_malloc(packet_size + sizeof(start_sequence) +
-                                      codec->extradata_size +
-                                      FF_INPUT_BUFFER_PADDING_SIZE);
+            uint8_t *dest = av_realloc(*data_ptr,
+                                       packet_size + sizeof(start_sequence) +
+                                       *size_ptr +
+                                       FF_INPUT_BUFFER_PADDING_SIZE);
             if (!dest) {
                 av_log(s, AV_LOG_ERROR,
                        "Unable to allocate memory for extradata!\n");
                 return AVERROR(ENOMEM);
             }
-            if (codec->extradata_size) {
-                memcpy(dest, codec->extradata, codec->extradata_size);
-                av_free(codec->extradata);
-            }
+            *data_ptr = dest;
 
-            memcpy(dest + codec->extradata_size, start_sequence,
+            memcpy(dest + *size_ptr, start_sequence,
                    sizeof(start_sequence));
-            memcpy(dest + codec->extradata_size + sizeof(start_sequence),
+            memcpy(dest + *size_ptr + sizeof(start_sequence),
                    decoded_packet, packet_size);
-            memset(dest + codec->extradata_size + sizeof(start_sequence) +
+            memset(dest + *size_ptr + sizeof(start_sequence) +
                    packet_size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
 
-            codec->extradata       = dest;
-            codec->extradata_size += sizeof(start_sequence) + packet_size;
+            *size_ptr += sizeof(start_sequence) + packet_size;
         }
     }
-
-    av_log(s, AV_LOG_DEBUG, "Extradata set to %p (size: %d)\n",
-           codec->extradata, codec->extradata_size);
 
     return 0;
 }
@@ -170,24 +167,35 @@ static int sdp_parse_fmtp_config_h264(AVFormatContext *s,
         if (strlen(value) == 6)
             parse_profile_level_id(s, h264_data, value);
     } else if (!strcmp(attr, "sprop-parameter-sets")) {
+        int ret;
         codec->extradata_size = 0;
         av_freep(&codec->extradata);
-        return parse_sprop_parameter_sets(s, codec, value);
+        ret = ff_h264_parse_sprop_parameter_sets(s, &codec->extradata,
+                                                 &codec->extradata_size, value);
+        av_log(s, AV_LOG_DEBUG, "Extradata set to %p (size: %d)\n",
+               codec->extradata, codec->extradata_size);
+        return ret;
     }
     return 0;
 }
 
-static int h264_handle_packet_stap_a(AVFormatContext *ctx, PayloadContext *data, AVPacket *pkt,
-                                     const uint8_t *buf, int len)
+int ff_h264_handle_aggregated_packet(AVFormatContext *ctx, PayloadContext *data, AVPacket *pkt,
+                                     const uint8_t *buf, int len,
+                                     int start_skip, int *nal_counters,
+                                     int nal_mask)
 {
     int pass         = 0;
     int total_length = 0;
     uint8_t *dst     = NULL;
     int ret;
 
+    // first we are going to figure out the total size
     for (pass = 0; pass < 2; pass++) {
         const uint8_t *src = buf;
         int src_len        = len;
+
+        src     += start_skip;
+        src_len -= start_skip;
 
         while (src_len > 2) {
             uint16_t nal_size = AV_RB16(src);
@@ -205,21 +213,19 @@ static int h264_handle_packet_stap_a(AVFormatContext *ctx, PayloadContext *data,
                     memcpy(dst, start_sequence, sizeof(start_sequence));
                     dst += sizeof(start_sequence);
                     memcpy(dst, src, nal_size);
-                    COUNT_NAL_TYPE(data, *src);
+                    if (nal_counters)
+                        nal_counters[(*src) & nal_mask]++;
                     dst += nal_size;
                 }
             } else {
                 av_log(ctx, AV_LOG_ERROR,
                        "nal size exceeds length: %d %d\n", nal_size, src_len);
+                return AVERROR_INVALIDDATA;
             }
 
             // eat what we handled
-            src     += nal_size;
-            src_len -= nal_size;
-
-            if (src_len < 0)
-                av_log(ctx, AV_LOG_ERROR,
-                       "Consumed more bytes than we got! (%d)\n", src_len);
+            src     += nal_size + start_skip;
+            src_len -= nal_size + start_skip;
         }
 
         if (pass == 0) {
@@ -235,7 +241,8 @@ static int h264_handle_packet_stap_a(AVFormatContext *ctx, PayloadContext *data,
 }
 
 static int h264_handle_packet_fu_a(AVFormatContext *ctx, PayloadContext *data, AVPacket *pkt,
-                                   const uint8_t *buf, int len)
+                                   const uint8_t *buf, int len,
+                                   int *nal_counters, int nal_mask)
 {
     uint8_t fu_indicator, fu_header, start_bit, nal_type, nal;
     int ret;
@@ -256,7 +263,8 @@ static int h264_handle_packet_fu_a(AVFormatContext *ctx, PayloadContext *data, A
     len -= 2;
 
     if (start_bit) {
-        COUNT_NAL_TYPE(data, nal_type);
+        if (nal_counters)
+            nal_counters[nal_type & nal_mask]++;
         /* copy in the start sequence, and the reconstructed nal */
         if ((ret = av_new_packet(pkt, sizeof(start_sequence) + sizeof(nal) + len)) < 0)
             return ret;
@@ -307,8 +315,8 @@ static int h264_handle_packet(AVFormatContext *ctx, PayloadContext *data,
         // consume the STAP-A NAL
         buf++;
         len--;
-        // first we are going to figure out the total size
-        result = h264_handle_packet_stap_a(ctx, data, pkt, buf, len);
+        result = ff_h264_handle_aggregated_packet(ctx, data, pkt, buf, len, 0,
+                                                  NAL_COUNTERS, NAL_MASK);
         break;
 
     case 25:                   // STAP-B
@@ -322,7 +330,8 @@ static int h264_handle_packet(AVFormatContext *ctx, PayloadContext *data,
         break;
 
     case 28:                   // FU-A (fragmented nal)
-        result = h264_handle_packet_fu_a(ctx, data, pkt, buf, len);
+        result = h264_handle_packet_fu_a(ctx, data, pkt, buf, len,
+                                         NAL_COUNTERS, NAL_MASK);
         break;
 
     case 30:                   // undefined

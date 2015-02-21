@@ -87,7 +87,7 @@ static int cng_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     energy /= frame->nb_samples;
     if (energy > 0) {
         double dbov = 10 * log10(energy / 1081109975);
-        qdbov = av_clip(-floor(dbov), 0, 127);
+        qdbov = av_clip_uintp2(-floor(dbov), 7);
     } else {
         qdbov = 127;
     }

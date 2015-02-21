@@ -581,7 +581,7 @@ static int adpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         // init the encoder state
         for (i = 0; i < avctx->channels; i++) {
             // clip step so it fits 6 bits
-            c->status[i].step_index = av_clip(c->status[i].step_index, 0, 63);
+            c->status[i].step_index = av_clip_uintp2(c->status[i].step_index, 6);
             put_sbits(&pb, 16, samples[i]);
             put_bits(&pb, 6, c->status[i].step_index);
             c->status[i].prev_sample = samples[i];

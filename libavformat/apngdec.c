@@ -150,7 +150,8 @@ static int apng_read_header(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     uint32_t len, tag;
     AVStream *st;
-    int ret = AVERROR_INVALIDDATA, acTL_found = 0;
+    int acTL_found = 0;
+    int64_t ret = AVERROR_INVALIDDATA;
 
     /* verify PNGSIG */
     if (avio_rb64(pb) != PNGSIG)
@@ -321,7 +322,7 @@ static int decode_fctl_chunk(AVFormatContext *s, APNGDemuxContext *ctx, AVPacket
 static int apng_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     APNGDemuxContext *ctx = s->priv_data;
-    int ret;
+    int64_t ret;
     int64_t size;
     AVIOContext *pb = s->pb;
     uint32_t len, tag;

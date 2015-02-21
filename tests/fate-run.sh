@@ -38,7 +38,7 @@ target_path(){
 # $1=value1, $2=value2, $3=threshold
 # prints 0 if absolute difference between value1 and value2 is <= threshold
 compare(){
-    awk "BEGIN { v=$1-$2; printf ((v<0?-v:v) > $3) }"
+    awk "BEGIN { v = $1 - $2; printf ((v < 0 ? -v : v) > $3) }"
 }
 
 do_tiny_psnr(){

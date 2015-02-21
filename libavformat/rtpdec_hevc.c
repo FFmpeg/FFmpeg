@@ -27,6 +27,7 @@
 
 #include "avformat.h"
 #include "rtpdec.h"
+#include "rtpdec_formats.h"
 
 #define RTP_HEVC_PAYLOAD_HEADER_SIZE       2
 #define RTP_HEVC_FU_HEADER_SIZE            1
@@ -94,8 +95,8 @@ static av_cold int hevc_sdp_parse_fmtp_config(AVFormatContext *s,
     /* sprop-sei: [base64] */
     if (!strcmp(attr, "sprop-vps") || !strcmp(attr, "sprop-sps") ||
         !strcmp(attr, "sprop-pps") || !strcmp(attr, "sprop-sei")) {
-        uint8_t **data_ptr;
-        int *size_ptr;
+        uint8_t **data_ptr = NULL;
+        int *size_ptr = NULL;
         if (!strcmp(attr, "sprop-vps")) {
             data_ptr = &hevc_data->vps;
             size_ptr = &hevc_data->vps_size;
@@ -111,41 +112,8 @@ static av_cold int hevc_sdp_parse_fmtp_config(AVFormatContext *s,
         } else
             av_assert0(0);
 
-        while (*value) {
-            char base64packet[1024];
-            uint8_t decoded_packet[1024];
-            int decoded_packet_size;
-            char *dst = base64packet;
-
-            while (*value && *value != ',' &&
-                   (dst - base64packet) < sizeof(base64packet) - 1) {
-                *dst++ = *value++;
-            }
-            *dst++ = '\0';
-
-            if (*value == ',')
-                value++;
-
-            decoded_packet_size = av_base64_decode(decoded_packet, base64packet,
-                                                   sizeof(decoded_packet));
-            if (decoded_packet_size > 0) {
-                uint8_t *tmp = av_realloc(*data_ptr, decoded_packet_size +
-                                          sizeof(start_sequence) + *size_ptr);
-                if (!tmp) {
-                    av_log(s, AV_LOG_ERROR,
-                           "Unable to allocate memory for extradata!\n");
-                    return AVERROR(ENOMEM);
-                }
-                *data_ptr = tmp;
-
-                memcpy(*data_ptr + *size_ptr, start_sequence,
-                       sizeof(start_sequence));
-                memcpy(*data_ptr + *size_ptr + sizeof(start_sequence),
-                       decoded_packet, decoded_packet_size);
-
-                *size_ptr += sizeof(start_sequence) + decoded_packet_size;
-            }
-        }
+        ff_h264_parse_sprop_parameter_sets(s, data_ptr,
+                                           size_ptr, value);
     }
 
     /* max-lsr, max-lps, max-cpb, max-dpb, max-br, max-tr, max-tc */
@@ -353,66 +321,12 @@ static int hevc_handle_packet(AVFormatContext *ctx, PayloadContext *rtp_hevc_ctx
         buf += RTP_HEVC_PAYLOAD_HEADER_SIZE;
         len -= RTP_HEVC_PAYLOAD_HEADER_SIZE;
 
-        /* pass the HEVC DONL field */
-        if (rtp_hevc_ctx->using_donl_field) {
-            buf += RTP_HEVC_DONL_FIELD_SIZE;
-            len -= RTP_HEVC_DONL_FIELD_SIZE;
-        }
-
-        /*
-         * pass 0: determine overall size of the A/V packet
-         * pass 1: create resulting A/V packet
-         */
-        {
-            int pass          = 0;
-            int pkt_size      = 0;
-            uint8_t *pkt_data = 0;
-
-            for (pass = 0; pass < 2; pass++) {
-                const uint8_t *buf1 = buf;
-                int len1            = len;
-
-                while (len1 > RTP_HEVC_AP_NALU_LENGTH_FIELD_SIZE) {
-                    uint16_t nalu_size = AV_RB16(buf1);
-
-                    /* pass the NALU length field */
-                    buf1 += RTP_HEVC_AP_NALU_LENGTH_FIELD_SIZE;
-                    len1 -= RTP_HEVC_AP_NALU_LENGTH_FIELD_SIZE;
-
-                    if (nalu_size > 0 && nalu_size <= len1) {
-                        if (pass == 0) {
-                            pkt_size += sizeof(start_sequence) + nalu_size;
-                        } else {
-                            /* A/V packet: copy start sequence */
-                            memcpy(pkt_data, start_sequence, sizeof(start_sequence));
-                            /* A/V packet: copy NAL unit data */
-                            memcpy(pkt_data + sizeof(start_sequence), buf1, nalu_size);
-                            /* shift pointer beyond the current NAL unit */
-                            pkt_data += sizeof(start_sequence) + nalu_size;
-                        }
-                    }
-
-                    /* pass the current NAL unit */
-                    buf1 += nalu_size;
-                    len1 -= nalu_size;
-
-                    /* pass the HEVC DOND field */
-                    if (rtp_hevc_ctx->using_donl_field) {
-                        buf1 += RTP_HEVC_DOND_FIELD_SIZE;
-                        len1 -= RTP_HEVC_DOND_FIELD_SIZE;
-                    }
-                }
-
-                /* create A/V packet */
-                if (pass == 0) {
-                    if ((res = av_new_packet(pkt, pkt_size)) < 0)
-                        return res;
-
-                    pkt_data = pkt->data;
-                }
-            }
-        }
-
+        res = ff_h264_handle_aggregated_packet(ctx, rtp_hevc_ctx, pkt, buf, len,
+                                               rtp_hevc_ctx->using_donl_field ?
+                                               RTP_HEVC_DONL_FIELD_SIZE : 0,
+                                               NULL, 0);
+        if (res < 0)
+            return res;
         break;
     /* fragmentation unit (FU) */
     case 49:

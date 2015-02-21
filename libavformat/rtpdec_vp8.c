@@ -261,6 +261,8 @@ static int vp8_handle_packet(AVFormatContext *ctx, PayloadContext *vp8,
             return ret;
         if (vp8->sequence_dirty)
             pkt->flags |= AV_PKT_FLAG_CORRUPT;
+        if (vp8->is_keyframe)
+            pkt->flags |= AV_PKT_FLAG_KEY;
         return 0;
     }
 

@@ -166,6 +166,7 @@ Codecs:
   dca.c                                 Kostya Shishkov, Benjamin Larsson
   dnxhd*                                Baptiste Coudurier
   dpcm.c                                Mike Melanson
+  dss_sp.c                              Oleksij Rempel, Michael Niedermayer
   dv.c                                  Roman Shaposhnik
   dvbsubdec.c                           Anshul Maheshwari
   dxa.c                                 Kostya Shishkov
@@ -401,6 +402,7 @@ Muxers/Demuxers:
   cdxl.c                                Paul B Mahol
   crc.c                                 Michael Niedermayer
   daud.c                                Reimar Doeffinger
+  dss.c                                 Oleksij Rempel, Michael Niedermayer
   dtshddec.c                            Paul B Mahol
   dv.c                                  Roman Shaposhnik
   dxa.c                                 Kostya Shishkov
