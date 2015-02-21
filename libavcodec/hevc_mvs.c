@@ -118,7 +118,7 @@ static av_always_inline void mv_scale(Mv *dst, Mv *src, int td, int tb)
     td = av_clip_int8(td);
     tb = av_clip_int8(tb);
     tx = (0x4000 + abs(td / 2)) / td;
-    scale_factor = av_clip((tb * tx + 32) >> 6, -4096, 4095);
+    scale_factor = av_clip_intp2((tb * tx + 32) >> 6, 12);
     dst->x = av_clip_int16((scale_factor * src->x + 127 +
                            (scale_factor * src->x < 0)) >> 8);
     dst->y = av_clip_int16((scale_factor * src->y + 127 +
