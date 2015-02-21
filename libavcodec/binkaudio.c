@@ -34,7 +34,6 @@
 #include "get_bits.h"
 #include "dct.h"
 #include "rdft.h"
-#include "fmtconvert.h"
 #include "internal.h"
 #include "wma_freqs.h"
 #include "libavutil/intfloat.h"

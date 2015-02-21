@@ -25,7 +25,6 @@
 #include "libavutil/float_dsp.h"
 
 #include "fft.h"
-#include "fmtconvert.h"
 #include "get_bits.h"
 #include "put_bits.h"
 
@@ -131,7 +130,6 @@ typedef struct WMACodecContext {
     float lsp_pow_e_table[256];
     float lsp_pow_m_table1[(1 << LSP_POW_BITS)];
     float lsp_pow_m_table2[(1 << LSP_POW_BITS)];
-    FmtConvertContext fmt_conv;
     AVFloatDSPContext fdsp;
 
 #ifdef TRACE

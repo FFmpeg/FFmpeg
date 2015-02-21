@@ -41,7 +41,6 @@
 #include "avcodec.h"
 #include "bytestream.h"
 #include "fft.h"
-#include "fmtconvert.h"
 #include "get_bits.h"
 #include "internal.h"
 
@@ -107,7 +106,6 @@ typedef struct ATRAC3Context {
 
     AtracGCContext  gainc_ctx;
     FFTContext mdct_ctx;
-    FmtConvertContext fmt_conv;
     AVFloatDSPContext fdsp;
 } ATRAC3Context;
 
@@ -910,7 +908,6 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
 
     ff_atrac_init_gain_compensation(&q->gainc_ctx, 4, 3);
     avpriv_float_dsp_init(&q->fdsp, avctx->flags & CODEC_FLAG_BITEXACT);
-    ff_fmt_convert_init(&q->fmt_conv, avctx);
 
     q->units = av_mallocz(sizeof(*q->units) * avctx->channels);
     if (!q->units) {

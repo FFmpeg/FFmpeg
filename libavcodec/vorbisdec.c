@@ -30,7 +30,6 @@
 #include "avcodec.h"
 #include "get_bits.h"
 #include "fft.h"
-#include "fmtconvert.h"
 #include "internal.h"
 
 #include "vorbis.h"
@@ -123,7 +122,6 @@ typedef struct vorbis_context_s {
     GetBitContext gb;
     VorbisDSPContext dsp;
     AVFloatDSPContext fdsp;
-    FmtConvertContext fmt_conv;
 
     FFTContext mdct[2];
     uint8_t       first_frame;
@@ -1018,7 +1016,6 @@ static av_cold int vorbis_decode_init(AVCodecContext *avctx)
     vc->avctx = avctx;
     ff_vorbisdsp_init(&vc->dsp);
     avpriv_float_dsp_init(&vc->fdsp, avctx->flags & CODEC_FLAG_BITEXACT);
-    ff_fmt_convert_init(&vc->fmt_conv, avctx);
 
     avctx->sample_fmt = AV_SAMPLE_FMT_FLTP;
 
