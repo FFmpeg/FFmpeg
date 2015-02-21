@@ -269,7 +269,7 @@ static inline short adpcm_ima_oki_expand_nibble(ADPCMChannelStatus *c, int nibbl
     if (sign) predictor -= diff;
     else predictor += diff;
 
-    c->predictor = av_clip(predictor, -2048, 2047);
+    c->predictor = av_clip_intp2(predictor, 11);
     c->step_index = step_index;
 
     return c->predictor << 4;
