@@ -720,7 +720,7 @@ static void fill_table(uint8_t* table[256 + 2*YUVRGB_TABLE_HEADROOM], const int 
     y_table -= elemsize * (inc >> 9);
 
     for (i = 0; i < 256 + 2*YUVRGB_TABLE_HEADROOM; i++) {
-        int64_t cb = av_clip(i-YUVRGB_TABLE_HEADROOM, 0, 255)*inc;
+        int64_t cb = av_clip_uint8(i-YUVRGB_TABLE_HEADROOM)*inc;
         table[i] = y_table + elemsize * (cb >> 16);
     }
 }
@@ -731,7 +731,7 @@ static void fill_gv_table(int table[256 + 2*YUVRGB_TABLE_HEADROOM], const int el
     int off    = -(inc >> 9);
 
     for (i = 0; i < 256 + 2*YUVRGB_TABLE_HEADROOM; i++) {
-        int64_t cb = av_clip(i-YUVRGB_TABLE_HEADROOM, 0, 255)*inc;
+        int64_t cb = av_clip_uint8(i-YUVRGB_TABLE_HEADROOM)*inc;
         table[i] = elemsize * (off + (cb >> 16));
     }
 }
