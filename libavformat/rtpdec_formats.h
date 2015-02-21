@@ -46,6 +46,7 @@ int ff_h264_handle_aggregated_packet(AVFormatContext *ctx, AVPacket *pkt,
 extern RTPDynamicProtocolHandler ff_ac3_dynamic_handler;
 extern RTPDynamicProtocolHandler ff_amr_nb_dynamic_handler;
 extern RTPDynamicProtocolHandler ff_amr_wb_dynamic_handler;
+extern RTPDynamicProtocolHandler ff_dv_dynamic_handler;
 extern RTPDynamicProtocolHandler ff_g726_16_dynamic_handler;
 extern RTPDynamicProtocolHandler ff_g726_24_dynamic_handler;
 extern RTPDynamicProtocolHandler ff_g726_32_dynamic_handler;
