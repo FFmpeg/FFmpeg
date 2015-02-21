@@ -1,5 +1,4 @@
 OBJS                                   += x86/constants.o               \
-                                          x86/fmtconvert_init.o         \
 
 # subsystems
 OBJS-$(CONFIG_AC3DSP)                  += x86/ac3dsp_init.o
@@ -9,6 +8,7 @@ OBJS-$(CONFIG_BSWAPDSP)                += x86/bswapdsp_init.o
 OBJS-$(CONFIG_DCT)                     += x86/dct_init.o
 OBJS-$(CONFIG_FDCTDSP)                 += x86/fdctdsp_init.o
 OBJS-$(CONFIG_FFT)                     += x86/fft_init.o
+OBJS-$(CONFIG_FMTCONVERT)              += x86/fmtconvert_init.o
 OBJS-$(CONFIG_H263DSP)                 += x86/h263dsp_init.o
 OBJS-$(CONFIG_H264CHROMA)              += x86/h264chroma_init.o
 OBJS-$(CONFIG_H264DSP)                 += x86/h264dsp_init.o
@@ -74,7 +74,6 @@ MMX-OBJS-$(CONFIG_VC1_DECODER)         += x86/vc1dsp_mmx.o
 
 # YASM optimizations
 YASM-OBJS                              += x86/deinterlace.o             \
-                                          x86/fmtconvert.o              \
 
 # subsystems
 YASM-OBJS-$(CONFIG_AC3DSP)             += x86/ac3dsp.o
@@ -83,6 +82,7 @@ YASM-OBJS-$(CONFIG_BSWAPDSP)           += x86/bswapdsp.o
 YASM-OBJS-$(CONFIG_DCT)                += x86/dct32.o
 YASM-OBJS-$(CONFIG_DNXHD_ENCODER)      += x86/dnxhdenc.o
 YASM-OBJS-$(CONFIG_FFT)                += x86/fft.o
+YASM-OBJS-$(CONFIG_FMTCONVERT)         += x86/fmtconvert.o
 YASM-OBJS-$(CONFIG_H263DSP)            += x86/h263_loopfilter.o
 YASM-OBJS-$(CONFIG_H264CHROMA)         += x86/h264_chromamc.o           \
                                           x86/h264_chromamc_10bit.o

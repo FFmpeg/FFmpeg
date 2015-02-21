@@ -1567,6 +1567,7 @@ CONFIG_EXTRA="
     faandct
     faanidct
     fdctdsp
+    fmtconvert
     gcrypt
     golomb
     gplv3
@@ -1761,7 +1762,7 @@ mpegvideoenc_select="me_cmp mpegvideo pixblockdsp qpeldsp"
 aac_decoder_select="imdct15 mdct sinewin"
 aac_encoder_select="audio_frame_queue iirfilter mdct sinewin"
 aac_latm_decoder_select="aac_decoder aac_latm_parser"
-ac3_decoder_select="ac3_parser ac3dsp bswapdsp mdct"
+ac3_decoder_select="ac3_parser ac3dsp bswapdsp fmtconvert mdct"
 ac3_encoder_select="ac3dsp audiodsp mdct me_cmp"
 ac3_fixed_encoder_select="ac3dsp audiodsp mdct me_cmp"
 aic_decoder_select="golomb idctdsp"
@@ -1787,7 +1788,7 @@ comfortnoise_encoder_select="lpc"
 cook_decoder_select="audiodsp mdct sinewin"
 cscd_decoder_select="lzo"
 cscd_decoder_suggest="zlib"
-dca_decoder_select="mdct"
+dca_decoder_select="fmtconvert mdct"
 dnxhd_decoder_select="blockdsp idctdsp"
 dnxhd_encoder_select="aandcttables blockdsp fdctdsp idctdsp mpegvideoenc pixblockdsp"
 dvvideo_decoder_select="dvprofile idctdsp"
