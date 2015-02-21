@@ -916,9 +916,9 @@ static void implicit_weight_table(H264Context *h, int field)
             int w = 32;
             if (!h->ref_list[0][ref0].long_ref && !h->ref_list[1][ref1].long_ref) {
                 int poc1 = h->ref_list[1][ref1].poc;
-                int td   = av_clip(poc1 - poc0, -128, 127);
+                int td   = av_clip_int8(poc1 - poc0);
                 if (td) {
-                    int tb = av_clip(cur_poc - poc0, -128, 127);
+                    int tb = av_clip_int8(cur_poc - poc0);
                     int tx = (16384 + (FFABS(td) >> 1)) / td;
                     int dist_scale_factor = (tb * tx + 32) >> 8;
                     if (dist_scale_factor >= -64 && dist_scale_factor <= 128)

@@ -1077,7 +1077,7 @@ static inline void silk_decode_lpc(SilkContext *s, SilkFrame *frame,
         weight = y + ((213 * fpart * y) >> 16);
 
         value = cur * 128 + (lsf_res[i] * 16384) / weight;
-        nlsf[i] = av_clip(value, 0, 32767);
+        nlsf[i] = av_clip_uintp2(value, 15);
     }
 
     /* stabilize the NLSF coefficients */
@@ -1288,8 +1288,8 @@ static void silk_decode_frame(SilkContext *s, OpusRangeCoder *rc,
         } else {
             /* gain is coded relative */
             int delta_gain = opus_rc_getsymbol(rc, silk_model_gain_delta);
-            log_gain = av_clip(FFMAX((delta_gain<<1) - 16,
-                                     frame->log_gain + delta_gain - 4), 0, 63);
+            log_gain = av_clip_uintp2(FFMAX((delta_gain<<1) - 16,
+                                     frame->log_gain + delta_gain - 4), 6);
         }
 
         frame->log_gain = log_gain;
