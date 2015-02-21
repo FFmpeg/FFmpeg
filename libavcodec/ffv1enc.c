@@ -924,7 +924,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
                         if (a+b)
                             p = 256.0 * b / (a + b);
                         s->initial_states[i][jp][k] =
-                            best_state[av_clip(round(p), 1, 255)][av_clip((a + b) / gob_count, 0, 255)];
+                            best_state[av_clip(round(p), 1, 255)][av_clip_uint8((a + b) / gob_count)];
                         for(jp++; jp<j; jp++)
                             s->initial_states[i][jp][k] = s->initial_states[i][jp-1][k];
                         a=b=0;
@@ -935,7 +935,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
                         p = 256.0 * b / (a + b);
                     }
                     s->initial_states[i][j][k] =
-                        best_state[av_clip(round(p), 1, 255)][av_clip((a + b) / gob_count, 0, 255)];
+                        best_state[av_clip(round(p), 1, 255)][av_clip_uint8((a + b) / gob_count)];
                 }
             }
         }
