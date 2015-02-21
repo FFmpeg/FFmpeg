@@ -247,6 +247,10 @@ static int hls_window(AVFormatContext *s, int last)
     int version = hls->flags & HLS_SINGLE_FILE ? 4 : 3;
     const char *proto = avio_find_protocol_name(s->filename);
     int use_rename = proto && !strcmp(proto, "file");
+    static unsigned warned_non_file;
+
+    if (!use_rename && !warned_non_file++)
+        av_log(s, AV_LOG_ERROR, "Cannot use rename on non file protocol, this may lead to races and temporarly partial files\n");
 
     snprintf(temp_filename, sizeof(temp_filename), use_rename ? "%s.tmp" : "%s", s->filename);
     if ((ret = avio_open2(&out, temp_filename, AVIO_FLAG_WRITE,
