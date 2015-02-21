@@ -177,7 +177,8 @@ static int sdp_parse_fmtp_config_h264(AVFormatContext *s,
 }
 
 static int h264_handle_packet_stap_a(AVFormatContext *ctx, PayloadContext *data, AVPacket *pkt,
-                                     const uint8_t *buf, int len)
+                                     const uint8_t *buf, int len,
+                                     int start_skip)
 {
     int pass         = 0;
     int total_length = 0;
@@ -188,6 +189,9 @@ static int h264_handle_packet_stap_a(AVFormatContext *ctx, PayloadContext *data,
     for (pass = 0; pass < 2; pass++) {
         const uint8_t *src = buf;
         int src_len        = len;
+
+        src     += start_skip;
+        src_len -= start_skip;
 
         while (src_len > 2) {
             uint16_t nal_size = AV_RB16(src);
@@ -215,8 +219,8 @@ static int h264_handle_packet_stap_a(AVFormatContext *ctx, PayloadContext *data,
             }
 
             // eat what we handled
-            src     += nal_size;
-            src_len -= nal_size;
+            src     += nal_size + start_skip;
+            src_len -= nal_size + start_skip;
         }
 
         if (pass == 0) {
@@ -304,7 +308,7 @@ static int h264_handle_packet(AVFormatContext *ctx, PayloadContext *data,
         // consume the STAP-A NAL
         buf++;
         len--;
-        result = h264_handle_packet_stap_a(ctx, data, pkt, buf, len);
+        result = h264_handle_packet_stap_a(ctx, data, pkt, buf, len, 0);
         break;
 
     case 25:                   // STAP-B
