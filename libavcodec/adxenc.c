@@ -81,7 +81,7 @@ static void adx_encode(ADXContext *c, uint8_t *adx, const int16_t *wav,
     for (i = 0, j = 0; j < 32; i += channels, j++) {
         d = ((wav[i] << COEFF_BITS) - c->coeff[0] * s1 - c->coeff[1] * s2) >> COEFF_BITS;
 
-        d = av_clip(ROUNDED_DIV(d, scale), -8, 7);
+        d = av_clip_intp2(ROUNDED_DIV(d, scale), 3);
 
         put_sbits(&pb, 4, d);
 
