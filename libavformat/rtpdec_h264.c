@@ -57,9 +57,12 @@ struct PayloadContext {
 
 #ifdef DEBUG
 #define COUNT_NAL_TYPE(data, nal) data->packet_types_received[(nal) & 0x1f]++
+#define NAL_COUNTERS data->packet_types_received
 #else
 #define COUNT_NAL_TYPE(data, nal) do { } while (0)
+#define NAL_COUNTERS NULL
 #endif
+#define NAL_MASK 0x1f
 
 static const uint8_t start_sequence[] = { 0, 0, 0, 1 };
 
@@ -178,7 +181,8 @@ static int sdp_parse_fmtp_config_h264(AVFormatContext *s,
 
 static int h264_handle_packet_stap_a(AVFormatContext *ctx, PayloadContext *data, AVPacket *pkt,
                                      const uint8_t *buf, int len,
-                                     int start_skip)
+                                     int start_skip, int *nal_counters,
+                                     int nal_mask)
 {
     int pass         = 0;
     int total_length = 0;
@@ -209,7 +213,8 @@ static int h264_handle_packet_stap_a(AVFormatContext *ctx, PayloadContext *data,
                     memcpy(dst, start_sequence, sizeof(start_sequence));
                     dst += sizeof(start_sequence);
                     memcpy(dst, src, nal_size);
-                    COUNT_NAL_TYPE(data, *src);
+                    if (nal_counters)
+                        nal_counters[(*src) & nal_mask]++;
                     dst += nal_size;
                 }
             } else {
@@ -236,7 +241,8 @@ static int h264_handle_packet_stap_a(AVFormatContext *ctx, PayloadContext *data,
 }
 
 static int h264_handle_packet_fu_a(AVFormatContext *ctx, PayloadContext *data, AVPacket *pkt,
-                                   const uint8_t *buf, int len)
+                                   const uint8_t *buf, int len,
+                                   int *nal_counters, int nal_mask)
 {
     uint8_t fu_indicator, fu_header, start_bit, nal_type, nal;
     int ret;
@@ -257,7 +263,8 @@ static int h264_handle_packet_fu_a(AVFormatContext *ctx, PayloadContext *data, A
     len -= 2;
 
     if (start_bit) {
-        COUNT_NAL_TYPE(data, nal_type);
+        if (nal_counters)
+            nal_counters[nal_type & nal_mask]++;
         /* copy in the start sequence, and the reconstructed nal */
         if ((ret = av_new_packet(pkt, sizeof(start_sequence) + sizeof(nal) + len)) < 0)
             return ret;
@@ -308,7 +315,8 @@ static int h264_handle_packet(AVFormatContext *ctx, PayloadContext *data,
         // consume the STAP-A NAL
         buf++;
         len--;
-        result = h264_handle_packet_stap_a(ctx, data, pkt, buf, len, 0);
+        result = h264_handle_packet_stap_a(ctx, data, pkt, buf, len, 0,
+                                           NAL_COUNTERS, NAL_MASK);
         break;
 
     case 25:                   // STAP-B
@@ -322,7 +330,8 @@ static int h264_handle_packet(AVFormatContext *ctx, PayloadContext *data,
         break;
 
     case 28:                   // FU-A (fragmented nal)
-        result = h264_handle_packet_fu_a(ctx, data, pkt, buf, len);
+        result = h264_handle_packet_fu_a(ctx, data, pkt, buf, len,
+                                         NAL_COUNTERS, NAL_MASK);
         break;
 
     case 30:                   // undefined
