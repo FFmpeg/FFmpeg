@@ -320,7 +320,7 @@ static int resample_cubic(AVFilterContext *ctx, void *arg,
             }
 
             sum = (sum + (1<<(COEFF_BITS * 2 - 1))) >> (COEFF_BITS * 2);
-            sum = av_clip(sum, 0, 255);
+            sum = av_clip_uint8(sum);
             dst[x + y * dst_linesize] = sum;
         }
     }
@@ -395,7 +395,7 @@ static int resample_linear(AVFilterContext *ctx, void *arg,
                 }
             }
 
-            sum = av_clip(sum, 0, 255);
+            sum = av_clip_uint8(sum);
             dst[x + y * dst_linesize] = sum;
         }
     }
