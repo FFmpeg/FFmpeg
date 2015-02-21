@@ -68,7 +68,7 @@ static av_cold int dv_sdp_parse_fmtp_config(AVFormatContext *s,
                                             char *attr, char *value)
 {
     /* does the DV stream include audio? */
-    if (!strcmp(attr, "audio") && !strcmp(value, "audio"))
+    if (!strcmp(attr, "audio") && !strcmp(value, "bundled"))
         dv_data->bundled_audio = 1;
 
     /* extract the DV profile */
