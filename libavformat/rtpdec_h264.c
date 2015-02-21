@@ -95,9 +95,9 @@ static void parse_profile_level_id(AVFormatContext *s,
     h264_data->level_idc   = level_idc;
 }
 
-static int parse_sprop_parameter_sets(AVFormatContext *s,
-                                      uint8_t **data_ptr, int *size_ptr,
-                                      const char *value)
+int ff_h264_parse_sprop_parameter_sets(AVFormatContext *s,
+                                       uint8_t **data_ptr, int *size_ptr,
+                                       const char *value)
 {
     char base64packet[1024];
     uint8_t decoded_packet[1024];
@@ -170,8 +170,8 @@ static int sdp_parse_fmtp_config_h264(AVFormatContext *s,
         int ret;
         codec->extradata_size = 0;
         av_freep(&codec->extradata);
-        ret = parse_sprop_parameter_sets(s, &codec->extradata,
-                                         &codec->extradata_size, value);
+        ret = ff_h264_parse_sprop_parameter_sets(s, &codec->extradata,
+                                                 &codec->extradata_size, value);
         av_log(s, AV_LOG_DEBUG, "Extradata set to %p (size: %d)\n",
                codec->extradata, codec->extradata_size);
         return ret;
@@ -179,7 +179,7 @@ static int sdp_parse_fmtp_config_h264(AVFormatContext *s,
     return 0;
 }
 
-static int h264_handle_packet_stap_a(AVFormatContext *ctx, PayloadContext *data, AVPacket *pkt,
+int ff_h264_handle_aggregated_packet(AVFormatContext *ctx, PayloadContext *data, AVPacket *pkt,
                                      const uint8_t *buf, int len,
                                      int start_skip, int *nal_counters,
                                      int nal_mask)
@@ -315,8 +315,8 @@ static int h264_handle_packet(AVFormatContext *ctx, PayloadContext *data,
         // consume the STAP-A NAL
         buf++;
         len--;
-        result = h264_handle_packet_stap_a(ctx, data, pkt, buf, len, 0,
-                                           NAL_COUNTERS, NAL_MASK);
+        result = ff_h264_handle_aggregated_packet(ctx, data, pkt, buf, len, 0,
+                                                  NAL_COUNTERS, NAL_MASK);
         break;
 
     case 25:                   // STAP-B
