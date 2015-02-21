@@ -32,7 +32,7 @@ struct PayloadContext {
 };
 
 static av_cold int ac3_init(AVFormatContext *s, int st_index,
-                        PayloadContext *data)
+                            PayloadContext *data)
 {
     if (st_index < 0)
         return 0;
@@ -45,7 +45,7 @@ static PayloadContext *ac3_new_context(void)
     return av_mallocz(sizeof(PayloadContext));
 }
 
-static inline void free_fragment_if_needed(PayloadContext *data)
+static void free_fragment(PayloadContext *data)
 {
     if (data->fragment) {
         uint8_t *p;
@@ -57,14 +57,14 @@ static inline void free_fragment_if_needed(PayloadContext *data)
 
 static void ac3_free_context(PayloadContext *data)
 {
-    free_fragment_if_needed(data);
+    free_fragment(data);
     av_free(data);
 }
 
 static int ac3_handle_packet(AVFormatContext *ctx, PayloadContext *data,
-                              AVStream *st, AVPacket *pkt, uint32_t *timestamp,
-                              const uint8_t *buf, int len, uint16_t seq,
-                              int flags)
+                             AVStream *st, AVPacket *pkt, uint32_t *timestamp,
+                             const uint8_t *buf, int len, uint16_t seq,
+                             int flags)
 {
     unsigned frame_type;
     unsigned nr_frames;
@@ -97,7 +97,7 @@ static int ac3_handle_packet(AVFormatContext *ctx, PayloadContext *data,
 
     case 1:
     case 2: /* First fragment */
-        free_fragment_if_needed(data);
+        free_fragment(data);
 
         data->last_frame = 1;
         data->nr_frames = nr_frames;
@@ -117,7 +117,7 @@ static int ac3_handle_packet(AVFormatContext *ctx, PayloadContext *data,
         }
         if (nr_frames != data->nr_frames ||
             data->timestamp != *timestamp) {
-            free_fragment_if_needed(data);
+            free_fragment(data);
             av_log(ctx, AV_LOG_ERROR, "Invalid packet received\n");
             return AVERROR_INVALIDDATA;
         }
@@ -130,7 +130,7 @@ static int ac3_handle_packet(AVFormatContext *ctx, PayloadContext *data,
         return AVERROR(EAGAIN);
 
     if (data->last_frame != data->nr_frames) {
-        free_fragment_if_needed(data);
+        free_fragment(data);
         av_log(ctx, AV_LOG_ERROR, "Missed %d packets\n",
                data->nr_frames - data->last_frame);
         return AVERROR_INVALIDDATA;
@@ -139,7 +139,7 @@ static int ac3_handle_packet(AVFormatContext *ctx, PayloadContext *data,
     err = ff_rtp_finalize_packet(pkt, &data->fragment, st->index);
     if (err < 0) {
         av_log(ctx, AV_LOG_ERROR,
-               "Error occurred when getting fragment buffer.");
+               "Error occurred when getting fragment buffer.\n");
         return err;
     }
 

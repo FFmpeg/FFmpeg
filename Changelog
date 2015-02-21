@@ -24,7 +24,7 @@ version <next>:
 - ported softpulldown filter from libmpcodecs as repeatfields filter
 - dcshift filter
 - RTP parser for loss tolerant payload format for MP3 audio (RFC 5219)
-- RTP parser for AC3 payload format (RFC 4184)
+- RTP depacketizer for AC3 payload format (RFC 4184)
 - palettegen and paletteuse filters
 - VP9 RTP payload format (draft 0) experimental depacketizer
 - DV RTP payload format (RFC 6469) depacketizer
