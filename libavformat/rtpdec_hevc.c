@@ -27,6 +27,7 @@
 
 #include "avformat.h"
 #include "rtpdec.h"
+#include "rtpdec_formats.h"
 
 #define RTP_HEVC_PAYLOAD_HEADER_SIZE       2
 #define RTP_HEVC_FU_HEADER_SIZE            1
@@ -111,41 +112,8 @@ static av_cold int hevc_sdp_parse_fmtp_config(AVFormatContext *s,
         } else
             av_assert0(0);
 
-        while (*value) {
-            char base64packet[1024];
-            uint8_t decoded_packet[1024];
-            int decoded_packet_size;
-            char *dst = base64packet;
-
-            while (*value && *value != ',' &&
-                   (dst - base64packet) < sizeof(base64packet) - 1) {
-                *dst++ = *value++;
-            }
-            *dst++ = '\0';
-
-            if (*value == ',')
-                value++;
-
-            decoded_packet_size = av_base64_decode(decoded_packet, base64packet,
-                                                   sizeof(decoded_packet));
-            if (decoded_packet_size > 0) {
-                uint8_t *tmp = av_realloc(*data_ptr, decoded_packet_size +
-                                          sizeof(start_sequence) + *size_ptr);
-                if (!tmp) {
-                    av_log(s, AV_LOG_ERROR,
-                           "Unable to allocate memory for extradata!\n");
-                    return AVERROR(ENOMEM);
-                }
-                *data_ptr = tmp;
-
-                memcpy(*data_ptr + *size_ptr, start_sequence,
-                       sizeof(start_sequence));
-                memcpy(*data_ptr + *size_ptr + sizeof(start_sequence),
-                       decoded_packet, decoded_packet_size);
-
-                *size_ptr += sizeof(start_sequence) + decoded_packet_size;
-            }
-        }
+        ff_h264_parse_sprop_parameter_sets(s, data_ptr,
+                                           size_ptr, value);
     }
 
     /* max-lsr, max-lps, max-cpb, max-dpb, max-br, max-tr, max-tc */
