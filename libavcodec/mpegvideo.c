@@ -2225,8 +2225,10 @@ void ff_print_debug_info2(AVCodecContext *avctx, AVFrame *pict, uint8_t *mbskip_
 
             av_log(avctx, AV_LOG_DEBUG, "Adding %d MVs info to frame %d\n", mbcount, avctx->frame_number);
             sd = av_frame_new_side_data(pict, AV_FRAME_DATA_MOTION_VECTORS, mbcount * sizeof(AVMotionVector));
-            if (!sd)
+            if (!sd) {
+                av_freep(&mvs);
                 return;
+            }
             memcpy(sd->data, mvs, mbcount * sizeof(AVMotionVector));
         }
 
