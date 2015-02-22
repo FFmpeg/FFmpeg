@@ -68,6 +68,10 @@ static int ogg_save(AVFormatContext *s)
     struct ogg_state *ost =
         av_malloc(sizeof(*ost) + (ogg->nstreams - 1) * sizeof(*ogg->streams));
     int i;
+
+    if (!ost)
+        return AVERROR(ENOMEM);
+
     ost->pos      = avio_tell(s->pb);
     ost->curidx   = ogg->curidx;
     ost->next     = ogg->state;
@@ -583,6 +587,7 @@ static int ogg_get_length(AVFormatContext *s)
     int i;
     int64_t size, end;
     int streams_left=0;
+    int ret;
 
     if (!s->pb->seekable)
         return 0;
@@ -596,7 +601,9 @@ static int ogg_get_length(AVFormatContext *s)
         return 0;
     end = size > MAX_PAGE_SIZE ? size - MAX_PAGE_SIZE : 0;
 
-    ogg_save(s);
+    ret = ogg_save(s);
+    if (ret < 0)
+        return ret;
     avio_seek(s->pb, end, SEEK_SET);
     ogg->page_pos = -1;
 
@@ -618,7 +625,10 @@ static int ogg_get_length(AVFormatContext *s)
 
     ogg_restore(s, 0);
 
-    ogg_save (s);
+    ret = ogg_save(s);
+    if (ret < 0)
+        return ret;
+
     avio_seek (s->pb, s->internal->data_offset, SEEK_SET);
     ogg_reset(s);
     while (streams_left > 0 && !ogg_packet(s, &i, NULL, NULL, NULL)) {
