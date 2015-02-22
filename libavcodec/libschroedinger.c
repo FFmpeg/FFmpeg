@@ -191,6 +191,8 @@ SchroFrame *ff_create_schro_frame(AVCodecContext *avctx,
     uv_height = y_height >> (SCHRO_FRAME_FORMAT_V_SHIFT(schro_frame_fmt));
 
     p_pic = av_mallocz(sizeof(AVPicture));
+    if (!p_pic)
+        return NULL;
     avpicture_alloc(p_pic, avctx->pix_fmt, y_width, y_height);
 
     p_frame         = schro_frame_new();
