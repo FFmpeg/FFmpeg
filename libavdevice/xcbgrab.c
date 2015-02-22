@@ -495,7 +495,6 @@ static int create_stream(AVFormatContext *s)
 {
     XCBGrabContext *c = s->priv_data;
     AVStream *st      = avformat_new_stream(s, NULL);
-    const char *opts  = strchr(s->filename, '+');
     xcb_get_geometry_cookie_t gc;
     xcb_get_geometry_reply_t *geo;
     int ret;
@@ -510,9 +509,6 @@ static int create_stream(AVFormatContext *s)
     ret = av_parse_video_rate(&st->avg_frame_rate, c->framerate);
     if (ret < 0)
         return ret;
-
-    if (opts)
-        sscanf(opts, "%d,%d", &c->x, &c->y);
 
     avpriv_set_pts_info(st, 64, 1, 1000000);
 
@@ -600,11 +596,23 @@ static av_cold int xcbgrab_read_header(AVFormatContext *s)
     XCBGrabContext *c = s->priv_data;
     int screen_num, ret;
     const xcb_setup_t *setup;
+    char *host        = s->filename[0] ? s->filename : NULL;
+    const char *opts  = strchr(s->filename, '+');
 
-    c->conn = xcb_connect(s->filename[0] ? s->filename : NULL, &screen_num);
+    if (opts) {
+        sscanf(opts, "%d,%d", &c->x, &c->y);
+        host = av_strdup(s->filename);
+        host[opts - s->filename] = '\0';
+    }
+
+    c->conn = xcb_connect(host, &screen_num);
+
+    if (opts)
+        av_free(host);
+
     if ((ret = xcb_connection_has_error(c->conn))) {
         av_log(s, AV_LOG_ERROR, "Cannot open display %s, error %d.\n",
-               s->filename[0] ? s->filename : "default", ret);
+               s->filename[0] ? host : "default", ret);
         return AVERROR(EIO);
     }
     setup = xcb_get_setup(c->conn);
