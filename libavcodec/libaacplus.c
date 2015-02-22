@@ -82,6 +82,10 @@ static av_cold int aacPlus_encode_init(AVCodecContext *avctx)
         if (aacplusEncGetDecoderSpecificInfo(s->aacplus_handle, &buffer,
                                            &decoder_specific_info_size) == 1) {
             avctx->extradata = av_malloc(decoder_specific_info_size + FF_INPUT_BUFFER_PADDING_SIZE);
+            if (!avctx->extradata) {
+                free(buffer);
+                return AVERROR(ENOMEM);
+            }
             avctx->extradata_size = decoder_specific_info_size;
             memcpy(avctx->extradata, buffer, avctx->extradata_size);
         }
