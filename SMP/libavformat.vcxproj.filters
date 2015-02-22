@@ -123,6 +123,9 @@
     <ClCompile Include="..\libavformat\rtpdec_latm.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavformat\rtpdec_mpa_robust.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavformat\rtpdec_mpeg12.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>

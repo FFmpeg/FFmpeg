@@ -129,6 +129,8 @@
     </ClCompile>
     <ClCompile Include="..\libavformat\rtpdec_latm.c">
     </ClCompile>
+    <ClCompile Include="..\libavformat\rtpdec_mpa_robust.c">
+    </ClCompile>
     <ClCompile Include="..\libavformat\rtpdec_mpeg12.c">
     </ClCompile>
     <ClCompile Include="..\libavformat\rtpdec_mpeg4.c">
