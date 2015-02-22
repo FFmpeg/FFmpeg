@@ -27,7 +27,7 @@ version <next>:
 - RTP depacketizer for AC3 payload format (RFC 4184)
 - palettegen and paletteuse filters
 - VP9 RTP payload format (draft 0) experimental depacketizer
-- DV RTP payload format (RFC 6469) depacketizer
+- RTP depacketizer for DV (RFC 6469)
 - DXVA2-accelerated HEVC decoding
 - AAC ELD 480 decoding
 - Intel QSV-accelerated H.264 decoding
