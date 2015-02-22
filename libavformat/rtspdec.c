@@ -504,6 +504,18 @@ static int rtsp_read_play(AVFormatContext *s)
     av_log(s, AV_LOG_DEBUG, "hello state=%d\n", rt->state);
     rt->nb_byes = 0;
 
+    if (rt->lower_transport == RTSP_LOWER_TRANSPORT_UDP) {
+        for (i = 0; i < rt->nb_rtsp_streams; i++) {
+            RTSPStream *rtsp_st = rt->rtsp_streams[i];
+            /* Try to initialize the connection state in a
+             * potential NAT router by sending dummy packets.
+             * RTP/RTCP dummy packets are used for RDT, too.
+             */
+            if (rtsp_st->rtp_handle &&
+                !(rt->server_type == RTSP_SERVER_WMS && i > 1))
+                ff_rtp_send_punch_packets(rtsp_st->rtp_handle);
+        }
+    }
     if (!(rt->server_type == RTSP_SERVER_REAL && rt->need_subscription)) {
         if (rt->transport == RTSP_TRANSPORT_RTP) {
             for (i = 0; i < rt->nb_rtsp_streams; i++) {
