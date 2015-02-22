@@ -227,7 +227,7 @@ static inline uint8_t adpcm_ms_compress_sample(ADPCMChannelStatus *c,
         bias = -c->idelta / 2;
 
     nibble = (nibble + bias) / c->idelta;
-    nibble = av_clip(nibble, -8, 7) & 0x0F;
+    nibble = av_clip_intp2(nibble, 3) & 0x0F;
 
     predictor += ((nibble & 0x08) ? (nibble - 0x10) : nibble) * c->idelta;
 

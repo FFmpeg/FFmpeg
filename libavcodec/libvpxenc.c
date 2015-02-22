@@ -717,9 +717,14 @@ static int vp8_encode(AVCodecContext *avctx, AVPacket *pkt,
             rawimg_alpha = &ctx->rawimg_alpha;
             rawimg_alpha->planes[VPX_PLANE_Y] = frame->data[3];
             u_plane = av_malloc(frame->linesize[1] * frame->height);
+            v_plane = av_malloc(frame->linesize[2] * frame->height);
+            if (!u_plane || !v_plane) {
+                av_free(u_plane);
+                av_free(v_plane);
+                return AVERROR(ENOMEM);
+            }
             memset(u_plane, 0x80, frame->linesize[1] * frame->height);
             rawimg_alpha->planes[VPX_PLANE_U] = u_plane;
-            v_plane = av_malloc(frame->linesize[2] * frame->height);
             memset(v_plane, 0x80, frame->linesize[2] * frame->height);
             rawimg_alpha->planes[VPX_PLANE_V] = v_plane;
             rawimg_alpha->stride[VPX_PLANE_Y] = frame->linesize[0];
