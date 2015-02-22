@@ -218,9 +218,9 @@ static int aac_parse_packet(AVFormatContext *ctx, PayloadContext *data,
             data->timestamp = *timestamp;
         }
 
-        if (data->timestamp != *timestamp
-            || data->au_headers[0].size != data->buf_size
-            || data->buf_pos + len > MAX_AAC_HBR_FRAME_SIZE) {
+        if (data->timestamp != *timestamp ||
+            data->au_headers[0].size != data->buf_size ||
+            data->buf_pos + len > MAX_AAC_HBR_FRAME_SIZE) {
             data->buf_pos = 0;
             data->buf_size = 0;
             av_log(ctx, AV_LOG_ERROR, "Invalid packet received\n");
