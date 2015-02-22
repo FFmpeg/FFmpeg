@@ -78,9 +78,13 @@ static void to_meta_with_crop(AVCodecContext *avctx, AVFrame *p, int *dest)
             for (y = blocky; y < blocky + 8 && y < C64YRES; y++) {
                 for (x = blockx; x < blockx + 8 && x < C64XRES; x += 2) {
                     if(x < width && y < height) {
-                        /* build average over 2 pixels */
-                        luma = (src[(x + 0 + y * p->linesize[0])] +
-                                src[(x + 1 + y * p->linesize[0])]) / 2;
+                        if (x + 1 < width) {
+                            /* build average over 2 pixels */
+                            luma = (src[(x + 0 + y * p->linesize[0])] +
+                                    src[(x + 1 + y * p->linesize[0])]) / 2;
+                        } else {
+                            luma = src[(x + y * p->linesize[0])];
+                        }
                         /* write blocks as linear data now so they are suitable for elbg */
                         dest[0] = luma;
                     }
