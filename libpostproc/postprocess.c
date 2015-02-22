@@ -700,6 +700,8 @@ pp_mode *pp_get_mode_by_name_and_quality(const char *name, int quality)
     }
 
     ppMode= av_malloc(sizeof(PPMode));
+    if (!ppMode)
+        return NULL;
 
     ppMode->lumMode= 0;
     ppMode->chromMode= 0;
