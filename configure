@@ -4248,7 +4248,8 @@ enabled_any sndio_indev sndio_outdev && check_lib2 sndio.h sio_open -lsndio
 
 if enabled libcdio; then
     check_lib2 "cdio/cdda.h cdio/paranoia.h" cdio_cddap_open -lcdio_paranoia -lcdio_cdda -lcdio ||
-    check_lib2 "cdio/paranoia/cdda.h cdio/paranoia/paranoia.h" cdio_cddap_open -lcdio_paranoia -lcdio_cdda -lcdio
+    check_lib2 "cdio/paranoia/cdda.h cdio/paranoia/paranoia.h" cdio_cddap_open -lcdio_paranoia -lcdio_cdda -lcdio ||
+    die "ERROR: No usable libcdio/cdparanoia found"
 fi
 
 check_lib X11/Xlib.h XOpenDisplay -lX11 && enable xlib
