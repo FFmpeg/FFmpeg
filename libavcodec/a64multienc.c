@@ -315,7 +315,9 @@ static int a64multi_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     } else {
         /* fill up mc_meta_charset with data until lifetime exceeds */
         if (c->mc_frame_counter < c->mc_lifetime) {
-            *p = *pict;
+            ret = av_frame_ref(p, pict);
+            if (ret < 0)
+                return ret;
             p->pict_type = AV_PICTURE_TYPE_I;
             p->key_frame = 1;
             to_meta_with_crop(avctx, p, meta + 32000 * c->mc_frame_counter);
