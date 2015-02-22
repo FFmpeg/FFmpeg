@@ -276,6 +276,9 @@ static int ogg_new_buf(struct ogg *ogg, int idx)
     uint8_t *nb = av_malloc(os->bufsize + FF_INPUT_BUFFER_PADDING_SIZE);
     int size = os->bufpos - os->pstart;
 
+    if (!nb)
+        return AVERROR(ENOMEM);
+
     if (os->buf) {
         memcpy(nb, os->buf + os->pstart, size);
         av_free(os->buf);
@@ -370,8 +373,11 @@ static int ogg_read_page(AVFormatContext *s, int *sid)
     ogg->page_pos =
     os->page_pos = avio_tell(bc) - 27;
 
-    if (os->psize > 0)
-        ogg_new_buf(ogg, idx);
+    if (os->psize > 0) {
+        ret = ogg_new_buf(ogg, idx);
+        if (ret < 0)
+            return ret;
+    }
 
     ret = avio_read(bc, os->segments, nsegs);
     if (ret < nsegs)
