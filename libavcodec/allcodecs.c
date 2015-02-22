@@ -164,6 +164,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER(H264_QSV,          h264_qsv);
     REGISTER_DECODER(HEVC,              hevc);
     REGISTER_DECODER(HNM4_VIDEO,        hnm4_video);
+    REGISTER_DECODER(HQX,               hqx);
     REGISTER_ENCDEC (HUFFYUV,           huffyuv);
     REGISTER_DECODER(IDCIN,             idcin);
     REGISTER_DECODER(IFF_BYTERUN1,      iff_byterun1);

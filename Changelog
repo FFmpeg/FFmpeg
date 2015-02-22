@@ -19,6 +19,7 @@ version <next>:
 - RTP depacketizer for AC3 payload format (RFC 4184)
 - RTP depacketizer for loss tolerant payload format for MP3 audio (RFC 5219)
 - RTP depacketizer for DV (RFC 6469)
+- Canopus HQX decoder
 
 
 version 11:
