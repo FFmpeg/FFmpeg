@@ -913,11 +913,10 @@ static const char * context_to_name(void * ptr) {
 static const AVClass av_codec_context_class = { "Postproc", context_to_name, NULL };
 
 pp_context *pp_get_context(int width, int height, int cpuCaps){
-    PPContext *c= av_malloc(sizeof(PPContext));
+    PPContext *c= av_mallocz(sizeof(PPContext));
     int stride= FFALIGN(width, 16);  //assumed / will realloc if needed
     int qpStride= (width+15)/16 + 2; //assumed / will realloc if needed
 
-    memset(c, 0, sizeof(PPContext));
     c->av_class = &av_codec_context_class;
     if(cpuCaps&PP_FORMAT){
         c->hChromaSubSample= cpuCaps&0x3;
