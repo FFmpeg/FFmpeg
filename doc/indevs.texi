@@ -359,4 +359,14 @@ avconv -f x11grab -show_region 1 -r 25 -s cif -i :0.0+10,20 out.mpg
 avconv -f x11grab -follow_mouse centered -show_region 1  -r 25 -s cif -i :0.0 out.mpg
 @end example
 
+@subsection @var{grab_x} @var{grab_y} AVOption
+
+The syntax is:
+@example
+-grab_x @var{x_offset} -grab_y @var{y_offset}
+@end example
+
+Set the grabing region coordinates. The are expressed as offset from the top left
+corner of the X11 window. The default value is 0.
+
 @c man end INPUT DEVICES
