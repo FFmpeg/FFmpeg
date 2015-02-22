@@ -917,6 +917,9 @@ pp_context *pp_get_context(int width, int height, int cpuCaps){
     int stride= FFALIGN(width, 16);  //assumed / will realloc if needed
     int qpStride= (width+15)/16 + 2; //assumed / will realloc if needed
 
+    if (!c)
+        return NULL;
+
     c->av_class = &av_codec_context_class;
     if(cpuCaps&PP_FORMAT){
         c->hChromaSubSample= cpuCaps&0x3;
