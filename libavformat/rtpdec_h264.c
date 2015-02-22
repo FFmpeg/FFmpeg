@@ -181,7 +181,7 @@ static int sdp_parse_fmtp_config_h264(AVFormatContext *s,
 
 int ff_h264_handle_aggregated_packet(AVFormatContext *ctx, AVPacket *pkt,
                                      const uint8_t *buf, int len,
-                                     int start_skip, int *nal_counters,
+                                     int skip_between, int *nal_counters,
                                      int nal_mask)
 {
     int pass         = 0;
@@ -193,9 +193,6 @@ int ff_h264_handle_aggregated_packet(AVFormatContext *ctx, AVPacket *pkt,
     for (pass = 0; pass < 2; pass++) {
         const uint8_t *src = buf;
         int src_len        = len;
-
-        src     += start_skip;
-        src_len -= start_skip;
 
         while (src_len > 2) {
             uint16_t nal_size = AV_RB16(src);
@@ -224,8 +221,8 @@ int ff_h264_handle_aggregated_packet(AVFormatContext *ctx, AVPacket *pkt,
             }
 
             // eat what we handled
-            src     += nal_size + start_skip;
-            src_len -= nal_size + start_skip;
+            src     += nal_size + skip_between;
+            src_len -= nal_size + skip_between;
         }
 
         if (pass == 0) {
