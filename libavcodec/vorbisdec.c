@@ -383,8 +383,10 @@ static int vorbis_parse_setup_hdr_codebooks(vorbis_context *vc)
                 codebook_setup->codevectors =
                     av_mallocz_array(used_entries, codebook_setup->dimensions *
                                sizeof(*codebook_setup->codevectors));
-                if (!codebook_setup->codevectors)
-                    return AVERROR(ENOMEM);
+                if (!codebook_setup->codevectors) {
+                    ret = AVERROR(ENOMEM);
+                    goto error;
+                }
             } else
                 codebook_setup->codevectors = NULL;
 

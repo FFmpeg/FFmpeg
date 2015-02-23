@@ -4563,12 +4563,16 @@ static int mov_create_timecode_track(AVFormatContext *s, int index, int src_inde
 
     /* encode context: tmcd data stream */
     track->enc = avcodec_alloc_context3(NULL);
+    if (!track->enc)
+        return AVERROR(ENOMEM);
     track->enc->codec_type = AVMEDIA_TYPE_DATA;
     track->enc->codec_tag  = track->tag;
     track->enc->time_base  = av_inv_q(rate);
 
     /* the tmcd track just contains one packet with the frame number */
     pkt.data = av_malloc(pkt.size);
+    if (!pkt.data)
+        return AVERROR(ENOMEM);
     AV_WB32(pkt.data, tc.start);
     ret = ff_mov_write_packet(s, &pkt);
     av_free(pkt.data);

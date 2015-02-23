@@ -60,11 +60,15 @@ static av_cold int encode_init(AVCodecContext *avctx)
     flags2 = 1;
     if (avctx->codec->id == AV_CODEC_ID_WMAV1) {
         extradata             = av_malloc(4);
+        if (!extradata)
+            return AVERROR(ENOMEM);
         avctx->extradata_size = 4;
         AV_WL16(extradata, flags1);
         AV_WL16(extradata + 2, flags2);
     } else if (avctx->codec->id == AV_CODEC_ID_WMAV2) {
         extradata             = av_mallocz(10);
+        if (!extradata)
+            return AVERROR(ENOMEM);
         avctx->extradata_size = 10;
         AV_WL32(extradata, flags1);
         AV_WL16(extradata + 4, flags2);

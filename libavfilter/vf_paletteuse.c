@@ -43,6 +43,12 @@ enum color_search_method {
     NB_COLOR_SEARCHES
 };
 
+enum diff_mode {
+    DIFF_MODE_NONE,
+    DIFF_MODE_RECTANGLE,
+    NB_DIFF_MODE
+};
+
 struct color_node {
     uint8_t val[3];
     uint8_t palette_id;
@@ -65,7 +71,8 @@ struct cache_node {
 
 struct PaletteUseContext;
 
-typedef int (*set_frame_func)(struct PaletteUseContext *s, AVFrame *out, AVFrame *in);
+typedef int (*set_frame_func)(struct PaletteUseContext *s, AVFrame *out, AVFrame *in,
+                              int x_start, int y_start, int width, int height);
 
 typedef struct PaletteUseContext {
     const AVClass *class;
@@ -78,6 +85,9 @@ typedef struct PaletteUseContext {
     set_frame_func set_frame;
     int bayer_scale;
     int ordered_dither[8*8];
+    int diff_mode;
+    AVFrame *last_in;
+    AVFrame *last_out;
 
     /* debug options */
     char *dot_filename;
@@ -97,6 +107,8 @@ static const AVOption paletteuse_options[] = {
         { "sierra2",         "Frankie Sierra dithering v2 (error diffusion)",                          0, AV_OPT_TYPE_CONST, {.i64=DITHERING_SIERRA2},         INT_MIN, INT_MAX, FLAGS, "dithering_mode" },
         { "sierra2_4a",      "Frankie Sierra dithering v2 \"Lite\" (error diffusion)",                 0, AV_OPT_TYPE_CONST, {.i64=DITHERING_SIERRA2_4A},      INT_MIN, INT_MAX, FLAGS, "dithering_mode" },
     { "bayer_scale", "set scale for bayer dithering", OFFSET(bayer_scale), AV_OPT_TYPE_INT, {.i64=2}, 0, 5, FLAGS },
+    { "diff_mode",   "set frame difference mode",     OFFSET(diff_mode),   AV_OPT_TYPE_INT, {.i64=DIFF_MODE_NONE}, 0, NB_DIFF_MODE-1, FLAGS, "diff_mode" },
+        { "rectangle", "process smallest different rectangle", 0, AV_OPT_TYPE_CONST, {.i64=DIFF_MODE_RECTANGLE}, INT_MIN, INT_MAX, FLAGS, "diff_mode" },
 
     /* following are the debug options, not part of the official API */
     { "debug_kdtree", "save Graphviz graph of the kdtree in specified file", OFFSET(dot_filename), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, FLAGS },
@@ -133,9 +145,9 @@ static int query_formats(AVFilterContext *ctx)
 
 static av_always_inline int dither_color(uint32_t px, int er, int eg, int eb, int scale, int shift)
 {
-    return av_clip_uint8((px >> 16 & 0xff) + ((er * scale) >> shift)) << 16
-         | av_clip_uint8((px >>  8 & 0xff) + ((eg * scale) >> shift)) <<  8
-         | av_clip_uint8((px       & 0xff) + ((eb * scale) >> shift));
+    return av_clip_uint8((px >> 16 & 0xff) + ((er * scale) / (1<<shift))) << 16
+         | av_clip_uint8((px >>  8 & 0xff) + ((eg * scale) / (1<<shift))) <<  8
+         | av_clip_uint8((px       & 0xff) + ((eb * scale) / (1<<shift)));
 }
 
 static av_always_inline int diff(const uint8_t *c1, const uint8_t *c2)
@@ -349,6 +361,7 @@ static av_always_inline uint8_t get_dst_color_err(struct cache_node *cache,
 }
 
 static av_always_inline int set_frame(PaletteUseContext *s, AVFrame *out, AVFrame *in,
+                                      int x_start, int y_start, int w, int h,
                                       enum dithering_mode dither,
                                       const enum color_search_method search_method)
 {
@@ -356,13 +369,16 @@ static av_always_inline int set_frame(PaletteUseContext *s, AVFrame *out, AVFram
     const struct color_node *map = s->map;
     struct cache_node *cache = s->cache;
     const uint32_t *palette = s->palette;
-    uint32_t *src = (uint32_t *)in ->data[0];
-    uint8_t  *dst =             out->data[0];
     const int src_linesize = in ->linesize[0] >> 2;
     const int dst_linesize = out->linesize[0];
+    uint32_t *src = ((uint32_t *)in ->data[0]) + y_start*src_linesize;
+    uint8_t  *dst =              out->data[0]  + y_start*dst_linesize;
 
-    for (y = 0; y < in->height; y++) {
-        for (x = 0; x < in->width; x++) {
+    w += x_start;
+    h += y_start;
+
+    for (y = y_start; y < h; y++) {
+        for (x = x_start; x < w; x++) {
             int er, eg, eb;
 
             if (dither == DITHERING_BAYER) {
@@ -381,7 +397,7 @@ static av_always_inline int set_frame(PaletteUseContext *s, AVFrame *out, AVFram
                 dst[x] = color;
 
             } else if (dither == DITHERING_HECKBERT) {
-                const int right = x < in->width - 1, down = y < in->height - 1;
+                const int right = x < w - 1, down = y < h - 1;
                 const int color = get_dst_color_err(cache, src[x], map, palette, &er, &eg, &eb, search_method);
 
                 if (color < 0)
@@ -393,7 +409,7 @@ static av_always_inline int set_frame(PaletteUseContext *s, AVFrame *out, AVFram
                 if (right && down) src[src_linesize + x + 1] = dither_color(src[src_linesize + x + 1], er, eg, eb, 2, 3);
 
             } else if (dither == DITHERING_FLOYD_STEINBERG) {
-                const int right = x < in->width - 1, down = y < in->height - 1, left = x > 0;
+                const int right = x < w - 1, down = y < h - 1, left = x > x_start;
                 const int color = get_dst_color_err(cache, src[x], map, palette, &er, &eg, &eb, search_method);
 
                 if (color < 0)
@@ -406,8 +422,8 @@ static av_always_inline int set_frame(PaletteUseContext *s, AVFrame *out, AVFram
                 if (right && down) src[src_linesize + x + 1] = dither_color(src[src_linesize + x + 1], er, eg, eb, 1, 4);
 
             } else if (dither == DITHERING_SIERRA2) {
-                const int right  = x < in->width - 1, down  = y < in->height - 1, left  = x > 0;
-                const int right2 = x < in->width - 2,                             left2 = x > 1;
+                const int right  = x < w - 1, down  = y < h - 1, left  = x > x_start;
+                const int right2 = x < w - 2,                    left2 = x > x_start + 1;
                 const int color = get_dst_color_err(cache, src[x], map, palette, &er, &eg, &eb, search_method);
 
                 if (color < 0)
@@ -426,7 +442,7 @@ static av_always_inline int set_frame(PaletteUseContext *s, AVFrame *out, AVFram
                 }
 
             } else if (dither == DITHERING_SIERRA2_4A) {
-                const int right = x < in->width - 1, down = y < in->height - 1, left = x > 0;
+                const int right = x < w - 1, down = y < h - 1, left = x > x_start;
                 const int color = get_dst_color_err(cache, src[x], map, palette, &er, &eg, &eb, search_method);
 
                 if (color < 0)
@@ -738,8 +754,98 @@ static void debug_mean_error(PaletteUseContext *s, const AVFrame *in1,
            mean_err / div, s->total_mean_err / (div * frame_count));
 }
 
+static void set_processing_window(enum diff_mode diff_mode,
+                                  const AVFrame *prv_src, const AVFrame *cur_src,
+                                  const AVFrame *prv_dst,       AVFrame *cur_dst,
+                                  int *xp, int *yp, int *wp, int *hp)
+{
+    int x_start = 0, y_start = 0;
+    int width  = cur_src->width;
+    int height = cur_src->height;
+
+    if (prv_src && diff_mode == DIFF_MODE_RECTANGLE) {
+        int y;
+        int x_end = cur_src->width  - 1,
+            y_end = cur_src->height - 1;
+        const uint32_t *prv_srcp = (const uint32_t *)prv_src->data[0];
+        const uint32_t *cur_srcp = (const uint32_t *)cur_src->data[0];
+        const uint8_t  *prv_dstp = prv_dst->data[0];
+        uint8_t        *cur_dstp = cur_dst->data[0];
+
+        const int prv_src_linesize = prv_src->linesize[0] >> 2;
+        const int cur_src_linesize = cur_src->linesize[0] >> 2;
+        const int prv_dst_linesize = prv_dst->linesize[0];
+        const int cur_dst_linesize = cur_dst->linesize[0];
+
+        /* skip common lines */
+        while (y_start < y_end && !memcmp(prv_srcp + y_start*prv_src_linesize,
+                                          cur_srcp + y_start*cur_src_linesize,
+                                          cur_src->width * 4)) {
+            memcpy(cur_dstp + y_start*cur_dst_linesize,
+                   prv_dstp + y_start*prv_dst_linesize,
+                   cur_dst->width);
+            y_start++;
+        }
+        while (y_end > y_start && !memcmp(prv_srcp + y_end*prv_src_linesize,
+                                          cur_srcp + y_end*cur_src_linesize,
+                                          cur_src->width * 4)) {
+            memcpy(cur_dstp + y_end*cur_dst_linesize,
+                   prv_dstp + y_end*prv_dst_linesize,
+                   cur_dst->width);
+            y_end--;
+        }
+
+        height = y_end + 1 - y_start;
+
+        /* skip common columns */
+        while (x_start < x_end) {
+            int same_column = 1;
+            for (y = y_start; y <= y_end; y++) {
+                if (prv_srcp[y*prv_src_linesize + x_start] != cur_srcp[y*cur_src_linesize + x_start]) {
+                    same_column = 0;
+                    break;
+                }
+            }
+            if (!same_column)
+                break;
+            x_start++;
+        }
+        while (x_end > x_start) {
+            int same_column = 1;
+            for (y = y_start; y <= y_end; y++) {
+                if (prv_srcp[y*prv_src_linesize + x_end] != cur_srcp[y*cur_src_linesize + x_end]) {
+                    same_column = 0;
+                    break;
+                }
+            }
+            if (!same_column)
+                break;
+            x_end--;
+        }
+        width = x_end + 1 - x_start;
+
+        if (x_start) {
+            for (y = y_start; y <= y_end; y++)
+                memcpy(cur_dstp + y*cur_dst_linesize,
+                       prv_dstp + y*prv_dst_linesize, x_start);
+        }
+        if (x_end != cur_src->width - 1) {
+            const int copy_len = cur_src->width - 1 - x_end;
+            for (y = y_start; y <= y_end; y++)
+                memcpy(cur_dstp + y*cur_dst_linesize + x_end + 1,
+                       prv_dstp + y*prv_dst_linesize + x_end + 1,
+                       copy_len);
+        }
+    }
+    *xp = x_start;
+    *yp = y_start;
+    *wp = width;
+    *hp = height;
+}
+
 static AVFrame *apply_palette(AVFilterLink *inlink, AVFrame *in)
 {
+    int x, y, w, h;
     AVFilterContext *ctx = inlink->dst;
     PaletteUseContext *s = ctx->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
@@ -750,8 +856,24 @@ static AVFrame *apply_palette(AVFilterLink *inlink, AVFrame *in)
         return NULL;
     }
     av_frame_copy_props(out, in);
-    if (s->set_frame(s, out, in) < 0) {
+
+    set_processing_window(s->diff_mode, s->last_in, in,
+                          s->last_out, out, &x, &y, &w, &h);
+    av_frame_free(&s->last_in);
+    av_frame_free(&s->last_out);
+    s->last_in  = av_frame_clone(in);
+    s->last_out = av_frame_clone(out);
+    if (!s->last_in || !s->last_out ||
+        av_frame_make_writable(s->last_in) < 0) {
         av_frame_free(&in);
+        av_frame_free(&out);
+        return NULL;
+    }
+
+    av_dlog(ctx, "%dx%d rect: (%d;%d) -> (%d,%d) [area:%dx%d]\n",
+            w, h, x, y, x+w, y+h, in->width, in->height);
+
+    if (s->set_frame(s, out, in, x, y, w, h) < 0) {
         av_frame_free(&out);
         return NULL;
     }
@@ -828,9 +950,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 }
 
 #define DEFINE_SET_FRAME(color_search, name, value)                             \
-static int set_frame_##name(PaletteUseContext *s, AVFrame *out, AVFrame *in)    \
+static int set_frame_##name(PaletteUseContext *s, AVFrame *out, AVFrame *in,    \
+                            int x_start, int y_start, int w, int h)             \
 {                                                                               \
-    return set_frame(s, out, in, value, color_search);                          \
+    return set_frame(s, out, in, x_start, y_start, w, h, value, color_search);  \
 }
 
 #define DEFINE_SET_FRAME_COLOR_SEARCH(color_search, color_search_macro)                                 \
@@ -901,6 +1024,8 @@ static av_cold void uninit(AVFilterContext *ctx)
     ff_dualinput_uninit(&s->dinput);
     for (i = 0; i < CACHE_SIZE; i++)
         av_freep(&s->cache[i].entries);
+    av_frame_free(&s->last_in);
+    av_frame_free(&s->last_out);
 }
 
 static const AVFilterPad paletteuse_inputs[] = {

@@ -56,6 +56,7 @@ struct RTPMuxContext {
      * (1, 2 or 4)
      */
     int nal_length_size;
+    int buffered_nals;
 
     int flags;
 

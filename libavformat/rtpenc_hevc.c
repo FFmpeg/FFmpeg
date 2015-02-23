@@ -19,11 +19,27 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/intreadwrite.h"
+
 #include "avc.h"
 #include "avformat.h"
 #include "rtpenc.h"
 
 #define RTP_HEVC_HEADERS_SIZE 3
+
+static void flush_buffered(AVFormatContext *s1, int last)
+{
+    RTPMuxContext *s = s1->priv_data;
+    if (s->buf_ptr != s->buf) {
+        // If only sending one single NAL unit, skip the aggregation framing
+        if (s->buffered_nals == 1)
+            ff_rtp_send_data(s1, s->buf + 4, s->buf_ptr - s->buf - 4, last);
+        else
+            ff_rtp_send_data(s1, s->buf, s->buf_ptr - s->buf, last);
+    }
+    s->buf_ptr = s->buf;
+    s->buffered_nals = 0;
+}
 
 static void nal_send(AVFormatContext *ctx, const uint8_t *buf, int len, int last_packet_of_frame)
 {
@@ -33,9 +49,31 @@ static void nal_send(AVFormatContext *ctx, const uint8_t *buf, int len, int last
 
     /* send it as one single NAL unit? */
     if (len <= rtp_ctx->max_payload_size) {
-        /* use the original NAL unit buffer and transmit it as RTP payload */
-        ff_rtp_send_data(ctx, buf, len, last_packet_of_frame);
+        int buffered_size = rtp_ctx->buf_ptr - rtp_ctx->buf;
+        /* Flush buffered NAL units if the current unit doesn't fit */
+        if (buffered_size + 2 + len > rtp_ctx->max_payload_size) {
+            flush_buffered(ctx, 0);
+            buffered_size = 0;
+        }
+        /* If the NAL unit fits including the framing, write the unit
+         * to the buffer as an aggregate packet, otherwise flush and
+         * send as single NAL. */
+        if (buffered_size + 4 + len <= rtp_ctx->max_payload_size) {
+            if (buffered_size == 0) {
+                *rtp_ctx->buf_ptr++ = 48 << 1;
+                *rtp_ctx->buf_ptr++ = 1;
+            }
+            AV_WB16(rtp_ctx->buf_ptr, len);
+            rtp_ctx->buf_ptr += 2;
+            memcpy(rtp_ctx->buf_ptr, buf, len);
+            rtp_ctx->buf_ptr += len;
+            rtp_ctx->buffered_nals++;
+        } else {
+            flush_buffered(ctx, 0);
+            ff_rtp_send_data(ctx, buf, len, last_packet_of_frame);
+        }
     } else {
+        flush_buffered(ctx, 0);
         /*
           create the HEVC payload header and transmit the buffer as fragmentation units (FU)
 
@@ -102,6 +140,7 @@ void ff_rtp_send_hevc(AVFormatContext *ctx, const uint8_t *frame_buf, int frame_
 
     /* use the default 90 KHz time stamp */
     rtp_ctx->timestamp = rtp_ctx->cur_timestamp;
+    rtp_ctx->buf_ptr   = rtp_ctx->buf;
 
     if (rtp_ctx->nal_length_size)
         buf_ptr = ff_avc_mp4_find_startcode(frame_buf, buf_end, rtp_ctx->nal_length_size) ? frame_buf : buf_end;
@@ -127,4 +166,5 @@ void ff_rtp_send_hevc(AVFormatContext *ctx, const uint8_t *frame_buf, int frame_
         /* jump to the next NAL unit */
         buf_ptr = next_NAL_unit;
     }
+    flush_buffered(ctx, 1);
 }

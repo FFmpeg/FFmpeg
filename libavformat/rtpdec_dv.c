@@ -17,10 +17,10 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
- *
  */
 
 #include "libavutil/avstring.h"
+
 #include "libavcodec/bytestream.h"
 
 #include "rtpdec_formats.h"
@@ -46,6 +46,7 @@ static void dv_free_dyn_buffer(AVIOContext **dyn_buf)
 
 static av_cold void dv_free_context(PayloadContext *data)
 {
+    dv_free_dyn_buffer(&data->buf);
     av_free(data);
 }
 

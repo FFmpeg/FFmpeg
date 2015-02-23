@@ -542,6 +542,10 @@ static int rtsp_read_play(AVFormatContext *s)
                 AVStream *st = NULL;
                 if (!rtpctx || rtsp_st->stream_index < 0)
                     continue;
+                if (CONFIG_RTPDEC &&
+                        !(rt->server_type == RTSP_SERVER_WMS && i > 1) && s->iformat)
+                        ff_rtp_send_punch_packets(rtsp_st->rtp_handle);
+
                 st = s->streams[rtsp_st->stream_index];
                 rtpctx->range_start_offset =
                     av_rescale_q(reply->range_start, AV_TIME_BASE_Q,
