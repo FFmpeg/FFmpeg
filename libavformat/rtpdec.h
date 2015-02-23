@@ -113,7 +113,7 @@ typedef int (*DynamicPayloadPacketHandlerProc)(AVFormatContext *ctx,
                                                int len, uint16_t seq, int flags);
 
 struct RTPDynamicProtocolHandler {
-    const char enc_name[50];
+    const char *enc_name;
     enum AVMediaType codec_type;
     enum AVCodecID codec_id;
     int static_payload_id; /* 0 means no payload id is set. 0 is a valid
