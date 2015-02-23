@@ -580,10 +580,8 @@ static int hqx_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     ret = ff_get_buffer(avctx, pic, 0);
-    if (ret < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Could not allocate buffer.\n");
+    if (ret < 0)
         return ret;
-    }
 
     for (slice = 0; slice < 16; slice++) {
         if (slice_off[slice] < HQX_HEADER_SIZE ||
