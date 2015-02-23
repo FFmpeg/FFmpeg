@@ -39,8 +39,6 @@
 #include "libavutil/avstring.h"
 #include "avformat.h"
 
-#include "network.h"
-
 #include "rtpdec.h"
 #include "rtpdec_formats.h"
 
