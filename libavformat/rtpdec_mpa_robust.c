@@ -33,15 +33,6 @@ struct PayloadContext {
     AVIOContext *fragment;
 };
 
-static av_cold int mpa_robust_init(AVFormatContext *ctx, int st_index,
-                                   PayloadContext *data)
-{
-    if (st_index < 0)
-        return 0;
-    ctx->streams[st_index]->need_parsing = AVSTREAM_PARSE_HEADERS;
-    return 0;
-}
-
 static PayloadContext *mpa_robust_new_context(void)
 {
     return av_mallocz(sizeof(PayloadContext));
@@ -217,7 +208,7 @@ RTPDynamicProtocolHandler ff_mpeg_audio_robust_dynamic_handler = {
     .enc_name          = "mpa-robust",
     .codec_type        = AVMEDIA_TYPE_AUDIO,
     .codec_id          = AV_CODEC_ID_MP3ADU,
-    .init              = mpa_robust_init,
+    .need_parsing      = AVSTREAM_PARSE_HEADERS,
     .alloc             = mpa_robust_new_context,
     .free              = mpa_robust_free_context,
     .parse_packet      = mpa_robust_parse_packet,

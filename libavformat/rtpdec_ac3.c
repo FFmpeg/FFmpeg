@@ -31,15 +31,6 @@ struct PayloadContext {
     AVIOContext *fragment;
 };
 
-static av_cold int ac3_init(AVFormatContext *s, int st_index,
-                            PayloadContext *data)
-{
-    if (st_index < 0)
-        return 0;
-    s->streams[st_index]->need_parsing = AVSTREAM_PARSE_FULL;
-    return 0;
-}
-
 static PayloadContext *ac3_new_context(void)
 {
     return av_mallocz(sizeof(PayloadContext));
@@ -150,7 +141,7 @@ RTPDynamicProtocolHandler ff_ac3_dynamic_handler = {
     .enc_name           = "ac3",
     .codec_type         = AVMEDIA_TYPE_AUDIO,
     .codec_id           = AV_CODEC_ID_AC3,
-    .init               = ac3_init,
+    .need_parsing       = AVSTREAM_PARSE_FULL,
     .alloc              = ac3_new_context,
     .free               = ac3_free_context,
     .parse_packet       = ac3_handle_packet,

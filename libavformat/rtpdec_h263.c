@@ -24,15 +24,6 @@
 #include "libavutil/attributes.h"
 #include "libavutil/intreadwrite.h"
 
-static av_cold int h263_init(AVFormatContext *ctx, int st_index,
-                             PayloadContext *data)
-{
-    if (st_index < 0)
-        return 0;
-    ctx->streams[st_index]->need_parsing = AVSTREAM_PARSE_FULL;
-    return 0;
-}
-
 int ff_h263_handle_packet(AVFormatContext *ctx, PayloadContext *data,
                           AVStream *st, AVPacket *pkt, uint32_t *timestamp,
                           const uint8_t *buf, int len, uint16_t seq, int flags)
@@ -102,7 +93,7 @@ RTPDynamicProtocolHandler ff_h263_1998_dynamic_handler = {
     .enc_name         = "H263-1998",
     .codec_type       = AVMEDIA_TYPE_VIDEO,
     .codec_id         = AV_CODEC_ID_H263,
-    .init             = h263_init,
+    .need_parsing     = AVSTREAM_PARSE_FULL,
     .parse_packet     = ff_h263_handle_packet,
 };
 
@@ -110,6 +101,6 @@ RTPDynamicProtocolHandler ff_h263_2000_dynamic_handler = {
     .enc_name         = "H263-2000",
     .codec_type       = AVMEDIA_TYPE_VIDEO,
     .codec_id         = AV_CODEC_ID_H263,
-    .init             = h263_init,
+    .need_parsing     = AVSTREAM_PARSE_FULL,
     .parse_packet     = ff_h263_handle_packet,
 };

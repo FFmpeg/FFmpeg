@@ -60,17 +60,6 @@ static av_cold void h261_free_context(PayloadContext *pl_ctx)
     av_free(pl_ctx);
 }
 
-static av_cold int h261_init(AVFormatContext *ctx, int st_index,
-                             PayloadContext *data)
-{
-    if (st_index < 0)
-        return 0;
-
-    ctx->streams[st_index]->need_parsing = AVSTREAM_PARSE_FULL;
-
-    return 0;
-}
-
 static int h261_handle_packet(AVFormatContext *ctx, PayloadContext *rtp_h261_ctx,
                               AVStream *st, AVPacket *pkt, uint32_t *timestamp,
                               const uint8_t *buf, int len, uint16_t seq,
@@ -194,7 +183,7 @@ RTPDynamicProtocolHandler ff_h261_dynamic_handler = {
     .enc_name          = "H261",
     .codec_type        = AVMEDIA_TYPE_VIDEO,
     .codec_id          = AV_CODEC_ID_H261,
-    .init              = h261_init,
+    .need_parsing      = AVSTREAM_PARSE_FULL,
     .alloc             = h261_new_context,
     .free              = h261_free_context,
     .parse_packet      = h261_handle_packet,
