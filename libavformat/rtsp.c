@@ -393,7 +393,7 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
             codec_type = AVMEDIA_TYPE_AUDIO;
         } else if (!strcmp(st_type, "video")) {
             codec_type = AVMEDIA_TYPE_VIDEO;
-        } else if (!strcmp(st_type, "application")) {
+        } else if (!strcmp(st_type, "application") || !strcmp(st_type, "text")) {
             codec_type = AVMEDIA_TYPE_DATA;
         }
         if (codec_type == AVMEDIA_TYPE_UNKNOWN || !(rt->media_type_mask & (1 << codec_type))) {
