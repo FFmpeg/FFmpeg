@@ -124,7 +124,8 @@ static av_cold int encode_init(AVCodecContext *avctx)
     ff_set_cmp(&s->mecc, s->mecc.me_sub_cmp, s->avctx->me_sub_cmp);
 
     s->input_picture = av_frame_alloc();
-    if (!s->input_picture)
+    avctx->coded_frame = av_frame_alloc();
+    if (!s->input_picture || !avctx->coded_frame)
         return AVERROR(ENOMEM);
 
     if ((ret = ff_snow_get_buffer(s, s->input_picture)) < 0)
@@ -1620,7 +1621,8 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     }
 
     ff_snow_frame_start(s);
-    avctx->coded_frame= s->current_picture;
+    av_frame_unref(avctx->coded_frame);
+    av_frame_ref(avctx->coded_frame, s->current_picture);
 
     s->m.current_picture_ptr= &s->m.current_picture;
     s->m.current_picture.f = s->current_picture;
@@ -1862,6 +1864,7 @@ static av_cold int encode_end(AVCodecContext *avctx)
     ff_snow_common_end(s);
     ff_rate_control_uninit(&s->m);
     av_frame_free(&s->input_picture);
+    av_frame_free(&avctx->coded_frame);
     av_freep(&avctx->stats_out);
 
     return 0;
