@@ -321,9 +321,15 @@ static int hevc_handle_packet(AVFormatContext *ctx, PayloadContext *rtp_hevc_ctx
         buf += RTP_HEVC_PAYLOAD_HEADER_SIZE;
         len -= RTP_HEVC_PAYLOAD_HEADER_SIZE;
 
+        /* pass the HEVC DONL field */
+        if (rtp_hevc_ctx->using_donl_field) {
+            buf += RTP_HEVC_DONL_FIELD_SIZE;
+            len -= RTP_HEVC_DONL_FIELD_SIZE;
+        }
+
         res = ff_h264_handle_aggregated_packet(ctx, rtp_hevc_ctx, pkt, buf, len,
                                                rtp_hevc_ctx->using_donl_field ?
-                                               RTP_HEVC_DONL_FIELD_SIZE : 0,
+                                               RTP_HEVC_DOND_FIELD_SIZE : 0,
                                                NULL, 0);
         if (res < 0)
             return res;
