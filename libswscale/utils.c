@@ -631,6 +631,13 @@ static av_cold int initFilter(int16_t **outFilter, int32_t **filterPos,
             (*filterPos)[i]-= shift;
             filter[i * filterSize + srcW - 1 - (*filterPos)[i]] += acc;
         }
+        av_assert0((*filterPos)[i] >= 0);
+        av_assert0((*filterPos)[i] < srcW);
+        if ((*filterPos)[i] + filterSize > srcW) {
+            for (j = 0; j < filterSize; j++) {
+                av_assert0((*filterPos)[i] + j < srcW || !filter[i * filterSize + j]);
+            }
+        }
     }
 
     // Note the +1 is for the MMX scaler which reads over the end
