@@ -116,6 +116,7 @@ struct RTPDynamicProtocolHandler {
     const char *enc_name;
     enum AVMediaType codec_type;
     enum AVCodecID codec_id;
+    enum AVStreamParseType need_parsing;
     int static_payload_id; /* 0 means no payload id is set. 0 is a valid
                             * payload ID (PCMU), too, but that format doesn't
                             * require any custom depacketization code. */

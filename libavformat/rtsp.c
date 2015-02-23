@@ -176,13 +176,16 @@ static int get_sockaddr(const char *buf, struct sockaddr_storage *sock)
 
 #if CONFIG_RTPDEC
 static void init_rtp_handler(RTPDynamicProtocolHandler *handler,
-                             RTSPStream *rtsp_st, AVCodecContext *codec)
+                             RTSPStream *rtsp_st, AVStream *st)
 {
+    AVCodecContext *codec = st ? st->codec : NULL;
     if (!handler)
         return;
     if (codec)
         codec->codec_id          = handler->codec_id;
     rtsp_st->dynamic_handler = handler;
+    if (st)
+        st->need_parsing = handler->need_parsing;
     if (handler->alloc) {
         rtsp_st->dynamic_protocol_context = handler->alloc();
         if (!rtsp_st->dynamic_protocol_context)
@@ -215,7 +218,7 @@ static int sdp_parse_rtpmap(AVFormatContext *s,
     if (codec->codec_id == AV_CODEC_ID_NONE) {
         RTPDynamicProtocolHandler *handler =
             ff_rtp_handler_find_by_name(buf, codec->codec_type);
-        init_rtp_handler(handler, rtsp_st, codec);
+        init_rtp_handler(handler, rtsp_st, st);
         /* If no dynamic handler was found, check with the list of standard
          * allocated types, if such a stream for some reason happens to
          * use a private payload type. This isn't handled in rtpdec.c, since
@@ -465,7 +468,7 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
                 /* Even static payload types may need a custom depacketizer */
                 handler = ff_rtp_handler_find_by_id(
                               rtsp_st->sdp_payload_type, st->codec->codec_type);
-                init_rtp_handler(handler, rtsp_st, st->codec);
+                init_rtp_handler(handler, rtsp_st, st);
                 if (handler && handler->init)
                     handler->init(s, st->index,
                                   rtsp_st->dynamic_protocol_context);
