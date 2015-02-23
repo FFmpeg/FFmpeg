@@ -331,24 +331,8 @@ static int hevc_handle_packet(AVFormatContext *ctx, PayloadContext *rtp_hevc_ctx
         new_nal_header[0] = (rtp_pl[0] & 0x81) | (fu_type << 1);
         new_nal_header[1] = rtp_pl[1];
 
-        /* start fragment vs. subsequent fragments */
-        if (first_fragment) {
-            /* create A/V packet which is big enough */
-            if ((res = av_new_packet(pkt, sizeof(start_sequence) + sizeof(new_nal_header) + len)) < 0)
-                return res;
-            /* A/V packet: copy start sequence */
-            memcpy(pkt->data, start_sequence, sizeof(start_sequence));
-            /* A/V packet: copy new NAL header */
-            memcpy(pkt->data + sizeof(start_sequence), new_nal_header, sizeof(new_nal_header));
-            /* A/V packet: copy NAL unit data */
-            memcpy(pkt->data + sizeof(start_sequence) + sizeof(new_nal_header), buf, len);
-        } else {
-            /* create A/V packet */
-            if ((res = av_new_packet(pkt, len)) < 0)
-                return res;
-            /* A/V packet: copy NAL unit data */
-            memcpy(pkt->data, buf, len);
-        }
+        res = ff_h264_handle_frag_packet(pkt, buf, len, first_fragment,
+                                         new_nal_header, sizeof(new_nal_header));
 
         break;
     /* PACI packet */
