@@ -165,5 +165,5 @@ RTPDynamicProtocolHandler ff_dv_dynamic_handler = {
     .parse_sdp_a_line = dv_parse_sdp_line,
     .alloc            = dv_new_context,
     .free             = dv_free_context,
-    .parse_packet     = dv_handle_packet
+    .parse_packet     = dv_handle_packet,
 };

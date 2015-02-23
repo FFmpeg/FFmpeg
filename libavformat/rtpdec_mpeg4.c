@@ -345,5 +345,5 @@ RTPDynamicProtocolHandler ff_mpeg4_generic_dynamic_handler = {
     .parse_sdp_a_line   = parse_sdp_line,
     .alloc              = new_context,
     .free               = free_context,
-    .parse_packet       = aac_parse_packet
+    .parse_packet       = aac_parse_packet,
 };

@@ -186,5 +186,5 @@ RTPDynamicProtocolHandler ff_mp4a_latm_dynamic_handler = {
     .parse_sdp_a_line   = latm_parse_sdp_line,
     .alloc              = latm_new_context,
     .free               = latm_free_context,
-    .parse_packet       = latm_parse_packet
+    .parse_packet       = latm_parse_packet,
 };

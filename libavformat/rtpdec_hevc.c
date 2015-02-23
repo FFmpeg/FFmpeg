@@ -421,5 +421,5 @@ RTPDynamicProtocolHandler ff_hevc_dynamic_handler = {
     .parse_sdp_a_line = hevc_parse_sdp_line,
     .alloc            = hevc_new_context,
     .free             = hevc_free_context,
-    .parse_packet     = hevc_handle_packet
+    .parse_packet     = hevc_handle_packet,
 };
