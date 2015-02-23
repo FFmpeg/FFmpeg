@@ -960,7 +960,8 @@ static int roq_encode_video(RoqContext *enc)
     reconstruct_and_encode_image(enc, tempData, enc->width, enc->height,
                                  enc->width*enc->height/64);
 
-    enc->avctx->coded_frame = enc->current_frame;
+    av_frame_unref(enc->avctx->coded_frame);
+    av_frame_ref(enc->avctx->coded_frame, enc->current_frame);
 
     /* Rotate frame history */
     FFSWAP(AVFrame *, enc->current_frame, enc->last_frame);
@@ -981,6 +982,7 @@ static av_cold int roq_encode_end(AVCodecContext *avctx)
 
     av_frame_free(&enc->current_frame);
     av_frame_free(&enc->last_frame);
+    av_frame_free(&enc->avctx->coded_frame);
 
     av_freep(&enc->tmpData);
     av_freep(&enc->this_motion4);
@@ -1019,7 +1021,8 @@ static av_cold int roq_encode_init(AVCodecContext *avctx)
 
     enc->last_frame    = av_frame_alloc();
     enc->current_frame = av_frame_alloc();
-    if (!enc->last_frame || !enc->current_frame) {
+    avctx->coded_frame = av_frame_alloc();
+    if (!enc->last_frame || !enc->current_frame || !avctx->coded_frame) {
         roq_encode_end(avctx);
         return AVERROR(ENOMEM);
     }
