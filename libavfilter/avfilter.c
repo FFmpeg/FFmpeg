@@ -79,7 +79,7 @@ int avfilter_link(AVFilterContext *src, unsigned srcpad,
 
     if (src->nb_outputs <= srcpad || dst->nb_inputs <= dstpad ||
         src->outputs[srcpad]      || dst->inputs[dstpad])
-        return -1;
+        return AVERROR(EINVAL);
 
     if (src->output_pads[srcpad].type != dst->input_pads[dstpad].type) {
         av_log(src, AV_LOG_ERROR,
@@ -254,7 +254,8 @@ int ff_request_frame(AVFilterLink *link)
         return link->srcpad->request_frame(link);
     else if (link->src->inputs[0])
         return ff_request_frame(link->src->inputs[0]);
-    else return -1;
+    else
+        return AVERROR(EINVAL);
 }
 
 int ff_poll_frame(AVFilterLink *link)
@@ -267,7 +268,7 @@ int ff_poll_frame(AVFilterLink *link)
     for (i = 0; i < link->src->nb_inputs; i++) {
         int val;
         if (!link->src->inputs[i])
-            return -1;
+            return AVERROR(EINVAL);
         val = ff_poll_frame(link->src->inputs[i]);
         min = FFMIN(min, val);
     }
