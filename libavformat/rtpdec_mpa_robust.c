@@ -214,11 +214,11 @@ static int mpa_robust_parse_packet(AVFormatContext *ctx, PayloadContext *data,
 }
 
 RTPDynamicProtocolHandler ff_mpeg_audio_robust_dynamic_handler = {
+    .enc_name          = "mpa-robust",
     .codec_type        = AVMEDIA_TYPE_AUDIO,
     .codec_id          = AV_CODEC_ID_MP3ADU,
     .init              = mpa_robust_init,
     .alloc             = mpa_robust_new_context,
     .free              = mpa_robust_free_context,
     .parse_packet      = mpa_robust_parse_packet,
-    .enc_name          = "mpa-robust",
 };
