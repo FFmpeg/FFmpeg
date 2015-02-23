@@ -284,6 +284,8 @@ static int libschroedinger_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     } else {
         /* Allocate frame data to schro input buffer. */
         SchroFrame *in_frame = libschroedinger_frame_from_data(avctx, frame);
+        if (!in_frame)
+            return AVERROR(ENOMEM);
         /* Load next frame. */
         schro_encoder_push_frame(encoder, in_frame);
     }
@@ -332,6 +334,8 @@ static int libschroedinger_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
             /* Create output frame. */
             p_frame_output = av_mallocz(sizeof(FFSchroEncodedFrame));
+            if (!p_frame_output)
+                return AVERROR(ENOMEM);
             /* Set output data. */
             p_frame_output->size     = p_schro_params->enc_buf_size;
             p_frame_output->p_encbuf = p_schro_params->enc_buf;

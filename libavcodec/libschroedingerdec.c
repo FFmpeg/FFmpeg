@@ -267,6 +267,8 @@ static int libschroedinger_decode_frame(AVCodecContext *avctx,
                 /* Decoder needs a frame - create one and push it in. */
                 frame = ff_create_schro_frame(avctx,
                                               p_schro_params->frame_format);
+                if (!frame)
+                    return AVERROR(ENOMEM);
                 schro_decoder_add_output_picture(decoder, frame);
                 break;
 
