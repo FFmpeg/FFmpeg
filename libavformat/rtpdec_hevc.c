@@ -315,39 +315,39 @@ static int hevc_handle_packet(AVFormatContext *ctx, PayloadContext *rtp_hevc_ctx
 
         av_dlog(ctx, " FU type %d with %d bytes\n", fu_type, len);
 
-        if (len > 0) {
-            new_nal_header[0] = (rtp_pl[0] & 0x81) | (fu_type << 1);
-            new_nal_header[1] = rtp_pl[1];
-
-            /* start fragment vs. subsequent fragments */
-            if (first_fragment) {
-                if (!last_fragment) {
-                    /* create A/V packet which is big enough */
-                    if ((res = av_new_packet(pkt, sizeof(start_sequence) + sizeof(new_nal_header) + len)) < 0)
-                        return res;
-                    /* A/V packet: copy start sequence */
-                    memcpy(pkt->data, start_sequence, sizeof(start_sequence));
-                    /* A/V packet: copy new NAL header */
-                    memcpy(pkt->data + sizeof(start_sequence), new_nal_header, sizeof(new_nal_header));
-                    /* A/V packet: copy NAL unit data */
-                    memcpy(pkt->data + sizeof(start_sequence) + sizeof(new_nal_header), buf, len);
-                } else {
-                    av_log(ctx, AV_LOG_ERROR, "Illegal combination of S and E bit in RTP/HEVC packet\n");
-                    res = AVERROR_INVALIDDATA;
-                }
-            } else {
-                /* create A/V packet */
-                if ((res = av_new_packet(pkt, len)) < 0)
-                    return res;
-                /* A/V packet: copy NAL unit data */
-                memcpy(pkt->data, buf, len);
-            }
-        } else {
+        if (len <= 0) {
             /* sanity check for size of input packet: 1 byte payload at least */
             av_log(ctx, AV_LOG_ERROR,
                    "Too short RTP/HEVC packet, got %d bytes of NAL unit type %d\n",
                    len, nal_type);
-            res = AVERROR_INVALIDDATA;
+            return AVERROR_INVALIDDATA;
+        }
+
+        if (first_fragment && last_fragment) {
+            av_log(ctx, AV_LOG_ERROR, "Illegal combination of S and E bit in RTP/HEVC packet\n");
+            return AVERROR_INVALIDDATA;
+        }
+
+        new_nal_header[0] = (rtp_pl[0] & 0x81) | (fu_type << 1);
+        new_nal_header[1] = rtp_pl[1];
+
+        /* start fragment vs. subsequent fragments */
+        if (first_fragment) {
+            /* create A/V packet which is big enough */
+            if ((res = av_new_packet(pkt, sizeof(start_sequence) + sizeof(new_nal_header) + len)) < 0)
+                return res;
+            /* A/V packet: copy start sequence */
+            memcpy(pkt->data, start_sequence, sizeof(start_sequence));
+            /* A/V packet: copy new NAL header */
+            memcpy(pkt->data + sizeof(start_sequence), new_nal_header, sizeof(new_nal_header));
+            /* A/V packet: copy NAL unit data */
+            memcpy(pkt->data + sizeof(start_sequence) + sizeof(new_nal_header), buf, len);
+        } else {
+            /* create A/V packet */
+            if ((res = av_new_packet(pkt, len)) < 0)
+                return res;
+            /* A/V packet: copy NAL unit data */
+            memcpy(pkt->data, buf, len);
         }
 
         break;
