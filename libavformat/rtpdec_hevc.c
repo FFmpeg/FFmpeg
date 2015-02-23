@@ -224,19 +224,19 @@ static int hevc_handle_packet(AVFormatContext *ctx, PayloadContext *rtp_hevc_ctx
     }
 
     /*
-      decode the HEVC payload header according to section 4 of draft version 6:
-
-         0                   1
-         0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
-        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-        |F|   Type    |  LayerId  | TID |
-        +-------------+-----------------+
-
-           Forbidden zero (F): 1 bit
-           NAL unit type (Type): 6 bits
-           NUH layer ID (LayerId): 6 bits
-           NUH temporal ID plus 1 (TID): 3 bits
-    */
+     * decode the HEVC payload header according to section 4 of draft version 6:
+     *
+     *    0                   1
+     *    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
+     *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     *   |F|   Type    |  LayerId  | TID |
+     *   +-------------+-----------------+
+     *
+     *      Forbidden zero (F): 1 bit
+     *      NAL unit type (Type): 6 bits
+     *      NUH layer ID (LayerId): 6 bits
+     *      NUH temporal ID plus 1 (TID): 3 bits
+     */
     nal_type =  (buf[0] >> 1) & 0x3f;
     lid  = ((buf[0] << 5) & 0x20) | ((buf[1] >> 3) & 0x1f);
     tid  =   buf[1] & 0x07;
@@ -314,17 +314,17 @@ static int hevc_handle_packet(AVFormatContext *ctx, PayloadContext *rtp_hevc_ctx
         len -= RTP_HEVC_PAYLOAD_HEADER_SIZE;
 
         /*
-             decode the FU header
-
-              0 1 2 3 4 5 6 7
-             +-+-+-+-+-+-+-+-+
-             |S|E|  FuType   |
-             +---------------+
-
-                Start fragment (S): 1 bit
-                End fragment (E): 1 bit
-                FuType: 6 bits
-        */
+         *    decode the FU header
+         *
+         *     0 1 2 3 4 5 6 7
+         *    +-+-+-+-+-+-+-+-+
+         *    |S|E|  FuType   |
+         *    +---------------+
+         *
+         *       Start fragment (S): 1 bit
+         *       End fragment (E): 1 bit
+         *       FuType: 6 bits
+         */
         first_fragment = buf[0] & 0x80;
         last_fragment  = buf[0] & 0x40;
         fu_type        = buf[0] & 0x3f;
