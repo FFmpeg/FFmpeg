@@ -4995,7 +4995,7 @@ fi
 
 # libdc1394 check
 if enabled libdc1394; then
-    { check_lib dc1394/dc1394.h dc1394_new -ldc1394 -lraw1394 &&
+    { require_pkg_config libdc1394-2 dc1394/dc1394.h dc1394_new &&
         enable libdc1394_2; } ||
     { check_lib libdc1394/dc1394_control.h dc1394_create_handle -ldc1394_control -lraw1394 &&
         enable libdc1394_1; } ||
