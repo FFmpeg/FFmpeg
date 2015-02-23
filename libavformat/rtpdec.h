@@ -120,6 +120,7 @@ struct RTPDynamicProtocolHandler {
     int static_payload_id; /* 0 means no payload id is set. 0 is a valid
                             * payload ID (PCMU), too, but that format doesn't
                             * require any custom depacketization code. */
+    int priv_data_size;
 
     /** Initialize dynamic protocol handler, called after the full rtpmap line is parsed, may be null */
     int (*init)(AVFormatContext *s, int st_index, PayloadContext *priv_data);
