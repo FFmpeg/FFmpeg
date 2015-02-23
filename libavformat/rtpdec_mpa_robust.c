@@ -33,11 +33,6 @@ struct PayloadContext {
     AVIOContext *fragment;
 };
 
-static PayloadContext *mpa_robust_new_context(void)
-{
-    return av_mallocz(sizeof(PayloadContext));
-}
-
 static inline void free_fragment(PayloadContext *data)
 {
     if (data->fragment) {
@@ -209,7 +204,7 @@ RTPDynamicProtocolHandler ff_mpeg_audio_robust_dynamic_handler = {
     .codec_type        = AVMEDIA_TYPE_AUDIO,
     .codec_id          = AV_CODEC_ID_MP3ADU,
     .need_parsing      = AVSTREAM_PARSE_HEADERS,
-    .alloc             = mpa_robust_new_context,
+    .priv_data_size    = sizeof(PayloadContext),
     .free              = mpa_robust_free_context,
     .parse_packet      = mpa_robust_parse_packet,
 };

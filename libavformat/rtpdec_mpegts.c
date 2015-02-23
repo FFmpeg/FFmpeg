@@ -30,11 +30,6 @@ struct PayloadContext {
     uint8_t buf[RTP_MAX_PACKET_LENGTH];
 };
 
-static PayloadContext *mpegts_new_context(void)
-{
-    return av_mallocz(sizeof(PayloadContext));
-}
-
 static void mpegts_free_context(PayloadContext *data)
 {
     if (!data)
@@ -100,8 +95,8 @@ static int mpegts_handle_packet(AVFormatContext *ctx, PayloadContext *data,
 
 RTPDynamicProtocolHandler ff_mpegts_dynamic_handler = {
     .codec_type        = AVMEDIA_TYPE_DATA,
+    .priv_data_size    = sizeof(PayloadContext),
     .parse_packet      = mpegts_handle_packet,
-    .alloc             = mpegts_new_context,
     .init              = mpegts_init,
     .free              = mpegts_free_context,
     .static_payload_id = 33,

@@ -47,11 +47,6 @@ static PayloadContext *amr_new_context(void)
     return data;
 }
 
-static void amr_free_context(PayloadContext *data)
-{
-    av_free(data);
-}
-
 static int amr_handle_packet(AVFormatContext *ctx, PayloadContext *data,
                              AVStream *st, AVPacket *pkt, uint32_t *timestamp,
                              const uint8_t *buf, int len, uint16_t seq,
@@ -196,7 +191,6 @@ RTPDynamicProtocolHandler ff_amr_nb_dynamic_handler = {
     .codec_id         = AV_CODEC_ID_AMR_NB,
     .parse_sdp_a_line = amr_parse_sdp_line,
     .alloc            = amr_new_context,
-    .free             = amr_free_context,
     .parse_packet     = amr_handle_packet,
 };
 
@@ -206,6 +200,5 @@ RTPDynamicProtocolHandler ff_amr_wb_dynamic_handler = {
     .codec_id         = AV_CODEC_ID_AMR_WB,
     .parse_sdp_a_line = amr_parse_sdp_line,
     .alloc            = amr_new_context,
-    .free             = amr_free_context,
     .parse_packet     = amr_handle_packet,
 };

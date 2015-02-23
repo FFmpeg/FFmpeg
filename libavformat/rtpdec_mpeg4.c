@@ -91,11 +91,6 @@ static const AttrNameMap attr_names[] = {
     { NULL, -1, -1 },
 };
 
-static PayloadContext *new_context(void)
-{
-    return av_mallocz(sizeof(PayloadContext));
-}
-
 static void free_context(PayloadContext *data)
 {
     av_free(data->au_headers);
@@ -326,6 +321,7 @@ RTPDynamicProtocolHandler ff_mp4v_es_dynamic_handler = {
     .codec_type         = AVMEDIA_TYPE_VIDEO,
     .codec_id           = AV_CODEC_ID_MPEG4,
     .need_parsing       = AVSTREAM_PARSE_FULL,
+    .priv_data_size     = sizeof(PayloadContext),
     .parse_sdp_a_line   = parse_sdp_line,
 };
 
@@ -333,8 +329,8 @@ RTPDynamicProtocolHandler ff_mpeg4_generic_dynamic_handler = {
     .enc_name           = "mpeg4-generic",
     .codec_type         = AVMEDIA_TYPE_AUDIO,
     .codec_id           = AV_CODEC_ID_AAC,
+    .priv_data_size     = sizeof(PayloadContext),
     .parse_sdp_a_line   = parse_sdp_line,
-    .alloc              = new_context,
     .free               = free_context,
     .parse_packet       = aac_parse_packet,
 };

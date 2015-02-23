@@ -31,11 +31,6 @@ struct PayloadContext {
     int         bundled_audio;
 };
 
-static av_cold PayloadContext *dv_new_context(void)
-{
-    return av_mallocz(sizeof(PayloadContext));
-}
-
 static void dv_free_dyn_buffer(AVIOContext **dyn_buf)
 {
     uint8_t *ptr_dyn_buffer;
@@ -150,7 +145,7 @@ RTPDynamicProtocolHandler ff_dv_dynamic_handler = {
     .codec_id         = AV_CODEC_ID_DVVIDEO,
     .need_parsing     = AVSTREAM_PARSE_FULL,
     .parse_sdp_a_line = dv_parse_sdp_line,
-    .alloc            = dv_new_context,
+    .priv_data_size   = sizeof(PayloadContext),
     .free             = dv_free_context,
     .parse_packet     = dv_handle_packet,
 };

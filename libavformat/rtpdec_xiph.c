@@ -49,11 +49,6 @@ struct PayloadContext {
     int split_pkts;
 };
 
-static PayloadContext *xiph_new_context(void)
-{
-    return av_mallocz(sizeof(PayloadContext));
-}
-
 static inline void free_fragment(PayloadContext * data)
 {
     if (data->fragment) {
@@ -385,8 +380,8 @@ RTPDynamicProtocolHandler ff_theora_dynamic_handler = {
     .enc_name         = "theora",
     .codec_type       = AVMEDIA_TYPE_VIDEO,
     .codec_id         = AV_CODEC_ID_THEORA,
+    .priv_data_size   = sizeof(PayloadContext),
     .parse_sdp_a_line = xiph_parse_sdp_line,
-    .alloc            = xiph_new_context,
     .free             = xiph_free_context,
     .parse_packet     = xiph_handle_packet,
 };
@@ -396,8 +391,8 @@ RTPDynamicProtocolHandler ff_vorbis_dynamic_handler = {
     .codec_type       = AVMEDIA_TYPE_AUDIO,
     .codec_id         = AV_CODEC_ID_VORBIS,
     .need_parsing     = AVSTREAM_PARSE_HEADERS,
+    .priv_data_size   = sizeof(PayloadContext),
     .parse_sdp_a_line = xiph_parse_sdp_line,
-    .alloc            = xiph_new_context,
     .free             = xiph_free_context,
     .parse_packet     = xiph_handle_packet,
 };

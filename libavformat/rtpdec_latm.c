@@ -31,11 +31,6 @@ struct PayloadContext {
     uint32_t timestamp;
 };
 
-static PayloadContext *latm_new_context(void)
-{
-    return av_mallocz(sizeof(PayloadContext));
-}
-
 static void latm_free_context(PayloadContext *data)
 {
     if (!data)
@@ -183,8 +178,8 @@ RTPDynamicProtocolHandler ff_mp4a_latm_dynamic_handler = {
     .enc_name           = "MP4A-LATM",
     .codec_type         = AVMEDIA_TYPE_AUDIO,
     .codec_id           = AV_CODEC_ID_AAC,
+    .priv_data_size     = sizeof(PayloadContext),
     .parse_sdp_a_line   = latm_parse_sdp_line,
-    .alloc              = latm_new_context,
     .free               = latm_free_context,
     .parse_packet       = latm_parse_packet,
 };

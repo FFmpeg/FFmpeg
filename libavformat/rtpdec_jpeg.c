@@ -59,11 +59,6 @@ static const uint8_t default_quantizers[128] = {
     99,  99,  99,  99,  99,  99,  99,  99
 };
 
-static PayloadContext *jpeg_new_context(void)
-{
-    return av_mallocz(sizeof(PayloadContext));
-}
-
 static inline void free_frame(PayloadContext *jpeg)
 {
     if (jpeg->frame) {
@@ -385,7 +380,7 @@ RTPDynamicProtocolHandler ff_jpeg_dynamic_handler = {
     .enc_name          = "JPEG",
     .codec_type        = AVMEDIA_TYPE_VIDEO,
     .codec_id          = AV_CODEC_ID_MJPEG,
-    .alloc             = jpeg_new_context,
+    .priv_data_size    = sizeof(PayloadContext),
     .free              = jpeg_free_context,
     .parse_packet      = jpeg_parse_packet,
     .static_payload_id = 26,
