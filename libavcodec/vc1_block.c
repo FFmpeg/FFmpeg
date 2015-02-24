@@ -259,12 +259,9 @@ static av_always_inline void get_mvdata_interlaced(VC1Context *v, int *dmv_x,
         *dmv_x = get_bits(gb, v->k_x);
         *dmv_y = get_bits(gb, v->k_y);
         if (v->numref) {
-            if (pred_flag) {
+            if (pred_flag)
                 *pred_flag = *dmv_y & 1;
-                *dmv_y     = (*dmv_y + *pred_flag) >> 1;
-            } else {
-                *dmv_y     = (*dmv_y + (*dmv_y & 1)) >> 1;
-            }
+            *dmv_y = (*dmv_y + (*dmv_y & 1)) >> 1;
         }
     }
     else {
