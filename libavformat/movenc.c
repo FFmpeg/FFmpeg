@@ -1033,6 +1033,27 @@ static int mov_write_hvcc_tag(AVIOContext *pb, MOVTrack *track)
 static int mov_write_avid_tag(AVIOContext *pb, MOVTrack *track)
 {
     int i;
+    int interlaced;
+    int cid;
+
+    if (track->vos_data && track->vos_len > 0x29) {
+        if (track->vos_data[0] == 0x00 &&
+            track->vos_data[1] == 0x00 &&
+            track->vos_data[2] == 0x02 &&
+            track->vos_data[3] == 0x80 &&
+            (track->vos_data[4] == 0x01 || track->vos_data[4] == 0x02)) {
+            /* looks like a DNxHD bit stream */
+            interlaced = (track->vos_data[5] & 2);
+            cid = AV_RB32(track->vos_data + 0x28);
+        } else {
+            av_log(NULL, AV_LOG_WARNING, "Could not locate DNxHD bit stream in vos_data\n");
+            return 0;
+        }
+    } else {
+        av_log(NULL, AV_LOG_WARNING, "Could not locate DNxHD bit stream, vos_data too small\n");
+        return 0;
+    }
+
     avio_wb32(pb, 24); /* size */
     ffio_wfourcc(pb, "ACLR");
     ffio_wfourcc(pb, "ACLR");
@@ -1056,10 +1077,10 @@ static int mov_write_avid_tag(AVIOContext *pb, MOVTrack *track)
     ffio_wfourcc(pb, "ARES");
     ffio_wfourcc(pb, "ARES");
     ffio_wfourcc(pb, "0001");
-    avio_wb32(pb, AV_RB32(track->vos_data + 0x28)); /* dnxhd cid, some id ? */
+    avio_wb32(pb, cid); /* dnxhd cid, some id ? */
     avio_wb32(pb, track->enc->width);
     /* values below are based on samples created with quicktime and avid codecs */
-    if (track->vos_data[5] & 2) { // interlaced
+    if (interlaced) {
         avio_wb32(pb, track->enc->height / 2);
         avio_wb32(pb, 2); /* unknown */
         avio_wb32(pb, 0); /* unknown */
@@ -4165,7 +4186,9 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
         samples_in_chunk = 1;
 
     /* copy extradata if it exists */
-    if (trk->vos_len == 0 && enc->extradata_size > 0 && !TAG_IS_AVCI(trk->tag)) {
+    if (trk->vos_len == 0 && enc->extradata_size > 0 &&
+        !TAG_IS_AVCI(trk->tag) &&
+        (enc->codec_id != AV_CODEC_ID_DNXHD)) {
         trk->vos_len  = enc->extradata_size;
         trk->vos_data = av_malloc(trk->vos_len);
         if (!trk->vos_data) {
@@ -4952,7 +4975,7 @@ static int mov_write_header(AVFormatContext *s)
         if (st->codec->extradata_size) {
             if (st->codec->codec_id == AV_CODEC_ID_DVD_SUBTITLE)
                 mov_create_dvd_sub_decoder_specific_info(track, st);
-            else if (!TAG_IS_AVCI(track->tag)){
+            else if (!TAG_IS_AVCI(track->tag) && st->codec->codec_id != AV_CODEC_ID_DNXHD) {
                 track->vos_len  = st->codec->extradata_size;
                 track->vos_data = av_malloc(track->vos_len);
                 if (!track->vos_data) {
