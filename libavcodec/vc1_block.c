@@ -1313,7 +1313,7 @@ static int vc1_decode_p_block(VC1Context *v, int16_t block[64], int n,
 
 /** @} */ // Macroblock group
 
-static const int size_table  [6] = { 0, 2, 3, 4,  5,  8 };
+static const uint8_t size_table[6] = { 0, 2, 3, 4,  5,  8 };
 
 /** Decode one P-frame MB
  */
