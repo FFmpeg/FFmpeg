@@ -155,8 +155,7 @@ static void set_codec_str(AVFormatContext *s, AVCodecContext *codec,
             if (avio_open_dyn_buf(&pb) < 0)
                 return;
             if (ff_isom_write_avcc(pb, extradata, extradata_size) < 0) {
-                avio_close_dyn_buf(pb, &tmpbuf);
-                av_free(tmpbuf);
+                ffio_free_dyn_buf(&pb);
                 return;
             }
             extradata_size = avio_close_dyn_buf(pb, &extradata);
