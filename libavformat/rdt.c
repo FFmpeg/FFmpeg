@@ -298,9 +298,6 @@ rdt_parse_packet (AVFormatContext *ctx, PayloadContext *rdt, AVStream *st,
     int seq = 1, res;
     AVIOContext pb;
 
-    if (!rdt->rmctx)
-        return AVERROR(EINVAL);
-
     if (rdt->audio_pkt_cnt == 0) {
         int pos;
 

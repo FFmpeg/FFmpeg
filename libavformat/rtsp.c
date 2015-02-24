@@ -193,6 +193,25 @@ static void init_rtp_handler(RTPDynamicProtocolHandler *handler,
     }
 }
 
+static void finalize_rtp_handler_init(AVFormatContext *s, RTSPStream *rtsp_st,
+                                      AVStream *st)
+{
+    if (rtsp_st->dynamic_handler && rtsp_st->dynamic_handler->init) {
+        int ret = rtsp_st->dynamic_handler->init(s, st ? st->index : -1,
+                                                 rtsp_st->dynamic_protocol_context);
+        if (ret < 0) {
+            if (rtsp_st->dynamic_protocol_context) {
+                if (rtsp_st->dynamic_handler->free)
+                    rtsp_st->dynamic_handler->free(
+                        rtsp_st->dynamic_protocol_context);
+                av_free(rtsp_st->dynamic_protocol_context);
+            }
+            rtsp_st->dynamic_protocol_context = NULL;
+            rtsp_st->dynamic_handler = NULL;
+        }
+    }
+}
+
 /* parse the rtpmap description: <codec_name>/<clock_rate>[/<other params>] */
 static int sdp_parse_rtpmap(AVFormatContext *s,
                             AVStream *st, RTSPStream *rtsp_st,
@@ -261,9 +280,7 @@ static int sdp_parse_rtpmap(AVFormatContext *s,
     default:
         break;
     }
-    if (rtsp_st->dynamic_handler && rtsp_st->dynamic_handler->init)
-        rtsp_st->dynamic_handler->init(s, st->index,
-                                       rtsp_st->dynamic_protocol_context);
+    finalize_rtp_handler_init(s, rtsp_st, st);
     return 0;
 }
 
@@ -444,8 +461,7 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
                 handler = ff_rtp_handler_find_by_id(
                               rtsp_st->sdp_payload_type, AVMEDIA_TYPE_DATA);
                 init_rtp_handler(handler, rtsp_st, NULL);
-                if (handler && handler->init)
-                    handler->init(s, -1, rtsp_st->dynamic_protocol_context);
+                finalize_rtp_handler_init(s, rtsp_st, NULL);
             }
         } else if (rt->server_type == RTSP_SERVER_WMS &&
                    codec_type == AVMEDIA_TYPE_DATA) {
@@ -469,9 +485,7 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
                 handler = ff_rtp_handler_find_by_id(
                               rtsp_st->sdp_payload_type, st->codec->codec_type);
                 init_rtp_handler(handler, rtsp_st, st);
-                if (handler && handler->init)
-                    handler->init(s, st->index,
-                                  rtsp_st->dynamic_protocol_context);
+                finalize_rtp_handler_init(s, rtsp_st, st);
             }
             if (rt->default_lang[0])
                 av_dict_set(&st->metadata, "language", rt->default_lang, 0);
