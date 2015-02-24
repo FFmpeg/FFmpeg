@@ -278,7 +278,6 @@ static av_cold int vp8_init(AVFormatContext *s, int st_index, PayloadContext *vp
 static void vp8_free_context(PayloadContext *vp8)
 {
     vp8_free_buffer(vp8);
-    av_free(vp8);
 }
 
 static int vp8_need_keyframe(PayloadContext *vp8)

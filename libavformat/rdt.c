@@ -543,7 +543,6 @@ rdt_free_context (PayloadContext *rdt)
         avformat_close_input(&rdt->rmctx);
     av_freep(&rdt->mlti_data);
     av_freep(&rdt->rmst);
-    av_free(rdt);
 }
 
 #define RDT_HANDLER(n, s, t) \

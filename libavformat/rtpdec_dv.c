@@ -42,7 +42,6 @@ static void dv_free_dyn_buffer(AVIOContext **dyn_buf)
 static av_cold void dv_free_context(PayloadContext *data)
 {
     dv_free_dyn_buffer(&data->buf);
-    av_free(data);
 }
 
 static av_cold int dv_sdp_parse_fmtp_config(AVFormatContext *s,

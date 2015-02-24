@@ -116,7 +116,6 @@ static void svq3_extradata_free(PayloadContext *sv)
         avio_close_dyn_buf(sv->pktbuf, &buf);
         av_free(buf);
     }
-    av_free(sv);
 }
 
 RTPDynamicProtocolHandler ff_svq3_dynamic_handler = {

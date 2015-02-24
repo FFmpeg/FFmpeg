@@ -95,7 +95,6 @@ static void free_context(PayloadContext *data)
 {
     av_free(data->au_headers);
     av_free(data->mode);
-    av_free(data);
 }
 
 static int parse_fmtp_config(AVCodecContext *codec, const char *value)

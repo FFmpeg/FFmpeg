@@ -39,7 +39,6 @@ static void latm_free_context(PayloadContext *data)
         av_free(p);
     }
     av_free(data->buf);
-    av_free(data);
 }
 
 static int latm_parse_packet(AVFormatContext *ctx, PayloadContext *data,
