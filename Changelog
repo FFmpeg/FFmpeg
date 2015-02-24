@@ -34,6 +34,7 @@ version <next>:
 - DSS SP decoder and DSS demuxer
 - Fix stsd atom corruption in DNxHD QuickTimes
 - Canopus HQX decoder
+- RTP depacketization of T.140 text (RFC 4103)
 
 
 version 2.5:
