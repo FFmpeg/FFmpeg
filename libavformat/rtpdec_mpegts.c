@@ -60,9 +60,6 @@ static int mpegts_handle_packet(AVFormatContext *ctx, PayloadContext *data,
     // different ranges.
     *timestamp = RTP_NOTS_VALUE;
 
-    if (!data->ts)
-        return AVERROR(EINVAL);
-
     if (!buf) {
         if (data->read_buf_index >= data->read_buf_size)
             return AVERROR(EAGAIN);
