@@ -29,6 +29,7 @@
 #include "libavcodec/internal.h"
 
 #include "avformat.h"
+#include "avio_internal.h"
 #include "internal.h"
 #include "mpegts.h"
 
@@ -1110,9 +1111,7 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
 
             ret = av_write_frame(ts_st->amux, &pkt2);
             if (ret < 0) {
-                avio_close_dyn_buf(ts_st->amux->pb, &data);
-                ts_st->amux->pb = NULL;
-                av_free(data);
+                ffio_free_dyn_buf(&ts_st->amux->pb);
                 return ret;
             }
             size            = avio_close_dyn_buf(ts_st->amux->pb, &data);

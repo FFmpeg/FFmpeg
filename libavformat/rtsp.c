@@ -703,11 +703,9 @@ void ff_rtsp_undo_setup(AVFormatContext *s, int send_packets)
                 AVFormatContext *rtpctx = rtsp_st->transport_priv;
                 av_write_trailer(rtpctx);
                 if (rt->lower_transport == RTSP_LOWER_TRANSPORT_TCP) {
-                    uint8_t *ptr;
                     if (CONFIG_RTSP_MUXER && rtpctx->pb && send_packets)
                         ff_rtsp_tcp_write_packet(s, rtsp_st);
-                    avio_close_dyn_buf(rtpctx->pb, &ptr);
-                    av_free(ptr);
+                    ffio_free_dyn_buf(&rtpctx->pb);
                 } else {
                     avio_close(rtpctx->pb);
                 }
