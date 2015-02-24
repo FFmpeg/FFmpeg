@@ -571,16 +571,12 @@ static int vc1_decode_i_block(VC1Context *v, int16_t block[64], int n,
         return -1;
     }
     if (dcdiff) {
+        const int m = (v->pq == 1 || v->pq == 2) ? 3 - v->pq : 0;
         if (dcdiff == 119 /* ESC index value */) {
-            /* TODO: Optimize */
-            if (v->pq == 1)      dcdiff = get_bits(gb, 10);
-            else if (v->pq == 2) dcdiff = get_bits(gb, 9);
-            else                 dcdiff = get_bits(gb, 8);
+            dcdiff = get_bits(gb, 8 + m);
         } else {
-            if (v->pq == 1)
-                dcdiff = (dcdiff << 2) + get_bits(gb, 2) - 3;
-            else if (v->pq == 2)
-                dcdiff = (dcdiff << 1) + get_bits1(gb)   - 1;
+            if (m)
+                dcdiff = (dcdiff << m) + get_bits(gb, m) - ((1 << m) - 1);
         }
         if (get_bits1(gb))
             dcdiff = -dcdiff;
@@ -739,16 +735,12 @@ static int vc1_decode_i_block_adv(VC1Context *v, int16_t block[64], int n,
         return -1;
     }
     if (dcdiff) {
+        const int m = (mquant == 1 || mquant == 2) ? 3 - mquant : 0;
         if (dcdiff == 119 /* ESC index value */) {
-            /* TODO: Optimize */
-            if (mquant == 1)      dcdiff = get_bits(gb, 10);
-            else if (mquant == 2) dcdiff = get_bits(gb, 9);
-            else                  dcdiff = get_bits(gb, 8);
+            dcdiff = get_bits(gb, 8 + m);
         } else {
-            if (mquant == 1)
-                dcdiff = (dcdiff << 2) + get_bits(gb, 2) - 3;
-            else if (mquant == 2)
-                dcdiff = (dcdiff << 1) + get_bits1(gb)   - 1;
+            if (m)
+                dcdiff = (dcdiff << m) + get_bits(gb, m) - ((1 << m) - 1);
         }
         if (get_bits1(gb))
             dcdiff = -dcdiff;
@@ -960,16 +952,12 @@ static int vc1_decode_intra_block(VC1Context *v, int16_t block[64], int n,
         return -1;
     }
     if (dcdiff) {
+        const int m = (mquant == 1 || mquant == 2) ? 3 - mquant : 0;
         if (dcdiff == 119 /* ESC index value */) {
-            /* TODO: Optimize */
-            if (mquant == 1)      dcdiff = get_bits(gb, 10);
-            else if (mquant == 2) dcdiff = get_bits(gb, 9);
-            else                  dcdiff = get_bits(gb, 8);
+            dcdiff = get_bits(gb, 8 + m);
         } else {
-            if (mquant == 1)
-                dcdiff = (dcdiff << 2) + get_bits(gb, 2) - 3;
-            else if (mquant == 2)
-                dcdiff = (dcdiff << 1) + get_bits1(gb)   - 1;
+            if (m)
+                dcdiff = (dcdiff << m) + get_bits(gb, m) - ((1 << m) - 1);
         }
         if (get_bits1(gb))
             dcdiff = -dcdiff;
