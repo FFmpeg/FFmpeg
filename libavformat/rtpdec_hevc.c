@@ -142,33 +142,7 @@ static av_cold int hevc_parse_sdp_line(AVFormatContext *ctx, int st_index,
     codec  = current_stream->codec;
 
     if (av_strstart(sdp_line_ptr, "framesize:", &sdp_line_ptr)) {
-        char str_video_width[50];
-        char *str_video_width_ptr = str_video_width;
-
-        /*
-         * parse "a=framesize:96 320-240"
-         */
-
-        /* ignore spaces */
-        while (*sdp_line_ptr && *sdp_line_ptr == ' ')
-            sdp_line_ptr++;
-        /* ignore RTP payload ID */
-        while (*sdp_line_ptr && *sdp_line_ptr != ' ')
-            sdp_line_ptr++;
-        /* ignore spaces */
-        while (*sdp_line_ptr && *sdp_line_ptr == ' ')
-            sdp_line_ptr++;
-        /* extract the actual video resolution description */
-        while (*sdp_line_ptr && *sdp_line_ptr != '-' &&
-               (str_video_width_ptr - str_video_width) < sizeof(str_video_width) - 1)
-            *str_video_width_ptr++ = *sdp_line_ptr++;
-        /* add trailing zero byte */
-        *str_video_width_ptr = '\0';
-
-        /* determine the width value */
-        codec->width   = atoi(str_video_width);
-        /* jump beyond the "-" and determine the height value */
-        codec->height  = atoi(sdp_line_ptr + 1);
+        ff_h264_parse_framesize(codec, sdp_line_ptr);
     } else if (av_strstart(sdp_line_ptr, "fmtp:", &sdp_line_ptr)) {
         int ret = ff_parse_fmtp(ctx, current_stream, hevc_data, sdp_line_ptr,
                                 hevc_sdp_parse_fmtp_config);
