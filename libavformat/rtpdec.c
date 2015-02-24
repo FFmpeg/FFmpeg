@@ -121,7 +121,8 @@ RTPDynamicProtocolHandler *ff_rtp_handler_find_by_name(const char *name,
     RTPDynamicProtocolHandler *handler;
     for (handler = rtp_first_dynamic_payload_handler;
          handler; handler = handler->next)
-        if (!av_strcasecmp(name, handler->enc_name) &&
+        if (handler->enc_name &&
+            !av_strcasecmp(name, handler->enc_name) &&
             codec_type == handler->codec_type)
             return handler;
     return NULL;
