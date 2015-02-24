@@ -140,7 +140,7 @@ end:
 
 static int parse_fmtp(AVFormatContext *s,
                       AVStream *stream, PayloadContext *data,
-                      char *attr, char *value)
+                      const char *attr, const char *value)
 {
     int res;
 

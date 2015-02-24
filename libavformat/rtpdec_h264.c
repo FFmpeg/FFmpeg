@@ -144,7 +144,7 @@ int ff_h264_parse_sprop_parameter_sets(AVFormatContext *s,
 static int sdp_parse_fmtp_config_h264(AVFormatContext *s,
                                       AVStream *stream,
                                       PayloadContext *h264_data,
-                                      char *attr, char *value)
+                                      const char *attr, const char *value)
 {
     AVCodecContext *codec = stream->codec;
 

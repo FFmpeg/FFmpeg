@@ -274,7 +274,7 @@ static int aac_parse_packet(AVFormatContext *ctx, PayloadContext *data,
 
 static int parse_fmtp(AVFormatContext *s,
                       AVStream *stream, PayloadContext *data,
-                      char *attr, char *value)
+                      const char *attr, const char *value)
 {
     AVCodecContext *codec = stream->codec;
     int res, i;

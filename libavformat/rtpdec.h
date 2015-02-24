@@ -207,7 +207,7 @@ int ff_parse_fmtp(AVFormatContext *s,
                   int (*parse_fmtp)(AVFormatContext *s,
                                     AVStream *stream,
                                     PayloadContext *data,
-                                    char *attr, char *value));
+                                    const char *attr, const char *value));
 
 void ff_register_rtp_dynamic_payload_handlers(void);
 

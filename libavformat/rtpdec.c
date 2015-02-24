@@ -844,7 +844,7 @@ int ff_parse_fmtp(AVFormatContext *s,
                   int (*parse_fmtp)(AVFormatContext *s,
                                     AVStream *stream,
                                     PayloadContext *data,
-                                    char *attr, char *value))
+                                    const char *attr, const char *value))
 {
     char attr[256];
     char *value;

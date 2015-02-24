@@ -48,7 +48,7 @@ static av_cold void dv_free_context(PayloadContext *data)
 static av_cold int dv_sdp_parse_fmtp_config(AVFormatContext *s,
                                             AVStream *stream,
                                             PayloadContext *dv_data,
-                                            char *attr, char *value)
+                                            const char *attr, const char *value)
 {
     /* does the DV stream include audio? */
     if (!strcmp(attr, "audio") && !strcmp(value, "bundled"))
