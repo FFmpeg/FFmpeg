@@ -729,39 +729,42 @@ static int vc1_decode_i_block_adv(VC1Context *v, int16_t block[64], int n,
     *dc_val = dcdiff;
 
     /* Store the quantized DC coeff, used for prediction */
-    if (n < 4) {
-        block[0] = dcdiff * s->y_dc_scale;
-    } else {
-        block[0] = dcdiff * s->c_dc_scale;
-    }
-
-    //AC Decoding
-    i = 1;
+    if (n < 4)
+        scale = s->y_dc_scale;
+    else
+        scale = s->c_dc_scale;
+    block[0] = dcdiff * scale;
 
     /* check if AC is needed at all */
     if (!a_avail && !c_avail)
         use_pred = 0;
-    ac_val  = s->ac_val[0][0] + s->block_index[n] * 16;
-    ac_val2 = ac_val;
 
     scale = mquant * 2 + ((mquant == v->pq) ? v->halfpq : 0);
 
+    ac_val  = s->ac_val[0][0] + s->block_index[n] * 16;
+    ac_val2 = ac_val;
     if (dc_pred_dir) // left
         ac_val -= 16;
     else // top
         ac_val -= 16 * s->block_wrap[n];
 
     q1 = s->current_picture.qscale_table[mb_pos];
-    if ( dc_pred_dir && c_avail && mb_pos)
-        q2 = s->current_picture.qscale_table[mb_pos - 1];
-    if (!dc_pred_dir && a_avail && mb_pos >= s->mb_stride)
-        q2 = s->current_picture.qscale_table[mb_pos - s->mb_stride];
-    if ( dc_pred_dir && n == 1)
-        q2 = q1;
-    if (!dc_pred_dir && n == 2)
-        q2 = q1;
     if (n == 3)
         q2 = q1;
+    else if (dc_pred_dir) {
+        if (n == 1)
+            q2 = q1;
+        else if (c_avail && mb_pos)
+            q2 = s->current_picture.qscale_table[mb_pos - 1];
+    } else {
+        if (n == 2)
+            q2 = q1;
+        else if (a_avail && mb_pos >= s->mb_stride)
+            q2 = s->current_picture.qscale_table[mb_pos - s->mb_stride];
+    }
+
+    //AC Decoding
+    i = 1;
 
     if (coded) {
         int last = 0, skip, value;
@@ -794,28 +797,24 @@ static int vc1_decode_i_block_adv(VC1Context *v, int16_t block[64], int n,
 
         /* apply AC prediction if needed */
         if (use_pred) {
+            int sh;
+            if (dc_pred_dir) { // left
+                sh = v->left_blk_sh;
+            } else { // top
+                sh = v->top_blk_sh;
+                ac_val += 8;
+            }
             /* scale predictors if needed*/
             if (q2 && q1 != q2) {
                 q1 = q1 * 2 + ((q1 == v->pq) ? v->halfpq : 0) - 1;
-                q2 = q2 * 2 + ((q2 == v->pq) ? v->halfpq : 0) - 1;
-
                 if (q1 < 1)
                     return AVERROR_INVALIDDATA;
-                if (dc_pred_dir) { // left
-                    for (k = 1; k < 8; k++)
-                        block[k << v->left_blk_sh] += (ac_val[k] * q2 * ff_vc1_dqscale[q1 - 1] + 0x20000) >> 18;
-                } else { // top
-                    for (k = 1; k < 8; k++)
-                        block[k << v->top_blk_sh] += (ac_val[k + 8] * q2 * ff_vc1_dqscale[q1 - 1] + 0x20000) >> 18;
-                }
+                q2 = q2 * 2 + ((q2 == v->pq) ? v->halfpq : 0) - 1;
+                for (k = 1; k < 8; k++)
+                    block[k << sh] += (ac_val[k] * q2 * ff_vc1_dqscale[q1 - 1] + 0x20000) >> 18;
             } else {
-                if (dc_pred_dir) { //left
-                    for (k = 1; k < 8; k++)
-                        block[k << v->left_blk_sh] += ac_val[k];
-                } else { //top
-                    for (k = 1; k < 8; k++)
-                        block[k << v->top_blk_sh] += ac_val[k + 8];
-                }
+                for (k = 1; k < 8; k++)
+                    block[k << sh] += ac_val[k];
             }
         }
         /* save AC coeffs for further prediction */
@@ -832,55 +831,38 @@ static int vc1_decode_i_block_adv(VC1Context *v, int16_t block[64], int n,
                     block[k] += (block[k] < 0) ? -mquant : mquant;
             }
 
-        if (use_pred) i = 63;
     } else { // no AC coeffs
         int k;
 
         memset(ac_val2, 0, 16 * 2);
-        if (dc_pred_dir) { // left
-            if (use_pred) {
-                memcpy(ac_val2, ac_val, 8 * 2);
-                if (q2 && q1 != q2) {
-                    q1 = q1 * 2 + ((q1 == v->pq) ? v->halfpq : 0) - 1;
-                    q2 = q2 * 2 + ((q2 == v->pq) ? v->halfpq : 0) - 1;
-                    if (q1 < 1)
-                        return AVERROR_INVALIDDATA;
-                    for (k = 1; k < 8; k++)
-                        ac_val2[k] = (ac_val2[k] * q2 * ff_vc1_dqscale[q1 - 1] + 0x20000) >> 18;
-                }
-            }
-        } else { // top
-            if (use_pred) {
-                memcpy(ac_val2 + 8, ac_val + 8, 8 * 2);
-                if (q2 && q1 != q2) {
-                    q1 = q1 * 2 + ((q1 == v->pq) ? v->halfpq : 0) - 1;
-                    q2 = q2 * 2 + ((q2 == v->pq) ? v->halfpq : 0) - 1;
-                    if (q1 < 1)
-                        return AVERROR_INVALIDDATA;
-                    for (k = 1; k < 8; k++)
-                        ac_val2[k + 8] = (ac_val2[k + 8] * q2 * ff_vc1_dqscale[q1 - 1] + 0x20000) >> 18;
-                }
-            }
-        }
 
         /* apply AC prediction if needed */
         if (use_pred) {
+            int sh;
             if (dc_pred_dir) { // left
-                for (k = 1; k < 8; k++) {
-                    block[k << v->left_blk_sh] = ac_val2[k] * scale;
-                    if (!v->pquantizer && block[k << v->left_blk_sh])
-                        block[k << v->left_blk_sh] += (block[k << v->left_blk_sh] < 0) ? -mquant : mquant;
-                }
+                sh = v->left_blk_sh;
             } else { // top
-                for (k = 1; k < 8; k++) {
-                    block[k << v->top_blk_sh] = ac_val2[k + 8] * scale;
-                    if (!v->pquantizer && block[k << v->top_blk_sh])
-                        block[k << v->top_blk_sh] += (block[k << v->top_blk_sh] < 0) ? -mquant : mquant;
-                }
+                sh = v->top_blk_sh;
+                ac_val  += 8;
+                ac_val2 += 8;
             }
-            i = 63;
+            memcpy(ac_val2, ac_val, 8 * 2);
+            if (q2 && q1 != q2) {
+                q1 = q1 * 2 + ((q1 == v->pq) ? v->halfpq : 0) - 1;
+                q2 = q2 * 2 + ((q2 == v->pq) ? v->halfpq : 0) - 1;
+                if (q1 < 1)
+                    return AVERROR_INVALIDDATA;
+                for (k = 1; k < 8; k++)
+                    ac_val2[k] = (ac_val2[k] * q2 * ff_vc1_dqscale[q1 - 1] + 0x20000) >> 18;
+            }
+            for (k = 1; k < 8; k++) {
+                block[k << sh] = ac_val2[k] * scale;
+                if (!v->pquantizer && block[k << sh])
+                    block[k << sh] += (block[k << sh] < 0) ? -mquant : mquant;
+            }
         }
     }
+    if (use_pred) i = 63;
     s->block_last_index[n] = i;
 
     return 0;
