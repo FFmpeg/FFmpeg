@@ -40,8 +40,10 @@
 #define DC_VLC_BITS 9
 
 // offset tables for interlaced picture MVDATA decoding
-static const int offset_table1[9] = {  0,  1,  2,  4,  8, 16, 32,  64, 128 };
-static const int offset_table2[9] = {  0,  1,  3,  7, 15, 31, 63, 127, 255 };
+static const uint8_t offset_table[2][9] = {
+    {  0,  1,  2,  4,  8, 16, 32,  64, 128 },
+    {  0,  1,  3,  7, 15, 31, 63, 127, 255 },
+};
 
 /***********************************************************************/
 /**
@@ -216,22 +218,22 @@ static void vc1_put_signed_blocks_clamped(VC1Context *v)
         s->mb_intra = 1;                                                \
     } else {                                                            \
         index1 = index % 6;                                             \
-        if (!s->quarter_sample && index1 == 5) val = 1;                 \
-        else                                   val = 0;                 \
-        if (size_table[index1] - val > 0)                               \
-            val = get_bits(gb, size_table[index1] - val);               \
-        else                                   val = 0;                 \
-        sign = 0 - (val&1);                                             \
-        _dmv_x = (sign ^ ((val>>1) + offset_table[index1])) - sign;     \
+        _dmv_x = offset_table[1][index1];                               \
+        val = size_table[index1] - (!s->quarter_sample && index1 == 5); \
+        if (val > 0) {                                                  \
+            val = get_bits(gb, val);                                    \
+            sign = 0 - (val & 1);                                       \
+            _dmv_x = (sign ^ ((val >> 1) + _dmv_x)) - sign;             \
+        }                                                               \
                                                                         \
         index1 = index / 6;                                             \
-        if (!s->quarter_sample && index1 == 5) val = 1;                 \
-        else                                   val = 0;                 \
-        if (size_table[index1] - val > 0)                               \
-            val = get_bits(gb, size_table[index1] - val);               \
-        else                                   val = 0;                 \
-        sign = 0 - (val & 1);                                           \
-        _dmv_y = (sign ^ ((val >> 1) + offset_table[index1])) - sign;   \
+        _dmv_y = offset_table[1][index1];                               \
+        val = size_table[index1] - (!s->quarter_sample && index1 == 5); \
+        if (val > 0) {                                                  \
+            val = get_bits(gb, val);                                    \
+            sign = 0 - (val & 1);                                       \
+            _dmv_y = (sign ^ ((val >> 1) + _dmv_y)) - sign;             \
+        }                                                               \
     }
 
 static av_always_inline void get_mvdata_interlaced(VC1Context *v, int *dmv_x,
@@ -242,7 +244,6 @@ static av_always_inline void get_mvdata_interlaced(VC1Context *v, int *dmv_x,
     GetBitContext *gb = &v->s.gb;
     int bits, esc;
     int val, sign;
-    const int* offs_tab;
 
     if (v->numref) {
         bits = VC1_2REF_MVDATA_VLC_BITS;
@@ -277,26 +278,18 @@ static av_always_inline void get_mvdata_interlaced(VC1Context *v, int *dmv_x,
     }
     else {
         av_assert0(index < esc);
-        if (extend_x)
-            offs_tab = offset_table2;
-        else
-            offs_tab = offset_table1;
         index1 = (index + 1) % 9;
         if (index1 != 0) {
             val    = get_bits(gb, index1 + extend_x);
-            sign   = 0 -(val & 1);
-            *dmv_x = (sign ^ ((val >> 1) + offs_tab[index1])) - sign;
+            sign   = 0 - (val & 1);
+            *dmv_x = (sign ^ ((val >> 1) + offset_table[extend_x][index1])) - sign;
         } else
             *dmv_x = 0;
-        if (extend_y)
-            offs_tab = offset_table2;
-        else
-            offs_tab = offset_table1;
         index1 = (index + 1) / 9;
         if (index1 > v->numref) {
             val    = get_bits(gb, (index1 + (extend_y << v->numref)) >> v->numref);
             sign   = 0 - (val & 1);
-            *dmv_y = (sign ^ ((val >> 1) + offs_tab[index1 >> v->numref])) - sign;
+            *dmv_y = (sign ^ ((val >> 1) + offset_table[extend_y][index1 >> v->numref])) - sign;
         } else
             *dmv_y = 0;
         if (v->numref && pred_flag)
@@ -1321,7 +1314,6 @@ static int vc1_decode_p_block(VC1Context *v, int16_t block[64], int n,
 /** @} */ // Macroblock group
 
 static const int size_table  [6] = { 0, 2, 3, 4,  5,  8 };
-static const int offset_table[6] = { 0, 1, 3, 7, 15, 31 };
 
 /** Decode one P-frame MB
  */
