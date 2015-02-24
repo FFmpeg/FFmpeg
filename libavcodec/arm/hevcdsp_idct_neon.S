@@ -21,8 +21,6 @@
 #include "libavutil/arm/asm.S"
 #include "neon.S"
 
-.code 32
-
 function ff_hevc_idct_4x4_dc_neon_8, export=1
         ldrsh       r1, [r0]
         ldr         r2, =0x20
