@@ -257,12 +257,32 @@ int ff_h264_handle_aggregated_packet(AVFormatContext *ctx, PayloadContext *data,
     return 0;
 }
 
+int ff_h264_handle_frag_packet(AVPacket *pkt, const uint8_t *buf, int len,
+                               int start_bit, const uint8_t *nal_header,
+                               int nal_header_len)
+{
+    int ret;
+    int tot_len = len;
+    int pos = 0;
+    if (start_bit)
+        tot_len += sizeof(start_sequence) + nal_header_len;
+    if ((ret = av_new_packet(pkt, tot_len)) < 0)
+        return ret;
+    if (start_bit) {
+        memcpy(pkt->data + pos, start_sequence, sizeof(start_sequence));
+        pos += sizeof(start_sequence);
+        memcpy(pkt->data + pos, nal_header, nal_header_len);
+        pos += nal_header_len;
+    }
+    memcpy(pkt->data + pos, buf, len);
+    return 0;
+}
+
 static int h264_handle_packet_fu_a(AVFormatContext *ctx, PayloadContext *data, AVPacket *pkt,
                                    const uint8_t *buf, int len,
                                    int *nal_counters, int nal_mask)
 {
     uint8_t fu_indicator, fu_header, start_bit, nal_type, nal;
-    int ret;
 
     if (len < 3) {
         av_log(ctx, AV_LOG_ERROR, "Too short data for FU-A H264 RTP packet\n");
@@ -279,22 +299,9 @@ static int h264_handle_packet_fu_a(AVFormatContext *ctx, PayloadContext *data, A
     buf += 2;
     len -= 2;
 
-    if (start_bit) {
-        if (nal_counters)
-            nal_counters[nal_type & nal_mask]++;
-        /* copy in the start sequence, and the reconstructed nal */
-        if ((ret = av_new_packet(pkt, sizeof(start_sequence) + sizeof(nal) + len)) < 0)
-            return ret;
-        memcpy(pkt->data, start_sequence, sizeof(start_sequence));
-        pkt->data[sizeof(start_sequence)] = nal;
-        memcpy(pkt->data + sizeof(start_sequence) + sizeof(nal), buf, len);
-    } else {
-        if ((ret = av_new_packet(pkt, len)) < 0)
-            return ret;
-        memcpy(pkt->data, buf, len);
-    }
-
-    return 0;
+    if (start_bit && nal_counters)
+        nal_counters[nal_type & nal_mask]++;
+    return ff_h264_handle_frag_packet(pkt, buf, len, start_bit, &nal, 1);
 }
 
 // return 0 on packet, no more left, 1 on packet, 1 on partial packet
