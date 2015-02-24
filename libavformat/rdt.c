@@ -538,7 +538,7 @@ static av_cold int rdt_init(AVFormatContext *s, int st_index, PayloadContext *rd
 }
 
 static void
-rdt_free_context (PayloadContext *rdt)
+rdt_close_context (PayloadContext *rdt)
 {
     int i;
 
@@ -561,7 +561,7 @@ static RTPDynamicProtocolHandler rdt_ ## n ## _handler = { \
     .priv_data_size   = sizeof(PayloadContext), \
     .init             = rdt_init, \
     .parse_sdp_a_line = rdt_parse_sdp_line, \
-    .free             = rdt_free_context, \
+    .close            = rdt_close_context, \
     .parse_packet     = rdt_parse_packet \
 }
 

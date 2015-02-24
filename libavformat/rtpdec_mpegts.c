@@ -30,7 +30,7 @@ struct PayloadContext {
     uint8_t buf[RTP_MAX_PACKET_LENGTH];
 };
 
-static void mpegts_free_context(PayloadContext *data)
+static void mpegts_close_context(PayloadContext *data)
 {
     if (!data)
         return;
@@ -94,6 +94,6 @@ RTPDynamicProtocolHandler ff_mpegts_dynamic_handler = {
     .priv_data_size    = sizeof(PayloadContext),
     .parse_packet      = mpegts_handle_packet,
     .init              = mpegts_init,
-    .free              = mpegts_free_context,
+    .close             = mpegts_close_context,
     .static_payload_id = 33,
 };

@@ -105,7 +105,7 @@ static int svq3_parse_packet (AVFormatContext *s, PayloadContext *sv,
     return AVERROR(EAGAIN);
 }
 
-static void svq3_extradata_free(PayloadContext *sv)
+static void svq3_close_context(PayloadContext *sv)
 {
     ffio_free_dyn_buf(&sv->pktbuf);
 }
@@ -115,6 +115,6 @@ RTPDynamicProtocolHandler ff_svq3_dynamic_handler = {
     .codec_type       = AVMEDIA_TYPE_VIDEO,
     .codec_id         = AV_CODEC_ID_NONE,      // see if (config_packet) above
     .priv_data_size   = sizeof(PayloadContext),
-    .free             = svq3_extradata_free,
+    .close            = svq3_close_context,
     .parse_packet     = svq3_parse_packet,
 };

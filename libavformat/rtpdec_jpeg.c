@@ -60,7 +60,7 @@ static const uint8_t default_quantizers[128] = {
     99,  99,  99,  99,  99,  99,  99,  99
 };
 
-static void jpeg_free_context(PayloadContext *jpeg)
+static void jpeg_close_context(PayloadContext *jpeg)
 {
     ffio_free_dyn_buf(&jpeg->frame);
 }
@@ -388,7 +388,7 @@ RTPDynamicProtocolHandler ff_jpeg_dynamic_handler = {
     .codec_type        = AVMEDIA_TYPE_VIDEO,
     .codec_id          = AV_CODEC_ID_MJPEG,
     .priv_data_size    = sizeof(PayloadContext),
-    .free              = jpeg_free_context,
+    .close             = jpeg_close_context,
     .parse_packet      = jpeg_parse_packet,
     .static_payload_id = 26,
 };
