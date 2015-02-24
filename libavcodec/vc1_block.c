@@ -388,6 +388,12 @@ static inline int ff_vc1_pred_dc(MpegEncContext *s, int overlap, int pq, int n,
     int q1, q2 = 0;
     int dqscale_index;
 
+    /* scale predictors if needed */
+    q1 = s->current_picture.qscale_table[mb_pos];
+    dqscale_index = s->y_dc_scale_table[q1] - 1;
+    if (dqscale_index < 0)
+        return 0;
+
     wrap = s->block_wrap[n];
     dc_val = s->dc_val[0] + s->block_index[n];
 
@@ -397,11 +403,7 @@ static inline int ff_vc1_pred_dc(MpegEncContext *s, int overlap, int pq, int n,
     c = dc_val[ - 1];
     b = dc_val[ - 1 - wrap];
     a = dc_val[ - wrap];
-    /* scale predictors if needed */
-    q1 = s->current_picture.qscale_table[mb_pos];
-    dqscale_index = s->y_dc_scale_table[q1] - 1;
-    if (dqscale_index < 0)
-        return 0;
+
     if (c_avail && (n != 1 && n != 3)) {
         q2 = s->current_picture.qscale_table[mb_pos - 1];
         if (q2 && q2 != q1)
