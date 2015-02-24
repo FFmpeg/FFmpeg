@@ -1117,6 +1117,16 @@ int avio_close_dyn_buf(AVIOContext *s, uint8_t **pbuffer)
     return size - padding;
 }
 
+void ffio_free_dyn_buf(AVIOContext **s)
+{
+    uint8_t *tmp;
+    if (!*s)
+        return;
+    avio_close_dyn_buf(*s, &tmp);
+    av_free(tmp);
+    *s = NULL;
+}
+
 static int null_buf_write(void *opaque, uint8_t *buf, int buf_size)
 {
     DynBuffer *d = opaque;
