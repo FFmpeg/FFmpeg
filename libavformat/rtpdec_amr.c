@@ -38,13 +38,10 @@ struct PayloadContext {
     int channels;
 };
 
-static PayloadContext *amr_new_context(void)
+static av_cold int amr_init(AVFormatContext *s, int st_index, PayloadContext *data)
 {
-    PayloadContext *data = av_mallocz(sizeof(PayloadContext));
-    if (!data)
-        return data;
     data->channels = 1;
-    return data;
+    return 0;
 }
 
 static int amr_handle_packet(AVFormatContext *ctx, PayloadContext *data,
@@ -189,8 +186,9 @@ RTPDynamicProtocolHandler ff_amr_nb_dynamic_handler = {
     .enc_name         = "AMR",
     .codec_type       = AVMEDIA_TYPE_AUDIO,
     .codec_id         = AV_CODEC_ID_AMR_NB,
+    .priv_data_size   = sizeof(PayloadContext),
+    .init             = amr_init,
     .parse_sdp_a_line = amr_parse_sdp_line,
-    .alloc            = amr_new_context,
     .parse_packet     = amr_handle_packet,
 };
 
@@ -198,7 +196,8 @@ RTPDynamicProtocolHandler ff_amr_wb_dynamic_handler = {
     .enc_name         = "AMR-WB",
     .codec_type       = AVMEDIA_TYPE_AUDIO,
     .codec_id         = AV_CODEC_ID_AMR_WB,
+    .priv_data_size   = sizeof(PayloadContext),
+    .init             = amr_init,
     .parse_sdp_a_line = amr_parse_sdp_line,
-    .alloc            = amr_new_context,
     .parse_packet     = amr_handle_packet,
 };
