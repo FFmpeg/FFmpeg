@@ -422,5 +422,5 @@ RTPDynamicProtocolHandler ff_h264_dynamic_handler = {
     .parse_sdp_a_line = parse_h264_sdp_line,
     .alloc            = h264_new_context,
     .free             = h264_free_context,
-    .parse_packet     = h264_handle_packet
+    .parse_packet     = h264_handle_packet,
 };

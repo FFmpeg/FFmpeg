@@ -226,5 +226,5 @@ RTPDynamicProtocolHandler ff_qcelp_dynamic_handler = {
     .static_payload_id  = 12,
     .alloc              = qcelp_new_context,
     .free               = qcelp_free_context,
-    .parse_packet       = qcelp_parse_packet
+    .parse_packet       = qcelp_parse_packet,
 };

@@ -397,7 +397,7 @@ RTPDynamicProtocolHandler ff_theora_dynamic_handler = {
     .parse_sdp_a_line = xiph_parse_sdp_line,
     .alloc            = xiph_new_context,
     .free             = xiph_free_context,
-    .parse_packet     = xiph_handle_packet
+    .parse_packet     = xiph_handle_packet,
 };
 
 RTPDynamicProtocolHandler ff_vorbis_dynamic_handler = {
@@ -408,5 +408,5 @@ RTPDynamicProtocolHandler ff_vorbis_dynamic_handler = {
     .parse_sdp_a_line = xiph_parse_sdp_line,
     .alloc            = xiph_new_context,
     .free             = xiph_free_context,
-    .parse_packet     = xiph_handle_packet
+    .parse_packet     = xiph_handle_packet,
 };
