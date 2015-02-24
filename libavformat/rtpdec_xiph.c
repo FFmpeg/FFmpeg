@@ -295,7 +295,7 @@ parse_packed_headers(const uint8_t * packed_headers,
 static int xiph_parse_fmtp_pair(AVFormatContext *s,
                                 AVStream* stream,
                                 PayloadContext *xiph_data,
-                                char *attr, char *value)
+                                const char *attr, const char *value)
 {
     AVCodecContext *codec = stream->codec;
     int result = 0;
