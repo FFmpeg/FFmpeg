@@ -143,7 +143,7 @@ static int dss_read_header(AVFormatContext *s)
 
     if (ctx->audio_codec == DSS_ACODEC_DSS_SP) {
         st->codec->codec_id    = AV_CODEC_ID_DSS_SP;
-        st->codec->sample_rate = 12000;
+        st->codec->sample_rate = 11025;
     } else if (ctx->audio_codec == DSS_ACODEC_G723_1) {
         st->codec->codec_id    = AV_CODEC_ID_G723_1;
         st->codec->sample_rate = 8000;
