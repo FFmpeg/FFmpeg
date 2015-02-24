@@ -4591,6 +4591,44 @@ fade=t=in:st=5.5:d=0.5
 
 @end itemize
 
+@section fftfilt
+Apply arbitrary expressions to samples in frequency domain
+
+@table @option
+@item dc_Y
+Adjust the dc value (gain) of the luma plane of the image. The filter
+accepts an integer value in range @code{0} to @code{1000}. The default
+value is set to @code{0}.
+
+@item dc_U
+Adjust the dc value (gain) of the 1st chroma plane of the image. The
+filter accepts an integer value in range @code{0} to @code{1000}. The
+default value is set to @code{0}.
+
+@item dc_V
+Adjust the dc value (gain) of the 2nd chroma plane of the image. The
+filter accepts an integer value in range @code{0} to @code{1000}. The
+default value is set to @code{0}.
+
+@item weight_Y
+Set the frequency domain weight expression for the luma plane.
+
+@item weight_U
+Set the frequency domain weight expression for the 1st chroma plane.
+
+@item weight_V
+Set the frequency domain weight expression for the 2nd chroma plane.
+
+The filter accepts the following variables:
+@item X
+@item Y
+The coordinates of the current sample.
+
+@item W
+@item H
+The width and height of the image.
+@end table
+
 @section field
 
 Extract a single field from an interlaced image using stride
