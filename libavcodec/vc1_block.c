@@ -930,7 +930,7 @@ static int vc1_decode_intra_block(VC1Context *v, int16_t block[64], int n,
     s->bdsp.clear_block(block);
 
     /* XXX: Guard against dumb values of mquant */
-    mquant = (mquant < 1) ? 0 : ((mquant > 31) ? 31 : mquant);
+    mquant = av_clip_uintp2(mquant, 5);
 
     /* Set DC scale - y and c use the same */
     s->y_dc_scale = s->y_dc_scale_table[mquant];
