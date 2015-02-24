@@ -54,6 +54,8 @@ typedef struct DSSDemuxContext {
     int swap;
     int dss_sp_swap_byte;
     int8_t *dss_sp_buf;
+
+    int packet_size;
 } DSSDemuxContext;
 
 static int dss_probe(AVProbeData *p)
@@ -210,6 +212,7 @@ static void dss_sp_byte_swap(DSSDemuxContext *ctx,
 static int dss_sp_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     DSSDemuxContext *ctx = s->priv_data;
+    AVStream *st = s->streams[0];
     int read_size, ret, offset = 0, buff_offset = 0;
     int64_t pos = avio_tell(s->pb);
 
@@ -223,6 +226,7 @@ static int dss_sp_read_packet(AVFormatContext *s, AVPacket *pkt)
         read_size = DSS_FRAME_SIZE;
 
     ctx->counter -= read_size;
+    ctx->packet_size = DSS_FRAME_SIZE - 1;
 
     ret = av_new_packet(pkt, DSS_FRAME_SIZE);
     if (ret < 0)
@@ -231,6 +235,7 @@ static int dss_sp_read_packet(AVFormatContext *s, AVPacket *pkt)
     pkt->duration     = 264;
     pkt->pos = pos;
     pkt->stream_index = 0;
+    s->bit_rate = 8LL * ctx->packet_size * st->codec->sample_rate * 512 / (506 * pkt->duration);
 
     if (ctx->counter < 0) {
         int size2 = ctx->counter + read_size;
@@ -264,6 +269,7 @@ error_eof:
 static int dss_723_1_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     DSSDemuxContext *ctx = s->priv_data;
+    AVStream *st = s->streams[0];
     int size, byte, ret, offset;
     int64_t pos = avio_tell(s->pb);
 
@@ -277,6 +283,7 @@ static int dss_723_1_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     size = frame_size[byte & 3];
 
+    ctx->packet_size = size;
     ctx->counter -= size;
 
     ret = av_new_packet(pkt, size);
@@ -287,6 +294,7 @@ static int dss_723_1_read_packet(AVFormatContext *s, AVPacket *pkt)
     pkt->data[0]  = byte;
     offset        = 1;
     pkt->duration = 240;
+    s->bit_rate = 8LL * size * st->codec->sample_rate * 512 / (506 * pkt->duration);
 
     pkt->stream_index = 0;
 
