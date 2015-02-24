@@ -718,8 +718,8 @@ av_cold void ff_snow_common_end(SnowContext *s)
         av_frame_free(&s->last_picture[i]);
     }
 
-    for(plane_index=0; plane_index < s->nb_planes; plane_index++){
-        for(level=s->spatial_decomposition_count-1; level>=0; level--){
+    for(plane_index=0; plane_index < MAX_PLANES; plane_index++){
+        for(level=MAX_DECOMPOSITIONS-1; level>=0; level--){
             for(orientation=level ? 1 : 0; orientation<4; orientation++){
                 SubBand *b= &s->plane[plane_index].band[level][orientation];
 
