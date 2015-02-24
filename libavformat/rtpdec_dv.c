@@ -32,7 +32,7 @@ struct PayloadContext {
     int         bundled_audio;
 };
 
-static av_cold void dv_free_context(PayloadContext *data)
+static av_cold void dv_close_context(PayloadContext *data)
 {
     ffio_free_dyn_buf(&data->buf);
 }
@@ -138,6 +138,6 @@ RTPDynamicProtocolHandler ff_dv_dynamic_handler = {
     .need_parsing     = AVSTREAM_PARSE_FULL,
     .parse_sdp_a_line = dv_parse_sdp_line,
     .priv_data_size   = sizeof(PayloadContext),
-    .free             = dv_free_context,
+    .close             = dv_close_context,
     .parse_packet     = dv_handle_packet,
 };

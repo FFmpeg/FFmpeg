@@ -91,7 +91,7 @@ static const AttrNameMap attr_names[] = {
     { NULL, -1, -1 },
 };
 
-static void free_context(PayloadContext *data)
+static void close_context(PayloadContext *data)
 {
     av_free(data->au_headers);
     av_free(data->mode);
@@ -330,6 +330,6 @@ RTPDynamicProtocolHandler ff_mpeg4_generic_dynamic_handler = {
     .codec_id           = AV_CODEC_ID_AAC,
     .priv_data_size     = sizeof(PayloadContext),
     .parse_sdp_a_line   = parse_sdp_line,
-    .free               = free_context,
+    .close              = close_context,
     .parse_packet       = aac_parse_packet,
 };

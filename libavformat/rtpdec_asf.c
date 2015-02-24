@@ -274,7 +274,7 @@ static int asfrtp_parse_packet(AVFormatContext *s, PayloadContext *asf,
     return res == 1 ? -1 : res;
 }
 
-static void asfrtp_free_context(PayloadContext *asf)
+static void asfrtp_close_context(PayloadContext *asf)
 {
     ffio_free_dyn_buf(&asf->pktbuf);
     av_freep(&asf->buf);
@@ -288,7 +288,7 @@ RTPDynamicProtocolHandler ff_ms_rtp_ ## n ## _handler = { \
     .codec_id         = AV_CODEC_ID_NONE, \
     .priv_data_size   = sizeof(PayloadContext), \
     .parse_sdp_a_line = asfrtp_parse_sdp_line, \
-    .free             = asfrtp_free_context, \
+    .close            = asfrtp_close_context, \
     .parse_packet     = asfrtp_parse_packet,   \
 }
 

@@ -33,7 +33,7 @@ struct PayloadContext {
     uint32_t     timestamp;
 };
 
-static av_cold void h261_free_context(PayloadContext *pl_ctx)
+static av_cold void h261_close_context(PayloadContext *pl_ctx)
 {
     /* return if context is invalid */
     if (!pl_ctx)
@@ -168,7 +168,7 @@ RTPDynamicProtocolHandler ff_h261_dynamic_handler = {
     .codec_id          = AV_CODEC_ID_H261,
     .need_parsing      = AVSTREAM_PARSE_FULL,
     .priv_data_size    = sizeof(PayloadContext),
-    .free              = h261_free_context,
+    .close             = h261_close_context,
     .parse_packet      = h261_handle_packet,
     .static_payload_id = 31,
 };

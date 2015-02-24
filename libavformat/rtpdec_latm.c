@@ -32,7 +32,7 @@ struct PayloadContext {
     uint32_t timestamp;
 };
 
-static void latm_free_context(PayloadContext *data)
+static void latm_close_context(PayloadContext *data)
 {
     ffio_free_dyn_buf(&data->dyn_buf);
     av_free(data->buf);
@@ -171,6 +171,6 @@ RTPDynamicProtocolHandler ff_mp4a_latm_dynamic_handler = {
     .codec_id           = AV_CODEC_ID_AAC,
     .priv_data_size     = sizeof(PayloadContext),
     .parse_sdp_a_line   = latm_parse_sdp_line,
-    .free               = latm_free_context,
+    .close              = latm_close_context,
     .parse_packet       = latm_parse_packet,
 };

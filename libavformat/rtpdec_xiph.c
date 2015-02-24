@@ -50,7 +50,7 @@ struct PayloadContext {
     int split_pkts;
 };
 
-static void xiph_free_context(PayloadContext * data)
+static void xiph_close_context(PayloadContext * data)
 {
     ffio_free_dyn_buf(&data->fragment);
     av_free(data->split_buf);
@@ -372,7 +372,7 @@ RTPDynamicProtocolHandler ff_theora_dynamic_handler = {
     .codec_id         = AV_CODEC_ID_THEORA,
     .priv_data_size   = sizeof(PayloadContext),
     .parse_sdp_a_line = xiph_parse_sdp_line,
-    .free             = xiph_free_context,
+    .close            = xiph_close_context,
     .parse_packet     = xiph_handle_packet,
 };
 
@@ -383,6 +383,6 @@ RTPDynamicProtocolHandler ff_vorbis_dynamic_handler = {
     .need_parsing     = AVSTREAM_PARSE_HEADERS,
     .priv_data_size   = sizeof(PayloadContext),
     .parse_sdp_a_line = xiph_parse_sdp_line,
-    .free             = xiph_free_context,
+    .close            = xiph_close_context,
     .parse_packet     = xiph_handle_packet,
 };

@@ -201,8 +201,8 @@ static void finalize_rtp_handler_init(AVFormatContext *s, RTSPStream *rtsp_st,
                                                  rtsp_st->dynamic_protocol_context);
         if (ret < 0) {
             if (rtsp_st->dynamic_protocol_context) {
-                if (rtsp_st->dynamic_handler->free)
-                    rtsp_st->dynamic_handler->free(
+                if (rtsp_st->dynamic_handler->close)
+                    rtsp_st->dynamic_handler->close(
                         rtsp_st->dynamic_protocol_context);
                 av_free(rtsp_st->dynamic_protocol_context);
             }
@@ -734,8 +734,8 @@ void ff_rtsp_close_streams(AVFormatContext *s)
         rtsp_st = rt->rtsp_streams[i];
         if (rtsp_st) {
             if (rtsp_st->dynamic_handler && rtsp_st->dynamic_protocol_context) {
-                if (rtsp_st->dynamic_handler->free)
-                    rtsp_st->dynamic_handler->free(
+                if (rtsp_st->dynamic_handler->close)
+                    rtsp_st->dynamic_handler->close(
                         rtsp_st->dynamic_protocol_context);
                 av_free(rtsp_st->dynamic_protocol_context);
             }

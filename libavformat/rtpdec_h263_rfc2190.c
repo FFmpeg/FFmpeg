@@ -40,7 +40,7 @@ struct PayloadContext {
     int          newformat;
 };
 
-static void h263_free_context(PayloadContext *data)
+static void h263_close_context(PayloadContext *data)
 {
     ffio_free_dyn_buf(&data->buf);
 }
@@ -189,6 +189,6 @@ RTPDynamicProtocolHandler ff_h263_rfc2190_dynamic_handler = {
     .need_parsing      = AVSTREAM_PARSE_FULL,
     .parse_packet      = h263_handle_packet,
     .priv_data_size    = sizeof(PayloadContext),
-    .free              = h263_free_context,
+    .close             = h263_close_context,
     .static_payload_id = 34,
 };

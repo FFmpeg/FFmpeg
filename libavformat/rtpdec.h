@@ -130,7 +130,7 @@ struct RTPDynamicProtocolHandler {
     /** Free any data needed by the rtp parsing for this dynamic data.
       * Don't free the protocol_data pointer itself, that is freed by the
       * caller. This is called even if the init method failed. */
-    void (*free)(PayloadContext *protocol_data);
+    void (*close)(PayloadContext *protocol_data);
     /** Parse handler for this dynamic packet */
     DynamicPayloadPacketHandlerProc parse_packet;
     int (*need_keyframe)(PayloadContext *context);

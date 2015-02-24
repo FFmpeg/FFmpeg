@@ -32,7 +32,7 @@ struct PayloadContext {
     AVIOContext *fragment;
 };
 
-static void ac3_free_context(PayloadContext *data)
+static void ac3_close_context(PayloadContext *data)
 {
     ffio_free_dyn_buf(&data->fragment);
 }
@@ -128,6 +128,6 @@ RTPDynamicProtocolHandler ff_ac3_dynamic_handler = {
     .codec_id           = AV_CODEC_ID_AC3,
     .need_parsing       = AVSTREAM_PARSE_FULL,
     .priv_data_size     = sizeof(PayloadContext),
-    .free               = ac3_free_context,
+    .close              = ac3_close_context,
     .parse_packet       = ac3_handle_packet,
 };
