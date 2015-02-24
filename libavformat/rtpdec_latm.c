@@ -96,7 +96,7 @@ static int latm_parse_packet(AVFormatContext *ctx, PayloadContext *data,
     return data->pos < data->len;
 }
 
-static int parse_fmtp_config(AVStream *st, char *value)
+static int parse_fmtp_config(AVStream *st, const char *value)
 {
     int len = ff_hex_to_data(NULL, value), i, ret = 0;
     GetBitContext gb;
