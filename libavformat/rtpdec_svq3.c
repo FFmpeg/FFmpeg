@@ -108,11 +108,6 @@ static int svq3_parse_packet (AVFormatContext *s, PayloadContext *sv,
     return AVERROR(EAGAIN);
 }
 
-static PayloadContext *svq3_extradata_new(void)
-{
-    return av_mallocz(sizeof(PayloadContext));
-}
-
 static void svq3_extradata_free(PayloadContext *sv)
 {
     if (sv->pktbuf) {
@@ -127,7 +122,7 @@ RTPDynamicProtocolHandler ff_svq3_dynamic_handler = {
     .enc_name         = "X-SV3V-ES",
     .codec_type       = AVMEDIA_TYPE_VIDEO,
     .codec_id         = AV_CODEC_ID_NONE,      // see if (config_packet) above
-    .alloc            = svq3_extradata_new,
+    .priv_data_size   = sizeof(PayloadContext),
     .free             = svq3_extradata_free,
     .parse_packet     = svq3_parse_packet,
 };

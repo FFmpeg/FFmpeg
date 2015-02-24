@@ -46,16 +46,6 @@ struct PayloadContext {
 
 static const uint8_t start_sequence[] = { 0x00, 0x00, 0x00, 0x01 };
 
-static av_cold PayloadContext *hevc_new_context(void)
-{
-    return av_mallocz(sizeof(PayloadContext));
-}
-
-static av_cold void hevc_free_context(PayloadContext *data)
-{
-    av_free(data);
-}
-
 static av_cold int hevc_sdp_parse_fmtp_config(AVFormatContext *s,
                                               AVStream *stream,
                                               PayloadContext *hevc_data,
@@ -413,8 +403,7 @@ RTPDynamicProtocolHandler ff_hevc_dynamic_handler = {
     .codec_type       = AVMEDIA_TYPE_VIDEO,
     .codec_id         = AV_CODEC_ID_HEVC,
     .need_parsing     = AVSTREAM_PARSE_FULL,
+    .priv_data_size   = sizeof(PayloadContext),
     .parse_sdp_a_line = hevc_parse_sdp_line,
-    .alloc            = hevc_new_context,
-    .free             = hevc_free_context,
     .parse_packet     = hevc_handle_packet,
 };

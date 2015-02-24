@@ -39,11 +39,6 @@ struct PayloadContext {
     int          newformat;
 };
 
-static PayloadContext *h263_new_context(void)
-{
-    return av_mallocz(sizeof(PayloadContext));
-}
-
 static void h263_free_context(PayloadContext *data)
 {
     if (!data)
@@ -202,7 +197,7 @@ RTPDynamicProtocolHandler ff_h263_rfc2190_dynamic_handler = {
     .codec_id          = AV_CODEC_ID_H263,
     .need_parsing      = AVSTREAM_PARSE_FULL,
     .parse_packet      = h263_handle_packet,
-    .alloc             = h263_new_context,
+    .priv_data_size    = sizeof(PayloadContext),
     .free              = h263_free_context,
     .static_payload_id = 34,
 };

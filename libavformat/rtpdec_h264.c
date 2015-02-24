@@ -342,11 +342,6 @@ static int h264_handle_packet(AVFormatContext *ctx, PayloadContext *data,
     return result;
 }
 
-static PayloadContext *h264_new_context(void)
-{
-    return av_mallocz(sizeof(PayloadContext));
-}
-
 static void h264_free_context(PayloadContext *data)
 {
 #ifdef DEBUG
@@ -408,8 +403,8 @@ RTPDynamicProtocolHandler ff_h264_dynamic_handler = {
     .codec_type       = AVMEDIA_TYPE_VIDEO,
     .codec_id         = AV_CODEC_ID_H264,
     .need_parsing     = AVSTREAM_PARSE_FULL,
+    .priv_data_size   = sizeof(PayloadContext),
     .parse_sdp_a_line = parse_h264_sdp_line,
-    .alloc            = h264_new_context,
     .free             = h264_free_context,
     .parse_packet     = h264_handle_packet,
 };

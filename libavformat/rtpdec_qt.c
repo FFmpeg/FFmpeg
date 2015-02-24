@@ -235,11 +235,6 @@ static int qt_rtp_parse_packet(AVFormatContext *s, PayloadContext *qt,
     }
 }
 
-static PayloadContext *qt_rtp_new(void)
-{
-    return av_mallocz(sizeof(PayloadContext));
-}
-
 static void qt_rtp_free(PayloadContext *qt)
 {
     av_freep(&qt->pkt.data);
@@ -251,7 +246,7 @@ RTPDynamicProtocolHandler ff_ ## m ## _rtp_ ## n ## _handler = { \
     .enc_name         = s, \
     .codec_type       = t, \
     .codec_id         = AV_CODEC_ID_NONE, \
-    .alloc            = qt_rtp_new,    \
+    .priv_data_size   = sizeof(PayloadContext), \
     .free             = qt_rtp_free,   \
     .parse_packet     = qt_rtp_parse_packet, \
 }
