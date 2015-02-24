@@ -423,20 +423,12 @@ static inline int ff_vc1_pred_dc(MpegEncContext *s, int overlap, int pq, int n,
             b = (b * s->y_dc_scale_table[q2] * ff_vc1_dqscale[dqscale_index] + 0x20000) >> 18;
     }
 
-    if (a_avail && c_avail) {
-        if (abs(a - b) <= abs(b - c)) {
-            pred     = c;
-            *dir_ptr = 1; // left
-        } else {
-            pred     = a;
-            *dir_ptr = 0; // top
-        }
+    if (c_avail && (!a_avail || abs(a - b) <= abs(b - c))) {
+        pred     = c;
+        *dir_ptr = 1; // left
     } else if (a_avail) {
         pred     = a;
         *dir_ptr = 0; // top
-    } else if (c_avail) {
-        pred     = c;
-        *dir_ptr = 1; // left
     } else {
         pred     = 0;
         *dir_ptr = 1; // left
