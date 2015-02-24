@@ -41,7 +41,8 @@ struct PayloadContext {
 static PayloadContext *amr_new_context(void)
 {
     PayloadContext *data = av_mallocz(sizeof(PayloadContext));
-    if(!data) return data;
+    if (!data)
+        return data;
     data->channels = 1;
     return data;
 }
