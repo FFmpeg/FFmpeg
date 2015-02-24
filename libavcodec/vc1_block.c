@@ -240,7 +240,7 @@ static av_always_inline void get_mvdata_interlaced(VC1Context *v, int *dmv_x,
                                                    int *dmv_y, int *pred_flag)
 {
     int index, index1;
-    int extend_x = 0, extend_y = 0;
+    int extend_x, extend_y;
     GetBitContext *gb = &v->s.gb;
     int bits, esc;
     int val, sign;
@@ -252,17 +252,8 @@ static av_always_inline void get_mvdata_interlaced(VC1Context *v, int *dmv_x,
         bits = VC1_1REF_MVDATA_VLC_BITS;
         esc  = 71;
     }
-    switch (v->dmvrange) {
-    case 1:
-        extend_x = 1;
-        break;
-    case 2:
-        extend_y = 1;
-        break;
-    case 3:
-        extend_x = extend_y = 1;
-        break;
-    }
+    extend_x = v->dmvrange & 1;
+    extend_y = (v->dmvrange >> 1) & 1;
     index = get_vlc2(gb, v->imv_vlc->table, bits, 3);
     if (index == esc) {
         *dmv_x = get_bits(gb, v->k_x);
@@ -287,7 +278,7 @@ static av_always_inline void get_mvdata_interlaced(VC1Context *v, int *dmv_x,
             *dmv_x = 0;
         index1 = (index + 1) / 9;
         if (index1 > v->numref) {
-            val    = get_bits(gb, (index1 + (extend_y << v->numref)) >> v->numref);
+            val    = get_bits(gb, (index1 >> v->numref) + extend_y);
             sign   = 0 - (val & 1);
             *dmv_y = (sign ^ ((val >> 1) + offset_table[extend_y][index1 >> v->numref])) - sign;
         } else
