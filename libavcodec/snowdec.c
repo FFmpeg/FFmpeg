@@ -156,7 +156,7 @@ static int decode_q_branch(SnowContext *s, int level, int x, int y){
         int l = left->color[0];
         int cb= left->color[1];
         int cr= left->color[2];
-        int ref = 0;
+        unsigned ref = 0;
         int ref_context= av_log2(2*left->ref) + av_log2(2*top->ref);
         int mx_context= av_log2(2*FFABS(left->mx - top->mx)) + 0*av_log2(2*FFABS(tr->mx - top->mx));
         int my_context= av_log2(2*FFABS(left->my - top->my)) + 0*av_log2(2*FFABS(tr->my - top->my));
