@@ -98,7 +98,7 @@ static void free_context(PayloadContext *data)
     av_free(data);
 }
 
-static int parse_fmtp_config(AVCodecContext *codec, char *value)
+static int parse_fmtp_config(AVCodecContext *codec, const char *value)
 {
     /* decode the hexa encoded parameter */
     int len = ff_hex_to_data(NULL, value);

@@ -66,7 +66,7 @@ static const uint8_t start_sequence[] = { 0, 0, 0, 1 };
 
 static void parse_profile_level_id(AVFormatContext *s,
                                    PayloadContext *h264_data,
-                                   char *value)
+                                   const char *value)
 {
     char buffer[3];
     // 6 characters=3 bytes, in hex.
