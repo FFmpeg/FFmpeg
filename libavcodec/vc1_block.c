@@ -1797,7 +1797,8 @@ static int vc1_decode_p_mb_intfi(VC1Context *v)
     } else {
         s->mb_intra = v->is_intra[s->mb_x] = 0;
         s->current_picture.mb_type[mb_pos + v->mb_off] = MB_TYPE_16x16;
-        for (i = 0; i < 6; i++) v->mb_type[0][s->block_index[i]] = 0;
+        for (i = 0; i < 6; i++)
+            v->mb_type[0][s->block_index[i]] = 0;
         if (idx_mbmode <= 5) { // 1-MV
             dmv_x = dmv_y = pred_flag = 0;
             if (idx_mbmode & 1) {
@@ -1840,7 +1841,8 @@ static int vc1_decode_p_mb_intfi(VC1Context *v)
                                          (i & 4) && (s->flags & CODEC_FLAG_GRAY),
                                          &block_tt);
                 block_cbp |= pat << (i << 2);
-                if (!v->ttmbf && ttmb < 8) ttmb = -1;
+                if (!v->ttmbf && ttmb < 8)
+                    ttmb = -1;
                 first_block = 0;
             }
         }
@@ -2074,7 +2076,8 @@ static void vc1_decode_b_mb_intfi(VC1Context *v)
     } else {
         s->mb_intra = v->is_intra[s->mb_x] = 0;
         s->current_picture.mb_type[mb_pos + v->mb_off] = MB_TYPE_16x16;
-        for (i = 0; i < 6; i++) v->mb_type[0][s->block_index[i]] = 0;
+        for (i = 0; i < 6; i++)
+            v->mb_type[0][s->block_index[i]] = 0;
         if (v->fmb_is_raw)
             fwd = v->forward_mb_plane[mb_pos] = get_bits1(gb);
         else
@@ -2780,15 +2783,14 @@ static void vc1_decode_i_blocks_adv(VC1Context *v)
     /* raw bottom MB row */
     s->mb_x = 0;
     init_block_index(v);
-
-    for (;s->mb_x < s->mb_width; s->mb_x++) {
+    for (; s->mb_x < s->mb_width; s->mb_x++) {
         ff_update_block_index(s);
         vc1_put_signed_blocks_clamped(v);
         if (v->s.loop_filter)
             ff_vc1_loop_filter_iblk_delayed(v, v->pq);
     }
     if (v->s.loop_filter)
-        ff_mpeg_draw_horiz_band(s, (s->end_mb_y-1)*16, 16);
+        ff_mpeg_draw_horiz_band(s, (s->end_mb_y - 1) * 16, 16);
     ff_er_add_slice(&s->er, 0, s->start_mb_y << v->field_mode, s->mb_width - 1,
                     (s->end_mb_y << v->field_mode) - 1, ER_MB_END);
 }
@@ -2852,7 +2854,8 @@ static void vc1_decode_p_blocks(VC1Context *v)
         memmove(v->ttblk_base,    v->ttblk,    sizeof(v->ttblk_base[0])    * s->mb_stride);
         memmove(v->is_intra_base, v->is_intra, sizeof(v->is_intra_base[0]) * s->mb_stride);
         memmove(v->luma_mv_base,  v->luma_mv,  sizeof(v->luma_mv_base[0])  * s->mb_stride);
-        if (s->mb_y != s->start_mb_y) ff_mpeg_draw_horiz_band(s, (s->mb_y - 1) * 16, 16);
+        if (s->mb_y != s->start_mb_y)
+            ff_mpeg_draw_horiz_band(s, (s->mb_y - 1) * 16, 16);
         s->first_slice_line = 0;
     }
     if (apply_loop_filter) {
