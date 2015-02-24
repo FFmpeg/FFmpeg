@@ -186,11 +186,7 @@ static void init_rtp_handler(RTPDynamicProtocolHandler *handler,
     rtsp_st->dynamic_handler = handler;
     if (st)
         st->need_parsing = handler->need_parsing;
-    if (handler->alloc) {
-        rtsp_st->dynamic_protocol_context = handler->alloc();
-        if (!rtsp_st->dynamic_protocol_context)
-            rtsp_st->dynamic_handler = NULL;
-    } else if (handler->priv_data_size) {
+    if (handler->priv_data_size) {
         rtsp_st->dynamic_protocol_context = av_mallocz(handler->priv_data_size);
         if (!rtsp_st->dynamic_protocol_context)
             rtsp_st->dynamic_handler = NULL;
