@@ -54,7 +54,7 @@ static PayloadContext *xiph_new_context(void)
     return av_mallocz(sizeof(PayloadContext));
 }
 
-static inline void free_fragment_if_needed(PayloadContext * data)
+static inline void free_fragment(PayloadContext * data)
 {
     if (data->fragment) {
         uint8_t* p;
@@ -66,7 +66,7 @@ static inline void free_fragment_if_needed(PayloadContext * data)
 
 static void xiph_free_context(PayloadContext * data)
 {
-    free_fragment_if_needed(data);
+    free_fragment(data);
     av_freep(&data->split_buf);
     av_freep(&data);
 }
@@ -183,7 +183,7 @@ static int xiph_handle_packet(AVFormatContext *ctx, PayloadContext *data,
         int res;
 
         // end packet has been lost somewhere, so drop buffered data
-        free_fragment_if_needed(data);
+        free_fragment(data);
 
         if((res = avio_open_dyn_buf(&data->fragment)) < 0)
             return res;
@@ -196,7 +196,7 @@ static int xiph_handle_packet(AVFormatContext *ctx, PayloadContext *data,
         if (data->timestamp != *timestamp) {
             // skip if fragmented timestamp is incorrect;
             // a start packet has been lost somewhere
-            free_fragment_if_needed(data);
+            free_fragment(data);
             av_log(ctx, AV_LOG_ERROR, "RTP timestamps don't match!\n");
             return AVERROR_INVALIDDATA;
         }

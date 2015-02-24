@@ -64,7 +64,7 @@ static PayloadContext *jpeg_new_context(void)
     return av_mallocz(sizeof(PayloadContext));
 }
 
-static inline void free_frame_if_needed(PayloadContext *jpeg)
+static inline void free_frame(PayloadContext *jpeg)
 {
     if (jpeg->frame) {
         uint8_t *p;
@@ -76,7 +76,7 @@ static inline void free_frame_if_needed(PayloadContext *jpeg)
 
 static void jpeg_free_context(PayloadContext *jpeg)
 {
-    free_frame_if_needed(jpeg);
+    free_frame(jpeg);
     av_free(jpeg);
 }
 
@@ -338,7 +338,7 @@ static int jpeg_parse_packet(AVFormatContext *ctx, PayloadContext *jpeg,
 
         /* Skip the current frame in case of the end packet
          * has been lost somewhere. */
-        free_frame_if_needed(jpeg);
+        free_frame(jpeg);
 
         if ((ret = avio_open_dyn_buf(&jpeg->frame)) < 0)
             return ret;
@@ -364,7 +364,7 @@ static int jpeg_parse_packet(AVFormatContext *ctx, PayloadContext *jpeg,
     if (jpeg->timestamp != *timestamp) {
         /* Skip the current frame if timestamp is incorrect.
          * A start packet has been lost somewhere. */
-        free_frame_if_needed(jpeg);
+        free_frame(jpeg);
         av_log(ctx, AV_LOG_ERROR, "RTP timestamps don't match.\n");
         return AVERROR_INVALIDDATA;
     }
