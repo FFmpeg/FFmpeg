@@ -269,13 +269,10 @@ static int vp8_handle_packet(AVFormatContext *ctx, PayloadContext *vp8,
     return AVERROR(EAGAIN);
 }
 
-static PayloadContext *vp8_new_context(void)
+static av_cold int vp8_init(AVFormatContext *s, int st_index, PayloadContext *vp8)
 {
-    PayloadContext *vp8 = av_mallocz(sizeof(PayloadContext));
-    if (!vp8)
-        return NULL;
     vp8->sequence_ok = 1;
-    return vp8;
+    return 0;
 }
 
 static void vp8_free_context(PayloadContext *vp8)
@@ -293,7 +290,8 @@ RTPDynamicProtocolHandler ff_vp8_dynamic_handler = {
     .enc_name       = "VP8",
     .codec_type     = AVMEDIA_TYPE_VIDEO,
     .codec_id       = AV_CODEC_ID_VP8,
-    .alloc          = vp8_new_context,
+    .priv_data_size = sizeof(PayloadContext),
+    .init           = vp8_init,
     .free           = vp8_free_context,
     .parse_packet   = vp8_handle_packet,
     .need_keyframe  = vp8_need_keyframe,
