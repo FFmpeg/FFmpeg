@@ -555,7 +555,7 @@ static int vc1_decode_i_block(VC1Context *v, int16_t block[64], int n,
     int i;
     int16_t *dc_val;
     int16_t *ac_val, *ac_val2;
-    int dcdiff;
+    int dcdiff, scale;
 
     /* Get DC differential */
     if (n < 4) {
@@ -584,26 +584,28 @@ static int vc1_decode_i_block(VC1Context *v, int16_t block[64], int n,
     *dc_val = dcdiff;
 
     /* Store the quantized DC coeff, used for prediction */
-    if (n < 4) {
-        block[0] = dcdiff * s->y_dc_scale;
-    } else {
-        block[0] = dcdiff * s->c_dc_scale;
-    }
-    /* Skip ? */
-    if (!coded) {
-        goto not_coded;
-    }
+    if (n < 4)
+        scale = s->y_dc_scale;
+    else
+        scale = s->c_dc_scale;
+    block[0] = dcdiff * scale;
 
-    // AC Decoding
-    i = 1;
+    ac_val  = s->ac_val[0][0] + s->block_index[n] * 16;
+    ac_val2 = ac_val;
+    if (dc_pred_dir) // left
+        ac_val -= 16;
+    else // top
+        ac_val -= 16 * s->block_wrap[n];
 
-    {
+    scale = v->pq * 2 + v->halfpq;
+
+    //AC Decoding
+    i = !!coded;
+
+    if (coded) {
         int last = 0, skip, value;
         const uint8_t *zz_table;
-        int scale;
         int k;
-
-        scale = v->pq * 2 + v->halfpq;
 
         if (v->s.ac_pred) {
             if (!dc_pred_dir)
@@ -612,13 +614,6 @@ static int vc1_decode_i_block(VC1Context *v, int16_t block[64], int n,
                 zz_table = v->zz_8x8[3];
         } else
             zz_table = v->zz_8x8[1];
-
-        ac_val  = s->ac_val[0][0] + s->block_index[n] * 16;
-        ac_val2 = ac_val;
-        if (dc_pred_dir) // left
-            ac_val -= 16;
-        else // top
-            ac_val -= 16 * s->block_wrap[n];
 
         while (!last) {
             vc1_decode_ac_coeff(v, &last, &skip, &value, codingset);
@@ -630,13 +625,15 @@ static int vc1_decode_i_block(VC1Context *v, int16_t block[64], int n,
 
         /* apply AC prediction if needed */
         if (s->ac_pred) {
+            int sh;
             if (dc_pred_dir) { // left
-                for (k = 1; k < 8; k++)
-                    block[k << v->left_blk_sh] += ac_val[k];
+                sh = v->left_blk_sh;
             } else { // top
-                for (k = 1; k < 8; k++)
-                    block[k << v->top_blk_sh] += ac_val[k + 8];
+                sh = v->top_blk_sh;
+                ac_val += 8;
             }
+            for (k = 1; k < 8; k++)
+                block[k << sh] += ac_val[k];
         }
         /* save AC coeffs for further prediction */
         for (k = 1; k < 8; k++) {
@@ -652,46 +649,30 @@ static int vc1_decode_i_block(VC1Context *v, int16_t block[64], int n,
                     block[k] += (block[k] < 0) ? -v->pq : v->pq;
             }
 
-        if (s->ac_pred) i = 63;
-    }
+    } else {
+        int k;
 
-not_coded:
-    if (!coded) {
-        int k, scale;
-        ac_val  = s->ac_val[0][0] + s->block_index[n] * 16;
-        ac_val2 = ac_val;
-
-        i = 0;
-        scale = v->pq * 2 + v->halfpq;
         memset(ac_val2, 0, 16 * 2);
-        if (dc_pred_dir) { // left
-            ac_val -= 16;
-            if (s->ac_pred)
-                memcpy(ac_val2, ac_val, 8 * 2);
-        } else { // top
-            ac_val -= 16 * s->block_wrap[n];
-            if (s->ac_pred)
-                memcpy(ac_val2 + 8, ac_val + 8, 8 * 2);
-        }
 
         /* apply AC prediction if needed */
         if (s->ac_pred) {
+            int sh;
             if (dc_pred_dir) { //left
-                for (k = 1; k < 8; k++) {
-                    block[k << v->left_blk_sh] = ac_val[k] * scale;
-                    if (!v->pquantizer && block[k << v->left_blk_sh])
-                        block[k << v->left_blk_sh] += (block[k << v->left_blk_sh] < 0) ? -v->pq : v->pq;
-                }
+                sh = v->left_blk_sh;
             } else { // top
-                for (k = 1; k < 8; k++) {
-                    block[k << v->top_blk_sh] = ac_val[k + 8] * scale;
-                    if (!v->pquantizer && block[k << v->top_blk_sh])
-                        block[k << v->top_blk_sh] += (block[k << v->top_blk_sh] < 0) ? -v->pq : v->pq;
-                }
+                sh = v->top_blk_sh;
+                ac_val  += 8;
+                ac_val2 += 8;
             }
-            i = 63;
+            memcpy(ac_val2, ac_val, 8 * 2);
+            for (k = 1; k < 8; k++) {
+                block[k << sh] = ac_val[k] * scale;
+                if (!v->pquantizer && block[k << sh])
+                    block[k << sh] += (block[k << sh] < 0) ? -v->pq : v->pq;
+            }
         }
     }
+    if (s->ac_pred) i = 63;
     s->block_last_index[n] = i;
 
     return 0;
