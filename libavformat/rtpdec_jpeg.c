@@ -59,7 +59,7 @@ static const uint8_t default_quantizers[128] = {
     99,  99,  99,  99,  99,  99,  99,  99
 };
 
-static inline void free_frame(PayloadContext *jpeg)
+static void free_frame(PayloadContext *jpeg)
 {
     if (jpeg->frame) {
         uint8_t *p;

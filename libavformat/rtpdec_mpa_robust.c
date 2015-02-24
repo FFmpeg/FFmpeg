@@ -33,7 +33,7 @@ struct PayloadContext {
     AVIOContext *fragment;
 };
 
-static inline void free_fragment(PayloadContext *data)
+static void free_fragment(PayloadContext *data)
 {
     if (data->fragment) {
         uint8_t *p;
