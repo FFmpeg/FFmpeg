@@ -778,6 +778,10 @@
     </ClCompile>
     <ClCompile Include="..\libavcodec\hnm4video.c">
     </ClCompile>
+    <ClCompile Include="..\libavcodec\hqx.c">
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\hqxvlc.c">
+    </ClCompile>
     <ClCompile Include="..\libavcodec\huffyuv.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\huffyuvdec.c">

@@ -1166,6 +1166,12 @@
     <ClCompile Include="..\libavcodec\hnm4video.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\hqx.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\hqxvlc.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\huffyuv.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
