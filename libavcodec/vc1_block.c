@@ -53,7 +53,7 @@ static const uint8_t offset_table[2][9] = {
  */
 
 
-static void init_block_index(VC1Context *v)
+static inline void init_block_index(VC1Context *v)
 {
     MpegEncContext *s = &v->s;
     ff_init_block_index(s);
