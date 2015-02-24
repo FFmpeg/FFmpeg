@@ -346,7 +346,7 @@ static int h264_handle_packet(AVFormatContext *ctx, PayloadContext *data,
 
 static PayloadContext *h264_new_context(void)
 {
-    return av_mallocz(sizeof(PayloadContext) + FF_INPUT_BUFFER_PADDING_SIZE);
+    return av_mallocz(sizeof(PayloadContext));
 }
 
 static void h264_free_context(PayloadContext *data)
