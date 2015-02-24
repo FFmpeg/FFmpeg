@@ -769,6 +769,8 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
     // if we need to clear it.
     if (!(st->disposition & AV_DISPOSITION_DEFAULT))
         put_ebml_uint(pb, MATROSKA_ID_TRACKFLAGDEFAULT, !!(st->disposition & AV_DISPOSITION_DEFAULT));
+    if (st->disposition & AV_DISPOSITION_FORCED)
+        put_ebml_uint(pb, MATROSKA_ID_TRACKFLAGFORCED, !!(st->disposition & AV_DISPOSITION_FORCED));
 
     if (codec->codec_type == AVMEDIA_TYPE_AUDIO && codec->initial_padding) {
         mkv->tracks[i].ts_offset = av_rescale_q(codec->initial_padding,
