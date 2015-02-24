@@ -256,6 +256,11 @@ static int dss_sp_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     dss_sp_byte_swap(ctx, pkt->data, ctx->dss_sp_buf);
 
+    if (ctx->dss_sp_swap_byte < 0) {
+        ret = AVERROR(EAGAIN);
+        goto error_eof;
+    }
+
     if (pkt->data[0] == 0xff)
         return AVERROR_INVALIDDATA;
 
@@ -340,6 +345,45 @@ static int dss_read_close(AVFormatContext *s)
     return 0;
 }
 
+static int dss_read_seek(AVFormatContext *s, int stream_index,
+                         int64_t timestamp, int flags)
+{
+    DSSDemuxContext *ctx = s->priv_data;
+    int64_t ret, seekto;
+    uint8_t header[DSS_AUDIO_BLOCK_HEADER_SIZE];
+    int offset;
+
+    if (ctx->audio_codec == DSS_ACODEC_DSS_SP)
+        seekto = timestamp / 264 * 41 / 506 * 512;
+    else
+        seekto = timestamp / 240 * ctx->packet_size / 506 * 512;
+
+    if (seekto < 0)
+        seekto = 0;
+
+    seekto += DSS_HEADER_SIZE;
+
+    ret = avio_seek(s->pb, seekto, SEEK_SET);
+    if (ret < 0)
+        return ret;
+
+    avio_read(s->pb, header, DSS_AUDIO_BLOCK_HEADER_SIZE);
+    ctx->swap = !!(header[0] & 0x80);
+    offset = 2*header[1] + 2*ctx->swap;
+    if (offset < DSS_AUDIO_BLOCK_HEADER_SIZE)
+        return AVERROR_INVALIDDATA;
+    if (offset == DSS_AUDIO_BLOCK_HEADER_SIZE) {
+        ctx->counter = 0;
+        offset = avio_skip(s->pb, -DSS_AUDIO_BLOCK_HEADER_SIZE);
+    } else {
+        ctx->counter = DSS_BLOCK_SIZE - offset;
+        offset = avio_skip(s->pb, offset - DSS_AUDIO_BLOCK_HEADER_SIZE);
+    }
+    ctx->dss_sp_swap_byte = -1;
+    return 0;
+}
+
+
 AVInputFormat ff_dss_demuxer = {
     .name           = "dss",
     .long_name      = NULL_IF_CONFIG_SMALL("Digital Speech Standard (DSS)"),
@@ -348,5 +392,6 @@ AVInputFormat ff_dss_demuxer = {
     .read_header    = dss_read_header,
     .read_packet    = dss_read_packet,
     .read_close     = dss_read_close,
+    .read_seek      = dss_read_seek,
     .extensions     = "dss"
 };
