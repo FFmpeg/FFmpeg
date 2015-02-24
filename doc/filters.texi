@@ -7820,8 +7820,8 @@ complete list of values. If not explicitly specified the filter applies
 the default flags.
 
 @item size, s
-Set the video size. For the syntax of this option, check the "Video size"
-section in the ffmpeg-utils manual.
+Set the video size. For the syntax of this option, check the
+@ref{video size syntax,,"Video size" section in the ffmpeg-utils manual,ffmpeg-utils}.
 
 @item in_color_matrix
 @item out_color_matrix
@@ -8218,8 +8218,8 @@ The sample aspect ratio of the input frame, expressed in the form
 @var{num}/@var{den}.
 
 @item s
-The size of the input frame. For the syntax of this option, check the "Video size"
-section in the ffmpeg-utils manual.
+The size of the input frame. For the syntax of this option, check the
+@ref{video size syntax,,"Video size" section in the ffmpeg-utils manual,ffmpeg-utils}.
 
 @item i
 The type of interlaced mode ("P" for "progressive", "T" for top field first, "B"
@@ -8712,10 +8712,10 @@ Set the filename of the subtitle file to read. It must be specified.
 
 @item original_size
 Specify the size of the original video, the video for which the ASS file
-was composed. For the syntax of this option, check the "Video size" section in
-the ffmpeg-utils manual. Due to a misdesign in ASS aspect ratio arithmetic,
-this is necessary to correctly scale the fonts if the aspect ratio has been
-changed.
+was composed. For the syntax of this option, check the
+@ref{video size syntax,,"Video size" section in the ffmpeg-utils manual,ffmpeg-utils}.
+Due to a misdesign in ASS aspect ratio arithmetic, this is necessary to
+correctly scale the fonts if the aspect ratio has been changed.
 
 @item charenc
 Set subtitles input character encoding. @code{subtitles} filter only. Only
@@ -8849,7 +8849,8 @@ The filter accepts the following options:
 
 @item layout
 Set the grid size (i.e. the number of lines and columns). For the syntax of
-this option, check the "Video size" section in the ffmpeg-utils manual.
+this option, check the
+@ref{video size syntax,,"Video size" section in the ffmpeg-utils manual,ffmpeg-utils}.
 
 @item nb_frames
 Set the maximum number of frames to render in the given area. It must be less
@@ -9907,8 +9908,8 @@ It accepts the following parameters:
 
 @item video_size
 Specify the size (width and height) of the buffered video frames. For the
-syntax of this option, check the "Video size" section in the ffmpeg-utils
-manual.
+syntax of this option, check the
+@ref{video size syntax,,"Video size" section in the ffmpeg-utils manual,ffmpeg-utils}.
 
 @item width
 The input video width.
@@ -10008,8 +10009,8 @@ Set the cellular automaton rule, it is a number ranging from 0 to 255.
 Default value is 110.
 
 @item size, s
-Set the size of the output video. For the syntax of this option, check
-the "Video size" section in the ffmpeg-utils manual.
+Set the size of the output video. For the syntax of this option, check the
+@ref{video size syntax,,"Video size" section in the ffmpeg-utils manual,ffmpeg-utils}.
 
 If @option{filename} or @option{pattern} is specified, the size is set
 by default to the width of the specified initial state row, and the
@@ -10209,7 +10210,7 @@ This source accepts the following parameters:
 
 @item size
 The size of the video to generate. For the syntax of this option, check the
-"Video size" section in the ffmpeg-utils manual.
+@ref{video size syntax,,"Video size" section in the ffmpeg-utils manual,ffmpeg-utils}.
 
 @item framerate
 The framerate of the generated video. It may be a string of the form
@@ -10298,7 +10299,7 @@ a dead cell.
 
 @item size, s
 Set the size of the output video. For the syntax of this option, check the
-"Video size" section in the ffmpeg-utils manual.
+@ref{video size syntax,,"Video size" section in the ffmpeg-utils manual,ffmpeg-utils}.
 
 If @option{filename} is specified, the size is set by default to the
 same size of the input file. If @option{size} is set, it must contain
@@ -10409,8 +10410,8 @@ coded on a @code{1/(N*N)} scale.
 
 @item size, s
 Specify the size of the sourced video. For the syntax of this option, check the
-"Video size" section in the ffmpeg-utils manual. The default value is
-"320x240".
+@ref{video size syntax,,"Video size" section in the ffmpeg-utils manual,ffmpeg-utils}.
+The default value is @code{320x240}.
 
 This option is not available with the @code{haldclutsrc} filter.
 
@@ -10536,8 +10537,9 @@ Same as above but not rotated.
 Default value is @samp{lissajous}.
 
 @item size, s
-Set the video size for the output. For the syntax of this option, check the "Video size"
-section in the ffmpeg-utils manual. Default value is @code{400x400}.
+Set the video size for the output. For the syntax of this option, check the
+@ref{video size syntax,,"Video size" section in the ffmpeg-utils manual,ffmpeg-utils}.
+Default value is @code{400x400}.
 
 @item rate, r
 Set the output frame rate. Default value is @code{25}.
@@ -10677,8 +10679,9 @@ activated. Default is @code{0}.
 
 @item size
 Set the video size. This option is for video only. For the syntax of this
-option, check the "Video size" section in the ffmpeg-utils manual. Default
-and minimum resolution is @code{640x480}.
+option, check the
+@ref{video size syntax,,"Video size" section in the ffmpeg-utils manual,ffmpeg-utils}.
+Default and minimum resolution is @code{640x480}.
 
 @item meter
 Set the EBU scale meter. Default is @code{9}. Common values are @code{9} and
@@ -11500,9 +11503,9 @@ The filter accepts the following options:
 
 @table @option
 @item size, s
-Specify the video size for the output. For the syntax of this option, check
-the "Video size" section in the ffmpeg-utils manual. Default value is
-@code{640x512}.
+Specify the video size for the output. For the syntax of this option, check the
+@ref{video size syntax,,"Video size" section in the ffmpeg-utils manual,ffmpeg-utils}.
+Default value is @code{640x512}.
 
 @item slide
 Specify how the spectrum should slide along the window.
@@ -11614,9 +11617,9 @@ The filter accepts the following options:
 
 @table @option
 @item size, s
-Specify the video size for the output. For the syntax of this option, check
-the "Video size" section in the ffmpeg-utils manual. Default value
-is "600x240".
+Specify the video size for the output. For the syntax of this option, check the
+@ref{video size syntax,,"Video size" section in the ffmpeg-utils manual,ffmpeg-utils}.
+Default value is @code{600x240}.
 
 @item mode
 Set display mode.
