@@ -82,6 +82,8 @@ static const AVOption colormatrix_options[] = {
     { "bt709",     "set BT.709 colorspace",      0, AV_OPT_TYPE_CONST, {.i64=COLOR_MODE_BT709},       .flags=FLAGS, .unit="color_mode" },
     { "fcc",       "set FCC colorspace   ",      0, AV_OPT_TYPE_CONST, {.i64=COLOR_MODE_FCC},         .flags=FLAGS, .unit="color_mode" },
     { "bt601",     "set BT.601 colorspace",      0, AV_OPT_TYPE_CONST, {.i64=COLOR_MODE_BT601},       .flags=FLAGS, .unit="color_mode" },
+    { "bt470",     "set BT.470 colorspace",      0, AV_OPT_TYPE_CONST, {.i64=COLOR_MODE_BT601},       .flags=FLAGS, .unit="color_mode" },
+    { "smpte170m", "set SMTPE-170M colorspace",  0, AV_OPT_TYPE_CONST, {.i64=COLOR_MODE_BT601},       .flags=FLAGS, .unit="color_mode" },
     { "smpte240m", "set SMPTE-240M colorspace",  0, AV_OPT_TYPE_CONST, {.i64=COLOR_MODE_SMPTE240M},   .flags=FLAGS, .unit="color_mode" },
     { NULL }
 };
@@ -351,6 +353,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
         case AVCOL_SPC_FCC       : source = COLOR_MODE_FCC       ; break;
         case AVCOL_SPC_SMPTE240M : source = COLOR_MODE_SMPTE240M ; break;
         case AVCOL_SPC_BT470BG   : source = COLOR_MODE_BT601     ; break;
+        case AVCOL_SPC_SMPTE170M : source = COLOR_MODE_BT601     ; break;
         default :
             av_log(ctx, AV_LOG_ERROR, "Input frame does not specify a supported colorspace, and none has been specified as source either\n");
             av_frame_free(&out);
