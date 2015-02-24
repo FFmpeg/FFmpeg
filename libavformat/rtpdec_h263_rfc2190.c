@@ -26,6 +26,7 @@
  */
 
 #include "avformat.h"
+#include "avio_internal.h"
 #include "rtpdec_formats.h"
 #include "libavutil/attributes.h"
 #include "libavutil/intreadwrite.h"
@@ -41,11 +42,7 @@ struct PayloadContext {
 
 static void h263_free_context(PayloadContext *data)
 {
-    if (data->buf) {
-        uint8_t *p;
-        avio_close_dyn_buf(data->buf, &p);
-        av_free(p);
-    }
+    ffio_free_dyn_buf(&data->buf);
 }
 
 static int h263_handle_packet(AVFormatContext *ctx, PayloadContext *data,
@@ -63,10 +60,7 @@ static int h263_handle_packet(AVFormatContext *ctx, PayloadContext *data,
 
     if (data->buf && data->timestamp != *timestamp) {
         /* Dropping old buffered, unfinished data */
-        uint8_t *p;
-        avio_close_dyn_buf(data->buf, &p);
-        av_free(p);
-        data->buf = NULL;
+        ffio_free_dyn_buf(&data->buf);
         data->endbyte_bits = 0;
     }
 

@@ -29,6 +29,7 @@
 
 #include "libavcodec/bytestream.h"
 
+#include "avio_internal.h"
 #include "rtpdec_formats.h"
 
 struct PayloadContext {
@@ -52,22 +53,12 @@ struct PayloadContext {
     int          got_keyframe;
 };
 
-static void vp8_free_buffer(PayloadContext *vp8)
-{
-    uint8_t *tmp;
-    if (!vp8->data)
-        return;
-    avio_close_dyn_buf(vp8->data, &tmp);
-    av_free(tmp);
-    vp8->data = NULL;
-}
-
 static int vp8_broken_sequence(AVFormatContext *ctx, PayloadContext *vp8,
                                const char *msg)
 {
     vp8->sequence_ok = 0;
     av_log(ctx, AV_LOG_WARNING, "%s", msg);
-    vp8_free_buffer(vp8);
+    ffio_free_dyn_buf(&vp8->data);
     return AVERROR(EAGAIN);
 }
 
@@ -150,7 +141,7 @@ static int vp8_handle_packet(AVFormatContext *ctx, PayloadContext *vp8,
         int res;
         int non_key = buf[0] & 0x01;
         if (!non_key) {
-            vp8_free_buffer(vp8);
+            ffio_free_dyn_buf(&vp8->data);
             // Keyframe, decoding ok again
             vp8->sequence_ok = 1;
             vp8->sequence_dirty = 0;
@@ -205,7 +196,7 @@ static int vp8_handle_packet(AVFormatContext *ctx, PayloadContext *vp8,
                     old_timestamp = vp8->timestamp;
                 } else {
                     // Shouldn't happen
-                    vp8_free_buffer(vp8);
+                    ffio_free_dyn_buf(&vp8->data);
                 }
             }
         }
@@ -277,7 +268,7 @@ static av_cold int vp8_init(AVFormatContext *s, int st_index, PayloadContext *vp
 
 static void vp8_free_context(PayloadContext *vp8)
 {
-    vp8_free_buffer(vp8);
+    ffio_free_dyn_buf(&vp8->data);
 }
 
 static int vp8_need_keyframe(PayloadContext *vp8)

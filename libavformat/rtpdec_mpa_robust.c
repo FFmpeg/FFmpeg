@@ -22,6 +22,7 @@
 #include "libavutil/attributes.h"
 #include "libavutil/intreadwrite.h"
 
+#include "avio_internal.h"
 #include "rtpdec_formats.h"
 
 struct PayloadContext {
@@ -33,19 +34,9 @@ struct PayloadContext {
     AVIOContext *fragment;
 };
 
-static void free_fragment(PayloadContext *data)
-{
-    if (data->fragment) {
-        uint8_t *p;
-        avio_close_dyn_buf(data->fragment, &p);
-        av_free(p);
-        data->fragment = NULL;
-    }
-}
-
 static void mpa_robust_free_context(PayloadContext *data)
 {
-    free_fragment(data);
+    ffio_free_dyn_buf(&data->fragment);
     av_free(data->split_buf);
 }
 
@@ -154,7 +145,7 @@ static int mpa_robust_parse_packet(AVFormatContext *ctx, PayloadContext *data,
         return 0;
     } else if (!continuation) { /* && adu_size > len */
         /* First fragment */
-        free_fragment(data);
+        ffio_free_dyn_buf(&data->fragment);
 
         data->adu_size = adu_size;
         data->cur_size = len;
@@ -177,7 +168,7 @@ static int mpa_robust_parse_packet(AVFormatContext *ctx, PayloadContext *data,
     }
     if (adu_size = data->adu_size ||
         data->timestamp != *timestamp) {
-        free_fragment(data);
+        ffio_free_dyn_buf(&data->fragment);
         av_log(ctx, AV_LOG_ERROR, "Invalid packet received\n");
         return AVERROR_INVALIDDATA;
     }

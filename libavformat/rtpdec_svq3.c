@@ -28,6 +28,7 @@
 
 #include <string.h>
 #include "libavutil/intreadwrite.h"
+#include "avio_internal.h"
 #include "internal.h"
 #include "rtp.h"
 #include "rtpdec.h"
@@ -81,11 +82,7 @@ static int svq3_parse_packet (AVFormatContext *s, PayloadContext *sv,
     if (start_packet) {
         int res;
 
-        if (sv->pktbuf) {
-            uint8_t *tmp;
-            avio_close_dyn_buf(sv->pktbuf, &tmp);
-            av_free(tmp);
-        }
+        ffio_free_dyn_buf(&sv->pktbuf);
         if ((res = avio_open_dyn_buf(&sv->pktbuf)) < 0)
             return res;
         sv->timestamp   = *timestamp;
@@ -110,11 +107,7 @@ static int svq3_parse_packet (AVFormatContext *s, PayloadContext *sv,
 
 static void svq3_extradata_free(PayloadContext *sv)
 {
-    if (sv->pktbuf) {
-        uint8_t *buf;
-        avio_close_dyn_buf(sv->pktbuf, &buf);
-        av_free(buf);
-    }
+    ffio_free_dyn_buf(&sv->pktbuf);
 }
 
 RTPDynamicProtocolHandler ff_svq3_dynamic_handler = {

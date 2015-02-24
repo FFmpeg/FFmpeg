@@ -33,6 +33,7 @@
 #include "libavutil/base64.h"
 #include "libavcodec/bytestream.h"
 
+#include "avio_internal.h"
 #include "internal.h"
 #include "rtpdec.h"
 #include "rtpdec_formats.h"
@@ -49,19 +50,9 @@ struct PayloadContext {
     int split_pkts;
 };
 
-static void free_fragment(PayloadContext * data)
-{
-    if (data->fragment) {
-        uint8_t* p;
-        avio_close_dyn_buf(data->fragment, &p);
-        av_free(p);
-        data->fragment = NULL;
-    }
-}
-
 static void xiph_free_context(PayloadContext * data)
 {
-    free_fragment(data);
+    ffio_free_dyn_buf(&data->fragment);
     av_freep(&data->split_buf);
 }
 
@@ -168,7 +159,7 @@ static int xiph_handle_packet(AVFormatContext *ctx, PayloadContext *data,
         int res;
 
         // end packet has been lost somewhere, so drop buffered data
-        free_fragment(data);
+        ffio_free_dyn_buf(&data->fragment);
 
         if((res = avio_open_dyn_buf(&data->fragment)) < 0)
             return res;
@@ -181,7 +172,7 @@ static int xiph_handle_packet(AVFormatContext *ctx, PayloadContext *data,
         if (data->timestamp != *timestamp) {
             // skip if fragmented timestamp is incorrect;
             // a start packet has been lost somewhere
-            free_fragment(data);
+            ffio_free_dyn_buf(&data->fragment);
             av_log(ctx, AV_LOG_ERROR, "RTP timestamps don't match!\n");
             return AVERROR_INVALIDDATA;
         }
