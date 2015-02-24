@@ -23,6 +23,7 @@
 
 #include "libavcodec/bytestream.h"
 
+#include "avio_internal.h"
 #include "rtpdec_formats.h"
 
 struct PayloadContext {
@@ -31,17 +32,9 @@ struct PayloadContext {
     int         bundled_audio;
 };
 
-static void dv_free_dyn_buffer(AVIOContext **dyn_buf)
-{
-    uint8_t *ptr_dyn_buffer;
-    avio_close_dyn_buf(*dyn_buf, &ptr_dyn_buffer);
-    av_free(ptr_dyn_buffer);
-    *dyn_buf = NULL;
-}
-
 static av_cold void dv_free_context(PayloadContext *data)
 {
-    dv_free_dyn_buffer(&data->buf);
+    ffio_free_dyn_buf(&data->buf);
 }
 
 static av_cold int dv_sdp_parse_fmtp_config(AVFormatContext *s,
@@ -104,7 +97,7 @@ static int dv_handle_packet(AVFormatContext *ctx, PayloadContext *rtp_dv_ctx,
 
     /* drop data of previous packets in case of non-continuous (lossy) packet stream */
     if (rtp_dv_ctx->buf && rtp_dv_ctx->timestamp != *timestamp) {
-        dv_free_dyn_buffer(&rtp_dv_ctx->buf);
+        ffio_free_dyn_buf(&rtp_dv_ctx->buf);
     }
 
     /* sanity check for size of input packet: 1 byte payload at least */

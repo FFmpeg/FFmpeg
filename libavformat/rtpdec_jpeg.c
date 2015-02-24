@@ -20,6 +20,7 @@
  */
 
 #include "avformat.h"
+#include "avio_internal.h"
 #include "rtpdec.h"
 #include "rtpdec_formats.h"
 #include "libavutil/intreadwrite.h"
@@ -59,19 +60,9 @@ static const uint8_t default_quantizers[128] = {
     99,  99,  99,  99,  99,  99,  99,  99
 };
 
-static void free_frame(PayloadContext *jpeg)
-{
-    if (jpeg->frame) {
-        uint8_t *p;
-        avio_close_dyn_buf(jpeg->frame, &p);
-        av_free(p);
-        jpeg->frame = NULL;
-    }
-}
-
 static void jpeg_free_context(PayloadContext *jpeg)
 {
-    free_frame(jpeg);
+    ffio_free_dyn_buf(&jpeg->frame);
 }
 
 static int jpeg_create_huffman_table(PutByteContext *p, int table_class,
@@ -315,7 +306,7 @@ static int jpeg_parse_packet(AVFormatContext *ctx, PayloadContext *jpeg,
 
         /* Skip the current frame in case of the end packet
          * has been lost somewhere. */
-        free_frame(jpeg);
+        ffio_free_dyn_buf(&jpeg->frame);
 
         if ((ret = avio_open_dyn_buf(&jpeg->frame)) < 0)
             return ret;
@@ -341,7 +332,7 @@ static int jpeg_parse_packet(AVFormatContext *ctx, PayloadContext *jpeg,
     if (jpeg->timestamp != *timestamp) {
         /* Skip the current frame if timestamp is incorrect.
          * A start packet has been lost somewhere. */
-        free_frame(jpeg);
+        ffio_free_dyn_buf(&jpeg->frame);
         av_log(ctx, AV_LOG_ERROR, "RTP timestamps don't match.\n");
         return AVERROR_INVALIDDATA;
     }

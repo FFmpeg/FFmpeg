@@ -21,6 +21,7 @@
 
 #include "libavcodec/get_bits.h"
 #include "avformat.h"
+#include "avio_internal.h"
 #include "rtpdec_formats.h"
 
 #define RTP_H261_PAYLOAD_HEADER_SIZE 4
@@ -32,14 +33,6 @@ struct PayloadContext {
     uint32_t     timestamp;
 };
 
-static void h261_free_dyn_buffer(AVIOContext **dyn_buf)
-{
-    uint8_t *ptr_dyn_buffer;
-    avio_close_dyn_buf(*dyn_buf, &ptr_dyn_buffer);
-    av_free(ptr_dyn_buffer);
-    *dyn_buf = NULL;
-}
-
 static av_cold void h261_free_context(PayloadContext *pl_ctx)
 {
     /* return if context is invalid */
@@ -47,9 +40,7 @@ static av_cold void h261_free_context(PayloadContext *pl_ctx)
         return;
 
     /* free buffer if it is valid */
-    if (pl_ctx->buf) {
-        h261_free_dyn_buffer(&pl_ctx->buf);
-    }
+    ffio_free_dyn_buf(&pl_ctx->buf);
 }
 
 static int h261_handle_packet(AVFormatContext *ctx, PayloadContext *rtp_h261_ctx,
@@ -62,7 +53,7 @@ static int h261_handle_packet(AVFormatContext *ctx, PayloadContext *rtp_h261_ctx
 
     /* drop data of previous packets in case of non-continuous (lossy) packet stream */
     if (rtp_h261_ctx->buf && rtp_h261_ctx->timestamp != *timestamp) {
-        h261_free_dyn_buffer(&rtp_h261_ctx->buf);
+        ffio_free_dyn_buf(&rtp_h261_ctx->buf);
         rtp_h261_ctx->endbyte_bits = 0;
     }
 
