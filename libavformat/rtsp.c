@@ -732,8 +732,7 @@ void ff_rtsp_close_streams(AVFormatContext *s)
                 if (rtsp_st->dynamic_handler->free)
                     rtsp_st->dynamic_handler->free(
                         rtsp_st->dynamic_protocol_context);
-                else
-                    av_free(rtsp_st->dynamic_protocol_context);
+                av_free(rtsp_st->dynamic_protocol_context);
             }
             for (j = 0; j < rtsp_st->nb_include_source_addrs; j++)
                 av_freep(&rtsp_st->include_source_addrs[j]);

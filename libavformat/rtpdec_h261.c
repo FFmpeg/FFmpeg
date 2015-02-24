@@ -50,9 +50,6 @@ static av_cold void h261_free_context(PayloadContext *pl_ctx)
     if (pl_ctx->buf) {
         h261_free_dyn_buffer(&pl_ctx->buf);
     }
-
-    /* free context */
-    av_free(pl_ctx);
 }
 
 static int h261_handle_packet(AVFormatContext *ctx, PayloadContext *rtp_h261_ctx,

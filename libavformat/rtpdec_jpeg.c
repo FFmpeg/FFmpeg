@@ -72,7 +72,6 @@ static void free_frame(PayloadContext *jpeg)
 static void jpeg_free_context(PayloadContext *jpeg)
 {
     free_frame(jpeg);
-    av_free(jpeg);
 }
 
 static int jpeg_create_huffman_table(PutByteContext *p, int table_class,

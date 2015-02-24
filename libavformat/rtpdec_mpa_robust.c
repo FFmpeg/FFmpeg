@@ -47,7 +47,6 @@ static void mpa_robust_free_context(PayloadContext *data)
 {
     free_fragment(data);
     av_free(data->split_buf);
-    av_free(data);
 }
 
 static int mpa_robust_parse_rtp_header(AVFormatContext *ctx,

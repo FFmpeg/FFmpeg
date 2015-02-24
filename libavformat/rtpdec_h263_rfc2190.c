@@ -46,7 +46,6 @@ static void h263_free_context(PayloadContext *data)
         avio_close_dyn_buf(data->buf, &p);
         av_free(p);
     }
-    av_free(data);
 }
 
 static int h263_handle_packet(AVFormatContext *ctx, PayloadContext *data,

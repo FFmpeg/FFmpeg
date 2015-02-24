@@ -382,8 +382,6 @@ static void h264_free_context(PayloadContext *data)
                    data->packet_types_received[ii], ii);
     }
 #endif
-
-    av_free(data);
 }
 
 static int parse_h264_sdp_line(AVFormatContext *s, int st_index,

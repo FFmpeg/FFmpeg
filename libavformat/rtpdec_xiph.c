@@ -63,7 +63,6 @@ static void xiph_free_context(PayloadContext * data)
 {
     free_fragment(data);
     av_freep(&data->split_buf);
-    av_freep(&data);
 }
 
 

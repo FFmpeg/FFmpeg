@@ -44,7 +44,6 @@ static void free_fragment(PayloadContext *data)
 static void ac3_free_context(PayloadContext *data)
 {
     free_fragment(data);
-    av_free(data);
 }
 
 static int ac3_handle_packet(AVFormatContext *ctx, PayloadContext *data,

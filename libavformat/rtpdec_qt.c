@@ -238,7 +238,6 @@ static int qt_rtp_parse_packet(AVFormatContext *s, PayloadContext *qt,
 static void qt_rtp_free(PayloadContext *qt)
 {
     av_freep(&qt->pkt.data);
-    av_free(qt);
 }
 
 #define RTP_QT_HANDLER(m, n, s, t) \
