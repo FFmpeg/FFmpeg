@@ -228,7 +228,7 @@ static int dss_sp_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (ret < 0)
         return ret;
 
-    pkt->duration     = 0;
+    pkt->duration     = 264;
     pkt->pos = pos;
     pkt->stream_index = 0;
 
