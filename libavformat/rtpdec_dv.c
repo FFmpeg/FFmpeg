@@ -50,19 +50,6 @@ static av_cold void dv_free_context(PayloadContext *data)
     av_free(data);
 }
 
-static av_cold int dv_init(AVFormatContext *ctx, int st_index,
-                           PayloadContext *data)
-{
-    av_dlog(ctx, "dv_init() for stream %d\n", st_index);
-
-    if (st_index < 0)
-        return 0;
-
-    ctx->streams[st_index]->need_parsing = AVSTREAM_PARSE_FULL;
-
-    return 0;
-}
-
 static av_cold int dv_sdp_parse_fmtp_config(AVFormatContext *s,
                                             AVStream *stream,
                                             PayloadContext *dv_data,
@@ -161,7 +148,7 @@ RTPDynamicProtocolHandler ff_dv_dynamic_handler = {
     .enc_name         = "DV",
     .codec_type       = AVMEDIA_TYPE_VIDEO,
     .codec_id         = AV_CODEC_ID_DVVIDEO,
-    .init             = dv_init,
+    .need_parsing     = AVSTREAM_PARSE_FULL,
     .parse_sdp_a_line = dv_parse_sdp_line,
     .alloc            = dv_new_context,
     .free             = dv_free_context,

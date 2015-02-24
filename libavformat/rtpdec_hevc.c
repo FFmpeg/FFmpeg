@@ -56,19 +56,6 @@ static av_cold void hevc_free_context(PayloadContext *data)
     av_free(data);
 }
 
-static av_cold int hevc_init(AVFormatContext *ctx, int st_index,
-                             PayloadContext *data)
-{
-    av_dlog(ctx, "hevc_init() for stream %d\n", st_index);
-
-    if (st_index < 0)
-        return 0;
-
-    ctx->streams[st_index]->need_parsing = AVSTREAM_PARSE_FULL;
-
-    return 0;
-}
-
 static av_cold int hevc_sdp_parse_fmtp_config(AVFormatContext *s,
                                               AVStream *stream,
                                               PayloadContext *hevc_data,
@@ -425,7 +412,7 @@ RTPDynamicProtocolHandler ff_hevc_dynamic_handler = {
     .enc_name         = "H265",
     .codec_type       = AVMEDIA_TYPE_VIDEO,
     .codec_id         = AV_CODEC_ID_HEVC,
-    .init             = hevc_init,
+    .need_parsing     = AVSTREAM_PARSE_FULL,
     .parse_sdp_a_line = hevc_parse_sdp_line,
     .alloc            = hevc_new_context,
     .free             = hevc_free_context,
