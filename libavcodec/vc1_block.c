@@ -1677,19 +1677,14 @@ static int vc1_decode_p_mb_intfr(VC1Context *v)
             dst_idx = 0;
             if (fourmv) {
                 mvbp = v->fourmvbp;
-                for (i = 0; i < 6; i++) {
-                    if (i < 4) {
-                        dmv_x = dmv_y = 0;
-                        val   = ((mvbp >> (3 - i)) & 1);
-                        if (val) {
-                            get_mvdata_interlaced(v, &dmv_x, &dmv_y, 0);
-                        }
-                        ff_vc1_pred_mv_intfr(v, i, dmv_x, dmv_y, 0, v->range_x, v->range_y, v->mb_type[0], 0);
-                        ff_vc1_mc_4mv_luma(v, i, 0, 0);
-                    } else if (i == 4) {
-                        ff_vc1_mc_4mv_chroma4(v, 0, 0, 0);
-                    }
+                for (i = 0; i < 4; i++) {
+                    dmv_x = dmv_y = 0;
+                    if (mvbp & (8 >> i))
+                        get_mvdata_interlaced(v, &dmv_x, &dmv_y, 0);
+                    ff_vc1_pred_mv_intfr(v, i, dmv_x, dmv_y, 0, v->range_x, v->range_y, v->mb_type[0], 0);
+                    ff_vc1_mc_4mv_luma(v, i, 0, 0);
                 }
+                ff_vc1_mc_4mv_chroma4(v, 0, 0, 0);
             } else if (twomv) {
                 mvbp  = v->twomvbp;
                 dmv_x = dmv_y = 0;
@@ -1836,18 +1831,14 @@ static int vc1_decode_p_mb_intfi(VC1Context *v)
             mb_has_coeffs = !(idx_mbmode & 2);
         } else { // 4-MV
             v->fourmvbp = get_vlc2(gb, v->fourmvbp_vlc->table, VC1_4MV_BLOCK_PATTERN_VLC_BITS, 1);
-            for (i = 0; i < 6; i++) {
-                if (i < 4) {
-                    dmv_x = dmv_y = pred_flag = 0;
-                    val   = ((v->fourmvbp >> (3 - i)) & 1);
-                    if (val) {
-                        get_mvdata_interlaced(v, &dmv_x, &dmv_y, &pred_flag);
-                    }
-                    ff_vc1_pred_mv(v, i, dmv_x, dmv_y, 0, v->range_x, v->range_y, v->mb_type[0], pred_flag, 0);
-                    ff_vc1_mc_4mv_luma(v, i, 0, 0);
-                } else if (i == 4)
-                    ff_vc1_mc_4mv_chroma(v, 0);
+            for (i = 0; i < 4; i++) {
+                dmv_x = dmv_y = pred_flag = 0;
+                if (v->fourmvbp & (8 >> i))
+                    get_mvdata_interlaced(v, &dmv_x, &dmv_y, &pred_flag);
+                ff_vc1_pred_mv(v, i, dmv_x, dmv_y, 0, v->range_x, v->range_y, v->mb_type[0], pred_flag, 0);
+                ff_vc1_mc_4mv_luma(v, i, 0, 0);
             }
+            ff_vc1_mc_4mv_chroma(v, 0);
             mb_has_coeffs = idx_mbmode & 1;
         }
         if (mb_has_coeffs)
@@ -2154,21 +2145,18 @@ static void vc1_decode_b_mb_intfi(VC1Context *v)
                 bmvtype = BMV_TYPE_FORWARD;
             v->bmvtype  = bmvtype;
             v->fourmvbp = get_vlc2(gb, v->fourmvbp_vlc->table, VC1_4MV_BLOCK_PATTERN_VLC_BITS, 1);
-            for (i = 0; i < 6; i++) {
-                if (i < 4) {
-                    dmv_x[0] = dmv_y[0] = pred_flag[0] = 0;
-                    dmv_x[1] = dmv_y[1] = pred_flag[1] = 0;
-                    val = ((v->fourmvbp >> (3 - i)) & 1);
-                    if (val) {
-                        get_mvdata_interlaced(v, &dmv_x[bmvtype == BMV_TYPE_BACKWARD],
-                                                 &dmv_y[bmvtype == BMV_TYPE_BACKWARD],
-                                             &pred_flag[bmvtype == BMV_TYPE_BACKWARD]);
-                    }
-                    ff_vc1_pred_b_mv_intfi(v, i, dmv_x, dmv_y, 0, pred_flag);
-                    ff_vc1_mc_4mv_luma(v, i, bmvtype == BMV_TYPE_BACKWARD, 0);
-                } else if (i == 4)
-                    ff_vc1_mc_4mv_chroma(v, bmvtype == BMV_TYPE_BACKWARD);
+            for (i = 0; i < 4; i++) {
+                dmv_x[0] = dmv_y[0] = pred_flag[0] = 0;
+                dmv_x[1] = dmv_y[1] = pred_flag[1] = 0;
+                if (v->fourmvbp & (8 >> i)) {
+                    get_mvdata_interlaced(v, &dmv_x[bmvtype == BMV_TYPE_BACKWARD],
+                                             &dmv_y[bmvtype == BMV_TYPE_BACKWARD],
+                                         &pred_flag[bmvtype == BMV_TYPE_BACKWARD]);
+                }
+                ff_vc1_pred_b_mv_intfi(v, i, dmv_x, dmv_y, 0, pred_flag);
+                ff_vc1_mc_4mv_luma(v, i, bmvtype == BMV_TYPE_BACKWARD, 0);
             }
+            ff_vc1_mc_4mv_chroma(v, bmvtype == BMV_TYPE_BACKWARD);
             mb_has_coeffs = idx_mbmode & 1;
         }
         if (mb_has_coeffs)
