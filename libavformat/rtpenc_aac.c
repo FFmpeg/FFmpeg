@@ -27,6 +27,7 @@
 void ff_rtp_send_aac(AVFormatContext *s1, const uint8_t *buff, int size)
 {
     RTPMuxContext *s = s1->priv_data;
+    AVStream *st = s1->streams[0];
     const int max_au_headers_size = 2 + 2 * s->max_frames_per_packet;
     int len, max_packet_size = s->max_payload_size - max_au_headers_size;
     uint8_t *p;
@@ -41,7 +42,9 @@ void ff_rtp_send_aac(AVFormatContext *s1, const uint8_t *buff, int size)
     len = (s->buf_ptr - s->buf);
     if (s->num_frames &&
         (s->num_frames == s->max_frames_per_packet ||
-         (len + size) > s->max_payload_size)) {
+         (len + size) > s->max_payload_size ||
+         av_compare_ts(s->cur_timestamp - s->timestamp, st->time_base,
+                       s1->max_delay, AV_TIME_BASE_Q) >= 0)) {
         int au_size = s->num_frames * 2;
 
         p = s->buf + max_au_headers_size - au_size - 2;
