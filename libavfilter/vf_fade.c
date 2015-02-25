@@ -138,7 +138,9 @@ static int config_props(AVFilterLink *inlink)
     s->hsub = pixdesc->log2_chroma_w;
     s->vsub = pixdesc->log2_chroma_h;
 
-    s->bpp = av_get_bits_per_pixel(pixdesc) >> 3;
+    s->bpp = pixdesc->flags & AV_PIX_FMT_FLAG_PLANAR ?
+             1 :
+             av_get_bits_per_pixel(pixdesc) >> 3;
     s->alpha &= !!(pixdesc->flags & AV_PIX_FMT_FLAG_ALPHA);
     s->is_packed_rgb = ff_fill_rgba_map(s->rgba_map, inlink->format) >= 0;
 
