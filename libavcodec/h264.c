@@ -1084,6 +1084,8 @@ void ff_h264_flush_change(H264Context *h)
                 h->delayed_pic[j++] = h->delayed_pic[i];
         h->delayed_pic[j] = NULL;
     }
+    ff_h264_unref_picture(h, &h->last_pic_for_ec);
+
     h->first_field = 0;
     ff_h264_reset_sei(h);
     h->recovery_frame = -1;
