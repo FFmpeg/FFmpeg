@@ -4191,7 +4191,11 @@ static AVIndexEntry *mov_find_next_sample(AVFormatContext *s, AVStream **st)
         if (msc->pb && msc->current_sample < avst->nb_index_entries) {
             AVIndexEntry *current_sample = &avst->index_entries[msc->current_sample];
             int64_t dts;
-            if (msc->ctts_data)
+
+            if (msc->ctts_data && msc->ctts_index >= msc->ctts_count)
+                av_log(s, AV_LOG_WARNING, "CTTS list too small\n");
+
+            if (msc->ctts_data && msc->ctts_index < msc->ctts_count)
                 dts = av_rescale(current_sample->timestamp - msc->dts_shift - msc->ctts_data[msc->ctts_index].duration,
                                  AV_TIME_BASE, msc->time_scale);
             else
