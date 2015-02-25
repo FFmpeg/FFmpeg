@@ -150,4 +150,11 @@ int ffio_open_null_buf(AVIOContext **s);
  */
 int ffio_close_null_buf(AVIOContext *s);
 
+/**
+ * Free a dynamic buffer.
+ *
+ * @param s a pointer to an IO context opened by avio_open_dyn_buf()
+ */
+void ffio_free_dyn_buf(AVIOContext **s);
+
 #endif /* AVFORMAT_AVIO_INTERNAL_H */

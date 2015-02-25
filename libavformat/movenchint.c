@@ -459,7 +459,6 @@ done:
 void ff_mov_close_hinting(MOVTrack *track)
 {
     AVFormatContext *rtp_ctx = track->rtp_ctx;
-    uint8_t *ptr;
 
     av_freep(&track->enc);
     sample_queue_free(&track->sample_queue);
@@ -467,8 +466,7 @@ void ff_mov_close_hinting(MOVTrack *track)
         return;
     if (rtp_ctx->pb) {
         av_write_trailer(rtp_ctx);
-        avio_close_dyn_buf(rtp_ctx->pb, &ptr);
-        av_free(ptr);
+        ffio_free_dyn_buf(&rtp_ctx->pb);
     }
     avformat_free_context(rtp_ctx);
 }

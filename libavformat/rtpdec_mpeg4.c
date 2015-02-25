@@ -91,19 +91,13 @@ static const AttrNameMap attr_names[] = {
     { NULL, -1, -1 },
 };
 
-static PayloadContext *new_context(void)
-{
-    return av_mallocz(sizeof(PayloadContext));
-}
-
-static void free_context(PayloadContext *data)
+static void close_context(PayloadContext *data)
 {
     av_freep(&data->au_headers);
     av_freep(&data->mode);
-    av_freep(&data);
 }
 
-static int parse_fmtp_config(AVCodecContext *codec, char *value)
+static int parse_fmtp_config(AVCodecContext *codec, const char *value)
 {
     /* decode the hexa encoded parameter */
     int len = ff_hex_to_data(NULL, value);
@@ -278,7 +272,7 @@ static int aac_parse_packet(AVFormatContext *ctx, PayloadContext *data,
 
 static int parse_fmtp(AVFormatContext *s,
                       AVStream *stream, PayloadContext *data,
-                      char *attr, char *value)
+                      const char *attr, const char *value)
 {
     AVCodecContext *codec = stream->codec;
     int res, i;
@@ -320,20 +314,12 @@ static int parse_sdp_line(AVFormatContext *s, int st_index,
     return 0;
 }
 
-static av_cold int init_video(AVFormatContext *s, int st_index,
-                              PayloadContext *data)
-{
-    if (st_index < 0)
-        return 0;
-    s->streams[st_index]->need_parsing = AVSTREAM_PARSE_FULL;
-    return 0;
-}
-
 RTPDynamicProtocolHandler ff_mp4v_es_dynamic_handler = {
     .enc_name           = "MP4V-ES",
     .codec_type         = AVMEDIA_TYPE_VIDEO,
     .codec_id           = AV_CODEC_ID_MPEG4,
-    .init               = init_video,
+    .need_parsing       = AVSTREAM_PARSE_FULL,
+    .priv_data_size     = sizeof(PayloadContext),
     .parse_sdp_a_line   = parse_sdp_line,
 };
 
@@ -341,8 +327,8 @@ RTPDynamicProtocolHandler ff_mpeg4_generic_dynamic_handler = {
     .enc_name           = "mpeg4-generic",
     .codec_type         = AVMEDIA_TYPE_AUDIO,
     .codec_id           = AV_CODEC_ID_AAC,
+    .priv_data_size     = sizeof(PayloadContext),
     .parse_sdp_a_line   = parse_sdp_line,
-    .alloc              = new_context,
-    .free               = free_context,
-    .parse_packet       = aac_parse_packet
+    .close              = close_context,
+    .parse_packet       = aac_parse_packet,
 };

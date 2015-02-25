@@ -23,6 +23,7 @@
 
 #include "libavcodec/bytestream.h"
 
+#include "avio_internal.h"
 #include "rtpdec_formats.h"
 
 struct PayloadContext {
@@ -31,42 +32,15 @@ struct PayloadContext {
     int         bundled_audio;
 };
 
-static av_cold PayloadContext *dv_new_context(void)
+static av_cold void dv_close_context(PayloadContext *data)
 {
-    return av_mallocz(sizeof(PayloadContext));
-}
-
-static void dv_free_dyn_buffer(AVIOContext **dyn_buf)
-{
-    uint8_t *ptr_dyn_buffer;
-    avio_close_dyn_buf(*dyn_buf, &ptr_dyn_buffer);
-    av_free(ptr_dyn_buffer);
-    *dyn_buf = NULL;
-}
-
-static av_cold void dv_free_context(PayloadContext *data)
-{
-    dv_free_dyn_buffer(&data->buf);
-    av_free(data);
-}
-
-static av_cold int dv_init(AVFormatContext *ctx, int st_index,
-                           PayloadContext *data)
-{
-    av_dlog(ctx, "dv_init() for stream %d\n", st_index);
-
-    if (st_index < 0)
-        return 0;
-
-    ctx->streams[st_index]->need_parsing = AVSTREAM_PARSE_FULL;
-
-    return 0;
+    ffio_free_dyn_buf(&data->buf);
 }
 
 static av_cold int dv_sdp_parse_fmtp_config(AVFormatContext *s,
                                             AVStream *stream,
                                             PayloadContext *dv_data,
-                                            char *attr, char *value)
+                                            const char *attr, const char *value)
 {
     /* does the DV stream include audio? */
     if (!strcmp(attr, "audio") && !strcmp(value, "bundled"))
@@ -123,7 +97,7 @@ static int dv_handle_packet(AVFormatContext *ctx, PayloadContext *rtp_dv_ctx,
 
     /* drop data of previous packets in case of non-continuous (lossy) packet stream */
     if (rtp_dv_ctx->buf && rtp_dv_ctx->timestamp != *timestamp) {
-        dv_free_dyn_buffer(&rtp_dv_ctx->buf);
+        ffio_free_dyn_buf(&rtp_dv_ctx->buf);
     }
 
     /* sanity check for size of input packet: 1 byte payload at least */
@@ -161,9 +135,9 @@ RTPDynamicProtocolHandler ff_dv_dynamic_handler = {
     .enc_name         = "DV",
     .codec_type       = AVMEDIA_TYPE_VIDEO,
     .codec_id         = AV_CODEC_ID_DVVIDEO,
-    .init             = dv_init,
+    .need_parsing     = AVSTREAM_PARSE_FULL,
     .parse_sdp_a_line = dv_parse_sdp_line,
-    .alloc            = dv_new_context,
-    .free             = dv_free_context,
-    .parse_packet     = dv_handle_packet
+    .priv_data_size   = sizeof(PayloadContext),
+    .close             = dv_close_context,
+    .parse_packet     = dv_handle_packet,
 };

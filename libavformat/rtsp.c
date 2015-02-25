@@ -181,17 +181,39 @@ static int get_sockaddr(const char *buf, struct sockaddr_storage *sock)
 
 #if CONFIG_RTPDEC
 static void init_rtp_handler(RTPDynamicProtocolHandler *handler,
-                             RTSPStream *rtsp_st, AVCodecContext *codec)
+                             RTSPStream *rtsp_st, AVStream *st)
 {
+    AVCodecContext *codec = st ? st->codec : NULL;
     if (!handler)
         return;
     if (codec)
         codec->codec_id          = handler->codec_id;
     rtsp_st->dynamic_handler = handler;
-    if (handler->alloc) {
-        rtsp_st->dynamic_protocol_context = handler->alloc();
+    if (st)
+        st->need_parsing = handler->need_parsing;
+    if (handler->priv_data_size) {
+        rtsp_st->dynamic_protocol_context = av_mallocz(handler->priv_data_size);
         if (!rtsp_st->dynamic_protocol_context)
             rtsp_st->dynamic_handler = NULL;
+    }
+}
+
+static void finalize_rtp_handler_init(AVFormatContext *s, RTSPStream *rtsp_st,
+                                      AVStream *st)
+{
+    if (rtsp_st->dynamic_handler && rtsp_st->dynamic_handler->init) {
+        int ret = rtsp_st->dynamic_handler->init(s, st ? st->index : -1,
+                                                 rtsp_st->dynamic_protocol_context);
+        if (ret < 0) {
+            if (rtsp_st->dynamic_protocol_context) {
+                if (rtsp_st->dynamic_handler->close)
+                    rtsp_st->dynamic_handler->close(
+                        rtsp_st->dynamic_protocol_context);
+                av_free(rtsp_st->dynamic_protocol_context);
+            }
+            rtsp_st->dynamic_protocol_context = NULL;
+            rtsp_st->dynamic_handler = NULL;
+        }
     }
 }
 
@@ -220,7 +242,7 @@ static int sdp_parse_rtpmap(AVFormatContext *s,
     if (codec->codec_id == AV_CODEC_ID_NONE) {
         RTPDynamicProtocolHandler *handler =
             ff_rtp_handler_find_by_name(buf, codec->codec_type);
-        init_rtp_handler(handler, rtsp_st, codec);
+        init_rtp_handler(handler, rtsp_st, st);
         /* If no dynamic handler was found, check with the list of standard
          * allocated types, if such a stream for some reason happens to
          * use a private payload type. This isn't handled in rtpdec.c, since
@@ -263,9 +285,7 @@ static int sdp_parse_rtpmap(AVFormatContext *s,
     default:
         break;
     }
-    if (rtsp_st->dynamic_handler && rtsp_st->dynamic_handler->init)
-        rtsp_st->dynamic_handler->init(s, st->index,
-                                       rtsp_st->dynamic_protocol_context);
+    finalize_rtp_handler_init(s, rtsp_st, st);
     return 0;
 }
 
@@ -328,7 +348,7 @@ static void parse_fmtp(AVFormatContext *s, RTSPState *rt,
             rtsp_st->dynamic_handler &&
             rtsp_st->dynamic_handler->parse_sdp_a_line) {
             rtsp_st->dynamic_handler->parse_sdp_a_line(s, i,
-            rtsp_st->dynamic_protocol_context, line);
+                rtsp_st->dynamic_protocol_context, line);
         }
     }
 }
@@ -398,7 +418,7 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
             codec_type = AVMEDIA_TYPE_AUDIO;
         } else if (!strcmp(st_type, "video")) {
             codec_type = AVMEDIA_TYPE_VIDEO;
-        } else if (!strcmp(st_type, "application")) {
+        } else if (!strcmp(st_type, "application") || !strcmp(st_type, "text")) {
             codec_type = AVMEDIA_TYPE_DATA;
         } else if (!strcmp(st_type, "text")) {
             codec_type = AVMEDIA_TYPE_SUBTITLE;
@@ -448,8 +468,7 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
                 handler = ff_rtp_handler_find_by_id(
                               rtsp_st->sdp_payload_type, AVMEDIA_TYPE_DATA);
                 init_rtp_handler(handler, rtsp_st, NULL);
-                if (handler && handler->init)
-                    handler->init(s, -1, rtsp_st->dynamic_protocol_context);
+                finalize_rtp_handler_init(s, rtsp_st, NULL);
             }
         } else if (rt->server_type == RTSP_SERVER_WMS &&
                    codec_type == AVMEDIA_TYPE_DATA) {
@@ -472,10 +491,8 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
                 /* Even static payload types may need a custom depacketizer */
                 handler = ff_rtp_handler_find_by_id(
                               rtsp_st->sdp_payload_type, st->codec->codec_type);
-                init_rtp_handler(handler, rtsp_st, st->codec);
-                if (handler && handler->init)
-                    handler->init(s, st->index,
-                                  rtsp_st->dynamic_protocol_context);
+                init_rtp_handler(handler, rtsp_st, st);
+                finalize_rtp_handler_init(s, rtsp_st, st);
             }
             if (rt->default_lang[0])
                 av_dict_set(&st->metadata, "language", rt->default_lang, 0);
@@ -693,11 +710,9 @@ void ff_rtsp_undo_setup(AVFormatContext *s, int send_packets)
                 AVFormatContext *rtpctx = rtsp_st->transport_priv;
                 av_write_trailer(rtpctx);
                 if (rt->lower_transport == RTSP_LOWER_TRANSPORT_TCP) {
-                    uint8_t *ptr;
                     if (CONFIG_RTSP_MUXER && rtpctx->pb && send_packets)
                         ff_rtsp_tcp_write_packet(s, rtsp_st);
-                    avio_close_dyn_buf(rtpctx->pb, &ptr);
-                    av_free(ptr);
+                    ffio_free_dyn_buf(&rtpctx->pb);
                 } else {
                     avio_closep(&rtpctx->pb);
                 }
@@ -725,9 +740,12 @@ void ff_rtsp_close_streams(AVFormatContext *s)
     for (i = 0; i < rt->nb_rtsp_streams; i++) {
         rtsp_st = rt->rtsp_streams[i];
         if (rtsp_st) {
-            if (rtsp_st->dynamic_handler && rtsp_st->dynamic_protocol_context)
-                rtsp_st->dynamic_handler->free(
-                    rtsp_st->dynamic_protocol_context);
+            if (rtsp_st->dynamic_handler && rtsp_st->dynamic_protocol_context) {
+                if (rtsp_st->dynamic_handler->close)
+                    rtsp_st->dynamic_handler->close(
+                        rtsp_st->dynamic_protocol_context);
+                av_free(rtsp_st->dynamic_protocol_context);
+            }
             for (j = 0; j < rtsp_st->nb_include_source_addrs; j++)
                 av_freep(&rtsp_st->include_source_addrs[j]);
             av_freep(&rtsp_st->include_source_addrs);

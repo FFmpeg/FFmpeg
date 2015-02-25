@@ -298,21 +298,10 @@ static int qdm2_parse_packet(AVFormatContext *s, PayloadContext *qdm,
     return (qdm->cache > 0) ? 1 : 0;
 }
 
-static PayloadContext *qdm2_extradata_new(void)
-{
-    return av_mallocz(sizeof(PayloadContext));
-}
-
-static void qdm2_extradata_free(PayloadContext *qdm)
-{
-    av_free(qdm);
-}
-
 RTPDynamicProtocolHandler ff_qdm2_dynamic_handler = {
     .enc_name         = "X-QDM",
     .codec_type       = AVMEDIA_TYPE_AUDIO,
     .codec_id         = AV_CODEC_ID_NONE,
-    .alloc            = qdm2_extradata_new,
-    .free             = qdm2_extradata_free,
+    .priv_data_size   = sizeof(PayloadContext),
     .parse_packet     = qdm2_parse_packet,
 };

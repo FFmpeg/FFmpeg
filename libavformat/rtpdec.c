@@ -56,7 +56,7 @@ static RTPDynamicProtocolHandler opus_dynamic_handler = {
     .codec_id   = AV_CODEC_ID_OPUS,
 };
 
-static RTPDynamicProtocolHandler ff_t140_dynamic_handler = {
+static RTPDynamicProtocolHandler t140_dynamic_handler = { /* RFC 4103 */
     .enc_name   = "t140",
     .codec_type = AVMEDIA_TYPE_SUBTITLE,
     .codec_id   = AV_CODEC_ID_SUBRIP,
@@ -104,7 +104,6 @@ void ff_register_rtp_dynamic_payload_handlers(void)
     ff_register_dynamic_payload_handler(&ff_quicktime_rtp_aud_handler);
     ff_register_dynamic_payload_handler(&ff_quicktime_rtp_vid_handler);
     ff_register_dynamic_payload_handler(&ff_svq3_dynamic_handler);
-    ff_register_dynamic_payload_handler(&ff_t140_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_theora_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_vorbis_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_vp8_dynamic_handler);
@@ -113,6 +112,7 @@ void ff_register_rtp_dynamic_payload_handlers(void)
     ff_register_dynamic_payload_handler(&opus_dynamic_handler);
     ff_register_dynamic_payload_handler(&realmedia_mp3_dynamic_handler);
     ff_register_dynamic_payload_handler(&speex_dynamic_handler);
+    ff_register_dynamic_payload_handler(&t140_dynamic_handler);
 }
 
 RTPDynamicProtocolHandler *ff_rtp_handler_find_by_name(const char *name,
@@ -121,7 +121,8 @@ RTPDynamicProtocolHandler *ff_rtp_handler_find_by_name(const char *name,
     RTPDynamicProtocolHandler *handler;
     for (handler = rtp_first_dynamic_payload_handler;
          handler; handler = handler->next)
-        if (!av_strcasecmp(name, handler->enc_name) &&
+        if (handler->enc_name &&
+            !av_strcasecmp(name, handler->enc_name) &&
             codec_type == handler->codec_type)
             return handler;
     return NULL;
@@ -851,7 +852,7 @@ int ff_parse_fmtp(AVFormatContext *s,
                   int (*parse_fmtp)(AVFormatContext *s,
                                     AVStream *stream,
                                     PayloadContext *data,
-                                    char *attr, char *value))
+                                    const char *attr, const char *value))
 {
     char attr[256];
     char *value;

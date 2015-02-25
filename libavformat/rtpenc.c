@@ -580,7 +580,7 @@ static int rtp_write_packet(AVFormatContext *s1, AVPacket *pkt)
         rtp_send_mpegts_raw(s1, pkt->data, size);
         break;
     case AV_CODEC_ID_H264:
-        ff_rtp_send_h264(s1, pkt->data, size);
+        ff_rtp_send_h264_hevc(s1, pkt->data, size);
         break;
     case AV_CODEC_ID_H261:
         ff_rtp_send_h261(s1, pkt->data, size);
@@ -603,7 +603,7 @@ static int rtp_write_packet(AVFormatContext *s1, AVPacket *pkt)
         ff_rtp_send_h263(s1, pkt->data, size);
         break;
     case AV_CODEC_ID_HEVC:
-        ff_rtp_send_hevc(s1, pkt->data, size);
+        ff_rtp_send_h264_hevc(s1, pkt->data, size);
         break;
     case AV_CODEC_ID_VORBIS:
     case AV_CODEC_ID_THEORA:

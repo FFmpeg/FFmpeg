@@ -1102,6 +1102,16 @@ It may be necessary to disable it for remote displays (legacy x11grab
 only).
 @end table
 
+@subsection @var{grab_x} @var{grab_y} AVOption
+
+The syntax is:
+@example
+-grab_x @var{x_offset} -grab_y @var{y_offset}
+@end example
+
+Set the grabing region coordinates. The are expressed as offset from the top left
+corner of the X11 window. The default value is 0.
+
 @section decklink
 
 The decklink input device provides capture capabilities for Blackmagic

@@ -31,22 +31,12 @@ struct PayloadContext {
     uint32_t     timestamp;
 };
 
-static av_cold PayloadContext *vp9_new_context(void)
-{
-    return av_mallocz(sizeof(PayloadContext));
-}
-
 static void vp9_free_dyn_buffer(AVIOContext **dyn_buf)
 {
     uint8_t *ptr_dyn_buffer;
     avio_close_dyn_buf(*dyn_buf, &ptr_dyn_buffer);
     av_free(ptr_dyn_buffer);
     *dyn_buf = NULL;
-}
-
-static av_cold void vp9_free_context(PayloadContext *data)
-{
-    av_free(data);
 }
 
 static av_cold int vp9_init(AVFormatContext *ctx, int st_index,
@@ -311,7 +301,6 @@ RTPDynamicProtocolHandler ff_vp9_dynamic_handler = {
     .codec_type       = AVMEDIA_TYPE_VIDEO,
     .codec_id         = AV_CODEC_ID_VP9,
     .init             = vp9_init,
-    .alloc            = vp9_new_context,
-    .free             = vp9_free_context,
+    .priv_data_size   = sizeof(PayloadContext),
     .parse_packet     = vp9_handle_packet
 };
