@@ -275,6 +275,15 @@ static struct color_ref **load_color_refs(const struct hist_node *hist, int nb_r
     return refs;
 }
 
+static double set_colorquant_ratio_meta(AVFrame *out, int nb_out, int nb_in)
+{
+    char buf[32];
+    const double ratio = (double)nb_out / nb_in;
+    snprintf(buf, sizeof(buf), "%f", ratio);
+    av_dict_set(&out->metadata, "lavfi.color_quant_ratio", buf, 0);
+    return ratio;
+}
+
 /**
  * Main function implementing the Median Cut Algorithm defined by Paul Heckbert
  * in Color Image Quantization for Frame Buffer Display (1982)
@@ -284,6 +293,7 @@ static AVFrame *get_palette_frame(AVFilterContext *ctx)
     AVFrame *out;
     PaletteGenContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
+    double ratio;
     int box_id = 0;
     struct range_box *box;
 
@@ -362,8 +372,9 @@ static AVFrame *get_palette_frame(AVFilterContext *ctx)
         box = box_id >= 0 ? &s->boxes[box_id] : NULL;
     }
 
-    av_log(ctx, AV_LOG_DEBUG, "%d%s boxes generated out of %d colors\n",
-           s->nb_boxes, s->reserve_transparent ? "(+1)" : "", s->nb_refs);
+    ratio = set_colorquant_ratio_meta(out, s->nb_boxes, s->nb_refs);
+    av_log(ctx, AV_LOG_INFO, "%d%s colors generated out of %d colors; ratio=%f\n",
+           s->nb_boxes, s->reserve_transparent ? "(+1)" : "", s->nb_refs, ratio);
 
     qsort(s->boxes, s->nb_boxes, sizeof(*s->boxes), cmp_color);
 
