@@ -615,6 +615,7 @@ static av_cold int xcbgrab_read_header(AVFormatContext *s)
 
     c->conn = xcb_connect(display_name[0] ? display_name : NULL, &screen_num);
     av_freep(&display_name);
+
     if ((ret = xcb_connection_has_error(c->conn))) {
         av_log(s, AV_LOG_ERROR, "Cannot open display %s, error %d.\n",
                s->filename[0] ? s->filename : "default", ret);
