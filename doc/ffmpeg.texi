@@ -1158,6 +1158,12 @@ This option enables or disables accurate seeking in input files with the
 transcoding. Use @option{-noaccurate_seek} to disable it, which may be useful
 e.g. when copying some streams and transcoding the others.
 
+@item -thread_message_queue @var{size} (@emph{input})
+This option sets the maximum number of queued packets when reading from the
+file or device. With low latency / high rate live streams, packets may be
+discarded if they are not read in a timely manner; raising this value can
+avoid it.
+
 @item -override_ffserver (@emph{global})
 Overrides the input specifications from @command{ffserver}. Using this
 option you can map any input stream to @command{ffserver} and control

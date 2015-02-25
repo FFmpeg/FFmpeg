@@ -3420,7 +3420,7 @@ static int init_input_threads(void)
             strcmp(f->ctx->iformat->name, "lavfi"))
             f->non_blocking = 1;
         ret = av_thread_message_queue_alloc(&f->in_thread_queue,
-                                            8, sizeof(AVPacket));
+                                            f->thread_queue_size, sizeof(AVPacket));
         if (ret < 0)
             return ret;
 
