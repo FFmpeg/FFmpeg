@@ -220,7 +220,8 @@ static int rtp_write_header(AVFormatContext *s1)
         break;
     case AV_CODEC_ID_VORBIS:
     case AV_CODEC_ID_THEORA:
-        if (!s->max_frames_per_packet) s->max_frames_per_packet = 15;
+        if (!s->max_frames_per_packet)
+            s->max_frames_per_packet = 15;
         s->max_frames_per_packet = av_clip(s->max_frames_per_packet, 1, 15);
         s->max_payload_size -= 6; // ident+frag+tdt/vdt+pkt_num+pkt_length
         s->num_frames = 0;
