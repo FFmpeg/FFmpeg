@@ -25,6 +25,7 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/opt.h"
+#include "libavutil/qsort.h"
 #include "avfilter.h"
 #include "internal.h"
 
@@ -352,7 +353,8 @@ static AVFrame *get_palette_frame(AVFilterContext *ctx)
 
         /* sort the range by its longest axis if it's not already sorted */
         if (box->sorted_by != longest) {
-            qsort(&s->refs[box->start], box->len, sizeof(*s->refs), cmp_funcs[longest]);
+            cmp_func cmpf = cmp_funcs[longest];
+            AV_QSORT(&s->refs[box->start], box->len, const struct color_ref *, cmpf);
             box->sorted_by = longest;
         }
 
