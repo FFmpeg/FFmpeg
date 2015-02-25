@@ -35,15 +35,6 @@
 #include "fmtconvert.h"
 #include "get_bits.h"
 
-/** DCA syncwords, also used for bitstream type detection */
-#define DCA_MARKER_RAW_BE 0x7FFE8001
-#define DCA_MARKER_RAW_LE 0xFE7F0180
-#define DCA_MARKER_14B_BE 0x1FFFE800
-#define DCA_MARKER_14B_LE 0xFF1F00E8
-
-/** DCA-HD specific block starts with this marker. */
-#define DCA_HD_MARKER     0x64582025
-
 #define DCA_PRIM_CHANNELS_MAX  (7)
 #define DCA_ABITS_MAX         (32)      /* Should be 28 */
 #define DCA_SUBSUBFRAMES_MAX   (4)

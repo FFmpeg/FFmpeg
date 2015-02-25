@@ -20,13 +20,10 @@
  */
 
 #include "libavcodec/bytestream.h"
+#include "libavcodec/dca_syncwords.h"
+
 #include "avformat.h"
 #include "rawdec.h"
-
-#define DCA_MARKER_14B_BE 0x1FFFE800
-#define DCA_MARKER_14B_LE 0xFF1F00E8
-#define DCA_MARKER_RAW_BE 0x7FFE8001
-#define DCA_MARKER_RAW_LE 0xFE7F0180
 
 static int dts_probe(AVProbeData *p)
 {
@@ -42,16 +39,16 @@ static int dts_probe(AVProbeData *p)
         state = (state << 16) | bytestream_get_be16(&bufp);
 
         /* regular bitstream */
-        if (state == DCA_MARKER_RAW_BE || state == DCA_MARKER_RAW_LE)
+        if (state == DCA_SYNCWORD_CORE_BE || state == DCA_SYNCWORD_CORE_LE)
             markers[0]++;
 
         /* 14 bits big-endian bitstream */
-        if (state == DCA_MARKER_14B_BE)
+        if (state == DCA_SYNCWORD_CORE_14B_BE)
             if ((bytestream_get_be16(&bufp) & 0xFFF0) == 0x07F0)
                 markers[1]++;
 
         /* 14 bits little-endian bitstream */
-        if (state == DCA_MARKER_14B_LE)
+        if (state == DCA_SYNCWORD_CORE_14B_LE)
             if ((bytestream_get_be16(&bufp) & 0xF0FF) == 0xF007)
                 markers[2]++;
     }

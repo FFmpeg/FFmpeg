@@ -37,6 +37,7 @@
 
 #include "avcodec.h"
 #include "dca.h"
+#include "dca_syncwords.h"
 #include "dcadata.h"
 #include "dcadsp.h"
 #include "dcahuff.h"
@@ -1100,7 +1101,7 @@ static int dca_decode_frame(AVCodecContext *avctx, void *data,
             uint32_t bits = get_bits_long(&s->gb, 32);
 
             switch (bits) {
-            case 0x5a5a5a5a: {
+            case DCA_SYNCWORD_XCH: {
                 int ext_amode, xch_fsize;
 
                 s->xch_base_channel = s->prim_channels;
@@ -1137,7 +1138,7 @@ static int dca_decode_frame(AVCodecContext *avctx, void *data,
                 s->xch_present = 1;
                 break;
             }
-            case 0x47004a03:
+            case DCA_SYNCWORD_XXCH:
                 /* XXCh: extended channels */
                 /* usually found either in core or HD part in DTS-HD HRA streams,
                  * but not in DTS-ES which contains XCh extensions instead */
@@ -1174,7 +1175,7 @@ static int dca_decode_frame(AVCodecContext *avctx, void *data,
 
     /* check for ExSS (HD part) */
     if (s->dca_buffer_size - s->frame_size > 32 &&
-        get_bits_long(&s->gb, 32) == DCA_HD_MARKER)
+        get_bits_long(&s->gb, 32) == DCA_SYNCWORD_SUBSTREAM)
         ff_dca_exss_parse_header(s);
 
     avctx->profile = s->profile;
