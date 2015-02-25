@@ -41,6 +41,11 @@ static int adx_read_packet(AVFormatContext *s, AVPacket *pkt)
     AVCodecContext *avctx = s->streams[0]->codec;
     int ret, size;
 
+    if (avctx->channels <= 0) {
+        av_log(s, AV_LOG_ERROR, "invalid number of channels %d\n", avctx->channels);
+        return AVERROR_INVALIDDATA;
+    }
+
     size = BLOCK_SIZE * avctx->channels;
 
     pkt->pos = avio_tell(s->pb);
