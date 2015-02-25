@@ -29,6 +29,9 @@
 #if ARCH_ARM
 #   include "arm/intmath.h"
 #endif
+#if ARCH_X86
+#   include "x86/intmath.h"
+#endif
 
 /**
  * @addtogroup lavu_internal
