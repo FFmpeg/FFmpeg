@@ -3718,6 +3718,24 @@ Set whether or not chroma is considered in the metric calculations. Default is
 @code{1}.
 @end table
 
+@section deflate
+
+Apply deflate effect to the video.
+
+This filter replaces the pixel by the local(3x3) average by taking into account
+only values lower than the pixel.
+
+It accepts the following options:
+
+@table @option
+@item threshold0
+@item threshold1
+@item threshold2
+@item threshold3
+Allows to limit the maximum change for each plane, default is 65535.
+If 0, plane will remain unchanged.
+@end table
+
 @section dejudder
 
 Remove judder produced by partially interlaced telecined content.
@@ -3902,6 +3920,33 @@ The default value is @code{23}.
 @item start_frame
 A number representing position of the first frame with respect to the telecine
 pattern. This is to be used if the stream is cut. The default value is @code{0}.
+@end table
+
+@section dilation
+
+Apply dilation effect to the video.
+
+This filter replaces the pixel by the local(3x3) maximum.
+
+It accepts the following options:
+
+@table @option
+@item threshold0
+@item threshold1
+@item threshold2
+@item threshold3
+Allows to limit the maximum change for each plane, default is 65535.
+If 0, plane will remain unchanged.
+
+@item coordinates
+Flag which specifies the pixel to refer to. Default is 255 i.e. all eight
+pixels are used.
+
+Flags to local 3x3 coordinates maps like this:
+
+    1 2 3
+    4   5
+    6 7 8
 @end table
 
 @section drawbox
@@ -4757,6 +4802,33 @@ The command accepts the same syntax of the corresponding option.
 If the specified expression is not valid, it is kept at its current
 value.
 
+@end table
+
+@section erosion
+
+Apply erosion effect to the video.
+
+This filter replaces the pixel by the local(3x3) minimum.
+
+It accepts the following options:
+
+@table @option
+@item threshold0
+@item threshold1
+@item threshold2
+@item threshold3
+Allows to limit the maximum change for each plane, default is 65535.
+If 0, plane will remain unchanged.
+
+@item coordinates
+Flag which specifies the pixel to refer to. Default is 255 i.e. all eight
+pixels are used.
+
+Flags to local 3x3 coordinates maps like this:
+
+    1 2 3
+    4   5
+    6 7 8
 @end table
 
 @section extractplanes
@@ -6354,6 +6426,24 @@ Default value is @code{none}.
 @item chroma_swap, cs
 @item alpha_swap, as
 Swap luma/chroma/alpha fields. Exchange even & odd lines. Default value is @code{0}.
+@end table
+
+@section inflate
+
+Apply inflate effect to the video.
+
+This filter replaces the pixel by the local(3x3) average by taking into account
+only values higher than the pixel.
+
+It accepts the following options:
+
+@table @option
+@item threshold0
+@item threshold1
+@item threshold2
+@item threshold3
+Allows to limit the maximum change for each plane, default is 65535.
+If 0, plane will remain unchanged.
 @end table
 
 @section interlace

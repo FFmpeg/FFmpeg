@@ -16,6 +16,7 @@ version <next>:
 - removegrain video filter
 - Intel QSV-accelerated MPEG-2 video and HEVC encoding
 - libkvazaar HEVC encoder
+- erosion, dilation, deflate and inflate video filters
 
 
 version 2.7:
