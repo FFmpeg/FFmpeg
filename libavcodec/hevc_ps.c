@@ -1083,6 +1083,14 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
         av_log(s->avctx, AV_LOG_ERROR, "CTB size out of range: 2^%d\n", sps->log2_ctb_size);
         goto err;
     }
+    if (sps->log2_ctb_size < 4) {
+        av_log(s->avctx,
+               AV_LOG_ERROR,
+               "log2_ctb_size %d differs from the bounds of any known profile\n",
+               sps->log2_ctb_size);
+        avpriv_request_sample(s->avctx, "log2_ctb_size %d", sps->log2_ctb_size);
+        goto err;
+    }
     if (sps->max_transform_hierarchy_depth_inter > sps->log2_ctb_size - sps->log2_min_tb_size) {
         av_log(s->avctx, AV_LOG_ERROR, "max_transform_hierarchy_depth_inter out of range: %d\n",
                sps->max_transform_hierarchy_depth_inter);
