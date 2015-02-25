@@ -639,15 +639,13 @@
     </ClCompile>
     <ClCompile Include="..\libavformat\rtpenc_h263_rfc2190.c">
     </ClCompile>
-    <ClCompile Include="..\libavformat\rtpenc_hevc.c">
+    <ClCompile Include="..\libavformat\rtpenc_h264_hevc.c">
     </ClCompile>
     <ClCompile Include="..\libavformat\rtpenc_jpeg.c">
     </ClCompile>
     <ClCompile Include="..\libavformat\rtpenc_mpv.c">
     </ClCompile>
     <ClCompile Include="..\libavformat\rtpenc.c">
-    </ClCompile>
-    <ClCompile Include="..\libavformat\rtpenc_h264.c">
     </ClCompile>
     <ClCompile Include="..\libavformat\rtpenc_vp8.c">
     </ClCompile>
