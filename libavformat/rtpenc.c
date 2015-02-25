@@ -271,6 +271,8 @@ static int rtp_write_header(AVFormatContext *s1)
         goto defaultcase;
     case AV_CODEC_ID_AAC:
         s->num_frames = 0;
+        if (!s->max_frames_per_packet)
+            s->max_frames_per_packet = 5;
         goto defaultcase;
     default:
 defaultcase:
