@@ -133,6 +133,9 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     GetBitContext gb;
     int i;
 
+    if (pkt->size != 10)
+        return AVERROR(EINVAL);
+
     avio_wl16(pb, SYNC_WORD);
     avio_wl16(pb, 8 * 10);
 
