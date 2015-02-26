@@ -63,6 +63,9 @@ static int mp3_read_probe(AVProbeData *p)
     const uint8_t *buf, *buf0, *buf2, *end;
     AVCodecContext *avctx = avcodec_alloc_context3(NULL);
 
+    if (!avctx)
+        return 0;
+
     buf0 = p->buf;
     end = p->buf + p->buf_size - sizeof(uint32_t);
     while(buf0 < end && !*buf0)
