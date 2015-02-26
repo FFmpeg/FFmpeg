@@ -196,7 +196,6 @@ static int rtp_write_header(AVFormatContext *s1)
         if (n < 1)
             n = 1;
         s->max_payload_size = n * TS_PACKET_SIZE;
-        s->buf_ptr = s->buf;
         break;
     case AV_CODEC_ID_H261:
         if (s1->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
@@ -229,7 +228,6 @@ static int rtp_write_header(AVFormatContext *s1)
         if (!s->max_frames_per_packet)
             s->max_frames_per_packet = 15;
         s->max_frames_per_packet = av_clip(s->max_frames_per_packet, 1, 15);
-        s->num_frames = 0;
         break;
     case AV_CODEC_ID_ADPCM_G722:
         /* Due to a historical error, the clock rate for G722 in RTP is
@@ -273,10 +271,8 @@ static int rtp_write_header(AVFormatContext *s1)
             av_log(s1, AV_LOG_ERROR, "Only mono is supported\n");
             goto fail;
         }
-        s->num_frames = 0;
         break;
     case AV_CODEC_ID_AAC:
-        s->num_frames = 0;
         if (!s->max_frames_per_packet)
             s->max_frames_per_packet = 5;
         break;
