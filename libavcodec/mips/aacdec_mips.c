@@ -343,7 +343,7 @@ static void update_ltp_mips(AACContext *ac, SingleChannelElement *sce)
 
     if (ics->window_sequence[0] == EIGHT_SHORT_SEQUENCE) {
         float *p_saved_ltp = saved_ltp + 576;
-        int loop_end1 = (int)(p_saved_ltp + 448);
+        float *loop_end1 = p_saved_ltp + 448;
 
         float_copy(saved_ltp, saved, 512);
 
