@@ -225,8 +225,9 @@ static void split_box(PaletteGenContext *s, struct range_box *box, int n)
 /**
  * Write the palette into the output frame.
  */
-static void write_palette(const PaletteGenContext *s, AVFrame *out)
+static void write_palette(AVFilterContext *ctx, AVFrame *out)
 {
+    const PaletteGenContext *s = ctx->priv;
     int x, y, box_id = 0;
     uint32_t *pal = (uint32_t *)out->data[0];
     const int pal_linesize = out->linesize[0] >> 2;
@@ -237,7 +238,7 @@ static void write_palette(const PaletteGenContext *s, AVFrame *out)
             if (box_id < s->nb_boxes) {
                 pal[x] = s->boxes[box_id++].color;
                 if ((x || y) && pal[x] == last_color)
-                    av_log(NULL, AV_LOG_WARNING, "Dupped color: %08X\n", pal[x]);
+                    av_log(ctx, AV_LOG_WARNING, "Dupped color: %08X\n", pal[x]);
                 last_color = pal[x];
             } else {
                 pal[x] = 0xff000000; // pad with black
@@ -378,7 +379,7 @@ static AVFrame *get_palette_frame(AVFilterContext *ctx)
 
     qsort(s->boxes, s->nb_boxes, sizeof(*s->boxes), cmp_color);
 
-    write_palette(s, out);
+    write_palette(ctx, out);
 
     return out;
 }
