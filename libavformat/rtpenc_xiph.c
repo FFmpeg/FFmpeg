@@ -35,7 +35,7 @@ void ff_rtp_send_xiph(AVFormatContext *s1, const uint8_t *buff, int size)
     int max_pkt_size, xdt, frag;
     uint8_t *q;
 
-    max_pkt_size = s->max_payload_size;
+    max_pkt_size = s->max_payload_size - 6; // ident+frag+tdt/vdt+pkt_num+pkt_length
 
     // set xiph data type
     switch (*buff) {
