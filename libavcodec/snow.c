@@ -434,6 +434,7 @@ av_cold int ff_snow_common_init(AVCodecContext *avctx){
 
     s->avctx= avctx;
     s->max_ref_frames=1; //just make sure it's not an invalid value in case of no initial keyframe
+    s->spatial_decomposition_count = 1;
 
     ff_me_cmp_init(&s->mecc, avctx);
     ff_hpeldsp_init(&s->hdsp, avctx->flags);

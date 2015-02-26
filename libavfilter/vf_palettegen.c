@@ -285,7 +285,6 @@ static AVFrame *get_palette_frame(AVFilterContext *ctx)
     PaletteGenContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
     int box_id = 0;
-    int longest = 0;
     struct range_box *box;
 
     /* reference only the used colors from histogram */
@@ -310,7 +309,7 @@ static AVFrame *get_palette_frame(AVFilterContext *ctx)
     s->nb_boxes = 1;
 
     while (box && box->len > 1) {
-        int i, rr, gr, br;
+        int i, rr, gr, br, longest;
         uint64_t median, box_weight = 0;
 
         /* compute the box weight (sum all the weights of the colors in the

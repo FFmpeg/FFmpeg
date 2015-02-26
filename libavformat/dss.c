@@ -54,6 +54,8 @@ typedef struct DSSDemuxContext {
     int swap;
     int dss_sp_swap_byte;
     int8_t *dss_sp_buf;
+
+    int packet_size;
 } DSSDemuxContext;
 
 static int dss_probe(AVProbeData *p)
@@ -143,7 +145,7 @@ static int dss_read_header(AVFormatContext *s)
 
     if (ctx->audio_codec == DSS_ACODEC_DSS_SP) {
         st->codec->codec_id    = AV_CODEC_ID_DSS_SP;
-        st->codec->sample_rate = 12000;
+        st->codec->sample_rate = 11025;
     } else if (ctx->audio_codec == DSS_ACODEC_G723_1) {
         st->codec->codec_id    = AV_CODEC_ID_G723_1;
         st->codec->sample_rate = 8000;
@@ -210,6 +212,7 @@ static void dss_sp_byte_swap(DSSDemuxContext *ctx,
 static int dss_sp_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     DSSDemuxContext *ctx = s->priv_data;
+    AVStream *st = s->streams[0];
     int read_size, ret, offset = 0, buff_offset = 0;
     int64_t pos = avio_tell(s->pb);
 
@@ -223,14 +226,16 @@ static int dss_sp_read_packet(AVFormatContext *s, AVPacket *pkt)
         read_size = DSS_FRAME_SIZE;
 
     ctx->counter -= read_size;
+    ctx->packet_size = DSS_FRAME_SIZE - 1;
 
     ret = av_new_packet(pkt, DSS_FRAME_SIZE);
     if (ret < 0)
         return ret;
 
-    pkt->duration     = 0;
+    pkt->duration     = 264;
     pkt->pos = pos;
     pkt->stream_index = 0;
+    s->bit_rate = 8LL * ctx->packet_size * st->codec->sample_rate * 512 / (506 * pkt->duration);
 
     if (ctx->counter < 0) {
         int size2 = ctx->counter + read_size;
@@ -251,6 +256,11 @@ static int dss_sp_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     dss_sp_byte_swap(ctx, pkt->data, ctx->dss_sp_buf);
 
+    if (ctx->dss_sp_swap_byte < 0) {
+        ret = AVERROR(EAGAIN);
+        goto error_eof;
+    }
+
     if (pkt->data[0] == 0xff)
         return AVERROR_INVALIDDATA;
 
@@ -264,6 +274,7 @@ error_eof:
 static int dss_723_1_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     DSSDemuxContext *ctx = s->priv_data;
+    AVStream *st = s->streams[0];
     int size, byte, ret, offset;
     int64_t pos = avio_tell(s->pb);
 
@@ -277,6 +288,7 @@ static int dss_723_1_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     size = frame_size[byte & 3];
 
+    ctx->packet_size = size;
     ctx->counter -= size;
 
     ret = av_new_packet(pkt, size);
@@ -287,6 +299,7 @@ static int dss_723_1_read_packet(AVFormatContext *s, AVPacket *pkt)
     pkt->data[0]  = byte;
     offset        = 1;
     pkt->duration = 240;
+    s->bit_rate = 8LL * size * st->codec->sample_rate * 512 / (506 * pkt->duration);
 
     pkt->stream_index = 0;
 
@@ -332,6 +345,45 @@ static int dss_read_close(AVFormatContext *s)
     return 0;
 }
 
+static int dss_read_seek(AVFormatContext *s, int stream_index,
+                         int64_t timestamp, int flags)
+{
+    DSSDemuxContext *ctx = s->priv_data;
+    int64_t ret, seekto;
+    uint8_t header[DSS_AUDIO_BLOCK_HEADER_SIZE];
+    int offset;
+
+    if (ctx->audio_codec == DSS_ACODEC_DSS_SP)
+        seekto = timestamp / 264 * 41 / 506 * 512;
+    else
+        seekto = timestamp / 240 * ctx->packet_size / 506 * 512;
+
+    if (seekto < 0)
+        seekto = 0;
+
+    seekto += DSS_HEADER_SIZE;
+
+    ret = avio_seek(s->pb, seekto, SEEK_SET);
+    if (ret < 0)
+        return ret;
+
+    avio_read(s->pb, header, DSS_AUDIO_BLOCK_HEADER_SIZE);
+    ctx->swap = !!(header[0] & 0x80);
+    offset = 2*header[1] + 2*ctx->swap;
+    if (offset < DSS_AUDIO_BLOCK_HEADER_SIZE)
+        return AVERROR_INVALIDDATA;
+    if (offset == DSS_AUDIO_BLOCK_HEADER_SIZE) {
+        ctx->counter = 0;
+        offset = avio_skip(s->pb, -DSS_AUDIO_BLOCK_HEADER_SIZE);
+    } else {
+        ctx->counter = DSS_BLOCK_SIZE - offset;
+        offset = avio_skip(s->pb, offset - DSS_AUDIO_BLOCK_HEADER_SIZE);
+    }
+    ctx->dss_sp_swap_byte = -1;
+    return 0;
+}
+
+
 AVInputFormat ff_dss_demuxer = {
     .name           = "dss",
     .long_name      = NULL_IF_CONFIG_SMALL("Digital Speech Standard (DSS)"),
@@ -340,5 +392,6 @@ AVInputFormat ff_dss_demuxer = {
     .read_header    = dss_read_header,
     .read_packet    = dss_read_packet,
     .read_close     = dss_read_close,
+    .read_seek      = dss_read_seek,
     .extensions     = "dss"
 };
