@@ -89,7 +89,7 @@ static void ff_acelp_interpolatef_mips(float *out, const float *in,
                 "addu   %[p_filter_coeffs_m],  %[p_filter_coeffs_m],   %[prec] \n\t"
                 "madd.s %[v],%[v],%[in_val_m], %[fc_val_m]                     \n\t"
 
-                : [v] "=&f" (v),[p_in_p] "+r" (p_in_p), [p_in_m] "+r" (p_in_m),
+                : [v] "+&f" (v),[p_in_p] "+r" (p_in_p), [p_in_m] "+r" (p_in_m),
                   [p_filter_coeffs_p] "+r" (p_filter_coeffs_p),
                   [in_val_p] "=&f" (in_val_p), [in_val_m] "=&f" (in_val_m),
                   [fc_val_p] "=&f" (fc_val_p), [fc_val_m] "=&f" (fc_val_m),
