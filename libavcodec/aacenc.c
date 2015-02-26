@@ -165,7 +165,7 @@ static void put_audio_specific_config(AVCodecContext *avctx)
     PutBitContext pb;
     AACEncContext *s = avctx->priv_data;
 
-    init_put_bits(&pb, avctx->extradata, avctx->extradata_size*8);
+    init_put_bits(&pb, avctx->extradata, avctx->extradata_size);
     put_bits(&pb, 5, 2); //object type - AAC-LC
     put_bits(&pb, 4, s->samplerate_index); //sample rate index
     put_bits(&pb, 4, s->channels);

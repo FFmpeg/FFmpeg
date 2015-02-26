@@ -151,7 +151,7 @@ static int encode_bitstream(FlashSVContext *s, const AVFrame *p, uint8_t *buf,
     int buf_pos, res;
     int pred_blocks = 0;
 
-    init_put_bits(&pb, buf, buf_size * 8);
+    init_put_bits(&pb, buf, buf_size);
 
     put_bits(&pb,  4, block_width / 16 - 1);
     put_bits(&pb, 12, s->image_width);
