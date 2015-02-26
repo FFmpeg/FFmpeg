@@ -1057,7 +1057,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                     slice_hdr        = pkt->data + (slice_hdr        - start);
                     tmp              = pkt->data + (tmp              - start);
                 }
-                init_put_bits(&pb, buf, (pkt_size - (buf - orig_buf)) * 8);
+                init_put_bits(&pb, buf, (pkt_size - (buf - orig_buf)));
                 ret = encode_slice(avctx, pic, &pb, sizes, x, y, q,
                                    mbs_per_slice);
                 if (ret < 0)
