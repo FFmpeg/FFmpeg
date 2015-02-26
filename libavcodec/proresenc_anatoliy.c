@@ -304,7 +304,7 @@ static int encode_slice_plane(AVCodecContext *avctx, int mb_count,
     }
 
     blocks_per_slice = mb_count << (2 - chroma);
-    init_put_bits(&pb, buf, buf_size << 3);
+    init_put_bits(&pb, buf, buf_size);
 
     encode_dc_coeffs(&pb, blocks, blocks_per_slice, qmat);
     encode_ac_coeffs(avctx, &pb, blocks, blocks_per_slice, qmat);

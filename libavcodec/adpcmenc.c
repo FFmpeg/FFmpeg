@@ -541,7 +541,7 @@ static int adpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     case AV_CODEC_ID_ADPCM_IMA_QT:
     {
         PutBitContext pb;
-        init_put_bits(&pb, dst, pkt_size * 8);
+        init_put_bits(&pb, dst, pkt_size);
 
         for (ch = 0; ch < avctx->channels; ch++) {
             ADPCMChannelStatus *status = &c->status[ch];
@@ -571,7 +571,7 @@ static int adpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     case AV_CODEC_ID_ADPCM_SWF:
     {
         PutBitContext pb;
-        init_put_bits(&pb, dst, pkt_size * 8);
+        init_put_bits(&pb, dst, pkt_size);
 
         n = frame->nb_samples - 1;
 
