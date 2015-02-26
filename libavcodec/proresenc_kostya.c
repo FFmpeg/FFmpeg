@@ -1022,7 +1022,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                 bytestream_put_byte(&buf, slice_hdr_size << 3);
                 slice_hdr = buf;
                 buf += slice_hdr_size - 1;
-                init_put_bits(&pb, buf, (pkt_size - (buf - orig_buf)) * 8);
+                init_put_bits(&pb, buf, (pkt_size - (buf - orig_buf)));
                 ret = encode_slice(avctx, pic, &pb, sizes, x, y, q, mbs_per_slice);
                 if (ret < 0)
                     return ret;

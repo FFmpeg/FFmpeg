@@ -301,7 +301,7 @@ static void encode_block(NellyMoserEncodeContext *s, unsigned char *output, int 
 
     apply_mdct(s);
 
-    init_put_bits(&pb, output, output_size * 8);
+    init_put_bits(&pb, output, output_size);
 
     i = 0;
     for (band = 0; band < NELLY_BANDS; band++) {
