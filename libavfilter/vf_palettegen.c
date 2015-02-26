@@ -436,7 +436,7 @@ static int update_histogram_diff(struct hist_node *hist,
         const uint32_t *p = (const uint32_t *)(f1->data[0] + y*f1->linesize[0]);
         const uint32_t *q = (const uint32_t *)(f2->data[0] + y*f2->linesize[0]);
 
-        for (x = 0; x < f2->width; x++) {
+        for (x = 0; x < f1->width; x++) {
             if (p[x] == q[x])
                 continue;
             ret = color_inc(hist, p[x]);
