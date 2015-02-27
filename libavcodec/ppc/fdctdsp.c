@@ -196,7 +196,7 @@ static const vector float fdctconsts[3] = {
 void ff_fdct_altivec(int16_t *block)
 {
     vector signed short *bp;
-    vector float *cp = fdctconsts;
+    const vector float *cp = fdctconsts;
     vector float b00, b10, b20, b30, b40, b50, b60, b70;
     vector float b01, b11, b21, b31, b41, b51, b61, b71;
     vector float mzero, cnst, cnsts0, cnsts1, cnsts2;
