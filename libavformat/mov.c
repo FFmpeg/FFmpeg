@@ -1236,7 +1236,7 @@ static int mov_read_aclr(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                 av_log(c, AV_LOG_ERROR, "aclr not decoded - unable to add atom to extradata\n");
             }
         } else {
-            av_log(c, AV_LOG_WARNING, "aclr not decoded - unexpected size %ld\n", atom.size);
+            av_log(c, AV_LOG_WARNING, "aclr not decoded - unexpected size %"PRId64"\n", atom.size);
         }
     }
 
