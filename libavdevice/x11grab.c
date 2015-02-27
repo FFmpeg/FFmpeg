@@ -614,8 +614,8 @@ static int x11grab_read_close(AVFormatContext *s1)
 #define OFFSET(x) offsetof(X11GrabContext, x)
 #define DEC AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
-    { "grab_x", "Initial x coordinate.", OFFSET(x_off), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, D },
-    { "grab_y", "Initial y coordinate.", OFFSET(y_off), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, D },
+    { "grab_x", "Initial x coordinate.", OFFSET(x_off), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, DEC },
+    { "grab_y", "Initial y coordinate.", OFFSET(y_off), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, DEC },
     { "video_size", "A string describing frame size, such as 640x480 or hd720.", OFFSET(video_size), AV_OPT_TYPE_STRING, {.str = "vga"}, 0, 0, DEC },
     { "framerate", "", OFFSET(framerate), AV_OPT_TYPE_STRING, {.str = "ntsc"}, 0, 0, DEC },
     { "draw_mouse", "Draw the mouse pointer.", OFFSET(draw_mouse), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, DEC },
