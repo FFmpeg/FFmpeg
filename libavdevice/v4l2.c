@@ -315,9 +315,9 @@ static void list_formats(AVFormatContext *ctx, int fd, int type)
                    vfd.description);
         } else if (vfd.flags & V4L2_FMT_FLAG_COMPRESSED &&
                    type & V4L_COMPFORMATS) {
-            AVCodec *codec = avcodec_find_encoder(codec_id);
+            const AVCodecDescriptor *desc = avcodec_descriptor_get(codec_id);
             av_log(ctx, AV_LOG_INFO, "C : %9s : %20s :",
-                   codec ? codec->name : "Unsupported",
+                   desc ? desc->name : "Unsupported",
                    vfd.description);
         } else {
             continue;
