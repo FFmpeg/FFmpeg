@@ -522,7 +522,7 @@ static int swscale(SwsContext *c, const uint8_t *src[],
             break;  // we can't output a dstY line so let's try with the next slice
 
 #if HAVE_MMX_INLINE
-        updateMMXDitherTables(c, dstY, lumBufIndex, chrBufIndex,
+        ff_updateMMXDitherTables(c, dstY, lumBufIndex, chrBufIndex,
                               lastInLumBuf, lastInChrBuf);
 #endif
         if (should_dither) {
