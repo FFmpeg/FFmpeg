@@ -22,6 +22,7 @@
 
 #include "libavcodec/bytestream.h"
 
+#include "avio_internal.h"
 #include "rtpdec_formats.h"
 
 #define RTP_VP9_DESC_REQUIRED_SIZE 1
@@ -30,14 +31,6 @@ struct PayloadContext {
     AVIOContext *buf;
     uint32_t     timestamp;
 };
-
-static void vp9_free_dyn_buffer(AVIOContext **dyn_buf)
-{
-    uint8_t *ptr_dyn_buffer;
-    avio_close_dyn_buf(*dyn_buf, &ptr_dyn_buffer);
-    av_free(ptr_dyn_buffer);
-    *dyn_buf = NULL;
-}
 
 static av_cold int vp9_init(AVFormatContext *ctx, int st_index,
                              PayloadContext *data)
@@ -68,7 +61,7 @@ static int vp9_handle_packet(AVFormatContext *ctx, PayloadContext *rtp_vp9_ctx,
 
     /* drop data of previous packets in case of non-continuous (lossy) packet stream */
     if (rtp_vp9_ctx->buf && rtp_vp9_ctx->timestamp != *timestamp) {
-        vp9_free_dyn_buffer(&rtp_vp9_ctx->buf);
+        ffio_free_dyn_buf(&rtp_vp9_ctx->buf);
     }
 
     /* sanity check for size of input packet: 1 byte payload at least */
