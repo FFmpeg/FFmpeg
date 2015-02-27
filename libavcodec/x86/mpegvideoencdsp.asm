@@ -29,16 +29,16 @@ cextern pw_1
 
 SECTION .text
 ; int ff_pix_sum16_mmx(uint8_t *pix, int line_size)
-; %1 = number of xmm registers used
-; %2 = number of loops
-; %3 = number of GPRs used
-%macro PIX_SUM16 4
-cglobal pix_sum16, 2, %3, %1
+; %1 = number of loops
+; %2 = number of GPRs used
+%macro PIX_SUM16 3
+cglobal pix_sum16, 2, %2, 6
     movsxdifnidn r1, r1d
-    mov          r2, %2
-%if cpuflag(xop)
+    mov          r2, %1
+%if mmsize == 16
     lea          r3, [r1*3]
-%else
+%endif
+%if notcpuflag(xop)
     pxor         m5, m5
 %endif
     pxor         m4, m4
@@ -52,42 +52,59 @@ cglobal pix_sum16, 2, %3, %1
     mova         m0, [r0]
 %if mmsize == 8
     mova         m1, [r0+8]
-%else
-    mova         m1, [r0+r1]
+%if cpuflag(mmxext)
+    mova         m2, [r0+r1]
+    mova         m3, [r0+r1+8]
 %endif
+%else ; sse2
+    mova         m1, [r0+r1]
+    mova         m2, [r0+r1*2]
+    mova         m3, [r0+r3]
+%endif
+%if cpuflag(mmxext)
+    psadbw       m0, m5
+    psadbw       m1, m5
+    psadbw       m2, m5
+    psadbw       m3, m5
+%else ; mmx
     punpckhbw    m2, m0, m5
     punpcklbw    m0, m5
     punpckhbw    m3, m1, m5
     punpcklbw    m1, m5
+%endif ; cpuflag(mmxext)
 %endif ; cpuflag(xop)
     paddw        m1, m0
     paddw        m3, m2
     paddw        m3, m1
     paddw        m4, m3
-%if mmsize == 8
-    add          r0, r1
+%if cpuflag(mmxext)
+    lea          r0, [r0+r1*%3]
 %else
-    lea          r0, [r0+r1*%4]
+    add          r0, r1
 %endif
     dec r2
     jne .loop
-%if cpuflag(xop)
+%if mmsize == 16
     pshufd       m0, m4, q0032
     paddd        m4, m0
-%else
+%elif notcpuflag(mmxext)
     HADDW        m4, m5
 %endif
     movd        eax, m4
     RET
 %endmacro
 
+%if ARCH_X86_32
 INIT_MMX mmx
-PIX_SUM16 0, 16, 3, 0
+PIX_SUM16 16, 3, 0
+INIT_MMX mmxext
+PIX_SUM16  8, 4, 2
+%endif
 INIT_XMM sse2
-PIX_SUM16 6, 8,  3, 2
+PIX_SUM16  4, 4, 4
 %if HAVE_XOP_EXTERNAL
 INIT_XMM xop
-PIX_SUM16 5, 4,  4, 4
+PIX_SUM16  4, 4, 4
 %endif
 
 ; int ff_pix_norm1_mmx(uint8_t *pix, int line_size)

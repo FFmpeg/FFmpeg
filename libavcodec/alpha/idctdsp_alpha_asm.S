@@ -33,7 +33,7 @@
 
 /************************************************************************
  * void put_pixels_clamped_mvi_asm(const int16_t *block, uint8_t *pixels,
- *                                 int line_size)
+ *                                 ptrdiff_t line_size)
  */
         .align 6
         .globl put_pixels_clamped_mvi_asm
@@ -83,7 +83,7 @@ put_pixels_clamped_mvi_asm:
 
 /************************************************************************
  * void add_pixels_clamped_mvi_asm(const int16_t *block, uint8_t *pixels,
- *                                 int line_size)
+ *                                 ptrdiff_t line_size)
  */
         .align 6
         .globl add_pixels_clamped_mvi_asm

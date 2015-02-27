@@ -383,9 +383,8 @@ static int configure_output_video_filter(FilterGraph *fg, OutputFilter *ofilter,
         snprintf(name, sizeof(name), "pixel format for output stream %d:%d",
                  ost->file_index, ost->index);
         ret = avfilter_graph_create_filter(&filter,
-                                                avfilter_get_by_name("format"),
-                                                "format", pix_fmts, NULL,
-                                                fg->graph);
+                                           avfilter_get_by_name("format"),
+                                           "format", pix_fmts, NULL, fg->graph);
         av_freep(&pix_fmts);
         if (ret < 0)
             return ret;
@@ -620,6 +619,7 @@ static int sub2video_prepare(InputStream *ist)
     ist->sub2video.frame = av_frame_alloc();
     if (!ist->sub2video.frame)
         return AVERROR(ENOMEM);
+    ist->sub2video.last_pts = INT64_MIN;
     return 0;
 }
 
@@ -637,6 +637,7 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
     AVBPrint args;
     char name[255];
     int ret, pad_idx = 0;
+    int64_t tsoffset = 0;
 
     if (ist->dec_ctx->codec_type == AVMEDIA_TYPE_AUDIO) {
         av_log(NULL, AV_LOG_ERROR, "Cannot connect video filter to audio input\n");
@@ -711,8 +712,14 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
 
     snprintf(name, sizeof(name), "trim for input stream %d:%d",
              ist->file_index, ist->st->index);
+    if (copy_ts) {
+        tsoffset = f->start_time == AV_NOPTS_VALUE ? 0 : f->start_time;
+        if (!start_at_zero && f->ctx->start_time != AV_NOPTS_VALUE)
+            tsoffset += f->ctx->start_time;
+    }
     ret = insert_trim(((f->start_time == AV_NOPTS_VALUE) || !f->accurate_seek) ?
-                      AV_NOPTS_VALUE : 0, f->recording_time, &last_filter, &pad_idx, name);
+                      AV_NOPTS_VALUE : tsoffset, f->recording_time,
+                      &last_filter, &pad_idx, name);
     if (ret < 0)
         return ret;
 
@@ -731,6 +738,7 @@ static int configure_input_audio_filter(FilterGraph *fg, InputFilter *ifilter,
     AVBPrint args;
     char name[255];
     int ret, pad_idx = 0;
+    int64_t tsoffset = 0;
 
     if (ist->dec_ctx->codec_type != AVMEDIA_TYPE_AUDIO) {
         av_log(NULL, AV_LOG_ERROR, "Cannot connect audio filter to non audio input\n");
@@ -813,8 +821,14 @@ static int configure_input_audio_filter(FilterGraph *fg, InputFilter *ifilter,
 
     snprintf(name, sizeof(name), "trim for input stream %d:%d",
              ist->file_index, ist->st->index);
+    if (copy_ts) {
+        tsoffset = f->start_time == AV_NOPTS_VALUE ? 0 : f->start_time;
+        if (!start_at_zero && f->ctx->start_time != AV_NOPTS_VALUE)
+            tsoffset += f->ctx->start_time;
+    }
     ret = insert_trim(((f->start_time == AV_NOPTS_VALUE) || !f->accurate_seek) ?
-                      AV_NOPTS_VALUE : 0, f->recording_time, &last_filter, &pad_idx, name);
+                      AV_NOPTS_VALUE : tsoffset, f->recording_time,
+                      &last_filter, &pad_idx, name);
     if (ret < 0)
         return ret;
 

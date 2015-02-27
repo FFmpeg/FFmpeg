@@ -55,7 +55,7 @@ int ff_oss_audio_open(AVFormatContext *s1, int is_output,
     else
         audio_fd = avpriv_open(audio_device, O_RDONLY);
     if (audio_fd < 0) {
-        av_log(s1, AV_LOG_ERROR, "%s: %s\n", audio_device, strerror(errno));
+        av_log(s1, AV_LOG_ERROR, "%s: %s\n", audio_device, av_err2str(AVERROR(errno)));
         return AVERROR(EIO);
     }
 
@@ -66,7 +66,7 @@ int ff_oss_audio_open(AVFormatContext *s1, int is_output,
     /* non blocking mode */
     if (!is_output) {
         if (fcntl(audio_fd, F_SETFL, O_NONBLOCK) < 0) {
-            av_log(s1, AV_LOG_WARNING, "%s: Could not enable non block mode (%s)\n", audio_device, strerror(errno));
+            av_log(s1, AV_LOG_WARNING, "%s: Could not enable non block mode (%s)\n", audio_device, av_err2str(AVERROR(errno)));
         }
     }
 
@@ -74,17 +74,17 @@ int ff_oss_audio_open(AVFormatContext *s1, int is_output,
 
 #define CHECK_IOCTL_ERROR(event)                                              \
     if (err < 0) {                                                            \
-        av_log(s1, AV_LOG_ERROR, #event ": %s\n", strerror(errno));         \
+        av_log(s1, AV_LOG_ERROR, #event ": %s\n", av_err2str(AVERROR(errno)));\
         goto fail;                                                            \
     }
 
     /* select format : favour native format
      * We don't CHECK_IOCTL_ERROR here because even if failed OSS still may be
      * usable. If OSS is not usable the SNDCTL_DSP_SETFMTS later is going to
-     * fail anyway. `err =` kept to eliminate compiler warning. */
+     * fail anyway. */
     err = ioctl(audio_fd, SNDCTL_DSP_GETFMTS, &tmp);
     if (err < 0) {
-        av_log(s1, AV_LOG_WARNING, "SNDCTL_DSP_GETFMTS: %s\n", strerror(errno));
+        av_log(s1, AV_LOG_WARNING, "SNDCTL_DSP_GETFMTS: %s\n", av_err2str(AVERROR(errno)));
     }
 
 #if HAVE_BIGENDIAN

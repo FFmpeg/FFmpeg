@@ -145,6 +145,7 @@ typedef struct VP9Context {
     uint8_t yac_qi;
     int8_t ydc_qdelta, uvdc_qdelta, uvac_qdelta;
     uint8_t lossless;
+#define MAX_SEGMENT 8
     struct {
         uint8_t enabled;
         uint8_t temporal;
@@ -160,7 +161,7 @@ typedef struct VP9Context {
             int8_t lf_val;
             int16_t qmul[2][2];
             uint8_t lflvl[4][2];
-        } feat[8];
+        } feat[MAX_SEGMENT];
     } segmentation;
     struct {
         unsigned log2_tile_cols, log2_tile_rows;
@@ -2346,6 +2347,7 @@ static av_always_inline int check_intra_mode(VP9Context *s, int mode, uint8_t **
         uint8_t needs_top:1;
         uint8_t needs_topleft:1;
         uint8_t needs_topright:1;
+        uint8_t invert_left:1;
     } edges[N_INTRA_PRED_MODES] = {
         [VERT_PRED]            = { .needs_top  = 1 },
         [HOR_PRED]             = { .needs_left = 1 },
@@ -2355,7 +2357,7 @@ static av_always_inline int check_intra_mode(VP9Context *s, int mode, uint8_t **
         [VERT_RIGHT_PRED]      = { .needs_left = 1, .needs_top = 1, .needs_topleft = 1 },
         [HOR_DOWN_PRED]        = { .needs_left = 1, .needs_top = 1, .needs_topleft = 1 },
         [VERT_LEFT_PRED]       = { .needs_top  = 1, .needs_topright = 1 },
-        [HOR_UP_PRED]          = { .needs_left = 1 },
+        [HOR_UP_PRED]          = { .needs_left = 1, .invert_left = 1 },
         [TM_VP8_PRED]          = { .needs_left = 1, .needs_top = 1, .needs_topleft = 1 },
         [LEFT_DC_PRED]         = { .needs_left = 1 },
         [TOP_DC_PRED]          = { .needs_top  = 1 },
@@ -2428,13 +2430,24 @@ static av_always_inline int check_intra_mode(VP9Context *s, int mode, uint8_t **
             uint8_t *dst = x == 0 ? dst_edge : dst_inner;
             ptrdiff_t stride = x == 0 ? stride_edge : stride_inner;
 
-            if (n_px_need <= n_px_have) {
-                for (i = 0; i < n_px_need; i++)
-                    l[n_px_need - 1 - i] = dst[i * stride - 1];
+            if (edges[mode].invert_left) {
+                if (n_px_need <= n_px_have) {
+                    for (i = 0; i < n_px_need; i++)
+                        l[i] = dst[i * stride - 1];
+                } else {
+                    for (i = 0; i < n_px_have; i++)
+                        l[i] = dst[i * stride - 1];
+                    memset(&l[n_px_have], l[n_px_have - 1], n_px_need - n_px_have);
+                }
             } else {
-                for (i = 0; i < n_px_have; i++)
-                    l[n_px_need - 1 - i] = dst[i * stride - 1];
-                memset(l, l[n_px_need - n_px_have], n_px_need - n_px_have);
+                if (n_px_need <= n_px_have) {
+                    for (i = 0; i < n_px_need; i++)
+                        l[n_px_need - 1 - i] = dst[i * stride - 1];
+                } else {
+                    for (i = 0; i < n_px_have; i++)
+                        l[n_px_need - 1 - i] = dst[i * stride - 1];
+                    memset(l, l[n_px_need - n_px_have], n_px_need - n_px_have);
+                }
             }
         } else {
             memset(l, 129, 4 << tx);
@@ -3780,6 +3793,18 @@ static int vp9_decode_frame(AVCodecContext *ctx, void *frame,
             return res;
     }
 
+    if (s->fullrange)
+        ctx->color_range = AVCOL_RANGE_JPEG;
+    else
+        ctx->color_range = AVCOL_RANGE_MPEG;
+
+    switch (s->colorspace) {
+    case 1: ctx->colorspace = AVCOL_SPC_BT470BG; break;
+    case 2: ctx->colorspace = AVCOL_SPC_BT709; break;
+    case 3: ctx->colorspace = AVCOL_SPC_SMPTE170M; break;
+    case 4: ctx->colorspace = AVCOL_SPC_SMPTE240M; break;
+    }
+
     // main tile decode loop
     memset(s->above_partition_ctx, 0, s->cols);
     memset(s->above_skip_ctx, 0, s->cols);
@@ -3813,6 +3838,8 @@ static int vp9_decode_frame(AVCodecContext *ctx, void *frame,
                 break;
         }
         s->prob_ctx[s->framectxid].p = s->prob.p;
+        ff_thread_finish_setup(ctx);
+    } else if (!s->refreshctx) {
         ff_thread_finish_setup(ctx);
     }
 

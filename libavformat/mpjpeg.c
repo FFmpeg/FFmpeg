@@ -18,17 +18,24 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
+#include "libavutil/opt.h"
 #include "avformat.h"
 
 /* Multipart JPEG */
 
 #define BOUNDARY_TAG "ffserver"
 
+typedef struct MPJPEGContext {
+    AVClass *class;
+    char *boundary_tag;
+} MPJPEGContext;
+
 static int mpjpeg_write_header(AVFormatContext *s)
 {
+    MPJPEGContext *mpj = s->priv_data;
     uint8_t buf1[256];
 
-    snprintf(buf1, sizeof(buf1), "--%s\r\n", BOUNDARY_TAG);
+    snprintf(buf1, sizeof(buf1), "--%s\r\n", mpj->boundary_tag);
     avio_write(s->pb, buf1, strlen(buf1));
     avio_flush(s->pb);
     return 0;
@@ -36,6 +43,7 @@ static int mpjpeg_write_header(AVFormatContext *s)
 
 static int mpjpeg_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
+    MPJPEGContext *mpj = s->priv_data;
     uint8_t buf1[256];
 
     snprintf(buf1, sizeof(buf1), "Content-type: image/jpeg\r\n");
@@ -45,7 +53,7 @@ static int mpjpeg_write_packet(AVFormatContext *s, AVPacket *pkt)
     avio_write(s->pb, buf1, strlen(buf1));
     avio_write(s->pb, pkt->data, pkt->size);
 
-    snprintf(buf1, sizeof(buf1), "\r\n--%s\r\n", BOUNDARY_TAG);
+    snprintf(buf1, sizeof(buf1), "\r\n--%s\r\n", mpj->boundary_tag);
     avio_write(s->pb, buf1, strlen(buf1));
     return 0;
 }
@@ -55,15 +63,29 @@ static int mpjpeg_write_trailer(AVFormatContext *s)
     return 0;
 }
 
+static const AVOption options[] = {
+    { "boundary_tag",    "Boundary tag", offsetof(MPJPEGContext, boundary_tag),   AV_OPT_TYPE_STRING, {.str = BOUNDARY_TAG}, .flags = AV_OPT_FLAG_ENCODING_PARAM },
+    { NULL },
+};
+
+static const AVClass mpjpeg_muxer_class = {
+    .class_name = "mpjpeg_muxer",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVOutputFormat ff_mpjpeg_muxer = {
     .name              = "mpjpeg",
     .long_name         = NULL_IF_CONFIG_SMALL("MIME multipart JPEG"),
     .mime_type         = "multipart/x-mixed-replace;boundary=" BOUNDARY_TAG,
     .extensions        = "mjpg",
+    .priv_data_size    = sizeof(MPJPEGContext),
     .audio_codec       = AV_CODEC_ID_NONE,
     .video_codec       = AV_CODEC_ID_MJPEG,
     .write_header      = mpjpeg_write_header,
     .write_packet      = mpjpeg_write_packet,
     .write_trailer     = mpjpeg_write_trailer,
     .flags             = AVFMT_NOTIMESTAMPS,
+    .priv_class        = &mpjpeg_muxer_class,
 };

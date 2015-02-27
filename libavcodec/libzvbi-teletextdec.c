@@ -101,6 +101,7 @@ static int create_ass_text(TeletextContext *ctx, const char *text, char **ass)
     /* First we escape the plain text into buf. */
     av_bprint_init(&buf, 0, AV_BPRINT_SIZE_UNLIMITED);
     ff_ass_bprint_text_event(&buf, text, strlen(text), "", 0);
+    av_bprintf(&buf, "\r\n");
 
     if (!av_bprint_is_complete(&buf)) {
         av_bprint_finalize(&buf, NULL);

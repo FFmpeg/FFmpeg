@@ -1,0 +1,4 @@
+3099f5514693a609180ab5761dc8d4ca *tests/data/fate/vsynth_lena-wmv1.avi
+129510 tests/data/fate/vsynth_lena-wmv1.avi
+dec44e3c04db4fef49a7728f164d9159 *tests/data/fate/vsynth_lena-wmv1.out.rawvideo
+stddev:    5.33 PSNR: 33.60 MAXDIFF:   77 bytes:  7603200/  7603200

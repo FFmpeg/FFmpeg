@@ -1,0 +1,141 @@
+Testing default values
+num=0
+toggle=1
+string=default
+escape=\=,
+flags=1
+rational=1/1
+video_rate=25/1
+width=200 height=300
+pix_fmt=0bgr
+sample_fmt=s16
+duration=1000
+color=255 192 203 255
+channel_layout=311=311
+binary=62 69 6e 0
+binary_size=4
+num64=1
+flt=0.333333
+dbl=0.333333
+
+Testing av_opt_is_set_to_default()
+name:       num default:1 error:
+name:    toggle default:0 error:
+name:  rational default:0 error:
+name:    string default:0 error:
+name:    escape default:0 error:
+name:     flags default:0 error:
+name:      cool default:1 error:Option not found
+name:      lame default:1 error:Option not found
+name:        mu default:1 error:Option not found
+name:      size default:0 error:
+name:   pix_fmt default:0 error:
+name:sample_fmt default:0 error:
+name:video_rate default:0 error:
+name:  duration default:0 error:
+name:     color default:0 error:
+name:        cl default:0 error:
+name:       bin default:0 error:
+name:      bin1 default:1 error:
+name:      bin2 default:1 error:
+name:     num64 default:0 error:
+name:       flt default:0 error:
+name:       dbl default:0 error:
+name:       num default:1 error:
+name:    toggle default:1 error:
+name:  rational default:1 error:
+name:    string default:1 error:
+name:    escape default:1 error:
+name:     flags default:1 error:
+name:      cool default:1 error:Option not found
+name:      lame default:1 error:Option not found
+name:        mu default:1 error:Option not found
+name:      size default:1 error:
+name:   pix_fmt default:1 error:
+name:sample_fmt default:1 error:
+name:video_rate default:1 error:
+name:  duration default:1 error:
+name:     color default:1 error:
+name:        cl default:1 error:
+name:       bin default:1 error:
+name:      bin1 default:1 error:
+name:      bin2 default:1 error:
+name:     num64 default:1 error:
+name:       flt default:1 error:
+name:       dbl default:1 error:
+
+Test av_opt_serialize()
+num=0,toggle=1,rational=1/1,string=default,escape=\\\=\,,flags=0x00000001,size=200x300,pix_fmt=0bgr,sample_fmt=s16,video_rate=25/1,duration=0:00:00.001000,color=0xffc0cbff,cl=0x137,bin=62696E00,bin1=,bin2=,num64=1,flt=0.333333,dbl=0.333333
+num=0,toggle=1,rational=1/1,string=default,escape=\\\=\,,flags=0x00000001,size=200x300,pix_fmt=0bgr,sample_fmt=s16,video_rate=25/1,duration=0:00:00.001000,color=0xffc0cbff,cl=0x137,bin=62696E00,bin1=,bin2=,num64=1,flt=0.333333,dbl=0.333333
+
+Testing av_set_options_string()
+OK    ''
+Error ':'
+Error '='
+Error 'foo=:'
+Error ':=foo'
+Error '=foo'
+Error 'foo='
+Error 'foo'
+Error 'foo=val'
+Error 'foo==val'
+Error 'toggle=:'
+OK    'string=:'
+Error 'toggle=1 : foo'
+Error 'toggle=100'
+Error 'toggle==1'
+OK    'flags=+mu-lame : num=42: toggle=0'
+OK    'num=42 : string=blahblah'
+Error 'rational=0 : rational=1/2 : rational=1/-1'
+Error 'rational=-1/0'
+OK    'size=1024x768'
+OK    'size=pal'
+Error 'size=bogus'
+OK    'pix_fmt=yuv420p'
+OK    'pix_fmt=2'
+Error 'pix_fmt=bogus'
+OK    'sample_fmt=s16'
+OK    'sample_fmt=2'
+Error 'sample_fmt=bogus'
+OK    'video_rate=pal'
+OK    'video_rate=25'
+OK    'video_rate=30000/1001'
+OK    'video_rate=30/1.001'
+Error 'video_rate=bogus'
+Error 'duration=bogus'
+OK    'duration=123.45'
+OK    'duration=1\:23\:45.67'
+OK    'color=blue'
+OK    'color=0x223300'
+OK    'color=0x42FF07AA'
+OK    'cl=stereo+downmix'
+Error 'cl=foo'
+Error 'bin=boguss'
+Error 'bin=111'
+OK    'bin=ffff'
+Error 'num64=bogus'
+OK    'num64=44'
+OK    'num64=44.4'
+Error 'num64=-1'
+Error 'num64=101'
+Error 'flt=bogus'
+OK    'flt=2'
+OK    'flt=2.2'
+Error 'flt=-1'
+Error 'flt=101'
+Error 'dbl=bogus'
+OK    'dbl=2'
+OK    'dbl=2.2'
+Error 'dbl=-1'
+Error 'dbl=101'
+
+Testing av_opt_set_from_string()
+OK    ''
+OK    '5'
+OK    '5:hello'
+OK    '5:hello:size=pal'
+Error '5:size=pal:hello'
+Error ':'
+Error '='
+OK    ' 5 : hello : size = pal '
+Error 'a_very_long_option_name_that_will_need_to_be_ellipsized_around_here=42'

@@ -45,7 +45,7 @@
         "cpuid                       \n\t"                      \
         "xchg   %%"REG_b", %%"REG_S                             \
         : "=a" (eax), "=S" (ebx), "=c" (ecx), "=d" (edx)        \
-        : "0" (index))
+        : "0" (index), "2"(0))
 
 #define xgetbv(index, eax, edx)                                 \
     __asm__ (".byte 0x0f, 0x01, 0xd0" : "=a"(eax), "=d"(edx) : "c" (index))

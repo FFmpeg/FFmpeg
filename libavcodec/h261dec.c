@@ -216,6 +216,13 @@ static int h261_decode_mb_skipped(H261Context *h, int mba1, int mba2)
         s->mb_skipped                  = 1;
         h->mtype                      &= ~MB_TYPE_H261_FIL;
 
+        if (s->current_picture.motion_val[0]) {
+            int b_stride = 2*s->mb_width + 1;
+            int b_xy     = 2 * s->mb_x + (2 * s->mb_y) * b_stride;
+            s->current_picture.motion_val[0][b_xy][0] = s->mv[0][0][0];
+            s->current_picture.motion_val[0][b_xy][1] = s->mv[0][0][1];
+        }
+
         ff_mpv_decode_mb(s, s->block);
     }
 
@@ -492,7 +499,7 @@ static int h261_decode_picture_header(H261Context *h)
         i += 32;
     s->picture_number = (s->picture_number & ~31) + i;
 
-    s->avctx->time_base      = (AVRational) { 1001, 30000 };
+    s->avctx->framerate = (AVRational) { 30000, 1001 };
 
     /* PTYPE starts here */
     skip_bits1(&s->gb); /* split screen off */

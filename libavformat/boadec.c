@@ -21,6 +21,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "internal.h"
 
 static int probe(AVProbeData *p)
 {
@@ -52,11 +53,11 @@ static int read_header(AVFormatContext *s)
     avio_rl32(s->pb);
     st->codec->sample_rate = avio_rl32(s->pb);
     st->codec->channels    = avio_rl32(s->pb);
-    s->data_offset         = avio_rl32(s->pb);
+    s->internal->data_offset = avio_rl32(s->pb);
     avio_r8(s->pb);
     st->codec->block_align = st->codec->channels * avio_rl32(s->pb);
 
-    avio_seek(s->pb, s->data_offset, SEEK_SET);
+    avio_seek(s->pb, s->internal->data_offset, SEEK_SET);
 
     return 0;
 }

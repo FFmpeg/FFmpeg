@@ -646,7 +646,7 @@ static int ivi_decode_blocks(GetBitContext *gb, IVIBandDesc *band,
 
         quant = band->glob_quant + mb->q_delta;
         if (avctx->codec_id == AV_CODEC_ID_INDEO4)
-            quant = av_clip(quant, 0, 31);
+            quant = av_clip_uintp2(quant, 5);
         else
             quant = av_clip(quant, 0, 23);
 

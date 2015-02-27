@@ -42,12 +42,12 @@ cglobal add_bytes_l2, 4, 6, %1, dst, src1, src2, wa, w, i
     and                waq, ~(mmsize*2-1)
     jmp .end_v
 .loop_v:
-    mova                m0, [src1q+iq]
-    mova                m1, [src1q+iq+mmsize]
-    paddb               m0, [src2q+iq]
-    paddb               m1, [src2q+iq+mmsize]
-    mova  [dstq+iq       ], m0
-    mova  [dstq+iq+mmsize], m1
+    movu                m0, [src2q+iq]
+    movu                m1, [src2q+iq+mmsize]
+    paddb               m0, [src1q+iq]
+    paddb               m1, [src1q+iq+mmsize]
+    movu  [dstq+iq       ], m0
+    movu  [dstq+iq+mmsize], m1
     add                 iq, mmsize*2
 .end_v:
     cmp                 iq, waq
@@ -157,7 +157,7 @@ cglobal add_png_paeth_prediction, 5, 7, %1, dst, src, top, w, bpp, end, cntr
     movh            [dstq], m3
     add               dstq, bppq
     cmp               dstq, endq
-    jle .loop
+    jl .loop
 
     mov               dstq, [rsp]
     dec              cntrq

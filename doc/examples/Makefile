@@ -29,6 +29,7 @@ OBJS=$(addsuffix .o,$(EXAMPLES))
 
 # the following examples make explicit use of the math library
 avcodec:           LDLIBS += -lm
+decoding_encoding: LDLIBS += -lm
 muxing:            LDLIBS += -lm
 resampling_audio:  LDLIBS += -lm
 

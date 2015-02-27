@@ -1,4 +1,5 @@
 \input texinfo @c -*- texinfo -*-
+@documentencoding UTF-8
 
 @settitle Developer Documentation
 @titlepage
@@ -647,12 +648,12 @@ accordingly].
 @subsection Adding files to the fate-suite dataset
 
 When there is no muxer or encoder available to generate test media for a
-specific test then the media has to be inlcuded in the fate-suite.
+specific test then the media has to be included in the fate-suite.
 First please make sure that the sample file is as small as possible to test the
 respective decoder or demuxer sufficiently. Large files increase network
 bandwidth and disk space requirements.
 Once you have a working fate test and fate sample, provide in the commit
-message or introductionary message for the patch series that you post to
+message or introductory message for the patch series that you post to
 the ffmpeg-devel mailing list, a direct link to download the sample media.
 
 

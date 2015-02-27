@@ -195,7 +195,7 @@ static av_cold int ac3_decode_init(AVCodecContext *avctx)
 #if (USE_FIXED)
     s->fdsp = avpriv_alloc_fixed_dsp(avctx->flags & CODEC_FLAG_BITEXACT);
 #else
-    avpriv_float_dsp_init(&s->fdsp, avctx->flags & CODEC_FLAG_BITEXACT);
+    s->fdsp = avpriv_float_dsp_alloc(avctx->flags & CODEC_FLAG_BITEXACT);
 #endif
 
     ff_ac3dsp_init(&s->ac3dsp, avctx->flags & CODEC_FLAG_BITEXACT);
@@ -485,7 +485,7 @@ static void calc_transform_coeffs_cpl(AC3DecodeContext *s)
 /**
  * Grouped mantissas for 3-level 5-level and 11-level quantization
  */
-typedef struct {
+typedef struct mant_groups {
     int b1_mant[2];
     int b2_mant[2];
     int b4_mant;
@@ -688,7 +688,7 @@ static inline void do_imdct(AC3DecodeContext *s, int channels)
             s->fdsp->vector_fmul_window_scaled(s->outptr[ch - 1], s->delay[ch - 1],
                                        s->tmp_output, s->window, 128, 8);
 #else
-            s->fdsp.vector_fmul_window(s->outptr[ch - 1], s->delay[ch - 1],
+            s->fdsp->vector_fmul_window(s->outptr[ch - 1], s->delay[ch - 1],
                                        s->tmp_output, s->window, 128);
 #endif
             for (i = 0; i < 128; i++)
@@ -700,7 +700,7 @@ static inline void do_imdct(AC3DecodeContext *s, int channels)
             s->fdsp->vector_fmul_window_scaled(s->outptr[ch - 1], s->delay[ch - 1],
                                        s->tmp_output, s->window, 128, 8);
 #else
-            s->fdsp.vector_fmul_window(s->outptr[ch - 1], s->delay[ch - 1],
+            s->fdsp->vector_fmul_window(s->outptr[ch - 1], s->delay[ch - 1],
                                        s->tmp_output, s->window, 128);
 #endif
             memcpy(s->delay[ch - 1], s->tmp_output + 128, 128 * sizeof(FFTSample));
@@ -1429,7 +1429,8 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data,
         memcpy(s->input_buffer, buf, FFMIN(buf_size, AC3_FRAME_BUFFER_SIZE));
     buf = s->input_buffer;
     /* initialize the GetBitContext with the start of valid AC-3 Frame */
-    init_get_bits(&s->gbc, buf, buf_size * 8);
+    if ((ret = init_get_bits8(&s->gbc, buf, buf_size)) < 0)
+        return ret;
 
     /* parse the syncinfo */
     err = parse_frame_header(s);
@@ -1635,9 +1636,7 @@ static av_cold int ac3_decode_end(AVCodecContext *avctx)
     AC3DecodeContext *s = avctx->priv_data;
     ff_mdct_end(&s->imdct_512);
     ff_mdct_end(&s->imdct_256);
-#if (USE_FIXED)
     av_freep(&s->fdsp);
-#endif
 
     return 0;
 }

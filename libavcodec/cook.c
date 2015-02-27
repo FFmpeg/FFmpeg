@@ -65,12 +65,12 @@
 #define SUBBAND_SIZE    20
 #define MAX_SUBPACKETS   5
 
-typedef struct {
+typedef struct cook_gains {
     int *now;
     int *previous;
 } cook_gains;
 
-typedef struct {
+typedef struct COOKSubpacket {
     int                 ch_idx;
     int                 size;
     int                 num_channels;
@@ -418,7 +418,7 @@ static void categorize(COOKContext *q, COOKSubpacket *p, const int *quant_index_
         num_bits = 0;
         index    = 0;
         for (j = p->total_subbands; j > 0; j--) {
-            exp_idx = av_clip((i - quant_index_table[index] + bias) / 2, 0, 7);
+            exp_idx = av_clip_uintp2((i - quant_index_table[index] + bias) / 2, 3);
             index++;
             num_bits += expbits_tab[exp_idx];
         }
@@ -429,7 +429,7 @@ static void categorize(COOKContext *q, COOKSubpacket *p, const int *quant_index_
     /* Calculate total number of bits. */
     num_bits = 0;
     for (i = 0; i < p->total_subbands; i++) {
-        exp_idx = av_clip((bias - quant_index_table[i]) / 2, 0, 7);
+        exp_idx = av_clip_uintp2((bias - quant_index_table[i]) / 2, 3);
         num_bits += expbits_tab[exp_idx];
         exp_index1[i] = exp_idx;
         exp_index2[i] = exp_idx;
@@ -1058,7 +1058,7 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
     q->avctx = avctx;
 
     /* Take care of the codec specific extradata. */
-    if (extradata_size <= 0) {
+    if (extradata_size < 8) {
         av_log(avctx, AV_LOG_ERROR, "Necessary extradata missing!\n");
         return AVERROR_INVALIDDATA;
     }
@@ -1215,8 +1215,8 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
 
         q->num_subpackets++;
         s++;
-        if (s > MAX_SUBPACKETS) {
-            avpriv_request_sample(avctx, "subpackets > %d", MAX_SUBPACKETS);
+        if (s > FFMIN(MAX_SUBPACKETS, avctx->block_align)) {
+            avpriv_request_sample(avctx, "subpackets > %d", FFMIN(MAX_SUBPACKETS, avctx->block_align));
             return AVERROR_PATCHWELCOME;
         }
     }

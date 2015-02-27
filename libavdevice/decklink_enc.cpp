@@ -20,13 +20,6 @@
  */
 
 #include <DeckLinkAPI.h>
-#ifdef _WIN32
-#include <DeckLinkAPI_i.c>
-typedef unsigned long buffercount_type;
-#else
-#include <DeckLinkAPIDispatch.cpp>
-typedef uint32_t buffercount_type;
-#endif
 
 #include <pthread.h>
 #include <semaphore.h>
@@ -37,44 +30,9 @@ extern "C" {
 #include "libavutil/imgutils.h"
 }
 
+#include "decklink_common.h"
 #include "decklink_enc.h"
 
-class decklink_callback;
-
-struct decklink_ctx {
-    /* DeckLink SDK interfaces */
-    IDeckLink *dl;
-    IDeckLinkOutput *dlo;
-    decklink_callback *callback;
-
-    /* DeckLink mode information */
-    IDeckLinkDisplayModeIterator *itermode;
-    BMDTimeValue bmd_tb_den;
-    BMDTimeValue bmd_tb_num;
-    BMDDisplayMode bmd_mode;
-    int bmd_width;
-    int bmd_height;
-
-    /* Streams present */
-    int audio;
-    int video;
-
-    /* Status */
-    int playback_started;
-    int64_t last_pts;
-
-    /* Options */
-    int list_devices;
-    int list_formats;
-    double preroll;
-
-    int frames_preroll;
-    int frames_buffer;
-
-    sem_t semaphore;
-
-    int channels;
-};
 
 /* DeckLink callback class declaration */
 class decklink_frame : public IDeckLinkVideoFrame
@@ -109,7 +67,7 @@ private:
     int   _refs;
 };
 
-class decklink_callback : public IDeckLinkVideoOutputCallback
+class decklink_output_callback : public IDeckLinkVideoOutputCallback
 {
 public:
     virtual HRESULT STDMETHODCALLTYPE ScheduledFrameCompleted(IDeckLinkVideoFrame *_frame, BMDOutputFrameCompletionResult result)
@@ -130,99 +88,6 @@ public:
     virtual ULONG   STDMETHODCALLTYPE Release(void)                           { return 1; }
 };
 
-#ifdef _WIN32
-static IDeckLinkIterator *CreateDeckLinkIteratorInstance(void)
-{
-    IDeckLinkIterator *iter;
-
-    if (CoInitialize(NULL) != S_OK) {
-        av_log(NULL, AV_LOG_ERROR, "COM initialization failed.\n");
-        return NULL;
-    }
-
-    if (CoCreateInstance(CLSID_CDeckLinkIterator, NULL, CLSCTX_ALL,
-                         IID_IDeckLinkIterator, (void**) &iter) != S_OK) {
-        av_log(NULL, AV_LOG_ERROR, "DeckLink drivers not installed.\n");
-        return NULL;
-    }
-
-    return iter;
-}
-#endif
-
-/* free() is needed for a string returned by the DeckLink SDL. */
-#undef free
-
-#ifdef _WIN32
-static char *dup_wchar_to_utf8(wchar_t *w)
-{
-    char *s = NULL;
-    int l = WideCharToMultiByte(CP_UTF8, 0, w, -1, 0, 0, 0, 0);
-    s = (char *) av_malloc(l);
-    if (s)
-        WideCharToMultiByte(CP_UTF8, 0, w, -1, s, l, 0, 0);
-    return s;
-}
-#define DECKLINK_STR    OLECHAR *
-#define DECKLINK_STRDUP dup_wchar_to_utf8
-#else
-#define DECKLINK_STR    const char *
-#define DECKLINK_STRDUP av_strdup
-#endif
-
-static HRESULT IDeckLink_GetDisplayName(IDeckLink *This, const char **displayName)
-{
-    DECKLINK_STR tmpDisplayName;
-    HRESULT hr = This->GetDisplayName(&tmpDisplayName);
-    if (hr != S_OK)
-        return hr;
-    *displayName = DECKLINK_STRDUP(tmpDisplayName);
-    free((void *) tmpDisplayName);
-    return hr;
-}
-
-static int decklink_set_format(struct decklink_ctx *ctx,
-                               int width, int height,
-                               int tb_num, int tb_den)
-{
-    BMDDisplayModeSupport support;
-    IDeckLinkDisplayMode *mode;
-
-    if (tb_num == 1) {
-        tb_num *= 1000;
-        tb_den *= 1000;
-    }
-    ctx->bmd_mode = bmdModeUnknown;
-    while ((ctx->bmd_mode == bmdModeUnknown) && ctx->itermode->Next(&mode) == S_OK) {
-        BMDTimeValue bmd_tb_num, bmd_tb_den;
-        int bmd_width  = mode->GetWidth();
-        int bmd_height = mode->GetHeight();
-
-        mode->GetFrameRate(&bmd_tb_num, &bmd_tb_den);
-
-        if (bmd_width == width && bmd_height == height &&
-            bmd_tb_num == tb_num && bmd_tb_den == tb_den) {
-            ctx->bmd_mode   = mode->GetDisplayMode();
-            ctx->bmd_width  = bmd_width;
-            ctx->bmd_height = bmd_height;
-            ctx->bmd_tb_den = bmd_tb_den;
-            ctx->bmd_tb_num = bmd_tb_num;
-        }
-
-        mode->Release();
-    }
-    if (ctx->bmd_mode == bmdModeUnknown)
-        return -1;
-    if (ctx->dlo->DoesSupportVideoMode(ctx->bmd_mode, bmdFormat8BitYUV,
-                                       bmdVideoOutputFlagDefault,
-                                       &support, NULL) != S_OK)
-        return -1;
-    if (support == bmdDisplayModeSupported)
-        return 0;
-
-    return -1;
-}
-
 static int decklink_setup_video(AVFormatContext *avctx, AVStream *st)
 {
     struct decklink_cctx *cctx = (struct decklink_cctx *) avctx->priv_data;
@@ -239,7 +104,7 @@ static int decklink_setup_video(AVFormatContext *avctx, AVStream *st)
                " Only AV_PIX_FMT_UYVY422 is supported.\n");
         return -1;
     }
-    if (decklink_set_format(ctx, c->width, c->height,
+    if (ff_decklink_set_format(avctx, c->width, c->height,
                             c->time_base.num, c->time_base.den)) {
         av_log(avctx, AV_LOG_ERROR, "Unsupported video size or framerate!"
                " Check available formats with -list_formats 1.\n");
@@ -252,8 +117,8 @@ static int decklink_setup_video(AVFormatContext *avctx, AVStream *st)
     }
 
     /* Set callback. */
-    ctx->callback = new decklink_callback();
-    ctx->dlo->SetScheduledFrameCompletionCallback(ctx->callback);
+    ctx->output_callback = new decklink_output_callback();
+    ctx->dlo->SetScheduledFrameCompletionCallback(ctx->output_callback);
 
     /* Start video semaphore. */
     ctx->frames_preroll = c->time_base.den * ctx->preroll;
@@ -333,8 +198,8 @@ av_cold int ff_decklink_write_trailer(AVFormatContext *avctx)
     if (ctx->dl)
         ctx->dl->Release();
 
-    if (ctx->callback)
-        delete ctx->callback;
+    if (ctx->output_callback)
+        delete ctx->output_callback;
 
     sem_destroy(&ctx->semaphore);
 
@@ -450,6 +315,7 @@ av_cold int ff_decklink_write_header(AVFormatContext *avctx)
 {
     struct decklink_cctx *cctx = (struct decklink_cctx *) avctx->priv_data;
     struct decklink_ctx *ctx;
+    IDeckLinkDisplayModeIterator *itermode;
     IDeckLinkIterator *iter;
     IDeckLink *dl = NULL;
     unsigned int n;
@@ -470,22 +336,14 @@ av_cold int ff_decklink_write_header(AVFormatContext *avctx)
 
     /* List available devices. */
     if (ctx->list_devices) {
-        av_log(avctx, AV_LOG_INFO, "Blackmagic DeckLink devices:\n");
-        while (iter->Next(&dl) == S_OK) {
-            const char *displayName;
-            IDeckLink_GetDisplayName(dl, &displayName);
-            av_log(avctx, AV_LOG_INFO, "\t'%s'\n", displayName);
-            av_free((void *) displayName);
-            dl->Release();
-        }
-        iter->Release();
+        ff_decklink_list_devices(avctx);
         return AVERROR_EXIT;
     }
 
     /* Open device. */
     while (iter->Next(&dl) == S_OK) {
         const char *displayName;
-        IDeckLink_GetDisplayName(dl, &displayName);
+        ff_decklink_get_display_name(dl, &displayName);
         if (!strcmp(avctx->filename, displayName)) {
             av_free((void *) displayName);
             ctx->dl = dl;
@@ -508,38 +366,18 @@ av_cold int ff_decklink_write_header(AVFormatContext *avctx)
         return AVERROR(EIO);
     }
 
-    if (ctx->dlo->GetDisplayModeIterator(&ctx->itermode) != S_OK) {
-        av_log(avctx, AV_LOG_ERROR, "Could not get Display Mode Iterator\n");
-        ctx->dl->Release();
-        return AVERROR(EIO);
-    }
-
     /* List supported formats. */
     if (ctx->list_formats) {
-        IDeckLinkDisplayMode *mode;
-
-        av_log(avctx, AV_LOG_INFO, "Supported formats for '%s':\n",
-               avctx->filename);
-        while (ctx->itermode->Next(&mode) == S_OK) {
-            BMDTimeValue tb_num, tb_den;
-            mode->GetFrameRate(&tb_num, &tb_den);
-            av_log(avctx, AV_LOG_INFO, "\t%ldx%ld at %d/%d fps",
-                   mode->GetWidth(), mode->GetHeight(),
-                   (int) tb_den, (int) tb_num);
-            switch (mode->GetFieldDominance()) {
-            case bmdLowerFieldFirst:
-            av_log(avctx, AV_LOG_INFO, " (interlaced, lower field first)"); break;
-            case bmdUpperFieldFirst:
-            av_log(avctx, AV_LOG_INFO, " (interlaced, upper field first)"); break;
-            }
-            av_log(avctx, AV_LOG_INFO, "\n");
-            mode->Release();
-        }
-
-        ctx->itermode->Release();
+        ff_decklink_list_formats(avctx);
         ctx->dlo->Release();
         ctx->dl->Release();
         return AVERROR_EXIT;
+    }
+
+    if (ctx->dlo->GetDisplayModeIterator(&itermode) != S_OK) {
+        av_log(avctx, AV_LOG_ERROR, "Could not get Display Mode Iterator\n");
+        ctx->dl->Release();
+        return AVERROR(EIO);
     }
 
     /* Setup streams. */
@@ -557,7 +395,7 @@ av_cold int ff_decklink_write_header(AVFormatContext *avctx)
             goto error;
         }
     }
-    ctx->itermode->Release();
+    itermode->Release();
 
     return 0;
 

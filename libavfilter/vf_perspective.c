@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/eval.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/pixdesc.h"
@@ -46,6 +47,7 @@ typedef struct PerspectiveContext {
     int height[4];
     int hsub, vsub;
     int nb_planes;
+    int sense;
 
     int (*perspective)(AVFilterContext *ctx,
                        void *arg, int job, int nb_jobs);
@@ -53,6 +55,11 @@ typedef struct PerspectiveContext {
 
 #define OFFSET(x) offsetof(PerspectiveContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
+
+enum PERSPECTIVESense {
+    PERSPECTIVE_SENSE_SOURCE      = 0, ///< coordinates give locations in source of corners of destination.
+    PERSPECTIVE_SENSE_DESTINATION = 1, ///< coordinates give locations in destination of corners of source.
+};
 
 static const AVOption perspective_options[] = {
     { "x0", "set top left x coordinate",     OFFSET(expr_str[0][0]), AV_OPT_TYPE_STRING, {.str="0"}, 0, 0, FLAGS },
@@ -66,6 +73,12 @@ static const AVOption perspective_options[] = {
     { "interpolation", "set interpolation", OFFSET(interpolation), AV_OPT_TYPE_INT, {.i64=LINEAR}, 0, 1, FLAGS, "interpolation" },
     {      "linear", "", 0, AV_OPT_TYPE_CONST, {.i64=LINEAR}, 0, 0, FLAGS, "interpolation" },
     {       "cubic", "", 0, AV_OPT_TYPE_CONST, {.i64=CUBIC},  0, 0, FLAGS, "interpolation" },
+    { "sense",   "specify the sense of the coordinates", OFFSET(sense), AV_OPT_TYPE_INT, {.i64=PERSPECTIVE_SENSE_SOURCE}, 0, 1, FLAGS, "sense"},
+    {       "source", "specify locations in source to send to corners in destination",
+                0, AV_OPT_TYPE_CONST, {.i64=PERSPECTIVE_SENSE_SOURCE}, 0, 0, FLAGS, "sense"},
+    {       "destination", "specify locations in destination to send corners of source",
+                0, AV_OPT_TYPE_CONST, {.i64=PERSPECTIVE_SENSE_DESTINATION}, 0, 0, FLAGS, "sense"},
+
     { NULL }
 };
 
@@ -105,7 +118,8 @@ enum                                   { VAR_W, VAR_H, VAR_VARS_NB };
 
 static int config_input(AVFilterLink *inlink)
 {
-    double x0, x1, x2, x3, x4, x5, x6, x7, q;
+    double x0, x1, x2, x3, x4, x5, x6, x7, x8, q;
+    double t0, t1, t2, t3;
     AVFilterContext *ctx = inlink->dst;
     PerspectiveContext *s = ctx->priv;
     double (*ref)[2] = s->ref;
@@ -141,32 +155,66 @@ static int config_input(AVFilterLink *inlink)
     if (!s->pv)
         return AVERROR(ENOMEM);
 
-    x6 = ((ref[0][0] - ref[1][0] - ref[2][0] + ref[3][0]) *
-          (ref[2][1] - ref[3][1]) -
-         ( ref[0][1] - ref[1][1] - ref[2][1] + ref[3][1]) *
-          (ref[2][0] - ref[3][0])) * h;
-    x7 = ((ref[0][1] - ref[1][1] - ref[2][1] + ref[3][1]) *
-          (ref[1][0] - ref[3][0]) -
-         ( ref[0][0] - ref[1][0] - ref[2][0] + ref[3][0]) *
-          (ref[1][1] - ref[3][1])) * w;
-    q =  ( ref[1][0] - ref[3][0]) * (ref[2][1] - ref[3][1]) -
-         ( ref[2][0] - ref[3][0]) * (ref[1][1] - ref[3][1]);
+    switch (s->sense) {
+    case PERSPECTIVE_SENSE_SOURCE:
+        x6 = ((ref[0][0] - ref[1][0] - ref[2][0] + ref[3][0]) *
+              (ref[2][1] - ref[3][1]) -
+             ( ref[0][1] - ref[1][1] - ref[2][1] + ref[3][1]) *
+              (ref[2][0] - ref[3][0])) * h;
+        x7 = ((ref[0][1] - ref[1][1] - ref[2][1] + ref[3][1]) *
+              (ref[1][0] - ref[3][0]) -
+             ( ref[0][0] - ref[1][0] - ref[2][0] + ref[3][0]) *
+              (ref[1][1] - ref[3][1])) * w;
+        q =  ( ref[1][0] - ref[3][0]) * (ref[2][1] - ref[3][1]) -
+             ( ref[2][0] - ref[3][0]) * (ref[1][1] - ref[3][1]);
 
-    x0 = q * (ref[1][0] - ref[0][0]) * h + x6 * ref[1][0];
-    x1 = q * (ref[2][0] - ref[0][0]) * w + x7 * ref[2][0];
-    x2 = q *  ref[0][0] * w * h;
-    x3 = q * (ref[1][1] - ref[0][1]) * h + x6 * ref[1][1];
-    x4 = q * (ref[2][1] - ref[0][1]) * w + x7 * ref[2][1];
-    x5 = q *  ref[0][1] * w * h;
+        x0 = q * (ref[1][0] - ref[0][0]) * h + x6 * ref[1][0];
+        x1 = q * (ref[2][0] - ref[0][0]) * w + x7 * ref[2][0];
+        x2 = q *  ref[0][0] * w * h;
+        x3 = q * (ref[1][1] - ref[0][1]) * h + x6 * ref[1][1];
+        x4 = q * (ref[2][1] - ref[0][1]) * w + x7 * ref[2][1];
+        x5 = q *  ref[0][1] * w * h;
+        x8 = q * w * h;
+        break;
+    case PERSPECTIVE_SENSE_DESTINATION:
+        t0 = ref[0][0] * (ref[3][1] - ref[1][1]) +
+             ref[1][0] * (ref[0][1] - ref[3][1]) +
+             ref[3][0] * (ref[1][1] - ref[0][1]);
+        t1 = ref[1][0] * (ref[2][1] - ref[3][1]) +
+             ref[2][0] * (ref[3][1] - ref[1][1]) +
+             ref[3][0] * (ref[1][1] - ref[2][1]);
+        t2 = ref[0][0] * (ref[3][1] - ref[2][1]) +
+             ref[2][0] * (ref[0][1] - ref[3][1]) +
+             ref[3][0] * (ref[2][1] - ref[0][1]);
+        t3 = ref[0][0] * (ref[1][1] - ref[2][1]) +
+             ref[1][0] * (ref[2][1] - ref[0][1]) +
+             ref[2][0] * (ref[0][1] - ref[1][1]);
+
+        x0 = t0 * t1 * w * (ref[2][1] - ref[0][1]);
+        x1 = t0 * t1 * w * (ref[0][0] - ref[2][0]);
+        x2 = t0 * t1 * w * (ref[0][1] * ref[2][0] - ref[0][0] * ref[2][1]);
+        x3 = t1 * t2 * h * (ref[1][1] - ref[0][1]);
+        x4 = t1 * t2 * h * (ref[0][0] - ref[1][0]);
+        x5 = t1 * t2 * h * (ref[0][1] * ref[1][0] - ref[0][0] * ref[1][1]);
+        x6 = t1 * t2 * (ref[1][1] - ref[0][1]) +
+             t0 * t3 * (ref[2][1] - ref[3][1]);
+        x7 = t1 * t2 * (ref[0][0] - ref[1][0]) +
+             t0 * t3 * (ref[3][0] - ref[2][0]);
+        x8 = t1 * t2 * (ref[0][1] * ref[1][0] - ref[0][0] * ref[1][1]) +
+             t0 * t3 * (ref[2][0] * ref[3][1] - ref[2][1] * ref[3][0]);
+        break;
+    default:
+        av_assert0(0);
+    }
 
     for (y = 0; y < h; y++){
         for (x = 0; x < w; x++){
             int u, v;
 
             u = (int)floor(SUB_PIXELS * (x0 * x + x1 * y + x2) /
-                                        (x6 * x + x7 * y + q * w * h) + 0.5);
+                                        (x6 * x + x7 * y + x8) + 0.5);
             v = (int)floor(SUB_PIXELS * (x3 * x + x4 * y + x5) /
-                                        (x6 * x + x7 * y + q * w * h) + 0.5);
+                                        (x6 * x + x7 * y + x8) + 0.5);
 
             s->pv[x + y * w][0] = u;
             s->pv[x + y * w][1] = v;
@@ -272,7 +320,7 @@ static int resample_cubic(AVFilterContext *ctx, void *arg,
             }
 
             sum = (sum + (1<<(COEFF_BITS * 2 - 1))) >> (COEFF_BITS * 2);
-            sum = av_clip(sum, 0, 255);
+            sum = av_clip_uint8(sum);
             dst[x + y * dst_linesize] = sum;
         }
     }
@@ -347,7 +395,7 @@ static int resample_linear(AVFilterContext *ctx, void *arg,
                 }
             }
 
-            sum = av_clip(sum, 0, 255);
+            sum = av_clip_uint8(sum);
             dst[x + y * dst_linesize] = sum;
         }
     }

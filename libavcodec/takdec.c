@@ -476,7 +476,7 @@ static int decode_subframe(TAKDecContext *s, int32_t *decoded,
                      s->residues[i + j + 1] * s->filter[j + 1] +
                      s->residues[i + j    ] * s->filter[j    ];
             }
-            v = (av_clip(v >> filter_quant, -8192, 8191) << dshift) - *decoded;
+            v = (av_clip_intp2(v >> filter_quant, 13) << dshift) - *decoded;
             *decoded++ = v;
             s->residues[filter_order + i] = v >> dshift;
         }
@@ -652,7 +652,7 @@ static int decorrelate(TAKDecContext *s, int c1, int c2, int length)
                          s->residues[i    ] * s->filter[0];
                 }
 
-                v = (av_clip(v >> 10, -8192, 8191) << dshift) - *p1;
+                v = (av_clip_intp2(v >> 10, 13) << dshift) - *p1;
                 *p1++ = v;
             }
 
@@ -743,6 +743,8 @@ static int tak_decode_frame(AVCodecContext *avctx, void *data,
         int buf_size = av_samples_get_buffer_size(NULL, avctx->channels,
                                                   s->nb_samples,
                                                   AV_SAMPLE_FMT_S32P, 0);
+        if (buf_size < 0)
+            return buf_size;
         av_fast_malloc(&s->decode_buffer, &s->decode_buffer_size, buf_size);
         if (!s->decode_buffer)
             return AVERROR(ENOMEM);

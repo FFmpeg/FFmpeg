@@ -234,7 +234,7 @@ int ff_mpeg1_find_frame_end(ParseContext *pc, const uint8_t *buf, int buf_size, 
                 }
             }
             if (pc->frame_start_found == 0 && s && state == PICTURE_START_CODE) {
-                ff_fetch_timestamp(s, i - 3, 1);
+                ff_fetch_timestamp(s, i - 3, 1, i > 3);
             }
         }
     }

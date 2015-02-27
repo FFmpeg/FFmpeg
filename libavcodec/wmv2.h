@@ -56,4 +56,15 @@ typedef struct Wmv2Context {
 
 void ff_wmv2_common_init(Wmv2Context *w);
 
+static av_always_inline int wmv2_get_cbp_table_index(MpegEncContext *s, int cbp_index)
+{
+    static const uint8_t map[3][3] = {
+        { 0, 2, 1 },
+        { 1, 0, 2 },
+        { 2, 1, 0 },
+    };
+
+    return map[(s->qscale > 10) + (s->qscale > 20)][cbp_index];
+}
+
 #endif /* AVCODEC_WMV2_H */

@@ -37,7 +37,7 @@ typedef struct {
     int qscale_type;
     int temp_linesize;
     uint8_t *src;
-    int16_t *temp;
+    uint16_t *temp;
     AVCodecContext *avctx;
     AVDCT *dct;
     int8_t *non_b_qp_table;

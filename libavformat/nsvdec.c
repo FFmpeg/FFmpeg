@@ -162,7 +162,7 @@ typedef struct NSVStream {
     int cum_len; /* temporary storage (used during seek) */
 } NSVStream;
 
-typedef struct {
+typedef struct NSVContext {
     int  base_offset;
     int  NSVf_end;
     uint32_t *nsvs_file_offset;
@@ -539,6 +539,7 @@ static int nsv_read_chunk(AVFormatContext *s, int fill_header)
     uint32_t vsize;
     uint16_t asize;
     uint16_t auxsize;
+    int ret;
 
     av_dlog(s, "%s(%d)\n", __FUNCTION__, fill_header);
 
@@ -597,7 +598,8 @@ null_chunk_retry:
     if (vsize && st[NSV_ST_VIDEO]) {
         nst = st[NSV_ST_VIDEO]->priv_data;
         pkt = &nsv->ahead[NSV_ST_VIDEO];
-        av_get_packet(pb, pkt, vsize);
+        if ((ret = av_get_packet(pb, pkt, vsize)) < 0)
+            return ret;
         pkt->stream_index = st[NSV_ST_VIDEO]->index;//NSV_ST_VIDEO;
         pkt->dts = nst->frame_offset;
         pkt->flags |= nsv->state == NSV_HAS_READ_NSVS ? AV_PKT_FLAG_KEY : 0; /* keyframe only likely on a sync frame */
@@ -619,6 +621,8 @@ null_chunk_retry:
             bps = avio_r8(pb);
             channels = avio_r8(pb);
             samplerate = avio_rl16(pb);
+            if (!channels || !samplerate)
+                return AVERROR_INVALIDDATA;
             asize-=4;
             av_dlog(s, "NSV RAWAUDIO: bps %d, nchan %d, srate %d\n", bps, channels, samplerate);
             if (fill_header) {
@@ -626,10 +630,7 @@ null_chunk_retry:
                 if (bps != 16) {
                     av_dlog(s, "NSV AUDIO bit/sample != 16 (%d)!!!\n", bps);
                 }
-                if(channels)
-                    bps /= channels; // ???
-                else
-                    av_log(s, AV_LOG_WARNING, "Channels is 0\n");
+                bps /= channels; // ???
                 if (bps == 8)
                     st[NSV_ST_AUDIO]->codec->codec_id = AV_CODEC_ID_PCM_U8;
                 samplerate /= 4;/* UGH ??? XXX */
@@ -639,7 +640,8 @@ null_chunk_retry:
                 av_dlog(s, "NSV RAWAUDIO: bps %d, nchan %d, srate %d\n", bps, channels, samplerate);
             }
         }
-        av_get_packet(pb, pkt, asize);
+        if ((ret = av_get_packet(pb, pkt, asize)) < 0)
+            return ret;
         pkt->stream_index = st[NSV_ST_AUDIO]->index;//NSV_ST_AUDIO;
         pkt->flags |= nsv->state == NSV_HAS_READ_NSVS ? AV_PKT_FLAG_KEY : 0; /* keyframe only likely on a sync frame */
         if( nsv->state == NSV_HAS_READ_NSVS && st[NSV_ST_VIDEO] ) {

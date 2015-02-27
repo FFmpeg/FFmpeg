@@ -53,7 +53,8 @@ void ff_parse_close(AVCodecParserContext *s);
  * Fetch timestamps for a specific byte within the current access unit.
  * @param off byte position within the access unit
  * @param remove Found timestamps will be removed if set to 1, kept if set to 0.
+ * @param fuzzy Only use found value if it is more informative than what we already have
  */
-void ff_fetch_timestamp(AVCodecParserContext *s, int off, int remove);
+void ff_fetch_timestamp(AVCodecParserContext *s, int off, int remove, int fuzzy);
 
 #endif /* AVCODEC_PARSER_H */

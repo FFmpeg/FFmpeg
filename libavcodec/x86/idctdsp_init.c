@@ -64,9 +64,6 @@ av_cold void ff_idctdsp_init_x86(IDCTDSPContext *c, AVCodecContext *avctx,
     int cpu_flags = av_get_cpu_flags();
 
     if (INLINE_MMX(cpu_flags)) {
-        c->put_pixels_clamped        = ff_put_pixels_clamped_mmx;
-        c->add_pixels_clamped        = ff_add_pixels_clamped_mmx;
-
         if (!high_bit_depth &&
             avctx->lowres == 0 &&
             (avctx->idct_algo == FF_IDCT_AUTO ||
@@ -80,8 +77,12 @@ av_cold void ff_idctdsp_init_x86(IDCTDSPContext *c, AVCodecContext *avctx,
     }
     if (EXTERNAL_MMX(cpu_flags)) {
         c->put_signed_pixels_clamped = ff_put_signed_pixels_clamped_mmx;
+        c->put_pixels_clamped        = ff_put_pixels_clamped_mmx;
+        c->add_pixels_clamped        = ff_add_pixels_clamped_mmx;
     }
     if (EXTERNAL_SSE2(cpu_flags)) {
         c->put_signed_pixels_clamped = ff_put_signed_pixels_clamped_sse2;
+        c->put_pixels_clamped        = ff_put_pixels_clamped_sse2;
+        c->add_pixels_clamped        = ff_add_pixels_clamped_sse2;
     }
 }

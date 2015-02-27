@@ -40,7 +40,7 @@
 #include "proresdsp.h"
 #include "get_bits.h"
 
-typedef struct {
+typedef struct ProresThreadData {
     const uint8_t *index;            ///< pointers to the data of this slice
     int slice_num;
     int x_pos, y_pos;
@@ -51,7 +51,7 @@ typedef struct {
     DECLARE_ALIGNED(16, int16_t, qmat_chroma_scaled)[64];
 } ProresThreadData;
 
-typedef struct {
+typedef struct ProresContext {
     ProresDSPContext dsp;
     AVFrame    *frame;
     ScanTable  scantable;
@@ -263,7 +263,7 @@ static int decode_picture_header(ProresContext *ctx, const uint8_t *buf,
 
     if (ctx->total_slices != num_slices) {
         av_freep(&ctx->slice_data);
-        ctx->slice_data = av_malloc((num_slices + 1) * sizeof(ctx->slice_data[0]));
+        ctx->slice_data = av_malloc_array(num_slices + 1, sizeof(ctx->slice_data[0]));
         if (!ctx->slice_data)
             return AVERROR(ENOMEM);
         ctx->total_slices = num_slices;

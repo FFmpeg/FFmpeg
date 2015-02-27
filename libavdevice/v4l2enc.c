@@ -56,7 +56,7 @@ static av_cold int write_header(AVFormatContext *s1)
 
     enc_ctx = s1->streams[0]->codec;
 
-    v4l2_pixfmt = avpriv_fmt_ff2v4l(enc_ctx->pix_fmt, AV_CODEC_ID_RAWVIDEO);
+    v4l2_pixfmt = ff_fmt_ff2v4l(enc_ctx->pix_fmt, AV_CODEC_ID_RAWVIDEO);
     if (!v4l2_pixfmt) { // XXX: try to force them one by one?
         av_log(s1, AV_LOG_ERROR, "Unknown V4L2 pixel format equivalent for %s\n",
                av_get_pix_fmt_name(enc_ctx->pix_fmt));

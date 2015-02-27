@@ -117,7 +117,7 @@ static int dnxhd_10bit_dct_quantize(MpegEncContext *ctx, int16_t *block,
 
     for (i = 1; i < 64; ++i) {
         int j = scantable[i];
-        int sign = block[j] >> 31;
+        int sign = FF_SIGNBIT(block[j]);
         int level = (block[j] ^ sign) - sign;
         level = level * qmat[j] >> DNX10BIT_QMAT_SHIFT;
         block[j] = (level ^ sign) - sign;
@@ -314,6 +314,7 @@ static av_cold int dnxhd_encode_init(AVCodecContext *avctx)
 
     index = ff_dnxhd_get_cid_table(ctx->cid);
     av_assert0(index >= 0);
+
     ctx->cid_table = &ff_dnxhd_cid_table[index];
 
     ctx->m.avctx    = avctx;

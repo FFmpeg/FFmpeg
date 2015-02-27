@@ -20,14 +20,14 @@
 <Representation id="1" bandwidth="302355">
 <BaseURL>dash_video2.webm</BaseURL>
 <SegmentBase
-  indexRange="1115782-1115886">
+  indexRange="1115782-1115879">
 <Initialization
   range="0-249" />
 </SegmentBase>
 </Representation>
 </AdaptationSet>
 <AdaptationSet id="1" mimeType="audio/webm" codecs="vorbis" lang="eng" audioSamplingRate="44100" bitstreamSwitching="true" subsegmentAlignment="false" subsegmentStartsWithSAP="1">
-<Representation id="0" bandwidth="82867">
+<Representation id="2" bandwidth="82867">
 <BaseURL>dash_audio1.webm</BaseURL>
 <SegmentBase
   indexRange="335488-335612">
@@ -35,10 +35,10 @@
   range="0-4103" />
 </SegmentBase>
 </Representation>
-<Representation id="1" bandwidth="82814">
+<Representation id="3" bandwidth="82814">
 <BaseURL>dash_audio2.webm</BaseURL>
 <SegmentBase
-  indexRange="335312-335432">
+  indexRange="335312-335425">
 <Initialization
   range="0-3927" />
 </SegmentBase>

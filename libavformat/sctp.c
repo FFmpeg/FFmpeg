@@ -298,7 +298,7 @@ static int sctp_write(URLContext *h, const uint8_t *buf, int size)
         info.sinfo_stream           = AV_RB16(buf);
         if (info.sinfo_stream > s->max_streams) {
             av_log(h, AV_LOG_ERROR, "bad input data\n");
-            return AVERROR(EINVAL);
+            return AVERROR_BUG;
         }
         ret = ff_sctp_send(s->fd, buf + 2, size - 2, &info, MSG_EOR);
     } else

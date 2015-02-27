@@ -27,7 +27,6 @@
 #include "oggdec.h"
 #include "vorbiscomment.h"
 #include "replaygain.h"
-#include "libavcodec/bytestream.h"
 
 static int flac_read_header(AVFormatContext *s)
 {
@@ -75,7 +74,9 @@ static int flac_read_header(AVFormatContext *s)
         }
 
         if (metadata_type == FLAC_METADATA_TYPE_STREAMINFO) {
-            FLACStreaminfo si;
+            uint32_t samplerate;
+            uint64_t samples;
+
             /* STREAMINFO can only occur once */
             if (found_streaminfo) {
                 RETURN_ERROR(AVERROR_INVALIDDATA);
@@ -88,14 +89,16 @@ static int flac_read_header(AVFormatContext *s)
             st->codec->extradata_size = metadata_size;
             buffer = NULL;
 
-            /* get codec params from STREAMINFO header */
-            avpriv_flac_parse_streaminfo(st->codec, &si, st->codec->extradata);
+            /* get sample rate and sample count from STREAMINFO header;
+             * other parameters will be extracted by the parser */
+            samplerate = AV_RB24(st->codec->extradata + 10) >> 4;
+            samples    = (AV_RB64(st->codec->extradata + 13) >> 24) & ((1ULL << 36) - 1);
 
             /* set time base and duration */
-            if (si.samplerate > 0) {
-                avpriv_set_pts_info(st, 64, 1, si.samplerate);
-                if (si.samples > 0)
-                    st->duration = si.samples;
+            if (samplerate > 0) {
+                avpriv_set_pts_info(st, 64, 1, samplerate);
+                if (samples > 0)
+                    st->duration = samples;
             }
         } else if (metadata_type == FLAC_METADATA_TYPE_CUESHEET) {
             uint8_t isrc[13];

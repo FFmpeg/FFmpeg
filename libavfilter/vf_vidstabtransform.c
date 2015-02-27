@@ -208,8 +208,9 @@ static int config_input(AVFilterLink *inlink)
 
     f = fopen(tc->input, "r");
     if (!f) {
+        int ret = AVERROR(errno);
         av_log(ctx, AV_LOG_ERROR, "cannot open input file %s\n", tc->input);
-        return AVERROR(errno);
+        return ret;
     } else {
         VSManyLocalMotions mlms;
         if (vsReadLocalMotionsFile(f, &mlms) == VS_OK) {

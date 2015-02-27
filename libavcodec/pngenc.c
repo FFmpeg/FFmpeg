@@ -275,6 +275,10 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         bit_depth = 8;
         color_type = PNG_COLOR_TYPE_GRAY_ALPHA;
         break;
+    case AV_PIX_FMT_YA16BE:
+        bit_depth = 16;
+        color_type = PNG_COLOR_TYPE_GRAY_ALPHA;
+        break;
     case AV_PIX_FMT_MONOBLACK:
         bit_depth  = 1;
         color_type = PNG_COLOR_TYPE_GRAY;
@@ -533,7 +537,7 @@ AVCodec ff_png_encoder = {
         AV_PIX_FMT_RGB48BE, AV_PIX_FMT_RGBA64BE,
         AV_PIX_FMT_PAL8,
         AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY8A,
-        AV_PIX_FMT_GRAY16BE,
+        AV_PIX_FMT_GRAY16BE, AV_PIX_FMT_YA16BE,
         AV_PIX_FMT_MONOBLACK, AV_PIX_FMT_NONE
     },
     .priv_class     = &pngenc_class,

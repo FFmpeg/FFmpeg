@@ -174,8 +174,7 @@ static int parse_source_parameters(AVCodecContext *avctx, GetBitContext *gb,
             /* [DIRAC_STD] Table 10.3 values 9-10 */
             frame_rate = dirac_frame_rate[source->frame_rate_index - 9];
     }
-    av_reduce(&avctx->time_base.num, &avctx->time_base.den,
-              frame_rate.den, frame_rate.num, 1 << 30);
+    avctx->framerate = frame_rate;
 
     /* [DIRAC_STD] 10.3.6 Pixel Aspect Ratio.
      * pixel_aspect_ratio(video_params) */

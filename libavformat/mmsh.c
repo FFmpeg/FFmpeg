@@ -54,7 +54,7 @@ typedef enum {
     CHUNK_TYPE_STREAM_CHANGE = 0x4324,
 } ChunkType;
 
-typedef struct {
+typedef struct MMSHContext {
     MMSContext mms;
     uint8_t location[1024];
     int request_seq;  ///< request packet sequence

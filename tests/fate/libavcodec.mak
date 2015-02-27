@@ -13,6 +13,10 @@ FATE_LIBAVCODEC-$(CONFIG_IIRFILTER) += fate-iirfilter
 fate-iirfilter: libavcodec/iirfilter-test$(EXESUF)
 fate-iirfilter: CMD = run libavcodec/iirfilter-test
 
+FATE_LIBAVCODEC-yes += fate-libavcodec-options
+fate-libavcodec-options: libavcodec/options-test$(EXESUF)
+fate-libavcodec-options: CMD = run libavcodec/options-test
+
 FATE_LIBAVCODEC-$(CONFIG_RANGECODER) += fate-rangecoder
 fate-rangecoder: libavcodec/rangecoder-test$(EXESUF)
 fate-rangecoder: CMD = run libavcodec/rangecoder-test

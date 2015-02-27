@@ -314,14 +314,18 @@ AVFilterChannelLayouts *avfilter_make_format64_list(const int64_t *fmts)
 #define ADD_FORMAT(f, fmt, type, list, nb)                  \
 do {                                                        \
     type *fmts;                                             \
+    void *oldf = *f;                                        \
                                                             \
     if (!(*f) && !(*f = av_mallocz(sizeof(**f))))           \
         return AVERROR(ENOMEM);                             \
                                                             \
     fmts = av_realloc((*f)->list,                           \
                       sizeof(*(*f)->list) * ((*f)->nb + 1));\
-    if (!fmts)                                              \
+    if (!fmts) {                                            \
+        if (!oldf)                                          \
+            av_freep(f);                                    \
         return AVERROR(ENOMEM);                             \
+    }                                                       \
                                                             \
     (*f)->list = fmts;                                      \
     (*f)->list[(*f)->nb++] = fmt;                           \
@@ -490,7 +494,7 @@ void ff_formats_changeref(AVFilterFormats **oldref, AVFilterFormats **newref)
 }
 
 #define SET_COMMON_FORMATS(ctx, fmts, in_fmts, out_fmts, ref, list) \
-{                                                                   \
+if (fmts) {                                                         \
     int count = 0, i;                                               \
                                                                     \
     for (i = 0; i < ctx->nb_inputs; i++) {                          \

@@ -95,7 +95,7 @@ static int flac_write_header(struct AVFormatContext *s)
         padding = 8192;
     /* The FLAC specification states that 24 bits are used to represent the
      * size of a metadata block so we must clip this value to 2^24-1. */
-    padding = av_clip(padding, 0, 16777215);
+    padding = av_clip_uintp2(padding, 24);
 
     ret = ff_flac_write_header(s->pb, codec->extradata,
                                codec->extradata_size, 0);

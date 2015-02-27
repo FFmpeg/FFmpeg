@@ -1,0 +1,4 @@
+e9cc761eb3fedc36ce5f97744196ed8b *tests/data/fate/vsynth_lena-zmbv.avi
+1808720 tests/data/fate/vsynth_lena-zmbv.avi
+ee68a5292fd0745834246b4ec0d85e9b *tests/data/fate/vsynth_lena-zmbv.out.rawvideo
+stddev:    8.12 PSNR: 29.94 MAXDIFF:   32 bytes:  7603200/  7603200

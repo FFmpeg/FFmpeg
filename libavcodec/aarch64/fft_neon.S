@@ -415,7 +415,7 @@ function ff_fft_permute_neon, export=1
         ret
 endfunc
 
-const   fft_tab_neon
+const   fft_tab_neon, relocate=1
         .quad fft4_neon
         .quad fft8_neon
         .quad fft16_neon

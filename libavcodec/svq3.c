@@ -69,7 +69,7 @@
  * svq3 decoder.
  */
 
-typedef struct {
+typedef struct SVQ3Context {
     H264Context h;
     HpelDSPContext hdsp;
     TpelDSPContext tdsp;
@@ -1008,6 +1008,10 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
             }
 
             buf = av_malloc(buf_len);
+            if (!buf) {
+                ret = AVERROR(ENOMEM);
+                goto fail;
+            }
             av_log(avctx, AV_LOG_DEBUG, "watermark size: %ux%u\n",
                    watermark_width, watermark_height);
             av_log(avctx, AV_LOG_DEBUG,
@@ -1106,7 +1110,7 @@ static int get_buffer(AVCodecContext *avctx, H264Picture *pic)
         goto fail;
 
     if (!h->edge_emu_buffer) {
-        h->edge_emu_buffer = av_mallocz(pic->f.linesize[0] * 17);
+        h->edge_emu_buffer = av_mallocz_array(pic->f.linesize[0], 17);
         if (!h->edge_emu_buffer)
             return AVERROR(ENOMEM);
     }
@@ -1176,7 +1180,7 @@ static int svq3_decode_frame(AVCodecContext *avctx, void *data,
 
     h->cur_pic_ptr = s->cur_pic;
     av_frame_unref(&h->cur_pic.f);
-    h->cur_pic     = *s->cur_pic;
+    memcpy(&h->cur_pic.tf, &s->cur_pic->tf, sizeof(h->cur_pic) - offsetof(H264Picture, tf));
     ret = av_frame_ref(&h->cur_pic.f, &s->cur_pic->f);
     if (ret < 0)
         return ret;

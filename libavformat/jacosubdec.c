@@ -232,7 +232,7 @@ static int jacosub_read_header(AVFormatContext *s)
     /* general/essential directives in the extradata */
     ret = avpriv_bprint_to_extradata(st->codec, &header);
     if (ret < 0)
-        return ret;
+        goto fail;
 
     /* SHIFT and TIMERES affect the whole script so packet timing can only be
      * done in a second pass */
@@ -243,6 +243,9 @@ static int jacosub_read_header(AVFormatContext *s)
     ff_subtitles_queue_finalize(&jacosub->q);
 
     return 0;
+fail:
+    jacosub_read_close(s);
+    return ret;
 }
 
 static int jacosub_read_packet(AVFormatContext *s, AVPacket *pkt)

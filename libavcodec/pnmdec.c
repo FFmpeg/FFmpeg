@@ -108,6 +108,13 @@ static int pnm_decode_frame(AVCodecContext *avctx, void *data,
         if (s->maxval < 65535)
             upgrade = 2;
         goto do_read;
+    case AV_PIX_FMT_YA16:
+        n =  avctx->width * 4;
+        components=2;
+        sample_len=16;
+        if (s->maxval < 65535)
+            upgrade = 2;
+        goto do_read;
     case AV_PIX_FMT_MONOWHITE:
     case AV_PIX_FMT_MONOBLACK:
         n = (avctx->width + 7) >> 3;

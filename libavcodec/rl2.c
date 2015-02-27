@@ -207,7 +207,7 @@ static av_cold int rl2_decode_end(AVCodecContext *avctx)
 {
     Rl2Context *s = avctx->priv_data;
 
-    av_free(s->back_frame);
+    av_freep(&s->back_frame);
 
     return 0;
 }

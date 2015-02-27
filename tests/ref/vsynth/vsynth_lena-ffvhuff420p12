@@ -1,0 +1,4 @@
+e5873a19c7be1cdf25600eb033738b9e *tests/data/fate/vsynth_lena-ffvhuff420p12.avi
+10925576 tests/data/fate/vsynth_lena-ffvhuff420p12.avi
+08b3c6c70eba608bae926608ff253f2a *tests/data/fate/vsynth_lena-ffvhuff420p12.out.rawvideo
+stddev:    0.68 PSNR: 51.38 MAXDIFF:    1 bytes:  7603200/  7603200

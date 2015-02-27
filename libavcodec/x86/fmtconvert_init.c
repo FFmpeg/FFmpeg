@@ -32,6 +32,10 @@
 
 void ff_int32_to_float_fmul_scalar_sse (float *dst, const int32_t *src, float mul, int len);
 void ff_int32_to_float_fmul_scalar_sse2(float *dst, const int32_t *src, float mul, int len);
+void ff_int32_to_float_fmul_array8_sse (FmtConvertContext *c, float *dst, const int32_t *src,
+                                        const float *mul, int len);
+void ff_int32_to_float_fmul_array8_sse2(FmtConvertContext *c, float *dst, const int32_t *src,
+                                        const float *mul, int len);
 
 void ff_float_to_int16_3dnow(int16_t *dst, const float *src, long len);
 void ff_float_to_int16_sse  (int16_t *dst, const float *src, long len);
@@ -134,12 +138,14 @@ av_cold void ff_fmt_convert_init_x86(FmtConvertContext *c, AVCodecContext *avctx
     }
     if (EXTERNAL_SSE(cpu_flags)) {
         c->int32_to_float_fmul_scalar = ff_int32_to_float_fmul_scalar_sse;
+        c->int32_to_float_fmul_array8 = ff_int32_to_float_fmul_array8_sse;
         c->float_to_int16             = ff_float_to_int16_sse;
         c->float_to_int16_interleave  = float_to_int16_interleave_sse;
         c->float_interleave           = float_interleave_sse;
     }
     if (EXTERNAL_SSE2(cpu_flags)) {
         c->int32_to_float_fmul_scalar = ff_int32_to_float_fmul_scalar_sse2;
+        c->int32_to_float_fmul_array8 = ff_int32_to_float_fmul_array8_sse2;
         c->float_to_int16             = ff_float_to_int16_sse2;
         c->float_to_int16_interleave  = float_to_int16_interleave_sse2;
     }

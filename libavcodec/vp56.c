@@ -473,7 +473,7 @@ static int vp56_size_changed(VP56Context *s)
     if (s->mb_width > 1000 || s->mb_height > 1000) {
         ff_set_dimensions(avctx, 0, 0);
         av_log(avctx, AV_LOG_ERROR, "picture too big\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     av_reallocp_array(&s->above_blocks, 4*s->mb_width+6,
@@ -509,11 +509,11 @@ int ff_vp56_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
     if (s->has_alpha) {
         if (remaining_buf_size < 3)
-            return -1;
+            return AVERROR_INVALIDDATA;
         alpha_offset = bytestream_get_be24(&buf);
         remaining_buf_size -= 3;
         if (remaining_buf_size < alpha_offset)
-            return -1;
+            return AVERROR_INVALIDDATA;
     }
 
     res = s->parse_header(s, buf, remaining_buf_size);
@@ -528,8 +528,9 @@ int ff_vp56_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         }
     }
 
-    if (ff_get_buffer(avctx, p, AV_GET_BUFFER_FLAG_REF) < 0)
-        return -1;
+    ret = ff_get_buffer(avctx, p, AV_GET_BUFFER_FLAG_REF);
+    if (ret < 0)
+        return ret;
 
     if (avctx->pix_fmt == AV_PIX_FMT_YUVA420P) {
         av_frame_unref(s->alpha_context->frames[VP56_FRAME_CURRENT]);
@@ -542,7 +543,7 @@ int ff_vp56_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     if (res == VP56_SIZE_CHANGE) {
         if (vp56_size_changed(s)) {
             av_frame_unref(p);
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
     }
 
@@ -564,7 +565,7 @@ int ff_vp56_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                 avctx->coded_height = bak_ch;
             }
             av_frame_unref(p);
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
     }
 
@@ -700,7 +701,7 @@ av_cold int ff_vp56_init_context(AVCodecContext *avctx, VP56Context *s,
     ff_vp3dsp_init(&s->vp3dsp, avctx->flags);
     ff_vp56dsp_init(&s->vp56dsp, avctx->codec->id);
     for (i = 0; i < 64; i++) {
-#define TRANSPOSE(x) (x >> 3) | ((x & 7) << 3)
+#define TRANSPOSE(x) (((x) >> 3) | (((x) & 7) << 3))
         s->idct_scantable[i] = TRANSPOSE(ff_zigzag_direct[i]);
 #undef TRANSPOSE
     }

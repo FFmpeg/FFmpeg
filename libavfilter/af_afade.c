@@ -230,7 +230,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
     AVFilterLink *outlink   = inlink->dst->outputs[0];
     int nb_samples          = buf->nb_samples;
     AVFrame *out_buf;
-    int64_t cur_sample = av_rescale_q(buf->pts, (AVRational){1, outlink->sample_rate}, outlink->time_base);
+    int64_t cur_sample = av_rescale_q(buf->pts, inlink->time_base, (AVRational){1, inlink->sample_rate});
 
     if ((!s->type && (s->start_sample + s->nb_samples < cur_sample)) ||
         ( s->type && (cur_sample + s->nb_samples < s->start_sample)))

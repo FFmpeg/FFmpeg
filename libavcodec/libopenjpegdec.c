@@ -51,7 +51,7 @@
                            AV_PIX_FMT_RGB48, AV_PIX_FMT_RGBA64
 
 #define GRAY_PIXEL_FORMATS AV_PIX_FMT_GRAY8, AV_PIX_FMT_YA8,                  \
-                           AV_PIX_FMT_GRAY16
+                           AV_PIX_FMT_GRAY16, AV_PIX_FMT_YA16
 
 #define YUV_PIXEL_FORMATS  AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUV411P, AV_PIX_FMT_YUVA420P, \
                            AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUVA422P, \
@@ -80,7 +80,7 @@ static const enum AVPixelFormat libopenjpeg_all_pix_fmts[]  = {
     RGB_PIXEL_FORMATS, GRAY_PIXEL_FORMATS, YUV_PIXEL_FORMATS, XYZ_PIXEL_FORMATS
 };
 
-typedef struct {
+typedef struct LibOpenJPEGContext {
     AVClass *class;
     opj_dparameters_t dec_params;
     int lowqual;

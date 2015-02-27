@@ -266,6 +266,9 @@ typedef struct VP8Context {
     vp8_mc_func put_pixels_tab[3][3][3];
     VP8Frame frames[5];
 
+    uint8_t colorspace; ///< 0 is the only value allowed (meaning bt601)
+    uint8_t fullrange;  ///< whether we can skip clamping in dsp functions
+
     int num_jobs;
     /**
      * This describes the macroblock memory layout.

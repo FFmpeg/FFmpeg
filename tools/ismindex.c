@@ -50,6 +50,7 @@
 #include "cmdutils.h"
 
 #include "libavformat/avformat.h"
+#include "libavformat/isom.h"
 #include "libavformat/os_support.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mathematics.h"
@@ -226,6 +227,94 @@ fail:
     return ret;
 }
 
+static int64_t read_trun_duration(AVIOContext *in, int default_duration,
+                                  int64_t end)
+{
+    int64_t ret = 0;
+    int64_t pos;
+    int flags, i;
+    int entries;
+    avio_r8(in); /* version */
+    flags = avio_rb24(in);
+    if (default_duration <= 0 && !(flags & MOV_TRUN_SAMPLE_DURATION)) {
+        fprintf(stderr, "No sample duration in trun flags\n");
+        return -1;
+    }
+    entries = avio_rb32(in);
+
+    if (flags & MOV_TRUN_DATA_OFFSET)        avio_rb32(in);
+    if (flags & MOV_TRUN_FIRST_SAMPLE_FLAGS) avio_rb32(in);
+
+    pos = avio_tell(in);
+    for (i = 0; i < entries && pos < end; i++) {
+        int sample_duration = default_duration;
+        if (flags & MOV_TRUN_SAMPLE_DURATION) sample_duration = avio_rb32(in);
+        if (flags & MOV_TRUN_SAMPLE_SIZE)     avio_rb32(in);
+        if (flags & MOV_TRUN_SAMPLE_FLAGS)    avio_rb32(in);
+        if (flags & MOV_TRUN_SAMPLE_CTS)      avio_rb32(in);
+        if (sample_duration < 0) {
+            fprintf(stderr, "Negative sample duration %d\n", sample_duration);
+            return -1;
+        }
+        ret += sample_duration;
+        pos = avio_tell(in);
+    }
+
+    return ret;
+}
+
+static int64_t read_moof_duration(AVIOContext *in, int64_t offset)
+{
+    int64_t ret = -1;
+    int32_t moof_size, size, tag;
+    int64_t pos = 0;
+    int default_duration = 0;
+
+    avio_seek(in, offset, SEEK_SET);
+    moof_size = avio_rb32(in);
+    tag  = avio_rb32(in);
+    if (expect_tag(tag, MKBETAG('m', 'o', 'o', 'f')) != 0)
+        goto fail;
+    while (pos < offset + moof_size) {
+        pos = avio_tell(in);
+        size = avio_rb32(in);
+        tag  = avio_rb32(in);
+        if (tag == MKBETAG('t', 'r', 'a', 'f')) {
+            int64_t traf_pos = pos;
+            int64_t traf_size = size;
+            while (pos < traf_pos + traf_size) {
+                pos = avio_tell(in);
+                size = avio_rb32(in);
+                tag  = avio_rb32(in);
+                if (tag == MKBETAG('t', 'f', 'h', 'd')) {
+                    int flags = 0;
+                    avio_r8(in); /* version */
+                    flags = avio_rb24(in);
+                    avio_rb32(in); /* track_id */
+                    if (flags & MOV_TFHD_BASE_DATA_OFFSET)
+                        avio_rb64(in);
+                    if (flags & MOV_TFHD_STSD_ID)
+                        avio_rb32(in);
+                    if (flags & MOV_TFHD_DEFAULT_DURATION)
+                        default_duration = avio_rb32(in);
+                }
+                if (tag == MKBETAG('t', 'r', 'u', 'n')) {
+                    return read_trun_duration(in, default_duration,
+                                              pos + size);
+                }
+                avio_seek(in, pos + size, SEEK_SET);
+            }
+            fprintf(stderr, "Couldn't find trun\n");
+            goto fail;
+        }
+        avio_seek(in, pos + size, SEEK_SET);
+    }
+    fprintf(stderr, "Couldn't find traf\n");
+
+fail:
+    return ret;
+}
+
 static int read_tfra(struct Tracks *tracks, int start_index, AVIOContext *f)
 {
     int ret = AVERROR_EOF, track_id;
@@ -251,16 +340,12 @@ static int read_tfra(struct Tracks *tracks, int start_index, AVIOContext *f)
     track->chunks  = avio_rb32(f);
     track->offsets = av_mallocz_array(track->chunks, sizeof(*track->offsets));
     if (!track->offsets) {
+        track->chunks = 0;
         ret = AVERROR(ENOMEM);
         goto fail;
     }
     // The duration here is always the difference between consecutive
-    // start times and doesn't even try to read the actual duration of the
-    // media fragments. This is what other smooth streaming tools tend to
-    // do too, but cannot express missing fragments, and the start times
-    // may not match the stream metadata we get from libavformat. Correct
-    // calculation would require parsing the tfxd atom (if present, it's
-    // not mandatory) or parsing the full moof atoms separately.
+    // start times.
     for (i = 0; i < track->chunks; i++) {
         if (version == 1) {
             track->offsets[i].time   = avio_rb64(f);
@@ -283,6 +368,17 @@ static int read_tfra(struct Tracks *tracks, int start_index, AVIOContext *f)
         track->offsets[track->chunks - 1].duration = track->offsets[0].time +
                                                      track->duration -
                                                      track->offsets[track->chunks - 1].time;
+    }
+    // Now try and read the actual durations from the trun sample data.
+    for (i = 0; i < track->chunks; i++) {
+        int64_t duration = read_moof_duration(f, track->offsets[i].offset);
+        if (duration > 0 && abs(duration - track->offsets[i].duration) > 3) {
+            // 3 allows for integer duration to drift a few units,
+            // e.g., for 1/3 durations
+            track->offsets[i].duration = duration;
+        }
+    }
+    if (track->chunks > 0) {
         if (track->offsets[track->chunks - 1].duration <= 0) {
             fprintf(stderr, "Calculated last chunk duration for track %d "
                     "was non-positive (%"PRId64"), probably due to missing "
@@ -353,10 +449,11 @@ fail:
 
 static int get_private_data(struct Track *track, AVCodecContext *codec)
 {
-    track->codec_private_size = codec->extradata_size;
+    track->codec_private_size = 0;
     track->codec_private      = av_mallocz(codec->extradata_size);
     if (!track->codec_private)
         return AVERROR(ENOMEM);
+    track->codec_private_size = codec->extradata_size;
     memcpy(track->codec_private, codec->extradata, codec->extradata_size);
     return 0;
 }
@@ -435,8 +532,9 @@ static int handle_file(struct Tracks *tracks, const char *file, int split,
             err = AVERROR(ENOMEM);
             goto fail;
         }
-        temp = av_realloc(tracks->tracks,
-                          sizeof(*tracks->tracks) * (tracks->nb_tracks + 1));
+        temp = av_realloc_array(tracks->tracks,
+                                tracks->nb_tracks + 1,
+                                sizeof(*tracks->tracks));
         if (!temp) {
             av_free(track);
             err = AVERROR(ENOMEM);
@@ -577,10 +675,6 @@ static void print_track_chunks(FILE *out, struct Tracks *tracks, int main,
         fprintf(out, "\t\t<c n=\"%d\" d=\"%"PRId64"\" ",
                 i, track->offsets[i].duration);
         if (pos != track->offsets[i].time) {
-            // With the current logic for calculation of durations from
-            // chunk start times, this branch can only be hit on the first
-            // chunk - but that's still useful and this will keep working
-            // if the duration calculation is improved.
             fprintf(out, "t=\"%"PRId64"\" ", track->offsets[i].time);
             pos = track->offsets[i].time;
         }

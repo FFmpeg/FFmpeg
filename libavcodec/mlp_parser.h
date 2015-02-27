@@ -32,6 +32,7 @@
 typedef struct MLPHeaderInfo
 {
     int stream_type;                        ///< 0xBB for MLP, 0xBA for TrueHD
+    int header_size;                        ///< Size of the major sync header, in bytes
 
     int group1_bits;                        ///< The bit depth of the first substream
     int group2_bits;                        ///< Bit depth of the second substream (MLP only)

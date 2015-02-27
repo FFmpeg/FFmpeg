@@ -59,7 +59,7 @@ typedef struct {
 
 static const AVOption concat_options[] = {
     { "n", "specify the number of segments", OFFSET(nb_segments),
-      AV_OPT_TYPE_INT, { .i64 = 2 }, 2, INT_MAX, V|A|F},
+      AV_OPT_TYPE_INT, { .i64 = 2 }, 1, INT_MAX, V|A|F},
     { "v", "specify the number of video streams",
       OFFSET(nb_streams[AVMEDIA_TYPE_VIDEO]),
       AV_OPT_TYPE_INT, { .i64 = 1 }, 0, INT_MAX, V|F },
@@ -409,7 +409,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     }
     for (i = 0; i < ctx->nb_outputs; i++)
         av_freep(&ctx->output_pads[i].name);
-    av_free(cat->in);
+    av_freep(&cat->in);
 }
 
 AVFilter ff_avf_concat = {

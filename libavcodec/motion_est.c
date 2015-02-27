@@ -36,9 +36,6 @@
 #include "mpegutils.h"
 #include "mpegvideo.h"
 
-#undef NDEBUG
-#include <assert.h>
-
 #define P_LEFT P[1]
 #define P_TOP P[2]
 #define P_TOPRIGHT P[3]
@@ -193,7 +190,13 @@ static av_always_inline int cmp_inline(MpegEncContext *s, const int x, const int
         int uvdxy;              /* no, it might not be used uninitialized */
         if(dxy){
             if(qpel){
-                c->qpel_put[size][dxy](c->temp, ref[0] + x + y*stride, stride); //FIXME prototype (add h)
+                if (h << size == 16) {
+                    c->qpel_put[size][dxy](c->temp, ref[0] + x + y*stride, stride); //FIXME prototype (add h)
+                } else if (size == 0 && h == 8) {
+                    c->qpel_put[1][dxy](c->temp    , ref[0] + x + y*stride    , stride);
+                    c->qpel_put[1][dxy](c->temp + 8, ref[0] + x + y*stride + 8, stride);
+                } else
+                    av_assert2(0);
                 if(chroma){
                     int cx= hx/2;
                     int cy= hy/2;
@@ -290,7 +293,7 @@ static int cmp_qpel(MpegEncContext *s, const int x, const int y, const int subx,
 #include "motion_est_template.c"
 
 static int zero_cmp(MpegEncContext *s, uint8_t *a, uint8_t *b,
-                    int stride, int h)
+                    ptrdiff_t stride, int h)
 {
     return 0;
 }
@@ -314,6 +317,9 @@ int ff_init_me(MpegEncContext *s){
     }
 
     c->avctx= s->avctx;
+
+    if(s->codec_id == AV_CODEC_ID_H261)
+        c->avctx->me_sub_cmp = c->avctx->me_cmp;
 
     if(cache_size < 2*dia_size && !c->stride){
         av_log(s->avctx, AV_LOG_INFO, "ME_MAP size may be a little small for the selected diamond size\n");
@@ -971,27 +977,7 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
     pic->mc_mb_var[s->mb_stride * mb_y + mb_x] = (vard+128)>>8;
     c->mc_mb_var_sum_temp += (vard+128)>>8;
 
-    if(mb_type){
-        int p_score= FFMIN(vard, varc-500+(s->lambda2>>FF_LAMBDA_SHIFT)*100);
-        int i_score= varc-500+(s->lambda2>>FF_LAMBDA_SHIFT)*20;
-        c->scene_change_score+= ff_sqrt(p_score) - ff_sqrt(i_score);
-
-        if(mb_type == CANDIDATE_MB_TYPE_INTER){
-            c->sub_motion_search(s, &mx, &my, dmin, 0, 0, 0, 16);
-            set_p_mv_tables(s, mx, my, 1);
-        }else{
-            mx <<=shift;
-            my <<=shift;
-        }
-        if(mb_type == CANDIDATE_MB_TYPE_INTER4V){
-            h263_mv4_search(s, mx, my, shift);
-
-            set_p_mv_tables(s, mx, my, 0);
-        }
-        if(mb_type == CANDIDATE_MB_TYPE_INTER_I){
-            interlaced_search(s, 0, s->p_field_mv_table, s->p_field_select_table, mx, my, 1);
-        }
-    }else if(c->avctx->mb_decision > FF_MB_DECISION_SIMPLE){
+    if (c->avctx->mb_decision > FF_MB_DECISION_SIMPLE) {
         int p_score= FFMIN(vard, varc-500+(s->lambda2>>FF_LAMBDA_SHIFT)*100);
         int i_score= varc-500+(s->lambda2>>FF_LAMBDA_SHIFT)*20;
         c->scene_change_score+= ff_sqrt(p_score) - ff_sqrt(i_score);

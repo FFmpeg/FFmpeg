@@ -612,10 +612,10 @@ static av_always_inline void decode_subband_internal(DiracContext *s, SubBand *b
 
     top = 0;
     for (cb_y = 0; cb_y < cb_height; cb_y++) {
-        bottom = (b->height * (cb_y+1)) / cb_height;
+        bottom = (b->height * (cb_y+1LL)) / cb_height;
         left = 0;
         for (cb_x = 0; cb_x < cb_width; cb_x++) {
-            right = (b->width * (cb_x+1)) / cb_width;
+            right = (b->width * (cb_x+1LL)) / cb_width;
             codeblock(s, b, &gb, &c, left, right, top, bottom, blockcnt_one, is_arith);
             left = right;
         }
@@ -772,7 +772,7 @@ static int decode_lowdelay_slice(AVCodecContext *avctx, void *arg)
  * Dirac Specification ->
  * 13.5.1 low_delay_transform_data()
  */
-static void decode_lowdelay(DiracContext *s)
+static int decode_lowdelay(DiracContext *s)
 {
     AVCodecContext *avctx = s->avctx;
     int slice_x, slice_y, bytes, bufsize;
@@ -781,6 +781,8 @@ static void decode_lowdelay(DiracContext *s)
     int slice_num = 0;
 
     slices = av_mallocz_array(s->lowdelay.num_x, s->lowdelay.num_y * sizeof(struct lowdelay_slice));
+    if (!slices)
+        return AVERROR(ENOMEM);
 
     align_get_bits(&s->gb);
     /*[DIRAC_STD] 13.5.2 Slices. slice(sx,sy) */
@@ -808,6 +810,7 @@ static void decode_lowdelay(DiracContext *s)
     intra_dc_prediction(&s->plane[1].band[0][0]);  /* [DIRAC_STD] 13.3 intra_dc_prediction() */
     intra_dc_prediction(&s->plane[2].band[0][0]);  /* [DIRAC_STD] 13.3 intra_dc_prediction() */
     av_free(slices);
+    return 0;
 }
 
 static void init_planes(DiracContext *s)
@@ -1004,8 +1007,8 @@ static int dirac_unpack_idwt_params(DiracContext *s)
         /* Codeblock parameters (core syntax only) */
         if (get_bits1(gb)) {
             for (i = 0; i <= s->wavelet_depth; i++) {
-                CHECKEDREAD(s->codeblock[i].width , tmp < 1, "codeblock width invalid\n")
-                CHECKEDREAD(s->codeblock[i].height, tmp < 1, "codeblock height invalid\n")
+                CHECKEDREAD(s->codeblock[i].width , tmp < 1 || tmp > (s->avctx->width >>s->wavelet_depth-i), "codeblock width invalid\n")
+                CHECKEDREAD(s->codeblock[i].height, tmp < 1 || tmp > (s->avctx->height>>s->wavelet_depth-i), "codeblock height invalid\n")
             }
 
             CHECKEDREAD(s->codeblock_mode, tmp > 1, "unknown codeblock mode\n")
@@ -1590,6 +1593,7 @@ static int dirac_decode_frame_internal(DiracContext *s)
 {
     DWTContext d;
     int y, i, comp, dsty;
+    int ret;
 
     if (s->low_delay) {
         /* [DIRAC_STD] 13.5.1 low_delay_transform_data() */
@@ -1597,8 +1601,10 @@ static int dirac_decode_frame_internal(DiracContext *s)
             Plane *p = &s->plane[comp];
             memset(p->idwt_buf, 0, p->idwt_stride * p->idwt_height * sizeof(IDWTELEM));
         }
-        if (!s->zero_res)
-            decode_lowdelay(s);
+        if (!s->zero_res) {
+            if ((ret = decode_lowdelay(s)) < 0)
+                return ret;
+        }
     }
 
     for (comp = 0; comp < 3; comp++) {

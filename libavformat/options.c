@@ -116,6 +116,7 @@ AVFormatContext *avformat_alloc_context(void)
         avformat_free_context(ic);
         return NULL;
     }
+    ic->internal->offset = AV_NOPTS_VALUE;
 
     return ic;
 }

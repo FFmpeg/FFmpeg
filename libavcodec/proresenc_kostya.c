@@ -824,10 +824,9 @@ static int find_slice_quant(AVCodecContext *avctx, const AVFrame *pic,
         if (ctx->alpha_bits)
             bits += estimate_alpha_plane(ctx, &error, src, linesize[3],
                                          mbs_per_slice, q, td->blocks[3]);
-        if (bits > 65000 * 8) {
+        if (bits > 65000 * 8)
             error = SCORE_LIMIT;
-            break;
-        }
+
         slice_bits[q]  = bits;
         slice_score[q] = error;
     }
@@ -1058,7 +1057,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                     slice_hdr        = pkt->data + (slice_hdr        - start);
                     tmp              = pkt->data + (tmp              - start);
                 }
-                init_put_bits(&pb, buf, (pkt_size - (buf - orig_buf)) * 8);
+                init_put_bits(&pb, buf, (pkt_size - (buf - orig_buf)));
                 ret = encode_slice(avctx, pic, &pb, sizes, x, y, q,
                                    mbs_per_slice);
                 if (ret < 0)
@@ -1101,7 +1100,7 @@ static av_cold int encode_close(AVCodecContext *avctx)
 
     if (ctx->tdata) {
         for (i = 0; i < avctx->thread_count; i++)
-            av_free(ctx->tdata[i].nodes);
+            av_freep(&ctx->tdata[i].nodes);
     }
     av_freep(&ctx->tdata);
     av_freep(&ctx->slice_q);
@@ -1148,11 +1147,13 @@ static av_cold int encode_init(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
     if (ctx->profile == PRORES_PROFILE_AUTO) {
-        ctx->profile = av_pix_fmt_desc_get(avctx->pix_fmt)->flags & AV_PIX_FMT_FLAG_ALPHA
+        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
+        ctx->profile = (desc->flags & AV_PIX_FMT_FLAG_ALPHA ||
+                        !(desc->log2_chroma_w + desc->log2_chroma_h))
                      ? PRORES_PROFILE_4444 : PRORES_PROFILE_HQ;
         av_log(avctx, AV_LOG_INFO, "Autoselected %s. It can be overridden "
                "through -profile option.\n", ctx->profile == PRORES_PROFILE_4444
-               ? "4:4:4:4 profile because of the alpha channel"
+               ? "4:4:4:4 profile because of the used input colorspace"
                : "HQ profile to keep best quality");
     }
     if (av_pix_fmt_desc_get(avctx->pix_fmt)->flags & AV_PIX_FMT_FLAG_ALPHA) {

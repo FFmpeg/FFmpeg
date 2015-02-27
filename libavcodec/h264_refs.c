@@ -36,13 +36,6 @@
 
 #include <assert.h>
 
-#define COPY_PICTURE(dst, src) \
-do {\
-    *(dst) = *(src);\
-    (dst)->f.extended_data = (dst)->f.data;\
-    (dst)->tf.f = &(dst)->f;\
-} while (0)
-
 
 static void pic_as_field(H264Picture *pic, const int parity){
     int i;
@@ -492,6 +485,11 @@ void ff_h264_remove_all_refs(H264Context *h)
         remove_long(h, i, 0);
     }
     assert(h->long_ref_count == 0);
+
+    if (h->short_ref_count && !h->last_pic_for_ec.f.data[0]) {
+        ff_h264_unref_picture(h, &h->last_pic_for_ec);
+        ff_h264_ref_picture(h, &h->last_pic_for_ec, h->short_ref[0]);
+    }
 
     for (i = 0; i < h->short_ref_count; i++) {
         unreference_pic(h, h->short_ref[i], 0);

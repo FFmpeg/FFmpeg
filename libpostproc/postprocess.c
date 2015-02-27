@@ -89,6 +89,9 @@ try to unroll inner for(x=0 ... loop to avoid these damn if(x ... checks
 #include "postprocess_internal.h"
 #include "libavutil/avstring.h"
 
+#include "libavutil/ffversion.h"
+const char postproc_ffversion[] = "FFmpeg version " FFMPEG_VERSION;
+
 unsigned postproc_version(void)
 {
     av_assert0(LIBPOSTPROC_VERSION_MICRO >= 100);
@@ -151,6 +154,7 @@ static const struct PPFilter filters[]=
     {"tn", "tmpnoise",              1, 7, 8, TEMP_NOISE_FILTER},
     {"fq", "forcequant",            1, 0, 0, FORCE_QUANT},
     {"be", "bitexact",              1, 0, 0, BITEXACT},
+    {"vi", "visualize",             1, 0, 0, VISUALIZE},
     {NULL, NULL,0,0,0,0} //End Marker
 };
 
@@ -166,28 +170,28 @@ static const char * const replaceTable[]=
 
 
 #if ARCH_X86 && HAVE_INLINE_ASM
-static inline void prefetchnta(void *p)
+static inline void prefetchnta(const void *p)
 {
     __asm__ volatile(   "prefetchnta (%0)\n\t"
         : : "r" (p)
     );
 }
 
-static inline void prefetcht0(void *p)
+static inline void prefetcht0(const void *p)
 {
     __asm__ volatile(   "prefetcht0 (%0)\n\t"
         : : "r" (p)
     );
 }
 
-static inline void prefetcht1(void *p)
+static inline void prefetcht1(const void *p)
 {
     __asm__ volatile(   "prefetcht1 (%0)\n\t"
         : : "r" (p)
     );
 }
 
-static inline void prefetcht2(void *p)
+static inline void prefetcht2(const void *p)
 {
     __asm__ volatile(   "prefetcht2 (%0)\n\t"
         : : "r" (p)
@@ -430,7 +434,7 @@ static inline void horizX1Filter(uint8_t *src, int stride, int QP)
  * accurate deblock filter
  */
 static av_always_inline void do_a_deblock_C(uint8_t *src, int step,
-                                            int stride, const PPContext *c)
+                                            int stride, const PPContext *c, int mode)
 {
     int y;
     const int QP= c->QP;
@@ -441,15 +445,15 @@ static av_always_inline void do_a_deblock_C(uint8_t *src, int step,
     for(y=0; y<8; y++){
         int numEq= 0;
 
-        if(((unsigned)(src[-1*step] - src[0*step] + dcOffset)) < dcThreshold) numEq++;
-        if(((unsigned)(src[ 0*step] - src[1*step] + dcOffset)) < dcThreshold) numEq++;
-        if(((unsigned)(src[ 1*step] - src[2*step] + dcOffset)) < dcThreshold) numEq++;
-        if(((unsigned)(src[ 2*step] - src[3*step] + dcOffset)) < dcThreshold) numEq++;
-        if(((unsigned)(src[ 3*step] - src[4*step] + dcOffset)) < dcThreshold) numEq++;
-        if(((unsigned)(src[ 4*step] - src[5*step] + dcOffset)) < dcThreshold) numEq++;
-        if(((unsigned)(src[ 5*step] - src[6*step] + dcOffset)) < dcThreshold) numEq++;
-        if(((unsigned)(src[ 6*step] - src[7*step] + dcOffset)) < dcThreshold) numEq++;
-        if(((unsigned)(src[ 7*step] - src[8*step] + dcOffset)) < dcThreshold) numEq++;
+        numEq += ((unsigned)(src[-1*step] - src[0*step] + dcOffset)) < dcThreshold;
+        numEq += ((unsigned)(src[ 0*step] - src[1*step] + dcOffset)) < dcThreshold;
+        numEq += ((unsigned)(src[ 1*step] - src[2*step] + dcOffset)) < dcThreshold;
+        numEq += ((unsigned)(src[ 2*step] - src[3*step] + dcOffset)) < dcThreshold;
+        numEq += ((unsigned)(src[ 3*step] - src[4*step] + dcOffset)) < dcThreshold;
+        numEq += ((unsigned)(src[ 4*step] - src[5*step] + dcOffset)) < dcThreshold;
+        numEq += ((unsigned)(src[ 5*step] - src[6*step] + dcOffset)) < dcThreshold;
+        numEq += ((unsigned)(src[ 6*step] - src[7*step] + dcOffset)) < dcThreshold;
+        numEq += ((unsigned)(src[ 7*step] - src[8*step] + dcOffset)) < dcThreshold;
         if(numEq > c->ppMode.flatnessThreshold){
             int min, max, x;
 
@@ -485,6 +489,16 @@ static av_always_inline void do_a_deblock_C(uint8_t *src, int step,
                 sums[8] = sums[7] - src[3*step] + last;
                 sums[9] = sums[8] - src[4*step] + last;
 
+                if (mode & VISUALIZE) {
+                    src[0*step] =
+                    src[1*step] =
+                    src[2*step] =
+                    src[3*step] =
+                    src[4*step] =
+                    src[5*step] =
+                    src[6*step] =
+                    src[7*step] = 128;
+                }
                 src[0*step]= (sums[0] + sums[2] + 2*src[0*step])>>4;
                 src[1*step]= (sums[1] + sums[3] + 2*src[1*step])>>4;
                 src[2*step]= (sums[2] + sums[4] + 2*src[2*step])>>4;
@@ -514,6 +528,13 @@ static av_always_inline void do_a_deblock_C(uint8_t *src, int step,
                 }else{
                     d = FFMIN(d, 0);
                     d = FFMAX(d, q);
+                }
+
+                if ((mode & VISUALIZE) && d) {
+                    d= (d < 0) ? 32 : -32;
+                    src[3*step]= av_clip_uint8(src[3*step] - d);
+                    src[4*step]= av_clip_uint8(src[4*step] + d);
+                    d = 0;
                 }
 
                 src[3*step]-= d;
@@ -679,6 +700,8 @@ pp_mode *pp_get_mode_by_name_and_quality(const char *name, int quality)
     }
 
     ppMode= av_malloc(sizeof(PPMode));
+    if (!ppMode)
+        return NULL;
 
     ppMode->lumMode= 0;
     ppMode->chromMode= 0;
@@ -892,11 +915,13 @@ static const char * context_to_name(void * ptr) {
 static const AVClass av_codec_context_class = { "Postproc", context_to_name, NULL };
 
 pp_context *pp_get_context(int width, int height, int cpuCaps){
-    PPContext *c= av_malloc(sizeof(PPContext));
+    PPContext *c= av_mallocz(sizeof(PPContext));
     int stride= FFALIGN(width, 16);  //assumed / will realloc if needed
     int qpStride= (width+15)/16 + 2; //assumed / will realloc if needed
 
-    memset(c, 0, sizeof(PPContext));
+    if (!c)
+        return NULL;
+
     c->av_class = &av_codec_context_class;
     if(cpuCaps&PP_FORMAT){
         c->hChromaSubSample= cpuCaps&0x3;
@@ -976,7 +1001,7 @@ void  pp_postprocess(const uint8_t * src[3], const int srcStride[3],
 
     if(pict_type & PP_PICT_TYPE_QP2){
         int i;
-        const int count= mbHeight * absQPStride;
+        const int count= FFMAX(mbHeight * absQPStride, mbWidth);
         for(i=0; i<(count>>2); i++){
             ((uint32_t*)c->stdQPTable)[i] = (((const uint32_t*)QP_store)[i]>>1) & 0x7F7F7F7F;
         }
@@ -1001,7 +1026,7 @@ void  pp_postprocess(const uint8_t * src[3], const int srcStride[3],
     if((pict_type&7)!=3){
         if (QPStride >= 0){
             int i;
-            const int count= mbHeight * QPStride;
+            const int count= FFMAX(mbHeight * QPStride, mbWidth);
             for(i=0; i<(count>>2); i++){
                 ((uint32_t*)c->nonBQPTable)[i] = ((const uint32_t*)QP_store)[i] & 0x3F3F3F3F;
             }
@@ -1023,6 +1048,9 @@ void  pp_postprocess(const uint8_t * src[3], const int srcStride[3],
 
     postProcess(src[0], srcStride[0], dst[0], dstStride[0],
                 width, height, QP_store, QPStride, 0, mode, c);
+
+    if (!(src[1] && src[2] && dst[1] && dst[2]))
+        return;
 
     width  = (width )>>c->hChromaSubSample;
     height = (height)>>c->vChromaSubSample;

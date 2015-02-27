@@ -362,7 +362,7 @@ static av_cold int uninit(AVCodecContext *avctx)
         av_bitstream_filter_close(priv->bsfc);
     }
 
-    av_free(priv->sps_pps_buf);
+    av_freep(&priv->sps_pps_buf);
 
     av_frame_free (&priv->pic);
 

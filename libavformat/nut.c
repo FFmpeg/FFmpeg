@@ -40,6 +40,8 @@ const AVCodecTag ff_nut_data_tags[] = {
 };
 
 const AVCodecTag ff_nut_video_tags[] = {
+    { AV_CODEC_ID_GIF,              MKTAG('G', 'I', 'F',  0 ) },
+    { AV_CODEC_ID_XFACE,            MKTAG('X', 'F', 'A', 'C') },
     { AV_CODEC_ID_VP9,              MKTAG('V', 'P', '9', '0') },
     { AV_CODEC_ID_RAWVIDEO,         MKTAG('R', 'G', 'B', 15 ) },
     { AV_CODEC_ID_RAWVIDEO,         MKTAG('B', 'G', 'R', 15 ) },
@@ -181,6 +183,7 @@ const AVCodecTag ff_nut_audio_extra_tags[] = {
     { AV_CODEC_ID_PCM_ALAW,         MKTAG('A', 'L', 'A', 'W') },
     { AV_CODEC_ID_PCM_MULAW,        MKTAG('U', 'L', 'A', 'W') },
     { AV_CODEC_ID_MP3,              MKTAG('M', 'P', '3', ' ') },
+    { AV_CODEC_ID_WAVPACK,          MKTAG('w', 'v', 'p', 'k') },
     { AV_CODEC_ID_NONE,             0                         }
 };
 

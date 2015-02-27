@@ -28,14 +28,11 @@
 #include "wma_freqs.h"
 #include "wmadata.h"
 
-#undef NDEBUG
-#include <assert.h>
-
 /* XXX: use same run/length optimization as mpeg decoders */
 // FIXME maybe split decode / encode or pass flag
-static av_cold void init_coef_vlc(VLC *vlc, uint16_t **prun_table,
-                                  float **plevel_table, uint16_t **pint_table,
-                                  const CoefVLCTable *vlc_table)
+static av_cold int init_coef_vlc(VLC *vlc, uint16_t **prun_table,
+                                 float **plevel_table, uint16_t **pint_table,
+                                 const CoefVLCTable *vlc_table)
 {
     int n                        = vlc_table->n;
     const uint8_t  *table_bits   = vlc_table->huffbits;
@@ -51,6 +48,13 @@ static av_cold void init_coef_vlc(VLC *vlc, uint16_t **prun_table,
     level_table  = av_malloc_array(n, sizeof(uint16_t));
     flevel_table = av_malloc_array(n, sizeof(*flevel_table));
     int_table    = av_malloc_array(n, sizeof(uint16_t));
+    if (!run_table || !level_table || !flevel_table || !int_table) {
+        av_freep(&run_table);
+        av_freep(&level_table);
+        av_freep(&flevel_table);
+        av_freep(&int_table);
+        return AVERROR(ENOMEM);
+    }
     i            = 2;
     level        = 1;
     k            = 0;
@@ -69,12 +73,14 @@ static av_cold void init_coef_vlc(VLC *vlc, uint16_t **prun_table,
     *plevel_table = flevel_table;
     *pint_table   = int_table;
     av_free(level_table);
+
+    return 0;
 }
 
 av_cold int ff_wma_init(AVCodecContext *avctx, int flags2)
 {
     WMACodecContext *s = avctx->priv_data;
-    int i;
+    int i, ret;
     float bps1, high_freq;
     volatile float bps;
     int sample_rate1;
@@ -86,7 +92,6 @@ av_cold int ff_wma_init(AVCodecContext *avctx, int flags2)
         return -1;
 
     ff_fmt_convert_init(&s->fmt_conv, avctx);
-    avpriv_float_dsp_init(&s->fdsp, avctx->flags & CODEC_FLAG_BITEXACT);
 
     if (avctx->codec->id == AV_CODEC_ID_WMAV1)
         s->version = 1;
@@ -333,6 +338,10 @@ av_cold int ff_wma_init(AVCodecContext *avctx, int flags2)
 #endif /* TRACE */
     }
 
+    s->fdsp = avpriv_float_dsp_alloc(avctx->flags & CODEC_FLAG_BITEXACT);
+    if (!s->fdsp)
+        return AVERROR(ENOMEM);
+
     /* choose the VLC tables for the coefficients */
     coef_vlc_table = 2;
     if (avctx->sample_rate >= 32000) {
@@ -343,12 +352,13 @@ av_cold int ff_wma_init(AVCodecContext *avctx, int flags2)
     }
     s->coef_vlcs[0] = &coef_vlcs[coef_vlc_table * 2];
     s->coef_vlcs[1] = &coef_vlcs[coef_vlc_table * 2 + 1];
-    init_coef_vlc(&s->coef_vlc[0], &s->run_table[0], &s->level_table[0],
-                  &s->int_table[0], s->coef_vlcs[0]);
-    init_coef_vlc(&s->coef_vlc[1], &s->run_table[1], &s->level_table[1],
-                  &s->int_table[1], s->coef_vlcs[1]);
+    ret = init_coef_vlc(&s->coef_vlc[0], &s->run_table[0], &s->level_table[0],
+                        &s->int_table[0], s->coef_vlcs[0]);
+    if (ret < 0)
+        return ret;
 
-    return 0;
+    return init_coef_vlc(&s->coef_vlc[1], &s->run_table[1], &s->level_table[1],
+                         &s->int_table[1], s->coef_vlcs[1]);
 }
 
 int ff_wma_total_gain_to_bits(int total_gain)
@@ -383,6 +393,7 @@ int ff_wma_end(AVCodecContext *avctx)
         av_freep(&s->level_table[i]);
         av_freep(&s->int_table[i]);
     }
+    av_freep(&s->fdsp);
 
     return 0;
 }
@@ -473,7 +484,11 @@ int ff_wma_run_level_decode(AVCodecContext *avctx, GetBitContext *gb,
     }
     /** NOTE: EOB can be omitted */
     if (offset > num_coefs) {
-        av_log(avctx, AV_LOG_ERROR, "overflow in spectral RLE, ignoring\n");
+        av_log(avctx, AV_LOG_ERROR,
+               "overflow (%d > %d) in spectral RLE, ignoring\n",
+               offset,
+               num_coefs
+              );
         return -1;
     }
 

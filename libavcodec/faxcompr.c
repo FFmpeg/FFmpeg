@@ -251,7 +251,7 @@ static void put_line(uint8_t *dst, int size, int width, const int *runs)
     PutBitContext pb;
     int run, mode = ~0, pix_left = width, run_idx = 0;
 
-    init_put_bits(&pb, dst, size * 8);
+    init_put_bits(&pb, dst, size);
     while (pix_left > 0) {
         run       = runs[run_idx++];
         mode      = ~mode;
@@ -296,7 +296,8 @@ int ff_ccitt_unpack(AVCodecContext *avctx, const uint8_t *src, int srcsize,
     ref[0] = avctx->width;
     ref[1] = 0;
     ref[2] = 0;
-    init_get_bits(&gb, src, srcsize * 8);
+    if ((ret = init_get_bits8(&gb, src, srcsize)) < 0)
+        goto fail;
     has_eol = show_bits(&gb, 12) == 1 || show_bits(&gb, 16) == 1;
 
     for (j = 0; j < height; j++) {

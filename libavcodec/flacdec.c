@@ -34,7 +34,6 @@
 #include <limits.h>
 
 #include "libavutil/avassert.h"
-#include "libavutil/channel_layout.h"
 #include "libavutil/crc.h"
 #include "avcodec.h"
 #include "internal.h"
@@ -103,16 +102,16 @@ static av_cold int flac_decode_init(AVCodecContext *avctx)
     if (!avctx->extradata)
         return 0;
 
-    if (!avpriv_flac_is_extradata_valid(avctx, &format, &streaminfo))
+    if (!ff_flac_is_extradata_valid(avctx, &format, &streaminfo))
         return AVERROR_INVALIDDATA;
 
     /* initialize based on the demuxer-supplied streamdata header */
-    avpriv_flac_parse_streaminfo(avctx, (FLACStreaminfo *)s, streaminfo);
+    ff_flac_parse_streaminfo(avctx, (FLACStreaminfo *)s, streaminfo);
     ret = allocate_buffers(s);
     if (ret < 0)
         return ret;
     flac_set_bps(s);
-    ff_flacdsp_init(&s->dsp, avctx->sample_fmt, s->bps);
+    ff_flacdsp_init(&s->dsp, avctx->sample_fmt, s->channels, s->bps);
     s->got_streaminfo = 1;
 
     return 0;
@@ -169,12 +168,12 @@ static int parse_streaminfo(FLACContext *s, const uint8_t *buf, int buf_size)
         metadata_size != FLAC_STREAMINFO_SIZE) {
         return AVERROR_INVALIDDATA;
     }
-    avpriv_flac_parse_streaminfo(s->avctx, (FLACStreaminfo *)s, &buf[8]);
+    ff_flac_parse_streaminfo(s->avctx, (FLACStreaminfo *)s, &buf[8]);
     ret = allocate_buffers(s);
     if (ret < 0)
         return ret;
     flac_set_bps(s);
-    ff_flacdsp_init(&s->dsp, s->avctx->sample_fmt, s->bps);
+    ff_flacdsp_init(&s->dsp, s->avctx->sample_fmt, s->channels, s->bps);
     s->got_streaminfo = 1;
 
     return 0;
@@ -367,7 +366,7 @@ static inline int decode_subframe(FLACContext *s, int channel)
 
     if (get_bits1(&s->gb)) {
         int left = get_bits_left(&s->gb);
-        if ( left < 0 ||
+        if ( left <= 0 ||
             (left < bps && !show_bits_long(&s->gb, left)) ||
                            !show_bits_long(&s->gb, bps)) {
             av_log(s->avctx, AV_LOG_ERROR,
@@ -473,10 +472,10 @@ static int decode_frame(FLACContext *s)
         ret = allocate_buffers(s);
         if (ret < 0)
             return ret;
-        ff_flacdsp_init(&s->dsp, s->avctx->sample_fmt, s->bps);
         s->got_streaminfo = 1;
         dump_headers(s->avctx, (FLACStreaminfo *)s);
     }
+    ff_flacdsp_init(&s->dsp, s->avctx->sample_fmt, s->channels, s->bps);
 
 //    dump_headers(s->avctx, (FLACStreaminfo *)s);
 

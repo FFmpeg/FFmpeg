@@ -180,7 +180,7 @@ int ff_avc_write_annexb_extradata(const uint8_t *in, uint8_t **buf, int *size)
     if (11 + sps_size + pps_size > *size)
         return AVERROR_INVALIDDATA;
     out_size = 8 + sps_size + pps_size;
-    out = av_mallocz(out_size);
+    out = av_mallocz(out_size + FF_INPUT_BUFFER_PADDING_SIZE);
     if (!out)
         return AVERROR(ENOMEM);
     AV_WB32(&out[0], 0x00000001);
@@ -190,4 +190,21 @@ int ff_avc_write_annexb_extradata(const uint8_t *in, uint8_t **buf, int *size)
     *buf = out;
     *size = out_size;
     return 0;
+}
+
+const uint8_t *ff_avc_mp4_find_startcode(const uint8_t *start,
+                                         const uint8_t *end,
+                                         int nal_length_size)
+{
+    unsigned int res = 0;
+
+    if (end - start < nal_length_size)
+        return NULL;
+    while (nal_length_size--)
+        res = (res << 8) | *start++;
+
+    if (res > end - start)
+        return NULL;
+
+    return start + res;
 }

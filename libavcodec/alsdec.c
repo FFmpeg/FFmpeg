@@ -152,7 +152,7 @@ enum RA_Flag {
 };
 
 
-typedef struct {
+typedef struct ALSSpecificConfig {
     uint32_t samples;         ///< number of samples, 0xFFFFFFFF if unknown
     int resolution;           ///< 000 = 8-bit; 001 = 16-bit; 010 = 24-bit; 011 = 32-bit
     int floating;             ///< 1 = IEEE 32-bit floating-point, 0 = integer
@@ -178,7 +178,7 @@ typedef struct {
 } ALSSpecificConfig;
 
 
-typedef struct {
+typedef struct ALSChannelData {
     int stop_flag;
     int master_channel;
     int time_diff_flag;
@@ -188,7 +188,7 @@ typedef struct {
 } ALSChannelData;
 
 
-typedef struct {
+typedef struct ALSDecContext {
     AVCodecContext *avctx;
     ALSSpecificConfig sconf;
     GetBitContext gb;
@@ -228,7 +228,7 @@ typedef struct {
 } ALSDecContext;
 
 
-typedef struct {
+typedef struct ALSBlockData {
     unsigned int block_length;      ///< number of samples within the block
     unsigned int ra_block;          ///< if true, this is a random access block
     int          *const_block;      ///< if true, this is a constant value block
@@ -1478,7 +1478,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
     int invalid_frame, ret;
     unsigned int c, sample, ra_frame, bytes_read, shift;
 
-    init_get_bits(&ctx->gb, buffer, buffer_size * 8);
+    if ((ret = init_get_bits8(&ctx->gb, buffer, buffer_size)) < 0)
+        return ret;
 
     // In the case that the distance between random access frames is set to zero
     // (sconf->ra_distance == 0) no frame is treated as a random access frame.

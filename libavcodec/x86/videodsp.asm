@@ -97,7 +97,10 @@ cglobal emu_edge_hvar, 5, 6, 1, dst, dst_stride, start_x, n_words, h, w
     neg        n_wordsq
     lea        start_xq, [start_xq+n_wordsq*2]
 .y_loop:                                        ; do {
-    ; FIXME also write a ssse3 version using pshufb
+%if cpuflag(avx2)
+    vpbroadcastb     m0, [dstq+start_xq]
+    mov              wq, n_wordsq               ;   initialize w
+%else
     movzx            wd, byte [dstq+start_xq]   ;   w = read(1)
     imul             wd, 0x01010101             ;   w *= 0x01010101
     movd             m0, wd
@@ -107,6 +110,7 @@ cglobal emu_edge_hvar, 5, 6, 1, dst, dst_stride, start_x, n_words, h, w
 %else ; mmx
     punpckldq        m0, m0                     ;   splat
 %endif ; mmx/sse
+%endif ; avx2
 .x_loop:                                        ;   do {
     movu    [dstq+wq*2], m0                     ;     write($reg, $mmsize)
     add              wq, mmsize/2               ;     w -= $mmsize/2
@@ -126,6 +130,11 @@ hvar_fn
 
 INIT_XMM sse2
 hvar_fn
+
+%if HAVE_AVX2_EXTERNAL
+INIT_XMM avx2
+hvar_fn
+%endif
 
 ; macro to read/write a horizontal number of pixels (%2) to/from registers
 ; on sse, - fills xmm0-15 for consecutive sets of 16 pixels
@@ -344,6 +353,9 @@ VERTICAL_EXTEND 16, 22
 ; obviously not the same on both sides.
 
 %macro READ_V_PIXEL 2
+%if cpuflag(avx2)
+    vpbroadcastb     m0, %2
+%else
     movzx          vald, byte %2
     imul           vald, 0x01010101
 %if %1 >= 8
@@ -354,6 +366,7 @@ VERTICAL_EXTEND 16, 22
     punpckldq        m0, m0
 %endif ; mmsize == 16
 %endif ; %1 > 16
+%endif ; avx2
 %endmacro ; READ_V_PIXEL
 
 %macro WRITE_V_PIXEL 2
@@ -398,14 +411,22 @@ VERTICAL_EXTEND 16, 22
 %endif ; %1 >=/< 8
 
 %if %1-%%off == 2
+%if cpuflag(avx2)
+    movd     [%2+%%off-2], m0
+%else
     mov      [%2+%%off], valw
+%endif ; avx2
 %endif ; (%1-%%off)/2
 %endmacro ; WRITE_V_PIXEL
 
 %macro H_EXTEND 2
 %assign %%n %1
 %rep 1+(%2-%1)/2
+%if cpuflag(avx2)
+cglobal emu_edge_hfix %+ %%n, 4, 4, 1, dst, dst_stride, start_x, bh
+%else
 cglobal emu_edge_hfix %+ %%n, 4, 5, 1, dst, dst_stride, start_x, bh, val
+%endif
 .loop_y:                                        ; do {
     READ_V_PIXEL    %%n, [dstq+start_xq]        ;   $variable_regs = read($n)
     WRITE_V_PIXEL   %%n, dstq                   ;   write($variable_regs, $n)
@@ -425,6 +446,11 @@ H_EXTEND 16, 22
 
 INIT_XMM sse2
 H_EXTEND 16, 22
+
+%if HAVE_AVX2_EXTERNAL
+INIT_XMM avx2
+H_EXTEND 8, 22
+%endif
 
 %macro PREFETCH_FN 1
 cglobal prefetch, 3, 3, 0, buf, stride, h

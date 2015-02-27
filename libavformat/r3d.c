@@ -25,13 +25,13 @@
 #include "avformat.h"
 #include "internal.h"
 
-typedef struct {
+typedef struct R3DContext {
     unsigned video_offsets_count;
     unsigned *video_offsets;
     unsigned rdvo_offset;
 } R3DContext;
 
-typedef struct {
+typedef struct Atom {
     unsigned size;
     uint32_t tag;
     uint64_t offset;
@@ -185,8 +185,8 @@ static int r3d_read_header(AVFormatContext *s)
         return -1;
     }
 
-    s->data_offset = avio_tell(s->pb);
-    av_dlog(s, "data offset %#"PRIx64"\n", s->data_offset);
+    s->internal->data_offset = avio_tell(s->pb);
+    av_dlog(s, "data offset %#"PRIx64"\n", s->internal->data_offset);
     if (!s->pb->seekable)
         return 0;
     // find REOB/REOF/REOS to load index
@@ -212,7 +212,7 @@ static int r3d_read_header(AVFormatContext *s)
     }
 
  out:
-    avio_seek(s->pb, s->data_offset, SEEK_SET);
+    avio_seek(s->pb, s->internal->data_offset, SEEK_SET);
     return 0;
 }
 
@@ -221,7 +221,7 @@ static int r3d_read_redv(AVFormatContext *s, AVPacket *pkt, Atom *atom)
     AVStream *st = s->streams[0];
     int tmp;
     int av_unused tmp2;
-    uint64_t pos = avio_tell(s->pb);
+    int64_t pos = avio_tell(s->pb);
     unsigned dts;
     int ret;
 
@@ -276,7 +276,7 @@ static int r3d_read_reda(AVFormatContext *s, AVPacket *pkt, Atom *atom)
     AVStream *st = s->streams[1];
     int av_unused tmp, tmp2;
     int samples, size;
-    uint64_t pos = avio_tell(s->pb);
+    int64_t pos = avio_tell(s->pb);
     unsigned dts;
     int ret;
 

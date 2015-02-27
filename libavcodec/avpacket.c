@@ -34,8 +34,7 @@
 
 void av_destruct_packet(AVPacket *pkt)
 {
-    av_free(pkt->data);
-    pkt->data = NULL;
+    av_freep(&pkt->data);
     pkt->size = 0;
 }
 
@@ -273,7 +272,7 @@ void av_packet_free_side_data(AVPacket *pkt)
 {
     int i;
     for (i = 0; i < pkt->side_data_elems; i++)
-        av_free(pkt->side_data[i].data);
+        av_freep(&pkt->side_data[i].data);
     av_freep(&pkt->side_data);
     pkt->side_data_elems = 0;
 }
@@ -547,8 +546,13 @@ int av_packet_ref(AVPacket *dst, const AVPacket *src)
         if (ret < 0)
             goto fail;
         memcpy(dst->buf->data, src->data, src->size);
-    } else
+    } else {
         dst->buf = av_buffer_ref(src->buf);
+        if (!dst->buf) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
+    }
 
     dst->size = src->size;
     dst->data = dst->buf->data;

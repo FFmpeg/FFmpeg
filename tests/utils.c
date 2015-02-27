@@ -25,7 +25,7 @@
 
 #define SCALEBITS 8
 #define ONE_HALF  (1 << (SCALEBITS - 1))
-#define FIX(x)    ((int) ((x) * (1L << SCALEBITS) + 0.5))
+#define FIX(x)    ((int) ((x) * (1 << SCALEBITS) + 0.5))
 
 #define err_if(expr) do {                                              \
     if (expr) {                                                        \
@@ -35,12 +35,12 @@
 } while (0)
 
 static void rgb24_to_yuv420p(unsigned char *lum, unsigned char *cb,
-                             unsigned char *cr, unsigned char *src,
+                             unsigned char *cr, const unsigned char *src,
                              int width, int height)
 {
     int wrap, wrap3, x, y;
     int r, g, b, r1, g1, b1;
-    unsigned char *p;
+    const unsigned char *p;
 
     wrap  = width;
     wrap3 = width * 3;
@@ -104,7 +104,7 @@ static void rgb24_to_yuv420p(unsigned char *lum, unsigned char *cb,
 #define DEFAULT_NB_PICT  50
 
 static void pgmyuv_save(const char *filename, int w, int h,
-                        unsigned char *rgb_tab)
+                        const unsigned char *rgb_tab)
 {
     FILE *f;
     int i, h2, w2;

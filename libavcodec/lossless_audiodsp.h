@@ -29,7 +29,8 @@ typedef struct LLAudDSPContext {
     /**
      * Calculate scalar product of v1 and v2,
      * and v1[i] += v3[i] * mul
-     * @param len length of vectors, should be multiple of 16
+     * @param len length of vectors, should be multiple of 16,
+     *            or padd v3 and v1 or v2 with zeros.
      */
     int32_t (*scalarproduct_and_madd_int16)(int16_t *v1 /* align 16 */,
                                             const int16_t *v2,

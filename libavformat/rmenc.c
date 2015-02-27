@@ -23,7 +23,7 @@
 #include "rm.h"
 #include "libavutil/dict.h"
 
-typedef struct {
+typedef struct StreamInfo {
     int nb_packets;
     int packet_total_size;
     int packet_max_size;
@@ -36,7 +36,7 @@ typedef struct {
     AVCodecContext *enc;
 } StreamInfo;
 
-typedef struct {
+typedef struct RMMuxContext {
     StreamInfo streams[2];
     StreamInfo *audio_stream, *video_stream;
     int data_pos; /* position of the data after the header */
@@ -364,6 +364,8 @@ static int rm_write_audio(AVFormatContext *s, const uint8_t *buf, int size, int 
 
     /* XXX: suppress this malloc */
     buf1 = av_malloc(size * sizeof(uint8_t));
+    if (!buf1)
+        return AVERROR(ENOMEM);
 
     write_packet_header(s, stream, size, !!(flags & AV_PKT_FLAG_KEY));
 

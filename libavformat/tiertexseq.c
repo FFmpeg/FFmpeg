@@ -301,7 +301,7 @@ static int seq_read_close(AVFormatContext *s)
     SeqDemuxContext *seq = s->priv_data;
 
     for (i = 0; i < SEQ_NUM_FRAME_BUFFERS; i++)
-        av_free(seq->frame_buffers[i].data);
+        av_freep(&seq->frame_buffers[i].data);
 
     return 0;
 }

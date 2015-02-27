@@ -155,7 +155,7 @@ static int frame_list_add_frame(FrameList *frame_list, int nb_samples, int64_t p
 
 typedef struct MixContext {
     const AVClass *class;       /**< class for AVOptions */
-    AVFloatDSPContext fdsp;
+    AVFloatDSPContext *fdsp;
 
     int nb_inputs;              /**< number of inputs */
     int active_inputs;          /**< number of input currently active */
@@ -298,7 +298,7 @@ static int output_frame(AVFilterLink *outlink, int nb_samples)
             plane_size = FFALIGN(plane_size, 16);
 
             for (p = 0; p < planes; p++) {
-                s->fdsp.vector_fmac_scalar((float *)out_buf->extended_data[p],
+                s->fdsp->vector_fmac_scalar((float *)out_buf->extended_data[p],
                                            (float *) in_buf->extended_data[p],
                                            s->input_scale[i], plane_size);
             }
@@ -496,12 +496,16 @@ static av_cold int init(AVFilterContext *ctx)
         snprintf(name, sizeof(name), "input%d", i);
         pad.type           = AVMEDIA_TYPE_AUDIO;
         pad.name           = av_strdup(name);
+        if (!pad.name)
+            return AVERROR(ENOMEM);
         pad.filter_frame   = filter_frame;
 
         ff_insert_inpad(ctx, i, &pad);
     }
 
-    avpriv_float_dsp_init(&s->fdsp, 0);
+    s->fdsp = avpriv_float_dsp_alloc(0);
+    if (!s->fdsp)
+        return AVERROR(ENOMEM);
 
     return 0;
 }
@@ -520,6 +524,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&s->frame_list);
     av_freep(&s->input_state);
     av_freep(&s->input_scale);
+    av_freep(&s->fdsp);
 
     for (i = 0; i < ctx->nb_inputs; i++)
         av_freep(&ctx->input_pads[i].name);
@@ -528,10 +533,17 @@ static av_cold void uninit(AVFilterContext *ctx)
 static int query_formats(AVFilterContext *ctx)
 {
     AVFilterFormats *formats = NULL;
+    AVFilterChannelLayouts *layouts;
+
+    layouts = ff_all_channel_layouts();
+
+    if (!layouts)
+        return AVERROR(ENOMEM);
+
     ff_add_format(&formats, AV_SAMPLE_FMT_FLT);
     ff_add_format(&formats, AV_SAMPLE_FMT_FLTP);
     ff_set_common_formats(ctx, formats);
-    ff_set_common_channel_layouts(ctx, ff_all_channel_layouts());
+    ff_set_common_channel_layouts(ctx, layouts);
     ff_set_common_samplerates(ctx, ff_all_samplerates());
     return 0;
 }

@@ -56,12 +56,13 @@ static int build_huff(const uint8_t *src, VLC *vlc, int *fsym)
         *fsym = he[0].sym;
         return 0;
     }
-    if (he[0].len > 32)
-        return -1;
 
     last = 255;
     while (he[last].len == 255 && last)
         last--;
+
+    if (he[last].len > 32)
+        return -1;
 
     code = 1;
     for (i = last; i >= 0; i--) {
@@ -214,6 +215,8 @@ static void restore_median(uint8_t *src, int step, int stride,
         slice_height = ((((slice + 1) * height) / slices) & cmask) -
                        slice_start;
 
+        if (!slice_height)
+            continue;
         bsrc = src + slice_start * stride;
 
         // first line - left neighbour prediction
@@ -224,7 +227,7 @@ static void restore_median(uint8_t *src, int step, int stride,
             A        = bsrc[i];
         }
         bsrc += stride;
-        if (slice_height == 1)
+        if (slice_height <= 1)
             continue;
         // second line - first element has top prediction, the rest uses median
         C        = bsrc[-stride];
@@ -269,6 +272,8 @@ static void restore_median_il(uint8_t *src, int step, int stride,
         slice_height   = ((((slice + 1) * height) / slices) & cmask) -
                          slice_start;
         slice_height >>= 1;
+        if (!slice_height)
+            continue;
 
         bsrc = src + slice_start * stride;
 
@@ -284,7 +289,7 @@ static void restore_median_il(uint8_t *src, int step, int stride,
             A                 = bsrc[stride + i];
         }
         bsrc += stride2;
-        if (slice_height == 1)
+        if (slice_height <= 1)
             continue;
         // second line - first element has top prediction, the rest uses median
         C        = bsrc[-stride2];

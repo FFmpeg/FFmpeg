@@ -29,6 +29,7 @@
 #include "eval.h"
 #include "log.h"
 #include "random_seed.h"
+#include "time_internal.h"
 #include "parseutils.h"
 
 #ifdef TEST
@@ -61,12 +62,12 @@ int av_parse_ratio(AVRational *q, const char *str, int max,
     return 0;
 }
 
-typedef struct {
+typedef struct VideoSizeAbbr {
     const char *abbr;
     int width, height;
 } VideoSizeAbbr;
 
-typedef struct {
+typedef struct VideoRateAbbr {
     const char *abbr;
     AVRational rate;
 } VideoRateAbbr;
@@ -185,7 +186,7 @@ int av_parse_video_rate(AVRational *rate, const char *arg)
     return 0;
 }
 
-typedef struct {
+typedef struct ColorEntry {
     const char *name;            ///< a string representing the name of the color
     uint8_t     rgb_color[3];    ///< RGB values for the color
 } ColorEntry;
@@ -552,7 +553,7 @@ int av_parse_time(int64_t *timeval, const char *timestr, int duration)
     const char *p, *q;
     int64_t t;
     time_t now;
-    struct tm dt = { 0 };
+    struct tm dt = { 0 }, tmbuf;
     int today = 0, negative = 0, microseconds = 0;
     int i;
     static const char * const date_fmt[] = {
@@ -647,7 +648,7 @@ int av_parse_time(int64_t *timeval, const char *timestr, int duration)
         int is_utc = *q == 'Z' || *q == 'z';
         q += is_utc;
         if (today) { /* fill in today's date */
-            struct tm dt2 = is_utc ? *gmtime(&now) : *localtime(&now);
+            struct tm dt2 = is_utc ? *gmtime_r(&now, &tmbuf) : *localtime_r(&now, &tmbuf);
             dt2.tm_hour = dt.tm_hour;
             dt2.tm_min  = dt.tm_min;
             dt2.tm_sec  = dt.tm_sec;

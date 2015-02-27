@@ -135,8 +135,8 @@ static int caca_write_header(AVFormatContext *s)
 
     c->canvas = caca_create_canvas(c->window_width, c->window_height);
     if (!c->canvas) {
-        av_log(s, AV_LOG_ERROR, "Failed to create canvas\n");
         ret = AVERROR(errno);
+        av_log(s, AV_LOG_ERROR, "Failed to create canvas\n");
         goto fail;
     }
 
@@ -145,8 +145,8 @@ static int caca_write_header(AVFormatContext *s)
                                    bpp / 8 * encctx->width,
                                    0x0000ff, 0x00ff00, 0xff0000, 0);
     if (!c->dither) {
-        av_log(s, AV_LOG_ERROR, "Failed to create dither\n");
         ret =  AVERROR(errno);
+        av_log(s, AV_LOG_ERROR, "Failed to create dither\n");
         goto fail;
     }
 
@@ -164,9 +164,9 @@ static int caca_write_header(AVFormatContext *s)
 
     c->display = caca_create_display_with_driver(c->canvas, c->driver);
     if (!c->display) {
+        ret = AVERROR(errno);
         av_log(s, AV_LOG_ERROR, "Failed to create display\n");
         list_drivers(c);
-        ret = AVERROR(errno);
         goto fail;
     }
 

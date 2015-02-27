@@ -49,7 +49,7 @@ static inline int get_lowest_part_list_y(H264Context *h, H264Picture *pic, int n
     return FFMAX(0, bottom);
 }
 
-static inline void get_lowest_part_y(H264Context *h, int refs[2][48], int n,
+static inline void get_lowest_part_y(H264Context *h, int16_t refs[2][48], int n,
                                      int height, int y_offset, int list0,
                                      int list1, int *nrefs)
 {
@@ -96,7 +96,7 @@ static void await_references(H264Context *h)
 {
     const int mb_xy   = h->mb_xy;
     const int mb_type = h->cur_pic.mb_type[mb_xy];
-    int refs[2][48];
+    int16_t refs[2][48];
     int nrefs[2] = { 0 };
     int ref, list;
 

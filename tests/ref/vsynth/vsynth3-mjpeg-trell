@@ -1,0 +1,4 @@
+56228a157453db7c9fd20ffcd49e3d6b *tests/data/fate/vsynth3-mjpeg-trell.avi
+63990 tests/data/fate/vsynth3-mjpeg-trell.avi
+4fed1e12c80df7b67df292b153c3cf16 *tests/data/fate/vsynth3-mjpeg-trell.out.rawvideo
+stddev:    8.27 PSNR: 29.77 MAXDIFF:   61 bytes:    86700/    86700

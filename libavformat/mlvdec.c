@@ -142,7 +142,7 @@ static int scan_file(AVFormatContext *avctx, AVStream *vst, AVStream *ast, int f
             vst->codec->codec_tag = MKTAG('B', 'I', 'T', 16);
             size -= 164;
         } else if (ast && type == MKTAG('W', 'A', 'V', 'I') && size >= 16) {
-            ret = ff_get_wav_header(pb, ast->codec, 16);
+            ret = ff_get_wav_header(pb, ast->codec, 16, 0);
             if (ret < 0)
                 return ret;
             size -= 16;
@@ -204,8 +204,8 @@ static int scan_file(AVFormatContext *avctx, AVStream *vst, AVStream *ast, int f
             time.tm_yday   = avio_rl16(pb);
             time.tm_isdst  = avio_rl16(pb);
             avio_skip(pb, 2);
-            strftime(str, sizeof(str), "%Y-%m-%d %H:%M:%S", &time);
-            av_dict_set(&avctx->metadata, "time", str, 0);
+            if (strftime(str, sizeof(str), "%Y-%m-%d %H:%M:%S", &time))
+                av_dict_set(&avctx->metadata, "time", str, 0);
             size -= 20;
         } else if (type == MKTAG('E','X','P','O') && size >= 16) {
             av_dict_set(&avctx->metadata, "isoMode", avio_rl32(pb) ? "auto" : "manual", 0);
@@ -242,6 +242,7 @@ static int read_header(AVFormatContext *avctx)
     AVIOContext *pb = avctx->pb;
     AVStream *vst = NULL, *ast = NULL;
     int size, ret;
+    unsigned nb_video_frames, nb_audio_frames;
     uint64_t guid;
     char guidstr[32];
 
@@ -259,11 +260,17 @@ static int read_header(AVFormatContext *avctx)
     avio_skip(pb, 8); //fileNum, fileCount, fileFlags
 
     mlv->class[0] = avio_rl16(pb);
-    if (mlv->class[0]) {
+    mlv->class[1] = avio_rl16(pb);
+
+    nb_video_frames = avio_rl32(pb);
+    nb_audio_frames = avio_rl32(pb);
+
+    if (nb_video_frames && mlv->class[0]) {
         vst = avformat_new_stream(avctx, NULL);
         if (!vst)
             return AVERROR(ENOMEM);
         vst->id = 0;
+        vst->nb_frames = nb_video_frames;
         if ((mlv->class[0] & (MLV_CLASS_FLAG_DELTA|MLV_CLASS_FLAG_LZMA)))
             avpriv_request_sample(avctx, "compression");
         vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
@@ -289,12 +296,12 @@ static int read_header(AVFormatContext *avctx)
         }
     }
 
-    mlv->class[1] = avio_rl16(pb);
-    if (mlv->class[1]) {
+    if (nb_audio_frames && mlv->class[1]) {
         ast = avformat_new_stream(avctx, NULL);
         if (!ast)
             return AVERROR(ENOMEM);
         ast->id = 1;
+        ast->nb_frames = nb_audio_frames;
         if ((mlv->class[1] & MLV_CLASS_FLAG_LZMA))
             avpriv_request_sample(avctx, "compression");
         if ((mlv->class[1] & ~MLV_CLASS_FLAG_LZMA) != MLV_AUDIO_CLASS_WAV)
@@ -303,16 +310,6 @@ static int read_header(AVFormatContext *avctx)
         ast->codec->codec_type = AVMEDIA_TYPE_AUDIO;
         avpriv_set_pts_info(ast, 33, 1, ast->codec->sample_rate);
     }
-
-    if (vst)
-       vst->nb_frames = avio_rl32(pb);
-    else
-       avio_skip(pb, 4);
-
-    if (ast)
-       ast->nb_frames = avio_rl32(pb);
-    else
-       avio_skip(pb, 4);
 
     if (vst) {
        AVRational framerate;
@@ -342,16 +339,14 @@ static int read_header(AVFormatContext *avctx)
                 break;
             if (check_file_header(mlv->pb[i], guid) < 0) {
                 av_log(avctx, AV_LOG_WARNING, "ignoring %s; bad format or guid mismatch\n", filename);
-                avio_close(mlv->pb[i]);
-                mlv->pb[i] = NULL;
+                avio_closep(&mlv->pb[i]);
                 continue;
             }
             av_log(avctx, AV_LOG_INFO, "scanning %s\n", filename);
             ret = scan_file(avctx, vst, ast, i);
             if (ret < 0) {
                 av_log(avctx, AV_LOG_WARNING, "ignoring %s; %s\n", filename, av_err2str(ret));
-                avio_close(mlv->pb[i]);
-                mlv->pb[i] = NULL;
+                avio_closep(&mlv->pb[i]);
                 continue;
             }
         }
@@ -447,7 +442,7 @@ static int read_close(AVFormatContext *s)
     int i;
     for (i = 0; i < 100; i++)
         if (mlv->pb[i])
-            avio_close(mlv->pb[i]);
+            avio_closep(&mlv->pb[i]);
     return 0;
 }
 

@@ -67,7 +67,7 @@ enum ReplayGainType {
 
 typedef struct VolumeContext {
     const AVClass *class;
-    AVFloatDSPContext fdsp;
+    AVFloatDSPContext *fdsp;
     enum PrecisionType precision;
     enum EvalMode eval_mode;
     const char *volume_expr;

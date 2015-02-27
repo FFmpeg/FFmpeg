@@ -130,7 +130,7 @@ static av_always_inline uint32_t bitswap_32(uint32_t x)
            (uint32_t)ff_reverse[ x >> 24];
 }
 
-typedef struct {
+typedef struct VLCcode {
     uint8_t bits;
     uint16_t symbol;
     /** codeword, with the first bit-to-be-read in the msb

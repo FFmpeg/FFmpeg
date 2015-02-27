@@ -339,21 +339,25 @@ static inline void mcdc(uint16_t *dst, const uint16_t *src, int log2w,
     }
 }
 
-static int decode_p_block(FourXContext *f, uint16_t *dst, uint16_t *src,
+static int decode_p_block(FourXContext *f, uint16_t *dst, const uint16_t *src,
                           int log2w, int log2h, int stride)
 {
-    const int index = size2index[log2h][log2w];
-    const int h     = 1 << log2h;
-    int code        = get_vlc2(&f->gb,
-                               block_type_vlc[1 - (f->version > 1)][index].table,
-                               BLOCK_TYPE_VLC_BITS, 1);
-    uint16_t *start = f->last_frame_buffer;
-    uint16_t *end   = start + stride * (f->avctx->height - h + 1) - (1 << log2w);
-    int ret;
-    int scale   = 1;
+    int index, h, code, ret, scale = 1;
+    uint16_t *start, *end;
     unsigned dc = 0;
 
-    av_assert0(code >= 0 && code <= 6 && log2w >= 0);
+    av_assert0(log2w >= 0 && log2h >= 0);
+
+    index = size2index[log2h][log2w];
+    av_assert0(index >= 0);
+
+    h     = 1 << log2h;
+    code  = get_vlc2(&f->gb, block_type_vlc[1 - (f->version > 1)][index].table,
+                     BLOCK_TYPE_VLC_BITS, 1);
+    av_assert0(code >= 0 && code <= 6);
+
+    start = f->last_frame_buffer;
+    end   = start + stride * (f->avctx->height - h + 1) - (1 << log2w);
 
     if (code == 1) {
         log2h--;

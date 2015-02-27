@@ -203,22 +203,22 @@ char *av_strtok(char *s, const char *delim, char **saveptr);
 /**
  * Locale-independent conversion of ASCII isdigit.
  */
-int av_isdigit(int c);
+av_const int av_isdigit(int c);
 
 /**
  * Locale-independent conversion of ASCII isgraph.
  */
-int av_isgraph(int c);
+av_const int av_isgraph(int c);
 
 /**
  * Locale-independent conversion of ASCII isspace.
  */
-int av_isspace(int c);
+av_const int av_isspace(int c);
 
 /**
  * Locale-independent conversion of ASCII characters to uppercase.
  */
-static inline int av_toupper(int c)
+static inline av_const int av_toupper(int c)
 {
     if (c >= 'a' && c <= 'z')
         c ^= 0x20;
@@ -228,7 +228,7 @@ static inline int av_toupper(int c)
 /**
  * Locale-independent conversion of ASCII characters to lowercase.
  */
-static inline int av_tolower(int c)
+static inline av_const int av_tolower(int c)
 {
     if (c >= 'A' && c <= 'Z')
         c ^= 0x20;
@@ -238,7 +238,7 @@ static inline int av_tolower(int c)
 /**
  * Locale-independent conversion of ASCII isxdigit.
  */
-int av_isxdigit(int c);
+av_const int av_isxdigit(int c);
 
 /**
  * Locale-independent case-insensitive compare.
@@ -356,6 +356,13 @@ int av_escape(char **dst, const char *src, const char *special_chars,
  */
 int av_utf8_decode(int32_t *codep, const uint8_t **bufp, const uint8_t *buf_end,
                    unsigned int flags);
+
+/**
+ * Check if a name is in a list.
+ * @returns 0 if not found, or the 1 based index where it has been found in the
+ *            list.
+ */
+int av_match_list(const char *name, const char *list, char separator);
 
 /**
  * @}

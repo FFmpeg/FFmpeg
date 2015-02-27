@@ -68,8 +68,6 @@ int ff_put_wav_header(AVIOContext *pb, AVCodecContext *enc, int flags)
      * fall back on using AVCodecContext.frame_size, which is not as reliable
      * for indicating packet duration. */
     frame_size = av_get_audio_frame_duration(enc, enc->block_align);
-    if (!frame_size)
-        frame_size = enc->frame_size;
 
     waveformatextensible = (enc->channels > 2 && enc->channel_layout) ||
                            enc->sample_rate > 48000 ||
@@ -104,12 +102,10 @@ int ff_put_wav_header(AVIOContext *pb, AVCodecContext *enc, int flags)
                enc->bits_per_coded_sample, bps);
     }
 
-    if (enc->codec_id == AV_CODEC_ID_MP2 ||
-        enc->codec_id == AV_CODEC_ID_MP3) {
-        /* This is wrong, but it seems many demuxers do not work if this
-         * is set correctly. */
+    if (enc->codec_id == AV_CODEC_ID_MP2) {
         blkalign = frame_size;
-        // blkalign = 144 * enc->bit_rate/enc->sample_rate;
+    } else if (enc->codec_id == AV_CODEC_ID_MP3) {
+        blkalign = 576 * (enc->sample_rate <= (24000 + 32000)/2 ? 1 : 2);
     } else if (enc->codec_id == AV_CODEC_ID_AC3) {
         blkalign = 3840;                /* maximum bytes per frame */
     } else if (enc->codec_id == AV_CODEC_ID_AAC) {
@@ -209,11 +205,15 @@ int ff_put_wav_header(AVIOContext *pb, AVCodecContext *enc, int flags)
 void ff_put_bmp_header(AVIOContext *pb, AVCodecContext *enc,
                        const AVCodecTag *tags, int for_asf, int ignore_extradata)
 {
+    int keep_height = enc->extradata_size >= 9 &&
+                      !memcmp(enc->extradata + enc->extradata_size - 9, "BottomUp", 9);
+    int extradata_size = enc->extradata_size - 9*keep_height;
+
     /* size */
-    avio_wl32(pb, 40 + (ignore_extradata ? 0 : enc->extradata_size));
+    avio_wl32(pb, 40 + (ignore_extradata ? 0 :extradata_size));
     avio_wl32(pb, enc->width);
     //We always store RGB TopDown
-    avio_wl32(pb, enc->codec_tag ? enc->height : -enc->height);
+    avio_wl32(pb, enc->codec_tag || keep_height ? enc->height : -enc->height);
     /* planes */
     avio_wl16(pb, 1);
     /* depth */
@@ -227,9 +227,9 @@ void ff_put_bmp_header(AVIOContext *pb, AVCodecContext *enc,
     avio_wl32(pb, 0);
 
     if (!ignore_extradata) {
-        avio_write(pb, enc->extradata, enc->extradata_size);
+        avio_write(pb, enc->extradata, extradata_size);
 
-        if (!for_asf && enc->extradata_size & 1)
+        if (!for_asf && extradata_size & 1)
             avio_w8(pb, 0);
     }
 }

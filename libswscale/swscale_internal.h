@@ -39,7 +39,7 @@
 
 #define STR(s) AV_TOSTRING(s) // AV_STRINGIFY is too long
 
-#define YUVRGB_TABLE_HEADROOM 128
+#define YUVRGB_TABLE_HEADROOM 256
 
 #define MAX_FILTER_SIZE SWS_MAX_FILTER_SIZE
 
@@ -60,6 +60,8 @@
 #   define APCK_COEF  8
 #   define APCK_SIZE 16
 #endif
+
+#define RETCODE_USE_CASCADE -12345
 
 struct SwsContext;
 
@@ -300,6 +302,14 @@ typedef struct SwsContext {
     int vChrDrop;                 ///< Binary logarithm of extra vertical subsampling factor in source image chroma planes specified by user.
     int sliceDir;                 ///< Direction that slices are fed to the scaler (1 = top-to-bottom, -1 = bottom-to-top).
     double param[2];              ///< Input parameters for scaling algorithms that need them.
+
+    /* The cascaded_* fields allow spliting a scaler task into multiple
+     * sequential steps, this is for example used to limit the maximum
+     * downscaling factor that needs to be supported in one scaler.
+     */
+    struct SwsContext *cascaded_context[2];
+    int cascaded_tmpStride[4];
+    uint8_t *cascaded_tmp[4];
 
     uint32_t pal_yuv[256];
     uint32_t pal_rgb[256];
@@ -610,14 +620,6 @@ av_cold void ff_sws_init_range_convert(SwsContext *c);
 
 SwsFunc ff_yuv2rgb_init_x86(SwsContext *c);
 SwsFunc ff_yuv2rgb_init_ppc(SwsContext *c);
-
-#if FF_API_SWS_FORMAT_NAME
-/**
- * @deprecated Use av_get_pix_fmt_name() instead.
- */
-attribute_deprecated
-const char *sws_format_name(enum AVPixelFormat format);
-#endif
 
 static av_always_inline int is16BPS(enum AVPixelFormat pix_fmt)
 {

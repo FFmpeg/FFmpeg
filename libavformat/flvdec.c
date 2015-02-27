@@ -39,7 +39,7 @@
 
 #define VALIDATE_INDEX_TS_THRESH 2500
 
-typedef struct {
+typedef struct FLVContext {
     const AVClass *class; ///< Class for private options.
     int trust_metadata;   ///< configure streams according onMetaData
     int wrong_dts;        ///< wrong dts due to negative cts
@@ -390,7 +390,7 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream,
     FLVContext *flv = s->priv_data;
     AVIOContext *ioc;
     AMFDataType amf_type;
-    char str_val[256];
+    char str_val[1024];
     double num_val;
 
     num_val  = 0;
@@ -405,8 +405,10 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream,
         num_val = avio_r8(ioc);
         break;
     case AMF_DATA_TYPE_STRING:
-        if (amf_get_string(ioc, str_val, sizeof(str_val)) < 0)
+        if (amf_get_string(ioc, str_val, sizeof(str_val)) < 0) {
+            av_log(s, AV_LOG_ERROR, "AMF_DATA_TYPE_STRING parsing failed\n");
             return -1;
+        }
         break;
     case AMF_DATA_TYPE_OBJECT:
         if ((vstream || astream) && key &&
@@ -421,8 +423,10 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream,
             if (amf_parse_object(s, astream, vstream, str_val, max_pos,
                                  depth + 1) < 0)
                 return -1;     // if we couldn't skip, bomb out.
-        if (avio_r8(ioc) != AMF_END_OF_OBJECT)
+        if (avio_r8(ioc) != AMF_END_OF_OBJECT) {
+            av_log(s, AV_LOG_ERROR, "Missing AMF_END_OF_OBJECT in AMF_DATA_TYPE_OBJECT\n");
             return -1;
+        }
         break;
     case AMF_DATA_TYPE_NULL:
     case AMF_DATA_TYPE_UNDEFINED:
@@ -437,8 +441,10 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream,
             if (amf_parse_object(s, astream, vstream, str_val, max_pos,
                                  depth + 1) < 0)
                 return -1;
-        if (avio_r8(ioc) != AMF_END_OF_OBJECT)
+        if (avio_r8(ioc) != AMF_END_OF_OBJECT) {
+            av_log(s, AV_LOG_ERROR, "Missing AMF_END_OF_OBJECT in AMF_DATA_TYPE_MIXEDARRAY\n");
             return -1;
+        }
         break;
     case AMF_DATA_TYPE_ARRAY:
     {
@@ -455,15 +461,16 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream,
         avio_skip(ioc, 8 + 2);  // timestamp (double) and UTC offset (int16)
         break;
     default:                    // unsupported type, we couldn't skip
+        av_log(s, AV_LOG_ERROR, "unsupported amf type %d\n", amf_type);
         return -1;
     }
 
     if (key) {
+        acodec = astream ? astream->codec : NULL;
+        vcodec = vstream ? vstream->codec : NULL;
+
         // stream info doesn't live any deeper than the first object
         if (depth == 1) {
-            acodec = astream ? astream->codec : NULL;
-            vcodec = vstream ? vstream->codec : NULL;
-
             if (amf_type == AMF_DATA_TYPE_NUMBER ||
                 amf_type == AMF_DATA_TYPE_BOOL) {
                 if (!strcmp(key, "duration"))
@@ -538,6 +545,9 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream,
     return 0;
 }
 
+#define TYPE_ONTEXTDATA 1
+#define TYPE_UNKNOWN 2
+
 static int flv_read_metabody(AVFormatContext *s, int64_t next_pos)
 {
     AMFDataType type;
@@ -558,13 +568,13 @@ static int flv_read_metabody(AVFormatContext *s, int64_t next_pos)
     type = avio_r8(ioc);
     if (type != AMF_DATA_TYPE_STRING ||
         amf_get_string(ioc, buffer, sizeof(buffer)) < 0)
-        return -1;
+        return TYPE_UNKNOWN;
 
     if (!strcmp(buffer, "onTextData"))
-        return 1;
+        return TYPE_ONTEXTDATA;
 
     if (strcmp(buffer, "onMetaData") && strcmp(buffer, "onCuePoint"))
-        return -1;
+        return TYPE_UNKNOWN;
 
     // find the streams now so that amf_parse_object doesn't need to do
     // the lookup every time it is called.
@@ -623,7 +633,7 @@ static int flv_read_close(AVFormatContext *s)
 
 static int flv_get_extradata(AVFormatContext *s, AVStream *st, int size)
 {
-    av_free(st->codec->extradata);
+    av_freep(&st->codec->extradata);
     if (ff_get_extradata(st->codec, s->pb, size) < 0)
         return AVERROR(ENOMEM);
     return 0;
@@ -746,7 +756,7 @@ static int flv_data_packet(AVFormatContext *s, AVPacket *pkt,
     if (i == s->nb_streams) {
         st = create_stream(s, AVMEDIA_TYPE_DATA);
         if (!st)
-            return AVERROR_INVALIDDATA;
+            return AVERROR(ENOMEM);
         st->codec->codec_id = AV_CODEC_ID_TEXT;
     }
 
@@ -822,7 +832,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
             stream_type=FLV_STREAM_TYPE_DATA;
             if (size > 13 + 1 + 4 && dts == 0) { // Header-type metadata stuff
                 meta_pos = avio_tell(s->pb);
-                if (flv_read_metabody(s, next) == 0) {
+                if (flv_read_metabody(s, next) <= 0) {
                     goto skip;
                 }
                 avio_seek(s->pb, meta_pos, SEEK_SET);
@@ -885,10 +895,14 @@ skip:
     if (s->pb->seekable && (!s->duration || s->duration == AV_NOPTS_VALUE) && !flv->searched_for_end) {
         int size;
         const int64_t pos   = avio_tell(s->pb);
+        // Read the last 4 bytes of the file, this should be the size of the
+        // previous FLV tag. Use the timestamp of its payload as duration.
         int64_t fsize       = avio_size(s->pb);
 retry_duration:
         avio_seek(s->pb, fsize - 4, SEEK_SET);
         size = avio_rb32(s->pb);
+        // Seek to the start of the last FLV tag at position (fsize - 4 - size)
+        // but skip the byte indicating the type.
         avio_seek(s->pb, fsize - 3 - size, SEEK_SET);
         if (size == avio_rb24(s->pb) + 11) {
             uint32_t ts = avio_rb24(s->pb);
@@ -930,6 +944,7 @@ retry_duration:
         } else {
             AVCodecContext ctx = {0};
             ctx.sample_rate = sample_rate;
+            ctx.bits_per_coded_sample = bits_per_coded_sample;
             flv_set_audio_codec(s, st, &ctx, flags & FLV_AUDIO_CODECID_MASK);
             sample_rate = ctx.sample_rate;
         }

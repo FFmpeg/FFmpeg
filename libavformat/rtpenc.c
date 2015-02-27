@@ -53,6 +53,7 @@ static int is_supported(enum AVCodecID id)
     case AV_CODEC_ID_H263:
     case AV_CODEC_ID_H263P:
     case AV_CODEC_ID_H264:
+    case AV_CODEC_ID_HEVC:
     case AV_CODEC_ID_MPEG1VIDEO:
     case AV_CODEC_ID_MPEG2VIDEO:
     case AV_CODEC_ID_MPEG4:
@@ -88,7 +89,7 @@ static int is_supported(enum AVCodecID id)
 static int rtp_write_header(AVFormatContext *s1)
 {
     RTPMuxContext *s = s1->priv_data;
-    int n;
+    int n, ret = AVERROR(EINVAL);
     AVStream *st;
 
     if (s1->nb_streams != 1) {
@@ -194,10 +195,30 @@ static int rtp_write_header(AVFormatContext *s1)
         s->max_payload_size = n * TS_PACKET_SIZE;
         s->buf_ptr = s->buf;
         break;
+    case AV_CODEC_ID_H261:
+        if (s1->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
+            av_log(s, AV_LOG_ERROR,
+                   "Packetizing H261 is experimental and produces incorrect "
+                   "packetization for cases where GOBs don't fit into packets "
+                   "(even though most receivers may handle it just fine). "
+                   "Please set -f_strict experimental in order to enable it.\n");
+            ret = AVERROR_EXPERIMENTAL;
+            goto fail;
+        }
+        break;
     case AV_CODEC_ID_H264:
         /* check for H.264 MP4 syntax */
         if (st->codec->extradata_size > 4 && st->codec->extradata[0] == 1) {
             s->nal_length_size = (st->codec->extradata[4] & 0x03) + 1;
+        }
+        break;
+    case AV_CODEC_ID_HEVC:
+        /* Only check for the standardized hvcC version of extradata, keeping
+         * things simple and similar to the avcC/H264 case above, instead
+         * of trying to handle the pre-standardization versions (as in
+         * libavcodec/hevc.c). */
+        if (st->codec->extradata_size > 21 && st->codec->extradata[0] == 1) {
+            s->nal_length_size = (st->codec->extradata[21] & 0x03) + 1;
         }
         break;
     case AV_CODEC_ID_VORBIS:
@@ -249,8 +270,11 @@ static int rtp_write_header(AVFormatContext *s1)
             av_log(s1, AV_LOG_ERROR, "Only mono is supported\n");
             goto fail;
         }
+        s->num_frames = 0;
+        goto defaultcase;
     case AV_CODEC_ID_AAC:
         s->num_frames = 0;
+        goto defaultcase;
     default:
 defaultcase:
         if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
@@ -264,7 +288,7 @@ defaultcase:
 
 fail:
     av_freep(&s->buf);
-    return AVERROR(EINVAL);
+    return ret;
 }
 
 /* send an rtcp sender report packet */
@@ -446,6 +470,7 @@ static void rtp_send_mpegts_raw(AVFormatContext *s1,
     RTPMuxContext *s = s1->priv_data;
     int len, out_len;
 
+    s->timestamp = s->cur_timestamp;
     while (size >= TS_PACKET_SIZE) {
         len = s->max_payload_size - (s->buf_ptr - s->buf);
         if (len > size)
@@ -555,7 +580,7 @@ static int rtp_write_packet(AVFormatContext *s1, AVPacket *pkt)
         rtp_send_mpegts_raw(s1, pkt->data, size);
         break;
     case AV_CODEC_ID_H264:
-        ff_rtp_send_h264(s1, pkt->data, size);
+        ff_rtp_send_h264_hevc(s1, pkt->data, size);
         break;
     case AV_CODEC_ID_H261:
         ff_rtp_send_h261(s1, pkt->data, size);
@@ -576,6 +601,9 @@ static int rtp_write_packet(AVFormatContext *s1, AVPacket *pkt)
         /* Fallthrough */
     case AV_CODEC_ID_H263P:
         ff_rtp_send_h263(s1, pkt->data, size);
+        break;
+    case AV_CODEC_ID_HEVC:
+        ff_rtp_send_h264_hevc(s1, pkt->data, size);
         break;
     case AV_CODEC_ID_VORBIS:
     case AV_CODEC_ID_THEORA:
@@ -629,4 +657,5 @@ AVOutputFormat ff_rtp_muxer = {
     .write_packet      = rtp_write_packet,
     .write_trailer     = rtp_write_trailer,
     .priv_class        = &rtp_muxer_class,
+    .flags             = AVFMT_TS_NONSTRICT,
 };

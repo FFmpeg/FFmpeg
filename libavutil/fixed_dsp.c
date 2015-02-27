@@ -63,8 +63,8 @@ static void vector_fmul_window_fixed_scaled_c(int16_t *dst, const int32_t *src0,
         s1 = src1[j];
         wi = win[i];
         wj = win[j];
-        dst[i] = av_clip_int16_c(((((int64_t)s0*wj - (int64_t)s1*wi + 0x40000000) >> 31) + round) >> bits);
-        dst[j] = av_clip_int16_c(((((int64_t)s0*wi + (int64_t)s1*wj + 0x40000000) >> 31) + round) >> bits);
+        dst[i] = av_clip_int16(((((int64_t)s0*wj - (int64_t)s1*wi + 0x40000000) >> 31) + round) >> bits);
+        dst[j] = av_clip_int16(((((int64_t)s0*wi + (int64_t)s1*wj + 0x40000000) >> 31) + round) >> bits);
     }
 }
 
@@ -91,6 +91,10 @@ static void vector_fmul_window_fixed_c(int32_t *dst, const int32_t *src0,
 AVFixedDSPContext * avpriv_alloc_fixed_dsp(int bit_exact)
 {
     AVFixedDSPContext * fdsp = av_malloc(sizeof(AVFixedDSPContext));
+
+    if (!fdsp)
+        return NULL;
+
     fdsp->vector_fmul_window_scaled = vector_fmul_window_fixed_scaled_c;
     fdsp->vector_fmul_window = vector_fmul_window_fixed_c;
 

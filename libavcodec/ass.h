@@ -92,6 +92,13 @@ int ff_ass_add_rect(AVSubtitle *sub, const char *dialog,
                     int ts_start, int duration, int raw);
 
 /**
+ * Same as ff_ass_add_rect_bprint, but taking an AVBPrint buffer instead of a
+ * string, and assuming raw=0.
+ */
+int ff_ass_add_rect_bprint(AVSubtitle *sub, AVBPrint *buf,
+                           int ts_start, int duration);
+
+/**
  * Add an ASS dialog line to an AVBPrint buffer.
  *
  * @param buf pointer to an initialized AVBPrint buffer

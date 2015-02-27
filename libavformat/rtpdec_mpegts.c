@@ -30,18 +30,12 @@ struct PayloadContext {
     uint8_t buf[RTP_MAX_PACKET_LENGTH];
 };
 
-static PayloadContext *mpegts_new_context(void)
-{
-    return av_mallocz(sizeof(PayloadContext));
-}
-
-static void mpegts_free_context(PayloadContext *data)
+static void mpegts_close_context(PayloadContext *data)
 {
     if (!data)
         return;
     if (data->ts)
         avpriv_mpegts_parse_close(data->ts);
-    av_free(data);
 }
 
 static av_cold int mpegts_init(AVFormatContext *ctx, int st_index,
@@ -65,9 +59,6 @@ static int mpegts_handle_packet(AVFormatContext *ctx, PayloadContext *data,
     // fill it in either, since the mpegts and RTP timestamps are in totally
     // different ranges.
     *timestamp = RTP_NOTS_VALUE;
-
-    if (!data->ts)
-        return AVERROR(EINVAL);
 
     if (!buf) {
         if (data->read_buf_index >= data->read_buf_size)
@@ -100,9 +91,9 @@ static int mpegts_handle_packet(AVFormatContext *ctx, PayloadContext *data,
 
 RTPDynamicProtocolHandler ff_mpegts_dynamic_handler = {
     .codec_type        = AVMEDIA_TYPE_DATA,
+    .priv_data_size    = sizeof(PayloadContext),
     .parse_packet      = mpegts_handle_packet,
-    .alloc             = mpegts_new_context,
     .init              = mpegts_init,
-    .free              = mpegts_free_context,
+    .close             = mpegts_close_context,
     .static_payload_id = 33,
 };

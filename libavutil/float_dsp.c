@@ -22,6 +22,7 @@
 #include "config.h"
 #include "attributes.h"
 #include "float_dsp.h"
+#include "mem.h"
 
 static void vector_fmul_c(float *dst, const float *src0, const float *src1,
                           int len)
@@ -139,6 +140,15 @@ av_cold void avpriv_float_dsp_init(AVFloatDSPContext *fdsp, int bit_exact)
         ff_float_dsp_init_mips(fdsp);
 }
 
+av_cold AVFloatDSPContext *avpriv_float_dsp_alloc(int bit_exact)
+{
+    AVFloatDSPContext *ret = av_mallocz(sizeof(AVFloatDSPContext));
+    if (ret)
+        avpriv_float_dsp_init(ret, bit_exact);
+    return ret;
+}
+
+
 #ifdef TEST
 
 #include <float.h>
@@ -146,13 +156,18 @@ av_cold void avpriv_float_dsp_init(AVFloatDSPContext *fdsp, int bit_exact)
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#if HAVE_UNISTD_H
+#include <unistd.h> /* for getopt */
+#endif
+#if !HAVE_GETOPT
+#include "compat/getopt.c"
+#endif
 
 #include "common.h"
 #include "cpu.h"
 #include "internal.h"
 #include "lfg.h"
 #include "log.h"
-#include "mem.h"
 #include "random_seed.h"
 
 #define LEN 240
@@ -369,7 +384,7 @@ static int test_scalarproduct_float(AVFloatDSPContext *fdsp, AVFloatDSPContext *
 
 int main(int argc, char **argv)
 {
-    int ret = 0;
+    int ret = 0, seeded = 0;
     uint32_t seed;
     AVFloatDSPContext fdsp, cdsp;
     AVLFG lfg;
@@ -380,12 +395,31 @@ int main(int argc, char **argv)
     LOCAL_ALIGNED(32, double, dbl_src0, [LEN]);
     LOCAL_ALIGNED(32, double, dbl_src1, [LEN]);
 
-    if (argc > 2 && !strcmp(argv[1], "-s"))
-        seed = strtoul(argv[2], NULL, 10);
-    else
+    for (;;) {
+        int arg = getopt(argc, argv, "s:c:");
+        if (arg == -1)
+            break;
+        switch (arg) {
+        case 's':
+            seed = strtoul(optarg, NULL, 10);
+            seeded = 1;
+            break;
+        case 'c':
+        {
+            int cpuflags = av_get_cpu_flags();
+
+            if (av_parse_cpu_caps(&cpuflags, optarg) < 0)
+                return 1;
+
+            av_force_cpu_flags(cpuflags);
+            break;
+        }
+        }
+    }
+    if (!seeded)
         seed = av_get_random_seed();
 
-    av_log(NULL, AV_LOG_INFO, "float_dsp-test: random seed %u\n", seed);
+    av_log(NULL, AV_LOG_INFO, "float_dsp-test: %s %u\n", seeded ? "seed" : "random seed", seed);
 
     av_lfg_init(&lfg, seed);
 

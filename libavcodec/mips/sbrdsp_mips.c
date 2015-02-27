@@ -58,39 +58,6 @@
 #include "libavcodec/sbrdsp.h"
 
 #if HAVE_INLINE_ASM
-static void sbr_neg_odd_64_mips(float *x)
-{
-    int Temp1, Temp2, Temp3, Temp4, Temp5;
-    float *x1    = &x[1];
-    float *x_end = x1 + 64;
-
-    /* loop unrolled 4 times */
-    __asm__ volatile (
-        "lui    %[Temp5],   0x8000                  \n\t"
-    "1:                                             \n\t"
-        "lw     %[Temp1],   0(%[x1])                \n\t"
-        "lw     %[Temp2],   8(%[x1])                \n\t"
-        "lw     %[Temp3],   16(%[x1])               \n\t"
-        "lw     %[Temp4],   24(%[x1])               \n\t"
-        "xor    %[Temp1],   %[Temp1],   %[Temp5]    \n\t"
-        "xor    %[Temp2],   %[Temp2],   %[Temp5]    \n\t"
-        "xor    %[Temp3],   %[Temp3],   %[Temp5]    \n\t"
-        "xor    %[Temp4],   %[Temp4],   %[Temp5]    \n\t"
-        "sw     %[Temp1],   0(%[x1])                \n\t"
-        "sw     %[Temp2],   8(%[x1])                \n\t"
-        "sw     %[Temp3],   16(%[x1])               \n\t"
-        "sw     %[Temp4],   24(%[x1])               \n\t"
-        "addiu  %[x1],      %[x1],      32          \n\t"
-        "bne    %[x1],      %[x_end],   1b          \n\t"
-
-        : [Temp1]"=&r"(Temp1), [Temp2]"=&r"(Temp2),
-          [Temp3]"=&r"(Temp3), [Temp4]"=&r"(Temp4),
-          [Temp5]"=&r"(Temp5), [x1]"+r"(x1)
-        : [x_end]"r"(x_end)
-        : "memory"
-    );
-}
-
 static void sbr_qmf_pre_shuffle_mips(float *z)
 {
     int Temp1, Temp2, Temp3, Temp4, Temp5, Temp6;
@@ -920,7 +887,6 @@ static void sbr_hf_apply_noise_3_mips(float (*Y)[2], const float *s_m,
 void ff_sbrdsp_init_mips(SBRDSPContext *s)
 {
 #if HAVE_INLINE_ASM
-    s->neg_odd_64 = sbr_neg_odd_64_mips;
     s->qmf_pre_shuffle = sbr_qmf_pre_shuffle_mips;
     s->qmf_post_shuffle = sbr_qmf_post_shuffle_mips;
 #if HAVE_MIPSFPU

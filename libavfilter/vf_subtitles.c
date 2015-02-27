@@ -51,6 +51,7 @@ typedef struct {
     ASS_Track    *track;
     char *filename;
     char *charenc;
+    char *force_style;
     int stream_index;
     uint8_t rgba_map[4];
     int     pix_step[4];       ///< steps per pixel for each plane of the main output
@@ -152,7 +153,7 @@ static int config_input(AVFilterLink *inlink)
 #define AR(c)  ( (c)>>24)
 #define AG(c)  (((c)>>16)&0xFF)
 #define AB(c)  (((c)>>8) &0xFF)
-#define AA(c)  ((0xFF-c) &0xFF)
+#define AA(c)  ((0xFF-(c)) &0xFF)
 
 static void overlay_ass_image(AssContext *ass, AVFrame *picref,
                               const ASS_Image *image)
@@ -260,6 +261,7 @@ static const AVOption subtitles_options[] = {
     {"charenc",      "set input character encoding", OFFSET(charenc),      AV_OPT_TYPE_STRING, {.str = NULL}, CHAR_MIN, CHAR_MAX, FLAGS},
     {"stream_index", "set stream index",             OFFSET(stream_index), AV_OPT_TYPE_INT,    { .i64 = -1 }, -1,       INT_MAX,  FLAGS},
     {"si",           "set stream index",             OFFSET(stream_index), AV_OPT_TYPE_INT,    { .i64 = -1 }, -1,       INT_MAX,  FLAGS},
+    {"force_style",  "force subtitle style",         OFFSET(force_style),  AV_OPT_TYPE_STRING, {.str = NULL}, CHAR_MIN, CHAR_MAX, FLAGS},
     {NULL},
 };
 
@@ -392,6 +394,27 @@ static av_cold int init_subtitles(AVFilterContext *ctx)
     if (ret < 0)
         goto end;
 
+    if (ass->force_style) {
+        char **list = NULL;
+        char *temp = NULL;
+        char *ptr = av_strtok(ass->force_style, ",", &temp);
+        int i = 0;
+        while (ptr) {
+            av_dynarray_add(&list, &i, ptr);
+            if (!list) {
+                ret = AVERROR(ENOMEM);
+                goto end;
+            }
+            ptr = av_strtok(NULL, ",", &temp);
+        }
+        av_dynarray_add(&list, &i, NULL);
+        if (!list) {
+            ret = AVERROR(ENOMEM);
+            goto end;
+        }
+        ass_set_style_overrides(ass->library, list);
+        av_free(list);
+    }
     /* Decode subtitles and push them into the renderer (libass) */
     if (dec_ctx->subtitle_header)
         ass_process_codec_private(ass->track,

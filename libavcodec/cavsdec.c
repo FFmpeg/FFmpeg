@@ -467,7 +467,7 @@ static inline void mv_pred_direct(AVSContext *h, cavs_vector *pmv_fw,
 {
     cavs_vector *pmv_bw = pmv_fw + MV_BWD_OFFS;
     int den = h->direct_den[col_mv->ref];
-    int m = col_mv->x >> 31;
+    int m = FF_SIGNBIT(col_mv->x);
 
     pmv_fw->dist = h->dist[1];
     pmv_bw->dist = h->dist[0];
@@ -476,7 +476,7 @@ static inline void mv_pred_direct(AVSContext *h, cavs_vector *pmv_fw,
     /* scale the co-located motion vector according to its temporal span */
     pmv_fw->x =     (((den + (den * col_mv->x * pmv_fw->dist ^ m) - m - 1) >> 14) ^ m) - m;
     pmv_bw->x = m - (((den + (den * col_mv->x * pmv_bw->dist ^ m) - m - 1) >> 14) ^ m);
-    m = col_mv->y >> 31;
+    m = FF_SIGNBIT(col_mv->y);
     pmv_fw->y =     (((den + (den * col_mv->y * pmv_fw->dist ^ m) - m - 1) >> 14) ^ m) - m;
     pmv_bw->y = m - (((den + (den * col_mv->y * pmv_bw->dist ^ m) - m - 1) >> 14) ^ m);
 }
@@ -1147,12 +1147,11 @@ static int decode_seq_header(AVSContext *h)
     h->low_delay =  get_bits1(&h->gb);
     h->mb_width  = (h->width  + 15) >> 4;
     h->mb_height = (h->height + 15) >> 4;
-    h->avctx->time_base.den = ff_mpeg12_frame_rate_tab[frame_rate_code].num;
-    h->avctx->time_base.num = ff_mpeg12_frame_rate_tab[frame_rate_code].den;
+    h->avctx->framerate = ff_mpeg12_frame_rate_tab[frame_rate_code];
     h->avctx->width  = h->width;
     h->avctx->height = h->height;
     if (!h->top_qp)
-        ff_cavs_init_top_lines(h);
+        return ff_cavs_init_top_lines(h);
     return 0;
 }
 

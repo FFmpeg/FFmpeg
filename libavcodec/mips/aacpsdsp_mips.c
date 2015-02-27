@@ -277,7 +277,7 @@ static void ps_mul_pair_single_mips(float (*dst)[2], float (*src0)[2], float *sr
 
 static void ps_decorrelate_mips(float (*out)[2], float (*delay)[2],
                              float (*ap_delay)[PS_QMF_TIME_SLOTS + PS_MAX_AP_DELAY][2],
-                             const float phi_fract[2], float (*Q_fract)[2],
+                             const float phi_fract[2], const float (*Q_fract)[2],
                              const float *transient_gain,
                              float g_decay_slope,
                              int len)
@@ -285,8 +285,8 @@ static void ps_decorrelate_mips(float (*out)[2], float (*delay)[2],
     float *p_delay = &delay[0][0];
     float *p_out = &out[0][0];
     float *p_ap_delay = &ap_delay[0][0][0];
-    float *p_t_gain = (float*)transient_gain;
-    float *p_Q_fract = &Q_fract[0][0];
+    const float *p_t_gain = transient_gain;
+    const float *p_Q_fract = &Q_fract[0][0];
     float ag0, ag1, ag2;
     float phi_fract0 = phi_fract[0];
     float phi_fract1 = phi_fract[1];

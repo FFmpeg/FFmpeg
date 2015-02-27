@@ -1,16 +1,10 @@
  ┌────────────────────────────────────────┐
- │ RELEASE NOTES for FFmpeg 2.4 "Fresnel" │
+ │ RELEASE NOTES for FFmpeg 2.5 "Bohr"    │
  └────────────────────────────────────────┘
 
-   The FFmpeg Project proudly presents FFmpeg 2.4 "Fresnel", just 2 months
-   after the release of 2.3. Since this wasn't a long time ago, the Changelog
+   The FFmpeg Project proudly presents FFmpeg 2.5 "Bohr", just 2.5 months
+   after the release of 2.4. Since this wasn't a long time ago, the Changelog
    is a bit short this time.
-
-   The most important thing in this release is the major version bump of the
-   libraries.  This means that this release is neither ABI-compatible nor
-   fully API-compatible. But on the other hand it is aligned with the Libav
-   11 release series, and will as a result probably end up being maintained for
-   a long time.
 
    As usual, if you have any question on this release or any FFmpeg related
    topic, feel free to join us on the #ffmpeg IRC channel (on
@@ -20,24 +14,21 @@
    │ 🔨  API Information         │
    └────────────────────────────┘
 
-     FFmpeg 2.4 includes the following library versions:
+     FFmpeg 2.5 includes the following library versions:
 
-       • libavutil      54.7.100
-       • libavcodec     56.1.100
-       • libavformat    56.4.101
-       • libavdevice    56.0.100
-       • libavfilter     5.1.100
-       • libswscale      3.0.100
-       • libswresample   1.1.100
-       • libpostproc    53.0.100
+       • libavutil      54.15.100
+       • libavcodec     56.13.100
+       • libavformat    56.15.102
+       • libavdevice    56. 3.100
+       • libavfilter     5. 2.103
+       • libswscale      3. 1.101
+       • libswresample   1. 1.100
+       • libpostproc    53. 3.100
 
-     Important API changes since 2.3:
+     Important API changes since 2.4:
 
-       • The new field mime_type was added to AVProbeData, which can
-         cause crashes, if it is not initialized.
-       • Some deprecated functions were removed.
-       • The avfilter_graph_parse function was made compatible with Libav.
-       • The Matroska demuxer now outputs verbatim ASS packets.
+       • avpriv_dv_frame_profile2() has been deprecated
+
 
      Please refer to the doc/APIchanges file for more information.
 
@@ -46,36 +37,65 @@
  └────────────────────────────┘
 
    ┌────────────────────────────┐
+   │ ffprobe                    │
+   └────────────────────────────┘
+
+    • -show_pixel_formats option
+
+   ┌────────────────────────────┐
+   │ ffserver                   │
+   └────────────────────────────┘
+
+    • codec private options support
+
+   ┌────────────────────────────┐
+   │ libavcodec                 │
+   └────────────────────────────┘
+
+    • STL subtitle decoder
+    • libutvideo YUV 4:2:2 10bit support
+    • animated WebP decoding support
+    • zygoaudio decoding support
+
+   ┌────────────────────────────┐
+   │ libavdevice                │
+   └────────────────────────────┘
+
+    • XCB-based screen-grabber
+    • AVFoundation screen capturing support
+
+   ┌────────────────────────────┐
    │ libavformat                │
    └────────────────────────────┘
 
-    • Icecast protocol.
-    • API for live metadata updates through event flags.
-    • UTF-16 support in text subtitles formats.
-    • The ASS muxer now reorders the Dialogue events properly.
+    • HEVC/H.265 RTP payload format (draft v6) packetizer
+    • SUP/PGS subtitle demuxer
+    • STL subtitle demuxer
+    • UDP-Lite support (RFC 3828)
+    • creating DASH compatible fragmented MP4, MPEG-DASH segmenting muxer
+    • WebP muxer
+    • APNG demuxer
 
    ┌────────────────────────────┐
    │ libavfilter                │
    └────────────────────────────┘
 
-    • Ported lenscorrection filter from frei0r filter.
-    • Large optimizations in dctdnoiz to make it usable.
-    • Added codecview filter to visualize information exported by some codecs.
-    • Added silenceremove filter.
+    • xBR scaling filter
 
    ┌────────────────────────────┐
    │ libavutil                  │
    └────────────────────────────┘
 
-    • Added clip() function in eval.
+    • CAST128 symmetric block cipher, ECB mode
+
+   ┌────────────────────────────┐
+   │ libpostproc                │
+   └────────────────────────────┘
+
+    • visualization support
 
  ┌────────────────────────────┐
  │ ⚠  Behaviour changes       │
  └────────────────────────────┘
-
-  • dctdnoiz filter now uses a block size of 8x8 instead of 16x16 by default
-  • -vismv option is deprecated in favor of the codecview filter
-  • libmodplug is now detected through pkg-config
-  • HTML documentation generation through texi2html is deprecated in
-    favor of makeinfo/texi2any
-  • ICY metadata are now requested by default with the HTTP protocol
+    • XMP metadata is not exported by default anymore as it can be huge.
+      see the export_xmp option

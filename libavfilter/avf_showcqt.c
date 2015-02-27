@@ -90,6 +90,7 @@ typedef struct {
     float coeffclamp;   /* lower coeffclamp, more precise, higher coeffclamp, faster */
     int fullhd;         /* if true, output video is at full HD resolution, otherwise it will be halved */
     float gamma;        /* lower gamma, more contrast, higher gamma, more range */
+    float gamma2;       /* gamma of bargraph */
     int fps;            /* the required fps is so strict, so it's enough to be int, but 24000/1001 etc cannot be encoded */
     int count;          /* fps * count = transform rate */
 } ShowCQTContext;
@@ -103,6 +104,7 @@ static const AVOption showcqt_options[] = {
     { "timeclamp", "set timeclamp", OFFSET(timeclamp), AV_OPT_TYPE_DOUBLE, { .dbl = 0.17 }, 0.1, 1.0, FLAGS },
     { "coeffclamp", "set coeffclamp", OFFSET(coeffclamp), AV_OPT_TYPE_FLOAT, { .dbl = 1 }, 0.1, 10, FLAGS },
     { "gamma", "set gamma", OFFSET(gamma), AV_OPT_TYPE_FLOAT, { .dbl = 3 }, 1, 7, FLAGS },
+    { "gamma2", "set gamma of bargraph", OFFSET(gamma2), AV_OPT_TYPE_FLOAT, { .dbl = 1 }, 1, 7, FLAGS },
     { "fullhd", "set full HD resolution", OFFSET(fullhd), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, FLAGS },
     { "fps", "set video fps", OFFSET(fps), AV_OPT_TYPE_INT, { .i64 = 25 }, 10, 100, FLAGS },
     { "count", "set number of transform per frame", OFFSET(count), AV_OPT_TYPE_INT, { .i64 = 6 }, 1, 30, FLAGS },
@@ -203,7 +205,7 @@ static void load_freetype_font(AVFilterContext *ctx)
     if (FT_Set_Char_Size(face, 16*64 * linear_hori_advance / face->glyph->linearHoriAdvance, 0, 0, 0))
         goto fail;
 
-    s->font_alpha = av_malloc(font_height * video_width);
+    s->font_alpha = av_malloc_array(font_height, video_width);
     if (!s->font_alpha)
         goto fail;
 
@@ -566,6 +568,7 @@ static int plot_cqt(AVFilterLink *inlink)
     for (x = 0; x < VIDEO_WIDTH; x++) {
         int u;
         float g = 1.0f / s->gamma;
+        float g2 = 1.0f / s->gamma2;
         FFTComplex l = {0,0};
         FFTComplex r = {0,0};
 
@@ -581,7 +584,7 @@ static int plot_cqt(AVFilterLink *inlink)
         result[x][0] = l.re * l.re + l.im * l.im;
         result[x][2] = r.re * r.re + r.im * r.im;
         result[x][1] = 0.5f * (result[x][0] + result[x][2]);
-        result[x][3] = result[x][1];
+        result[x][3] = (g2 == 1.0f) ? result[x][1] : powf(result[x][1], g2);
         result[x][0] = 255.0f * powf(FFMIN(1.0f,result[x][0]), g);
         result[x][1] = 255.0f * powf(FFMIN(1.0f,result[x][1]), g);
         result[x][2] = 255.0f * powf(FFMIN(1.0f,result[x][2]), g);

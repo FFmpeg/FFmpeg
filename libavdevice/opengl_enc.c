@@ -31,6 +31,7 @@
 #include "config.h"
 
 #if HAVE_WINDOWS_H
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #endif
 #if HAVE_OPENGL_GL3_H

@@ -46,7 +46,7 @@ enum LOCO_MODE {
 typedef struct LOCOContext {
     AVCodecContext *avctx;
     int lossy;
-    int mode;
+    enum LOCO_MODE mode;
 } LOCOContext;
 
 typedef struct RICEContext {
@@ -130,12 +130,15 @@ static int loco_decode_plane(LOCOContext *l, uint8_t *data, int width, int heigh
 {
     RICEContext rc;
     int val;
+    int ret;
     int i, j;
 
     if(buf_size<=0)
         return -1;
 
-    init_get_bits8(&rc.gb, buf, buf_size);
+    if ((ret = init_get_bits8(&rc.gb, buf, buf_size)) < 0)
+        return ret;
+
     rc.save  = 0;
     rc.run   = 0;
     rc.run2  = 0;
@@ -166,6 +169,23 @@ static int loco_decode_plane(LOCOContext *l, uint8_t *data, int width, int heigh
     }
 
     return (get_bits_count(&rc.gb) + 7) >> 3;
+}
+
+static void rotate_faulty_loco(uint8_t *data, int width, int height, int stride, int step)
+{
+    int y;
+
+    for (y=1; y<height; y++) {
+        if (width>=y) {
+            memmove(data + y*stride,
+                    data + y*(stride + step),
+                    step*(width-y));
+            if (y+1 < height)
+                memmove(data + y*stride + step*(width-y),
+                        data + (y+1)*stride,
+                        step*y);
+        }
+    }
 }
 
 static int decode_frame(AVCodecContext *avctx,
@@ -216,6 +236,8 @@ static int decode_frame(AVCodecContext *avctx,
         ADVANCE_BY_DECODED;
         decoded = loco_decode_plane(l, p->data[0] + p->linesize[0]*(avctx->height-1) + 2, avctx->width, avctx->height,
                                     -p->linesize[0], buf, buf_size, 3);
+        if (avctx->width & 1)
+            rotate_faulty_loco(p->data[0] + p->linesize[0]*(avctx->height-1), avctx->width, avctx->height, -p->linesize[0], 3);
         break;
     case LOCO_CRGBA:
     case LOCO_RGBA:

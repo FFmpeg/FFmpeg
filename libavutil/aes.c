@@ -62,9 +62,9 @@ static uint32_t dec_multbl[4][256];
 #endif
 
 #if HAVE_BIGENDIAN
-#   define ROT(x, s) ((x >> s) | (x << (32-s)))
+#   define ROT(x, s) (((x) >> (s)) | ((x) << (32-(s))))
 #else
-#   define ROT(x, s) ((x << s) | (x >> (32-s)))
+#   define ROT(x, s) (((x) << (s)) | ((x) >> (32-(s))))
 #endif
 
 static inline void addkey(av_aes_block *dst, const av_aes_block *src,
@@ -127,7 +127,7 @@ static inline void mix(av_aes_block state[2], uint32_t multbl[][256], int s1, in
     state[0].u32[3] = mix_core(multbl, src[3][0], src[s1-1][1], src[1][2], src[s3-1][3]);
 }
 
-static inline void crypt(AVAES *a, int s, const uint8_t *sbox,
+static inline void aes_crypt(AVAES *a, int s, const uint8_t *sbox,
                          uint32_t multbl[][256])
 {
     int r;
@@ -146,7 +146,7 @@ void av_aes_crypt(AVAES *a, uint8_t *dst, const uint8_t *src,
     while (count--) {
         addkey_s(&a->state[1], src, &a->round_key[a->rounds]);
         if (decrypt) {
-            crypt(a, 0, inv_sbox, dec_multbl);
+            aes_crypt(a, 0, inv_sbox, dec_multbl);
             if (iv) {
                 addkey_s(&a->state[0], iv, &a->state[0]);
                 memcpy(iv, src, 16);
@@ -155,7 +155,7 @@ void av_aes_crypt(AVAES *a, uint8_t *dst, const uint8_t *src,
         } else {
             if (iv)
                 addkey_s(&a->state[1], iv, &a->state[1]);
-            crypt(a, 2, sbox, enc_multbl);
+            aes_crypt(a, 2, sbox, enc_multbl);
             addkey_d(dst, &a->state[0], &a->round_key[0]);
             if (iv)
                 memcpy(iv, dst, 16);

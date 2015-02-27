@@ -158,21 +158,21 @@ static void *pcm_dvd_decode_samples(AVCodecContext *avctx, const uint8_t *src,
     GetByteContext gb;
     int i;
     uint8_t t;
-    int samples;
 
     bytestream2_init(&gb, src, blocks * s->block_size);
     switch (avctx->bits_per_coded_sample) {
-    case 16:
+    case 16: {
 #if HAVE_BIGENDIAN
         bytestream2_get_buffer(&gb, dst16, blocks * s->block_size);
         dst16 += blocks * s->block_size / 2;
 #else
-        samples = blocks * avctx->channels;
+        int samples = blocks * avctx->channels;
         do {
             *dst16++ = bytestream2_get_be16u(&gb);
         } while (--samples);
 #endif
         return dst16;
+    }
     case 20:
         if (avctx->channels == 1) {
             do {

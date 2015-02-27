@@ -107,6 +107,43 @@
     SWAP %5, %2, %3
 %endmacro
 
+%macro TRANSPOSE8x4D 9-11
+%if ARCH_X86_64
+    SBUTTERFLY dq,  %1, %2, %9
+    SBUTTERFLY dq,  %3, %4, %9
+    SBUTTERFLY dq,  %5, %6, %9
+    SBUTTERFLY dq,  %7, %8, %9
+    SBUTTERFLY qdq, %1, %3, %9
+    SBUTTERFLY qdq, %2, %4, %9
+    SBUTTERFLY qdq, %5, %7, %9
+    SBUTTERFLY qdq, %6, %8, %9
+    SWAP %2, %5
+    SWAP %4, %7
+%else
+; in:  m0..m7
+; out: m0..m7, unless %11 in which case m2 is in %9
+; spills into %9 and %10
+    movdqa %9, m%7
+    SBUTTERFLY dq,  %1, %2, %7
+    movdqa %10, m%2
+    movdqa m%7, %9
+    SBUTTERFLY dq,  %3, %4, %2
+    SBUTTERFLY dq,  %5, %6, %2
+    SBUTTERFLY dq,  %7, %8, %2
+    SBUTTERFLY qdq, %1, %3, %2
+    movdqa %9, m%3
+    movdqa m%2, %10
+    SBUTTERFLY qdq, %2, %4, %3
+    SBUTTERFLY qdq, %5, %7, %3
+    SBUTTERFLY qdq, %6, %8, %3
+    SWAP %2, %5
+    SWAP %4, %7
+%if %0<11
+    movdqa m%3, %9
+%endif
+%endif
+%endmacro
+
 %macro TRANSPOSE8x8W 9-11
 %if ARCH_X86_64
     SBUTTERFLY wd,  %1, %2, %9
@@ -639,6 +676,11 @@
 %elif cpuflag(sse)
     shufps  %1, %1, 0
 %endif
+%endmacro
+
+%macro CLIPUB 3 ;(dst, min, max)
+    pmaxub %1, %2
+    pminub %1, %3
 %endmacro
 
 %macro CLIPW 3 ;(dst, min, max)

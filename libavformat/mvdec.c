@@ -57,7 +57,12 @@ static int mv_probe(AVProbeData *p)
 static char *var_read_string(AVIOContext *pb, int size)
 {
     int n;
-    char *str = av_malloc(size + 1);
+    char *str;
+
+    if (size < 0 || size == INT_MAX)
+        return NULL;
+
+    str = av_malloc(size + 1);
     if (!str)
         return NULL;
     n = avio_get_str(pb, size, str, size + 1);
@@ -218,7 +223,7 @@ static int parse_video_var(AVFormatContext *avctx, AVStream *st,
     return 0;
 }
 
-static void read_table(AVFormatContext *avctx, AVStream *st,
+static int read_table(AVFormatContext *avctx, AVStream *st,
                        int (*parse)(AVFormatContext *avctx, AVStream *st,
                                     const char *name, int size))
 {
@@ -233,11 +238,16 @@ static void read_table(AVFormatContext *avctx, AVStream *st,
         avio_read(pb, name, 16);
         name[sizeof(name) - 1] = 0;
         size = avio_rb32(pb);
+        if (size < 0) {
+            av_log(avctx, AV_LOG_ERROR, "entry size %d is invalid\n", size);
+            return AVERROR_INVALIDDATA;
+        }
         if (parse(avctx, st, name, size) < 0) {
             avpriv_request_sample(avctx, "Variable %s", name);
             avio_skip(pb, size);
         }
     }
+    return 0;
 }
 
 static void read_index(AVIOContext *pb, AVStream *st)
@@ -263,6 +273,7 @@ static int mv_read_header(AVFormatContext *avctx)
     AVIOContext *pb = avctx->pb;
     AVStream *ast = NULL, *vst = NULL; //initialization to suppress warning
     int version, i;
+    int ret;
 
     avio_skip(pb, 4);
 
@@ -335,7 +346,8 @@ static int mv_read_header(AVFormatContext *avctx)
     } else if (!version && avio_rb16(pb) == 3) {
         avio_skip(pb, 4);
 
-        read_table(avctx, NULL, parse_global_var);
+        if ((ret = read_table(avctx, NULL, parse_global_var)) < 0)
+            return ret;
 
         if (mv->nb_audio_tracks > 1) {
             avpriv_request_sample(avctx, "Multiple audio streams support");
@@ -345,7 +357,8 @@ static int mv_read_header(AVFormatContext *avctx)
             if (!ast)
                 return AVERROR(ENOMEM);
             ast->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-            read_table(avctx, ast, parse_audio_var);
+            if ((read_table(avctx, ast, parse_audio_var)) < 0)
+                return ret;
             if (mv->acompression == 100 &&
                 mv->aformat == AUDIO_FORMAT_SIGNED &&
                 ast->codec->bits_per_coded_sample == 16) {
@@ -371,7 +384,8 @@ static int mv_read_header(AVFormatContext *avctx)
             if (!vst)
                 return AVERROR(ENOMEM);
             vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-            read_table(avctx, vst, parse_video_var);
+            if ((ret = read_table(avctx, vst, parse_video_var))<0)
+                return ret;
         }
 
         if (mv->nb_audio_tracks)
@@ -394,7 +408,7 @@ static int mv_read_packet(AVFormatContext *avctx, AVPacket *pkt)
     AVStream *st = avctx->streams[mv->stream_index];
     const AVIndexEntry *index;
     int frame = mv->frame[mv->stream_index];
-    int ret;
+    int64_t ret;
     uint64_t pos;
 
     if (frame < st->nb_index_entries) {

@@ -85,7 +85,7 @@ typedef struct MPADecodeContext {
     int err_recognition;
     AVCodecContext* avctx;
     MPADSPContext mpadsp;
-    AVFloatDSPContext fdsp;
+    AVFloatDSPContext *fdsp;
     AVFrame *frame;
 } MPADecodeContext;
 
@@ -406,6 +406,16 @@ static av_cold void decode_init_static(void)
     }
 }
 
+#if USE_FLOATS
+static av_cold int decode_close(AVCodecContext * avctx)
+{
+    MPADecodeContext *s = avctx->priv_data;
+    av_freep(&s->fdsp);
+
+    return 0;
+}
+#endif
+
 static av_cold int decode_init(AVCodecContext * avctx)
 {
     static int initialized_tables = 0;
@@ -418,7 +428,12 @@ static av_cold int decode_init(AVCodecContext * avctx)
 
     s->avctx = avctx;
 
-    avpriv_float_dsp_init(&s->fdsp, avctx->flags & CODEC_FLAG_BITEXACT);
+#if USE_FLOATS
+    s->fdsp = avpriv_float_dsp_alloc(avctx->flags & CODEC_FLAG_BITEXACT);
+    if (!s->fdsp)
+        return AVERROR(ENOMEM);
+#endif
+
     ff_mpadsp_init(&s->mpadsp);
 
     if (avctx->request_sample_fmt == OUT_FMT &&
@@ -1138,7 +1153,7 @@ found2:
         /* NOTE: the 1/sqrt(2) normalization factor is included in the
            global gain */
 #if USE_FLOATS
-       s->fdsp.butterflies_float(g0->sb_hybrid, g1->sb_hybrid, 576);
+       s->fdsp->butterflies_float(g0->sb_hybrid, g1->sb_hybrid, 576);
 #else
         tab0 = g0->sb_hybrid;
         tab1 = g1->sb_hybrid;
@@ -1819,7 +1834,7 @@ static av_cold int decode_close_mp3on4(AVCodecContext * avctx)
     int i;
 
     for (i = 0; i < s->frames; i++)
-        av_free(s->mp3decctx[i]);
+        av_freep(&s->mp3decctx[i]);
 
     return 0;
 }

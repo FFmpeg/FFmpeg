@@ -33,7 +33,7 @@
 #define AIFF                    0
 #define AIFF_C_VERSION1         0xA2805140
 
-typedef struct {
+typedef struct AIFFInputContext {
     int64_t data_end;
     int block_duration;
 } AIFFInputContext;
@@ -116,7 +116,9 @@ static unsigned int get_aiff_header(AVFormatContext *s, int size,
     size -= 18;
 
     /* get codec id for AIFF-C */
-    if (version == AIFF_C_VERSION1) {
+    if (size < 4) {
+        version = AIFF;
+    } else if (version == AIFF_C_VERSION1) {
         codec->codec_tag = avio_rl32(pb);
         codec->codec_id  = ff_codec_get_id(ff_codec_aiff_tags, codec->codec_tag);
         size -= 4;

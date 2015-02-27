@@ -46,6 +46,7 @@
 #include "libavutil/mem.h"
 
 #include "libavcodec/avcodec.h"
+#include "libavcodec/idctdsp.h"
 
 #include "idctdsp.h"
 #include "xvididct.h"
@@ -497,13 +498,13 @@ void ff_xvid_idct_mmx(short *block)
 void ff_xvid_idct_mmx_put(uint8_t *dest, int line_size, int16_t *block)
 {
     ff_xvid_idct_mmx(block);
-    ff_put_pixels_clamped_mmx(block, dest, line_size);
+    ff_put_pixels_clamped(block, dest, line_size);
 }
 
 void ff_xvid_idct_mmx_add(uint8_t *dest, int line_size, int16_t *block)
 {
     ff_xvid_idct_mmx(block);
-    ff_add_pixels_clamped_mmx(block, dest, line_size);
+    ff_add_pixels_clamped(block, dest, line_size);
 }
 
 #endif /* HAVE_MMX_INLINE */
@@ -536,13 +537,13 @@ void ff_xvid_idct_mmxext(short *block)
 void ff_xvid_idct_mmxext_put(uint8_t *dest, int line_size, int16_t *block)
 {
     ff_xvid_idct_mmxext(block);
-    ff_put_pixels_clamped_mmx(block, dest, line_size);
+    ff_put_pixels_clamped(block, dest, line_size);
 }
 
 void ff_xvid_idct_mmxext_add(uint8_t *dest, int line_size, int16_t *block)
 {
     ff_xvid_idct_mmxext(block);
-    ff_add_pixels_clamped_mmx(block, dest, line_size);
+    ff_add_pixels_clamped(block, dest, line_size);
 }
 
 #endif /* HAVE_MMXEXT_INLINE */

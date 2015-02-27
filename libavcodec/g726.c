@@ -219,7 +219,7 @@ static int16_t g726_decode(G726Context* c, int I)
             c->b[i] = 0;
     } else {
         /* This is a bit crazy, but it really is +255 not +256 */
-        fa1 = av_clip((-c->a[0]*c->pk[0]*pk0)>>5, -256, 255);
+        fa1 = av_clip_intp2((-c->a[0]*c->pk[0]*pk0)>>5, 8);
 
         c->a[1] += 128*pk0*c->pk[1] + fa1 - (c->a[1]>>7);
         c->a[1] = av_clip(c->a[1], -12288, 12288);

@@ -47,14 +47,14 @@ typedef struct LLSModel {
      *            32-byte aligned, and any padding elements must be initialized
      *            (i.e not denormal/nan).
      */
-    void (*update_lls)(struct LLSModel *m, double *var);
+    void (*update_lls)(struct LLSModel *m, const double *var);
     /**
      * Inner product of var[] and the LPC coefs.
      * @param m this context
      * @param var training samples, excluding the value to be predicted. unaligned.
      * @param order lpc order
      */
-    double (*evaluate_lls)(struct LLSModel *m, double *var, int order);
+    double (*evaluate_lls)(struct LLSModel *m, const double *var, int order);
 } LLSModel;
 
 void avpriv_init_lls(LLSModel *m, int indep_count);

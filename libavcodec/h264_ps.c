@@ -31,31 +31,11 @@
 #include "internal.h"
 #include "avcodec.h"
 #include "h264.h"
-#include "h264data.h" //FIXME FIXME FIXME (just for zigzag_scan)
+#include "h264data.h"
 #include "golomb.h"
 
 #define MAX_LOG2_MAX_FRAME_NUM    (12 + 4)
 #define MIN_LOG2_MAX_FRAME_NUM    4
-
-static const AVRational pixel_aspect[17] = {
-    {   0,  1 },
-    {   1,  1 },
-    {  12, 11 },
-    {  10, 11 },
-    {  16, 11 },
-    {  40, 33 },
-    {  24, 11 },
-    {  20, 11 },
-    {  32, 11 },
-    {  80, 33 },
-    {  18, 11 },
-    {  15, 11 },
-    {  64, 33 },
-    { 160, 99 },
-    {   4,  3 },
-    {   3,  2 },
-    {   2,  1 },
-};
 
 #define QP(qP, depth) ((qP) + 6 * ((depth) - 8))
 
@@ -164,8 +144,8 @@ static inline int decode_vui_parameters(H264Context *h, SPS *sps)
         if (aspect_ratio_idc == EXTENDED_SAR) {
             sps->sar.num = get_bits(&h->gb, 16);
             sps->sar.den = get_bits(&h->gb, 16);
-        } else if (aspect_ratio_idc < FF_ARRAY_ELEMS(pixel_aspect)) {
-            sps->sar = pixel_aspect[aspect_ratio_idc];
+        } else if (aspect_ratio_idc < FF_ARRAY_ELEMS(ff_h264_pixel_aspect)) {
+            sps->sar = ff_h264_pixel_aspect[aspect_ratio_idc];
         } else {
             av_log(h->avctx, AV_LOG_ERROR, "illegal aspect ratio\n");
             return AVERROR_INVALIDDATA;
@@ -391,7 +371,8 @@ int ff_h264_decode_seq_parameter_set(H264Context *h)
                                   "Different chroma and luma bit depth");
             goto fail;
         }
-        if (sps->bit_depth_luma > 14U || sps->bit_depth_chroma > 14U) {
+        if (sps->bit_depth_luma   < 8 || sps->bit_depth_luma   > 14 ||
+            sps->bit_depth_chroma < 8 || sps->bit_depth_chroma > 14) {
             av_log(h->avctx, AV_LOG_ERROR, "illegal bit depth value (%d, %d)\n",
                    sps->bit_depth_luma, sps->bit_depth_chroma);
             goto fail;

@@ -54,7 +54,7 @@ static int sami_read_header(AVFormatContext *s)
     char c = 0;
     int res = 0, got_first_sync_point = 0;
     FFTextReader tr;
-    ff_text_init_avio(&tr, s->pb);
+    ff_text_init_avio(s, &tr, s->pb);
 
     if (!st)
         return AVERROR(ENOMEM);

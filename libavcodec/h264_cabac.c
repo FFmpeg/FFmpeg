@@ -27,6 +27,7 @@
 
 #define CABAC(h) 1
 #define UNCHECKED_BITSTREAM_READER 1
+#define INT_BIT (CHAR_BIT * sizeof(int))
 
 #include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
@@ -1281,7 +1282,7 @@ void ff_h264_init_cabac_states(H264Context *h) {
 }
 
 static int decode_cabac_field_decoding_flag(H264Context *h) {
-    const long mbb_xy = h->mb_xy - 2L*h->mb_stride;
+    const int mbb_xy = h->mb_xy - 2*h->mb_stride;
 
     unsigned long ctx = 0;
 
@@ -1713,7 +1714,7 @@ decode_cabac_residual_internal(H264Context *h, int16_t *block,
 \
             if( coeff_abs >= 15 ) { \
                 int j = 0; \
-                while(get_cabac_bypass( CC ) && j<30) { \
+                while (get_cabac_bypass(CC) && j < 30) { \
                     j++; \
                 } \
 \

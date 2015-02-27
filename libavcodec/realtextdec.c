@@ -52,13 +52,13 @@ static int rt_event_to_ass(AVBPrint *buf, const char *p)
         }
         p++;
     }
-    av_bprintf(buf, "\r\n");
     return 0;
 }
 
 static int realtext_decode_frame(AVCodecContext *avctx,
                                  void *data, int *got_sub_ptr, AVPacket *avpkt)
 {
+    int ret = 0;
     AVSubtitle *sub = data;
     const char *ptr = avpkt->data;
     AVBPrint buf;
@@ -67,9 +67,11 @@ static int realtext_decode_frame(AVCodecContext *avctx,
     // note: no need to rescale pts & duration since they are in the same
     // timebase as ASS (1/100)
     if (ptr && avpkt->size > 0 && !rt_event_to_ass(&buf, ptr))
-        ff_ass_add_rect(sub, buf.str, avpkt->pts, avpkt->duration, 0);
-    *got_sub_ptr = sub->num_rects > 0;
+        ret = ff_ass_add_rect_bprint(sub, &buf, avpkt->pts, avpkt->duration);
     av_bprint_finalize(&buf, NULL);
+    if (ret < 0)
+        return ret;
+    *got_sub_ptr = sub->num_rects > 0;
     return avpkt->size;
 }
 

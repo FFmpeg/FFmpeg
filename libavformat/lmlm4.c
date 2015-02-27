@@ -23,6 +23,7 @@
  */
 
 #include "libavutil/intreadwrite.h"
+
 #include "avformat.h"
 #include "internal.h"
 
@@ -34,23 +35,23 @@
 
 #define LMLM4_MAX_PACKET_SIZE   1024 * 1024
 
-static int lmlm4_probe(AVProbeData * pd) {
+static int lmlm4_probe(AVProbeData *pd)
+{
     const unsigned char *buf = pd->buf;
     unsigned int frame_type, packet_size;
 
-    frame_type  = AV_RB16(buf+2);
-    packet_size = AV_RB32(buf+4);
+    frame_type  = AV_RB16(buf + 2);
+    packet_size = AV_RB32(buf + 4);
 
     if (!AV_RB16(buf) && frame_type <= LMLM4_MPEG1L2 && packet_size &&
         frame_type != LMLM4_INVALID && packet_size <= LMLM4_MAX_PACKET_SIZE) {
-
         if (frame_type == LMLM4_MPEG1L2) {
-            if ((AV_RB16(buf+8) & 0xfffe) != 0xfffc)
+            if ((AV_RB16(buf + 8) & 0xfffe) != 0xfffc)
                 return 0;
             /* I could calculate the audio framesize and compare with
              * packet_size-8, but that seems overkill */
             return AVPROBE_SCORE_MAX / 3;
-        } else if (AV_RB24(buf+8) == 0x000001) {    /* PES Signal */
+        } else if (AV_RB24(buf + 8) == 0x000001) {    /* PES Signal */
             return AVPROBE_SCORE_MAX / 5;
         }
     }
@@ -58,7 +59,8 @@ static int lmlm4_probe(AVProbeData * pd) {
     return 0;
 }
 
-static int lmlm4_read_header(AVFormatContext *s) {
+static int lmlm4_read_header(AVFormatContext *s)
+{
     AVStream *st;
 
     if (!(st = avformat_new_stream(s, NULL)))
@@ -78,7 +80,8 @@ static int lmlm4_read_header(AVFormatContext *s) {
     return 0;
 }
 
-static int lmlm4_read_packet(AVFormatContext *s, AVPacket *pkt) {
+static int lmlm4_read_packet(AVFormatContext *s, AVPacket *pkt)
+{
     AVIOContext *pb = s->pb;
     int ret;
     unsigned int frame_type, packet_size, padding, frame_size;
@@ -104,15 +107,15 @@ static int lmlm4_read_packet(AVFormatContext *s, AVPacket *pkt) {
     avio_skip(pb, padding);
 
     switch (frame_type) {
-        case LMLM4_I_FRAME:
-            pkt->flags = AV_PKT_FLAG_KEY;
-        case LMLM4_P_FRAME:
-        case LMLM4_B_FRAME:
-            pkt->stream_index = 0;
-            break;
-        case LMLM4_MPEG1L2:
-            pkt->stream_index = 1;
-            break;
+    case LMLM4_I_FRAME:
+        pkt->flags = AV_PKT_FLAG_KEY;
+    case LMLM4_P_FRAME:
+    case LMLM4_B_FRAME:
+        pkt->stream_index = 0;
+        break;
+    case LMLM4_MPEG1L2:
+        pkt->stream_index = 1;
+        break;
     }
 
     return ret;

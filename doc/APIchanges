@@ -15,14 +15,101 @@ libavutil:     2014-08-09
 
 API changes, most recent first:
 
+2015-xx-xx - xxxxxxx - lavc 56.13
+  Add width, height, coded_width, coded_height and format to
+  AVCodecParserContext.
+
+2015-xx-xx - xxxxxxx - lavu 54.9.0
+  Add AV_PIX_FMT_QSV for QSV hardware acceleration.
+
+2015-02-xx - xxxxxxx - lavc 56.21.102
+  Deprecate VIMA decoder.
+
+2015-01-27 - 728685f - lavc 56.12.0, lavu 54.8.0 - avcodec.h, frame.h
+  Add AV_PKT_DATA_AUDIO_SERVICE_TYPE and AV_FRAME_DATA_AUDIO_SERVICE_TYPE for
+  storing the audio service type as side data.
+
+2015-01-16 - a47c933 - lavf 56.19.100 - avformat.h
+  Add data_codec and data_codec_id for storing codec of data stream
+
+2015-01-11 - 007c33d - lavd 56.4.100 - avdevice.h
+  Add avdevice_list_input_sources().
+  Add avdevice_list_output_sinks().
+
+2014-12-25 - d7aaeea / c220a60 - lavc 56.19.100 / 56.10.0 - vdpau.h
+  Add av_vdpau_get_surface_parameters().
+
+2014-12-25 - ddb9a24 / 6c99c92 - lavc 56.18.100 / 56.9.0 - avcodec.h
+  Add AV_HWACCEL_FLAG_ALLOW_HIGH_DEPTH flag to av_vdpau_bind_context().
+
+2014-12-25 - d16079a / 57b6704 - lavc 56.17.100 / 56.8.0 - avcodec.h
+  Add AVCodecContext.sw_pix_fmt.
+
+2014-12-04 - 6e9ac02 - lavc 56.14.100 - dv_profile.h
+  Add av_dv_codec_profile2().
+
+-------- 8< --------- FFmpeg 2.5 was cut here -------- 8< ---------
+
+2014-11-21 - ab922f9 - lavu 54.15.100 - dict.h
+   Add av_dict_get_string().
+
+2014-11-18 - a54a51c - lavu 54.14.100 - float_dsp.h
+  Add avpriv_float_dsp_alloc().
+
+2014-11-16 - 6690d4c3 - lavf 56.13.100 - avformat.h
+  Add AVStream.recommended_encoder_configuration with accessors.
+
+2014-11-16 - bee5844d - lavu 54.13.100 - opt.h
+  Add av_opt_serialize().
+
+2014-11-16 - eec69332 - lavu 54.12.100 - opt.h
+  Add av_opt_is_set_to_default().
+
+2014-11-06 - 44fa267 / 5e80fb7 - lavc 56.11.100 / 56.6.0 - vorbis_parser.h
+  Add a public API for parsing vorbis packets.
+
+2014-10-15 - 17085a0 / 7ea1b34 - lavc 56.7.100 / 56.5.0 - avcodec.h
+  Replace AVCodecContext.time_base used for decoding
+  with AVCodecContext.framerate.
+
+2014-10-15 - 51c810e / d565fef1 - lavc 56.6.100 / 56.4.0 - avcodec.h
+  Add AV_HWACCEL_FLAG_IGNORE_LEVEL flag to av_vdpau_bind_context().
+
+2014-10-13 - da21895 / 2df0c32e - lavc 56.5.100 / 56.3.0 - avcodec.h
+  Add AVCodecContext.initial_padding. Deprecate the use of AVCodecContext.delay
+  for audio encoding.
+
+2014-10-08 - bb44f7d / 5a419b2 - lavu 54.10.100 / 54.4.0 - pixdesc.h
+  Add API to return the name of frame and context color properties.
+
+2014-10-06 - a61899a / e3e158e - lavc 56.3.100 / 56.2.0 - vdpau.h
+  Add av_vdpau_bind_context(). This function should now be used for creating
+  (or resetting) a AVVDPAUContext instead of av_vdpau_alloc_context().
+
+2014-10-02 - cdd6f05 - lavc 56.2.100 - avcodec.h
+2014-10-02 - cdd6f05 - lavu 54.9.100 - frame.h
+  Add AV_FRAME_DATA_SKIP_SAMPLES. Add lavc CODEC_FLAG2_SKIP_MANUAL and
+  AVOption "skip_manual", which makes lavc export skip information via
+  AV_FRAME_DATA_SKIP_SAMPLES AVFrame side data, instead of skipping and
+  discarding samples automatically.
+
+2014-10-02 - 0d92b0d - lavu 54.8.100 - avstring.h
+  Add av_match_list()
+
+2014-09-24 - ac68295 - libpostproc 53.1.100
+  Add visualization support
+
+2014-09-19 - 6edd6a4 - lavc 56.1.101 - dv_profile.h
+  deprecate avpriv_dv_frame_profile2(), which was made public by accident.
+
 
 -------- 8< --------- FFmpeg 2.4 was cut here -------- 8< ---------
 
-2014-08-28 - f30a815 / 9301486 - lavc 56.1.100 / 56.1.0 - avcodec.h
-  Add AV_PKT_DATA_STEREO3D to export container-level stereo3d information.
-
 2014-08-25 - 215db29 / b263f8f - lavf 56.3.100 / 56.3.0 - avformat.h
   Add AVFormatContext.max_ts_probe.
+
+2014-08-28 - f30a815 / 9301486 - lavc 56.1.100 / 56.1.0 - avcodec.h
+  Add AV_PKT_DATA_STEREO3D to export container-level stereo3d information.
 
 2014-08-23 - 8fc9bd0 - lavu 54.7.100 - dict.h
   AV_DICT_DONT_STRDUP_KEY and AV_DICT_DONT_STRDUP_VAL arguments are now
@@ -148,7 +235,7 @@ API changes, most recent first:
   Increase FF_INPUT_BUFFER_PADDING_SIZE to 32 due to some corner cases needing
   it
 
-2014-06-10 - xxxxxxx - lavf 55.43.100 - avformat.h
+2014-06-10 - 5482780 - lavf 55.43.100 - avformat.h
   New field int64_t max_analyze_duration2 instead of deprecated
   int max_analyze_duration.
 
@@ -172,7 +259,7 @@ API changes, most recent first:
   Add strict_std_compliance and related AVOptions to support experimental
   muxing.
 
-2014-05-26 - xxxxxxx - lavu 52.87.100 - threadmessage.h
+2014-05-26 - 55cc60c - lavu 52.87.100 - threadmessage.h
   Add thread message queue API.
 
 2014-05-26 - c37d179 - lavf 55.41.100 - avformat.h
@@ -182,7 +269,7 @@ API changes, most recent first:
   Add av_stream_get_side_data() to access stream-level side data
   in the same way as av_packet_get_side_data().
 
-2014-05-xx - xxxxxxx - lavu 52.86.100 - fifo.h
+2014-05-20 - 7336e39 - lavu 52.86.100 - fifo.h
   Add av_fifo_alloc_array() function.
 
 2014-05-19 - ef1d4ee / bddd8cb - lavu 52.85.100 / 53.15.0 - frame.h, display.h
@@ -201,7 +288,7 @@ API changes, most recent first:
   Add avcodec_free_context(). From now on it should be used for freeing
   AVCodecContext.
 
-2014-05-17 - 0eec06e - lavu 52.84.100 - time.h
+2014-05-17 - 0eec06e / 1bd0bdc - lavu 52.84.100 / 54.5.0 - time.h
   Add av_gettime_relative() av_gettime_relative_is_monotonic()
 
 2014-05-15 - eacf7d6 / 0c1959b - lavf 55.38.100 / 55.17.0 - avformat.h
@@ -214,10 +301,10 @@ API changes, most recent first:
 2014-05-11 - 14aef38 / 66e6c8a - lavu 52.83.100 / 53.14.0 - pixfmt.h
   Add AV_PIX_FMT_VDA for new-style VDA acceleration.
 
-2014-05-xx - xxxxxxx - lavu 52.82.0 - fifo.h
+2014-05-07 - 351f611 - lavu 52.82.100 - fifo.h
   Add av_fifo_freep() function.
 
-2014-05-02 - ba52fb11 - lavu 52.81.0 - opt.h
+2014-05-02 - ba52fb11 - lavu 52.81.100 - opt.h
   Add av_opt_set_dict2() function.
 
 2014-05-01 - e77b985 / a2941c8 - lavc 55.60.103 / 55.50.3 - avcodec.h
@@ -236,10 +323,14 @@ API changes, most recent first:
   Deprecate CODEC_FLAG_INPUT_PRESERVED. Its functionality is replaced by passing
   reference-counted frames to encoders.
 
+2014-04-30 - 617e866 - lavu 52.81.100 - pixdesc.h
+  Add av_find_best_pix_fmt_of_2(), av_get_pix_fmt_loss()
+  Deprecate avcodec_get_pix_fmt_loss(), avcodec_find_best_pix_fmt_of_2()
+
 2014-04-29 - 1bf6396 - lavc 55.60.100 - avcodec.h
   Add AVCodecDescriptor.mime_types field.
 
-2014-04-29 - xxxxxxx - lavu 52.80.0 - hash.h
+2014-04-29 - b804eb4 - lavu 52.80.100 - hash.h
   Add av_hash_final_bin(), av_hash_final_hex() and av_hash_final_b64().
 
 2014-03-07 - 8b2a130 - lavc 55.50.0 / 55.53.100 - dxva2.h
@@ -251,7 +342,7 @@ API changes, most recent first:
 2014-04-17 - a8d01a7 / 0983d48 - lavu 53.12.0 / 52.77.100 - crc.h
   Add AV_CRC_16_ANSI_LE crc variant.
 
-2014-04-XX - xxxxxxx - lavf xx.xx.1xx - avformat.h
+2014-04-15 - ef818d8 - lavf 55.37.101 - avformat.h
   Add av_format_inject_global_side_data()
 
 2014-04-12 - 4f698be - lavu 52.76.100 - log.h
@@ -331,7 +422,7 @@ API changes, most recent first:
 2014-02-19 - f4c8d00 / 6bb8720 - lavu 52.64.101 / 53.3.1 - opt.h
   Deprecate unused AV_OPT_FLAG_METADATA.
 
-2014-02-xx - xxxxxxx - lavd 55.10.100 - avdevice.h
+2014-02-16 - 81c3f81 - lavd 55.10.100 - avdevice.h
   Add avdevice_list_devices() and avdevice_free_list_devices()
 
 2014-02-16 - db3c970 - lavf 55.33.100 - avio.h
@@ -372,7 +463,7 @@ API changes, most recent first:
 2014-01-19 - 1a193c4 - lavf 55.25.100 - avformat.h
   Add avformat_get_mov_video_tags() and avformat_get_mov_audio_tags().
 
-2014-01-19 - xxxxxxx - lavu 52.63.100 - rational.h
+2014-01-19 - 3532dd5 - lavu 52.63.100 - rational.h
   Add av_make_q() function.
 
 2014-01-05 - 4cf4da9 / 5b4797a - lavu 52.62.100 / 53.2.0 - frame.h
@@ -861,6 +952,9 @@ lavd 54.4.100 / 54.0.0, lavfi 3.5.0
   Data planes parameters to avresample_convert() and
   avresample_read() are now uint8_t** instead of void**.
   Libavresample is now stable.
+
+2012-09-26 - 3ba0dab7 / 1384df64 - lavf 54.29.101 / 56.06.3 - avformat.h
+  Add AVFormatContext.avoid_negative_ts.
 
 2012-09-24 - 46a3595 / a42aada - lavc 54.59.100 / 54.28.0 - avcodec.h
   Add avcodec_free_frame(). This function must now

@@ -32,7 +32,7 @@
 #include "version.h"
 #include "lls.h"
 
-static void update_lls(LLSModel *m, double *var)
+static void update_lls(LLSModel *m, const double *var)
 {
     int i, j;
 
@@ -100,7 +100,7 @@ void avpriv_solve_lls(LLSModel *m, double threshold, unsigned short min_order)
     }
 }
 
-static double evaluate_lls(LLSModel *m, double *param, int order)
+static double evaluate_lls(LLSModel *m, const double *param, int order)
 {
     int i;
     double out = 0;

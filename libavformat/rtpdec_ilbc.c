@@ -25,7 +25,7 @@
 
 static int ilbc_parse_fmtp(AVFormatContext *s,
                            AVStream *stream, PayloadContext *data,
-                           char *attr, char *value)
+                           const char *attr, const char *value)
 {
     if (!strcmp(attr, "mode")) {
         int mode = atoi(value);

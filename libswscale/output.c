@@ -1549,16 +1549,16 @@ static av_always_inline void yuv2rgb_write_full(SwsContext *c,
                 r = (((R >> 19) + A_DITHER(i,y)  -96)>>8);
                 g = (((G >> 19) + A_DITHER(i + 17,y) - 96)>>8);
                 b = (((B >> 20) + A_DITHER(i + 17*2,y) -96)>>8);
-                r = av_clip(r, 0, 7);
-                g = av_clip(g, 0, 7);
-                b = av_clip(b, 0, 3);
+                r = av_clip_uintp2(r, 3);
+                g = av_clip_uintp2(g, 3);
+                b = av_clip_uintp2(b, 2);
             } else {
                 r = (((R >> 21) + A_DITHER(i,y)-256)>>8);
                 g = (((G >> 19) + A_DITHER(i + 17,y)-256)>>8);
                 b = (((B >> 21) + A_DITHER(i + 17*2,y)-256)>>8);
-                r = av_clip(r, 0, 1);
-                g = av_clip(g, 0, 3);
-                b = av_clip(b, 0, 1);
+                r = av_clip_uintp2(r, 1);
+                g = av_clip_uintp2(g, 2);
+                b = av_clip_uintp2(b, 1);
             }
             break;
         case SWS_DITHER_X_DITHER:
@@ -1568,16 +1568,16 @@ static av_always_inline void yuv2rgb_write_full(SwsContext *c,
                 r = (((R >> 19) + X_DITHER(i,y) - 96)>>8);
                 g = (((G >> 19) + X_DITHER(i + 17,y) - 96)>>8);
                 b = (((B >> 20) + X_DITHER(i + 17*2,y) - 96)>>8);
-                r = av_clip(r, 0, 7);
-                g = av_clip(g, 0, 7);
-                b = av_clip(b, 0, 3);
+                r = av_clip_uintp2(r, 3);
+                g = av_clip_uintp2(g, 3);
+                b = av_clip_uintp2(b, 2);
             } else {
                 r = (((R >> 21) + X_DITHER(i,y)-256)>>8);
                 g = (((G >> 19) + X_DITHER(i + 17,y)-256)>>8);
                 b = (((B >> 21) + X_DITHER(i + 17*2,y)-256)>>8);
-                r = av_clip(r, 0, 1);
-                g = av_clip(g, 0, 3);
-                b = av_clip(b, 0, 1);
+                r = av_clip_uintp2(r, 1);
+                g = av_clip_uintp2(g, 2);
+                b = av_clip_uintp2(b, 1);
             }
 
             break;

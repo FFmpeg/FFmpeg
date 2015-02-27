@@ -161,7 +161,7 @@ static av_always_inline float quantize_and_encode_band_cost_template(
                         di = t - CLIPPED_ESCAPE;
                         curbits += 21;
                     } else {
-                        int c = av_clip(quant(t, Q), 0, 8191);
+                        int c = av_clip_uintp2(quant(t, Q), 13);
                         di = t - c*cbrtf(c)*IQ;
                         curbits += av_log2(c)*2 - 4 + 1;
                     }
@@ -191,7 +191,7 @@ static av_always_inline float quantize_and_encode_band_cost_template(
             if (BT_ESC) {
                 for (j = 0; j < 2; j++) {
                     if (ff_aac_codebook_vectors[cb-1][curidx*2+j] == 64.0f) {
-                        int coef = av_clip(quant(fabsf(in[i+j]), Q), 0, 8191);
+                        int coef = av_clip_uintp2(quant(fabsf(in[i+j]), Q), 13);
                         int len = av_log2(coef);
 
                         put_bits(pb, len - 4 + 1, (1 << (len - 4 + 1)) - 2);

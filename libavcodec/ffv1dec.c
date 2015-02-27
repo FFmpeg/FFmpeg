@@ -854,13 +854,13 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
 static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPacket *avpkt)
 {
-    const uint8_t *buf  = avpkt->data;
+    uint8_t *buf        = avpkt->data;
     int buf_size        = avpkt->size;
     FFV1Context *f      = avctx->priv_data;
     RangeCoder *const c = &f->slice_context[0]->c;
     int i, ret;
     uint8_t keystate = 128;
-    const uint8_t *buf_p;
+    uint8_t *buf_p;
     AVFrame *p;
 
     if (f->last_picture.f)
@@ -938,7 +938,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
         if (i) {
             ff_init_range_decoder(&fs->c, buf_p, v);
         } else
-            fs->c.bytestream_end = (uint8_t *)(buf_p + v);
+            fs->c.bytestream_end = buf_p + v;
 
         fs->avctx = avctx;
         fs->cur = p;
@@ -966,7 +966,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
                 src[j] = f->last_picture.f->data[j] + f->last_picture.f->linesize[j] *
                          (fs->slice_y >> sv) + (fs->slice_x >> sh);
             }
-            av_image_copy(dst, p->linesize, (const uint8_t **)src,
+            av_image_copy(dst, p->linesize, src,
                           f->last_picture.f->linesize,
                           avctx->pix_fmt,
                           fs->slice_width,
@@ -1051,12 +1051,17 @@ static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
         return 0;
 
     {
-        FFV1Context bak = *fdst;
+        ThreadFrame picture = fdst->picture, last_picture = fdst->last_picture;
+        uint8_t (*initial_states[MAX_QUANT_TABLES])[32];
+        struct FFV1Context *slice_context[MAX_SLICES];
+        memcpy(initial_states, fdst->initial_states, sizeof(fdst->initial_states));
+        memcpy(slice_context,  fdst->slice_context , sizeof(fdst->slice_context));
+
         memcpy(fdst, fsrc, sizeof(*fdst));
-        memcpy(fdst->initial_states, bak.initial_states, sizeof(fdst->initial_states));
-        memcpy(fdst->slice_context,  bak.slice_context , sizeof(fdst->slice_context));
-        fdst->picture      = bak.picture;
-        fdst->last_picture = bak.last_picture;
+        memcpy(fdst->initial_states, initial_states, sizeof(fdst->initial_states));
+        memcpy(fdst->slice_context,  slice_context , sizeof(fdst->slice_context));
+        fdst->picture      = picture;
+        fdst->last_picture = last_picture;
         for (i = 0; i<fdst->num_h_slices * fdst->num_v_slices; i++) {
             FFV1Context *fssrc = fsrc->slice_context[i];
             FFV1Context *fsdst = fdst->slice_context[i];

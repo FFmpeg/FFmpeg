@@ -65,26 +65,12 @@ static void ff_fft_calc_mips(FFTContext *s, FFTComplex *z)
     float w_re, w_im;
     float *w_re_ptr, *w_im_ptr;
     const int fft_size = (1 << s->nbits);
-    int s_n = s->nbits;
-    int tem1, tem2;
     float pom,  pom1,  pom2,  pom3;
     float temp, temp1, temp3, temp4;
     FFTComplex * tmpz_n2, * tmpz_n34, * tmpz_n4;
     FFTComplex * tmpz_n2_i, * tmpz_n34_i, * tmpz_n4_i, * tmpz_i;
 
-    /**
-    *num_transforms = (0x2aab >> (16 - s->nbits)) | 1;
-    */
-    __asm__ volatile (
-        "li   %[tem1], 16                                      \n\t"
-        "sub  %[s_n],  %[tem1], %[s_n]                         \n\t"
-        "li   %[tem2], 10923                                   \n\t"
-        "srav %[tem2], %[tem2], %[s_n]                         \n\t"
-        "ori  %[num_t],%[tem2], 1                              \n\t"
-        : [num_t]"=r"(num_transforms), [s_n]"+r"(s_n),
-          [tem1]"=&r"(tem1), [tem2]"=&r"(tem2)
-    );
-
+    num_transforms = (0x2aab >> (16 - s->nbits)) | 1;
 
     for (n=0; n<num_transforms; n++) {
         offset = ff_fft_offsets_lut[n] << 2;
@@ -214,15 +200,7 @@ static void ff_fft_calc_mips(FFTContext *s, FFTComplex *z)
     n4 = 4;
 
     for (nbits=4; nbits<=s->nbits; nbits++) {
-        /*
-        * num_transforms = (num_transforms >> 1) | 1;
-        */
-        __asm__ volatile (
-            "sra %[num_t], %[num_t], 1               \n\t"
-            "ori %[num_t], %[num_t], 1               \n\t"
-
-            : [num_t] "+r" (num_transforms)
-        );
+        num_transforms = (num_transforms >> 1) | 1;
         n2  = 2 * n4;
         n34 = 3 * n4;
 

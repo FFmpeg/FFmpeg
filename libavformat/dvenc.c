@@ -337,7 +337,8 @@ static DVMuxContext* dv_init_mux(AVFormatContext* s)
                 goto bail_out;
         }
     }
-    c->sys = av_dv_codec_profile(vst->codec->width, vst->codec->height, vst->codec->pix_fmt);
+    c->sys = av_dv_codec_profile2(vst->codec->width, vst->codec->height,
+                                  vst->codec->pix_fmt, vst->codec->time_base);
     if (!c->sys)
         goto bail_out;
 

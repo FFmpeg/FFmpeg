@@ -227,7 +227,7 @@ static inline uint8_t adpcm_ms_compress_sample(ADPCMChannelStatus *c,
         bias = -c->idelta / 2;
 
     nibble = (nibble + bias) / c->idelta;
-    nibble = av_clip(nibble, -8, 7) & 0x0F;
+    nibble = av_clip_intp2(nibble, 3) & 0x0F;
 
     predictor += ((nibble & 0x08) ? (nibble - 0x10) : nibble) * c->idelta;
 
@@ -541,7 +541,7 @@ static int adpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     case AV_CODEC_ID_ADPCM_IMA_QT:
     {
         PutBitContext pb;
-        init_put_bits(&pb, dst, pkt_size * 8);
+        init_put_bits(&pb, dst, pkt_size);
 
         for (ch = 0; ch < avctx->channels; ch++) {
             ADPCMChannelStatus *status = &c->status[ch];
@@ -571,7 +571,7 @@ static int adpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     case AV_CODEC_ID_ADPCM_SWF:
     {
         PutBitContext pb;
-        init_put_bits(&pb, dst, pkt_size * 8);
+        init_put_bits(&pb, dst, pkt_size);
 
         n = frame->nb_samples - 1;
 
@@ -581,7 +581,7 @@ static int adpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         // init the encoder state
         for (i = 0; i < avctx->channels; i++) {
             // clip step so it fits 6 bits
-            c->status[i].step_index = av_clip(c->status[i].step_index, 0, 63);
+            c->status[i].step_index = av_clip_uintp2(c->status[i].step_index, 6);
             put_sbits(&pb, 16, samples[i]);
             put_bits(&pb, 6, c->status[i].step_index);
             c->status[i].prev_sample = samples[i];

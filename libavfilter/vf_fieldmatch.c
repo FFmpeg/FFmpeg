@@ -21,7 +21,7 @@
 
 /**
  * @file
- * Fieldmatching filter, ported from VFM filter (VapouSsynth) by Clément.
+ * Fieldmatching filter, ported from VFM filter (VapourSynth) by Clément.
  * Fredrik Mellbin is the author of the VIVTC/VFM filter, which is itself a
  * light clone of the TIVTC/TFM (AviSynth) filter written by Kevin Stone
  * (tritical), the original author.
@@ -285,9 +285,9 @@ static int calc_combed_score(const FieldMatchContext *fm, const AVFrame *src)
             cmkpV  += cmk_linesizeUV;
             cmkpU  += cmk_linesizeUV;
             for (x = 1; x < width - 1; x++) {
-#define HAS_FF_AROUND(p, lz) (p[x-1 - lz] == 0xff || p[x - lz] == 0xff || p[x+1 - lz] == 0xff || \
-                              p[x-1     ] == 0xff ||                      p[x+1     ] == 0xff || \
-                              p[x-1 + lz] == 0xff || p[x + lz] == 0xff || p[x+1 + lz] == 0xff)
+#define HAS_FF_AROUND(p, lz) (p[(x)-1 - (lz)] == 0xff || p[(x) - (lz)] == 0xff || p[(x)+1 - (lz)] == 0xff || \
+                              p[(x)-1       ] == 0xff ||                          p[(x)+1       ] == 0xff || \
+                              p[(x)-1 + (lz)] == 0xff || p[(x) + (lz)] == 0xff || p[(x)+1 + (lz)] == 0xff)
                 if ((cmkpV[x] == 0xff && HAS_FF_AROUND(cmkpV, cmk_linesizeUV)) ||
                     (cmkpU[x] == 0xff && HAS_FF_AROUND(cmkpU, cmk_linesizeUV))) {
                     ((uint16_t*)cmkp)[x]  = 0xffff;

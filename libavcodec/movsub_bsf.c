@@ -29,6 +29,8 @@ static int text2movsub(AVBitStreamFilterContext *bsfc, AVCodecContext *avctx, co
     if (buf_size > 0xffff) return 0;
     *poutbuf_size = buf_size + 2;
     *poutbuf = av_malloc(*poutbuf_size + FF_INPUT_BUFFER_PADDING_SIZE);
+    if (!*poutbuf)
+        return AVERROR(ENOMEM);
     AV_WB16(*poutbuf, buf_size);
     memcpy(*poutbuf + 2, buf, buf_size);
     return 1;
@@ -45,6 +47,8 @@ static int mov2textsub(AVBitStreamFilterContext *bsfc, AVCodecContext *avctx, co
     if (buf_size < 2) return 0;
     *poutbuf_size = FFMIN(buf_size - 2, AV_RB16(buf));
     *poutbuf = av_malloc(*poutbuf_size + FF_INPUT_BUFFER_PADDING_SIZE);
+    if (!*poutbuf)
+        return AVERROR(ENOMEM);
     memcpy(*poutbuf, buf + 2, *poutbuf_size);
     return 1;
 }

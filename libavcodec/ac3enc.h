@@ -80,12 +80,14 @@ typedef int64_t CoefSumType;
 #define AC3ENC_OPT_NOT_INDICATED    0
 #define AC3ENC_OPT_MODE_ON          2
 #define AC3ENC_OPT_MODE_OFF         1
+#define AC3ENC_OPT_DSUREX_DPLIIZ    3
 
 /* specific option values */
 #define AC3ENC_OPT_LARGE_ROOM       1
 #define AC3ENC_OPT_SMALL_ROOM       2
 #define AC3ENC_OPT_DOWNMIX_LTRT     1
 #define AC3ENC_OPT_DOWNMIX_LORO     2
+#define AC3ENC_OPT_DOWNMIX_DPLII    3 // reserved value in A/52, but used by encoders to indicate DPL2
 #define AC3ENC_OPT_ADCONV_STANDARD  0
 #define AC3ENC_OPT_ADCONV_HDCD      1
 
@@ -163,7 +165,7 @@ typedef struct AC3EncodeContext {
     AVCodecContext *avctx;                  ///< parent AVCodecContext
     PutBitContext pb;                       ///< bitstream writer context
     AudioDSPContext adsp;
-    AVFloatDSPContext fdsp;
+    AVFloatDSPContext *fdsp;
     MECmpContext mecc;
     AC3DSPContext ac3dsp;                   ///< AC-3 optimized functions
     FFTContext mdct;                        ///< FFT context for MDCT calculation

@@ -75,9 +75,9 @@ static av_cold int g722_encode_init(AVCodecContext * avctx)
         int max_paths = frontier * FREEZE_INTERVAL;
         int i;
         for (i = 0; i < 2; i++) {
-            c->paths[i] = av_mallocz(max_paths * sizeof(**c->paths));
-            c->node_buf[i] = av_mallocz(2 * frontier * sizeof(**c->node_buf));
-            c->nodep_buf[i] = av_mallocz(2 * frontier * sizeof(**c->nodep_buf));
+            c->paths[i] = av_mallocz_array(max_paths, sizeof(**c->paths));
+            c->node_buf[i] = av_mallocz_array(frontier, 2 * sizeof(**c->node_buf));
+            c->nodep_buf[i] = av_mallocz_array(frontier, 2 * sizeof(**c->nodep_buf));
             if (!c->paths[i] || !c->node_buf[i] || !c->nodep_buf[i]) {
                 ret = AVERROR(ENOMEM);
                 goto error;
@@ -107,7 +107,7 @@ static av_cold int g722_encode_init(AVCodecContext * avctx)
            a common packet size for VoIP applications */
         avctx->frame_size = 320;
     }
-    avctx->delay = 22;
+    avctx->initial_padding = 22;
 
     if (avctx->trellis) {
         /* validate trellis */
@@ -119,6 +119,8 @@ static av_cold int g722_encode_init(AVCodecContext * avctx)
             avctx->trellis = new_trellis;
         }
     }
+
+    ff_g722dsp_init(&c->dsp);
 
     return 0;
 error:
@@ -136,12 +138,12 @@ static const int16_t low_quant[33] = {
 static inline void filter_samples(G722Context *c, const int16_t *samples,
                                   int *xlow, int *xhigh)
 {
-    int xout1, xout2;
+    int xout[2];
     c->prev_samples[c->prev_samples_pos++] = samples[0];
     c->prev_samples[c->prev_samples_pos++] = samples[1];
-    ff_g722_apply_qmf(c->prev_samples + c->prev_samples_pos - 24, &xout1, &xout2);
-    *xlow  = xout1 + xout2 >> 14;
-    *xhigh = xout1 - xout2 >> 14;
+    c->dsp.apply_qmf(c->prev_samples + c->prev_samples_pos - 24, xout);
+    *xlow  = xout[0] + xout[1] >> 14;
+    *xhigh = xout[0] - xout[1] >> 14;
     if (c->prev_samples_pos >= PREV_SAMPLES_BUF_SIZE) {
         memmove(c->prev_samples,
                 c->prev_samples + c->prev_samples_pos - 22,
@@ -224,9 +226,9 @@ static void g722_encode_trellis(G722Context *c, int trellis,
                 if (k < 0)
                     continue;
 
-                decoded = av_clip((cur_node->state.scale_factor *
+                decoded = av_clip_intp2((cur_node->state.scale_factor *
                                   ff_g722_low_inv_quant6[k] >> 10)
-                                + cur_node->state.s_predictor, -16384, 16383);
+                                + cur_node->state.s_predictor, 14);
                 dec_diff = xlow - decoded;
 
 #define STORE_NODE(index, UPDATE, VALUE)\
@@ -283,8 +285,7 @@ static void g722_encode_trellis(G722Context *c, int trellis,
 
                 dhigh = cur_node->state.scale_factor *
                         ff_g722_high_inv_quant[ihigh] >> 10;
-                decoded = av_clip(dhigh + cur_node->state.s_predictor,
-                                  -16384, 16383);
+                decoded = av_clip_intp2(dhigh + cur_node->state.s_predictor, 14);
                 dec_diff = xhigh - decoded;
 
                 STORE_NODE(1, ff_g722_update_high_predictor(&node->state, dhigh, ihigh), ihigh);
@@ -374,7 +375,7 @@ static int g722_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     }
 
     if (frame->pts != AV_NOPTS_VALUE)
-        avpkt->pts = frame->pts - ff_samples_to_time_base(avctx, avctx->delay);
+        avpkt->pts = frame->pts - ff_samples_to_time_base(avctx, avctx->initial_padding);
     *got_packet_ptr = 1;
     return 0;
 }

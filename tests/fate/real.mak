@@ -2,7 +2,9 @@ FATE_REALAUDIO-$(call DEMDEC, RM, RA_144) += fate-ra3-144
 fate-ra3-144: CMD = framecrc -i $(TARGET_SAMPLES)/realaudio/ra3.ra
 
 #FATE_REALAUDIO-$(call DEMDEC, RM, RA_288) += fate-ra4-288
-#fate-ra4-288: CMD = framecrc -i $(TARGET_SAMPLES)/realaudio/ra4-288.ra
+fate-ra4-288: CMD = pcm -i $(TARGET_SAMPLES)/realaudio/ra4_288.ra
+fate-ra4-288: REF = $(SAMPLES)/realaudio/ra4_288.pcm
+fate-ra4-288: CMP = oneoff
 
 FATE_REALMEDIA_AUDIO-$(call DEMDEC, RM, RA_144) += fate-ra-144
 fate-ra-144: CMD = md5 -i $(TARGET_SAMPLES)/real/ra3_in_rm_file.rm -f s16le

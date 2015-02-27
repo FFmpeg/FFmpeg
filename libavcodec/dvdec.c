@@ -42,6 +42,7 @@
 
 #include "avcodec.h"
 #include "dv.h"
+#include "dv_profile_internal.h"
 #include "dvdata.h"
 #include "get_bits.h"
 #include "idctdsp.h"
@@ -60,6 +61,117 @@ typedef struct BlockInfo {
 } BlockInfo;
 
 static const int dv_iweight_bits = 14;
+
+static const uint16_t dv_iweight_88[64] = {
+    32768, 16705, 16705, 17734, 17032, 17734, 18205, 18081,
+    18081, 18205, 18725, 18562, 19195, 18562, 18725, 19266,
+    19091, 19705, 19705, 19091, 19266, 21407, 19643, 20267,
+    20228, 20267, 19643, 21407, 22725, 21826, 20853, 20806,
+    20806, 20853, 21826, 22725, 23170, 23170, 21407, 21400,
+    21407, 23170, 23170, 24598, 23786, 22018, 22018, 23786,
+    24598, 25251, 24465, 22654, 24465, 25251, 25972, 25172,
+    25172, 25972, 26722, 27969, 26722, 29692, 29692, 31521,
+};
+static const uint16_t dv_iweight_248[64] = {
+    32768, 16384, 16705, 16705, 17734, 17734, 17734, 17734,
+    18081, 18081, 18725, 18725, 21407, 21407, 19091, 19091,
+    19195, 19195, 18205, 18205, 18725, 18725, 19705, 19705,
+    20267, 20267, 21826, 21826, 23170, 23170, 20806, 20806,
+    20267, 20267, 19266, 19266, 21407, 21407, 20853, 20853,
+    21400, 21400, 23786, 23786, 24465, 24465, 22018, 22018,
+    23170, 23170, 22725, 22725, 24598, 24598, 24465, 24465,
+    25172, 25172, 27969, 27969, 25972, 25972, 29692, 29692
+};
+
+/**
+ * The "inverse" DV100 weights are actually just the spec weights (zig-zagged).
+ */
+static const uint16_t dv_iweight_1080_y[64] = {
+    128,  16,  16,  17,  17,  17,  18,  18,
+     18,  18,  18,  18,  19,  18,  18,  19,
+     19,  19,  19,  19,  19,  42,  38,  40,
+     40,  40,  38,  42,  44,  43,  41,  41,
+     41,  41,  43,  44,  45,  45,  42,  42,
+     42,  45,  45,  48,  46,  43,  43,  46,
+     48,  49,  48,  44,  48,  49, 101,  98,
+     98, 101, 104, 109, 104, 116, 116, 123,
+};
+static const uint16_t dv_iweight_1080_c[64] = {
+    128,  16,  16,  17,  17,  17,  25,  25,
+     25,  25,  26,  25,  26,  25,  26,  26,
+     26,  27,  27,  26,  26,  42,  38,  40,
+     40,  40,  38,  42,  44,  43,  41,  41,
+     41,  41,  43,  44,  91,  91,  84,  84,
+     84,  91,  91,  96,  93,  86,  86,  93,
+     96, 197, 191, 177, 191, 197, 203, 197,
+    197, 203, 209, 219, 209, 232, 232, 246,
+};
+static const uint16_t dv_iweight_720_y[64] = {
+    128,  16,  16,  17,  17,  17,  18,  18,
+     18,  18,  18,  18,  19,  18,  18,  19,
+     19,  19,  19,  19,  19,  42,  38,  40,
+     40,  40,  38,  42,  44,  43,  41,  41,
+     41,  41,  43,  44,  68,  68,  63,  63,
+     63,  68,  68,  96,  92,  86,  86,  92,
+     96,  98,  96,  88,  96,  98, 202, 196,
+    196, 202, 208, 218, 208, 232, 232, 246,
+};
+const uint16_t dv_iweight_720_c[64] = {
+    128,  24,  24,  26,  26,  26,  36,  36,
+     36,  36,  36,  36,  38,  36,  36,  38,
+     38,  38,  38,  38,  38,  84,  76,  80,
+     80,  80,  76,  84,  88,  86,  82,  82,
+     82,  82,  86,  88, 182, 182, 168, 168,
+    168, 182, 182, 192, 186, 192, 172, 186,
+    192, 394, 382, 354, 382, 394, 406, 394,
+    394, 406, 418, 438, 418, 464, 464, 492,
+};
+
+static void dv_init_weight_tables(DVVideoContext *ctx, const AVDVProfile *d)
+{
+    int j, i, c, s;
+    uint32_t *factor1 = &ctx->idct_factor[0],
+             *factor2 = &ctx->idct_factor[DV_PROFILE_IS_HD(d) ? 4096 : 2816];
+
+    if (DV_PROFILE_IS_HD(d)) {
+        /* quantization quanta by QNO for DV100 */
+        static const uint8_t dv100_qstep[16] = {
+            1, /* QNO = 0 and 1 both have no quantization */
+            1,
+            2, 3, 4, 5, 6, 7, 8, 16, 18, 20, 22, 24, 28, 52
+        };
+        const uint16_t *iweight1, *iweight2;
+
+        if (d->height == 720) {
+            iweight1 = &dv_iweight_720_y[0];
+            iweight2 = &dv_iweight_720_c[0];
+        } else {
+            iweight1 = &dv_iweight_1080_y[0];
+            iweight2 = &dv_iweight_1080_c[0];
+        }
+        for (c = 0; c < 4; c++) {
+            for (s = 0; s < 16; s++) {
+                for (i = 0; i < 64; i++) {
+                    *factor1++ = (dv100_qstep[s] << (c + 9)) * iweight1[i];
+                    *factor2++ = (dv100_qstep[s] << (c + 9)) * iweight2[i];
+                }
+            }
+        }
+    } else {
+        static const uint8_t dv_quant_areas[4] = { 6, 21, 43, 64 };
+        const uint16_t *iweight1 = &dv_iweight_88[0];
+        for (j = 0; j < 2; j++, iweight1 = &dv_iweight_248[0]) {
+            for (s = 0; s < 22; s++) {
+                for (i = c = 0; c < 4; c++) {
+                    for (; i < dv_quant_areas[c]; i++) {
+                        *factor1   = iweight1[i] << (ff_dv_quant_shifts[s][c] + 1);
+                        *factor2++ = (*factor1++) << 1;
+                    }
+                }
+            }
+        }
+    }
+}
 
 static av_cold int dvvideo_decode_init(AVCodecContext *avctx)
 {
@@ -362,7 +474,7 @@ static int dvvideo_decode_frame(AVCodecContext *avctx, void *data,
     int apt, is16_9, ret;
     const AVDVProfile *sys;
 
-    sys = avpriv_dv_frame_profile2(avctx, s->sys, buf, buf_size);
+    sys = ff_dv_frame_profile(avctx, s->sys, buf, buf_size);
     if (!sys || buf_size < sys->frame_size) {
         av_log(avctx, AV_LOG_ERROR, "could not find dv frame profile\n");
         return -1; /* NOTE: we only accept several full frames */
@@ -374,6 +486,7 @@ static int dvvideo_decode_frame(AVCodecContext *avctx, void *data,
             av_log(avctx, AV_LOG_ERROR, "Error initializing the work tables.\n");
             return ret;
         }
+        dv_init_weight_tables(s, sys);
         s->sys = sys;
     }
 
@@ -381,7 +494,7 @@ static int dvvideo_decode_frame(AVCodecContext *avctx, void *data,
     s->frame->key_frame = 1;
     s->frame->pict_type = AV_PICTURE_TYPE_I;
     avctx->pix_fmt      = s->sys->pix_fmt;
-    avctx->time_base    = s->sys->time_base;
+    avctx->framerate    = av_inv_q(s->sys->time_base);
 
     ret = ff_set_dimensions(avctx, s->sys->width, s->sys->height);
     if (ret < 0)
@@ -392,7 +505,7 @@ static int dvvideo_decode_frame(AVCodecContext *avctx, void *data,
     if (*vsc_pack == dv_video_control) {
         apt    = buf[4] & 0x07;
         is16_9 = (vsc_pack[2] & 0x07) == 0x02 ||
-                               (!apt && (vsc_pack[2] & 0x07) == 0x07);
+                 (!apt && (vsc_pack[2] & 0x07) == 0x07);
         ff_set_sar(avctx, s->sys->sar[is16_9]);
     }
 

@@ -38,6 +38,7 @@
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
 #include "libavutil/time.h"
+#include "libavutil/time_internal.h"
 
 #include "avformat.h"
 #include "avio.h"
@@ -251,7 +252,7 @@ static void peak_write_frame(AVFormatContext *s)
     wav->peak_num_frames++;
 }
 
-static void peak_write_chunk(AVFormatContext *s)
+static int peak_write_chunk(AVFormatContext *s)
 {
     WAVMuxContext *wav = s->priv_data;
     AVIOContext *pb = s->pb;
@@ -267,11 +268,16 @@ static void peak_write_chunk(AVFormatContext *s)
 
     memset(timestamp, 0, sizeof(timestamp));
     if (!(s->flags & AVFMT_FLAG_BITEXACT)) {
+        struct tm tmpbuf;
         av_log(s, AV_LOG_INFO, "Writing local time and date to Peak Envelope Chunk\n");
         now0 = av_gettime();
         now_secs = now0 / 1000000;
-        strftime(timestamp, sizeof(timestamp), "%Y:%m:%d:%H:%M:%S:", localtime(&now_secs));
-        av_strlcatf(timestamp, sizeof(timestamp), "%03d", (int)((now0 / 1000) % 1000));
+        if (strftime(timestamp, sizeof(timestamp), "%Y:%m:%d:%H:%M:%S:", localtime_r(&now_secs, &tmpbuf))) {
+            av_strlcatf(timestamp, sizeof(timestamp), "%03d", (int)((now0 / 1000) % 1000));
+        } else {
+            av_log(s, AV_LOG_ERROR, "Failed to write timestamp\n");
+            return -1;
+        }
     }
 
     avio_wl32(pb, 1);                           /* version */
@@ -291,6 +297,8 @@ static void peak_write_chunk(AVFormatContext *s)
 
     if (!wav->data)
         wav->data = peak;
+
+    return 0;
 }
 
 static int wav_write_header(AVFormatContext *s)
@@ -412,6 +420,7 @@ static int wav_write_trailer(AVFormatContext *s)
     int64_t file_size, data_size;
     int64_t number_of_samples = 0;
     int rf64 = 0;
+    int ret = 0;
 
     avio_flush(pb);
 
@@ -422,7 +431,7 @@ static int wav_write_trailer(AVFormatContext *s)
         }
 
         if (wav->write_peak && wav->peak_output) {
-            peak_write_chunk(s);
+            ret = peak_write_chunk(s);
             avio_flush(pb);
         }
 
@@ -483,7 +492,7 @@ static int wav_write_trailer(AVFormatContext *s)
     if (wav->write_peak)
         peak_free_buffers(s);
 
-    return 0;
+    return ret;
 }
 
 #define OFFSET(x) offsetof(WAVMuxContext, x)

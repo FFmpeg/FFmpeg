@@ -1,0 +1,4 @@
+50b91fe78559c0f5f1e5873cdcc0e6a8 *tests/data/fate/vsynth_lena-msmpeg4.avi
+127660 tests/data/fate/vsynth_lena-msmpeg4.avi
+bb14902d5850d6b0ab70fdb017855775 *tests/data/fate/vsynth_lena-msmpeg4.out.rawvideo
+stddev:    5.33 PSNR: 33.58 MAXDIFF:   78 bytes:  7603200/  7603200

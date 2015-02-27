@@ -34,7 +34,7 @@ static int dts_probe(AVProbeData *p)
 {
     const uint8_t *buf, *bufp;
     uint32_t state = -1;
-    int markers[4] = {0};
+    int markers[4*16] = {0};
     int sum, max, i;
     int64_t diff = 0;
     uint8_t hdr[12 + FF_INPUT_BUFFER_PADDING_SIZE] = { 0 };
@@ -43,6 +43,7 @@ static int dts_probe(AVProbeData *p)
 
     for(; buf < (p->buf+p->buf_size)-2; buf+=2) {
         int marker, sample_blocks, sample_rate, sr_code, framesize;
+        int lfe;
         GetBitContext gb;
 
         bufp = buf;
@@ -89,13 +90,27 @@ static int dts_probe(AVProbeData *p)
         if (sample_rate == 0)
             continue;
 
+        get_bits(&gb, 5);
+        if (get_bits(&gb, 1))
+            continue;
+
+        skip_bits_long(&gb, 9);
+        lfe = get_bits(&gb, 2);
+        if (lfe > 2)
+            continue;
+
+        marker += 4* sr_code;
+
         markers[marker] ++;
     }
-    sum = markers[0] + markers[1] + markers[2] + markers[3];
-    max = 0;
-    for (i=1; i<4; i++)
+
+    sum = max = 0;
+    for (i=0; i<FF_ARRAY_ELEMS(markers); i++) {
+        sum += markers[i];
         if (markers[max] < markers[i])
             max = i;
+    }
+
     if (markers[max] > 3 && p->buf_size / markers[max] < 32*1024 &&
         markers[max] * 4 > sum * 3 &&
         diff / p->buf_size > 200)

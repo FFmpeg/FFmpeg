@@ -16,13 +16,17 @@ fate-binkaudio: $(FATE_BINKAUDIO-yes)
 FATE_SAMPLES_AUDIO-$(call DEMDEC, BMV, BMV_AUDIO) += fate-bmv-audio
 fate-bmv-audio: CMD = framecrc -i $(TARGET_SAMPLES)/bmv/SURFING-partial.BMV -vn
 
+FATE_SAMPLES_AUDIO-$(call DEMDEC, MPEGTS, DCA) += fate-dca-core
+fate-dca-core: CMD = pcm -i $(TARGET_SAMPLES)/dts/dts.ts
+fate-dca-core: CMP = oneoff
+fate-dca-core: REF = $(SAMPLES)/dts/dts.pcm
+
 FATE_SAMPLES_AUDIO-$(call DEMDEC, DSICIN, DSICINAUDIO) += fate-delphine-cin-audio
 fate-delphine-cin-audio: CMD = framecrc -i $(TARGET_SAMPLES)/delphine-cin/LOGO-partial.CIN -vn
 
-FATE_SAMPLES_AUDIO-$(call DEMDEC, MPEGTS, DCA) += fate-dts
-fate-dts: CMD = pcm -i $(TARGET_SAMPLES)/dts/dts.ts
-fate-dts: CMP = oneoff
-fate-dts: REF = $(SAMPLES)/dts/dts.pcm
+FATE_SAMPLES_AUDIO-$(call DEMDEC, DSS, DSS_SP) += fate-dss-lp fate-dss-sp
+fate-dss-lp: CMD = framecrc -i $(TARGET_SAMPLES)/dss/lp.dss -frames 30
+fate-dss-sp: CMD = framecrc -i $(TARGET_SAMPLES)/dss/sp.dss -frames 30
 
 FATE_SAMPLES_AUDIO-$(call DEMDEC, DTS, DCA) += fate-dts_es
 fate-dts_es: CMD = pcm -i $(TARGET_SAMPLES)/dts/dts_es.dts
@@ -44,8 +48,8 @@ fate-nellymoser-aref-encode: $(AREF) ./tests/data/asynth-16000-1.wav
 fate-nellymoser-aref-encode: CMD = enc_dec_pcm flv wav s16le $(REF) -c:a nellymoser
 fate-nellymoser-aref-encode: CMP = stddev
 fate-nellymoser-aref-encode: REF = ./tests/data/asynth-16000-1.wav
-fate-nellymoser-aref-encode: CMP_SHIFT = -244
-fate-nellymoser-aref-encode: CMP_TARGET = 9612
+fate-nellymoser-aref-encode: CMP_SHIFT = -256
+fate-nellymoser-aref-encode: CMP_TARGET = 3863
 fate-nellymoser-aref-encode: SIZE_TOLERANCE = 268
 
 FATE_SAMPLES_AUDIO-$(call DEMDEC, AVI, ON2AVC) += fate-on2avc

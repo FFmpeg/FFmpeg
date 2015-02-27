@@ -29,7 +29,7 @@ cglobal ssd_int8_vs_int16, 3, 3, 3, pix1, pix2, size
 .loop
     sub       sizeq, 8
     movq      m1, [pix1q + sizeq]
-    movu      m2, [pix2q + sizeq*2]
+    mova      m2, [pix2q + sizeq*2]
 %if mmsize == 8
     movq      m3, [pix2q + sizeq*2 + mmsize]
     punpckhbw m4, m1

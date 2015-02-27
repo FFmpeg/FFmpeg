@@ -37,11 +37,14 @@ OBJS-$(CONFIG_XMM_CLOBBER_TEST)        += x86/w64xmmtest.o
 
 # decoders/encoders
 OBJS-$(CONFIG_AAC_DECODER)             += x86/sbrdsp_init.o
+OBJS-$(CONFIG_ADPCM_G722_DECODER)      += x86/g722dsp_init.o
+OBJS-$(CONFIG_ADPCM_G722_ENCODER)      += x86/g722dsp_init.o
+OBJS-$(CONFIG_APNG_DECODER)            += x86/pngdsp_init.o
 OBJS-$(CONFIG_CAVS_DECODER)            += x86/cavsdsp.o
 OBJS-$(CONFIG_DCA_DECODER)             += x86/dcadsp_init.o
 OBJS-$(CONFIG_DNXHD_ENCODER)           += x86/dnxhdenc_init.o
 OBJS-$(CONFIG_HEVC_DECODER)            += x86/hevcdsp_init.o
-OBJS-$(CONFIG_MLP_DECODER)             += x86/mlpdsp.o
+OBJS-$(CONFIG_MLP_DECODER)             += x86/mlpdsp_init.o
 OBJS-$(CONFIG_MPEG4_DECODER)           += x86/xvididct_init.o
 OBJS-$(CONFIG_PNG_DECODER)             += x86/pngdsp_init.o
 OBJS-$(CONFIG_PRORES_DECODER)          += x86/proresdsp_init.o
@@ -50,9 +53,10 @@ OBJS-$(CONFIG_RV30_DECODER)            += x86/rv34dsp_init.o
 OBJS-$(CONFIG_RV40_DECODER)            += x86/rv34dsp_init.o            \
                                           x86/rv40dsp_init.o
 OBJS-$(CONFIG_SVQ1_ENCODER)            += x86/svq1enc_init.o
-OBJS-$(CONFIG_V210_DECODER)            += x86/v210-init.o
+OBJS-$(CONFIG_TRUEHD_DECODER)          += x86/mlpdsp_init.o
 OBJS-$(CONFIG_TTA_DECODER)             += x86/ttadsp_init.o
-OBJS-$(CONFIG_TRUEHD_DECODER)          += x86/mlpdsp.o
+OBJS-$(CONFIG_V210_DECODER)            += x86/v210-init.o
+OBJS-$(CONFIG_V210_ENCODER)            += x86/v210enc_init.o
 OBJS-$(CONFIG_VC1_DECODER)             += x86/vc1dsp_init.o
 OBJS-$(CONFIG_VORBIS_DECODER)          += x86/vorbisdsp_init.o
 OBJS-$(CONFIG_VP6_DECODER)             += x86/vp6dsp_init.o
@@ -66,8 +70,7 @@ OBJS-$(CONFIG_WEBP_DECODER)            += x86/vp8dsp_init.o
 # subsystems
 MMX-OBJS-$(CONFIG_DIRAC_DECODER)       += x86/dirac_dwt.o
 MMX-OBJS-$(CONFIG_FDCTDSP)             += x86/fdct.o
-MMX-OBJS-$(CONFIG_IDCTDSP)             += x86/idctdsp_mmx.o             \
-                                          x86/simple_idct.o
+MMX-OBJS-$(CONFIG_IDCTDSP)             += x86/simple_idct.o
 
 # decoders/encoders
 MMX-OBJS-$(CONFIG_MPEG4_DECODER)       += x86/xvididct_mmx.o            \
@@ -128,11 +131,16 @@ YASM-OBJS-$(CONFIG_VP3DSP)             += x86/vp3dsp.o
 
 # decoders/encoders
 YASM-OBJS-$(CONFIG_AAC_DECODER)        += x86/sbrdsp.o
+YASM-OBJS-$(CONFIG_ADPCM_G722_DECODER) += x86/g722dsp.o
+YASM-OBJS-$(CONFIG_ADPCM_G722_ENCODER) += x86/g722dsp.o
+YASM-OBJS-$(CONFIG_APNG_DECODER)       += x86/pngdsp.o
 YASM-OBJS-$(CONFIG_DCA_DECODER)        += x86/dcadsp.o
 YASM-OBJS-$(CONFIG_HEVC_DECODER)       += x86/hevc_mc.o                 \
                                           x86/hevc_deblock.o            \
                                           x86/hevc_idct.o               \
-                                          x86/hevc_res_add.o
+                                          x86/hevc_res_add.o            \
+                                          x86/hevc_sao.o
+YASM-OBJS-$(CONFIG_MLP_DECODER)        += x86/mlpdsp.o
 YASM-OBJS-$(CONFIG_PNG_DECODER)        += x86/pngdsp.o
 YASM-OBJS-$(CONFIG_PRORES_DECODER)     += x86/proresdsp.o
 YASM-OBJS-$(CONFIG_PRORES_LGPL_DECODER) += x86/proresdsp.o
@@ -140,7 +148,9 @@ YASM-OBJS-$(CONFIG_RV30_DECODER)       += x86/rv34dsp.o
 YASM-OBJS-$(CONFIG_RV40_DECODER)       += x86/rv34dsp.o                 \
                                           x86/rv40dsp.o
 YASM-OBJS-$(CONFIG_SVQ1_ENCODER)       += x86/svq1enc.o
+YASM-OBJS-$(CONFIG_TRUEHD_DECODER)     += x86/mlpdsp.o
 YASM-OBJS-$(CONFIG_TTA_DECODER)        += x86/ttadsp.o
+YASM-OBJS-$(CONFIG_V210_ENCODER)       += x86/v210enc.o
 YASM-OBJS-$(CONFIG_V210_DECODER)       += x86/v210.o
 YASM-OBJS-$(CONFIG_VC1_DECODER)        += x86/vc1dsp.o
 YASM-OBJS-$(CONFIG_VORBIS_DECODER)     += x86/vorbisdsp.o

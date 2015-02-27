@@ -121,11 +121,11 @@ static void denoise_spatial(HQDN3DContext *s,
 }
 
 av_always_inline
-static void denoise_depth(HQDN3DContext *s,
-                          uint8_t *src, uint8_t *dst,
-                          uint16_t *line_ant, uint16_t **frame_ant_ptr,
-                          int w, int h, int sstride, int dstride,
-                          int16_t *spatial, int16_t *temporal, int depth)
+static int denoise_depth(HQDN3DContext *s,
+                         uint8_t *src, uint8_t *dst,
+                         uint16_t *line_ant, uint16_t **frame_ant_ptr,
+                         int w, int h, int sstride, int dstride,
+                         int16_t *spatial, int16_t *temporal, int depth)
 {
     // FIXME: For 16bit depth, frame_ant could be a pointer to the previous
     // filtered frame rather than a separate buffer.
@@ -134,6 +134,8 @@ static void denoise_depth(HQDN3DContext *s,
     if (!frame_ant) {
         uint8_t *frame_src = src;
         *frame_ant_ptr = frame_ant = av_malloc_array(w, h*sizeof(uint16_t));
+        if (!frame_ant)
+            return AVERROR(ENOMEM);
         for (y = 0; y < h; y++, src += sstride, frame_ant += w)
             for (x = 0; x < w; x++)
                 frame_ant[x] = LOAD(x);
@@ -148,15 +150,25 @@ static void denoise_depth(HQDN3DContext *s,
         denoise_temporal(src, dst, frame_ant,
                          w, h, sstride, dstride, temporal, depth);
     emms_c();
+    return 0;
 }
 
-#define denoise(...) \
-    switch (s->depth) {\
-        case  8: denoise_depth(__VA_ARGS__,  8); break;\
-        case  9: denoise_depth(__VA_ARGS__,  9); break;\
-        case 10: denoise_depth(__VA_ARGS__, 10); break;\
-        case 16: denoise_depth(__VA_ARGS__, 16); break;\
-    }
+#define denoise(...)                                                          \
+    do {                                                                      \
+        int ret = AVERROR_BUG;                                                \
+        switch (s->depth) {                                                   \
+            case  8: ret = denoise_depth(__VA_ARGS__,  8); break;             \
+            case  9: ret = denoise_depth(__VA_ARGS__,  9); break;             \
+            case 10: ret = denoise_depth(__VA_ARGS__, 10); break;             \
+            case 16: ret = denoise_depth(__VA_ARGS__, 16); break;             \
+        }                                                                     \
+        if (ret < 0) {                                                        \
+            av_frame_free(&out);                                              \
+            if (!direct)                                                      \
+                av_frame_free(&in);                                           \
+            return ret;                                                       \
+        }                                                                     \
+    } while (0)
 
 static int16_t *precalc_coefs(double dist25, int depth)
 {
@@ -282,13 +294,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFilterLink *outlink = ctx->outputs[0];
 
     AVFrame *out;
-    int direct, c;
+    int c, direct = av_frame_is_writable(in) && !ctx->is_disabled;
 
-    if (av_frame_is_writable(in) && !ctx->is_disabled) {
-        direct = 1;
+    if (direct) {
         out = in;
     } else {
-        direct = 0;
         out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
         if (!out) {
             av_frame_free(&in);

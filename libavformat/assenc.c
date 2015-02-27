@@ -23,6 +23,8 @@
 #include "avformat.h"
 #include "internal.h"
 
+#include "libavutil/opt.h"
+
 typedef struct DialogueLine {
     int readorder;
     char *line;
@@ -30,42 +32,37 @@ typedef struct DialogueLine {
 } DialogueLine;
 
 typedef struct ASSContext{
-    unsigned int extra_index;
+    const AVClass *class;
     int write_ts; // 0: ssa (timing in payload), 1: ass (matroska like)
     int expected_readorder;
     DialogueLine *dialogue_cache;
     DialogueLine *last_added_dialogue;
     int cache_size;
+    int ssa_mode;
+    int ignore_readorder;
 }ASSContext;
 
 static int write_header(AVFormatContext *s)
 {
     ASSContext *ass = s->priv_data;
     AVCodecContext *avctx= s->streams[0]->codec;
-    uint8_t *last= NULL;
 
     if (s->nb_streams != 1 || (avctx->codec_id != AV_CODEC_ID_SSA &&
                                avctx->codec_id != AV_CODEC_ID_ASS)) {
         av_log(s, AV_LOG_ERROR, "Exactly one ASS/SSA stream is needed.\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
     ass->write_ts = avctx->codec_id == AV_CODEC_ID_ASS;
     avpriv_set_pts_info(s->streams[0], 64, 1, 100);
-
-    while(ass->extra_index < avctx->extradata_size){
-        uint8_t *p  = avctx->extradata + ass->extra_index;
-        uint8_t *end= strchr(p, '\n');
-        if(!end) end= avctx->extradata + avctx->extradata_size;
-        else     end++;
-
-        avio_write(s->pb, p, end-p);
-        ass->extra_index += end-p;
-
-        if(last && !memcmp(last, "[Events]", 8))
-            break;
-        last=p;
+    if (avctx->extradata_size > 0) {
+        avio_write(s->pb, avctx->extradata, avctx->extradata_size);
+        if (avctx->extradata[avctx->extradata_size - 1] != '\n')
+            avio_write(s->pb, "\r\n", 2);
+        ass->ssa_mode = !strstr(avctx->extradata, "\n[V4+ Styles]");
+        if (!strstr(avctx->extradata, "\n[Events]"))
+            avio_printf(s->pb, "[Events]\r\nFormat: %s, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\r\n",
+                        ass->ssa_mode ? "Marked" : "Layer");
     }
-
     avio_flush(s->pb);
 
     return 0;
@@ -87,7 +84,7 @@ static void purge_dialogues(AVFormatContext *s, int force)
         avio_printf(s->pb, "Dialogue: %s\r\n", dialogue->line);
         if (dialogue == ass->last_added_dialogue)
             ass->last_added_dialogue = next;
-        av_free(dialogue->line);
+        av_freep(&dialogue->line);
         av_free(dialogue);
         if (next)
             next->prev = NULL;
@@ -164,6 +161,9 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
         if (*p == ',')
             p++;
 
+        if (ass->ssa_mode && !strncmp(p, "Marked=", 7))
+            p += 7;
+
         layer = strtol(p, &p, 10);
         if (*p == ',')
             p++;
@@ -174,14 +174,15 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
         if (hh1 > 9) hh1 = 9, mm1 = 59, ss1 = 59, ms1 = 99;
         if (hh2 > 9) hh2 = 9, mm2 = 59, ss2 = 59, ms2 = 99;
 
-        dialogue->line = av_asprintf("%ld,%d:%02d:%02d.%02d,%d:%02d:%02d.%02d,%s",
+        dialogue->line = av_asprintf("%s%ld,%d:%02d:%02d.%02d,%d:%02d:%02d.%02d,%s",
+                                     ass->ssa_mode ? "Marked=" : "",
                                      layer, hh1, mm1, ss1, ms1, hh2, mm2, ss2, ms2, p);
         if (!dialogue->line) {
             av_free(dialogue);
             return AVERROR(ENOMEM);
         }
         insert_dialogue(ass, dialogue);
-        purge_dialogues(s, 0);
+        purge_dialogues(s, ass->ignore_readorder);
     } else {
         avio_write(s->pb, pkt->data, pkt->size);
     }
@@ -191,15 +192,23 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
 
 static int write_trailer(AVFormatContext *s)
 {
-    ASSContext *ass = s->priv_data;
-    AVCodecContext *avctx= s->streams[0]->codec;
-
     purge_dialogues(s, 1);
-    avio_write(s->pb, avctx->extradata      + ass->extra_index,
-                      avctx->extradata_size - ass->extra_index);
-
     return 0;
 }
+
+#define OFFSET(x) offsetof(ASSContext, x)
+#define E AV_OPT_FLAG_ENCODING_PARAM
+static const AVOption options[] = {
+    { "ignore_readorder", "write events immediately, even if they're out-of-order", OFFSET(ignore_readorder), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, E },
+    { NULL },
+};
+
+static const AVClass ass_class = {
+    .class_name = "ass muxer",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
 
 AVOutputFormat ff_ass_muxer = {
     .name           = "ass",
@@ -212,4 +221,5 @@ AVOutputFormat ff_ass_muxer = {
     .write_packet   = write_packet,
     .write_trailer  = write_trailer,
     .flags          = AVFMT_GLOBALHEADER | AVFMT_NOTIMESTAMPS | AVFMT_TS_NONSTRICT,
+    .priv_class     = &ass_class,
 };
