@@ -914,7 +914,7 @@ static const char * context_to_name(void * ptr) {
 
 static const AVClass av_codec_context_class = { "Postproc", context_to_name, NULL };
 
-pp_context *pp_get_context(int width, int height, int cpuCaps){
+av_cold pp_context *pp_get_context(int width, int height, int cpuCaps){
     PPContext *c= av_mallocz(sizeof(PPContext));
     int stride= FFALIGN(width, 16);  //assumed / will realloc if needed
     int qpStride= (width+15)/16 + 2; //assumed / will realloc if needed
@@ -947,7 +947,7 @@ pp_context *pp_get_context(int width, int height, int cpuCaps){
     return c;
 }
 
-void pp_free_context(void *vc){
+av_cold void pp_free_context(void *vc){
     PPContext *c = (PPContext*)vc;
     int i;
 
