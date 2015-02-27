@@ -88,6 +88,7 @@ struct Resampler {
 };
 
 extern struct Resampler const swri_resampler;
+extern struct Resampler const swri_soxr_resampler;
 
 struct SwrContext {
     const AVClass *av_class;                        ///< AVClass used for AVOption and av_log()
@@ -200,4 +201,5 @@ void swri_audio_convert_init_x86(struct AudioConvert *ac,
                                  enum AVSampleFormat out_fmt,
                                  enum AVSampleFormat in_fmt,
                                  int channels);
+
 #endif

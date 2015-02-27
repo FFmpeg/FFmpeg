@@ -97,7 +97,7 @@ static int invert_initial_buffer(struct ResampleContext *c, AudioData *dst, cons
     return 0;
 }
 
-struct Resampler const soxr_resampler={
+struct Resampler const swri_soxr_resampler={
     create, destroy, process, flush, NULL /* set_compensation */, get_delay,
     invert_initial_buffer,
 };
