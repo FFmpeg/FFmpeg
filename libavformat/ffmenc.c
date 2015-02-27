@@ -25,6 +25,7 @@
 #include "libavutil/parseutils.h"
 #include "libavutil/opt.h"
 #include "avformat.h"
+#include "avio_internal.h"
 #include "internal.h"
 #include "ffm.h"
 
@@ -127,7 +128,6 @@ static int ffm_write_header_codec_ctx(AVIOContext *pb, AVCodecContext *ctx, unsi
 {
     AVIOContext *tmp;
     char *buf = NULL;
-    uint8_t *p = NULL;
     int ret, need_coma = 0;
 
 #define SKIP_DEFAULTS   AV_OPT_SERIALIZE_SKIP_DEFAULTS
@@ -156,8 +156,7 @@ static int ffm_write_header_codec_ctx(AVIOContext *pb, AVCodecContext *ctx, unsi
     return 0;
   fail:
     av_free(buf);
-    avio_close_dyn_buf(tmp, &p);
-    av_free(p);
+    ffio_free_dyn_buf(&tmp);
     return ret;
 
 #undef SKIP_DEFAULTS

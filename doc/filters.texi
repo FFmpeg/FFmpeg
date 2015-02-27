@@ -6980,6 +6980,11 @@ the background is static.
 Default value is @var{full}.
 @end table
 
+The filter also exports the frame metadata @code{lavfi.color_quant_ratio}
+(@code{nb_color_in / nb_color_out}) which you can use to evaluate the degree of
+color quantization of the palette. This information is also visible at
+@var{info} logging level.
+
 @subsection Examples
 
 @itemize

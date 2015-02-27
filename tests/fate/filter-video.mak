@@ -29,6 +29,27 @@ fate-filter-codecview-mvs: CMD = framecrc -flags2 +export_mvs -i $(TARGET_SAMPLE
 FATE_FILTER-$(call ALLYES, SHOWPALETTE_FILTER FLIC_DEMUXER FLIC_DECODER) += fate-filter-showpalette
 fate-filter-showpalette: CMD = framecrc -i $(TARGET_SAMPLES)/fli/fli-engines.fli -vf showpalette=3 -pix_fmt bgra
 
+FATE_FILTER_PALETTEGEN += fate-filter-palettegen-1
+fate-filter-palettegen-1: CMD = framecrc -i $(TARGET_SAMPLES)/filter/anim.mkv -vf palettegen -pix_fmt bgra
+
+FATE_FILTER_PALETTEGEN += fate-filter-palettegen-2
+fate-filter-palettegen-2: CMD = framecrc -i $(TARGET_SAMPLES)/filter/anim.mkv -vf palettegen=max_colors=128:reserve_transparent=0:stats_mode=diff -pix_fmt bgra
+
+fate-filter-palettegen: $(FATE_FILTER_PALETTEGEN)
+FATE_FILTER-$(call ALLYES, PALETTEGEN_FILTER MATROSKA_DEMUXER H264_DECODER) += $(FATE_FILTER_PALETTEGEN)
+
+FATE_FILTER_PALETTEUSE += fate-filter-paletteuse-nodither
+fate-filter-paletteuse-nodither: CMD = framecrc -i $(TARGET_SAMPLES)/filter/anim.mkv -i $(TARGET_SAMPLES)/filter/anim-palette.png -lavfi paletteuse=none -pix_fmt bgra
+
+FATE_FILTER_PALETTEUSE += fate-filter-paletteuse-bayer
+fate-filter-paletteuse-bayer: CMD = framecrc -i $(TARGET_SAMPLES)/filter/anim.mkv -i $(TARGET_SAMPLES)/filter/anim-palette.png -lavfi paletteuse=bayer -pix_fmt bgra
+
+FATE_FILTER_PALETTEUSE += fate-filter-paletteuse-sierra2_4a
+fate-filter-paletteuse-sierra2_4a: CMD = framecrc -i $(TARGET_SAMPLES)/filter/anim.mkv -i $(TARGET_SAMPLES)/filter/anim-palette.png -lavfi paletteuse=sierra2_4a:diff_mode=rectangle -pix_fmt bgra
+
+fate-filter-paletteuse: $(FATE_FILTER_PALETTEUSE)
+FATE_FILTER-$(call ALLYES, PALETTEUSE_FILTER MATROSKA_DEMUXER H264_DECODER IMAGE2_DEMUXER PNG_DECODER) += $(FATE_FILTER_PALETTEUSE)
+
 FATE_SAMPLES_AVCONV += $(FATE_FILTER-yes)
 
 FATE_FILTER-$(call ALLYES, AVDEVICE LIFE_FILTER) += fate-filter-lavd-life

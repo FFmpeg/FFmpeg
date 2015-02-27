@@ -545,7 +545,7 @@ static int hqx_decode_frame(AVCodecContext *avctx, void *data,
     }
     ret = av_image_check_size(ctx->width, ctx->height, 0, avctx);
     if (ret < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Invalid stored dimenstions %dx%d.\n",
+        av_log(avctx, AV_LOG_ERROR, "Invalid stored dimensions %dx%d.\n",
                ctx->width, ctx->height);
         return AVERROR_INVALIDDATA;
     }
@@ -590,8 +590,8 @@ static int hqx_decode_frame(AVCodecContext *avctx, void *data,
             av_log(avctx, AV_LOG_ERROR, "Invalid slice size.\n");
             break;
         }
-        ret = init_get_bits(&gb, src + slice_off[slice],
-                            (slice_off[slice + 1] - slice_off[slice]) * 8);
+        ret = init_get_bits8(&gb, src + slice_off[slice],
+                             slice_off[slice + 1] - slice_off[slice]);
         if (ret < 0)
             return ret;
         ret = decode_slice(ctx, pic, &gb, slice, decode_func);

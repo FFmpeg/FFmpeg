@@ -25,6 +25,7 @@
 
 #include "libavutil/bprint.h"
 #include "libavutil/opt.h"
+#include "libavutil/qsort.h"
 #include "dualinput.h"
 #include "avfilter.h"
 
@@ -592,6 +593,7 @@ static int get_next_color(const uint8_t *color_used, const uint32_t *palette,
     unsigned nb_color = 0;
     struct color_rect ranges;
     struct color tmp_pal[256];
+    cmp_func cmpf;
 
     ranges.min[0] = ranges.min[1] = ranges.min[2] = 0xff;
     ranges.max[0] = ranges.max[1] = ranges.max[2] = 0x00;
@@ -631,10 +633,11 @@ static int get_next_color(const uint8_t *color_used, const uint32_t *palette,
     if (wr >= wg && wr >= wb) longest = 0;
     if (wg >= wr && wg >= wb) longest = 1;
     if (wb >= wr && wb >= wg) longest = 2;
+    cmpf = cmp_funcs[longest];
     *component = longest;
 
     /* sort along this axis to get median */
-    qsort(tmp_pal, nb_color, sizeof(*tmp_pal), cmp_funcs[longest]);
+    AV_QSORT(tmp_pal, nb_color, struct color, cmpf);
 
     return tmp_pal[nb_color >> 1].pal_id;
 }
