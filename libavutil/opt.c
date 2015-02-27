@@ -1964,9 +1964,17 @@ static const AVClass test_class = {
     test_options
 };
 
+static void log_callback_help(void *ptr, int level, const char *fmt, va_list vl)
+{
+    vfprintf(stdout, fmt, vl);
+}
+
 int main(void)
 {
     int i;
+
+    av_log_set_level(AV_LOG_DEBUG);
+    av_log_set_callback(log_callback_help);
 
     printf("Testing default values\n");
     {
