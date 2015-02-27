@@ -75,8 +75,9 @@ void ff_rtp_send_xiph(AVFormatContext *s1, const uint8_t *buff, int size)
         int remaining    = end_ptr - ptr;
 
         assert(s->num_frames <= s->max_frames_per_packet);
-        if ((s->num_frames > 0 && remaining < 0) ||
-            s->num_frames == s->max_frames_per_packet) {
+        if (s->num_frames > 0 &&
+            (remaining < 0 ||
+             s->num_frames == s->max_frames_per_packet)) {
             // send previous packets now; no room for new data
             ff_rtp_send_data(s1, s->buf, s->buf_ptr - s->buf, 0);
             s->num_frames = 0;
