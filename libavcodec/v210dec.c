@@ -63,7 +63,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     s->unpack_frame            = v210_planar_unpack_c;
 
     if (HAVE_MMX)
-        v210_x86_init(s);
+        ff_v210_x86_init(s);
 
     return 0;
 }
@@ -101,7 +101,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     if (aligned_input != s->aligned_input) {
         s->aligned_input = aligned_input;
         if (HAVE_MMX)
-            v210_x86_init(s);
+            ff_v210_x86_init(s);
     }
 
     if ((ret = ff_get_buffer(avctx, pic, 0)) < 0)
