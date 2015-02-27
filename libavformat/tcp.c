@@ -43,7 +43,7 @@ typedef struct TCPContext {
 #define E AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
     { "listen",          "Listen for incoming connections",  OFFSET(listen),         AV_OPT_TYPE_INT, { .i64 = 0 },     0,       1,       .flags = D|E },
-    { "timeout",         "Connection timeout (in milliseconds)", OFFSET(timeout),    AV_OPT_TYPE_INT, { .i64 = 10000 }, INT_MIN, INT_MAX, .flags = D|E },
+    { "timeout",         "Connection timeout (in milliseconds)", OFFSET(timeout),    AV_OPT_TYPE_INT, { .i64 = 0 }, INT_MIN, INT_MAX, .flags = D|E },
     { "listen_timeout",  "Bind timeout (in milliseconds)",   OFFSET(listen_timeout), AV_OPT_TYPE_INT, { .i64 = -1 },    INT_MIN, INT_MAX, .flags = D|E },
     { NULL }
 };
@@ -86,6 +86,10 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
             s->listen_timeout = strtol(buf, NULL, 10);
         }
     }
+    if (!s->timeout)
+        s->timeout = h->rw_timeout ? h->rw_timeout / 1000 : 10000;
+    if (h->rw_timeout && s->listen_timeout < 0)
+        s->listen_timeout = h->rw_timeout / 1000;
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
     snprintf(portstr, sizeof(portstr), "%d", port);
