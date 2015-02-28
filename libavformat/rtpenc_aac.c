@@ -39,7 +39,7 @@ void ff_rtp_send_aac(AVFormatContext *s1, const uint8_t *buff, int size)
 
     /* test if the packet must be sent */
     len = (s->buf_ptr - s->buf);
-    if ((s->num_frames == max_frames_per_packet) || (len && (len + size) > s->max_payload_size)) {
+    if ((s->num_frames == max_frames_per_packet) || (s->num_frames && (len + size) > s->max_payload_size)) {
         int au_size = s->num_frames * 2;
 
         p = s->buf + max_au_headers_size - au_size - 2;
