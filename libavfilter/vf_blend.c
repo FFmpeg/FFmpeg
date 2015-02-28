@@ -379,7 +379,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     int i;
 
     ff_dualinput_uninit(&b->dinput);
-    av_freep(&b->prev_frame);
+    av_frame_free(&b->prev_frame);
 
     for (i = 0; i < FF_ARRAY_ELEMS(b->params); i++)
         av_expr_free(b->params[i].e);
