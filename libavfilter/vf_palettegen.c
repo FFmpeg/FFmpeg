@@ -531,7 +531,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     for (i = 0; i < HIST_SIZE; i++)
         av_freep(&s->histogram[i].entries);
     av_freep(&s->refs);
-    av_freep(&s->prev_frame);
+    av_frame_free(&s->prev_frame);
 }
 
 static const AVFilterPad palettegen_inputs[] = {

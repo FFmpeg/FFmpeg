@@ -613,7 +613,7 @@ int ff_yuv2rgb_c_init_tables(SwsContext *c, const int inv_table[4],
 void ff_yuv2rgb_init_tables_ppc(SwsContext *c, const int inv_table[4],
                                 int brightness, int contrast, int saturation);
 
-void updateMMXDitherTables(SwsContext *c, int dstY, int lumBufIndex, int chrBufIndex,
+void ff_updateMMXDitherTables(SwsContext *c, int dstY, int lumBufIndex, int chrBufIndex,
                            int lastInLumBuf, int lastInChrBuf);
 
 av_cold void ff_sws_init_range_convert(SwsContext *c);

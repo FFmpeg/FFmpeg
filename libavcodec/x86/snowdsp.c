@@ -877,7 +877,7 @@ static void ff_snow_inner_add_yblock_mmx(const uint8_t *obmc, const int obmc_str
 
 #endif /* HAVE_INLINE_ASM */
 
-void ff_dwt_init_x86(SnowDWTContext *c)
+av_cold void ff_dwt_init_x86(SnowDWTContext *c)
 {
 #if HAVE_INLINE_ASM
     int mm_flags = av_get_cpu_flags();

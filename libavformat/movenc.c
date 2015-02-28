@@ -1521,7 +1521,8 @@ static int mov_write_pasp_tag(AVIOContext *pb, MOVTrack *track)
 
 static int mov_write_colr_tag(AVIOContext *pb, MOVTrack *track)
 {
-    // Ref: https://developer.apple.com/library/mac/technotes/tn2162/_index.html#//apple_ref/doc/uid/DTS40013070-CH1-TNTAG9
+    // Ref (MOV): https://developer.apple.com/library/mac/technotes/tn2162/_index.html#//apple_ref/doc/uid/DTS40013070-CH1-TNTAG9
+    // Ref (MP4): ISO/IEC 14496-12:2012
 
     if (track->enc->color_primaries == AVCOL_PRI_UNSPECIFIED &&
         track->enc->color_trc == AVCOL_TRC_UNSPECIFIED &&
@@ -1553,9 +1554,15 @@ static int mov_write_colr_tag(AVIOContext *pb, MOVTrack *track)
         }
     }
 
-    avio_wb32(pb, 18);
+    /* We should only ever be called by MOV or MP4. */
+    av_assert0(track->mode == MODE_MOV || track->mode == MODE_MP4);
+
+    avio_wb32(pb, 18 + (track->mode == MODE_MP4));
     ffio_wfourcc(pb, "colr");
-    ffio_wfourcc(pb, "nclc");
+    if (track->mode == MODE_MP4)
+        ffio_wfourcc(pb, "nclx");
+    else
+        ffio_wfourcc(pb, "nclc");
     switch (track->enc->color_primaries) {
     case AVCOL_PRI_BT709:     avio_wb16(pb, 1); break;
     case AVCOL_PRI_SMPTE170M:
@@ -1576,7 +1583,13 @@ static int mov_write_colr_tag(AVIOContext *pb, MOVTrack *track)
     default:                  avio_wb16(pb, 2);
     }
 
-    return 18;
+    if (track->mode == MODE_MP4) {
+        int full_range = track->enc->color_range == AVCOL_RANGE_JPEG;
+        avio_w8(pb, full_range << 7);
+        return 19;
+    } else {
+        return 18;
+    }
 }
 
 static void find_compressor(char * compressor_name, int len, MOVTrack *track)
@@ -1687,8 +1700,12 @@ static int mov_write_video_tag(AVIOContext *pb, MOVMuxContext *mov, MOVTrack *tr
         if (track->enc->field_order != AV_FIELD_UNKNOWN)
             mov_write_fiel_tag(pb, track);
 
-    if (mov->flags & FF_MOV_FLAG_WRITE_COLR)
-        mov_write_colr_tag(pb, track);
+    if (mov->flags & FF_MOV_FLAG_WRITE_COLR) {
+        if (track->mode == MODE_MOV || track->mode == MODE_MP4)
+            mov_write_colr_tag(pb, track);
+        else
+            av_log(mov->fc, AV_LOG_WARNING, "Not writing 'colr' atom. Format is not MOV or MP4.\n");
+    }
 
     if (track->enc->sample_aspect_ratio.den && track->enc->sample_aspect_ratio.num &&
         track->enc->sample_aspect_ratio.den != track->enc->sample_aspect_ratio.num) {

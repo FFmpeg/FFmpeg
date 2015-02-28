@@ -362,7 +362,7 @@ static void init_dequant4_coeff_table(H264Context *h)
     }
 }
 
-void h264_init_dequant_tables(H264Context *h)
+void ff_h264_init_dequant_tables(H264Context *h)
 {
     int i, x;
     init_dequant4_coeff_table(h);
@@ -1499,7 +1499,7 @@ int ff_h264_decode_slice_header(H264Context *h, H264Context *h0)
 
     if (first_slice && h->dequant_coeff_pps != pps_id) {
         h->dequant_coeff_pps = pps_id;
-        h264_init_dequant_tables(h);
+        ff_h264_init_dequant_tables(h);
     }
 
     frame_num = get_bits(&h->gb, h->sps.log2_max_frame_num);
