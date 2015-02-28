@@ -114,6 +114,7 @@ static int icecast_open(URLContext *h, const char *uri, int flags)
     av_dict_set(&opt_dict, "method", s->legacy_icecast ? "SOURCE" : "PUT", 0);
     av_dict_set(&opt_dict, "auth_type", "basic", 0);
     av_dict_set(&opt_dict, "headers", headers, 0);
+    av_dict_set(&opt_dict, "chunked_post", "0", 0);
     if (NOT_EMPTY(s->content_type))
         av_dict_set(&opt_dict, "content_type", s->content_type, 0);
     if (NOT_EMPTY(s->user_agent))
