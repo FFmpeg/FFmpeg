@@ -96,7 +96,7 @@ end:
     av_free_packet(&pkt);
     avcodec_close(codec_ctx);
     avformat_close_input(&format_ctx);
-    av_freep(&frame);
+    av_frame_free(&frame);
 
     if (ret < 0)
         av_log(log_ctx, AV_LOG_ERROR, "Error loading image file '%s'\n", filename);
