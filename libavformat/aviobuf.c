@@ -42,28 +42,28 @@
  */
 #define SHORT_SEEK_THRESHOLD 4096
 
-static void *ffio_url_child_next(void *obj, void *prev)
+static void *ff_avio_child_next(void *obj, void *prev)
 {
     AVIOContext *s = obj;
     return prev ? NULL : s->opaque;
 }
 
-static const AVClass *ffio_url_child_class_next(const AVClass *prev)
+static const AVClass *ff_avio_child_class_next(const AVClass *prev)
 {
     return prev ? NULL : &ffurl_context_class;
 }
 
-static const AVOption ffio_url_options[] = {
+static const AVOption ff_avio_options[] = {
     { NULL },
 };
 
-const AVClass ffio_url_class = {
+const AVClass ff_avio_class = {
     .class_name = "AVIOContext",
     .item_name  = av_default_item_name,
     .version    = LIBAVUTIL_VERSION_INT,
-    .option     = ffio_url_options,
-    .child_next = ffio_url_child_next,
-    .child_class_next = ffio_url_child_class_next,
+    .option     = ff_avio_options,
+    .child_next = ff_avio_child_next,
+    .child_class_next = ff_avio_child_class_next,
 };
 
 static void fill_buffer(AVIOContext *s);
@@ -775,7 +775,7 @@ int ffio_fdopen(AVIOContext **s, URLContext *h)
         (*s)->read_pause = (int (*)(void *, int))h->prot->url_read_pause;
         (*s)->read_seek  = (int64_t (*)(void *, int, int64_t, int))h->prot->url_read_seek;
     }
-    (*s)->av_class = &ffio_url_class;
+    (*s)->av_class = &ff_avio_class;
     return 0;
 }
 
