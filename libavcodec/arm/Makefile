@@ -92,7 +92,6 @@ VFP-OBJS                               += arm/fmtconvert_vfp.o
 # subsystems
 VFP-OBJS-$(CONFIG_FFT)                 += arm/fft_vfp.o
 VFP-OBJS-$(CONFIG_MDCT)                += arm/mdct_vfp.o
-VFP-OBJS-$(HAVE_ARMV6)                 += arm/fmtconvert_vfp_armv6.o
 
 # decoders/encoders
 VFP-OBJS-$(CONFIG_DCA_DECODER)         += arm/dcadsp_vfp.o              \
