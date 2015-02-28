@@ -76,5 +76,5 @@ int ff_tls_open_underlying(TLSShared *c, URLContext *parent, const char *uri, AV
     }
 
     return ffurl_open(&c->tcp, buf, AVIO_FLAG_READ_WRITE,
-                      &parent->interrupt_callback, options, parent->protocols);
+                      &parent->interrupt_callback, options, parent->protocols, parent);
 }

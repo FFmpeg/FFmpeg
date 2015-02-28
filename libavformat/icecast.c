@@ -177,7 +177,7 @@ static int icecast_open(URLContext *h, const char *uri, int flags)
     ff_url_join(h_url, sizeof(h_url), "http", auth, host, port, "%s", path);
     // Finally open http proto handler
     ret = ffurl_open(&s->hd, h_url, AVIO_FLAG_READ_WRITE, NULL, &opt_dict,
-                     h->protocols);
+                     h->protocols, h);
 
 cleanup:
     // Free variables

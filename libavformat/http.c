@@ -181,7 +181,7 @@ static int http_open_cnx_internal(URLContext *h, AVDictionary **options)
 
     if (!s->hd) {
         err = ffurl_open(&s->hd, buf, AVIO_FLAG_READ_WRITE,
-                         &h->interrupt_callback, options, h->protocols);
+                         &h->interrupt_callback, options, h->protocols, h);
         if (err < 0)
             return err;
     }
@@ -1079,7 +1079,7 @@ static int http_proxy_open(URLContext *h, const char *uri, int flags)
                 NULL);
 redo:
     ret = ffurl_open(&s->hd, lower_url, AVIO_FLAG_READ_WRITE,
-                     &h->interrupt_callback, NULL, h->protocols);
+                     &h->interrupt_callback, NULL, h->protocols, h);
     if (ret < 0)
         return ret;
 

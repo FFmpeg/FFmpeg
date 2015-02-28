@@ -1466,7 +1466,7 @@ int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
                 /* we will use two ports per rtp stream (rtp and rtcp) */
                 j += 2;
                 err = ffurl_open(&rtsp_st->rtp_handle, buf, AVIO_FLAG_READ_WRITE,
-                                 &s->interrupt_callback, &opts, rt->protocols);
+                                 &s->interrupt_callback, &opts, rt->protocols, NULL);
 
                 av_dict_free(&opts);
 
@@ -1610,7 +1610,7 @@ int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
             ff_url_join(url, sizeof(url), "rtp", NULL, namebuf,
                         port, "%s", optbuf);
             if (ffurl_open(&rtsp_st->rtp_handle, url, AVIO_FLAG_READ_WRITE,
-                           &s->interrupt_callback, NULL, rt->protocols) < 0) {
+                           &s->interrupt_callback, NULL, rt->protocols, NULL) < 0) {
                 err = AVERROR_INVALIDDATA;
                 goto fail;
             }
@@ -1804,7 +1804,7 @@ redirect:
         ff_url_join(tcpname, sizeof(tcpname), lower_rtsp_proto, NULL,
                     host, port, NULL);
         if (ffurl_open(&rt->rtsp_hd, tcpname, AVIO_FLAG_READ_WRITE,
-                       &s->interrupt_callback, NULL, rt->protocols) < 0) {
+                       &s->interrupt_callback, NULL, rt->protocols, NULL) < 0) {
             err = AVERROR(EIO);
             goto fail;
         }
@@ -2311,7 +2311,7 @@ static int sdp_read_header(AVFormatContext *s)
                                 rtsp_st->nb_exclude_source_addrs,
                                 rtsp_st->exclude_source_addrs);
             err = ffurl_open(&rtsp_st->rtp_handle, url, AVIO_FLAG_READ_WRITE,
-                             &s->interrupt_callback, &opts, rt->protocols);
+                             &s->interrupt_callback, &opts, rt->protocols, NULL);
 
             av_dict_free(&opts);
 
@@ -2388,7 +2388,7 @@ static int rtp_read_header(AVFormatContext *s)
     }
 
     ret = ffurl_open(&in, s->filename, AVIO_FLAG_READ,
-                     &s->interrupt_callback, NULL, rt->protocols);
+                     &s->interrupt_callback, NULL, rt->protocols, NULL);
     if (ret)
         goto fail;
 

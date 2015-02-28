@@ -137,12 +137,14 @@ int ffurl_connect(URLContext *uc, AVDictionary **options);
  * @param protocols a NULL-terminate list of protocols available for use by
  *                  this context and its children. The caller must ensure this
  *                  list remains valid until the context is closed.
+ * @param parent An enclosing URLContext, whose generic options should
+ *               be applied to this URLContext as well.
  * @return 0 in case of success, a negative value corresponding to an
  * AVERROR code in case of failure
  */
 int ffurl_open(URLContext **puc, const char *filename, int flags,
                const AVIOInterruptCB *int_cb, AVDictionary **options,
-               const URLProtocol **protocols);
+               const URLProtocol **protocols, URLContext *parent);
 
 /**
  * Read up to size bytes from the resource accessed by h, and store

@@ -174,11 +174,14 @@ int ffurl_alloc(URLContext **puc, const char *filename, int flags,
 
 int ffurl_open(URLContext **puc, const char *filename, int flags,
                const AVIOInterruptCB *int_cb, AVDictionary **options,
-               const URLProtocol **protocols)
+               const URLProtocol **protocols,
+               URLContext *parent)
 {
     int ret = ffurl_alloc(puc, filename, flags, int_cb, protocols);
     if (ret)
         return ret;
+    if (parent)
+        av_opt_copy(*puc, parent);
     if (options &&
         (ret = av_opt_set_dict(*puc, options)) < 0)
         goto fail;

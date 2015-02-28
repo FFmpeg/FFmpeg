@@ -160,7 +160,7 @@ static int sap_write_header(AVFormatContext *s)
         if (!same_port)
             base_port += 2;
         ret = ffurl_open(&fd, url, AVIO_FLAG_WRITE, &s->interrupt_callback, NULL,
-                         sap->protocols);
+                         sap->protocols, NULL);
         if (ret) {
             ret = AVERROR(EIO);
             goto fail;
@@ -179,7 +179,7 @@ static int sap_write_header(AVFormatContext *s)
     ff_url_join(url, sizeof(url), "udp", NULL, announce_addr, port,
                 "?ttl=%d&connect=1", ttl);
     ret = ffurl_open(&sap->ann_fd, url, AVIO_FLAG_WRITE,
-                     &s->interrupt_callback, NULL, sap->protocols);
+                     &s->interrupt_callback, NULL, sap->protocols, NULL);
     if (ret) {
         ret = AVERROR(EIO);
         goto fail;

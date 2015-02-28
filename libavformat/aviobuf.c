@@ -905,7 +905,7 @@ int avio_open2(AVIOContext **s, const char *filename, int flags,
     if (!protocols)
         return AVERROR(ENOMEM);
 
-    err = ffurl_open(&h, filename, flags, int_cb, options, protocols);
+    err = ffurl_open(&h, filename, flags, int_cb, options, protocols, NULL);
     if (err < 0) {
         av_freep(&protocols);
         return err;

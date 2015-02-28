@@ -95,7 +95,7 @@ static av_cold int concat_open(URLContext *h, const char *uri, int flags)
 
         /* creating URLContext */
         if ((err = ffurl_open(&uc, node_uri, flags,
-                              &h->interrupt_callback, NULL, h->protocols)) < 0)
+                              &h->interrupt_callback, NULL, h->protocols, h)) < 0)
             break;
 
         /* creating size */
