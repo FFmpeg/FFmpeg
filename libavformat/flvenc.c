@@ -489,7 +489,7 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
         avio_w8(pb, FLV_TAG_TYPE_VIDEO);
 
         flags = enc->codec_tag;
-        if (flags == 0) {
+        if (flags <= 0 || flags > 15) {
             av_log(s, AV_LOG_ERROR,
                    "Video codec '%s' is not compatible with FLV\n",
                    avcodec_get_name(enc->codec_id));
