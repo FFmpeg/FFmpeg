@@ -77,7 +77,7 @@ static int v308_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
 static av_cold int v308_encode_close(AVCodecContext *avctx)
 {
-    av_freep(&avctx->coded_frame);
+    av_frame_free(&avctx->coded_frame);
 
     return 0;
 }

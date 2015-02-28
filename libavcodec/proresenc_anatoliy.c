@@ -601,7 +601,7 @@ static av_cold int prores_encode_init(AVCodecContext *avctx)
 static av_cold int prores_encode_close(AVCodecContext *avctx)
 {
     ProresContext* ctx = avctx->priv_data;
-    av_freep(&avctx->coded_frame);
+    av_frame_free(&avctx->coded_frame);
     av_freep(&ctx->fill_y);
 
     return 0;
