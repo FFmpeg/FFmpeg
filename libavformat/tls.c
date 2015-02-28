@@ -137,7 +137,7 @@ static int do_tls_poll(URLContext *h, int ret)
     return 0;
 }
 
-static int tls_open(URLContext *h, const char *uri, int flags)
+static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **options)
 {
     TLSContext *c = h->priv_data;
     int ret;
@@ -189,7 +189,7 @@ static int tls_open(URLContext *h, const char *uri, int flags)
     }
 
     ret = ffurl_open(&c->tcp, buf, AVIO_FLAG_READ_WRITE,
-                     &h->interrupt_callback, NULL);
+                     &h->interrupt_callback, options);
     if (ret)
         goto fail;
     c->fd = ffurl_get_file_handle(c->tcp);
@@ -360,7 +360,7 @@ static int tls_close(URLContext *h)
 
 URLProtocol ff_tls_protocol = {
     .name           = "tls",
-    .url_open       = tls_open,
+    .url_open2      = tls_open,
     .url_read       = tls_read,
     .url_write      = tls_write,
     .url_close      = tls_close,
