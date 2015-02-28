@@ -245,7 +245,7 @@ int av_image_check_sar(unsigned int w, unsigned int h, AVRational sar)
 {
     int64_t scaled_dim;
 
-    if (!sar.den)
+    if (sar.den <= 0 || sar.num < 0)
         return AVERROR(EINVAL);
 
     if (!sar.num || sar.num == sar.den)
