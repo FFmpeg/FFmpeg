@@ -37,7 +37,6 @@
 #include "libavutil/random_seed.h"
 #include "avcodec.h"
 #include "fft.h"
-#include "fmtconvert.h"
 #include "internal.h"
 #include "nellymoser.h"
 #include "sinewin.h"

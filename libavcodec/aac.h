@@ -36,7 +36,6 @@
 #include "fft.h"
 #include "mpeg4audio.h"
 #include "sbr.h"
-#include "fmtconvert.h"
 
 #include <stdint.h>
 
@@ -296,7 +295,6 @@ struct AACContext {
     FFTContext mdct_ld;
     FFTContext mdct_ltp;
     IMDCT15Context *mdct480;
-    FmtConvertContext fmt_conv;
     AVFloatDSPContext *fdsp;
     int random_state;
     /** @} */
