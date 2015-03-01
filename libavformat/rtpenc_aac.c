@@ -25,16 +25,15 @@
 void ff_rtp_send_aac(AVFormatContext *s1, const uint8_t *buff, int size)
 {
     RTPMuxContext *s = s1->priv_data;
-    int len, max_packet_size;
-    uint8_t *p;
     const int max_au_headers_size = 2 + 2 * s->max_frames_per_packet;
+    int len, max_packet_size = s->max_payload_size - max_au_headers_size;
+    uint8_t *p;
 
     /* skip ADTS header, if present */
     if ((s1->streams[0]->codec->extradata_size) == 0) {
         size -= 7;
         buff += 7;
     }
-    max_packet_size = s->max_payload_size - max_au_headers_size;
 
     /* test if the packet must be sent */
     len = (s->buf_ptr - s->buf);
