@@ -179,11 +179,17 @@ static int rtp_write_header(AVFormatContext *s1)
         }
     }
 
-    avpriv_set_pts_info(st, 32, 1, 90000);
+    if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
+        avpriv_set_pts_info(st, 32, 1, st->codec->sample_rate);
+    } else {
+        avpriv_set_pts_info(st, 32, 1, 90000);
+    }
+    s->buf_ptr = s->buf;
     switch(st->codec->codec_id) {
     case AV_CODEC_ID_MP2:
     case AV_CODEC_ID_MP3:
         s->buf_ptr = s->buf + 4;
+        avpriv_set_pts_info(st, 32, 1, 90000);
         break;
     case AV_CODEC_ID_MPEG1VIDEO:
     case AV_CODEC_ID_MPEG2VIDEO:
@@ -227,7 +233,7 @@ static int rtp_write_header(AVFormatContext *s1)
             s->max_frames_per_packet = 15;
         s->max_frames_per_packet = av_clip(s->max_frames_per_packet, 1, 15);
         s->num_frames = 0;
-        goto defaultcase;
+        break;
     case AV_CODEC_ID_ADPCM_G722:
         /* Due to a historical error, the clock rate for G722 in RTP is
          * 8000, even if the sample rate is 16000. See RFC 3551. */
@@ -252,7 +258,7 @@ static int rtp_write_header(AVFormatContext *s1)
             s->max_frames_per_packet = 1;
         s->max_frames_per_packet = FFMIN(s->max_frames_per_packet,
                                          s->max_payload_size / st->codec->block_align);
-        goto defaultcase;
+        break;
     case AV_CODEC_ID_AMR_NB:
     case AV_CODEC_ID_AMR_WB:
         if (!s->max_frames_per_packet)
@@ -271,18 +277,13 @@ static int rtp_write_header(AVFormatContext *s1)
             goto fail;
         }
         s->num_frames = 0;
-        goto defaultcase;
+        break;
     case AV_CODEC_ID_AAC:
         s->num_frames = 0;
         if (!s->max_frames_per_packet)
             s->max_frames_per_packet = 5;
-        goto defaultcase;
+        break;
     default:
-defaultcase:
-        if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
-            avpriv_set_pts_info(st, 32, 1, st->codec->sample_rate);
-        }
-        s->buf_ptr = s->buf;
         break;
     }
 
