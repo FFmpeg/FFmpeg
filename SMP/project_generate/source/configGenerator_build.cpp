@@ -465,6 +465,11 @@ void configGenerator::buildForcedEnables( string sOptionLower, vector<string> & 
     {
         vForceEnable.push_back( "qsv" );
     }
+    else if( sOptionLower.compare( "gnutls" ) == 0 )
+    {
+        vForceEnable.push_back( "nettle" );
+        vForceEnable.push_back( "gcrypt" );
+    }
 }
 
 void configGenerator::buildForcedDisables( string sOptionLower, vector<string> & vForceDisable )
@@ -484,6 +489,11 @@ void configGenerator::buildForcedDisables( string sOptionLower, vector<string> &
     else if( sOptionLower.compare( "libmfx" ) == 0 )
     {
         vForceDisable.push_back( "qsv" );
+    }
+    else if( sOptionLower.compare( "gnutls" ) == 0 )
+    {
+        vForceDisable.push_back( "nettle" );
+        vForceDisable.push_back( "gcrypt" );
     }
 }
 
