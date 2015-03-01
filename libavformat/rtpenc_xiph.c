@@ -82,14 +82,16 @@ void ff_rtp_send_xiph(AVFormatContext *s1, const uint8_t *buff, int size)
         }
 
         // buffer current frame to send later
-        if (0 == s->num_frames) s->timestamp = s->cur_timestamp;
+        if (0 == s->num_frames)
+            s->timestamp = s->cur_timestamp;
         s->num_frames++;
 
         // Set packet header. Normally, this is OR'd with frag and xdt,
         // but those are zero, so omitted here
         *q++ = s->num_frames;
 
-        if (s->num_frames > 1) q = s->buf_ptr; // jump ahead if needed
+        if (s->num_frames > 1)
+            q = s->buf_ptr; // jump ahead if needed
         *q++ = (size >> 8) & 0xff;
         *q++ = size & 0xff;
         memcpy(q, buff, size);
