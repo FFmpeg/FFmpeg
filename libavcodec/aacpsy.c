@@ -717,7 +717,7 @@ static void psy_3gpp_analyze_channel(FFPsyContext *ctx, int channel,
             }
             desired_pe_no_ah = FFMAX(desired_pe - (pe - pe_no_ah), 0.0f);
             if (active_lines > 0.0f)
-                reduction += calc_reduction_3gpp(a, desired_pe_no_ah, pe_no_ah, active_lines);
+                reduction = calc_reduction_3gpp(a, desired_pe_no_ah, pe_no_ah, active_lines);
 
             pe = 0.0f;
             for (w = 0; w < wi->num_windows*16; w += 16) {
