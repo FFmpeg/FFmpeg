@@ -1329,6 +1329,7 @@ EXAMPLE_LIST="
     filtering_video_example
     metadata_example
     muxing_example
+    qsvdec_example
     remuxing_example
     resampling_audio_example
     scaling_video_example
@@ -1838,6 +1839,7 @@ HAVE_LIST="
     section_data_rel_ro
     texi2html
     threads
+    vaapi_x11
     vdpau_x11
     xlib
 "
@@ -1856,6 +1858,7 @@ CONFIG_EXTRA="
     faandct
     faanidct
     fdctdsp
+    fmtconvert
     frame_thread_encoder
     gcrypt
     golomb
@@ -2074,7 +2077,7 @@ mpegvideoenc_select="me_cmp mpegvideo pixblockdsp qpeldsp"
 aac_decoder_select="imdct15 mdct sinewin"
 aac_encoder_select="audio_frame_queue iirfilter mdct sinewin"
 aac_latm_decoder_select="aac_decoder aac_latm_parser"
-ac3_decoder_select="ac3_parser ac3dsp bswapdsp mdct"
+ac3_decoder_select="ac3_parser ac3dsp bswapdsp fmtconvert mdct"
 ac3_fixed_decoder_select="ac3_parser ac3dsp bswapdsp mdct"
 ac3_encoder_select="ac3dsp audiodsp mdct me_cmp"
 ac3_fixed_encoder_select="ac3dsp audiodsp mdct me_cmp"
@@ -2104,7 +2107,7 @@ comfortnoise_encoder_select="lpc"
 cook_decoder_select="audiodsp mdct sinewin"
 cscd_decoder_select="lzo"
 cscd_decoder_suggest="zlib"
-dca_decoder_select="mdct"
+dca_decoder_select="fmtconvert mdct"
 dirac_decoder_select="dwt golomb videodsp mpegvideoenc"
 dnxhd_decoder_select="blockdsp idctdsp"
 dnxhd_encoder_select="aandcttables blockdsp fdctdsp idctdsp mpegvideoenc pixblockdsp"
@@ -2653,6 +2656,7 @@ filtering_audio_example_deps="avfilter avcodec avformat avutil"
 filtering_video_example_deps="avfilter avcodec avformat avutil"
 metadata_example_deps="avformat avutil"
 muxing_example_deps="avcodec avformat avutil swscale"
+qsvdec_example_deps="avcodec avutil libmfx h264_qsv_decoder vaapi_x11"
 remuxing_example_deps="avcodec avformat avutil"
 resampling_audio_example_deps="avutil swresample"
 scaling_video_example_deps="avutil swscale"
@@ -5132,6 +5136,10 @@ EOF
 enabled vaapi &&
     check_lib va/va.h vaInitialize -lva ||
     disable vaapi
+
+enabled vaapi && enabled xlib &&
+    check_lib2 "va/va.h va/va_x11.h" vaGetDisplay -lva -lva-x11 &&
+    enable vaapi_x11
 
 enabled vdpau &&
     check_cpp_condition vdpau/vdpau.h "defined VDP_DECODER_PROFILE_MPEG4_PART2_ASP" ||

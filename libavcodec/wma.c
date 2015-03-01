@@ -91,7 +91,6 @@ av_cold int ff_wma_init(AVCodecContext *avctx, int flags2)
         avctx->bit_rate    <= 0)
         return -1;
 
-    ff_fmt_convert_init(&s->fmt_conv, avctx);
 
     if (avctx->codec->id == AV_CODEC_ID_WMAV1)
         s->version = 1;

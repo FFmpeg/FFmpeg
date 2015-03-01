@@ -1,7 +1,5 @@
 ARCH_HEADERS = mathops.h
 
-OBJS                                   += arm/fmtconvert_init_arm.o
-
 # subsystems
 OBJS-$(CONFIG_AC3DSP)                  += arm/ac3dsp_init_arm.o         \
                                           arm/ac3dsp_arm.o
@@ -9,6 +7,7 @@ OBJS-$(CONFIG_AUDIODSP)                += arm/audiodsp_init_arm.o
 OBJS-$(CONFIG_BLOCKDSP)                += arm/blockdsp_init_arm.o
 OBJS-$(CONFIG_FFT)                     += arm/fft_init_arm.o            \
                                           arm/fft_fixed_init_arm.o
+OBJS-$(CONFIG_FMTCONVERT)              += arm/fmtconvert_init_arm.o
 OBJS-$(CONFIG_H264CHROMA)              += arm/h264chroma_init_arm.o
 OBJS-$(CONFIG_H264DSP)                 += arm/h264dsp_init_arm.o
 OBJS-$(CONFIG_H264PRED)                += arm/h264pred_init_arm.o
@@ -87,12 +86,11 @@ ARMV6-OBJS-$(CONFIG_VP8_DECODER)       += arm/vp8_armv6.o               \
 
 
 # VFP optimizations
-VFP-OBJS                               += arm/fmtconvert_vfp.o
 
 # subsystems
 VFP-OBJS-$(CONFIG_FFT)                 += arm/fft_vfp.o
+VFP-OBJS-$(CONFIG_FMTCONVERT)          += arm/fmtconvert_vfp.o
 VFP-OBJS-$(CONFIG_MDCT)                += arm/mdct_vfp.o
-VFP-OBJS-$(HAVE_ARMV6)                 += arm/fmtconvert_vfp_armv6.o
 
 # decoders/encoders
 VFP-OBJS-$(CONFIG_DCA_DECODER)         += arm/dcadsp_vfp.o              \
@@ -100,7 +98,6 @@ VFP-OBJS-$(CONFIG_DCA_DECODER)         += arm/dcadsp_vfp.o              \
 
 
 # NEON optimizations
-NEON-OBJS                              += arm/fmtconvert_neon.o
 
 # subsystems
 NEON-OBJS-$(CONFIG_AC3DSP)             += arm/ac3dsp_neon.o
@@ -111,6 +108,7 @@ NEON-OBJS-$(CONFIG_BLOCKDSP)           += arm/blockdsp_init_neon.o      \
                                           arm/blockdsp_neon.o
 NEON-OBJS-$(CONFIG_FFT)                += arm/fft_neon.o                \
                                           arm/fft_fixed_neon.o
+NEON-OBJS-$(CONFIG_FMTCONVERT)         += arm/fmtconvert_neon.o
 NEON-OBJS-$(CONFIG_H264CHROMA)         += arm/h264cmc_neon.o
 NEON-OBJS-$(CONFIG_H264DSP)            += arm/h264dsp_neon.o            \
                                           arm/h264idct_neon.o

@@ -24,7 +24,6 @@ OBJS = allcodecs.o                                                      \
        bitstream_filter.o                                               \
        codec_desc.o                                                     \
        dv_profile.o                                                     \
-       fmtconvert.o                                                     \
        imgconvert.o                                                     \
        mathtables.o                                                     \
        options.o                                                        \
@@ -56,6 +55,7 @@ FFT-OBJS-$(CONFIG_HARDCODED_TABLES)    += cos_tables.o cos_fixed_tables.o
 OBJS-$(CONFIG_FFT)                     += avfft.o fft_fixed.o fft_float.o \
                                           fft_fixed_32.o fft_init_table.o \
                                           $(FFT-OBJS-yes)
+OBJS-$(CONFIG_FMTCONVERT)              += fmtconvert.o
 OBJS-$(CONFIG_GOLOMB)                  += golomb.o
 OBJS-$(CONFIG_H263DSP)                 += h263dsp.o
 OBJS-$(CONFIG_H264CHROMA)              += h264chroma.o

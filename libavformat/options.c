@@ -55,7 +55,7 @@ static const AVClass *format_child_class_next(const AVClass *prev)
     AVOutputFormat *ofmt = NULL;
 
     if (!prev)
-        return &ffio_url_class;
+        return &ff_avio_class;
 
     while ((ifmt = av_iformat_next(ifmt)))
         if (ifmt->priv_class == prev)

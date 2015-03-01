@@ -59,7 +59,7 @@ static RTPDynamicProtocolHandler opus_dynamic_handler = {
 static RTPDynamicProtocolHandler t140_dynamic_handler = { /* RFC 4103 */
     .enc_name   = "t140",
     .codec_type = AVMEDIA_TYPE_SUBTITLE,
-    .codec_id   = AV_CODEC_ID_SUBRIP,
+    .codec_id   = AV_CODEC_ID_TEXT,
 };
 
 static RTPDynamicProtocolHandler *rtp_first_dynamic_payload_handler = NULL;

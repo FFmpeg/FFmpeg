@@ -88,7 +88,6 @@
 #include "get_bits.h"
 #include "fft.h"
 #include "imdct15.h"
-#include "fmtconvert.h"
 #include "lpc.h"
 #include "kbdwin.h"
 #include "sinewin.h"
@@ -1133,7 +1132,6 @@ static av_cold int aac_decode_init(AVCodecContext *avctx)
 
     ff_aac_sbr_init();
 
-    ff_fmt_convert_init(&ac->fmt_conv, avctx);
     ac->fdsp = avpriv_float_dsp_alloc(avctx->flags & CODEC_FLAG_BITEXACT);
     if (!ac->fdsp) {
         return AVERROR(ENOMEM);
