@@ -18,6 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/intreadwrite.h"
+
 #include "avformat.h"
 #include "rtpenc.h"
 
@@ -45,8 +47,7 @@ void ff_rtp_send_aac(AVFormatContext *s1, const uint8_t *buff, int size)
             memmove(p + 2, s->buf + 2, au_size);
         }
         /* Write the AU header size */
-        p[0] =  au_size >> 5;
-        p[1] = (au_size & 0x1F) << 3;
+        AV_WB16(p, au_size * 8);
 
         ff_rtp_send_data(s1, p, s->buf_ptr - p, 1);
 
@@ -59,8 +60,7 @@ void ff_rtp_send_aac(AVFormatContext *s1, const uint8_t *buff, int size)
 
     if (size <= max_packet_size) {
         p = s->buf + s->num_frames++ * 2 + 2;
-        *p++ = size >> 5;
-        *p = (size & 0x1F) << 3;
+        AV_WB16(p, size * 8);
         memcpy(s->buf_ptr, buff, size);
         s->buf_ptr += size;
     } else {
@@ -68,12 +68,10 @@ void ff_rtp_send_aac(AVFormatContext *s1, const uint8_t *buff, int size)
 
         max_packet_size = s->max_payload_size - 4;
         p = s->buf;
-        p[0] = 0;
-        p[1] = 16;
+        AV_WB16(p, 2 * 8);
         while (size > 0) {
             len = FFMIN(size, max_packet_size);
-            p[2] = au_size >> 5;
-            p[3] = (au_size & 0x1F) << 3;
+            AV_WB16(&p[2], au_size * 8);
             memcpy(p + 4, buff, len);
             ff_rtp_send_data(s1, p, len + 4, len == size);
             size -= len;
