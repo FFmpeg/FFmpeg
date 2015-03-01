@@ -140,6 +140,12 @@ fate-acodec-roqaudio: CODEC = roq_dpcm
 fate-acodec-roqaudio: ENCOPTS = -ar 22050
 fate-acodec-roqaudio: DECOPTS = -ar 44100
 
+FATE_ACODEC-$(call ENCDEC, S302M, MPEGTS) += fate-acodec-s302m
+fate-acodec-s302m: FMT = mpegts
+fate-acodec-s302m: CODEC = s302m
+fate-acodec-s302m: ENCOPTS = -ar 48000 -strict -2
+fate-acodec-s302m: DECOPTS = -ar 44100
+
 FATE_ACODEC-$(call ENCDEC, WAVPACK, WV) += fate-acodec-wavpack
 fate-acodec-wavpack: FMT = wv
 fate-acodec-wavpack: CODEC = wavpack -compression_level 1
