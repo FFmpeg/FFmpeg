@@ -36,7 +36,9 @@ void ff_rtp_send_amr(AVFormatContext *s1, const uint8_t *buff, int size)
 
     /* Test if the packet must be sent. */
     len = s->buf_ptr - s->buf;
-    if (s->num_frames == s->max_frames_per_packet || (s->num_frames && len + size - 1 > s->max_payload_size)) {
+    if (s->num_frames &&
+        (s->num_frames == s->max_frames_per_packet ||
+         len + size - 1 > s->max_payload_size)) {
         int header_size = s->num_frames + 1;
         p = s->buf + max_header_toc_size - header_size;
         if (p != s->buf)
