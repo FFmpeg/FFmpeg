@@ -20,6 +20,8 @@
  */
 
 #include "libavutil/avassert.h"
+#include "libavutil/intreadwrite.h"
+
 #include "avformat.h"
 #include "rtpenc.h"
 
@@ -92,8 +94,8 @@ void ff_rtp_send_xiph(AVFormatContext *s1, const uint8_t *buff, int size)
 
         if (s->num_frames > 1)
             q = s->buf_ptr; // jump ahead if needed
-        *q++ = (size >> 8) & 0xff;
-        *q++ = size & 0xff;
+        AV_WB16(q, size);
+        q += 2;
         memcpy(q, buff, size);
         q += size;
         s->buf_ptr = q;
@@ -114,8 +116,8 @@ void ff_rtp_send_xiph(AVFormatContext *s1, const uint8_t *buff, int size)
 
         // set packet headers
         *q++ = (frag << 6) | (xdt << 4); // num_frames = 0
-        *q++ = (len >> 8) & 0xff;
-        *q++ = len & 0xff;
+        AV_WB16(q, len);
+        q += 2;
         // set packet body
         memcpy(q, buff, len);
         q += len;
