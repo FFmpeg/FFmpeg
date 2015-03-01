@@ -33,6 +33,7 @@
 void ff_rtp_send_xiph(AVFormatContext *s1, const uint8_t *buff, int size)
 {
     RTPMuxContext *s = s1->priv_data;
+    AVStream *st = s1->streams[0];
     int max_pkt_size, xdt, frag;
     uint8_t *q;
 
@@ -78,8 +79,10 @@ void ff_rtp_send_xiph(AVFormatContext *s1, const uint8_t *buff, int size)
         av_assert1(s->num_frames <= s->max_frames_per_packet);
         if (s->num_frames > 0 &&
             (remaining < 0 ||
-             s->num_frames == s->max_frames_per_packet)) {
-            // send previous packets now; no room for new data
+             s->num_frames == s->max_frames_per_packet ||
+             av_compare_ts(s->cur_timestamp - s->timestamp, st->time_base,
+                           s1->max_delay, AV_TIME_BASE_Q) >= 0)) {
+            // send previous packets now; no room for new data, or too much delay
             ff_rtp_send_data(s1, s->buf, s->buf_ptr - s->buf, 0);
             s->num_frames = 0;
         }

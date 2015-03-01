@@ -152,33 +152,6 @@ static int rtp_write_header(AVFormatContext *s1)
     }
     s->max_payload_size = s1->packet_size - 12;
 
-    s->max_frames_per_packet = 0;
-    if (s1->max_delay > 0) {
-        if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
-            int frame_size = av_get_audio_frame_duration(st->codec, 0);
-            if (!frame_size)
-                frame_size = st->codec->frame_size;
-            if (frame_size == 0) {
-                av_log(s1, AV_LOG_ERROR, "Cannot respect max delay: frame size = 0\n");
-            } else {
-                s->max_frames_per_packet =
-                        av_rescale_q_rnd(s1->max_delay,
-                                         AV_TIME_BASE_Q,
-                                         (AVRational){ frame_size, st->codec->sample_rate },
-                                         AV_ROUND_DOWN);
-            }
-        }
-        if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
-            /* FIXME: We should round down here... */
-            if (st->avg_frame_rate.num > 0 && st->avg_frame_rate.den > 0) {
-                s->max_frames_per_packet = av_rescale_q(s1->max_delay,
-                                                        (AVRational){1, 1000000},
-                                                        av_inv_q(st->avg_frame_rate));
-            } else
-                s->max_frames_per_packet = 1;
-        }
-    }
-
     if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
         avpriv_set_pts_info(st, 32, 1, st->codec->sample_rate);
     } else {
@@ -228,9 +201,7 @@ static int rtp_write_header(AVFormatContext *s1)
         break;
     case AV_CODEC_ID_VORBIS:
     case AV_CODEC_ID_THEORA:
-        if (!s->max_frames_per_packet)
-            s->max_frames_per_packet = 15;
-        s->max_frames_per_packet = av_clip(s->max_frames_per_packet, 1, 15);
+        s->max_frames_per_packet = 15;
         break;
     case AV_CODEC_ID_ADPCM_G722:
         /* Due to a historical error, the clock rate for G722 in RTP is
@@ -252,15 +223,11 @@ static int rtp_write_header(AVFormatContext *s1)
             av_log(s1, AV_LOG_ERROR, "Incorrect iLBC block size specified\n");
             goto fail;
         }
-        if (!s->max_frames_per_packet)
-            s->max_frames_per_packet = 1;
-        s->max_frames_per_packet = FFMIN(s->max_frames_per_packet,
-                                         s->max_payload_size / st->codec->block_align);
+        s->max_frames_per_packet = s->max_payload_size / st->codec->block_align;
         break;
     case AV_CODEC_ID_AMR_NB:
     case AV_CODEC_ID_AMR_WB:
-        if (!s->max_frames_per_packet)
-            s->max_frames_per_packet = 12;
+        s->max_frames_per_packet = 50;
         if (st->codec->codec_id == AV_CODEC_ID_AMR_NB)
             n = 31;
         else
@@ -276,8 +243,7 @@ static int rtp_write_header(AVFormatContext *s1)
         }
         break;
     case AV_CODEC_ID_AAC:
-        if (!s->max_frames_per_packet)
-            s->max_frames_per_packet = 5;
+        s->max_frames_per_packet = 50;
         break;
     default:
         break;
@@ -496,18 +462,23 @@ static int rtp_send_ilbc(AVFormatContext *s1, const uint8_t *buf, int size)
     int frames = size / frame_size;
 
     while (frames > 0) {
-        int n = FFMIN(s->max_frames_per_packet - s->num_frames, frames);
+        if (s->num_frames > 0 &&
+            av_compare_ts(s->cur_timestamp - s->timestamp, st->time_base,
+                          s1->max_delay, AV_TIME_BASE_Q) >= 0) {
+            ff_rtp_send_data(s1, s->buf, s->buf_ptr - s->buf, 1);
+            s->num_frames = 0;
+        }
 
         if (!s->num_frames) {
             s->buf_ptr = s->buf;
             s->timestamp = s->cur_timestamp;
         }
-        memcpy(s->buf_ptr, buf, n * frame_size);
-        frames           -= n;
-        s->num_frames    += n;
-        s->buf_ptr       += n * frame_size;
-        buf              += n * frame_size;
-        s->cur_timestamp += n * frame_duration;
+        memcpy(s->buf_ptr, buf, frame_size);
+        frames--;
+        s->num_frames++;
+        s->buf_ptr       += frame_size;
+        buf              += frame_size;
+        s->cur_timestamp += frame_duration;
 
         if (s->num_frames == s->max_frames_per_packet) {
             ff_rtp_send_data(s1, s->buf, s->buf_ptr - s->buf, 1);
