@@ -471,6 +471,7 @@ Muxers/Demuxers:
   rtpdec_dv.*                           Thomas Volkert
   rtpdec_h261.*, rtpenc_h261.*          Thomas Volkert
   rtpdec_hevc.*, rtpenc_hevc.*          Thomas Volkert
+  rtpdec_mpa_robust.*                   Gilles Chanteperdrix
   rtpdec_asf.*                          Ronald S. Bultje
   rtpdec_vp9.c                          Thomas Volkert
   rtpenc_mpv.*, rtpenc_aac.*            Martin Storsjo
