@@ -28,7 +28,7 @@
 #include "mpegvideo.h"
 #include "put_bits.h"
 
-void ff_rv10_encode_picture_header(MpegEncContext *s, int picture_number)
+int ff_rv10_encode_picture_header(MpegEncContext *s, int picture_number)
 {
     int full_frame= 0;
 
@@ -48,12 +48,17 @@ void ff_rv10_encode_picture_header(MpegEncContext *s, int picture_number)
     /* if multiple packets per frame are sent, the position at which
        to display the macroblocks is coded here */
     if(!full_frame){
+        if (s->mb_width * s->mb_height >= (1U << 12)) {
+            avpriv_report_missing_feature(s, "Encoding frames with 4096 or more macroblocks");
+            return AVERROR(ENOSYS);
+        }
         put_bits(&s->pb, 6, 0); /* mb_x */
         put_bits(&s->pb, 6, 0); /* mb_y */
         put_bits(&s->pb, 12, s->mb_width * s->mb_height);
     }
 
     put_bits(&s->pb, 3, 0);     /* ignored */
+    return 0;
 }
 
 FF_MPV_GENERIC_CLASS(rv10)
