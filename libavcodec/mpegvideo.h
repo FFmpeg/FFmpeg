@@ -931,7 +931,7 @@ extern const uint8_t ff_h263_chroma_qscale_table[32];
 extern const uint8_t ff_h263_loop_filter_strength[32];
 
 /* rv10.c */
-void ff_rv10_encode_picture_header(MpegEncContext *s, int picture_number);
+int ff_rv10_encode_picture_header(MpegEncContext *s, int picture_number);
 int ff_rv_decode_dc(MpegEncContext *s, int n);
 void ff_rv20_encode_picture_header(MpegEncContext *s, int picture_number);
 
