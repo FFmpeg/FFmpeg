@@ -44,6 +44,10 @@ typedef struct {
 
 /* in ms */
 #define BUFFER_DURATION 0
+/* the header needs at most 7 + 4 + 12 B */
+#define MAX_HEADER_SIZE (7 + 4 + 12)
+/* UINT16_MAX is the maximal chunk size */
+#define MAX_PACKET_SIZE (UINT16_MAX - MAX_HEADER_SIZE)
 
 
 static void put_str(AVIOContext *s, const char *tag)
@@ -387,6 +391,10 @@ static int rm_write_video(AVFormatContext *s, const uint8_t *buf, int size, int 
     /* Well, I spent some time finding the meaning of these bits. I am
        not sure I understood everything, but it works !! */
 #if 1
+    if (size > MAX_PACKET_SIZE) {
+        av_log_missing_feature(s, "Muxing packets larger than 64 kB", 0);
+        return AVERROR(ENOSYS);
+    }
     write_packet_header(s, stream, size + 7 + (size >= 0x4000)*4, key_frame);
     /* bit 7: '1' if final packet of a frame converted in several packets */
     avio_w8(pb, 0x81);
