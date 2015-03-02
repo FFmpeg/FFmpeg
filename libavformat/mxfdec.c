@@ -671,6 +671,19 @@ static int mxf_read_cryptographic_context(void *arg, AVIOContext *pb, int tag, i
     return 0;
 }
 
+static int mxf_read_strong_ref_array(AVIOContext *pb, UID **refs, int *count)
+{
+    *count = avio_rb32(pb);
+    *refs = av_calloc(*count, sizeof(UID));
+    if (!*refs) {
+        *count = 0;
+        return AVERROR(ENOMEM);
+    }
+    avio_skip(pb, 4); /* useless size of objects, always 16 according to specs */
+    avio_read(pb, (uint8_t *)*refs, *count * sizeof(UID));
+    return 0;
+}
+
 static int mxf_read_content_storage(void *arg, AVIOContext *pb, int tag, int size, UID uid, int64_t klv_offset)
 {
     MXFContext *mxf = arg;
@@ -679,13 +692,7 @@ static int mxf_read_content_storage(void *arg, AVIOContext *pb, int tag, int siz
         if (mxf->packages_refs)
             av_log(mxf->fc, AV_LOG_VERBOSE, "Multiple packages_refs\n");
         av_free(mxf->packages_refs);
-        mxf->packages_count = avio_rb32(pb);
-        mxf->packages_refs = av_calloc(mxf->packages_count, sizeof(UID));
-        if (!mxf->packages_refs)
-            return AVERROR(ENOMEM);
-        avio_skip(pb, 4); /* useless size of objects, always 16 according to specs */
-        avio_read(pb, (uint8_t *)mxf->packages_refs, mxf->packages_count * sizeof(UID));
-        break;
+        return mxf_read_strong_ref_array(pb, &mxf->packages_refs, &mxf->packages_count);
     }
     return 0;
 }
@@ -775,15 +782,8 @@ static int mxf_read_sequence(void *arg, AVIOContext *pb, int tag, int size, UID 
         sequence->origin = avio_r8(pb);
         break;
     case 0x1001:
-        sequence->structural_components_count = avio_rb32(pb);
-        sequence->structural_components_refs = av_calloc(sequence->structural_components_count, sizeof(UID));
-        if (!sequence->structural_components_refs) {
-            sequence->structural_components_count = 0;
-            return AVERROR(ENOMEM);
-        }
-        avio_skip(pb, 4); /* useless size of objects, always 16 according to specs */
-        avio_read(pb, (uint8_t *)sequence->structural_components_refs, sequence->structural_components_count * sizeof(UID));
-        break;
+        return mxf_read_strong_ref_array(pb, &sequence->structural_components_refs,
+                                             &sequence->structural_components_count);
     }
     return 0;
 }
@@ -796,15 +796,8 @@ static int mxf_read_essence_group(void *arg, AVIOContext *pb, int tag, int size,
         essence_group->duration = avio_rb64(pb);
         break;
     case 0x0501:
-        essence_group->structural_components_count = avio_rb32(pb);
-        essence_group->structural_components_refs = av_calloc(essence_group->structural_components_count, sizeof(UID));
-        if (!essence_group->structural_components_refs) {
-            essence_group->structural_components_count = 0;
-            return AVERROR(ENOMEM);
-        }
-        avio_skip(pb, 4); /* useless size of objects, always 16 according to specs */
-        avio_read(pb, (uint8_t *)essence_group->structural_components_refs, essence_group->structural_components_count * sizeof(UID));
-        break;
+        return mxf_read_strong_ref_array(pb, &essence_group->structural_components_refs,
+                                             &essence_group->structural_components_count);
     }
     return 0;
 }
@@ -835,13 +828,8 @@ static int mxf_read_package(void *arg, AVIOContext *pb, int tag, int size, UID u
     MXFPackage *package = arg;
     switch(tag) {
     case 0x4403:
-        package->tracks_count = avio_rb32(pb);
-        package->tracks_refs = av_calloc(package->tracks_count, sizeof(UID));
-        if (!package->tracks_refs)
-            return AVERROR(ENOMEM);
-        avio_skip(pb, 4); /* useless size of objects, always 16 according to specs */
-        avio_read(pb, (uint8_t *)package->tracks_refs, package->tracks_count * sizeof(UID));
-        break;
+        return mxf_read_strong_ref_array(pb, &package->tracks_refs,
+                                             &package->tracks_count);
     case 0x4401:
         /* UMID */
         avio_read(pb, package->package_ul, 16);
@@ -944,13 +932,8 @@ static int mxf_read_generic_descriptor(void *arg, AVIOContext *pb, int tag, int 
     MXFDescriptor *descriptor = arg;
     switch(tag) {
     case 0x3F01:
-        descriptor->sub_descriptors_count = avio_rb32(pb);
-        descriptor->sub_descriptors_refs = av_calloc(descriptor->sub_descriptors_count, sizeof(UID));
-        if (!descriptor->sub_descriptors_refs)
-            return AVERROR(ENOMEM);
-        avio_skip(pb, 4); /* useless size of objects, always 16 according to specs */
-        avio_read(pb, (uint8_t *)descriptor->sub_descriptors_refs, descriptor->sub_descriptors_count * sizeof(UID));
-        break;
+        return mxf_read_strong_ref_array(pb, &descriptor->sub_descriptors_refs,
+                                             &descriptor->sub_descriptors_count);
     case 0x3002: /* ContainerDuration */
         descriptor->duration = avio_rb64(pb);
         break;
