@@ -10,6 +10,9 @@ fate-4xm: $(FATE_4XM)
 FATE_SAMPLES_AVCONV-$(call DEMDEC, AVI, AASC) += fate-aasc
 fate-aasc: CMD = framecrc -i $(TARGET_SAMPLES)/aasc/AASC-1.5MB.AVI -pix_fmt rgb24
 
+FATE_SAMPLES_AVCONV-$(call DEMDEC, MOV, AIC) += fate-aic-oddsize
+fate-aic-oddsize: CMD = framecrc -i $(TARGET_SAMPLES)/aic/aic_odd_dimensions.mov
+
 FATE_SAMPLES_AVCONV-$(call DEMDEC, MM, MMVIDEO) += fate-alg-mm
 fate-alg-mm: CMD = framecrc -i $(TARGET_SAMPLES)/alg-mm/ibmlogo.mm -an -pix_fmt rgb24
 
