@@ -37,7 +37,7 @@ typedef struct AudioPhaserContext {
     double decay;
     double speed;
 
-    enum WaveType type;
+    int type;
 
     int delay_buffer_length;
     double *delay_buffer;

@@ -338,7 +338,7 @@ struct WriterContext {
     unsigned int nb_section_frame;  ///< number of the frame  section in case we are in "packets_and_frames" section
     unsigned int nb_section_packet_frame; ///< nb_section_packet or nb_section_frame according if is_packets_and_frames
 
-    StringValidation string_validation;
+    int string_validation;
     char *string_validation_replacement;
     unsigned int string_validation_utf8_flags;
 };

@@ -193,10 +193,10 @@ cglobal hevc_sao_band_filter_%2_%1, 6, 6, 15, 7*mmsize*ARCH_X86_32, dst, src, ds
 align 16
 .loop
 %if %2 == 8
-    mova              m8, [srcq]
+    movu              m8, [srcq]
     HEVC_SAO_BAND_FILTER_COMPUTE %1, m9, m8
     CLIPW             m8, m14, m13
-    mova          [dstq], m8
+    movu          [dstq], m8
 %endif
 
 %assign i 0
@@ -537,7 +537,7 @@ align 16
 
     HEVC_SAO_EDGE_FILTER_COMPUTE_10
     CLIPW             m2, m0, [pw_mask %+ %1]
-    mova          [dstq], m2
+    movu          [dstq], m2
 %endif
 
 %assign i 0

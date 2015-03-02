@@ -98,7 +98,7 @@ static int mpa_robust_parse_packet(AVFormatContext *ctx, PayloadContext *data,
         pkt->stream_index = st->index;
         memcpy(pkt->data, buf, adu_size);
 
-        data->split_pos += adu_size;
+        data->split_pos = (buf - data->split_buf) + adu_size;
 
         if (data->split_pos == data->split_buf_size) {
             av_freep(&data->split_buf);

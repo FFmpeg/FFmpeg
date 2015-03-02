@@ -960,6 +960,7 @@ static int output_packet(AVFormatContext *ctx, int flush)
     int best_i = -1;
     int best_score = INT_MIN;
     int ignore_constraints = 0;
+    int ignore_delay = 0;
     int64_t scr = s->last_scr;
     PacketDesc *timestamp_packet;
     const int64_t max_delay = av_rescale(ctx->max_delay, 90000, AV_TIME_BASE);
@@ -985,7 +986,7 @@ retry:
         if (space < s->packet_size && !ignore_constraints)
             continue;
 
-        if (next_pkt && next_pkt->dts - scr > max_delay)
+        if (next_pkt && next_pkt->dts - scr > max_delay && !ignore_delay)
             continue;
         if (   stream->predecode_packet
             && stream->predecode_packet->size > stream->buffer_index)
@@ -999,6 +1000,7 @@ retry:
 
     if (best_i < 0) {
         int64_t best_dts = INT64_MAX;
+        int has_premux = 0;
 
         for (i = 0; i < ctx->nb_streams; i++) {
             AVStream *st = ctx->streams[i];
@@ -1006,21 +1008,29 @@ retry:
             PacketDesc *pkt_desc = stream->predecode_packet;
             if (pkt_desc && pkt_desc->dts < best_dts)
                 best_dts = pkt_desc->dts;
+            has_premux |= !!stream->premux_packet;
         }
 
-        av_dlog(ctx, "bumping scr, scr:%f, dts:%f\n",
-                scr / 90000.0, best_dts / 90000.0);
-        if (best_dts == INT64_MAX)
+        if (best_dts < INT64_MAX) {
+            av_dlog(ctx, "bumping scr, scr:%f, dts:%f\n",
+                    scr / 90000.0, best_dts / 90000.0);
+
+            if (scr >= best_dts + 1 && !ignore_constraints) {
+                av_log(ctx, AV_LOG_ERROR,
+                    "packet too large, ignoring buffer limits to mux it\n");
+                ignore_constraints = 1;
+            }
+            scr = FFMAX(best_dts + 1, scr);
+            if (remove_decoded_packets(ctx, scr) < 0)
+                return -1;
+        } else if (has_premux && flush) {
+            av_log(ctx, AV_LOG_ERROR,
+                  "delay too large, ignoring ...\n");
+            ignore_delay = 1;
+            ignore_constraints = 1;
+        } else
             return 0;
 
-        if (scr >= best_dts + 1 && !ignore_constraints) {
-            av_log(ctx, AV_LOG_ERROR,
-                   "packet too large, ignoring buffer limits to mux it\n");
-            ignore_constraints = 1;
-        }
-        scr = FFMAX(best_dts + 1, scr);
-        if (remove_decoded_packets(ctx, scr) < 0)
-            return -1;
         goto retry;
     }
 

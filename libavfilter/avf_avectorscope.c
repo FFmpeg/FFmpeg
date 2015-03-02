@@ -44,7 +44,7 @@ typedef struct AudioVectorScopeContext {
     AVFrame *outpicref;
     int w, h;
     int hw, hh;
-    enum VectorScopeMode mode;
+    int mode;
     int contrast[3];
     int fade[3];
     double zoom;
