@@ -80,10 +80,12 @@ typedef struct ASFContext {
     ASFStream *asf_st;                   ///< currently decoded stream
 
     int no_resync_search;
+    int export_xmp;
 } ASFContext;
 
 static const AVOption options[] = {
     { "no_resync_search", "Don't try to resynchronize by looking for a certain optional start code", offsetof(ASFContext, no_resync_search), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, AV_OPT_FLAG_DECODING_PARAM },
+    { "export_xmp", "Export full XMP metadata", offsetof(ASFContext, export_xmp), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, AV_OPT_FLAG_DECODING_PARAM },
     { NULL },
 };
 
@@ -277,12 +279,16 @@ static void get_id3_tag(AVFormatContext *s, int len)
 
 static void get_tag(AVFormatContext *s, const char *key, int type, int len, int type2_size)
 {
-    char *value;
+    ASFContext *asf = s->priv_data;
+    char *value = NULL;
     int64_t off = avio_tell(s->pb);
 #define LEN 22
 
     if ((unsigned)len >= (UINT_MAX - LEN) / 2)
         return;
+
+    if (!asf->export_xmp && !strncmp(key, "xmp", 3))
+        goto finish;
 
     value = av_malloc(2 * len + LEN);
     if (!value)
