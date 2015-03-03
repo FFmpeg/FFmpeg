@@ -1069,10 +1069,10 @@ static void search_for_ms(AACEncContext *s, ChannelElement *cpe,
                     float minthr = FFMIN(band0->threshold, band1->threshold);
                     float maxthr = FFMAX(band0->threshold, band1->threshold);
                     for (i = 0; i < sce0->ics.swb_sizes[g]; i++) {
-                        M[i] = (sce0->coeffs[start+w2*128+i]
-                              + sce1->coeffs[start+w2*128+i]) * 0.5;
+                        M[i] = (sce0->pcoeffs[start+w2*128+i]
+                              + sce1->pcoeffs[start+w2*128+i]) * 0.5;
                         S[i] =  M[i]
-                              - sce1->coeffs[start+w2*128+i];
+                              - sce1->pcoeffs[start+w2*128+i];
                     }
                     abs_pow34_v(L34, sce0->coeffs+start+w2*128, sce0->ics.swb_sizes[g]);
                     abs_pow34_v(R34, sce1->coeffs+start+w2*128, sce0->ics.swb_sizes[g]);

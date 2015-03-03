@@ -260,6 +260,7 @@ static void apply_window_and_mdct(AACEncContext *s, SingleChannelElement *sce,
         for (i = 0; i < 1024; i += 128)
             s->mdct128.mdct_calc(&s->mdct128, sce->coeffs + i, output + i*2);
     memcpy(audio, audio + 1024, sizeof(audio[0]) * 1024);
+    memcpy(sce->pcoeffs, sce->coeffs, sizeof(sce->pcoeffs));
 }
 
 /**
@@ -311,20 +312,23 @@ static void adjust_frame_information(ChannelElement *cpe, int chans)
         start = 0;
         maxsfb = 0;
         cpe->ch[ch].pulse.num_pulse = 0;
-        for (w = 0; w < ics->num_windows*16; w += 16) {
-            for (g = 0; g < ics->num_swb; g++) {
-                //apply M/S
-                if (cpe->common_window && !ch && cpe->ms_mask[w + g]) {
-                    for (i = 0; i < ics->swb_sizes[g]; i++) {
-                        cpe->ch[0].coeffs[start+i] = (cpe->ch[0].coeffs[start+i] + cpe->ch[1].coeffs[start+i]) / 2.0;
-                        cpe->ch[1].coeffs[start+i] =  cpe->ch[0].coeffs[start+i] - cpe->ch[1].coeffs[start+i];
+        for (w = 0; w < ics->num_windows; w += ics->group_len[w]) {
+            for (w2 = 0; w2 < ics->group_len[w]; w2++) {
+                start = (w+w2) * 128;
+                for (g = 0; g < ics->num_swb; g++) {
+                    //apply M/S
+                    if (cpe->common_window && !ch && cpe->ms_mask[w*16 + g]) {
+                        for (i = 0; i < ics->swb_sizes[g]; i++) {
+                            cpe->ch[0].coeffs[start+i] = (cpe->ch[0].pcoeffs[start+i] + cpe->ch[1].pcoeffs[start+i]) * 0.5f;
+                            cpe->ch[1].coeffs[start+i] = cpe->ch[0].coeffs[start+i] - cpe->ch[1].pcoeffs[start+i];
+                        }
                     }
+                    start += ics->swb_sizes[g];
                 }
-                start += ics->swb_sizes[g];
+                for (cmaxsfb = ics->num_swb; cmaxsfb > 0 && cpe->ch[ch].zeroes[w*16+cmaxsfb-1]; cmaxsfb--)
+                    ;
+                maxsfb = FFMAX(maxsfb, cmaxsfb);
             }
-            for (cmaxsfb = ics->num_swb; cmaxsfb > 0 && cpe->ch[ch].zeroes[w+cmaxsfb-1]; cmaxsfb--)
-                ;
-            maxsfb = FFMAX(maxsfb, cmaxsfb);
         }
         ics->max_sfb = maxsfb;
 
@@ -507,7 +511,7 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     AACEncContext *s = avctx->priv_data;
     float **samples = s->planar_samples, *samples2, *la, *overlap;
     ChannelElement *cpe;
-    int i, ch, w, g, chans, tag, start_ch, ret;
+    int i, ch, w, g, chans, tag, start_ch, ret, ms_mode = 0;
     int chan_el_counter[4];
     FFPsyWindowInfo windows[AAC_MAX_CHANNELS];
 
@@ -630,6 +634,7 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                 if (cpe->common_window) {
                     put_ics_info(s, &cpe->ch[0].ics);
                     encode_ms_info(&s->pb, cpe);
+                    if (cpe->ms_mode) ms_mode = 1;
                 }
             }
             for (ch = 0; ch < chans; ch++) {
@@ -643,6 +648,15 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         if (frame_bits <= 6144 * s->channels - 3) {
             s->psy.bitres.bits = frame_bits / s->channels;
             break;
+        }
+        if (ms_mode) {
+            for (i = 0; i < s->chan_map[0]; i++) {
+                // Must restore coeffs
+                chans = tag == TYPE_CPE ? 2 : 1;
+                cpe = &s->cpe[i];
+                for (ch = 0; ch < chans; ch++)
+                    memcpy(cpe->ch[ch].coeffs, cpe->ch[ch].pcoeffs, sizeof(cpe->ch[ch].coeffs));
+            }
         }
 
         s->lambda *= avctx->bit_rate * 1024.0f / avctx->sample_rate / frame_bits;
