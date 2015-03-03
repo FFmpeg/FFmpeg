@@ -297,6 +297,17 @@ static void write_metadata(AVFormatContext *s, unsigned int ts)
     avio_wb32(pb, data_size + 11);
 }
 
+static int unsupported_codec(AVFormatContext *s,
+                             const char* type, int codec_id)
+{
+    const AVCodecDescriptor *desc = avcodec_descriptor_get(codec_id);
+    av_log(s, AV_LOG_ERROR,
+           "%s codec %s not compatible with flv\n",
+            type,
+            desc ? desc->name : "unknown");
+    return AVERROR(ENOSYS);
+}
+
 static int flv_write_header(AVFormatContext *s)
 {
     int i;
@@ -319,10 +330,8 @@ static int flv_write_header(AVFormatContext *s)
                 return AVERROR(EINVAL);
             }
             flv->video_enc = enc;
-            if (enc->codec_tag == 0) {
-                av_log(s, AV_LOG_ERROR, "video codec not compatible with flv\n");
-                return -1;
-            }
+            if (!ff_codec_get_tag(flv_video_codec_ids, enc->codec_id))
+                return unsupported_codec(s, "Video", enc->codec_id);
             break;
         case AVMEDIA_TYPE_AUDIO:
             if (flv->audio_enc) {
@@ -332,13 +341,11 @@ static int flv_write_header(AVFormatContext *s)
             }
             flv->audio_enc = enc;
             if (get_audio_flags(s, enc) < 0)
-                return AVERROR_INVALIDDATA;
+                return unsupported_codec(s, "Audio", enc->codec_id);
             break;
         case AVMEDIA_TYPE_DATA:
-            if (enc->codec_id != AV_CODEC_ID_TEXT) {
-                av_log(s, AV_LOG_ERROR, "codec not compatible with flv\n");
-                return AVERROR_INVALIDDATA;
-            }
+            if (enc->codec_id != AV_CODEC_ID_TEXT)
+                return unsupported_codec(s, "Data", enc->codec_id);
             flv->data_enc = enc;
             break;
         default:
@@ -479,13 +486,7 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
     case AVMEDIA_TYPE_VIDEO:
         avio_w8(pb, FLV_TAG_TYPE_VIDEO);
 
-        flags = enc->codec_tag;
-        if (flags == 0) {
-            av_log(s, AV_LOG_ERROR,
-                   "video codec %X not compatible with flv\n",
-                   enc->codec_id);
-            return -1;
-        }
+        flags = ff_codec_get_tag(flv_video_codec_ids, enc->codec_id);
 
         flags |= pkt->flags & AV_PKT_FLAG_KEY ? FLV_FRAME_KEY : FLV_FRAME_INTER;
         break;
