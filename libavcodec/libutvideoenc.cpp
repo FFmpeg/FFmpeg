@@ -209,7 +209,7 @@ static av_cold int utvideo_encode_close(AVCodecContext *avctx)
 {
     UtVideoContext *utv = (UtVideoContext *)avctx->priv_data;
 
-    av_freep(&avctx->coded_frame);
+    av_frame_free(&avctx->coded_frame);
     av_freep(&avctx->extradata);
     av_freep(&utv->buffer);
 

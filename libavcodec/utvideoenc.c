@@ -48,7 +48,7 @@ static av_cold int utvideo_encode_close(AVCodecContext *avctx)
     UtvideoContext *c = avctx->priv_data;
     int i;
 
-    av_freep(&avctx->coded_frame);
+    av_frame_free(&avctx->coded_frame);
     av_freep(&c->slice_bits);
     for (i = 0; i < 4; i++)
         av_freep(&c->slice_buffer[i]);

@@ -26,6 +26,7 @@
 #include "png.h"
 
 #include "libavutil/avassert.h"
+#include "libavutil/libm.h"
 #include "libavutil/opt.h"
 
 #include <zlib.h>
@@ -231,7 +232,7 @@ static int png_write_row(PNGEncContext *s, const uint8_t *data, int size)
     return 0;
 }
 
-#define AV_WB32_PNG(buf, n) (AV_WB32(buf, round((n) * 100000)))
+#define AV_WB32_PNG(buf, n) (AV_WB32(buf, lrint((n) * 100000)))
 static int png_get_chrm(enum AVColorPrimaries prim,  uint8_t *buf)
 {
     double rx, ry, gx, gy, bx, by, wx = 0.3127, wy = 0.3290;

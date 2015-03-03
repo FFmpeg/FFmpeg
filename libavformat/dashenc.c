@@ -72,6 +72,7 @@ typedef struct OutputStream {
     int bit_rate;
     char bandwidth_str[64];
 
+    int codec_str_extradata_size;
     char codec_str[100];
 } OutputStream;
 
@@ -498,8 +499,16 @@ static int write_manifest(AVFormatContext *s, int final)
         for (i = 0; i < s->nb_streams; i++) {
             AVStream *st = s->streams[i];
             OutputStream *os = &c->streams[i];
-            if (s->streams[i]->codec->codec_type != AVMEDIA_TYPE_VIDEO)
+
+            if (st->codec->codec_type != AVMEDIA_TYPE_VIDEO)
                 continue;
+
+            if (os->codec_str_extradata_size != st->codec->extradata_size) {
+                memset(os->codec_str, 0, sizeof(os->codec_str));
+                set_codec_str(s, st->codec, os->codec_str, sizeof(os->codec_str));
+                os->codec_str_extradata_size = st->codec->extradata_size;
+            }
+
             avio_printf(out, "\t\t\t<Representation id=\"%d\" mimeType=\"video/mp4\" codecs=\"%s\"%s width=\"%d\" height=\"%d\">\n", i, os->codec_str, os->bandwidth_str, st->codec->width, st->codec->height);
             output_segment_list(&c->streams[i], out, c);
             avio_printf(out, "\t\t\t</Representation>\n");
@@ -511,8 +520,16 @@ static int write_manifest(AVFormatContext *s, int final)
         for (i = 0; i < s->nb_streams; i++) {
             AVStream *st = s->streams[i];
             OutputStream *os = &c->streams[i];
-            if (s->streams[i]->codec->codec_type != AVMEDIA_TYPE_AUDIO)
+
+            if (st->codec->codec_type != AVMEDIA_TYPE_AUDIO)
                 continue;
+
+            if (os->codec_str_extradata_size != st->codec->extradata_size) {
+                memset(os->codec_str, 0, sizeof(os->codec_str));
+                set_codec_str(s, st->codec, os->codec_str, sizeof(os->codec_str));
+                os->codec_str_extradata_size = st->codec->extradata_size;
+            }
+
             avio_printf(out, "\t\t\t<Representation id=\"%d\" mimeType=\"audio/mp4\" codecs=\"%s\"%s audioSamplingRate=\"%d\">\n", i, os->codec_str, os->bandwidth_str, st->codec->sample_rate);
             avio_printf(out, "\t\t\t\t<AudioChannelConfiguration schemeIdUri=\"urn:mpeg:dash:23003:3:audio_channel_configuration:2011\" value=\"%d\" />\n", st->codec->channels);
             output_segment_list(&c->streams[i], out, c);
@@ -647,7 +664,8 @@ static int dash_write_header(AVFormatContext *s)
         else if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO)
             c->has_audio = 1;
 
-        set_codec_str(s, os->ctx->streams[0]->codec, os->codec_str, sizeof(os->codec_str));
+        set_codec_str(s, s->streams[i]->codec, os->codec_str, sizeof(os->codec_str));
+        os->codec_str_extradata_size = s->streams[i]->codec->extradata_size;
         os->first_pts = AV_NOPTS_VALUE;
         os->max_pts = AV_NOPTS_VALUE;
         os->segment_index = 1;
