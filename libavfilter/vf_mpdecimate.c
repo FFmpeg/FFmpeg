@@ -131,7 +131,7 @@ static av_cold int init(AVFilterContext *ctx)
 {
     DecimateContext *decimate = ctx->priv;
 
-    decimate->sad = av_pixelutils_get_sad_fn(3, 3, 0, decimate); // 8x8, not aligned on blocksize
+    decimate->sad = av_pixelutils_get_sad_fn(3, 3, 0, ctx); // 8x8, not aligned on blocksize
     if (!decimate->sad)
         return AVERROR(EINVAL);
 
