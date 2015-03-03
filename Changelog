@@ -21,6 +21,7 @@ version <next>:
 - RTP depacketizer for DV (RFC 6469)
 - Canopus HQX decoder
 - RTP depacketization of T.140 text (RFC 4103)
+- VP9 RTP payload format (draft 0) experimental depacketizer
 
 
 version 11:
