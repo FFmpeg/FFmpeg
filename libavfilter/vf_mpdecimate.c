@@ -84,15 +84,21 @@ static int diff_planes(AVFilterContext *ctx,
         for (x = 8; x < w-7; x += 4) {
             d = decimate->sad(cur + y*cur_linesize + x, cur_linesize,
                               ref + y*ref_linesize + x, ref_linesize);
-            if (d > decimate->hi)
+            if (d > decimate->hi) {
+                av_log(ctx, AV_LOG_DEBUG, "%d>=hi ", d);
                 return 1;
+            }
             if (d > decimate->lo) {
                 c++;
-                if (c > t)
+                if (c > t) {
+                    av_log(ctx, AV_LOG_DEBUG, "lo:%d>=%d ", c, t);
                     return 1;
+                }
             }
         }
     }
+
+    av_log(ctx, AV_LOG_DEBUG, "lo:%d<%d ", c, t);
     return 0;
 }
 
