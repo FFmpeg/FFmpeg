@@ -246,6 +246,8 @@ static void restore_median(uint8_t *src, int step, int stride,
     for (slice = 0; slice < slices; slice++) {
         slice_start = ((slice * height) / slices) & cmask;
         slice_height = ((((slice + 1) * height) / slices) & cmask) - slice_start;
+        if (!slice_height)
+            continue;
 
         bsrc = src + slice_start * stride;
 
@@ -301,6 +303,8 @@ static void restore_median_il(uint8_t *src, int step, int stride,
         slice_start    = ((slice * height) / slices) & cmask;
         slice_height   = ((((slice + 1) * height) / slices) & cmask) - slice_start;
         slice_height >>= 1;
+        if (!slice_height)
+            continue;
 
         bsrc = src + slice_start * stride;
 
