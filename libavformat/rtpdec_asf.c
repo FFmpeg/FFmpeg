@@ -194,8 +194,6 @@ static int asfrtp_parse_packet(AVFormatContext *s, PayloadContext *asf,
             int start_off = avio_tell(pb);
 
             mflags = avio_r8(pb);
-            if (mflags & 0x80)
-                flags |= RTP_FLAG_KEY;
             len_off = avio_rb24(pb);
             if (mflags & 0x20)   /**< relative timestamp */
                 avio_skip(pb, 4);
