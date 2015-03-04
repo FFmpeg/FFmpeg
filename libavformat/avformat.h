@@ -2138,8 +2138,9 @@ int avformat_seek_file(AVFormatContext *s, int stream_index, int64_t min_ts, int
 
 /**
  * Discard all internally buffered data. This can be useful when dealing with
- * discontinuities in the byte stream. Generally works only with headerless
- * formats.
+ * discontinuities in the byte stream. Generally works only with formats that
+ * can resync. This includes headerless formats like MPEG-TS/TS but should also
+ * work with NUT, Ogg and in a limited way AVI for example.
  *
  * The set of streams, the detected duration, stream parameters and codecs do
  * not change when calling this function. If you want a complete reset, it's
