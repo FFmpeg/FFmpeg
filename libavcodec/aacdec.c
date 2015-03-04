@@ -1236,7 +1236,8 @@ static int decode_ics_info(AACContext *ac, IndividualChannelStream *ics,
     if (aot != AOT_ER_AAC_ELD) {
         if (get_bits1(gb)) {
             av_log(ac->avctx, AV_LOG_ERROR, "Reserved bit set.\n");
-            return AVERROR_INVALIDDATA;
+            if (ac->avctx->err_recognition & AV_EF_BITSTREAM)
+                return AVERROR_INVALIDDATA;
         }
         ics->window_sequence[1] = ics->window_sequence[0];
         ics->window_sequence[0] = get_bits(gb, 2);
