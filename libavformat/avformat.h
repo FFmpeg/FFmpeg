@@ -2506,6 +2506,13 @@ void av_dump_format(AVFormatContext *ic,
                     int is_output);
 
 /**
+ * Alias to default av_dump_format using ic->filename as url
+ */
+void av_dump_format(AVFormatContext *ic,
+                    int index,
+                    int is_output);
+
+/**
  * Return in 'buf' the path with '%d' replaced by a number.
  *
  * Also handles the '%0nd' format where 'n' is the total number
