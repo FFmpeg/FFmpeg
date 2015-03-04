@@ -234,6 +234,12 @@ int avio_put_str(AVIOContext *s, const char *str);
 int avio_put_str16le(AVIOContext *s, const char *str);
 
 /**
+ * Convert an UTF-8 string to UTF-16BE and write it.
+ * @return number of bytes written.
+ */
+int avio_put_str16be(AVIOContext *s, const char *str);
+
+/**
  * Passing this as the "whence" parameter to a seek function causes it to
  * return the filesize without seeking anywhere. Supporting this is optional.
  * If it is not supported then the seek function will return <0.

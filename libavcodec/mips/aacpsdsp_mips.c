@@ -292,7 +292,7 @@ static void ps_decorrelate_mips(float (*out)[2], float (*delay)[2],
     float phi_fract1 = phi_fract[1];
     float temp0, temp1, temp2, temp3, temp4, temp5, temp6, temp7, temp8, temp9;
 
-    len = (int)((int*)p_delay + (len << 1));
+    float *p_delay_end = (p_delay + (len << 1));
 
     /* merged 2 loops */
     __asm__ volatile(
@@ -368,7 +368,7 @@ static void ps_decorrelate_mips(float (*out)[2], float (*delay)[2],
         "swc1    %[temp3],      628(%[p_ap_delay])                       \n\t"
         "swc1    %[temp5],      -8(%[p_out])                             \n\t"
         "swc1    %[temp6],      -4(%[p_out])                             \n\t"
-        "bne     %[p_delay],    %[len],        1b                        \n\t"
+        "bne     %[p_delay],    %[p_delay_end],1b                        \n\t"
         " swc1   %[temp6],      -4(%[p_out])                             \n\t"
         ".set    pop                                                     \n\t"
 
@@ -379,7 +379,7 @@ static void ps_decorrelate_mips(float (*out)[2], float (*delay)[2],
           [p_Q_fract]"+r"(p_Q_fract), [p_t_gain]"+r"(p_t_gain), [p_out]"+r"(p_out),
           [ag0]"=&f"(ag0), [ag1]"=&f"(ag1), [ag2]"=&f"(ag2)
         : [phi_fract0]"f"(phi_fract0), [phi_fract1]"f"(phi_fract1),
-          [len]"r"(len), [g_decay_slope]"f"(g_decay_slope)
+          [p_delay_end]"r"(p_delay_end), [g_decay_slope]"f"(g_decay_slope)
         : "memory"
     );
 }
@@ -399,7 +399,7 @@ static void ps_stereo_interpolate_mips(float (*l)[2], float (*r)[2],
     float temp0, temp1, temp2, temp3;
     float l_re, l_im, r_re, r_im;
 
-    len = (int)((int*)l + (len << 1));
+    float *l_end = ((float *)l + (len << 1));
 
     __asm__ volatile(
         ".set    push                                     \n\t"
@@ -426,7 +426,7 @@ static void ps_stereo_interpolate_mips(float (*l)[2], float (*r)[2],
         "swc1    %[temp0],  -8(%[l])                      \n\t"
         "swc1    %[temp2],  -8(%[r])                      \n\t"
         "swc1    %[temp1],  -4(%[l])                      \n\t"
-        "bne     %[l],      %[len],    1b                 \n\t"
+        "bne     %[l],      %[l_end],  1b                 \n\t"
         " swc1   %[temp3],  -4(%[r])                      \n\t"
         ".set    pop                                      \n\t"
 
@@ -437,7 +437,7 @@ static void ps_stereo_interpolate_mips(float (*l)[2], float (*r)[2],
           [l_re]"=&f"(l_re), [l_im]"=&f"(l_im),
           [r_re]"=&f"(r_re), [r_im]"=&f"(r_im)
         : [hs0]"f"(hs0), [hs1]"f"(hs1), [hs2]"f"(hs2),
-          [hs3]"f"(hs3), [len]"r"(len)
+          [hs3]"f"(hs3), [l_end]"r"(l_end)
         : "memory"
     );
 }

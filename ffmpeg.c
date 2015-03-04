@@ -2847,6 +2847,7 @@ static int transcode_init(void)
                     int idx = av_find_nearest_q_idx(ost->frame_rate, ost->enc->supported_framerates);
                     ost->frame_rate = ost->enc->supported_framerates[idx];
                 }
+                // reduce frame rate for mpeg4 to be within the spec limits
                 if (enc_ctx->codec_id == AV_CODEC_ID_MPEG4) {
                     av_reduce(&ost->frame_rate.num, &ost->frame_rate.den,
                               ost->frame_rate.num, ost->frame_rate.den, 65535);

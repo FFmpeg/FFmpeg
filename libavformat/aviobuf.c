@@ -342,7 +342,7 @@ int avio_put_str(AVIOContext *s, const char *str)
     return len;
 }
 
-int avio_put_str16le(AVIOContext *s, const char *str)
+static inline int put_str16(AVIOContext *s, const char *str, const int be)
 {
     const uint8_t *q = str;
     int ret = 0;
@@ -353,18 +353,33 @@ int avio_put_str16le(AVIOContext *s, const char *str)
         uint16_t tmp;
 
         GET_UTF8(ch, *q++, goto invalid;)
-        PUT_UTF16(ch, tmp, avio_wl16(s, tmp); ret += 2;)
+        PUT_UTF16(ch, tmp, be ? avio_wb16(s, tmp) : avio_wl16(s, tmp);
+                  ret += 2;)
         continue;
 invalid:
-        av_log(s, AV_LOG_ERROR, "Invaid UTF8 sequence in avio_put_str16le\n");
+        av_log(s, AV_LOG_ERROR, "Invaid UTF8 sequence in avio_put_str16%s\n", be ? "be" : "le");
         err = AVERROR(EINVAL);
     }
-    avio_wl16(s, 0);
+    if (be)
+        avio_wb16(s, 0);
+    else
+        avio_wl16(s, 0);
     if (err)
         return err;
     ret += 2;
     return ret;
 }
+
+#define PUT_STR16(type, big_endian)                          \
+int avio_put_str16 ## type(AVIOContext *s, const char *str)  \
+{                                                            \
+return put_str16(s, str, big_endian);                        \
+}
+
+PUT_STR16(le, 0)
+PUT_STR16(be, 1)
+
+#undef PUT_STR16
 
 int ff_get_v_length(uint64_t val)
 {

@@ -664,14 +664,14 @@ static void sbr_hf_gen_mips(float (*X_high)[2], const float (*X_low)[2],
 static void sbr_hf_g_filt_mips(float (*Y)[2], const float (*X_high)[40][2],
                             const float *g_filt, int m_max, intptr_t ixh)
 {
-    float *p_y, *p_x, *p_g;
+    const float *p_x, *p_g, *loop_end;
+    float *p_y;
     float temp0, temp1, temp2;
-    int loop_end;
 
-    p_g = (float*)&g_filt[0];
+    p_g = &g_filt[0];
     p_y = &Y[0][0];
-    p_x = (float*)&X_high[0][ixh][0];
-    loop_end = (int)((int*)p_g + m_max);
+    p_x = &X_high[0][ixh][0];
+    loop_end = p_g + m_max;
 
     __asm__ volatile(
         ".set    push                                \n\t"

@@ -1247,7 +1247,10 @@ static void video_audio_display(VideoState *s)
             s->rdft_bits = rdft_bits;
             s->rdft_data = av_malloc_array(nb_freq, 4 *sizeof(*s->rdft_data));
         }
-        {
+        if (!s->rdft || !s->rdft_data){
+            av_log(NULL, AV_LOG_ERROR, "Failed to allocate buffers for RDFT, switching to waves display\n");
+            s->show_mode = SHOW_MODE_WAVES;
+        } else {
             FFTSample *data[2];
             for (ch = 0; ch < nb_display_channels; ch++) {
                 data[ch] = s->rdft_data + 2 * nb_freq * ch;
