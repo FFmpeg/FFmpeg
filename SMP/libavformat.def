@@ -113,6 +113,7 @@ EXPORTS
     avio_pause
     avio_printf
     avio_put_str
+    avio_put_str16be
     avio_put_str16le
     avio_r8
     avio_rb16
