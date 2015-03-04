@@ -46,11 +46,11 @@ Most of these dependencies (and there dependencies) are available in the ShiftMe
 However the following is a list of extra dependency options that require external downloads:
     1) sdl (requires SDL 1.2)
 		a) Download pre-built binaries from the sdl homepage.
-		b) Extract all the header files into OutputDir/include/SDL*.
+		b) Extract all the header files into OutputDir/include/SDL/*.
 		c) Extract the lib's to OutputDir/lib* and the DLL's to OutputDir/bin*.
     2) opengl (requires glext)
 		a) Download glext from the glext homepage.
-		b) Extract all the header files into OutputDir/include/gl*.
+		b) Extract all the header files into OutputDir/include/gl/*.
     3) opencl (requires Intel or AMD OpenCL SDK, NVIDIAs does not support required features)
 		a) Download either the "Intel OpenCL SDK" or the "AMD OpenCL SDK" from their respective suppliers.
 			Note: The default projects use the Intel SDK.
@@ -63,6 +63,10 @@ However the following is a list of extra dependency options that require externa
 		c) Download the "NVIDIA Video Codec SDK" from the NVIDIA website.
 		d) Copy 'nvEncodeAPI.h' from the "NVIDIA Video Codec SDK" into the installed %CUDA%\include folder 
 			(where %CUDA% is the location that the CUDA SDK was installed).
+	5) libmfx (requires Intel Media SDK)
+		a) Download the "Intel Media SDK" as part of the "Intel Integrated Native Developer Experience" from the Intel website.
+		b) Install the downloaded SDK wherever desired.
+		c) Copy the SDK headers found in the SDKs include directory into a new subdirectory named "mfx". 
 			
 *OutputDir is the "Output Directory" specified in the project properties. 
     Note: There is a different OutputDir for 32/64bit configurations. Lib's and DLL's should be placed in the correct directory.

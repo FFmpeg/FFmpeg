@@ -321,6 +321,8 @@
     <ClCompile Include="..\libavcodec\qpeldsp.c">
       <ObjectFileName>$(IntDir)\libavcodec_qpeldsp.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\qsv.c">
+    </ClCompile>
     <ClCompile Include="..\libavcodec\rangecoder.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\rdft.c">
@@ -757,6 +759,8 @@
     <ClCompile Include="..\libavcodec\h264_sei.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\h264_slice.c">
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\qsv_h264.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\hevc.c">
     </ClCompile>
@@ -1879,7 +1883,7 @@
       <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;inline=__inline;strtod=avpriv_strtod;_LIB;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <AdditionalIncludeDirectories>$(OutDir)\include\opus;$(CUDA_PATH)\include\;.\;..\;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(INTELMEDIASDKROOT)\include\;$(OutDir)\include\opus;$(CUDA_PATH)\include\;.\;..\;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <ExceptionHandling>false</ExceptionHandling>
       <C99Support>true</C99Support>
@@ -1894,8 +1898,8 @@
       <TargetMachine>MachineX86</TargetMachine>
       <SubSystem>Windows</SubSystem>
       <OutputFile>$(OutDir)\lib\$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalDependencies>libbz2d.lib;libiconvd.lib;libfdk-aacd.lib;libilbcd.lib;libmp3lamed.lib;libopusd.lib;libspeexd.lib;libtheorad.lib;libvorbisd.lib;libvpxd.lib;libx264d.lib;libx265d.lib;libxvidcored.lib;liblzmad.lib;libzd.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(OutDir)\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libbz2d.lib;libiconvd.lib;libfdk-aacd.lib;libilbcd.lib;libmfxd.lib;libmp3lamed.lib;libopusd.lib;libspeexd.lib;libtheorad.lib;libvorbisd.lib;libvpxd.lib;libx264d.lib;libx265d.lib;libxvidcored.lib;liblzmad.lib;libzd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(INTELMEDIASDKROOT)\lib\win32;$(OutDir)\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Lib>
     <PostBuildEvent>
       <Command>mkdir $(OutDir)\include
@@ -1943,7 +1947,7 @@ cd $(ProjectDir)
       <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
-      <AdditionalIncludeDirectories>$(OutDir)\include\opus;$(CUDA_PATH)\include\;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(INTELMEDIASDKROOT)\include\;$(OutDir)\include\opus;$(CUDA_PATH)\include\;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
   </ItemDefinitionGroup>
@@ -1953,7 +1957,7 @@ cd $(ProjectDir)
       <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;inline=__inline;strtod=avpriv_strtod;_LIB;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <AdditionalIncludeDirectories>$(OutDir)\include\opus;$(CUDA_PATH)\include\;.\;..\;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(INTELMEDIASDKROOT)\include\;$(OutDir)\include\opus;$(CUDA_PATH)\include\;.\;..\;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ExceptionHandling>false</ExceptionHandling>
       <C99Support>true</C99Support>
       <ForcedIncludeFiles>compat\msvcrt\snprintf.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
@@ -1967,8 +1971,8 @@ cd $(ProjectDir)
       <TargetMachine>MachineX64</TargetMachine>
       <SubSystem>Windows</SubSystem>
       <OutputFile>$(OutDir)\lib\$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalDependencies>libbz2d.lib;libiconvd.lib;libfdk-aacd.lib;libilbcd.lib;libmp3lamed.lib;libopusd.lib;libspeexd.lib;libtheorad.lib;libvorbisd.lib;libvpxd.lib;libx264d.lib;libx265d.lib;libxvidcored.lib;liblzmad.lib;libzd.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(OutDir)\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libbz2d.lib;libiconvd.lib;libfdk-aacd.lib;libilbcd.lib;libmfxd.lib;libmp3lamed.lib;libopusd.lib;libspeexd.lib;libtheorad.lib;libvorbisd.lib;libvpxd.lib;libx264d.lib;libx265d.lib;libxvidcored.lib;liblzmad.lib;libzd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(INTELMEDIASDKROOT)\lib\x64;$(OutDir)\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Lib>
     <PostBuildEvent>
       <Command>mkdir $(OutDir)\include
@@ -2016,7 +2020,7 @@ cd $(ProjectDir)
       <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
-      <AdditionalIncludeDirectories>$(OutDir)\include\opus;$(CUDA_PATH)\include\;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(INTELMEDIASDKROOT)\include\;$(OutDir)\include\opus;$(CUDA_PATH)\include\;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
   </ItemDefinitionGroup>
@@ -2026,7 +2030,7 @@ cd $(ProjectDir)
       <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;inline=__inline;strtod=avpriv_strtod;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <AdditionalIncludeDirectories>$(OutDir)\include\opus;$(CUDA_PATH)\include\;.\;..\;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(INTELMEDIASDKROOT)\include\;$(OutDir)\include\opus;$(CUDA_PATH)\include\;.\;..\;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <ExceptionHandling>false</ExceptionHandling>
       <C99Support>true</C99Support>
@@ -2044,8 +2048,8 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\bin\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavcodec.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>libavutild.lib;libswresampled.lib;libbz2d.lib;libiconvd.lib;libfdk-aacd.lib;libilbcd.lib;libmp3lamed.lib;libopusd.lib;libspeexd.lib;libtheorad.lib;libvorbisd.lib;libvpxd.lib;libx264d.lib;libx265d.lib;libxvidcored.lib;liblzmad.lib;libzd.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(OutDir)\bin\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libavutild.lib;libswresampled.lib;libbz2d.lib;libiconvd.lib;libfdk-aacd.lib;libilbcd.lib;libmfxd.lib;libmp3lamed.lib;libopusd.lib;libspeexd.lib;libtheorad.lib;libvorbisd.lib;libvpxd.lib;libx264d.lib;libx265d.lib;libxvidcored.lib;liblzmad.lib;libzd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(INTELMEDIASDKROOT)\lib\win32;$(OutDir)\bin\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <LargeAddressAware>true</LargeAddressAware>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ForceFileOutput>UndefinedSymbolOnly</ForceFileOutput>
@@ -2101,7 +2105,7 @@ echo            A output file will be generated anyway.
 echo            These errors are the result of dead code elimination not being performed in debug builds.</Command>
     </PreLinkEvent>
     <ResourceCompile>
-      <AdditionalIncludeDirectories>$(OutDir)\include\opus;$(CUDA_PATH)\include\;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(INTELMEDIASDKROOT)\include\;$(OutDir)\include\opus;$(CUDA_PATH)\include\;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
   </ItemDefinitionGroup>
@@ -2111,7 +2115,7 @@ echo            These errors are the result of dead code elimination not being p
       <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;inline=__inline;strtod=avpriv_strtod;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <AdditionalIncludeDirectories>$(OutDir)\include\opus;$(CUDA_PATH)\include\;.\;..\;$(OutDir)\include;$(OutDir)\include\opus;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(INTELMEDIASDKROOT)\include\;$(OutDir)\include\opus;$(CUDA_PATH)\include\;.\;..\;$(OutDir)\include;$(OutDir)\include\opus;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ExceptionHandling>false</ExceptionHandling>
       <C99Support>true</C99Support>
       <ForcedIncludeFiles>compat\msvcrt\snprintf.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
@@ -2128,8 +2132,8 @@ echo            These errors are the result of dead code elimination not being p
       <ProgramDatabaseFile>$(OutDir)\bin\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavcodec.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>libavutild.lib;libswresampled.lib;libbz2d.lib;libiconvd.lib;libfdk-aacd.lib;libilbcd.lib;libmp3lamed.lib;libopusd.lib;libspeexd.lib;libtheorad.lib;libvorbisd.lib;libvpxd.lib;libx264d.lib;libx265d.lib;libxvidcored.lib;liblzmad.lib;libzd.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(OutDir)\bin\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libavutild.lib;libswresampled.lib;libbz2d.lib;libiconvd.lib;libfdk-aacd.lib;libilbcd.lib;libmfxd.lib;libmp3lamed.lib;libopusd.lib;libspeexd.lib;libtheorad.lib;libvorbisd.lib;libvpxd.lib;libx264d.lib;libx265d.lib;libxvidcored.lib;liblzmad.lib;libzd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(INTELMEDIASDKROOT)\lib\x64;$(OutDir)\bin\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ForceFileOutput>UndefinedSymbolOnly</ForceFileOutput>
     </Link>
@@ -2184,7 +2188,7 @@ echo            A output file will be generated anyway.
 echo            These errors are the result of dead code elimination not being performed in debug builds.</Command>
     </PreLinkEvent>
     <ResourceCompile>
-      <AdditionalIncludeDirectories>$(OutDir)\include\opus;$(CUDA_PATH)\include\;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(INTELMEDIASDKROOT)\include\;$(OutDir)\include\opus;$(CUDA_PATH)\include\;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
   </ItemDefinitionGroup>
@@ -2194,7 +2198,7 @@ echo            These errors are the result of dead code elimination not being p
       <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;inline=__inline;strtod=avpriv_strtod;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <AdditionalIncludeDirectories>$(OutDir)\include\opus;$(CUDA_PATH)\include\;.\;..\;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(INTELMEDIASDKROOT)\include\;$(OutDir)\include\opus;$(CUDA_PATH)\include\;.\;..\;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <ExceptionHandling>false</ExceptionHandling>
       <C99Support>true</C99Support>
@@ -2212,8 +2216,8 @@ echo            These errors are the result of dead code elimination not being p
       <ProgramDatabaseFile>$(OutDir)\bin\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavcodec.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>libavutild.lib;libswresampled.lib;libbz2d.lib;libiconvd.lib;libfdk-aacd.lib;libilbcd.lib;libmp3lamed.lib;libopusd.lib;libspeexd.lib;libtheorad.lib;libvorbisd.lib;libvpxd.lib;libx264d.lib;libx265d.lib;libxvidcored.lib;liblzmad.lib;libzd.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(OutDir)\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libavutild.lib;libswresampled.lib;libbz2d.lib;libiconvd.lib;libfdk-aacd.lib;libilbcd.lib;libmfxd.lib;libmp3lamed.lib;libopusd.lib;libspeexd.lib;libtheorad.lib;libvorbisd.lib;libvpxd.lib;libx264d.lib;libx265d.lib;libxvidcored.lib;liblzmad.lib;libzd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(INTELMEDIASDKROOT)\lib\win32;$(OutDir)\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <LargeAddressAware>true</LargeAddressAware>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ForceFileOutput>UndefinedSymbolOnly</ForceFileOutput>
@@ -2269,7 +2273,7 @@ echo            A output file will be generated anyway.
 echo            These errors are the result of dead code elimination not being performed in debug builds.</Command>
     </PreLinkEvent>
     <ResourceCompile>
-      <AdditionalIncludeDirectories>$(OutDir)\include\opus;$(CUDA_PATH)\include\;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(INTELMEDIASDKROOT)\include\;$(OutDir)\include\opus;$(CUDA_PATH)\include\;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
   </ItemDefinitionGroup>
@@ -2279,7 +2283,7 @@ echo            These errors are the result of dead code elimination not being p
       <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;inline=__inline;strtod=avpriv_strtod;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <AdditionalIncludeDirectories>$(OutDir)\include\opus;$(CUDA_PATH)\include\;.\;..\;$(OutDir)\include;$(OutDir)\include\opus;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(INTELMEDIASDKROOT)\include\;$(OutDir)\include\opus;$(CUDA_PATH)\include\;.\;..\;$(OutDir)\include;$(OutDir)\include\opus;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ExceptionHandling>false</ExceptionHandling>
       <C99Support>true</C99Support>
       <ForcedIncludeFiles>compat\msvcrt\snprintf.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
@@ -2296,8 +2300,8 @@ echo            These errors are the result of dead code elimination not being p
       <ProgramDatabaseFile>$(OutDir)\bin\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavcodec.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>libavutild.lib;libswresampled.lib;libbz2d.lib;libiconvd.lib;libfdk-aacd.lib;libilbcd.lib;libmp3lamed.lib;libopusd.lib;libspeexd.lib;libtheorad.lib;libvorbisd.lib;libvpxd.lib;libx264d.lib;libx265d.lib;libxvidcored.lib;liblzmad.lib;libzd.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(OutDir)\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libavutild.lib;libswresampled.lib;libbz2d.lib;libiconvd.lib;libfdk-aacd.lib;libilbcd.lib;libmfxd.lib;libmp3lamed.lib;libopusd.lib;libspeexd.lib;libtheorad.lib;libvorbisd.lib;libvpxd.lib;libx264d.lib;libx265d.lib;libxvidcored.lib;liblzmad.lib;libzd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(INTELMEDIASDKROOT)\lib\x64;$(OutDir)\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ForceFileOutput>UndefinedSymbolOnly</ForceFileOutput>
     </Link>
@@ -2352,7 +2356,7 @@ echo            A output file will be generated anyway.
 echo            These errors are the result of dead code elimination not being performed in debug builds.</Command>
     </PreLinkEvent>
     <ResourceCompile>
-      <AdditionalIncludeDirectories>$(OutDir)\include\opus;$(CUDA_PATH)\include\;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(INTELMEDIASDKROOT)\include\;$(OutDir)\include\opus;$(CUDA_PATH)\include\;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
   </ItemDefinitionGroup>
@@ -2372,7 +2376,7 @@ echo            These errors are the result of dead code elimination not being p
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
-      <AdditionalIncludeDirectories>$(OutDir)\include\opus;$(CUDA_PATH)\include\;.\;..\;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(INTELMEDIASDKROOT)\include\;$(OutDir)\include\opus;$(CUDA_PATH)\include\;.\;..\;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ExceptionHandling>false</ExceptionHandling>
       <C99Support>true</C99Support>
       <ForcedIncludeFiles>compat\msvcrt\snprintf.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
@@ -2385,8 +2389,8 @@ echo            These errors are the result of dead code elimination not being p
       <TargetMachine>MachineX86</TargetMachine>
       <SubSystem>Windows</SubSystem>
       <OutputFile>$(OutDir)\lib\$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalDependencies>libbz2.lib;libiconv.lib;libfdk-aac.lib;libilbc.lib;libmp3lame.lib;libopus.lib;libspeex.lib;libtheora.lib;libvorbis.lib;libvpx.lib;libx264.lib;libx265.lib;libxvidcore.lib;liblzma.lib;libz.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(OutDir)\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libbz2.lib;libiconv.lib;libfdk-aac.lib;libilbc.lib;libmfx.lib;libmp3lame.lib;libopus.lib;libspeex.lib;libtheora.lib;libvorbis.lib;libvpx.lib;libx264.lib;libx265.lib;libxvidcore.lib;liblzma.lib;libz.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(INTELMEDIASDKROOT)\lib\win32;$(OutDir)\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Lib>
     <PostBuildEvent>
       <Command>mkdir $(OutDir)\include
@@ -2434,7 +2438,7 @@ cd $(ProjectDir)
       <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
-      <AdditionalIncludeDirectories>$(OutDir)\include\opus;$(CUDA_PATH)\include\;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(INTELMEDIASDKROOT)\include\;$(OutDir)\include\opus;$(CUDA_PATH)\include\;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
   </ItemDefinitionGroup>
@@ -2453,7 +2457,7 @@ cd $(ProjectDir)
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
-      <AdditionalIncludeDirectories>$(OutDir)\include\opus;$(CUDA_PATH)\include\;.\;..\;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(INTELMEDIASDKROOT)\include\;$(OutDir)\include\opus;$(CUDA_PATH)\include\;.\;..\;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ExceptionHandling>false</ExceptionHandling>
       <C99Support>true</C99Support>
       <ForcedIncludeFiles>compat\msvcrt\snprintf.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
@@ -2466,8 +2470,8 @@ cd $(ProjectDir)
       <TargetMachine>MachineX64</TargetMachine>
       <SubSystem>Windows</SubSystem>
       <OutputFile>$(OutDir)\lib\$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalDependencies>libbz2.lib;libiconv.lib;libfdk-aac.lib;libilbc.lib;libmp3lame.lib;libopus.lib;libspeex.lib;libtheora.lib;libvorbis.lib;libvpx.lib;libx264.lib;libx265.lib;libxvidcore.lib;liblzma.lib;libz.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(OutDir)\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libbz2.lib;libiconv.lib;libfdk-aac.lib;libilbc.lib;libmfx.lib;libmp3lame.lib;libopus.lib;libspeex.lib;libtheora.lib;libvorbis.lib;libvpx.lib;libx264.lib;libx265.lib;libxvidcore.lib;liblzma.lib;libz.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(INTELMEDIASDKROOT)\lib\x64;$(OutDir)\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Lib>
     <PostBuildEvent>
       <Command>mkdir $(OutDir)\include
@@ -2515,7 +2519,7 @@ cd $(ProjectDir)
       <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
-      <AdditionalIncludeDirectories>$(OutDir)\include\opus;$(CUDA_PATH)\include\;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(INTELMEDIASDKROOT)\include\;$(OutDir)\include\opus;$(CUDA_PATH)\include\;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
   </ItemDefinitionGroup>
@@ -2535,7 +2539,7 @@ cd $(ProjectDir)
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
-      <AdditionalIncludeDirectories>$(OutDir)\include\opus;$(CUDA_PATH)\include\;.\;..\;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(INTELMEDIASDKROOT)\include\;$(OutDir)\include\opus;$(CUDA_PATH)\include\;.\;..\;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ExceptionHandling>false</ExceptionHandling>
       <C99Support>true</C99Support>
       <ForcedIncludeFiles>compat\msvcrt\snprintf.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
@@ -2553,8 +2557,8 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\bin\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavcodec.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>libavutil.lib;libswresample.lib;libbz2.lib;libiconv.lib;libfdk-aac.lib;libilbc.lib;libmp3lame.lib;libopus.lib;libspeex.lib;libtheora.lib;libvorbis.lib;libvpx.lib;libx264.lib;libx265.lib;libxvidcore.lib;liblzma.lib;libz.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(OutDir)\bin\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libavutil.lib;libswresample.lib;libbz2.lib;libiconv.lib;libfdk-aac.lib;libilbc.lib;libmfx.lib;libmp3lame.lib;libopus.lib;libspeex.lib;libtheora.lib;libvorbis.lib;libvpx.lib;libx264.lib;libx265.lib;libxvidcore.lib;liblzma.lib;libz.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(INTELMEDIASDKROOT)\lib\win32;$(OutDir)\bin\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <LargeAddressAware>true</LargeAddressAware>
     </Link>
     <PostBuildEvent>
@@ -2603,7 +2607,7 @@ cd $(ProjectDir)
       <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
-      <AdditionalIncludeDirectories>$(OutDir)\include\opus;$(CUDA_PATH)\include\;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(INTELMEDIASDKROOT)\include\;$(OutDir)\include\opus;$(CUDA_PATH)\include\;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
   </ItemDefinitionGroup>
@@ -2622,7 +2626,7 @@ cd $(ProjectDir)
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
-      <AdditionalIncludeDirectories>$(OutDir)\include\opus;$(CUDA_PATH)\include\;.\;..\;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(INTELMEDIASDKROOT)\include\;$(OutDir)\include\opus;$(CUDA_PATH)\include\;.\;..\;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ExceptionHandling>false</ExceptionHandling>
       <C99Support>true</C99Support>
       <ForcedIncludeFiles>compat\msvcrt\snprintf.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
@@ -2640,8 +2644,8 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\bin\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavcodec.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>libavutil.lib;libswresample.lib;libbz2.lib;libiconv.lib;libfdk-aac.lib;libilbc.lib;libmp3lame.lib;libopus.lib;libspeex.lib;libtheora.lib;libvorbis.lib;libvpx.lib;libx264.lib;libx265.lib;libxvidcore.lib;liblzma.lib;libz.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(OutDir)\bin\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libavutil.lib;libswresample.lib;libbz2.lib;libiconv.lib;libfdk-aac.lib;libilbc.lib;libmfx.lib;libmp3lame.lib;libopus.lib;libspeex.lib;libtheora.lib;libvorbis.lib;libvpx.lib;libx264.lib;libx265.lib;libxvidcore.lib;liblzma.lib;libz.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(INTELMEDIASDKROOT)\lib\x64;$(OutDir)\bin\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
       <Command>mkdir $(OutDir)\include
@@ -2689,7 +2693,7 @@ cd $(ProjectDir)
       <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
-      <AdditionalIncludeDirectories>$(OutDir)\include\opus;$(CUDA_PATH)\include\;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(INTELMEDIASDKROOT)\include\;$(OutDir)\include\opus;$(CUDA_PATH)\include\;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
   </ItemDefinitionGroup>
@@ -2709,7 +2713,7 @@ cd $(ProjectDir)
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
-      <AdditionalIncludeDirectories>$(OutDir)\include\opus;$(CUDA_PATH)\include\;.\;..\;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(INTELMEDIASDKROOT)\include\;$(OutDir)\include\opus;$(CUDA_PATH)\include\;.\;..\;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ExceptionHandling>false</ExceptionHandling>
       <C99Support>true</C99Support>
       <ForcedIncludeFiles>compat\msvcrt\snprintf.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
@@ -2727,8 +2731,8 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\bin\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavcodec.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>libavutil.lib;libswresample.lib;libbz2.lib;libiconv.lib;libfdk-aac.lib;libilbc.lib;libmp3lame.lib;libopus.lib;libspeex.lib;libtheora.lib;libvorbis.lib;libvpx.lib;libx264.lib;libx265.lib;libxvidcore.lib;liblzma.lib;libz.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(OutDir)\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libavutil.lib;libswresample.lib;libbz2.lib;libiconv.lib;libfdk-aac.lib;libilbc.lib;libmfx.lib;libmp3lame.lib;libopus.lib;libspeex.lib;libtheora.lib;libvorbis.lib;libvpx.lib;libx264.lib;libx265.lib;libxvidcore.lib;liblzma.lib;libz.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(INTELMEDIASDKROOT)\lib\win32;$(OutDir)\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <LargeAddressAware>true</LargeAddressAware>
     </Link>
     <PostBuildEvent>
@@ -2777,7 +2781,7 @@ cd $(ProjectDir)
       <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
-      <AdditionalIncludeDirectories>$(OutDir)\include\opus;$(CUDA_PATH)\include\;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(INTELMEDIASDKROOT)\include\;$(OutDir)\include\opus;$(CUDA_PATH)\include\;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
   </ItemDefinitionGroup>
@@ -2796,7 +2800,7 @@ cd $(ProjectDir)
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
-      <AdditionalIncludeDirectories>$(OutDir)\include\opus;$(CUDA_PATH)\include\;.\;..\;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(INTELMEDIASDKROOT)\include\;$(OutDir)\include\opus;$(CUDA_PATH)\include\;.\;..\;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ExceptionHandling>false</ExceptionHandling>
       <C99Support>true</C99Support>
       <ForcedIncludeFiles>compat\msvcrt\snprintf.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
@@ -2814,8 +2818,8 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\bin\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavcodec.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>libavutil.lib;libswresample.lib;libbz2.lib;libiconv.lib;libfdk-aac.lib;libilbc.lib;libmp3lame.lib;libopus.lib;libspeex.lib;libtheora.lib;libvorbis.lib;libvpx.lib;libx264.lib;libx265.lib;libxvidcore.lib;liblzma.lib;libz.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(OutDir)\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libavutil.lib;libswresample.lib;libbz2.lib;libiconv.lib;libfdk-aac.lib;libilbc.lib;libmfx.lib;libmp3lame.lib;libopus.lib;libspeex.lib;libtheora.lib;libvorbis.lib;libvpx.lib;libx264.lib;libx265.lib;libxvidcore.lib;liblzma.lib;libz.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(INTELMEDIASDKROOT)\lib\x64;$(OutDir)\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
       <Command>mkdir $(OutDir)\include
@@ -2863,7 +2867,7 @@ cd $(ProjectDir)
       <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
-      <AdditionalIncludeDirectories>$(OutDir)\include\opus;$(CUDA_PATH)\include\;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(INTELMEDIASDKROOT)\include\;$(OutDir)\include\opus;$(CUDA_PATH)\include\;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
   </ItemDefinitionGroup>
@@ -2883,7 +2887,7 @@ cd $(ProjectDir)
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
-      <AdditionalIncludeDirectories>$(OutDir)\include\opus;$(CUDA_PATH)\include\;.\;..\;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(INTELMEDIASDKROOT)\include\;$(OutDir)\include\opus;$(CUDA_PATH)\include\;.\;..\;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ExceptionHandling>false</ExceptionHandling>
       <C99Support>true</C99Support>
       <ForcedIncludeFiles>compat\msvcrt\snprintf.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
@@ -2895,8 +2899,8 @@ cd $(ProjectDir)
       <TargetMachine>MachineX86</TargetMachine>
       <SubSystem>Windows</SubSystem>
       <OutputFile>$(OutDir)\lib\$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalDependencies>libbz2.lib;libiconv.lib;libfdk-aac.lib;libilbc.lib;libmp3lame.lib;libopus.lib;libspeex.lib;libtheora.lib;libvorbis.lib;libvpx.lib;libx264.lib;libx265.lib;libxvidcore.lib;liblzma.lib;libz.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(OutDir)\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libbz2.lib;libiconv.lib;libfdk-aac.lib;libilbc.lib;libmfx.lib;libmp3lame.lib;libopus.lib;libspeex.lib;libtheora.lib;libvorbis.lib;libvpx.lib;libx264.lib;libx265.lib;libxvidcore.lib;liblzma.lib;libz.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(INTELMEDIASDKROOT)\lib\win32;$(OutDir)\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Lib>
     <PostBuildEvent>
       <Command>mkdir $(OutDir)\include
@@ -2944,7 +2948,7 @@ cd $(ProjectDir)
       <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
-      <AdditionalIncludeDirectories>$(OutDir)\include\opus;$(CUDA_PATH)\include\;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(INTELMEDIASDKROOT)\include\;$(OutDir)\include\opus;$(CUDA_PATH)\include\;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
   </ItemDefinitionGroup>
@@ -2963,7 +2967,7 @@ cd $(ProjectDir)
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
-      <AdditionalIncludeDirectories>$(OutDir)\include\opus;$(CUDA_PATH)\include\;.\;..\;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(INTELMEDIASDKROOT)\include\;$(OutDir)\include\opus;$(CUDA_PATH)\include\;.\;..\;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ExceptionHandling>false</ExceptionHandling>
       <C99Support>true</C99Support>
       <ForcedIncludeFiles>compat\msvcrt\snprintf.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
@@ -2975,8 +2979,8 @@ cd $(ProjectDir)
       <TargetMachine>MachineX64</TargetMachine>
       <SubSystem>Windows</SubSystem>
       <OutputFile>$(OutDir)\lib\$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalDependencies>libbz2.lib;libiconv.lib;libfdk-aac.lib;libilbc.lib;libmp3lame.lib;libopus.lib;libspeex.lib;libtheora.lib;libvorbis.lib;libvpx.lib;libx264.lib;libx265.lib;libxvidcore.lib;liblzma.lib;libz.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(OutDir)\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libbz2.lib;libiconv.lib;libfdk-aac.lib;libilbc.lib;libmfx.lib;libmp3lame.lib;libopus.lib;libspeex.lib;libtheora.lib;libvorbis.lib;libvpx.lib;libx264.lib;libx265.lib;libxvidcore.lib;liblzma.lib;libz.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(INTELMEDIASDKROOT)\lib\x64;$(OutDir)\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Lib>
     <PostBuildEvent>
       <Command>mkdir $(OutDir)\include
@@ -3024,7 +3028,7 @@ cd $(ProjectDir)
       <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
-      <AdditionalIncludeDirectories>$(OutDir)\include\opus;$(CUDA_PATH)\include\;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(INTELMEDIASDKROOT)\include\;$(OutDir)\include\opus;$(CUDA_PATH)\include\;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
   </ItemDefinitionGroup>
