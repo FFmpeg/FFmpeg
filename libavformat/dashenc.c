@@ -645,7 +645,7 @@ static int dash_write_header(AVFormatContext *s)
         else if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO)
             c->has_audio = 1;
 
-        set_codec_str(s, os->ctx->streams[0]->codec, os->codec_str, sizeof(os->codec_str));
+        set_codec_str(s, st->codec, os->codec_str, sizeof(os->codec_str));
         os->first_pts = AV_NOPTS_VALUE;
         os->max_pts = AV_NOPTS_VALUE;
         os->segment_index = 1;
