@@ -120,6 +120,11 @@ static int decimate_frame(AVFilterContext *ctx,
         return 0;
 
     for (plane = 0; ref->data[plane] && ref->linesize[plane]; plane++) {
+        /* use 8x8 SAD even on subsampled planes.  The blocks won't match up with
+         * luma blocks, but hopefully nobody is depending on this to catch
+         * localized chroma changes that wouldn't exceed the thresholds when
+         * diluted by using what's effectively a larger block size.
+         */
         int vsub = plane == 1 || plane == 2 ? decimate->vsub : 0;
         int hsub = plane == 1 || plane == 2 ? decimate->hsub : 0;
         if (diff_planes(ctx,
