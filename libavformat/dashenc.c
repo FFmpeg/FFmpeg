@@ -730,6 +730,29 @@ static void find_index_range(AVFormatContext *s, const char *full_path,
     *index_length = AV_RB32(&buf[0]);
 }
 
+static int update_stream_extradata(AVFormatContext *s, OutputStream *os,
+                                   AVCodecContext *codec)
+{
+    uint8_t *extradata;
+
+    if (os->ctx->streams[0]->codec->extradata_size || !codec->extradata_size)
+        return 0;
+
+    extradata = av_malloc(codec->extradata_size);
+
+    if (!extradata)
+        return AVERROR(ENOMEM);
+
+    memcpy(extradata, codec->extradata, codec->extradata_size);
+
+    os->ctx->streams[0]->codec->extradata = extradata;
+    os->ctx->streams[0]->codec->extradata_size = codec->extradata_size;
+
+    set_codec_str(s, codec, os->codec_str, sizeof(os->codec_str));
+
+    return 0;
+}
+
 static int dash_flush(AVFormatContext *s, int final, int stream)
 {
     DASHContext *c = s->priv_data;
@@ -832,6 +855,10 @@ static int dash_write_packet(AVFormatContext *s, AVPacket *pkt)
     OutputStream *os = &c->streams[pkt->stream_index];
     int64_t seg_end_duration = (os->segment_index) * (int64_t) c->min_seg_duration;
     int ret;
+
+    ret = update_stream_extradata(s, os, st->codec);
+    if (ret < 0)
+        return ret;
 
     // If forcing the stream to start at 0, the mp4 muxer will set the start
     // timestamps to 0. Do the same here, to avoid mismatches in duration/timestamps.
