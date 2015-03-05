@@ -23,6 +23,7 @@
  */
 
 #include "dca.h"
+#include "dca_syncwords.h"
 #include "get_bits.h"
 #include "parser.h"
 
@@ -35,9 +36,9 @@ typedef struct DCAParseContext {
 } DCAParseContext;
 
 #define IS_MARKER(state, i, buf, buf_size) \
-    ((state == DCA_MARKER_14B_LE && (i < buf_size - 2) && (buf[i + 1] & 0xF0) == 0xF0 &&  buf[i + 2]         == 0x07) || \
-     (state == DCA_MARKER_14B_BE && (i < buf_size - 2) &&  buf[i + 1]         == 0x07 && (buf[i + 2] & 0xF0) == 0xF0) || \
-      state == DCA_MARKER_RAW_LE || state == DCA_MARKER_RAW_BE || state == DCA_HD_MARKER)
+    ((state == DCA_SYNCWORD_CORE_14B_LE && (i < buf_size - 2) && (buf[i + 1] & 0xF0) == 0xF0 &&  buf[i + 2]         == 0x07) || \
+     (state == DCA_SYNCWORD_CORE_14B_BE && (i < buf_size - 2) &&  buf[i + 1]         == 0x07 && (buf[i + 2] & 0xF0) == 0xF0) || \
+      state == DCA_SYNCWORD_CORE_LE || state == DCA_SYNCWORD_CORE_BE || state == DCA_SYNCWORD_SUBSTREAM)
 
 /**
  * Find the end of the current frame in the bitstream.
@@ -58,7 +59,7 @@ static int dca_find_frame_end(DCAParseContext *pc1, const uint8_t *buf,
         for (i = 0; i < buf_size; i++) {
             state = (state << 8) | buf[i];
             if (IS_MARKER(state, i, buf, buf_size)) {
-                if (!pc1->lastmarker || state == pc1->lastmarker || pc1->lastmarker == DCA_HD_MARKER) {
+                if (!pc1->lastmarker || state == pc1->lastmarker || pc1->lastmarker == DCA_SYNCWORD_SUBSTREAM) {
                     start_found     = 1;
                     pc1->lastmarker = state;
                     i++;
@@ -71,9 +72,9 @@ static int dca_find_frame_end(DCAParseContext *pc1, const uint8_t *buf,
         for (; i < buf_size; i++) {
             pc1->size++;
             state = (state << 8) | buf[i];
-            if (state == DCA_HD_MARKER && !pc1->hd_pos)
+            if (state == DCA_SYNCWORD_SUBSTREAM && !pc1->hd_pos)
                 pc1->hd_pos = pc1->size;
-            if (IS_MARKER(state, i, buf, buf_size) && (state == pc1->lastmarker || pc1->lastmarker == DCA_HD_MARKER)) {
+            if (IS_MARKER(state, i, buf, buf_size) && (state == pc1->lastmarker || pc1->lastmarker == DCA_SYNCWORD_SUBSTREAM)) {
                 if (pc1->framesize > pc1->size)
                     continue;
                 pc->frame_start_found = 0;

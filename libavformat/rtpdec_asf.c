@@ -205,8 +205,6 @@ static int asfrtp_parse_packet(AVFormatContext *s, PayloadContext *asf,
             int start_off = avio_tell(pb);
 
             mflags = avio_r8(pb);
-            if (mflags & 0x80)
-                flags |= RTP_FLAG_KEY;
             len_off = avio_rb24(pb);
             if (mflags & 0x20)   /**< relative timestamp */
                 avio_skip(pb, 4);
@@ -289,7 +287,6 @@ static void asfrtp_close_context(PayloadContext *asf)
 {
     ffio_free_dyn_buf(&asf->pktbuf);
     av_freep(&asf->buf);
-    av_free(asf);
 }
 
 #define RTP_ASF_HANDLER(n, s, t) \

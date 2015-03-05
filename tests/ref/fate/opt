@@ -183,9 +183,6 @@ Value -1.000000 for parameter 'rational' out of range [0 - 10]
 Value -1.000000 for parameter 'rational' out of range [0 - 10]
 Error 'rational=0 : rational=1/2 : rational=1/-1'
 Setting options string 'rational=-1/0'
-Setting entry with key 'rational' to value '-1/0'
-Value -inf for parameter 'rational' out of range [0 - 10]
-Value -inf for parameter 'rational' out of range [0 - 10]
 Error 'rational=-1/0'
 Setting options string 'size=1024x768'
 Setting entry with key 'size' to value '1024x768'
