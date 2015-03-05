@@ -316,7 +316,7 @@ end:
  * Note: r, g, and b are the component of c but are passed as well to avoid
  * recomputing them (they are generally computed by the caller for other uses).
  */
-static av_always_inline uint8_t color_get(struct cache_node *cache, uint32_t color,
+static av_always_inline int color_get(struct cache_node *cache, uint32_t color,
                                           uint8_t r, uint8_t g, uint8_t b,
                                           const struct color_node *map,
                                           const uint32_t *palette,
@@ -346,7 +346,7 @@ static av_always_inline uint8_t color_get(struct cache_node *cache, uint32_t col
     return e->pal_entry;
 }
 
-static av_always_inline uint8_t get_dst_color_err(struct cache_node *cache,
+static av_always_inline int get_dst_color_err(struct cache_node *cache,
                                                   uint32_t c, const struct color_node *map,
                                                   const uint32_t *palette,
                                                   int *er, int *eg, int *eb,
@@ -355,7 +355,7 @@ static av_always_inline uint8_t get_dst_color_err(struct cache_node *cache,
     const uint8_t r = c >> 16 & 0xff;
     const uint8_t g = c >>  8 & 0xff;
     const uint8_t b = c       & 0xff;
-    const uint8_t dstx = color_get(cache, c, r, g, b, map, palette, search_method);
+    const int dstx = color_get(cache, c, r, g, b, map, palette, search_method);
     const uint32_t dstc = palette[dstx];
     *er = r - (dstc >> 16 & 0xff);
     *eg = g - (dstc >>  8 & 0xff);
