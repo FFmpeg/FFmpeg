@@ -2123,11 +2123,15 @@ int main(void)
         av_log_set_level(AV_LOG_QUIET);
 
         for (i=0; i < FF_ARRAY_ELEMS(options); i++) {
+            int silence_log = !strcmp(options[i], "rational=-1/0"); // inf formating differs between platforms
             av_log(&test_ctx, AV_LOG_DEBUG, "Setting options string '%s'\n", options[i]);
+            if (silence_log)
+                av_log_set_callback(NULL);
             if (av_set_options_string(&test_ctx, options[i], "=", ":") < 0)
                 printf("Error '%s'\n", options[i]);
             else
                 printf("OK    '%s'\n", options[i]);
+            av_log_set_callback(log_callback_help);
         }
         av_opt_free(&test_ctx);
     }
