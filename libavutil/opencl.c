@@ -611,6 +611,9 @@ void av_opencl_uninit(void)
         }
         opencl_ctx.context = NULL;
     }
+    for (i = 0; i < opencl_ctx.kernel_code_count; i++) {
+        opencl_ctx.kernel_code[i].is_compiled = 0;
+    }
     free_device_list(&opencl_ctx.device_list);
 end:
     if (opencl_ctx.init_count <= 0)
