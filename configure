@@ -1466,6 +1466,7 @@ HAVE_LIST="
     alsa_asoundlib_h
     altivec_h
     arpa_inet_h
+    as_object_arch
     asm_mod_q
     asm_mod_y
     asm_types_h
@@ -3963,6 +3964,11 @@ EOF
     check_inline_asm asm_mod_y '"vmul.i32 d0, d0, %y0" :: "x"(0)'
 
     [ $target_os != win32 ] && enabled_all armv6t2 shared !pic && enable_weak_pic
+
+    # llvm's integrated assembler supports .object_arch from llvm 3.5
+    [ "$objformat" = elf ] && check_as <<EOF && enable as_object_arch
+.object_arch armv4
+EOF
 
 elif enabled mips; then
 
