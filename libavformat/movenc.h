@@ -185,6 +185,7 @@ typedef struct MOVMuxContext {
     AVFormatContext *fc;
 
     int use_editlist;
+    float gamma;
 } MOVMuxContext;
 
 #define FF_MOV_FLAG_RTP_HINT              (1 <<  0)
@@ -202,6 +203,7 @@ typedef struct MOVMuxContext {
 #define FF_MOV_FLAG_FRAG_DISCONT          (1 << 12)
 #define FF_MOV_FLAG_DELAY_MOOV            (1 << 13)
 #define FF_MOV_FLAG_WRITE_COLR            (1 << 14)
+#define FF_MOV_FLAG_WRITE_GAMA            (1 << 15)
 
 int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt);
 
