@@ -1087,7 +1087,7 @@ static int vp8_lossless_decode_frame(AVCodecContext *avctx, AVFrame *p,
                                      unsigned int data_size, int is_alpha_chunk)
 {
     WebPContext *s = avctx->priv_data;
-    int w, h, ret, i;
+    int w, h, ret, i, used;
 
     if (!is_alpha_chunk) {
         s->lossless = 1;
@@ -1137,8 +1137,16 @@ static int vp8_lossless_decode_frame(AVCodecContext *avctx, AVFrame *p,
     /* parse transformations */
     s->nb_transforms = 0;
     s->reduced_width = 0;
+    used = 0;
     while (get_bits1(&s->gb)) {
         enum TransformType transform = get_bits(&s->gb, 2);
+        if (used & (1 << transform)) {
+            av_log(avctx, AV_LOG_ERROR, "Transform %d used more than once\n",
+                   transform);
+            ret = AVERROR_INVALIDDATA;
+            goto free_and_return;
+        }
+        used |= (1 << transform);
         s->transforms[s->nb_transforms++] = transform;
         switch (transform) {
         case PREDICTOR_TRANSFORM:
