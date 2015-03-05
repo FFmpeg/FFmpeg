@@ -199,7 +199,7 @@ static void ac3_update_bap_counts_mips(uint16_t mant_cnt[16], uint8_t *bap,
 }
 #endif
 
-#if HAVE_MIPSFPU && HAVE_MIPS32R2
+#if HAVE_MIPSFPU
 static void float_to_fixed24_mips(int32_t *dst, const float *src, unsigned int len)
 {
     const float scale = 1 << 24;
@@ -403,7 +403,7 @@ void ff_ac3dsp_init_mips(AC3DSPContext *c, int bit_exact) {
     c->bit_alloc_calc_bap = ac3_bit_alloc_calc_bap_mips;
     c->update_bap_counts  = ac3_update_bap_counts_mips;
 #endif
-#if HAVE_MIPSFPU && HAVE_MIPS32R2
+#if HAVE_MIPSFPU
     c->float_to_fixed24 = float_to_fixed24_mips;
     c->downmix          = ac3_downmix_mips;
 #endif
