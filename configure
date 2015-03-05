@@ -1477,6 +1477,7 @@ SYSTEM_FUNCS="
 TOOLCHAIN_FEATURES="
     as_dn_directive
     as_func
+    as_object_arch
     asm_mod_q
     attribute_may_alias
     attribute_packed
@@ -3868,6 +3869,11 @@ EOF
     check_as <<EOF && enable as_dn_directive
 ra .dn d0.i16
 .unreq ra
+EOF
+
+    # llvm's integrated assembler supports .object_arch from llvm 3.5
+    [ "$objformat" = elf ] && check_as <<EOF && enable as_object_arch
+.object_arch armv4
 EOF
 
     [ $target_os != win32 ] && enabled_all armv6t2 shared !pic && enable_weak_pic
