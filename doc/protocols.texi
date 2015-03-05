@@ -1081,8 +1081,8 @@ Set raise error timeout, expressed in microseconds.
 This option is only relevant in read mode: if no data arrived in more
 than this time interval, raise error.
 
-@item listen_timeout=@var{microseconds}
-Set listen timeout, expressed in microseconds.
+@item listen_timeout=@var{milliseconds}
+Set listen timeout, expressed in milliseconds.
 @end table
 
 The following example shows how to setup a listening TCP connection
