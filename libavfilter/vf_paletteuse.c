@@ -317,10 +317,10 @@ end:
  * recomputing them (they are generally computed by the caller for other uses).
  */
 static av_always_inline int color_get(struct cache_node *cache, uint32_t color,
-                                          uint8_t r, uint8_t g, uint8_t b,
-                                          const struct color_node *map,
-                                          const uint32_t *palette,
-                                          const enum color_search_method search_method)
+                                      uint8_t r, uint8_t g, uint8_t b,
+                                      const struct color_node *map,
+                                      const uint32_t *palette,
+                                      const enum color_search_method search_method)
 {
     int i;
     const uint8_t rgb[] = {r, g, b};
@@ -347,10 +347,10 @@ static av_always_inline int color_get(struct cache_node *cache, uint32_t color,
 }
 
 static av_always_inline int get_dst_color_err(struct cache_node *cache,
-                                                  uint32_t c, const struct color_node *map,
-                                                  const uint32_t *palette,
-                                                  int *er, int *eg, int *eb,
-                                                  const enum color_search_method search_method)
+                                              uint32_t c, const struct color_node *map,
+                                              const uint32_t *palette,
+                                              int *er, int *eg, int *eb,
+                                              const enum color_search_method search_method)
 {
     const uint8_t r = c >> 16 & 0xff;
     const uint8_t g = c >>  8 & 0xff;
