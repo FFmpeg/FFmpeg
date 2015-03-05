@@ -607,14 +607,17 @@ static av_cold int xcbgrab_read_header(AVFormatContext *s)
 
     c->conn = xcb_connect(host, &screen_num);
 
-    if (opts)
-        av_free(host);
-
     if ((ret = xcb_connection_has_error(c->conn))) {
         av_log(s, AV_LOG_ERROR, "Cannot open display %s, error %d.\n",
                s->filename[0] ? host : "default", ret);
+        if (opts)
+            av_freep(&host);
         return AVERROR(EIO);
     }
+
+    if (opts)
+        av_freep(&host);
+
     setup = xcb_get_setup(c->conn);
 
     c->screen = get_screen(setup, screen_num);
