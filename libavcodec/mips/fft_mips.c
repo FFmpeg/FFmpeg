@@ -50,6 +50,7 @@
 #include "config.h"
 #include "libavcodec/fft.h"
 #include "libavcodec/fft_table.h"
+#include "libavutil/mips/asmdefs.h"
 
 /**
  * FFT transform
@@ -368,14 +369,14 @@ static void ff_imdct_half_mips(FFTContext *s, FFTSample *output, const FFTSample
             "mul.s          %[temp11],      %[temp5],   %[temp6]                \t\n"
             "mul.s          %[temp12],      %[temp5],   %[temp7]                \t\n"
             "lwc1           %[temp8],       0(%[in3])                           \t\n"
-            "addiu          %[tcos1],       %[tcos1],   8                       \t\n"
-            "addiu          %[tsin1],       %[tsin1],   8                       \t\n"
-            "addiu          %[in1],         %[in1],     16                      \t\n"
+            PTR_ADDIU "     %[tcos1],       %[tcos1],   8                       \t\n"
+            PTR_ADDIU "     %[tsin1],       %[tsin1],   8                       \t\n"
+            PTR_ADDIU "     %[in1],         %[in1],     16                      \t\n"
             "nmsub.s        %[temp11],      %[temp11],  %[temp8],   %[temp7]    \t\n"
             "madd.s         %[temp12],      %[temp12],  %[temp8],   %[temp6]    \t\n"
-            "addiu          %[in2],         %[in2],     -16                     \t\n"
-            "addiu          %[in3],         %[in3],     16                      \t\n"
-            "addiu          %[in4],         %[in4],     -16                     \t\n"
+            PTR_ADDIU "     %[in2],         %[in2],     -16                     \t\n"
+            PTR_ADDIU "     %[in3],         %[in3],     16                      \t\n"
+            PTR_ADDIU "     %[in4],         %[in4],     -16                     \t\n"
 
             : [temp1]"=&f"(temp1), [temp2]"=&f"(temp2),
               [temp3]"=&f"(temp3), [temp4]"=&f"(temp4),

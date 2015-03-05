@@ -54,6 +54,7 @@
 
 #include <string.h>
 
+#include "libavutil/mips/asmdefs.h"
 #include "libavcodec/mpegaudiodsp.h"
 
 static void ff_mpadsp_apply_window_mips_fixed(int32_t *synth_buf, int32_t *window,
@@ -152,7 +153,7 @@ static void ff_mpadsp_apply_window_mips_fixed(int32_t *synth_buf, int32_t *windo
 
          "extr.w %[sum1],   $ac0,       24                                \n\t"
          "mflo   %[temp3]                                                 \n\t"
-         "addi   %[w],      %[w],       4                                 \n\t"
+         PTR_ADDIU "%[w],   %[w],       4                                 \n\t"
          "and    %[temp1],  %[temp3],   0x00ffffff                        \n\t"
          "slt    %[temp2],  %[sum1],    %[min_asm]                        \n\t"
          "movn   %[sum1],   %[min_asm], %[temp2]                          \n\t"
@@ -180,7 +181,7 @@ static void ff_mpadsp_apply_window_mips_fixed(int32_t *synth_buf, int32_t *windo
              "mtlo   $0,         $ac1                                      \n\t"
              "mthi   $0                                                    \n\t"
              "mtlo   %[temp1]                                              \n\t"
-             "addi   %[p_temp1], %[p_temp1],       4                       \n\t"
+             PTR_ADDIU "%[p_temp1], %[p_temp1],    4                       \n\t"
              "lw     %[w_asm],   0(%[w])                                   \n\t"
              "lw     %[p_asm],   0(%[p_temp1])                             \n\t"
              "lw     %[w2_asm],  0(%[w2])                                  \n\t"
@@ -221,7 +222,7 @@ static void ff_mpadsp_apply_window_mips_fixed(int32_t *synth_buf, int32_t *windo
              "msub   $ac1,       %[w2_asm],        %[p_asm]                \n\t"
              "madd   %[w_asm1],  %[p_asm1]                                 \n\t"
              "msub   $ac1,       %[w2_asm1],       %[p_asm1]               \n\t"
-             "addi   %[p_temp2], %[p_temp2],       -4                      \n\t"
+             PTR_ADDIU "%[p_temp2], %[p_temp2],   -4                      \n\t"
              "lw     %[w_asm],   32*4(%[w])                                \n\t"
              "lw     %[p_asm],   0(%[p_temp2])                             \n\t"
              "lw     %[w2_asm],  32*4(%[w2])                               \n\t"
@@ -262,8 +263,8 @@ static void ff_mpadsp_apply_window_mips_fixed(int32_t *synth_buf, int32_t *windo
              "msub   %[w_asm1],  %[p_asm1]                                 \n\t"
              "msub   $ac1,       %[w2_asm],        %[p_asm]                \n\t"
              "msub   $ac1,       %[w2_asm1],       %[p_asm1]               \n\t"
-             "addi   %[w],       %[w],             4                       \n\t"
-             "addi   %[w2],      %[w2],            -4                      \n\t"
+             PTR_ADDIU "%[w],    %[w],             4                       \n\t"
+             PTR_ADDIU "%[w2],   %[w2],            -4                      \n\t"
              "mflo   %[temp2]                                              \n\t"
              "extr.w %[sum1],    $ac0,             24                      \n\t"
              "li     %[temp3],   1                                         \n\t"

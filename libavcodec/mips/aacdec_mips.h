@@ -58,6 +58,7 @@
 #define AVCODEC_MIPS_AACDEC_FLOAT_H
 
 #include "libavcodec/aac.h"
+#include "libavutil/mips/asmdefs.h"
 
 #if HAVE_INLINE_ASM && HAVE_MIPSFPU
 static inline float *VMUL2_mips(float *dst, const float *v, unsigned idx,
@@ -77,7 +78,7 @@ static inline float *VMUL2_mips(float *dst, const float *v, unsigned idx,
         "lwxc1   %[temp1],  %[temp4](%[v])             \n\t"
         "mul.s   %[temp0],  %[temp0],     %[temp2]     \n\t"
         "mul.s   %[temp1],  %[temp1],     %[temp2]     \n\t"
-        "addiu   %[ret],    %[dst],       8            \n\t"
+        PTR_ADDIU "%[ret],  %[dst],       8            \n\t"
         "swc1    %[temp0],  0(%[dst])                  \n\t"
         "swc1    %[temp1],  4(%[dst])                  \n\t"
 
@@ -115,7 +116,7 @@ static inline float *VMUL4_mips(float *dst, const float *v, unsigned idx,
         "mul.s   %[temp6],  %[temp6],     %[temp4]    \n\t"
         "mul.s   %[temp7],  %[temp7],     %[temp4]    \n\t"
         "mul.s   %[temp8],  %[temp8],     %[temp4]    \n\t"
-        "addiu   %[ret],    %[dst],       16          \n\t"
+        PTR_ADDIU "%[ret],  %[dst],       16          \n\t"
         "swc1    %[temp5],  0(%[dst])                 \n\t"
         "swc1    %[temp6],  4(%[dst])                 \n\t"
         "swc1    %[temp7],  8(%[dst])                 \n\t"
@@ -157,7 +158,7 @@ static inline float *VMUL2S_mips(float *dst, const float *v, unsigned idx,
         "mtc1    %[temp4],  %[temp7]                 \n\t"
         "mul.s   %[temp8],  %[temp8],     %[temp6]   \n\t"
         "mul.s   %[temp9],  %[temp9],     %[temp7]   \n\t"
-        "addiu   %[ret],    %[dst],       8          \n\t"
+        PTR_ADDIU "%[ret],  %[dst],       8          \n\t"
         "swc1    %[temp8],  0(%[dst])                \n\t"
         "swc1    %[temp9],  4(%[dst])                \n\t"
 
@@ -220,7 +221,7 @@ static inline float *VMUL4S_mips(float *dst, const float *v, unsigned idx,
         "mul.s   %[temp11],  %[temp11],    %[temp15]   \n\t"
         "mul.s   %[temp12],  %[temp12],    %[temp16]   \n\t"
         "mul.s   %[temp13],  %[temp13],    %[temp17]   \n\t"
-        "addiu   %[ret],     %[dst],       16          \n\t"
+        PTR_ADDIU "%[ret],   %[dst],       16          \n\t"
         "swc1    %[temp10],  0(%[dst])                 \n\t"
         "swc1    %[temp11],  4(%[dst])                 \n\t"
         "swc1    %[temp12],  8(%[dst])                 \n\t"
