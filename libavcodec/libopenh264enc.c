@@ -39,6 +39,10 @@ typedef struct SVCContext {
     char *profile;
 } SVCContext;
 
+#define OPENH264_VER_AT_LEAST(maj, min) \
+    ((OPENH264_MAJOR  > (maj)) || \
+     (OPENH264_MAJOR == (maj) && OPENH264_MINOR >= (min)))
+
 #define OFFSET(x) offsetof(SVCContext, x)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
@@ -103,7 +107,11 @@ static av_cold int svc_encode_init(AVCodecContext *avctx)
     param.bEnableLongTermReference   = 0;
     param.iLtrMarkPeriod             = 30;
     param.uiIntraPeriod              = avctx->gop_size;
+#if OPENH264_VER_AT_LEAST(1, 4)
+    param.eSpsPpsIdStrategy          = CONSTANT_ID;
+#else
     param.bEnableSpsPpsIdAddition    = 0;
+#endif
     param.bPrefixNalAddingCtrl       = 0;
     param.iLoopFilterDisableIdc      = !s->loopfilter;
     param.iEntropyCodingModeFlag     = 0;
