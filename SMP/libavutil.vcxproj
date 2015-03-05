@@ -96,6 +96,8 @@
     </ClCompile>
     <ClCompile Include="..\libavutil\channel_layout.c">
     </ClCompile>
+    <ClCompile Include="..\libavutil\color_utils.c">
+    </ClCompile>
     <ClCompile Include="..\libavutil\cpu.c">
     </ClCompile>
     <ClCompile Include="..\libavutil\crc.c">

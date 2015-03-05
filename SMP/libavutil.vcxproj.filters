@@ -89,6 +89,9 @@
     <ClCompile Include="..\libavutil\channel_layout.c">
       <Filter>Source Files\libavutil</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavutil\color_utils.c">
+      <Filter>Source Files\libavutil</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavutil\cpu.c">
       <Filter>Source Files\libavutil</Filter>
     </ClCompile>

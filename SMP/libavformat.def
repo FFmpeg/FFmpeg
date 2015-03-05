@@ -78,6 +78,7 @@ EXPORTS
     avformat_close_input
     avformat_configuration
     avformat_find_stream_info
+    avformat_flush
     avformat_free_context
     avformat_get_class
     avformat_get_mov_audio_tags
