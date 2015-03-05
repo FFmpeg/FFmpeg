@@ -69,7 +69,7 @@ static int pcx_rle_encode(      uint8_t *dst, int dst_size,
 
     // check worst-case upper bound on dst_size
     if (dst_size < 2LL * src_plane_size * nplanes || src_plane_size <= 0)
-        return -1;
+        return AVERROR(EINVAL);
 
     for (p = 0; p < nplanes; p++) {
         int count = 1;
@@ -114,7 +114,7 @@ static int pcx_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     if (avctx->width > 65535 || avctx->height > 65535) {
         av_log(avctx, AV_LOG_ERROR, "image dimensions do not fit in 16 bits\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
 
     switch (avctx->pix_fmt) {
@@ -144,7 +144,7 @@ static int pcx_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "unsupported pixfmt\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
 
     line_bytes = (avctx->width * bpp + 7) >> 3;
@@ -186,7 +186,7 @@ static int pcx_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         if ((written = pcx_rle_encode(buf, buf_end - buf,
                                       src, line_bytes, nplanes)) < 0) {
             av_log(avctx, AV_LOG_ERROR, "buffer too small\n");
-            return -1;
+            return AVERROR_BUG;
         }
         buf += written;
         src += frame->linesize[0];
@@ -195,7 +195,7 @@ static int pcx_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     if (nplanes == 1 && bpp == 8) {
         if (buf_end - buf < 257) {
             av_log(avctx, AV_LOG_ERROR, "buffer too small\n");
-            return -1;
+            return AVERROR_BUG;
         }
         bytestream_put_byte(&buf, 12);
         for (i = 0; i < 256; i++) {
