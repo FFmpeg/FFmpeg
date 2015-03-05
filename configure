@@ -4464,11 +4464,6 @@ if enabled_any arm aarch64 || enabled_all ppc altivec && enabled asm; then
 .func test
 .endfunc
 EOF
-
-    # llvm's integrated assembler supports .object_arch from llvm 3.5
-    enabled arm && test "$objformat" = elf && check_as <<EOF && enable as_object_arch
-.object_arch armv4
-EOF
 fi
 
 check_inline_asm inline_asm_labels '"1:\n"'
@@ -4525,6 +4520,11 @@ EOF
     check_as <<EOF && enable as_dn_directive
 ra .dn d0.i16
 .unreq ra
+EOF
+
+    # llvm's integrated assembler supports .object_arch from llvm 3.5
+    [ "$objformat" = elf ] && check_as <<EOF && enable as_object_arch
+.object_arch armv4
 EOF
 
     [ $target_os != win32 ] && enabled_all armv6t2 shared !pic && enable_weak_pic
