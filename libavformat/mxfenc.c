@@ -624,14 +624,61 @@ static void mxf_write_preface(AVFormatContext *s)
 }
 
 /*
- * Write a local tag containing an ascii string as utf-16
+ * Returns the length of the UTF-16 string, in 16-bit characters, that would result
+ * from decoding the utf-8 string.
+ */
+static uint64_t mxf_utf16len(const char *utf8_str)
+{
+    const uint8_t *q = utf8_str;
+    uint64_t size = 0;
+    while (*q) {
+        uint32_t ch;
+        GET_UTF8(ch, *q++, goto invalid;)
+        if (ch < 0x10000)
+            size++;
+        else
+            size += 2;
+        continue;
+invalid:
+        av_log(NULL, AV_LOG_ERROR, "Invaid UTF8 sequence in mxf_utf16len\n\n");
+    }
+    size += 1;
+    return size;
+}
+
+/*
+ * Returns the calculated length a local tag containing an utf-8 string as utf-16
+ */
+static int mxf_utf16_local_tag_length(const char *utf8_str)
+{
+    uint64_t size;
+
+    if (!utf8_str)
+        return 0;
+
+    size = mxf_utf16len(utf8_str);
+    if (size >= UINT16_MAX/2) {
+        av_log(NULL, AV_LOG_ERROR, "utf16 local tag size %"PRIx64" invalid (too large), ignoring\n", size);
+        return 0;
+    }
+
+    return 4 + size * 2;
+}
+
+/*
+ * Write a local tag containing an utf-8 string as utf-16
  */
 static void mxf_write_local_tag_utf16(AVIOContext *pb, int tag, const char *value)
 {
-    int i, size = strlen(value);
+    uint64_t size = mxf_utf16len(value);
+
+    if (size >= UINT16_MAX/2) {
+        av_log(NULL, AV_LOG_ERROR, "utf16 local tag size %"PRIx64" invalid (too large), ignoring\n", size);
+        return;
+    }
+
     mxf_write_local_tag(pb, size*2, tag);
-    for (i = 0; i < size; i++)
-        avio_wb16(pb, value[i]);
+    avio_put_str16be(pb, value);
 }
 
 static void mxf_write_identification(AVFormatContext *s)
@@ -648,7 +695,9 @@ static void mxf_write_identification(AVFormatContext *s)
 
     version = s->flags & AVFMT_FLAG_BITEXACT ?
         "0.0.0" : AV_STRINGIFY(LIBAVFORMAT_VERSION);
-    length = 84 + (strlen(company)+strlen(product)+strlen(version))*2; // utf-16
+    length = 72 + mxf_utf16_local_tag_length(company) +
+                  mxf_utf16_local_tag_length(product) +
+                  mxf_utf16_local_tag_length(version);
     klv_encode_ber_length(pb, length);
 
     // write uid
@@ -659,7 +708,6 @@ static void mxf_write_identification(AVFormatContext *s)
     // write generation uid
     mxf_write_local_tag(pb, 16, 0x3C09);
     mxf_write_uuid(pb, Identification, 1);
-
     mxf_write_local_tag_utf16(pb, 0x3C01, company); // Company Name
     mxf_write_local_tag_utf16(pb, 0x3C02, product); // Product Name
     mxf_write_local_tag_utf16(pb, 0x3C04, version); // Version String
@@ -1092,20 +1140,21 @@ static void mxf_write_generic_sound_desc(AVFormatContext *s, AVStream *st)
     mxf_write_generic_sound_common(s, st, mxf_generic_sound_descriptor_key, 0);
 }
 
-static void mxf_write_package(AVFormatContext *s, enum MXFMetadataSetType type)
+static void mxf_write_package(AVFormatContext *s, enum MXFMetadataSetType type, const char *package_name)
 {
     MXFContext *mxf = s->priv_data;
     AVIOContext *pb = s->pb;
     int i, track_count = s->nb_streams+1;
+    int name_size = mxf_utf16_local_tag_length(package_name);
 
     if (type == MaterialPackage) {
         mxf_write_metadata_key(pb, 0x013600);
         PRINT_KEY(s, "Material Package key", pb->buf_ptr - 16);
-        klv_encode_ber_length(pb, 92 + 16*track_count);
+        klv_encode_ber_length(pb, 92 + name_size + (16*track_count));
     } else {
         mxf_write_metadata_key(pb, 0x013700);
         PRINT_KEY(s, "Source Package key", pb->buf_ptr - 16);
-        klv_encode_ber_length(pb, 112 + 16*track_count); // 20 bytes length for descriptor reference
+        klv_encode_ber_length(pb, 112 + name_size + (16*track_count)); // 20 bytes length for descriptor reference
     }
 
     // write uid
@@ -1118,6 +1167,10 @@ static void mxf_write_package(AVFormatContext *s, enum MXFMetadataSetType type)
     mxf_write_local_tag(pb, 32, 0x4401);
     mxf_write_umid(s, type == SourcePackage);
     PRINT_KEY(s, "package umid second part", pb->buf_ptr - 16);
+
+    // package name
+    if (name_size)
+        mxf_write_local_tag_utf16(pb, 0x4402, package_name);
 
     // package creation date
     mxf_write_local_tag(pb, 8, 0x4405);
@@ -1187,11 +1240,33 @@ static int mxf_write_essence_container_data(AVFormatContext *s)
 
 static int mxf_write_header_metadata_sets(AVFormatContext *s)
 {
+    const char *material_package_name = NULL;
+    const char *file_package_name = NULL;
+    AVDictionaryEntry *entry = NULL;
+    AVStream *st = NULL;
+    int i;
+
+    if (entry = av_dict_get(s->metadata, "material_package_name", NULL, 0))
+       material_package_name = entry->value;
+
+    if (entry = av_dict_get(s->metadata, "file_package_name", NULL, 0)) {
+        file_package_name = entry->value;
+    } else {
+        /* check if any of the streams contain a file_package_name */
+        for (i = 0; i < s->nb_streams; i++) {
+            st = s->streams[i];
+            if (entry = av_dict_get(st->metadata, "file_package_name", NULL, 0)) {
+                file_package_name = entry->value;
+                break;
+            }
+        }
+    }
+
     mxf_write_preface(s);
     mxf_write_identification(s);
     mxf_write_content_storage(s);
-    mxf_write_package(s, MaterialPackage);
-    mxf_write_package(s, SourcePackage);
+    mxf_write_package(s, MaterialPackage, material_package_name);
+    mxf_write_package(s, SourcePackage, file_package_name);
     mxf_write_essence_container_data(s);
     return 0;
 }
