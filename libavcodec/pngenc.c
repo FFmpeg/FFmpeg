@@ -28,6 +28,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/libm.h"
 #include "libavutil/opt.h"
+#include "libavutil/color_utils.h"
 
 #include <zlib.h>
 
@@ -277,31 +278,9 @@ static int png_get_chrm(enum AVColorPrimaries prim,  uint8_t *buf)
 
 static int png_get_gama(enum AVColorTransferCharacteristic trc, uint8_t *buf)
 {
-    double gamma;
-    switch (trc) {
-        case AVCOL_TRC_BT709:
-        case AVCOL_TRC_SMPTE170M:
-        case AVCOL_TRC_SMPTE240M:
-        case AVCOL_TRC_BT1361_ECG:
-        case AVCOL_TRC_BT2020_10:
-        case AVCOL_TRC_BT2020_12:
-            /* these share a segmented TRC, but gamma 1.961 is a close
-              approximation, and also more correct for decoding content */
-            gamma = 1.961;
-            break;
-        case AVCOL_TRC_GAMMA22:
-        case AVCOL_TRC_IEC61966_2_1:
-            gamma = 2.2;
-            break;
-        case AVCOL_TRC_GAMMA28:
-            gamma = 2.8;
-            break;
-        case AVCOL_TRC_LINEAR:
-            gamma = 1.0;
-            break;
-        default:
-            return 0;
-    }
+    double gamma = avpriv_get_gamma_from_trc(trc);
+    if (gamma <= 1e-6)
+        return 0;
 
     AV_WB32_PNG(buf, 1.0 / gamma);
     return 1;
