@@ -120,6 +120,7 @@ const char *const forced_keyframes_const_names[] = {
 static void do_video_stats(OutputStream *ost, int frame_size);
 static int64_t getutime(void);
 static int64_t getmaxrss(void);
+static int64_t gettime_relative_minus_pause(void);
 
 static int run_as_daemon  = 0;
 static int nb_frames_dup = 0;
@@ -145,6 +146,9 @@ int         nb_output_files   = 0;
 
 FilterGraph **filtergraphs;
 int        nb_filtergraphs;
+
+int64_t paused_start = 0;
+int64_t paused_time = 0;
 
 #if HAVE_TERMIOS_H
 
@@ -3268,6 +3272,14 @@ static int check_keyboard_interaction(int64_t cur_time)
         last_time = cur_time;
     }else
         key = -1;
+    // if (key == 'u' && paused_start) {
+    if (key != -1 && paused_start) { // Any valid key unpauses (backward compatibility)
+        paused_time += (av_gettime_relative() - paused_start);
+        paused_start = 0;
+    }
+    if (key == 'p' && !paused_start) {
+        paused_start = av_gettime_relative();
+    }
     if (key == 'q')
         return AVERROR_EXIT;
     if (key == '+') av_log_set_level(av_log_get_level()+10);
@@ -3346,7 +3358,9 @@ static int check_keyboard_interaction(int64_t cur_time)
                         "C      Send/Que command to all matching filters\n"
                         "D      cycle through available debug modes\n"
                         "h      dump packets/hex press to cycle through the 3 states\n"
+                        "p      pause transcoding\n"
                         "q      quit\n"
+                        "u      unpause transcoding"
                         "s      Show QP histogram\n"
         );
     }
@@ -3778,6 +3792,11 @@ static int transcode_step(void)
     InputStream  *ist;
     int ret;
 
+    if (paused_start) {
+        av_usleep(10000);
+        return 0;
+    }
+
     ost = choose_output();
     if (!ost) {
         if (got_eagain()) {
@@ -3838,7 +3857,7 @@ static int transcode(void)
 #endif
 
     while (!received_sigterm) {
-        int64_t cur_time= av_gettime_relative();
+        int64_t cur_time = av_gettime_relative();
 
         /* if 'q' pressed, exits */
         if (stdin_interaction)
@@ -3861,7 +3880,7 @@ static int transcode(void)
         }
 
         /* dump report by using the output first video and audio streams */
-        print_report(0, timer_start, cur_time);
+        print_report(0, timer_start, gettime_relative_minus_pause());
     }
 #if HAVE_PTHREADS
     free_input_threads();
@@ -3885,7 +3904,7 @@ static int transcode(void)
     }
 
     /* dump report by using the first video and audio streams */
-    print_report(1, timer_start, av_gettime_relative());
+    print_report(1, timer_start, gettime_relative_minus_pause());
 
     /* close each encoder */
     for (i = 0; i < nb_output_streams; i++) {
@@ -3934,6 +3953,11 @@ static int transcode(void)
     return ret;
 }
 
+static int64_t gettime_relative_minus_pause(void)
+{
+    return av_gettime_relative() - paused_time -
+            (paused_start ? av_gettime_relative() - paused_start : 0);
+}
 
 static int64_t getutime(void)
 {
