@@ -271,6 +271,9 @@ supported using @command{-list_formats all} for Video4Linux2 devices.
 Some usage examples of the video4linux2 devices with avconv and avplay:
 
 @example
+# List supported formats for a video4linux2 device.
+avplay -f video4linux2 -list_formats all /dev/video0
+
 # Grab and show the input of a video4linux2 device.
 avplay -f video4linux2 -framerate 30 -video_size hd720 /dev/video0
 
