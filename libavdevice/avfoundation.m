@@ -508,6 +508,16 @@ static int get_audio_config(AVFormatContext *s)
         ctx->audio_bits_per_sample == 16 &&
         ctx->audio_packed) {
         stream->codec->codec_id = ctx->audio_be ? AV_CODEC_ID_PCM_S16BE : AV_CODEC_ID_PCM_S16LE;
+    } else if (basic_desc->mFormatID == kAudioFormatLinearPCM &&
+        ctx->audio_signed_integer &&
+        ctx->audio_bits_per_sample == 24 &&
+        ctx->audio_packed) {
+        stream->codec->codec_id = ctx->audio_be ? AV_CODEC_ID_PCM_S24BE : AV_CODEC_ID_PCM_S24LE;
+    } else if (basic_desc->mFormatID == kAudioFormatLinearPCM &&
+        ctx->audio_signed_integer &&
+        ctx->audio_bits_per_sample == 32 &&
+        ctx->audio_packed) {
+        stream->codec->codec_id = ctx->audio_be ? AV_CODEC_ID_PCM_S32BE : AV_CODEC_ID_PCM_S32LE;
     } else {
         av_log(s, AV_LOG_ERROR, "audio format is not supported\n");
         return 1;
