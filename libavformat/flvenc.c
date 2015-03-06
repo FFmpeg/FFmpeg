@@ -336,6 +336,13 @@ static int unsupported_codec(AVFormatContext *s,
     return AVERROR(ENOSYS);
 }
 
+static int check_video_codec_tag(int codec_tag) {
+    if (codec_tag <= 0 || codec_tag > 15) {
+        return AVERROR(ENOSYS);
+    } else
+        return 0;
+}
+
 static int flv_write_header(AVFormatContext *s)
 {
     int i;
@@ -358,7 +365,7 @@ static int flv_write_header(AVFormatContext *s)
                 return AVERROR(EINVAL);
             }
             flv->video_enc = enc;
-            if (!ff_codec_get_tag(flv_video_codec_ids, enc->codec_id))
+            if (check_video_codec_tag(enc->codec_tag) < 0)
                 return unsupported_codec(s, "Video", enc->codec_id);
 
             if (enc->codec_id == AV_CODEC_ID_MPEG4 ||
@@ -542,7 +549,9 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
     case AVMEDIA_TYPE_VIDEO:
         avio_w8(pb, FLV_TAG_TYPE_VIDEO);
 
-        flags = ff_codec_get_tag(flv_video_codec_ids, enc->codec_id);
+        flags = enc->codec_tag;
+        if (check_video_codec_tag(flags) < 0)
+            return unsupported_codec(s, "Video", enc->codec_id);
 
         flags |= pkt->flags & AV_PKT_FLAG_KEY ? FLV_FRAME_KEY : FLV_FRAME_INTER;
         break;
