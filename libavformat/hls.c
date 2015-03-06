@@ -62,6 +62,7 @@
 enum KeyType {
     KEY_NONE,
     KEY_AES_128,
+    KEY_SAMPLE_AES
 };
 
 struct segment {
@@ -329,7 +330,7 @@ static void handle_variant_args(struct variant_info *info, const char *key,
 
 struct key_info {
      char uri[MAX_URL_SIZE];
-     char method[10];
+     char method[11];
      char iv[35];
 };
 
@@ -556,6 +557,8 @@ static int parse_playlist(HLSContext *c, const char *url,
             has_iv = 0;
             if (!strcmp(info.method, "AES-128"))
                 key_type = KEY_AES_128;
+            if (!strcmp(info.method, "SAMPLE-AES"))
+                key_type = KEY_SAMPLE_AES;
             if (!strncmp(info.iv, "0x", 2) || !strncmp(info.iv, "0X", 2)) {
                 ff_hex_to_data(iv, info.iv + 2);
                 has_iv = 1;
@@ -967,6 +970,10 @@ static int open_input(HLSContext *c, struct playlist *pls)
             goto cleanup;
         }
         ret = 0;
+    } else if (seg->key_type == KEY_SAMPLE_AES) {
+        av_log(pls->parent, AV_LOG_ERROR,
+               "SAMPLE-AES encryption is not supported yet\n");
+        ret = AVERROR_PATCHWELCOME;
     }
     else
       ret = AVERROR(ENOSYS);

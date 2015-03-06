@@ -136,7 +136,7 @@ static inline int get_duration(AVIStream *ast, int len)
 static int get_riff(AVFormatContext *s, AVIOContext *pb)
 {
     AVIContext *avi = s->priv_data;
-    char header[8];
+    char header[8] = {0};
     int i;
 
     /* check RIFF header */
@@ -308,7 +308,8 @@ static int avi_read_tag(AVFormatContext *s, AVStream *st, uint32_t tag,
     value = av_malloc(size + 1);
     if (!value)
         return AVERROR(ENOMEM);
-    avio_read(pb, value, size);
+    if (avio_read(pb, value, size) != size)
+        return AVERROR_INVALIDDATA;
     value[size] = 0;
 
     AV_WL32(key, tag);
