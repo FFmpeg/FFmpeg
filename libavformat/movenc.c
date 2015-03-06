@@ -2409,6 +2409,12 @@ static int mov_write_mfhd_tag(AVIOContext *pb, MOVMuxContext *mov)
     return 0;
 }
 
+static uint32_t get_sample_flags(MOVTrack *track, MOVIentry *entry)
+{
+    return entry->flags & MOV_SYNC_SAMPLE ? MOV_FRAG_SAMPLE_FLAG_DEPENDS_NO :
+           (MOV_FRAG_SAMPLE_FLAG_DEPENDS_YES | MOV_FRAG_SAMPLE_FLAG_IS_NON_SYNC);
+}
+
 static int mov_write_tfhd_tag(AVIOContext *pb, MOVMuxContext *mov,
                               MOVTrack *track, int64_t moof_offset)
 {
@@ -2454,20 +2460,19 @@ static int mov_write_tfhd_tag(AVIOContext *pb, MOVMuxContext *mov,
         track->default_size = -1;
 
     if (flags & MOV_TFHD_DEFAULT_FLAGS) {
-        track->default_sample_flags =
-            track->enc->codec_type == AVMEDIA_TYPE_VIDEO ?
-            (MOV_FRAG_SAMPLE_FLAG_DEPENDS_YES | MOV_FRAG_SAMPLE_FLAG_IS_NON_SYNC) :
-            MOV_FRAG_SAMPLE_FLAG_DEPENDS_NO;
+        /* Set the default flags based on the second sample, if available.
+         * If the first sample is different, that can be signaled via a separate field. */
+        if (track->entry > 1)
+            track->default_sample_flags = get_sample_flags(track, &track->cluster[1]);
+        else
+            track->default_sample_flags =
+                track->enc->codec_type == AVMEDIA_TYPE_VIDEO ?
+                (MOV_FRAG_SAMPLE_FLAG_DEPENDS_YES | MOV_FRAG_SAMPLE_FLAG_IS_NON_SYNC) :
+                MOV_FRAG_SAMPLE_FLAG_DEPENDS_NO;
         avio_wb32(pb, track->default_sample_flags);
     }
 
     return update_size(pb, pos);
-}
-
-static uint32_t get_sample_flags(MOVTrack *track, MOVIentry *entry)
-{
-    return entry->flags & MOV_SYNC_SAMPLE ? MOV_FRAG_SAMPLE_FLAG_DEPENDS_NO :
-           (MOV_FRAG_SAMPLE_FLAG_DEPENDS_YES | MOV_FRAG_SAMPLE_FLAG_IS_NON_SYNC);
 }
 
 static int mov_write_trun_tag(AVIOContext *pb, MOVMuxContext *mov,
