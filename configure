@@ -3531,7 +3531,9 @@ probe_cc(){
         _flags='-nologo'
         _cflags='-D_USE_MATH_DEFINES -D_CRT_SECURE_NO_WARNINGS -Dinline=__inline -FIstdlib.h -Dstrtoll=_strtoi64'
         if [ $pfx = hostcc ]; then
-            append _cflags -Dsnprintf=_snprintf
+            if [ -z "$cl_major_ver" ] || [ $cl_major_ver -le 18 ]; then
+                append _cflags -Dsnprintf=_snprintf
+            fi
         fi
         disable stripping
     elif $_cc --version 2>/dev/null | grep -q ^cparser; then
@@ -4318,10 +4320,12 @@ case $libc_type in
         add_compat strtod.o strtod=avpriv_strtod
         ;;
     msvcrt)
-        add_compat strtod.o strtod=avpriv_strtod
-        add_compat msvcrt/snprintf.o snprintf=avpriv_snprintf   \
-                                     _snprintf=avpriv_snprintf  \
-                                     vsnprintf=avpriv_vsnprintf
+        if [ -z "$cl_major_ver" ] || [ $cl_major_ver -le 18 ]; then
+            add_compat strtod.o strtod=avpriv_strtod
+            add_compat msvcrt/snprintf.o snprintf=avpriv_snprintf   \
+                                         _snprintf=avpriv_snprintf  \
+                                         vsnprintf=avpriv_vsnprintf
+        fi
         ;;
 esac
 
