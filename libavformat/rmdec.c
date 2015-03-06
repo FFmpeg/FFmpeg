@@ -708,7 +708,7 @@ static int rm_assemble_video_frame(AVFormatContext *s, AVIOContext *pb,
                                    int64_t *timestamp)
 {
     int hdr;
-    int seq = 0, pic_num = 0, len2 = 0, pos = 0; //init to silcense compiler warning
+    int seq = 0, pic_num = 0, len2 = 0, pos = 0; //init to silence compiler warning
     int type;
     int ret;
 

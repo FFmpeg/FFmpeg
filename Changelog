@@ -39,7 +39,7 @@ version 2.6:
 - Canopus HQX decoder
 - RTP depacketization of T.140 text (RFC 4103)
 - VP9 RTP payload format (draft 0) experimental depacketizer
-- Port MIPS opttimizations to 64-bit
+- Port MIPS optimizations to 64-bit
 
 
 version 2.5:

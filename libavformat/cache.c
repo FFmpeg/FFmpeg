@@ -145,7 +145,7 @@ static int add_entry(URLContext *h, const unsigned char *buf, int size)
 
     return 0;
 fail:
-    //we could truncate the file to pos here if pos >=0 but ftruncate isnt available in VS so
+    //we could truncate the file to pos here if pos >=0 but ftruncate isn't available in VS so
     //for simplicty we just leave the file a bit larger
     av_free(entry);
     av_free(node);
@@ -300,7 +300,7 @@ static int cache_close(URLContext *h)
 #define D AV_OPT_FLAG_DECODING_PARAM
 
 static const AVOption options[] = {
-    { "read_ahead_limit", "Amount in bytes that may be read ahead when seeking isnt supported, -1 for unlimited", OFFSET(read_ahead_limit), AV_OPT_TYPE_INT, { .i64 = 65536 }, -1, INT_MAX, D },
+    { "read_ahead_limit", "Amount in bytes that may be read ahead when seeking isn't supported, -1 for unlimited", OFFSET(read_ahead_limit), AV_OPT_TYPE_INT, { .i64 = 65536 }, -1, INT_MAX, D },
     {NULL},
 };
 
