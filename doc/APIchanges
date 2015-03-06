@@ -17,23 +17,23 @@ API changes, most recent first:
 
 -------- 8< --------- FFmpeg 2.6 was cut here -------- 8< ---------
 
-2015-03-04 - xxxxxxx - lavf 56.25.100
+2015-03-04 - cca4476 - lavf 56.25.100
   Add avformat_flush()
 
-2015-03-xx - xxxxxxx - lavf 56.24.100
+2015-03-03 - 81a9126 - lavf 56.24.100
   Add avio_put_str16be()
 
-2015-xx-xx - xxxxxxx - lavc 56.13
+2015-02-19 - 560eb71 / 31d2039 - lavc 56.23.100 / 56.13.0
   Add width, height, coded_width, coded_height and format to
   AVCodecParserContext.
 
-2015-xx-xx - xxxxxxx - lavu 54.9.0
+2015-02-19 - e375511 / 5b1d9ce - lavu 54.19.100 / 54.9.0
   Add AV_PIX_FMT_QSV for QSV hardware acceleration.
 
-2015-02-xx - xxxxxxx - lavc 56.21.102
+2015-02-14 - ba22295 - lavc 56.21.102
   Deprecate VIMA decoder.
 
-2015-01-27 - 728685f - lavc 56.12.0, lavu 54.8.0 - avcodec.h, frame.h
+2015-01-27 - 62a82c6 / 728685f - lavc 56.21.100 / 56.12.0, lavu 54.18.100 / 54.8.0 - avcodec.h, frame.h
   Add AV_PKT_DATA_AUDIO_SERVICE_TYPE and AV_FRAME_DATA_AUDIO_SERVICE_TYPE for
   storing the audio service type as side data.
 
