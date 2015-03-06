@@ -174,6 +174,7 @@ typedef struct MOVMuxContext {
 
     int use_editlist;
     int frag_interleave;
+    int missing_duration_warned;
 } MOVMuxContext;
 
 #define FF_MOV_FLAG_RTP_HINT              (1 <<  0)
