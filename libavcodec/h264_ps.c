@@ -545,19 +545,15 @@ static void build_qp_table(PPS *pps, int t, int index, const int depth)
 
 int ff_h264_decode_picture_parameter_set(H264Context *h, int bit_length)
 {
+    const SPS *sps;
     unsigned int pps_id = get_ue_golomb(&h->gb);
     PPS *pps;
-    const int qp_bd_offset = 6 * (h->sps.bit_depth_luma - 8);
+    int qp_bd_offset;
     int bits_left;
 
     if (pps_id >= MAX_PPS_COUNT) {
         av_log(h->avctx, AV_LOG_ERROR, "pps_id %u out of range\n", pps_id);
         return AVERROR_INVALIDDATA;
-    } else if (h->sps.bit_depth_luma > 10) {
-        av_log(h->avctx, AV_LOG_ERROR,
-               "Unimplemented luma bit depth=%d (max=10)\n",
-               h->sps.bit_depth_luma);
-        return AVERROR_PATCHWELCOME;
     }
 
     pps = av_mallocz(sizeof(PPS));
@@ -568,6 +564,14 @@ int ff_h264_decode_picture_parameter_set(H264Context *h, int bit_length)
         !h->sps_buffers[pps->sps_id]) {
         av_log(h->avctx, AV_LOG_ERROR, "sps_id %u out of range\n", pps->sps_id);
         goto fail;
+    }
+    sps = h->sps_buffers[pps->sps_id];
+
+    if (sps->bit_depth_luma > 10) {
+        av_log(h->avctx, AV_LOG_ERROR,
+               "Unimplemented luma bit depth=%d (max=10)\n",
+               sps->bit_depth_luma);
+        return AVERROR_PATCHWELCOME;
     }
 
     pps->cabac             = get_bits1(&h->gb);
@@ -615,6 +619,8 @@ int ff_h264_decode_picture_parameter_set(H264Context *h, int bit_length)
         goto fail;
     }
 
+    qp_bd_offset = 6 * (sps->bit_depth_luma - 8);
+
     pps->weighted_pred                        = get_bits1(&h->gb);
     pps->weighted_bipred_idc                  = get_bits(&h->gb, 2);
     pps->init_qp                              = get_se_golomb(&h->gb) + 26 + qp_bd_offset;
@@ -645,9 +651,9 @@ int ff_h264_decode_picture_parameter_set(H264Context *h, int bit_length)
     }
 
     build_qp_table(pps, 0, pps->chroma_qp_index_offset[0],
-                   h->sps.bit_depth_luma);
+                   sps->bit_depth_luma);
     build_qp_table(pps, 1, pps->chroma_qp_index_offset[1],
-                   h->sps.bit_depth_luma);
+                   sps->bit_depth_luma);
     if (pps->chroma_qp_index_offset[0] != pps->chroma_qp_index_offset[1])
         pps->chroma_qp_diff = 1;
 
