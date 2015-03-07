@@ -2041,7 +2041,7 @@ static int mxf_timestamp_to_str(uint64_t timestamp, char **str)
     if (!*str)
         return AVERROR(ENOMEM);
     if (!strftime(*str, 32, "%Y-%m-%d %H:%M:%S", &time))
-        str[0] = '\0';
+        (*str)[0] = '\0';
 
     return 0;
 }
