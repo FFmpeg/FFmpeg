@@ -278,7 +278,8 @@ static int vp9_alloc_frame(AVCodecContext *ctx, VP9Frame *f)
 
     // retain segmentation map if it doesn't update
     if (s->segmentation.enabled && !s->segmentation.update_map &&
-        !s->intraonly && !s->keyframe && !s->errorres) {
+        !s->intraonly && !s->keyframe && !s->errorres &&
+        ctx->active_thread_type != FF_THREAD_FRAME) {
         memcpy(f->segmentation_map, s->frames[LAST_FRAME].segmentation_map, sz);
     }
 
@@ -1350,9 +1351,18 @@ static void decode_mode(AVCodecContext *ctx)
 
             if (!s->last_uses_2pass)
                 ff_thread_await_progress(&s->frames[LAST_FRAME].tf, row >> 3, 0);
-            for (y = 0; y < h4; y++)
+            for (y = 0; y < h4; y++) {
+                int idx_base = (y + row) * 8 * s->sb_cols + col;
                 for (x = 0; x < w4; x++)
-                    pred = FFMIN(pred, refsegmap[(y + row) * 8 * s->sb_cols + x + col]);
+                    pred = FFMIN(pred, refsegmap[idx_base + x]);
+                if (!s->segmentation.update_map && ctx->active_thread_type == FF_THREAD_FRAME) {
+                    // FIXME maybe retain reference to previous frame as
+                    // segmap reference instead of copying the whole map
+                    // into a new buffer
+                    memcpy(&s->frames[CUR_FRAME].segmentation_map[idx_base],
+                           &refsegmap[idx_base], w4);
+                }
+            }
             av_assert1(pred < 8);
             b->seg_id = pred;
         } else {
