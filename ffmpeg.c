@@ -1451,7 +1451,6 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
         last_time = cur_time;
     }
 
-
     oc = output_files[0]->ctx;
 
     total_size = avio_size(oc->pb);
@@ -3360,7 +3359,7 @@ static int check_keyboard_interaction(int64_t cur_time)
                         "h      dump packets/hex press to cycle through the 3 states\n"
                         "p      pause transcoding\n"
                         "q      quit\n"
-                        "u      unpause transcoding"
+                        "u      unpause transcoding\n"
                         "s      Show QP histogram\n"
         );
     }
@@ -3857,11 +3856,9 @@ static int transcode(void)
 #endif
 
     while (!received_sigterm) {
-        int64_t cur_time = av_gettime_relative();
-
         /* if 'q' pressed, exits */
         if (stdin_interaction)
-            if (check_keyboard_interaction(cur_time) < 0)
+            if (check_keyboard_interaction(av_gettime_relative()) < 0)
                 break;
 
         /* check if there's any stream where output is still needed */
