@@ -298,7 +298,7 @@ FFmpeg has a @url{http://ffmpeg.org/ffmpeg-protocols.html#concat,
 @code{concat}} protocol designed specifically for that, with examples in the
 documentation.
 
-A few multimedia containers (MPEG-1, MPEG-2 PS, DV) allow to concatenate
+A few multimedia containers (MPEG-1, MPEG-2 PS, DV) allow one to concatenate
 video by merely concatenating the files containing them.
 
 Hence you may concatenate your multimedia files by first transcoding them to
