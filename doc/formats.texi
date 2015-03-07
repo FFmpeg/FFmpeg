@@ -23,7 +23,7 @@ Reduce buffering.
 
 @item probesize @var{integer} (@emph{input})
 Set probing size in bytes, i.e. the size of the data to analyze to get
-stream information. A higher value will allow to detect more
+stream information. A higher value will enable detecting more
 information in case it is dispersed into the stream, but will increase
 latency. Must be an integer not lesser than 32. It is 5000000 by default.
 
@@ -67,7 +67,7 @@ Default is 0.
 
 @item analyzeduration @var{integer} (@emph{input})
 Specify how many microseconds are analyzed to probe the input. A
-higher value will allow to detect more accurate information, but will
+higher value will enable detecting more accurate information, but will
 increase latency. It defaults to 5,000,000 microseconds = 5 seconds.
 
 @item cryptokey @var{hexadecimal string} (@emph{input})
