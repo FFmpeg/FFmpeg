@@ -161,8 +161,8 @@ void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height, int l
         break;
     case PIX_FMT_YUV411P:
     case PIX_FMT_UYYVYY411:
-        w_align=32;
-        h_align=8;
+        w_align = 32;
+        h_align = 16 * 2;
         break;
     case PIX_FMT_YUV410P:
         if(s->codec_id == CODEC_ID_SVQ1){
