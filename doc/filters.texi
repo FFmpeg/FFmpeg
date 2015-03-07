@@ -4629,6 +4629,29 @@ The coordinates of the current sample.
 The width and height of the image.
 @end table
 
+@subsection Examples
+
+@itemize
+@item
+High-pass:
+@example
+fftfilt=dc_Y=128:weight_Y='squish(1-(Y+X)/100)'
+@end example
+
+@item
+Low-pass:
+@example
+fftfilt=dc_Y=0:weight_Y='squish((Y+X)/100-1)'
+@end example
+
+@item
+Sharpen:
+@example
+fftfilt=dc_Y=0:weight_Y='1+squish(1-(Y+X)/100)'
+@end example
+
+@end itemize
+
 @section field
 
 Extract a single field from an interlaced image using stride
