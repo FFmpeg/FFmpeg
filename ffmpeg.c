@@ -3271,8 +3271,9 @@ static int check_keyboard_interaction(int64_t cur_time)
         last_time = cur_time;
     }else
         key = -1;
-    // if (key == 'u' && paused_start) {
-    if (key != -1 && paused_start) { // Any valid key unpauses (backward compatibility)
+    // Reserve 'u' for unpausing a paused transcode, but allow any key to
+    // unpause for backward compatibility
+    if ((key == 'u' || key != -1) && paused_start) {
         paused_time += (av_gettime_relative() - paused_start);
         paused_start = 0;
     }
@@ -3856,6 +3857,8 @@ static int transcode(void)
 #endif
 
     while (!received_sigterm) {
+        int64_t cur_time = gettime_relative_minus_pause();
+
         /* if 'q' pressed, exits */
         if (stdin_interaction)
             if (check_keyboard_interaction(av_gettime_relative()) < 0)
@@ -3877,7 +3880,7 @@ static int transcode(void)
         }
 
         /* dump report by using the output first video and audio streams */
-        print_report(0, timer_start, gettime_relative_minus_pause());
+        print_report(0, timer_start, cur_time);
     }
 #if HAVE_PTHREADS
     free_input_threads();
