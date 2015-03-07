@@ -452,6 +452,12 @@ static int opus_decode_packet(AVCodecContext *avctx, void *data,
     int decoded_samples = 0;
     int i, ret;
 
+    for (i = 0; i < c->nb_streams; i++) {
+        OpusStreamContext *s = &c->streams[i];
+        s->out[0] =
+        s->out[1] = NULL;
+    }
+
     /* decode the header of the first sub-packet to find out the sample count */
     if (buf) {
         OpusPacket *pkt = &c->streams[0].packet;
