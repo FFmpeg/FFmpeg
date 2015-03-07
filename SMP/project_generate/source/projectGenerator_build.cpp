@@ -157,6 +157,10 @@ void projectGenerator::buildDependencies( const string & sProjectName, StaticLis
             {
                 sLib = "libxvidcore";
             }
+            else if( vitLib->compare( "libmfx" ) == 0 )
+            {
+                vAddLibs.push_back( "libmfx" ); //Only 1 lib for debug/release
+            }
             else if( vitLib->compare("openssl") == 0 )
             {
                 //Needs ws2_32 but libavformat needs this even if not using openssl so it is already included
