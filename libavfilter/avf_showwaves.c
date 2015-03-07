@@ -50,7 +50,7 @@ typedef struct {
     int req_fullfilled;
     int n;
     int sample_count_mod;
-    enum ShowWavesMode mode;
+    int mode;                   ///< ShowWavesMode
     int split_channels;
     void (*draw_sample)(uint8_t *buf, int height, int linesize,
                         int16_t sample, int16_t *prev_y, int intensity);
