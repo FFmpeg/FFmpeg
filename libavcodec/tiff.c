@@ -236,6 +236,14 @@ static int init_image(TiffContext *s)
     int i, ret;
     uint32_t *pal;
 
+    // make sure there is no aliasing in the following switch
+    if (s->bpp >= 100 || s->bppcount >= 10) {
+        av_log(s->avctx, AV_LOG_ERROR,
+               "Unsupported image parameters: bpp=%d, bppcount=%d\n",
+               s->bpp, s->bppcount);
+        return AVERROR_INVALIDDATA;
+    }
+
     switch (s->bpp * 10 + s->bppcount) {
     case 11:
         s->avctx->pix_fmt = AV_PIX_FMT_MONOBLACK;
