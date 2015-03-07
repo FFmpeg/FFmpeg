@@ -24,8 +24,8 @@
  * assembly (rather than from within .s files).
  */
 
-#ifndef AVCODEC_MIPS_ASMDEFS_H
-#define AVCODEC_MIPS_ASMDEFS_H
+#ifndef AVUTIL_MIPS_ASMDEFS_H
+#define AVUTIL_MIPS_ASMDEFS_H
 
 #include <sgidefs.h>
 
