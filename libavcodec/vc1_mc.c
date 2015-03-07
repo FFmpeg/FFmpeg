@@ -416,10 +416,12 @@ void ff_vc1_mc_4mv_luma(VC1Context *v, int n, int dir, int avg)
     if (v->field_mode && v->ref_field_type[dir])
         srcY += s->current_picture_ptr->f->linesize[0];
 
-    if (fieldmv && !(src_y & 1))
-        v_edge_pos--;
-    if (fieldmv && (src_y & 1) && src_y < 4)
-        src_y--;
+    if (fieldmv) {
+        if (!(src_y & 1))
+            v_edge_pos--;
+        else
+            src_y -= (src_y < 4);
+    }
     if (v->rangeredfrm || use_ic
         || s->h_edge_pos < 13 || v_edge_pos < 23
         || (unsigned)(src_x - s->mspel) > s->h_edge_pos - (mx & 3) - 8 - s->mspel * 2
@@ -722,11 +724,12 @@ void ff_vc1_mc_4mv_chroma4(VC1Context *v, int dir, int dir2, int avg)
         uvmx_field[i] = (uvmx_field[i] & 3) << 1;
         uvmy_field[i] = (uvmy_field[i] & 3) << 1;
 
-        if (fieldmv && !(uvsrc_y & 1))
-            v_edge_pos = (s->v_edge_pos >> 1) - 1;
-
-        if (fieldmv && (uvsrc_y & 1) && uvsrc_y < 2)
-            uvsrc_y--;
+        if (fieldmv) {
+            if (!(uvsrc_y & 1))
+                v_edge_pos = (s->v_edge_pos >> 1) - 1;
+            else
+                uvsrc_y -= (uvsrc_y < 2);
+        }
         if (use_ic
             || s->h_edge_pos < 10 || v_edge_pos < (5 << fieldmv)
             || (unsigned)uvsrc_x > (s->h_edge_pos >> 1) - 5
