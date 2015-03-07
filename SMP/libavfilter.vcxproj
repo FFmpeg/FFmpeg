@@ -255,6 +255,8 @@
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_fade.c">
     </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_fftfilt.c">
+    </ClCompile>
     <ClCompile Include="..\libavfilter\vf_field.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_fieldmatch.c">

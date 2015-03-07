@@ -329,6 +329,9 @@
     <ClCompile Include="..\libavfilter\vf_fade.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_fftfilt.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\vf_field.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
