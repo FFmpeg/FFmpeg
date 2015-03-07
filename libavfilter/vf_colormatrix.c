@@ -68,7 +68,7 @@ typedef struct {
     const AVClass *class;
     int yuv_convert[16][3][3];
     int interlaced;
-    enum ColorMode source, dest;
+    int source, dest;        ///< ColorMode
     int mode;
     int hsub, vsub;
 } ColorMatrixContext;
