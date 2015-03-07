@@ -95,6 +95,7 @@ typedef struct
     int             width, height;
 
     int             capture_cursor;
+    int             capture_mouse_clicks;
 
     int             list_devices;
     int             video_device_index;
@@ -742,6 +743,12 @@ static int avf_read_header(AVFormatContext *s)
             }
 #endif
 
+            if (ctx->capture_mouse_clicks) {
+                capture_screen_input.capturesMouseClicks = YES;
+            } else {
+                capture_screen_input.capturesMouseClicks = NO;
+            }
+
             video_device = (AVCaptureDevice*) capture_screen_input;
             capture_screen = 1;
 #endif
@@ -785,6 +792,12 @@ static int avf_read_header(AVFormatContext *s)
                     capture_screen_input.capturesCursor = NO;
                 }
 #endif
+
+                if (ctx->capture_mouse_clicks) {
+                    capture_screen_input.capturesMouseClicks = YES;
+                } else {
+                    capture_screen_input.capturesMouseClicks = NO;
+                }
             }
         }
 #endif
@@ -1002,6 +1015,8 @@ static const AVOption options[] = {
     { "framerate", "set frame rate", offsetof(AVFContext, framerate), AV_OPT_TYPE_VIDEO_RATE, {.str = "ntsc"}, 0, 0, AV_OPT_FLAG_DECODING_PARAM },
     { "video_size", "set video size", offsetof(AVFContext, width), AV_OPT_TYPE_IMAGE_SIZE, {.str = NULL}, 0, 0, AV_OPT_FLAG_DECODING_PARAM },
     { "capture_cursor", "capture the screen cursor", offsetof(AVFContext, capture_cursor), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, AV_OPT_FLAG_DECODING_PARAM },
+    { "capture_mouse_clicks", "capture the screen mouse clicks", offsetof(AVFContext, capture_mouse_clicks), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, AV_OPT_FLAG_DECODING_PARAM },
+
     { NULL },
 };
 
