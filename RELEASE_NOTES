@@ -21,32 +21,31 @@
    10-bit support in spp, but maybe it's more important to mention the addition
    of colorlevels (yet another color handling filter), tblend (allowing you
    to for example run a diff between successive frames of a video stream), or
-   eventually the dcshift audio filter.
+   the dcshift audio filter.
 
-   There is also two other important filters landing in libavfilter: palettegen
-   and paletteuse, submitted by the Stupeflix company. These filters will be
-   very useful in case you are looking for creating high quality GIF, a format
-   that still bravely fights annihilation in 2015.
+   There are also two other important filters landing in libavfilter: palettegen
+   and paletteuse. Both submitted by the Stupeflix company. These filters will
+   be very useful in case you are looking for creating high quality GIFs, a
+   format that still bravely fights annihilation in 2015.
 
-   There are many other features, but let's follow-up on one big cleanup
+   There are many other new features, but let's follow-up on one big cleanup
    achievement: the libmpcodecs (MPlayer filters) wrapper is finally dead. The
    last remaining filters (softpulldown/repeatfields, eq*, and various
    postprocessing filters) were ported by Arwa Arif (OPW student) and Paul B
    Mahol.
 
-   Concerning API changes, not much things to mention. Though, the introduction
-   of devices inputs and outputs listing by Lukasz Marek is a notable addition
-   (try ffmpeg -sources or ffmpeg -sinks for an example of the usage). As
-   usual, see doc/APIchanges for more information.
+   Concerning API changes, there are not many things to mention. Though, the
+   introduction of device inputs and outputs listing by Lukasz Marek is a
+   notable addition (try ffmpeg -sources or ffmpeg -sinks for an example of
+   the usage). As usual, see doc/APIchanges for more information.
 
    Now let's talk about optimizations. Ronald S. Bultje made the VP9 decoder
    usable on x86 32-bit systems and pre-ssse3 CPUs like Phenom (even dual core
    Athlons can play 1080p 30fps VP9 content now), so we now secretly hope for
-   Google and Mozilla to use ffvp9 instead of libvpx.
-
-   But VP9 is not the center of attention anymore, and HEVC/H.265 is also
-   getting many improvements, which includes optimizations, both in C and x86
-   ASM, mainly from James Almer, Christophe Gisquet and Pierre-Edouard Lepere.
+   Google and Mozilla to use ffvp9 instead of libvpx. But VP9 is not the
+   center of attention anymore, and HEVC/H.265 is also getting many
+   improvements, which include C and x86 ASM optimizations, mainly from James
+   Almer, Christophe Gisquet and Pierre-Edouard Lepere.
 
    Even though we had many x86 contributions, it is not the only architecture
    getting some love, with Seppo Tomperi adding ARM NEON optimizations to the
@@ -61,6 +60,6 @@
    complete Git history on http://source.ffmpeg.org.
 
    We hope you will like this release as much as we enjoyed working on it, and
-   as usual, if you have any question about it, or any FFmpeg related topic,
+   as usual, if you have any questions about it, or any FFmpeg related topic,
    feel free to join us on the #ffmpeg IRC channel (on irc.freenode.net) or ask
    on the mailing-lists.
