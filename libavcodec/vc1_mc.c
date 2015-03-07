@@ -679,7 +679,7 @@ void ff_vc1_mc_4mv_chroma4(VC1Context *v, int dir, int dir2, int avg)
     int uvmx_field[4], uvmy_field[4];
     int i, off, tx, ty;
     int fieldmv = v->blk_mv_type[s->block_index[0]];
-    static const int s_rndtblfield[16] = { 0, 0, 1, 2, 4, 4, 5, 6, 2, 2, 3, 8, 6, 6, 7, 12 };
+    static const uint8_t s_rndtblfield[16] = { 0, 0, 1, 2, 4, 4, 5, 6, 2, 2, 3, 8, 6, 6, 7, 12 };
     int v_dist = fieldmv ? 1 : 4; // vertical offset for lower sub-blocks
     int v_edge_pos = s->v_edge_pos >> 1;
     int use_ic;
