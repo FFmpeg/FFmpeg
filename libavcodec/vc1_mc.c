@@ -778,7 +778,6 @@ void ff_vc1_interp_mc(VC1Context *v)
     H264ChromaContext *h264chroma = &v->h264chroma;
     uint8_t *srcY, *srcU, *srcV;
     int dxy, mx, my, uvmx, uvmy, src_x, src_y, uvsrc_x, uvsrc_y;
-    int off, off_uv;
     int v_edge_pos = s->v_edge_pos >> v->field_mode;
     int use_ic = v->next_use_ic;
 
@@ -881,19 +880,16 @@ void ff_vc1_interp_mc(VC1Context *v)
         srcY += s->mspel * (1 + s->linesize);
     }
 
-    off    = 0;
-    off_uv = 0;
-
     if (s->mspel) {
         dxy = ((my & 3) << 2) | (mx & 3);
-        v->vc1dsp.avg_vc1_mspel_pixels_tab[0][dxy](s->dest[0] + off    , srcY    , s->linesize, v->rnd);
+        v->vc1dsp.avg_vc1_mspel_pixels_tab[0][dxy](s->dest[0], srcY, s->linesize, v->rnd);
     } else { // hpel mc
         dxy = (my & 2) | ((mx & 2) >> 1);
 
         if (!v->rnd)
-            s->hdsp.avg_pixels_tab[0][dxy](s->dest[0] + off, srcY, s->linesize, 16);
+            s->hdsp.avg_pixels_tab[0][dxy](s->dest[0], srcY, s->linesize, 16);
         else
-            s->hdsp.avg_no_rnd_pixels_tab[dxy](s->dest[0] + off, srcY, s->linesize, 16);
+            s->hdsp.avg_no_rnd_pixels_tab[dxy](s->dest[0], srcY, s->linesize, 16);
     }
 
     if (s->flags & CODEC_FLAG_GRAY) return;
@@ -901,10 +897,10 @@ void ff_vc1_interp_mc(VC1Context *v)
     uvmx = (uvmx & 3) << 1;
     uvmy = (uvmy & 3) << 1;
     if (!v->rnd) {
-        h264chroma->avg_h264_chroma_pixels_tab[0](s->dest[1] + off_uv, srcU, s->uvlinesize, 8, uvmx, uvmy);
-        h264chroma->avg_h264_chroma_pixels_tab[0](s->dest[2] + off_uv, srcV, s->uvlinesize, 8, uvmx, uvmy);
+        h264chroma->avg_h264_chroma_pixels_tab[0](s->dest[1], srcU, s->uvlinesize, 8, uvmx, uvmy);
+        h264chroma->avg_h264_chroma_pixels_tab[0](s->dest[2], srcV, s->uvlinesize, 8, uvmx, uvmy);
     } else {
-        v->vc1dsp.avg_no_rnd_vc1_chroma_pixels_tab[0](s->dest[1] + off_uv, srcU, s->uvlinesize, 8, uvmx, uvmy);
-        v->vc1dsp.avg_no_rnd_vc1_chroma_pixels_tab[0](s->dest[2] + off_uv, srcV, s->uvlinesize, 8, uvmx, uvmy);
+        v->vc1dsp.avg_no_rnd_vc1_chroma_pixels_tab[0](s->dest[1], srcU, s->uvlinesize, 8, uvmx, uvmy);
+        v->vc1dsp.avg_no_rnd_vc1_chroma_pixels_tab[0](s->dest[2], srcV, s->uvlinesize, 8, uvmx, uvmy);
     }
 }
