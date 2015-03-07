@@ -71,7 +71,7 @@ the HTTP server (configured through the @option{HTTPPort} option), and
 configuration file.
 
 Each feed is associated to a file which is stored on disk. This stored
-file is used to allow to send pre-recorded data to a player as fast as
+file is used to send pre-recorded data to a player as fast as
 possible when new content is added in real-time to the stream.
 
 A "live-stream" or "stream" is a resource published by

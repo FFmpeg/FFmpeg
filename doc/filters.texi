@@ -3389,7 +3389,7 @@ Set number overlapping pixels for each block. Since the filter can be slow, you
 may want to reduce this value, at the cost of a less effective filter and the
 risk of various artefacts.
 
-If the overlapping value doesn't allow to process the whole input width or
+If the overlapping value doesn't permit processing the whole input width or
 height, a warning will be displayed and according borders won't be denoised.
 
 Default value is @var{blocksize}-1, which is the best possible setting.
