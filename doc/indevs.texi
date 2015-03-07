@@ -1,7 +1,7 @@
 @chapter Input Devices
 @c man begin INPUT DEVICES
 
-Input devices are configured elements in FFmpeg which allow to access
+Input devices are configured elements in FFmpeg which enable accessing
 the data coming from a multimedia device attached to your system.
 
 When you configure your FFmpeg build, all the supported input devices
