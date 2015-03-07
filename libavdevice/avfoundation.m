@@ -33,6 +33,7 @@
 #include "libavutil/avstring.h"
 #include "libavformat/internal.h"
 #include "libavutil/internal.h"
+#include "libavutil/parseutils.h"
 #include "libavutil/time.h"
 #include "avdevice.h"
 
@@ -89,6 +90,9 @@ typedef struct
     pthread_cond_t  frame_wait_cond;
     id              avf_delegate;
     id              avf_audio_delegate;
+
+    AVRational      framerate;
+    int             width, height;
 
     int             list_devices;
     int             video_device_index;
@@ -263,9 +267,103 @@ static void parse_device_name(AVFormatContext *s)
     }
 }
 
+/**
+ * Configure the video device.
+ *
+ * Configure the video device using a run-time approach to access properties
+ * since formats, activeFormat are available since  iOS >= 7.0 or OSX >= 10.7
+ * and activeVideoMaxFrameDuration is available since i0S >= 7.0 and OSX >= 10.9.
+ *
+ * The NSUndefinedKeyException must be handled by the caller of this function.
+ *
+ */
+static int configure_video_device(AVFormatContext *s, AVCaptureDevice *video_device)
+{
+    AVFContext *ctx = (AVFContext*)s->priv_data;
+
+    double framerate = av_q2d(ctx->framerate);
+    NSObject *range = nil;
+    NSObject *format = nil;
+    NSObject *selected_range = nil;
+    NSObject *selected_format = nil;
+
+    for (format in [video_device valueForKey:@"formats"]) {
+        CMFormatDescriptionRef formatDescription;
+        CMVideoDimensions dimensions;
+
+        formatDescription = (CMFormatDescriptionRef) [format performSelector:@selector(formatDescription)];
+        dimensions = CMVideoFormatDescriptionGetDimensions(formatDescription);
+
+        if ((ctx->width == 0 && ctx->height == 0) ||
+            (dimensions.width == ctx->width && dimensions.height == ctx->height)) {
+
+            selected_format = format;
+
+            for (range in [format valueForKey:@"videoSupportedFrameRateRanges"]) {
+                double max_framerate;
+
+                [[range valueForKey:@"maxFrameRate"] getValue:&max_framerate];
+                if (fabs (framerate - max_framerate) < 0.01) {
+                    selected_range = range;
+                    break;
+                }
+            }
+        }
+    }
+
+    if (!selected_format) {
+        av_log(s, AV_LOG_ERROR, "Selected video size (%dx%d) is not supported by the device\n",
+            ctx->width, ctx->height);
+        goto unsupported_format;
+    }
+
+    if (!selected_range) {
+        av_log(s, AV_LOG_ERROR, "Selected framerate (%f) is not supported by the device\n",
+            framerate);
+        goto unsupported_format;
+    }
+
+    if ([video_device lockForConfiguration:NULL] == YES) {
+        NSValue *min_frame_duration = [selected_range valueForKey:@"minFrameDuration"];
+
+        [video_device setValue:selected_format forKey:@"activeFormat"];
+        [video_device setValue:min_frame_duration forKey:@"activeVideoMinFrameDuration"];
+        [video_device setValue:min_frame_duration forKey:@"activeVideoMaxFrameDuration"];
+    } else {
+        av_log(s, AV_LOG_ERROR, "Could not lock device for configuration");
+        return AVERROR(EINVAL);
+    }
+
+    return 0;
+
+unsupported_format:
+
+    av_log(s, AV_LOG_ERROR, "Supported modes:\n");
+    for (format in [video_device valueForKey:@"formats"]) {
+        CMFormatDescriptionRef formatDescription;
+        CMVideoDimensions dimensions;
+
+        formatDescription = (CMFormatDescriptionRef) [format performSelector:@selector(formatDescription)];
+        dimensions = CMVideoFormatDescriptionGetDimensions(formatDescription);
+
+        for (range in [format valueForKey:@"videoSupportedFrameRateRanges"]) {
+            double min_framerate;
+            double max_framerate;
+
+            [[range valueForKey:@"minFrameRate"] getValue:&min_framerate];
+            [[range valueForKey:@"maxFrameRate"] getValue:&max_framerate];
+            av_log(s, AV_LOG_ERROR, "  %dx%d@[%f %f]fps\n",
+                dimensions.width, dimensions.height,
+                min_framerate, max_framerate);
+        }
+    }
+    return AVERROR(EINVAL);
+}
+
 static int add_video_device(AVFormatContext *s, AVCaptureDevice *video_device)
 {
     AVFContext *ctx = (AVFContext*)s->priv_data;
+    int ret;
     NSError *error  = nil;
     AVCaptureInput* capture_input = nil;
     struct AVFPixelFormatSpec pxl_fmt_spec;
@@ -298,6 +396,18 @@ static int add_video_device(AVFormatContext *s, AVCaptureDevice *video_device)
     if (!ctx->video_output) {
         av_log(s, AV_LOG_ERROR, "Failed to init AV video output\n");
         return 1;
+    }
+
+    // Configure device framerate and video size
+    @try {
+        if ((ret = configure_video_device(s, video_device)) < 0) {
+            return ret;
+        }
+    } @catch (NSException *exception) {
+        if (![[exception name] isEqualToString:NSUndefinedKeyException]) {
+          av_log (s, AV_LOG_ERROR, "An error occured: %s", [exception.reason UTF8String]);
+          return AVERROR_EXTERNAL;
+        }
     }
 
     // select pixel format
@@ -549,6 +659,7 @@ static int get_audio_config(AVFormatContext *s)
 static int avf_read_header(AVFormatContext *s)
 {
     NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+    int capture_screen      = 0;
     uint32_t num_screens    = 0;
     AVFContext *ctx         = (AVFContext*)s->priv_data;
     AVCaptureDevice *video_device = nil;
@@ -616,7 +727,13 @@ static int avf_read_header(AVFormatContext *s)
             CGDirectDisplayID screens[num_screens];
             CGGetActiveDisplayList(num_screens, screens, &num_screens);
             AVCaptureScreenInput* capture_screen_input = [[[AVCaptureScreenInput alloc] initWithDisplayID:screens[ctx->video_device_index - ctx->num_video_devices]] autorelease];
+
+            if (ctx->framerate.num > 0) {
+                capture_screen_input.minFrameDuration = CMTimeMake(ctx->framerate.den, ctx->framerate.num);
+            }
+
             video_device = (AVCaptureDevice*) capture_screen_input;
+            capture_screen = 1;
 #endif
          } else {
             av_log(ctx, AV_LOG_ERROR, "Invalid device index\n");
@@ -645,6 +762,11 @@ static int avf_read_header(AVFormatContext *s)
                 AVCaptureScreenInput* capture_screen_input = [[[AVCaptureScreenInput alloc] initWithDisplayID:screens[idx]] autorelease];
                 video_device = (AVCaptureDevice*) capture_screen_input;
                 ctx->video_device_index = ctx->num_video_devices + idx;
+                capture_screen = 1;
+
+                if (ctx->framerate.num > 0) {
+                    capture_screen_input.minFrameDuration = CMTimeMake(ctx->framerate.den, ctx->framerate.num);
+                }
             }
         }
 #endif
@@ -714,6 +836,12 @@ static int avf_read_header(AVFormatContext *s)
     }
 
     [ctx->capture_session startRunning];
+
+    /* Unlock device configuration only after the session is started so it
+     * does not reset the capture formats */
+    if (!capture_screen) {
+        [video_device unlockForConfiguration];
+    }
 
     if (video_device && get_video_config(s)) {
         goto fail;
@@ -853,6 +981,8 @@ static const AVOption options[] = {
     { "video_device_index", "select video device by index for devices with same name (starts at 0)", offsetof(AVFContext, video_device_index), AV_OPT_TYPE_INT, {.i64 = -1}, -1, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
     { "audio_device_index", "select audio device by index for devices with same name (starts at 0)", offsetof(AVFContext, audio_device_index), AV_OPT_TYPE_INT, {.i64 = -1}, -1, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
     { "pixel_format", "set pixel format", offsetof(AVFContext, pixel_format), AV_OPT_TYPE_PIXEL_FMT, {.i64 = AV_PIX_FMT_YUV420P}, 0, INT_MAX, AV_OPT_FLAG_DECODING_PARAM},
+    { "framerate", "set frame rate", offsetof(AVFContext, framerate), AV_OPT_TYPE_VIDEO_RATE, {.str = "ntsc"}, 0, 0, AV_OPT_FLAG_DECODING_PARAM },
+    { "video_size", "set video size", offsetof(AVFContext, width), AV_OPT_TYPE_IMAGE_SIZE, {.str = NULL}, 0, 0, AV_OPT_FLAG_DECODING_PARAM },
     { NULL },
 };
 
