@@ -905,6 +905,12 @@ Some usage examples of the video4linux2 device with @command{ffmpeg}
 and @command{ffplay}:
 @itemize
 @item
+List supported formats for a video4linux2 device:
+@example
+ffplay -f video4linux2 -list_formats all /dev/video0
+@end example
+
+@item
 Grab and show the input of a video4linux2 device:
 @example
 ffplay -f video4linux2 -framerate 30 -video_size hd720 /dev/video0
