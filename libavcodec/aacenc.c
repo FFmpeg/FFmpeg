@@ -53,6 +53,11 @@
         return AVERROR(EINVAL); \
     }
 
+#define WARN_IF(cond, ...) \
+    if (cond) { \
+        av_log(avctx, AV_LOG_WARNING, __VA_ARGS__); \
+    }
+
 float ff_aac_pow34sf_tab[428];
 
 static const uint8_t swb_size_1024_96[] = {
@@ -102,7 +107,8 @@ static const uint8_t *swb_size_1024[] = {
     swb_size_1024_96, swb_size_1024_96, swb_size_1024_64,
     swb_size_1024_48, swb_size_1024_48, swb_size_1024_32,
     swb_size_1024_24, swb_size_1024_24, swb_size_1024_16,
-    swb_size_1024_16, swb_size_1024_16, swb_size_1024_8
+    swb_size_1024_16, swb_size_1024_16, swb_size_1024_8,
+    swb_size_1024_8
 };
 
 static const uint8_t swb_size_128_96[] = {
@@ -131,7 +137,8 @@ static const uint8_t *swb_size_128[] = {
     swb_size_128_96, swb_size_128_96, swb_size_128_96,
     swb_size_128_48, swb_size_128_48, swb_size_128_48,
     swb_size_128_24, swb_size_128_24, swb_size_128_16,
-    swb_size_128_16, swb_size_128_16, swb_size_128_8
+    swb_size_128_16, swb_size_128_16, swb_size_128_8,
+    swb_size_128_8
 };
 
 /** default channel configurations */
@@ -754,14 +761,20 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
 
     s->channels = avctx->channels;
 
-    ERROR_IF(i >= 12,
+    ERROR_IF(i == 16
+                || i >= (sizeof(swb_size_1024) / sizeof(*swb_size_1024))
+                || i >= (sizeof(swb_size_128) / sizeof(*swb_size_128)),
              "Unsupported sample rate %d\n", avctx->sample_rate);
     ERROR_IF(s->channels > AAC_MAX_CHANNELS,
              "Unsupported number of channels: %d\n", s->channels);
     ERROR_IF(avctx->profile != FF_PROFILE_UNKNOWN && avctx->profile != FF_PROFILE_AAC_LOW,
              "Unsupported profile %d\n", avctx->profile);
-    ERROR_IF(1024.0 * avctx->bit_rate / avctx->sample_rate > 6144 * s->channels,
-             "Too many bits per frame requested\n");
+    WARN_IF(1024.0 * avctx->bit_rate / avctx->sample_rate > 6144 * s->channels,
+             "Too many bits per frame requested, clamping to max\n");
+
+    avctx->bit_rate = (int)FFMIN(
+        6144 * s->channels / 1024.0 * avctx->sample_rate,
+        avctx->bit_rate);
 
     s->samplerate_index = i;
 

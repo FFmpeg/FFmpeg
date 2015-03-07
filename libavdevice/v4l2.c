@@ -747,7 +747,7 @@ static int v4l2_set_parameters(AVFormatContext *ctx)
             }
         } else {
             av_log(ctx, AV_LOG_WARNING,
-                   "The driver does not allow to change time per frame\n");
+                   "The driver does not permit changing the time per frame\n");
         }
     }
     if (tpf->denominator > 0 && tpf->numerator > 0) {

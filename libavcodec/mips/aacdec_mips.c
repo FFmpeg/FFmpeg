@@ -56,6 +56,7 @@
 #include "aacdec_mips.h"
 #include "libavcodec/aactab.h"
 #include "libavcodec/sinewin.h"
+#include "libavutil/mips/asmdefs.h"
 
 #if HAVE_INLINE_ASM
 static av_always_inline void float_copy(float *dst, const float *src, int count)
@@ -80,7 +81,7 @@ static av_always_inline void float_copy(float *dst, const float *src, int count)
         "lw      %[temp5],    20(%[src])         \n\t"
         "lw      %[temp6],    24(%[src])         \n\t"
         "lw      %[temp7],    28(%[src])         \n\t"
-        "addiu   %[src],      %[src],      32    \n\t"
+        PTR_ADDIU "%[src],    %[src],      32    \n\t"
         "sw      %[temp0],    0(%[dst])          \n\t"
         "sw      %[temp1],    4(%[dst])          \n\t"
         "sw      %[temp2],    8(%[dst])          \n\t"
@@ -90,7 +91,7 @@ static av_always_inline void float_copy(float *dst, const float *src, int count)
         "sw      %[temp6],    24(%[dst])         \n\t"
         "sw      %[temp7],    28(%[dst])         \n\t"
         "bne     %[src],      %[loop_end], 1b    \n\t"
-        "addiu   %[dst],      %[dst],      32    \n\t"
+        PTR_ADDIU "%[dst],    %[dst],      32    \n\t"
         ".set pop                                \n\t"
 
         : [temp0]"=&r"(temp[0]), [temp1]"=&r"(temp[1]),
@@ -250,7 +251,7 @@ static void apply_ltp_mips(AACContext *ac, SingleChannelElement *sce)
                 "sw      $0,              4(%[p_predTime])        \n\t"
                 "sw      $0,              8(%[p_predTime])        \n\t"
                 "sw      $0,              12(%[p_predTime])       \n\t"
-                "addiu   %[p_predTime],   %[p_predTime],     16   \n\t"
+                PTR_ADDIU "%[p_predTime], %[p_predTime],     16   \n\t"
 
                 : [p_predTime]"+r"(p_predTime)
                 :
@@ -261,7 +262,7 @@ static void apply_ltp_mips(AACContext *ac, SingleChannelElement *sce)
 
             __asm__ volatile (
                 "sw      $0,              0(%[p_predTime])        \n\t"
-                "addiu   %[p_predTime],   %[p_predTime],     4    \n\t"
+                PTR_ADDIU "%[p_predTime], %[p_predTime],     4    \n\t"
 
                 : [p_predTime]"+r"(p_predTime)
                 :
@@ -315,9 +316,9 @@ static av_always_inline void fmul_and_reverse(float *dst, const float *src0, con
             "swc1    %[temp9],    4(%[ptr1])                \n\t"
             "swc1    %[temp10],   8(%[ptr1])                \n\t"
             "swc1    %[temp11],   12(%[ptr1])               \n\t"
-            "addiu   %[ptr1],     %[ptr1],      16          \n\t"
-            "addiu   %[ptr2],     %[ptr2],      -16         \n\t"
-            "addiu   %[ptr3],     %[ptr3],      -16         \n\t"
+            PTR_ADDIU "%[ptr1],   %[ptr1],      16          \n\t"
+            PTR_ADDIU "%[ptr2],   %[ptr2],      -16         \n\t"
+            PTR_ADDIU "%[ptr3],   %[ptr3],      -16         \n\t"
 
             : [temp0]"=&f"(temp[0]), [temp1]"=&f"(temp[1]),
               [temp2]"=&f"(temp[2]), [temp3]"=&f"(temp[3]),
@@ -358,7 +359,7 @@ static void update_ltp_mips(AACContext *ac, SingleChannelElement *sce)
             "sw     $0,              20(%[p_saved_ltp])       \n\t"
             "sw     $0,              24(%[p_saved_ltp])       \n\t"
             "sw     $0,              28(%[p_saved_ltp])       \n\t"
-            "addiu  %[p_saved_ltp],  %[p_saved_ltp],     32   \n\t"
+            PTR_ADDIU "%[p_saved_ltp],%[p_saved_ltp],    32   \n\t"
             "bne    %[p_saved_ltp],  %[loop_end1],       1b   \n\t"
 
             : [p_saved_ltp]"+r"(p_saved_ltp)
@@ -386,7 +387,7 @@ static void update_ltp_mips(AACContext *ac, SingleChannelElement *sce)
             "lw      %[temp5],    20(%[src])            \n\t"
             "lw      %[temp6],    24(%[src])            \n\t"
             "lw      %[temp7],    28(%[src])            \n\t"
-            "addiu   %[src],      %[src],         32    \n\t"
+            PTR_ADDIU "%[src],    %[src],         32    \n\t"
             "sw      %[temp0],    0(%[dst])             \n\t"
             "sw      %[temp1],    4(%[dst])             \n\t"
             "sw      %[temp2],    8(%[dst])             \n\t"
@@ -404,7 +405,7 @@ static void update_ltp_mips(AACContext *ac, SingleChannelElement *sce)
             "sw      $0,          2328(%[dst])          \n\t"
             "sw      $0,          2332(%[dst])          \n\t"
             "bne     %[src],      %[loop_end],    1b    \n\t"
-            " addiu  %[dst],      %[dst],         32    \n\t"
+            PTR_ADDIU "%[dst],    %[dst],         32    \n\t"
             ".set pop                                   \n\t"
 
             : [temp0]"=&r"(temp0), [temp1]"=&r"(temp1),

@@ -50,9 +50,9 @@
 #include "config.h"
 #include "libavcodec/avcodec.h"
 #include "libavcodec/fmtconvert.h"
+#include "libavutil/mips/asmdefs.h"
 
 #if HAVE_INLINE_ASM
-
 static void int32_to_float_fmul_scalar_mips(float *dst, const int *src,
         float mul, int len)
 {
@@ -86,7 +86,7 @@ static void int32_to_float_fmul_scalar_mips(float *dst, const int *src,
         "mtc1     %[rpom12],     %[temp13]              \n\t"
         "mtc1     %[rpom22],     %[temp15]              \n\t"
 
-        "addiu    %[src],        32                     \n\t"
+        PTR_ADDIU "%[src],       32                     \n\t"
         "cvt.s.w  %[temp1],      %[temp1]               \n\t"
         "cvt.s.w  %[temp3],      %[temp3]               \n\t"
         "cvt.s.w  %[temp5],      %[temp5]               \n\t"
@@ -116,7 +116,7 @@ static void int32_to_float_fmul_scalar_mips(float *dst, const int *src,
         "swc1    %[temp11],      20(%[dst])             \n\t" /*dst[i+5] = src[i+5] * mul;*/
         "swc1    %[temp13],      24(%[dst])             \n\t" /*dst[i+6] = src[i+6] * mul;*/
         "swc1    %[temp15],      28(%[dst])             \n\t" /*dst[i+7] = src[i+7] * mul;*/
-        "addiu   %[dst],        32                      \n\t"
+        PTR_ADDIU "%[dst],       32                     \n\t"
         "bne     %[src],        %[src_end], i32tf_lp%=  \n\t"
         : [temp1]"=&f"(temp1),   [temp11]"=&f"(temp11),
           [temp13]"=&f"(temp13), [temp15]"=&f"(temp15),
