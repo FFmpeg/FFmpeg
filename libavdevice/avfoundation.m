@@ -94,6 +94,8 @@ typedef struct
     AVRational      framerate;
     int             width, height;
 
+    int             capture_cursor;
+
     int             list_devices;
     int             video_device_index;
     int             video_stream_index;
@@ -732,6 +734,14 @@ static int avf_read_header(AVFormatContext *s)
                 capture_screen_input.minFrameDuration = CMTimeMake(ctx->framerate.den, ctx->framerate.num);
             }
 
+#if !TARGET_OS_IPHONE && __MAC_OS_X_VERSION_MIN_REQUIRED >= 1080
+            if (ctx->capture_cursor) {
+                capture_screen_input.capturesCursor = YES;
+            } else {
+                capture_screen_input.capturesCursor = NO;
+            }
+#endif
+
             video_device = (AVCaptureDevice*) capture_screen_input;
             capture_screen = 1;
 #endif
@@ -767,6 +777,14 @@ static int avf_read_header(AVFormatContext *s)
                 if (ctx->framerate.num > 0) {
                     capture_screen_input.minFrameDuration = CMTimeMake(ctx->framerate.den, ctx->framerate.num);
                 }
+
+#if !TARGET_OS_IPHONE && __MAC_OS_X_VERSION_MIN_REQUIRED >= 1080
+                if (ctx->capture_cursor) {
+                    capture_screen_input.capturesCursor = YES;
+                } else {
+                    capture_screen_input.capturesCursor = NO;
+                }
+#endif
             }
         }
 #endif
@@ -983,6 +1001,7 @@ static const AVOption options[] = {
     { "pixel_format", "set pixel format", offsetof(AVFContext, pixel_format), AV_OPT_TYPE_PIXEL_FMT, {.i64 = AV_PIX_FMT_YUV420P}, 0, INT_MAX, AV_OPT_FLAG_DECODING_PARAM},
     { "framerate", "set frame rate", offsetof(AVFContext, framerate), AV_OPT_TYPE_VIDEO_RATE, {.str = "ntsc"}, 0, 0, AV_OPT_FLAG_DECODING_PARAM },
     { "video_size", "set video size", offsetof(AVFContext, width), AV_OPT_TYPE_IMAGE_SIZE, {.str = NULL}, 0, 0, AV_OPT_FLAG_DECODING_PARAM },
+    { "capture_cursor", "capture the screen cursor", offsetof(AVFContext, capture_cursor), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, AV_OPT_FLAG_DECODING_PARAM },
     { NULL },
 };
 
