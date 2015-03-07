@@ -451,11 +451,13 @@ static int opus_decode_packet(AVCodecContext *avctx, void *data,
     int coded_samples   = 0;
     int decoded_samples = 0;
     int i, ret;
+    int delayed_samples = 0;
 
     for (i = 0; i < c->nb_streams; i++) {
         OpusStreamContext *s = &c->streams[i];
         s->out[0] =
         s->out[1] = NULL;
+        delayed_samples = FFMAX(delayed_samples, s->delayed_samples);
     }
 
     /* decode the header of the first sub-packet to find out the sample count */
@@ -470,7 +472,7 @@ static int opus_decode_packet(AVCodecContext *avctx, void *data,
         c->streams[0].silk_samplerate = get_silk_samplerate(pkt->config);
     }
 
-    frame->nb_samples = coded_samples + c->streams[0].delayed_samples;
+    frame->nb_samples = coded_samples + delayed_samples;
 
     /* no input or buffered data => nothing to do */
     if (!frame->nb_samples) {
