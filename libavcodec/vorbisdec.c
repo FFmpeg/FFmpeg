@@ -1325,14 +1325,15 @@ static av_always_inline int setup_classifs(vorbis_context *vc,
                                            int ptns_to_read
                                           )
 {
+    vorbis_codebook *codebook = vc->codebooks + vr->classbook;
     int p, j, i;
-    unsigned c_p_c         = vc->codebooks[vr->classbook].dimensions;
+    unsigned c_p_c         = codebook->dimensions;
     unsigned inverse_class = ff_inverse[vr->classifications];
     unsigned temp, temp2;
     for (p = 0, j = 0; j < ch_used; ++j) {
         if (!do_not_decode[j]) {
-            temp = get_vlc2(&vc->gb, vc->codebooks[vr->classbook].vlc.table,
-                                     vc->codebooks[vr->classbook].nb_bits, 3);
+            temp = get_vlc2(&vc->gb, codebook->vlc.table,
+                                     codebook->nb_bits, 3);
 
             av_dlog(NULL, "Classword: %u\n", temp);
 
