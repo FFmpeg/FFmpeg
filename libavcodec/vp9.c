@@ -301,6 +301,7 @@ static int vp9_ref_frame(AVCodecContext *ctx, VP9Frame *dst, VP9Frame *src)
 
     dst->segmentation_map = src->segmentation_map;
     dst->mv = src->mv;
+    dst->uses_2pass = src->uses_2pass;
 
     return 0;
 }
