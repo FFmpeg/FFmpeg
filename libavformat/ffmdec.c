@@ -297,6 +297,11 @@ static int ffm2_read_header(AVFormatContext *s)
             case MKBETAG('S', 'T', 'V', 'I'):
                 codec->time_base.num = avio_rb32(pb);
                 codec->time_base.den = avio_rb32(pb);
+                if (codec->time_base.num <= 0 || codec->time_base.den <= 0) {
+                    av_log(s, AV_LOG_ERROR, "Invalid time base %d/%d\n",
+                           codec->time_base.num, codec->time_base.den);
+                    goto fail;
+                }
                 codec->width = avio_rb16(pb);
                 codec->height = avio_rb16(pb);
                 codec->gop_size = avio_rb16(pb);
@@ -421,6 +426,11 @@ static int ffm_read_header(AVFormatContext *s)
         case AVMEDIA_TYPE_VIDEO:
             codec->time_base.num = avio_rb32(pb);
             codec->time_base.den = avio_rb32(pb);
+            if (codec->time_base.num <= 0 || codec->time_base.den <= 0) {
+                av_log(s, AV_LOG_ERROR, "Invalid time base %d/%d\n",
+                       codec->time_base.num, codec->time_base.den);
+                goto fail;
+            }
             codec->width = avio_rb16(pb);
             codec->height = avio_rb16(pb);
             codec->gop_size = avio_rb16(pb);
