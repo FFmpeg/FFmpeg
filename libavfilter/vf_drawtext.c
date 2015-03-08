@@ -136,7 +136,7 @@ enum expansion_mode {
 
 typedef struct DrawTextContext {
     const AVClass *class;
-    enum expansion_mode exp_mode;   ///< expansion mode to use for the text
+    int exp_mode;                   ///< expansion mode to use for the text
     int reinit;                     ///< tells if the filter is being reinited
 #if CONFIG_LIBFONTCONFIG
     uint8_t *font;              ///< font to be used
