@@ -896,13 +896,10 @@ static int init_dimensions(H264Context *h)
 {
     int width  = h->width  - (h->sps.crop_right + h->sps.crop_left);
     int height = h->height - (h->sps.crop_top   + h->sps.crop_bottom);
-    int crop_present = h->sps.crop_left  || h->sps.crop_top ||
-                       h->sps.crop_right || h->sps.crop_bottom;
 
     /* handle container cropping */
-    if (!crop_present &&
-        FFALIGN(h->avctx->width,  16) == h->width &&
-        FFALIGN(h->avctx->height, 16) == h->height) {
+    if (FFALIGN(h->avctx->width,  16) == FFALIGN(width,  16) &&
+        FFALIGN(h->avctx->height, 16) == FFALIGN(height, 16)) {
         width  = h->avctx->width;
         height = h->avctx->height;
     }
