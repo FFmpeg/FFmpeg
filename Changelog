@@ -1,6 +1,19 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 0.8.17:
+
+- h264_cabac: Break infinite loops
+- matroskadec: Fix read-after-free in matroska_read_seek() (chromium/427266)
+- gifdec: refactor interleave end handling (CVE-2014-8547)
+- smc: fix the bounds check (CVE-2014-8548)
+- mmvideo: check frame dimensions (CVE-2014-8543)
+- jvdec: check frame dimensions (CVE-2014-8542)
+- mov: avoid a memleak when multiple stss boxes are present
+- apetag: Fix APE tag size check
+- x86: Only use optimizations with cmov if the CPU supports the instruction
+- x86: Add CPU flag for the i686 cmov instruction
+
 version 0.8.16:
 
 - avcodec: Add more missing #includes for ff_get_buffer()
