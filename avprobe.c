@@ -608,6 +608,8 @@ static void show_stream(AVFormatContext *fmt_ctx, int stream_idx)
         case AVMEDIA_TYPE_VIDEO:
             probe_int("width", dec_ctx->width);
             probe_int("height", dec_ctx->height);
+            probe_int("coded_width", dec_ctx->coded_width);
+            probe_int("coded_height", dec_ctx->coded_height);
             probe_int("has_b_frames", dec_ctx->has_b_frames);
             if (dec_ctx->sample_aspect_ratio.num)
                 sar = &dec_ctx->sample_aspect_ratio;
