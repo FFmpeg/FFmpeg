@@ -498,6 +498,13 @@ static int tiff_decode_tag(TiffContext *s, const uint8_t *start, const uint8_t *
     default:
         av_log(s->avctx, AV_LOG_DEBUG, "Unknown or unsupported tag %d/0X%0X\n", tag, tag);
     }
+    if (s->bpp > 64U) {
+        av_log(s->avctx, AV_LOG_ERROR,
+                "This format is not supported (bpp=%d, %d components)\n",
+                s->bpp, count);
+        s->bpp = 0;
+        return AVERROR_INVALIDDATA;
+    }
     return 0;
 }
 
