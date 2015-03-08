@@ -658,6 +658,14 @@ static int init_image(TiffContext *s, ThreadFrame *frame)
     int ret;
     int create_gray_palette = 0;
 
+    // make sure there is no aliasing in the following switch
+    if (s->bpp >= 100 || s->bppcount >= 10) {
+        av_log(s->avctx, AV_LOG_ERROR,
+               "Unsupported image parameters: bpp=%d, bppcount=%d\n",
+               s->bpp, s->bppcount);
+        return AVERROR_INVALIDDATA;
+    }
+
     switch (s->planar * 1000 + s->bpp * 10 + s->bppcount) {
     case 11:
         if (!s->palette_is_set) {
