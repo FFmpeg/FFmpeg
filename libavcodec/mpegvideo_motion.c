@@ -210,8 +210,8 @@ static inline int hpel_motion(MpegEncContext *s,
         dxy |= (motion_y & 1) << 1;
     src += src_y * s->linesize + src_x;
 
-        if ((unsigned)src_x > FFMAX(s->h_edge_pos - (motion_x & 1) - 8, 0) ||
-            (unsigned)src_y > FFMAX(s->v_edge_pos - (motion_y & 1) - 8, 0)) {
+        if ((unsigned)src_x >= FFMAX(s->h_edge_pos - (motion_x & 1) - 7, 0) ||
+            (unsigned)src_y >= FFMAX(s->v_edge_pos - (motion_y & 1) - 7, 0)) {
             s->vdsp.emulated_edge_mc(s->edge_emu_buffer, src,
                                      s->linesize, s->linesize,
                                      9, 9,
@@ -306,8 +306,8 @@ void mpeg_motion_internal(MpegEncContext *s,
     ptr_cb = ref_picture[1] + uvsrc_y * uvlinesize + uvsrc_x;
     ptr_cr = ref_picture[2] + uvsrc_y * uvlinesize + uvsrc_x;
 
-    if ((unsigned)src_x > FFMAX(s->h_edge_pos - (motion_x & 1) - 16, 0) ||
-        (unsigned)src_y > FFMAX(   v_edge_pos - (motion_y & 1) - h , 0)) {
+    if ((unsigned)src_x >= FFMAX(s->h_edge_pos - (motion_x & 1) - 15   , 0) ||
+        (unsigned)src_y >= FFMAX(   v_edge_pos - (motion_y & 1) - h + 1, 0)) {
         if (is_mpeg12 ||
             s->codec_id == AV_CODEC_ID_MPEG2VIDEO ||
             s->codec_id == AV_CODEC_ID_MPEG1VIDEO) {
@@ -536,8 +536,8 @@ static inline void qpel_motion(MpegEncContext *s,
     ptr_cb = ref_picture[1] + uvsrc_y * uvlinesize + uvsrc_x;
     ptr_cr = ref_picture[2] + uvsrc_y * uvlinesize + uvsrc_x;
 
-    if ((unsigned)src_x > FFMAX(s->h_edge_pos - (motion_x & 3) - 16, 0) ||
-        (unsigned)src_y > FFMAX(   v_edge_pos - (motion_y & 3) - h, 0)) {
+    if ((unsigned)src_x >= FFMAX(s->h_edge_pos - (motion_x & 3) - 15   , 0) ||
+        (unsigned)src_y >= FFMAX(   v_edge_pos - (motion_y & 3) - h + 1, 0)) {
         s->vdsp.emulated_edge_mc(s->edge_emu_buffer, ptr_y,
                                  s->linesize, s->linesize,
                                  17, 17 + field_based,
@@ -620,8 +620,8 @@ static void chroma_4mv_motion(MpegEncContext *s,
 
     offset = src_y * s->uvlinesize + src_x;
     ptr    = ref_picture[1] + offset;
-    if ((unsigned)src_x > FFMAX((s->h_edge_pos >> 1) - (dxy & 1) - 8, 0) ||
-        (unsigned)src_y > FFMAX((s->v_edge_pos >> 1) - (dxy >> 1) - 8, 0)) {
+    if ((unsigned)src_x >= FFMAX((s->h_edge_pos >> 1) - (dxy  & 1) - 7, 0) ||
+        (unsigned)src_y >= FFMAX((s->v_edge_pos >> 1) - (dxy >> 1) - 7, 0)) {
         s->vdsp.emulated_edge_mc(s->edge_emu_buffer, ptr,
                                  s->uvlinesize, s->uvlinesize,
                                  9, 9, src_x, src_y,
@@ -778,8 +778,8 @@ static inline void apply_8x8(MpegEncContext *s,
                 dxy &= ~12;
 
             ptr = ref_picture[0] + (src_y * s->linesize) + (src_x);
-            if ((unsigned)src_x > FFMAX(s->h_edge_pos - (motion_x & 3) - 8, 0) ||
-                (unsigned)src_y > FFMAX(s->v_edge_pos - (motion_y & 3) - 8, 0)) {
+            if ((unsigned)src_x >= FFMAX(s->h_edge_pos - (motion_x & 3) - 7, 0) ||
+                (unsigned)src_y >= FFMAX(s->v_edge_pos - (motion_y & 3) - 7, 0)) {
                 s->vdsp.emulated_edge_mc(s->edge_emu_buffer, ptr,
                                          s->linesize, s->linesize,
                                          9, 9,

@@ -103,6 +103,69 @@ static av_always_inline void vc1_lut_scale_chroma(uint8_t *srcU, uint8_t *srcV,
     }
 }
 
+static const uint8_t popcount4[16] = { 0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4 };
+
+static av_always_inline int get_luma_mv(VC1Context *v, int dir, int16_t *tx, int16_t *ty)
+{
+    MpegEncContext *s = &v->s;
+    int idx = v->mv_f[dir][s->block_index[0] + v->blocks_off] |
+             (v->mv_f[dir][s->block_index[1] + v->blocks_off] << 1) |
+             (v->mv_f[dir][s->block_index[2] + v->blocks_off] << 2) |
+             (v->mv_f[dir][s->block_index[3] + v->blocks_off] << 3);
+    static const uint8_t index2[16] = { 0, 0, 0, 0x23, 0, 0x13, 0x03, 0, 0, 0x12, 0x02, 0, 0x01, 0, 0, 0 };
+    int opp_count = popcount4[idx];
+
+    switch (opp_count) {
+    case 0:
+    case 4:
+        *tx = median4(s->mv[dir][0][0], s->mv[dir][1][0], s->mv[dir][2][0], s->mv[dir][3][0]);
+        *ty = median4(s->mv[dir][0][1], s->mv[dir][1][1], s->mv[dir][2][1], s->mv[dir][3][1]);
+        break;
+    case 1:
+        *tx = mid_pred(s->mv[dir][idx < 2][0], s->mv[dir][1 + (idx < 4)][0], s->mv[dir][2 + (idx < 8)][0]);
+        *ty = mid_pred(s->mv[dir][idx < 2][1], s->mv[dir][1 + (idx < 4)][1], s->mv[dir][2 + (idx < 8)][1]);
+        break;
+    case 3:
+        *tx = mid_pred(s->mv[dir][idx > 0xd][0], s->mv[dir][1 + (idx > 0xb)][0], s->mv[dir][2 + (idx > 0x7)][0]);
+        *ty = mid_pred(s->mv[dir][idx > 0xd][1], s->mv[dir][1 + (idx > 0xb)][1], s->mv[dir][2 + (idx > 0x7)][1]);
+        break;
+    case 2:
+        *tx = (s->mv[dir][index2[idx] >> 4][0] + s->mv[dir][index2[idx] & 0xf][0]) / 2;
+        *ty = (s->mv[dir][index2[idx] >> 4][1] + s->mv[dir][index2[idx] & 0xf][1]) / 2;
+        break;
+    }
+    return opp_count;
+}
+
+static av_always_inline int get_chroma_mv(VC1Context *v, int dir, int16_t *tx, int16_t *ty)
+{
+    MpegEncContext *s = &v->s;
+    int idx = !v->mb_type[0][s->block_index[0]] |
+             (!v->mb_type[0][s->block_index[1]] << 1) |
+             (!v->mb_type[0][s->block_index[2]] << 2) |
+             (!v->mb_type[0][s->block_index[3]] << 3);
+    static const uint8_t index2[16] = { 0, 0, 0, 0x01, 0, 0x02, 0x12, 0, 0, 0x03, 0x13, 0, 0x23, 0, 0, 0 };
+    int valid_count = popcount4[idx];
+
+    switch (valid_count) {
+    case 4:
+        *tx = median4(s->mv[dir][0][0], s->mv[dir][1][0], s->mv[dir][2][0], s->mv[dir][3][0]);
+        *ty = median4(s->mv[dir][0][1], s->mv[dir][1][1], s->mv[dir][2][1], s->mv[dir][3][1]);
+        break;
+    case 3:
+        *tx = mid_pred(s->mv[dir][idx > 0xd][0], s->mv[dir][1 + (idx > 0xb)][0], s->mv[dir][2 + (idx > 0x7)][0]);
+        *ty = mid_pred(s->mv[dir][idx > 0xd][1], s->mv[dir][1 + (idx > 0xb)][1], s->mv[dir][2 + (idx > 0x7)][1]);
+        break;
+    case 2:
+        *tx = (s->mv[dir][index2[idx] >> 4][0] + s->mv[dir][index2[idx] & 0xf][0]) / 2;
+        *ty = (s->mv[dir][index2[idx] >> 4][1] + s->mv[dir][index2[idx] & 0xf][1]) / 2;
+        break;
+    default:
+        return 0;
+    }
+    return valid_count;
+}
+
 /** Do motion compensation over 1 macroblock
  * Mostly adapted hpel_motion and qpel_motion from mpegvideo.c
  */
@@ -330,37 +393,10 @@ void ff_vc1_mc_4mv_luma(VC1Context *v, int n, int dir, int avg)
     }
 
     if (s->pict_type == AV_PICTURE_TYPE_P && n == 3 && v->field_mode) {
-        int same_count = 0, opp_count = 0, k;
-        int chosen_mv[2][4][2], f;
-        int tx, ty;
-        for (k = 0; k < 4; k++) {
-            f = v->mv_f[0][s->block_index[k] + v->blocks_off];
-            chosen_mv[f][f ? opp_count : same_count][0] = s->mv[0][k][0];
-            chosen_mv[f][f ? opp_count : same_count][1] = s->mv[0][k][1];
-            opp_count  += f;
-            same_count += 1 - f;
-        }
-        f = opp_count > same_count;
-        switch (f ? opp_count : same_count) {
-        case 4:
-            tx = median4(chosen_mv[f][0][0], chosen_mv[f][1][0],
-                         chosen_mv[f][2][0], chosen_mv[f][3][0]);
-            ty = median4(chosen_mv[f][0][1], chosen_mv[f][1][1],
-                         chosen_mv[f][2][1], chosen_mv[f][3][1]);
-            break;
-        case 3:
-            tx = mid_pred(chosen_mv[f][0][0], chosen_mv[f][1][0], chosen_mv[f][2][0]);
-            ty = mid_pred(chosen_mv[f][0][1], chosen_mv[f][1][1], chosen_mv[f][2][1]);
-            break;
-        case 2:
-            tx = (chosen_mv[f][0][0] + chosen_mv[f][1][0]) / 2;
-            ty = (chosen_mv[f][0][1] + chosen_mv[f][1][1]) / 2;
-            break;
-        default:
-            av_assert0(0);
-        }
-        s->current_picture.motion_val[1][s->block_index[0] + v->blocks_off][0] = tx;
-        s->current_picture.motion_val[1][s->block_index[0] + v->blocks_off][1] = ty;
+        int opp_count = get_luma_mv(v, 0,
+                                    &s->current_picture.motion_val[1][s->block_index[0] + v->blocks_off][0],
+                                    &s->current_picture.motion_val[1][s->block_index[0] + v->blocks_off][1]);
+        int k, f = opp_count > 2;
         for (k = 0; k < 4; k++)
             v->mv_f[1][s->block_index[k] + v->blocks_off] = f;
     }
@@ -416,10 +452,12 @@ void ff_vc1_mc_4mv_luma(VC1Context *v, int n, int dir, int avg)
     if (v->field_mode && v->ref_field_type[dir])
         srcY += s->current_picture_ptr->f->linesize[0];
 
-    if (fieldmv && !(src_y & 1))
-        v_edge_pos--;
-    if (fieldmv && (src_y & 1) && src_y < 4)
-        src_y--;
+    if (fieldmv) {
+        if (!(src_y & 1))
+            v_edge_pos--;
+        else
+            src_y -= (src_y < 4);
+    }
     if (v->rangeredfrm || use_ic
         || s->h_edge_pos < 13 || v_edge_pos < 23
         || (unsigned)(src_x - s->mspel) > s->h_edge_pos - (mx & 3) - 8 - s->mspel * 2
@@ -463,59 +501,6 @@ void ff_vc1_mc_4mv_luma(VC1Context *v, int n, int dir, int avg)
     }
 }
 
-static av_always_inline int get_chroma_mv(int *mvx, int *mvy, int *a, int flag, int *tx, int *ty)
-{
-    int idx, i;
-    static const int count[16] = { 0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4};
-
-    idx =  ((a[3] != flag) << 3)
-         | ((a[2] != flag) << 2)
-         | ((a[1] != flag) << 1)
-         |  (a[0] != flag);
-    if (!idx) {
-        *tx = median4(mvx[0], mvx[1], mvx[2], mvx[3]);
-        *ty = median4(mvy[0], mvy[1], mvy[2], mvy[3]);
-        return 4;
-    } else if (count[idx] == 1) {
-        switch (idx) {
-        case 0x1:
-            *tx = mid_pred(mvx[1], mvx[2], mvx[3]);
-            *ty = mid_pred(mvy[1], mvy[2], mvy[3]);
-            return 3;
-        case 0x2:
-            *tx = mid_pred(mvx[0], mvx[2], mvx[3]);
-            *ty = mid_pred(mvy[0], mvy[2], mvy[3]);
-            return 3;
-        case 0x4:
-            *tx = mid_pred(mvx[0], mvx[1], mvx[3]);
-            *ty = mid_pred(mvy[0], mvy[1], mvy[3]);
-            return 3;
-        case 0x8:
-            *tx = mid_pred(mvx[0], mvx[1], mvx[2]);
-            *ty = mid_pred(mvy[0], mvy[1], mvy[2]);
-            return 3;
-        }
-    } else if (count[idx] == 2) {
-        int t1 = 0, t2 = 0;
-        for (i = 0; i < 3; i++)
-            if (!a[i]) {
-                t1 = i;
-                break;
-            }
-        for (i = t1 + 1; i < 4; i++)
-            if (!a[i]) {
-                t2 = i;
-                break;
-            }
-        *tx = (mvx[t1] + mvx[t2]) / 2;
-        *ty = (mvy[t1] + mvy[t2]) / 2;
-        return 2;
-    } else {
-        return 0;
-    }
-    return -1;
-}
-
 /** Do motion compensation for 4-MV macroblock - both chroma blocks
  */
 void ff_vc1_mc_4mv_chroma(VC1Context *v, int dir)
@@ -524,10 +509,8 @@ void ff_vc1_mc_4mv_chroma(VC1Context *v, int dir)
     H264ChromaContext *h264chroma = &v->h264chroma;
     uint8_t *srcU, *srcV;
     int uvmx, uvmy, uvsrc_x, uvsrc_y;
-    int k, tx = 0, ty = 0;
-    int mvx[4], mvy[4], intra[4], mv_f[4];
-    int valid_count;
-    int chroma_ref_type = v->cur_field_type;
+    int16_t tx, ty;
+    int chroma_ref_type;
     int v_edge_pos = s->v_edge_pos >> v->field_mode;
     uint8_t (*lutuv)[256];
     int use_ic;
@@ -537,31 +520,19 @@ void ff_vc1_mc_4mv_chroma(VC1Context *v, int dir)
     if (s->flags & CODEC_FLAG_GRAY)
         return;
 
-    for (k = 0; k < 4; k++) {
-        mvx[k] = s->mv[dir][k][0];
-        mvy[k] = s->mv[dir][k][1];
-        intra[k] = v->mb_type[0][s->block_index[k]];
-        if (v->field_mode)
-            mv_f[k] = v->mv_f[dir][s->block_index[k] + v->blocks_off];
-    }
-
     /* calculate chroma MV vector from four luma MVs */
-    if (!v->field_mode || (v->field_mode && !v->numref)) {
-        valid_count = get_chroma_mv(mvx, mvy, intra, 0, &tx, &ty);
-        chroma_ref_type = v->ref_field_type[dir];
+    if (!v->field_mode || !v->numref) {
+        int valid_count = get_chroma_mv(v, dir, &tx, &ty);
         if (!valid_count) {
             s->current_picture.motion_val[1][s->block_index[0] + v->blocks_off][0] = 0;
             s->current_picture.motion_val[1][s->block_index[0] + v->blocks_off][1] = 0;
             v->luma_mv[s->mb_x][0] = v->luma_mv[s->mb_x][1] = 0;
             return; //no need to do MC for intra blocks
         }
+        chroma_ref_type = v->ref_field_type[dir];
     } else {
-        int dominant = 0;
-        if (mv_f[0] + mv_f[1] + mv_f[2] + mv_f[3] > 2)
-            dominant = 1;
-        valid_count = get_chroma_mv(mvx, mvy, mv_f, dominant, &tx, &ty);
-        if (dominant)
-            chroma_ref_type = !v->cur_field_type;
+        int opp_count = get_luma_mv(v, dir, &tx, &ty);
+        chroma_ref_type = v->cur_field_type ^ (opp_count > 2);
     }
     if (v->field_mode && chroma_ref_type == 1 && v->cur_field_type == 1 && !v->s.last_picture.f->data[0])
         return;
@@ -677,7 +648,7 @@ void ff_vc1_mc_4mv_chroma4(VC1Context *v, int dir, int dir2, int avg)
     int uvmx_field[4], uvmy_field[4];
     int i, off, tx, ty;
     int fieldmv = v->blk_mv_type[s->block_index[0]];
-    static const int s_rndtblfield[16] = { 0, 0, 1, 2, 4, 4, 5, 6, 2, 2, 3, 8, 6, 6, 7, 12 };
+    static const uint8_t s_rndtblfield[16] = { 0, 0, 1, 2, 4, 4, 5, 6, 2, 2, 3, 8, 6, 6, 7, 12 };
     int v_dist = fieldmv ? 1 : 4; // vertical offset for lower sub-blocks
     int v_edge_pos = s->v_edge_pos >> 1;
     int use_ic;
@@ -722,11 +693,12 @@ void ff_vc1_mc_4mv_chroma4(VC1Context *v, int dir, int dir2, int avg)
         uvmx_field[i] = (uvmx_field[i] & 3) << 1;
         uvmy_field[i] = (uvmy_field[i] & 3) << 1;
 
-        if (fieldmv && !(uvsrc_y & 1))
-            v_edge_pos = (s->v_edge_pos >> 1) - 1;
-
-        if (fieldmv && (uvsrc_y & 1) && uvsrc_y < 2)
-            uvsrc_y--;
+        if (fieldmv) {
+            if (!(uvsrc_y & 1))
+                v_edge_pos = (s->v_edge_pos >> 1) - 1;
+            else
+                uvsrc_y -= (uvsrc_y < 2);
+        }
         if (use_ic
             || s->h_edge_pos < 10 || v_edge_pos < (5 << fieldmv)
             || (unsigned)uvsrc_x > (s->h_edge_pos >> 1) - 5
@@ -778,7 +750,6 @@ void ff_vc1_interp_mc(VC1Context *v)
     H264ChromaContext *h264chroma = &v->h264chroma;
     uint8_t *srcY, *srcU, *srcV;
     int dxy, mx, my, uvmx, uvmy, src_x, src_y, uvsrc_x, uvsrc_y;
-    int off, off_uv;
     int v_edge_pos = s->v_edge_pos >> v->field_mode;
     int use_ic = v->next_use_ic;
 
@@ -881,19 +852,16 @@ void ff_vc1_interp_mc(VC1Context *v)
         srcY += s->mspel * (1 + s->linesize);
     }
 
-    off    = 0;
-    off_uv = 0;
-
     if (s->mspel) {
         dxy = ((my & 3) << 2) | (mx & 3);
-        v->vc1dsp.avg_vc1_mspel_pixels_tab[0][dxy](s->dest[0] + off    , srcY    , s->linesize, v->rnd);
+        v->vc1dsp.avg_vc1_mspel_pixels_tab[0][dxy](s->dest[0], srcY, s->linesize, v->rnd);
     } else { // hpel mc
         dxy = (my & 2) | ((mx & 2) >> 1);
 
         if (!v->rnd)
-            s->hdsp.avg_pixels_tab[0][dxy](s->dest[0] + off, srcY, s->linesize, 16);
+            s->hdsp.avg_pixels_tab[0][dxy](s->dest[0], srcY, s->linesize, 16);
         else
-            s->hdsp.avg_no_rnd_pixels_tab[dxy](s->dest[0] + off, srcY, s->linesize, 16);
+            s->hdsp.avg_no_rnd_pixels_tab[dxy](s->dest[0], srcY, s->linesize, 16);
     }
 
     if (s->flags & CODEC_FLAG_GRAY) return;
@@ -901,10 +869,10 @@ void ff_vc1_interp_mc(VC1Context *v)
     uvmx = (uvmx & 3) << 1;
     uvmy = (uvmy & 3) << 1;
     if (!v->rnd) {
-        h264chroma->avg_h264_chroma_pixels_tab[0](s->dest[1] + off_uv, srcU, s->uvlinesize, 8, uvmx, uvmy);
-        h264chroma->avg_h264_chroma_pixels_tab[0](s->dest[2] + off_uv, srcV, s->uvlinesize, 8, uvmx, uvmy);
+        h264chroma->avg_h264_chroma_pixels_tab[0](s->dest[1], srcU, s->uvlinesize, 8, uvmx, uvmy);
+        h264chroma->avg_h264_chroma_pixels_tab[0](s->dest[2], srcV, s->uvlinesize, 8, uvmx, uvmy);
     } else {
-        v->vc1dsp.avg_no_rnd_vc1_chroma_pixels_tab[0](s->dest[1] + off_uv, srcU, s->uvlinesize, 8, uvmx, uvmy);
-        v->vc1dsp.avg_no_rnd_vc1_chroma_pixels_tab[0](s->dest[2] + off_uv, srcV, s->uvlinesize, 8, uvmx, uvmy);
+        v->vc1dsp.avg_no_rnd_vc1_chroma_pixels_tab[0](s->dest[1], srcU, s->uvlinesize, 8, uvmx, uvmy);
+        v->vc1dsp.avg_no_rnd_vc1_chroma_pixels_tab[0](s->dest[2], srcV, s->uvlinesize, 8, uvmx, uvmy);
     }
 }
