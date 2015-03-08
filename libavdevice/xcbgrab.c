@@ -621,6 +621,7 @@ static av_cold int xcbgrab_read_header(AVFormatContext *s)
                s->filename[0] ? s->filename : "default", ret);
         return AVERROR(EIO);
     }
+
     setup = xcb_get_setup(c->conn);
 
     c->screen = get_screen(setup, screen_num);
