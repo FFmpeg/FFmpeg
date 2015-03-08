@@ -222,6 +222,9 @@ static void print_stats(AVFilterContext *ctx)
         av_log(ctx, AV_LOG_INFO, "Peak count: %"PRId64"\n", p->min_count + p->max_count);
     }
 
+    if (!nb_samples || !s->nb_channels)
+        return;
+
     av_log(ctx, AV_LOG_INFO, "Overall\n");
     av_log(ctx, AV_LOG_INFO, "DC offset: %f\n", max_sigma_x / (nb_samples / s->nb_channels));
     av_log(ctx, AV_LOG_INFO, "Min level: %f\n", min);
