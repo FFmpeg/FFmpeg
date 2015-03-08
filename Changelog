@@ -1,6 +1,19 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 11.3:
+
+- prores: Extend the padding check to 16bit
+- icecast: Do not use chunked post, allows feeding to icecast properly
+- img2dec: correctly use the parsed value from -start_number
+- h264_cabac: Break infinite loops
+- hevc_deblock: Fix compilation with nasm (libav #795)
+- h264: initialize H264Context.avctx in init_thread_copy
+- h264: Do not share rbsp_buffer across threads
+- h264: only ref cur_pic in update_thread_context if it is initialized
+- matroskadec: Fix read-after-free in matroska_read_seek() (chromium #427266)
+- log: Unbreak no-tty support on 256color terminals
+
 version 11.2:
 
 - h264: restore a block mistakenly removed in e10fd08a (libav #781)
