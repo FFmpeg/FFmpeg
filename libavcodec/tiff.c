@@ -755,13 +755,6 @@ static int tiff_decode_tag(TiffContext *s)
                 s->bpp = -1;
             }
         }
-        if (s->bpp > 64U) {
-            av_log(s->avctx, AV_LOG_ERROR,
-                   "This format is not supported (bpp=%d, %d components)\n",
-                   s->bpp, count);
-            s->bpp = 0;
-            return AVERROR_INVALIDDATA;
-        }
         break;
     case TIFF_SAMPLES_PER_PIXEL:
         if (count != 1) {
@@ -1036,6 +1029,13 @@ static int tiff_decode_tag(TiffContext *s)
     default:
         av_log(s->avctx, AV_LOG_DEBUG, "Unknown or unsupported tag %d/0X%0X\n",
                tag, tag);
+    }
+    if (s->bpp > 64U) {
+        av_log(s->avctx, AV_LOG_ERROR,
+                "This format is not supported (bpp=%d, %d components)\n",
+                s->bpp, count);
+        s->bpp = 0;
+        return AVERROR_INVALIDDATA;
     }
     bytestream2_seek(&s->gb, start, SEEK_SET);
     return 0;
