@@ -354,7 +354,7 @@ static int ffm2_read_header(AVFormatContext *s)
     }
 
     /* get until end of block reached */
-    while ((avio_tell(pb) % ffm->packet_size) != 0)
+    while ((avio_tell(pb) % ffm->packet_size) != 0 && !pb->eof_reached)
         avio_r8(pb);
 
     /* init packet demux */
@@ -481,7 +481,7 @@ static int ffm_read_header(AVFormatContext *s)
     }
 
     /* get until end of block reached */
-    while ((avio_tell(pb) % ffm->packet_size) != 0)
+    while ((avio_tell(pb) % ffm->packet_size) != 0 && !pb->eof_reached)
         avio_r8(pb);
 
     /* init packet demux */
