@@ -53,11 +53,11 @@ typedef struct SIFFContext {
     int has_audio;
 
     int curstrm;
-    int pktsize;
+    unsigned int pktsize;
     int gmcsize;
     int sndsize;
 
-    int flags;
+    unsigned int flags;
     uint8_t gmc[4];
 } SIFFContext;
 
@@ -189,9 +189,9 @@ static int siff_read_header(AVFormatContext *s)
 static int siff_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     SIFFContext *c = s->priv_data;
-    int size;
 
     if (c->has_video) {
+        unsigned int size;
         if (c->cur_frame >= c->frames)
             return AVERROR(EIO);
         if (c->curstrm == -1) {
@@ -215,10 +215,11 @@ static int siff_read_packet(AVFormatContext *s, AVPacket *pkt)
             pkt->stream_index = 0;
             c->curstrm        = -1;
         } else {
-            if ((size = av_get_packet(s->pb, pkt, c->sndsize - 4)) < 0)
+            int pktsize = av_get_packet(s->pb, pkt, c->sndsize - 4);
+            if (pktsize < 0)
                 return AVERROR(EIO);
             pkt->stream_index = 1;
-            pkt->duration     = size;
+            pkt->duration     = pktsize;
             c->curstrm        = 0;
         }
         if (!c->cur_frame || c->curstrm)
@@ -226,10 +227,10 @@ static int siff_read_packet(AVFormatContext *s, AVPacket *pkt)
         if (c->curstrm == -1)
             c->cur_frame++;
     } else {
-        size = av_get_packet(s->pb, pkt, c->block_align);
-        if (size <= 0)
+        int pktsize = av_get_packet(s->pb, pkt, c->block_align);
+        if (pktsize <= 0)
             return AVERROR(EIO);
-        pkt->duration = size;
+        pkt->duration = pktsize;
     }
     return pkt->size;
 }
