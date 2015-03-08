@@ -50,6 +50,12 @@ do_tiny_psnr(){
     size_cmp=$(compare $size1 $size2 $size_tolerance)
     if [ "$val_cmp" != 0 ] || [ "$size_cmp" != 0 ]; then
         echo "$psnr"
+        if [ "$val_cmp" != 0 ]; then
+            echo "$3: |$val - $cmp_target| >= $fuzz"
+        fi
+        if [ "$size_cmp" != 0 ]; then
+            echo "size: |$size1 - $size2| >= $size_tolerance"
+        fi
         return 1
     fi
 }
