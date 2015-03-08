@@ -1321,7 +1321,7 @@ static av_always_inline int setup_classifs(vorbis_context *vc,
     int p, j, i;
     unsigned c_p_c         = vc->codebooks[vr->classbook].dimensions;
     unsigned inverse_class = ff_inverse[vr->classifications];
-    unsigned temp, temp2;
+    int temp, temp2;
     for (p = 0, j = 0; j < ch_used; ++j) {
         if (!do_not_decode[j]) {
             temp = get_vlc2(&vc->gb, vc->codebooks[vr->classbook].vlc.table,
@@ -1329,27 +1329,22 @@ static av_always_inline int setup_classifs(vorbis_context *vc,
 
             av_dlog(NULL, "Classword: %u\n", temp);
 
-            if ((int)temp < 0)
-                return temp;
+            av_assert0(temp < 65536);
+
+            if (temp < 0) {
+                av_log(vc->avctx, AV_LOG_ERROR,
+                       "Invalid vlc code decoding %d channel.", j);
+                return AVERROR_INVALIDDATA;
+            }
 
             av_assert0(vr->classifications > 1); //needed for inverse[]
 
-            if (temp <= 65536) {
-                for (i = partition_count + c_p_c - 1; i >= partition_count; i--) {
-                    temp2 = (((uint64_t)temp) * inverse_class) >> 32;
+            for (i = partition_count + c_p_c - 1; i >= partition_count; i--) {
+                temp2 = (((uint64_t)temp) * inverse_class) >> 32;
 
-                    if (i < ptns_to_read)
-                        vr->classifs[p + i] = temp - temp2 * vr->classifications;
-                    temp = temp2;
-                }
-            } else {
-                for (i = partition_count + c_p_c - 1; i >= partition_count; i--) {
-                    temp2 = temp / vr->classifications;
-
-                    if (i < ptns_to_read)
-                        vr->classifs[p + i] = temp - temp2 * vr->classifications;
-                    temp = temp2;
-                }
+                if (i < ptns_to_read)
+                    vr->classifs[p + i] = temp - temp2 * vr->classifications;
+                temp = temp2;
             }
         }
         p += ptns_to_read;
@@ -1405,8 +1400,8 @@ static av_always_inline int vorbis_residue_decode_internal(vorbis_context *vc,
         voffset = vr->begin;
         for (partition_count = 0; partition_count < ptns_to_read;) {  // SPEC        error
             if (!pass) {
-                int ret;
-                if ((ret = setup_classifs(vc, vr, do_not_decode, ch_used, partition_count, ptns_to_read)) < 0)
+                int ret = setup_classifs(vc, vr, do_not_decode, ch_used, partition_count, ptns_to_read);
+                if (ret < 0)
                     return ret;
             }
             for (i = 0; (i < c_p_c) && (partition_count < ptns_to_read); ++i) {
