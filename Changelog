@@ -1,5 +1,17 @@
 Releases are sorted from youngest to oldest.
 
+version 9.18:
+- img2dec: correctly use the parsed value from -start_number
+- h264_cabac: Break infinite loops
+- matroskadec: Fix read-after-free in matroska_read_seek() (chromium/427266)
+- smc: fix the bounds check (CVE-2014-8548)
+- gifdec: refactor interleave end handling (CVE-2014-8547)
+- mmvideo: check frame dimensions (CVE-2014-8543)
+- jvdec: check frame dimensions (CVE-2014-8542)
+- mov: avoid a memleak when multiple stss boxes are present
+- mp3enc: fix a triggerable assert
+- apetag: Fix APE tag size check
+
 version 9.17:
 - ffv1dec: check that global parameters do not change in version 0/1 (CVE-2013-7020)
 - mpegenc: limit the maximum muxrate
