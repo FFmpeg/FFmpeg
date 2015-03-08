@@ -171,6 +171,8 @@
       <!-- video attributes -->
       <xsd:attribute name="width"                type="xsd:int"/>
       <xsd:attribute name="height"               type="xsd:int"/>
+      <xsd:attribute name="coded_width"          type="xsd:int"/>
+      <xsd:attribute name="coded_height"         type="xsd:int"/>
       <xsd:attribute name="has_b_frames"         type="xsd:int"/>
       <xsd:attribute name="sample_aspect_ratio"  type="xsd:string"/>
       <xsd:attribute name="display_aspect_ratio" type="xsd:string"/>
