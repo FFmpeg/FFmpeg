@@ -1539,6 +1539,7 @@ HAVE_LIST="
     alsa_asoundlib_h
     altivec_h
     arpa_inet_h
+    as_object_arch
     asm_mod_q
     asm_types_h
     atomic_cas_ptr
@@ -4153,6 +4154,11 @@ EOF
             $ARCH_EXT_LIST_ARM
 
     check_inline_asm asm_mod_q '"add r0, %Q0, %R0" :: "r"((long long)0)'
+
+    # llvm's integrated assembler supports .object_arch from llvm 3.5
+    [ "$objformat" = elf ] && check_as <<EOF && enable as_object_arch
+.object_arch armv4
+EOF
 
     [ $target_os != win32 ] && enabled_all armv6t2 shared !pic && enable_weak_pic
 
