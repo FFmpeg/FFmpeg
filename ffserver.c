@@ -2055,7 +2055,8 @@ static int open_input_stream(HTTPContext *c, const char *info)
     ret = avformat_open_input(&s, input_filename, c->stream->ifmt,
                               &c->stream->in_opts);
     if (ret < 0) {
-        http_log("Could not open input '%s': %s\n", input_filename, av_err2str(ret));
+        http_log("Could not open input '%s': %s\n",
+                 input_filename, av_err2str(ret));
         return ret;
     }
 
@@ -2125,7 +2126,8 @@ static int http_prepare_data(HTTPContext *c)
         c->fmt_ctx = *ctx;
         av_freep(&ctx);
         av_dict_copy(&(c->fmt_ctx.metadata), c->stream->metadata, 0);
-        c->fmt_ctx.streams = av_mallocz_array(c->stream->nb_streams, sizeof(AVStream *));
+        c->fmt_ctx.streams = av_mallocz_array(c->stream->nb_streams,
+                                              sizeof(AVStream *));
 
         for(i=0;i<c->stream->nb_streams;i++) {
             AVStream *src;
@@ -2280,7 +2282,8 @@ static int http_prepare_data(HTTPContext *c)
                             max_packet_size = RTSP_TCP_MAX_PACKET_SIZE;
                         else
                             max_packet_size = c->rtp_handles[c->packet_stream_index]->max_packet_size;
-                        ret = ffio_open_dyn_packet_buf(&ctx->pb, max_packet_size);
+                        ret = ffio_open_dyn_packet_buf(&ctx->pb,
+                                                       max_packet_size);
                     } else {
                         ret = avio_open_dyn_buf(&ctx->pb);
                     }
@@ -2292,10 +2295,13 @@ static int http_prepare_data(HTTPContext *c)
 
                     ctx->pb->seekable = 0;
                     if (pkt.dts != AV_NOPTS_VALUE)
-                        pkt.dts = av_rescale_q(pkt.dts, ist->time_base, ost->time_base);
+                        pkt.dts = av_rescale_q(pkt.dts, ist->time_base,
+                                               ost->time_base);
                     if (pkt.pts != AV_NOPTS_VALUE)
-                        pkt.pts = av_rescale_q(pkt.pts, ist->time_base, ost->time_base);
-                    pkt.duration = av_rescale_q(pkt.duration, ist->time_base, ost->time_base);
+                        pkt.pts = av_rescale_q(pkt.pts, ist->time_base,
+                                               ost->time_base);
+                    pkt.duration = av_rescale_q(pkt.duration, ist->time_base,
+                                                ost->time_base);
                     if ((ret = av_write_frame(ctx, &pkt)) < 0) {
                         http_log("Error writing frame to output for stream '%s': %s\n",
                                  c->stream->filename, av_err2str(ret));
@@ -2437,7 +2443,8 @@ static int http_send_data(HTTPContext *c)
                     ffurl_write(c->rtp_handles[c->packet_stream_index],
                                 c->buffer_ptr, len);
                     c->buffer_ptr += len;
-                    /* here we continue as we can send several packets per 10 ms slot */
+                    /* here we continue as we can send several packets
+                     * per 10 ms slot */
                 }
             } else {
                 /* TCP data output */
@@ -2830,9 +2837,12 @@ static int prepare_sdp_description(FFServerStream *stream, uint8_t **pbuffer,
         snprintf(avc->filename, 1024, "rtp://0.0.0.0");
     }
 
-    if (!(avc->streams = av_malloc_array(avc->nb_streams, sizeof(*avc->streams))))
+    avc->streams = av_malloc_array(avc->nb_streams, sizeof(*avc->streams));
+    if (!avc->streams)
         goto sdp_done;
-    if (!(avs = av_malloc_array(avc->nb_streams, sizeof(*avs))))
+
+    avs = av_malloc_array(avc->nb_streams, sizeof(*avs));
+    if (!avs)
         goto sdp_done;
 
     for(i = 0; i < stream->nb_streams; i++) {
@@ -2894,7 +2904,8 @@ static void rtsp_cmd_describe(HTTPContext *c, const char *url)
     /* get the host IP */
     len = sizeof(my_addr);
     getsockname(c->fd, (struct sockaddr *)&my_addr, &len);
-    content_length = prepare_sdp_description(stream, &content, my_addr.sin_addr);
+    content_length = prepare_sdp_description(stream, &content,
+                                             my_addr.sin_addr);
     if (content_length < 0) {
         rtsp_reply_error(c, RTSP_STATUS_INTERNAL);
         return;
@@ -3463,7 +3474,6 @@ static void extract_mpeg4_header(AVFormatContext *infile)
                 if (p[0] == 0x00 && p[1] == 0x00 &&
                     p[2] == 0x01 && p[3] == 0xb6) {
                     size = p - pkt.data;
-                    //                    av_hex_dump_log(infile, AV_LOG_DEBUG, pkt.data, size);
                     st->codec->extradata = av_mallocz(size + FF_INPUT_BUFFER_PADDING_SIZE);
                     st->codec->extradata_size = size;
                     memcpy(st->codec->extradata, pkt.data, size);
@@ -3550,7 +3560,8 @@ static void build_feed_streams(void)
             } else {
                 /* we handle a stream coming from a feed */
                 for(i=0;i<stream->nb_streams;i++)
-                    stream->feed_streams[i] = add_av_stream(feed, stream->streams[i]);
+                    stream->feed_streams[i] = add_av_stream(feed,
+                                                            stream->streams[i]);
             }
         }
     }

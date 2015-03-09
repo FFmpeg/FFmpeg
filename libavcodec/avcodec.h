@@ -1823,7 +1823,7 @@ typedef struct AVCodecContext {
     /**
      * precision of the intra DC coefficient - 8
      * - encoding: Set by user.
-     * - decoding: unused
+     * - decoding: Set by libavcodec
      */
     int intra_dc_precision;
 

@@ -3486,7 +3486,7 @@ Set number overlapping pixels for each block. Since the filter can be slow, you
 may want to reduce this value, at the cost of a less effective filter and the
 risk of various artefacts.
 
-If the overlapping value doesn't allow to process the whole input width or
+If the overlapping value doesn't permit processing the whole input width or
 height, a warning will be displayed and according borders won't be denoised.
 
 Default value is @var{blocksize}-1, which is the best possible setting.
@@ -4538,7 +4538,8 @@ The number of seconds for which the fade effect has to last. At the end of the
 fade-in effect the output video will have the same intensity as the input video,
 at the end of the fade-out transition the output video will be filled with the
 selected @option{color}.
-If both duration and nb_frames are specified, duration is used. Default is 0.
+If both duration and nb_frames are specified, duration is used. Default is 0
+(nb_frames is used by default).
 
 @item color, c
 Specify the color of the fade. Default is "black".
@@ -4628,6 +4629,29 @@ The coordinates of the current sample.
 @item H
 The width and height of the image.
 @end table
+
+@subsection Examples
+
+@itemize
+@item
+High-pass:
+@example
+fftfilt=dc_Y=128:weight_Y='squish(1-(Y+X)/100)'
+@end example
+
+@item
+Low-pass:
+@example
+fftfilt=dc_Y=0:weight_Y='squish((Y+X)/100-1)'
+@end example
+
+@item
+Sharpen:
+@example
+fftfilt=dc_Y=0:weight_Y='1+squish(1-(Y+X)/100)'
+@end example
+
+@end itemize
 
 @section field
 

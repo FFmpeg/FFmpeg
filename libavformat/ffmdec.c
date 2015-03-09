@@ -261,7 +261,7 @@ static int ffm2_read_header(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     AVCodecContext *codec;
     int ret;
-    int f_main = 0, f_cprv, f_stvi, f_stau;
+    int f_main = 0, f_cprv = -1, f_stvi = -1, f_stau = -1;
     AVCodec *enc;
     char *buffer;
 
@@ -331,6 +331,12 @@ static int ffm2_read_header(AVFormatContext *s)
             }
             codec->time_base.num = avio_rb32(pb);
             codec->time_base.den = avio_rb32(pb);
+            if (codec->time_base.num <= 0 || codec->time_base.den <= 0) {
+                av_log(s, AV_LOG_ERROR, "Invalid time base %d/%d\n",
+                       codec->time_base.num, codec->time_base.den);
+                ret = AVERROR_INVALIDDATA;
+                goto fail;
+            }
             codec->width = avio_rb16(pb);
             codec->height = avio_rb16(pb);
             codec->gop_size = avio_rb16(pb);
@@ -434,7 +440,7 @@ static int ffm2_read_header(AVFormatContext *s)
     }
 
     /* get until end of block reached */
-    while ((avio_tell(pb) % ffm->packet_size) != 0)
+    while ((avio_tell(pb) % ffm->packet_size) != 0 && !pb->eof_reached)
         avio_r8(pb);
 
     /* init packet demux */
@@ -503,6 +509,11 @@ static int ffm_read_header(AVFormatContext *s)
         case AVMEDIA_TYPE_VIDEO:
             codec->time_base.num = avio_rb32(pb);
             codec->time_base.den = avio_rb32(pb);
+            if (codec->time_base.num <= 0 || codec->time_base.den <= 0) {
+                av_log(s, AV_LOG_ERROR, "Invalid time base %d/%d\n",
+                       codec->time_base.num, codec->time_base.den);
+                goto fail;
+            }
             codec->width = avio_rb16(pb);
             codec->height = avio_rb16(pb);
             codec->gop_size = avio_rb16(pb);
@@ -561,7 +572,7 @@ static int ffm_read_header(AVFormatContext *s)
     }
 
     /* get until end of block reached */
-    while ((avio_tell(pb) % ffm->packet_size) != 0)
+    while ((avio_tell(pb) % ffm->packet_size) != 0 && !pb->eof_reached)
         avio_r8(pb);
 
     /* init packet demux */

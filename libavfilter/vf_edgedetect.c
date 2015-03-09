@@ -50,7 +50,7 @@ typedef struct {
     int nb_planes;
     double   low, high;
     uint8_t  low_u8, high_u8;
-    enum FilterMode mode;
+    int mode;
 } EdgeDetectContext;
 
 #define OFFSET(x) offsetof(EdgeDetectContext, x)

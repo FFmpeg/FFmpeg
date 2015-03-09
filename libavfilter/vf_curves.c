@@ -60,7 +60,7 @@ enum preset {
 
 typedef struct {
     const AVClass *class;
-    enum preset preset;
+    int preset;
     char *comp_points_str[NB_COMP + 1];
     char *comp_points_str_all;
     uint8_t graph[NB_COMP + 1][256];

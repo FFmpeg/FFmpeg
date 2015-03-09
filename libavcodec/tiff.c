@@ -658,6 +658,14 @@ static int init_image(TiffContext *s, ThreadFrame *frame)
     int ret;
     int create_gray_palette = 0;
 
+    // make sure there is no aliasing in the following switch
+    if (s->bpp >= 100 || s->bppcount >= 10) {
+        av_log(s->avctx, AV_LOG_ERROR,
+               "Unsupported image parameters: bpp=%d, bppcount=%d\n",
+               s->bpp, s->bppcount);
+        return AVERROR_INVALIDDATA;
+    }
+
     switch (s->planar * 1000 + s->bpp * 10 + s->bppcount) {
     case 11:
         if (!s->palette_is_set) {
@@ -838,13 +846,6 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
             default:
                 s->bpp = -1;
             }
-        }
-        if (s->bpp > 64U) {
-            av_log(s->avctx, AV_LOG_ERROR,
-                   "This format is not supported (bpp=%d, %d components)\n",
-                   s->bpp, count);
-            s->bpp = 0;
-            return AVERROR_INVALIDDATA;
         }
         break;
     case TIFF_SAMPLES_PER_PIXEL:
@@ -1158,6 +1159,13 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
         }
     }
 end:
+    if (s->bpp > 64U) {
+        av_log(s->avctx, AV_LOG_ERROR,
+                "This format is not supported (bpp=%d, %d components)\n",
+                s->bpp, count);
+        s->bpp = 0;
+        return AVERROR_INVALIDDATA;
+    }
     bytestream2_seek(&s->gb, start, SEEK_SET);
     return 0;
 }
