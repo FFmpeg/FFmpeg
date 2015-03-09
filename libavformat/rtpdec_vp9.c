@@ -113,11 +113,6 @@ static int vp9_handle_packet(AVFormatContext *ctx, PayloadContext *rtp_vp9_ctx,
      *   PictureID:  8 or 16 bits including the M bit.
      */
     if (has_pic_id) {
-        if (len < 1) {
-            av_log(ctx, AV_LOG_ERROR, "Too short RTP/VP9 packet\n");
-            return AVERROR_INVALIDDATA;
-        }
-
         /* check for 1-byte or 2-byte picture index */
         if (buf[0] & 0x80) {
             if (len < 2) {
