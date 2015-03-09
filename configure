@@ -4486,6 +4486,7 @@ elif enabled gcc; then
     check_cflags -Werror=declaration-after-statement
     check_cflags -Werror=vla
     check_cflags -Werror=format-security
+    check_cflags -fdiagnostics-color=auto
     enabled extra_warnings || check_disable_warning -Wno-maybe-uninitialized
 elif enabled llvm_gcc; then
     check_cflags -mllvm -stack-alignment=16
