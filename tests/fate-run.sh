@@ -23,6 +23,7 @@ cmp_target=${13:-0}
 size_tolerance=${14:-0}
 cmp_unit=${15:-2}
 gen=${16:-no}
+hwaccel=${17:-none}
 
 outdir="tests/data/fate"
 outfile="${outdir}/${test}"
@@ -76,7 +77,7 @@ probefmt(){
 }
 
 avconv(){
-    dec_opts="-threads $threads -thread_type $thread_type"
+    dec_opts="-hwaccel $hwaccel -threads $threads -thread_type $thread_type"
     avconv_args="-nostats -cpuflags $cpuflags"
     for arg in $@; do
         [ x${arg} = x-i ] && avconv_args="${avconv_args} ${dec_opts}"
