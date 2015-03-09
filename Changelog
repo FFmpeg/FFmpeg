@@ -3,6 +3,9 @@ releases are sorted from youngest to oldest.
 
 version 0.8.17:
 
+- tiff: Check that there is no aliasing in pixel format selection (CVE-2014-8544)
+- rmenc: limit packet size
+- eamad: check for out of bounds read (CID/1257500)
 - h264_cabac: Break infinite loops
 - matroskadec: Fix read-after-free in matroska_read_seek() (chromium/427266)
 - gifdec: refactor interleave end handling (CVE-2014-8547)
