@@ -2,6 +2,15 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 10.6:
+- utvideodec: Handle slice_height being zero (CVE-2014-9604)
+- tiff: Check that there is no aliasing in pixel format selection (CVE-2014-8544)
+- rmenc: limit packet size
+- webp: validate the distance prefix code
+- rv10: check size of s->mb_width * s->mb_height
+- eamad: check for out of bounds read (CID/1257500)
+- mdec: check for out of bounds read (CID/1257501)
+- configure: Properly fail when libcdio/cdparanoia is not found
+- arm: Suppress tags about used cpu arch and extensions
 - img2dec: correctly use the parsed value from -start_number
 - h264_cabac: Break infinite loops
 - h264: initialize H264Context.avctx in init_thread_copy
