@@ -664,6 +664,7 @@ static int asf_write_header(AVFormatContext *s)
      * It is needed to use asf as a streamable format. */
     if (asf_write_header1(s, 0, DATA_HEADER_SIZE) < 0) {
         //av_free(asf);
+        av_freep(&asf->index_ptr);
         return -1;
     }
 
