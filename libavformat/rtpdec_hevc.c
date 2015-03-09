@@ -249,14 +249,6 @@ static int hevc_handle_packet(AVFormatContext *ctx, PayloadContext *rtp_hevc_ctx
     case 39:
     /* single NAL unit packet */
     default:
-        /* sanity check for size of input packet: 1 byte payload at least */
-        if (len < 1) {
-            av_log(ctx, AV_LOG_ERROR,
-                   "Too short RTP/HEVC packet, got %d bytes of NAL unit type %d\n",
-                   len, nal_type);
-            return AVERROR_INVALIDDATA;
-        }
-
         /* create A/V packet */
         if ((res = av_new_packet(pkt, sizeof(start_sequence) + len)) < 0)
             return res;
