@@ -966,6 +966,8 @@ static av_cold int roq_encode_init(AVCodecContext *avctx)
 
     av_lfg_init(&enc->randctx, 1);
 
+    enc->avctx = avctx;
+
     enc->framesSinceKeyframe = 0;
     if ((avctx->width & 0xf) || (avctx->height & 0xf)) {
         av_log(avctx, AV_LOG_ERROR, "Dimensions must be divisible by 16\n");
