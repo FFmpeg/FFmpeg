@@ -1469,7 +1469,7 @@ combination with -ss to start extracting from a certain point in time.
 
 For creating a video from many images:
 @example
-ffmpeg -f image2 -i foo-%03d.jpeg -r 12 -s WxH foo.avi
+ffmpeg -f image2 -framerate 12 -i foo-%03d.jpeg -s WxH foo.avi
 @end example
 
 The syntax @code{foo-%03d.jpeg} specifies to use a decimal number
@@ -1484,7 +1484,7 @@ image2-specific @code{-pattern_type glob} option.
 For example, for creating a video from filenames matching the glob pattern
 @code{foo-*.jpeg}:
 @example
-ffmpeg -f image2 -pattern_type glob -i 'foo-*.jpeg' -r 12 -s WxH foo.avi
+ffmpeg -f image2 -pattern_type glob -framerate 12 -i 'foo-*.jpeg' -s WxH foo.avi
 @end example
 
 @item
