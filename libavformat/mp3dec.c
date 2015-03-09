@@ -31,6 +31,7 @@
 #include "id3v1.h"
 #include "replaygain.h"
 
+#include "libavcodec/avcodec.h"
 #include "libavcodec/mpegaudiodecheader.h"
 
 #define XING_FLAG_FRAMES 0x01
@@ -55,7 +56,10 @@ static int mp3_read_probe(AVProbeData *p)
     int fsize, frames, sample_rate;
     uint32_t header;
     uint8_t *buf, *buf0, *buf2, *end;
-    AVCodecContext avctx;
+    AVCodecContext *avctx = avcodec_alloc_context3(NULL);
+
+    if (!avctx)
+        return AVERROR(ENOMEM);
 
     buf0 = p->buf;
     end = p->buf + p->buf_size - sizeof(uint32_t);
@@ -70,7 +74,9 @@ static int mp3_read_probe(AVProbeData *p)
 
         for(frames = 0; buf2 < end; frames++) {
             header = AV_RB32(buf2);
-            fsize = avpriv_mpa_decode_header(&avctx, header, &sample_rate, &sample_rate, &sample_rate, &sample_rate);
+            fsize = avpriv_mpa_decode_header(avctx, header, &sample_rate,
+                                             &sample_rate, &sample_rate,
+                                             &sample_rate);
             if(fsize < 0)
                 break;
             buf2 += fsize;
@@ -79,6 +85,7 @@ static int mp3_read_probe(AVProbeData *p)
         if(buf == buf0)
             first_frames= frames;
     }
+    avcodec_free_context(&avctx);
     // keep this in sync with ac3 probe, both need to avoid
     // issues with MPEG-files!
     if (first_frames >= 10)
