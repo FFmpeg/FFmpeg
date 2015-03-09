@@ -1077,8 +1077,11 @@ static int mkv_write_chapters(AVFormatContext *s)
         int64_t chapterstart = av_rescale_q(c->start, c->time_base, scale);
         int64_t chapterend   = av_rescale_q(c->end,   c->time_base, scale);
         AVDictionaryEntry *t = NULL;
-        if (chapterstart < 0 || chapterstart > chapterend)
+        if (chapterstart < 0 || chapterstart > chapterend || chapterend < 0) {
+            av_log(s, AV_LOG_ERROR, "Invalid chapter start (%"PRId64") or end (%"PRId64").\n",
+                   chapterstart, chapterend);
             return AVERROR_INVALIDDATA;
+        }
 
         chapteratom = start_ebml_master(pb, MATROSKA_ID_CHAPTERATOM, 0);
         put_ebml_uint(pb, MATROSKA_ID_CHAPTERUID, c->id + mkv->chapter_id_offset);
