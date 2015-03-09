@@ -88,11 +88,10 @@ static int rtp_mpegts_write_header(AVFormatContext *s)
     st->time_base.num   = 1;
     st->time_base.den   = 90000;
     st->codec->codec_id = AV_CODEC_ID_MPEG2TS;
-    chain->rtp_ctx = rtp_ctx;
     rtp_ctx->pb = s->pb;
     if ((ret = avformat_write_header(rtp_ctx, NULL)) < 0)
         goto fail;
-    rtp_ctx = NULL;
+    chain->rtp_ctx = rtp_ctx;
 
     return 0;
 
