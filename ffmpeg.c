@@ -121,6 +121,8 @@ static void do_video_stats(OutputStream *ost, int frame_size);
 static int64_t getutime(void);
 static int64_t getmaxrss(void);
 static int64_t gettime_relative_minus_pause(void);
+static void pauseTranscoding(void);
+static void unpauseTranscoding(void);
 
 static int run_as_daemon  = 0;
 static int nb_frames_dup = 0;
@@ -3259,12 +3261,28 @@ static OutputStream *choose_output(void)
     return ost_min;
 }
 
+static void pauseTranscoding(void)
+{
+    if (!paused_start)
+        paused_start = av_gettime_relative();
+}
+
+static void unpauseTranscoding(void)
+{
+    if (paused_start) {
+        paused_time += av_gettime_relative() - paused_start;
+        paused_start = 0;
+    }
+}
+
 static int check_keyboard_interaction(int64_t cur_time)
 {
     int i, ret, key;
     static int64_t last_time;
-    if (received_nb_signals)
+    if (received_nb_signals) {
+        unpauseTranscoding();
         return AVERROR_EXIT;
+    }
     /* read_key() returns 0 on EOF */
     if(cur_time - last_time >= 100000 && !run_as_daemon){
         key =  read_key();
@@ -3273,13 +3291,8 @@ static int check_keyboard_interaction(int64_t cur_time)
         key = -1;
     // Reserve 'u' for unpausing a paused transcode, but allow any key to
     // unpause for backward compatibility
-    if ((key == 'u' || key != -1) && paused_start) {
-        paused_time += (av_gettime_relative() - paused_start);
-        paused_start = 0;
-    }
-    if (key == 'p' && !paused_start) {
-        paused_start = av_gettime_relative();
-    }
+    if (key == 'u' || key != -1) unpauseTranscoding();
+    if (key == 'p') pauseTranscoding();
     if (key == 'q')
         return AVERROR_EXIT;
     if (key == '+') av_log_set_level(av_log_get_level()+10);
@@ -3375,6 +3388,10 @@ static void *input_thread(void *arg)
     int ret = 0;
 
     while (1) {
+        if (paused_start) {
+            av_usleep(1000); // Be more responsive to unpausing than main thread
+            continue;
+        }
         AVPacket pkt;
         ret = av_read_frame(f->ctx, &pkt);
 
