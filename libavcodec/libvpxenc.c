@@ -390,6 +390,7 @@ static av_cold int vpx_init(AVCodecContext *avctx,
             av_log(avctx, AV_LOG_ERROR,
                    "Stat buffer alloc (%"SIZE_SPECIFIER" bytes) failed\n",
                    ctx->twopass_stats.sz);
+            ctx->twopass_stats.sz = 0;
             return ret;
         }
         decode_size = av_base64_decode(ctx->twopass_stats.buf, avctx->stats_in,
