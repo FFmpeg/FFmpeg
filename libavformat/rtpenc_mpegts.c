@@ -98,7 +98,7 @@ static int rtp_mpegts_write_header(AVFormatContext *s)
 
 fail:
     if (mpegts_ctx) {
-        ffio_free_dyn_buf(&chain->mpegts_ctx->pb);
+        ffio_free_dyn_buf(&mpegts_ctx->pb);
         avformat_free_context(mpegts_ctx);
     }
     if (rtp_ctx)
