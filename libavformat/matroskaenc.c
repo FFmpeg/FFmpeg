@@ -920,8 +920,11 @@ static int mkv_write_chapters(AVFormatContext *s)
         int chapterstart = av_rescale_q(c->start, c->time_base, scale);
         int chapterend   = av_rescale_q(c->end,   c->time_base, scale);
         AVDictionaryEntry *t = NULL;
-        if (chapterstart < 0 || chapterstart > chapterend)
+        if (chapterstart < 0 || chapterstart > chapterend || chapterend < 0) {
+            av_log(s, AV_LOG_ERROR, "Invalid chapter start (%d) or end (%d).\n",
+                   chapterstart, chapterend);
             return AVERROR_INVALIDDATA;
+        }
 
         chapteratom = start_ebml_master(pb, MATROSKA_ID_CHAPTERATOM, 0);
         put_ebml_uint(pb, MATROSKA_ID_CHAPTERUID, c->id);
