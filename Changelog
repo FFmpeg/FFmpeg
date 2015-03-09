@@ -1,6 +1,12 @@
 Releases are sorted from youngest to oldest.
 
 version 9.18:
+- tiff: Check that there is no aliasing in pixel format selection (CVE-2014-8544)
+- utvideodec: Handle slice_height being zero (CVE-2014-9604)
+- rmenc: limit packet size
+- rv10: check size of s->mb_width * s->mb_height
+- eamad: check for out of bounds read (CID/1257500)
+- arm: Suppress tags about used cpu arch and extensions
 - img2dec: correctly use the parsed value from -start_number
 - h264_cabac: Break infinite loops
 - matroskadec: Fix read-after-free in matroska_read_seek() (chromium/427266)
