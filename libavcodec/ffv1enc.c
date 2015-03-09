@@ -780,6 +780,10 @@ static av_cold int encode_init(AVCodecContext *avctx)
         s->colorspace = 1;
         s->chroma_planes = 1;
         s->version = FFMAX(s->version, 1);
+        if (!s->ac && avctx->coder_type == -1) {
+            av_log(avctx, AV_LOG_INFO, "bits_per_raw_sample > 8, forcing coder 1\n");
+            s->ac = 2;
+        }
         if (!s->ac) {
             av_log(avctx, AV_LOG_ERROR, "bits_per_raw_sample of more than 8 needs -coder 1 currently\n");
             return AVERROR(ENOSYS);
