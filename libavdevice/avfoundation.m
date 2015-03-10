@@ -71,7 +71,7 @@ static const struct AVFPixelFormatSpec avf_pixel_formats[] = {
     { AV_PIX_FMT_YUV420P,      kCVPixelFormatType_420YpCbCr8Planar },
     { AV_PIX_FMT_NV12,         kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange },
     { AV_PIX_FMT_YUYV422,      kCVPixelFormatType_422YpCbCr8_yuvs },
-#if __MAC_OS_X_VERSION_MIN_REQUIRED >= 1080
+#if !TARGET_OS_IPHONE && __MAC_OS_X_VERSION_MIN_REQUIRED >= 1080
     { AV_PIX_FMT_GRAY8,        kCVPixelFormatType_OneComponent8 },
 #endif
     { AV_PIX_FMT_NONE, 0 }
@@ -563,7 +563,7 @@ static int avf_read_header(AVFormatContext *s)
     pthread_mutex_init(&ctx->frame_lock, NULL);
     pthread_cond_init(&ctx->frame_wait_cond, NULL);
 
-#if __MAC_OS_X_VERSION_MIN_REQUIRED >= 1070
+#if !TARGET_OS_IPHONE && __MAC_OS_X_VERSION_MIN_REQUIRED >= 1070
     CGGetActiveDisplayList(0, NULL, &num_screens);
 #endif
 
@@ -577,7 +577,7 @@ static int avf_read_header(AVFormatContext *s)
             av_log(ctx, AV_LOG_INFO, "[%d] %s\n", index, name);
             index++;
         }
-#if __MAC_OS_X_VERSION_MIN_REQUIRED >= 1070
+#if !TARGET_OS_IPHONE && __MAC_OS_X_VERSION_MIN_REQUIRED >= 1070
         if (num_screens > 0) {
             CGDirectDisplayID screens[num_screens];
             CGGetActiveDisplayList(num_screens, screens, &num_screens);
@@ -612,7 +612,7 @@ static int avf_read_header(AVFormatContext *s)
         if (ctx->video_device_index < ctx->num_video_devices) {
             video_device = [devices objectAtIndex:ctx->video_device_index];
         } else if (ctx->video_device_index < ctx->num_video_devices + num_screens) {
-#if __MAC_OS_X_VERSION_MIN_REQUIRED >= 1070
+#if !TARGET_OS_IPHONE && __MAC_OS_X_VERSION_MIN_REQUIRED >= 1070
             CGDirectDisplayID screens[num_screens];
             CGGetActiveDisplayList(num_screens, screens, &num_screens);
             AVCaptureScreenInput* capture_screen_input = [[[AVCaptureScreenInput alloc] initWithDisplayID:screens[ctx->video_device_index - ctx->num_video_devices]] autorelease];
@@ -635,7 +635,7 @@ static int avf_read_header(AVFormatContext *s)
             }
         }
 
-#if __MAC_OS_X_VERSION_MIN_REQUIRED >= 1070
+#if !TARGET_OS_IPHONE && __MAC_OS_X_VERSION_MIN_REQUIRED >= 1070
         // looking for screen inputs
         if (!video_device) {
             int idx;
