@@ -60,11 +60,9 @@ static const struct algo idct_tab_arch[] = {
 #if HAVE_MMX_INLINE
     { "SIMPLE-MMX",  ff_simple_idct_mmx,  FF_IDCT_PERM_SIMPLE, AV_CPU_FLAG_MMX },
 #endif
-#if CONFIG_MPEG4_DECODER
-#if HAVE_MMX_INLINE
+#if CONFIG_MPEG4_DECODER && HAVE_YASM
+#if ARCH_X86_32
     { "XVID-MMX",    ff_xvid_idct_mmx,    FF_IDCT_PERM_NONE,   AV_CPU_FLAG_MMX,    1 },
-#endif
-#if HAVE_MMXEXT_INLINE
     { "XVID-MMXEXT", ff_xvid_idct_mmxext, FF_IDCT_PERM_NONE,   AV_CPU_FLAG_MMXEXT, 1 },
 #endif
 #if HAVE_SSE2_EXTERNAL
@@ -73,7 +71,7 @@ static const struct algo idct_tab_arch[] = {
     { "PR-SSE2",     ff_prores_idct_put_10_sse2_wrap, FF_IDCT_PERM_TRANSPOSE, AV_CPU_FLAG_SSE2, 1 },
 #endif
 #endif
-#endif /* CONFIG_MPEG4_DECODER */
+#endif /* CONFIG_MPEG4_DECODER && HAVE_YASM */
     { 0 }
 };
 
