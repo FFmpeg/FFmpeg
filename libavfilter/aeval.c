@@ -217,6 +217,7 @@ static av_cold void uninit(AVFilterContext *ctx)
         eval->expr[i] = NULL;
     }
     av_freep(&eval->expr);
+    av_freep(&eval->channel_values);
 }
 
 static int config_props(AVFilterLink *outlink)
