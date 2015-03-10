@@ -208,14 +208,14 @@ static int config_props(AVFilterLink *inlink)
         int h = inlink->h;
 
         /* RDFT - Array initialization for Horizontal pass*/
-        for (rdft_hbits = 1; 1 << rdft_hbits < w; rdft_hbits++);
+        for (rdft_hbits = 1; 1 << rdft_hbits < w*10/9; rdft_hbits++);
         fftfilt->rdft_hbits[i] = rdft_hbits;
         fftfilt->rdft_hlen[i] = 1 << rdft_hbits;
         if (!(fftfilt->rdft_hdata[i] = av_malloc_array(h, fftfilt->rdft_hlen[i] * sizeof(FFTSample))))
             return AVERROR(ENOMEM);
 
         /* RDFT - Array initialization for Vertical pass*/
-        for (rdft_vbits = 1; 1 << rdft_vbits < h; rdft_vbits++);
+        for (rdft_vbits = 1; 1 << rdft_vbits < h*10/9; rdft_vbits++);
         fftfilt->rdft_vbits[i] = rdft_vbits;
         fftfilt->rdft_vlen[i] = 1 << rdft_vbits;
         if (!(fftfilt->rdft_vdata[i] = av_malloc_array(fftfilt->rdft_hlen[i], fftfilt->rdft_vlen[i] * sizeof(FFTSample))))
