@@ -45,8 +45,8 @@ static int zero12v_decode_frame(AVCodecContext *avctx, void *data,
     const uint8_t *line_end, *src = avpkt->data;
     int stride = avctx->width * 8 / 3;
 
-    if (width == 1) {
-        av_log(avctx, AV_LOG_ERROR, "Width 1 not supported.\n");
+    if (width <= 1 || avctx->height <= 0) {
+        av_log(avctx, AV_LOG_ERROR, "Dimensions %dx%d not supported.\n", width, avctx->height);
         return AVERROR_INVALIDDATA;
     }
 
