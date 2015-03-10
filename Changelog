@@ -3,6 +3,7 @@ releases are sorted from youngest to oldest.
 
 version 0.8.17:
 
+- utvideodec: Handle slice_height being zero (CVE-2014-9604)
 - tiff: Check that there is no aliasing in pixel format selection (CVE-2014-8544)
 - rmenc: limit packet size
 - eamad: check for out of bounds read (CID/1257500)
