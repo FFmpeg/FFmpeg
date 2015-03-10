@@ -168,6 +168,7 @@ typedef struct MOVMuxContext {
     int iods_video_profile;
     int iods_audio_profile;
 
+    int moov_written;
     int fragments;
     int max_fragment_duration;
     int min_fragment_duration;
