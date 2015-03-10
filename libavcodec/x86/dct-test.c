@@ -67,9 +67,9 @@ static const struct algo idct_tab_arch[] = {
 #if HAVE_MMXEXT_INLINE
     { "XVID-MMXEXT", ff_xvid_idct_mmxext, FF_IDCT_PERM_NONE,   AV_CPU_FLAG_MMXEXT, 1 },
 #endif
-#if HAVE_SSE2_INLINE
+#if HAVE_SSE2_EXTERNAL
     { "XVID-SSE2",   ff_xvid_idct_sse2,   FF_IDCT_PERM_SSE2,   AV_CPU_FLAG_SSE2,   1 },
-#if ARCH_X86_64 && HAVE_YASM
+#if ARCH_X86_64
     { "PR-SSE2",     ff_prores_idct_put_10_sse2_wrap, FF_IDCT_PERM_TRANSPOSE, AV_CPU_FLAG_SSE2, 1 },
 #endif
 #endif
