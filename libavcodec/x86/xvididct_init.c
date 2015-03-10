@@ -26,11 +26,7 @@
 #include "idctdsp.h"
 #include "xvididct.h"
 
-static void xvid_idct_sse2_put(uint8_t *dest, int line_size, short *block)
-{
-    ff_xvid_idct_sse2(block);
-    ff_put_pixels_clamped(block, dest, line_size);
-}
+void ff_xvid_idct_put_sse2(uint8_t *dest, int line_size, short *block);
 
 static void xvid_idct_sse2_add(uint8_t *dest, int line_size, short *block)
 {
@@ -91,7 +87,7 @@ av_cold void ff_xvid_idct_init_x86(IDCTDSPContext *c, AVCodecContext *avctx,
 #endif
 
     if (EXTERNAL_SSE2(cpu_flags)) {
-        c->idct_put  = xvid_idct_sse2_put;
+        c->idct_put  = ff_xvid_idct_put_sse2;
         c->idct_add  = xvid_idct_sse2_add;
         c->idct      = ff_xvid_idct_sse2;
         c->perm_type = FF_IDCT_PERM_SSE2;

@@ -292,13 +292,13 @@ SECTION .text
 %define TAN3  xmm13
 %define TAN1  xmm14
 %else
-%define ROW0  [r0 + 0*16]
+%define ROW0  [BLOCK + 0*16]
 %define REG0  xmm4
-%define ROW2  [r0 + 2*16]
+%define ROW2  [BLOCK + 2*16]
 %define REG2  xmm4
-%define ROW4  [r0 + 4*16]
+%define ROW4  [BLOCK + 4*16]
 %define REG4  xmm6
-%define ROW6  [r0 + 6*16]
+%define ROW6  [BLOCK + 6*16]
 %define REG6  xmm6
 %define XMMS  xmm2
 %define SREG2 xmm7
@@ -369,8 +369,71 @@ SECTION .text
     movdqa   TAN1, [tan1]
 %endmacro
 
+%macro FIRST_HALF 2  ; %1=dct  %2=type(normal,add,put)
+    psraw    xmm5, 6
+    psraw    REG0, 6
+    psraw    TAN3, 6
+    psraw    xmm3, 6
+    ; dct coeffs must still be written for AC prediction
+%if %2 == 0
+    movdqa   [%1+1*16], TAN3
+    movdqa   [%1+2*16], xmm3
+    movdqa   [%1+5*16], REG0
+    movdqa   [%1+6*16], xmm5
+%else
+    ; Must now load args as gprs are no longer used for masks
+    ; DEST is set to where address of dest was loaded
+    %if ARCH_X86_32
+    %xdefine DEST r2q ; BLOCK is r0, stride r1
+    movifnidn DEST, destm
+    movifnidn strideq, stridem
+    %else
+    %xdefine DEST r0q
+    %endif
+    lea      r3q, [3*strideq]
+    %if %2 == 1
+    packuswb TAN3, xmm3
+    packuswb xmm5, REG0
+    movq     [DEST + strideq], TAN3
+    movhps   [DEST + 2*strideq], TAN3
+    ; REG0 and TAN3 are now available (and likely used in second half)
+    %else
+        %warning Unimplemented
+    %endif
+%endif
+%endmacro
+
+%macro SECOND_HALF 6 ; %1=dct  %2=type(normal,add,put) 3-6: xmms
+    psraw    %3, 6
+    psraw    %4, 6
+    psraw    %5, 6
+    psraw    %6, 6
+    ; dct coeffs must still be written for AC prediction
+%if %2 == 0
+    movdqa   [%1+0*16], %3
+    movdqa   [%1+3*16], %5
+    movdqa   [%1+4*16], %6
+    movdqa   [%1+7*16], %4
+%elif %2 == 1
+    packuswb %3, %5
+    packuswb %6, %4
+    ; address of dest may have been loaded
+    movq     [DEST], %3
+    movhps   [DEST + r3q], %3
+    lea      DEST, [DEST + 4*strideq]
+    movq     [DEST], %6
+    movhps   [DEST + r3q], %6
+    ; and now write remainder of first half
+    movq     [DEST + 2*strideq], xmm5
+    movhps   [DEST + strideq], xmm5
+%elif %2 == 2
+%warning Unimplemented
+%endif
+%endmacro
+
+
 ; IDCT pass on columns.
-%macro iLLM_PASS  1  ;dct
+%macro iLLM_PASS  2  ; %1=dct  %2=type(normal,add,put)
     movdqa   xmm1, TAN3
     movdqa   xmm3, TAN1
     pmulhw   TAN3, xmm4
@@ -407,7 +470,7 @@ SECTION .text
     psubsw   xmm5, REG6
     MOV32    ROW0, REG0
     MOV32    ROW4, REG4
-    MOV32    TAN1, [r0]
+    MOV32    TAN1, [BLOCK]
     movdqa   XMMS, REG0
     psubsw   REG0, REG4
     paddsw   REG4, XMMS
@@ -423,33 +486,22 @@ SECTION .text
     movdqa   XMMS, REG0
     psubsw   REG0, xmm3
     paddsw   xmm3, XMMS
-    MOV32    [r0], TAN1
-    psraw    xmm5, 6
-    psraw    REG0, 6
-    psraw    TAN3, 6
-    psraw    xmm3, 6
-    movdqa   [%1+1*16], TAN3
-    movdqa   [%1+2*16], xmm3
-    movdqa   [%1+5*16], REG0
-    movdqa   [%1+6*16], xmm5
+    MOV32    [BLOCK], TAN1
+
+    FIRST_HALF %1, %2
+
     movdqa   xmm0, xmm7
     movdqa   xmm4, REG4
     psubsw   xmm7, xmm1
     psubsw   REG4, TAN1
     paddsw   xmm1, xmm0
     paddsw   TAN1, xmm4
-    psraw    xmm1, 6
-    psraw    xmm7, 6
-    psraw    TAN1, 6
-    psraw    REG4, 6
-    movdqa   [%1+0*16], xmm1
-    movdqa   [%1+3*16], TAN1
-    movdqa   [%1+4*16], REG4
-    movdqa   [%1+7*16], xmm7
+
+    SECOND_HALF %1, %2, xmm1, xmm7, TAN1, REG4
 %endmacro
 
 ; IDCT pass on columns, assuming rows 4-7 are zero
-%macro iLLM_PASS_SPARSE   1 ;dct
+%macro iLLM_PASS_SPARSE   2 ; %1=dct   %2=type(normal,put,add)
     pmulhw   TAN3, xmm4
     paddsw   TAN3, xmm4
     movdqa   xmm3, xmm6
@@ -475,7 +527,7 @@ SECTION .text
     movdqa   xmm6, REG0
     psubsw   xmm6, SREG2
     paddsw  SREG2, REG0
-    MOV32    TAN1, [r0]
+    MOV32    TAN1, [BLOCK]
     movdqa   XMMS, REG0
     psubsw   REG0, xmm5
     paddsw   xmm5, XMMS
@@ -485,70 +537,92 @@ SECTION .text
     movdqa   XMMS, REG0
     psubsw   REG0, xmm3
     paddsw   xmm3, XMMS
-    MOV32    [r0], TAN1
-    psraw        xmm5, 6
-    psraw        REG0, 6
-    psraw        TAN3, 6
-    psraw        xmm3, 6
-    movdqa   [%1+1*16], TAN3
-    movdqa   [%1+2*16], xmm3
-    movdqa   [%1+5*16], REG0
-    movdqa   [%1+6*16], xmm5
+    MOV32    [BLOCK], TAN1
+
+    FIRST_HALF %1, %2
+
     movdqa   xmm0, SREG2
     movdqa   xmm4, xmm6
     psubsw  SREG2, xmm1
     psubsw   xmm6, TAN1
     paddsw   xmm1, xmm0
     paddsw   TAN1, xmm4
-    psraw        xmm1, 6
-    psraw       SREG2, 6
-    psraw        TAN1, 6
-    psraw        xmm6, 6
-    movdqa   [%1+0*16], xmm1
-    movdqa   [%1+3*16], TAN1
-    movdqa   [%1+4*16], xmm6
-    movdqa   [%1+7*16], SREG2
+
+    SECOND_HALF %1, %2, xmm1, SREG2, TAN1, xmm6
 %endmacro
 
-INIT_XMM sse2
-cglobal xvid_idct, 1, 5, 8+7*ARCH_X86_64, block
+%macro IDCT_SSE2 1 ; 0=normal  1=put  2=add
+%if %1 == 0 || ARCH_X86_32
+    %define GPR0  r1d
+    %define GPR1  r2d
+    %define GPR2  r3d
+    %define GPR3  r4d
+    %define NUM_GPRS 5
+%else
+    %define GPR0  r3d
+    %define GPR1  r4d
+    %define GPR2  r5d
+    %define GPR3  r6d
+    %define NUM_GPRS 7
+%endif
+%if %1 == 0
+cglobal xvid_idct, 1, NUM_GPRS, 8+7*ARCH_X86_64, block
+%xdefine BLOCK blockq
+%else
+    %if %1 == 1
+cglobal xvid_idct_put, 0, NUM_GPRS, 8+7*ARCH_X86_64, dest, stride, block
+    %else
+cglobal xvid_idct_add, 0, NUM_GPRS, 8+7*ARCH_X86_64, dest, stride, block
+    %endif
+    %if ARCH_X86_64
+    %xdefine BLOCK blockq
+    %else
+    mov    r0q, blockm
+    %xdefine BLOCK r0q
+    %endif
+%endif
     movq           mm0, [pb_127]
-    iMTX_MULT      r0 + 0*16, iTab1, PUT_EVEN, ROW0, 0*16
-    iMTX_MULT      r0 + 1*16, iTab2, PUT_ODD, ROW1,  1*16
-    iMTX_MULT      r0 + 2*16, iTab3, PUT_EVEN, ROW2, 2*16
+    iMTX_MULT      BLOCK + 0*16, iTab1, PUT_EVEN, ROW0, 0*16
+    iMTX_MULT      BLOCK + 1*16, iTab2, PUT_ODD, ROW1,  1*16
+    iMTX_MULT      BLOCK + 2*16, iTab3, PUT_EVEN, ROW2, 2*16
 
-    TEST_TWO_ROWS  r0 + 3*16, r0 + 4*16, r1d, r2d, CLEAR_ODD, ROW3, CLEAR_EVEN, ROW4 ; a, c
-    JZ   r1d, col1
-    iMTX_MULT      r0 + 3*16, iTab4, PUT_ODD, ROW3,  3*16
+    TEST_TWO_ROWS  BLOCK + 3*16, BLOCK + 4*16, GPR0, GPR1, CLEAR_ODD, ROW3, CLEAR_EVEN, ROW4 ; a, c
+    JZ   GPR0, col1
+    iMTX_MULT      BLOCK + 3*16, iTab4, PUT_ODD, ROW3,  3*16
 .col1:
-    TEST_TWO_ROWS  r0 + 5*16, r0 + 6*16, r1d, r3d, CLEAR_ODD, ROW5, CLEAR_EVEN, ROW6 ; a, d
-    TEST_ONE_ROW   r0 + 7*16, r4d, CLEAR_ODD, ROW7 ; esi
+    TEST_TWO_ROWS  BLOCK + 5*16, BLOCK + 6*16, GPR0, GPR2, CLEAR_ODD, ROW5, CLEAR_EVEN, ROW6 ; a, d
+    TEST_ONE_ROW   BLOCK + 7*16, GPR3, CLEAR_ODD, ROW7 ; esi
 
     iLLM_HEAD
-    JNZ  r2d, 2
-    JNZ  r1d, 3
-    JNZ  r3d, 4
-    JNZ  r4d, 5
-    iLLM_PASS_SPARSE r0
+    JNZ  GPR1, 2
+    JNZ  GPR0, 3
+    JNZ  GPR2, 4
+    JNZ  GPR3, 5
+    iLLM_PASS_SPARSE BLOCK, %1
     jmp .6
 .2:
-    iMTX_MULT     r0 + 4*16, iTab1, PUT_EVEN, ROW4
+    iMTX_MULT     BLOCK + 4*16, iTab1, PUT_EVEN, ROW4
 .3:
-    iMTX_MULT     r0 + 5*16, iTab4, PUT_ODD, ROW5,  4*16
-    JZ   r3d, col2
+    iMTX_MULT     BLOCK + 5*16, iTab4, PUT_ODD, ROW5,  4*16
+    JZ   GPR2, col2
 .4:
-    iMTX_MULT     r0 + 6*16, iTab3, PUT_EVEN, ROW6, 5*16
+    iMTX_MULT     BLOCK + 6*16, iTab3, PUT_EVEN, ROW6, 5*16
 .col2:
-    JZ   r4d, col3
+    JZ   GPR3, col3
 .5:
-    iMTX_MULT     r0 + 7*16, iTab2, PUT_ODD, ROW7,  5*16
+    iMTX_MULT     BLOCK + 7*16, iTab2, PUT_ODD, ROW7,  5*16
 .col3:
 %if ARCH_X86_32
     iLLM_HEAD
 %endif
-    iLLM_PASS     r0
+    iLLM_PASS     BLOCK, %1
 .6:
     RET
+%endmacro
+
+INIT_XMM sse2
+IDCT_SSE2 0
+IDCT_SSE2 1
 
 %if ARCH_X86_32
 
