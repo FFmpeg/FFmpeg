@@ -23,6 +23,7 @@ cmp_target=${13:-0}
 size_tolerance=${14:-0}
 cmp_unit=${15:-2}
 gen=${16:-no}
+hwaccel=${17:-none}
 
 outdir="tests/data/fate"
 outfile="${outdir}/${test}"
@@ -91,7 +92,7 @@ probeframes(){
 }
 
 ffmpeg(){
-    dec_opts="-threads $threads -thread_type $thread_type"
+    dec_opts="-hwaccel $hwaccel -threads $threads -thread_type $thread_type"
     ffmpeg_args="-nostats -cpuflags $cpuflags"
     for arg in $@; do
         [ x${arg} = x-i ] && ffmpeg_args="${ffmpeg_args} ${dec_opts}"
