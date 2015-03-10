@@ -384,6 +384,12 @@ SECTION .text
     ; Must now load args as gprs are no longer used for masks
     ; DEST is set to where address of dest was loaded
     %if ARCH_X86_32
+        %if %2 == 2 ; Not enough xmms, store
+    movdqa   [%1+1*16], TAN3
+    movdqa   [%1+2*16], xmm3
+    movdqa   [%1+5*16], REG0
+    movdqa   [%1+6*16], xmm5
+        %endif
     %xdefine DEST r2q ; BLOCK is r0, stride r1
     movifnidn DEST, destm
     movifnidn strideq, stridem
@@ -397,8 +403,6 @@ SECTION .text
     movq     [DEST + strideq], TAN3
     movhps   [DEST + 2*strideq], TAN3
     ; REG0 and TAN3 are now available (and likely used in second half)
-    %else
-        %warning Unimplemented
     %endif
 %endif
 %endmacro
@@ -427,7 +431,88 @@ SECTION .text
     movq     [DEST + 2*strideq], xmm5
     movhps   [DEST + strideq], xmm5
 %elif %2 == 2
-%warning Unimplemented
+    pxor        xmm0, xmm0
+    %if ARCH_X86_32
+    ; free: m3 REG0=m4 m5
+    ; input: m1, m7, m2, m6
+    movq        xmm3, [DEST+0*strideq]
+    movq        xmm4, [DEST+1*strideq]
+    punpcklbw   xmm3, xmm0
+    punpcklbw   xmm4, xmm0
+    paddsw      xmm3, %3
+    paddsw      xmm4, [%1 + 1*16]
+    movq          %3, [DEST+2*strideq]
+    movq        xmm5, [DEST+      r3q]
+    punpcklbw     %3, xmm0
+    punpcklbw   xmm5, xmm0
+    paddsw        %3, [%1 + 2*16]
+    paddsw      xmm5, %5
+    packuswb    xmm3, xmm4
+    packuswb      %3, xmm5
+    movq    [DEST+0*strideq], xmm3
+    movhps  [DEST+1*strideq], xmm3
+    movq    [DEST+2*strideq], %3
+    movhps  [DEST+      r3q], %3
+    lea         DEST, [DEST+4*strideq]
+    movq        xmm3, [DEST+0*strideq]
+    movq        xmm4, [DEST+1*strideq]
+    movq          %3, [DEST+2*strideq]
+    movq        xmm5, [DEST+      r3q]
+    punpcklbw   xmm3, xmm0
+    punpcklbw   xmm4, xmm0
+    punpcklbw     %3, xmm0
+    punpcklbw   xmm5, xmm0
+    paddsw      xmm3, %6
+    paddsw      xmm4, [%1 + 5*16]
+    paddsw        %3, [%1 + 6*16]
+    paddsw      xmm5, %4
+    packuswb    xmm3, xmm4
+    packuswb      %3, xmm5
+    movq    [DEST+0*strideq], xmm3
+    movhps  [DEST+1*strideq], xmm3
+    movq    [DEST+2*strideq], %3
+    movhps  [DEST+      r3q], %3
+    %else
+    ; l1:TAN3=m13  l2:m3  l5:REG0=m8 l6=m5
+    ; input: m1, m7/SREG2=m9, TAN1=m14, REG4=m10
+    movq        xmm2, [DEST+0*strideq]
+    movq        xmm4, [DEST+1*strideq]
+    movq       xmm12, [DEST+2*strideq]
+    movq       xmm11, [DEST+      r3q]
+    punpcklbw   xmm2, xmm0
+    punpcklbw   xmm4, xmm0
+    punpcklbw  xmm12, xmm0
+    punpcklbw  xmm11, xmm0
+    paddsw      xmm2, %3
+    paddsw      xmm4, TAN3
+    paddsw     xmm12, xmm3
+    paddsw     xmm11, %5
+    packuswb    xmm2, xmm4
+    packuswb   xmm12, xmm11
+    movq    [DEST+0*strideq], xmm2
+    movhps  [DEST+1*strideq], xmm2
+    movq    [DEST+2*strideq], xmm12
+    movhps  [DEST+      r3q], xmm12
+    lea         DEST, [DEST+4*strideq]
+    movq        xmm2, [DEST+0*strideq]
+    movq        xmm4, [DEST+1*strideq]
+    movq       xmm12, [DEST+2*strideq]
+    movq       xmm11, [DEST+      r3q]
+    punpcklbw   xmm2, xmm0
+    punpcklbw   xmm4, xmm0
+    punpcklbw  xmm12, xmm0
+    punpcklbw  xmm11, xmm0
+    paddsw      xmm2, %6
+    paddsw      xmm4, REG0
+    paddsw     xmm12, xmm5
+    paddsw     xmm11, %4
+    packuswb    xmm2, xmm4
+    packuswb   xmm12, xmm11
+    movq    [DEST+0*strideq], xmm2
+    movhps  [DEST+1*strideq], xmm2
+    movq    [DEST+2*strideq], xmm12
+    movhps  [DEST+      r3q], xmm12
+    %endif
 %endif
 %endmacro
 
@@ -623,6 +708,7 @@ cglobal xvid_idct_add, 0, NUM_GPRS, 8+7*ARCH_X86_64, dest, stride, block
 INIT_XMM sse2
 IDCT_SSE2 0
 IDCT_SSE2 1
+IDCT_SSE2 2
 
 %if ARCH_X86_32
 

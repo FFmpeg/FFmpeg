@@ -27,12 +27,7 @@
 #include "xvididct.h"
 
 void ff_xvid_idct_put_sse2(uint8_t *dest, int line_size, short *block);
-
-static void xvid_idct_sse2_add(uint8_t *dest, int line_size, short *block)
-{
-    ff_xvid_idct_sse2(block);
-    ff_add_pixels_clamped(block, dest, line_size);
-}
+void ff_xvid_idct_add_sse2(uint8_t *dest, int line_size, short *block);
 
 #if ARCH_X86_32
 static void xvid_idct_mmx_put(uint8_t *dest, int line_size, short *block)
@@ -88,7 +83,7 @@ av_cold void ff_xvid_idct_init_x86(IDCTDSPContext *c, AVCodecContext *avctx,
 
     if (EXTERNAL_SSE2(cpu_flags)) {
         c->idct_put  = ff_xvid_idct_put_sse2;
-        c->idct_add  = xvid_idct_sse2_add;
+        c->idct_add  = ff_xvid_idct_add_sse2;
         c->idct      = ff_xvid_idct_sse2;
         c->perm_type = FF_IDCT_PERM_SSE2;
     }
