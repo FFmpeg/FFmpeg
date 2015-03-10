@@ -3988,7 +3988,7 @@ static int mov_parse_mpeg2_frame(AVPacket *pkt, uint32_t *flags)
     return 0;
 }
 
-static void mov_parse_vc1_frame(AVPacket *pkt, MOVTrack *trk, int fragment)
+static void mov_parse_vc1_frame(AVPacket *pkt, MOVTrack *trk)
 {
     const uint8_t *start, *next, *end = pkt->data + pkt->size;
     int seq = 0, entry = 0;
@@ -4008,10 +4008,13 @@ static void mov_parse_vc1_frame(AVPacket *pkt, MOVTrack *trk, int fragment)
             break;
         }
     }
-    if (!trk->entry && !fragment) {
+    if (!trk->entry && trk->vc1_info.first_packet_seen)
+        trk->vc1_info.first_frag_written = 1;
+    if (!trk->entry && !trk->vc1_info.first_frag_written) {
         /* First packet in first fragment */
         trk->vc1_info.first_packet_seq   = seq;
         trk->vc1_info.first_packet_entry = entry;
+        trk->vc1_info.first_packet_seen  = 1;
     } else if ((seq && !trk->vc1_info.packet_seq) ||
                (entry && !trk->vc1_info.packet_entry)) {
         int i;
@@ -4022,7 +4025,7 @@ static void mov_parse_vc1_frame(AVPacket *pkt, MOVTrack *trk, int fragment)
             trk->vc1_info.packet_seq = 1;
         if (entry)
             trk->vc1_info.packet_entry = 1;
-        if (!fragment) {
+        if (!trk->vc1_info.first_frag_written) {
             /* First fragment */
             if ((!seq   || trk->vc1_info.first_packet_seq) &&
                 (!entry || trk->vc1_info.first_packet_entry)) {
@@ -4386,7 +4389,7 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
         trk->start_cts = pkt->pts - pkt->dts;
 
     if (enc->codec_id == AV_CODEC_ID_VC1) {
-        mov_parse_vc1_frame(pkt, trk, mov->fragments);
+        mov_parse_vc1_frame(pkt, trk);
     } else if (pkt->flags & AV_PKT_FLAG_KEY) {
         if (mov->mode == MODE_MOV && enc->codec_id == AV_CODEC_ID_MPEG2VIDEO &&
             trk->entry > 0) { // force sync sample for the first key frame
