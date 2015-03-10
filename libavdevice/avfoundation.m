@@ -268,6 +268,10 @@ static int add_video_device(AVFormatContext *s, AVCaptureDevice *video_device)
     AVFContext *ctx = (AVFContext*)s->priv_data;
     NSError *error  = nil;
     AVCaptureInput* capture_input = nil;
+    struct AVFPixelFormatSpec pxl_fmt_spec;
+    NSNumber *pixel_format;
+    NSDictionary *capture_dict;
+    dispatch_queue_t queue;
 
     if (ctx->video_device_index < ctx->num_video_devices) {
         capture_input = (AVCaptureInput*) [[[AVCaptureDeviceInput alloc] initWithDevice:video_device error:&error] autorelease];
@@ -297,7 +301,6 @@ static int add_video_device(AVFormatContext *s, AVCaptureDevice *video_device)
     }
 
     // select pixel format
-    struct AVFPixelFormatSpec pxl_fmt_spec;
     pxl_fmt_spec.ff_id = AV_PIX_FMT_NONE;
 
     for (int i = 0; avf_pixel_formats[i].ff_id != AV_PIX_FMT_NONE; i++) {
@@ -352,8 +355,8 @@ static int add_video_device(AVFormatContext *s, AVCaptureDevice *video_device)
     }
 
     ctx->pixel_format          = pxl_fmt_spec.ff_id;
-    NSNumber     *pixel_format = [NSNumber numberWithUnsignedInt:pxl_fmt_spec.avf_id];
-    NSDictionary *capture_dict = [NSDictionary dictionaryWithObject:pixel_format
+    pixel_format = [NSNumber numberWithUnsignedInt:pxl_fmt_spec.avf_id];
+    capture_dict = [NSDictionary dictionaryWithObject:pixel_format
                                                forKey:(id)kCVPixelBufferPixelFormatTypeKey];
 
     [ctx->video_output setVideoSettings:capture_dict];
@@ -361,7 +364,7 @@ static int add_video_device(AVFormatContext *s, AVCaptureDevice *video_device)
 
     ctx->avf_delegate = [[AVFFrameReceiver alloc] initWithContext:ctx];
 
-    dispatch_queue_t queue = dispatch_queue_create("avf_queue", NULL);
+    queue = dispatch_queue_create("avf_queue", NULL);
     [ctx->video_output setSampleBufferDelegate:ctx->avf_delegate queue:queue];
     dispatch_release(queue);
 
@@ -380,6 +383,7 @@ static int add_audio_device(AVFormatContext *s, AVCaptureDevice *audio_device)
     AVFContext *ctx = (AVFContext*)s->priv_data;
     NSError *error  = nil;
     AVCaptureDeviceInput* audio_dev_input = [[[AVCaptureDeviceInput alloc] initWithDevice:audio_device error:&error] autorelease];
+    dispatch_queue_t queue;
 
     if (!audio_dev_input) {
         av_log(s, AV_LOG_ERROR, "Failed to create AV capture input device: %s\n",
@@ -404,7 +408,7 @@ static int add_audio_device(AVFormatContext *s, AVCaptureDevice *audio_device)
 
     ctx->avf_audio_delegate = [[AVFAudioReceiver alloc] initWithContext:ctx];
 
-    dispatch_queue_t queue = dispatch_queue_create("avf_audio_queue", NULL);
+    queue = dispatch_queue_create("avf_audio_queue", NULL);
     [ctx->audio_output setSampleBufferDelegate:ctx->avf_audio_delegate queue:queue];
     dispatch_release(queue);
 
@@ -421,6 +425,13 @@ static int add_audio_device(AVFormatContext *s, AVCaptureDevice *audio_device)
 static int get_video_config(AVFormatContext *s)
 {
     AVFContext *ctx = (AVFContext*)s->priv_data;
+    CVImageBufferRef image_buffer;
+    CGSize image_buffer_size;
+    AVStream* stream = avformat_new_stream(s, NULL);
+
+    if (!stream) {
+        return 1;
+    }
 
     // Take stream info from the first frame.
     while (ctx->frames_captured < 1) {
@@ -429,18 +440,12 @@ static int get_video_config(AVFormatContext *s)
 
     lock_frames(ctx);
 
-    AVStream* stream = avformat_new_stream(s, NULL);
-
-    if (!stream) {
-        return 1;
-    }
-
     ctx->video_stream_index = stream->index;
 
     avpriv_set_pts_info(stream, 64, 1, avf_time_base);
 
-    CVImageBufferRef image_buffer = CMSampleBufferGetImageBuffer(ctx->current_frame);
-    CGSize image_buffer_size      = CVImageBufferGetEncodedSize(image_buffer);
+    image_buffer      = CMSampleBufferGetImageBuffer(ctx->current_frame);
+    image_buffer_size = CVImageBufferGetEncodedSize(image_buffer);
 
     stream->codec->codec_id   = AV_CODEC_ID_RAWVIDEO;
     stream->codec->codec_type = AVMEDIA_TYPE_VIDEO;
@@ -459,6 +464,12 @@ static int get_video_config(AVFormatContext *s)
 static int get_audio_config(AVFormatContext *s)
 {
     AVFContext *ctx = (AVFContext*)s->priv_data;
+    CMFormatDescriptionRef format_desc;
+    AVStream* stream = avformat_new_stream(s, NULL);
+
+    if (!stream) {
+        return 1;
+    }
 
     // Take stream info from the first frame.
     while (ctx->audio_frames_captured < 1) {
@@ -467,17 +478,11 @@ static int get_audio_config(AVFormatContext *s)
 
     lock_frames(ctx);
 
-    AVStream* stream = avformat_new_stream(s, NULL);
-
-    if (!stream) {
-        return 1;
-    }
-
     ctx->audio_stream_index = stream->index;
 
     avpriv_set_pts_info(stream, 64, 1, avf_time_base);
 
-    CMFormatDescriptionRef format_desc = CMSampleBufferGetFormatDescription(ctx->current_audio_frame);
+    format_desc = CMSampleBufferGetFormatDescription(ctx->current_audio_frame);
     const AudioStreamBasicDescription *basic_desc = CMAudioFormatDescriptionGetStreamBasicDescription(format_desc);
 
     if (!basic_desc) {
@@ -544,10 +549,16 @@ static int get_audio_config(AVFormatContext *s)
 static int avf_read_header(AVFormatContext *s)
 {
     NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+    uint32_t num_screens    = 0;
     AVFContext *ctx         = (AVFContext*)s->priv_data;
+    AVCaptureDevice *video_device = nil;
+    AVCaptureDevice *audio_device = nil;
+    // Find capture device
+    NSArray *devices = [AVCaptureDevice devicesWithMediaType:AVMediaTypeVideo];
+    ctx->num_video_devices = [devices count];
+
     ctx->first_pts          = av_gettime();
     ctx->first_audio_pts    = av_gettime();
-    uint32_t num_screens    = 0;
 
     pthread_mutex_init(&ctx->frame_lock, NULL);
     pthread_cond_init(&ctx->frame_wait_cond, NULL);
@@ -558,9 +569,8 @@ static int avf_read_header(AVFormatContext *s)
 
     // List devices if requested
     if (ctx->list_devices) {
-        av_log(ctx, AV_LOG_INFO, "AVFoundation video devices:\n");
-        NSArray *devices = [AVCaptureDevice devicesWithMediaType:AVMediaTypeVideo];
         int index = 0;
+        av_log(ctx, AV_LOG_INFO, "AVFoundation video devices:\n");
         for (AVCaptureDevice *device in devices) {
             const char *name = [[device localizedName] UTF8String];
             index            = [devices indexOfObject:device];
@@ -587,13 +597,6 @@ static int avf_read_header(AVFormatContext *s)
          goto fail;
     }
 
-    // Find capture device
-    AVCaptureDevice *video_device = nil;
-    AVCaptureDevice *audio_device = nil;
-
-    NSArray *video_devices = [AVCaptureDevice devicesWithMediaType:AVMediaTypeVideo];
-    ctx->num_video_devices = [video_devices count];
-
     // parse input filename for video and audio device
     parse_device_name(s);
 
@@ -607,7 +610,7 @@ static int avf_read_header(AVFormatContext *s)
 
     if (ctx->video_device_index >= 0) {
         if (ctx->video_device_index < ctx->num_video_devices) {
-            video_device = [video_devices objectAtIndex:ctx->video_device_index];
+            video_device = [devices objectAtIndex:ctx->video_device_index];
         } else if (ctx->video_device_index < ctx->num_video_devices + num_screens) {
 #if __MAC_OS_X_VERSION_MIN_REQUIRED >= 1070
             CGDirectDisplayID screens[num_screens];
@@ -625,7 +628,7 @@ static int avf_read_header(AVFormatContext *s)
             video_device = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeVideo];
         } else {
         // looking for video inputs
-        for (AVCaptureDevice *device in video_devices) {
+        for (AVCaptureDevice *device in devices) {
             if (!strncmp(ctx->video_filename, [[device localizedName] UTF8String], strlen(ctx->video_filename))) {
                 video_device = device;
                 break;
@@ -735,11 +738,13 @@ static int avf_read_packet(AVFormatContext *s, AVPacket *pkt)
     AVFContext* ctx = (AVFContext*)s->priv_data;
 
     do {
+        CVImageBufferRef image_buffer;
         lock_frames(ctx);
 
-        CVImageBufferRef image_buffer = CMSampleBufferGetImageBuffer(ctx->current_frame);
+        image_buffer = CMSampleBufferGetImageBuffer(ctx->current_frame);
 
         if (ctx->current_frame != nil) {
+            void *data;
             if (av_new_packet(pkt, (int)CVPixelBufferGetDataSize(image_buffer)) < 0) {
                 return AVERROR(EIO);
             }
@@ -752,7 +757,7 @@ static int avf_read_packet(AVFormatContext *s, AVPacket *pkt)
 
             CVPixelBufferLockBaseAddress(image_buffer, 0);
 
-            void* data = CVPixelBufferGetBaseAddress(image_buffer);
+            data = CVPixelBufferGetBaseAddress(image_buffer);
             memcpy(pkt->data, data, pkt->size);
 
             CVPixelBufferUnlockBaseAddress(image_buffer, 0);
@@ -782,14 +787,14 @@ static int avf_read_packet(AVFormatContext *s, AVPacket *pkt)
             pkt->flags        |= AV_PKT_FLAG_KEY;
 
             if (ctx->audio_non_interleaved) {
-                int sample, c, shift;
+                int sample, c, shift, num_samples;
 
                 OSStatus ret = CMBlockBufferCopyDataBytes(block_buffer, 0, pkt->size, ctx->audio_buffer);
                 if (ret != kCMBlockBufferNoErr) {
                     return AVERROR(EIO);
                 }
 
-                int num_samples = pkt->size / (ctx->audio_channels * (ctx->audio_bits_per_sample >> 3));
+                num_samples = pkt->size / (ctx->audio_channels * (ctx->audio_bits_per_sample >> 3));
 
                 // transform decoded frame into output format
                 #define INTERLEAVE_OUTPUT(bps)                                         \
