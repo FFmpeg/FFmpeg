@@ -27,9 +27,7 @@
 #ifndef AVUTIL_MIPS_ASMDEFS_H
 #define AVUTIL_MIPS_ASMDEFS_H
 
-#include <sgidefs.h>
-
-#if _MIPS_SIM == _ABI64
+#if defined(_ABI64) && _MIPS_SIM == _ABI64
 # define PTRSIZE        " 8 "
 # define PTRLOG         " 3 "
 # define PTR_ADDU       "daddu "
