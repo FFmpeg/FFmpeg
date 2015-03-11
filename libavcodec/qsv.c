@@ -117,12 +117,19 @@ static int qsv_init_session(AVCodecContext *avctx, QSVContext *q, mfxSession ses
 
             MFXQueryIMPL(q->internal_session, &impl);
 
-            if (impl & MFX_IMPL_SOFTWARE)
+            switch (MFX_IMPL_BASETYPE(impl)) {
+            case MFX_IMPL_SOFTWARE:
                 desc = "software";
-            else if (impl & MFX_IMPL_HARDWARE)
+                break;
+            case MFX_IMPL_HARDWARE:
+            case MFX_IMPL_HARDWARE2:
+            case MFX_IMPL_HARDWARE3:
+            case MFX_IMPL_HARDWARE4:
                 desc = "hardware accelerated";
-            else
+                break;
+            default:
                 desc = "unknown";
+            }
 
             av_log(avctx, AV_LOG_VERBOSE,
                    "Initialized an internal MFX session using %s implementation\n",
