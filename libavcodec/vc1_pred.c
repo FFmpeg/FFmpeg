@@ -231,8 +231,10 @@ void ff_vc1_pred_mv(VC1Context *v, int n, int dmv_x, int dmv_y,
     else
         mixedmv_pic = 0;
     /* scale MV difference to be quad-pel */
-    dmv_x <<= 1 - s->quarter_sample;
-    dmv_y <<= 1 - s->quarter_sample;
+    if (!s->quarter_sample) {
+        dmv_x *= 2;
+        dmv_y *= 2;
+    }
 
     wrap = s->b8_stride;
     xy   = s->block_index[n];
