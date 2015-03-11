@@ -60,6 +60,13 @@ static av_cold int mm_decode_init(AVCodecContext *avctx)
 
     avctx->pix_fmt = PIX_FMT_PAL8;
 
+    if (!avctx->width || !avctx->height ||
+        (avctx->width & 1) || (avctx->height & 1)) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid video dimensions: %dx%d\n",
+               avctx->width, avctx->height);
+        return AVERROR(EINVAL);
+    }
+
     avcodec_get_frame_defaults(&s->frame);
     s->frame.reference = 3;
 
