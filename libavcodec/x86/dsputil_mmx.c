@@ -2668,7 +2668,8 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             c->add_hfyu_median_prediction = ff_add_hfyu_median_prediction_mmx2;
 #endif
 #if HAVE_7REGS
-            if (HAVE_AMD3DNOW && (mm_flags & AV_CPU_FLAG_3DNOW))
+            if (HAVE_AMD3DNOW && (mm_flags & AV_CPU_FLAG_3DNOW) &&
+                (mm_flags & AV_CPU_FLAG_CMOV))
                 c->add_hfyu_median_prediction = add_hfyu_median_prediction_cmov;
 #endif
 

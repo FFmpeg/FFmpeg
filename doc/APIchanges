@@ -13,7 +13,7 @@ libavutil:   2011-04-18
 
 API changes, most recent first:
 
-2014-09-16 - xxxxxxx - lavu 51.22.3 - cpu.h
+2014-09-16 - 8637f4e - lavu 51.22.3 - cpu.h
   Add AV_CPU_FLAG_CMOV.
 
 2012-01-24 - xxxxxxx - lavfi 2.60.100
