@@ -957,7 +957,7 @@ static int mpeg_decode_mb(MpegEncContext *s, int16_t block[12][64])
                                 av_dlog(s->avctx, "fmx=%d\n", val);
                                 val = mpeg_decode_motion(s, s->mpeg_f_code[i][1],
                                                          s->last_mv[i][j][1] >> 1);
-                                s->last_mv[i][j][1] = val << 1;
+                                s->last_mv[i][j][1] = 2 * val;
                                 s->mv[i][j][1]      = val;
                                 av_dlog(s->avctx, "fmy=%d\n", val);
                             }
