@@ -1723,6 +1723,7 @@ AVCodec ff_mjpeg_decoder = {
     .decode         = ff_mjpeg_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
     .priv_class     = &mjpegdec_class,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 
 AVCodec ff_thp_decoder = {
@@ -1735,4 +1736,5 @@ AVCodec ff_thp_decoder = {
     .close          = ff_mjpeg_decode_end,
     .decode         = ff_mjpeg_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
