@@ -281,7 +281,7 @@ static inline int get_ur_golomb(GetBitContext *gb, int k, int limit,
 
     if (log > 31 - limit) {
         buf >>= log - k;
-        buf  += (30 - log) << k;
+        buf  += (30U - log) << k;
         LAST_SKIP_BITS(re, gb, 32 + k - log);
         CLOSE_READER(re, gb);
 
@@ -317,7 +317,7 @@ static inline int get_ur_golomb_jpegls(GetBitContext *gb, int k, int limit,
     if (log - k >= 32 - MIN_CACHE_BITS + (MIN_CACHE_BITS == 32) &&
         32 - log < limit) {
         buf >>= log - k;
-        buf  += (30 - log) << k;
+        buf  += (30U - log) << k;
         LAST_SKIP_BITS(re, gb, 32 + k - log);
         CLOSE_READER(re, gb);
 
