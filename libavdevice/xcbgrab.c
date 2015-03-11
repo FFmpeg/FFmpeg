@@ -602,6 +602,8 @@ static av_cold int xcbgrab_read_header(AVFormatContext *s)
     if (opts) {
         sscanf(opts, "%d,%d", &c->x, &c->y);
         host = av_strdup(s->filename);
+        if (!host)
+            return AVERROR(ENOMEM);
         host[opts - s->filename] = '\0';
     }
 
