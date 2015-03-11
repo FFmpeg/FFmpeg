@@ -615,8 +615,10 @@ static int find_and_decode_index(NUTContext *nut)
     GET_V(syncpoint_count, tmp < INT_MAX / 8 && tmp > 0);
     syncpoints   = av_malloc(sizeof(int64_t) *  syncpoint_count);
     has_keyframe = av_malloc(sizeof(int8_t)  * (syncpoint_count + 1));
-    if (!syncpoints || !has_keyframe)
-        return AVERROR(ENOMEM);
+    if (!syncpoints || !has_keyframe) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
     for (i = 0; i < syncpoint_count; i++) {
         syncpoints[i] = ffio_read_varlen(bc);
         if (syncpoints[i] <= 0)
