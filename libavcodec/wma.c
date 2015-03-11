@@ -451,7 +451,7 @@ int ff_wma_run_level_decode(AVCodecContext *avctx, GetBitContext *gb,
             /** normal code */
             offset                  += run_table[code];
             sign                     = get_bits1(gb) - 1;
-            iptr[offset & coef_mask] = ilvl[code] ^ sign << 31;
+            iptr[offset & coef_mask] = ilvl[code] ^ (sign & 0x80000000);
         } else if (code == 1) {
             /** EOB */
             break;
