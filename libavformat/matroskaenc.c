@@ -917,11 +917,12 @@ static int mkv_write_chapters(AVFormatContext *s)
     for (i = 0; i < s->nb_chapters; i++) {
         ebml_master chapteratom, chapterdisplay;
         AVChapter *c     = s->chapters[i];
-        int chapterstart = av_rescale_q(c->start, c->time_base, scale);
-        int chapterend   = av_rescale_q(c->end,   c->time_base, scale);
+        int64_t chapterstart = av_rescale_q(c->start, c->time_base, scale);
+        int64_t chapterend   = av_rescale_q(c->end,   c->time_base, scale);
         AVDictionaryEntry *t = NULL;
         if (chapterstart < 0 || chapterstart > chapterend || chapterend < 0) {
-            av_log(s, AV_LOG_ERROR, "Invalid chapter start (%d) or end (%d).\n",
+            av_log(s, AV_LOG_ERROR,
+                   "Invalid chapter start (%"PRId64") or end (%"PRId64").\n",
                    chapterstart, chapterend);
             return AVERROR_INVALIDDATA;
         }
