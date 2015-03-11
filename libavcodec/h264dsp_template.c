@@ -36,7 +36,7 @@ static void FUNCC(weight_h264_pixels ## W)(uint8_t *_block, int stride, int heig
     int y; \
     pixel *block = (pixel*)_block; \
     stride >>= sizeof(pixel)-1; \
-    offset <<= (log2_denom + (BIT_DEPTH-8)); \
+    offset = (unsigned)offset << (log2_denom + (BIT_DEPTH-8)); \
     if(log2_denom) offset += 1<<(log2_denom-1); \
     for (y = 0; y < height; y++, block += stride) { \
         op_scale1(0); \
@@ -67,8 +67,8 @@ static void FUNCC(biweight_h264_pixels ## W)(uint8_t *_dst, uint8_t *_src, int s
     pixel *dst = (pixel*)_dst; \
     pixel *src = (pixel*)_src; \
     stride >>= sizeof(pixel)-1; \
-    offset <<= (BIT_DEPTH-8); \
-    offset = ((offset + 1) | 1) << log2_denom; \
+    offset = (unsigned)offset << (BIT_DEPTH-8); \
+    offset = (unsigned)((offset + 1) | 1) << log2_denom; \
     for (y = 0; y < height; y++, dst += stride, src += stride) { \
         op_scale2(0); \
         op_scale2(1); \
