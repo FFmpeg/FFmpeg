@@ -42,6 +42,14 @@ static av_cold int decode_init(AVCodecContext *avctx)
     JvContext *s = avctx->priv_data;
     avctx->pix_fmt = PIX_FMT_PAL8;
     dsputil_init(&s->dsp, avctx);
+
+    if (!avctx->width || !avctx->height ||
+        (avctx->width & 7) || (avctx->height & 7)) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid video dimensions: %dx%d\n",
+               avctx->width, avctx->height);
+        return AVERROR(EINVAL);
+    }
+
     return 0;
 }
 
