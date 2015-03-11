@@ -1049,7 +1049,8 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
     }
 
     entangled_thread_counter++;
-    if (entangled_thread_counter != 1) {
+    if (entangled_thread_counter != 1 &&
+        !(codec->caps_internal & FF_CODEC_CAP_INIT_THREADSAFE)) {
         av_log(avctx, AV_LOG_ERROR,
                "Insufficient thread locking. At least %d threads are "
                "calling avcodec_open2() at the same time right now.\n",
@@ -1286,6 +1287,10 @@ end:
 
     return ret;
 free_and_end:
+    if (avctx->codec &&
+        (avctx->codec->caps_internal & FF_CODEC_CAP_INIT_CLEANUP))
+        avctx->codec->close(avctx);
+
     av_dict_free(&tmp);
     av_freep(&avctx->priv_data);
     if (avctx->internal) {

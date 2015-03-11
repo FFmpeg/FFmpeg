@@ -33,6 +33,16 @@
 #include "avcodec.h"
 #include "config.h"
 
+/**
+ * Codec is thread safe.
+ */
+#define FF_CODEC_CAP_INIT_THREADSAFE        (1 << 0)
+/**
+ * Codec cleans up memory on init failure.
+ */
+#define FF_CODEC_CAP_INIT_CLEANUP           (1 << 1)
+
+
 #define FF_SANE_NB_CHANNELS 63U
 
 #define FF_SIGNBIT(x) (x >> CHAR_BIT * sizeof(x) - 1)
