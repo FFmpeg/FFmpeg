@@ -1292,8 +1292,12 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output)
                decoded_frame->width, decoded_frame->height, av_get_pix_fmt_name(decoded_frame->format));
 
         ret = poll_filters();
-        if (ret < 0 && (ret != AVERROR_EOF && ret != AVERROR(EAGAIN)))
-            av_log(NULL, AV_LOG_ERROR, "Error while filtering.\n");
+        if (ret < 0 && (ret != AVERROR_EOF && ret != AVERROR(EAGAIN))) {
+            char errbuf[128];
+            av_strerror(ret, errbuf, sizeof(errbuf));
+
+            av_log(NULL, AV_LOG_ERROR, "Error while filtering: %s\n", errbuf);
+        }
 
         ist->resample_width   = decoded_frame->width;
         ist->resample_height  = decoded_frame->height;
@@ -2514,11 +2518,15 @@ static int transcode(void)
 
         ret = poll_filters();
         if (ret < 0) {
-            if (ret == AVERROR_EOF || ret == AVERROR(EAGAIN))
+            if (ret == AVERROR_EOF || ret == AVERROR(EAGAIN)) {
                 continue;
+            } else {
+                char errbuf[128];
+                av_strerror(ret, errbuf, sizeof(errbuf));
 
-            av_log(NULL, AV_LOG_ERROR, "Error while filtering.\n");
-            break;
+                av_log(NULL, AV_LOG_ERROR, "Error while filtering: %s\n", errbuf);
+                break;
+            }
         }
 
         /* dump report by using the output first video and audio streams */
