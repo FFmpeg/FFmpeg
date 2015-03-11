@@ -243,6 +243,7 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC (SVQ1,              svq1);
     REGISTER_DECODER(SVQ3,              svq3);
     REGISTER_ENCDEC (TARGA,             targa);
+    REGISTER_DECODER(TDSC,              tdsc);
     REGISTER_DECODER(THEORA,            theora);
     REGISTER_DECODER(THP,               thp);
     REGISTER_DECODER(TIERTEXSEQVIDEO,   tiertexseqvideo);

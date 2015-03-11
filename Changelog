@@ -22,6 +22,7 @@ version <next>:
 - Canopus HQX decoder
 - RTP depacketization of T.140 text (RFC 4103)
 - VP9 RTP payload format (draft 0) experimental depacketizer
+- TDSC decoder
 
 
 version 11:

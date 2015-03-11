@@ -1286,6 +1286,13 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
+        .id        = AV_CODEC_ID_TDSC,
+        .type      = AVMEDIA_TYPE_VIDEO,
+        .name      = "tdsc",
+        .long_name = NULL_IF_CONFIG_SMALL("TDSC"),
+        .props     = AV_CODEC_PROP_LOSSY,
+    },
+    {
         .id        = AV_CODEC_ID_TIFF,
         .type      = AVMEDIA_TYPE_VIDEO,
         .name      = "tiff",

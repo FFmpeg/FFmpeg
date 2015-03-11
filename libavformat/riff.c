@@ -352,6 +352,7 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { AV_CODEC_ID_PRORES,       MKTAG('A', 'P', 'C', 'H') },
     { AV_CODEC_ID_QTRLE,        MKTAG('r', 'l', 'e', ' ') },
     { AV_CODEC_ID_HQX,          MKTAG('C', 'H', 'Q', 'X') },
+    { AV_CODEC_ID_TDSC,         MKTAG('T', 'D', 'S', 'C') },
     { AV_CODEC_ID_NONE,         0 }
 };
 

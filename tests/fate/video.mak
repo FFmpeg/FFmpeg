@@ -248,6 +248,9 @@ fate-sp5x: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/sp5x/sp5x_problem.av
 FATE_SAMPLES_AVCONV-$(call DEMDEC, SRT, SRT) += fate-sub-srt
 fate-sub-srt: CMD = md5 -i $(TARGET_SAMPLES)/sub/SubRip_capability_tester.srt -f ass
 
+FATE_SAMPLES_AVCONV-$(call DEMDEC, ASF, TDSC) += fate-tdsc
+fate-tdsc: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/tdsc/tdsc.asf -an -pix_fmt bgr24
+
 FATE_SAMPLES_AVCONV-$(call DEMDEC, THP, THP) += fate-thp
 fate-thp: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/thp/pikmin2-opening1-partial.thp -an
 
