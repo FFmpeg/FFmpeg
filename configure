@@ -1238,7 +1238,6 @@ SUBSYSTEM_LIST="
     lzo
     mdct
     network
-    qsv
     rdft
 "
 
@@ -1598,6 +1597,7 @@ CONFIG_EXTRA="
     nettle
     pixblockdsp
     qpeldsp
+    qsv
     rangecoder
     riffdec
     riffenc
