@@ -7,7 +7,7 @@ all: all-yes
 
 DEFAULT_YASMD=.dbg
 
-ifeq (1, DBG)
+ifeq ($(DBG),1)
 YASMD=$(DEFAULT_YASMD)
 else
 YASMD=

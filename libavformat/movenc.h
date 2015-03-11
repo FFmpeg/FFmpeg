@@ -139,6 +139,8 @@ typedef struct MOVTrack {
     struct {
         int     first_packet_seq;
         int     first_packet_entry;
+        int     first_packet_seen;
+        int     first_frag_written;
         int     packet_seq;
         int     packet_entry;
         int     slices;
@@ -166,6 +168,7 @@ typedef struct MOVMuxContext {
     int iods_video_profile;
     int iods_audio_profile;
 
+    int moov_written;
     int fragments;
     int max_fragment_duration;
     int min_fragment_duration;

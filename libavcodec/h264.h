@@ -949,7 +949,7 @@ static const uint8_t scan8[16 * 3 + 3] = {
     0 +  0 * 8, 0 +  5 * 8, 0 + 10 * 8
 };
 
-static av_always_inline uint32_t pack16to32(int a, int b)
+static av_always_inline uint32_t pack16to32(unsigned a, unsigned b)
 {
 #if HAVE_BIGENDIAN
     return (b & 0xFFFF) + (a << 16);
@@ -958,7 +958,7 @@ static av_always_inline uint32_t pack16to32(int a, int b)
 #endif
 }
 
-static av_always_inline uint16_t pack8to16(int a, int b)
+static av_always_inline uint16_t pack8to16(unsigned a, unsigned b)
 {
 #if HAVE_BIGENDIAN
     return (b & 0xFF) + (a << 8);
