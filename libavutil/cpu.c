@@ -69,6 +69,7 @@ static const struct {
     { AV_CPU_FLAG_FMA4,      "fma4"       },
     { AV_CPU_FLAG_3DNOW,     "3dnow"      },
     { AV_CPU_FLAG_3DNOWEXT,  "3dnowext"   },
+    { AV_CPU_FLAG_CMOV,      "cmov"       },
 #endif
     { 0 }
 };

@@ -41,6 +41,7 @@
 #define AV_CPU_FLAG_XOP          0x0400 ///< Bulldozer XOP functions
 #define AV_CPU_FLAG_FMA4         0x0800 ///< Bulldozer FMA4 functions
 #define AV_CPU_FLAG_IWMMXT       0x0100 ///< XScale IWMMXT
+#define AV_CPU_FLAG_CMOV         0x1000 ///< i686 cmov
 #define AV_CPU_FLAG_ALTIVEC      0x0001 ///< standard
 
 /**
