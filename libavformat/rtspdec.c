@@ -700,7 +700,6 @@ static int rtsp_listen(AVFormatContext *s)
             return AVERROR_INVALIDDATA;
         }
     }
-    return 0;
 }
 
 static int rtsp_probe(AVProbeData *p)

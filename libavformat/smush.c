@@ -129,7 +129,6 @@ static int smush_read_header(AVFormatContext *ctx)
                 break;
             default:
                 return AVERROR_INVALIDDATA;
-                break;
             }
         }
 

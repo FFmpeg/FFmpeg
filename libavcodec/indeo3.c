@@ -831,8 +831,6 @@ static int parse_bintree(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
             break;
         }
     }//while
-
-    return 0;
 }
 
 

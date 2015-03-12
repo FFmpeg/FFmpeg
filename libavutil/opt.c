@@ -240,8 +240,6 @@ static int set_string_number(void *obj, void *target_obj, const AVOption *o, con
             return 0;
         notfirst = 1;
     }
-
-    return 0;
 }
 
 int av_opt_set(void *obj, const char *name, const char *val, int search_flags)
