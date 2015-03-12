@@ -281,12 +281,13 @@ int ff_fmt_is_in(int fmt, const int *fmts)
         for (count = 0; fmts[count] != -1; count++)                     \
             ;                                                           \
     formats = av_mallocz(sizeof(*formats));                             \
-    if (!formats) return NULL;                                          \
+    if (!formats)                                                       \
+        return NULL;                                                    \
     formats->count_field = count;                                       \
     if (count) {                                                        \
         formats->field = av_malloc_array(count, sizeof(*formats->field));      \
         if (!formats->field) {                                          \
-            av_free(formats);                                           \
+            av_freep(&formats);                                         \
             return NULL;                                                \
         }                                                               \
     }
@@ -415,6 +416,8 @@ AVFilterChannelLayouts *ff_all_channel_counts(void)
 do {                                                                 \
     *ref = f;                                                        \
     f->refs = av_realloc(f->refs, sizeof(*f->refs) * ++f->refcount); \
+    if (!f->refs)                                                    \
+        return;                                                      \
     f->refs[f->refcount-1] = ref;                                    \
 } while (0)
 
