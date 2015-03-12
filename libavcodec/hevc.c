@@ -2148,7 +2148,8 @@ static int hevc_frame_start(HEVCContext *s)
     if (ret < 0)
         goto fail;
 
-    ff_thread_finish_setup(s->avctx);
+    if (!s->avctx->hwaccel)
+        ff_thread_finish_setup(s->avctx);
 
     return 0;
 fail:
