@@ -21,6 +21,8 @@
 
 #include <stdint.h>
 
+#include "config.h"
+
 #include "avcodec.h"
 
 /**
@@ -51,13 +53,13 @@ int ff_init_scantable_permutation_x86(uint8_t *idct_permutation,
 typedef struct IDCTDSPContext {
     /* pixel ops : interface with DCT */
     void (*put_pixels_clamped)(const int16_t *block /* align 16 */,
-                               uint8_t *pixels /* align 8 */,
+                               uint8_t *restrict pixels /* align 8 */,
                                ptrdiff_t line_size);
     void (*put_signed_pixels_clamped)(const int16_t *block /* align 16 */,
-                                      uint8_t *pixels /* align 8 */,
+                                      uint8_t *restrict pixels /* align 8 */,
                                       ptrdiff_t line_size);
     void (*add_pixels_clamped)(const int16_t *block /* align 16 */,
-                               uint8_t *pixels /* align 8 */,
+                               uint8_t *restrict pixels /* align 8 */,
                                ptrdiff_t line_size);
 
     void (*idct)(int16_t *block /* align 16 */);
