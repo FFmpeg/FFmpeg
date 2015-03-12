@@ -280,7 +280,7 @@ static int decode_lt_rps(HEVCContext *s, LongTermRPS *rps, GetBitContext *gb)
     return 0;
 }
 
-static int set_sps(HEVCContext *s, const HEVCSPS *sps)
+static int set_sps(HEVCContext *s, const HEVCSPS *sps, enum AVPixelFormat pix_fmt)
 {
     #define HWACCEL_MAX (CONFIG_HEVC_DXVA2_HWACCEL)
     enum AVPixelFormat pix_fmts[HWACCEL_MAX + 2], *fmt = pix_fmts;
@@ -304,13 +304,18 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps)
 #endif
     }
 
-    *fmt++ = sps->pix_fmt;
-    *fmt = AV_PIX_FMT_NONE;
+    if (pix_fmt == AV_PIX_FMT_NONE) {
+        *fmt++ = sps->pix_fmt;
+        *fmt = AV_PIX_FMT_NONE;
 
-    ret = ff_thread_get_format(s->avctx, pix_fmts);
-    if (ret < 0)
-        goto fail;
-    s->avctx->pix_fmt = ret;
+        ret = ff_thread_get_format(s->avctx, pix_fmts);
+        if (ret < 0)
+            goto fail;
+        s->avctx->pix_fmt = ret;
+    }
+    else {
+        s->avctx->pix_fmt = pix_fmt;
+    }
 
     ff_set_sar(s->avctx, sps->vui.sar);
 
@@ -420,7 +425,7 @@ static int hls_slice_header(HEVCContext *s)
                 sh->no_output_of_prior_pics_flag = 0;
         }
         ff_hevc_clear_refs(s);
-        ret = set_sps(s, s->sps);
+        ret = set_sps(s, s->sps, AV_PIX_FMT_NONE);
         if (ret < 0)
             return ret;
 
@@ -3335,7 +3340,7 @@ static int hevc_update_thread_context(AVCodecContext *dst,
     }
 
     if (s->sps != s0->sps)
-        if ((ret = set_sps(s, s0->sps)) < 0)
+        if ((ret = set_sps(s, s0->sps, src->pix_fmt)) < 0)
             return ret;
 
     s->seq_decode = s0->seq_decode;
