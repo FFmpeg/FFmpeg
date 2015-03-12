@@ -1507,12 +1507,19 @@ static int mov_write_tkhd_tag(AVIOContext *pb, MOVMuxContext *mov,
     int flags   = MOV_TKHD_FLAG_IN_MOVIE;
     int group   = 0;
 
+    uint32_t *display_matrix = NULL;
+    int      display_matrix_size, i;
 
     if (st) {
         if (mov->per_stream_grouping)
             group = st->index;
         else
             group = st->codec->codec_type;
+
+        display_matrix = (uint32_t*)av_stream_get_side_data(st, AV_PKT_DATA_DISPLAYMATRIX,
+                                                            &display_matrix_size);
+        if (display_matrix_size < 9 * sizeof(*display_matrix))
+            display_matrix = NULL;
     }
 
     if (track->flags & MOV_TRACK_ENABLED)
@@ -1553,15 +1560,20 @@ static int mov_write_tkhd_tag(AVIOContext *pb, MOVMuxContext *mov,
     avio_wb16(pb, 0); /* reserved */
 
     /* Matrix structure */
-    avio_wb32(pb, 0x00010000); /* reserved */
-    avio_wb32(pb, 0x0); /* reserved */
-    avio_wb32(pb, 0x0); /* reserved */
-    avio_wb32(pb, 0x0); /* reserved */
-    avio_wb32(pb, 0x00010000); /* reserved */
-    avio_wb32(pb, 0x0); /* reserved */
-    avio_wb32(pb, 0x0); /* reserved */
-    avio_wb32(pb, 0x0); /* reserved */
-    avio_wb32(pb, 0x40000000); /* reserved */
+    if (display_matrix) {
+        for (i = 0; i < 9; i++)
+            avio_wb32(pb, display_matrix[i]);
+    } else {
+        avio_wb32(pb, 0x00010000); /* reserved */
+        avio_wb32(pb, 0x0); /* reserved */
+        avio_wb32(pb, 0x0); /* reserved */
+        avio_wb32(pb, 0x0); /* reserved */
+        avio_wb32(pb, 0x00010000); /* reserved */
+        avio_wb32(pb, 0x0); /* reserved */
+        avio_wb32(pb, 0x0); /* reserved */
+        avio_wb32(pb, 0x0); /* reserved */
+        avio_wb32(pb, 0x40000000); /* reserved */
+    }
 
     /* Track width and height, for visual only */
     if (st && (track->enc->codec_type == AVMEDIA_TYPE_VIDEO ||
