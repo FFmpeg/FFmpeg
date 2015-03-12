@@ -171,8 +171,15 @@ AVFilterFormats *ff_make_format_list(const int *fmts)
         ;
 
     formats               = av_mallocz(sizeof(*formats));
-    if (count)
+    if (!formats)
+        return NULL;
+    if (count) {
         formats->formats  = av_malloc(sizeof(*formats->formats) * count);
+        if (!formats->formats) {
+            av_freep(&formats);
+            return NULL;
+        }
+    }
     formats->nb_formats = count;
     memcpy(formats->formats, fmts, sizeof(*formats->formats) * count);
 
@@ -257,6 +264,8 @@ AVFilterChannelLayouts *ff_all_channel_layouts(void)
 do {                                                                 \
     *ref = f;                                                        \
     f->refs = av_realloc(f->refs, sizeof(*f->refs) * ++f->refcount); \
+    if (!f->refs)                                                    \
+        return;                                                      \
     f->refs[f->refcount-1] = ref;                                    \
 } while (0)
 
