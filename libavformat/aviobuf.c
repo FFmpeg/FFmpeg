@@ -778,7 +778,9 @@ int ffio_fdopen(AVIOContext **s, URLContext *h)
         return AVERROR(ENOMEM);
 
     *s = avio_alloc_context(buffer, buffer_size, h->flags & AVIO_FLAG_WRITE, h,
-                            (void*)ffurl_read, (void*)ffurl_write, (void*)ffurl_seek);
+                            (int (*)(void *, uint8_t *, int)) ffurl_read,
+                            (int (*)(void *, uint8_t *, int)) ffurl_write,
+                            (int64_t (*)(void *, int64_t, int)) ffurl_seek);
     if (!*s) {
         av_free(buffer);
         return AVERROR(ENOMEM);
