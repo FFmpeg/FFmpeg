@@ -1710,6 +1710,8 @@ static int matroska_parse_tracks(AVFormatContext *s)
                 return AVERROR_INVALIDDATA;
             track->audio.buf = av_malloc(track->audio.frame_size *
                                          track->audio.sub_packet_h);
+            if (!track->audio.buf)
+                return AVERROR(ENOMEM);
             if (codec_id == AV_CODEC_ID_RA_288) {
                 st->codec->block_align = track->audio.coded_framesize;
                 track->codec_priv.size = 0;
@@ -2270,6 +2272,10 @@ static int matroska_parse_frame(MatroskaDemuxContext *matroska,
         offset = 8;
 
     pkt = av_mallocz(sizeof(AVPacket));
+    if (!pkt) {
+        av_freep(&pkt_data);
+        return AVERROR(ENOMEM);
+    }
     /* XXX: prevent data copy... */
     if (av_new_packet(pkt, pkt_size + offset) < 0) {
         av_free(pkt);
