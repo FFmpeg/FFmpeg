@@ -384,7 +384,7 @@ static av_cold int initFilter(int16_t **outFilter, int32_t **filterPos,
             int j;
             (*filterPos)[i] = xx;
             for (j = 0; j < filterSize; j++) {
-                int64_t d = (FFABS(((int64_t)xx << 17) - xDstInSrc)) << 13;
+                int64_t d = (FFABS(((int64_t)xx * (1 << 17)) - xDstInSrc)) << 13;
                 double floatd;
                 int64_t coeff;
 

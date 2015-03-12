@@ -316,24 +316,26 @@ void mpeg_motion_internal(MpegEncContext *s,
                    src_y);
             return;
         }
+        src_y = (unsigned)src_y << field_based;
         s->vdsp.emulated_edge_mc(s->edge_emu_buffer, ptr_y,
                                  s->linesize, s->linesize,
                                  17, 17 + field_based,
-                                 src_x, src_y << field_based,
+                                 src_x, src_y,
                                  s->h_edge_pos, s->v_edge_pos);
         ptr_y = s->edge_emu_buffer;
         if (!CONFIG_GRAY || !(s->flags & CODEC_FLAG_GRAY)) {
             uint8_t *ubuf = s->edge_emu_buffer + 18 * s->linesize;
             uint8_t *vbuf = ubuf + 9 * s->uvlinesize;
+            uvsrc_y = (unsigned)uvsrc_y << field_based;
             s->vdsp.emulated_edge_mc(ubuf, ptr_cb,
                                      s->uvlinesize, s->uvlinesize,
                                      9, 9 + field_based,
-                                     uvsrc_x, uvsrc_y << field_based,
+                                     uvsrc_x, uvsrc_y,
                                      s->h_edge_pos >> 1, s->v_edge_pos >> 1);
             s->vdsp.emulated_edge_mc(vbuf, ptr_cr,
                                      s->uvlinesize, s->uvlinesize,
                                      9, 9 + field_based,
-                                     uvsrc_x, uvsrc_y << field_based,
+                                     uvsrc_x, uvsrc_y,
                                      s->h_edge_pos >> 1, s->v_edge_pos >> 1);
             ptr_cb = ubuf;
             ptr_cr = vbuf;

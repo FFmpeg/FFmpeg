@@ -399,16 +399,16 @@ static void decode_pitch_vector(AMRContext *p,
         decode_pitch_lag_1_6(&pitch_lag_int, &pitch_lag_frac,
                              amr_subframe->p_lag, p->pitch_lag_int,
                              subframe);
-    } else
+    } else {
         ff_decode_pitch_lag(&pitch_lag_int, &pitch_lag_frac,
                             amr_subframe->p_lag,
                             p->pitch_lag_int, subframe,
                             mode != MODE_4k75 && mode != MODE_5k15,
                             mode <= MODE_6k7 ? 4 : (mode == MODE_7k95 ? 5 : 6));
+        pitch_lag_frac *= 2;
+    }
 
     p->pitch_lag_int = pitch_lag_int; // store previous lag in a uint8_t
-
-    pitch_lag_frac <<= (p->cur_frame_mode != MODE_12k2);
 
     pitch_lag_int += pitch_lag_frac > 0;
 

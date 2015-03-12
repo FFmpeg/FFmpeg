@@ -2952,12 +2952,12 @@ int ff_mpv_lowest_referenced_row(MpegEncContext *s, int dir)
     }
 
     for (i = 0; i < mvs; i++) {
-        my = s->mv[dir][i][1]<<qpel_shift;
+        my = s->mv[dir][i][1];
         my_max = FFMAX(my_max, my);
         my_min = FFMIN(my_min, my);
     }
 
-    off = (FFMAX(-my_min, my_max) + 63) >> 6;
+    off = ((FFMAX(-my_min, my_max)<<qpel_shift) + 63) >> 6;
 
     return FFMIN(FFMAX(s->mb_y + off, 0), s->mb_height-1);
 unhandled:

@@ -1721,8 +1721,8 @@ void vp8_mc_luma(VP8Context *s, VP8ThreadData *td, uint8_t *dst,
     if (AV_RN32A(mv)) {
         int src_linesize = linesize;
 
-        int mx = (mv->x << 1) & 7, mx_idx = subpel_idx[0][mx];
-        int my = (mv->y << 1) & 7, my_idx = subpel_idx[0][my];
+        int mx = (mv->x * 2) & 7, mx_idx = subpel_idx[0][mx];
+        int my = (mv->y * 2) & 7, my_idx = subpel_idx[0][my];
 
         x_off += mv->x >> 2;
         y_off += mv->y >> 2;

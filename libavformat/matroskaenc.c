@@ -1078,7 +1078,8 @@ static int mkv_write_chapters(AVFormatContext *s)
         int64_t chapterend   = av_rescale_q(c->end,   c->time_base, scale);
         AVDictionaryEntry *t = NULL;
         if (chapterstart < 0 || chapterstart > chapterend || chapterend < 0) {
-            av_log(s, AV_LOG_ERROR, "Invalid chapter start (%"PRId64") or end (%"PRId64").\n",
+            av_log(s, AV_LOG_ERROR,
+                   "Invalid chapter start (%"PRId64") or end (%"PRId64").\n",
                    chapterstart, chapterend);
             return AVERROR_INVALIDDATA;
         }
