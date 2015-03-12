@@ -7297,7 +7297,21 @@ DECLARE_ALIGNED(16, const float, ff_dca_fir_32bands_nonperfect)[512] = {
     +1.390191784E-007
 };
 
-/* pre-scale lfe fir coefficients */
+/* pre-scale lfe fir coefficients
+ *
+ * Permuted compared to table D.8 in the spec. First, the table in the
+ * spec has twice the number of coefficients, but they are reflected,
+ * T[i] = T[511 - i]. Furthermore, the indices are permuted, so that
+ *
+ *   lfe_fir_64[8 * k + j] = T[64 * j + k]
+ *
+ * for 0 <= k < 32 and 0 <= j < 8. (This corresponds to adding a
+ * leading zero to the 8-bit index, and rotating it right by 3 bits
+ * as a 9-bit field). Values with j >= 4 can be reflected, as
+ *
+ *   lfe_fir_64[8 * k + j] = T[64 * (7 - j) + (63 - k)]
+ *
+ * so all values in T get included. */
 #define SCALE(c) ((c) / (256.0f * 32768.0f))
 DECLARE_ALIGNED(16, const float, ff_dca_lfe_fir_64)[256] = {
     SCALE(2.658434386830777e-4), SCALE(9.029330685734748e-3),
@@ -7430,6 +7444,18 @@ DECLARE_ALIGNED(16, const float, ff_dca_lfe_fir_64)[256] = {
     SCALE(3.165979683399200e-2), SCALE(1.527829794213176e-3),
 };
 
+/* Permuted compared to table D.8 in the spec. First, the table in the
+ * spec has twice the number of coefficients, but they are reflected,
+ * T[i] = T[511 - i]. Furthermore, the indices are permuted, so that
+ *
+ *   lfe_fir_128[4 * k + j] = T[128 * j + k]
+ *
+ * for 0 <= k < 64 and 0 <= j < 4. Values with j >= 2 can be
+ * reflected, as
+ *
+ *   lfe_fir_128[4 * k + j] = T[128 * (3 - j) + (127 - k)]
+ *
+ * so all values in T get included. */
 DECLARE_ALIGNED(16, const float, ff_dca_lfe_fir_128)[256] = {
     SCALE(0.00053168571), SCALE(0.15878495574), SCALE(0.68603444099), SCALE(0.15492856503),
     SCALE(0.00016358691), SCALE(0.16269733012), SCALE(0.68591803312), SCALE(0.15112841129),
