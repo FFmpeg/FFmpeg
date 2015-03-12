@@ -21,6 +21,7 @@
 #include "libavutil/attributes.h"
 #include "libavutil/arm/cpu.h"
 #include "libavcodec/hevcdsp.h"
+#include "hevcdsp_arm.h"
 
 void ff_hevc_v_loop_filter_luma_neon(uint8_t *_pix, ptrdiff_t _stride, int _beta, int *_tc, uint8_t *_no_p, uint8_t *_no_q);
 void ff_hevc_h_loop_filter_luma_neon(uint8_t *_pix, ptrdiff_t _stride, int _beta, int *_tc, uint8_t *_no_p, uint8_t *_no_q);
@@ -141,9 +142,8 @@ void ff_hevc_put_qpel_bi_neon_wrapper(uint8_t *dst, ptrdiff_t dststride, uint8_t
     put_hevc_qpel_uw_neon[my][mx](dst, dststride, src, srcstride, width, height, src2, MAX_PB_SIZE);
 }
 
-static av_cold void hevcdsp_init_neon(HEVCDSPContext *c, const int bit_depth)
+av_cold void ff_hevcdsp_init_neon(HEVCDSPContext *c, const int bit_depth)
 {
-#if HAVE_NEON
     if (bit_depth == 8) {
         int x;
         c->hevc_v_loop_filter_luma     = ff_hevc_v_loop_filter_luma_neon;
@@ -221,13 +221,4 @@ static av_cold void hevcdsp_init_neon(HEVCDSPContext *c, const int bit_depth)
         c->put_hevc_qpel_uni[8][0][0]  = ff_hevc_put_qpel_uw_pixels_w48_neon_8;
         c->put_hevc_qpel_uni[9][0][0]  = ff_hevc_put_qpel_uw_pixels_w64_neon_8;
     }
-#endif // HAVE_NEON
-}
-
-void ff_hevcdsp_init_arm(HEVCDSPContext *c, const int bit_depth)
-{
-    int cpu_flags = av_get_cpu_flags();
-
-    if (have_neon(cpu_flags))
-        hevcdsp_init_neon(c, bit_depth);
 }
