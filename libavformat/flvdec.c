@@ -546,7 +546,8 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream,
 }
 
 #define TYPE_ONTEXTDATA 1
-#define TYPE_UNKNOWN 2
+#define TYPE_ONCAPTION 2
+#define TYPE_UNKNOWN 9
 
 static int flv_read_metabody(AVFormatContext *s, int64_t next_pos)
 {
@@ -572,6 +573,9 @@ static int flv_read_metabody(AVFormatContext *s, int64_t next_pos)
 
     if (!strcmp(buffer, "onTextData"))
         return TYPE_ONTEXTDATA;
+
+    if (!strcmp(buffer, "onCaption"))
+        return TYPE_ONCAPTION;
 
     if (strcmp(buffer, "onMetaData") && strcmp(buffer, "onCuePoint"))
         return TYPE_UNKNOWN;
@@ -717,8 +721,11 @@ static int flv_data_packet(AVFormatContext *s, AVPacket *pkt,
     char buf[20];
     int ret = AVERROR_INVALIDDATA;
     int i, length = -1;
+    int array = 0;
 
     switch (avio_r8(pb)) {
+    case AMF_DATA_TYPE_ARRAY:
+        array = 1;
     case AMF_DATA_TYPE_MIXEDARRAY:
         avio_seek(pb, 4, SEEK_CUR);
     case AMF_DATA_TYPE_OBJECT:
@@ -727,9 +734,9 @@ static int flv_data_packet(AVFormatContext *s, AVPacket *pkt,
         goto skip;
     }
 
-    while ((ret = amf_get_string(pb, buf, sizeof(buf))) > 0) {
+    while (array || (ret = amf_get_string(pb, buf, sizeof(buf))) > 0) {
         AMFDataType type = avio_r8(pb);
-        if (type == AMF_DATA_TYPE_STRING && !strcmp(buf, "text")) {
+        if (type == AMF_DATA_TYPE_STRING && (array || !strcmp(buf, "text"))) {
             length = avio_rb16(pb);
             ret    = av_get_packet(pb, pkt, length);
             if (ret < 0)
@@ -838,6 +845,8 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
                     goto skip;
                 } else if (type == TYPE_ONTEXTDATA) {
                     avpriv_request_sample(s, "OnTextData packet");
+                    return flv_data_packet(s, pkt, dts, next);
+                } else if (type == TYPE_ONCAPTION) {
                     return flv_data_packet(s, pkt, dts, next);
                 }
                 avio_seek(s->pb, meta_pos, SEEK_SET);
@@ -955,6 +964,8 @@ retry_duration:
         }
     } else if (stream_type == FLV_STREAM_TYPE_VIDEO) {
         size -= flv_set_video_codec(s, st, flags & FLV_VIDEO_CODECID_MASK, 1);
+    } else if (stream_type == FLV_STREAM_TYPE_DATA) {
+        st->codec->codec_id = AV_CODEC_ID_TEXT;
     }
 
     if (st->codec->codec_id == AV_CODEC_ID_AAC ||
