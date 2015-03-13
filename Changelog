@@ -24,6 +24,7 @@ version <next>:
 - VP9 RTP payload format (draft 0) experimental depacketizer
 - TDSC decoder
 - DTS lossless extension (XLL) decoding (not lossless, disabled by default)
+- Intel QSV-accelerated H.264 encoding
 
 
 version 11:

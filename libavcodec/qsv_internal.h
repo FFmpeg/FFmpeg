@@ -21,10 +21,23 @@
 #ifndef AVCODEC_QSV_INTERNAL_H
 #define AVCODEC_QSV_INTERNAL_H
 
+#include <mfx/mfxvideo.h>
+
+#include "libavutil/frame.h"
+
 #define QSV_VERSION_MAJOR 1
 #define QSV_VERSION_MINOR 1
 
 #define ASYNC_DEPTH_DEFAULT 4       // internal parallelism
+
+typedef struct QSVFrame {
+    AVFrame *frame;
+    mfxFrameSurface1 *surface;
+
+    mfxFrameSurface1 surface_internal;
+
+    struct QSVFrame *next;
+} QSVFrame;
 
 /**
  * Convert a libmfx error code into a libav error code.
