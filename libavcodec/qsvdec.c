@@ -34,7 +34,7 @@
 
 #include "avcodec.h"
 #include "internal.h"
-#include "qsv_internal.h"
+#include "qsvdec.h"
 
 int ff_qsv_error(int mfx_err)
 {
