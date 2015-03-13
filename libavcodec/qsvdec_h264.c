@@ -33,6 +33,7 @@
 
 #include "avcodec.h"
 #include "internal.h"
+#include "qsv_internal.h"
 #include "qsvdec.h"
 #include "qsv.h"
 
