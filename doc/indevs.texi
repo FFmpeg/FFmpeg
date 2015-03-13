@@ -150,6 +150,87 @@ $ ffmpeg -f avfoundation -pixel_format bgr0 -i "default:none" out.avi
 
 BSD video input device.
 
+@section decklink
+
+The decklink input device provides capture capabilities for Blackmagic
+DeckLink devices.
+
+To enable this input device, you need the Blackmagic DeckLink SDK and you
+need to configure with the appropriate @code{--extra-cflags}
+and @code{--extra-ldflags}.
+On Windows, you need to run the IDL files through @command{widl}.
+
+DeckLink is very picky about the formats it supports. Pixel format is
+uyvy422 or v210, framerate and video size must be determined for your device with
+@command{-list_formats 1}. Audio sample rate is always 48 kHz and the number
+of channels can be 2, 8 or 16.
+
+@subsection Options
+
+@table @option
+
+@item list_devices
+If set to @option{true}, print a list of devices and exit.
+Defaults to @option{false}.
+
+@item list_formats
+If set to @option{true}, print a list of supported formats and exit.
+Defaults to @option{false}.
+
+@item bm_v210
+If set to @samp{1}, video is captured in 10 bit v210 instead
+of uyvy422. Not all Blackmagic devices support this option.
+
+@item bm_channels <CHANNELS>
+Number of audio channels, can be 2, 8 or 16
+
+@item bm_audiodepth <BITDEPTH>
+Audio bit depth, can be 16 or 32.
+
+@end table
+
+@subsection Examples
+
+@itemize
+
+@item
+List input devices:
+@example
+ffmpeg -f decklink -list_devices 1 -i dummy
+@end example
+
+@item
+List supported formats:
+@example
+ffmpeg -f decklink -list_formats 1 -i 'Intensity Pro'
+@end example
+
+@item
+Capture video clip at 1080i50 (format 11):
+@example
+ffmpeg -f decklink -i 'Intensity Pro@@11' -acodec copy -vcodec copy output.avi
+@end example
+
+@item
+Capture video clip at 1080i50 10 bit:
+@example
+ffmpeg -bm_v210 1 -f decklink -i 'UltraStudio Mini Recorder@@11' -acodec copy -vcodec copy output.avi
+@end example
+
+@item
+Capture video clip at 720p50 with 32bit audio:
+@example
+ffmpeg -bm_audiodepth 32 -f decklink -i 'UltraStudio Mini Recorder@@14' -acodec copy -vcodec copy output.avi
+@end example
+
+@item
+Capture video clip at 576i50 with 8 audio channels:
+@example
+ffmpeg -bm_channels 8 -f decklink -i 'UltraStudio Mini Recorder@@3' -acodec copy -vcodec copy output.avi
+@end example
+
+@end itemize
+
 @section dshow
 
 Windows DirectShow input device.
@@ -1117,87 +1198,6 @@ The syntax is:
 
 Set the grabbing region coordinates. They are expressed as offset from the top left
 corner of the X11 window. The default value is 0.
-
-@section decklink
-
-The decklink input device provides capture capabilities for Blackmagic
-DeckLink devices.
-
-To enable this input device, you need the Blackmagic DeckLink SDK and you
-need to configure with the appropriate @code{--extra-cflags}
-and @code{--extra-ldflags}.
-On Windows, you need to run the IDL files through @command{widl}.
-
-DeckLink is very picky about the formats it supports. Pixel format is
-uyvy422 or v210, framerate and video size must be determined for your device with
-@command{-list_formats 1}. Audio sample rate is always 48 kHz and the number
-of channels can be 2, 8 or 16.
-
-@subsection Options
-
-@table @option
-
-@item list_devices
-If set to @option{true}, print a list of devices and exit.
-Defaults to @option{false}.
-
-@item list_formats
-If set to @option{true}, print a list of supported formats and exit.
-Defaults to @option{false}.
-
-@item bm_v210
-If set to @samp{1}, video is captured in 10 bit v210 instead
-of uyvy422. Not all Blackmagic devices support this option.
-
-@item bm_channels <CHANNELS>
-Number of audio channels, can be 2, 8 or 16
-
-@item bm_audiodepth <BITDEPTH>
-Audio bit depth, can be 16 or 32.
-
-@end table
-
-@subsection Examples
-
-@itemize
-
-@item
-List input devices:
-@example
-ffmpeg -f decklink -list_devices 1 -i dummy
-@end example
-
-@item
-List supported formats:
-@example
-ffmpeg -f decklink -list_formats 1 -i 'Intensity Pro'
-@end example
-
-@item
-Capture video clip at 1080i50 (format 11):
-@example
-ffmpeg -f decklink -i 'Intensity Pro@@11' -acodec copy -vcodec copy output.avi
-@end example
-
-@item
-Capture video clip at 1080i50 10 bit:
-@example
-ffmpeg -bm_v210 1 -f decklink -i 'UltraStudio Mini Recorder@@11' -acodec copy -vcodec copy output.avi
-@end example
-
-@item
-Capture video clip at 720p50 with 32bit audio:
-@example
-ffmpeg -bm_audiodepth 32 -f decklink -i 'UltraStudio Mini Recorder@@14' -acodec copy -vcodec copy output.avi
-@end example
-
-@item
-Capture video clip at 576i50 with 8 audio channels:
-@example
-ffmpeg -bm_channels 8 -f decklink -i 'UltraStudio Mini Recorder@@3' -acodec copy -vcodec copy output.avi
-@end example
-
-@end itemize
 
 
 @c man end INPUT DEVICES
