@@ -92,8 +92,8 @@ static AVStream *create_stream(AVFormatContext *s, int codec_type)
         return NULL;
     st->codec->codec_type = codec_type;
     if (s->nb_streams>=3 ||(   s->nb_streams==2
-                           && s->streams[0]->codec->codec_type != AVMEDIA_TYPE_DATA
-                           && s->streams[1]->codec->codec_type != AVMEDIA_TYPE_DATA))
+                           && s->streams[0]->codec->codec_type != AVMEDIA_TYPE_SUBTITLE
+                           && s->streams[1]->codec->codec_type != AVMEDIA_TYPE_SUBTITLE))
         s->ctx_flags &= ~AVFMTCTX_NOHEADER;
 
     avpriv_set_pts_info(st, 32, 1, 1000); /* 32 bit pts in ms */
@@ -482,7 +482,7 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream,
                          0 <= (int)(num_val * 1024.0))
                     acodec->bit_rate = num_val * 1024.0;
                 else if (!strcmp(key, "datastream")) {
-                    AVStream *st = create_stream(s, AVMEDIA_TYPE_DATA);
+                    AVStream *st = create_stream(s, AVMEDIA_TYPE_SUBTITLE);
                     if (!st)
                         return AVERROR(ENOMEM);
                     st->codec->codec_id = AV_CODEC_ID_TEXT;
@@ -584,7 +584,7 @@ static int flv_read_metabody(AVFormatContext *s, int64_t next_pos)
             vstream = stream;
         else if (stream->codec->codec_type == AVMEDIA_TYPE_AUDIO)
             astream = stream;
-        else if (stream->codec->codec_type == AVMEDIA_TYPE_DATA)
+        else if (stream->codec->codec_type == AVMEDIA_TYPE_SUBTITLE)
             dstream = stream;
     }
 
@@ -749,12 +749,12 @@ static int flv_data_packet(AVFormatContext *s, AVPacket *pkt,
 
     for (i = 0; i < s->nb_streams; i++) {
         st = s->streams[i];
-        if (st->codec->codec_type == AVMEDIA_TYPE_DATA)
+        if (st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE)
             break;
     }
 
     if (i == s->nb_streams) {
-        st = create_stream(s, AVMEDIA_TYPE_DATA);
+        st = create_stream(s, AVMEDIA_TYPE_SUBTITLE);
         if (!st)
             return AVERROR(ENOMEM);
         st->codec->codec_id = AV_CODEC_ID_TEXT;
@@ -862,12 +862,12 @@ skip:
                     (s->video_codec_id || flv_same_video_codec(st->codec, flags)))
                     break;
             } else if (stream_type == FLV_STREAM_TYPE_DATA) {
-                if (st->codec->codec_type == AVMEDIA_TYPE_DATA)
+                if (st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE)
                     break;
             }
         }
         if (i == s->nb_streams) {
-            static const enum AVMediaType stream_types[] = {AVMEDIA_TYPE_VIDEO, AVMEDIA_TYPE_AUDIO, AVMEDIA_TYPE_DATA};
+            static const enum AVMediaType stream_types[] = {AVMEDIA_TYPE_VIDEO, AVMEDIA_TYPE_AUDIO, AVMEDIA_TYPE_SUBTITLE};
             av_log(s, AV_LOG_WARNING, "Stream discovered after head already parsed\n");
             st = create_stream(s, stream_types[stream_type]);
             if (!st)
