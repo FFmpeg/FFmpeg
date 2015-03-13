@@ -3610,8 +3610,8 @@ int ff_lock_avcodec(AVCodecContext *log_ctx, AVCodec *codec)
         if ((*lockmgr_cb)(&codec_mutex, AV_LOCK_OBTAIN))
             return -1;
     }
-    entangled_thread_counter++;
-    if (entangled_thread_counter != 1 &&
+
+    if (avpriv_atomic_int_add_and_fetch(&entangled_thread_counter, 1) != 1 &&
         !(codec->caps_internal & FF_CODEC_CAP_INIT_THREADSAFE)) {
         av_log(log_ctx, AV_LOG_ERROR,
                "Insufficient thread locking. At least %d threads are "
@@ -3632,7 +3632,7 @@ int ff_unlock_avcodec(void)
 {
     av_assert0(ff_avcodec_locked);
     ff_avcodec_locked = 0;
-    entangled_thread_counter--;
+    avpriv_atomic_int_add_and_fetch(&entangled_thread_counter, -1);
     if (lockmgr_cb) {
         if ((*lockmgr_cb)(&codec_mutex, AV_LOCK_RELEASE))
             return -1;
