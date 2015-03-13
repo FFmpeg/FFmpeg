@@ -30,6 +30,7 @@
 #include "avio_internal.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/avstring.h"
+#include "libavutil/opt.h"
 #include "internal.h"
 #include "network.h"
 #include "os_support.h"
@@ -44,16 +45,43 @@ typedef struct UDPContext {
     int udp_fd;
     int ttl;
     int buffer_size;
+    int pkt_size;
     int is_multicast;
     int local_port;
     int reuse_socket;
     struct sockaddr_storage dest_addr;
     int dest_addr_len;
     int is_connected;
+    char *localaddr;
+    char *sources;
+    char *block;
 } UDPContext;
 
 #define UDP_TX_BUF_SIZE 32768
 #define UDP_MAX_PKT_SIZE 65536
+
+#define OFFSET(x) offsetof(UDPContext, x)
+#define D AV_OPT_FLAG_DECODING_PARAM
+#define E AV_OPT_FLAG_ENCODING_PARAM
+static const AVOption options[] = {
+    { "ttl",            "Time to live (in milliseconds, multicast only)",  OFFSET(ttl),            AV_OPT_TYPE_INT,    { .i64 = 16 },     0, INT_MAX, .flags = D|E },
+    { "buffer_size",    "System data size (in bytes)",                     OFFSET(buffer_size),    AV_OPT_TYPE_INT,    { .i64 = -1 },    -1, INT_MAX, .flags = D|E },
+    { "local_port",     "Local port",                                      OFFSET(local_port),     AV_OPT_TYPE_INT,    { .i64 = -1 },    -1, INT_MAX, .flags = D|E },
+    { "reuse_socket",   "Reuse socket",                                    OFFSET(reuse_socket),   AV_OPT_TYPE_INT,    { .i64 = -1 },    -1, 1,       .flags = D|E },
+    { "connect",        "Connect socket",                                  OFFSET(is_connected),   AV_OPT_TYPE_INT,    { .i64 =  0 },     0, 1,       .flags = D|E },
+    { "pkt_size",       "Maximum packet size",                             OFFSET(pkt_size),       AV_OPT_TYPE_INT,    { .i64 = -1 },    -1, INT_MAX, .flags = D|E },
+    { "localaddr",      "Local address",                                   OFFSET(localaddr),      AV_OPT_TYPE_STRING, { .str = NULL },               .flags = D|E },
+    { "sources",        "Source list",                                     OFFSET(sources),        AV_OPT_TYPE_STRING, { .str = NULL },               .flags = D|E },
+    { "block",          "Block list",                                      OFFSET(block),          AV_OPT_TYPE_STRING, { .str = NULL },               .flags = D|E },
+    { NULL }
+};
+
+static const AVClass udp_class = {
+    .class_name = "udp",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
 
 static void log_net_error(void *ctx, int level, const char* prefix)
 {
@@ -411,7 +439,6 @@ static int udp_open(URLContext *h, const char *uri, int flags)
     char buf[256];
     struct sockaddr_storage my_addr;
     socklen_t len;
-    int reuse_specified = 0;
     int i, num_include_sources = 0, num_exclude_sources = 0;
     char *include_sources[32], *exclude_sources[32];
 
@@ -420,8 +447,24 @@ static int udp_open(URLContext *h, const char *uri, int flags)
 
     is_output = !(flags & AVIO_FLAG_READ);
 
-    s->ttl = 16;
-    s->buffer_size = is_output ? UDP_TX_BUF_SIZE : UDP_MAX_PKT_SIZE;
+    if (s->buffer_size < 0)
+        s->buffer_size = is_output ? UDP_TX_BUF_SIZE : UDP_MAX_PKT_SIZE;
+
+    if (s->sources) {
+        if (parse_source_list(s->sources, include_sources,
+                              &num_include_sources,
+                              FF_ARRAY_ELEMS(include_sources)))
+            goto fail;
+    }
+
+    if (s->block) {
+        if (parse_source_list(s->block, exclude_sources, &num_exclude_sources,
+                              FF_ARRAY_ELEMS(exclude_sources)))
+            goto fail;
+    }
+
+    if (s->pkt_size)
+        h->max_packet_size = s->pkt_size;
 
     p = strchr(uri, '?');
     if (p) {
@@ -431,7 +474,6 @@ static int udp_open(URLContext *h, const char *uri, int flags)
             /* assume if no digits were found it is a request to enable it */
             if (buf == endptr)
                 s->reuse_socket = 1;
-            reuse_specified = 1;
         }
         if (av_find_info_tag(buf, sizeof(buf), "ttl", p)) {
             s->ttl = strtol(buf, NULL, 10);
@@ -478,14 +520,18 @@ static int udp_open(URLContext *h, const char *uri, int flags)
 
     if ((s->is_multicast || !s->local_port) && (h->flags & AVIO_FLAG_READ))
         s->local_port = port;
-    udp_fd = udp_socket_create(s, &my_addr, &len, localaddr);
+
+    if (localaddr[0])
+        udp_fd = udp_socket_create(s, &my_addr, &len, localaddr);
+    else
+        udp_fd = udp_socket_create(s, &my_addr, &len, s->localaddr);
     if (udp_fd < 0)
         goto fail;
 
     /* Follow the requested reuse option, unless it's multicast in which
      * case enable reuse unless explicitly disabled.
      */
-    if (s->reuse_socket || (s->is_multicast && !reuse_specified)) {
+    if (s->reuse_socket > 0 || (s->is_multicast && s->reuse_socket < 0)) {
         s->reuse_socket = 1;
         if (setsockopt (udp_fd, SOL_SOCKET, SO_REUSEADDR, &(s->reuse_socket), sizeof(s->reuse_socket)) != 0)
             goto fail;
@@ -631,4 +677,5 @@ URLProtocol ff_udp_protocol = {
     .url_get_file_handle = udp_get_file_handle,
     .priv_data_size      = sizeof(UDPContext),
     .flags               = URL_PROTOCOL_FLAG_NETWORK,
+    .priv_data_class     = &udp_class,
 };
