@@ -276,54 +276,34 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     return ff_filter_frame(outlink, out);
 }
 
+static inline int set_param(AVExpr **pexpr, const char *args, const char *cmd,
+                            void (*set_fn)(EQContext *eq), AVFilterContext *ctx)
+{
+    EQContext *eq = ctx->priv;
+    int ret;
+    if ((ret = set_expr(pexpr, args, cmd, ctx)) < 0)
+        return ret;
+    set_fn(eq);
+    return 0;
+}
+
 static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
                            char *res, int res_len, int flags)
 {
     EQContext *eq = ctx->priv;
-    int ret;
 
-    if (!strcmp(cmd, "contrast")) {
-        ret = set_expr(&eq->contrast_pexpr, args, cmd, ctx);
-        set_contrast(eq);
-        return ret;
-    }
-    else if (!strcmp(cmd, "brightness")) {
-        ret = set_expr(&eq->brightness_pexpr, args, cmd, ctx);
-        set_brightness(eq);
-        return ret;
-    }
-    else if (!strcmp(cmd, "saturation")) {
-        ret = set_expr(&eq->saturation_pexpr, args, cmd, ctx);
-        set_saturation(eq);
-        return ret;
-    }
-    else if (!strcmp(cmd, "gamma")) {
-        ret = set_expr(&eq->gamma_pexpr, args, cmd, ctx);
-        set_gamma(eq);
-        return ret;
-    }
-    else if (!strcmp(cmd, "gamma_r")) {
-        ret = set_expr(&eq->gamma_r_pexpr, args, cmd, ctx);
-        set_gamma(eq);
-        return ret;
-    }
-    else if (!strcmp(cmd, "gamma_g")) {
-        ret = set_expr(&eq->gamma_g_pexpr, args, cmd, ctx);
-        set_gamma(eq);
-        return ret;
-    }
-    else if (!strcmp(cmd, "gamma_b")) {
-        ret = set_expr(&eq->gamma_b_pexpr, args, cmd, ctx);
-        set_gamma(eq);
-        return ret;
-    }
-    else if (!strcmp(cmd, "gamma_weight")) {
-        ret = set_expr(&eq->gamma_weight_pexpr, args, cmd, ctx);
-        set_gamma(eq);
-        return ret;
-    }
-    else
-        return AVERROR(ENOSYS);
+#define SET_PARAM(param_name, set_fn_name)                              \
+    if (!strcmp(cmd, #param_name)) return set_param(&eq->param_name##_pexpr, args, cmd, set_##set_fn_name, ctx);
+
+         SET_PARAM(contrast, contrast)
+    else SET_PARAM(brightness, brightness)
+    else SET_PARAM(saturation, saturation)
+    else SET_PARAM(gamma, gamma)
+    else SET_PARAM(gamma_r, gamma)
+    else SET_PARAM(gamma_g, gamma)
+    else SET_PARAM(gamma_b, gamma)
+    else SET_PARAM(gamma_weight, gamma)
+    else return AVERROR(ENOSYS);
 }
 
 static const AVFilterPad eq_inputs[] = {
