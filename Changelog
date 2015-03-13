@@ -3,6 +3,7 @@ releases are sorted from youngest to oldest.
 
 version <next>:
 - FFT video filter
+- TDSC decoder
 
 
 version 2.6:
