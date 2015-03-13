@@ -689,10 +689,10 @@ static int decode_frame_header(AVCodecContext *ctx,
         for (j = 1; j < 4; j++) {
             s->segmentation.feat[i].lflvl[j][0] =
                 av_clip_uintp2(lflvl + ((s->lf_delta.ref[j] +
-                                         s->lf_delta.mode[0]) << sh), 6);
+                                         s->lf_delta.mode[0]) * (1 << sh)), 6);
             s->segmentation.feat[i].lflvl[j][1] =
                 av_clip_uintp2(lflvl + ((s->lf_delta.ref[j] +
-                                         s->lf_delta.mode[1]) << sh), 6);
+                                         s->lf_delta.mode[1]) * (1 << sh)), 6);
         }
     }
 

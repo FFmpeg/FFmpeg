@@ -162,7 +162,8 @@ static int svq1_decode_block_intra(GetBitContext *bitbuf, uint8_t *pixels,
     const uint32_t *codebook;
     int entries[6];
     int i, j, m, n;
-    int mean, stages;
+    int stages;
+    unsigned mean;
     unsigned x, y, width, height, level;
     uint32_t n1, n2, n3, n4;
 
@@ -228,7 +229,8 @@ static int svq1_decode_block_non_intra(GetBitContext *bitbuf, uint8_t *pixels,
     const uint32_t *codebook;
     int entries[6];
     int i, j, m, n;
-    int mean, stages;
+    int stages;
+    unsigned mean;
     int x, y, width, height, level;
     uint32_t n1, n2, n3, n4;
 

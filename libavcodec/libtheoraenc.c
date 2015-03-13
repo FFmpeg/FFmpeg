@@ -267,6 +267,8 @@ static av_cold int encode_init(AVCodecContext* avc_context)
 
     /* Set up the output AVFrame */
     avc_context->coded_frame = av_frame_alloc();
+    if (!avc_context->coded_frame)
+        return AVERROR(ENOMEM);
 
     return 0;
 }

@@ -3024,6 +3024,12 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
 
     if (profile)
         snprintf(buf + strlen(buf), buf_size - strlen(buf), " (%s)", profile);
+    if (   enc->codec_type == AVMEDIA_TYPE_VIDEO
+        && av_log_get_level() >= AV_LOG_VERBOSE
+        && enc->refs)
+        snprintf(buf + strlen(buf), buf_size - strlen(buf),
+                 ", %d reference frame%s",
+                 enc->refs, enc->refs > 1 ? "s" : "");
 
     if (enc->codec_tag) {
         char tag_buf[32];

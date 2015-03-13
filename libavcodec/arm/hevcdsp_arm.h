@@ -1,6 +1,4 @@
 /*
- * Copyright (c) 2015 Imagination Technologies Ltd
- *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -18,29 +16,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-/**
- * @file
- * MIPS assembly defines from sys/asm.h but rewritten for use with C inline
- * assembly (rather than from within .s files).
- */
+#ifndef AVCODEC_ARM_HEVCDSP_ARM_H
+#define AVCODEC_ARM_HEVCDSP_ARM_H
 
-#ifndef AVUTIL_MIPS_ASMDEFS_H
-#define AVUTIL_MIPS_ASMDEFS_H
+#include "libavcodec/hevcdsp.h"
 
-#if defined(_ABI64) && _MIPS_SIM == _ABI64
-# define PTRSIZE        " 8 "
-# define PTRLOG         " 3 "
-# define PTR_ADDU       "daddu "
-# define PTR_ADDIU      "daddiu "
-# define PTR_SUBU       "dsubu "
-# define PTR_L          "ld "
-#else
-# define PTRSIZE        " 4 "
-# define PTRLOG         " 2 "
-# define PTR_ADDU       "addu "
-# define PTR_ADDIU      "addiu "
-# define PTR_SUBU       "subu "
-# define PTR_L          "lw "
-#endif
+void ff_hevcdsp_init_neon(HEVCDSPContext *c, const int bit_depth);
 
-#endif /* AVCODEC_MIPS_ASMDEFS_H */
+#endif /* AVCODEC_ARM_HEVCDSP_ARM_H */

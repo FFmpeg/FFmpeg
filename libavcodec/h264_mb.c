@@ -213,7 +213,7 @@ static av_always_inline void mc_dir_part(H264Context *h, H264Picture *pic,
     const int mx      = h->mv_cache[list][scan8[n]][0] + src_x_offset * 8;
     int my            = h->mv_cache[list][scan8[n]][1] + src_y_offset * 8;
     const int luma_xy = (mx & 3) + ((my & 3) << 2);
-    ptrdiff_t offset  = ((mx >> 2) << pixel_shift) + (my >> 2) * h->mb_linesize;
+    ptrdiff_t offset  = (mx >> 2) * (1 << pixel_shift) + (my >> 2) * h->mb_linesize;
     uint8_t *src_y    = pic->f.data[0] + offset;
     uint8_t *src_cb, *src_cr;
     int extra_width  = 0;
@@ -288,9 +288,9 @@ static av_always_inline void mc_dir_part(H264Context *h, H264Picture *pic,
         emu |= (my >> 3) < 0 || (my >> 3) + 8 >= (pic_height >> 1);
     }
 
-    src_cb = pic->f.data[1] + ((mx >> 3) << pixel_shift) +
+    src_cb = pic->f.data[1] + ((mx >> 3) * (1 << pixel_shift)) +
              (my >> ysh) * h->mb_uvlinesize;
-    src_cr = pic->f.data[2] + ((mx >> 3) << pixel_shift) +
+    src_cr = pic->f.data[2] + ((mx >> 3) * (1 << pixel_shift)) +
              (my >> ysh) * h->mb_uvlinesize;
 
     if (emu) {
@@ -302,7 +302,7 @@ static av_always_inline void mc_dir_part(H264Context *h, H264Picture *pic,
     }
     chroma_op(dest_cb, src_cb, h->mb_uvlinesize,
               height >> (chroma_idc == 1 /* yuv420 */),
-              mx & 7, (my << (chroma_idc == 2 /* yuv422 */)) & 7);
+              mx & 7, ((unsigned)my << (chroma_idc == 2 /* yuv422 */)) & 7);
 
     if (emu) {
         h->vdsp.emulated_edge_mc(h->edge_emu_buffer, src_cr,
@@ -312,7 +312,7 @@ static av_always_inline void mc_dir_part(H264Context *h, H264Picture *pic,
         src_cr = h->edge_emu_buffer;
     }
     chroma_op(dest_cr, src_cr, h->mb_uvlinesize, height >> (chroma_idc == 1 /* yuv420 */),
-              mx & 7, (my << (chroma_idc == 2 /* yuv422 */)) & 7);
+              mx & 7, ((unsigned)my << (chroma_idc == 2 /* yuv422 */)) & 7);
 }
 
 static av_always_inline void mc_part_std(H264Context *h, int n, int square,
@@ -485,7 +485,7 @@ static av_always_inline void prefetch_motion(H264Context *h, int list,
         const int mx  = (h->mv_cache[list][scan8[0]][0] >> 2) + 16 * h->mb_x + 8;
         const int my  = (h->mv_cache[list][scan8[0]][1] >> 2) + 16 * h->mb_y;
         uint8_t **src = h->ref_list[list][refn].f.data;
-        int off       = (mx << pixel_shift) +
+        int off       =  mx * (1<< pixel_shift) +
                         (my + (h->mb_x & 3) * 4) * h->mb_linesize +
                         (64 << pixel_shift);
         h->vdsp.prefetch(src[0] + off, h->linesize, 4);
@@ -493,7 +493,7 @@ static av_always_inline void prefetch_motion(H264Context *h, int list,
             h->vdsp.prefetch(src[1] + off, h->linesize, 4);
             h->vdsp.prefetch(src[2] + off, h->linesize, 4);
         } else {
-            off= (((mx>>1)+64)<<pixel_shift) + ((my>>1) + (h->mb_x&7))*h->uvlinesize;
+            off= ((mx>>1)+64) * (1<<pixel_shift) + ((my>>1) + (h->mb_x&7))*h->uvlinesize;
             h->vdsp.prefetch(src[1] + off, src[2] - src[1], 2);
         }
     }
