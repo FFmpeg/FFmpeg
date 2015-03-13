@@ -243,19 +243,19 @@ typedef struct AC3DecodeContext {
  * Parse the E-AC-3 frame header.
  * This parses both the bit stream info and audio frame header.
  */
-int ff_eac3_parse_header(AC3DecodeContext *s);
+static int ff_eac3_parse_header(AC3DecodeContext *s);
 
 /**
  * Decode mantissas in a single channel for the entire frame.
  * This is used when AHT mode is enabled.
  */
-void ff_eac3_decode_transform_coeffs_aht_ch(AC3DecodeContext *s, int ch);
+static void ff_eac3_decode_transform_coeffs_aht_ch(AC3DecodeContext *s, int ch);
 
 /**
  * Apply spectral extension to each channel by copying lower frequency
  * coefficients to higher frequency bins and applying side information to
  * approximate the original high frequency signal.
  */
-void ff_eac3_apply_spectral_extension(AC3DecodeContext *s);
+static void ff_eac3_apply_spectral_extension(AC3DecodeContext *s);
 
 #endif /* AVCODEC_AC3DEC_H */
