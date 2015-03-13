@@ -908,9 +908,14 @@ static int avf_read_packet(AVFormatContext *s, AVPacket *pkt)
                 return AVERROR(EIO);
             }
 
-            pkt->pts = pkt->dts = av_rescale_q(av_gettime() - ctx->first_pts,
-                                               AV_TIME_BASE_Q,
-                                               avf_time_base_q);
+            CMItemCount count;
+            CMSampleTimingInfo timing_info;
+
+            if (CMSampleBufferGetOutputSampleTimingInfoArray(ctx->current_frame, 1, &timing_info, &count) == noErr) {
+                AVRational timebase_q = av_make_q(1, timing_info.presentationTimeStamp.timescale);
+                pkt->pts = pkt->dts = av_rescale_q(timing_info.presentationTimeStamp.value, timebase_q, avf_time_base_q);
+            }
+
             pkt->stream_index  = ctx->video_stream_index;
             pkt->flags        |= AV_PKT_FLAG_KEY;
 
@@ -938,9 +943,13 @@ static int avf_read_packet(AVFormatContext *s, AVPacket *pkt)
                 return AVERROR(EIO);
             }
 
-            pkt->pts = pkt->dts = av_rescale_q(av_gettime() - ctx->first_audio_pts,
-                                               AV_TIME_BASE_Q,
-                                               avf_time_base_q);
+            CMItemCount count;
+            CMSampleTimingInfo timing_info;
+
+            if (CMSampleBufferGetOutputSampleTimingInfoArray(ctx->current_audio_frame, 1, &timing_info, &count) == noErr) {
+                AVRational timebase_q = av_make_q(1, timing_info.presentationTimeStamp.timescale);
+                pkt->pts = pkt->dts = av_rescale_q(timing_info.presentationTimeStamp.value, timebase_q, avf_time_base_q);
+            }
 
             pkt->stream_index  = ctx->audio_stream_index;
             pkt->flags        |= AV_PKT_FLAG_KEY;
