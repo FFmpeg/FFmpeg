@@ -3608,7 +3608,10 @@ int ff_lock_avcodec(AVCodecContext *log_ctx)
     }
     entangled_thread_counter++;
     if (entangled_thread_counter != 1) {
-        av_log(log_ctx, AV_LOG_ERROR, "Insufficient thread locking around avcodec_open/close()\n");
+        av_log(log_ctx, AV_LOG_ERROR,
+               "Insufficient thread locking. At least %d threads are "
+               "calling avcodec_open2() at the same time right now.\n",
+               entangled_thread_counter);
         if (!lockmgr_cb)
             av_log(log_ctx, AV_LOG_ERROR, "No lock manager is set, please see av_lockmgr_register()\n");
         ff_avcodec_locked = 1;
