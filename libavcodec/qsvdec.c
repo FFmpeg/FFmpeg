@@ -68,7 +68,7 @@ static int qsv_init_session(AVCodecContext *avctx, QSVContext *q, mfxSession ses
     return 0;
 }
 
-int ff_qsv_init(AVCodecContext *avctx, QSVContext *q, mfxSession session)
+int ff_qsv_decode_init(AVCodecContext *avctx, QSVContext *q, mfxSession session)
 {
     mfxVideoParam param = { { 0 } };
     int ret;
@@ -272,7 +272,7 @@ int ff_qsv_decode(AVCodecContext *avctx, QSVContext *q,
     return bs.DataOffset;
 }
 
-int ff_qsv_close(QSVContext *q)
+int ff_qsv_decode_close(QSVContext *q)
 {
     QSVFrame *cur = q->work_frames;
 

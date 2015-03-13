@@ -65,12 +65,12 @@ typedef struct QSVContext {
 
 int ff_qsv_map_pixfmt(enum AVPixelFormat format);
 
-int ff_qsv_init(AVCodecContext *s, QSVContext *q, mfxSession session);
+int ff_qsv_decode_init(AVCodecContext *s, QSVContext *q, mfxSession session);
 
 int ff_qsv_decode(AVCodecContext *s, QSVContext *q,
                   AVFrame *frame, int *got_frame,
                   AVPacket *avpkt);
 
-int ff_qsv_close(QSVContext *q);
+int ff_qsv_decode_close(QSVContext *q);
 
 #endif /* AVCODEC_QSVDEC_H */

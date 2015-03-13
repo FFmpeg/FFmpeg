@@ -74,7 +74,7 @@ static av_cold int qsv_decode_close(AVCodecContext *avctx)
 {
     QSVH264Context *s = avctx->priv_data;
 
-    ff_qsv_close(&s->qsv);
+    ff_qsv_decode_close(&s->qsv);
 
     qsv_clear_buffers(s);
 
@@ -195,7 +195,7 @@ static int qsv_process_data(AVCodecContext *avctx, AVFrame *frame,
             s->qsv.nb_ext_buffers = user_ctx->nb_ext_buffers;
         }
 
-        ret = ff_qsv_init(avctx, &s->qsv, session);
+        ret = ff_qsv_decode_init(avctx, &s->qsv, session);
         if (ret < 0)
             goto reinit_fail;
     }
