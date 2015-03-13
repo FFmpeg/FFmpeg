@@ -109,6 +109,7 @@
     <YASM Include="..\libavcodec\x86\hevc_res_add.asm" />
     <YASM Include="..\libavcodec\x86\hevc_sao.asm" />
     <YASM Include="..\libavcodec\x86\mlpdsp.asm" />
+    <YASM Include="..\libavcodec\x86\xvididct.asm" />
     <YASM Include="..\libavcodec\x86\proresdsp.asm" />
     <YASM Include="..\libavcodec\x86\rv34dsp.asm" />
     <YASM Include="..\libavcodec\x86\rv40dsp.asm" />
@@ -900,6 +901,7 @@
     <ClCompile Include="..\libavcodec\mpeg12enc.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\xvididct.c">
+      <ObjectFileName>$(IntDir)\libavcodec_xvididct.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavcodec\mpl2dec.c">
     </ClCompile>
@@ -1632,8 +1634,6 @@
       <ObjectFileName>$(IntDir)\libavcodec_x86_simple_idct.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavcodec\x86\xvididct_mmx.c">
-    </ClCompile>
-    <ClCompile Include="..\libavcodec\x86\xvididct_sse2.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\x86\snowdsp.c">
     </ClCompile>
