@@ -28,6 +28,7 @@
  * Upmix delay samples from stereo to original channel layout.
  */
 #include "ac3dec.h"
+#include "eac3dec.c"
 #include "ac3dec.c"
 
 static const AVOption options[] = {
