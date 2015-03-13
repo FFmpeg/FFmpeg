@@ -33,6 +33,16 @@
 #include "avcodec.h"
 #include "config.h"
 
+/**
+ * Codec is thread safe.
+ */
+#define FF_CODEC_CAP_INIT_THREADSAFE        (1 << 0)
+/**
+ * Codec cleans up memory on init failure.
+ */
+#define FF_CODEC_CAP_INIT_CLEANUP           (1 << 1)
+
+
 #define FF_SANE_NB_CHANNELS 63U
 
 #define FF_SIGNBIT(x) ((x) >> CHAR_BIT * sizeof(x) - 1)
@@ -157,7 +167,7 @@ int ff_init_buffer_info(AVCodecContext *s, AVFrame *frame);
 void avpriv_color_frame(AVFrame *frame, const int color[4]);
 
 extern volatile int ff_avcodec_locked;
-int ff_lock_avcodec(AVCodecContext *log_ctx);
+int ff_lock_avcodec(AVCodecContext *log_ctx, AVCodec *codec);
 int ff_unlock_avcodec(void);
 
 int avpriv_lock_avformat(void);

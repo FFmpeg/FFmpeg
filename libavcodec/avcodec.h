@@ -3262,6 +3262,11 @@ typedef struct AVCodec {
      * Will be called when seeking
      */
     void (*flush)(AVCodecContext *);
+    /**
+     * Internal codec capabilities.
+     * See FF_CODEC_CAP_* in internal.h
+     */
+    int caps_internal;
 } AVCodec;
 
 int av_codec_get_max_lowres(const AVCodec *codec);
