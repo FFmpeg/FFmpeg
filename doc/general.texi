@@ -145,20 +145,25 @@ enable it.
 @section AviSynth
 
 Libav can read AviSynth scripts as input. To enable support you need a
-suitable @file{avisynth_c.h} header to compile against. The header in
-classic AviSynth's CVS repository is not compatible as it has not been
-updated to support AviSynth 2.6. AviSynth 2.5 is not supported by Libav.
-Once you have the appropriate header, pass @code{--enable-avisynth} to
-configure to enable AviSynth support.
+suitable @file{avisynth_c.h} header to compile against. The header as
+provided by AviSynth+ is fully compatible. AviSynth 2.5 is not supported
+by Libav. Once you have the appropriate header, pass
+@code{--enable-avisynth} to configure to enable AviSynth support.
 
 For Windows, supported AviSynth variants are
 @url{http://avisynth.nl, AviSynth 2.6} for 32-bit builds and
 @url{http://avs-plus.net, AviSynth+ 0.1} for 32-bit and 64-bit builds.
-The necessary @file{avisynth_c.h} header is the variant in the @file{extras/}
-directory of the @url{https://www.videolan.org/developers/x264.html, x264}
-source tree. For convenience, this header is also available from a
-@url{https://github.com/qyot27/avisynth_headers, temporary repository}
-along with an installation routine.
+@url{https://github.com/AviSynth/AviSynthPlus, AviSynth+'s git repository}
+provides a GNU-style Makefile which can install just the headers using
+@code{make install PREFIX=/install/prefix}.
+
+@float NOTE
+When using AviSynth+'s installed headers, the user must also pass
+the avisynth/ include directory to @code{--extra-cflags}. For example,
+if the PREFIX given to AviSynth+'s Makefile was /usr/i686-w64-mingw32,
+then the correct command would be
+@code{--extra-cflags="-I/usr/i686-w64-mingw32/include/avisynth"}.
+@end float
 
 For Linux and OS X, the supported AviSynth variant is
 @url{https://github.com/avxsynth/avxsynth, AvxSynth}.

@@ -27,16 +27,7 @@
 /* Enable function pointer definitions for runtime loading. */
 #define AVSC_NO_DECLSPEC
 
-/* Platform-specific directives for AviSynth vs AvxSynth.
- *
- * avisynth_c.h needs to be the one provided with x264, as
- * the one in AviSynth's CVS hasn't been updated to support
- * 2.6's extra colorspaces. A temporary source of that header,
- * installable from a GNU-style Makefile is available from
- * github.com/qyot27/avisynth_headers -- AvxSynth doesn't
- * require this kind of special treatment because like any
- * standard *nix application, it installs its headers
- * alongside its libs. */
+/* Platform-specific directives for AviSynth vs AvxSynth. */
 #ifdef _WIN32
   #include <windows.h>
   #undef EXTERN_C
