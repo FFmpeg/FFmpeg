@@ -2194,7 +2194,7 @@ static int mov_open_dref(AVIOContext **pb, const char *src, MOVDref *ref,
     /* try relative path, we do not try the absolute because it can leak information about our
        system to an attacker */
     if (ref->nlvl_to > 0 && ref->nlvl_from > 0) {
-        char filename[1024];
+        char filename[1025];
         const char *src_path;
         int i, l;
 
@@ -2224,6 +2224,8 @@ static int mov_open_dref(AVIOContext **pb, const char *src, MOVDref *ref,
 
             av_strlcat(filename, ref->path + l + 1, sizeof(filename));
 
+            if (strlen(filename) + 1 == sizeof(filename))
+                return AVERROR(ENOENT);
             if (!avio_open2(pb, filename, AVIO_FLAG_READ, int_cb, NULL))
                 return 0;
         }
