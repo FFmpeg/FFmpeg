@@ -1168,7 +1168,7 @@ void ff_get_unscaled_swscale(SwsContext *c)
         ff_get_unscaled_swscale_ppc(c);
 }
 
-static void reset_ptr(const uint8_t *src[], int format)
+static void reset_ptr(const uint8_t *src[], enum AVPixelFormat format)
 {
     if (!isALPHA(format))
         src[3] = NULL;
