@@ -924,14 +924,13 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
 
                     bin = s->spx_src_start_freq;
                     for (bnd = 0; bnd < s->num_spx_bands; bnd++) {
-                        int bandsize;
+                        int bandsize = s->spx_band_sizes[bnd];
                         int spx_coord_exp, spx_coord_mant;
                         INTFLOAT nratio, sblend, nblend;
 #if USE_FIXED
-                        int64_t accu;
                         /* calculate blending factors */
-                        bandsize = s->spx_band_sizes[bnd];
-                        accu = (int64_t)((bin << 23) + (bandsize << 22)) * s->spx_dst_end_freq;
+                        int64_t accu = ((bin << 23) + (bandsize << 22))
+                                     * (int64_t)s->spx_dst_end_freq;
                         nratio = (int)(accu >> 32);
                         nratio -= spx_blend << 18;
 
@@ -951,7 +950,6 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
                         float spx_coord;
 
                         /* calculate blending factors */
-                        bandsize = s->spx_band_sizes[bnd];
                         nratio = ((float)((bin + (bandsize >> 1))) / s->spx_dst_end_freq) - spx_blend;
                         nratio = av_clipf(nratio, 0.0f, 1.0f);
                         nblend = sqrtf(3.0f * nratio); // noise is scaled by sqrt(3)
