@@ -527,8 +527,17 @@ static int create_stream(AVFormatContext *s)
     gc  = xcb_get_geometry(c->conn, c->screen->root);
     geo = xcb_get_geometry_reply(c->conn, gc, NULL);
 
-    c->width      = FFMIN(geo->width, c->width);
-    c->height     = FFMIN(geo->height, c->height);
+    if (c->x + c->width >= geo->width ||
+        c->y + c->height >= geo->height) {
+        av_log(s, AV_LOG_ERROR,
+               "Capture area %dx%d at position %d.%d "
+               "outside the screen size %dx%d\n",
+               c->width, c->height,
+               c->x, c->y,
+               geo->width, geo->height);
+        return AVERROR(EINVAL);
+    }
+
     c->time_base  = (AVRational){ st->avg_frame_rate.den,
                                   st->avg_frame_rate.num };
     c->time_frame = av_gettime();
