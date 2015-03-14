@@ -143,7 +143,9 @@ static void ff_eac3_apply_spectral_extension(AC3DecodeContext *s)
             float nscale = s->spx_noise_blend[ch][bnd] * rms_energy[bnd] * (1.0f / INT32_MIN);
             float sscale = s->spx_signal_blend[ch][bnd];
 #if USE_FIXED
+            // spx_noise_blend and spx_signal_blend are both FP.23
             nscale *= 1.0 / (1<<23);
+            sscale *= 1.0 / (1<<23);
 #endif
             for (i = 0; i < s->spx_band_sizes[bnd]; i++) {
                 float noise  = nscale * (int32_t)av_lfg_get(&s->dith_state);
