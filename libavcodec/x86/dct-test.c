@@ -22,25 +22,35 @@
 #include "xvididct.h"
 #include "simple_idct.h"
 
-#if ARCH_X86_64 && HAVE_MMX && HAVE_YASM
+#if (CONFIG_PRORES_DECODER || CONFIG_PRORES_LGPL_DECODER) && ARCH_X86_64 && HAVE_YASM
 void ff_prores_idct_put_10_sse2(uint16_t *dst, int linesize,
                                 int16_t *block, int16_t *qmat);
 
-static void ff_prores_idct_put_10_sse2_wrap(int16_t *dst){
-    DECLARE_ALIGNED(16, static int16_t, qmat)[64];
-    DECLARE_ALIGNED(16, static int16_t, tmp)[64];
-    int i;
-
-    for(i=0; i<64; i++){
-        qmat[i]=4;
-        tmp[i]= dst[i];
-    }
-    ff_prores_idct_put_10_sse2(dst, 16, tmp, qmat);
-
-    for(i=0; i<64; i++) {
-         dst[i] -= 512;
-    }
+#define PR_WRAP(INSN) \
+static void ff_prores_idct_put_10_##INSN##_wrap(int16_t *dst){ \
+    DECLARE_ALIGNED(16, static int16_t, qmat)[64]; \
+    DECLARE_ALIGNED(16, static int16_t, tmp)[64]; \
+    int i; \
+ \
+    for(i=0; i<64; i++){ \
+        qmat[i]=4; \
+        tmp[i]= dst[i]; \
+    } \
+    ff_prores_idct_put_10_##INSN (dst, 16, tmp, qmat); \
+ \
+    for(i=0; i<64; i++) { \
+         dst[i] -= 512; \
+    } \
 }
+
+PR_WRAP(sse2)
+
+# if HAVE_AVX_EXTERNAL
+void ff_prores_idct_put_10_avx(uint16_t *dst, int linesize,
+                               int16_t *block, int16_t *qmat);
+PR_WRAP(avx)
+# endif
+
 #endif
 
 static const struct algo fdct_tab_arch[] = {
@@ -60,20 +70,21 @@ static const struct algo idct_tab_arch[] = {
 #if HAVE_MMX_INLINE
     { "SIMPLE-MMX",  ff_simple_idct_mmx,  FF_IDCT_PERM_SIMPLE, AV_CPU_FLAG_MMX },
 #endif
-#if CONFIG_MPEG4_DECODER
-#if HAVE_MMX_INLINE
+#if CONFIG_MPEG4_DECODER && HAVE_YASM
+#if ARCH_X86_32
     { "XVID-MMX",    ff_xvid_idct_mmx,    FF_IDCT_PERM_NONE,   AV_CPU_FLAG_MMX,    1 },
-#endif
-#if HAVE_MMXEXT_INLINE
     { "XVID-MMXEXT", ff_xvid_idct_mmxext, FF_IDCT_PERM_NONE,   AV_CPU_FLAG_MMXEXT, 1 },
 #endif
 #if HAVE_SSE2_EXTERNAL
     { "XVID-SSE2",   ff_xvid_idct_sse2,   FF_IDCT_PERM_SSE2,   AV_CPU_FLAG_SSE2,   1 },
-#if ARCH_X86_64
+#endif
+#endif /* CONFIG_MPEG4_DECODER && HAVE_YASM */
+#if (CONFIG_PRORES_DECODER || CONFIG_PRORES_LGPL_DECODER) && ARCH_X86_64 && HAVE_YASM
     { "PR-SSE2",     ff_prores_idct_put_10_sse2_wrap, FF_IDCT_PERM_TRANSPOSE, AV_CPU_FLAG_SSE2, 1 },
+# if HAVE_AVX_EXTERNAL
+    { "PR-AVX",      ff_prores_idct_put_10_avx_wrap, FF_IDCT_PERM_TRANSPOSE, AV_CPU_FLAG_AVX, 1 },
+# endif
 #endif
-#endif
-#endif /* CONFIG_MPEG4_DECODER */
     { 0 }
 };
 

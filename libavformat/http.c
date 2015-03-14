@@ -93,6 +93,7 @@ typedef struct HTTPContext {
     AVDictionary *chained_options;
     int send_expect_100;
     char *method;
+    int reconnect;
 } HTTPContext;
 
 #define OFFSET(x) offsetof(HTTPContext, x)
@@ -123,6 +124,7 @@ static const AVOption options[] = {
     { "offset", "initial byte offset", OFFSET(off), AV_OPT_TYPE_INT64, { .i64 = 0 }, 0, INT64_MAX, D },
     { "end_offset", "try to limit the request to bytes preceding this offset", OFFSET(end_off), AV_OPT_TYPE_INT64, { .i64 = 0 }, 0, INT64_MAX, D },
     { "method", "Override the HTTP method", OFFSET(method), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, E },
+    { "reconnect", "auto reconnect after disconnect before EOF", OFFSET(reconnect), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, D },
     { NULL }
 };
 
@@ -908,10 +910,12 @@ static int http_buf_read_compressed(URLContext *h, uint8_t *buf, int size)
 }
 #endif /* CONFIG_ZLIB */
 
+static int64_t http_seek_internal(URLContext *h, int64_t off, int whence, int force_reconnect);
+
 static int http_read_stream(URLContext *h, uint8_t *buf, int size)
 {
     HTTPContext *s = h->priv_data;
-    int err, new_location;
+    int err, new_location, read_ret, seek_ret;
 
     if (!s->hd)
         return AVERROR_EOF;
@@ -945,7 +949,19 @@ static int http_read_stream(URLContext *h, uint8_t *buf, int size)
     if (s->compressed)
         return http_buf_read_compressed(h, buf, size);
 #endif /* CONFIG_ZLIB */
-    return http_buf_read(h, buf, size);
+    read_ret = http_buf_read(h, buf, size);
+    if (read_ret < 0 && s->reconnect && !h->is_streamed && s->filesize > 0 && s->off < s->filesize) {
+        av_log(h, AV_LOG_INFO, "Will reconnect at %"PRId64".\n", s->off);
+        seek_ret = http_seek_internal(h, s->off, SEEK_SET, 1);
+        if (seek_ret != s->off) {
+            av_log(h, AV_LOG_ERROR, "Failed to reconnect at %"PRId64".\n", s->off);
+            return read_ret;
+        }
+
+        read_ret = http_buf_read(h, buf, size);
+    }
+
+    return read_ret;
 }
 
 // Like http_read_stream(), but no short reads.
@@ -1104,7 +1120,7 @@ static int http_close(URLContext *h)
     return ret;
 }
 
-static int64_t http_seek(URLContext *h, int64_t off, int whence)
+static int64_t http_seek_internal(URLContext *h, int64_t off, int whence, int force_reconnect)
 {
     HTTPContext *s = h->priv_data;
     URLContext *old_hd = s->hd;
@@ -1115,8 +1131,9 @@ static int64_t http_seek(URLContext *h, int64_t off, int whence)
 
     if (whence == AVSEEK_SIZE)
         return s->filesize;
-    else if ((whence == SEEK_CUR && off == 0) ||
-             (whence == SEEK_SET && off == s->off))
+    else if (!force_reconnect &&
+             ((whence == SEEK_CUR && off == 0) ||
+              (whence == SEEK_SET && off == s->off)))
         return s->off;
     else if ((s->filesize == -1 && whence == SEEK_END) || h->is_streamed)
         return AVERROR(ENOSYS);
@@ -1149,6 +1166,11 @@ static int64_t http_seek(URLContext *h, int64_t off, int whence)
     av_dict_free(&options);
     ffurl_close(old_hd);
     return off;
+}
+
+static int64_t http_seek(URLContext *h, int64_t off, int whence)
+{
+    return http_seek_internal(h, off, whence, 0);
 }
 
 static int http_get_file_handle(URLContext *h)

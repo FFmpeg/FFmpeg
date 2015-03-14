@@ -256,6 +256,9 @@ fate-smc: CMD = framecrc -i $(TARGET_SAMPLES)/smc/cass_schi.qt -pix_fmt rgb24
 FATE_VIDEO-$(call DEMDEC, AVI, SP5X) += fate-sp5x
 fate-sp5x: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/sp5x/sp5x_problem.avi
 
+FATE_VIDEO-$(call DEMDEC, ASF, TDSC) += fate-tdsc
+fate-tdsc: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/tdsc/tdsc.asf -an -pix_fmt bgr24
+
 FATE_VIDEO-$(call DEMDEC, THP, THP) += fate-thp
 fate-thp: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/thp/pikmin2-opening1-partial.thp -an
 

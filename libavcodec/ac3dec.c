@@ -872,7 +872,7 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
                 start_subband += start_subband - 7;
             end_subband    = get_bits(gbc, 3) + 5;
 #if USE_FIXED
-            s->spx_dst_end_freq = end_freq_inv_tab[end_subband];
+            s->spx_dst_end_freq = end_freq_inv_tab[end_subband-5];
 #endif
             if (end_subband   > 7)
                 end_subband   += end_subband   - 7;
@@ -924,14 +924,13 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
 
                     bin = s->spx_src_start_freq;
                     for (bnd = 0; bnd < s->num_spx_bands; bnd++) {
-                        int bandsize;
+                        int bandsize = s->spx_band_sizes[bnd];
                         int spx_coord_exp, spx_coord_mant;
                         INTFLOAT nratio, sblend, nblend;
 #if USE_FIXED
-                        int64_t accu;
                         /* calculate blending factors */
-                        bandsize = s->spx_band_sizes[bnd];
-                        accu = (int64_t)((bin << 23) + (bandsize << 22)) * s->spx_dst_end_freq;
+                        int64_t accu = ((bin << 23) + (bandsize << 22))
+                                     * (int64_t)s->spx_dst_end_freq;
                         nratio = (int)(accu >> 32);
                         nratio -= spx_blend << 18;
 
@@ -939,7 +938,7 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
                             nblend = 0;
                             sblend = 0x800000;
                         } else if (nratio > 0x7fffff) {
-                            nblend = 0x800000;
+                            nblend = 14529495; // sqrt(3) in FP.23
                             sblend = 0;
                         } else {
                             nblend = fixed_sqrt(nratio, 23);
@@ -951,7 +950,6 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
                         float spx_coord;
 
                         /* calculate blending factors */
-                        bandsize = s->spx_band_sizes[bnd];
                         nratio = ((float)((bin + (bandsize >> 1))) / s->spx_dst_end_freq) - spx_blend;
                         nratio = av_clipf(nratio, 0.0f, 1.0f);
                         nblend = sqrtf(3.0f * nratio); // noise is scaled by sqrt(3)

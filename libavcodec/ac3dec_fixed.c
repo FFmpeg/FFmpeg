@@ -164,6 +164,7 @@ static void ac3_downmix_c_fixed16(int16_t **samples, int16_t (*matrix)[2],
     }
 }
 
+#include "eac3dec.c"
 #include "ac3dec.c"
 
 static const AVOption options[] = {
