@@ -270,7 +270,7 @@ void put_vp8_epel ## WIDTH ## _v ## TAPS ## _altivec(uint8_t *dst, ptrdiff_t dst
 #define EPEL_HV(WIDTH, HTAPS, VTAPS) \
 static void put_vp8_epel ## WIDTH ## _h ## HTAPS ## v ## VTAPS ## _altivec(uint8_t *dst, ptrdiff_t dstride, uint8_t *src, ptrdiff_t sstride, int h, int mx, int my) \
 { \
-    DECLARE_ALIGNED(16, uint8_t, tmp)[(2*WIDTH+5)*16]; \
+    LOCAL_ALIGNED(16, uint8_t, tmp, [(2*WIDTH+5)*16]); \
     if (VTAPS == 6) { \
         put_vp8_epel ## WIDTH ## _h ## HTAPS ## _altivec(tmp, 16,      src-2*sstride, sstride, h+5, mx, my); \
         put_vp8_epel ## WIDTH ## _v ## VTAPS ## _altivec(dst, dstride, tmp+2*16,      16,      h,   mx, my); \
