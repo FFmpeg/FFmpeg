@@ -338,7 +338,7 @@ static int multiple_resample(ResampleContext *c, AudioData *dst, int dst_size, A
 static int64_t get_delay(struct SwrContext *s, int64_t base){
     ResampleContext *c = s->resample;
     int64_t num = s->in_buffer_count - (c->filter_length-1)/2;
-    num <<= c->phase_shift;
+    num *= 1 << c->phase_shift;
     num -= c->index;
     num *= c->src_incr;
     num -= c->frac;
