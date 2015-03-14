@@ -262,18 +262,6 @@ int ff_fmt_is_in(int fmt, const int *fmts)
     return 0;
 }
 
-#define COPY_INT_LIST(list_copy, list, type) {                          \
-    int count = 0;                                                      \
-    if (list)                                                           \
-        for (count = 0; list[count] != -1; count++)                     \
-            ;                                                           \
-    list_copy = av_calloc(count+1, sizeof(type));                       \
-    if (list_copy) {                                                    \
-        memcpy(list_copy, list, sizeof(type) * count);                  \
-        list_copy[count] = -1;                                          \
-    }                                                                   \
-}
-
 #define MAKE_FORMAT_LIST(type, field, count_field)                      \
     type *formats;                                                      \
     int count = 0;                                                      \
