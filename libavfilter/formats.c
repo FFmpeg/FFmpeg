@@ -308,8 +308,8 @@ do {                                                        \
     if (!(*f) && !(*f = av_mallocz(sizeof(**f))))           \
         return AVERROR(ENOMEM);                             \
                                                             \
-    fmts = av_realloc((*f)->list,                           \
-                      sizeof(*(*f)->list) * ((*f)->nb + 1));\
+    fmts = av_realloc_array((*f)->list, (*f)->nb + 1,       \
+                            sizeof(*(*f)->list));           \
     if (!fmts) {                                            \
         if (!oldf)                                          \
             av_freep(f);                                    \
