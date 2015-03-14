@@ -944,6 +944,11 @@ static int open_input(HLSContext *c, struct playlist *pls)
                     av_log(NULL, AV_LOG_ERROR, "Unable to read key file %s\n",
                            seg->key);
                 }
+                av_freep(&c->cookies);
+                av_opt_get(uc->priv_data, "cookies", 0, (uint8_t**)&(c->cookies));
+                if (c->cookies && !strlen(c->cookies))
+                    av_freep(&c->cookies);
+                av_dict_set(&opts, "cookies", c->cookies, 0);
                 ffurl_close(uc);
             } else {
                 av_log(NULL, AV_LOG_ERROR, "Unable to open key file %s\n",
