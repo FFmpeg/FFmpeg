@@ -932,9 +932,6 @@
     <ClCompile Include="..\libavcodec\dxtory.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavcodec\eac3dec.c">
-      <Filter>Source Files\libavcodec</Filter>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\eac3_data.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
@@ -1691,6 +1688,9 @@
     <ClCompile Include="..\libavcodec\targa_y216dec.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\tdsc.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\tiertexseqv.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
@@ -2418,9 +2418,6 @@
       <Filter>Source Files\libavcodec\x86</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\x86\simple_idct.c">
-      <Filter>Source Files\libavcodec\x86</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libavcodec\x86\xvididct_mmx.c">
       <Filter>Source Files\libavcodec\x86</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\x86\snowdsp.c">
