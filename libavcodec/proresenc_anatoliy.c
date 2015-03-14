@@ -286,7 +286,8 @@ static int encode_slice_plane(AVCodecContext *avctx, int mb_count,
 {
     ProresContext* ctx = avctx->priv_data;
     FDCTDSPContext *fdsp = &ctx->fdsp;
-    DECLARE_ALIGNED(16, int16_t, blocks)[DEFAULT_SLICE_MB_WIDTH << 8], *block;
+    LOCAL_ALIGNED(16, int16_t, blocks, [DEFAULT_SLICE_MB_WIDTH << 8]);
+    int16_t *block;
     int i, blocks_per_slice;
     PutBitContext pb;
 

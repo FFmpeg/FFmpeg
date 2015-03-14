@@ -1615,7 +1615,7 @@ void intra_predict(VP8Context *s, VP8ThreadData *td, uint8_t *dst[3],
             for (x = 0; x < 4; x++) {
                 int copy = 0, linesize = s->linesize;
                 uint8_t *dst = ptr + 4 * x;
-                DECLARE_ALIGNED(4, uint8_t, copy_dst)[5 * 8];
+                LOCAL_ALIGNED(4, uint8_t, copy_dst, [5 * 8]);
 
                 if ((y == 0 || x == 3) && mb_y == 0) {
                     topright = tr_top;
