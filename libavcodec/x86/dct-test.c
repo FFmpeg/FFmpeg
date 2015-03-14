@@ -22,7 +22,7 @@
 #include "xvididct.h"
 #include "simple_idct.h"
 
-#if ARCH_X86_64 && HAVE_MMX && HAVE_YASM
+#if (CONFIG_PRORES_DECODER || CONFIG_PRORES_LGPL_DECODER) && ARCH_X86_64 && HAVE_YASM
 void ff_prores_idct_put_10_sse2(uint16_t *dst, int linesize,
                                 int16_t *block, int16_t *qmat);
 
@@ -67,11 +67,11 @@ static const struct algo idct_tab_arch[] = {
 #endif
 #if HAVE_SSE2_EXTERNAL
     { "XVID-SSE2",   ff_xvid_idct_sse2,   FF_IDCT_PERM_SSE2,   AV_CPU_FLAG_SSE2,   1 },
-#if ARCH_X86_64
-    { "PR-SSE2",     ff_prores_idct_put_10_sse2_wrap, FF_IDCT_PERM_TRANSPOSE, AV_CPU_FLAG_SSE2, 1 },
-#endif
 #endif
 #endif /* CONFIG_MPEG4_DECODER && HAVE_YASM */
+#if (CONFIG_PRORES_DECODER || CONFIG_PRORES_LGPL_DECODER) && ARCH_X86_64 && HAVE_YASM
+    { "PR-SSE2",     ff_prores_idct_put_10_sse2_wrap, FF_IDCT_PERM_TRANSPOSE, AV_CPU_FLAG_SSE2, 1 },
+#endif
     { 0 }
 };
 
