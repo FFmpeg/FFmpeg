@@ -2345,6 +2345,9 @@ static int mov_open_dref(AVIOContext **pb, const char *src, MOVDref *ref,
                 av_strlcat(filename, "../", sizeof(filename));
 
             av_strlcat(filename, ref->path + l + 1, sizeof(filename));
+            if (!use_absolute_path)
+                if(strstr(ref->path + l + 1, "..") || ref->nlvl_from > 1)
+                    return AVERROR(ENOENT);
 
             if (strlen(filename) + 1 == sizeof(filename))
                 return AVERROR(ENOENT);
