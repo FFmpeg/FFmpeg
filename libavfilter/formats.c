@@ -400,21 +400,21 @@ AVFilterChannelLayouts *ff_all_channel_counts(void)
     return ret;
 }
 
-#define FORMATS_REF(f, ref)                                          \
-do {                                                                 \
-    *ref = f;                                                        \
-    f->refs = av_realloc(f->refs, sizeof(*f->refs) * ++f->refcount); \
-    if (!f->refs)                                                    \
-        return;                                                      \
-    f->refs[f->refcount-1] = ref;                                    \
-} while (0)
+#define FORMATS_REF(f, ref)                                                     \
+    void *tmp = av_realloc_array(f->refs, sizeof(*f->refs), f->refcount + 1);   \
+    if (!tmp)                                                                   \
+        return AVERROR(ENOMEM);                                                 \
+    f->refs = tmp;                                                              \
+    f->refs[f->refcount++] = ref;                                               \
+    *ref = f;                                                                   \
+    return 0
 
-void ff_channel_layouts_ref(AVFilterChannelLayouts *f, AVFilterChannelLayouts **ref)
+int ff_channel_layouts_ref(AVFilterChannelLayouts *f, AVFilterChannelLayouts **ref)
 {
     FORMATS_REF(f, ref);
 }
 
-void ff_formats_ref(AVFilterFormats *f, AVFilterFormats **ref)
+int ff_formats_ref(AVFilterFormats *f, AVFilterFormats **ref)
 {
     FORMATS_REF(f, ref);
 }
