@@ -144,6 +144,13 @@ typedef struct {
 typedef struct {
     UID uid;
     enum MXFMetadataSetType type;
+    char *name;
+    char *value;
+} MXFTaggedValue;
+
+typedef struct {
+    UID uid;
+    enum MXFMetadataSetType type;
     MXFSequence *sequence; /* mandatory, and only one */
     UID sequence_ref;
     int track_id;
@@ -206,6 +213,8 @@ typedef struct MXFPackage {
     MXFDescriptor *descriptor; /* only one */
     UID descriptor_ref;
     char *name;
+    UID *comment_refs;
+    int comment_count;
 } MXFPackage;
 
 typedef struct MXFMetadataSet {
@@ -282,6 +291,8 @@ static const uint8_t mxf_random_index_pack_key[]           = { 0x06,0x0e,0x2b,0x
 static const uint8_t mxf_sony_mpeg4_extradata[]            = { 0x06,0x0e,0x2b,0x34,0x04,0x01,0x01,0x01,0x0e,0x06,0x06,0x02,0x02,0x01,0x00,0x00 };
 static const uint8_t mxf_avid_project_name[]               = { 0xa5,0xfb,0x7b,0x25,0xf6,0x15,0x94,0xb9,0x62,0xfc,0x37,0x17,0x49,0x2d,0x42,0xbf };
 static const uint8_t mxf_jp2k_rsiz[]                       = { 0x06,0x0e,0x2b,0x34,0x02,0x05,0x01,0x01,0x0d,0x01,0x02,0x01,0x01,0x02,0x01,0x00 };
+static const uint8_t mxf_indirect_value_utf16le[]          = { 0x4c,0x00,0x02,0x10,0x01,0x00,0x00,0x00,0x00,0x06,0x0e,0x2b,0x34,0x01,0x04,0x01,0x01 };
+static const uint8_t mxf_indirect_value_utf16be[]          = { 0x42,0x01,0x10,0x02,0x00,0x00,0x00,0x00,0x00,0x06,0x0e,0x2b,0x34,0x01,0x04,0x01,0x01 };
 
 #define IS_KLV_KEY(x, y) (!memcmp(x, y, sizeof(y)))
 
@@ -305,6 +316,10 @@ static void mxf_free_metadataset(MXFMetadataSet **ctx, int freectx)
     case MaterialPackage:
         av_freep(&((MXFPackage *)*ctx)->tracks_refs);
         av_freep(&((MXFPackage *)*ctx)->name);
+        break;
+    case TaggedValue:
+        av_freep(&((MXFTaggedValue *)*ctx)->name);
+        av_freep(&((MXFTaggedValue *)*ctx)->value);
         break;
     case IndexTableSegment:
         seg = (MXFIndexTableSegment *)*ctx;
@@ -803,7 +818,7 @@ static int mxf_read_essence_group(void *arg, AVIOContext *pb, int tag, int size,
     return 0;
 }
 
-static int mxf_read_utf16_string(AVIOContext *pb, int size, char** str)
+static inline int mxf_read_utf16_string(AVIOContext *pb, int size, char** str, int be)
 {
     int ret;
     size_t buf_size;
@@ -816,13 +831,27 @@ static int mxf_read_utf16_string(AVIOContext *pb, int size, char** str)
     if (!*str)
         return AVERROR(ENOMEM);
 
-    if ((ret = avio_get_str16be(pb, size, *str, buf_size)) < 0) {
+    if (be)
+        ret = avio_get_str16be(pb, size, *str, buf_size);
+    else
+        ret = avio_get_str16le(pb, size, *str, buf_size);
+
+    if (ret < 0) {
         av_freep(str);
         return ret;
     }
 
     return ret;
 }
+
+#define READ_STR16(type, big_endian)                                               \
+static int mxf_read_utf16 ## type ##_string(AVIOContext *pb, int size, char** str) \
+{                                                                                  \
+return mxf_read_utf16_string(pb, size, str, big_endian);                           \
+}
+READ_STR16(be, 1)
+READ_STR16(le, 0)
+#undef READ_STR16
 
 static int mxf_read_package(void *arg, AVIOContext *pb, int tag, int size, UID uid, int64_t klv_offset)
 {
@@ -840,7 +869,10 @@ static int mxf_read_package(void *arg, AVIOContext *pb, int tag, int size, UID u
         avio_read(pb, package->descriptor_ref, 16);
         break;
     case 0x4402:
-        return mxf_read_utf16_string(pb, size, &package->name);
+        return mxf_read_utf16be_string(pb, size, &package->name);
+    case 0x4406:
+        return mxf_read_strong_ref_array(pb, &package->comment_refs,
+                                             &package->comment_count);
     }
     return 0;
 }
@@ -1008,6 +1040,36 @@ static int mxf_read_generic_descriptor(void *arg, AVIOContext *pb, int tag, int 
                 descriptor->pix_fmt = AV_PIX_FMT_XYZ12;
         }
         break;
+    }
+    return 0;
+}
+
+static int mxf_read_indirect_value(void *arg, AVIOContext *pb, int size)
+{
+    MXFTaggedValue *tagged_value = arg;
+    uint8_t key[17];
+
+    if (size <= 17)
+        return 0;
+
+    avio_read(pb, key, 17);
+    /* TODO: handle other types of of indirect values */
+    if (memcmp(key, mxf_indirect_value_utf16le, 17) == 0) {
+        return mxf_read_utf16le_string(pb, size - 17, &tagged_value->value);
+    } else if (memcmp(key, mxf_indirect_value_utf16be, 17) == 0) {
+        return mxf_read_utf16be_string(pb, size - 17, &tagged_value->value);
+    }
+    return 0;
+}
+
+static int mxf_read_tagged_value(void *arg, AVIOContext *pb, int tag, int size, UID uid, int64_t klv_offset)
+{
+    MXFTaggedValue *tagged_value = arg;
+    switch (tag){
+    case 0x5001:
+        return mxf_read_utf16be_string(pb, size, &tagged_value->name);
+    case 0x5003:
+        return mxf_read_indirect_value(tagged_value, pb, size);
     }
     return 0;
 }
@@ -1630,6 +1692,28 @@ static MXFStructuralComponent* mxf_resolve_sourceclip(MXFContext *mxf, UID *stro
     return NULL;
 }
 
+static int mxf_parse_package_comments(MXFContext *mxf, AVDictionary **pm, MXFPackage *package)
+{
+    MXFTaggedValue *tag;
+    int size, i;
+    char *key = NULL;
+
+    for (i = 0; i < package->comment_count; i++) {
+        tag = mxf_resolve_strong_ref(mxf, &package->comment_refs[i], TaggedValue);
+        if (!tag || !tag->name || !tag->value)
+            continue;
+
+        size = strlen(tag->name) + 8 + 1;
+        key = av_mallocz(size);
+        if (!key)
+            return AVERROR(ENOMEM);
+
+        snprintf(key, size, "comment_%s", tag->name);
+        av_dict_set(pm, key, tag->value, AV_DICT_DONT_STRDUP_KEY);
+    }
+    return 0;
+}
+
 static int mxf_parse_physical_source_package(MXFContext *mxf, MXFTrack *source_track, AVStream *st)
 {
     MXFPackage *physical_package = NULL;
@@ -1709,6 +1793,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
     mxf_add_umid_metadata(&mxf->fc->metadata, "material_package_umid", material_package);
     if (material_package->name && material_package->name[0])
         av_dict_set(&mxf->fc->metadata, "material_package_name", material_package->name, 0);
+    mxf_parse_package_comments(mxf, &mxf->fc->metadata, material_package);
 
     for (i = 0; i < material_package->tracks_count; i++) {
         MXFPackage *source_package = NULL;
@@ -2047,7 +2132,7 @@ static int mxf_timestamp_to_str(uint64_t timestamp, char **str)
 }
 
 #define SET_STR_METADATA(pb, name, str) do { \
-    if ((ret = mxf_read_utf16_string(pb, size, &str)) < 0) \
+    if ((ret = mxf_read_utf16be_string(pb, size, &str)) < 0) \
         return ret; \
     av_dict_set(&s->metadata, name, str, AV_DICT_DONT_STRDUP_VAL); \
 } while (0)
@@ -2136,6 +2221,7 @@ static const MXFMetadataReadTableEntry mxf_metadata_read_table[] = {
     { { 0x06,0x0e,0x2b,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x0f,0x00 }, mxf_read_sequence, sizeof(MXFSequence), Sequence },
     { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0D,0x01,0x01,0x01,0x01,0x01,0x05,0x00 }, mxf_read_essence_group, sizeof(MXFEssenceGroup), EssenceGroup},
     { { 0x06,0x0e,0x2b,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x11,0x00 }, mxf_read_source_clip, sizeof(MXFStructuralComponent), SourceClip },
+    { { 0x06,0x0e,0x2b,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x3f,0x00 }, mxf_read_tagged_value, sizeof(MXFTaggedValue), TaggedValue },
     { { 0x06,0x0e,0x2b,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x44,0x00 }, mxf_read_generic_descriptor, sizeof(MXFDescriptor), MultipleDescriptor },
     { { 0x06,0x0e,0x2b,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x42,0x00 }, mxf_read_generic_descriptor, sizeof(MXFDescriptor), Descriptor }, /* Generic Sound */
     { { 0x06,0x0e,0x2b,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x28,0x00 }, mxf_read_generic_descriptor, sizeof(MXFDescriptor), Descriptor }, /* CDCI */
