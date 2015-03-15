@@ -170,7 +170,7 @@ static int set_expr(AVExpr **pexpr, const char *expr, const char *option, void *
                         NULL, NULL, NULL, NULL, 0, log_ctx);
     if (ret < 0) {
         av_log(log_ctx, AV_LOG_ERROR,
-               "Error when evaluating the expression '%s' for %s\n",
+               "Error when parsing the expression '%s' for %s\n",
                expr, option);
         *pexpr = old;
         return ret;
