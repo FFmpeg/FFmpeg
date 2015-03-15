@@ -112,7 +112,7 @@ static const uint8_t ac3_default_coeffs[8][5][2] = {
 static inline int
 symmetric_dequant(int code, int levels)
 {
-    return ((code - (levels >> 1)) << 24) / levels;
+    return ((code - (levels >> 1)) * (1 << 24)) / levels;
 }
 
 /*
@@ -470,7 +470,7 @@ static void calc_transform_coeffs_cpl(AC3DecodeContext *s)
                 int cpl_coord = s->cpl_coords[ch][band] << 5;
                 for (bin = band_start; bin < band_end; bin++) {
                     s->fixed_coeffs[ch][bin] =
-                        MULH(s->fixed_coeffs[CPL_CH][bin] << 4, cpl_coord);
+                        MULH(s->fixed_coeffs[CPL_CH][bin] * (1 << 4), cpl_coord);
                 }
                 if (ch == 2 && s->phase_flags[band]) {
                     for (bin = band_start; bin < band_end; bin++)
@@ -567,8 +567,7 @@ static void ac3_decode_transform_coeffs_ch(AC3DecodeContext *s, int ch_index, ma
                 av_log(s->avctx, AV_LOG_ERROR, "bap %d is invalid in plain AC-3\n", bap);
                 bap = 15;
             }
-            mantissa = get_sbits(gbc, quantization_tab[bap]);
-            mantissa <<= 24 - quantization_tab[bap];
+            mantissa = (unsigned)get_sbits(gbc, quantization_tab[bap]) << (24 - quantization_tab[bap]);
             break;
         }
         coeffs[freq] = mantissa >> exps[freq];

@@ -165,7 +165,7 @@ static void ac3_downmix_sse(float **samples, float (*matrix)[2],
                matrix_cmp[3][0] == matrix_cmp[4][0]) {
         MIX5(IF1, IF0);
     } else {
-        DECLARE_ALIGNED(16, float, matrix_simd)[AC3_MAX_CHANNELS][2][4];
+        LOCAL_ALIGNED(16, float, matrix_simd, [AC3_MAX_CHANNELS], [2][4]);
         float *samp[AC3_MAX_CHANNELS];
 
         for (j = 0; j < in_ch; j++)

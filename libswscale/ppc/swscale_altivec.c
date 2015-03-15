@@ -90,7 +90,7 @@ static void yuv2planeX_16_altivec(const int16_t *filter, int filterSize,
                                   const uint8_t *dither, int offset, int x)
 {
     register int i, j;
-    DECLARE_ALIGNED(16, int, val)[16];
+    LOCAL_ALIGNED(16, int, val, [16]);
     vector signed int vo1, vo2, vo3, vo4;
     vector unsigned short vs1, vs2;
     vector unsigned char vf;
@@ -215,7 +215,7 @@ static void hScale_altivec_real(SwsContext *c, int16_t *dst, int dstW,
                                 const int32_t *filterPos, int filterSize)
 {
     register int i;
-    DECLARE_ALIGNED(16, int, tempo)[4];
+    LOCAL_ALIGNED(16, int, tempo, [4]);
 
     if (filterSize % 4) {
         for (i = 0; i < dstW; i++) {

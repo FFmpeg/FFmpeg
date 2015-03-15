@@ -3604,7 +3604,7 @@ int av_lockmgr_register(int (*cb)(void **mutex, enum AVLockOp op))
     return 0;
 }
 
-int ff_lock_avcodec(AVCodecContext *log_ctx, AVCodec *codec)
+int ff_lock_avcodec(AVCodecContext *log_ctx, const AVCodec *codec)
 {
     if (lockmgr_cb) {
         if ((*lockmgr_cb)(&codec_mutex, AV_LOCK_OBTAIN))

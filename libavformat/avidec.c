@@ -33,10 +33,11 @@
 #include "avi.h"
 #include "dv.h"
 #include "internal.h"
+#include "isom.h"
 #include "riff.h"
 #include "libavcodec/bytestream.h"
 #include "libavcodec/exif.h"
-#include "libavformat/isom.h"
+#include "libavcodec/internal.h"
 
 typedef struct AVIStream {
     int64_t frame_offset;   /* current frame (video) or byte (audio) counter
@@ -1446,17 +1447,16 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 if (index >= 0 && e->timestamp == ast->frame_offset) {
                     if (index == st->nb_index_entries-1) {
                         int key=1;
-                        int i;
                         uint32_t state=-1;
-                        for (i=0; i<FFMIN(size,256); i++) {
-                            if (st->codec->codec_id == AV_CODEC_ID_MPEG4) {
-                                if (state == 0x1B6) {
-                                    key= !(pkt->data[i]&0xC0);
+                        if (st->codec->codec_id == AV_CODEC_ID_MPEG4) {
+                            const uint8_t *ptr = pkt->data, *end = ptr + FFMIN(size, 256);
+                            while (ptr < end) {
+                                ptr = avpriv_find_start_code(ptr, end, &state);
+                                if (state == 0x1B6 && ptr < end) {
+                                    key = !(*ptr & 0xC0);
                                     break;
                                 }
-                            }else
-                                break;
-                            state= (state<<8) + pkt->data[i];
+                            }
                         }
                         if (!key)
                             e->flags &= ~AVINDEX_KEYFRAME;

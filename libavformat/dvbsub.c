@@ -37,7 +37,7 @@ static int dvbsub_probe(AVProbeData *p)
             const uint8_t *ptr = p->buf + i;
             uint8_t histogram[6] = {0};
             int min = 255;
-            for(j=0; ptr + 6 < end; j++) {
+            for(j=0; 6 < end - ptr; j++) {
                 if (*ptr != 0x0f)
                     break;
                 type    = ptr[1];
@@ -48,6 +48,8 @@ static int dvbsub_probe(AVProbeData *p)
                 } else if (type >= 0x10 && type <= 0x14) {
                     histogram[type - 0x10] ++;
                 } else
+                    break;
+                if (6 + len > end - ptr)
                     break;
                 ptr += 6 + len;
             }

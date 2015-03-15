@@ -355,7 +355,7 @@ static av_always_inline void h264_filter_mb_fast_internal(H264Context *h,
         }
         return;
     } else {
-        LOCAL_ALIGNED_8(int16_t, bS, [2], [4][4]);
+        LOCAL_ALIGNED(8, int16_t, bS, [2], [4][4]);
         int edges;
         if( IS_8x8DCT(mb_type) && (h->cbp&7) == 7 && !chroma444 ) {
             edges = 4;
@@ -492,7 +492,7 @@ static av_always_inline void filter_mb_dir(H264Context *h, int mb_x, int mb_y, u
             int j;
 
             for(j=0; j<2; j++, mbn_xy += h->mb_stride){
-                DECLARE_ALIGNED(8, int16_t, bS)[4];
+                LOCAL_ALIGNED(8, int16_t, bS, [4]);
                 int qp;
                 if (IS_INTRA(mb_type | h->cur_pic.mb_type[mbn_xy])) {
                     AV_WN64A(bS, 0x0003000300030003ULL);
@@ -529,7 +529,7 @@ static av_always_inline void filter_mb_dir(H264Context *h, int mb_x, int mb_y, u
                 }
             }
         }else{
-            DECLARE_ALIGNED(8, int16_t, bS)[4];
+            LOCAL_ALIGNED(8, int16_t, bS, [4]);
             int qp;
 
             if( IS_INTRA(mb_type|mbm_type)) {
@@ -612,7 +612,7 @@ static av_always_inline void filter_mb_dir(H264Context *h, int mb_x, int mb_y, u
 
     /* Calculate bS */
     for( edge = 1; edge < edges; edge++ ) {
-        DECLARE_ALIGNED(8, int16_t, bS)[4];
+        LOCAL_ALIGNED(8, int16_t, bS, [4]);
         int qp;
         const int deblock_edge = !IS_8x8DCT(mb_type & (edge<<24)); // (edge&1) && IS_8x8DCT(mb_type)
 
@@ -719,7 +719,7 @@ void ff_h264_filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint
         /* First vertical edge is different in MBAFF frames
          * There are 8 different bS to compute and 2 different Qp
          */
-        DECLARE_ALIGNED(8, int16_t, bS)[8];
+        LOCAL_ALIGNED(8, int16_t, bS, [8]);
         int qp[2];
         int bqp[2];
         int rqp[2];

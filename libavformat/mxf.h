@@ -47,6 +47,7 @@ enum MXFMetadataSetType {
     EssenceContainerData,
     TypeBottom,// add metadata type before this
     EssenceGroup,
+    TaggedValue,
 };
 
 enum MXFFrameLayout {

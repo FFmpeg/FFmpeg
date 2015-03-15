@@ -139,10 +139,10 @@ static inline void cavs_idct8_1d(int16_t *block, uint64_t bias)
 static void cavs_idct8_add_mmx(uint8_t *dst, int16_t *block, int stride)
 {
     int i;
-    DECLARE_ALIGNED(16, int16_t, b2)[64];
+    LOCAL_ALIGNED(16, int16_t, b2, [64]);
 
     for(i=0; i<2; i++){
-        DECLARE_ALIGNED(8, uint64_t, tmp);
+        LOCAL_ALIGNED(8, uint64_t, tmp);
 
         cavs_idct8_1d(block+4*i, ff_pw_4.a);
 

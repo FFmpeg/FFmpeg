@@ -28,8 +28,8 @@ void ff_prores_idct_put_10_sse2(uint16_t *dst, int linesize,
 
 #define PR_WRAP(INSN) \
 static void ff_prores_idct_put_10_##INSN##_wrap(int16_t *dst){ \
-    DECLARE_ALIGNED(16, static int16_t, qmat)[64]; \
-    DECLARE_ALIGNED(16, static int16_t, tmp)[64]; \
+    LOCAL_ALIGNED(16, int16_t, qmat, [64]); \
+    LOCAL_ALIGNED(16, int16_t, tmp, [64]); \
     int i; \
  \
     for(i=0; i<64; i++){ \
