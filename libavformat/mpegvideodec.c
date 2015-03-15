@@ -52,11 +52,11 @@ static int mpegvideo_probe(AVProbeData *p)
                 j = -1;
                 if (ptr[j + 8] & 2)
                     j+= 64;
-                if (ptr + j >= end)
+                if (j >= end - ptr)
                     break;
                 if (ptr[j + 8] & 1)
                     j+= 64;
-                if (ptr + j >= end)
+                if (j >= end - ptr)
                     break;
                 if (AV_RB24(ptr + j + 9) & 0xFFFFFE)
                     break;
