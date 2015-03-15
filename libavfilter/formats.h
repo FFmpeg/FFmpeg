@@ -142,17 +142,17 @@ AVFilterChannelLayouts *avfilter_make_format64_list(const int64_t *fmts);
  * layouts/sample rates. If there are no links hooked to this filter, the list
  * is freed.
  */
-void ff_set_common_channel_layouts(AVFilterContext *ctx,
-                                   AVFilterChannelLayouts *layouts);
-void ff_set_common_samplerates(AVFilterContext *ctx,
-                               AVFilterFormats *samplerates);
+int ff_set_common_channel_layouts(AVFilterContext *ctx,
+                                  AVFilterChannelLayouts *layouts);
+int ff_set_common_samplerates(AVFilterContext *ctx,
+                              AVFilterFormats *samplerates);
 
 /**
  * A helper for query_formats() which sets all links to the same list of
  * formats. If there are no links hooked to this filter, the list of formats is
  * freed.
  */
-void ff_set_common_formats(AVFilterContext *ctx, AVFilterFormats *formats);
+int ff_set_common_formats(AVFilterContext *ctx, AVFilterFormats *formats);
 
 int ff_add_channel_layout(AVFilterChannelLayouts **l, uint64_t channel_layout);
 

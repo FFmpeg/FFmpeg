@@ -401,7 +401,12 @@ AVFilterChannelLayouts *ff_all_channel_counts(void)
 }
 
 #define FORMATS_REF(f, ref)                                                     \
-    void *tmp = av_realloc_array(f->refs, sizeof(*f->refs), f->refcount + 1);   \
+    void *tmp;                                                                  \
+                                                                                \
+    if (!ref)                                                                   \
+        return AVERROR_BUG;                                                     \
+                                                                                \
+    tmp = av_realloc_array(f->refs, sizeof(*f->refs), f->refcount + 1);         \
     if (!tmp)                                                                   \
         return AVERROR(ENOMEM);                                                 \
     f->refs = tmp;                                                              \
@@ -485,18 +490,24 @@ void ff_formats_changeref(AVFilterFormats **oldref, AVFilterFormats **newref)
 }
 
 #define SET_COMMON_FORMATS(ctx, fmts, in_fmts, out_fmts, ref, list) \
-if (fmts) {                                                         \
     int count = 0, i;                                               \
+                                                                    \
+    if (!fmts)                                                      \
+        return AVERROR_BUG;                                         \
                                                                     \
     for (i = 0; i < ctx->nb_inputs; i++) {                          \
         if (ctx->inputs[i] && !ctx->inputs[i]->out_fmts) {          \
-            ref(fmts, &ctx->inputs[i]->out_fmts);                   \
+            int ret = ref(fmts, &ctx->inputs[i]->out_fmts);         \
+            if (ret < 0)                                            \
+                return ret;                                         \
             count++;                                                \
         }                                                           \
     }                                                               \
     for (i = 0; i < ctx->nb_outputs; i++) {                         \
         if (ctx->outputs[i] && !ctx->outputs[i]->in_fmts) {         \
-            ref(fmts, &ctx->outputs[i]->in_fmts);                   \
+            int ret = ref(fmts, &ctx->outputs[i]->in_fmts);         \
+            if (ret < 0)                                            \
+                return ret;                                         \
             count++;                                                \
         }                                                           \
     }                                                               \
@@ -506,17 +517,18 @@ if (fmts) {                                                         \
         av_freep(&fmts->refs);                                      \
         av_freep(&fmts);                                            \
     }                                                               \
-}
+                                                                    \
+    return 0;
 
-void ff_set_common_channel_layouts(AVFilterContext *ctx,
-                                   AVFilterChannelLayouts *layouts)
+int ff_set_common_channel_layouts(AVFilterContext *ctx,
+                                  AVFilterChannelLayouts *layouts)
 {
     SET_COMMON_FORMATS(ctx, layouts, in_channel_layouts, out_channel_layouts,
                        ff_channel_layouts_ref, channel_layouts);
 }
 
-void ff_set_common_samplerates(AVFilterContext *ctx,
-                               AVFilterFormats *samplerates)
+int ff_set_common_samplerates(AVFilterContext *ctx,
+                              AVFilterFormats *samplerates)
 {
     SET_COMMON_FORMATS(ctx, samplerates, in_samplerates, out_samplerates,
                        ff_formats_ref, formats);
@@ -527,7 +539,7 @@ void ff_set_common_samplerates(AVFilterContext *ctx,
  * formats. If there are no links hooked to this filter, the list of formats is
  * freed.
  */
-void ff_set_common_formats(AVFilterContext *ctx, AVFilterFormats *formats)
+int ff_set_common_formats(AVFilterContext *ctx, AVFilterFormats *formats)
 {
     SET_COMMON_FORMATS(ctx, formats, in_formats, out_formats,
                        ff_formats_ref, formats);
@@ -536,14 +548,21 @@ void ff_set_common_formats(AVFilterContext *ctx, AVFilterFormats *formats)
 static int default_query_formats_common(AVFilterContext *ctx,
                                         AVFilterChannelLayouts *(layouts)(void))
 {
+    int ret;
     enum AVMediaType type = ctx->inputs  && ctx->inputs [0] ? ctx->inputs [0]->type :
                             ctx->outputs && ctx->outputs[0] ? ctx->outputs[0]->type :
                             AVMEDIA_TYPE_VIDEO;
 
-    ff_set_common_formats(ctx, ff_all_formats(type));
+    ret = ff_set_common_formats(ctx, ff_all_formats(type));
+    if (ret < 0)
+        return ret;
     if (type == AVMEDIA_TYPE_AUDIO) {
-        ff_set_common_channel_layouts(ctx, layouts());
-        ff_set_common_samplerates(ctx, ff_all_samplerates());
+        ret = ff_set_common_channel_layouts(ctx, layouts());
+        if (ret < 0)
+            return ret;
+        ret = ff_set_common_samplerates(ctx, ff_all_samplerates());
+        if (ret < 0)
+            return ret;
     }
 
     return 0;
