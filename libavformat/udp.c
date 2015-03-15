@@ -77,6 +77,7 @@ typedef struct UDPContext {
     int ttl;
     int udplite_coverage;
     int buffer_size;
+    int pkt_size;
     int is_multicast;
     int is_broadcast;
     int local_port;
@@ -98,37 +99,42 @@ typedef struct UDPContext {
 #endif
     uint8_t tmp[UDP_MAX_PKT_SIZE+4];
     int remaining_in_dg;
-    char *local_addr;
-    int packet_size;
+    char *localaddr;
     int timeout;
     struct sockaddr_storage local_addr_storage;
+    char *sources;
+    char *block;
 } UDPContext;
 
 #define OFFSET(x) offsetof(UDPContext, x)
 #define D AV_OPT_FLAG_DECODING_PARAM
 #define E AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
-{"buffer_size", "set packet buffer size in bytes", OFFSET(buffer_size), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, D|E },
-{"localport", "set local port to bind to", OFFSET(local_port), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, D|E },
-{"localaddr", "choose local IP address", OFFSET(local_addr), AV_OPT_TYPE_STRING, {.str = ""}, 0, 0, D|E },
-{"udplite_coverage", "choose UDPLite head size which should be validated by checksum", OFFSET(udplite_coverage), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, D|E },
-{"pkt_size", "set size of UDP packets", OFFSET(packet_size), AV_OPT_TYPE_INT, {.i64 = 1472}, 0, INT_MAX, D|E },
-{"reuse", "explicitly allow or disallow reusing UDP sockets", OFFSET(reuse_socket), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, D|E },
-{"broadcast", "explicitly allow or disallow broadcast destination", OFFSET(is_broadcast), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, E },
-{"ttl", "set the time to live value (for multicast only)", OFFSET(ttl), AV_OPT_TYPE_INT, {.i64 = 16}, 0, INT_MAX, E },
-{"connect", "set if connect() should be called on socket", OFFSET(is_connected), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, D|E },
-/* TODO 'sources', 'block' option */
-{"fifo_size", "set the UDP receiving circular buffer size, expressed as a number of packets with size of 188 bytes", OFFSET(circular_buffer_size), AV_OPT_TYPE_INT, {.i64 = 7*4096}, 0, INT_MAX, D },
-{"overrun_nonfatal", "survive in case of UDP receiving circular buffer overrun", OFFSET(overrun_nonfatal), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, D },
-{"timeout", "set raise error timeout (only in read mode)", OFFSET(timeout), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, D },
-{NULL}
+    { "buffer_size",    "System data size (in bytes)",                     OFFSET(buffer_size),    AV_OPT_TYPE_INT,    { .i64 = -1 },    -1, INT_MAX, .flags = D|E },
+    { "localport",      "Local port",                                      OFFSET(local_port),     AV_OPT_TYPE_INT,    { .i64 = -1 },    -1, INT_MAX, D|E },
+    { "local_port",     "Local port",                                      OFFSET(local_port),     AV_OPT_TYPE_INT,    { .i64 = -1 },    -1, INT_MAX, .flags = D|E },
+    { "localaddr",      "Local address",                                   OFFSET(localaddr),      AV_OPT_TYPE_STRING, { .str = "" },                 .flags = D|E },
+    { "udplite_coverage", "choose UDPLite head size which should be validated by checksum", OFFSET(udplite_coverage), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, D|E },
+    { "pkt_size",       "set size of UDP packets",                         OFFSET(pkt_size),       AV_OPT_TYPE_INT,    { .i64 = 1472 },  -1, INT_MAX, D|E },
+    { "pkt_size",       "Maximum UDP packet size",                         OFFSET(pkt_size),       AV_OPT_TYPE_INT,    { .i64 = 1472 },  -1, INT_MAX, .flags = D|E },
+    { "reuse",          "explicitly allow reusing UDP sockets",            OFFSET(reuse_socket),   AV_OPT_TYPE_INT,    { .i64 = -1 },    -1, 1,       D|E },
+    { "reuse_socket",   "explicitly allow reusing UDP sockets",            OFFSET(reuse_socket),   AV_OPT_TYPE_INT,    { .i64 = -1 },    -1, 1,       .flags = D|E },
+    { "broadcast", "explicitly allow or disallow broadcast destination",   OFFSET(is_broadcast),   AV_OPT_TYPE_INT,    { .i64 = 0  },     0, 1,       E },
+    { "ttl",            "Time to live (multicast only)",                   OFFSET(ttl),            AV_OPT_TYPE_INT,    { .i64 = 16 },     0, INT_MAX, E },
+    { "connect",        "set if connect() should be called on socket",     OFFSET(is_connected),   AV_OPT_TYPE_INT,    { .i64 =  0 },     0, 1,       .flags = D|E },
+    { "fifo_size",      "set the UDP receiving circular buffer size, expressed as a number of packets with size of 188 bytes", OFFSET(circular_buffer_size), AV_OPT_TYPE_INT, {.i64 = 7*4096}, 0, INT_MAX, D },
+    { "overrun_nonfatal", "survive in case of UDP receiving circular buffer overrun", OFFSET(overrun_nonfatal), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1,    D },
+    { "timeout",        "set raise error timeout (only in read mode)",     OFFSET(timeout),        AV_OPT_TYPE_INT,    { .i64 = 0 },      0, INT_MAX, D },
+    { "sources",        "Source list",                                     OFFSET(sources),        AV_OPT_TYPE_STRING, { .str = NULL },               .flags = D|E },
+    { "block",          "Block list",                                      OFFSET(block),          AV_OPT_TYPE_STRING, { .str = NULL },               .flags = D|E },
+    { NULL }
 };
 
-static const AVClass udp_context_class = {
-    .class_name     = "udp",
-    .item_name      = av_default_item_name,
-    .option         = options,
-    .version        = LIBAVUTIL_VERSION_INT,
+static const AVClass udp_class = {
+    .class_name = "udp",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
 };
 
 static const AVClass udplite_context_class = {
@@ -563,15 +569,30 @@ static int udp_open(URLContext *h, const char *uri, int flags)
     char buf[256];
     struct sockaddr_storage my_addr;
     socklen_t len;
-    int reuse_specified = 0;
     int i, num_include_sources = 0, num_exclude_sources = 0;
     char *include_sources[32], *exclude_sources[32];
 
     h->is_streamed = 1;
 
     is_output = !(flags & AVIO_FLAG_READ);
-    if (!s->buffer_size) /* if not set explicitly */
+    if (s->buffer_size < 0)
         s->buffer_size = is_output ? UDP_TX_BUF_SIZE : UDP_MAX_PKT_SIZE;
+
+    if (s->sources) {
+        if (parse_source_list(s->sources, include_sources,
+                              &num_include_sources,
+                              FF_ARRAY_ELEMS(include_sources)))
+            goto fail;
+    }
+
+    if (s->block) {
+        if (parse_source_list(s->block, exclude_sources, &num_exclude_sources,
+                              FF_ARRAY_ELEMS(exclude_sources)))
+            goto fail;
+    }
+
+    if (s->pkt_size)
+        h->max_packet_size = s->pkt_size;
 
     p = strchr(uri, '?');
     if (p) {
@@ -581,7 +602,6 @@ static int udp_open(URLContext *h, const char *uri, int flags)
             /* assume if no digits were found it is a request to enable it */
             if (buf == endptr)
                 s->reuse_socket = 1;
-            reuse_specified = 1;
         }
         if (av_find_info_tag(buf, sizeof(buf), "overrun_nonfatal", p)) {
             char *endptr = NULL;
@@ -604,7 +624,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
             s->local_port = strtol(buf, NULL, 10);
         }
         if (av_find_info_tag(buf, sizeof(buf), "pkt_size", p)) {
-            s->packet_size = strtol(buf, NULL, 10);
+            s->pkt_size = strtol(buf, NULL, 10);
         }
         if (av_find_info_tag(buf, sizeof(buf), "buffer_size", p)) {
             s->buffer_size = strtol(buf, NULL, 10);
@@ -643,7 +663,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
     /* handling needed to support options picking from both AVOption and URL */
     s->circular_buffer_size *= 188;
     if (flags & AVIO_FLAG_WRITE) {
-        h->max_packet_size = s->packet_size;
+        h->max_packet_size = s->pkt_size;
     } else {
         h->max_packet_size = UDP_MAX_PKT_SIZE;
     }
@@ -662,9 +682,13 @@ static int udp_open(URLContext *h, const char *uri, int flags)
             goto fail;
     }
 
-    if ((s->is_multicast || !s->local_port) && (h->flags & AVIO_FLAG_READ))
+    if ((s->is_multicast || s->local_port <= 0) && (h->flags & AVIO_FLAG_READ))
         s->local_port = port;
-    udp_fd = udp_socket_create(s, &my_addr, &len, localaddr[0] ? localaddr : s->local_addr);
+
+    if (localaddr[0])
+        udp_fd = udp_socket_create(s, &my_addr, &len, localaddr);
+    else
+        udp_fd = udp_socket_create(s, &my_addr, &len, s->localaddr);
     if (udp_fd < 0)
         goto fail;
 
@@ -673,7 +697,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
     /* Follow the requested reuse option, unless it's multicast in which
      * case enable reuse unless explicitly disabled.
      */
-    if (s->reuse_socket || (s->is_multicast && !reuse_specified)) {
+    if (s->reuse_socket > 0 || (s->is_multicast && s->reuse_socket < 0)) {
         s->reuse_socket = 1;
         if (setsockopt (udp_fd, SOL_SOCKET, SO_REUSEADDR, &(s->reuse_socket), sizeof(s->reuse_socket)) != 0)
             goto fail;
@@ -951,7 +975,7 @@ URLProtocol ff_udp_protocol = {
     .url_close           = udp_close,
     .url_get_file_handle = udp_get_file_handle,
     .priv_data_size      = sizeof(UDPContext),
-    .priv_data_class     = &udp_context_class,
+    .priv_data_class     = &udp_class,
     .flags               = URL_PROTOCOL_FLAG_NETWORK,
 };
 
