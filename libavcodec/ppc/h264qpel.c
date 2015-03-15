@@ -73,7 +73,7 @@ static void OPNAME ## h264_qpel ## SIZE ## _mc00_ ## CODETYPE (uint8_t *dst, con
 \
 static void OPNAME ## h264_qpel ## SIZE ## _mc10_ ## CODETYPE(uint8_t *dst, const uint8_t *src, ptrdiff_t stride)\
 { \
-    LOCAL_ALIGNED(16, uint8_t, half, [SIZE*SIZE]);\
+    DECLARE_ALIGNED(16, uint8_t, half)[SIZE*SIZE];\
     put_h264_qpel ## SIZE ## _h_lowpass_ ## CODETYPE(half, src, SIZE, stride);\
     OPNAME ## pixels ## SIZE ## _l2_ ## CODETYPE(dst, src, half, stride, stride, SIZE);\
 }\
@@ -85,14 +85,14 @@ static void OPNAME ## h264_qpel ## SIZE ## _mc20_ ## CODETYPE(uint8_t *dst, cons
 \
 static void OPNAME ## h264_qpel ## SIZE ## _mc30_ ## CODETYPE(uint8_t *dst, const uint8_t *src, ptrdiff_t stride)\
 {\
-    LOCAL_ALIGNED(16, uint8_t, half, [SIZE*SIZE]);\
+    DECLARE_ALIGNED(16, uint8_t, half)[SIZE*SIZE];\
     put_h264_qpel ## SIZE ## _h_lowpass_ ## CODETYPE(half, src, SIZE, stride);\
     OPNAME ## pixels ## SIZE ## _l2_ ## CODETYPE(dst, src+1, half, stride, stride, SIZE);\
 }\
 \
 static void OPNAME ## h264_qpel ## SIZE ## _mc01_ ## CODETYPE(uint8_t *dst, const uint8_t *src, ptrdiff_t stride)\
 {\
-    LOCAL_ALIGNED(16, uint8_t, half, [SIZE*SIZE]);\
+    DECLARE_ALIGNED(16, uint8_t, half)[SIZE*SIZE];\
     put_h264_qpel ## SIZE ## _v_lowpass_ ## CODETYPE(half, src, SIZE, stride);\
     OPNAME ## pixels ## SIZE ## _l2_ ## CODETYPE(dst, src, half, stride, stride, SIZE);\
 }\
@@ -104,15 +104,15 @@ static void OPNAME ## h264_qpel ## SIZE ## _mc02_ ## CODETYPE(uint8_t *dst, cons
 \
 static void OPNAME ## h264_qpel ## SIZE ## _mc03_ ## CODETYPE(uint8_t *dst, const uint8_t *src, ptrdiff_t stride)\
 {\
-    LOCAL_ALIGNED(16, uint8_t, half, [SIZE*SIZE]);\
+    DECLARE_ALIGNED(16, uint8_t, half)[SIZE*SIZE];\
     put_h264_qpel ## SIZE ## _v_lowpass_ ## CODETYPE(half, src, SIZE, stride);\
     OPNAME ## pixels ## SIZE ## _l2_ ## CODETYPE(dst, src+stride, half, stride, stride, SIZE);\
 }\
 \
 static void OPNAME ## h264_qpel ## SIZE ## _mc11_ ## CODETYPE(uint8_t *dst, const uint8_t *src, ptrdiff_t stride)\
 {\
-    LOCAL_ALIGNED(16, uint8_t, halfH, [SIZE*SIZE]);\
-    LOCAL_ALIGNED(16, uint8_t, halfV, [SIZE*SIZE]);\
+    DECLARE_ALIGNED(16, uint8_t, halfH)[SIZE*SIZE];\
+    DECLARE_ALIGNED(16, uint8_t, halfV)[SIZE*SIZE];\
     put_h264_qpel ## SIZE ## _h_lowpass_ ## CODETYPE(halfH, src, SIZE, stride);\
     put_h264_qpel ## SIZE ## _v_lowpass_ ## CODETYPE(halfV, src, SIZE, stride);\
     OPNAME ## pixels ## SIZE ## _l2_ ## CODETYPE(dst, halfH, halfV, stride, SIZE, SIZE);\
@@ -120,8 +120,8 @@ static void OPNAME ## h264_qpel ## SIZE ## _mc11_ ## CODETYPE(uint8_t *dst, cons
 \
 static void OPNAME ## h264_qpel ## SIZE ## _mc31_ ## CODETYPE(uint8_t *dst, const uint8_t *src, ptrdiff_t stride)\
 {\
-    LOCAL_ALIGNED(16, uint8_t, halfH, [SIZE*SIZE]);\
-    LOCAL_ALIGNED(16, uint8_t, halfV, [SIZE*SIZE]);\
+    DECLARE_ALIGNED(16, uint8_t, halfH)[SIZE*SIZE];\
+    DECLARE_ALIGNED(16, uint8_t, halfV)[SIZE*SIZE];\
     put_h264_qpel ## SIZE ## _h_lowpass_ ## CODETYPE(halfH, src, SIZE, stride);\
     put_h264_qpel ## SIZE ## _v_lowpass_ ## CODETYPE(halfV, src+1, SIZE, stride);\
     OPNAME ## pixels ## SIZE ## _l2_ ## CODETYPE(dst, halfH, halfV, stride, SIZE, SIZE);\
@@ -129,8 +129,8 @@ static void OPNAME ## h264_qpel ## SIZE ## _mc31_ ## CODETYPE(uint8_t *dst, cons
 \
 static void OPNAME ## h264_qpel ## SIZE ## _mc13_ ## CODETYPE(uint8_t *dst, const uint8_t *src, ptrdiff_t stride)\
 {\
-    LOCAL_ALIGNED(16, uint8_t, halfH, [SIZE*SIZE]);\
-    LOCAL_ALIGNED(16, uint8_t, halfV, [SIZE*SIZE]);\
+    DECLARE_ALIGNED(16, uint8_t, halfH)[SIZE*SIZE];\
+    DECLARE_ALIGNED(16, uint8_t, halfV)[SIZE*SIZE];\
     put_h264_qpel ## SIZE ## _h_lowpass_ ## CODETYPE(halfH, src + stride, SIZE, stride);\
     put_h264_qpel ## SIZE ## _v_lowpass_ ## CODETYPE(halfV, src, SIZE, stride);\
     OPNAME ## pixels ## SIZE ## _l2_ ## CODETYPE(dst, halfH, halfV, stride, SIZE, SIZE);\
@@ -138,8 +138,8 @@ static void OPNAME ## h264_qpel ## SIZE ## _mc13_ ## CODETYPE(uint8_t *dst, cons
 \
 static void OPNAME ## h264_qpel ## SIZE ## _mc33_ ## CODETYPE(uint8_t *dst, const uint8_t *src, ptrdiff_t stride)\
 {\
-    LOCAL_ALIGNED(16, uint8_t, halfH, [SIZE*SIZE]);\
-    LOCAL_ALIGNED(16, uint8_t, halfV, [SIZE*SIZE]);\
+    DECLARE_ALIGNED(16, uint8_t, halfH)[SIZE*SIZE];\
+    DECLARE_ALIGNED(16, uint8_t, halfV)[SIZE*SIZE];\
     put_h264_qpel ## SIZE ## _h_lowpass_ ## CODETYPE(halfH, src + stride, SIZE, stride);\
     put_h264_qpel ## SIZE ## _v_lowpass_ ## CODETYPE(halfV, src+1, SIZE, stride);\
     OPNAME ## pixels ## SIZE ## _l2_ ## CODETYPE(dst, halfH, halfV, stride, SIZE, SIZE);\
@@ -147,15 +147,15 @@ static void OPNAME ## h264_qpel ## SIZE ## _mc33_ ## CODETYPE(uint8_t *dst, cons
 \
 static void OPNAME ## h264_qpel ## SIZE ## _mc22_ ## CODETYPE(uint8_t *dst, const uint8_t *src, ptrdiff_t stride)\
 {\
-    LOCAL_ALIGNED(16, int16_t, tmp, [SIZE*(SIZE+8)]);\
+    DECLARE_ALIGNED(16, int16_t, tmp)[SIZE*(SIZE+8)];\
     OPNAME ## h264_qpel ## SIZE ## _hv_lowpass_ ## CODETYPE(dst, tmp, src, stride, SIZE, stride);\
 }\
 \
 static void OPNAME ## h264_qpel ## SIZE ## _mc21_ ## CODETYPE(uint8_t *dst, const uint8_t *src, ptrdiff_t stride)\
 {\
-    LOCAL_ALIGNED(16, uint8_t, halfH, [SIZE*SIZE]);\
-    LOCAL_ALIGNED(16, uint8_t, halfHV, [SIZE*SIZE]);\
-    LOCAL_ALIGNED(16, int16_t, tmp, [SIZE*(SIZE+8)]);\
+    DECLARE_ALIGNED(16, uint8_t, halfH)[SIZE*SIZE];\
+    DECLARE_ALIGNED(16, uint8_t, halfHV)[SIZE*SIZE];\
+    DECLARE_ALIGNED(16, int16_t, tmp)[SIZE*(SIZE+8)];\
     put_h264_qpel ## SIZE ## _h_lowpass_ ## CODETYPE(halfH, src, SIZE, stride);\
     put_h264_qpel ## SIZE ## _hv_lowpass_ ## CODETYPE(halfHV, tmp, src, SIZE, SIZE, stride);\
     OPNAME ## pixels ## SIZE ## _l2_ ## CODETYPE(dst, halfH, halfHV, stride, SIZE, SIZE);\
@@ -163,9 +163,9 @@ static void OPNAME ## h264_qpel ## SIZE ## _mc21_ ## CODETYPE(uint8_t *dst, cons
 \
 static void OPNAME ## h264_qpel ## SIZE ## _mc23_ ## CODETYPE(uint8_t *dst, const uint8_t *src, ptrdiff_t stride)\
 {\
-    LOCAL_ALIGNED(16, uint8_t, halfH, [SIZE*SIZE]);\
-    LOCAL_ALIGNED(16, uint8_t, halfHV, [SIZE*SIZE]);\
-    LOCAL_ALIGNED(16, int16_t, tmp, [SIZE*(SIZE+8)]);\
+    DECLARE_ALIGNED(16, uint8_t, halfH)[SIZE*SIZE];\
+    DECLARE_ALIGNED(16, uint8_t, halfHV)[SIZE*SIZE];\
+    DECLARE_ALIGNED(16, int16_t, tmp)[SIZE*(SIZE+8)];\
     put_h264_qpel ## SIZE ## _h_lowpass_ ## CODETYPE(halfH, src + stride, SIZE, stride);\
     put_h264_qpel ## SIZE ## _hv_lowpass_ ## CODETYPE(halfHV, tmp, src, SIZE, SIZE, stride);\
     OPNAME ## pixels ## SIZE ## _l2_ ## CODETYPE(dst, halfH, halfHV, stride, SIZE, SIZE);\
@@ -173,9 +173,9 @@ static void OPNAME ## h264_qpel ## SIZE ## _mc23_ ## CODETYPE(uint8_t *dst, cons
 \
 static void OPNAME ## h264_qpel ## SIZE ## _mc12_ ## CODETYPE(uint8_t *dst, const uint8_t *src, ptrdiff_t stride)\
 {\
-    LOCAL_ALIGNED(16, uint8_t, halfH, [SIZE*SIZE]);\
-    LOCAL_ALIGNED(16, uint8_t, halfHV, [SIZE*SIZE]);\
-    LOCAL_ALIGNED(16, int16_t, tmp, [SIZE*(SIZE+8)]);\
+    DECLARE_ALIGNED(16, uint8_t, halfV)[SIZE*SIZE];\
+    DECLARE_ALIGNED(16, uint8_t, halfHV)[SIZE*SIZE];\
+    DECLARE_ALIGNED(16, int16_t, tmp)[SIZE*(SIZE+8)];\
     put_h264_qpel ## SIZE ## _v_lowpass_ ## CODETYPE(halfV, src, SIZE, stride);\
     put_h264_qpel ## SIZE ## _hv_lowpass_ ## CODETYPE(halfHV, tmp, src, SIZE, SIZE, stride);\
     OPNAME ## pixels ## SIZE ## _l2_ ## CODETYPE(dst, halfV, halfHV, stride, SIZE, SIZE);\
@@ -183,9 +183,9 @@ static void OPNAME ## h264_qpel ## SIZE ## _mc12_ ## CODETYPE(uint8_t *dst, cons
 \
 static void OPNAME ## h264_qpel ## SIZE ## _mc32_ ## CODETYPE(uint8_t *dst, const uint8_t *src, ptrdiff_t stride)\
 {\
-    LOCAL_ALIGNED(16, uint8_t, halfH, [SIZE*SIZE]);\
-    LOCAL_ALIGNED(16, uint8_t, halfHV, [SIZE*SIZE]);\
-    LOCAL_ALIGNED(16, int16_t, tmp, [SIZE*(SIZE+8)]);\
+    DECLARE_ALIGNED(16, uint8_t, halfV)[SIZE*SIZE];\
+    DECLARE_ALIGNED(16, uint8_t, halfHV)[SIZE*SIZE];\
+    DECLARE_ALIGNED(16, int16_t, tmp)[SIZE*(SIZE+8)];\
     put_h264_qpel ## SIZE ## _v_lowpass_ ## CODETYPE(halfV, src+1, SIZE, stride);\
     put_h264_qpel ## SIZE ## _hv_lowpass_ ## CODETYPE(halfHV, tmp, src, SIZE, SIZE, stride);\
     OPNAME ## pixels ## SIZE ## _l2_ ## CODETYPE(dst, halfV, halfHV, stride, SIZE, SIZE);\

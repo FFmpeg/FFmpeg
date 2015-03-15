@@ -262,7 +262,7 @@ static av_always_inline void h264_idct_dc_add_internal(uint8_t *dst, int16_t *bl
     vec_u8 dcplus, dcminus, v0, v1, v2, v3, aligner;
     vec_s32 v_dc32;
     LOAD_ZERO;
-    LOCAL_ALIGNED(16, int, dc);
+    DECLARE_ALIGNED(16, int, dc);
     int i;
 
     dc = (block[0] + 32) >> 6;
@@ -391,7 +391,7 @@ static void h264_idct_add8_altivec(uint8_t **dest, const int *block_offset,
 static inline void write16x4(uint8_t *dst, int dst_stride,
                              register vec_u8 r0, register vec_u8 r1,
                              register vec_u8 r2, register vec_u8 r3) {
-    LOCAL_ALIGNED(16, unsigned char, result, [64]);
+    DECLARE_ALIGNED(16, unsigned char, result)[64];
     uint32_t *src_int = (uint32_t *)result, *dst_int = (uint32_t *)dst;
     int int_dst_stride = dst_stride/4;
 
@@ -571,7 +571,7 @@ static inline vec_u8 h264_deblock_q1(register vec_u8 p0,
 }
 
 #define h264_loop_filter_luma_altivec(p2, p1, p0, q0, q1, q2, alpha, beta, tc0) {            \
-    LOCAL_ALIGNED(16, unsigned char, temp, [16]);                                            \
+    DECLARE_ALIGNED(16, unsigned char, temp)[16];                                             \
     register vec_u8 alphavec;                                                              \
     register vec_u8 betavec;                                                               \
     register vec_u8 mask;                                                                  \
@@ -652,7 +652,7 @@ void weight_h264_W_altivec(uint8_t *block, int stride, int height,
     vec_u8 vblock;
     vec_s16 vtemp, vweight, voffset, v0, v1;
     vec_u16 vlog2_denom;
-    LOCAL_ALIGNED(16, int32_t, temp, [4]);
+    DECLARE_ALIGNED(16, int32_t, temp)[4];
     LOAD_ZERO;
 
     offset <<= log2_denom;
@@ -701,7 +701,7 @@ void biweight_h264_W_altivec(uint8_t *dst, uint8_t *src, int stride, int height,
     vec_u8 vsrc, vdst;
     vec_s16 vtemp, vweights, vweightd, voffset, v0, v1, v2, v3;
     vec_u16 vlog2_denom;
-    LOCAL_ALIGNED(16, int32_t, temp, [4]);
+    DECLARE_ALIGNED(16, int32_t, temp)[4];
     LOAD_ZERO;
 
     offset = ((offset + 1) | 1) << log2_denom;
