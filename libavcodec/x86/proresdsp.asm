@@ -302,8 +302,6 @@ cglobal prores_idct_put_10, 4, 4, %1
 
 INIT_XMM sse2
 idct_put_fn 16
-INIT_XMM sse4
-idct_put_fn 16
 %if HAVE_AVX_EXTERNAL
 INIT_XMM avx
 idct_put_fn 16
