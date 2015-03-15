@@ -22,6 +22,7 @@
 #include "libavutil/log.h"
 
 #include "dca.h"
+#include "dca_syncwords.h"
 #include "get_bits.h"
 
 /* extensions that reside in core substream */
@@ -121,7 +122,8 @@ static int dca_exss_parse_asset_header(DCAContext *s)
         skip_bits(&s->gb, 4); // max sample rate code
         channels = get_bits(&s->gb, 8) + 1;
 
-        if (get_bits1(&s->gb)) { // 1-to-1 channels to speakers
+        s->one2one_map_chtospkr = get_bits1(&s->gb);
+        if (s->one2one_map_chtospkr) {
             int spkr_remap_sets;
             int spkr_mask_size = 16;
             int num_spkrs[7];
@@ -249,14 +251,14 @@ void ff_dca_exss_parse_header(DCAContext *s)
     int num_assets = 1;
     int active_ss_mask[8];
     int i, j;
-    int start_posn;
+    int start_pos;
     int hdrsize;
     uint32_t mkr;
 
     if (get_bits_left(&s->gb) < 52)
         return;
 
-    start_posn = get_bits_count(&s->gb) - 32;
+    start_pos = get_bits_count(&s->gb) - 32;
 
     skip_bits(&s->gb, 8); // user data
     ss_index = get_bits(&s->gb, 2);
@@ -317,38 +319,55 @@ void ff_dca_exss_parse_header(DCAContext *s)
     av_assert0(num_assets > 0); // silence a warning
 
     for (i = 0; i < num_assets; i++)
-        asset_size[i] = get_bits_long(&s->gb, 16 + 4 * blownup);
+        asset_size[i] = get_bits_long(&s->gb, 16 + 4 * blownup) + 1;
 
     for (i = 0; i < num_assets; i++) {
         if (dca_exss_parse_asset_header(s))
             return;
     }
 
-    /* not parsed further, we were only interested in the extensions mask
-     * from the asset header */
-
         j = get_bits_count(&s->gb);
-        if (start_posn + hdrsize * 8 > j)
-            skip_bits_long(&s->gb, start_posn + hdrsize * 8 - j);
+        if (start_pos + hdrsize * 8 > j)
+            skip_bits_long(&s->gb, start_pos + hdrsize * 8 - j);
 
         for (i = 0; i < num_assets; i++) {
-            start_posn = get_bits_count(&s->gb);
-            mkr        = get_bits_long(&s->gb, 32);
+            int end_pos;
+            start_pos = get_bits_count(&s->gb);
+            end_pos   = start_pos + asset_size[i] * 8;
+            mkr       = get_bits_long(&s->gb, 32);
 
             /* parse extensions that we know about */
-            if (mkr == 0x655e315e) {
+            switch (mkr) {
+            case DCA_SYNCWORD_XBR:
                 ff_dca_xbr_parse_frame(s);
-            } else if (mkr == 0x47004a03) {
+                break;
+            case DCA_SYNCWORD_XXCH:
                 ff_dca_xxch_decode_frame(s);
                 s->core_ext_mask |= DCA_EXT_XXCH; /* xxx use for chan reordering */
-            } else {
+                break;
+            case DCA_SYNCWORD_XLL:
+                if (s->xll_disable) {
+                    av_log(s->avctx, AV_LOG_DEBUG,
+                           "DTS-XLL: ignoring XLL extension\n");
+                    break;
+                }
+                av_log(s->avctx, AV_LOG_DEBUG,
+                       "DTS-XLL: decoding XLL extension\n");
+                if (ff_dca_xll_decode_header(s)        == 0 &&
+                    ff_dca_xll_decode_navi(s, end_pos) == 0)
+                    s->exss_ext_mask |= DCA_EXT_EXSS_XLL;
+                break;
+            default:
                 av_log(s->avctx, AV_LOG_DEBUG,
                        "DTS-ExSS: unknown marker = 0x%08x\n", mkr);
             }
 
             /* skip to end of block */
             j = get_bits_count(&s->gb);
-            if (start_posn + asset_size[i] * 8 > j)
-                skip_bits_long(&s->gb, start_posn + asset_size[i] * 8 - j);
+            if (j > end_pos)
+                av_log(s->avctx, AV_LOG_ERROR,
+                       "DTS-ExSS: Processed asset too long.\n");
+            if (j < end_pos)
+                skip_bits_long(&s->gb, end_pos - j);
         }
 }

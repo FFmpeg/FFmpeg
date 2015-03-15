@@ -47,8 +47,14 @@ extern const float ff_dca_fir_32bands_nonperfect[512];
 
 extern const float ff_dca_lfe_fir_64[256];
 extern const float ff_dca_lfe_fir_128[256];
+extern const float ff_dca_lfe_xll_fir_64[256];
+extern const float ff_dca_fir_64bands[1024];
 
-extern const uint16_t ff_dca_dmixtable[242];
+#define FF_DCA_DMIXTABLE_SIZE      242
+#define FF_DCA_INV_DMIXTABLE_SIZE  201
+
+extern const uint16_t ff_dca_dmixtable[FF_DCA_DMIXTABLE_SIZE];
+extern const uint32_t ff_dca_inv_dmixtable[FF_DCA_INV_DMIXTABLE_SIZE];
 
 extern const float ff_dca_default_coeffs[10][6][2];
 
@@ -56,6 +62,8 @@ extern const uint32_t ff_dca_map_xxch_to_native[28];
 extern const int ff_dca_ext_audio_descr_mask[8];
 
 extern const uint64_t ff_dca_core_channel_layout[16];
+
+extern const int32_t ff_dca_sampling_freqs[16];
 
 extern const int8_t ff_dca_lfe_index[16];
 
