@@ -3454,10 +3454,12 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
              * of this packet to be what the previous packets duration implies. */
             trk->cluster[trk->entry].dts = trk->start_dts + trk->track_duration;
             /* We also may have written the pts and the corresponding duration
-             * in sidx tags; make sure the sidx pts and duration match up with
+             * in sidx/tfrf/tfxd tags; make sure the sidx pts and duration match up with
              * the next fragment. This means the cts of the first sample must
              * be the same in all fragments. */
-            pkt->pts = pkt->dts + trk->start_cts;
+            if ((mov->flags & FF_MOV_FLAG_DASH && !(mov->flags & FF_MOV_FLAG_FASTSTART)) ||
+                mov->mode == MODE_ISM)
+                pkt->pts = pkt->dts + trk->start_cts;
         } else {
             /* New fragment, but discontinuous from previous fragments.
              * Pretend the duration sum of the earlier fragments is
