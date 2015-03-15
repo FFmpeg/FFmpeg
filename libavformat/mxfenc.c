@@ -312,6 +312,7 @@ typedef struct MXFContext {
     uint32_t instance_number;
     uint8_t umid[16];        ///< unique material identifier
     int channel_count;
+    uint32_t tagged_value_count;
 } MXFContext;
 
 static const uint8_t uuid_base[]            = { 0xAD,0xAB,0x44,0x24,0x2f,0x25,0x4d,0xc7,0x92,0xff,0x29,0xbd };
@@ -368,6 +369,7 @@ static const MXFLocalTagPair mxf_local_tag_batch[] = {
     { 0x4405, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x07,0x02,0x01,0x10,0x01,0x03,0x00,0x00}}, /* Package Creation Date */
     { 0x4404, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x07,0x02,0x01,0x10,0x02,0x05,0x00,0x00}}, /* Package Modified Date */
     { 0x4403, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x06,0x01,0x01,0x04,0x06,0x05,0x00,0x00}}, /* Tracks Strong reference array */
+    { 0x4406, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x03,0x02,0x01,0x02,0x0C,0x00,0x00,0x00}}, /* User Comments */
     { 0x4701, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x06,0x01,0x01,0x04,0x02,0x03,0x00,0x00}}, /* Descriptor */
     // Track
     { 0x4801, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x01,0x07,0x01,0x01,0x00,0x00,0x00,0x00}}, /* Track ID */
@@ -387,6 +389,9 @@ static const MXFLocalTagPair mxf_local_tag_batch[] = {
     { 0x1501, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x07,0x02,0x01,0x03,0x01,0x05,0x00,0x00}}, /* Start Time Code */
     { 0x1502, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x04,0x04,0x01,0x01,0x02,0x06,0x00,0x00}}, /* Rounded Time Code Base */
     { 0x1503, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x01,0x04,0x04,0x01,0x01,0x05,0x00,0x00,0x00}}, /* Drop Frame */
+    // Tagged Value
+    { 0x5001, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x03,0x02,0x01,0x02,0x09,0x01,0x00,0x00}}, /* Name */
+    { 0x5003, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x03,0x02,0x01,0x02,0x0A,0x01,0x00,0x00}}, /* Value */
     // File Descriptor
     { 0x3F01, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x04,0x06,0x01,0x01,0x04,0x06,0x0B,0x00,0x00}}, /* Sub Descriptors reference array */
     { 0x3006, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x05,0x06,0x01,0x01,0x03,0x05,0x00,0x00,0x00}}, /* Linked Track ID */
@@ -1140,21 +1145,72 @@ static void mxf_write_generic_sound_desc(AVFormatContext *s, AVStream *st)
     mxf_write_generic_sound_common(s, st, mxf_generic_sound_descriptor_key, 0);
 }
 
+static const uint8_t mxf_indirect_value_utf16le[] = { 0x4c,0x00,0x02,0x10,0x01,0x00,0x00,0x00,0x00,0x06,0x0e,0x2b,0x34,0x01,0x04,0x01,0x01 };
+
+static int mxf_write_tagged_value(AVFormatContext *s, const char* name, const char* value)
+{
+    MXFContext *mxf = s->priv_data;
+    AVIOContext *pb = s->pb;
+    int name_size = mxf_utf16_local_tag_length(name);
+    int indirect_value_size = 13 + mxf_utf16_local_tag_length(value);
+
+    if (!name_size || indirect_value_size == 13)
+        return 1;
+
+    mxf_write_metadata_key(pb, 0x013f00);
+    klv_encode_ber_length(pb, 24 + name_size + indirect_value_size);
+
+    // write instance UID
+    mxf_write_local_tag(pb, 16, 0x3C0A);
+    mxf_write_uuid(pb, TaggedValue, mxf->tagged_value_count);
+
+    // write name
+    mxf_write_local_tag_utf16(pb, 0x5001, name); // Name
+
+    // write indirect value
+    mxf_write_local_tag(pb, indirect_value_size, 0x5003);
+    avio_write(pb, mxf_indirect_value_utf16le, 17);
+    avio_put_str16le(pb, value);
+
+    mxf->tagged_value_count++;
+    return 0;
+}
+
+static int mxf_write_user_comments(AVFormatContext *s, const AVDictionary *m)
+{
+    MXFContext *mxf = s->priv_data;
+    AVDictionaryEntry *t = NULL;
+    int count = 0;
+
+    while ((t = av_dict_get(m, "comment_", t, AV_DICT_IGNORE_SUFFIX))) {
+        if (mxf->tagged_value_count >= UINT16_MAX) {
+            av_log(s, AV_LOG_ERROR, "too many tagged values, ignoring remaining\n");
+            return count;
+        }
+
+        if (mxf_write_tagged_value(s, t->key + 8, t->value) == 0)
+            count++;
+    }
+    return count;
+}
+
 static void mxf_write_package(AVFormatContext *s, enum MXFMetadataSetType type, const char *package_name)
 {
     MXFContext *mxf = s->priv_data;
     AVIOContext *pb = s->pb;
     int i, track_count = s->nb_streams+1;
     int name_size = mxf_utf16_local_tag_length(package_name);
+    int user_comment_count = 0;
 
     if (type == MaterialPackage) {
+        user_comment_count = mxf_write_user_comments(s, s->metadata);
         mxf_write_metadata_key(pb, 0x013600);
         PRINT_KEY(s, "Material Package key", pb->buf_ptr - 16);
-        klv_encode_ber_length(pb, 92 + name_size + (16*track_count));
+        klv_encode_ber_length(pb, 104 + name_size + (16*track_count) + (16*user_comment_count));
     } else {
         mxf_write_metadata_key(pb, 0x013700);
         PRINT_KEY(s, "Source Package key", pb->buf_ptr - 16);
-        klv_encode_ber_length(pb, 112 + name_size + (16*track_count)); // 20 bytes length for descriptor reference
+        klv_encode_ber_length(pb, 124 + name_size + (16*track_count)); // 20 bytes length for descriptor reference
     }
 
     // write uid
@@ -1187,6 +1243,12 @@ static void mxf_write_package(AVFormatContext *s, enum MXFMetadataSetType type, 
                    Track + TypeBottom, -1); // timecode track
     for (i = 0; i < s->nb_streams; i++)
         mxf_write_uuid(pb, type == MaterialPackage ? Track : Track + TypeBottom, i);
+
+    // write user comment refs
+    mxf_write_local_tag(pb, user_comment_count*16 + 8, 0x4406);
+    mxf_write_refs_count(pb, user_comment_count);
+    for (i = 0; i < user_comment_count; i++)
+         mxf_write_uuid(pb, TaggedValue, mxf->tagged_value_count - user_comment_count + i);
 
     // write multiple descriptor reference
     if (type == SourcePackage) {
