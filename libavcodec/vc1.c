@@ -572,13 +572,13 @@ int ff_vc1_decode_entry_point(AVCodecContext *avctx, VC1Context *v, GetBitContex
         int scale, shift, i;                                                  \
         if (!lumscale) {                                                      \
             scale = -64;                                                      \
-            shift = (255 - lumshift * 2) << 6;                                \
+            shift = (255 - lumshift * 2) * 64;                                \
             if (lumshift > 31)                                                \
                 shift += 128 << 6;                                            \
         } else {                                                              \
             scale = lumscale + 32;                                            \
             if (lumshift > 31)                                                \
-                shift = (lumshift - 64) << 6;                                 \
+                shift = (lumshift - 64) * 64;                                 \
             else                                                              \
                 shift = lumshift << 6;                                        \
         }                                                                     \
