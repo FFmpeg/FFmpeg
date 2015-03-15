@@ -237,7 +237,7 @@ static av_always_inline av_flatten void FUNCC(h264_loop_filter_chroma)(uint8_t *
     xstride >>= sizeof(pixel)-1;
     ystride >>= sizeof(pixel)-1;
     for( i = 0; i < 4; i++ ) {
-        const int tc = ((tc0[i] - 1) << (BIT_DEPTH - 8)) + 1;
+        const int tc = ((tc0[i] - 1U) << (BIT_DEPTH - 8)) + 1;
         if( tc <= 0 ) {
             pix += inner_iters*ystride;
             continue;
@@ -252,7 +252,7 @@ static av_always_inline av_flatten void FUNCC(h264_loop_filter_chroma)(uint8_t *
                 FFABS( p1 - p0 ) < beta &&
                 FFABS( q1 - q0 ) < beta ) {
 
-                int delta = av_clip( (((q0 - p0 ) << 2) + (p1 - q1) + 4) >> 3, -tc, tc );
+                int delta = av_clip( ((q0 - p0) * 4 + (p1 - q1) + 4) >> 3, -tc, tc );
 
                 pix[-xstride] = av_clip_pixel( p0 + delta );    /* p0' */
                 pix[0]        = av_clip_pixel( q0 - delta );    /* q0' */
