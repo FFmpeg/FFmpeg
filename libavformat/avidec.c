@@ -33,11 +33,11 @@
 #include "avi.h"
 #include "dv.h"
 #include "internal.h"
+#include "isom.h"
 #include "riff.h"
 #include "libavcodec/bytestream.h"
 #include "libavcodec/exif.h"
 #include "libavcodec/internal.h"
-#include "libavformat/isom.h"
 
 typedef struct AVIStream {
     int64_t frame_offset;   /* current frame (video) or byte (audio) counter
