@@ -300,7 +300,7 @@ static av_cold int psy_3gpp_init(FFPsyContext *ctx) {
     ctx->model_priv_data = av_mallocz(sizeof(AacPsyContext));
     if (!ctx->model_priv_data)
         return AVERROR(ENOMEM);
-    pctx = (AacPsyContext*) ctx->model_priv_data;
+    pctx = ctx->model_priv_data;
 
     pctx->chan_bitrate = chan_bitrate;
     pctx->frame_bits   = chan_bitrate * AAC_BLOCK_SIZE_LONG / ctx->avctx->sample_rate;
