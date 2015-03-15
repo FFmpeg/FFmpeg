@@ -1038,7 +1038,7 @@ static int dca_filter_channels(DCAContext *s, int block_index, int upsample)
             unsigned i;
             /* Should apply the filter in Table 6-11 when upsampling. For
              * now, just duplicate. */
-            for (i = 511; i > 0; i--) {
+            for (i = 255; i > 0; i--) {
                 samples[2 * i]     =
                 samples[2 * i + 1] = samples[i];
             }
