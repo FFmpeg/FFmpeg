@@ -122,11 +122,11 @@ static int dvbsub_parse(AVCodecParserContext *s,
     {
         if (*p == 0x0f)
         {
-            if (p + 6 <= p_end)
+            if (6 <= p_end - p)
             {
                 len = AV_RB16(p + 4);
 
-                if (p + len + 6 <= p_end)
+                if (len + 6 <= p_end - p)
                 {
                     *poutbuf_size += len + 6;
 
@@ -136,7 +136,7 @@ static int dvbsub_parse(AVCodecParserContext *s,
             } else
                 break;
         } else if (*p == 0xff) {
-            if (p + 1 < p_end)
+            if (1 < p_end - p)
             {
                 av_dlog(avctx, "Junk at end of packet\n");
             }
