@@ -155,6 +155,7 @@ typedef struct MOVContext {
     unsigned trex_count;
     int itunes_metadata;  ///< metadata are itunes style
     int chapter_track;
+    int seek_individually;
     int64_t next_root_atom; ///< offset of the next root atom
     int export_all;
     int export_xmp;
