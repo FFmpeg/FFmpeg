@@ -2196,7 +2196,7 @@ static int sdp_probe(AVProbeData *p1)
 
     /* we look for a line beginning "c=IN IP" */
     while (p < p_end && *p != '\0') {
-        if (p + sizeof("c=IN IP") - 1 < p_end &&
+        if (sizeof("c=IN IP") - 1 < p_end - p &&
             av_strstart(p, "c=IN IP", NULL))
             return AVPROBE_SCORE_EXTENSION;
 
