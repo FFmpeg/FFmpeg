@@ -1808,7 +1808,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             /* If downmixing to stereo, don't decode additional channels.
              * FIXME: Using the xch_disable flag for this doesn't seem right. */
             if (!s->xch_disable)
-                channels += s->xll_channels - s->xll_residual_channels;
+                channels = s->xll_channels;
         }
     }
 
