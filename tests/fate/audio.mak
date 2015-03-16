@@ -16,10 +16,18 @@ fate-binkaudio: $(FATE_BINKAUDIO-yes)
 FATE_SAMPLES_AUDIO-$(call DEMDEC, BMV, BMV_AUDIO) += fate-bmv-audio
 fate-bmv-audio: CMD = framecrc -i $(TARGET_SAMPLES)/bmv/SURFING-partial.BMV -vn
 
-FATE_SAMPLES_AUDIO-$(call DEMDEC, MPEGTS, DCA) += fate-dca-core
+FATE_DCA-$(CONFIG_MPEGTS_DEMUXER) += fate-dca-core
 fate-dca-core: CMD = pcm -i $(TARGET_SAMPLES)/dts/dts.ts
 fate-dca-core: CMP = oneoff
 fate-dca-core: REF = $(SAMPLES)/dts/dts.pcm
+
+FATE_DCA-$(CONFIG_DTS_DEMUXER) += fate-dca-xll
+fate-dca-xll: CMD = pcm -disable_xll 0 -i $(TARGET_SAMPLES)/dts/master_audio_7.1_24bit.dts
+fate-dca-xll: CMP = oneoff
+fate-dca-xll: REF = $(SAMPLES)/dts/master_audio_7.1_24bit.pcm
+
+FATE_SAMPLES_AUDIO-$(CONFIG_DCA_DECODER) += $(FATE_DCA-yes)
+fate-dca: $(FATE_DCA-yes)
 
 FATE_SAMPLES_AUDIO-$(call DEMDEC, DSICIN, DSICINAUDIO) += fate-delphine-cin-audio
 fate-delphine-cin-audio: CMD = framecrc -i $(TARGET_SAMPLES)/delphine-cin/LOGO-partial.CIN -vn

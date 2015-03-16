@@ -742,7 +742,7 @@ SwsFunc ff_getSwsFunc(SwsContext *c)
     return swscale;
 }
 
-static void reset_ptr(const uint8_t *src[], int format)
+static void reset_ptr(const uint8_t *src[], enum AVPixelFormat format)
 {
     if (!isALPHA(format))
         src[3] = NULL;

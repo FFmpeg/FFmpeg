@@ -316,6 +316,7 @@ static void mxf_free_metadataset(MXFMetadataSet **ctx, int freectx)
     case MaterialPackage:
         av_freep(&((MXFPackage *)*ctx)->tracks_refs);
         av_freep(&((MXFPackage *)*ctx)->name);
+        av_freep(&((MXFPackage *)*ctx)->comment_refs);
         break;
     case TaggedValue:
         av_freep(&((MXFTaggedValue *)*ctx)->name);

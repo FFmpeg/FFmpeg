@@ -4,6 +4,8 @@
  * Copyright (C) 2004 Benjamin Zores
  * Copyright (C) 2006 Benjamin Larsson
  * Copyright (C) 2007 Konstantin Shishkov
+ * Copyright (C) 2012 Paul B Mahol
+ * Copyright (C) 2014 Niels Möller
  *
  * This file is part of FFmpeg.
  *
@@ -26,6 +28,7 @@
 #include <stddef.h>
 #include <stdio.h>
 
+#include "libavutil/attributes.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
 #include "libavutil/float_dsp.h"
@@ -623,8 +626,83 @@ static void qmf_32_subbands(DCAContext *s, int chans,
                               samples_out, s->raXin, scale);
 }
 
-static void lfe_interpolation_fir(DCAContext *s, int decimation_select,
-                                  int num_deci_sample, float *samples_in,
+static QMF64_table *qmf64_precompute(void)
+{
+    unsigned i, j;
+    QMF64_table *table = av_malloc(sizeof(*table));
+    if (!table)
+        return NULL;
+
+    for (i = 0; i < 32; i++)
+        for (j = 0; j < 32; j++)
+            table->dct4_coeff[i][j] = cos((2 * i + 1) * (2 * j + 1) * M_PI / 128);
+    for (i = 0; i < 32; i++)
+        for (j = 0; j < 32; j++)
+            table->dct2_coeff[i][j] = cos((2 * i + 1) *      j      * M_PI /  64);
+
+    /* FIXME: Is the factor 0.125 = 1/8 right? */
+    for (i = 0; i < 32; i++)
+        table->rcos[i] =  0.125 / cos((2 * i + 1) * M_PI / 256);
+    for (i = 0; i < 32; i++)
+        table->rsin[i] = -0.125 / sin((2 * i + 1) * M_PI / 256);
+
+    return table;
+}
+
+/* FIXME: Totally unoptimized. Based on the reference code and
+ * http://multimedia.cx/mirror/dca-transform.pdf, with guessed tweaks
+ * for doubling the size. */
+static void qmf_64_subbands(DCAContext *s, int chans, float samples_in[64][8],
+                            float *samples_out, float scale)
+{
+    float raXin[64];
+    float A[32], B[32];
+    float *raX = s->subband_fir_hist[chans];
+    float *raZ = s->subband_fir_noidea[chans];
+    unsigned i, j, k, subindex;
+
+    for (i = s->subband_activity[chans]; i < 64; i++)
+        raXin[i] = 0.0;
+    for (subindex = 0; subindex < 8; subindex++) {
+        for (i = 0; i < s->subband_activity[chans]; i++)
+            raXin[i] = samples_in[i][subindex];
+
+        for (k = 0; k < 32; k++) {
+            A[k] = 0.0;
+            for (i = 0; i < 32; i++)
+                A[k] += (raXin[2 * i] + raXin[2 * i + 1]) * s->qmf64_table->dct4_coeff[k][i];
+        }
+        for (k = 0; k < 32; k++) {
+            B[k] = raXin[0] * s->qmf64_table->dct2_coeff[k][0];
+            for (i = 1; i < 32; i++)
+                B[k] += (raXin[2 * i] + raXin[2 * i - 1]) * s->qmf64_table->dct2_coeff[k][i];
+        }
+        for (k = 0; k < 32; k++) {
+            raX[k]      = s->qmf64_table->rcos[k] * (A[k] + B[k]);
+            raX[63 - k] = s->qmf64_table->rsin[k] * (A[k] - B[k]);
+        }
+
+        for (i = 0; i < 64; i++) {
+            float out = raZ[i];
+            for (j = 0; j < 1024; j += 128)
+                out += ff_dca_fir_64bands[j + i] * (raX[j + i] - raX[j + 63 - i]);
+            *samples_out++ = out * scale;
+        }
+
+        for (i = 0; i < 64; i++) {
+            float hist = 0.0;
+            for (j = 0; j < 1024; j += 128)
+                hist += ff_dca_fir_64bands[64 + j + i] * (-raX[i + j] - raX[j + 63 - i]);
+
+            raZ[i] = hist;
+        }
+
+        /* FIXME: Make buffer circular, to avoid this move. */
+        memmove(raX + 64, raX, (1024 - 64) * sizeof(*raX));
+    }
+}
+
+static void lfe_interpolation_fir(DCAContext *s, const float *samples_in,
                                   float *samples_out)
 {
     /* samples_in: An array holding decimated samples.
@@ -640,15 +718,18 @@ static void lfe_interpolation_fir(DCAContext *s, int decimation_select,
     int deciindex;
 
     /* Select decimation filter */
-    if (decimation_select == 1) {
+    if (s->lfe == 1) {
         idx     = 1;
         prCoeff = ff_dca_lfe_fir_128;
     } else {
-        idx     = 0;
-        prCoeff = ff_dca_lfe_fir_64;
+        idx = 0;
+        if (s->exss_ext_mask & DCA_EXT_EXSS_XLL)
+            prCoeff = ff_dca_lfe_xll_fir_64;
+        else
+            prCoeff = ff_dca_lfe_fir_64;
     }
     /* Interpolation */
-    for (deciindex = 0; deciindex < num_deci_sample; deciindex++) {
+    for (deciindex = 0; deciindex < 2 * s->lfe; deciindex++) {
         s->dcadsp.lfe_fir[idx](samples_out, samples_in, prCoeff);
         samples_in++;
         samples_out += 2 * 32 * (1 + idx);
@@ -917,27 +998,56 @@ static int dca_subsubframe(DCAContext *s, int base_channel, int block_index)
     return 0;
 }
 
-static int dca_filter_channels(DCAContext *s, int block_index)
+static int dca_filter_channels(DCAContext *s, int block_index, int upsample)
 {
     float (*subband_samples)[DCA_SUBBANDS][8] = s->subband_samples[block_index];
     int k;
 
-    /* 32 subbands QMF */
-    for (k = 0; k < s->prim_channels; k++) {
-        if (s->channel_order_tab[k] >= 0)
-            qmf_32_subbands(s, k, subband_samples[k],
-                            s->samples_chanptr[s->channel_order_tab[k]],
-                            M_SQRT1_2 / 32768.0);
+    if (upsample) {
+        if (!s->qmf64_table) {
+            s->qmf64_table = qmf64_precompute();
+            if (!s->qmf64_table)
+                return AVERROR(ENOMEM);
+        }
+
+        /* 64 subbands QMF */
+        for (k = 0; k < s->prim_channels; k++) {
+            if (s->channel_order_tab[k] >= 0)
+                qmf_64_subbands(s, k, subband_samples[k],
+                                s->samples_chanptr[s->channel_order_tab[k]],
+                                /* Upsampling needs a factor 2 here. */
+                                M_SQRT2 / 32768.0);
+        }
+    } else {
+        /* 32 subbands QMF */
+        for (k = 0; k < s->prim_channels; k++) {
+            if (s->channel_order_tab[k] >= 0)
+                qmf_32_subbands(s, k, subband_samples[k],
+                                s->samples_chanptr[s->channel_order_tab[k]],
+                                M_SQRT1_2 / 32768.0);
+        }
     }
 
     /* Generate LFE samples for this subsubframe FIXME!!! */
     if (s->lfe) {
-        lfe_interpolation_fir(s, s->lfe, 2 * s->lfe,
+        float *samples = s->samples_chanptr[s->lfe_index];
+        lfe_interpolation_fir(s,
                               s->lfe_data + 2 * s->lfe * (block_index + 4),
-                              s->samples_chanptr[s->lfe_index]);
-        /* Outputs 20bits pcm samples */
+                              samples);
+        if (upsample) {
+            unsigned i;
+            /* Should apply the filter in Table 6-11 when upsampling. For
+             * now, just duplicate. */
+            for (i = 255; i > 0; i--) {
+                samples[2 * i]     =
+                samples[2 * i + 1] = samples[i];
+            }
+            samples[1] = samples[0];
+        }
     }
 
+    /* FIXME: This downmixing is probably broken with upsample.
+     * Probably totally broken also with XLL in general. */
     /* Downmixing to Stereo */
     if (s->prim_channels + !!s->lfe > 2 &&
         s->avctx->request_channel_layout == AV_CH_LAYOUT_STEREO) {
@@ -1344,8 +1454,10 @@ static int dca_decode_frame(AVCodecContext *avctx, void *data,
     int posn;
     int j, k;
     int endch;
+    int upsample = 0;
 
-    s->xch_present = 0;
+    s->exss_ext_mask = 0;
+    s->xch_present   = 0;
 
     s->dca_buffer_size = avpriv_dca_convert_bitstream(buf, buf_size, s->dca_buffer,
                                                   DCA_MAX_FRAME_SIZE + DCA_MAX_EXSS_HEADER_SIZE);
@@ -1667,14 +1779,51 @@ FF_ENABLE_DEPRECATION_WARNINGS
         s->channel_order_tab = s->xxch_order_tab;
     }
 
+    /* get output buffer */
+    frame->nb_samples = 256 * (s->sample_blocks / 8);
+    if (s->exss_ext_mask & DCA_EXT_EXSS_XLL) {
+        int xll_nb_samples = s->xll_segments * s->xll_smpl_in_seg;
+        /* Check for invalid/unsupported conditions first */
+        if (s->xll_residual_channels > channels) {
+            av_log(s->avctx, AV_LOG_WARNING,
+                   "DCA: too many residual channels (%d, core channels %d). Disabling XLL\n",
+                   s->xll_residual_channels, channels);
+            s->exss_ext_mask &= ~DCA_EXT_EXSS_XLL;
+        } else if (xll_nb_samples != frame->nb_samples &&
+                   2 * frame->nb_samples != xll_nb_samples) {
+            av_log(s->avctx, AV_LOG_WARNING,
+                   "DCA: unsupported upsampling (%d XLL samples, %d core samples). Disabling XLL\n",
+                   xll_nb_samples, frame->nb_samples);
+            s->exss_ext_mask &= ~DCA_EXT_EXSS_XLL;
+        } else {
+            if (2 * frame->nb_samples == xll_nb_samples) {
+                av_log(s->avctx, AV_LOG_INFO,
+                       "XLL: upsampling core channels by a factor of 2\n");
+                upsample = 1;
+
+                frame->nb_samples = xll_nb_samples;
+                // FIXME: Is it good enough to copy from the first channel set?
+                avctx->sample_rate = s->xll_chsets[0].sampling_frequency;
+            }
+            /* If downmixing to stereo, don't decode additional channels.
+             * FIXME: Using the xch_disable flag for this doesn't seem right. */
+            if (!s->xch_disable)
+                channels = s->xll_channels;
+        }
+    }
+
     if (avctx->channels != channels) {
         if (avctx->channels)
             av_log(avctx, AV_LOG_INFO, "Number of channels changed in DCA decoder (%d -> %d)\n", avctx->channels, channels);
         avctx->channels = channels;
     }
 
-    /* get output buffer */
-    frame->nb_samples = 256 * (s->sample_blocks / 8);
+    /* FIXME: This is an ugly hack, to just revert to the default
+     * layout if we have additional channels. Need to convert the XLL
+     * channel masks to ffmpeg channel_layout mask. */
+    if (av_get_channel_layout_nb_channels(avctx->channel_layout) != avctx->channels)
+        avctx->channel_layout = 0;
+
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
     samples_flt = (float **) frame->extended_data;
@@ -1703,13 +1852,13 @@ FF_ENABLE_DEPRECATION_WARNINGS
     /* filter to get final output */
     for (i = 0; i < (s->sample_blocks / 8); i++) {
         int ch;
-
+        unsigned block = upsample ? 512 : 256;
         for (ch = 0; ch < channels; ch++)
-            s->samples_chanptr[ch] = samples_flt[ch] + i * 256;
+            s->samples_chanptr[ch] = samples_flt[ch] + i * block;
         for (; ch < full_channels; ch++)
-            s->samples_chanptr[ch] = s->extra_channels[ch - channels] + i * 256;
+            s->samples_chanptr[ch] = s->extra_channels[ch - channels] + i * block;
 
-        dca_filter_channels(s, i);
+        dca_filter_channels(s, i, upsample);
 
         /* If this was marked as a DTS-ES stream we need to subtract back- */
         /* channel from SL & SR to remove matrixed back-channel signal */
@@ -1774,6 +1923,11 @@ FF_ENABLE_DEPRECATION_WARNINGS
     for (i = 0; i < 2 * s->lfe * 4; i++)
         s->lfe_data[i] = s->lfe_data[i + lfe_samples];
 
+    if (s->exss_ext_mask & DCA_EXT_EXSS_XLL) {
+        ret = ff_dca_xll_decode_audio(s, frame);
+        if (ret < 0)
+            return ret;
+    }
     /* AVMatrixEncoding
      *
      * DCA_STEREO_TOTAL (Lt/Rt) is equivalent to Dolby Surround */
@@ -1832,6 +1986,8 @@ static av_cold int dca_decode_end(AVCodecContext *avctx)
     ff_mdct_end(&s->imdct);
     av_freep(&s->extra_channels_buffer);
     av_freep(&s->fdsp);
+    av_freep(&s->xll_sample_buf);
+    av_freep(&s->qmf64_table);
     return 0;
 }
 
@@ -1846,6 +2002,7 @@ static const AVProfile profiles[] = {
 
 static const AVOption options[] = {
     { "disable_xch", "disable decoding of the XCh extension", offsetof(DCAContext, xch_disable), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_AUDIO_PARAM },
+    { "disable_xll", "disable decoding of the XLL extension", offsetof(DCAContext, xll_disable), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_AUDIO_PARAM },
     { NULL },
 };
 
