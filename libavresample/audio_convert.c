@@ -319,7 +319,7 @@ int ff_audio_convert(AudioConvert *ac, AudioData *out, AudioData *in)
 
     if (ac->dc) {
         /* dithered conversion */
-        av_dlog(ac->avr, "%d samples - audio_convert: %s to %s (dithered)\n",
+        av_log(ac->avr, AV_LOG_TRACE, "%d samples - audio_convert: %s to %s (dithered)\n",
                 len, av_get_sample_fmt_name(ac->in_fmt),
                 av_get_sample_fmt_name(ac->out_fmt));
 
@@ -337,7 +337,7 @@ int ff_audio_convert(AudioConvert *ac, AudioData *out, AudioData *in)
             use_generic = 0;
         }
     }
-    av_dlog(ac->avr, "%d samples - audio_convert: %s to %s (%s)\n", len,
+    av_log(ac->avr, AV_LOG_TRACE, "%d samples - audio_convert: %s to %s (%s)\n", len,
             av_get_sample_fmt_name(ac->in_fmt),
             av_get_sample_fmt_name(ac->out_fmt),
             use_generic ? ac->func_descr_generic : ac->func_descr);

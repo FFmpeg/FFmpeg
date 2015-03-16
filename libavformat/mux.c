@@ -264,7 +264,7 @@ static int compute_pkt_fields2(AVFormatContext *s, AVStream *st, AVPacket *pkt)
     int delay = FFMAX(st->codec->has_b_frames, !!st->codec->max_b_frames);
     int num, den, i;
 
-    av_dlog(s, "compute_pkt_fields2: pts:%" PRId64 " dts:%" PRId64 " cur_dts:%" PRId64 " b:%d size:%d st:%d\n",
+    av_log(s, AV_LOG_TRACE, "compute_pkt_fields2: pts:%" PRId64 " dts:%" PRId64 " cur_dts:%" PRId64 " b:%d size:%d st:%d\n",
             pkt->pts, pkt->dts, st->cur_dts, delay, pkt->size, pkt->stream_index);
 
 /*    if(pkt->pts == AV_NOPTS_VALUE && pkt->dts == AV_NOPTS_VALUE)
@@ -308,7 +308,7 @@ static int compute_pkt_fields2(AVFormatContext *s, AVStream *st, AVPacket *pkt)
         return AVERROR(EINVAL);
     }
 
-    av_dlog(s, "av_write_frame: pts2:%"PRId64" dts2:%"PRId64"\n",
+    av_log(s, AV_LOG_TRACE, "av_write_frame: pts2:%"PRId64" dts2:%"PRId64"\n",
             pkt->pts, pkt->dts);
     st->cur_dts = pkt->dts;
 
@@ -560,7 +560,7 @@ int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt)
     if (pkt) {
         AVStream *st = s->streams[pkt->stream_index];
 
-        av_dlog(s, "av_interleaved_write_frame size:%d dts:%" PRId64 " pts:%" PRId64 "\n",
+        av_log(s, AV_LOG_TRACE, "av_interleaved_write_frame size:%d dts:%" PRId64 " pts:%" PRId64 "\n",
                 pkt->size, pkt->dts, pkt->pts);
         if ((ret = compute_pkt_fields2(s, st, pkt)) < 0 && !(s->oformat->flags & AVFMT_NOTIMESTAMPS))
             goto fail;
@@ -570,7 +570,7 @@ int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt)
             goto fail;
         }
     } else {
-        av_dlog(s, "av_interleaved_write_frame FLUSH\n");
+        av_log(s, AV_LOG_TRACE, "av_interleaved_write_frame FLUSH\n");
         flush = 1;
     }
 

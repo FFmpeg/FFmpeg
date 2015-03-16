@@ -485,7 +485,7 @@ int ff_audio_resample(ResampleContext *c, AudioData *dst, AudioData *src)
     ff_audio_data_drain(c->buffer, consumed);
     c->initial_padding_samples = FFMAX(c->initial_padding_samples - consumed, 0);
 
-    av_dlog(c->avr, "resampled %d in + %d leftover to %d out + %d leftover\n",
+    av_log(c->avr, AV_LOG_TRACE, "resampled %d in + %d leftover to %d out + %d leftover\n",
             in_samples, in_leftover, out_samples, c->buffer->nb_samples);
 
     dst->nb_samples = out_samples;

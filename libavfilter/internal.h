@@ -145,7 +145,7 @@ void ff_avfilter_default_free_buffer(AVFilterBuffer *buf);
 /** Tell is a format is contained in the provided list terminated by -1. */
 int ff_fmt_is_in(int fmt, const int *fmts);
 
-#define FF_DPRINTF_START(ctx, func) av_dlog(NULL, "%-16s: ", #func)
+#define FF_DPRINTF_START(ctx, func) av_log(NULL, AV_LOG_TRACE, "%-16s: ", #func)
 
 void ff_dlog_link(void *ctx, AVFilterLink *link, int end);
 

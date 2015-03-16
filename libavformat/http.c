@@ -460,7 +460,7 @@ static int process_line(URLContext *h, char *line, int line_count,
             p++;
         s->http_code = strtol(p, &end, 10);
 
-        av_dlog(NULL, "http_code=%d\n", s->http_code);
+        av_log(NULL, AV_LOG_TRACE, "http_code=%d\n", s->http_code);
 
         if ((ret = check_http_code(h, s->http_code, end)) < 0)
             return ret;
@@ -535,7 +535,7 @@ static int http_read_header(URLContext *h, int *new_location)
         if ((err = http_get_line(s, line, sizeof(line))) < 0)
             return err;
 
-        av_dlog(NULL, "header='%s'\n", line);
+        av_log(NULL, AV_LOG_TRACE, "header='%s'\n", line);
 
         err = process_line(h, line, s->line_count, new_location);
         if (err < 0)
@@ -775,7 +775,7 @@ static int http_read_stream(URLContext *h, uint8_t *buf, int size)
 
                 s->chunksize = strtoll(line, NULL, 16);
 
-                av_dlog(NULL, "Chunked encoding data size: %"PRId64"'\n",
+                av_log(NULL, AV_LOG_TRACE, "Chunked encoding data size: %"PRId64"'\n",
                         s->chunksize);
 
                 if (!s->chunksize)

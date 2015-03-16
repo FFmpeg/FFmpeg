@@ -123,7 +123,7 @@ static int read_data_packet(MMSHContext *mmsh, const int len)
         return AVERROR(EIO);
     }
     res = ffurl_read_complete(mms->mms_hd, mms->in_buffer, len);
-    av_dlog(NULL, "Data packet len = %d\n", len);
+    av_log(NULL, AV_LOG_TRACE, "Data packet len = %d\n", len);
     if (res != len) {
         av_log(NULL, AV_LOG_ERROR, "Read data packet failed!\n");
         return AVERROR(EIO);
@@ -157,7 +157,7 @@ static int get_http_header_data(MMSHContext *mmsh)
                 if (mms->asf_header) {
                     if (len != mms->asf_header_size) {
                         mms->asf_header_size = len;
-                        av_dlog(NULL, "Header len changed from %d to %d\n",
+                        av_log(NULL, AV_LOG_TRACE, "Header len changed from %d to %d\n",
                                 mms->asf_header_size, len);
                         av_freep(&mms->asf_header);
                     }
@@ -202,7 +202,7 @@ static int get_http_header_data(MMSHContext *mmsh)
                     av_log(NULL, AV_LOG_ERROR, "Read other chunk type data failed!\n");
                     return AVERROR(EIO);
                 } else {
-                    av_dlog(NULL, "Skip chunk type %d \n", chunk_type);
+                    av_log(NULL, AV_LOG_TRACE, "Skip chunk type %d \n", chunk_type);
                     continue;
                 }
             }
@@ -289,7 +289,7 @@ static int mmsh_open(URLContext *h, const char *uri, int flags)
         av_log(NULL, AV_LOG_ERROR, "Build play request failed!\n");
         goto fail;
     }
-    av_dlog(NULL, "out_buffer is %s", headers);
+    av_log(NULL, AV_LOG_TRACE, "out_buffer is %s", headers);
     av_opt_set(mms->mms_hd->priv_data, "headers", headers, 0);
 
     err = ffurl_connect(mms->mms_hd, NULL);
@@ -303,12 +303,12 @@ static int mmsh_open(URLContext *h, const char *uri, int flags)
         goto fail;
     }
 
-    av_dlog(NULL, "Connection successfully open\n");
+    av_log(NULL, AV_LOG_TRACE, "Connection successfully open\n");
     return 0;
 fail:
     av_freep(&stream_selection);
     mmsh_close(h);
-    av_dlog(NULL, "Connection failed with error %d\n", err);
+    av_log(NULL, AV_LOG_TRACE, "Connection failed with error %d\n", err);
     return err;
 }
 

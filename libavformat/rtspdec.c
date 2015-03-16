@@ -113,7 +113,7 @@ static int rtsp_send_reply(AVFormatContext *s, enum RTSPStatusCode code,
     if (extracontent)
         av_strlcat(message, extracontent, sizeof(message));
     av_strlcat(message, "\r\n", sizeof(message));
-    av_dlog(s, "Sending response:\n%s", message);
+    av_log(s, AV_LOG_TRACE, "Sending response:\n%s", message);
     ffurl_write(rt->rtsp_hd_out, message, strlen(message));
 
     return 0;
@@ -149,7 +149,7 @@ static inline int rtsp_read_request(AVFormatContext *s,
         if (ret)
             return ret;
         if (rbuflen > 1) {
-            av_dlog(s, "Parsing[%d]: %s\n", rbuflen, rbuf);
+            av_log(s, AV_LOG_TRACE, "Parsing[%d]: %s\n", rbuflen, rbuf);
             ff_rtsp_parse_line(request, rbuf, rt, method);
         }
     } while (rbuflen > 0);
@@ -292,7 +292,7 @@ static int rtsp_read_setup(AVFormatContext *s, char* host, char *controlurl)
             snprintf(buf, sizeof(buf), "%d", rt->buffer_size);
             av_dict_set(&opts, "buffer_size", buf, 0);
             ff_url_join(url, sizeof(url), "rtp", NULL, host, localport, NULL);
-            av_dlog(s, "Opening: %s", url);
+            av_log(s, AV_LOG_TRACE, "Opening: %s", url);
             ret = ffurl_open(&rtsp_st->rtp_handle, url, AVIO_FLAG_READ_WRITE,
                              &s->interrupt_callback, &opts);
             av_dict_free(&opts);
@@ -304,7 +304,7 @@ static int rtsp_read_setup(AVFormatContext *s, char* host, char *controlurl)
             return ret;
         }
 
-        av_dlog(s, "Listening on: %d",
+        av_log(s, AV_LOG_TRACE, "Listening on: %d",
                 ff_rtp_get_local_rtp_port(rtsp_st->rtp_handle));
         if ((ret = ff_rtsp_open_transport_ctx(s, rtsp_st))) {
             rtsp_send_reply(s, RTSP_STATUS_TRANSPORT, NULL, request.seq);
@@ -750,7 +750,7 @@ int ff_rtsp_tcp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
     int id, len, i, ret;
     RTSPStream *rtsp_st;
 
-    av_dlog(s, "tcp_read_packet:\n");
+    av_log(s, AV_LOG_TRACE, "tcp_read_packet:\n");
 redo:
     for (;;) {
         RTSPMessageHeader reply;
@@ -769,7 +769,7 @@ redo:
         return -1;
     id  = buf[0];
     len = AV_RB16(buf + 1);
-    av_dlog(s, "id=%d len=%d\n", id, len);
+    av_log(s, AV_LOG_TRACE, "id=%d len=%d\n", id, len);
     if (len > buf_size || len < 12)
         goto redo;
     /* get the data */

@@ -441,7 +441,7 @@ int ff_audio_mix(AudioMix *am, AudioData *src)
             use_generic = 0;
         }
     }
-    av_dlog(am->avr, "audio_mix: %d samples - %d to %d channels (%s)\n",
+    av_log(am->avr, AV_LOG_TRACE, "audio_mix: %d samples - %d to %d channels (%s)\n",
             src->nb_samples, am->in_channels, am->out_channels,
             use_generic ? am->func_descr_generic : am->func_descr);
 

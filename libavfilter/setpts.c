@@ -143,7 +143,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     d = av_expr_eval(setpts->expr, setpts->var_values, NULL);
     frame->pts = D2TS(d);
 
-    av_dlog(inlink->dst,
+    av_log(inlink->dst, AV_LOG_TRACE,
             "n:%"PRId64" interlaced:%d pts:%"PRId64" t:%f -> pts:%"PRId64" t:%f\n",
             (int64_t)setpts->var_values[VAR_N],
             (int)setpts->var_values[VAR_INTERLACED],

@@ -1065,7 +1065,7 @@ static double compute_target_time(double frame_current_pts, VideoState *is)
     }
     is->frame_timer += delay;
 
-    av_dlog(NULL, "video: delay=%0.3f pts=%0.3f A-V=%f\n",
+    av_log(NULL, AV_LOG_TRACE, "video: delay=%0.3f pts=%0.3f A-V=%f\n",
             delay, frame_current_pts, -diff);
 
     return is->frame_timer;
@@ -1611,7 +1611,7 @@ static int video_thread(void *arg)
 #if CONFIG_AVFILTER
         if (   last_w != is->video_st->codec->width
             || last_h != is->video_st->codec->height) {
-            av_dlog(NULL, "Changing size %dx%d -> %dx%d\n", last_w, last_h,
+            av_log(NULL, AV_LOG_TRACE, "Changing size %dx%d -> %dx%d\n", last_w, last_h,
                     is->video_st->codec->width, is->video_st->codec->height);
             avfilter_graph_free(&graph);
             graph = avfilter_graph_alloc();
@@ -1640,7 +1640,7 @@ static int video_thread(void *arg)
             if (av_cmp_q(tb, is->video_st->time_base)) {
                 av_unused int64_t pts1 = pts_int;
                 pts_int = av_rescale_q(pts_int, tb, is->video_st->time_base);
-                av_dlog(NULL, "video_thread(): "
+                av_log(NULL, AV_LOG_TRACE, "video_thread(): "
                         "tb:%d/%d pts:%"PRId64" -> tb:%d/%d pts:%"PRId64"\n",
                         tb.num, tb.den, pts1,
                         is->video_st->time_base.num, is->video_st->time_base.den, pts_int);
@@ -1819,7 +1819,7 @@ static int synchronize_audio(VideoState *is, short *samples,
                         samples_size = wanted_size;
                     }
                 }
-                av_dlog(NULL, "diff=%f adiff=%f sample_diff=%d apts=%0.3f vpts=%0.3f %f\n",
+                av_log(NULL, AV_LOG_TRACE, "diff=%f adiff=%f sample_diff=%d apts=%0.3f vpts=%0.3f %f\n",
                         diff, avg_diff, samples_size - samples_size1,
                         is->audio_clock, is->video_clock, is->audio_diff_threshold);
             }
