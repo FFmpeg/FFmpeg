@@ -3402,18 +3402,19 @@ static int mov_write_tfhd_tag(AVIOContext *pb, MOVMuxContext *mov,
 }
 
 static int mov_write_trun_tag(AVIOContext *pb, MOVMuxContext *mov,
-                              MOVTrack *track, int moof_size)
+                              MOVTrack *track, int moof_size,
+                              int first, int end)
 {
     int64_t pos = avio_tell(pb);
     uint32_t flags = MOV_TRUN_DATA_OFFSET;
     int i;
 
-    for (i = 0; i < track->entry; i++) {
+    for (i = first; i < end; i++) {
         if (get_cluster_duration(track, i) != track->default_duration)
             flags |= MOV_TRUN_SAMPLE_DURATION;
         if (track->cluster[i].size != track->default_size)
             flags |= MOV_TRUN_SAMPLE_SIZE;
-        if (i > 0 && get_sample_flags(track, &track->cluster[i]) != track->default_sample_flags)
+        if (i > first && get_sample_flags(track, &track->cluster[i]) != track->default_sample_flags)
             flags |= MOV_TRUN_SAMPLE_FLAGS;
     }
     if (!(flags & MOV_TRUN_SAMPLE_FLAGS) && track->entry > 0 &&
@@ -3427,18 +3428,18 @@ static int mov_write_trun_tag(AVIOContext *pb, MOVMuxContext *mov,
     avio_w8(pb, 0); /* version */
     avio_wb24(pb, flags);
 
-    avio_wb32(pb, track->entry); /* sample count */
+    avio_wb32(pb, end - first); /* sample count */
     if (mov->flags & FF_MOV_FLAG_OMIT_TFHD_OFFSET &&
         !(mov->flags & FF_MOV_FLAG_DEFAULT_BASE_MOOF) &&
         !mov->first_trun)
         avio_wb32(pb, 0); /* Later tracks follow immediately after the previous one */
     else
         avio_wb32(pb, moof_size + 8 + track->data_offset +
-                      track->cluster[0].pos); /* data offset */
+                      track->cluster[first].pos); /* data offset */
     if (flags & MOV_TRUN_FIRST_SAMPLE_FLAGS)
-        avio_wb32(pb, get_sample_flags(track, &track->cluster[0]));
+        avio_wb32(pb, get_sample_flags(track, &track->cluster[first]));
 
-    for (i = 0; i < track->entry; i++) {
+    for (i = first; i < end; i++) {
         if (flags & MOV_TRUN_SAMPLE_DURATION)
             avio_wb32(pb, get_cluster_duration(track, i));
         if (flags & MOV_TRUN_SAMPLE_SIZE)
@@ -3577,13 +3578,20 @@ static int mov_write_traf_tag(AVIOContext *pb, MOVMuxContext *mov,
                               int moof_size)
 {
     int64_t pos = avio_tell(pb);
+    int i, start = 0;
     avio_wb32(pb, 0); /* size placeholder */
     ffio_wfourcc(pb, "traf");
 
     mov_write_tfhd_tag(pb, mov, track, moof_offset);
     if (mov->mode != MODE_ISM)
         mov_write_tfdt_tag(pb, track);
-    mov_write_trun_tag(pb, mov, track, moof_size);
+    for (i = 1; i < track->entry; i++) {
+        if (track->cluster[i].pos != track->cluster[i - 1].pos + track->cluster[i - 1].size) {
+            mov_write_trun_tag(pb, mov, track, moof_size, start, i);
+            start = i;
+        }
+    }
+    mov_write_trun_tag(pb, mov, track, moof_size, start, track->entry);
     if (mov->mode == MODE_ISM) {
         mov_write_tfxd_tag(pb, track);
 
