@@ -724,6 +724,7 @@ int opt_loglevel(void *optctx, const char *opt, const char *arg)
         { "info"   , AV_LOG_INFO    },
         { "verbose", AV_LOG_VERBOSE },
         { "debug"  , AV_LOG_DEBUG   },
+        { "trace"  , AV_LOG_TRACE   },
     };
     char *tail;
     int level;
