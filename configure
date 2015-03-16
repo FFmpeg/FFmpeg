@@ -4834,8 +4834,12 @@ check_cflags -Wtype-limits
 check_cflags -Wundef
 check_cflags -Wmissing-prototypes
 check_cflags -Wstrict-prototypes
-enabled extra_warnings && check_cflags -Winline
-enabled extra_warnings && check_cflags -Wcast-qual
+
+if enabled extra_warnings; then
+    check_cflags -Wcast-qual
+    check_cflags -Wextra
+    check_cflags -Wpedantic
+fi
 
 check_disable_warning(){
     warning_flag=-W${1#-Wno-}
