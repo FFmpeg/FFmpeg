@@ -1757,7 +1757,7 @@ int ff_mpv_frame_start(MpegEncContext *s, AVCodecContext *avctx)
         if (!s->droppable)
             s->next_picture_ptr = s->current_picture_ptr;
     }
-    av_dlog(s->avctx, "L%p N%p C%p L%p N%p C%p type:%d drop:%d\n",
+    ff_dlog(s->avctx, "L%p N%p C%p L%p N%p C%p type:%d drop:%d\n",
             s->last_picture_ptr, s->next_picture_ptr,s->current_picture_ptr,
             s->last_picture_ptr    ? s->last_picture_ptr->f->data[0]    : NULL,
             s->next_picture_ptr    ? s->next_picture_ptr->f->data[0]    : NULL,

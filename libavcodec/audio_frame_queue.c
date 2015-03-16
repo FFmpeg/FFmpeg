@@ -56,12 +56,12 @@ void ff_af_queue_close(AudioFrameQueue *afq)
 static void af_queue_log_state(AudioFrameQueue *afq)
 {
     AudioFrame *f;
-    av_dlog(afq->avctx, "remaining delay   = %d\n", afq->remaining_delay);
-    av_dlog(afq->avctx, "remaining samples = %d\n", afq->remaining_samples);
-    av_dlog(afq->avctx, "frames:\n");
+    ff_dlog(afq->avctx, "remaining delay   = %d\n", afq->remaining_delay);
+    ff_dlog(afq->avctx, "remaining samples = %d\n", afq->remaining_samples);
+    ff_dlog(afq->avctx, "frames:\n");
     f = afq->frame_queue;
     while (f) {
-        av_dlog(afq->avctx, "  [ pts=%9"PRId64" duration=%d ]\n",
+        ff_dlog(afq->avctx, "  [ pts=%9"PRId64" duration=%d ]\n",
                 f->pts, f->duration);
         f = f->next;
     }

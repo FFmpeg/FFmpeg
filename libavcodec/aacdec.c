@@ -862,10 +862,10 @@ static int decode_audio_specific_config(AACContext *ac,
     GetBitContext gb;
     int i, ret;
 
-    av_dlog(avctx, "extradata size %d\n", avctx->extradata_size);
+    ff_dlog(avctx, "extradata size %d\n", avctx->extradata_size);
     for (i = 0; i < avctx->extradata_size; i++)
-        av_dlog(avctx, "%02x ", avctx->extradata[i]);
-    av_dlog(avctx, "\n");
+        ff_dlog(avctx, "%02x ", avctx->extradata[i]);
+    ff_dlog(avctx, "\n");
 
     if ((ret = init_get_bits(&gb, data, bit_size)) < 0)
         return ret;
@@ -912,7 +912,7 @@ static int decode_audio_specific_config(AACContext *ac,
         return AVERROR(ENOSYS);
     }
 
-    av_dlog(avctx,
+    ff_dlog(avctx,
             "AOT %d chan config %d sampling index %d (%d) SBR %d PS %d\n",
             m4ac->object_type, m4ac->chan_config, m4ac->sampling_index,
             m4ac->sample_rate, m4ac->sbr,

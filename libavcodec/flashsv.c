@@ -347,7 +347,7 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
             return err;
     }
 
-    av_dlog(avctx, "image: %dx%d block: %dx%d num: %dx%d part: %dx%d\n",
+    ff_dlog(avctx, "image: %dx%d block: %dx%d num: %dx%d part: %dx%d\n",
             s->image_width, s->image_height, s->block_width, s->block_height,
             h_blocks, v_blocks, h_part, v_part);
 

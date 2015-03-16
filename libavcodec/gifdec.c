@@ -74,7 +74,7 @@ static int gif_read_image(GifState *s, AVFrame *frame)
     has_local_palette = flags & 0x80;
     bits_per_pixel = (flags & 0x07) + 1;
 
-    av_dlog(s->avctx, "gif: image x=%d y=%d w=%d h=%d\n", left, top, width, height);
+    ff_dlog(s->avctx, "gif: image x=%d y=%d w=%d h=%d\n", left, top, width, height);
 
     if (has_local_palette) {
         bytestream2_get_buffer(&s->gb, s->local_palette, 3 * (1 << bits_per_pixel));
@@ -159,7 +159,7 @@ static int gif_read_extension(GifState *s)
     ext_code = bytestream2_get_byte(&s->gb);
     ext_len  = bytestream2_get_byte(&s->gb);
 
-    av_dlog(s->avctx, "gif: ext_code=0x%x len=%d\n", ext_code, ext_len);
+    ff_dlog(s->avctx, "gif: ext_code=0x%x len=%d\n", ext_code, ext_len);
 
     switch(ext_code) {
     case 0xf9:
@@ -175,7 +175,7 @@ static int gif_read_extension(GifState *s)
             s->transparent_color_index = -1;
         s->gce_disposal = (gce_flags >> 2) & 0x7;
 
-        av_dlog(s->avctx, "gif: gce_flags=%x delay=%d tcolor=%d disposal=%d\n",
+        ff_dlog(s->avctx, "gif: gce_flags=%x delay=%d tcolor=%d disposal=%d\n",
                gce_flags, s->gce_delay,
                s->transparent_color_index, s->gce_disposal);
 
@@ -190,7 +190,7 @@ static int gif_read_extension(GifState *s)
             bytestream2_get_byte(&s->gb);
         ext_len = bytestream2_get_byte(&s->gb);
 
-        av_dlog(s->avctx, "gif: ext_len1=%d\n", ext_len);
+        ff_dlog(s->avctx, "gif: ext_len1=%d\n", ext_len);
     }
     return 0;
 }
@@ -227,7 +227,7 @@ static int gif_read_header1(GifState *s)
     s->background_color_index = bytestream2_get_byte(&s->gb);
     bytestream2_get_byte(&s->gb);                /* ignored */
 
-    av_dlog(s->avctx, "gif: screen_w=%d screen_h=%d bpp=%d global_palette=%d\n",
+    ff_dlog(s->avctx, "gif: screen_w=%d screen_h=%d bpp=%d global_palette=%d\n",
            s->screen_width, s->screen_height, s->bits_per_pixel,
            has_global_palette);
 
@@ -246,7 +246,7 @@ static int gif_parse_next_image(GifState *s, AVFrame *frame)
         int code = bytestream2_get_byte(&s->gb);
         int ret;
 
-        av_dlog(s->avctx, "gif: code=%02x '%c'\n", code, code);
+        ff_dlog(s->avctx, "gif: code=%02x '%c'\n", code, code);
 
         switch (code) {
         case ',':

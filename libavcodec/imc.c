@@ -783,7 +783,7 @@ static int imc_get_coeffs(IMCContext *q, IMCChannel *chctx)
                 cw = 0;
 
                 if (get_bits_count(&q->gb) + cw_len > 512) {
-                    av_dlog(NULL, "Band %i coeff %i cw_len %i\n", i, j, cw_len);
+                    ff_dlog(NULL, "Band %i coeff %i cw_len %i\n", i, j, cw_len);
                     return AVERROR_INVALIDDATA;
                 }
 

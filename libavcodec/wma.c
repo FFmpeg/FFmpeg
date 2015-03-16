@@ -22,6 +22,7 @@
 #include "libavutil/attributes.h"
 
 #include "avcodec.h"
+#include "internal.h"
 #include "sinewin.h"
 #include "wma.h"
 #include "wma_common.h"
@@ -183,13 +184,13 @@ av_cold int ff_wma_init(AVCodecContext *avctx, int flags2)
         else
             high_freq = high_freq * 0.5;
     }
-    av_dlog(s->avctx, "flags2=0x%x\n", flags2);
-    av_dlog(s->avctx, "version=%d channels=%d sample_rate=%d bitrate=%d block_align=%d\n",
+    ff_dlog(s->avctx, "flags2=0x%x\n", flags2);
+    ff_dlog(s->avctx, "version=%d channels=%d sample_rate=%d bitrate=%d block_align=%d\n",
             s->version, avctx->channels, avctx->sample_rate, avctx->bit_rate,
             avctx->block_align);
-    av_dlog(s->avctx, "bps=%f bps1=%f high_freq=%f bitoffset=%d\n",
+    ff_dlog(s->avctx, "bps=%f bps1=%f high_freq=%f bitoffset=%d\n",
             bps, bps1, high_freq, s->byte_offset_bits);
-    av_dlog(s->avctx, "use_noise_coding=%d use_exp_vlc=%d nb_block_sizes=%d\n",
+    ff_dlog(s->avctx, "use_noise_coding=%d use_exp_vlc=%d nb_block_sizes=%d\n",
             s->use_noise_coding, s->use_exp_vlc, s->nb_block_sizes);
 
     /* compute the scale factor band sizes for each MDCT block size */
@@ -279,14 +280,14 @@ av_cold int ff_wma_init(AVCodecContext *avctx, int flags2)
             }
             s->exponent_high_sizes[k] = j;
 #if 0
-            tprintf(s->avctx, "%5d: coefs_end=%d high_band_start=%d nb_high_bands=%d: ",
+            ff_tlog(s->avctx, "%5d: coefs_end=%d high_band_start=%d nb_high_bands=%d: ",
                     s->frame_len >> k,
                     s->coefs_end[k],
                     s->high_band_start[k],
                     s->exponent_high_sizes[k]);
             for (j = 0; j < s->exponent_high_sizes[k]; j++)
-                tprintf(s->avctx, " %d", s->exponent_high_bands[k][j]);
-            tprintf(s->avctx, "\n");
+                ff_tlog(s->avctx, " %d", s->exponent_high_bands[k][j]);
+            ff_tlog(s->avctx, "\n");
 #endif /* 0 */
         }
     }
@@ -295,12 +296,12 @@ av_cold int ff_wma_init(AVCodecContext *avctx, int flags2)
     {
         int i, j;
         for (i = 0; i < s->nb_block_sizes; i++) {
-            tprintf(s->avctx, "%5d: n=%2d:",
+            ff_tlog(s->avctx, "%5d: n=%2d:",
                     s->frame_len >> i,
                     s->exponent_sizes[i]);
             for (j = 0; j < s->exponent_sizes[i]; j++)
-                tprintf(s->avctx, " %d", s->exponent_bands[i][j]);
-            tprintf(s->avctx, "\n");
+                ff_tlog(s->avctx, " %d", s->exponent_bands[i][j]);
+            ff_tlog(s->avctx, "\n");
         }
     }
 #endif /* TRACE */

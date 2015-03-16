@@ -437,7 +437,7 @@ static int decode_frame(AVCodecContext *avctx,
         if (length > 0x7fffffff)
             goto fail;
         tag = bytestream2_get_le32(&s->gb);
-        av_dlog(avctx, "png: tag=%c%c%c%c length=%u\n",
+        ff_dlog(avctx, "png: tag=%c%c%c%c length=%u\n",
                 (tag & 0xff),
                 ((tag >> 8) & 0xff),
                 ((tag >> 16) & 0xff),
@@ -459,7 +459,7 @@ static int decode_frame(AVCodecContext *avctx,
             s->interlace_type   = bytestream2_get_byte(&s->gb);
             bytestream2_skip(&s->gb, 4); /* crc */
             s->state |= PNG_IHDR;
-            av_dlog(avctx, "width=%d height=%d depth=%d color_type=%d "
+            ff_dlog(avctx, "width=%d height=%d depth=%d color_type=%d "
                            "compression_type=%d filter_type=%d interlace_type=%d\n",
                     s->width, s->height, s->bit_depth, s->color_type,
                     s->compression_type, s->filter_type, s->interlace_type);
@@ -526,7 +526,7 @@ static int decode_frame(AVCodecContext *avctx,
                                                             s->width);
                     s->crow_size = s->pass_row_size + 1;
                 }
-                av_dlog(avctx, "row_size=%d crow_size =%d\n",
+                ff_dlog(avctx, "row_size=%d crow_size =%d\n",
                         s->row_size, s->crow_size);
                 s->image_buf      = p->data[0];
                 s->image_linesize = p->linesize[0];

@@ -889,7 +889,7 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
                 FFSWAP(uint8_t *, v->mv_f_next[1], v->mv_f[1]);
             }
         }
-        av_dlog(s->avctx, "Consumed %i/%i bits\n",
+        ff_dlog(s->avctx, "Consumed %i/%i bits\n",
                 get_bits_count(&s->gb), s->gb.size_in_bits);
 //  if (get_bits_count(&s->gb) > buf_size * 8)
 //      return -1;

@@ -235,7 +235,7 @@ static int decode_format80(GetByteContext *gb, int src_size,
     start = bytestream2_tell(gb);
     while (bytestream2_tell(gb) - start < src_size) {
         opcode = bytestream2_get_byte(gb);
-        av_dlog(NULL, "      opcode %02X: ", opcode);
+        ff_dlog(NULL, "      opcode %02X: ", opcode);
 
         /* 0x80 means that frame is finished */
         if (opcode == 0x80)
@@ -251,7 +251,7 @@ static int decode_format80(GetByteContext *gb, int src_size,
 
             count   = bytestream2_get_le16(gb);
             src_pos = bytestream2_get_le16(gb);
-            av_dlog(NULL, "(1) copy %X bytes from absolute pos %X\n", count, src_pos);
+            ff_dlog(NULL, "(1) copy %X bytes from absolute pos %X\n", count, src_pos);
             CHECK_COUNT();
             CHECK_COPY(src_pos);
             for (i = 0; i < count; i++)
@@ -262,7 +262,7 @@ static int decode_format80(GetByteContext *gb, int src_size,
 
             count = bytestream2_get_le16(gb);
             color = bytestream2_get_byte(gb);
-            av_dlog(NULL, "(2) set %X bytes to %02X\n", count, color);
+            ff_dlog(NULL, "(2) set %X bytes to %02X\n", count, color);
             CHECK_COUNT();
             memset(&dest[dest_index], color, count);
             dest_index += count;
@@ -271,7 +271,7 @@ static int decode_format80(GetByteContext *gb, int src_size,
 
             count = (opcode & 0x3F) + 3;
             src_pos = bytestream2_get_le16(gb);
-            av_dlog(NULL, "(3) copy %X bytes from absolute pos %X\n", count, src_pos);
+            ff_dlog(NULL, "(3) copy %X bytes from absolute pos %X\n", count, src_pos);
             CHECK_COUNT();
             CHECK_COPY(src_pos);
             for (i = 0; i < count; i++)
@@ -281,7 +281,7 @@ static int decode_format80(GetByteContext *gb, int src_size,
         } else if (opcode > 0x80) {
 
             count = opcode & 0x3F;
-            av_dlog(NULL, "(4) copy %X bytes from source to dest\n", count);
+            ff_dlog(NULL, "(4) copy %X bytes from source to dest\n", count);
             CHECK_COUNT();
             bytestream2_get_buffer(gb, &dest[dest_index], count);
             dest_index += count;
@@ -290,7 +290,7 @@ static int decode_format80(GetByteContext *gb, int src_size,
 
             count = ((opcode & 0x70) >> 4) + 3;
             src_pos = bytestream2_get_byte(gb) | ((opcode & 0x0F) << 8);
-            av_dlog(NULL, "(5) copy %X bytes from relpos %X\n", count, src_pos);
+            ff_dlog(NULL, "(5) copy %X bytes from relpos %X\n", count, src_pos);
             CHECK_COUNT();
             CHECK_COPY(dest_index - src_pos);
             for (i = 0; i < count; i++)

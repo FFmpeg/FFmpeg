@@ -71,7 +71,7 @@ static int pcm_dvd_parse_header(AVCodecContext *avctx, const uint8_t *header)
         return 0;
 
     if (avctx->debug & FF_DEBUG_PICT_INFO)
-        av_dlog(avctx, "pcm_dvd_parse_header: header = %02x%02x%02x\n",
+        ff_dlog(avctx, "pcm_dvd_parse_header: header = %02x%02x%02x\n",
                 header[0], header[1], header[2]);
     /*
      * header[0] emphasis (1), muse(1), reserved(1), frame number(5)
@@ -135,7 +135,7 @@ static int pcm_dvd_parse_header(AVCodecContext *avctx, const uint8_t *header)
     }
 
     if (avctx->debug & FF_DEBUG_PICT_INFO)
-        av_dlog(avctx,
+        ff_dlog(avctx,
                 "pcm_dvd_parse_header: %d channels, %d bits per sample, %d Hz, %d bit/s\n",
                 avctx->channels, avctx->bits_per_coded_sample,
                 avctx->sample_rate, avctx->bit_rate);

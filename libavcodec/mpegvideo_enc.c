@@ -993,7 +993,7 @@ static int load_input_picture(MpegEncContext *s, const AVFrame *pic_arg)
         if ((s->width & 15) || (s->height & 15))
             direct = 0;
 
-        av_dlog(s->avctx, "%d %d %td %td\n", pic_arg->linesize[0],
+        ff_dlog(s->avctx, "%d %d %td %td\n", pic_arg->linesize[0],
                 pic_arg->linesize[1], s->linesize, s->uvlinesize);
 
         i = ff_find_unused_picture(s, direct);
@@ -3139,7 +3139,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
                 if(CONFIG_H263_ENCODER && s->out_format == FMT_H263)
                     ff_h263_loop_filter(s);
             }
-            av_dlog(s->avctx, "MB %d %d bits\n",
+            ff_dlog(s->avctx, "MB %d %d bits\n",
                     s->mb_x + s->mb_y * s->mb_stride, put_bits_count(&s->pb));
         }
     }
@@ -3337,7 +3337,7 @@ static int encode_picture(MpegEncContext *s, int picture_number)
         s->pict_type= AV_PICTURE_TYPE_I;
         for(i=0; i<s->mb_stride*s->mb_height; i++)
             s->mb_type[i]= CANDIDATE_MB_TYPE_INTRA;
-        av_dlog(s, "Scene change detected, encoding as I Frame %d %d\n",
+        ff_dlog(s, "Scene change detected, encoding as I Frame %d %d\n",
                 s->current_picture.mb_var_sum, s->current_picture.mc_mb_var_sum);
     }
 

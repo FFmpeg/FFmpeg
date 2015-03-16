@@ -401,7 +401,7 @@ static int dca_subframe_header(DCAContext *s, int base_channel, int block_index)
             }
 
             if (s->bitalloc[j][k] > 26) {
-                av_dlog(s->avctx, "bitalloc index [%i][%i] too big (%i)\n",
+                ff_dlog(s->avctx, "bitalloc index [%i][%i] too big (%i)\n",
                         j, k, s->bitalloc[j][k]);
                 return AVERROR_INVALIDDATA;
             }
@@ -1374,14 +1374,14 @@ FF_ENABLE_DEPRECATION_WARNINGS
                     s->downmix_coef[i][1] = ff_dca_default_coeffs[am][i][1];
                 }
             }
-            av_dlog(s->avctx, "Stereo downmix coeffs:\n");
+            ff_dlog(s->avctx, "Stereo downmix coeffs:\n");
             for (i = 0; i < num_core_channels + !!s->lfe; i++) {
-                av_dlog(s->avctx, "L, input channel %d = %f\n", i,
+                ff_dlog(s->avctx, "L, input channel %d = %f\n", i,
                         s->downmix_coef[i][0]);
-                av_dlog(s->avctx, "R, input channel %d = %f\n", i,
+                ff_dlog(s->avctx, "R, input channel %d = %f\n", i,
                         s->downmix_coef[i][1]);
             }
-            av_dlog(s->avctx, "\n");
+            ff_dlog(s->avctx, "\n");
         }
     } else {
         av_log(avctx, AV_LOG_ERROR, "Non standard configuration %d !\n", s->amode);

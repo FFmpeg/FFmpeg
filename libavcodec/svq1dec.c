@@ -192,7 +192,7 @@ static int svq1_decode_block_intra(GetBitContext *bitbuf, uint8_t *pixels,
         }
 
         if ((stages > 0 && level >= 4) || stages < 0) {
-            av_dlog(NULL,
+            ff_dlog(NULL,
                     "Error (svq1_decode_block_intra): invalid vector: stages=%i level=%i\n",
                     stages, level);
             return AVERROR_INVALIDDATA;  /* invalid vector */
@@ -254,7 +254,7 @@ static int svq1_decode_block_non_intra(GetBitContext *bitbuf, uint8_t *pixels,
             continue;           /* skip vector */
 
         if ((stages > 0 && level >= 4) || stages < 0) {
-            av_dlog(NULL,
+            ff_dlog(NULL,
                     "Error (svq1_decode_block_non_intra): invalid vector: stages=%i level=%i\n",
                     stages, level);
             return AVERROR_INVALIDDATA;  /* invalid vector */
@@ -480,7 +480,7 @@ static int svq1_decode_delta_block(AVCodecContext *avctx, HpelDSPContext *hdsp,
                                          pitch, motion, x, y, width, height);
 
         if (result != 0) {
-            av_dlog(avctx, "Error in svq1_motion_inter_block %i\n", result);
+            ff_dlog(avctx, "Error in svq1_motion_inter_block %i\n", result);
             break;
         }
         result = svq1_decode_block_non_intra(bitbuf, current, pitch);
@@ -491,7 +491,7 @@ static int svq1_decode_delta_block(AVCodecContext *avctx, HpelDSPContext *hdsp,
                                             pitch, motion, x, y, width, height);
 
         if (result != 0) {
-            av_dlog(avctx, "Error in svq1_motion_inter_4v_block %i\n", result);
+            ff_dlog(avctx, "Error in svq1_motion_inter_4v_block %i\n", result);
             break;
         }
         result = svq1_decode_block_non_intra(bitbuf, current, pitch);
@@ -552,7 +552,7 @@ static int svq1_decode_frame_header(AVCodecContext *avctx, AVFrame *frame)
                                            bitbuf->size_in_bits >> 3,
                                            csum);
 
-            av_dlog(avctx, "%s checksum (%02x) for packet data\n",
+            ff_dlog(avctx, "%s checksum (%02x) for packet data\n",
                     (csum == 0) ? "correct" : "incorrect", csum);
         }
 
@@ -657,7 +657,7 @@ static int svq1_decode_frame(AVCodecContext *avctx, void *data,
     result = svq1_decode_frame_header(avctx, cur);
 
     if (result != 0) {
-        av_dlog(avctx, "Error in svq1_decode_frame_header %i\n", result);
+        ff_dlog(avctx, "Error in svq1_decode_frame_header %i\n", result);
         return result;
     }
 
@@ -728,7 +728,7 @@ static int svq1_decode_frame(AVCodecContext *avctx, void *data,
                                                      previous, linesize,
                                                      pmv, x, y, width, height);
                     if (result != 0) {
-                        av_dlog(avctx,
+                        ff_dlog(avctx,
                                 "Error in svq1_decode_delta_block %i\n",
                                 result);
                         goto err;

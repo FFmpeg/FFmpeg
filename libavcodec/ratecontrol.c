@@ -27,6 +27,7 @@
 
 #include "libavutil/attributes.h"
 #include "avcodec.h"
+#include "internal.h"
 #include "ratecontrol.h"
 #include "mpegutils.h"
 #include "mpegvideo.h"
@@ -306,7 +307,7 @@ int ff_vbv_update(MpegEncContext *s, int frame_size)
     const double min_rate   = s->avctx->rc_min_rate / fps;
     const double max_rate   = s->avctx->rc_max_rate / fps;
 
-    av_dlog(s, "%d %f %d %f %f\n",
+    ff_dlog(s, "%d %f %d %f %f\n",
             buffer_size, rcc->buffer_index, frame_size, min_rate, max_rate);
 
     if (buffer_size) {
@@ -550,7 +551,7 @@ static double modify_qscale(MpegEncContext *s, RateControlEntry *rce,
             }
         }
     }
-    av_dlog(s, "q:%f max:%f min:%f size:%f index:%f agr:%f\n",
+    ff_dlog(s, "q:%f max:%f min:%f size:%f index:%f agr:%f\n",
             q, max_rate, min_rate, buffer_size, rcc->buffer_index,
             s->rc_buffer_aggressivity);
     if (s->rc_qsquish == 0.0 || qmin == qmax) {
@@ -796,7 +797,7 @@ float ff_rate_estimate_qscale(MpegEncContext *s, int dry_run)
             assert(pict_type == rce->new_pict_type);
 
         q = rce->new_qscale / br_compensation;
-        av_dlog(s, "%f %f %f last:%d var:%d type:%d//\n", q, rce->new_qscale,
+        ff_dlog(s, "%f %f %f last:%d var:%d type:%d//\n", q, rce->new_qscale,
                 br_compensation, s->frame_bits, var, pict_type);
     } else {
         rce->pict_type     =
@@ -991,7 +992,7 @@ static int init_pass2(MpegEncContext *s)
             expected_bits     += bits;
         }
 
-        av_dlog(s->avctx,
+        ff_dlog(s->avctx,
                 "expected_bits: %f all_available_bits: %d rate_factor: %f\n",
                 expected_bits, (int)all_available_bits, rate_factor);
         if (expected_bits > all_available_bits) {
@@ -1005,7 +1006,7 @@ static int init_pass2(MpegEncContext *s)
     /* check bitrate calculations and print info */
     qscale_sum = 0.0;
     for (i = 0; i < rcc->num_entries; i++) {
-        av_dlog(s, "[lavc rc] entry[%d].new_qscale = %.3f  qp = %.3f\n",
+        ff_dlog(s, "[lavc rc] entry[%d].new_qscale = %.3f  qp = %.3f\n",
                 i,
                 rcc->entry[i].new_qscale,
                 rcc->entry[i].new_qscale / FF_QP2LAMBDA);

@@ -160,7 +160,7 @@ static inline void put_vlc_symbol(PutBitContext *pb, VlcState *const state,
     code = v ^ ((2 * state->drift + state->count) >> 31);
 #endif
 
-    av_dlog(NULL, "v:%d/%d bias:%d error:%d drift:%d count:%d k:%d\n", v, code,
+    ff_dlog(NULL, "v:%d/%d bias:%d error:%d drift:%d count:%d k:%d\n", v, code,
             state->bias, state->error_sum, state->drift, state->count, k);
     set_sr_golomb(pb, code, k, 12, bits);
 
@@ -234,7 +234,7 @@ static av_always_inline int encode_line(FFV1Context *s, int w,
                 }
             }
 
-            av_dlog(s->avctx, "count:%d index:%d, mode:%d, x:%d pos:%d\n",
+            ff_dlog(s->avctx, "count:%d index:%d, mode:%d, x:%d pos:%d\n",
                     run_count, run_index, run_mode, x,
                     (int)put_bits_count(&s->pb));
 

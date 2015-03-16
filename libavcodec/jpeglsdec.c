@@ -77,7 +77,7 @@ int ff_jpegls_decode_lse(MJpegDecodeContext *s)
         av_log(s->avctx, AV_LOG_ERROR, "invalid id %d\n", id);
         return AVERROR_INVALIDDATA;
     }
-    av_dlog(s->avctx, "ID=%i, T=%i,%i,%i\n", id, s->t1, s->t2, s->t3);
+    ff_dlog(s->avctx, "ID=%i, T=%i,%i,%i\n", id, s->t1, s->t2, s->t3);
 
     return 0;
 }
@@ -298,13 +298,13 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near,
     else
         shift = point_transform + (16 - s->bits);
 
-    av_dlog(s->avctx,
+    ff_dlog(s->avctx,
             "JPEG-LS params: %ix%i NEAR=%i MV=%i T(%i,%i,%i) "
             "RESET=%i, LIMIT=%i, qbpp=%i, RANGE=%i\n",
             s->width, s->height, state->near, state->maxval,
             state->T1, state->T2, state->T3,
             state->reset, state->limit, state->qbpp, state->range);
-    av_dlog(s->avctx, "JPEG params: ILV=%i Pt=%i BPP=%i, scan = %i\n",
+    ff_dlog(s->avctx, "JPEG params: ILV=%i Pt=%i BPP=%i, scan = %i\n",
             ilv, point_transform, s->bits, s->cur_scan);
     if (ilv == 0) { /* separate planes */
         if (s->cur_scan > s->nb_components) {
