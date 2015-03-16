@@ -851,6 +851,9 @@
     <ClCompile Include="..\libavcodec\dca_exss.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\dca_xll.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\synth_filter.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
