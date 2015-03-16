@@ -268,7 +268,7 @@ static int X264_frame(AVCodecContext *ctx, AVPacket *pkt, const AVFrame *frame,
     }
     do {
         if (x264_encoder_encode(x4->enc, &nal, &nnal, frame? &x4->pic: NULL, &pic_out) < 0)
-            return AVERROR_UNKNOWN;
+            return AVERROR_EXTERNAL;
 
         ret = encode_nals(ctx, pkt, nal, nnal);
         if (ret < 0)
@@ -687,7 +687,7 @@ static av_cold int X264_init(AVCodecContext *avctx)
 
     x4->enc = x264_encoder_open(&x4->params);
     if (!x4->enc)
-        return AVERROR_UNKNOWN;
+        return AVERROR_EXTERNAL;
 
     avctx->coded_frame = av_frame_alloc();
     if (!avctx->coded_frame)
