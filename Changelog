@@ -1,6 +1,31 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 2.6.1:
+- avformat/mov: Disallow ".." in dref unless use_absolute_path is set
+- avfilter/palettegen: make sure at least one frame was sent to the filter
+- avformat/mov: Check for string truncation in mov_open_dref()
+- ac3_fixed: fix out-of-bound read
+- mips/asmdefs: use _ABI64 as defined by gcc
+- hevc: delay ff_thread_finish_setup for hwaccel
+- avcodec/012v: Check dimensions more completely
+- asfenc: fix leaking asf->index_ptr on error
+- roqvideoenc: set enc->avctx in roq_encode_init
+- avcodec/options_table: remove extradata_size from the AVOptions table
+- ffmdec: limit the backward seek to the last resync position
+- Add dependencies to configure file for vf_fftfilt
+- ffmdec: make sure the time base is valid
+- ffmdec: fix infinite loop at EOF
+- ffmdec: initialize f_cprv, f_stvi and f_stau
+- arm: Suppress tags about used cpu arch and extensions
+- mxfdec: Fix the error handling for when strftime fails
+- avcodec/opusdec: Fix delayed sample value
+- avcodec/opusdec: Clear out pointers per packet
+- avcodec/utils: Align YUV411 by as much as the other YUV variants
+- lavc/hevcdsp: Fix compilation for arm with --disable-neon.
+- vp9: fix segmentation map retention with threading enabled.
+- Revert "avutil/opencl: is_compiled flag not being cleared in av_opencl_uninit"
+
 version 2.6:
 - nvenc encoder
 - 10bit spp filter
