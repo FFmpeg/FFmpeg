@@ -145,7 +145,7 @@ void av_image_copy(uint8_t *dst_data[4], int dst_linesizes[4],
  */
 int av_image_fill_arrays(uint8_t *dst_data[4], int dst_linesize[4],
                          const uint8_t *src,
-                         enum PixelFormat pix_fmt, int width, int height, int align);
+                         enum AVPixelFormat pix_fmt, int width, int height, int align);
 
 /**
  * Return the size in bytes of the amount of data required to store an
@@ -153,7 +153,7 @@ int av_image_fill_arrays(uint8_t *dst_data[4], int dst_linesize[4],
  *
  * @param[in] align the assumed linesize alignment
  */
-int av_image_get_buffer_size(enum PixelFormat pix_fmt, int width, int height, int align);
+int av_image_get_buffer_size(enum AVPixelFormat pix_fmt, int width, int height, int align);
 
 /**
  * Copy image data from an image into a buffer.
@@ -174,7 +174,7 @@ int av_image_get_buffer_size(enum PixelFormat pix_fmt, int width, int height, in
  */
 int av_image_copy_to_buffer(uint8_t *dst, int dst_size,
                             const uint8_t * const src_data[4], const int src_linesize[4],
-                            enum PixelFormat pix_fmt, int width, int height, int align);
+                            enum AVPixelFormat pix_fmt, int width, int height, int align);
 
 /**
  * Check if the given dimension of an image is valid, meaning that all

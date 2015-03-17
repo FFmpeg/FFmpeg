@@ -228,7 +228,7 @@ AVCodec ff_libopenh264_encoder = {
     .encode2        = svc_encode_frame,
     .close          = svc_encode_close,
     .capabilities   = CODEC_CAP_AUTO_THREADS,
-    .pix_fmts       = (const enum PixelFormat[]){ AV_PIX_FMT_YUV420P,
-                                                  AV_PIX_FMT_NONE },
+    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P,
+                                                    AV_PIX_FMT_NONE },
     .priv_class     = &class,
 };
