@@ -86,13 +86,13 @@ typedef struct {
     /* options */
     int order;
     int ppsrc;
-    enum matching_mode mode;
+    int mode;                       ///< matching_mode
     int field;
     int mchroma;
     int y0, y1;
     int64_t scthresh;
     double scthresh_flt;
-    enum comb_matching_mode combmatch;
+    int combmatch;                  ///< comb_matching_mode
     int combdbg;
     int cthresh;
     int chroma;
