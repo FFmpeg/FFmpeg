@@ -448,7 +448,6 @@ void avcodec_register_all(void)
     REGISTER_ENCODER(LIBMP3LAME,        libmp3lame);
     REGISTER_ENCDEC (LIBOPENCORE_AMRNB, libopencore_amrnb);
     REGISTER_DECODER(LIBOPENCORE_AMRWB, libopencore_amrwb);
-    REGISTER_ENCODER(LIBOPENH264,       libopenh264);
     REGISTER_ENCDEC (LIBOPENJPEG,       libopenjpeg);
     REGISTER_ENCDEC (LIBOPUS,           libopus);
     REGISTER_ENCDEC (LIBSCHROEDINGER,   libschroedinger);
@@ -466,6 +465,10 @@ void avcodec_register_all(void)
     REGISTER_ENCODER(LIBX265,           libx265);
     REGISTER_ENCODER(LIBXAVS,           libxavs);
     REGISTER_ENCODER(LIBXVID,           libxvid);
+
+    /* external libraries, that shouldn't be used by default if one of the
+     * above is available */
+    REGISTER_ENCODER(LIBOPENH264,       libopenh264);
 
     /* parsers */
     REGISTER_PARSER(AAC,                aac);
