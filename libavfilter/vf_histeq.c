@@ -57,7 +57,7 @@ typedef struct {
     const AVClass *class;
     float strength;
     float intensity;
-    enum HisteqAntibanding antibanding;
+    int antibanding;               ///< HisteqAntibanding
     int in_histogram [256];        ///< input histogram
     int out_histogram[256];        ///< output histogram
     int LUT[256];                  ///< lookup table derived from histogram[]
