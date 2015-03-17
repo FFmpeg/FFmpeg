@@ -775,11 +775,16 @@ static int avi_read_header(AVFormatContext *s)
                     st->codec->codec_tag  = tag1;
                     st->codec->codec_id   = ff_codec_get_id(ff_codec_bmp_tags,
                                                             tag1);
+                    /* If codec is not found yet, try with the mov tags. */
                     if (!st->codec->codec_id) {
-                        st->codec->codec_id = ff_codec_get_id(ff_codec_movvideo_tags,
-                                                              tag1);
+                        char tag_buf[32];
+                        av_get_codec_tag_string(tag_buf, sizeof(tag_buf), tag1);
+                        st->codec->codec_id =
+                            ff_codec_get_id(ff_codec_movvideo_tags, tag1);
                         if (st->codec->codec_id)
-                           av_log(s, AV_LOG_WARNING, "mov tag found in avi\n");
+                           av_log(s, AV_LOG_WARNING,
+                                  "mov tag found in avi (fourcc %s)\n",
+                                  tag_buf);
                     }
                     /* This is needed to get the pict type which is necessary
                      * for generating correct pts. */
