@@ -77,6 +77,8 @@ typedef struct HTTPContext {
     int is_akamai;
     int is_mediagateway;
     char *cookies;          ///< holds newline (\n) delimited Set-Cookie header field values (without the "Set-Cookie: " field name)
+    /* A dictionary containing cookies keyed by cookie name */
+    AVDictionary *cookie_dict;
     int icy;
     /* how much data was read since the last ICY metadata packet */
     int icy_data_read;
@@ -464,6 +466,43 @@ static int parse_icy(HTTPContext *s, const char *tag, const char *p)
     return 0;
 }
 
+static int parse_cookie(HTTPContext *s, const char *p, AVDictionary **cookies)
+{
+    char *eql, *name;
+
+    // duplicate the cookie name (dict will dupe the value)
+    if (!(eql = strchr(p, '='))) return AVERROR(EINVAL);
+    if (!(name = av_strndup(p, eql - p))) return AVERROR(ENOMEM);
+
+    // add the cookie to the dictionary
+    av_dict_set(cookies, name, eql, AV_DICT_DONT_STRDUP_KEY);
+
+    return 0;
+}
+
+static int cookie_string(AVDictionary *dict, char **cookies)
+{
+    AVDictionaryEntry *e = NULL;
+    int len = 1;
+
+    // determine how much memory is needed for the cookies string
+    while (e = av_dict_get(dict, "", e, AV_DICT_IGNORE_SUFFIX))
+        len += strlen(e->key) + strlen(e->value) + 1;
+
+    // reallocate the cookies
+    e = NULL;
+    if (*cookies) av_free(*cookies);
+    *cookies = av_malloc(len);
+    if (!cookies) return AVERROR(ENOMEM);
+    *cookies[0] = '\0';
+
+    // write out the cookies
+    while (e = av_dict_get(dict, "", e, AV_DICT_IGNORE_SUFFIX))
+        av_strlcatf(*cookies, len, "%s%s\n", e->key, e->value);
+
+    return 0;
+}
+
 static int process_line(URLContext *h, char *line, int line_count,
                         int *new_location)
 {
@@ -535,19 +574,8 @@ static int process_line(URLContext *h, char *line, int line_count,
             av_free(s->mime_type);
             s->mime_type = av_strdup(p);
         } else if (!av_strcasecmp(tag, "Set-Cookie")) {
-            if (!s->cookies) {
-                if (!(s->cookies = av_strdup(p)))
-                    return AVERROR(ENOMEM);
-            } else {
-                char *tmp = s->cookies;
-                size_t str_size = strlen(tmp) + strlen(p) + 2;
-                if (!(s->cookies = av_malloc(str_size))) {
-                    s->cookies = tmp;
-                    return AVERROR(ENOMEM);
-                }
-                snprintf(s->cookies, str_size, "%s\n%s", tmp, p);
-                av_free(tmp);
-            }
+            if (parse_cookie(s, p, &s->cookie_dict))
+                av_log(h, AV_LOG_WARNING, "Unable to parse '%s'\n", p);
         } else if (!av_strcasecmp(tag, "Icy-MetaInt")) {
             s->icy_metaint = strtoll(p, NULL, 10);
         } else if (!av_strncasecmp(tag, "Icy-", 4)) {
@@ -578,11 +606,18 @@ static int get_cookies(HTTPContext *s, char **cookies, const char *path,
 
     if (!set_cookies) return AVERROR(EINVAL);
 
+    // destroy any cookies in the dictionary.
+    av_dict_free(&s->cookie_dict);
+
     *cookies = NULL;
     while ((cookie = av_strtok(set_cookies, "\n", &next))) {
         int domain_offset = 0;
         char *param, *next_param, *cdomain = NULL, *cpath = NULL, *cvalue = NULL;
         set_cookies = NULL;
+
+        // store the cookie in a dict in case it is updated in the response
+        if (parse_cookie(s, cookie, &s->cookie_dict))
+            av_log(s, AV_LOG_WARNING, "Unable to parse '%s'\n", cookie);
 
         while ((param = av_strtok(cookie, "; ", &next_param))) {
             if (cookie) {
@@ -690,6 +725,10 @@ static int http_read_header(URLContext *h, int *new_location)
 
     if (s->seekable == -1 && s->is_mediagateway && s->filesize == 2000000000)
         h->is_streamed = 1; /* we can in fact _not_ seek */
+
+    // add any new cookies into the existing cookie string
+    cookie_string(s->cookie_dict, &s->cookies);
+    av_dict_free(&s->cookie_dict);
 
     return err;
 }
