@@ -728,7 +728,8 @@ static int read_sbr_grid(AACContext *ac, SpectralBandReplication *sbr,
         break;
     }
 
-    if (bs_pointer < 0 || bs_pointer > ch_data->bs_num_env + 1) {
+    av_assert0(bs_pointer >= 0);
+    if (bs_pointer > ch_data->bs_num_env + 1) {
         av_log(ac->avctx, AV_LOG_ERROR,
                "Invalid bitstream, bs_pointer points to a middle noise border outside the time borders table: %d\n",
                bs_pointer);
