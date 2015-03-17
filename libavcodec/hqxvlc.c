@@ -2138,10 +2138,6 @@ const HQXAC ff_hqx_ac[NUM_HQX_AC] = {
     { 11, 6, ac128_lut },
 };
 
-static const int table_off[] = {
-    0, 32, 928, 2272, 4640,
-};
-
 #define INIT_DC_TABLE(idx, name)                                              \
     do {                                                                      \
         ret = init_vlc(&ctx->dc_vlc[idx], HQX_DC_VLC_BITS,                    \
