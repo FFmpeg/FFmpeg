@@ -4579,7 +4579,6 @@ disabled  zlib || check_lib   zlib.h      zlibVersion -lz   || disable  zlib
 disabled bzlib || check_lib2 bzlib.h BZ2_bzlibVersion -lbz2 || disable bzlib
 
 check_lib math.h sin -lm && LIBM="-lm"
-enabled vaapi && require vaapi va/va.h vaInitialize -lva
 
 atan2f_args=2
 ldexpf_args=2
@@ -4774,6 +4773,8 @@ if enabled libxcb; then
     add_cflags "$xcb_event_cflags $xcb_shm_cflags $xcb_xfixes_cflags"
     add_extralibs "$xcb_event_libs $xcb_shm_libs $xcb_xfixes_libs"
 fi
+
+enabled vaapi && require vaapi va/va.h vaInitialize -lva
 
 enabled vaapi &&
     check_code cc "va/va.h" "vaCreateSurfaces(0, 0, 0, 0, 0, 0, 0, 0)" ||
