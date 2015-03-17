@@ -3664,7 +3664,9 @@ static int mov_probe(AVProbeData *p)
                  AV_RB64(p->buf+offset + 8) == 0)) {
                 score = FFMAX(score, AVPROBE_SCORE_EXTENSION);
             } else if (tag == MKTAG('f','t','y','p') &&
-                       AV_RL32(p->buf + offset + 8) == MKTAG('j','p','2',' ')) {
+                       (   AV_RL32(p->buf + offset + 8) == MKTAG('j','p','2',' ')
+                        || AV_RL32(p->buf + offset + 8) == MKTAG('j','p','x',' ')
+                    )) {
                 score = FFMAX(score, 5);
             } else {
                 score = AVPROBE_SCORE_MAX;
