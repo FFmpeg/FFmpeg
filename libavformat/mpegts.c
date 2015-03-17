@@ -596,7 +596,7 @@ static inline int get16(const uint8_t **pp, const uint8_t *p_end)
     int c;
 
     p = *pp;
-    if ((p + 1) >= p_end)
+    if (1 >= p_end - p)
         return AVERROR_INVALIDDATA;
     c   = AV_RB16(p);
     p  += 2;
@@ -615,7 +615,7 @@ static char *getstr8(const uint8_t **pp, const uint8_t *p_end)
     len = get8(&p, p_end);
     if (len < 0)
         return NULL;
-    if ((p + len) > p_end)
+    if (len > p_end - p)
         return NULL;
     str = av_malloc(len + 1);
     if (!str)
@@ -2181,7 +2181,7 @@ static int handle_packet(MpegTSContext *ts, const uint8_t *packet)
         if (is_start) {
             /* pointer field present */
             len = *p++;
-            if (p + len > p_end)
+            if (len > p_end - p)
                 return 0;
             if (len && cc_ok) {
                 /* write remaining section bytes */

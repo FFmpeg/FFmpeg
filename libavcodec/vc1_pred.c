@@ -170,9 +170,9 @@ static av_always_inline int scaleforsame(VC1Context *v, int i, int n /* MV */,
     n >>= hpel;
     if (v->s.pict_type != AV_PICTURE_TYPE_B || v->second_field || !dir) {
         if (dim)
-            n = scaleforsame_y(v, i, n, dir) << hpel;
+            n = scaleforsame_y(v, i, n, dir) * (1 << hpel);
         else
-            n = scaleforsame_x(v, n, dir) << hpel;
+            n = scaleforsame_x(v, n, dir) * (1 << hpel);
         return n;
     }
     brfd      = FFMIN(v->brfd, 3);
@@ -202,7 +202,7 @@ static av_always_inline int scaleforopp(VC1Context *v, int n /* MV */,
         refdist = dir ? v->brfd : v->frfd;
     scaleopp = ff_vc1_field_mvpred_scales[dir ^ v->second_field][0][refdist];
 
-    n = (n * scaleopp >> 8) << hpel;
+    n = (n * scaleopp >> 8) * (1 << hpel);
     return n;
 }
 
@@ -697,10 +697,12 @@ void ff_vc1_pred_b_mv(VC1Context *v, int dmv_x[2], int dmv_y[2],
     r_x = v->range_x;
     r_y = v->range_y;
     /* scale MV difference to be quad-pel */
-    dmv_x[0] <<= 1 - s->quarter_sample;
-    dmv_y[0] <<= 1 - s->quarter_sample;
-    dmv_x[1] <<= 1 - s->quarter_sample;
-    dmv_y[1] <<= 1 - s->quarter_sample;
+    if (!s->quarter_sample) {
+        dmv_x[0] *= 2;
+        dmv_y[0] *= 2;
+        dmv_x[1] *= 2;
+        dmv_y[1] *= 2;
+    }
 
     wrap = s->b8_stride;
     xy = s->block_index[0];

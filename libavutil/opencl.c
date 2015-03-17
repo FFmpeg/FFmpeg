@@ -588,6 +588,7 @@ end:
 
 void av_opencl_uninit(void)
 {
+    int i;
     cl_int status;
     LOCK_OPENCL;
     opencl_ctx.init_count--;
@@ -610,6 +611,9 @@ void av_opencl_uninit(void)
                    "Could not release OpenCL context: %s\n", av_opencl_errstr(status));
         }
         opencl_ctx.context = NULL;
+    }
+    for (i = 0; i < opencl_ctx.kernel_code_count; i++) {
+        opencl_ctx.kernel_code[i].is_compiled = 0;
     }
     free_device_list(&opencl_ctx.device_list);
 end:

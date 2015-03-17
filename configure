@@ -2995,13 +2995,6 @@ disabled logging && logfile=/dev/null
 echo "# $0 $FFMPEG_CONFIGURATION" > $logfile
 set >> $logfile
 
-test -n "$cross_prefix" && enable cross_compile
-
-if enabled cross_compile; then
-    test -n "$arch" && test -n "$target_os" ||
-        die "Must specify target arch and OS when cross-compiling"
-fi
-
 test -n "$valgrind" && toolchain="valgrind-memcheck"
 
 case "$toolchain" in
@@ -3087,6 +3080,13 @@ case "$toolchain" in
         die "Unknown toolchain $toolchain"
     ;;
 esac
+
+test -n "$cross_prefix" && enable cross_compile
+
+if enabled cross_compile; then
+    test -n "$arch" && test -n "$target_os" ||
+        die "Must specify target arch and OS when cross-compiling"
+fi
 
 ar_default="${cross_prefix}${ar_default}"
 cc_default="${cross_prefix}${cc_default}"
@@ -3751,6 +3751,7 @@ elif enabled arm; then
         elif check_arm_arch 6T2;      then echo armv6t2;
         elif check_arm_arch 7;        then echo armv7;
         elif check_arm_arch 7A  7_A;  then echo armv7-a;
+        elif check_arm_arch 7S;       then echo armv7-a;
         elif check_arm_arch 7R  7_R;  then echo armv7-r;
         elif check_arm_arch 7M  7_M;  then echo armv7-m;
         elif check_arm_arch 7EM 7E_M; then echo armv7-m;
@@ -5299,7 +5300,9 @@ if enabled icc; then
     # 10006: ignoring unknown option -fno-signed-zeros
     # 10148: ignoring unknown option -Wno-parentheses
     # 10156: ignoring option '-W'; no argument required
-    check_cflags -wd144,167,188,556,1292,1419,10006,10148,10156
+    # 13200: No EMMS instruction before call to function
+    # 13203: No EMMS instruction before return from function
+    check_cflags -wd144,167,188,556,1292,1419,10006,10148,10156,13200,13203
     # 11030: Warning unknown option --as-needed
     # 10156: ignoring option '-export'; no argument required
     check_ldflags -wd10156,11030

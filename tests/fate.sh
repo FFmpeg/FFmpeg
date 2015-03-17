@@ -51,6 +51,7 @@ configure()(
         --enable-avresample                                             \
         ${arch:+--arch=$arch}                                           \
         ${cpu:+--cpu="$cpu"}                                            \
+        ${toolchain:+--toolchain="$toolchain"}                          \
         ${cross_prefix:+--cross-prefix="$cross_prefix"}                 \
         ${as:+--as="$as"}                                               \
         ${cc:+--cc="$cc"}                                               \

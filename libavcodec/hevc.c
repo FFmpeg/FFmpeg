@@ -280,7 +280,7 @@ static int decode_lt_rps(HEVCContext *s, LongTermRPS *rps, GetBitContext *gb)
     return 0;
 }
 
-static int set_sps(HEVCContext *s, const HEVCSPS *sps)
+static int set_sps(HEVCContext *s, const HEVCSPS *sps, enum AVPixelFormat pix_fmt)
 {
     #define HWACCEL_MAX (CONFIG_HEVC_DXVA2_HWACCEL)
     enum AVPixelFormat pix_fmts[HWACCEL_MAX + 2], *fmt = pix_fmts;
@@ -304,13 +304,18 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps)
 #endif
     }
 
-    *fmt++ = sps->pix_fmt;
-    *fmt = AV_PIX_FMT_NONE;
+    if (pix_fmt == AV_PIX_FMT_NONE) {
+        *fmt++ = sps->pix_fmt;
+        *fmt = AV_PIX_FMT_NONE;
 
-    ret = ff_thread_get_format(s->avctx, pix_fmts);
-    if (ret < 0)
-        goto fail;
-    s->avctx->pix_fmt = ret;
+        ret = ff_thread_get_format(s->avctx, pix_fmts);
+        if (ret < 0)
+            goto fail;
+        s->avctx->pix_fmt = ret;
+    }
+    else {
+        s->avctx->pix_fmt = pix_fmt;
+    }
 
     ff_set_sar(s->avctx, sps->vui.sar);
 
@@ -420,7 +425,7 @@ static int hls_slice_header(HEVCContext *s)
                 sh->no_output_of_prior_pics_flag = 0;
         }
         ff_hevc_clear_refs(s);
-        ret = set_sps(s, s->sps);
+        ret = set_sps(s, s->sps, AV_PIX_FMT_NONE);
         if (ret < 0)
             return ret;
 
@@ -858,7 +863,7 @@ static void hls_sao_param(HEVCContext *s, int rx, int ry)
             } else if (sao->offset_sign[c_idx][i]) {
                 sao->offset_val[c_idx][i + 1] = -sao->offset_val[c_idx][i + 1];
             }
-            sao->offset_val[c_idx][i + 1] <<= log2_sao_offset_scale;
+            sao->offset_val[c_idx][i + 1] *= 1 << log2_sao_offset_scale;
         }
     }
 }
@@ -1300,7 +1305,7 @@ static void luma_mc_uni(HEVCContext *s, uint8_t *dst, ptrdiff_t dststride,
 
     x_off += mv->x >> 2;
     y_off += mv->y >> 2;
-    src   += y_off * srcstride + (x_off << s->sps->pixel_shift);
+    src   += y_off * srcstride + x_off * (1 << s->sps->pixel_shift);
 
     if (x_off < QPEL_EXTRA_BEFORE || y_off < QPEL_EXTRA_AFTER ||
         x_off >= pic_width - block_w - QPEL_EXTRA_AFTER ||
@@ -1455,7 +1460,7 @@ static void chroma_mc_uni(HEVCContext *s, uint8_t *dst0,
 
     x_off += mv->x >> (2 + hshift);
     y_off += mv->y >> (2 + vshift);
-    src0  += y_off * srcstride + (x_off << s->sps->pixel_shift);
+    src0  += y_off * srcstride + x_off * (1 << s->sps->pixel_shift);
 
     if (x_off < EPEL_EXTRA_BEFORE || y_off < EPEL_EXTRA_AFTER ||
         x_off >= pic_width - block_w - EPEL_EXTRA_AFTER ||
@@ -3335,7 +3340,7 @@ static int hevc_update_thread_context(AVCodecContext *dst,
     }
 
     if (s->sps != s0->sps)
-        if ((ret = set_sps(s, s0->sps)) < 0)
+        if ((ret = set_sps(s, s0->sps, src->pix_fmt)) < 0)
             return ret;
 
     s->seq_decode = s0->seq_decode;

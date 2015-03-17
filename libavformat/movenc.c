@@ -81,6 +81,7 @@ static const AVOption options[] = {
     { "use_editlist", "use edit list", offsetof(MOVMuxContext, use_editlist), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 1, AV_OPT_FLAG_ENCODING_PARAM},
     { "fragment_index", "Fragment number of the next fragment", offsetof(MOVMuxContext, fragments), AV_OPT_TYPE_INT, {.i64 = 1}, 1, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM},
     { "mov_gamma", "gamma value for gama atom", offsetof(MOVMuxContext, gamma), AV_OPT_TYPE_FLOAT, {.dbl = 0.0 }, 0.0, 10, AV_OPT_FLAG_ENCODING_PARAM},
+    { "frag_interleave", "Interleave samples within fragments (max number of consecutive samples, lower is tighter interleaving, but with more overhead)", offsetof(MOVMuxContext, frag_interleave), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
     { NULL },
 };
 
@@ -3402,18 +3403,19 @@ static int mov_write_tfhd_tag(AVIOContext *pb, MOVMuxContext *mov,
 }
 
 static int mov_write_trun_tag(AVIOContext *pb, MOVMuxContext *mov,
-                              MOVTrack *track, int moof_size)
+                              MOVTrack *track, int moof_size,
+                              int first, int end)
 {
     int64_t pos = avio_tell(pb);
     uint32_t flags = MOV_TRUN_DATA_OFFSET;
     int i;
 
-    for (i = 0; i < track->entry; i++) {
+    for (i = first; i < end; i++) {
         if (get_cluster_duration(track, i) != track->default_duration)
             flags |= MOV_TRUN_SAMPLE_DURATION;
         if (track->cluster[i].size != track->default_size)
             flags |= MOV_TRUN_SAMPLE_SIZE;
-        if (i > 0 && get_sample_flags(track, &track->cluster[i]) != track->default_sample_flags)
+        if (i > first && get_sample_flags(track, &track->cluster[i]) != track->default_sample_flags)
             flags |= MOV_TRUN_SAMPLE_FLAGS;
     }
     if (!(flags & MOV_TRUN_SAMPLE_FLAGS) && track->entry > 0 &&
@@ -3427,18 +3429,18 @@ static int mov_write_trun_tag(AVIOContext *pb, MOVMuxContext *mov,
     avio_w8(pb, 0); /* version */
     avio_wb24(pb, flags);
 
-    avio_wb32(pb, track->entry); /* sample count */
+    avio_wb32(pb, end - first); /* sample count */
     if (mov->flags & FF_MOV_FLAG_OMIT_TFHD_OFFSET &&
         !(mov->flags & FF_MOV_FLAG_DEFAULT_BASE_MOOF) &&
         !mov->first_trun)
         avio_wb32(pb, 0); /* Later tracks follow immediately after the previous one */
     else
         avio_wb32(pb, moof_size + 8 + track->data_offset +
-                      track->cluster[0].pos); /* data offset */
+                      track->cluster[first].pos); /* data offset */
     if (flags & MOV_TRUN_FIRST_SAMPLE_FLAGS)
-        avio_wb32(pb, get_sample_flags(track, &track->cluster[0]));
+        avio_wb32(pb, get_sample_flags(track, &track->cluster[first]));
 
-    for (i = 0; i < track->entry; i++) {
+    for (i = first; i < end; i++) {
         if (flags & MOV_TRUN_SAMPLE_DURATION)
             avio_wb32(pb, get_cluster_duration(track, i));
         if (flags & MOV_TRUN_SAMPLE_SIZE)
@@ -3577,13 +3579,20 @@ static int mov_write_traf_tag(AVIOContext *pb, MOVMuxContext *mov,
                               int moof_size)
 {
     int64_t pos = avio_tell(pb);
+    int i, start = 0;
     avio_wb32(pb, 0); /* size placeholder */
     ffio_wfourcc(pb, "traf");
 
     mov_write_tfhd_tag(pb, mov, track, moof_offset);
     if (mov->mode != MODE_ISM)
         mov_write_tfdt_tag(pb, track);
-    mov_write_trun_tag(pb, mov, track, moof_size);
+    for (i = 1; i < track->entry; i++) {
+        if (track->cluster[i].pos != track->cluster[i - 1].pos + track->cluster[i - 1].size) {
+            mov_write_trun_tag(pb, mov, track, moof_size, start, i);
+            start = i;
+        }
+    }
+    mov_write_trun_tag(pb, mov, track, moof_size, start, track->entry);
     if (mov->mode == MODE_ISM) {
         mov_write_tfxd_tag(pb, track);
 
@@ -4048,6 +4057,32 @@ static void mov_parse_vc1_frame(AVPacket *pkt, MOVTrack *trk)
     }
 }
 
+static int mov_flush_fragment_interleaving(AVFormatContext *s, MOVTrack *track)
+{
+    MOVMuxContext *mov = s->priv_data;
+    int ret, buf_size;
+    uint8_t *buf;
+    int i, offset;
+
+    if (!track->mdat_buf)
+        return 0;
+    if (!mov->mdat_buf) {
+        if ((ret = avio_open_dyn_buf(&mov->mdat_buf)) < 0)
+            return ret;
+    }
+    buf_size = avio_close_dyn_buf(track->mdat_buf, &buf);
+    track->mdat_buf = NULL;
+
+    offset = avio_tell(mov->mdat_buf);
+    avio_write(mov->mdat_buf, buf, buf_size);
+    av_free(buf);
+
+    for (i = track->entries_flushed; i < track->entry; i++)
+        track->cluster[i].pos += offset;
+    track->entries_flushed = track->entry;
+    return 0;
+}
+
 static int mov_flush_fragment(AVFormatContext *s)
 {
     MOVMuxContext *mov = s->priv_data;
@@ -4107,15 +4142,29 @@ static int mov_flush_fragment(AVFormatContext *s)
         return 0;
     }
 
+    if (mov->frag_interleave) {
+        for (i = 0; i < mov->nb_streams; i++) {
+            MOVTrack *track = &mov->tracks[i];
+            int ret;
+            if ((ret = mov_flush_fragment_interleaving(s, track)) < 0)
+                return ret;
+        }
+
+        if (!mov->mdat_buf)
+            return 0;
+        mdat_size = avio_tell(mov->mdat_buf);
+    }
+
     for (i = 0; i < mov->nb_streams; i++) {
         MOVTrack *track = &mov->tracks[i];
-        if (mov->flags & FF_MOV_FLAG_SEPARATE_MOOF)
+        if (mov->flags & FF_MOV_FLAG_SEPARATE_MOOF || mov->frag_interleave)
             track->data_offset = 0;
         else
             track->data_offset = mdat_size;
-        if (!track->mdat_buf)
+        if (!track->entry)
             continue;
-        mdat_size += avio_tell(track->mdat_buf);
+        if (track->mdat_buf)
+            mdat_size += avio_tell(track->mdat_buf);
         if (first_track < 0)
             first_track = i;
     }
@@ -4154,10 +4203,18 @@ static int mov_flush_fragment(AVFormatContext *s)
         if (track->entry)
             track->frag_start += duration;
         track->entry = 0;
-        if (!track->mdat_buf)
-            continue;
-        buf_size = avio_close_dyn_buf(track->mdat_buf, &buf);
-        track->mdat_buf = NULL;
+        track->entries_flushed = 0;
+        if (!mov->frag_interleave) {
+            if (!track->mdat_buf)
+                continue;
+            buf_size = avio_close_dyn_buf(track->mdat_buf, &buf);
+            track->mdat_buf = NULL;
+        } else {
+            if (!mov->mdat_buf)
+                continue;
+            buf_size = avio_close_dyn_buf(mov->mdat_buf, &buf);
+            mov->mdat_buf = NULL;
+        }
 
         avio_write(s->pb, buf, buf_size);
         av_free(buf);
@@ -4211,6 +4268,13 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (mov->flags & FF_MOV_FLAG_FRAGMENT) {
         int ret;
         if (mov->moov_written || mov->flags & FF_MOV_FLAG_EMPTY_MOOV) {
+            if (mov->frag_interleave && mov->fragments > 0) {
+                if (trk->entry - trk->entries_flushed >= mov->frag_interleave) {
+                    if ((ret = mov_flush_fragment_interleaving(s, trk)) < 0)
+                        return ret;
+                }
+            }
+
             if (!trk->mdat_buf) {
                 if ((ret = avio_open_dyn_buf(&trk->mdat_buf)) < 0)
                     return ret;
@@ -4873,6 +4937,21 @@ static int mov_write_header(AVFormatContext *s)
 
     if (!mov->use_editlist && s->avoid_negative_ts == AVFMT_AVOID_NEG_TS_AUTO)
         s->avoid_negative_ts = AVFMT_AVOID_NEG_TS_MAKE_ZERO;
+
+    /* Clear the omit_tfhd_offset flag if default_base_moof is set;
+     * if the latter is set that's enough and omit_tfhd_offset doesn't
+     * add anything extra on top of that. */
+    if (mov->flags & FF_MOV_FLAG_OMIT_TFHD_OFFSET &&
+        mov->flags & FF_MOV_FLAG_DEFAULT_BASE_MOOF)
+        mov->flags &= ~FF_MOV_FLAG_OMIT_TFHD_OFFSET;
+
+    if (mov->frag_interleave &&
+        mov->flags & (FF_MOV_FLAG_OMIT_TFHD_OFFSET | FF_MOV_FLAG_SEPARATE_MOOF)) {
+        av_log(s, AV_LOG_ERROR,
+               "Sample interleaving in fragments is mutually exclusive with "
+               "omit_tfhd_offset and separate_moof\n");
+        return AVERROR(EINVAL);
+    }
 
     /* Non-seekable output is ok if using fragmentation. If ism_lookahead
      * is enabled, we don't support non-seekable output at all. */
