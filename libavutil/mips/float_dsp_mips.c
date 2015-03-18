@@ -188,10 +188,10 @@ static void vector_fmul_window_mips(float *dst, const float *src0,
         "lwc1    %[wj3],   -12(%[win_j])                \n\t"
         "lwc1    %[s0],     8(%[src0_i])                \n\t"
         "lwc1    %[s01],    12(%[src0_i])               \n\t"
-        "addiu   %[src1_j],-16                          \n\t"
-        "addiu   %[win_i],  16                          \n\t"
-        "addiu   %[win_j], -16                          \n\t"
-        "addiu   %[src0_i], 16                          \n\t"
+        PTR_ADDIU "%[src1_j],-16                        \n\t"
+        PTR_ADDIU "%[win_i],16                          \n\t"
+        PTR_ADDIU "%[win_j],-16                         \n\t"
+        PTR_ADDIU "%[src0_i],16                         \n\t"
         "swc1    %[temp],   0(%[dst_i])                 \n\t" /* dst[i] = s0*wj - s1*wi; */
         "swc1    %[temp1],  0(%[dst_j])                 \n\t" /* dst[j] = s0*wi + s1*wj; */
         "swc1    %[temp2],  4(%[dst_i])                 \n\t" /* dst[i+1] = s01*wj1 - s11*wi1; */
@@ -208,8 +208,8 @@ static void vector_fmul_window_mips(float *dst, const float *src0,
         "swc1    %[temp1], -8(%[dst_j])                 \n\t" /* dst[j-2] = s0*wi2 + s1*wj2; */
         "swc1    %[temp2],  12(%[dst_i])                \n\t" /* dst[i+2] = s01*wj3 - s11*wi3; */
         "swc1    %[temp3], -12(%[dst_j])                \n\t" /* dst[j-3] = s01*wi3 + s11*wj3; */
-        "addiu   %[dst_i],  16                          \n\t"
-        "addiu   %[dst_j], -16                          \n\t"
+        PTR_ADDIU "%[dst_i],16                          \n\t"
+        PTR_ADDIU "%[dst_j],-16                         \n\t"
         "bne     %[win_i], %[lp_end], 1b                \n\t"
         : [temp]"=&f"(temp), [temp1]"=&f"(temp1), [temp2]"=&f"(temp2),
           [temp3]"=&f"(temp3), [src0_i]"+r"(src0_i), [win_i]"+r"(win_i),
