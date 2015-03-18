@@ -29,6 +29,9 @@ fate-fraps-v5: CMD = framecrc -i $(TARGET_SAMPLES)/fraps/fraps-v5-bouncing-balls
 FATE_SCREEN-$(call DEMDEC, AVI, FRAPS) += $(FATE_FRAPS)
 fate-fraps: $(FATE_FRAPS)
 
+FATE_SAMPLES_AVCONV-$(call DEMDEC, ASF, TDSC) += fate-tdsc
+fate-tdsc: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/tdsc/tdsc.asf -an -pix_fmt bgr24
+
 FATE_TSCC += fate-tscc-15bit
 fate-tscc-15bit: CMD = framecrc -i $(TARGET_SAMPLES)/tscc/oneminute.avi -t 15 -pix_fmt rgb24
 

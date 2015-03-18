@@ -303,7 +303,7 @@ static void filter(SPPContext *p, uint8_t *dst, uint8_t *src,
 
 static int query_formats(AVFilterContext *ctx)
 {
-    static const enum PixelFormat pix_fmts[] = {
+    static const enum AVPixelFormat pix_fmts[] = {
         AV_PIX_FMT_YUV444P,  AV_PIX_FMT_YUV422P,
         AV_PIX_FMT_YUV420P,  AV_PIX_FMT_YUV411P,
         AV_PIX_FMT_YUV410P,  AV_PIX_FMT_YUV440P,

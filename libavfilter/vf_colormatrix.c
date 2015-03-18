@@ -416,7 +416,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
                                FFMIN(in->height, ctx->graph->nb_threads));
     else if (in->format == AV_PIX_FMT_YUV420P)
         ctx->internal->execute(ctx, process_slice_yuv420p, &td, NULL,
-                               FFMIN(in->height, ctx->graph->nb_threads));
+                               FFMAX(1, FFMIN(in->height, ctx->graph->nb_threads) & ~1));
     else
         ctx->internal->execute(ctx, process_slice_uyvy422, &td, NULL,
                                FFMIN(in->height, ctx->graph->nb_threads));

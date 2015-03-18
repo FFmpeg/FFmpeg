@@ -237,5 +237,5 @@ AVCodec ff_xface_encoder = {
     .init           = xface_encode_init,
     .close          = xface_encode_close,
     .encode2        = xface_encode_frame,
-    .pix_fmts       = (const enum PixelFormat[]) { AV_PIX_FMT_MONOWHITE, AV_PIX_FMT_NONE },
+    .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_MONOWHITE, AV_PIX_FMT_NONE },
 };

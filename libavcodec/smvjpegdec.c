@@ -50,7 +50,7 @@ static inline void smv_img_pnt_plane(uint8_t      **dst, uint8_t *src,
 
 static inline void smv_img_pnt(uint8_t *dst_data[4], uint8_t *src_data[4],
                                const int src_linesizes[4],
-                               enum PixelFormat pix_fmt, int width, int height,
+                               enum AVPixelFormat pix_fmt, int width, int height,
                                int nlines)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);

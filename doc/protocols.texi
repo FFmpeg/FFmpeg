@@ -1055,7 +1055,9 @@ subfile,,start,153391104,end,268142592,,:/media/dvd/VIDEO_TS/VTS_08_1.VOB
 @end example
 
 Play an AVI file directly from a TAR archive:
+@example
 subfile,,start,183241728,end,366490624,,:archive.tar
+@end example
 
 @section tcp
 

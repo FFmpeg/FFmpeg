@@ -514,8 +514,8 @@ int ff_dca_xll_decode_audio(DCAContext *s, AVFrame *frame)
             }
             for (i = 0; i < chset->channels; i++) {
                 int param_index = params->seg_type ? 0 : i;
-                int bits        = params->pancABIT0[param_index];
                 int part0       = params->nSamplPart0[param_index];
+                int bits        = part0 ? params->pancABIT0[param_index] : 0;
                 int *sample_buf = s->xll_sample_buf +
                                   (in_channel + i) * s->xll_smpl_in_seg;
 

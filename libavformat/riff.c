@@ -42,6 +42,7 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { AV_CODEC_ID_H264,         MKTAG('V', '2', '6', '4') }, /* CCTV recordings */
     { AV_CODEC_ID_H264,         MKTAG('G', 'A', 'V', 'C') }, /* GeoVision camera */
     { AV_CODEC_ID_H264,         MKTAG('U', 'M', 'S', 'V') },
+    { AV_CODEC_ID_H264,         MKTAG('t', 's', 'h', 'd') },
     { AV_CODEC_ID_H264,         MKTAG('I', 'N', 'M', 'C') },
     { AV_CODEC_ID_H263,         MKTAG('H', '2', '6', '3') },
     { AV_CODEC_ID_H263,         MKTAG('X', '2', '6', '3') },

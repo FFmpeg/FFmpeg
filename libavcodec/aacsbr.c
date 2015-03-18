@@ -635,7 +635,7 @@ static int read_sbr_grid(AACContext *ac, SpectralBandReplication *sbr,
                          GetBitContext *gb, SBRData *ch_data)
 {
     int i;
-    unsigned bs_pointer = 0;
+    int bs_pointer = 0;
     // frameLengthFlag ? 15 : 16; 960 sample length frames unsupported; this value is numTimeSlots
     int abs_bord_trail = 16;
     int num_rel_lead, num_rel_trail;
@@ -728,6 +728,7 @@ static int read_sbr_grid(AACContext *ac, SpectralBandReplication *sbr,
         break;
     }
 
+    av_assert0(bs_pointer >= 0);
     if (bs_pointer > ch_data->bs_num_env + 1) {
         av_log(ac->avctx, AV_LOG_ERROR,
                "Invalid bitstream, bs_pointer points to a middle noise border outside the time borders table: %d\n",
@@ -747,11 +748,11 @@ static int read_sbr_grid(AACContext *ac, SpectralBandReplication *sbr,
     ch_data->t_q[0]                     = ch_data->t_env[0];
     ch_data->t_q[ch_data->bs_num_noise] = ch_data->t_env[ch_data->bs_num_env];
     if (ch_data->bs_num_noise > 1) {
-        unsigned int idx;
+        int idx;
         if (ch_data->bs_frame_class == FIXFIX) {
             idx = ch_data->bs_num_env >> 1;
         } else if (ch_data->bs_frame_class & 1) { // FIXVAR or VARVAR
-            idx = ch_data->bs_num_env - FFMAX((int)bs_pointer - 1, 1);
+            idx = ch_data->bs_num_env - FFMAX(bs_pointer - 1, 1);
         } else { // VARFIX
             if (!bs_pointer)
                 idx = 1;
