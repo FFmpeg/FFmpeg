@@ -1472,7 +1472,6 @@ static int dca_decode_frame(AVCodecContext *avctx, void *data,
     }
     // set AVCodec values with parsed data
     avctx->sample_rate = s->sample_rate;
-    avctx->bit_rate    = s->bit_rate;
 
     s->profile = FF_PROFILE_DTS;
 
@@ -1937,6 +1936,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if (ret < 0)
         return ret;
 
+    if (   avctx->profile != FF_PROFILE_DTS_HD_MA
+        && avctx->profile != FF_PROFILE_DTS_HD_HRA)
+        avctx->bit_rate = s->bit_rate;
     *got_frame_ptr = 1;
 
     return buf_size;
