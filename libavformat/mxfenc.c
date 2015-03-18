@@ -2265,6 +2265,13 @@ static int mxf_write_footer(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     int err = 0;
 
+    if (!mxf->header_written ||
+        (s->oformat == &ff_mxf_opatom_muxer && !mxf->body_partition_offset)) {
+        /* reason could be invalid options/not supported codec/out of memory */
+        err = AVERROR_UNKNOWN;
+        goto end;
+    }
+
     mxf->duration = mxf->last_indexed_edit_unit + mxf->edit_units_count;
 
     mxf_write_klv_fill(s);
