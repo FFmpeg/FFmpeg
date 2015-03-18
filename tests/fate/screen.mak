@@ -41,8 +41,14 @@ fate-tscc-32bit: CMD = framecrc -i $(TARGET_SAMPLES)/tscc/2004-12-17-uebung9-par
 FATE_SAMPLES_AVCONV-$(call DEMDEC, AVI, TSCC) += $(FATE_TSCC)
 fate-tscc: $(FATE_TSCC)
 
-FATE_SAMPLES_AVCONV-$(call DEMDEC, AVI, TSCC2) += fate-tscc2
-fate-tscc2: CMD = framecrc -i $(TARGET_SAMPLES)/tscc/tsc2_16bpp.avi
+FATE_TSCC2-$(CONFIG_AVI_DEMUXER) += fate-tscc2-avi
+fate-tscc2-avi: CMD = framecrc -i $(TARGET_SAMPLES)/tscc/tsc2_16bpp.avi
+
+FATE_TSCC2-$(CONFIG_MOV_DEMUXER) += fate-tscc2-mov
+fate-tscc2-mov: CMD = framecrc -i $(TARGET_SAMPLES)/tscc/rec.trec
+
+FATE_SAMPLES_AVCONV-$(CONFIG_TSCC2_DECODER) += $(FATE_TSCC2-yes)
+fate-tscc2: $(FATE_TSCC2-yes)
 
 FATE_VMNC += fate-vmnc-16bit
 fate-vmnc-16bit: CMD = framecrc -i $(TARGET_SAMPLES)/VMnc/test.avi -pix_fmt rgb24
