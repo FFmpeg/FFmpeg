@@ -281,10 +281,10 @@ static int process_slice_yuv420p(AVFilterContext *ctx, void *arg, int jobnr, int
     const ThreadData *td = arg;
     const AVFrame *src = td->src;
     AVFrame *dst = td->dst;
-    const int height = src->height;
+    const int height = FFALIGN(src->height, 2) >> 1;
     const int width = src->width;
-    const int slice_start = (height *  jobnr   ) / nb_jobs;
-    const int slice_end   = (height * (jobnr+1)) / nb_jobs;
+    const int slice_start = ((height *  jobnr   ) / nb_jobs) << 1;
+    const int slice_end   = ((height * (jobnr+1)) / nb_jobs) << 1;
     const int src_pitchY  = src->linesize[0];
     const int src_pitchUV = src->linesize[1];
     const int dst_pitchY  = dst->linesize[0];
@@ -416,7 +416,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
                                FFMIN(in->height, ctx->graph->nb_threads));
     else if (in->format == AV_PIX_FMT_YUV420P)
         ctx->internal->execute(ctx, process_slice_yuv420p, &td, NULL,
-                               FFMAX(1, FFMIN(in->height, ctx->graph->nb_threads) & ~1));
+                               FFMIN(in->height / 2, ctx->graph->nb_threads));
     else
         ctx->internal->execute(ctx, process_slice_uyvy422, &td, NULL,
                                FFMIN(in->height, ctx->graph->nb_threads));
