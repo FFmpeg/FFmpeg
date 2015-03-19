@@ -42,6 +42,7 @@
 #endif
 
 typedef struct UDPContext {
+    const AVClass *class;
     int udp_fd;
     int ttl;
     int buffer_size;
@@ -293,7 +294,7 @@ static int udp_socket_create(UDPContext *s, struct sockaddr_storage *addr,
 
     if (((struct sockaddr *) &s->dest_addr)->sa_family)
         family = ((struct sockaddr *) &s->dest_addr)->sa_family;
-    res0 = udp_resolve_host(localaddr[0] ? localaddr : NULL, s->local_port,
+    res0 = udp_resolve_host((localaddr && localaddr[0]) ? localaddr : NULL, s->local_port,
                             SOCK_DGRAM, family, AI_PASSIVE);
     if (res0 == 0)
         goto fail;
