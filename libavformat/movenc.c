@@ -4093,6 +4093,32 @@ static int mov_flush_fragment(AVFormatContext *s)
     if (!(mov->flags & FF_MOV_FLAG_FRAGMENT))
         return 0;
 
+    for (i = 0; i < mov->nb_streams; i++) {
+        MOVTrack *track = &mov->tracks[i];
+        if (track->entry <= 1)
+            continue;
+        // Sample durations are calculated as the diff of dts values,
+        // but for the last sample in a fragment, we don't know the dts
+        // of the first sample in the next fragment, so we have to rely
+        // on what was set as duration in the AVPacket. Not all callers
+        // set this though, so we might want to replace it with an
+        // estimate if it currently is zero.
+        if (get_cluster_duration(track, track->entry - 1) != 0)
+            continue;
+        // Use the duration (i.e. dts diff) of the second last sample for
+        // the last one. This is a wild guess (and fatal if it turns out
+        // to be too long), but probably the best we can do - having a zero
+        // duration is bad as well.
+        track->track_duration += get_cluster_duration(track, track->entry - 2);
+        if (!mov->missing_duration_warned) {
+            av_log(s, AV_LOG_WARNING,
+                   "Estimating the duration of the last packet in a "
+                   "fragment, consider setting the duration field in "
+                   "AVPacket instead.\n");
+            mov->missing_duration_warned = 1;
+        }
+    }
+
     if (!mov->moov_written) {
         int64_t pos = avio_tell(s->pb);
         uint8_t *buf;
