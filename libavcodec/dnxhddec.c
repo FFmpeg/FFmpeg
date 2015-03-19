@@ -312,7 +312,7 @@ static int dnxhd_decode_macroblock(DNXHDContext *ctx, AVFrame *frame, int x, int
     dest_u = frame->data[1] + ((y * dct_linesize_chroma) << 4) + (x << (3 + shift1));
     dest_v = frame->data[2] + ((y * dct_linesize_chroma) << 4) + (x << (3 + shift1));
 
-    if (ctx->cur_field) {
+    if (frame->interlaced_frame && ctx->cur_field) {
         dest_y += frame->linesize[0];
         dest_u += frame->linesize[1];
         dest_v += frame->linesize[2];
