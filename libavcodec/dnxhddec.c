@@ -157,11 +157,13 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
         } else {
             ctx->decode_dct_block = dnxhd_decode_dct_block_10;
             ctx->pix_fmt = AV_PIX_FMT_YUV422P10;
+            ctx->is_444 = 0;
         }
     } else if (buf[0x21] == 0x38) { /* 8 bit */
         ctx->bit_depth = ctx->avctx->bits_per_raw_sample = 8;
 
         ctx->pix_fmt = AV_PIX_FMT_YUV422P;
+        ctx->is_444 = 0;
         ctx->decode_dct_block = dnxhd_decode_dct_block_8;
     } else {
         av_log(ctx->avctx, AV_LOG_ERROR, "invalid bit depth value (%d).\n",
