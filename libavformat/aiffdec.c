@@ -223,6 +223,11 @@ static int aiff_read_header(AVFormatContext *s)
     while (filesize > 0) {
         /* parse different chunks */
         size = get_tag(pb, &tag);
+
+        if (size == AVERROR_EOF && offset > 0 && st->codec->block_align) {
+            av_log(s, AV_LOG_WARNING, "header parser hit EOF\n");
+            goto got_sound;
+        }
         if (size < 0)
             return size;
 
