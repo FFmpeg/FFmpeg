@@ -173,8 +173,6 @@ static inline void dv_calc_mb_coordinates(const AVDVProfile *d, int chan,
     }
 }
 
-static const uint8_t dv_quant_areas[4] = { 6, 21, 43, 64 };
-
 int ff_dv_init_dynamic_tables(DVVideoContext *ctx, const AVDVProfile *d)
 {
     int j, i, c, s, p;
