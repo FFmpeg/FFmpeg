@@ -52,6 +52,7 @@ typedef struct AVIIndex {
     int64_t     audio_strm_offset;
     int         entry;
     int         ents_allocated;
+    int         master_odml_riff_id_base;
     AVIIentry** cluster;
 } AVIIndex;
 
@@ -169,7 +170,6 @@ static void write_odml_master(AVFormatContext *s, int stream_index)
         * We want to make it JUNK entry for now, since we'd
         * like to get away without making AVI an OpenDML one
         * for compatibility reasons. */
-    avist->indexes.entry      = avist->indexes.ents_allocated = 0;
     avist->indexes.indx_start = ff_start_tag(pb, "JUNK");
     avio_wl16(pb, 4);   /* wLongsPerEntry */
     avio_w8(pb, 0);     /* bIndexSubType (0 == frame index) */
@@ -469,7 +469,7 @@ static int avi_write_header(AVFormatContext *s)
     return 0;
 }
 
-static void update_odml_entry(AVFormatContext *s, int stream_index, int64_t ix)
+static void update_odml_entry(AVFormatContext *s, int stream_index, int64_t ix, int size)
 {
     AVIOContext *pb = s->pb;
     AVIContext *avi = s->priv_data;
@@ -484,10 +484,10 @@ static void update_odml_entry(AVFormatContext *s, int stream_index, int64_t ix)
     avio_seek(pb, avist->indexes.indx_start - 8, SEEK_SET);
     ffio_wfourcc(pb, "indx");             /* enabling this entry */
     avio_skip(pb, 8);
-    avio_wl32(pb, avi->riff_id);          /* nEntriesInUse */
-    avio_skip(pb, 16 * avi->riff_id);
+    avio_wl32(pb, avi->riff_id - avist->indexes.master_odml_riff_id_base);          /* nEntriesInUse */
+    avio_skip(pb, 16 * (avi->riff_id - avist->indexes.master_odml_riff_id_base));
     avio_wl64(pb, ix);                    /* qwOffset */
-    avio_wl32(pb, pos - ix);              /* dwSize */
+    avio_wl32(pb, size);                  /* dwSize */
     ff_parse_specific_params(s->streams[stream_index], &au_byterate, &au_ssize, &au_scale);
     if (s->streams[stream_index]->codec->codec_type == AVMEDIA_TYPE_AUDIO && au_ssize > 0) {
         uint32_t audio_segm_size = (avist->audio_strm_length - avist->indexes.audio_strm_offset);
@@ -512,10 +512,19 @@ static int avi_write_ix(AVFormatContext *s)
 
     av_assert0(pb->seekable);
 
-    if (avi->riff_id > AVI_MASTER_INDEX_SIZE) {
-        av_log(s, AV_LOG_ERROR, "Invalid riff index %d > %d\n",
-               avi->riff_id, AVI_MASTER_INDEX_SIZE);
-        return AVERROR(EINVAL);
+    for (i = 0; i < s->nb_streams; i++) {
+        AVIStream *avist = s->streams[i]->priv_data;
+        if (avi->riff_id - avist->indexes.master_odml_riff_id_base == AVI_MASTER_INDEX_SIZE) {
+            int64_t pos;
+            int size = 8+2+1+1+4+8+4+4+16*AVI_MASTER_INDEX_SIZE;
+
+            pos = avio_tell(pb);
+            update_odml_entry(s, i, pos, size);
+            write_odml_master(s, i);
+            av_assert1(avio_tell(pb) - pos == size);
+            avist->indexes.master_odml_riff_id_base = avi->riff_id - 1;
+        }
+        av_assert0(avi->riff_id - avist->indexes.master_odml_riff_id_base < AVI_MASTER_INDEX_SIZE);
     }
 
     for (i = 0; i < s->nb_streams; i++) {
@@ -546,7 +555,7 @@ static int avi_write_ix(AVFormatContext *s)
                           (ie->flags & 0x10 ? 0 : 0x80000000));
         }
 
-        update_odml_entry(s, i, ix);
+        update_odml_entry(s, i, ix, avio_tell(pb) - ix);
     }
     return 0;
 }
