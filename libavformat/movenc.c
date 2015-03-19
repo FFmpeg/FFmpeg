@@ -4536,8 +4536,14 @@ static int mov_write_single_packet(AVFormatContext *s, AVPacket *pkt)
              (mov->flags & FF_MOV_FLAG_FRAG_KEYFRAME &&
               enc->codec_type == AVMEDIA_TYPE_VIDEO &&
               trk->entry && pkt->flags & AV_PKT_FLAG_KEY)) {
-            if (frag_duration >= mov->min_fragment_duration)
+            if (frag_duration >= mov->min_fragment_duration) {
+                // Set the duration of this track to line up with the next
+                // sample in this track. This avoids relying on AVPacket
+                // duration, but only helps for this particular track, not
+                // for the other ones that are flushed at the same time.
+                trk->track_duration = pkt->dts - trk->start_dts;
                 mov_auto_flush_fragment(s);
+            }
         }
 
         return ff_mov_write_packet(s, pkt);
