@@ -3652,14 +3652,14 @@ static int mov_write_sidx_tag(AVIOContext *pb,
         duration = track->start_dts + track->track_duration -
                    track->cluster[0].dts;
         starts_with_SAP = track->cluster[0].flags & MOV_SYNC_SAMPLE;
+
+        // pts<0 should be cut away using edts
+        if (presentation_time < 0)
+            presentation_time = 0;
     } else {
         entries = track->nb_frag_info;
         presentation_time = track->frag_info[0].time;
     }
-
-    // pts<0 should be cut away using edts
-    if (presentation_time < 0)
-        presentation_time = 0;
 
     avio_wb32(pb, 0); /* size */
     ffio_wfourcc(pb, "sidx");
