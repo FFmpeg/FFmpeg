@@ -178,7 +178,7 @@ static void write_odml_master(AVFormatContext *s, int stream_index)
     ffio_wfourcc(pb, avi_stream2fourcc(tag, stream_index, enc->codec_type));
                         /* dwChunkId */
     avio_wl64(pb, 0);   /* dwReserved[3] */
-    // avio_wl32(pb, 0);   /* Must be 0.    */
+    avio_wl32(pb, 0);   /* Must be 0.    */
     for (j = 0; j < AVI_MASTER_INDEX_SIZE * 2; j++)
         avio_wl64(pb, 0);
     ff_end_tag(pb, avist->indexes.indx_start);
