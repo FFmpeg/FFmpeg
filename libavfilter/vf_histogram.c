@@ -37,7 +37,7 @@ enum HistogramMode {
 
 typedef struct HistogramContext {
     const AVClass *class;               ///< AVClass context for log and options purpose
-    enum HistogramMode mode;
+    int mode;                           ///< HistogramMode
     unsigned       histogram[256];
     int            ncomp;
     const uint8_t  *bg_color;

@@ -58,7 +58,7 @@ struct rgbvec {
 
 typedef struct LUT3DContext {
     const AVClass *class;
-    enum interp_mode interpolation;
+    int interpolation;          ///<interp_mode
     char *file;
     uint8_t rgba_map[4];
     int step;

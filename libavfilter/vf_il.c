@@ -38,7 +38,7 @@ enum FilterMode {
 
 typedef struct {
     const AVClass *class;
-    enum FilterMode luma_mode, chroma_mode, alpha_mode;
+    int luma_mode, chroma_mode, alpha_mode; ///<FilterMode
     int luma_swap, chroma_swap, alpha_swap;
     int nb_planes;
     int linesize[4], chroma_height;

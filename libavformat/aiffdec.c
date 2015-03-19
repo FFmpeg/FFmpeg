@@ -223,6 +223,11 @@ static int aiff_read_header(AVFormatContext *s)
     while (filesize > 0) {
         /* parse different chunks */
         size = get_tag(pb, &tag);
+
+        if (size == AVERROR_EOF && offset > 0 && st->codec->block_align) {
+            av_log(s, AV_LOG_WARNING, "header parser hit EOF\n");
+            goto got_sound;
+        }
         if (size < 0)
             return size;
 
@@ -306,6 +311,9 @@ static int aiff_read_header(AVFormatContext *s)
             if(ff_mov_read_chan(s, pb, st, size) < 0)
                 return AVERROR_INVALIDDATA;
             break;
+        case 0:
+            if (offset > 0 && st->codec->block_align) // COMM && SSND
+                goto got_sound;
         default: /* Jump */
             if (size & 1)   /* Always even aligned */
                 size++;
