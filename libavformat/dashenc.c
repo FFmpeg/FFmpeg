@@ -69,6 +69,7 @@ typedef struct OutputStream {
     int nb_segments, segments_size, segment_index;
     Segment **segments;
     int64_t first_pts, start_pts, max_pts;
+    int64_t last_dts;
     int bit_rate;
     char bandwidth_str[64];
 
@@ -654,6 +655,7 @@ static int dash_write_header(AVFormatContext *s)
         set_codec_str(s, st->codec, os->codec_str, sizeof(os->codec_str));
         os->first_pts = AV_NOPTS_VALUE;
         os->max_pts = AV_NOPTS_VALUE;
+        os->last_dts = AV_NOPTS_VALUE;
         os->segment_index = 1;
     }
 
@@ -865,6 +867,16 @@ static int dash_write_packet(AVFormatContext *s, AVPacket *pkt)
     ret = update_stream_extradata(s, os, st->codec);
     if (ret < 0)
         return ret;
+
+    // Fill in a heuristic guess of the packet duration, if none is available.
+    // The mp4 muxer will do something similar (for the last packet in a fragment)
+    // if nothing is set (setting it for the other packets doesn't hurt).
+    // By setting a nonzero duration here, we can be sure that the mp4 muxer won't
+    // invoke its heuristic (this doesn't have to be identical to that algorithm),
+    // so that we know the exact timestamps of fragments.
+    if (!pkt->duration && os->last_dts != AV_NOPTS_VALUE)
+        pkt->duration = pkt->dts - os->last_dts;
+    os->last_dts = pkt->dts;
 
     // If forcing the stream to start at 0, the mp4 muxer will set the start
     // timestamps to 0. Do the same here, to avoid mismatches in duration/timestamps.
