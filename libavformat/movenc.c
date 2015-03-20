@@ -2302,7 +2302,7 @@ static int mov_write_tkhd_tag(AVIOContext *pb, MOVMuxContext *mov,
 
         display_matrix = (uint32_t*)av_stream_get_side_data(st, AV_PKT_DATA_DISPLAYMATRIX,
                                                             &display_matrix_size);
-        if (display_matrix_size < 9 * sizeof(*display_matrix))
+        if (display_matrix && display_matrix_size < 9 * sizeof(*display_matrix))
             display_matrix = NULL;
     }
 
