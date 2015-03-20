@@ -69,8 +69,8 @@ enum MCDeintParity {
 
 typedef struct {
     const AVClass *class;
-    enum MCDeintMode mode;
-    enum MCDeintParity parity;
+    int mode;           ///< MCDeintMode
+    int parity;         ///< MCDeintParity
     int qp;
     AVCodecContext *enc_ctx;
 } MCDeintContext;
