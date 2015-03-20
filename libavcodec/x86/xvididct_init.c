@@ -26,9 +26,6 @@
 #include "idctdsp.h"
 #include "xvididct.h"
 
-void ff_xvid_idct_put_sse2(uint8_t *dest, int line_size, short *block);
-void ff_xvid_idct_add_sse2(uint8_t *dest, int line_size, short *block);
-
 #if ARCH_X86_32
 static void xvid_idct_mmx_put(uint8_t *dest, int line_size, short *block)
 {

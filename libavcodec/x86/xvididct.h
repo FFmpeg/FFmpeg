@@ -37,7 +37,7 @@ void ff_xvid_idct_mmxext_put(uint8_t *dest, int line_size, int16_t *block);
 void ff_xvid_idct_mmxext_add(uint8_t *dest, int line_size, int16_t *block);
 
 void ff_xvid_idct_sse2(short *block);
-void ff_xvid_idct_sse2_put(uint8_t *dest, int line_size, short *block);
-void ff_xvid_idct_sse2_add(uint8_t *dest, int line_size, short *block);
+void ff_xvid_idct_put_sse2(uint8_t *dest, int line_size, short *block);
+void ff_xvid_idct_add_sse2(uint8_t *dest, int line_size, short *block);
 
 #endif /* AVCODEC_X86_XVIDIDCT_H */
