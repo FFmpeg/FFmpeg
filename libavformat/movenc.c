@@ -2291,12 +2291,19 @@ static int mov_write_tkhd_tag(AVIOContext *pb, MOVMuxContext *mov,
     int rotation = 0;
     int group   = 0;
 
+    uint32_t *display_matrix = NULL;
+    int      display_matrix_size, i;
 
     if (st) {
         if (mov->per_stream_grouping)
             group = st->index;
         else
             group = st->codec->codec_type;
+
+        display_matrix = (uint32_t*)av_stream_get_side_data(st, AV_PKT_DATA_DISPLAYMATRIX,
+                                                            &display_matrix_size);
+        if (display_matrix_size < 9 * sizeof(*display_matrix))
+            display_matrix = NULL;
     }
 
     if (track->flags & MOV_TRACK_ENABLED)
@@ -2341,7 +2348,10 @@ static int mov_write_tkhd_tag(AVIOContext *pb, MOVMuxContext *mov,
         AVDictionaryEntry *rot = av_dict_get(st->metadata, "rotate", NULL, 0);
         rotation = (rot && rot->value) ? atoi(rot->value) : 0;
     }
-    if (rotation == 90) {
+    if (display_matrix) {
+        for (i = 0; i < 9; i++)
+            avio_wb32(pb, display_matrix[i]);
+    } else if (rotation == 90) {
         write_matrix(pb,  0,  1, -1,  0, track->enc->height, 0);
     } else if (rotation == 180) {
         write_matrix(pb, -1,  0,  0, -1, track->enc->width, track->enc->height);
