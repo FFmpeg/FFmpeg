@@ -283,10 +283,10 @@ typedef struct RefPicListTab {
 } RefPicListTab;
 
 typedef struct HEVCWindow {
-    int left_offset;
-    int right_offset;
-    int top_offset;
-    int bottom_offset;
+    unsigned int left_offset;
+    unsigned int right_offset;
+    unsigned int top_offset;
+    unsigned int bottom_offset;
 } HEVCWindow;
 
 typedef struct VUI {
