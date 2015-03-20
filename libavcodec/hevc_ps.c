@@ -883,10 +883,10 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
         }
         av_log(s->avctx, AV_LOG_WARNING,
                "Displaying the whole video surface.\n");
-        sps->pic_conf_win.left_offset   =
-        sps->pic_conf_win.right_offset  =
-        sps->pic_conf_win.top_offset    =
-        sps->pic_conf_win.bottom_offset = 0;
+        sps->output_window.left_offset   =
+        sps->output_window.right_offset  =
+        sps->output_window.top_offset    =
+        sps->output_window.bottom_offset = 0;
         sps->output_width               = sps->width;
         sps->output_height              = sps->height;
     }
