@@ -79,13 +79,6 @@ static const int factor[16] = {
     N / (N2 * N0), N / (N2 * N1), N / (N2 * N0), N / (N2 * N2),
 };
 
-static const int thres[16] = {
-    N / (SN0 * SN0), N / (SN0 * SN2), N / (SN0 * SN0), N / (SN0 * SN2),
-    N / (SN2 * SN0), N / (SN2 * SN2), N / (SN2 * SN0), N / (SN2 * SN2),
-    N / (SN0 * SN0), N / (SN0 * SN2), N / (SN0 * SN0), N / (SN0 * SN2),
-    N / (SN2 * SN0), N / (SN2 * SN2), N / (SN2 * SN0), N / (SN2 * SN2),
-};
-
 static void init_thres2(PP7Context *p)
 {
     int qp, i;

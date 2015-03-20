@@ -4366,40 +4366,72 @@ The filter accepts the following options:
 
 @table @option
 @item contrast
-Set the contrast value. It accepts a float value in range @code{-2.0} to
-@code{2.0}. The default value is @code{0.0}.
+Set the contrast expression. The value must be a float value in range
+@code{-2.0} to @code{2.0}. The default value is "0".
 
 @item brightness
-Set the brightness value. It accepts a float value in range @code{-1.0} to
-@code{1.0}. The default value is @code{0.0}.
+Set the brightness expression. The value must be a float value in
+range @code{-1.0} to @code{1.0}. The default value is "0".
 
 @item saturation
-Set the saturation value. It accepts a float value in range @code{0.0} to
-@code{3.0}. The default value is @code{1.0}.
+Set the saturation expression. The value must be a float in
+range @code{0.0} to @code{3.0}. The default value is "1".
 
 @item gamma
-Set the gamma value. It accepts a float value in range @code{0.1} to @code{10.0}.
-The default value is @code{1.0}.
+Set the gamma expression. The value must be a float in range
+@code{0.1} to @code{10.0}.  The default value is "1".
 
 @item gamma_r
-Set the gamma value for red. It accepts a float value in range
-@code{0.1} to @code{10.0}. The default value is @code{1.0}.
+Set the gamma expression for red. The value must be a float in
+range @code{0.1} to @code{10.0}. The default value is "1".
 
 @item gamma_g
-Set the gamma value for green. It accepts a float value in range
-@code{0.1} to @code{10.0}. The default value is @code{1.0}.
+Set the gamma expression for green. The value must be a float in range
+@code{0.1} to @code{10.0}. The default value is "1".
 
 @item gamma_b
-Set the gamma value for blue. It accepts a float value in range
-@code{0.1} to @code{10.0}. The default value is @code{1.0}.
+Set the gamma expression for blue. The value must be a float in range
+@code{0.1} to @code{10.0}. The default value is "1".
 
 @item gamma_weight
-Can be used to reduce the effect of a high gamma value on bright image areas,
-e.g. keep them from getting overamplified and just plain white. It accepts a
-float value in range @code{0.0} to @code{1.0}.A value of @code{0.0} turns the
-gamma correction all the way down while @code{1.0} leaves it at its full strength.
-Default is @code{1.0}.
+Set the gamma weight expression. It can be used to reduce the effect
+of a high gamma value on bright image areas, e.g. keep them from
+getting overamplified and just plain white. The value must be a float
+in range @code{0.0} to @code{1.0}. A value of @code{0.0} turns the
+gamma correction all the way down while @code{1.0} leaves it at its
+full strength. Default is "1".
 
+@item eval
+Set when the expressions for brightness, contrast, saturation and
+gamma expressions are evaluated.
+
+It accepts the following values:
+@table @samp
+@item init
+only evaluate expressions once during the filter initialization or
+when a command is processed
+
+@item frame
+evaluate expressions for each incoming frame
+@end table
+
+Default value is @samp{init}.
+@end table
+
+The expressions accept the following parameters:
+@table @option
+@item n
+frame count of the input frame starting from 0
+
+@item pos
+byte position of the corresponding packet in the input file, NAN if
+unspecified
+
+@item r
+frame rate of the input video, NAN if the input frame rate is unknown
+
+@item t
+timestamp expressed in seconds, NAN if the input timestamp is unknown
 @end table
 
 @subsection Commands

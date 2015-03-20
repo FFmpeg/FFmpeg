@@ -113,6 +113,7 @@ typedef struct MOVTrack {
     int         tref_id; ///< trackID of the referenced track
     int64_t     start_dts;
     int64_t     start_cts;
+    int64_t     end_pts;
 
     int         hint_track;   ///< the track that hints this track, -1 if no hint track is set
     int         src_track;    ///< the track that this hint (or tmcd) track describes
@@ -192,6 +193,7 @@ typedef struct MOVMuxContext {
     float gamma;
 
     int frag_interleave;
+    int missing_duration_warned;
 } MOVMuxContext;
 
 #define FF_MOV_FLAG_RTP_HINT              (1 <<  0)

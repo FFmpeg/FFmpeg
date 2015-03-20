@@ -2291,12 +2291,19 @@ static int mov_write_tkhd_tag(AVIOContext *pb, MOVMuxContext *mov,
     int rotation = 0;
     int group   = 0;
 
+    uint32_t *display_matrix = NULL;
+    int      display_matrix_size, i;
 
     if (st) {
         if (mov->per_stream_grouping)
             group = st->index;
         else
             group = st->codec->codec_type;
+
+        display_matrix = (uint32_t*)av_stream_get_side_data(st, AV_PKT_DATA_DISPLAYMATRIX,
+                                                            &display_matrix_size);
+        if (display_matrix_size < 9 * sizeof(*display_matrix))
+            display_matrix = NULL;
     }
 
     if (track->flags & MOV_TRACK_ENABLED)
@@ -2341,7 +2348,10 @@ static int mov_write_tkhd_tag(AVIOContext *pb, MOVMuxContext *mov,
         AVDictionaryEntry *rot = av_dict_get(st->metadata, "rotate", NULL, 0);
         rotation = (rot && rot->value) ? atoi(rot->value) : 0;
     }
-    if (rotation == 90) {
+    if (display_matrix) {
+        for (i = 0; i < 9; i++)
+            avio_wb32(pb, display_matrix[i]);
+    } else if (rotation == 90) {
         write_matrix(pb,  0,  1, -1,  0, track->enc->height, 0);
     } else if (rotation == 180) {
         write_matrix(pb, -1,  0,  0, -1, track->enc->width, track->enc->height);
@@ -3468,9 +3478,10 @@ static int mov_write_tfxd_tag(AVIOContext *pb, MOVTrack *track)
     avio_write(pb, uuid, sizeof(uuid));
     avio_w8(pb, 1);
     avio_wb24(pb, 0);
-    avio_wb64(pb, track->frag_start);
-    avio_wb64(pb, track->start_dts + track->track_duration -
-                  track->cluster[0].dts);
+    avio_wb64(pb, track->start_dts + track->frag_start +
+                  track->cluster[0].cts);
+    avio_wb64(pb, track->end_pts -
+                  (track->cluster[0].dts + track->cluster[0].cts));
 
     return update_size(pb, pos);
 }
@@ -3549,13 +3560,15 @@ static int mov_add_tfra_entries(AVIOContext *pb, MOVMuxContext *mov, int tracks,
         // from the fields we have stored
         info->time     = track->start_dts + track->frag_start +
                          track->cluster[0].cts;
+        info->duration = track->end_pts -
+                         (track->cluster[0].dts + track->cluster[0].cts);
         // If the pts is less than zero, we will have trimmed
         // away parts of the media track using an edit list,
         // and the corresponding start presentation time is zero.
-        if (info->time < 0)
+        if (info->time < 0) {
+            info->duration += info->time;
             info->time = 0;
-        info->duration = track->start_dts + track->track_duration -
-                         track->cluster[0].dts;
+        }
         info->tfrf_offset = 0;
         mov_write_tfrf_tags(pb, mov, track);
     }
@@ -3648,17 +3661,19 @@ static int mov_write_sidx_tag(AVIOContext *pb,
         entries = 1;
         presentation_time = track->start_dts + track->frag_start +
                             track->cluster[0].cts;
-        duration = track->start_dts + track->track_duration -
-                   track->cluster[0].dts;
+        duration = track->end_pts -
+                   (track->cluster[0].dts + track->cluster[0].cts);
         starts_with_SAP = track->cluster[0].flags & MOV_SYNC_SAMPLE;
+
+        // pts<0 should be cut away using edts
+        if (presentation_time < 0) {
+            duration += presentation_time;
+            presentation_time = 0;
+        }
     } else {
         entries = track->nb_frag_info;
         presentation_time = track->frag_info[0].time;
     }
-
-    // pts<0 should be cut away using edts
-    if (presentation_time < 0)
-        presentation_time = 0;
 
     avio_wb32(pb, 0); /* size */
     ffio_wfourcc(pb, "sidx");
@@ -4093,6 +4108,33 @@ static int mov_flush_fragment(AVFormatContext *s)
     if (!(mov->flags & FF_MOV_FLAG_FRAGMENT))
         return 0;
 
+    for (i = 0; i < mov->nb_streams; i++) {
+        MOVTrack *track = &mov->tracks[i];
+        if (track->entry <= 1)
+            continue;
+        // Sample durations are calculated as the diff of dts values,
+        // but for the last sample in a fragment, we don't know the dts
+        // of the first sample in the next fragment, so we have to rely
+        // on what was set as duration in the AVPacket. Not all callers
+        // set this though, so we might want to replace it with an
+        // estimate if it currently is zero.
+        if (get_cluster_duration(track, track->entry - 1) != 0)
+            continue;
+        // Use the duration (i.e. dts diff) of the second last sample for
+        // the last one. This is a wild guess (and fatal if it turns out
+        // to be too long), but probably the best we can do - having a zero
+        // duration is bad as well.
+        track->track_duration += get_cluster_duration(track, track->entry - 2);
+        track->end_pts        += get_cluster_duration(track, track->entry - 2);
+        if (!mov->missing_duration_warned) {
+            av_log(s, AV_LOG_WARNING,
+                   "Estimating the duration of the last packet in a "
+                   "fragment, consider setting the duration field in "
+                   "AVPacket instead.\n");
+            mov->missing_duration_warned = 1;
+        }
+    }
+
     if (!mov->moov_written) {
         int64_t pos = avio_tell(s->pb);
         uint8_t *buf;
@@ -4402,15 +4444,18 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
              * of this packet to be what the previous packets duration implies. */
             trk->cluster[trk->entry].dts = trk->start_dts + trk->track_duration;
             /* We also may have written the pts and the corresponding duration
-             * in sidx tags; make sure the sidx pts and duration match up with
+             * in sidx/tfrf/tfxd tags; make sure the sidx pts and duration match up with
              * the next fragment. This means the cts of the first sample must
              * be the same in all fragments. */
-            pkt->pts = pkt->dts + trk->start_cts;
+            if ((mov->flags & FF_MOV_FLAG_DASH && !(mov->flags & FF_MOV_FLAG_FASTSTART)) ||
+                mov->mode == MODE_ISM)
+                pkt->pts = pkt->dts + trk->end_pts - trk->cluster[trk->entry].dts;
         } else {
             /* New fragment, but discontinuous from previous fragments.
              * Pretend the duration sum of the earlier fragments is
              * pkt->dts - trk->start_dts. */
             trk->frag_start = pkt->dts - trk->start_dts;
+            trk->end_pts = AV_NOPTS_VALUE;
             trk->frag_discont = 0;
         }
     }
@@ -4452,6 +4497,13 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     trk->cluster[trk->entry].flags = 0;
     if (trk->start_cts == AV_NOPTS_VALUE)
         trk->start_cts = pkt->pts - pkt->dts;
+    if (trk->end_pts == AV_NOPTS_VALUE)
+        trk->end_pts = trk->cluster[trk->entry].dts +
+                       trk->cluster[trk->entry].cts + pkt->duration;
+    else
+        trk->end_pts = FFMAX(trk->end_pts, trk->cluster[trk->entry].dts +
+                                           trk->cluster[trk->entry].cts +
+                                           pkt->duration);
 
     if (enc->codec_id == AV_CODEC_ID_VC1) {
         mov_parse_vc1_frame(pkt, trk);
@@ -4510,8 +4562,15 @@ static int mov_write_single_packet(AVFormatContext *s, AVPacket *pkt)
              (mov->flags & FF_MOV_FLAG_FRAG_KEYFRAME &&
               enc->codec_type == AVMEDIA_TYPE_VIDEO &&
               trk->entry && pkt->flags & AV_PKT_FLAG_KEY)) {
-            if (frag_duration >= mov->min_fragment_duration)
+            if (frag_duration >= mov->min_fragment_duration) {
+                // Set the duration of this track to line up with the next
+                // sample in this track. This avoids relying on AVPacket
+                // duration, but only helps for this particular track, not
+                // for the other ones that are flushed at the same time.
+                trk->track_duration = pkt->dts - trk->start_dts;
+                trk->end_pts = pkt->pts;
                 mov_auto_flush_fragment(s);
+            }
         }
 
         return ff_mov_write_packet(s, pkt);
@@ -5038,6 +5097,7 @@ static int mov_write_header(AVFormatContext *s)
         track->hint_track = -1;
         track->start_dts  = AV_NOPTS_VALUE;
         track->start_cts  = AV_NOPTS_VALUE;
+        track->end_pts    = AV_NOPTS_VALUE;
         if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
             if (track->tag == MKTAG('m','x','3','p') || track->tag == MKTAG('m','x','3','n') ||
                 track->tag == MKTAG('m','x','4','p') || track->tag == MKTAG('m','x','4','n') ||

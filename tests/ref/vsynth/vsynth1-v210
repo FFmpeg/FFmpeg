@@ -1,4 +1,4 @@
-b066679e08cd90c342da21c88bec2a20 *tests/data/fate/vsynth1-v210.avi
-14752448 tests/data/fate/vsynth1-v210.avi
+0712d60b3a00cf2d5a7e39aa21e2547a *tests/data/fate/vsynth1-v210.avi
+14752452 tests/data/fate/vsynth1-v210.avi
 2ba7f4ca302f3c4147860b9dfb12b6e4 *tests/data/fate/vsynth1-v210.out.rawvideo
 stddev:    1.84 PSNR: 42.81 MAXDIFF:   29 bytes:  7603200/  7603200

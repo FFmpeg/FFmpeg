@@ -173,15 +173,6 @@ static inline void dv_calc_mb_coordinates(const AVDVProfile *d, int chan,
     }
 }
 
-/* quantization quanta by QNO for DV100 */
-static const uint8_t dv100_qstep[16] = {
-    1, /* QNO = 0 and 1 both have no quantization */
-    1,
-    2, 3, 4, 5, 6, 7, 8, 16, 18, 20, 22, 24, 28, 52
-};
-
-static const uint8_t dv_quant_areas[4] = { 6, 21, 43, 64 };
-
 int ff_dv_init_dynamic_tables(DVVideoContext *ctx, const AVDVProfile *d)
 {
     int j, i, c, s, p;

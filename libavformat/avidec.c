@@ -180,12 +180,13 @@ static int read_braindead_odml_indx(AVFormatContext *s, int frame_num)
 
     av_dlog(s,
             "longs_pre_entry:%d index_type:%d entries_in_use:%d "
-            "chunk_id:%X base:%16"PRIX64"\n",
+            "chunk_id:%X base:%16"PRIX64" frame_num:%d\n",
             longs_pre_entry,
             index_type,
             entries_in_use,
             chunk_id,
-            base);
+            base,
+            frame_num);
 
     if (stream_id >= s->nb_streams || stream_id < 0)
         return AVERROR_INVALIDDATA;

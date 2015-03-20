@@ -6,6 +6,7 @@ version <next>:
 - TDSC decoder
 - DTS lossless extension (XLL) decoding (not lossless, disabled by default)
 - showwavespic filter
+- libdcadec wrapper
 
 
 version 2.6:

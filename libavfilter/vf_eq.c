@@ -27,11 +27,6 @@
  * very simple video equalizer
  */
 
-/**
- * TODO:
- * - Add support to process_command
- */
-
 #include "libavfilter/internal.h"
 #include "libavutil/common.h"
 #include "libavutil/imgutils.h"
@@ -111,16 +106,16 @@ static void check_values(EQParameters *param, EQContext *eq)
 
 static void set_contrast(EQContext *eq)
 {
-    eq->var_values[VAR_CONTRAST] = av_clipf(av_expr_eval(eq->contrast_pexpr, eq->var_values, eq),-2.0, 2.0);
-    eq->param[0].contrast = eq->var_values[VAR_CONTRAST];
+    eq->contrast = av_clipf(av_expr_eval(eq->contrast_pexpr, eq->var_values, eq), -2.0, 2.0);
+    eq->param[0].contrast = eq->contrast;
     eq->param[0].lut_clean = 0;
     check_values(&eq->param[0], eq);
 }
 
 static void set_brightness(EQContext *eq)
 {
-    eq->var_values[VAR_BRIGHTNESS] =  av_clipf(av_expr_eval(eq->brightness_pexpr, eq->var_values, eq), -1.0, 1.0);
-    eq->param[0].brightness = eq->var_values[VAR_BRIGHTNESS];
+    eq->brightness = av_clipf(av_expr_eval(eq->brightness_pexpr, eq->var_values, eq), -1.0, 1.0);
+    eq->param[0].brightness = eq->brightness;
     eq->param[0].lut_clean = 0;
     check_values(&eq->param[0], eq);
 }
@@ -129,18 +124,18 @@ static void set_gamma(EQContext *eq)
 {
     int i;
 
-    eq->var_values[VAR_GAMMA]        =  av_clipf(av_expr_eval(eq->gamma_pexpr,        eq->var_values, eq),  0.1, 10.0);
-    eq->var_values[VAR_GAMMA_R]      =  av_clipf(av_expr_eval(eq->gamma_r_pexpr,      eq->var_values, eq),  0.1, 10.0);
-    eq->var_values[VAR_GAMMA_G]      =  av_clipf(av_expr_eval(eq->gamma_g_pexpr,      eq->var_values, eq),  0.1, 10.0);
-    eq->var_values[VAR_GAMMA_B]      =  av_clipf(av_expr_eval(eq->gamma_b_pexpr,      eq->var_values, eq),  0.1, 10.0);
-    eq->var_values[VAR_GAMMA_WEIGHT] =  av_clipf(av_expr_eval(eq->gamma_weight_pexpr, eq->var_values, eq),  0.0,  1.0);
+    eq->gamma        = av_clipf(av_expr_eval(eq->gamma_pexpr,        eq->var_values, eq), 0.1, 10.0);
+    eq->gamma_r      = av_clipf(av_expr_eval(eq->gamma_r_pexpr,      eq->var_values, eq), 0.1, 10.0);
+    eq->gamma_g      = av_clipf(av_expr_eval(eq->gamma_g_pexpr,      eq->var_values, eq), 0.1, 10.0);
+    eq->gamma_b      = av_clipf(av_expr_eval(eq->gamma_b_pexpr,      eq->var_values, eq), 0.1, 10.0);
+    eq->gamma_weight = av_clipf(av_expr_eval(eq->gamma_weight_pexpr, eq->var_values, eq), 0.0,  1.0);
 
-    eq->param[0].gamma = eq->var_values[VAR_GAMMA] * eq->var_values[VAR_GAMMA_G];
-    eq->param[1].gamma = sqrt(eq->var_values[VAR_GAMMA_B] / eq->var_values[VAR_GAMMA_G]);
-    eq->param[2].gamma = sqrt(eq->var_values[VAR_GAMMA_R] / eq->var_values[VAR_GAMMA_G]);
+    eq->param[0].gamma = eq->gamma * eq->gamma_g;
+    eq->param[1].gamma = sqrt(eq->gamma_b / eq->gamma_g);
+    eq->param[2].gamma = sqrt(eq->gamma_r / eq->gamma_g);
 
     for (i = 0; i < 3; i++) {
-        eq->param[i].gamma_weight = eq->var_values[VAR_GAMMA_WEIGHT];
+        eq->param[i].gamma_weight = eq->gamma_weight;
         eq->param[i].lut_clean = 0;
         check_values(&eq->param[i], eq);
     }
@@ -150,10 +145,10 @@ static void set_saturation(EQContext *eq)
 {
     int i;
 
-    eq->var_values[VAR_SATURATION] = av_clipf(av_expr_eval(eq->saturation_pexpr, eq->var_values, eq), 0.0, 3.0);
+    eq->saturation = av_clipf(av_expr_eval(eq->saturation_pexpr, eq->var_values, eq), 0.0, 3.0);
 
     for (i = 1; i < 3; i++) {
-        eq->param[i].contrast = eq->var_values[VAR_SATURATION];
+        eq->param[i].contrast = eq->saturation;
         eq->param[i].lut_clean = 0;
         check_values(&eq->param[i], eq);
     }
@@ -166,8 +161,7 @@ static int set_expr(AVExpr **pexpr, const char *expr, const char *option, void *
 
     if (*pexpr)
         old = *pexpr;
-    ret = av_expr_parse(pexpr, expr, var_names,
-                        NULL, NULL, NULL, NULL, 0, log_ctx);
+    ret = av_expr_parse(pexpr, expr, var_names, NULL, NULL, NULL, NULL, 0, log_ctx);
     if (ret < 0) {
         av_log(log_ctx, AV_LOG_ERROR,
                "Error when parsing the expression '%s' for %s\n",
@@ -200,10 +194,12 @@ static int initialize(AVFilterContext *ctx)
     if (ARCH_X86)
         ff_eq_init_x86(eq);
 
-    set_gamma(eq);
-    set_contrast(eq);
-    set_brightness(eq);
-    set_saturation(eq);
+    if (eq->eval_mode == EVAL_MODE_INIT) {
+        set_gamma(eq);
+        set_contrast(eq);
+        set_brightness(eq);
+        set_saturation(eq);
+    }
 
     return 0;
 }
@@ -220,6 +216,17 @@ static void uninit(AVFilterContext *ctx)
     av_expr_free(eq->gamma_r_pexpr);      eq->gamma_r_pexpr      = NULL;
     av_expr_free(eq->gamma_g_pexpr);      eq->gamma_g_pexpr      = NULL;
     av_expr_free(eq->gamma_b_pexpr);      eq->gamma_b_pexpr      = NULL;
+}
+
+static int config_props(AVFilterLink *inlink)
+{
+    EQContext *eq = inlink->dst->priv;
+
+    eq->var_values[VAR_N] = 0;
+    eq->var_values[VAR_R] = inlink->frame_rate.num == 0 || inlink->frame_rate.den == 0 ?
+        NAN : av_q2d(inlink->frame_rate);
+
+    return 0;
 }
 
 static int query_formats(AVFilterContext *ctx)
@@ -239,12 +246,15 @@ static int query_formats(AVFilterContext *ctx)
     return ff_set_common_formats(ctx, fmts_list);
 }
 
+#define TS2T(ts, tb) ((ts) == AV_NOPTS_VALUE ? NAN : (double)(ts) * av_q2d(tb))
+
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = inlink->dst->outputs[0];
     EQContext *eq = ctx->priv;
     AVFrame *out;
+    int64_t pos = av_frame_get_pkt_pos(in);
     const AVPixFmtDescriptor *desc;
     int i;
 
@@ -254,6 +264,17 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     av_frame_copy_props(out, in);
     desc = av_pix_fmt_desc_get(inlink->format);
+
+    eq->var_values[VAR_N]   = inlink->frame_count;
+    eq->var_values[VAR_POS] = pos == -1 ? NAN : pos;
+    eq->var_values[VAR_T]   = TS2T(in->pts, inlink->time_base);
+
+    if (eq->eval_mode == EVAL_MODE_FRAME) {
+        set_gamma(eq);
+        set_contrast(eq);
+        set_brightness(eq);
+        set_saturation(eq);
+    }
 
     for (i = 0; i < desc->nb_components; i++) {
         int w = inlink->w;
@@ -276,54 +297,35 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     return ff_filter_frame(outlink, out);
 }
 
+static inline int set_param(AVExpr **pexpr, const char *args, const char *cmd,
+                            void (*set_fn)(EQContext *eq), AVFilterContext *ctx)
+{
+    EQContext *eq = ctx->priv;
+    int ret;
+    if ((ret = set_expr(pexpr, args, cmd, ctx)) < 0)
+        return ret;
+    if (eq->eval_mode == EVAL_MODE_INIT)
+        set_fn(eq);
+    return 0;
+}
+
 static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
                            char *res, int res_len, int flags)
 {
     EQContext *eq = ctx->priv;
-    int ret;
 
-    if (!strcmp(cmd, "contrast")) {
-        ret = set_expr(&eq->contrast_pexpr, args, cmd, ctx);
-        set_contrast(eq);
-        return ret;
-    }
-    else if (!strcmp(cmd, "brightness")) {
-        ret = set_expr(&eq->brightness_pexpr, args, cmd, ctx);
-        set_brightness(eq);
-        return ret;
-    }
-    else if (!strcmp(cmd, "saturation")) {
-        ret = set_expr(&eq->saturation_pexpr, args, cmd, ctx);
-        set_saturation(eq);
-        return ret;
-    }
-    else if (!strcmp(cmd, "gamma")) {
-        ret = set_expr(&eq->gamma_pexpr, args, cmd, ctx);
-        set_gamma(eq);
-        return ret;
-    }
-    else if (!strcmp(cmd, "gamma_r")) {
-        ret = set_expr(&eq->gamma_r_pexpr, args, cmd, ctx);
-        set_gamma(eq);
-        return ret;
-    }
-    else if (!strcmp(cmd, "gamma_g")) {
-        ret = set_expr(&eq->gamma_g_pexpr, args, cmd, ctx);
-        set_gamma(eq);
-        return ret;
-    }
-    else if (!strcmp(cmd, "gamma_b")) {
-        ret = set_expr(&eq->gamma_b_pexpr, args, cmd, ctx);
-        set_gamma(eq);
-        return ret;
-    }
-    else if (!strcmp(cmd, "gamma_weight")) {
-        ret = set_expr(&eq->gamma_weight_pexpr, args, cmd, ctx);
-        set_gamma(eq);
-        return ret;
-    }
-    else
-        return AVERROR(ENOSYS);
+#define SET_PARAM(param_name, set_fn_name)                              \
+    if (!strcmp(cmd, #param_name)) return set_param(&eq->param_name##_pexpr, args, cmd, set_##set_fn_name, ctx);
+
+         SET_PARAM(contrast, contrast)
+    else SET_PARAM(brightness, brightness)
+    else SET_PARAM(saturation, saturation)
+    else SET_PARAM(gamma, gamma)
+    else SET_PARAM(gamma_r, gamma)
+    else SET_PARAM(gamma_g, gamma)
+    else SET_PARAM(gamma_b, gamma)
+    else SET_PARAM(gamma_weight, gamma)
+    else return AVERROR(ENOSYS);
 }
 
 static const AVFilterPad eq_inputs[] = {
@@ -331,6 +333,7 @@ static const AVFilterPad eq_inputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
         .filter_frame = filter_frame,
+        .config_props = config_props,
     },
     { NULL }
 };
@@ -363,6 +366,9 @@ static const AVOption eq_options[] = {
         OFFSET(gamma_b_expr),      AV_OPT_TYPE_STRING, {.str = "1.0"}, CHAR_MIN, CHAR_MAX, FLAGS },
     { "gamma_weight", "set the gamma weight which reduces the effect of gamma on bright areas",
         OFFSET(gamma_weight_expr), AV_OPT_TYPE_STRING, {.str = "1.0"}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "eval", "specify when to evaluate expressions", OFFSET(eval_mode), AV_OPT_TYPE_INT, {.i64 = EVAL_MODE_INIT}, 0, EVAL_MODE_NB-1, FLAGS, "eval" },
+         { "init",  "eval expressions once during initialization", 0, AV_OPT_TYPE_CONST, {.i64=EVAL_MODE_INIT},  .flags = FLAGS, .unit = "eval" },
+         { "frame", "eval expressions per-frame",                  0, AV_OPT_TYPE_CONST, {.i64=EVAL_MODE_FRAME}, .flags = FLAGS, .unit = "eval" },
     { NULL }
 };
 

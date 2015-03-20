@@ -136,6 +136,8 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
         frame->top_field_first  = first_field ^ ctx->cur_field;
         av_log(ctx->avctx, AV_LOG_DEBUG,
                "interlaced %d, cur field %d\n", buf[5] & 3, ctx->cur_field);
+    } else {
+        ctx->cur_field = 0;
     }
 
     ctx->height = AV_RB16(buf + 0x18);
@@ -157,11 +159,13 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
         } else {
             ctx->decode_dct_block = dnxhd_decode_dct_block_10;
             ctx->pix_fmt = AV_PIX_FMT_YUV422P10;
+            ctx->is_444 = 0;
         }
     } else if (buf[0x21] == 0x38) { /* 8 bit */
         ctx->bit_depth = ctx->avctx->bits_per_raw_sample = 8;
 
         ctx->pix_fmt = AV_PIX_FMT_YUV422P;
+        ctx->is_444 = 0;
         ctx->decode_dct_block = dnxhd_decode_dct_block_8;
     } else {
         av_log(ctx->avctx, AV_LOG_ERROR, "invalid bit depth value (%d).\n",
@@ -373,7 +377,7 @@ static int dnxhd_decode_macroblock(DNXHDContext *ctx, AVFrame *frame,
     dest_u = frame->data[1] + ((y * dct_linesize_chroma) << 4) + (x << (3 + shift1 + ctx->is_444));
     dest_v = frame->data[2] + ((y * dct_linesize_chroma) << 4) + (x << (3 + shift1 + ctx->is_444));
 
-    if (ctx->cur_field) {
+    if (frame->interlaced_frame && ctx->cur_field) {
         dest_y += frame->linesize[0];
         dest_u += frame->linesize[1];
         dest_v += frame->linesize[2];
