@@ -857,13 +857,13 @@ int ff_generate_sliding_window_mmcos(H264Context *h, int first_slice);
  * Check if the top & left blocks are available if needed & change the
  * dc mode so it only uses the available blocks.
  */
-int ff_h264_check_intra4x4_pred_mode(H264Context *h, H264SliceContext *sl);
+int ff_h264_check_intra4x4_pred_mode(const H264Context *h, H264SliceContext *sl);
 
 /**
  * Check if the top & left blocks are available if needed & change the
  * dc mode so it only uses the available blocks.
  */
-int ff_h264_check_intra_pred_mode(H264Context *h, H264SliceContext *sl,
+int ff_h264_check_intra_pred_mode(const H264Context *h, H264SliceContext *sl,
                                   int mode, int is_chroma);
 
 void ff_h264_hl_decode_mb(const H264Context *h, H264SliceContext *sl);
@@ -1161,7 +1161,7 @@ void ff_h264_unref_picture(H264Context *h, H264Picture *pic);
 int ff_h264_context_init(H264Context *h);
 int ff_h264_set_parameter_from_sps(H264Context *h);
 
-void ff_h264_draw_horiz_band(H264Context *h, H264SliceContext *sl, int y, int height);
+void ff_h264_draw_horiz_band(const H264Context *h, H264SliceContext *sl, int y, int height);
 int ff_init_poc(H264Context *h, int pic_field_poc[2], int *pic_poc);
 int ff_pred_weight_table(H264Context *h, H264SliceContext *sl);
 int ff_set_ref_count(H264Context *h, H264SliceContext *sl);
