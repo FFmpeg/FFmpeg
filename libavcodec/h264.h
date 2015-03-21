@@ -393,6 +393,8 @@ typedef struct H264SliceContext {
     int neighbor_transform_size;
 
     int direct_spatial_mv_pred;
+    int col_parity;
+    int col_fieldoff;
 
     /**
      * non zero coeff count cache.
@@ -485,8 +487,6 @@ typedef struct H264Context {
     int picture_structure;
     int first_field;
 
-    int col_parity;
-    int col_fieldoff;
     int dist_scale_factor[32];
     int dist_scale_factor_field[2][32];
     int map_col_to_list0[2][16 + 32];
