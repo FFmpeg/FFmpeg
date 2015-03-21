@@ -351,6 +351,9 @@ typedef struct H264SliceContext {
     int luma_weight[48][2][2];
     int chroma_weight[48][2][2][2];
     int implicit_weight[48][48][2];
+
+    int prev_mb_skipped;
+    int next_mb_skipped;
 } H264SliceContext;
 
 /**
@@ -388,9 +391,6 @@ typedef struct H264Context {
     int context_initialized;
     int flags;
     int workaround_bugs;
-
-    int prev_mb_skipped;
-    int next_mb_skipped;
 
     // prediction stuff
     int chroma_pred_mode;

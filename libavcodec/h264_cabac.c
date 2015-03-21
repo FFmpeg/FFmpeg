@@ -1900,16 +1900,16 @@ int ff_h264_decode_mb_cabac(H264Context *h, H264SliceContext *sl)
     if( h->slice_type_nos != AV_PICTURE_TYPE_I ) {
         int skip;
         /* a skipped mb needs the aff flag from the following mb */
-        if (FRAME_MBAFF(h) && (h->mb_y & 1) == 1 && h->prev_mb_skipped)
-            skip = h->next_mb_skipped;
+        if (FRAME_MBAFF(h) && (h->mb_y & 1) == 1 && sl->prev_mb_skipped)
+            skip = sl->next_mb_skipped;
         else
             skip = decode_cabac_mb_skip( h, h->mb_x, h->mb_y );
         /* read skip flags */
         if( skip ) {
             if (FRAME_MBAFF(h) && (h->mb_y & 1) == 0) {
                 h->cur_pic.mb_type[mb_xy] = MB_TYPE_SKIP;
-                h->next_mb_skipped = decode_cabac_mb_skip( h, h->mb_x, h->mb_y+1 );
-                if(!h->next_mb_skipped)
+                sl->next_mb_skipped = decode_cabac_mb_skip( h, h->mb_x, h->mb_y+1 );
+                if(!sl->next_mb_skipped)
                     h->mb_mbaff = h->mb_field_decoding_flag = decode_cabac_field_decoding_flag(h);
             }
 
@@ -1929,7 +1929,7 @@ int ff_h264_decode_mb_cabac(H264Context *h, H264SliceContext *sl)
             h->mb_field_decoding_flag = decode_cabac_field_decoding_flag(h);
     }
 
-    h->prev_mb_skipped = 0;
+    sl->prev_mb_skipped = 0;
 
     fill_decode_neighbors(h, -(MB_FIELD(h)));
 

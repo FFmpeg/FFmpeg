@@ -729,7 +729,7 @@ int ff_h264_decode_mb_cavlc(H264Context *h, H264SliceContext *sl)
             h->mb_mbaff = h->mb_field_decoding_flag = get_bits1(&h->gb);
     }
 
-    h->prev_mb_skipped= 0;
+    sl->prev_mb_skipped = 0;
 
     mb_type= get_ue_golomb(&h->gb);
     if(h->slice_type_nos == AV_PICTURE_TYPE_B){

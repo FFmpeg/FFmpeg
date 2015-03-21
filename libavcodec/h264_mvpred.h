@@ -824,7 +824,7 @@ static void av_unused decode_mb_skip(H264Context *h, H264SliceContext *sl)
     h->cur_pic.mb_type[mb_xy]      = mb_type;
     h->cur_pic.qscale_table[mb_xy] = sl->qscale;
     h->slice_table[mb_xy]            = h->slice_num;
-    h->prev_mb_skipped               = 1;
+    sl->prev_mb_skipped            = 1;
 }
 
 #endif /* AVCODEC_H264_MVPRED_H */
