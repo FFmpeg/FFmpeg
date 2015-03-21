@@ -685,7 +685,7 @@ av_cold int ff_h264_decode_init(AVCodecContext *avctx)
 
     h->thread_context[0] = h;
     for (i = 0; i < h->nb_slice_ctx; i++)
-        h->slice_ctx[i].h264 = h->thread_context[0];
+        h->slice_ctx[i].h264 = h;
 
     h->outputed_poc      = h->next_outputed_poc = INT_MIN;
     for (i = 0; i < MAX_DELAYED_PIC_COUNT; i++)
@@ -1433,7 +1433,6 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size,
                             int parse_extradata)
 {
     AVCodecContext *const avctx = h->avctx;
-    H264Context *hx; ///< thread context
     H264SliceContext *sl;
     int buf_index;
     unsigned context_count;
@@ -1491,10 +1490,9 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size,
                     continue;
             }
 
-            hx = h->thread_context[context_count];
             sl = &h->slice_ctx[context_count];
 
-            ptr = ff_h264_decode_nal(hx, sl, buf + buf_index, &dst_length,
+            ptr = ff_h264_decode_nal(h, sl, buf + buf_index, &dst_length,
                                      &consumed, next_avc - buf_index);
             if (!ptr || dst_length < 0) {
                 ret = -1;
@@ -1507,7 +1505,7 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size,
             if (h->avctx->debug & FF_DEBUG_STARTCODE)
                 av_log(h->avctx, AV_LOG_DEBUG,
                        "NAL %d/%d at %d/%d length %d\n",
-                       hx->nal_unit_type, hx->nal_ref_idc, buf_index, buf_size, dst_length);
+                       h->nal_unit_type, h->nal_ref_idc, buf_index, buf_size, dst_length);
 
             if (h->is_avc && (nalsize != consumed) && nalsize)
                 av_log(h->avctx, AV_LOG_DEBUG,
@@ -1530,7 +1528,7 @@ again:
              * parsing. Decoding slices is not possible in codec init
              * with frame-mt */
             if (parse_extradata) {
-                switch (hx->nal_unit_type) {
+                switch (h->nal_unit_type) {
                 case NAL_IDR_SLICE:
                 case NAL_SLICE:
                 case NAL_DPA:
@@ -1538,16 +1536,16 @@ again:
                 case NAL_DPC:
                     av_log(h->avctx, AV_LOG_WARNING,
                            "Ignoring NAL %d in global header/extradata\n",
-                           hx->nal_unit_type);
+                           h->nal_unit_type);
                     // fall through to next case
                 case NAL_AUXILIARY_SLICE:
-                    hx->nal_unit_type = NAL_FF_IGNORE;
+                    h->nal_unit_type = NAL_FF_IGNORE;
                 }
             }
 
             err = 0;
 
-            switch (hx->nal_unit_type) {
+            switch (h->nal_unit_type) {
             case NAL_IDR_SLICE:
                 if ((ptr[0] & 0xFC) == 0x98) {
                     av_log(h->avctx, AV_LOG_ERROR, "Invalid inter IDR frame\n");
@@ -1568,7 +1566,7 @@ again:
             case NAL_SLICE:
                 init_get_bits(&sl->gb, ptr, bit_length);
 
-                if ((err = ff_h264_decode_slice_header(hx, sl, h)))
+                if ((err = ff_h264_decode_slice_header(h, sl)))
                     break;
 
                 if (h->sei_recovery_frame_cnt >= 0) {
@@ -1586,16 +1584,16 @@ again:
                 }
 
                 h->cur_pic_ptr->f.key_frame |=
-                    (hx->nal_unit_type == NAL_IDR_SLICE);
+                    (h->nal_unit_type == NAL_IDR_SLICE);
 
-                if (hx->nal_unit_type == NAL_IDR_SLICE ||
+                if (h->nal_unit_type == NAL_IDR_SLICE ||
                     h->recovery_frame == h->frame_num) {
                     h->recovery_frame         = -1;
                     h->cur_pic_ptr->recovered = 1;
                 }
                 // If we have an IDR, all frames after it in decoded order are
                 // "recovered".
-                if (hx->nal_unit_type == NAL_IDR_SLICE)
+                if (h->nal_unit_type == NAL_IDR_SLICE)
                     h->frame_recovered |= FRAME_RECOVERED_IDR;
                 h->frame_recovered |= 3*!!(avctx->flags2 & CODEC_FLAG2_SHOW_ALL);
                 h->frame_recovered |= 3*!!(avctx->flags & CODEC_FLAG_OUTPUT_CORRUPT);
@@ -1681,7 +1679,7 @@ again:
                 break;
             default:
                 av_log(avctx, AV_LOG_DEBUG, "Unknown NAL code: %d (%d bits)\n",
-                       hx->nal_unit_type, bit_length);
+                       h->nal_unit_type, bit_length);
             }
 
             if (context_count == h->max_contexts) {
@@ -1696,13 +1694,9 @@ again:
                     av_log(h->avctx, AV_LOG_ERROR, "decode_slice_header error\n");
                 sl->ref_count[0] = sl->ref_count[1] = sl->list_count = 0;
             } else if (err == SLICE_SINGLETHREAD) {
-                /* Slice could not be decoded in parallel mode, copy down
-                 * NAL unit stuff to context 0 and restart. Note that
-                 * rbsp_buffer is not transferred, but since we no longer
+                /* Slice could not be decoded in parallel mode, restart. Note
+                 * that rbsp_buffer is not transferred, but since we no longer
                  * run in parallel mode this should not be an issue. */
-                h->nal_unit_type = hx->nal_unit_type;
-                h->nal_ref_idc   = hx->nal_ref_idc;
-                hx               = h;
                 sl               = &h->slice_ctx[0];
                 goto again;
             }
