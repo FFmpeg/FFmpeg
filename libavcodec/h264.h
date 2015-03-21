@@ -354,6 +354,9 @@ typedef struct H264SliceContext {
 
     int prev_mb_skipped;
     int next_mb_skipped;
+
+    int chroma_pred_mode;
+    int intra16x16_pred_mode;
 } H264SliceContext;
 
 /**
@@ -393,9 +396,6 @@ typedef struct H264Context {
     int workaround_bugs;
 
     // prediction stuff
-    int chroma_pred_mode;
-    int intra16x16_pred_mode;
-
     int topleft_mb_xy;
     int top_mb_xy;
     int topright_mb_xy;

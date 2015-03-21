@@ -160,8 +160,8 @@ static av_noinline void FUNC(hl_decode_mb)(H264Context *h, H264SliceContext *sl)
                                uvlinesize, 1, 0, SIMPLE, PIXEL_SHIFT);
 
             if (SIMPLE || !CONFIG_GRAY || !(h->flags & CODEC_FLAG_GRAY)) {
-                h->hpc.pred8x8[h->chroma_pred_mode](dest_cb, uvlinesize);
-                h->hpc.pred8x8[h->chroma_pred_mode](dest_cr, uvlinesize);
+                h->hpc.pred8x8[sl->chroma_pred_mode](dest_cb, uvlinesize);
+                h->hpc.pred8x8[sl->chroma_pred_mode](dest_cr, uvlinesize);
             }
 
             hl_decode_mb_predict_luma(h, sl, mb_type, is_h264, SIMPLE,
@@ -195,13 +195,13 @@ static av_noinline void FUNC(hl_decode_mb)(H264Context *h, H264SliceContext *sl)
             uint8_t *dest[2] = { dest_cb, dest_cr };
             if (transform_bypass) {
                 if (IS_INTRA(mb_type) && h->sps.profile_idc == 244 &&
-                    (h->chroma_pred_mode == VERT_PRED8x8 ||
-                     h->chroma_pred_mode == HOR_PRED8x8)) {
-                    h->hpc.pred8x8_add[h->chroma_pred_mode](dest[0],
+                    (sl->chroma_pred_mode == VERT_PRED8x8 ||
+                     sl->chroma_pred_mode == HOR_PRED8x8)) {
+                    h->hpc.pred8x8_add[sl->chroma_pred_mode](dest[0],
                                                             block_offset + 16,
                                                             h->mb + (16 * 16 * 1 << PIXEL_SHIFT),
                                                             uvlinesize);
-                    h->hpc.pred8x8_add[h->chroma_pred_mode](dest[1],
+                    h->hpc.pred8x8_add[sl->chroma_pred_mode](dest[1],
                                                             block_offset + 32,
                                                             h->mb + (16 * 16 * 2 << PIXEL_SHIFT),
                                                             uvlinesize);

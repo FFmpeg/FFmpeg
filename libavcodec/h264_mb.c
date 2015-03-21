@@ -699,7 +699,7 @@ static av_always_inline void hl_decode_mb_predict_luma(H264Context *h,
             }
         }
     } else {
-        h->hpc.pred16x16[h->intra16x16_pred_mode](dest_y, linesize);
+        h->hpc.pred16x16[sl->intra16x16_pred_mode](dest_y, linesize);
         if (is_h264) {
             if (h->non_zero_count_cache[scan8[LUMA_DC_BLOCK_INDEX + p]]) {
                 if (!transform_bypass)
@@ -743,9 +743,9 @@ static av_always_inline void hl_decode_mb_idct_luma(H264Context *h, H264SliceCon
             if (IS_INTRA16x16(mb_type)) {
                 if (transform_bypass) {
                     if (h->sps.profile_idc == 244 &&
-                        (h->intra16x16_pred_mode == VERT_PRED8x8 ||
-                         h->intra16x16_pred_mode == HOR_PRED8x8)) {
-                        h->hpc.pred16x16_add[h->intra16x16_pred_mode](dest_y, block_offset,
+                        (sl->intra16x16_pred_mode == VERT_PRED8x8 ||
+                         sl->intra16x16_pred_mode == HOR_PRED8x8)) {
+                        h->hpc.pred16x16_add[sl->intra16x16_pred_mode](dest_y, block_offset,
                                                                       h->mb + (p * 256 << pixel_shift),
                                                                       linesize);
                     } else {

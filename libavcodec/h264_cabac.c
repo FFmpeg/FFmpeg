@@ -1992,7 +1992,7 @@ int ff_h264_decode_mb_cabac(H264Context *h, H264SliceContext *sl)
 decode_intra_mb:
         partition_count = 0;
         cbp= i_mb_type_info[mb_type].cbp;
-        h->intra16x16_pred_mode= i_mb_type_info[mb_type].pred_mode;
+        sl->intra16x16_pred_mode = i_mb_type_info[mb_type].pred_mode;
         mb_type= i_mb_type_info[mb_type].type;
     }
     if(MB_FIELD(h))
@@ -2061,8 +2061,8 @@ decode_intra_mb:
             write_back_intra_pred_mode(h);
             if( ff_h264_check_intra4x4_pred_mode(h) < 0 ) return -1;
         } else {
-            h->intra16x16_pred_mode= ff_h264_check_intra_pred_mode( h, h->intra16x16_pred_mode, 0 );
-            if( h->intra16x16_pred_mode < 0 ) return -1;
+            sl->intra16x16_pred_mode = ff_h264_check_intra_pred_mode(h, sl->intra16x16_pred_mode, 0);
+            if (sl->intra16x16_pred_mode < 0) return -1;
         }
         if(decode_chroma){
             h->chroma_pred_mode_table[mb_xy] =
@@ -2070,9 +2070,9 @@ decode_intra_mb:
 
             pred_mode= ff_h264_check_intra_pred_mode( h, pred_mode, 1 );
             if( pred_mode < 0 ) return -1;
-            h->chroma_pred_mode= pred_mode;
+            sl->chroma_pred_mode = pred_mode;
         } else {
-            h->chroma_pred_mode= DC_128_PRED8x8;
+            sl->chroma_pred_mode = DC_128_PRED8x8;
         }
     } else if( partition_count == 4 ) {
         int i, j, sub_partition_count[4], list, ref[2][4];
