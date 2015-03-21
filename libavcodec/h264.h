@@ -881,9 +881,9 @@ int ff_h264_decode_mb_cavlc(H264Context *h, H264SliceContext *sl);
  * Decode a CABAC coded macroblock
  * @return 0 if OK, ER_AC_ERROR / ER_DC_ERROR / ER_MV_ERROR on error
  */
-int ff_h264_decode_mb_cabac(H264Context *h, H264SliceContext *sl);
+int ff_h264_decode_mb_cabac(const H264Context *h, H264SliceContext *sl);
 
-void ff_h264_init_cabac_states(H264Context *h, H264SliceContext *sl);
+void ff_h264_init_cabac_states(const H264Context *h, H264SliceContext *sl);
 
 void ff_h264_init_dequant_tables(H264Context *h);
 
