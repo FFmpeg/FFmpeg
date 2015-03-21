@@ -369,7 +369,7 @@ static av_always_inline void h264_filter_mb_fast_internal(H264Context *h,
             int mask_edge0 = 3*((mask_edge1>>1) & ((5*left_type)>>5)&1); // (mb_type & (MB_TYPE_16x16 | MB_TYPE_8x16)) && (h->left_type[LTOP] & (MB_TYPE_16x16 | MB_TYPE_8x16)) ? 3 : 0;
             int step =  1+(mb_type>>24); //IS_8x8DCT(mb_type) ? 2 : 1;
             edges = 4 - 3*((mb_type>>3) & !(h->cbp & 15)); //(mb_type & MB_TYPE_16x16) && !(h->cbp & 15) ? 1 : 4;
-            h->h264dsp.h264_loop_filter_strength( bS, h->non_zero_count_cache, h->ref_cache, h->mv_cache,
+            h->h264dsp.h264_loop_filter_strength(bS, sl->non_zero_count_cache, h->ref_cache, h->mv_cache,
                                               h->list_count==2, edges, step, mask_edge0, mask_edge1, FIELD_PICTURE(h));
         }
         if( IS_INTRA(left_type) )
@@ -510,15 +510,15 @@ static av_always_inline void filter_mb_dir(H264Context *h, H264SliceContext *sl,
                     AV_WN64A(bS, 0x0003000300030003ULL);
                 } else {
                     if (!CABAC(h) && IS_8x8DCT(h->cur_pic.mb_type[mbn_xy])) {
-                        bS[0]= 1+((h->cbp_table[mbn_xy] & 0x4000)||h->non_zero_count_cache[scan8[0]+0]);
-                        bS[1]= 1+((h->cbp_table[mbn_xy] & 0x4000)||h->non_zero_count_cache[scan8[0]+1]);
-                        bS[2]= 1+((h->cbp_table[mbn_xy] & 0x8000)||h->non_zero_count_cache[scan8[0]+2]);
-                        bS[3]= 1+((h->cbp_table[mbn_xy] & 0x8000)||h->non_zero_count_cache[scan8[0]+3]);
+                        bS[0]= 1+((h->cbp_table[mbn_xy] & 0x4000) || sl->non_zero_count_cache[scan8[0]+0]);
+                        bS[1]= 1+((h->cbp_table[mbn_xy] & 0x4000) || sl->non_zero_count_cache[scan8[0]+1]);
+                        bS[2]= 1+((h->cbp_table[mbn_xy] & 0x8000) || sl->non_zero_count_cache[scan8[0]+2]);
+                        bS[3]= 1+((h->cbp_table[mbn_xy] & 0x8000) || sl->non_zero_count_cache[scan8[0]+3]);
                     }else{
                     const uint8_t *mbn_nnz = h->non_zero_count[mbn_xy] + 3*4;
                     int i;
                     for( i = 0; i < 4; i++ ) {
-                        bS[i] = 1 + !!(h->non_zero_count_cache[scan8[0]+i] | mbn_nnz[i]);
+                        bS[i] = 1 + !!(sl->non_zero_count_cache[scan8[0]+i] | mbn_nnz[i]);
                     }
                     }
                 }
@@ -574,8 +574,8 @@ static av_always_inline void filter_mb_dir(H264Context *h, H264SliceContext *sl,
                     int b_idx= 8 + 4 + x + 8*y;
                     int bn_idx= b_idx - (dir ? 8:1);
 
-                    if( h->non_zero_count_cache[b_idx] |
-                        h->non_zero_count_cache[bn_idx] ) {
+                    if (sl->non_zero_count_cache[b_idx] |
+                        sl->non_zero_count_cache[bn_idx]) {
                         bS[i] = 2;
                     }
                     else if(!mv_done)
@@ -657,8 +657,8 @@ static av_always_inline void filter_mb_dir(H264Context *h, H264SliceContext *sl,
                 int b_idx= 8 + 4 + x + 8*y;
                 int bn_idx= b_idx - (dir ? 8:1);
 
-                if( h->non_zero_count_cache[b_idx] |
-                    h->non_zero_count_cache[bn_idx] ) {
+                if (sl->non_zero_count_cache[b_idx] |
+                    sl->non_zero_count_cache[bn_idx]) {
                     bS[i] = 2;
                 }
                 else if(!mv_done)
@@ -765,7 +765,7 @@ void ff_h264_filter_mb(H264Context *h, H264SliceContext *sl,
                 if( IS_INTRA( mbn_type ) )
                     bS[i] = 4;
                 else{
-                    bS[i] = 1 + !!(h->non_zero_count_cache[12+8*(i>>1)] |
+                    bS[i] = 1 + !!(sl->non_zero_count_cache[12+8*(i>>1)] |
                          ((!h->pps.cabac && IS_8x8DCT(mbn_type)) ?
                             (h->cbp_table[mbn_xy] & (((MB_FIELD(h) ? (i&2) : (mb_y&1)) ? 8 : 2) << 12))
                                                                        :

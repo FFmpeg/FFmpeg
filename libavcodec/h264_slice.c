@@ -2207,7 +2207,7 @@ static int fill_filter_caches(H264Context *h, H264SliceContext *sl, int mb_type)
                                  top_type, left_type, mb_xy, 1);
 
     nnz       = h->non_zero_count[mb_xy];
-    nnz_cache = h->non_zero_count_cache;
+    nnz_cache = sl->non_zero_count_cache;
     AV_COPY32(&nnz_cache[4 + 8 * 1], &nnz[0]);
     AV_COPY32(&nnz_cache[4 + 8 * 2], &nnz[4]);
     AV_COPY32(&nnz_cache[4 + 8 * 3], &nnz[8]);

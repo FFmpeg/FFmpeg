@@ -64,11 +64,12 @@ static void h264_er_decode_mb(void *opaque, int ref, int mv_dir, int mv_type,
                               int mb_x, int mb_y, int mb_intra, int mb_skipped)
 {
     H264Context *h = opaque;
+    H264SliceContext *sl = &h->slice_ctx[0];
 
     h->mb_x  = mb_x;
     h->mb_y  = mb_y;
     h->mb_xy = mb_x + mb_y * h->mb_stride;
-    memset(h->non_zero_count_cache, 0, sizeof(h->non_zero_count_cache));
+    memset(sl->non_zero_count_cache, 0, sizeof(sl->non_zero_count_cache));
     av_assert1(ref >= 0);
     /* FIXME: It is possible albeit uncommon that slice references
      * differ between slices. We take the easy approach and ignore

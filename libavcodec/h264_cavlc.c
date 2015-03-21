@@ -284,10 +284,11 @@ static int8_t cavlc_level_tab[7][1<<LEVEL_TAB_BITS][2];
  * Get the predicted number of non-zero coefficients.
  * @param n block index
  */
-static inline int pred_non_zero_count(H264Context *h, int n){
+static inline int pred_non_zero_count(H264Context *h, H264SliceContext *sl, int n)
+{
     const int index8= scan8[n];
-    const int left= h->non_zero_count_cache[index8 - 1];
-    const int top = h->non_zero_count_cache[index8 - 8];
+    const int left = sl->non_zero_count_cache[index8 - 1];
+    const int top  = sl->non_zero_count_cache[index8 - 8];
     int i= left + top;
 
     if(i<64) i= (i+1)>>1;
@@ -442,7 +443,11 @@ static inline int get_level_prefix(GetBitContext *gb){
  * @param max_coeff number of coefficients in the block
  * @return <0 if an error occurred
  */
-static int decode_residual(H264Context *h, GetBitContext *gb, int16_t *block, int n, const uint8_t *scantable, const uint32_t *qmul, int max_coeff){
+static int decode_residual(H264Context *h, H264SliceContext *sl,
+                           GetBitContext *gb, int16_t *block, int n,
+                           const uint8_t *scantable, const uint32_t *qmul,
+                           int max_coeff)
+{
     static const int coeff_token_table_index[17]= {0, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3};
     int level[16];
     int zeros_left, coeff_token, total_coeff, i, trailing_ones, run_before;
@@ -457,16 +462,16 @@ static int decode_residual(H264Context *h, GetBitContext *gb, int16_t *block, in
         total_coeff= coeff_token>>2;
     }else{
         if(n >= LUMA_DC_BLOCK_INDEX){
-            total_coeff= pred_non_zero_count(h, (n - LUMA_DC_BLOCK_INDEX)*16);
+            total_coeff= pred_non_zero_count(h, sl, (n - LUMA_DC_BLOCK_INDEX)*16);
             coeff_token= get_vlc2(gb, coeff_token_vlc[ coeff_token_table_index[total_coeff] ].table, COEFF_TOKEN_VLC_BITS, 2);
             total_coeff= coeff_token>>2;
         }else{
-            total_coeff= pred_non_zero_count(h, n);
+            total_coeff= pred_non_zero_count(h, sl, n);
             coeff_token= get_vlc2(gb, coeff_token_vlc[ coeff_token_table_index[total_coeff] ].table, COEFF_TOKEN_VLC_BITS, 2);
             total_coeff= coeff_token>>2;
         }
     }
-    h->non_zero_count_cache[ scan8[n] ]= total_coeff;
+    sl->non_zero_count_cache[scan8[n]] = total_coeff;
 
     //FIXME set last_non_zero?
 
@@ -638,7 +643,7 @@ static av_always_inline int decode_luma_residual(H264Context *h, H264SliceContex
         AV_ZERO128(h->mb_luma_dc[p]+8);
         AV_ZERO128(h->mb_luma_dc[p]+16);
         AV_ZERO128(h->mb_luma_dc[p]+24);
-        if( decode_residual(h, h->intra_gb_ptr, h->mb_luma_dc[p], LUMA_DC_BLOCK_INDEX+p, scan, NULL, 16) < 0){
+        if( decode_residual(h, sl, h->intra_gb_ptr, h->mb_luma_dc[p], LUMA_DC_BLOCK_INDEX+p, scan, NULL, 16) < 0){
             return -1; //FIXME continue if partitioned and other return -1 too
         }
 
@@ -648,7 +653,7 @@ static av_always_inline int decode_luma_residual(H264Context *h, H264SliceContex
             for(i8x8=0; i8x8<4; i8x8++){
                 for(i4x4=0; i4x4<4; i4x4++){
                     const int index= i4x4 + 4*i8x8 + p*16;
-                    if( decode_residual(h, h->intra_gb_ptr, h->mb + (16*index << pixel_shift),
+                    if( decode_residual(h, sl, h->intra_gb_ptr, h->mb + (16*index << pixel_shift),
                         index, scan + 1, h->dequant4_coeff[p][qscale], 15) < 0 ){
                         return -1;
                     }
@@ -656,7 +661,7 @@ static av_always_inline int decode_luma_residual(H264Context *h, H264SliceContex
             }
             return 0xf;
         }else{
-            fill_rectangle(&h->non_zero_count_cache[scan8[p*16]], 4, 4, 8, 0, 1);
+            fill_rectangle(&sl->non_zero_count_cache[scan8[p*16]], 4, 4, 8, 0, 1);
             return 0;
         }
     }else{
@@ -670,25 +675,25 @@ static av_always_inline int decode_luma_residual(H264Context *h, H264SliceContex
                     uint8_t *nnz;
                     for(i4x4=0; i4x4<4; i4x4++){
                         const int index= i4x4 + 4*i8x8 + p*16;
-                        if( decode_residual(h, gb, buf, index, scan8x8+16*i4x4,
+                        if( decode_residual(h, sl, gb, buf, index, scan8x8+16*i4x4,
                                             h->dequant8_coeff[cqm][qscale], 16) < 0 )
                             return -1;
                     }
-                    nnz= &h->non_zero_count_cache[ scan8[4*i8x8+p*16] ];
+                    nnz = &sl->non_zero_count_cache[scan8[4 * i8x8 + p * 16]];
                     nnz[0] += nnz[1] + nnz[8] + nnz[9];
                     new_cbp |= !!nnz[0] << i8x8;
                 }else{
                     for(i4x4=0; i4x4<4; i4x4++){
                         const int index= i4x4 + 4*i8x8 + p*16;
-                        if( decode_residual(h, gb, h->mb + (16*index << pixel_shift), index,
+                        if( decode_residual(h, sl, gb, h->mb + (16*index << pixel_shift), index,
                                             scan, h->dequant4_coeff[cqm][qscale], 16) < 0 ){
                             return -1;
                         }
-                        new_cbp |= h->non_zero_count_cache[ scan8[index] ] << i8x8;
+                        new_cbp |= sl->non_zero_count_cache[scan8[index]] << i8x8;
                     }
                 }
             }else{
-                uint8_t * const nnz= &h->non_zero_count_cache[ scan8[4*i8x8+p*16] ];
+                uint8_t * const nnz = &sl->non_zero_count_cache[scan8[4 * i8x8 + p * 16]];
                 nnz[0] = nnz[1] = nnz[8] = nnz[9] = 0;
             }
         }
@@ -1135,7 +1140,7 @@ decode_intra_mb:
 
             if(cbp&0x30){
                 for(chroma_idx=0; chroma_idx<2; chroma_idx++)
-                    if (decode_residual(h, gb, h->mb + ((256 + 16*16*chroma_idx) << pixel_shift),
+                    if (decode_residual(h, sl, gb, h->mb + ((256 + 16*16*chroma_idx) << pixel_shift),
                                         CHROMA_DC_BLOCK_INDEX+chroma_idx,
                                         CHROMA422(h) ? chroma422_dc_scan : chroma_dc_scan,
                                         NULL, 4*num_c8x8) < 0) {
@@ -1150,24 +1155,24 @@ decode_intra_mb:
                     for (i8x8 = 0; i8x8<num_c8x8; i8x8++) {
                         for (i4x4 = 0; i4x4 < 4; i4x4++) {
                             const int index = 16 + 16*chroma_idx + 8*i8x8 + i4x4;
-                            if (decode_residual(h, gb, mb, index, scan + 1, qmul, 15) < 0)
+                            if (decode_residual(h, sl, gb, mb, index, scan + 1, qmul, 15) < 0)
                                 return -1;
                             mb += 16 << pixel_shift;
                         }
                     }
                 }
             }else{
-                fill_rectangle(&h->non_zero_count_cache[scan8[16]], 4, 4, 8, 0, 1);
-                fill_rectangle(&h->non_zero_count_cache[scan8[32]], 4, 4, 8, 0, 1);
+                fill_rectangle(&sl->non_zero_count_cache[scan8[16]], 4, 4, 8, 0, 1);
+                fill_rectangle(&sl->non_zero_count_cache[scan8[32]], 4, 4, 8, 0, 1);
             }
         }
     }else{
-        fill_rectangle(&h->non_zero_count_cache[scan8[ 0]], 4, 4, 8, 0, 1);
-        fill_rectangle(&h->non_zero_count_cache[scan8[16]], 4, 4, 8, 0, 1);
-        fill_rectangle(&h->non_zero_count_cache[scan8[32]], 4, 4, 8, 0, 1);
+        fill_rectangle(&sl->non_zero_count_cache[scan8[ 0]], 4, 4, 8, 0, 1);
+        fill_rectangle(&sl->non_zero_count_cache[scan8[16]], 4, 4, 8, 0, 1);
+        fill_rectangle(&sl->non_zero_count_cache[scan8[32]], 4, 4, 8, 0, 1);
     }
     h->cur_pic.qscale_table[mb_xy] = sl->qscale;
-    write_back_non_zero_count(h);
+    write_back_non_zero_count(h, sl);
 
     return 0;
 }

@@ -691,7 +691,7 @@ static int svq3_decode_mb(SVQ3Context *s, unsigned int mb_type)
         memset(sl->intra4x4_pred_mode + h->mb2br_xy[mb_xy], DC_PRED, 8);
     }
     if (!IS_SKIP(mb_type) || h->pict_type == AV_PICTURE_TYPE_B) {
-        memset(h->non_zero_count_cache + 8, 0, 14 * 8 * sizeof(uint8_t));
+        memset(sl->non_zero_count_cache + 8, 0, 14 * 8 * sizeof(uint8_t));
     }
 
     if (!IS_INTRA16x16(mb_type) &&
@@ -733,7 +733,7 @@ static int svq3_decode_mb(SVQ3Context *s, unsigned int mb_type)
                     k = index ? (1 * (j & 1) + 2 * (i & 1) +
                                  2 * (j & 2) + 4 * (i & 2))
                               : (4 * i + j);
-                    h->non_zero_count_cache[scan8[k]] = 1;
+                    sl->non_zero_count_cache[scan8[k]] = 1;
 
                     if (svq3_decode_block(&h->gb, &h->mb[16 * k], index, type)) {
                         av_log(h->avctx, AV_LOG_ERROR,
@@ -755,7 +755,7 @@ static int svq3_decode_mb(SVQ3Context *s, unsigned int mb_type)
                 for (i = 1; i < 3; i++) {
                     for (j = 0; j < 4; j++) {
                         k                                 = 16 * i + j;
-                        h->non_zero_count_cache[scan8[k]] = 1;
+                        sl->non_zero_count_cache[scan8[k]] = 1;
 
                         if (svq3_decode_block(&h->gb, &h->mb[16 * k], 1, 1)) {
                             av_log(h->avctx, AV_LOG_ERROR,

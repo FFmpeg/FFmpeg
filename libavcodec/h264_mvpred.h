@@ -539,7 +539,7 @@ static void fill_decode_caches(H264Context *h, H264SliceContext *sl, int mb_type
          */
         /* FIXME: constraint_intra_pred & partitioning & nnz
          * (let us hope this is just a typo in the spec) */
-        nnz_cache = h->non_zero_count_cache;
+        nnz_cache = sl->non_zero_count_cache;
         if (top_type) {
             nnz = h->non_zero_count[top_xy];
             AV_COPY32(&nnz_cache[4 + 8 * 0], &nnz[4 * 3]);

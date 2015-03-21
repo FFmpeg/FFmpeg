@@ -1534,7 +1534,10 @@ static int decode_cabac_mb_mvd( H264Context *h, int ctxbase, int amvd, int *mvda
     my += decode_cabac_mb_mvd( h, 47, amvd1, &mpy );\
 }
 
-static av_always_inline int get_cabac_cbf_ctx( H264Context *h, int cat, int idx, int max_coeff, int is_dc ) {
+static av_always_inline int get_cabac_cbf_ctx(H264Context *h, H264SliceContext *sl,
+                                              int cat, int idx, int max_coeff,
+                                              int is_dc)
+{
     int nza, nzb;
     int ctx = 0;
     static const uint16_t base_ctx[14] = {85,89,93,97,101,1012,460,464,468,1016,472,476,480,1020};
@@ -1550,8 +1553,8 @@ static av_always_inline int get_cabac_cbf_ctx( H264Context *h, int cat, int idx,
             nzb = h-> top_cbp&(0x100<<idx);
         }
     } else {
-        nza = h->non_zero_count_cache[scan8[idx] - 1];
-        nzb = h->non_zero_count_cache[scan8[idx] - 8];
+        nza = sl->non_zero_count_cache[scan8[idx] - 1];
+        nzb = sl->non_zero_count_cache[scan8[idx] - 8];
     }
 
     if( nza > 0 )
@@ -1564,7 +1567,8 @@ static av_always_inline int get_cabac_cbf_ctx( H264Context *h, int cat, int idx,
 }
 
 static av_always_inline void
-decode_cabac_residual_internal(H264Context *h, int16_t *block,
+decode_cabac_residual_internal(H264Context *h, H264SliceContext *sl,
+                               int16_t *block,
                                int cat, int n, const uint8_t *scantable,
                                const uint32_t *qmul, int max_coeff,
                                int is_dc, int chroma422)
@@ -1684,13 +1688,13 @@ decode_cabac_residual_internal(H264Context *h, int16_t *block,
             h->cbp_table[h->mb_xy] |= 0x40 << (n - CHROMA_DC_BLOCK_INDEX);
         else
             h->cbp_table[h->mb_xy] |= 0x100 << (n - LUMA_DC_BLOCK_INDEX);
-        h->non_zero_count_cache[scan8[n]] = coeff_count;
+        sl->non_zero_count_cache[scan8[n]] = coeff_count;
     } else {
         if( max_coeff == 64 )
-            fill_rectangle(&h->non_zero_count_cache[scan8[n]], 2, 2, 8, coeff_count, 1);
+            fill_rectangle(&sl->non_zero_count_cache[scan8[n]], 2, 2, 8, coeff_count, 1);
         else {
             av_assert2( cat == 1 || cat ==  2 || cat ==  4 || cat == 7 || cat == 8 || cat == 11 || cat == 12 );
-            h->non_zero_count_cache[scan8[n]] = coeff_count;
+            sl->non_zero_count_cache[scan8[n]] = coeff_count;
         }
     }
 
@@ -1751,31 +1755,34 @@ decode_cabac_residual_internal(H264Context *h, int16_t *block,
 }
 
 static av_noinline void decode_cabac_residual_dc_internal(H264Context *h,
+                                                          H264SliceContext *sl,
                                                           int16_t *block,
                                                           int cat, int n,
                                                           const uint8_t *scantable,
                                                           int max_coeff)
 {
-    decode_cabac_residual_internal(h, block, cat, n, scantable, NULL, max_coeff, 1, 0);
+    decode_cabac_residual_internal(h, sl, block, cat, n, scantable, NULL, max_coeff, 1, 0);
 }
 
 static av_noinline void decode_cabac_residual_dc_internal_422(H264Context *h,
+                                                              H264SliceContext *sl,
                                                               int16_t *block,
                                                               int cat, int n,
                                                               const uint8_t *scantable,
                                                               int max_coeff)
 {
-    decode_cabac_residual_internal(h, block, cat, n, scantable, NULL, max_coeff, 1, 1);
+    decode_cabac_residual_internal(h, sl, block, cat, n, scantable, NULL, max_coeff, 1, 1);
 }
 
 static av_noinline void decode_cabac_residual_nondc_internal(H264Context *h,
+                                                             H264SliceContext *sl,
                                                              int16_t *block,
                                                              int cat, int n,
                                                              const uint8_t *scantable,
                                                              const uint32_t *qmul,
                                                              int max_coeff)
 {
-    decode_cabac_residual_internal(h, block, cat, n, scantable, qmul, max_coeff, 0, 0);
+    decode_cabac_residual_internal(h, sl, block, cat, n, scantable, qmul, max_coeff, 0, 0);
 }
 
 /* cat: 0-> DC 16x16  n = 0
@@ -1791,33 +1798,36 @@ static av_noinline void decode_cabac_residual_nondc_internal(H264Context *h,
  * as well as because most blocks have zero CBFs. */
 
 static av_always_inline void decode_cabac_residual_dc(H264Context *h,
+                                                      H264SliceContext *sl,
                                                       int16_t *block,
                                                       int cat, int n,
                                                       const uint8_t *scantable,
                                                       int max_coeff)
 {
     /* read coded block flag */
-    if( get_cabac( &h->cabac, &h->cabac_state[get_cabac_cbf_ctx( h, cat, n, max_coeff, 1 ) ] ) == 0 ) {
-        h->non_zero_count_cache[scan8[n]] = 0;
+    if( get_cabac( &h->cabac, &h->cabac_state[get_cabac_cbf_ctx(h, sl, cat, n, max_coeff, 1)]) == 0 ) {
+        sl->non_zero_count_cache[scan8[n]] = 0;
         return;
     }
-    decode_cabac_residual_dc_internal( h, block, cat, n, scantable, max_coeff );
+    decode_cabac_residual_dc_internal(h, sl, block, cat, n, scantable, max_coeff);
 }
 
 static av_always_inline void
-decode_cabac_residual_dc_422(H264Context *h, int16_t *block,
+decode_cabac_residual_dc_422(H264Context *h, H264SliceContext *sl,
+                             int16_t *block,
                              int cat, int n, const uint8_t *scantable,
                              int max_coeff)
 {
     /* read coded block flag */
-    if (get_cabac(&h->cabac, &h->cabac_state[get_cabac_cbf_ctx(h, cat, n, max_coeff, 1)]) == 0) {
-        h->non_zero_count_cache[scan8[n]] = 0;
+    if (get_cabac(&h->cabac, &h->cabac_state[get_cabac_cbf_ctx(h, sl, cat, n, max_coeff, 1)]) == 0) {
+        sl->non_zero_count_cache[scan8[n]] = 0;
         return;
     }
-    decode_cabac_residual_dc_internal_422(h, block, cat, n, scantable, max_coeff);
+    decode_cabac_residual_dc_internal_422(h, sl, block, cat, n, scantable, max_coeff);
 }
 
 static av_always_inline void decode_cabac_residual_nondc(H264Context *h,
+                                                         H264SliceContext *sl,
                                                          int16_t *block,
                                                          int cat, int n,
                                                          const uint8_t *scantable,
@@ -1825,15 +1835,15 @@ static av_always_inline void decode_cabac_residual_nondc(H264Context *h,
                                                          int max_coeff)
 {
     /* read coded block flag */
-    if( (cat != 5 || CHROMA444(h)) && get_cabac( &h->cabac, &h->cabac_state[get_cabac_cbf_ctx( h, cat, n, max_coeff, 0 ) ] ) == 0 ) {
+    if( (cat != 5 || CHROMA444(h)) && get_cabac( &h->cabac, &h->cabac_state[get_cabac_cbf_ctx(h, sl, cat, n, max_coeff, 0)]) == 0) {
         if( max_coeff == 64 ) {
-            fill_rectangle(&h->non_zero_count_cache[scan8[n]], 2, 2, 8, 0, 1);
+            fill_rectangle(&sl->non_zero_count_cache[scan8[n]], 2, 2, 8, 0, 1);
         } else {
-            h->non_zero_count_cache[scan8[n]] = 0;
+            sl->non_zero_count_cache[scan8[n]] = 0;
         }
         return;
     }
-    decode_cabac_residual_nondc_internal( h, block, cat, n, scantable, qmul, max_coeff );
+    decode_cabac_residual_nondc_internal(h, sl, block, cat, n, scantable, qmul, max_coeff);
 }
 
 static av_always_inline void decode_cabac_luma_residual(H264Context *h, H264SliceContext *sl,
@@ -1849,16 +1859,16 @@ static av_always_inline void decode_cabac_luma_residual(H264Context *h, H264Slic
         AV_ZERO128(h->mb_luma_dc[p]+8);
         AV_ZERO128(h->mb_luma_dc[p]+16);
         AV_ZERO128(h->mb_luma_dc[p]+24);
-        decode_cabac_residual_dc(h, h->mb_luma_dc[p], ctx_cat[0][p], LUMA_DC_BLOCK_INDEX+p, scan, 16);
+        decode_cabac_residual_dc(h, sl, h->mb_luma_dc[p], ctx_cat[0][p], LUMA_DC_BLOCK_INDEX+p, scan, 16);
 
         if( cbp&15 ) {
             qmul = h->dequant4_coeff[p][qscale];
             for( i4x4 = 0; i4x4 < 16; i4x4++ ) {
                 const int index = 16*p + i4x4;
-                decode_cabac_residual_nondc(h, h->mb + (16*index << pixel_shift), ctx_cat[1][p], index, scan + 1, qmul, 15);
+                decode_cabac_residual_nondc(h, sl, h->mb + (16*index << pixel_shift), ctx_cat[1][p], index, scan + 1, qmul, 15);
             }
         } else {
-            fill_rectangle(&h->non_zero_count_cache[scan8[16*p]], 4, 4, 8, 0, 1);
+            fill_rectangle(&sl->non_zero_count_cache[scan8[16*p]], 4, 4, 8, 0, 1);
         }
     } else {
         int cqm = (IS_INTRA( mb_type ) ? 0:3) + p;
@@ -1866,19 +1876,19 @@ static av_always_inline void decode_cabac_luma_residual(H264Context *h, H264Slic
             if( cbp & (1<<i8x8) ) {
                 if( IS_8x8DCT(mb_type) ) {
                     const int index = 16*p + 4*i8x8;
-                    decode_cabac_residual_nondc(h, h->mb + (16*index << pixel_shift), ctx_cat[3][p], index,
+                    decode_cabac_residual_nondc(h, sl, h->mb + (16*index << pixel_shift), ctx_cat[3][p], index,
                                                 scan8x8, h->dequant8_coeff[cqm][qscale], 64);
                 } else {
                     qmul = h->dequant4_coeff[cqm][qscale];
                     for( i4x4 = 0; i4x4 < 4; i4x4++ ) {
                         const int index = 16*p + 4*i8x8 + i4x4;
 //START_TIMER
-                        decode_cabac_residual_nondc(h, h->mb + (16*index << pixel_shift), ctx_cat[2][p], index, scan, qmul, 16);
+                        decode_cabac_residual_nondc(h, sl, h->mb + (16*index << pixel_shift), ctx_cat[2][p], index, scan, qmul, 16);
 //STOP_TIMER("decode_residual")
                     }
                 }
             } else {
-                fill_rectangle(&h->non_zero_count_cache[scan8[4*i8x8+16*p]], 2, 2, 8, 0, 1);
+                fill_rectangle(&sl->non_zero_count_cache[scan8[4*i8x8+16*p]], 2, 2, 8, 0, 1);
             }
         }
     }
@@ -2315,7 +2325,7 @@ decode_intra_mb:
      * the transform mode of the current macroblock there. */
     if (CHROMA444(h) && IS_8x8DCT(mb_type)){
         int i;
-        uint8_t *nnz_cache = h->non_zero_count_cache;
+        uint8_t *nnz_cache = sl->non_zero_count_cache;
         for (i = 0; i < 2; i++){
             if (sl->left_type[LEFT(i)] && !IS_8x8DCT(sl->left_type[LEFT(i)])) {
                 nnz_cache[3+8* 1 + 2*8*i]=
@@ -2385,7 +2395,7 @@ decode_intra_mb:
             if( cbp&0x30 ){
                 int c;
                 for (c = 0; c < 2; c++)
-                    decode_cabac_residual_dc_422(h, h->mb + ((256 + 16*16*c) << pixel_shift), 3,
+                    decode_cabac_residual_dc_422(h, sl, h->mb + ((256 + 16*16*c) << pixel_shift), 3,
                                                  CHROMA_DC_BLOCK_INDEX + c,
                                                  chroma422_dc_scan, 8);
             }
@@ -2398,20 +2408,20 @@ decode_intra_mb:
                     for (i8x8 = 0; i8x8 < 2; i8x8++) {
                         for (i = 0; i < 4; i++) {
                             const int index = 16 + 16 * c + 8*i8x8 + i;
-                            decode_cabac_residual_nondc(h, mb, 4, index, scan + 1, qmul, 15);
+                            decode_cabac_residual_nondc(h, sl, mb, 4, index, scan + 1, qmul, 15);
                             mb += 16<<pixel_shift;
                         }
                     }
                 }
             } else {
-                fill_rectangle(&h->non_zero_count_cache[scan8[16]], 4, 4, 8, 0, 1);
-                fill_rectangle(&h->non_zero_count_cache[scan8[32]], 4, 4, 8, 0, 1);
+                fill_rectangle(&sl->non_zero_count_cache[scan8[16]], 4, 4, 8, 0, 1);
+                fill_rectangle(&sl->non_zero_count_cache[scan8[32]], 4, 4, 8, 0, 1);
             }
         } else /* yuv420 */ {
             if( cbp&0x30 ){
                 int c;
                 for (c = 0; c < 2; c++)
-                    decode_cabac_residual_dc(h, h->mb + ((256 + 16*16*c) << pixel_shift), 3, CHROMA_DC_BLOCK_INDEX+c, chroma_dc_scan, 4);
+                    decode_cabac_residual_dc(h, sl, h->mb + ((256 + 16*16*c) << pixel_shift), 3, CHROMA_DC_BLOCK_INDEX+c, chroma_dc_scan, 4);
             }
 
             if( cbp&0x20 ) {
@@ -2420,23 +2430,23 @@ decode_intra_mb:
                     qmul = h->dequant4_coeff[c+1+(IS_INTRA( mb_type ) ? 0:3)][sl->chroma_qp[c]];
                     for( i = 0; i < 4; i++ ) {
                         const int index = 16 + 16 * c + i;
-                        decode_cabac_residual_nondc(h, h->mb + (16*index << pixel_shift), 4, index, scan + 1, qmul, 15);
+                        decode_cabac_residual_nondc(h, sl, h->mb + (16*index << pixel_shift), 4, index, scan + 1, qmul, 15);
                     }
                 }
             } else {
-                fill_rectangle(&h->non_zero_count_cache[scan8[16]], 4, 4, 8, 0, 1);
-                fill_rectangle(&h->non_zero_count_cache[scan8[32]], 4, 4, 8, 0, 1);
+                fill_rectangle(&sl->non_zero_count_cache[scan8[16]], 4, 4, 8, 0, 1);
+                fill_rectangle(&sl->non_zero_count_cache[scan8[32]], 4, 4, 8, 0, 1);
             }
         }
     } else {
-        fill_rectangle(&h->non_zero_count_cache[scan8[ 0]], 4, 4, 8, 0, 1);
-        fill_rectangle(&h->non_zero_count_cache[scan8[16]], 4, 4, 8, 0, 1);
-        fill_rectangle(&h->non_zero_count_cache[scan8[32]], 4, 4, 8, 0, 1);
+        fill_rectangle(&sl->non_zero_count_cache[scan8[ 0]], 4, 4, 8, 0, 1);
+        fill_rectangle(&sl->non_zero_count_cache[scan8[16]], 4, 4, 8, 0, 1);
+        fill_rectangle(&sl->non_zero_count_cache[scan8[32]], 4, 4, 8, 0, 1);
         h->last_qscale_diff = 0;
     }
 
     h->cur_pic.qscale_table[mb_xy] = sl->qscale;
-    write_back_non_zero_count(h);
+    write_back_non_zero_count(h, sl);
 
     return 0;
 }

@@ -378,6 +378,12 @@ typedef struct H264SliceContext {
     unsigned int top_samples_available;
     unsigned int topright_samples_available;
     unsigned int left_samples_available;
+
+    /**
+     * non zero coeff count cache.
+     * is 64 if not available.
+     */
+    DECLARE_ALIGNED(8, uint8_t, non_zero_count_cache)[15 * 8];
 } H264SliceContext;
 
 /**
@@ -419,12 +425,6 @@ typedef struct H264Context {
     int8_t(*intra4x4_pred_mode);
     H264PredContext hpc;
     uint8_t (*top_borders[2])[(16 * 3) * 2];
-
-    /**
-     * non zero coeff count cache.
-     * is 64 if not available.
-     */
-    DECLARE_ALIGNED(8, uint8_t, non_zero_count_cache)[15 * 8];
 
     uint8_t (*non_zero_count)[48];
 
@@ -1017,11 +1017,12 @@ static av_always_inline void write_back_intra_pred_mode(H264Context *h,
     i4x4[6] = i4x4_cache[7 + 8 * 1];
 }
 
-static av_always_inline void write_back_non_zero_count(H264Context *h)
+static av_always_inline void write_back_non_zero_count(H264Context *h,
+                                                       H264SliceContext *sl)
 {
     const int mb_xy    = h->mb_xy;
     uint8_t *nnz       = h->non_zero_count[mb_xy];
-    uint8_t *nnz_cache = h->non_zero_count_cache;
+    uint8_t *nnz_cache = sl->non_zero_count_cache;
 
     AV_COPY32(&nnz[ 0], &nnz_cache[4 + 8 * 1]);
     AV_COPY32(&nnz[ 4], &nnz_cache[4 + 8 * 2]);
