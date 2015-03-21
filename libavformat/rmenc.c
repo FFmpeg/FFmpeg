@@ -363,6 +363,8 @@ static int rm_write_audio(AVFormatContext *s, const uint8_t *buf, int size, int 
 
     /* XXX: suppress this malloc */
     buf1 = av_malloc(size * sizeof(uint8_t));
+    if (!buf1)
+        return AVERROR(ENOMEM);
 
     write_packet_header(s, stream, size, !!(flags & AV_PKT_FLAG_KEY));
 
