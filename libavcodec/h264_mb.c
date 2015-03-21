@@ -819,7 +819,7 @@ void ff_h264_hl_decode_mb(H264Context *h, H264SliceContext *sl)
 {
     const int mb_xy   = h->mb_xy;
     const int mb_type = h->cur_pic.mb_type[mb_xy];
-    int is_complex    = CONFIG_SMALL || h->is_complex ||
+    int is_complex    = CONFIG_SMALL || sl->is_complex ||
                         IS_INTRA_PCM(mb_type) || sl->qscale == 0;
 
     if (CHROMA444(h)) {

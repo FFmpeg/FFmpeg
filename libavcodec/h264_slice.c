@@ -2404,9 +2404,9 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
 
     av_assert0(h->block_offset[15] == (4 * ((scan8[15] - scan8[0]) & 7) << h->pixel_shift) + 4 * h->linesize * ((scan8[15] - scan8[0]) >> 3));
 
-    h->is_complex = FRAME_MBAFF(h) || h->picture_structure != PICT_FRAME ||
-                    avctx->codec_id != AV_CODEC_ID_H264 ||
-                    (CONFIG_GRAY && (h->flags & CODEC_FLAG_GRAY));
+    sl->is_complex = FRAME_MBAFF(h) || h->picture_structure != PICT_FRAME ||
+                     avctx->codec_id != AV_CODEC_ID_H264 ||
+                     (CONFIG_GRAY && (h->flags & CODEC_FLAG_GRAY));
 
     if (!(h->avctx->active_thread_type & FF_THREAD_SLICE) && h->picture_structure == PICT_FRAME && h->er.error_status_table) {
         const int start_i  = av_clip(h->resync_mb_x + h->resync_mb_y * h->mb_width, 0, h->mb_num - 1);

@@ -873,6 +873,7 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
 {
     SVQ3Context *s = avctx->priv_data;
     H264Context *h = &s->h;
+    H264SliceContext *sl;
     int m;
     unsigned char *extradata;
     unsigned char *extradata_end;
@@ -894,8 +895,10 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
     ff_hpeldsp_init(&s->hdsp, avctx->flags);
     ff_tpeldsp_init(&s->tdsp);
 
+    sl = h->slice_ctx;
+
     h->flags           = avctx->flags;
-    h->is_complex      = 1;
+    sl->is_complex     = 1;
     h->sps.chroma_format_idc = 1;
     h->picture_structure = PICT_FRAME;
     avctx->pix_fmt     = AV_PIX_FMT_YUVJ420P;
