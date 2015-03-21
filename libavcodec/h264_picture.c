@@ -199,22 +199,22 @@ int ff_h264_field_end(H264Context *h, H264SliceContext *sl, int in_setup)
     if (!FIELD_PICTURE(h) && h->current_slice && !h->sps.new) {
         int use_last_pic = h->last_pic_for_ec.f.buf[0] && !sl->ref_count[0];
 
-        ff_h264_set_erpic(&h->er.cur_pic, h->cur_pic_ptr);
+        ff_h264_set_erpic(&sl->er.cur_pic, h->cur_pic_ptr);
 
         if (use_last_pic) {
-            ff_h264_set_erpic(&h->er.last_pic, &h->last_pic_for_ec);
+            ff_h264_set_erpic(&sl->er.last_pic, &h->last_pic_for_ec);
             COPY_PICTURE(&sl->ref_list[0][0], &h->last_pic_for_ec);
         } else if (sl->ref_count[0]) {
-            ff_h264_set_erpic(&h->er.last_pic, &sl->ref_list[0][0]);
+            ff_h264_set_erpic(&sl->er.last_pic, &sl->ref_list[0][0]);
         } else
-            ff_h264_set_erpic(&h->er.last_pic, NULL);
+            ff_h264_set_erpic(&sl->er.last_pic, NULL);
 
         if (sl->ref_count[1])
-            ff_h264_set_erpic(&h->er.next_pic, &sl->ref_list[1][0]);
+            ff_h264_set_erpic(&sl->er.next_pic, &sl->ref_list[1][0]);
 
-        h->er.ref_count = sl->ref_count[0];
+        sl->er.ref_count = sl->ref_count[0];
 
-        ff_er_frame_end(&h->er);
+        ff_er_frame_end(&sl->er);
         if (use_last_pic)
             memset(&sl->ref_list[0][0], 0, sizeof(h->last_pic_for_ec));
     }

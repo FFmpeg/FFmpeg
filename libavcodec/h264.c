@@ -401,10 +401,6 @@ void ff_h264_free_tables(H264Context *h, int free_rbsp)
         hx = h->thread_context[i];
         if (!hx)
             continue;
-        av_freep(&hx->dc_val_base);
-        av_freep(&hx->er.mb_index2xy);
-        av_freep(&hx->er.error_status_table);
-        av_freep(&hx->er.er_temp_buffer);
 
         if (free_rbsp) {
             av_freep(&hx->rbsp_buffer);
@@ -416,6 +412,11 @@ void ff_h264_free_tables(H264Context *h, int free_rbsp)
 
     for (i = 0; i < h->nb_slice_ctx; i++) {
         H264SliceContext *sl = &h->slice_ctx[i];
+
+        av_freep(&sl->dc_val_base);
+        av_freep(&sl->er.mb_index2xy);
+        av_freep(&sl->er.error_status_table);
+        av_freep(&sl->er.er_temp_buffer);
 
         av_freep(&sl->bipred_scratchpad);
         av_freep(&sl->edge_emu_buffer);
@@ -499,23 +500,21 @@ fail:
  * Init context
  * Allocate buffers which are not shared amongst multiple threads.
  */
-int ff_h264_context_init(H264Context *h)
+int ff_h264_slice_context_init(H264Context *h, H264SliceContext *sl)
 {
-    ERContext *er = &h->er;
+    ERContext *er = &sl->er;
     int mb_array_size = h->mb_height * h->mb_stride;
     int y_size  = (2 * h->mb_width + 1) * (2 * h->mb_height + 1);
     int c_size  = h->mb_stride * (h->mb_height + 1);
     int yc_size = y_size + 2   * c_size;
     int x, y, i;
 
-    for (i = 0; i < h->nb_slice_ctx; i++) {
-        h->slice_ctx[i].ref_cache[0][scan8[5]  + 1] =
-        h->slice_ctx[i].ref_cache[0][scan8[7]  + 1] =
-        h->slice_ctx[i].ref_cache[0][scan8[13] + 1] =
-        h->slice_ctx[i].ref_cache[1][scan8[5]  + 1] =
-        h->slice_ctx[i].ref_cache[1][scan8[7]  + 1] =
-        h->slice_ctx[i].ref_cache[1][scan8[13] + 1] = PART_NOT_AVAILABLE;
-    }
+    sl->ref_cache[0][scan8[5]  + 1] =
+    sl->ref_cache[0][scan8[7]  + 1] =
+    sl->ref_cache[0][scan8[13] + 1] =
+    sl->ref_cache[1][scan8[5]  + 1] =
+    sl->ref_cache[1][scan8[7]  + 1] =
+    sl->ref_cache[1][scan8[13] + 1] = PART_NOT_AVAILABLE;
 
     if (CONFIG_ERROR_RESILIENCE) {
         /* init ER */
@@ -547,13 +546,13 @@ int ff_h264_context_init(H264Context *h)
         FF_ALLOC_OR_GOTO(h->avctx, er->er_temp_buffer,
                          h->mb_height * h->mb_stride, fail);
 
-        FF_ALLOCZ_OR_GOTO(h->avctx, h->dc_val_base,
+        FF_ALLOCZ_OR_GOTO(h->avctx, sl->dc_val_base,
                           yc_size * sizeof(int16_t), fail);
-        er->dc_val[0] = h->dc_val_base + h->mb_width * 2 + 2;
-        er->dc_val[1] = h->dc_val_base + y_size + h->mb_stride + 1;
+        er->dc_val[0] = sl->dc_val_base + h->mb_width * 2 + 2;
+        er->dc_val[1] = sl->dc_val_base + y_size + h->mb_stride + 1;
         er->dc_val[2] = er->dc_val[1] + c_size;
         for (i = 0; i < yc_size; i++)
-            h->dc_val_base[i] = 1024;
+            sl->dc_val_base[i] = 1024;
     }
 
     return 0;
@@ -1906,7 +1905,7 @@ static int h264_decode_frame(AVCodecContext *avctx, void *data,
                 return ret;
             *got_frame = 1;
             if (CONFIG_MPEGVIDEO) {
-                ff_print_debug_info2(h->avctx, pict, h->er.mbskip_table,
+                ff_print_debug_info2(h->avctx, pict, NULL,
                                     h->next_output_pic->mb_type,
                                     h->next_output_pic->qscale_table,
                                     h->next_output_pic->motion_val,

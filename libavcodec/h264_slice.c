@@ -545,12 +545,12 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
         memset(h->sps_buffers, 0, sizeof(h->sps_buffers));
         memset(h->pps_buffers, 0, sizeof(h->pps_buffers));
 
-        memset(&h->er, 0, sizeof(h->er));
         memset(&h->cur_pic, 0, sizeof(h->cur_pic));
         memset(&h->last_pic_for_ec, 0, sizeof(h->last_pic_for_ec));
 
         h->slice_ctx = orig_slice_ctx;
 
+        memset(&h->slice_ctx[0].er,         0, sizeof(h->slice_ctx[0].er));
         memset(&h->slice_ctx[0].mb,         0, sizeof(h->slice_ctx[0].mb));
         memset(&h->slice_ctx[0].mb_luma_dc, 0, sizeof(h->slice_ctx[0].mb_luma_dc));
         memset(&h->slice_ctx[0].mb_padding, 0, sizeof(h->slice_ctx[0].mb_padding));
@@ -587,7 +587,7 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
             av_log(dst, AV_LOG_ERROR, "Could not allocate memory\n");
             return ret;
         }
-        ret = ff_h264_context_init(h);
+        ret = ff_h264_slice_context_init(h, &h->slice_ctx[0]);
         if (ret < 0) {
             av_log(dst, AV_LOG_ERROR, "context_init() failed.\n");
             return ret;
@@ -741,16 +741,16 @@ static int h264_frame_start(H264Context *h)
     h->cur_pic_ptr = pic;
     ff_h264_unref_picture(h, &h->cur_pic);
     if (CONFIG_ERROR_RESILIENCE) {
-        ff_h264_set_erpic(&h->er.cur_pic, NULL);
+        ff_h264_set_erpic(&h->slice_ctx[0].er.cur_pic, NULL);
     }
 
     if ((ret = ff_h264_ref_picture(h, &h->cur_pic, h->cur_pic_ptr)) < 0)
         return ret;
 
     if (CONFIG_ERROR_RESILIENCE) {
-        ff_er_frame_start(&h->er);
-        ff_h264_set_erpic(&h->er.last_pic, NULL);
-        ff_h264_set_erpic(&h->er.next_pic, NULL);
+        ff_er_frame_start(&h->slice_ctx[0].er);
+        ff_h264_set_erpic(&h->slice_ctx[0].er.last_pic, NULL);
+        ff_h264_set_erpic(&h->slice_ctx[0].er.next_pic, NULL);
     }
 
     assert(h->linesize && h->uvlinesize);
@@ -1202,7 +1202,7 @@ static int h264_slice_header_init(H264Context *h, int reinit)
     h->slice_context_count = nb_slices;
 
     if (!HAVE_THREADS || !(h->avctx->active_thread_type & FF_THREAD_SLICE)) {
-        ret = ff_h264_context_init(h);
+        ret = ff_h264_slice_context_init(h, &h->slice_ctx[0]);
         if (ret < 0) {
             av_log(h->avctx, AV_LOG_ERROR, "context_init() failed.\n");
             goto fail;
@@ -1248,7 +1248,7 @@ static int h264_slice_header_init(H264Context *h, int reinit)
         }
 
         for (i = 0; i < h->slice_context_count; i++)
-            if ((ret = ff_h264_context_init(h->thread_context[i])) < 0) {
+            if ((ret = ff_h264_slice_context_init(h, &h->slice_ctx[i])) < 0) {
                 av_log(h->avctx, AV_LOG_ERROR, "context_init() failed.\n");
                 goto fail;
             }
@@ -2371,19 +2371,19 @@ static void decode_finish_row(H264Context *h, H264SliceContext *sl)
 
     ff_h264_draw_horiz_band(h, sl, top, height);
 
-    if (h->droppable || h->er.error_occurred)
+    if (h->droppable || sl->er.error_occurred)
         return;
 
     ff_thread_report_progress(&h->cur_pic_ptr->tf, top + height - 1,
                               h->picture_structure == PICT_BOTTOM_FIELD);
 }
 
-static void er_add_slice(H264Context *h, H264SliceContext *sl,
+static void er_add_slice(H264SliceContext *sl,
                          int startx, int starty,
                          int endx, int endy, int status)
 {
     if (CONFIG_ERROR_RESILIENCE) {
-        ERContext *er = &h->er;
+        ERContext *er = &sl->er;
 
         ff_er_add_slice(er, startx, starty, endx, endy, status);
     }
@@ -2408,13 +2408,13 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
                      avctx->codec_id != AV_CODEC_ID_H264 ||
                      (CONFIG_GRAY && (h->flags & CODEC_FLAG_GRAY));
 
-    if (!(h->avctx->active_thread_type & FF_THREAD_SLICE) && h->picture_structure == PICT_FRAME && h->er.error_status_table) {
+    if (!(h->avctx->active_thread_type & FF_THREAD_SLICE) && h->picture_structure == PICT_FRAME && sl->er.error_status_table) {
         const int start_i  = av_clip(sl->resync_mb_x + sl->resync_mb_y * h->mb_width, 0, h->mb_num - 1);
         if (start_i) {
-            int prev_status = h->er.error_status_table[h->er.mb_index2xy[start_i - 1]];
+            int prev_status = sl->er.error_status_table[sl->er.mb_index2xy[start_i - 1]];
             prev_status &= ~ VP_START;
             if (prev_status != (ER_MV_END | ER_DC_END | ER_AC_END))
-                h->er.error_occurred = 1;
+                sl->er.error_occurred = 1;
         }
     }
 
@@ -2452,7 +2452,7 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
 
             if ((h->workaround_bugs & FF_BUG_TRUNCATED) &&
                 sl->cabac.bytestream > sl->cabac.bytestream_end + 2) {
-                er_add_slice(h, sl, sl->resync_mb_x, sl->resync_mb_y, sl->mb_x - 1,
+                er_add_slice(sl, sl->resync_mb_x, sl->resync_mb_y, sl->mb_x - 1,
                              sl->mb_y, ER_MB_END);
                 if (sl->mb_x >= lf_x_start)
                     loop_filter(h, sl, lf_x_start, sl->mb_x + 1);
@@ -2465,7 +2465,7 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
                        "error while decoding MB %d %d, bytestream %"PTRDIFF_SPECIFIER"\n",
                        sl->mb_x, sl->mb_y,
                        sl->cabac.bytestream_end - sl->cabac.bytestream);
-                er_add_slice(h, sl, sl->resync_mb_x, sl->resync_mb_y, sl->mb_x,
+                er_add_slice(sl, sl->resync_mb_x, sl->resync_mb_y, sl->mb_x,
                              sl->mb_y, ER_MB_ERROR);
                 return AVERROR_INVALIDDATA;
             }
@@ -2485,7 +2485,7 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
             if (eos || sl->mb_y >= h->mb_height) {
                 tprintf(h->avctx, "slice end %d %d\n",
                         get_bits_count(&sl->gb), sl->gb.size_in_bits);
-                er_add_slice(h, sl, sl->resync_mb_x, sl->resync_mb_y, sl->mb_x - 1,
+                er_add_slice(sl, sl->resync_mb_x, sl->resync_mb_y, sl->mb_x - 1,
                              sl->mb_y, ER_MB_END);
                 if (sl->mb_x > lf_x_start)
                     loop_filter(h, sl, lf_x_start, sl->mb_x);
@@ -2512,7 +2512,7 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
             if (ret < 0) {
                 av_log(h->avctx, AV_LOG_ERROR,
                        "error while decoding MB %d %d\n", sl->mb_x, sl->mb_y);
-                er_add_slice(h, sl, sl->resync_mb_x, sl->resync_mb_y, sl->mb_x,
+                er_add_slice(sl, sl->resync_mb_x, sl->resync_mb_y, sl->mb_x,
                              sl->mb_y, ER_MB_ERROR);
                 return ret;
             }
@@ -2533,12 +2533,12 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
 
                     if (   get_bits_left(&sl->gb) == 0
                         || get_bits_left(&sl->gb) > 0 && !(h->avctx->err_recognition & AV_EF_AGGRESSIVE)) {
-                        er_add_slice(h, sl, sl->resync_mb_x, sl->resync_mb_y,
+                        er_add_slice(sl, sl->resync_mb_x, sl->resync_mb_y,
                                      sl->mb_x - 1, sl->mb_y, ER_MB_END);
 
                         return 0;
                     } else {
-                        er_add_slice(h, sl, sl->resync_mb_x, sl->resync_mb_y,
+                        er_add_slice(sl, sl->resync_mb_x, sl->resync_mb_y,
                                      sl->mb_x, sl->mb_y, ER_MB_END);
 
                         return AVERROR_INVALIDDATA;
@@ -2551,14 +2551,14 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
                         get_bits_count(&sl->gb), sl->gb.size_in_bits);
 
                 if (get_bits_left(&sl->gb) == 0) {
-                    er_add_slice(h, sl, sl->resync_mb_x, sl->resync_mb_y,
+                    er_add_slice(sl, sl->resync_mb_x, sl->resync_mb_y,
                                  sl->mb_x - 1, sl->mb_y, ER_MB_END);
                     if (sl->mb_x > lf_x_start)
                         loop_filter(h, sl, lf_x_start, sl->mb_x);
 
                     return 0;
                 } else {
-                    er_add_slice(h, sl, sl->resync_mb_x, sl->resync_mb_y, sl->mb_x,
+                    er_add_slice(sl, sl->resync_mb_x, sl->resync_mb_y, sl->mb_x,
                                  sl->mb_y, ER_MB_ERROR);
 
                     return AVERROR_INVALIDDATA;
@@ -2594,8 +2594,9 @@ int ff_h264_execute_decode_slices(H264Context *h, unsigned context_count)
         av_assert0(context_count > 0);
         for (i = 1; i < context_count; i++) {
             hx                 = h->thread_context[i];
+            sl                 = &h->slice_ctx[i];
             if (CONFIG_ERROR_RESILIENCE) {
-                hx->er.error_count = 0;
+                sl->er.error_count = 0;
             }
             hx->x264_build     = h->x264_build;
         }
@@ -2611,7 +2612,7 @@ int ff_h264_execute_decode_slices(H264Context *h, unsigned context_count)
         h->picture_structure = hx->picture_structure;
         if (CONFIG_ERROR_RESILIENCE) {
             for (i = 1; i < context_count; i++)
-                h->er.error_count += h->thread_context[i]->er.error_count;
+                h->slice_ctx[0].er.error_count += h->slice_ctx[i].er.error_count;
         }
     }
 
