@@ -847,15 +847,15 @@ decode_intra_mb:
 
         if (sl->slice_type_nos == AV_PICTURE_TYPE_B) {
             for(i=0; i<4; i++){
-                h->sub_mb_type[i]= get_ue_golomb_31(&h->gb);
-                if(h->sub_mb_type[i] >=13){
-                    av_log(h->avctx, AV_LOG_ERROR, "B sub_mb_type %u out of range at %d %d\n", h->sub_mb_type[i], h->mb_x, h->mb_y);
+                sl->sub_mb_type[i]= get_ue_golomb_31(&h->gb);
+                if(sl->sub_mb_type[i] >=13){
+                    av_log(h->avctx, AV_LOG_ERROR, "B sub_mb_type %u out of range at %d %d\n", sl->sub_mb_type[i], h->mb_x, h->mb_y);
                     return -1;
                 }
-                sub_partition_count[i]= b_sub_mb_type_info[ h->sub_mb_type[i] ].partition_count;
-                h->sub_mb_type[i]=      b_sub_mb_type_info[ h->sub_mb_type[i] ].type;
+                sub_partition_count[i]= b_sub_mb_type_info[ sl->sub_mb_type[i] ].partition_count;
+                sl->sub_mb_type[i]=      b_sub_mb_type_info[ sl->sub_mb_type[i] ].type;
             }
-            if( IS_DIRECT(h->sub_mb_type[0]|h->sub_mb_type[1]|h->sub_mb_type[2]|h->sub_mb_type[3])) {
+            if( IS_DIRECT(sl->sub_mb_type[0]|sl->sub_mb_type[1]|sl->sub_mb_type[2]|sl->sub_mb_type[3])) {
                 ff_h264_pred_direct_motion(h, sl, &mb_type);
                 sl->ref_cache[0][scan8[4]] =
                 sl->ref_cache[1][scan8[4]] =
@@ -865,21 +865,21 @@ decode_intra_mb:
         }else{
             av_assert2(sl->slice_type_nos == AV_PICTURE_TYPE_P); //FIXME SP correct ?
             for(i=0; i<4; i++){
-                h->sub_mb_type[i]= get_ue_golomb_31(&h->gb);
-                if(h->sub_mb_type[i] >=4){
-                    av_log(h->avctx, AV_LOG_ERROR, "P sub_mb_type %u out of range at %d %d\n", h->sub_mb_type[i], h->mb_x, h->mb_y);
+                sl->sub_mb_type[i]= get_ue_golomb_31(&h->gb);
+                if(sl->sub_mb_type[i] >=4){
+                    av_log(h->avctx, AV_LOG_ERROR, "P sub_mb_type %u out of range at %d %d\n", sl->sub_mb_type[i], h->mb_x, h->mb_y);
                     return -1;
                 }
-                sub_partition_count[i]= p_sub_mb_type_info[ h->sub_mb_type[i] ].partition_count;
-                h->sub_mb_type[i]=      p_sub_mb_type_info[ h->sub_mb_type[i] ].type;
+                sub_partition_count[i]= p_sub_mb_type_info[ sl->sub_mb_type[i] ].partition_count;
+                sl->sub_mb_type[i]=      p_sub_mb_type_info[ sl->sub_mb_type[i] ].type;
             }
         }
 
         for(list=0; list<h->list_count; list++){
             int ref_count = IS_REF0(mb_type) ? 1 : local_ref_count[list];
             for(i=0; i<4; i++){
-                if(IS_DIRECT(h->sub_mb_type[i])) continue;
-                if(IS_DIR(h->sub_mb_type[i], 0, list)){
+                if(IS_DIRECT(sl->sub_mb_type[i])) continue;
+                if(IS_DIR(sl->sub_mb_type[i], 0, list)){
                     unsigned int tmp;
                     if(ref_count == 1){
                         tmp= 0;
@@ -901,19 +901,19 @@ decode_intra_mb:
         }
 
         if(dct8x8_allowed)
-            dct8x8_allowed = get_dct8x8_allowed(h);
+            dct8x8_allowed = get_dct8x8_allowed(h, sl);
 
         for(list=0; list<h->list_count; list++){
             for(i=0; i<4; i++){
-                if(IS_DIRECT(h->sub_mb_type[i])) {
+                if(IS_DIRECT(sl->sub_mb_type[i])) {
                     sl->ref_cache[list][ scan8[4*i] ] = sl->ref_cache[list][ scan8[4*i]+1 ];
                     continue;
                 }
                 sl->ref_cache[list][ scan8[4*i]   ]=sl->ref_cache[list][ scan8[4*i]+1 ]=
                 sl->ref_cache[list][ scan8[4*i]+8 ]=sl->ref_cache[list][ scan8[4*i]+9 ]= ref[list][i];
 
-                if(IS_DIR(h->sub_mb_type[i], 0, list)){
-                    const int sub_mb_type= h->sub_mb_type[i];
+                if(IS_DIR(sl->sub_mb_type[i], 0, list)){
+                    const int sub_mb_type= sl->sub_mb_type[i];
                     const int block_width= (sub_mb_type & (MB_TYPE_16x16|MB_TYPE_16x8)) ? 2 : 1;
                     for(j=0; j<sub_partition_count[i]; j++){
                         int mx, my;

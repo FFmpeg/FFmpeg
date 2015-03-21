@@ -2096,32 +2096,32 @@ decode_intra_mb:
 
         if (sl->slice_type_nos == AV_PICTURE_TYPE_B ) {
             for( i = 0; i < 4; i++ ) {
-                h->sub_mb_type[i] = decode_cabac_b_mb_sub_type( h );
-                sub_partition_count[i]= b_sub_mb_type_info[ h->sub_mb_type[i] ].partition_count;
-                h->sub_mb_type[i]=      b_sub_mb_type_info[ h->sub_mb_type[i] ].type;
+                sl->sub_mb_type[i] = decode_cabac_b_mb_sub_type( h );
+                sub_partition_count[i] = b_sub_mb_type_info[sl->sub_mb_type[i]].partition_count;
+                sl->sub_mb_type[i]     = b_sub_mb_type_info[sl->sub_mb_type[i]].type;
             }
-            if( IS_DIRECT(h->sub_mb_type[0] | h->sub_mb_type[1] |
-                          h->sub_mb_type[2] | h->sub_mb_type[3]) ) {
+            if (IS_DIRECT(sl->sub_mb_type[0] | sl->sub_mb_type[1] |
+                          sl->sub_mb_type[2] | sl->sub_mb_type[3])) {
                 ff_h264_pred_direct_motion(h, sl, &mb_type);
                 sl->ref_cache[0][scan8[4]] =
                 sl->ref_cache[1][scan8[4]] =
                 sl->ref_cache[0][scan8[12]] =
                 sl->ref_cache[1][scan8[12]] = PART_NOT_AVAILABLE;
                     for( i = 0; i < 4; i++ )
-                        fill_rectangle( &h->direct_cache[scan8[4*i]], 2, 2, 8, (h->sub_mb_type[i]>>1)&0xFF, 1 );
+                        fill_rectangle(&h->direct_cache[scan8[4*i]], 2, 2, 8, (sl->sub_mb_type[i] >> 1) & 0xFF, 1);
             }
         } else {
             for( i = 0; i < 4; i++ ) {
-                h->sub_mb_type[i] = decode_cabac_p_mb_sub_type( h );
-                sub_partition_count[i]= p_sub_mb_type_info[ h->sub_mb_type[i] ].partition_count;
-                h->sub_mb_type[i]=      p_sub_mb_type_info[ h->sub_mb_type[i] ].type;
+                sl->sub_mb_type[i] = decode_cabac_p_mb_sub_type(h);
+                sub_partition_count[i] = p_sub_mb_type_info[sl->sub_mb_type[i]].partition_count;
+                sl->sub_mb_type[i]     = p_sub_mb_type_info[sl->sub_mb_type[i]].type;
             }
         }
 
         for( list = 0; list < h->list_count; list++ ) {
                 for( i = 0; i < 4; i++ ) {
-                    if(IS_DIRECT(h->sub_mb_type[i])) continue;
-                    if(IS_DIR(h->sub_mb_type[i], 0, list)){
+                    if(IS_DIRECT(sl->sub_mb_type[i])) continue;
+                    if(IS_DIR(sl->sub_mb_type[i], 0, list)){
                         if (local_ref_count[list] > 1) {
                             ref[list][i] = decode_cabac_mb_ref(h, sl, list, 4 * i);
                             if (ref[list][i] >= (unsigned)local_ref_count[list]) {
@@ -2139,18 +2139,18 @@ decode_intra_mb:
         }
 
         if(dct8x8_allowed)
-            dct8x8_allowed = get_dct8x8_allowed(h);
+            dct8x8_allowed = get_dct8x8_allowed(h, sl);
 
         for(list=0; list<h->list_count; list++){
             for(i=0; i<4; i++){
                 sl->ref_cache[list][scan8[4 * i]] = sl->ref_cache[list][scan8[4 * i] + 1];
-                if(IS_DIRECT(h->sub_mb_type[i])){
+                if(IS_DIRECT(sl->sub_mb_type[i])){
                     fill_rectangle(h->mvd_cache[list][scan8[4*i]], 2, 2, 8, 0, 2);
                     continue;
                 }
 
-                if(IS_DIR(h->sub_mb_type[i], 0, list) && !IS_DIRECT(h->sub_mb_type[i])){
-                    const int sub_mb_type= h->sub_mb_type[i];
+                if(IS_DIR(sl->sub_mb_type[i], 0, list) && !IS_DIRECT(sl->sub_mb_type[i])){
+                    const int sub_mb_type= sl->sub_mb_type[i];
                     const int block_width= (sub_mb_type & (MB_TYPE_16x16|MB_TYPE_16x8)) ? 2 : 1;
                     for(j=0; j<sub_partition_count[i]; j++){
                         int mpx, mpy;

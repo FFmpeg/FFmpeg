@@ -403,6 +403,8 @@ typedef struct H264SliceContext {
      */
     DECLARE_ALIGNED(16, int16_t, mv_cache)[2][5 * 8][2];
     DECLARE_ALIGNED(8,  int8_t, ref_cache)[2][5 * 8];
+
+    DECLARE_ALIGNED(8, uint16_t, sub_mb_type)[4];
 } H264SliceContext;
 
 /**
@@ -480,9 +482,6 @@ typedef struct H264Context {
     int mb_mbaff;               ///< mb_aff_frame && mb_field_decoding_flag
     int picture_structure;
     int first_field;
-
-    DECLARE_ALIGNED(8, uint16_t, sub_mb_type)[4];
-
 
     int direct_spatial_mv_pred;
     int col_parity;
@@ -1101,21 +1100,21 @@ static av_always_inline void write_back_motion(H264Context *h,
     if (sl->slice_type_nos == AV_PICTURE_TYPE_B && CABAC(h)) {
         if (IS_8X8(mb_type)) {
             uint8_t *direct_table = &h->direct_table[4 * h->mb_xy];
-            direct_table[1] = h->sub_mb_type[1] >> 1;
-            direct_table[2] = h->sub_mb_type[2] >> 1;
-            direct_table[3] = h->sub_mb_type[3] >> 1;
+            direct_table[1] = sl->sub_mb_type[1] >> 1;
+            direct_table[2] = sl->sub_mb_type[2] >> 1;
+            direct_table[3] = sl->sub_mb_type[3] >> 1;
         }
     }
 }
 
-static av_always_inline int get_dct8x8_allowed(H264Context *h)
+static av_always_inline int get_dct8x8_allowed(H264Context *h, H264SliceContext *sl)
 {
     if (h->sps.direct_8x8_inference_flag)
-        return !(AV_RN64A(h->sub_mb_type) &
+        return !(AV_RN64A(sl->sub_mb_type) &
                  ((MB_TYPE_16x8 | MB_TYPE_8x16 | MB_TYPE_8x8) *
                   0x0001000100010001ULL));
     else
-        return !(AV_RN64A(h->sub_mb_type) &
+        return !(AV_RN64A(sl->sub_mb_type) &
                  ((MB_TYPE_16x8 | MB_TYPE_8x16 | MB_TYPE_8x8 | MB_TYPE_DIRECT2) *
                   0x0001000100010001ULL));
 }

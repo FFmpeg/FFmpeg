@@ -338,9 +338,9 @@ single_col:
             int xy4 = x8 * 3 + y8 * b4_stride;
             int a, b;
 
-            if (is_b8x8 && !IS_DIRECT(h->sub_mb_type[i8]))
+            if (is_b8x8 && !IS_DIRECT(sl->sub_mb_type[i8]))
                 continue;
-            h->sub_mb_type[i8] = sub_mb_type;
+            sl->sub_mb_type[i8] = sub_mb_type;
 
             fill_rectangle(&sl->ref_cache[0][scan8[i8 * 4]], 2, 2, 8,
                            (uint8_t)ref[0], 1);
@@ -402,9 +402,9 @@ single_col:
             const int x8 = i8 & 1;
             const int y8 = i8 >> 1;
 
-            if (is_b8x8 && !IS_DIRECT(h->sub_mb_type[i8]))
+            if (is_b8x8 && !IS_DIRECT(sl->sub_mb_type[i8]))
                 continue;
-            h->sub_mb_type[i8] = sub_mb_type;
+            sl->sub_mb_type[i8] = sub_mb_type;
 
             fill_rectangle(&sl->mv_cache[0][scan8[i8 * 4]], 2, 2, 8, mv[0], 4);
             fill_rectangle(&sl->mv_cache[1][scan8[i8 * 4]], 2, 2, 8, mv[1], 4);
@@ -446,7 +446,7 @@ single_col:
                         }
                     }
                     if (!(m & 3))
-                        h->sub_mb_type[i8] += MB_TYPE_16x16 - MB_TYPE_8x8;
+                        sl->sub_mb_type[i8] += MB_TYPE_16x16 - MB_TYPE_8x8;
                     n += m;
                 }
             }
@@ -576,9 +576,9 @@ single_col:
                 int ref0, scale;
                 const int16_t (*l1mv)[2] = l1mv0;
 
-                if (is_b8x8 && !IS_DIRECT(h->sub_mb_type[i8]))
+                if (is_b8x8 && !IS_DIRECT(sl->sub_mb_type[i8]))
                     continue;
-                h->sub_mb_type[i8] = sub_mb_type;
+                sl->sub_mb_type[i8] = sub_mb_type;
 
                 fill_rectangle(&sl->ref_cache[1][scan8[i8 * 4]], 2, 2, 8, 0, 1);
                 if (IS_INTRA(mb_type_col[y8])) {
@@ -644,9 +644,9 @@ single_col:
                 int ref0, scale;
                 const int16_t (*l1mv)[2] = l1mv0;
 
-                if (is_b8x8 && !IS_DIRECT(h->sub_mb_type[i8]))
+                if (is_b8x8 && !IS_DIRECT(sl->sub_mb_type[i8]))
                     continue;
-                h->sub_mb_type[i8] = sub_mb_type;
+                sl->sub_mb_type[i8] = sub_mb_type;
                 fill_rectangle(&sl->ref_cache[1][scan8[i8 * 4]], 2, 2, 8, 0, 1);
                 if (IS_INTRA(mb_type_col[0])) {
                     fill_rectangle(&sl->ref_cache[0][scan8[i8 * 4]], 2, 2, 8, 0, 1);

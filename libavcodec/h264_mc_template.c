@@ -109,7 +109,7 @@ static void MCFUNC(hl_motion)(H264Context *h, H264SliceContext *sl,
         av_assert2(IS_8X8(mb_type));
 
         for (i = 0; i < 4; i++) {
-            const int sub_mb_type = h->sub_mb_type[i];
+            const int sub_mb_type = sl->sub_mb_type[i];
             const int n  = 4 * i;
             int x_offset = (i & 1) << 2;
             int y_offset = (i & 2) << 1;
