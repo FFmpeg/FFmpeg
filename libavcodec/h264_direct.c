@@ -34,7 +34,7 @@
 
 #include <assert.h>
 
-static int get_scale_factor(H264Context *const h, H264SliceContext *sl,
+static int get_scale_factor(H264SliceContext *sl,
                             int poc, int poc1, int i)
 {
     int poc0 = sl->ref_list[0][i].poc;
@@ -48,7 +48,7 @@ static int get_scale_factor(H264Context *const h, H264SliceContext *sl,
     }
 }
 
-void ff_h264_direct_dist_scale_factor(H264Context *const h,
+void ff_h264_direct_dist_scale_factor(const H264Context *const h,
                                       H264SliceContext *sl)
 {
     const int poc  = FIELD_PICTURE(h) ? h->cur_pic_ptr->field_poc[h->picture_structure == PICT_BOTTOM_FIELD]
@@ -62,14 +62,14 @@ void ff_h264_direct_dist_scale_factor(H264Context *const h,
             const int poc1 = sl->ref_list[1][0].field_poc[field];
             for (i = 0; i < 2 * sl->ref_count[0]; i++)
                 sl->dist_scale_factor_field[field][i ^ field] =
-                    get_scale_factor(h, sl, poc, poc1, i + 16);
+                    get_scale_factor(sl, poc, poc1, i + 16);
         }
 
     for (i = 0; i < sl->ref_count[0]; i++)
-        sl->dist_scale_factor[i] = get_scale_factor(h, sl, poc, poc1, i);
+        sl->dist_scale_factor[i] = get_scale_factor(sl, poc, poc1, i);
 }
 
-static void fill_colmap(H264Context *h, H264SliceContext *sl,
+static void fill_colmap(const H264Context *h, H264SliceContext *sl,
                         int map[2][16 + 32], int list,
                         int field, int colfield, int mbafi)
 {
@@ -107,7 +107,7 @@ static void fill_colmap(H264Context *h, H264SliceContext *sl,
     }
 }
 
-void ff_h264_direct_ref_list_init(H264Context *const h, H264SliceContext *sl)
+void ff_h264_direct_ref_list_init(const H264Context *const h, H264SliceContext *sl)
 {
     H264Picture *const ref1 = &sl->ref_list[1][0];
     H264Picture *const cur = h->cur_pic_ptr;
@@ -155,7 +155,7 @@ void ff_h264_direct_ref_list_init(H264Context *const h, H264SliceContext *sl)
     }
 }
 
-static void await_reference_mb_row(H264Context *const h, H264Picture *ref,
+static void await_reference_mb_row(const H264Context *const h, H264Picture *ref,
                                    int mb_y)
 {
     int ref_field         = ref->reference - 1;
@@ -174,7 +174,7 @@ static void await_reference_mb_row(H264Context *const h, H264Picture *ref,
                              ref_field_picture && ref_field);
 }
 
-static void pred_spatial_direct_motion(H264Context *const h, H264SliceContext *sl,
+static void pred_spatial_direct_motion(const H264Context *const h, H264SliceContext *sl,
                                        int *mb_type)
 {
     int b8_stride = 2;
@@ -461,7 +461,7 @@ single_col:
     }
 }
 
-static void pred_temp_direct_motion(H264Context *const h, H264SliceContext *sl,
+static void pred_temp_direct_motion(const H264Context *const h, H264SliceContext *sl,
                                     int *mb_type)
 {
     int b8_stride = 2;
@@ -695,7 +695,7 @@ single_col:
     }
 }
 
-void ff_h264_pred_direct_motion(H264Context *const h, H264SliceContext *sl,
+void ff_h264_pred_direct_motion(const H264Context *const h, H264SliceContext *sl,
                                 int *mb_type)
 {
     if (sl->direct_spatial_mv_pred)

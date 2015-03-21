@@ -886,9 +886,9 @@ void ff_h264_init_cabac_states(H264Context *h, H264SliceContext *sl);
 
 void ff_h264_init_dequant_tables(H264Context *h);
 
-void ff_h264_direct_dist_scale_factor(H264Context *const h, H264SliceContext *sl);
-void ff_h264_direct_ref_list_init(H264Context *const h, H264SliceContext *sl);
-void ff_h264_pred_direct_motion(H264Context *const h, H264SliceContext *sl,
+void ff_h264_direct_dist_scale_factor(const H264Context *const h, H264SliceContext *sl);
+void ff_h264_direct_ref_list_init(const H264Context *const h, H264SliceContext *sl);
+void ff_h264_pred_direct_motion(const H264Context *const h, H264SliceContext *sl,
                                 int *mb_type);
 
 void ff_h264_filter_mb_fast(H264Context *h, H264SliceContext *sl, int mb_x, int mb_y,
