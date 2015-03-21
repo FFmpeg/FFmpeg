@@ -37,8 +37,7 @@
 #include "thread.h"
 
 static inline int get_lowest_part_list_y(H264SliceContext *sl,
-                                         H264Picture *pic, int n,
-                                         int height, int y_offset, int list)
+                                         int n, int height, int y_offset, int list)
 {
     int raw_my             = sl->mv_cache[list][scan8[n]][1];
     int filter_height_down = (raw_my & 3) ? 3 : 0;
@@ -68,7 +67,7 @@ static inline void get_lowest_part_y(const H264Context *h, H264SliceContext *sl,
         // Fields can wait on each other, though.
         if (ref->tf.progress->data != h->cur_pic.tf.progress->data ||
             (ref->reference & 3) != h->picture_structure) {
-            my = get_lowest_part_list_y(sl, ref, n, height, y_offset, 0);
+            my = get_lowest_part_list_y(sl, n, height, y_offset, 0);
             if (refs[0][ref_n] < 0)
                 nrefs[0] += 1;
             refs[0][ref_n] = FFMAX(refs[0][ref_n], my);
@@ -81,7 +80,7 @@ static inline void get_lowest_part_y(const H264Context *h, H264SliceContext *sl,
 
         if (ref->tf.progress->data != h->cur_pic.tf.progress->data ||
             (ref->reference & 3) != h->picture_structure) {
-            my = get_lowest_part_list_y(sl, ref, n, height, y_offset, 1);
+            my = get_lowest_part_list_y(sl, n, height, y_offset, 1);
             if (refs[1][ref_n] < 0)
                 nrefs[1] += 1;
             refs[1][ref_n] = FFMAX(refs[1][ref_n], my);
