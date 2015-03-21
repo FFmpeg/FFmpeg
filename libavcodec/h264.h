@@ -430,6 +430,7 @@ typedef struct H264SliceContext {
     DECLARE_ALIGNED(16, int16_t, mv_cache)[2][5 * 8][2];
     DECLARE_ALIGNED(8,  int8_t, ref_cache)[2][5 * 8];
     DECLARE_ALIGNED(16, uint8_t, mvd_cache)[2][5 * 8][2];
+    uint8_t direct_cache[5 * 8];
 
     DECLARE_ALIGNED(8, uint16_t, sub_mb_type)[4];
 
@@ -540,7 +541,6 @@ typedef struct H264Context {
     uint8_t *chroma_pred_mode_table;
     uint8_t (*mvd_table[2])[2];
     uint8_t *direct_table;
-    uint8_t direct_cache[5 * 8];
 
     uint8_t zigzag_scan[16];
     uint8_t zigzag_scan8x8[64];

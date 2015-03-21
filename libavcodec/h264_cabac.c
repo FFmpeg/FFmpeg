@@ -1475,9 +1475,9 @@ static int decode_cabac_mb_ref(H264Context *h, H264SliceContext *sl, int list, i
     int ctx  = 0;
 
     if (sl->slice_type_nos == AV_PICTURE_TYPE_B) {
-        if( refa > 0 && !(h->direct_cache[scan8[n] - 1]&(MB_TYPE_DIRECT2>>1)) )
+        if( refa > 0 && !(sl->direct_cache[scan8[n] - 1]&(MB_TYPE_DIRECT2>>1)) )
             ctx++;
-        if( refb > 0 && !(h->direct_cache[scan8[n] - 8]&(MB_TYPE_DIRECT2>>1)) )
+        if( refb > 0 && !(sl->direct_cache[scan8[n] - 8]&(MB_TYPE_DIRECT2>>1)) )
             ctx += 2;
     } else {
         if( refa > 0 )
@@ -2114,7 +2114,7 @@ decode_intra_mb:
                 sl->ref_cache[0][scan8[12]] =
                 sl->ref_cache[1][scan8[12]] = PART_NOT_AVAILABLE;
                     for( i = 0; i < 4; i++ )
-                        fill_rectangle(&h->direct_cache[scan8[4*i]], 2, 2, 8, (sl->sub_mb_type[i] >> 1) & 0xFF, 1);
+                        fill_rectangle(&sl->direct_cache[scan8[4*i]], 2, 2, 8, (sl->sub_mb_type[i] >> 1) & 0xFF, 1);
             }
         } else {
             for( i = 0; i < 4; i++ ) {
