@@ -926,13 +926,6 @@ void ff_h264_reset_sei(H264Context *h);
  */
 const char* ff_h264_sei_stereo_mode(H264Context *h);
 
-#define COPY_PICTURE(dst, src) \
-do {\
-    *(dst) = *(src);\
-    (dst)->f.extended_data = (dst)->f.data;\
-    (dst)->tf.f = &(dst)->f;\
-} while (0)
-
 /*
  * o-o o-o
  *  / / /
