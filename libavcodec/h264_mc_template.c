@@ -71,7 +71,7 @@ static void MCFUNC(hl_motion)(H264Context *h, H264SliceContext *sl,
                               h264_weight_func *weight_op,
                               h264_biweight_func *weight_avg)
 {
-    const int mb_xy   = h->mb_xy;
+    const int mb_xy   = sl->mb_xy;
     const int mb_type = h->cur_pic.mb_type[mb_xy];
 
     av_assert2(IS_INTER(mb_type));

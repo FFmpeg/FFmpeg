@@ -393,6 +393,7 @@ typedef struct H264SliceContext {
     ptrdiff_t mb_linesize;  ///< may be equal to s->linesize or s->linesize * 2, for mbaff
     ptrdiff_t mb_uvlinesize;
 
+    int mb_xy;
     int mb_skip_run;
     int is_complex;
 
@@ -574,7 +575,6 @@ typedef struct H264Context {
     int mb_height, mb_width;
     int mb_stride;
     int mb_num;
-    int mb_xy;
 
     // =============================================================
     // Things below are not used in the MB or more inner code
@@ -1020,7 +1020,7 @@ static av_always_inline int pred_intra_mode(H264Context *h,
 static av_always_inline void write_back_intra_pred_mode(H264Context *h,
                                                         H264SliceContext *sl)
 {
-    int8_t *i4x4       = sl->intra4x4_pred_mode + h->mb2br_xy[h->mb_xy];
+    int8_t *i4x4       = sl->intra4x4_pred_mode + h->mb2br_xy[sl->mb_xy];
     int8_t *i4x4_cache = sl->intra4x4_pred_mode_cache;
 
     AV_COPY32(i4x4, i4x4_cache + 4 + 8 * 4);
@@ -1032,7 +1032,7 @@ static av_always_inline void write_back_intra_pred_mode(H264Context *h,
 static av_always_inline void write_back_non_zero_count(H264Context *h,
                                                        H264SliceContext *sl)
 {
-    const int mb_xy    = h->mb_xy;
+    const int mb_xy    = sl->mb_xy;
     uint8_t *nnz       = h->non_zero_count[mb_xy];
     uint8_t *nnz_cache = sl->non_zero_count_cache;
 
@@ -1066,8 +1066,8 @@ static av_always_inline void write_back_motion_list(H264Context *h,
     AV_COPY128(mv_dst + 2 * b_stride, mv_src + 8 * 2);
     AV_COPY128(mv_dst + 3 * b_stride, mv_src + 8 * 3);
     if (CABAC(h)) {
-        uint8_t (*mvd_dst)[2] = &sl->mvd_table[list][FMO ? 8 * h->mb_xy
-                                                        : h->mb2br_xy[h->mb_xy]];
+        uint8_t (*mvd_dst)[2] = &sl->mvd_table[list][FMO ? 8 * sl->mb_xy
+                                                        : h->mb2br_xy[sl->mb_xy]];
         uint8_t(*mvd_src)[2]  = &sl->mvd_cache[list][scan8[0]];
         if (IS_SKIP(mb_type)) {
             AV_ZERO128(mvd_dst);
@@ -1095,7 +1095,7 @@ static av_always_inline void write_back_motion(H264Context *h,
 {
     const int b_stride      = h->b_stride;
     const int b_xy  = 4 * h->mb_x + 4 * h->mb_y * h->b_stride; // try mb2b(8)_xy
-    const int b8_xy = 4 * h->mb_xy;
+    const int b8_xy = 4 * sl->mb_xy;
 
     if (USES_LIST(mb_type, 0)) {
         write_back_motion_list(h, sl, b_stride, b_xy, b8_xy, mb_type, 0);
@@ -1108,7 +1108,7 @@ static av_always_inline void write_back_motion(H264Context *h,
 
     if (sl->slice_type_nos == AV_PICTURE_TYPE_B && CABAC(h)) {
         if (IS_8X8(mb_type)) {
-            uint8_t *direct_table = &h->direct_table[4 * h->mb_xy];
+            uint8_t *direct_table = &h->direct_table[4 * sl->mb_xy];
             direct_table[1] = sl->sub_mb_type[1] >> 1;
             direct_table[2] = sl->sub_mb_type[2] >> 1;
             direct_table[3] = sl->sub_mb_type[3] >> 1;

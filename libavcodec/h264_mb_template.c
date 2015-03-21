@@ -44,7 +44,7 @@ static av_noinline void FUNC(hl_decode_mb)(H264Context *h, H264SliceContext *sl)
 {
     const int mb_x    = h->mb_x;
     const int mb_y    = h->mb_y;
-    const int mb_xy   = h->mb_xy;
+    const int mb_xy   = sl->mb_xy;
     const int mb_type = h->cur_pic.mb_type[mb_xy];
     uint8_t *dest_y, *dest_cb, *dest_cr;
     int linesize, uvlinesize /*dct_offset*/;
@@ -273,7 +273,7 @@ static av_noinline void FUNC(hl_decode_mb_444)(H264Context *h, H264SliceContext 
 {
     const int mb_x    = h->mb_x;
     const int mb_y    = h->mb_y;
-    const int mb_xy   = h->mb_xy;
+    const int mb_xy   = sl->mb_xy;
     const int mb_type = h->cur_pic.mb_type[mb_xy];
     uint8_t *dest[3];
     int linesize;

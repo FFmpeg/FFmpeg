@@ -96,7 +96,7 @@ static inline void get_lowest_part_y(H264Context *h, H264SliceContext *sl,
  */
 static void await_references(H264Context *h, H264SliceContext *sl)
 {
-    const int mb_xy   = h->mb_xy;
+    const int mb_xy   = sl->mb_xy;
     const int mb_type = h->cur_pic.mb_type[mb_xy];
     int16_t refs[2][48];
     int nrefs[2] = { 0 };
@@ -528,7 +528,7 @@ static av_always_inline void xchg_mb_border(H264Context *h, H264SliceContext *sl
     }
 
     if (sl->deblocking_filter == 2) {
-        deblock_topleft = h->slice_table[h->mb_xy - 1 - h->mb_stride] == sl->slice_num;
+        deblock_topleft = h->slice_table[sl->mb_xy - 1 - h->mb_stride] == sl->slice_num;
         deblock_top     = sl->top_type;
     } else {
         deblock_topleft = (h->mb_x > 0);
@@ -817,7 +817,7 @@ static av_always_inline void hl_decode_mb_idct_luma(H264Context *h, H264SliceCon
 
 void ff_h264_hl_decode_mb(H264Context *h, H264SliceContext *sl)
 {
-    const int mb_xy   = h->mb_xy;
+    const int mb_xy   = sl->mb_xy;
     const int mb_type = h->cur_pic.mb_type[mb_xy];
     int is_complex    = CONFIG_SMALL || sl->is_complex ||
                         IS_INTRA_PCM(mb_type) || sl->qscale == 0;

@@ -246,7 +246,7 @@ static av_always_inline void h264_filter_mb_fast_internal(H264Context *h,
     int chroma444 = CHROMA444(h);
     int chroma422 = CHROMA422(h);
 
-    int mb_xy = h->mb_xy;
+    int mb_xy = sl->mb_xy;
     int left_type = sl->left_type[LTOP];
     int top_type  = sl->top_type;
 

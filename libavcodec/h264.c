@@ -68,7 +68,7 @@ static void h264_er_decode_mb(void *opaque, int ref, int mv_dir, int mv_type,
 
     h->mb_x  = mb_x;
     h->mb_y  = mb_y;
-    h->mb_xy = mb_x + mb_y * h->mb_stride;
+    sl->mb_xy = mb_x + mb_y * h->mb_stride;
     memset(sl->non_zero_count_cache, 0, sizeof(sl->non_zero_count_cache));
     av_assert1(ref >= 0);
     /* FIXME: It is possible albeit uncommon that slice references
@@ -85,7 +85,7 @@ static void h264_er_decode_mb(void *opaque, int ref, int mv_dir, int mv_type,
         av_log(h->avctx, AV_LOG_DEBUG, "Reference invalid\n");
         return;
     }
-    fill_rectangle(&h->cur_pic.ref_index[0][4 * h->mb_xy],
+    fill_rectangle(&h->cur_pic.ref_index[0][4 * sl->mb_xy],
                    2, 2, 2, ref, 1);
     fill_rectangle(&sl->ref_cache[0][scan8[0]], 4, 4, 8, ref, 1);
     fill_rectangle(sl->mv_cache[0][scan8[0]], 4, 4, 8,

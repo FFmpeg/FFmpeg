@@ -179,7 +179,7 @@ static void pred_spatial_direct_motion(H264Context *const h, H264SliceContext *s
 {
     int b8_stride = 2;
     int b4_stride = h->b_stride;
-    int mb_xy = h->mb_xy, mb_y = h->mb_y;
+    int mb_xy = sl->mb_xy, mb_y = h->mb_y;
     int mb_type_col[2];
     const int16_t (*l1mv0)[2], (*l1mv1)[2];
     const int8_t *l1ref0, *l1ref1;
@@ -466,7 +466,7 @@ static void pred_temp_direct_motion(H264Context *const h, H264SliceContext *sl,
 {
     int b8_stride = 2;
     int b4_stride = h->b_stride;
-    int mb_xy = h->mb_xy, mb_y = h->mb_y;
+    int mb_xy = sl->mb_xy, mb_y = h->mb_y;
     int mb_type_col[2];
     const int16_t (*l1mv0)[2], (*l1mv1)[2];
     const int8_t *l1ref0, *l1ref1;

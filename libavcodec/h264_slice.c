@@ -2127,7 +2127,7 @@ static av_always_inline void fill_filter_caches_inter(H264Context *h,
  */
 static int fill_filter_caches(H264Context *h, H264SliceContext *sl, int mb_type)
 {
-    const int mb_xy = h->mb_xy;
+    const int mb_xy = sl->mb_xy;
     int top_xy, left_xy[LEFT_MBS];
     int top_type, left_type[LEFT_MBS];
     uint8_t *nnz;
@@ -2283,7 +2283,7 @@ static void loop_filter(H264Context *h, H264SliceContext *sl, int start_x, int e
         for (mb_x = start_x; mb_x < end_x; mb_x++)
             for (mb_y = end_mb_y - FRAME_MBAFF(h); mb_y <= end_mb_y; mb_y++) {
                 int mb_xy, mb_type;
-                mb_xy         = h->mb_xy = mb_x + mb_y * h->mb_stride;
+                mb_xy         = sl->mb_xy = mb_x + mb_y * h->mb_stride;
                 sl->slice_num = h->slice_table[mb_xy];
                 mb_type       = h->cur_pic.mb_type[mb_xy];
                 sl->list_count = h->list_counts[mb_xy];

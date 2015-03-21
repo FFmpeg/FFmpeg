@@ -711,7 +711,7 @@ int ff_h264_decode_mb_cavlc(H264Context *h, H264SliceContext *sl)
     const int pixel_shift = h->pixel_shift;
     unsigned local_ref_count[2];
 
-    mb_xy = h->mb_xy = h->mb_x + h->mb_y*h->mb_stride;
+    mb_xy = sl->mb_xy = h->mb_x + h->mb_y*h->mb_stride;
 
     tprintf(h->avctx, "pic:%d mb:%d/%d\n", h->frame_num, h->mb_x, h->mb_y);
     cbp = 0; /* avoid warning. FIXME: find a solution without slowing

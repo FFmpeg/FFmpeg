@@ -1284,7 +1284,7 @@ void ff_h264_init_cabac_states(H264Context *h, H264SliceContext *sl)
 
 static int decode_cabac_field_decoding_flag(H264Context *h, H264SliceContext *sl)
 {
-    const int mbb_xy = h->mb_xy - 2*h->mb_stride;
+    const int mbb_xy = sl->mb_xy - 2*h->mb_stride;
 
     unsigned long ctx = 0;
 
@@ -1348,7 +1348,7 @@ static int decode_cabac_mb_skip(H264Context *h, H264SliceContext *sl,
         }else
             mbb_xy = mb_x + (mb_y-1)*h->mb_stride;
     }else{
-        int mb_xy = h->mb_xy;
+        int mb_xy = sl->mb_xy;
         mba_xy = mb_xy - 1;
         mbb_xy = mb_xy - (h->mb_stride << FIELD_PICTURE(h));
     }
@@ -1695,9 +1695,9 @@ decode_cabac_residual_internal(H264Context *h, H264SliceContext *sl,
 
     if( is_dc ) {
         if( cat == 3 )
-            h->cbp_table[h->mb_xy] |= 0x40 << (n - CHROMA_DC_BLOCK_INDEX);
+            h->cbp_table[sl->mb_xy] |= 0x40 << (n - CHROMA_DC_BLOCK_INDEX);
         else
-            h->cbp_table[h->mb_xy] |= 0x100 << (n - LUMA_DC_BLOCK_INDEX);
+            h->cbp_table[sl->mb_xy] |= 0x100 << (n - LUMA_DC_BLOCK_INDEX);
         sl->non_zero_count_cache[scan8[n]] = coeff_count;
     } else {
         if( max_coeff == 64 )
@@ -1917,7 +1917,7 @@ int ff_h264_decode_mb_cabac(H264Context *h, H264SliceContext *sl)
     const int pixel_shift = h->pixel_shift;
     unsigned local_ref_count[2];
 
-    mb_xy = h->mb_xy = h->mb_x + h->mb_y*h->mb_stride;
+    mb_xy = sl->mb_xy = h->mb_x + h->mb_y*h->mb_stride;
 
     tprintf(h->avctx, "pic:%d mb:%d/%d\n", h->frame_num, h->mb_x, h->mb_y);
     if (sl->slice_type_nos != AV_PICTURE_TYPE_I) {

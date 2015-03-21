@@ -494,7 +494,7 @@ static int svq3_decode_mb(SVQ3Context *s, unsigned int mb_type)
     int cbp = 0;
     uint32_t vlc;
     int8_t *top, *left;
-    const int mb_xy         = h->mb_xy;
+    const int mb_xy         = sl->mb_xy;
     const int b_xy          = 4 * h->mb_x + 4 * h->mb_y * h->b_stride;
 
     sl->top_samples_available      = (h->mb_y == 0) ? 0x33FF : 0xFFFF;
@@ -782,7 +782,7 @@ static int svq3_decode_slice_header(AVCodecContext *avctx)
     SVQ3Context *s = avctx->priv_data;
     H264Context *h    = &s->h;
     H264SliceContext *sl = &h->slice_ctx[0];
-    const int mb_xy   = h->mb_xy;
+    const int mb_xy   = sl->mb_xy;
     int i, header;
     unsigned slice_id;
 
@@ -1153,7 +1153,7 @@ static int svq3_decode_frame(AVCodecContext *avctx, void *data,
         return 0;
     }
 
-    h->mb_x = h->mb_y = h->mb_xy = 0;
+    h->mb_x = h->mb_y = sl->mb_xy = 0;
 
     if (s->watermark_key) {
         av_fast_padded_malloc(&s->buf, &s->buf_size, buf_size);
@@ -1283,7 +1283,7 @@ static int svq3_decode_frame(AVCodecContext *avctx, void *data,
     for (h->mb_y = 0; h->mb_y < h->mb_height; h->mb_y++) {
         for (h->mb_x = 0; h->mb_x < h->mb_width; h->mb_x++) {
             unsigned mb_type;
-            h->mb_xy = h->mb_x + h->mb_y * h->mb_stride;
+            sl->mb_xy = h->mb_x + h->mb_y * h->mb_stride;
 
             if ((get_bits_count(&h->gb) + 7) >= h->gb.size_in_bits &&
                 ((get_bits_count(&h->gb) & 7) == 0 ||
