@@ -2249,7 +2249,7 @@ void ff_print_debug_info2(AVCodecContext *avctx, AVFrame *pict, uint8_t *mbskip_
         for (y = 0; y < mb_height; y++) {
             for (x = 0; x < mb_width; x++) {
                 if (avctx->debug & FF_DEBUG_SKIP) {
-                    int count = mbskip_table[x + y * mb_stride];
+                    int count = mbskip_table ? mbskip_table[x + y * mb_stride] : 0;
                     if (count > 9)
                         count = 9;
                     av_log(avctx, AV_LOG_DEBUG, "%1d", count);
@@ -2518,7 +2518,8 @@ void ff_print_debug_info2(AVCodecContext *avctx, AVFrame *pict, uint8_t *mbskip_
                         // hmm
                     }
                 }
-                mbskip_table[mb_index] = 0;
+                if (mbskip_table)
+                    mbskip_table[mb_index] = 0;
             }
         }
     }
