@@ -656,7 +656,7 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
     h->dequant_coeff_pps = h1->dequant_coeff_pps;
 
     // POC timing
-    copy_fields(h, h1, poc_lsb, redundant_pic_count);
+    copy_fields(h, h1, poc_lsb, default_ref_list);
 
     // reference lists
     copy_fields(h, h1, short_ref, thread_context);
@@ -1790,7 +1790,7 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl, H264Contex
     ff_init_poc(h, h->cur_pic_ptr->field_poc, &h->cur_pic_ptr->poc);
 
     if (h->pps.redundant_pic_cnt_present)
-        h->redundant_pic_count = get_ue_golomb(&h->gb);
+        sl->redundant_pic_count = get_ue_golomb(&h->gb);
 
     ret = ff_set_ref_count(h, sl);
     if (ret < 0)

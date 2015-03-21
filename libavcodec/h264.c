@@ -1629,7 +1629,7 @@ again:
                         ff_vdpau_h264_picture_start(h);
                 }
 
-                if (hx->redundant_pic_count == 0) {
+                if (sl->redundant_pic_count == 0) {
                     if (avctx->hwaccel) {
                         ret = avctx->hwaccel->decode_slice(avctx,
                                                            &buf[buf_index - consumed],

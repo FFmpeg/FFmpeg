@@ -393,6 +393,8 @@ typedef struct H264SliceContext {
     ptrdiff_t mb_linesize;  ///< may be equal to s->linesize or s->linesize * 2, for mbaff
     ptrdiff_t mb_uvlinesize;
 
+    int redundant_pic_count;
+
     /**
      * number of neighbors (top and/or left) that used 8x8 dct
      */
@@ -619,8 +621,6 @@ typedef struct H264Context {
      * max_frame_num or 2 * max_frame_num for field pics.
      */
     int max_pic_num;
-
-    int redundant_pic_count;
 
     H264Picture default_ref_list[2][32]; ///< base reference list for all slices of a coded picture
     H264Picture *short_ref[32];
