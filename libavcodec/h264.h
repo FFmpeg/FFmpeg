@@ -438,8 +438,10 @@ typedef struct H264SliceContext {
 
     uint8_t *bipred_scratchpad;
     uint8_t *edge_emu_buffer;
+    uint8_t (*top_borders[2])[(16 * 3) * 2];
     int bipred_scratchpad_allocated;
     int edge_emu_buffer_allocated;
+    int top_borders_allocated[2];
 
     /**
      * non zero coeff count cache.
@@ -512,7 +514,6 @@ typedef struct H264Context {
 
     int8_t(*intra4x4_pred_mode);
     H264PredContext hpc;
-    uint8_t (*top_borders[2])[(16 * 3) * 2];
 
     uint8_t (*non_zero_count)[48];
 
