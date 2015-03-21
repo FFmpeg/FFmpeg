@@ -373,6 +373,11 @@ typedef struct H264SliceContext {
 
     const uint8_t *left_block;
     int topleft_partition;
+
+    unsigned int topleft_samples_available;
+    unsigned int top_samples_available;
+    unsigned int topright_samples_available;
+    unsigned int left_samples_available;
 } H264SliceContext;
 
 /**
@@ -413,10 +418,6 @@ typedef struct H264Context {
 
     int8_t(*intra4x4_pred_mode);
     H264PredContext hpc;
-    unsigned int topleft_samples_available;
-    unsigned int top_samples_available;
-    unsigned int topright_samples_available;
-    unsigned int left_samples_available;
     uint8_t (*top_borders[2])[(16 * 3) * 2];
 
     /**
@@ -854,7 +855,8 @@ int ff_h264_check_intra4x4_pred_mode(H264Context *h, H264SliceContext *sl);
  * Check if the top & left blocks are available if needed & change the
  * dc mode so it only uses the available blocks.
  */
-int ff_h264_check_intra_pred_mode(H264Context *h, int mode, int is_chroma);
+int ff_h264_check_intra_pred_mode(H264Context *h, H264SliceContext *sl,
+                                  int mode, int is_chroma);
 
 void ff_h264_hl_decode_mb(H264Context *h, H264SliceContext *sl);
 int ff_h264_decode_extradata(H264Context *h, const uint8_t *buf, int size);

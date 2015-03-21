@@ -637,12 +637,12 @@ static av_always_inline void hl_decode_mb_predict_luma(H264Context *h,
                         h->hpc.pred8x8l_add[dir](ptr, h->mb + (i * 16 + p * 256 << pixel_shift), linesize);
                     } else
                         h->hpc.pred8x8l_filter_add[dir](ptr, h->mb + (i * 16 + p * 256 << pixel_shift),
-                                                        (h-> topleft_samples_available << i) & 0x8000,
-                                                        (h->topright_samples_available << i) & 0x4000, linesize);
+                                                        (sl-> topleft_samples_available << i) & 0x8000,
+                                                        (sl->topright_samples_available << i) & 0x4000, linesize);
                 } else {
                     const int nnz = h->non_zero_count_cache[scan8[i + p * 16]];
-                    h->hpc.pred8x8l[dir](ptr, (h->topleft_samples_available << i) & 0x8000,
-                                         (h->topright_samples_available << i) & 0x4000, linesize);
+                    h->hpc.pred8x8l[dir](ptr, (sl->topleft_samples_available << i) & 0x8000,
+                                         (sl->topright_samples_available << i) & 0x4000, linesize);
                     if (nnz) {
                         if (nnz == 1 && dctcoef_get(h->mb, pixel_shift, i * 16 + p * 256))
                             idct_dc_add(ptr, h->mb + (i * 16 + p * 256 << pixel_shift), linesize);
@@ -670,7 +670,7 @@ static av_always_inline void hl_decode_mb_predict_luma(H264Context *h,
                     int nnz, tr;
                     uint64_t tr_high;
                     if (dir == DIAG_DOWN_LEFT_PRED || dir == VERT_LEFT_PRED) {
-                        const int topright_avail = (h->topright_samples_available << i) & 0x8000;
+                        const int topright_avail = (sl->topright_samples_available << i) & 0x8000;
                         av_assert2(h->mb_y || linesize <= block_offset[i]);
                         if (!topright_avail) {
                             if (pixel_shift) {

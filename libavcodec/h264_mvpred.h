@@ -465,47 +465,47 @@ static void fill_decode_caches(H264Context *h, H264SliceContext *sl, int mb_type
     if (!IS_SKIP(mb_type)) {
         if (IS_INTRA(mb_type)) {
             int type_mask = h->pps.constrained_intra_pred ? IS_INTRA(-1) : -1;
-            h->topleft_samples_available      =
-                h->top_samples_available      =
-                    h->left_samples_available = 0xFFFF;
-            h->topright_samples_available     = 0xEEEA;
+            sl->topleft_samples_available     =
+                sl->top_samples_available     =
+                    sl->left_samples_available = 0xFFFF;
+            sl->topright_samples_available     = 0xEEEA;
 
             if (!(top_type & type_mask)) {
-                h->topleft_samples_available  = 0xB3FF;
-                h->top_samples_available      = 0x33FF;
-                h->topright_samples_available = 0x26EA;
+                sl->topleft_samples_available  = 0xB3FF;
+                sl->top_samples_available      = 0x33FF;
+                sl->topright_samples_available = 0x26EA;
             }
             if (IS_INTERLACED(mb_type) != IS_INTERLACED(left_type[LTOP])) {
                 if (IS_INTERLACED(mb_type)) {
                     if (!(left_type[LTOP] & type_mask)) {
-                        h->topleft_samples_available &= 0xDFFF;
-                        h->left_samples_available    &= 0x5FFF;
+                        sl->topleft_samples_available &= 0xDFFF;
+                        sl->left_samples_available    &= 0x5FFF;
                     }
                     if (!(left_type[LBOT] & type_mask)) {
-                        h->topleft_samples_available &= 0xFF5F;
-                        h->left_samples_available    &= 0xFF5F;
+                        sl->topleft_samples_available &= 0xFF5F;
+                        sl->left_samples_available    &= 0xFF5F;
                     }
                 } else {
                     int left_typei = h->cur_pic.mb_type[left_xy[LTOP] + h->mb_stride];
 
                     av_assert2(left_xy[LTOP] == left_xy[LBOT]);
                     if (!((left_typei & type_mask) && (left_type[LTOP] & type_mask))) {
-                        h->topleft_samples_available &= 0xDF5F;
-                        h->left_samples_available    &= 0x5F5F;
+                        sl->topleft_samples_available &= 0xDF5F;
+                        sl->left_samples_available    &= 0x5F5F;
                     }
                 }
             } else {
                 if (!(left_type[LTOP] & type_mask)) {
-                    h->topleft_samples_available &= 0xDF5F;
-                    h->left_samples_available    &= 0x5F5F;
+                    sl->topleft_samples_available &= 0xDF5F;
+                    sl->left_samples_available    &= 0x5F5F;
                 }
             }
 
             if (!(topleft_type & type_mask))
-                h->topleft_samples_available &= 0x7FFF;
+                sl->topleft_samples_available &= 0x7FFF;
 
             if (!(topright_type & type_mask))
-                h->topright_samples_available &= 0xFBFF;
+                sl->topright_samples_available &= 0xFBFF;
 
             if (IS_INTRA4x4(mb_type)) {
                 if (IS_INTRA4x4(top_type)) {

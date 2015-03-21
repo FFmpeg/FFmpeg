@@ -152,7 +152,7 @@ int ff_h264_check_intra4x4_pred_mode(H264Context *h, H264SliceContext *sl)
     };
     int i;
 
-    if (!(h->top_samples_available & 0x8000)) {
+    if (!(sl->top_samples_available & 0x8000)) {
         for (i = 0; i < 4; i++) {
             int status = top[sl->intra4x4_pred_mode_cache[scan8[0] + i]];
             if (status < 0) {
@@ -166,10 +166,10 @@ int ff_h264_check_intra4x4_pred_mode(H264Context *h, H264SliceContext *sl)
         }
     }
 
-    if ((h->left_samples_available & 0x8888) != 0x8888) {
+    if ((sl->left_samples_available & 0x8888) != 0x8888) {
         static const int mask[4] = { 0x8000, 0x2000, 0x80, 0x20 };
         for (i = 0; i < 4; i++)
-            if (!(h->left_samples_available & mask[i])) {
+            if (!(sl->left_samples_available & mask[i])) {
                 int status = left[sl->intra4x4_pred_mode_cache[scan8[0] + 8 * i]];
                 if (status < 0) {
                     av_log(h->avctx, AV_LOG_ERROR,
@@ -189,7 +189,8 @@ int ff_h264_check_intra4x4_pred_mode(H264Context *h, H264SliceContext *sl)
  * Check if the top & left blocks are available if needed and
  * change the dc mode so it only uses the available blocks.
  */
-int ff_h264_check_intra_pred_mode(H264Context *h, int mode, int is_chroma)
+int ff_h264_check_intra_pred_mode(H264Context *h, H264SliceContext *sl,
+                                  int mode, int is_chroma)
 {
     static const int8_t top[4]  = { LEFT_DC_PRED8x8, 1, -1, -1 };
     static const int8_t left[5] = { TOP_DC_PRED8x8, -1,  2, -1, DC_128_PRED8x8 };
@@ -201,7 +202,7 @@ int ff_h264_check_intra_pred_mode(H264Context *h, int mode, int is_chroma)
         return AVERROR_INVALIDDATA;
     }
 
-    if (!(h->top_samples_available & 0x8000)) {
+    if (!(sl->top_samples_available & 0x8000)) {
         mode = top[mode];
         if (mode < 0) {
             av_log(h->avctx, AV_LOG_ERROR,
@@ -211,7 +212,7 @@ int ff_h264_check_intra_pred_mode(H264Context *h, int mode, int is_chroma)
         }
     }
 
-    if ((h->left_samples_available & 0x8080) != 0x8080) {
+    if ((sl->left_samples_available & 0x8080) != 0x8080) {
         mode = left[mode];
         if (mode < 0) {
             av_log(h->avctx, AV_LOG_ERROR,
@@ -219,10 +220,10 @@ int ff_h264_check_intra_pred_mode(H264Context *h, int mode, int is_chroma)
                    h->mb_x, h->mb_y);
             return AVERROR_INVALIDDATA;
         }
-        if (is_chroma && (h->left_samples_available & 0x8080)) {
+        if (is_chroma && (sl->left_samples_available & 0x8080)) {
             // mad cow disease mode, aka MBAFF + constrained_intra_pred
             mode = ALZHEIMER_DC_L0T_PRED8x8 +
-                   (!(h->left_samples_available & 0x8000)) +
+                   (!(sl->left_samples_available & 0x8000)) +
                    2 * (mode == DC_128_PRED8x8);
         }
     }

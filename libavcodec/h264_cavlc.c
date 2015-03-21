@@ -825,12 +825,12 @@ decode_intra_mb:
             if (ff_h264_check_intra4x4_pred_mode(h, sl) < 0)
                 return -1;
         }else{
-            sl->intra16x16_pred_mode = ff_h264_check_intra_pred_mode(h, sl->intra16x16_pred_mode, 0);
+            sl->intra16x16_pred_mode = ff_h264_check_intra_pred_mode(h, sl, sl->intra16x16_pred_mode, 0);
             if (sl->intra16x16_pred_mode < 0)
                 return -1;
         }
         if(decode_chroma){
-            pred_mode= ff_h264_check_intra_pred_mode(h, get_ue_golomb_31(&h->gb), 1);
+            pred_mode= ff_h264_check_intra_pred_mode(h, sl, get_ue_golomb_31(&h->gb), 1);
             if(pred_mode < 0)
                 return -1;
             sl->chroma_pred_mode = pred_mode;

@@ -497,9 +497,9 @@ static int svq3_decode_mb(SVQ3Context *s, unsigned int mb_type)
     const int mb_xy         = h->mb_xy;
     const int b_xy          = 4 * h->mb_x + 4 * h->mb_y * h->b_stride;
 
-    h->top_samples_available      = (h->mb_y == 0) ? 0x33FF : 0xFFFF;
-    h->left_samples_available     = (h->mb_x == 0) ? 0x5F5F : 0xFFFF;
-    h->topright_samples_available = 0xFFFF;
+    sl->top_samples_available      = (h->mb_y == 0) ? 0x33FF : 0xFFFF;
+    sl->left_samples_available     = (h->mb_x == 0) ? 0x5F5F : 0xFFFF;
+    sl->topright_samples_available = 0xFFFF;
 
     if (mb_type == 0) {           /* SKIP */
         if (h->pict_type == AV_PICTURE_TYPE_P ||
@@ -610,7 +610,7 @@ static int svq3_decode_mb(SVQ3Context *s, unsigned int mb_type)
                 for (i = 0; i < 4; i++)
                     sl->intra4x4_pred_mode_cache[scan8[0] - 1 + i * 8] = sl->intra4x4_pred_mode[h->mb2br_xy[mb_xy - 1] + 6 - i];
                 if (sl->intra4x4_pred_mode_cache[scan8[0] - 1] == -1)
-                    h->left_samples_available = 0x5F5F;
+                    sl->left_samples_available = 0x5F5F;
             }
             if (h->mb_y > 0) {
                 sl->intra4x4_pred_mode_cache[4 + 8 * 0] = sl->intra4x4_pred_mode[h->mb2br_xy[mb_xy - h->mb_stride] + 0];
@@ -619,7 +619,7 @@ static int svq3_decode_mb(SVQ3Context *s, unsigned int mb_type)
                 sl->intra4x4_pred_mode_cache[7 + 8 * 0] = sl->intra4x4_pred_mode[h->mb2br_xy[mb_xy - h->mb_stride] + 3];
 
                 if (sl->intra4x4_pred_mode_cache[4 + 8 * 0] == -1)
-                    h->top_samples_available = 0x33FF;
+                    sl->top_samples_available = 0x33FF;
             }
 
             /* decode prediction codes for luma blocks */
@@ -653,14 +653,14 @@ static int svq3_decode_mb(SVQ3Context *s, unsigned int mb_type)
         if (mb_type == 8) {
             ff_h264_check_intra4x4_pred_mode(h, sl);
 
-            h->top_samples_available  = (h->mb_y == 0) ? 0x33FF : 0xFFFF;
-            h->left_samples_available = (h->mb_x == 0) ? 0x5F5F : 0xFFFF;
+            sl->top_samples_available  = (h->mb_y == 0) ? 0x33FF : 0xFFFF;
+            sl->left_samples_available = (h->mb_x == 0) ? 0x5F5F : 0xFFFF;
         } else {
             for (i = 0; i < 4; i++)
                 memset(&sl->intra4x4_pred_mode_cache[scan8[0] + 8 * i], DC_128_PRED, 4);
 
-            h->top_samples_available  = 0x33FF;
-            h->left_samples_available = 0x5F5F;
+            sl->top_samples_available  = 0x33FF;
+            sl->left_samples_available = 0x5F5F;
         }
 
         mb_type = MB_TYPE_INTRA4x4;
@@ -668,7 +668,7 @@ static int svq3_decode_mb(SVQ3Context *s, unsigned int mb_type)
         dir = i_mb_type_info[mb_type - 8].pred_mode;
         dir = (dir >> 1) ^ 3 * (dir & 1) ^ 1;
 
-        if ((sl->intra16x16_pred_mode = ff_h264_check_intra_pred_mode(h, dir, 0)) < 0) {
+        if ((sl->intra16x16_pred_mode = ff_h264_check_intra_pred_mode(h, sl, dir, 0)) < 0) {
             av_log(h->avctx, AV_LOG_ERROR, "ff_h264_check_intra_pred_mode < 0\n");
             return sl->intra16x16_pred_mode;
         }
@@ -772,7 +772,7 @@ static int svq3_decode_mb(SVQ3Context *s, unsigned int mb_type)
     h->cur_pic.mb_type[mb_xy] = mb_type;
 
     if (IS_INTRA(mb_type))
-        sl->chroma_pred_mode = ff_h264_check_intra_pred_mode(h, DC_PRED8x8, 1);
+        sl->chroma_pred_mode = ff_h264_check_intra_pred_mode(h, sl, DC_PRED8x8, 1);
 
     return 0;
 }
