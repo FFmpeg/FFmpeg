@@ -500,7 +500,7 @@ void ff_vdpau_h264_picture_complete(H264Context *h)
     memcpy(render->info.h264.scaling_lists_8x8[0], h->pps.scaling_matrix8[0], sizeof(render->info.h264.scaling_lists_8x8[0]));
     memcpy(render->info.h264.scaling_lists_8x8[1], h->pps.scaling_matrix8[3], sizeof(render->info.h264.scaling_lists_8x8[0]));
 
-    ff_h264_draw_horiz_band(h, 0, h->avctx->height);
+    ff_h264_draw_horiz_band(h, &h->slice_ctx[0], 0, h->avctx->height);
     render->bitstream_buffers_used = 0;
 }
 #endif /* CONFIG_H264_VDPAU_DECODER */

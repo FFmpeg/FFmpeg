@@ -402,6 +402,17 @@ typedef struct H264SliceContext {
     int map_col_to_list0_field[2][2][16 + 32];
 
     /**
+     * num_ref_idx_l0/1_active_minus1 + 1
+     */
+    unsigned int ref_count[2];          ///< counts frames or fields, depending on current mb mode
+    unsigned int list_count;
+    H264Picture ref_list[2][48];        /**< 0..15: frame refs, 16..47: mbaff field refs.
+                                         *   Reordered version of default_ref_list
+                                         *   according to picture reordering in slice header */
+    int ref2frm[MAX_SLICES][2][64];     ///< reference to frame number lists, used in the loop filter, the first 2 are for -2,-1
+
+
+    /**
      * non zero coeff count cache.
      * is 64 if not available.
      */
@@ -492,16 +503,7 @@ typedef struct H264Context {
     int picture_structure;
     int first_field;
 
-    /**
-     * num_ref_idx_l0/1_active_minus1 + 1
-     */
-    unsigned int ref_count[2];          ///< counts frames or fields, depending on current mb mode
-    unsigned int list_count;
     uint8_t *list_counts;               ///< Array of list_count per MB specifying the slice type
-    H264Picture ref_list[2][48];        /**< 0..15: frame refs, 16..47: mbaff field refs.
-                                         *   Reordered version of default_ref_list
-                                         *   according to picture reordering in slice header */
-    int ref2frm[MAX_SLICES][2][64];     ///< reference to frame number lists, used in the loop filter, the first 2 are for -2,-1
 
     // data partitioning
     GetBitContext intra_gb;
@@ -834,7 +836,7 @@ int ff_h264_alloc_tables(H264Context *h);
  */
 int ff_h264_fill_default_ref_list(H264Context *h, H264SliceContext *sl);
 
-int ff_h264_decode_ref_pic_list_reordering(H264Context *h);
+int ff_h264_decode_ref_pic_list_reordering(H264Context *h, H264SliceContext *sl);
 void ff_h264_fill_mbaff_ref_list(H264Context *h, H264SliceContext *sl);
 void ff_h264_remove_all_refs(H264Context *h);
 
@@ -1148,7 +1150,7 @@ static inline int get_avc_nalsize(H264Context *h, const uint8_t *buf,
     return nalsize;
 }
 
-int ff_h264_field_end(H264Context *h, int in_setup);
+int ff_h264_field_end(H264Context *h, H264SliceContext *sl, int in_setup);
 
 int ff_h264_ref_picture(H264Context *h, H264Picture *dst, H264Picture *src);
 void ff_h264_unref_picture(H264Context *h, H264Picture *pic);
@@ -1156,7 +1158,7 @@ void ff_h264_unref_picture(H264Context *h, H264Picture *pic);
 int ff_h264_context_init(H264Context *h);
 int ff_h264_set_parameter_from_sps(H264Context *h);
 
-void ff_h264_draw_horiz_band(H264Context *h, int y, int height);
+void ff_h264_draw_horiz_band(H264Context *h, H264SliceContext *sl, int y, int height);
 int ff_init_poc(H264Context *h, int pic_field_poc[2], int *pic_poc);
 int ff_pred_weight_table(H264Context *h, H264SliceContext *sl);
 int ff_set_ref_count(H264Context *h, H264SliceContext *sl);

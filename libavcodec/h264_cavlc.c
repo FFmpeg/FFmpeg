@@ -794,8 +794,8 @@ decode_intra_mb:
         return 0;
     }
 
-    local_ref_count[0] = h->ref_count[0] << MB_MBAFF(h);
-    local_ref_count[1] = h->ref_count[1] << MB_MBAFF(h);
+    local_ref_count[0] = sl->ref_count[0] << MB_MBAFF(h);
+    local_ref_count[1] = sl->ref_count[1] << MB_MBAFF(h);
 
     fill_decode_neighbors(h, sl, mb_type);
     fill_decode_caches(h, sl, mb_type);
@@ -875,7 +875,7 @@ decode_intra_mb:
             }
         }
 
-        for(list=0; list<h->list_count; list++){
+        for (list = 0; list < sl->list_count; list++) {
             int ref_count = IS_REF0(mb_type) ? 1 : local_ref_count[list];
             for(i=0; i<4; i++){
                 if(IS_DIRECT(sl->sub_mb_type[i])) continue;
@@ -903,7 +903,7 @@ decode_intra_mb:
         if(dct8x8_allowed)
             dct8x8_allowed = get_dct8x8_allowed(h, sl);
 
-        for(list=0; list<h->list_count; list++){
+        for (list = 0; list < sl->list_count; list++) {
             for(i=0; i<4; i++){
                 if(IS_DIRECT(sl->sub_mb_type[i])) {
                     sl->ref_cache[list][ scan8[4*i] ] = sl->ref_cache[list][ scan8[4*i]+1 ];
@@ -953,7 +953,7 @@ decode_intra_mb:
         int list, mx, my, i;
          //FIXME we should set ref_idx_l? to 0 if we use that later ...
         if(IS_16X16(mb_type)){
-            for(list=0; list<h->list_count; list++){
+            for (list = 0; list < sl->list_count; list++) {
                     unsigned int val;
                     if(IS_DIR(mb_type, 0, list)){
                         if(local_ref_count[list]==1){
@@ -970,7 +970,7 @@ decode_intra_mb:
                     fill_rectangle(&sl->ref_cache[list][ scan8[0] ], 4, 4, 8, val, 1);
                     }
             }
-            for(list=0; list<h->list_count; list++){
+            for (list = 0; list < sl->list_count; list++) {
                 if(IS_DIR(mb_type, 0, list)){
                     pred_motion(h, sl, 0, 4, list, sl->ref_cache[list][ scan8[0] ], &mx, &my);
                     mx += get_se_golomb(&h->gb);
@@ -982,7 +982,7 @@ decode_intra_mb:
             }
         }
         else if(IS_16X8(mb_type)){
-            for(list=0; list<h->list_count; list++){
+            for (list = 0; list < sl->list_count; list++) {
                     for(i=0; i<2; i++){
                         unsigned int val;
                         if(IS_DIR(mb_type, i, list)){
@@ -1002,7 +1002,7 @@ decode_intra_mb:
                         fill_rectangle(&sl->ref_cache[list][ scan8[0] + 16*i ], 4, 2, 8, val, 1);
                     }
             }
-            for(list=0; list<h->list_count; list++){
+            for (list = 0; list < sl->list_count; list++) {
                 for(i=0; i<2; i++){
                     unsigned int val;
                     if(IS_DIR(mb_type, i, list)){
@@ -1019,7 +1019,7 @@ decode_intra_mb:
             }
         }else{
             av_assert2(IS_8X16(mb_type));
-            for(list=0; list<h->list_count; list++){
+            for (list = 0; list < sl->list_count; list++) {
                     for(i=0; i<2; i++){
                         unsigned int val;
                         if(IS_DIR(mb_type, i, list)){ //FIXME optimize
@@ -1039,7 +1039,7 @@ decode_intra_mb:
                         fill_rectangle(&sl->ref_cache[list][ scan8[0] + 2*i ], 2, 4, 8, val, 1);
                     }
             }
-            for(list=0; list<h->list_count; list++){
+            for (list = 0; list < sl->list_count; list++) {
                 for(i=0; i<2; i++){
                     unsigned int val;
                     if(IS_DIR(mb_type, i, list)){

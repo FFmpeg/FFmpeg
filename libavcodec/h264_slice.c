@@ -897,20 +897,20 @@ static void implicit_weight_table(H264Context *h, H264SliceContext *sl, int fiel
         } else {
             cur_poc = h->cur_pic_ptr->field_poc[h->picture_structure - 1];
         }
-        if (h->ref_count[0] == 1 && h->ref_count[1] == 1 && !FRAME_MBAFF(h) &&
-            h->ref_list[0][0].poc + h->ref_list[1][0].poc == 2 * cur_poc) {
+        if (sl->ref_count[0] == 1 && sl->ref_count[1] == 1 && !FRAME_MBAFF(h) &&
+            sl->ref_list[0][0].poc + sl->ref_list[1][0].poc == 2 * cur_poc) {
             sl->use_weight        = 0;
             sl->use_weight_chroma = 0;
             return;
         }
         ref_start  = 0;
-        ref_count0 = h->ref_count[0];
-        ref_count1 = h->ref_count[1];
+        ref_count0 = sl->ref_count[0];
+        ref_count1 = sl->ref_count[1];
     } else {
         cur_poc    = h->cur_pic_ptr->field_poc[field];
         ref_start  = 16;
-        ref_count0 = 16 + 2 * h->ref_count[0];
-        ref_count1 = 16 + 2 * h->ref_count[1];
+        ref_count0 = 16 + 2 * sl->ref_count[0];
+        ref_count1 = 16 + 2 * sl->ref_count[1];
     }
 
     sl->use_weight               = 2;
@@ -919,11 +919,11 @@ static void implicit_weight_table(H264Context *h, H264SliceContext *sl, int fiel
     sl->chroma_log2_weight_denom = 5;
 
     for (ref0 = ref_start; ref0 < ref_count0; ref0++) {
-        int poc0 = h->ref_list[0][ref0].poc;
+        int poc0 = sl->ref_list[0][ref0].poc;
         for (ref1 = ref_start; ref1 < ref_count1; ref1++) {
             int w = 32;
-            if (!h->ref_list[0][ref0].long_ref && !h->ref_list[1][ref1].long_ref) {
-                int poc1 = h->ref_list[1][ref1].poc;
+            if (!sl->ref_list[0][ref0].long_ref && !sl->ref_list[1][ref1].long_ref) {
+                int poc1 = sl->ref_list[1][ref1].poc;
                 int td   = av_clip_int8(poc1 - poc0);
                 if (td) {
                     int tb = av_clip_int8(cur_poc - poc0);
@@ -1304,7 +1304,7 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl, H264Contex
 
     if (first_mb_in_slice == 0) { // FIXME better field boundary detection
         if (h0->current_slice && h->cur_pic_ptr && FIELD_PICTURE(h)) {
-            ff_h264_field_end(h, 1);
+            ff_h264_field_end(h, sl, 1);
         }
 
         h0->current_slice = 0;
@@ -1801,15 +1801,15 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl, H264Contex
     if (slice_type != AV_PICTURE_TYPE_I &&
         (h0->current_slice == 0 ||
          slice_type != h0->last_slice_type ||
-         memcmp(h0->last_ref_count, h0->ref_count, sizeof(h0->ref_count)))) {
+         memcmp(h0->last_ref_count, sl->ref_count, sizeof(sl->ref_count)))) {
 
         ff_h264_fill_default_ref_list(h, sl);
     }
 
     if (sl->slice_type_nos != AV_PICTURE_TYPE_I) {
-       ret = ff_h264_decode_ref_pic_list_reordering(h);
+       ret = ff_h264_decode_ref_pic_list_reordering(h, sl);
        if (ret < 0) {
-           h->ref_count[1] = h->ref_count[0] = 0;
+           sl->ref_count[1] = sl->ref_count[0] = 0;
            return ret;
        }
     }
@@ -1950,7 +1950,7 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl, H264Contex
                    6 * (h->sps.bit_depth_luma - 8);
 
     h0->last_slice_type = slice_type;
-    memcpy(h0->last_ref_count, h0->ref_count, sizeof(h0->last_ref_count));
+    memcpy(h0->last_ref_count, sl->ref_count, sizeof(h0->last_ref_count));
     sl->slice_num       = ++h0->current_slice;
 
     if (sl->slice_num)
@@ -1964,13 +1964,13 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl, H264Contex
 
     for (j = 0; j < 2; j++) {
         int id_list[16];
-        int *ref2frm = h->ref2frm[sl->slice_num & (MAX_SLICES - 1)][j];
+        int *ref2frm = sl->ref2frm[sl->slice_num & (MAX_SLICES - 1)][j];
         for (i = 0; i < 16; i++) {
             id_list[i] = 60;
-            if (j < h->list_count && i < h->ref_count[j] &&
-                h->ref_list[j][i].f.buf[0]) {
+            if (j < sl->list_count && i < sl->ref_count[j] &&
+                sl->ref_list[j][i].f.buf[0]) {
                 int k;
-                AVBuffer *buf = h->ref_list[j][i].f.buf[0]->buffer;
+                AVBuffer *buf = sl->ref_list[j][i].f.buf[0]->buffer;
                 for (k = 0; k < h->short_ref_count; k++)
                     if (h->short_ref[k]->f.buf[0]->buffer == buf) {
                         id_list[i] = k;
@@ -1987,12 +1987,12 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl, H264Contex
         ref2frm[0] =
         ref2frm[1] = -1;
         for (i = 0; i < 16; i++)
-            ref2frm[i + 2] = 4 * id_list[i] + (h->ref_list[j][i].reference & 3);
+            ref2frm[i + 2] = 4 * id_list[i] + (sl->ref_list[j][i].reference & 3);
         ref2frm[18 + 0] =
         ref2frm[18 + 1] = -1;
         for (i = 16; i < 48; i++)
             ref2frm[i + 4] = 4 * id_list[(i - 16) >> 1] +
-                             (h->ref_list[j][i].reference & 3);
+                             (sl->ref_list[j][i].reference & 3);
     }
 
     h0->au_pps_id = pps_id;
@@ -2012,7 +2012,7 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl, H264Contex
                pps_id, h->frame_num,
                h->cur_pic_ptr->field_poc[0],
                h->cur_pic_ptr->field_poc[1],
-               h->ref_count[0], h->ref_count[1],
+               sl->ref_count[0], sl->ref_count[1],
                sl->qscale,
                h->deblocking_filter,
                h->slice_alpha_c0_offset, h->slice_beta_offset,
@@ -2057,7 +2057,7 @@ static av_always_inline void fill_filter_caches_inter(H264Context *h,
         if (USES_LIST(top_type, list)) {
             const int b_xy  = h->mb2b_xy[top_xy] + 3 * b_stride;
             const int b8_xy = 4 * top_xy + 2;
-            int (*ref2frm)[64] = (void*)(h->ref2frm[h->slice_table[top_xy] & (MAX_SLICES - 1)][0] + (MB_MBAFF(h) ? 20 : 2));
+            int (*ref2frm)[64] = (void*)(sl->ref2frm[h->slice_table[top_xy] & (MAX_SLICES - 1)][0] + (MB_MBAFF(h) ? 20 : 2));
             AV_COPY128(mv_dst - 1 * 8, h->cur_pic.motion_val[list][b_xy + 0]);
             ref_cache[0 - 1 * 8] =
             ref_cache[1 - 1 * 8] = ref2frm[list][h->cur_pic.ref_index[list][b8_xy + 0]];
@@ -2072,7 +2072,7 @@ static av_always_inline void fill_filter_caches_inter(H264Context *h,
             if (USES_LIST(left_type[LTOP], list)) {
                 const int b_xy  = h->mb2b_xy[left_xy[LTOP]] + 3;
                 const int b8_xy = 4 * left_xy[LTOP] + 1;
-                int (*ref2frm)[64] =(void*)( h->ref2frm[h->slice_table[left_xy[LTOP]] & (MAX_SLICES - 1)][0] + (MB_MBAFF(h) ? 20 : 2));
+                int (*ref2frm)[64] =(void*)( sl->ref2frm[h->slice_table[left_xy[LTOP]] & (MAX_SLICES - 1)][0] + (MB_MBAFF(h) ? 20 : 2));
                 AV_COPY32(mv_dst - 1 +  0, h->cur_pic.motion_val[list][b_xy + b_stride * 0]);
                 AV_COPY32(mv_dst - 1 +  8, h->cur_pic.motion_val[list][b_xy + b_stride * 1]);
                 AV_COPY32(mv_dst - 1 + 16, h->cur_pic.motion_val[list][b_xy + b_stride * 2]);
@@ -2105,7 +2105,7 @@ static av_always_inline void fill_filter_caches_inter(H264Context *h,
 
     {
         int8_t *ref = &h->cur_pic.ref_index[list][4 * mb_xy];
-        int (*ref2frm)[64] = (void*)(h->ref2frm[sl->slice_num & (MAX_SLICES - 1)][0] + (MB_MBAFF(h) ? 20 : 2));
+        int (*ref2frm)[64] = (void*)(sl->ref2frm[sl->slice_num & (MAX_SLICES - 1)][0] + (MB_MBAFF(h) ? 20 : 2));
         uint32_t ref01 = (pack16to32(ref2frm[list][ref[0]], ref2frm[list][ref[1]]) & 0x00FF00FF) * 0x0101;
         uint32_t ref23 = (pack16to32(ref2frm[list][ref[2]], ref2frm[list][ref[3]]) & 0x00FF00FF) * 0x0101;
         AV_WN32A(&ref_cache[0 * 8], ref01);
@@ -2203,7 +2203,7 @@ static int fill_filter_caches(H264Context *h, H264SliceContext *sl, int mb_type)
 
     fill_filter_caches_inter(h, sl, mb_type, top_xy, left_xy,
                              top_type, left_type, mb_xy, 0);
-    if (h->list_count == 2)
+    if (sl->list_count == 2)
         fill_filter_caches_inter(h, sl, mb_type, top_xy, left_xy,
                                  top_type, left_type, mb_xy, 1);
 
@@ -2288,7 +2288,7 @@ static void loop_filter(H264Context *h, H264SliceContext *sl, int start_x, int e
                 mb_xy         = h->mb_xy = mb_x + mb_y * h->mb_stride;
                 sl->slice_num = h->slice_table[mb_xy];
                 mb_type       = h->cur_pic.mb_type[mb_xy];
-                h->list_count = h->list_counts[mb_xy];
+                sl->list_count = h->list_counts[mb_xy];
 
                 if (FRAME_MBAFF(h))
                     h->mb_mbaff               =
@@ -2354,7 +2354,7 @@ static void predict_field_decoding_flag(H264Context *h, H264SliceContext *sl)
 /**
  * Draw edges and report progress for the last MB row.
  */
-static void decode_finish_row(H264Context *h)
+static void decode_finish_row(H264Context *h, H264SliceContext *sl)
 {
     int top            = 16 * (h->mb_y      >> FIELD_PICTURE(h));
     int pic_height     = 16 *  h->mb_height >> FIELD_PICTURE(h);
@@ -2376,7 +2376,7 @@ static void decode_finish_row(H264Context *h)
         top    = 0;
     }
 
-    ff_h264_draw_horiz_band(h, top, height);
+    ff_h264_draw_horiz_band(h, sl, top, height);
 
     if (h->droppable || h->er.error_occurred)
         return;
@@ -2385,7 +2385,8 @@ static void decode_finish_row(H264Context *h)
                               h->picture_structure == PICT_BOTTOM_FIELD);
 }
 
-static void er_add_slice(H264Context *h, int startx, int starty,
+static void er_add_slice(H264Context *h, H264SliceContext *sl,
+                         int startx, int starty,
                          int endx, int endy, int status)
 {
     if (CONFIG_ERROR_RESILIENCE) {
@@ -2453,7 +2454,7 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
 
             if ((h->workaround_bugs & FF_BUG_TRUNCATED) &&
                 h->cabac.bytestream > h->cabac.bytestream_end + 2) {
-                er_add_slice(h, h->resync_mb_x, h->resync_mb_y, h->mb_x - 1,
+                er_add_slice(h, sl, h->resync_mb_x, h->resync_mb_y, h->mb_x - 1,
                              h->mb_y, ER_MB_END);
                 if (h->mb_x >= lf_x_start)
                     loop_filter(h, sl, lf_x_start, h->mb_x + 1);
@@ -2466,7 +2467,7 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
                        "error while decoding MB %d %d, bytestream %"PTRDIFF_SPECIFIER"\n",
                        h->mb_x, h->mb_y,
                        h->cabac.bytestream_end - h->cabac.bytestream);
-                er_add_slice(h, h->resync_mb_x, h->resync_mb_y, h->mb_x,
+                er_add_slice(h, sl, h->resync_mb_x, h->resync_mb_y, h->mb_x,
                              h->mb_y, ER_MB_ERROR);
                 return AVERROR_INVALIDDATA;
             }
@@ -2474,7 +2475,7 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
             if (++h->mb_x >= h->mb_width) {
                 loop_filter(h, sl, lf_x_start, h->mb_x);
                 h->mb_x = lf_x_start = 0;
-                decode_finish_row(h);
+                decode_finish_row(h, sl);
                 ++h->mb_y;
                 if (FIELD_OR_MBAFF_PICTURE(h)) {
                     ++h->mb_y;
@@ -2486,7 +2487,7 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
             if (eos || h->mb_y >= h->mb_height) {
                 tprintf(h->avctx, "slice end %d %d\n",
                         get_bits_count(&h->gb), h->gb.size_in_bits);
-                er_add_slice(h, h->resync_mb_x, h->resync_mb_y, h->mb_x - 1,
+                er_add_slice(h, sl, h->resync_mb_x, h->resync_mb_y, h->mb_x - 1,
                              h->mb_y, ER_MB_END);
                 if (h->mb_x > lf_x_start)
                     loop_filter(h, sl, lf_x_start, h->mb_x);
@@ -2513,7 +2514,7 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
             if (ret < 0) {
                 av_log(h->avctx, AV_LOG_ERROR,
                        "error while decoding MB %d %d\n", h->mb_x, h->mb_y);
-                er_add_slice(h, h->resync_mb_x, h->resync_mb_y, h->mb_x,
+                er_add_slice(h, sl, h->resync_mb_x, h->resync_mb_y, h->mb_x,
                              h->mb_y, ER_MB_ERROR);
                 return ret;
             }
@@ -2521,7 +2522,7 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
             if (++h->mb_x >= h->mb_width) {
                 loop_filter(h, sl, lf_x_start, h->mb_x);
                 h->mb_x = lf_x_start = 0;
-                decode_finish_row(h);
+                decode_finish_row(h, sl);
                 ++h->mb_y;
                 if (FIELD_OR_MBAFF_PICTURE(h)) {
                     ++h->mb_y;
@@ -2534,12 +2535,12 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
 
                     if (   get_bits_left(&h->gb) == 0
                         || get_bits_left(&h->gb) > 0 && !(h->avctx->err_recognition & AV_EF_AGGRESSIVE)) {
-                        er_add_slice(h, h->resync_mb_x, h->resync_mb_y,
+                        er_add_slice(h, sl, h->resync_mb_x, h->resync_mb_y,
                                      h->mb_x - 1, h->mb_y, ER_MB_END);
 
                         return 0;
                     } else {
-                        er_add_slice(h, h->resync_mb_x, h->resync_mb_y,
+                        er_add_slice(h, sl, h->resync_mb_x, h->resync_mb_y,
                                      h->mb_x, h->mb_y, ER_MB_END);
 
                         return AVERROR_INVALIDDATA;
@@ -2552,14 +2553,14 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
                         get_bits_count(&h->gb), h->gb.size_in_bits);
 
                 if (get_bits_left(&h->gb) == 0) {
-                    er_add_slice(h, h->resync_mb_x, h->resync_mb_y,
+                    er_add_slice(h, sl, h->resync_mb_x, h->resync_mb_y,
                                  h->mb_x - 1, h->mb_y, ER_MB_END);
                     if (h->mb_x > lf_x_start)
                         loop_filter(h, sl, lf_x_start, h->mb_x);
 
                     return 0;
                 } else {
-                    er_add_slice(h, h->resync_mb_x, h->resync_mb_y, h->mb_x,
+                    er_add_slice(h, sl, h->resync_mb_x, h->resync_mb_y, h->mb_x,
                                  h->mb_y, ER_MB_ERROR);
 
                     return AVERROR_INVALIDDATA;

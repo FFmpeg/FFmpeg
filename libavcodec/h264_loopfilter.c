@@ -370,7 +370,7 @@ static av_always_inline void h264_filter_mb_fast_internal(H264Context *h,
             int step =  1+(mb_type>>24); //IS_8x8DCT(mb_type) ? 2 : 1;
             edges = 4 - 3*((mb_type>>3) & !(h->cbp & 15)); //(mb_type & MB_TYPE_16x16) && !(h->cbp & 15) ? 1 : 4;
             h->h264dsp.h264_loop_filter_strength(bS, sl->non_zero_count_cache, sl->ref_cache, sl->mv_cache,
-                                              h->list_count==2, edges, step, mask_edge0, mask_edge1, FIELD_PICTURE(h));
+                                                 sl->list_count==2, edges, step, mask_edge0, mask_edge1, FIELD_PICTURE(h));
         }
         if( IS_INTRA(left_type) )
             AV_WN64A(bS[0][0], 0x0004000400040004ULL);
@@ -445,7 +445,7 @@ static int check_mv(H264Context *h, H264SliceContext *sl, long b_idx, long bn_id
         v = sl->mv_cache[0][b_idx][0] - sl->mv_cache[0][bn_idx][0] + 3 >= 7U |
            FFABS(sl->mv_cache[0][b_idx][1] - sl->mv_cache[0][bn_idx][1]) >= mvy_limit;
 
-    if(h->list_count==2){
+    if (sl->list_count == 2) {
         if(!v)
             v = sl->ref_cache[1][b_idx] != sl->ref_cache[1][bn_idx] |
                 sl->mv_cache[1][b_idx][0] - sl->mv_cache[1][bn_idx][0] + 3 >= 7U |

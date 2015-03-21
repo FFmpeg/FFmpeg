@@ -145,7 +145,7 @@ static int scan_mmco_reset(AVCodecParserContext *s)
 
     if (sl->slice_type_nos != AV_PICTURE_TYPE_I) {
         int list;
-        for (list = 0; list < h->list_count; list++) {
+        for (list = 0; list < sl->list_count; list++) {
             if (get_bits1(&h->gb)) {
                 int index;
                 for (index = 0; ; index++) {
@@ -161,7 +161,7 @@ static int scan_mmco_reset(AVCodecParserContext *s)
                     } else
                         break;
 
-                    if (index >= h->ref_count[list]) {
+                    if (index >= sl->ref_count[list]) {
                         av_log(h->avctx, AV_LOG_ERROR,
                                "reference count %d overflow\n", index);
                         return AVERROR_INVALIDDATA;

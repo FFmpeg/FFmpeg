@@ -64,7 +64,7 @@ static av_noinline void FUNC(hl_decode_mb)(H264Context *h, H264SliceContext *sl)
     h->vdsp.prefetch(dest_y  + (h->mb_x & 3) * 4 * h->linesize   + (64 << PIXEL_SHIFT), h->linesize,       4);
     h->vdsp.prefetch(dest_cb + (h->mb_x & 7)     * h->uvlinesize + (64 << PIXEL_SHIFT), dest_cr - dest_cb, 2);
 
-    h->list_counts[mb_xy] = h->list_count;
+    h->list_counts[mb_xy] = sl->list_count;
 
     if (!SIMPLE && MB_FIELD(h)) {
         linesize     = sl->mb_linesize = h->linesize * 2;
@@ -77,7 +77,7 @@ static av_noinline void FUNC(hl_decode_mb)(H264Context *h, H264SliceContext *sl)
         }
         if (FRAME_MBAFF(h)) {
             int list;
-            for (list = 0; list < h->list_count; list++) {
+            for (list = 0; list < sl->list_count; list++) {
                 if (!USES_LIST(mb_type, list))
                     continue;
                 if (IS_16X16(mb_type)) {
@@ -289,7 +289,7 @@ static av_noinline void FUNC(hl_decode_mb_444)(H264Context *h, H264SliceContext 
                          h->linesize, 4);
     }
 
-    h->list_counts[mb_xy] = h->list_count;
+    h->list_counts[mb_xy] = sl->list_count;
 
     if (!SIMPLE && MB_FIELD(h)) {
         linesize     = sl->mb_linesize = sl->mb_uvlinesize = h->linesize * 2;
@@ -299,7 +299,7 @@ static av_noinline void FUNC(hl_decode_mb_444)(H264Context *h, H264SliceContext 
                 dest[p] -= h->linesize * 15;
         if (FRAME_MBAFF(h)) {
             int list;
-            for (list = 0; list < h->list_count; list++) {
+            for (list = 0; list < sl->list_count; list++) {
                 if (!USES_LIST(mb_type, list))
                     continue;
                 if (IS_16X16(mb_type)) {
