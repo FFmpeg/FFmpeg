@@ -140,7 +140,7 @@ void ff_h264_direct_ref_list_init(H264Context *const h, H264SliceContext *sl)
         h->col_fieldoff = 2 * h->ref_list[1][0].reference - 3;
     }
 
-    if (sl->slice_type_nos != AV_PICTURE_TYPE_B || h->direct_spatial_mv_pred)
+    if (sl->slice_type_nos != AV_PICTURE_TYPE_B || sl->direct_spatial_mv_pred)
         return;
 
     for (list = 0; list < 2; list++) {
@@ -695,7 +695,7 @@ single_col:
 void ff_h264_pred_direct_motion(H264Context *const h, H264SliceContext *sl,
                                 int *mb_type)
 {
-    if (h->direct_spatial_mv_pred)
+    if (sl->direct_spatial_mv_pred)
         pred_spatial_direct_motion(h, sl, mb_type);
     else
         pred_temp_direct_motion(h, sl, mb_type);

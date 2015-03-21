@@ -1310,7 +1310,7 @@ int ff_set_ref_count(H264Context *h, H264SliceContext *sl)
         max[0] = max[1] = h->picture_structure == PICT_FRAME ? 15 : 31;
 
         if (sl->slice_type_nos == AV_PICTURE_TYPE_B)
-            h->direct_spatial_mv_pred = get_bits1(&h->gb);
+            sl->direct_spatial_mv_pred = get_bits1(&h->gb);
         num_ref_idx_active_override_flag = get_bits1(&h->gb);
 
         if (num_ref_idx_active_override_flag) {

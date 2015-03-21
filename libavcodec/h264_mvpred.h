@@ -603,7 +603,7 @@ static void fill_decode_caches(H264Context *h, H264SliceContext *sl, int mb_type
         }
     }
 
-    if (IS_INTER(mb_type) || (IS_DIRECT(mb_type) && h->direct_spatial_mv_pred)) {
+    if (IS_INTER(mb_type) || (IS_DIRECT(mb_type) && sl->direct_spatial_mv_pred)) {
         int list;
         int b_stride = h->b_stride;
         for (list = 0; list < h->list_count; list++) {
@@ -613,7 +613,7 @@ static void fill_decode_caches(H264Context *h, H264SliceContext *sl, int mb_type
             int16_t(*mv)[2]       = h->cur_pic.motion_val[list];
             if (!USES_LIST(mb_type, list))
                 continue;
-            av_assert2(!(IS_DIRECT(mb_type) && !h->direct_spatial_mv_pred));
+            av_assert2(!(IS_DIRECT(mb_type) && !sl->direct_spatial_mv_pred));
 
             if (USES_LIST(top_type, list)) {
                 const int b_xy = h->mb2b_xy[top_xy] + 3 * b_stride;
@@ -813,7 +813,7 @@ static void av_unused decode_mb_skip(H264Context *h, H264SliceContext *sl)
     if (sl->slice_type_nos == AV_PICTURE_TYPE_B) {
         // just for fill_caches. pred_direct_motion will set the real mb_type
         mb_type |= MB_TYPE_L0L1 | MB_TYPE_DIRECT2 | MB_TYPE_SKIP;
-        if (h->direct_spatial_mv_pred) {
+        if (sl->direct_spatial_mv_pred) {
             fill_decode_neighbors(h, sl, mb_type);
             fill_decode_caches(h, sl, mb_type); //FIXME check what is needed and what not ...
         }
