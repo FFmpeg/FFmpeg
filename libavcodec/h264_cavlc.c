@@ -723,7 +723,7 @@ int ff_h264_decode_mb_cavlc(H264Context *h, H264SliceContext *sl)
         if (sl->mb_skip_run--) {
             if (FRAME_MBAFF(h) && (sl->mb_y & 1) == 0) {
                 if (sl->mb_skip_run == 0)
-                    h->mb_mbaff = h->mb_field_decoding_flag = get_bits1(&sl->gb);
+                    h->mb_mbaff = sl->mb_field_decoding_flag = get_bits1(&sl->gb);
             }
             decode_mb_skip(h, sl);
             return 0;
@@ -731,7 +731,7 @@ int ff_h264_decode_mb_cavlc(H264Context *h, H264SliceContext *sl)
     }
     if (FRAME_MBAFF(h)) {
         if ((sl->mb_y & 1) == 0)
-            h->mb_mbaff = h->mb_field_decoding_flag = get_bits1(&sl->gb);
+            h->mb_mbaff = sl->mb_field_decoding_flag = get_bits1(&sl->gb);
     }
 
     sl->prev_mb_skipped = 0;
@@ -768,7 +768,7 @@ decode_intra_mb:
         mb_type= i_mb_type_info[mb_type].type;
     }
 
-    if(MB_FIELD(h))
+    if (MB_FIELD(sl))
         mb_type |= MB_TYPE_INTERLACED;
 
     h->slice_table[mb_xy] = sl->slice_num;

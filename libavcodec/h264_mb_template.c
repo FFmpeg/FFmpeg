@@ -66,7 +66,7 @@ static av_noinline void FUNC(hl_decode_mb)(const H264Context *h, H264SliceContex
 
     h->list_counts[mb_xy] = sl->list_count;
 
-    if (!SIMPLE && MB_FIELD(h)) {
+    if (!SIMPLE && MB_FIELD(sl)) {
         linesize     = sl->mb_linesize = h->linesize * 2;
         uvlinesize   = sl->mb_uvlinesize = h->uvlinesize * 2;
         block_offset = &h->block_offset[48];
@@ -291,7 +291,7 @@ static av_noinline void FUNC(hl_decode_mb_444)(const H264Context *h, H264SliceCo
 
     h->list_counts[mb_xy] = sl->list_count;
 
-    if (!SIMPLE && MB_FIELD(h)) {
+    if (!SIMPLE && MB_FIELD(sl)) {
         linesize     = sl->mb_linesize = sl->mb_uvlinesize = h->linesize * 2;
         block_offset = &h->block_offset[48];
         if (mb_y & 1) // FIXME move out of this function?

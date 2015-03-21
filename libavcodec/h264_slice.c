@@ -1553,7 +1553,7 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl, H264Contex
     h->picture_structure = picture_structure;
     h->droppable         = droppable;
     h->frame_num         = frame_num;
-    h->mb_field_decoding_flag = picture_structure != PICT_FRAME;
+    sl->mb_field_decoding_flag = picture_structure != PICT_FRAME;
 
     if (h0->current_slice == 0) {
         /* Shorten frame num gaps so we don't have to allocate reference
@@ -2131,7 +2131,7 @@ static int fill_filter_caches(H264Context *h, H264SliceContext *sl, int mb_type)
     uint8_t *nnz;
     uint8_t *nnz_cache;
 
-    top_xy = mb_xy - (h->mb_stride << MB_FIELD(h));
+    top_xy = mb_xy - (h->mb_stride << MB_FIELD(sl));
 
     /* Wow, what a mess, why didn't they simplify the interlacing & intra
      * stuff, I can't imagine that these complex rules are worth it. */
@@ -2288,7 +2288,7 @@ static void loop_filter(H264Context *h, H264SliceContext *sl, int start_x, int e
 
                 if (FRAME_MBAFF(h))
                     h->mb_mbaff               =
-                    h->mb_field_decoding_flag = !!IS_INTERLACED(mb_type);
+                    sl->mb_field_decoding_flag = !!IS_INTERLACED(mb_type);
 
                 sl->mb_x = mb_x;
                 sl->mb_y = mb_y;
@@ -2302,7 +2302,7 @@ static void loop_filter(H264Context *h, H264SliceContext *sl, int start_x, int e
                           mb_y * h->uvlinesize * block_h;
                 // FIXME simplify above
 
-                if (MB_FIELD(h)) {
+                if (MB_FIELD(sl)) {
                     linesize   = sl->mb_linesize   = h->linesize   * 2;
                     uvlinesize = sl->mb_uvlinesize = h->uvlinesize * 2;
                     if (mb_y & 1) { // FIXME move out of this function?
@@ -2344,7 +2344,7 @@ static void predict_field_decoding_flag(H264Context *h, H264SliceContext *sl)
                       h->cur_pic.mb_type[mb_xy - 1] :
                       (h->slice_table[mb_xy - h->mb_stride] == sl->slice_num) ?
                       h->cur_pic.mb_type[mb_xy - h->mb_stride] : 0;
-    h->mb_mbaff     = h->mb_field_decoding_flag = IS_INTERLACED(mb_type) ? 1 : 0;
+    h->mb_mbaff     = sl->mb_field_decoding_flag = IS_INTERLACED(mb_type) ? 1 : 0;
 }
 
 /**
