@@ -57,23 +57,23 @@ static av_noinline void FUNC(hl_decode_mb)(const H264Context *h, H264SliceContex
     const int block_h   = 16 >> h->chroma_y_shift;
     const int chroma422 = CHROMA422(h);
 
-    dest_y  = h->cur_pic.f.data[0] + ((mb_x << PIXEL_SHIFT)     + mb_y * h->linesize)  * 16;
-    dest_cb = h->cur_pic.f.data[1] +  (mb_x << PIXEL_SHIFT) * 8 + mb_y * h->uvlinesize * block_h;
-    dest_cr = h->cur_pic.f.data[2] +  (mb_x << PIXEL_SHIFT) * 8 + mb_y * h->uvlinesize * block_h;
+    dest_y  = h->cur_pic.f.data[0] + ((mb_x << PIXEL_SHIFT)     + mb_y * sl->linesize)  * 16;
+    dest_cb = h->cur_pic.f.data[1] +  (mb_x << PIXEL_SHIFT) * 8 + mb_y * sl->uvlinesize * block_h;
+    dest_cr = h->cur_pic.f.data[2] +  (mb_x << PIXEL_SHIFT) * 8 + mb_y * sl->uvlinesize * block_h;
 
-    h->vdsp.prefetch(dest_y  + (sl->mb_x & 3) * 4 * h->linesize   + (64 << PIXEL_SHIFT), h->linesize,       4);
-    h->vdsp.prefetch(dest_cb + (sl->mb_x & 7)     * h->uvlinesize + (64 << PIXEL_SHIFT), dest_cr - dest_cb, 2);
+    h->vdsp.prefetch(dest_y  + (sl->mb_x & 3) * 4 * sl->linesize   + (64 << PIXEL_SHIFT), sl->linesize,       4);
+    h->vdsp.prefetch(dest_cb + (sl->mb_x & 7)     * sl->uvlinesize + (64 << PIXEL_SHIFT), dest_cr - dest_cb, 2);
 
     h->list_counts[mb_xy] = sl->list_count;
 
     if (!SIMPLE && MB_FIELD(sl)) {
-        linesize     = sl->mb_linesize = h->linesize * 2;
-        uvlinesize   = sl->mb_uvlinesize = h->uvlinesize * 2;
+        linesize     = sl->mb_linesize = sl->linesize * 2;
+        uvlinesize   = sl->mb_uvlinesize = sl->uvlinesize * 2;
         block_offset = &h->block_offset[48];
         if (mb_y & 1) { // FIXME move out of this function?
-            dest_y  -= h->linesize * 15;
-            dest_cb -= h->uvlinesize * (block_h - 1);
-            dest_cr -= h->uvlinesize * (block_h - 1);
+            dest_y  -= sl->linesize * 15;
+            dest_cb -= sl->uvlinesize * (block_h - 1);
+            dest_cr -= sl->uvlinesize * (block_h - 1);
         }
         if (FRAME_MBAFF(h)) {
             int list;
@@ -94,8 +94,8 @@ static av_noinline void FUNC(hl_decode_mb)(const H264Context *h, H264SliceContex
             }
         }
     } else {
-        linesize   = sl->mb_linesize   = h->linesize;
-        uvlinesize = sl->mb_uvlinesize = h->uvlinesize;
+        linesize   = sl->mb_linesize   = sl->linesize;
+        uvlinesize = sl->mb_uvlinesize = sl->uvlinesize;
         // dct_offset = s->linesize * 16;
     }
 
@@ -284,19 +284,19 @@ static av_noinline void FUNC(hl_decode_mb_444)(const H264Context *h, H264SliceCo
 
     for (p = 0; p < plane_count; p++) {
         dest[p] = h->cur_pic.f.data[p] +
-                  ((mb_x << PIXEL_SHIFT) + mb_y * h->linesize) * 16;
-        h->vdsp.prefetch(dest[p] + (sl->mb_x & 3) * 4 * h->linesize + (64 << PIXEL_SHIFT),
-                         h->linesize, 4);
+                  ((mb_x << PIXEL_SHIFT) + mb_y * sl->linesize) * 16;
+        h->vdsp.prefetch(dest[p] + (sl->mb_x & 3) * 4 * sl->linesize + (64 << PIXEL_SHIFT),
+                         sl->linesize, 4);
     }
 
     h->list_counts[mb_xy] = sl->list_count;
 
     if (!SIMPLE && MB_FIELD(sl)) {
-        linesize     = sl->mb_linesize = sl->mb_uvlinesize = h->linesize * 2;
+        linesize     = sl->mb_linesize = sl->mb_uvlinesize = sl->linesize * 2;
         block_offset = &h->block_offset[48];
         if (mb_y & 1) // FIXME move out of this function?
             for (p = 0; p < 3; p++)
-                dest[p] -= h->linesize * 15;
+                dest[p] -= sl->linesize * 15;
         if (FRAME_MBAFF(h)) {
             int list;
             for (list = 0; list < sl->list_count; list++) {
@@ -316,7 +316,7 @@ static av_noinline void FUNC(hl_decode_mb_444)(const H264Context *h, H264SliceCo
             }
         }
     } else {
-        linesize = sl->mb_linesize = sl->mb_uvlinesize = h->linesize;
+        linesize = sl->mb_linesize = sl->mb_uvlinesize = sl->linesize;
     }
 
     if (!SIMPLE && IS_INTRA_PCM(mb_type)) {

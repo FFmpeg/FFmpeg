@@ -320,23 +320,23 @@ static inline void svq3_mc_dir_part(SVQ3Context *s,
     }
 
     /* form component predictions */
-    dest = h->cur_pic.f.data[0] + x + y * h->linesize;
-    src  = pic->f.data[0] + mx + my * h->linesize;
+    dest = h->cur_pic.f.data[0] + x + y * sl->linesize;
+    src  = pic->f.data[0] + mx + my * sl->linesize;
 
     if (emu) {
         h->vdsp.emulated_edge_mc(sl->edge_emu_buffer, src,
-                                 h->linesize, h->linesize,
+                                 sl->linesize, sl->linesize,
                                  width + 1, height + 1,
                                  mx, my, s->h_edge_pos, s->v_edge_pos);
         src = sl->edge_emu_buffer;
     }
     if (thirdpel)
         (avg ? s->tdsp.avg_tpel_pixels_tab
-             : s->tdsp.put_tpel_pixels_tab)[dxy](dest, src, h->linesize,
+             : s->tdsp.put_tpel_pixels_tab)[dxy](dest, src, sl->linesize,
                                                  width, height);
     else
         (avg ? s->hdsp.avg_pixels_tab
-             : s->hdsp.put_pixels_tab)[blocksize][dxy](dest, src, h->linesize,
+             : s->hdsp.put_pixels_tab)[blocksize][dxy](dest, src, sl->linesize,
                                                        height);
 
     if (!(h->flags & CODEC_FLAG_GRAY)) {
@@ -347,12 +347,12 @@ static inline void svq3_mc_dir_part(SVQ3Context *s,
         blocksize++;
 
         for (i = 1; i < 3; i++) {
-            dest = h->cur_pic.f.data[i] + (x >> 1) + (y >> 1) * h->uvlinesize;
-            src  = pic->f.data[i] + mx + my * h->uvlinesize;
+            dest = h->cur_pic.f.data[i] + (x >> 1) + (y >> 1) * sl->uvlinesize;
+            src  = pic->f.data[i] + mx + my * sl->uvlinesize;
 
             if (emu) {
                 h->vdsp.emulated_edge_mc(sl->edge_emu_buffer, src,
-                                         h->uvlinesize, h->uvlinesize,
+                                         sl->uvlinesize, sl->uvlinesize,
                                          width + 1, height + 1,
                                          mx, my, (s->h_edge_pos >> 1),
                                          s->v_edge_pos >> 1);
@@ -361,12 +361,12 @@ static inline void svq3_mc_dir_part(SVQ3Context *s,
             if (thirdpel)
                 (avg ? s->tdsp.avg_tpel_pixels_tab
                      : s->tdsp.put_tpel_pixels_tab)[dxy](dest, src,
-                                                         h->uvlinesize,
+                                                         sl->uvlinesize,
                                                          width, height);
             else
                 (avg ? s->hdsp.avg_pixels_tab
                      : s->hdsp.put_pixels_tab)[blocksize][dxy](dest, src,
-                                                               h->uvlinesize,
+                                                               sl->uvlinesize,
                                                                height);
         }
     }
@@ -1123,8 +1123,8 @@ static int get_buffer(AVCodecContext *avctx, H264Picture *pic)
             return AVERROR(ENOMEM);
     }
 
-    h->linesize   = pic->f.linesize[0];
-    h->uvlinesize = pic->f.linesize[1];
+    sl->linesize   = pic->f.linesize[0];
+    sl->uvlinesize = pic->f.linesize[1];
 
     return 0;
 fail:
@@ -1195,14 +1195,14 @@ static int svq3_decode_frame(AVCodecContext *avctx, void *data,
         return ret;
 
     for (i = 0; i < 16; i++) {
-        h->block_offset[i]           = (4 * ((scan8[i] - scan8[0]) & 7)) + 4 * h->linesize * ((scan8[i] - scan8[0]) >> 3);
-        h->block_offset[48 + i]      = (4 * ((scan8[i] - scan8[0]) & 7)) + 8 * h->linesize * ((scan8[i] - scan8[0]) >> 3);
+        h->block_offset[i]           = (4 * ((scan8[i] - scan8[0]) & 7)) + 4 * sl->linesize * ((scan8[i] - scan8[0]) >> 3);
+        h->block_offset[48 + i]      = (4 * ((scan8[i] - scan8[0]) & 7)) + 8 * sl->linesize * ((scan8[i] - scan8[0]) >> 3);
     }
     for (i = 0; i < 16; i++) {
         h->block_offset[16 + i]      =
-        h->block_offset[32 + i]      = (4 * ((scan8[i] - scan8[0]) & 7)) + 4 * h->uvlinesize * ((scan8[i] - scan8[0]) >> 3);
+        h->block_offset[32 + i]      = (4 * ((scan8[i] - scan8[0]) & 7)) + 4 * sl->uvlinesize * ((scan8[i] - scan8[0]) >> 3);
         h->block_offset[48 + 16 + i] =
-        h->block_offset[48 + 32 + i] = (4 * ((scan8[i] - scan8[0]) & 7)) + 8 * h->uvlinesize * ((scan8[i] - scan8[0]) >> 3);
+        h->block_offset[48 + 32 + i] = (4 * ((scan8[i] - scan8[0]) & 7)) + 8 * sl->uvlinesize * ((scan8[i] - scan8[0]) >> 3);
     }
 
     if (h->pict_type != AV_PICTURE_TYPE_I) {

@@ -403,6 +403,7 @@ typedef struct H264SliceContext {
     unsigned int topright_samples_available;
     unsigned int left_samples_available;
 
+    ptrdiff_t linesize, uvlinesize;
     ptrdiff_t mb_linesize;  ///< may be equal to s->linesize or s->linesize * 2, for mbaff
     ptrdiff_t mb_uvlinesize;
 
@@ -517,7 +518,6 @@ typedef struct H264Context {
 
     /* coded dimensions -- 16 * mb w/h */
     int width, height;
-    ptrdiff_t linesize, uvlinesize;
     int chroma_x_shift, chroma_y_shift;
 
     int droppable;
