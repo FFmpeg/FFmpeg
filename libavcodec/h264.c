@@ -604,6 +604,7 @@ av_cold int ff_h264_decode_init(AVCodecContext *avctx)
 
     /* needed so that IDCT permutation is known early */
     ff_videodsp_init(&h->vdsp, 8);
+    h->cur_chroma_format_idc = -1;
 
     memset(h->pps.scaling_matrix4, 16, 6 * 16 * sizeof(uint8_t));
     memset(h->pps.scaling_matrix8, 16, 2 * 64 * sizeof(uint8_t));
