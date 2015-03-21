@@ -335,6 +335,7 @@ typedef struct H264Picture {
 
 typedef struct H264SliceContext {
     struct H264Context *h264;
+    GetBitContext gb;
 
     int slice_num;
     int slice_type;

@@ -221,11 +221,11 @@ int ff_h264_decode_ref_pic_list_reordering(H264Context *h, H264SliceContext *sl)
         for (i = 0; i < sl->ref_count[list]; i++)
             COPY_PICTURE(&sl->ref_list[list][i], &h->default_ref_list[list][i]);
 
-        if (get_bits1(&h->gb)) {    // ref_pic_list_modification_flag_l[01]
+        if (get_bits1(&sl->gb)) {    // ref_pic_list_modification_flag_l[01]
             int pred = h->curr_pic_num;
 
             for (index = 0; ; index++) {
-                unsigned int modification_of_pic_nums_idc = get_ue_golomb_31(&h->gb);
+                unsigned int modification_of_pic_nums_idc = get_ue_golomb_31(&sl->gb);
                 unsigned int pic_id;
                 int i;
                 H264Picture *ref = NULL;
@@ -241,7 +241,7 @@ int ff_h264_decode_ref_pic_list_reordering(H264Context *h, H264SliceContext *sl)
                 switch (modification_of_pic_nums_idc) {
                 case 0:
                 case 1: {
-                    const unsigned int abs_diff_pic_num = get_ue_golomb(&h->gb) + 1;
+                    const unsigned int abs_diff_pic_num = get_ue_golomb(&sl->gb) + 1;
                     int frame_num;
 
                     if (abs_diff_pic_num > h->max_pic_num) {
@@ -272,7 +272,7 @@ int ff_h264_decode_ref_pic_list_reordering(H264Context *h, H264SliceContext *sl)
                 }
                 case 2: {
                     int long_idx;
-                    pic_id = get_ue_golomb(&h->gb); // long_term_pic_idx
+                    pic_id = get_ue_golomb(&sl->gb); // long_term_pic_idx
 
                     long_idx = pic_num_extract(h, pic_id, &pic_structure);
 
