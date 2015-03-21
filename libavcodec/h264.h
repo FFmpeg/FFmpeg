@@ -433,6 +433,12 @@ typedef struct H264SliceContext {
     ///< as mb is addressed by scantable[i] and scantable is uint8_t we can either
     ///< check that i is not too large or ensure that there is some unused stuff after mb
     int16_t mb_padding[256 * 2];
+
+    /**
+     * Cabac
+     */
+    CABACContext cabac;
+    uint8_t cabac_state[1024];
 } H264SliceContext;
 
 /**
@@ -518,12 +524,6 @@ typedef struct H264Context {
     GetBitContext inter_gb;
     GetBitContext *intra_gb_ptr;
     GetBitContext *inter_gb_ptr;
-
-    /**
-     * Cabac
-     */
-    CABACContext cabac;
-    uint8_t cabac_state[1024];
 
     /* 0x100 -> non null luma_dc, 0x80/0x40 -> non null chroma_dc (cb/cr), 0x?0 -> chroma_cbp(0, 1, 2), 0x0? luma_cbp */
     uint16_t *cbp_table;

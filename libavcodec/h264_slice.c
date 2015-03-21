@@ -2423,7 +2423,7 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
         align_get_bits(&h->gb);
 
         /* init cabac */
-        ff_init_cabac_decoder(&h->cabac,
+        ff_init_cabac_decoder(&sl->cabac,
                               h->gb.buffer + get_bits_count(&h->gb) / 8,
                               (get_bits_left(&h->gb) + 7) / 8);
 
@@ -2448,23 +2448,23 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
                     ff_h264_hl_decode_mb(h, sl);
                 h->mb_y--;
             }
-            eos = get_cabac_terminate(&h->cabac);
+            eos = get_cabac_terminate(&sl->cabac);
 
             if ((h->workaround_bugs & FF_BUG_TRUNCATED) &&
-                h->cabac.bytestream > h->cabac.bytestream_end + 2) {
+                sl->cabac.bytestream > sl->cabac.bytestream_end + 2) {
                 er_add_slice(h, sl, h->resync_mb_x, h->resync_mb_y, h->mb_x - 1,
                              h->mb_y, ER_MB_END);
                 if (h->mb_x >= lf_x_start)
                     loop_filter(h, sl, lf_x_start, h->mb_x + 1);
                 return 0;
             }
-            if (h->cabac.bytestream > h->cabac.bytestream_end + 2 )
-                av_log(h->avctx, AV_LOG_DEBUG, "bytestream overread %"PTRDIFF_SPECIFIER"\n", h->cabac.bytestream_end - h->cabac.bytestream);
-            if (ret < 0 || h->cabac.bytestream > h->cabac.bytestream_end + 4) {
+            if (sl->cabac.bytestream > sl->cabac.bytestream_end + 2 )
+                av_log(h->avctx, AV_LOG_DEBUG, "bytestream overread %"PTRDIFF_SPECIFIER"\n", sl->cabac.bytestream_end - sl->cabac.bytestream);
+            if (ret < 0 || sl->cabac.bytestream > sl->cabac.bytestream_end + 4) {
                 av_log(h->avctx, AV_LOG_ERROR,
                        "error while decoding MB %d %d, bytestream %"PTRDIFF_SPECIFIER"\n",
                        h->mb_x, h->mb_y,
-                       h->cabac.bytestream_end - h->cabac.bytestream);
+                       sl->cabac.bytestream_end - sl->cabac.bytestream);
                 er_add_slice(h, sl, h->resync_mb_x, h->resync_mb_y, h->mb_x,
                              h->mb_y, ER_MB_ERROR);
                 return AVERROR_INVALIDDATA;
