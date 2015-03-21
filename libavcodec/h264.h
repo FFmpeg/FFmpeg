@@ -989,7 +989,7 @@ static av_always_inline uint16_t pack8to16(unsigned a, unsigned b)
 /**
  * Get the chroma qp.
  */
-static av_always_inline int get_chroma_qp(H264Context *h, int t, int qscale)
+static av_always_inline int get_chroma_qp(const H264Context *h, int t, int qscale)
 {
     return h->pps.chroma_qp_table[t][qscale];
 }
@@ -997,7 +997,7 @@ static av_always_inline int get_chroma_qp(H264Context *h, int t, int qscale)
 /**
  * Get the predicted intra4x4 prediction mode.
  */
-static av_always_inline int pred_intra_mode(H264Context *h,
+static av_always_inline int pred_intra_mode(const H264Context *h,
                                             H264SliceContext *sl, int n)
 {
     const int index8 = scan8[n];
@@ -1013,7 +1013,7 @@ static av_always_inline int pred_intra_mode(H264Context *h,
         return min;
 }
 
-static av_always_inline void write_back_intra_pred_mode(H264Context *h,
+static av_always_inline void write_back_intra_pred_mode(const H264Context *h,
                                                         H264SliceContext *sl)
 {
     int8_t *i4x4       = sl->intra4x4_pred_mode + h->mb2br_xy[sl->mb_xy];
@@ -1025,7 +1025,7 @@ static av_always_inline void write_back_intra_pred_mode(H264Context *h,
     i4x4[6] = i4x4_cache[7 + 8 * 1];
 }
 
-static av_always_inline void write_back_non_zero_count(H264Context *h,
+static av_always_inline void write_back_non_zero_count(const H264Context *h,
                                                        H264SliceContext *sl)
 {
     const int mb_xy    = sl->mb_xy;
@@ -1049,7 +1049,7 @@ static av_always_inline void write_back_non_zero_count(H264Context *h,
     }
 }
 
-static av_always_inline void write_back_motion_list(H264Context *h,
+static av_always_inline void write_back_motion_list(const H264Context *h,
                                                     H264SliceContext *sl,
                                                     int b_stride,
                                                     int b_xy, int b8_xy,
@@ -1085,7 +1085,7 @@ static av_always_inline void write_back_motion_list(H264Context *h,
     }
 }
 
-static av_always_inline void write_back_motion(H264Context *h,
+static av_always_inline void write_back_motion(const H264Context *h,
                                                H264SliceContext *sl,
                                                int mb_type)
 {
@@ -1112,7 +1112,7 @@ static av_always_inline void write_back_motion(H264Context *h,
     }
 }
 
-static av_always_inline int get_dct8x8_allowed(H264Context *h, H264SliceContext *sl)
+static av_always_inline int get_dct8x8_allowed(const H264Context *h, H264SliceContext *sl)
 {
     if (h->sps.direct_8x8_inference_flag)
         return !(AV_RN64A(sl->sub_mb_type) &
