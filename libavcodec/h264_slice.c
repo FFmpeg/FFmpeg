@@ -604,7 +604,6 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
     h->coded_picture_number = h1->coded_picture_number;
     h->first_field          = h1->first_field;
     h->picture_structure    = h1->picture_structure;
-    h->qscale               = h1->qscale;
     h->droppable            = h1->droppable;
     h->low_delay            = h1->low_delay;
 
@@ -1228,7 +1227,6 @@ static int h264_slice_header_init(H264Context *h, int reinit)
             c->uvlinesize        = h->uvlinesize;
             c->chroma_x_shift    = h->chroma_x_shift;
             c->chroma_y_shift    = h->chroma_y_shift;
-            c->qscale            = h->qscale;
             c->droppable         = h->droppable;
             c->low_delay         = h->low_delay;
             c->mb_width          = h->mb_width;
