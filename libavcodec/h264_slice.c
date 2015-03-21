@@ -392,31 +392,6 @@ void ff_h264_init_dequant_tables(H264Context *h)
     }
 }
 
-/**
- * Mimic alloc_tables(), but for every context thread.
- */
-static void clone_tables(H264Context *dst, H264SliceContext *sl,
-                         H264Context *src, int i)
-{
-    sl->intra4x4_pred_mode     = src->intra4x4_pred_mode + i * 8 * 2 * src->mb_stride;
-    sl->mvd_table[0]           = src->mvd_table[0] + i * 8 * 2 * src->mb_stride;
-    sl->mvd_table[1]           = src->mvd_table[1] + i * 8 * 2 * src->mb_stride;
-
-    dst->non_zero_count         = src->non_zero_count;
-    dst->slice_table            = src->slice_table;
-    dst->cbp_table              = src->cbp_table;
-    dst->mb2b_xy                = src->mb2b_xy;
-    dst->mb2br_xy               = src->mb2br_xy;
-    dst->chroma_pred_mode_table = src->chroma_pred_mode_table;
-    dst->direct_table           = src->direct_table;
-    dst->list_counts            = src->list_counts;
-    dst->DPB                    = src->DPB;
-    dst->cur_pic_ptr            = src->cur_pic_ptr;
-    dst->cur_pic                = src->cur_pic;
-    ff_h264_pred_init(&dst->hpc, src->avctx->codec_id, src->sps.bit_depth_luma,
-                      src->sps.chroma_format_idc);
-}
-
 #define IN_RANGE(a, b, size) (((a) >= (b)) && ((a) < ((b) + (size))))
 
 #define REBASE_PICTURE(pic, new_ctx, old_ctx)             \
@@ -591,7 +566,6 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
         }
         }
 
-        h->thread_context[0] = h;
         h->context_initialized = h1->context_initialized;
     }
 
@@ -657,7 +631,7 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
     copy_fields(h, h1, poc_lsb, default_ref_list);
 
     // reference lists
-    copy_fields(h, h1, short_ref, thread_context);
+    copy_fields(h, h1, short_ref, current_slice);
 
     copy_picture_range(h->short_ref, h1->short_ref, 32, h, h1);
     copy_picture_range(h->long_ref, h1->long_ref, 32, h, h1);
@@ -1176,50 +1150,19 @@ static int h264_slice_header_init(H264Context *h, int reinit)
             goto fail;
         }
     } else {
-        for (i = 1; i < h->slice_context_count; i++) {
-            H264Context *c;
-            c                    = h->thread_context[i] = av_mallocz(sizeof(H264Context));
-            if (!c) {
-                ret = AVERROR(ENOMEM);
-                goto fail;
-            }
-            c->avctx             = h->avctx;
-            c->vdsp              = h->vdsp;
-            c->h264dsp           = h->h264dsp;
-            c->h264qpel          = h->h264qpel;
-            c->h264chroma        = h->h264chroma;
-            c->sps               = h->sps;
-            c->pps               = h->pps;
-            c->pixel_shift       = h->pixel_shift;
-            c->cur_chroma_format_idc = h->cur_chroma_format_idc;
-            c->width             = h->width;
-            c->height            = h->height;
-            c->linesize          = h->linesize;
-            c->uvlinesize        = h->uvlinesize;
-            c->chroma_x_shift    = h->chroma_x_shift;
-            c->chroma_y_shift    = h->chroma_y_shift;
-            c->droppable         = h->droppable;
-            c->low_delay         = h->low_delay;
-            c->mb_width          = h->mb_width;
-            c->mb_height         = h->mb_height;
-            c->mb_stride         = h->mb_stride;
-            c->mb_num            = h->mb_num;
-            c->flags             = h->flags;
-            c->workaround_bugs   = h->workaround_bugs;
-            c->pict_type         = h->pict_type;
+        for (i = 0; i < h->slice_context_count; i++) {
+            H264SliceContext *sl = &h->slice_ctx[i];
 
-            h->slice_ctx[i].h264 = c;
+            sl->h264               = h;
+            sl->intra4x4_pred_mode = h->intra4x4_pred_mode + i * 8 * 2 * h->mb_stride;
+            sl->mvd_table[0]       = h->mvd_table[0]       + i * 8 * 2 * h->mb_stride;
+            sl->mvd_table[1]       = h->mvd_table[1]       + i * 8 * 2 * h->mb_stride;
 
-            init_scan_tables(c);
-            clone_tables(c, &h->slice_ctx[i], h, i);
-            c->context_initialized = 1;
-        }
-
-        for (i = 0; i < h->slice_context_count; i++)
-            if ((ret = ff_h264_slice_context_init(h, &h->slice_ctx[i])) < 0) {
+            if ((ret = ff_h264_slice_context_init(h, sl)) < 0) {
                 av_log(h->avctx, AV_LOG_ERROR, "context_init() failed.\n");
                 goto fail;
             }
+        }
     }
 
     h->context_initialized = 1;
@@ -2357,7 +2300,7 @@ static void er_add_slice(H264SliceContext *sl,
 static int decode_slice(struct AVCodecContext *avctx, void *arg)
 {
     H264SliceContext *sl = arg;
-    const H264Context *h = avctx->priv_data;
+    const H264Context *h = sl->h264;
     int lf_x_start = sl->mb_x;
     int ret;
 
