@@ -40,7 +40,7 @@
 #define CHROMA_IDC 2
 #include "h264_mc_template.c"
 
-static av_noinline void FUNC(hl_decode_mb)(H264Context *h, H264SliceContext *sl)
+static av_noinline void FUNC(hl_decode_mb)(const H264Context *h, H264SliceContext *sl)
 {
     const int mb_x    = sl->mb_x;
     const int mb_y    = sl->mb_y;
@@ -269,7 +269,7 @@ static av_noinline void FUNC(hl_decode_mb)(H264Context *h, H264SliceContext *sl)
 #define CHROMA_IDC 3
 #include "h264_mc_template.c"
 
-static av_noinline void FUNC(hl_decode_mb_444)(H264Context *h, H264SliceContext *sl)
+static av_noinline void FUNC(hl_decode_mb_444)(const H264Context *h, H264SliceContext *sl)
 {
     const int mb_x    = sl->mb_x;
     const int mb_y    = sl->mb_y;

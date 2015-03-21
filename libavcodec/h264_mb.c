@@ -36,7 +36,7 @@
 #include "svq3.h"
 #include "thread.h"
 
-static inline int get_lowest_part_list_y(H264Context *h, H264SliceContext *sl,
+static inline int get_lowest_part_list_y(H264SliceContext *sl,
                                          H264Picture *pic, int n,
                                          int height, int y_offset, int list)
 {
@@ -50,7 +50,7 @@ static inline int get_lowest_part_list_y(H264Context *h, H264SliceContext *sl,
     return FFMAX(0, bottom);
 }
 
-static inline void get_lowest_part_y(H264Context *h, H264SliceContext *sl,
+static inline void get_lowest_part_y(const H264Context *h, H264SliceContext *sl,
                                      int16_t refs[2][48], int n,
                                      int height, int y_offset, int list0,
                                      int list1, int *nrefs)
@@ -68,7 +68,7 @@ static inline void get_lowest_part_y(H264Context *h, H264SliceContext *sl,
         // Fields can wait on each other, though.
         if (ref->tf.progress->data != h->cur_pic.tf.progress->data ||
             (ref->reference & 3) != h->picture_structure) {
-            my = get_lowest_part_list_y(h, sl, ref, n, height, y_offset, 0);
+            my = get_lowest_part_list_y(sl, ref, n, height, y_offset, 0);
             if (refs[0][ref_n] < 0)
                 nrefs[0] += 1;
             refs[0][ref_n] = FFMAX(refs[0][ref_n], my);
@@ -81,7 +81,7 @@ static inline void get_lowest_part_y(H264Context *h, H264SliceContext *sl,
 
         if (ref->tf.progress->data != h->cur_pic.tf.progress->data ||
             (ref->reference & 3) != h->picture_structure) {
-            my = get_lowest_part_list_y(h, sl, ref, n, height, y_offset, 1);
+            my = get_lowest_part_list_y(sl, ref, n, height, y_offset, 1);
             if (refs[1][ref_n] < 0)
                 nrefs[1] += 1;
             refs[1][ref_n] = FFMAX(refs[1][ref_n], my);
@@ -94,7 +94,7 @@ static inline void get_lowest_part_y(H264Context *h, H264SliceContext *sl,
  *
  * @param h the H264 context
  */
-static void await_references(H264Context *h, H264SliceContext *sl)
+static void await_references(const H264Context *h, H264SliceContext *sl)
 {
     const int mb_xy   = sl->mb_xy;
     const int mb_type = h->cur_pic.mb_type[mb_xy];
@@ -202,14 +202,14 @@ static void await_references(H264Context *h, H264SliceContext *sl)
         }
 }
 
-static av_always_inline void mc_dir_part(H264Context *h, H264SliceContext *sl,
+static av_always_inline void mc_dir_part(const H264Context *h, H264SliceContext *sl,
                                          H264Picture *pic,
                                          int n, int square, int height,
                                          int delta, int list,
                                          uint8_t *dest_y, uint8_t *dest_cb,
                                          uint8_t *dest_cr,
                                          int src_x_offset, int src_y_offset,
-                                         qpel_mc_func *qpix_op,
+                                         const qpel_mc_func *qpix_op,
                                          h264_chroma_mc_func chroma_op,
                                          int pixel_shift, int chroma_idc)
 {
@@ -318,20 +318,20 @@ static av_always_inline void mc_dir_part(H264Context *h, H264SliceContext *sl,
               mx & 7, ((unsigned)my << (chroma_idc == 2 /* yuv422 */)) & 7);
 }
 
-static av_always_inline void mc_part_std(H264Context *h, H264SliceContext *sl,
+static av_always_inline void mc_part_std(const H264Context *h, H264SliceContext *sl,
                                          int n, int square,
                                          int height, int delta,
                                          uint8_t *dest_y, uint8_t *dest_cb,
                                          uint8_t *dest_cr,
                                          int x_offset, int y_offset,
-                                         qpel_mc_func *qpix_put,
+                                         const qpel_mc_func *qpix_put,
                                          h264_chroma_mc_func chroma_put,
-                                         qpel_mc_func *qpix_avg,
+                                         const qpel_mc_func *qpix_avg,
                                          h264_chroma_mc_func chroma_avg,
                                          int list0, int list1,
                                          int pixel_shift, int chroma_idc)
 {
-    qpel_mc_func *qpix_op         = qpix_put;
+    const qpel_mc_func *qpix_op   = qpix_put;
     h264_chroma_mc_func chroma_op = chroma_put;
 
     dest_y += (2 * x_offset << pixel_shift) + 2 * y_offset * sl->mb_linesize;
@@ -366,13 +366,13 @@ static av_always_inline void mc_part_std(H264Context *h, H264SliceContext *sl,
     }
 }
 
-static av_always_inline void mc_part_weighted(H264Context *h, H264SliceContext *sl,
+static av_always_inline void mc_part_weighted(const H264Context *h, H264SliceContext *sl,
                                               int n, int square,
                                               int height, int delta,
                                               uint8_t *dest_y, uint8_t *dest_cb,
                                               uint8_t *dest_cr,
                                               int x_offset, int y_offset,
-                                              qpel_mc_func *qpix_put,
+                                              const qpel_mc_func *qpix_put,
                                               h264_chroma_mc_func chroma_put,
                                               h264_weight_func luma_weight_op,
                                               h264_weight_func chroma_weight_op,
@@ -480,7 +480,7 @@ static av_always_inline void mc_part_weighted(H264Context *h, H264SliceContext *
     }
 }
 
-static av_always_inline void prefetch_motion(H264Context *h, H264SliceContext *sl,
+static av_always_inline void prefetch_motion(const H264Context *h, H264SliceContext *sl,
                                              int list, int pixel_shift,
                                              int chroma_idc)
 {
@@ -505,7 +505,7 @@ static av_always_inline void prefetch_motion(H264Context *h, H264SliceContext *s
     }
 }
 
-static av_always_inline void xchg_mb_border(H264Context *h, H264SliceContext *sl,
+static av_always_inline void xchg_mb_border(const H264Context *h, H264SliceContext *sl,
                                             uint8_t *src_y,
                                             uint8_t *src_cb, uint8_t *src_cr,
                                             int linesize, int uvlinesize,
@@ -610,7 +610,7 @@ static av_always_inline void dctcoef_set(int16_t *mb, int high_bit_depth,
         AV_WN16A(mb + index, value);
 }
 
-static av_always_inline void hl_decode_mb_predict_luma(H264Context *h,
+static av_always_inline void hl_decode_mb_predict_luma(const H264Context *h,
                                                        H264SliceContext *sl,
                                                        int mb_type, int is_h264,
                                                        int simple,
@@ -732,7 +732,7 @@ static av_always_inline void hl_decode_mb_predict_luma(H264Context *h,
     }
 }
 
-static av_always_inline void hl_decode_mb_idct_luma(H264Context *h, H264SliceContext *sl,
+static av_always_inline void hl_decode_mb_idct_luma(const H264Context *h, H264SliceContext *sl,
                                                     int mb_type,
                                                     int is_h264, int simple,
                                                     int transform_bypass,
@@ -815,7 +815,7 @@ static av_always_inline void hl_decode_mb_idct_luma(H264Context *h, H264SliceCon
 #define SIMPLE 0
 #include "h264_mb_template.c"
 
-void ff_h264_hl_decode_mb(H264Context *h, H264SliceContext *sl)
+void ff_h264_hl_decode_mb(const H264Context *h, H264SliceContext *sl)
 {
     const int mb_xy   = sl->mb_xy;
     const int mb_type = h->cur_pic.mb_type[mb_xy];
