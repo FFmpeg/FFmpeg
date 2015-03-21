@@ -1940,7 +1940,7 @@ int ff_h264_decode_mb_cabac(H264Context *h, H264SliceContext *sl)
 
             h->cbp_table[mb_xy] = 0;
             h->chroma_pred_mode_table[mb_xy] = 0;
-            h->last_qscale_diff = 0;
+            sl->last_qscale_diff = 0;
 
             return 0;
 
@@ -2053,7 +2053,7 @@ decode_intra_mb:
         // All coeffs are present
         memset(h->non_zero_count[mb_xy], 16, 48);
         h->cur_pic.mb_type[mb_xy] = mb_type;
-        h->last_qscale_diff = 0;
+        sl->last_qscale_diff = 0;
         return 0;
     }
 
@@ -2368,7 +2368,7 @@ decode_intra_mb:
         }
 
         // decode_cabac_mb_dqp
-        if(get_cabac_noinline( &sl->cabac, &sl->cabac_state[60 + (h->last_qscale_diff != 0)])){
+        if(get_cabac_noinline( &sl->cabac, &sl->cabac_state[60 + (sl->last_qscale_diff != 0)])){
             int val = 1;
             int ctx= 2;
             const int max_qp = 51 + 6*(h->sps.bit_depth_luma-8);
@@ -2386,7 +2386,7 @@ decode_intra_mb:
                 val=   (val + 1)>>1 ;
             else
                 val= -((val + 1)>>1);
-            h->last_qscale_diff = val;
+            sl->last_qscale_diff = val;
             sl->qscale += val;
             if (((unsigned)sl->qscale) > max_qp){
                 if (sl->qscale < 0) sl->qscale += max_qp + 1;
@@ -2395,7 +2395,7 @@ decode_intra_mb:
             sl->chroma_qp[0] = get_chroma_qp(h, 0, sl->qscale);
             sl->chroma_qp[1] = get_chroma_qp(h, 1, sl->qscale);
         }else
-            h->last_qscale_diff=0;
+            sl->last_qscale_diff=0;
 
         decode_cabac_luma_residual(h, sl, scan, scan8x8, pixel_shift, mb_type, cbp, 0);
         if (CHROMA444(h)) {
@@ -2452,7 +2452,7 @@ decode_intra_mb:
         fill_rectangle(&sl->non_zero_count_cache[scan8[ 0]], 4, 4, 8, 0, 1);
         fill_rectangle(&sl->non_zero_count_cache[scan8[16]], 4, 4, 8, 0, 1);
         fill_rectangle(&sl->non_zero_count_cache[scan8[32]], 4, 4, 8, 0, 1);
-        h->last_qscale_diff = 0;
+        sl->last_qscale_diff = 0;
     }
 
     h->cur_pic.qscale_table[mb_xy] = sl->qscale;

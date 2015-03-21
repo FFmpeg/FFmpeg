@@ -344,6 +344,7 @@ typedef struct H264SliceContext {
     int qscale;
     int chroma_qp[2];   // QPc
     int qp_thresh;      ///< QP threshold to skip loopfilter
+    int last_qscale_diff;
 
     // Weighted pred stuff
     int use_weight;
@@ -534,7 +535,6 @@ typedef struct H264Context {
 
     /* chroma_pred_mode for i4x4 or i16x16, else 0 */
     uint8_t *chroma_pred_mode_table;
-    int last_qscale_diff;
     uint8_t (*mvd_table[2])[2];
     DECLARE_ALIGNED(16, uint8_t, mvd_cache)[2][5 * 8][2];
     uint8_t *direct_table;
