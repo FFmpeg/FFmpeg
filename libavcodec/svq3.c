@@ -540,7 +540,7 @@ static int svq3_decode_mb(SVQ3Context *s, unsigned int mb_type)
          */
 
         for (m = 0; m < 2; m++) {
-            if (h->mb_x > 0 && h->intra4x4_pred_mode[h->mb2br_xy[mb_xy - 1] + 6] != -1) {
+            if (h->mb_x > 0 && sl->intra4x4_pred_mode[h->mb2br_xy[mb_xy - 1] + 6] != -1) {
                 for (i = 0; i < 4; i++)
                     AV_COPY32(h->mv_cache[m][scan8[0] - 1 + i * 8],
                               h->cur_pic.motion_val[m][b_xy - 1 + i * h->b_stride]);
@@ -553,21 +553,21 @@ static int svq3_decode_mb(SVQ3Context *s, unsigned int mb_type)
                        h->cur_pic.motion_val[m][b_xy - h->b_stride],
                        4 * 2 * sizeof(int16_t));
                 memset(&h->ref_cache[m][scan8[0] - 1 * 8],
-                       (h->intra4x4_pred_mode[h->mb2br_xy[mb_xy - h->mb_stride]] == -1) ? PART_NOT_AVAILABLE : 1, 4);
+                       (sl->intra4x4_pred_mode[h->mb2br_xy[mb_xy - h->mb_stride]] == -1) ? PART_NOT_AVAILABLE : 1, 4);
 
                 if (h->mb_x < h->mb_width - 1) {
                     AV_COPY32(h->mv_cache[m][scan8[0] + 4 - 1 * 8],
                               h->cur_pic.motion_val[m][b_xy - h->b_stride + 4]);
                     h->ref_cache[m][scan8[0] + 4 - 1 * 8] =
-                        (h->intra4x4_pred_mode[h->mb2br_xy[mb_xy - h->mb_stride + 1] + 6] == -1 ||
-                         h->intra4x4_pred_mode[h->mb2br_xy[mb_xy - h->mb_stride]] == -1) ? PART_NOT_AVAILABLE : 1;
+                        (sl->intra4x4_pred_mode[h->mb2br_xy[mb_xy - h->mb_stride + 1] + 6] == -1 ||
+                         sl->intra4x4_pred_mode[h->mb2br_xy[mb_xy - h->mb_stride]] == -1) ? PART_NOT_AVAILABLE : 1;
                 } else
                     h->ref_cache[m][scan8[0] + 4 - 1 * 8] = PART_NOT_AVAILABLE;
                 if (h->mb_x > 0) {
                     AV_COPY32(h->mv_cache[m][scan8[0] - 1 - 1 * 8],
                               h->cur_pic.motion_val[m][b_xy - h->b_stride - 1]);
                     h->ref_cache[m][scan8[0] - 1 - 1 * 8] =
-                        (h->intra4x4_pred_mode[h->mb2br_xy[mb_xy - h->mb_stride - 1] + 3] == -1) ? PART_NOT_AVAILABLE : 1;
+                        (sl->intra4x4_pred_mode[h->mb2br_xy[mb_xy - h->mb_stride - 1] + 3] == -1) ? PART_NOT_AVAILABLE : 1;
                 } else
                     h->ref_cache[m][scan8[0] - 1 - 1 * 8] = PART_NOT_AVAILABLE;
             } else
@@ -603,22 +603,22 @@ static int svq3_decode_mb(SVQ3Context *s, unsigned int mb_type)
 
         mb_type = MB_TYPE_16x16;
     } else if (mb_type == 8 || mb_type == 33) {   /* INTRA4x4 */
-        memset(h->intra4x4_pred_mode_cache, -1, 8 * 5 * sizeof(int8_t));
+        memset(sl->intra4x4_pred_mode_cache, -1, 8 * 5 * sizeof(int8_t));
 
         if (mb_type == 8) {
             if (h->mb_x > 0) {
                 for (i = 0; i < 4; i++)
-                    h->intra4x4_pred_mode_cache[scan8[0] - 1 + i * 8] = h->intra4x4_pred_mode[h->mb2br_xy[mb_xy - 1] + 6 - i];
-                if (h->intra4x4_pred_mode_cache[scan8[0] - 1] == -1)
+                    sl->intra4x4_pred_mode_cache[scan8[0] - 1 + i * 8] = sl->intra4x4_pred_mode[h->mb2br_xy[mb_xy - 1] + 6 - i];
+                if (sl->intra4x4_pred_mode_cache[scan8[0] - 1] == -1)
                     h->left_samples_available = 0x5F5F;
             }
             if (h->mb_y > 0) {
-                h->intra4x4_pred_mode_cache[4 + 8 * 0] = h->intra4x4_pred_mode[h->mb2br_xy[mb_xy - h->mb_stride] + 0];
-                h->intra4x4_pred_mode_cache[5 + 8 * 0] = h->intra4x4_pred_mode[h->mb2br_xy[mb_xy - h->mb_stride] + 1];
-                h->intra4x4_pred_mode_cache[6 + 8 * 0] = h->intra4x4_pred_mode[h->mb2br_xy[mb_xy - h->mb_stride] + 2];
-                h->intra4x4_pred_mode_cache[7 + 8 * 0] = h->intra4x4_pred_mode[h->mb2br_xy[mb_xy - h->mb_stride] + 3];
+                sl->intra4x4_pred_mode_cache[4 + 8 * 0] = sl->intra4x4_pred_mode[h->mb2br_xy[mb_xy - h->mb_stride] + 0];
+                sl->intra4x4_pred_mode_cache[5 + 8 * 0] = sl->intra4x4_pred_mode[h->mb2br_xy[mb_xy - h->mb_stride] + 1];
+                sl->intra4x4_pred_mode_cache[6 + 8 * 0] = sl->intra4x4_pred_mode[h->mb2br_xy[mb_xy - h->mb_stride] + 2];
+                sl->intra4x4_pred_mode_cache[7 + 8 * 0] = sl->intra4x4_pred_mode[h->mb2br_xy[mb_xy - h->mb_stride] + 3];
 
-                if (h->intra4x4_pred_mode_cache[4 + 8 * 0] == -1)
+                if (sl->intra4x4_pred_mode_cache[4 + 8 * 0] == -1)
                     h->top_samples_available = 0x33FF;
             }
 
@@ -632,8 +632,8 @@ static int svq3_decode_mb(SVQ3Context *s, unsigned int mb_type)
                     return -1;
                 }
 
-                left = &h->intra4x4_pred_mode_cache[scan8[i] - 1];
-                top  = &h->intra4x4_pred_mode_cache[scan8[i] - 8];
+                left = &sl->intra4x4_pred_mode_cache[scan8[i] - 1];
+                top  = &sl->intra4x4_pred_mode_cache[scan8[i] - 8];
 
                 left[1] = svq3_pred_1[top[0] + 1][left[0] + 1][svq3_pred_0[vlc][0]];
                 left[2] = svq3_pred_1[top[1] + 1][left[1] + 1][svq3_pred_0[vlc][1]];
@@ -645,19 +645,19 @@ static int svq3_decode_mb(SVQ3Context *s, unsigned int mb_type)
             }
         } else {    /* mb_type == 33, DC_128_PRED block type */
             for (i = 0; i < 4; i++)
-                memset(&h->intra4x4_pred_mode_cache[scan8[0] + 8 * i], DC_PRED, 4);
+                memset(&sl->intra4x4_pred_mode_cache[scan8[0] + 8 * i], DC_PRED, 4);
         }
 
-        write_back_intra_pred_mode(h);
+        write_back_intra_pred_mode(h, sl);
 
         if (mb_type == 8) {
-            ff_h264_check_intra4x4_pred_mode(h);
+            ff_h264_check_intra4x4_pred_mode(h, sl);
 
             h->top_samples_available  = (h->mb_y == 0) ? 0x33FF : 0xFFFF;
             h->left_samples_available = (h->mb_x == 0) ? 0x5F5F : 0xFFFF;
         } else {
             for (i = 0; i < 4; i++)
-                memset(&h->intra4x4_pred_mode_cache[scan8[0] + 8 * i], DC_128_PRED, 4);
+                memset(&sl->intra4x4_pred_mode_cache[scan8[0] + 8 * i], DC_128_PRED, 4);
 
             h->top_samples_available  = 0x33FF;
             h->left_samples_available = 0x5F5F;
@@ -688,7 +688,7 @@ static int svq3_decode_mb(SVQ3Context *s, unsigned int mb_type)
         }
     }
     if (!IS_INTRA4x4(mb_type)) {
-        memset(h->intra4x4_pred_mode + h->mb2br_xy[mb_xy], DC_PRED, 8);
+        memset(sl->intra4x4_pred_mode + h->mb2br_xy[mb_xy], DC_PRED, 8);
     }
     if (!IS_SKIP(mb_type) || h->pict_type == AV_PICTURE_TYPE_B) {
         memset(h->non_zero_count_cache + 8, 0, 14 * 8 * sizeof(uint8_t));
@@ -853,17 +853,17 @@ static int svq3_decode_slice_header(AVCodecContext *avctx)
 
     /* reset intra predictors and invalidate motion vector references */
     if (h->mb_x > 0) {
-        memset(h->intra4x4_pred_mode + h->mb2br_xy[mb_xy - 1] + 3,
+        memset(sl->intra4x4_pred_mode + h->mb2br_xy[mb_xy - 1] + 3,
                -1, 4 * sizeof(int8_t));
-        memset(h->intra4x4_pred_mode + h->mb2br_xy[mb_xy - h->mb_x],
+        memset(sl->intra4x4_pred_mode + h->mb2br_xy[mb_xy - h->mb_x],
                -1, 8 * sizeof(int8_t) * h->mb_x);
     }
     if (h->mb_y > 0) {
-        memset(h->intra4x4_pred_mode + h->mb2br_xy[mb_xy - h->mb_stride],
+        memset(sl->intra4x4_pred_mode + h->mb2br_xy[mb_xy - h->mb_stride],
                -1, 8 * sizeof(int8_t) * (h->mb_width - h->mb_x));
 
         if (h->mb_x > 0)
-            h->intra4x4_pred_mode[h->mb2br_xy[mb_xy - h->mb_stride - 1] + 3] = -1;
+            sl->intra4x4_pred_mode[h->mb2br_xy[mb_xy - h->mb_stride - 1] + 3] = -1;
     }
 
     return 0;

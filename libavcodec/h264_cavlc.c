@@ -809,7 +809,7 @@ decode_intra_mb:
 
 //                fill_intra4x4_pred_table(h);
             for(i=0; i<16; i+=di){
-                int mode= pred_intra_mode(h, i);
+                int mode = pred_intra_mode(h, sl, i);
 
                 if(!get_bits1(&h->gb)){
                     const int rem_mode= get_bits(&h->gb, 3);
@@ -817,12 +817,12 @@ decode_intra_mb:
                 }
 
                 if(di==4)
-                    fill_rectangle( &h->intra4x4_pred_mode_cache[ scan8[i] ], 2, 2, 8, mode, 1 );
+                    fill_rectangle(&sl->intra4x4_pred_mode_cache[ scan8[i] ], 2, 2, 8, mode, 1);
                 else
-                    h->intra4x4_pred_mode_cache[ scan8[i] ] = mode;
+                    sl->intra4x4_pred_mode_cache[scan8[i]] = mode;
             }
-            write_back_intra_pred_mode(h);
-            if( ff_h264_check_intra4x4_pred_mode(h) < 0)
+            write_back_intra_pred_mode(h, sl);
+            if (ff_h264_check_intra4x4_pred_mode(h, sl) < 0)
                 return -1;
         }else{
             sl->intra16x16_pred_mode = ff_h264_check_intra_pred_mode(h, sl->intra16x16_pred_mode, 0);

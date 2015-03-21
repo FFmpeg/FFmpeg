@@ -384,9 +384,11 @@ void ff_h264_init_dequant_tables(H264Context *h)
 /**
  * Mimic alloc_tables(), but for every context thread.
  */
-static void clone_tables(H264Context *dst, H264Context *src, int i)
+static void clone_tables(H264Context *dst, H264SliceContext *sl,
+                         H264Context *src, int i)
 {
-    dst->intra4x4_pred_mode     = src->intra4x4_pred_mode + i * 8 * 2 * src->mb_stride;
+    sl->intra4x4_pred_mode     = src->intra4x4_pred_mode + i * 8 * 2 * src->mb_stride;
+
     dst->non_zero_count         = src->non_zero_count;
     dst->slice_table            = src->slice_table;
     dst->cbp_table              = src->cbp_table;
@@ -1240,7 +1242,7 @@ static int h264_slice_header_init(H264Context *h, int reinit)
             h->slice_ctx[i].h264 = c;
 
             init_scan_tables(c);
-            clone_tables(c, h, i);
+            clone_tables(c, &h->slice_ctx[i], h, i);
             c->context_initialized = 1;
         }
 

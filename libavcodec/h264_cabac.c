@@ -2048,21 +2048,21 @@ decode_intra_mb:
             if( dct8x8_allowed && get_cabac_noinline( &h->cabac, &h->cabac_state[399 + h->neighbor_transform_size] ) ) {
                 mb_type |= MB_TYPE_8x8DCT;
                 for( i = 0; i < 16; i+=4 ) {
-                    int pred = pred_intra_mode( h, i );
+                    int pred = pred_intra_mode(h, sl, i);
                     int mode = decode_cabac_mb_intra4x4_pred_mode( h, pred );
-                    fill_rectangle( &h->intra4x4_pred_mode_cache[ scan8[i] ], 2, 2, 8, mode, 1 );
+                    fill_rectangle(&sl->intra4x4_pred_mode_cache[scan8[i]], 2, 2, 8, mode, 1);
                 }
             } else {
                 for( i = 0; i < 16; i++ ) {
-                    int pred = pred_intra_mode( h, i );
-                    h->intra4x4_pred_mode_cache[ scan8[i] ] = decode_cabac_mb_intra4x4_pred_mode( h, pred );
+                    int pred = pred_intra_mode(h, sl, i);
+                    sl->intra4x4_pred_mode_cache[scan8[i]] = decode_cabac_mb_intra4x4_pred_mode(h, pred);
 
                     av_dlog(h->avctx, "i4x4 pred=%d mode=%d\n", pred,
                             h->intra4x4_pred_mode_cache[scan8[i]]);
                 }
             }
-            write_back_intra_pred_mode(h);
-            if( ff_h264_check_intra4x4_pred_mode(h) < 0 ) return -1;
+            write_back_intra_pred_mode(h, sl);
+            if (ff_h264_check_intra4x4_pred_mode(h, sl) < 0 ) return -1;
         } else {
             sl->intra16x16_pred_mode = ff_h264_check_intra_pred_mode(h, sl->intra16x16_pred_mode, 0);
             if (sl->intra16x16_pred_mode < 0) return -1;

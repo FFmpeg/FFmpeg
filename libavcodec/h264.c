@@ -142,7 +142,7 @@ void ff_h264_draw_horiz_band(H264Context *h, int y, int height)
  * Check if the top & left blocks are available if needed and
  * change the dc mode so it only uses the available blocks.
  */
-int ff_h264_check_intra4x4_pred_mode(H264Context *h)
+int ff_h264_check_intra4x4_pred_mode(H264Context *h, H264SliceContext *sl)
 {
     static const int8_t top[12] = {
         -1, 0, LEFT_DC_PRED, -1, -1, -1, -1, -1, 0
@@ -154,14 +154,14 @@ int ff_h264_check_intra4x4_pred_mode(H264Context *h)
 
     if (!(h->top_samples_available & 0x8000)) {
         for (i = 0; i < 4; i++) {
-            int status = top[h->intra4x4_pred_mode_cache[scan8[0] + i]];
+            int status = top[sl->intra4x4_pred_mode_cache[scan8[0] + i]];
             if (status < 0) {
                 av_log(h->avctx, AV_LOG_ERROR,
                        "top block unavailable for requested intra4x4 mode %d at %d %d\n",
                        status, h->mb_x, h->mb_y);
                 return AVERROR_INVALIDDATA;
             } else if (status) {
-                h->intra4x4_pred_mode_cache[scan8[0] + i] = status;
+                sl->intra4x4_pred_mode_cache[scan8[0] + i] = status;
             }
         }
     }
@@ -170,14 +170,14 @@ int ff_h264_check_intra4x4_pred_mode(H264Context *h)
         static const int mask[4] = { 0x8000, 0x2000, 0x80, 0x20 };
         for (i = 0; i < 4; i++)
             if (!(h->left_samples_available & mask[i])) {
-                int status = left[h->intra4x4_pred_mode_cache[scan8[0] + 8 * i]];
+                int status = left[sl->intra4x4_pred_mode_cache[scan8[0] + 8 * i]];
                 if (status < 0) {
                     av_log(h->avctx, AV_LOG_ERROR,
                            "left block unavailable for requested intra4x4 mode %d at %d %d\n",
                            status, h->mb_x, h->mb_y);
                     return AVERROR_INVALIDDATA;
                 } else if (status) {
-                    h->intra4x4_pred_mode_cache[scan8[0] + 8 * i] = status;
+                    sl->intra4x4_pred_mode_cache[scan8[0] + 8 * i] = status;
                 }
             }
     }
@@ -432,6 +432,8 @@ int ff_h264_alloc_tables(H264Context *h)
 
     FF_ALLOCZ_ARRAY_OR_GOTO(h->avctx, h->intra4x4_pred_mode,
                       row_mb_num, 8 * sizeof(uint8_t), fail)
+    h->slice_ctx[0].intra4x4_pred_mode = h->intra4x4_pred_mode;
+
     FF_ALLOCZ_OR_GOTO(h->avctx, h->non_zero_count,
                       big_mb_num * 48 * sizeof(uint8_t), fail)
     FF_ALLOCZ_OR_GOTO(h->avctx, h->slice_table_base,

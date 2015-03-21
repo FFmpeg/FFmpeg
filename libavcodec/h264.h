@@ -358,6 +358,9 @@ typedef struct H264SliceContext {
     int chroma_pred_mode;
     int intra16x16_pred_mode;
 
+    int8_t intra4x4_pred_mode_cache[5 * 8];
+    int8_t(*intra4x4_pred_mode);
+
     int topleft_mb_xy;
     int top_mb_xy;
     int topright_mb_xy;
@@ -408,8 +411,6 @@ typedef struct H264Context {
     int flags;
     int workaround_bugs;
 
-    // prediction stuff
-    int8_t intra4x4_pred_mode_cache[5 * 8];
     int8_t(*intra4x4_pred_mode);
     H264PredContext hpc;
     unsigned int topleft_samples_available;
@@ -847,7 +848,7 @@ int ff_generate_sliding_window_mmcos(H264Context *h, int first_slice);
  * Check if the top & left blocks are available if needed & change the
  * dc mode so it only uses the available blocks.
  */
-int ff_h264_check_intra4x4_pred_mode(H264Context *h);
+int ff_h264_check_intra4x4_pred_mode(H264Context *h, H264SliceContext *sl);
 
 /**
  * Check if the top & left blocks are available if needed & change the
@@ -986,11 +987,12 @@ static av_always_inline int get_chroma_qp(H264Context *h, int t, int qscale)
 /**
  * Get the predicted intra4x4 prediction mode.
  */
-static av_always_inline int pred_intra_mode(H264Context *h, int n)
+static av_always_inline int pred_intra_mode(H264Context *h,
+                                            H264SliceContext *sl, int n)
 {
     const int index8 = scan8[n];
-    const int left   = h->intra4x4_pred_mode_cache[index8 - 1];
-    const int top    = h->intra4x4_pred_mode_cache[index8 - 8];
+    const int left   = sl->intra4x4_pred_mode_cache[index8 - 1];
+    const int top    = sl->intra4x4_pred_mode_cache[index8 - 8];
     const int min    = FFMIN(left, top);
 
     tprintf(h->avctx, "mode:%d %d min:%d\n", left, top, min);
@@ -1001,10 +1003,11 @@ static av_always_inline int pred_intra_mode(H264Context *h, int n)
         return min;
 }
 
-static av_always_inline void write_back_intra_pred_mode(H264Context *h)
+static av_always_inline void write_back_intra_pred_mode(H264Context *h,
+                                                        H264SliceContext *sl)
 {
-    int8_t *i4x4       = h->intra4x4_pred_mode + h->mb2br_xy[h->mb_xy];
-    int8_t *i4x4_cache = h->intra4x4_pred_mode_cache;
+    int8_t *i4x4       = sl->intra4x4_pred_mode + h->mb2br_xy[h->mb_xy];
+    int8_t *i4x4_cache = sl->intra4x4_pred_mode_cache;
 
     AV_COPY32(i4x4, i4x4_cache + 4 + 8 * 4);
     i4x4[4] = i4x4_cache[7 + 8 * 3];
