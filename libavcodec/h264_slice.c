@@ -531,8 +531,7 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
         for (i = 0; i < MAX_PPS_COUNT; i++)
             av_freep(h->pps_buffers + i);
 
-        av_freep(&h->rbsp_buffer[0]);
-        av_freep(&h->rbsp_buffer[1]);
+        av_freep(&h->rbsp_buffer);
         ff_h264_unref_picture(h, &h->last_pic_for_ec);
         memcpy(h, h1, sizeof(H264Context));
 
@@ -566,10 +565,8 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
         h->list_counts       = NULL;
         h->mb2b_xy           = NULL;
         h->mb2br_xy          = NULL;
-        for (i = 0; i < 2; i++) {
-            h->rbsp_buffer[i] = NULL;
-            h->rbsp_buffer_size[i] = 0;
-        }
+        h->rbsp_buffer       = NULL;
+        h->rbsp_buffer_size  = 0;
 
         if (h1->context_initialized) {
         h->context_initialized = 0;

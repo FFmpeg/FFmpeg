@@ -238,7 +238,6 @@ const uint8_t *ff_h264_decode_nal(H264Context *h, const uint8_t *src,
 {
     int i, si, di;
     uint8_t *dst;
-    int bufidx;
 
     // src[0]&0x80; // forbidden bit
     h->nal_ref_idc   = src[0] >> 5;
@@ -294,11 +293,8 @@ const uint8_t *ff_h264_decode_nal(H264Context *h, const uint8_t *src,
     }
 #endif
 
-    // use second escape buffer for inter data
-    bufidx = h->nal_unit_type == NAL_DPC ? 1 : 0;
-
-    av_fast_padded_malloc(&h->rbsp_buffer[bufidx], &h->rbsp_buffer_size[bufidx], length+MAX_MBPAIR_SIZE);
-    dst = h->rbsp_buffer[bufidx];
+    av_fast_padded_malloc(&h->rbsp_buffer, &h->rbsp_buffer_size, length+MAX_MBPAIR_SIZE);
+    dst = h->rbsp_buffer;
 
     if (!dst)
         return NULL;
@@ -417,10 +413,8 @@ void ff_h264_free_tables(H264Context *h, int free_rbsp)
         av_freep(&hx->er.mbskip_table);
 
         if (free_rbsp) {
-            av_freep(&hx->rbsp_buffer[1]);
-            av_freep(&hx->rbsp_buffer[0]);
-            hx->rbsp_buffer_size[0] = 0;
-            hx->rbsp_buffer_size[1] = 0;
+            av_freep(&hx->rbsp_buffer);
+            hx->rbsp_buffer_size = 0;
         }
         if (i)
             av_freep(&h->thread_context[i]);
@@ -754,10 +748,8 @@ static int decode_init_thread_copy(AVCodecContext *avctx)
         h->slice_ctx[i].h264 = h;
 
     h->avctx               = avctx;
-    h->rbsp_buffer[0]      = NULL;
-    h->rbsp_buffer[1]      = NULL;
-    h->rbsp_buffer_size[0] = 0;
-    h->rbsp_buffer_size[1] = 0;
+    h->rbsp_buffer         = NULL;
+    h->rbsp_buffer_size    = 0;
     h->context_initialized = 0;
 
     return 0;
@@ -1577,8 +1569,6 @@ again:
                 h->has_recovery_point = 1;
             case NAL_SLICE:
                 init_get_bits(&hx->gb, ptr, bit_length);
-                hx->intra_gb_ptr      =
-                hx->inter_gb_ptr      = &hx->gb;
 
                 if ((err = ff_h264_decode_slice_header(hx, sl, h)))
                     break;

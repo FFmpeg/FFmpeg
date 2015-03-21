@@ -643,7 +643,7 @@ static av_always_inline int decode_luma_residual(H264Context *h, H264SliceContex
         AV_ZERO128(sl->mb_luma_dc[p]+8);
         AV_ZERO128(sl->mb_luma_dc[p]+16);
         AV_ZERO128(sl->mb_luma_dc[p]+24);
-        if( decode_residual(h, sl, h->intra_gb_ptr, sl->mb_luma_dc[p], LUMA_DC_BLOCK_INDEX+p, scan, NULL, 16) < 0){
+        if (decode_residual(h, sl, gb, sl->mb_luma_dc[p], LUMA_DC_BLOCK_INDEX + p, scan, NULL, 16) < 0) {
             return -1; //FIXME continue if partitioned and other return -1 too
         }
 
@@ -653,7 +653,7 @@ static av_always_inline int decode_luma_residual(H264Context *h, H264SliceContex
             for(i8x8=0; i8x8<4; i8x8++){
                 for(i4x4=0; i4x4<4; i4x4++){
                     const int index= i4x4 + 4*i8x8 + p*16;
-                    if( decode_residual(h, sl, h->intra_gb_ptr, sl->mb + (16*index << pixel_shift),
+                    if( decode_residual(h, sl, gb, sl->mb + (16*index << pixel_shift),
                         index, scan + 1, h->dequant4_coeff[p][qscale], 15) < 0 ){
                         return -1;
                     }
@@ -1096,7 +1096,7 @@ decode_intra_mb:
         int i4x4, i8x8, chroma_idx;
         int dquant;
         int ret;
-        GetBitContext *gb= IS_INTRA(mb_type) ? h->intra_gb_ptr : h->inter_gb_ptr;
+        GetBitContext *gb = &h->gb;
         const uint8_t *scan, *scan8x8;
         const int max_qp = 51 + 6*(h->sps.bit_depth_luma-8);
 

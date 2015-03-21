@@ -543,12 +543,6 @@ typedef struct H264Context {
 
     uint8_t *list_counts;               ///< Array of list_count per MB specifying the slice type
 
-    // data partitioning
-    GetBitContext intra_gb;
-    GetBitContext inter_gb;
-    GetBitContext *intra_gb_ptr;
-    GetBitContext *inter_gb_ptr;
-
     /* 0x100 -> non null luma_dc, 0x80/0x40 -> non null chroma_dc (cb/cr), 0x?0 -> chroma_cbp(0, 1, 2), 0x0? luma_cbp */
     uint16_t *cbp_table;
 
@@ -582,8 +576,8 @@ typedef struct H264Context {
 
     int nal_ref_idc;
     int nal_unit_type;
-    uint8_t *rbsp_buffer[2];
-    unsigned int rbsp_buffer_size[2];
+    uint8_t *rbsp_buffer;
+    unsigned int rbsp_buffer_size;
 
     /**
      * Used to parse AVC variant of h264
