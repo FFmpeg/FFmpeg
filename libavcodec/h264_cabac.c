@@ -1859,17 +1859,17 @@ static av_always_inline void decode_cabac_luma_residual(H264Context *h, H264Slic
     int i8x8, i4x4;
     int qscale = p == 0 ? sl->qscale : sl->chroma_qp[p - 1];
     if( IS_INTRA16x16( mb_type ) ) {
-        AV_ZERO128(h->mb_luma_dc[p]+0);
-        AV_ZERO128(h->mb_luma_dc[p]+8);
-        AV_ZERO128(h->mb_luma_dc[p]+16);
-        AV_ZERO128(h->mb_luma_dc[p]+24);
-        decode_cabac_residual_dc(h, sl, h->mb_luma_dc[p], ctx_cat[0][p], LUMA_DC_BLOCK_INDEX+p, scan, 16);
+        AV_ZERO128(sl->mb_luma_dc[p]+0);
+        AV_ZERO128(sl->mb_luma_dc[p]+8);
+        AV_ZERO128(sl->mb_luma_dc[p]+16);
+        AV_ZERO128(sl->mb_luma_dc[p]+24);
+        decode_cabac_residual_dc(h, sl, sl->mb_luma_dc[p], ctx_cat[0][p], LUMA_DC_BLOCK_INDEX+p, scan, 16);
 
         if( cbp&15 ) {
             qmul = h->dequant4_coeff[p][qscale];
             for( i4x4 = 0; i4x4 < 16; i4x4++ ) {
                 const int index = 16*p + i4x4;
-                decode_cabac_residual_nondc(h, sl, h->mb + (16*index << pixel_shift), ctx_cat[1][p], index, scan + 1, qmul, 15);
+                decode_cabac_residual_nondc(h, sl, sl->mb + (16*index << pixel_shift), ctx_cat[1][p], index, scan + 1, qmul, 15);
             }
         } else {
             fill_rectangle(&sl->non_zero_count_cache[scan8[16*p]], 4, 4, 8, 0, 1);
@@ -1880,14 +1880,14 @@ static av_always_inline void decode_cabac_luma_residual(H264Context *h, H264Slic
             if( cbp & (1<<i8x8) ) {
                 if( IS_8x8DCT(mb_type) ) {
                     const int index = 16*p + 4*i8x8;
-                    decode_cabac_residual_nondc(h, sl, h->mb + (16*index << pixel_shift), ctx_cat[3][p], index,
+                    decode_cabac_residual_nondc(h, sl, sl->mb + (16*index << pixel_shift), ctx_cat[3][p], index,
                                                 scan8x8, h->dequant8_coeff[cqm][qscale], 64);
                 } else {
                     qmul = h->dequant4_coeff[cqm][qscale];
                     for( i4x4 = 0; i4x4 < 4; i4x4++ ) {
                         const int index = 16*p + 4*i8x8 + i4x4;
 //START_TIMER
-                        decode_cabac_residual_nondc(h, sl, h->mb + (16*index << pixel_shift), ctx_cat[2][p], index, scan, qmul, 16);
+                        decode_cabac_residual_nondc(h, sl, sl->mb + (16*index << pixel_shift), ctx_cat[2][p], index, scan, qmul, 16);
 //STOP_TIMER("decode_residual")
                     }
                 }
@@ -2399,7 +2399,7 @@ decode_intra_mb:
             if( cbp&0x30 ){
                 int c;
                 for (c = 0; c < 2; c++)
-                    decode_cabac_residual_dc_422(h, sl, h->mb + ((256 + 16*16*c) << pixel_shift), 3,
+                    decode_cabac_residual_dc_422(h, sl, sl->mb + ((256 + 16*16*c) << pixel_shift), 3,
                                                  CHROMA_DC_BLOCK_INDEX + c,
                                                  chroma422_dc_scan, 8);
             }
@@ -2407,7 +2407,7 @@ decode_intra_mb:
             if( cbp&0x20 ) {
                 int c, i, i8x8;
                 for( c = 0; c < 2; c++ ) {
-                    int16_t *mb = h->mb + (16*(16 + 16*c) << pixel_shift);
+                    int16_t *mb = sl->mb + (16*(16 + 16*c) << pixel_shift);
                     qmul = h->dequant4_coeff[c+1+(IS_INTRA( mb_type ) ? 0:3)][sl->chroma_qp[c]];
                     for (i8x8 = 0; i8x8 < 2; i8x8++) {
                         for (i = 0; i < 4; i++) {
@@ -2425,7 +2425,7 @@ decode_intra_mb:
             if( cbp&0x30 ){
                 int c;
                 for (c = 0; c < 2; c++)
-                    decode_cabac_residual_dc(h, sl, h->mb + ((256 + 16*16*c) << pixel_shift), 3, CHROMA_DC_BLOCK_INDEX+c, chroma_dc_scan, 4);
+                    decode_cabac_residual_dc(h, sl, sl->mb + ((256 + 16*16*c) << pixel_shift), 3, CHROMA_DC_BLOCK_INDEX+c, chroma_dc_scan, 4);
             }
 
             if( cbp&0x20 ) {
@@ -2434,7 +2434,7 @@ decode_intra_mb:
                     qmul = h->dequant4_coeff[c+1+(IS_INTRA( mb_type ) ? 0:3)][sl->chroma_qp[c]];
                     for( i = 0; i < 4; i++ ) {
                         const int index = 16 + 16 * c + i;
-                        decode_cabac_residual_nondc(h, sl, h->mb + (16*index << pixel_shift), 4, index, scan + 1, qmul, 15);
+                        decode_cabac_residual_nondc(h, sl, sl->mb + (16*index << pixel_shift), 4, index, scan + 1, qmul, 15);
                     }
                 }
             } else {

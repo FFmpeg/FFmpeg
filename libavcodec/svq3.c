@@ -714,9 +714,9 @@ static int svq3_decode_mb(SVQ3Context *s, unsigned int mb_type)
         }
     }
     if (IS_INTRA16x16(mb_type)) {
-        AV_ZERO128(h->mb_luma_dc[0] + 0);
-        AV_ZERO128(h->mb_luma_dc[0] + 8);
-        if (svq3_decode_block(&h->gb, h->mb_luma_dc[0], 0, 1)) {
+        AV_ZERO128(sl->mb_luma_dc[0] + 0);
+        AV_ZERO128(sl->mb_luma_dc[0] + 8);
+        if (svq3_decode_block(&h->gb, sl->mb_luma_dc[0], 0, 1)) {
             av_log(h->avctx, AV_LOG_ERROR,
                    "error while decoding intra luma dc\n");
             return -1;
@@ -735,7 +735,7 @@ static int svq3_decode_mb(SVQ3Context *s, unsigned int mb_type)
                               : (4 * i + j);
                     sl->non_zero_count_cache[scan8[k]] = 1;
 
-                    if (svq3_decode_block(&h->gb, &h->mb[16 * k], index, type)) {
+                    if (svq3_decode_block(&h->gb, &sl->mb[16 * k], index, type)) {
                         av_log(h->avctx, AV_LOG_ERROR,
                                "error while decoding block\n");
                         return -1;
@@ -745,7 +745,7 @@ static int svq3_decode_mb(SVQ3Context *s, unsigned int mb_type)
 
         if ((cbp & 0x30)) {
             for (i = 1; i < 3; ++i)
-                if (svq3_decode_block(&h->gb, &h->mb[16 * 16 * i], 0, 3)) {
+                if (svq3_decode_block(&h->gb, &sl->mb[16 * 16 * i], 0, 3)) {
                     av_log(h->avctx, AV_LOG_ERROR,
                            "error while decoding chroma dc block\n");
                     return -1;
@@ -757,7 +757,7 @@ static int svq3_decode_mb(SVQ3Context *s, unsigned int mb_type)
                         k                                 = 16 * i + j;
                         sl->non_zero_count_cache[scan8[k]] = 1;
 
-                        if (svq3_decode_block(&h->gb, &h->mb[16 * k], 1, 1)) {
+                        if (svq3_decode_block(&h->gb, &sl->mb[16 * k], 1, 1)) {
                             av_log(h->avctx, AV_LOG_ERROR,
                                    "error while decoding chroma ac block\n");
                             return -1;

@@ -534,22 +534,23 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
         av_freep(&h->rbsp_buffer[0]);
         av_freep(&h->rbsp_buffer[1]);
         ff_h264_unref_picture(h, &h->last_pic_for_ec);
-        memcpy(h, h1, offsetof(H264Context, mb));
+        memcpy(h, h1, offsetof(H264Context, cabac));
         memcpy(&h->cabac, &h1->cabac,
                sizeof(H264Context) - offsetof(H264Context, cabac));
-        av_assert0((void*)&h->cabac == &h->mb_padding + 1);
+
 
         memset(h->sps_buffers, 0, sizeof(h->sps_buffers));
         memset(h->pps_buffers, 0, sizeof(h->pps_buffers));
 
         memset(&h->er, 0, sizeof(h->er));
-        memset(&h->mb, 0, sizeof(h->mb));
-        memset(&h->mb_luma_dc, 0, sizeof(h->mb_luma_dc));
-        memset(&h->mb_padding, 0, sizeof(h->mb_padding));
         memset(&h->cur_pic, 0, sizeof(h->cur_pic));
         memset(&h->last_pic_for_ec, 0, sizeof(h->last_pic_for_ec));
 
         h->slice_ctx = orig_slice_ctx;
+
+        memset(&h->slice_ctx[0].mb,         0, sizeof(h->slice_ctx[0].mb));
+        memset(&h->slice_ctx[0].mb_luma_dc, 0, sizeof(h->slice_ctx[0].mb_luma_dc));
+        memset(&h->slice_ctx[0].mb_padding, 0, sizeof(h->slice_ctx[0].mb_padding));
 
         h->avctx             = dst;
         h->DPB               = NULL;

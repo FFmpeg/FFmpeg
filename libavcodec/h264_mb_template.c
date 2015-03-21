@@ -199,27 +199,27 @@ static av_noinline void FUNC(hl_decode_mb)(H264Context *h, H264SliceContext *sl)
                      sl->chroma_pred_mode == HOR_PRED8x8)) {
                     h->hpc.pred8x8_add[sl->chroma_pred_mode](dest[0],
                                                             block_offset + 16,
-                                                            h->mb + (16 * 16 * 1 << PIXEL_SHIFT),
+                                                            sl->mb + (16 * 16 * 1 << PIXEL_SHIFT),
                                                             uvlinesize);
                     h->hpc.pred8x8_add[sl->chroma_pred_mode](dest[1],
                                                             block_offset + 32,
-                                                            h->mb + (16 * 16 * 2 << PIXEL_SHIFT),
+                                                            sl->mb + (16 * 16 * 2 << PIXEL_SHIFT),
                                                             uvlinesize);
                 } else {
                     idct_add = h->h264dsp.h264_add_pixels4_clear;
                     for (j = 1; j < 3; j++) {
                         for (i = j * 16; i < j * 16 + 4; i++)
                             if (sl->non_zero_count_cache[scan8[i]] ||
-                                dctcoef_get(h->mb, PIXEL_SHIFT, i * 16))
+                                dctcoef_get(sl->mb, PIXEL_SHIFT, i * 16))
                                 idct_add(dest[j - 1] + block_offset[i],
-                                         h->mb + (i * 16 << PIXEL_SHIFT),
+                                         sl->mb + (i * 16 << PIXEL_SHIFT),
                                          uvlinesize);
                         if (chroma422) {
                             for (i = j * 16 + 4; i < j * 16 + 8; i++)
                                 if (sl->non_zero_count_cache[scan8[i + 4]] ||
-                                    dctcoef_get(h->mb, PIXEL_SHIFT, i * 16))
+                                    dctcoef_get(sl->mb, PIXEL_SHIFT, i * 16))
                                     idct_add(dest[j - 1] + block_offset[i + 4],
-                                             h->mb + (i * 16 << PIXEL_SHIFT),
+                                             sl->mb + (i * 16 << PIXEL_SHIFT),
                                              uvlinesize);
                         }
                     }
@@ -235,24 +235,24 @@ static av_noinline void FUNC(hl_decode_mb)(H264Context *h, H264SliceContext *sl)
                         qp[1] = sl->chroma_qp[1];
                     }
                     if (sl->non_zero_count_cache[scan8[CHROMA_DC_BLOCK_INDEX + 0]])
-                        h->h264dsp.h264_chroma_dc_dequant_idct(h->mb + (16 * 16 * 1 << PIXEL_SHIFT),
+                        h->h264dsp.h264_chroma_dc_dequant_idct(sl->mb + (16 * 16 * 1 << PIXEL_SHIFT),
                                                                h->dequant4_coeff[IS_INTRA(mb_type) ? 1 : 4][qp[0]][0]);
                     if (sl->non_zero_count_cache[scan8[CHROMA_DC_BLOCK_INDEX + 1]])
-                        h->h264dsp.h264_chroma_dc_dequant_idct(h->mb + (16 * 16 * 2 << PIXEL_SHIFT),
+                        h->h264dsp.h264_chroma_dc_dequant_idct(sl->mb + (16 * 16 * 2 << PIXEL_SHIFT),
                                                                h->dequant4_coeff[IS_INTRA(mb_type) ? 2 : 5][qp[1]][0]);
                     h->h264dsp.h264_idct_add8(dest, block_offset,
-                                              h->mb, uvlinesize,
+                                              sl->mb, uvlinesize,
                                               sl->non_zero_count_cache);
                 } else if (CONFIG_SVQ3_DECODER) {
-                    h->h264dsp.h264_chroma_dc_dequant_idct(h->mb + 16 * 16 * 1,
+                    h->h264dsp.h264_chroma_dc_dequant_idct(sl->mb + 16 * 16 * 1,
                                                            h->dequant4_coeff[IS_INTRA(mb_type) ? 1 : 4][sl->chroma_qp[0]][0]);
-                    h->h264dsp.h264_chroma_dc_dequant_idct(h->mb + 16 * 16 * 2,
+                    h->h264dsp.h264_chroma_dc_dequant_idct(sl->mb + 16 * 16 * 2,
                                                            h->dequant4_coeff[IS_INTRA(mb_type) ? 2 : 5][sl->chroma_qp[1]][0]);
                     for (j = 1; j < 3; j++) {
                         for (i = j * 16; i < j * 16 + 4; i++)
-                            if (sl->non_zero_count_cache[scan8[i]] || h->mb[i * 16]) {
+                            if (sl->non_zero_count_cache[scan8[i]] || sl->mb[i * 16]) {
                                 uint8_t *const ptr = dest[j - 1] + block_offset[i];
-                                ff_svq3_add_idct_c(ptr, h->mb + i * 16,
+                                ff_svq3_add_idct_c(ptr, sl->mb + i * 16,
                                                    uvlinesize,
                                                    ff_h264_chroma_qp[0][sl->qscale + 12] - 12, 2);
                             }
