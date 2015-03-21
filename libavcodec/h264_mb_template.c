@@ -81,13 +81,13 @@ static av_noinline void FUNC(hl_decode_mb)(H264Context *h, H264SliceContext *sl)
                 if (!USES_LIST(mb_type, list))
                     continue;
                 if (IS_16X16(mb_type)) {
-                    int8_t *ref = &h->ref_cache[list][scan8[0]];
+                    int8_t *ref = &sl->ref_cache[list][scan8[0]];
                     fill_rectangle(ref, 4, 4, 8, (16 + *ref) ^ (h->mb_y & 1), 1);
                 } else {
                     for (i = 0; i < 16; i += 4) {
-                        int ref = h->ref_cache[list][scan8[i]];
+                        int ref = sl->ref_cache[list][scan8[i]];
                         if (ref >= 0)
-                            fill_rectangle(&h->ref_cache[list][scan8[i]], 2, 2,
+                            fill_rectangle(&sl->ref_cache[list][scan8[i]], 2, 2,
                                            8, (16 + ref) ^ (h->mb_y & 1), 1);
                     }
                 }
@@ -303,13 +303,13 @@ static av_noinline void FUNC(hl_decode_mb_444)(H264Context *h, H264SliceContext 
                 if (!USES_LIST(mb_type, list))
                     continue;
                 if (IS_16X16(mb_type)) {
-                    int8_t *ref = &h->ref_cache[list][scan8[0]];
+                    int8_t *ref = &sl->ref_cache[list][scan8[0]];
                     fill_rectangle(ref, 4, 4, 8, (16 + *ref) ^ (h->mb_y & 1), 1);
                 } else {
                     for (i = 0; i < 16; i += 4) {
-                        int ref = h->ref_cache[list][scan8[i]];
+                        int ref = sl->ref_cache[list][scan8[i]];
                         if (ref >= 0)
-                            fill_rectangle(&h->ref_cache[list][scan8[i]], 2, 2,
+                            fill_rectangle(&sl->ref_cache[list][scan8[i]], 2, 2,
                                            8, (16 + ref) ^ (h->mb_y & 1), 1);
                     }
                 }

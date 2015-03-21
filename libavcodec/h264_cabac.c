@@ -1459,9 +1459,10 @@ static int decode_cabac_b_mb_sub_type( H264Context *h ) {
     return type;
 }
 
-static int decode_cabac_mb_ref( H264Context *h, int list, int n ) {
-    int refa = h->ref_cache[list][scan8[n] - 1];
-    int refb = h->ref_cache[list][scan8[n] - 8];
+static int decode_cabac_mb_ref(H264Context *h, H264SliceContext *sl, int list, int n)
+{
+    int refa = sl->ref_cache[list][scan8[n] - 1];
+    int refb = sl->ref_cache[list][scan8[n] - 8];
     int ref  = 0;
     int ctx  = 0;
 
@@ -2098,11 +2099,11 @@ decode_intra_mb:
             }
             if( IS_DIRECT(h->sub_mb_type[0] | h->sub_mb_type[1] |
                           h->sub_mb_type[2] | h->sub_mb_type[3]) ) {
-                ff_h264_pred_direct_motion(h, &mb_type);
-                h->ref_cache[0][scan8[4]] =
-                h->ref_cache[1][scan8[4]] =
-                h->ref_cache[0][scan8[12]] =
-                h->ref_cache[1][scan8[12]] = PART_NOT_AVAILABLE;
+                ff_h264_pred_direct_motion(h, sl, &mb_type);
+                sl->ref_cache[0][scan8[4]] =
+                sl->ref_cache[1][scan8[4]] =
+                sl->ref_cache[0][scan8[12]] =
+                sl->ref_cache[1][scan8[12]] = PART_NOT_AVAILABLE;
                     for( i = 0; i < 4; i++ )
                         fill_rectangle( &h->direct_cache[scan8[4*i]], 2, 2, 8, (h->sub_mb_type[i]>>1)&0xFF, 1 );
             }
@@ -2119,7 +2120,7 @@ decode_intra_mb:
                     if(IS_DIRECT(h->sub_mb_type[i])) continue;
                     if(IS_DIR(h->sub_mb_type[i], 0, list)){
                         if (local_ref_count[list] > 1) {
-                            ref[list][i] = decode_cabac_mb_ref( h, list, 4*i );
+                            ref[list][i] = decode_cabac_mb_ref(h, sl, list, 4 * i);
                             if (ref[list][i] >= (unsigned)local_ref_count[list]) {
                                 av_log(h->avctx, AV_LOG_ERROR, "Reference %d >= %d\n", ref[list][i], local_ref_count[list]);
                                 return -1;
@@ -2129,8 +2130,8 @@ decode_intra_mb:
                     } else {
                         ref[list][i] = -1;
                     }
-                                                       h->ref_cache[list][ scan8[4*i]+1 ]=
-                    h->ref_cache[list][ scan8[4*i]+8 ]=h->ref_cache[list][ scan8[4*i]+9 ]= ref[list][i];
+                    sl->ref_cache[list][scan8[4 * i] + 1] =
+                    sl->ref_cache[list][scan8[4 * i] + 8] = sl->ref_cache[list][scan8[4 * i] + 9] = ref[list][i];
                 }
         }
 
@@ -2139,7 +2140,7 @@ decode_intra_mb:
 
         for(list=0; list<h->list_count; list++){
             for(i=0; i<4; i++){
-                h->ref_cache[list][ scan8[4*i]   ]=h->ref_cache[list][ scan8[4*i]+1 ];
+                sl->ref_cache[list][scan8[4 * i]] = sl->ref_cache[list][scan8[4 * i] + 1];
                 if(IS_DIRECT(h->sub_mb_type[i])){
                     fill_rectangle(h->mvd_cache[list][scan8[4*i]], 2, 2, 8, 0, 2);
                     continue;
@@ -2152,9 +2153,9 @@ decode_intra_mb:
                         int mpx, mpy;
                         int mx, my;
                         const int index= 4*i + block_width*j;
-                        int16_t (* mv_cache)[2]= &h->mv_cache[list][ scan8[index] ];
+                        int16_t (* mv_cache)[2] = &sl->mv_cache[list][ scan8[index] ];
                         uint8_t (* mvd_cache)[2]= &h->mvd_cache[list][ scan8[index] ];
-                        pred_motion(h, sl, index, block_width, list, h->ref_cache[list][ scan8[index] ], &mx, &my);
+                        pred_motion(h, sl, index, block_width, list, sl->ref_cache[list][ scan8[index] ], &mx, &my);
                         DECODE_CABAC_MB_MVD( h, list, index)
                         tprintf(h->avctx, "final mv:%d %d\n", mx, my);
 
@@ -2188,13 +2189,13 @@ decode_intra_mb:
                         mvd_cache[ 0 ][1]= mpy;
                     }
                 }else{
-                    fill_rectangle(h->mv_cache [list][ scan8[4*i] ], 2, 2, 8, 0, 4);
+                    fill_rectangle(sl->mv_cache [list][ scan8[4*i] ], 2, 2, 8, 0, 4);
                     fill_rectangle(h->mvd_cache[list][ scan8[4*i] ], 2, 2, 8, 0, 2);
                 }
             }
         }
     } else if( IS_DIRECT(mb_type) ) {
-        ff_h264_pred_direct_motion(h, &mb_type);
+        ff_h264_pred_direct_motion(h, sl, &mb_type);
         fill_rectangle(h->mvd_cache[0][scan8[0]], 4, 4, 8, 0, 2);
         fill_rectangle(h->mvd_cache[1][scan8[0]], 4, 4, 8, 0, 2);
         dct8x8_allowed &= h->sps.direct_8x8_inference_flag;
@@ -2205,25 +2206,25 @@ decode_intra_mb:
                 if(IS_DIR(mb_type, 0, list)){
                     int ref;
                     if (local_ref_count[list] > 1) {
-                        ref= decode_cabac_mb_ref(h, list, 0);
+                        ref= decode_cabac_mb_ref(h, sl, list, 0);
                         if (ref >= (unsigned)local_ref_count[list]) {
                             av_log(h->avctx, AV_LOG_ERROR, "Reference %d >= %d\n", ref, local_ref_count[list]);
                             return -1;
                         }
                     }else
                         ref=0;
-                    fill_rectangle(&h->ref_cache[list][ scan8[0] ], 4, 4, 8, ref, 1);
+                    fill_rectangle(&sl->ref_cache[list][ scan8[0] ], 4, 4, 8, ref, 1);
                 }
             }
             for(list=0; list<h->list_count; list++){
                 if(IS_DIR(mb_type, 0, list)){
                     int mx,my,mpx,mpy;
-                    pred_motion(h, sl, 0, 4, list, h->ref_cache[list][ scan8[0] ], &mx, &my);
+                    pred_motion(h, sl, 0, 4, list, sl->ref_cache[list][ scan8[0] ], &mx, &my);
                     DECODE_CABAC_MB_MVD( h, list, 0)
                     tprintf(h->avctx, "final mv:%d %d\n", mx, my);
 
                     fill_rectangle(h->mvd_cache[list][ scan8[0] ], 4, 4, 8, pack8to16(mpx,mpy), 2);
-                    fill_rectangle(h->mv_cache[list][ scan8[0] ], 4, 4, 8, pack16to32(mx,my), 4);
+                    fill_rectangle(sl->mv_cache[list][ scan8[0] ], 4, 4, 8, pack16to32(mx,my), 4);
                 }
             }
         }
@@ -2233,31 +2234,31 @@ decode_intra_mb:
                         if(IS_DIR(mb_type, i, list)){
                             int ref;
                             if (local_ref_count[list] > 1) {
-                                ref= decode_cabac_mb_ref( h, list, 8*i );
+                                ref= decode_cabac_mb_ref(h, sl, list, 8 * i);
                                 if (ref >= (unsigned)local_ref_count[list]) {
                                     av_log(h->avctx, AV_LOG_ERROR, "Reference %d >= %d\n", ref, local_ref_count[list]);
                                     return -1;
                                 }
                             }else
                                 ref=0;
-                            fill_rectangle(&h->ref_cache[list][ scan8[0] + 16*i ], 4, 2, 8, ref, 1);
+                            fill_rectangle(&sl->ref_cache[list][ scan8[0] + 16*i ], 4, 2, 8, ref, 1);
                         }else
-                            fill_rectangle(&h->ref_cache[list][ scan8[0] + 16*i ], 4, 2, 8, (LIST_NOT_USED&0xFF), 1);
+                            fill_rectangle(&sl->ref_cache[list][ scan8[0] + 16*i ], 4, 2, 8, (LIST_NOT_USED&0xFF), 1);
                     }
             }
             for(list=0; list<h->list_count; list++){
                 for(i=0; i<2; i++){
                     if(IS_DIR(mb_type, i, list)){
                         int mx,my,mpx,mpy;
-                        pred_16x8_motion(h, sl, 8*i, list, h->ref_cache[list][scan8[0] + 16*i], &mx, &my);
+                        pred_16x8_motion(h, sl, 8*i, list, sl->ref_cache[list][scan8[0] + 16*i], &mx, &my);
                         DECODE_CABAC_MB_MVD( h, list, 8*i)
                         tprintf(h->avctx, "final mv:%d %d\n", mx, my);
 
                         fill_rectangle(h->mvd_cache[list][ scan8[0] + 16*i ], 4, 2, 8, pack8to16(mpx,mpy), 2);
-                        fill_rectangle(h->mv_cache[list][ scan8[0] + 16*i ], 4, 2, 8, pack16to32(mx,my), 4);
+                        fill_rectangle(sl->mv_cache[list][ scan8[0] + 16*i ], 4, 2, 8, pack16to32(mx,my), 4);
                     }else{
                         fill_rectangle(h->mvd_cache[list][ scan8[0] + 16*i ], 4, 2, 8, 0, 2);
-                        fill_rectangle(h-> mv_cache[list][ scan8[0] + 16*i ], 4, 2, 8, 0, 4);
+                        fill_rectangle(sl->mv_cache[list][ scan8[0] + 16*i ], 4, 2, 8, 0, 4);
                     }
                 }
             }
@@ -2268,31 +2269,31 @@ decode_intra_mb:
                         if(IS_DIR(mb_type, i, list)){ //FIXME optimize
                             int ref;
                             if (local_ref_count[list] > 1) {
-                                ref= decode_cabac_mb_ref( h, list, 4*i );
+                                ref= decode_cabac_mb_ref(h, sl, list, 4 * i);
                                 if (ref >= (unsigned)local_ref_count[list]) {
                                     av_log(h->avctx, AV_LOG_ERROR, "Reference %d >= %d\n", ref, local_ref_count[list]);
                                     return -1;
                                 }
                             }else
                                 ref=0;
-                            fill_rectangle(&h->ref_cache[list][ scan8[0] + 2*i ], 2, 4, 8, ref, 1);
+                            fill_rectangle(&sl->ref_cache[list][ scan8[0] + 2*i ], 2, 4, 8, ref, 1);
                         }else
-                            fill_rectangle(&h->ref_cache[list][ scan8[0] + 2*i ], 2, 4, 8, (LIST_NOT_USED&0xFF), 1);
+                            fill_rectangle(&sl->ref_cache[list][ scan8[0] + 2*i ], 2, 4, 8, (LIST_NOT_USED&0xFF), 1);
                     }
             }
             for(list=0; list<h->list_count; list++){
                 for(i=0; i<2; i++){
                     if(IS_DIR(mb_type, i, list)){
                         int mx,my,mpx,mpy;
-                        pred_8x16_motion(h, sl, i*4, list, h->ref_cache[list][ scan8[0] + 2*i ], &mx, &my);
+                        pred_8x16_motion(h, sl, i*4, list, sl->ref_cache[list][ scan8[0] + 2*i ], &mx, &my);
                         DECODE_CABAC_MB_MVD( h, list, 4*i)
 
                         tprintf(h->avctx, "final mv:%d %d\n", mx, my);
                         fill_rectangle(h->mvd_cache[list][ scan8[0] + 2*i ], 2, 4, 8, pack8to16(mpx,mpy), 2);
-                        fill_rectangle(h->mv_cache[list][ scan8[0] + 2*i ], 2, 4, 8, pack16to32(mx,my), 4);
+                        fill_rectangle(sl->mv_cache[list][ scan8[0] + 2*i ], 2, 4, 8, pack16to32(mx,my), 4);
                     }else{
                         fill_rectangle(h->mvd_cache[list][ scan8[0] + 2*i ], 2, 4, 8, 0, 2);
-                        fill_rectangle(h-> mv_cache[list][ scan8[0] + 2*i ], 2, 4, 8, 0, 4);
+                        fill_rectangle(sl->mv_cache[list][ scan8[0] + 2*i ], 2, 4, 8, 0, 4);
                     }
                 }
             }
@@ -2301,7 +2302,7 @@ decode_intra_mb:
 
    if( IS_INTER( mb_type ) ) {
         h->chroma_pred_mode_table[mb_xy] = 0;
-        write_back_motion( h, mb_type );
+        write_back_motion(h, sl, mb_type);
    }
 
     if( !IS_INTRA16x16( mb_type ) ) {

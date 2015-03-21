@@ -49,14 +49,14 @@ static void mc_part(H264Context *h, H264SliceContext *sl,
                     int list0, int list1)
 {
     if ((sl->use_weight == 2 && list0 && list1 &&
-         (sl->implicit_weight[h->ref_cache[0][scan8[n]]][h->ref_cache[1][scan8[n]]][h->mb_y & 1] != 32)) ||
+         (sl->implicit_weight[sl->ref_cache[0][scan8[n]]][sl->ref_cache[1][scan8[n]]][h->mb_y & 1] != 32)) ||
         sl->use_weight == 1)
         mc_part_weighted(h, sl, n, square, height, delta, dest_y, dest_cb, dest_cr,
                          x_offset, y_offset, qpix_put, chroma_put,
                          weight_op[0], weight_op[1], weight_avg[0],
                          weight_avg[1], list0, list1, PIXEL_SHIFT, CHROMA_IDC);
     else
-        mc_part_std(h, n, square, height, delta, dest_y, dest_cb, dest_cr,
+        mc_part_std(h, sl, n, square, height, delta, dest_y, dest_cb, dest_cr,
                     x_offset, y_offset, qpix_put, chroma_put, qpix_avg,
                     chroma_avg, list0, list1, PIXEL_SHIFT, CHROMA_IDC);
 }
@@ -77,8 +77,8 @@ static void MCFUNC(hl_motion)(H264Context *h, H264SliceContext *sl,
     av_assert2(IS_INTER(mb_type));
 
     if (HAVE_THREADS && (h->avctx->active_thread_type & FF_THREAD_FRAME))
-        await_references(h);
-    prefetch_motion(h, 0, PIXEL_SHIFT, CHROMA_IDC);
+        await_references(h, sl);
+    prefetch_motion(h, sl, 0, PIXEL_SHIFT, CHROMA_IDC);
 
     if (IS_16X16(mb_type)) {
         mc_part(h, sl, 0, 1, 16, 0, dest_y, dest_cb, dest_cr, 0, 0,
@@ -158,6 +158,6 @@ static void MCFUNC(hl_motion)(H264Context *h, H264SliceContext *sl,
         }
     }
 
-    prefetch_motion(h, 1, PIXEL_SHIFT, CHROMA_IDC);
+    prefetch_motion(h, sl, 1, PIXEL_SHIFT, CHROMA_IDC);
 }
 

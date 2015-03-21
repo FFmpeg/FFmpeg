@@ -87,8 +87,8 @@ static void h264_er_decode_mb(void *opaque, int ref, int mv_dir, int mv_type,
     }
     fill_rectangle(&h->cur_pic.ref_index[0][4 * h->mb_xy],
                    2, 2, 2, ref, 1);
-    fill_rectangle(&h->ref_cache[0][scan8[0]], 4, 4, 8, ref, 1);
-    fill_rectangle(h->mv_cache[0][scan8[0]], 4, 4, 8,
+    fill_rectangle(&sl->ref_cache[0][scan8[0]], 4, 4, 8, ref, 1);
+    fill_rectangle(sl->mv_cache[0][scan8[0]], 4, 4, 8,
                    pack16to32((*mv)[0][0][0], (*mv)[0][0][1]), 4);
     h->mb_mbaff =
     h->mb_field_decoding_flag = 0;
@@ -507,12 +507,14 @@ int ff_h264_context_init(H264Context *h)
     FF_ALLOCZ_ARRAY_OR_GOTO(h->avctx, h->top_borders[1],
                       h->mb_width, 16 * 3 * sizeof(uint8_t) * 2, fail)
 
-    h->ref_cache[0][scan8[5]  + 1] =
-    h->ref_cache[0][scan8[7]  + 1] =
-    h->ref_cache[0][scan8[13] + 1] =
-    h->ref_cache[1][scan8[5]  + 1] =
-    h->ref_cache[1][scan8[7]  + 1] =
-    h->ref_cache[1][scan8[13] + 1] = PART_NOT_AVAILABLE;
+    for (i = 0; i < h->nb_slice_ctx; i++) {
+        h->slice_ctx[i].ref_cache[0][scan8[5]  + 1] =
+        h->slice_ctx[i].ref_cache[0][scan8[7]  + 1] =
+        h->slice_ctx[i].ref_cache[0][scan8[13] + 1] =
+        h->slice_ctx[i].ref_cache[1][scan8[5]  + 1] =
+        h->slice_ctx[i].ref_cache[1][scan8[7]  + 1] =
+        h->slice_ctx[i].ref_cache[1][scan8[13] + 1] = PART_NOT_AVAILABLE;
+    }
 
     if (CONFIG_ERROR_RESILIENCE) {
         /* init ER */

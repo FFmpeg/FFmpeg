@@ -36,10 +36,11 @@
 #include "svq3.h"
 #include "thread.h"
 
-static inline int get_lowest_part_list_y(H264Context *h, H264Picture *pic, int n,
+static inline int get_lowest_part_list_y(H264Context *h, H264SliceContext *sl,
+                                         H264Picture *pic, int n,
                                          int height, int y_offset, int list)
 {
-    int raw_my             = h->mv_cache[list][scan8[n]][1];
+    int raw_my             = sl->mv_cache[list][scan8[n]][1];
     int filter_height_down = (raw_my & 3) ? 3 : 0;
     int full_my            = (raw_my >> 2) + y_offset;
     int bottom             = full_my + filter_height_down + height;
@@ -49,7 +50,8 @@ static inline int get_lowest_part_list_y(H264Context *h, H264Picture *pic, int n
     return FFMAX(0, bottom);
 }
 
-static inline void get_lowest_part_y(H264Context *h, int16_t refs[2][48], int n,
+static inline void get_lowest_part_y(H264Context *h, H264SliceContext *sl,
+                                     int16_t refs[2][48], int n,
                                      int height, int y_offset, int list0,
                                      int list1, int *nrefs)
 {
@@ -58,7 +60,7 @@ static inline void get_lowest_part_y(H264Context *h, int16_t refs[2][48], int n,
     y_offset += 16 * (h->mb_y >> MB_FIELD(h));
 
     if (list0) {
-        int ref_n = h->ref_cache[0][scan8[n]];
+        int ref_n = sl->ref_cache[0][scan8[n]];
         H264Picture *ref = &h->ref_list[0][ref_n];
 
         // Error resilience puts the current picture in the ref list.
@@ -66,7 +68,7 @@ static inline void get_lowest_part_y(H264Context *h, int16_t refs[2][48], int n,
         // Fields can wait on each other, though.
         if (ref->tf.progress->data != h->cur_pic.tf.progress->data ||
             (ref->reference & 3) != h->picture_structure) {
-            my = get_lowest_part_list_y(h, ref, n, height, y_offset, 0);
+            my = get_lowest_part_list_y(h, sl, ref, n, height, y_offset, 0);
             if (refs[0][ref_n] < 0)
                 nrefs[0] += 1;
             refs[0][ref_n] = FFMAX(refs[0][ref_n], my);
@@ -74,12 +76,12 @@ static inline void get_lowest_part_y(H264Context *h, int16_t refs[2][48], int n,
     }
 
     if (list1) {
-        int ref_n    = h->ref_cache[1][scan8[n]];
+        int ref_n    = sl->ref_cache[1][scan8[n]];
         H264Picture *ref = &h->ref_list[1][ref_n];
 
         if (ref->tf.progress->data != h->cur_pic.tf.progress->data ||
             (ref->reference & 3) != h->picture_structure) {
-            my = get_lowest_part_list_y(h, ref, n, height, y_offset, 1);
+            my = get_lowest_part_list_y(h, sl, ref, n, height, y_offset, 1);
             if (refs[1][ref_n] < 0)
                 nrefs[1] += 1;
             refs[1][ref_n] = FFMAX(refs[1][ref_n], my);
@@ -92,7 +94,7 @@ static inline void get_lowest_part_y(H264Context *h, int16_t refs[2][48], int n,
  *
  * @param h the H264 context
  */
-static void await_references(H264Context *h)
+static void await_references(H264Context *h, H264SliceContext *sl)
 {
     const int mb_xy   = h->mb_xy;
     const int mb_type = h->cur_pic.mb_type[mb_xy];
@@ -103,17 +105,17 @@ static void await_references(H264Context *h)
     memset(refs, -1, sizeof(refs));
 
     if (IS_16X16(mb_type)) {
-        get_lowest_part_y(h, refs, 0, 16, 0,
+        get_lowest_part_y(h, sl, refs, 0, 16, 0,
                           IS_DIR(mb_type, 0, 0), IS_DIR(mb_type, 0, 1), nrefs);
     } else if (IS_16X8(mb_type)) {
-        get_lowest_part_y(h, refs, 0, 8, 0,
+        get_lowest_part_y(h, sl, refs, 0, 8, 0,
                           IS_DIR(mb_type, 0, 0), IS_DIR(mb_type, 0, 1), nrefs);
-        get_lowest_part_y(h, refs, 8, 8, 8,
+        get_lowest_part_y(h, sl, refs, 8, 8, 8,
                           IS_DIR(mb_type, 1, 0), IS_DIR(mb_type, 1, 1), nrefs);
     } else if (IS_8X16(mb_type)) {
-        get_lowest_part_y(h, refs, 0, 16, 0,
+        get_lowest_part_y(h, sl, refs, 0, 16, 0,
                           IS_DIR(mb_type, 0, 0), IS_DIR(mb_type, 0, 1), nrefs);
-        get_lowest_part_y(h, refs, 4, 16, 0,
+        get_lowest_part_y(h, sl, refs, 4, 16, 0,
                           IS_DIR(mb_type, 1, 0), IS_DIR(mb_type, 1, 1), nrefs);
     } else {
         int i;
@@ -126,25 +128,25 @@ static void await_references(H264Context *h)
             int y_offset          = (i & 2) << 2;
 
             if (IS_SUB_8X8(sub_mb_type)) {
-                get_lowest_part_y(h, refs, n, 8, y_offset,
+                get_lowest_part_y(h, sl, refs, n, 8, y_offset,
                                   IS_DIR(sub_mb_type, 0, 0),
                                   IS_DIR(sub_mb_type, 0, 1),
                                   nrefs);
             } else if (IS_SUB_8X4(sub_mb_type)) {
-                get_lowest_part_y(h, refs, n, 4, y_offset,
+                get_lowest_part_y(h, sl, refs, n, 4, y_offset,
                                   IS_DIR(sub_mb_type, 0, 0),
                                   IS_DIR(sub_mb_type, 0, 1),
                                   nrefs);
-                get_lowest_part_y(h, refs, n + 2, 4, y_offset + 4,
+                get_lowest_part_y(h, sl, refs, n + 2, 4, y_offset + 4,
                                   IS_DIR(sub_mb_type, 0, 0),
                                   IS_DIR(sub_mb_type, 0, 1),
                                   nrefs);
             } else if (IS_SUB_4X8(sub_mb_type)) {
-                get_lowest_part_y(h, refs, n, 8, y_offset,
+                get_lowest_part_y(h, sl, refs, n, 8, y_offset,
                                   IS_DIR(sub_mb_type, 0, 0),
                                   IS_DIR(sub_mb_type, 0, 1),
                                   nrefs);
-                get_lowest_part_y(h, refs, n + 1, 8, y_offset,
+                get_lowest_part_y(h, sl, refs, n + 1, 8, y_offset,
                                   IS_DIR(sub_mb_type, 0, 0),
                                   IS_DIR(sub_mb_type, 0, 1),
                                   nrefs);
@@ -153,7 +155,7 @@ static void await_references(H264Context *h)
                 av_assert2(IS_SUB_4X4(sub_mb_type));
                 for (j = 0; j < 4; j++) {
                     int sub_y_offset = y_offset + 2 * (j & 2);
-                    get_lowest_part_y(h, refs, n + j, 4, sub_y_offset,
+                    get_lowest_part_y(h, sl, refs, n + j, 4, sub_y_offset,
                                       IS_DIR(sub_mb_type, 0, 0),
                                       IS_DIR(sub_mb_type, 0, 1),
                                       nrefs);
@@ -200,7 +202,8 @@ static void await_references(H264Context *h)
         }
 }
 
-static av_always_inline void mc_dir_part(H264Context *h, H264Picture *pic,
+static av_always_inline void mc_dir_part(H264Context *h, H264SliceContext *sl,
+                                         H264Picture *pic,
                                          int n, int square, int height,
                                          int delta, int list,
                                          uint8_t *dest_y, uint8_t *dest_cb,
@@ -210,8 +213,8 @@ static av_always_inline void mc_dir_part(H264Context *h, H264Picture *pic,
                                          h264_chroma_mc_func chroma_op,
                                          int pixel_shift, int chroma_idc)
 {
-    const int mx      = h->mv_cache[list][scan8[n]][0] + src_x_offset * 8;
-    int my            = h->mv_cache[list][scan8[n]][1] + src_y_offset * 8;
+    const int mx      = sl->mv_cache[list][scan8[n]][0] + src_x_offset * 8;
+    int my            = sl->mv_cache[list][scan8[n]][1] + src_y_offset * 8;
     const int luma_xy = (mx & 3) + ((my & 3) << 2);
     ptrdiff_t offset  = (mx >> 2) * (1 << pixel_shift) + (my >> 2) * h->mb_linesize;
     uint8_t *src_y    = pic->f.data[0] + offset;
@@ -315,7 +318,8 @@ static av_always_inline void mc_dir_part(H264Context *h, H264Picture *pic,
               mx & 7, ((unsigned)my << (chroma_idc == 2 /* yuv422 */)) & 7);
 }
 
-static av_always_inline void mc_part_std(H264Context *h, int n, int square,
+static av_always_inline void mc_part_std(H264Context *h, H264SliceContext *sl,
+                                         int n, int square,
                                          int height, int delta,
                                          uint8_t *dest_y, uint8_t *dest_cb,
                                          uint8_t *dest_cr,
@@ -345,8 +349,8 @@ static av_always_inline void mc_part_std(H264Context *h, int n, int square,
     y_offset += 8 * (h->mb_y >> MB_FIELD(h));
 
     if (list0) {
-        H264Picture *ref = &h->ref_list[0][h->ref_cache[0][scan8[n]]];
-        mc_dir_part(h, ref, n, square, height, delta, 0,
+        H264Picture *ref = &h->ref_list[0][sl->ref_cache[0][scan8[n]]];
+        mc_dir_part(h, sl, ref, n, square, height, delta, 0,
                     dest_y, dest_cb, dest_cr, x_offset, y_offset,
                     qpix_op, chroma_op, pixel_shift, chroma_idc);
 
@@ -355,8 +359,8 @@ static av_always_inline void mc_part_std(H264Context *h, int n, int square,
     }
 
     if (list1) {
-        H264Picture *ref = &h->ref_list[1][h->ref_cache[1][scan8[n]]];
-        mc_dir_part(h, ref, n, square, height, delta, 1,
+        H264Picture *ref = &h->ref_list[1][sl->ref_cache[1][scan8[n]]];
+        mc_dir_part(h, sl, ref, n, square, height, delta, 1,
                     dest_y, dest_cb, dest_cr, x_offset, y_offset,
                     qpix_op, chroma_op, pixel_shift, chroma_idc);
     }
@@ -404,14 +408,14 @@ static av_always_inline void mc_part_weighted(H264Context *h, H264SliceContext *
         uint8_t *tmp_cb = h->bipred_scratchpad;
         uint8_t *tmp_cr = h->bipred_scratchpad + (16 << pixel_shift);
         uint8_t *tmp_y  = h->bipred_scratchpad + 16 * h->mb_uvlinesize;
-        int refn0       = h->ref_cache[0][scan8[n]];
-        int refn1       = h->ref_cache[1][scan8[n]];
+        int refn0       = sl->ref_cache[0][scan8[n]];
+        int refn1       = sl->ref_cache[1][scan8[n]];
 
-        mc_dir_part(h, &h->ref_list[0][refn0], n, square, height, delta, 0,
+        mc_dir_part(h, sl, &h->ref_list[0][refn0], n, square, height, delta, 0,
                     dest_y, dest_cb, dest_cr,
                     x_offset, y_offset, qpix_put, chroma_put,
                     pixel_shift, chroma_idc);
-        mc_dir_part(h, &h->ref_list[1][refn1], n, square, height, delta, 1,
+        mc_dir_part(h, sl, &h->ref_list[1][refn1], n, square, height, delta, 1,
                     tmp_y, tmp_cb, tmp_cr,
                     x_offset, y_offset, qpix_put, chroma_put,
                     pixel_shift, chroma_idc);
@@ -451,9 +455,9 @@ static av_always_inline void mc_part_weighted(H264Context *h, H264SliceContext *
         }
     } else {
         int list     = list1 ? 1 : 0;
-        int refn     = h->ref_cache[list][scan8[n]];
+        int refn     = sl->ref_cache[list][scan8[n]];
         H264Picture *ref = &h->ref_list[list][refn];
-        mc_dir_part(h, ref, n, square, height, delta, list,
+        mc_dir_part(h, sl, ref, n, square, height, delta, list,
                     dest_y, dest_cb, dest_cr, x_offset, y_offset,
                     qpix_put, chroma_put, pixel_shift, chroma_idc);
 
@@ -476,15 +480,16 @@ static av_always_inline void mc_part_weighted(H264Context *h, H264SliceContext *
     }
 }
 
-static av_always_inline void prefetch_motion(H264Context *h, int list,
-                                             int pixel_shift, int chroma_idc)
+static av_always_inline void prefetch_motion(H264Context *h, H264SliceContext *sl,
+                                             int list, int pixel_shift,
+                                             int chroma_idc)
 {
     /* fetch pixels for estimated mv 4 macroblocks ahead
      * optimized for 64byte cache lines */
-    const int refn = h->ref_cache[list][scan8[0]];
+    const int refn = sl->ref_cache[list][scan8[0]];
     if (refn >= 0) {
-        const int mx  = (h->mv_cache[list][scan8[0]][0] >> 2) + 16 * h->mb_x + 8;
-        const int my  = (h->mv_cache[list][scan8[0]][1] >> 2) + 16 * h->mb_y;
+        const int mx  = (sl->mv_cache[list][scan8[0]][0] >> 2) + 16 * h->mb_x + 8;
+        const int my  = (sl->mv_cache[list][scan8[0]][1] >> 2) + 16 * h->mb_y;
         uint8_t **src = h->ref_list[list][refn].f.data;
         int off       =  mx * (1<< pixel_shift) +
                         (my + (h->mb_x & 3) * 4) * h->mb_linesize +

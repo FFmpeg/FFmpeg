@@ -171,7 +171,8 @@ static void await_reference_mb_row(H264Context *const h, H264Picture *ref,
                              ref_field_picture && ref_field);
 }
 
-static void pred_spatial_direct_motion(H264Context *const h, int *mb_type)
+static void pred_spatial_direct_motion(H264Context *const h, H264SliceContext *sl,
+                                       int *mb_type)
 {
     int b8_stride = 2;
     int b4_stride = h->b_stride;
@@ -196,13 +197,13 @@ static void pred_spatial_direct_motion(H264Context *const h, int *mb_type)
 
     /* ref = min(neighbors) */
     for (list = 0; list < 2; list++) {
-        int left_ref     = h->ref_cache[list][scan8[0] - 1];
-        int top_ref      = h->ref_cache[list][scan8[0] - 8];
-        int refc         = h->ref_cache[list][scan8[0] - 8 + 4];
-        const int16_t *C = h->mv_cache[list][scan8[0]  - 8 + 4];
+        int left_ref     = sl->ref_cache[list][scan8[0] - 1];
+        int top_ref      = sl->ref_cache[list][scan8[0] - 8];
+        int refc         = sl->ref_cache[list][scan8[0] - 8 + 4];
+        const int16_t *C = sl->mv_cache[list][scan8[0]  - 8 + 4];
         if (refc == PART_NOT_AVAILABLE) {
-            refc = h->ref_cache[list][scan8[0] - 8 - 1];
-            C    = h->mv_cache[list][scan8[0]  - 8 - 1];
+            refc = sl->ref_cache[list][scan8[0] - 8 - 1];
+            C    = sl->mv_cache[list][scan8[0]  - 8 - 1];
         }
         ref[list] = FFMIN3((unsigned)left_ref,
                            (unsigned)top_ref,
@@ -210,8 +211,8 @@ static void pred_spatial_direct_motion(H264Context *const h, int *mb_type)
         if (ref[list] >= 0) {
             /* This is just pred_motion() but with the cases removed that
              * cannot happen for direct blocks. */
-            const int16_t *const A = h->mv_cache[list][scan8[0] - 1];
-            const int16_t *const B = h->mv_cache[list][scan8[0] - 8];
+            const int16_t *const A = sl->mv_cache[list][scan8[0] - 1];
+            const int16_t *const B = sl->mv_cache[list][scan8[0] - 8];
 
             int match_count = (left_ref == ref[list]) +
                               (top_ref  == ref[list]) +
@@ -247,10 +248,10 @@ static void pred_spatial_direct_motion(H264Context *const h, int *mb_type)
     }
 
     if (!(is_b8x8 | mv[0] | mv[1])) {
-        fill_rectangle(&h->ref_cache[0][scan8[0]], 4, 4, 8, (uint8_t)ref[0], 1);
-        fill_rectangle(&h->ref_cache[1][scan8[0]], 4, 4, 8, (uint8_t)ref[1], 1);
-        fill_rectangle(&h->mv_cache[0][scan8[0]], 4, 4, 8, 0, 4);
-        fill_rectangle(&h->mv_cache[1][scan8[0]], 4, 4, 8, 0, 4);
+        fill_rectangle(&sl->ref_cache[0][scan8[0]], 4, 4, 8, (uint8_t)ref[0], 1);
+        fill_rectangle(&sl->ref_cache[1][scan8[0]], 4, 4, 8, (uint8_t)ref[1], 1);
+        fill_rectangle(&sl->mv_cache[0][scan8[0]], 4, 4, 8, 0, 4);
+        fill_rectangle(&sl->mv_cache[1][scan8[0]], 4, 4, 8, 0, 4);
         *mb_type = (*mb_type & ~(MB_TYPE_8x8 | MB_TYPE_16x8 | MB_TYPE_8x16 |
                                  MB_TYPE_P1L0 | MB_TYPE_P1L1)) |
                    MB_TYPE_16x16 | MB_TYPE_DIRECT2;
@@ -341,9 +342,9 @@ single_col:
                 continue;
             h->sub_mb_type[i8] = sub_mb_type;
 
-            fill_rectangle(&h->ref_cache[0][scan8[i8 * 4]], 2, 2, 8,
+            fill_rectangle(&sl->ref_cache[0][scan8[i8 * 4]], 2, 2, 8,
                            (uint8_t)ref[0], 1);
-            fill_rectangle(&h->ref_cache[1][scan8[i8 * 4]], 2, 2, 8,
+            fill_rectangle(&sl->ref_cache[1][scan8[i8 * 4]], 2, 2, 8,
                            (uint8_t)ref[1], 1);
             if (!IS_INTRA(mb_type_col[y8]) && !h->ref_list[1][0].long_ref &&
                 ((l1ref0[xy8] == 0 &&
@@ -364,8 +365,8 @@ single_col:
                 a = mv[0];
                 b = mv[1];
             }
-            fill_rectangle(&h->mv_cache[0][scan8[i8 * 4]], 2, 2, 8, a, 4);
-            fill_rectangle(&h->mv_cache[1][scan8[i8 * 4]], 2, 2, 8, b, 4);
+            fill_rectangle(&sl->mv_cache[0][scan8[i8 * 4]], 2, 2, 8, a, 4);
+            fill_rectangle(&sl->mv_cache[1][scan8[i8 * 4]], 2, 2, 8, b, 4);
         }
         if (!is_b8x8 && !(n & 3))
             *mb_type = (*mb_type & ~(MB_TYPE_8x8 | MB_TYPE_16x8 | MB_TYPE_8x16 |
@@ -374,8 +375,8 @@ single_col:
     } else if (IS_16X16(*mb_type)) {
         int a, b;
 
-        fill_rectangle(&h->ref_cache[0][scan8[0]], 4, 4, 8, (uint8_t)ref[0], 1);
-        fill_rectangle(&h->ref_cache[1][scan8[0]], 4, 4, 8, (uint8_t)ref[1], 1);
+        fill_rectangle(&sl->ref_cache[0][scan8[0]], 4, 4, 8, (uint8_t)ref[0], 1);
+        fill_rectangle(&sl->ref_cache[1][scan8[0]], 4, 4, 8, (uint8_t)ref[1], 1);
         if (!IS_INTRA(mb_type_col[0]) && !h->ref_list[1][0].long_ref &&
             ((l1ref0[0] == 0 &&
               FFABS(l1mv0[0][0]) <= 1 &&
@@ -393,8 +394,8 @@ single_col:
             a = mv[0];
             b = mv[1];
         }
-        fill_rectangle(&h->mv_cache[0][scan8[0]], 4, 4, 8, a, 4);
-        fill_rectangle(&h->mv_cache[1][scan8[0]], 4, 4, 8, b, 4);
+        fill_rectangle(&sl->mv_cache[0][scan8[0]], 4, 4, 8, a, 4);
+        fill_rectangle(&sl->mv_cache[1][scan8[0]], 4, 4, 8, b, 4);
     } else {
         int n = 0;
         for (i8 = 0; i8 < 4; i8++) {
@@ -405,11 +406,11 @@ single_col:
                 continue;
             h->sub_mb_type[i8] = sub_mb_type;
 
-            fill_rectangle(&h->mv_cache[0][scan8[i8 * 4]], 2, 2, 8, mv[0], 4);
-            fill_rectangle(&h->mv_cache[1][scan8[i8 * 4]], 2, 2, 8, mv[1], 4);
-            fill_rectangle(&h->ref_cache[0][scan8[i8 * 4]], 2, 2, 8,
+            fill_rectangle(&sl->mv_cache[0][scan8[i8 * 4]], 2, 2, 8, mv[0], 4);
+            fill_rectangle(&sl->mv_cache[1][scan8[i8 * 4]], 2, 2, 8, mv[1], 4);
+            fill_rectangle(&sl->ref_cache[0][scan8[i8 * 4]], 2, 2, 8,
                            (uint8_t)ref[0], 1);
-            fill_rectangle(&h->ref_cache[1][scan8[i8 * 4]], 2, 2, 8,
+            fill_rectangle(&sl->ref_cache[1][scan8[i8 * 4]], 2, 2, 8,
                            (uint8_t)ref[1], 1);
 
             assert(b8_stride == 2);
@@ -424,10 +425,10 @@ single_col:
                     const int16_t *mv_col = l1mv[x8 * 3 + y8 * 3 * b4_stride];
                     if (FFABS(mv_col[0]) <= 1 && FFABS(mv_col[1]) <= 1) {
                         if (ref[0] == 0)
-                            fill_rectangle(&h->mv_cache[0][scan8[i8 * 4]], 2, 2,
+                            fill_rectangle(&sl->mv_cache[0][scan8[i8 * 4]], 2, 2,
                                            8, 0, 4);
                         if (ref[1] == 0)
-                            fill_rectangle(&h->mv_cache[1][scan8[i8 * 4]], 2, 2,
+                            fill_rectangle(&sl->mv_cache[1][scan8[i8 * 4]], 2, 2,
                                            8, 0, 4);
                         n += 4;
                     }
@@ -438,9 +439,9 @@ single_col:
                                                      (y8 * 2 + (i4 >> 1)) * b4_stride];
                         if (FFABS(mv_col[0]) <= 1 && FFABS(mv_col[1]) <= 1) {
                             if (ref[0] == 0)
-                                AV_ZERO32(h->mv_cache[0][scan8[i8 * 4 + i4]]);
+                                AV_ZERO32(sl->mv_cache[0][scan8[i8 * 4 + i4]]);
                             if (ref[1] == 0)
-                                AV_ZERO32(h->mv_cache[1][scan8[i8 * 4 + i4]]);
+                                AV_ZERO32(sl->mv_cache[1][scan8[i8 * 4 + i4]]);
                             m++;
                         }
                     }
@@ -457,7 +458,8 @@ single_col:
     }
 }
 
-static void pred_temp_direct_motion(H264Context *const h, int *mb_type)
+static void pred_temp_direct_motion(H264Context *const h, H264SliceContext *sl,
+                                    int *mb_type)
 {
     int b8_stride = 2;
     int b4_stride = h->b_stride;
@@ -578,11 +580,11 @@ single_col:
                     continue;
                 h->sub_mb_type[i8] = sub_mb_type;
 
-                fill_rectangle(&h->ref_cache[1][scan8[i8 * 4]], 2, 2, 8, 0, 1);
+                fill_rectangle(&sl->ref_cache[1][scan8[i8 * 4]], 2, 2, 8, 0, 1);
                 if (IS_INTRA(mb_type_col[y8])) {
-                    fill_rectangle(&h->ref_cache[0][scan8[i8 * 4]], 2, 2, 8, 0, 1);
-                    fill_rectangle(&h->mv_cache[0][scan8[i8 * 4]], 2, 2, 8, 0, 4);
-                    fill_rectangle(&h->mv_cache[1][scan8[i8 * 4]], 2, 2, 8, 0, 4);
+                    fill_rectangle(&sl->ref_cache[0][scan8[i8 * 4]], 2, 2, 8, 0, 1);
+                    fill_rectangle(&sl->mv_cache[0][scan8[i8 * 4]], 2, 2, 8, 0, 4);
+                    fill_rectangle(&sl->mv_cache[1][scan8[i8 * 4]], 2, 2, 8, 0, 4);
                     continue;
                 }
 
@@ -595,7 +597,7 @@ single_col:
                     l1mv = l1mv1;
                 }
                 scale = dist_scale_factor[ref0];
-                fill_rectangle(&h->ref_cache[0][scan8[i8 * 4]], 2, 2, 8,
+                fill_rectangle(&sl->ref_cache[0][scan8[i8 * 4]], 2, 2, 8,
                                ref0, 1);
 
                 {
@@ -603,9 +605,9 @@ single_col:
                     int my_col            = (mv_col[1] << y_shift) / 2;
                     int mx                = (scale * mv_col[0] + 128) >> 8;
                     int my                = (scale * my_col    + 128) >> 8;
-                    fill_rectangle(&h->mv_cache[0][scan8[i8 * 4]], 2, 2, 8,
+                    fill_rectangle(&sl->mv_cache[0][scan8[i8 * 4]], 2, 2, 8,
                                    pack16to32(mx, my), 4);
-                    fill_rectangle(&h->mv_cache[1][scan8[i8 * 4]], 2, 2, 8,
+                    fill_rectangle(&sl->mv_cache[1][scan8[i8 * 4]], 2, 2, 8,
                                    pack16to32(mx - mv_col[0], my - my_col), 4);
                 }
             }
@@ -617,7 +619,7 @@ single_col:
         if (IS_16X16(*mb_type)) {
             int ref, mv0, mv1;
 
-            fill_rectangle(&h->ref_cache[1][scan8[0]], 4, 4, 8, 0, 1);
+            fill_rectangle(&sl->ref_cache[1][scan8[0]], 4, 4, 8, 0, 1);
             if (IS_INTRA(mb_type_col[0])) {
                 ref = mv0 = mv1 = 0;
             } else {
@@ -632,9 +634,9 @@ single_col:
                 mv0      = pack16to32(mv_l0[0], mv_l0[1]);
                 mv1      = pack16to32(mv_l0[0] - mv_col[0], mv_l0[1] - mv_col[1]);
             }
-            fill_rectangle(&h->ref_cache[0][scan8[0]], 4, 4, 8, ref, 1);
-            fill_rectangle(&h->mv_cache[0][scan8[0]], 4, 4, 8, mv0, 4);
-            fill_rectangle(&h->mv_cache[1][scan8[0]], 4, 4, 8, mv1, 4);
+            fill_rectangle(&sl->ref_cache[0][scan8[0]], 4, 4, 8, ref, 1);
+            fill_rectangle(&sl->mv_cache[0][scan8[0]], 4, 4, 8, mv0, 4);
+            fill_rectangle(&sl->mv_cache[1][scan8[0]], 4, 4, 8, mv1, 4);
         } else {
             for (i8 = 0; i8 < 4; i8++) {
                 const int x8 = i8 & 1;
@@ -645,11 +647,11 @@ single_col:
                 if (is_b8x8 && !IS_DIRECT(h->sub_mb_type[i8]))
                     continue;
                 h->sub_mb_type[i8] = sub_mb_type;
-                fill_rectangle(&h->ref_cache[1][scan8[i8 * 4]], 2, 2, 8, 0, 1);
+                fill_rectangle(&sl->ref_cache[1][scan8[i8 * 4]], 2, 2, 8, 0, 1);
                 if (IS_INTRA(mb_type_col[0])) {
-                    fill_rectangle(&h->ref_cache[0][scan8[i8 * 4]], 2, 2, 8, 0, 1);
-                    fill_rectangle(&h->mv_cache[0][scan8[i8 * 4]], 2, 2, 8, 0, 4);
-                    fill_rectangle(&h->mv_cache[1][scan8[i8 * 4]], 2, 2, 8, 0, 4);
+                    fill_rectangle(&sl->ref_cache[0][scan8[i8 * 4]], 2, 2, 8, 0, 1);
+                    fill_rectangle(&sl->mv_cache[0][scan8[i8 * 4]], 2, 2, 8, 0, 4);
+                    fill_rectangle(&sl->mv_cache[1][scan8[i8 * 4]], 2, 2, 8, 0, 4);
                     continue;
                 }
 
@@ -663,24 +665,24 @@ single_col:
                 }
                 scale = dist_scale_factor[ref0];
 
-                fill_rectangle(&h->ref_cache[0][scan8[i8 * 4]], 2, 2, 8,
+                fill_rectangle(&sl->ref_cache[0][scan8[i8 * 4]], 2, 2, 8,
                                ref0, 1);
                 if (IS_SUB_8X8(sub_mb_type)) {
                     const int16_t *mv_col = l1mv[x8 * 3 + y8 * 3 * b4_stride];
                     int mx                = (scale * mv_col[0] + 128) >> 8;
                     int my                = (scale * mv_col[1] + 128) >> 8;
-                    fill_rectangle(&h->mv_cache[0][scan8[i8 * 4]], 2, 2, 8,
+                    fill_rectangle(&sl->mv_cache[0][scan8[i8 * 4]], 2, 2, 8,
                                    pack16to32(mx, my), 4);
-                    fill_rectangle(&h->mv_cache[1][scan8[i8 * 4]], 2, 2, 8,
+                    fill_rectangle(&sl->mv_cache[1][scan8[i8 * 4]], 2, 2, 8,
                                    pack16to32(mx - mv_col[0], my - mv_col[1]), 4);
                 } else {
                     for (i4 = 0; i4 < 4; i4++) {
                         const int16_t *mv_col = l1mv[x8 * 2 + (i4 & 1) +
                                                      (y8 * 2 + (i4 >> 1)) * b4_stride];
-                        int16_t *mv_l0 = h->mv_cache[0][scan8[i8 * 4 + i4]];
+                        int16_t *mv_l0 = sl->mv_cache[0][scan8[i8 * 4 + i4]];
                         mv_l0[0] = (scale * mv_col[0] + 128) >> 8;
                         mv_l0[1] = (scale * mv_col[1] + 128) >> 8;
-                        AV_WN32A(h->mv_cache[1][scan8[i8 * 4 + i4]],
+                        AV_WN32A(sl->mv_cache[1][scan8[i8 * 4 + i4]],
                                  pack16to32(mv_l0[0] - mv_col[0],
                                             mv_l0[1] - mv_col[1]));
                     }
@@ -690,10 +692,11 @@ single_col:
     }
 }
 
-void ff_h264_pred_direct_motion(H264Context *const h, int *mb_type)
+void ff_h264_pred_direct_motion(H264Context *const h, H264SliceContext *sl,
+                                int *mb_type)
 {
     if (h->direct_spatial_mv_pred)
-        pred_spatial_direct_motion(h, mb_type);
+        pred_spatial_direct_motion(h, sl, mb_type);
     else
-        pred_temp_direct_motion(h, mb_type);
+        pred_temp_direct_motion(h, sl, mb_type);
 }

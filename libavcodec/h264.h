@@ -384,6 +384,12 @@ typedef struct H264SliceContext {
      * is 64 if not available.
      */
     DECLARE_ALIGNED(8, uint8_t, non_zero_count_cache)[15 * 8];
+
+    /**
+     * Motion vector cache.
+     */
+    DECLARE_ALIGNED(16, int16_t, mv_cache)[2][5 * 8][2];
+    DECLARE_ALIGNED(8,  int8_t, ref_cache)[2][5 * 8];
 } H264SliceContext;
 
 /**
@@ -428,11 +434,6 @@ typedef struct H264Context {
 
     uint8_t (*non_zero_count)[48];
 
-    /**
-     * Motion vector cache.
-     */
-    DECLARE_ALIGNED(16, int16_t, mv_cache)[2][5 * 8][2];
-    DECLARE_ALIGNED(8, int8_t, ref_cache)[2][5 * 8];
 #define LIST_NOT_USED -1 // FIXME rename?
 #define PART_NOT_AVAILABLE -2
 
@@ -881,7 +882,8 @@ void ff_h264_init_dequant_tables(H264Context *h);
 
 void ff_h264_direct_dist_scale_factor(H264Context *const h);
 void ff_h264_direct_ref_list_init(H264Context *const h);
-void ff_h264_pred_direct_motion(H264Context *const h, int *mb_type);
+void ff_h264_pred_direct_motion(H264Context *const h, H264SliceContext *sl,
+                                int *mb_type);
 
 void ff_h264_filter_mb_fast(H264Context *h, H264SliceContext *sl, int mb_x, int mb_y,
                             uint8_t *img_y, uint8_t *img_cb, uint8_t *img_cr,
@@ -1042,12 +1044,13 @@ static av_always_inline void write_back_non_zero_count(H264Context *h,
 }
 
 static av_always_inline void write_back_motion_list(H264Context *h,
+                                                    H264SliceContext *sl,
                                                     int b_stride,
                                                     int b_xy, int b8_xy,
                                                     int mb_type, int list)
 {
     int16_t(*mv_dst)[2] = &h->cur_pic.motion_val[list][b_xy];
-    int16_t(*mv_src)[2] = &h->mv_cache[list][scan8[0]];
+    int16_t(*mv_src)[2] = &sl->mv_cache[list][scan8[0]];
     AV_COPY128(mv_dst + 0 * b_stride, mv_src + 8 * 0);
     AV_COPY128(mv_dst + 1 * b_stride, mv_src + 8 * 1);
     AV_COPY128(mv_dst + 2 * b_stride, mv_src + 8 * 2);
@@ -1068,7 +1071,7 @@ static av_always_inline void write_back_motion_list(H264Context *h,
 
     {
         int8_t *ref_index = &h->cur_pic.ref_index[list][b8_xy];
-        int8_t *ref_cache = h->ref_cache[list];
+        int8_t *ref_cache = sl->ref_cache[list];
         ref_index[0 + 0 * 2] = ref_cache[scan8[0]];
         ref_index[1 + 0 * 2] = ref_cache[scan8[4]];
         ref_index[0 + 1 * 2] = ref_cache[scan8[8]];
@@ -1076,20 +1079,22 @@ static av_always_inline void write_back_motion_list(H264Context *h,
     }
 }
 
-static av_always_inline void write_back_motion(H264Context *h, int mb_type)
+static av_always_inline void write_back_motion(H264Context *h,
+                                               H264SliceContext *sl,
+                                               int mb_type)
 {
     const int b_stride      = h->b_stride;
     const int b_xy  = 4 * h->mb_x + 4 * h->mb_y * h->b_stride; // try mb2b(8)_xy
     const int b8_xy = 4 * h->mb_xy;
 
     if (USES_LIST(mb_type, 0)) {
-        write_back_motion_list(h, b_stride, b_xy, b8_xy, mb_type, 0);
+        write_back_motion_list(h, sl, b_stride, b_xy, b8_xy, mb_type, 0);
     } else {
         fill_rectangle(&h->cur_pic.ref_index[0][b8_xy],
                        2, 2, 2, (uint8_t)LIST_NOT_USED, 1);
     }
     if (USES_LIST(mb_type, 1))
-        write_back_motion_list(h, b_stride, b_xy, b8_xy, mb_type, 1);
+        write_back_motion_list(h, sl, b_stride, b_xy, b8_xy, mb_type, 1);
 
     if (h->slice_type_nos == AV_PICTURE_TYPE_B && CABAC(h)) {
         if (IS_8X8(mb_type)) {

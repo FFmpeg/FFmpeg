@@ -466,15 +466,15 @@ static inline int svq3_mc_dir(SVQ3Context *s, int size, int mode,
                 int32_t mv = pack16to32(mx, my);
 
                 if (part_height == 8 && i < 8) {
-                    AV_WN32A(h->mv_cache[dir][scan8[k] + 1 * 8], mv);
+                    AV_WN32A(sl->mv_cache[dir][scan8[k] + 1 * 8], mv);
 
                     if (part_width == 8 && j < 8)
-                        AV_WN32A(h->mv_cache[dir][scan8[k] + 1 + 1 * 8], mv);
+                        AV_WN32A(sl->mv_cache[dir][scan8[k] + 1 + 1 * 8], mv);
                 }
                 if (part_width == 8 && j < 8)
-                    AV_WN32A(h->mv_cache[dir][scan8[k] + 1], mv);
+                    AV_WN32A(sl->mv_cache[dir][scan8[k] + 1], mv);
                 if (part_width == 4 || part_height == 4)
-                    AV_WN32A(h->mv_cache[dir][scan8[k]], mv);
+                    AV_WN32A(sl->mv_cache[dir][scan8[k]], mv);
             }
 
             /* write back motion vectors */
@@ -542,36 +542,36 @@ static int svq3_decode_mb(SVQ3Context *s, unsigned int mb_type)
         for (m = 0; m < 2; m++) {
             if (h->mb_x > 0 && sl->intra4x4_pred_mode[h->mb2br_xy[mb_xy - 1] + 6] != -1) {
                 for (i = 0; i < 4; i++)
-                    AV_COPY32(h->mv_cache[m][scan8[0] - 1 + i * 8],
+                    AV_COPY32(sl->mv_cache[m][scan8[0] - 1 + i * 8],
                               h->cur_pic.motion_val[m][b_xy - 1 + i * h->b_stride]);
             } else {
                 for (i = 0; i < 4; i++)
-                    AV_ZERO32(h->mv_cache[m][scan8[0] - 1 + i * 8]);
+                    AV_ZERO32(sl->mv_cache[m][scan8[0] - 1 + i * 8]);
             }
             if (h->mb_y > 0) {
-                memcpy(h->mv_cache[m][scan8[0] - 1 * 8],
+                memcpy(sl->mv_cache[m][scan8[0] - 1 * 8],
                        h->cur_pic.motion_val[m][b_xy - h->b_stride],
                        4 * 2 * sizeof(int16_t));
-                memset(&h->ref_cache[m][scan8[0] - 1 * 8],
+                memset(&sl->ref_cache[m][scan8[0] - 1 * 8],
                        (sl->intra4x4_pred_mode[h->mb2br_xy[mb_xy - h->mb_stride]] == -1) ? PART_NOT_AVAILABLE : 1, 4);
 
                 if (h->mb_x < h->mb_width - 1) {
-                    AV_COPY32(h->mv_cache[m][scan8[0] + 4 - 1 * 8],
+                    AV_COPY32(sl->mv_cache[m][scan8[0] + 4 - 1 * 8],
                               h->cur_pic.motion_val[m][b_xy - h->b_stride + 4]);
-                    h->ref_cache[m][scan8[0] + 4 - 1 * 8] =
+                    sl->ref_cache[m][scan8[0] + 4 - 1 * 8] =
                         (sl->intra4x4_pred_mode[h->mb2br_xy[mb_xy - h->mb_stride + 1] + 6] == -1 ||
                          sl->intra4x4_pred_mode[h->mb2br_xy[mb_xy - h->mb_stride]] == -1) ? PART_NOT_AVAILABLE : 1;
                 } else
-                    h->ref_cache[m][scan8[0] + 4 - 1 * 8] = PART_NOT_AVAILABLE;
+                    sl->ref_cache[m][scan8[0] + 4 - 1 * 8] = PART_NOT_AVAILABLE;
                 if (h->mb_x > 0) {
-                    AV_COPY32(h->mv_cache[m][scan8[0] - 1 - 1 * 8],
+                    AV_COPY32(sl->mv_cache[m][scan8[0] - 1 - 1 * 8],
                               h->cur_pic.motion_val[m][b_xy - h->b_stride - 1]);
-                    h->ref_cache[m][scan8[0] - 1 - 1 * 8] =
+                    sl->ref_cache[m][scan8[0] - 1 - 1 * 8] =
                         (sl->intra4x4_pred_mode[h->mb2br_xy[mb_xy - h->mb_stride - 1] + 3] == -1) ? PART_NOT_AVAILABLE : 1;
                 } else
-                    h->ref_cache[m][scan8[0] - 1 - 1 * 8] = PART_NOT_AVAILABLE;
+                    sl->ref_cache[m][scan8[0] - 1 - 1 * 8] = PART_NOT_AVAILABLE;
             } else
-                memset(&h->ref_cache[m][scan8[0] - 1 * 8 - 1],
+                memset(&sl->ref_cache[m][scan8[0] - 1 * 8 - 1],
                        PART_NOT_AVAILABLE, 8);
 
             if (h->pict_type != AV_PICTURE_TYPE_B)
@@ -1132,6 +1132,7 @@ static int svq3_decode_frame(AVCodecContext *avctx, void *data,
 {
     SVQ3Context *s     = avctx->priv_data;
     H264Context *h     = &s->h;
+    H264SliceContext *sl = &h->slice_ctx[0];
     int buf_size       = avpkt->size;
     int left;
     uint8_t *buf;
@@ -1270,9 +1271,9 @@ static int svq3_decode_frame(AVCodecContext *avctx, void *data,
         for (i = 0; i < 4; i++) {
             int j;
             for (j = -1; j < 4; j++)
-                h->ref_cache[m][scan8[0] + 8 * i + j] = 1;
+                sl->ref_cache[m][scan8[0] + 8 * i + j] = 1;
             if (i < 3)
-                h->ref_cache[m][scan8[0] + 8 * i + j] = PART_NOT_AVAILABLE;
+                sl->ref_cache[m][scan8[0] + 8 * i + j] = PART_NOT_AVAILABLE;
         }
     }
 

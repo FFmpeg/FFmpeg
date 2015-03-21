@@ -856,11 +856,11 @@ decode_intra_mb:
                 h->sub_mb_type[i]=      b_sub_mb_type_info[ h->sub_mb_type[i] ].type;
             }
             if( IS_DIRECT(h->sub_mb_type[0]|h->sub_mb_type[1]|h->sub_mb_type[2]|h->sub_mb_type[3])) {
-                ff_h264_pred_direct_motion(h, &mb_type);
-                h->ref_cache[0][scan8[4]] =
-                h->ref_cache[1][scan8[4]] =
-                h->ref_cache[0][scan8[12]] =
-                h->ref_cache[1][scan8[12]] = PART_NOT_AVAILABLE;
+                ff_h264_pred_direct_motion(h, sl, &mb_type);
+                sl->ref_cache[0][scan8[4]] =
+                sl->ref_cache[1][scan8[4]] =
+                sl->ref_cache[0][scan8[12]] =
+                sl->ref_cache[1][scan8[12]] = PART_NOT_AVAILABLE;
             }
         }else{
             av_assert2(h->slice_type_nos == AV_PICTURE_TYPE_P); //FIXME SP correct ?
@@ -906,11 +906,11 @@ decode_intra_mb:
         for(list=0; list<h->list_count; list++){
             for(i=0; i<4; i++){
                 if(IS_DIRECT(h->sub_mb_type[i])) {
-                    h->ref_cache[list][ scan8[4*i] ] = h->ref_cache[list][ scan8[4*i]+1 ];
+                    sl->ref_cache[list][ scan8[4*i] ] = sl->ref_cache[list][ scan8[4*i]+1 ];
                     continue;
                 }
-                h->ref_cache[list][ scan8[4*i]   ]=h->ref_cache[list][ scan8[4*i]+1 ]=
-                h->ref_cache[list][ scan8[4*i]+8 ]=h->ref_cache[list][ scan8[4*i]+9 ]= ref[list][i];
+                sl->ref_cache[list][ scan8[4*i]   ]=sl->ref_cache[list][ scan8[4*i]+1 ]=
+                sl->ref_cache[list][ scan8[4*i]+8 ]=sl->ref_cache[list][ scan8[4*i]+9 ]= ref[list][i];
 
                 if(IS_DIR(h->sub_mb_type[i], 0, list)){
                     const int sub_mb_type= h->sub_mb_type[i];
@@ -918,8 +918,8 @@ decode_intra_mb:
                     for(j=0; j<sub_partition_count[i]; j++){
                         int mx, my;
                         const int index= 4*i + block_width*j;
-                        int16_t (* mv_cache)[2]= &h->mv_cache[list][ scan8[index] ];
-                        pred_motion(h, sl, index, block_width, list, h->ref_cache[list][ scan8[index] ], &mx, &my);
+                        int16_t (* mv_cache)[2]= &sl->mv_cache[list][ scan8[index] ];
+                        pred_motion(h, sl, index, block_width, list, sl->ref_cache[list][ scan8[index] ], &mx, &my);
                         mx += get_se_golomb(&h->gb);
                         my += get_se_golomb(&h->gb);
                         tprintf(h->avctx, "final mv:%d %d\n", mx, my);
@@ -940,14 +940,14 @@ decode_intra_mb:
                         mv_cache[ 0 ][1]= my;
                     }
                 }else{
-                    uint32_t *p= (uint32_t *)&h->mv_cache[list][ scan8[4*i] ][0];
+                    uint32_t *p= (uint32_t *)&sl->mv_cache[list][ scan8[4*i] ][0];
                     p[0] = p[1]=
                     p[8] = p[9]= 0;
                 }
             }
         }
     }else if(IS_DIRECT(mb_type)){
-        ff_h264_pred_direct_motion(h, &mb_type);
+        ff_h264_pred_direct_motion(h, sl, &mb_type);
         dct8x8_allowed &= h->sps.direct_8x8_inference_flag;
     }else{
         int list, mx, my, i;
@@ -967,17 +967,17 @@ decode_intra_mb:
                                 return -1;
                             }
                         }
-                    fill_rectangle(&h->ref_cache[list][ scan8[0] ], 4, 4, 8, val, 1);
+                    fill_rectangle(&sl->ref_cache[list][ scan8[0] ], 4, 4, 8, val, 1);
                     }
             }
             for(list=0; list<h->list_count; list++){
                 if(IS_DIR(mb_type, 0, list)){
-                    pred_motion(h, sl, 0, 4, list, h->ref_cache[list][ scan8[0] ], &mx, &my);
+                    pred_motion(h, sl, 0, 4, list, sl->ref_cache[list][ scan8[0] ], &mx, &my);
                     mx += get_se_golomb(&h->gb);
                     my += get_se_golomb(&h->gb);
                     tprintf(h->avctx, "final mv:%d %d\n", mx, my);
 
-                    fill_rectangle(h->mv_cache[list][ scan8[0] ], 4, 4, 8, pack16to32(mx,my), 4);
+                    fill_rectangle(sl->mv_cache[list][ scan8[0] ], 4, 4, 8, pack16to32(mx,my), 4);
                 }
             }
         }
@@ -999,14 +999,14 @@ decode_intra_mb:
                             }
                         }else
                             val= LIST_NOT_USED&0xFF;
-                        fill_rectangle(&h->ref_cache[list][ scan8[0] + 16*i ], 4, 2, 8, val, 1);
+                        fill_rectangle(&sl->ref_cache[list][ scan8[0] + 16*i ], 4, 2, 8, val, 1);
                     }
             }
             for(list=0; list<h->list_count; list++){
                 for(i=0; i<2; i++){
                     unsigned int val;
                     if(IS_DIR(mb_type, i, list)){
-                        pred_16x8_motion(h, sl, 8*i, list, h->ref_cache[list][scan8[0] + 16*i], &mx, &my);
+                        pred_16x8_motion(h, sl, 8*i, list, sl->ref_cache[list][scan8[0] + 16*i], &mx, &my);
                         mx += get_se_golomb(&h->gb);
                         my += get_se_golomb(&h->gb);
                         tprintf(h->avctx, "final mv:%d %d\n", mx, my);
@@ -1014,7 +1014,7 @@ decode_intra_mb:
                         val= pack16to32(mx,my);
                     }else
                         val=0;
-                    fill_rectangle(h->mv_cache[list][ scan8[0] + 16*i ], 4, 2, 8, val, 4);
+                    fill_rectangle(sl->mv_cache[list][ scan8[0] + 16*i ], 4, 2, 8, val, 4);
                 }
             }
         }else{
@@ -1036,14 +1036,14 @@ decode_intra_mb:
                             }
                         }else
                             val= LIST_NOT_USED&0xFF;
-                        fill_rectangle(&h->ref_cache[list][ scan8[0] + 2*i ], 2, 4, 8, val, 1);
+                        fill_rectangle(&sl->ref_cache[list][ scan8[0] + 2*i ], 2, 4, 8, val, 1);
                     }
             }
             for(list=0; list<h->list_count; list++){
                 for(i=0; i<2; i++){
                     unsigned int val;
                     if(IS_DIR(mb_type, i, list)){
-                        pred_8x16_motion(h, sl, i*4, list, h->ref_cache[list][ scan8[0] + 2*i ], &mx, &my);
+                        pred_8x16_motion(h, sl, i*4, list, sl->ref_cache[list][ scan8[0] + 2*i ], &mx, &my);
                         mx += get_se_golomb(&h->gb);
                         my += get_se_golomb(&h->gb);
                         tprintf(h->avctx, "final mv:%d %d\n", mx, my);
@@ -1051,14 +1051,14 @@ decode_intra_mb:
                         val= pack16to32(mx,my);
                     }else
                         val=0;
-                    fill_rectangle(h->mv_cache[list][ scan8[0] + 2*i ], 2, 4, 8, val, 4);
+                    fill_rectangle(sl->mv_cache[list][ scan8[0] + 2*i ], 2, 4, 8, val, 4);
                 }
             }
         }
     }
 
     if(IS_INTER(mb_type))
-        write_back_motion(h, mb_type);
+        write_back_motion(h, sl, mb_type);
 
     if(!IS_INTRA16x16(mb_type)){
         cbp= get_ue_golomb(&h->gb);

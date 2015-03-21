@@ -2043,6 +2043,7 @@ int ff_h264_get_slice_type(const H264Context *h)
 }
 
 static av_always_inline void fill_filter_caches_inter(H264Context *h,
+                                                      H264SliceContext *sl,
                                                       int mb_type, int top_xy,
                                                       int left_xy[LEFT_MBS],
                                                       int top_type,
@@ -2050,8 +2051,8 @@ static av_always_inline void fill_filter_caches_inter(H264Context *h,
                                                       int mb_xy, int list)
 {
     int b_stride = h->b_stride;
-    int16_t(*mv_dst)[2] = &h->mv_cache[list][scan8[0]];
-    int8_t *ref_cache = &h->ref_cache[list][scan8[0]];
+    int16_t(*mv_dst)[2] = &sl->mv_cache[list][scan8[0]];
+    int8_t *ref_cache   = &sl->ref_cache[list][scan8[0]];
     if (IS_INTER(mb_type) || IS_DIRECT(mb_type)) {
         if (USES_LIST(top_type, list)) {
             const int b_xy  = h->mb2b_xy[top_xy] + 3 * b_stride;
@@ -2200,10 +2201,10 @@ static int fill_filter_caches(H264Context *h, H264SliceContext *sl, int mb_type)
     if (IS_INTRA(mb_type))
         return 0;
 
-    fill_filter_caches_inter(h, mb_type, top_xy, left_xy,
+    fill_filter_caches_inter(h, sl, mb_type, top_xy, left_xy,
                              top_type, left_type, mb_xy, 0);
     if (h->list_count == 2)
-        fill_filter_caches_inter(h, mb_type, top_xy, left_xy,
+        fill_filter_caches_inter(h, sl, mb_type, top_xy, left_xy,
                                  top_type, left_type, mb_xy, 1);
 
     nnz       = h->non_zero_count[mb_xy];
