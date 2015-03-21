@@ -534,10 +534,7 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
         av_freep(&h->rbsp_buffer[0]);
         av_freep(&h->rbsp_buffer[1]);
         ff_h264_unref_picture(h, &h->last_pic_for_ec);
-        memcpy(h, h1, offsetof(H264Context, cabac));
-        memcpy(&h->cabac, &h1->cabac,
-               sizeof(H264Context) - offsetof(H264Context, cabac));
-
+        memcpy(h, h1, sizeof(H264Context));
 
         memset(h->sps_buffers, 0, sizeof(h->sps_buffers));
         memset(h->pps_buffers, 0, sizeof(h->pps_buffers));
