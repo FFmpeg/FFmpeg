@@ -223,8 +223,8 @@ static void fill_slice_long(AVCodecContext *avctx, DXVA_Slice_H264_Long *slice,
     slice->first_mb_in_slice     = (h->mb_y >> FIELD_OR_MBAFF_PICTURE(h)) * h->mb_width + h->mb_x;
     slice->NumMbsForSlice        = 0; /* XXX it is set once we have all slices */
     slice->BitOffsetToSliceData  = get_bits_count(&h->gb);
-    slice->slice_type            = ff_h264_get_slice_type(h);
-    if (h->slice_type_fixed)
+    slice->slice_type            = ff_h264_get_slice_type(sl);
+    if (sl->slice_type_fixed)
         slice->slice_type += 5;
     slice->luma_log2_weight_denom       = sl->luma_log2_weight_denom;
     slice->chroma_log2_weight_denom     = sl->chroma_log2_weight_denom;
@@ -278,7 +278,7 @@ static void fill_slice_long(AVCodecContext *avctx, DXVA_Slice_H264_Long *slice,
     slice->slice_qs_delta    = 0; /* XXX not implemented by FFmpeg */
     slice->slice_qp_delta    = sl->qscale - h->pps.init_qp;
     slice->redundant_pic_cnt = h->redundant_pic_count;
-    if (h->slice_type == AV_PICTURE_TYPE_B)
+    if (sl->slice_type == AV_PICTURE_TYPE_B)
         slice->direct_spatial_mv_pred_flag = h->direct_spatial_mv_pred;
     slice->cabac_init_idc = h->pps.cabac ? h->cabac_init_idc : 0;
     if (h->deblocking_filter < 2)
@@ -417,6 +417,7 @@ static int dxva2_h264_decode_slice(AVCodecContext *avctx,
                                    uint32_t size)
 {
     const H264Context *h = avctx->priv_data;
+    const H264SliceContext *sl = &h->slice_ctx[0];
     struct dxva_context *ctx = avctx->hwaccel_context;
     const H264Picture *current_picture = h->cur_pic_ptr;
     struct dxva2_picture_context *ctx_pic = current_picture->hwaccel_picture_private;
@@ -438,7 +439,7 @@ static int dxva2_h264_decode_slice(AVCodecContext *avctx,
                         &ctx_pic->pp, position, size);
     ctx_pic->slice_count++;
 
-    if (h->slice_type != AV_PICTURE_TYPE_I && h->slice_type != AV_PICTURE_TYPE_SI)
+    if (sl->slice_type != AV_PICTURE_TYPE_I && sl->slice_type != AV_PICTURE_TYPE_SI)
         ctx_pic->pp.wBitFields &= ~(1 << 15); /* Set IntraPicFlag to 0 */
     return 0;
 }

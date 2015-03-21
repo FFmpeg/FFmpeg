@@ -336,6 +336,11 @@ typedef struct H264Picture {
 typedef struct H264SliceContext {
     struct H264Context *h264;
 
+    int slice_num;
+    int slice_type;
+    int slice_type_nos;         ///< S free slice type (SI/SP are remapped to I/P)
+    int slice_type_fixed;
+
     int qscale;
     int chroma_qp[2];   // QPc
     int qp_thresh;      ///< QP threshold to skip loopfilter
@@ -467,11 +472,7 @@ typedef struct H264Context {
     uint32_t(*dequant4_coeff[6])[16];
     uint32_t(*dequant8_coeff[6])[64];
 
-    int slice_num;
     uint16_t *slice_table;      ///< slice_table_base + 2*mb_stride + 1
-    int slice_type;
-    int slice_type_nos;         ///< S free slice type (SI/SP are remapped to I/P)
-    int slice_type_fixed;
 
     // interlacing specific flags
     int mb_aff_frame;
@@ -820,7 +821,7 @@ void ff_h264_free_context(H264Context *h);
 /**
  * Reconstruct bitstream slice_type.
  */
-int ff_h264_get_slice_type(const H264Context *h);
+int ff_h264_get_slice_type(const H264SliceContext *sl);
 
 /**
  * Allocate tables.
@@ -831,7 +832,7 @@ int ff_h264_alloc_tables(H264Context *h);
 /**
  * Fill the default_ref_list.
  */
-int ff_h264_fill_default_ref_list(H264Context *h);
+int ff_h264_fill_default_ref_list(H264Context *h, H264SliceContext *sl);
 
 int ff_h264_decode_ref_pic_list_reordering(H264Context *h);
 void ff_h264_fill_mbaff_ref_list(H264Context *h, H264SliceContext *sl);
@@ -882,7 +883,7 @@ void ff_h264_init_cabac_states(H264Context *h, H264SliceContext *sl);
 void ff_h264_init_dequant_tables(H264Context *h);
 
 void ff_h264_direct_dist_scale_factor(H264Context *const h);
-void ff_h264_direct_ref_list_init(H264Context *const h);
+void ff_h264_direct_ref_list_init(H264Context *const h, H264SliceContext *sl);
 void ff_h264_pred_direct_motion(H264Context *const h, H264SliceContext *sl,
                                 int *mb_type);
 
@@ -1097,7 +1098,7 @@ static av_always_inline void write_back_motion(H264Context *h,
     if (USES_LIST(mb_type, 1))
         write_back_motion_list(h, sl, b_stride, b_xy, b8_xy, mb_type, 1);
 
-    if (h->slice_type_nos == AV_PICTURE_TYPE_B && CABAC(h)) {
+    if (sl->slice_type_nos == AV_PICTURE_TYPE_B && CABAC(h)) {
         if (IS_8X8(mb_type)) {
             uint8_t *direct_table = &h->direct_table[4 * h->mb_xy];
             direct_table[1] = h->sub_mb_type[1] >> 1;
@@ -1158,7 +1159,7 @@ int ff_h264_set_parameter_from_sps(H264Context *h);
 void ff_h264_draw_horiz_band(H264Context *h, int y, int height);
 int ff_init_poc(H264Context *h, int pic_field_poc[2], int *pic_poc);
 int ff_pred_weight_table(H264Context *h, H264SliceContext *sl);
-int ff_set_ref_count(H264Context *h);
+int ff_set_ref_count(H264Context *h, H264SliceContext *sl);
 
 int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl, H264Context *h0);
 #define SLICE_SINGLETHREAD 1

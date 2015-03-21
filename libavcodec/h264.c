@@ -1072,7 +1072,7 @@ int ff_pred_weight_table(H264Context *h, H264SliceContext *sl)
                 }
             }
         }
-        if (h->slice_type_nos != AV_PICTURE_TYPE_B)
+        if (sl->slice_type_nos != AV_PICTURE_TYPE_B)
             break;
     }
     sl->use_weight = sl->use_weight || sl->use_weight_chroma;
@@ -1296,7 +1296,7 @@ int ff_h264_set_parameter_from_sps(H264Context *h)
     return 0;
 }
 
-int ff_set_ref_count(H264Context *h)
+int ff_set_ref_count(H264Context *h, H264SliceContext *sl)
 {
     int ref_count[2], list_count;
     int num_ref_idx_active_override_flag;
@@ -1305,17 +1305,17 @@ int ff_set_ref_count(H264Context *h)
     ref_count[0] = h->pps.ref_count[0];
     ref_count[1] = h->pps.ref_count[1];
 
-    if (h->slice_type_nos != AV_PICTURE_TYPE_I) {
+    if (sl->slice_type_nos != AV_PICTURE_TYPE_I) {
         unsigned max[2];
         max[0] = max[1] = h->picture_structure == PICT_FRAME ? 15 : 31;
 
-        if (h->slice_type_nos == AV_PICTURE_TYPE_B)
+        if (sl->slice_type_nos == AV_PICTURE_TYPE_B)
             h->direct_spatial_mv_pred = get_bits1(&h->gb);
         num_ref_idx_active_override_flag = get_bits1(&h->gb);
 
         if (num_ref_idx_active_override_flag) {
             ref_count[0] = get_ue_golomb(&h->gb) + 1;
-            if (h->slice_type_nos == AV_PICTURE_TYPE_B) {
+            if (sl->slice_type_nos == AV_PICTURE_TYPE_B) {
                 ref_count[1] = get_ue_golomb(&h->gb) + 1;
             } else
                 // full range is spec-ok in this case, even for frames
@@ -1329,7 +1329,7 @@ int ff_set_ref_count(H264Context *h)
             return AVERROR_INVALIDDATA;
         }
 
-        if (h->slice_type_nos == AV_PICTURE_TYPE_B)
+        if (sl->slice_type_nos == AV_PICTURE_TYPE_B)
             list_count = 2;
         else
             list_count = 1;
@@ -1579,7 +1579,7 @@ again:
                     break;
 
                 if (h->sei_recovery_frame_cnt >= 0) {
-                    if (h->frame_num != h->sei_recovery_frame_cnt || hx->slice_type_nos != AV_PICTURE_TYPE_I)
+                    if (h->frame_num != h->sei_recovery_frame_cnt || sl->slice_type_nos != AV_PICTURE_TYPE_I)
                         h->valid_recovery_point = 1;
 
                     if (   h->recovery_frame < 0

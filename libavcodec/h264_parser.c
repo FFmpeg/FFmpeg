@@ -135,15 +135,15 @@ static int scan_mmco_reset(AVCodecParserContext *s)
     H264Context      *h = &p->h;
     H264SliceContext *sl = &h->slice_ctx[0];
 
-    h->slice_type_nos = s->pict_type & 3;
+    sl->slice_type_nos = s->pict_type & 3;
 
     if (h->pps.redundant_pic_cnt_present)
         get_ue_golomb(&h->gb); // redundant_pic_count
 
-    if (ff_set_ref_count(h) < 0)
+    if (ff_set_ref_count(h, sl) < 0)
         return AVERROR_INVALIDDATA;
 
-    if (h->slice_type_nos != AV_PICTURE_TYPE_I) {
+    if (sl->slice_type_nos != AV_PICTURE_TYPE_I) {
         int list;
         for (list = 0; list < h->list_count; list++) {
             if (get_bits1(&h->gb)) {
@@ -171,8 +171,8 @@ static int scan_mmco_reset(AVCodecParserContext *s)
         }
     }
 
-    if ((h->pps.weighted_pred && h->slice_type_nos == AV_PICTURE_TYPE_P) ||
-        (h->pps.weighted_bipred_idc == 1 && h->slice_type_nos == AV_PICTURE_TYPE_B))
+    if ((h->pps.weighted_pred && sl->slice_type_nos == AV_PICTURE_TYPE_P) ||
+        (h->pps.weighted_bipred_idc == 1 && sl->slice_type_nos == AV_PICTURE_TYPE_B))
         ff_pred_weight_table(h, sl);
 
     if (get_bits1(&h->gb)) { // adaptive_ref_pic_marking_mode_flag

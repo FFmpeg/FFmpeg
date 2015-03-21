@@ -104,7 +104,7 @@ static void fill_colmap(H264Context *h, int map[2][16 + 32], int list,
     }
 }
 
-void ff_h264_direct_ref_list_init(H264Context *const h)
+void ff_h264_direct_ref_list_init(H264Context *const h, H264SliceContext *sl)
 {
     H264Picture *const ref1 = &h->ref_list[1][0];
     H264Picture *const cur = h->cur_pic_ptr;
@@ -140,7 +140,7 @@ void ff_h264_direct_ref_list_init(H264Context *const h)
         h->col_fieldoff = 2 * h->ref_list[1][0].reference - 3;
     }
 
-    if (h->slice_type_nos != AV_PICTURE_TYPE_B || h->direct_spatial_mv_pred)
+    if (sl->slice_type_nos != AV_PICTURE_TYPE_B || h->direct_spatial_mv_pred)
         return;
 
     for (list = 0; list < 2; list++) {

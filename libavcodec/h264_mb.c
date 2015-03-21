@@ -528,7 +528,7 @@ static av_always_inline void xchg_mb_border(H264Context *h, H264SliceContext *sl
     }
 
     if (h->deblocking_filter == 2) {
-        deblock_topleft = h->slice_table[h->mb_xy - 1 - h->mb_stride] == h->slice_num;
+        deblock_topleft = h->slice_table[h->mb_xy - 1 - h->mb_stride] == sl->slice_num;
         deblock_top     = sl->top_type;
     } else {
         deblock_topleft = (h->mb_x > 0);

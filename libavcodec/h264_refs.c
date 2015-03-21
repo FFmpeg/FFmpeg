@@ -112,11 +112,11 @@ static int add_sorted(H264Picture **sorted, H264Picture **src, int len, int limi
     return out_i;
 }
 
-int ff_h264_fill_default_ref_list(H264Context *h)
+int ff_h264_fill_default_ref_list(H264Context *h, H264SliceContext *sl)
 {
     int i, len;
 
-    if (h->slice_type_nos == AV_PICTURE_TYPE_B) {
+    if (sl->slice_type_nos == AV_PICTURE_TYPE_B) {
         H264Picture *sorted[32];
         int cur_poc, list;
         int lens[2];
@@ -172,7 +172,7 @@ int ff_h264_fill_default_ref_list(H264Context *h)
                 h->default_ref_list[0][i].pic_id,
                 h->default_ref_list[0][i].f.data[0]);
     }
-    if (h->slice_type_nos == AV_PICTURE_TYPE_B) {
+    if (sl->slice_type_nos == AV_PICTURE_TYPE_B) {
         for (i = 0; i < h->ref_count[1]; i++) {
             tprintf(h->avctx, "List1: %s fn:%d 0x%p\n",
                     (h->default_ref_list[1][i].long_ref ? "LT" : "ST"),

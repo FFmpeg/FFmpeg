@@ -468,7 +468,7 @@ void ff_vdpau_h264_picture_complete(H264Context *h)
     render = (struct vdpau_render_state *)h->cur_pic_ptr->f.data[0];
     assert(render);
 
-    render->info.h264.slice_count = h->slice_num;
+    render->info.h264.slice_count = h->current_slice;
     if (render->info.h264.slice_count < 1)
         return;
 

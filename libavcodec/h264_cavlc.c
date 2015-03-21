@@ -716,7 +716,7 @@ int ff_h264_decode_mb_cavlc(H264Context *h, H264SliceContext *sl)
     tprintf(h->avctx, "pic:%d mb:%d/%d\n", h->frame_num, h->mb_x, h->mb_y);
     cbp = 0; /* avoid warning. FIXME: find a solution without slowing
                 down the code */
-    if(h->slice_type_nos != AV_PICTURE_TYPE_I){
+    if (sl->slice_type_nos != AV_PICTURE_TYPE_I) {
         if(h->mb_skip_run==-1)
             h->mb_skip_run= get_ue_golomb_long(&h->gb);
 
@@ -737,7 +737,7 @@ int ff_h264_decode_mb_cavlc(H264Context *h, H264SliceContext *sl)
     sl->prev_mb_skipped = 0;
 
     mb_type= get_ue_golomb(&h->gb);
-    if(h->slice_type_nos == AV_PICTURE_TYPE_B){
+    if (sl->slice_type_nos == AV_PICTURE_TYPE_B) {
         if(mb_type < 23){
             partition_count= b_mb_type_info[mb_type].partition_count;
             mb_type=         b_mb_type_info[mb_type].type;
@@ -745,7 +745,7 @@ int ff_h264_decode_mb_cavlc(H264Context *h, H264SliceContext *sl)
             mb_type -= 23;
             goto decode_intra_mb;
         }
-    }else if(h->slice_type_nos == AV_PICTURE_TYPE_P){
+    } else if (sl->slice_type_nos == AV_PICTURE_TYPE_P) {
         if(mb_type < 5){
             partition_count= p_mb_type_info[mb_type].partition_count;
             mb_type=         p_mb_type_info[mb_type].type;
@@ -754,12 +754,12 @@ int ff_h264_decode_mb_cavlc(H264Context *h, H264SliceContext *sl)
             goto decode_intra_mb;
         }
     }else{
-       av_assert2(h->slice_type_nos == AV_PICTURE_TYPE_I);
-        if(h->slice_type == AV_PICTURE_TYPE_SI && mb_type)
+       av_assert2(sl->slice_type_nos == AV_PICTURE_TYPE_I);
+        if (sl->slice_type == AV_PICTURE_TYPE_SI && mb_type)
             mb_type--;
 decode_intra_mb:
         if(mb_type > 25){
-            av_log(h->avctx, AV_LOG_ERROR, "mb_type %d in %c slice too large at %d %d\n", mb_type, av_get_picture_type_char(h->slice_type), h->mb_x, h->mb_y);
+            av_log(h->avctx, AV_LOG_ERROR, "mb_type %d in %c slice too large at %d %d\n", mb_type, av_get_picture_type_char(sl->slice_type), h->mb_x, h->mb_y);
             return -1;
         }
         partition_count=0;
@@ -771,7 +771,7 @@ decode_intra_mb:
     if(MB_FIELD(h))
         mb_type |= MB_TYPE_INTERLACED;
 
-    h->slice_table[ mb_xy ]= h->slice_num;
+    h->slice_table[mb_xy] = sl->slice_num;
 
     if(IS_INTRA_PCM(mb_type)){
         const int mb_size = ff_h264_mb_sizes[h->sps.chroma_format_idc] *
@@ -845,7 +845,7 @@ decode_intra_mb:
     }else if(partition_count==4){
         int i, j, sub_partition_count[4], list, ref[2][4];
 
-        if(h->slice_type_nos == AV_PICTURE_TYPE_B){
+        if (sl->slice_type_nos == AV_PICTURE_TYPE_B) {
             for(i=0; i<4; i++){
                 h->sub_mb_type[i]= get_ue_golomb_31(&h->gb);
                 if(h->sub_mb_type[i] >=13){
@@ -863,7 +863,7 @@ decode_intra_mb:
                 sl->ref_cache[1][scan8[12]] = PART_NOT_AVAILABLE;
             }
         }else{
-            av_assert2(h->slice_type_nos == AV_PICTURE_TYPE_P); //FIXME SP correct ?
+            av_assert2(sl->slice_type_nos == AV_PICTURE_TYPE_P); //FIXME SP correct ?
             for(i=0; i<4; i++){
                 h->sub_mb_type[i]= get_ue_golomb_31(&h->gb);
                 if(h->sub_mb_type[i] >=4){

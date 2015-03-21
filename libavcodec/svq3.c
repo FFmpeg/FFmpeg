@@ -824,7 +824,7 @@ static int svq3_decode_slice_header(AVCodecContext *avctx)
         return -1;
     }
 
-    h->slice_type = golomb_to_pict_type[slice_id];
+    sl->slice_type = golomb_to_pict_type[slice_id];
 
     if ((header & 0x9F) == 2) {
         i              = (h->mb_num < 64) ? 6 : (1 + av_log2(h->mb_num - 1));
@@ -835,8 +835,8 @@ static int svq3_decode_slice_header(AVCodecContext *avctx)
         h->mb_skip_run = 0;
     }
 
-    h->slice_num      = get_bits(&h->gb, 8);
-    sl->qscale         = get_bits(&h->gb, 5);
+    sl->slice_num     = get_bits(&h->gb, 8);
+    sl->qscale        = get_bits(&h->gb, 5);
     s->adaptive_quant = get_bits1(&h->gb);
 
     /* unknown fields */
@@ -1167,7 +1167,7 @@ static int svq3_decode_frame(AVCodecContext *avctx, void *data,
     if (svq3_decode_slice_header(avctx))
         return -1;
 
-    h->pict_type = h->slice_type;
+    h->pict_type = sl->slice_type;
 
     if (h->pict_type != AV_PICTURE_TYPE_B)
         FFSWAP(H264Picture*, s->next_pic, s->last_pic);
@@ -1233,7 +1233,7 @@ static int svq3_decode_frame(AVCodecContext *avctx, void *data,
                "%c hpel:%d, tpel:%d aqp:%d qp:%d, slice_num:%02X\n",
                av_get_picture_type_char(h->pict_type),
                s->halfpel_flag, s->thirdpel_flag,
-               s->adaptive_quant, h->slice_ctx[0].qscale, h->slice_num);
+               s->adaptive_quant, h->slice_ctx[0].qscale, sl->slice_num);
 
     if (avctx->skip_frame >= AVDISCARD_NONREF && h->pict_type == AV_PICTURE_TYPE_B ||
         avctx->skip_frame >= AVDISCARD_NONKEY && h->pict_type != AV_PICTURE_TYPE_I ||
@@ -1248,7 +1248,7 @@ static int svq3_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     if (h->pict_type == AV_PICTURE_TYPE_B) {
-        h->frame_num_offset = h->slice_num - h->prev_frame_num;
+        h->frame_num_offset = sl->slice_num - h->prev_frame_num;
 
         if (h->frame_num_offset < 0)
             h->frame_num_offset += 256;
@@ -1259,7 +1259,7 @@ static int svq3_decode_frame(AVCodecContext *avctx, void *data,
         }
     } else {
         h->prev_frame_num        = h->frame_num;
-        h->frame_num             = h->slice_num;
+        h->frame_num             = sl->slice_num;
         h->prev_frame_num_offset = h->frame_num - h->prev_frame_num;
 
         if (h->prev_frame_num_offset < 0)
