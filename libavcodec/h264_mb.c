@@ -616,7 +616,7 @@ static av_always_inline void hl_decode_mb_predict_luma(H264Context *h,
                                                        int simple,
                                                        int transform_bypass,
                                                        int pixel_shift,
-                                                       int *block_offset,
+                                                       const int *block_offset,
                                                        int linesize,
                                                        uint8_t *dest_y, int p)
 {
@@ -737,7 +737,7 @@ static av_always_inline void hl_decode_mb_idct_luma(H264Context *h, H264SliceCon
                                                     int is_h264, int simple,
                                                     int transform_bypass,
                                                     int pixel_shift,
-                                                    int *block_offset,
+                                                    const int *block_offset,
                                                     int linesize,
                                                     uint8_t *dest_y, int p)
 {

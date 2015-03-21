@@ -49,7 +49,7 @@ static av_noinline void FUNC(hl_decode_mb)(H264Context *h, H264SliceContext *sl)
     uint8_t *dest_y, *dest_cb, *dest_cr;
     int linesize, uvlinesize /*dct_offset*/;
     int i, j;
-    int *block_offset = &h->block_offset[0];
+    const int *block_offset = &h->block_offset[0];
     const int transform_bypass = !SIMPLE && (sl->qscale == 0 && h->sps.transform_bypass);
     /* is_h264 should always be true if SVQ3 is disabled. */
     const int is_h264 = !CONFIG_SVQ3_DECODER || SIMPLE || h->avctx->codec_id == AV_CODEC_ID_H264;
@@ -278,7 +278,7 @@ static av_noinline void FUNC(hl_decode_mb_444)(H264Context *h, H264SliceContext 
     uint8_t *dest[3];
     int linesize;
     int i, j, p;
-    int *block_offset = &h->block_offset[0];
+    const int *block_offset = &h->block_offset[0];
     const int transform_bypass = !SIMPLE && (sl->qscale == 0 && h->sps.transform_bypass);
     const int plane_count      = (SIMPLE || !CONFIG_GRAY || !(h->flags & CODEC_FLAG_GRAY)) ? 3 : 1;
 
