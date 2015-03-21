@@ -893,7 +893,7 @@ static void implicit_weight_table(const H264Context *h, H264SliceContext *sl, in
         int poc0 = sl->ref_list[0][ref0].poc;
         for (ref1 = ref_start; ref1 < ref_count1; ref1++) {
             int w = 32;
-            if (!sl->ref_list[0][ref0].long_ref && !sl->ref_list[1][ref1].long_ref) {
+            if (!sl->ref_list[0][ref0].parent->long_ref && !sl->ref_list[1][ref1].parent->long_ref) {
                 int poc1 = sl->ref_list[1][ref1].poc;
                 int td   = av_clip_int8(poc1 - poc0);
                 if (td) {
@@ -1869,9 +1869,9 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
         for (i = 0; i < 16; i++) {
             id_list[i] = 60;
             if (j < sl->list_count && i < sl->ref_count[j] &&
-                sl->ref_list[j][i].f.buf[0]) {
+                sl->ref_list[j][i].parent->f.buf[0]) {
                 int k;
-                AVBuffer *buf = sl->ref_list[j][i].f.buf[0]->buffer;
+                AVBuffer *buf = sl->ref_list[j][i].parent->f.buf[0]->buffer;
                 for (k = 0; k < h->short_ref_count; k++)
                     if (h->short_ref[k]->f.buf[0]->buffer == buf) {
                         id_list[i] = k;

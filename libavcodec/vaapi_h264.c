@@ -156,13 +156,13 @@ static int fill_vaapi_ReferenceFrames(VAPictureParameterBufferH264 *pic_param,
  * @param[in]  ref_count   The number of reference pictures in ref_list
  */
 static void fill_vaapi_RefPicList(VAPictureH264 RefPicList[32],
-                                  H264Picture  *ref_list,
+                                  H264Ref  *ref_list,
                                   unsigned int  ref_count)
 {
     unsigned int i, n = 0;
     for (i = 0; i < ref_count; i++)
         if (ref_list[i].reference)
-            fill_vaapi_pic(&RefPicList[n++], &ref_list[i], 0);
+            fill_vaapi_pic(&RefPicList[n++], ref_list[i].parent, 0);
 
     for (; n < 32; n++)
         init_vaapi_pic(&RefPicList[n]);

@@ -77,7 +77,7 @@ static void h264_er_decode_mb(void *opaque, int ref, int mv_dir, int mv_type,
      * practice then correct remapping should be added. */
     if (ref >= sl->ref_count[0])
         ref = 0;
-    if (!sl->ref_list[0][ref].f.data[0]) {
+    if (!sl->ref_list[0][ref].data[0]) {
         av_log(h->avctx, AV_LOG_DEBUG, "Reference not available for error concealing\n");
         ref = 0;
     }

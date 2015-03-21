@@ -333,6 +333,17 @@ typedef struct H264Picture {
     int crop_top;
 } H264Picture;
 
+typedef struct H264Ref {
+    uint8_t *data[3];
+    int linesize[3];
+
+    int reference;
+    int poc;
+    int pic_id;
+
+    H264Picture *parent;
+} H264Ref;
+
 typedef struct H264SliceContext {
     struct H264Context *h264;
     GetBitContext gb;
@@ -430,7 +441,7 @@ typedef struct H264SliceContext {
      */
     unsigned int ref_count[2];          ///< counts frames or fields, depending on current mb mode
     unsigned int list_count;
-    H264Picture ref_list[2][48];        /**< 0..15: frame refs, 16..47: mbaff field refs.
+    H264Ref ref_list[2][48];        /**< 0..15: frame refs, 16..47: mbaff field refs.
                                          *   Reordered version of default_ref_list
                                          *   according to picture reordering in slice header */
     int ref2frm[MAX_SLICES][2][64];     ///< reference to frame number lists, used in the loop filter, the first 2 are for -2,-1
@@ -628,7 +639,7 @@ typedef struct H264Context {
      */
     int max_pic_num;
 
-    H264Picture default_ref_list[2][32]; ///< base reference list for all slices of a coded picture
+    H264Ref default_ref_list[2][32]; ///< base reference list for all slices of a coded picture
     H264Picture *short_ref[32];
     H264Picture *long_ref[32];
     H264Picture *delayed_pic[MAX_DELAYED_PIC_COUNT + 2]; // FIXME size?
