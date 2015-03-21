@@ -794,7 +794,7 @@ static void fill_decode_caches(H264Context *h, H264SliceContext *sl, int mb_type
         }
     }
 
-    h->neighbor_transform_size = !!IS_8x8DCT(top_type) + !!IS_8x8DCT(left_type[LTOP]);
+    sl->neighbor_transform_size = !!IS_8x8DCT(top_type) + !!IS_8x8DCT(left_type[LTOP]);
 }
 
 /**

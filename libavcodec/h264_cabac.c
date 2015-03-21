@@ -2056,7 +2056,7 @@ decode_intra_mb:
     if( IS_INTRA( mb_type ) ) {
         int i, pred_mode;
         if( IS_INTRA4x4( mb_type ) ) {
-            if( dct8x8_allowed && get_cabac_noinline( &h->cabac, &h->cabac_state[399 + h->neighbor_transform_size] ) ) {
+            if (dct8x8_allowed && get_cabac_noinline(&h->cabac, &h->cabac_state[399 + sl->neighbor_transform_size])) {
                 mb_type |= MB_TYPE_8x8DCT;
                 for( i = 0; i < 16; i+=4 ) {
                     int pred = pred_intra_mode(h, sl, i);
@@ -2319,7 +2319,7 @@ decode_intra_mb:
     h->cbp_table[mb_xy] = h->cbp = cbp;
 
     if( dct8x8_allowed && (cbp&15) && !IS_INTRA( mb_type ) ) {
-        mb_type |= MB_TYPE_8x8DCT * get_cabac_noinline( &h->cabac, &h->cabac_state[399 + h->neighbor_transform_size] );
+        mb_type |= MB_TYPE_8x8DCT * get_cabac_noinline(&h->cabac, &h->cabac_state[399 + sl->neighbor_transform_size]);
     }
 
     /* It would be better to do this in fill_decode_caches, but we don't know
