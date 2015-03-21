@@ -1382,17 +1382,13 @@ SwsFilter *sws_getDefaultFilter(float lumaGBlur, float chromaGBlur,
         filter->chrV = sws_getIdentityVec();
     }
 
-    if (!filter->lumH || !filter->lumV || !filter->chrH || !filter->chrV) {
-        sws_freeVec(filter->lumH);
-        sws_freeVec(filter->lumV);
-        sws_freeVec(filter->chrH);
-        sws_freeVec(filter->chrV);
-        av_freep(&filter);
-        return NULL;
-    }
+    if (!filter->lumH || !filter->lumV || !filter->chrH || !filter->chrV)
+        goto fail;
 
     if (chromaSharpen != 0.0) {
         SwsVector *id = sws_getIdentityVec();
+        if (!id)
+            goto fail;
         sws_scaleVec(filter->chrH, -chromaSharpen);
         sws_scaleVec(filter->chrV, -chromaSharpen);
         sws_addVec(filter->chrH, id);
@@ -1402,6 +1398,8 @@ SwsFilter *sws_getDefaultFilter(float lumaGBlur, float chromaGBlur,
 
     if (lumaSharpen != 0.0) {
         SwsVector *id = sws_getIdentityVec();
+        if (!id)
+            goto fail;
         sws_scaleVec(filter->lumH, -lumaSharpen);
         sws_scaleVec(filter->lumV, -lumaSharpen);
         sws_addVec(filter->lumH, id);
@@ -1426,6 +1424,14 @@ SwsFilter *sws_getDefaultFilter(float lumaGBlur, float chromaGBlur,
         sws_printVec2(filter->lumH, NULL, AV_LOG_DEBUG);
 
     return filter;
+
+fail:
+    sws_freeVec(filter->lumH);
+    sws_freeVec(filter->lumV);
+    sws_freeVec(filter->chrH);
+    sws_freeVec(filter->chrV);
+    av_freep(&filter);
+    return NULL;
 }
 
 SwsVector *sws_allocVec(int length)
