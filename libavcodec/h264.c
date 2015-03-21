@@ -405,8 +405,6 @@ void ff_h264_free_tables(H264Context *h, int free_rbsp)
         av_freep(&hx->er.mb_index2xy);
         av_freep(&hx->er.error_status_table);
         av_freep(&hx->er.er_temp_buffer);
-        av_freep(&hx->er.mbintra_table);
-        av_freep(&hx->er.mbskip_table);
 
         if (free_rbsp) {
             av_freep(&hx->rbsp_buffer);
@@ -545,11 +543,6 @@ int ff_h264_context_init(H264Context *h)
 
         FF_ALLOCZ_OR_GOTO(h->avctx, er->error_status_table,
                           mb_array_size * sizeof(uint8_t), fail);
-
-        FF_ALLOC_OR_GOTO(h->avctx, er->mbintra_table, mb_array_size, fail);
-        memset(er->mbintra_table, 1, mb_array_size);
-
-        FF_ALLOCZ_OR_GOTO(h->avctx, er->mbskip_table, mb_array_size + 2, fail);
 
         FF_ALLOC_OR_GOTO(h->avctx, er->er_temp_buffer,
                          h->mb_height * h->mb_stride, fail);
