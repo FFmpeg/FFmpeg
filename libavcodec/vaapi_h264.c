@@ -334,7 +334,7 @@ static int vaapi_h264_decode_slice(AVCodecContext *avctx,
     slice_param->direct_spatial_mv_pred_flag    = sl->slice_type == AV_PICTURE_TYPE_B ? sl->direct_spatial_mv_pred : 0;
     slice_param->num_ref_idx_l0_active_minus1   = sl->list_count > 0 ? sl->ref_count[0] - 1 : 0;
     slice_param->num_ref_idx_l1_active_minus1   = sl->list_count > 1 ? sl->ref_count[1] - 1 : 0;
-    slice_param->cabac_init_idc                 = h->cabac_init_idc;
+    slice_param->cabac_init_idc                 = sl->cabac_init_idc;
     slice_param->slice_qp_delta                 = sl->qscale - h->pps.init_qp;
     slice_param->disable_deblocking_filter_idc  = sl->deblocking_filter < 2 ? !sl->deblocking_filter : sl->deblocking_filter;
     slice_param->slice_alpha_c0_offset_div2     = sl->slice_alpha_c0_offset / 2;

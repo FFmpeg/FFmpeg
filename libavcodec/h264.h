@@ -453,6 +453,7 @@ typedef struct H264SliceContext {
      */
     CABACContext cabac;
     uint8_t cabac_state[1024];
+    int cabac_init_idc;
 } H264SliceContext;
 
 /**
@@ -639,8 +640,6 @@ typedef struct H264Context {
 
     int long_ref_count;     ///< number of actual long term references
     int short_ref_count;    ///< number of actual short term references
-
-    int cabac_init_idc;
 
     /**
      * @name Members for slice based multithreading

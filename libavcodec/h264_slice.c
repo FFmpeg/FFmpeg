@@ -659,7 +659,7 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
     copy_fields(h, h1, poc_lsb, redundant_pic_count);
 
     // reference lists
-    copy_fields(h, h1, short_ref, cabac_init_idc);
+    copy_fields(h, h1, short_ref, thread_context);
 
     copy_picture_range(h->short_ref, h1->short_ref, 32, h, h1);
     copy_picture_range(h->long_ref, h1->long_ref, 32, h, h1);
@@ -1859,7 +1859,7 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl, H264Contex
             av_log(h->avctx, AV_LOG_ERROR, "cabac_init_idc %u overflow\n", tmp);
             return AVERROR_INVALIDDATA;
         }
-        h->cabac_init_idc = tmp;
+        sl->cabac_init_idc = tmp;
     }
 
     sl->last_qscale_diff = 0;
