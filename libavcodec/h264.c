@@ -233,7 +233,8 @@ int ff_h264_check_intra_pred_mode(const H264Context *h, H264SliceContext *sl,
     return mode;
 }
 
-const uint8_t *ff_h264_decode_nal(H264Context *h, const uint8_t *src,
+const uint8_t *ff_h264_decode_nal(H264Context *h, H264SliceContext *sl,
+                                  const uint8_t *src,
                                   int *dst_length, int *consumed, int length)
 {
     int i, si, di;
@@ -293,8 +294,8 @@ const uint8_t *ff_h264_decode_nal(H264Context *h, const uint8_t *src,
     }
 #endif
 
-    av_fast_padded_malloc(&h->rbsp_buffer, &h->rbsp_buffer_size, length+MAX_MBPAIR_SIZE);
-    dst = h->rbsp_buffer;
+    av_fast_padded_malloc(&sl->rbsp_buffer, &sl->rbsp_buffer_size, length+MAX_MBPAIR_SIZE);
+    dst = sl->rbsp_buffer;
 
     if (!dst)
         return NULL;
@@ -402,10 +403,6 @@ void ff_h264_free_tables(H264Context *h, int free_rbsp)
         if (!hx)
             continue;
 
-        if (free_rbsp) {
-            av_freep(&hx->rbsp_buffer);
-            hx->rbsp_buffer_size = 0;
-        }
         if (i)
             av_freep(&h->thread_context[i]);
     }
@@ -427,6 +424,11 @@ void ff_h264_free_tables(H264Context *h, int free_rbsp)
         sl->edge_emu_buffer_allocated   = 0;
         sl->top_borders_allocated[0]    = 0;
         sl->top_borders_allocated[1]    = 0;
+
+        if (free_rbsp) {
+            av_freep(&sl->rbsp_buffer);
+            sl->rbsp_buffer_size            = 0;
+        }
     }
 }
 
@@ -745,8 +747,6 @@ static int decode_init_thread_copy(AVCodecContext *avctx)
         h->slice_ctx[i].h264 = h;
 
     h->avctx               = avctx;
-    h->rbsp_buffer         = NULL;
-    h->rbsp_buffer_size    = 0;
     h->context_initialized = 0;
 
     return 0;
@@ -1392,7 +1392,7 @@ static int get_last_needed_nal(H264Context *h, const uint8_t *buf, int buf_size)
                 continue;
         }
 
-        ptr = ff_h264_decode_nal(h, buf + buf_index, &dst_length, &consumed,
+        ptr = ff_h264_decode_nal(h, &h->slice_ctx[0], buf + buf_index, &dst_length, &consumed,
                                  next_avc - buf_index);
 
         if (!ptr || dst_length < 0)
@@ -1494,7 +1494,7 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size,
             hx = h->thread_context[context_count];
             sl = &h->slice_ctx[context_count];
 
-            ptr = ff_h264_decode_nal(hx, buf + buf_index, &dst_length,
+            ptr = ff_h264_decode_nal(hx, sl, buf + buf_index, &dst_length,
                                      &consumed, next_avc - buf_index);
             if (!ptr || dst_length < 0) {
                 ret = -1;
