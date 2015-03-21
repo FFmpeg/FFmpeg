@@ -357,6 +357,19 @@ typedef struct H264SliceContext {
 
     int chroma_pred_mode;
     int intra16x16_pred_mode;
+
+    int topleft_mb_xy;
+    int top_mb_xy;
+    int topright_mb_xy;
+    int left_mb_xy[LEFT_MBS];
+
+    int topleft_type;
+    int top_type;
+    int topright_type;
+    int left_type[LEFT_MBS];
+
+    const uint8_t *left_block;
+    int topleft_partition;
 } H264SliceContext;
 
 /**
@@ -396,19 +409,6 @@ typedef struct H264Context {
     int workaround_bugs;
 
     // prediction stuff
-    int topleft_mb_xy;
-    int top_mb_xy;
-    int topright_mb_xy;
-    int left_mb_xy[LEFT_MBS];
-
-    int topleft_type;
-    int top_type;
-    int topright_type;
-    int left_type[LEFT_MBS];
-
-    const uint8_t *left_block;
-    int topleft_partition;
-
     int8_t intra4x4_pred_mode_cache[5 * 8];
     int8_t(*intra4x4_pred_mode);
     H264PredContext hpc;

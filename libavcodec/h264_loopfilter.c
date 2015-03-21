@@ -233,6 +233,7 @@ static av_always_inline void filter_mb_edgech(uint8_t *pix, int stride,
 }
 
 static av_always_inline void h264_filter_mb_fast_internal(H264Context *h,
+                                                          H264SliceContext *sl,
                                                           int mb_x, int mb_y,
                                                           uint8_t *img_y,
                                                           uint8_t *img_cb,
@@ -246,8 +247,8 @@ static av_always_inline void h264_filter_mb_fast_internal(H264Context *h,
     int chroma422 = CHROMA422(h);
 
     int mb_xy = h->mb_xy;
-    int left_type= h->left_type[LTOP];
-    int top_type= h->top_type;
+    int left_type = sl->left_type[LTOP];
+    int top_type  = sl->top_type;
 
     int qp_bd_offset = 6 * (h->sps.bit_depth_luma - 8);
     int a = 52 + h->slice_alpha_c0_offset - qp_bd_offset;
@@ -256,7 +257,7 @@ static av_always_inline void h264_filter_mb_fast_internal(H264Context *h,
     int mb_type = h->cur_pic.mb_type[mb_xy];
     int qp      = h->cur_pic.qscale_table[mb_xy];
     int qp0     = h->cur_pic.qscale_table[mb_xy - 1];
-    int qp1     = h->cur_pic.qscale_table[h->top_mb_xy];
+    int qp1     = h->cur_pic.qscale_table[sl->top_mb_xy];
     int qpc = get_chroma_qp( h, 0, qp );
     int qpc0 = get_chroma_qp( h, 0, qp0 );
     int qpc1 = get_chroma_qp( h, 0, qp1 );
@@ -425,12 +426,12 @@ void ff_h264_filter_mb_fast(H264Context *h, H264SliceContext *sl,
     }
 
 #if CONFIG_SMALL
-    h264_filter_mb_fast_internal(h, mb_x, mb_y, img_y, img_cb, img_cr, linesize, uvlinesize, h->pixel_shift);
+    h264_filter_mb_fast_internal(h, sl, mb_x, mb_y, img_y, img_cb, img_cr, linesize, uvlinesize, h->pixel_shift);
 #else
     if(h->pixel_shift){
-        h264_filter_mb_fast_internal(h, mb_x, mb_y, img_y, img_cb, img_cr, linesize, uvlinesize, 1);
+        h264_filter_mb_fast_internal(h, sl, mb_x, mb_y, img_y, img_cb, img_cr, linesize, uvlinesize, 1);
     }else{
-        h264_filter_mb_fast_internal(h, mb_x, mb_y, img_y, img_cb, img_cr, linesize, uvlinesize, 0);
+        h264_filter_mb_fast_internal(h, sl, mb_x, mb_y, img_y, img_cb, img_cr, linesize, uvlinesize, 0);
     }
 #endif
 }
@@ -476,8 +477,8 @@ static av_always_inline void filter_mb_dir(H264Context *h, H264SliceContext *sl,
     int chroma_qp_avg[2];
     int chroma444 = CHROMA444(h);
     int chroma422 = CHROMA422(h);
-    const int mbm_xy = dir == 0 ? mb_xy -1 : h->top_mb_xy;
-    const int mbm_type = dir == 0 ? h->left_type[LTOP] : h->top_type;
+    const int mbm_xy = dir == 0 ? mb_xy -1 : sl->top_mb_xy;
+    const int mbm_type = dir == 0 ? sl->left_type[LTOP] : sl->top_type;
 
     // how often to recheck mv-based bS when iterating between edges
     static const uint8_t mask_edge_tab[2][8]={{0,3,3,3,1,1,1,1},
@@ -728,9 +729,9 @@ void ff_h264_filter_mb(H264Context *h, H264SliceContext *sl,
 
     if (FRAME_MBAFF(h)
             // and current and left pair do not have the same interlaced type
-            && IS_INTERLACED(mb_type^h->left_type[LTOP])
+            && IS_INTERLACED(mb_type ^ sl->left_type[LTOP])
             // and left mb is in available to us
-            && h->left_type[LTOP]) {
+            && sl->left_type[LTOP]) {
         /* First vertical edge is different in MBAFF frames
          * There are 8 different bS to compute and 2 different Qp
          */
@@ -758,8 +759,8 @@ void ff_h264_filter_mb(H264Context *h, H264SliceContext *sl,
             const uint8_t *off= offset[MB_FIELD(h)][mb_y&1];
             for( i = 0; i < 8; i++ ) {
                 int j= MB_FIELD(h) ? i>>2 : i&1;
-                int mbn_xy = h->left_mb_xy[LEFT(j)];
-                int mbn_type= h->left_type[LEFT(j)];
+                int mbn_xy = sl->left_mb_xy[LEFT(j)];
+                int mbn_type = sl->left_type[LEFT(j)];
 
                 if( IS_INTRA( mbn_type ) )
                     bS[i] = 4;
@@ -774,8 +775,8 @@ void ff_h264_filter_mb(H264Context *h, H264SliceContext *sl,
         }
 
         mb_qp   = h->cur_pic.qscale_table[mb_xy];
-        mbn0_qp = h->cur_pic.qscale_table[h->left_mb_xy[0]];
-        mbn1_qp = h->cur_pic.qscale_table[h->left_mb_xy[1]];
+        mbn0_qp = h->cur_pic.qscale_table[sl->left_mb_xy[0]];
+        mbn1_qp = h->cur_pic.qscale_table[sl->left_mb_xy[1]];
         qp[0] = ( mb_qp + mbn0_qp + 1 ) >> 1;
         bqp[0] = ( get_chroma_qp( h, 0, mb_qp ) +
                    get_chroma_qp( h, 0, mbn0_qp ) + 1 ) >> 1;

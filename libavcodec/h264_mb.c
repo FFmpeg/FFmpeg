@@ -500,7 +500,8 @@ static av_always_inline void prefetch_motion(H264Context *h, int list,
     }
 }
 
-static av_always_inline void xchg_mb_border(H264Context *h, uint8_t *src_y,
+static av_always_inline void xchg_mb_border(H264Context *h, H264SliceContext *sl,
+                                            uint8_t *src_y,
                                             uint8_t *src_cb, uint8_t *src_cr,
                                             int linesize, int uvlinesize,
                                             int xchg, int chroma444,
@@ -523,7 +524,7 @@ static av_always_inline void xchg_mb_border(H264Context *h, uint8_t *src_y,
 
     if (h->deblocking_filter == 2) {
         deblock_topleft = h->slice_table[h->mb_xy - 1 - h->mb_stride] == h->slice_num;
-        deblock_top     = h->top_type;
+        deblock_top     = sl->top_type;
     } else {
         deblock_topleft = (h->mb_x > 0);
         deblock_top     = (h->mb_y > !!MB_FIELD(h));

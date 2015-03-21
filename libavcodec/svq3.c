@@ -376,6 +376,7 @@ static inline int svq3_mc_dir(SVQ3Context *s, int size, int mode,
 {
     int i, j, k, mx, my, dx, dy, x, y;
     H264Context *h          = &s->h;
+    H264SliceContext *sl    = &h->slice_ctx[0];
     const int part_width    = ((size & 5) == 4) ? 4 : 16 >> (size & 1);
     const int part_height   = 16 >> ((unsigned)(size + 1) / 3);
     const int extra_width   = (mode == PREDICT_MODE) ? -16 * 6 : 0;
@@ -393,7 +394,7 @@ static inline int svq3_mc_dir(SVQ3Context *s, int size, int mode,
                 (j >> 1 & 4) + (i      & 8);
 
             if (mode != PREDICT_MODE) {
-                pred_motion(h, k, part_width >> 2, dir, 1, &mx, &my);
+                pred_motion(h, sl, k, part_width >> 2, dir, 1, &mx, &my);
             } else {
                 mx = s->next_pic->motion_val[0][b_xy][0] << 1;
                 my = s->next_pic->motion_val[0][b_xy][1] << 1;

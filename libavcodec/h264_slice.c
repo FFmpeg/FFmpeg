@@ -2153,9 +2153,9 @@ static int fill_filter_caches(H264Context *h, H264SliceContext *sl, int mb_type)
         }
     }
 
-    h->top_mb_xy        = top_xy;
-    h->left_mb_xy[LTOP] = left_xy[LTOP];
-    h->left_mb_xy[LBOT] = left_xy[LBOT];
+    sl->top_mb_xy        = top_xy;
+    sl->left_mb_xy[LTOP] = left_xy[LTOP];
+    sl->left_mb_xy[LBOT] = left_xy[LBOT];
     {
         /* For sufficiently low qp, filtering wouldn't do anything.
          * This is a conservative estimate: could also check beta_offset
@@ -2191,9 +2191,9 @@ static int fill_filter_caches(H264Context *h, H264SliceContext *sl, int mb_type)
         if (h->slice_table[left_xy[LBOT]] == 0xFFFF)
             left_type[LTOP] = left_type[LBOT] = 0;
     }
-    h->top_type        = top_type;
-    h->left_type[LTOP] = left_type[LTOP];
-    h->left_type[LBOT] = left_type[LBOT];
+    sl->top_type        = top_type;
+    sl->left_type[LTOP] = left_type[LTOP];
+    sl->left_type[LBOT] = left_type[LBOT];
 
     if (IS_INTRA(mb_type))
         return 0;

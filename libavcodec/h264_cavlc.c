@@ -792,8 +792,8 @@ decode_intra_mb:
     local_ref_count[0] = h->ref_count[0] << MB_MBAFF(h);
     local_ref_count[1] = h->ref_count[1] << MB_MBAFF(h);
 
-    fill_decode_neighbors(h, mb_type);
-    fill_decode_caches(h, mb_type);
+    fill_decode_neighbors(h, sl, mb_type);
+    fill_decode_caches(h, sl, mb_type);
 
     //mb_pred
     if(IS_INTRA(mb_type)){
@@ -914,7 +914,7 @@ decode_intra_mb:
                         int mx, my;
                         const int index= 4*i + block_width*j;
                         int16_t (* mv_cache)[2]= &h->mv_cache[list][ scan8[index] ];
-                        pred_motion(h, index, block_width, list, h->ref_cache[list][ scan8[index] ], &mx, &my);
+                        pred_motion(h, sl, index, block_width, list, h->ref_cache[list][ scan8[index] ], &mx, &my);
                         mx += get_se_golomb(&h->gb);
                         my += get_se_golomb(&h->gb);
                         tprintf(h->avctx, "final mv:%d %d\n", mx, my);
@@ -967,7 +967,7 @@ decode_intra_mb:
             }
             for(list=0; list<h->list_count; list++){
                 if(IS_DIR(mb_type, 0, list)){
-                    pred_motion(h, 0, 4, list, h->ref_cache[list][ scan8[0] ], &mx, &my);
+                    pred_motion(h, sl, 0, 4, list, h->ref_cache[list][ scan8[0] ], &mx, &my);
                     mx += get_se_golomb(&h->gb);
                     my += get_se_golomb(&h->gb);
                     tprintf(h->avctx, "final mv:%d %d\n", mx, my);
@@ -1001,7 +1001,7 @@ decode_intra_mb:
                 for(i=0; i<2; i++){
                     unsigned int val;
                     if(IS_DIR(mb_type, i, list)){
-                        pred_16x8_motion(h, 8*i, list, h->ref_cache[list][scan8[0] + 16*i], &mx, &my);
+                        pred_16x8_motion(h, sl, 8*i, list, h->ref_cache[list][scan8[0] + 16*i], &mx, &my);
                         mx += get_se_golomb(&h->gb);
                         my += get_se_golomb(&h->gb);
                         tprintf(h->avctx, "final mv:%d %d\n", mx, my);
@@ -1038,7 +1038,7 @@ decode_intra_mb:
                 for(i=0; i<2; i++){
                     unsigned int val;
                     if(IS_DIR(mb_type, i, list)){
-                        pred_8x16_motion(h, i*4, list, h->ref_cache[list][ scan8[0] + 2*i ], &mx, &my);
+                        pred_8x16_motion(h, sl, i*4, list, h->ref_cache[list][ scan8[0] + 2*i ], &mx, &my);
                         mx += get_se_golomb(&h->gb);
                         my += get_se_golomb(&h->gb);
                         tprintf(h->avctx, "final mv:%d %d\n", mx, my);
