@@ -2400,7 +2400,7 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
     H264Context       *h = sl->h264;
     int lf_x_start = h->mb_x;
 
-    h->mb_skip_run = -1;
+    sl->mb_skip_run = -1;
 
     av_assert0(h->block_offset[15] == (4 * ((scan8[15] - scan8[0]) & 7) << h->pixel_shift) + 4 * h->linesize * ((scan8[15] - scan8[0]) >> 3));
 
@@ -2546,7 +2546,7 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
                 }
             }
 
-            if (get_bits_left(&h->gb) <= 0 && h->mb_skip_run <= 0) {
+            if (get_bits_left(&h->gb) <= 0 && sl->mb_skip_run <= 0) {
                 tprintf(h->avctx, "slice end %d %d\n",
                         get_bits_count(&h->gb), h->gb.size_in_bits);
 

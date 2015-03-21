@@ -393,6 +393,8 @@ typedef struct H264SliceContext {
     ptrdiff_t mb_linesize;  ///< may be equal to s->linesize or s->linesize * 2, for mbaff
     ptrdiff_t mb_uvlinesize;
 
+    int mb_skip_run;
+
     int redundant_pic_count;
 
     /**
@@ -568,7 +570,6 @@ typedef struct H264Context {
     int mb_x, mb_y;
     int resync_mb_x;
     int resync_mb_y;
-    int mb_skip_run;
     int mb_height, mb_width;
     int mb_stride;
     int mb_num;

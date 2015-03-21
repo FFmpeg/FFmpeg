@@ -717,12 +717,12 @@ int ff_h264_decode_mb_cavlc(H264Context *h, H264SliceContext *sl)
     cbp = 0; /* avoid warning. FIXME: find a solution without slowing
                 down the code */
     if (sl->slice_type_nos != AV_PICTURE_TYPE_I) {
-        if(h->mb_skip_run==-1)
-            h->mb_skip_run= get_ue_golomb_long(&h->gb);
+        if (sl->mb_skip_run == -1)
+            sl->mb_skip_run = get_ue_golomb_long(&h->gb);
 
-        if (h->mb_skip_run--) {
+        if (sl->mb_skip_run--) {
             if(FRAME_MBAFF(h) && (h->mb_y&1) == 0){
-                if(h->mb_skip_run==0)
+                if (sl->mb_skip_run == 0)
                     h->mb_mbaff = h->mb_field_decoding_flag = get_bits1(&h->gb);
             }
             decode_mb_skip(h, sl);

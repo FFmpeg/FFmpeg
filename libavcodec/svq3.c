@@ -828,11 +828,11 @@ static int svq3_decode_slice_header(AVCodecContext *avctx)
 
     if ((header & 0x9F) == 2) {
         i              = (h->mb_num < 64) ? 6 : (1 + av_log2(h->mb_num - 1));
-        h->mb_skip_run = get_bits(&h->gb, i) -
+        sl->mb_skip_run = get_bits(&h->gb, i) -
                          (h->mb_y * h->mb_width + h->mb_x);
     } else {
         skip_bits1(&h->gb);
-        h->mb_skip_run = 0;
+        sl->mb_skip_run = 0;
     }
 
     sl->slice_num     = get_bits(&h->gb, 8);
