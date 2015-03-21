@@ -778,7 +778,7 @@ decode_intra_mb:
                             h->sps.bit_depth_luma;
 
         // We assume these blocks are very rare so we do not optimize it.
-        h->intra_pcm_ptr = align_get_bits(&h->gb);
+        sl->intra_pcm_ptr = align_get_bits(&h->gb);
         if (get_bits_left(&h->gb) < mb_size) {
             av_log(h->avctx, AV_LOG_ERROR, "Not enough data for an intra PCM block.\n");
             return AVERROR_INVALIDDATA;
