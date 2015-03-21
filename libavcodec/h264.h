@@ -398,6 +398,8 @@ typedef struct H264SliceContext {
 
     int dist_scale_factor[32];
     int dist_scale_factor_field[2][32];
+    int map_col_to_list0[2][16 + 32];
+    int map_col_to_list0_field[2][2][16 + 32];
 
     /**
      * non zero coeff count cache.
@@ -489,9 +491,6 @@ typedef struct H264Context {
     int mb_mbaff;               ///< mb_aff_frame && mb_field_decoding_flag
     int picture_structure;
     int first_field;
-
-    int map_col_to_list0[2][16 + 32];
-    int map_col_to_list0_field[2][2][16 + 32];
 
     /**
      * num_ref_idx_l0/1_active_minus1 + 1

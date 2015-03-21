@@ -145,10 +145,10 @@ void ff_h264_direct_ref_list_init(H264Context *const h, H264SliceContext *sl)
         return;
 
     for (list = 0; list < 2; list++) {
-        fill_colmap(h, h->map_col_to_list0, list, sidx, ref1sidx, 0);
+        fill_colmap(h, sl->map_col_to_list0, list, sidx, ref1sidx, 0);
         if (FRAME_MBAFF(h))
             for (field = 0; field < 2; field++)
-                fill_colmap(h, h->map_col_to_list0_field[field], list, field,
+                fill_colmap(h, sl->map_col_to_list0_field[field], list, field,
                             field, 1);
     }
 }
@@ -555,14 +555,14 @@ single_col:
     }
 
     {
-        const int *map_col_to_list0[2] = { h->map_col_to_list0[0],
-                                           h->map_col_to_list0[1] };
+        const int *map_col_to_list0[2] = { sl->map_col_to_list0[0],
+                                           sl->map_col_to_list0[1] };
         const int *dist_scale_factor = sl->dist_scale_factor;
         int ref_offset;
 
         if (FRAME_MBAFF(h) && IS_INTERLACED(*mb_type)) {
-            map_col_to_list0[0] = h->map_col_to_list0_field[h->mb_y & 1][0];
-            map_col_to_list0[1] = h->map_col_to_list0_field[h->mb_y & 1][1];
+            map_col_to_list0[0] = sl->map_col_to_list0_field[h->mb_y & 1][0];
+            map_col_to_list0[1] = sl->map_col_to_list0_field[h->mb_y & 1][1];
             dist_scale_factor   = sl->dist_scale_factor_field[h->mb_y & 1];
         }
         ref_offset = (h->ref_list[1][0].mbaff << 4) & (mb_type_col[0] >> 3);
