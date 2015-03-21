@@ -892,10 +892,10 @@ void ff_h264_direct_ref_list_init(const H264Context *const h, H264SliceContext *
 void ff_h264_pred_direct_motion(const H264Context *const h, H264SliceContext *sl,
                                 int *mb_type);
 
-void ff_h264_filter_mb_fast(H264Context *h, H264SliceContext *sl, int mb_x, int mb_y,
+void ff_h264_filter_mb_fast(const H264Context *h, H264SliceContext *sl, int mb_x, int mb_y,
                             uint8_t *img_y, uint8_t *img_cb, uint8_t *img_cr,
                             unsigned int linesize, unsigned int uvlinesize);
-void ff_h264_filter_mb(H264Context *h, H264SliceContext *sl, int mb_x, int mb_y,
+void ff_h264_filter_mb(const H264Context *h, H264SliceContext *sl, int mb_x, int mb_y,
                        uint8_t *img_y, uint8_t *img_cb, uint8_t *img_cr,
                        unsigned int linesize, unsigned int uvlinesize);
 
