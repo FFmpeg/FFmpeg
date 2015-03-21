@@ -711,6 +711,11 @@ static int h264_frame_start(H264Context *h)
     if ((ret = ff_h264_ref_picture(h, &h->cur_pic, h->cur_pic_ptr)) < 0)
         return ret;
 
+    for (i = 0; i < h->nb_slice_ctx; i++) {
+        h->slice_ctx[i].linesize   = h->cur_pic_ptr->f.linesize[0];
+        h->slice_ctx[i].uvlinesize = h->cur_pic_ptr->f.linesize[1];
+    }
+
     if (CONFIG_ERROR_RESILIENCE) {
         ff_er_frame_start(&h->slice_ctx[0].er);
         ff_h264_set_erpic(&h->slice_ctx[0].er.last_pic, NULL);
