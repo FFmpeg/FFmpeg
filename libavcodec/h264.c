@@ -592,18 +592,7 @@ av_cold int ff_h264_decode_init(AVCodecContext *avctx)
 
     h->avctx = avctx;
 
-    h->bit_depth_luma    = 8;
-    h->chroma_format_idc = 1;
-
-    ff_h264dsp_init(&h->h264dsp, 8, 1);
-    ff_h264chroma_init(&h->h264chroma, h->sps.bit_depth_chroma);
-    ff_h264qpel_init(&h->h264qpel, 8);
-    ff_h264_pred_init(&h->hpc, h->avctx->codec_id, 8, 1);
-
     h->dequant_coeff_pps = -1;
-
-    /* needed so that IDCT permutation is known early */
-    ff_videodsp_init(&h->vdsp, 8);
     h->cur_chroma_format_idc = -1;
 
     memset(h->pps.scaling_matrix4, 16, 6 * 16 * sizeof(uint8_t));
@@ -624,9 +613,6 @@ av_cold int ff_h264_decode_init(AVCodecContext *avctx)
     ff_h264_decode_init_vlc();
 
     ff_init_cabac_states();
-
-    h->pixel_shift        = 0;
-    h->sps.bit_depth_luma = avctx->bits_per_raw_sample = 8;
 
     h->nb_slice_ctx = (avctx->active_thread_type & FF_THREAD_SLICE) ?  H264_MAX_THREADS : 1;
     h->slice_ctx = av_mallocz_array(h->nb_slice_ctx, sizeof(*h->slice_ctx));
