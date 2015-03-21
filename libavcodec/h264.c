@@ -449,6 +449,9 @@ int ff_h264_alloc_tables(H264Context *h)
                       row_mb_num, 16 * sizeof(uint8_t), fail);
     FF_ALLOCZ_ARRAY_OR_GOTO(h->avctx, h->mvd_table[1],
                       row_mb_num, 16 * sizeof(uint8_t), fail);
+    h->slice_ctx[0].mvd_table[0] = h->mvd_table[0];
+    h->slice_ctx[0].mvd_table[1] = h->mvd_table[1];
+
     FF_ALLOCZ_OR_GOTO(h->avctx, h->direct_table,
                       4 * big_mb_num * sizeof(uint8_t), fail);
     FF_ALLOCZ_OR_GOTO(h->avctx, h->list_counts,

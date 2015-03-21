@@ -439,6 +439,8 @@ typedef struct H264SliceContext {
     ///< check that i is not too large or ensure that there is some unused stuff after mb
     int16_t mb_padding[256 * 2];
 
+    uint8_t (*mvd_table[2])[2];
+
     /**
      * Cabac
      */
@@ -1065,7 +1067,7 @@ static av_always_inline void write_back_motion_list(H264Context *h,
     AV_COPY128(mv_dst + 2 * b_stride, mv_src + 8 * 2);
     AV_COPY128(mv_dst + 3 * b_stride, mv_src + 8 * 3);
     if (CABAC(h)) {
-        uint8_t (*mvd_dst)[2] = &h->mvd_table[list][FMO ? 8 * h->mb_xy
+        uint8_t (*mvd_dst)[2] = &sl->mvd_table[list][FMO ? 8 * h->mb_xy
                                                         : h->mb2br_xy[h->mb_xy]];
         uint8_t(*mvd_src)[2]  = &h->mvd_cache[list][scan8[0]];
         if (IS_SKIP(mb_type)) {

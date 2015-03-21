@@ -689,7 +689,7 @@ static void fill_decode_caches(H264Context *h, H264SliceContext *sl, int mb_type
 
             if (!(mb_type & (MB_TYPE_SKIP | MB_TYPE_DIRECT2))) {
                 uint8_t(*mvd_cache)[2]   = &h->mvd_cache[list][scan8[0]];
-                uint8_t(*mvd)[2]         = h->mvd_table[list];
+                uint8_t(*mvd)[2]         = sl->mvd_table[list];
                 ref_cache[2 + 8 * 0] =
                 ref_cache[2 + 8 * 2] = PART_NOT_AVAILABLE;
                 AV_ZERO32(mv_cache[2 + 8 * 0]);

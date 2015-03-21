@@ -388,6 +388,8 @@ static void clone_tables(H264Context *dst, H264SliceContext *sl,
                          H264Context *src, int i)
 {
     sl->intra4x4_pred_mode     = src->intra4x4_pred_mode + i * 8 * 2 * src->mb_stride;
+    sl->mvd_table[0]           = src->mvd_table[0] + i * 8 * 2 * src->mb_stride;
+    sl->mvd_table[1]           = src->mvd_table[1] + i * 8 * 2 * src->mb_stride;
 
     dst->non_zero_count         = src->non_zero_count;
     dst->slice_table            = src->slice_table;
@@ -395,8 +397,6 @@ static void clone_tables(H264Context *dst, H264SliceContext *sl,
     dst->mb2b_xy                = src->mb2b_xy;
     dst->mb2br_xy               = src->mb2br_xy;
     dst->chroma_pred_mode_table = src->chroma_pred_mode_table;
-    dst->mvd_table[0]           = src->mvd_table[0] + i * 8 * 2 * src->mb_stride;
-    dst->mvd_table[1]           = src->mvd_table[1] + i * 8 * 2 * src->mb_stride;
     dst->direct_table           = src->direct_table;
     dst->list_counts            = src->list_counts;
     dst->DPB                    = src->DPB;
