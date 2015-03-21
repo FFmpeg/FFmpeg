@@ -2307,16 +2307,16 @@ static void loop_filter(H264Context *h, H264SliceContext *sl, int start_x, int e
                 // FIXME simplify above
 
                 if (MB_FIELD(h)) {
-                    linesize   = h->mb_linesize   = h->linesize   * 2;
-                    uvlinesize = h->mb_uvlinesize = h->uvlinesize * 2;
+                    linesize   = sl->mb_linesize   = h->linesize   * 2;
+                    uvlinesize = sl->mb_uvlinesize = h->uvlinesize * 2;
                     if (mb_y & 1) { // FIXME move out of this function?
                         dest_y  -= h->linesize   * 15;
                         dest_cb -= h->uvlinesize * (block_h - 1);
                         dest_cr -= h->uvlinesize * (block_h - 1);
                     }
                 } else {
-                    linesize   = h->mb_linesize   = h->linesize;
-                    uvlinesize = h->mb_uvlinesize = h->uvlinesize;
+                    linesize   = sl->mb_linesize   = h->linesize;
+                    uvlinesize = sl->mb_uvlinesize = h->uvlinesize;
                 }
                 backup_mb_border(h, dest_y, dest_cb, dest_cr, linesize,
                                  uvlinesize, 0);

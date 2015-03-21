@@ -67,8 +67,8 @@ static av_noinline void FUNC(hl_decode_mb)(H264Context *h, H264SliceContext *sl)
     h->list_counts[mb_xy] = h->list_count;
 
     if (!SIMPLE && MB_FIELD(h)) {
-        linesize     = h->mb_linesize = h->linesize * 2;
-        uvlinesize   = h->mb_uvlinesize = h->uvlinesize * 2;
+        linesize     = sl->mb_linesize = h->linesize * 2;
+        uvlinesize   = sl->mb_uvlinesize = h->uvlinesize * 2;
         block_offset = &h->block_offset[48];
         if (mb_y & 1) { // FIXME move out of this function?
             dest_y  -= h->linesize * 15;
@@ -94,8 +94,8 @@ static av_noinline void FUNC(hl_decode_mb)(H264Context *h, H264SliceContext *sl)
             }
         }
     } else {
-        linesize   = h->mb_linesize   = h->linesize;
-        uvlinesize = h->mb_uvlinesize = h->uvlinesize;
+        linesize   = sl->mb_linesize   = h->linesize;
+        uvlinesize = sl->mb_uvlinesize = h->uvlinesize;
         // dct_offset = s->linesize * 16;
     }
 
@@ -292,7 +292,7 @@ static av_noinline void FUNC(hl_decode_mb_444)(H264Context *h, H264SliceContext 
     h->list_counts[mb_xy] = h->list_count;
 
     if (!SIMPLE && MB_FIELD(h)) {
-        linesize     = h->mb_linesize = h->mb_uvlinesize = h->linesize * 2;
+        linesize     = sl->mb_linesize = sl->mb_uvlinesize = h->linesize * 2;
         block_offset = &h->block_offset[48];
         if (mb_y & 1) // FIXME move out of this function?
             for (p = 0; p < 3; p++)
@@ -316,7 +316,7 @@ static av_noinline void FUNC(hl_decode_mb_444)(H264Context *h, H264SliceContext 
             }
         }
     } else {
-        linesize = h->mb_linesize = h->mb_uvlinesize = h->linesize;
+        linesize = sl->mb_linesize = sl->mb_uvlinesize = h->linesize;
     }
 
     if (!SIMPLE && IS_INTRA_PCM(mb_type)) {

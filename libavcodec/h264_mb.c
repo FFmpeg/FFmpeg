@@ -216,7 +216,7 @@ static av_always_inline void mc_dir_part(H264Context *h, H264SliceContext *sl,
     const int mx      = sl->mv_cache[list][scan8[n]][0] + src_x_offset * 8;
     int my            = sl->mv_cache[list][scan8[n]][1] + src_y_offset * 8;
     const int luma_xy = (mx & 3) + ((my & 3) << 2);
-    ptrdiff_t offset  = (mx >> 2) * (1 << pixel_shift) + (my >> 2) * h->mb_linesize;
+    ptrdiff_t offset  = (mx >> 2) * (1 << pixel_shift) + (my >> 2) * sl->mb_linesize;
     uint8_t *src_y    = pic->f.data[0] + offset;
     uint8_t *src_cb, *src_cr;
     int extra_width  = 0;
@@ -238,17 +238,17 @@ static av_always_inline void mc_dir_part(H264Context *h, H264SliceContext *sl,
         full_mx + 16 /*FIXME*/ > pic_width  + extra_width  ||
         full_my + 16 /*FIXME*/ > pic_height + extra_height) {
         h->vdsp.emulated_edge_mc(h->edge_emu_buffer,
-                                 src_y - (2 << pixel_shift) - 2 * h->mb_linesize,
-                                 h->mb_linesize, h->mb_linesize,
+                                 src_y - (2 << pixel_shift) - 2 * sl->mb_linesize,
+                                 sl->mb_linesize, sl->mb_linesize,
                                  16 + 5, 16 + 5 /*FIXME*/, full_mx - 2,
                                  full_my - 2, pic_width, pic_height);
-        src_y = h->edge_emu_buffer + (2 << pixel_shift) + 2 * h->mb_linesize;
+        src_y = h->edge_emu_buffer + (2 << pixel_shift) + 2 * sl->mb_linesize;
         emu   = 1;
     }
 
-    qpix_op[luma_xy](dest_y, src_y, h->mb_linesize); // FIXME try variable height perhaps?
+    qpix_op[luma_xy](dest_y, src_y, sl->mb_linesize); // FIXME try variable height perhaps?
     if (!square)
-        qpix_op[luma_xy](dest_y + delta, src_y + delta, h->mb_linesize);
+        qpix_op[luma_xy](dest_y + delta, src_y + delta, sl->mb_linesize);
 
     if (CONFIG_GRAY && h->flags & CODEC_FLAG_GRAY)
         return;
@@ -257,30 +257,30 @@ static av_always_inline void mc_dir_part(H264Context *h, H264SliceContext *sl,
         src_cb = pic->f.data[1] + offset;
         if (emu) {
             h->vdsp.emulated_edge_mc(h->edge_emu_buffer,
-                                     src_cb - (2 << pixel_shift) - 2 * h->mb_linesize,
-                                     h->mb_linesize, h->mb_linesize,
+                                     src_cb - (2 << pixel_shift) - 2 * sl->mb_linesize,
+                                     sl->mb_linesize, sl->mb_linesize,
                                      16 + 5, 16 + 5 /*FIXME*/,
                                      full_mx - 2, full_my - 2,
                                      pic_width, pic_height);
-            src_cb = h->edge_emu_buffer + (2 << pixel_shift) + 2 * h->mb_linesize;
+            src_cb = h->edge_emu_buffer + (2 << pixel_shift) + 2 * sl->mb_linesize;
         }
-        qpix_op[luma_xy](dest_cb, src_cb, h->mb_linesize); // FIXME try variable height perhaps?
+        qpix_op[luma_xy](dest_cb, src_cb, sl->mb_linesize); // FIXME try variable height perhaps?
         if (!square)
-            qpix_op[luma_xy](dest_cb + delta, src_cb + delta, h->mb_linesize);
+            qpix_op[luma_xy](dest_cb + delta, src_cb + delta, sl->mb_linesize);
 
         src_cr = pic->f.data[2] + offset;
         if (emu) {
             h->vdsp.emulated_edge_mc(h->edge_emu_buffer,
-                                     src_cr - (2 << pixel_shift) - 2 * h->mb_linesize,
-                                     h->mb_linesize, h->mb_linesize,
+                                     src_cr - (2 << pixel_shift) - 2 * sl->mb_linesize,
+                                     sl->mb_linesize, sl->mb_linesize,
                                      16 + 5, 16 + 5 /*FIXME*/,
                                      full_mx - 2, full_my - 2,
                                      pic_width, pic_height);
-            src_cr = h->edge_emu_buffer + (2 << pixel_shift) + 2 * h->mb_linesize;
+            src_cr = h->edge_emu_buffer + (2 << pixel_shift) + 2 * sl->mb_linesize;
         }
-        qpix_op[luma_xy](dest_cr, src_cr, h->mb_linesize); // FIXME try variable height perhaps?
+        qpix_op[luma_xy](dest_cr, src_cr, sl->mb_linesize); // FIXME try variable height perhaps?
         if (!square)
-            qpix_op[luma_xy](dest_cr + delta, src_cr + delta, h->mb_linesize);
+            qpix_op[luma_xy](dest_cr + delta, src_cr + delta, sl->mb_linesize);
         return;
     }
 
@@ -292,29 +292,29 @@ static av_always_inline void mc_dir_part(H264Context *h, H264SliceContext *sl,
     }
 
     src_cb = pic->f.data[1] + ((mx >> 3) * (1 << pixel_shift)) +
-             (my >> ysh) * h->mb_uvlinesize;
+             (my >> ysh) * sl->mb_uvlinesize;
     src_cr = pic->f.data[2] + ((mx >> 3) * (1 << pixel_shift)) +
-             (my >> ysh) * h->mb_uvlinesize;
+             (my >> ysh) * sl->mb_uvlinesize;
 
     if (emu) {
         h->vdsp.emulated_edge_mc(h->edge_emu_buffer, src_cb,
-                                 h->mb_uvlinesize, h->mb_uvlinesize,
+                                 sl->mb_uvlinesize, sl->mb_uvlinesize,
                                  9, 8 * chroma_idc + 1, (mx >> 3), (my >> ysh),
                                  pic_width >> 1, pic_height >> (chroma_idc == 1 /* yuv420 */));
         src_cb = h->edge_emu_buffer;
     }
-    chroma_op(dest_cb, src_cb, h->mb_uvlinesize,
+    chroma_op(dest_cb, src_cb, sl->mb_uvlinesize,
               height >> (chroma_idc == 1 /* yuv420 */),
               mx & 7, ((unsigned)my << (chroma_idc == 2 /* yuv422 */)) & 7);
 
     if (emu) {
         h->vdsp.emulated_edge_mc(h->edge_emu_buffer, src_cr,
-                                 h->mb_uvlinesize, h->mb_uvlinesize,
+                                 sl->mb_uvlinesize, sl->mb_uvlinesize,
                                  9, 8 * chroma_idc + 1, (mx >> 3), (my >> ysh),
                                  pic_width >> 1, pic_height >> (chroma_idc == 1 /* yuv420 */));
         src_cr = h->edge_emu_buffer;
     }
-    chroma_op(dest_cr, src_cr, h->mb_uvlinesize, height >> (chroma_idc == 1 /* yuv420 */),
+    chroma_op(dest_cr, src_cr, sl->mb_uvlinesize, height >> (chroma_idc == 1 /* yuv420 */),
               mx & 7, ((unsigned)my << (chroma_idc == 2 /* yuv422 */)) & 7);
 }
 
@@ -334,16 +334,16 @@ static av_always_inline void mc_part_std(H264Context *h, H264SliceContext *sl,
     qpel_mc_func *qpix_op         = qpix_put;
     h264_chroma_mc_func chroma_op = chroma_put;
 
-    dest_y += (2 * x_offset << pixel_shift) + 2 * y_offset * h->mb_linesize;
+    dest_y += (2 * x_offset << pixel_shift) + 2 * y_offset * sl->mb_linesize;
     if (chroma_idc == 3 /* yuv444 */) {
-        dest_cb += (2 * x_offset << pixel_shift) + 2 * y_offset * h->mb_linesize;
-        dest_cr += (2 * x_offset << pixel_shift) + 2 * y_offset * h->mb_linesize;
+        dest_cb += (2 * x_offset << pixel_shift) + 2 * y_offset * sl->mb_linesize;
+        dest_cr += (2 * x_offset << pixel_shift) + 2 * y_offset * sl->mb_linesize;
     } else if (chroma_idc == 2 /* yuv422 */) {
-        dest_cb += (x_offset << pixel_shift) + 2 * y_offset * h->mb_uvlinesize;
-        dest_cr += (x_offset << pixel_shift) + 2 * y_offset * h->mb_uvlinesize;
+        dest_cb += (x_offset << pixel_shift) + 2 * y_offset * sl->mb_uvlinesize;
+        dest_cr += (x_offset << pixel_shift) + 2 * y_offset * sl->mb_uvlinesize;
     } else { /* yuv420 */
-        dest_cb += (x_offset << pixel_shift) + y_offset * h->mb_uvlinesize;
-        dest_cr += (x_offset << pixel_shift) + y_offset * h->mb_uvlinesize;
+        dest_cb += (x_offset << pixel_shift) + y_offset * sl->mb_uvlinesize;
+        dest_cr += (x_offset << pixel_shift) + y_offset * sl->mb_uvlinesize;
     }
     x_offset += 8 * h->mb_x;
     y_offset += 8 * (h->mb_y >> MB_FIELD(h));
@@ -383,21 +383,21 @@ static av_always_inline void mc_part_weighted(H264Context *h, H264SliceContext *
 {
     int chroma_height;
 
-    dest_y += (2 * x_offset << pixel_shift) + 2 * y_offset * h->mb_linesize;
+    dest_y += (2 * x_offset << pixel_shift) + 2 * y_offset * sl->mb_linesize;
     if (chroma_idc == 3 /* yuv444 */) {
         chroma_height     = height;
         chroma_weight_avg = luma_weight_avg;
         chroma_weight_op  = luma_weight_op;
-        dest_cb += (2 * x_offset << pixel_shift) + 2 * y_offset * h->mb_linesize;
-        dest_cr += (2 * x_offset << pixel_shift) + 2 * y_offset * h->mb_linesize;
+        dest_cb += (2 * x_offset << pixel_shift) + 2 * y_offset * sl->mb_linesize;
+        dest_cr += (2 * x_offset << pixel_shift) + 2 * y_offset * sl->mb_linesize;
     } else if (chroma_idc == 2 /* yuv422 */) {
         chroma_height = height;
-        dest_cb      += (x_offset << pixel_shift) + 2 * y_offset * h->mb_uvlinesize;
-        dest_cr      += (x_offset << pixel_shift) + 2 * y_offset * h->mb_uvlinesize;
+        dest_cb      += (x_offset << pixel_shift) + 2 * y_offset * sl->mb_uvlinesize;
+        dest_cr      += (x_offset << pixel_shift) + 2 * y_offset * sl->mb_uvlinesize;
     } else { /* yuv420 */
         chroma_height = height >> 1;
-        dest_cb      += (x_offset << pixel_shift) + y_offset * h->mb_uvlinesize;
-        dest_cr      += (x_offset << pixel_shift) + y_offset * h->mb_uvlinesize;
+        dest_cb      += (x_offset << pixel_shift) + y_offset * sl->mb_uvlinesize;
+        dest_cr      += (x_offset << pixel_shift) + y_offset * sl->mb_uvlinesize;
     }
     x_offset += 8 * h->mb_x;
     y_offset += 8 * (h->mb_y >> MB_FIELD(h));
@@ -407,7 +407,7 @@ static av_always_inline void mc_part_weighted(H264Context *h, H264SliceContext *
          * use implicit weights => chroma too. */
         uint8_t *tmp_cb = h->bipred_scratchpad;
         uint8_t *tmp_cr = h->bipred_scratchpad + (16 << pixel_shift);
-        uint8_t *tmp_y  = h->bipred_scratchpad + 16 * h->mb_uvlinesize;
+        uint8_t *tmp_y  = h->bipred_scratchpad + 16 * sl->mb_uvlinesize;
         int refn0       = sl->ref_cache[0][scan8[n]];
         int refn1       = sl->ref_cache[1][scan8[n]];
 
@@ -423,29 +423,29 @@ static av_always_inline void mc_part_weighted(H264Context *h, H264SliceContext *
         if (sl->use_weight == 2) {
             int weight0 = sl->implicit_weight[refn0][refn1][h->mb_y & 1];
             int weight1 = 64 - weight0;
-            luma_weight_avg(dest_y, tmp_y, h->mb_linesize,
+            luma_weight_avg(dest_y, tmp_y, sl->mb_linesize,
                             height, 5, weight0, weight1, 0);
             if (!CONFIG_GRAY || !(h->flags & CODEC_FLAG_GRAY)) {
-                chroma_weight_avg(dest_cb, tmp_cb, h->mb_uvlinesize,
+                chroma_weight_avg(dest_cb, tmp_cb, sl->mb_uvlinesize,
                                   chroma_height, 5, weight0, weight1, 0);
-                chroma_weight_avg(dest_cr, tmp_cr, h->mb_uvlinesize,
+                chroma_weight_avg(dest_cr, tmp_cr, sl->mb_uvlinesize,
                                   chroma_height, 5, weight0, weight1, 0);
             }
         } else {
-            luma_weight_avg(dest_y, tmp_y, h->mb_linesize, height,
+            luma_weight_avg(dest_y, tmp_y, sl->mb_linesize, height,
                             sl->luma_log2_weight_denom,
                             sl->luma_weight[refn0][0][0],
                             sl->luma_weight[refn1][1][0],
                             sl->luma_weight[refn0][0][1] +
                             sl->luma_weight[refn1][1][1]);
             if (!CONFIG_GRAY || !(h->flags & CODEC_FLAG_GRAY)) {
-                chroma_weight_avg(dest_cb, tmp_cb, h->mb_uvlinesize, chroma_height,
+                chroma_weight_avg(dest_cb, tmp_cb, sl->mb_uvlinesize, chroma_height,
                                   sl->chroma_log2_weight_denom,
                                   sl->chroma_weight[refn0][0][0][0],
                                   sl->chroma_weight[refn1][1][0][0],
                                   sl->chroma_weight[refn0][0][0][1] +
                                   sl->chroma_weight[refn1][1][0][1]);
-                chroma_weight_avg(dest_cr, tmp_cr, h->mb_uvlinesize, chroma_height,
+                chroma_weight_avg(dest_cr, tmp_cr, sl->mb_uvlinesize, chroma_height,
                                   sl->chroma_log2_weight_denom,
                                   sl->chroma_weight[refn0][0][1][0],
                                   sl->chroma_weight[refn1][1][1][0],
@@ -461,17 +461,17 @@ static av_always_inline void mc_part_weighted(H264Context *h, H264SliceContext *
                     dest_y, dest_cb, dest_cr, x_offset, y_offset,
                     qpix_put, chroma_put, pixel_shift, chroma_idc);
 
-        luma_weight_op(dest_y, h->mb_linesize, height,
+        luma_weight_op(dest_y, sl->mb_linesize, height,
                        sl->luma_log2_weight_denom,
                        sl->luma_weight[refn][list][0],
                        sl->luma_weight[refn][list][1]);
         if (!CONFIG_GRAY || !(h->flags & CODEC_FLAG_GRAY)) {
             if (sl->use_weight_chroma) {
-                chroma_weight_op(dest_cb, h->mb_uvlinesize, chroma_height,
+                chroma_weight_op(dest_cb, sl->mb_uvlinesize, chroma_height,
                                  sl->chroma_log2_weight_denom,
                                  sl->chroma_weight[refn][list][0][0],
                                  sl->chroma_weight[refn][list][0][1]);
-                chroma_weight_op(dest_cr, h->mb_uvlinesize, chroma_height,
+                chroma_weight_op(dest_cr, sl->mb_uvlinesize, chroma_height,
                                  sl->chroma_log2_weight_denom,
                                  sl->chroma_weight[refn][list][1][0],
                                  sl->chroma_weight[refn][list][1][1]);
@@ -492,7 +492,7 @@ static av_always_inline void prefetch_motion(H264Context *h, H264SliceContext *s
         const int my  = (sl->mv_cache[list][scan8[0]][1] >> 2) + 16 * h->mb_y;
         uint8_t **src = h->ref_list[list][refn].f.data;
         int off       =  mx * (1<< pixel_shift) +
-                        (my + (h->mb_x & 3) * 4) * h->mb_linesize +
+                        (my + (h->mb_x & 3) * 4) * sl->mb_linesize +
                         (64 << pixel_shift);
         h->vdsp.prefetch(src[0] + off, h->linesize, 4);
         if (chroma_idc == 3 /* yuv444 */) {
