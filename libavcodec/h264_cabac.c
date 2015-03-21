@@ -1933,7 +1933,7 @@ int ff_h264_decode_mb_cabac(H264Context *h, H264SliceContext *sl)
                 h->cur_pic.mb_type[mb_xy] = MB_TYPE_SKIP;
                 sl->next_mb_skipped = decode_cabac_mb_skip(h, sl, sl->mb_x, sl->mb_y+1 );
                 if(!sl->next_mb_skipped)
-                    h->mb_mbaff = sl->mb_field_decoding_flag = decode_cabac_field_decoding_flag(h, sl);
+                    sl->mb_mbaff = sl->mb_field_decoding_flag = decode_cabac_field_decoding_flag(h, sl);
             }
 
             decode_mb_skip(h, sl);
@@ -1948,7 +1948,7 @@ int ff_h264_decode_mb_cabac(H264Context *h, H264SliceContext *sl)
     }
     if (FRAME_MBAFF(h)) {
         if ((sl->mb_y & 1) == 0)
-            h->mb_mbaff =
+            sl->mb_mbaff =
             sl->mb_field_decoding_flag = decode_cabac_field_decoding_flag(h, sl);
     }
 
@@ -2057,8 +2057,8 @@ decode_intra_mb:
         return 0;
     }
 
-    local_ref_count[0] = sl->ref_count[0] << MB_MBAFF(h);
-    local_ref_count[1] = sl->ref_count[1] << MB_MBAFF(h);
+    local_ref_count[0] = sl->ref_count[0] << MB_MBAFF(sl);
+    local_ref_count[1] = sl->ref_count[1] << MB_MBAFF(sl);
 
     fill_decode_caches(h, sl, mb_type);
 

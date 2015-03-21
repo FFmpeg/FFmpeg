@@ -90,7 +90,7 @@ static void h264_er_decode_mb(void *opaque, int ref, int mv_dir, int mv_type,
     fill_rectangle(&sl->ref_cache[0][scan8[0]], 4, 4, 8, ref, 1);
     fill_rectangle(sl->mv_cache[0][scan8[0]], 4, 4, 8,
                    pack16to32((*mv)[0][0][0], (*mv)[0][0][1]), 4);
-    h->mb_mbaff =
+    sl->mb_mbaff =
     sl->mb_field_decoding_flag = 0;
     ff_h264_hl_decode_mb(h, &h->slice_ctx[0]);
 }
