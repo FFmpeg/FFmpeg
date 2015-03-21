@@ -1288,7 +1288,7 @@ static int decode_cabac_field_decoding_flag(H264Context *h, H264SliceContext *sl
 
     unsigned long ctx = 0;
 
-    ctx += h->mb_field_decoding_flag & !!h->mb_x; //for FMO:(s->current_picture.mb_type[mba_xy] >> 7) & (h->slice_table[mba_xy] == h->slice_num);
+    ctx += h->mb_field_decoding_flag & !!sl->mb_x; //for FMO:(s->current_picture.mb_type[mba_xy] >> 7) & (h->slice_table[mba_xy] == h->slice_num);
     ctx += (h->cur_pic.mb_type[mbb_xy] >> 7) & (h->slice_table[mbb_xy] == sl->slice_num);
 
     return get_cabac_noinline( &sl->cabac, &(sl->cabac_state+70)[ctx] );
@@ -1917,21 +1917,21 @@ int ff_h264_decode_mb_cabac(H264Context *h, H264SliceContext *sl)
     const int pixel_shift = h->pixel_shift;
     unsigned local_ref_count[2];
 
-    mb_xy = sl->mb_xy = h->mb_x + h->mb_y*h->mb_stride;
+    mb_xy = sl->mb_xy = sl->mb_x + sl->mb_y*h->mb_stride;
 
-    tprintf(h->avctx, "pic:%d mb:%d/%d\n", h->frame_num, h->mb_x, h->mb_y);
+    tprintf(h->avctx, "pic:%d mb:%d/%d\n", h->frame_num, sl->mb_x, sl->mb_y);
     if (sl->slice_type_nos != AV_PICTURE_TYPE_I) {
         int skip;
         /* a skipped mb needs the aff flag from the following mb */
-        if (FRAME_MBAFF(h) && (h->mb_y & 1) == 1 && sl->prev_mb_skipped)
+        if (FRAME_MBAFF(h) && (sl->mb_y & 1) == 1 && sl->prev_mb_skipped)
             skip = sl->next_mb_skipped;
         else
-            skip = decode_cabac_mb_skip(h, sl, h->mb_x, h->mb_y );
+            skip = decode_cabac_mb_skip(h, sl, sl->mb_x, sl->mb_y );
         /* read skip flags */
         if( skip ) {
-            if (FRAME_MBAFF(h) && (h->mb_y & 1) == 0) {
+            if (FRAME_MBAFF(h) && (sl->mb_y & 1) == 0) {
                 h->cur_pic.mb_type[mb_xy] = MB_TYPE_SKIP;
-                sl->next_mb_skipped = decode_cabac_mb_skip(h, sl, h->mb_x, h->mb_y+1 );
+                sl->next_mb_skipped = decode_cabac_mb_skip(h, sl, sl->mb_x, sl->mb_y+1 );
                 if(!sl->next_mb_skipped)
                     h->mb_mbaff = h->mb_field_decoding_flag = decode_cabac_field_decoding_flag(h, sl);
             }
@@ -1947,7 +1947,7 @@ int ff_h264_decode_mb_cabac(H264Context *h, H264SliceContext *sl)
         }
     }
     if (FRAME_MBAFF(h)) {
-        if( (h->mb_y&1) == 0 )
+        if ((sl->mb_y & 1) == 0)
             h->mb_mbaff =
             h->mb_field_decoding_flag = decode_cabac_field_decoding_flag(h, sl);
     }
@@ -2377,7 +2377,7 @@ decode_intra_mb:
                 ctx= 3;
                 val++;
                 if(val > 2*max_qp){ //prevent infinite loop
-                    av_log(h->avctx, AV_LOG_ERROR, "cabac decode of qscale diff failed at %d %d\n", h->mb_x, h->mb_y);
+                    av_log(h->avctx, AV_LOG_ERROR, "cabac decode of qscale diff failed at %d %d\n", sl->mb_x, sl->mb_y);
                     return -1;
                 }
             }

@@ -179,7 +179,7 @@ static void pred_spatial_direct_motion(H264Context *const h, H264SliceContext *s
 {
     int b8_stride = 2;
     int b4_stride = h->b_stride;
-    int mb_xy = sl->mb_xy, mb_y = h->mb_y;
+    int mb_xy = sl->mb_xy, mb_y = sl->mb_y;
     int mb_type_col[2];
     const int16_t (*l1mv0)[2], (*l1mv1)[2];
     const int8_t *l1ref0, *l1ref1;
@@ -193,7 +193,7 @@ static void pred_spatial_direct_motion(H264Context *const h, H264SliceContext *s
     assert(sl->ref_list[1][0].reference & 3);
 
     await_reference_mb_row(h, &sl->ref_list[1][0],
-                           h->mb_y + !!IS_INTERLACED(*mb_type));
+                           sl->mb_y + !!IS_INTERLACED(*mb_type));
 
 #define MB_TYPE_16x16_OR_INTRA (MB_TYPE_16x16 | MB_TYPE_INTRA4x4 | \
                                 MB_TYPE_INTRA16x16 | MB_TYPE_INTRA_PCM)
@@ -263,9 +263,9 @@ static void pred_spatial_direct_motion(H264Context *const h, H264SliceContext *s
 
     if (IS_INTERLACED(sl->ref_list[1][0].mb_type[mb_xy])) { // AFL/AFR/FR/FL -> AFL/FL
         if (!IS_INTERLACED(*mb_type)) {                    //     AFR/FR    -> AFL/FL
-            mb_y  = (h->mb_y & ~1) + sl->col_parity;
-            mb_xy = h->mb_x +
-                    ((h->mb_y & ~1) + sl->col_parity) * h->mb_stride;
+            mb_y  = (sl->mb_y & ~1) + sl->col_parity;
+            mb_xy = sl->mb_x +
+                    ((sl->mb_y & ~1) + sl->col_parity) * h->mb_stride;
             b8_stride = 0;
         } else {
             mb_y  += sl->col_fieldoff;
@@ -274,8 +274,8 @@ static void pred_spatial_direct_motion(H264Context *const h, H264SliceContext *s
         goto single_col;
     } else {                                             // AFL/AFR/FR/FL -> AFR/FR
         if (IS_INTERLACED(*mb_type)) {                   // AFL       /FL -> AFR/FR
-            mb_y           =  h->mb_y & ~1;
-            mb_xy          = (h->mb_y & ~1) * h->mb_stride + h->mb_x;
+            mb_y           =  sl->mb_y & ~1;
+            mb_xy          = (sl->mb_y & ~1) * h->mb_stride + sl->mb_x;
             mb_type_col[0] = sl->ref_list[1][0].mb_type[mb_xy];
             mb_type_col[1] = sl->ref_list[1][0].mb_type[mb_xy + h->mb_stride];
             b8_stride      = 2 + 4 * h->mb_stride;
@@ -324,7 +324,7 @@ single_col:
     l1ref0 = &sl->ref_list[1][0].ref_index[0][4 * mb_xy];
     l1ref1 = &sl->ref_list[1][0].ref_index[1][4 * mb_xy];
     if (!b8_stride) {
-        if (h->mb_y & 1) {
+        if (sl->mb_y & 1) {
             l1ref0 += 2;
             l1ref1 += 2;
             l1mv0  += 2 * b4_stride;
@@ -466,7 +466,7 @@ static void pred_temp_direct_motion(H264Context *const h, H264SliceContext *sl,
 {
     int b8_stride = 2;
     int b4_stride = h->b_stride;
-    int mb_xy = sl->mb_xy, mb_y = h->mb_y;
+    int mb_xy = sl->mb_xy, mb_y = sl->mb_y;
     int mb_type_col[2];
     const int16_t (*l1mv0)[2], (*l1mv1)[2];
     const int8_t *l1ref0, *l1ref1;
@@ -477,13 +477,13 @@ static void pred_temp_direct_motion(H264Context *const h, H264SliceContext *sl,
     assert(sl->ref_list[1][0].reference & 3);
 
     await_reference_mb_row(h, &sl->ref_list[1][0],
-                           h->mb_y + !!IS_INTERLACED(*mb_type));
+                           sl->mb_y + !!IS_INTERLACED(*mb_type));
 
     if (IS_INTERLACED(sl->ref_list[1][0].mb_type[mb_xy])) { // AFL/AFR/FR/FL -> AFL/FL
         if (!IS_INTERLACED(*mb_type)) {                    //     AFR/FR    -> AFL/FL
-            mb_y  = (h->mb_y & ~1) + sl->col_parity;
-            mb_xy = h->mb_x +
-                    ((h->mb_y & ~1) + sl->col_parity) * h->mb_stride;
+            mb_y  = (sl->mb_y & ~1) + sl->col_parity;
+            mb_xy = sl->mb_x +
+                    ((sl->mb_y & ~1) + sl->col_parity) * h->mb_stride;
             b8_stride = 0;
         } else {
             mb_y  += sl->col_fieldoff;
@@ -492,8 +492,8 @@ static void pred_temp_direct_motion(H264Context *const h, H264SliceContext *sl,
         goto single_col;
     } else {                                        // AFL/AFR/FR/FL -> AFR/FR
         if (IS_INTERLACED(*mb_type)) {              // AFL       /FL -> AFR/FR
-            mb_y           = h->mb_y & ~1;
-            mb_xy          = h->mb_x + (h->mb_y & ~1) * h->mb_stride;
+            mb_y           = sl->mb_y & ~1;
+            mb_xy          = sl->mb_x + (sl->mb_y & ~1) * h->mb_stride;
             mb_type_col[0] = sl->ref_list[1][0].mb_type[mb_xy];
             mb_type_col[1] = sl->ref_list[1][0].mb_type[mb_xy + h->mb_stride];
             b8_stride      = 2 + 4 * h->mb_stride;
@@ -548,7 +548,7 @@ single_col:
     l1ref0 = &sl->ref_list[1][0].ref_index[0][4 * mb_xy];
     l1ref1 = &sl->ref_list[1][0].ref_index[1][4 * mb_xy];
     if (!b8_stride) {
-        if (h->mb_y & 1) {
+        if (sl->mb_y & 1) {
             l1ref0 += 2;
             l1ref1 += 2;
             l1mv0  += 2 * b4_stride;
@@ -563,9 +563,9 @@ single_col:
         int ref_offset;
 
         if (FRAME_MBAFF(h) && IS_INTERLACED(*mb_type)) {
-            map_col_to_list0[0] = sl->map_col_to_list0_field[h->mb_y & 1][0];
-            map_col_to_list0[1] = sl->map_col_to_list0_field[h->mb_y & 1][1];
-            dist_scale_factor   = sl->dist_scale_factor_field[h->mb_y & 1];
+            map_col_to_list0[0] = sl->map_col_to_list0_field[sl->mb_y & 1][0];
+            map_col_to_list0[1] = sl->map_col_to_list0_field[sl->mb_y & 1][1];
+            dist_scale_factor   = sl->dist_scale_factor_field[sl->mb_y & 1];
         }
         ref_offset = (sl->ref_list[1][0].mbaff << 4) & (mb_type_col[0] >> 3);
 

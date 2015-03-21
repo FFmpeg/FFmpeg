@@ -478,7 +478,7 @@ static int decode_residual(H264Context *h, H264SliceContext *sl,
     if(total_coeff==0)
         return 0;
     if(total_coeff > (unsigned)max_coeff) {
-        av_log(h->avctx, AV_LOG_ERROR, "corrupted macroblock %d %d (total_coeff=%d)\n", h->mb_x, h->mb_y, total_coeff);
+        av_log(h->avctx, AV_LOG_ERROR, "corrupted macroblock %d %d (total_coeff=%d)\n", sl->mb_x, sl->mb_y, total_coeff);
         return -1;
     }
 
@@ -628,7 +628,7 @@ static int decode_residual(H264Context *h, H264SliceContext *sl,
     }
 
     if(zeros_left<0){
-        av_log(h->avctx, AV_LOG_ERROR, "negative number of zero coeffs at %d %d\n", h->mb_x, h->mb_y);
+        av_log(h->avctx, AV_LOG_ERROR, "negative number of zero coeffs at %d %d\n", sl->mb_x, sl->mb_y);
         return -1;
     }
 
@@ -711,9 +711,9 @@ int ff_h264_decode_mb_cavlc(H264Context *h, H264SliceContext *sl)
     const int pixel_shift = h->pixel_shift;
     unsigned local_ref_count[2];
 
-    mb_xy = sl->mb_xy = h->mb_x + h->mb_y*h->mb_stride;
+    mb_xy = sl->mb_xy = sl->mb_x + sl->mb_y*h->mb_stride;
 
-    tprintf(h->avctx, "pic:%d mb:%d/%d\n", h->frame_num, h->mb_x, h->mb_y);
+    tprintf(h->avctx, "pic:%d mb:%d/%d\n", h->frame_num, sl->mb_x, sl->mb_y);
     cbp = 0; /* avoid warning. FIXME: find a solution without slowing
                 down the code */
     if (sl->slice_type_nos != AV_PICTURE_TYPE_I) {
@@ -721,7 +721,7 @@ int ff_h264_decode_mb_cavlc(H264Context *h, H264SliceContext *sl)
             sl->mb_skip_run = get_ue_golomb_long(&h->gb);
 
         if (sl->mb_skip_run--) {
-            if(FRAME_MBAFF(h) && (h->mb_y&1) == 0){
+            if (FRAME_MBAFF(h) && (sl->mb_y & 1) == 0) {
                 if (sl->mb_skip_run == 0)
                     h->mb_mbaff = h->mb_field_decoding_flag = get_bits1(&h->gb);
             }
@@ -730,7 +730,7 @@ int ff_h264_decode_mb_cavlc(H264Context *h, H264SliceContext *sl)
         }
     }
     if (FRAME_MBAFF(h)) {
-        if( (h->mb_y&1) == 0 )
+        if ((sl->mb_y & 1) == 0)
             h->mb_mbaff = h->mb_field_decoding_flag = get_bits1(&h->gb);
     }
 
@@ -759,7 +759,7 @@ int ff_h264_decode_mb_cavlc(H264Context *h, H264SliceContext *sl)
             mb_type--;
 decode_intra_mb:
         if(mb_type > 25){
-            av_log(h->avctx, AV_LOG_ERROR, "mb_type %d in %c slice too large at %d %d\n", mb_type, av_get_picture_type_char(sl->slice_type), h->mb_x, h->mb_y);
+            av_log(h->avctx, AV_LOG_ERROR, "mb_type %d in %c slice too large at %d %d\n", mb_type, av_get_picture_type_char(sl->slice_type), sl->mb_x, sl->mb_y);
             return -1;
         }
         partition_count=0;
@@ -849,7 +849,7 @@ decode_intra_mb:
             for(i=0; i<4; i++){
                 sl->sub_mb_type[i]= get_ue_golomb_31(&h->gb);
                 if(sl->sub_mb_type[i] >=13){
-                    av_log(h->avctx, AV_LOG_ERROR, "B sub_mb_type %u out of range at %d %d\n", sl->sub_mb_type[i], h->mb_x, h->mb_y);
+                    av_log(h->avctx, AV_LOG_ERROR, "B sub_mb_type %u out of range at %d %d\n", sl->sub_mb_type[i], sl->mb_x, sl->mb_y);
                     return -1;
                 }
                 sub_partition_count[i]= b_sub_mb_type_info[ sl->sub_mb_type[i] ].partition_count;
@@ -867,7 +867,7 @@ decode_intra_mb:
             for(i=0; i<4; i++){
                 sl->sub_mb_type[i]= get_ue_golomb_31(&h->gb);
                 if(sl->sub_mb_type[i] >=4){
-                    av_log(h->avctx, AV_LOG_ERROR, "P sub_mb_type %u out of range at %d %d\n", sl->sub_mb_type[i], h->mb_x, h->mb_y);
+                    av_log(h->avctx, AV_LOG_ERROR, "P sub_mb_type %u out of range at %d %d\n", sl->sub_mb_type[i], sl->mb_x, sl->mb_y);
                     return -1;
                 }
                 sub_partition_count[i]= p_sub_mb_type_info[ sl->sub_mb_type[i] ].partition_count;
@@ -1065,14 +1065,14 @@ decode_intra_mb:
 
         if(decode_chroma){
             if(cbp > 47){
-                av_log(h->avctx, AV_LOG_ERROR, "cbp too large (%u) at %d %d\n", cbp, h->mb_x, h->mb_y);
+                av_log(h->avctx, AV_LOG_ERROR, "cbp too large (%u) at %d %d\n", cbp, sl->mb_x, sl->mb_y);
                 return -1;
             }
             if(IS_INTRA4x4(mb_type)) cbp= golomb_to_intra4x4_cbp[cbp];
             else                     cbp= golomb_to_inter_cbp   [cbp];
         }else{
             if(cbp > 15){
-                av_log(h->avctx, AV_LOG_ERROR, "cbp too large (%u) at %d %d\n", cbp, h->mb_x, h->mb_y);
+                av_log(h->avctx, AV_LOG_ERROR, "cbp too large (%u) at %d %d\n", cbp, sl->mb_x, sl->mb_y);
                 return -1;
             }
             if(IS_INTRA4x4(mb_type)) cbp= golomb_to_intra4x4_cbp_gray[cbp];
@@ -1116,7 +1116,7 @@ decode_intra_mb:
             if (sl->qscale < 0) sl->qscale += max_qp + 1;
             else                sl->qscale -= max_qp+1;
             if (((unsigned)sl->qscale) > max_qp){
-                av_log(h->avctx, AV_LOG_ERROR, "dquant out of range (%d) at %d %d\n", dquant, h->mb_x, h->mb_y);
+                av_log(h->avctx, AV_LOG_ERROR, "dquant out of range (%d) at %d %d\n", dquant, sl->mb_x, sl->mb_y);
                 return -1;
             }
         }

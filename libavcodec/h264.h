@@ -393,6 +393,7 @@ typedef struct H264SliceContext {
     ptrdiff_t mb_linesize;  ///< may be equal to s->linesize or s->linesize * 2, for mbaff
     ptrdiff_t mb_uvlinesize;
 
+    int mb_x, mb_y;
     int mb_xy;
     int mb_skip_run;
     int is_complex;
@@ -569,7 +570,7 @@ typedef struct H264Context {
 
     int x264_build;
 
-    int mb_x, mb_y;
+    int mb_y;
     int resync_mb_x;
     int resync_mb_y;
     int mb_height, mb_width;
@@ -1094,7 +1095,7 @@ static av_always_inline void write_back_motion(H264Context *h,
                                                int mb_type)
 {
     const int b_stride      = h->b_stride;
-    const int b_xy  = 4 * h->mb_x + 4 * h->mb_y * h->b_stride; // try mb2b(8)_xy
+    const int b_xy  = 4 * sl->mb_x + 4 * sl->mb_y * h->b_stride; // try mb2b(8)_xy
     const int b8_xy = 4 * sl->mb_xy;
 
     if (USES_LIST(mb_type, 0)) {

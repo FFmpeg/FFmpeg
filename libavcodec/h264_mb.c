@@ -57,7 +57,7 @@ static inline void get_lowest_part_y(H264Context *h, H264SliceContext *sl,
 {
     int my;
 
-    y_offset += 16 * (h->mb_y >> MB_FIELD(h));
+    y_offset += 16 * (sl->mb_y >> MB_FIELD(h));
 
     if (list0) {
         int ref_n = sl->ref_cache[0][scan8[n]];
@@ -287,7 +287,7 @@ static av_always_inline void mc_dir_part(H264Context *h, H264SliceContext *sl,
     ysh = 3 - (chroma_idc == 2 /* yuv422 */);
     if (chroma_idc == 1 /* yuv420 */ && MB_FIELD(h)) {
         // chroma offset when predicting from a field of opposite parity
-        my  += 2 * ((h->mb_y & 1) - (pic->reference - 1));
+        my  += 2 * ((sl->mb_y & 1) - (pic->reference - 1));
         emu |= (my >> 3) < 0 || (my >> 3) + 8 >= (pic_height >> 1);
     }
 
@@ -345,8 +345,8 @@ static av_always_inline void mc_part_std(H264Context *h, H264SliceContext *sl,
         dest_cb += (x_offset << pixel_shift) + y_offset * sl->mb_uvlinesize;
         dest_cr += (x_offset << pixel_shift) + y_offset * sl->mb_uvlinesize;
     }
-    x_offset += 8 * h->mb_x;
-    y_offset += 8 * (h->mb_y >> MB_FIELD(h));
+    x_offset += 8 * sl->mb_x;
+    y_offset += 8 * (sl->mb_y >> MB_FIELD(h));
 
     if (list0) {
         H264Picture *ref = &sl->ref_list[0][sl->ref_cache[0][scan8[n]]];
@@ -399,8 +399,8 @@ static av_always_inline void mc_part_weighted(H264Context *h, H264SliceContext *
         dest_cb      += (x_offset << pixel_shift) + y_offset * sl->mb_uvlinesize;
         dest_cr      += (x_offset << pixel_shift) + y_offset * sl->mb_uvlinesize;
     }
-    x_offset += 8 * h->mb_x;
-    y_offset += 8 * (h->mb_y >> MB_FIELD(h));
+    x_offset += 8 * sl->mb_x;
+    y_offset += 8 * (sl->mb_y >> MB_FIELD(h));
 
     if (list0 && list1) {
         /* don't optimize for luma-only case, since B-frames usually
@@ -421,7 +421,7 @@ static av_always_inline void mc_part_weighted(H264Context *h, H264SliceContext *
                     pixel_shift, chroma_idc);
 
         if (sl->use_weight == 2) {
-            int weight0 = sl->implicit_weight[refn0][refn1][h->mb_y & 1];
+            int weight0 = sl->implicit_weight[refn0][refn1][sl->mb_y & 1];
             int weight1 = 64 - weight0;
             luma_weight_avg(dest_y, tmp_y, sl->mb_linesize,
                             height, 5, weight0, weight1, 0);
@@ -488,18 +488,18 @@ static av_always_inline void prefetch_motion(H264Context *h, H264SliceContext *s
      * optimized for 64byte cache lines */
     const int refn = sl->ref_cache[list][scan8[0]];
     if (refn >= 0) {
-        const int mx  = (sl->mv_cache[list][scan8[0]][0] >> 2) + 16 * h->mb_x + 8;
-        const int my  = (sl->mv_cache[list][scan8[0]][1] >> 2) + 16 * h->mb_y;
+        const int mx  = (sl->mv_cache[list][scan8[0]][0] >> 2) + 16 * sl->mb_x + 8;
+        const int my  = (sl->mv_cache[list][scan8[0]][1] >> 2) + 16 * sl->mb_y;
         uint8_t **src = sl->ref_list[list][refn].f.data;
         int off       =  mx * (1<< pixel_shift) +
-                        (my + (h->mb_x & 3) * 4) * sl->mb_linesize +
+                        (my + (sl->mb_x & 3) * 4) * sl->mb_linesize +
                         (64 << pixel_shift);
         h->vdsp.prefetch(src[0] + off, h->linesize, 4);
         if (chroma_idc == 3 /* yuv444 */) {
             h->vdsp.prefetch(src[1] + off, h->linesize, 4);
             h->vdsp.prefetch(src[2] + off, h->linesize, 4);
         } else {
-            off= ((mx>>1)+64) * (1<<pixel_shift) + ((my>>1) + (h->mb_x&7))*h->uvlinesize;
+            off= ((mx>>1)+64) * (1<<pixel_shift) + ((my>>1) + (sl->mb_x&7))*h->uvlinesize;
             h->vdsp.prefetch(src[1] + off, src[2] - src[1], 2);
         }
     }
@@ -519,7 +519,7 @@ static av_always_inline void xchg_mb_border(H264Context *h, H264SliceContext *sl
     uint8_t *top_border;
 
     if (!simple && FRAME_MBAFF(h)) {
-        if (h->mb_y & 1) {
+        if (sl->mb_y & 1) {
             if (!MB_MBAFF(h))
                 return;
         } else {
@@ -531,16 +531,16 @@ static av_always_inline void xchg_mb_border(H264Context *h, H264SliceContext *sl
         deblock_topleft = h->slice_table[sl->mb_xy - 1 - h->mb_stride] == sl->slice_num;
         deblock_top     = sl->top_type;
     } else {
-        deblock_topleft = (h->mb_x > 0);
-        deblock_top     = (h->mb_y > !!MB_FIELD(h));
+        deblock_topleft = (sl->mb_x > 0);
+        deblock_top     = (sl->mb_y > !!MB_FIELD(h));
     }
 
     src_y  -= linesize   + 1 + pixel_shift;
     src_cb -= uvlinesize + 1 + pixel_shift;
     src_cr -= uvlinesize + 1 + pixel_shift;
 
-    top_border_m1 = h->top_borders[top_idx][h->mb_x - 1];
-    top_border    = h->top_borders[top_idx][h->mb_x];
+    top_border_m1 = h->top_borders[top_idx][sl->mb_x - 1];
+    top_border    = h->top_borders[top_idx][sl->mb_x];
 
 #define XCHG(a, b, xchg)                        \
     if (pixel_shift) {                          \
@@ -562,8 +562,8 @@ static av_always_inline void xchg_mb_border(H264Context *h, H264SliceContext *sl
         }
         XCHG(top_border + (0 << pixel_shift), src_y + (1 << pixel_shift), xchg);
         XCHG(top_border + (8 << pixel_shift), src_y + (9 << pixel_shift), 1);
-        if (h->mb_x + 1 < h->mb_width) {
-            XCHG(h->top_borders[top_idx][h->mb_x + 1],
+        if (sl->mb_x + 1 < h->mb_width) {
+            XCHG(h->top_borders[top_idx][sl->mb_x + 1],
                  src_y + (17 << pixel_shift), 1);
         }
         if (simple || !CONFIG_GRAY || !(h->flags & CODEC_FLAG_GRAY)) {
@@ -576,9 +576,9 @@ static av_always_inline void xchg_mb_border(H264Context *h, H264SliceContext *sl
                 XCHG(top_border + (24 << pixel_shift), src_cb + (9 << pixel_shift), 1);
                 XCHG(top_border + (32 << pixel_shift), src_cr + (1 << pixel_shift), xchg);
                 XCHG(top_border + (40 << pixel_shift), src_cr + (9 << pixel_shift), 1);
-                if (h->mb_x + 1 < h->mb_width) {
-                    XCHG(h->top_borders[top_idx][h->mb_x + 1] + (16 << pixel_shift), src_cb + (17 << pixel_shift), 1);
-                    XCHG(h->top_borders[top_idx][h->mb_x + 1] + (32 << pixel_shift), src_cr + (17 << pixel_shift), 1);
+                if (sl->mb_x + 1 < h->mb_width) {
+                    XCHG(h->top_borders[top_idx][sl->mb_x + 1] + (16 << pixel_shift), src_cb + (17 << pixel_shift), 1);
+                    XCHG(h->top_borders[top_idx][sl->mb_x + 1] + (32 << pixel_shift), src_cr + (17 << pixel_shift), 1);
                 }
             } else {
                 if (deblock_topleft) {
@@ -676,7 +676,7 @@ static av_always_inline void hl_decode_mb_predict_luma(H264Context *h,
                     uint64_t tr_high;
                     if (dir == DIAG_DOWN_LEFT_PRED || dir == VERT_LEFT_PRED) {
                         const int topright_avail = (sl->topright_samples_available << i) & 0x8000;
-                        av_assert2(h->mb_y || linesize <= block_offset[i]);
+                        av_assert2(sl->mb_y || linesize <= block_offset[i]);
                         if (!topright_avail) {
                             if (pixel_shift) {
                                 tr_high  = ((uint16_t *)ptr)[3 - linesize / 2] * 0x0001000100010001ULL;

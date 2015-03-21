@@ -64,7 +64,7 @@ static av_always_inline int fetch_diagonal_mv(H264Context *h, H264SliceContext *
 
             if (!MB_FIELD(h) && IS_INTERLACED(sl->left_type[0])) {
                 SET_DIAG_MV(* 2, >> 1, sl->left_mb_xy[0] + h->mb_stride,
-                            (h->mb_y & 1) * 2 + (i >> 5));
+                            (sl->mb_y & 1) * 2 + (i >> 5));
             }
             if (MB_FIELD(h) && !IS_INTERLACED(sl->left_type[0])) {
                 // left shift will turn LIST_NOT_USED into PART_NOT_AVAILABLE, but that's OK.
@@ -148,7 +148,7 @@ static av_always_inline void pred_motion(H264Context *const h,
     tprintf(h->avctx,
             "pred_motion (%2d %2d %2d) (%2d %2d %2d) (%2d %2d %2d) -> (%2d %2d %2d) at %2d %2d %d list %d\n",
             top_ref, B[0], B[1], diagonal_ref, C[0], C[1], left_ref,
-            A[0], A[1], ref, *mx, *my, h->mb_x, h->mb_y, n, list);
+            A[0], A[1], ref, *mx, *my, sl->mb_x, sl->mb_y, n, list);
 }
 
 /**
@@ -167,7 +167,7 @@ static av_always_inline void pred_16x8_motion(H264Context *const h,
         const int16_t *const B = sl->mv_cache[list][scan8[0] - 8];
 
         tprintf(h->avctx, "pred_16x8: (%2d %2d %2d) at %2d %2d %d list %d\n",
-                top_ref, B[0], B[1], h->mb_x, h->mb_y, n, list);
+                top_ref, B[0], B[1], sl->mb_x, sl->mb_y, n, list);
 
         if (top_ref == ref) {
             *mx = B[0];
@@ -179,7 +179,7 @@ static av_always_inline void pred_16x8_motion(H264Context *const h,
         const int16_t *const A = sl->mv_cache[list][scan8[8] - 1];
 
         tprintf(h->avctx, "pred_16x8: (%2d %2d %2d) at %2d %2d %d list %d\n",
-                left_ref, A[0], A[1], h->mb_x, h->mb_y, n, list);
+                left_ref, A[0], A[1], sl->mb_x, sl->mb_y, n, list);
 
         if (left_ref == ref) {
             *mx = A[0];
@@ -208,7 +208,7 @@ static av_always_inline void pred_8x16_motion(H264Context *const h,
         const int16_t *const A = sl->mv_cache[list][scan8[0] - 1];
 
         tprintf(h->avctx, "pred_8x16: (%2d %2d %2d) at %2d %2d %d list %d\n",
-                left_ref, A[0], A[1], h->mb_x, h->mb_y, n, list);
+                left_ref, A[0], A[1], sl->mb_x, sl->mb_y, n, list);
 
         if (left_ref == ref) {
             *mx = A[0];
@@ -222,7 +222,7 @@ static av_always_inline void pred_8x16_motion(H264Context *const h,
         diagonal_ref = fetch_diagonal_mv(h, sl, &C, scan8[4], list, 2);
 
         tprintf(h->avctx, "pred_8x16: (%2d %2d %2d) at %2d %2d %d list %d\n",
-                diagonal_ref, C[0], C[1], h->mb_x, h->mb_y, n, list);
+                diagonal_ref, C[0], C[1], sl->mb_x, sl->mb_y, n, list);
 
         if (diagonal_ref == ref) {
             *mx = C[0];
@@ -299,7 +299,7 @@ static av_always_inline void pred_pskip_motion(H264Context *const h,
     }
 
     tprintf(h->avctx, "pred_pskip: (%d) (%d) at %2d %2d\n",
-            top_ref, left_ref, h->mb_x, h->mb_y);
+            top_ref, left_ref, sl->mb_x, sl->mb_y);
 
     if (USES_LIST(sl->topright_type, 0)) {
         diagonal_ref = ref[4 * sl->topright_mb_xy + 2];
@@ -378,7 +378,7 @@ static void fill_decode_neighbors(H264Context *h, H264SliceContext *sl, int mb_t
     if (FRAME_MBAFF(h)) {
         const int left_mb_field_flag = IS_INTERLACED(h->cur_pic.mb_type[mb_xy - 1]);
         const int curr_mb_field_flag = IS_INTERLACED(mb_type);
-        if (h->mb_y & 1) {
+        if (sl->mb_y & 1) {
             if (left_mb_field_flag != curr_mb_field_flag) {
                 left_xy[LBOT] = left_xy[LTOP] = mb_xy - h->mb_stride - 1;
                 if (curr_mb_field_flag) {

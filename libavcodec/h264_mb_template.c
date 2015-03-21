@@ -42,8 +42,8 @@
 
 static av_noinline void FUNC(hl_decode_mb)(H264Context *h, H264SliceContext *sl)
 {
-    const int mb_x    = h->mb_x;
-    const int mb_y    = h->mb_y;
+    const int mb_x    = sl->mb_x;
+    const int mb_y    = sl->mb_y;
     const int mb_xy   = sl->mb_xy;
     const int mb_type = h->cur_pic.mb_type[mb_xy];
     uint8_t *dest_y, *dest_cb, *dest_cr;
@@ -61,8 +61,8 @@ static av_noinline void FUNC(hl_decode_mb)(H264Context *h, H264SliceContext *sl)
     dest_cb = h->cur_pic.f.data[1] +  (mb_x << PIXEL_SHIFT) * 8 + mb_y * h->uvlinesize * block_h;
     dest_cr = h->cur_pic.f.data[2] +  (mb_x << PIXEL_SHIFT) * 8 + mb_y * h->uvlinesize * block_h;
 
-    h->vdsp.prefetch(dest_y  + (h->mb_x & 3) * 4 * h->linesize   + (64 << PIXEL_SHIFT), h->linesize,       4);
-    h->vdsp.prefetch(dest_cb + (h->mb_x & 7)     * h->uvlinesize + (64 << PIXEL_SHIFT), dest_cr - dest_cb, 2);
+    h->vdsp.prefetch(dest_y  + (sl->mb_x & 3) * 4 * h->linesize   + (64 << PIXEL_SHIFT), h->linesize,       4);
+    h->vdsp.prefetch(dest_cb + (sl->mb_x & 7)     * h->uvlinesize + (64 << PIXEL_SHIFT), dest_cr - dest_cb, 2);
 
     h->list_counts[mb_xy] = sl->list_count;
 
@@ -82,13 +82,13 @@ static av_noinline void FUNC(hl_decode_mb)(H264Context *h, H264SliceContext *sl)
                     continue;
                 if (IS_16X16(mb_type)) {
                     int8_t *ref = &sl->ref_cache[list][scan8[0]];
-                    fill_rectangle(ref, 4, 4, 8, (16 + *ref) ^ (h->mb_y & 1), 1);
+                    fill_rectangle(ref, 4, 4, 8, (16 + *ref) ^ (sl->mb_y & 1), 1);
                 } else {
                     for (i = 0; i < 16; i += 4) {
                         int ref = sl->ref_cache[list][scan8[i]];
                         if (ref >= 0)
                             fill_rectangle(&sl->ref_cache[list][scan8[i]], 2, 2,
-                                           8, (16 + ref) ^ (h->mb_y & 1), 1);
+                                           8, (16 + ref) ^ (sl->mb_y & 1), 1);
                     }
                 }
             }
@@ -271,8 +271,8 @@ static av_noinline void FUNC(hl_decode_mb)(H264Context *h, H264SliceContext *sl)
 
 static av_noinline void FUNC(hl_decode_mb_444)(H264Context *h, H264SliceContext *sl)
 {
-    const int mb_x    = h->mb_x;
-    const int mb_y    = h->mb_y;
+    const int mb_x    = sl->mb_x;
+    const int mb_y    = sl->mb_y;
     const int mb_xy   = sl->mb_xy;
     const int mb_type = h->cur_pic.mb_type[mb_xy];
     uint8_t *dest[3];
@@ -285,7 +285,7 @@ static av_noinline void FUNC(hl_decode_mb_444)(H264Context *h, H264SliceContext 
     for (p = 0; p < plane_count; p++) {
         dest[p] = h->cur_pic.f.data[p] +
                   ((mb_x << PIXEL_SHIFT) + mb_y * h->linesize) * 16;
-        h->vdsp.prefetch(dest[p] + (h->mb_x & 3) * 4 * h->linesize + (64 << PIXEL_SHIFT),
+        h->vdsp.prefetch(dest[p] + (sl->mb_x & 3) * 4 * h->linesize + (64 << PIXEL_SHIFT),
                          h->linesize, 4);
     }
 
@@ -304,13 +304,13 @@ static av_noinline void FUNC(hl_decode_mb_444)(H264Context *h, H264SliceContext 
                     continue;
                 if (IS_16X16(mb_type)) {
                     int8_t *ref = &sl->ref_cache[list][scan8[0]];
-                    fill_rectangle(ref, 4, 4, 8, (16 + *ref) ^ (h->mb_y & 1), 1);
+                    fill_rectangle(ref, 4, 4, 8, (16 + *ref) ^ (sl->mb_y & 1), 1);
                 } else {
                     for (i = 0; i < 16; i += 4) {
                         int ref = sl->ref_cache[list][scan8[i]];
                         if (ref >= 0)
                             fill_rectangle(&sl->ref_cache[list][scan8[i]], 2, 2,
-                                           8, (16 + ref) ^ (h->mb_y & 1), 1);
+                                           8, (16 + ref) ^ (sl->mb_y & 1), 1);
                     }
                 }
             }
