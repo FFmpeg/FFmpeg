@@ -1852,7 +1852,7 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl, H264Contex
     }
 
     if (sl->slice_type_nos == AV_PICTURE_TYPE_B && !sl->direct_spatial_mv_pred)
-        ff_h264_direct_dist_scale_factor(h);
+        ff_h264_direct_dist_scale_factor(h, sl);
     ff_h264_direct_ref_list_init(h, sl);
 
     if (sl->slice_type_nos != AV_PICTURE_TYPE_I && h->pps.cabac) {

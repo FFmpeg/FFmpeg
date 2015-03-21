@@ -396,6 +396,9 @@ typedef struct H264SliceContext {
     int col_parity;
     int col_fieldoff;
 
+    int dist_scale_factor[32];
+    int dist_scale_factor_field[2][32];
+
     /**
      * non zero coeff count cache.
      * is 64 if not available.
@@ -487,8 +490,6 @@ typedef struct H264Context {
     int picture_structure;
     int first_field;
 
-    int dist_scale_factor[32];
-    int dist_scale_factor_field[2][32];
     int map_col_to_list0[2][16 + 32];
     int map_col_to_list0_field[2][2][16 + 32];
 
@@ -882,7 +883,7 @@ void ff_h264_init_cabac_states(H264Context *h, H264SliceContext *sl);
 
 void ff_h264_init_dequant_tables(H264Context *h);
 
-void ff_h264_direct_dist_scale_factor(H264Context *const h);
+void ff_h264_direct_dist_scale_factor(H264Context *const h, H264SliceContext *sl);
 void ff_h264_direct_ref_list_init(H264Context *const h, H264SliceContext *sl);
 void ff_h264_pred_direct_motion(H264Context *const h, H264SliceContext *sl,
                                 int *mb_type);
