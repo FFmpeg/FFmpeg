@@ -330,10 +330,15 @@ static av_cold int vpx_init(AVCodecContext *avctx,
         }
     }
 
-    if (avctx->qmin >= 0)
-        enccfg.rc_min_quantizer = avctx->qmin;
-    if (avctx->qmax >= 0)
-        enccfg.rc_max_quantizer = avctx->qmax;
+    if (avctx->codec_id == AV_CODEC_ID_VP9 && ctx->lossless == 1) {
+        enccfg.rc_min_quantizer =
+        enccfg.rc_max_quantizer = 0;
+    } else {
+        if (avctx->qmin >= 0)
+            enccfg.rc_min_quantizer = avctx->qmin;
+        if (avctx->qmax >= 0)
+            enccfg.rc_max_quantizer = avctx->qmax;
+    }
 
     if (enccfg.rc_end_usage == VPX_CQ
 #if CONFIG_LIBVPX_VP9_ENCODER

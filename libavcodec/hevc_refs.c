@@ -386,8 +386,9 @@ static HEVCFrame *find_ref_idx(HEVCContext *s, int poc)
         }
     }
 
-    av_log(s->avctx, AV_LOG_ERROR,
-           "Could not find ref with POC %d\n", poc);
+    if (s->nal_unit_type != NAL_CRA_NUT && !IS_BLA(s))
+        av_log(s->avctx, AV_LOG_ERROR,
+               "Could not find ref with POC %d\n", poc);
     return NULL;
 }
 
