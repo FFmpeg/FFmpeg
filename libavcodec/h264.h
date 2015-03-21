@@ -429,6 +429,7 @@ typedef struct H264SliceContext {
      */
     DECLARE_ALIGNED(16, int16_t, mv_cache)[2][5 * 8][2];
     DECLARE_ALIGNED(8,  int8_t, ref_cache)[2][5 * 8];
+    DECLARE_ALIGNED(16, uint8_t, mvd_cache)[2][5 * 8][2];
 
     DECLARE_ALIGNED(8, uint16_t, sub_mb_type)[4];
 
@@ -538,7 +539,6 @@ typedef struct H264Context {
     /* chroma_pred_mode for i4x4 or i16x16, else 0 */
     uint8_t *chroma_pred_mode_table;
     uint8_t (*mvd_table[2])[2];
-    DECLARE_ALIGNED(16, uint8_t, mvd_cache)[2][5 * 8][2];
     uint8_t *direct_table;
     uint8_t direct_cache[5 * 8];
 
@@ -1069,7 +1069,7 @@ static av_always_inline void write_back_motion_list(H264Context *h,
     if (CABAC(h)) {
         uint8_t (*mvd_dst)[2] = &sl->mvd_table[list][FMO ? 8 * h->mb_xy
                                                         : h->mb2br_xy[h->mb_xy]];
-        uint8_t(*mvd_src)[2]  = &h->mvd_cache[list][scan8[0]];
+        uint8_t(*mvd_src)[2]  = &sl->mvd_cache[list][scan8[0]];
         if (IS_SKIP(mb_type)) {
             AV_ZERO128(mvd_dst);
         } else {
