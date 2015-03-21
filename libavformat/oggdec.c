@@ -64,6 +64,8 @@ static int ogg_save(AVFormatContext *s)
     struct ogg_state *ost =
         av_malloc(sizeof(*ost) + (ogg->nstreams - 1) * sizeof(*ogg->streams));
     int i;
+    if (!ost)
+        return AVERROR(ENOMEM);
     ost->pos      = avio_tell(s->pb);
     ost->curidx   = ogg->curidx;
     ost->next     = ogg->state;
@@ -191,6 +193,9 @@ static int ogg_new_buf(struct ogg *ogg, int idx)
     struct ogg_stream *os = ogg->streams + idx;
     uint8_t *nb = av_malloc(os->bufsize + FF_INPUT_BUFFER_PADDING_SIZE);
     int size = os->bufpos - os->pstart;
+
+    if (!nb)
+        return AVERROR(ENOMEM);
 
     if (os->buf) {
         memcpy(nb, os->buf + os->pstart, size);
