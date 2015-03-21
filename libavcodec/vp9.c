@@ -2506,7 +2506,7 @@ static void intra_recon(AVCodecContext *ctx, ptrdiff_t y_off, ptrdiff_t uv_off)
             for (x = 0; x < end_x; x += uvstep1d, ptr += 4 * uvstep1d,
                                    ptr_r += 4 * uvstep1d, n += step) {
                 int mode = b->uvmode;
-                uint8_t *a = &a_buf[16];
+                uint8_t *a = &a_buf[32];
                 int eob = b->skip ? 0 : b->uvtx > TX_8X8 ? AV_RN16A(&s->uveob[p][n]) : s->uveob[p][n];
 
                 mode = check_intra_mode(s, mode, &a, ptr_r,
