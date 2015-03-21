@@ -1756,11 +1756,11 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl, H264Contex
         av_log(h->avctx, AV_LOG_ERROR, "first_mb_in_slice overflow\n");
         return AVERROR_INVALIDDATA;
     }
-    h->resync_mb_x = sl->mb_x =  first_mb_in_slice % h->mb_width;
-    h->resync_mb_y = sl->mb_y = (first_mb_in_slice / h->mb_width) <<
-                               FIELD_OR_MBAFF_PICTURE(h);
+    sl->resync_mb_x = sl->mb_x =  first_mb_in_slice % h->mb_width;
+    sl->resync_mb_y = sl->mb_y = (first_mb_in_slice / h->mb_width) <<
+                                 FIELD_OR_MBAFF_PICTURE(h);
     if (h->picture_structure == PICT_BOTTOM_FIELD)
-        h->resync_mb_y = sl->mb_y = sl->mb_y + 1;
+        sl->resync_mb_y = sl->mb_y = sl->mb_y + 1;
     av_assert1(sl->mb_y < h->mb_height);
 
     if (h->picture_structure == PICT_FRAME) {
@@ -1953,9 +1953,9 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl, H264Contex
     sl->slice_num       = ++h0->current_slice;
 
     if (sl->slice_num)
-        h0->slice_row[(sl->slice_num-1)&(MAX_SLICES-1)]= h->resync_mb_y;
-    if (   h0->slice_row[sl->slice_num&(MAX_SLICES-1)] + 3 >= h->resync_mb_y
-        && h0->slice_row[sl->slice_num&(MAX_SLICES-1)] <= h->resync_mb_y
+        h0->slice_row[(sl->slice_num-1)&(MAX_SLICES-1)]= sl->resync_mb_y;
+    if (   h0->slice_row[sl->slice_num&(MAX_SLICES-1)] + 3 >= sl->resync_mb_y
+        && h0->slice_row[sl->slice_num&(MAX_SLICES-1)] <= sl->resync_mb_y
         && sl->slice_num >= MAX_SLICES) {
         //in case of ASO this check needs to be updated depending on how we decide to assign slice numbers in this case
         av_log(h->avctx, AV_LOG_WARNING, "Possibly too many slices (%d >= %d), increase MAX_SLICES and recompile if there are artifacts\n", sl->slice_num, MAX_SLICES);
@@ -2410,7 +2410,7 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
                      (CONFIG_GRAY && (h->flags & CODEC_FLAG_GRAY));
 
     if (!(h->avctx->active_thread_type & FF_THREAD_SLICE) && h->picture_structure == PICT_FRAME && h->er.error_status_table) {
-        const int start_i  = av_clip(h->resync_mb_x + h->resync_mb_y * h->mb_width, 0, h->mb_num - 1);
+        const int start_i  = av_clip(sl->resync_mb_x + sl->resync_mb_y * h->mb_width, 0, h->mb_num - 1);
         if (start_i) {
             int prev_status = h->er.error_status_table[h->er.mb_index2xy[start_i - 1]];
             prev_status &= ~ VP_START;
@@ -2453,7 +2453,7 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
 
             if ((h->workaround_bugs & FF_BUG_TRUNCATED) &&
                 sl->cabac.bytestream > sl->cabac.bytestream_end + 2) {
-                er_add_slice(h, sl, h->resync_mb_x, h->resync_mb_y, sl->mb_x - 1,
+                er_add_slice(h, sl, sl->resync_mb_x, sl->resync_mb_y, sl->mb_x - 1,
                              sl->mb_y, ER_MB_END);
                 if (sl->mb_x >= lf_x_start)
                     loop_filter(h, sl, lf_x_start, sl->mb_x + 1);
@@ -2466,7 +2466,7 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
                        "error while decoding MB %d %d, bytestream %"PTRDIFF_SPECIFIER"\n",
                        sl->mb_x, sl->mb_y,
                        sl->cabac.bytestream_end - sl->cabac.bytestream);
-                er_add_slice(h, sl, h->resync_mb_x, h->resync_mb_y, sl->mb_x,
+                er_add_slice(h, sl, sl->resync_mb_x, sl->resync_mb_y, sl->mb_x,
                              sl->mb_y, ER_MB_ERROR);
                 return AVERROR_INVALIDDATA;
             }
@@ -2486,7 +2486,7 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
             if (eos || sl->mb_y >= h->mb_height) {
                 tprintf(h->avctx, "slice end %d %d\n",
                         get_bits_count(&h->gb), h->gb.size_in_bits);
-                er_add_slice(h, sl, h->resync_mb_x, h->resync_mb_y, sl->mb_x - 1,
+                er_add_slice(h, sl, sl->resync_mb_x, sl->resync_mb_y, sl->mb_x - 1,
                              sl->mb_y, ER_MB_END);
                 if (sl->mb_x > lf_x_start)
                     loop_filter(h, sl, lf_x_start, sl->mb_x);
@@ -2513,7 +2513,7 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
             if (ret < 0) {
                 av_log(h->avctx, AV_LOG_ERROR,
                        "error while decoding MB %d %d\n", sl->mb_x, sl->mb_y);
-                er_add_slice(h, sl, h->resync_mb_x, h->resync_mb_y, sl->mb_x,
+                er_add_slice(h, sl, sl->resync_mb_x, sl->resync_mb_y, sl->mb_x,
                              sl->mb_y, ER_MB_ERROR);
                 return ret;
             }
@@ -2534,12 +2534,12 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
 
                     if (   get_bits_left(&h->gb) == 0
                         || get_bits_left(&h->gb) > 0 && !(h->avctx->err_recognition & AV_EF_AGGRESSIVE)) {
-                        er_add_slice(h, sl, h->resync_mb_x, h->resync_mb_y,
+                        er_add_slice(h, sl, sl->resync_mb_x, sl->resync_mb_y,
                                      sl->mb_x - 1, sl->mb_y, ER_MB_END);
 
                         return 0;
                     } else {
-                        er_add_slice(h, sl, h->resync_mb_x, h->resync_mb_y,
+                        er_add_slice(h, sl, sl->resync_mb_x, sl->resync_mb_y,
                                      sl->mb_x, sl->mb_y, ER_MB_END);
 
                         return AVERROR_INVALIDDATA;
@@ -2552,14 +2552,14 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
                         get_bits_count(&h->gb), h->gb.size_in_bits);
 
                 if (get_bits_left(&h->gb) == 0) {
-                    er_add_slice(h, sl, h->resync_mb_x, h->resync_mb_y,
+                    er_add_slice(h, sl, sl->resync_mb_x, sl->resync_mb_y,
                                  sl->mb_x - 1, sl->mb_y, ER_MB_END);
                     if (sl->mb_x > lf_x_start)
                         loop_filter(h, sl, lf_x_start, sl->mb_x);
 
                     return 0;
                 } else {
-                    er_add_slice(h, sl, h->resync_mb_x, h->resync_mb_y, sl->mb_x,
+                    er_add_slice(h, sl, sl->resync_mb_x, sl->resync_mb_y, sl->mb_x,
                                  sl->mb_y, ER_MB_ERROR);
 
                     return AVERROR_INVALIDDATA;
