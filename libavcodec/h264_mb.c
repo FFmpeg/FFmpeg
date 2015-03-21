@@ -605,6 +605,7 @@ static av_always_inline void dctcoef_set(int16_t *mb, int high_bit_depth,
 }
 
 static av_always_inline void hl_decode_mb_predict_luma(H264Context *h,
+                                                       H264SliceContext *sl,
                                                        int mb_type, int is_h264,
                                                        int simple,
                                                        int transform_bypass,
@@ -616,7 +617,7 @@ static av_always_inline void hl_decode_mb_predict_luma(H264Context *h,
     void (*idct_add)(uint8_t *dst, int16_t *block, int stride);
     void (*idct_dc_add)(uint8_t *dst, int16_t *block, int stride);
     int i;
-    int qscale = p == 0 ? h->qscale : h->chroma_qp[p - 1];
+    int qscale = p == 0 ? sl->qscale : sl->chroma_qp[p - 1];
     block_offset += 16 * p;
     if (IS_INTRA4x4(mb_type)) {
         if (IS_8x8DCT(mb_type)) {
@@ -725,7 +726,8 @@ static av_always_inline void hl_decode_mb_predict_luma(H264Context *h,
     }
 }
 
-static av_always_inline void hl_decode_mb_idct_luma(H264Context *h, int mb_type,
+static av_always_inline void hl_decode_mb_idct_luma(H264Context *h, H264SliceContext *sl,
+                                                    int mb_type,
                                                     int is_h264, int simple,
                                                     int transform_bypass,
                                                     int pixel_shift,
@@ -789,7 +791,7 @@ static av_always_inline void hl_decode_mb_idct_luma(H264Context *h, int mb_type,
                     // FIXME benchmark weird rule, & below
                     uint8_t *const ptr = dest_y + block_offset[i];
                     ff_svq3_add_idct_c(ptr, h->mb + i * 16 + p * 256, linesize,
-                                       h->qscale, IS_INTRA(mb_type) ? 1 : 0);
+                                       sl->qscale, IS_INTRA(mb_type) ? 1 : 0);
                 }
         }
     }
@@ -812,7 +814,7 @@ void ff_h264_hl_decode_mb(H264Context *h, H264SliceContext *sl)
     const int mb_xy   = h->mb_xy;
     const int mb_type = h->cur_pic.mb_type[mb_xy];
     int is_complex    = CONFIG_SMALL || h->is_complex ||
-                        IS_INTRA_PCM(mb_type) || h->qscale == 0;
+                        IS_INTRA_PCM(mb_type) || sl->qscale == 0;
 
     if (CHROMA444(h)) {
         if (is_complex || h->pixel_shift)

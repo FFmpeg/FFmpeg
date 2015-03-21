@@ -336,6 +336,9 @@ typedef struct H264Picture {
 typedef struct H264SliceContext {
     struct H264Context *h264;
 
+    int qscale;
+    int chroma_qp[2];   // QPc
+
     // Weighted pred stuff
     int use_weight;
     int use_weight_chroma;
@@ -371,7 +374,6 @@ typedef struct H264Context {
     int            nb_slice_ctx;
 
     int pixel_shift;    ///< 0 for 8-bit H264, 1 for high-bit-depth H264
-    int chroma_qp[2];   // QPc
 
     int qp_thresh;      ///< QP threshold to skip loopfilter
 
@@ -380,7 +382,6 @@ typedef struct H264Context {
     ptrdiff_t linesize, uvlinesize;
     int chroma_x_shift, chroma_y_shift;
 
-    int qscale;
     int droppable;
     int coded_picture_number;
     int low_delay;
@@ -864,15 +865,15 @@ void ff_h264_decode_init_vlc(void);
  * Decode a macroblock
  * @return 0 if OK, ER_AC_ERROR / ER_DC_ERROR / ER_MV_ERROR on error
  */
-int ff_h264_decode_mb_cavlc(H264Context *h);
+int ff_h264_decode_mb_cavlc(H264Context *h, H264SliceContext *sl);
 
 /**
  * Decode a CABAC coded macroblock
  * @return 0 if OK, ER_AC_ERROR / ER_DC_ERROR / ER_MV_ERROR on error
  */
-int ff_h264_decode_mb_cabac(H264Context *h);
+int ff_h264_decode_mb_cabac(H264Context *h, H264SliceContext *sl);
 
-void ff_h264_init_cabac_states(H264Context *h);
+void ff_h264_init_cabac_states(H264Context *h, H264SliceContext *sl);
 
 void ff_h264_init_dequant_tables(H264Context *h);
 
@@ -880,10 +881,10 @@ void ff_h264_direct_dist_scale_factor(H264Context *const h);
 void ff_h264_direct_ref_list_init(H264Context *const h);
 void ff_h264_pred_direct_motion(H264Context *const h, int *mb_type);
 
-void ff_h264_filter_mb_fast(H264Context *h, int mb_x, int mb_y,
+void ff_h264_filter_mb_fast(H264Context *h, H264SliceContext *sl, int mb_x, int mb_y,
                             uint8_t *img_y, uint8_t *img_cb, uint8_t *img_cr,
                             unsigned int linesize, unsigned int uvlinesize);
-void ff_h264_filter_mb(H264Context *h, int mb_x, int mb_y,
+void ff_h264_filter_mb(H264Context *h, H264SliceContext *sl, int mb_x, int mb_y,
                        uint8_t *img_y, uint8_t *img_cb, uint8_t *img_cr,
                        unsigned int linesize, unsigned int uvlinesize);
 

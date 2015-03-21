@@ -276,7 +276,7 @@ static void fill_slice_long(AVCodecContext *avctx, DXVA_Slice_H264_Long *slice,
         }
     }
     slice->slice_qs_delta    = 0; /* XXX not implemented by FFmpeg */
-    slice->slice_qp_delta    = h->qscale - h->pps.init_qp;
+    slice->slice_qp_delta    = sl->qscale - h->pps.init_qp;
     slice->redundant_pic_cnt = h->redundant_pic_count;
     if (h->slice_type == AV_PICTURE_TYPE_B)
         slice->direct_spatial_mv_pred_flag = h->direct_spatial_mv_pred;

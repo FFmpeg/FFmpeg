@@ -630,9 +630,9 @@ static int decode_residual(H264Context *h, GetBitContext *gb, int16_t *block, in
     return 0;
 }
 
-static av_always_inline int decode_luma_residual(H264Context *h, GetBitContext *gb, const uint8_t *scan, const uint8_t *scan8x8, int pixel_shift, int mb_type, int cbp, int p){
+static av_always_inline int decode_luma_residual(H264Context *h, H264SliceContext *sl, GetBitContext *gb, const uint8_t *scan, const uint8_t *scan8x8, int pixel_shift, int mb_type, int cbp, int p){
     int i4x4, i8x8;
-    int qscale = p == 0 ? h->qscale : h->chroma_qp[p-1];
+    int qscale = p == 0 ? sl->qscale : sl->chroma_qp[p - 1];
     if(IS_INTRA16x16(mb_type)){
         AV_ZERO128(h->mb_luma_dc[p]+0);
         AV_ZERO128(h->mb_luma_dc[p]+8);
@@ -696,7 +696,8 @@ static av_always_inline int decode_luma_residual(H264Context *h, GetBitContext *
     }
 }
 
-int ff_h264_decode_mb_cavlc(H264Context *h){
+int ff_h264_decode_mb_cavlc(H264Context *h, H264SliceContext *sl)
+{
     int mb_xy;
     int partition_count;
     unsigned int mb_type, cbp;
@@ -719,7 +720,7 @@ int ff_h264_decode_mb_cavlc(H264Context *h){
                 if(h->mb_skip_run==0)
                     h->mb_mbaff = h->mb_field_decoding_flag = get_bits1(&h->gb);
             }
-            decode_mb_skip(h);
+            decode_mb_skip(h, sl);
             return 0;
         }
     }
@@ -1095,38 +1096,38 @@ decode_intra_mb:
         const int max_qp = 51 + 6*(h->sps.bit_depth_luma-8);
 
         if(IS_INTERLACED(mb_type)){
-            scan8x8= h->qscale ? h->field_scan8x8_cavlc : h->field_scan8x8_cavlc_q0;
-            scan= h->qscale ? h->field_scan : h->field_scan_q0;
+            scan8x8 = sl->qscale ? h->field_scan8x8_cavlc : h->field_scan8x8_cavlc_q0;
+            scan    = sl->qscale ? h->field_scan : h->field_scan_q0;
         }else{
-            scan8x8= h->qscale ? h->zigzag_scan8x8_cavlc : h->zigzag_scan8x8_cavlc_q0;
-            scan= h->qscale ? h->zigzag_scan : h->zigzag_scan_q0;
+            scan8x8 = sl->qscale ? h->zigzag_scan8x8_cavlc : h->zigzag_scan8x8_cavlc_q0;
+            scan    = sl->qscale ? h->zigzag_scan : h->zigzag_scan_q0;
         }
 
         dquant= get_se_golomb(&h->gb);
 
-        h->qscale += dquant;
+        sl->qscale += dquant;
 
-        if(((unsigned)h->qscale) > max_qp){
-            if(h->qscale<0) h->qscale+= max_qp+1;
-            else            h->qscale-= max_qp+1;
-            if(((unsigned)h->qscale) > max_qp){
+        if (((unsigned)sl->qscale) > max_qp){
+            if (sl->qscale < 0) sl->qscale += max_qp + 1;
+            else                sl->qscale -= max_qp+1;
+            if (((unsigned)sl->qscale) > max_qp){
                 av_log(h->avctx, AV_LOG_ERROR, "dquant out of range (%d) at %d %d\n", dquant, h->mb_x, h->mb_y);
                 return -1;
             }
         }
 
-        h->chroma_qp[0]= get_chroma_qp(h, 0, h->qscale);
-        h->chroma_qp[1]= get_chroma_qp(h, 1, h->qscale);
+        sl->chroma_qp[0] = get_chroma_qp(h, 0, sl->qscale);
+        sl->chroma_qp[1] = get_chroma_qp(h, 1, sl->qscale);
 
-        if( (ret = decode_luma_residual(h, gb, scan, scan8x8, pixel_shift, mb_type, cbp, 0)) < 0 ){
+        if ((ret = decode_luma_residual(h, sl, gb, scan, scan8x8, pixel_shift, mb_type, cbp, 0)) < 0 ) {
             return -1;
         }
         h->cbp_table[mb_xy] |= ret << 12;
         if (CHROMA444(h)) {
-            if( decode_luma_residual(h, gb, scan, scan8x8, pixel_shift, mb_type, cbp, 1) < 0 ){
+            if (decode_luma_residual(h, sl, gb, scan, scan8x8, pixel_shift, mb_type, cbp, 1) < 0 ) {
                 return -1;
             }
-            if( decode_luma_residual(h, gb, scan, scan8x8, pixel_shift, mb_type, cbp, 2) < 0 ){
+            if (decode_luma_residual(h, sl, gb, scan, scan8x8, pixel_shift, mb_type, cbp, 2) < 0 ) {
                 return -1;
             }
         } else {
@@ -1144,7 +1145,7 @@ decode_intra_mb:
 
             if(cbp&0x20){
                 for(chroma_idx=0; chroma_idx<2; chroma_idx++){
-                    const uint32_t *qmul = h->dequant4_coeff[chroma_idx+1+(IS_INTRA( mb_type ) ? 0:3)][h->chroma_qp[chroma_idx]];
+                    const uint32_t *qmul = h->dequant4_coeff[chroma_idx+1+(IS_INTRA( mb_type ) ? 0:3)][sl->chroma_qp[chroma_idx]];
                     int16_t *mb = h->mb + (16*(16 + 16*chroma_idx) << pixel_shift);
                     for (i8x8 = 0; i8x8<num_c8x8; i8x8++) {
                         for (i4x4 = 0; i4x4 < 4; i4x4++) {
@@ -1165,7 +1166,7 @@ decode_intra_mb:
         fill_rectangle(&h->non_zero_count_cache[scan8[16]], 4, 4, 8, 0, 1);
         fill_rectangle(&h->non_zero_count_cache[scan8[32]], 4, 4, 8, 0, 1);
     }
-    h->cur_pic.qscale_table[mb_xy] = h->qscale;
+    h->cur_pic.qscale_table[mb_xy] = sl->qscale;
     write_back_non_zero_count(h);
 
     return 0;

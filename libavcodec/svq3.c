@@ -488,6 +488,7 @@ static inline int svq3_mc_dir(SVQ3Context *s, int size, int mode,
 static int svq3_decode_mb(SVQ3Context *s, unsigned int mb_type)
 {
     H264Context *h = &s->h;
+    H264SliceContext *sl = &h->slice_ctx[0];
     int i, j, k, m, dir, mode;
     int cbp = 0;
     uint32_t vlc;
@@ -704,10 +705,10 @@ static int svq3_decode_mb(SVQ3Context *s, unsigned int mb_type)
     }
     if (IS_INTRA16x16(mb_type) ||
         (h->pict_type != AV_PICTURE_TYPE_I && s->adaptive_quant && cbp)) {
-        h->qscale += svq3_get_se_golomb(&h->gb);
+        sl->qscale += svq3_get_se_golomb(&h->gb);
 
-        if (h->qscale > 31u) {
-            av_log(h->avctx, AV_LOG_ERROR, "qscale:%d\n", h->qscale);
+        if (sl->qscale > 31u) {
+            av_log(h->avctx, AV_LOG_ERROR, "qscale:%d\n", sl->qscale);
             return -1;
         }
     }
@@ -723,7 +724,7 @@ static int svq3_decode_mb(SVQ3Context *s, unsigned int mb_type)
 
     if (cbp) {
         const int index = IS_INTRA16x16(mb_type) ? 1 : 0;
-        const int type  = ((h->qscale < 24 && IS_INTRA4x4(mb_type)) ? 2 : 1);
+        const int type  = ((sl->qscale < 24 && IS_INTRA4x4(mb_type)) ? 2 : 1);
 
         for (i = 0; i < 4; i++)
             if ((cbp & (1 << i))) {
@@ -779,6 +780,7 @@ static int svq3_decode_slice_header(AVCodecContext *avctx)
 {
     SVQ3Context *s = avctx->priv_data;
     H264Context *h    = &s->h;
+    H264SliceContext *sl = &h->slice_ctx[0];
     const int mb_xy   = h->mb_xy;
     int i, header;
     unsigned slice_id;
@@ -833,7 +835,7 @@ static int svq3_decode_slice_header(AVCodecContext *avctx)
     }
 
     h->slice_num      = get_bits(&h->gb, 8);
-    h->qscale         = get_bits(&h->gb, 5);
+    sl->qscale         = get_bits(&h->gb, 5);
     s->adaptive_quant = get_bits1(&h->gb);
 
     /* unknown fields */
@@ -898,7 +900,7 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
     avctx->pix_fmt     = AV_PIX_FMT_YUVJ420P;
     avctx->color_range = AVCOL_RANGE_JPEG;
 
-    h->chroma_qp[0] = h->chroma_qp[1] = 4;
+    h->slice_ctx[0].chroma_qp[0] = h->slice_ctx[0].chroma_qp[1] = 4;
     h->chroma_x_shift = h->chroma_y_shift = 1;
 
     s->halfpel_flag  = 1;
@@ -1229,7 +1231,7 @@ static int svq3_decode_frame(AVCodecContext *avctx, void *data,
                "%c hpel:%d, tpel:%d aqp:%d qp:%d, slice_num:%02X\n",
                av_get_picture_type_char(h->pict_type),
                s->halfpel_flag, s->thirdpel_flag,
-               s->adaptive_quant, h->qscale, h->slice_num);
+               s->adaptive_quant, h->slice_ctx[0].qscale, h->slice_num);
 
     if (avctx->skip_frame >= AVDISCARD_NONREF && h->pict_type == AV_PICTURE_TYPE_B ||
         avctx->skip_frame >= AVDISCARD_NONKEY && h->pict_type != AV_PICTURE_TYPE_I ||
