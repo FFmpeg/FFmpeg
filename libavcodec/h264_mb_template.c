@@ -155,7 +155,7 @@ static av_noinline void FUNC(hl_decode_mb)(H264Context *h, H264SliceContext *sl)
         }
     } else {
         if (IS_INTRA(mb_type)) {
-            if (h->deblocking_filter)
+            if (sl->deblocking_filter)
                 xchg_mb_border(h, sl, dest_y, dest_cb, dest_cr, linesize,
                                uvlinesize, 1, 0, SIMPLE, PIXEL_SHIFT);
 
@@ -168,7 +168,7 @@ static av_noinline void FUNC(hl_decode_mb)(H264Context *h, H264SliceContext *sl)
                                       transform_bypass, PIXEL_SHIFT,
                                       block_offset, linesize, dest_y, 0);
 
-            if (h->deblocking_filter)
+            if (sl->deblocking_filter)
                 xchg_mb_border(h, sl, dest_y, dest_cb, dest_cr, linesize,
                                uvlinesize, 0, 0, SIMPLE, PIXEL_SHIFT);
         } else if (is_h264) {
@@ -339,7 +339,7 @@ static av_noinline void FUNC(hl_decode_mb_444)(H264Context *h, H264SliceContext 
         }
     } else {
         if (IS_INTRA(mb_type)) {
-            if (h->deblocking_filter)
+            if (sl->deblocking_filter)
                 xchg_mb_border(h, sl, dest[0], dest[1], dest[2], linesize,
                                linesize, 1, 1, SIMPLE, PIXEL_SHIFT);
 
@@ -348,7 +348,7 @@ static av_noinline void FUNC(hl_decode_mb_444)(H264Context *h, H264SliceContext 
                                           transform_bypass, PIXEL_SHIFT,
                                           block_offset, linesize, dest[p], p);
 
-            if (h->deblocking_filter)
+            if (sl->deblocking_filter)
                 xchg_mb_border(h, sl, dest[0], dest[1], dest[2], linesize,
                                linesize, 0, 1, SIMPLE, PIXEL_SHIFT);
         } else {

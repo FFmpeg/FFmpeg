@@ -346,6 +346,11 @@ typedef struct H264SliceContext {
     int qp_thresh;      ///< QP threshold to skip loopfilter
     int last_qscale_diff;
 
+    // deblock
+    int deblocking_filter;          ///< disable_deblocking_filter_idc with 1 <-> 0
+    int slice_alpha_c0_offset;
+    int slice_beta_offset;
+
     // Weighted pred stuff
     int use_weight;
     int use_weight_chroma;
@@ -567,11 +572,6 @@ typedef struct H264Context {
     int mb_xy;
 
     int is_complex;
-
-    // deblock
-    int deblocking_filter;          ///< disable_deblocking_filter_idc with 1 <-> 0
-    int slice_alpha_c0_offset;
-    int slice_beta_offset;
 
     // =============================================================
     // Things below are not used in the MB or more inner code

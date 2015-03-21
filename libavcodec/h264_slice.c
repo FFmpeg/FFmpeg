@@ -1878,9 +1878,9 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl, H264Contex
         sl->slice_type == AV_PICTURE_TYPE_SI)
         get_se_golomb(&h->gb); /* slice_qs_delta */
 
-    h->deblocking_filter     = 1;
-    h->slice_alpha_c0_offset = 0;
-    h->slice_beta_offset     = 0;
+    sl->deblocking_filter     = 1;
+    sl->slice_alpha_c0_offset = 0;
+    sl->slice_beta_offset     = 0;
     if (h->pps.deblocking_filter_parameters_present) {
         tmp = get_ue_golomb_31(&h->gb);
         if (tmp > 2) {
@@ -1888,20 +1888,20 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl, H264Contex
                    "deblocking_filter_idc %u out of range\n", tmp);
             return AVERROR_INVALIDDATA;
         }
-        h->deblocking_filter = tmp;
-        if (h->deblocking_filter < 2)
-            h->deblocking_filter ^= 1;  // 1<->0
+        sl->deblocking_filter = tmp;
+        if (sl->deblocking_filter < 2)
+            sl->deblocking_filter ^= 1;  // 1<->0
 
-        if (h->deblocking_filter) {
-            h->slice_alpha_c0_offset = get_se_golomb(&h->gb) * 2;
-            h->slice_beta_offset     = get_se_golomb(&h->gb) * 2;
-            if (h->slice_alpha_c0_offset >  12 ||
-                h->slice_alpha_c0_offset < -12 ||
-                h->slice_beta_offset >  12     ||
-                h->slice_beta_offset < -12) {
+        if (sl->deblocking_filter) {
+            sl->slice_alpha_c0_offset = get_se_golomb(&h->gb) * 2;
+            sl->slice_beta_offset     = get_se_golomb(&h->gb) * 2;
+            if (sl->slice_alpha_c0_offset >  12 ||
+                sl->slice_alpha_c0_offset < -12 ||
+                sl->slice_beta_offset >  12     ||
+                sl->slice_beta_offset < -12) {
                 av_log(h->avctx, AV_LOG_ERROR,
                        "deblocking filter parameters %d %d out of range\n",
-                       h->slice_alpha_c0_offset, h->slice_beta_offset);
+                       sl->slice_alpha_c0_offset, sl->slice_beta_offset);
                 return AVERROR_INVALIDDATA;
             }
         }
@@ -1916,13 +1916,13 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl, H264Contex
          sl->slice_type_nos == AV_PICTURE_TYPE_B) ||
         (h->avctx->skip_loop_filter >= AVDISCARD_NONREF &&
          h->nal_ref_idc == 0))
-        h->deblocking_filter = 0;
+        sl->deblocking_filter = 0;
 
-    if (h->deblocking_filter == 1 && h0->max_contexts > 1) {
+    if (sl->deblocking_filter == 1 && h0->max_contexts > 1) {
         if (h->avctx->flags2 & CODEC_FLAG2_FAST) {
             /* Cheat slightly for speed:
              * Do not bother to deblock across slices. */
-            h->deblocking_filter = 2;
+            sl->deblocking_filter = 2;
         } else {
             h0->max_contexts = 1;
             if (!h0->single_decode_warning) {
@@ -1941,7 +1941,7 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl, H264Contex
         }
     }
     sl->qp_thresh = 15 -
-                   FFMIN(h->slice_alpha_c0_offset, h->slice_beta_offset) -
+                   FFMIN(sl->slice_alpha_c0_offset, sl->slice_beta_offset) -
                    FFMAX3(0,
                           h->pps.chroma_qp_index_offset[0],
                           h->pps.chroma_qp_index_offset[1]) +
@@ -2012,8 +2012,8 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl, H264Contex
                h->cur_pic_ptr->field_poc[1],
                sl->ref_count[0], sl->ref_count[1],
                sl->qscale,
-               h->deblocking_filter,
-               h->slice_alpha_c0_offset, h->slice_beta_offset,
+               sl->deblocking_filter,
+               sl->slice_alpha_c0_offset, sl->slice_beta_offset,
                sl->use_weight,
                sl->use_weight == 1 && sl->use_weight_chroma ? "c" : "",
                sl->slice_type == AV_PICTURE_TYPE_B ? (sl->direct_spatial_mv_pred ? "SPAT" : "TEMP") : "");
@@ -2181,7 +2181,7 @@ static int fill_filter_caches(H264Context *h, H264SliceContext *sl, int mb_type)
     top_type        = h->cur_pic.mb_type[top_xy];
     left_type[LTOP] = h->cur_pic.mb_type[left_xy[LTOP]];
     left_type[LBOT] = h->cur_pic.mb_type[left_xy[LBOT]];
-    if (h->deblocking_filter == 2) {
+    if (sl->deblocking_filter == 2) {
         if (h->slice_table[top_xy] != sl->slice_num)
             top_type = 0;
         if (h->slice_table[left_xy[LBOT]] != sl->slice_num)
@@ -2279,7 +2279,7 @@ static void loop_filter(H264Context *h, H264SliceContext *sl, int start_x, int e
     const int pixel_shift    = h->pixel_shift;
     const int block_h        = 16 >> h->chroma_y_shift;
 
-    if (h->deblocking_filter) {
+    if (sl->deblocking_filter) {
         for (mb_x = start_x; mb_x < end_x; mb_x++)
             for (mb_y = end_mb_y - FRAME_MBAFF(h); mb_y <= end_mb_y; mb_y++) {
                 int mb_xy, mb_type;
@@ -2359,7 +2359,7 @@ static void decode_finish_row(H264Context *h, H264SliceContext *sl)
     int height         =  16      << FRAME_MBAFF(h);
     int deblock_border = (16 + 4) << FRAME_MBAFF(h);
 
-    if (h->deblocking_filter) {
+    if (sl->deblocking_filter) {
         if ((top + height) >= pic_height)
             height += deblock_border;
         top -= deblock_border;

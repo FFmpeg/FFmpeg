@@ -251,8 +251,8 @@ static av_always_inline void h264_filter_mb_fast_internal(H264Context *h,
     int top_type  = sl->top_type;
 
     int qp_bd_offset = 6 * (h->sps.bit_depth_luma - 8);
-    int a = 52 + h->slice_alpha_c0_offset - qp_bd_offset;
-    int b = 52 + h->slice_beta_offset - qp_bd_offset;
+    int a = 52 + sl->slice_alpha_c0_offset - qp_bd_offset;
+    int b = 52 + sl->slice_beta_offset - qp_bd_offset;
 
     int mb_type = h->cur_pic.mb_type[mb_xy];
     int qp      = h->cur_pic.qscale_table[mb_xy];
@@ -725,8 +725,8 @@ void ff_h264_filter_mb(H264Context *h, H264SliceContext *sl,
     int first_vertical_edge_done = 0;
     int chroma = CHROMA(h) && !(CONFIG_GRAY && (h->flags&CODEC_FLAG_GRAY));
     int qp_bd_offset = 6 * (h->sps.bit_depth_luma - 8);
-    int a = 52 + h->slice_alpha_c0_offset - qp_bd_offset;
-    int b = 52 + h->slice_beta_offset - qp_bd_offset;
+    int a = 52 + sl->slice_alpha_c0_offset - qp_bd_offset;
+    int b = 52 + sl->slice_beta_offset - qp_bd_offset;
 
     if (FRAME_MBAFF(h)
             // and current and left pair do not have the same interlaced type
