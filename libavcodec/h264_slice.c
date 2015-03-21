@@ -777,7 +777,7 @@ static int h264_frame_start(H264Context *h)
     return 0;
 }
 
-static av_always_inline void backup_mb_border(H264Context *h, H264SliceContext *sl,
+static av_always_inline void backup_mb_border(const H264Context *h, H264SliceContext *sl,
                                               uint8_t *src_y,
                                               uint8_t *src_cb, uint8_t *src_cr,
                                               int linesize, int uvlinesize,
@@ -879,7 +879,7 @@ static av_always_inline void backup_mb_border(H264Context *h, H264SliceContext *
  * @param field  0/1 initialize the weight for interlaced MBAFF
  *                -1 initializes the rest
  */
-static void implicit_weight_table(H264Context *h, H264SliceContext *sl, int field)
+static void implicit_weight_table(const H264Context *h, H264SliceContext *sl, int field)
 {
     int ref0, ref1, i, cur_poc, ref_start, ref_count0, ref_count1;
 
@@ -2031,7 +2031,7 @@ int ff_h264_get_slice_type(const H264SliceContext *sl)
     }
 }
 
-static av_always_inline void fill_filter_caches_inter(H264Context *h,
+static av_always_inline void fill_filter_caches_inter(const H264Context *h,
                                                       H264SliceContext *sl,
                                                       int mb_type, int top_xy,
                                                       int left_xy[LEFT_MBS],
@@ -2116,7 +2116,7 @@ static av_always_inline void fill_filter_caches_inter(H264Context *h,
  *
  * @return non zero if the loop filter can be skipped
  */
-static int fill_filter_caches(H264Context *h, H264SliceContext *sl, int mb_type)
+static int fill_filter_caches(const H264Context *h, H264SliceContext *sl, int mb_type)
 {
     const int mb_xy = sl->mb_xy;
     int top_xy, left_xy[LEFT_MBS];
@@ -2261,7 +2261,7 @@ static int fill_filter_caches(H264Context *h, H264SliceContext *sl, int mb_type)
     return 0;
 }
 
-static void loop_filter(H264Context *h, H264SliceContext *sl, int start_x, int end_x)
+static void loop_filter(const H264Context *h, H264SliceContext *sl, int start_x, int end_x)
 {
     uint8_t *dest_y, *dest_cb, *dest_cr;
     int linesize, uvlinesize, mb_x, mb_y;
@@ -2330,7 +2330,7 @@ static void loop_filter(H264Context *h, H264SliceContext *sl, int start_x, int e
     sl->chroma_qp[1] = get_chroma_qp(h, 1, sl->qscale);
 }
 
-static void predict_field_decoding_flag(H264Context *h, H264SliceContext *sl)
+static void predict_field_decoding_flag(const H264Context *h, H264SliceContext *sl)
 {
     const int mb_xy = sl->mb_x + sl->mb_y * h->mb_stride;
     int mb_type     = (h->slice_table[mb_xy - 1] == sl->slice_num) ?
@@ -2343,7 +2343,7 @@ static void predict_field_decoding_flag(H264Context *h, H264SliceContext *sl)
 /**
  * Draw edges and report progress for the last MB row.
  */
-static void decode_finish_row(H264Context *h, H264SliceContext *sl)
+static void decode_finish_row(const H264Context *h, H264SliceContext *sl)
 {
     int top            = 16 * (sl->mb_y      >> FIELD_PICTURE(h));
     int pic_height     = 16 *  h->mb_height >> FIELD_PICTURE(h);
@@ -2388,7 +2388,7 @@ static void er_add_slice(H264SliceContext *sl,
 static int decode_slice(struct AVCodecContext *avctx, void *arg)
 {
     H264SliceContext *sl = arg;
-    H264Context       *h = sl->h264;
+    const H264Context *h = sl->h264;
     int lf_x_start = sl->mb_x;
     int ret;
 
