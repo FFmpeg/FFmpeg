@@ -104,6 +104,8 @@ int ff_mms_asf_header_parser(MMSContext *mms)
                 mms->streams = av_fast_realloc(mms->streams,
                                    &mms->nb_streams_allocated,
                                    (mms->stream_num + 1) * sizeof(MMSStream));
+                if (!mms->streams)
+                    return AVERROR(ENOMEM);
                 mms->streams[mms->stream_num].id = stream_id;
                 mms->stream_num++;
             } else {
