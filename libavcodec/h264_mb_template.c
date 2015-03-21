@@ -191,7 +191,7 @@ static av_noinline void FUNC(hl_decode_mb)(H264Context *h, H264SliceContext *sl)
                                PIXEL_SHIFT, block_offset, linesize, dest_y, 0);
 
         if ((SIMPLE || !CONFIG_GRAY || !(h->flags & CODEC_FLAG_GRAY)) &&
-            (h->cbp & 0x30)) {
+            (sl->cbp & 0x30)) {
             uint8_t *dest[2] = { dest_cb, dest_cr };
             if (transform_bypass) {
                 if (IS_INTRA(mb_type) && h->sps.profile_idc == 244 &&

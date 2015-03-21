@@ -1088,7 +1088,7 @@ decode_intra_mb:
     if(dct8x8_allowed && (cbp&15) && !IS_INTRA(mb_type)){
         mb_type |= MB_TYPE_8x8DCT*get_bits1(&h->gb);
     }
-    h->cbp=
+    sl->cbp=
     h->cbp_table[mb_xy]= cbp;
     h->cur_pic.mb_type[mb_xy] = mb_type;
 

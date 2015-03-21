@@ -589,16 +589,16 @@ static void fill_decode_caches(H264Context *h, H264SliceContext *sl, int mb_type
         if (CABAC(h)) {
             // top_cbp
             if (top_type)
-                h->top_cbp = h->cbp_table[top_xy];
+                sl->top_cbp = h->cbp_table[top_xy];
             else
-                h->top_cbp = IS_INTRA(mb_type) ? 0x7CF : 0x00F;
+                sl->top_cbp = IS_INTRA(mb_type) ? 0x7CF : 0x00F;
             // left_cbp
             if (left_type[LTOP]) {
-                h->left_cbp =   (h->cbp_table[left_xy[LTOP]] & 0x7F0) |
+                sl->left_cbp =   (h->cbp_table[left_xy[LTOP]] & 0x7F0) |
                                ((h->cbp_table[left_xy[LTOP]] >> (left_block[0] & (~1))) & 2) |
                               (((h->cbp_table[left_xy[LBOT]] >> (left_block[2] & (~1))) & 2) << 2);
             } else {
-                h->left_cbp = IS_INTRA(mb_type) ? 0x7CF : 0x00F;
+                sl->left_cbp = IS_INTRA(mb_type) ? 0x7CF : 0x00F;
             }
         }
     }

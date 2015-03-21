@@ -2211,7 +2211,7 @@ static int fill_filter_caches(H264Context *h, H264SliceContext *sl, int mb_type)
     AV_COPY32(&nnz_cache[4 + 8 * 2], &nnz[4]);
     AV_COPY32(&nnz_cache[4 + 8 * 3], &nnz[8]);
     AV_COPY32(&nnz_cache[4 + 8 * 4], &nnz[12]);
-    h->cbp = h->cbp_table[mb_xy];
+    sl->cbp = h->cbp_table[mb_xy];
 
     if (top_type) {
         nnz = h->non_zero_count[top_xy];
@@ -2248,22 +2248,22 @@ static int fill_filter_caches(H264Context *h, H264SliceContext *sl, int mb_type)
             nnz_cache[scan8[0]] =
             nnz_cache[scan8[1]] =
             nnz_cache[scan8[2]] =
-            nnz_cache[scan8[3]] = (h->cbp & 0x1000) >> 12;
+            nnz_cache[scan8[3]] = (sl->cbp & 0x1000) >> 12;
 
             nnz_cache[scan8[0 + 4]] =
             nnz_cache[scan8[1 + 4]] =
             nnz_cache[scan8[2 + 4]] =
-            nnz_cache[scan8[3 + 4]] = (h->cbp & 0x2000) >> 12;
+            nnz_cache[scan8[3 + 4]] = (sl->cbp & 0x2000) >> 12;
 
             nnz_cache[scan8[0 + 8]] =
             nnz_cache[scan8[1 + 8]] =
             nnz_cache[scan8[2 + 8]] =
-            nnz_cache[scan8[3 + 8]] = (h->cbp & 0x4000) >> 12;
+            nnz_cache[scan8[3 + 8]] = (sl->cbp & 0x4000) >> 12;
 
             nnz_cache[scan8[0 + 12]] =
             nnz_cache[scan8[1 + 12]] =
             nnz_cache[scan8[2 + 12]] =
-            nnz_cache[scan8[3 + 12]] = (h->cbp & 0x8000) >> 12;
+            nnz_cache[scan8[3 + 12]] = (sl->cbp & 0x8000) >> 12;
         }
     }
 

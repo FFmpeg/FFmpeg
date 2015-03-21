@@ -768,7 +768,7 @@ static int svq3_decode_mb(SVQ3Context *s, unsigned int mb_type)
         }
     }
 
-    h->cbp                              = cbp;
+    sl->cbp                   = cbp;
     h->cur_pic.mb_type[mb_xy] = mb_type;
 
     if (IS_INTRA(mb_type))
@@ -1306,7 +1306,7 @@ static int svq3_decode_frame(AVCodecContext *avctx, void *data,
                 return -1;
             }
 
-            if (mb_type != 0 || h->cbp)
+            if (mb_type != 0 || sl->cbp)
                 ff_h264_hl_decode_mb(h, &h->slice_ctx[0]);
 
             if (h->pict_type != AV_PICTURE_TYPE_B && !h->low_delay)

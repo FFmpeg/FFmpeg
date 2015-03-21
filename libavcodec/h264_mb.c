@@ -768,7 +768,7 @@ static av_always_inline void hl_decode_mb_idct_luma(H264Context *h, H264SliceCon
                                                     linesize,
                                                     sl->non_zero_count_cache + p * 5 * 8);
                 }
-            } else if (h->cbp & 15) {
+            } else if (sl->cbp & 15) {
                 if (transform_bypass) {
                     const int di = IS_8x8DCT(mb_type) ? 4 : 1;
                     idct_add = IS_8x8DCT(mb_type) ? h->h264dsp.h264_add_pixels8_clear

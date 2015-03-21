@@ -396,6 +396,10 @@ typedef struct H264SliceContext {
     int col_parity;
     int col_fieldoff;
 
+    int cbp;
+    int top_cbp;
+    int left_cbp;
+
     int dist_scale_factor[32];
     int dist_scale_factor_field[2][32];
     int map_col_to_list0[2][16 + 32];
@@ -527,9 +531,7 @@ typedef struct H264Context {
 
     /* 0x100 -> non null luma_dc, 0x80/0x40 -> non null chroma_dc (cb/cr), 0x?0 -> chroma_cbp(0, 1, 2), 0x0? luma_cbp */
     uint16_t *cbp_table;
-    int cbp;
-    int top_cbp;
-    int left_cbp;
+
     /* chroma_pred_mode for i4x4 or i16x16, else 0 */
     uint8_t *chroma_pred_mode_table;
     int last_qscale_diff;

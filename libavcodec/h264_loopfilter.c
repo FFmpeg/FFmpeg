@@ -358,7 +358,7 @@ static av_always_inline void h264_filter_mb_fast_internal(H264Context *h,
     } else {
         LOCAL_ALIGNED(8, int16_t, bS, [2], [4][4]);
         int edges;
-        if( IS_8x8DCT(mb_type) && (h->cbp&7) == 7 && !chroma444 ) {
+        if( IS_8x8DCT(mb_type) && (sl->cbp&7) == 7 && !chroma444 ) {
             edges = 4;
             AV_WN64A(bS[0][0], 0x0002000200020002ULL);
             AV_WN64A(bS[0][2], 0x0002000200020002ULL);
@@ -368,7 +368,7 @@ static av_always_inline void h264_filter_mb_fast_internal(H264Context *h,
             int mask_edge1 = (3*(((5*mb_type)>>5)&1)) | (mb_type>>4); //(mb_type & (MB_TYPE_16x16 | MB_TYPE_8x16)) ? 3 : (mb_type & MB_TYPE_16x8) ? 1 : 0;
             int mask_edge0 = 3*((mask_edge1>>1) & ((5*left_type)>>5)&1); // (mb_type & (MB_TYPE_16x16 | MB_TYPE_8x16)) && (h->left_type[LTOP] & (MB_TYPE_16x16 | MB_TYPE_8x16)) ? 3 : 0;
             int step =  1+(mb_type>>24); //IS_8x8DCT(mb_type) ? 2 : 1;
-            edges = 4 - 3*((mb_type>>3) & !(h->cbp & 15)); //(mb_type & MB_TYPE_16x16) && !(h->cbp & 15) ? 1 : 4;
+            edges = 4 - 3*((mb_type>>3) & !(sl->cbp & 15)); //(mb_type & MB_TYPE_16x16) && !(h->cbp & 15) ? 1 : 4;
             h->h264dsp.h264_loop_filter_strength(bS, sl->non_zero_count_cache, sl->ref_cache, sl->mv_cache,
                                                  sl->list_count==2, edges, step, mask_edge0, mask_edge1, FIELD_PICTURE(h));
         }
@@ -485,7 +485,7 @@ static av_always_inline void filter_mb_dir(H264Context *h, H264SliceContext *sl,
     static const uint8_t mask_edge_tab[2][8]={{0,3,3,3,1,1,1,1},
                                               {0,3,1,1,3,3,3,3}};
     const int mask_edge = mask_edge_tab[dir][(mb_type>>3)&7];
-    const int edges = mask_edge== 3 && !(h->cbp&15) ? 1 : 4;
+    const int edges = mask_edge== 3 && !(sl->cbp&15) ? 1 : 4;
 
     // how often to recheck mv-based bS when iterating along each edge
     const int mask_par0 = mb_type & (MB_TYPE_16x16 | (MB_TYPE_8x16 >> dir));

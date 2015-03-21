@@ -1406,8 +1406,8 @@ static int decode_cabac_mb_cbp_luma(H264Context *h, H264SliceContext *sl)
 {
     int cbp_b, cbp_a, ctx, cbp = 0;
 
-    cbp_a = h->left_cbp;
-    cbp_b = h->top_cbp;
+    cbp_a = sl->left_cbp;
+    cbp_b = sl->top_cbp;
 
     ctx = !(cbp_a & 0x02) + 2 * !(cbp_b & 0x04);
     cbp += get_cabac_noinline(&sl->cabac, &sl->cabac_state[73 + ctx]);
@@ -1424,8 +1424,8 @@ static int decode_cabac_mb_cbp_chroma(H264Context *h, H264SliceContext *sl)
     int ctx;
     int cbp_a, cbp_b;
 
-    cbp_a = (h->left_cbp>>4)&0x03;
-    cbp_b = (h-> top_cbp>>4)&0x03;
+    cbp_a = (sl->left_cbp>>4)&0x03;
+    cbp_b = (sl-> top_cbp>>4)&0x03;
 
     ctx = 0;
     if( cbp_a > 0 ) ctx++;
@@ -1555,12 +1555,12 @@ static av_always_inline int get_cabac_cbf_ctx(H264Context *h, H264SliceContext *
     if( is_dc ) {
         if( cat == 3 ) {
             idx -= CHROMA_DC_BLOCK_INDEX;
-            nza = (h->left_cbp>>(6+idx))&0x01;
-            nzb = (h-> top_cbp>>(6+idx))&0x01;
+            nza = (sl->left_cbp>>(6+idx))&0x01;
+            nzb = (sl-> top_cbp>>(6+idx))&0x01;
         } else {
             idx -= LUMA_DC_BLOCK_INDEX;
-            nza = h->left_cbp&(0x100<<idx);
-            nzb = h-> top_cbp&(0x100<<idx);
+            nza = sl->left_cbp&(0x100<<idx);
+            nzb = sl-> top_cbp&(0x100<<idx);
         }
     } else {
         nza = sl->non_zero_count_cache[scan8[idx] - 1];
@@ -2325,7 +2325,7 @@ decode_intra_mb:
         }
     }
 
-    h->cbp_table[mb_xy] = h->cbp = cbp;
+    h->cbp_table[mb_xy] = sl->cbp = cbp;
 
     if( dct8x8_allowed && (cbp&15) && !IS_INTRA( mb_type ) ) {
         mb_type |= MB_TYPE_8x8DCT * get_cabac_noinline(&sl->cabac, &sl->cabac_state[399 + sl->neighbor_transform_size]);
