@@ -2,7 +2,11 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 2.5.5:
+- vp9: make above buffer pointer 32-byte aligned.
+- avcodec/dnxhddec: Check that the frame is interlaced before using cur_field
 - avformat/mov: Disallow ".." in dref unless use_absolute_path is set
+- avformat/mov: Check for string truncation in mov_open_dref()
+- avformat/mov: Use sizeof(filename) instead of a literal number
 - eac3dec: fix scaling
 - ac3_fixed: fix computation of spx_noise_blend
 - ac3_fixed: fix out-of-bound read
