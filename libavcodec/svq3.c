@@ -303,6 +303,7 @@ static inline void svq3_mc_dir_part(SVQ3Context *s,
                                     int thirdpel, int dir, int avg)
 {
     H264Context *h = &s->h;
+    H264SliceContext *sl = &h->slice_ctx[0];
     const H264Picture *pic = (dir == 0) ? s->last_pic : s->next_pic;
     uint8_t *src, *dest;
     int i, emu = 0;
@@ -323,11 +324,11 @@ static inline void svq3_mc_dir_part(SVQ3Context *s,
     src  = pic->f.data[0] + mx + my * h->linesize;
 
     if (emu) {
-        h->vdsp.emulated_edge_mc(h->edge_emu_buffer, src,
+        h->vdsp.emulated_edge_mc(sl->edge_emu_buffer, src,
                                  h->linesize, h->linesize,
                                  width + 1, height + 1,
                                  mx, my, s->h_edge_pos, s->v_edge_pos);
-        src = h->edge_emu_buffer;
+        src = sl->edge_emu_buffer;
     }
     if (thirdpel)
         (avg ? s->tdsp.avg_tpel_pixels_tab
@@ -350,12 +351,12 @@ static inline void svq3_mc_dir_part(SVQ3Context *s,
             src  = pic->f.data[i] + mx + my * h->uvlinesize;
 
             if (emu) {
-                h->vdsp.emulated_edge_mc(h->edge_emu_buffer, src,
+                h->vdsp.emulated_edge_mc(sl->edge_emu_buffer, src,
                                          h->uvlinesize, h->uvlinesize,
                                          width + 1, height + 1,
                                          mx, my, (s->h_edge_pos >> 1),
                                          s->v_edge_pos >> 1);
-                src = h->edge_emu_buffer;
+                src = sl->edge_emu_buffer;
             }
             if (thirdpel)
                 (avg ? s->tdsp.avg_tpel_pixels_tab
@@ -1082,6 +1083,7 @@ static int get_buffer(AVCodecContext *avctx, H264Picture *pic)
 {
     SVQ3Context *s = avctx->priv_data;
     H264Context *h = &s->h;
+    H264SliceContext *sl = &h->slice_ctx[0];
     const int big_mb_num    = h->mb_stride * (h->mb_height + 1) + 1;
     const int mb_array_size = h->mb_stride * h->mb_height;
     const int b4_stride     = h->mb_width * 4 + 1;
@@ -1115,9 +1117,9 @@ static int get_buffer(AVCodecContext *avctx, H264Picture *pic)
     if (ret < 0)
         goto fail;
 
-    if (!h->edge_emu_buffer) {
-        h->edge_emu_buffer = av_mallocz_array(pic->f.linesize[0], 17);
-        if (!h->edge_emu_buffer)
+    if (!sl->edge_emu_buffer) {
+        sl->edge_emu_buffer = av_mallocz_array(pic->f.linesize[0], 17);
+        if (!sl->edge_emu_buffer)
             return AVERROR(ENOMEM);
     }
 
@@ -1373,7 +1375,6 @@ static av_cold int svq3_decode_end(AVCodecContext *avctx)
 
     av_freep(&s->buf);
     s->buf_size = 0;
-    av_freep(&h->edge_emu_buffer);
 
     return 0;
 }

@@ -436,6 +436,11 @@ typedef struct H264SliceContext {
 
     const uint8_t *intra_pcm_ptr;
 
+    uint8_t *bipred_scratchpad;
+    uint8_t *edge_emu_buffer;
+    int bipred_scratchpad_allocated;
+    int edge_emu_buffer_allocated;
+
     /**
      * non zero coeff count cache.
      * is 64 if not available.
@@ -763,14 +768,11 @@ typedef struct H264Context {
     int initial_cpb_removal_delay[32];  ///< Initial timestamps for CPBs
 
     int cur_chroma_format_idc;
-    uint8_t *bipred_scratchpad;
-
     int16_t slice_row[MAX_SLICES]; ///< to detect when MAX_SLICES is too low
 
     uint8_t parse_history[6];
     int parse_history_count;
     int parse_last_mb;
-    uint8_t *edge_emu_buffer;
     int16_t *dc_val_base;
 
     AVBufferPool *qscale_table_pool;
