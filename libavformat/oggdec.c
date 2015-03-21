@@ -282,8 +282,11 @@ static int ogg_read_page(AVFormatContext *s, int *str)
     os = ogg->streams + idx;
     os->page_pos = avio_tell(bc) - 27;
 
-    if (os->psize > 0)
-        ogg_new_buf(ogg, idx);
+    if (os->psize > 0) {
+        ret = ogg_new_buf(ogg, idx);
+        if (ret < 0)
+            return ret;
+    }
 
     ret = avio_read(bc, os->segments, nsegs);
     if (ret < nsegs)
@@ -503,7 +506,7 @@ static int ogg_get_headers(AVFormatContext *s)
 static int ogg_get_length(AVFormatContext *s)
 {
     struct ogg *ogg = s->priv_data;
-    int i;
+    int i, ret;
     int64_t size, end;
 
     if (!s->pb->seekable)
@@ -518,7 +521,9 @@ static int ogg_get_length(AVFormatContext *s)
         return 0;
     end = size > MAX_PAGE_SIZE ? size - MAX_PAGE_SIZE : 0;
 
-    ogg_save(s);
+    ret = ogg_save(s);
+    if (ret < 0)
+        return ret;
     avio_seek(s->pb, end, SEEK_SET);
 
     while (!ogg_read_page(s, &i)) {
@@ -570,7 +575,11 @@ static int ogg_read_header(AVFormatContext *s)
             ogg->streams[i].codec = NULL;
 
     //linear granulepos seek from end
-    ogg_get_length(s);
+    ret = ogg_get_length(s);
+    if (ret < 0) {
+        ogg_read_close(s);
+        return ret;
+    }
 
     //fill the extradata in the per codec callbacks
     return 0;
