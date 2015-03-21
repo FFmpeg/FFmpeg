@@ -341,7 +341,7 @@ int ff_h264_decode_ref_pic_list_reordering(H264Context *h)
     return 0;
 }
 
-void ff_h264_fill_mbaff_ref_list(H264Context *h)
+void ff_h264_fill_mbaff_ref_list(H264Context *h, H264SliceContext *sl)
 {
     int list, i, j;
     for (list = 0; list < h->list_count; list++) {
@@ -359,11 +359,11 @@ void ff_h264_fill_mbaff_ref_list(H264Context *h)
             field[1].reference = PICT_BOTTOM_FIELD;
             field[1].poc       = field[1].field_poc[1];
 
-            h->luma_weight[16 + 2 * i][list][0] = h->luma_weight[16 + 2 * i + 1][list][0] = h->luma_weight[i][list][0];
-            h->luma_weight[16 + 2 * i][list][1] = h->luma_weight[16 + 2 * i + 1][list][1] = h->luma_weight[i][list][1];
+            sl->luma_weight[16 + 2 * i][list][0] = sl->luma_weight[16 + 2 * i + 1][list][0] = sl->luma_weight[i][list][0];
+            sl->luma_weight[16 + 2 * i][list][1] = sl->luma_weight[16 + 2 * i + 1][list][1] = sl->luma_weight[i][list][1];
             for (j = 0; j < 2; j++) {
-                h->chroma_weight[16 + 2 * i][list][j][0] = h->chroma_weight[16 + 2 * i + 1][list][j][0] = h->chroma_weight[i][list][j][0];
-                h->chroma_weight[16 + 2 * i][list][j][1] = h->chroma_weight[16 + 2 * i + 1][list][j][1] = h->chroma_weight[i][list][j][1];
+                sl->chroma_weight[16 + 2 * i][list][j][0] = sl->chroma_weight[16 + 2 * i + 1][list][j][0] = sl->chroma_weight[i][list][j][0];
+                sl->chroma_weight[16 + 2 * i][list][j][1] = sl->chroma_weight[16 + 2 * i + 1][list][j][1] = sl->chroma_weight[i][list][j][1];
             }
         }
     }

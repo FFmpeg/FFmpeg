@@ -1303,7 +1303,7 @@ static int svq3_decode_frame(AVCodecContext *avctx, void *data,
             }
 
             if (mb_type != 0 || h->cbp)
-                ff_h264_hl_decode_mb(h);
+                ff_h264_hl_decode_mb(h, &h->slice_ctx[0]);
 
             if (h->pict_type != AV_PICTURE_TYPE_B && !h->low_delay)
                 h->cur_pic.mb_type[h->mb_x + h->mb_y * h->mb_stride] =

@@ -40,7 +40,7 @@
 #define CHROMA_IDC 2
 #include "h264_mc_template.c"
 
-static av_noinline void FUNC(hl_decode_mb)(H264Context *h)
+static av_noinline void FUNC(hl_decode_mb)(H264Context *h, H264SliceContext *sl)
 {
     const int mb_x    = h->mb_x;
     const int mb_y    = h->mb_y;
@@ -173,13 +173,13 @@ static av_noinline void FUNC(hl_decode_mb)(H264Context *h)
                                uvlinesize, 0, 0, SIMPLE, PIXEL_SHIFT);
         } else if (is_h264) {
             if (chroma422) {
-                FUNC(hl_motion_422)(h, dest_y, dest_cb, dest_cr,
+                FUNC(hl_motion_422)(h, sl, dest_y, dest_cb, dest_cr,
                               h->qpel_put, h->h264chroma.put_h264_chroma_pixels_tab,
                               h->qpel_avg, h->h264chroma.avg_h264_chroma_pixels_tab,
                               h->h264dsp.weight_h264_pixels_tab,
                               h->h264dsp.biweight_h264_pixels_tab);
             } else {
-                FUNC(hl_motion_420)(h, dest_y, dest_cb, dest_cr,
+                FUNC(hl_motion_420)(h, sl, dest_y, dest_cb, dest_cr,
                               h->qpel_put, h->h264chroma.put_h264_chroma_pixels_tab,
                               h->qpel_avg, h->h264chroma.avg_h264_chroma_pixels_tab,
                               h->h264dsp.weight_h264_pixels_tab,
@@ -269,7 +269,7 @@ static av_noinline void FUNC(hl_decode_mb)(H264Context *h)
 #define CHROMA_IDC 3
 #include "h264_mc_template.c"
 
-static av_noinline void FUNC(hl_decode_mb_444)(H264Context *h)
+static av_noinline void FUNC(hl_decode_mb_444)(H264Context *h, H264SliceContext *sl)
 {
     const int mb_x    = h->mb_x;
     const int mb_y    = h->mb_y;
@@ -352,7 +352,7 @@ static av_noinline void FUNC(hl_decode_mb_444)(H264Context *h)
                 xchg_mb_border(h, dest[0], dest[1], dest[2], linesize,
                                linesize, 0, 1, SIMPLE, PIXEL_SHIFT);
         } else {
-            FUNC(hl_motion_444)(h, dest[0], dest[1], dest[2],
+            FUNC(hl_motion_444)(h, sl, dest[0], dest[1], dest[2],
                       h->qpel_put, h->h264chroma.put_h264_chroma_pixels_tab,
                       h->qpel_avg, h->h264chroma.avg_h264_chroma_pixels_tab,
                       h->h264dsp.weight_h264_pixels_tab,

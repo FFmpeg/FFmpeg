@@ -362,7 +362,8 @@ static av_always_inline void mc_part_std(H264Context *h, int n, int square,
     }
 }
 
-static av_always_inline void mc_part_weighted(H264Context *h, int n, int square,
+static av_always_inline void mc_part_weighted(H264Context *h, H264SliceContext *sl,
+                                              int n, int square,
                                               int height, int delta,
                                               uint8_t *dest_y, uint8_t *dest_cb,
                                               uint8_t *dest_cr,
@@ -415,8 +416,8 @@ static av_always_inline void mc_part_weighted(H264Context *h, int n, int square,
                     x_offset, y_offset, qpix_put, chroma_put,
                     pixel_shift, chroma_idc);
 
-        if (h->use_weight == 2) {
-            int weight0 = h->implicit_weight[refn0][refn1][h->mb_y & 1];
+        if (sl->use_weight == 2) {
+            int weight0 = sl->implicit_weight[refn0][refn1][h->mb_y & 1];
             int weight1 = 64 - weight0;
             luma_weight_avg(dest_y, tmp_y, h->mb_linesize,
                             height, 5, weight0, weight1, 0);
@@ -428,24 +429,24 @@ static av_always_inline void mc_part_weighted(H264Context *h, int n, int square,
             }
         } else {
             luma_weight_avg(dest_y, tmp_y, h->mb_linesize, height,
-                            h->luma_log2_weight_denom,
-                            h->luma_weight[refn0][0][0],
-                            h->luma_weight[refn1][1][0],
-                            h->luma_weight[refn0][0][1] +
-                            h->luma_weight[refn1][1][1]);
+                            sl->luma_log2_weight_denom,
+                            sl->luma_weight[refn0][0][0],
+                            sl->luma_weight[refn1][1][0],
+                            sl->luma_weight[refn0][0][1] +
+                            sl->luma_weight[refn1][1][1]);
             if (!CONFIG_GRAY || !(h->flags & CODEC_FLAG_GRAY)) {
                 chroma_weight_avg(dest_cb, tmp_cb, h->mb_uvlinesize, chroma_height,
-                                  h->chroma_log2_weight_denom,
-                                  h->chroma_weight[refn0][0][0][0],
-                                  h->chroma_weight[refn1][1][0][0],
-                                  h->chroma_weight[refn0][0][0][1] +
-                                  h->chroma_weight[refn1][1][0][1]);
+                                  sl->chroma_log2_weight_denom,
+                                  sl->chroma_weight[refn0][0][0][0],
+                                  sl->chroma_weight[refn1][1][0][0],
+                                  sl->chroma_weight[refn0][0][0][1] +
+                                  sl->chroma_weight[refn1][1][0][1]);
                 chroma_weight_avg(dest_cr, tmp_cr, h->mb_uvlinesize, chroma_height,
-                                  h->chroma_log2_weight_denom,
-                                  h->chroma_weight[refn0][0][1][0],
-                                  h->chroma_weight[refn1][1][1][0],
-                                  h->chroma_weight[refn0][0][1][1] +
-                                  h->chroma_weight[refn1][1][1][1]);
+                                  sl->chroma_log2_weight_denom,
+                                  sl->chroma_weight[refn0][0][1][0],
+                                  sl->chroma_weight[refn1][1][1][0],
+                                  sl->chroma_weight[refn0][0][1][1] +
+                                  sl->chroma_weight[refn1][1][1][1]);
             }
         }
     } else {
@@ -457,19 +458,19 @@ static av_always_inline void mc_part_weighted(H264Context *h, int n, int square,
                     qpix_put, chroma_put, pixel_shift, chroma_idc);
 
         luma_weight_op(dest_y, h->mb_linesize, height,
-                       h->luma_log2_weight_denom,
-                       h->luma_weight[refn][list][0],
-                       h->luma_weight[refn][list][1]);
+                       sl->luma_log2_weight_denom,
+                       sl->luma_weight[refn][list][0],
+                       sl->luma_weight[refn][list][1]);
         if (!CONFIG_GRAY || !(h->flags & CODEC_FLAG_GRAY)) {
-            if (h->use_weight_chroma) {
+            if (sl->use_weight_chroma) {
                 chroma_weight_op(dest_cb, h->mb_uvlinesize, chroma_height,
-                                 h->chroma_log2_weight_denom,
-                                 h->chroma_weight[refn][list][0][0],
-                                 h->chroma_weight[refn][list][0][1]);
+                                 sl->chroma_log2_weight_denom,
+                                 sl->chroma_weight[refn][list][0][0],
+                                 sl->chroma_weight[refn][list][0][1]);
                 chroma_weight_op(dest_cr, h->mb_uvlinesize, chroma_height,
-                                 h->chroma_log2_weight_denom,
-                                 h->chroma_weight[refn][list][1][0],
-                                 h->chroma_weight[refn][list][1][1]);
+                                 sl->chroma_log2_weight_denom,
+                                 sl->chroma_weight[refn][list][1][0],
+                                 sl->chroma_weight[refn][list][1][1]);
             }
         }
     }
@@ -806,7 +807,7 @@ static av_always_inline void hl_decode_mb_idct_luma(H264Context *h, int mb_type,
 #define SIMPLE 0
 #include "h264_mb_template.c"
 
-void ff_h264_hl_decode_mb(H264Context *h)
+void ff_h264_hl_decode_mb(H264Context *h, H264SliceContext *sl)
 {
     const int mb_xy   = h->mb_xy;
     const int mb_type = h->cur_pic.mb_type[mb_xy];
@@ -815,13 +816,13 @@ void ff_h264_hl_decode_mb(H264Context *h)
 
     if (CHROMA444(h)) {
         if (is_complex || h->pixel_shift)
-            hl_decode_mb_444_complex(h);
+            hl_decode_mb_444_complex(h, sl);
         else
-            hl_decode_mb_444_simple_8(h);
+            hl_decode_mb_444_simple_8(h, sl);
     } else if (is_complex) {
-        hl_decode_mb_complex(h);
+        hl_decode_mb_complex(h, sl);
     } else if (h->pixel_shift) {
-        hl_decode_mb_simple_16(h);
+        hl_decode_mb_simple_16(h, sl);
     } else
-        hl_decode_mb_simple_8(h);
+        hl_decode_mb_simple_8(h, sl);
 }

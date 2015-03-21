@@ -133,6 +133,7 @@ static int scan_mmco_reset(AVCodecParserContext *s)
 {
     H264ParseContext *p = s->priv_data;
     H264Context      *h = &p->h;
+    H264SliceContext *sl = &h->slice_ctx[0];
 
     h->slice_type_nos = s->pict_type & 3;
 
@@ -172,7 +173,7 @@ static int scan_mmco_reset(AVCodecParserContext *s)
 
     if ((h->pps.weighted_pred && h->slice_type_nos == AV_PICTURE_TYPE_P) ||
         (h->pps.weighted_bipred_idc == 1 && h->slice_type_nos == AV_PICTURE_TYPE_B))
-        ff_pred_weight_table(h);
+        ff_pred_weight_table(h, sl);
 
     if (get_bits1(&h->gb)) { // adaptive_ref_pic_marking_mode_flag
         int i;
@@ -603,6 +604,12 @@ static av_cold int init(AVCodecParserContext *s)
 {
     H264ParseContext *p = s->priv_data;
     H264Context      *h = &p->h;
+
+    h->slice_ctx = av_mallocz(sizeof(*h->slice_ctx));
+    if (!h->slice_ctx)
+        return 0;
+    h->nb_slice_ctx = 1;
+
     h->thread_context[0]   = h;
     h->slice_context_count = 1;
     ff_h264dsp_init(&h->h264dsp, 8, 1);

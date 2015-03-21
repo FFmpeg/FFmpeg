@@ -192,27 +192,28 @@ static void fill_vaapi_plain_pred_weight_table(H264Context   *h,
                                                short          chroma_weight[32][2],
                                                short          chroma_offset[32][2])
 {
+    H264SliceContext *sl = &h->slice_ctx[0];
     unsigned int i, j;
 
-    *luma_weight_flag    = h->luma_weight_flag[list];
-    *chroma_weight_flag  = h->chroma_weight_flag[list];
+    *luma_weight_flag    = sl->luma_weight_flag[list];
+    *chroma_weight_flag  = sl->chroma_weight_flag[list];
 
     for (i = 0; i < h->ref_count[list]; i++) {
         /* VA API also wants the inferred (default) values, not
            only what is available in the bitstream (7.4.3.2). */
-        if (h->luma_weight_flag[list]) {
-            luma_weight[i] = h->luma_weight[i][list][0];
-            luma_offset[i] = h->luma_weight[i][list][1];
+        if (sl->luma_weight_flag[list]) {
+            luma_weight[i] = sl->luma_weight[i][list][0];
+            luma_offset[i] = sl->luma_weight[i][list][1];
         } else {
-            luma_weight[i] = 1 << h->luma_log2_weight_denom;
+            luma_weight[i] = 1 << sl->luma_log2_weight_denom;
             luma_offset[i] = 0;
         }
         for (j = 0; j < 2; j++) {
-            if (h->chroma_weight_flag[list]) {
-                chroma_weight[i][j] = h->chroma_weight[i][list][j][0];
-                chroma_offset[i][j] = h->chroma_weight[i][list][j][1];
+            if (sl->chroma_weight_flag[list]) {
+                chroma_weight[i][j] = sl->chroma_weight[i][list][j][0];
+                chroma_offset[i][j] = sl->chroma_weight[i][list][j][1];
             } else {
-                chroma_weight[i][j] = 1 << h->chroma_log2_weight_denom;
+                chroma_weight[i][j] = 1 << sl->chroma_log2_weight_denom;
                 chroma_offset[i][j] = 0;
             }
         }
@@ -316,6 +317,7 @@ static int vaapi_h264_decode_slice(AVCodecContext *avctx,
                                    uint32_t        size)
 {
     H264Context * const h = avctx->priv_data;
+    H264SliceContext *sl  = &h->slice_ctx[0];
     VASliceParameterBufferH264 *slice_param;
 
     av_dlog(avctx, "vaapi_h264_decode_slice(): buffer %p, size %d\n",
@@ -336,8 +338,8 @@ static int vaapi_h264_decode_slice(AVCodecContext *avctx,
     slice_param->disable_deblocking_filter_idc  = h->deblocking_filter < 2 ? !h->deblocking_filter : h->deblocking_filter;
     slice_param->slice_alpha_c0_offset_div2     = h->slice_alpha_c0_offset / 2;
     slice_param->slice_beta_offset_div2         = h->slice_beta_offset     / 2;
-    slice_param->luma_log2_weight_denom         = h->luma_log2_weight_denom;
-    slice_param->chroma_log2_weight_denom       = h->chroma_log2_weight_denom;
+    slice_param->luma_log2_weight_denom         = sl->luma_log2_weight_denom;
+    slice_param->chroma_log2_weight_denom       = sl->chroma_log2_weight_denom;
 
     fill_vaapi_RefPicList(slice_param->RefPicList0, h->ref_list[0], h->list_count > 0 ? h->ref_count[0] : 0);
     fill_vaapi_RefPicList(slice_param->RefPicList1, h->ref_list[1], h->list_count > 1 ? h->ref_count[1] : 0);

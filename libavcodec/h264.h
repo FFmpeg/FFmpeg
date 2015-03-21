@@ -333,6 +333,22 @@ typedef struct H264Picture {
     int crop_top;
 } H264Picture;
 
+typedef struct H264SliceContext {
+    struct H264Context *h264;
+
+    // Weighted pred stuff
+    int use_weight;
+    int use_weight_chroma;
+    int luma_log2_weight_denom;
+    int chroma_log2_weight_denom;
+    int luma_weight_flag[2];    ///< 7.4.3.2 luma_weight_lX_flag
+    int chroma_weight_flag[2];  ///< 7.4.3.2 chroma_weight_lX_flag
+    // The following 2 can be changed to int8_t but that causes 10cpu cycles speedloss
+    int luma_weight[48][2][2];
+    int chroma_weight[48][2][2][2];
+    int implicit_weight[48][48][2];
+} H264SliceContext;
+
 /**
  * H264Context
  */
@@ -350,6 +366,9 @@ typedef struct H264Context {
     H264Picture *cur_pic_ptr;
     H264Picture cur_pic;
     H264Picture last_pic_for_ec;
+
+    H264SliceContext *slice_ctx;
+    int            nb_slice_ctx;
 
     int pixel_shift;    ///< 0 for 8-bit H264, 1 for high-bit-depth H264
     int chroma_qp[2];   // QPc
@@ -459,15 +478,6 @@ typedef struct H264Context {
 
     DECLARE_ALIGNED(8, uint16_t, sub_mb_type)[4];
 
-    // Weighted pred stuff
-    int use_weight;
-    int use_weight_chroma;
-    int luma_log2_weight_denom;
-    int chroma_log2_weight_denom;
-    // The following 2 can be changed to int8_t but that causes 10cpu cycles speedloss
-    int luma_weight[48][2][2];
-    int chroma_weight[48][2][2][2];
-    int implicit_weight[48][48][2];
 
     int direct_spatial_mv_pred;
     int col_parity;
@@ -737,8 +747,6 @@ typedef struct H264Context {
 
     int missing_fields;
 
-    int luma_weight_flag[2];    ///< 7.4.3.2 luma_weight_lX_flag
-    int chroma_weight_flag[2];  ///< 7.4.3.2 chroma_weight_lX_flag
 
     // Timestamp stuff
     int sei_buffering_period_present;   ///< Buffering period SEI flag
@@ -822,7 +830,7 @@ int ff_h264_alloc_tables(H264Context *h);
 int ff_h264_fill_default_ref_list(H264Context *h);
 
 int ff_h264_decode_ref_pic_list_reordering(H264Context *h);
-void ff_h264_fill_mbaff_ref_list(H264Context *h);
+void ff_h264_fill_mbaff_ref_list(H264Context *h, H264SliceContext *sl);
 void ff_h264_remove_all_refs(H264Context *h);
 
 /**
@@ -847,7 +855,7 @@ int ff_h264_check_intra4x4_pred_mode(H264Context *h);
  */
 int ff_h264_check_intra_pred_mode(H264Context *h, int mode, int is_chroma);
 
-void ff_h264_hl_decode_mb(H264Context *h);
+void ff_h264_hl_decode_mb(H264Context *h, H264SliceContext *sl);
 int ff_h264_decode_extradata(H264Context *h, const uint8_t *buf, int size);
 int ff_h264_decode_init(AVCodecContext *avctx);
 void ff_h264_decode_init_vlc(void);
@@ -1137,10 +1145,10 @@ int ff_h264_set_parameter_from_sps(H264Context *h);
 
 void ff_h264_draw_horiz_band(H264Context *h, int y, int height);
 int ff_init_poc(H264Context *h, int pic_field_poc[2], int *pic_poc);
-int ff_pred_weight_table(H264Context *h);
+int ff_pred_weight_table(H264Context *h, H264SliceContext *sl);
 int ff_set_ref_count(H264Context *h);
 
-int ff_h264_decode_slice_header(H264Context *h, H264Context *h0);
+int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl, H264Context *h0);
 #define SLICE_SINGLETHREAD 1
 #define SLICE_SKIPED 2
 

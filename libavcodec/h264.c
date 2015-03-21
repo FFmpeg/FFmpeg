@@ -91,7 +91,7 @@ static void h264_er_decode_mb(void *opaque, int ref, int mv_dir, int mv_type,
                    pack16to32((*mv)[0][0][0], (*mv)[0][0][1]), 4);
     h->mb_mbaff =
     h->mb_field_decoding_flag = 0;
-    ff_h264_hl_decode_mb(h);
+    ff_h264_hl_decode_mb(h, &h->slice_ctx[0]);
 }
 
 void ff_h264_draw_horiz_band(H264Context *h, int y, int height)
@@ -673,7 +673,17 @@ av_cold int ff_h264_decode_init(AVCodecContext *avctx)
     h->pixel_shift        = 0;
     h->sps.bit_depth_luma = avctx->bits_per_raw_sample = 8;
 
+    h->nb_slice_ctx = (avctx->active_thread_type & FF_THREAD_SLICE) ?  H264_MAX_THREADS : 1;
+    h->slice_ctx = av_mallocz_array(h->nb_slice_ctx, sizeof(*h->slice_ctx));
+    if (!h->slice_ctx) {
+        h->nb_slice_ctx = 0;
+        return AVERROR(ENOMEM);
+    }
+
     h->thread_context[0] = h;
+    for (i = 0; i < h->nb_slice_ctx; i++)
+        h->slice_ctx[i].h264 = h->thread_context[0];
+
     h->outputed_poc      = h->next_outputed_poc = INT_MIN;
     for (i = 0; i < MAX_DELAYED_PIC_COUNT; i++)
         h->last_pocs[i] = INT_MIN;
@@ -716,11 +726,22 @@ av_cold int ff_h264_decode_init(AVCodecContext *avctx)
 static int decode_init_thread_copy(AVCodecContext *avctx)
 {
     H264Context *h = avctx->priv_data;
+    int i;
 
     if (!avctx->internal->is_copy)
         return 0;
     memset(h->sps_buffers, 0, sizeof(h->sps_buffers));
     memset(h->pps_buffers, 0, sizeof(h->pps_buffers));
+
+    h->nb_slice_ctx = (avctx->active_thread_type & FF_THREAD_SLICE) ?  H264_MAX_THREADS : 1;
+    h->slice_ctx = av_mallocz_array(h->nb_slice_ctx, sizeof(*h->slice_ctx));
+    if (!h->slice_ctx) {
+        h->nb_slice_ctx = 0;
+        return AVERROR(ENOMEM);
+    }
+
+    for (i = 0; i < h->nb_slice_ctx; i++)
+        h->slice_ctx[i].h264 = h;
 
     h->avctx               = avctx;
     h->rbsp_buffer[0]      = NULL;
@@ -980,47 +1001,47 @@ static void decode_postinit(H264Context *h, int setup_finished)
         ff_thread_finish_setup(h->avctx);
 }
 
-int ff_pred_weight_table(H264Context *h)
+int ff_pred_weight_table(H264Context *h, H264SliceContext *sl)
 {
     int list, i;
     int luma_def, chroma_def;
 
-    h->use_weight             = 0;
-    h->use_weight_chroma      = 0;
-    h->luma_log2_weight_denom = get_ue_golomb(&h->gb);
+    sl->use_weight             = 0;
+    sl->use_weight_chroma      = 0;
+    sl->luma_log2_weight_denom = get_ue_golomb(&h->gb);
     if (h->sps.chroma_format_idc)
-        h->chroma_log2_weight_denom = get_ue_golomb(&h->gb);
+        sl->chroma_log2_weight_denom = get_ue_golomb(&h->gb);
 
-    if (h->luma_log2_weight_denom > 7U) {
-        av_log(h->avctx, AV_LOG_ERROR, "luma_log2_weight_denom %d is out of range\n", h->luma_log2_weight_denom);
-        h->luma_log2_weight_denom = 0;
+    if (sl->luma_log2_weight_denom > 7U) {
+        av_log(h->avctx, AV_LOG_ERROR, "luma_log2_weight_denom %d is out of range\n", sl->luma_log2_weight_denom);
+        sl->luma_log2_weight_denom = 0;
     }
-    if (h->chroma_log2_weight_denom > 7U) {
-        av_log(h->avctx, AV_LOG_ERROR, "chroma_log2_weight_denom %d is out of range\n", h->chroma_log2_weight_denom);
-        h->chroma_log2_weight_denom = 0;
+    if (sl->chroma_log2_weight_denom > 7U) {
+        av_log(h->avctx, AV_LOG_ERROR, "chroma_log2_weight_denom %d is out of range\n", sl->chroma_log2_weight_denom);
+        sl->chroma_log2_weight_denom = 0;
     }
 
-    luma_def   = 1 << h->luma_log2_weight_denom;
-    chroma_def = 1 << h->chroma_log2_weight_denom;
+    luma_def   = 1 << sl->luma_log2_weight_denom;
+    chroma_def = 1 << sl->chroma_log2_weight_denom;
 
     for (list = 0; list < 2; list++) {
-        h->luma_weight_flag[list]   = 0;
-        h->chroma_weight_flag[list] = 0;
+        sl->luma_weight_flag[list]   = 0;
+        sl->chroma_weight_flag[list] = 0;
         for (i = 0; i < h->ref_count[list]; i++) {
             int luma_weight_flag, chroma_weight_flag;
 
             luma_weight_flag = get_bits1(&h->gb);
             if (luma_weight_flag) {
-                h->luma_weight[i][list][0] = get_se_golomb(&h->gb);
-                h->luma_weight[i][list][1] = get_se_golomb(&h->gb);
-                if (h->luma_weight[i][list][0] != luma_def ||
-                    h->luma_weight[i][list][1] != 0) {
-                    h->use_weight             = 1;
-                    h->luma_weight_flag[list] = 1;
+                sl->luma_weight[i][list][0] = get_se_golomb(&h->gb);
+                sl->luma_weight[i][list][1] = get_se_golomb(&h->gb);
+                if (sl->luma_weight[i][list][0] != luma_def ||
+                    sl->luma_weight[i][list][1] != 0) {
+                    sl->use_weight             = 1;
+                    sl->luma_weight_flag[list] = 1;
                 }
             } else {
-                h->luma_weight[i][list][0] = luma_def;
-                h->luma_weight[i][list][1] = 0;
+                sl->luma_weight[i][list][0] = luma_def;
+                sl->luma_weight[i][list][1] = 0;
             }
 
             if (h->sps.chroma_format_idc) {
@@ -1028,19 +1049,19 @@ int ff_pred_weight_table(H264Context *h)
                 if (chroma_weight_flag) {
                     int j;
                     for (j = 0; j < 2; j++) {
-                        h->chroma_weight[i][list][j][0] = get_se_golomb(&h->gb);
-                        h->chroma_weight[i][list][j][1] = get_se_golomb(&h->gb);
-                        if (h->chroma_weight[i][list][j][0] != chroma_def ||
-                            h->chroma_weight[i][list][j][1] != 0) {
-                            h->use_weight_chroma        = 1;
-                            h->chroma_weight_flag[list] = 1;
+                        sl->chroma_weight[i][list][j][0] = get_se_golomb(&h->gb);
+                        sl->chroma_weight[i][list][j][1] = get_se_golomb(&h->gb);
+                        if (sl->chroma_weight[i][list][j][0] != chroma_def ||
+                            sl->chroma_weight[i][list][j][1] != 0) {
+                            sl->use_weight_chroma        = 1;
+                            sl->chroma_weight_flag[list] = 1;
                         }
                     }
                 } else {
                     int j;
                     for (j = 0; j < 2; j++) {
-                        h->chroma_weight[i][list][j][0] = chroma_def;
-                        h->chroma_weight[i][list][j][1] = 0;
+                        sl->chroma_weight[i][list][j][0] = chroma_def;
+                        sl->chroma_weight[i][list][j][1] = 0;
                     }
                 }
             }
@@ -1048,7 +1069,7 @@ int ff_pred_weight_table(H264Context *h)
         if (h->slice_type_nos != AV_PICTURE_TYPE_B)
             break;
     }
-    h->use_weight = h->use_weight || h->use_weight_chroma;
+    sl->use_weight = sl->use_weight || sl->use_weight_chroma;
     return 0;
 }
 
@@ -1412,6 +1433,7 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size,
 {
     AVCodecContext *const avctx = h->avctx;
     H264Context *hx; ///< thread context
+    H264SliceContext *sl;
     int buf_index;
     unsigned context_count;
     int next_avc;
@@ -1469,6 +1491,7 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size,
             }
 
             hx = h->thread_context[context_count];
+            sl = &h->slice_ctx[context_count];
 
             ptr = ff_h264_decode_nal(hx, buf + buf_index, &dst_length,
                                      &consumed, next_avc - buf_index);
@@ -1546,7 +1569,7 @@ again:
                 hx->intra_gb_ptr      =
                 hx->inter_gb_ptr      = &hx->gb;
 
-                if ((err = ff_h264_decode_slice_header(hx, h)))
+                if ((err = ff_h264_decode_slice_header(hx, sl, h)))
                     break;
 
                 if (h->sei_recovery_frame_cnt >= 0) {
@@ -1681,6 +1704,7 @@ again:
                 h->nal_unit_type = hx->nal_unit_type;
                 h->nal_ref_idc   = hx->nal_ref_idc;
                 hx               = h;
+                sl               = &h->slice_ctx[0];
                 goto again;
             }
         }
@@ -1904,6 +1928,9 @@ av_cold void ff_h264_free_context(H264Context *h)
     int i;
 
     ff_h264_free_tables(h, 1); // FIXME cleanup init stuff perhaps
+
+    av_freep(&h->slice_ctx);
+    h->nb_slice_ctx = 0;
 
     for (i = 0; i < MAX_SPS_COUNT; i++)
         av_freep(h->sps_buffers + i);

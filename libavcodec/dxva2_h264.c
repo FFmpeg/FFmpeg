@@ -211,6 +211,7 @@ static void fill_slice_long(AVCodecContext *avctx, DXVA_Slice_H264_Long *slice,
                             const DXVA_PicParams_H264 *pp, unsigned position, unsigned size)
 {
     const H264Context *h = avctx->priv_data;
+    H264SliceContext *sl = &h->slice_ctx[0];
     struct dxva_context *ctx = avctx->hwaccel_context;
     unsigned list;
 
@@ -225,8 +226,8 @@ static void fill_slice_long(AVCodecContext *avctx, DXVA_Slice_H264_Long *slice,
     slice->slice_type            = ff_h264_get_slice_type(h);
     if (h->slice_type_fixed)
         slice->slice_type += 5;
-    slice->luma_log2_weight_denom       = h->luma_log2_weight_denom;
-    slice->chroma_log2_weight_denom     = h->chroma_log2_weight_denom;
+    slice->luma_log2_weight_denom       = sl->luma_log2_weight_denom;
+    slice->chroma_log2_weight_denom     = sl->chroma_log2_weight_denom;
     if (h->list_count > 0)
         slice->num_ref_idx_l0_active_minus1 = h->ref_count[0] - 1;
     if (h->list_count > 1)
@@ -250,15 +251,15 @@ static void fill_slice_long(AVCodecContext *avctx, DXVA_Slice_H264_Long *slice,
                                    r->reference == PICT_BOTTOM_FIELD);
                 for (plane = 0; plane < 3; plane++) {
                     int w, o;
-                    if (plane == 0 && h->luma_weight_flag[list]) {
-                        w = h->luma_weight[i][list][0];
-                        o = h->luma_weight[i][list][1];
-                    } else if (plane >= 1 && h->chroma_weight_flag[list]) {
-                        w = h->chroma_weight[i][list][plane-1][0];
-                        o = h->chroma_weight[i][list][plane-1][1];
+                    if (plane == 0 && sl->luma_weight_flag[list]) {
+                        w = sl->luma_weight[i][list][0];
+                        o = sl->luma_weight[i][list][1];
+                    } else if (plane >= 1 && sl->chroma_weight_flag[list]) {
+                        w = sl->chroma_weight[i][list][plane-1][0];
+                        o = sl->chroma_weight[i][list][plane-1][1];
                     } else {
-                        w = 1 << (plane == 0 ? h->luma_log2_weight_denom :
-                                               h->chroma_log2_weight_denom);
+                        w = 1 << (plane == 0 ? sl->luma_log2_weight_denom :
+                                               sl->chroma_log2_weight_denom);
                         o = 0;
                     }
                     slice->Weights[list][i][plane][0] = w;
