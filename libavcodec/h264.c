@@ -99,8 +99,7 @@ void ff_h264_draw_horiz_band(const H264Context *h, H264SliceContext *sl,
                              int y, int height)
 {
     AVCodecContext *avctx = h->avctx;
-    const AVFrame   *cur  = &h->cur_pic.f;
-    AVFrame *last = sl->ref_list[0][0].f.data[0] ? &sl->ref_list[0][0].f : NULL;
+    const AVFrame   *src  = &h->cur_pic.f;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
     int vshift = desc->log2_chroma_h;
     const int field_pic = h->picture_structure != PICT_FRAME;
@@ -115,17 +114,8 @@ void ff_h264_draw_horiz_band(const H264Context *h, H264SliceContext *sl,
         return;
 
     if (avctx->draw_horiz_band) {
-        const AVFrame *src;
         int offset[AV_NUM_DATA_POINTERS];
         int i;
-
-        if (cur->pict_type == AV_PICTURE_TYPE_B || h->low_delay ||
-            (avctx->slice_flags & SLICE_FLAG_CODED_ORDER))
-            src = cur;
-        else if (last)
-            src = last;
-        else
-            return;
 
         offset[0] = y * src->linesize[0];
         offset[1] =
