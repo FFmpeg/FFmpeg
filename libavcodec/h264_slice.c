@@ -1940,7 +1940,7 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl, H264Contex
             }
         }
     }
-    h->qp_thresh = 15 -
+    sl->qp_thresh = 15 -
                    FFMIN(h->slice_alpha_c0_offset, h->slice_beta_offset) -
                    FFMAX3(0,
                           h->pps.chroma_qp_index_offset[0],
@@ -2124,7 +2124,7 @@ static av_always_inline void fill_filter_caches_inter(H264Context *h,
  *
  * @return non zero if the loop filter can be skipped
  */
-static int fill_filter_caches(H264Context *h, int mb_type)
+static int fill_filter_caches(H264Context *h, H264SliceContext *sl, int mb_type)
 {
     const int mb_xy = h->mb_xy;
     int top_xy, left_xy[LEFT_MBS];
@@ -2160,7 +2160,7 @@ static int fill_filter_caches(H264Context *h, int mb_type)
         /* For sufficiently low qp, filtering wouldn't do anything.
          * This is a conservative estimate: could also check beta_offset
          * and more accurate chroma_qp. */
-        int qp_thresh = h->qp_thresh; // FIXME strictly we should store qp_thresh for each mb of a slice
+        int qp_thresh = sl->qp_thresh; // FIXME strictly we should store qp_thresh for each mb of a slice
         int qp        = h->cur_pic.qscale_table[mb_xy];
         if (qp <= qp_thresh &&
             (left_xy[LTOP] < 0 ||
@@ -2317,7 +2317,7 @@ static void loop_filter(H264Context *h, H264SliceContext *sl, int start_x, int e
                 }
                 backup_mb_border(h, dest_y, dest_cb, dest_cr, linesize,
                                  uvlinesize, 0);
-                if (fill_filter_caches(h, mb_type))
+                if (fill_filter_caches(h, sl, mb_type))
                     continue;
                 sl->chroma_qp[0] = get_chroma_qp(h, 0, h->cur_pic.qscale_table[mb_xy]);
                 sl->chroma_qp[1] = get_chroma_qp(h, 1, h->cur_pic.qscale_table[mb_xy]);
