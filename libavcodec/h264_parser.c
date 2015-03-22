@@ -133,25 +133,26 @@ static int scan_mmco_reset(AVCodecParserContext *s)
 {
     H264ParseContext *p = s->priv_data;
     H264Context      *h = &p->h;
+    H264SliceContext *sl = &h->slice_ctx[0];
 
-    h->slice_type_nos = s->pict_type & 3;
+    sl->slice_type_nos = s->pict_type & 3;
 
     if (h->pps.redundant_pic_cnt_present)
-        get_ue_golomb(&h->gb); // redundant_pic_count
+        get_ue_golomb(&sl->gb); // redundant_pic_count
 
-    if (ff_set_ref_count(h) < 0)
+    if (ff_set_ref_count(h, sl) < 0)
         return AVERROR_INVALIDDATA;
 
-    if (h->slice_type_nos != AV_PICTURE_TYPE_I) {
+    if (sl->slice_type_nos != AV_PICTURE_TYPE_I) {
         int list;
-        for (list = 0; list < h->list_count; list++) {
-            if (get_bits1(&h->gb)) {
+        for (list = 0; list < sl->list_count; list++) {
+            if (get_bits1(&sl->gb)) {
                 int index;
                 for (index = 0; ; index++) {
-                    unsigned int reordering_of_pic_nums_idc = get_ue_golomb_31(&h->gb);
+                    unsigned int reordering_of_pic_nums_idc = get_ue_golomb_31(&sl->gb);
 
                     if (reordering_of_pic_nums_idc < 3)
-                        get_ue_golomb(&h->gb);
+                        get_ue_golomb(&sl->gb);
                     else if (reordering_of_pic_nums_idc > 3) {
                         av_log(h->avctx, AV_LOG_ERROR,
                                "illegal reordering_of_pic_nums_idc %d\n",
@@ -160,7 +161,7 @@ static int scan_mmco_reset(AVCodecParserContext *s)
                     } else
                         break;
 
-                    if (index >= h->ref_count[list]) {
+                    if (index >= sl->ref_count[list]) {
                         av_log(h->avctx, AV_LOG_ERROR,
                                "reference count %d overflow\n", index);
                         return AVERROR_INVALIDDATA;
@@ -170,14 +171,14 @@ static int scan_mmco_reset(AVCodecParserContext *s)
         }
     }
 
-    if ((h->pps.weighted_pred && h->slice_type_nos == AV_PICTURE_TYPE_P) ||
-        (h->pps.weighted_bipred_idc == 1 && h->slice_type_nos == AV_PICTURE_TYPE_B))
-        ff_pred_weight_table(h);
+    if ((h->pps.weighted_pred && sl->slice_type_nos == AV_PICTURE_TYPE_P) ||
+        (h->pps.weighted_bipred_idc == 1 && sl->slice_type_nos == AV_PICTURE_TYPE_B))
+        ff_pred_weight_table(h, sl);
 
-    if (get_bits1(&h->gb)) { // adaptive_ref_pic_marking_mode_flag
+    if (get_bits1(&sl->gb)) { // adaptive_ref_pic_marking_mode_flag
         int i;
         for (i = 0; i < MAX_MMCO_COUNT; i++) {
-            MMCOOpcode opcode = get_ue_golomb_31(&h->gb);
+            MMCOOpcode opcode = get_ue_golomb_31(&sl->gb);
             if (opcode > (unsigned) MMCO_LONG) {
                 av_log(h->avctx, AV_LOG_ERROR,
                        "illegal memory management control operation %d\n",
@@ -190,10 +191,10 @@ static int scan_mmco_reset(AVCodecParserContext *s)
                 return 1;
 
             if (opcode == MMCO_SHORT2UNUSED || opcode == MMCO_SHORT2LONG)
-                get_ue_golomb(&h->gb);
+                get_ue_golomb(&sl->gb);
             if (opcode == MMCO_SHORT2LONG || opcode == MMCO_LONG2UNUSED ||
                 opcode == MMCO_LONG || opcode == MMCO_SET_MAX_LONG)
-                get_ue_golomb_31(&h->gb);
+                get_ue_golomb_31(&sl->gb);
         }
     }
 
@@ -214,6 +215,7 @@ static inline int parse_nal_units(AVCodecParserContext *s,
 {
     H264ParseContext *p = s->priv_data;
     H264Context      *h = &p->h;
+    H264SliceContext *sl = &h->slice_ctx[0];
     int buf_index, next_avc;
     unsigned int pps_id;
     unsigned int slice_type;
@@ -270,7 +272,7 @@ static inline int parse_nal_units(AVCodecParserContext *s,
             }
             break;
         }
-        ptr = ff_h264_decode_nal(h, buf + buf_index, &dst_length,
+        ptr = ff_h264_decode_nal(h, sl, buf + buf_index, &dst_length,
                                  &consumed, src_length);
         if (!ptr || dst_length < 0)
             break;
@@ -297,14 +299,15 @@ static inline int parse_nal_units(AVCodecParserContext *s,
             h->prev_poc_lsb          = 0;
         /* fall through */
         case NAL_SLICE:
-            get_ue_golomb_long(&h->gb);  // skip first_mb_in_slice
-            slice_type   = get_ue_golomb_31(&h->gb);
+            init_get_bits(&sl->gb, ptr, 8 * dst_length);
+            get_ue_golomb_long(&sl->gb);  // skip first_mb_in_slice
+            slice_type   = get_ue_golomb_31(&sl->gb);
             s->pict_type = golomb_to_pict_type[slice_type % 5];
             if (h->sei_recovery_frame_cnt >= 0) {
                 /* key frame, since recovery_frame_cnt is set */
                 s->key_frame = 1;
             }
-            pps_id = get_ue_golomb(&h->gb);
+            pps_id = get_ue_golomb(&sl->gb);
             if (pps_id >= MAX_PPS_COUNT) {
                 av_log(h->avctx, AV_LOG_ERROR,
                        "pps_id %u out of range\n", pps_id);
@@ -322,7 +325,7 @@ static inline int parse_nal_units(AVCodecParserContext *s,
                 return -1;
             }
             h->sps       = *h->sps_buffers[h->pps.sps_id];
-            h->frame_num = get_bits(&h->gb, h->sps.log2_max_frame_num);
+            h->frame_num = get_bits(&sl->gb, h->sps.log2_max_frame_num);
 
             if(h->sps.ref_frame_count <= 1 && h->pps.ref_count[0] <= 1 && s->pict_type == AV_PICTURE_TYPE_I)
                 s->key_frame = 1;
@@ -362,30 +365,30 @@ static inline int parse_nal_units(AVCodecParserContext *s,
             if (h->sps.frame_mbs_only_flag) {
                 h->picture_structure = PICT_FRAME;
             } else {
-                if (get_bits1(&h->gb)) { // field_pic_flag
-                    h->picture_structure = PICT_TOP_FIELD + get_bits1(&h->gb); // bottom_field_flag
+                if (get_bits1(&sl->gb)) { // field_pic_flag
+                    h->picture_structure = PICT_TOP_FIELD + get_bits1(&sl->gb); // bottom_field_flag
                 } else {
                     h->picture_structure = PICT_FRAME;
                 }
             }
 
             if (h->nal_unit_type == NAL_IDR_SLICE)
-                get_ue_golomb(&h->gb); /* idr_pic_id */
+                get_ue_golomb(&sl->gb); /* idr_pic_id */
             if (h->sps.poc_type == 0) {
-                h->poc_lsb = get_bits(&h->gb, h->sps.log2_max_poc_lsb);
+                h->poc_lsb = get_bits(&sl->gb, h->sps.log2_max_poc_lsb);
 
                 if (h->pps.pic_order_present == 1 &&
                     h->picture_structure == PICT_FRAME)
-                    h->delta_poc_bottom = get_se_golomb(&h->gb);
+                    h->delta_poc_bottom = get_se_golomb(&sl->gb);
             }
 
             if (h->sps.poc_type == 1 &&
                 !h->sps.delta_pic_order_always_zero_flag) {
-                h->delta_poc[0] = get_se_golomb(&h->gb);
+                h->delta_poc[0] = get_se_golomb(&sl->gb);
 
                 if (h->pps.pic_order_present == 1 &&
                     h->picture_structure == PICT_FRAME)
-                    h->delta_poc[1] = get_se_golomb(&h->gb);
+                    h->delta_poc[1] = get_se_golomb(&sl->gb);
             }
 
             /* Decode POC of this picture.
@@ -603,7 +606,12 @@ static av_cold int init(AVCodecParserContext *s)
 {
     H264ParseContext *p = s->priv_data;
     H264Context      *h = &p->h;
-    h->thread_context[0]   = h;
+
+    h->slice_ctx = av_mallocz(sizeof(*h->slice_ctx));
+    if (!h->slice_ctx)
+        return 0;
+    h->nb_slice_ctx = 1;
+
     h->slice_context_count = 1;
     ff_h264dsp_init(&h->h264dsp, 8, 1);
     return 0;
