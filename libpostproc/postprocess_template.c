@@ -3481,9 +3481,8 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
             int endx = FFMIN(width, x+32);
           for(; x < endx; x+=BLOCK_SIZE){
             const int stride= dstStride;
-#if TEMPLATE_PP_MMX
-            uint8_t *tmpXchg;
-#endif
+            av_unused uint8_t *tmpXchg;
+
             if(isColor){
                 QP= QPptr[x>>qpHShift];
                 c.nonBQP= nonBQPptr[x>>qpHShift];
