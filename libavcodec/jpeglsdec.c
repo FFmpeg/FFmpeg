@@ -111,12 +111,20 @@ int ff_jpegls_decode_lse(MJpegDecodeContext *s)
         if ((s->avctx->pix_fmt == AV_PIX_FMT_GRAY8 || s->avctx->pix_fmt == AV_PIX_FMT_PAL8) &&
             (s->picture_ptr->format == AV_PIX_FMT_GRAY8 || s->picture_ptr->format == AV_PIX_FMT_PAL8)) {
             uint32_t *pal = (uint32_t *)s->picture_ptr->data[1];
+            int shift = 0;
+
+            if (s->avctx->bits_per_raw_sample > 0 && s->avctx->bits_per_raw_sample < 8) {
+                maxtab = FFMIN(maxtab, (1<<s->avctx->bits_per_raw_sample)-1);
+                shift = 8 - s->avctx->bits_per_raw_sample;
+            }
+
             s->picture_ptr->format =
             s->avctx->pix_fmt = AV_PIX_FMT_PAL8;
             for (i=s->palette_index; i<=maxtab; i++) {
-                pal[i] = 0;
+                uint8_t k = i << shift;
+                pal[k] = 0;
                 for (j=0; j<wt; j++) {
-                    pal[i] |= get_bits(&s->gb, 8) << (8*(wt-j-1));
+                    pal[k] |= get_bits(&s->gb, 8) << (8*(wt-j-1));
                 }
             }
             s->palette_index = i;
