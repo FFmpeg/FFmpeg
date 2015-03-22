@@ -3475,29 +3475,6 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
             const int stride= dstStride;
             av_unused uint8_t *tmpXchg;
 
-            if(isColor){
-                QP= QPptr[x>>qpHShift];
-                c.nonBQP= nonBQPptr[x>>qpHShift];
-            }else{
-                QP= QPptr[x>>4];
-                QP= (QP* QPCorrecture + 256*128)>>16;
-                c.nonBQP= nonBQPptr[x>>4];
-                c.nonBQP= (c.nonBQP* QPCorrecture + 256*128)>>16;
-                yHistogram[ srcBlock[srcStride*12 + 4] ]++;
-            }
-            c.QP= QP;
-#if TEMPLATE_PP_MMX
-            __asm__ volatile(
-                "movd %1, %%mm7         \n\t"
-                "packuswb %%mm7, %%mm7  \n\t" // 0, 0, 0, QP, 0, 0, 0, QP
-                "packuswb %%mm7, %%mm7  \n\t" // 0,QP, 0, QP, 0,QP, 0, QP
-                "packuswb %%mm7, %%mm7  \n\t" // QP,..., QP
-                "movq %%mm7, %0         \n\t"
-                : "=m" (c.pQPb)
-                : "r" (QP)
-            );
-#endif
-
 
 #if TEMPLATE_PP_MMXEXT && HAVE_6REGS
 /*
@@ -3546,6 +3523,28 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
                 RENAME(deInterlaceBlendCubic)(dstBlock, dstStride);
 */
 
+            if(isColor){
+                QP= QPptr[x>>qpHShift];
+                c.nonBQP= nonBQPptr[x>>qpHShift];
+            }else{
+                QP= QPptr[x>>4];
+                QP= (QP* QPCorrecture + 256*128)>>16;
+                c.nonBQP= nonBQPptr[x>>4];
+                c.nonBQP= (c.nonBQP* QPCorrecture + 256*128)>>16;
+                yHistogram[ srcBlock[srcStride*12 + 4] ]++;
+            }
+            c.QP= QP;
+#if TEMPLATE_PP_MMX
+            __asm__ volatile(
+                "movd %1, %%mm7         \n\t"
+                "packuswb %%mm7, %%mm7  \n\t" // 0, 0, 0, QP, 0, 0, 0, QP
+                "packuswb %%mm7, %%mm7  \n\t" // 0,QP, 0, QP, 0,QP, 0, QP
+                "packuswb %%mm7, %%mm7  \n\t" // QP,..., QP
+                "movq %%mm7, %0         \n\t"
+                : "=m" (c.pQPb)
+                : "r" (QP)
+            );
+#endif
             /* only deblock if we have 2 blocks */
             if(y + 8 < height){
                 if(mode & V_X1_FILTER)
