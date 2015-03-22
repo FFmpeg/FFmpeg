@@ -3529,7 +3529,6 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
 
           for(x = startx; x < endx; x+=BLOCK_SIZE){
             const int stride= dstStride;
-            av_unused uint8_t *tmpXchg;
 
             if(isColor){
                 QP= QPptr[x>>qpHShift];
@@ -3569,7 +3568,37 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
                 }
             }
 
+            dstBlock+=8;
+            srcBlock+=8;
+          }
+
+          dstBlock = dstBlockStart;
+          srcBlock = srcBlockStart;
+
+          for(x = startx; x < endx; x+=BLOCK_SIZE){
+            const int stride= dstStride;
+            av_unused uint8_t *tmpXchg;
+
+            if(isColor){
+                QP= QPptr[x>>qpHShift];
+                c.nonBQP= nonBQPptr[x>>qpHShift];
+            }else{
+                QP= QPptr[x>>4];
+                QP= (QP* QPCorrecture + 256*128)>>16;
+                c.nonBQP= nonBQPptr[x>>4];
+                c.nonBQP= (c.nonBQP* QPCorrecture + 256*128)>>16;
+            }
+            c.QP= QP;
 #if TEMPLATE_PP_MMX
+            __asm__ volatile(
+                "movd %1, %%mm7         \n\t"
+                "packuswb %%mm7, %%mm7  \n\t" // 0, 0, 0, QP, 0, 0, 0, QP
+                "packuswb %%mm7, %%mm7  \n\t" // 0,QP, 0, QP, 0,QP, 0, QP
+                "packuswb %%mm7, %%mm7  \n\t" // QP,..., QP
+                "movq %%mm7, %0         \n\t"
+                : "=m" (c.pQPb)
+                : "r" (QP)
+            );
             RENAME(transpose1)(tempBlock1, tempBlock2, dstBlock, dstStride);
 #endif
             /* check if we have a previous block to deblock it with dstBlock */
