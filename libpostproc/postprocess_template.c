@@ -3471,11 +3471,9 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
         for(x=0; x<width; ){
             int startx = x;
             int endx = FFMIN(width, x+32);
+            uint8_t *dstBlockStart = dstBlock;
+            const uint8_t *srcBlockStart = srcBlock;
           for(; x < endx; x+=BLOCK_SIZE){
-            const int stride= dstStride;
-            av_unused uint8_t *tmpXchg;
-
-
 #if TEMPLATE_PP_MMXEXT && HAVE_6REGS
 /*
             prefetchnta(srcBlock + (((x>>2)&6) + 5)*srcStride + 32);
@@ -3522,6 +3520,16 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
 /*          else if(mode & CUBIC_BLEND_DEINT_FILTER)
                 RENAME(deInterlaceBlendCubic)(dstBlock, dstStride);
 */
+            dstBlock+=8;
+            srcBlock+=8;
+          }
+
+          dstBlock = dstBlockStart;
+          srcBlock = srcBlockStart;
+
+          for(x = startx; x < endx; x+=BLOCK_SIZE){
+            const int stride= dstStride;
+            av_unused uint8_t *tmpXchg;
 
             if(isColor){
                 QP= QPptr[x>>qpHShift];
