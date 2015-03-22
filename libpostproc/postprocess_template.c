@@ -3476,7 +3476,10 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
         // From this point on it is guaranteed that we can read and write 16 lines downward
         // finish 1 block before the next otherwise we might have a problem
         // with the L1 Cache of the P4 ... or only a few blocks at a time or something
-        for(x=0; x<width; x+=BLOCK_SIZE){
+        for(x=0; x<width; ){
+            int startx = x;
+            int endx = FFMIN(width, x+32);
+          for(; x < endx; x+=BLOCK_SIZE){
             const int stride= dstStride;
 #if TEMPLATE_PP_MMX
             uint8_t *tmpXchg;
@@ -3650,6 +3653,7 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
             tempBlock1= tempBlock2;
             tempBlock2 = tmpXchg;
 #endif
+          }
         }
 
         if(mode & DERING){
