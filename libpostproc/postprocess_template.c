@@ -3395,14 +3395,6 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
                 "g" ((x86_reg)x), "g" ((x86_reg)copyAhead)
                 : "%"REG_a, "%"REG_d
             );
-
-#elif TEMPLATE_PP_3DNOW
-//FIXME check if this is faster on an 3dnow chip or if it is faster without the prefetch or ...
-/*          prefetch(srcBlock + (((x>>3)&3) + 5)*srcStride + 32);
-            prefetch(srcBlock + (((x>>3)&3) + 9)*srcStride + 32);
-            prefetchw(dstBlock + (((x>>3)&3) + 5)*dstStride + 32);
-            prefetchw(dstBlock + (((x>>3)&3) + 9)*dstStride + 32);
-*/
 #endif
 
             RENAME(blockCopy)(dstBlock + dstStride*8, dstStride,
@@ -3533,14 +3525,6 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
                 "g" ((x86_reg)x), "g" ((x86_reg)copyAhead)
                 : "%"REG_a, "%"REG_d
             );
-
-#elif TEMPLATE_PP_3DNOW
-//FIXME check if this is faster on an 3dnow chip or if it is faster without the prefetch or ...
-/*          prefetch(srcBlock + (((x>>3)&3) + 5)*srcStride + 32);
-            prefetch(srcBlock + (((x>>3)&3) + 9)*srcStride + 32);
-            prefetchw(dstBlock + (((x>>3)&3) + 5)*dstStride + 32);
-            prefetchw(dstBlock + (((x>>3)&3) + 9)*dstStride + 32);
-*/
 #endif
 
             RENAME(blockCopy)(dstBlock + dstStride*copyAhead, dstStride,
@@ -3587,9 +3571,7 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
                 if(mode & H_X1_FILTER)
                         RENAME(vertX1Filter)(tempBlock1, 16, &c);
                 else if(mode & H_DEBLOCK){
-//START_TIMER
                     const int t= RENAME(vertClassify)(tempBlock1, 16, &c);
-//STOP_TIMER("dc & minmax")
                     if(t==1)
                         RENAME(doVertLowPass)(tempBlock1, 16, &c);
                     else if(t==2)
@@ -3678,15 +3660,6 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
                 }
             }
         }
-/*
-        for(x=0; x<width; x+=32){
-            volatile int i;
-            i+=   dstBlock[x + 7*dstStride] + dstBlock[x + 8*dstStride]
-                + dstBlock[x + 9*dstStride] + dstBlock[x +10*dstStride]
-                + dstBlock[x +11*dstStride] + dstBlock[x +12*dstStride];
-                + dstBlock[x +13*dstStride]
-                + dstBlock[x +14*dstStride] + dstBlock[x +15*dstStride];
-        }*/
     }
 #if   TEMPLATE_PP_3DNOW
     __asm__ volatile("femms");
