@@ -714,7 +714,6 @@ int ff_h264_decode_mb_cavlc(const H264Context *h, H264SliceContext *sl)
     int dct8x8_allowed= h->pps.transform_8x8_mode;
     int decode_chroma = h->sps.chroma_format_idc == 1 || h->sps.chroma_format_idc == 2;
     const int pixel_shift = h->pixel_shift;
-    unsigned local_ref_count[2];
 
     mb_xy = sl->mb_xy = sl->mb_x + sl->mb_y*h->mb_stride;
 
@@ -799,9 +798,6 @@ decode_intra_mb:
         return 0;
     }
 
-    local_ref_count[0] = sl->ref_count[0] << MB_MBAFF(sl);
-    local_ref_count[1] = sl->ref_count[1] << MB_MBAFF(sl);
-
     fill_decode_neighbors(h, sl, mb_type);
     fill_decode_caches(h, sl, mb_type);
 
@@ -881,7 +877,7 @@ decode_intra_mb:
         }
 
         for (list = 0; list < sl->list_count; list++) {
-            int ref_count = IS_REF0(mb_type) ? 1 : local_ref_count[list];
+            int ref_count = IS_REF0(mb_type) ? 1 : sl->ref_count[list] << MB_MBAFF(sl);
             for(i=0; i<4; i++){
                 if(IS_DIRECT(sl->sub_mb_type[i])) continue;
                 if(IS_DIR(sl->sub_mb_type[i], 0, list)){
@@ -961,13 +957,14 @@ decode_intra_mb:
             for (list = 0; list < sl->list_count; list++) {
                     unsigned int val;
                     if(IS_DIR(mb_type, 0, list)){
-                        if(local_ref_count[list]==1){
+                        unsigned rc = sl->ref_count[list] << MB_MBAFF(sl);
+                        if (rc == 1) {
                             val= 0;
-                        } else if(local_ref_count[list]==2){
+                        } else if (rc == 2) {
                             val= get_bits1(&sl->gb)^1;
                         }else{
                             val= get_ue_golomb_31(&sl->gb);
-                            if (val >= local_ref_count[list]){
+                            if (val >= rc) {
                                 av_log(h->avctx, AV_LOG_ERROR, "ref %u overflow\n", val);
                                 return -1;
                             }
@@ -991,13 +988,14 @@ decode_intra_mb:
                     for(i=0; i<2; i++){
                         unsigned int val;
                         if(IS_DIR(mb_type, i, list)){
-                            if(local_ref_count[list] == 1) {
+                            unsigned rc = sl->ref_count[list] << MB_MBAFF(sl);
+                            if (rc == 1) {
                                 val= 0;
-                            } else if(local_ref_count[list] == 2) {
+                            } else if (rc == 2) {
                                 val= get_bits1(&sl->gb)^1;
                             }else{
                                 val= get_ue_golomb_31(&sl->gb);
-                                if (val >= local_ref_count[list]){
+                                if (val >= rc) {
                                     av_log(h->avctx, AV_LOG_ERROR, "ref %u overflow\n", val);
                                     return -1;
                                 }
@@ -1028,13 +1026,14 @@ decode_intra_mb:
                     for(i=0; i<2; i++){
                         unsigned int val;
                         if(IS_DIR(mb_type, i, list)){ //FIXME optimize
-                            if(local_ref_count[list]==1){
+                            unsigned rc = sl->ref_count[list] << MB_MBAFF(sl);
+                            if (rc == 1) {
                                 val= 0;
-                            } else if(local_ref_count[list]==2){
+                            } else if (rc == 2) {
                                 val= get_bits1(&sl->gb)^1;
                             }else{
                                 val= get_ue_golomb_31(&sl->gb);
-                                if (val >= local_ref_count[list]){
+                                if (val >= rc) {
                                     av_log(h->avctx, AV_LOG_ERROR, "ref %u overflow\n", val);
                                     return -1;
                                 }
