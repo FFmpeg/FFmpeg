@@ -228,7 +228,7 @@ autocmd InsertEnter * match ForbiddenWhitespace /\t\|\s\+\%#\@@<!$/
 @end example
 
 For Emacs, add these roughly equivalent lines to your @file{.emacs.d/init.el}:
-@example
+@lisp
 (c-add-style "ffmpeg"
              '("k&r"
                (c-basic-offset . 4)
@@ -239,7 +239,7 @@ For Emacs, add these roughly equivalent lines to your @file{.emacs.d/init.el}:
                )
              )
 (setq c-default-style "ffmpeg")
-@end example
+@end lisp
 
 @section Development Policy
 
