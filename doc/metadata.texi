@@ -12,10 +12,10 @@ A file consists of a header and a number of metadata tags divided into sections,
 each on its own line.
 
 @item
-The header is a ';FFMETADATA' string, followed by a version number (now 1).
+The header is a @samp{;FFMETADATA} string, followed by a version number (now 1).
 
 @item
-Metadata tags are of the form 'key=value'
+Metadata tags are of the form @samp{key=value}
 
 @item
 Immediately after header follows global metadata
@@ -26,26 +26,30 @@ metadata.
 
 @item
 A section starts with the section name in uppercase (i.e. STREAM or CHAPTER) in
-brackets ('[', ']') and ends with next section or end of file.
+brackets (@samp{[}, @samp{]}) and ends with next section or end of file.
 
 @item
 At the beginning of a chapter section there may be an optional timebase to be
-used for start/end values. It must be in form 'TIMEBASE=num/den', where num and
-den are integers. If the timebase is missing then start/end times are assumed to
+used for start/end values. It must be in form
+@samp{TIMEBASE=@var{num}/@var{den}}, where @var{num} and @var{den} are
+integers. If the timebase is missing then start/end times are assumed to
 be in milliseconds.
+
 Next a chapter section must contain chapter start and end times in form
-'START=num', 'END=num', where num is a positive integer.
+@samp{START=@var{num}}, @samp{END=@var{num}}, where @var{num} is a positive
+integer.
 
 @item
-Empty lines and lines starting with ';' or '#' are ignored.
+Empty lines and lines starting with @samp{;} or @samp{#} are ignored.
 
 @item
-Metadata keys or values containing special characters ('=', ';', '#', '\' and a
-newline) must be escaped with a backslash '\'.
+Metadata keys or values containing special characters (@samp{=}, @samp{;},
+@samp{#}, @samp{\} and a newline) must be escaped with a backslash @samp{\}.
 
 @item
-Note that whitespace in metadata (e.g. foo = bar) is considered to be a part of
-the tag (in the example above key is 'foo ', value is ' bar').
+Note that whitespace in metadata (e.g. @samp{foo = bar}) is considered to be
+a part of the tag (in the example above key is @samp{foo }, value is
+@samp{ bar}).
 @end enumerate
 
 A ffmetadata file might look like this:

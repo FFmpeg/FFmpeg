@@ -12,17 +12,17 @@ explicitly specified. The following rules are applied:
 
 @itemize
 @item
-@code{'} and @code{\} are special characters (respectively used for
+@samp{'} and @samp{\} are special characters (respectively used for
 quoting and escaping). In addition to them, there might be other
 special characters depending on the specific syntax where the escaping
 and quoting are employed.
 
 @item
-A special character is escaped by prefixing it with a '\'.
+A special character is escaped by prefixing it with a @samp{\}.
 
 @item
-All characters enclosed between '' are included literally in the
-parsed string. The quote character @code{'} itself cannot be quoted,
+All characters enclosed between @samp{''} are included literally in the
+parsed string. The quote character @samp{'} itself cannot be quoted,
 so you may need to close the quote and escape it.
 
 @item
@@ -71,7 +71,7 @@ Escaping and quoting can be mixed together:
 @end example
 
 @item
-To include a literal @code{\} you can use either escaping or quoting:
+To include a literal @samp{\} you can use either escaping or quoting:
 @example
 'c:\foo' can be written as c:\\foo
 @end example
