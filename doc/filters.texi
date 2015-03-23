@@ -8,13 +8,13 @@ outputs.
 To illustrate the sorts of things that are possible, we consider the
 following filtergraph.
 
-@example
+@verbatim
                 [main]
 input --> split ---------------------> overlay --> output
             |                             ^
             |[tmp]                  [flip]|
             +-----> crop --> vflip -------+
-@end example
+@end verbatim
 
 This filtergraph splits the input stream in two streams, then sends one
 stream through the crop filter and the vflip filter, before merging it
