@@ -136,6 +136,7 @@ typedef struct AVFrameSideData {
     uint8_t *data;
     int      size;
     AVDictionary *metadata;
+    AVBufferRef *buf;
 } AVFrameSideData;
 
 /**

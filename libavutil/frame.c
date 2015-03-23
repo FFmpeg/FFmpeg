@@ -115,7 +115,7 @@ static void free_side_data(AVFrameSideData **ptr_sd)
 {
     AVFrameSideData *sd = *ptr_sd;
 
-    av_freep(&sd->data);
+    av_buffer_unref(&sd->buf);
     av_dict_free(&sd->metadata);
     av_freep(ptr_sd);
 }
@@ -275,7 +275,7 @@ int av_frame_get_buffer(AVFrame *frame, int align)
     return AVERROR(EINVAL);
 }
 
-int av_frame_copy_props(AVFrame *dst, const AVFrame *src)
+static int frame_copy_props(AVFrame *dst, const AVFrame *src, int force_copy)
 {
     int i;
 
@@ -320,13 +320,28 @@ int av_frame_copy_props(AVFrame *dst, const AVFrame *src)
         if (   sd_src->type == AV_FRAME_DATA_PANSCAN
             && (src->width != dst->width || src->height != dst->height))
             continue;
-        sd_dst = av_frame_new_side_data(dst, sd_src->type,
-                                        sd_src->size);
-        if (!sd_dst) {
-            wipe_side_data(dst);
-            return AVERROR(ENOMEM);
+        if (force_copy) {
+            sd_dst = av_frame_new_side_data(dst, sd_src->type,
+                                            sd_src->size);
+            if (!sd_dst) {
+                wipe_side_data(dst);
+                return AVERROR(ENOMEM);
+            }
+            memcpy(sd_dst->data, sd_src->data, sd_src->size);
+        } else {
+            sd_dst = av_frame_new_side_data(dst, sd_src->type, 0);
+            if (!sd_dst) {
+                wipe_side_data(dst);
+                return AVERROR(ENOMEM);
+            }
+            sd_dst->buf = av_buffer_ref(sd_src->buf);
+            if (!sd_dst->buf) {
+                wipe_side_data(dst);
+                return AVERROR(ENOMEM);
+            }
+            sd_dst->data = sd_dst->buf->data;
+            sd_dst->size = sd_dst->buf->size;
         }
-        memcpy(sd_dst->data, sd_src->data, sd_src->size);
         av_dict_copy(&sd_dst->metadata, sd_src->metadata, 0);
     }
 
@@ -356,7 +371,7 @@ int av_frame_ref(AVFrame *dst, const AVFrame *src)
     dst->channel_layout = src->channel_layout;
     dst->nb_samples     = src->nb_samples;
 
-    ret = av_frame_copy_props(dst, src);
+    ret = frame_copy_props(dst, src, 0);
     if (ret < 0)
         return ret;
 
@@ -530,6 +545,11 @@ int av_frame_make_writable(AVFrame *frame)
     return 0;
 }
 
+int av_frame_copy_props(AVFrame *dst, const AVFrame *src)
+{
+    return frame_copy_props(dst, src, 1);
+}
+
 AVBufferRef *av_frame_get_plane_buffer(AVFrame *frame, int plane)
 {
     uint8_t *data;
@@ -580,13 +600,16 @@ AVFrameSideData *av_frame_new_side_data(AVFrame *frame,
     if (!ret)
         return NULL;
 
-    ret->data = av_malloc(size);
-    if (!ret->data) {
-        av_freep(&ret);
-        return NULL;
-    }
+    if (size > 0) {
+        ret->buf = av_buffer_alloc(size);
+        if (!ret->buf) {
+            av_freep(&ret);
+            return NULL;
+        }
 
-    ret->size = size;
+        ret->data = ret->buf->data;
+        ret->size = size;
+    }
     ret->type = type;
 
     frame->side_data[frame->nb_side_data++] = ret;
