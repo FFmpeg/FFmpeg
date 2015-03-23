@@ -13,6 +13,9 @@ libavutil:     2014-08-09
 
 API changes, most recent first:
 
+2015-xx-xx - xxxxxxx - lavc 56.22.0
+  Add FF_PROFILE_DTS_EXPRESS.
+
 2015-xx-xx - xxxxxxx - lavu 54.10.0
   Add AV_PIX_FMT_MMAL for MMAL hardware acceleration.
 
