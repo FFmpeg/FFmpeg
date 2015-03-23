@@ -3395,14 +3395,6 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
                 "g" ((x86_reg)x), "g" ((x86_reg)copyAhead)
                 : "%"REG_a, "%"REG_d
             );
-
-#elif TEMPLATE_PP_3DNOW
-//FIXME check if this is faster on an 3dnow chip or if it is faster without the prefetch or ...
-/*          prefetch(srcBlock + (((x>>3)&3) + 5)*srcStride + 32);
-            prefetch(srcBlock + (((x>>3)&3) + 9)*srcStride + 32);
-            prefetchw(dstBlock + (((x>>3)&3) + 5)*dstStride + 32);
-            prefetchw(dstBlock + (((x>>3)&3) + 9)*dstStride + 32);
-*/
 #endif
 
             RENAME(blockCopy)(dstBlock + dstStride*8, dstStride,
@@ -3476,35 +3468,12 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
         // From this point on it is guaranteed that we can read and write 16 lines downward
         // finish 1 block before the next otherwise we might have a problem
         // with the L1 Cache of the P4 ... or only a few blocks at a time or something
-        for(x=0; x<width; x+=BLOCK_SIZE){
-            const int stride= dstStride;
-#if TEMPLATE_PP_MMX
-            uint8_t *tmpXchg;
-#endif
-            if(isColor){
-                QP= QPptr[x>>qpHShift];
-                c.nonBQP= nonBQPptr[x>>qpHShift];
-            }else{
-                QP= QPptr[x>>4];
-                QP= (QP* QPCorrecture + 256*128)>>16;
-                c.nonBQP= nonBQPptr[x>>4];
-                c.nonBQP= (c.nonBQP* QPCorrecture + 256*128)>>16;
-                yHistogram[ srcBlock[srcStride*12 + 4] ]++;
-            }
-            c.QP= QP;
-#if TEMPLATE_PP_MMX
-            __asm__ volatile(
-                "movd %1, %%mm7         \n\t"
-                "packuswb %%mm7, %%mm7  \n\t" // 0, 0, 0, QP, 0, 0, 0, QP
-                "packuswb %%mm7, %%mm7  \n\t" // 0,QP, 0, QP, 0,QP, 0, QP
-                "packuswb %%mm7, %%mm7  \n\t" // QP,..., QP
-                "movq %%mm7, %0         \n\t"
-                : "=m" (c.pQPb)
-                : "r" (QP)
-            );
-#endif
-
-
+        for(x=0; x<width; ){
+            int startx = x;
+            int endx = FFMIN(width, x+32);
+            uint8_t *dstBlockStart = dstBlock;
+            const uint8_t *srcBlockStart = srcBlock;
+          for(; x < endx; x+=BLOCK_SIZE){
 #if TEMPLATE_PP_MMXEXT && HAVE_6REGS
 /*
             prefetchnta(srcBlock + (((x>>2)&6) + 5)*srcStride + 32);
@@ -3531,14 +3500,6 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
                 "g" ((x86_reg)x), "g" ((x86_reg)copyAhead)
                 : "%"REG_a, "%"REG_d
             );
-
-#elif TEMPLATE_PP_3DNOW
-//FIXME check if this is faster on an 3dnow chip or if it is faster without the prefetch or ...
-/*          prefetch(srcBlock + (((x>>3)&3) + 5)*srcStride + 32);
-            prefetch(srcBlock + (((x>>3)&3) + 9)*srcStride + 32);
-            prefetchw(dstBlock + (((x>>3)&3) + 5)*dstStride + 32);
-            prefetchw(dstBlock + (((x>>3)&3) + 9)*dstStride + 32);
-*/
 #endif
 
             RENAME(blockCopy)(dstBlock + dstStride*copyAhead, dstStride,
@@ -3559,7 +3520,38 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
 /*          else if(mode & CUBIC_BLEND_DEINT_FILTER)
                 RENAME(deInterlaceBlendCubic)(dstBlock, dstStride);
 */
+            dstBlock+=8;
+            srcBlock+=8;
+          }
 
+          dstBlock = dstBlockStart;
+          srcBlock = srcBlockStart;
+
+          for(x = startx; x < endx; x+=BLOCK_SIZE){
+            const int stride= dstStride;
+
+            if(isColor){
+                QP= QPptr[x>>qpHShift];
+                c.nonBQP= nonBQPptr[x>>qpHShift];
+            }else{
+                QP= QPptr[x>>4];
+                QP= (QP* QPCorrecture + 256*128)>>16;
+                c.nonBQP= nonBQPptr[x>>4];
+                c.nonBQP= (c.nonBQP* QPCorrecture + 256*128)>>16;
+                yHistogram[ srcBlock[srcStride*12 + 4] ]++;
+            }
+            c.QP= QP;
+#if TEMPLATE_PP_MMX
+            __asm__ volatile(
+                "movd %1, %%mm7         \n\t"
+                "packuswb %%mm7, %%mm7  \n\t" // 0, 0, 0, QP, 0, 0, 0, QP
+                "packuswb %%mm7, %%mm7  \n\t" // 0,QP, 0, QP, 0,QP, 0, QP
+                "packuswb %%mm7, %%mm7  \n\t" // QP,..., QP
+                "movq %%mm7, %0         \n\t"
+                : "=m" (c.pQPb)
+                : "r" (QP)
+            );
+#endif
             /* only deblock if we have 2 blocks */
             if(y + 8 < height){
                 if(mode & V_X1_FILTER)
@@ -3576,7 +3568,37 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
                 }
             }
 
+            dstBlock+=8;
+            srcBlock+=8;
+          }
+
+          dstBlock = dstBlockStart;
+          srcBlock = srcBlockStart;
+
+          for(x = startx; x < endx; x+=BLOCK_SIZE){
+            const int stride= dstStride;
+            av_unused uint8_t *tmpXchg;
+
+            if(isColor){
+                QP= QPptr[x>>qpHShift];
+                c.nonBQP= nonBQPptr[x>>qpHShift];
+            }else{
+                QP= QPptr[x>>4];
+                QP= (QP* QPCorrecture + 256*128)>>16;
+                c.nonBQP= nonBQPptr[x>>4];
+                c.nonBQP= (c.nonBQP* QPCorrecture + 256*128)>>16;
+            }
+            c.QP= QP;
 #if TEMPLATE_PP_MMX
+            __asm__ volatile(
+                "movd %1, %%mm7         \n\t"
+                "packuswb %%mm7, %%mm7  \n\t" // 0, 0, 0, QP, 0, 0, 0, QP
+                "packuswb %%mm7, %%mm7  \n\t" // 0,QP, 0, QP, 0,QP, 0, QP
+                "packuswb %%mm7, %%mm7  \n\t" // QP,..., QP
+                "movq %%mm7, %0         \n\t"
+                : "=m" (c.pQPb)
+                : "r" (QP)
+            );
             RENAME(transpose1)(tempBlock1, tempBlock2, dstBlock, dstStride);
 #endif
             /* check if we have a previous block to deblock it with dstBlock */
@@ -3585,9 +3607,7 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
                 if(mode & H_X1_FILTER)
                         RENAME(vertX1Filter)(tempBlock1, 16, &c);
                 else if(mode & H_DEBLOCK){
-//START_TIMER
                     const int t= RENAME(vertClassify)(tempBlock1, 16, &c);
-//STOP_TIMER("dc & minmax")
                     if(t==1)
                         RENAME(doVertLowPass)(tempBlock1, 16, &c);
                     else if(t==2)
@@ -3650,6 +3670,7 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
             tempBlock1= tempBlock2;
             tempBlock2 = tmpXchg;
 #endif
+          }
         }
 
         if(mode & DERING){
@@ -3675,15 +3696,6 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
                 }
             }
         }
-/*
-        for(x=0; x<width; x+=32){
-            volatile int i;
-            i+=   dstBlock[x + 7*dstStride] + dstBlock[x + 8*dstStride]
-                + dstBlock[x + 9*dstStride] + dstBlock[x +10*dstStride]
-                + dstBlock[x +11*dstStride] + dstBlock[x +12*dstStride];
-                + dstBlock[x +13*dstStride]
-                + dstBlock[x +14*dstStride] + dstBlock[x +15*dstStride];
-        }*/
     }
 #if   TEMPLATE_PP_3DNOW
     __asm__ volatile("femms");
