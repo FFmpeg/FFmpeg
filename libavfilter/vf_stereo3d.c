@@ -63,7 +63,7 @@ enum StereoCode {
 };
 
 typedef struct StereoComponent {
-    enum StereoCode format;
+    int format;                 ///< StereoCode
     int width, height;
     int off_left, off_right;
     int off_lstep, off_rstep;
