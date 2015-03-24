@@ -163,13 +163,13 @@ follow the same constraints order of the previous point. The following
 
 If the option value itself is a list of items (e.g. the @code{format} filter
 takes a list of pixel formats), the items in the list are usually separated by
-'|'.
+@samp{|}.
 
-The list of arguments can be quoted using the character "'" as initial
-and ending mark, and the character '\' for escaping the characters
+The list of arguments can be quoted using the character @samp{'} as initial
+and ending mark, and the character @samp{\} for escaping the characters
 within the quoted text; otherwise the argument string is considered
 terminated when the next special character (belonging to the set
-"[]=;,") is encountered.
+@samp{[]=;,}) is encountered.
 
 The name and arguments of the filter are optionally preceded and
 followed by a list of link labels.
@@ -4149,7 +4149,7 @@ If @option{expansion} is set to @code{none}, the text is printed verbatim.
 If @option{expansion} is set to @code{normal} (which is the default),
 the following expansion mechanism is used.
 
-The backslash character '\', followed by any character, always expands to
+The backslash character @samp{\}, followed by any character, always expands to
 the second character.
 
 Sequence of the form @code{%@{...@}} are expanded. The text between the
@@ -4181,8 +4181,9 @@ value.
 Evaluate the expression's value and output as formatted integer.
 
 The first argument is the expression to be evaluated, just as for the @var{expr} function.
-The second argument specifies the output format. Allowed values are 'x', 'X', 'd' and
-'u'. They are treated exactly as in the printf function.
+The second argument specifies the output format. Allowed values are @samp{x},
+@samp{X}, @samp{d} and @samp{u}. They are treated exactly as in the
+@code{printf} function.
 The third parameter is optional and sets the number of positions taken by the output.
 It can be used to add padding with zeros from the left.
 

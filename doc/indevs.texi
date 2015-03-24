@@ -181,12 +181,6 @@ Defaults to @option{false}.
 If set to @samp{1}, video is captured in 10 bit v210 instead
 of uyvy422. Not all Blackmagic devices support this option.
 
-@item bm_channels <CHANNELS>
-Number of audio channels, can be 2, 8 or 16
-
-@item bm_audiodepth <BITDEPTH>
-Audio bit depth, can be 16 or 32.
-
 @end table
 
 @subsection Examples

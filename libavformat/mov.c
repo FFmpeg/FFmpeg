@@ -2949,7 +2949,7 @@ static int mov_read_tkhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
         for (i = 0; i < 3; i++)
             for (j = 0; j < 3; j++)
-                sc->display_matrix[i * 3 + j] = display_matrix[j][i];
+                sc->display_matrix[i * 3 + j] = display_matrix[i][j];
 
         rotate = av_display_rotation_get(sc->display_matrix);
         if (!isnan(rotate)) {
