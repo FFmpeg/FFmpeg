@@ -97,7 +97,7 @@ static int msrle_decode_pal4(AVCodecContext *avctx, AVPicture *pic,
             // decode a run of data
             if (pixel_ptr + rle_code > avctx->width + 1) {
                 av_log(avctx, AV_LOG_ERROR,
-                       "MS RLE: frame ptr just went out of bounds (run)\n");
+                       "MS RLE: frame ptr just went out of bounds (run) %d %d %d\n", pixel_ptr, rle_code, avctx->width);
                 return AVERROR_INVALIDDATA;
             }
             stream_byte = bytestream2_get_byte(gb);
