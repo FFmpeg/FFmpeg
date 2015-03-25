@@ -781,6 +781,7 @@ typedef struct H264Context {
     int initial_cpb_removal_delay[32];  ///< Initial timestamps for CPBs
 
     int cur_chroma_format_idc;
+    int cur_bit_depth_luma;
     int16_t slice_row[MAX_SLICES]; ///< to detect when MAX_SLICES is too low
 
     uint8_t parse_history[6];
