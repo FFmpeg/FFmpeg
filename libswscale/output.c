@@ -1709,8 +1709,8 @@ yuv2rgb_full_1_c_template(SwsContext *c, const int16_t *buf0,
         int A = 0; //init to silence warning
         for (i = 0; i < dstW; i++) {
             int Y = buf0[i] << 2;
-            int U = (ubuf0[i] - (128<<7)) << 2;
-            int V = (vbuf0[i] - (128<<7)) << 2;
+            int U = (ubuf0[i] - (128<<7)) * 4;
+            int V = (vbuf0[i] - (128<<7)) * 4;
 
             if (hasAlpha) {
                 A = (abuf0[i] + 64) >> 7;
