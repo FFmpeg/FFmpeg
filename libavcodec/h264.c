@@ -619,7 +619,6 @@ av_cold int ff_h264_decode_init(AVCodecContext *avctx)
     h->bit_depth_luma    = 8;
     h->chroma_format_idc = 1;
 
-    h->avctx->bits_per_raw_sample = 8;
     h->cur_chroma_format_idc = 1;
 
     ff_h264dsp_init(&h->h264dsp, 8, 1);
@@ -654,6 +653,7 @@ av_cold int ff_h264_decode_init(AVCodecContext *avctx)
     ff_init_cabac_states();
 
     h->pixel_shift        = 0;
+    h->cur_bit_depth_luma =
     h->sps.bit_depth_luma = avctx->bits_per_raw_sample = 8;
 
     h->nb_slice_ctx = (avctx->active_thread_type & FF_THREAD_SLICE) ?  H264_MAX_THREADS : 1;
@@ -1237,7 +1237,7 @@ int ff_h264_set_parameter_from_sps(H264Context *h)
     if (h->avctx->has_b_frames < 2)
         h->avctx->has_b_frames = !h->low_delay;
 
-    if (h->avctx->bits_per_raw_sample != h->sps.bit_depth_luma ||
+    if (h->cur_bit_depth_luma         != h->sps.bit_depth_luma ||
         h->cur_chroma_format_idc      != h->sps.chroma_format_idc) {
         if (h->avctx->codec &&
             h->avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU &&
@@ -1248,6 +1248,7 @@ int ff_h264_set_parameter_from_sps(H264Context *h)
         }
         if (h->sps.bit_depth_luma >= 8 && h->sps.bit_depth_luma <= 14 &&
             h->sps.bit_depth_luma != 11 && h->sps.bit_depth_luma != 13) {
+            h->cur_bit_depth_luma         =
             h->avctx->bits_per_raw_sample = h->sps.bit_depth_luma;
             h->cur_chroma_format_idc      = h->sps.chroma_format_idc;
             h->pixel_shift                = h->sps.bit_depth_luma > 8;

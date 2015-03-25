@@ -7,6 +7,8 @@ version <next>:
 - DTS lossless extension (XLL) decoding (not lossless, disabled by default)
 - showwavespic filter
 - libdcadec wrapper
+- Drop support for nvenc API before 5.0
+- nvenc H265 encoder
 
 
 version 2.6:

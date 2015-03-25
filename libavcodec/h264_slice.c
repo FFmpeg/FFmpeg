@@ -458,11 +458,6 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
          h->sps.chroma_format_idc != h1->sps.chroma_format_idc ||
          h->sps.colorspace        != h1->sps.colorspace)) {
 
-        /* set bits_per_raw_sample to the previous value. the check for changed
-         * bit depth in h264_set_parameter_from_sps() uses it and sets it to
-         * the current value */
-        h->avctx->bits_per_raw_sample = h->sps.bit_depth_luma;
-
         h->width     = h1->width;
         h->height    = h1->height;
         h->mb_height = h1->mb_height;
@@ -1303,7 +1298,7 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
 
         if (h->mb_width  != h->sps.mb_width ||
             h->mb_height != h->sps.mb_height * (2 - h->sps.frame_mbs_only_flag) ||
-            h->avctx->bits_per_raw_sample != h->sps.bit_depth_luma ||
+            h->cur_bit_depth_luma    != h->sps.bit_depth_luma ||
             h->cur_chroma_format_idc != h->sps.chroma_format_idc
         )
             needs_reinit = 1;
@@ -1325,7 +1320,7 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
     must_reinit = (h->context_initialized &&
                     (   16*h->sps.mb_width != h->avctx->coded_width
                      || 16*h->sps.mb_height * (2 - h->sps.frame_mbs_only_flag) != h->avctx->coded_height
-                     || h->avctx->bits_per_raw_sample != h->sps.bit_depth_luma
+                     || h->cur_bit_depth_luma    != h->sps.bit_depth_luma
                      || h->cur_chroma_format_idc != h->sps.chroma_format_idc
                      || h->mb_width  != h->sps.mb_width
                      || h->mb_height != h->sps.mb_height * (2 - h->sps.frame_mbs_only_flag)
