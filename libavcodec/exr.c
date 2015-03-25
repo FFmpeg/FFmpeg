@@ -60,7 +60,7 @@ enum ExrCompr {
 
 enum ExrPixelType {
     EXR_UINT,
-    EXR_HALF,p
+    EXR_HALF,
     EXR_FLOAT,
     EXR_UNKNOWN,
 };
