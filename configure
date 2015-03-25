@@ -2420,6 +2420,7 @@ libutvideo_decoder_deps="libutvideo"
 libutvideo_encoder_deps="libutvideo"
 libzvbi_teletext_decoder_deps="libzvbi"
 nvenc_encoder_deps="nvenc"
+nvenc_h265_encoder_deps="nvenc"
 
 # demuxers / muxers
 ac3_demuxer_select="ac3_parser"
