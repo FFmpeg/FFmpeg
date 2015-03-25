@@ -38,6 +38,7 @@ typedef struct {
     int first_field;
     char *pattern;
     unsigned int pattern_pos;
+    int64_t start_time;
 
     AVRational pts;
     double ts_unit;
@@ -88,6 +89,8 @@ static av_cold int init(AVFilterContext *ctx)
         s->pts.num += 2;
         s->pts.den += *p - '0';
     }
+
+    s->start_time = AV_NOPTS_VALUE;
 
     s->out_cnt = (max + 1) / 2;
     av_log(ctx, AV_LOG_INFO, "Telecine pattern %s yields up to %d frames per frame, pts advance factor: %d/%d\n",
@@ -173,6 +176,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
     TelecineContext *s = ctx->priv;
     int i, len, ret = 0, nout = 0;
 
+    if (s->start_time == AV_NOPTS_VALUE)
+        s->start_time = inpicref->pts;
+
     len = s->pattern[s->pattern_pos] - '0';
 
     s->pattern_pos++;
@@ -235,7 +241,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
             return AVERROR(ENOMEM);
         }
 
-        frame->pts = outlink->frame_count * s->ts_unit;
+        frame->pts = ((s->start_time == AV_NOPTS_VALUE) ? 0 : s->start_time) +
+                     outlink->frame_count * s->ts_unit;
         ret = ff_filter_frame(outlink, frame);
     }
     av_frame_free(&inpicref);
