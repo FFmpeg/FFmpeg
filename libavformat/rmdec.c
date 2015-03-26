@@ -320,6 +320,8 @@ int ff_rm_read_mdpr_codecdata(AVFormatContext *s, AVIOContext *pb,
 
     if (codec_data_size > INT_MAX)
         return AVERROR_INVALIDDATA;
+    if (codec_data_size == 0)
+        return 0;
 
     avpriv_set_pts_info(st, 64, 1, 1000);
     codec_pos = avio_tell(pb);
