@@ -49,6 +49,7 @@ static int flags, checked;
 void av_force_cpu_flags(int arg){
     if (   (arg & ( AV_CPU_FLAG_3DNOW    |
                     AV_CPU_FLAG_3DNOWEXT |
+                    AV_CPU_FLAG_MMXEXT   |
                     AV_CPU_FLAG_SSE      |
                     AV_CPU_FLAG_SSE2     |
                     AV_CPU_FLAG_SSE2SLOW |
