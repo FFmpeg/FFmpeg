@@ -316,6 +316,8 @@
     <ClCompile Include="..\libavcodec\mpegvideoencdsp.c">
       <ObjectFileName>$(IntDir)\libavcodec_mpegvideoencdsp.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\nvenc.c">
+    </ClCompile>
     <ClCompile Include="..\libavcodec\pixblockdsp.c">
       <ObjectFileName>$(IntDir)\libavcodec_pixblockdsp.obj</ObjectFileName>
     </ClCompile>
@@ -948,8 +950,6 @@
     <ClCompile Include="..\libavcodec\nuv.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\rtjpeg.c">
-    </ClCompile>
-    <ClCompile Include="..\libavcodec\nvenc.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\on2avc.c">
     </ClCompile>
