@@ -1264,13 +1264,6 @@ static const AVOption options[] = {
     { NULL }
 };
 
-static const AVClass nvenc_class = {
-    .class_name = "nvenc",
-    .item_name = av_default_item_name,
-    .option = options,
-    .version = LIBAVUTIL_VERSION_INT,
-};
-
 static const AVCodecDefault nvenc_defaults[] = {
     { "b", "0" },
     { "qmin", "-1" },
@@ -1282,6 +1275,13 @@ static const AVCodecDefault nvenc_defaults[] = {
 };
 
 #if CONFIG_NVENC_ENCODER
+static const AVClass nvenc_class = {
+    .class_name = "nvenc",
+    .item_name = av_default_item_name,
+    .option = options,
+    .version = LIBAVUTIL_VERSION_INT,
+};
+
 AVCodec ff_nvenc_encoder = {
     .name = "nvenc",
     .long_name = NULL_IF_CONFIG_SMALL("Nvidia NVENC h264 encoder"),
@@ -1299,6 +1299,13 @@ AVCodec ff_nvenc_encoder = {
 #endif
 
 #if CONFIG_NVENC_H265_ENCODER
+static const AVClass nvenc_h265_class = {
+    .class_name = "nvenc_h265",
+    .item_name = av_default_item_name,
+    .option = options,
+    .version = LIBAVUTIL_VERSION_INT,
+};
+
 AVCodec ff_nvenc_h265_encoder = {
     .name = "nvenc_h265",
     .long_name = NULL_IF_CONFIG_SMALL("Nvidia NVENC h265 encoder"),
@@ -1309,7 +1316,7 @@ AVCodec ff_nvenc_h265_encoder = {
     .encode2 = nvenc_encode_frame,
     .close = nvenc_encode_close,
     .capabilities = CODEC_CAP_DELAY,
-    .priv_class = &nvenc_class,
+    .priv_class = &nvenc_h265_class,
     .defaults = nvenc_defaults,
     .pix_fmts = pix_fmts_nvenc,
 };

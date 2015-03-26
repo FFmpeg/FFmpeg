@@ -357,11 +357,13 @@ AVSC_INLINE void avs_set_fps(AVS_VideoInfo * p, unsigned numerator, unsigned den
     p->fps_denominator = denominator/x;
 }
 
+#ifdef AVS_IMPLICIT_FUNCTION_DECLARATION_ERROR
 AVSC_INLINE int avs_is_same_colorspace(AVS_VideoInfo * x, AVS_VideoInfo * y)
 {
         return (x->pixel_type == y->pixel_type)
                 || (avs_is_yv12(x) && avs_is_yv12(y));
 }
+#endif
 
 /////////////////////////////////////////////////////////////////////
 //
@@ -400,8 +402,10 @@ typedef struct AVS_VideoFrame {
 // Access functions for AVS_VideoFrame
 AVSC_API(int, avs_get_pitch_p)(const AVS_VideoFrame * p, int plane);
 
+#ifdef AVS_IMPLICIT_FUNCTION_DECLARATION_ERROR
 AVSC_INLINE int avs_get_pitch(const AVS_VideoFrame * p) {
         return avs_get_pitch_p(p, 0);}
+#endif
 
 AVSC_API(int, avs_get_row_size_p)(const AVS_VideoFrame * p, int plane);
 
@@ -415,15 +419,19 @@ AVSC_INLINE int avs_get_height(const AVS_VideoFrame * p) {
 
 AVSC_API(const BYTE *, avs_get_read_ptr_p)(const AVS_VideoFrame * p, int plane);
 
+#ifdef AVS_IMPLICIT_FUNCTION_DECLARATION_ERROR
 AVSC_INLINE const BYTE* avs_get_read_ptr(const AVS_VideoFrame * p) {
         return avs_get_read_ptr_p(p, 0);}
+#endif
 
 AVSC_API(int, avs_is_writable)(const AVS_VideoFrame * p);
 
 AVSC_API(BYTE *, avs_get_write_ptr_p)(const AVS_VideoFrame * p, int plane);
 
+#ifdef AVS_IMPLICIT_FUNCTION_DECLARATION_ERROR
 AVSC_INLINE BYTE* avs_get_write_ptr(const AVS_VideoFrame * p) {
         return avs_get_write_ptr_p(p, 0);}
+#endif
 
 AVSC_API(void, avs_release_video_frame)(AVS_VideoFrame *);
 // makes a shallow copy of a video frame

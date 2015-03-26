@@ -31,7 +31,6 @@
   #include <windows.h>
   #undef EXTERN_C
   #include "compat/avisynth/avisynth_c.h"
-  #include "compat/avisynth/avisynth_c_25.h"
   #define AVISYNTH_LIB "avisynth"
   #define USING_AVISYNTH
 #else
@@ -406,6 +405,19 @@ static int avisynth_open_file(AVFormatContext *s)
     avs->clip = avs_library.avs_take_clip(val, avs->env);
     avs->vi   = avs_library.avs_get_video_info(avs->clip);
 
+#ifdef USING_AVISYNTH
+    /* FFmpeg only supports AviSynth 2.6 on Windows. Since AvxSynth
+     * identifies itself as interface version 3 like 2.5.8, this
+     * needs to be special-cased. */
+
+    if (avs_library.avs_get_version(avs->clip) == 3) {
+        av_log(s, AV_LOG_ERROR,
+               "AviSynth 2.5.8 not supported. Please upgrade to 2.6.\n");
+        ret = AVERROR_UNKNOWN;
+        goto fail;
+    }
+#endif
+
     /* Release the AVS_Value as it will go out of scope. */
     avs_library.avs_release_value(val);
 
@@ -505,13 +517,8 @@ static int avisynth_read_packet_video(AVFormatContext *s, AVPacket *pkt,
         src_p = avs_library.avs_get_read_ptr_p(frame, plane);
         pitch = avs_library.avs_get_pitch_p(frame, plane);
 
-        if (avs_library.avs_get_version(avs->clip) == 3) {
-            rowsize     = avs_get_row_size_p_25(frame, plane);
-            planeheight = avs_get_height_p_25(frame, plane);
-        } else {
-            rowsize     = avs_library.avs_get_row_size_p(frame, plane);
-            planeheight = avs_library.avs_get_height_p(frame, plane);
-        }
+        rowsize     = avs_library.avs_get_row_size_p(frame, plane);
+        planeheight = avs_library.avs_get_height_p(frame, plane);
 #else
         src_p = avs_get_read_ptr_p(frame, plane);
         pitch = avs_get_pitch_p(frame, plane);
