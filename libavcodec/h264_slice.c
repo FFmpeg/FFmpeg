@@ -246,7 +246,7 @@ static int alloc_picture(H264Context *h, H264Picture *pic)
             pic->hwaccel_picture_private = pic->hwaccel_priv_buf->data;
         }
     }
-    if (!h->avctx->hwaccel && CONFIG_GRAY && h->flags & CODEC_FLAG_GRAY && pic->f.data[2]) {
+    if (CONFIG_GRAY && !h->avctx->hwaccel && h->flags & CODEC_FLAG_GRAY && pic->f.data[2]) {
         int h_chroma_shift, v_chroma_shift;
         av_pix_fmt_get_chroma_sub_sample(pic->f.format,
                                          &h_chroma_shift, &v_chroma_shift);

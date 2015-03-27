@@ -241,6 +241,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
             return AVERROR(ENOMEM);
         }
 
+        av_frame_copy_props(frame, inpicref);
         frame->pts = ((s->start_time == AV_NOPTS_VALUE) ? 0 : s->start_time) +
                      outlink->frame_count * s->ts_unit;
         ret = ff_filter_frame(outlink, frame);
