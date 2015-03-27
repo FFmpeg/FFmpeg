@@ -9,6 +9,7 @@ version <next>:
 - libdcadec wrapper
 - Drop support for nvenc API before 5.0
 - nvenc H265 encoder
+- Detelecine filter
 
 
 version 2.6:

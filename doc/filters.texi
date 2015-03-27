@@ -3728,6 +3728,33 @@ FFmpeg was configured with @code{--enable-opencl}. Default value is 0.
 
 @end table
 
+@section detelecine
+
+Apply an exact inverse of the telecine operation. It requires a predefined
+pattern specified using the pattern option which must be the same as that passed
+to the telecine filter.
+
+This filter accepts the following options:
+
+@table @option
+@item first_field
+@table @samp
+@item top, t
+top field first
+@item bottom, b
+bottom field first
+The default value is @code{top}.
+@end table
+
+@item pattern
+A string of numbers representing the pulldown pattern you wish to apply.
+The default value is @code{23}.
+
+@item start_frame
+A number representing position of the first frame with respect to the telecine
+pattern. This is to be used if the stream is cut. The default value is @code{0}.
+@end table
+
 @section drawbox
 
 Draw a colored box on the input image.
