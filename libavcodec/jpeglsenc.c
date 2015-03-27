@@ -31,6 +31,7 @@
 #include "internal.h"
 #include "mathops.h"
 #include "mjpeg.h"
+#include "mjpegenc.h"
 #include "jpegls.h"
 
 /**
