@@ -240,7 +240,8 @@ int avio_open_dir(AVIODirContext **s, const char *url, AVDictionary **options);
  *
  * @param s         directory read context.
  * @param[out] next next entry or NULL when no more entries.
- * @return >=0 on success or negative on error.
+ * @return >=0 on success or negative on error. End of list is not considered an
+ *             error.
  */
 int avio_read_dir(AVIODirContext *s, AVIODirEntry **next);
 
