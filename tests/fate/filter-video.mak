@@ -259,25 +259,14 @@ fate-filter-idet: CMD = video_filter "idet"
 FATE_FILTER_VSYNTH-$(CONFIG_PAD_FILTER) += fate-filter-pad
 fate-filter-pad: CMD = video_filter "pad=iw*1.5:ih*1.5:iw*0.3:ih*0.2"
 
-FATE_FILTER_VSYNTH-$(CONFIG_PP_FILTER) += fate-filter-pp
+FATE_FILTER_PP = fate-filter-pp fate-filter-pp1 fate-filter-pp2 fate-filter-pp3 fate-filter-pp4 fate-filter-pp5 fate-filter-pp6
+FATE_FILTER_VSYNTH-$(CONFIG_PP_FILTER) += $(FATE_FILTER_PP)
 fate-filter-pp: CMD = video_filter "pp=be/hb/vb/tn/l5/al"
-
-FATE_FILTER_VSYNTH-$(CONFIG_PP_FILTER) += fate-filter-pp1
 fate-filter-pp1: CMD = video_filter "pp=fq|4/be/hb/vb/tn/l5/al"
-
-FATE_FILTER_VSYNTH-$(CONFIG_PP_FILTER) += fate-filter-pp2
 fate-filter-pp2: CMD = video_filter "pp=be/fq|16/h1/v1/lb"
-
-FATE_FILTER_VSYNTH-$(CONFIG_PP_FILTER) += fate-filter-pp3
 fate-filter-pp3: CMD = video_filter "pp=be/fq|8/ha|128|7/va/li"
-
-FATE_FILTER_VSYNTH-$(CONFIG_PP_FILTER) += fate-filter-pp4
 fate-filter-pp4: CMD = video_filter "pp=be/ci"
-
-FATE_FILTER_VSYNTH-$(CONFIG_PP_FILTER) += fate-filter-pp5
 fate-filter-pp5: CMD = video_filter "pp=md"
-
-FATE_FILTER_VSYNTH-$(CONFIG_PP_FILTER) += fate-filter-pp6
 fate-filter-pp6: CMD = video_filter "pp=be/fd"
 
 FATE_FILTER_VSYNTH-$(call ALLYES, QP_FILTER PP_FILTER) += fate-filter-qp
