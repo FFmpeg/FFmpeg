@@ -41,7 +41,7 @@ typedef struct {
     int64_t start_time;
 
     AVRational pts;
-    double ts_unit;
+    AVRational ts_unit;
     int out_cnt;
     int occupied;
 
@@ -164,7 +164,7 @@ static int config_output(AVFilterLink *outlink)
     av_log(ctx, AV_LOG_VERBOSE, "TB: %d/%d -> %d/%d\n",
            inlink->time_base.num, inlink->time_base.den, outlink->time_base.num, outlink->time_base.den);
 
-    s->ts_unit = av_q2d(av_inv_q(av_mul_q(fps, outlink->time_base)));
+    s->ts_unit = av_inv_q(av_mul_q(fps, outlink->time_base));
 
     return 0;
 }
@@ -243,7 +243,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
 
         av_frame_copy_props(frame, inpicref);
         frame->pts = ((s->start_time == AV_NOPTS_VALUE) ? 0 : s->start_time) +
-                     outlink->frame_count * s->ts_unit;
+                     av_rescale(outlink->frame_count, s->ts_unit.num,
+                                s->ts_unit.den);
         ret = ff_filter_frame(outlink, frame);
     }
     av_frame_free(&inpicref);
