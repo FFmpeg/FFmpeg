@@ -34,6 +34,7 @@
 #include "idctdsp.h"
 #include "get_bits.h"
 #include "internal.h"
+#include "jpegtables.h"
 #include "mjpeg.h"
 
 enum ChunkType {
