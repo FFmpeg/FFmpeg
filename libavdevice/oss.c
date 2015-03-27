@@ -39,7 +39,7 @@
 
 #include "libavformat/avformat.h"
 
-#include "oss_audio.h"
+#include "oss.h"
 
 int ff_oss_audio_open(AVFormatContext *s1, int is_output,
                       const char *audio_device)

@@ -43,7 +43,7 @@
 
 #include "libavformat/avformat.h"
 
-#include "alsa-audio.h"
+#include "alsa.h"
 
 static av_cold int audio_write_header(AVFormatContext *s1)
 {

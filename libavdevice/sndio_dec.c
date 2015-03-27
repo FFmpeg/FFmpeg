@@ -29,7 +29,7 @@
 #include "libavformat/avformat.h"
 #include "libavformat/internal.h"
 
-#include "sndio_common.h"
+#include "libavdevice/sndio.h"
 
 static av_cold int audio_read_header(AVFormatContext *s1)
 {

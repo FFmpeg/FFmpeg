@@ -27,8 +27,8 @@
  * @author Benoit Fouet ( benoit fouet free fr )
  */
 
-#ifndef AVDEVICE_ALSA_AUDIO_H
-#define AVDEVICE_ALSA_AUDIO_H
+#ifndef AVDEVICE_ALSA_H
+#define AVDEVICE_ALSA_H
 
 #include <alsa/asoundlib.h>
 #include "config.h"
@@ -93,4 +93,4 @@ int ff_alsa_xrun_recover(AVFormatContext *s1, int err);
 
 int ff_alsa_extend_reorder_buf(AlsaData *s, int size);
 
-#endif /* AVDEVICE_ALSA_AUDIO_H */
+#endif /* AVDEVICE_ALSA_H */

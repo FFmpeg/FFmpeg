@@ -53,7 +53,7 @@
 #include "libavformat/avformat.h"
 #include "libavformat/internal.h"
 
-#include "alsa-audio.h"
+#include "alsa.h"
 
 static av_cold int audio_read_header(AVFormatContext *s1)
 {

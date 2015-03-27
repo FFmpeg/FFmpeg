@@ -33,7 +33,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"
 
-#include "alsa-audio.h"
+#include "alsa.h"
 
 static av_cold snd_pcm_format_t codec_id_to_pcm_format(int codec_id)
 {

@@ -24,7 +24,7 @@
 
 #include "libavformat/avformat.h"
 
-#include "sndio_common.h"
+#include "libavdevice/sndio.h"
 
 static inline void movecb(void *addr, int delta)
 {
