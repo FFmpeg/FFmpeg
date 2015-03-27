@@ -214,6 +214,11 @@ enum AVPixelFormat {
      *  mfxFrameSurface1 structure.
      */
     AV_PIX_FMT_QSV,
+    /**
+     * HW acceleration though MMAL, data[3] contains a pointer to the
+     * MMAL_BUFFER_HEADER_T structure.
+     */
+    AV_PIX_FMT_MMAL,
 
     AV_PIX_FMT_NB,        ///< number of pixel formats, DO NOT USE THIS if you want to link with shared libav* because the number of formats might differ between versions
 

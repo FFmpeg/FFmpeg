@@ -217,6 +217,7 @@ External library support:
   --enable-libxcb-xfixes   enable X11 grabbing mouse rendering [auto]
   --enable-libxvid         enable Xvid encoding via xvidcore,
                            native MPEG-4/Xvid encoder exists [no]
+  --enable-mmal            enable decoding via MMAL [no]
   --enable-openssl         enable openssl [no]
   --enable-x11grab         enable X11 grabbing (legacy) [no]
   --enable-zlib            enable zlib [autodetect]
@@ -1182,6 +1183,7 @@ EXTERNAL_LIBRARY_LIST="
     libxcb_shm
     libxcb_xfixes
     libxvid
+    mmal
     openssl
     x11grab
     zlib
@@ -1970,6 +1972,10 @@ h263_vdpau_hwaccel_deps="vdpau"
 h263_vdpau_hwaccel_select="h263_decoder"
 h264_dxva2_hwaccel_deps="dxva2"
 h264_dxva2_hwaccel_select="h264_decoder"
+h264_mmal_decoder_deps="mmal"
+h264_mmal_hwaccel_deps="mmal"
+h264_mmal_decoder_select="h264_decoder"
+h264_mmal_encoder_deps="mmal"
 h264_qsv_hwaccel_deps="libmfx"
 h264_vaapi_hwaccel_deps="vaapi"
 h264_vaapi_hwaccel_select="h264_decoder"
@@ -4255,6 +4261,13 @@ enabled libx265           && require_pkg_config x265 x265.h x265_encoder_encode 
                                die "ERROR: libx265 version must be >= 17."; }
 enabled libxavs           && require libxavs xavs.h xavs_encoder_encode -lxavs
 enabled libxvid           && require libxvid xvid.h xvid_global -lxvidcore
+enabled mmal              && { check_lib interface/mmal/mmal.h mmal_port_connect -lmmal_core -lmmal_util -lmmal_vc_client -lbcm_host ||
+                                { ! enabled cross_compile && {
+                                    add_cflags -isystem/opt/vc/include/ -isystem/opt/vc/include/interface/vmcs_host/linux -isystem/opt/vc/include/interface/vcos/pthreads -fgnu89-inline ;
+                                    add_extralibs -L/opt/vc/lib/ -lmmal_core -lmmal_util -lmmal_vc_client -lbcm_host ;
+                                    check_lib interface/mmal/mmal.h mmal_port_connect ; }
+                                check_lib interface/mmal/mmal.h mmal_port_connect ; } ||
+                               die "ERROR: mmal not found"; }
 enabled openssl           && { check_lib openssl/ssl.h SSL_library_init -lssl -lcrypto ||
                                check_lib openssl/ssl.h SSL_library_init -lssl32 -leay32 ||
                                check_lib openssl/ssl.h SSL_library_init -lssl -lcrypto -lws2_32 -lgdi32 ||

@@ -25,6 +25,7 @@ version <next>:
 - TDSC decoder
 - DTS lossless extension (XLL) decoding (not lossless, disabled by default)
 - Intel QSV-accelerated H.264 encoding
+- MMAL-accelerated H.264 decoding
 
 
 version 11:
