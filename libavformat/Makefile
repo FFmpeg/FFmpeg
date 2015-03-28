@@ -80,6 +80,7 @@ OBJS-$(CONFIG_ANM_DEMUXER)               += anm.o
 OBJS-$(CONFIG_APC_DEMUXER)               += apc.o
 OBJS-$(CONFIG_APE_DEMUXER)               += ape.o apetag.o img2.o
 OBJS-$(CONFIG_APNG_DEMUXER)              += apngdec.o
+OBJS-$(CONFIG_APNG_MUXER)                += apngenc.o
 OBJS-$(CONFIG_AQTITLE_DEMUXER)           += aqtitledec.o subtitles.o
 OBJS-$(CONFIG_ASF_DEMUXER)               += asfdec.o asf.o asfcrypt.o \
                                             avlanguage.o
