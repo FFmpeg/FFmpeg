@@ -1890,6 +1890,7 @@ CONFIG_EXTRA="
     nettle
     pixblockdsp
     qpeldsp
+    qsv
     qsvdec
     rangecoder
     riffdec
@@ -2073,6 +2074,7 @@ mpegaudio_select="mpegaudiodsp"
 mpegaudiodsp_select="dct"
 mpegvideo_select="blockdsp h264chroma hpeldsp idctdsp me_cmp videodsp"
 mpegvideoenc_select="me_cmp mpegvideo pixblockdsp qpeldsp"
+qsvdec_select="qsv"
 
 # decoders / encoders
 aac_decoder_select="imdct15 mdct sinewin"

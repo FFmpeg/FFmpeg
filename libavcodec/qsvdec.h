@@ -33,11 +33,6 @@
 
 #include "avcodec.h"
 
-#define QSV_VERSION_MAJOR 1
-#define QSV_VERSION_MINOR 1
-
-#define ASYNC_DEPTH_DEFAULT 4       // internal parallelism
-
 typedef struct QSVFrame {
     AVFrame *frame;
     mfxFrameSurface1 *surface;
@@ -67,11 +62,6 @@ typedef struct QSVContext {
     mfxExtBuffer **ext_buffers;
     int         nb_ext_buffers;
 } QSVContext;
-
-/**
- * Convert a libmfx error code into a ffmpeg error code.
- */
-int ff_qsv_error(int mfx_err);
 
 int ff_qsv_map_pixfmt(enum AVPixelFormat format);
 
