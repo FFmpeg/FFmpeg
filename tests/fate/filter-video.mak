@@ -265,8 +265,8 @@ $(FATE_FILTER_PP): fate-vsynth1-mpeg4-qprd
 
 fate-filter-pp:  CMD = framecrc -flags bitexact -idct simple -i $(TARGET_PATH)/tests/data/fate/vsynth1-mpeg4-qprd.avi -vframes 5 -flags +bitexact -vf "pp=be/hb/vb/tn/l5/al"
 fate-filter-pp1: CMD = video_filter "pp=fq|4/be/hb/vb/tn/l5/al"
-fate-filter-pp2: CMD = video_filter "pp=be/fq|16/h1/v1/lb"
-fate-filter-pp3: CMD = video_filter "pp=be/fq|8/ha|128|7/va/li"
+fate-filter-pp2: CMD = video_filter "qp=x+y,pp=be/h1/v1/lb"
+fate-filter-pp3: CMD = video_filter "qp=x+y,pp=be/ha|128|7/va/li"
 fate-filter-pp4: CMD = video_filter "pp=be/ci"
 fate-filter-pp5: CMD = video_filter "pp=md"
 fate-filter-pp6: CMD = video_filter "pp=be/fd"
