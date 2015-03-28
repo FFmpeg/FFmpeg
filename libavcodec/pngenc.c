@@ -512,9 +512,9 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     ret         = 0;
 
 the_end:
-    av_free(crow_base);
-    av_free(progressive_buf);
-    av_free(top_buf);
+    av_freep(&crow_base);
+    av_freep(&progressive_buf);
+    av_freep(&top_buf);
     deflateEnd(&s->zstream);
     return ret;
 fail:
