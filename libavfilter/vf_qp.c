@@ -50,26 +50,31 @@ static int config_input(AVFilterLink *inlink)
     AVFilterContext *ctx = inlink->dst;
     QPContext *s = ctx->priv;
     int i;
+    int ret;
+    AVExpr *e = NULL;
+    static const char *var_names[] = { "known", "qp", NULL };
 
     if (!s->qp_expr_str)
         return 0;
 
+    ret = av_expr_parse(&e, s->qp_expr_str, var_names, NULL, NULL, NULL, NULL, 0, ctx);
+    if (ret < 0)
+        return ret;
+
     s->h       = (inlink->h + 15) >> 4;
     s->qstride = (inlink->w + 15) >> 4;
     for (i = -129; i < 128; i++) {
-        double var_values[] = { i != -129, i, 0 };
-        static const char *var_names[] = { "known", "qp", NULL };
-        double temp_val;
-        int ret;
+        double var_values[] = { i != -129, i, 0};
+        double temp_val = av_expr_eval(e, var_values, NULL);
 
-        ret = av_expr_parse_and_eval(&temp_val, s->qp_expr_str,
-                                     var_names, var_values,
-                                     NULL, NULL, NULL, NULL, 0, 0, ctx);
-        if (ret < 0)
-            return ret;
+        if (isnan(temp_val)) {
+                av_expr_free(e);
+                return AVERROR(EINVAL);
+        }
 
         s->lut[i + 129] = lrintf(temp_val);
     }
+    av_expr_free(e);
 
     return 0;
 }
