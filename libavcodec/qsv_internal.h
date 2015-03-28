@@ -40,7 +40,7 @@ typedef struct QSVFrame {
 } QSVFrame;
 
 /**
- * Convert a libmfx error code into a libav error code.
+ * Convert a libmfx error code into a ffmpeg error code.
  */
 int ff_qsv_error(int mfx_err);
 
