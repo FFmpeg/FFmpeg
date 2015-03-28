@@ -33,6 +33,7 @@ typedef struct QPContext {
     char *qp_expr_str;
     int8_t lut[257];
     int h, qstride;
+    int evaluate_per_mb;
 } QPContext;
 
 #define OFFSET(x) offsetof(QPContext, x)
@@ -52,7 +53,7 @@ static int config_input(AVFilterLink *inlink)
     int i;
     int ret;
     AVExpr *e = NULL;
-    static const char *var_names[] = { "known", "qp", NULL };
+    static const char *var_names[] = { "known", "qp", "x", "y", "w", "h", NULL };
 
     if (!s->qp_expr_str)
         return 0;
@@ -64,12 +65,16 @@ static int config_input(AVFilterLink *inlink)
     s->h       = (inlink->h + 15) >> 4;
     s->qstride = (inlink->w + 15) >> 4;
     for (i = -129; i < 128; i++) {
-        double var_values[] = { i != -129, i, 0};
+        double var_values[] = { i != -129, i, NAN, NAN, s->qstride, s->h, 0};
         double temp_val = av_expr_eval(e, var_values, NULL);
 
         if (isnan(temp_val)) {
+            if(strchr(s->qp_expr_str, 'x') || strchr(s->qp_expr_str, 'y'))
+                s->evaluate_per_mb = 1;
+            else {
                 av_expr_free(e);
                 return AVERROR(EINVAL);
+            }
         }
 
         s->lut[i + 129] = lrintf(temp_val);
@@ -108,7 +113,26 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     in_qp_table = av_frame_get_qp_table(in, &stride, &type);
     av_frame_set_qp_table(out, out_qp_table_buf, s->qstride, type);
 
-    if (in_qp_table) {
+
+    if (s->evaluate_per_mb) {
+        int y, x;
+
+        for (y = 0; y < s->h; y++)
+            for (x = 0; x < s->qstride; x++) {
+                int qp = in_qp_table ? in_qp_table[x + stride * y] : NAN;
+                double var_values[] = { !!in_qp_table, qp, x, y, s->qstride, s->h, 0};
+                static const char *var_names[] = { "known", "qp", "x", "y", "w", "h", NULL };
+                double temp_val;
+                int ret;
+
+                ret = av_expr_parse_and_eval(&temp_val, s->qp_expr_str,
+                                            var_names, var_values,
+                                            NULL, NULL, NULL, NULL, 0, 0, ctx);
+                if (ret < 0)
+                    return ret;
+                out_qp_table_buf->data[x + s->qstride * y] = lrintf(temp_val);
+            }
+    } else if (in_qp_table) {
         int y, x;
 
         for (y = 0; y < s->h; y++)
