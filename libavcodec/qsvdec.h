@@ -20,8 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_QSV_INTERNAL_H
-#define AVCODEC_QSV_INTERNAL_H
+#ifndef AVCODEC_QSVDEC_H
+#define AVCODEC_QSVDEC_H
 
 #include <stdint.h>
 #include <sys/types.h>
@@ -83,4 +83,4 @@ int ff_qsv_decode(AVCodecContext *s, QSVContext *q,
 
 int ff_qsv_close(QSVContext *q);
 
-#endif /* AVCODEC_QSV_INTERNAL_H */
+#endif /* AVCODEC_QSVDEC_H */
