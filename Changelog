@@ -10,6 +10,7 @@ version <next>:
 - Drop support for nvenc API before 5.0
 - nvenc H265 encoder
 - Detelecine filter
+- Intel QSV-accelerated H.264 encoding
 
 
 version 2.6:

@@ -32,15 +32,7 @@
 #include "libavutil/pixfmt.h"
 
 #include "avcodec.h"
-
-typedef struct QSVFrame {
-    AVFrame *frame;
-    mfxFrameSurface1 *surface;
-
-    mfxFrameSurface1 surface_internal;
-
-    struct QSVFrame *next;
-} QSVFrame;
+#include "qsv_internal.h"
 
 typedef struct QSVContext {
     // the session used for decoding
