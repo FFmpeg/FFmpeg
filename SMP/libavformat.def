@@ -99,17 +99,20 @@ EXPORTS
     avio_alloc_context
     avio_check
     avio_close
+    avio_close_dir
     avio_close_dyn_buf
     avio_closep
     avio_enum_protocols
     avio_feof
     avio_find_protocol_name
     avio_flush
+    avio_free_directory_entry
     avio_get_str
     avio_get_str16be
     avio_get_str16le
     avio_open
     avio_open2
+    avio_open_dir
     avio_open_dyn_buf
     avio_pause
     avio_printf
@@ -122,6 +125,7 @@ EXPORTS
     avio_rb32
     avio_rb64
     avio_read
+    avio_read_dir
     avio_read_to_bprint
     avio_rl16
     avio_rl24

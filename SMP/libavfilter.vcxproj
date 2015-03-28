@@ -243,6 +243,8 @@
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_deshake.c">
     </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_detelecine.c">
+    </ClCompile>
     <ClCompile Include="..\libavfilter\vf_drawbox.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_drawtext.c">

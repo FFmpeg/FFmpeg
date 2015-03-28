@@ -500,6 +500,12 @@
     <ClCompile Include="..\libavcodec\qsv.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\qsvdec.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\qsvenc.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\rangecoder.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
@@ -1145,7 +1151,10 @@
     <ClCompile Include="..\libavcodec\h264_slice.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavcodec\qsv_h264.c">
+    <ClCompile Include="..\libavcodec\qsvdec_h264.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\qsvenc_h264.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\hevc.c">
