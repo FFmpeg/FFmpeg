@@ -87,6 +87,9 @@ typedef struct URLProtocol {
     const AVClass *priv_data_class;
     int flags;
     int (*url_check)(URLContext *h, int mask);
+    int (*url_open_dir)(URLContext *h);
+    int (*url_read_dir)(URLContext *h, AVIODirEntry **next);
+    int (*url_close_dir)(URLContext *h);
 } URLProtocol;
 
 /**
@@ -279,6 +282,13 @@ int ff_url_join(char *str, int size, const char *proto,
  */
 void ff_make_absolute_url(char *buf, int size, const char *base,
                           const char *rel);
+
+/**
+ * Allocate directory entry with default values.
+ *
+ * @return entry or NULL on error
+ */
+AVIODirEntry *ff_alloc_dir_entry(void);
 
 
 #endif /* AVFORMAT_URL_H */

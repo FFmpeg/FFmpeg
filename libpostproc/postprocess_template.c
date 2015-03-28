@@ -3529,16 +3529,12 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
 
           for(x = startx; x < endx; x+=BLOCK_SIZE){
             const int stride= dstStride;
-
-            if(isColor){
-                QP= QPptr[x>>qpHShift];
-                c.nonBQP= nonBQPptr[x>>qpHShift];
-            }else{
-                QP= QPptr[x>>4];
+            QP = QPptr[x>>qpHShift];
+            c.nonBQP = nonBQPptr[x>>qpHShift];
+            if(!isColor){
                 QP= (QP* QPCorrecture + 256*128)>>16;
-                c.nonBQP= nonBQPptr[x>>4];
                 c.nonBQP= (c.nonBQP* QPCorrecture + 256*128)>>16;
-                yHistogram[ srcBlock[srcStride*12 + 4] ]++;
+                yHistogram[srcBlock[srcStride*12 + 4]]++;
             }
             c.QP= QP;
 #if TEMPLATE_PP_MMX

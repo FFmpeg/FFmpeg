@@ -1321,6 +1321,7 @@ COMPONENT_LIST="
 
 EXAMPLE_LIST="
     avio_reading_example
+    avio_list_dir_example
     decoding_encoding_example
     demuxing_decoding_example
     extract_mvs_example
@@ -1891,6 +1892,8 @@ CONFIG_EXTRA="
     pixblockdsp
     qpeldsp
     qsv
+    qsvdec
+    qsvenc
     rangecoder
     riffdec
     riffenc
@@ -2073,6 +2076,8 @@ mpegaudio_select="mpegaudiodsp"
 mpegaudiodsp_select="dct"
 mpegvideo_select="blockdsp h264chroma hpeldsp idctdsp me_cmp videodsp"
 mpegvideoenc_select="me_cmp mpegvideo pixblockdsp qpeldsp"
+qsvdec_select="qsv"
+qsvenc_select="qsv"
 
 # decoders / encoders
 aac_decoder_select="imdct15 mdct sinewin"
@@ -2147,7 +2152,9 @@ h263p_encoder_select="h263_encoder"
 h264_decoder_select="cabac golomb h264chroma h264dsp h264pred h264qpel startcode videodsp"
 h264_decoder_suggest="error_resilience"
 h264_qsv_decoder_deps="libmfx"
-h264_qsv_decoder_select="h264_mp4toannexb_bsf h264_parser qsv h264_qsv_hwaccel"
+h264_qsv_decoder_select="h264_mp4toannexb_bsf h264_parser qsvdec h264_qsv_hwaccel"
+h264_qsv_encoder_deps="libmfx"
+h264_qsv_encoder_select="qsvenc"
 hevc_decoder_select="bswapdsp cabac golomb videodsp"
 huffyuv_decoder_select="bswapdsp huffyuvdsp llviddsp"
 huffyuv_encoder_select="bswapdsp huffman huffyuvencdsp llviddsp"
@@ -2653,6 +2660,7 @@ zoompan_filter_deps="swscale"
 
 # examples
 avio_reading="avformat avcodec avutil"
+avio_list_dir="avformat avutil"
 avcodec_example_deps="avcodec avutil"
 decoding_encoding_example_deps="avcodec avformat avutil"
 demuxing_decoding_example_deps="avcodec avformat avutil"

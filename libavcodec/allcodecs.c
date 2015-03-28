@@ -554,6 +554,7 @@ void avcodec_register_all(void)
     /* external libraries, that shouldn't be used by default if one of the
      * above is available */
     REGISTER_ENCODER(LIBOPENH264,       libopenh264);
+    REGISTER_ENCODER(H264_QSV,          h264_qsv);
 
     /* parsers */
     REGISTER_PARSER(AAC,                aac);
