@@ -399,9 +399,9 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     s->buf[10] = 0; /* compression type */
     s->buf[11] = 0; /* filter type */
     s->buf[12] = is_progressive; /* interlace type */
-
     png_write_chunk(&s->bytestream, MKTAG('I', 'H', 'D', 'R'), s->buf, 13);
 
+    /* write physical information */
     if (s->dpm) {
       AV_WB32(s->buf, s->dpm);
       AV_WB32(s->buf + 4, s->dpm);
