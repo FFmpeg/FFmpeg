@@ -480,10 +480,10 @@ int ff_h264_decode_seq_parameter_set(H264Context *h)
 #endif
     sps->crop = get_bits1(&h->gb);
     if (sps->crop) {
-        int crop_left   = get_ue_golomb(&h->gb);
-        int crop_right  = get_ue_golomb(&h->gb);
-        int crop_top    = get_ue_golomb(&h->gb);
-        int crop_bottom = get_ue_golomb(&h->gb);
+        unsigned int crop_left   = get_ue_golomb(&h->gb);
+        unsigned int crop_right  = get_ue_golomb(&h->gb);
+        unsigned int crop_top    = get_ue_golomb(&h->gb);
+        unsigned int crop_bottom = get_ue_golomb(&h->gb);
         int width  = 16 * sps->mb_width;
         int height = 16 * sps->mb_height * (2 - sps->frame_mbs_only_flag);
 
