@@ -165,6 +165,7 @@ struct variant {
 };
 
 typedef struct HLSContext {
+    AVClass *class;
     int n_variants;
     struct variant **variants;
     int n_playlists;
@@ -173,6 +174,7 @@ typedef struct HLSContext {
     struct rendition **renditions;
 
     int cur_seq_no;
+    int live_start_index;
     int first_packet;
     int64_t first_timestamp;
     int64_t cur_timestamp;
@@ -1237,10 +1239,12 @@ static int select_cur_seq_no(HLSContext *c, struct playlist *pls)
              * require us to download a segment to inspect its timestamps. */
             return c->cur_seq_no;
 
-        /* If this is a live stream with more than 3 segments, start at the
-         * third last segment. */
-        if (pls->n_segments > 3)
-            return pls->start_seq_no + pls->n_segments - 3;
+        /* If this is a live stream, start live_start_index segments from the
+         * start or end */
+        if (c->live_start_index < 0)
+            return pls->start_seq_no + FFMAX(pls->n_segments + c->live_start_index, 0);
+        else
+            return pls->start_seq_no + FFMIN(c->live_start_index, pls->n_segments - 1);
     }
 
     /* Otherwise just start on the first segment. */
@@ -1714,9 +1718,25 @@ static int hls_probe(AVProbeData *p)
     return 0;
 }
 
+#define OFFSET(x) offsetof(HLSContext, x)
+#define FLAGS AV_OPT_FLAG_DECODING_PARAM
+static const AVOption hls_options[] = {
+    {"live_start_index", "segment index to start live streams at (negative values are from the end)",
+        OFFSET(live_start_index), FF_OPT_TYPE_INT, {.i64 = -3}, INT_MIN, INT_MAX, FLAGS},
+    {NULL}
+};
+
+static const AVClass hls_class = {
+    .class_name = "hls,applehttp",
+    .item_name  = av_default_item_name,
+    .option     = hls_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVInputFormat ff_hls_demuxer = {
     .name           = "hls,applehttp",
     .long_name      = NULL_IF_CONFIG_SMALL("Apple HTTP Live Streaming"),
+    .priv_class     = &hls_class,
     .priv_data_size = sizeof(HLSContext),
     .read_probe     = hls_probe,
     .read_header    = hls_read_header,
