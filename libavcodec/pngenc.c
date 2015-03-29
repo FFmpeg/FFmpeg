@@ -299,24 +299,12 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     int y, len, row_size, ret;
     int pass_row_size, enc_row_size;
     int64_t max_packet_size;
-    int compression_level;
     uint8_t *ptr, *top, *crow_buf, *crow;
     uint8_t *crow_base       = NULL;
     uint8_t *progressive_buf = NULL;
     uint8_t *top_buf         = NULL;
 
     row_size       = (avctx->width * s->bits_per_pixel + 7) >> 3;
-
-    s->zstream.zalloc = ff_png_zalloc;
-    s->zstream.zfree  = ff_png_zfree;
-    s->zstream.opaque = NULL;
-    compression_level = avctx->compression_level == FF_COMPRESSION_DEFAULT
-                      ? Z_DEFAULT_COMPRESSION
-                      : av_clip(avctx->compression_level, 0, 9);
-    ret = deflateInit2(&s->zstream, compression_level,
-                       Z_DEFLATED, 15, 8, Z_DEFAULT_STRATEGY);
-    if (ret != Z_OK)
-        return -1;
 
     enc_row_size    = deflateBound(&s->zstream, row_size);
     max_packet_size = avctx->height * (int64_t)(enc_row_size +
@@ -475,13 +463,14 @@ the_end:
     av_freep(&crow_base);
     av_freep(&progressive_buf);
     av_freep(&top_buf);
-    deflateEnd(&s->zstream);
+    deflateReset(&s->zstream);
     return ret;
 }
 
 static av_cold int png_enc_init(AVCodecContext *avctx)
 {
     PNGEncContext *s = avctx->priv_data;
+    int compression_level;
 
     switch (avctx->pix_fmt) {
     case AV_PIX_FMT_RGBA:
@@ -569,11 +558,23 @@ static av_cold int png_enc_init(AVCodecContext *avctx)
     }
     s->bits_per_pixel = ff_png_get_nb_channels(s->color_type) * s->bit_depth;
 
+    s->zstream.zalloc = ff_png_zalloc;
+    s->zstream.zfree  = ff_png_zfree;
+    s->zstream.opaque = NULL;
+    compression_level = avctx->compression_level == FF_COMPRESSION_DEFAULT
+                      ? Z_DEFAULT_COMPRESSION
+                      : av_clip(avctx->compression_level, 0, 9);
+    if (deflateInit2(&s->zstream, compression_level, Z_DEFLATED, 15, 8, Z_DEFAULT_STRATEGY) != Z_OK)
+        return -1;
+
     return 0;
 }
 
 static av_cold int png_enc_close(AVCodecContext *avctx)
 {
+    PNGEncContext *s = avctx->priv_data;
+
+    deflateEnd(&s->zstream);
     av_frame_free(&avctx->coded_frame);
     return 0;
 }
