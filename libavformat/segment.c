@@ -357,17 +357,17 @@ static int segment_end(AVFormatContext *s, int write_trailer, int is_last)
                 av_freep(&entry);
             }
 
-            avio_closep(&seg->list_pb);
             if ((ret = segment_list_open(s)) < 0)
                 goto end;
             for (entry = seg->segment_list_entries; entry; entry = entry->next)
                 segment_list_print_entry(seg->list_pb, seg->list_type, entry, s);
             if (seg->list_type == LIST_TYPE_M3U8 && is_last)
                 avio_printf(seg->list_pb, "#EXT-X-ENDLIST\n");
+            avio_closep(&seg->list_pb);
         } else {
             segment_list_print_entry(seg->list_pb, seg->list_type, &seg->cur_entry, s);
+            avio_flush(seg->list_pb);
         }
-        avio_flush(seg->list_pb);
     }
 
     av_log(s, AV_LOG_VERBOSE, "segment:'%s' count:%d ended\n",
@@ -635,8 +635,9 @@ static int seg_write_header(AVFormatContext *s)
             else if (av_match_ext(seg->list, "ffcat,ffconcat")) seg->list_type = LIST_TYPE_FFCONCAT;
             else                                      seg->list_type = LIST_TYPE_FLAT;
         }
-        if ((ret = segment_list_open(s)) < 0)
-            goto fail;
+        if (!seg->list_size && seg->list_type != LIST_TYPE_M3U8)
+            if ((ret = segment_list_open(s)) < 0)
+                goto fail;
     }
     if (seg->list_type == LIST_TYPE_EXT)
         av_log(s, AV_LOG_WARNING, "'ext' list type option is deprecated in favor of 'csv'\n");
