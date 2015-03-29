@@ -631,9 +631,6 @@ av_cold int ff_h264_decode_init(AVCodecContext *avctx)
     if (ret < 0)
         return ret;
 
-    memset(h->pps.scaling_matrix4, 16, 6 * 16 * sizeof(uint8_t));
-    memset(h->pps.scaling_matrix8, 16, 2 * 64 * sizeof(uint8_t));
-
     /* set defaults */
     // s->decode_mb = ff_h263_decode_mb;
     if (!avctx->has_b_frames)
