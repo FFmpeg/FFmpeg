@@ -70,6 +70,42 @@ static const AVRational vui_sar[] = {
     {  2,   1 },
 };
 
+static void remove_pps(HEVCContext *s, int id)
+{
+    if (s->pps_list[id] && s->pps == (const HEVCPPS*)s->pps_list[id]->data)
+        s->pps = NULL;
+    av_buffer_unref(&s->pps_list[id]);
+}
+
+static void remove_sps(HEVCContext *s, int id)
+{
+    int i;
+    if (s->sps_list[id]) {
+        if (s->sps == (const HEVCSPS*)s->sps_list[id]->data)
+            s->sps = NULL;
+
+        /* drop all PPS that depend on this SPS */
+        for (i = 0; i < FF_ARRAY_ELEMS(s->pps_list); i++)
+            if (s->pps_list[i] && ((HEVCPPS*)s->pps_list[i]->data)->sps_id == id)
+                remove_pps(s, i);
+    }
+    av_buffer_unref(&s->sps_list[id]);
+}
+
+static void remove_vps(HEVCContext *s, int id)
+{
+    int i;
+    if (s->vps_list[id]) {
+        if (s->vps == (const HEVCVPS*)s->vps_list[id]->data)
+            s->vps = NULL;
+
+        for (i = 0; i < FF_ARRAY_ELEMS(s->sps_list); i++)
+            if (s->sps_list[i] && ((HEVCSPS*)s->sps_list[i]->data)->vps_id == id)
+                remove_sps(s, i);
+    }
+    av_buffer_unref(&s->vps_list[id]);
+}
+
 int ff_hevc_decode_short_term_rps(HEVCContext *s, ShortTermRPS *rps,
                                   const HEVCSPS *sps, int is_slice_header)
 {
@@ -411,7 +447,7 @@ int ff_hevc_decode_nal_vps(HEVCContext *s)
         !memcmp(s->vps_list[vps_id]->data, vps_buf->data, vps_buf->size)) {
         av_buffer_unref(&vps_buf);
     } else {
-        av_buffer_unref(&s->vps_list[vps_id]);
+        remove_vps(s, vps_id);
         s->vps_list[vps_id] = vps_buf;
     }
 
@@ -958,11 +994,7 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
         !memcmp(s->sps_list[sps_id]->data, sps_buf->data, sps_buf->size)) {
         av_buffer_unref(&sps_buf);
     } else {
-        for (i = 0; i < FF_ARRAY_ELEMS(s->pps_list); i++) {
-            if (s->pps_list[i] && ((HEVCPPS*)s->pps_list[i]->data)->sps_id == sps_id)
-                av_buffer_unref(&s->pps_list[i]);
-        }
-        av_buffer_unref(&s->sps_list[sps_id]);
+        remove_sps(s, sps_id);
         s->sps_list[sps_id] = sps_buf;
     }
 
@@ -1311,7 +1343,7 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
         }
     }
 
-    av_buffer_unref(&s->pps_list[pps_id]);
+    remove_pps(s, pps_id);
     s->pps_list[pps_id] = pps_buf;
 
     return 0;
