@@ -3,6 +3,45 @@ releases are sorted from youngest to oldest.
 
 version <next>:
 
+version 2.4.8:
+- avutil/cpu: add missing check for mmxext to av_force_cpu_flags
+- avcodec/msrledec: restructure msrle_decode_pal4() based on the line number instead of the pixel pointer
+- avcodec/hevc_ps: Check cropping parameters more correctly
+- avcodec/dnxhddec: Check that the frame is interlaced before using cur_field
+- avformat/mov: Disallow ".." in dref unless use_absolute_path is set
+- avformat/mov: Check for string truncation in mov_open_dref()
+- ac3_fixed: fix out-of-bound read
+- avcodec/012v: redesign main loop
+- avcodec/012v: Check dimensions more completely
+- asfenc: fix leaking asf->index_ptr on error
+- avcodec/options_table: remove extradata_size from the AVOptions table
+- ffmdec: limit the backward seek to the last resync position
+- ffmdec: make sure the time base is valid
+- ffmdec: fix infinite loop at EOF
+- avcodec/tiff: move bpp check to after "end:"
+- avcodec/opusdec: Fix delayed sample value
+- avcodec/utils: Align YUV411 by as much as the other YUV variants
+- vp9: fix segmentation map retention with threading enabled.
+- doc/protocols/tcp: fix units of listen_timeout option value, from microseconds to milliseconds
+- fix VP9 packet decoder returning 0 instead of the used data size
+- avformat/bit: only accept the g729 codec and 1 channel
+- avformat/adxdec: check avctx->channels for invalid values
+- Fix buffer_size argument to init_put_bits() in multiple encoders.
+- mips/acelp_filters: fix incorrect register constraint
+- avcodec/hevc_ps: Sanity checks for some log2_* values
+- avcodec/zmbv: Check len before reading in decode_frame()
+- avcodec/snowdec: Fix ref value check
+- swscale/utils: More carefully merge and clear coefficients outside the input
+- avcodec/a64multienc: fix use of uninitialized values in to_meta_with_crop
+- avcodec/a64multienc: don't set incorrect packet size
+- webp: ensure that each transform is only used once
+- avcodec/hevc_ps: More complete window reset
+- vp9: make above buffer pointer 32-byte aligned.
+- avformat/rm: limit packet size
+- avcodec/webp: validate the distance prefix code
+- avcodec/gif: fix off by one in column offsetting finding
+
+
 version 2.4.7:
 - avcodec/flac_parser: fix handling EOF if no headers are found
 - avfilter/vf_framepack: Check and update frame_rate
