@@ -25,6 +25,7 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
 #include "libavutil/opt.h"
+
 #include "avcodec.h"
 #include "dca.h"
 #include "dca_syncwords.h"
@@ -48,6 +49,10 @@ static int dcadec_decode_frame(AVCodecContext *avctx, void *data,
     int input_size = avpkt->size;
 
     /* convert bytestream syntax to RAW BE format if required */
+    if (input_size < 8) {
+        av_log(avctx, AV_LOG_ERROR, "Input size too small\n");
+        return AVERROR_INVALIDDATA;
+    }
     mrk = AV_RB32(input);
     if (mrk != DCA_SYNCWORD_CORE_BE && mrk != DCA_SYNCWORD_SUBSTREAM) {
         s->buffer = av_fast_realloc(s->buffer, &s->buffer_size, avpkt->size + FF_INPUT_BUFFER_PADDING_SIZE);
@@ -75,11 +80,16 @@ static int dcadec_decode_frame(AVCodecContext *avctx, void *data,
     avctx->channel_layout = channel_mask;
     avctx->sample_rate    = sample_rate;
 
-    av_assert0(bits_per_sample >= 16 && bits_per_sample <= 24);
+    av_assert0(bits_per_sample >= 16);
     if (bits_per_sample == 16)
         avctx->sample_fmt = AV_SAMPLE_FMT_S16P;
-    else
+    else if (bits_per_sample <= 24)
         avctx->sample_fmt = AV_SAMPLE_FMT_S32P;
+    else {
+        av_log(avctx, AV_LOG_ERROR, "Unsupported number of bits per sample: %d\n",
+               bits_per_sample);
+        return AVERROR(ENOSYS);
+    }
 
     avctx->bits_per_raw_sample = bits_per_sample;
 

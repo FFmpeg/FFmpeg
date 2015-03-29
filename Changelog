@@ -6,7 +6,7 @@ version <next>:
 - TDSC decoder
 - DTS lossless extension (XLL) decoding (not lossless, disabled by default)
 - showwavespic filter
-- libdcadec wrapper
+- DTS decoding through libdcadec
 - Drop support for nvenc API before 5.0
 - nvenc H265 encoder
 - Detelecine filter
