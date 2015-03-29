@@ -373,19 +373,19 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     s->bytestream_end   = pkt->data + pkt->size;
 
     crow_base = av_malloc((row_size + 32) << (s->filter_type == PNG_FILTER_VALUE_MIXED));
-    if (!crow_base)
-        goto fail;
+    if (!crow_base) {
+        ret = AVERROR(ENOMEM);
+        goto the_end;
+    }
     // pixel data should be aligned, but there's a control byte before it
     crow_buf = crow_base + 15;
     if (is_progressive) {
         progressive_buf = av_malloc(row_size + 1);
-        if (!progressive_buf)
-            goto fail;
-    }
-    if (is_progressive) {
         top_buf = av_malloc(row_size + 1);
-        if (!top_buf)
-            goto fail;
+        if (!progressive_buf || !top_buf) {
+            ret = AVERROR(ENOMEM);
+            goto the_end;
+        }
     }
 
     /* write png header */
@@ -501,7 +501,8 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             if (ret == Z_STREAM_END)
                 break;
         } else {
-            goto fail;
+            ret = -1;
+            goto the_end;
         }
     }
     png_write_chunk(&s->bytestream, MKTAG('I', 'E', 'N', 'D'), NULL, 0);
@@ -517,9 +518,6 @@ the_end:
     av_freep(&top_buf);
     deflateEnd(&s->zstream);
     return ret;
-fail:
-    ret = -1;
-    goto the_end;
 }
 
 static av_cold int png_enc_init(AVCodecContext *avctx)
