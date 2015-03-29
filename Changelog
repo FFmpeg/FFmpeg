@@ -11,6 +11,7 @@ version <next>:
 - nvenc H265 encoder
 - Detelecine filter
 - Intel QSV-accelerated H.264 encoding
+- MMAL-accelerated H.264 decoding
 
 
 version 2.6:

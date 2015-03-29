@@ -252,6 +252,11 @@ enum AVPixelFormat {
      *  mfxFrameSurface1 structure.
      */
     AV_PIX_FMT_QSV,
+    /**
+     * HW acceleration though MMAL, data[3] contains a pointer to the
+     * MMAL_BUFFER_HEADER_T structure.
+     */
+    AV_PIX_FMT_MMAL,
 
 #ifndef AV_PIX_FMT_ABI_GIT_MASTER
     AV_PIX_FMT_RGBA64BE=0x123,  ///< packed RGBA 16:16:16:16, 64bpp, 16R, 16G, 16B, 16A, the 2-byte value for each R/G/B/A component is stored as big-endian
