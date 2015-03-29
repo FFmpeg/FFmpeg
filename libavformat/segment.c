@@ -237,6 +237,8 @@ static int segment_start(AVFormatContext *s, int write_header)
         av_log(s, AV_LOG_ERROR, "Failed to open segment '%s'\n", oc->filename);
         return err;
     }
+    if (!seg->individual_header_trailer)
+        oc->pb->seekable = 0;
 
     if (oc->oformat->priv_class && oc->priv_data)
         av_opt_set(oc->priv_data, "mpegts_flags", "+resend_headers", 0);
@@ -680,6 +682,8 @@ static int seg_write_header(AVFormatContext *s)
             av_log(s, AV_LOG_ERROR, "Failed to open segment '%s'\n", oc->filename);
             goto fail;
         }
+        if (!seg->individual_header_trailer)
+            oc->pb->seekable = 0;
     } else {
         if ((ret = open_null_ctx(&oc->pb)) < 0)
             goto fail;
@@ -720,6 +724,8 @@ static int seg_write_header(AVFormatContext *s)
         if ((ret = avio_open2(&oc->pb, oc->filename, AVIO_FLAG_WRITE,
                               &s->interrupt_callback, NULL)) < 0)
             goto fail;
+        if (!seg->individual_header_trailer)
+            oc->pb->seekable = 0;
     }
 
 fail:
