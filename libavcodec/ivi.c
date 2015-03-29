@@ -35,7 +35,7 @@
 #include "get_bits.h"
 #include "internal.h"
 #include "mathops.h"
-#include "ivi_common.h"
+#include "ivi.h"
 #include "ivi_dsp.h"
 
 /**

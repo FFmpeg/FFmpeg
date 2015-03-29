@@ -27,7 +27,7 @@
  */
 
 #include "avcodec.h"
-#include "ivi_common.h"
+#include "ivi.h"
 #include "ivi_dsp.h"
 
 void ff_ivi_recompose53(const IVIPlaneDesc *plane, uint8_t *dst,
