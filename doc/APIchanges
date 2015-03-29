@@ -18,6 +18,9 @@ API changes, most recent first:
 2015-xx-xx - xxxxxxx - lavu 54.21.100 / 54.10.0
   Add AV_PIX_FMT_MMAL for MMAL hardware acceleration.
 
+2015-xx-xx - xxxxxxx - 56.29.100 / lavc 56.22.0
+  Add FF_PROFILE_DTS_EXPRESS.
+
 -------- 8< --------- FFmpeg 2.6 was cut here -------- 8< ---------
 
 2015-03-04 - cca4476 - lavf 56.25.100
