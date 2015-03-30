@@ -35,6 +35,7 @@
 
 #include <stdint.h>
 
+#include "mjpeg.h"
 #include "mpegvideo.h"
 #include "put_bits.h"
 
@@ -50,7 +51,7 @@ typedef struct MJpegContext {
     uint16_t huff_code_ac_chrominance[256];
 } MJpegContext;
 
-static inline void put_marker(PutBitContext *p, int code)
+static inline void put_marker(PutBitContext *p, enum JpegMarker code)
 {
     put_bits(p, 8, 0xff);
     put_bits(p, 8, code);

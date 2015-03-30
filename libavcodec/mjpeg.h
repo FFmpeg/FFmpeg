@@ -38,7 +38,7 @@
 #include "avcodec.h"
 
 /* JPEG marker codes */
-typedef enum {
+enum JpegMarker {
     /* start of frame */
     SOF0  = 0xc0,       /* baseline */
     SOF1  = 0xc1,       /* extended sequential, huffman */
@@ -117,7 +117,7 @@ typedef enum {
     TEM   = 0x01,       /* temporary private use for arithmetic coding */
 
     /* 0x02 -> 0xbf reserved */
-} JPEG_MARKER;
+};
 
 #define PREDICT(ret, topleft, top, left, predictor)\
     switch(predictor){\
