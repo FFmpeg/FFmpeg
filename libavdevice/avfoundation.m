@@ -408,7 +408,7 @@ static int add_video_device(AVFormatContext *s, AVCaptureDevice *video_device)
         }
     } @catch (NSException *exception) {
         if (![[exception name] isEqualToString:NSUndefinedKeyException]) {
-          av_log (s, AV_LOG_ERROR, "An error occured: %s", [exception.reason UTF8String]);
+          av_log (s, AV_LOG_ERROR, "An error occurred: %s", [exception.reason UTF8String]);
           return AVERROR_EXTERNAL;
         }
     }
