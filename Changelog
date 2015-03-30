@@ -14,6 +14,7 @@ version <next>:
 - MMAL-accelerated H.264 decoding
 - basic APNG encoder and muxer
 - unpack DivX-style packed B-frames in MPEG-4 bitstream filter
+- WebM Live Chunk Muxer
 
 
 version 2.6:
