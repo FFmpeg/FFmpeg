@@ -56,8 +56,8 @@ typedef struct TransContext {
     int hsub, vsub;
     int pixsteps[4];
 
-    PassthroughType passthrough; ///< landscape passthrough mode enabled
-    enum TransposeDir dir;
+    int passthrough;    ///< PassthroughType, landscape passthrough mode enabled
+    int dir;            ///< TransposeDir
 } TransContext;
 
 static int query_formats(AVFilterContext *ctx)

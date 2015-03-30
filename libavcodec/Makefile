@@ -269,6 +269,7 @@ OBJS-$(CONFIG_H264_DECODER)            += h264.o h264_cabac.o h264_cavlc.o \
                                           h264_direct.o h264_loopfilter.o  \
                                           h264_mb.o h264_picture.o h264_ps.o \
                                           h264_refs.o h264_sei.o h264_slice.o
+OBJS-$(CONFIG_H264_MMAL_DECODER)       += mmaldec.o
 OBJS-$(CONFIG_H264_VDA_DECODER)        += vda_h264_dec.o
 OBJS-$(CONFIG_H264_QSV_DECODER)        += qsvdec_h264.o
 OBJS-$(CONFIG_H264_QSV_ENCODER)        += qsvenc_h264.o
@@ -735,7 +736,7 @@ OBJS-$(CONFIG_ELBG_FILTER)             += elbg.o
 # external codec libraries
 OBJS-$(CONFIG_LIBAACPLUS_ENCODER)         += libaacplus.o
 OBJS-$(CONFIG_LIBCELT_DECODER)            += libcelt_dec.o
-OBJS-$(CONFIG_LIBDCADEC_DECODER)          += libdcadec.o
+OBJS-$(CONFIG_LIBDCADEC_DECODER)          += libdcadec.o dca.o
 OBJS-$(CONFIG_LIBFAAC_ENCODER)            += libfaac.o
 OBJS-$(CONFIG_LIBFDK_AAC_DECODER)         += libfdk-aacdec.o
 OBJS-$(CONFIG_LIBFDK_AAC_ENCODER)         += libfdk-aacenc.o
@@ -868,7 +869,7 @@ SKIPHEADERS                            += %_tablegen.h                  \
 SKIPHEADERS-$(CONFIG_DXVA2)            += dxva2.h dxva2_internal.h
 SKIPHEADERS-$(CONFIG_LIBSCHROEDINGER)  += libschroedinger.h
 SKIPHEADERS-$(CONFIG_LIBUTVIDEO)       += libutvideo.h
-SKIPHEADERS-$(CONFIG_QSVDEC)           += qsv.h qsvdec.h qsv_internal.h
+SKIPHEADERS-$(CONFIG_QSV)              += qsv.h qsvdec.h qsvenc.h qsv_internal.h
 SKIPHEADERS-$(CONFIG_XVMC)             += xvmc.h
 SKIPHEADERS-$(CONFIG_VAAPI)            += vaapi_internal.h
 SKIPHEADERS-$(CONFIG_VDA)              += vda.h vda_internal.h

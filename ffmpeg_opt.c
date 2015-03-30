@@ -110,6 +110,7 @@ static int no_file_overwrite  = 0;
 static int do_psnr            = 0;
 static int input_sync;
 static int override_ffserver  = 0;
+static int input_stream_potentially_available = 0;
 
 static void uninit_options(OptionsContext *o)
 {
@@ -1007,6 +1008,8 @@ static int open_input_file(OptionsContext *o, const char *filename)
     for (i = 0; i < orig_nb_streams; i++)
         av_dict_free(&opts[i]);
     av_freep(&opts);
+
+    input_stream_potentially_available = 1;
 
     return 0;
 }
@@ -2104,6 +2107,12 @@ loop_end:
         }
     }
 
+    if (!(oc->oformat->flags & AVFMT_NOSTREAMS) && !input_stream_potentially_available) {
+        av_log(NULL, AV_LOG_ERROR,
+               "No input streams but output needs an input stream\n");
+        exit_program(1);
+    }
+
     if (!(oc->oformat->flags & AVFMT_NOFILE)) {
         /* test if it already exists to avoid losing precious files */
         assert_file_overwrite(filename);
@@ -2608,6 +2617,9 @@ static int opt_filter_complex(void *optctx, const char *opt, const char *arg)
     filtergraphs[nb_filtergraphs - 1]->graph_desc = av_strdup(arg);
     if (!filtergraphs[nb_filtergraphs - 1]->graph_desc)
         return AVERROR(ENOMEM);
+
+    input_stream_potentially_available = 1;
+
     return 0;
 }
 
@@ -2622,6 +2634,9 @@ static int opt_filter_complex_script(void *optctx, const char *opt, const char *
         return AVERROR(ENOMEM);
     filtergraphs[nb_filtergraphs - 1]->index      = nb_filtergraphs - 1;
     filtergraphs[nb_filtergraphs - 1]->graph_desc = graph_desc;
+
+    input_stream_potentially_available = 1;
+
     return 0;
 }
 

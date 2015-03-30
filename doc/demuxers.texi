@@ -205,6 +205,11 @@ It accepts the following options:
 Set the minimum valid delay between frames in hundredths of seconds.
 Range is 0 to 6000. Default value is 2.
 
+@item max_gif_delay
+Set the maximum valid delay between frames in hundredth of seconds.
+Range is 0 to 65535. Default value is 65535 (nearly eleven minutes),
+the maximum value allowed by the specification.
+
 @item default_delay
 Set the default delay between frames in hundredths of seconds.
 Range is 0 to 6000. Default value is 10.

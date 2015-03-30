@@ -82,7 +82,7 @@ typedef struct WAVMuxContext {
     int write_peak;
     int rf64;
     int peak_block_size;
-    PeakFormat peak_format;
+    int peak_format;
     int peak_block_pos;
     int peak_ppv;
     int peak_bps;

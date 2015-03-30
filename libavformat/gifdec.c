@@ -43,6 +43,7 @@ typedef struct GIFDemuxContext {
      * invalid and set to value of default_delay.
      */
     int min_delay;
+    int max_delay;
     int default_delay;
 
     /**
@@ -159,6 +160,7 @@ static int gif_read_ext(AVFormatContext *s)
 
         if (gdc->delay < gdc->min_delay)
             gdc->delay = gdc->default_delay;
+        gdc->delay = FFMIN(gdc->delay, gdc->max_delay);
 
         /* skip the rest of the Graphic Control Extension block */
         if ((ret = avio_skip(pb, sb_size - 3)) < 0 )
@@ -309,6 +311,7 @@ resync:
 
 static const AVOption options[] = {
     { "min_delay"    , "minimum valid delay between frames (in hundredths of second)", offsetof(GIFDemuxContext, min_delay)    , AV_OPT_TYPE_INT, {.i64 = GIF_MIN_DELAY}    , 0, 100 * 60, AV_OPT_FLAG_DECODING_PARAM },
+    { "max_gif_delay", "maximum valid delay between frames (in hundredths of seconds)", offsetof(GIFDemuxContext, max_delay)   , AV_OPT_TYPE_INT, {.i64 = 65535}            , 0, 65535   , AV_OPT_FLAG_DECODING_PARAM },
     { "default_delay", "default delay between frames (in hundredths of second)"      , offsetof(GIFDemuxContext, default_delay), AV_OPT_TYPE_INT, {.i64 = GIF_DEFAULT_DELAY}, 0, 100 * 60, AV_OPT_FLAG_DECODING_PARAM },
     { "ignore_loop"  , "ignore loop setting (netscape extension)"                    , offsetof(GIFDemuxContext, ignore_loop)  , AV_OPT_TYPE_INT, {.i64 = 1}                , 0,        1, AV_OPT_FLAG_DECODING_PARAM },
     { NULL },

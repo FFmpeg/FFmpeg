@@ -115,7 +115,6 @@ static const AVOption options[] = {
     { "local_port",     "Local port",                                      OFFSET(local_port),     AV_OPT_TYPE_INT,    { .i64 = -1 },    -1, INT_MAX, .flags = D|E },
     { "localaddr",      "Local address",                                   OFFSET(localaddr),      AV_OPT_TYPE_STRING, { .str = NULL },               .flags = D|E },
     { "udplite_coverage", "choose UDPLite head size which should be validated by checksum", OFFSET(udplite_coverage), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, D|E },
-    { "pkt_size",       "set size of UDP packets",                         OFFSET(pkt_size),       AV_OPT_TYPE_INT,    { .i64 = 1472 },  -1, INT_MAX, D|E },
     { "pkt_size",       "Maximum UDP packet size",                         OFFSET(pkt_size),       AV_OPT_TYPE_INT,    { .i64 = 1472 },  -1, INT_MAX, .flags = D|E },
     { "reuse",          "explicitly allow reusing UDP sockets",            OFFSET(reuse_socket),   AV_OPT_TYPE_INT,    { .i64 = -1 },    -1, 1,       D|E },
     { "reuse_socket",   "explicitly allow reusing UDP sockets",            OFFSET(reuse_socket),   AV_OPT_TYPE_INT,    { .i64 = -1 },    -1, 1,       .flags = D|E },
@@ -591,7 +590,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
             goto fail;
     }
 
-    if (s->pkt_size)
+    if (s->pkt_size > 0)
         h->max_packet_size = s->pkt_size;
 
     p = strchr(uri, '?');

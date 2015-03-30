@@ -77,6 +77,7 @@ void avcodec_register_all(void)
     REGISTER_HWACCEL(H263_VAAPI,        h263_vaapi);
     REGISTER_HWACCEL(H263_VDPAU,        h263_vdpau);
     REGISTER_HWACCEL(H264_DXVA2,        h264_dxva2);
+    REGISTER_HWACCEL(H264_MMAL,         h264_mmal);
     REGISTER_HWACCEL(H264_QSV,          h264_qsv);
     REGISTER_HWACCEL(H264_VAAPI,        h264_vaapi);
     REGISTER_HWACCEL(H264_VDA,          h264_vda);
@@ -171,6 +172,7 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC (H263P,             h263p);
     REGISTER_DECODER(H264,              h264);
     REGISTER_DECODER(H264_CRYSTALHD,    h264_crystalhd);
+    REGISTER_DECODER(H264_MMAL,         h264_mmal);
     REGISTER_DECODER(H264_QSV,          h264_qsv);
     REGISTER_DECODER(H264_VDA,          h264_vda);
     REGISTER_DECODER(H264_VDPAU,        h264_vdpau);
