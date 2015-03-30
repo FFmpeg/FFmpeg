@@ -36,7 +36,6 @@
 #include "libavutil/internal.h"
 
 #include "avcodec.h"
-#include "put_bits.h"
 
 /* JPEG marker codes */
 typedef enum {
@@ -119,12 +118,6 @@ typedef enum {
 
     /* 0x02 -> 0xbf reserved */
 } JPEG_MARKER;
-
-static inline void put_marker(PutBitContext *p, int code)
-{
-    put_bits(p, 8, 0xff);
-    put_bits(p, 8, code);
-}
 
 #define PREDICT(ret, topleft, top, left, predictor)\
     switch(predictor){\

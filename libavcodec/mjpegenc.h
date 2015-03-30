@@ -36,6 +36,7 @@
 #include <stdint.h>
 
 #include "mpegvideo.h"
+#include "put_bits.h"
 
 typedef struct MJpegContext {
     uint8_t huff_size_dc_luminance[12]; //FIXME use array [3] instead of lumi / chrom, for easier addressing
@@ -48,6 +49,12 @@ typedef struct MJpegContext {
     uint8_t huff_size_ac_chrominance[256];
     uint16_t huff_code_ac_chrominance[256];
 } MJpegContext;
+
+static inline void put_marker(PutBitContext *p, int code)
+{
+    put_bits(p, 8, 0xff);
+    put_bits(p, 8, code);
+}
 
 int  ff_mjpeg_encode_init(MpegEncContext *s);
 void ff_mjpeg_encode_close(MpegEncContext *s);

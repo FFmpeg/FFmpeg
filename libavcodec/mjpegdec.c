@@ -41,6 +41,7 @@
 #include "mjpeg.h"
 #include "mjpegdec.h"
 #include "jpeglsdec.h"
+#include "put_bits.h"
 #include "tiff.h"
 #include "exif.h"
 #include "bytestream.h"
