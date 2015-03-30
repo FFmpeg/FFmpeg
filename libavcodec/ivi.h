@@ -26,8 +26,8 @@
  * Indeo5 decoders.
  */
 
-#ifndef AVCODEC_IVI_COMMON_H
-#define AVCODEC_IVI_COMMON_H
+#ifndef AVCODEC_IVI_H
+#define AVCODEC_IVI_H
 
 #include "avcodec.h"
 #include "get_bits.h"
@@ -342,4 +342,4 @@ int ff_ivi_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                         AVPacket *avpkt);
 int ff_ivi_decode_close(AVCodecContext *avctx);
 
-#endif /* AVCODEC_IVI_COMMON_H */
+#endif /* AVCODEC_IVI_H */
