@@ -248,7 +248,7 @@ static int decode_main_header(NUTContext *nut)
     }
 
     GET_V(nut->time_base_count, tmp > 0 && tmp < INT_MAX / sizeof(AVRational));
-    nut->time_base = av_malloc(nut->time_base_count * sizeof(AVRational));
+    nut->time_base = av_malloc_array(nut->time_base_count, sizeof(AVRational));
     if (!nut->time_base)
         return AVERROR(ENOMEM);
 
