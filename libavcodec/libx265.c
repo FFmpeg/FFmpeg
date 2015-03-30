@@ -272,6 +272,19 @@ static int libx265_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     pkt->pts = x265pic_out.pts;
     pkt->dts = x265pic_out.dts;
 
+    switch (x265pic_out.sliceType) {
+    case X265_TYPE_IDR:
+    case X265_TYPE_I:
+        avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
+        break;
+    case X265_TYPE_P:
+        avctx->coded_frame->pict_type = AV_PICTURE_TYPE_P;
+        break;
+    case X265_TYPE_B:
+        avctx->coded_frame->pict_type = AV_PICTURE_TYPE_B;
+        break;
+    }
+
     *got_packet = 1;
     return 0;
 }
