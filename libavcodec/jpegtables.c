@@ -30,7 +30,7 @@
  * MJPEG encoder and decoder.
  */
 
-#include "mjpeg.h"
+#include "jpegtables.h"
 
 
 #if 0

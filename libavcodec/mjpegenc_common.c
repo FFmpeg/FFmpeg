@@ -29,6 +29,7 @@
 
 #include "avcodec.h"
 #include "idctdsp.h"
+#include "jpegtables.h"
 #include "put_bits.h"
 #include "mjpegenc.h"
 #include "mjpegenc_common.h"

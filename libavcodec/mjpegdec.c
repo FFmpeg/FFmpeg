@@ -38,6 +38,7 @@
 #include "copy_block.h"
 #include "idctdsp.h"
 #include "internal.h"
+#include "jpegtables.h"
 #include "mjpeg.h"
 #include "mjpegdec.h"
 #include "jpeglsdec.h"
