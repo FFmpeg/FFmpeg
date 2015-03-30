@@ -51,11 +51,17 @@ enum var_name {
     VAR_NB
 };
 
+enum EvalMode {
+    EVAL_MODE_INIT,
+    EVAL_MODE_FRAME,
+    EVAL_MODE_NB
+};
+
 typedef struct {
     const AVClass *class;
     const AVPixFmtDescriptor *desc;
     int backward;
-    enum EvalMode { EVAL_MODE_INIT, EVAL_MODE_FRAME, EVAL_MODE_NB } eval_mode;
+    int eval_mode;                      ///< EvalMode
 #define DEF_EXPR_FIELDS(name) AVExpr *name##_pexpr; char *name##_expr; double name
     DEF_EXPR_FIELDS(angle);
     DEF_EXPR_FIELDS(x0);
