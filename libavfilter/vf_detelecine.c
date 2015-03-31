@@ -265,12 +265,16 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
                 out = 1;
             } else if (len == 1) {
                 // fill in the EARLIER field from the new pic
-                av_image_copy_plane(s->frame->data[i] + s->frame->linesize[i] * s->first_field,
-                                    s->frame->linesize[i] * 2,
-                                    inpicref->data[i] + inpicref->linesize[i] * s->first_field,
-                                    inpicref->linesize[i] * 2,
-                                    s->stride[i],
-                                    (s->planeheight[i] - s->first_field + 1) / 2);
+                for (i = 0; i < s->nb_planes; i++) {
+                    av_image_copy_plane(s->frame->data[i] +
+                                        s->frame->linesize[i] * s->first_field,
+                                        s->frame->linesize[i] * 2,
+                                        inpicref->data[i] +
+                                        inpicref->linesize[i] * s->first_field,
+                                        inpicref->linesize[i] * 2, s->stride[i],
+                                        (s->planeheight[i] - s->first_field + 1) / 2);
+                 }
+
                 // TODO: not sure about the other field
 
                 len--;
