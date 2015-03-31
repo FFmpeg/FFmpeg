@@ -291,58 +291,11 @@ static int png_get_gama(enum AVColorTransferCharacteristic trc, uint8_t *buf)
     return 1;
 }
 
-static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
-                        const AVFrame *pict, int *got_packet)
+static int encode_headers(AVCodecContext *avctx, const AVFrame *pict)
 {
-    PNGEncContext *s       = avctx->priv_data;
-    const AVFrame *const p = pict;
-    int y, len, row_size, ret;
-    int pass_row_size, enc_row_size;
-    int64_t max_packet_size;
-    uint8_t *ptr, *top, *crow_buf, *crow;
-    uint8_t *crow_base       = NULL;
-    uint8_t *progressive_buf = NULL;
-    uint8_t *top_buf         = NULL;
-
-    row_size       = (avctx->width * s->bits_per_pixel + 7) >> 3;
-
-    enc_row_size    = deflateBound(&s->zstream, row_size);
-    max_packet_size =
-        FF_MIN_BUFFER_SIZE + // headers
-        avctx->height * (
-            enc_row_size +
-            12 * (((int64_t)enc_row_size + IOBUF_SIZE - 1) / IOBUF_SIZE) // IDAT * ceil(enc_row_size / IOBUF_SIZE)
-        );
-    if (max_packet_size > INT_MAX)
-        return AVERROR(ENOMEM);
-    ret = ff_alloc_packet2(avctx, pkt, max_packet_size);
-    if (ret < 0)
-        return ret;
-
-    s->bytestream_start =
-    s->bytestream       = pkt->data;
-    s->bytestream_end   = pkt->data + pkt->size;
-
-    crow_base = av_malloc((row_size + 32) << (s->filter_type == PNG_FILTER_VALUE_MIXED));
-    if (!crow_base) {
-        ret = AVERROR(ENOMEM);
-        goto the_end;
-    }
-    // pixel data should be aligned, but there's a control byte before it
-    crow_buf = crow_base + 15;
-    if (s->is_progressive) {
-        progressive_buf = av_malloc(row_size + 1);
-        top_buf = av_malloc(row_size + 1);
-        if (!progressive_buf || !top_buf) {
-            ret = AVERROR(ENOMEM);
-            goto the_end;
-        }
-    }
+    PNGEncContext *s = avctx->priv_data;
 
     /* write png header */
-    AV_WB64(s->bytestream, PNGSIG);
-    s->bytestream += 8;
-
     AV_WB32(s->buf, avctx->width);
     AV_WB32(s->buf + 4, avctx->height);
     s->buf[8]  = s->bit_depth;
@@ -381,9 +334,9 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         int has_alpha, alpha, i;
         unsigned int v;
         uint32_t *palette;
-        uint8_t *alpha_ptr;
+        uint8_t *ptr, *alpha_ptr;
 
-        palette   = (uint32_t *)p->data[1];
+        palette   = (uint32_t *)pict->data[1];
         ptr       = s->buf;
         alpha_ptr = s->buf + 256 * 3;
         has_alpha = 0;
@@ -403,7 +356,39 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         }
     }
 
-    /* now put each row */
+    return 0;
+}
+
+static int encode_frame(AVCodecContext *avctx, const AVFrame *pict)
+{
+    PNGEncContext *s       = avctx->priv_data;
+    const AVFrame *const p = pict;
+    int y, len, ret;
+    int row_size, pass_row_size;
+    uint8_t *ptr, *top, *crow_buf, *crow;
+    uint8_t *crow_base       = NULL;
+    uint8_t *progressive_buf = NULL;
+    uint8_t *top_buf         = NULL;
+
+    row_size = (avctx->width * s->bits_per_pixel + 7) >> 3;
+
+    crow_base = av_malloc((row_size + 32) << (s->filter_type == PNG_FILTER_VALUE_MIXED));
+    if (!crow_base) {
+        ret = AVERROR(ENOMEM);
+        goto the_end;
+    }
+    // pixel data should be aligned, but there's a control byte before it
+    crow_buf = crow_base + 15;
+    if (s->is_progressive) {
+        progressive_buf = av_malloc(row_size + 1);
+        top_buf = av_malloc(row_size + 1);
+        if (!progressive_buf || !top_buf) {
+            ret = AVERROR(ENOMEM);
+            goto the_end;
+        }
+    }
+
+    /* put each row */
     s->zstream.avail_out = IOBUF_SIZE;
     s->zstream.next_out  = s->buf;
     if (s->is_progressive) {
@@ -456,12 +441,8 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             goto the_end;
         }
     }
-    png_write_chunk(&s->bytestream, MKTAG('I', 'E', 'N', 'D'), NULL, 0);
 
-    pkt->size   = s->bytestream - s->bytestream_start;
-    pkt->flags |= AV_PKT_FLAG_KEY;
-    *got_packet = 1;
-    ret         = 0;
+    ret = 0;
 
 the_end:
     av_freep(&crow_base);
@@ -469,6 +450,51 @@ the_end:
     av_freep(&top_buf);
     deflateReset(&s->zstream);
     return ret;
+}
+
+static int encode(AVCodecContext *avctx, AVPacket *pkt,
+                  const AVFrame *pict, int *got_packet)
+{
+    PNGEncContext *s = avctx->priv_data;
+    int ret;
+    int enc_row_size;
+    size_t max_packet_size;
+
+    enc_row_size    = deflateBound(&s->zstream, (avctx->width * s->bits_per_pixel + 7) >> 3);
+    max_packet_size =
+        FF_MIN_BUFFER_SIZE + // headers
+        avctx->height * (
+            enc_row_size +
+            12 * (((int64_t)enc_row_size + IOBUF_SIZE - 1) / IOBUF_SIZE) // IDAT * ceil(enc_row_size / IOBUF_SIZE)
+        );
+    if (max_packet_size > INT_MAX)
+        return AVERROR(ENOMEM);
+    ret = ff_alloc_packet2(avctx, pkt, max_packet_size);
+    if (ret < 0)
+        return ret;
+
+    s->bytestream_start =
+    s->bytestream       = pkt->data;
+    s->bytestream_end   = pkt->data + pkt->size;
+
+    AV_WB64(s->bytestream, PNGSIG);
+    s->bytestream += 8;
+
+    ret = encode_headers(avctx, pict);
+    if (ret < 0)
+        return ret;
+
+    ret = encode_frame(avctx, pict);
+    if (ret < 0)
+        return ret;
+
+    png_write_chunk(&s->bytestream, MKTAG('I', 'E', 'N', 'D'), NULL, 0);
+
+    pkt->size = s->bytestream - s->bytestream_start;
+    pkt->flags |= AV_PKT_FLAG_KEY;
+    *got_packet = 1;
+
+    return 0;
 }
 
 static av_cold int png_enc_init(AVCodecContext *avctx)
@@ -606,7 +632,7 @@ AVCodec ff_png_encoder = {
     .priv_data_size = sizeof(PNGEncContext),
     .init           = png_enc_init,
     .close          = png_enc_close,
-    .encode2        = encode_frame,
+    .encode2        = encode,
     .capabilities   = CODEC_CAP_FRAME_THREADS | CODEC_CAP_INTRA_ONLY,
     .pix_fmts       = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_RGB24, AV_PIX_FMT_RGBA,
