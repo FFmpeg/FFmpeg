@@ -1622,7 +1622,9 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     ff_snow_frame_start(s);
     av_frame_unref(avctx->coded_frame);
-    av_frame_ref(avctx->coded_frame, s->current_picture);
+    ret = av_frame_ref(avctx->coded_frame, s->current_picture);
+    if (ret < 0)
+        return ret;
 
     s->m.current_picture_ptr= &s->m.current_picture;
     s->m.current_picture.f = s->current_picture;
