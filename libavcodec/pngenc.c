@@ -307,12 +307,16 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     row_size       = (avctx->width * s->bits_per_pixel + 7) >> 3;
 
     enc_row_size    = deflateBound(&s->zstream, row_size);
-    max_packet_size = avctx->height * (int64_t)(enc_row_size +
-                                       ((enc_row_size + IOBUF_SIZE - 1) / IOBUF_SIZE) * 12)
-                      + FF_MIN_BUFFER_SIZE;
+    max_packet_size =
+        FF_MIN_BUFFER_SIZE + // headers
+        avctx->height * (
+            enc_row_size +
+            12 * (((int64_t)enc_row_size + IOBUF_SIZE - 1) / IOBUF_SIZE) // IDAT * ceil(enc_row_size / IOBUF_SIZE)
+        );
     if (max_packet_size > INT_MAX)
         return AVERROR(ENOMEM);
-    if ((ret = ff_alloc_packet2(avctx, pkt, max_packet_size)) < 0)
+    ret = ff_alloc_packet2(avctx, pkt, max_packet_size);
+    if (ret < 0)
         return ret;
 
     s->bytestream_start =
