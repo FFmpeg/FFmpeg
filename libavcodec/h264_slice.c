@@ -530,6 +530,7 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
             return ret;
     }
 
+    h->enable_er       = h1->enable_er;
     h->workaround_bugs = h1->workaround_bugs;
     h->low_delay       = h1->low_delay;
     h->droppable       = h1->droppable;
@@ -633,7 +634,7 @@ static int h264_frame_start(H264Context *h)
     if ((ret = ff_h264_ref_picture(h, &h->cur_pic, h->cur_pic_ptr)) < 0)
         return ret;
 
-    if (CONFIG_ERROR_RESILIENCE)
+    if (CONFIG_ERROR_RESILIENCE && h->enable_er)
         ff_er_frame_start(&h->slice_ctx[0].er);
 
     for (i = 0; i < 16; i++) {
@@ -2060,6 +2061,9 @@ static void er_add_slice(H264SliceContext *sl,
 {
 #if CONFIG_ERROR_RESILIENCE
     ERContext *er = &sl->er;
+
+    if (!sl->h264->enable_er)
+        return;
 
     er->ref_count = sl->ref_count[0];
     ff_er_add_slice(er, startx, starty, endx, endy, status);

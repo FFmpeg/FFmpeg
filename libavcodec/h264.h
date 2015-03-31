@@ -727,6 +727,8 @@ typedef struct H264Context {
 
     int cur_chroma_format_idc;
 
+    int enable_er;
+
     AVBufferPool *qscale_table_pool;
     AVBufferPool *mb_type_pool;
     AVBufferPool *motion_val_pool;

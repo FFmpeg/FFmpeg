@@ -184,7 +184,7 @@ int ff_h264_field_end(H264Context *h, H264SliceContext *sl, int in_setup)
      * past end by one (callers fault) and resync_mb_y != 0
      * causes problems for the first MB line, too.
      */
-    if (!FIELD_PICTURE(h)) {
+    if (!FIELD_PICTURE(h) && h->enable_er) {
         h264_set_erpic(&sl->er.cur_pic, h->cur_pic_ptr);
         h264_set_erpic(&sl->er.last_pic,
                        sl->ref_count[0] ? sl->ref_list[0][0].parent : NULL);

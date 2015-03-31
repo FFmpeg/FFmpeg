@@ -28,6 +28,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/display.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/opt.h"
 #include "libavutil/stereo3d.h"
 #include "libavutil/timer.h"
 #include "internal.h"
@@ -665,6 +666,12 @@ av_cold int ff_h264_decode_init(AVCodecContext *avctx)
     }
 
     avctx->internal->allocate_progress = 1;
+
+    if (h->enable_er) {
+        av_log(avctx, AV_LOG_WARNING,
+               "Error resilience is enabled. It is unsafe and unsupported and may crash. "
+               "Use it at your own risk\n");
+    }
 
     return 0;
 }
@@ -1786,6 +1793,20 @@ static av_cold int h264_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
+#define OFFSET(x) offsetof(H264Context, x)
+#define VD AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM
+static const AVOption h264_options[] = {
+    { "enable_er", "Enable error resilience on damaged frames (unsafe)", OFFSET(enable_er), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VD },
+    { NULL },
+};
+
+static const AVClass h264_class = {
+    .class_name = "h264",
+    .item_name  = av_default_item_name,
+    .option     = h264_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 static const AVProfile profiles[] = {
     { FF_PROFILE_H264_BASELINE,             "Baseline"              },
     { FF_PROFILE_H264_CONSTRAINED_BASELINE, "Constrained Baseline"  },
@@ -1819,4 +1840,5 @@ AVCodec ff_h264_decoder = {
     .init_thread_copy      = ONLY_IF_THREADS_ENABLED(decode_init_thread_copy),
     .update_thread_context = ONLY_IF_THREADS_ENABLED(ff_h264_update_thread_context),
     .profiles              = NULL_IF_CONFIG_SMALL(profiles),
+    .priv_class            = &h264_class,
 };
