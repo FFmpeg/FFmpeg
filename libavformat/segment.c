@@ -226,7 +226,7 @@ static int segment_start(AVFormatContext *s, int write_header)
     }
 
     seg->segment_idx++;
-    if ((seg->segment_idx_wrap) && (seg->segment_idx%seg->segment_idx_wrap == 0))
+    if ((seg->segment_idx_wrap) && (seg->segment_idx % seg->segment_idx_wrap == 0))
         seg->segment_idx_wrap_nb++;
 
     if ((err = set_segment_filename(s)) < 0)
@@ -761,7 +761,7 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
             int64_t avgt = av_gettime();
             time_t sec = avgt / 1000000;
             localtime_r(&sec, &ti);
-            usecs = (int64_t)(ti.tm_hour*3600 + ti.tm_min*60 + ti.tm_sec) * 1000000 + (avgt % 1000000);
+            usecs = (int64_t)(ti.tm_hour * 3600 + ti.tm_min * 60 + ti.tm_sec) * 1000000 + (avgt % 1000000);
             wrapped_val = usecs % seg->time;
             if (seg->last_cut != usecs && wrapped_val < seg->last_val) {
                 seg->cut_pending = 1;
@@ -769,7 +769,7 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
             }
             seg->last_val = wrapped_val;
         } else {
-            end_pts = seg->time * (seg->segment_count+1);
+            end_pts = seg->time * (seg->segment_count + 1);
         }
     }
 
@@ -797,7 +797,7 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
             goto fail;
 
         seg->cut_pending = 0;
-        seg->cur_entry.index = seg->segment_idx + seg->segment_idx_wrap*seg->segment_idx_wrap_nb;
+        seg->cur_entry.index = seg->segment_idx + seg->segment_idx_wrap * seg->segment_idx_wrap_nb;
         seg->cur_entry.start_time = (double)pkt->pts * av_q2d(st->time_base);
         seg->cur_entry.start_pts = av_rescale_q(pkt->pts, st->time_base, AV_TIME_BASE_Q);
         seg->cur_entry.end_time = seg->cur_entry.start_time +

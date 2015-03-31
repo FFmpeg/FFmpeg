@@ -15,6 +15,15 @@ libavutil:     2014-08-09
 
 API changes, most recent first:
 
+2015-03-27 - 184084c - lavf 56.27.100 - avio.h url.h
+  New directory listing API.
+
+  Add AVIODirEntryType enum.
+  Add AVIODirEntry, AVIODirContext structures.
+  Add avio_open_dir(), avio_read_dir(), avio_close_dir(), avio_free_directory_entry().
+  Add ff_alloc_dir_entry().
+  Extend URLProtocol with url_open_dir(), url_read_dir(), url_close_dir().
+
 2015-xx-xx - xxxxxxx - lavu 54.21.100 / 54.10.0
   Add AV_PIX_FMT_MMAL for MMAL hardware acceleration.
 

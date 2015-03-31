@@ -30,8 +30,8 @@
 #define BITSTREAM_READER_LE
 #include "avcodec.h"
 #include "get_bits.h"
+#include "ivi.h"
 #include "ivi_dsp.h"
-#include "ivi_common.h"
 #include "indeo4data.h"
 
 #define IVI4_PIC_SIZE_ESC   7

@@ -37,6 +37,7 @@
 #include "avcodec.h"
 #include "idctdsp.h"
 #include "internal.h"
+#include "jpegtables.h"
 #include "mjpegenc_common.h"
 #include "mpegvideo.h"
 #include "mjpeg.h"

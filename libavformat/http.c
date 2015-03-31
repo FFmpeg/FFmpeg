@@ -495,7 +495,7 @@ static int cookie_string(AVDictionary *dict, char **cookies)
     e = NULL;
     if (*cookies) av_free(*cookies);
     *cookies = av_malloc(len);
-    if (!cookies) return AVERROR(ENOMEM);
+    if (!*cookies) return AVERROR(ENOMEM);
     *cookies[0] = '\0';
 
     // write out the cookies

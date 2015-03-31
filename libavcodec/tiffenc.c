@@ -164,7 +164,8 @@ static int add_entry1(TiffEncoderContext *s,
  * @param dst output buffer
  * @param n size of input buffer
  * @param compr compression method
- * @return number of output bytes. If an output error is encountered, -1 is returned
+ * @return number of output bytes. If an output error is encountered, a negative
+ * value corresponding to an AVERROR error code is returned.
  */
 static int encode_strip(TiffEncoderContext *s, const int8_t *src,
                         uint8_t *dst, int n, int compr)
@@ -177,14 +178,14 @@ static int encode_strip(TiffEncoderContext *s, const int8_t *src,
         unsigned long zlen = s->buf_size - (*s->buf - s->buf_start);
         if (compress(dst, &zlen, src, n) != Z_OK) {
             av_log(s->avctx, AV_LOG_ERROR, "Compressing failed\n");
-            return -1;
+            return AVERROR_EXTERNAL;
         }
         return zlen;
     }
 #endif
     case TIFF_RAW:
         if (check_size(s, n))
-            return -1;
+            return AVERROR(EINVAL);
         memcpy(dst, src, n);
         return n;
     case TIFF_PACKBITS:
@@ -193,7 +194,9 @@ static int encode_strip(TiffEncoderContext *s, const int8_t *src,
     case TIFF_LZW:
         return ff_lzw_encode(s->lzws, src, n);
     default:
-        return -1;
+        av_log(s->avctx, AV_LOG_ERROR, "Unsupported compression method: %d\n",
+               compr);
+        return AVERROR(EINVAL);
     }
 }
 
@@ -304,7 +307,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     default:
         av_log(s->avctx, AV_LOG_ERROR,
                "This colors format is not supported\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
 
     for (i = 0; i < s->bpp_tab_size; i++)
