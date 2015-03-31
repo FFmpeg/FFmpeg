@@ -1416,7 +1416,8 @@ int ff_h264_decode_slice_header(H264Context *h, H264Context *h0)
                      || h->mb_width  != h->sps.mb_width
                      || h->mb_height != h->sps.mb_height * (2 - h->sps.frame_mbs_only_flag)
                     ));
-    if (non_j_pixfmt(h0->avctx->pix_fmt) != non_j_pixfmt(get_pixel_format(h0, 0)))
+    if (h0->avctx->pix_fmt == AV_PIX_FMT_NONE
+        || (non_j_pixfmt(h0->avctx->pix_fmt) != non_j_pixfmt(get_pixel_format(h0, 0))))
         must_reinit = 1;
 
     if (first_slice && av_cmp_q(h->sps.sar, h->avctx->sample_aspect_ratio))
