@@ -273,8 +273,6 @@ static inline int pic_is_unused(H264Context *h, H264Picture *pic)
 {
     if (!pic->f.buf[0])
         return 1;
-    if (pic->needs_realloc && !(pic->reference & DELAYED_PIC_REF))
-        return 1;
     return 0;
 }
 
@@ -288,11 +286,6 @@ static int find_unused_picture(H264Context *h)
     }
     if (i == H264_MAX_PICTURE_COUNT)
         return AVERROR_INVALIDDATA;
-
-    if (h->DPB[i].needs_realloc) {
-        h->DPB[i].needs_realloc = 0;
-        ff_h264_unref_picture(h, &h->DPB[i]);
-    }
 
     return i;
 }

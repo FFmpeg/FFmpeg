@@ -292,7 +292,6 @@ typedef struct H264Picture {
     int mbaff;              ///< 1 -> MBAFF frame 0-> not MBAFF
     int field_picture;      ///< whether or not picture was encoded in separate fields
 
-    int needs_realloc;      ///< picture needs to be reallocated (eg due to a frame size change)
     int reference;
     int recovered;          ///< picture at IDR or recovery point + recovery count
 } H264Picture;

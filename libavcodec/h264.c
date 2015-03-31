@@ -359,9 +359,6 @@ void ff_h264_free_tables(H264Context *h, int free_rbsp)
         for (i = 0; i < H264_MAX_PICTURE_COUNT; i++)
             ff_h264_unref_picture(h, &h->DPB[i]);
         av_freep(&h->DPB);
-    } else if (h->DPB) {
-        for (i = 0; i < H264_MAX_PICTURE_COUNT; i++)
-            h->DPB[i].needs_realloc = 1;
     }
 
     h->cur_pic_ptr = NULL;
