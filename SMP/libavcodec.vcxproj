@@ -260,6 +260,8 @@
     </ClCompile>
     <ClCompile Include="..\libavcodec\intrax8dsp.c">
     </ClCompile>
+    <ClCompile Include="..\libavcodec\jpegtables.c">
+    </ClCompile>
     <ClCompile Include="..\libavcodec\libxvid_rc.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\lossless_audiodsp.c">
@@ -434,8 +436,6 @@
     <ClCompile Include="..\libavcodec\amrwbdec.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\mjpegenc.c">
-    </ClCompile>
-    <ClCompile Include="..\libavcodec\mjpeg.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\mjpegenc_common.c">
     </ClCompile>
@@ -813,7 +813,7 @@
     </ClCompile>
     <ClCompile Include="..\libavcodec\indeo4.c">
     </ClCompile>
-    <ClCompile Include="..\libavcodec\ivi_common.c">
+    <ClCompile Include="..\libavcodec\ivi.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\ivi_dsp.c">
     </ClCompile>

@@ -410,6 +410,9 @@
     <ClCompile Include="..\libavcodec\intrax8dsp.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\jpegtables.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\libxvid_rc.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
@@ -657,9 +660,6 @@
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\mjpegenc.c">
-      <Filter>Source Files\libavcodec</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libavcodec\mjpeg.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\mjpegenc_common.c">
@@ -1220,7 +1220,7 @@
     <ClCompile Include="..\libavcodec\indeo4.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavcodec\ivi_common.c">
+    <ClCompile Include="..\libavcodec\ivi.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\ivi_dsp.c">
