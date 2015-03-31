@@ -195,7 +195,7 @@ int avpriv_unlock_avformat(void);
  *                avpkt->size is set to the specified size.
  *                All other AVPacket fields will be reset with av_init_packet().
  * @param size    the minimum required packet size
- * @return        0 on success, negative error code on failure
+ * @return        non negative on success, negative error code on failure
  */
 int ff_alloc_packet2(AVCodecContext *avctx, AVPacket *avpkt, int64_t size);
 
