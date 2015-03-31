@@ -770,6 +770,115 @@ static int piz_uncompress(EXRContext *s, const uint8_t *src, int ssize,
     return 0;
 }
 
+
+static void B44_unpack14 ( GetByteContext *gb, uint16_t out[16]){
+    uint16_t shift;
+    const uint8_t *r = gb->buffer;
+    av_assert0(r[2] != 0xfc);
+    out[0] = (r[0] << 8) | r[1];
+    shift = (r[2] >> 2);
+    out[ 1] = out[ 0] + ((r[ 5] >> 2) << shift);
+    out[ 2] = out[ 1] + ((r[ 8] >> 2) << shift);
+    out[ 3] = out[ 2] + ((r[11] >> 2) << shift);
+    out[ 4] = out[ 0] + (((r[ 2] << 4) | (r[ 3] >> 4)) << shift);
+    out[ 5] = out[ 4] + (((r[ 5] << 4) | (r[ 6] >> 4)) << shift);
+    out[ 6] = out[ 5] + (((r[ 8] << 4) | (r[ 9] >> 4)) << shift);
+    out[ 7] = out[ 6] + (((r[11] << 4) | (r[12] >> 4)) << shift);
+    out[ 8] = out[ 4] + (((r[ 3] << 2) | (r[ 4] >> 6)) << shift);
+    out[ 9] = out[ 8] + (((r[ 6] << 2) | (r[ 7] >> 6)) << shift);
+    out[10] = out[ 9] + (((r[ 9] << 2) | (r[10] >> 6)) << shift);
+    out[11] = out[10] + (((r[12] << 2) | (r[13] >> 6)) << shift);
+    out[12] = out[ 8] + (r[ 4] << shift);
+    out[13] = out[12] + (r[ 7] << shift);
+    out[14] = out[13] + (r[10] << shift);
+    out[15] = out[14] + (r[13] << shift);
+    for (int i = 0; i < 16; ++i) { //if any out value exceeds 16bits
+        if (out[i] & 0x8000)
+            out[i] &= 0x7fff;
+        else
+            out[i] = ~out[i];
+    }
+}
+static void B44_unpack3 ( GetByteContext *gb, uint16_t out[16]){
+    const uint8_t *r = gb->buffer; //pixels have the same value
+    av_assert0(r[2] == 0xfc);
+    out[0] = (r[0] << 8) | r[1];
+    if (out[0] & 0x8000)
+        out[0] &= 0x7fff;
+    else
+        out[0] = ~out[0];
+    for (int i = 1; i < 16; ++i)
+        out[i] = out[0];
+}
+static int b44_uncompress(EXRContext *s, const uint8_t *src,int ssize, int dsize, EXRThreadData *td)
+{
+    GetByteContext gb;
+    unsigned long dest_len = dsize;
+    uint8_t *out;
+    int i, j;
+    uint16_t *tmp = (uint16_t *)td->tmp;
+    out = td->uncompressed_data;
+    bytestream2_init(&gb, src, ssize);
+    if (uncompress(td->tmp, &dest_len, src, ssize) != Z_OK || dest_len != dsize)
+        return AVERROR_INVALIDDATA;
+    for (i = 0; i < s->nb_channels; i++) {
+        EXRChannel *channel = &s->channels[i];
+        int size = channel->pixel_type;
+        int inSize = ssize;
+        if (channel->pixel_type != EXR_HALF) { // UINT or FLOAT channel.
+            int n = s->xdelta * s->ydelta * size * sizeof (*tmp);
+            memcpy (tmp, gb.buffer, n);
+            gb.buffer += n;
+            inSize -= n;
+            continue;
+        } else { //EXR_HALF Channel
+            for (int y=0; y < s->ydelta; y +=4 ) {
+                uint16_t *row0 = tmp + y * s->xdelta;
+                uint16_t *row1 = row0 + s->xdelta;
+                uint16_t *row2 = row1 + s->xdelta;
+                uint16_t *row3 = row2 + s->xdelta;
+                for (int x = 0; x < s->xdelta; x += 4) {
+                    uint16_t out[16];
+                    int num = (x + 3 < s->xdelta)? 4 * sizeof (*out) : (s->xdelta - x) * sizeof (*out);
+                    if (gb.buffer[2] == 0xfc) {
+                        B44_unpack3 (&gb, out);
+                        gb.buffer += 3;
+                        inSize -= 3;
+                    } else {
+                        B44_unpack14 (&gb, out);
+                        gb.buffer += 14;
+                        inSize -= 14;
+                    }
+                    if (y + 3 < s->ydelta) {
+                        memcpy (row0, &out[ 0], num);
+                        memcpy (row1, &out[ 4], num);
+                        memcpy (row2, &out[ 8], num);
+                        memcpy (row3, &out[12], num);
+                    } else {
+                        memcpy (row0, &out[ 0], num);
+                        if (y + 1 < s->ydelta)
+                            memcpy (row1, &out[ 4], num);
+                        if (y + 2 < s->ydelta)
+                            memcpy (row2, &out[ 8], num);
+                    }
+                    row0 += 4;
+                    row1 += 4;
+                    row2 += 4;
+                    row3 += 4;
+                }
+            }
+        }
+    }
+    for (i = 0; i < s->ysize; i++) {
+        for (j = 0; j < s->nb_channels; j++) {
+            uint16_t *in = tmp + j * s->xdelta * s->ysize + i * s->xdelta;
+            memcpy(out, in, s->xdelta * 2);
+            out += s->xdelta * 2;
+        }
+    }
+    return 0;
+}p
+
 static int pxr24_uncompress(EXRContext *s, const uint8_t *src,
                             int compressed_size, int uncompressed_size,
                             EXRThreadData *td)
@@ -888,6 +997,8 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
             break;
         case EXR_RLE:
             ret = rle_uncompress(src, data_size, uncompressed_size, td);
+        case EXR_B44:
+            ret = b44_uncompress(s, src, data_size, uncompressed_size, td);
         }
         if (ret < 0) {
             av_log(avctx, AV_LOG_ERROR, "decode_block() failed.\n");
@@ -1282,6 +1393,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
         s->scan_lines_per_block = 16;
         break;
     case EXR_PIZ:
+    case EXR_B44:
         s->scan_lines_per_block = 32;
         break;
     default:
