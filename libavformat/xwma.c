@@ -104,11 +104,10 @@ static int xwma_read_header(AVFormatContext *s)
             avpriv_request_sample(s, "Unexpected extradata (%d bytes)",
                                   st->codec->extradata_size);
         } else {
-            st->codec->extradata_size = 6;
-            st->codec->extradata      = av_mallocz(6 + FF_INPUT_BUFFER_PADDING_SIZE);
-            if (!st->codec->extradata)
+            if (ff_alloc_extradata(st->codec, 6))
                 return AVERROR(ENOMEM);
 
+            memset(st->codec->extradata, 0, st->codec->extradata_size);
             /* setup extradata with our experimentally obtained value */
             st->codec->extradata[4] = 31;
         }
