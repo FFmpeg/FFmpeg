@@ -2106,17 +2106,22 @@ static int transcode_init(void)
             const char *in_codec_name  = "?";
             const char *encoder_name   = "?";
             const char *out_codec_name = "?";
+            const AVCodecDescriptor *desc;
 
             if (in_codec) {
                 decoder_name  = in_codec->name;
-                in_codec_name = avcodec_descriptor_get(in_codec->id)->name;
+                desc = avcodec_descriptor_get(in_codec->id);
+                if (desc)
+                    in_codec_name = desc->name;
                 if (!strcmp(decoder_name, in_codec_name))
                     decoder_name = "native";
             }
 
             if (out_codec) {
                 encoder_name   = out_codec->name;
-                out_codec_name = avcodec_descriptor_get(out_codec->id)->name;
+                desc = avcodec_descriptor_get(out_codec->id);
+                if (desc)
+                    out_codec_name = desc->name;
                 if (!strcmp(encoder_name, out_codec_name))
                     encoder_name = "native";
             }
