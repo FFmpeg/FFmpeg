@@ -822,7 +822,7 @@ static av_cold int nvenc_encode_init(AVCodecContext *avctx)
         }
 
         nv_status = p_nvenc->nvEncCreateInputBuffer(ctx->nvencoder, &allocSurf);
-        if (nv_status = NV_ENC_SUCCESS){
+        if (nv_status != NV_ENC_SUCCESS) {
             av_log(avctx, AV_LOG_FATAL, "CreateInputBuffer failed\n");
             res = AVERROR_EXTERNAL;
             goto error;
@@ -840,7 +840,7 @@ static av_cold int nvenc_encode_init(AVCodecContext *avctx)
         allocOut.memoryHeap = NV_ENC_MEMORY_HEAP_SYSMEM_CACHED;
 
         nv_status = p_nvenc->nvEncCreateBitstreamBuffer(ctx->nvencoder, &allocOut);
-        if (nv_status = NV_ENC_SUCCESS) {
+        if (nv_status != NV_ENC_SUCCESS) {
             av_log(avctx, AV_LOG_FATAL, "CreateBitstreamBuffer failed\n");
             ctx->output_surfaces[surfaceCount++].output_surface = NULL;
             res = AVERROR_EXTERNAL;
