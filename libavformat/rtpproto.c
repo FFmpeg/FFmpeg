@@ -51,6 +51,7 @@ typedef struct RTPContext {
     struct sockaddr_storage last_rtp_source, last_rtcp_source;
     socklen_t last_rtp_source_len, last_rtcp_source_len;
     int ttl;
+    int buffer_size;
     int rtcp_port, local_rtpport, local_rtcpport;
     int connect;
     int pkt_size;
@@ -63,6 +64,7 @@ typedef struct RTPContext {
 #define E AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
     { "ttl",                "Time to live (in milliseconds, multicast only)",                   OFFSET(ttl),             AV_OPT_TYPE_INT,    { .i64 = -1 },    -1, INT_MAX, .flags = D|E },
+    { "buffer_size",        "Send/Receive buffer size (in bytes)",                              OFFSET(buffer_size),     AV_OPT_TYPE_INT,    { .i64 = -1 },    -1, INT_MAX, .flags = D|E },
     { "rtcp_port",          "Custom rtcp port",                                                 OFFSET(rtcp_port),       AV_OPT_TYPE_INT,    { .i64 = -1 },    -1, INT_MAX, .flags = D|E },
     { "local_rtpport",      "Local rtp port",                                                   OFFSET(local_rtpport),   AV_OPT_TYPE_INT,    { .i64 = -1 },    -1, INT_MAX, .flags = D|E },
     { "local_rtcpport",     "Local rtcp port",                                                  OFFSET(local_rtcpport),  AV_OPT_TYPE_INT,    { .i64 = -1 },    -1, INT_MAX, .flags = D|E },
@@ -232,6 +234,8 @@ static void build_udp_url(RTPContext *s,
         url_add_option(buf, buf_size, "localport=%d", local_port);
     if (s->ttl >= 0)
         url_add_option(buf, buf_size, "ttl=%d", s->ttl);
+    if (s->buffer_size >= 0)
+        url_add_option(buf, buf_size, "buffer_size=%d", s->buffer_size);
     if (s->pkt_size >= 0)
         url_add_option(buf, buf_size, "pkt_size=%d", s->pkt_size);
     if (s->connect)
