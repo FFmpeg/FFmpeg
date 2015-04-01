@@ -692,6 +692,10 @@ int av_expr_parse(AVExpr **expr, const char *s,
         goto end;
     }
     e->var= av_mallocz(sizeof(double) *VARS);
+    if (!e->var) {
+        ret = AVERROR(ENOMEM);
+        goto end;
+    }
     *expr = e;
     e = NULL;
 end:
