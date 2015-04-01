@@ -71,17 +71,25 @@ int av_dict_set(AVDictionary **pm, const char *key, const char *value,
 {
     AVDictionary *m = *pm;
     AVDictionaryEntry *tag = av_dict_get(m, key, NULL, flags);
-    char *oldval = NULL;
+    char *oldval = NULL, *copy_key = NULL, *copy_value = NULL;
 
+    if (flags & AV_DICT_DONT_STRDUP_KEY)
+        copy_key = (void *)key;
+    else
+        copy_key = av_strdup(key);
+    if (flags & AV_DICT_DONT_STRDUP_VAL)
+        copy_value = (void *)value;
+    else if (copy_key)
+        copy_value = av_strdup(value);
     if (!m)
         m = *pm = av_mallocz(sizeof(*m));
-    if (!m)
+    if (!m || (key && !copy_key) || (value && !copy_value))
         goto err_out;
 
     if (tag) {
         if (flags & AV_DICT_DONT_OVERWRITE) {
-            if (flags & AV_DICT_DONT_STRDUP_KEY) av_free((void*)key);
-            if (flags & AV_DICT_DONT_STRDUP_VAL) av_free((void*)value);
+            av_free(copy_key);
+            av_free(copy_value);
             return 0;
         }
         if (flags & AV_DICT_APPEND)
@@ -97,27 +105,23 @@ int av_dict_set(AVDictionary **pm, const char *key, const char *value,
             goto err_out;
         m->elems = tmp;
     }
-    if (value) {
-        if (flags & AV_DICT_DONT_STRDUP_KEY)
-            m->elems[m->count].key = (char*)(intptr_t)key;
-        else
-            m->elems[m->count].key = av_strdup(key);
-        if (!m->elems[m->count].key)
-            goto err_out;
-        if (flags & AV_DICT_DONT_STRDUP_VAL) {
-            m->elems[m->count].value = (char*)(intptr_t)value;
-        } else if (oldval && flags & AV_DICT_APPEND) {
-            int len = strlen(oldval) + strlen(value) + 1;
+    if (copy_value) {
+        m->elems[m->count].key = copy_key;
+        m->elems[m->count].value = copy_value;
+        if (oldval && flags & AV_DICT_APPEND) {
+            int len = strlen(oldval) + strlen(copy_value) + 1;
             char *newval = av_mallocz(len);
             if (!newval)
                 goto err_out;
             av_strlcat(newval, oldval, len);
             av_freep(&oldval);
-            av_strlcat(newval, value, len);
+            av_strlcat(newval, copy_value, len);
             m->elems[m->count].value = newval;
-        } else
-            m->elems[m->count].value = av_strdup(value);
+            av_freep(&copy_value);
+        }
         m->count++;
+    } else {
+        av_freep(&copy_key);
     }
     if (!m->count) {
         av_freep(&m->elems);
@@ -131,8 +135,8 @@ err_out:
         av_freep(&m->elems);
         av_freep(pm);
     }
-    if (flags & AV_DICT_DONT_STRDUP_KEY) av_free((void*)key);
-    if (flags & AV_DICT_DONT_STRDUP_VAL) av_free((void*)value);
+    av_free(copy_key);
+    av_free(copy_value);
     return AVERROR(ENOMEM);
 }
 
