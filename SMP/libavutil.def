@@ -5,6 +5,7 @@ EXPORTS
     av_aes_alloc
     av_aes_crypt
     av_aes_init
+    av_append_path_component
     av_asprintf
     av_audio_fifo_alloc
     av_audio_fifo_drain
