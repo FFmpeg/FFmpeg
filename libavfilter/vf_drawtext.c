@@ -159,6 +159,7 @@ typedef struct DrawTextContext {
     unsigned int fontsize;          ///< font size to use
 
     short int draw_box;             ///< draw box around text - true or false
+    int boxborderw;                 ///< box border width
     int use_kerning;                ///< font kerning is used - true/false
     int tabsize;                    ///< tab size
     int fix_bounds;                 ///< do we let it go out of frame bounds - t/f
@@ -204,6 +205,7 @@ static const AVOption drawtext_options[]= {
     {"bordercolor", "set border color",     OFFSET(bordercolor.rgba),   AV_OPT_TYPE_COLOR,  {.str="black"}, CHAR_MIN, CHAR_MAX, FLAGS},
     {"shadowcolor", "set shadow color",     OFFSET(shadowcolor.rgba),   AV_OPT_TYPE_COLOR,  {.str="black"}, CHAR_MIN, CHAR_MAX, FLAGS},
     {"box",         "set box",              OFFSET(draw_box),           AV_OPT_TYPE_INT,    {.i64=0},     0,        1       , FLAGS},
+    {"boxborderw",  "set box border width", OFFSET(boxborderw),         AV_OPT_TYPE_INT,    {.i64=0},     INT_MIN,  INT_MAX , FLAGS},
     {"fontsize",    "set font size",        OFFSET(fontsize),           AV_OPT_TYPE_INT,    {.i64=0},     0,        INT_MAX , FLAGS},
     {"x",           "set x expression",     OFFSET(x_expr),             AV_OPT_TYPE_STRING, {.str="0"},   CHAR_MIN, CHAR_MAX, FLAGS},
     {"y",           "set y expression",     OFFSET(y_expr),             AV_OPT_TYPE_STRING, {.str="0"},   CHAR_MIN, CHAR_MAX, FLAGS},
@@ -1245,7 +1247,8 @@ static int draw_text(AVFilterContext *ctx, AVFrame *frame,
     if (s->draw_box)
         ff_blend_rectangle(&s->dc, &s->boxcolor,
                            frame->data, frame->linesize, width, height,
-                           s->x, s->y, box_w, box_h);
+                           s->x - s->boxborderw, s->y - s->boxborderw,
+                           box_w + s->boxborderw * 2, box_h + s->boxborderw * 2);
 
     if (s->shadowx || s->shadowy) {
         if ((ret = draw_glyphs(s, frame, width, height,

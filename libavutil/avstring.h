@@ -276,6 +276,16 @@ const char *av_dirname(char *path);
  */
 int av_match_name(const char *name, const char *names);
 
+/**
+ * Append path component to the existing path.
+ * Path separator '/' is placed between when needed.
+ * Resulting string have to be freed with av_free().
+ * @param path      base path
+ * @param component component to be appended
+ * @return new path or NULL on error.
+ */
+char *av_append_path_component(const char *path, const char *component);
+
 enum AVEscapeMode {
     AV_ESCAPE_MODE_AUTO,      ///< Use auto-selected escaping mode.
     AV_ESCAPE_MODE_BACKSLASH, ///< Use backslash escaping.

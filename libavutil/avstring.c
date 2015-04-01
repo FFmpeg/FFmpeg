@@ -269,6 +269,37 @@ const char *av_dirname(char *path)
     return path;
 }
 
+char *av_append_path_component(const char *path, const char *component)
+{
+    size_t p_len, c_len;
+    char *fullpath;
+
+    if (!path)
+        return av_strdup(component);
+    if (!component)
+        return av_strdup(path);
+
+    p_len = strlen(path);
+    c_len = strlen(component);
+    if (p_len > SIZE_MAX - c_len || p_len + c_len > SIZE_MAX - 2)
+        return NULL;
+    fullpath = av_malloc(p_len + c_len + 2);
+    if (fullpath) {
+        if (p_len) {
+            av_strlcpy(fullpath, path, p_len + 1);
+            if (c_len) {
+                if (fullpath[p_len - 1] != '/' && component[0] != '/')
+                    fullpath[p_len++] = '/';
+                else if (fullpath[p_len - 1] == '/' && component[0] == '/')
+                    p_len--;
+            }
+        }
+        av_strlcpy(&fullpath[p_len], component, c_len + 1);
+        fullpath[p_len + c_len] = 0;
+    }
+    return fullpath;
+}
+
 int av_escape(char **dst, const char *src, const char *special_chars,
               enum AVEscapeMode mode, int flags)
 {
@@ -427,6 +458,7 @@ int av_match_list(const char *name, const char *list, char separator)
 int main(void)
 {
     int i;
+    char *fullpath;
     static const char * const strings[] = {
         "''",
         "",
@@ -467,6 +499,19 @@ int main(void)
         av_free(q);
     }
 
+    printf("Testing av_append_path_component()\n");
+    #define TEST_APPEND_PATH_COMPONENT(path, component, expected) \
+        fullpath = av_append_path_component((path), (component)); \
+        printf("%s = %s\n", fullpath, expected); \
+        av_free(fullpath);
+    TEST_APPEND_PATH_COMPONENT(NULL, NULL, "(null)")
+    TEST_APPEND_PATH_COMPONENT("path", NULL, "path");
+    TEST_APPEND_PATH_COMPONENT(NULL, "comp", "comp");
+    TEST_APPEND_PATH_COMPONENT("path", "comp", "path/comp");
+    TEST_APPEND_PATH_COMPONENT("path/", "comp", "path/comp");
+    TEST_APPEND_PATH_COMPONENT("path", "/comp", "path/comp");
+    TEST_APPEND_PATH_COMPONENT("path/", "/comp", "path/comp");
+    TEST_APPEND_PATH_COMPONENT("path/path2/", "/comp/comp2", "path/path2/comp/comp2");
     return 0;
 }
 
