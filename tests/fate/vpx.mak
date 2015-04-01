@@ -43,6 +43,9 @@ fate-webm-dash-manifest-unaligned-audio-streams: CMD = run ffmpeg -f webm_dash_m
 FATE_VP8-$(call DEMDEC, WEBM_DASH_MANIFEST, VP8) += fate-webm-dash-manifest-representations
 fate-webm-dash-manifest-representations: CMD = run ffmpeg -f webm_dash_manifest -i $(TARGET_SAMPLES)/vp8/dash_video1.webm -f webm_dash_manifest -i $(TARGET_SAMPLES)/vp8/dash_video4.webm -c copy -map 0 -map 1 -f webm_dash_manifest -adaptation_sets "id=0,streams=0,1" -
 
+FATE_VP8-$(call DEMDEC, WEBM_DASH_MANIFEST, VP8) += fate-webm-dash-manifest-live
+fate-webm-dash-manifest-live: CMD = run ffmpeg -f webm_dash_manifest -live 1 -i $(TARGET_SAMPLES)/vp8/dash_live_video_360.hdr -f webm_dash_manifest -live 1 -i $(TARGET_SAMPLES)/vp8/dash_live_audio_171.hdr -c copy -map 0 -map 1 -f webm_dash_manifest -live 1 -adaptation_sets "id=0,streams=0 id=1,streams=1" -chunk_start_index 1 -chunk_duration_ms 5000 -time_shift_buffer_depth 7200 -debug_mode 1 -
+
 FATE_SAMPLES_AVCONV += $(FATE_VP6-yes)
 fate-vp6: $(FATE_VP6-yes)
 
