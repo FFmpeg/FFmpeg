@@ -53,6 +53,10 @@ fate-des: libavutil/des-test$(EXESUF)
 fate-des: CMD = run libavutil/des-test
 fate-des: REF = /dev/null
 
+FATE_LIBAVUTIL += fate-dict
+fate-dict: libavutil/dict-test$(EXESUF)
+fate-dict: CMD = run libavutil/dict-test
+
 FATE_LIBAVUTIL += fate-eval
 fate-eval: libavutil/eval-test$(EXESUF)
 fate-eval: CMD = run libavutil/eval-test
