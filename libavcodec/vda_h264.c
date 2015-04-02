@@ -320,9 +320,20 @@ static int vda_h264_start_frame(AVCodecContext *avctx,
                                 uint32_t size)
 {
     VDAContext *vda = avctx->internal->hwaccel_priv_data;
+    H264Context *h  = avctx->priv_data;
 
-    vda->bitstream_size = 0;
-
+    if (h->is_avc == 1) {
+        void *tmp;
+        vda->bitstream_size = 0;
+        tmp = av_fast_realloc(vda->bitstream,
+                              &vda->allocated_size,
+                              size);
+        vda->bitstream = tmp;
+        memcpy(vda->bitstream, buffer, size);
+        vda->bitstream_size = size;
+    } else {
+        vda->bitstream_size = 0;
+    }
     return 0;
 }
 
@@ -332,6 +343,9 @@ static int vda_h264_decode_slice(AVCodecContext *avctx,
 {
     VDAContext *vda       = avctx->internal->hwaccel_priv_data;
     void *tmp;
+
+    if (h->is_avc == 1)
+        return 0;
 
     tmp = av_fast_realloc(vda->bitstream,
                           &vda->allocated_size,

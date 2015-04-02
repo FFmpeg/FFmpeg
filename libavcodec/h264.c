@@ -1588,7 +1588,7 @@ again:
                         decode_postinit(h, nal_index >= nals_needed);
 
                     if (h->avctx->hwaccel &&
-                        (ret = h->avctx->hwaccel->start_frame(h->avctx, NULL, 0)) < 0)
+                        (ret = h->avctx->hwaccel->start_frame(h->avctx, buf, buf_size)) < 0)
                         return ret;
                     if (CONFIG_H264_VDPAU_DECODER &&
                         h->avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU)
