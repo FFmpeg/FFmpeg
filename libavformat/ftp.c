@@ -43,10 +43,10 @@ typedef struct {
     uint8_t *control_buf_ptr, *control_buf_end;
     int server_data_port;                        /**< Data connection port opened by server, -1 on error. */
     int server_control_port;                     /**< Control connection port, default is 21 */
-    char hostname[512];                          /**< Server address. */
+    char *hostname;                              /**< Server address. */
     char *user;                                  /**< Server user */
     char *password;                              /**< Server user's password */
-    char path[MAX_URL_SIZE];                     /**< Path to resource on server. */
+    char *path;                                  /**< Path to resource on server. */
     int64_t filesize;                            /**< Size of file on server, -1 on error. */
     int64_t position;                            /**< Current position, calculated. */
     int rw_timeout;                              /**< Network timeout. */
@@ -351,9 +351,12 @@ static int ftp_current_dir(FTPContext *s)
         end[-1] = '\0';
     } else
         *end = '\0';
-    av_strlcpy(s->path, start, sizeof(s->path));
+    s->path = av_strdup(start);
 
     av_free(res);
+
+    if (!s->path)
+        return AVERROR(ENOMEM);
     return 0;
 
   fail:
@@ -569,10 +572,11 @@ static int ftp_abort(URLContext *h)
 
 static int ftp_open(URLContext *h, const char *url, int flags)
 {
-    char proto[10], path[MAX_URL_SIZE], credencials[MAX_URL_SIZE];
+    char proto[10], path[MAX_URL_SIZE], credencials[MAX_URL_SIZE], hostname[MAX_URL_SIZE];
     const char *tok_user = NULL, *tok_pass = NULL;
     char *end = NULL;
     int err;
+    size_t pathlen;
     FTPContext *s = h->priv_data;
 
     av_dlog(h, "ftp protocol open\n");
@@ -583,7 +587,7 @@ static int ftp_open(URLContext *h, const char *url, int flags)
 
     av_url_split(proto, sizeof(proto),
                  credencials, sizeof(credencials),
-                 s->hostname, sizeof(s->hostname),
+                 hostname, sizeof(hostname),
                  &s->server_control_port,
                  path, sizeof(path),
                  url);
@@ -596,7 +600,8 @@ static int ftp_open(URLContext *h, const char *url, int flags)
     }
     s->user = av_strdup(tok_user);
     s->password = av_strdup(tok_pass);
-    if (!s->user || (tok_pass && !s->password)) {
+    s->hostname = av_strdup(hostname);
+    if (!s->hostname || !s->user || (tok_pass && !s->password)) {
         err = AVERROR(ENOMEM);
         goto fail;
     }
@@ -609,7 +614,10 @@ static int ftp_open(URLContext *h, const char *url, int flags)
 
     if ((err = ftp_current_dir(s)) < 0)
         goto fail;
-    av_strlcat(s->path, path, sizeof(s->path));
+    pathlen = strlen(s->path) + strlen(path) + 1;
+    if ((err = av_reallocp(&s->path, pathlen)) < 0)
+        goto fail;
+    av_strlcat(s->path + strlen(s->path), path, pathlen);
 
     if (ftp_restart(s, 0) < 0) {
         h->is_streamed = 1;
@@ -766,6 +774,8 @@ static int ftp_close(URLContext *h)
     ftp_close_both_connections(s);
     av_freep(&s->user);
     av_freep(&s->password);
+    av_freep(&s->hostname);
+    av_freep(&s->path);
 
     return 0;
 }
