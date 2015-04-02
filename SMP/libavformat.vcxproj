@@ -211,6 +211,8 @@
     </ClCompile>
     <ClCompile Include="..\libavformat\apngdec.c">
     </ClCompile>
+    <ClCompile Include="..\libavformat\apngenc.c">
+    </ClCompile>
     <ClCompile Include="..\libavformat\aqtitledec.c">
     </ClCompile>
     <ClCompile Include="..\libavformat\subtitles.c">

@@ -454,6 +454,8 @@
     <ClCompile Include="..\libavcodec\pngdsp.c">
       <ObjectFileName>$(IntDir)\libavcodec_pngdsp.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\pngenc.c">
+    </ClCompile>
     <ClCompile Include="..\libavcodec\assdec.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\ass.c">
@@ -990,8 +992,6 @@
     <ClCompile Include="..\libavcodec\pictordec.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\textdec.c">
-    </ClCompile>
-    <ClCompile Include="..\libavcodec\pngenc.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\proresdec2.c">
     </ClCompile>
