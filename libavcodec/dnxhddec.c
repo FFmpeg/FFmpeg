@@ -80,6 +80,7 @@ static int dnxhd_init_vlc(DNXHDContext *ctx, int cid)
             return AVERROR(ENOSYS);
         }
         ctx->cid_table = &ff_dnxhd_cid_table[index];
+        av_log(ctx->avctx, AV_LOG_VERBOSE, "Profile cid %d.\n", cid);
 
         ff_free_vlc(&ctx->ac_vlc);
         ff_free_vlc(&ctx->dc_vlc);
