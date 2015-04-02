@@ -222,6 +222,7 @@ library:
     @tab Audio format used on the Nintendo Gamecube.
 @item AFC                       @tab   @tab X
     @tab Audio format used on the Nintendo Gamecube.
+@item APNG                      @tab X @tab X
 @item ASF                       @tab X @tab X
 @item AST                       @tab X @tab X
     @tab Audio format used on the Nintendo Wii.
@@ -508,6 +509,7 @@ following image formats are supported:
 @item Alias PIX    @tab X @tab X
     @tab Alias/Wavefront PIX image format
 @item animated GIF @tab X @tab X
+@item APNG         @tab X @tab X
 @item BMP          @tab X @tab X
     @tab Microsoft BMP image
 @item BRender PIX  @tab   @tab X

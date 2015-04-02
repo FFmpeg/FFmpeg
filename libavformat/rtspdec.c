@@ -287,10 +287,15 @@ static int rtsp_read_setup(AVFormatContext *s, char* host, char *controlurl)
                  request.transports[0].interleaved_max);
     } else {
         do {
+            AVDictionary *opts = NULL;
+            char buf[256];
+            snprintf(buf, sizeof(buf), "%d", rt->buffer_size);
+            av_dict_set(&opts, "buffer_size", buf, 0);
             ff_url_join(url, sizeof(url), "rtp", NULL, host, localport, NULL);
             av_dlog(s, "Opening: %s", url);
             ret = ffurl_open(&rtsp_st->rtp_handle, url, AVIO_FLAG_READ_WRITE,
-                             &s->interrupt_callback, NULL);
+                             &s->interrupt_callback, &opts);
+            av_dict_free(&opts);
             if (ret)
                 localport += 2;
         } while (ret || localport > rt->rtp_port_max);

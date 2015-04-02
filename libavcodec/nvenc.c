@@ -151,6 +151,7 @@ typedef struct NvencContext
     void *nvencoder;
 
     char *preset;
+    char *profile;
     int cbr;
     int twopass;
     int gpu;
@@ -729,26 +730,6 @@ static av_cold int nvenc_encode_init(AVCodecContext *avctx)
         ctx->encode_config.frameFieldMode = NV_ENC_PARAMS_FRAME_FIELD_MODE_FRAME;
     }
 
-    switch (avctx->profile) {
-    case FF_PROFILE_HEVC_MAIN:
-        ctx->encode_config.profileGUID = NV_ENC_HEVC_PROFILE_MAIN_GUID;
-        break;
-    case FF_PROFILE_H264_BASELINE:
-        ctx->encode_config.profileGUID = NV_ENC_H264_PROFILE_BASELINE_GUID;
-        break;
-    case FF_PROFILE_H264_MAIN:
-        ctx->encode_config.profileGUID = NV_ENC_H264_PROFILE_MAIN_GUID;
-        break;
-    case FF_PROFILE_H264_HIGH:
-    case FF_PROFILE_UNKNOWN:
-        ctx->encode_config.profileGUID = NV_ENC_H264_PROFILE_HIGH_GUID;
-        break;
-    default:
-        av_log(avctx, AV_LOG_WARNING, "Unsupported profile requested, falling back to high\n");
-        ctx->encode_config.profileGUID = NV_ENC_H264_PROFILE_HIGH_GUID;
-        break;
-    }
-
     switch (avctx->codec->id) {
     case AV_CODEC_ID_H264:
         ctx->encode_config.encodeCodecConfig.h264Config.h264VUIParameters.colourDescriptionPresentFlag = 1;
@@ -762,10 +743,48 @@ static av_cold int nvenc_encode_init(AVCodecContext *avctx)
 
         ctx->encode_config.encodeCodecConfig.h264Config.disableSPSPPS = (avctx->flags & CODEC_FLAG_GLOBAL_HEADER) ? 1 : 0;
         ctx->encode_config.encodeCodecConfig.h264Config.repeatSPSPPS = (avctx->flags & CODEC_FLAG_GLOBAL_HEADER) ? 0 : 1;
+
+        if (!ctx->profile) {
+            switch (avctx->profile) {
+            case FF_PROFILE_H264_BASELINE:
+                ctx->encode_config.profileGUID = NV_ENC_H264_PROFILE_BASELINE_GUID;
+                break;
+            case FF_PROFILE_H264_MAIN:
+                ctx->encode_config.profileGUID = NV_ENC_H264_PROFILE_MAIN_GUID;
+                break;
+            case FF_PROFILE_H264_HIGH:
+            case FF_PROFILE_UNKNOWN:
+                ctx->encode_config.profileGUID = NV_ENC_H264_PROFILE_HIGH_GUID;
+                break;
+            default:
+                av_log(avctx, AV_LOG_WARNING, "Unsupported profile requested, falling back to high\n");
+                ctx->encode_config.profileGUID = NV_ENC_H264_PROFILE_HIGH_GUID;
+                break;
+            }
+        } else {
+            if (!strcmp(ctx->profile, "high")) {
+                ctx->encode_config.profileGUID = NV_ENC_H264_PROFILE_HIGH_GUID;
+                avctx->profile = FF_PROFILE_H264_HIGH;
+            } else if (!strcmp(ctx->profile, "main")) {
+                ctx->encode_config.profileGUID = NV_ENC_H264_PROFILE_MAIN_GUID;
+                avctx->profile = FF_PROFILE_H264_MAIN;
+            } else if (!strcmp(ctx->profile, "baseline")) {
+                ctx->encode_config.profileGUID = NV_ENC_H264_PROFILE_BASELINE_GUID;
+                avctx->profile = FF_PROFILE_H264_BASELINE;
+            } else {
+                av_log(avctx, AV_LOG_FATAL, "Profile \"%s\" is unknown! Supported profiles: high, main, baseline\n", ctx->profile);
+                res = AVERROR(EINVAL);
+                goto error;
+            }
+        }
         break;
     case AV_CODEC_ID_H265:
         ctx->encode_config.encodeCodecConfig.hevcConfig.disableSPSPPS = (avctx->flags & CODEC_FLAG_GLOBAL_HEADER) ? 1 : 0;
         ctx->encode_config.encodeCodecConfig.hevcConfig.repeatSPSPPS = (avctx->flags & CODEC_FLAG_GLOBAL_HEADER) ? 0 : 1;
+
+        /* No other profile is supported in the current SDK version 5 */
+        ctx->encode_config.profileGUID = NV_ENC_HEVC_PROFILE_MAIN_GUID;
+        avctx->profile = FF_PROFILE_HEVC_MAIN;
         break;
     /* Earlier switch/case will return if unknown codec is passed. */
     }
@@ -1258,6 +1277,7 @@ static enum AVPixelFormat pix_fmts_nvenc[] = {
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
     { "preset", "Set the encoding preset (one of hq, hp, bd, ll, llhq, llhp, default)", OFFSET(preset), AV_OPT_TYPE_STRING, { .str = "hq" }, 0, 0, VE },
+    { "profile", "Set the encoding profile (high, main or baseline)", OFFSET(profile), AV_OPT_TYPE_STRING, { 0 }, 0, 0, VE},
     { "cbr", "Use cbr encoding mode", OFFSET(cbr), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VE },
     { "2pass", "Use 2pass cbr encoding mode (low latency mode only)", OFFSET(twopass), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 1, VE },
     { "gpu", "Selects which NVENC capable GPU to use. First GPU is 0, second is 1, and so on.", OFFSET(gpu), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE },

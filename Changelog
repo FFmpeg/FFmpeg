@@ -12,6 +12,7 @@ version <next>:
 - Detelecine filter
 - Intel QSV-accelerated H.264 encoding
 - MMAL-accelerated H.264 decoding
+- basic APNG encoder and muxer
 
 
 version 2.6:

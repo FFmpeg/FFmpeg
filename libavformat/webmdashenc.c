@@ -271,7 +271,8 @@ static int to_integer(char *p, int len)
 {
     int ret;
     char *q = av_malloc(sizeof(char) * len);
-    if (!q) return -1;
+    if (!q)
+        return AVERROR(ENOMEM);
     av_strlcpy(q, p, len);
     ret = atoi(q);
     av_free(q);
@@ -291,7 +292,8 @@ static int parse_adaptation_sets(AVFormatContext *s)
             continue;
         else if (state == new_set && !strncmp(p, "id=", 3)) {
             w->as = av_realloc(w->as, sizeof(*w->as) * ++w->nb_as);
-            if (w->as == NULL) return -1;
+            if (w->as == NULL)
+                return AVERROR(ENOMEM);
             w->as[w->nb_as - 1].nb_streams = 0;
             w->as[w->nb_as - 1].streams = NULL;
             p += 3; // consume "id="
@@ -308,7 +310,8 @@ static int parse_adaptation_sets(AVFormatContext *s)
             q = p;
             while (*q != '\0' && *q != ',' && *q != ' ') q++;
             as->streams = av_realloc(as->streams, sizeof(*as->streams) * ++as->nb_streams);
-            if (as->streams == NULL) return -1;
+            if (as->streams == NULL)
+                return AVERROR(ENOMEM);
             as->streams[as->nb_streams - 1] = to_integer(p, q - p + 1);
             if (as->streams[as->nb_streams - 1] < 0) return -1;
             if (*q == '\0') break;
