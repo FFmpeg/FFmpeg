@@ -27,6 +27,7 @@
 #include "apng.h"
 
 #include "libavutil/avassert.h"
+#include "libavutil/crc.h"
 #include "libavutil/libm.h"
 #include "libavutil/opt.h"
 #include "libavutil/color_utils.h"
@@ -205,27 +206,28 @@ static uint8_t *png_choose_filter(PNGEncContext *s, uint8_t *dst,
 static void png_write_chunk(uint8_t **f, uint32_t tag,
                             const uint8_t *buf, int length)
 {
-    uint32_t crc;
+    const AVCRC *crc_table = av_crc_get_table(AV_CRC_32_IEEE_LE);
+    uint32_t crc = ~0U;
     uint8_t tagbuf[4];
 
     bytestream_put_be32(f, length);
-    crc = crc32(0, Z_NULL, 0);
     AV_WL32(tagbuf, tag);
-    crc = crc32(crc, tagbuf, 4);
+    crc = av_crc(crc_table, crc, tagbuf, 4);
     bytestream_put_be32(f, av_bswap32(tag));
     if (length > 0) {
-        crc = crc32(crc, buf, length);
+        crc = av_crc(crc_table, crc, buf, length);
         memcpy(*f, buf, length);
         *f += length;
     }
-    bytestream_put_be32(f, crc);
+    bytestream_put_be32(f, ~crc);
 }
 
 static void png_write_image_data(AVCodecContext *avctx,
                                  const uint8_t *buf, int length)
 {
     PNGEncContext *s = avctx->priv_data;
-    uint32_t crc = crc32(0, Z_NULL, 0);
+    const AVCRC *crc_table = av_crc_get_table(AV_CRC_32_IEEE_LE);
+    uint32_t crc = ~0U;
 
     if (avctx->codec_id == AV_CODEC_ID_PNG || avctx->frame_number == 0)
         return png_write_chunk(&s->bytestream, MKTAG('I', 'D', 'A', 'T'), buf, length);
@@ -234,13 +236,13 @@ static void png_write_image_data(AVCodecContext *avctx,
 
     bytestream_put_be32(&s->bytestream, MKBETAG('f', 'd', 'A', 'T'));
     bytestream_put_be32(&s->bytestream, s->sequence_number);
-    crc = crc32(crc, s->bytestream - 8, 8);
+    crc = av_crc(crc_table, crc, s->bytestream - 8, 8);
 
-    crc = crc32(crc, buf, length);
+    crc = av_crc(crc_table, crc, buf, length);
     memcpy(s->bytestream, buf, length);
     s->bytestream += length;
 
-    bytestream_put_be32(&s->bytestream, crc);
+    bytestream_put_be32(&s->bytestream, ~crc);
 
     ++s->sequence_number;
 }
@@ -536,7 +538,7 @@ static int encode_apng(AVCodecContext *avctx, AVPacket *pkt,
     uint8_t buf[26];
 
     if (avctx->codec_id == AV_CODEC_ID_APNG && s->color_type == PNG_COLOR_TYPE_PALETTE) {
-        uint32_t checksum = crc32(crc32(0, Z_NULL, 0), pict->data[1], 256 * sizeof(uint32_t));
+        uint32_t checksum = ~av_crc(av_crc_get_table(AV_CRC_32_IEEE_LE), ~0U, pict->data[1], 256 * sizeof(uint32_t));
 
         if (avctx->frame_number == 0) {
             s->palette_checksum = checksum;
