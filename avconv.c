@@ -318,7 +318,7 @@ static void update_sample_fmt(AVCodecContext *dec, AVCodec *dec_codec,
 static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
 {
     AVBitStreamFilterContext *bsfc = ost->bitstream_filters;
-    AVCodecContext          *avctx = ost->enc_ctx;
+    AVCodecContext          *avctx = ost->encoding_needed ? ost->enc_ctx : ost->st->codec;
     int ret;
 
     /*
@@ -1703,7 +1703,7 @@ static int transcode_init(void)
         if (ost->attachment_filename)
             continue;
 
-        enc_ctx = ost->enc_ctx;
+        enc_ctx = ost->stream_copy ? ost->st->codec : ost->enc_ctx;
 
         if (ist) {
             dec_ctx = ist->dec_ctx;
@@ -1962,18 +1962,19 @@ static int transcode_init(void)
             if (ost->enc_ctx->bit_rate && ost->enc_ctx->bit_rate < 1000)
                 av_log(NULL, AV_LOG_WARNING, "The bitrate parameter is set too low."
                                              "It takes bits/s as argument, not kbits/s\n");
+
+            ret = avcodec_copy_context(ost->st->codec, ost->enc_ctx);
+            if (ret < 0) {
+                av_log(NULL, AV_LOG_FATAL,
+                       "Error initializing the output stream codec context.\n");
+                exit_program(1);
+            }
+
+            ost->st->time_base = ost->enc_ctx->time_base;
         } else {
             av_opt_set_dict(ost->enc_ctx, &ost->encoder_opts);
+            ost->st->time_base = ost->st->codec->time_base;
         }
-
-        ret = avcodec_copy_context(ost->st->codec, ost->enc_ctx);
-        if (ret < 0) {
-            av_log(NULL, AV_LOG_FATAL,
-                   "Error initializing the output stream codec context.\n");
-            exit_program(1);
-        }
-
-        ost->st->time_base = ost->enc_ctx->time_base;
     }
 
     /* init input streams */
