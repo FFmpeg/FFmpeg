@@ -151,8 +151,8 @@ by Libav. Once you have the appropriate header, pass
 @code{--enable-avisynth} to configure to enable AviSynth support.
 
 For Windows, supported AviSynth variants are
-@url{http://avisynth.nl, AviSynth 2.6} for 32-bit builds and
-@url{http://avs-plus.net, AviSynth+ 0.1} for 32-bit and 64-bit builds.
+@url{http://avisynth.nl, AviSynth 2.6 RC1 or higher} for 32-bit builds and
+@url{http://avs-plus.net, AviSynth+ r1718 or higher} for 32-bit and 64-bit builds.
 @url{https://github.com/AviSynth/AviSynthPlus, AviSynth+'s git repository}
 provides a GNU-style Makefile which can install just the headers using
 @code{make install PREFIX=/install/prefix}.
