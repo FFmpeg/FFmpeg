@@ -277,6 +277,9 @@ Set initial byte offset.
 
 @item end_offset
 Try to limit the request to bytes preceding this offset.
+
+@item listen
+If set to 1 enables experimental HTTP server.
 @end table
 
 @subsection HTTP Cookies
