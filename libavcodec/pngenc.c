@@ -229,8 +229,10 @@ static void png_write_image_data(AVCodecContext *avctx,
     const AVCRC *crc_table = av_crc_get_table(AV_CRC_32_IEEE_LE);
     uint32_t crc = ~0U;
 
-    if (avctx->codec_id == AV_CODEC_ID_PNG || avctx->frame_number == 0)
-        return png_write_chunk(&s->bytestream, MKTAG('I', 'D', 'A', 'T'), buf, length);
+    if (avctx->codec_id == AV_CODEC_ID_PNG || avctx->frame_number == 0) {
+        png_write_chunk(&s->bytestream, MKTAG('I', 'D', 'A', 'T'), buf, length);
+        return;
+    }
 
     bytestream_put_be32(&s->bytestream, length + 4);
 
