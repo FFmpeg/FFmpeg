@@ -342,6 +342,7 @@ static int vda_h264_decode_slice(AVCodecContext *avctx,
                                  uint32_t size)
 {
     VDAContext *vda       = avctx->internal->hwaccel_priv_data;
+    H264Context *h  = avctx->priv_data;
     void *tmp;
 
     if (h->is_avc == 1)
