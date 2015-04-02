@@ -26,7 +26,6 @@
 #include "libavutil/bprint.h"
 
 #define CONTROL_BUFFER_SIZE 1024
-#define CREDENTIALS_BUFFER_SIZE 128
 
 typedef enum {
     UNKNOWN,
@@ -45,7 +44,8 @@ typedef struct {
     int server_data_port;                        /**< Data connection port opened by server, -1 on error. */
     int server_control_port;                     /**< Control connection port, default is 21 */
     char hostname[512];                          /**< Server address. */
-    char credencials[CREDENTIALS_BUFFER_SIZE];   /**< Authentication data */
+    char *user;                                  /**< Server user */
+    char *password;                              /**< Server user's password */
     char path[MAX_URL_SIZE];                     /**< Path to resource on server. */
     int64_t filesize;                            /**< Size of file on server, -1 on error. */
     int64_t position;                            /**< Current position, calculated. */
@@ -71,6 +71,8 @@ static const AVClass ftp_context_class = {
     .option         = options,
     .version        = LIBAVUTIL_VERSION_INT,
 };
+
+static int ftp_close(URLContext *h);
 
 static int ftp_getc(FTPContext *s)
 {
@@ -213,28 +215,16 @@ static void ftp_close_both_connections(FTPContext *s)
 
 static int ftp_auth(FTPContext *s)
 {
-    const char *user = NULL, *pass = NULL;
-    char *end = NULL, buf[CONTROL_BUFFER_SIZE], credencials[CREDENTIALS_BUFFER_SIZE];
+    char buf[CONTROL_BUFFER_SIZE];
     int err;
     static const int user_codes[] = {331, 230, 0};
     static const int pass_codes[] = {230, 0};
 
-    /* Authentication may be repeated, original string has to be saved */
-    av_strlcpy(credencials, s->credencials, sizeof(credencials));
-
-    user = av_strtok(credencials, ":", &end);
-    pass = av_strtok(end, ":", &end);
-
-    if (!user) {
-        user = "anonymous";
-        pass = s->anonymous_password ? s->anonymous_password : "nopassword";
-    }
-
-    snprintf(buf, sizeof(buf), "USER %s\r\n", user);
+    snprintf(buf, sizeof(buf), "USER %s\r\n", s->user);
     err = ftp_send_command(s, buf, user_codes, NULL);
     if (err == 331) {
-        if (pass) {
-            snprintf(buf, sizeof(buf), "PASS %s\r\n", pass);
+        if (s->password) {
+            snprintf(buf, sizeof(buf), "PASS %s\r\n", s->password);
             err = ftp_send_command(s, buf, pass_codes, NULL);
         } else
             return AVERROR(EACCES);
@@ -579,7 +569,9 @@ static int ftp_abort(URLContext *h)
 
 static int ftp_open(URLContext *h, const char *url, int flags)
 {
-    char proto[10], path[MAX_URL_SIZE];
+    char proto[10], path[MAX_URL_SIZE], credencials[MAX_URL_SIZE];
+    const char *tok_user = NULL, *tok_pass = NULL;
+    char *end = NULL;
     int err;
     FTPContext *s = h->priv_data;
 
@@ -590,11 +582,24 @@ static int ftp_open(URLContext *h, const char *url, int flags)
     s->position = 0;
 
     av_url_split(proto, sizeof(proto),
-                 s->credencials, sizeof(s->credencials),
+                 credencials, sizeof(credencials),
                  s->hostname, sizeof(s->hostname),
                  &s->server_control_port,
                  path, sizeof(path),
                  url);
+
+    tok_user = av_strtok(credencials, ":", &end);
+    tok_pass = av_strtok(end, ":", &end);
+    if (!tok_user) {
+        tok_user = "anonymous";
+        tok_pass = av_x_if_null(s->anonymous_password, "nopassword");
+    }
+    s->user = av_strdup(tok_user);
+    s->password = av_strdup(tok_pass);
+    if (!s->user || (tok_pass && !s->password)) {
+        err = AVERROR(ENOMEM);
+        goto fail;
+    }
 
     if (s->server_control_port < 0 || s->server_control_port > 65535)
         s->server_control_port = 21;
@@ -619,8 +624,7 @@ static int ftp_open(URLContext *h, const char *url, int flags)
 
   fail:
     av_log(h, AV_LOG_ERROR, "FTP open failed\n");
-    ffurl_closep(&s->conn_control);
-    ffurl_closep(&s->conn_data);
+    ftp_close(h);
     return err;
 }
 
@@ -755,9 +759,13 @@ static int ftp_write(URLContext *h, const unsigned char *buf, int size)
 
 static int ftp_close(URLContext *h)
 {
+    FTPContext *s = h->priv_data;
+
     av_dlog(h, "ftp protocol close\n");
 
-    ftp_close_both_connections(h->priv_data);
+    ftp_close_both_connections(s);
+    av_freep(&s->user);
+    av_freep(&s->password);
 
     return 0;
 }
