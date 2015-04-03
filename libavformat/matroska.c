@@ -99,12 +99,17 @@ const CodecTags ff_mkv_codec_tags[]={
     {""                 , AV_CODEC_ID_NONE}
 };
 
-const CodecMime ff_mkv_mime_tags[] = {
-    {"text/plain"                 , AV_CODEC_ID_TEXT},
+const CodecMime ff_mkv_image_mime_tags[] = {
     {"image/gif"                  , AV_CODEC_ID_GIF},
     {"image/jpeg"                 , AV_CODEC_ID_MJPEG},
     {"image/png"                  , AV_CODEC_ID_PNG},
     {"image/tiff"                 , AV_CODEC_ID_TIFF},
+
+    {""                           , AV_CODEC_ID_NONE}
+};
+
+const CodecMime ff_mkv_mime_tags[] = {
+    {"text/plain"                 , AV_CODEC_ID_TEXT},
     {"application/x-truetype-font", AV_CODEC_ID_TTF},
     {"application/x-font"         , AV_CODEC_ID_TTF},
     {"application/vnd.ms-opentype", AV_CODEC_ID_OTF},
