@@ -18,6 +18,11 @@
 
 #ifdef __APPLE__
 #include <sys/sysctl.h>
+#elif defined(__linux__)
+#include <asm/cputable.h>
+#include <linux/auxvec.h>
+#include <fcntl.h>
+#include <unistd.h>
 #elif defined(__OpenBSD__)
 #include <sys/param.h>
 #include <sys/sysctl.h>
@@ -62,6 +67,32 @@ int ff_get_cpu_flags_ppc(void)
     if (err == 0)
         return has_vu ? AV_CPU_FLAG_ALTIVEC : 0;
     return 0;
+#elif defined(__linux__)
+    // The linux kernel could have the altivec support disabled
+    // even if the cpu has it.
+    int i, ret = 0;
+    int fd = open("/proc/self/auxv", O_RDONLY);
+    unsigned long buf[64] = { 0 };
+    ssize_t count;
+
+    if (fd < 0)
+        return 0;
+
+    while ((count = read(fd, buf, sizeof(buf))) > 0) {
+        for (i = 0; i < count / sizeof(*buf); i += 2) {
+            if (buf[i] == AT_NULL)
+                goto out;
+            if (buf[i] == AT_HWCAP) {
+                if (buf[i + 1] & PPC_FEATURE_HAS_ALTIVEC)
+                    ret = AV_CPU_FLAG_ALTIVEC;
+                goto out;
+            }
+        }
+    }
+
+out:
+    close(fd);
+    return ret;
 #elif CONFIG_RUNTIME_CPUDETECT
     int proc_ver;
     // Support of mfspr PVR emulation added in Linux 2.6.17.
