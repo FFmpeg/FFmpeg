@@ -1265,6 +1265,11 @@ static int mkv_write_attachments(AVFormatContext *s)
                     mimetype = ff_mkv_mime_tags[i].str;
                     break;
                 }
+            for (i = 0; ff_mkv_image_mime_tags[i].id != AV_CODEC_ID_NONE; i++)
+                if (ff_mkv_image_mime_tags[i].id == st->codec->codec_id) {
+                    mimetype = ff_mkv_image_mime_tags[i].str;
+                    break;
+                }
         }
         if (!mimetype) {
             av_log(s, AV_LOG_ERROR, "Attachment stream %d has no mimetype tag and "
