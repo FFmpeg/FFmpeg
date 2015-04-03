@@ -921,77 +921,77 @@ static void do_video_out(AVFormatContext *s,
                                           ost->last_nb0_frames[1],
                                           ost->last_nb0_frames[2]);
     } else {
-    delta0 = sync_ipts - ost->sync_opts;
-    delta  = delta0 + duration;
+        delta0 = sync_ipts - ost->sync_opts;
+        delta  = delta0 + duration;
 
-    /* by default, we output a single frame */
-    nb0_frames = 0;
-    nb_frames = 1;
+        /* by default, we output a single frame */
+        nb0_frames = 0;
+        nb_frames = 1;
 
-    format_video_sync = video_sync_method;
-    if (format_video_sync == VSYNC_AUTO) {
-        if(!strcmp(s->oformat->name, "avi")) {
-            format_video_sync = VSYNC_VFR;
-        } else
-            format_video_sync = (s->oformat->flags & AVFMT_VARIABLE_FPS) ? ((s->oformat->flags & AVFMT_NOTIMESTAMPS) ? VSYNC_PASSTHROUGH : VSYNC_VFR) : VSYNC_CFR;
-        if (   ist
-            && format_video_sync == VSYNC_CFR
-            && input_files[ist->file_index]->ctx->nb_streams == 1
-            && input_files[ist->file_index]->input_ts_offset == 0) {
-            format_video_sync = VSYNC_VSCFR;
+        format_video_sync = video_sync_method;
+        if (format_video_sync == VSYNC_AUTO) {
+            if(!strcmp(s->oformat->name, "avi")) {
+                format_video_sync = VSYNC_VFR;
+            } else
+                format_video_sync = (s->oformat->flags & AVFMT_VARIABLE_FPS) ? ((s->oformat->flags & AVFMT_NOTIMESTAMPS) ? VSYNC_PASSTHROUGH : VSYNC_VFR) : VSYNC_CFR;
+            if (   ist
+                && format_video_sync == VSYNC_CFR
+                && input_files[ist->file_index]->ctx->nb_streams == 1
+                && input_files[ist->file_index]->input_ts_offset == 0) {
+                format_video_sync = VSYNC_VSCFR;
+            }
+            if (format_video_sync == VSYNC_CFR && copy_ts) {
+                format_video_sync = VSYNC_VSCFR;
+            }
         }
-        if (format_video_sync == VSYNC_CFR && copy_ts) {
-            format_video_sync = VSYNC_VSCFR;
+
+        if (delta0 < 0 &&
+            delta > 0 &&
+            format_video_sync != VSYNC_PASSTHROUGH &&
+            format_video_sync != VSYNC_DROP) {
+            double cor = FFMIN(-delta0, duration);
+            if (delta0 < -0.6) {
+                av_log(NULL, AV_LOG_WARNING, "Past duration %f too large\n", -delta0);
+            } else
+                av_log(NULL, AV_LOG_DEBUG, "Cliping frame in rate conversion by %f\n", -delta0);
+            sync_ipts += cor;
+            duration -= cor;
+            delta0 += cor;
         }
-    }
 
-    if (delta0 < 0 &&
-        delta > 0 &&
-        format_video_sync != VSYNC_PASSTHROUGH &&
-        format_video_sync != VSYNC_DROP) {
-        double cor = FFMIN(-delta0, duration);
-        if (delta0 < -0.6) {
-            av_log(NULL, AV_LOG_WARNING, "Past duration %f too large\n", -delta0);
-        } else
-            av_log(NULL, AV_LOG_DEBUG, "Cliping frame in rate conversion by %f\n", -delta0);
-        sync_ipts += cor;
-        duration -= cor;
-        delta0 += cor;
-    }
-
-    switch (format_video_sync) {
-    case VSYNC_VSCFR:
-        if (ost->frame_number == 0 && delta - duration >= 0.5) {
-            av_log(NULL, AV_LOG_DEBUG, "Not duplicating %d initial frames\n", (int)lrintf(delta - duration));
-            delta = duration;
-            delta0 = 0;
+        switch (format_video_sync) {
+        case VSYNC_VSCFR:
+            if (ost->frame_number == 0 && delta - duration >= 0.5) {
+                av_log(NULL, AV_LOG_DEBUG, "Not duplicating %d initial frames\n", (int)lrintf(delta - duration));
+                delta = duration;
+                delta0 = 0;
+                ost->sync_opts = lrint(sync_ipts);
+            }
+        case VSYNC_CFR:
+            // FIXME set to 0.5 after we fix some dts/pts bugs like in avidec.c
+            if (frame_drop_threshold && delta < frame_drop_threshold && ost->frame_number) {
+                nb_frames = 0;
+            } else if (delta < -1.1)
+                nb_frames = 0;
+            else if (delta > 1.1) {
+                nb_frames = lrintf(delta);
+                if (delta0 > 1.1)
+                    nb0_frames = lrintf(delta0 - 0.6);
+            }
+            break;
+        case VSYNC_VFR:
+            if (delta <= -0.6)
+                nb_frames = 0;
+            else if (delta > 0.6)
+                ost->sync_opts = lrint(sync_ipts);
+            break;
+        case VSYNC_DROP:
+        case VSYNC_PASSTHROUGH:
             ost->sync_opts = lrint(sync_ipts);
+            break;
+        default:
+            av_assert0(0);
         }
-    case VSYNC_CFR:
-        // FIXME set to 0.5 after we fix some dts/pts bugs like in avidec.c
-        if (frame_drop_threshold && delta < frame_drop_threshold && ost->frame_number) {
-            nb_frames = 0;
-        } else if (delta < -1.1)
-            nb_frames = 0;
-        else if (delta > 1.1) {
-            nb_frames = lrintf(delta);
-            if (delta0 > 1.1)
-                nb0_frames = lrintf(delta0 - 0.6);
-        }
-        break;
-    case VSYNC_VFR:
-        if (delta <= -0.6)
-            nb_frames = 0;
-        else if (delta > 0.6)
-            ost->sync_opts = lrint(sync_ipts);
-        break;
-    case VSYNC_DROP:
-    case VSYNC_PASSTHROUGH:
-        ost->sync_opts = lrint(sync_ipts);
-        break;
-    default:
-        av_assert0(0);
-    }
     }
 
     nb_frames = FFMIN(nb_frames, ost->max_frames - ost->frame_number);
@@ -1171,7 +1171,7 @@ static void do_video_out(AVFormatContext *s,
         ost->last_frame = av_frame_alloc();
     av_frame_unref(ost->last_frame);
     if (next_picture)
-    av_frame_ref(ost->last_frame, next_picture);
+        av_frame_ref(ost->last_frame, next_picture);
 }
 
 static double psnr(double d)
