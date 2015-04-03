@@ -549,6 +549,8 @@ redo:
             request_probe = 50;
         } else {
             codec_id = AV_CODEC_ID_MP2;
+            if (m->imkh_cctv)
+                request_probe = 25;
         }
     } else if (startcode >= 0x80 && startcode <= 0x87) {
         type     = AVMEDIA_TYPE_AUDIO;
