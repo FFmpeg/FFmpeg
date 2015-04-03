@@ -2382,11 +2382,13 @@ static int transcode_init(void)
             codec->rc_max_rate    = icodec->rc_max_rate;
             codec->rc_buffer_size = icodec->rc_buffer_size;
             codec->field_order    = icodec->field_order;
-            codec->extradata      = av_mallocz(extra_size);
-            if (!codec->extradata) {
-                return AVERROR(ENOMEM);
+            if (icodec->extradata_size) {
+                codec->extradata      = av_mallocz(extra_size);
+                if (!codec->extradata) {
+                    return AVERROR(ENOMEM);
+                }
+                memcpy(codec->extradata, icodec->extradata, icodec->extradata_size);
             }
-            memcpy(codec->extradata, icodec->extradata, icodec->extradata_size);
             codec->extradata_size= icodec->extradata_size;
             codec->bits_per_coded_sample  = icodec->bits_per_coded_sample;
 
