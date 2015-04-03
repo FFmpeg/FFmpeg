@@ -705,7 +705,7 @@ av_cold int ff_h264_decode_init(AVCodecContext *avctx)
     if (h->enable_er < 0 && (avctx->active_thread_type & FF_THREAD_SLICE))
         h->enable_er = 0;
 
-    if (h->enable_er) {
+    if (h->enable_er && (avctx->active_thread_type & FF_THREAD_SLICE)) {
         av_log(avctx, AV_LOG_WARNING,
                "Error resilience with slice threads is enabled. It is unsafe and unsupported and may crash. "
                "Use it at your own risk\n");
