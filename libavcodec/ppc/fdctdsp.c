@@ -78,6 +78,14 @@ static const vector float fdctconsts[3] = {
 #define LD_WA vec_splat(cnsts2, 2)
 #define LD_WB vec_splat(cnsts2, 3)
 
+#if HAVE_BIGENDIAN
+#define VEC_FMERGEH(a, b) vec_mergeh(a, b)
+#define VEC_FMERGEL(a, b) vec_mergel(a, b)
+#else
+#define VEC_FMERGEH(a, b) vec_mergel(b, a)
+#define VEC_FMERGEL(a, b) vec_mergeh(b, a)
+#endif
+
 #define FDCTROW(b0, b1, b2, b3, b4, b5, b6, b7) /* {{{ */           \
     x0 = vec_add(b0, b7);               /* x0 = b0 + b7; */         \
     x7 = vec_sub(b0, b7);               /* x7 = b0 - b7; */         \
@@ -385,45 +393,45 @@ void ff_fdct_altivec(int16_t *block)
     /* }}} */
 
     /* 8x8 matrix transpose (vector float[8][2]) {{{ */
-    x0 = vec_mergel(b00, b20);
-    x1 = vec_mergeh(b00, b20);
-    x2 = vec_mergel(b10, b30);
-    x3 = vec_mergeh(b10, b30);
+    x0 = VEC_FMERGEL(b00, b20);
+    x1 = VEC_FMERGEH(b00, b20);
+    x2 = VEC_FMERGEL(b10, b30);
+    x3 = VEC_FMERGEH(b10, b30);
 
-    b00 = vec_mergeh(x1, x3);
-    b10 = vec_mergel(x1, x3);
-    b20 = vec_mergeh(x0, x2);
-    b30 = vec_mergel(x0, x2);
+    b00 = VEC_FMERGEH(x1, x3);
+    b10 = VEC_FMERGEL(x1, x3);
+    b20 = VEC_FMERGEH(x0, x2);
+    b30 = VEC_FMERGEL(x0, x2);
 
-    x4 = vec_mergel(b41, b61);
-    x5 = vec_mergeh(b41, b61);
-    x6 = vec_mergel(b51, b71);
-    x7 = vec_mergeh(b51, b71);
+    x4 = VEC_FMERGEL(b41, b61);
+    x5 = VEC_FMERGEH(b41, b61);
+    x6 = VEC_FMERGEL(b51, b71);
+    x7 = VEC_FMERGEH(b51, b71);
 
-    b41 = vec_mergeh(x5, x7);
-    b51 = vec_mergel(x5, x7);
-    b61 = vec_mergeh(x4, x6);
-    b71 = vec_mergel(x4, x6);
+    b41 = VEC_FMERGEH(x5, x7);
+    b51 = VEC_FMERGEL(x5, x7);
+    b61 = VEC_FMERGEH(x4, x6);
+    b71 = VEC_FMERGEL(x4, x6);
 
-    x0 = vec_mergel(b01, b21);
-    x1 = vec_mergeh(b01, b21);
-    x2 = vec_mergel(b11, b31);
-    x3 = vec_mergeh(b11, b31);
+    x0 = VEC_FMERGEL(b01, b21);
+    x1 = VEC_FMERGEH(b01, b21);
+    x2 = VEC_FMERGEL(b11, b31);
+    x3 = VEC_FMERGEH(b11, b31);
 
-    x4 = vec_mergel(b40, b60);
-    x5 = vec_mergeh(b40, b60);
-    x6 = vec_mergel(b50, b70);
-    x7 = vec_mergeh(b50, b70);
+    x4 = VEC_FMERGEL(b40, b60);
+    x5 = VEC_FMERGEH(b40, b60);
+    x6 = VEC_FMERGEL(b50, b70);
+    x7 = VEC_FMERGEH(b50, b70);
 
-    b40 = vec_mergeh(x1, x3);
-    b50 = vec_mergel(x1, x3);
-    b60 = vec_mergeh(x0, x2);
-    b70 = vec_mergel(x0, x2);
+    b40 = VEC_FMERGEH(x1, x3);
+    b50 = VEC_FMERGEL(x1, x3);
+    b60 = VEC_FMERGEH(x0, x2);
+    b70 = VEC_FMERGEL(x0, x2);
 
-    b01 = vec_mergeh(x5, x7);
-    b11 = vec_mergel(x5, x7);
-    b21 = vec_mergeh(x4, x6);
-    b31 = vec_mergel(x4, x6);
+    b01 = VEC_FMERGEH(x5, x7);
+    b11 = VEC_FMERGEL(x5, x7);
+    b21 = VEC_FMERGEH(x4, x6);
+    b31 = VEC_FMERGEL(x4, x6);
     /* }}} */
 
     FDCTCOL(b00, b10, b20, b30, b40, b50, b60, b70);
