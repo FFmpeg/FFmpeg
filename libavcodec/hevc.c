@@ -3375,7 +3375,7 @@ static int hevc_decode_extradata(HEVCContext *s)
 {
     AVCodecContext *avctx = s->avctx;
     GetByteContext gb;
-    int ret;
+    int ret, i;
 
     bytestream2_init(&gb, avctx->extradata, avctx->extradata_size);
 
@@ -3432,6 +3432,16 @@ static int hevc_decode_extradata(HEVCContext *s)
         if (ret < 0)
             return ret;
     }
+
+    /* export stream parameters from the first SPS */
+    for (i = 0; i < FF_ARRAY_ELEMS(s->sps_list); i++) {
+        if (s->sps_list[i]) {
+            const HEVCSPS *sps = (const HEVCSPS*)s->sps_list[i]->data;
+            export_stream_params(s->avctx, s, sps);
+            break;
+        }
+    }
+
     return 0;
 }
 
