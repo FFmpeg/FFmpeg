@@ -15,6 +15,11 @@ libavutil:     2014-08-09
 
 API changes, most recent first:
 
+2015-xx-xx - xxxxxxx - lavf 56.29.100 - avio.h
+  Add AVIODirEntryType.AVIO_ENTRY_SERVER.
+  Add AVIODirEntryType.AVIO_ENTRY_SHARE.
+  Add AVIODirEntryType.AVIO_ENTRY_WORKGROUP.
+
 2015-xx-xx - xxxxxxx - lavu 54.22.100 - avstring.h
   Add av_append_path_component()
 
