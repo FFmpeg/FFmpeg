@@ -59,6 +59,9 @@
 #define VISUAL_OBJ_STARTCODE 0x1B5
 #define VOP_STARTCODE        0x1B6
 
+/* smaller packets likely don't contain a real frame */
+#define MAX_NVOP_SIZE 19
+
 typedef struct Mpeg4DecContext {
     MpegEncContext m;
 
