@@ -2666,11 +2666,13 @@ static int transcode_init(void)
             enc_ctx->rc_max_rate    = dec_ctx->rc_max_rate;
             enc_ctx->rc_buffer_size = dec_ctx->rc_buffer_size;
             enc_ctx->field_order    = dec_ctx->field_order;
-            enc_ctx->extradata      = av_mallocz(extra_size);
-            if (!enc_ctx->extradata) {
-                return AVERROR(ENOMEM);
+            if (dec_ctx->extradata_size) {
+                enc_ctx->extradata      = av_mallocz(extra_size);
+                if (!enc_ctx->extradata) {
+                    return AVERROR(ENOMEM);
+                }
+                memcpy(enc_ctx->extradata, dec_ctx->extradata, dec_ctx->extradata_size);
             }
-            memcpy(enc_ctx->extradata, dec_ctx->extradata, dec_ctx->extradata_size);
             enc_ctx->extradata_size= dec_ctx->extradata_size;
             enc_ctx->bits_per_coded_sample  = dec_ctx->bits_per_coded_sample;
 
