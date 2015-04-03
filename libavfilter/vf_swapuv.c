@@ -79,8 +79,7 @@ static int query_formats(AVFilterContext *ctx)
             ff_add_format(&formats, fmt);
     }
 
-    ff_set_common_formats(ctx, formats);
-    return 0;
+    return ff_set_common_formats(ctx, formats);
 }
 
 static const AVFilterPad swapuv_inputs[] = {

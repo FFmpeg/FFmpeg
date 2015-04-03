@@ -176,11 +176,15 @@ static int geq_query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRAP,
         AV_PIX_FMT_NONE
     };
+    AVFilterFormats *fmts_list;
+
     if (geq->is_rgb) {
-        ff_set_common_formats(ctx, ff_make_format_list(rgb_pix_fmts));
+        fmts_list = ff_make_format_list(rgb_pix_fmts);
     } else
-        ff_set_common_formats(ctx, ff_make_format_list(yuv_pix_fmts));
-    return 0;
+        fmts_list = ff_make_format_list(yuv_pix_fmts);
+    if (!fmts_list)
+        return AVERROR(ENOMEM);
+    return ff_set_common_formats(ctx, fmts_list);
 }
 
 static int geq_config_props(AVFilterLink *inlink)
