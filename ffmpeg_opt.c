@@ -3040,7 +3040,7 @@ const OptionDef options[] = {
                       OPT_INPUT | OPT_OUTPUT,                                    { .off = OFFSET(top_field_first) },
         "top=1/bottom=0/auto=-1 field first", "" },
     { "vtag",         OPT_VIDEO | HAS_ARG | OPT_EXPERT  | OPT_PERFILE |
-                      OPT_OUTPUT,                                                { .func_arg = opt_old2new },
+                      OPT_INPUT | OPT_OUTPUT,                                    { .func_arg = opt_old2new },
         "force video tag/fourcc", "fourcc/tag" },
     { "qphist",       OPT_VIDEO | OPT_BOOL | OPT_EXPERT ,                        { &qp_hist },
         "show QP histogram" },

@@ -179,8 +179,8 @@ included in compat/avisynth/, which allows the user to enable support
 without needing to search for these headers themselves.
 
 For Windows, supported AviSynth variants are
-@url{http://avisynth.nl, AviSynth 2.6} for 32-bit builds and
-@url{http://avs-plus.net, AviSynth+ 0.1} for 32-bit and 64-bit builds.
+@url{http://avisynth.nl, AviSynth 2.6 RC1 or higher} for 32-bit builds and
+@url{http://avs-plus.net, AviSynth+ r1718 or higher} for 32-bit and 64-bit builds.
 
 For Linux and OS X, the supported AviSynth variant is
 @url{https://github.com/avxsynth/avxsynth, AvxSynth}.

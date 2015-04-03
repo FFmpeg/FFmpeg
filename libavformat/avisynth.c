@@ -139,15 +139,15 @@ static av_cold int avisynth_load_library(void)
     LOAD_AVS_FUNC(avs_release_video_frame, 0);
     LOAD_AVS_FUNC(avs_take_clip, 0);
 #ifdef USING_AVISYNTH
-    LOAD_AVS_FUNC(avs_bits_per_pixel, 0);
-    LOAD_AVS_FUNC(avs_get_height_p, 0);
-    LOAD_AVS_FUNC(avs_get_pitch_p, 0);
-    LOAD_AVS_FUNC(avs_get_read_ptr_p, 0);
-    LOAD_AVS_FUNC(avs_get_row_size_p, 0);
-    LOAD_AVS_FUNC(avs_is_yv24, 0);
-    LOAD_AVS_FUNC(avs_is_yv16, 0);
-    LOAD_AVS_FUNC(avs_is_yv411, 0);
-    LOAD_AVS_FUNC(avs_is_y8, 0);
+    LOAD_AVS_FUNC(avs_bits_per_pixel, 1);
+    LOAD_AVS_FUNC(avs_get_height_p, 1);
+    LOAD_AVS_FUNC(avs_get_pitch_p, 1);
+    LOAD_AVS_FUNC(avs_get_read_ptr_p, 1);
+    LOAD_AVS_FUNC(avs_get_row_size_p, 1);
+    LOAD_AVS_FUNC(avs_is_yv24, 1);
+    LOAD_AVS_FUNC(avs_is_yv16, 1);
+    LOAD_AVS_FUNC(avs_is_yv411, 1);
+    LOAD_AVS_FUNC(avs_is_y8, 1);
 #endif
 #undef LOAD_AVS_FUNC
 
@@ -406,13 +406,14 @@ static int avisynth_open_file(AVFormatContext *s)
     avs->vi   = avs_library.avs_get_video_info(avs->clip);
 
 #ifdef USING_AVISYNTH
-    /* FFmpeg only supports AviSynth 2.6 on Windows. Since AvxSynth
-     * identifies itself as interface version 3 like 2.5.8, this
-     * needs to be special-cased. */
+    /* On Windows, FFmpeg supports AviSynth interface version 6 or higher.
+     * This includes AviSynth 2.6 RC1 or higher, and AviSynth+ r1718 or higher,
+     * and excludes 2.5 and the 2.6 alphas. Since AvxSynth identifies itself
+     * as interface version 3 like 2.5.8, this needs to be special-cased. */
 
-    if (avs_library.avs_get_version(avs->clip) == 3) {
+    if (avs_library.avs_get_version(avs->clip) < 6) {
         av_log(s, AV_LOG_ERROR,
-               "AviSynth 2.5.8 not supported. Please upgrade to 2.6.\n");
+               "AviSynth version is too old. Please upgrade to either AviSynth 2.6 >= RC1 or AviSynth+ >= r1718.\n");
         ret = AVERROR_UNKNOWN;
         goto fail;
     }

@@ -41,6 +41,12 @@ static const char *type_string(int type)
         return "<LINK>";
     case AVIO_ENTRY_SOCKET:
         return "<SOCKET>";
+    case AVIO_ENTRY_SERVER:
+        return "<SERVER>";
+    case AVIO_ENTRY_SHARE:
+        return "<SHARE>";
+    case AVIO_ENTRY_WORKGROUP:
+        return "<WORKGROUP>";
     case AVIO_ENTRY_UNKNOWN:
     default:
         break;
