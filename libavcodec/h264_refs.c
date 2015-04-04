@@ -681,7 +681,7 @@ int ff_h264_execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count)
          */
         if (h->short_ref_count && h->short_ref[0] == h->cur_pic_ptr) {
             /* Just mark the second field valid */
-            h->cur_pic_ptr->reference = PICT_FRAME;
+            h->cur_pic_ptr->reference |= h->picture_structure;
         } else if (h->cur_pic_ptr->long_ref) {
             av_log(h->avctx, AV_LOG_ERROR, "illegal short term reference "
                                            "assignment for second field "
