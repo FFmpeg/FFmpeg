@@ -1209,11 +1209,11 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
     if (first_mb_in_slice == 0) { // FIXME better field boundary detection
         if (h->current_slice) {
             if (h->cur_pic_ptr && FIELD_PICTURE(h) && h->first_field) {
-                ff_h264_field_end(h, sl, 1);
+                ff_h264_field_end(h, h->slice_ctx, 1);
                 h->current_slice = 0;
             } else if (h->cur_pic_ptr && !FIELD_PICTURE(h) && !h->first_field && h->nal_unit_type  == NAL_IDR_SLICE) {
                 av_log(h, AV_LOG_WARNING, "Broken frame packetizing\n");
-                ff_h264_field_end(h, sl, 1);
+                ff_h264_field_end(h, h->slice_ctx, 1);
                 h->current_slice = 0;
                 ff_thread_report_progress(&h->cur_pic_ptr->tf, INT_MAX, 0);
                 ff_thread_report_progress(&h->cur_pic_ptr->tf, INT_MAX, 1);
@@ -2287,7 +2287,7 @@ static void decode_finish_row(const H264Context *h, H264SliceContext *sl)
 
     ff_h264_draw_horiz_band(h, sl, top, height);
 
-    if (h->droppable || sl->er.error_occurred)
+    if (h->droppable || sl->h264->slice_ctx[0].er.error_occurred)
         return;
 
     ff_thread_report_progress(&h->cur_pic_ptr->tf, top + height - 1,
@@ -2302,7 +2302,7 @@ static void er_add_slice(H264SliceContext *sl,
         return;
 
     if (CONFIG_ERROR_RESILIENCE) {
-        ERContext *er = &sl->er;
+        ERContext *er = &sl->h264->slice_ctx[0].er;
 
         ff_er_add_slice(er, startx, starty, endx, endy, status);
     }
@@ -2330,13 +2330,13 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
                      avctx->codec_id != AV_CODEC_ID_H264 ||
                      (CONFIG_GRAY && (h->flags & CODEC_FLAG_GRAY));
 
-    if (!(h->avctx->active_thread_type & FF_THREAD_SLICE) && h->picture_structure == PICT_FRAME && sl->er.error_status_table) {
+    if (!(h->avctx->active_thread_type & FF_THREAD_SLICE) && h->picture_structure == PICT_FRAME && h->slice_ctx[0].er.error_status_table) {
         const int start_i  = av_clip(sl->resync_mb_x + sl->resync_mb_y * h->mb_width, 0, h->mb_num - 1);
         if (start_i) {
-            int prev_status = sl->er.error_status_table[sl->er.mb_index2xy[start_i - 1]];
+            int prev_status = h->slice_ctx[0].er.error_status_table[h->slice_ctx[0].er.mb_index2xy[start_i - 1]];
             prev_status &= ~ VP_START;
             if (prev_status != (ER_MV_END | ER_DC_END | ER_AC_END))
-                sl->er.error_occurred = 1;
+                h->slice_ctx[0].er.error_occurred = 1;
         }
     }
 
