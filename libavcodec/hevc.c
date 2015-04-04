@@ -280,23 +280,64 @@ static int decode_lt_rps(HEVCContext *s, LongTermRPS *rps, GetBitContext *gb)
     return 0;
 }
 
+static void export_stream_params(AVCodecContext *avctx,
+                                 const HEVCContext *s, const HEVCSPS *sps)
+{
+    const HEVCVPS *vps = (const HEVCVPS*)s->vps_list[sps->vps_id]->data;
+    unsigned int num = 0, den = 0;
+
+    avctx->pix_fmt             = sps->pix_fmt;
+    avctx->coded_width         = sps->width;
+    avctx->coded_height        = sps->height;
+    avctx->width               = sps->output_width;
+    avctx->height              = sps->output_height;
+    avctx->has_b_frames        = sps->temporal_layer[sps->max_sub_layers - 1].num_reorder_pics;
+    avctx->profile             = sps->ptl.general_ptl.profile_idc;
+    avctx->level               = sps->ptl.general_ptl.level_idc;
+
+    ff_set_sar(avctx, sps->vui.sar);
+
+    if (sps->vui.video_signal_type_present_flag)
+        avctx->color_range = sps->vui.video_full_range_flag ? AVCOL_RANGE_JPEG
+                                                            : AVCOL_RANGE_MPEG;
+    else
+        avctx->color_range = AVCOL_RANGE_MPEG;
+
+    if (sps->vui.colour_description_present_flag) {
+        avctx->color_primaries = sps->vui.colour_primaries;
+        avctx->color_trc       = sps->vui.transfer_characteristic;
+        avctx->colorspace      = sps->vui.matrix_coeffs;
+    } else {
+        avctx->color_primaries = AVCOL_PRI_UNSPECIFIED;
+        avctx->color_trc       = AVCOL_TRC_UNSPECIFIED;
+        avctx->colorspace      = AVCOL_SPC_UNSPECIFIED;
+    }
+
+    if (vps->vps_timing_info_present_flag) {
+        num = vps->vps_num_units_in_tick;
+        den = vps->vps_time_scale;
+    } else if (sps->vui.vui_timing_info_present_flag) {
+        num = sps->vui.vui_num_units_in_tick;
+        den = sps->vui.vui_time_scale;
+    }
+
+    if (num != 0 && den != 0)
+        av_reduce(&avctx->framerate.den, &avctx->framerate.num,
+                  num, den, 1 << 30);
+}
+
 static int set_sps(HEVCContext *s, const HEVCSPS *sps, enum AVPixelFormat pix_fmt)
 {
     #define HWACCEL_MAX (CONFIG_HEVC_DXVA2_HWACCEL)
     enum AVPixelFormat pix_fmts[HWACCEL_MAX + 2], *fmt = pix_fmts;
     int ret, i;
-    unsigned int num = 0, den = 0;
+
+    export_stream_params(s->avctx, s, sps);
 
     pic_arrays_free(s);
     ret = pic_arrays_init(s, sps);
     if (ret < 0)
         goto fail;
-
-    s->avctx->coded_width         = sps->width;
-    s->avctx->coded_height        = sps->height;
-    s->avctx->width               = sps->output_width;
-    s->avctx->height              = sps->output_height;
-    s->avctx->has_b_frames        = sps->temporal_layer[sps->max_sub_layers - 1].num_reorder_pics;
 
     if (sps->pix_fmt == AV_PIX_FMT_YUV420P || sps->pix_fmt == AV_PIX_FMT_YUVJ420P) {
 #if CONFIG_HEVC_DXVA2_HWACCEL
@@ -315,24 +356,6 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps, enum AVPixelFormat pix_fm
     }
     else {
         s->avctx->pix_fmt = pix_fmt;
-    }
-
-    ff_set_sar(s->avctx, sps->vui.sar);
-
-    if (sps->vui.video_signal_type_present_flag)
-        s->avctx->color_range = sps->vui.video_full_range_flag ? AVCOL_RANGE_JPEG
-                                                               : AVCOL_RANGE_MPEG;
-    else
-        s->avctx->color_range = AVCOL_RANGE_MPEG;
-
-    if (sps->vui.colour_description_present_flag) {
-        s->avctx->color_primaries = sps->vui.colour_primaries;
-        s->avctx->color_trc       = sps->vui.transfer_characteristic;
-        s->avctx->colorspace      = sps->vui.matrix_coeffs;
-    } else {
-        s->avctx->color_primaries = AVCOL_PRI_UNSPECIFIED;
-        s->avctx->color_trc       = AVCOL_TRC_UNSPECIFIED;
-        s->avctx->colorspace      = AVCOL_SPC_UNSPECIFIED;
     }
 
     ff_hevc_pred_init(&s->hpc,     sps->bit_depth);
@@ -362,18 +385,6 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps, enum AVPixelFormat pix_fm
 
     s->sps = sps;
     s->vps = (HEVCVPS*) s->vps_list[s->sps->vps_id]->data;
-
-    if (s->vps->vps_timing_info_present_flag) {
-        num = s->vps->vps_num_units_in_tick;
-        den = s->vps->vps_time_scale;
-    } else if (sps->vui.vui_timing_info_present_flag) {
-        num = sps->vui.vui_num_units_in_tick;
-        den = sps->vui.vui_time_scale;
-    }
-
-    if (num != 0 && den != 0)
-        av_reduce(&s->avctx->framerate.den, &s->avctx->framerate.num,
-                  num, den, 1 << 30);
 
     return 0;
 
@@ -432,9 +443,6 @@ static int hls_slice_header(HEVCContext *s)
         s->seq_decode = (s->seq_decode + 1) & 0xff;
         s->max_ra     = INT_MAX;
     }
-
-    s->avctx->profile = s->sps->ptl.general_ptl.profile_idc;
-    s->avctx->level   = s->sps->ptl.general_ptl.level_idc;
 
     sh->dependent_slice_segment_flag = 0;
     if (!sh->first_slice_in_pic_flag) {
@@ -3367,7 +3375,7 @@ static int hevc_decode_extradata(HEVCContext *s)
 {
     AVCodecContext *avctx = s->avctx;
     GetByteContext gb;
-    int ret;
+    int ret, i;
 
     bytestream2_init(&gb, avctx->extradata, avctx->extradata_size);
 
@@ -3424,6 +3432,16 @@ static int hevc_decode_extradata(HEVCContext *s)
         if (ret < 0)
             return ret;
     }
+
+    /* export stream parameters from the first SPS */
+    for (i = 0; i < FF_ARRAY_ELEMS(s->sps_list); i++) {
+        if (s->sps_list[i]) {
+            const HEVCSPS *sps = (const HEVCSPS*)s->sps_list[i]->data;
+            export_stream_params(s->avctx, s, sps);
+            break;
+        }
+    }
+
     return 0;
 }
 

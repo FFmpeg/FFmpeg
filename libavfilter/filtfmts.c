@@ -75,6 +75,7 @@ int main(int argc, char **argv)
     const char *filter_name;
     const char *filter_args = NULL;
     int i;
+    int ret = 0;
 
     av_log_set_level(AV_LOG_DEBUG);
 
@@ -115,11 +116,21 @@ int main(int argc, char **argv)
     /* create a link for each of the input pads */
     for (i = 0; i < filter_ctx->nb_inputs; i++) {
         AVFilterLink *link = av_mallocz(sizeof(AVFilterLink));
+        if (!link) {
+            fprintf(stderr, "Unable to allocate memory for filter input link\n");
+            ret = 1;
+            goto fail;
+        }
         link->type = avfilter_pad_get_type(filter_ctx->input_pads, i);
         filter_ctx->inputs[i] = link;
     }
     for (i = 0; i < filter_ctx->nb_outputs; i++) {
         AVFilterLink *link = av_mallocz(sizeof(AVFilterLink));
+        if (!link) {
+            fprintf(stderr, "Unable to allocate memory for filter output link\n");
+            ret = 1;
+            goto fail;
+        }
         link->type = avfilter_pad_get_type(filter_ctx->output_pads, i);
         filter_ctx->outputs[i] = link;
     }
@@ -131,8 +142,9 @@ int main(int argc, char **argv)
 
     print_formats(filter_ctx);
 
+fail:
     avfilter_free(filter_ctx);
     avfilter_graph_free(&graph_ctx);
     fflush(stdout);
-    return 0;
+    return ret;
 }

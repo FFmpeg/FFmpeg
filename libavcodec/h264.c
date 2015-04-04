@@ -702,6 +702,15 @@ av_cold int ff_h264_decode_init(AVCodecContext *avctx)
 
     ff_h264_flush_change(h);
 
+    if (h->enable_er < 0 && (avctx->active_thread_type & FF_THREAD_SLICE))
+        h->enable_er = 0;
+
+    if (h->enable_er && (avctx->active_thread_type & FF_THREAD_SLICE)) {
+        av_log(avctx, AV_LOG_WARNING,
+               "Error resilience with slice threads is enabled. It is unsafe and unsupported and may crash. "
+               "Use it at your own risk\n");
+    }
+
     return 0;
 }
 
@@ -1925,6 +1934,22 @@ static av_cold int h264_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
+#define OFFSET(x) offsetof(H264Context, x)
+#define VD AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM
+static const AVOption h264_options[] = {
+    {"is_avc", "is avc", offsetof(H264Context, is_avc), FF_OPT_TYPE_INT, {.i64 = 0}, 0, 1, 0},
+    {"nal_length_size", "nal_length_size", offsetof(H264Context, nal_length_size), FF_OPT_TYPE_INT, {.i64 = 0}, 0, 4, 0},
+    { "enable_er", "Enable error resilience on damaged frames (unsafe)", OFFSET(enable_er), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 1, VD },
+    { NULL },
+};
+
+static const AVClass h264_class = {
+    .class_name = "H264 Decoder",
+    .item_name  = av_default_item_name,
+    .option     = h264_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 static const AVProfile profiles[] = {
     { FF_PROFILE_H264_BASELINE,             "Baseline"              },
     { FF_PROFILE_H264_CONSTRAINED_BASELINE, "Constrained Baseline"  },
@@ -1940,19 +1965,6 @@ static const AVProfile profiles[] = {
     { FF_PROFILE_H264_HIGH_444_INTRA,       "High 4:4:4 Intra"      },
     { FF_PROFILE_H264_CAVLC_444,            "CAVLC 4:4:4"           },
     { FF_PROFILE_UNKNOWN },
-};
-
-static const AVOption h264_options[] = {
-    {"is_avc", "is avc", offsetof(H264Context, is_avc), FF_OPT_TYPE_INT, {.i64 = 0}, 0, 1, 0},
-    {"nal_length_size", "nal_length_size", offsetof(H264Context, nal_length_size), FF_OPT_TYPE_INT, {.i64 = 0}, 0, 4, 0},
-    {NULL}
-};
-
-static const AVClass h264_class = {
-    .class_name = "H264 Decoder",
-    .item_name  = av_default_item_name,
-    .option     = h264_options,
-    .version    = LIBAVUTIL_VERSION_INT,
 };
 
 AVCodec ff_h264_decoder = {

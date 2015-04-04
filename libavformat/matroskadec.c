@@ -2142,20 +2142,41 @@ static int matroska_read_header(AVFormatContext *s)
             av_dict_set(&st->metadata, "filename", attachments[j].filename, 0);
             av_dict_set(&st->metadata, "mimetype", attachments[j].mime, 0);
             st->codec->codec_id   = AV_CODEC_ID_NONE;
-            st->codec->codec_type = AVMEDIA_TYPE_ATTACHMENT;
-            if (ff_alloc_extradata(st->codec, attachments[j].bin.size))
-                break;
-            memcpy(st->codec->extradata, attachments[j].bin.data,
-                   attachments[j].bin.size);
 
-            for (i = 0; ff_mkv_mime_tags[i].id != AV_CODEC_ID_NONE; i++) {
-                if (!strncmp(ff_mkv_mime_tags[i].str, attachments[j].mime,
-                             strlen(ff_mkv_mime_tags[i].str))) {
-                    st->codec->codec_id = ff_mkv_mime_tags[i].id;
+            for (i = 0; ff_mkv_image_mime_tags[i].id != AV_CODEC_ID_NONE; i++) {
+                if (!strncmp(ff_mkv_image_mime_tags[i].str, attachments[j].mime,
+                             strlen(ff_mkv_image_mime_tags[i].str))) {
+                    st->codec->codec_id = ff_mkv_image_mime_tags[i].id;
                     break;
                 }
             }
-            attachments[j].stream = st;
+
+            if (st->codec->codec_id != AV_CODEC_ID_NONE) {
+                st->disposition      |= AV_DISPOSITION_ATTACHED_PIC;
+                st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
+
+                av_init_packet(&st->attached_pic);
+                if ((res = av_new_packet(&st->attached_pic, attachments[j].bin.size)) < 0)
+                    return res;
+                memcpy(st->attached_pic.data, attachments[j].bin.data, attachments[j].bin.size);
+                st->attached_pic.stream_index = st->index;
+                st->attached_pic.flags       |= AV_PKT_FLAG_KEY;
+            } else {
+                st->codec->codec_type = AVMEDIA_TYPE_ATTACHMENT;
+                if (ff_alloc_extradata(st->codec, attachments[j].bin.size))
+                    break;
+                memcpy(st->codec->extradata, attachments[j].bin.data,
+                    attachments[j].bin.size);
+
+                for (i = 0; ff_mkv_mime_tags[i].id != AV_CODEC_ID_NONE; i++) {
+                    if (!strncmp(ff_mkv_mime_tags[i].str, attachments[j].mime,
+                                strlen(ff_mkv_mime_tags[i].str))) {
+                        st->codec->codec_id = ff_mkv_mime_tags[i].id;
+                        break;
+                    }
+                }
+                attachments[j].stream = st;
+            }
         }
     }
 

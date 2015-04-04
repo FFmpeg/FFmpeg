@@ -2077,12 +2077,6 @@ static int decode_user_data(Mpeg4DecContext *ctx, GetBitContext *gb)
         ctx->divx_version = ver;
         ctx->divx_build   = build;
         s->divx_packed  = e == 3 && last == 'p';
-        if (s->divx_packed && !ctx->showed_packed_warning) {
-            av_log(s->avctx, AV_LOG_INFO, "Video uses a non-standard and "
-                   "wasteful way to store B-frames ('packed B-frames'). "
-                   "Consider using a tool like VirtualDub or avidemux to fix it.\n");
-            ctx->showed_packed_warning = 1;
-        }
     }
 
     /* libavcodec detection */
@@ -2667,6 +2661,12 @@ int ff_mpeg4_frame_end(AVCodecContext *avctx, const uint8_t *buf, int buf_size)
         }
 
         if (startcode_found) {
+            if (!ctx->showed_packed_warning) {
+                av_log(s->avctx, AV_LOG_INFO, "Video uses a non-standard and "
+                       "wasteful way to store B-frames ('packed B-frames'). "
+                       "Consider using a tool like VirtualDub or avidemux to fix it.\n");
+                ctx->showed_packed_warning = 1;
+            }
             av_fast_padded_malloc(&s->bitstream_buffer,
                            &s->allocated_bitstream_buffer_size,
                            buf_size - current_pos);

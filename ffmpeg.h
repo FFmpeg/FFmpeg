@@ -394,6 +394,7 @@ typedef struct OutputStream {
     AVFrame *filtered_frame;
     AVFrame *last_frame;
     int last_droped;
+    int last_nb0_frames[3];
 
     /* video only */
     AVRational frame_rate;

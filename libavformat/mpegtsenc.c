@@ -1356,7 +1356,10 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
         }
     }
 
-    if (ts_st->payload_size && ts_st->payload_size + size > ts->pes_payload_size) {
+    if (ts_st->payload_size && (ts_st->payload_size + size > ts->pes_payload_size ||
+        (dts != AV_NOPTS_VALUE && ts_st->payload_dts != AV_NOPTS_VALUE &&
+         av_compare_ts(dts - ts_st->payload_dts, st->time_base,
+                       s->max_delay, AV_TIME_BASE_Q) >= 0))) {
         mpegts_write_pes(s, st, ts_st->payload, ts_st->payload_size,
                          ts_st->payload_pts, ts_st->payload_dts,
                          ts_st->payload_flags & AV_PKT_FLAG_KEY);
