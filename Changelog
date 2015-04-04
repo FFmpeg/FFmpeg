@@ -15,6 +15,7 @@ version <next>:
 - basic APNG encoder and muxer
 - unpack DivX-style packed B-frames in MPEG-4 bitstream filter
 - WebM Live Chunk Muxer
+- nvenc level and tier options
 
 
 version 2.6:
