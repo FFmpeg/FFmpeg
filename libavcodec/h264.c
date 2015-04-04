@@ -1598,7 +1598,7 @@ again:
 
                     if (h->avctx->hwaccel &&
                         (ret = h->avctx->hwaccel->start_frame(h->avctx, buf, buf_size)) < 0)
-                        return ret;
+                        goto end;
                     if (CONFIG_H264_VDPAU_DECODER &&
                         h->avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU)
                         ff_vdpau_h264_picture_start(h);
@@ -1610,7 +1610,7 @@ again:
                                                            &buf[buf_index - consumed],
                                                            consumed);
                         if (ret < 0)
-                            return ret;
+                            goto end;
                     } else if (CONFIG_H264_VDPAU_DECODER &&
                                h->avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU) {
                         ff_vdpau_add_data_chunk(h->cur_pic_ptr->f.data[0],
