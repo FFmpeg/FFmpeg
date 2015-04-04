@@ -27,6 +27,7 @@
 
 #include <limits.h>
 
+#include "libavutil/atomic.h"
 #include "libavutil/internal.h"
 #include "avcodec.h"
 #include "error_resilience.h"
@@ -813,20 +814,20 @@ void ff_er_add_slice(ERContext *s, int startx, int starty,
     mask &= ~VP_START;
     if (status & (ER_AC_ERROR | ER_AC_END)) {
         mask           &= ~(ER_AC_ERROR | ER_AC_END);
-        s->error_count -= end_i - start_i + 1;
+        avpriv_atomic_int_add_and_fetch(&s->error_count, start_i - end_i - 1);
     }
     if (status & (ER_DC_ERROR | ER_DC_END)) {
         mask           &= ~(ER_DC_ERROR | ER_DC_END);
-        s->error_count -= end_i - start_i + 1;
+        avpriv_atomic_int_add_and_fetch(&s->error_count, start_i - end_i - 1);
     }
     if (status & (ER_MV_ERROR | ER_MV_END)) {
         mask           &= ~(ER_MV_ERROR | ER_MV_END);
-        s->error_count -= end_i - start_i + 1;
+        avpriv_atomic_int_add_and_fetch(&s->error_count, start_i - end_i - 1);
     }
 
     if (status & ER_MB_ERROR) {
         s->error_occurred = 1;
-        s->error_count    = INT_MAX;
+        avpriv_atomic_int_set(&s->error_count, INT_MAX);
     }
 
     if (mask == ~0x7F) {
@@ -839,7 +840,7 @@ void ff_er_add_slice(ERContext *s, int startx, int starty,
     }
 
     if (end_i == s->mb_num)
-        s->error_count = INT_MAX;
+        avpriv_atomic_int_set(&s->error_count, INT_MAX);
     else {
         s->error_status_table[end_xy] &= mask;
         s->error_status_table[end_xy] |= status;
@@ -854,7 +855,7 @@ void ff_er_add_slice(ERContext *s, int startx, int starty,
         prev_status &= ~ VP_START;
         if (prev_status != (ER_MV_END | ER_DC_END | ER_AC_END)) {
             s->error_occurred = 1;
-            s->error_count = INT_MAX;
+            avpriv_atomic_int_set(&s->error_count, INT_MAX);
         }
     }
 }
