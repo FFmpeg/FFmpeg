@@ -1206,11 +1206,21 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
     first_mb_in_slice = get_ue_golomb_long(&sl->gb);
 
     if (first_mb_in_slice == 0) { // FIXME better field boundary detection
-        if (h->current_slice && h->cur_pic_ptr && FIELD_PICTURE(h)) {
-            ff_h264_field_end(h, sl, 1);
+        if (h->current_slice) {
+            if (h->cur_pic_ptr && FIELD_PICTURE(h) && h->first_field) {
+                ff_h264_field_end(h, sl, 1);
+                h->current_slice = 0;
+            } else if (h->cur_pic_ptr && !FIELD_PICTURE(h) && !h->first_field && h->nal_unit_type  == NAL_IDR_SLICE) {
+                av_log(h, AV_LOG_WARNING, "Broken frame packetizing\n");
+                ff_h264_field_end(h, sl, 1);
+                h->current_slice = 0;
+                ff_thread_report_progress(&h->cur_pic_ptr->tf, INT_MAX, 0);
+                ff_thread_report_progress(&h->cur_pic_ptr->tf, INT_MAX, 1);
+                h->cur_pic_ptr = NULL;
+            } else
+                return AVERROR_INVALIDDATA;
         }
 
-        h->current_slice = 0;
         if (!h->first_field) {
             if (h->cur_pic_ptr && !h->droppable) {
                 ff_thread_report_progress(&h->cur_pic_ptr->tf, INT_MAX,
