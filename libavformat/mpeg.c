@@ -547,8 +547,13 @@ redo:
             codec_id = AV_CODEC_ID_ADPCM_ADX;
             // Auto-detect AC-3
             request_probe = 50;
+        } else if (m->imkh_cctv && startcode == 0x1c0) {
+            codec_id = AV_CODEC_ID_PCM_ALAW;
+            request_probe = 50;
         } else {
             codec_id = AV_CODEC_ID_MP2;
+            if (m->imkh_cctv)
+                request_probe = 25;
         }
     } else if (startcode >= 0x80 && startcode <= 0x87) {
         type     = AVMEDIA_TYPE_AUDIO;
@@ -591,7 +596,8 @@ skip:
     st->id                = startcode;
     st->codec->codec_type = type;
     st->codec->codec_id   = codec_id;
-    if (st->codec->codec_id == AV_CODEC_ID_PCM_MULAW) {
+    if (   st->codec->codec_id == AV_CODEC_ID_PCM_MULAW
+        || st->codec->codec_id == AV_CODEC_ID_PCM_ALAW) {
         st->codec->channels = 1;
         st->codec->channel_layout = AV_CH_LAYOUT_MONO;
         st->codec->sample_rate = 8000;

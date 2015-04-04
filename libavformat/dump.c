@@ -118,7 +118,9 @@ void av_pkt_dump_log2(void *avcl, int level, const AVPacket *pkt, int dump_paylo
 static void print_fps(double d, const char *postfix)
 {
     uint64_t v = lrintf(d * 100);
-    if (v % 100)
+    if (!v)
+        av_log(NULL, AV_LOG_INFO, "%1.4f %s", d, postfix);
+    else if (v % 100)
         av_log(NULL, AV_LOG_INFO, "%3.2f %s", d, postfix);
     else if (v % (100 * 1000))
         av_log(NULL, AV_LOG_INFO, "%1.0f %s", d, postfix);
