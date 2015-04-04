@@ -509,8 +509,11 @@ void ff_h264_remove_all_refs(H264Context *h)
     h->short_ref_count = 0;
 
     memset(h->default_ref_list, 0, sizeof(h->default_ref_list));
-    for (i = 0; i < h->nb_slice_ctx; i++)
-        memset(h->slice_ctx[i].ref_list, 0, sizeof(h->slice_ctx[i].ref_list));
+    for (i = 0; i < h->nb_slice_ctx; i++) {
+        H264SliceContext *sl = &h->slice_ctx[i];
+        sl->list_count = sl->ref_count[0] = sl->ref_count[1] = 0;
+        memset(sl->ref_list, 0, sizeof(sl->ref_list));
+    }
 }
 
 /**
