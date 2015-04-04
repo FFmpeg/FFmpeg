@@ -176,6 +176,7 @@ static void await_references(const H264Context *h, H264SliceContext *sl)
                 nrefs[list]--;
 
                 if (!FIELD_PICTURE(h) && ref_field_picture) { // frame referencing two fields
+                    av_assert2((ref_pic->parent->reference & 3) == 3);
                     ff_thread_await_progress(&ref_pic->parent->tf,
                                              FFMIN((row >> 1) - !(row & 1),
                                                    pic_height - 1),
