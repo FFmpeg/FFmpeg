@@ -117,6 +117,37 @@ int av_parse_time(int64_t *timeval, const char *timestr, int duration);
 int av_find_info_tag(char *arg, int arg_size, const char *tag1, const char *info);
 
 /**
+ * Simplified version of strptime
+ *
+ * Parse the input string p according to the format string fmt and
+ * store its results in the structure dt.
+ *
+ * Neither text and locale's alternative representation are supported.
+ *
+ * The supported input field descriptors are listed below.
+ * - %H: the hour as a decimal number, using a 24-hour clock, in the
+ *   range '00' through '23'
+ * - %M: the minute as a decimal number, using a 24-hour clock, in the
+ *   range '00' through '59'
+ * - %S: the second as a decimal number, using a 24-hour clock, in the
+ *   range '00' through '59'
+ * - %Y: the year as a decimal number, using the Gregorian calendar
+ * - %m: the month as a decimal number, in the range '1' through '12'
+ * - %d: the day of the month as a decimal number, in the range '1'
+ *   through '31'
+ * - %T: alias for '%H:%M:%S'
+ * - %%: a literal '%'
+ *
+ * @return a pointer to the first character not processed in this function
+ *         call. In case the input string contains more characters than
+ *         required by the format string the return value points right after
+ *         the last consumed input character. In case the whole input string
+ *         is consumed the return value points to the null byte at the end of
+ *         the string. On failure NULL is returned.
+ */
+const char *av_small_strptime(const char *p, const char *fmt, struct tm *dt);
+
+/**
  * Convert the decomposed UTC time in tm to a time_t value.
  */
 time_t av_timegm(struct tm *tm);

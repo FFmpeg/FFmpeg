@@ -1487,7 +1487,6 @@ SYSTEM_FUNCS="
     setrlimit
     Sleep
     strerror_r
-    strptime
     sysconf
     sysctl
     usleep
@@ -4133,7 +4132,6 @@ check_func_headers time.h nanosleep || { check_func_headers time.h nanosleep -lr
 check_func  sched_getaffinity
 check_func  setrlimit
 check_func  strerror_r
-check_func  strptime
 check_func  sysconf
 check_func  sysctl
 check_func  usleep

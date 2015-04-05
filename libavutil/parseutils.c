@@ -400,7 +400,7 @@ static int date_get_num(const char **pp,
     return val;
 }
 
-static const char *small_strptime(const char *p, const char *fmt, struct tm *dt)
+const char *av_small_strptime(const char *p, const char *fmt, struct tm *dt)
 {
     int c, val;
 
@@ -453,7 +453,7 @@ static const char *small_strptime(const char *p, const char *fmt, struct tm *dt)
             dt->tm_mday = val;
             break;
         case 'T':
-            p = small_strptime(p, "%H:%M:%S", dt);
+            p = av_small_strptime(p, "%H:%M:%S", dt);
             if (!p)
                 return NULL;
             break;
@@ -526,7 +526,7 @@ int av_parse_time(int64_t *timeval, const char *timestr, int duration)
 
         /* parse the year-month-day part */
         for (i = 0; i < FF_ARRAY_ELEMS(date_fmt); i++) {
-            q = small_strptime(p, date_fmt[i], &dt);
+            q = av_small_strptime(p, date_fmt[i], &dt);
             if (q) {
                 break;
             }
@@ -550,7 +550,7 @@ int av_parse_time(int64_t *timeval, const char *timestr, int duration)
 
         /* parse the hour-minute-second part */
         for (i = 0; i < FF_ARRAY_ELEMS(time_fmt); i++) {
-            q = small_strptime(p, time_fmt[i], &dt);
+            q = av_small_strptime(p, time_fmt[i], &dt);
             if (q) {
                 break;
             }
@@ -562,7 +562,7 @@ int av_parse_time(int64_t *timeval, const char *timestr, int duration)
             ++p;
         }
         /* parse timestr as HH:MM:SS */
-        q = small_strptime(p, time_fmt[0], &dt);
+        q = av_small_strptime(p, time_fmt[0], &dt);
         if (!q) {
             char *o;
             /* parse timestr as S+ */
