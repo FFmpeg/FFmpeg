@@ -1210,7 +1210,17 @@ is the @option{global_header} flag.
 
 WebM DASH Manifest muxer.
 
-This muxer implements the WebM DASH Manifest specification to generate the DASH manifest XML.
+This muxer implements the WebM DASH Manifest specification to generate the DASH
+manifest XML. It also supports manifest generation for DASH live streams.
+
+For more information see:
+
+@itemize @bullet
+@item
+WebM DASH Specification: @url{https://sites.google.com/a/webmproject.org/wiki/adaptive-streaming/webm-dash-specification}
+@item
+ISO DASH Specification: @url{http://standards.iso.org/ittf/PubliclyAvailableStandards/c065274_ISO_IEC_23009-1_2014.zip}
+@end itemize
 
 @subsection Options
 
@@ -1221,6 +1231,28 @@ This muxer supports the following options:
 This option has the following syntax: "id=x,streams=a,b,c id=y,streams=d,e" where x and y are the
 unique identifiers of the adaptation sets and a,b,c,d and e are the indices of the corresponding
 audio and video streams. Any number of adaptation sets can be added using this option.
+
+@item live
+Set this to 1 to create a live stream DASH Manifest. Default: 0.
+
+@item chunk_start_index
+Start index of the first chunk. This will go in the @samp{startNumber} attribute
+of the @samp{SegmentTemplate} element in the manifest. Default: 0.
+
+@item chunk_duration_ms
+Duration of each chunk in milliseconds. This will go in the @samp{duration}
+attribute of the @samp{SegmentTemplate} element in the manifest. Default: 1000.
+
+@item utc_timing_url
+URL of the page that will return the UTC timestamp in ISO format. This will go
+in the @samp{value} attribute of the @samp{UTCTiming} element in the manifest.
+Default: None.
+
+@item time_shift_buffer_depth
+Smallest time (in seconds) shifting buffer for which any Representation is
+guaranteed to be available. This will go in the @samp{timeShiftBufferDepth}
+attribute of the @samp{MPD} element. Default: 60.
+
 @end table
 
 @subsection Example

@@ -2664,7 +2664,7 @@ int ff_mpeg4_frame_end(AVCodecContext *avctx, const uint8_t *buf, int buf_size)
             if (!ctx->showed_packed_warning) {
                 av_log(s->avctx, AV_LOG_INFO, "Video uses a non-standard and "
                        "wasteful way to store B-frames ('packed B-frames'). "
-                       "Consider using a tool like VirtualDub or avidemux to fix it.\n");
+                       "Consider using the mpeg4_unpack_bframes bitstream filter to fix it.\n");
                 ctx->showed_packed_warning = 1;
             }
             av_fast_padded_malloc(&s->bitstream_buffer,

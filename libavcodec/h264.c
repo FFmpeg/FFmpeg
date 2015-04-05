@@ -1548,8 +1548,14 @@ again:
                     ret = -1;
                     goto end;
                 }
-                if(!idr_cleared)
+                if(!idr_cleared) {
+                    if (h->current_slice && (avctx->active_thread_type & FF_THREAD_SLICE)) {
+                        av_log(h, AV_LOG_ERROR, "invalid mixed IDR / non IDR frames cannot be decoded in slice multithreading mode\n");
+                        ret = AVERROR_INVALIDDATA;
+                        goto end;
+                    }
                     idr(h); // FIXME ensure we don't lose some frames if there is reordering
+                }
                 idr_cleared = 1;
                 h->has_recovery_point = 1;
             case NAL_SLICE:
@@ -1598,7 +1604,7 @@ again:
 
                     if (h->avctx->hwaccel &&
                         (ret = h->avctx->hwaccel->start_frame(h->avctx, buf, buf_size)) < 0)
-                        return ret;
+                        goto end;
                     if (CONFIG_H264_VDPAU_DECODER &&
                         h->avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU)
                         ff_vdpau_h264_picture_start(h);
@@ -1610,7 +1616,7 @@ again:
                                                            &buf[buf_index - consumed],
                                                            consumed);
                         if (ret < 0)
-                            return ret;
+                            goto end;
                     } else if (CONFIG_H264_VDPAU_DECODER &&
                                h->avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU) {
                         ff_vdpau_add_data_chunk(h->cur_pic_ptr->f.data[0],

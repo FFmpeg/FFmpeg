@@ -69,8 +69,8 @@ typedef struct {
     double end_scale;
     double end_pts;
     double bailout;
-    enum Outer outer;
-    enum Inner inner;
+    int outer;
+    int inner;
     int cache_allocated;
     int cache_used;
     Point *point_cache;

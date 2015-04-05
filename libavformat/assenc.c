@@ -31,7 +31,7 @@ typedef struct DialogueLine {
     struct DialogueLine *prev, *next;
 } DialogueLine;
 
-typedef struct ASSContext{
+typedef struct ASSContext {
     const AVClass *class;
     int write_ts; // 0: ssa (timing in payload), 1: ass (matroska like)
     int expected_readorder;
@@ -40,12 +40,12 @@ typedef struct ASSContext{
     int cache_size;
     int ssa_mode;
     int ignore_readorder;
-}ASSContext;
+} ASSContext;
 
 static int write_header(AVFormatContext *s)
 {
     ASSContext *ass = s->priv_data;
-    AVCodecContext *avctx= s->streams[0]->codec;
+    AVCodecContext *avctx = s->streams[0]->codec;
 
     if (s->nb_streams != 1 || (avctx->codec_id != AV_CODEC_ID_SSA &&
                                avctx->codec_id != AV_CODEC_ID_ASS)) {

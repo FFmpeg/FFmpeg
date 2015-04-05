@@ -40,6 +40,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/lzo.h"
 #include "libavutil/mathematics.h"
+#include "libavutil/opt.h"
 #include "libavutil/time_internal.h"
 
 #include "libavcodec/bytestream.h"
@@ -260,6 +261,7 @@ typedef struct MatroskaLevel1Element {
 } MatroskaLevel1Element;
 
 typedef struct MatroskaDemuxContext {
+    const AVClass *class;
     AVFormatContext *ctx;
 
     /* EBML stuff */
@@ -307,6 +309,9 @@ typedef struct MatroskaDemuxContext {
 
     /* File has SSA subtitles which prevent incremental cluster parsing. */
     int contains_ssa;
+
+    /* WebM DASH Manifest live flag/ */
+    int is_live;
 } MatroskaDemuxContext;
 
 typedef struct MatroskaBlock {
@@ -698,7 +703,7 @@ static int ebml_level_end(MatroskaDemuxContext *matroska)
             return 1;
         }
     }
-    return 0;
+    return (matroska->is_live && matroska->ctx->pb->eof_reached) ? 1 : 0;
 }
 
 /*
@@ -949,8 +954,11 @@ static int ebml_parse(MatroskaDemuxContext *matroska, EbmlSyntax *syntax,
     if (!matroska->current_id) {
         uint64_t id;
         int res = ebml_read_num(matroska, matroska->ctx->pb, 4, &id);
-        if (res < 0)
-            return res;
+        if (res < 0) {
+            // in live mode, finish parsing if EOF is reached.
+            return (matroska->is_live && matroska->ctx->pb->eof_reached &&
+                    res == AVERROR_EOF) ? 1 : res;
+        }
         matroska->current_id = id | 1 << 7 * res;
     }
     return ebml_parse_id(matroska, syntax, matroska->current_id, data);
@@ -3417,32 +3425,46 @@ static int webm_dash_manifest_read_header(AVFormatContext *s)
         return -1;
     }
 
-    // initialization range
-    // 5 is the offset of Cluster ID.
-    av_dict_set_int(&s->streams[0]->metadata, INITIALIZATION_RANGE, avio_tell(s->pb) - 5, 0);
+    if (!matroska->is_live) {
+        buf = av_asprintf("%g", matroska->duration);
+        if (!buf) return AVERROR(ENOMEM);
+        av_dict_set(&s->streams[0]->metadata, DURATION, buf, 0);
+        av_free(buf);
+
+        // initialization range
+        // 5 is the offset of Cluster ID.
+        av_dict_set_int(&s->streams[0]->metadata, INITIALIZATION_RANGE, avio_tell(s->pb) - 5, 0);
+    }
 
     // basename of the file
     buf = strrchr(s->filename, '/');
     av_dict_set(&s->streams[0]->metadata, FILENAME, buf ? ++buf : s->filename, 0);
-
-    // duration
-    buf = av_asprintf("%g", matroska->duration);
-    if (!buf) return AVERROR(ENOMEM);
-    av_dict_set(&s->streams[0]->metadata, DURATION, buf, 0);
-    av_free(buf);
 
     // track number
     tracks = matroska->tracks.elem;
     av_dict_set_int(&s->streams[0]->metadata, TRACK_NUMBER, tracks[0].num, 0);
 
     // parse the cues and populate Cue related fields
-    return webm_dash_manifest_cues(s);
+    return matroska->is_live ? 0 : webm_dash_manifest_cues(s);
 }
 
 static int webm_dash_manifest_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     return AVERROR_EOF;
 }
+
+#define OFFSET(x) offsetof(MatroskaDemuxContext, x)
+static const AVOption options[] = {
+    { "live", "flag indicating that the input is a live file that only has the headers.", OFFSET(is_live), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, AV_OPT_FLAG_DECODING_PARAM },
+    { NULL },
+};
+
+static const AVClass webm_dash_class = {
+    .class_name = "WebM DASH Manifest demuxer",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
 
 AVInputFormat ff_matroska_demuxer = {
     .name           = "matroska,webm",
@@ -3464,4 +3486,5 @@ AVInputFormat ff_webm_dash_manifest_demuxer = {
     .read_header    = webm_dash_manifest_read_header,
     .read_packet    = webm_dash_manifest_read_packet,
     .read_close     = matroska_read_close,
+    .priv_class     = &webm_dash_class,
 };

@@ -96,6 +96,7 @@ typedef struct HTTPContext {
     int send_expect_100;
     char *method;
     int reconnect;
+    int listen;
 } HTTPContext;
 
 #define OFFSET(x) offsetof(HTTPContext, x)
@@ -127,6 +128,7 @@ static const AVOption options[] = {
     { "end_offset", "try to limit the request to bytes preceding this offset", OFFSET(end_off), AV_OPT_TYPE_INT64, { .i64 = 0 }, 0, INT64_MAX, D },
     { "method", "Override the HTTP method", OFFSET(method), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, E },
     { "reconnect", "auto reconnect after disconnect before EOF", OFFSET(reconnect), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, D },
+    { "listen", "listen on HTTP", OFFSET(listen), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, E },
     { NULL }
 };
 
@@ -296,6 +298,31 @@ int ff_http_averror(int status_code, int default_averror)
         return default_averror;
 }
 
+static int http_listen(URLContext *h, const char *uri, int flags,
+                       AVDictionary **options) {
+    HTTPContext *s = h->priv_data;
+    int ret;
+    static const char header[] = "HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nTransfer-Encoding: chunked\r\n\r\n";
+    char hostname[1024];
+    char lower_url[100];
+    int port;
+    av_url_split(NULL, 0, NULL, 0, hostname, sizeof(hostname), &port,
+                 NULL, 0, uri);
+    ff_url_join(lower_url, sizeof(lower_url), "tcp", NULL, hostname, port,
+                NULL);
+    av_dict_set(options, "listen", "1", 0);
+    if (ret = ffurl_open(&s->hd, lower_url, AVIO_FLAG_READ_WRITE,
+                         &h->interrupt_callback, options) < 0)
+        goto fail;
+    if (ret = ffurl_write(s->hd, header, strlen(header)) < 0)
+        goto fail;
+    return 0;
+
+fail:
+    av_dict_free(&s->chained_options);
+    return ret;
+}
+
 static int http_open(URLContext *h, const char *uri, int flags,
                      AVDictionary **options)
 {
@@ -321,6 +348,9 @@ static int http_open(URLContext *h, const char *uri, int flags,
                    "No trailing CRLF found in HTTP header.\n");
     }
 
+    if (s->listen) {
+        return http_listen(h, uri, flags, options);
+    }
     ret = http_open_cnx(h, options);
     if (ret < 0)
         av_dict_free(&s->chained_options);

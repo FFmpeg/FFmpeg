@@ -139,6 +139,26 @@ ffmpeg -i frame_%d.jpg -c:v copy rotated.avi
 
 @section mp3_header_decompress
 
+@section mpeg4_unpack_bframes
+
+Unpack DivX-style packed B-frames.
+
+DivX-style packed B-frames are not valid MPEG-4 and were only a
+workaround for the broken Video for Windows subsystem.
+They use more space, can cause minor AV sync issues, require more
+CPU power to decode (unless the player has some decoded picture queue
+to compensate the 2,0,2,0 frame per packet style) and cause
+trouble if copied into a standard container like mp4 or mpeg-ps/ts,
+because MPEG-4 decoders may not be able to decode them, since they are
+not valid MPEG-4.
+
+For example to fix an AVI file containing an MPEG-4 stream with
+DivX-style packed B-frames using @command{ffmpeg}, you can use the command:
+
+@example
+ffmpeg -i INPUT.avi -codec copy -bsf:v mpeg4_unpack_bframes OUTPUT.avi
+@end example
+
 @section noise
 
 Damages the contents of packets without damaging the container. Can be
