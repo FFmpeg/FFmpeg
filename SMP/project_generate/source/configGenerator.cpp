@@ -379,7 +379,7 @@ bool configGenerator::changeConfig( const string & stOption )
             //Find before the =
             string sList = sOption.substr( 0, uiStartPos );
             //The actual element name is suffixed by list name (all after the =)
-            sOption += "_" + sOption.substr( uiStartPos+1 );;
+            sOption = sOption.substr( uiStartPos + 1 ) + "_" + sList;
             //Get the config element
             ValuesList::iterator vitOption = getConfigOption( sOption );
             if( vitOption == m_vConfigValues.end( ) )
@@ -398,10 +398,11 @@ bool configGenerator::changeConfig( const string & stOption )
             if( vitComponent != vList.end() )
             {
                 //This is a component
-                sOption.resize( sOption.length()-1 ); //Need to remove the s from end
+                string sOption2 = sOption.substr( 0, sOption.length()-1 ); //Need to remove the s from end
                 //Get the specific list
                 vList.resize( 0 );
-                getConfigList( sOption+"_LIST", vList );
+                transform( sOption2.begin( ), sOption2.end( ), sOption2.begin( ), ::toupper );
+                getConfigList( sOption2 + "_LIST", vList );
                 for( vitComponent = vList.begin(); vitComponent<vList.end(); vitComponent++ )
                 {
                     toggleConfigValue( *vitComponent, bEnable );
