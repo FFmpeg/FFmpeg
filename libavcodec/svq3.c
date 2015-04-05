@@ -898,6 +898,8 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
     ff_h264_pred_init(&h->hpc, h->avctx->codec_id, 8, 1);
     ff_videodsp_init(&h->vdsp, 8);
     h->sps.bit_depth_luma = avctx->bits_per_raw_sample = 8;
+    memset(h->pps.scaling_matrix4, 16, 6 * 16 * sizeof(uint8_t));
+    memset(h->pps.scaling_matrix8, 16, 2 * 64 * sizeof(uint8_t));
 
     ff_hpeldsp_init(&s->hdsp, avctx->flags);
     ff_tpeldsp_init(&s->tdsp);
