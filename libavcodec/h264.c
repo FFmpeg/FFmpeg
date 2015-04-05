@@ -598,7 +598,7 @@ static int h264_init_context(AVCodecContext *avctx, H264Context *h)
     h->recovery_frame        = -1;
     h->frame_recovered       = 0;
 
-    h->outputed_poc = h->next_outputed_poc = INT_MIN;
+    h->next_outputed_poc = INT_MIN;
     for (i = 0; i < MAX_DELAYED_PIC_COUNT; i++)
         h->last_pocs[i] = INT_MIN;
 
@@ -1047,7 +1047,7 @@ void ff_h264_flush_change(H264Context *h)
     int i;
     for (i = 0; i < MAX_DELAYED_PIC_COUNT; i++)
         h->last_pocs[i] = INT_MIN;
-    h->outputed_poc          = h->next_outputed_poc = INT_MIN;
+    h->next_outputed_poc = INT_MIN;
     h->prev_interlaced_frame = 1;
     idr(h);
     if (h->cur_pic_ptr)

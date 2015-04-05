@@ -583,7 +583,6 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
     }
     h->prev_frame_num_offset = h->frame_num_offset;
     h->prev_frame_num        = h->frame_num;
-    h->outputed_poc          = h->next_outputed_poc;
 
     h->recovery_frame        = h1->recovery_frame;
     h->frame_recovered       = h1->frame_recovered;
