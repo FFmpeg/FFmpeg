@@ -369,6 +369,7 @@ void configGenerator::buildReservedValues( vector<string> & vReservedItems )
     vReservedItems.push_back( "mm_empty" );
     vReservedItems.push_back( "ebp_available" );
     vReservedItems.push_back( "ebx_available" );
+    vReservedItems.push_back( "debug" );
 }
 
 void configGenerator::buildAdditionalDependencies( DependencyList & mAdditionalDependencies )
