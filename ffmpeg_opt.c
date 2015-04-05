@@ -1977,8 +1977,8 @@ loop_end:
         ost->stream_copy               = 0;
         ost->attachment_filename       = o->attachments[i];
         ost->finished                  = 1;
-        ost->enc_ctx->extradata      = attachment;
-        ost->enc_ctx->extradata_size = len;
+        ost->st->codec->extradata      = attachment;
+        ost->st->codec->extradata_size = len;
 
         p = strrchr(o->attachments[i], '/');
         av_dict_set(&ost->st->metadata, "filename", (p && *p) ? p + 1 : o->attachments[i], AV_DICT_DONT_OVERWRITE);
