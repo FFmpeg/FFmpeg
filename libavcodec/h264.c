@@ -619,8 +619,6 @@ av_cold int ff_h264_decode_init(AVCodecContext *avctx)
     h->bit_depth_luma    = 8;
     h->chroma_format_idc = 1;
 
-    h->cur_chroma_format_idc = 1;
-
     ff_h264dsp_init(&h->h264dsp, 8, 1);
     av_assert0(h->sps.bit_depth_chroma == 0);
     ff_h264chroma_init(&h->h264chroma, h->sps.bit_depth_chroma);
@@ -632,6 +630,7 @@ av_cold int ff_h264_decode_init(AVCodecContext *avctx)
 
     /* needed so that IDCT permutation is known early */
     ff_videodsp_init(&h->vdsp, 8);
+    h->cur_chroma_format_idc = -1;
 
     memset(h->pps.scaling_matrix4, 16, 6 * 16 * sizeof(uint8_t));
     memset(h->pps.scaling_matrix8, 16, 2 * 64 * sizeof(uint8_t));
