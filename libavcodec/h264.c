@@ -659,7 +659,6 @@ av_cold int ff_h264_decode_init(AVCodecContext *avctx)
         return ret;
 
     /* set defaults */
-    // s->decode_mb = ff_h263_decode_mb;
     if (!avctx->has_b_frames)
         h->low_delay = 1;
 
