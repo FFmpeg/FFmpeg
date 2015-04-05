@@ -2237,6 +2237,9 @@
     <ClCompile Include="..\libavcodec\mjpega_dump_header_bsf.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\mpeg4_unpack_bframes_bsf.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\movsub_bsf.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>

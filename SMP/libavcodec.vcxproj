@@ -1504,6 +1504,8 @@
     </ClCompile>
     <ClCompile Include="..\libavcodec\mjpega_dump_header_bsf.c">
     </ClCompile>
+    <ClCompile Include="..\libavcodec\mpeg4_unpack_bframes_bsf.c">
+    </ClCompile>
     <ClCompile Include="..\libavcodec\movsub_bsf.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\mp3_header_decompress_bsf.c">
