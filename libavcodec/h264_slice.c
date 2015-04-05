@@ -454,6 +454,7 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
 
     if (!inited) {
         H264SliceContext *orig_slice_ctx = h->slice_ctx;
+        H264Picture *orig_DPB = h->DPB;
 
         for (i = 0; i < MAX_SPS_COUNT; i++)
             av_freep(h->sps_buffers + i);
@@ -471,6 +472,7 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
         h->cur_pic.tf.f = &h->cur_pic.f;
 
         h->slice_ctx = orig_slice_ctx;
+        h->DPB       = orig_DPB;
 
         memset(&h->slice_ctx[0].er,         0, sizeof(h->slice_ctx[0].er));
         memset(&h->slice_ctx[0].mb,         0, sizeof(h->slice_ctx[0].mb));
@@ -478,7 +480,6 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
         memset(&h->slice_ctx[0].mb_padding, 0, sizeof(h->slice_ctx[0].mb_padding));
 
         h->avctx             = dst;
-        h->DPB               = NULL;
         h->qscale_table_pool = NULL;
         h->mb_type_pool      = NULL;
         h->ref_index_pool    = NULL;

@@ -355,14 +355,6 @@ void ff_h264_free_tables(H264Context *h, int free_rbsp)
     av_buffer_pool_uninit(&h->motion_val_pool);
     av_buffer_pool_uninit(&h->ref_index_pool);
 
-    if (free_rbsp && h->DPB) {
-        for (i = 0; i < H264_MAX_PICTURE_COUNT; i++)
-            ff_h264_unref_picture(h, &h->DPB[i]);
-        av_freep(&h->DPB);
-    }
-
-    h->cur_pic_ptr = NULL;
-
     for (i = 0; i < h->nb_slice_ctx; i++) {
         H264SliceContext *sl = &h->slice_ctx[i];
 
@@ -392,7 +384,7 @@ int ff_h264_alloc_tables(H264Context *h)
 {
     const int big_mb_num = h->mb_stride * (h->mb_height + 1);
     const int row_mb_num = h->mb_stride * 2 * h->avctx->thread_count;
-    int x, y, i;
+    int x, y;
 
     FF_ALLOCZ_OR_GOTO(h->avctx, h->intra4x4_pred_mode,
                       row_mb_num * 8 * sizeof(uint8_t), fail)
@@ -437,15 +429,6 @@ int ff_h264_alloc_tables(H264Context *h)
 
     if (!h->dequant4_coeff[0])
         h264_init_dequant_tables(h);
-
-    if (!h->DPB) {
-        h->DPB = av_mallocz_array(H264_MAX_PICTURE_COUNT, sizeof(*h->DPB));
-        if (!h->DPB)
-            goto fail;
-        for (i = 0; i < H264_MAX_PICTURE_COUNT; i++)
-            av_frame_unref(&h->DPB[i].f);
-        av_frame_unref(&h->cur_pic.f);
-    }
 
     return 0;
 
@@ -612,6 +595,13 @@ static int h264_init_context(AVCodecContext *avctx, H264Context *h)
         h->nb_slice_ctx = 0;
         return AVERROR(ENOMEM);
     }
+
+    h->DPB = av_mallocz_array(H264_MAX_PICTURE_COUNT, sizeof(*h->DPB));
+    if (!h->DPB)
+        return AVERROR(ENOMEM);
+    for (i = 0; i < H264_MAX_PICTURE_COUNT; i++)
+        av_frame_unref(&h->DPB[i].f);
+    av_frame_unref(&h->cur_pic.f);
 
     for (i = 0; i < h->nb_slice_ctx; i++)
         h->slice_ctx[i].h264 = h;
@@ -1755,6 +1745,14 @@ av_cold void ff_h264_free_context(H264Context *h)
     int i;
 
     ff_h264_free_tables(h, 1); // FIXME cleanup init stuff perhaps
+
+    if (h->DPB) {
+        for (i = 0; i < H264_MAX_PICTURE_COUNT; i++)
+            ff_h264_unref_picture(h, &h->DPB[i]);
+        av_freep(&h->DPB);
+    }
+
+    h->cur_pic_ptr = NULL;
 
     av_freep(&h->slice_ctx);
     h->nb_slice_ctx = 0;
