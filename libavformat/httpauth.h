@@ -56,7 +56,7 @@ typedef struct HTTPAuthState {
     /**
      * The currently chosen auth type.
      */
-    HTTPAuthType auth_type;
+    int auth_type;
     /**
      * Authentication realm
      */
