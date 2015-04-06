@@ -488,6 +488,7 @@ typedef struct H264Context {
     int mb_x, mb_y;
     int resync_mb_x;
     int resync_mb_y;
+    int mb_index_end;
     int mb_skip_run;
     int mb_height, mb_width;
     int mb_stride;
