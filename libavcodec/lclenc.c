@@ -42,6 +42,7 @@
 #include <stdlib.h>
 
 #include "avcodec.h"
+#include "internal.h"
 #include "lcl.h"
 #include "libavutil/internal.h"
 #include "libavutil/mem.h"
@@ -197,4 +198,6 @@ AVCodec ff_zlib_encoder = {
     .encode2        = encode_frame,
     .close          = encode_end,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_BGR24, AV_PIX_FMT_NONE },
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |
+                      FF_CODEC_CAP_INIT_CLEANUP,
 };
