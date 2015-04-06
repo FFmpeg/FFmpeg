@@ -29,6 +29,7 @@
 #include "asv.h"
 #include "avcodec.h"
 #include "fdctdsp.h"
+#include "internal.h"
 #include "mathops.h"
 #include "mpeg12data.h"
 
@@ -329,6 +330,8 @@ AVCodec ff_asv1_encoder = {
     .close          = asv_encode_close,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV420P,
                                                      AV_PIX_FMT_NONE },
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |
+                      FF_CODEC_CAP_INIT_CLEANUP,
 };
 #endif
 
@@ -344,5 +347,7 @@ AVCodec ff_asv2_encoder = {
     .close          = asv_encode_close,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV420P,
                                                      AV_PIX_FMT_NONE },
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |
+                      FF_CODEC_CAP_INIT_CLEANUP,
 };
 #endif
