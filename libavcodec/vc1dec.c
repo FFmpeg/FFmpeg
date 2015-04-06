@@ -483,6 +483,9 @@ static av_cold int vc1_decode_init(AVCodecContext *avctx)
         }
 
         buf2  = av_mallocz(avctx->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
+        if (!buf2)
+            return AVERROR(ENOMEM);
+
         start = find_next_marker(start, end); // in WVC1 extradata first byte is its size, but can be 0 in mkv
         next  = start;
         for (; next < end; start = next) {
