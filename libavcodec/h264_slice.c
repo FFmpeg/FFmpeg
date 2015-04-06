@@ -2349,8 +2349,17 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
 
         for (;;) {
             // START_TIMER
-            int ret = ff_h264_decode_mb_cabac(h, sl);
-            int eos;
+            int ret, eos;
+
+            if (sl->mb_x + sl->mb_y * h->mb_width >= sl->mb_index_end) {
+                av_log(h->avctx, AV_LOG_ERROR, "Slice overlaps next at %d\n",
+                       sl->mb_index_end);
+                er_add_slice(sl, sl->resync_mb_x, sl->resync_mb_y, sl->mb_x,
+                             sl->mb_y, ER_MB_ERROR);
+                return AVERROR_INVALIDDATA;
+            }
+
+            ret = ff_h264_decode_mb_cabac(h, sl);
             // STOP_TIMER("decode_mb_cabac")
 
             if (ret >= 0)
@@ -2412,7 +2421,17 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
         }
     } else {
         for (;;) {
-            int ret = ff_h264_decode_mb_cavlc(h, sl);
+            int ret;
+
+            if (sl->mb_x + sl->mb_y * h->mb_width >= sl->mb_index_end) {
+                av_log(h->avctx, AV_LOG_ERROR, "Slice overlaps next at %d\n",
+                       sl->mb_index_end);
+                er_add_slice(sl, sl->resync_mb_x, sl->resync_mb_y, sl->mb_x,
+                             sl->mb_y, ER_MB_ERROR);
+                return AVERROR_INVALIDDATA;
+            }
+
+            ret = ff_h264_decode_mb_cavlc(h, sl);
 
             if (ret >= 0)
                 ff_h264_hl_decode_mb(h, sl);
@@ -2500,6 +2519,8 @@ int ff_h264_execute_decode_slices(H264Context *h, unsigned context_count)
 
     av_assert0(context_count && h->slice_ctx[context_count - 1].mb_y < h->mb_height);
 
+    h->slice_ctx[0].mb_index_end = INT_MAX;
+
     if (h->avctx->hwaccel ||
         h->avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU)
         return 0;
@@ -2508,12 +2529,24 @@ int ff_h264_execute_decode_slices(H264Context *h, unsigned context_count)
         h->mb_y = h->slice_ctx[0].mb_y;
         return ret;
     } else {
+        int j, mb_index;
         av_assert0(context_count > 0);
-        for (i = 1; i < context_count; i++) {
+        for (i = 0; i < context_count; i++) {
+            int mb_index_end = h->mb_width * h->mb_height;
             sl                 = &h->slice_ctx[i];
+            mb_index = sl->resync_mb_x + sl->resync_mb_y * h->mb_width;
             if (CONFIG_ERROR_RESILIENCE) {
                 sl->er.error_count = 0;
             }
+            for (j = 0; j < context_count; j++) {
+                H264SliceContext *sl2 = &h->slice_ctx[j];
+                int mb_index2 = sl2->resync_mb_x + sl2->resync_mb_y * h->mb_width;
+
+                if (i==j || mb_index > mb_index2)
+                    continue;
+                mb_index_end = FFMIN(mb_index_end, mb_index2);
+            }
+            sl->mb_index_end = mb_index_end;
         }
 
         avctx->execute(avctx, decode_slice, h->slice_ctx,
