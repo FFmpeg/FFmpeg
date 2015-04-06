@@ -1583,6 +1583,9 @@ int av_find_default_stream_index(AVFormatContext *s)
                 score += 50;
         }
 
+        if (st->discard != AVDISCARD_ALL)
+            score += 200;
+
         if (score > best_score) {
             best_score = score;
             best_stream = i;
