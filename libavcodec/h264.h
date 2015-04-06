@@ -724,8 +724,6 @@ typedef struct H264Context {
     int sei_buffering_period_present;   ///< Buffering period SEI flag
     int initial_cpb_removal_delay[32];  ///< Initial timestamps for CPBs
 
-    int cur_chroma_format_idc;
-
     int enable_er;
 
     AVBufferPool *qscale_table_pool;
@@ -1073,7 +1071,6 @@ int ff_h264_ref_picture(H264Context *h, H264Picture *dst, H264Picture *src);
 void ff_h264_unref_picture(H264Context *h, H264Picture *pic);
 
 int ff_h264_slice_context_init(H264Context *h, H264SliceContext *sl);
-int ff_h264_set_parameter_from_sps(H264Context *h);
 
 void ff_h264_draw_horiz_band(const H264Context *h, H264SliceContext *sl, int y, int height);
 int ff_init_poc(H264Context *h, int pic_field_poc[2], int *pic_poc);

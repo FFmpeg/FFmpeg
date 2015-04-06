@@ -428,11 +428,6 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
          h->sps.bit_depth_luma    != h1->sps.bit_depth_luma    ||
          h->sps.chroma_format_idc != h1->sps.chroma_format_idc ||
          h->sps.colorspace        != h1->sps.colorspace)) {
-
-        /* set bits_per_raw_sample to the previous value. the check for changed
-         * bit depth in h264_set_parameter_from_sps() uses it and sets it to
-         * the current value */
-        h->avctx->bits_per_raw_sample = h->sps.bit_depth_luma;
         need_reinit = 1;
     }
 
@@ -571,8 +566,6 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
 
         /* copy block_offset since frame_start may not be called */
         memcpy(h->block_offset, h1->block_offset, sizeof(h->block_offset));
-
-        ff_h264_set_parameter_from_sps(h);
     }
 
     if (!h->cur_pic_ptr)
@@ -1012,6 +1005,23 @@ static int h264_slice_header_init(H264Context *h, int reinit)
         return ret;
     }
 
+    if (h->sps.bit_depth_luma < 8 || h->sps.bit_depth_luma > 10) {
+        av_log(h->avctx, AV_LOG_ERROR, "Unsupported bit depth %d\n",
+               h->sps.bit_depth_luma);
+        return AVERROR_INVALIDDATA;
+    }
+
+    h->avctx->bits_per_raw_sample = h->sps.bit_depth_luma;
+    h->pixel_shift                = h->sps.bit_depth_luma > 8;
+
+    ff_h264dsp_init(&h->h264dsp, h->sps.bit_depth_luma,
+                    h->sps.chroma_format_idc);
+    ff_h264chroma_init(&h->h264chroma, h->sps.bit_depth_chroma);
+    ff_h264qpel_init(&h->h264qpel, h->sps.bit_depth_luma);
+    ff_h264_pred_init(&h->hpc, h->avctx->codec_id, h->sps.bit_depth_luma,
+                      h->sps.chroma_format_idc);
+    ff_videodsp_init(&h->vdsp, h->sps.bit_depth_luma);
+
     if (nb_slices > H264_MAX_THREADS || (nb_slices > h->mb_height && h->mb_height)) {
         int max_slices;
         if (h->mb_height)
@@ -1152,8 +1162,20 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
             h->chroma_format_idc = h->sps.chroma_format_idc;
             needs_reinit         = 1;
         }
-        if ((ret = ff_h264_set_parameter_from_sps(h)) < 0)
-            return ret;
+
+        if (h->flags & CODEC_FLAG_LOW_DELAY ||
+            (h->sps.bitstream_restriction_flag &&
+             !h->sps.num_reorder_frames)) {
+            if (h->avctx->has_b_frames > 1 || h->delayed_pic[0])
+                av_log(h->avctx, AV_LOG_WARNING, "Delayed frames seen. "
+                       "Reenabling low delay requires a codec flush.\n");
+            else
+                h->low_delay = 1;
+        }
+
+        if (h->avctx->has_b_frames < 2)
+            h->avctx->has_b_frames = !h->low_delay;
+
     }
 
     h->avctx->profile = ff_h264_get_profile(&h->sps);
