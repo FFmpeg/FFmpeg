@@ -1084,6 +1084,6 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
 
 void ff_h264_flush_change(H264Context *h);
 
-void ff_h264_free_tables(H264Context *h, int free_rbsp);
+void ff_h264_free_tables(H264Context *h);
 
 #endif /* AVCODEC_H264_H */

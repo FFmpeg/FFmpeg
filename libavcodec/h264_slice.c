@@ -994,7 +994,7 @@ static int h264_slice_header_init(H264Context *h, int reinit)
     }
 
     if (reinit)
-        ff_h264_free_tables(h, 0);
+        ff_h264_free_tables(h);
     h->first_field           = 0;
     h->prev_interlaced_frame = 1;
 
