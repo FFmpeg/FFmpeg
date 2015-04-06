@@ -584,9 +584,9 @@ static int more_rbsp_data_in_pps(H264Context *h, PPS *pps)
 
 int ff_h264_decode_picture_parameter_set(H264Context *h, int bit_length)
 {
+    const SPS *sps;
     unsigned int pps_id = get_ue_golomb(&h->gb);
     PPS *pps;
-    SPS *sps;
     int qp_bd_offset;
     int bits_left;
 
@@ -605,7 +605,6 @@ int ff_h264_decode_picture_parameter_set(H264Context *h, int bit_length)
         goto fail;
     }
     sps = h->sps_buffers[pps->sps_id];
-    qp_bd_offset = 6 * (sps->bit_depth_luma - 8);
     if (sps->bit_depth_luma > 14) {
         av_log(h->avctx, AV_LOG_ERROR,
                "Invalid luma bit depth=%d\n",
@@ -663,6 +662,8 @@ int ff_h264_decode_picture_parameter_set(H264Context *h, int bit_length)
         goto fail;
     }
 
+    qp_bd_offset = 6 * (sps->bit_depth_luma - 8);
+
     pps->weighted_pred                        = get_bits1(&h->gb);
     pps->weighted_bipred_idc                  = get_bits(&h->gb, 2);
     pps->init_qp                              = get_se_golomb(&h->gb) + 26 + qp_bd_offset;
@@ -691,8 +692,10 @@ int ff_h264_decode_picture_parameter_set(H264Context *h, int bit_length)
         pps->chroma_qp_index_offset[1] = pps->chroma_qp_index_offset[0];
     }
 
-    build_qp_table(pps, 0, pps->chroma_qp_index_offset[0], sps->bit_depth_luma);
-    build_qp_table(pps, 1, pps->chroma_qp_index_offset[1], sps->bit_depth_luma);
+    build_qp_table(pps, 0, pps->chroma_qp_index_offset[0],
+                   sps->bit_depth_luma);
+    build_qp_table(pps, 1, pps->chroma_qp_index_offset[1],
+                   sps->bit_depth_luma);
     if (pps->chroma_qp_index_offset[0] != pps->chroma_qp_index_offset[1])
         pps->chroma_qp_diff = 1;
 

@@ -232,7 +232,7 @@ static int config_output(AVFilterLink *outlink)
     if (!s->frame_list)
         return AVERROR(ENOMEM);
 
-    s->fifos = av_mallocz(s->nb_inputs * sizeof(*s->fifos));
+    s->fifos = av_mallocz_array(s->nb_inputs, sizeof(*s->fifos));
     if (!s->fifos)
         return AVERROR(ENOMEM);
 

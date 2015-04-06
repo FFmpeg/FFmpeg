@@ -55,7 +55,7 @@ typedef struct MPTestContext {
     AVRational frame_rate;
     int64_t pts, max_pts, duration;
     int hsub, vsub;
-    enum test_type test;
+    int test;           ///< test_type
 } MPTestContext;
 
 #define OFFSET(x) offsetof(MPTestContext, x)

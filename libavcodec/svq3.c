@@ -893,6 +893,18 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
     if ((ret = ff_h264_decode_init(avctx)) < 0)
         goto fail;
 
+    ff_h264dsp_init(&h->h264dsp, 8, 1);
+    av_assert0(h->sps.bit_depth_chroma == 0);
+    ff_h264_pred_init(&h->hpc, AV_CODEC_ID_SVQ3, 8, 1);
+    ff_videodsp_init(&h->vdsp, 8);
+
+    memset(h->pps.scaling_matrix4, 16, 6 * 16 * sizeof(uint8_t));
+    memset(h->pps.scaling_matrix8, 16, 2 * 64 * sizeof(uint8_t));
+
+    avctx->bits_per_raw_sample = 8;
+    h->sps.bit_depth_luma = 8;
+    h->chroma_format_idc = 1;
+
     ff_hpeldsp_init(&s->hdsp, avctx->flags);
     ff_tpeldsp_init(&s->tdsp);
 

@@ -188,7 +188,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *cur)
         decimate->ref = cur;
         decimate->drop_count = FFMIN(-1, decimate->drop_count-1);
 
-        if (ret = ff_filter_frame(outlink, av_frame_clone(cur)) < 0)
+        if ((ret = ff_filter_frame(outlink, av_frame_clone(cur))) < 0)
             return ret;
     }
 
