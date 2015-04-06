@@ -311,10 +311,10 @@ static int http_listen(URLContext *h, const char *uri, int flags,
     ff_url_join(lower_url, sizeof(lower_url), "tcp", NULL, hostname, port,
                 NULL);
     av_dict_set(options, "listen", "1", 0);
-    if (ret = ffurl_open(&s->hd, lower_url, AVIO_FLAG_READ_WRITE,
-                         &h->interrupt_callback, options) < 0)
+    if ((ret = ffurl_open(&s->hd, lower_url, AVIO_FLAG_READ_WRITE,
+                          &h->interrupt_callback, options)) < 0)
         goto fail;
-    if (ret = ffurl_write(s->hd, header, strlen(header)) < 0)
+    if ((ret = ffurl_write(s->hd, header, strlen(header))) < 0)
         goto fail;
     return 0;
 
