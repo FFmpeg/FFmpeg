@@ -414,7 +414,7 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
 {
     H264Context *h = dst->priv_data, *h1 = src->priv_data;
     int inited = h->context_initialized, err = 0;
-    int context_reinitialized = 0;
+    int need_reinit = 0;
     int i, ret;
 
     if (dst == src || !h1->context_initialized)
@@ -433,23 +433,7 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
          * bit depth in h264_set_parameter_from_sps() uses it and sets it to
          * the current value */
         h->avctx->bits_per_raw_sample = h->sps.bit_depth_luma;
-
-        h->width     = h1->width;
-        h->height    = h1->height;
-        h->mb_height = h1->mb_height;
-        h->mb_width  = h1->mb_width;
-        h->mb_num    = h1->mb_num;
-        h->mb_stride = h1->mb_stride;
-        h->b_stride  = h1->b_stride;
-
-        if ((err = h264_slice_header_init(h, 1)) < 0) {
-            av_log(h->avctx, AV_LOG_ERROR, "h264_slice_header_init() failed");
-            return err;
-        }
-        context_reinitialized = 1;
-
-        /* copy block_offset since frame_start may not be called */
-        memcpy(h->block_offset, h1->block_offset, sizeof(h->block_offset));
+        need_reinit = 1;
     }
 
     if (!inited) {
@@ -571,8 +555,25 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
 
     h->last_slice_type = h1->last_slice_type;
 
-    if (context_reinitialized)
+    if (need_reinit) {
+        h->width     = h1->width;
+        h->height    = h1->height;
+        h->mb_height = h1->mb_height;
+        h->mb_width  = h1->mb_width;
+        h->mb_num    = h1->mb_num;
+        h->mb_stride = h1->mb_stride;
+        h->b_stride  = h1->b_stride;
+
+        if ((err = h264_slice_header_init(h, 1)) < 0) {
+            av_log(h->avctx, AV_LOG_ERROR, "h264_slice_header_init() failed");
+            return err;
+        }
+
+        /* copy block_offset since frame_start may not be called */
+        memcpy(h->block_offset, h1->block_offset, sizeof(h->block_offset));
+
         ff_h264_set_parameter_from_sps(h);
+    }
 
     if (!h->cur_pic_ptr)
         return 0;
