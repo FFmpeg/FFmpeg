@@ -1696,7 +1696,7 @@ av_cold void ff_h264_free_context(H264Context *h)
 {
     int i;
 
-    ff_h264_free_tables(h); // FIXME cleanup init stuff perhaps
+    ff_h264_free_tables(h);
 
     if (h->DPB) {
         for (i = 0; i < H264_MAX_PICTURE_COUNT; i++)
