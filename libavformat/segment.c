@@ -86,7 +86,7 @@ typedef struct SegmentContext {
     int cut_pending;
 
     char *entry_prefix;    ///< prefix to add to list entry filenames
-    ListType list_type;    ///< set the list type
+    int list_type;         ///< set the list type
     AVIOContext *list_pb;  ///< list file put-byte context
     char *time_str;        ///< segment duration specification string
     int64_t time;          ///< segment duration
