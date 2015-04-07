@@ -268,7 +268,7 @@ static int ape_read_header(AVFormatContext * s)
                ape->seektablelength / sizeof(*ape->seektable), ape->totalframes);
         return AVERROR_INVALIDDATA;
     }
-    ape->frames       = av_malloc(ape->totalframes * sizeof(APEFrame));
+    ape->frames       = av_malloc_array(ape->totalframes, sizeof(APEFrame));
     if(!ape->frames)
         return AVERROR(ENOMEM);
     ape->firstframe   = ape->junklength + ape->descriptorlength + ape->headerlength + ape->seektablelength + ape->wavheaderlength;
