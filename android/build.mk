@@ -80,7 +80,7 @@ LOCAL_SRC_FILES := $(C_FILES) $(if $(filter S,$(ASM_SUFFIX)),$(S_FILES))
 intermediates := $(local-intermediates-dir)
 ifeq ($(FFMPEG_ARCH),x86)
 GEN := $(S_OBJS:%=$(intermediates)/%)
-$(GEN): YASM := yasm
+$(GEN): YASM := prebuilts/misc/$(BUILD_OS)-$(HOST_PREBUILT_ARCH)/yasm/yasm
 $(GEN): YASMFLAGS := -felf -DPIC $(LOCAL_C_INCLUDES:%=-I%)
 $(GEN): PRIVATE_CUSTOM_TOOL = $(YASM) $(YASMFLAGS) -Pconfig.asm -o $@ $<
 $(GEN): $(intermediates)/%.o: $(LOCAL_PATH)/%.asm $(SUBDIR)config.asm
