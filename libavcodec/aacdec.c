@@ -423,7 +423,7 @@ static uint64_t sniff_channel_order(uint8_t (*layout_map)[3], int tags)
  * Save current output configuration if and only if it has been locked.
  */
 static void push_output_configuration(AACContext *ac) {
-    if (ac->oc[1].status == OC_LOCKED) {
+    if (ac->oc[1].status == OC_LOCKED || ac->oc[0].status == OC_NONE) {
         ac->oc[0] = ac->oc[1];
     }
     ac->oc[1].status = OC_NONE;
