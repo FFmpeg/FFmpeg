@@ -1307,6 +1307,7 @@ int ff_h264_decode_slice_header(H264Context *h, H264Context *h0)
     int field_pic_flag, bottom_field_flag;
     int first_slice = h == h0 && !h0->current_slice;
     int frame_num, picture_structure, droppable;
+    int mb_aff_frame, last_mb_aff_frame;
     PPS *pps;
 
     h->qpel_put = h->h264qpel.put_h264_qpel_pixels_tab;
@@ -1531,7 +1532,8 @@ int ff_h264_decode_slice_header(H264Context *h, H264Context *h0)
     }
 
     h->mb_mbaff        = 0;
-    h->mb_aff_frame    = 0;
+    mb_aff_frame       = 0;
+    last_mb_aff_frame  = h0->mb_aff_frame;
     last_pic_structure = h0->picture_structure;
     last_pic_droppable = h0->droppable;
     droppable          = h->nal_ref_idc == 0;
@@ -1549,12 +1551,13 @@ int ff_h264_decode_slice_header(H264Context *h, H264Context *h0)
             picture_structure = PICT_TOP_FIELD + bottom_field_flag;
         } else {
             picture_structure = PICT_FRAME;
-            h->mb_aff_frame      = h->sps.mb_aff;
+            mb_aff_frame      = h->sps.mb_aff;
         }
     }
     if (h0->current_slice) {
         if (last_pic_structure != picture_structure ||
-            last_pic_droppable != droppable) {
+            last_pic_droppable != droppable ||
+            last_mb_aff_frame  != mb_aff_frame) {
             av_log(h->avctx, AV_LOG_ERROR,
                    "Changing field mode (%d -> %d) between slices is not allowed\n",
                    last_pic_structure, h->picture_structure);
@@ -1570,6 +1573,7 @@ int ff_h264_decode_slice_header(H264Context *h, H264Context *h0)
     h->picture_structure = picture_structure;
     h->droppable         = droppable;
     h->frame_num         = frame_num;
+    h->mb_aff_frame      = mb_aff_frame;
     h->mb_field_decoding_flag = picture_structure != PICT_FRAME;
 
     if (h0->current_slice == 0) {
