@@ -24,6 +24,7 @@
 #include <semaphore.h>
 #include <jack/jack.h>
 
+#include "libavutil/internal.h"
 #include "libavutil/log.h"
 #include "libavutil/fifo.h"
 #include "libavutil/opt.h"

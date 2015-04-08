@@ -21,19 +21,22 @@
  */
 
 #include "config.h"
-#include "libavformat/avformat.h"
-#include "libavformat/internal.h"
-#include "libavutil/log.h"
-#include "libavutil/mathematics.h"
-#include "libavutil/opt.h"
-#include "libavutil/parseutils.h"
-#include "libavutil/pixdesc.h"
 
 #if HAVE_LIBDC1394_2
 #include <dc1394/dc1394.h>
 #elif HAVE_LIBDC1394_1
 #include <libraw1394/raw1394.h>
 #include <libdc1394/dc1394_control.h>
+
+#include "libavutil/internal.h"
+#include "libavutil/log.h"
+#include "libavutil/mathematics.h"
+#include "libavutil/opt.h"
+#include "libavutil/parseutils.h"
+#include "libavutil/pixdesc.h"
+
+#include "libavformat/avformat.h"
+#include "libavformat/internal.h"
 
 #define DC1394_VIDEO_MODE_320x240_YUV422 MODE_320x240_YUV422
 #define DC1394_VIDEO_MODE_640x480_YUV411 MODE_640x480_YUV411

@@ -29,10 +29,12 @@
 #include <pulse/rtclock.h>
 #include <pulse/error.h>
 
+#include "libavutil/internal.h"
+#include "libavutil/opt.h"
+#include "libavutil/time.h"
+
 #include "libavformat/avformat.h"
 #include "libavformat/internal.h"
-#include "libavutil/time.h"
-#include "libavutil/opt.h"
 
 #define DEFAULT_CODEC_ID AV_NE(AV_CODEC_ID_PCM_S16BE, AV_CODEC_ID_PCM_S16LE)
 

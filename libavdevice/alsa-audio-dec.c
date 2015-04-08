@@ -46,9 +46,12 @@
  */
 
 #include <alsa/asoundlib.h>
+
+#include "libavutil/internal.h"
+#include "libavutil/opt.h"
+
 #include "libavformat/avformat.h"
 #include "libavformat/internal.h"
-#include "libavutil/opt.h"
 
 #include "alsa-audio.h"
 

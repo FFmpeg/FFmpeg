@@ -51,6 +51,7 @@
 #include <X11/extensions/Xfixes.h>
 #include <X11/extensions/XShm.h>
 
+#include "libavutil/internal.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"

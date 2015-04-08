@@ -38,6 +38,9 @@
  */
 
 #include <alsa/asoundlib.h>
+
+#include "libavutil/internal.h"
+
 #include "libavformat/avformat.h"
 
 #include "alsa-audio.h"
