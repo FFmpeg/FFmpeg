@@ -4,8 +4,10 @@ OBJS += x86/cpu.o                                                       \
 
 OBJS-$(CONFIG_PIXELUTILS) += x86/pixelutils_init.o                      \
 
+EMMS_OBJS_$(HAVE_INLINE_MMX)_$(HAVE_EXTERNAL_MMX)_$(HAVE_MM_EMPTY) = x86/emms.o
+
 YASM-OBJS += x86/cpuid.o                                                \
-             x86/emms.o                                                 \
+             $(EMMS_OBJS_NO_NO_NO)                                      \
              x86/float_dsp.o                                            \
              x86/lls.o                                                  \
 
