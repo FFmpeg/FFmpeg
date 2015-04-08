@@ -5223,7 +5223,7 @@ again:
 
             if (err < 0) {
                 av_log(h->avctx, AV_LOG_ERROR, "decode_slice_header error\n");
-                h->ref_count[0] = h->ref_count[1] = h->list_count = 0;
+                hx->ref_count[0] = hx->ref_count[1] = hx->list_count = 0;
             } else if (err == 1) {
                 if (context_count > 1) {
                     ret = execute_decode_slices(h, context_count - 1);
