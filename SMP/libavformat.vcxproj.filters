@@ -654,6 +654,9 @@
     <ClCompile Include="..\libavformat\webmdashenc.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavformat\webm_chunk.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavformat\mgsts.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>

@@ -483,6 +483,8 @@
     </ClCompile>
     <ClCompile Include="..\libavformat\webmdashenc.c">
     </ClCompile>
+    <ClCompile Include="..\libavformat\webm_chunk.c">
+    </ClCompile>
     <ClCompile Include="..\libavformat\mgsts.c">
     </ClCompile>
     <ClCompile Include="..\libavformat\microdvddec.c">
