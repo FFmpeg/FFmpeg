@@ -261,12 +261,6 @@ static inline int decode_vui_parameters(H264Context *h, SPS *sps)
         }
     }
 
-    if (get_bits_left(&h->gb) < 0) {
-        av_log(h->avctx, AV_LOG_ERROR,
-               "Overread VUI by %d bits\n", -get_bits_left(&h->gb));
-        return AVERROR_INVALIDDATA;
-    }
-
     return 0;
 }
 
@@ -541,6 +535,12 @@ int ff_h264_decode_seq_parameter_set(H264Context *h)
         int ret = decode_vui_parameters(h, sps);
         if (ret < 0)
             goto fail;
+    }
+
+    if (get_bits_left(&h->gb) < 0) {
+        av_log(h->avctx, AV_LOG_ERROR,
+               "Overread %s by %d bits\n", sps->vui_parameters_present_flag ? "VUI" : "SPS", -get_bits_left(&h->gb));
+        goto fail;
     }
 
     if (!sps->sar.den)
