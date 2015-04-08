@@ -28,11 +28,12 @@
 #include <zlib.h>
 
 #include "libavutil/intreadwrite.h"
+
 #include "avcodec.h"
 #include "blockdsp.h"
 #include "bytestream.h"
-#include "idctdsp.h"
 #include "get_bits.h"
+#include "idctdsp.h"
 #include "internal.h"
 #include "jpegtables.h"
 #include "mjpeg.h"
@@ -263,7 +264,8 @@ static int jpg_decode_data(JPGContext *c, int width, int height,
 
     for (i = 0; i < 3; i++)
         c->prev_dc[i] = 1024;
-    bx = by = 0;
+    bx =
+    by = 0;
     c->bdsp.clear_blocks(c->block[0]);
     for (mb_y = 0; mb_y < mb_h; mb_y++) {
         for (mb_x = 0; mb_x < mb_w; mb_x++) {
