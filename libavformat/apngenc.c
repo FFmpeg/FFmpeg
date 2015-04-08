@@ -114,7 +114,7 @@ static void flush_packet(AVFormatContext *format_context, AVPacket *packet)
         uint8_t *existing_acTL_chunk;
         uint8_t *existing_fcTL_chunk;
 
-        av_log(format_context, AV_LOG_WARNING, "Only a single frame so saving as a normal PNG.\n");
+        av_log(format_context, AV_LOG_INFO, "Only a single frame so saving as a normal PNG.\n");
 
         // Write normal PNG headers without acTL chunk
         existing_acTL_chunk = apng_find_chunk(MKBETAG('a', 'c', 'T', 'L'), codec_context->extradata, codec_context->extradata_size);
