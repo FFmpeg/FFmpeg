@@ -76,6 +76,9 @@ static int libquvi_read_header(AVFormatContext *s)
     if (rc != QUVI_OK)
         goto quvi_fail;
 
+    if (!(qc->fmtctx = avformat_alloc_context()))
+            goto quvi_fail;
+
     if ((ret = ff_copy_whitelists(qc->fmtctx, s)) < 0)
         goto end;
 

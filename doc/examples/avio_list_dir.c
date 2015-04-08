@@ -74,17 +74,18 @@ int main(int argc, char *argv[])
 
     /* register codecs and formats and other lavf/lavc components*/
     av_register_all();
+    avformat_network_init();
 
     if ((ret = avio_open_dir(&ctx, input_dir, NULL)) < 0) {
         av_log(NULL, AV_LOG_ERROR, "Cannot open directory: %s.\n", av_err2str(ret));
-        return 1;
+        goto fail;
     }
 
     cnt = 0;
     for (;;) {
         if ((ret = avio_read_dir(ctx, &entry)) < 0) {
             av_log(NULL, AV_LOG_ERROR, "Cannot list directory: %s.\n", av_err2str(ret));
-            return 1;
+            goto fail;
         }
         if (!entry)
             break;
@@ -111,7 +112,9 @@ int main(int argc, char *argv[])
         cnt++;
     };
 
+  fail:
     avio_close_dir(&ctx);
+    avformat_network_deinit();
 
-    return 0;
+    return ret < 0 ? 1 : 0;
 }

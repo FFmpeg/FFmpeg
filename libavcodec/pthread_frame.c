@@ -48,6 +48,7 @@
 #include "libavutil/internal.h"
 #include "libavutil/log.h"
 #include "libavutil/mem.h"
+#include "libavutil/opt.h"
 
 /**
  * Context used by codec threads and stored in their AVCodecInternal thread_ctx.
@@ -574,8 +575,6 @@ void ff_frame_thread_free(AVCodecContext *avctx, int thread_count)
         if (codec->close)
             codec->close(p->avctx);
 
-        avctx->codec = NULL;
-
         release_delayed_buffers(p);
         av_frame_free(&p->frame);
     }
@@ -603,6 +602,10 @@ void ff_frame_thread_free(AVCodecContext *avctx, int thread_count)
     av_freep(&fctx->threads);
     pthread_mutex_destroy(&fctx->buffer_mutex);
     av_freep(&avctx->internal->thread_ctx);
+
+    if (avctx->priv_data && avctx->codec && avctx->codec->priv_class)
+        av_opt_free(avctx->priv_data);
+    avctx->codec = NULL;
 }
 
 int ff_frame_thread_init(AVCodecContext *avctx)

@@ -1268,4 +1268,47 @@ ffmpeg -f webm_dash_manifest -i video1.webm \
        manifest.xml
 @end example
 
+@section webm_chunk
+
+WebM Live Chunk Muxer.
+
+This muxer writes out WebM headers and chunks as separate files which can be
+consumed by clients that support WebM Live streams via DASH.
+
+@subsection Options
+
+This muxer supports the following options:
+
+@table @option
+@item chunk_start_index
+Index of the first chunk (defaults to 0).
+
+@item header
+Filename of the header where the initialization data will be written.
+
+@item audio_chunk_duration
+Duration of each audio chunk in milliseconds (defaults to 5000).
+@end table
+
+@subsection Example
+@example
+ffmpeg -f v4l2 -i /dev/video0 \
+       -f alsa -i hw:0 \
+       -map 0:0 \
+       -c:v libvpx-vp9 \
+       -s 640x360 -keyint_min 30 -g 30 \
+       -f webm_chunk \
+       -header webm_live_video_360.hdr \
+       -chunk_start_index 1 \
+       webm_live_video_360_%d.chk \
+       -map 1:0 \
+       -c:a libvorbis \
+       -b:a 128k \
+       -f webm_chunk \
+       -header webm_live_audio_128.hdr \
+       -chunk_start_index 1 \
+       -audio_chunk_duration 1000 \
+       webm_live_audio_128_%d.chk
+@end example
+
 @c man end MUXERS

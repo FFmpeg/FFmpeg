@@ -182,7 +182,7 @@ static void hqx_idct_put(uint16_t *dst, ptrdiff_t stride,
 
     for (i = 0; i < 8; i++) {
         for (j = 0; j < 8; j++) {
-            int v = av_clip(block[j + i * 8] + 0x800, 0, 0x1000);
+            int v = av_clip(block[j + i * 8] + 0x800, 0, 0xFFF);
             dst[j] = (v << 4) | (v >> 8);
         }
         dst += stride >> 1;

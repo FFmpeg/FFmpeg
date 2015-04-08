@@ -69,7 +69,7 @@
 
 #ifdef ALLOW_INTERLACE
 #define MB_MBAFF(h)    (h)->mb_mbaff
-#define MB_FIELD(h)    (h)->mb_field_decoding_flag
+#define MB_FIELD(sl)  (sl)->mb_field_decoding_flag
 #define FRAME_MBAFF(h) (h)->mb_aff_frame
 #define FIELD_PICTURE(h) ((h)->picture_structure != PICT_FRAME)
 #define LEFT_MBS 2
@@ -78,7 +78,7 @@
 #define LEFT(i)  (i)
 #else
 #define MB_MBAFF(h)      0
-#define MB_FIELD(h)      0
+#define MB_FIELD(sl)     0
 #define FRAME_MBAFF(h)   0
 #define FIELD_PICTURE(h) 0
 #undef  IS_INTERLACED
@@ -411,6 +411,7 @@ typedef struct H264SliceContext {
     int mb_xy;
     int resync_mb_x;
     int resync_mb_y;
+    int mb_index_end;
     int mb_skip_run;
     int is_complex;
 

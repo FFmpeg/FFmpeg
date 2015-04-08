@@ -91,9 +91,6 @@ static void write_header(AVFormatContext *s)
 {
     WebMDashMuxContext *w = s->priv_data;
     double min_buffer_time = 1.0;
-    time_t local_time;
-    struct tm *gmt, gmt_buffer;
-    char *gmt_iso = av_malloc(21);
     avio_printf(s->pb, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
     avio_printf(s->pb, "<MPD\n");
     avio_printf(s->pb, "  xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n");
@@ -108,13 +105,15 @@ static void write_header(AVFormatContext *s)
     avio_printf(s->pb, "  profiles=\"%s\"%s",
                 w->is_live ? "urn:mpeg:dash:profile:isoff-live:2011" : "urn:webm:dash:profile:webm-on-demand:2012",
                 w->is_live ? "\n" : ">\n");
-    time(&local_time);
-    gmt = gmtime_r(&local_time, &gmt_buffer);
-    strftime(gmt_iso, 21, "%FT%TZ", gmt);
-    if (w->debug_mode) {
-        av_strlcpy(gmt_iso, "", 1);
-    }
     if (w->is_live) {
+        time_t local_time = time(NULL);
+        struct tm gmt_buffer;
+        struct tm *gmt = gmtime_r(&local_time, &gmt_buffer);
+        char *gmt_iso = av_malloc(21);
+        strftime(gmt_iso, 21, "%Y-%m-%dT%H:%M:%SZ", gmt);
+        if (w->debug_mode) {
+            av_strlcpy(gmt_iso, "", 1);
+        }
         avio_printf(s->pb, "  availabilityStartTime=\"%s\"\n", gmt_iso);
         avio_printf(s->pb, "  timeShiftBufferDepth=\"PT%gS\"", w->time_shift_buffer_depth);
         avio_printf(s->pb, ">\n");
@@ -123,8 +122,8 @@ static void write_header(AVFormatContext *s)
                     w->utc_timing_url ? "urn:mpeg:dash:utc:http-iso:2014" : "urn:mpeg:dash:utc:direct:2012");
         avio_printf(s->pb, "  value=\"%s\"/>\n",
                     w->utc_timing_url ? w->utc_timing_url : gmt_iso);
+        av_free(gmt_iso);
     }
-    av_free(gmt_iso);
 }
 
 static void write_footer(AVFormatContext *s)

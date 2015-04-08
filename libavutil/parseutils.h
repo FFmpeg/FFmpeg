@@ -146,38 +146,44 @@ const char *av_get_known_color_name(int color_idx, const uint8_t **rgb);
 int av_parse_time(int64_t *timeval, const char *timestr, int duration);
 
 /**
- * Parse the input string p according to the format string fmt and
- * store its results in the structure dt.
- * This implementation supports only a subset of the formats supported
- * by the standard strptime().
- *
- * In particular it actually supports the parameters:
- * - %H: the hour as a decimal number, using a 24-hour clock, in the
- * range '00' through '23'
- * - %J: hours as a decimal number, in the range '0' through INT_MAX
- * - %M: the minute as a decimal number, using a 24-hour clock, in the
- * range '00' through '59'
- * - %S: the second as a decimal number, using a 24-hour clock, in the
- * range '00' through '59'
- * - %Y: the year as a decimal number, using the Gregorian calendar
- * - %m: the month as a decimal number, in the range '1' through '12'
- * - %d: the day of the month as a decimal number, in the range '1'
- * through '31'
- * - %%: a literal '%'
- *
- * @return a pointer to the first character not processed in this
- * function call, or NULL in case the function fails to match all of
- * the fmt string and therefore an error occurred
- */
-char *av_small_strptime(const char *p, const char *fmt, struct tm *dt);
-
-/**
  * Attempt to find a specific tag in a URL.
  *
  * syntax: '?tag1=val1&tag2=val2...'. Little URL decoding is done.
  * Return 1 if found.
  */
 int av_find_info_tag(char *arg, int arg_size, const char *tag1, const char *info);
+
+/**
+ * Simplified version of strptime
+ *
+ * Parse the input string p according to the format string fmt and
+ * store its results in the structure dt.
+ * This implementation supports only a subset of the formats supported
+ * by the standard strptime().
+ *
+ * The supported input field descriptors are listed below.
+ * - %H: the hour as a decimal number, using a 24-hour clock, in the
+ *   range '00' through '23'
+ * - %J: hours as a decimal number, in the range '0' through INT_MAX
+ * - %M: the minute as a decimal number, using a 24-hour clock, in the
+ *   range '00' through '59'
+ * - %S: the second as a decimal number, using a 24-hour clock, in the
+ *   range '00' through '59'
+ * - %Y: the year as a decimal number, using the Gregorian calendar
+ * - %m: the month as a decimal number, in the range '1' through '12'
+ * - %d: the day of the month as a decimal number, in the range '1'
+ *   through '31'
+ * - %T: alias for '%H:%M:%S'
+ * - %%: a literal '%'
+ *
+ * @return a pointer to the first character not processed in this function
+ *         call. In case the input string contains more characters than
+ *         required by the format string the return value points right after
+ *         the last consumed input character. In case the whole input string
+ *         is consumed the return value points to the null byte at the end of
+ *         the string. On failure NULL is returned.
+ */
+char *av_small_strptime(const char *p, const char *fmt, struct tm *dt);
 
 /**
  * Convert the decomposed UTC time in tm to a time_t value.

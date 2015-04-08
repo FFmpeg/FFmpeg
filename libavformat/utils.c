@@ -4079,8 +4079,8 @@ int64_t ff_iso8601_to_unix_time(const char *datestr)
 {
     struct tm time1 = { 0 }, time2 = { 0 };
     char *ret1, *ret2;
-    ret1 = av_small_strptime(datestr, "%Y - %m - %d %H:%M:%S", &time1);
-    ret2 = av_small_strptime(datestr, "%Y - %m - %dT%H:%M:%S", &time2);
+    ret1 = av_small_strptime(datestr, "%Y - %m - %d %T", &time1);
+    ret2 = av_small_strptime(datestr, "%Y - %m - %dT%T", &time2);
     if (ret2 && !ret1)
         return av_timegm(&time2);
     else
