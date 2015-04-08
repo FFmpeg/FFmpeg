@@ -10,7 +10,6 @@ Style: Default,Comic Sans MS,30,&H123456,&H123456,&H0,&H0,0,0,0,0,100,100,0,0,1,
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
-Dialogue: 0,0:00:00.00,0:00:40.00,Default,,0,0,0,,25.000 FPS
 Dialogue: 0,0:00:40.00,0:00:52.00,Default,,0,0,0,,{\c&H345678&}foo{\c}\N{\c&HABCDEF&}bar{\c}\Nbla
 Dialogue: 0,0:00:52.00,0:00:56.00,Default,,0,0,0,,{\u1}{\s1}{\i1}{\b1}italic bold underline strike{\s0}{\u0}\Nitalic bold no-underline no-strike
 Dialogue: 0,0:00:56.00,0:01:00.00,Default,,0,0,0,,back to
