@@ -2159,6 +2159,8 @@ static int matroska_read_header(AVFormatContext *s)
                 }
             }
 
+            attachments[j].stream = st;
+
             if (st->codec->codec_id != AV_CODEC_ID_NONE) {
                 st->disposition      |= AV_DISPOSITION_ATTACHED_PIC;
                 st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
@@ -2174,7 +2176,7 @@ static int matroska_read_header(AVFormatContext *s)
                 if (ff_alloc_extradata(st->codec, attachments[j].bin.size))
                     break;
                 memcpy(st->codec->extradata, attachments[j].bin.data,
-                    attachments[j].bin.size);
+                       attachments[j].bin.size);
 
                 for (i = 0; ff_mkv_mime_tags[i].id != AV_CODEC_ID_NONE; i++) {
                     if (!strncmp(ff_mkv_mime_tags[i].str, attachments[j].mime,
@@ -2183,7 +2185,6 @@ static int matroska_read_header(AVFormatContext *s)
                         break;
                     }
                 }
-                attachments[j].stream = st;
             }
         }
     }
