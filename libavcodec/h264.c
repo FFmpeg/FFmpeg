@@ -1495,9 +1495,6 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size,
                 continue;
 
 again:
-            if (   (!(avctx->active_thread_type & FF_THREAD_FRAME) || nals_needed >= nal_index)
-                && !h->current_slice)
-                h->au_pps_id = -1;
             /* Ignore per frame NAL unit type during extradata
              * parsing. Decoding slices is not possible in codec init
              * with frame-mt */
@@ -1545,6 +1542,10 @@ again:
                 h->has_recovery_point = 1;
             case NAL_SLICE:
                 init_get_bits(&sl->gb, ptr, bit_length);
+
+                if (   nals_needed >= nal_index
+                    || (!(avctx->active_thread_type & FF_THREAD_FRAME) && !context_count))
+                    h->au_pps_id = -1;
 
                 if ((err = ff_h264_decode_slice_header(h, sl)))
                     break;
