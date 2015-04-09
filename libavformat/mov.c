@@ -1001,7 +1001,7 @@ static int mov_read_colr(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     av_dlog(c->fc, "%s: pri %d trc %d matrix %d",
             color_parameter_type, color_primaries, color_trc, color_matrix);
 
-    if (strncmp(color_parameter_type, "nclx", 4) == 0) {
+    if (!strncmp(color_parameter_type, "nclx", 4)) {
         uint8_t color_range = avio_r8(pb) >> 7;
         av_dlog(c->fc, " full %"PRIu8"", color_range);
         if (color_range)
@@ -1021,7 +1021,7 @@ static int mov_read_colr(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         st->codec->color_primaries = color_primaries;
         st->codec->color_trc = color_trc;
         st->codec->colorspace = color_matrix;
-    } else {
+    } else if (!strncmp(color_parameter_type, "nclc", 4)) {
         /* color primaries, Table 4-4 */
         switch (color_primaries) {
         case 1: st->codec->color_primaries = AVCOL_PRI_BT709; break;
