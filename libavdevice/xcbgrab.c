@@ -37,13 +37,14 @@
 #include <xcb/shape.h>
 #endif
 
-#include "libavformat/avformat.h"
-#include "libavformat/internal.h"
-
+#include "libavutil/internal.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/time.h"
+
+#include "libavformat/avformat.h"
+#include "libavformat/internal.h"
 
 typedef struct XCBGrabContext {
     const AVClass *class;

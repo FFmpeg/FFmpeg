@@ -23,10 +23,13 @@
 
 #include <pulse/rtclock.h>
 #include <pulse/error.h>
-#include "libavformat/avformat.h"
-#include "libavformat/internal.h"
+
+#include "libavutil/internal.h"
 #include "libavutil/opt.h"
 #include "libavutil/time.h"
+
+#include "libavformat/avformat.h"
+#include "libavformat/internal.h"
 #include "pulse_audio_common.h"
 #include "timefilter.h"
 

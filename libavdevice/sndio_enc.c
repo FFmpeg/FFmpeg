@@ -22,6 +22,9 @@
 #include <stdint.h>
 #include <sndio.h>
 
+#include "libavutil/internal.h"
+
+
 #include "avdevice.h"
 #include "sndio_common.h"
 
