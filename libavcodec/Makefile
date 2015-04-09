@@ -156,7 +156,7 @@ OBJS-$(CONFIG_CDXL_DECODER)            += cdxl.o
 OBJS-$(CONFIG_CINEPAK_DECODER)         += cinepak.o
 OBJS-$(CONFIG_CLJR_DECODER)            += cljrdec.o
 OBJS-$(CONFIG_CLJR_ENCODER)            += cljrenc.o
-OBJS-$(CONFIG_CLLC_DECODER)            += cllc.o
+OBJS-$(CONFIG_CLLC_DECODER)            += cllc.o canopus.o
 OBJS-$(CONFIG_COOK_DECODER)            += cook.o
 OBJS-$(CONFIG_COMFORTNOISE_DECODER)    += cngdec.o celp_filters.o
 OBJS-$(CONFIG_COMFORTNOISE_ENCODER)    += cngenc.o
@@ -232,7 +232,7 @@ OBJS-$(CONFIG_HEVC_DECODER)            += hevc.o hevc_mvs.o hevc_ps.o hevc_sei.o
                                           hevc_cabac.o hevc_refs.o hevcpred.o    \
                                           hevcdsp.o hevc_filter.o
 OBJS-$(CONFIG_HNM4_VIDEO_DECODER)      += hnm4video.o
-OBJS-$(CONFIG_HQX_DECODER)             += hqx.o hqxvlc.o hqxdsp.o
+OBJS-$(CONFIG_HQX_DECODER)             += hqx.o hqxvlc.o hqxdsp.o canopus.o
 OBJS-$(CONFIG_HUFFYUV_DECODER)         += huffyuv.o huffyuvdec.o
 OBJS-$(CONFIG_HUFFYUV_ENCODER)         += huffyuv.o huffyuvenc.o
 OBJS-$(CONFIG_IDCIN_DECODER)           += idcinvideo.o
