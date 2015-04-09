@@ -361,6 +361,7 @@ Optimization options (experts only):
   --disable-inline-asm     disable use of inline assembly
   --disable-yasm           disable use of nasm/yasm assembly
   --disable-mips32r5       disable MIPS32R5 optimizations
+  --disable-mips64r6       disable MIPS64R6 optimizations
   --disable-mipsdspr1      disable MIPS DSP ASE R1 optimizations
   --disable-mipsdspr2      disable MIPS DSP ASE R2 optimizations
   --disable-msa            disable MSA optimizations
@@ -1568,6 +1569,7 @@ ARCH_EXT_LIST_MIPS="
     mipsfpu
     mips32r2
     mips32r5
+    mips64r6
     mipsdspr1
     mipsdspr2
     msa
@@ -2014,6 +2016,7 @@ mipsfpu_deps="mips"
 mipsdspr1_deps="mips"
 mipsdspr2_deps="mips"
 mips32r5_deps="mips"
+mips64r6_deps="mips"
 msa_deps="mips"
 
 altivec_deps="ppc"
@@ -3849,6 +3852,7 @@ elif enabled mips; then
     case $cpu in
         24kc)
             disable mips32r5
+            disable mips64r6
             disable mipsfpu
             disable mipsdspr1
             disable mipsdspr2
@@ -3856,34 +3860,49 @@ elif enabled mips; then
         ;;
         24kf*)
             disable mips32r5
+            disable mips64r6
             disable mipsdspr1
             disable mipsdspr2
             disable msa
         ;;
         24kec|34kc|1004kc)
             disable mips32r5
+            disable mips64r6
             disable mipsfpu
             disable mipsdspr2
             disable msa
         ;;
         24kef*|34kf*|1004kf*)
             disable mips32r5
+            disable mips64r6
             disable mipsdspr2
             disable msa
         ;;
         74kc)
             disable mips32r5
+            disable mips64r6
             disable mipsfpu
             disable msa
         ;;
         p5600)
+            disable mips64r6
             disable mipsdspr1
             disable mipsdspr2
 
             check_cflags "-mtune=p5600"
         ;;
+        i6400)
+            disable mips32r5
+            disable mipsdspr1
+            disable mipsdspr2
+            disable mipsfpu
+
+            check_cflags "-mtune=i6400 -mabi=64"
+            check_ldflags "-mabi=64"
+        ;;
         generic)
             disable mips32r5
+            disable mips64r6
             disable msa
         ;;
     esac
@@ -4642,7 +4661,7 @@ elif enabled mips; then
     elif enabled mipsdspr1 || enabled mipsdspr2; then
         add_cflags "-mips32r2 -mfp32"
         add_asflags "-mips32r2 -mfp32"
-    elif enabled mips32r5; then
+    elif enabled mips32r5 || enabled mips64r6; then
         check_cflags "-mfp64"
         check_ldflags "-mfp64"
     fi
@@ -4650,6 +4669,9 @@ elif enabled mips; then
     enabled mips32r5  && check_cflags "-mips32r5 -msched-weight -mload-store-pairs -funroll-loops" &&
      check_ldflags "-mips32r5" &&
      check_inline_asm mips32r5  '"ulw $t0, ($t1)"'
+    enabled mips64r6  && check_cflags "-mips64r6 -msched-weight -mload-store-pairs -funroll-loops" &&
+     check_ldflags "-mips64r6" &&
+     check_inline_asm mips64r6  '"aui $t0, $t1, 1"'
     enabled mipsdspr1 && add_cflags "-mdsp" && add_asflags "-mdsp" &&
      check_inline_asm mipsdspr1 '"addu.qb $t0, $t1, $t2"'
     enabled mipsdspr2 && add_cflags "-mdspr2" && add_asflags "-mdspr2" &&
@@ -4660,6 +4682,7 @@ elif enabled mips; then
      check_inline_asm msa       '"addvi.b $w0, $w1, 1"'
 
     enabled mips32r5 && add_asflags "-mips32r5 -mfp64"
+    enabled mips64r6 && add_asflags "-mips64r6 -mfp64"
     enabled msa && add_asflags "-mmsa"
 
 elif enabled parisc; then
@@ -5621,6 +5644,7 @@ fi
 if enabled mips; then
     echo "MIPS FPU enabled          ${mipsfpu-no}"
     echo "MIPS32R5 enabled          ${mips32r5-no}"
+    echo "MIPS64R6 enabled          ${mips64r6-no}"
     echo "MIPS DSP R1 enabled       ${mipsdspr1-no}"
     echo "MIPS DSP R2 enabled       ${mipsdspr2-no}"
     echo "MIPS MSA enabled          ${msa-no}"
