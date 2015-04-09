@@ -44,7 +44,7 @@
 #include "avdevice.h"
 #include "libavformat/internal.h"
 
-#include "oss_audio.h"
+#include "oss.h"
 
 static int audio_read_header(AVFormatContext *s1)
 {

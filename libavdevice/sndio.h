@@ -1,4 +1,7 @@
 /*
+ * sndio play and grab interface
+ * Copyright (c) 2010 Jacob Meuser
+ *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -16,30 +19,30 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVDEVICE_OSS_AUDIO_H
-#define AVDEVICE_OSS_AUDIO_H
+#ifndef AVDEVICE_SNDIO_H
+#define AVDEVICE_SNDIO_H
 
-#include "libavcodec/avcodec.h"
+#include <stdint.h>
+#include <sndio.h>
 
-#include "libavformat/avformat.h"
+#include "libavutil/log.h"
+#include "avdevice.h"
 
-#define OSS_AUDIO_BLOCK_SIZE 4096
-
-typedef struct OSSAudioData {
+typedef struct SndioData {
     AVClass *class;
-    int fd;
-    int sample_rate;
-    int channels;
-    int frame_size; /* in bytes ! */
+    struct sio_hdl *hdl;
     enum AVCodecID codec_id;
-    unsigned int flip_left : 1;
-    uint8_t buffer[OSS_AUDIO_BLOCK_SIZE];
-    int buffer_ptr;
-} OSSAudioData;
+    int64_t hwpos;
+    int64_t softpos;
+    uint8_t *buffer;
+    int bps;
+    int buffer_size;
+    int buffer_offset;
+    int channels;
+    int sample_rate;
+} SndioData;
 
-int ff_oss_audio_open(AVFormatContext *s1, int is_output,
-                      const char *audio_device);
+int ff_sndio_open(AVFormatContext *s1, int is_output, const char *audio_device);
+int ff_sndio_close(SndioData *s);
 
-int ff_oss_audio_close(OSSAudioData *s);
-
-#endif /* AVDEVICE_OSS_AUDIO_H */
+#endif /* AVDEVICE_SNDIO_H */
