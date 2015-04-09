@@ -40,9 +40,6 @@ enum HQXFormat {
 
 #define HQX_HEADER_SIZE 59
 
-typedef int (*mb_decode_func)(HQXContext *ctx, AVFrame *pic,
-                              GetBitContext *gb, int x, int y);
-
 /* macroblock selects a group of 4 possible quants and
  * a block can use any of those four quantisers
  * one column is powers of 2, the other one is powers of 2 * 3,
@@ -82,14 +79,14 @@ static const uint8_t hqx_quant_chroma[64] = {
     44,  91,  96, 197, 203, 209, 232, 246,
 };
 
-static inline void put_blocks(HQXContext *ctx, AVFrame *pic, int plane,
+static inline void put_blocks(HQXContext *ctx, int plane,
                               int x, int y, int ilace,
                               int16_t *block0, int16_t *block1,
                               const uint8_t *quant)
 {
     int fields = ilace ? 2 : 1;
-    int lsize = pic->linesize[plane];
-    uint8_t *p = pic->data[plane] + x * 2;
+    int lsize = ctx->pic->linesize[plane];
+    uint8_t *p = ctx->pic->data[plane] + x * 2;
 
     ctx->hqxdsp.idct_put((uint16_t *)(p + y * lsize),
                          lsize * fields, block0, quant);
@@ -154,8 +151,7 @@ static int decode_block(GetBitContext *gb, VLC *vlc,
     return 0;
 }
 
-static int hqx_decode_422(HQXContext *ctx, AVFrame *pic,
-                          GetBitContext *gb, int x, int y)
+static int hqx_decode_422(HQXContext *ctx, GetBitContext *gb, int x, int y)
 {
     const int *quants;
     int flag;
@@ -179,16 +175,15 @@ static int hqx_decode_422(HQXContext *ctx, AVFrame *pic,
             return ret;
     }
 
-    put_blocks(ctx, pic, 0, x,      y, flag, ctx->block[0], ctx->block[2], hqx_quant_luma);
-    put_blocks(ctx, pic, 0, x + 8,  y, flag, ctx->block[1], ctx->block[3], hqx_quant_luma);
-    put_blocks(ctx, pic, 2, x >> 1, y, flag, ctx->block[4], ctx->block[5], hqx_quant_chroma);
-    put_blocks(ctx, pic, 1, x >> 1, y, flag, ctx->block[6], ctx->block[7], hqx_quant_chroma);
+    put_blocks(ctx, 0, x,      y, flag, ctx->block[0], ctx->block[2], hqx_quant_luma);
+    put_blocks(ctx, 0, x + 8,  y, flag, ctx->block[1], ctx->block[3], hqx_quant_luma);
+    put_blocks(ctx, 2, x >> 1, y, flag, ctx->block[4], ctx->block[5], hqx_quant_chroma);
+    put_blocks(ctx, 1, x >> 1, y, flag, ctx->block[6], ctx->block[7], hqx_quant_chroma);
 
     return 0;
 }
 
-static int hqx_decode_422a(HQXContext *ctx, AVFrame *pic,
-                           GetBitContext *gb, int x, int y)
+static int hqx_decode_422a(HQXContext *ctx, GetBitContext *gb, int x, int y)
 {
     const int *quants;
     int flag = 0;
@@ -226,18 +221,17 @@ static int hqx_decode_422a(HQXContext *ctx, AVFrame *pic,
         }
     }
 
-    put_blocks(ctx, pic, 3, x,      y, flag, ctx->block[ 0], ctx->block[ 2], hqx_quant_luma);
-    put_blocks(ctx, pic, 3, x + 8,  y, flag, ctx->block[ 1], ctx->block[ 3], hqx_quant_luma);
-    put_blocks(ctx, pic, 0, x,      y, flag, ctx->block[ 4], ctx->block[ 6], hqx_quant_luma);
-    put_blocks(ctx, pic, 0, x + 8,  y, flag, ctx->block[ 5], ctx->block[ 7], hqx_quant_luma);
-    put_blocks(ctx, pic, 2, x >> 1, y, flag, ctx->block[ 8], ctx->block[ 9], hqx_quant_chroma);
-    put_blocks(ctx, pic, 1, x >> 1, y, flag, ctx->block[10], ctx->block[11], hqx_quant_chroma);
+    put_blocks(ctx, 3, x,      y, flag, ctx->block[ 0], ctx->block[ 2], hqx_quant_luma);
+    put_blocks(ctx, 3, x + 8,  y, flag, ctx->block[ 1], ctx->block[ 3], hqx_quant_luma);
+    put_blocks(ctx, 0, x,      y, flag, ctx->block[ 4], ctx->block[ 6], hqx_quant_luma);
+    put_blocks(ctx, 0, x + 8,  y, flag, ctx->block[ 5], ctx->block[ 7], hqx_quant_luma);
+    put_blocks(ctx, 2, x >> 1, y, flag, ctx->block[ 8], ctx->block[ 9], hqx_quant_chroma);
+    put_blocks(ctx, 1, x >> 1, y, flag, ctx->block[10], ctx->block[11], hqx_quant_chroma);
 
     return 0;
 }
 
-static int hqx_decode_444(HQXContext *ctx, AVFrame *pic,
-                          GetBitContext *gb, int x, int y)
+static int hqx_decode_444(HQXContext *ctx, GetBitContext *gb, int x, int y)
 {
     const int *quants;
     int flag;
@@ -261,18 +255,17 @@ static int hqx_decode_444(HQXContext *ctx, AVFrame *pic,
             return ret;
     }
 
-    put_blocks(ctx, pic, 0, x,     y, flag, ctx->block[0], ctx->block[ 2], hqx_quant_luma);
-    put_blocks(ctx, pic, 0, x + 8, y, flag, ctx->block[1], ctx->block[ 3], hqx_quant_luma);
-    put_blocks(ctx, pic, 2, x,     y, flag, ctx->block[4], ctx->block[ 6], hqx_quant_chroma);
-    put_blocks(ctx, pic, 2, x + 8, y, flag, ctx->block[5], ctx->block[ 7], hqx_quant_chroma);
-    put_blocks(ctx, pic, 1, x,     y, flag, ctx->block[8], ctx->block[10], hqx_quant_chroma);
-    put_blocks(ctx, pic, 1, x + 8, y, flag, ctx->block[9], ctx->block[11], hqx_quant_chroma);
+    put_blocks(ctx, 0, x,     y, flag, ctx->block[0], ctx->block[ 2], hqx_quant_luma);
+    put_blocks(ctx, 0, x + 8, y, flag, ctx->block[1], ctx->block[ 3], hqx_quant_luma);
+    put_blocks(ctx, 2, x,     y, flag, ctx->block[4], ctx->block[ 6], hqx_quant_chroma);
+    put_blocks(ctx, 2, x + 8, y, flag, ctx->block[5], ctx->block[ 7], hqx_quant_chroma);
+    put_blocks(ctx, 1, x,     y, flag, ctx->block[8], ctx->block[10], hqx_quant_chroma);
+    put_blocks(ctx, 1, x + 8, y, flag, ctx->block[9], ctx->block[11], hqx_quant_chroma);
 
     return 0;
 }
 
-static int hqx_decode_444a(HQXContext *ctx, AVFrame *pic,
-                           GetBitContext *gb, int x, int y)
+static int hqx_decode_444a(HQXContext *ctx, GetBitContext *gb, int x, int y)
 {
     const int *quants;
     int flag = 0;
@@ -307,14 +300,14 @@ static int hqx_decode_444a(HQXContext *ctx, AVFrame *pic,
         }
     }
 
-    put_blocks(ctx, pic, 3, x,     y, flag, ctx->block[ 0], ctx->block[ 2], hqx_quant_luma);
-    put_blocks(ctx, pic, 3, x + 8, y, flag, ctx->block[ 1], ctx->block[ 3], hqx_quant_luma);
-    put_blocks(ctx, pic, 0, x,     y, flag, ctx->block[ 4], ctx->block[ 6], hqx_quant_luma);
-    put_blocks(ctx, pic, 0, x + 8, y, flag, ctx->block[ 5], ctx->block[ 7], hqx_quant_luma);
-    put_blocks(ctx, pic, 2, x,     y, flag, ctx->block[ 8], ctx->block[10], hqx_quant_chroma);
-    put_blocks(ctx, pic, 2, x + 8, y, flag, ctx->block[ 9], ctx->block[11], hqx_quant_chroma);
-    put_blocks(ctx, pic, 1, x,     y, flag, ctx->block[12], ctx->block[14], hqx_quant_chroma);
-    put_blocks(ctx, pic, 1, x + 8, y, flag, ctx->block[13], ctx->block[15], hqx_quant_chroma);
+    put_blocks(ctx, 3, x,     y, flag, ctx->block[ 0], ctx->block[ 2], hqx_quant_luma);
+    put_blocks(ctx, 3, x + 8, y, flag, ctx->block[ 1], ctx->block[ 3], hqx_quant_luma);
+    put_blocks(ctx, 0, x,     y, flag, ctx->block[ 4], ctx->block[ 6], hqx_quant_luma);
+    put_blocks(ctx, 0, x + 8, y, flag, ctx->block[ 5], ctx->block[ 7], hqx_quant_luma);
+    put_blocks(ctx, 2, x,     y, flag, ctx->block[ 8], ctx->block[10], hqx_quant_chroma);
+    put_blocks(ctx, 2, x + 8, y, flag, ctx->block[ 9], ctx->block[11], hqx_quant_chroma);
+    put_blocks(ctx, 1, x,     y, flag, ctx->block[12], ctx->block[14], hqx_quant_chroma);
+    put_blocks(ctx, 1, x + 8, y, flag, ctx->block[13], ctx->block[15], hqx_quant_chroma);
 
     return 0;
 }
@@ -323,8 +316,7 @@ static const int shuffle_16[16] = {
     0, 5, 11, 14, 2, 7, 9, 13, 1, 4, 10, 15, 3, 6, 8, 12
 };
 
-static int decode_slice(HQXContext *ctx, AVFrame *pic, GetBitContext *gb,
-                        int slice_no, mb_decode_func decode_func)
+static int decode_slice(HQXContext *ctx, GetBitContext *gb, int slice_no)
 {
     int mb_w = (ctx->width  + 15) >> 4;
     int mb_h = (ctx->height + 15) >> 4;
@@ -370,7 +362,7 @@ static int decode_slice(HQXContext *ctx, AVFrame *pic, GetBitContext *gb,
                 mb_x +=            pos % grp_w;
                 mb_y  = loc_row + (pos / grp_w);
             }
-            decode_func(ctx, pic, gb, mb_x * 16, mb_y * 16);
+            ctx->decode_func(ctx, gb, mb_x * 16, mb_y * 16);
         }
     }
 
@@ -381,16 +373,12 @@ static int hqx_decode_frame(AVCodecContext *avctx, void *data,
                             int *got_picture_ptr, AVPacket *avpkt)
 {
     HQXContext *ctx = avctx->priv_data;
-    AVFrame *pic = data;
     uint8_t *src = avpkt->data;
     uint32_t info_tag, info_offset;
     int data_start;
-    unsigned data_size;
     GetBitContext gb;
     int i, ret;
     int slice;
-    uint32_t slice_off[17];
-    mb_decode_func decode_func = 0;
 
     if (avpkt->size < 8)
         return AVERROR_INVALIDDATA;
@@ -413,10 +401,12 @@ static int hqx_decode_frame(AVCodecContext *avctx, void *data,
         av_log(avctx, AV_LOG_DEBUG, "Skipping INFO chunk.\n");
     }
 
-    data_start = src - avpkt->data;
-    data_size  = avpkt->size - data_start;
+    data_start     = src - avpkt->data;
+    ctx->data_size = avpkt->size - data_start;
+    ctx->src       = src;
+    ctx->pic       = data;
 
-    if (data_size < HQX_HEADER_SIZE) {
+    if (ctx->data_size < HQX_HEADER_SIZE) {
         av_log(avctx, AV_LOG_ERROR, "Frame too small.\n");
         return AVERROR_INVALIDDATA;
     }
@@ -431,7 +421,7 @@ static int hqx_decode_frame(AVCodecContext *avctx, void *data,
     ctx->width      = AV_RB16(src + 4);
     ctx->height     = AV_RB16(src + 6);
     for (i = 0; i < 17; i++)
-        slice_off[i] = AV_RB24(src + 8 + i * 3);
+        ctx->slice_off[i] = AV_RB24(src + 8 + i * 3);
 
     if (ctx->dcb == 8) {
         av_log(avctx, AV_LOG_ERROR, "Invalid DC precision %d.\n", ctx->dcb);
@@ -453,50 +443,50 @@ static int hqx_decode_frame(AVCodecContext *avctx, void *data,
     switch (ctx->format) {
     case HQX_422:
         avctx->pix_fmt = AV_PIX_FMT_YUV422P16;
-        decode_func = hqx_decode_422;
+        ctx->decode_func = hqx_decode_422;
         break;
     case HQX_444:
         avctx->pix_fmt = AV_PIX_FMT_YUV444P16;
-        decode_func = hqx_decode_444;
+        ctx->decode_func = hqx_decode_444;
         break;
     case HQX_422A:
         avctx->pix_fmt = AV_PIX_FMT_YUVA422P16;
-        decode_func = hqx_decode_422a;
+        ctx->decode_func = hqx_decode_422a;
         break;
     case HQX_444A:
         avctx->pix_fmt = AV_PIX_FMT_YUVA444P16;
-        decode_func = hqx_decode_444a;
+        ctx->decode_func = hqx_decode_444a;
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Invalid format: %d.\n", ctx->format);
         return AVERROR_INVALIDDATA;
     }
 
-    ret = ff_get_buffer(avctx, pic, 0);
+    ret = ff_get_buffer(avctx, ctx->pic, 0);
     if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR, "Could not allocate buffer.\n");
         return ret;
     }
 
     for (slice = 0; slice < 16; slice++) {
-        if (slice_off[slice] < HQX_HEADER_SIZE ||
-            slice_off[slice] >= slice_off[slice + 1] ||
-            slice_off[slice + 1] > data_size) {
+        if (ctx->slice_off[slice] < HQX_HEADER_SIZE ||
+            ctx->slice_off[slice] >= ctx->slice_off[slice + 1] ||
+            ctx->slice_off[slice + 1] > ctx->data_size) {
             av_log(avctx, AV_LOG_ERROR, "Invalid slice size.\n");
             break;
         }
-        ret = init_get_bits(&gb, src + slice_off[slice],
-                            (slice_off[slice + 1] - slice_off[slice]) * 8);
+        ret = init_get_bits(&gb, src + ctx->slice_off[slice],
+                            (ctx->slice_off[slice + 1] - ctx->slice_off[slice]) * 8);
         if (ret < 0)
             return ret;
-        ret = decode_slice(ctx, pic, &gb, slice, decode_func);
+        ret = decode_slice(ctx, &gb, slice);
         if (ret < 0) {
             av_log(avctx, AV_LOG_ERROR, "Error decoding slice %d.\n", slice);
         }
     }
 
-    pic->key_frame = 1;
-    pic->pict_type = AV_PICTURE_TYPE_I;
+    ctx->pic->key_frame = 1;
+    ctx->pic->pict_type = AV_PICTURE_TYPE_I;
 
     *got_picture_ptr = 1;
 
