@@ -51,10 +51,17 @@ typedef struct HQXAC {
 
 struct HQXContext;
 
-typedef int (*mb_decode_func)(struct HQXContext *ctx, GetBitContext *gb, int x, int y);
+typedef int (*mb_decode_func)(struct HQXContext *ctx,
+                              int slice_no, int x, int y);
+
+typedef struct HQXSlice {
+    GetBitContext gb;
+    DECLARE_ALIGNED(16, int16_t, block)[16][64];
+} HQXSlice;
 
 typedef struct HQXContext {
     HQXDSPContext hqxdsp;
+    HQXSlice slice[16];
 
     AVFrame *pic;
     mb_decode_func decode_func;
@@ -65,8 +72,6 @@ typedef struct HQXContext {
     uint8_t *src;
     unsigned int data_size;
     uint32_t slice_off[17];
-
-    DECLARE_ALIGNED(16, int16_t, block)[16][64];
 
     VLC cbp_vlc;
     VLC dc_vlc[3];
