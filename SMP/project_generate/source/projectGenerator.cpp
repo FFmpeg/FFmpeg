@@ -1906,7 +1906,7 @@ bool projectGenerator::passStaticIncludeObject( uint & uiStartPos, uint & uiEndP
             //Check if object already included in internal list
             if( find( m_vCIncludes.begin(), m_vCIncludes.end(), *vitFile ) == m_vCIncludes.end() )
             {
-                m_vCIncludes.push_back( *vitFile );
+                vStaticIncludes.push_back( *vitFile );
                 //cout << "  Found C Static: '" << *vitFile << "'" << endl;
             }
         }

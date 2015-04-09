@@ -506,4 +506,11 @@ void configGenerator::buildObjects( const string & sTag, vector<string> & vObjec
         vObjects.push_back( "strtod" ); //msvc contains a strtod but it does not handle NaN's correctly
         vObjects.push_back( "getopt" );
     }
+    else if( sTag.compare( "EMMS_OBJS__yes_" ) == 0 )
+    {
+        if( this->getConfigOption( "MMX_EXTERNAL" )->m_sValue.compare( "1" ) == 0 )
+        {
+            vObjects.push_back( "x86/emms" ); //yasm emms is not required in 32b but is for 64bit unless with icl
+        }
+    }
 }
