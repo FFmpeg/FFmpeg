@@ -50,9 +50,10 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_NONE
     };
 
-    ff_set_common_formats(ctx, ff_make_format_list(pixel_fmts_eq));
-
-    return 0;
+    AVFilterFormats *fmts_list = ff_make_format_list(pixel_fmts_eq);
+    if (!fmts_list)
+        return AVERROR(ENOMEM);
+    return ff_set_common_formats(ctx, fmts_list);
 }
 
 static int config_input(AVFilterLink *inlink)

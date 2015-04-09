@@ -534,6 +534,7 @@ static int query_formats(AVFilterContext *ctx)
 {
     AVFilterFormats *formats = NULL;
     AVFilterChannelLayouts *layouts;
+    int ret;
 
     layouts = ff_all_channel_layouts();
 
@@ -542,10 +543,13 @@ static int query_formats(AVFilterContext *ctx)
 
     ff_add_format(&formats, AV_SAMPLE_FMT_FLT);
     ff_add_format(&formats, AV_SAMPLE_FMT_FLTP);
-    ff_set_common_formats(ctx, formats);
-    ff_set_common_channel_layouts(ctx, layouts);
-    ff_set_common_samplerates(ctx, ff_all_samplerates());
-    return 0;
+    ret = ff_set_common_formats(ctx, formats);
+    if (ret < 0)
+        return ret;
+    ret = ff_set_common_channel_layouts(ctx, layouts);
+    if (ret < 0)
+        return ret;
+    return ff_set_common_samplerates(ctx, ff_all_samplerates());
 }
 
 static const AVFilterPad avfilter_af_amix_outputs[] = {
