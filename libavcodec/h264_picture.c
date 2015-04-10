@@ -184,6 +184,7 @@ int ff_h264_field_end(H264Context *h, H264SliceContext *sl, int in_setup)
         ff_vdpau_h264_picture_complete(h);
 
 #if CONFIG_ERROR_RESILIENCE
+    av_assert0(sl == h->slice_ctx);
     /*
      * FIXME: Error handling code does not seem to support interlaced
      * when slices span multiple rows

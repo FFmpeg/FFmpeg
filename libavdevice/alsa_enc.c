@@ -39,10 +39,13 @@
 
 #include <alsa/asoundlib.h>
 
+#include "libavutil/internal.h"
 #include "libavutil/time.h"
+
+
 #include "libavformat/internal.h"
 #include "avdevice.h"
-#include "alsa-audio.h"
+#include "alsa.h"
 
 static av_cold int audio_write_header(AVFormatContext *s1)
 {

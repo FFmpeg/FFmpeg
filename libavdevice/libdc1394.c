@@ -21,13 +21,6 @@
  */
 
 #include "config.h"
-#include "libavformat/avformat.h"
-#include "libavformat/internal.h"
-#include "libavutil/log.h"
-#include "libavutil/mathematics.h"
-#include "libavutil/opt.h"
-#include "libavutil/parseutils.h"
-#include "libavutil/pixdesc.h"
 
 #if HAVE_LIBDC1394_2
 #include <dc1394/dc1394.h>
@@ -47,6 +40,16 @@
 #define DC1394_FRAMERATE_120   FRAMERATE_120
 #define DC1394_FRAMERATE_240   FRAMERATE_240
 #endif
+
+#include "libavutil/internal.h"
+#include "libavutil/log.h"
+#include "libavutil/mathematics.h"
+#include "libavutil/opt.h"
+#include "libavutil/parseutils.h"
+#include "libavutil/pixdesc.h"
+
+#include "libavformat/avformat.h"
+#include "libavformat/internal.h"
 
 typedef struct dc1394_data {
     AVClass *class;

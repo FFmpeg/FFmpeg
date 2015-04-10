@@ -46,11 +46,18 @@ typedef struct HQXAC {
     const HQXLUT *lut;
 } HQXAC;
 
+
+typedef struct HQXSliceData
+{
+    DECLARE_ALIGNED(16, int16_t, block)[16][64];
+
+} HQXSliceData;
+
 typedef struct HQXContext {
     int format, dcb, width, height;
     int interlaced;
 
-    DECLARE_ALIGNED(16, int16_t, block)[16][64];
+    HQXSliceData slice[17];
 
     VLC cbp_vlc;
     VLC dc_vlc[3];

@@ -52,14 +52,15 @@
 #include <X11/extensions/Xfixes.h>
 #include <X11/extensions/XShm.h>
 
-#include "avdevice.h"
-
+#include "libavutil/internal.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/time.h"
 
 #include "libavformat/internal.h"
+
+#include "avdevice.h"
 
 /** X11 device demuxer context */
 typedef struct X11GrabContext {

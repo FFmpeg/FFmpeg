@@ -438,7 +438,8 @@ static int ffm2_read_header(AVFormatContext *s)
             }
             avio_get_str(pb, INT_MAX, buffer, size);
             av_set_options_string(codec, buffer, "=", ",");
-            ffm_append_recommended_configuration(st, &buffer);
+            if ((ret = ffm_append_recommended_configuration(st, &buffer)) < 0)
+                goto fail;
             break;
         }
         avio_seek(pb, next, SEEK_SET);

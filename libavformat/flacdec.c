@@ -176,8 +176,26 @@ fail:
     return ret;
 }
 
+static int raw_flac_probe(AVProbeData *p)
+{
+    if ((p->buf[2] & 0xF0) == 0)    // blocksize code invalid
+        return 0;
+    if ((p->buf[2] & 0x0F) == 0x0F) // sample rate code invalid
+        return 0;
+    if ((p->buf[3] & 0xF0) >= FLAC_MAX_CHANNELS + FLAC_CHMODE_MID_SIDE << 4)
+        // channel mode invalid
+        return 0;
+    if ((p->buf[3] & 0x06) == 0x06) // bits per sample code invalid
+        return 0;
+    if ((p->buf[3] & 0x01) == 0x01) // reserved bit set
+        return 0;
+    return AVPROBE_SCORE_EXTENSION / 4 + 1;
+}
+
 static int flac_probe(AVProbeData *p)
 {
+    if ((AV_RB16(p->buf) & 0xFFFE) == 0xFFF8)
+        return raw_flac_probe(p);
     if (p->buf_size < 4 || memcmp(p->buf, "fLaC", 4))
         return 0;
     return AVPROBE_SCORE_EXTENSION;

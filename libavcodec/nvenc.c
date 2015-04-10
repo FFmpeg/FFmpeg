@@ -129,6 +129,12 @@ typedef struct NvencDynLoadFunctions
 #endif
 } NvencDynLoadFunctions;
 
+typedef struct NvencValuePair
+{
+    const char *str;
+    uint32_t num;
+} NvencValuePair;
+
 typedef struct NvencContext
 {
     AVClass *avclass;
@@ -152,10 +158,75 @@ typedef struct NvencContext
 
     char *preset;
     char *profile;
+    char *level;
+    char *tier;
     int cbr;
     int twopass;
     int gpu;
 } NvencContext;
+
+static const NvencValuePair nvenc_h264_level_pairs[] = {
+    { "auto", NV_ENC_LEVEL_AUTOSELECT },
+    { "1"   , NV_ENC_LEVEL_H264_1     },
+    { "1.0" , NV_ENC_LEVEL_H264_1     },
+    { "1b"  , NV_ENC_LEVEL_H264_1b    },
+    { "1.0b", NV_ENC_LEVEL_H264_1b    },
+    { "1.1" , NV_ENC_LEVEL_H264_11    },
+    { "1.2" , NV_ENC_LEVEL_H264_12    },
+    { "1.3" , NV_ENC_LEVEL_H264_13    },
+    { "2"   , NV_ENC_LEVEL_H264_2     },
+    { "2.0" , NV_ENC_LEVEL_H264_2     },
+    { "2.1" , NV_ENC_LEVEL_H264_21    },
+    { "2.2" , NV_ENC_LEVEL_H264_22    },
+    { "3"   , NV_ENC_LEVEL_H264_3     },
+    { "3.0" , NV_ENC_LEVEL_H264_3     },
+    { "3.1" , NV_ENC_LEVEL_H264_31    },
+    { "3.2" , NV_ENC_LEVEL_H264_32    },
+    { "4"   , NV_ENC_LEVEL_H264_4     },
+    { "4.0" , NV_ENC_LEVEL_H264_4     },
+    { "4.1" , NV_ENC_LEVEL_H264_41    },
+    { "4.2" , NV_ENC_LEVEL_H264_42    },
+    { "5"   , NV_ENC_LEVEL_H264_5     },
+    { "5.0" , NV_ENC_LEVEL_H264_5     },
+    { "5.1" , NV_ENC_LEVEL_H264_51    },
+    { NULL }
+};
+
+static const NvencValuePair nvenc_h265_level_pairs[] = {
+    { "auto", NV_ENC_LEVEL_AUTOSELECT },
+    { "1"   , NV_ENC_LEVEL_HEVC_1     },
+    { "1.0" , NV_ENC_LEVEL_HEVC_1     },
+    { "2"   , NV_ENC_LEVEL_HEVC_2     },
+    { "2.0" , NV_ENC_LEVEL_HEVC_2     },
+    { "2.1" , NV_ENC_LEVEL_HEVC_21    },
+    { "3"   , NV_ENC_LEVEL_HEVC_3     },
+    { "3.0" , NV_ENC_LEVEL_HEVC_3     },
+    { "3.1" , NV_ENC_LEVEL_HEVC_31    },
+    { "4"   , NV_ENC_LEVEL_HEVC_4     },
+    { "4.0" , NV_ENC_LEVEL_HEVC_4     },
+    { "4.1" , NV_ENC_LEVEL_HEVC_41    },
+    { "5"   , NV_ENC_LEVEL_HEVC_5     },
+    { "5.0" , NV_ENC_LEVEL_HEVC_5     },
+    { "5.1" , NV_ENC_LEVEL_HEVC_51    },
+    { "5.2" , NV_ENC_LEVEL_HEVC_52    },
+    { "6"   , NV_ENC_LEVEL_HEVC_6     },
+    { "6.0" , NV_ENC_LEVEL_HEVC_6     },
+    { "6.1" , NV_ENC_LEVEL_HEVC_61    },
+    { "6.2" , NV_ENC_LEVEL_HEVC_62    },
+    { NULL }
+};
+
+static int input_string_to_uint32(AVCodecContext *avctx, const NvencValuePair *pair, const char *input, uint32_t *output)
+{
+    for (; pair->str; ++pair) {
+        if (!strcmp(input, pair->str)) {
+            *output = pair->num;
+            return 0;
+        }
+    }
+
+    return AVERROR(EINVAL);
+}
 
 static NvencData* data_queue_dequeue(NvencDataList* queue)
 {
@@ -777,6 +848,18 @@ static av_cold int nvenc_encode_init(AVCodecContext *avctx)
                 goto error;
             }
         }
+
+        if (ctx->level) {
+            res = input_string_to_uint32(avctx, nvenc_h264_level_pairs, ctx->level, &ctx->encode_config.encodeCodecConfig.h264Config.level);
+
+            if (res) {
+                av_log(avctx, AV_LOG_FATAL, "Level \"%s\" is unknown! Supported levels: auto, 1, 1b, 1.1, 1.2, 1.3, 2, 2.1, 2.2, 3, 3.1, 3.2, 4, 4.1, 4.2, 5, 5.1\n", ctx->level);
+                goto error;
+            }
+        } else {
+            ctx->encode_config.encodeCodecConfig.h264Config.level = NV_ENC_LEVEL_AUTOSELECT;
+        }
+
         break;
     case AV_CODEC_ID_H265:
         ctx->encode_config.encodeCodecConfig.hevcConfig.disableSPSPPS = (avctx->flags & CODEC_FLAG_GLOBAL_HEADER) ? 1 : 0;
@@ -785,6 +868,30 @@ static av_cold int nvenc_encode_init(AVCodecContext *avctx)
         /* No other profile is supported in the current SDK version 5 */
         ctx->encode_config.profileGUID = NV_ENC_HEVC_PROFILE_MAIN_GUID;
         avctx->profile = FF_PROFILE_HEVC_MAIN;
+
+        if (ctx->level) {
+            res = input_string_to_uint32(avctx, nvenc_h265_level_pairs, ctx->level, &ctx->encode_config.encodeCodecConfig.hevcConfig.level);
+
+            if (res) {
+                av_log(avctx, AV_LOG_FATAL, "Level \"%s\" is unknown! Supported levels: auto, 1, 2, 2.1, 3, 3.1, 4, 4.1, 5, 5.1, 5.2, 6, 6.1, 6.2\n", ctx->level);
+                goto error;
+            }
+        } else {
+            ctx->encode_config.encodeCodecConfig.hevcConfig.level = NV_ENC_LEVEL_AUTOSELECT;
+        }
+
+        if (ctx->tier) {
+            if (!strcmp(ctx->tier, "main")) {
+                ctx->encode_config.encodeCodecConfig.hevcConfig.tier = NV_ENC_TIER_HEVC_MAIN;
+            } else if (!strcmp(ctx->tier, "high")) {
+                ctx->encode_config.encodeCodecConfig.hevcConfig.tier = NV_ENC_TIER_HEVC_HIGH;
+            } else {
+                av_log(avctx, AV_LOG_FATAL, "Tier \"%s\" is unknown! Supported tiers: main, high\n", ctx->tier);
+                res = AVERROR(EINVAL);
+                goto error;
+            }
+        }
+
         break;
     /* Earlier switch/case will return if unknown codec is passed. */
     }
@@ -1277,7 +1384,9 @@ static enum AVPixelFormat pix_fmts_nvenc[] = {
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
     { "preset", "Set the encoding preset (one of hq, hp, bd, ll, llhq, llhp, default)", OFFSET(preset), AV_OPT_TYPE_STRING, { .str = "hq" }, 0, 0, VE },
-    { "profile", "Set the encoding profile (high, main or baseline)", OFFSET(profile), AV_OPT_TYPE_STRING, { 0 }, 0, 0, VE},
+    { "profile", "Set the encoding profile (high, main or baseline)", OFFSET(profile), AV_OPT_TYPE_STRING, { 0 }, 0, 0, VE },
+    { "level", "Set the encoding level restriction (auto, 1.0, 1.0b, 1.1, 1.2, ..., 4.2, 5.0, 5.1)", OFFSET(level), AV_OPT_TYPE_STRING, { 0 }, 0, 0, VE },
+    { "tier", "Set the encoding tier (main or high)", OFFSET(tier), AV_OPT_TYPE_STRING, { 0 }, 0, 0, VE },
     { "cbr", "Use cbr encoding mode", OFFSET(cbr), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VE },
     { "2pass", "Use 2pass cbr encoding mode (low latency mode only)", OFFSET(twopass), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 1, VE },
     { "gpu", "Selects which NVENC capable GPU to use. First GPU is 0, second is 1, and so on.", OFFSET(gpu), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE },

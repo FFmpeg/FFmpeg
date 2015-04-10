@@ -27,8 +27,8 @@
  * @author Benoit Fouet ( benoit fouet free fr )
  */
 
-#ifndef AVDEVICE_ALSA_AUDIO_H
-#define AVDEVICE_ALSA_AUDIO_H
+#ifndef AVDEVICE_ALSA_H
+#define AVDEVICE_ALSA_H
 
 #include <alsa/asoundlib.h>
 #include "config.h"
@@ -101,4 +101,4 @@ int ff_alsa_extend_reorder_buf(AlsaData *s, int size);
 
 int ff_alsa_get_device_list(AVDeviceInfoList *device_list, snd_pcm_stream_t stream_type);
 
-#endif /* AVDEVICE_ALSA_AUDIO_H */
+#endif /* AVDEVICE_ALSA_H */
