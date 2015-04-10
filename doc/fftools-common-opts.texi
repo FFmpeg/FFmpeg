@@ -253,10 +253,14 @@ Possible flags for this option are:
 @item sse4.1
 @item sse4.2
 @item avx
+@item avx2
 @item xop
+@item fma3
 @item fma4
 @item 3dnow
 @item 3dnowext
+@item bmi1
+@item bmi2
 @item cmov
 @end table
 @item ARM
