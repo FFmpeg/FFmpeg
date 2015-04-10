@@ -26,7 +26,10 @@
 
 #include "libavformat/internal.h"
 
+// windows.h must no be included before winsock2.h, and libavformat internal
+// headers may include winsock2.h
 #include <windows.h>
+// windows.h needs to be included before vfw.h
 #include <vfw.h>
 
 #include "avdevice.h"
