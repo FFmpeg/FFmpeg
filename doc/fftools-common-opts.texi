@@ -284,6 +284,12 @@ Possible flags for this option are:
 @item neon
 @item setend
 @end table
+@item AArch64
+@table @samp
+@item armv8
+@item vfp
+@item neon
+@end table
 @item PowerPC
 @table @samp
 @item altivec
