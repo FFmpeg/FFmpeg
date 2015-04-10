@@ -100,7 +100,20 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
     }
 
     if (x265_param_default_preset(ctx->params, ctx->preset, ctx->tune) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Invalid preset or tune.\n");
+        int i;
+
+        av_log(avctx, AV_LOG_ERROR, "Error setting preset/tune %s/%s.\n", ctx->preset, ctx->tune);
+        av_log(avctx, AV_LOG_INFO, "Possible presets:");
+        for (i = 0; x265_preset_names[i]; i++)
+            av_log(avctx, AV_LOG_INFO, " %s", x265_preset_names[i]);
+
+        av_log(avctx, AV_LOG_INFO, "\n");
+        av_log(avctx, AV_LOG_INFO, "Possible tunes:");
+        for (i = 0; x265_tune_names[i]; i++)
+            av_log(avctx, AV_LOG_INFO, " %s", x265_tune_names[i]);
+
+        av_log(avctx, AV_LOG_INFO, "\n");
+
         return AVERROR(EINVAL);
     }
 
