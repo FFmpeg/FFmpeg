@@ -40,8 +40,8 @@ void ff_rtp_send_jpeg(AVFormatContext *s1, const uint8_t *buf, int size)
     s->timestamp = s->cur_timestamp;
 
     /* convert video pixel dimensions from pixels to blocks */
-    w = s1->streams[0]->codec->width  >> 3;
-    h = s1->streams[0]->codec->height >> 3;
+    w = (s1->streams[0]->codec->width  + 7) >> 3;
+    h = (s1->streams[0]->codec->height + 7) >> 3;
 
     /* get the pixel format type or fail */
     if (s1->streams[0]->codec->pix_fmt == AV_PIX_FMT_YUVJ422P ||
