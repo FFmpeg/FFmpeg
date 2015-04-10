@@ -282,6 +282,7 @@ Possible flags for this option are:
 @item vfp
 @item vfpv3
 @item neon
+@item setend
 @end table
 @item PowerPC
 @table @samp
