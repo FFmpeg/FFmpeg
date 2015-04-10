@@ -4614,8 +4614,8 @@ enabled libopencore_amrnb && require libopencore_amrnb opencore-amrnb/interf_dec
 enabled libopencore_amrwb && require libopencore_amrwb opencore-amrwb/dec_if.h D_IF_init -lopencore-amrwb
 enabled libopencv         && require_pkg_config opencv opencv/cv.h cvCreateImageHeader
 enabled libopenh264       && require_pkg_config openh264 wels/codec_api.h WelsGetCodecVersion
-enabled libopenjpeg       && { { check_header openjpeg.h && check_lib2 openjpeg.h opj_version -lopenjpeg -DOPJ_STATIC; } ||
-                               { require_pkg_config libopenjpeg1 openjpeg.h opj_version -DOPJ_STATIC; } }
+enabled libopenjpeg       && { check_lib2 openjpeg.h opj_version -lopenjpeg -DOPJ_STATIC ||
+                               require_pkg_config libopenjpeg1 openjpeg.h opj_version -DOPJ_STATIC; }
 enabled libopus           && require_pkg_config opus opus_multistream.h opus_multistream_decoder_create
 enabled libpulse          && require_pkg_config libpulse-simple pulse/simple.h pa_simple_new
 enabled librtmp           && require_pkg_config librtmp librtmp/rtmp.h RTMP_Socket
