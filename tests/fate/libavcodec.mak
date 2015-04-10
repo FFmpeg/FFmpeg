@@ -1,3 +1,8 @@
+FATE_LIBAVCODEC-$(CONFIG_CABAC) += fate-cabac
+fate-cabac: libavcodec/cabac-test$(EXESUF)
+fate-cabac: CMD = run libavcodec/cabac-test
+fate-cabac: REF = /dev/null
+
 FATE_LIBAVCODEC-$(CONFIG_GOLOMB) += fate-golomb
 fate-golomb: libavcodec/golomb-test$(EXESUF)
 fate-golomb: CMD = run libavcodec/golomb-test
