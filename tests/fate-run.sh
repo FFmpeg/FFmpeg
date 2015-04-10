@@ -252,7 +252,13 @@ else
     err=1
 fi
 
-echo "${test}:${sig:-$err}:$($base64 <$cmpfile):$($base64 <$errfile)" >$repfile
+if [ $err -eq 0 ]; then
+    unset cmpo erro
+else
+    cmpo="$($base64 <$cmpfile)"
+    erro="$($base64 <$errfile)"
+fi
+echo "${test}:${sig:-$err}:$cmpo:$erro" >$repfile
 
 if test $err != 0 && test $gen != "no" ; then
     echo "GEN     $ref"
