@@ -1275,12 +1275,16 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     int ret;
 
     if (s->reload) {
-        if ((ret = load_textfile(ctx)) < 0)
+        if ((ret = load_textfile(ctx)) < 0) {
+            av_frame_free(&frame);
             return ret;
+        }
 #if CONFIG_LIBFRIBIDI
         if (s->text_shaping)
-            if ((ret = shape_text(ctx)) < 0)
+            if ((ret = shape_text(ctx)) < 0) {
+                av_frame_free(&frame);
                 return ret;
+            }
 #endif
     }
 
