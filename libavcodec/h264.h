@@ -779,7 +779,7 @@ int ff_h264_decode_sei(H264Context *h);
 /**
  * Decode SPS
  */
-int ff_h264_decode_seq_parameter_set(H264Context *h);
+int ff_h264_decode_seq_parameter_set(H264Context *h, int ignore_truncation);
 
 /**
  * compute profile from sps
