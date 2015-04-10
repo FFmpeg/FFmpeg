@@ -37,6 +37,7 @@ version <next>:
 - Hap decoder and encoder
 - DirectDraw Surface image/texture decoder
 - rewritten ASF demuxer
+- Go2Meeting decoding support
 
 
 version 11:
