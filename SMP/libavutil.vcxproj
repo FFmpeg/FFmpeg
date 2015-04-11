@@ -66,12 +66,6 @@
     <YASM Include="..\libavutil\x86\pixelutils.asm" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\libavutil\..\compat\msvcrt\snprintf.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\..\compat\strtod.c">
-    </ClCompile>
-    <ClCompile Include="..\libavutil\..\compat\getopt.c">
-    </ClCompile>
     <ClCompile Include="..\libavutil\adler32.c">
     </ClCompile>
     <ClCompile Include="..\libavutil\aes.c">
@@ -198,6 +192,12 @@
     <ClCompile Include="..\libavutil\opencl.c">
     </ClCompile>
     <ClCompile Include="..\libavutil\opencl_internal.c">
+    </ClCompile>
+    <ClCompile Include="..\libavutil\..\compat\msvcrt\snprintf.c">
+    </ClCompile>
+    <ClCompile Include="..\libavutil\..\compat\strtod.c">
+    </ClCompile>
+    <ClCompile Include="..\libavutil\..\compat\getopt.c">
     </ClCompile>
     <ClCompile Include="..\libavutil\x86\cpu.c">
       <ObjectFileName>$(IntDir)\libavutil_x86_cpu.obj</ObjectFileName>
