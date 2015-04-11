@@ -112,7 +112,7 @@ typedef struct {
 static void add_serial_pair(WtvSyncEntry ** list, int * count, int64_t serial, int64_t value)
 {
     int new_count = *count + 1;
-    WtvSyncEntry *new_list = av_realloc(*list, new_count * sizeof(WtvSyncEntry));
+    WtvSyncEntry *new_list = av_realloc_array(*list, new_count, sizeof(WtvSyncEntry));
     if (!new_list)
         return;
     new_list[*count] = (WtvSyncEntry){serial, value};
