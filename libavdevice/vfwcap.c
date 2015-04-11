@@ -19,15 +19,18 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <windows.h>
-#include <vfw.h>
-
 #include "libavutil/internal.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
 
 #include "libavformat/internal.h"
+
+// windows.h must no be included before winsock2.h, and libavformat internal
+// headers may include winsock2.h
+#include <windows.h>
+// windows.h needs to be included before vfw.h
+#include <vfw.h>
 
 #include "avdevice.h"
 

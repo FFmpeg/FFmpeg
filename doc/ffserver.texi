@@ -118,7 +118,8 @@ Multiple streams can be connected to the same feed.
 
 For example, you can have a situation described by the following
 graph:
-@example
+
+@verbatim
                _________       __________
               |         |     |          |
 ffmpeg 1 -----| feed 1  |-----| stream 1 |
@@ -143,7 +144,8 @@ ffmpeg 2 -----| feed 3  |-----| stream 4 |
               |         |     |          |
               | file 1  |-----| stream 5 |
               |_________|     |__________|
-@end example
+
+@end verbatim
 
 @anchor{FFM}
 @section FFM, FFM2 formats

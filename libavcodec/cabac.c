@@ -174,7 +174,7 @@ int main(void){
     CABACContext c;
     uint8_t b[9*SIZE];
     uint8_t r[9*SIZE];
-    int i;
+    int i, ret = 0;
     uint8_t state[10]= {0};
     AVLFG prng;
 
@@ -207,21 +207,27 @@ STOP_TIMER("put_cabac")
 
     for(i=0; i<SIZE; i++){
 START_TIMER
-        if( (r[i]&1) != get_cabac_bypass(&c) )
+        if( (r[i]&1) != get_cabac_bypass(&c) ) {
             av_log(NULL, AV_LOG_ERROR, "CABAC bypass failure at %d\n", i);
+            ret = 1;
+        }
 STOP_TIMER("get_cabac_bypass")
     }
 
     for(i=0; i<SIZE; i++){
 START_TIMER
-        if( (r[i]&1) != get_cabac_noinline(&c, state) )
+        if( (r[i]&1) != get_cabac_noinline(&c, state) ) {
             av_log(NULL, AV_LOG_ERROR, "CABAC failure at %d\n", i);
+            ret = 1;
+        }
 STOP_TIMER("get_cabac")
     }
-    if(!get_cabac_terminate(&c))
+    if(!get_cabac_terminate(&c)) {
         av_log(NULL, AV_LOG_ERROR, "where's the Terminator?\n");
+        ret = 1;
+    }
 
-    return 0;
+    return ret;
 }
 
 #endif /* TEST */

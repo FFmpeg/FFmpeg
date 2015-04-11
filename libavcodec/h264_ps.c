@@ -297,7 +297,7 @@ static void decode_scaling_matrices(H264Context *h, SPS *sps,
     }
 }
 
-int ff_h264_decode_seq_parameter_set(H264Context *h)
+int ff_h264_decode_seq_parameter_set(H264Context *h, int ignore_truncation)
 {
     int profile_idc, level_idc, constraint_set_flags = 0;
     unsigned int sps_id;
@@ -518,9 +518,10 @@ int ff_h264_decode_seq_parameter_set(H264Context *h)
     }
 
     if (get_bits_left(&h->gb) < 0) {
-        av_log(h->avctx, AV_LOG_ERROR,
+        av_log(h->avctx, ignore_truncation ? AV_LOG_WARNING : AV_LOG_ERROR,
                "Overread %s by %d bits\n", sps->vui_parameters_present_flag ? "VUI" : "SPS", -get_bits_left(&h->gb));
-        goto fail;
+        if (!ignore_truncation)
+            goto fail;
     }
 
     if (!sps->sar.den)
