@@ -1,6 +1,35 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 2.6.2:
+- avcodec/h264: Do not fail with randomly truncated VUIs
+- avcodec/h264_ps: Move truncation check from VUI to SPS
+- avcodec/h264: Be more tolerant to changing pps id between slices
+- avcodec/aacdec: Fix storing state before PCE decode
+- avcodec/h264: reset the counts in the correct context
+- avcodec/h264_slice: Do not reset mb_aff_frame per slice
+- avcodec/h264: finish previous slices before switching to single thread mode
+- avcodec/h264: Fix race between slices where one overwrites data from the next
+- avformat/utils: avoid discarded streams in av_find_default_stream_index()
+- ffmpeg: Fix extradata allocation
+- avcodec/h264_refs: Do not set reference to things which do not exist
+- avcodec/h264: Fail for invalid mixed IDR / non IDR frames in slice threading mode
+- Revert "avcodec/exr: fix memset first arg in reverse_lut()"
+- h264: avoid unnecessary calls to get_format
+- avutil/pca: Check for av_malloc* failures
+- avutil/cpu: add missing check for mmxext to av_force_cpu_flags
+- lavc/dnxhd: Fix pix_fmt change.
+- avformat/http: replace cookies with updated values instead of appending forever
+- avformat/hls: store cookies returned in HLS key response
+- avformat/rmdec: fix support for 0 sized mdpr
+- avcodec/msrledec: restructure msrle_decode_pal4() based on the line number instead of the pixel pointer
+- avcodec/hevc_ps: Check cropping parameters more correctly
+- hevc: make the crop sizes unsigned
+- avcodec/dnxhddec: Reset is_444 if format is not 444
+- avcodec/dnxhddec: Check that the frame is interlaced before using cur_field
+- mips/float_dsp: fix vector_fmul_window_mips on mips64
+- doc: Remove non-existing decklink options.
+
 version 2.6.1:
 - avformat/mov: Disallow ".." in dref unless use_absolute_path is set
 - avfilter/palettegen: make sure at least one frame was sent to the filter
