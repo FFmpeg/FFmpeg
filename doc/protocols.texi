@@ -279,7 +279,29 @@ Set initial byte offset.
 Try to limit the request to bytes preceding this offset.
 
 @item listen
-If set to 1 enables experimental HTTP server.
+If set to 1 enables experimental HTTP server. This can be used to send data when
+used as an output option, or read data from a client with HTTP POST when used as
+an input option.
+@example
+# Server side (sending):
+ffmpeg -i somefile.ogg -c copy -listen 1 -f ogg http://@var{server}:@var{port}
+
+# Client side (receiving):
+ffmpeg -i http://@var{server}:@var{port} -c copy somefile.ogg
+
+# Client can also be done with wget:
+wget http://@var{server}:@var{port} -O somefile.ogg
+
+# Server side (receiving):
+ffmpeg -listen 1 -i http://@var{server}:@var{port} -c copy somefile.ogg
+
+# Client side (sending):
+ffmpeg -i somefile.ogg -chunked_post 0 -c copy -f ogg http://@var{server}:@var{port}
+
+# Client can also be done with wget:
+wget --post-file=somefile.ogg http://@var{server}:@var{port}
+@end example
+
 @end table
 
 @subsection HTTP Cookies

@@ -128,13 +128,14 @@ static const AVOption options[] = {
     { "end_offset", "try to limit the request to bytes preceding this offset", OFFSET(end_off), AV_OPT_TYPE_INT64, { .i64 = 0 }, 0, INT64_MAX, D },
     { "method", "Override the HTTP method", OFFSET(method), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, E },
     { "reconnect", "auto reconnect after disconnect before EOF", OFFSET(reconnect), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, D },
-    { "listen", "listen on HTTP", OFFSET(listen), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, E },
+    { "listen", "listen on HTTP", OFFSET(listen), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, D | E },
     { NULL }
 };
 
 static int http_connect(URLContext *h, const char *path, const char *local_path,
                         const char *hoststr, const char *auth,
                         const char *proxyauth, int *new_location);
+static int http_read_header(URLContext *h, int *new_location);
 
 void ff_http_init_auth_state(URLContext *dest, const URLContext *src)
 {
@@ -305,7 +306,7 @@ static int http_listen(URLContext *h, const char *uri, int flags,
     static const char header[] = "HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nTransfer-Encoding: chunked\r\n\r\n";
     char hostname[1024];
     char lower_url[100];
-    int port;
+    int port, new_location;
     av_url_split(NULL, 0, NULL, 0, hostname, sizeof(hostname), &port,
                  NULL, 0, uri);
     ff_url_join(lower_url, sizeof(lower_url), "tcp", NULL, hostname, port,
@@ -316,6 +317,8 @@ static int http_listen(URLContext *h, const char *uri, int flags,
         goto fail;
     if ((ret = ffurl_write(s->hd, header, strlen(header))) < 0)
         goto fail;
+    if ((ret = http_read_header(h, &new_location)) < 0)
+         goto fail;
     return 0;
 
 fail:
