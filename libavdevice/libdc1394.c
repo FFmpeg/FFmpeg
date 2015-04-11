@@ -28,16 +28,6 @@
 #include <libraw1394/raw1394.h>
 #include <libdc1394/dc1394_control.h>
 
-#include "libavutil/internal.h"
-#include "libavutil/log.h"
-#include "libavutil/mathematics.h"
-#include "libavutil/opt.h"
-#include "libavutil/parseutils.h"
-#include "libavutil/pixdesc.h"
-
-#include "libavformat/avformat.h"
-#include "libavformat/internal.h"
-
 #define DC1394_VIDEO_MODE_320x240_YUV422 MODE_320x240_YUV422
 #define DC1394_VIDEO_MODE_640x480_YUV411 MODE_640x480_YUV411
 #define DC1394_VIDEO_MODE_640x480_YUV422 MODE_640x480_YUV422
@@ -50,6 +40,16 @@
 #define DC1394_FRAMERATE_120   FRAMERATE_120
 #define DC1394_FRAMERATE_240   FRAMERATE_240
 #endif
+
+#include "libavutil/internal.h"
+#include "libavutil/log.h"
+#include "libavutil/mathematics.h"
+#include "libavutil/opt.h"
+#include "libavutil/parseutils.h"
+#include "libavutil/pixdesc.h"
+
+#include "libavformat/avformat.h"
+#include "libavformat/internal.h"
 
 typedef struct dc1394_data {
     AVClass *class;
