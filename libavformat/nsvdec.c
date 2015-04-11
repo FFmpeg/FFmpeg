@@ -346,7 +346,7 @@ static int nsv_parse_NSVf_header(AVFormatContext *s)
         nsv->index_entries = table_entries_used;
         if((unsigned)table_entries_used >= UINT_MAX / sizeof(uint32_t))
             return -1;
-        nsv->nsvs_file_offset = av_malloc((unsigned)table_entries_used * sizeof(uint32_t));
+        nsv->nsvs_file_offset = av_malloc_array((unsigned)table_entries_used, sizeof(uint32_t));
         if (!nsv->nsvs_file_offset)
             return AVERROR(ENOMEM);
 
@@ -355,7 +355,7 @@ static int nsv_parse_NSVf_header(AVFormatContext *s)
 
         if(table_entries > table_entries_used &&
            avio_rl32(pb) == MKTAG('T','O','C','2')) {
-            nsv->nsvs_timestamps = av_malloc((unsigned)table_entries_used*sizeof(uint32_t));
+            nsv->nsvs_timestamps = av_malloc_array((unsigned)table_entries_used, sizeof(uint32_t));
             if (!nsv->nsvs_timestamps)
                 return AVERROR(ENOMEM);
             for(i=0;i<table_entries_used;i++) {
