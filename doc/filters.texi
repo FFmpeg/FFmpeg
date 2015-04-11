@@ -1209,6 +1209,17 @@ The timestamp, expressed in seconds. It's NAN if the input timestamp is unknown.
 
 The default value of @var{x} and @var{y} is 0.
 
+@item draw
+Draw the text only if the expression evaluates as non-zero.
+The expression accepts the same variables @var{x, y} do.
+The default value is 1.
+
+@item alpha
+Draw the text applying alpha blending. The value can
+be either a number between 0.0 and 1.0
+The expression accepts the same variables @var{x, y} do.
+The default value is 1.
+
 @item fontsize
 The font size to be used for drawing text.
 The default value of @var{fontsize} is 16.

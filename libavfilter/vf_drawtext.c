@@ -152,6 +152,9 @@ typedef struct DrawTextContext {
     char   *d_expr;
     AVExpr *d_pexpr;
     int draw;                       ///< set to zero to prevent drawing
+    char   *a_expr;
+    AVExpr *a_pexpr;
+    int alpha;
     AVLFG  prng;                    ///< random
 } DrawTextContext;
 
@@ -176,6 +179,7 @@ static const AVOption drawtext_options[]= {
     { "shadowy",     NULL,                   OFFSET(shadowy),            AV_OPT_TYPE_INT,    { .i64 = 0       }, INT_MIN, INT_MAX, FLAGS },
     { "tabsize",     NULL,                   OFFSET(tabsize),            AV_OPT_TYPE_INT,    { .i64 = 4       }, 0,       INT_MAX, FLAGS },
     { "draw",        "if false do not draw", OFFSET(d_expr),             AV_OPT_TYPE_STRING, { .str = "1"     },          .flags = FLAGS },
+    { "alpha",       "apply alpha while rendering", OFFSET(a_expr),      AV_OPT_TYPE_STRING, { .str = "1"     },          .flags = FLAGS },
     { "fix_bounds",  "if true, check and fix text coords to avoid clipping",
                                             OFFSET(fix_bounds),          AV_OPT_TYPE_INT,    { .i64 = 1       }, 0,       1,       FLAGS },
 
@@ -678,6 +682,8 @@ static int config_input(AVFilterLink *inlink)
         (ret = av_expr_parse(&s->y_pexpr, s->y_expr, var_names,
                              NULL, NULL, fun2_names, fun2, 0, ctx)) < 0 ||
         (ret = av_expr_parse(&s->d_pexpr, s->d_expr, var_names,
+                             NULL, NULL, fun2_names, fun2, 0, ctx)) < 0 ||
+        (ret = av_expr_parse(&s->a_pexpr, s->a_expr, var_names,
                              NULL, NULL, fun2_names, fun2, 0, ctx)) < 0)
         return AVERROR(EINVAL);
 
@@ -713,7 +719,7 @@ static int config_input(AVFilterLink *inlink)
 
 #define SET_PIXEL_YUV(frame, yuva_color, val, x, y, hsub, vsub) {           \
     luma_pos    = ((x)          ) + ((y)          ) * frame->linesize[0]; \
-    alpha = yuva_color[3] * (val) * 129;                               \
+    alpha = yuva_color[3] * alpha_mul * (val) * 129 / 255; \
     frame->data[0][luma_pos]    = (alpha * yuva_color[0] + (255*255*129 - alpha) * frame->data[0][luma_pos]   ) >> 23; \
     if (((x) & ((1<<(hsub)) - 1)) == 0 && ((y) & ((1<<(vsub)) - 1)) == 0) {\
         chroma_pos1 = ((x) >> (hsub)) + ((y) >> (vsub)) * frame->linesize[1]; \
@@ -725,7 +731,8 @@ static int config_input(AVFilterLink *inlink)
 
 static inline int draw_glyph_yuv(AVFrame *frame, FT_Bitmap *bitmap, unsigned int x,
                                  unsigned int y, unsigned int width, unsigned int height,
-                                 const uint8_t yuva_color[4], int hsub, int vsub)
+                                 const uint8_t yuva_color[4], int hsub, int vsub,
+                                 int alpha_mul)
 {
     int r, c, alpha;
     unsigned int luma_pos, chroma_pos1, chroma_pos2;
@@ -747,7 +754,7 @@ static inline int draw_glyph_yuv(AVFrame *frame, FT_Bitmap *bitmap, unsigned int
 
 #define SET_PIXEL_RGB(frame, rgba_color, val, x, y, pixel_step, r_off, g_off, b_off, a_off) { \
     p   = frame->data[0] + (x) * pixel_step + ((y) * frame->linesize[0]); \
-    alpha = rgba_color[3] * (val) * 129;                              \
+    alpha = rgba_color[3] * alpha_mul * (val) * 129 / 255;                           \
     *(p+r_off) = (alpha * rgba_color[0] + (255*255*129 - alpha) * *(p+r_off)) >> 23; \
     *(p+g_off) = (alpha * rgba_color[1] + (255*255*129 - alpha) * *(p+g_off)) >> 23; \
     *(p+b_off) = (alpha * rgba_color[2] + (255*255*129 - alpha) * *(p+b_off)) >> 23; \
@@ -756,7 +763,8 @@ static inline int draw_glyph_yuv(AVFrame *frame, FT_Bitmap *bitmap, unsigned int
 static inline int draw_glyph_rgb(AVFrame *frame, FT_Bitmap *bitmap,
                                  unsigned int x, unsigned int y,
                                  unsigned int width, unsigned int height, int pixel_step,
-                                 const uint8_t rgba_color[4], const uint8_t rgba_map[4])
+                                 const uint8_t rgba_color[4], const uint8_t rgba_map[4],
+                                 int alpha_mul)
 {
     int r, c, alpha;
     uint8_t *p;
@@ -780,11 +788,12 @@ static inline int draw_glyph_rgb(AVFrame *frame, FT_Bitmap *bitmap,
 static inline void drawbox(AVFrame *frame, unsigned int x, unsigned int y,
                            unsigned int width, unsigned int height,
                            uint8_t *line[4], int pixel_step[4], uint8_t color[4],
-                           int hsub, int vsub, int is_rgba_packed, uint8_t rgba_map[4])
+                           int hsub, int vsub, int is_rgba_packed, uint8_t rgba_map[4],
+                           int alpha_mul)
 {
     int i, j, alpha;
 
-    if (color[3] != 0xFF) {
+    if (color[3] != 0xFF || alpha_mul != 0xFF) {
         if (is_rgba_packed) {
             uint8_t *p;
             for (j = 0; j < height; j++)
@@ -805,7 +814,9 @@ static inline void drawbox(AVFrame *frame, unsigned int x, unsigned int y,
 }
 
 static int draw_glyphs(DrawTextContext *s, AVFrame *frame,
-                       int width, int height, const uint8_t rgbcolor[4], const uint8_t yuvcolor[4], int x, int y)
+                       int width, int height,
+                       const uint8_t rgbcolor[4], const uint8_t yuvcolor[4],
+                       int x, int y)
 {
     char *text = HAVE_LOCALTIME_R ? s->expanded_text : s->text;
     uint32_t code = 0;
@@ -831,11 +842,11 @@ static int draw_glyphs(DrawTextContext *s, AVFrame *frame,
         if (s->is_packed_rgb) {
             draw_glyph_rgb(frame, &glyph->bitmap,
                            s->positions[i].x+x, s->positions[i].y+y, width, height,
-                           s->pixel_step[0], rgbcolor, s->rgba_map);
+                           s->pixel_step[0], rgbcolor, s->rgba_map, s->alpha);
         } else {
             draw_glyph_yuv(frame, &glyph->bitmap,
                            s->positions[i].x+x, s->positions[i].y+y, width, height,
-                           yuvcolor, s->hsub, s->vsub);
+                           yuvcolor, s->hsub, s->vsub, s->alpha);
         }
     }
 
@@ -853,7 +864,7 @@ static int draw_text(AVFilterContext *ctx, AVFrame *frame,
         drawbox(frame, s->x, s->y, s->w, s->h,
                 s->box_line, s->pixel_step, s->boxcolor,
                 s->hsub, s->vsub, s->is_packed_rgb,
-                s->rgba_map);
+                s->rgba_map, s->alpha);
 
     if (s->shadowx || s->shadowy) {
         if ((ret = draw_glyphs(s, frame, width, height,
@@ -889,6 +900,21 @@ static inline int normalize_double(int *n, double d)
     return ret;
 }
 
+static void update_alpha(DrawTextContext *s)
+{
+    double alpha = av_expr_eval(s->a_pexpr, s->var_values, &s->prng);
+
+    if (isnan(alpha))
+        return;
+
+    if (alpha >= 1.0)
+        s->alpha = 255;
+    else if (alpha <= 0)
+        s->alpha = 0;
+    else
+        s->alpha = 256 * alpha;
+}
+
 static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
     AVFilterContext *ctx = inlink->dst;
@@ -911,6 +937,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
         av_expr_eval(s->x_pexpr, s->var_values, &s->prng);
 
     s->draw = av_expr_eval(s->d_pexpr, s->var_values, &s->prng);
+
+    update_alpha(s);
 
     normalize_double(&s->x, s->var_values[VAR_X]);
     normalize_double(&s->y, s->var_values[VAR_Y]);
