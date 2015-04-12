@@ -313,6 +313,7 @@ typedef struct MXFContext {
     uint8_t umid[16];        ///< unique material identifier
     int channel_count;
     uint32_t tagged_value_count;
+    AVRational audio_edit_rate;
 } MXFContext;
 
 static const uint8_t uuid_base[]            = { 0xAD,0xAB,0x44,0x24,0x2f,0x25,0x4d,0xc7,0x92,0xff,0x29,0xbd };
@@ -781,8 +782,14 @@ static void mxf_write_track(AVFormatContext *s, AVStream *st, enum MXFMetadataSe
         avio_write(pb, sc->track_essence_element_key + 12, 4);
 
     mxf_write_local_tag(pb, 8, 0x4B01);
-    avio_wb32(pb, mxf->time_base.den);
-    avio_wb32(pb, mxf->time_base.num);
+
+    if (st == mxf->timecode_track && s->oformat == &ff_mxf_opatom_muxer){
+        avio_wb32(pb, mxf->tc.rate.num);
+        avio_wb32(pb, mxf->tc.rate.den);
+    } else {
+        avio_wb32(pb, mxf->time_base.den);
+        avio_wb32(pb, mxf->time_base.num);
+    }
 
     // write origin
     mxf_write_local_tag(pb, 8, 0x4B02);
@@ -811,7 +818,12 @@ static void mxf_write_common_fields(AVFormatContext *s, AVStream *st)
 
     // write duration
     mxf_write_local_tag(pb, 8, 0x0202);
-    avio_wb64(pb, mxf->duration);
+
+    if (st != mxf->timecode_track && s->oformat == &ff_mxf_opatom_muxer && st->codec->codec_type == AVMEDIA_TYPE_AUDIO){
+        avio_wb64(pb, mxf->body_offset / mxf->edit_unit_byte_count);
+    } else {
+        avio_wb64(pb, mxf->duration);
+    }
 }
 
 static void mxf_write_sequence(AVFormatContext *s, AVStream *st, enum MXFMetadataSetType type)
@@ -1090,8 +1102,17 @@ static void mxf_write_generic_sound_common(AVFormatContext *s, AVStream *st, con
     AVIOContext *pb = s->pb;
     MXFContext *mxf = s->priv_data;
     int show_warnings = !mxf->footer_partition_offset;
+    int duration_size = 0;
 
-    mxf_write_generic_desc(s, st, key, size+5+12+8+8);
+    if (s->oformat == &ff_mxf_opatom_muxer)
+        duration_size = 12;
+
+    mxf_write_generic_desc(s, st, key, size+duration_size+5+12+8+8);
+
+    if (duration_size > 0){
+        mxf_write_local_tag(pb, 8, 0x3002);
+        avio_wb64(pb, mxf->body_offset / mxf->edit_unit_byte_count);
+    }
 
     // audio locked
     mxf_write_local_tag(pb, 1, 0x3D02);
@@ -1114,7 +1135,7 @@ static void mxf_write_generic_sound_common(AVFormatContext *s, AVStream *st, con
             av_log(s, AV_LOG_WARNING, "d10_channelcount shall be set to 4 or 8 : the output will not comply to MXF D-10 specs\n");
         avio_wb32(pb, mxf->channel_count);
     } else {
-        if (show_warnings && mxf->channel_count != -1)
+        if (show_warnings && mxf->channel_count != -1 && s->oformat != &ff_mxf_opatom_muxer)
             av_log(s, AV_LOG_ERROR, "-d10_channelcount requires MXF D-10 and will be ignored\n");
         avio_wb32(pb, st->codec->channels);
     }
@@ -1963,6 +1984,19 @@ static void mxf_gen_umid(AVFormatContext *s)
     mxf->instance_number = seed & 0xFFFFFF;
 }
 
+static int mxf_init_timecode(AVFormatContext *s, AVStream *st, AVRational rate)
+{
+    MXFContext *mxf = s->priv_data;
+    AVDictionaryEntry *tcr = av_dict_get(s->metadata, "timecode", NULL, 0);
+    if (!tcr)
+        tcr = av_dict_get(st->metadata, "timecode", NULL, 0);
+
+    if (tcr)
+        return av_timecode_init_from_string(&mxf->tc, rate, tcr->value, s);
+    else
+        return av_timecode_init(&mxf->tc, rate, 0, 0, s);
+}
+
 static int mxf_write_header(AVFormatContext *s)
 {
     MXFContext *mxf = s->priv_data;
@@ -1971,7 +2005,6 @@ static int mxf_write_header(AVFormatContext *s)
     const MXFSamplesPerFrame *spf = NULL;
     AVDictionaryEntry *t;
     int64_t timestamp = 0;
-    AVDictionaryEntry *tcr = av_dict_get(s->metadata, "timecode", NULL, 0);
 
     if (!s->nb_streams)
         return -1;
@@ -1988,7 +2021,7 @@ static int mxf_write_header(AVFormatContext *s)
             return AVERROR(ENOMEM);
         st->priv_data = sc;
 
-        if ((i == 0) ^ (st->codec->codec_type == AVMEDIA_TYPE_VIDEO)) {
+        if (((i == 0) ^ (st->codec->codec_type == AVMEDIA_TYPE_VIDEO)) && s->oformat != &ff_mxf_opatom_muxer) {
             av_log(s, AV_LOG_ERROR, "there must be exactly one video stream and it must be the first one\n");
             return -1;
         }
@@ -2008,14 +2041,9 @@ static int mxf_write_header(AVFormatContext *s)
             mxf->time_base = spf->time_base;
             rate = av_inv_q(mxf->time_base);
             avpriv_set_pts_info(st, 64, mxf->time_base.num, mxf->time_base.den);
-            if (!tcr)
-                tcr = av_dict_get(st->metadata, "timecode", NULL, 0);
-            if (tcr)
-                ret = av_timecode_init_from_string(&mxf->tc, rate, tcr->value, s);
-            else
-                ret = av_timecode_init(&mxf->tc, rate, 0, 0, s);
-            if (ret < 0)
+            if((ret = mxf_init_timecode(s, st, rate)) < 0)
                 return ret;
+
             sc->video_bit_rate = st->codec->bit_rate ? st->codec->bit_rate : st->codec->rc_max_rate;
             if (s->oformat == &ff_mxf_d10_muxer) {
                 if (sc->video_bit_rate == 50000000) {
@@ -2055,8 +2083,35 @@ static int mxf_write_header(AVFormatContext *s)
                     av_log(s, AV_LOG_ERROR, "MXF D-10 only support 16 or 24 bits le audio\n");
                 }
                 sc->index = ((MXFStreamContext*)s->streams[0]->priv_data)->index + 1;
-            } else
-            mxf->slice_count = 1;
+            } else if (s->oformat == &ff_mxf_opatom_muxer) {
+                AVRational tbc = av_inv_q(mxf->audio_edit_rate);
+
+                if (st->codec->codec_id != AV_CODEC_ID_PCM_S16LE &&
+                    st->codec->codec_id != AV_CODEC_ID_PCM_S24LE) {
+                    av_log(s, AV_LOG_ERROR, "Only pcm_s16le and pcm_s24le audio codecs are implemented\n");
+                    return AVERROR_PATCHWELCOME;
+                }
+                if (st->codec->channels != 1) {
+                    av_log(s, AV_LOG_ERROR, "MXF OPAtom only supports single channel audio\n");
+                    return AVERROR(EINVAL);
+                }
+
+                spf = ff_mxf_get_samples_per_frame(s, tbc);
+                if (!spf){
+                    av_log(s, AV_LOG_ERROR, "Unsupported timecode frame rate %d/%d\n", tbc.den, tbc.num);
+                    return AVERROR(EINVAL);
+                }
+
+                mxf->time_base = st->time_base;
+                if((ret = mxf_init_timecode(s, st, av_inv_q(spf->time_base))) < 0)
+                    return ret;
+
+                mxf->timecode_base = (tbc.den + tbc.num/2) / tbc.num;
+                mxf->edit_unit_byte_count = (av_get_bits_per_sample(st->codec->codec_id) * st->codec->channels) >> 3;
+                sc->index = 2;
+            } else {
+                mxf->slice_count = 1;
+            }
         }
 
         if (!sc->index) {
@@ -2270,7 +2325,6 @@ static int mxf_write_opatom_packet(AVFormatContext *s, AVPacket *pkt, MXFIndexEn
     mxf->edit_units_count++;
     avio_write(pb, pkt->data, pkt->size);
     mxf->body_offset += pkt->size;
-
     avio_flush(pb);
 
     return 0;
@@ -2549,6 +2603,19 @@ static const AVClass mxf_d10_muxer_class = {
     .version        = LIBAVUTIL_VERSION_INT,
 };
 
+static const AVOption opatom_options[] = {
+    { "mxf_audio_edit_rate", "Audio edit rate for timecode",
+        offsetof(MXFContext, audio_edit_rate), AV_OPT_TYPE_RATIONAL, {.dbl=25}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
+    { NULL },
+};
+
+static const AVClass mxf_opatom_muxer_class = {
+    .class_name     = "MXF-OPAtom muxer",
+    .item_name      = av_default_item_name,
+    .option         = opatom_options,
+    .version        = LIBAVUTIL_VERSION_INT,
+};
+
 AVOutputFormat ff_mxf_muxer = {
     .name              = "mxf",
     .long_name         = NULL_IF_CONFIG_SMALL("MXF (Material eXchange Format)"),
@@ -2592,4 +2659,5 @@ AVOutputFormat ff_mxf_opatom_muxer = {
     .write_trailer     = mxf_write_footer,
     .flags             = AVFMT_NOTIMESTAMPS,
     .interleave_packet = mxf_interleave,
+    .priv_class        = &mxf_opatom_muxer_class,
 };
