@@ -802,7 +802,7 @@ int ff_rtsp_open_transport_ctx(AVFormatContext *s, RTSPStream *rtsp_st)
     if (!st)
         s->ctx_flags |= AVFMTCTX_NOHEADER;
 
-    if (CONFIG_RTSP_MUXER && s->oformat) {
+    if (CONFIG_RTSP_MUXER && s->oformat && st) {
         int ret = ff_rtp_chain_mux_open((AVFormatContext **)&rtsp_st->transport_priv,
                                         s, st, rtsp_st->rtp_handle,
                                         RTSP_TCP_MAX_PACKET_SIZE,
@@ -814,7 +814,7 @@ int ff_rtsp_open_transport_ctx(AVFormatContext *s, RTSPStream *rtsp_st)
         st->time_base = ((AVFormatContext*)rtsp_st->transport_priv)->streams[0]->time_base;
     } else if (rt->transport == RTSP_TRANSPORT_RAW) {
         return 0; // Don't need to open any parser here
-    } else if (CONFIG_RTPDEC && rt->transport == RTSP_TRANSPORT_RDT)
+    } else if (CONFIG_RTPDEC && rt->transport == RTSP_TRANSPORT_RDT && st)
         rtsp_st->transport_priv = ff_rdt_parse_open(s, st->index,
                                             rtsp_st->dynamic_protocol_context,
                                             rtsp_st->dynamic_handler);
