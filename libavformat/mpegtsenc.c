@@ -309,6 +309,9 @@ static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
         case AV_CODEC_ID_TRUEHD:
             stream_type = STREAM_TYPE_AUDIO_TRUEHD;
             break;
+        case AV_CODEC_ID_HDMV_PGS_SUBTITLE:
+            stream_type = STREAM_TYPE_SUBTITLE_HDMV_PGS_SUBTITLE;
+            break;
         default:
             stream_type = STREAM_TYPE_PRIVATE_DATA;
             break;
