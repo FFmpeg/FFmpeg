@@ -86,10 +86,10 @@ struct SwrContext *swr_alloc_set_opts(struct SwrContext *s,
     if (av_opt_set_int(s, "tsf", AV_SAMPLE_FMT_NONE,   0) < 0)
         goto fail;
 
-    if (av_opt_set_int(s, "ich", av_get_channel_layout_nb_channels(s-> in_ch_layout), 0) < 0)
+    if (av_opt_set_int(s, "ich", av_get_channel_layout_nb_channels(s-> user_in_ch_layout), 0) < 0)
         goto fail;
 
-    if (av_opt_set_int(s, "och", av_get_channel_layout_nb_channels(s->out_ch_layout), 0) < 0)
+    if (av_opt_set_int(s, "och", av_get_channel_layout_nb_channels(s->user_out_ch_layout), 0) < 0)
         goto fail;
 
     av_opt_set_int(s, "uch", 0, 0);
@@ -167,6 +167,9 @@ av_cold int swr_init(struct SwrContext *s){
     s->out.ch_count  = s-> user_out_ch_count;
     s-> in.ch_count  = s->  user_in_ch_count;
     s->used_ch_count = s->user_used_ch_count;
+
+    s-> in_ch_layout = s-> user_in_ch_layout;
+    s->out_ch_layout = s->user_out_ch_layout;
 
     if(av_get_channel_layout_nb_channels(s-> in_ch_layout) > SWR_CH_MAX) {
         av_log(s, AV_LOG_WARNING, "Input channel layout 0x%"PRIx64" is invalid or unsupported.\n", s-> in_ch_layout);
