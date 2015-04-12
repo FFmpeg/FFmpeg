@@ -93,6 +93,8 @@ struct SwrContext {
     int user_in_ch_count;                           ///< User set input channel count
     int user_out_ch_count;                          ///< User set output channel count
     int user_used_ch_count;                         ///< User set used channel count
+    int64_t user_in_ch_layout;                      ///< User set input channel layout
+    int64_t user_out_ch_layout;                     ///< User set output channel layout
 
     struct DitherContext dither;
 
