@@ -510,6 +510,7 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
 
     // extradata/NAL handling
     h->is_avc = h1->is_avc;
+    h->nal_length_size = h1->nal_length_size;
 
     // SPS/PPS
     if ((ret = copy_parameter_set((void **)h->sps_buffers,
