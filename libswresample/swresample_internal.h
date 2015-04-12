@@ -112,6 +112,10 @@ struct SwrContext {
     int used_ch_count;                              ///< number of used input channels (mapped channel count if channel_map, otherwise in.ch_count)
     int engine;
 
+    int user_in_ch_count;                           ///< User set input channel count
+    int user_out_ch_count;                          ///< User set output channel count
+    int user_used_ch_count;                         ///< User set used channel count
+
     struct DitherContext dither;
 
     int filter_size;                                /**< length of each FIR filter in the resampling filterbank relative to the cutoff frequency */
