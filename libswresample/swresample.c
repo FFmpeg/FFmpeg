@@ -152,6 +152,7 @@ av_cold void swr_close(SwrContext *s){
 
 av_cold int swr_init(struct SwrContext *s){
     int ret;
+    char l1[1024], l2[1024];
 
     clear_context(s);
 
@@ -277,10 +278,18 @@ av_cold int swr_init(struct SwrContext *s){
         return -1;
     }
 
+    av_get_channel_layout_string(l1, sizeof(l1), s-> in.ch_count, s-> in_ch_layout);
+    av_get_channel_layout_string(l2, sizeof(l2), s->out.ch_count, s->out_ch_layout);
+    if (s->out_ch_layout && s->out.ch_count != av_get_channel_layout_nb_channels(s->out_ch_layout)) {
+        av_log(s, AV_LOG_ERROR, "Output channel layout %s mismatches specified channel count %d\n", l2, s->out.ch_count);
+        return AVERROR(EINVAL);
+    }
+    if (s->in_ch_layout && s->used_ch_count != av_get_channel_layout_nb_channels(s->in_ch_layout)) {
+        av_log(s, AV_LOG_ERROR, "Input channel layout %s mismatches specified channel count %d\n", l1, s->used_ch_count);
+        return AVERROR(EINVAL);
+    }
+
     if ((!s->out_ch_layout || !s->in_ch_layout) && s->used_ch_count != s->out.ch_count && !s->rematrix_custom) {
-        char l1[1024], l2[1024];
-        av_get_channel_layout_string(l1, sizeof(l1), s-> in.ch_count, s-> in_ch_layout);
-        av_get_channel_layout_string(l2, sizeof(l2), s->out.ch_count, s->out_ch_layout);
         av_log(s, AV_LOG_ERROR, "Rematrix is needed between %s and %s "
                "but there is not enough information to do it\n", l1, l2);
         return -1;
