@@ -407,7 +407,7 @@ static int copy_parameter_set(void **to, void **from, int count, int size)
     memcpy(&to->start_field, &from->start_field,                        \
            (char *)&to->end_field - (char *)&to->start_field)
 
-static int h264_slice_header_init(H264Context *h, int reinit);
+static int h264_slice_header_init(H264Context *h);
 
 int ff_h264_update_thread_context(AVCodecContext *dst,
                                   const AVCodecContext *src)
@@ -560,7 +560,7 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
         h->mb_stride = h1->mb_stride;
         h->b_stride  = h1->b_stride;
 
-        if ((err = h264_slice_header_init(h, 1)) < 0) {
+        if ((err = h264_slice_header_init(h)) < 0) {
             av_log(h->avctx, AV_LOG_ERROR, "h264_slice_header_init() failed");
             return err;
         }
@@ -975,7 +975,7 @@ static int init_dimensions(H264Context *h)
     return 0;
 }
 
-static int h264_slice_header_init(H264Context *h, int reinit)
+static int h264_slice_header_init(H264Context *h)
 {
     int nb_slices = (HAVE_THREADS &&
                      h->avctx->active_thread_type & FF_THREAD_SLICE) ?
@@ -994,8 +994,8 @@ static int h264_slice_header_init(H264Context *h, int reinit)
                   h->sps.num_units_in_tick, den, 1 << 30);
     }
 
-    if (reinit)
-        ff_h264_free_tables(h);
+    ff_h264_free_tables(h);
+
     h->first_field           = 0;
     h->prev_interlaced_frame = 1;
 
@@ -1234,7 +1234,7 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
         av_log(h->avctx, AV_LOG_INFO, "Reinit context to %dx%d, "
                "pix_fmt: %d\n", h->width, h->height, h->avctx->pix_fmt);
 
-        if ((ret = h264_slice_header_init(h, 1)) < 0) {
+        if ((ret = h264_slice_header_init(h)) < 0) {
             av_log(h->avctx, AV_LOG_ERROR,
                    "h264_slice_header_init() failed\n");
             return ret;
@@ -1251,7 +1251,7 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
             return ret;
         h->avctx->pix_fmt = ret;
 
-        if ((ret = h264_slice_header_init(h, 0)) < 0) {
+        if ((ret = h264_slice_header_init(h)) < 0) {
             av_log(h->avctx, AV_LOG_ERROR,
                    "h264_slice_header_init() failed\n");
             return ret;
