@@ -590,9 +590,6 @@ static int h264_init_context(AVCodecContext *avctx, H264Context *h)
         return AVERROR(ENOMEM);
     }
 
-    h->DPB = av_mallocz_array(H264_MAX_PICTURE_COUNT, sizeof(*h->DPB));
-    if (!h->DPB)
-        return AVERROR(ENOMEM);
     for (i = 0; i < H264_MAX_PICTURE_COUNT; i++)
         av_frame_unref(&h->DPB[i].f);
     av_frame_unref(&h->cur_pic.f);
@@ -1052,9 +1049,8 @@ static void flush_dpb(AVCodecContext *avctx)
 
     ff_h264_flush_change(h);
 
-    if (h->DPB)
-        for (i = 0; i < H264_MAX_PICTURE_COUNT; i++)
-            ff_h264_unref_picture(h, &h->DPB[i]);
+    for (i = 0; i < H264_MAX_PICTURE_COUNT; i++)
+        ff_h264_unref_picture(h, &h->DPB[i]);
     h->cur_pic_ptr = NULL;
     ff_h264_unref_picture(h, &h->cur_pic);
 
@@ -1698,11 +1694,8 @@ av_cold void ff_h264_free_context(H264Context *h)
 
     ff_h264_free_tables(h);
 
-    if (h->DPB) {
-        for (i = 0; i < H264_MAX_PICTURE_COUNT; i++)
-            ff_h264_unref_picture(h, &h->DPB[i]);
-        av_freep(&h->DPB);
-    }
+    for (i = 0; i < H264_MAX_PICTURE_COUNT; i++)
+        ff_h264_unref_picture(h, &h->DPB[i]);
 
     h->cur_pic_ptr = NULL;
 
