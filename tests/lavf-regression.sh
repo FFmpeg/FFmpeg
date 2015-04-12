@@ -94,6 +94,10 @@ if [ -n "$do_mxf_opatom" ]; then
 do_lavf mxf_opatom "" "-s 1920x1080 -vcodec dnxhd -pix_fmt yuv422p -vb 36M -f mxf_opatom -map 0"
 fi
 
+if [ -n "$do_mxf_opatom_audio" ]; then
+do_lavf mxf_opatom_audio "-ar 48000 -ac 1" "-f mxf_opatom -mxf_audio_edit_rate 25 -map 1"
+fi
+
 if [ -n "$do_ts" ] ; then
 do_lavf ts "" "-ab 64k -mpegts_transport_stream_id 42 -ar 44100 -threads 1"
 fi
