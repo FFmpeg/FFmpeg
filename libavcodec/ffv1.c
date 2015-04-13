@@ -111,7 +111,7 @@ av_cold int ffv1_init_slices_state(FFV1Context *f)
 
 av_cold int ffv1_init_slice_contexts(FFV1Context *f)
 {
-    int i, j;
+    int i;
 
     f->slice_count = f->num_h_slices * f->num_v_slices;
     av_assert0(f->slice_count > 0);
@@ -147,9 +147,9 @@ av_cold int ffv1_init_slice_contexts(FFV1Context *f)
     return 0;
 
 memfail:
-    for (j = 0; j < i; j++) {
-        av_freep(&f->slice_context[j]->sample_buffer);
-        av_freep(&f->slice_context[j]);
+    while(--i >= 0) {
+        av_freep(&f->slice_context[i]->sample_buffer);
+        av_freep(&f->slice_context[i]);
     }
     return AVERROR(ENOMEM);
 }
