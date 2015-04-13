@@ -124,6 +124,22 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
     ctx->params->sourceHeight    = avctx->height;
     ctx->params->bEnablePsnr     = !!(avctx->flags & CODEC_FLAG_PSNR);
 
+    if ((avctx->color_primaries <= AVCOL_PRI_BT2020 &&
+         avctx->color_primaries != AVCOL_PRI_UNSPECIFIED) ||
+        (avctx->color_trc <= AVCOL_TRC_BT2020_12 &&
+         avctx->color_trc != AVCOL_TRC_UNSPECIFIED) ||
+        (avctx->colorspace <= AVCOL_SPC_BT2020_CL &&
+         avctx->colorspace != AVCOL_SPC_UNSPECIFIED)) {
+
+        ctx->params->vui.bEnableVideoSignalTypePresentFlag  = 1;
+        ctx->params->vui.bEnableColorDescriptionPresentFlag = 1;
+
+        // x265 validates the parameters internally
+        ctx->params->vui.colorPrimaries          = avctx->color_primaries;
+        ctx->params->vui.transferCharacteristics = avctx->color_trc;
+        ctx->params->vui.matrixCoeffs            = avctx->colorspace;
+    }
+
     if (avctx->sample_aspect_ratio.num > 0 && avctx->sample_aspect_ratio.den > 0) {
         char sar[12];
         int sar_num, sar_den;
