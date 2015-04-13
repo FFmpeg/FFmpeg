@@ -150,6 +150,9 @@ FATE_ACODEC-$(call ENCDEC, WAVPACK, WV) += fate-acodec-wavpack
 fate-acodec-wavpack: FMT = wv
 fate-acodec-wavpack: CODEC = wavpack -compression_level 1
 
+FATE_ACODEC-$(call ENCDEC, TTA, MATROSKA) += fate-acodec-tta
+fate-acodec-tta: FMT = matroska
+
 FATE_ACODEC += $(FATE_ACODEC-yes)
 
 $(FATE_ACODEC): tests/data/asynth-44100-2.wav
