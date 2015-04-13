@@ -148,8 +148,8 @@ av_cold int ffv1_init_slice_contexts(FFV1Context *f)
 
 memfail:
     for (j = 0; j < i; j++) {
-        av_free(&f->slice_context[j]->sample_buffer);
-        av_free(&f->slice_context[j]);
+        av_freep(&f->slice_context[j]->sample_buffer);
+        av_freep(&f->slice_context[j]);
     }
     return AVERROR(ENOMEM);
 }
