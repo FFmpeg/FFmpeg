@@ -493,6 +493,11 @@ static av_cold int X264_init(AVCodecContext *avctx)
                                  avctx->pix_fmt == AV_PIX_FMT_YUVJ444P ||
                                  avctx->color_range == AVCOL_RANGE_JPEG;
 
+    // x264 validates the values internally
+    x4->params.vui.i_colorprim = avctx->color_primaries;
+    x4->params.vui.i_transfer  = avctx->color_trc;
+    x4->params.vui.i_colmatrix = avctx->colorspace;
+
     if (avctx->flags & CODEC_FLAG_GLOBAL_HEADER)
         x4->params.b_repeat_headers = 0;
 
