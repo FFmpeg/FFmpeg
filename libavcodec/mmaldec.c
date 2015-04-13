@@ -24,6 +24,12 @@
  * MMAL Video Decoder
  */
 
+#include <bcm_host.h>
+#include <interface/mmal/mmal.h>
+#include <interface/mmal/util/mmal_util.h>
+#include <interface/mmal/util/mmal_util_params.h>
+#include <interface/mmal/util/mmal_default_components.h>
+
 #include "avcodec.h"
 #include "internal.h"
 #include "libavutil/atomic.h"
@@ -32,12 +38,6 @@
 #include "libavutil/common.h"
 #include "libavutil/opt.h"
 #include "libavutil/log.h"
-
-#include <bcm_host.h>
-#include <interface/mmal/mmal.h>
-#include <interface/mmal/util/mmal_util.h>
-#include <interface/mmal/util/mmal_util_params.h>
-#include <interface/mmal/util/mmal_default_components.h>
 
 typedef struct FFBufferEntry {
     AVBufferRef *ref;
