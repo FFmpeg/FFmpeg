@@ -917,6 +917,9 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
     if (err < 0)
         goto done;
 
+    if (*new_location)
+        s->off = off;
+
     err = (off == s->off) ? 0 : -1;
 done:
     av_freep(&authstr);
