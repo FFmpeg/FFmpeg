@@ -162,6 +162,8 @@
     </ClCompile>
     <ClCompile Include="..\libavfilter\af_channelsplit.c">
     </ClCompile>
+    <ClCompile Include="..\libavfilter\af_chorus.c">
+    </ClCompile>
     <ClCompile Include="..\libavfilter\af_compand.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\af_dcshift.c">

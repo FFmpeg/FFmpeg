@@ -191,6 +191,9 @@
     <ClCompile Include="..\libavfilter\af_channelsplit.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\af_chorus.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\af_compand.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
