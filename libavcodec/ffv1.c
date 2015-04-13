@@ -140,7 +140,7 @@ av_cold int ffv1_init_slice_contexts(FFV1Context *f)
         fs->sample_buffer = av_malloc_array((fs->width + 6), 3 * MAX_PLANES *
                                       sizeof(*fs->sample_buffer));
         if (!fs->sample_buffer) {
-            av_free(fs);
+            av_freep(&f->slice_context[i]);
             goto memfail;
         }
     }
