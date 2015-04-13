@@ -16,6 +16,7 @@ version <next>:
 - unpack DivX-style packed B-frames in MPEG-4 bitstream filter
 - WebM Live Chunk Muxer
 - nvenc level and tier options
+- chorus filter
 
 
 version 2.6:

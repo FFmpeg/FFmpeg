@@ -54,6 +54,7 @@ static int rtp_asf_fix_header(uint8_t *buf, int len)
     p += sizeof(ff_asf_guid) + 14;
     do {
         uint64_t chunksize = AV_RL64(p + sizeof(ff_asf_guid));
+        int skip = 6 * 8 + 3 * 4 + sizeof(ff_asf_guid) * 2;
         if (memcmp(p, ff_asf_file_header, sizeof(ff_asf_guid))) {
             if (chunksize > end - p)
                 return -1;
@@ -61,9 +62,11 @@ static int rtp_asf_fix_header(uint8_t *buf, int len)
             continue;
         }
 
+        if (end - p < 8 + skip)
+            break;
         /* skip most of the file header, to min_pktsize */
-        p += 6 * 8 + 3 * 4 + sizeof(ff_asf_guid) * 2;
-        if (p + 8 <= end && AV_RL32(p) == AV_RL32(p + 4)) {
+        p += skip;
+        if (AV_RL32(p) == AV_RL32(p + 4)) {
             /* and set that to zero */
             AV_WL32(p, 0);
             return 0;

@@ -55,6 +55,7 @@ typedef struct RTPContext {
     int rtcp_port, local_rtpport, local_rtcpport;
     int connect;
     int pkt_size;
+    int dscp;
     char *sources;
     char *block;
 } RTPContext;
@@ -71,6 +72,7 @@ static const AVOption options[] = {
     { "connect",            "Connect socket",                                                   OFFSET(connect),         AV_OPT_TYPE_INT,    { .i64 =  0 },     0, 1,       .flags = D|E },
     { "write_to_source",    "Send packets to the source address of the latest received packet", OFFSET(write_to_source), AV_OPT_TYPE_INT,    { .i64 =  0 },     0, 1,       .flags = D|E },
     { "pkt_size",           "Maximum packet size",                                              OFFSET(pkt_size),        AV_OPT_TYPE_INT,    { .i64 = -1 },    -1, INT_MAX, .flags = D|E },
+    { "dscp",               "DSCP class",                                                       OFFSET(dscp),            AV_OPT_TYPE_INT,    { .i64 = -1 },    -1, INT_MAX, .flags = D|E },
     { "sources",            "Source list",                                                      OFFSET(sources),         AV_OPT_TYPE_STRING, { .str = NULL },               .flags = D|E },
     { "block",              "Block list",                                                       OFFSET(block),           AV_OPT_TYPE_STRING, { .str = NULL },               .flags = D|E },
     { NULL }
@@ -225,7 +227,6 @@ static void build_udp_url(RTPContext *s,
                           char *buf, int buf_size,
                           const char *hostname,
                           int port, int local_port,
-                          int dscp,
                           const char *include_sources,
                           const char *exclude_sources)
 {
@@ -240,8 +241,8 @@ static void build_udp_url(RTPContext *s,
         url_add_option(buf, buf_size, "pkt_size=%d", s->pkt_size);
     if (s->connect)
         url_add_option(buf, buf_size, "connect=1");
-    if (dscp >= 0)
-        url_add_option(buf, buf_size, "dscp=%d", dscp);
+    if (s->dscp >= 0)
+        url_add_option(buf, buf_size, "dscp=%d", s->dscp);
     url_add_option(buf, buf_size, "fifo_size=0");
     if (include_sources && include_sources[0])
         url_add_option(buf, buf_size, "sources=%s", include_sources);
@@ -316,7 +317,6 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
 {
     RTPContext *s = h->priv_data;
     int rtp_port;
-    int dscp;
     char hostname[256], include_sources[1024] = "", exclude_sources[1024] = "";
     char *sources = include_sources, *block = exclude_sources;
     char buf[1024];
@@ -327,7 +327,6 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
     av_url_split(NULL, 0, NULL, 0, hostname, sizeof(hostname), &rtp_port,
                  path, sizeof(path), uri);
     /* extract parameters */
-    dscp = -1;
     if (s->rtcp_port < 0)
         s->rtcp_port = rtp_port + 1;
 
@@ -358,7 +357,7 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
             s->write_to_source = strtol(buf, NULL, 10);
         }
         if (av_find_info_tag(buf, sizeof(buf), "dscp", p)) {
-            dscp = strtol(buf, NULL, 10);
+            s->dscp = strtol(buf, NULL, 10);
         }
         if (av_find_info_tag(buf, sizeof(buf), "sources", p)) {
             av_strlcpy(include_sources, buf, sizeof(include_sources));
@@ -380,7 +379,7 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
     for (i = 0; i < max_retry_count; i++) {
         build_udp_url(s, buf, sizeof(buf),
                       hostname, rtp_port, s->local_rtpport,
-                      dscp, sources, block);
+                      sources, block);
         if (ffurl_open(&s->rtp_hd, buf, flags, &h->interrupt_callback, NULL) < 0)
             goto fail;
         s->local_rtpport = ff_udp_get_local_port(s->rtp_hd);
@@ -392,7 +391,7 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
             s->local_rtcpport = s->local_rtpport + 1;
             build_udp_url(s, buf, sizeof(buf),
                           hostname, s->rtcp_port, s->local_rtcpport,
-                          dscp, sources, block);
+                          sources, block);
             if (ffurl_open(&s->rtcp_hd, buf, flags, &h->interrupt_callback, NULL) < 0) {
                 s->local_rtpport = s->local_rtcpport = -1;
                 continue;
@@ -401,7 +400,7 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
         }
         build_udp_url(s, buf, sizeof(buf),
                       hostname, s->rtcp_port, s->local_rtcpport,
-                      dscp, sources, block);
+                      sources, block);
         if (ffurl_open(&s->rtcp_hd, buf, flags, &h->interrupt_callback, NULL) < 0)
             goto fail;
         break;

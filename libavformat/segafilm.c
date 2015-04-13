@@ -199,7 +199,7 @@ static int film_read_header(AVFormatContext *s)
     film->sample_count = AV_RB32(&scratch[12]);
     if(film->sample_count >= UINT_MAX / sizeof(film_sample))
         return -1;
-    film->sample_table = av_malloc(film->sample_count * sizeof(film_sample));
+    film->sample_table = av_malloc_array(film->sample_count, sizeof(film_sample));
     if (!film->sample_table)
         return AVERROR(ENOMEM);
 

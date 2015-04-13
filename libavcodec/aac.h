@@ -141,6 +141,9 @@ typedef struct PredictorState {
 #define SCALE_MAX_DIFF   60    ///< maximum scalefactor difference allowed by standard
 #define SCALE_DIFF_ZERO  60    ///< codebook index corresponding to zero scalefactor indices difference
 
+#define NOISE_PRE       256    ///< preamble for NOISE_BT, put in bitstream with the first noise band
+#define NOISE_PRE_BITS    9    ///< length of preamble
+
 /**
  * Long Term Prediction
  */

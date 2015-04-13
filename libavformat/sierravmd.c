@@ -183,7 +183,7 @@ static int vmd_read_header(AVFormatContext *s)
         return -1;
     }
     raw_frame_table = av_malloc(raw_frame_table_size);
-    vmd->frame_table = av_malloc((vmd->frame_count * vmd->frames_per_block + sound_buffers) * sizeof(vmd_frame));
+    vmd->frame_table = av_malloc_array(vmd->frame_count * vmd->frames_per_block + sound_buffers, sizeof(vmd_frame));
     if (!raw_frame_table || !vmd->frame_table) {
         ret = AVERROR(ENOMEM);
         goto error;
