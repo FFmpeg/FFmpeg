@@ -450,6 +450,9 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     char buf[32];
     int in_range;
 
+    if (av_frame_get_colorspace(in) == AVCOL_SPC_YCGCO)
+        av_log(link->dst, AV_LOG_WARNING, "Detected unsupported YCgCo colorspace.\n");
+
     if(   in->width  != link->w
        || in->height != link->h
        || in->format != link->format) {
