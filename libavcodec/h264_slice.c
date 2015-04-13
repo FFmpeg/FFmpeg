@@ -1004,8 +1004,6 @@ static enum AVPixelFormat get_pixel_format(H264Context *h, int force_callback)
         *fmt++ = AV_PIX_FMT_VDPAU;
 #endif
         if (CHROMA444(h)) {
-            if (h->avctx->colorspace == AVCOL_SPC_YCGCO)
-                av_log(h->avctx, AV_LOG_WARNING, "Detected unsupported YCgCo colorspace.\n");
             if (h->avctx->colorspace == AVCOL_SPC_RGB)
                 *fmt++ = AV_PIX_FMT_GBRP;
             else if (h->avctx->color_range == AVCOL_RANGE_JPEG)
