@@ -388,7 +388,7 @@ static void encode_band_info(AACEncContext *s, SingleChannelElement *sce)
 static void encode_scale_factors(AVCodecContext *avctx, AACEncContext *s,
                                  SingleChannelElement *sce)
 {
-    int diff, off_sf = sce->sf_idx[0], off_pns = sce->sf_idx[0];
+    int diff, off_sf = sce->sf_idx[0], off_pns = sce->sf_idx[0] - NOISE_OFFSET;
     int noise_flag = 1;
     int i, w;
 
