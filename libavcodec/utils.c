@@ -2600,7 +2600,7 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
                     av_log(avctx, AV_LOG_WARNING, "Could not update timestamps for discarded samples.\n");
                 }
                 av_log(avctx, AV_LOG_DEBUG, "discard %d/%d samples\n",
-                       discard_padding, frame->nb_samples);
+                       (int)discard_padding, frame->nb_samples);
                 frame->nb_samples -= discard_padding;
             }
         }
