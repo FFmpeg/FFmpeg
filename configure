@@ -113,6 +113,8 @@ Program options:
 
 Component options:
   --disable-doc            do not build documentation
+  --disable-pod2man        do not build manual pages
+  --disable-texi2html      do not build HTML documentation
   --disable-avdevice       disable libavdevice build
   --disable-avcodec        disable libavcodec build
   --disable-avformat       disable libavformat build
@@ -4707,8 +4709,8 @@ if check_pkg_config sdl SDL_events.h SDL_PollEvent; then
     enable sdl
 fi
 
-pod2man --help     > /dev/null 2>&1 && enable pod2man   || disable pod2man
-texi2html -version > /dev/null 2>&1 && enable texi2html || disable texi2html
+! disabled pod2man   && check_cmd pod2man --help     && enable pod2man   || disable pod2man
+! disabled texi2html && check_cmd texi2html -version && enable texi2html || disable texi2html
 
 check_header linux/fb.h
 check_header linux/videodev2.h
