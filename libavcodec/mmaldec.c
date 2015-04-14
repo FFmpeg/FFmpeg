@@ -29,6 +29,7 @@
 #include <interface/mmal/util/mmal_util.h>
 #include <interface/mmal/util/mmal_util_params.h>
 #include <interface/mmal/util/mmal_default_components.h>
+#include <interface/mmal/vc/mmal_vc_api.h>
 
 #include "avcodec.h"
 #include "internal.h"
@@ -182,6 +183,8 @@ static av_cold int ffmmal_close_decoder(AVCodecContext *avctx)
     if (ctx->bsfc)
         av_bitstream_filter_close(ctx->bsfc);
 
+    mmal_vc_deinit();
+
     return 0;
 }
 
@@ -320,6 +323,11 @@ static av_cold int ffmmal_init_decoder(AVCodecContext *avctx)
     int ret = 0;
 
     bcm_host_init();
+
+    if (mmal_vc_init()) {
+        av_log(avctx, AV_LOG_ERROR, "Cannot initialize MMAL VC driver!\n");
+        return AVERROR(ENOSYS);
+    }
 
     if ((ret = ff_get_format(avctx, avctx->codec->pix_fmts)) < 0)
         return ret;
