@@ -2242,7 +2242,7 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb)
     if (ctx->time_increment_bits == 0 ||
         !(show_bits(gb, ctx->time_increment_bits + 1) & 1)) {
         av_log(s->avctx, AV_LOG_WARNING,
-               "hmm, seems the headers are not complete, trying to guess time_increment_bits\n");
+               "time_increment_bits %d is invalid in relation to the current bitstream, this is likely caused by a missing VOL header\n", ctx->time_increment_bits);
 
         for (ctx->time_increment_bits = 1;
              ctx->time_increment_bits < 16;
@@ -2257,7 +2257,7 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb)
         }
 
         av_log(s->avctx, AV_LOG_WARNING,
-               "my guess is %d bits ;)\n", ctx->time_increment_bits);
+               "time_increment_bits set to %d bits, based on bitstream analysis\n", ctx->time_increment_bits);
         if (s->avctx->framerate.num && 4*s->avctx->framerate.num < 1<<ctx->time_increment_bits) {
             s->avctx->framerate.num = 1<<ctx->time_increment_bits;
             s->avctx->time_base = av_inv_q(av_mul_q(s->avctx->framerate, (AVRational){s->avctx->ticks_per_frame, 1}));
