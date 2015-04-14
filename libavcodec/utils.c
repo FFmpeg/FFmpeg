@@ -2549,9 +2549,9 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
         side= av_packet_get_side_data(avctx->internal->pkt, AV_PKT_DATA_SKIP_SAMPLES, &side_size);
         if(side && side_size>=10) {
             avctx->internal->skip_samples = AV_RL32(side);
-            av_log(avctx, AV_LOG_DEBUG, "skip %d samples due to side data\n",
-                   avctx->internal->skip_samples);
             discard_padding = AV_RL32(side + 4);
+            av_log(avctx, AV_LOG_DEBUG, "skip %d / discard %d samples due to side data\n",
+                   avctx->internal->skip_samples, (int)discard_padding);
             skip_reason = AV_RL8(side + 8);
             discard_reason = AV_RL8(side + 9);
         }
