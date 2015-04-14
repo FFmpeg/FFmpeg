@@ -106,7 +106,7 @@ static int mp3_read_probe(AVProbeData *p)
 //mpegps_mp3_unrecognized_format.mpg has max_frames=3
 }
 
-static void read_xing_toc(AVFormatContext *s, int64_t base, int64_t filesize, int64_t duration)
+static void read_xing_toc(AVFormatContext *s, int64_t filesize, int64_t duration)
 {
     int i;
     MP3DecContext *mp3 = s->priv_data;
@@ -122,7 +122,7 @@ static void read_xing_toc(AVFormatContext *s, int64_t base, int64_t filesize, in
         uint8_t b = avio_r8(s->pb);
         if (fill_index)
             av_add_index_entry(s->streams[0],
-                           av_rescale(b, filesize, 256) + base,
+                           av_rescale(b, filesize, 256),
                            av_rescale(i, duration, XING_TOC_COUNT),
                            0, 0, AVINDEX_KEYFRAME);
     }
@@ -130,7 +130,7 @@ static void read_xing_toc(AVFormatContext *s, int64_t base, int64_t filesize, in
         mp3->xing_toc = 1;
 }
 
-static void mp3_parse_info_tag(AVFormatContext *s, AVStream *st, int64_t base,
+static void mp3_parse_info_tag(AVFormatContext *s, AVStream *st,
                                MPADecodeHeader *c, uint32_t spf)
 {
 #define LAST_BITS(k, n) ((k) & ((1 << (n)) - 1))
@@ -172,7 +172,7 @@ static void mp3_parse_info_tag(AVFormatContext *s, AVStream *st, int64_t base,
         }
     }
     if (v & XING_FLAG_TOC)
-        read_xing_toc(s, base, mp3->header_filesize, av_rescale_q(mp3->frames,
+        read_xing_toc(s, mp3->header_filesize, av_rescale_q(mp3->frames,
                                        (AVRational){spf, c->sample_rate},
                                        st->time_base));
     /* VBR quality */
@@ -310,7 +310,7 @@ static int mp3_parse_vbr_tags(AVFormatContext *s, AVStream *st, int64_t base)
     mp3->frames = 0;
     mp3->header_filesize   = 0;
 
-    mp3_parse_info_tag(s, st, base, &c, spf);
+    mp3_parse_info_tag(s, st, &c, spf);
     mp3_parse_vbri_tag(s, st, base);
 
     if (!mp3->frames && !mp3->header_filesize)
