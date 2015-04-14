@@ -2241,7 +2241,7 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb)
 
     if (ctx->time_increment_bits == 0 ||
         !(show_bits(gb, ctx->time_increment_bits + 1) & 1)) {
-        av_log(s->avctx, AV_LOG_ERROR,
+        av_log(s->avctx, AV_LOG_WARNING,
                "hmm, seems the headers are not complete, trying to guess time_increment_bits\n");
 
         for (ctx->time_increment_bits = 1;
@@ -2256,7 +2256,7 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb)
                 break;
         }
 
-        av_log(s->avctx, AV_LOG_ERROR,
+        av_log(s->avctx, AV_LOG_WARNING,
                "my guess is %d bits ;)\n", ctx->time_increment_bits);
         if (s->avctx->framerate.num && 4*s->avctx->framerate.num < 1<<ctx->time_increment_bits) {
             s->avctx->framerate.num = 1<<ctx->time_increment_bits;
