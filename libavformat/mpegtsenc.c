@@ -1219,7 +1219,7 @@ int ff_check_h264_startcode(AVFormatContext *s, const AVStream *st, const AVPack
 
 static int check_hevc_startcode(AVFormatContext *s, const AVStream *st, const AVPacket *pkt)
 {
-    if (pkt->size < 5 || AV_RB32(pkt->data) != 0x0000001) {
+    if (pkt->size < 5 || AV_RB32(pkt->data) != 0x0000001 && AV_RB24(pkt->data) != 0x000001) {
         if (!st->nb_frames) {
             av_log(s, AV_LOG_ERROR, "HEVC bitstream malformed, no startcode found\n");
             return AVERROR_PATCHWELCOME;

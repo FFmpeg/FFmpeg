@@ -831,7 +831,7 @@ static int mpeg_decode_mb(MpegEncContext *s, int16_t block[12][64])
             s->last_mv[0][1][1] = mpeg_decode_motion(s, s->mpeg_f_code[0][1],
                                                      s->last_mv[0][0][1]);
 
-            skip_bits1(&s->gb); /* marker */
+            check_marker(&s->gb, "after concealment_motion_vectors");
         } else {
             /* reset mv prediction */
             memset(s->last_mv, 0, sizeof(s->last_mv));
@@ -1451,7 +1451,7 @@ static void mpeg_decode_sequence_extension(Mpeg1Context *s1)
     s->height |= (vert_size_ext  << 12);
     bit_rate_ext = get_bits(&s->gb, 12);  /* XXX: handle it */
     s->bit_rate += (bit_rate_ext << 18) * 400;
-    skip_bits1(&s->gb); /* marker */
+    check_marker(&s->gb, "after bit rate extension");
     s->avctx->rc_buffer_size += get_bits(&s->gb, 8) * 1024 * 16 << 10;
 
     s->low_delay = get_bits1(&s->gb);
@@ -2131,8 +2131,7 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
         s->frame_rate_index = 1;
     }
     s->bit_rate = get_bits(&s->gb, 18) * 400;
-    if (get_bits1(&s->gb) == 0) { /* marker */
-        av_log(avctx, AV_LOG_ERROR, "Marker in sequence header missing\n");
+    if (check_marker(&s->gb, "in sequence header") == 0) {
         return AVERROR_INVALIDDATA;
     }
     s->width  = width;

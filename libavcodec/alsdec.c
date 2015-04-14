@@ -352,7 +352,7 @@ static av_cold int read_specific_config(ALSDecContext *ctx)
         if (get_bits_left(&gb) < bits_needed)
             return AVERROR_INVALIDDATA;
 
-        if (!(sconf->chan_pos = av_malloc(avctx->channels * sizeof(*sconf->chan_pos))))
+        if (!(sconf->chan_pos = av_malloc_array(avctx->channels, sizeof(*sconf->chan_pos))))
             return AVERROR(ENOMEM);
 
         ctx->cs_switch = 1;
@@ -1680,14 +1680,14 @@ static av_cold int decode_init(AVCodecContext *avctx)
     // allocate quantized parcor coefficient buffer
     num_buffers = sconf->mc_coding ? avctx->channels : 1;
 
-    ctx->quant_cof        = av_malloc(sizeof(*ctx->quant_cof) * num_buffers);
-    ctx->lpc_cof          = av_malloc(sizeof(*ctx->lpc_cof)   * num_buffers);
-    ctx->quant_cof_buffer = av_malloc(sizeof(*ctx->quant_cof_buffer) *
-                                      num_buffers * sconf->max_order);
-    ctx->lpc_cof_buffer   = av_malloc(sizeof(*ctx->lpc_cof_buffer) *
-                                      num_buffers * sconf->max_order);
-    ctx->lpc_cof_reversed_buffer = av_malloc(sizeof(*ctx->lpc_cof_buffer) *
-                                             sconf->max_order);
+    ctx->quant_cof        = av_malloc_array(num_buffers, sizeof(*ctx->quant_cof));
+    ctx->lpc_cof          = av_malloc_array(num_buffers, sizeof(*ctx->lpc_cof));
+    ctx->quant_cof_buffer = av_malloc_array(num_buffers * sconf->max_order,
+                                            sizeof(*ctx->quant_cof_buffer));
+    ctx->lpc_cof_buffer   = av_malloc_array(num_buffers * sconf->max_order,
+                                            sizeof(*ctx->lpc_cof_buffer));
+    ctx->lpc_cof_reversed_buffer = av_malloc_array(sconf->max_order,
+                                                   sizeof(*ctx->lpc_cof_buffer));
 
     if (!ctx->quant_cof              || !ctx->lpc_cof        ||
         !ctx->quant_cof_buffer       || !ctx->lpc_cof_buffer ||
@@ -1704,15 +1704,14 @@ static av_cold int decode_init(AVCodecContext *avctx)
     }
 
     // allocate and assign lag and gain data buffer for ltp mode
-    ctx->const_block     = av_malloc (sizeof(*ctx->const_block) * num_buffers);
-    ctx->shift_lsbs      = av_malloc (sizeof(*ctx->shift_lsbs)  * num_buffers);
-    ctx->opt_order       = av_malloc (sizeof(*ctx->opt_order)   * num_buffers);
-    ctx->store_prev_samples = av_malloc(sizeof(*ctx->store_prev_samples) * num_buffers);
-    ctx->use_ltp         = av_mallocz(sizeof(*ctx->use_ltp)  * num_buffers);
-    ctx->ltp_lag         = av_malloc (sizeof(*ctx->ltp_lag)  * num_buffers);
-    ctx->ltp_gain        = av_malloc (sizeof(*ctx->ltp_gain) * num_buffers);
-    ctx->ltp_gain_buffer = av_malloc (sizeof(*ctx->ltp_gain_buffer) *
-                                      num_buffers * 5);
+    ctx->const_block     = av_malloc_array(num_buffers, sizeof(*ctx->const_block));
+    ctx->shift_lsbs      = av_malloc_array(num_buffers, sizeof(*ctx->shift_lsbs));
+    ctx->opt_order       = av_malloc_array(num_buffers, sizeof(*ctx->opt_order));
+    ctx->store_prev_samples = av_malloc_array(num_buffers, sizeof(*ctx->store_prev_samples));
+    ctx->use_ltp         = av_mallocz_array(num_buffers, sizeof(*ctx->use_ltp));
+    ctx->ltp_lag         = av_malloc_array(num_buffers, sizeof(*ctx->ltp_lag));
+    ctx->ltp_gain        = av_malloc_array(num_buffers, sizeof(*ctx->ltp_gain));
+    ctx->ltp_gain_buffer = av_malloc_array(num_buffers * 5, sizeof(*ctx->ltp_gain_buffer));
 
     if (!ctx->const_block || !ctx->shift_lsbs ||
         !ctx->opt_order || !ctx->store_prev_samples ||
@@ -1728,12 +1727,12 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     // allocate and assign channel data buffer for mcc mode
     if (sconf->mc_coding) {
-        ctx->chan_data_buffer  = av_malloc(sizeof(*ctx->chan_data_buffer) *
-                                           num_buffers * num_buffers);
-        ctx->chan_data         = av_malloc(sizeof(*ctx->chan_data) *
-                                           num_buffers);
-        ctx->reverted_channels = av_malloc(sizeof(*ctx->reverted_channels) *
-                                           num_buffers);
+        ctx->chan_data_buffer  = av_malloc_array(num_buffers * num_buffers,
+                                                 sizeof(*ctx->chan_data_buffer));
+        ctx->chan_data         = av_malloc_array(num_buffers,
+                                                 sizeof(*ctx->chan_data));
+        ctx->reverted_channels = av_malloc_array(num_buffers,
+                                                 sizeof(*ctx->reverted_channels));
 
         if (!ctx->chan_data_buffer || !ctx->chan_data || !ctx->reverted_channels) {
             av_log(avctx, AV_LOG_ERROR, "Allocating buffer memory failed.\n");
@@ -1751,9 +1750,9 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     channel_size      = sconf->frame_length + sconf->max_order;
 
-    ctx->prev_raw_samples = av_malloc (sizeof(*ctx->prev_raw_samples) * sconf->max_order);
-    ctx->raw_buffer       = av_mallocz(sizeof(*ctx->     raw_buffer)  * avctx->channels * channel_size);
-    ctx->raw_samples      = av_malloc (sizeof(*ctx->     raw_samples) * avctx->channels);
+    ctx->prev_raw_samples = av_malloc_array(sconf->max_order, sizeof(*ctx->prev_raw_samples));
+    ctx->raw_buffer       = av_mallocz_array(avctx->channels * channel_size, sizeof(*ctx->raw_buffer));
+    ctx->raw_samples      = av_malloc_array(avctx->channels, sizeof(*ctx->raw_samples));
 
     // allocate previous raw sample buffer
     if (!ctx->prev_raw_samples || !ctx->raw_buffer|| !ctx->raw_samples) {
@@ -1770,10 +1769,10 @@ static av_cold int decode_init(AVCodecContext *avctx)
     // allocate crc buffer
     if (HAVE_BIGENDIAN != sconf->msb_first && sconf->crc_enabled &&
         (avctx->err_recognition & (AV_EF_CRCCHECK|AV_EF_CAREFUL))) {
-        ctx->crc_buffer = av_malloc(sizeof(*ctx->crc_buffer) *
-                                    ctx->cur_frame_length *
-                                    avctx->channels *
-                                    av_get_bytes_per_sample(avctx->sample_fmt));
+        ctx->crc_buffer = av_malloc_array(ctx->cur_frame_length *
+                                          avctx->channels *
+                                          av_get_bytes_per_sample(avctx->sample_fmt),
+                                          sizeof(*ctx->crc_buffer));
         if (!ctx->crc_buffer) {
             av_log(avctx, AV_LOG_ERROR, "Allocating buffer memory failed.\n");
             ret = AVERROR(ENOMEM);

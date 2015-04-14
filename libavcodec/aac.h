@@ -143,6 +143,7 @@ typedef struct PredictorState {
 
 #define NOISE_PRE       256    ///< preamble for NOISE_BT, put in bitstream with the first noise band
 #define NOISE_PRE_BITS    9    ///< length of preamble
+#define NOISE_OFFSET     90    ///< subtracted from global gain, used as offset for the preamble
 
 /**
  * Long Term Prediction
