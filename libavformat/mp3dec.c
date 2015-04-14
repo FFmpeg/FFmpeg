@@ -334,6 +334,7 @@ static int mp3_read_header(AVFormatContext *s)
     AVStream *st;
     int64_t off;
     int ret;
+    int i;
 
     st = avformat_new_stream(s, NULL);
     if (!st)
@@ -362,6 +363,10 @@ static int mp3_read_header(AVFormatContext *s)
     ret = ff_replaygain_export(st, s->metadata);
     if (ret < 0)
         return ret;
+
+    // the seek index is relative to the end of the xing vbr headers
+    for (i = 0; i < st->nb_index_entries; i++)
+        st->index_entries[i].pos += avio_tell(s->pb);
 
     /* the parameters will be extracted from the compressed bitstream */
     return 0;
