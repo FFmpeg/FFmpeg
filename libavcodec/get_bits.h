@@ -394,7 +394,7 @@ static inline int check_marker(GetBitContext *s, const char *msg)
 {
     int bit = get_bits1(s);
     if (!bit)
-        av_log(NULL, AV_LOG_INFO, "Marker bit missing %s\n", msg);
+        av_log(NULL, AV_LOG_INFO, "Marker bit missing at %d of %d %s\n", get_bits_count(s) - 1, s->size_in_bits, msg);
 
     return bit;
 }
