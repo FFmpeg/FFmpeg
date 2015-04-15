@@ -366,6 +366,7 @@ Optimization options (experts only):
   --disable-mipsdspr2      disable MIPS DSP ASE R2 optimizations
   --disable-msa            disable MSA optimizations
   --disable-mipsfpu        disable floating point MIPS optimizations
+  --disable-loongson3      disable Loongson-3 SIMD optimizations
   --disable-fast-unaligned consider unaligned accesses slow
 
 Developer options (useful when working on FFmpeg itself):
@@ -1576,6 +1577,7 @@ ARCH_EXT_LIST_MIPS="
     mipsdspr1
     mipsdspr2
     msa
+    loongson3
 "
 
 ARCH_EXT_LIST_X86_SIMD="
@@ -2024,6 +2026,7 @@ mips32r2_deps="mips"
 mips32r5_deps="mips"
 mips64r6_deps="mips"
 msa_deps="mips"
+loongson3_deps="mips"
 
 altivec_deps="ppc"
 dcbzl_deps="ppc"
@@ -3916,6 +3919,23 @@ elif enabled mips; then
             check_cflags "-mtune=i6400 -mabi=64"
             check_ldflags "-mabi=64"
         ;;
+        loongson3*)
+            enable mipsfpu
+            disable mips32r2
+            disable mips32r5
+            disable mips64r6
+            disable mipsdspr1
+            disable mipsdspr2
+            disable msa
+            enable local_aligned_8 local_aligned_16
+            enable simd_align_16
+            enable fast_64bit
+            enable fast_clz
+            enable fast_cmov
+            enable fast_unaligned
+            disable aligned_stack
+            cpuflags="-march=$cpu"
+        ;;
         generic)
             disable mips32r5
             disable mips64r6
@@ -4696,6 +4716,8 @@ elif enabled mips; then
      check_inline_asm mipsfpu   '"madd.d $f0, $f2, $f4, $f6"'
     enabled msa       && check_cflags "-mmsa" && check_ldflags "-mmsa" &&
      check_inline_asm msa       '"addvi.b $w0, $w1, 1"'
+    enabled loongson3 && add_cflags "-mhard-float" && add_asflags "-mhard-float" &&
+        check_inline_asm loongson3 '"gsldxc1 $f0, 0($2, $3)"'
 
     enabled mips32r5 && add_asflags "-mips32r5 -mfp64"
     enabled mips64r6 && add_asflags "-mips64r6 -mfp64"
@@ -5665,6 +5687,7 @@ if enabled mips; then
     echo "MIPS DSP R1 enabled       ${mipsdspr1-no}"
     echo "MIPS DSP R2 enabled       ${mipsdspr2-no}"
     echo "MIPS MSA enabled          ${msa-no}"
+    echo "LOONGSON3 enabled         ${loongson3-no}"
 fi
 if enabled ppc; then
     echo "AltiVec enabled           ${altivec-no}"
