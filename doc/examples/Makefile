@@ -18,6 +18,7 @@ EXAMPLES=       avio_list_dir                      \
                 extract_mvs                        \
                 filtering_video                    \
                 filtering_audio                    \
+                flac_test                          \
                 metadata                           \
                 muxing                             \
                 remuxing                           \
