@@ -428,6 +428,7 @@ static int mp3_seek(AVFormatContext *s, int stream_index, int64_t timestamp,
     int best_score;
 
     if (   mp3->is_cbr
+        && (mp3->usetoc <= 0 || !mp3->xing_toc)
         && st->duration > 0
         && mp3->header_filesize > s->internal->data_offset
         && mp3->frames) {
