@@ -109,7 +109,7 @@ static void write_header(AVFormatContext *s)
         time_t local_time = time(NULL);
         struct tm gmt_buffer;
         struct tm *gmt = gmtime_r(&local_time, &gmt_buffer);
-        char *gmt_iso = av_malloc(21);
+        char gmt_iso[21];
         strftime(gmt_iso, 21, "%Y-%m-%dT%H:%M:%SZ", gmt);
         if (w->debug_mode) {
             av_strlcpy(gmt_iso, "", 1);
@@ -122,7 +122,6 @@ static void write_header(AVFormatContext *s)
                     w->utc_timing_url ? "urn:mpeg:dash:utc:http-iso:2014" : "urn:mpeg:dash:utc:direct:2012");
         avio_printf(s->pb, "  value=\"%s\"/>\n",
                     w->utc_timing_url ? w->utc_timing_url : gmt_iso);
-        av_free(gmt_iso);
     }
 }
 
