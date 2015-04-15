@@ -197,7 +197,7 @@ static inline int decode_vui_parameters(H264Context *h, SPS *sps)
             av_log(h->avctx, AV_LOG_ERROR,
                    "time_scale/num_units_in_tick invalid or unsupported (%"PRIu32"/%"PRIu32")\n",
                    sps->time_scale, sps->num_units_in_tick);
-            return AVERROR_INVALIDDATA;
+            sps->timing_info_present_flag = 0;
         }
         sps->fixed_frame_rate_flag = get_bits1(&h->gb);
     }
