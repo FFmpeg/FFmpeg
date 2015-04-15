@@ -1006,14 +1006,12 @@ static int load_input_picture(MpegEncContext *s, const AVFrame *pic_arg)
         if (direct) {
             if ((ret = av_frame_ref(pic->f, pic_arg)) < 0)
                 return ret;
-            if (ff_alloc_picture(s, pic, 1) < 0) {
-                return -1;
-            }
-        } else {
-            if (ff_alloc_picture(s, pic, 0) < 0) {
-                return -1;
-            }
+        }
+        ret = ff_alloc_picture(s, pic, direct);
+        if (ret < 0)
+            return ret;
 
+        if (!direct) {
             if (pic->f->data[0] + INPLACE_OFFSET == pic_arg->data[0] &&
                 pic->f->data[1] + INPLACE_OFFSET == pic_arg->data[1] &&
                 pic->f->data[2] + INPLACE_OFFSET == pic_arg->data[2]) {
