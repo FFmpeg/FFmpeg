@@ -191,13 +191,16 @@ static inline int decode_vui_parameters(H264Context *h, SPS *sps)
 
     sps->timing_info_present_flag = get_bits1(&h->gb);
     if (sps->timing_info_present_flag) {
-        sps->num_units_in_tick = get_bits_long(&h->gb, 32);
-        sps->time_scale        = get_bits_long(&h->gb, 32);
-        if (!sps->num_units_in_tick || !sps->time_scale) {
+        unsigned num_units_in_tick = get_bits_long(&h->gb, 32);
+        unsigned time_scale        = get_bits_long(&h->gb, 32);
+        if (!num_units_in_tick || !time_scale) {
             av_log(h->avctx, AV_LOG_ERROR,
-                   "time_scale/num_units_in_tick invalid or unsupported (%"PRIu32"/%"PRIu32")\n",
-                   sps->time_scale, sps->num_units_in_tick);
-            return AVERROR_INVALIDDATA;
+                   "time_scale/num_units_in_tick invalid or unsupported (%u/%u)\n",
+                   time_scale, num_units_in_tick);
+            sps->timing_info_present_flag = 0;
+        } else {
+            sps->num_units_in_tick = num_units_in_tick;
+            sps->time_scale = time_scale;
         }
         sps->fixed_frame_rate_flag = get_bits1(&h->gb);
     }
