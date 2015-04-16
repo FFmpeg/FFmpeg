@@ -131,6 +131,9 @@ int ff_ac3_bit_alloc_calc_mask(AC3BitAllocParameters *s, int16_t *band_psd,
     int band_start, band_end, begin, end1;
     int lowcomp, fastleak, slowleak;
 
+    if (end <= 0)
+        return AVERROR_INVALIDDATA;
+
     /* excitation function */
     band_start = ff_ac3_bin_to_band_tab[start];
     band_end   = ff_ac3_bin_to_band_tab[end-1] + 1;
