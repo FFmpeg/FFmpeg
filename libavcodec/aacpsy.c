@@ -727,7 +727,10 @@ static void psy_3gpp_analyze_channel(FFPsyContext *ctx, int channel,
                     if (active_lines > 0.0f)
                         band->thr = calc_reduced_thr_3gpp(band, coeffs[g].min_snr, reduction);
                     pe += calc_pe_3gpp(band);
-                    band->norm_fac = band->active_lines / band->thr;
+                    if (band->thr > 0.0f)
+                        band->norm_fac = band->active_lines / band->thr;
+                    else
+                        band->norm_fac = 0.0f;
                     norm_fac += band->norm_fac;
                 }
             }
