@@ -723,7 +723,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
                 s->fft_data[x] = s->fft_data[x+step];
             s->remaining_fill += step;
         }
-        return AVERROR(EOF);
+        return AVERROR_EOF;
     }
 
     remaining = insamples->nb_samples;
