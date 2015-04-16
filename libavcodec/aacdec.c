@@ -900,7 +900,7 @@ static int decode_eld_specific_config(AACContext *ac, AVCodecContext *avctx,
         if (len == 15 + 255)
             len += get_bits(gb, 16);
         if (get_bits_left(gb) < len * 8 + 4) {
-            av_log(ac->avctx, AV_LOG_ERROR, overread_err);
+            av_log(avctx, AV_LOG_ERROR, overread_err);
             return AVERROR_INVALIDDATA;
         }
         skip_bits_long(gb, 8 * len);
