@@ -2012,14 +2012,18 @@ setend_deps="arm"
 
 map 'eval ${v}_inline_deps=inline_asm' $ARCH_EXT_LIST_ARM
 
+loongson_deps="mips"
 mipsfpu_deps="mips"
 mipsdspr1_deps="mips"
 mipsdspr2_deps="mips"
+mips32r2_deps="mips"
 mips32r5_deps="mips"
 mips64r6_deps="mips"
 msa_deps="mips"
 
 altivec_deps="ppc"
+dcbzl_deps="ppc"
+ldbrx_deps="ppc"
 ppc4xx_deps="ppc"
 vsx_deps="ppc"
 
