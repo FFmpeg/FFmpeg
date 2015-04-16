@@ -211,6 +211,8 @@ if ((y) < (x)) {\
 #   define FASTDIV(a,b) ((uint32_t)((((uint64_t)a) * ff_inverse[b]) >> 32))
 #endif /* FASTDIV */
 
+#ifndef ff_sqrt
+#define ff_sqrt ff_sqrt
 static inline av_const unsigned int ff_sqrt(unsigned int a)
 {
     unsigned int b;
@@ -230,6 +232,7 @@ static inline av_const unsigned int ff_sqrt(unsigned int a)
 
     return b - (a < b * b);
 }
+#endif
 
 static inline int8_t ff_u8_to_s8(uint8_t a)
 {
