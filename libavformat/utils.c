@@ -3136,9 +3136,13 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
                 fps_analyze_framecount = 0;
             /* variable fps and no guess at the real fps */
             if (!(st->r_frame_rate.num && st->avg_frame_rate.num) &&
-                st->info->duration_count < fps_analyze_framecount &&
-                st->codec->codec_type == AVMEDIA_TYPE_VIDEO)
-                break;
+                st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
+                int count = (ic->iformat->flags & AVFMT_NOTIMESTAMPS) ?
+                    st->info->codec_info_duration_fields/2 :
+                    st->info->duration_count;
+                if (count < fps_analyze_framecount)
+                    break;
+            }
             if (st->parser && st->parser->parser->split &&
                 !st->codec->extradata)
                 break;
