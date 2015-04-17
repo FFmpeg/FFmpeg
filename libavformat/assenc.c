@@ -40,6 +40,8 @@ typedef struct ASSContext {
     int cache_size;
     int ssa_mode;
     int ignore_readorder;
+    uint8_t *trailer;
+    size_t trailer_size;
 } ASSContext;
 
 static int write_header(AVFormatContext *s)
@@ -55,8 +57,23 @@ static int write_header(AVFormatContext *s)
     ass->write_ts = avctx->codec_id == AV_CODEC_ID_ASS;
     avpriv_set_pts_info(s->streams[0], 64, 1, 100);
     if (avctx->extradata_size > 0) {
-        avio_write(s->pb, avctx->extradata, avctx->extradata_size);
-        if (avctx->extradata[avctx->extradata_size - 1] != '\n')
+        size_t header_size = avctx->extradata_size;
+        uint8_t *trailer = strstr(avctx->extradata, "\n[Events]");
+
+        if (trailer)
+            trailer = strstr(trailer, "Format:");
+        if (trailer)
+            trailer = strstr(trailer, "\n");
+
+        if (trailer++) {
+            header_size = (trailer - avctx->extradata);
+            ass->trailer_size = avctx->extradata_size - header_size;
+            if (ass->trailer_size)
+                ass->trailer = trailer;
+        }
+
+        avio_write(s->pb, avctx->extradata, header_size);
+        if (avctx->extradata[header_size - 1] != '\n')
             avio_write(s->pb, "\r\n", 2);
         ass->ssa_mode = !strstr(avctx->extradata, "\n[V4+ Styles]");
         if (!strstr(avctx->extradata, "\n[Events]"))
@@ -192,7 +209,14 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
 
 static int write_trailer(AVFormatContext *s)
 {
+    ASSContext *ass = s->priv_data;
+
     purge_dialogues(s, 1);
+
+    if (ass->trailer) {
+        avio_write(s->pb, ass->trailer, ass->trailer_size);
+    }
+
     return 0;
 }
 
