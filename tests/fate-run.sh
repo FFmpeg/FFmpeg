@@ -236,7 +236,7 @@ gapless(){
     do_md5sum $decfile1
     # test decoded (and cut) data
     ffmpeg -i "$sample" $extra_args -flags +bitexact -f wav md5:
-    # the same as aboce again, with seeking to the start
+    # the same as above again, with seeking to the start
     ffmpeg -ss $start_offset -i "$sample" $extra_args -flags +bitexact -c:a copy -f framecrc -y $decfile2
     do_md5sum $decfile2
     ffmpeg -ss $start_offset -i "$sample" $extra_args -flags +bitexact -f wav md5:
