@@ -64,6 +64,7 @@ const char *swscale_license(void);
 #define SWS_SINC          0x100
 #define SWS_LANCZOS       0x200
 #define SWS_SPLINE        0x400
+#define SWS_GAMMA_CORRECT 0x800
 
 #define SWS_SRC_V_CHR_DROP_MASK     0x30000
 #define SWS_SRC_V_CHR_DROP_SHIFT    16
