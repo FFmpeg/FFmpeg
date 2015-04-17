@@ -388,7 +388,7 @@ static av_cold void decode_init_static(void)
     }
 
     for (i = 0; i < 8; i++) {
-        float ci, cs, ca;
+        double ci, cs, ca;
         ci = ci_table[i];
         cs = 1.0 / sqrt(1.0 + ci * ci);
         ca = cs * ci;
