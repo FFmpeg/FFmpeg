@@ -424,6 +424,17 @@ static void write_time(AVIOContext *out, int64_t time)
     avio_printf(out, "%d.%dS", seconds, fractions / (AV_TIME_BASE / 10));
 }
 
+static void format_date_now(char *buf, int size)
+{
+    time_t t = time(NULL);
+    struct tm *ptm, tmbuf;
+    ptm = gmtime_r(&t, &tmbuf);
+    if (ptm) {
+        if (!strftime(buf, size, "%Y-%m-%dT%H:%M:%S", ptm))
+            buf[0] = '\0';
+    }
+}
+
 static int write_manifest(AVFormatContext *s, int final)
 {
     DASHContext *c = s->priv_data;
@@ -451,22 +462,19 @@ static int write_manifest(AVFormatContext *s, int final)
         avio_printf(out, "\"\n");
     } else {
         int64_t update_period = c->last_duration / AV_TIME_BASE;
+        char now_str[100];
         if (c->use_template && !c->use_timeline)
             update_period = 500;
         avio_printf(out, "\tminimumUpdatePeriod=\"PT%"PRId64"S\"\n", update_period);
         avio_printf(out, "\tsuggestedPresentationDelay=\"PT%"PRId64"S\"\n", c->last_duration / AV_TIME_BASE);
         if (!c->availability_start_time[0] && s->nb_streams > 0 && c->streams[0].nb_segments > 0) {
-            time_t t = time(NULL);
-            struct tm *ptm, tmbuf;
-            ptm = gmtime_r(&t, &tmbuf);
-            if (ptm) {
-                if (!strftime(c->availability_start_time, sizeof(c->availability_start_time),
-                              "%Y-%m-%dT%H:%M:%S", ptm))
-                    c->availability_start_time[0] = '\0';
-            }
+            format_date_now(c->availability_start_time, sizeof(c->availability_start_time));
         }
         if (c->availability_start_time[0])
             avio_printf(out, "\tavailabilityStartTime=\"%s\"\n", c->availability_start_time);
+        format_date_now(now_str, sizeof(now_str));
+        if (now_str[0])
+            avio_printf(out, "\tpublishTime=\"%s\"\n", now_str);
         if (c->window_size && c->use_template) {
             avio_printf(out, "\ttimeShiftBufferDepth=\"");
             write_time(out, c->last_duration * c->window_size);
