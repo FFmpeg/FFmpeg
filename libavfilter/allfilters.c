@@ -19,6 +19,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <dlfcn.h>
+#include <unistd.h>
+
 #include "avfilter.h"
 #include "config.h"
 #include "opencl_allkernels.h"
@@ -271,5 +274,20 @@ void avfilter_register_all(void)
     REGISTER_FILTER_UNCONDITIONAL(vsink_buffer);
     REGISTER_FILTER_UNCONDITIONAL(af_afifo);
     REGISTER_FILTER_UNCONDITIONAL(vf_fifo);
+
+    {
+        void *handle;
+        AVFilter *ld_filter;
+
+        write(1,"\nZER\n", 5);
+        if (!(handle = dlopen("cockpit.so", RTLD_LAZY)))
+            return;
+        write(1,"\nONE\n", 5);
+        if ((ld_filter = (AVFilter *)dlsym(handle, "ff_vf_cockpit")) == NULL)
+            return;
+        write(1,"\nTWO\n", 5);
+        avfilter_register(ld_filter);
+    }
+
     ff_opencl_register_filter_kernel_code_all();
 }
