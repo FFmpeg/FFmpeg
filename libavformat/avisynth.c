@@ -22,6 +22,7 @@
 #include "libavcodec/internal.h"
 #include "avformat.h"
 #include "internal.h"
+#include "config.h"
 
 /* Enable function pointer definitions for runtime loading. */
 #define AVSC_NO_DECLSPEC
@@ -36,11 +37,8 @@
 #else
   #include <dlfcn.h>
   #include "compat/avisynth/avxsynth_c.h"
-    #if defined (__APPLE__)
-      #define AVISYNTH_LIB "libavxsynth.dylib"
-    #else
-      #define AVISYNTH_LIB "libavxsynth.so"
-    #endif
+  #define AVISYNTH_NAME "libavxsynth"
+  #define AVISYNTH_LIB AVISYNTH_NAME SLIBSUF
 
   #define LoadLibrary(x) dlopen(x, RTLD_NOW | RTLD_LOCAL)
   #define GetProcAddress dlsym
