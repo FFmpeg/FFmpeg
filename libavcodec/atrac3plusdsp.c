@@ -599,8 +599,8 @@ void ff_atrac3p_ipqf(FFTContext *dct_ctx, Atrac3pIPQFChannelCtx *hist,
                      const float *in, float *out)
 {
     int i, s, sb, t, pos_now, pos_next;
-    DECLARE_ALIGNED(32, float, idct_in)[ATRAC3P_SUBBANDS];
-    DECLARE_ALIGNED(32, float, idct_out)[ATRAC3P_SUBBANDS];
+    LOCAL_ALIGNED(32, float, idct_in, [ATRAC3P_SUBBANDS]);
+    LOCAL_ALIGNED(32, float, idct_out, [ATRAC3P_SUBBANDS]);
 
     memset(out, 0, ATRAC3P_FRAME_SAMPLES * sizeof(*out));
 
