@@ -150,7 +150,7 @@ static void release_unused_pictures(H264Context *h, int remove_current)
 
     /* release non reference frames */
     for (i = 0; i < H264_MAX_PICTURE_COUNT; i++) {
-        if (h->DPB[i].f.buf[0] && !h->DPB[i].reference &&
+        if (h->DPB[i].f->buf[0] && !h->DPB[i].reference &&
             (remove_current || &h->DPB[i] != h->cur_pic_ptr)) {
             ff_h264_unref_picture(h, &h->DPB[i]);
         }
@@ -220,9 +220,9 @@ static int alloc_picture(H264Context *h, H264Picture *pic)
 {
     int i, ret = 0;
 
-    av_assert0(!pic->f.data[0]);
+    av_assert0(!pic->f->data[0]);
 
-    pic->tf.f = &pic->f;
+    pic->tf.f = pic->f;
     ret = ff_thread_get_buffer(h->avctx, &pic->tf, pic->reference ?
                                                    AV_GET_BUFFER_FLAG_REF : 0);
     if (ret < 0)
@@ -271,7 +271,7 @@ fail:
 
 static inline int pic_is_unused(H264Context *h, H264Picture *pic)
 {
-    if (!pic->f.buf[0])
+    if (!pic->f->buf[0])
         return 1;
     return 0;
 }
@@ -473,14 +473,14 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
 
     for (i = 0; i < H264_MAX_PICTURE_COUNT; i++) {
         ff_h264_unref_picture(h, &h->DPB[i]);
-        if (h1->DPB[i].f.buf[0] &&
+        if (h1->DPB[i].f->buf[0] &&
             (ret = ff_h264_ref_picture(h, &h->DPB[i], &h1->DPB[i])) < 0)
             return ret;
     }
 
     h->cur_pic_ptr = REBASE_PICTURE(h1->cur_pic_ptr, h, h1);
     ff_h264_unref_picture(h, &h->cur_pic);
-    if (h1->cur_pic.f.buf[0]) {
+    if (h1->cur_pic.f->buf[0]) {
         ret = ff_h264_ref_picture(h, &h->cur_pic, &h1->cur_pic);
         if (ret < 0)
             return ret;
@@ -556,14 +556,14 @@ static int h264_frame_start(H264Context *h)
     pic = &h->DPB[i];
 
     pic->reference              = h->droppable ? 0 : h->picture_structure;
-    pic->f.coded_picture_number = h->coded_picture_number++;
+    pic->f->coded_picture_number = h->coded_picture_number++;
     pic->field_picture          = h->picture_structure != PICT_FRAME;
     /*
      * Zero key_frame here; IDR markings per slice in frame or fields are ORed
      * in later.
      * See decode_nal_units().
      */
-    pic->f.key_frame = 0;
+    pic->f->key_frame = 0;
     pic->mmco_reset  = 0;
     pic->recovered   = 0;
 
@@ -579,14 +579,14 @@ static int h264_frame_start(H264Context *h)
         ff_er_frame_start(&h->slice_ctx[0].er);
 
     for (i = 0; i < 16; i++) {
-        h->block_offset[i]           = (4 * ((scan8[i] - scan8[0]) & 7) << pixel_shift) + 4 * pic->f.linesize[0] * ((scan8[i] - scan8[0]) >> 3);
-        h->block_offset[48 + i]      = (4 * ((scan8[i] - scan8[0]) & 7) << pixel_shift) + 8 * pic->f.linesize[0] * ((scan8[i] - scan8[0]) >> 3);
+        h->block_offset[i]           = (4 * ((scan8[i] - scan8[0]) & 7) << pixel_shift) + 4 * pic->f->linesize[0] * ((scan8[i] - scan8[0]) >> 3);
+        h->block_offset[48 + i]      = (4 * ((scan8[i] - scan8[0]) & 7) << pixel_shift) + 8 * pic->f->linesize[0] * ((scan8[i] - scan8[0]) >> 3);
     }
     for (i = 0; i < 16; i++) {
         h->block_offset[16 + i]      =
-        h->block_offset[32 + i]      = (4 * ((scan8[i] - scan8[0]) & 7) << pixel_shift) + 4 * pic->f.linesize[1] * ((scan8[i] - scan8[0]) >> 3);
+        h->block_offset[32 + i]      = (4 * ((scan8[i] - scan8[0]) & 7) << pixel_shift) + 4 * pic->f->linesize[1] * ((scan8[i] - scan8[0]) >> 3);
         h->block_offset[48 + 16 + i] =
-        h->block_offset[48 + 32 + i] = (4 * ((scan8[i] - scan8[0]) & 7) << pixel_shift) + 8 * pic->f.linesize[1] * ((scan8[i] - scan8[0]) >> 3);
+        h->block_offset[48 + 32 + i] = (4 * ((scan8[i] - scan8[0]) & 7) << pixel_shift) + 8 * pic->f->linesize[1] * ((scan8[i] - scan8[0]) >> 3);
     }
 
     /* Some macroblocks can be accessed before they're available in case
@@ -1278,7 +1278,7 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
          * since that can modify s->current_picture_ptr. */
         if (h->first_field) {
             assert(h->cur_pic_ptr);
-            assert(h->cur_pic_ptr->f.buf[0]);
+            assert(h->cur_pic_ptr->f->buf[0]);
             assert(h->cur_pic_ptr->reference != DELAYED_PIC_REF);
 
             /* figure out if we have a complementary field pair */
@@ -1353,10 +1353,10 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
              * is not noticeable by comparison, but it should be fixed. */
             if (h->short_ref_count) {
                 if (prev) {
-                    av_image_copy(h->short_ref[0]->f.data,
-                                  h->short_ref[0]->f.linesize,
-                                  (const uint8_t **)prev->f.data,
-                                  prev->f.linesize,
+                    av_image_copy(h->short_ref[0]->f->data,
+                                  h->short_ref[0]->f->linesize,
+                                  (const uint8_t **)prev->f->data,
+                                  prev->f->linesize,
                                   h->avctx->pix_fmt,
                                   h->mb_width  * 16,
                                   h->mb_height * 16);
@@ -1371,7 +1371,7 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
          * frame, or to allocate a new one. */
         if (h->first_field) {
             assert(h->cur_pic_ptr);
-            assert(h->cur_pic_ptr->f.buf[0]);
+            assert(h->cur_pic_ptr->f->buf[0]);
             assert(h->cur_pic_ptr->reference != DELAYED_PIC_REF);
 
             /* figure out if we have a complementary field pair */
@@ -1612,16 +1612,16 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
         for (i = 0; i < 16; i++) {
             id_list[i] = 60;
             if (j < sl->list_count && i < sl->ref_count[j] &&
-                sl->ref_list[j][i].parent->f.buf[0]) {
+                sl->ref_list[j][i].parent->f->buf[0]) {
                 int k;
-                AVBuffer *buf = sl->ref_list[j][i].parent->f.buf[0]->buffer;
+                AVBuffer *buf = sl->ref_list[j][i].parent->f->buf[0]->buffer;
                 for (k = 0; k < h->short_ref_count; k++)
-                    if (h->short_ref[k]->f.buf[0]->buffer == buf) {
+                    if (h->short_ref[k]->f->buf[0]->buffer == buf) {
                         id_list[i] = k;
                         break;
                     }
                 for (k = 0; k < h->long_ref_count; k++)
-                    if (h->long_ref[k] && h->long_ref[k]->f.buf[0]->buffer == buf) {
+                    if (h->long_ref[k] && h->long_ref[k]->f->buf[0]->buffer == buf) {
                         id_list[i] = h->short_ref_count + k;
                         break;
                     }
@@ -1935,12 +1935,12 @@ static void loop_filter(const H264Context *h, H264SliceContext *sl, int start_x,
 
                 sl->mb_x = mb_x;
                 sl->mb_y = mb_y;
-                dest_y  = h->cur_pic.f.data[0] +
+                dest_y  = h->cur_pic.f->data[0] +
                           ((mb_x << pixel_shift) + mb_y * sl->linesize) * 16;
-                dest_cb = h->cur_pic.f.data[1] +
+                dest_cb = h->cur_pic.f->data[1] +
                           (mb_x << pixel_shift) * (8 << CHROMA444(h)) +
                           mb_y * sl->uvlinesize * block_h;
-                dest_cr = h->cur_pic.f.data[2] +
+                dest_cr = h->cur_pic.f->data[2] +
                           (mb_x << pixel_shift) * (8 << CHROMA444(h)) +
                           mb_y * sl->uvlinesize * block_h;
                 // FIXME simplify above
@@ -2046,8 +2046,8 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
     int lf_x_start = sl->mb_x;
     int ret;
 
-    sl->linesize   = h->cur_pic_ptr->f.linesize[0];
-    sl->uvlinesize = h->cur_pic_ptr->f.linesize[1];
+    sl->linesize   = h->cur_pic_ptr->f->linesize[0];
+    sl->uvlinesize = h->cur_pic_ptr->f->linesize[1];
 
     ret = alloc_scratch_buffers(sl, sl->linesize);
     if (ret < 0)
