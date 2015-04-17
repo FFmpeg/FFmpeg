@@ -2844,6 +2844,7 @@ static int tb_unreliable(AVCodecContext *c)
         c->codec_tag == AV_RL32("mp4v") ||
         c->codec_id == AV_CODEC_ID_MPEG2VIDEO ||
         c->codec_id == AV_CODEC_ID_GIF ||
+        c->codec_id == AV_CODEC_ID_HEVC ||
         c->codec_id == AV_CODEC_ID_H264)
         return 1;
     return 0;
