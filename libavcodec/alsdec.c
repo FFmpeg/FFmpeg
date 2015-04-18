@@ -1272,8 +1272,16 @@ static int revert_channel_correlation(ALSDecContext *ctx, ALSBlockData *bd,
 
             if (ch[dep].time_diff_sign) {
                 t      = -t;
+                if (t > 0 && begin < t) {
+                    av_log(ctx->avctx, AV_LOG_ERROR, "begin %u smaller than time diff index %d.\n", begin, t);
+                    return AVERROR_INVALIDDATA;
+                }
                 begin -= t;
             } else {
+                if (t > 0 && end < t) {
+                    av_log(ctx->avctx, AV_LOG_ERROR, "end %u smaller than time diff index %d.\n", end, t);
+                    return AVERROR_INVALIDDATA;
+                }
                 end   -= t;
             }
 
