@@ -1702,6 +1702,12 @@ static av_cold int decode_init(AVCodecContext *avctx)
         avctx->sample_fmt          = sconf->resolution > 1
                                      ? AV_SAMPLE_FMT_S32 : AV_SAMPLE_FMT_S16;
         avctx->bits_per_raw_sample = (sconf->resolution + 1) * 8;
+        if (avctx->bits_per_raw_sample > 32) {
+            av_log(avctx, AV_LOG_ERROR, "Bits per raw sample %d larger than 32.\n",
+                   avctx->bits_per_raw_sample);
+            ret = AVERROR_INVALIDDATA;
+            goto fail;
+        }
     }
 
     // set maximum Rice parameter for progressive decoding based on resolution
