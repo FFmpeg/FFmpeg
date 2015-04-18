@@ -57,7 +57,7 @@ FATE_SAMPLES_AVCONV += $(FATE_EXR-yes)
 fate-exr: $(FATE_EXR-yes)
 
 FATE_SAMPLES_AVCONV-$(call DEMDEC, IMAGE2, PICTOR) += fate-pictor
-fate-pictor: CMD = framecrc -i $(TARGET_SAMPLES)/pictor/MFISH.PIC -pix_fmt rgb24
+fate-pictor: CMD = framecrc -c pictor -i $(TARGET_SAMPLES)/pictor/MFISH.PIC -pix_fmt rgb24
 
 FATE_SAMPLES_AVCONV-$(call PARSERDEMDEC, PNG, IMAGE2PIPE, PNG) += fate-pngparser
 fate-pngparser: CMD = framecrc -f image2pipe -i $(TARGET_SAMPLES)/png1/libav_4x_concat.png -pix_fmt rgba
