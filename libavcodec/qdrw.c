@@ -35,6 +35,8 @@
 enum QuickdrawOpcodes {
     PACKBITSRECT = 0x0098,
     PACKBITSRGN,
+    DIRECTBITSRECT,
+    DIRECTBITSRGN,
 
     EOP = 0x00FF,
 };
@@ -64,14 +66,17 @@ static int parse_palette(AVCodecContext *avctx, GetByteContext *gbc,
     return 0;
 }
 
-static int decode_rle(AVCodecContext *avctx, AVFrame *p, GetByteContext *gbc)
+static int decode_rle(AVCodecContext *avctx, AVFrame *p, GetByteContext *gbc,
+                      int step)
 {
-    int i;
+    int i, j;
+    int offset = avctx->width * step;
     uint8_t *outdata = p->data[0];
 
     for (i = 0; i < avctx->height; i++) {
         int size, left, code, pix;
         uint8_t *out = outdata;
+        int pos = 0;
 
         /* size of packed line */
         size = left = bytestream2_get_be16(gbc);
@@ -83,12 +88,24 @@ static int decode_rle(AVCodecContext *avctx, AVFrame *p, GetByteContext *gbc)
             code = bytestream2_get_byte(gbc);
             if (code & 0x80 ) { /* run */
                 pix = bytestream2_get_byte(gbc);
-                memset(out, pix, 257 - code);
-                out   += 257 - code;
+                for (j = 0; j < 257 - code; j++) {
+                    out[pos] = pix;
+                    pos += step;
+                    if (pos >= offset) {
+                        pos -= offset;
+                        pos++;
+                    }
+                }
                 left  -= 2;
             } else { /* copy */
-                bytestream2_get_buffer(gbc, out, code + 1);
-                out   += code + 1;
+                for (j = 0; j < code + 1; j++) {
+                    out[pos] = bytestream2_get_byte(gbc);
+                    pos += step;
+                    if (pos >= offset) {
+                        pos -= offset;
+                        pos++;
+                    }
+                }
                 left  -= 2 + code;
             }
         }
@@ -134,6 +151,7 @@ static int decode_frame(AVCodecContext *avctx,
 
     while (bytestream2_get_bytes_left(&gbc) >= 4) {
         int bppcnt, bpp;
+        int rowbytes, pack_type;
         int opcode = bytestream2_get_be16(&gbc);
 
         switch(opcode) {
@@ -185,7 +203,63 @@ static int decode_frame(AVCodecContext *avctx,
                 avpriv_report_missing_feature(avctx, "Packbit mask region");
             }
 
-            ret = decode_rle(avctx, p, &gbc);
+            ret = decode_rle(avctx, p, &gbc, bppcnt);
+            if (ret < 0)
+                return ret;
+            *got_frame = 1;
+            break;
+        case DIRECTBITSRECT:
+        case DIRECTBITSRGN:
+            av_log(avctx, AV_LOG_DEBUG, "Parsing Directbit opcode\n");
+
+            bytestream2_skip(&gbc, 4);
+            rowbytes = bytestream2_get_be16(&gbc) & 0x3FFF;
+            if (rowbytes <= 250) {
+                avpriv_report_missing_feature(avctx, "Short rowbytes");
+                return AVERROR_PATCHWELCOME;
+            }
+
+            bytestream2_skip(&gbc, 10);
+            pack_type = bytestream2_get_be16(&gbc);
+
+            bytestream2_skip(&gbc, 16);
+            bppcnt = bytestream2_get_be16(&gbc); /* cmpCount */
+            bpp    = bytestream2_get_be16(&gbc); /* cmpSize */
+
+            av_log(avctx, AV_LOG_DEBUG, "bppcount %d bpp %d\n", bppcnt, bpp);
+            if (bppcnt == 3 && bpp == 8) {
+                avctx->pix_fmt = AV_PIX_FMT_RGB24;
+            } else if (bppcnt == 4 && bpp == 8) {
+                avctx->pix_fmt = AV_PIX_FMT_ARGB;
+            } else {
+                av_log(avctx, AV_LOG_ERROR,
+                       "Invalid pixel format (bppcnt %d bpp %d) in Directbit\n",
+                       bppcnt, bpp);
+                return AVERROR_INVALIDDATA;
+            }
+
+            /* set packing when default is selected */
+            if (pack_type == 0)
+                pack_type = bppcnt;
+
+            if (pack_type != 3 && pack_type != 4) {
+                avpriv_request_sample(avctx, "Pack type %d", pack_type);
+                return AVERROR_PATCHWELCOME;
+            }
+            if ((ret = ff_get_buffer(avctx, p, 0)) < 0) {
+                av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+                return ret;
+            }
+
+            /* jump to data */
+            bytestream2_skip(&gbc, 30);
+
+            if (opcode == DIRECTBITSRGN) {
+                bytestream2_skip(&gbc, 2 + 8); /* size + rect */
+                avpriv_report_missing_feature(avctx, "DirectBit mask region");
+            }
+
+            ret = decode_rle(avctx, p, &gbc, bppcnt);
             if (ret < 0)
                 return ret;
             *got_frame = 1;
