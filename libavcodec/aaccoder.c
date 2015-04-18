@@ -210,7 +210,7 @@ static av_always_inline float quantize_and_encode_band_cost_template(
                         int len = av_log2(coef);
 
                         put_bits(pb, len - 4 + 1, (1 << (len - 4 + 1)) - 2);
-                        put_bits(pb, len, coef & ((1 << len) - 1));
+                        put_sbits(pb, len, coef);
                     }
                 }
             }
