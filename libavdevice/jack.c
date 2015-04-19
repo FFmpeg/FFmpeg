@@ -165,6 +165,8 @@ static int start_jack(AVFormatContext *context)
 
     self->sample_rate = jack_get_sample_rate(self->client);
     self->ports       = av_malloc(self->nports * sizeof(*self->ports));
+    if (!self->ports)
+        return AVERROR(ENOMEM);
     self->buffer_size = jack_get_buffer_size(self->client);
 
     /* Register JACK ports */
