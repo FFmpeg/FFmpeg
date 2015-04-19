@@ -1031,6 +1031,9 @@ static void do_video_out(AVFormatContext *s,
     } else
         in_picture = next_picture;
 
+    if (!in_picture)
+        return;
+
     in_picture->pts = ost->sync_opts;
 
 #if 1
