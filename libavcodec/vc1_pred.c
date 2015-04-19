@@ -468,7 +468,7 @@ void ff_vc1_pred_mv_intfr(VC1Context *v, int n, int dmv_x, int dmv_y,
     MpegEncContext *s = &v->s;
     int xy, wrap, off = 0;
     int A[2], B[2], C[2];
-    int px, py;
+    int px = 0, py = 0;
     int a_valid = 0, b_valid = 0, c_valid = 0;
     int field_a, field_b, field_c; // 0: same, 1: opposit
     int total_valid, num_samefield, num_oppfield;
@@ -605,8 +605,7 @@ void ff_vc1_pred_mv_intfr(VC1Context *v, int n, int dmv_x, int dmv_y,
                 if (a_valid) { px = A[0]; py = A[1]; }
                 if (b_valid) { px = B[0]; py = B[1]; }
                 if (c_valid) { px = C[0]; py = C[1]; }
-            } else
-                px = py = 0;
+            }
         }
     } else {
         if (a_valid)
@@ -661,8 +660,7 @@ void ff_vc1_pred_mv_intfr(VC1Context *v, int n, int dmv_x, int dmv_y,
         } else if (total_valid == 1) {
             px = (a_valid) ? A[0] : ((b_valid) ? B[0] : C[0]);
             py = (a_valid) ? A[1] : ((b_valid) ? B[1] : C[1]);
-        } else
-            px = py = 0;
+        }
     }
 
     /* store MV using signed modulus of MV range defined in 4.11 */
