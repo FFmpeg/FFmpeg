@@ -393,7 +393,7 @@ static void dca_xll_inv_adapt_pred(int *samples, int nsamples, unsigned order,
             for (; j < order; j++)
                 s += (int64_t) c[j] * prev[DCA_XLL_AORDER_MAX + i - 1 - j];
 
-            samples[i] -= av_clip((s + 0x8000) >> 16, -0x1000000, 0xffffff);
+            samples[i] -= av_clip_intp2((s + 0x8000) >> 16, 24);
         }
     }
     for (i = order; i < nsamples; i++) {
@@ -402,7 +402,7 @@ static void dca_xll_inv_adapt_pred(int *samples, int nsamples, unsigned order,
 
         /* NOTE: Equations seem to imply addition, while the
          * pseudocode seems to use subtraction.*/
-        samples[i] -= av_clip((s + 0x8000) >> 16, -0x1000000, 0xffffff);
+        samples[i] -= av_clip_intp2((s + 0x8000) >> 16, 24);
     }
 }
 

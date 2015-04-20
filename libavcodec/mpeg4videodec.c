@@ -193,13 +193,13 @@ static int mpeg4_decode_sprite_trajectory(Mpeg4DecContext *ctx, GetBitContext *g
             x = get_xbits(gb, length);
 
         if (!(ctx->divx_version == 500 && ctx->divx_build == 413))
-            skip_bits1(gb);     /* marker bit */
+            check_marker(gb, "before sprite_trajectory");
 
         length = get_vlc2(gb, sprite_trajectory.table, SPRITE_TRAJ_VLC_BITS, 3);
         if (length)
             y = get_xbits(gb, length);
 
-        skip_bits1(gb);         /* marker bit */
+        check_marker(gb, "after sprite_trajectory");
         ctx->sprite_traj[i][0] = d[i][0] = x;
         ctx->sprite_traj[i][1] = d[i][1] = y;
     }
@@ -1677,7 +1677,7 @@ static int mpeg4_decode_gop_header(MpegEncContext *s, GetBitContext *gb)
 
     hours   = get_bits(gb, 5);
     minutes = get_bits(gb, 6);
-    skip_bits1(gb);
+    check_marker(gb, "in gop_header");
     seconds = get_bits(gb, 6);
 
     s->time_base = seconds + 60*(minutes + 60*hours);
@@ -1732,16 +1732,16 @@ static int decode_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
         s->low_delay = get_bits1(gb);
         if (get_bits1(gb)) {    /* vbv parameters */
             get_bits(gb, 15);   /* first_half_bitrate */
-            skip_bits1(gb);     /* marker */
+            check_marker(gb, "after first_half_bitrate");
             get_bits(gb, 15);   /* latter_half_bitrate */
-            skip_bits1(gb);     /* marker */
+            check_marker(gb, "after latter_half_bitrate");
             get_bits(gb, 15);   /* first_half_vbv_buffer_size */
-            skip_bits1(gb);     /* marker */
+            check_marker(gb, "after first_half_vbv_buffer_size");
             get_bits(gb, 3);    /* latter_half_vbv_buffer_size */
             get_bits(gb, 11);   /* first_half_vbv_occupancy */
-            skip_bits1(gb);     /* marker */
+            check_marker(gb, "after first_half_vbv_occupancy");
             get_bits(gb, 15);   /* latter_half_vbv_occupancy */
-            skip_bits1(gb);     /* marker */
+            check_marker(gb, "after latter_half_vbv_occupancy");
         }
     } else {
         /* is setting low delay flag only once the smartest thing to do?
@@ -1815,13 +1815,13 @@ static int decode_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
             ctx->vol_sprite_usage == GMC_SPRITE) {
             if (ctx->vol_sprite_usage == STATIC_SPRITE) {
                 skip_bits(gb, 13); // sprite_width
-                skip_bits1(gb); /* marker */
+                check_marker(gb, "after sprite_width");
                 skip_bits(gb, 13); // sprite_height
-                skip_bits1(gb); /* marker */
+                check_marker(gb, "after sprite_height");
                 skip_bits(gb, 13); // sprite_left
-                skip_bits1(gb); /* marker */
+                check_marker(gb, "after sprite_left");
                 skip_bits(gb, 13); // sprite_top
-                skip_bits1(gb); /* marker */
+                check_marker(gb, "after sprite_top");
             }
             ctx->num_sprite_warping_points = get_bits(gb, 6);
             if (ctx->num_sprite_warping_points > 3) {
@@ -2343,11 +2343,11 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb)
     if (ctx->shape != RECT_SHAPE) {
         if (ctx->vol_sprite_usage != 1 || s->pict_type != AV_PICTURE_TYPE_I) {
             skip_bits(gb, 13);  /* width */
-            skip_bits1(gb);     /* marker */
+            check_marker(gb, "after width");
             skip_bits(gb, 13);  /* height */
-            skip_bits1(gb);     /* marker */
+            check_marker(gb, "after height");
             skip_bits(gb, 13);  /* hor_spat_ref */
-            skip_bits1(gb);     /* marker */
+            check_marker(gb, "after hor_spat_ref");
             skip_bits(gb, 13);  /* ver_spat_ref */
         }
         skip_bits1(gb);         /* change_CR_disable */

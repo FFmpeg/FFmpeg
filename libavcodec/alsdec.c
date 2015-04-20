@@ -358,10 +358,14 @@ static av_cold int read_specific_config(ALSDecContext *ctx)
         ctx->cs_switch = 1;
 
         for (i = 0; i < avctx->channels; i++) {
+            sconf->chan_pos[i] = -1;
+        }
+
+        for (i = 0; i < avctx->channels; i++) {
             int idx;
 
             idx = get_bits(&gb, chan_pos_bits);
-            if (idx >= avctx->channels) {
+            if (idx >= avctx->channels || sconf->chan_pos[idx] != -1) {
                 av_log(avctx, AV_LOG_WARNING, "Invalid channel reordering.\n");
                 ctx->cs_switch = 0;
                 break;
@@ -1286,8 +1290,16 @@ static int revert_channel_correlation(ALSDecContext *ctx, ALSBlockData *bd,
 
             if (ch[dep].time_diff_sign) {
                 t      = -t;
+                if (t > 0 && begin < t) {
+                    av_log(ctx->avctx, AV_LOG_ERROR, "begin %u smaller than time diff index %d.\n", begin, t);
+                    return AVERROR_INVALIDDATA;
+                }
                 begin -= t;
             } else {
+                if (t > 0 && end < t) {
+                    av_log(ctx->avctx, AV_LOG_ERROR, "end %u smaller than time diff index %d.\n", end, t);
+                    return AVERROR_INVALIDDATA;
+                }
                 end   -= t;
             }
 
@@ -1666,6 +1678,12 @@ static av_cold int decode_init(AVCodecContext *avctx)
         avctx->sample_fmt          = sconf->resolution > 1
                                      ? AV_SAMPLE_FMT_S32 : AV_SAMPLE_FMT_S16;
         avctx->bits_per_raw_sample = (sconf->resolution + 1) * 8;
+        if (avctx->bits_per_raw_sample > 32) {
+            av_log(avctx, AV_LOG_ERROR, "Bits per raw sample %d larger than 32.\n",
+                   avctx->bits_per_raw_sample);
+            ret = AVERROR_INVALIDDATA;
+            goto fail;
+        }
     }
 
     // set maximum Rice parameter for progressive decoding based on resolution
@@ -1727,9 +1745,9 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     // allocate and assign channel data buffer for mcc mode
     if (sconf->mc_coding) {
-        ctx->chan_data_buffer  = av_malloc_array(num_buffers * num_buffers,
+        ctx->chan_data_buffer  = av_mallocz_array(num_buffers * num_buffers,
                                                  sizeof(*ctx->chan_data_buffer));
-        ctx->chan_data         = av_malloc_array(num_buffers,
+        ctx->chan_data         = av_mallocz_array(num_buffers,
                                                  sizeof(*ctx->chan_data));
         ctx->reverted_channels = av_malloc_array(num_buffers,
                                                  sizeof(*ctx->reverted_channels));

@@ -273,6 +273,9 @@ int main(int argc, char *argv[])
     int max_psnr   = -1;
     int max_psnr_shift = 0;
 
+    if (shift_last > shift_first)
+        shift_first -= shift_last - shift_first;
+
     if (argc > 3) {
         if (!strcmp(argv[3], "u8")) {
             len = 1;

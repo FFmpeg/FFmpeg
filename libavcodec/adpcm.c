@@ -1498,7 +1498,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
                         prev = 0;
                     }
 
-                    prev = av_clip((prev + 0x20) >> 6, -0x200000, 0x1fffff);
+                    prev = av_clip_intp2((prev + 0x20) >> 6, 21);
 
                     byte = bytestream2_get_byteu(&gb);
                     if (!channel)

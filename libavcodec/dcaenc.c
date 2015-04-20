@@ -847,8 +847,7 @@ static void put_subframe_samples(DCAEncContext *c, int ss, int band, int ch)
         int i;
         for (i = 0; i < 8; i++) {
             int bits = bit_consumption[c->abits[band][ch]] / 16;
-            int32_t mask = (1 << bits) - 1;
-            put_bits(&c->pb, bits, c->quantized[ss * 8 + i][band][ch] & mask);
+            put_sbits(&c->pb, bits, c->quantized[ss * 8 + i][band][ch]);
         }
     }
 }

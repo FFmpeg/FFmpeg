@@ -156,8 +156,7 @@ typedef struct {
 
 static void encode_codeword(PutBitContext *pb, int val, int codebook)
 {
-    unsigned int rice_order, exp_order, switch_bits, first_exp, exp, zeros,
-            mask;
+    unsigned int rice_order, exp_order, switch_bits, first_exp, exp, zeros;
 
     /* number of bits to switch between rice and exp golomb */
     switch_bits = codebook & 3;
@@ -174,10 +173,9 @@ static void encode_codeword(PutBitContext *pb, int val, int codebook)
         put_bits(pb, zeros, 0);
         put_bits(pb, exp + 1, val);
     } else if (rice_order) {
-        mask = (1 << rice_order) - 1;
         put_bits(pb, (val >> rice_order), 0);
         put_bits(pb, 1, 1);
-        put_bits(pb, rice_order, val & mask);
+        put_sbits(pb, rice_order, val);
     } else {
         put_bits(pb, val, 0);
         put_bits(pb, 1, 1);

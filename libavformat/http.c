@@ -943,6 +943,14 @@ static int http_buf_read(URLContext *h, uint8_t *buf, int size)
             s->filesize >= 0 && s->off >= s->filesize)
             return AVERROR_EOF;
         len = ffurl_read(s->hd, buf, size);
+        if (!len && (!s->willclose || s->chunksize < 0) &&
+            s->filesize >= 0 && s->off < s->filesize) {
+            av_log(h, AV_LOG_ERROR,
+                   "Stream ends prematurely at %"PRId64", should be %"PRId64"\n",
+                   s->off, s->filesize
+                  );
+            return AVERROR(EIO);
+        }
     }
     if (len > 0) {
         s->off += len;
