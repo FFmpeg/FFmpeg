@@ -49,29 +49,25 @@ typedef struct HQXAC {
     const HQXLUT *lut;
 } HQXAC;
 
-
-typedef struct HQXSliceData
-{
-    DECLARE_ALIGNED(16, int16_t, block)[16][64];
-    GetBitContext gb;
-
-} HQXSliceData;
-
 struct HQXContext;
-typedef int (*mb_decode_func)(struct HQXContext *ctx, HQXSliceData * slice_data,
-                              GetBitContext *gb, int x, int y);
 
+typedef int (*mb_decode_func)(struct HQXContext *ctx,
+                              int slice_no, int x, int y);
+
+typedef struct HQXSlice {
+    GetBitContext gb;
+    DECLARE_ALIGNED(16, int16_t, block)[16][64];
+} HQXSlice;
 
 typedef struct HQXContext {
     HQXDSPContext hqxdsp;
+    HQXSlice slice[16];
 
     AVFrame *pic;
     mb_decode_func decode_func;
 
     int format, dcb, width, height;
     int interlaced;
-
-    HQXSliceData slice[17];
 
     uint8_t *src;
     unsigned int data_size;
