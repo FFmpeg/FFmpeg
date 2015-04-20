@@ -615,6 +615,15 @@ static int flac_parse(AVCodecParserContext *s, AVCodecContext *avctx,
                                               nb_desired * FLAC_AVG_FRAME_SIZE);
         }
 
+        if (!av_fifo_space(fpc->fifo_buf) &&
+            av_fifo_size(fpc->fifo_buf) / FLAC_AVG_FRAME_SIZE >
+            fpc->nb_headers_buffered * 10) {
+            /* There is less than one valid flac header buffered for 10 headers
+             * buffered. Therefore the fifo is most likely filled with invalid
+             * data and the input is not a flac file. */
+            goto handle_error;
+        }
+
         /* Fill the buffer. */
         if (   av_fifo_space(fpc->fifo_buf) < read_end - read_start
             && av_fifo_realloc2(fpc->fifo_buf, (read_end - read_start) + 2*av_fifo_size(fpc->fifo_buf)) < 0) {
