@@ -2903,7 +2903,7 @@ int ff_find_stream_index(AVFormatContext *s, int id)
 int64_t ff_iso8601_to_unix_time(const char *datestr)
 {
     struct tm time1 = { 0 }, time2 = { 0 };
-    char *ret1, *ret2;
+    const char *ret1, *ret2;
     ret1 = av_small_strptime(datestr, "%Y - %m - %d %T", &time1);
     ret2 = av_small_strptime(datestr, "%Y - %m - %dT%T", &time2);
     if (ret2 && !ret1)
