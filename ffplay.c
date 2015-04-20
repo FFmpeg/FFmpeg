@@ -1553,7 +1553,7 @@ static double compute_target_delay(double delay, VideoState *is)
         }
     }
 
-    av_dlog(NULL, "video: delay=%0.3f A-V=%f\n",
+    av_log(NULL, AV_LOG_TRACE, "video: delay=%0.3f A-V=%f\n",
             delay, -diff);
 
     return delay;
@@ -2408,7 +2408,7 @@ static int synchronize_audio(VideoState *is, int nb_samples)
                     max_nb_samples = ((nb_samples * (100 + SAMPLE_CORRECTION_PERCENT_MAX) / 100));
                     wanted_nb_samples = FFMIN(FFMAX(wanted_nb_samples, min_nb_samples), max_nb_samples);
                 }
-                av_dlog(NULL, "diff=%f adiff=%f sample_diff=%d apts=%0.3f %f\n",
+                av_log(NULL, AV_LOG_TRACE, "diff=%f adiff=%f sample_diff=%d apts=%0.3f %f\n",
                         diff, avg_diff, wanted_nb_samples - nb_samples,
                         is->audio_clock, is->audio_diff_threshold);
             }

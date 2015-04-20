@@ -163,7 +163,7 @@ static int fbdev_read_packet(AVFormatContext *avctx, AVPacket *pkt)
     while (1) {
         curtime = av_gettime();
         delay = fbdev->time_frame - curtime;
-        av_dlog(avctx,
+        av_log(avctx, AV_LOG_TRACE,
                 "time_frame:%"PRId64" curtime:%"PRId64" delay:%"PRId64"\n",
                 fbdev->time_frame, curtime, delay);
         if (delay <= 0) {

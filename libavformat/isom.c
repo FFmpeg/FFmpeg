@@ -415,7 +415,7 @@ int ff_mp4_read_descr(AVFormatContext *fc, AVIOContext *pb, int *tag)
     int len;
     *tag = avio_r8(pb);
     len = ff_mp4_read_descr_len(pb);
-    av_dlog(fc, "MPEG4 description: tag=0x%02x len=%d\n", *tag, len);
+    av_log(fc, AV_LOG_TRACE, "MPEG4 description: tag=0x%02x len=%d\n", *tag, len);
     return len;
 }
 
@@ -463,10 +463,10 @@ int ff_mp4_read_dec_config_descr(AVFormatContext *fc, AVStream *st, AVIOContext 
     codec_id= ff_codec_get_id(ff_mp4_obj_type, object_type_id);
     if (codec_id)
         st->codec->codec_id= codec_id;
-    av_dlog(fc, "esds object type id 0x%02x\n", object_type_id);
+    av_log(fc, AV_LOG_TRACE, "esds object type id 0x%02x\n", object_type_id);
     len = ff_mp4_read_descr(fc, pb, &tag);
     if (tag == MP4DecSpecificDescrTag) {
-        av_dlog(fc, "Specific MPEG4 header len=%d\n", len);
+        av_log(fc, AV_LOG_TRACE, "Specific MPEG4 header len=%d\n", len);
         if (!len || (uint64_t)len > (1<<30))
             return -1;
         av_free(st->codec->extradata);
@@ -483,7 +483,7 @@ int ff_mp4_read_dec_config_descr(AVFormatContext *fc, AVStream *st, AVIOContext 
                 st->codec->sample_rate = cfg.ext_sample_rate;
             else
                 st->codec->sample_rate = cfg.sample_rate;
-            av_dlog(fc, "mp4a config channels %d obj %d ext obj %d "
+            av_log(fc, AV_LOG_TRACE, "mp4a config channels %d obj %d ext obj %d "
                     "sample rate %d ext sample rate %d\n", st->codec->channels,
                     cfg.object_type, cfg.ext_object_type,
                     cfg.sample_rate, cfg.ext_sample_rate);

@@ -1085,7 +1085,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
         pkt->pts > pkt->dts)
         presentation_delayed = 1;
 
-    av_dlog(NULL,
+    av_log(NULL, AV_LOG_TRACE,
             "IN delayed:%d pts:%s, dts:%s cur_dts:%s st:%d pc:%p duration:%d delay:%d onein_oneout:%d\n",
             presentation_delayed, av_ts2str(pkt->pts), av_ts2str(pkt->dts), av_ts2str(st->cur_dts),
             pkt->stream_index, pc, pkt->duration, delay, onein_oneout);
@@ -1151,7 +1151,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
     if (pkt->dts > st->cur_dts)
         st->cur_dts = pkt->dts;
 
-    av_dlog(NULL, "OUTdelayed:%d/%d pts:%s, dts:%s cur_dts:%s\n",
+    av_log(NULL, AV_LOG_TRACE, "OUTdelayed:%d/%d pts:%s, dts:%s cur_dts:%s\n",
             presentation_delayed, delay, av_ts2str(pkt->pts), av_ts2str(pkt->dts), av_ts2str(st->cur_dts));
 
     /* update flags */
@@ -1798,7 +1798,7 @@ int ff_seek_frame_binary(AVFormatContext *s, int stream_index,
     if (stream_index < 0)
         return -1;
 
-    av_dlog(s, "read_seek: %d %s\n", stream_index, av_ts2str(target_ts));
+    av_log(s, AV_LOG_TRACE, "read_seek: %d %s\n", stream_index, av_ts2str(target_ts));
 
     ts_max =
     ts_min = AV_NOPTS_VALUE;
@@ -1818,7 +1818,7 @@ int ff_seek_frame_binary(AVFormatContext *s, int stream_index,
         if (e->timestamp <= target_ts || e->pos == e->min_distance) {
             pos_min = e->pos;
             ts_min  = e->timestamp;
-            av_dlog(s, "using cached pos_min=0x%"PRIx64" dts_min=%s\n",
+            av_log(s, AV_LOG_TRACE, "using cached pos_min=0x%"PRIx64" dts_min=%s\n",
                     pos_min, av_ts2str(ts_min));
         } else {
             av_assert1(index == 0);
@@ -1833,7 +1833,7 @@ int ff_seek_frame_binary(AVFormatContext *s, int stream_index,
             pos_max   = e->pos;
             ts_max    = e->timestamp;
             pos_limit = pos_max - e->min_distance;
-            av_dlog(s, "using cached pos_max=0x%"PRIx64" pos_limit=0x%"PRIx64
+            av_log(s, AV_LOG_TRACE, "using cached pos_max=0x%"PRIx64" pos_limit=0x%"PRIx64
                     " dts_max=%s\n", pos_max, pos_limit, av_ts2str(ts_max));
         }
     }
@@ -1903,7 +1903,7 @@ int64_t ff_gen_search(AVFormatContext *s, int stream_index, int64_t target_ts,
     int no_change;
     int ret;
 
-    av_dlog(s, "gen_seek: %d %s\n", stream_index, av_ts2str(target_ts));
+    av_log(s, AV_LOG_TRACE, "gen_seek: %d %s\n", stream_index, av_ts2str(target_ts));
 
     if (ts_min == AV_NOPTS_VALUE) {
         pos_min = s->internal->data_offset;
@@ -1932,7 +1932,7 @@ int64_t ff_gen_search(AVFormatContext *s, int stream_index, int64_t target_ts,
 
     no_change = 0;
     while (pos_min < pos_limit) {
-        av_dlog(s,
+        av_log(s, AV_LOG_TRACE,
                 "pos_min=0x%"PRIx64" pos_max=0x%"PRIx64" dts_min=%s dts_max=%s\n",
                 pos_min, pos_max, av_ts2str(ts_min), av_ts2str(ts_max));
         av_assert0(pos_limit <= pos_max);
@@ -1963,7 +1963,7 @@ int64_t ff_gen_search(AVFormatContext *s, int stream_index, int64_t target_ts,
             no_change++;
         else
             no_change = 0;
-        av_dlog(s, "%"PRId64" %"PRId64" %"PRId64" / %s %s %s"
+        av_log(s, AV_LOG_TRACE, "%"PRId64" %"PRId64" %"PRId64" / %s %s %s"
                 " target:%s limit:%"PRId64" start:%"PRId64" noc:%d\n",
                 pos_min, pos, pos_max,
                 av_ts2str(ts_min), av_ts2str(ts), av_ts2str(ts_max), av_ts2str(target_ts),
@@ -1990,7 +1990,7 @@ int64_t ff_gen_search(AVFormatContext *s, int stream_index, int64_t target_ts,
     ts_min  = ff_read_timestamp(s, stream_index, &pos_min, INT64_MAX, read_timestamp);
     pos_min++;
     ts_max = ff_read_timestamp(s, stream_index, &pos_min, INT64_MAX, read_timestamp);
-    av_dlog(s, "pos=0x%"PRIx64" %s<=%s<=%s\n",
+    av_log(s, AV_LOG_TRACE, "pos=0x%"PRIx64" %s<=%s<=%s\n",
             pos, av_ts2str(ts_min), av_ts2str(target_ts), av_ts2str(ts_max));
 #endif
     *ts_ret = ts;
@@ -2544,11 +2544,11 @@ static void estimate_timings(AVFormatContext *ic, int64_t old_offset)
         AVStream av_unused *st;
         for (i = 0; i < ic->nb_streams; i++) {
             st = ic->streams[i];
-            av_dlog(ic, "%d: start_time: %0.3f duration: %0.3f\n", i,
+            av_log(ic, AV_LOG_TRACE, "%d: start_time: %0.3f duration: %0.3f\n", i,
                     (double) st->start_time / AV_TIME_BASE,
                     (double) st->duration   / AV_TIME_BASE);
         }
-        av_dlog(ic,
+        av_log(ic, AV_LOG_TRACE,
                 "stream: start_time: %0.3f duration: %0.3f bitrate=%d kb/s\n",
                 (double) ic->start_time / AV_TIME_BASE,
                 (double) ic->duration   / AV_TIME_BASE,
@@ -3731,7 +3731,7 @@ AVProgram *av_new_program(AVFormatContext *ac, int id)
     AVProgram *program = NULL;
     int i;
 
-    av_dlog(ac, "new_program: id=0x%04x\n", id);
+    av_log(ac, AV_LOG_TRACE, "new_program: id=0x%04x\n", id);
 
     for (i = 0; i < ac->nb_programs; i++)
         if (ac->programs[i]->id == id)

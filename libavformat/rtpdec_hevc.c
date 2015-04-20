@@ -55,7 +55,7 @@ static av_cold int hevc_sdp_parse_fmtp_config(AVFormatContext *s,
     /* profile-id: 0-31 */
     if (!strcmp(attr, "profile-id")) {
         hevc_data->profile_id = atoi(value);
-        av_dlog(s, "SDP: found profile-id: %d\n", hevc_data->profile_id);
+        av_log(s, AV_LOG_TRACE, "SDP: found profile-id: %d\n", hevc_data->profile_id);
     }
 
     /* tier-flag: 0-1 */
@@ -106,7 +106,7 @@ static av_cold int hevc_sdp_parse_fmtp_config(AVFormatContext *s,
     if (!strcmp(attr, "sprop-max-don-diff")) {
         if (atoi(value) > 0)
             hevc_data->using_donl_field = 1;
-        av_dlog(s, "Found sprop-max-don-diff in SDP, DON field usage is: %d\n",
+        av_log(s, AV_LOG_TRACE, "Found sprop-max-don-diff in SDP, DON field usage is: %d\n",
                 hevc_data->using_donl_field);
     }
 
@@ -114,7 +114,7 @@ static av_cold int hevc_sdp_parse_fmtp_config(AVFormatContext *s,
     if (!strcmp(attr, "sprop-depack-buf-nalus")) {
         if (atoi(value) > 0)
             hevc_data->using_donl_field = 1;
-        av_dlog(s, "Found sprop-depack-buf-nalus in SDP, DON field usage is: %d\n",
+        av_log(s, AV_LOG_TRACE, "Found sprop-depack-buf-nalus in SDP, DON field usage is: %d\n",
                 hevc_data->using_donl_field);
     }
 
@@ -309,7 +309,7 @@ static int hevc_handle_packet(AVFormatContext *ctx, PayloadContext *rtp_hevc_ctx
             len -= RTP_HEVC_DONL_FIELD_SIZE;
         }
 
-        av_dlog(ctx, " FU type %d with %d bytes\n", fu_type, len);
+        av_log(ctx, AV_LOG_TRACE, " FU type %d with %d bytes\n", fu_type, len);
 
         /* sanity check for size of input packet: 1 byte payload at least */
         if (len <= 0) {

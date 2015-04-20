@@ -442,7 +442,7 @@ static int compute_pkt_fields2(AVFormatContext *s, AVStream *st, AVPacket *pkt)
     int num, den, i;
     int frame_size;
 
-    av_dlog(s, "compute_pkt_fields2: pts:%s dts:%s cur_dts:%s b:%d size:%d st:%d\n",
+    av_log(s, AV_LOG_TRACE, "compute_pkt_fields2: pts:%s dts:%s cur_dts:%s b:%d size:%d st:%d\n",
             av_ts2str(pkt->pts), av_ts2str(pkt->dts), av_ts2str(st->cur_dts), delay, pkt->size, pkt->stream_index);
 
     if (pkt->duration < 0 && st->codec->codec_type != AVMEDIA_TYPE_SUBTITLE) {
@@ -502,7 +502,7 @@ static int compute_pkt_fields2(AVFormatContext *s, AVStream *st, AVPacket *pkt)
         return AVERROR(EINVAL);
     }
 
-    av_dlog(s, "av_write_frame: pts2:%s dts2:%s\n",
+    av_log(s, AV_LOG_TRACE, "av_write_frame: pts2:%s dts2:%s\n",
             av_ts2str(pkt->pts), av_ts2str(pkt->dts));
     st->cur_dts = pkt->dts;
     st->pts.val = pkt->dts;
@@ -876,7 +876,7 @@ int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt)
     if (pkt) {
         AVStream *st = s->streams[pkt->stream_index];
 
-        av_dlog(s, "av_interleaved_write_frame size:%d dts:%s pts:%s\n",
+        av_log(s, AV_LOG_TRACE, "av_interleaved_write_frame size:%d dts:%s pts:%s\n",
                 pkt->size, av_ts2str(pkt->dts), av_ts2str(pkt->pts));
         if ((ret = compute_pkt_fields2(s, st, pkt)) < 0 && !(s->oformat->flags & AVFMT_NOTIMESTAMPS))
             goto fail;
@@ -886,7 +886,7 @@ int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt)
             goto fail;
         }
     } else {
-        av_dlog(s, "av_interleaved_write_frame FLUSH\n");
+        av_log(s, AV_LOG_TRACE, "av_interleaved_write_frame FLUSH\n");
         flush = 1;
     }
 

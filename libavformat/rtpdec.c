@@ -362,9 +362,9 @@ int ff_rtp_check_and_send_back_rr(RTPDemuxContext *s, URLContext *fd,
     len = avio_close_dyn_buf(pb, &buf);
     if ((len > 0) && buf) {
         int av_unused result;
-        av_dlog(s->ic, "sending %d bytes of RR\n", len);
+        av_log(s->ic, AV_LOG_TRACE, "sending %d bytes of RR\n", len);
         result = ffurl_write(fd, buf, len);
-        av_dlog(s->ic, "result from ffurl_write: %d\n", result);
+        av_log(s->ic, AV_LOG_TRACE, "result from ffurl_write: %d\n", result);
         av_free(buf);
     }
     return 0;
