@@ -584,10 +584,9 @@ static int ogg_packet(AVFormatContext *s, int *sid, int *dstart, int *dsize,
 static int ogg_get_length(AVFormatContext *s)
 {
     struct ogg *ogg = s->priv_data;
-    int i;
+    int i, ret;
     int64_t size, end;
     int streams_left=0;
-    int ret;
 
     if (!s->pb->seekable)
         return 0;
@@ -707,7 +706,11 @@ static int ogg_read_header(AVFormatContext *s)
     }
 
     //linear granulepos seek from end
-    ogg_get_length(s);
+    ret = ogg_get_length(s);
+    if (ret < 0) {
+        ogg_read_close(s);
+        return ret;
+    }
 
     return 0;
 }
