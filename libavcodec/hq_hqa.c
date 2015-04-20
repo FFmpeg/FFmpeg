@@ -255,7 +255,8 @@ static int hqa_decode_frame(HQContext *ctx, AVFrame *pic, size_t data_size)
 
     av_log(ctx->avctx, AV_LOG_VERBOSE, "HQA Profile\n");
 
-    quant = bytestream2_get_be32(&ctx->gbc);
+    quant = bytestream2_get_byte(&ctx->gbc);
+    bytestream2_skip(&ctx->gbc, 3);
     if (quant >= NUM_HQ_QUANTS) {
         av_log(ctx->avctx, AV_LOG_ERROR,
                "Invalid quantization matrix %d.\n", quant);
