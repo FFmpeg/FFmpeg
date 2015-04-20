@@ -339,7 +339,10 @@ int ff_img_read_header(AVFormatContext *s1)
                     break;
                 }
             }
-            ffio_rewind_with_probe_data(s1->pb, &probe_buffer, probe_buffer_size);
+            if (s1->flags & AVFMT_FLAG_CUSTOM_IO) {
+                avio_seek(s1->pb, 0, SEEK_SET);
+            } else
+                ffio_rewind_with_probe_data(s1->pb, &probe_buffer, probe_buffer_size);
         }
         if (st->codec->codec_id == AV_CODEC_ID_NONE)
             st->codec->codec_id = ff_guess_image2_codec(s->path);
