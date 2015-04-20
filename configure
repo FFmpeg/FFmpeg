@@ -317,6 +317,8 @@ Developer options (useful when working on Libav itself):
                            (group) and PROB the probability associated with
                            NAME (default 0.5).
   --random-seed=VALUE      seed value for --enable/disable-random
+  --disable-valgrind-backtrace do not print a backtrace under Valgrind
+                           (only applies to --disable-optimizations builds)
 
 NOTE: Object files are built at the place where configure is launched.
 EOF
@@ -1261,6 +1263,7 @@ CONFIG_LIST="
     pod2man
     texi2html
     thumb
+    valgrind_backtrace
     xmm_clobber_test
 "
 
@@ -1412,6 +1415,7 @@ HEADERS_LIST="
     sys_un_h
     sys_videoio_h
     unistd_h
+    valgrind_valgrind_h
     windows_h
     winsock2_h
 "
@@ -1743,6 +1747,7 @@ simd_align_16_if_any="altivec neon sse"
 log2_deps="!libc_msvcrt"
 
 symver_if_any="symver_asm_label symver_gnu_asm"
+valgrind_backtrace_deps="!optimizations valgrind_valgrind_h"
 
 # threading support
 atomics_gcc_if="sync_val_compare_and_swap"
@@ -2282,6 +2287,7 @@ enable optimizations
 enable safe_bitstream_reader
 enable static
 enable swscale_alpha
+enable valgrind_backtrace
 
 # By default, enable only those hwaccels that have no external dependencies.
 enable dxva2 vda vdpau
@@ -4164,6 +4170,7 @@ check_header sys/select.h
 check_header sys/time.h
 check_header sys/un.h
 check_header unistd.h
+check_header valgrind/valgrind.h
 check_header vdpau/vdpau.h
 check_header vdpau/vdpau_x11.h
 check_header VideoDecodeAcceleration/VDADecoder.h

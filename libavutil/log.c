@@ -40,6 +40,12 @@
 #include "internal.h"
 #include "log.h"
 
+#if HAVE_VALGRIND_VALGRIND_H
+#include <valgrind/valgrind.h>
+/* this is the log level at which valgrind will output a full backtrace */
+#define BACKTRACE_LOGLEVEL AV_LOG_ERROR
+#endif
+
 static int av_log_level = AV_LOG_INFO;
 static int flags;
 
@@ -164,6 +170,11 @@ void av_log_default_callback(void *avcl, int level, const char *fmt, va_list vl)
     }
     colored_fputs(av_clip(level >> 3, 0, NB_LEVELS - 1), tint >> 8, line);
     av_strlcpy(prev, line, sizeof line);
+
+#if CONFIG_VALGRIND_BACKTRACE
+    if (level <= BACKTRACE_LOGLEVEL)
+        VALGRIND_PRINTF_BACKTRACE("");
+#endif
 }
 
 static void (*av_log_callback)(void*, int, const char*, va_list) =
