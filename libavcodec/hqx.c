@@ -24,6 +24,7 @@
 #include "libavutil/intreadwrite.h"
 
 #include "avcodec.h"
+#include "canopus.h"
 #include "get_bits.h"
 #include "internal.h"
 
@@ -405,29 +406,28 @@ static int hqx_decode_frame(AVCodecContext *avctx, void *data,
 {
     HQXContext *ctx = avctx->priv_data;
     uint8_t *src = avpkt->data;
-    uint32_t info_tag, info_offset;
+    uint32_t info_tag;
     int data_start;
     int i, ret;
 
-    if (avpkt->size < 8)
+    if (avpkt->size < 4 + 4) {
+        av_log(avctx, AV_LOG_ERROR, "Frame is too small %d.\n", avpkt->size);
         return AVERROR_INVALIDDATA;
+    }
 
-    /* Skip the INFO header if present */
-    info_offset = 0;
     info_tag    = AV_RL32(src);
     if (info_tag == MKTAG('I', 'N', 'F', 'O')) {
-        info_offset = AV_RL32(src + 4);
+        int info_offset = AV_RL32(src + 4);
         if (info_offset > UINT32_MAX - 8 || info_offset + 8 > avpkt->size) {
             av_log(avctx, AV_LOG_ERROR,
                    "Invalid INFO header offset: 0x%08"PRIX32" is too large.\n",
                    info_offset);
             return AVERROR_INVALIDDATA;
         }
+        ff_canopus_parse_info_tag(avctx, src + 8, info_offset);
 
         info_offset += 8;
         src         += info_offset;
-
-        av_log(avctx, AV_LOG_DEBUG, "Skipping INFO chunk.\n");
     }
 
     data_start     = src - avpkt->data;
