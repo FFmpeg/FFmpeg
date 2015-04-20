@@ -1085,10 +1085,12 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
         pkt->pts > pkt->dts)
         presentation_delayed = 1;
 
-    av_log(s, AV_LOG_TRACE,
+    if (s->debug & FF_FDEBUG_TS)
+        av_log(s, AV_LOG_TRACE,
             "IN delayed:%d pts:%s, dts:%s cur_dts:%s st:%d pc:%p duration:%d delay:%d onein_oneout:%d\n",
             presentation_delayed, av_ts2str(pkt->pts), av_ts2str(pkt->dts), av_ts2str(st->cur_dts),
             pkt->stream_index, pc, pkt->duration, delay, onein_oneout);
+
     /* Interpolate PTS and DTS if they are not present. We skip H264
      * currently because delay and has_b_frames are not reliably set. */
     if ((delay == 0 || (delay == 1 && pc)) &&
@@ -1151,7 +1153,8 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
     if (pkt->dts > st->cur_dts)
         st->cur_dts = pkt->dts;
 
-    av_log(s, AV_LOG_TRACE, "OUTdelayed:%d/%d pts:%s, dts:%s cur_dts:%s\n",
+    if (s->debug & FF_FDEBUG_TS)
+        av_log(s, AV_LOG_TRACE, "OUTdelayed:%d/%d pts:%s, dts:%s cur_dts:%s\n",
             presentation_delayed, delay, av_ts2str(pkt->pts), av_ts2str(pkt->dts), av_ts2str(st->cur_dts));
 
     /* update flags */
