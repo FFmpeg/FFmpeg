@@ -531,7 +531,7 @@ int ff_h264_decode_seq_parameter_set(H264Context *h)
 
 fail:
     av_free(sps);
-    return -1;
+    return AVERROR_INVALIDDATA;
 }
 
 static void build_qp_table(PPS *pps, int t, int index, const int depth)
@@ -550,6 +550,7 @@ int ff_h264_decode_picture_parameter_set(H264Context *h, int bit_length)
     PPS *pps;
     int qp_bd_offset;
     int bits_left;
+    int ret;
 
     if (pps_id >= MAX_PPS_COUNT) {
         av_log(h->avctx, AV_LOG_ERROR, "pps_id %u out of range\n", pps_id);
@@ -563,6 +564,7 @@ int ff_h264_decode_picture_parameter_set(H264Context *h, int bit_length)
     if ((unsigned)pps->sps_id >= MAX_SPS_COUNT ||
         !h->sps_buffers[pps->sps_id]) {
         av_log(h->avctx, AV_LOG_ERROR, "sps_id %u out of range\n", pps->sps_id);
+        ret = AVERROR_INVALIDDATA;
         goto fail;
     }
     sps = h->sps_buffers[pps->sps_id];
@@ -571,7 +573,8 @@ int ff_h264_decode_picture_parameter_set(H264Context *h, int bit_length)
         av_log(h->avctx, AV_LOG_ERROR,
                "Unimplemented luma bit depth=%d (max=10)\n",
                sps->bit_depth_luma);
-        return AVERROR_PATCHWELCOME;
+        ret = AVERROR_PATCHWELCOME;
+        goto fail;
     }
 
     pps->cabac             = get_bits1(&h->gb);
@@ -616,6 +619,7 @@ int ff_h264_decode_picture_parameter_set(H264Context *h, int bit_length)
     pps->ref_count[1] = get_ue_golomb(&h->gb) + 1;
     if (pps->ref_count[0] - 1 > 32 - 1 || pps->ref_count[1] - 1 > 32 - 1) {
         av_log(h->avctx, AV_LOG_ERROR, "reference overflow (pps)\n");
+        ret = AVERROR_INVALIDDATA;
         goto fail;
     }
 
@@ -678,5 +682,5 @@ int ff_h264_decode_picture_parameter_set(H264Context *h, int bit_length)
 
 fail:
     av_free(pps);
-    return -1;
+    return ret;
 }
