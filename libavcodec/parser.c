@@ -29,7 +29,6 @@
 
 #include "internal.h"
 #include "parser.h"
-#include "internal.h"
 
 static AVCodecParser *av_first_parser = NULL;
 
