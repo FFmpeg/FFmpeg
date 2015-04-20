@@ -190,6 +190,7 @@ warnings and errors. This is the default value.
 Same as @code{info}, except more verbose.
 @item debug, 48
 Show everything, including debugging information.
+@item trace, 56
 @end table
 
 By default the program logs to stderr, if coloring is supported by the
