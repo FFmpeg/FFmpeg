@@ -2231,13 +2231,19 @@ static int video_thread(void *arg)
     enum AVPixelFormat last_format = -2;
     int last_serial = -1;
     int last_vfilter_idx = 0;
-    if (!graph)
+    if (!graph) {
+        av_frame_free(&frame);
         return AVERROR(ENOMEM);
+    }
 
 #endif
 
-    if (!frame)
+    if (!frame) {
+#if CONFIG_AVFILTER
+        avfilter_graph_free(&graph);
+#endif
         return AVERROR(ENOMEM);
+    }
 
     for (;;) {
         ret = get_video_frame(is, frame);
