@@ -607,8 +607,7 @@ static int hqx_decode_frame(AVCodecContext *avctx, void *data,
         avctx->pix_fmt = AV_PIX_FMT_YUVA444P16;
         arg_data.decode_func = hqx_decode_444a;
         break;
-    }
-    if (!arg_data.decode_func) {
+    default:
         av_log(avctx, AV_LOG_ERROR, "Invalid format: %d.\n", ctx->format);
         return AVERROR_INVALIDDATA;
     }
