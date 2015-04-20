@@ -885,6 +885,7 @@ TESTPROGS = imgconvert                                                  \
             options                                                     \
             avfft                                                       \
 
+TESTPROGS += api-flac
 
 TESTPROGS-$(CONFIG_CABAC)                 += cabac
 TESTPROGS-$(CONFIG_FFT)                   += fft fft-fixed fft-fixed32
