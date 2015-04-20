@@ -1,14 +1,14 @@
-FATE_CLLC += fate-cllc-argb
-fate-cllc-argb: CMD = framecrc -i $(TARGET_SAMPLES)/cllc/sample-cllc-argb.avi
+FATE_CANOPUS_CLLC += fate-canopus-cllc-argb
+fate-canopus-cllc-argb: CMD = framecrc -i $(TARGET_SAMPLES)/cllc/sample-cllc-argb.avi
 
-FATE_CLLC += fate-cllc-rgb
-fate-cllc-rgb: CMD = framecrc -i $(TARGET_SAMPLES)/cllc/sample-cllc-rgb.avi
+FATE_CANOPUS_CLLC += fate-canopus-cllc-rgb
+fate-canopus-cllc-rgb: CMD = framecrc -i $(TARGET_SAMPLES)/cllc/sample-cllc-rgb.avi
 
-FATE_CLLC += fate-cllc-yuy2-noblock
-fate-cllc-yuy2-noblock: CMD = framecrc -i $(TARGET_SAMPLES)/cllc/sample-cllc-yuy2-noblock.avi
+FATE_CANOPUS_CLLC += fate-canopus-cllc-yuy2-noblock
+fate-canopus-cllc-yuy2-noblock: CMD = framecrc -i $(TARGET_SAMPLES)/cllc/sample-cllc-yuy2-noblock.avi
 
-FATE_LOSSLESS_VIDEO-$(call DEMDEC, AVI, CLLC) += $(FATE_CLLC)
-fate-cllc: $(FATE_CLLC)
+FATE_LOSSLESS_VIDEO-$(call DEMDEC, AVI, CLLC) += $(FATE_CANOPUS_CLLC)
+fate-canopus-cllc: $(FATE_CANOPUS_CLLC)
 
 FATE_LAGARITH += fate-lagarith-rgb24
 fate-lagarith-rgb24: CMD = framecrc -i $(TARGET_SAMPLES)/lagarith/lag-rgb24.avi
