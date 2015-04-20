@@ -24,6 +24,7 @@
 #include <stdint.h>
 #include "libavutil/mem.h"
 #include "get_bits.h"
+#include "hqxdsp.h"
 
 enum HQXACMode {
     HQX_AC_Q0 = 0,
@@ -54,6 +55,8 @@ typedef struct HQXSliceData
 } HQXSliceData;
 
 typedef struct HQXContext {
+    HQXDSPContext hqxdsp;
+
     int format, dcb, width, height;
     int interlaced;
 
