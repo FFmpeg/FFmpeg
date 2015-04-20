@@ -537,6 +537,9 @@ int avformat_open_input(AVFormatContext **ps, const char *filename,
     if (options)
         av_dict_copy(&tmp, *options, 0);
 
+    if (s->pb) // must be before any goto fail
+        s->flags |= AVFMT_FLAG_CUSTOM_IO;
+
     if ((ret = av_opt_set_dict(s, &tmp)) < 0)
         goto fail;
 
