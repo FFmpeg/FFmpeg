@@ -176,12 +176,15 @@ pixfmts(){
     $showfiltfmts scale | awk -F '[ \r]' '/^OUTPUT/{ print $3 }' | sort | comm -23 - $exclude_fmts >$out_fmts
 
     pix_fmts=$($showfiltfmts $filter | awk -F '[ \r]' '/^INPUT/{ print $3 }' | sort | comm -12 - $out_fmts)
+
+    outertest=$test
     for pix_fmt in $pix_fmts; do
         test=$pix_fmt
         video_filter "format=$pix_fmt,$filter=$filter_args" -pix_fmt $pix_fmt
     done
 
     rm $exclude_fmts $out_fmts
+    test=$outertest
 }
 
 mkdir -p "$outdir"
