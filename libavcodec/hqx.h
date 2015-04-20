@@ -22,6 +22,8 @@
 #define AVCODEC_HQX_H
 
 #include <stdint.h>
+
+#include "libavutil/frame.h"
 #include "libavutil/mem.h"
 #include "get_bits.h"
 #include "hqxdsp.h"
@@ -51,16 +53,29 @@ typedef struct HQXAC {
 typedef struct HQXSliceData
 {
     DECLARE_ALIGNED(16, int16_t, block)[16][64];
+    GetBitContext gb;
 
 } HQXSliceData;
 
+struct HQXContext;
+typedef int (*mb_decode_func)(struct HQXContext *ctx, HQXSliceData * slice_data,
+                              GetBitContext *gb, int x, int y);
+
+
 typedef struct HQXContext {
     HQXDSPContext hqxdsp;
+
+    AVFrame *pic;
+    mb_decode_func decode_func;
 
     int format, dcb, width, height;
     int interlaced;
 
     HQXSliceData slice[17];
+
+    uint8_t *src;
+    unsigned int data_size;
+    uint32_t slice_off[17];
 
     VLC cbp_vlc;
     VLC dc_vlc[3];
