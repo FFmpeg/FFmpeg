@@ -258,7 +258,7 @@ static int rv10_decode_picture_header(MpegEncContext *s)
 
     pb_frame = get_bits1(&s->gb);
 
-    av_dlog(s->avctx, "pict_type=%d pb_frame=%d\n", s->pict_type, pb_frame);
+    ff_dlog(s->avctx, "pict_type=%d pb_frame=%d\n", s->pict_type, pb_frame);
 
     if (pb_frame) {
         avpriv_request_sample(s->avctx, "pb frame");
@@ -277,7 +277,7 @@ static int rv10_decode_picture_header(MpegEncContext *s)
             s->last_dc[0] = get_bits(&s->gb, 8);
             s->last_dc[1] = get_bits(&s->gb, 8);
             s->last_dc[2] = get_bits(&s->gb, 8);
-            av_dlog(s->avctx, "DC:%d %d %d\n", s->last_dc[0],
+            ff_dlog(s->avctx, "DC:%d %d %d\n", s->last_dc[0],
                     s->last_dc[1], s->last_dc[2]);
         }
     }
@@ -594,7 +594,7 @@ static int rv10_decode_packet(AVCodecContext *avctx, const uint8_t *buf,
     }
 
 
-    av_dlog(avctx, "qscale=%d\n", s->qscale);
+    ff_dlog(avctx, "qscale=%d\n", s->qscale);
 
     /* default quantization values */
     if (s->codec_id == AV_CODEC_ID_RV10) {
@@ -634,7 +634,7 @@ static int rv10_decode_packet(AVCodecContext *avctx, const uint8_t *buf,
     for (s->mb_num_left = mb_count; s->mb_num_left > 0; s->mb_num_left--) {
         int ret;
         ff_update_block_index(s);
-        av_dlog(avctx, "**mb x=%d y=%d\n", s->mb_x, s->mb_y);
+        ff_dlog(avctx, "**mb x=%d y=%d\n", s->mb_x, s->mb_y);
 
         s->mv_dir  = MV_DIR_FORWARD;
         s->mv_type = MV_TYPE_16X16;
@@ -706,7 +706,7 @@ static int rv10_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     int slice_count;
     const uint8_t *slices_hdr = NULL;
 
-    av_dlog(avctx, "*****frame %d size=%d\n", avctx->frame_number, buf_size);
+    ff_dlog(avctx, "*****frame %d size=%d\n", avctx->frame_number, buf_size);
     s->flags  = avctx->flags;
     s->flags2 = avctx->flags2;
 

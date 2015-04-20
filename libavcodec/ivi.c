@@ -562,7 +562,7 @@ static int ivi_decode_coded_blocks(GetBitContext *gb, IVIBandDesc *band,
         pos = band->scan[scan_pos];
 
         if (!val)
-            av_dlog(avctx, "Val = 0 encountered!\n");
+            ff_dlog(avctx, "Val = 0 encountered!\n");
 
         q = (base_tab[pos] * quant) >> 9;
         if (q > 1)
@@ -988,7 +988,7 @@ static int decode_band(IVI45DecContext *ctx,
                                       (ctx->planes[0].bands[0].mb_size >> 3) - (band->mb_size >> 3));
             if (result < 0)
                 break;
-            av_dlog(avctx, "Empty tile encountered!\n");
+            ff_dlog(avctx, "Empty tile encountered!\n");
         } else {
             tile->data_size = ivi_dec_tile_data_size(&ctx->gb);
             if (!tile->data_size) {

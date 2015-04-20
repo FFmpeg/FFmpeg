@@ -139,7 +139,7 @@ static av_cold int MPA_encode_init(AVCodecContext *avctx)
     s->sblimit = ff_mpa_sblimit_table[table];
     s->alloc_table = ff_mpa_alloc_tables[table];
 
-    av_dlog(avctx, "%d kb/s, %d Hz, frame_size=%d bits, table=%d, padincr=%x\n",
+    ff_dlog(avctx, "%d kb/s, %d Hz, frame_size=%d bits, table=%d, padincr=%x\n",
             bitrate, freq, s->frame_size, table, s->frame_frac_incr);
 
     for(i=0;i<s->nb_channels;i++)
@@ -410,7 +410,7 @@ static void compute_scale_factors(MpegAudioContext *s,
                 index = 62; /* value 63 is not allowed */
             }
 
-            av_dlog(NULL, "%2d:%d in=%x %x %d\n",
+            ff_dlog(NULL, "%2d:%d in=%x %x %d\n",
                     j, i, vmax, s->scale_factor_table[index], index);
             /* store the scale factor */
             av_assert2(index >=0 && index <= 63);
@@ -479,7 +479,7 @@ static void compute_scale_factors(MpegAudioContext *s,
             code = 0;           /* kill warning */
         }
 
-        av_dlog(NULL, "%d: %2d %2d %2d %d %d -> %d\n", j,
+        ff_dlog(NULL, "%d: %2d %2d %2d %d %d -> %d\n", j,
                 sf[0], sf[1], sf[2], d1, d2, code);
         scale_code[j] = code;
         sf += 3;
@@ -556,7 +556,7 @@ static void compute_bit_allocation(MpegAudioContext *s,
         }
         if (max_sb < 0)
             break;
-        av_dlog(NULL, "current=%d max=%d max_sb=%d max_ch=%d alloc=%d\n",
+        ff_dlog(NULL, "current=%d max=%d max_sb=%d max_ch=%d alloc=%d\n",
                 current_frame_size, max_frame_size, max_sb, max_ch,
                 bit_alloc[max_ch][max_sb]);
 

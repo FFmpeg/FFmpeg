@@ -2412,7 +2412,7 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
             }
 
             if (eos || sl->mb_y >= h->mb_height) {
-                tprintf(h->avctx, "slice end %d %d\n",
+                ff_tlog(h->avctx, "slice end %d %d\n",
                         get_bits_count(&sl->gb), sl->gb.size_in_bits);
                 er_add_slice(sl, sl->resync_mb_x, sl->resync_mb_y, sl->mb_x - 1,
                              sl->mb_y, ER_MB_END);
@@ -2467,7 +2467,7 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
                         predict_field_decoding_flag(h, sl);
                 }
                 if (sl->mb_y >= h->mb_height) {
-                    tprintf(h->avctx, "slice end %d %d\n",
+                    ff_tlog(h->avctx, "slice end %d %d\n",
                             get_bits_count(&sl->gb), sl->gb.size_in_bits);
 
                     if (   get_bits_left(&sl->gb) == 0
@@ -2486,7 +2486,7 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
             }
 
             if (get_bits_left(&sl->gb) <= 0 && sl->mb_skip_run <= 0) {
-                tprintf(h->avctx, "slice end %d %d\n",
+                ff_tlog(h->avctx, "slice end %d %d\n",
                         get_bits_count(&sl->gb), sl->gb.size_in_bits);
 
                 if (get_bits_left(&sl->gb) == 0) {

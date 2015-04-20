@@ -186,7 +186,7 @@ static int mpegvideo_parse(AVCodecParserContext *s,
        to have the full timing information. The time take by this
        function should be negligible for uncorrupted streams */
     mpegvideo_extract_headers(s, avctx, buf, buf_size);
-    av_dlog(NULL, "pict_type=%d frame_rate=%0.3f repeat_pict=%d\n",
+    ff_dlog(NULL, "pict_type=%d frame_rate=%0.3f repeat_pict=%d\n",
             s->pict_type, av_q2d(avctx->framerate), s->repeat_pict);
 
     *poutbuf = buf;

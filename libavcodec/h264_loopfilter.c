@@ -526,8 +526,8 @@ static av_always_inline void filter_mb_dir(const H264Context *h, H264SliceContex
                 // Do not use s->qscale as luma quantizer because it has not the same
                 // value in IPCM macroblocks.
                 qp = (h->cur_pic.qscale_table[mb_xy] + h->cur_pic.qscale_table[mbn_xy] + 1) >> 1;
-                tprintf(h->avctx, "filter mb:%d/%d dir:%d edge:%d, QPy:%d ls:%d uvls:%d", mb_x, mb_y, dir, edge, qp, tmp_linesize, tmp_uvlinesize);
-                { int i; for (i = 0; i < 4; i++) tprintf(h->avctx, " bS[%d]:%d", i, bS[i]); tprintf(h->avctx, "\n"); }
+                ff_tlog(h->avctx, "filter mb:%d/%d dir:%d edge:%d, QPy:%d ls:%d uvls:%d", mb_x, mb_y, dir, edge, qp, tmp_linesize, tmp_uvlinesize);
+                { int i; for (i = 0; i < 4; i++) ff_tlog(h->avctx, " bS[%d]:%d", i, bS[i]); ff_tlog(h->avctx, "\n"); }
                 filter_mb_edgeh( &img_y[j*linesize], tmp_linesize, bS, qp, a, b, h, 0 );
                 chroma_qp_avg[0] = (sl->chroma_qp[0] + get_chroma_qp(h, 0, h->cur_pic.qscale_table[mbn_xy]) + 1) >> 1;
                 chroma_qp_avg[1] = (sl->chroma_qp[1] + get_chroma_qp(h, 1, h->cur_pic.qscale_table[mbn_xy]) + 1) >> 1;
@@ -591,9 +591,9 @@ static av_always_inline void filter_mb_dir(const H264Context *h, H264SliceContex
             // value in IPCM macroblocks.
             if(bS[0]+bS[1]+bS[2]+bS[3]){
                 qp = (h->cur_pic.qscale_table[mb_xy] + h->cur_pic.qscale_table[mbm_xy] + 1) >> 1;
-                //tprintf(h->avctx, "filter mb:%d/%d dir:%d edge:%d, QPy:%d, QPc:%d, QPcn:%d\n", mb_x, mb_y, dir, edge, qp, h->chroma_qp[0], h->cur_pic.qscale_table[mbn_xy]);
-                tprintf(h->avctx, "filter mb:%d/%d dir:%d edge:%d, QPy:%d ls:%d uvls:%d", mb_x, mb_y, dir, edge, qp, linesize, uvlinesize);
-                //{ int i; for (i = 0; i < 4; i++) tprintf(h->avctx, " bS[%d]:%d", i, bS[i]); tprintf(h->avctx, "\n"); }
+                //ff_tlog(h->avctx, "filter mb:%d/%d dir:%d edge:%d, QPy:%d, QPc:%d, QPcn:%d\n", mb_x, mb_y, dir, edge, qp, h->chroma_qp[0], h->cur_pic.qscale_table[mbn_xy]);
+                ff_tlog(h->avctx, "filter mb:%d/%d dir:%d edge:%d, QPy:%d ls:%d uvls:%d", mb_x, mb_y, dir, edge, qp, linesize, uvlinesize);
+                //{ int i; for (i = 0; i < 4; i++) ff_tlog(h->avctx, " bS[%d]:%d", i, bS[i]); ff_tlog(h->avctx, "\n"); }
                 chroma_qp_avg[0] = (sl->chroma_qp[0] + get_chroma_qp(h, 0, h->cur_pic.qscale_table[mbm_xy]) + 1) >> 1;
                 chroma_qp_avg[1] = (sl->chroma_qp[1] + get_chroma_qp(h, 1, h->cur_pic.qscale_table[mbm_xy]) + 1) >> 1;
                 if( dir == 0 ) {
@@ -676,9 +676,9 @@ static av_always_inline void filter_mb_dir(const H264Context *h, H264SliceContex
         // Do not use s->qscale as luma quantizer because it has not the same
         // value in IPCM macroblocks.
         qp = h->cur_pic.qscale_table[mb_xy];
-        //tprintf(h->avctx, "filter mb:%d/%d dir:%d edge:%d, QPy:%d, QPc:%d, QPcn:%d\n", mb_x, mb_y, dir, edge, qp, h->chroma_qp[0], h->cur_pic.qscale_table[mbn_xy]);
-        tprintf(h->avctx, "filter mb:%d/%d dir:%d edge:%d, QPy:%d ls:%d uvls:%d", mb_x, mb_y, dir, edge, qp, linesize, uvlinesize);
-        //{ int i; for (i = 0; i < 4; i++) tprintf(h->avctx, " bS[%d]:%d", i, bS[i]); tprintf(h->avctx, "\n"); }
+        //ff_tlog(h->avctx, "filter mb:%d/%d dir:%d edge:%d, QPy:%d, QPc:%d, QPcn:%d\n", mb_x, mb_y, dir, edge, qp, h->chroma_qp[0], h->cur_pic.qscale_table[mbn_xy]);
+        ff_tlog(h->avctx, "filter mb:%d/%d dir:%d edge:%d, QPy:%d ls:%d uvls:%d", mb_x, mb_y, dir, edge, qp, linesize, uvlinesize);
+        //{ int i; for (i = 0; i < 4; i++) ff_tlog(h->avctx, " bS[%d]:%d", i, bS[i]); ff_tlog(h->avctx, "\n"); }
         if( dir == 0 ) {
             filter_mb_edgev( &img_y[4*edge << h->pixel_shift], linesize, bS, qp, a, b, h, 0 );
             if (chroma) {
@@ -790,8 +790,8 @@ void ff_h264_filter_mb(const H264Context *h, H264SliceContext *sl,
                    get_chroma_qp( h, 1, mbn1_qp ) + 1 ) >> 1;
 
         /* Filter edge */
-        tprintf(h->avctx, "filter mb:%d/%d MBAFF, QPy:%d/%d, QPb:%d/%d QPr:%d/%d ls:%d uvls:%d", mb_x, mb_y, qp[0], qp[1], bqp[0], bqp[1], rqp[0], rqp[1], linesize, uvlinesize);
-        { int i; for (i = 0; i < 8; i++) tprintf(h->avctx, " bS[%d]:%d", i, bS[i]); tprintf(h->avctx, "\n"); }
+        ff_tlog(h->avctx, "filter mb:%d/%d MBAFF, QPy:%d/%d, QPb:%d/%d QPr:%d/%d ls:%d uvls:%d", mb_x, mb_y, qp[0], qp[1], bqp[0], bqp[1], rqp[0], rqp[1], linesize, uvlinesize);
+        { int i; for (i = 0; i < 8; i++) ff_tlog(h->avctx, " bS[%d]:%d", i, bS[i]); ff_tlog(h->avctx, "\n"); }
         if (MB_FIELD(sl)) {
             filter_mb_mbaff_edgev ( h, img_y                ,   linesize, bS  , 1, qp [0], a, b, 1 );
             filter_mb_mbaff_edgev ( h, img_y  + 8*  linesize,   linesize, bS+4, 1, qp [1], a, b, 1 );

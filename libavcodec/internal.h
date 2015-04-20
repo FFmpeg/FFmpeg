@@ -48,6 +48,19 @@
 #define FF_CODEC_CAP_INIT_CLEANUP           (1 << 1)
 
 
+#ifdef DEBUG
+#   define ff_dlog(ctx, ...) av_log(ctx, AV_LOG_DEBUG, __VA_ARGS__)
+#else
+#   define ff_dlog(ctx, ...)
+#endif
+
+#ifdef TRACE
+#   define ff_tlog(ctx, ...) av_log(ctx, AV_LOG_TRACE, __VA_ARGS__)
+#else
+#   define ff_tlog(p, ...)
+#endif
+
+
 #define FF_SANE_NB_CHANNELS 63U
 
 #define FF_SIGNBIT(x) ((x) >> CHAR_BIT * sizeof(x) - 1)

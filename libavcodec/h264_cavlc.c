@@ -293,7 +293,7 @@ static inline int pred_non_zero_count(const H264Context *h, H264SliceContext *sl
 
     if(i<64) i= (i+1)>>1;
 
-    tprintf(h->avctx, "pred_nnz L%X T%X n%d s%d P%X\n", left, top, n, scan8[n], i&31);
+    ff_tlog(h->avctx, "pred_nnz L%X T%X n%d s%d P%X\n", left, top, n, scan8[n], i&31);
 
     return i&31;
 }
@@ -483,7 +483,7 @@ static int decode_residual(const H264Context *h, H264SliceContext *sl,
     }
 
     trailing_ones= coeff_token&3;
-    tprintf(h->avctx, "trailing:%d, total:%d\n", trailing_ones, total_coeff);
+    ff_tlog(h->avctx, "trailing:%d, total:%d\n", trailing_ones, total_coeff);
     av_assert2(total_coeff<=16);
 
     i = show_bits(gb, 3);
@@ -717,7 +717,7 @@ int ff_h264_decode_mb_cavlc(const H264Context *h, H264SliceContext *sl)
 
     mb_xy = sl->mb_xy = sl->mb_x + sl->mb_y*h->mb_stride;
 
-    tprintf(h->avctx, "pic:%d mb:%d/%d\n", h->frame_num, sl->mb_x, sl->mb_y);
+    ff_tlog(h->avctx, "pic:%d mb:%d/%d\n", h->frame_num, sl->mb_x, sl->mb_y);
     cbp = 0; /* avoid warning. FIXME: find a solution without slowing
                 down the code */
     if (sl->slice_type_nos != AV_PICTURE_TYPE_I) {
@@ -923,7 +923,7 @@ decode_intra_mb:
                         pred_motion(h, sl, index, block_width, list, sl->ref_cache[list][ scan8[index] ], &mx, &my);
                         mx += get_se_golomb(&sl->gb);
                         my += get_se_golomb(&sl->gb);
-                        tprintf(h->avctx, "final mv:%d %d\n", mx, my);
+                        ff_tlog(h->avctx, "final mv:%d %d\n", mx, my);
 
                         if(IS_SUB_8X8(sub_mb_type)){
                             mv_cache[ 1 ][0]=
@@ -977,7 +977,7 @@ decode_intra_mb:
                     pred_motion(h, sl, 0, 4, list, sl->ref_cache[list][ scan8[0] ], &mx, &my);
                     mx += get_se_golomb(&sl->gb);
                     my += get_se_golomb(&sl->gb);
-                    tprintf(h->avctx, "final mv:%d %d\n", mx, my);
+                    ff_tlog(h->avctx, "final mv:%d %d\n", mx, my);
 
                     fill_rectangle(sl->mv_cache[list][ scan8[0] ], 4, 4, 8, pack16to32(mx,my), 4);
                 }
@@ -1012,7 +1012,7 @@ decode_intra_mb:
                         pred_16x8_motion(h, sl, 8*i, list, sl->ref_cache[list][scan8[0] + 16*i], &mx, &my);
                         mx += get_se_golomb(&sl->gb);
                         my += get_se_golomb(&sl->gb);
-                        tprintf(h->avctx, "final mv:%d %d\n", mx, my);
+                        ff_tlog(h->avctx, "final mv:%d %d\n", mx, my);
 
                         val= pack16to32(mx,my);
                     }else
@@ -1050,7 +1050,7 @@ decode_intra_mb:
                         pred_8x16_motion(h, sl, i*4, list, sl->ref_cache[list][ scan8[0] + 2*i ], &mx, &my);
                         mx += get_se_golomb(&sl->gb);
                         my += get_se_golomb(&sl->gb);
-                        tprintf(h->avctx, "final mv:%d %d\n", mx, my);
+                        ff_tlog(h->avctx, "final mv:%d %d\n", mx, my);
 
                         val= pack16to32(mx,my);
                     }else

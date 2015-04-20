@@ -148,7 +148,7 @@ static int gif_read_image(GifState *s, AVFrame *frame)
     has_local_palette = flags & 0x80;
     bits_per_pixel = (flags & 0x07) + 1;
 
-    av_dlog(s->avctx, "image x=%d y=%d w=%d h=%d\n", left, top, width, height);
+    ff_dlog(s->avctx, "image x=%d y=%d w=%d h=%d\n", left, top, width, height);
 
     if (has_local_palette) {
         pal_size = 1 << bits_per_pixel;
@@ -315,7 +315,7 @@ static int gif_read_extension(GifState *s)
     ext_code = bytestream2_get_byteu(&s->gb);
     ext_len  = bytestream2_get_byteu(&s->gb);
 
-    av_dlog(s->avctx, "ext_code=0x%x len=%d\n", ext_code, ext_len);
+    ff_dlog(s->avctx, "ext_code=0x%x len=%d\n", ext_code, ext_len);
 
     switch(ext_code) {
     case GIF_GCE_EXT_LABEL:
@@ -336,13 +336,13 @@ static int gif_read_extension(GifState *s)
             s->transparent_color_index = -1;
         s->gce_disposal = (gce_flags >> 2) & 0x7;
 
-        av_dlog(s->avctx, "gce_flags=%x tcolor=%d disposal=%d\n",
+        ff_dlog(s->avctx, "gce_flags=%x tcolor=%d disposal=%d\n",
                gce_flags,
                s->transparent_color_index, s->gce_disposal);
 
         if (s->gce_disposal > 3) {
             s->gce_disposal = GCE_DISPOSAL_NONE;
-            av_dlog(s->avctx, "invalid value in gce_disposal (%d). Using default value of 0.\n", ext_len);
+            ff_dlog(s->avctx, "invalid value in gce_disposal (%d). Using default value of 0.\n", ext_len);
         }
 
         ext_len = bytestream2_get_byteu(&s->gb);
@@ -359,7 +359,7 @@ static int gif_read_extension(GifState *s)
         bytestream2_skipu(&s->gb, ext_len);
         ext_len = bytestream2_get_byteu(&s->gb);
 
-        av_dlog(s->avctx, "ext_len1=%d\n", ext_len);
+        ff_dlog(s->avctx, "ext_len1=%d\n", ext_len);
     }
     return 0;
 }
@@ -395,7 +395,7 @@ static int gif_read_header1(GifState *s)
         s->avctx->sample_aspect_ratio.den = 64;
     }
 
-    av_dlog(s->avctx, "screen_w=%d screen_h=%d bpp=%d global_palette=%d\n",
+    ff_dlog(s->avctx, "screen_w=%d screen_h=%d bpp=%d global_palette=%d\n",
            s->screen_width, s->screen_height, s->bits_per_pixel,
            s->has_global_palette);
 
