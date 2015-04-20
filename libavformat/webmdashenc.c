@@ -398,8 +398,8 @@ static int write_adaptation_set(AVFormatContext *s, int as_index)
         ret = write_representation(s, s->streams[as->streams[i]],
                                    representation_id, !width_in_as,
                                    !height_in_as, !sample_rate_in_as);
-        if (ret) return ret;
         av_free(representation_id);
+        if (ret) return ret;
     }
     avio_printf(s->pb, "</AdaptationSet>\n");
     return 0;
