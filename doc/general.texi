@@ -254,6 +254,8 @@ library:
 @item Delphine Software International CIN @tab   @tab X
     @tab Multimedia format used by Delphine Software games.
 @item Digital Speech Standard (DSS) @tab   @tab X
+@item Canopus HQ                @tab   @tab X
+@item Canopus HQA               @tab   @tab X
 @item Canopus HQX               @tab   @tab X
 @item CD+G                      @tab   @tab X
     @tab Video format used by CD+G karaoke disks

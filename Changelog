@@ -17,6 +17,7 @@ version <next>:
 - WebM Live Chunk Muxer
 - nvenc level and tier options
 - chorus filter
+- Canopus HQ/HQA decoder
 
 
 version 2.6:
