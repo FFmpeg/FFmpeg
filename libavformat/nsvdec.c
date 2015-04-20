@@ -723,7 +723,6 @@ static int nsv_probe(AVProbeData *p)
 {
     int i, score = 0;
 
-    av_log(NULL, AV_LOG_TRACE, "nsv_probe(), buf_size %d\n", p->buf_size);
     /* check file header */
     /* streamed files might not have any header */
     if (p->buf[0] == 'N' && p->buf[1] == 'S' &&
