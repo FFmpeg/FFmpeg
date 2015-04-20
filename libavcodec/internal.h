@@ -51,7 +51,7 @@
 #ifdef DEBUG
 #   define ff_dlog(ctx, ...) av_log(ctx, AV_LOG_DEBUG, __VA_ARGS__)
 #else
-#   define ff_dlog(ctx, ...)
+#   define ff_dlog(ctx, ...) do { if (0) av_log(ctx, AV_LOG_DEBUG, __VA_ARGS__); } while (0)
 #endif
 
 #ifdef TRACE
