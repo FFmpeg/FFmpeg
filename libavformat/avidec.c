@@ -1150,7 +1150,7 @@ start_sync:
         size = d[4] + (d[5] << 8) + (d[6] << 16) + (d[7] << 24);
 
         n = get_stream_idx(d + 2);
-        av_log(s, AV_LOG_TRACE, "%X %X %X %X %X %X %X %X %"PRId64" %u %d\n",
+        ff_tlog(s, "%X %X %X %X %X %X %X %X %"PRId64" %u %d\n",
                 d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7], i, size, n);
         if (i*(avi->io_fsize>0) + (uint64_t)size > avi->fsize || d[0] > 127)
             continue;
