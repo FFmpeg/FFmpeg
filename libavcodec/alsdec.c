@@ -1230,6 +1230,7 @@ static int revert_channel_correlation(ALSDecContext *ctx, ALSBlockData *bd,
     ALSChannelData *ch = cd[c];
     unsigned int   dep = 0;
     unsigned int channels = ctx->avctx->channels;
+    unsigned int channel_size = ctx->sconf.frame_length + ctx->sconf.max_order;
 
     if (reverted[c])
         return 0;
@@ -1261,9 +1262,9 @@ static int revert_channel_correlation(ALSDecContext *ctx, ALSBlockData *bd,
 
     dep = 0;
     while (!ch[dep].stop_flag) {
-        unsigned int smp;
-        unsigned int begin = 1;
-        unsigned int end   = bd->block_length - 1;
+        ptrdiff_t smp;
+        ptrdiff_t begin = 1;
+        ptrdiff_t end   = bd->block_length - 1;
         int64_t y;
         int32_t *master = ctx->raw_samples[ch[dep].master_channel] + offset;
 
@@ -1272,17 +1273,26 @@ static int revert_channel_correlation(ALSDecContext *ctx, ALSBlockData *bd,
 
             if (ch[dep].time_diff_sign) {
                 t      = -t;
-                if (t > 0 && begin < t) {
-                    av_log(ctx->avctx, AV_LOG_ERROR, "begin %u smaller than time diff index %d.\n", begin, t);
+                if (begin < t) {
+                    av_log(ctx->avctx, AV_LOG_ERROR, "begin %td smaller than time diff index %d.\n", begin, t);
                     return AVERROR_INVALIDDATA;
                 }
                 begin -= t;
             } else {
-                if (t > 0 && end < t) {
-                    av_log(ctx->avctx, AV_LOG_ERROR, "end %u smaller than time diff index %d.\n", end, t);
+                if (end < t) {
+                    av_log(ctx->avctx, AV_LOG_ERROR, "end %td smaller than time diff index %d.\n", end, t);
                     return AVERROR_INVALIDDATA;
                 }
                 end   -= t;
+            }
+
+            if (FFMIN(begin - 1, begin - 1 + t) < ctx->raw_buffer - master ||
+                FFMAX(end   + 1,   end + 1 + t) > ctx->raw_buffer + channels * channel_size - master) {
+                av_log(ctx->avctx, AV_LOG_ERROR,
+                       "sample pointer range [%p, %p] not contained in raw_buffer [%p, %p].\n",
+                       master + FFMIN(begin - 1, begin - 1 + t), master + FFMAX(end + 1,   end + 1 + t),
+                       ctx->raw_buffer, ctx->raw_buffer + channels * channel_size);
+                return AVERROR_INVALIDDATA;
             }
 
             for (smp = begin; smp < end; smp++) {
@@ -1297,6 +1307,16 @@ static int revert_channel_correlation(ALSDecContext *ctx, ALSBlockData *bd,
                 bd->raw_samples[smp] += y >> 7;
             }
         } else {
+
+            if (begin - 1 < ctx->raw_buffer - master ||
+                end   + 1 > ctx->raw_buffer + channels * channel_size - master) {
+                av_log(ctx->avctx, AV_LOG_ERROR,
+                       "sample pointer range [%p, %p] not contained in raw_buffer [%p, %p].\n",
+                       master + begin - 1, master + end + 1,
+                       ctx->raw_buffer, ctx->raw_buffer + channels * channel_size);
+                return AVERROR_INVALIDDATA;
+            }
+
             for (smp = begin; smp < end; smp++) {
                 y  = (1 << 6) +
                      MUL64(ch[dep].weighting[0], master[smp - 1]) +
