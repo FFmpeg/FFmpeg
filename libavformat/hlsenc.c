@@ -52,6 +52,7 @@ typedef enum HLSFlags {
     HLS_DELETE_SEGMENTS = (1 << 1),
     HLS_ROUND_DURATIONS = (1 << 2),
     HLS_DISCONT_START = (1 << 3),
+    HLS_OMIT_ENDLIST = (1 << 4),
 } HLSFlags;
 
 typedef struct HLSContext {
