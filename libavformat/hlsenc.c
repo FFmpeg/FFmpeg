@@ -293,7 +293,7 @@ static int hls_window(AVFormatContext *s, int last)
         avio_printf(out, "%s\n", en->filename);
     }
 
-    if (last)
+    if (last && (hls->flags & HLS_OMIT_ENDLIST)==0)
         avio_printf(out, "#EXT-X-ENDLIST\n");
 
 fail:
@@ -524,6 +524,7 @@ static const AVOption options[] = {
     {"delete_segments", "delete segment files that are no longer part of the playlist", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_DELETE_SEGMENTS }, 0, UINT_MAX,   E, "flags"},
     {"round_durations", "round durations in m3u8 to whole numbers", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_ROUND_DURATIONS }, 0, UINT_MAX,   E, "flags"},
     {"discont_start", "Start the m3u8 with a discontinuity", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_DISCONT_START }, 0, UINT_MAX,   E, "flags"},
+    {"omit_endlist", "Do not append an endlist when ending stream", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_OMIT_ENDLIST }, 0, UINT_MAX,   E, "flags"},
 
     { NULL },
 };
