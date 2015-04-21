@@ -552,6 +552,8 @@
     </ClCompile>
     <ClCompile Include="..\libavcodec\cllc.c">
     </ClCompile>
+    <ClCompile Include="..\libavcodec\canopus.c">
+    </ClCompile>
     <ClCompile Include="..\libavcodec\cook.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\cngdec.c">
@@ -793,9 +795,17 @@
     </ClCompile>
     <ClCompile Include="..\libavcodec\hnm4video.c">
     </ClCompile>
+    <ClCompile Include="..\libavcodec\hq_hqa.c">
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\hq_hqadata.c">
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\hq_hqadsp.c">
+    </ClCompile>
     <ClCompile Include="..\libavcodec\hqx.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\hqxvlc.c">
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\hqxdsp.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\huffyuv.c">
     </ClCompile>
