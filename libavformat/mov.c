@@ -1230,7 +1230,7 @@ static int mov_read_aclr(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                         av_log(c, AV_LOG_WARNING, "ignored unknown aclr value (%d)\n", range_value);
                         break;
                     }
-                    av_dlog(c, "color_range: %"PRIu8"\n", codec->color_range);
+                    av_dlog(c, "color_range: %d\n", codec->color_range);
                 } else {
                   /* For some reason the whole atom was not added to the extradata */
                   av_log(c, AV_LOG_ERROR, "aclr not decoded - incomplete atom\n");
