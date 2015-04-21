@@ -52,6 +52,7 @@ typedef enum HLSFlags {
     HLS_DELETE_SEGMENTS = (1 << 1),
     HLS_ROUND_DURATIONS = (1 << 2),
     HLS_DISCONT_START = (1 << 3),
+    HLS_OMIT_ENDLIST = (1 << 4),
 } HLSFlags;
 
 typedef struct HLSContext {
@@ -293,7 +294,7 @@ static int hls_window(AVFormatContext *s, int last)
         avio_printf(out, "%s\n", en->filename);
     }
 
-    if (last)
+    if (last && (hls->flags & HLS_OMIT_ENDLIST)==0)
         avio_printf(out, "#EXT-X-ENDLIST\n");
 
 fail:
@@ -524,6 +525,7 @@ static const AVOption options[] = {
     {"delete_segments", "delete segment files that are no longer part of the playlist", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_DELETE_SEGMENTS }, 0, UINT_MAX,   E, "flags"},
     {"round_durations", "round durations in m3u8 to whole numbers", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_ROUND_DURATIONS }, 0, UINT_MAX,   E, "flags"},
     {"discont_start", "start the playlist with a discontinuity tag", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_DISCONT_START }, 0, UINT_MAX,   E, "flags"},
+    {"omit_endlist", "Do not append an endlist when ending stream", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_OMIT_ENDLIST }, 0, UINT_MAX,   E, "flags"},
 
     { NULL },
 };
