@@ -75,7 +75,10 @@ static int hq_decode_block(HQContext *c, GetBitContext *gb, int16_t block[64],
     }
 
     for (;;) {
-        val  = get_vlc2(gb, c->hq_ac_vlc.table, 9, 2);
+        val = get_vlc2(gb, c->hq_ac_vlc.table, 9, 2);
+        if (val < 0)
+            return AVERROR_INVALIDDATA;
+
         pos += ff_hq_ac_skips[val];
         if (pos >= 64)
             break;
