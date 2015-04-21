@@ -20,6 +20,7 @@
 
 #include "avcodec.h"
 #include "h263.h"
+#include "internal.h"
 #include "intrax8.h"
 #include "mathops.h"
 #include "mpegutils.h"
@@ -417,15 +418,15 @@ int ff_wmv2_decode_mb(MpegEncContext *s, int16_t block[6][64])
         }
     } else {
         if (s->pict_type == AV_PICTURE_TYPE_P)
-            av_dlog(s->avctx, "%d%d ", s->inter_intra_pred, cbp);
-        av_dlog(s->avctx, "I at %d %d %d %06X\n", s->mb_x, s->mb_y,
+            ff_dlog(s->avctx, "%d%d ", s->inter_intra_pred, cbp);
+        ff_dlog(s->avctx, "I at %d %d %d %06X\n", s->mb_x, s->mb_y,
                 ((cbp & 3) ? 1 : 0) + ((cbp & 0x3C) ? 2 : 0),
                 show_bits(&s->gb, 24));
         s->ac_pred = get_bits1(&s->gb);
         if (s->inter_intra_pred) {
             s->h263_aic_dir = get_vlc2(&s->gb, ff_inter_intra_vlc.table,
                                        INTER_INTRA_VLC_BITS, 1);
-            av_dlog(s->avctx, "%d%d %d %d/",
+            ff_dlog(s->avctx, "%d%d %d %d/",
                     s->ac_pred, s->h263_aic_dir, s->mb_x, s->mb_y);
         }
         if (s->per_mb_rl_table && cbp) {

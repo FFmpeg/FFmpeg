@@ -945,7 +945,7 @@ static int decode_frame_headers(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
     if (width != ctx->width || height != ctx->height) {
         int res;
 
-        av_dlog(avctx, "Frame dimensions changed!\n");
+        ff_dlog(avctx, "Frame dimensions changed!\n");
 
         if (width  < 16 || width  > 640 ||
             height < 16 || height > 480 ||

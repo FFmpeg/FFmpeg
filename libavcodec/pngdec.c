@@ -651,7 +651,7 @@ static int decode_idat_chunk(AVCodecContext *avctx, PNGDecContext *s,
                     s->cur_w);
             s->crow_size = s->pass_row_size + 1;
         }
-        av_dlog(avctx, "row_size=%d crow_size =%d\n",
+        ff_dlog(avctx, "row_size=%d crow_size =%d\n",
                 s->row_size, s->crow_size);
         s->image_buf      = p->data[0];
         s->image_linesize = p->linesize[0];

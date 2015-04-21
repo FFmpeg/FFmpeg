@@ -110,7 +110,7 @@ static const ff_asf_guid stream_bitrate_guid = { /* (http://get.to/sdp) */
 
 #define PRINT_IF_GUID(g, cmp) \
     if (!ff_guidcmp(g, &cmp)) \
-        av_dlog(NULL, "(GUID: %s) ", # cmp)
+        av_log(NULL, AV_LOG_TRACE, "(GUID: %s) ", # cmp)
 
 static void print_guid(ff_asf_guid *g)
 {
@@ -141,10 +141,10 @@ static void print_guid(ff_asf_guid *g)
     else PRINT_IF_GUID(g, stream_bitrate_guid);
     else PRINT_IF_GUID(g, ff_asf_language_guid);
     else
-        av_dlog(NULL, "(GUID: unknown) ");
+        av_log(NULL, AV_LOG_TRACE, "(GUID: unknown) ");
     for (i = 0; i < 16; i++)
-        av_dlog(NULL, " 0x%02x,", (*g)[i]);
-    av_dlog(NULL, "}\n");
+        av_log(NULL, AV_LOG_TRACE, " 0x%02x,", (*g)[i]);
+    av_log(NULL, AV_LOG_TRACE, "}\n");
 }
 #undef PRINT_IF_GUID
 #else
@@ -669,7 +669,7 @@ static int asf_read_metadata(AVFormatContext *s, int64_t size)
 
         if ((ret = avio_get_str16le(pb, name_len, name, sizeof(name))) < name_len)
             avio_skip(pb, name_len - ret);
-        av_dlog(s, "%d stream %d name_len %2d type %d len %4d <%s>\n",
+        av_log(s, AV_LOG_TRACE, "%d stream %d name_len %2d type %d len %4d <%s>\n",
                 i, stream_num, name_len, value_type, value_len, name);
 
         if (!strcmp(name, "AspectRatioX")){
@@ -855,7 +855,7 @@ static int asf_read_header(AVFormatContext *s)
                           &st->sample_aspect_ratio.den,
                           asf->dar[0].num, asf->dar[0].den, INT_MAX);
 
-            av_dlog(s, "i=%d, st->codec->codec_type:%d, asf->dar %d:%d sar=%d:%d\n",
+            av_log(s, AV_LOG_TRACE, "i=%d, st->codec->codec_type:%d, asf->dar %d:%d sar=%d:%d\n",
                     i, st->codec->codec_type, asf->dar[i].num, asf->dar[i].den,
                     st->sample_aspect_ratio.num, st->sample_aspect_ratio.den);
 
@@ -993,7 +993,7 @@ static int asf_get_packet(AVFormatContext *s, AVIOContext *pb)
     if (packet_length < asf->hdr.min_pktsize)
         padsize += asf->hdr.min_pktsize - packet_length;
     asf->packet_padsize = padsize;
-    av_dlog(s, "packet: size=%d padsize=%d  left=%d\n",
+    av_log(s, AV_LOG_TRACE, "packet: size=%d padsize=%d  left=%d\n",
             s->packet_size, asf->packet_padsize, asf->packet_size_left);
     return 0;
 }
@@ -1019,7 +1019,7 @@ static int asf_read_frame_header(AVFormatContext *s, AVIOContext *pb)
     DO_2BITS(asf->packet_property >> 4, asf->packet_seq, 0);
     DO_2BITS(asf->packet_property >> 2, asf->packet_frag_offset, 0);
     DO_2BITS(asf->packet_property, asf->packet_replic_size, 0);
-    av_dlog(asf, "key:%d stream:%d seq:%d offset:%d replic_size:%d\n",
+    av_log(asf, AV_LOG_TRACE, "key:%d stream:%d seq:%d offset:%d replic_size:%d\n",
             asf->packet_key_frame, asf->stream_index, asf->packet_seq,
             asf->packet_frag_offset, asf->packet_replic_size);
     if (rsize+(int64_t)asf->packet_replic_size > asf->packet_size_left) {
@@ -1178,7 +1178,7 @@ static int asf_parse_packet(AVFormatContext *s, AVIOContext *pb, AVPacket *pkt)
         av_assert0(asf_st);
 
         if (!asf_st->frag_offset && asf->packet_frag_offset) {
-            av_dlog(s, "skipping asf data pkt with fragment offset for "
+            av_log(s, AV_LOG_TRACE, "skipping asf data pkt with fragment offset for "
                     "stream:%d, expected:%d but got %d from pkt)\n",
                     asf->stream_index, asf_st->frag_offset,
                     asf->packet_frag_offset);
@@ -1238,7 +1238,7 @@ static int asf_parse_packet(AVFormatContext *s, AVIOContext *pb, AVPacket *pkt)
                     asf_st->palette_changed = 0;
                 }
             }
-            av_dlog(asf, "new packet: stream:%d key:%d packet_key:%d audio:%d size:%d\n",
+            av_log(asf, AV_LOG_TRACE, "new packet: stream:%d key:%d packet_key:%d audio:%d size:%d\n",
                     asf->stream_index, asf->packet_key_frame,
                     asf_st->pkt.flags & AV_PKT_FLAG_KEY,
                     s->streams[asf->stream_index]->codec->codec_type == AVMEDIA_TYPE_AUDIO,
@@ -1250,7 +1250,7 @@ static int asf_parse_packet(AVFormatContext *s, AVIOContext *pb, AVPacket *pkt)
         }
 
         /* read data */
-        av_dlog(asf, "READ PACKET s:%d  os:%d  o:%d,%d  l:%d   DATA:%p\n",
+        av_log(asf, AV_LOG_TRACE, "READ PACKET s:%d  os:%d  o:%d,%d  l:%d   DATA:%p\n",
                 s->packet_size, asf_st->pkt.size, asf->packet_frag_offset,
                 asf_st->frag_offset, asf->packet_frag_size, asf_st->pkt.data);
         asf->packet_size_left -= asf->packet_frag_size;

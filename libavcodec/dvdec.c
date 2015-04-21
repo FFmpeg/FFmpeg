@@ -222,7 +222,7 @@ static void dv_decode_ac(GetBitContext *gb, BlockInfo *mb, int16_t *block)
 
     /* get the AC coefficients until last_index is reached */
     for (;;) {
-        av_dlog(NULL, "%2d: bits=%04x index=%d\n", pos, SHOW_UBITS(re, gb, 16),
+        ff_dlog(NULL, "%2d: bits=%04x index=%d\n", pos, SHOW_UBITS(re, gb, 16),
                 re_index);
         /* our own optimized GET_RL_VLC */
         index   = NEG_USR32(re_cache, TEX_VLC_BITS);
@@ -245,7 +245,7 @@ static void dv_decode_ac(GetBitContext *gb, BlockInfo *mb, int16_t *block)
         }
         re_index += vlc_len;
 
-        av_dlog(NULL, "run=%d level=%d\n", run, level);
+        ff_dlog(NULL, "run=%d level=%d\n", run, level);
         pos += run;
         if (pos >= 64)
             break;
@@ -342,7 +342,7 @@ static int dv_decode_video_segment(AVCodecContext *avctx, void *arg)
             mb->pos               = 0;
             mb->partial_bit_count = 0;
 
-            av_dlog(avctx, "MB block: %d, %d ", mb_index, j);
+            ff_dlog(avctx, "MB block: %d, %d ", mb_index, j);
             dv_decode_ac(&gb, mb, block);
 
             /* write the remaining bits in a new buffer only if the
@@ -355,7 +355,7 @@ static int dv_decode_video_segment(AVCodecContext *avctx, void *arg)
         }
 
         /* pass 2: we can do it just after */
-        av_dlog(avctx, "***pass 2 size=%d MB#=%d\n", put_bits_count(&pb), mb_index);
+        ff_dlog(avctx, "***pass 2 size=%d MB#=%d\n", put_bits_count(&pb), mb_index);
         block = block1;
         mb    = mb1;
         init_get_bits(&gb, mb_bit_buffer, put_bits_count(&pb));
@@ -376,7 +376,7 @@ static int dv_decode_video_segment(AVCodecContext *avctx, void *arg)
     }
 
     /* we need a pass over the whole video segment */
-    av_dlog(avctx, "***pass 3 size=%d\n", put_bits_count(&vs_pb));
+    ff_dlog(avctx, "***pass 3 size=%d\n", put_bits_count(&vs_pb));
     block = &sblock[0][0];
     mb    = mb_data;
     init_get_bits(&gb, vs_bit_buffer, put_bits_count(&vs_pb));
@@ -385,7 +385,7 @@ static int dv_decode_video_segment(AVCodecContext *avctx, void *arg)
     for (mb_index = 0; mb_index < 5; mb_index++) {
         for (j = 0; j < s->sys->bpm; j++) {
             if (mb->pos < 64 && get_bits_left(&gb) > 0) {
-                av_dlog(avctx, "start %d:%d\n", mb_index, j);
+                ff_dlog(avctx, "start %d:%d\n", mb_index, j);
                 dv_decode_ac(&gb, mb, block);
             }
             if (mb->pos >= 64 && mb->pos < 127)

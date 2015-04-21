@@ -798,7 +798,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
         size = avio_rb24(s->pb);
         dts  = avio_rb24(s->pb);
         dts |= avio_r8(s->pb) << 24;
-        av_dlog(s, "type:%d, size:%d, dts:%"PRId64" pos:%"PRId64"\n", type, size, dts, avio_tell(s->pb));
+        av_log(s, AV_LOG_TRACE, "type:%d, size:%d, dts:%"PRId64" pos:%"PRId64"\n", type, size, dts, avio_tell(s->pb));
         if (avio_feof(s->pb))
             return AVERROR_EOF;
         avio_skip(s->pb, 3); /* stream id, always 0 */
@@ -888,7 +888,7 @@ skip:
                 return AVERROR(ENOMEM);
 
         }
-        av_dlog(s, "%d %X %d \n", stream_type, flags, st->discard);
+        av_log(s, AV_LOG_TRACE, "%d %X %d \n", stream_type, flags, st->discard);
 
         if ((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_KEY ||
             stream_type == FLV_STREAM_TYPE_AUDIO)
@@ -1017,7 +1017,7 @@ retry_duration:
                     st->codec->sample_rate = cfg.ext_sample_rate;
                 else
                     st->codec->sample_rate = cfg.sample_rate;
-                av_dlog(s, "mp4a config channels %d sample rate %d\n",
+                av_log(s, AV_LOG_TRACE, "mp4a config channels %d sample rate %d\n",
                         st->codec->channels, st->codec->sample_rate);
                 }
             }

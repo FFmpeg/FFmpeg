@@ -174,14 +174,14 @@ int ff_h264_fill_default_ref_list(H264Context *h, H264SliceContext *sl)
     }
 #ifdef TRACE
     for (i = 0; i < sl->ref_count[0]; i++) {
-        tprintf(h->avctx, "List0: %s fn:%d 0x%p\n",
+        ff_tlog(h->avctx, "List0: %s fn:%d 0x%p\n",
                 h->default_ref_list[0][i].parent ? (h->default_ref_list[0][i].parent->long_ref ? "LT" : "ST") : "NULL",
                 h->default_ref_list[0][i].pic_id,
                 h->default_ref_list[0][i].parent ? h->default_ref_list[0][i].parent->f.data[0] : 0);
     }
     if (sl->slice_type_nos == AV_PICTURE_TYPE_B) {
         for (i = 0; i < sl->ref_count[1]; i++) {
-            tprintf(h->avctx, "List1: %s fn:%d 0x%p\n",
+            ff_tlog(h->avctx, "List1: %s fn:%d 0x%p\n",
                     h->default_ref_list[1][i].parent ? (h->default_ref_list[1][i].parent->long_ref ? "LT" : "ST") : "NULL",
                     h->default_ref_list[1][i].pic_id,
                     h->default_ref_list[1][i].parent ? h->default_ref_list[1][i].parent->f.data[0] : 0);

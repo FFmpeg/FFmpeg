@@ -27,6 +27,7 @@
 #include "libavutil/common.h"
 
 #include "avcodec.h"
+#include "internal.h"
 #include "mpegaudio.h"
 #include "mpegaudiodata.h"
 #include "mpegaudiodecheader.h"
@@ -94,20 +95,20 @@ int avpriv_mpegaudio_decode_header(MPADecodeHeader *s, uint32_t header)
     }
 
 #if defined(DEBUG)
-    av_dlog(NULL, "layer%d, %d Hz, %d kbits/s, ",
+    ff_dlog(NULL, "layer%d, %d Hz, %d kbits/s, ",
            s->layer, s->sample_rate, s->bit_rate);
     if (s->nb_channels == 2) {
         if (s->layer == 3) {
             if (s->mode_ext & MODE_EXT_MS_STEREO)
-                av_dlog(NULL, "ms-");
+                ff_dlog(NULL, "ms-");
             if (s->mode_ext & MODE_EXT_I_STEREO)
-                av_dlog(NULL, "i-");
+                ff_dlog(NULL, "i-");
         }
-        av_dlog(NULL, "stereo");
+        ff_dlog(NULL, "stereo");
     } else {
-        av_dlog(NULL, "mono");
+        ff_dlog(NULL, "mono");
     }
-    av_dlog(NULL, "\n");
+    ff_dlog(NULL, "\n");
 #endif
     return 0;
 }

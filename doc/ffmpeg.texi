@@ -1158,6 +1158,13 @@ This option enables or disables accurate seeking in input files with the
 transcoding. Use @option{-noaccurate_seek} to disable it, which may be useful
 e.g. when copying some streams and transcoding the others.
 
+@item -seek_timestamp (@emph{input})
+This option enables or disables seeking by timestamp in input files with the
+@option{-ss} option. It is disabled by default. If enabled, the argument
+to the @option{-ss} option is considered an actual timestamp, and is not
+offset by the start time of the file. This matters only for files which do
+not start from timestamp 0, such as transport streams.
+
 @item -thread_queue_size @var{size} (@emph{input})
 This option sets the maximum number of queued packets when reading from the
 file or device. With low latency / high rate live streams, packets may be

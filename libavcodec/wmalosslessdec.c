@@ -210,8 +210,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
         }
         /* dump the extradata */
         for (i = 0; i < avctx->extradata_size; i++)
-            av_dlog(avctx, "[%x] ", avctx->extradata[i]);
-        av_dlog(avctx, "\n");
+            ff_dlog(avctx, "[%x] ", avctx->extradata[i]);
+        ff_dlog(avctx, "\n");
 
     } else {
         avpriv_request_sample(avctx, "Unsupported extradata size");
@@ -932,7 +932,7 @@ static int decode_subframe(WmallDecodeCtx *s)
                    "Invalid number of padding bits in raw PCM tile\n");
             return AVERROR_INVALIDDATA;
         }
-        av_dlog(s->avctx, "RAWPCM %d bits per sample. "
+        ff_dlog(s->avctx, "RAWPCM %d bits per sample. "
                 "total %d bits, remain=%d\n", bits,
                 bits * s->num_channels * subframe_len, get_bits_count(&s->gb));
         for (i = 0; i < s->num_channels; i++)
@@ -1035,13 +1035,13 @@ static int decode_frame(WmallDecodeCtx *s)
         /* usually true for the first frame */
         if (get_bits1(gb)) {
             skip = get_bits(gb, av_log2(s->samples_per_frame * 2));
-            av_dlog(s->avctx, "start skip: %i\n", skip);
+            ff_dlog(s->avctx, "start skip: %i\n", skip);
         }
 
         /* sometimes true for the last frame */
         if (get_bits1(gb)) {
             skip = get_bits(gb, av_log2(s->samples_per_frame * 2));
-            av_dlog(s->avctx, "end skip: %i\n", skip);
+            ff_dlog(s->avctx, "end skip: %i\n", skip);
         }
 
     }
@@ -1064,7 +1064,7 @@ static int decode_frame(WmallDecodeCtx *s)
         }
     }
 
-    av_dlog(s->avctx, "Frame done\n");
+    ff_dlog(s->avctx, "Frame done\n");
 
     s->skip_frame = 0;
 
@@ -1213,7 +1213,7 @@ static int decode_packet(AVCodecContext *avctx, void *data, int *got_frame_ptr,
             if (num_bits_prev_frame < remaining_packet_bits && !s->packet_loss)
                 decode_frame(s);
         } else if (s->num_saved_bits - s->frame_offset) {
-            av_dlog(avctx, "ignoring %x previously saved bits\n",
+            ff_dlog(avctx, "ignoring %x previously saved bits\n",
                     s->num_saved_bits - s->frame_offset);
         }
 

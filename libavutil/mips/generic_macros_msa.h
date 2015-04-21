@@ -56,7 +56,7 @@
         uint8_t *dst_ptr_m = (uint8_t *) (pdst);  \
         uint64_t val_m = (val);                   \
                                                   \
-        __asm__ __volatile__ (                    \
+        __asm__ volatile (                        \
             "sd  %[val_m],  %[dst_ptr_m]  \n\t"   \
                                                   \
             : [dst_ptr_m] "=m" (*dst_ptr_m)       \
@@ -73,7 +73,7 @@
         val0_m = (uint32_t) ((val) & 0x00000000FFFFFFFF);          \
         val1_m = (uint32_t) (((val) >> 32) & 0x00000000FFFFFFFF);  \
                                                                    \
-        __asm__ __volatile__ (                                     \
+        __asm__ volatile (                                         \
             "usw  %[val0_m],  %[dst1_m]  \n\t"                     \
             "usw  %[val1_m],  %[dst2_m]  \n\t"                     \
                                                                    \

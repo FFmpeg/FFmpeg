@@ -28,5 +28,11 @@ fate-rangecoder: CMD = run libavcodec/rangecoder-test
 fate-rangecoder: CMP = null
 fate-rangecoder: REF = /dev/null
 
+FATE_LIBAVCODEC-$(call ENCDEC, FLAC, FLAC) += fate-api-flac
+fate-api-flac: libavcodec/api-flac-test$(EXESUF)
+fate-api-flac: CMD = run libavcodec/api-flac-test
+fate-api-flac: CMP = null
+fate-api-flac: REF = /dev/null
+
 FATE-$(CONFIG_AVCODEC) += $(FATE_LIBAVCODEC-yes)
 fate-libavcodec: $(FATE_LIBAVCODEC-yes)

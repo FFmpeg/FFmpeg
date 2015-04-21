@@ -22,6 +22,7 @@
 #include "avcodec.h"
 #include "get_bits.h"
 #include "bytestream.h"
+#include "internal.h"
 #include "libavutil/colorspace.h"
 #include "libavutil/opt.h"
 
@@ -893,20 +894,20 @@ static void dvbsub_parse_pixel_data_block(AVCodecContext *avctx, DVBSubObjectDis
     uint8_t *map_table;
 
 #if 0
-    av_dlog(avctx, "DVB pixel block size %d, %s field:\n", buf_size,
+    ff_dlog(avctx, "DVB pixel block size %d, %s field:\n", buf_size,
             top_bottom ? "bottom" : "top");
 
     for (i = 0; i < buf_size; i++) {
         if (i % 16 == 0)
-            av_dlog(avctx, "0x%8p: ", buf+i);
+            ff_dlog(avctx, "0x%8p: ", buf+i);
 
-        av_dlog(avctx, "%02x ", buf[i]);
+        ff_dlog(avctx, "%02x ", buf[i]);
         if (i % 16 == 15)
-            av_dlog(avctx, "\n");
+            ff_dlog(avctx, "\n");
     }
 
     if (i % 16)
-        av_dlog(avctx, "\n");
+        ff_dlog(avctx, "\n");
 #endif
 
     if (!region)
@@ -1064,16 +1065,16 @@ static int dvbsub_parse_clut_segment(AVCodecContext *avctx,
     int y, cr, cb, alpha;
     int r, g, b, r_add, g_add, b_add;
 
-    av_dlog(avctx, "DVB clut packet:\n");
+    ff_dlog(avctx, "DVB clut packet:\n");
 
     for (i=0; i < buf_size; i++) {
-        av_dlog(avctx, "%02x ", buf[i]);
+        ff_dlog(avctx, "%02x ", buf[i]);
         if (i % 16 == 15)
-            av_dlog(avctx, "\n");
+            ff_dlog(avctx, "\n");
     }
 
     if (i % 16)
-        av_dlog(avctx, "\n");
+        ff_dlog(avctx, "\n");
 
     clut_id = *buf++;
     version = ((*buf)>>4)&15;
@@ -1131,9 +1132,9 @@ static int dvbsub_parse_clut_segment(AVCodecContext *avctx,
         YUV_TO_RGB1_CCIR(cb, cr);
         YUV_TO_RGB2_CCIR(r, g, b, y);
 
-        av_dlog(avctx, "clut %d := (%d,%d,%d,%d)\n", entry_id, r, g, b, alpha);
+        ff_dlog(avctx, "clut %d := (%d,%d,%d,%d)\n", entry_id, r, g, b, alpha);
         if (!!(depth & 0x80) + !!(depth & 0x40) + !!(depth & 0x20) > 1) {
-            av_dlog(avctx, "More than one bit level marked: %x\n", depth);
+            ff_dlog(avctx, "More than one bit level marked: %x\n", depth);
             if (avctx->strict_std_compliance > FF_COMPLIANCE_NORMAL)
                 return AVERROR_INVALIDDATA;
         }
@@ -1223,11 +1224,11 @@ static int dvbsub_parse_region_segment(AVCodecContext *avctx,
             region->bgcolor = (((*buf++) >> 2) & 3);
     }
 
-    av_dlog(avctx, "Region %d, (%dx%d)\n", region_id, region->width, region->height);
+    ff_dlog(avctx, "Region %d, (%dx%d)\n", region_id, region->width, region->height);
 
     if (fill) {
         memset(region->pbuf, region->bgcolor, region->buf_size);
-        av_dlog(avctx, "Fill region (%d)\n", region->bgcolor);
+        ff_dlog(avctx, "Fill region (%d)\n", region->bgcolor);
     }
 
     delete_region_display_list(ctx, region);
@@ -1304,7 +1305,7 @@ static int dvbsub_parse_page_segment(AVCodecContext *avctx,
     ctx->time_out = timeout;
     ctx->version = version;
 
-    av_dlog(avctx, "Page time out %ds, state %d\n", ctx->time_out, page_state);
+    ff_dlog(avctx, "Page time out %ds, state %d\n", ctx->time_out, page_state);
 
     if(ctx->compute_edt == 1)
         save_subtitle_set(avctx, sub, got_output);
@@ -1348,7 +1349,7 @@ static int dvbsub_parse_page_segment(AVCodecContext *avctx,
         display->next = ctx->display_list;
         ctx->display_list = display;
 
-        av_dlog(avctx, "Region %d, (%d,%d)\n", region_id, display->x_pos, display->y_pos);
+        ff_dlog(avctx, "Region %d, (%d,%d)\n", region_id, display->x_pos, display->y_pos);
     }
 
     while (tmp_display_list) {
@@ -1541,19 +1542,19 @@ static int dvbsub_decode(AVCodecContext *avctx,
     int ret = 0;
     int got_segment = 0;
 
-    av_dlog(avctx, "DVB sub packet:\n");
+    ff_dlog(avctx, "DVB sub packet:\n");
 
     for (i=0; i < buf_size; i++) {
-        av_dlog(avctx, "%02x ", buf[i]);
+        ff_dlog(avctx, "%02x ", buf[i]);
         if (i % 16 == 15)
-            av_dlog(avctx, "\n");
+            ff_dlog(avctx, "\n");
     }
 
     if (i % 16)
-        av_dlog(avctx, "\n");
+        ff_dlog(avctx, "\n");
 
     if (buf_size <= 6 || *buf != 0x0f) {
-        av_dlog(avctx, "incomplete or broken packet");
+        ff_dlog(avctx, "incomplete or broken packet");
         return AVERROR_INVALIDDATA;
     }
 
@@ -1573,7 +1574,7 @@ static int dvbsub_decode(AVCodecContext *avctx,
         }
 
         if (p_end - p < segment_length) {
-            av_dlog(avctx, "incomplete or broken packet");
+            ff_dlog(avctx, "incomplete or broken packet");
             ret = -1;
             goto end;
         }
@@ -1608,7 +1609,7 @@ static int dvbsub_decode(AVCodecContext *avctx,
                 got_segment |= 16;
                 break;
             default:
-                av_dlog(avctx, "Subtitling segment type 0x%x, page id %d, length %d\n",
+                ff_dlog(avctx, "Subtitling segment type 0x%x, page id %d, length %d\n",
                         segment_type, page_id, segment_length);
                 break;
             }

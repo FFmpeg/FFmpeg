@@ -229,20 +229,17 @@ gapless(){
     decfile3="${outdir}/${test}.out-3"
     cleanfiles="$cleanfiles $decfile1 $decfile2 $decfile3"
 
-    # large enough to make ffmpeg.c seek to the start of the file
-    start_offset=-1
-
     # test packet data
-    ffmpeg -i "$sample" $extra_args -flags +bitexact -c:a copy -f framecrc -y $decfile1
+    ffmpeg $extra_args -i "$sample" -flags +bitexact -c:a copy -f framecrc -y $decfile1
     do_md5sum $decfile1
     # test decoded (and cut) data
-    ffmpeg -i "$sample" $extra_args -flags +bitexact -f wav md5:
+    ffmpeg $extra_args -i "$sample" -flags +bitexact -f wav md5:
     # the same as above again, with seeking to the start
-    ffmpeg -ss $start_offset -i "$sample" $extra_args -flags +bitexact -c:a copy -f framecrc -y $decfile2
+    ffmpeg $extra_args -ss 0 -seek_timestamp 1 -i "$sample" -flags +bitexact -c:a copy -f framecrc -y $decfile2
     do_md5sum $decfile2
-    ffmpeg -ss $start_offset -i "$sample" $extra_args -flags +bitexact -f wav md5:
+    ffmpeg $extra_args -ss 0 -seek_timestamp 1 -i "$sample" -flags +bitexact -f wav md5:
     # test packet data, with seeking to a specific position
-    ffmpeg -ss 5 -i "$sample" $extra_args -flags +bitexact -c:a copy -f framecrc -y $decfile3
+    ffmpeg $extra_args -ss 5 -seek_timestamp 1 -i "$sample" -flags +bitexact -c:a copy -f framecrc -y $decfile3
     do_md5sum $decfile3
 }
 

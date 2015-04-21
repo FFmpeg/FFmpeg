@@ -66,7 +66,7 @@ static int pcm_bluray_parse_header(AVCodecContext *avctx,
     uint8_t channel_layout = header[2] >> 4;
 
     if (avctx->debug & FF_DEBUG_PICT_INFO)
-        av_dlog(avctx, "pcm_bluray_parse_header: header = %02x%02x%02x%02x\n",
+        ff_dlog(avctx, "pcm_bluray_parse_header: header = %02x%02x%02x%02x\n",
                 header[0], header[1], header[2], header[3]);
 
     /* get the sample depth and derive the sample format from it */
@@ -116,7 +116,7 @@ static int pcm_bluray_parse_header(AVCodecContext *avctx,
                       avctx->bits_per_coded_sample;
 
     if (avctx->debug & FF_DEBUG_PICT_INFO)
-        av_dlog(avctx,
+        ff_dlog(avctx,
                 "pcm_bluray_parse_header: %d channels, %d bits per sample, %d Hz, %d bit/s\n",
                 avctx->channels, avctx->bits_per_coded_sample,
                 avctx->sample_rate, avctx->bit_rate);
@@ -296,7 +296,7 @@ static int pcm_bluray_decode_frame(AVCodecContext *avctx, void *data,
 
     retval = bytestream2_tell(&gb);
     if (avctx->debug & FF_DEBUG_BITSTREAM)
-        av_dlog(avctx, "pcm_bluray_decode_frame: decoded %d -> %d bytes\n",
+        ff_dlog(avctx, "pcm_bluray_decode_frame: decoded %d -> %d bytes\n",
                 retval, buf_size);
     return retval + 4;
 }

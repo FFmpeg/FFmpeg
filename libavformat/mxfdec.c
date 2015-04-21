@@ -600,7 +600,7 @@ static int mxf_read_partition_pack(void *arg, AVIOContext *pb, int tag, int size
         }
     }
 
-    av_dlog(mxf->fc,
+    av_log(mxf->fc, AV_LOG_TRACE,
             "PartitionPack: ThisPartition = 0x%"PRIX64
             ", PreviousPartition = 0x%"PRIX64", "
             "FooterPartition = 0x%"PRIX64", IndexSID = %i, BodySID = %i\n",
@@ -910,32 +910,32 @@ static int mxf_read_index_table_segment(void *arg, AVIOContext *pb, int tag, int
     switch(tag) {
     case 0x3F05:
         segment->edit_unit_byte_count = avio_rb32(pb);
-        av_dlog(NULL, "EditUnitByteCount %d\n", segment->edit_unit_byte_count);
+        av_log(NULL, AV_LOG_TRACE, "EditUnitByteCount %d\n", segment->edit_unit_byte_count);
         break;
     case 0x3F06:
         segment->index_sid = avio_rb32(pb);
-        av_dlog(NULL, "IndexSID %d\n", segment->index_sid);
+        av_log(NULL, AV_LOG_TRACE, "IndexSID %d\n", segment->index_sid);
         break;
     case 0x3F07:
         segment->body_sid = avio_rb32(pb);
-        av_dlog(NULL, "BodySID %d\n", segment->body_sid);
+        av_log(NULL, AV_LOG_TRACE, "BodySID %d\n", segment->body_sid);
         break;
     case 0x3F0A:
-        av_dlog(NULL, "IndexEntryArray found\n");
+        av_log(NULL, AV_LOG_TRACE, "IndexEntryArray found\n");
         return mxf_read_index_entry_array(pb, segment);
     case 0x3F0B:
         segment->index_edit_rate.num = avio_rb32(pb);
         segment->index_edit_rate.den = avio_rb32(pb);
-        av_dlog(NULL, "IndexEditRate %d/%d\n", segment->index_edit_rate.num,
+        av_log(NULL, AV_LOG_TRACE, "IndexEditRate %d/%d\n", segment->index_edit_rate.num,
                 segment->index_edit_rate.den);
         break;
     case 0x3F0C:
         segment->index_start_position = avio_rb64(pb);
-        av_dlog(NULL, "IndexStartPosition %"PRId64"\n", segment->index_start_position);
+        av_log(NULL, AV_LOG_TRACE, "IndexStartPosition %"PRId64"\n", segment->index_start_position);
         break;
     case 0x3F0D:
         segment->index_duration = avio_rb64(pb);
-        av_dlog(NULL, "IndexDuration %"PRId64"\n", segment->index_duration);
+        av_log(NULL, AV_LOG_TRACE, "IndexDuration %"PRId64"\n", segment->index_duration);
         break;
     }
     return 0;
@@ -949,7 +949,7 @@ static void mxf_read_pixel_layout(AVIOContext *pb, MXFDescriptor *descriptor)
     do {
         code = avio_r8(pb);
         value = avio_r8(pb);
-        av_dlog(NULL, "pixel layout: code %#x\n", code);
+        av_log(NULL, AV_LOG_TRACE, "pixel layout: code %#x\n", code);
 
         if (ofs <= 14) {
             layout[ofs++] = code;
@@ -1780,7 +1780,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
     MXFPackage *material_package = NULL;
     int i, j, k, ret;
 
-    av_dlog(mxf->fc, "metadata sets count %d\n", mxf->metadata_sets_count);
+    av_log(mxf->fc, AV_LOG_TRACE, "metadata sets count %d\n", mxf->metadata_sets_count);
     /* TODO: handle multiple material packages (OP3x) */
     for (i = 0; i < mxf->packages_count; i++) {
         material_package = mxf_resolve_strong_ref(mxf, &mxf->packages_refs[i], MaterialPackage);
@@ -1851,7 +1851,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
 
             source_package = mxf_resolve_source_package(mxf, component->source_package_uid);
             if (!source_package) {
-                av_dlog(mxf->fc, "material track %d: no corresponding source package found\n", material_track->track_id);
+                av_log(mxf->fc, AV_LOG_TRACE, "material track %d: no corresponding source package found\n", material_track->track_id);
                 break;
             }
             for (k = 0; k < source_package->tracks_count; k++) {
@@ -2272,7 +2272,7 @@ static int mxf_read_local_tags(MXFContext *mxf, KLVPacket *klv, MXFMetadataReadF
         uint64_t next = avio_tell(pb) + size;
         UID uid = {0};
 
-        av_dlog(mxf->fc, "local tag %#04x size %d\n", tag, size);
+        av_log(mxf->fc, AV_LOG_TRACE, "local tag %#04x size %d\n", tag, size);
         if (!size) { /* ignore empty tag, needed for some files with empty UMID tag */
             av_log(mxf->fc, AV_LOG_ERROR, "local tag %#04x with 0 size\n", tag);
             continue;
@@ -2283,7 +2283,7 @@ static int mxf_read_local_tags(MXFContext *mxf, KLVPacket *klv, MXFMetadataReadF
                 int local_tag = AV_RB16(mxf->local_tags+i*18);
                 if (local_tag == tag) {
                     memcpy(uid, mxf->local_tags+i*18+2, 16);
-                    av_dlog(mxf->fc, "local tag %#04x\n", local_tag);
+                    av_log(mxf->fc, AV_LOG_TRACE, "local tag %#04x\n", local_tag);
                     PRINT_KEY(mxf->fc, "uid", uid);
                 }
             }
@@ -2379,7 +2379,7 @@ static int mxf_seek_to_previous_partition(MXFContext *mxf)
     avio_seek(pb, mxf->run_in + mxf->current_partition->previous_partition, SEEK_SET);
     mxf->current_partition = NULL;
 
-    av_dlog(mxf->fc, "seeking to previous partition\n");
+    av_log(mxf->fc, AV_LOG_TRACE, "seeking to previous partition\n");
 
     /* Make sure this is actually a PartitionPack, and if so parse it.
      * See deadlock2.mxf
@@ -2423,11 +2423,11 @@ static int mxf_parse_handle_essence(MXFContext *mxf)
         return mxf_seek_to_previous_partition(mxf);
     } else {
         if (!mxf->footer_partition) {
-            av_dlog(mxf->fc, "no FooterPartition\n");
+            av_log(mxf->fc, AV_LOG_TRACE, "no FooterPartition\n");
             return 0;
         }
 
-        av_dlog(mxf->fc, "seeking to FooterPartition\n");
+        av_log(mxf->fc, AV_LOG_TRACE, "seeking to FooterPartition\n");
 
         /* remember where we were so we don't end up seeking further back than this */
         mxf->last_forward_tell = avio_tell(pb);
@@ -2680,7 +2680,7 @@ static int mxf_read_header(AVFormatContext *s)
         }
 
         PRINT_KEY(s, "read header", klv.key);
-        av_dlog(s, "size %"PRIu64" offset %#"PRIx64"\n", klv.length, klv.offset);
+        av_log(s, AV_LOG_TRACE, "size %"PRIu64" offset %#"PRIx64"\n", klv.length, klv.offset);
         if (IS_KLV_KEY(klv.key, mxf_encrypted_triplet_key) ||
             IS_KLV_KEY(klv.key, mxf_essence_element_key) ||
             IS_KLV_KEY(klv.key, mxf_avid_essence_element_key) ||
@@ -2891,7 +2891,7 @@ static int mxf_read_packet_old(AVFormatContext *s, AVPacket *pkt)
 
     while ((ret = klv_read_packet(&klv, s->pb)) == 0) {
         PRINT_KEY(s, "read packet", klv.key);
-        av_dlog(s, "size %"PRIu64" offset %#"PRIx64"\n", klv.length, klv.offset);
+        av_log(s, AV_LOG_TRACE, "size %"PRIu64" offset %#"PRIx64"\n", klv.length, klv.offset);
         if (IS_KLV_KEY(klv.key, mxf_encrypted_triplet_key)) {
             ret = mxf_decrypt_triplet(s, pkt, &klv);
             if (ret < 0) {

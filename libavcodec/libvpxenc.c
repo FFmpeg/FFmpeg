@@ -149,12 +149,19 @@ static av_cold void dump_enc_cfg(AVCodecContext *avctx,
     av_log(avctx, level, "vpx_codec_enc_cfg\n");
     av_log(avctx, level, "generic settings\n"
            "  %*s%u\n  %*s%u\n  %*s%u\n  %*s%u\n  %*s%u\n"
+#if CONFIG_LIBVPX_VP9_ENCODER && defined(VPX_IMG_FMT_HIGHBITDEPTH)
+           "  %*s%u\n  %*s%u\n"
+#endif
            "  %*s{%u/%u}\n  %*s%u\n  %*s%d\n  %*s%u\n",
            width, "g_usage:",           cfg->g_usage,
            width, "g_threads:",         cfg->g_threads,
            width, "g_profile:",         cfg->g_profile,
            width, "g_w:",               cfg->g_w,
            width, "g_h:",               cfg->g_h,
+#if CONFIG_LIBVPX_VP9_ENCODER && defined(VPX_IMG_FMT_HIGHBITDEPTH)
+           width, "g_bit_depth:",       cfg->g_bit_depth,
+           width, "g_input_bit_depth:", cfg->g_input_bit_depth,
+#endif
            width, "g_timebase:",        cfg->g_timebase.num, cfg->g_timebase.den,
            width, "g_error_resilient:", cfg->g_error_resilient,
            width, "g_pass:",            cfg->g_pass,
@@ -259,6 +266,66 @@ static av_cold int vp8_free(AVCodecContext *avctx)
     return 0;
 }
 
+#if CONFIG_LIBVPX_VP9_ENCODER
+static int set_pix_fmt(AVCodecContext *avctx, vpx_codec_caps_t codec_caps,
+                       struct vpx_codec_enc_cfg *enccfg, vpx_codec_flags_t *flags,
+                       vpx_img_fmt_t *img_fmt) {
+#ifdef VPX_IMG_FMT_HIGHBITDEPTH
+    enccfg->g_bit_depth = enccfg->g_input_bit_depth = 8;
+#endif
+    switch (avctx->pix_fmt) {
+    case AV_PIX_FMT_YUV420P:
+        enccfg->g_profile = 0;
+        *img_fmt = VPX_IMG_FMT_I420;
+        return 0;
+    case AV_PIX_FMT_YUV422P:
+    case AV_PIX_FMT_YUV444P:
+        enccfg->g_profile = 1;
+        *img_fmt = avctx->pix_fmt == AV_PIX_FMT_YUV422P ? VPX_IMG_FMT_I422 : VPX_IMG_FMT_I444;
+        return 0;
+#ifdef VPX_IMG_FMT_HIGHBITDEPTH
+    case AV_PIX_FMT_YUV420P10LE:
+    case AV_PIX_FMT_YUV420P12LE:
+        if (codec_caps & VPX_CODEC_CAP_HIGHBITDEPTH) {
+            enccfg->g_bit_depth = enccfg->g_input_bit_depth =
+                avctx->pix_fmt == AV_PIX_FMT_YUV420P10LE ? 10 : 12;
+            enccfg->g_profile = 2;
+            *img_fmt = VPX_IMG_FMT_I42016;
+            *flags |= VPX_CODEC_USE_HIGHBITDEPTH;
+            return 0;
+        }
+        break;
+    case AV_PIX_FMT_YUV422P10LE:
+    case AV_PIX_FMT_YUV422P12LE:
+        if (codec_caps & VPX_CODEC_CAP_HIGHBITDEPTH) {
+            enccfg->g_bit_depth = enccfg->g_input_bit_depth =
+                avctx->pix_fmt == AV_PIX_FMT_YUV422P10LE ? 10 : 12;
+            enccfg->g_profile = 3;
+            *img_fmt = VPX_IMG_FMT_I42216;
+            *flags |= VPX_CODEC_USE_HIGHBITDEPTH;
+            return 0;
+        }
+        break;
+    case AV_PIX_FMT_YUV444P10LE:
+    case AV_PIX_FMT_YUV444P12LE:
+        if (codec_caps & VPX_CODEC_CAP_HIGHBITDEPTH) {
+            enccfg->g_bit_depth = enccfg->g_input_bit_depth =
+                avctx->pix_fmt == AV_PIX_FMT_YUV444P10LE ? 10 : 12;
+            enccfg->g_profile = 3;
+            *img_fmt = VPX_IMG_FMT_I44416;
+            *flags |= VPX_CODEC_USE_HIGHBITDEPTH;
+            return 0;
+        }
+        break;
+#endif
+    default:
+        break;
+    }
+    av_log(avctx, AV_LOG_ERROR, "Unsupported pixel format.\n");
+    return AVERROR_INVALIDDATA;
+}
+#endif
+
 static av_cold int vpx_init(AVCodecContext *avctx,
                             const struct vpx_codec_iface *iface)
 {
@@ -267,6 +334,10 @@ static av_cold int vpx_init(AVCodecContext *avctx,
     struct vpx_codec_enc_cfg enccfg_alpha;
     vpx_codec_flags_t flags = (avctx->flags & CODEC_FLAG_PSNR) ? VPX_CODEC_USE_PSNR : 0;
     int res;
+    vpx_img_fmt_t img_fmt = VPX_IMG_FMT_I420;
+#if CONFIG_LIBVPX_VP9_ENCODER
+    vpx_codec_caps_t codec_caps = vpx_codec_get_caps(iface);
+#endif
 
     av_log(avctx, AV_LOG_INFO, "%s\n", vpx_codec_version_str());
     av_log(avctx, AV_LOG_VERBOSE, "%s\n", vpx_codec_build_config());
@@ -279,6 +350,13 @@ static av_cold int vpx_init(AVCodecContext *avctx,
                vpx_codec_err_to_string(res));
         return AVERROR(EINVAL);
     }
+
+#if CONFIG_LIBVPX_VP9_ENCODER
+    if (avctx->codec_id == AV_CODEC_ID_VP9) {
+        if (set_pix_fmt(avctx, codec_caps, &enccfg, &flags, &img_fmt))
+            return AVERROR(EINVAL);
+    }
+#endif
 
     if(!avctx->bit_rate)
         if(avctx->rc_max_rate || avctx->rc_buffer_size || avctx->rc_initial_buffer_occupancy) {
@@ -483,8 +561,12 @@ static av_cold int vpx_init(AVCodecContext *avctx,
     av_log(avctx, AV_LOG_DEBUG, "Using deadline: %d\n", ctx->deadline);
 
     //provide dummy value to initialize wrapper, values will be updated each _encode()
-    vpx_img_wrap(&ctx->rawimg, VPX_IMG_FMT_I420, avctx->width, avctx->height, 1,
+    vpx_img_wrap(&ctx->rawimg, img_fmt, avctx->width, avctx->height, 1,
                  (unsigned char*)1);
+#if CONFIG_LIBVPX_VP9_ENCODER && defined(VPX_IMG_FMT_HIGHBITDEPTH)
+    if (avctx->codec_id == AV_CODEC_ID_VP9 && (codec_caps & VPX_CODEC_CAP_HIGHBITDEPTH))
+        ctx->rawimg.bit_depth = enccfg.g_bit_depth;
+#endif
 
     if (ctx->is_alpha)
         vpx_img_wrap(&ctx->rawimg_alpha, VPX_IMG_FMT_I420, avctx->width, avctx->height, 1,
@@ -915,7 +997,6 @@ AVCodec ff_libvpx_vp9_encoder = {
     .encode2        = vp8_encode,
     .close          = vp8_free,
     .capabilities   = CODEC_CAP_DELAY | CODEC_CAP_AUTO_THREADS,
-    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE },
     .priv_class     = &class_vp9,
     .defaults       = defaults,
     .init_static_data = ff_vp9_init_static,

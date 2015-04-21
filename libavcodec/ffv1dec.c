@@ -77,7 +77,7 @@ static inline int get_vlc_symbol(GetBitContext *gb, VlcState *const state,
     }
 
     v = get_sr_golomb(gb, k, 12, bits);
-    av_dlog(NULL, "v:%d bias:%d error:%d drift:%d count:%d k:%d",
+    ff_dlog(NULL, "v:%d bias:%d error:%d drift:%d count:%d k:%d",
             v, state->bias, state->error_sum, state->drift, state->count, k);
 
 #if 0 // JPEG LS
@@ -165,7 +165,7 @@ static av_always_inline void decode_line(FFV1Context *s, int w,
             } else
                 diff = get_vlc_symbol(&s->gb, &p->vlc_state[context], bits);
 
-            av_dlog(s->avctx, "count:%d index:%d, mode:%d, x:%d pos:%d\n",
+            ff_dlog(s->avctx, "count:%d index:%d, mode:%d, x:%d pos:%d\n",
                     run_count, run_index, run_mode, x, get_bits_count(&s->gb));
         }
 
@@ -750,7 +750,7 @@ static int read_header(FFV1Context *f)
         return AVERROR(ENOSYS);
     }
 
-    av_dlog(f->avctx, "%d %d %d\n",
+    ff_dlog(f->avctx, "%d %d %d\n",
             f->chroma_h_shift, f->chroma_v_shift, f->avctx->pix_fmt);
     if (f->version < 2) {
         context_count = read_quant_tables(c, f->quant_table);

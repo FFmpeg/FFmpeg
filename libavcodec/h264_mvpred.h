@@ -78,7 +78,7 @@ static av_always_inline int fetch_diagonal_mv(const H264Context *h, H264SliceCon
         *C = sl->mv_cache[list][i - 8 + part_width];
         return topright_ref;
     } else {
-        tprintf(h->avctx, "topright MV not available\n");
+        ff_tlog(h->avctx, "topright MV not available\n");
 
         *C = sl->mv_cache[list][i - 8 - 1];
         return sl->ref_cache[list][i - 8 - 1];
@@ -118,7 +118,7 @@ static av_always_inline void pred_motion(const H264Context *const h,
 
     diagonal_ref = fetch_diagonal_mv(h, sl, &C, index8, list, part_width);
     match_count  = (diagonal_ref == ref) + (top_ref == ref) + (left_ref == ref);
-    tprintf(h->avctx, "pred_motion match_count=%d\n", match_count);
+    ff_tlog(h->avctx, "pred_motion match_count=%d\n", match_count);
     if (match_count > 1) { //most common
         *mx = mid_pred(A[0], B[0], C[0]);
         *my = mid_pred(A[1], B[1], C[1]);
@@ -145,7 +145,7 @@ static av_always_inline void pred_motion(const H264Context *const h,
         }
     }
 
-    tprintf(h->avctx,
+    ff_tlog(h->avctx,
             "pred_motion (%2d %2d %2d) (%2d %2d %2d) (%2d %2d %2d) -> (%2d %2d %2d) at %2d %2d %d list %d\n",
             top_ref, B[0], B[1], diagonal_ref, C[0], C[1], left_ref,
             A[0], A[1], ref, *mx, *my, sl->mb_x, sl->mb_y, n, list);
@@ -166,7 +166,7 @@ static av_always_inline void pred_16x8_motion(const H264Context *const h,
         const int top_ref      = sl->ref_cache[list][scan8[0] - 8];
         const int16_t *const B = sl->mv_cache[list][scan8[0] - 8];
 
-        tprintf(h->avctx, "pred_16x8: (%2d %2d %2d) at %2d %2d %d list %d\n",
+        ff_tlog(h->avctx, "pred_16x8: (%2d %2d %2d) at %2d %2d %d list %d\n",
                 top_ref, B[0], B[1], sl->mb_x, sl->mb_y, n, list);
 
         if (top_ref == ref) {
@@ -178,7 +178,7 @@ static av_always_inline void pred_16x8_motion(const H264Context *const h,
         const int left_ref     = sl->ref_cache[list][scan8[8] - 1];
         const int16_t *const A = sl->mv_cache[list][scan8[8] - 1];
 
-        tprintf(h->avctx, "pred_16x8: (%2d %2d %2d) at %2d %2d %d list %d\n",
+        ff_tlog(h->avctx, "pred_16x8: (%2d %2d %2d) at %2d %2d %d list %d\n",
                 left_ref, A[0], A[1], sl->mb_x, sl->mb_y, n, list);
 
         if (left_ref == ref) {
@@ -207,7 +207,7 @@ static av_always_inline void pred_8x16_motion(const H264Context *const h,
         const int left_ref     = sl->ref_cache[list][scan8[0] - 1];
         const int16_t *const A = sl->mv_cache[list][scan8[0] - 1];
 
-        tprintf(h->avctx, "pred_8x16: (%2d %2d %2d) at %2d %2d %d list %d\n",
+        ff_tlog(h->avctx, "pred_8x16: (%2d %2d %2d) at %2d %2d %d list %d\n",
                 left_ref, A[0], A[1], sl->mb_x, sl->mb_y, n, list);
 
         if (left_ref == ref) {
@@ -221,7 +221,7 @@ static av_always_inline void pred_8x16_motion(const H264Context *const h,
 
         diagonal_ref = fetch_diagonal_mv(h, sl, &C, scan8[4], list, 2);
 
-        tprintf(h->avctx, "pred_8x16: (%2d %2d %2d) at %2d %2d %d list %d\n",
+        ff_tlog(h->avctx, "pred_8x16: (%2d %2d %2d) at %2d %2d %d list %d\n",
                 diagonal_ref, C[0], C[1], sl->mb_x, sl->mb_y, n, list);
 
         if (diagonal_ref == ref) {
@@ -298,7 +298,7 @@ static av_always_inline void pred_pskip_motion(const H264Context *const h,
         goto zeromv;
     }
 
-    tprintf(h->avctx, "pred_pskip: (%d) (%d) at %2d %2d\n",
+    ff_tlog(h->avctx, "pred_pskip: (%d) (%d) at %2d %2d\n",
             top_ref, left_ref, sl->mb_x, sl->mb_y);
 
     if (USES_LIST(sl->topright_type, 0)) {
@@ -325,7 +325,7 @@ static av_always_inline void pred_pskip_motion(const H264Context *const h,
     }
 
     match_count = !diagonal_ref + !top_ref + !left_ref;
-    tprintf(h->avctx, "pred_pskip_motion match_count=%d\n", match_count);
+    ff_tlog(h->avctx, "pred_pskip_motion match_count=%d\n", match_count);
     if (match_count > 1) {
         mx = mid_pred(A[0], B[0], C[0]);
         my = mid_pred(A[1], B[1], C[1]);

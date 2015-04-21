@@ -528,6 +528,9 @@ static uint64_t subframe_count_exact(FlacEncodeContext *s, FlacSubframe *sub,
     /* subframe header */
     count += 8;
 
+    if (sub->wasted)
+        count += sub->wasted;
+
     /* subframe */
     if (sub->type == FLAC_SUBFRAME_CONSTANT) {
         count += sub->obits;

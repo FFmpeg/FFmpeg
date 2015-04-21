@@ -395,6 +395,8 @@ Developer options (useful when working on FFmpeg itself):
                            (group) and PROB the probability associated with
                            NAME (default 0.5).
   --random-seed=VALUE      seed value for --enable/disable-random
+  --disable-valgrind-backtrace do not print a backtrace under Valgrind
+                           (only applies to --disable-optimizations builds)
 
 NOTE: Object files are built at the place where configure is launched.
 EOF
@@ -1512,6 +1514,7 @@ CONFIG_LIST="
     pod2man
     raise_major
     thumb
+    valgrind_backtrace
     xmm_clobber_test
 "
 
@@ -1686,6 +1689,7 @@ HEADERS_LIST="
     termios_h
     udplite_h
     unistd_h
+    valgrind_valgrind_h
     windows_h
     winsock2_h
 "
@@ -2068,6 +2072,7 @@ simd_align_16_if_any="altivec neon sse"
 # system capabilities
 
 symver_if_any="symver_asm_label symver_gnu_asm"
+valgrind_backtrace_deps="!optimizations valgrind_valgrind_h"
 
 # threading support
 atomics_gcc_if_any="sync_val_compare_and_swap atomic_compare_exchange"
@@ -2796,6 +2801,7 @@ enable runtime_cpudetect
 enable safe_bitstream_reader
 enable static
 enable swscale_alpha
+enable valgrind_backtrace
 
 sws_max_filter_size_default=256
 set_default sws_max_filter_size
@@ -4933,6 +4939,7 @@ check_header sys/time.h
 check_header sys/un.h
 check_header termios.h
 check_header unistd.h
+check_header valgrind/valgrind.h
 check_header vdpau/vdpau.h
 check_header vdpau/vdpau_x11.h
 check_header VideoDecodeAcceleration/VDADecoder.h

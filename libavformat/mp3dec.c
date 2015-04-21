@@ -489,6 +489,12 @@ static int mp3_seek(AVFormatContext *s, int stream_index, int64_t timestamp,
     ret = avio_seek(s->pb, best_pos, SEEK_SET);
     if (ret < 0)
         return ret;
+
+    if (mp3->is_cbr && ie == &ie1) {
+        int frame_duration = av_rescale(st->duration, 1, mp3->frames);
+        ie1.timestamp = frame_duration * av_rescale(best_pos - s->internal->data_offset, mp3->frames, mp3->header_filesize);
+    }
+
     ff_update_cur_dts(s, st, ie->timestamp);
     st->skip_samples = ie->timestamp <= 0 ? mp3->start_pad + 528 + 1 : 0;
     return 0;
