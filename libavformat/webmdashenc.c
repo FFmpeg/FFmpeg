@@ -115,7 +115,8 @@ static void write_header(AVFormatContext *s)
             av_strlcpy(gmt_iso, "", 1);
         }
         avio_printf(s->pb, "  availabilityStartTime=\"%s\"\n", gmt_iso);
-        avio_printf(s->pb, "  timeShiftBufferDepth=\"PT%gS\"", w->time_shift_buffer_depth);
+        avio_printf(s->pb, "  timeShiftBufferDepth=\"PT%gS\"\n", w->time_shift_buffer_depth);
+        avio_printf(s->pb, "  minimumUpdatePeriod=\"0\"");
         avio_printf(s->pb, ">\n");
         avio_printf(s->pb, "<UTCTiming\n");
         avio_printf(s->pb, "  schemeIdUri=\"%s\"\n",
