@@ -50,6 +50,7 @@ typedef enum HLSFlags {
     // Generate a single media file and use byte ranges in the playlist.
     HLS_SINGLE_FILE = (1 << 0),
     HLS_DELETE_SEGMENTS = (1 << 1),
+    HLS_ROUND_DURATIONS = (1 << 2),
 } HLSFlags;
 
 typedef struct HLSContext {
@@ -274,7 +275,10 @@ static int hls_window(AVFormatContext *s, int last)
            sequence);
 
     for (en = hls->segments; en; en = en->next) {
-        avio_printf(out, "#EXTINF:%f,\n", en->duration);
+        if (hls->flags & HLS_ROUND_DURATIONS)
+            avio_printf(out, "#EXTINF:%d,\n",  (int)round(en->duration));
+        else
+            avio_printf(out, "#EXTINF:%f,\n", en->duration);
         if (hls->flags & HLS_SINGLE_FILE)
              avio_printf(out, "#EXT-X-BYTERANGE:%"PRIi64"@%"PRIi64"\n",
                          en->size, en->pos);
@@ -512,6 +516,8 @@ static const AVOption options[] = {
     {"hls_flags",     "set flags affecting HLS playlist and media file generation", OFFSET(flags), AV_OPT_TYPE_FLAGS, {.i64 = 0 }, 0, UINT_MAX, E, "flags"},
     {"single_file",   "generate a single media file indexed with byte ranges", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_SINGLE_FILE }, 0, UINT_MAX,   E, "flags"},
     {"delete_segments", "delete segment files that are no longer part of the playlist", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_DELETE_SEGMENTS }, 0, UINT_MAX,   E, "flags"},
+    {"round_durations", "round durations in m3u8 to whole numbers", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_ROUND_DURATIONS }, 0, UINT_MAX,   E, "flags"},
+
 
     { NULL },
 };
