@@ -252,12 +252,6 @@ void *av_calloc(size_t nmemb, size_t size) av_malloc_attrib;
  * @return Pointer to a newly-reallocated block or `NULL` if the block
  *         cannot be reallocated or the function is used to free the memory block
  *
- * @warning Pointers originating from the av_malloc() family of functions must
- *          not be passed to av_realloc(). The former can be implemented using
- *          memalign() (or other functions), and there is no guarantee that
- *          pointers from such functions can be passed to realloc() at all.
- *          The situation is undefined according to POSIX and may crash with
- *          some libc implementations.
  * @warning Unlike av_malloc(), the returned pointer is not guaranteed to be
  *          correctly aligned.
  * @see av_fast_realloc()
@@ -281,12 +275,6 @@ void *av_realloc(void *ptr, size_t size) av_alloc_size(2);
  *
  * @return Zero on success, an AVERROR error code on failure
  *
- * @warning Pointers originating from the av_malloc() family of functions must
- *          not be passed to av_reallocp(). The former can be implemented using
- *          memalign() (or other functions), and there is no guarantee that
- *          pointers from such functions can be passed to realloc() at all.
- *          The situation is undefined according to POSIX and may crash with
- *          some libc implementations.
  * @warning Unlike av_malloc(), the allocated memory is not guaranteed to be
  *          correctly aligned.
  */
@@ -324,12 +312,6 @@ void *av_realloc_f(void *ptr, size_t nelem, size_t elsize);
  * @return Pointer to a newly-reallocated block or NULL if the block
  *         cannot be reallocated or the function is used to free the memory block
  *
- * @warning Pointers originating from the av_malloc() family of functions must
- *          not be passed to av_realloc(). The former can be implemented using
- *          memalign() (or other functions), and there is no guarantee that
- *          pointers from such functions can be passed to realloc() at all.
- *          The situation is undefined according to POSIX and may crash with
- *          some libc implementations.
  * @warning Unlike av_malloc(), the allocated memory is not guaranteed to be
  *          correctly aligned.
  * @see av_reallocp_array()
@@ -350,12 +332,6 @@ av_alloc_size(2, 3) void *av_realloc_array(void *ptr, size_t nmemb, size_t size)
  *
  * @return Zero on success, an AVERROR error code on failure
  *
- * @warning Pointers originating from the av_malloc() family of functions must
- *          not be passed to av_realloc(). The former can be implemented using
- *          memalign() (or other functions), and there is no guarantee that
- *          pointers from such functions can be passed to realloc() at all.
- *          The situation is undefined according to POSIX and may crash with
- *          some libc implementations.
  * @warning Unlike av_malloc(), the allocated memory is not guaranteed to be
  *          correctly aligned.
  */
