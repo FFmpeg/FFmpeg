@@ -134,10 +134,8 @@ static int hq_decode_frame(HQContext *ctx, AVFrame *pic,
     ctx->avctx->pix_fmt             = AV_PIX_FMT_YUV422P;
 
     ret = ff_get_buffer(ctx->avctx, pic, 0);
-    if (ret < 0) {
-        av_log(ctx->avctx, AV_LOG_ERROR, "Could not allocate buffer.\n");
+    if (ret < 0)
         return ret;
-    }
 
     /* Offsets are stored from CUV position, so adjust them accordingly. */
     for (i = 0; i < profile->num_slices + 1; i++)
@@ -264,10 +262,8 @@ static int hqa_decode_frame(HQContext *ctx, AVFrame *pic, size_t data_size)
     }
 
     ret = ff_get_buffer(ctx->avctx, pic, 0);
-    if (ret < 0) {
-        av_log(ctx->avctx, AV_LOG_ERROR, "Could not allocate buffer.\n");
+    if (ret < 0)
         return ret;
-    }
 
     /* Offsets are stored from HQA1 position, so adjust them accordingly. */
     for (i = 0; i < num_slices + 1; i++)
