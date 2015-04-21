@@ -727,6 +727,7 @@ do {                                                                    \
     ref_out = av_buffer_create(data, data_size, compat_release_buffer,  \
                                dummy_ref, 0);                           \
     if (!ref_out) {                                                     \
+        av_buffer_unref(&dummy_ref);                                    \
         av_frame_unref(frame);                                          \
         ret = AVERROR(ENOMEM);                                          \
         goto fail;                                                      \
