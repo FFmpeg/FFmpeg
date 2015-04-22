@@ -110,7 +110,7 @@ static void read_xing_toc(AVFormatContext *s, int64_t filesize, int64_t duration
 {
     int i;
     MP3DecContext *mp3 = s->priv_data;
-    int fill_index = mp3->usetoc && duration > 0;
+    int fill_index = mp3->usetoc == 1 && duration > 0;
 
     if (!filesize &&
         !(filesize = avio_size(s->pb))) {
@@ -336,6 +336,9 @@ static int mp3_read_header(AVFormatContext *s)
     int ret;
     int i;
 
+    if (mp3->usetoc < 0)
+        mp3->usetoc = 0;
+
     st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
@@ -432,8 +435,11 @@ static int mp3_seek(AVFormatContext *s, int stream_index, int64_t timestamp,
     int64_t best_pos;
     int best_score;
 
+    if (mp3->usetoc == 2)
+        return -1; // generic index code
+
     if (   mp3->is_cbr
-        && (mp3->usetoc <= 0 || !mp3->xing_toc)
+        && (mp3->usetoc == 0 || !mp3->xing_toc)
         && st->duration > 0
         && mp3->header_filesize > s->internal->data_offset
         && mp3->frames) {
@@ -498,7 +504,7 @@ static int mp3_seek(AVFormatContext *s, int stream_index, int64_t timestamp,
 }
 
 static const AVOption options[] = {
-    { "usetoc", "use table of contents", offsetof(MP3DecContext, usetoc), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 1, AV_OPT_FLAG_DECODING_PARAM},
+    { "usetoc", "use table of contents", offsetof(MP3DecContext, usetoc), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 2, AV_OPT_FLAG_DECODING_PARAM},
     { NULL },
 };
 
