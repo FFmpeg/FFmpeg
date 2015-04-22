@@ -99,6 +99,7 @@ $(foreach SHARP,$(VP9_SHARP),$(eval $(call FATE_VP9_SUITE,01-sharpness-$(SHARP),
 $(foreach W,$(VP9_SIZE_A),$(eval $(foreach H,$(VP9_SIZE_A),$(eval $(call FATE_VP9_SUITE,02-size-$(W)x$(H),$(1),$(2))))))
 $(foreach W,$(VP9_SIZE_B),$(eval $(foreach H,$(VP9_SIZE_B),$(eval $(call FATE_VP9_SUITE,03-size-$(W)x$(H),$(1),$(2))))))
 $(eval $(call FATE_VP9_SUITE,03-deltaq,$(1),$(2)))
+$(eval $(call FATE_VP9_SUITE,06-bilinear,$(1),$(2)))
 $(eval $(call FATE_VP9_SUITE,2pass-akiyo,$(1),$(2)))
 $(eval $(call FATE_VP9_SUITE,parallelmode-akiyo,$(1),$(2)))
 $(eval $(call FATE_VP9_SUITE,segmentation-aq-akiyo,$(1),$(2)))
