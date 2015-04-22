@@ -37,6 +37,8 @@ Possible values:
 @table @samp
 @item ignidx
 Ignore index.
+@item fastseek
+Enable fast, but inaccurate seeks for some formats.
 @item genpts
 Generate PTS.
 @item nofillin

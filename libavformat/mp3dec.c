@@ -337,7 +337,7 @@ static int mp3_read_header(AVFormatContext *s)
     int i;
 
     if (mp3->usetoc < 0)
-        mp3->usetoc = 2;
+        mp3->usetoc = (s->flags & AVFMT_FLAG_FAST_SEEK) ? 0 : 2;
 
     st = avformat_new_stream(s, NULL);
     if (!st)
