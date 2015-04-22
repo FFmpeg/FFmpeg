@@ -186,14 +186,14 @@ static int mpeg4_decode_sprite_trajectory(Mpeg4DecContext *ctx, GetBitContext *g
         int x = 0, y = 0;
 
         length = get_vlc2(gb, sprite_trajectory.table, SPRITE_TRAJ_VLC_BITS, 3);
-        if (length)
+        if (length > 0)
             x = get_xbits(gb, length);
 
         if (!(ctx->divx_version == 500 && ctx->divx_build == 413))
             skip_bits1(gb);     /* marker bit */
 
         length = get_vlc2(gb, sprite_trajectory.table, SPRITE_TRAJ_VLC_BITS, 3);
-        if (length)
+        if (length > 0)
             y = get_xbits(gb, length);
 
         skip_bits1(gb);         /* marker bit */
