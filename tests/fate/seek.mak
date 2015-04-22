@@ -241,11 +241,18 @@ fate-seek-lavf-yuv4mpeg: SRC = lavf/lavf.y4m
 
 FATE_SEEK += $(FATE_SEEK_LAVF-yes:%=fate-seek-lavf-%)
 
-$(FATE_SEEK) $(FATE_SAMPLES_SEEK): libavformat/seek-test$(EXESUF)
+# extra files
+
+FATE_SEEK_EXTRA-$(CONFIG_MP3_DEMUXER)   += fate-seek-extra-mp3
+fate-seek-extra-mp3:  CMD = run libavformat/seek-test$(EXESUF) $(TARGET_SAMPLES)/gapless/gapless.mp3 -usetoc 0
+FATE_SEEK_EXTRA += $(FATE_SEEK_EXTRA-yes)
+
+
+$(FATE_SEEK) $(FATE_SAMPLES_SEEK) $(FATE_SEEK_EXTRA): libavformat/seek-test$(EXESUF)
 $(FATE_SEEK) $(FATE_SAMPLES_SEEK): CMD = run libavformat/seek-test$(EXESUF) $(TARGET_PATH)/tests/data/$(SRC)
 $(FATE_SEEK) $(FATE_SAMPLES_SEEK): fate-seek-%: fate-%
 fate-seek-%: REF = $(SRC_PATH)/tests/ref/seek/$(@:fate-seek-%=%)
 
 FATE_AVCONV += $(FATE_SEEK)
-FATE_SAMPLES_AVCONV += $(FATE_SAMPLES_SEEK)
-fate-seek:     $(FATE_SEEK) $(FATE_SAMPLES_SEEK)
+FATE_SAMPLES_AVCONV += $(FATE_SAMPLES_SEEK) $(FATE_SEEK_EXTRA)
+fate-seek:     $(FATE_SEEK) $(FATE_SAMPLES_SEEK) $(FATE_SEEK_EXTRA)

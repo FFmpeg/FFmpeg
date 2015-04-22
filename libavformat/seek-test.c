@@ -76,6 +76,8 @@ int main(int argc, char **argv)
             frame_count = atoi(argv[i+1]);
         } else if(!strcmp(argv[i], "-duration")){
             duration = atoi(argv[i+1]);
+        } else if(!strcmp(argv[i], "-usetoc")) {
+            av_dict_set(&format_opts, "usetoc", argv[i+1], 0);
         } else {
             argc = 1;
         }
