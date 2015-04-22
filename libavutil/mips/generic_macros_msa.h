@@ -50,7 +50,25 @@
     *((v8i16 *) (pdest)) = (vec);  \
 }
 
+#define STORE_SW(vec, pdest)       \
+{                                  \
+    *((v4i32 *) (pdest)) = (vec);  \
+}
+
 #if (__mips_isa_rev >= 6)
+    #define STORE_WORD(pdst, val)                 \
+    {                                             \
+        uint8_t *dst_ptr_m = (uint8_t *) (pdst);  \
+        uint32_t val_m = (val);                   \
+                                                  \
+        __asm__ volatile (                        \
+            "sw  %[val_m],  %[dst_ptr_m]  \n\t"   \
+                                                  \
+            : [dst_ptr_m] "=m" (*dst_ptr_m)       \
+            : [val_m] "r" (val_m)                 \
+        );                                        \
+    }
+
     #define STORE_DWORD(pdst, val)                \
     {                                             \
         uint8_t *dst_ptr_m = (uint8_t *) (pdst);  \
@@ -64,6 +82,19 @@
         );                                        \
     }
 #else
+    #define STORE_WORD(pdst, val)                 \
+    {                                             \
+        uint8_t *dst_ptr_m = (uint8_t *) (pdst);  \
+        uint32_t val_m = (val);                   \
+                                                  \
+        __asm__ volatile (                        \
+            "usw  %[val_m],  %[dst_ptr_m]  \n\t"  \
+                                                  \
+            : [dst_ptr_m] "=m" (*dst_ptr_m)       \
+            : [val_m] "r" (val_m)                 \
+        );                                        \
+    }
+
     #define STORE_DWORD(pdst, val)                                 \
     {                                                              \
         uint8_t *dst1_m = (uint8_t *) (pdst);                      \
@@ -83,6 +114,13 @@
     }
 #endif
 
+#define LOAD_2VECS_SB(psrc, stride,     \
+                      val0, val1)       \
+{                                       \
+    val0 = LOAD_SB(psrc + 0 * stride);  \
+    val1 = LOAD_SB(psrc + 1 * stride);  \
+}
+
 #define LOAD_4VECS_SB(psrc, stride,            \
                       val0, val1, val2, val3)  \
 {                                              \
@@ -90,6 +128,15 @@
     val1 = LOAD_SB(psrc + 1 * stride);         \
     val2 = LOAD_SB(psrc + 2 * stride);         \
     val3 = LOAD_SB(psrc + 3 * stride);         \
+}
+
+#define LOAD_6VECS_SB(psrc, stride,                        \
+                      out0, out1, out2, out3, out4, out5)  \
+{                                                          \
+    LOAD_4VECS_SB((psrc), (stride),                        \
+                  (out0), (out1), (out2), (out3));         \
+    LOAD_2VECS_SB((psrc + 4 * stride), (stride),           \
+                  (out4), (out5));                         \
 }
 
 #define LOAD_7VECS_SB(psrc, stride,            \
@@ -113,6 +160,48 @@
                   (out0), (out1), (out2), (out3));  \
     LOAD_4VECS_SB((psrc + 4 * stride), (stride),    \
                   (out4), (out5), (out6), (out7));  \
+}
+
+#define STORE_2VECS_SH(ptr, stride,       \
+                       in0, in1)          \
+{                                         \
+    STORE_SH(in0, ((ptr) + 0 * stride));  \
+    STORE_SH(in1, ((ptr) + 1 * stride));  \
+}
+
+#define STORE_4VECS_SH(ptr, stride,         \
+                       in0, in1, in2, in3)  \
+{                                           \
+    STORE_SH(in0, ((ptr) + 0 * stride));    \
+    STORE_SH(in1, ((ptr) + 1 * stride));    \
+    STORE_SH(in2, ((ptr) + 2 * stride));    \
+    STORE_SH(in3, ((ptr) + 3 * stride));    \
+}
+
+#define STORE_6VECS_SH(ptr, stride,         \
+                       in0, in1, in2, in3,  \
+                       in4, in5)            \
+{                                           \
+    STORE_SH(in0, ((ptr) + 0 * stride));    \
+    STORE_SH(in1, ((ptr) + 1 * stride));    \
+    STORE_SH(in2, ((ptr) + 2 * stride));    \
+    STORE_SH(in3, ((ptr) + 3 * stride));    \
+    STORE_SH(in4, ((ptr) + 4 * stride));    \
+    STORE_SH(in5, ((ptr) + 5 * stride));    \
+}
+
+#define STORE_8VECS_SH(ptr, stride,         \
+                       in0, in1, in2, in3,  \
+                       in4, in5, in6, in7)  \
+{                                           \
+    STORE_SH(in0, ((ptr) + 0 * stride));    \
+    STORE_SH(in1, ((ptr) + 1 * stride));    \
+    STORE_SH(in2, ((ptr) + 2 * stride));    \
+    STORE_SH(in3, ((ptr) + 3 * stride));    \
+    STORE_SH(in4, ((ptr) + 4 * stride));    \
+    STORE_SH(in5, ((ptr) + 5 * stride));    \
+    STORE_SH(in6, ((ptr) + 6 * stride));    \
+    STORE_SH(in7, ((ptr) + 7 * stride));    \
 }
 
 #define ILVR_B_2VECS_SB(in0_r, in1_r, in0_l, in1_l,         \
@@ -164,6 +253,28 @@
                     out6, out7);                     \
 }
 
+#define ILVR_H_2VECS_SH(in0_r, in1_r, in0_l, in1_l,         \
+                        out0, out1)                         \
+{                                                           \
+    out0 = __msa_ilvr_h((v8i16) (in0_l), (v8i16) (in0_r));  \
+    out1 = __msa_ilvr_h((v8i16) (in1_l), (v8i16) (in1_r));  \
+}
+
+#define ILVR_H_6VECS_SH(in0_r, in1_r, in2_r,     \
+                        in3_r, in4_r, in5_r,     \
+                        in0_l, in1_l, in2_l,     \
+                        in3_l, in4_l, in5_l,     \
+                        out0, out1, out2,        \
+                        out3, out4, out5)        \
+{                                                \
+    ILVR_H_2VECS_SH(in0_r, in1_r, in0_l, in1_l,  \
+                    out0, out1);                 \
+    ILVR_H_2VECS_SH(in2_r, in3_r, in2_l, in3_l,  \
+                    out2, out3);                 \
+    ILVR_H_2VECS_SH(in4_r, in5_r, in4_l, in5_l,  \
+                    out4, out5);                 \
+}
+
 #define ILVL_B_2VECS_SB(in0_r, in1_r, in0_l, in1_l,         \
                         out0, out1)                         \
 {                                                           \
@@ -193,6 +304,28 @@
     ILVL_B_2VECS_SB(in2_r, in3_r, in2_l, in3_l,  \
                     out2, out3);                 \
     ILVL_B_2VECS_SB(in4_r, in5_r, in4_l, in5_l,  \
+                    out4, out5);                 \
+}
+
+#define ILVL_H_2VECS_SH(in0_r, in1_r, in0_l, in1_l,         \
+                        out0, out1)                         \
+{                                                           \
+    out0 = __msa_ilvl_h((v8i16) (in0_l), (v8i16) (in0_r));  \
+    out1 = __msa_ilvl_h((v8i16) (in1_l), (v8i16) (in1_r));  \
+}
+
+#define ILVL_H_6VECS_SH(in0_r, in1_r, in2_r,     \
+                        in3_r, in4_r, in5_r,     \
+                        in0_l, in1_l, in2_l,     \
+                        in3_l, in4_l, in5_l,     \
+                        out0, out1, out2,        \
+                        out3, out4, out5)        \
+{                                                \
+    ILVL_H_2VECS_SH(in0_r, in1_r, in0_l, in1_l,  \
+                    out0, out1);                 \
+    ILVL_H_2VECS_SH(in2_r, in3_r, in2_l, in3_l,  \
+                    out2, out3);                 \
+    ILVL_H_2VECS_SH(in4_r, in5_r, in4_l, in5_l,  \
                     out4, out5);                 \
 }
 
