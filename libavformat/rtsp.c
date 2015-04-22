@@ -169,15 +169,12 @@ static void rtsp_parse_range_npt(const char *p, int64_t *start, int64_t *end)
     *end = AV_NOPTS_VALUE;
 
     get_word_sep(buf, sizeof(buf), "-", &p);
-    if (av_parse_time(start, buf, 1) < 0) {
-        av_log(NULL, AV_LOG_ERROR, "Invalid interval start specification '%s'\n", buf);
+    if (av_parse_time(start, buf, 1) < 0)
         return;
-    }
     if (*p == '-') {
         p++;
         get_word_sep(buf, sizeof(buf), "-", &p);
-        if (av_parse_time(end, buf, 1) < 0)
-            av_log(NULL, AV_LOG_ERROR, "Invalid interval end specification '%s'\n", buf);
+        av_parse_time(end, buf, 1);
     }
 }
 
