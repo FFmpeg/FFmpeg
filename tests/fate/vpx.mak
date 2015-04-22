@@ -101,6 +101,8 @@ $(foreach W,$(VP9_SIZE_B),$(eval $(foreach H,$(VP9_SIZE_B),$(eval $(call FATE_VP
 $(eval $(call FATE_VP9_SUITE,03-deltaq,$(1),$(2)))
 $(eval $(call FATE_VP9_SUITE,06-bilinear,$(1),$(2)))
 $(eval $(call FATE_VP9_SUITE,09-lf_deltas,$(1),$(2)))
+$(eval $(call FATE_VP9_SUITE,10-show-existing-frame,$(1),$(2)))
+$(eval $(call FATE_VP9_SUITE,10-show-existing-frame2,$(1),$(2)))
 $(eval $(call FATE_VP9_SUITE,2pass-akiyo,$(1),$(2)))
 $(eval $(call FATE_VP9_SUITE,parallelmode-akiyo,$(1),$(2)))
 $(eval $(call FATE_VP9_SUITE,segmentation-aq-akiyo,$(1),$(2)))
