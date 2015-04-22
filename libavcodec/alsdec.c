@@ -680,7 +680,7 @@ static int read_var_block_data(ALSDecContext *ctx, ALSBlockData *bd)
 
 
     if (!sconf->rlslms) {
-        if (sconf->adapt_order) {
+        if (sconf->adapt_order && sconf->max_order) {
             int opt_order_length = av_ceil_log2(av_clip((bd->block_length >> 3) - 1,
                                                 2, sconf->max_order + 1));
             *bd->opt_order       = get_bits(gb, opt_order_length);
