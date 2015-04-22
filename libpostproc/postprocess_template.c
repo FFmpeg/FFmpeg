@@ -3479,7 +3479,7 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
 #endif
         const int8_t *QPptr= &QPs[(y>>qpVShift)*QPStride];
         int8_t *nonBQPptr= &c.nonBQPTable[(y>>qpVShift)*FFABS(QPStride)];
-        int QP=0;
+        int QP=0, nonBQP=0;
         /* can we mess with a 8x16 block from srcBlock/dstBlock downwards and 1 line upwards
            if not than use a temporary buffer */
         if(y+15 >= height){
@@ -3512,6 +3512,29 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
             int endx = FFMIN(width, x+32);
             uint8_t *dstBlockStart = dstBlock;
             const uint8_t *srcBlockStart = srcBlock;
+            int qp_index = 0;
+            for(qp_index=0; qp_index < (endx-startx)/BLOCK_SIZE; qp_index++){
+                QP = QPptr[(x+qp_index*BLOCK_SIZE)>>qpHShift];
+                nonBQP = nonBQPptr[(x+qp_index*BLOCK_SIZE)>>qpHShift];
+            if(!isColor){
+                QP= (QP* QPCorrecture + 256*128)>>16;
+                nonBQP= (nonBQP* QPCorrecture + 256*128)>>16;
+                yHistogram[(srcBlock+qp_index*8)[srcStride*12 + 4]]++;
+            }
+            c.QP_block[qp_index] = QP;
+            c.nonBQP_block[qp_index] = nonBQP;
+#if TEMPLATE_PP_MMX
+            __asm__ volatile(
+                "movd %1, %%mm7         \n\t"
+                "packuswb %%mm7, %%mm7  \n\t" // 0, 0, 0, QP, 0, 0, 0, QP
+                "packuswb %%mm7, %%mm7  \n\t" // 0,QP, 0, QP, 0,QP, 0, QP
+                "packuswb %%mm7, %%mm7  \n\t" // QP,..., QP
+                "movq %%mm7, %0         \n\t"
+                : "=m" (c.pQPb_block[qp_index])
+                : "r" (QP)
+            );
+#endif
+            }
           for(; x < endx; x+=BLOCK_SIZE){
             RENAME(prefetchnta)(srcBlock + (((x>>2)&6) + copyAhead)*srcStride + 32);
             RENAME(prefetchnta)(srcBlock + (((x>>2)&6) + copyAhead+1)*srcStride + 32);
@@ -3543,27 +3566,15 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
           dstBlock = dstBlockStart;
           srcBlock = srcBlockStart;
 
-          for(x = startx; x < endx; x+=BLOCK_SIZE){
+          for(x = startx, qp_index = 0; x < endx; x+=BLOCK_SIZE, qp_index++){
             const int stride= dstStride;
-            QP = QPptr[x>>qpHShift];
-            c.nonBQP = nonBQPptr[x>>qpHShift];
-            if(!isColor){
-                QP= (QP* QPCorrecture + 256*128)>>16;
-                c.nonBQP= (c.nonBQP* QPCorrecture + 256*128)>>16;
-                yHistogram[srcBlock[srcStride*12 + 4]]++;
-            }
-            c.QP= QP;
-#if TEMPLATE_PP_MMX
-            __asm__ volatile(
-                "movd %1, %%mm7         \n\t"
-                "packuswb %%mm7, %%mm7  \n\t" // 0, 0, 0, QP, 0, 0, 0, QP
-                "packuswb %%mm7, %%mm7  \n\t" // 0,QP, 0, QP, 0,QP, 0, QP
-                "packuswb %%mm7, %%mm7  \n\t" // QP,..., QP
-                "movq %%mm7, %0         \n\t"
-                : "=m" (c.pQPb)
-                : "r" (QP)
-            );
-#endif
+            //temporary while changing QP stuff to make things continue to work
+            //eventually QP,nonBQP,etc will be arrays and this will be unnecessary
+            c.QP = c.QP_block[qp_index];
+            c.nonBQP = c.nonBQP_block[qp_index];
+            c.pQPb = c.pQPb_block[qp_index];
+            c.pQPb2 = c.pQPb2_block[qp_index];
+
             /* only deblock if we have 2 blocks */
             if(y + 8 < height){
                 if(mode & V_X1_FILTER)
@@ -3587,30 +3598,14 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
           dstBlock = dstBlockStart;
           srcBlock = srcBlockStart;
 
-          for(x = startx; x < endx; x+=BLOCK_SIZE){
+          for(x = startx, qp_index=0; x < endx; x+=BLOCK_SIZE, qp_index++){
             const int stride= dstStride;
             av_unused uint8_t *tmpXchg;
-
-            if(isColor){
-                QP= QPptr[x>>qpHShift];
-                c.nonBQP= nonBQPptr[x>>qpHShift];
-            }else{
-                QP= QPptr[x>>4];
-                QP= (QP* QPCorrecture + 256*128)>>16;
-                c.nonBQP= nonBQPptr[x>>4];
-                c.nonBQP= (c.nonBQP* QPCorrecture + 256*128)>>16;
-            }
-            c.QP= QP;
+            c.QP = c.QP_block[qp_index];
+            c.nonBQP = c.nonBQP_block[qp_index];
+            c.pQPb = c.pQPb_block[qp_index];
+            c.pQPb2 = c.pQPb2_block[qp_index];
 #if TEMPLATE_PP_MMX
-            __asm__ volatile(
-                "movd %1, %%mm7         \n\t"
-                "packuswb %%mm7, %%mm7  \n\t" // 0, 0, 0, QP, 0, 0, 0, QP
-                "packuswb %%mm7, %%mm7  \n\t" // 0,QP, 0, QP, 0,QP, 0, QP
-                "packuswb %%mm7, %%mm7  \n\t" // QP,..., QP
-                "movq %%mm7, %0         \n\t"
-                : "=m" (c.pQPb)
-                : "r" (QP)
-            );
             RENAME(transpose1)(tempBlock1, tempBlock2, dstBlock, dstStride);
 #endif
             /* check if we have a previous block to deblock it with dstBlock */
@@ -3632,7 +3627,7 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
 
 #else
                 if(mode & H_X1_FILTER)
-                    horizX1Filter(dstBlock-4, stride, QP);
+                    horizX1Filter(dstBlock-4, stride, c.QP);
                 else if(mode & H_DEBLOCK){
 #if TEMPLATE_PP_ALTIVEC
                     DECLARE_ALIGNED(16, unsigned char, tempBlock)[272];
