@@ -279,7 +279,7 @@ static av_always_inline unsigned int opus_getrawbits(OpusRangeCoder *rc, unsigne
         rc->rb.bytes--;
     }
 
-    value = rc->rb.cacheval & ((1<<count)-1);
+    value = av_mod_uintp2(rc->rb.cacheval, count);
     rc->rb.cacheval    >>= count;
     rc->rb.cachelen     -= count;
     rc->total_read_bits += count;

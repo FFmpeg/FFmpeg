@@ -772,7 +772,7 @@ int ff_h264_execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count)
     for (i = 0; i<h->short_ref_count; i++) {
         pic = h->short_ref[i];
         if (pic->invalid_gap) {
-            int d = (h->cur_pic_ptr->frame_num - pic->frame_num) & ((1 << h->sps.log2_max_frame_num)-1);
+            int d = av_mod_uintp2(h->cur_pic_ptr->frame_num - pic->frame_num, h->sps.log2_max_frame_num);
             if (d > h->sps.ref_frame_count)
                 remove_short(h, pic->frame_num, 0);
         }

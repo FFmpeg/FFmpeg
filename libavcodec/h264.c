@@ -1559,9 +1559,8 @@ again:
                         h->valid_recovery_point = 1;
 
                     if (   h->recovery_frame < 0
-                        || ((h->recovery_frame - h->frame_num) & ((1 << h->sps.log2_max_frame_num)-1)) > h->sei_recovery_frame_cnt) {
-                        h->recovery_frame = (h->frame_num + h->sei_recovery_frame_cnt) &
-                                            ((1 << h->sps.log2_max_frame_num) - 1);
+                        || av_mod_uintp2(h->recovery_frame - h->frame_num, h->sps.log2_max_frame_num) > h->sei_recovery_frame_cnt) {
+                        h->recovery_frame = av_mod_uintp2(h->frame_num + h->sei_recovery_frame_cnt, h->sps.log2_max_frame_num);
 
                         if (!h->valid_recovery_point)
                             h->recovery_frame = h->frame_num;

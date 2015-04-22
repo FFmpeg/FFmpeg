@@ -658,8 +658,8 @@ int ff_hevc_skip_flag_decode(HEVCContext *s, int x0, int y0, int x_cb, int y_cb)
 {
     int min_cb_width = s->sps->min_cb_width;
     int inc = 0;
-    int x0b = x0 & ((1 << s->sps->log2_ctb_size) - 1);
-    int y0b = y0 & ((1 << s->sps->log2_ctb_size) - 1);
+    int x0b = av_mod_uintp2(x0, s->sps->log2_ctb_size);
+    int y0b = av_mod_uintp2(y0, s->sps->log2_ctb_size);
 
     if (s->HEVClc->ctb_left_flag || x0b)
         inc = !!SAMPLE_CTB(s->skip_flag, x_cb - 1, y_cb);
@@ -723,8 +723,8 @@ int ff_hevc_pred_mode_decode(HEVCContext *s)
 int ff_hevc_split_coding_unit_flag_decode(HEVCContext *s, int ct_depth, int x0, int y0)
 {
     int inc = 0, depth_left = 0, depth_top = 0;
-    int x0b  = x0 & ((1 << s->sps->log2_ctb_size) - 1);
-    int y0b  = y0 & ((1 << s->sps->log2_ctb_size) - 1);
+    int x0b  = av_mod_uintp2(x0, s->sps->log2_ctb_size);
+    int y0b  = av_mod_uintp2(y0, s->sps->log2_ctb_size);
     int x_cb = x0 >> s->sps->log2_min_cb_size;
     int y_cb = y0 >> s->sps->log2_min_cb_size;
 
