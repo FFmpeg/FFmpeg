@@ -27,6 +27,8 @@
 #include "libavformat/riff.h"
 #include "avdevice.h"
 #include "libavcodec/raw.h"
+#include "objidl.h"
+#include "shlwapi.h"
 
 
 static enum AVPixelFormat dshow_pixfmt(DWORD biCompression, WORD biBitCount)
@@ -728,12 +730,46 @@ dshow_open_device(AVFormatContext *avctx, ICreateDevEnum *devenum,
     ICaptureGraphBuilder2 *graph_builder2 = NULL;
     int ret = AVERROR(EIO);
     int r;
+    IStream *ifile_stream = NULL;
+    IStream *ofile_stream = NULL;
+    IPersistStream *pers_stream = NULL;
 
     const wchar_t *filter_name[2] = { L"Audio capture filter", L"Video capture filter" };
 
-    if ((r = dshow_cycle_devices(avctx, devenum, devtype, sourcetype, &device_filter)) < 0) {
-        ret = r;
-        goto error;
+
+    if ( ((ctx->audio_filter_load_file) && (strlen(ctx->audio_filter_load_file)>0) && (sourcetype == AudioSourceDevice)) ||
+            ((ctx->video_filter_load_file) && (strlen(ctx->video_filter_load_file)>0) && (sourcetype == VideoSourceDevice)) ) {
+        HRESULT hr;
+        char *filename = NULL;
+
+        if (sourcetype == AudioSourceDevice)
+            filename = ctx->audio_filter_load_file;
+        else
+            filename = ctx->video_filter_load_file;
+
+        hr = SHCreateStreamOnFile ((LPCSTR) filename, STGM_READ, &ifile_stream);
+        if (S_OK != hr) {
+            av_log(avctx, AV_LOG_ERROR, "Could not open capture filter description file.\n");
+            goto error;
+        }
+
+        hr = OleLoadFromStream(ifile_stream, &IID_IBaseFilter, (void **) &device_filter);
+        if (hr != S_OK) {
+            av_log(avctx, AV_LOG_ERROR, "Could not load capture filter from file.\n");
+            goto error;
+        }
+
+        if (sourcetype == AudioSourceDevice)
+            av_log(avctx, AV_LOG_INFO, "Audio-");
+        else
+            av_log(avctx, AV_LOG_INFO, "Video-");
+        av_log(avctx, AV_LOG_INFO, "Capture filter loaded successfully from file \"%s\".\n", filename);
+    } else {
+
+        if ((r = dshow_cycle_devices(avctx, devenum, devtype, sourcetype, &device_filter)) < 0) {
+            ret = r;
+            goto error;
+        }
     }
 
     ctx->device_filter [devtype] = device_filter;
@@ -757,6 +793,48 @@ dshow_open_device(AVFormatContext *avctx, ICreateDevEnum *devenum,
         goto error;
     }
     ctx->capture_filter[devtype] = capture_filter;
+
+    if ( ((ctx->audio_filter_save_file) && (strlen(ctx->audio_filter_save_file)>0) && (sourcetype == AudioSourceDevice)) ||
+            ((ctx->video_filter_save_file) && (strlen(ctx->video_filter_save_file)>0) && (sourcetype == VideoSourceDevice)) ) {
+
+        HRESULT hr;
+        char *filename = NULL;
+
+        if (sourcetype == AudioSourceDevice)
+            filename = ctx->audio_filter_save_file;
+        else
+            filename = ctx->video_filter_save_file;
+
+        hr = SHCreateStreamOnFile ((LPCSTR) filename, STGM_CREATE | STGM_READWRITE, &ofile_stream);
+        if (S_OK != hr) {
+            av_log(avctx, AV_LOG_ERROR, "Could not create capture filter description file.\n");
+            goto error;
+        }
+
+        hr  = IBaseFilter_QueryInterface(device_filter, &IID_IPersistStream, (void **) &pers_stream);
+        if (hr != S_OK) {
+            av_log(avctx, AV_LOG_ERROR, "Query for IPersistStream failed.\n");
+            goto error;
+        }
+
+        hr = OleSaveToStream(pers_stream, ofile_stream);
+        if (hr != S_OK) {
+            av_log(avctx, AV_LOG_ERROR, "Could not save capture filter \n");
+            goto error;
+        }
+
+        hr = IStream_Commit(ofile_stream, STGC_DEFAULT);
+        if (S_OK != hr) {
+            av_log(avctx, AV_LOG_ERROR, "Could not commit capture filter data to file.\n");
+            goto error;
+        }
+
+        if (sourcetype == AudioSourceDevice)
+            av_log(avctx, AV_LOG_INFO, "Audio-");
+        else
+            av_log(avctx, AV_LOG_INFO, "Video-");
+        av_log(avctx, AV_LOG_INFO, "Capture filter saved successfully to file \"%s\".\n", filename);
+    }
 
     r = IGraphBuilder_AddFilter(graph, (IBaseFilter *) capture_filter,
                                 filter_name[devtype]);
@@ -801,6 +879,15 @@ dshow_open_device(AVFormatContext *avctx, ICreateDevEnum *devenum,
 error:
     if (graph_builder2 != NULL)
         ICaptureGraphBuilder2_Release(graph_builder2);
+
+    if (pers_stream)
+        IPersistStream_Release(pers_stream);
+
+    if (ifile_stream)
+        IStream_Release(ifile_stream);
+
+    if (ofile_stream)
+        IStream_Release(ofile_stream);
 
     return ret;
 }
@@ -1211,6 +1298,10 @@ static const AVOption options[] = {
     { "show_analog_tv_tuner_audio_dialog", "display property dialog for analog tuner audio filter", OFFSET(show_analog_tv_tuner_audio_dialog), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, DEC, "show_analog_tv_tuner_dialog" },
     { "true", "", 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, DEC, "show_analog_tv_tuner_audio_dialog" },
     { "false", "", 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, DEC, "show_analog_tv_tuner_audio_dialog" },
+    { "audio_device_load", "load audio capture filter device (and properties) from file", OFFSET(audio_filter_load_file), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
+    { "audio_device_save", "save audio capture filter device (and properties) to file", OFFSET(audio_filter_save_file), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
+    { "video_device_load", "load video capture filter device (and properties) from file", OFFSET(video_filter_load_file), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
+    { "video_device_save", "save video capture filter device (and properties) to file", OFFSET(video_filter_save_file), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
     { NULL },
 };
 
