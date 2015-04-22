@@ -1,5 +1,8 @@
 /*
- * Copyright (C) 2008 Michael Niedermayer
+ * VP9 compatible video decoder
+ *
+ * Copyright (C) 2013 Ronald S. Bultje <rsbultje gmail com>
+ * Copyright (C) 2013 Clément Bœsch <u pkh me>
  *
  * This file is part of FFmpeg.
  *
