@@ -239,7 +239,7 @@ typedef struct VP9Context {
     // whole-frame cache
     uint8_t *intra_pred_data[3];
     struct VP9Filter *lflvl;
-    DECLARE_ALIGNED(32, uint8_t, edge_emu_buffer)[71*80];
+    DECLARE_ALIGNED(32, uint8_t, edge_emu_buffer)[135*144];
 
     // block reconstruction intermediates
     int block_alloc_using_2pass;
@@ -248,6 +248,8 @@ typedef struct VP9Context {
     struct { int x, y; } min_mv, max_mv;
     DECLARE_ALIGNED(32, uint8_t, tmp_y)[64*64];
     DECLARE_ALIGNED(32, uint8_t, tmp_uv)[2][32*32];
+    uint16_t mvscale[3][2];
+    uint8_t mvstep[3][2];
 } VP9Context;
 
 static const uint8_t bwh_tab[2][N_BS_SIZES][2] = {
@@ -580,6 +582,26 @@ static int decode_frame_header(AVCodecContext *ctx,
                     s->fixcompref    = 0;
                     s->varcompref[0] = 1;
                     s->varcompref[1] = 2;
+                }
+            }
+
+            for (i = 0; i < 3; i++) {
+                AVFrame *ref = s->refs[s->refidx[i]].f;
+                int refw = ref->width, refh = ref->height;
+
+                if (refw == w && refh == h) {
+                    s->mvscale[i][0] = s->mvscale[i][1] = 0;
+                } else {
+                    if (w * 2 < refw || h * 2 < refh || w > 16 * refw || h > 16 * refh) {
+                        av_log(ctx, AV_LOG_ERROR,
+                               "Invalid ref frame dimensions %dx%d for frame size %dx%d\n",
+                               refw, refh, w, h);
+                        return AVERROR_INVALIDDATA;
+                    }
+                    s->mvscale[i][0] = (refw << 14) / w;
+                    s->mvscale[i][1] = (refh << 14) / h;
+                    s->mvstep[i][0] = 16 * s->mvscale[i][0] >> 14;
+                    s->mvstep[i][1] = 16 * s->mvscale[i][1] >> 14;
                 }
             }
         }
@@ -2524,12 +2546,118 @@ static void intra_recon(AVCodecContext *ctx, ptrdiff_t y_off, ptrdiff_t uv_off)
     }
 }
 
-static av_always_inline void mc_luma_dir(VP9Context *s, vp9_mc_func (*mc)[2],
-                                         uint8_t *dst, ptrdiff_t dst_stride,
-                                         const uint8_t *ref, ptrdiff_t ref_stride,
-                                         ThreadFrame *ref_frame,
-                                         ptrdiff_t y, ptrdiff_t x, const VP56mv *mv,
-                                         int bw, int bh, int w, int h)
+static av_always_inline void mc_luma_scaled(VP9Context *s, vp9_scaled_mc_func smc,
+                                            uint8_t *dst, ptrdiff_t dst_stride,
+                                            const uint8_t *ref, ptrdiff_t ref_stride,
+                                            ThreadFrame *ref_frame,
+                                            ptrdiff_t y, ptrdiff_t x, const VP56mv *mv,
+                                            int bw, int bh, int w, int h,
+                                            const uint16_t *scale, const uint8_t *step)
+{
+#define scale_mv(n, dim) (((int64_t)n * scale[dim]) >> 14)
+    // BUG libvpx seems to scale the two components separately. This introduces
+    // rounding errors but we have to reproduce them to be exactly compatible
+    // with the output from libvpx...
+    int mx = scale_mv(mv->x * 2, 0) + scale_mv(x * 16, 0);
+    int my = scale_mv(mv->y * 2, 1) + scale_mv(y * 16, 1);
+    int refbw_m1, refbh_m1;
+    int th;
+
+    y = my >> 4;
+    x = mx >> 4;
+    ref += y * ref_stride + x;
+    mx &= 15;
+    my &= 15;
+    refbw_m1 = ((bw - 1) * step[0] + mx) >> 4;
+    refbh_m1 = ((bh - 1) * step[1] + my) >> 4;
+    // FIXME bilinear filter only needs 0/1 pixels, not 3/4
+    // we use +7 because the last 7 pixels of each sbrow can be changed in
+    // the longest loopfilter of the next sbrow
+    th = (y + refbh_m1 + 4 + 7) >> 6;
+    ff_thread_await_progress(ref_frame, FFMAX(th, 0), 0);
+    if (x < 3 || y < 3 || x + 4 >= w - refbw_m1 || y + 4 >= h - refbh_m1) {
+        s->vdsp.emulated_edge_mc(s->edge_emu_buffer,
+                                 ref - 3 * ref_stride - 3,
+                                 144, ref_stride,
+                                 refbw_m1 + 8, refbh_m1 + 8,
+                                 x - 3, y - 3, w, h);
+        ref = s->edge_emu_buffer + 3 * 144 + 3;
+        ref_stride = 144;
+    }
+    smc(dst, dst_stride, ref, ref_stride, bh, mx, my, step[0], step[1]);
+}
+
+static av_always_inline void mc_chroma_scaled(VP9Context *s, vp9_scaled_mc_func smc,
+                                              uint8_t *dst_u, uint8_t *dst_v,
+                                              ptrdiff_t dst_stride,
+                                              const uint8_t *ref_u, ptrdiff_t src_stride_u,
+                                              const uint8_t *ref_v, ptrdiff_t src_stride_v,
+                                              ThreadFrame *ref_frame,
+                                              ptrdiff_t y, ptrdiff_t x, const VP56mv *mv,
+                                              int bw, int bh, int w, int h,
+                                              const uint16_t *scale, const uint8_t *step)
+{
+    // BUG https://code.google.com/p/webm/issues/detail?id=820
+    int mx = scale_mv(mv->x, 0) + (scale_mv(x * 16, 0) & ~15) + (scale_mv(x * 32, 0) & 15);
+    int my = scale_mv(mv->y, 1) + (scale_mv(y * 16, 1) & ~15) + (scale_mv(y * 32, 1) & 15);
+#undef scale_mv
+    int refbw_m1, refbh_m1;
+    int th;
+
+    y = my >> 4;
+    x = mx >> 4;
+    ref_u += y * src_stride_u + x;
+    ref_v += y * src_stride_v + x;
+    mx &= 15;
+    my &= 15;
+    refbw_m1 = ((bw - 1) * step[0] + mx) >> 4;
+    refbh_m1 = ((bh - 1) * step[1] + my) >> 4;
+    // FIXME bilinear filter only needs 0/1 pixels, not 3/4
+    // we use +7 because the last 7 pixels of each sbrow can be changed in
+    // the longest loopfilter of the next sbrow
+    th = (y + refbh_m1 + 4 + 7) >> 5;
+    ff_thread_await_progress(ref_frame, FFMAX(th, 0), 0);
+    if (x < 3 || y < 3 || x + 4 >= w - refbw_m1 || y + 4 >= h - refbh_m1) {
+        s->vdsp.emulated_edge_mc(s->edge_emu_buffer,
+                                 ref_u - 3 * src_stride_u - 3,
+                                 144, src_stride_u,
+                                 refbw_m1 + 8, refbh_m1 + 8,
+                                 x - 3, y - 3, w, h);
+        ref_u = s->edge_emu_buffer + 3 * 144 + 3;
+        smc(dst_u, dst_stride, ref_u, 144, bh, mx, my, step[0], step[1]);
+
+        s->vdsp.emulated_edge_mc(s->edge_emu_buffer,
+                                 ref_v - 3 * src_stride_v - 3,
+                                 144, src_stride_v,
+                                 refbw_m1 + 8, refbh_m1 + 8,
+                                 x - 3, y - 3, w, h);
+        ref_v = s->edge_emu_buffer + 3 * 144 + 3;
+        smc(dst_v, dst_stride, ref_v, 144, bh, mx, my, step[0], step[1]);
+    } else {
+        smc(dst_u, dst_stride, ref_u, src_stride_u, bh, mx, my, step[0], step[1]);
+        smc(dst_v, dst_stride, ref_v, src_stride_v, bh, mx, my, step[0], step[1]);
+    }
+}
+
+#define FN(x) x##_scaled
+#define mc_luma_dir(s, mc, dst, dst_ls, src, src_ls, tref, row, col, mv, bw, bh, w, h, i) \
+    mc_luma_scaled(s, s->dsp.s##mc, dst, dst_ls, src, src_ls, tref, row, col, \
+                   mv, bw, bh, w, h, s->mvscale[b->ref[i]], s->mvstep[b->ref[i]])
+#define mc_chroma_dir(s, mc, dstu, dstv, dst_ls, srcu, srcu_ls, srcv, srcv_ls, tref, \
+                      row, col, mv, bw, bh, w, h, i) \
+    mc_chroma_scaled(s, s->dsp.s##mc, dstu, dstv, dst_ls, srcu, srcu_ls, srcv, srcv_ls, tref, \
+                     row, col, mv, bw, bh, w, h, s->mvscale[b->ref[i]], s->mvstep[b->ref[i]])
+#include "vp9_mc_template.c"
+#undef mc_luma_dir
+#undef mc_chroma_dir
+#undef FN
+
+static av_always_inline void mc_luma_unscaled(VP9Context *s, vp9_mc_func (*mc)[2],
+                                              uint8_t *dst, ptrdiff_t dst_stride,
+                                              const uint8_t *ref, ptrdiff_t ref_stride,
+                                              ThreadFrame *ref_frame,
+                                              ptrdiff_t y, ptrdiff_t x, const VP56mv *mv,
+                                              int bw, int bh, int w, int h)
 {
     int mx = mv->x, my = mv->y, th;
 
@@ -2556,14 +2684,14 @@ static av_always_inline void mc_luma_dir(VP9Context *s, vp9_mc_func (*mc)[2],
     mc[!!mx][!!my](dst, dst_stride, ref, ref_stride, bh, mx << 1, my << 1);
 }
 
-static av_always_inline void mc_chroma_dir(VP9Context *s, vp9_mc_func (*mc)[2],
-                                           uint8_t *dst_u, uint8_t *dst_v,
-                                           ptrdiff_t dst_stride,
-                                           const uint8_t *ref_u, ptrdiff_t src_stride_u,
-                                           const uint8_t *ref_v, ptrdiff_t src_stride_v,
-                                           ThreadFrame *ref_frame,
-                                           ptrdiff_t y, ptrdiff_t x, const VP56mv *mv,
-                                           int bw, int bh, int w, int h)
+static av_always_inline void mc_chroma_unscaled(VP9Context *s, vp9_mc_func (*mc)[2],
+                                                uint8_t *dst_u, uint8_t *dst_v,
+                                                ptrdiff_t dst_stride,
+                                                const uint8_t *ref_u, ptrdiff_t src_stride_u,
+                                                const uint8_t *ref_v, ptrdiff_t src_stride_v,
+                                                ThreadFrame *ref_frame,
+                                                ptrdiff_t y, ptrdiff_t x, const VP56mv *mv,
+                                                int bw, int bh, int w, int h)
 {
     int mx = mv->x, my = mv->y, th;
 
@@ -2601,156 +2729,32 @@ static av_always_inline void mc_chroma_dir(VP9Context *s, vp9_mc_func (*mc)[2],
     }
 }
 
+#define FN(x) x
+#define mc_luma_dir(s, mc, dst, dst_ls, src, src_ls, tref, row, col, mv, bw, bh, w, h, i) \
+    mc_luma_unscaled(s, s->dsp.mc, dst, dst_ls, src, src_ls, tref, row, col, \
+                     mv, bw, bh, w, h)
+#define mc_chroma_dir(s, mc, dstu, dstv, dst_ls, srcu, srcu_ls, srcv, srcv_ls, tref, \
+                      row, col, mv, bw, bh, w, h, i) \
+    mc_chroma_unscaled(s, s->dsp.mc, dstu, dstv, dst_ls, srcu, srcu_ls, srcv, srcv_ls, tref, \
+                       row, col, mv, bw, bh, w, h)
+#include "vp9_mc_template.c"
+#undef mc_luma_dir_dir
+#undef mc_chroma_dir_dir
+#undef FN
+
 static void inter_recon(AVCodecContext *ctx)
 {
-    static const uint8_t bwlog_tab[2][N_BS_SIZES] = {
-        { 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4 },
-        { 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 4, 4 },
-    };
     VP9Context *s = ctx->priv_data;
     VP9Block *b = s->b;
     int row = s->row, col = s->col;
-    ThreadFrame *tref1 = &s->refs[s->refidx[b->ref[0]]], *tref2;
-    AVFrame *ref1 = tref1->f, *ref2;
-    int w1 = ref1->width, h1 = ref1->height, w2, h2;
-    ptrdiff_t ls_y = s->y_stride, ls_uv = s->uv_stride;
 
-    if (b->comp) {
-        tref2 = &s->refs[s->refidx[b->ref[1]]];
-        ref2 = tref2->f;
-        w2 = ref2->width;
-        h2 = ref2->height;
-    }
-
-    // y inter pred
-    if (b->bs > BS_8x8) {
-        if (b->bs == BS_8x4) {
-            mc_luma_dir(s, s->dsp.mc[3][b->filter][0], s->dst[0], ls_y,
-                        ref1->data[0], ref1->linesize[0], tref1,
-                        row << 3, col << 3, &b->mv[0][0], 8, 4, w1, h1);
-            mc_luma_dir(s, s->dsp.mc[3][b->filter][0],
-                        s->dst[0] + 4 * ls_y, ls_y,
-                        ref1->data[0], ref1->linesize[0], tref1,
-                        (row << 3) + 4, col << 3, &b->mv[2][0], 8, 4, w1, h1);
-
-            if (b->comp) {
-                mc_luma_dir(s, s->dsp.mc[3][b->filter][1], s->dst[0], ls_y,
-                            ref2->data[0], ref2->linesize[0], tref2,
-                            row << 3, col << 3, &b->mv[0][1], 8, 4, w2, h2);
-                mc_luma_dir(s, s->dsp.mc[3][b->filter][1],
-                            s->dst[0] + 4 * ls_y, ls_y,
-                            ref2->data[0], ref2->linesize[0], tref2,
-                            (row << 3) + 4, col << 3, &b->mv[2][1], 8, 4, w2, h2);
-            }
-        } else if (b->bs == BS_4x8) {
-            mc_luma_dir(s, s->dsp.mc[4][b->filter][0], s->dst[0], ls_y,
-                        ref1->data[0], ref1->linesize[0], tref1,
-                        row << 3, col << 3, &b->mv[0][0], 4, 8, w1, h1);
-            mc_luma_dir(s, s->dsp.mc[4][b->filter][0], s->dst[0] + 4, ls_y,
-                        ref1->data[0], ref1->linesize[0], tref1,
-                        row << 3, (col << 3) + 4, &b->mv[1][0], 4, 8, w1, h1);
-
-            if (b->comp) {
-                mc_luma_dir(s, s->dsp.mc[4][b->filter][1], s->dst[0], ls_y,
-                            ref2->data[0], ref2->linesize[0], tref2,
-                            row << 3, col << 3, &b->mv[0][1], 4, 8, w2, h2);
-                mc_luma_dir(s, s->dsp.mc[4][b->filter][1], s->dst[0] + 4, ls_y,
-                            ref2->data[0], ref2->linesize[0], tref2,
-                            row << 3, (col << 3) + 4, &b->mv[1][1], 4, 8, w2, h2);
-            }
-        } else {
-            av_assert2(b->bs == BS_4x4);
-
-            // FIXME if two horizontally adjacent blocks have the same MV,
-            // do a w8 instead of a w4 call
-            mc_luma_dir(s, s->dsp.mc[4][b->filter][0], s->dst[0], ls_y,
-                        ref1->data[0], ref1->linesize[0], tref1,
-                        row << 3, col << 3, &b->mv[0][0], 4, 4, w1, h1);
-            mc_luma_dir(s, s->dsp.mc[4][b->filter][0], s->dst[0] + 4, ls_y,
-                        ref1->data[0], ref1->linesize[0], tref1,
-                        row << 3, (col << 3) + 4, &b->mv[1][0], 4, 4, w1, h1);
-            mc_luma_dir(s, s->dsp.mc[4][b->filter][0],
-                        s->dst[0] + 4 * ls_y, ls_y,
-                        ref1->data[0], ref1->linesize[0], tref1,
-                        (row << 3) + 4, col << 3, &b->mv[2][0], 4, 4, w1, h1);
-            mc_luma_dir(s, s->dsp.mc[4][b->filter][0],
-                        s->dst[0] + 4 * ls_y + 4, ls_y,
-                        ref1->data[0], ref1->linesize[0], tref1,
-                        (row << 3) + 4, (col << 3) + 4, &b->mv[3][0], 4, 4, w1, h1);
-
-            if (b->comp) {
-                mc_luma_dir(s, s->dsp.mc[4][b->filter][1], s->dst[0], ls_y,
-                            ref2->data[0], ref2->linesize[0], tref2,
-                            row << 3, col << 3, &b->mv[0][1], 4, 4, w2, h2);
-                mc_luma_dir(s, s->dsp.mc[4][b->filter][1], s->dst[0] + 4, ls_y,
-                            ref2->data[0], ref2->linesize[0], tref2,
-                            row << 3, (col << 3) + 4, &b->mv[1][1], 4, 4, w2, h2);
-                mc_luma_dir(s, s->dsp.mc[4][b->filter][1],
-                            s->dst[0] + 4 * ls_y, ls_y,
-                            ref2->data[0], ref2->linesize[0], tref2,
-                            (row << 3) + 4, col << 3, &b->mv[2][1], 4, 4, w2, h2);
-                mc_luma_dir(s, s->dsp.mc[4][b->filter][1],
-                            s->dst[0] + 4 * ls_y + 4, ls_y,
-                            ref2->data[0], ref2->linesize[0], tref2,
-                            (row << 3) + 4, (col << 3) + 4, &b->mv[3][1], 4, 4, w2, h2);
-            }
-        }
+    if (s->mvscale[b->ref[0]][0] || (b->comp && s->mvscale[b->ref[1]][0])) {
+        inter_pred_scaled(ctx);
     } else {
-        int bwl = bwlog_tab[0][b->bs];
-        int bw = bwh_tab[0][b->bs][0] * 4, bh = bwh_tab[0][b->bs][1] * 4;
-
-        mc_luma_dir(s, s->dsp.mc[bwl][b->filter][0], s->dst[0], ls_y,
-                    ref1->data[0], ref1->linesize[0], tref1,
-                    row << 3, col << 3, &b->mv[0][0],bw, bh, w1, h1);
-
-        if (b->comp)
-            mc_luma_dir(s, s->dsp.mc[bwl][b->filter][1], s->dst[0], ls_y,
-                        ref2->data[0], ref2->linesize[0], tref2,
-                        row << 3, col << 3, &b->mv[0][1], bw, bh, w2, h2);
+        inter_pred(ctx);
     }
-
-    // uv inter pred
-    {
-        int bwl = bwlog_tab[1][b->bs];
-        int bw = bwh_tab[1][b->bs][0] * 4, bh = bwh_tab[1][b->bs][1] * 4;
-        VP56mv mvuv;
-
-        w1 = (w1 + 1) >> 1;
-        h1 = (h1 + 1) >> 1;
-        if (b->comp) {
-            w2 = (w2 + 1) >> 1;
-            h2 = (h2 + 1) >> 1;
-        }
-        if (b->bs > BS_8x8) {
-            mvuv.x = ROUNDED_DIV(b->mv[0][0].x + b->mv[1][0].x + b->mv[2][0].x + b->mv[3][0].x, 4);
-            mvuv.y = ROUNDED_DIV(b->mv[0][0].y + b->mv[1][0].y + b->mv[2][0].y + b->mv[3][0].y, 4);
-        } else {
-            mvuv = b->mv[0][0];
-        }
-
-        mc_chroma_dir(s, s->dsp.mc[bwl][b->filter][0],
-                      s->dst[1], s->dst[2], ls_uv,
-                      ref1->data[1], ref1->linesize[1],
-                      ref1->data[2], ref1->linesize[2], tref1,
-                      row << 2, col << 2, &mvuv, bw, bh, w1, h1);
-
-        if (b->comp) {
-            if (b->bs > BS_8x8) {
-                mvuv.x = ROUNDED_DIV(b->mv[0][1].x + b->mv[1][1].x + b->mv[2][1].x + b->mv[3][1].x, 4);
-                mvuv.y = ROUNDED_DIV(b->mv[0][1].y + b->mv[1][1].y + b->mv[2][1].y + b->mv[3][1].y, 4);
-            } else {
-                mvuv = b->mv[0][1];
-            }
-            mc_chroma_dir(s, s->dsp.mc[bwl][b->filter][1],
-                          s->dst[1], s->dst[2], ls_uv,
-                          ref2->data[1], ref2->linesize[1],
-                          ref2->data[2], ref2->linesize[2], tref2,
-                          row << 2, col << 2, &mvuv, bw, bh, w2, h2);
-        }
-    }
-
     if (!b->skip) {
-        /* mostly copied intra_reconn() */
+        /* mostly copied intra_recon() */
 
         int w4 = bwh_tab[1][b->bs][0] << 1, step1d = 1 << b->tx, n;
         int h4 = bwh_tab[1][b->bs][1] << 1, x, y, step = 1 << (b->tx * 2);
