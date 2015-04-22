@@ -3765,6 +3765,8 @@ static int vp9_decode_frame(AVCodecContext *ctx, void *frame,
         }
         if ((res = av_frame_ref(frame, s->refs[ref].f)) < 0)
             return res;
+        ((AVFrame *)frame)->pkt_pts = pkt->pts;
+        ((AVFrame *)frame)->pkt_dts = pkt->dts;
         *got_frame = 1;
         return pkt->size;
     }
