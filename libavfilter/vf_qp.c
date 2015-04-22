@@ -90,7 +90,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFilterLink *outlink = ctx->outputs[0];
     QPContext *s = ctx->priv;
     AVBufferRef *out_qp_table_buf;
-    AVFrame *out;
+    AVFrame *out = NULL;
     const int8_t *in_qp_table;
     int type, stride, ret;
 
@@ -123,13 +123,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                 double var_values[] = { !!in_qp_table, qp, x, y, s->qstride, s->h, 0};
                 static const char *var_names[] = { "known", "qp", "x", "y", "w", "h", NULL };
                 double temp_val;
-                int ret;
 
                 ret = av_expr_parse_and_eval(&temp_val, s->qp_expr_str,
                                             var_names, var_values,
                                             NULL, NULL, NULL, NULL, 0, 0, ctx);
                 if (ret < 0)
-                    return ret;
+                    goto fail;
                 out_qp_table_buf->data[x + s->qstride * y] = lrintf(temp_val);
             }
     } else if (in_qp_table) {
@@ -148,8 +147,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     }
 
     ret = ff_filter_frame(outlink, out);
+    out = NULL;
 fail:
     av_frame_free(&in);
+    av_frame_free(&out);
     return ret;
 }
 

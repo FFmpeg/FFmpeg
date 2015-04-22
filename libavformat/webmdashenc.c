@@ -56,6 +56,7 @@ typedef struct WebMDashMuxContext {
     int chunk_duration;
     char *utc_timing_url;
     double time_shift_buffer_depth;
+    int minimum_update_period;
     int debug_mode;
 } WebMDashMuxContext;
 
@@ -115,7 +116,8 @@ static void write_header(AVFormatContext *s)
             av_strlcpy(gmt_iso, "", 1);
         }
         avio_printf(s->pb, "  availabilityStartTime=\"%s\"\n", gmt_iso);
-        avio_printf(s->pb, "  timeShiftBufferDepth=\"PT%gS\"", w->time_shift_buffer_depth);
+        avio_printf(s->pb, "  timeShiftBufferDepth=\"PT%gS\"\n", w->time_shift_buffer_depth);
+        avio_printf(s->pb, "  minimumUpdatePeriod=\"PT%dS\"", w->minimum_update_period);
         avio_printf(s->pb, ">\n");
         avio_printf(s->pb, "<UTCTiming\n");
         avio_printf(s->pb, "  schemeIdUri=\"%s\"\n",
@@ -516,6 +518,7 @@ static const AVOption options[] = {
     { "chunk_duration_ms", "duration of each chunk (in milliseconds)", OFFSET(chunk_duration), AV_OPT_TYPE_INT, {.i64 = 1000}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
     { "utc_timing_url", "URL of the page that will return the UTC timestamp in ISO format", OFFSET(utc_timing_url), AV_OPT_TYPE_STRING, { 0 }, 0, 0, AV_OPT_FLAG_ENCODING_PARAM },
     { "time_shift_buffer_depth", "Smallest time (in seconds) shifting buffer for which any Representation is guaranteed to be available.", OFFSET(time_shift_buffer_depth), AV_OPT_TYPE_DOUBLE, { .dbl = 60.0 }, 1.0, DBL_MAX, AV_OPT_FLAG_ENCODING_PARAM },
+    { "minimum_update_period", "Minimum Update Period (in seconds) of the manifest.", OFFSET(minimum_update_period), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
     { NULL },
 };
 

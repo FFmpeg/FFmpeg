@@ -7,7 +7,8 @@
   minBufferTime="PT1S"
   profiles="urn:mpeg:dash:profile:isoff-live:2011"
   availabilityStartTime=""
-  timeShiftBufferDepth="PT7200S">
+  timeShiftBufferDepth="PT7200S"
+  minimumUpdatePeriod="PT60S">
 <UTCTiming
   schemeIdUri="urn:mpeg:dash:utc:direct:2012"
   value=""/>

@@ -1416,6 +1416,8 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
                 sample < st->last_discard_sample)
                 discard_padding = FFMIN(end_sample - st->first_discard_sample, duration);
         }
+        if (st->start_skip_samples && (pkt->pts == 0 || pkt->pts == RELATIVE_TS_BASE))
+            st->skip_samples = st->start_skip_samples;
         if (st->skip_samples || discard_padding) {
             uint8_t *p = av_packet_new_side_data(pkt, AV_PKT_DATA_SKIP_SAMPLES, 10);
             if (p) {
@@ -1645,6 +1647,8 @@ void ff_read_frame_flush(AVFormatContext *s)
 
         if (s->internal->inject_global_side_data)
             st->inject_global_side_data = 1;
+
+        st->skip_samples = 0;
     }
 }
 

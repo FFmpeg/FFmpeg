@@ -1083,6 +1083,15 @@ typedef struct AVStream {
     int skip_samples;
 
     /**
+     * If not 0, the number of samples that should be skipped from the start of
+     * the stream (the samples are removed from packets with pts==0, which also
+     * assumes negative timestamps do not happen).
+     * Intended for use with formats such as mp3 with ad-hoc gapless audio
+     * support.
+     */
+    int64_t start_skip_samples;
+
+    /**
      * If not 0, the first audio sample that should be discarded from the stream.
      * This is broken by design (needs global sample count), but can't be
      * avoided for broken by design formats such as mp3 with ad-hoc gapless

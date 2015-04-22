@@ -179,6 +179,9 @@ typedef struct DrawTextContext {
     AVExpr *x_pexpr, *y_pexpr;      ///< parsed expressions for x and y
     int64_t basetime;               ///< base pts time in the real world for display
     double var_values[VAR_VARS_NB];
+    char   *a_expr;
+    AVExpr *a_pexpr;
+    int alpha;
     AVLFG  prng;                    ///< random
     char       *tc_opt_string;      ///< specified timecode option string
     AVRational  tc_rate;            ///< frame rate for timecode
@@ -229,6 +232,7 @@ static const AVOption drawtext_options[]= {
     {"r",               "set rate (timecode only)",         OFFSET(tc_rate),       AV_OPT_TYPE_RATIONAL, {.dbl=0},           0,  INT_MAX, FLAGS},
     {"rate",            "set rate (timecode only)",         OFFSET(tc_rate),       AV_OPT_TYPE_RATIONAL, {.dbl=0},           0,  INT_MAX, FLAGS},
     {"reload",     "reload text file for each frame",                       OFFSET(reload),     AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS},
+    { "alpha",       "apply alpha while rendering", OFFSET(a_expr),      AV_OPT_TYPE_STRING, { .str = "1"     },          .flags = FLAGS },
     {"fix_bounds", "if true, check and fix text coords to avoid clipping",  OFFSET(fix_bounds), AV_OPT_TYPE_INT, {.i64=1}, 0, 1, FLAGS},
     {"start_number", "start frame number for n/frame_num variable", OFFSET(start_number), AV_OPT_TYPE_INT, {.i64=0}, 0, INT_MAX, FLAGS},
 
@@ -749,6 +753,8 @@ static int config_input(AVFilterLink *inlink)
     if ((ret = av_expr_parse(&s->x_pexpr, s->x_expr, var_names,
                              NULL, NULL, fun2_names, fun2, 0, ctx)) < 0 ||
         (ret = av_expr_parse(&s->y_pexpr, s->y_expr, var_names,
+                             NULL, NULL, fun2_names, fun2, 0, ctx)) < 0 ||
+        (ret = av_expr_parse(&s->a_pexpr, s->a_expr, var_names,
                              NULL, NULL, fun2_names, fun2, 0, ctx)) < 0)
 
         return AVERROR(EINVAL);
@@ -1052,7 +1058,8 @@ static int expand_text(AVFilterContext *ctx, char *text, AVBPrint *bp)
 
 static int draw_glyphs(DrawTextContext *s, AVFrame *frame,
                        int width, int height,
-                       FFDrawColor *color, int x, int y, int borderw)
+                       FFDrawColor *color,
+                       int x, int y, int borderw)
 {
     char *text = s->expanded_text.str;
     uint32_t code = 0;
@@ -1092,6 +1099,29 @@ static int draw_glyphs(DrawTextContext *s, AVFrame *frame,
     return 0;
 }
 
+
+static void update_color_with_alpha(DrawTextContext *s, FFDrawColor *color, const FFDrawColor incolor)
+{
+    *color = incolor;
+    color->rgba[3] = (color->rgba[3] * s->alpha) / 255;
+    ff_draw_color(&s->dc, color, color->rgba);
+}
+
+static void update_alpha(DrawTextContext *s)
+{
+    double alpha = av_expr_eval(s->a_pexpr, s->var_values, &s->prng);
+
+    if (isnan(alpha))
+        return;
+
+    if (alpha >= 1.0)
+        s->alpha = 255;
+    else if (alpha <= 0)
+        s->alpha = 0;
+    else
+        s->alpha = 256 * alpha;
+}
+
 static int draw_text(AVFilterContext *ctx, AVFrame *frame,
                      int width, int height)
 {
@@ -1113,6 +1143,11 @@ static int draw_text(AVFilterContext *ctx, AVFrame *frame,
     time_t now = time(0);
     struct tm ltime;
     AVBPrint *bp = &s->expanded_text;
+
+    FFDrawColor fontcolor;
+    FFDrawColor shadowcolor;
+    FFDrawColor bordercolor;
+    FFDrawColor boxcolor;
 
     av_bprint_clear(bp);
 
@@ -1239,29 +1274,35 @@ static int draw_text(AVFilterContext *ctx, AVFrame *frame,
     s->y = s->var_values[VAR_Y] = av_expr_eval(s->y_pexpr, s->var_values, &s->prng);
     s->x = s->var_values[VAR_X] = av_expr_eval(s->x_pexpr, s->var_values, &s->prng);
 
+    update_alpha(s);
+    update_color_with_alpha(s, &fontcolor  , s->fontcolor  );
+    update_color_with_alpha(s, &shadowcolor, s->shadowcolor);
+    update_color_with_alpha(s, &bordercolor, s->bordercolor);
+    update_color_with_alpha(s, &boxcolor   , s->boxcolor   );
+
     box_w = FFMIN(width - 1 , max_text_line_w);
     box_h = FFMIN(height - 1, y + s->max_glyph_h);
 
     /* draw box */
     if (s->draw_box)
-        ff_blend_rectangle(&s->dc, &s->boxcolor,
+        ff_blend_rectangle(&s->dc, &boxcolor,
                            frame->data, frame->linesize, width, height,
                            s->x - s->boxborderw, s->y - s->boxborderw,
                            box_w + s->boxborderw * 2, box_h + s->boxborderw * 2);
 
     if (s->shadowx || s->shadowy) {
         if ((ret = draw_glyphs(s, frame, width, height,
-                               &s->shadowcolor, s->shadowx, s->shadowy, 0)) < 0)
+                               &shadowcolor, s->shadowx, s->shadowy, 0)) < 0)
             return ret;
     }
 
     if (s->borderw) {
         if ((ret = draw_glyphs(s, frame, width, height,
-                               &s->bordercolor, 0, 0, s->borderw)) < 0)
+                               &bordercolor, 0, 0, s->borderw)) < 0)
             return ret;
     }
     if ((ret = draw_glyphs(s, frame, width, height,
-                           &s->fontcolor, 0, 0, 0)) < 0)
+                           &fontcolor, 0, 0, 0)) < 0)
         return ret;
 
     return 0;

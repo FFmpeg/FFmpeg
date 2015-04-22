@@ -518,7 +518,7 @@ static inline void set_ur_golomb(PutBitContext *pb, int i, int k, int limit,
 
     e = i >> k;
     if (e < limit)
-        put_bits(pb, e + k + 1, (1 << k) + (i & ((1 << k) - 1)));
+        put_bits(pb, e + k + 1, (1 << k) + av_mod_uintp2(i, k));
     else
         put_bits(pb, limit + esc_len, i - limit + 1);
 }

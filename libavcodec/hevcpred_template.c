@@ -117,8 +117,8 @@ do {                                  \
     if (s->pps->constrained_intra_pred_flag == 1) {
         int size_in_luma_pu_v = PU(size_in_luma_v);
         int size_in_luma_pu_h = PU(size_in_luma_h);
-        int on_pu_edge_x    = !(x0 & ((1 << s->sps->log2_min_pu_size) - 1));
-        int on_pu_edge_y    = !(y0 & ((1 << s->sps->log2_min_pu_size) - 1));
+        int on_pu_edge_x    = !av_mod_uintp2(x0, s->sps->log2_min_pu_size);
+        int on_pu_edge_y    = !av_mod_uintp2(y0, s->sps->log2_min_pu_size);
         if (!size_in_luma_pu_h)
             size_in_luma_pu_h++;
         if (cand_bottom_left == 1 && on_pu_edge_x) {

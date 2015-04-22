@@ -172,8 +172,7 @@ static av_always_inline void decode_line(FFV1Context *s, int w,
         if (sign)
             diff = -diff;
 
-        sample[1][x] = (predict(sample[1] + x, sample[0] + x) + diff) &
-                       ((1 << bits) - 1);
+        sample[1][x] = av_mod_uintp2(predict(sample[1] + x, sample[0] + x) + diff, bits);
     }
     s->run_index = run_index;
 }

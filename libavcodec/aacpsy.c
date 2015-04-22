@@ -313,7 +313,7 @@ static av_cold int psy_3gpp_init(FFPsyContext *ctx) {
     ctx->bitres.size   = 6144 - pctx->frame_bits;
     ctx->bitres.size  -= ctx->bitres.size % 8;
     pctx->fill_level   = ctx->bitres.size;
-    minath = ath(3410, ATH_ADD);
+    minath = ath(3410 - 0.733 * ATH_ADD, ATH_ADD);
     for (j = 0; j < 2; j++) {
         AacPsyCoeffs *coeffs = pctx->psy_coef[j];
         const uint8_t *band_sizes = ctx->bands[j];
