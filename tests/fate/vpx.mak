@@ -109,6 +109,9 @@ $(eval $(call FATE_VP9_SUITE,trac4359,$(1),$(2)))
 endef
 
 $(eval $(call FATE_VP9_FULL))
+FATE_VP9-$(CONFIG_IVF_DEMUXER) += fate-vp9-05-resize
+fate-vp9-05-resize: CMD = framemd5 -i $(TARGET_SAMPLES)/vp9-test-vectors/vp90-2-05-resize.ivf -s 352x288 -sws_flags bitexact+bilinear
+fate-vp9-05-resize: REF = $(SRC_PATH)/tests/ref/fate/vp9-05-resize
 
 FATE_SAMPLES_AVCONV-$(CONFIG_VP9_DECODER) += $(FATE_VP9-yes)
 fate-vp9: $(FATE_VP9-yes)
