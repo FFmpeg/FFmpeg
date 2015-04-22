@@ -514,7 +514,7 @@ static int sbr_make_f_master(AACContext *ac, SpectralBandReplication *sbr,
 /// High Frequency Generation - Patch Construction (14496-3 sp04 p216 fig. 4.46)
 static int sbr_hf_calc_npatches(AACContext *ac, SpectralBandReplication *sbr)
 {
-    int i, k, sb = 0;
+    int i, k, last_k = -1, last_msb = -1, sb = 0;
     int msb = sbr->k[0];
     int usb = sbr->kx[1];
     int goal_sb = ((1000 << 11) + (sbr->sample_rate >> 1)) / sbr->sample_rate;
@@ -528,6 +528,12 @@ static int sbr_hf_calc_npatches(AACContext *ac, SpectralBandReplication *sbr)
 
     do {
         int odd = 0;
+        if (k == last_k && msb == last_msb) {
+            av_log(ac->avctx, AV_LOG_ERROR, "patch construction failed\n");
+            return AVERROR_INVALIDDATA;
+        }
+        last_k = k;
+        last_msb = msb;
         for (i = k; i == k || sb > (sbr->k[0] - 1 + msb - odd); i--) {
             sb = sbr->f_master[i];
             odd = (sb + sbr->k[0]) & 1;
