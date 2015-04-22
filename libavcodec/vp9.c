@@ -622,8 +622,6 @@ static int decode_frame_header(AVCodecContext *ctx,
                 if (get_bits1(&s->gb))
                     s->lf_delta.mode[i] = get_sbits_inv(&s->gb, 6);
         }
-    } else {
-        memset(&s->lf_delta, 0, sizeof(s->lf_delta));
     }
 
     /* quantization header data */
@@ -705,16 +703,21 @@ static int decode_frame_header(AVCodecContext *ctx,
         } else {
             lflvl  = s->filter.level;
         }
-        s->segmentation.feat[i].lflvl[0][0] =
-        s->segmentation.feat[i].lflvl[0][1] =
-            av_clip_uintp2(lflvl + (s->lf_delta.ref[0] << sh), 6);
-        for (j = 1; j < 4; j++) {
-            s->segmentation.feat[i].lflvl[j][0] =
-                av_clip_uintp2(lflvl + ((s->lf_delta.ref[j] +
-                                         s->lf_delta.mode[0]) * (1 << sh)), 6);
-            s->segmentation.feat[i].lflvl[j][1] =
-                av_clip_uintp2(lflvl + ((s->lf_delta.ref[j] +
-                                         s->lf_delta.mode[1]) * (1 << sh)), 6);
+        if (s->lf_delta.enabled) {
+            s->segmentation.feat[i].lflvl[0][0] =
+            s->segmentation.feat[i].lflvl[0][1] =
+                av_clip_uintp2(lflvl + (s->lf_delta.ref[0] << sh), 6);
+            for (j = 1; j < 4; j++) {
+                s->segmentation.feat[i].lflvl[j][0] =
+                    av_clip_uintp2(lflvl + ((s->lf_delta.ref[j] +
+                                             s->lf_delta.mode[0]) * (1 << sh)), 6);
+                s->segmentation.feat[i].lflvl[j][1] =
+                    av_clip_uintp2(lflvl + ((s->lf_delta.ref[j] +
+                                             s->lf_delta.mode[1]) * (1 << sh)), 6);
+            }
+        } else {
+            memset(s->segmentation.feat[i].lflvl, lflvl,
+                   sizeof(s->segmentation.feat[i].lflvl));
         }
     }
 
