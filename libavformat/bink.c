@@ -194,7 +194,10 @@ static int read_header(AVFormatContext *s)
             return ret;
     }
 
-    avio_seek(pb, vst->index_entries[0].pos, SEEK_SET);
+    if (vst->index_entries)
+        avio_seek(pb, vst->index_entries[0].pos, SEEK_SET);
+    else
+        avio_skip(pb, 4);
 
     bink->current_track = -1;
     return 0;
