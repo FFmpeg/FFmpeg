@@ -18,6 +18,10 @@ fate-vsynth%-asv1:               ENCOPTS = -qscale 10
 FATE_VCODEC-$(call ENCDEC, ASV2, AVI)   += asv2
 fate-vsynth%-asv2:               ENCOPTS = -qscale 10
 
+FATE_VCODEC-$(call ENCDEC, CINEPAK, MOV) += cinepak
+fate-vsynth%-cinepak:            ENCOPTS  = -vcodec cinepak -frames 3
+fate-vsynth%-cinepak:            FMT      = mov
+
 FATE_VCODEC-$(call ENCDEC, CLJR, AVI)   += cljr
 fate-vsynth%-cljr:               ENCOPTS = -strict -1
 
@@ -320,7 +324,7 @@ FATE_VSYNTH_LENA = $(FATE_VCODEC:%=fate-vsynth_lena-%)
 RESIZE_OFF   = dnxhd-720p dnxhd-720p-rd dnxhd-720p-10bit dnxhd-1080i \
                dv dv-411 dv-50 avui snow snow-hpel snow-ll
 # Incorrect parameters - usually size or color format restrictions
-INC_PAR_OFF  = h261 h261-trellis h263 h263p h263-obmc msvideo1 \
+INC_PAR_OFF  = cinepak h261 h261-trellis h263 h263p h263-obmc msvideo1 \
                roqvideo rv10 rv20 y41p qtrlegray
 VSYNTH3_OFF  = $(RESIZE_OFF) $(INC_PAR_OFF)
 
