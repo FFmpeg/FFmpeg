@@ -776,7 +776,7 @@ static int dss_sp_decode_frame(AVCodecContext *avctx, void *data,
 }
 
 AVCodec ff_dss_sp_decoder = {
-    .name           = "DSS SP",
+    .name           = "dss_sp",
     .long_name      = NULL_IF_CONFIG_SMALL("Digital Speech Standard - Standard Play mode (DSS SP)"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_DSS_SP,
