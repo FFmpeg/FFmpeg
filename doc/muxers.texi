@@ -1253,6 +1253,10 @@ Smallest time (in seconds) shifting buffer for which any Representation is
 guaranteed to be available. This will go in the @samp{timeShiftBufferDepth}
 attribute of the @samp{MPD} element. Default: 60.
 
+@item minimum_update_period
+Minimum update period (in seconds) of the manifest. This will go in the
+@samp{minimumUpdatePeriod} attribute of the @samp{MPD} element. Default: 0.
+
 @end table
 
 @subsection Example
