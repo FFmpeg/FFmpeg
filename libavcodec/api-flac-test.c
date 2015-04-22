@@ -40,8 +40,7 @@ static int generate_raw_frame(uint16_t *frame_data, int i, int sample_rate,
 {
     int j, k;
 
-    for (j = 0; j < frame_size; j++)
-    {
+    for (j = 0; j < frame_size; j++) {
         frame_data[channels * j] = 10000 * ((j / 10 * i) % 2);
         for (k = 1; k < channels; k++)
             frame_data[channels * j + k] = frame_data[channels * j] * (k + 1);
@@ -60,8 +59,7 @@ static int init_encoder(AVCodec *enc, AVCodecContext **enc_ctx,
     av_log(NULL, AV_LOG_INFO, "channel layout: %s, sample rate: %i\n", name_buff, sample_rate);
 
     ctx = avcodec_alloc_context3(enc);
-    if (!ctx)
-    {
+    if (!ctx) {
         av_log(NULL, AV_LOG_ERROR, "Can't allocate encoder context\n");
         return AVERROR(ENOMEM);
     }
@@ -71,8 +69,7 @@ static int init_encoder(AVCodec *enc, AVCodecContext **enc_ctx,
     ctx->channel_layout = ch_layout;
 
     result = avcodec_open2(ctx, enc, NULL);
-    if (result < 0)
-    {
+    if (result < 0) {
         av_log(ctx, AV_LOG_ERROR, "Can't open encoder\n");
         return result;
     }
@@ -88,8 +85,7 @@ static int init_decoder(AVCodec *dec, AVCodecContext **dec_ctx,
     int result;
 
     ctx = avcodec_alloc_context3(dec);
-    if (!ctx)
-    {
+    if (!ctx) {
         av_log(NULL, AV_LOG_ERROR , "Can't allocate decoder context\n");
         return AVERROR(ENOMEM);
     }
@@ -100,8 +96,7 @@ static int init_decoder(AVCodec *dec, AVCodecContext **dec_ctx,
     ctx->channel_layout = ch_layout;
 
     result = avcodec_open2(ctx, dec, NULL);
-    if (result < 0)
-    {
+    if (result < 0) {
         av_log(ctx, AV_LOG_ERROR, "Can't open decoder\n");
         return result;
     }
@@ -123,8 +118,7 @@ static int run_test(AVCodec *enc, AVCodec *dec, AVCodecContext *enc_ctx,
     int i = 0;
 
     in_frame = av_frame_alloc();
-    if (!in_frame)
-    {
+    if (!in_frame) {
         av_log(NULL, AV_LOG_ERROR, "Can't allocate input frame\n");
         return AVERROR(ENOMEM);
     }
@@ -132,35 +126,30 @@ static int run_test(AVCodec *enc, AVCodec *dec, AVCodecContext *enc_ctx,
     in_frame->nb_samples = enc_ctx->frame_size;
     in_frame->format = enc_ctx->sample_fmt;
     in_frame->channel_layout = enc_ctx->channel_layout;
-    if (av_frame_get_buffer(in_frame, 32) != 0)
-    {
+    if (av_frame_get_buffer(in_frame, 32) != 0) {
         av_log(NULL, AV_LOG_ERROR, "Can't allocate a buffer for input frame\n");
         return AVERROR(ENOMEM);
     }
 
     out_frame = av_frame_alloc();
-    if (!out_frame)
-    {
+    if (!out_frame) {
         av_log(NULL, AV_LOG_ERROR, "Can't allocate output frame\n");
         return AVERROR(ENOMEM);
     }
 
     raw_in = av_malloc(in_frame->linesize[0] * NUMBER_OF_FRAMES);
-    if (!raw_in)
-    {
+    if (!raw_in) {
         av_log(NULL, AV_LOG_ERROR, "Can't allocate memory for raw_in\n");
         return AVERROR(ENOMEM);
     }
 
     raw_out = av_malloc(in_frame->linesize[0] * NUMBER_OF_FRAMES);
-    if (!raw_out)
-    {
+    if (!raw_out) {
         av_log(NULL, AV_LOG_ERROR, "Can't allocate memory for raw_out\n");
         return AVERROR(ENOMEM);
     }
 
-    for (i = 0; i < NUMBER_OF_FRAMES; i++)
-    {
+    for (i = 0; i < NUMBER_OF_FRAMES; i++) {
         av_init_packet(&enc_pkt);
         enc_pkt.data = NULL;
         enc_pkt.size = 0;
@@ -170,44 +159,36 @@ static int run_test(AVCodec *enc, AVCodec *dec, AVCodecContext *enc_ctx,
         memcpy(raw_in + in_offset, in_frame->data[0], in_frame->linesize[0]);
         in_offset += in_frame->linesize[0];
         result = avcodec_encode_audio2(enc_ctx, &enc_pkt, in_frame, &got_output);
-        if (result < 0)
-        {
+        if (result < 0) {
             av_log(NULL, AV_LOG_ERROR, "Error encoding audio frame\n");
             return result;
         }
 
         /* if we get an encoded packet, feed it straight to the decoder */
-        if (got_output)
-        {
+        if (got_output) {
             result = avcodec_decode_audio4(dec_ctx, out_frame, &got_output, &enc_pkt);
-            if (result < 0)
-            {
+            if (result < 0) {
                 av_log(NULL, AV_LOG_ERROR, "Error decoding audio packet\n");
                 return result;
             }
 
-            if (got_output)
-            {
-                if (result != enc_pkt.size)
-                {
+            if (got_output) {
+                if (result != enc_pkt.size) {
                     av_log(NULL, AV_LOG_INFO, "Decoder consumed only part of a packet, it is allowed to do so -- need to update this test\n");
                     return AVERROR_UNKNOWN;
                 }
 
-                if (in_frame->nb_samples != out_frame->nb_samples)
-                {
+                if (in_frame->nb_samples != out_frame->nb_samples) {
                     av_log(NULL, AV_LOG_ERROR, "Error frames before and after decoding has different number of samples\n");
                     return AVERROR_UNKNOWN;
                 }
 
-                if (in_frame->channel_layout != out_frame->channel_layout)
-                {
+                if (in_frame->channel_layout != out_frame->channel_layout) {
                     av_log(NULL, AV_LOG_ERROR, "Error frames before and after decoding has different channel layout\n");
                     return AVERROR_UNKNOWN;
                 }
 
-                if (in_frame->format != out_frame->format)
-                {
+                if (in_frame->format != out_frame->format) {
                     av_log(NULL, AV_LOG_ERROR, "Error frames before and after decoding has different sample format\n");
                     return AVERROR_UNKNOWN;
                 }
@@ -218,8 +199,7 @@ static int run_test(AVCodec *enc, AVCodec *dec, AVCodecContext *enc_ctx,
         av_free_packet(&enc_pkt);
     }
 
-    if (memcmp(raw_in, raw_out, frame_data_size * NUMBER_OF_FRAMES) != 0)
-    {
+    if (memcmp(raw_in, raw_out, frame_data_size * NUMBER_OF_FRAMES) != 0) {
         av_log(NULL, AV_LOG_ERROR, "Output differs\n");
         return 1;
     }
@@ -258,23 +238,19 @@ int main(void)
     avcodec_register_all();
 
     enc = avcodec_find_encoder(AV_CODEC_ID_FLAC);
-    if (!enc)
-    {
+    if (!enc) {
         av_log(NULL, AV_LOG_ERROR, "Can't find encoder\n");
         return 1;
     }
 
     dec = avcodec_find_decoder(AV_CODEC_ID_FLAC);
-    if (!dec)
-    {
+    if (!dec) {
         av_log(NULL, AV_LOG_ERROR, "Can't find decoder\n");
         return 1;
     }
 
-    for (cl = 0; cl < FF_ARRAY_ELEMS(channel_layouts); cl++)
-    {
-        for (sr = 0; sr < FF_ARRAY_ELEMS(sample_rates); sr++)
-        {
+    for (cl = 0; cl < FF_ARRAY_ELEMS(channel_layouts); cl++) {
+        for (sr = 0; sr < FF_ARRAY_ELEMS(sample_rates); sr++) {
             if (init_encoder(enc, &enc_ctx, channel_layouts[cl], sample_rates[sr]) != 0)
                 return 1;
             if (init_decoder(dec, &dec_ctx, channel_layouts[cl]) != 0)
