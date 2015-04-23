@@ -3111,8 +3111,8 @@ static void decode_sb(AVCodecContext *ctx, int row, int col, struct VP9Filter *l
     VP9Context *s = ctx->priv_data;
     int c = ((s->above_partition_ctx[col] >> (3 - bl)) & 1) |
             (((s->left_partition_ctx[row & 0x7] >> (3 - bl)) & 1) << 1);
-    const uint8_t *p = s->keyframe ? vp9_default_kf_partition_probs[bl][c] :
-                                     s->prob.p.partition[bl][c];
+    const uint8_t *p = s->keyframe || s->intraonly ? vp9_default_kf_partition_probs[bl][c] :
+                                                     s->prob.p.partition[bl][c];
     enum BlockPartition bp;
     ptrdiff_t hbs = 4 >> bl;
     AVFrame *f = s->frames[CUR_FRAME].tf.f;
@@ -3791,7 +3791,7 @@ static int vp9_decode_frame(AVCodecContext *ctx, void *frame,
         return res;
     f = s->frames[CUR_FRAME].tf.f;
     f->key_frame = s->keyframe;
-    f->pict_type = s->keyframe ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
+    f->pict_type = (s->keyframe || s->intraonly) ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
     ls_y = f->linesize[0];
     ls_uv =f->linesize[1];
 
@@ -3801,7 +3801,7 @@ static int vp9_decode_frame(AVCodecContext *ctx, void *frame,
             ff_thread_release_buffer(ctx, &s->next_refs[i]);
         if (s->refreshrefmask & (1 << i)) {
             res = ff_thread_ref_frame(&s->next_refs[i], &s->frames[CUR_FRAME].tf);
-        } else {
+        } else if (s->refs[i].f->data[0]) {
             res = ff_thread_ref_frame(&s->next_refs[i], &s->refs[i]);
         }
         if (res < 0)
