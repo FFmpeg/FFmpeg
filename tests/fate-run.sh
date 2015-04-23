@@ -42,7 +42,7 @@ compare(){
 }
 
 do_tiny_psnr(){
-    psnr=$(tests/tiny_psnr "$1" "$2" $cmp_unit $cmp_shift 0)
+    psnr=$(tests/tiny_psnr "$1" "$2" $cmp_unit $cmp_shift 0) || return 1
     val=$(expr "$psnr" : ".*$3: *\([0-9.]*\)")
     size1=$(expr "$psnr" : '.*bytes: *\([0-9]*\)')
     size2=$(expr "$psnr" : '.*bytes:[ 0-9]*/ *\([0-9]*\)')
