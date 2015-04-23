@@ -1707,8 +1707,9 @@ copy_avg_fn(4)
 #undef fpel_fn
 #undef copy_avg_fn
 
-static const int8_t vp9_subpel_filters[3][15][8] = {
+static const int16_t vp9_subpel_filters[3][16][8] = {
     [FILTER_8TAP_REGULAR] = {
+        {  0,  0,   0, 128,   0,   0,  0,  0 },
         {  0,  1,  -5, 126,   8,  -3,  1,  0 },
         { -1,  3, -10, 122,  18,  -6,  2,  0 },
         { -1,  4, -13, 118,  27,  -9,  3, -1 },
@@ -1725,6 +1726,7 @@ static const int8_t vp9_subpel_filters[3][15][8] = {
         {  0,  2,  -6,  18, 122, -10,  3, -1 },
         {  0,  1,  -3,   8, 126,  -5,  1,  0 },
     }, [FILTER_8TAP_SHARP] = {
+        {  0,  0,   0, 128,   0,   0,  0,  0 },
         { -1,  3,  -7, 127,   8,  -3,  1,  0 },
         { -2,  5, -13, 125,  17,  -6,  3, -1 },
         { -3,  7, -17, 121,  27, -10,  5, -2 },
@@ -1741,6 +1743,7 @@ static const int8_t vp9_subpel_filters[3][15][8] = {
         { -1,  3,  -6,  17, 125, -13,  5, -2 },
         {  0,  1,  -3,   8, 127,  -7,  3, -1 },
     }, [FILTER_8TAP_SMOOTH] = {
+        {  0,  0,   0, 128,   0,   0,  0,  0 },
         { -3, -1,  32,  64,  38,   1, -3,  0 },
         { -2, -2,  29,  63,  41,   2, -3,  0 },
         { -2, -2,  26,  63,  43,   4, -4,  0 },
@@ -1772,7 +1775,7 @@ static const int8_t vp9_subpel_filters[3][15][8] = {
 static av_always_inline void do_8tap_1d_c(uint8_t *dst, ptrdiff_t dst_stride,
                                           const uint8_t *src, ptrdiff_t src_stride,
                                           int w, int h, ptrdiff_t ds,
-                                          const int8_t *filter, int avg)
+                                          const int16_t *filter, int avg)
 {
     do {
         int x;
@@ -1792,7 +1795,7 @@ static av_always_inline void do_8tap_1d_c(uint8_t *dst, ptrdiff_t dst_stride,
 #define filter_8tap_1d_fn(opn, opa, dir, ds) \
 static av_noinline void opn##_8tap_1d_##dir##_c(uint8_t *dst, ptrdiff_t dst_stride, \
                                                 const uint8_t *src, ptrdiff_t src_stride, \
-                                                int w, int h, const int8_t *filter) \
+                                                int w, int h, const int16_t *filter) \
 { \
     do_8tap_1d_c(dst, dst_stride, src, src_stride, w, h, ds, filter, opa); \
 }
@@ -1806,8 +1809,8 @@ filter_8tap_1d_fn(avg, 1, h, 1)
 
 static av_always_inline void do_8tap_2d_c(uint8_t *dst, ptrdiff_t dst_stride,
                                           const uint8_t *src, ptrdiff_t src_stride,
-                                          int w, int h, const int8_t *filterx,
-                                          const int8_t *filtery, int avg)
+                                          int w, int h, const int16_t *filterx,
+                                          const int16_t *filtery, int avg)
 {
     int tmp_h = h + 7;
     uint8_t tmp[64 * 71], *tmp_ptr = tmp;
@@ -1842,8 +1845,8 @@ static av_always_inline void do_8tap_2d_c(uint8_t *dst, ptrdiff_t dst_stride,
 #define filter_8tap_2d_fn(opn, opa) \
 static av_noinline void opn##_8tap_2d_hv_c(uint8_t *dst, ptrdiff_t dst_stride, \
                                            const uint8_t *src, ptrdiff_t src_stride, \
-                                           int w, int h, const int8_t *filterx, \
-                                           const int8_t *filtery) \
+                                           int w, int h, const int16_t *filterx, \
+                                           const int16_t *filtery) \
 { \
     do_8tap_2d_c(dst, dst_stride, src, src_stride, w, h, filterx, filtery, opa); \
 }
@@ -1853,15 +1856,13 @@ filter_8tap_2d_fn(avg, 1)
 
 #undef filter_8tap_2d_fn
 
-#undef FILTER_8TAP
-
 #define filter_fn_1d(sz, dir, dir_m, type, type_idx, avg) \
 static void avg##_8tap_##type##_##sz##dir##_c(uint8_t *dst, ptrdiff_t dst_stride, \
                                               const uint8_t *src, ptrdiff_t src_stride, \
                                               int h, int mx, int my) \
 { \
     avg##_8tap_1d_##dir##_c(dst, dst_stride, src, src_stride, sz, h, \
-                            vp9_subpel_filters[type_idx][dir_m - 1]); \
+                            vp9_subpel_filters[type_idx][dir_m]); \
 }
 
 #define filter_fn_2d(sz, type, type_idx, avg) \
@@ -1870,8 +1871,8 @@ static void avg##_8tap_##type##_##sz##hv_c(uint8_t *dst, ptrdiff_t dst_stride, \
                                            int h, int mx, int my) \
 { \
     avg##_8tap_2d_hv_c(dst, dst_stride, src, src_stride, sz, h, \
-                       vp9_subpel_filters[type_idx][mx - 1], \
-                       vp9_subpel_filters[type_idx][my - 1]); \
+                       vp9_subpel_filters[type_idx][mx], \
+                       vp9_subpel_filters[type_idx][my]); \
 }
 
 #define FILTER_BILIN(src, x, mxy, stride) \
@@ -1956,8 +1957,6 @@ bilin_2d_fn(put, 0)
 bilin_2d_fn(avg, 1)
 
 #undef bilin_2d_fn
-
-#undef FILTER_BILIN
 
 #define bilinf_fn_1d(sz, dir, dir_m, avg) \
 static void avg##_bilin_##sz##dir##_c(uint8_t *dst, ptrdiff_t dst_stride, \
@@ -2053,12 +2052,190 @@ static av_cold void vp9dsp_mc_init(VP9DSPContext *dsp)
 #undef init_subpel3
 }
 
+static av_always_inline void do_scaled_8tap_c(uint8_t *dst, ptrdiff_t dst_stride,
+                                              const uint8_t *src, ptrdiff_t src_stride,
+                                              int w, int h, int mx, int my,
+                                              int dx, int dy, int avg,
+                                              const int16_t (*filters)[8])
+{
+    int tmp_h = (((h - 1) * dy + my) >> 4) + 8;
+    uint8_t tmp[64 * 135], *tmp_ptr = tmp;
+
+    src -= src_stride * 3;
+    do {
+        int x;
+        int imx = mx, ioff = 0;
+
+        for (x = 0; x < w; x++) {
+            tmp_ptr[x] = FILTER_8TAP(src, ioff, filters[imx], 1);
+            imx += dx;
+            ioff += imx >> 4;
+            imx &= 0xf;
+        }
+
+        tmp_ptr += 64;
+        src += src_stride;
+    } while (--tmp_h);
+
+    tmp_ptr = tmp + 64 * 3;
+    do {
+        int x;
+        const int16_t *filter = filters[my];
+
+        for (x = 0; x < w; x++)
+            if (avg) {
+                dst[x] = (dst[x] + FILTER_8TAP(tmp_ptr, x, filter, 64) + 1) >> 1;
+            } else {
+                dst[x] = FILTER_8TAP(tmp_ptr, x, filter, 64);
+            }
+
+        my += dy;
+        tmp_ptr += (my >> 4) * 64;
+        my &= 0xf;
+        dst += dst_stride;
+    } while (--h);
+}
+
+#define scaled_filter_8tap_fn(opn, opa) \
+static av_noinline void opn##_scaled_8tap_c(uint8_t *dst, ptrdiff_t dst_stride, \
+                                            const uint8_t *src, ptrdiff_t src_stride, \
+                                            int w, int h, int mx, int my, int dx, int dy, \
+                                            const int16_t (*filters)[8]) \
+{ \
+    do_scaled_8tap_c(dst, dst_stride, src, src_stride, w, h, mx, my, dx, dy, \
+                     opa, filters); \
+}
+
+scaled_filter_8tap_fn(put, 0)
+scaled_filter_8tap_fn(avg, 1)
+
+#undef scaled_filter_8tap_fn
+
+#undef FILTER_8TAP
+
+#define scaled_filter_fn(sz, type, type_idx, avg) \
+static void avg##_scaled_##type##_##sz##_c(uint8_t *dst, ptrdiff_t dst_stride, \
+                                           const uint8_t *src, ptrdiff_t src_stride, \
+                                           int h, int mx, int my, int dx, int dy) \
+{ \
+    avg##_scaled_8tap_c(dst, dst_stride, src, src_stride, sz, h, mx, my, dx, dy, \
+                        vp9_subpel_filters[type_idx]); \
+}
+
+static av_always_inline void do_scaled_bilin_c(uint8_t *dst, ptrdiff_t dst_stride,
+                                               const uint8_t *src, ptrdiff_t src_stride,
+                                               int w, int h, int mx, int my,
+                                               int dx, int dy, int avg)
+{
+    uint8_t tmp[64 * 129], *tmp_ptr = tmp;
+    int tmp_h = (((h - 1) * dy + my) >> 4) + 2;
+
+    do {
+        int x;
+        int imx = mx, ioff = 0;
+
+        for (x = 0; x < w; x++) {
+            tmp_ptr[x] = FILTER_BILIN(src, ioff, imx, 1);
+            imx += dx;
+            ioff += imx >> 4;
+            imx &= 0xf;
+        }
+
+        tmp_ptr += 64;
+        src += src_stride;
+    } while (--tmp_h);
+
+    tmp_ptr = tmp;
+    do {
+        int x;
+
+        for (x = 0; x < w; x++)
+            if (avg) {
+                dst[x] = (dst[x] + FILTER_BILIN(tmp_ptr, x, my, 64) + 1) >> 1;
+            } else {
+                dst[x] = FILTER_BILIN(tmp_ptr, x, my, 64);
+            }
+
+        my += dy;
+        tmp_ptr += (my >> 4) * 64;
+        my &= 0xf;
+        dst += dst_stride;
+    } while (--h);
+}
+
+#define scaled_bilin_fn(opn, opa) \
+static av_noinline void opn##_scaled_bilin_c(uint8_t *dst, ptrdiff_t dst_stride, \
+                                             const uint8_t *src, ptrdiff_t src_stride, \
+                                             int w, int h, int mx, int my, int dx, int dy) \
+{ \
+    do_scaled_bilin_c(dst, dst_stride, src, src_stride, w, h, mx, my, dx, dy, opa); \
+}
+
+scaled_bilin_fn(put, 0)
+scaled_bilin_fn(avg, 1)
+
+#undef scaled_bilin_fn
+
+#undef FILTER_BILIN
+
+#define scaled_bilinf_fn(sz, avg) \
+static void avg##_scaled_bilin_##sz##_c(uint8_t *dst, ptrdiff_t dst_stride, \
+                                        const uint8_t *src, ptrdiff_t src_stride, \
+                                        int h, int mx, int my, int dx, int dy) \
+{ \
+    avg##_scaled_bilin_c(dst, dst_stride, src, src_stride, sz, h, mx, my, dx, dy); \
+}
+
+#define scaled_filter_fns(sz, avg) \
+scaled_filter_fn(sz,        regular, FILTER_8TAP_REGULAR, avg) \
+scaled_filter_fn(sz,        smooth,  FILTER_8TAP_SMOOTH,  avg) \
+scaled_filter_fn(sz,        sharp,   FILTER_8TAP_SHARP,   avg) \
+scaled_bilinf_fn(sz,                                      avg)
+
+#define scaled_filter_fn_set(avg) \
+scaled_filter_fns(64, avg) \
+scaled_filter_fns(32, avg) \
+scaled_filter_fns(16, avg) \
+scaled_filter_fns(8,  avg) \
+scaled_filter_fns(4,  avg)
+
+scaled_filter_fn_set(put)
+scaled_filter_fn_set(avg)
+
+#undef scaled_filter_fns
+#undef scaled_filter_fn_set
+#undef scaled_filter_fn
+#undef scaled_bilinf_fn
+
+static av_cold void vp9dsp_scaled_mc_init(VP9DSPContext *dsp)
+{
+#define init_scaled(idx1, idx2, sz, type) \
+    dsp->smc[idx1][FILTER_8TAP_SMOOTH ][idx2] = type##_scaled_smooth_##sz##_c; \
+    dsp->smc[idx1][FILTER_8TAP_REGULAR][idx2] = type##_scaled_regular_##sz##_c; \
+    dsp->smc[idx1][FILTER_8TAP_SHARP  ][idx2] = type##_scaled_sharp_##sz##_c; \
+    dsp->smc[idx1][FILTER_BILINEAR    ][idx2] = type##_scaled_bilin_##sz##_c
+
+#define init_scaled_put_avg(idx, sz) \
+    init_scaled(idx, 0, sz, put); \
+    init_scaled(idx, 1, sz, avg)
+
+    init_scaled_put_avg(0, 64);
+    init_scaled_put_avg(1, 32);
+    init_scaled_put_avg(2, 16);
+    init_scaled_put_avg(3,  8);
+    init_scaled_put_avg(4,  4);
+
+#undef init_scaled_put_avg
+#undef init_scaled
+}
+
 av_cold void ff_vp9dsp_init(VP9DSPContext *dsp)
 {
     vp9dsp_intrapred_init(dsp);
     vp9dsp_itxfm_init(dsp);
     vp9dsp_loopfilter_init(dsp);
     vp9dsp_mc_init(dsp);
+    vp9dsp_scaled_mc_init(dsp);
 
     if (ARCH_X86) ff_vp9dsp_init_x86(dsp);
 }

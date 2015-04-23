@@ -350,6 +350,30 @@ If set to @option{true}, before capture starts, popup a display
 dialog to the end user, allowing them to manually
 modify TV audio (like mono vs. stereo, Language A,B or C).
 
+@item audio_device_load
+Load an audio capture filter device from file instead of searching
+it by name. It may load additional parameters too, if the filter
+supports the serialization of its properties to.
+To use this an audio capture source has to be specified, but it can
+be anything even fake one.
+
+@item audio_device_save
+Save the currently used audio capture filter device and its
+parameters (if the filter supports it) to a file.
+If a file with the same name exists it will be overwritten.
+
+@item video_device_load
+Load a video capture filter device from file instead of searching
+it by name. It may load additional parameters too, if the filter
+supports the serialization of its properties to.
+To use this a video capture source has to be specified, but it can
+be anything even fake one.
+
+@item video_device_save
+Save the currently used video capture filter device and its
+parameters (if the filter supports it) to a file.
+If a file with the same name exists it will be overwritten.
+
 @end table
 
 @subsection Examples

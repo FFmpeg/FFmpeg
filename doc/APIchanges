@@ -15,6 +15,10 @@ libavutil:     2014-08-09
 
 API changes, most recent first:
 
+2015-xx-xx - xxxxxxx - lavf 56.xx.xxx - avformat.h
+  Add AVFMT_FLAG_FAST_SEEK flag. Some formats (initially mp3) use it to enable
+  fast, but inaccurate seeking.
+
 2015-xx-xx - xxxxxxx - lavu 54.12.0
   Add AV_LOG_TRACE for extremely verbose debugging.
 
