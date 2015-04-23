@@ -316,6 +316,11 @@ static int decode_element(AVCodecContext *avctx, AVFrame *frame, int ch_index,
         int lpc_quant[2];
         int rice_history_mult[2];
 
+        if (!alac->rice_limit) {
+            avpriv_request_sample(alac->avctx, "Compression with rice limit 0");
+            return AVERROR(ENOSYS);
+        }
+
         decorr_shift       = get_bits(&alac->gb, 8);
         decorr_left_weight = get_bits(&alac->gb, 8);
 
