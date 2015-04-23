@@ -1352,8 +1352,8 @@ static void decode_mode(AVCodecContext *ctx)
     VP9Block *b = s->b;
     int row = s->row, col = s->col, row7 = s->row7;
     enum TxfmMode max_tx = max_tx_for_bl_bp[b->bs];
-    int w4 = FFMIN(s->cols - col, bwh_tab[1][b->bs][0]);
-    int h4 = FFMIN(s->rows - row, bwh_tab[1][b->bs][1]), y;
+    int bw4 = bwh_tab[1][b->bs][0], w4 = FFMIN(s->cols - col, bw4);
+    int bh4 = bwh_tab[1][b->bs][1], h4 = FFMIN(s->rows - row, bh4), y;
     int have_a = row > 0, have_l = col > s->tiling.tile_col_start;
     int vref, filter_id;
 
@@ -1395,7 +1395,7 @@ static void decode_mode(AVCodecContext *ctx)
     if (s->segmentation.enabled &&
         (s->segmentation.update_map || s->keyframe || s->intraonly)) {
         setctx_2d(&s->frames[CUR_FRAME].segmentation_map[row * 8 * s->sb_cols + col],
-                  w4, h4, 8 * s->sb_cols, b->seg_id);
+                  bw4, bh4, 8 * s->sb_cols, b->seg_id);
     }
 
     b->skip = s->segmentation.enabled &&
