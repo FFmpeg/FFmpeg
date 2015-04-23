@@ -490,7 +490,7 @@ static int convert_timestamp(AVFormatContext *ctx, int64_t *ts)
     return 0;
 }
 
-static int mmap_read_frame(AVFormatContext *ctx, AVPacket *pkt)
+static int mmap_read_frame(AVFormatContext *ctx, AVPacket *pkt, int retry)
 {
     struct video_data *s = ctx->priv_data;
     struct v4l2_buffer buf = {
@@ -527,11 +527,14 @@ static int mmap_read_frame(AVFormatContext *ctx, AVPacket *pkt)
         s->frame_size = buf.bytesused;
 
     if (s->frame_size > 0 && buf.bytesused != s->frame_size) {
-        av_log(ctx, AV_LOG_ERROR,
-               "The v4l2 frame is %d bytes, but %d bytes are expected\n",
-               buf.bytesused, s->frame_size);
         enqueue_buffer(s, &buf);
-        return AVERROR_INVALIDDATA;
+        if(retry > 3) {
+            av_log(ctx, AV_LOG_ERROR,
+                   "The v4l2 frame is %d bytes, but %d bytes are expected\n",
+                   buf.bytesused, s->frame_size);
+            return AVERROR_INVALIDDATA;
+        }
+        return mmap_read_frame(ctx, pkt, retry+1);
     }
 
     /* Image is at s->buff_start[buf.index] */
@@ -981,7 +984,7 @@ static int v4l2_read_packet(AVFormatContext *ctx, AVPacket *pkt)
     int res;
 
     av_init_packet(pkt);
-    if ((res = mmap_read_frame(ctx, pkt)) < 0) {
+    if ((res = mmap_read_frame(ctx, pkt, 0)) < 0) {
         return res;
     }
 
