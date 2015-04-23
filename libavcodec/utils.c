@@ -1709,9 +1709,11 @@ free_and_end:
         (avctx->codec->caps_internal & FF_CODEC_CAP_INIT_CLEANUP))
         avctx->codec->close(avctx);
 
-    av_dict_free(&tmp);
     if (codec->priv_class && codec->priv_data_size)
         av_opt_free(avctx->priv_data);
+    av_opt_free(avctx);
+
+    av_dict_free(&tmp);
     av_freep(&avctx->priv_data);
     if (avctx->internal) {
         av_frame_free(&avctx->internal->to_free);
