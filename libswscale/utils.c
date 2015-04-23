@@ -1256,6 +1256,7 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
 
 
     if (!unscaled && c->gamma_flag && (srcFormat != tmpFmt || dstFormat != tmpFmt)) {
+        SwsContext *c2;
         c->cascaded_context[0] = NULL;
 
         ret = av_image_alloc(c->cascaded_tmp, c->cascaded_tmpStride,
@@ -1272,10 +1273,17 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
 
         c->cascaded_context[1] = sws_getContext(srcW, srcH, tmpFmt,
                                                 dstW, dstH, tmpFmt,
-                                                flags | SWS_GAMMA_CORRECT, srcFilter, dstFilter, c->param);
+                                                flags, srcFilter, dstFilter, c->param);
 
         if (!c->cascaded_context[1])
             return -1;
+
+        c2 = c->cascaded_context[1];
+        c2->is_internal_gamma = 1;
+        c2->gamma     = alloc_gamma_tbl(    c->gamma_value);
+        c2->inv_gamma = alloc_gamma_tbl(1.f/c->gamma_value);
+        if (!c2->gamma || !c2->inv_gamma)
+            return AVERROR(ENOMEM);
 
         c->cascaded_context[2] = NULL;
         if (dstFormat != tmpFmt) {
@@ -1291,18 +1299,6 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
                 return -1;
         }
         return 0;
-    }
-
-    c->gamma = NULL;
-    c->inv_gamma = NULL;
-    if (c->flags & SWS_GAMMA_CORRECT) {
-        c->gamma = alloc_gamma_tbl(c->gamma_value);
-        if (!c->gamma)
-            return AVERROR(ENOMEM);
-        c->inv_gamma = alloc_gamma_tbl(1.f/c->gamma_value);
-        if (!c->inv_gamma) {
-            return AVERROR(ENOMEM);
-        }
     }
 
     if (isBayer(srcFormat)) {

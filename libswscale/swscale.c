@@ -369,7 +369,7 @@ static int swscale(SwsContext *c, const uint8_t *src[],
     int chrBufIndex  = c->chrBufIndex;
     int lastInLumBuf = c->lastInLumBuf;
     int lastInChrBuf = c->lastInChrBuf;
-    int perform_gamma = c->flags & SWS_GAMMA_CORRECT;
+    int perform_gamma = c->is_internal_gamma;
 
 
     if (!usePal(c->srcFormat)) {

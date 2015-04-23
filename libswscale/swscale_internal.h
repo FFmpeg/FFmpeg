@@ -315,6 +315,7 @@ typedef struct SwsContext {
 
     double gamma_value;
     int gamma_flag;
+    int is_internal_gamma;
     uint16_t *gamma;
     uint16_t *inv_gamma;
 
