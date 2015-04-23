@@ -22,6 +22,7 @@
 
 #include "mpegutils.h"
 #include "vaapi_internal.h"
+#include "internal.h"
 
 /** Reconstruct bitstream f_code */
 static inline int mpeg2_get_f_code(MpegEncContext *s)

@@ -21,6 +21,7 @@
  */
 
 #include "vaapi_internal.h"
+#include "internal.h"
 #include "h263.h"
 #include "mpeg4video.h"
 
