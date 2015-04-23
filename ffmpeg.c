@@ -353,7 +353,6 @@ void term_init(void)
         signal(SIGQUIT, sigterm_handler); /* Quit (POSIX).  */
     }
 #endif
-    avformat_network_deinit();
 
     signal(SIGINT , sigterm_handler); /* Interrupt (ANSI).    */
     signal(SIGTERM, sigterm_handler); /* Termination (ANSI).  */
