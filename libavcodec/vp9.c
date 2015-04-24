@@ -2337,12 +2337,12 @@ static void decode_coeffs(AVCodecContext *ctx)
         break;
     }
 
-#define DECODE_UV_COEF_LOOP(step) \
+#define DECODE_UV_COEF_LOOP(step, decode_coeffs_fn) \
     for (n = 0, y = 0; y < end_y; y += step) { \
         for (x = 0; x < end_x; x += step, n += step * step) { \
-            res = decode_coeffs_b(&s->c, s->uvblock[pl] + 16 * n, \
-                                  16 * step * step, c, e, p, a[x] + l[y], \
-                                  uvscan, uvnb, uv_band_counts, qmul[1]); \
+            res = decode_coeffs_fn(&s->c, s->uvblock[pl] + 16 * n, \
+                                   16 * step * step, c, e, p, a[x] + l[y], \
+                                   uvscan, uvnb, uv_band_counts, qmul[1]); \
             a[x] = l[y] = !!res; \
             if (step >= 4) { \
                 AV_WN16A(&s->uveob[pl][n], res); \
@@ -2355,36 +2355,30 @@ static void decode_coeffs(AVCodecContext *ctx)
     p = s->prob.coef[b->uvtx][1 /* uv */][!b->intra];
     c = s->counts.coef[b->uvtx][1 /* uv */][!b->intra];
     e = s->counts.eob[b->uvtx][1 /* uv */][!b->intra];
-    w4 >>= 1;
-    h4 >>= 1;
-    end_x >>= 1;
-    end_y >>= 1;
+    w4 >>= s->ss_h;
+    end_x >>= s->ss_h;
+    h4 >>= s->ss_v;
+    end_y >>= s->ss_v;
     for (pl = 0; pl < 2; pl++) {
-        a = &s->above_uv_nnz_ctx[pl][col];
-        l = &s->left_uv_nnz_ctx[pl][row & 7];
+        a = &s->above_uv_nnz_ctx[pl][col << !s->ss_h];
+        l = &s->left_uv_nnz_ctx[pl][(row & 7) << !s->ss_v];
         switch (b->uvtx) {
         case TX_4X4:
-            DECODE_UV_COEF_LOOP(1);
+            DECODE_UV_COEF_LOOP(1, decode_coeffs_b);
             break;
         case TX_8X8:
             MERGE_CTX(2, AV_RN16A);
-            DECODE_UV_COEF_LOOP(2);
+            DECODE_UV_COEF_LOOP(2, decode_coeffs_b);
             SPLAT_CTX(2);
             break;
         case TX_16X16:
             MERGE_CTX(4, AV_RN32A);
-            DECODE_UV_COEF_LOOP(4);
+            DECODE_UV_COEF_LOOP(4, decode_coeffs_b);
             SPLAT_CTX(4);
             break;
         case TX_32X32:
             MERGE_CTX(8, AV_RN64A);
-            // a 64x64 (max) uv block can ever only contain 1 tx32x32 block
-            // so there is no need to loop
-            res = decode_coeffs_b32(&s->c, s->uvblock[pl],
-                                    1024, c, e, p, a[0] + l[0],
-                                    uvscan, uvnb, uv_band_counts, qmul[1]);
-            a[0] = l[0] = !!res;
-            AV_WN16A(&s->uveob[pl][0], res);
+            DECODE_UV_COEF_LOOP(8, decode_coeffs_b32);
             SPLAT_CTX(8);
             break;
         }
@@ -3031,34 +3025,39 @@ static void decode_b(AVCodecContext *ctx, int row, int col,
     case 8:  AV_ZERO64(&v);  break; \
     case 16: AV_ZERO128(&v); break; \
     }
-#define SPLAT_ZERO_YUV(dir, var, off, n) \
+#define SPLAT_ZERO_YUV(dir, var, off, n, dir2) \
     do { \
         SPLAT_ZERO_CTX(s->dir##_y_##var[off * 2], n * 2); \
-        SPLAT_ZERO_CTX(s->dir##_uv_##var[0][off], n); \
-        SPLAT_ZERO_CTX(s->dir##_uv_##var[1][off], n); \
+        if (s->ss_##dir2) { \
+            SPLAT_ZERO_CTX(s->dir##_uv_##var[0][off], n); \
+            SPLAT_ZERO_CTX(s->dir##_uv_##var[1][off], n); \
+        } else { \
+            SPLAT_ZERO_CTX(s->dir##_uv_##var[0][off * 2], n * 2); \
+            SPLAT_ZERO_CTX(s->dir##_uv_##var[1][off * 2], n * 2); \
+        } \
     } while (0)
 
             switch (w4) {
-            case 1: SPLAT_ZERO_YUV(above, nnz_ctx, col, 1); break;
-            case 2: SPLAT_ZERO_YUV(above, nnz_ctx, col, 2); break;
-            case 4: SPLAT_ZERO_YUV(above, nnz_ctx, col, 4); break;
-            case 8: SPLAT_ZERO_YUV(above, nnz_ctx, col, 8); break;
+            case 1: SPLAT_ZERO_YUV(above, nnz_ctx, col, 1, h); break;
+            case 2: SPLAT_ZERO_YUV(above, nnz_ctx, col, 2, h); break;
+            case 4: SPLAT_ZERO_YUV(above, nnz_ctx, col, 4, h); break;
+            case 8: SPLAT_ZERO_YUV(above, nnz_ctx, col, 8, h); break;
             }
             switch (h4) {
-            case 1: SPLAT_ZERO_YUV(left, nnz_ctx, row7, 1); break;
-            case 2: SPLAT_ZERO_YUV(left, nnz_ctx, row7, 2); break;
-            case 4: SPLAT_ZERO_YUV(left, nnz_ctx, row7, 4); break;
-            case 8: SPLAT_ZERO_YUV(left, nnz_ctx, row7, 8); break;
+            case 1: SPLAT_ZERO_YUV(left, nnz_ctx, row7, 1, v); break;
+            case 2: SPLAT_ZERO_YUV(left, nnz_ctx, row7, 2, v); break;
+            case 4: SPLAT_ZERO_YUV(left, nnz_ctx, row7, 4, v); break;
+            case 8: SPLAT_ZERO_YUV(left, nnz_ctx, row7, 8, v); break;
             }
         }
         if (s->pass == 1) {
             s->b++;
             s->block += w4 * h4 * 64;
-            s->uvblock[0] += w4 * h4 * 16;
-            s->uvblock[1] += w4 * h4 * 16;
+            s->uvblock[0] += w4 * h4 * 64 >> (s->ss_h + s->ss_v);
+            s->uvblock[1] += w4 * h4 * 64 >> (s->ss_h + s->ss_v);
             s->eob += 4 * w4 * h4;
-            s->uveob[0] += w4 * h4;
-            s->uveob[1] += w4 * h4;
+            s->uveob[0] += 4 * w4 * h4 >> (s->ss_h + s->ss_v);
+            s->uveob[1] += 4 * w4 * h4 >> (s->ss_h + s->ss_v);
 
             return;
         }
@@ -3155,11 +3154,11 @@ static void decode_b(AVCodecContext *ctx, int row, int col,
     if (s->pass == 2) {
         s->b++;
         s->block += w4 * h4 * 64;
-        s->uvblock[0] += w4 * h4 * 16;
-        s->uvblock[1] += w4 * h4 * 16;
+        s->uvblock[0] += w4 * h4 * 64 >> (s->ss_v + s->ss_h);
+        s->uvblock[1] += w4 * h4 * 64 >> (s->ss_v + s->ss_h);
         s->eob += 4 * w4 * h4;
-        s->uveob[0] += w4 * h4;
-        s->uveob[1] += w4 * h4;
+        s->uveob[0] += 4 * w4 * h4 >> (s->ss_v + s->ss_h);
+        s->uveob[1] += 4 * w4 * h4 >> (s->ss_v + s->ss_h);
     }
 }
 
