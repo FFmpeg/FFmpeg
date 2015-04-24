@@ -112,8 +112,7 @@ typedef struct VP9Context {
     uint8_t invisible;
     uint8_t use_last_frame_mvs;
     uint8_t errorres;
-    uint8_t colorspace;
-    uint8_t fullrange;
+    uint8_t ss_h, ss_v;
     uint8_t intraonly;
     uint8_t resetctx;
     uint8_t refreshrefmask;
@@ -463,11 +462,56 @@ static int update_prob(VP56RangeCoder *c, int p)
                     255 - inv_recenter_nonneg(inv_map_table[d], 255 - p);
 }
 
+static enum AVPixelFormat read_colorspace_details(AVCodecContext *ctx)
+{
+    static const enum AVColorSpace colorspaces[8] = {
+        AVCOL_SPC_UNSPECIFIED, AVCOL_SPC_BT470BG, AVCOL_SPC_BT709, AVCOL_SPC_SMPTE170M,
+        AVCOL_SPC_SMPTE240M, AVCOL_SPC_BT2020_NCL, AVCOL_SPC_RESERVED, AVCOL_SPC_RGB,
+    };
+    VP9Context *s = ctx->priv_data;
+    enum AVPixelFormat res;
+
+    ctx->colorspace = colorspaces[get_bits(&s->gb, 3)];
+    if (ctx->colorspace == AVCOL_SPC_RGB) { // RGB = profile 1
+        if (s->profile == 1) {
+            s->ss_h = s->ss_v = 1;
+            res = AV_PIX_FMT_GBRP;
+            ctx->color_range = AVCOL_RANGE_JPEG;
+        } else {
+            av_log(ctx, AV_LOG_ERROR, "RGB not supported in profile 0\n");
+            return AVERROR_INVALIDDATA;
+        }
+    } else {
+        static const enum AVPixelFormat pix_fmt_for_ss[2 /* v */][2 /* h */] = {
+            { AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUV422P },
+            { AV_PIX_FMT_YUV440P, AV_PIX_FMT_YUV420P },
+        };
+        ctx->color_range = get_bits1(&s->gb) ? AVCOL_RANGE_JPEG : AVCOL_RANGE_MPEG;
+        if (s->profile == 1) {
+            s->ss_h = get_bits1(&s->gb);
+            s->ss_v = get_bits1(&s->gb);
+            if ((res = pix_fmt_for_ss[s->ss_v][s->ss_h]) == AV_PIX_FMT_YUV420P) {
+                av_log(ctx, AV_LOG_ERROR, "YUV 4:2:0 not supported in profile 1\n");
+                return AVERROR_INVALIDDATA;
+            } else if (get_bits1(&s->gb)) {
+                av_log(ctx, AV_LOG_ERROR, "Profile 1 color details reserved bit set\n");
+                return AVERROR_INVALIDDATA;
+            }
+        } else {
+            s->ss_h = s->ss_v = 1;
+            res = AV_PIX_FMT_YUV420P;
+        }
+    }
+
+    return res;
+}
+
 static int decode_frame_header(AVCodecContext *ctx,
                                const uint8_t *data, int size, int *ref)
 {
     VP9Context *s = ctx->priv_data;
     int c, i, j, k, l, m, n, w, h, max, size2, res, sharp;
+    enum AVPixelFormat fmt = ctx->pix_fmt;
     int last_invisible;
     const uint8_t *data2;
 
@@ -481,8 +525,9 @@ static int decode_frame_header(AVCodecContext *ctx,
         return AVERROR_INVALIDDATA;
     }
     s->profile = get_bits1(&s->gb);
-    if (get_bits1(&s->gb)) { // reserved bit
-        av_log(ctx, AV_LOG_ERROR, "Reserved bit should be zero\n");
+    s->profile |= get_bits1(&s->gb) << 1;
+    if (s->profile > 1) {
+        av_log(ctx, AV_LOG_ERROR, "Profile %d is not yet supported\n", s->profile);
         return AVERROR_INVALIDDATA;
     }
     if (get_bits1(&s->gb)) {
@@ -500,12 +545,8 @@ static int decode_frame_header(AVCodecContext *ctx,
             av_log(ctx, AV_LOG_ERROR, "Invalid sync code\n");
             return AVERROR_INVALIDDATA;
         }
-        s->colorspace = get_bits(&s->gb, 3);
-        if (s->colorspace == 7) { // RGB = profile 1
-            av_log(ctx, AV_LOG_ERROR, "RGB not supported in profile 0\n");
-            return AVERROR_INVALIDDATA;
-        }
-        s->fullrange  = get_bits1(&s->gb);
+        if ((fmt = read_colorspace_details(ctx)) < 0)
+            return fmt;
         // for profile 1, here follows the subsampling bits
         s->refreshrefmask = 0xff;
         w = get_bits(&s->gb, 16) + 1;
@@ -519,6 +560,15 @@ static int decode_frame_header(AVCodecContext *ctx,
             if (get_bits_long(&s->gb, 24) != VP9_SYNCCODE) { // synccode
                 av_log(ctx, AV_LOG_ERROR, "Invalid sync code\n");
                 return AVERROR_INVALIDDATA;
+            }
+            if (s->profile == 1) {
+                if ((fmt = read_colorspace_details(ctx)) < 0)
+                    return fmt;
+            } else {
+                s->ss_h = s->ss_v = 1;
+                fmt = AV_PIX_FMT_YUV420P;
+                ctx->colorspace = AVCOL_SPC_BT470BG;
+                ctx->color_range = AVCOL_RANGE_JPEG;
             }
             s->refreshrefmask = get_bits(&s->gb, 8);
             w = get_bits(&s->gb, 16) + 1;
@@ -3815,18 +3865,6 @@ static int vp9_decode_frame(AVCodecContext *ctx, void *frame,
             return res;
     }
 
-    if (s->fullrange)
-        ctx->color_range = AVCOL_RANGE_JPEG;
-    else
-        ctx->color_range = AVCOL_RANGE_MPEG;
-
-    switch (s->colorspace) {
-    case 1: ctx->colorspace = AVCOL_SPC_BT470BG; break;
-    case 2: ctx->colorspace = AVCOL_SPC_BT709; break;
-    case 3: ctx->colorspace = AVCOL_SPC_SMPTE170M; break;
-    case 4: ctx->colorspace = AVCOL_SPC_SMPTE240M; break;
-    }
-
     // main tile decode loop
     memset(s->above_partition_ctx, 0, s->cols);
     memset(s->above_skip_ctx, 0, s->cols);
@@ -3836,8 +3874,8 @@ static int vp9_decode_frame(AVCodecContext *ctx, void *frame,
         memset(s->above_mode_ctx, NEARESTMV, s->cols);
     }
     memset(s->above_y_nnz_ctx, 0, s->sb_cols * 16);
-    memset(s->above_uv_nnz_ctx[0], 0, s->sb_cols * 8);
-    memset(s->above_uv_nnz_ctx[1], 0, s->sb_cols * 8);
+    memset(s->above_uv_nnz_ctx[0], 0, s->sb_cols * 16 >> s->ss_h);
+    memset(s->above_uv_nnz_ctx[1], 0, s->sb_cols * 16 >> s->ss_h);
     memset(s->above_segpred_ctx, 0, s->cols);
     s->pass = s->frames[CUR_FRAME].uses_2pass =
         ctx->active_thread_type == FF_THREAD_FRAME && s->refreshctx && !s->parallelmode;
@@ -4094,6 +4132,8 @@ static int vp9_decode_update_thread_context(AVCodecContext *dst, const AVCodecCo
 
     s->invisible = ssrc->invisible;
     s->keyframe = ssrc->keyframe;
+    s->ss_v = ssrc->ss_v;
+    s->ss_h = ssrc->ss_h;
     s->segmentation.enabled = ssrc->segmentation.enabled;
     s->segmentation.update_map = ssrc->segmentation.update_map;
     memcpy(&s->prob_ctx, &ssrc->prob_ctx, sizeof(s->prob_ctx));
