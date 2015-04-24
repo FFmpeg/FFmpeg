@@ -147,6 +147,7 @@ static void mp3_parse_info_tag(AVFormatContext *s, AVStream *st,
     MP3DecContext *mp3 = s->priv_data;
     static const int64_t xing_offtbl[2][2] = {{32, 17}, {17,9}};
     uint64_t fsize = avio_size(s->pb);
+    fsize = fsize >= avio_tell(s->pb) ? fsize - avio_tell(s->pb) : 0;
 
     /* Check for Xing / Info tag */
     avio_skip(s->pb, xing_offtbl[c->lsf == 1][c->nb_channels == 1]);
@@ -166,6 +167,8 @@ static void mp3_parse_info_tag(AVFormatContext *s, AVStream *st,
         delta = FFMAX(fsize, mp3->header_filesize) - min;
         if (fsize > mp3->header_filesize && delta > min >> 4) {
             mp3->frames = 0;
+            av_log(s, AV_LOG_WARNING,
+                   "invalid concatenated file detected - using bitrate for duration\n");
         } else if (delta > min >> 4) {
             av_log(s, AV_LOG_WARNING,
                    "filesize and duration do not match (growing file?)\n");
