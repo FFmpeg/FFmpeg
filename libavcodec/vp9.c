@@ -3188,24 +3188,24 @@ static void decode_sb(AVCodecContext *ctx, int row, int col, struct VP9Filter *l
             case PARTITION_H:
                 decode_b(ctx, row, col, lflvl, yoff, uvoff, bl, bp);
                 yoff  += hbs * 8 * y_stride;
-                uvoff += hbs * 4 * uv_stride;
+                uvoff += hbs * 8 * uv_stride >> s->ss_v;
                 decode_b(ctx, row + hbs, col, lflvl, yoff, uvoff, bl, bp);
                 break;
             case PARTITION_V:
                 decode_b(ctx, row, col, lflvl, yoff, uvoff, bl, bp);
                 yoff  += hbs * 8;
-                uvoff += hbs * 4;
+                uvoff += hbs * 8 >> s->ss_h;
                 decode_b(ctx, row, col + hbs, lflvl, yoff, uvoff, bl, bp);
                 break;
             case PARTITION_SPLIT:
                 decode_sb(ctx, row, col, lflvl, yoff, uvoff, bl + 1);
                 decode_sb(ctx, row, col + hbs, lflvl,
-                          yoff + 8 * hbs, uvoff + 4 * hbs, bl + 1);
+                          yoff + 8 * hbs, uvoff + (8 * hbs >> s->ss_h), bl + 1);
                 yoff  += hbs * 8 * y_stride;
-                uvoff += hbs * 4 * uv_stride;
+                uvoff += hbs * 8 * uv_stride >> s->ss_v;
                 decode_sb(ctx, row + hbs, col, lflvl, yoff, uvoff, bl + 1);
                 decode_sb(ctx, row + hbs, col + hbs, lflvl,
-                          yoff + 8 * hbs, uvoff + 4 * hbs, bl + 1);
+                          yoff + 8 * hbs, uvoff + (8 * hbs >> s->ss_h), bl + 1);
                 break;
             default:
                 av_assert0(0);
@@ -3214,7 +3214,7 @@ static void decode_sb(AVCodecContext *ctx, int row, int col, struct VP9Filter *l
             bp = PARTITION_SPLIT;
             decode_sb(ctx, row, col, lflvl, yoff, uvoff, bl + 1);
             decode_sb(ctx, row, col + hbs, lflvl,
-                      yoff + 8 * hbs, uvoff + 4 * hbs, bl + 1);
+                      yoff + 8 * hbs, uvoff + (8 * hbs >> s->ss_h), bl + 1);
         } else {
             bp = PARTITION_H;
             decode_b(ctx, row, col, lflvl, yoff, uvoff, bl, bp);
@@ -3224,7 +3224,7 @@ static void decode_sb(AVCodecContext *ctx, int row, int col, struct VP9Filter *l
             bp = PARTITION_SPLIT;
             decode_sb(ctx, row, col, lflvl, yoff, uvoff, bl + 1);
             yoff  += hbs * 8 * y_stride;
-            uvoff += hbs * 4 * uv_stride;
+            uvoff += hbs * 8 * uv_stride >> s->ss_v;
             decode_sb(ctx, row + hbs, col, lflvl, yoff, uvoff, bl + 1);
         } else {
             bp = PARTITION_V;
@@ -3253,11 +3253,11 @@ static void decode_sb_mem(AVCodecContext *ctx, int row, int col, struct VP9Filte
         decode_b(ctx, row, col, lflvl, yoff, uvoff, b->bl, b->bp);
         if (b->bp == PARTITION_H && row + hbs < s->rows) {
             yoff  += hbs * 8 * y_stride;
-            uvoff += hbs * 4 * uv_stride;
+            uvoff += hbs * 8 * uv_stride >> s->ss_v;
             decode_b(ctx, row + hbs, col, lflvl, yoff, uvoff, b->bl, b->bp);
         } else if (b->bp == PARTITION_V && col + hbs < s->cols) {
             yoff  += hbs * 8;
-            uvoff += hbs * 4;
+            uvoff += hbs * 8 >> s->ss_h;
             decode_b(ctx, row, col + hbs, lflvl, yoff, uvoff, b->bl, b->bp);
         }
     } else {
@@ -3265,20 +3265,20 @@ static void decode_sb_mem(AVCodecContext *ctx, int row, int col, struct VP9Filte
         if (col + hbs < s->cols) { // FIXME why not <=?
             if (row + hbs < s->rows) {
                 decode_sb_mem(ctx, row, col + hbs, lflvl, yoff + 8 * hbs,
-                              uvoff + 4 * hbs, bl + 1);
+                              uvoff + (8 * hbs >> s->ss_h), bl + 1);
                 yoff  += hbs * 8 * y_stride;
-                uvoff += hbs * 4 * uv_stride;
+                uvoff += hbs * 8 * uv_stride >> s->ss_v;
                 decode_sb_mem(ctx, row + hbs, col, lflvl, yoff, uvoff, bl + 1);
                 decode_sb_mem(ctx, row + hbs, col + hbs, lflvl,
-                                    yoff + 8 * hbs, uvoff + 4 * hbs, bl + 1);
+                                    yoff + 8 * hbs, uvoff + (8 * hbs >> s->ss_h), bl + 1);
             } else {
                 yoff  += hbs * 8;
-                uvoff += hbs * 4;
+                uvoff += hbs * 8 >> s->ss_h;
                 decode_sb_mem(ctx, row, col + hbs, lflvl, yoff, uvoff, bl + 1);
             }
         } else if (row + hbs < s->rows) {
             yoff  += hbs * 8 * y_stride;
-            uvoff += hbs * 4 * uv_stride;
+            uvoff += hbs * 8 * uv_stride >> s->ss_v;
             decode_sb_mem(ctx, row + hbs, col, lflvl, yoff, uvoff, bl + 1);
         }
     }
@@ -3950,7 +3950,7 @@ static int vp9_decode_frame(AVCodecContext *ctx, void *frame,
             }
 
             for (row = s->tiling.tile_row_start; row < s->tiling.tile_row_end;
-                 row += 8, yoff += ls_y * 64, uvoff += ls_uv * 32) {
+                 row += 8, yoff += ls_y * 64, uvoff += ls_uv * 64 >> s->ss_v) {
                 struct VP9Filter *lflvl_ptr = s->lflvl;
                 ptrdiff_t yoff2 = yoff, uvoff2 = uvoff;
 
@@ -3975,7 +3975,7 @@ static int vp9_decode_frame(AVCodecContext *ctx, void *frame,
 
                     for (col = s->tiling.tile_col_start;
                          col < s->tiling.tile_col_end;
-                         col += 8, yoff2 += 64, uvoff2 += 32, lflvl_ptr++) {
+                         col += 8, yoff2 += 64, uvoff2 += 64 >> s->ss_h, lflvl_ptr++) {
                         // FIXME integrate with lf code (i.e. zero after each
                         // use, similar to invtxfm coefficients, or similar)
                         if (s->pass != 1) {
@@ -4006,11 +4006,11 @@ static int vp9_decode_frame(AVCodecContext *ctx, void *frame,
                            f->data[0] + yoff + 63 * ls_y,
                            8 * s->cols);
                     memcpy(s->intra_pred_data[1],
-                           f->data[1] + uvoff + 31 * ls_uv,
-                           4 * s->cols);
+                           f->data[1] + uvoff + ((64 >> s->ss_v) - 1) * ls_uv,
+                           8 * s->cols >> s->ss_h);
                     memcpy(s->intra_pred_data[2],
-                           f->data[2] + uvoff + 31 * ls_uv,
-                           4 * s->cols);
+                           f->data[2] + uvoff + ((64 >> s->ss_v) - 1) * ls_uv,
+                           8 * s->cols >> s->ss_h);
                 }
 
                 // loopfilter one row
@@ -4019,7 +4019,7 @@ static int vp9_decode_frame(AVCodecContext *ctx, void *frame,
                     uvoff2 = uvoff;
                     lflvl_ptr = s->lflvl;
                     for (col = 0; col < s->cols;
-                         col += 8, yoff2 += 64, uvoff2 += 32, lflvl_ptr++) {
+                         col += 8, yoff2 += 64, uvoff2 += 64 >> s->ss_h, lflvl_ptr++) {
                         loopfilter_sb(ctx, lflvl_ptr, row, col, yoff2, uvoff2);
                     }
                 }
