@@ -25,10 +25,30 @@
 #include "libavutil/common.h"
 #include "libavutil/bprint.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/mem.h"
 
-static int text_to_ass(AVBPrint *buf, const char *text, const char *text_end)
+#define STYLE_FLAG_BOLD         1
+#define STYLE_FLAG_ITALIC       2
+#define STYLE_FLAG_UNDERLINE    4
+
+static int text_to_ass(AVBPrint *buf, const char *text, const char *text_end,
+                        int **style_start, int **style_end,
+                        int **style_flags, int style_entries)
 {
+    int i = 0;
+    int style_pos = 0;
     while (text < text_end) {
+        for (i = 0; i < style_entries; i++) {
+            if (*style_flags[i] && style_pos == *style_start[i]) {
+                if (*style_flags[i] & STYLE_FLAG_BOLD)
+                    av_bprintf(buf, "{\\b1}");
+                if (*style_flags[i] & STYLE_FLAG_ITALIC)
+                    av_bprintf(buf, "{\\i1}");
+                if (*style_flags[i] & STYLE_FLAG_UNDERLINE)
+                    av_bprintf(buf, "{\\u1}");
+            }
+        }
+
         switch (*text) {
         case '\r':
             break;
@@ -39,7 +59,19 @@ static int text_to_ass(AVBPrint *buf, const char *text, const char *text_end)
             av_bprint_chars(buf, *text, 1);
             break;
         }
+
+        for (i = 0; i < style_entries; i++) {
+            if (*style_flags[i] && style_pos == *style_end[i]) {
+                if (*style_flags[i] & STYLE_FLAG_BOLD)
+                    av_bprintf(buf, "{\\b0}");
+                if (*style_flags[i] & STYLE_FLAG_ITALIC)
+                    av_bprintf(buf, "{\\i0}");
+                if (*style_flags[i] & STYLE_FLAG_UNDERLINE)
+                    av_bprintf(buf, "{\\u0}");
+            }
+        }
         text++;
+        style_pos++;
     }
 
     return 0;
@@ -61,8 +93,17 @@ static int mov_text_decode_frame(AVCodecContext *avctx,
     AVSubtitle *sub = data;
     int ret, ts_start, ts_end;
     AVBPrint buf;
-    const char *ptr = avpkt->data;
-    const char *end;
+    char *ptr = avpkt->data;
+    char *end;
+    //char *ptr_temp;
+    int text_length, tsmb_type, style_entries, tsmb_size;
+    int **style_start = {0,};
+    int **style_end = {0,};
+    int **style_flags = {0,};
+    const uint8_t *tsmb;
+    int index, i;
+    int *flag;
+    int *style_pos;
 
     if (!ptr || avpkt->size < 2)
         return AVERROR_INVALIDDATA;
@@ -82,7 +123,8 @@ static int mov_text_decode_frame(AVCodecContext *avctx,
      * In complex cases, there are style descriptors appended to the string
      * so we can't just assume the packet size is the string size.
      */
-    end = ptr + FFMIN(2 + AV_RB16(ptr), avpkt->size);
+    text_length = AV_RB16(ptr);
+    end = ptr + FFMIN(2 + text_length, avpkt->size);
     ptr += 2;
 
     ts_start = av_rescale_q(avpkt->pts,
@@ -92,10 +134,53 @@ static int mov_text_decode_frame(AVCodecContext *avctx,
                             avctx->time_base,
                             (AVRational){1,100});
 
+    tsmb_size = 0;
     // Note that the spec recommends lines be no longer than 2048 characters.
     av_bprint_init(&buf, 0, AV_BPRINT_SIZE_UNLIMITED);
-    text_to_ass(&buf, ptr, end);
-    ret = ff_ass_add_rect_bprint(sub, &buf, ts_start, ts_end-ts_start);
+    if (text_length + 2 != avpkt->size) {
+        while (text_length + 2 + tsmb_size < avpkt->size)  {
+            tsmb = ptr + text_length + tsmb_size;
+            tsmb_size = AV_RB32(tsmb);
+            tsmb += 4;
+            tsmb_type = AV_RB32(tsmb);
+            tsmb += 4;
+
+            if (tsmb_type == MKBETAG('s','t','y','l')) {
+                style_entries = AV_RB16(tsmb);
+                tsmb += 2;
+
+                for(i = 0; i < style_entries; i++) {
+                    style_pos = av_malloc(4);
+                    *style_pos = AV_RB16(tsmb);
+                    index = i;
+                    av_dynarray_add(&style_start, &index, style_pos);
+                    tsmb += 2;
+                    style_pos = av_malloc(4);
+                    *style_pos = AV_RB16(tsmb);
+                    index = i;
+                    av_dynarray_add(&style_end, &index, style_pos);
+                    tsmb += 2;
+                    // fontID = AV_RB16(tsmb);
+                    tsmb += 2;
+                    flag = av_malloc(4);
+                    *flag = AV_RB8(tsmb);
+                    index = i;
+                    av_dynarray_add(&style_flags, &index, flag);
+                    //fontsize=AV_RB8(tsmb);
+                    tsmb += 2;
+                    // text-color-rgba
+                    tsmb += 4;
+                }
+                text_to_ass(&buf, ptr, end, style_start, style_end, style_flags, style_entries);
+                av_freep(&style_start);
+                av_freep(&style_end);
+                av_freep(&style_flags);
+            }
+        }
+    } else
+        text_to_ass(&buf, ptr, end, NULL, NULL, 0, 0);
+
+    ret = ff_ass_add_rect_bprint(sub, &buf, ts_start, ts_end - ts_start);
     av_bprint_finalize(&buf, NULL);
     if (ret < 0)
         return ret;
