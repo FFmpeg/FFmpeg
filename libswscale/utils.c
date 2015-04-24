@@ -960,6 +960,20 @@ SwsContext *sws_alloc_context(void)
     return c;
 }
 
+static uint16_t * alloc_gamma_tbl(double e)
+{
+    int i = 0;
+    uint16_t * tbl;
+    tbl = (uint16_t*)av_malloc(sizeof(uint16_t) * 1 << 16);
+    if (!tbl)
+        return NULL;
+
+    for (i = 0; i < 65536; ++i) {
+        tbl[i] = pow(i / 65535.0, e) * 65535.0;
+    }
+    return tbl;
+}
+
 av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
                              SwsFilter *dstFilter)
 {
@@ -978,6 +992,7 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
     const AVPixFmtDescriptor *desc_src;
     const AVPixFmtDescriptor *desc_dst;
     int ret = 0;
+    enum AVPixelFormat tmpFmt;
 
     cpu_flags = av_get_cpu_flags();
     flags     = c->flags;
@@ -1233,6 +1248,57 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
             c->lumXInc = ((int64_t)(srcW       - 2) << 16) / (dstW       - 2) - 20;
             c->chrXInc = ((int64_t)(c->chrSrcW - 2) << 16) / (c->chrDstW - 2) - 20;
         }
+    }
+
+    // hardcoded for now
+    c->gamma_value = 2.2;
+    tmpFmt = AV_PIX_FMT_RGBA64LE;
+
+
+    if (!unscaled && c->gamma_flag && (srcFormat != tmpFmt || dstFormat != tmpFmt)) {
+        SwsContext *c2;
+        c->cascaded_context[0] = NULL;
+
+        ret = av_image_alloc(c->cascaded_tmp, c->cascaded_tmpStride,
+                            srcW, srcH, tmpFmt, 64);
+        if (ret < 0)
+            return ret;
+
+        c->cascaded_context[0] = sws_getContext(srcW, srcH, srcFormat,
+                                                srcW, srcH, tmpFmt,
+                                                flags, NULL, NULL, c->param);
+        if (!c->cascaded_context[0]) {
+            return -1;
+        }
+
+        c->cascaded_context[1] = sws_getContext(srcW, srcH, tmpFmt,
+                                                dstW, dstH, tmpFmt,
+                                                flags, srcFilter, dstFilter, c->param);
+
+        if (!c->cascaded_context[1])
+            return -1;
+
+        c2 = c->cascaded_context[1];
+        c2->is_internal_gamma = 1;
+        c2->gamma     = alloc_gamma_tbl(    c->gamma_value);
+        c2->inv_gamma = alloc_gamma_tbl(1.f/c->gamma_value);
+        if (!c2->gamma || !c2->inv_gamma)
+            return AVERROR(ENOMEM);
+
+        c->cascaded_context[2] = NULL;
+        if (dstFormat != tmpFmt) {
+            ret = av_image_alloc(c->cascaded1_tmp, c->cascaded1_tmpStride,
+                                dstW, dstH, tmpFmt, 64);
+            if (ret < 0)
+                return ret;
+
+            c->cascaded_context[2] = sws_getContext(dstW, dstH, tmpFmt,
+                                                dstW, dstH, dstFormat,
+                                                flags, NULL, NULL, c->param);
+            if (!c->cascaded_context[2])
+                return -1;
+        }
+        return 0;
     }
 
     if (isBayer(srcFormat)) {
@@ -1977,8 +2043,14 @@ void sws_freeContext(SwsContext *c)
 
     sws_freeContext(c->cascaded_context[0]);
     sws_freeContext(c->cascaded_context[1]);
+    sws_freeContext(c->cascaded_context[2]);
     memset(c->cascaded_context, 0, sizeof(c->cascaded_context));
     av_freep(&c->cascaded_tmp[0]);
+    av_freep(&c->cascaded1_tmp[0]);
+
+    av_freep(&c->gamma);
+    av_freep(&c->inv_gamma);
+
 
     av_free(c);
 }

@@ -52,6 +52,22 @@ DECLARE_ALIGNED(8, static const uint8_t, sws_pb_64)[8] = {
     64, 64, 64, 64, 64, 64, 64, 64
 };
 
+static void gamma_convert(uint8_t * src[], int width, uint16_t *gamma)
+{
+    int i;
+    uint16_t *src1 = (uint16_t*)src[0];
+
+    for (i = 0; i < width; ++i) {
+        uint16_t r = AV_RL16(src1 + i*4 + 0);
+        uint16_t g = AV_RL16(src1 + i*4 + 1);
+        uint16_t b = AV_RL16(src1 + i*4 + 2);
+
+        AV_WL16(src1 + i*4 + 0, gamma[r]);
+        AV_WL16(src1 + i*4 + 1, gamma[g]);
+        AV_WL16(src1 + i*4 + 2, gamma[b]);
+    }
+}
+
 static av_always_inline void fillPlane(uint8_t *plane, int stride, int width,
                                        int height, int y, uint8_t val)
 {
@@ -353,6 +369,8 @@ static int swscale(SwsContext *c, const uint8_t *src[],
     int chrBufIndex  = c->chrBufIndex;
     int lastInLumBuf = c->lastInLumBuf;
     int lastInChrBuf = c->lastInChrBuf;
+    int perform_gamma = c->is_internal_gamma;
+
 
     if (!usePal(c->srcFormat)) {
         pal = c->input_rgb2yuv_table;
@@ -480,6 +498,10 @@ static int swscale(SwsContext *c, const uint8_t *src[],
             av_assert0(lumBufIndex < 2 * vLumBufSize);
             av_assert0(lastInLumBuf + 1 - srcSliceY < srcSliceH);
             av_assert0(lastInLumBuf + 1 - srcSliceY >= 0);
+
+            if (perform_gamma)
+                gamma_convert((uint8_t **)src1, srcW, c->inv_gamma);
+
             hyscale(c, lumPixBuf[lumBufIndex], dstW, src1, srcW, lumXInc,
                     hLumFilter, hLumFilterPos, hLumFilterSize,
                     formatConvBuffer, pal, 0);
@@ -641,6 +663,8 @@ static int swscale(SwsContext *c, const uint8_t *src[],
                          chrUSrcPtr, chrVSrcPtr, vChrFilterSize,
                          alpSrcPtr, dest, dstW, dstY);
             }
+            if (perform_gamma)
+                gamma_convert(dest, dstW, c->gamma);
         }
     }
     if (isPlanar(dstFormat) && isALPHA(dstFormat) && !alpPixBuf) {
@@ -900,6 +924,33 @@ int attribute_align_arg sws_scale(struct SwsContext *c,
         av_log(c, AV_LOG_ERROR, "One of the input parameters to sws_scale() is NULL, please check the calling code\n");
         return 0;
     }
+
+    if (c->gamma_flag && c->cascaded_context[0]) {
+
+
+        ret = sws_scale(c->cascaded_context[0],
+                    srcSlice, srcStride, srcSliceY, srcSliceH,
+                    c->cascaded_tmp, c->cascaded_tmpStride);
+
+        if (ret < 0)
+            return ret;
+
+        if (c->cascaded_context[2])
+            ret = sws_scale(c->cascaded_context[1], (const uint8_t * const *)c->cascaded_tmp, c->cascaded_tmpStride, srcSliceY, srcSliceH, c->cascaded1_tmp, c->cascaded1_tmpStride);
+        else
+            ret = sws_scale(c->cascaded_context[1], (const uint8_t * const *)c->cascaded_tmp, c->cascaded_tmpStride, srcSliceY, srcSliceH, dst, dstStride);
+
+        if (ret < 0)
+            return ret;
+
+        if (c->cascaded_context[2]) {
+            ret = sws_scale(c->cascaded_context[2],
+                        (const uint8_t * const *)c->cascaded1_tmp, c->cascaded1_tmpStride, c->cascaded_context[1]->dstY - ret, c->cascaded_context[1]->dstY,
+                        dst, dstStride);
+        }
+        return ret;
+    }
+
     if (c->cascaded_context[0] && srcSliceY == 0 && srcSliceH == c->cascaded_context[0]->srcH) {
         ret = sws_scale(c->cascaded_context[0],
                         srcSlice, srcStride, srcSliceY, srcSliceH,

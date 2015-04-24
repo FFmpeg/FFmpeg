@@ -307,9 +307,17 @@ typedef struct SwsContext {
      * sequential steps, this is for example used to limit the maximum
      * downscaling factor that needs to be supported in one scaler.
      */
-    struct SwsContext *cascaded_context[2];
+    struct SwsContext *cascaded_context[3];
     int cascaded_tmpStride[4];
     uint8_t *cascaded_tmp[4];
+    int cascaded1_tmpStride[4];
+    uint8_t *cascaded1_tmp[4];
+
+    double gamma_value;
+    int gamma_flag;
+    int is_internal_gamma;
+    uint16_t *gamma;
+    uint16_t *inv_gamma;
 
     uint32_t pal_yuv[256];
     uint32_t pal_rgb[256];

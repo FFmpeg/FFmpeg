@@ -1163,6 +1163,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
             av_log(avctx, AV_LOG_ERROR, "alpha bits should be 0, 8 or 16\n");
             return AVERROR(EINVAL);
         }
+        avctx->bits_per_coded_sample = 32;
     } else {
         ctx->alpha_bits = 0;
     }

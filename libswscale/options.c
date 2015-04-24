@@ -75,6 +75,9 @@ static const AVOption swscale_options[] = {
     { "ed",              "error diffusion",               0,                 AV_OPT_TYPE_CONST,  { .i64  = SWS_DITHER_ED      }, INT_MIN, INT_MAX,        VE, "sws_dither" },
     { "a_dither",        "arithmetic addition dither",    0,                 AV_OPT_TYPE_CONST,  { .i64  = SWS_DITHER_A_DITHER}, INT_MIN, INT_MAX,        VE, "sws_dither" },
     { "x_dither",        "arithmetic xor dither",         0,                 AV_OPT_TYPE_CONST,  { .i64  = SWS_DITHER_X_DITHER}, INT_MIN, INT_MAX,        VE, "sws_dither" },
+    { "gamma",           "gamma correct scaling", OFFSET(gamma_flag),        AV_OPT_TYPE_INT,    { .i64  = 0                  }, 0,       INT_MAX,        VE, "gamma" },
+    { "true",            "enable",                        0,                 AV_OPT_TYPE_CONST,  { .i64  = 1                  }, INT_MIN, INT_MAX,        VE, "gamma" },
+    { "false",           "disable",                       0,                 AV_OPT_TYPE_CONST,  { .i64  = 0                  }, INT_MIN, INT_MAX,        VE, "gamma" },
 
     { NULL }
 };
