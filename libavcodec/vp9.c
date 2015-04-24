@@ -2390,7 +2390,7 @@ static av_always_inline int check_intra_mode(VP9Context *s, int mode, uint8_t **
                                              uint8_t *dst_inner, ptrdiff_t stride_inner,
                                              uint8_t *l, int col, int x, int w,
                                              int row, int y, enum TxfmMode tx,
-                                             int p)
+                                             int p, int ss_h, int ss_v)
 {
     int have_top = row > 0 || y > 0;
     int have_left = col > s->tiling.tile_col_start || x > 0;
@@ -2445,7 +2445,7 @@ static av_always_inline int check_intra_mode(VP9Context *s, int mode, uint8_t **
     mode = mode_conv[mode][have_left][have_top];
     if (edges[mode].needs_top) {
         uint8_t *top, *topleft;
-        int n_px_need = 4 << tx, n_px_have = (((s->cols - col) << !p) - x) * 4;
+        int n_px_need = 4 << tx, n_px_have = (((s->cols - col) << !ss_h) - x) * 4;
         int n_px_need_tr = 0;
 
         if (tx == TX_4X4 && edges[mode].needs_topright && have_right)
@@ -2456,11 +2456,11 @@ static av_always_inline int check_intra_mode(VP9Context *s, int mode, uint8_t **
         // post-loopfilter data)
         if (have_top) {
             top = !(row & 7) && !y ?
-                s->intra_pred_data[p] + col * (8 >> !!p) + x * 4 :
+                s->intra_pred_data[p] + col * (8 >> ss_h) + x * 4 :
                 y == 0 ? &dst_edge[-stride_edge] : &dst_inner[-stride_inner];
             if (have_left)
                 topleft = !(row & 7) && !y ?
-                    s->intra_pred_data[p] + col * (8 >> !!p) + x * 4 :
+                    s->intra_pred_data[p] + col * (8 >> ss_h) + x * 4 :
                     y == 0 || x == 0 ? &dst_edge[-stride_edge] :
                     &dst_inner[-stride_inner];
         }
@@ -2501,7 +2501,7 @@ static av_always_inline int check_intra_mode(VP9Context *s, int mode, uint8_t **
     }
     if (edges[mode].needs_left) {
         if (have_left) {
-            int n_px_need = 4 << tx, i, n_px_have = (((s->rows - row) << !p) - y) * 4;
+            int n_px_need = 4 << tx, i, n_px_have = (((s->rows - row) << !ss_v) - y) * 4;
             uint8_t *dst = x == 0 ? dst_edge : dst_inner;
             ptrdiff_t stride = x == 0 ? stride_edge : stride_inner;
 
@@ -2560,7 +2560,7 @@ static void intra_recon(AVCodecContext *ctx, ptrdiff_t y_off, ptrdiff_t uv_off)
             mode = check_intra_mode(s, mode, &a, ptr_r,
                                     s->frames[CUR_FRAME].tf.f->linesize[0],
                                     ptr, s->y_stride, l,
-                                    col, x, w4, row, y, b->tx, 0);
+                                    col, x, w4, row, y, b->tx, 0, 0, 0);
             s->dsp.intra_pred[b->tx][mode](ptr, s->y_stride, l, a);
             if (eob)
                 s->dsp.itxfm_add[tx][txtp](ptr, s->y_stride,
@@ -2571,9 +2571,9 @@ static void intra_recon(AVCodecContext *ctx, ptrdiff_t y_off, ptrdiff_t uv_off)
     }
 
     // U/V
-    w4 >>= 1;
-    end_x >>= 1;
-    end_y >>= 1;
+    w4 >>= s->ss_h;
+    end_x >>= s->ss_h;
+    end_y >>= s->ss_v;
     step = 1 << (b->uvtx * 2);
     for (p = 0; p < 2; p++) {
         dst   = s->dst[1 + p];
@@ -2588,8 +2588,8 @@ static void intra_recon(AVCodecContext *ctx, ptrdiff_t y_off, ptrdiff_t uv_off)
 
                 mode = check_intra_mode(s, mode, &a, ptr_r,
                                         s->frames[CUR_FRAME].tf.f->linesize[1],
-                                        ptr, s->uv_stride, l,
-                                        col, x, w4, row, y, b->uvtx, p + 1);
+                                        ptr, s->uv_stride, l, col, x, w4, row, y,
+                                        b->uvtx, p + 1, s->ss_h, s->ss_v);
                 s->dsp.intra_pred[b->uvtx][mode](ptr, s->uv_stride, l, a);
                 if (eob)
                     s->dsp.itxfm_add[uvtx][DCT_DCT](ptr, s->uv_stride,
@@ -3010,7 +3010,8 @@ static void decode_b(AVCodecContext *ctx, int row, int col,
         b->bl = bl;
         b->bp = bp;
         decode_mode(ctx);
-        b->uvtx = b->tx - (w4 * 2 == (1 << b->tx) || h4 * 2 == (1 << b->tx));
+        b->uvtx = b->tx - ((s->ss_h && w4 * 2 == (1 << b->tx)) ||
+                           (s->ss_v && h4 * 2 == (1 << b->tx)));
 
         if (!b->skip) {
             decode_coeffs(ctx);
