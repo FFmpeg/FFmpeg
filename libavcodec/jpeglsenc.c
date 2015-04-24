@@ -253,7 +253,10 @@ static int encode_picture_ls(AVCodecContext *avctx, AVPacket *pkt,
     const int near         = avctx->prediction_method;
     PutBitContext pb, pb2;
     GetBitContext gb;
-    uint8_t *buf2, *zero, *cur, *last;
+    uint8_t *buf2 = NULL;
+    uint8_t *zero = NULL;
+    uint8_t *cur  = NULL;
+    uint8_t *last = NULL;
     JLSState *state;
     int i, size, ret;
     int comps;
@@ -271,6 +274,8 @@ static int encode_picture_ls(AVCodecContext *avctx, AVPacket *pkt,
     }
 
     buf2 = av_malloc(pkt->size);
+    if (!buf2)
+        goto memfail;
 
     init_put_bits(&pb, pkt->data, pkt->size);
     init_put_bits(&pb2, buf2, pkt->size);
@@ -301,6 +306,9 @@ static int encode_picture_ls(AVCodecContext *avctx, AVPacket *pkt,
     put_bits(&pb, 8, 0);  // point transform: none
 
     state = av_mallocz(sizeof(JLSState));
+    if (!state)
+        goto memfail;
+
     /* initialize JPEG-LS state from JPEG parameters */
     state->near = near;
     state->bpp  = (avctx->pix_fmt == AV_PIX_FMT_GRAY16) ? 16 : 8;
@@ -309,8 +317,10 @@ static int encode_picture_ls(AVCodecContext *avctx, AVPacket *pkt,
 
     ls_store_lse(state, &pb);
 
-    zero = av_mallocz(p->linesize[0]);
-    last = zero;
+    zero = last = av_mallocz(p->linesize[0]);
+    if (!zero)
+        goto memfail;
+
     cur  = p->data[0];
     if (avctx->pix_fmt == AV_PIX_FMT_GRAY8) {
         int t = 0;
@@ -360,8 +370,8 @@ static int encode_picture_ls(AVCodecContext *avctx, AVPacket *pkt,
         }
     }
 
-    av_free(zero);
-    av_free(state);
+    av_freep(&zero);
+    av_freep(&state);
 
     /* the specification says that after doing 0xff escaping unused bits in
      * the last byte must be set to 0, so just append 7 "optional" zero-bits
@@ -382,7 +392,7 @@ static int encode_picture_ls(AVCodecContext *avctx, AVPacket *pkt,
         }
     }
     avpriv_align_put_bits(&pb);
-    av_free(buf2);
+    av_freep(&buf2);
 
     /* End of image */
     put_marker(&pb, EOI);
@@ -394,6 +404,13 @@ static int encode_picture_ls(AVCodecContext *avctx, AVPacket *pkt,
     pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;
     return 0;
+
+memfail:
+    av_free_packet(pkt);
+    av_freep(&buf2);
+    av_freep(&state);
+    av_freep(&zero);
+    return AVERROR(ENOMEM);
 }
 
 static av_cold int encode_close(AVCodecContext *avctx)
