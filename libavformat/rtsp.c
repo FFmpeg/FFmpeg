@@ -904,6 +904,8 @@ static void rtsp_parse_transport(RTSPMessageHeader *reply, const char *p)
             p++;
 
         reply->nb_transports++;
+        if (reply->nb_transports >= RTSP_MAX_TRANSPORTS)
+            break;
     }
 }
 
