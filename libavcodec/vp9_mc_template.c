@@ -21,6 +21,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#define ROUNDED_DIV_MVx2(a, b) \
+    (VP56mv) { .x = ROUNDED_DIV(a.x + b.x, 2), .y = ROUNDED_DIV(a.y + b.y, 2) }
+#define ROUNDED_DIV_MVx4(a, b, c, d) \
+    (VP56mv) { .x = ROUNDED_DIV(a.x + b.x + c.x + d.x, 4), \
+               .y = ROUNDED_DIV(a.y + b.y + c.y + d.y, 4) }
+
 static void FN(inter_pred)(AVCodecContext *ctx)
 {
     static const uint8_t bwlog_tab[2][N_BS_SIZES] = {
@@ -44,6 +50,8 @@ static void FN(inter_pred)(AVCodecContext *ctx)
 
     // y inter pred
     if (b->bs > BS_8x8) {
+        VP56mv uvmv;
+
         if (b->bs == BS_8x4) {
             mc_luma_dir(s, mc[3][b->filter][0], s->dst[0], ls_y,
                         ref1->data[0], ref1->linesize[0], tref1,
@@ -52,6 +60,30 @@ static void FN(inter_pred)(AVCodecContext *ctx)
                         s->dst[0] + 4 * ls_y, ls_y,
                         ref1->data[0], ref1->linesize[0], tref1,
                         (row << 3) + 4, col << 3, &b->mv[2][0], 8, 4, w1, h1, 0);
+            w1 = (w1 + s->ss_h) >> s->ss_h;
+            if (s->ss_v) {
+                h1 = (h1 + 1) >> 1;
+                uvmv = ROUNDED_DIV_MVx2(b->mv[0][0], b->mv[2][0]);
+                mc_chroma_dir(s, mc[3 + s->ss_h][b->filter][0],
+                              s->dst[1], s->dst[2], ls_uv,
+                              ref1->data[1], ref1->linesize[1],
+                              ref1->data[2], ref1->linesize[2], tref1,
+                              row << 2, col << (3 - s->ss_h),
+                              &uvmv, 8 >> s->ss_h, 4, w1, h1, 0);
+            } else {
+                mc_chroma_dir(s, mc[3 + s->ss_h][b->filter][0],
+                              s->dst[1], s->dst[2], ls_uv,
+                              ref1->data[1], ref1->linesize[1],
+                              ref1->data[2], ref1->linesize[2], tref1,
+                              row << 3, col << (3 - s->ss_h),
+                              &b->mv[0][0], 8 >> s->ss_h, 4, w1, h1, 0);
+                mc_chroma_dir(s, mc[3 + s->ss_h][b->filter][0],
+                              s->dst[1] + 4 * ls_uv, s->dst[2] + 4 * ls_uv, ls_uv,
+                              ref1->data[1], ref1->linesize[1],
+                              ref1->data[2], ref1->linesize[2], tref1,
+                              (row << 3) + 4, col << (3 - s->ss_h),
+                              &b->mv[2][0], 8 >> s->ss_h, 4, w1, h1, 0);
+            }
 
             if (b->comp) {
                 mc_luma_dir(s, mc[3][b->filter][1], s->dst[0], ls_y,
@@ -61,6 +93,30 @@ static void FN(inter_pred)(AVCodecContext *ctx)
                             s->dst[0] + 4 * ls_y, ls_y,
                             ref2->data[0], ref2->linesize[0], tref2,
                             (row << 3) + 4, col << 3, &b->mv[2][1], 8, 4, w2, h2, 1);
+                w2 = (w2 + s->ss_h) >> s->ss_h;
+                if (s->ss_v) {
+                    h2 = (h2 + 1) >> 1;
+                    uvmv = ROUNDED_DIV_MVx2(b->mv[0][1], b->mv[2][1]);
+                    mc_chroma_dir(s, mc[3 + s->ss_h][b->filter][1],
+                                  s->dst[1], s->dst[2], ls_uv,
+                                  ref2->data[1], ref2->linesize[1],
+                                  ref2->data[2], ref2->linesize[2], tref2,
+                                  row << 2, col << (3 - s->ss_h),
+                                  &uvmv, 8 >> s->ss_h, 4, w2, h2, 1);
+                } else {
+                    mc_chroma_dir(s, mc[3 + s->ss_h][b->filter][1],
+                                  s->dst[1], s->dst[2], ls_uv,
+                                  ref2->data[1], ref2->linesize[1],
+                                  ref2->data[2], ref2->linesize[2], tref2,
+                                  row << 3, col << (3 - s->ss_h),
+                                  &b->mv[0][1], 8 >> s->ss_h, 4, w2, h2, 1);
+                    mc_chroma_dir(s, mc[3 + s->ss_h][b->filter][1],
+                                  s->dst[1] + 4 * ls_uv, s->dst[2] + 4 * ls_uv, ls_uv,
+                                  ref2->data[1], ref2->linesize[1],
+                                  ref2->data[2], ref2->linesize[2], tref2,
+                                  (row << 3) + 4, col << (3 - s->ss_h),
+                                  &b->mv[2][1], 8 >> s->ss_h, 4, w2, h2, 1);
+                }
             }
         } else if (b->bs == BS_4x8) {
             mc_luma_dir(s, mc[4][b->filter][0], s->dst[0], ls_y,
@@ -69,6 +125,30 @@ static void FN(inter_pred)(AVCodecContext *ctx)
             mc_luma_dir(s, mc[4][b->filter][0], s->dst[0] + 4, ls_y,
                         ref1->data[0], ref1->linesize[0], tref1,
                         row << 3, (col << 3) + 4, &b->mv[1][0], 4, 8, w1, h1, 0);
+            h1 = (h1 + s->ss_v) >> s->ss_v;
+            if (s->ss_h) {
+                w1 = (w1 + 1) >> 1;
+                uvmv = ROUNDED_DIV_MVx2(b->mv[0][0], b->mv[1][0]);
+                mc_chroma_dir(s, mc[4][b->filter][0],
+                              s->dst[1], s->dst[2], ls_uv,
+                              ref1->data[1], ref1->linesize[1],
+                              ref1->data[2], ref1->linesize[2], tref1,
+                              row << (3 - s->ss_v), col << 2,
+                              &uvmv, 4, 8 >> s->ss_v, w1, h1, 0);
+            } else {
+                mc_chroma_dir(s, mc[4][b->filter][0],
+                              s->dst[1], s->dst[2], ls_uv,
+                              ref1->data[1], ref1->linesize[1],
+                              ref1->data[2], ref1->linesize[2], tref1,
+                              row << (3 - s->ss_v), col << 3,
+                              &b->mv[0][0], 4, 8 >> s->ss_v, w1, h1, 0);
+                mc_chroma_dir(s, mc[4][b->filter][0],
+                              s->dst[1] + 4, s->dst[2] + 4, ls_uv,
+                              ref1->data[1], ref1->linesize[1],
+                              ref1->data[2], ref1->linesize[2], tref1,
+                              row << (3 - s->ss_v), (col << 3) + 4,
+                              &b->mv[1][0], 4, 8 >> s->ss_v, w1, h1, 0);
+            }
 
             if (b->comp) {
                 mc_luma_dir(s, mc[4][b->filter][1], s->dst[0], ls_y,
@@ -77,6 +157,30 @@ static void FN(inter_pred)(AVCodecContext *ctx)
                 mc_luma_dir(s, mc[4][b->filter][1], s->dst[0] + 4, ls_y,
                             ref2->data[0], ref2->linesize[0], tref2,
                             row << 3, (col << 3) + 4, &b->mv[1][1], 4, 8, w2, h2, 1);
+                h2 = (h2 + s->ss_v) >> s->ss_v;
+                if (s->ss_h) {
+                    w2 = (w2 + 1) >> 1;
+                    uvmv = ROUNDED_DIV_MVx2(b->mv[0][1], b->mv[1][1]);
+                    mc_chroma_dir(s, mc[4][b->filter][1],
+                                  s->dst[1], s->dst[2], ls_uv,
+                                  ref2->data[1], ref2->linesize[1],
+                                  ref2->data[2], ref2->linesize[2], tref2,
+                                  row << (3 - s->ss_v), col << 2,
+                                  &uvmv, 4, 8 >> s->ss_v, w2, h2, 1);
+                } else {
+                    mc_chroma_dir(s, mc[4][b->filter][1],
+                                  s->dst[1], s->dst[2], ls_uv,
+                                  ref2->data[1], ref2->linesize[1],
+                                  ref2->data[2], ref2->linesize[2], tref2,
+                                  row << (3 - s->ss_v), col << 3,
+                                  &b->mv[0][1], 4, 8 >> s->ss_v, w2, h2, 1);
+                    mc_chroma_dir(s, mc[4][b->filter][1],
+                                  s->dst[1] + 4, s->dst[2] + 4, ls_uv,
+                                  ref2->data[1], ref2->linesize[1],
+                                  ref2->data[2], ref2->linesize[2], tref2,
+                                  row << (3 - s->ss_v), (col << 3) + 4,
+                                  &b->mv[1][1], 4, 8 >> s->ss_v, w2, h2, 1);
+                }
             }
         } else {
             av_assert2(b->bs == BS_4x4);
@@ -97,6 +201,78 @@ static void FN(inter_pred)(AVCodecContext *ctx)
                         s->dst[0] + 4 * ls_y + 4, ls_y,
                         ref1->data[0], ref1->linesize[0], tref1,
                         (row << 3) + 4, (col << 3) + 4, &b->mv[3][0], 4, 4, w1, h1, 0);
+            if (s->ss_v) {
+                h1 = (h1 + 1) >> 1;
+                if (s->ss_h) {
+                    w1 = (w1 + 1) >> 1;
+                    uvmv = ROUNDED_DIV_MVx4(b->mv[0][0], b->mv[1][0],
+                                            b->mv[2][0], b->mv[3][0]);
+                    mc_chroma_dir(s, mc[4][b->filter][0],
+                                  s->dst[1], s->dst[2], ls_uv,
+                                  ref1->data[1], ref1->linesize[1],
+                                  ref1->data[2], ref1->linesize[2], tref1,
+                                  row << 2, col << 2,
+                                  &uvmv, 4, 4, w1, h1, 0);
+                } else {
+                    uvmv = ROUNDED_DIV_MVx2(b->mv[0][0], b->mv[2][0]);
+                    mc_chroma_dir(s, mc[4][b->filter][0],
+                                  s->dst[1], s->dst[2], ls_uv,
+                                  ref1->data[1], ref1->linesize[1],
+                                  ref1->data[2], ref1->linesize[2], tref1,
+                                  row << 2, col << 3,
+                                  &uvmv, 4, 4, w1, h1, 0);
+                    uvmv = ROUNDED_DIV_MVx2(b->mv[1][0], b->mv[3][0]);
+                    mc_chroma_dir(s, mc[4][b->filter][0],
+                                  s->dst[1] + 4, s->dst[2] + 4, ls_uv,
+                                  ref1->data[1], ref1->linesize[1],
+                                  ref1->data[2], ref1->linesize[2], tref1,
+                                  row << 2, (col << 3) + 4,
+                                  &uvmv, 4, 4, w1, h1, 0);
+                }
+            } else {
+                if (s->ss_h) {
+                    w1 = (w1 + 1) >> 1;
+                    uvmv = ROUNDED_DIV_MVx2(b->mv[0][0], b->mv[1][0]);
+                    mc_chroma_dir(s, mc[4][b->filter][0],
+                                  s->dst[1], s->dst[2], ls_uv,
+                                  ref1->data[1], ref1->linesize[1],
+                                  ref1->data[2], ref1->linesize[2], tref1,
+                                  row << 3, col << 2,
+                                  &uvmv, 4, 4, w1, h1, 0);
+                    uvmv = ROUNDED_DIV_MVx2(b->mv[2][0], b->mv[3][0]);
+                    mc_chroma_dir(s, mc[4][b->filter][0],
+                                  s->dst[1] + 4 * ls_uv, s->dst[2] + 4 * ls_uv, ls_uv,
+                                  ref1->data[1], ref1->linesize[1],
+                                  ref1->data[2], ref1->linesize[2], tref1,
+                                  (row << 3) + 4, col << 2,
+                                  &uvmv, 4, 4, w1, h1, 0);
+                } else {
+                    mc_chroma_dir(s, mc[4][b->filter][0],
+                                  s->dst[1], s->dst[2], ls_uv,
+                                  ref1->data[1], ref1->linesize[1],
+                                  ref1->data[2], ref1->linesize[2], tref1,
+                                  row << 3, col << 3,
+                                  &b->mv[0][0], 4, 4, w1, h1, 0);
+                    mc_chroma_dir(s, mc[4][b->filter][0],
+                                  s->dst[1] + 4, s->dst[2] + 4, ls_uv,
+                                  ref1->data[1], ref1->linesize[1],
+                                  ref1->data[2], ref1->linesize[2], tref1,
+                                  row << 3, (col << 3) + 4,
+                                  &b->mv[1][0], 4, 4, w1, h1, 0);
+                    mc_chroma_dir(s, mc[4][b->filter][0],
+                                  s->dst[1] + 4 * ls_uv, s->dst[2] + 4 * ls_uv, ls_uv,
+                                  ref1->data[1], ref1->linesize[1],
+                                  ref1->data[2], ref1->linesize[2], tref1,
+                                  (row << 3) + 4, col << 3,
+                                  &b->mv[2][0], 4, 4, w1, h1, 0);
+                    mc_chroma_dir(s, mc[4][b->filter][0],
+                                  s->dst[1] + 4 * ls_uv + 4, s->dst[2] + 4 * ls_uv + 4, ls_uv,
+                                  ref1->data[1], ref1->linesize[1],
+                                  ref1->data[2], ref1->linesize[2], tref1,
+                                  (row << 3) + 4, (col << 3) + 4,
+                                  &b->mv[3][0], 4, 4, w1, h1, 0);
+                }
+            }
 
             if (b->comp) {
                 mc_luma_dir(s, mc[4][b->filter][1], s->dst[0], ls_y,
@@ -113,59 +289,109 @@ static void FN(inter_pred)(AVCodecContext *ctx)
                             s->dst[0] + 4 * ls_y + 4, ls_y,
                             ref2->data[0], ref2->linesize[0], tref2,
                             (row << 3) + 4, (col << 3) + 4, &b->mv[3][1], 4, 4, w2, h2, 1);
+                if (s->ss_v) {
+                    h2 = (h2 + 1) >> 1;
+                    if (s->ss_h) {
+                        w2 = (w2 + 1) >> 1;
+                        uvmv = ROUNDED_DIV_MVx4(b->mv[0][1], b->mv[1][1],
+                                                b->mv[2][1], b->mv[3][1]);
+                        mc_chroma_dir(s, mc[4][b->filter][1],
+                                      s->dst[1], s->dst[2], ls_uv,
+                                      ref2->data[1], ref2->linesize[1],
+                                      ref2->data[2], ref2->linesize[2], tref2,
+                                      row << 2, col << 2,
+                                      &uvmv, 4, 4, w2, h2, 1);
+                    } else {
+                        uvmv = ROUNDED_DIV_MVx2(b->mv[0][1], b->mv[2][1]);
+                        mc_chroma_dir(s, mc[4][b->filter][1],
+                                      s->dst[1], s->dst[2], ls_uv,
+                                      ref2->data[1], ref2->linesize[1],
+                                      ref2->data[2], ref2->linesize[2], tref2,
+                                      row << 2, col << 3,
+                                      &uvmv, 4, 4, w2, h2, 1);
+                        uvmv = ROUNDED_DIV_MVx2(b->mv[1][1], b->mv[3][1]);
+                        mc_chroma_dir(s, mc[4][b->filter][1],
+                                      s->dst[1] + 4, s->dst[2] + 4, ls_uv,
+                                      ref2->data[1], ref2->linesize[1],
+                                      ref2->data[2], ref2->linesize[2], tref2,
+                                      row << 2, (col << 3) + 4,
+                                      &uvmv, 4, 4, w2, h2, 1);
+                    }
+                } else {
+                    if (s->ss_h) {
+                        w2 = (w2 + 1) >> 1;
+                        uvmv = ROUNDED_DIV_MVx2(b->mv[0][1], b->mv[1][1]);
+                        mc_chroma_dir(s, mc[4][b->filter][1],
+                                      s->dst[1], s->dst[2], ls_uv,
+                                      ref2->data[1], ref2->linesize[1],
+                                      ref2->data[2], ref2->linesize[2], tref2,
+                                      row << 3, col << 2,
+                                      &uvmv, 4, 4, w2, h2, 1);
+                        uvmv = ROUNDED_DIV_MVx2(b->mv[2][1], b->mv[3][1]);
+                        mc_chroma_dir(s, mc[4][b->filter][1],
+                                      s->dst[1] + 4 * ls_uv, s->dst[2] + 4 * ls_uv, ls_uv,
+                                      ref2->data[1], ref2->linesize[1],
+                                      ref2->data[2], ref2->linesize[2], tref2,
+                                      (row << 3) + 4, col << 2,
+                                      &uvmv, 4, 4, w2, h2, 1);
+                    } else {
+                        mc_chroma_dir(s, mc[4][b->filter][1],
+                                      s->dst[1], s->dst[2], ls_uv,
+                                      ref2->data[1], ref2->linesize[1],
+                                      ref2->data[2], ref2->linesize[2], tref2,
+                                      row << 3, col << 3,
+                                      &b->mv[0][1], 4, 4, w2, h2, 1);
+                        mc_chroma_dir(s, mc[4][b->filter][1],
+                                      s->dst[1] + 4, s->dst[2] + 4, ls_uv,
+                                      ref2->data[1], ref2->linesize[1],
+                                      ref2->data[2], ref2->linesize[2], tref2,
+                                      row << 3, (col << 3) + 4,
+                                      &b->mv[1][1], 4, 4, w2, h2, 1);
+                        mc_chroma_dir(s, mc[4][b->filter][1],
+                                      s->dst[1] + 4 * ls_uv, s->dst[2] + 4 * ls_uv, ls_uv,
+                                      ref2->data[1], ref2->linesize[1],
+                                      ref2->data[2], ref2->linesize[2], tref2,
+                                      (row << 3) + 4, col << 3,
+                                      &b->mv[2][1], 4, 4, w2, h2, 1);
+                        mc_chroma_dir(s, mc[4][b->filter][1],
+                                      s->dst[1] + 4 * ls_uv + 4, s->dst[2] + 4 * ls_uv + 4, ls_uv,
+                                      ref2->data[1], ref2->linesize[1],
+                                      ref2->data[2], ref2->linesize[2], tref2,
+                                      (row << 3) + 4, (col << 3) + 4,
+                                      &b->mv[3][1], 4, 4, w2, h2, 1);
+                    }
+                }
             }
         }
     } else {
         int bwl = bwlog_tab[0][b->bs];
         int bw = bwh_tab[0][b->bs][0] * 4, bh = bwh_tab[0][b->bs][1] * 4;
+        int uvbw = bwh_tab[s->ss_h][b->bs][0] * 4, uvbh = bwh_tab[s->ss_v][b->bs][1] * 4;
 
         mc_luma_dir(s, mc[bwl][b->filter][0], s->dst[0], ls_y,
                     ref1->data[0], ref1->linesize[0], tref1,
-                    row << 3, col << 3, &b->mv[0][0],bw, bh, w1, h1, 0);
-
-        if (b->comp)
-            mc_luma_dir(s, mc[bwl][b->filter][1], s->dst[0], ls_y,
-                        ref2->data[0], ref2->linesize[0], tref2,
-                        row << 3, col << 3, &b->mv[0][1], bw, bh, w2, h2, 1);
-    }
-
-    // uv inter pred
-    {
-        int bwl = bwlog_tab[1][b->bs];
-        int bw = bwh_tab[1][b->bs][0] * 4, bh = bwh_tab[1][b->bs][1] * 4;
-        VP56mv mvuv;
-
-        w1 = (w1 + 1) >> 1;
-        h1 = (h1 + 1) >> 1;
-        if (b->comp) {
-            w2 = (w2 + 1) >> 1;
-            h2 = (h2 + 1) >> 1;
-        }
-        if (b->bs > BS_8x8) {
-            mvuv.x = ROUNDED_DIV(b->mv[0][0].x + b->mv[1][0].x + b->mv[2][0].x + b->mv[3][0].x, 4);
-            mvuv.y = ROUNDED_DIV(b->mv[0][0].y + b->mv[1][0].y + b->mv[2][0].y + b->mv[3][0].y, 4);
-        } else {
-            mvuv = b->mv[0][0];
-        }
-
-        mc_chroma_dir(s, mc[bwl][b->filter][0],
+                    row << 3, col << 3, &b->mv[0][0], bw, bh, w1, h1, 0);
+        w1 = (w1 + s->ss_h) >> s->ss_h;
+        h1 = (h1 + s->ss_v) >> s->ss_v;
+        mc_chroma_dir(s, mc[bwl + s->ss_h][b->filter][0],
                       s->dst[1], s->dst[2], ls_uv,
                       ref1->data[1], ref1->linesize[1],
                       ref1->data[2], ref1->linesize[2], tref1,
-                      row << 2, col << 2, &mvuv, bw, bh, w1, h1, 0);
+                      row << (3 - s->ss_v), col << (3 - s->ss_h),
+                      &b->mv[0][0], uvbw, uvbh, w1, h1, 0);
 
         if (b->comp) {
-            if (b->bs > BS_8x8) {
-                mvuv.x = ROUNDED_DIV(b->mv[0][1].x + b->mv[1][1].x + b->mv[2][1].x + b->mv[3][1].x, 4);
-                mvuv.y = ROUNDED_DIV(b->mv[0][1].y + b->mv[1][1].y + b->mv[2][1].y + b->mv[3][1].y, 4);
-            } else {
-                mvuv = b->mv[0][1];
-            }
-            mc_chroma_dir(s, mc[bwl][b->filter][1],
+            mc_luma_dir(s, mc[bwl][b->filter][1], s->dst[0], ls_y,
+                        ref2->data[0], ref2->linesize[0], tref2,
+                        row << 3, col << 3, &b->mv[0][1], bw, bh, w2, h2, 1);
+            w2 = (w2 + s->ss_h) >> s->ss_h;
+            h2 = (h2 + s->ss_v) >> s->ss_v;
+            mc_chroma_dir(s, mc[bwl + s->ss_h][b->filter][1],
                           s->dst[1], s->dst[2], ls_uv,
                           ref2->data[1], ref2->linesize[1],
                           ref2->data[2], ref2->linesize[2], tref2,
-                          row << 2, col << 2, &mvuv, bw, bh, w2, h2, 1);
+                          row << (3 - s->ss_v), col << (3 - s->ss_h),
+                          &b->mv[0][1], uvbw, uvbh, w2, h2, 1);
         }
     }
 }

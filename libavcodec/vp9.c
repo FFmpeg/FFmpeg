@@ -2609,7 +2609,7 @@ static av_always_inline void mc_luma_scaled(VP9Context *s, vp9_scaled_mc_func sm
                                             int bw, int bh, int w, int h,
                                             const uint16_t *scale, const uint8_t *step)
 {
-#define scale_mv(n, dim) (((int64_t)n * scale[dim]) >> 14)
+#define scale_mv(n, dim) (((int64_t)(n) * scale[dim]) >> 14)
     // BUG libvpx seems to scale the two components separately. This introduces
     // rounding errors but we have to reproduce them to be exactly compatible
     // with the output from libvpx...
@@ -2653,8 +2653,8 @@ static av_always_inline void mc_chroma_scaled(VP9Context *s, vp9_scaled_mc_func 
                                               const uint16_t *scale, const uint8_t *step)
 {
     // BUG https://code.google.com/p/webm/issues/detail?id=820
-    int mx = scale_mv(mv->x, 0) + (scale_mv(x * 16, 0) & ~15) + (scale_mv(x * 32, 0) & 15);
-    int my = scale_mv(mv->y, 1) + (scale_mv(y * 16, 1) & ~15) + (scale_mv(y * 32, 1) & 15);
+    int mx = scale_mv(mv->x << !s->ss_h, 0) + (scale_mv(x * 16, 0) & ~15) + (scale_mv(x * 32, 0) & 15);
+    int my = scale_mv(mv->y << !s->ss_v, 1) + (scale_mv(y * 16, 1) & ~15) + (scale_mv(y * 32, 1) & 15);
 #undef scale_mv
     int refbw_m1, refbh_m1;
     int th;
@@ -2670,7 +2670,7 @@ static av_always_inline void mc_chroma_scaled(VP9Context *s, vp9_scaled_mc_func 
     // FIXME bilinear filter only needs 0/1 pixels, not 3/4
     // we use +7 because the last 7 pixels of each sbrow can be changed in
     // the longest loopfilter of the next sbrow
-    th = (y + refbh_m1 + 4 + 7) >> 5;
+    th = (y + refbh_m1 + 4 + 7) >> (6 - s->ss_v);
     ff_thread_await_progress(ref_frame, FFMAX(th, 0), 0);
     if (x < 3 || y < 3 || x + 4 >= w - refbw_m1 || y + 4 >= h - refbh_m1) {
         s->vdsp.emulated_edge_mc(s->edge_emu_buffer,
@@ -2748,7 +2748,7 @@ static av_always_inline void mc_chroma_unscaled(VP9Context *s, vp9_mc_func (*mc)
                                                 ptrdiff_t y, ptrdiff_t x, const VP56mv *mv,
                                                 int bw, int bh, int w, int h)
 {
-    int mx = mv->x, my = mv->y, th;
+    int mx = mv->x << !s->ss_h, my = mv->y << !s->ss_v, th;
 
     y += my >> 4;
     x += mx >> 4;
@@ -2759,7 +2759,7 @@ static av_always_inline void mc_chroma_unscaled(VP9Context *s, vp9_mc_func (*mc)
     // FIXME bilinear filter only needs 0/1 pixels, not 3/4
     // we use +7 because the last 7 pixels of each sbrow can be changed in
     // the longest loopfilter of the next sbrow
-    th = (y + bh + 4 * !!my + 7) >> 5;
+    th = (y + bh + 4 * !!my + 7) >> (6 - s->ss_v);
     ff_thread_await_progress(ref_frame, FFMAX(th, 0), 0);
     if (x < !!mx * 3 || y < !!my * 3 ||
         x + !!mx * 4 > w - bw || y + !!my * 4 > h - bh) {
@@ -2833,8 +2833,8 @@ static void inter_recon(AVCodecContext *ctx)
         }
 
         // uv itxfm add
-        end_x >>= 1;
-        end_y >>= 1;
+        end_x >>= s->ss_h;
+        end_y >>= s->ss_v;
         step = 1 << (b->uvtx * 2);
         for (p = 0; p < 2; p++) {
             dst = s->dst[p + 1];
