@@ -170,6 +170,7 @@ void projectGenerator::buildDependencies( const string & sProjectName, StaticLis
             else if( vitLib->compare("vfwcap_indev") == 0 )
             {
                 vAddLibs.push_back( "vfw32" ); //Add the additional required libs
+                vAddLibs.push_back( "shlwapi" );
             }
             else if( vitLib->compare("dshow_indev") == 0 )
             {
