@@ -195,6 +195,8 @@ AVInputFormat *av_probe_input_format3(AVProbeData *pd, int is_opened,
         score = 0;
         if (fmt1->read_probe) {
             score = fmt1->read_probe(&lpd);
+            if (score)
+                av_log(NULL, AV_LOG_TRACE, "Probing %s score:%d size:%d\n", fmt1->name, score, lpd.buf_size);
             if (fmt1->extensions && av_match_ext(lpd.filename, fmt1->extensions)) {
                 if      (nodat == 0) score = FFMAX(score, 1);
                 else if (nodat == 1) score = FFMAX(score, AVPROBE_SCORE_EXTENSION / 2 - 1);

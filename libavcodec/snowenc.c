@@ -60,7 +60,6 @@ static av_cold int encode_init(AVCodecContext *avctx)
     }
 
     if ((ret = ff_snow_common_init(avctx)) < 0) {
-        ff_snow_common_end(avctx->priv_data);
         return ret;
     }
     ff_mpegvideoencdsp_init(&s->mpvencdsp, avctx);
@@ -1903,6 +1902,8 @@ AVCodec ff_snow_encoder = {
         AV_PIX_FMT_NONE
     },
     .priv_class     = &snowenc_class,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |
+                      FF_CODEC_CAP_INIT_CLEANUP,
 };
 
 

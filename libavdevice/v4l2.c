@@ -528,8 +528,8 @@ static int mmap_read_frame(AVFormatContext *ctx, AVPacket *pkt)
 
     if (s->frame_size > 0 && buf.bytesused != s->frame_size) {
         av_log(ctx, AV_LOG_ERROR,
-               "The v4l2 frame is %d bytes, but %d bytes are expected\n",
-               buf.bytesused, s->frame_size);
+               "The v4l2 frame is %d bytes, but %d bytes are expected. Flags: 0x%08X\n",
+               buf.bytesused, s->frame_size, buf.flags);
         enqueue_buffer(s, &buf);
         return AVERROR_INVALIDDATA;
     }

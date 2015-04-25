@@ -60,55 +60,56 @@ static av_cold int vpx_init(AVCodecContext *avctx,
 }
 
 // returns 0 on success, AVERROR_INVALIDDATA otherwise
-static int set_pix_fmt(AVCodecContext *avctx, struct vpx_image *img) {
+static int set_pix_fmt(AVCodecContext *avctx, struct vpx_image *img)
+{
     if (avctx->codec_id == AV_CODEC_ID_VP8 && img->fmt != VPX_IMG_FMT_I420)
         return AVERROR_INVALIDDATA;
     switch (img->fmt) {
-        case VPX_IMG_FMT_I420:
-            avctx->pix_fmt = AV_PIX_FMT_YUV420P;
-            return 0;
+    case VPX_IMG_FMT_I420:
+        avctx->pix_fmt = AV_PIX_FMT_YUV420P;
+        return 0;
 #if CONFIG_LIBVPX_VP9_DECODER
-        case VPX_IMG_FMT_I422:
-            avctx->pix_fmt = AV_PIX_FMT_YUV422P;
-            return 0;
-        case VPX_IMG_FMT_I444:
-            avctx->pix_fmt = AV_PIX_FMT_YUV444P;
-            return 0;
+    case VPX_IMG_FMT_I422:
+        avctx->pix_fmt = AV_PIX_FMT_YUV422P;
+        return 0;
+    case VPX_IMG_FMT_I444:
+        avctx->pix_fmt = AV_PIX_FMT_YUV444P;
+        return 0;
 #ifdef VPX_IMG_FMT_HIGHBITDEPTH
-        case VPX_IMG_FMT_I42016:
-            if (img->bit_depth == 10) {
-                avctx->pix_fmt = AV_PIX_FMT_YUV420P10LE;
-                return 0;
-            } else if (img->bit_depth == 12) {
-                avctx->pix_fmt = AV_PIX_FMT_YUV420P12LE;
-                return 0;
-            } else {
-                return AVERROR_INVALIDDATA;
-            }
-        case VPX_IMG_FMT_I42216:
-            if (img->bit_depth == 10) {
-                avctx->pix_fmt = AV_PIX_FMT_YUV422P10LE;
-                return 0;
-            } else if (img->bit_depth == 12) {
-                avctx->pix_fmt = AV_PIX_FMT_YUV422P12LE;
-                return 0;
-            } else {
-                return AVERROR_INVALIDDATA;
-            }
-        case VPX_IMG_FMT_I44416:
-            if (img->bit_depth == 10) {
-                avctx->pix_fmt = AV_PIX_FMT_YUV444P10LE;
-                return 0;
-            } else if (img->bit_depth == 12) {
-                avctx->pix_fmt = AV_PIX_FMT_YUV444P12LE;
-                return 0;
-            } else {
-                return AVERROR_INVALIDDATA;
-            }
-#endif
-#endif
-        default:
+    case VPX_IMG_FMT_I42016:
+        if (img->bit_depth == 10) {
+            avctx->pix_fmt = AV_PIX_FMT_YUV420P10LE;
+            return 0;
+        } else if (img->bit_depth == 12) {
+            avctx->pix_fmt = AV_PIX_FMT_YUV420P12LE;
+            return 0;
+        } else {
             return AVERROR_INVALIDDATA;
+        }
+    case VPX_IMG_FMT_I42216:
+        if (img->bit_depth == 10) {
+            avctx->pix_fmt = AV_PIX_FMT_YUV422P10LE;
+            return 0;
+        } else if (img->bit_depth == 12) {
+            avctx->pix_fmt = AV_PIX_FMT_YUV422P12LE;
+            return 0;
+        } else {
+            return AVERROR_INVALIDDATA;
+        }
+    case VPX_IMG_FMT_I44416:
+        if (img->bit_depth == 10) {
+            avctx->pix_fmt = AV_PIX_FMT_YUV444P10LE;
+            return 0;
+        } else if (img->bit_depth == 12) {
+            avctx->pix_fmt = AV_PIX_FMT_YUV444P12LE;
+            return 0;
+        } else {
+            return AVERROR_INVALIDDATA;
+        }
+#endif
+#endif
+    default:
+        return AVERROR_INVALIDDATA;
     }
 }
 

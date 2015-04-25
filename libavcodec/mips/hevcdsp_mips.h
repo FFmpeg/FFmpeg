@@ -29,6 +29,16 @@ void ff_hevc_put_hevc_##PEL##_##DIR####WIDTH##_8_msa(int16_t *dst,          \
                                                      intptr_t my,           \
                                                      int width)
 
+MC(pel, pixels, 4);
+MC(pel, pixels, 6);
+MC(pel, pixels, 8);
+MC(pel, pixels, 12);
+MC(pel, pixels, 16);
+MC(pel, pixels, 24);
+MC(pel, pixels, 32);
+MC(pel, pixels, 48);
+MC(pel, pixels, 64);
+
 MC(qpel, h, 4);
 MC(qpel, h, 8);
 MC(qpel, h, 12);
@@ -46,4 +56,14 @@ MC(qpel, v, 24);
 MC(qpel, v, 32);
 MC(qpel, v, 48);
 MC(qpel, v, 64);
+
+MC(qpel, hv, 4);
+MC(qpel, hv, 8);
+MC(qpel, hv, 12);
+MC(qpel, hv, 16);
+MC(qpel, hv, 24);
+MC(qpel, hv, 32);
+MC(qpel, hv, 48);
+MC(qpel, hv, 64);
+
 #undef MC

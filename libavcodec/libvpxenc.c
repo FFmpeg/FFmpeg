@@ -269,7 +269,8 @@ static av_cold int vp8_free(AVCodecContext *avctx)
 #if CONFIG_LIBVPX_VP9_ENCODER
 static int set_pix_fmt(AVCodecContext *avctx, vpx_codec_caps_t codec_caps,
                        struct vpx_codec_enc_cfg *enccfg, vpx_codec_flags_t *flags,
-                       vpx_img_fmt_t *img_fmt) {
+                       vpx_img_fmt_t *img_fmt)
+{
 #ifdef VPX_IMG_FMT_HIGHBITDEPTH
     enccfg->g_bit_depth = enccfg->g_input_bit_depth = 8;
 #endif
@@ -422,12 +423,12 @@ static av_cold int vpx_init(AVCodecContext *avctx,
 #if CONFIG_LIBVPX_VP9_ENCODER
         || enccfg.rc_end_usage == VPX_Q
 #endif
-        ) {
+       ) {
         if (ctx->crf < enccfg.rc_min_quantizer || ctx->crf > enccfg.rc_max_quantizer) {
-                av_log(avctx, AV_LOG_ERROR,
-                       "CQ level %d must be between minimum and maximum quantizer value (%d-%d)\n",
-                       ctx->crf, enccfg.rc_min_quantizer, enccfg.rc_max_quantizer);
-                return AVERROR(EINVAL);
+            av_log(avctx, AV_LOG_ERROR,
+                   "CQ level %d must be between minimum and maximum quantizer value (%d-%d)\n",
+                   ctx->crf, enccfg.rc_min_quantizer, enccfg.rc_max_quantizer);
+            return AVERROR(EINVAL);
         }
     }
 
@@ -436,7 +437,7 @@ static av_cold int vpx_init(AVCodecContext *avctx,
     //0-100 (0 => CBR, 100 => VBR)
     enccfg.rc_2pass_vbr_bias_pct           = round(avctx->qcompress * 100);
     if (avctx->bit_rate)
-        enccfg.rc_2pass_vbr_minsection_pct     =
+        enccfg.rc_2pass_vbr_minsection_pct =
             avctx->rc_min_rate * 100LL / avctx->bit_rate;
     if (avctx->rc_max_rate)
         enccfg.rc_2pass_vbr_maxsection_pct =
@@ -490,8 +491,8 @@ static av_cold int vpx_init(AVCodecContext *avctx,
     /* 0-3: For non-zero values the encoder increasingly optimizes for reduced
        complexity playback on low powered devices at the expense of encode
        quality. */
-   if (avctx->profile != FF_PROFILE_UNKNOWN)
-       enccfg.g_profile = avctx->profile;
+    if (avctx->profile != FF_PROFILE_UNKNOWN)
+        enccfg.g_profile = avctx->profile;
 
     enccfg.g_error_resilient = ctx->error_resilient || ctx->flags & VP8F_ERROR_RESILIENT;
 
@@ -525,9 +526,10 @@ static av_cold int vpx_init(AVCodecContext *avctx,
         codecctl_int(avctx, VP8E_SET_ARNR_STRENGTH,    ctx->arnr_strength);
     if (ctx->arnr_type >= 0)
         codecctl_int(avctx, VP8E_SET_ARNR_TYPE,        ctx->arnr_type);
-    codecctl_int(avctx, VP8E_SET_NOISE_SENSITIVITY, avctx->noise_reduction);
-    if (avctx->codec_id == AV_CODEC_ID_VP8)
+    if (avctx->codec_id == AV_CODEC_ID_VP8) {
+        codecctl_int(avctx, VP8E_SET_NOISE_SENSITIVITY, avctx->noise_reduction);
         codecctl_int(avctx, VP8E_SET_TOKEN_PARTITIONS,  av_log2(avctx->slices));
+    }
 #if FF_API_MPV_OPT
     FF_DISABLE_DEPRECATION_WARNINGS
     if (avctx->mb_threshold) {
@@ -610,8 +612,7 @@ static inline void cx_pktcpy(struct FrameListData *dst,
     if (src_alpha) {
         dst->buf_alpha = src_alpha->data.frame.buf;
         dst->sz_alpha = src_alpha->data.frame.sz;
-    }
-    else {
+    } else {
         dst->buf_alpha = NULL;
         dst->sz_alpha = 0;
     }
@@ -702,8 +703,8 @@ static int queue_frames(AVCodecContext *avctx, AVPacket *pkt_out,
     /* consume all available output from the encoder before returning. buffers
        are only good through the next vpx_codec call */
     while ((pkt = vpx_codec_get_cx_data(&ctx->encoder, &iter)) &&
-            (!ctx->is_alpha ||
-             (ctx->is_alpha && (pkt_alpha = vpx_codec_get_cx_data(&ctx->encoder_alpha, &iter_alpha))))) {
+           (!ctx->is_alpha ||
+            (ctx->is_alpha && (pkt_alpha = vpx_codec_get_cx_data(&ctx->encoder_alpha, &iter_alpha))))) {
         switch (pkt->kind) {
         case VPX_CODEC_CX_FRAME_PKT:
             if (!size) {

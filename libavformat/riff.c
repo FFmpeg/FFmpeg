@@ -110,6 +110,8 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { AV_CODEC_ID_MPEG4,        MKTAG('D', 'r', 'e', 'X') },
     { AV_CODEC_ID_MPEG4,        MKTAG('Q', 'M', 'P', '4') }, /* QNAP Systems */
     { AV_CODEC_ID_MPEG4,        MKTAG('P', 'L', 'V', '1') }, /* Pelco DVR MPEG-4 */
+    { AV_CODEC_ID_MPEG4,        MKTAG('G', 'L', 'V', '4') },
+    { AV_CODEC_ID_MPEG4,        MKTAG('G', 'M', 'P', '4') }, /* GeoVision camera */
     { AV_CODEC_ID_MSMPEG4V3,    MKTAG('M', 'P', '4', '3') },
     { AV_CODEC_ID_MSMPEG4V3,    MKTAG('D', 'I', 'V', '3') },
     { AV_CODEC_ID_MSMPEG4V3,    MKTAG('M', 'P', 'G', '3') },

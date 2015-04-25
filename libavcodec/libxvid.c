@@ -481,8 +481,7 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)
         } else {
             av_log(avctx, AV_LOG_ERROR,
                    "Too small height for threads > 1.");
-            ret = AVERROR(EINVAL);
-            goto fail;
+            return AVERROR(EINVAL);
         }
     }
 #endif
@@ -503,8 +502,7 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)
         if (!x->twopassbuffer || !x->old_twopassbuffer) {
             av_log(avctx, AV_LOG_ERROR,
                    "Xvid: Cannot allocate 2-pass log buffers\n");
-            ret = AVERROR(ENOMEM);
-            goto fail;
+            return AVERROR(ENOMEM);
         }
         x->twopassbuffer[0]     =
         x->old_twopassbuffer[0] = 0;
@@ -519,16 +517,14 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)
         fd = av_tempfile("xvidff.", &x->twopassfile, 0, avctx);
         if (fd < 0) {
             av_log(avctx, AV_LOG_ERROR, "Xvid: Cannot write 2-pass pipe\n");
-            ret = fd;
-            goto fail;
+            return fd;
         }
         x->twopassfd = fd;
 
         if (!avctx->stats_in) {
             av_log(avctx, AV_LOG_ERROR,
                    "Xvid: No 2-pass information loaded for second pass\n");
-            ret = AVERROR(EINVAL);
-            goto fail;
+            return AVERROR(EINVAL);
         }
 
         ret = write(fd, avctx->stats_in, strlen(avctx->stats_in));
@@ -539,7 +535,7 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)
             ret = AVERROR(EIO);
         }
         if (ret < 0)
-            goto fail;
+            return ret;
 
         rc2pass2.filename                          = x->twopassfile;
         plugins[xvid_enc_create.num_plugins].func  = xvid_plugin_2pass2;
@@ -627,19 +623,15 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)
         if (avctx->intra_matrix) {
             intra           = avctx->intra_matrix;
             x->intra_matrix = av_malloc(sizeof(unsigned char) * 64);
-            if (!x->intra_matrix) {
-                ret = AVERROR(ENOMEM);
-                goto fail;
-            }
+            if (!x->intra_matrix)
+                return AVERROR(ENOMEM);
         } else
             intra = NULL;
         if (avctx->inter_matrix) {
             inter           = avctx->inter_matrix;
             x->inter_matrix = av_malloc(sizeof(unsigned char) * 64);
-            if (!x->inter_matrix) {
-                ret = AVERROR(ENOMEM);
-                goto fail;
-            }
+            if (!x->inter_matrix)
+                return AVERROR(ENOMEM);
         } else
             inter = NULL;
 
@@ -684,20 +676,15 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)
     xerr = xvid_encore(NULL, XVID_ENC_CREATE, &xvid_enc_create, NULL);
     if (xerr) {
         av_log(avctx, AV_LOG_ERROR, "Xvid: Could not create encoder reference\n");
-        goto fail;
+        return AVERROR_EXTERNAL;
     }
 
     x->encoder_handle  = xvid_enc_create.handle;
     avctx->coded_frame = av_frame_alloc();
-    if (!avctx->coded_frame) {
-        ret = AVERROR(ENOMEM);
-        goto fail;
-    }
+    if (!avctx->coded_frame)
+        return AVERROR(ENOMEM);
 
     return 0;
-fail:
-    xvid_encode_close(avctx);
-    return ret;
 }
 
 static int xvid_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
@@ -826,10 +813,12 @@ static av_cold int xvid_encode_close(AVCodecContext *avctx)
 {
     struct xvid_context *x = avctx->priv_data;
 
-    if(x->encoder_handle)
+    if (x->encoder_handle) {
         xvid_encore(x->encoder_handle, XVID_ENC_DESTROY, NULL, NULL);
-    x->encoder_handle = NULL;
+        x->encoder_handle = NULL;
+    }
 
+    av_frame_free(&avctx->coded_frame);
     av_freep(&avctx->extradata);
     if (x->twopassbuffer) {
         av_freep(&x->twopassbuffer);
@@ -844,7 +833,6 @@ static av_cold int xvid_encode_close(AVCodecContext *avctx)
     av_freep(&x->twopassfile);
     av_freep(&x->intra_matrix);
     av_freep(&x->inter_matrix);
-    av_frame_free(&avctx->coded_frame);
 
     return 0;
 }
@@ -881,4 +869,6 @@ AVCodec ff_libxvid_encoder = {
     .close          = xvid_encode_close,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE },
     .priv_class     = &xvid_class,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |
+                      FF_CODEC_CAP_INIT_CLEANUP,
 };
