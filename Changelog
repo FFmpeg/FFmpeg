@@ -1,7 +1,43 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
-version <next>:
+version 2.4.9:
+- alac: reject rice_limit 0 if compression is used
+- lavf: Reset global flag on deinit
+- bink: check vst->index_entries before using it
+- mpeg4videodec: only allow a positive length
+- alsdec: check sample pointer range in revert_channel_correlation
+- avcodec/h264_refs: Do not set reference to things which dont exist
+- avcodec/h264: Fail for invalid mixed IDR / non IDR frames in slice threading mode
+- h264: avoid unnecessary calls to get_format
+- avutil/pca: Check for av_malloc* failures
+- alsdec: validate time diff index
+- avcodec/alsdec: Use av_mallocz_array() for chan_data to ensure the arrays never contain random data
+- alsdec: ensure channel reordering is reversible
+- avcodec/atrac3plusdsp: fix on stack alignment
+- ac3: validate end in ff_ac3_bit_alloc_calc_mask
+- aacpsy: avoid psy_band->threshold becoming NaN
+- aasc: return correct buffer size from aasc_decode_frame
+- aacdec: consistently use avctx for logging in decode_eld_specific_config
+- msrledec: use signed pixel_ptr in msrle_decode_pal4
+- swresample/swresample-test: Randomly wipe out channel counts
+- swresample: Check channel layouts and channels against each other and print human readable error messages
+- swresample: Allow reinitialization without ever setting channel layouts
+- swresample: Allow reinitialization without ever setting channel counts
+- avcodec/h264: Do not fail with randomly truncated VUIs
+- avcodec/h264_ps: Move truncation check from VUI to SPS
+- avcodec/h264: Be more tolerant to changing pps id between slices
+- avcodec/aacdec: Fix storing state before PCE decode
+- avcodec/h264: reset the counts in the correct context
+- avcodec/h264_slice: Dont reset mb_aff_frame per slice
+- tests: Fix test name for pixfmts tests
+- avcodec/h264: finish previous slices before switching to single thread mode
+- avcodec/h264: Fix race between slices where one overwrites data from the next
+- avformat/utils: avoid discarded streams in av_find_default_stream_index()
+- avformat/utils: Ensure that AVFMT_FLAG_CUSTOM_IO is set before use
+- avformat/img2dec: do not rewind custom io buffers
+- fate: Include branch information in the payload header
+
 
 version 2.4.8:
 - avutil/cpu: add missing check for mmxext to av_force_cpu_flags
