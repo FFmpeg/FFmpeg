@@ -160,6 +160,18 @@ fate-id-cin-video: CMD = framecrc -i $(TARGET_SAMPLES)/idcin/idlog-2MB.cin -pix_
 FATE_SAMPLES_AVCONV-$(call ENCDEC, ROQ PGMYUV, ROQ IMAGE2) += fate-idroq-video-encode
 fate-idroq-video-encode: CMD = md5 -f image2 -vcodec pgmyuv -i $(TARGET_SAMPLES)/ffmpeg-synthetic/vsynth1/%02d.pgm -sws_flags +bitexact -vf pad=512:512:80:112 -f roq -t 0.2
 
+FATE_HAP += fate-hap1
+fate-hap1: CMD = framecrc -i $(TARGET_SAMPLES)/hap/hap1.mov
+
+FATE_HAP += fate-hap5
+fate-hap5: CMD = framecrc -i $(TARGET_SAMPLES)/hap/hap5.mov
+
+FATE_HAP += fate-hapy
+fate-hapy: CMD = framecrc -i $(TARGET_SAMPLES)/hap/hapy.mov
+
+FATE_SAMPLES_AVCONV-$(call DEMDEC, MOV, HAP) += $(FATE_HAP)
+fate-hap: $(FATE_HAP)
+
 FATE_IFF-$(CONFIG_IFF_BYTERUN1_DECODER) += fate-iff-byterun1
 fate-iff-byterun1: CMD = framecrc -i $(TARGET_SAMPLES)/iff/ASH.LBM -pix_fmt rgb24
 

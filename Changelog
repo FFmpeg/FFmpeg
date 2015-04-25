@@ -34,6 +34,7 @@ version <next>:
 - NVIDIA NVENC-accelerated H.264 and HEVC encoding support
 - Multipart JPEG demuxer
 - Support the extended vp9 profiles in the libvpx wrapper
+- Hap decoder and encoder
 
 
 version 11:
