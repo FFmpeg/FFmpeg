@@ -303,7 +303,7 @@ static int h263p_decode_umotion(MpegEncContext * s, int pred)
    code >>= 1;
 
    code = (sign) ? (pred - code) : (pred + code);
-   ff_dlog(s->avctx,"H.263+ UMV Motion = %d\n", code);
+   ff_tlog(s->avctx,"H.263+ UMV Motion = %d\n", code);
    return code;
 
 }
