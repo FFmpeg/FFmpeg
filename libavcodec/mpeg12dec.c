@@ -1303,10 +1303,10 @@ static int mpeg_decode_postinit(AVCodecContext *avctx)
 // res_change_ffmpeg_aspect.ts 4/3 225/44 ->4/3
 // widescreen-issue562.mpg 4/3 16/9 -> 16/9
 //                s->avctx->sample_aspect_ratio = av_mul_q(s->avctx->sample_aspect_ratio, (AVRational) {s->width, s->height});
-                ff_dlog(avctx, "A %d/%d\n",
+                ff_dlog(avctx, "aspect A %d/%d\n",
                         ff_mpeg2_aspect[s->aspect_ratio_info].num,
                         ff_mpeg2_aspect[s->aspect_ratio_info].den);
-                ff_dlog(avctx, "B %d/%d\n", s->avctx->sample_aspect_ratio.num,
+                ff_dlog(avctx, "aspect B %d/%d\n", s->avctx->sample_aspect_ratio.num,
                         s->avctx->sample_aspect_ratio.den);
             }
         } else {
@@ -1997,7 +1997,7 @@ eos: // end of slice
         return AVERROR_INVALIDDATA;
     }
     *buf += (get_bits_count(&s->gb) - 1) / 8;
-    ff_dlog(s, "y %d %d %d %d\n", s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y);
+    ff_dlog(s, "Slice start:%d %d  end:%d %d\n", s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y);
     return 0;
 }
 
