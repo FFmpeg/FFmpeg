@@ -21,6 +21,7 @@
  */
 
 #include "vaapi_internal.h"
+#include "internal.h"
 #include "vc1.h"
 #include "vc1data.h"
 

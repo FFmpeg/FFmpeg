@@ -21,8 +21,8 @@
  */
 
 #include "vaapi_internal.h"
-#include "h263.h"
 #include "internal.h"
+#include "h263.h"
 #include "mpeg4video.h"
 
 /** Reconstruct bitstream intra_dc_vlc_thr */
