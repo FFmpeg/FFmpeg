@@ -156,7 +156,7 @@ static inline int mpeg1_decode_block_intra(MpegEncContext *s,
     dc += diff;
     s->last_dc[component] = dc;
     block[0] = dc * quant_matrix[0];
-    ff_dlog(s->avctx, "dc=%d diff=%d\n", dc, diff);
+    ff_tlog(s->avctx, "dc=%d diff=%d\n", dc, diff);
     i = 0;
     {
         OPEN_READER(re, &s->gb);
@@ -568,7 +568,7 @@ static inline int mpeg2_decode_block_intra(MpegEncContext *s,
     dc += diff;
     s->last_dc[component] = dc;
     block[0] = dc << (3 - s->intra_dc_precision);
-    ff_dlog(s->avctx, "dc=%d\n", block[0]);
+    ff_tlog(s->avctx, "dc=%d\n", block[0]);
     mismatch = block[0] ^ 1;
     i = 0;
     if (s->intra_vlc_format)
@@ -735,7 +735,7 @@ static int mpeg_decode_mb(MpegEncContext *s, int16_t block[12][64])
     const int mb_block_count = 4 + (1 << s->chroma_format);
     int ret;
 
-    ff_dlog(s->avctx, "decode_mb: x=%d y=%d\n", s->mb_x, s->mb_y);
+    ff_tlog(s->avctx, "decode_mb: x=%d y=%d\n", s->mb_x, s->mb_y);
 
     av_assert2(s->mb_skipped == 0);
 
@@ -800,7 +800,7 @@ static int mpeg_decode_mb(MpegEncContext *s, int16_t block[12][64])
         mb_type = btype2mb_type[mb_type];
         break;
     }
-    ff_dlog(s->avctx, "mb_type=%x\n", mb_type);
+    ff_tlog(s->avctx, "mb_type=%x\n", mb_type);
 //    motion_type = 0; /* avoid warning */
     if (IS_INTRA(mb_type)) {
         s->bdsp.clear_blocks(s->block[0]);
@@ -897,7 +897,7 @@ static int mpeg_decode_mb(MpegEncContext *s, int16_t block[12][64])
 
             /* motion vectors */
             s->mv_dir = (mb_type >> 13) & 3;
-            ff_dlog(s->avctx, "motion_type=%d\n", motion_type);
+            ff_tlog(s->avctx, "motion_type=%d\n", motion_type);
             switch (motion_type) {
             case MT_FRAME: /* or MT_16X8 */
                 if (s->picture_structure == PICT_FRAME) {
@@ -954,12 +954,12 @@ static int mpeg_decode_mb(MpegEncContext *s, int16_t block[12][64])
                                                          s->last_mv[i][j][0]);
                                 s->last_mv[i][j][0] = val;
                                 s->mv[i][j][0]      = val;
-                                ff_dlog(s->avctx, "fmx=%d\n", val);
+                                ff_tlog(s->avctx, "fmx=%d\n", val);
                                 val = mpeg_decode_motion(s, s->mpeg_f_code[i][1],
                                                          s->last_mv[i][j][1] >> 1);
                                 s->last_mv[i][j][1] = 2 * val;
                                 s->mv[i][j][1]      = val;
-                                ff_dlog(s->avctx, "fmy=%d\n", val);
+                                ff_tlog(s->avctx, "fmy=%d\n", val);
                             }
                         }
                     }
@@ -1303,10 +1303,10 @@ static int mpeg_decode_postinit(AVCodecContext *avctx)
 // res_change_ffmpeg_aspect.ts 4/3 225/44 ->4/3
 // widescreen-issue562.mpg 4/3 16/9 -> 16/9
 //                s->avctx->sample_aspect_ratio = av_mul_q(s->avctx->sample_aspect_ratio, (AVRational) {s->width, s->height});
-                ff_dlog(avctx, "A %d/%d\n",
+                ff_dlog(avctx, "aspect A %d/%d\n",
                         ff_mpeg2_aspect[s->aspect_ratio_info].num,
                         ff_mpeg2_aspect[s->aspect_ratio_info].den);
-                ff_dlog(avctx, "B %d/%d\n", s->avctx->sample_aspect_ratio.num,
+                ff_dlog(avctx, "aspect B %d/%d\n", s->avctx->sample_aspect_ratio.num,
                         s->avctx->sample_aspect_ratio.den);
             }
         } else {
@@ -1997,7 +1997,7 @@ eos: // end of slice
         return AVERROR_INVALIDDATA;
     }
     *buf += (get_bits_count(&s->gb) - 1) / 8;
-    ff_dlog(s, "y %d %d %d %d\n", s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y);
+    ff_dlog(s, "Slice start:%d %d  end:%d %d\n", s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y);
     return 0;
 }
 
