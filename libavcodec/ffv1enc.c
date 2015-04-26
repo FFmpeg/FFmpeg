@@ -793,6 +793,8 @@ static av_cold int encode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "format not supported\n");
         return AVERROR(ENOSYS);
     }
+    av_assert0(s->bits_per_raw_sample >= 8);
+
     if (s->transparency) {
         av_log(avctx, AV_LOG_WARNING, "Storing alpha plane, this will require a recent FFV1 decoder to playback!\n");
     }
