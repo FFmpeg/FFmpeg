@@ -404,7 +404,7 @@ static void copy_picture_range(H264Picture **to, H264Picture **from, int count,
     int i;
 
     for (i = 0; i < count; i++) {
-        assert((IN_RANGE(from[i], old_base, sizeof(*old_base)) ||
+        av_assert1((IN_RANGE(from[i], old_base, sizeof(*old_base)) ||
                 IN_RANGE(from[i], old_base->DPB,
                          sizeof(H264Picture) * H264_MAX_PICTURE_COUNT) ||
                 !from[i]));
@@ -1501,8 +1501,8 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
          * We have to do that before the "dummy" in-between frame allocation,
          * since that can modify h->cur_pic_ptr. */
         if (h->first_field) {
-            assert(h->cur_pic_ptr);
-            assert(h->cur_pic_ptr->f.buf[0]);
+            av_assert0(h->cur_pic_ptr);
+            av_assert0(h->cur_pic_ptr->f.buf[0]);
             assert(h->cur_pic_ptr->reference != DELAYED_PIC_REF);
 
             /* Mark old field/frame as completed */
@@ -1604,8 +1604,8 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
          * We're using that to see whether to continue decoding in that
          * frame, or to allocate a new one. */
         if (h->first_field) {
-            assert(h->cur_pic_ptr);
-            assert(h->cur_pic_ptr->f.buf[0]);
+            av_assert0(h->cur_pic_ptr);
+            av_assert0(h->cur_pic_ptr->f.buf[0]);
             assert(h->cur_pic_ptr->reference != DELAYED_PIC_REF);
 
             /* figure out if we have a complementary field pair */
