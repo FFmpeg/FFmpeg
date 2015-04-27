@@ -223,7 +223,7 @@ static inline int ff_mpeg4_pred_dc(MpegEncContext *s, int n, int level,
     } else {
         level += pred;
         ret    = level;
-        if (s->err_recognition & AV_EF_BITSTREAM) {
+        if (s->avctx->err_recognition & AV_EF_BITSTREAM) {
             if (level < 0) {
                 av_log(s->avctx, AV_LOG_ERROR,
                        "dc<0 at %dx%d\n", s->mb_x, s->mb_y);

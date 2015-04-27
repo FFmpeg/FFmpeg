@@ -833,7 +833,9 @@ int ff_msmpeg4_decode_block(MpegEncContext * s, int16_t * block,
             i-= 192;
             if(i&(~63)){
                 const int left= get_bits_left(&s->gb);
-                if(((i+192 == 64 && level/qmul==-1) || !(s->err_recognition&AV_EF_BITSTREAM)) && left>=0){
+                if (((i + 192 == 64 && level / qmul == -1) ||
+                     !(s->avctx->err_recognition & AV_EF_BITSTREAM)) &&
+                    left >= 0) {
                     av_log(s->avctx, AV_LOG_ERROR, "ignoring overflow at %d %d\n", s->mb_x, s->mb_y);
                     break;
                 }else{

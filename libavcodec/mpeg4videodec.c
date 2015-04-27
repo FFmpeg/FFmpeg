@@ -563,7 +563,7 @@ static inline int mpeg4_decode_dc(MpegEncContext *s, int n, int *dir_ptr)
 
         if (code > 8) {
             if (get_bits1(&s->gb) == 0) { /* marker */
-                if (s->err_recognition & AV_EF_BITSTREAM) {
+                if (s->avctx->err_recognition & AV_EF_BITSTREAM) {
                     av_log(s->avctx, AV_LOG_ERROR, "dc marker bit missing\n");
                     return -1;
                 }
@@ -1099,7 +1099,7 @@ static inline int mpeg4_decode_block(Mpeg4DecContext *ctx, int16_t *block,
                                 level = level * qmul - qadd;
 
                             if ((unsigned)(level + 2048) > 4095) {
-                                if (s->err_recognition & AV_EF_BITSTREAM) {
+                                if (s->avctx->err_recognition & AV_EF_BITSTREAM) {
                                     if (level > 2560 || level < -2560) {
                                         av_log(s->avctx, AV_LOG_ERROR,
                                                "|level| overflow in 3. esc, qp=%d\n",
