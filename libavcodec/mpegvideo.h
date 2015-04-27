@@ -864,7 +864,7 @@ void ff_wmv2_encode_mb(MpegEncContext * s,
                        int motion_x, int motion_y);
 
 int ff_mpeg_ref_picture(MpegEncContext *s, Picture *dst, Picture *src);
-void ff_mpeg_unref_picture(MpegEncContext *s, Picture *picture);
+void ff_mpeg_unref_picture(AVCodecContext *avctx, Picture *picture);
 void ff_free_picture_tables(Picture *pic);
 
 #endif /* AVCODEC_MPEGVIDEO_H */
