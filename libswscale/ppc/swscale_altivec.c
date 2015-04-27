@@ -40,18 +40,10 @@
         ls  = vec_perm(a, l2, c);\
         a = l2;\
     }
-#define  GET_VF(a, b, c,d) {\
-        a = vec_mergeh(c, d);\
-        b = vec_mergel(c, d);\
-    }
 #else
 #define  GET_LS(a,b,c,s) {\
         ls  = a;\
         a = vec_vsx_ld(((b) << 1)  + 16, s);\
-    }
-#define  GET_VF(a, b, c, d) {\
-        a = vec_mergel(d, c);\
-        b = vec_mergeh(d, c);\
     }
 #endif
 
@@ -61,7 +53,8 @@
         vector signed int   i1  = vec_mule(filter, ls);\
         vector signed int   i2  = vec_mulo(filter, ls);\
         vector signed int   vf1, vf2;\
-        GET_VF(vf1, vf2, i1, i2);\
+        vf1 = vec_mergeh(i1, i2);\
+        vf2 = vec_mergel(i1, i2);\
         d1 = vec_add(d1, vf1);\
         d2 = vec_add(d2, vf2);\
     } while (0)
