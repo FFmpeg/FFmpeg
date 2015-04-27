@@ -463,7 +463,7 @@ int ff_h263_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     }
 
     if (!s->current_picture_ptr || s->current_picture_ptr->f->data[0]) {
-        int i = ff_find_unused_picture(s, 0);
+        int i = ff_find_unused_picture(s->avctx, s->picture, 0);
         if (i < 0)
             return i;
         s->current_picture_ptr = &s->picture[i];

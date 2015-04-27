@@ -1612,18 +1612,18 @@ av_cold void ff_init_vlc_rl(RLTable *rl)
     }
 }
 
-static void release_unused_pictures(MpegEncContext *s)
+static void release_unused_pictures(AVCodecContext *avctx, Picture *picture)
 {
     int i;
 
     /* release non reference frames */
     for (i = 0; i < MAX_PICTURE_COUNT; i++) {
-        if (!s->picture[i].reference)
-            ff_mpeg_unref_picture(s->avctx, &s->picture[i]);
+        if (!picture[i].reference)
+            ff_mpeg_unref_picture(avctx, &picture[i]);
     }
 }
 
-static inline int pic_is_unused(MpegEncContext *s, Picture *pic)
+static inline int pic_is_unused(Picture *pic)
 {
     if (!pic->f->buf[0])
         return 1;
@@ -1632,18 +1632,18 @@ static inline int pic_is_unused(MpegEncContext *s, Picture *pic)
     return 0;
 }
 
-static int find_unused_picture(MpegEncContext *s, int shared)
+static int find_unused_picture(Picture *picture, int shared)
 {
     int i;
 
     if (shared) {
         for (i = 0; i < MAX_PICTURE_COUNT; i++) {
-            if (!s->picture[i].f->buf[0])
+            if (!picture[i].f->buf[0])
                 return i;
         }
     } else {
         for (i = 0; i < MAX_PICTURE_COUNT; i++) {
-            if (pic_is_unused(s, &s->picture[i]))
+            if (pic_is_unused(&picture[i]))
                 return i;
         }
     }
@@ -1651,15 +1651,15 @@ static int find_unused_picture(MpegEncContext *s, int shared)
     return AVERROR_INVALIDDATA;
 }
 
-int ff_find_unused_picture(MpegEncContext *s, int shared)
+int ff_find_unused_picture(AVCodecContext *avctx, Picture *picture, int shared)
 {
-    int ret = find_unused_picture(s, shared);
+    int ret = find_unused_picture(picture, shared);
 
     if (ret >= 0 && ret < MAX_PICTURE_COUNT) {
-        if (s->picture[ret].needs_realloc) {
-            s->picture[ret].needs_realloc = 0;
-            ff_free_picture_tables(&s->picture[ret]);
-            ff_mpeg_unref_picture(s->avctx, &s->picture[ret]);
+        if (picture[ret].needs_realloc) {
+            picture[ret].needs_realloc = 0;
+            ff_free_picture_tables(&picture[ret]);
+            ff_mpeg_unref_picture(avctx, &picture[ret]);
         }
     }
     return ret;
@@ -1697,14 +1697,14 @@ int ff_mpv_frame_start(MpegEncContext *s, AVCodecContext *avctx)
 
     ff_mpeg_unref_picture(s->avctx, &s->current_picture);
 
-    release_unused_pictures(s);
+    release_unused_pictures(s->avctx, s->picture);
 
     if (s->current_picture_ptr && !s->current_picture_ptr->f->buf[0]) {
         // we already have a unused image
         // (maybe it was set before reading the header)
         pic = s->current_picture_ptr;
     } else {
-        i   = ff_find_unused_picture(s, 0);
+        i   = ff_find_unused_picture(s->avctx, s->picture, 0);
         if (i < 0) {
             av_log(s->avctx, AV_LOG_ERROR, "no frame buffer available\n");
             return i;
@@ -1771,7 +1771,7 @@ int ff_mpv_frame_start(MpegEncContext *s, AVCodecContext *avctx)
                    "allocate dummy last picture for field based first keyframe\n");
 
         /* Allocate a dummy frame */
-        i = ff_find_unused_picture(s, 0);
+        i = ff_find_unused_picture(s->avctx, s->picture, 0);
         if (i < 0) {
             av_log(s->avctx, AV_LOG_ERROR, "no frame buffer available\n");
             return i;
@@ -1801,7 +1801,7 @@ int ff_mpv_frame_start(MpegEncContext *s, AVCodecContext *avctx)
     if ((!s->next_picture_ptr || !s->next_picture_ptr->f->buf[0]) &&
         s->pict_type == AV_PICTURE_TYPE_B) {
         /* Allocate a dummy frame */
-        i = ff_find_unused_picture(s, 0);
+        i = ff_find_unused_picture(s->avctx, s->picture, 0);
         if (i < 0) {
             av_log(s->avctx, AV_LOG_ERROR, "no frame buffer available\n");
             return i;

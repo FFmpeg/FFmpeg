@@ -994,7 +994,7 @@ static int load_input_picture(MpegEncContext *s, const AVFrame *pic_arg)
         ff_dlog(s->avctx, "%d %d %td %td\n", pic_arg->linesize[0],
                 pic_arg->linesize[1], s->linesize, s->uvlinesize);
 
-        i = ff_find_unused_picture(s, direct);
+        i = ff_find_unused_picture(s->avctx, s->picture, direct);
         if (i < 0)
             return i;
 
@@ -1379,7 +1379,7 @@ no_output_pic:
             // one & ensure that the shared one is reuseable
 
             Picture *pic;
-            int i = ff_find_unused_picture(s, 0);
+            int i = ff_find_unused_picture(s->avctx, s->picture, 0);
             if (i < 0)
                 return i;
             pic = &s->picture[i];
