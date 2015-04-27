@@ -88,12 +88,7 @@ static void remove_sps(HEVCContext *s, int id)
             if (s->pps_list[i] && ((HEVCPPS*)s->pps_list[i]->data)->sps_id == id)
                 remove_pps(s, i);
 
-        if (s->sps_list[id] && s->sps == (HEVCSPS*)s->sps_list[id]->data) {
-            av_buffer_unref(&s->current_sps);
-            s->current_sps = av_buffer_ref(s->sps_list[id]);
-            if (!s->current_sps)
-                s->sps = NULL;
-        }
+        av_assert0(!(s->sps_list[id] && s->sps == (HEVCSPS*)s->sps_list[id]->data));
     }
     av_buffer_unref(&s->sps_list[id]);
 }
