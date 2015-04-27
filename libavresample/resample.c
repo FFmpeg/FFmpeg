@@ -432,7 +432,9 @@ int ff_audio_resample(ResampleContext *c, AudioData *dst, AudioData *src)
         int bps = av_get_bytes_per_sample(c->avr->internal_sample_fmt);
         int i;
 
-        ret = ff_audio_data_realloc(c->buffer, in_samples + c->padding_size);
+        ret = ff_audio_data_realloc(c->buffer,
+                                    FFMAX(in_samples, in_leftover) +
+                                    c->padding_size);
         if (ret < 0) {
             av_log(c->avr, AV_LOG_ERROR, "Error reallocating resampling buffer\n");
             return AVERROR(ENOMEM);
