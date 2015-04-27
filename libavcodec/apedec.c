@@ -1472,13 +1472,13 @@ static int ape_decode_frame(AVCodecContext *avctx, void *data,
             av_log(avctx, AV_LOG_ERROR, "Invalid sample count: %u.\n", nblocks);
             return AVERROR_INVALIDDATA;
         }
-        s->samples = nblocks;
 
         /* Initialize the frame decoder */
         if (init_frame_decoder(s) < 0) {
             av_log(avctx, AV_LOG_ERROR, "Error reading frame header\n");
             return AVERROR_INVALIDDATA;
         }
+        s->samples = nblocks;
     }
 
     if (!s->data) {
