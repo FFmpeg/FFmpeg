@@ -389,7 +389,7 @@ static av_cold int dct_init(MpegEncContext *s)
     s->dct_unquantize_mpeg1_intra = dct_unquantize_mpeg1_intra_c;
     s->dct_unquantize_mpeg1_inter = dct_unquantize_mpeg1_inter_c;
     s->dct_unquantize_mpeg2_intra = dct_unquantize_mpeg2_intra_c;
-    if (s->flags & CODEC_FLAG_BITEXACT)
+    if (s->avctx->flags & CODEC_FLAG_BITEXACT)
         s->dct_unquantize_mpeg2_intra = dct_unquantize_mpeg2_intra_bitexact;
     s->dct_unquantize_mpeg2_inter = dct_unquantize_mpeg2_inter_c;
 
@@ -1174,7 +1174,7 @@ static int init_context_frame(MpegEncContext *s)
     }
 
     if (s->codec_id == AV_CODEC_ID_MPEG4 ||
-        (s->flags & CODEC_FLAG_INTERLACED_ME)) {
+        (s->avctx->flags & CODEC_FLAG_INTERLACED_ME)) {
         /* interlaced direct mode decoding tables */
         for (i = 0; i < 2; i++) {
             int j, k;
@@ -1276,9 +1276,6 @@ av_cold int ff_mpv_common_init(MpegEncContext *s)
         return -1;
 
     dct_init(s);
-
-    s->flags  = s->avctx->flags;
-    s->flags2 = s->avctx->flags2;
 
     /* set chroma shifts */
     av_pix_fmt_get_chroma_sub_sample(s->avctx->pix_fmt,
@@ -1744,7 +1741,7 @@ int ff_mpv_frame_start(MpegEncContext *s, AVCodecContext *avctx)
     s->current_picture_ptr->field_picture      =  s->picture_structure != PICT_FRAME;
 
     s->current_picture_ptr->f->pict_type = s->pict_type;
-    // if (s->flags && CODEC_FLAG_QSCALE)
+    // if (s->avctx->flags && CODEC_FLAG_QSCALE)
     //     s->current_picture_ptr->quality = s->new_picture_ptr->quality;
     s->current_picture_ptr->f->key_frame = s->pict_type == AV_PICTURE_TYPE_I;
 
@@ -2158,7 +2155,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
     else if (!is_mpeg12 && (s->h263_pred || s->h263_aic))
         s->mbintra_table[mb_xy]=1;
 
-    if ((s->flags&CODEC_FLAG_PSNR) || !(s->encoding && (s->intra_only || s->pict_type==AV_PICTURE_TYPE_B) && s->avctx->mb_decision != FF_MB_DECISION_RD)) { //FIXME precalc
+    if ((s->avctx->flags & CODEC_FLAG_PSNR) ||
+        !(s->encoding && (s->intra_only || s->pict_type == AV_PICTURE_TYPE_B) &&
+          s->avctx->mb_decision != FF_MB_DECISION_RD)) { // FIXME precalc
         uint8_t *dest_y, *dest_cb, *dest_cr;
         int dct_linesize, dct_offset;
         op_pixels_func (*op_pix)[4];
@@ -2247,7 +2246,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 add_dequant_dct(s, block[2], 2, dest_y + dct_offset             , dct_linesize, s->qscale);
                 add_dequant_dct(s, block[3], 3, dest_y + dct_offset + block_size, dct_linesize, s->qscale);
 
-                if(!CONFIG_GRAY || !(s->flags&CODEC_FLAG_GRAY)){
+                if (!CONFIG_GRAY || !(s->avctx->flags & CODEC_FLAG_GRAY)) {
                     if (s->chroma_y_shift){
                         add_dequant_dct(s, block[4], 4, dest_cb, uvlinesize, s->chroma_qscale);
                         add_dequant_dct(s, block[5], 5, dest_cr, uvlinesize, s->chroma_qscale);
@@ -2266,7 +2265,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 add_dct(s, block[2], 2, dest_y + dct_offset             , dct_linesize);
                 add_dct(s, block[3], 3, dest_y + dct_offset + block_size, dct_linesize);
 
-                if(!CONFIG_GRAY || !(s->flags&CODEC_FLAG_GRAY)){
+                if (!CONFIG_GRAY || !(s->avctx->flags & CODEC_FLAG_GRAY)) {
                     if(s->chroma_y_shift){//Chroma420
                         add_dct(s, block[4], 4, dest_cb, uvlinesize);
                         add_dct(s, block[5], 5, dest_cr, uvlinesize);
@@ -2299,7 +2298,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 put_dct(s, block[2], 2, dest_y + dct_offset             , dct_linesize, s->qscale);
                 put_dct(s, block[3], 3, dest_y + dct_offset + block_size, dct_linesize, s->qscale);
 
-                if(!CONFIG_GRAY || !(s->flags&CODEC_FLAG_GRAY)){
+                if (!CONFIG_GRAY || !(s->avctx->flags & CODEC_FLAG_GRAY)) {
                     if(s->chroma_y_shift){
                         put_dct(s, block[4], 4, dest_cb, uvlinesize, s->chroma_qscale);
                         put_dct(s, block[5], 5, dest_cr, uvlinesize, s->chroma_qscale);
@@ -2318,7 +2317,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 s->idsp.idct_put(dest_y + dct_offset,              dct_linesize, block[2]);
                 s->idsp.idct_put(dest_y + dct_offset + block_size, dct_linesize, block[3]);
 
-                if(!CONFIG_GRAY || !(s->flags&CODEC_FLAG_GRAY)){
+                if (!CONFIG_GRAY || !(s->avctx->flags & CODEC_FLAG_GRAY)) {
                     if(s->chroma_y_shift){
                         s->idsp.idct_put(dest_cb, uvlinesize, block[4]);
                         s->idsp.idct_put(dest_cr, uvlinesize, block[5]);

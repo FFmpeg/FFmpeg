@@ -237,8 +237,6 @@ typedef struct MpegEncContext {
     enum AVCodecID codec_id;     /* see AV_CODEC_ID_xxx */
     int fixed_qscale; ///< fixed qscale if non zero
     int encoding;     ///< true if we are encoding (vs decoding)
-    int flags;        ///< AVCodecContext.flags (HQ, MV4, ...)
-    int flags2;       ///< AVCodecContext.flags2
     int max_b_frames; ///< max number of b-frames for encoding
     int luma_elim_threshold;
     int chroma_elim_threshold;

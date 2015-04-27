@@ -275,7 +275,6 @@ static int svq1_encode_plane(SVQ1EncContext *s, int plane,
         s->m.pict_type                     = f->pict_type;
         s->m.me_method                     = s->avctx->me_method;
         s->m.me.scene_change_score         = 0;
-        s->m.flags                         = s->avctx->flags;
         // s->m.out_format                    = FMT_H263;
         // s->m.unrestricted_mv               = 1;
         s->m.lambda                        = f->quality;

@@ -150,7 +150,7 @@ av_cold int ff_rate_control_init(MpegEncContext *s)
     }
     rcc->buffer_index = s->avctx->rc_initial_buffer_occupancy;
 
-    if (s->flags & CODEC_FLAG_PASS2) {
+    if (s->avctx->flags & CODEC_FLAG_PASS2) {
         int i;
         char *p;
 
@@ -214,7 +214,7 @@ av_cold int ff_rate_control_init(MpegEncContext *s)
             return -1;
 
         // FIXME maybe move to end
-        if ((s->flags & CODEC_FLAG_PASS2) && s->avctx->rc_strategy == FF_RC_STRATEGY_XVID) {
+        if ((s->avctx->flags & CODEC_FLAG_PASS2) && s->avctx->rc_strategy == FF_RC_STRATEGY_XVID) {
 #if CONFIG_LIBXVID
             return ff_xvid_rate_control_init(s);
 #else
@@ -225,7 +225,7 @@ av_cold int ff_rate_control_init(MpegEncContext *s)
         }
     }
 
-    if (!(s->flags & CODEC_FLAG_PASS2)) {
+    if (!(s->avctx->flags & CODEC_FLAG_PASS2)) {
         rcc->short_term_qsum   = 0.001;
         rcc->short_term_qcount = 0.001;
 
@@ -294,7 +294,7 @@ av_cold void ff_rate_control_uninit(MpegEncContext *s)
     av_freep(&rcc->entry);
 
 #if CONFIG_LIBXVID
-    if ((s->flags & CODEC_FLAG_PASS2) && s->avctx->rc_strategy == FF_RC_STRATEGY_XVID)
+    if ((s->avctx->flags & CODEC_FLAG_PASS2) && s->avctx->rc_strategy == FF_RC_STRATEGY_XVID)
         ff_xvid_rate_control_uninit(s);
 #endif
 }
@@ -744,7 +744,7 @@ float ff_rate_estimate_qscale(MpegEncContext *s, int dry_run)
     emms_c();
 
 #if CONFIG_LIBXVID
-    if ((s->flags & CODEC_FLAG_PASS2) &&
+    if ((s->avctx->flags & CODEC_FLAG_PASS2) &&
         s->avctx->rc_strategy == FF_RC_STRATEGY_XVID)
         return ff_xvid_rate_estimate_qscale(s, dry_run);
 #endif
@@ -761,7 +761,7 @@ float ff_rate_estimate_qscale(MpegEncContext *s, int dry_run)
                          sqrt(last_var), s->frame_bits);
     }
 
-    if (s->flags & CODEC_FLAG_PASS2) {
+    if (s->avctx->flags & CODEC_FLAG_PASS2) {
         assert(picture_number >= 0);
         assert(picture_number < rcc->num_entries);
         rce         = &rcc->entry[picture_number];
@@ -792,7 +792,7 @@ float ff_rate_estimate_qscale(MpegEncContext *s, int dry_run)
     var = pict_type == AV_PICTURE_TYPE_I ? pic->mb_var_sum : pic->mc_mb_var_sum;
 
     short_term_q = 0; /* avoid warning */
-    if (s->flags & CODEC_FLAG_PASS2) {
+    if (s->avctx->flags & CODEC_FLAG_PASS2) {
         if (pict_type != AV_PICTURE_TYPE_I)
             assert(pict_type == rce->new_pict_type);
 

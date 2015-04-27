@@ -300,8 +300,6 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
     }
     s->gop_size     = avctx->gop_size;
     s->avctx        = avctx;
-    s->flags        = avctx->flags;
-    s->flags2       = avctx->flags2;
     if (avctx->max_b_frames > MAX_B_FRAMES) {
         av_log(avctx, AV_LOG_ERROR, "Too many B-frames requested, maximum "
                "is %d.\n", MAX_B_FRAMES);
@@ -343,7 +341,7 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
                          (s->mpv_flags & FF_MPV_FLAG_QP_RD)) &&
                         !s->fixed_qscale;
 
-    s->loop_filter      = !!(s->flags & CODEC_FLAG_LOOP_FILTER);
+    s->loop_filter = !!(s->avctx->flags & CODEC_FLAG_LOOP_FILTER);
 
     if (avctx->rc_max_rate && !avctx->rc_buffer_size) {
         av_log(avctx, AV_LOG_ERROR,
@@ -400,7 +398,7 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
                "specified vbv buffer is too large for the given bitrate!\n");
     }
 
-    if ((s->flags & CODEC_FLAG_4MV)  && s->codec_id != AV_CODEC_ID_MPEG4 &&
+    if ((s->avctx->flags & CODEC_FLAG_4MV) && s->codec_id != AV_CODEC_ID_MPEG4 &&
         s->codec_id != AV_CODEC_ID_H263 && s->codec_id != AV_CODEC_ID_H263P &&
         s->codec_id != AV_CODEC_ID_FLV1) {
         av_log(avctx, AV_LOG_ERROR, "4MV not supported by codec\n");
@@ -437,7 +435,7 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
         return -1;
     }
 
-    if ((s->flags & (CODEC_FLAG_INTERLACED_DCT | CODEC_FLAG_INTERLACED_ME)) &&
+    if ((s->avctx->flags & (CODEC_FLAG_INTERLACED_DCT | CODEC_FLAG_INTERLACED_ME)) &&
         s->codec_id != AV_CODEC_ID_MPEG4 && s->codec_id != AV_CODEC_ID_MPEG2VIDEO) {
         av_log(avctx, AV_LOG_ERROR, "interlacing not supported by codec\n");
         return -1;
@@ -462,14 +460,14 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
     }
 
     if (s->avctx->scenechange_threshold < 1000000000 &&
-        (s->flags & CODEC_FLAG_CLOSED_GOP)) {
+        (s->avctx->flags & CODEC_FLAG_CLOSED_GOP)) {
         av_log(avctx, AV_LOG_ERROR,
                "closed gop with scene change detection are not supported yet, "
                "set threshold to 1000000000\n");
         return -1;
     }
 
-    if (s->flags & CODEC_FLAG_LOW_DELAY) {
+    if (s->avctx->flags & CODEC_FLAG_LOW_DELAY) {
         if (s->codec_id != AV_CODEC_ID_MPEG2VIDEO) {
             av_log(avctx, AV_LOG_ERROR,
                   "low delay forcing is only available for mpeg2\n");
@@ -559,12 +557,12 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
     switch (avctx->codec->id) {
     case AV_CODEC_ID_MPEG1VIDEO:
         s->out_format = FMT_MPEG1;
-        s->low_delay  = !!(s->flags & CODEC_FLAG_LOW_DELAY);
+        s->low_delay  = !!(s->avctx->flags & CODEC_FLAG_LOW_DELAY);
         avctx->delay  = s->low_delay ? 0 : (s->max_b_frames + 1);
         break;
     case AV_CODEC_ID_MPEG2VIDEO:
         s->out_format = FMT_MPEG1;
-        s->low_delay  = !!(s->flags & CODEC_FLAG_LOW_DELAY);
+        s->low_delay  = !!(s->avctx->flags & CODEC_FLAG_LOW_DELAY);
         avctx->delay  = s->low_delay ? 0 : (s->max_b_frames + 1);
         s->rtp_mode   = 1;
         break;
@@ -1273,7 +1271,7 @@ static int select_input_picture(MpegEncContext *s)
                 }
             }
 
-            if (s->flags & CODEC_FLAG_PASS2) {
+            if (s->avctx->flags & CODEC_FLAG_PASS2) {
                 for (i = 0; i < s->max_b_frames + 1; i++) {
                     int pict_num = s->input_picture[0]->f->display_picture_number + i;
 
@@ -1342,13 +1340,13 @@ static int select_input_picture(MpegEncContext *s)
                     s->gop_size > s->picture_in_gop_number) {
                     b_frames = s->gop_size - s->picture_in_gop_number - 1;
                 } else {
-                    if (s->flags & CODEC_FLAG_CLOSED_GOP)
+                    if (s->avctx->flags & CODEC_FLAG_CLOSED_GOP)
                         b_frames = 0;
                     s->input_picture[b_frames]->f->pict_type = AV_PICTURE_TYPE_I;
                 }
             }
 
-            if ((s->flags & CODEC_FLAG_CLOSED_GOP) && b_frames &&
+            if ((s->avctx->flags & CODEC_FLAG_CLOSED_GOP) && b_frames &&
                 s->input_picture[b_frames]->f->pict_type == AV_PICTURE_TYPE_I)
                 b_frames--;
 
@@ -1659,7 +1657,7 @@ vbv_retry:
             assert(s->avctx->rc_max_rate);
         }
 
-        if (s->flags & CODEC_FLAG_PASS1)
+        if (s->avctx->flags & CODEC_FLAG_PASS1)
             ff_write_pass1_stats(s);
 
         for (i = 0; i < 4; i++) {
@@ -1667,7 +1665,7 @@ vbv_retry:
             avctx->error[i] += s->current_picture_ptr->f->error[i];
         }
 
-        if (s->flags & CODEC_FLAG_PASS1)
+        if (s->avctx->flags & CODEC_FLAG_PASS1)
             assert(avctx->header_bits + avctx->mv_bits + avctx->misc_bits +
                    avctx->i_tex_bits + avctx->p_tex_bits ==
                        put_bits_count(&s->pb));
@@ -1955,7 +1953,7 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
     }
 
     if (s->mb_intra) {
-        if (s->flags & CODEC_FLAG_INTERLACED_DCT) {
+        if (s->avctx->flags & CODEC_FLAG_INTERLACED_DCT) {
             int progressive_score, interlaced_score;
 
             s->interlaced_dct = 0;
@@ -1984,7 +1982,7 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
         s->pdsp.get_pixels(s->block[2], ptr_y + dct_offset,     wrap_y);
         s->pdsp.get_pixels(s->block[3], ptr_y + dct_offset + 8, wrap_y);
 
-        if (s->flags & CODEC_FLAG_GRAY) {
+        if (s->avctx->flags & CODEC_FLAG_GRAY) {
             skip_dct[4] = 1;
             skip_dct[5] = 1;
         } else {
@@ -2027,7 +2025,7 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
                           op_pix, op_qpix);
         }
 
-        if (s->flags & CODEC_FLAG_INTERLACED_DCT) {
+        if (s->avctx->flags & CODEC_FLAG_INTERLACED_DCT) {
             int progressive_score, interlaced_score;
 
             s->interlaced_dct = 0;
@@ -2064,7 +2062,7 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
         s->pdsp.diff_pixels(s->block[3], ptr_y + dct_offset + 8,
                             dest_y + dct_offset + 8, wrap_y);
 
-        if (s->flags & CODEC_FLAG_GRAY) {
+        if (s->avctx->flags & CODEC_FLAG_GRAY) {
             skip_dct[4] = 1;
             skip_dct[5] = 1;
         } else {
@@ -2174,7 +2172,7 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
         }
     }
 
-    if ((s->flags & CODEC_FLAG_GRAY) && s->mb_intra) {
+    if ((s->avctx->flags & CODEC_FLAG_GRAY) && s->mb_intra) {
         s->block_last_index[4] =
         s->block_last_index[5] = 0;
         s->block[4][0] =
@@ -2486,7 +2484,7 @@ static void write_slice_end(MpegEncContext *s){
     avpriv_align_put_bits(&s->pb);
     flush_put_bits(&s->pb);
 
-    if((s->flags&CODEC_FLAG_PASS1) && !s->partitioned_frame)
+    if ((s->avctx->flags & CODEC_FLAG_PASS1) && !s->partitioned_frame)
         s->misc_bits+= get_bits_diff(s);
 }
 
@@ -2697,7 +2695,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
                     break;
                     }
 
-                    if(s->flags&CODEC_FLAG_PASS1){
+                    if (s->avctx->flags & CODEC_FLAG_PASS1) {
                         int bits= put_bits_count(&s->pb);
                         s->misc_bits+= bits - s->last_bits;
                         s->last_bits= bits;
@@ -3116,7 +3114,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
                 s->p_mv_table[xy][1]=0;
             }
 
-            if(s->flags&CODEC_FLAG_PSNR){
+            if (s->avctx->flags & CODEC_FLAG_PSNR) {
                 int w= 16;
                 int h= 16;
 
@@ -3281,11 +3279,11 @@ static int encode_picture(MpegEncContext *s, int picture_number)
             s->no_rounding ^= 1;
     }
 
-    if(s->flags & CODEC_FLAG_PASS2){
+    if (s->avctx->flags & CODEC_FLAG_PASS2) {
         if (estimate_qp(s,1) < 0)
             return -1;
         ff_get_2pass_fcode(s);
-    }else if(!(s->flags & CODEC_FLAG_QSCALE)){
+    } else if (!(s->avctx->flags & CODEC_FLAG_QSCALE)) {
         if(s->pict_type==AV_PICTURE_TYPE_B)
             s->lambda= s->last_lambda_for[s->pict_type];
         else
@@ -3343,7 +3341,7 @@ static int encode_picture(MpegEncContext *s, int picture_number)
         if(s->pict_type==AV_PICTURE_TYPE_P || s->pict_type==AV_PICTURE_TYPE_S) {
             s->f_code= ff_get_best_fcode(s, s->p_mv_table, CANDIDATE_MB_TYPE_INTER);
 
-            if(s->flags & CODEC_FLAG_INTERLACED_ME){
+            if (s->avctx->flags & CODEC_FLAG_INTERLACED_ME) {
                 int a,b;
                 a= ff_get_best_fcode(s, s->p_field_mv_table[0][0], CANDIDATE_MB_TYPE_INTER_I); //FIXME field_select
                 b= ff_get_best_fcode(s, s->p_field_mv_table[1][1], CANDIDATE_MB_TYPE_INTER_I);
@@ -3352,7 +3350,7 @@ static int encode_picture(MpegEncContext *s, int picture_number)
 
             ff_fix_long_p_mvs(s);
             ff_fix_long_mvs(s, NULL, 0, s->p_mv_table, s->f_code, CANDIDATE_MB_TYPE_INTER, 0);
-            if(s->flags & CODEC_FLAG_INTERLACED_ME){
+            if (s->avctx->flags & CODEC_FLAG_INTERLACED_ME) {
                 int j;
                 for(i=0; i<2; i++){
                     for(j=0; j<2; j++)
@@ -3377,7 +3375,7 @@ static int encode_picture(MpegEncContext *s, int picture_number)
             ff_fix_long_mvs(s, NULL, 0, s->b_back_mv_table, s->b_code, CANDIDATE_MB_TYPE_BACKWARD, 1);
             ff_fix_long_mvs(s, NULL, 0, s->b_bidir_forw_mv_table, s->f_code, CANDIDATE_MB_TYPE_BIDIR, 1);
             ff_fix_long_mvs(s, NULL, 0, s->b_bidir_back_mv_table, s->b_code, CANDIDATE_MB_TYPE_BIDIR, 1);
-            if(s->flags & CODEC_FLAG_INTERLACED_ME){
+            if (s->avctx->flags & CODEC_FLAG_INTERLACED_ME) {
                 int dir, j;
                 for(dir=0; dir<2; dir++){
                     for(i=0; i<2; i++){
@@ -3396,7 +3394,9 @@ static int encode_picture(MpegEncContext *s, int picture_number)
     if (estimate_qp(s, 0) < 0)
         return -1;
 
-    if(s->qscale < 3 && s->max_qcoeff<=128 && s->pict_type==AV_PICTURE_TYPE_I && !(s->flags & CODEC_FLAG_QSCALE))
+    if (s->qscale < 3 && s->max_qcoeff <= 128 &&
+        s->pict_type == AV_PICTURE_TYPE_I &&
+        !(s->avctx->flags & CODEC_FLAG_QSCALE))
         s->qscale= 3; //reduce clipping problems
 
     if (s->out_format == FMT_MJPEG) {

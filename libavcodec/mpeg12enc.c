@@ -324,7 +324,7 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
         put_bits(&s->pb, 1, 1);
         put_bits(&s->pb, 6, (uint32_t)((time_code / fps) % 60));
         put_bits(&s->pb, 6, (uint32_t)((time_code % fps)));
-        put_bits(&s->pb, 1, !!(s->flags & CODEC_FLAG_CLOSED_GOP));
+        put_bits(&s->pb, 1, !!(s->avctx->flags & CODEC_FLAG_CLOSED_GOP));
         put_bits(&s->pb, 1, 0);                     // broken link
     }
 }
