@@ -3309,11 +3309,11 @@ static void loopfilter_sb(AVCodecContext *ctx, struct VP9Filter *lflvl,
         unsigned hm = hm1 | hm2 | hm13 | hm23;
 
         for (x = 1; hm & ~(x - 1); x <<= 1, ptr += 8, l++) {
-            if (hm1 & x) {
-                int L = *l, H = L >> 4;
-                int E = s->filter.mblim_lut[L], I = s->filter.lim_lut[L];
+            if (col || x > 1) {
+                if (hm1 & x) {
+                    int L = *l, H = L >> 4;
+                    int E = s->filter.mblim_lut[L], I = s->filter.lim_lut[L];
 
-                if (col || x > 1) {
                     if (hmask1[0] & x) {
                         if (hmask2[0] & x) {
                             av_assert2(l[8] == L);
@@ -3333,12 +3333,10 @@ static void loopfilter_sb(AVCodecContext *ctx, struct VP9Filter *lflvl,
                         s->dsp.loop_filter_8[!!(hmask1[1] & x)]
                                             [0](ptr, ls_y, E, I, H);
                     }
-                }
-            } else if (hm2 & x) {
-                int L = l[8], H = L >> 4;
-                int E = s->filter.mblim_lut[L], I = s->filter.lim_lut[L];
+                } else if (hm2 & x) {
+                    int L = l[8], H = L >> 4;
+                    int E = s->filter.mblim_lut[L], I = s->filter.lim_lut[L];
 
-                if (col || x > 1) {
                     s->dsp.loop_filter_8[!!(hmask2[1] & x)]
                                         [0](ptr + 8 * ls_y, ls_y, E, I, H);
                 }
