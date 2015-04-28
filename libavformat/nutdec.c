@@ -487,6 +487,10 @@ static int decode_info_header(NUTContext *nut)
                                      nut->time_base[chapter_start %
                                                     nut->time_base_count],
                                      start, start + chapter_len, NULL);
+        if (!chapter) {
+            av_log(s, AV_LOG_ERROR, "Could not create chapter.\n");
+            return AVERROR(ENOMEM);
+        }
         metadata = &chapter->metadata;
     } else if (stream_id_plus1) {
         st       = s->streams[stream_id_plus1 - 1];
