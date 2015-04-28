@@ -286,7 +286,7 @@ static int decode_main_header(NUTContext *nut)
         while (tmp_fields-- > 8)
             ffio_read_varlen(bc);
 
-        if (count == 0 || i + count > 256) {
+        if (count <= 0 || count > 256 - (i <= 'N') - i) {
             av_log(s, AV_LOG_ERROR, "illegal count %d at %d\n", count, i);
             return AVERROR_INVALIDDATA;
         }
