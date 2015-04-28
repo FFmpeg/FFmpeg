@@ -2577,7 +2577,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
     case AV_CODEC_ID_H263P:
     case AV_CODEC_ID_FLV1:
         if (CONFIG_H263_ENCODER)
-            s->gob_index = ff_h263_get_gob_height(s);
+            s->gob_index = H263_GOB_HEIGHT(s->height);
         break;
     case AV_CODEC_ID_MPEG4:
         if(CONFIG_MPEG4_ENCODER && s->partitioned_frame)

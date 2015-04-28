@@ -40,6 +40,8 @@
 #define CBPY_VLC_BITS 6
 #define TEX_VLC_BITS 9
 
+#define H263_GOB_HEIGHT(h) ((h) <= 400 ? 1 : (h) <= 800 ? 2 : 4)
+
 extern const AVRational ff_h263_pixel_aspect[16];
 extern const uint8_t ff_h263_cbpy_tab[16][2];
 
@@ -122,7 +124,6 @@ int av_const h263_get_picture_format(int width, int height);
 void ff_clean_h263_qscales(MpegEncContext *s);
 int ff_h263_resync(MpegEncContext *s);
 const uint8_t *ff_h263_find_resync_marker(const uint8_t *p, const uint8_t *end);
-int ff_h263_get_gob_height(MpegEncContext *s);
 void ff_h263_encode_motion(MpegEncContext * s, int val, int f_code);
 
 
