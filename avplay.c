@@ -1033,7 +1033,7 @@ static void stream_pause(VideoState *is)
 
 static double compute_target_time(double frame_current_pts, VideoState *is)
 {
-    double delay, sync_threshold, diff;
+    double delay, sync_threshold, diff = 0;
 
     /* compute nominal delay */
     delay = frame_current_pts - is->frame_last_pts;
