@@ -3218,8 +3218,6 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
     s->pps = NULL;
     s->vps = NULL;
 
-    av_buffer_unref(&s->current_sps);
-
     av_freep(&s->sh.entry_point_offset);
     av_freep(&s->sh.offset);
     av_freep(&s->sh.size);
@@ -3338,13 +3336,6 @@ static int hevc_update_thread_context(AVCodecContext *dst,
             if (!s->pps_list[i])
                 return AVERROR(ENOMEM);
         }
-    }
-
-    av_buffer_unref(&s->current_sps);
-    if (s0->current_sps) {
-        s->current_sps = av_buffer_ref(s0->current_sps);
-        if (!s->current_sps)
-            return AVERROR(ENOMEM);
     }
 
     if (s->sps != s0->sps)

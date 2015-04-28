@@ -9,9 +9,6 @@
   availabilityStartTime=""
   timeShiftBufferDepth="PT7200S"
   minimumUpdatePeriod="PT60S">
-<UTCTiming
-  schemeIdUri="urn:mpeg:dash:utc:direct:2012"
-  value=""/>
 <Period id="0" start="PT0S" >
 <AdaptationSet id="0" mimeType="video/webm" codecs="vp9" bitstreamSwitching="true" subsegmentAlignment="true" subsegmentStartsWithSAP="1">
 <ContentComponent id="1" type="video"/>

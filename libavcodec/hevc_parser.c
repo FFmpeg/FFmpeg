@@ -333,7 +333,6 @@ static void hevc_close(AVCodecParserContext *s)
     for (i = 0; i < FF_ARRAY_ELEMS(h->pps_list); i++)
         av_buffer_unref(&h->pps_list[i]);
 
-    av_buffer_unref(&h->current_sps);
     h->sps = NULL;
 
     for (i = 0; i < h->nals_allocated; i++)

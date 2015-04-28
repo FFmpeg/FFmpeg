@@ -201,9 +201,6 @@ static int webm_chunk_write_packet(AVFormatContext *s, AVPacket *pkt)
         }
     }
 
-    if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO && pkt->pts == 0) {
-        goto fail;
-    }
     ret = oc->oformat->write_packet(oc, pkt);
     if (ret < 0)
         goto fail;

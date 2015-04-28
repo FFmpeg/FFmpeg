@@ -225,7 +225,7 @@ typedef struct AVClass {
  * @see av_log_set_callback
  *
  * @param avcl A pointer to an arbitrary struct of which the first field is a
- *        pointer to an AVClass struct.
+ *        pointer to an AVClass struct or NULL if general log.
  * @param level The importance level of the message expressed using a @ref
  *        lavu_log_constants "Logging Constant".
  * @param fmt The format string (printf-compatible) that specifies how

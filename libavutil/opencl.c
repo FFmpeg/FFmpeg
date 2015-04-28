@@ -181,9 +181,11 @@ static void free_device_list(AVOpenCLDeviceList *device_list)
         if (!device_list->platform_node[i])
             continue;
         for (j = 0; j < device_list->platform_node[i]->device_num; j++) {
+            av_freep(&(device_list->platform_node[i]->device_node[j]->device_name));
             av_freep(&(device_list->platform_node[i]->device_node[j]));
         }
         av_freep(&device_list->platform_node[i]->device_node);
+        av_freep(&(device_list->platform_node[i]->platform_name));
         av_freep(&device_list->platform_node[i]);
     }
     av_freep(&device_list->platform_node);
@@ -198,6 +200,8 @@ static int get_device_list(AVOpenCLDeviceList *device_list)
     cl_platform_id *platform_ids = NULL;
     cl_device_id *device_ids = NULL;
     AVOpenCLDeviceNode *device_node = NULL;
+    size_t platform_name_size = 0;
+    size_t device_name_size = 0;
     status = clGetPlatformIDs(0, NULL, &device_list->platform_num);
     if (status != CL_SUCCESS) {
         av_log(&opencl_ctx, AV_LOG_ERROR,
@@ -232,8 +236,25 @@ static int get_device_list(AVOpenCLDeviceList *device_list)
         }
         device_list->platform_node[i]->platform_id = platform_ids[i];
         status = clGetPlatformInfo(platform_ids[i], CL_PLATFORM_VENDOR,
-                                   sizeof(device_list->platform_node[i]->platform_name),
-                                   device_list->platform_node[i]->platform_name, NULL);
+                                   0, NULL, &platform_name_size);
+        if (status != CL_SUCCESS) {
+            av_log(&opencl_ctx, AV_LOG_WARNING,
+                    "Could not get size of platform name: %s\n", av_opencl_errstr(status));
+        } else {
+            device_list->platform_node[i]->platform_name = av_malloc(platform_name_size * sizeof(char));
+            if (!device_list->platform_node[i]->platform_name) {
+                av_log(&opencl_ctx, AV_LOG_WARNING,
+                        "Could not allocate memory for device name: %s\n", av_opencl_errstr(status));
+            } else {
+                status = clGetPlatformInfo(platform_ids[i], CL_PLATFORM_VENDOR,
+                                           platform_name_size * sizeof(char),
+                                           device_list->platform_node[i]->platform_name, NULL);
+                if (status != CL_SUCCESS) {
+                    av_log(&opencl_ctx, AV_LOG_WARNING,
+                            "Could not get platform name: %s\n", av_opencl_errstr(status));
+                }
+            }
+        }
         total_devices_num = 0;
         for (j = 0; j < FF_ARRAY_ELEMS(device_type); j++) {
             status = clGetDeviceIDs(device_list->platform_node[i]->platform_id,
@@ -271,8 +292,21 @@ static int get_device_list(AVOpenCLDeviceList *device_list)
                     device_node->device_id = device_ids[k];
                     device_node->device_type = device_type[j];
                     status = clGetDeviceInfo(device_node->device_id, CL_DEVICE_NAME,
-                                             sizeof(device_node->device_name), device_node->device_name,
-                                             NULL);
+                                             0, NULL, &device_name_size);
+                    if (status != CL_SUCCESS) {
+                        av_log(&opencl_ctx, AV_LOG_WARNING,
+                                "Could not get size of device name: %s\n", av_opencl_errstr(status));
+                        continue;
+                    }
+                    device_node->device_name = av_malloc(device_name_size * sizeof(char));
+                    if (!device_node->device_name) {
+                        av_log(&opencl_ctx, AV_LOG_WARNING,
+                                "Could not allocate memory for device name: %s\n", av_opencl_errstr(status));
+                        continue;
+                    }
+                    status = clGetDeviceInfo(device_node->device_id, CL_DEVICE_NAME,
+                                             device_name_size * sizeof(char),
+                                             device_node->device_name, NULL);
                     if (status != CL_SUCCESS) {
                         av_log(&opencl_ctx, AV_LOG_WARNING,
                                 "Could not get device name: %s\n", av_opencl_errstr(status));

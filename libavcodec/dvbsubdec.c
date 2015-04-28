@@ -1418,7 +1418,7 @@ static void save_display_set(DVBSubContext *ctx)
 
         pbuf = av_malloc(width * height * 4);
         if (!pbuf)
-            return AVERROR(ENOMEM);
+            return;
 
         for (display = ctx->display_list; display; display = display->next) {
             region = get_region(ctx, display->region_id);

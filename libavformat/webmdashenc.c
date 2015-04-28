@@ -119,11 +119,11 @@ static void write_header(AVFormatContext *s)
         avio_printf(s->pb, "  timeShiftBufferDepth=\"PT%gS\"\n", w->time_shift_buffer_depth);
         avio_printf(s->pb, "  minimumUpdatePeriod=\"PT%dS\"", w->minimum_update_period);
         avio_printf(s->pb, ">\n");
-        avio_printf(s->pb, "<UTCTiming\n");
-        avio_printf(s->pb, "  schemeIdUri=\"%s\"\n",
-                    w->utc_timing_url ? "urn:mpeg:dash:utc:http-iso:2014" : "urn:mpeg:dash:utc:direct:2012");
-        avio_printf(s->pb, "  value=\"%s\"/>\n",
-                    w->utc_timing_url ? w->utc_timing_url : gmt_iso);
+        if (w->utc_timing_url) {
+            avio_printf(s->pb, "<UTCTiming\n");
+            avio_printf(s->pb, "  schemeIdUri=\"urn:mpeg:dash:utc:http-iso:2014\"\n");
+            avio_printf(s->pb, "  value=\"%s\"/>\n", w->utc_timing_url);
+        }
     }
 }
 
