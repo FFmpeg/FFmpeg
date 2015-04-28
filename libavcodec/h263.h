@@ -211,11 +211,4 @@ static inline int get_p_cbp(MpegEncContext * s,
     return cbp;
 }
 
-static inline void memsetw(short *tab, int val, int n)
-{
-    int i;
-    for(i=0;i<n;i++)
-        tab[i] = val;
-}
-
 #endif /* AVCODEC_H263_H */

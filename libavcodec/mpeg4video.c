@@ -51,13 +51,6 @@ void ff_mpeg4_clean_buffers(MpegEncContext *s)
     c_wrap = s->mb_stride;
     c_xy   = (s->mb_y - 1) * c_wrap + s->mb_x - 1;
 
-#if 0
-    /* clean DC */
-    memsetw(s->dc_val[0] + l_xy, 1024, l_wrap * 2 + 1);
-    memsetw(s->dc_val[1] + c_xy, 1024, c_wrap + 1);
-    memsetw(s->dc_val[2] + c_xy, 1024, c_wrap + 1);
-#endif
-
     /* clean AC */
     memset(s->ac_val[0] + l_xy, 0, (l_wrap * 2 + 1) * 16 * sizeof(int16_t));
     memset(s->ac_val[1] + c_xy, 0, (c_wrap     + 1) * 16 * sizeof(int16_t));
@@ -65,9 +58,6 @@ void ff_mpeg4_clean_buffers(MpegEncContext *s)
 
     /* clean MV */
     // we can't clear the MVs as they might be needed by a b frame
-//    memset(s->motion_val + l_xy, 0, (l_wrap * 2 + 1) * 2 * sizeof(int16_t));
-//    memset(s->motion_val, 0, 2 * sizeof(int16_t) * (2 + s->mb_width * 2) *
-//           (2 + s->mb_height * 2));
     s->last_mv[0][0][0] =
     s->last_mv[0][0][1] =
     s->last_mv[1][0][0] =
