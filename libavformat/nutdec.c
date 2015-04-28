@@ -744,12 +744,14 @@ fail:
     return ret;
 }
 
+static int nut_read_close(AVFormatContext *s);
+
 static int nut_read_header(AVFormatContext *s)
 {
     NUTContext *nut = s->priv_data;
     AVIOContext *bc = s->pb;
     int64_t pos;
-    int initialized_stream_count;
+    int initialized_stream_count, ret = 0;
 
     nut->avf = s;
 
@@ -759,7 +761,8 @@ static int nut_read_header(AVFormatContext *s)
         pos = find_startcode(bc, MAIN_STARTCODE, pos) + 1;
         if (pos < 0 + 1) {
             av_log(s, AV_LOG_ERROR, "No main startcode found.\n");
-            return AVERROR_INVALIDDATA;
+            ret = AVERROR_INVALIDDATA;
+            goto end;
         }
     } while (decode_main_header(nut) < 0);
 
@@ -769,7 +772,8 @@ static int nut_read_header(AVFormatContext *s)
         pos = find_startcode(bc, STREAM_STARTCODE, pos) + 1;
         if (pos < 0 + 1) {
             av_log(s, AV_LOG_ERROR, "Not all stream headers found.\n");
-            return AVERROR_INVALIDDATA;
+            ret = AVERROR_INVALIDDATA;
+            goto end;
         }
         if (decode_stream_header(nut) >= 0)
             initialized_stream_count++;
@@ -783,7 +787,8 @@ static int nut_read_header(AVFormatContext *s)
 
         if (startcode == 0) {
             av_log(s, AV_LOG_ERROR, "EOF before video frames\n");
-            return AVERROR_INVALIDDATA;
+            ret = AVERROR_INVALIDDATA;
+            goto end;
         } else if (startcode == SYNCPOINT_STARTCODE) {
             nut->next_startcode = startcode;
             break;
@@ -805,7 +810,10 @@ static int nut_read_header(AVFormatContext *s)
 
     ff_metadata_conv_ctx(s, NULL, ff_nut_metadata_conv);
 
-    return 0;
+end:
+    if (ret < 0)
+        nut_read_close(s);
+    return FFMIN(ret, 0);
 }
 
 static int read_sm_data(AVFormatContext *s, AVIOContext *bc, AVPacket *pkt, int is_meta, int64_t maxpos)
