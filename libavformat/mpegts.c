@@ -66,6 +66,7 @@ typedef void SetServiceCallback(void *opaque, int ret);
 typedef struct MpegTSSectionFilter {
     int section_index;
     int section_h_size;
+    int last_ver;
     uint8_t *section_buf;
     unsigned int check_crc:1;
     unsigned int end_of_section_reached:1;
@@ -340,6 +341,8 @@ static MpegTSFilter *mpegts_open_section_filter(MpegTSContext *ts, unsigned int 
     sec->opaque = opaque;
     sec->section_buf = av_malloc(MAX_SECTION_SIZE);
     sec->check_crc = check_crc;
+    sec->last_ver = -1;
+
     if (!sec->section_buf) {
         av_free(filter);
         return NULL;
@@ -1186,6 +1189,7 @@ static int mp4_read_od(AVFormatContext *s, const uint8_t *buf, unsigned size,
 static void m4sl_cb(MpegTSFilter *filter, const uint8_t *section, int section_len)
 {
     MpegTSContext *ts = filter->u.section_filter.opaque;
+    MpegTSSectionFilter *tssf = &filter->u.section_filter;
     SectionHeader h;
     const uint8_t *p, *p_end;
     AVIOContext pb;
@@ -1200,6 +1204,9 @@ static void m4sl_cb(MpegTSFilter *filter, const uint8_t *section, int section_le
         return;
     if (h.tid != M4OD_TID)
         return;
+    if (h.version == tssf->last_ver)
+        return;
+    tssf->last_ver = h.version;
 
     mp4_read_od(s, p, (unsigned)(p_end - p), mp4_descr, &mp4_descr_count, MAX_MP4_DESCR_COUNT);
 
@@ -1374,6 +1381,7 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
 static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len)
 {
     MpegTSContext *ts = filter->u.section_filter.opaque;
+    MpegTSSectionFilter *tssf = &filter->u.section_filter;
     SectionHeader h1, *h = &h1;
     PESContext *pes;
     AVStream *st;
@@ -1393,6 +1401,9 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
     p = section;
     if (parse_section_header(h, &p, p_end) < 0)
         return;
+    if (h->version == tssf->last_ver)
+        return;
+    tssf->last_ver = h->version;
 
     av_dlog(ts->stream, "sid=0x%x sec_num=%d/%d\n",
            h->id, h->sec_num, h->last_sec_num);
@@ -1519,6 +1530,7 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
 static void pat_cb(MpegTSFilter *filter, const uint8_t *section, int section_len)
 {
     MpegTSContext *ts = filter->u.section_filter.opaque;
+    MpegTSSectionFilter *tssf = &filter->u.section_filter;
     SectionHeader h1, *h = &h1;
     const uint8_t *p, *p_end;
     int sid, pmt_pid;
@@ -1532,6 +1544,9 @@ static void pat_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
         return;
     if (h->tid != PAT_TID)
         return;
+    if (h->version == tssf->last_ver)
+        return;
+    tssf->last_ver = h->version;
 
     clear_programs(ts);
     for(;;) {
@@ -1562,6 +1577,7 @@ static void pat_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
 static void sdt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len)
 {
     MpegTSContext *ts = filter->u.section_filter.opaque;
+    MpegTSSectionFilter *tssf = &filter->u.section_filter;
     SectionHeader h1, *h = &h1;
     const uint8_t *p, *p_end, *desc_list_end, *desc_end;
     int onid, val, sid, desc_list_len, desc_tag, desc_len, service_type;
@@ -1576,6 +1592,10 @@ static void sdt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
         return;
     if (h->tid != SDT_TID)
         return;
+    if (h->version == tssf->last_ver)
+        return;
+    tssf->last_ver = h->version;
+
     onid = get16(&p, p_end);
     if (onid < 0)
         return;
