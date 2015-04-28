@@ -22,6 +22,7 @@
 #include "libavutil/time.h"
 #include "libavutil/log.h"
 #include "libavutil/opencl.h"
+#include "libavutil/avstring.h"
 #include "cmdutils.h"
 
 typedef struct {
@@ -238,7 +239,8 @@ int opt_opencl_bench(void *optctx, const char *opt, const char *arg)
                 devices[count].platform_idx = i;
                 devices[count].device_idx = j;
                 devices[count].runtime = score;
-                strcpy(devices[count].device_name, device_node->device_name);
+                av_strlcpy(devices[count].device_name, device_node->device_name,
+                           sizeof(devices[count].device_name));
                 count++;
             }
         }
