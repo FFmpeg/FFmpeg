@@ -114,7 +114,6 @@ int ff_h264_ref_picture(H264Context *h, H264Picture *dst, H264Picture *src)
     dst->long_ref      = src->long_ref;
     dst->mbaff         = src->mbaff;
     dst->field_picture = src->field_picture;
-    dst->needs_realloc = src->needs_realloc;
     dst->reference     = src->reference;
     dst->crop          = src->crop;
     dst->crop_left     = src->crop_left;
