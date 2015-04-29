@@ -110,6 +110,7 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
     static const uint8_t header_prefix[]    = { 0x00, 0x00, 0x02, 0x80, 0x01 };
     static const uint8_t header_prefix444[] = { 0x00, 0x00, 0x02, 0x80, 0x02 };
     int i, cid, ret;
+    int old_bit_depth = ctx->bit_depth;
 
     if (buf_size < 0x280) {
         av_log(ctx->avctx, AV_LOG_ERROR, "buffer too small (%d < 640).\n",
@@ -134,10 +135,6 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
 
     ff_dlog(ctx->avctx, "width %d, height %d\n", ctx->width, ctx->height);
 
-    if (!ctx->bit_depth) {
-        ff_blockdsp_init(&ctx->bdsp, ctx->avctx);
-        ff_idctdsp_init(&ctx->idsp, ctx->avctx);
-    }
     if (buf[0x21] == 0x58) { /* 10 bit */
         ctx->bit_depth = ctx->avctx->bits_per_raw_sample = 10;
 
@@ -158,6 +155,10 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
         av_log(ctx->avctx, AV_LOG_ERROR, "invalid bit depth value (%d).\n",
                buf[0x21]);
         return AVERROR_INVALIDDATA;
+    }
+    if (ctx->bit_depth != old_bit_depth) {
+        ff_blockdsp_init(&ctx->bdsp, ctx->avctx);
+        ff_idctdsp_init(&ctx->idsp, ctx->avctx);
     }
 
     cid = AV_RB32(buf + 0x28);
