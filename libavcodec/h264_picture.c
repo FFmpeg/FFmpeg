@@ -169,7 +169,6 @@ int ff_h264_field_end(H264Context *h, H264SliceContext *sl, int in_setup)
         }
         h->prev_frame_num_offset = h->frame_num_offset;
         h->prev_frame_num        = h->frame_num;
-        h->outputed_poc          = h->next_outputed_poc;
     }
 
     if (avctx->hwaccel) {
