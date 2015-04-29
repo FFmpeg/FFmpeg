@@ -352,7 +352,7 @@ static int decode_rbsp_trailing(H264Context *h, const uint8_t *src)
     return 0;
 }
 
-void ff_h264_free_tables(H264Context *h, int free_rbsp)
+void ff_h264_free_tables(H264Context *h)
 {
     int i;
 
@@ -392,11 +392,6 @@ void ff_h264_free_tables(H264Context *h, int free_rbsp)
         sl->edge_emu_buffer_allocated   = 0;
         sl->top_borders_allocated[0]    = 0;
         sl->top_borders_allocated[1]    = 0;
-
-        if (free_rbsp) {
-            av_freep(&sl->rbsp_buffer);
-            sl->rbsp_buffer_size            = 0;
-        }
     }
 }
 
@@ -453,7 +448,7 @@ int ff_h264_alloc_tables(H264Context *h)
     return 0;
 
 fail:
-    ff_h264_free_tables(h, 1);
+    ff_h264_free_tables(h);
     return AVERROR(ENOMEM);
 }
 
@@ -1097,7 +1092,7 @@ static void flush_dpb(AVCodecContext *avctx)
 
     h->mb_y = 0;
 
-    ff_h264_free_tables(h, 1);
+    ff_h264_free_tables(h);
     h->context_initialized = 0;
 }
 
@@ -1853,7 +1848,7 @@ av_cold void ff_h264_free_context(H264Context *h)
 {
     int i;
 
-    ff_h264_free_tables(h, 1); // FIXME cleanup init stuff perhaps
+    ff_h264_free_tables(h); // FIXME cleanup init stuff perhaps
 
     if (h->DPB) {
         for (i = 0; i < H264_MAX_PICTURE_COUNT; i++)
@@ -1864,6 +1859,8 @@ av_cold void ff_h264_free_context(H264Context *h)
 
     h->cur_pic_ptr = NULL;
 
+    for (i = 0; i < h->nb_slice_ctx; i++)
+        av_freep(&h->slice_ctx[i].rbsp_buffer);
     av_freep(&h->slice_ctx);
     h->nb_slice_ctx = 0;
 
