@@ -580,6 +580,16 @@ typedef struct SectionHeader {
     uint8_t last_sec_num;
 } SectionHeader;
 
+static int skip_identical(const SectionHeader *h, MpegTSSectionFilter *tssf)
+{
+    if (h->version == tssf->last_ver)
+        return 1;
+
+    tssf->last_ver = h->version;
+
+    return 0;
+}
+
 static inline int get8(const uint8_t **pp, const uint8_t *p_end)
 {
     const uint8_t *p;
@@ -1469,9 +1479,8 @@ static void m4sl_cb(MpegTSFilter *filter, const uint8_t *section,
         return;
     if (h.tid != M4OD_TID)
         return;
-    if (h.version == tssf->last_ver)
+    if (skip_identical(&h, tssf))
         return;
-    tssf->last_ver = h.version;
 
     mp4_read_od(s, p, (unsigned) (p_end - p), mp4_descr, &mp4_descr_count,
                 MAX_MP4_DESCR_COUNT);
@@ -1816,9 +1825,8 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
     p = section;
     if (parse_section_header(h, &p, p_end) < 0)
         return;
-    if (h->version == tssf->last_ver)
+    if (skip_identical(h, tssf))
         return;
-    tssf->last_ver = h->version;
 
     av_log(ts->stream, AV_LOG_TRACE, "sid=0x%x sec_num=%d/%d version=%d\n",
             h->id, h->sec_num, h->last_sec_num, h->version);
@@ -1986,9 +1994,8 @@ static void pat_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
     if (ts->skip_changes)
         return;
 
-    if (h->version == tssf->last_ver)
+    if (skip_identical(h, tssf))
         return;
-    tssf->last_ver = h->version;
     ts->stream->ts_id = h->id;
 
     clear_programs(ts);
@@ -2061,9 +2068,8 @@ static void sdt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
         return;
     if (ts->skip_changes)
         return;
-    if (h->version == tssf->last_ver)
+    if (skip_identical(h, tssf))
         return;
-    tssf->last_ver = h->version;
 
     onid = get16(&p, p_end);
     if (onid < 0)
