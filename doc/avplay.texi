@@ -115,6 +115,8 @@ Do not exit after playback is finished.
 Exit if any key is pressed.
 @item -exitonmousedown
 Exit if any mouse button is pressed.
+@item -noautorotate
+Disable automatically rotating video based on file metadata.
 @end table
 
 @section While playing

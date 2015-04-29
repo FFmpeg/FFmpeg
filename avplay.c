@@ -27,6 +27,7 @@
 
 #include "libavutil/avstring.h"
 #include "libavutil/colorspace.h"
+#include "libavutil/display.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/imgutils.h"
@@ -265,6 +266,7 @@ static int rdftspeed = 20;
 #if CONFIG_AVFILTER
 static char *vfilters = NULL;
 #endif
+static int autorotate = 1;
 
 /* current context */
 static int is_full_screen;
@@ -1547,6 +1549,22 @@ static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const c
 } while (0)
 
     INSERT_FILT("format", "yuv420p");
+
+    if (autorotate) {
+        uint8_t* displaymatrix = av_stream_get_side_data(is->video_st,
+                                                         AV_PKT_DATA_DISPLAYMATRIX, NULL);
+        if (displaymatrix) {
+            double rot = av_display_rotation_get((int32_t*) displaymatrix);
+            if (rot < -135 || rot > 135) {
+                INSERT_FILT("vflip", NULL);
+                INSERT_FILT("hflip", NULL);
+            } else if (rot < -45) {
+                INSERT_FILT("transpose", "dir=clock");
+            } else if (rot > 45) {
+                INSERT_FILT("transpose", "dir=cclock");
+            }
+        }
+    }
 
     if (vfilters) {
         AVFilterInOut *outputs = avfilter_inout_alloc();
@@ -2928,6 +2946,7 @@ static const OptionDef options[] = {
     { "rdftspeed", OPT_INT | HAS_ARG| OPT_AUDIO | OPT_EXPERT, { &rdftspeed }, "rdft speed", "msecs" },
     { "default", HAS_ARG | OPT_AUDIO | OPT_VIDEO | OPT_EXPERT, { opt_default }, "generic catch all option", "" },
     { "i", 0, { NULL }, "avconv compatibility dummy option", ""},
+    { "autorotate", OPT_BOOL, { &autorotate }, "automatically rotate video", "" },
     { NULL, },
 };
 
