@@ -401,6 +401,9 @@ Technical note -- attachments are implemented as codec extradata, so this
 option can actually be used to extract extradata from any stream, not just
 attachments.
 
+@item -noautorotate
+Disable automatically rotating video based on file metadata.
+
 @end table
 
 @section Video Options

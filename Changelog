@@ -28,6 +28,7 @@ version <next>:
 - MMAL-accelerated H.264 decoding
 - DTS decoding through libdcadec
 - Canopus HQ/HQA decoder
+- Automatically rotate videos based on metadata in avconv
 
 
 version 11:
