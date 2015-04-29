@@ -255,7 +255,9 @@ static int encode_picture_ls(AVCodecContext *avctx, AVPacket *pkt,
     PutBitContext pb, pb2;
     GetBitContext gb;
     uint8_t *buf2 = NULL;
-    uint8_t *zero, *cur, *last;
+    uint8_t *zero = NULL;
+    uint8_t *cur  = NULL;
+    uint8_t *last = NULL;
     JLSState *state = NULL;
     int i, size, ret;
     int comps;
@@ -272,7 +274,7 @@ static int encode_picture_ls(AVCodecContext *avctx, AVPacket *pkt,
 
     buf2 = av_malloc(pkt->size);
     if (!buf2)
-        goto fail;
+        goto memfail;
 
     init_put_bits(&pb, pkt->data, pkt->size);
     init_put_bits(&pb2, buf2, pkt->size);
@@ -304,7 +306,8 @@ static int encode_picture_ls(AVCodecContext *avctx, AVPacket *pkt,
 
     state = av_mallocz(sizeof(JLSState));
     if (!state)
-        goto fail;
+        goto memfail;
+
     /* initialize JPEG-LS state from JPEG parameters */
     state->near = near;
     state->bpp  = (avctx->pix_fmt == AV_PIX_FMT_GRAY16) ? 16 : 8;
@@ -313,11 +316,10 @@ static int encode_picture_ls(AVCodecContext *avctx, AVPacket *pkt,
 
     ls_store_lse(state, &pb);
 
-    zero = av_mallocz(FFABS(p->linesize[0]));
+    zero = last = av_mallocz(FFABS(p->linesize[0]));
     if (!zero)
-        goto fail;
+        goto memfail;
 
-    last = zero;
     cur  = p->data[0];
     if (avctx->pix_fmt == AV_PIX_FMT_GRAY8) {
         int t = 0;
@@ -401,10 +403,12 @@ static int encode_picture_ls(AVCodecContext *avctx, AVPacket *pkt,
     pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;
     return 0;
-fail:
+
+memfail:
+    av_free_packet(pkt);
     av_freep(&buf2);
     av_freep(&state);
-
+    av_freep(&zero);
     return AVERROR(ENOMEM);
 }
 
