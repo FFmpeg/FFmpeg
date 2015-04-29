@@ -436,7 +436,7 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
 {
     H264Context *h = dst->priv_data, *h1 = src->priv_data;
     int inited = h->context_initialized, err = 0;
-    int context_reinitialized = 0;
+    int need_reinit = 0;
     int i, ret;
 
     if (dst == src)
@@ -451,36 +451,7 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
          h->sps.chroma_format_idc != h1->sps.chroma_format_idc ||
          h->sps.colorspace        != h1->sps.colorspace)) {
 
-        h->width     = h1->width;
-        h->height    = h1->height;
-        h->mb_height = h1->mb_height;
-        h->mb_width  = h1->mb_width;
-        h->mb_num    = h1->mb_num;
-        h->mb_stride = h1->mb_stride;
-        h->b_stride  = h1->b_stride;
-        // SPS/PPS
-        if ((ret = copy_parameter_set((void **)h->sps_buffers,
-                                      (void **)h1->sps_buffers,
-                                      MAX_SPS_COUNT, sizeof(SPS))) < 0)
-            return ret;
-        h->sps = h1->sps;
-        if ((ret = copy_parameter_set((void **)h->pps_buffers,
-                                      (void **)h1->pps_buffers,
-                                      MAX_PPS_COUNT, sizeof(PPS))) < 0)
-            return ret;
-        h->pps = h1->pps;
-
-        if ((err = h264_slice_header_init(h, 1)) < 0) {
-            av_log(h->avctx, AV_LOG_ERROR, "h264_slice_header_init() failed\n");
-            return err;
-        }
-        context_reinitialized = 1;
-
-#if 0
-        h264_set_parameter_from_sps(h);
-        //Note we set context_reinitialized which will cause h264_set_parameter_from_sps to be reexecuted
-        h->cur_chroma_format_idc = h1->cur_chroma_format_idc;
-#endif
+        need_reinit = 1;
     }
 
     /* copy block_offset since frame_start may not be called */
@@ -624,8 +595,25 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
 
     h->frame_recovered       = h1->frame_recovered;
 
-    if (context_reinitialized)
+    if (need_reinit) {
+        h->width     = h1->width;
+        h->height    = h1->height;
+        h->mb_height = h1->mb_height;
+        h->mb_width  = h1->mb_width;
+        h->mb_num    = h1->mb_num;
+        h->mb_stride = h1->mb_stride;
+        h->b_stride  = h1->b_stride;
+
+        if ((err = h264_slice_header_init(h, 1)) < 0) {
+            av_log(h->avctx, AV_LOG_ERROR, "h264_slice_header_init() failed");
+            return err;
+        }
+
+        /* copy block_offset since frame_start may not be called */
+        memcpy(h->block_offset, h1->block_offset, sizeof(h->block_offset));
+
         ff_h264_set_parameter_from_sps(h);
+    }
 
     if (!h->cur_pic_ptr)
         return 0;
