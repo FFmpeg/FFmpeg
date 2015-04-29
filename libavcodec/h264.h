@@ -290,8 +290,7 @@ typedef struct MMCO {
 } MMCO;
 
 typedef struct H264Picture {
-    struct AVFrame f;
-    uint8_t avframe_padding[1024]; // hack to allow linking to a avutil with larger AVFrame
+    AVFrame *f;
     ThreadFrame tf;
 
     AVBufferRef *qscale_table_buf;

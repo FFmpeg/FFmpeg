@@ -143,7 +143,7 @@ static int vda_old_h264_end_frame(AVCodecContext *avctx)
     H264Context *h                      = avctx->priv_data;
     VDAContext *vda                     = avctx->internal->hwaccel_priv_data;
     struct vda_context *vda_ctx         = avctx->hwaccel_context;
-    AVFrame *frame                      = &h->cur_pic_ptr->f;
+    AVFrame *frame                      = h->cur_pic_ptr->f;
     struct vda_buffer *context;
     AVBufferRef *buffer;
     int status;
@@ -375,7 +375,7 @@ static int vda_h264_end_frame(AVCodecContext *avctx)
     H264Context *h        = avctx->priv_data;
     VDAContext *vda       = avctx->internal->hwaccel_priv_data;
     AVVDAContext *vda_ctx = avctx->hwaccel_context;
-    AVFrame *frame        = &h->cur_pic_ptr->f;
+    AVFrame *frame        = h->cur_pic_ptr->f;
     uint32_t flush_flags  = 1 << 0; ///< kVDADecoderFlush_emitFrames
     CFDataRef coded_frame;
     OSStatus status;
