@@ -452,4 +452,6 @@ AVCodec ff_jpegls_encoder = {
         AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY16,
         AV_PIX_FMT_NONE
     },
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |
+                      FF_CODEC_CAP_INIT_CLEANUP,
 };
