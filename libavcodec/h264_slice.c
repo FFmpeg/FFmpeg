@@ -521,6 +521,7 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
     // extradata/NAL handling
     h->is_avc = h1->is_avc;
     h->nal_length_size = h1->nal_length_size;
+    h->x264_build      = h1->x264_build;
 
     // Dequantization matrices
     // FIXME these are big - can they be only copied when PPS changes?
