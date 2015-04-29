@@ -2369,6 +2369,8 @@ static int handle_packets(MpegTSContext *ts, int64_t nb_packets)
                     av_buffer_unref(&pes->buffer);
                     pes->data_index = 0;
                     pes->state = MPEGTS_SKIP; /* skip until pes header */
+                } else if (ts->pids[i]->type == MPEGTS_SECTION) {
+                    ts->pids[i]->u.section_filter.last_ver = -1;
                 }
                 ts->pids[i]->last_cc = -1;
                 ts->pids[i]->last_pcr = -1;
