@@ -1124,6 +1124,8 @@ static int h264_slice_header_init(H264Context *h, int reinit)
     h->avctx->bits_per_raw_sample = h->sps.bit_depth_luma;
     h->cur_chroma_format_idc      = h->sps.chroma_format_idc;
     h->pixel_shift                = h->sps.bit_depth_luma > 8;
+    h->chroma_format_idc          = h->sps.chroma_format_idc;
+    h->bit_depth_luma             = h->sps.bit_depth_luma;
 
     ff_h264dsp_init(&h->h264dsp, h->sps.bit_depth_luma,
                     h->sps.chroma_format_idc);
@@ -1325,11 +1327,8 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
             needs_reinit = 1;
 
         if (h->bit_depth_luma    != h->sps.bit_depth_luma ||
-            h->chroma_format_idc != h->sps.chroma_format_idc) {
-            h->bit_depth_luma    = h->sps.bit_depth_luma;
-            h->chroma_format_idc = h->sps.chroma_format_idc;
+            h->chroma_format_idc != h->sps.chroma_format_idc)
             needs_reinit         = 1;
-        }
 
         if (h->flags & CODEC_FLAG_LOW_DELAY ||
             (h->sps.bitstream_restriction_flag &&
