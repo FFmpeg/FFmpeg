@@ -2170,11 +2170,13 @@ static int handle_packets(MpegTSContext *ts, int nb_packets)
         for (i = 0; i < NB_PID_MAX; i++) {
             if (ts->pids[i]) {
                 if (ts->pids[i]->type == MPEGTS_PES) {
-                   PESContext *pes = ts->pids[i]->u.pes_filter.opaque;
-                   av_buffer_unref(&pes->buffer);
-                   pes->data_index = 0;
-                   pes->state = MPEGTS_SKIP; /* skip until pes header */
-                   pes->last_pcr = -1;
+                    PESContext *pes = ts->pids[i]->u.pes_filter.opaque;
+                    av_buffer_unref(&pes->buffer);
+                    pes->data_index = 0;
+                    pes->state = MPEGTS_SKIP; /* skip until pes header */
+                    pes->last_pcr = -1;
+                } else if (ts->pids[i]->type == MPEGTS_SECTION) {
+                    ts->pids[i]->u.section_filter.last_ver = -1;
                 }
                 ts->pids[i]->last_cc = -1;
             }
