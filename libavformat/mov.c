@@ -1209,6 +1209,8 @@ static int mov_read_aclr(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     uint64_t original_size;
     if (c->fc->nb_streams >= 1) {
         AVCodecContext *codec = c->fc->streams[c->fc->nb_streams-1]->codec;
+        if (codec->codec_id == AV_CODEC_ID_H264)
+            return 0;
         if (atom.size == 16) {
             original_size = codec->extradata_size;
             ret = mov_realloc_extradata(codec, atom);
