@@ -506,7 +506,7 @@ typedef struct H264Context {
     H264QpelContext h264qpel;
     GetBitContext gb;
 
-    H264Picture *DPB;
+    H264Picture DPB[H264_MAX_PICTURE_COUNT];
     H264Picture *cur_pic_ptr;
     H264Picture cur_pic;
     H264Picture last_pic_for_ec;
