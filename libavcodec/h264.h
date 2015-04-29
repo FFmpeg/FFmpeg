@@ -1168,7 +1168,6 @@ int ff_h264_ref_picture(H264Context *h, H264Picture *dst, H264Picture *src);
 void ff_h264_unref_picture(H264Context *h, H264Picture *pic);
 
 int ff_h264_slice_context_init(H264Context *h, H264SliceContext *sl);
-int ff_h264_set_parameter_from_sps(H264Context *h);
 
 void ff_h264_draw_horiz_band(const H264Context *h, H264SliceContext *sl, int y, int height);
 int ff_init_poc(H264Context *h, int pic_field_poc[2], int *pic_poc);
