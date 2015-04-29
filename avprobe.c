@@ -24,6 +24,7 @@
 #include "libavformat/avformat.h"
 #include "libavcodec/avcodec.h"
 #include "libavutil/avstring.h"
+#include "libavutil/display.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/dict.h"
@@ -699,6 +700,27 @@ static void show_stream(AVFormatContext *fmt_ctx, int stream_idx)
         probe_int("nb_frames", stream->nb_frames);
 
     probe_dict(stream->metadata, "tags");
+
+    if (stream->nb_side_data) {
+        int i, j;
+        probe_object_header("sidedata");
+        for (i = 0; i < stream->nb_side_data; i++) {
+            const AVPacketSideData* sd = &stream->side_data[i];
+            switch (sd->type) {
+            case AV_PKT_DATA_DISPLAYMATRIX:
+                probe_object_header("displaymatrix");
+                probe_array_header("matrix", 1);
+                for (j = 0; j < 9; j++)
+                    probe_int(NULL, ((int32_t *)sd->data)[j]);
+                probe_array_footer("matrix", 1);
+                probe_int("rotation",
+                          av_display_rotation_get((int32_t *)sd->data));
+                probe_object_footer("displaymatrix");
+                break;
+            }
+        }
+        probe_object_footer("sidedata");
+    }
 
     probe_object_footer("stream");
 }
