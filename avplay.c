@@ -1504,7 +1504,7 @@ static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const c
     char sws_flags_str[128];
     char buffersrc_args[256];
     int ret;
-    AVFilterContext *filt_src = NULL, *filt_out = NULL, *filt_format;
+    AVFilterContext *filt_src = NULL, *filt_out = NULL, *last_filter;
     AVCodecContext *codec = is->video_st->codec;
 
     snprintf(sws_flags_str, sizeof(sws_flags_str), "flags=%"PRId64, sws_flags);
@@ -1526,13 +1526,27 @@ static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const c
                                             "out", NULL, NULL, graph)) < 0)
         return ret;
 
-    if ((ret = avfilter_graph_create_filter(&filt_format,
-                                            avfilter_get_by_name("format"),
-                                            "format", "yuv420p", NULL, graph)) < 0)
-        return ret;
-    if ((ret = avfilter_link(filt_format, 0, filt_out, 0)) < 0)
-        return ret;
+    last_filter = filt_out;
 
+/* Note: this macro adds a filter before the lastly added filter, so the
+ * processing order of the filters is in reverse */
+#define INSERT_FILT(name, arg) do {                                          \
+    AVFilterContext *filt_ctx;                                               \
+                                                                             \
+    ret = avfilter_graph_create_filter(&filt_ctx,                            \
+                                       avfilter_get_by_name(name),           \
+                                       "avplay_" name, arg, NULL, graph);    \
+    if (ret < 0)                                                             \
+        return ret;                                                          \
+                                                                             \
+    ret = avfilter_link(filt_ctx, 0, last_filter, 0);                        \
+    if (ret < 0)                                                             \
+        return ret;                                                          \
+                                                                             \
+    last_filter = filt_ctx;                                                  \
+} while (0)
+
+    INSERT_FILT("format", "yuv420p");
 
     if (vfilters) {
         AVFilterInOut *outputs = avfilter_inout_alloc();
@@ -1544,14 +1558,14 @@ static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const c
         outputs->next    = NULL;
 
         inputs->name    = av_strdup("out");
-        inputs->filter_ctx = filt_format;
+        inputs->filter_ctx = last_filter;
         inputs->pad_idx = 0;
         inputs->next    = NULL;
 
         if ((ret = avfilter_graph_parse(graph, vfilters, inputs, outputs, NULL)) < 0)
             return ret;
     } else {
-        if ((ret = avfilter_link(filt_src, 0, filt_format, 0)) < 0)
+        if ((ret = avfilter_link(filt_src, 0, last_filter, 0)) < 0)
             return ret;
     }
 
