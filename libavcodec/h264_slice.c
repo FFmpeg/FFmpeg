@@ -457,70 +457,35 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
     /* copy block_offset since frame_start may not be called */
     memcpy(h->block_offset, h1->block_offset, sizeof(h->block_offset));
 
-    if (!inited) {
-        H264SliceContext *orig_slice_ctx = h->slice_ctx;
-        H264Picture *orig_DPB = h->DPB;
+    // SPS/PPS
+    if ((ret = copy_parameter_set((void **)h->sps_buffers,
+                                  (void **)h1->sps_buffers,
+                                  MAX_SPS_COUNT, sizeof(SPS))) < 0)
+        return ret;
+    h->sps = h1->sps;
+    if ((ret = copy_parameter_set((void **)h->pps_buffers,
+                                  (void **)h1->pps_buffers,
+                                  MAX_PPS_COUNT, sizeof(PPS))) < 0)
+        return ret;
+    h->pps = h1->pps;
 
-        for (i = 0; i < MAX_SPS_COUNT; i++)
-            av_freep(h->sps_buffers + i);
+    if (need_reinit || !inited) {
+        h->width     = h1->width;
+        h->height    = h1->height;
+        h->mb_height = h1->mb_height;
+        h->mb_width  = h1->mb_width;
+        h->mb_num    = h1->mb_num;
+        h->mb_stride = h1->mb_stride;
+        h->b_stride  = h1->b_stride;
 
-        for (i = 0; i < MAX_PPS_COUNT; i++)
-            av_freep(h->pps_buffers + i);
-
-        ff_h264_unref_picture(h, &h->last_pic_for_ec);
-        memcpy(h, h1, sizeof(H264Context));
-
-        memset(h->sps_buffers, 0, sizeof(h->sps_buffers));
-        memset(h->pps_buffers, 0, sizeof(h->pps_buffers));
-
-        memset(&h->cur_pic, 0, sizeof(h->cur_pic));
-        memset(&h->last_pic_for_ec, 0, sizeof(h->last_pic_for_ec));
-
-        h->slice_ctx = orig_slice_ctx;
-        h->DPB       = orig_DPB;
-
-        memset(&h->slice_ctx[0].er,         0, sizeof(h->slice_ctx[0].er));
-        memset(&h->slice_ctx[0].mb,         0, sizeof(h->slice_ctx[0].mb));
-        memset(&h->slice_ctx[0].mb_luma_dc, 0, sizeof(h->slice_ctx[0].mb_luma_dc));
-        memset(&h->slice_ctx[0].mb_padding, 0, sizeof(h->slice_ctx[0].mb_padding));
-
-        h->avctx             = dst;
-        h->qscale_table_pool = NULL;
-        h->mb_type_pool      = NULL;
-        h->ref_index_pool    = NULL;
-        h->motion_val_pool   = NULL;
-        h->intra4x4_pred_mode= NULL;
-        h->non_zero_count    = NULL;
-        h->slice_table_base  = NULL;
-        h->slice_table       = NULL;
-        h->cbp_table         = NULL;
-        h->chroma_pred_mode_table = NULL;
-        memset(h->mvd_table, 0, sizeof(h->mvd_table));
-        h->direct_table      = NULL;
-        h->list_counts       = NULL;
-        h->mb2b_xy           = NULL;
-        h->mb2br_xy          = NULL;
-
-        if (h1->context_initialized) {
-        h->context_initialized = 0;
-
-        memset(&h->cur_pic, 0, sizeof(h->cur_pic));
-        av_frame_unref(&h->cur_pic.f);
-        h->cur_pic.tf.f = &h->cur_pic.f;
-
-        ret = ff_h264_alloc_tables(h);
-        if (ret < 0) {
-            av_log(dst, AV_LOG_ERROR, "Could not allocate memory\n");
-            return ret;
+        if (h->context_initialized || h1->context_initialized) {
+            if ((err = h264_slice_header_init(h)) < 0) {
+                av_log(h->avctx, AV_LOG_ERROR, "h264_slice_header_init() failed");
+                return err;
+            }
         }
-        ret = ff_h264_slice_context_init(h, &h->slice_ctx[0]);
-        if (ret < 0) {
-            av_log(dst, AV_LOG_ERROR, "context_init() failed.\n");
-            return ret;
-        }
-        }
-
-        h->context_initialized = h1->context_initialized;
+        /* copy block_offset since frame_start may not be called */
+        memcpy(h->block_offset, h1->block_offset, sizeof(h->block_offset));
     }
 
     h->avctx->coded_height  = h1->avctx->coded_height;
@@ -557,18 +522,6 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
     h->is_avc = h1->is_avc;
     h->nal_length_size = h1->nal_length_size;
 
-    // SPS/PPS
-    if ((ret = copy_parameter_set((void **)h->sps_buffers,
-                                  (void **)h1->sps_buffers,
-                                  MAX_SPS_COUNT, sizeof(SPS))) < 0)
-        return ret;
-    h->sps = h1->sps;
-    if ((ret = copy_parameter_set((void **)h->pps_buffers,
-                                  (void **)h1->pps_buffers,
-                                  MAX_PPS_COUNT, sizeof(PPS))) < 0)
-        return ret;
-    h->pps = h1->pps;
-
     // Dequantization matrices
     // FIXME these are big - can they be only copied when PPS changes?
     copy_fields(h, h1, dequant4_buffer, dequant4_coeff);
@@ -595,24 +548,6 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
                        MAX_DELAYED_PIC_COUNT + 2, h, h1);
 
     h->frame_recovered       = h1->frame_recovered;
-
-    if (need_reinit) {
-        h->width     = h1->width;
-        h->height    = h1->height;
-        h->mb_height = h1->mb_height;
-        h->mb_width  = h1->mb_width;
-        h->mb_num    = h1->mb_num;
-        h->mb_stride = h1->mb_stride;
-        h->b_stride  = h1->b_stride;
-
-        if ((err = h264_slice_header_init(h)) < 0) {
-            av_log(h->avctx, AV_LOG_ERROR, "h264_slice_header_init() failed");
-            return err;
-        }
-
-        /* copy block_offset since frame_start may not be called */
-        memcpy(h->block_offset, h1->block_offset, sizeof(h->block_offset));
-    }
 
     if (!h->cur_pic_ptr)
         return 0;
