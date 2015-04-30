@@ -3285,20 +3285,20 @@ static void decode_sb_mem(AVCodecContext *ctx, int row, int col, struct VP9Filte
     }
 }
 
-static av_always_inline void filter_plane_cols(VP9Context *s, int col,
+static av_always_inline void filter_plane_cols(VP9Context *s, int col, int ss,
                                                uint8_t *lvl, uint8_t (*mask)[4],
                                                uint8_t *dst, ptrdiff_t ls)
 {
     int y, x;
 
     // filter edges between columns (e.g. block1 | block2)
-    for (y = 0; y < 8; y += 2, dst += 16 * ls, lvl += 16) {
-        uint8_t *ptr = dst, *l = lvl, *hmask1 = mask[y], *hmask2 = mask[y + 1];
+    for (y = 0; y < 8; y += 2 << ss, dst += 16 * ls, lvl += 16 << ss) {
+        uint8_t *ptr = dst, *l = lvl, *hmask1 = mask[y], *hmask2 = mask[y + (1 << ss)];
         unsigned hm1 = hmask1[0] | hmask1[1] | hmask1[2], hm13 = hmask1[3];
         unsigned hm2 = hmask2[1] | hmask2[2], hm23 = hmask2[3];
         unsigned hm = hm1 | hm2 | hm13 | hm23;
 
-        for (x = 1; hm & ~(x - 1); x <<= 1, ptr += 8, l++) {
+        for (x = 1; hm & ~(x - 1); x <<= 1, ptr += 8 >> ss) {
             if (col || x > 1) {
                 if (hm1 & x) {
                     int L = *l, H = L >> 4;
@@ -3306,13 +3306,13 @@ static av_always_inline void filter_plane_cols(VP9Context *s, int col,
 
                     if (hmask1[0] & x) {
                         if (hmask2[0] & x) {
-                            av_assert2(l[8] == L);
+                            av_assert2(l[8 << ss] == L);
                             s->dsp.loop_filter_16[0](ptr, ls, E, I, H);
                         } else {
                             s->dsp.loop_filter_8[2][0](ptr, ls, E, I, H);
                         }
                     } else if (hm2 & x) {
-                        L = l[8];
+                        L = l[8 << ss];
                         H |= (L >> 4) << 8;
                         E |= s->filter.mblim_lut[L] << 8;
                         I |= s->filter.lim_lut[L] << 8;
@@ -3324,37 +3324,43 @@ static av_always_inline void filter_plane_cols(VP9Context *s, int col,
                                             [0](ptr, ls, E, I, H);
                     }
                 } else if (hm2 & x) {
-                    int L = l[8], H = L >> 4;
+                    int L = l[8 << ss], H = L >> 4;
                     int E = s->filter.mblim_lut[L], I = s->filter.lim_lut[L];
 
                     s->dsp.loop_filter_8[!!(hmask2[1] & x)]
                                         [0](ptr + 8 * ls, ls, E, I, H);
                 }
             }
-            if (hm13 & x) {
-                int L = *l, H = L >> 4;
-                int E = s->filter.mblim_lut[L], I = s->filter.lim_lut[L];
+            if (ss) {
+                if (x & 0xAA)
+                    l += 2;
+            } else {
+                if (hm13 & x) {
+                    int L = *l, H = L >> 4;
+                    int E = s->filter.mblim_lut[L], I = s->filter.lim_lut[L];
 
-                if (hm23 & x) {
-                    L = l[8];
-                    H |= (L >> 4) << 8;
-                    E |= s->filter.mblim_lut[L] << 8;
-                    I |= s->filter.lim_lut[L] << 8;
-                    s->dsp.loop_filter_mix2[0][0][0](ptr + 4, ls, E, I, H);
-                } else {
-                    s->dsp.loop_filter_8[0][0](ptr + 4, ls, E, I, H);
+                    if (hm23 & x) {
+                        L = l[8];
+                        H |= (L >> 4) << 8;
+                        E |= s->filter.mblim_lut[L] << 8;
+                        I |= s->filter.lim_lut[L] << 8;
+                        s->dsp.loop_filter_mix2[0][0][0](ptr + 4, ls, E, I, H);
+                    } else {
+                        s->dsp.loop_filter_8[0][0](ptr + 4, ls, E, I, H);
+                    }
+                } else if (hm23 & x) {
+                    int L = l[8], H = L >> 4;
+                    int E = s->filter.mblim_lut[L], I = s->filter.lim_lut[L];
+
+                    s->dsp.loop_filter_8[0][0](ptr + 8 * ls + 4, ls, E, I, H);
                 }
-            } else if (hm23 & x) {
-                int L = l[8], H = L >> 4;
-                int E = s->filter.mblim_lut[L], I = s->filter.lim_lut[L];
-
-                s->dsp.loop_filter_8[0][0](ptr + 8 * ls + 4, ls, E, I, H);
+                l++;
             }
         }
     }
 }
 
-static av_always_inline void filter_plane_rows(VP9Context *s, int row,
+static av_always_inline void filter_plane_rows(VP9Context *s, int row, int ss,
                                                uint8_t *lvl, uint8_t (*mask)[4],
                                                uint8_t *dst, ptrdiff_t ls)
 {
@@ -3363,62 +3369,70 @@ static av_always_inline void filter_plane_rows(VP9Context *s, int row,
     //                                 block1
     // filter edges between rows (e.g. ------)
     //                                 block2
-    for (y = 0; y < 8; y++, dst += 8 * ls, lvl += 8) {
+    for (y = 0; y < 8; y++, dst += 8 * ls >> ss) {
         uint8_t *ptr = dst, *l = lvl, *vmask = mask[y];
         unsigned vm = vmask[0] | vmask[1] | vmask[2], vm3 = vmask[3];
 
-        for (x = 1; vm & ~(x - 1); x <<= 2, ptr += 16, l += 2) {
+        for (x = 1; vm & ~(x - 1); x <<= (2 << ss), ptr += 16, l += 2 << ss) {
             if (row || y) {
                 if (vm & x) {
                     int L = *l, H = L >> 4;
                     int E = s->filter.mblim_lut[L], I = s->filter.lim_lut[L];
 
                     if (vmask[0] & x) {
-                        if (vmask[0] & (x << 1)) {
-                            av_assert2(l[1] == L);
+                        if (vmask[0] & (x << (1 + ss))) {
+                            av_assert2(l[1 + ss] == L);
                             s->dsp.loop_filter_16[1](ptr, ls, E, I, H);
                         } else {
                             s->dsp.loop_filter_8[2][1](ptr, ls, E, I, H);
                         }
-                    } else if (vm & (x << 1)) {
-                        L = l[1];
+                    } else if (vm & (x << (1 + ss))) {
+                        L = l[1 + ss];
                         H |= (L >> 4) << 8;
                         E |= s->filter.mblim_lut[L] << 8;
                         I |= s->filter.lim_lut[L] << 8;
                         s->dsp.loop_filter_mix2[!!(vmask[1] &  x)]
-                                               [!!(vmask[1] & (x << 1))]
+                                               [!!(vmask[1] & (x << (1 + ss)))]
                                                [1](ptr, ls, E, I, H);
                     } else {
                         s->dsp.loop_filter_8[!!(vmask[1] & x)]
                                             [1](ptr, ls, E, I, H);
                     }
-                } else if (vm & (x << 1)) {
-                    int L = l[1], H = L >> 4;
+                } else if (vm & (x << (1 + ss))) {
+                    int L = l[1 + ss], H = L >> 4;
                     int E = s->filter.mblim_lut[L], I = s->filter.lim_lut[L];
 
-                    s->dsp.loop_filter_8[!!(vmask[1] & (x << 1))]
+                    s->dsp.loop_filter_8[!!(vmask[1] & (x << (1 + ss)))]
                                         [1](ptr + 8, ls, E, I, H);
                 }
             }
-            if (vm3 & x) {
-                int L = *l, H = L >> 4;
-                int E = s->filter.mblim_lut[L], I = s->filter.lim_lut[L];
+            if (!ss) {
+                if (vm3 & x) {
+                    int L = *l, H = L >> 4;
+                    int E = s->filter.mblim_lut[L], I = s->filter.lim_lut[L];
 
-                if (vm3 & (x << 1)) {
-                    L = l[1];
-                    H |= (L >> 4) << 8;
-                    E |= s->filter.mblim_lut[L] << 8;
-                    I |= s->filter.lim_lut[L] << 8;
-                    s->dsp.loop_filter_mix2[0][0][1](ptr + ls * 4, ls, E, I, H);
-                } else {
-                    s->dsp.loop_filter_8[0][1](ptr + ls * 4, ls, E, I, H);
+                    if (vm3 & (x << 1)) {
+                        L = l[1];
+                        H |= (L >> 4) << 8;
+                        E |= s->filter.mblim_lut[L] << 8;
+                        I |= s->filter.lim_lut[L] << 8;
+                        s->dsp.loop_filter_mix2[0][0][1](ptr + ls * 4, ls, E, I, H);
+                    } else {
+                        s->dsp.loop_filter_8[0][1](ptr + ls * 4, ls, E, I, H);
+                    }
+                } else if (vm3 & (x << 1)) {
+                    int L = l[1], H = L >> 4;
+                    int E = s->filter.mblim_lut[L], I = s->filter.lim_lut[L];
+
+                    s->dsp.loop_filter_8[0][1](ptr + ls * 4 + 8, ls, E, I, H);
                 }
-            } else if (vm3 & (x << 1)) {
-                int L = l[1], H = L >> 4;
-                int E = s->filter.mblim_lut[L], I = s->filter.lim_lut[L];
-
-                s->dsp.loop_filter_8[0][1](ptr + ls * 4 + 8, ls, E, I, H);
             }
+        }
+        if (ss) {
+            if (y & 1)
+                lvl += 16;
+        } else {
+            lvl += 8;
         }
     }
 }
@@ -3430,7 +3444,7 @@ static void loopfilter_sb(AVCodecContext *ctx, struct VP9Filter *lflvl,
     AVFrame *f = s->frames[CUR_FRAME].tf.f;
     uint8_t *dst = f->data[0] + yoff;
     ptrdiff_t ls_y = f->linesize[0], ls_uv = f->linesize[1];
-    int y, x, p;
+    int p;
 
     // FIXME in how far can we interleave the v/h loopfilter calls? E.g.
     // if you think of them as acting on a 8x8 block max, we can interleave
@@ -3438,100 +3452,13 @@ static void loopfilter_sb(AVCodecContext *ctx, struct VP9Filter *lflvl,
     // 8 pixel blocks, and we won't always do that (we want at least 16px
     // to use SSE2 optimizations, perhaps 32 for AVX2)
 
-    filter_plane_cols(s, col, lflvl->level, lflvl->mask[0][0], dst, ls_y);
-    filter_plane_rows(s, row, lflvl->level, lflvl->mask[0][1], dst, ls_y);
+    filter_plane_cols(s, col, 0, lflvl->level, lflvl->mask[0][0], dst, ls_y);
+    filter_plane_rows(s, row, 0, lflvl->level, lflvl->mask[0][1], dst, ls_y);
 
-    // same principle but for U/V planes
     for (p = 0; p < 2; p++) {
-        uint8_t *lvl = lflvl->level;
-
         dst = f->data[1 + p] + uvoff;
-        for (y = 0; y < 8; y += 4, dst += 16 * ls_uv, lvl += 32) {
-            uint8_t *ptr = dst, *l = lvl, *hmask1 = lflvl->mask[1][0][y];
-            uint8_t *hmask2 = lflvl->mask[1][0][y + 2];
-            unsigned hm1 = hmask1[0] | hmask1[1] | hmask1[2];
-            unsigned hm2 = hmask2[1] | hmask2[2], hm = hm1 | hm2;
-
-            for (x = 1; hm & ~(x - 1); x <<= 1, ptr += 4) {
-                if (col || x > 1) {
-                    if (hm1 & x) {
-                        int L = *l, H = L >> 4;
-                        int E = s->filter.mblim_lut[L], I = s->filter.lim_lut[L];
-
-                        if (hmask1[0] & x) {
-                            if (hmask2[0] & x) {
-                                av_assert2(l[16] == L);
-                                s->dsp.loop_filter_16[0](ptr, ls_uv, E, I, H);
-                            } else {
-                                s->dsp.loop_filter_8[2][0](ptr, ls_uv, E, I, H);
-                            }
-                        } else if (hm2 & x) {
-                            L = l[16];
-                            H |= (L >> 4) << 8;
-                            E |= s->filter.mblim_lut[L] << 8;
-                            I |= s->filter.lim_lut[L] << 8;
-                            s->dsp.loop_filter_mix2[!!(hmask1[1] & x)]
-                                                   [!!(hmask2[1] & x)]
-                                                   [0](ptr, ls_uv, E, I, H);
-                        } else {
-                            s->dsp.loop_filter_8[!!(hmask1[1] & x)]
-                                                [0](ptr, ls_uv, E, I, H);
-                        }
-                    } else if (hm2 & x) {
-                        int L = l[16], H = L >> 4;
-                        int E = s->filter.mblim_lut[L], I = s->filter.lim_lut[L];
-
-                        s->dsp.loop_filter_8[!!(hmask2[1] & x)]
-                                            [0](ptr + 8 * ls_uv, ls_uv, E, I, H);
-                    }
-                }
-                if (x & 0xAA)
-                    l += 2;
-            }
-        }
-        lvl = lflvl->level;
-        dst = f->data[1 + p] + uvoff;
-        for (y = 0; y < 8; y++, dst += 4 * ls_uv) {
-            uint8_t *ptr = dst, *l = lvl, *vmask = lflvl->mask[1][1][y];
-            unsigned vm = vmask[0] | vmask[1] | vmask[2];
-
-            for (x = 1; vm & ~(x - 1); x <<= 4, ptr += 16, l += 4) {
-                if (row || y) {
-                    if (vm & x) {
-                        int L = *l, H = L >> 4;
-                        int E = s->filter.mblim_lut[L], I = s->filter.lim_lut[L];
-
-                        if (vmask[0] & x) {
-                            if (vmask[0] & (x << 2)) {
-                                av_assert2(l[2] == L);
-                                s->dsp.loop_filter_16[1](ptr, ls_uv, E, I, H);
-                            } else {
-                                s->dsp.loop_filter_8[2][1](ptr, ls_uv, E, I, H);
-                            }
-                        } else if (vm & (x << 2)) {
-                            L = l[2];
-                            H |= (L >> 4) << 8;
-                            E |= s->filter.mblim_lut[L] << 8;
-                            I |= s->filter.lim_lut[L] << 8;
-                            s->dsp.loop_filter_mix2[!!(vmask[1] &  x)]
-                                                   [!!(vmask[1] & (x << 2))]
-                                                   [1](ptr, ls_uv, E, I, H);
-                        } else {
-                            s->dsp.loop_filter_8[!!(vmask[1] & x)]
-                                                [1](ptr, ls_uv, E, I, H);
-                        }
-                    } else if (vm & (x << 2)) {
-                        int L = l[2], H = L >> 4;
-                        int E = s->filter.mblim_lut[L], I = s->filter.lim_lut[L];
-
-                        s->dsp.loop_filter_8[!!(vmask[1] & (x << 2))]
-                                            [1](ptr + 8, ls_uv, E, I, H);
-                    }
-                }
-            }
-            if (y & 1)
-                lvl += 16;
-        }
+        filter_plane_cols(s, col, 1, lflvl->level, lflvl->mask[1][0], dst, ls_uv);
+        filter_plane_rows(s, row, 1, lflvl->level, lflvl->mask[1][1], dst, ls_uv);
     }
 }
 
