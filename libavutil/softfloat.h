@@ -25,6 +25,7 @@
 #include "common.h"
 
 #include "avassert.h"
+#include "softfloat_tables.h"
 
 #define MIN_EXP -126
 #define MAX_EXP  126
@@ -102,6 +103,13 @@ static inline av_const int av_cmp_sf(SoftFloat a, SoftFloat b){
     else    return  a.mant          - (b.mant >> t);
 }
 
+static inline av_const int av_gt_sf(SoftFloat a, SoftFloat b)
+{
+    int t= a.exp - b.exp;
+    if(t<0) return (a.mant >> (-t)) >  b.mant      ;
+    else    return  a.mant          > (b.mant >> t);
+}
+
 static inline av_const SoftFloat av_add_sf(SoftFloat a, SoftFloat b){
     int t= a.exp - b.exp;
     if      (t <-31) return b;
@@ -114,7 +122,7 @@ static inline av_const SoftFloat av_sub_sf(SoftFloat a, SoftFloat b){
     return av_add_sf(a, (SoftFloat){ -b.mant, b.exp});
 }
 
-//FIXME sqrt, log, exp, pow, sin, cos
+//FIXME log, exp, pow
 
 /**
  * Converts a mantisse and exponent to a SoftFloat
@@ -131,6 +139,89 @@ static inline av_const int av_sf2int(SoftFloat v, int frac_bits){
     v.exp += frac_bits - (ONE_BITS + 1);
     if(v.exp >= 0) return v.mant <<  v.exp ;
     else           return v.mant >>(-v.exp);
+}
+
+/**
+ * Rounding-to-nearest used.
+ */
+static av_always_inline SoftFloat av_sqrt_sf(SoftFloat val)
+{
+    int tabIndex, rem;
+
+    if (val.mant == 0)
+        val.exp = 0;
+    else
+    {
+        tabIndex = (val.mant - 0x20000000) >> 20;
+
+        rem = val.mant & 0xFFFFF;
+        val.mant  = (int)(((int64_t)av_sqrttbl_sf[tabIndex] * (0x100000 - rem) +
+                           (int64_t)av_sqrttbl_sf[tabIndex + 1] * rem +
+                           0x80000) >> 20);
+        val.mant = (int)(((int64_t)av_sqr_exp_multbl_sf[val.exp & 1] * val.mant +
+                          0x10000000) >> 29);
+
+        if (val.mant < 0x40000000)
+            val.exp -= 2;
+        else
+            val.mant >>= 1;
+
+        val.exp = (val.exp >> 1) + 1;
+    }
+
+    return val;
+}
+
+/**
+ * Rounding-to-nearest used.
+ */
+static av_always_inline void av_sincos_sf(int a, int *s, int *c)
+{
+    int idx, sign;
+    int sv, cv;
+    int st, ct;
+
+    idx = a >> 26;
+    sign = (idx << 27) >> 31;
+    cv = av_costbl_1_sf[idx & 0xf];
+    cv = (cv ^ sign) - sign;
+
+    idx -= 8;
+    sign = (idx << 27) >> 31;
+    sv = av_costbl_1_sf[idx & 0xf];
+    sv = (sv ^ sign) - sign;
+
+    idx = a >> 21;
+    ct = av_costbl_2_sf[idx & 0x1f];
+    st = av_sintbl_2_sf[idx & 0x1f];
+
+    idx = (int)(((int64_t)cv * ct - (int64_t)sv * st + 0x20000000) >> 30);
+
+    sv = (int)(((int64_t)cv * st + (int64_t)sv * ct + 0x20000000) >> 30);
+
+    cv = idx;
+
+    idx = a >> 16;
+    ct = av_costbl_3_sf[idx & 0x1f];
+    st = av_sintbl_3_sf[idx & 0x1f];
+
+    idx = (int)(((int64_t)cv * ct - (int64_t)sv * st + 0x20000000) >> 30);
+
+    sv = (int)(((int64_t)cv * st + (int64_t)sv * ct + 0x20000000) >> 30);
+    cv = idx;
+
+    idx = a >> 11;
+
+    ct = (int)(((int64_t)av_costbl_4_sf[idx & 0x1f] * (0x800 - (a & 0x7ff)) +
+                (int64_t)av_costbl_4_sf[(idx & 0x1f)+1]*(a & 0x7ff) +
+                0x400) >> 11);
+    st = (int)(((int64_t)av_sintbl_4_sf[idx & 0x1f] * (0x800 - (a & 0x7ff)) +
+                (int64_t)av_sintbl_4_sf[(idx & 0x1f) + 1] * (a & 0x7ff) +
+                0x400) >> 11);
+
+    *c = (int)(((int64_t)cv * ct + (int64_t)sv * st + 0x20000000) >> 30);
+
+    *s = (int)(((int64_t)cv * st + (int64_t)sv * ct + 0x20000000) >> 30);
 }
 
 #endif /* AVUTIL_SOFTFLOAT_H */
