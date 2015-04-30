@@ -77,12 +77,20 @@ static void FN(inter_pred)(AVCodecContext *ctx)
                               ref1->data[2], ref1->linesize[2], tref1,
                               row << 3, col << (3 - s->ss_h),
                               &b->mv[0][0], 8 >> s->ss_h, 4, w1, h1, 0);
+                // BUG for 4:2:2 bs=8x4, libvpx uses the wrong block index
+                // to get the motion vector for the bottom 4x4 block
+                // https://code.google.com/p/webm/issues/detail?id=993
+                if (s->ss_h == 0) {
+                    uvmv = b->mv[2][0];
+                } else {
+                    uvmv = ROUNDED_DIV_MVx2(b->mv[0][0], b->mv[2][0]);
+                }
                 mc_chroma_dir(s, mc[3 + s->ss_h][b->filter][0],
                               s->dst[1] + 4 * ls_uv, s->dst[2] + 4 * ls_uv, ls_uv,
                               ref1->data[1], ref1->linesize[1],
                               ref1->data[2], ref1->linesize[2], tref1,
                               (row << 3) + 4, col << (3 - s->ss_h),
-                              &b->mv[2][0], 8 >> s->ss_h, 4, w1, h1, 0);
+                              &uvmv, 8 >> s->ss_h, 4, w1, h1, 0);
             }
 
             if (b->comp) {
@@ -110,12 +118,20 @@ static void FN(inter_pred)(AVCodecContext *ctx)
                                   ref2->data[2], ref2->linesize[2], tref2,
                                   row << 3, col << (3 - s->ss_h),
                                   &b->mv[0][1], 8 >> s->ss_h, 4, w2, h2, 1);
+                    // BUG for 4:2:2 bs=8x4, libvpx uses the wrong block index
+                    // to get the motion vector for the bottom 4x4 block
+                    // https://code.google.com/p/webm/issues/detail?id=993
+                    if (s->ss_h == 0) {
+                        uvmv = b->mv[2][1];
+                    } else {
+                        uvmv = ROUNDED_DIV_MVx2(b->mv[0][1], b->mv[2][1]);
+                    }
                     mc_chroma_dir(s, mc[3 + s->ss_h][b->filter][1],
                                   s->dst[1] + 4 * ls_uv, s->dst[2] + 4 * ls_uv, ls_uv,
                                   ref2->data[1], ref2->linesize[1],
                                   ref2->data[2], ref2->linesize[2], tref2,
                                   (row << 3) + 4, col << (3 - s->ss_h),
-                                  &b->mv[2][1], 8 >> s->ss_h, 4, w2, h2, 1);
+                                  &uvmv, 8 >> s->ss_h, 4, w2, h2, 1);
                 }
             }
         } else if (b->bs == BS_4x8) {
@@ -239,7 +255,10 @@ static void FN(inter_pred)(AVCodecContext *ctx)
                                   ref1->data[2], ref1->linesize[2], tref1,
                                   row << 3, col << 2,
                                   &uvmv, 4, 4, w1, h1, 0);
-                    uvmv = ROUNDED_DIV_MVx2(b->mv[2][0], b->mv[3][0]);
+                    // BUG libvpx uses wrong block index for 4:2:2 bs=4x4
+                    // bottom block
+                    // https://code.google.com/p/webm/issues/detail?id=993
+                    uvmv = ROUNDED_DIV_MVx2(b->mv[1][0], b->mv[2][0]);
                     mc_chroma_dir(s, mc[4][b->filter][0],
                                   s->dst[1] + 4 * ls_uv, s->dst[2] + 4 * ls_uv, ls_uv,
                                   ref1->data[1], ref1->linesize[1],
@@ -327,7 +346,10 @@ static void FN(inter_pred)(AVCodecContext *ctx)
                                       ref2->data[2], ref2->linesize[2], tref2,
                                       row << 3, col << 2,
                                       &uvmv, 4, 4, w2, h2, 1);
-                        uvmv = ROUNDED_DIV_MVx2(b->mv[2][1], b->mv[3][1]);
+                        // BUG libvpx uses wrong block index for 4:2:2 bs=4x4
+                        // bottom block
+                        // https://code.google.com/p/webm/issues/detail?id=993
+                        uvmv = ROUNDED_DIV_MVx2(b->mv[1][1], b->mv[2][1]);
                         mc_chroma_dir(s, mc[4][b->filter][1],
                                       s->dst[1] + 4 * ls_uv, s->dst[2] + 4 * ls_uv, ls_uv,
                                       ref2->data[1], ref2->linesize[1],
