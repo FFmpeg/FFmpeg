@@ -106,6 +106,7 @@ $(foreach W,$(VP9_SIZE_A),$(eval $(foreach H,$(VP9_SIZE_A),$(eval $(call FATE_VP
 $(foreach W,$(VP9_SIZE_B),$(eval $(foreach H,$(VP9_SIZE_B),$(eval $(call FATE_VP9_SUITE,03-size-$(W)x$(H))))))
 $(eval $(call FATE_VP9_SUITE,03-deltaq))
 $(eval $(call FATE_VP9_PROFILE_SUITE,04-yuv444,1))
+$(eval $(call FATE_VP9_PROFILE_SUITE,04-yuv440,1))
 $(eval $(call FATE_VP9_SUITE,06-bilinear))
 $(eval $(call FATE_VP9_SUITE,09-lf_deltas))
 $(eval $(call FATE_VP9_SUITE,10-show-existing-frame))
