@@ -3285,25 +3285,15 @@ static void decode_sb_mem(AVCodecContext *ctx, int row, int col, struct VP9Filte
     }
 }
 
-static void loopfilter_sb(AVCodecContext *ctx, struct VP9Filter *lflvl,
-                          int row, int col, ptrdiff_t yoff, ptrdiff_t uvoff)
+static av_always_inline void filter_plane_cols(VP9Context *s, int col,
+                                               uint8_t *lvl, uint8_t (*mask)[4],
+                                               uint8_t *dst, ptrdiff_t ls)
 {
-    VP9Context *s = ctx->priv_data;
-    AVFrame *f = s->frames[CUR_FRAME].tf.f;
-    uint8_t *dst = f->data[0] + yoff, *lvl = lflvl->level;
-    ptrdiff_t ls_y = f->linesize[0], ls_uv = f->linesize[1];
-    int y, x, p;
+    int y, x;
 
-    // FIXME in how far can we interleave the v/h loopfilter calls? E.g.
-    // if you think of them as acting on a 8x8 block max, we can interleave
-    // each v/h within the single x loop, but that only works if we work on
-    // 8 pixel blocks, and we won't always do that (we want at least 16px
-    // to use SSE2 optimizations, perhaps 32 for AVX2)
-
-    // filter edges between columns, Y plane (e.g. block1 | block2)
-    for (y = 0; y < 8; y += 2, dst += 16 * ls_y, lvl += 16) {
-        uint8_t *ptr = dst, *l = lvl, *hmask1 = lflvl->mask[0][0][y];
-        uint8_t *hmask2 = lflvl->mask[0][0][y + 1];
+    // filter edges between columns (e.g. block1 | block2)
+    for (y = 0; y < 8; y += 2, dst += 16 * ls, lvl += 16) {
+        uint8_t *ptr = dst, *l = lvl, *hmask1 = mask[y], *hmask2 = mask[y + 1];
         unsigned hm1 = hmask1[0] | hmask1[1] | hmask1[2], hm13 = hmask1[3];
         unsigned hm2 = hmask2[1] | hmask2[2], hm23 = hmask2[3];
         unsigned hm = hm1 | hm2 | hm13 | hm23;
@@ -3317,9 +3307,9 @@ static void loopfilter_sb(AVCodecContext *ctx, struct VP9Filter *lflvl,
                     if (hmask1[0] & x) {
                         if (hmask2[0] & x) {
                             av_assert2(l[8] == L);
-                            s->dsp.loop_filter_16[0](ptr, ls_y, E, I, H);
+                            s->dsp.loop_filter_16[0](ptr, ls, E, I, H);
                         } else {
-                            s->dsp.loop_filter_8[2][0](ptr, ls_y, E, I, H);
+                            s->dsp.loop_filter_8[2][0](ptr, ls, E, I, H);
                         }
                     } else if (hm2 & x) {
                         L = l[8];
@@ -3328,17 +3318,17 @@ static void loopfilter_sb(AVCodecContext *ctx, struct VP9Filter *lflvl,
                         I |= s->filter.lim_lut[L] << 8;
                         s->dsp.loop_filter_mix2[!!(hmask1[1] & x)]
                                                [!!(hmask2[1] & x)]
-                                               [0](ptr, ls_y, E, I, H);
+                                               [0](ptr, ls, E, I, H);
                     } else {
                         s->dsp.loop_filter_8[!!(hmask1[1] & x)]
-                                            [0](ptr, ls_y, E, I, H);
+                                            [0](ptr, ls, E, I, H);
                     }
                 } else if (hm2 & x) {
                     int L = l[8], H = L >> 4;
                     int E = s->filter.mblim_lut[L], I = s->filter.lim_lut[L];
 
                     s->dsp.loop_filter_8[!!(hmask2[1] & x)]
-                                        [0](ptr + 8 * ls_y, ls_y, E, I, H);
+                                        [0](ptr + 8 * ls, ls, E, I, H);
                 }
             }
             if (hm13 & x) {
@@ -3350,26 +3340,31 @@ static void loopfilter_sb(AVCodecContext *ctx, struct VP9Filter *lflvl,
                     H |= (L >> 4) << 8;
                     E |= s->filter.mblim_lut[L] << 8;
                     I |= s->filter.lim_lut[L] << 8;
-                    s->dsp.loop_filter_mix2[0][0][0](ptr + 4, ls_y, E, I, H);
+                    s->dsp.loop_filter_mix2[0][0][0](ptr + 4, ls, E, I, H);
                 } else {
-                    s->dsp.loop_filter_8[0][0](ptr + 4, ls_y, E, I, H);
+                    s->dsp.loop_filter_8[0][0](ptr + 4, ls, E, I, H);
                 }
             } else if (hm23 & x) {
                 int L = l[8], H = L >> 4;
                 int E = s->filter.mblim_lut[L], I = s->filter.lim_lut[L];
 
-                s->dsp.loop_filter_8[0][0](ptr + 8 * ls_y + 4, ls_y, E, I, H);
+                s->dsp.loop_filter_8[0][0](ptr + 8 * ls + 4, ls, E, I, H);
             }
         }
     }
+}
 
-    //                                          block1
-    // filter edges between rows, Y plane (e.g. ------)
-    //                                          block2
-    dst = f->data[0] + yoff;
-    lvl = lflvl->level;
-    for (y = 0; y < 8; y++, dst += 8 * ls_y, lvl += 8) {
-        uint8_t *ptr = dst, *l = lvl, *vmask = lflvl->mask[0][1][y];
+static av_always_inline void filter_plane_rows(VP9Context *s, int row,
+                                               uint8_t *lvl, uint8_t (*mask)[4],
+                                               uint8_t *dst, ptrdiff_t ls)
+{
+    int y, x;
+
+    //                                 block1
+    // filter edges between rows (e.g. ------)
+    //                                 block2
+    for (y = 0; y < 8; y++, dst += 8 * ls, lvl += 8) {
+        uint8_t *ptr = dst, *l = lvl, *vmask = mask[y];
         unsigned vm = vmask[0] | vmask[1] | vmask[2], vm3 = vmask[3];
 
         for (x = 1; vm & ~(x - 1); x <<= 2, ptr += 16, l += 2) {
@@ -3381,9 +3376,9 @@ static void loopfilter_sb(AVCodecContext *ctx, struct VP9Filter *lflvl,
                     if (vmask[0] & x) {
                         if (vmask[0] & (x << 1)) {
                             av_assert2(l[1] == L);
-                            s->dsp.loop_filter_16[1](ptr, ls_y, E, I, H);
+                            s->dsp.loop_filter_16[1](ptr, ls, E, I, H);
                         } else {
-                            s->dsp.loop_filter_8[2][1](ptr, ls_y, E, I, H);
+                            s->dsp.loop_filter_8[2][1](ptr, ls, E, I, H);
                         }
                     } else if (vm & (x << 1)) {
                         L = l[1];
@@ -3392,17 +3387,17 @@ static void loopfilter_sb(AVCodecContext *ctx, struct VP9Filter *lflvl,
                         I |= s->filter.lim_lut[L] << 8;
                         s->dsp.loop_filter_mix2[!!(vmask[1] &  x)]
                                                [!!(vmask[1] & (x << 1))]
-                                               [1](ptr, ls_y, E, I, H);
+                                               [1](ptr, ls, E, I, H);
                     } else {
                         s->dsp.loop_filter_8[!!(vmask[1] & x)]
-                                            [1](ptr, ls_y, E, I, H);
+                                            [1](ptr, ls, E, I, H);
                     }
                 } else if (vm & (x << 1)) {
                     int L = l[1], H = L >> 4;
                     int E = s->filter.mblim_lut[L], I = s->filter.lim_lut[L];
 
                     s->dsp.loop_filter_8[!!(vmask[1] & (x << 1))]
-                                        [1](ptr + 8, ls_y, E, I, H);
+                                        [1](ptr + 8, ls, E, I, H);
                 }
             }
             if (vm3 & x) {
@@ -3414,22 +3409,42 @@ static void loopfilter_sb(AVCodecContext *ctx, struct VP9Filter *lflvl,
                     H |= (L >> 4) << 8;
                     E |= s->filter.mblim_lut[L] << 8;
                     I |= s->filter.lim_lut[L] << 8;
-                    s->dsp.loop_filter_mix2[0][0][1](ptr + ls_y * 4, ls_y, E, I, H);
+                    s->dsp.loop_filter_mix2[0][0][1](ptr + ls * 4, ls, E, I, H);
                 } else {
-                    s->dsp.loop_filter_8[0][1](ptr + ls_y * 4, ls_y, E, I, H);
+                    s->dsp.loop_filter_8[0][1](ptr + ls * 4, ls, E, I, H);
                 }
             } else if (vm3 & (x << 1)) {
                 int L = l[1], H = L >> 4;
                 int E = s->filter.mblim_lut[L], I = s->filter.lim_lut[L];
 
-                s->dsp.loop_filter_8[0][1](ptr + ls_y * 4 + 8, ls_y, E, I, H);
+                s->dsp.loop_filter_8[0][1](ptr + ls * 4 + 8, ls, E, I, H);
             }
         }
     }
+}
+
+static void loopfilter_sb(AVCodecContext *ctx, struct VP9Filter *lflvl,
+                          int row, int col, ptrdiff_t yoff, ptrdiff_t uvoff)
+{
+    VP9Context *s = ctx->priv_data;
+    AVFrame *f = s->frames[CUR_FRAME].tf.f;
+    uint8_t *dst = f->data[0] + yoff;
+    ptrdiff_t ls_y = f->linesize[0], ls_uv = f->linesize[1];
+    int y, x, p;
+
+    // FIXME in how far can we interleave the v/h loopfilter calls? E.g.
+    // if you think of them as acting on a 8x8 block max, we can interleave
+    // each v/h within the single x loop, but that only works if we work on
+    // 8 pixel blocks, and we won't always do that (we want at least 16px
+    // to use SSE2 optimizations, perhaps 32 for AVX2)
+
+    filter_plane_cols(s, col, lflvl->level, lflvl->mask[0][0], dst, ls_y);
+    filter_plane_rows(s, row, lflvl->level, lflvl->mask[0][1], dst, ls_y);
 
     // same principle but for U/V planes
     for (p = 0; p < 2; p++) {
-        lvl = lflvl->level;
+        uint8_t *lvl = lflvl->level;
+
         dst = f->data[1 + p] + uvoff;
         for (y = 0; y < 8; y += 4, dst += 16 * ls_uv, lvl += 32) {
             uint8_t *ptr = dst, *l = lvl, *hmask1 = lflvl->mask[1][0][y];
