@@ -85,6 +85,12 @@ fate-vp9$(2)-$(1): CMD = framemd5 $(3) -i $(TARGET_SAMPLES)/vp9-test-vectors/vp9
 fate-vp9$(2)-$(1): REF = $(SRC_PATH)/tests/ref/fate/vp9-$(1)
 endef
 
+define FATE_VP9_PROFILE_SUITE
+FATE_VP9-$(CONFIG_MATROSKA_DEMUXER) += fate-vp9p$(2)-$(1)
+fate-vp9p$(2)-$(1): CMD = framemd5 -i $(TARGET_SAMPLES)/vp9-test-vectors/vp9$(2)-2-$(1).webm
+fate-vp9p$(2)-$(1): REF = $(SRC_PATH)/tests/ref/fate/vp9p$(2)-$(1)
+endef
+
 VP9_Q = 00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 \
         16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 \
         32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 \
@@ -94,24 +100,25 @@ VP9_SIZE_A = 08 10 16 18 32 34 64 66
 VP9_SIZE_B = 196 198 200 202 208 210 224 226
 
 define FATE_VP9_FULL
-$(foreach Q,$(VP9_Q),$(eval $(call FATE_VP9_SUITE,00-quantizer-$(Q),$(1),$(2))))
-$(foreach SHARP,$(VP9_SHARP),$(eval $(call FATE_VP9_SUITE,01-sharpness-$(SHARP),$(1),$(2))))
-$(foreach W,$(VP9_SIZE_A),$(eval $(foreach H,$(VP9_SIZE_A),$(eval $(call FATE_VP9_SUITE,02-size-$(W)x$(H),$(1),$(2))))))
-$(foreach W,$(VP9_SIZE_B),$(eval $(foreach H,$(VP9_SIZE_B),$(eval $(call FATE_VP9_SUITE,03-size-$(W)x$(H),$(1),$(2))))))
-$(eval $(call FATE_VP9_SUITE,03-deltaq,$(1),$(2)))
-$(eval $(call FATE_VP9_SUITE,06-bilinear,$(1),$(2)))
-$(eval $(call FATE_VP9_SUITE,09-lf_deltas,$(1),$(2)))
-$(eval $(call FATE_VP9_SUITE,10-show-existing-frame,$(1),$(2)))
-$(eval $(call FATE_VP9_SUITE,10-show-existing-frame2,$(1),$(2)))
-$(eval $(call FATE_VP9_SUITE,15-segkey_adpq,$(1),$(2)))
-$(eval $(call FATE_VP9_SUITE,16-intra-only,$(1),$(2)))
-$(eval $(call FATE_VP9_SUITE,2pass-akiyo,$(1),$(2)))
-$(eval $(call FATE_VP9_SUITE,parallelmode-akiyo,$(1),$(2)))
-$(eval $(call FATE_VP9_SUITE,segmentation-aq-akiyo,$(1),$(2)))
-$(eval $(call FATE_VP9_SUITE,segmentation-sf-akiyo,$(1),$(2)))
-$(eval $(call FATE_VP9_SUITE,tiling-pedestrian,$(1),$(2)))
-$(eval $(call FATE_VP9_SUITE,trac3849,$(1),$(2)))
-$(eval $(call FATE_VP9_SUITE,trac4359,$(1),$(2)))
+$(foreach Q,$(VP9_Q),$(eval $(call FATE_VP9_SUITE,00-quantizer-$(Q))))
+$(foreach SHARP,$(VP9_SHARP),$(eval $(call FATE_VP9_SUITE,01-sharpness-$(SHARP))))
+$(foreach W,$(VP9_SIZE_A),$(eval $(foreach H,$(VP9_SIZE_A),$(eval $(call FATE_VP9_SUITE,02-size-$(W)x$(H))))))
+$(foreach W,$(VP9_SIZE_B),$(eval $(foreach H,$(VP9_SIZE_B),$(eval $(call FATE_VP9_SUITE,03-size-$(W)x$(H))))))
+$(eval $(call FATE_VP9_SUITE,03-deltaq))
+$(eval $(call FATE_VP9_PROFILE_SUITE,04-yuv444,1))
+$(eval $(call FATE_VP9_SUITE,06-bilinear))
+$(eval $(call FATE_VP9_SUITE,09-lf_deltas))
+$(eval $(call FATE_VP9_SUITE,10-show-existing-frame))
+$(eval $(call FATE_VP9_SUITE,10-show-existing-frame2))
+$(eval $(call FATE_VP9_SUITE,15-segkey_adpq))
+$(eval $(call FATE_VP9_SUITE,16-intra-only))
+$(eval $(call FATE_VP9_SUITE,2pass-akiyo))
+$(eval $(call FATE_VP9_SUITE,parallelmode-akiyo))
+$(eval $(call FATE_VP9_SUITE,segmentation-aq-akiyo))
+$(eval $(call FATE_VP9_SUITE,segmentation-sf-akiyo))
+$(eval $(call FATE_VP9_SUITE,tiling-pedestrian))
+$(eval $(call FATE_VP9_SUITE,trac3849))
+$(eval $(call FATE_VP9_SUITE,trac4359))
 endef
 
 $(eval $(call FATE_VP9_FULL))
