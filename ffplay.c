@@ -1531,7 +1531,7 @@ static void step_to_next_frame(VideoState *is)
 
 static double compute_target_delay(double delay, VideoState *is)
 {
-    double sync_threshold, diff;
+    double sync_threshold, diff = 0;
 
     /* update delay to follow master synchronisation source */
     if (get_master_sync_type(is) != AV_SYNC_VIDEO_MASTER) {
