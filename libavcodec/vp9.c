@@ -2853,7 +2853,7 @@ static void inter_recon(AVCodecContext *ctx)
     }
 }
 
-static av_always_inline void mask_edges(struct VP9Filter *lflvl, int is_uv,
+static av_always_inline void mask_edges(uint8_t (*mask)[8][4], int is_uv,
                                         int row_and_7, int col_and_7,
                                         int w, int h, int col_end, int row_end,
                                         enum TxfmMode tx, int skip_inter)
@@ -2894,8 +2894,8 @@ static av_always_inline void mask_edges(struct VP9Filter *lflvl, int is_uv,
             for (y = row_and_7; y < h + row_and_7; y++) {
                 int col_mask_id = 2 - !(y & 7);
 
-                lflvl->mask[is_uv][0][y][1] |= m_row_8;
-                lflvl->mask[is_uv][0][y][2] |= m_row_4;
+                mask[0][y][1] |= m_row_8;
+                mask[0][y][2] |= m_row_4;
                 // for odd lines, if the odd col is not being filtered,
                 // skip odd row also:
                 // .---. <-- a
@@ -2907,9 +2907,9 @@ static av_always_inline void mask_edges(struct VP9Filter *lflvl, int is_uv,
                 // if a/c are even row/col and b/d are odd, and d is skipped,
                 // e.g. right edge of size-66x66.webm, then skip b also (bug)
                 if ((col_end & 1) && (y & 1)) {
-                    lflvl->mask[is_uv][1][y][col_mask_id] |= m_col_odd;
+                    mask[1][y][col_mask_id] |= m_col_odd;
                 } else {
-                    lflvl->mask[is_uv][1][y][col_mask_id] |= m_col;
+                    mask[1][y][col_mask_id] |= m_col;
                 }
             }
         } else {
@@ -2918,11 +2918,11 @@ static av_always_inline void mask_edges(struct VP9Filter *lflvl, int is_uv,
             for (y = row_and_7; y < h + row_and_7; y++) {
                 int col_mask_id = 2 - !(y & 3);
 
-                lflvl->mask[is_uv][0][y][1] |= m_row_8; // row edge
-                lflvl->mask[is_uv][0][y][2] |= m_row_4;
-                lflvl->mask[is_uv][1][y][col_mask_id] |= m_col; // col edge
-                lflvl->mask[is_uv][0][y][3] |= m_col;
-                lflvl->mask[is_uv][1][y][3] |= m_col;
+                mask[0][y][1] |= m_row_8; // row edge
+                mask[0][y][2] |= m_row_4;
+                mask[1][y][col_mask_id] |= m_col; // col edge
+                mask[0][y][3] |= m_col;
+                mask[1][y][3] |= m_col;
             }
         }
     } else {
@@ -2941,47 +2941,47 @@ static av_always_inline void mask_edges(struct VP9Filter *lflvl, int is_uv,
                 int m_row_8 = m_row - m_row_16;
 
                 for (y = row_and_7; y < h + row_and_7; y++) {
-                    lflvl->mask[is_uv][0][y][0] |= m_row_16;
-                    lflvl->mask[is_uv][0][y][1] |= m_row_8;
+                    mask[0][y][0] |= m_row_16;
+                    mask[0][y][1] |= m_row_8;
                 }
             } else {
                 for (y = row_and_7; y < h + row_and_7; y++)
-                    lflvl->mask[is_uv][0][y][mask_id] |= m_row;
+                    mask[0][y][mask_id] |= m_row;
             }
 
             if (is_uv && tx > TX_8X8 && (h ^ (h - 1)) == 1) {
                 for (y = row_and_7; y < h + row_and_7 - 1; y += step1d)
-                    lflvl->mask[is_uv][1][y][0] |= m_col;
+                    mask[1][y][0] |= m_col;
                 if (y - row_and_7 == h - 1)
-                    lflvl->mask[is_uv][1][y][1] |= m_col;
+                    mask[1][y][1] |= m_col;
             } else {
                 for (y = row_and_7; y < h + row_and_7; y += step1d)
-                    lflvl->mask[is_uv][1][y][mask_id] |= m_col;
+                    mask[1][y][mask_id] |= m_col;
             }
         } else if (tx != TX_4X4) {
             int mask_id;
 
             mask_id = (tx == TX_8X8) || (is_uv && h == 1);
-            lflvl->mask[is_uv][1][row_and_7][mask_id] |= m_col;
+            mask[1][row_and_7][mask_id] |= m_col;
             mask_id = (tx == TX_8X8) || (is_uv && w == 1);
             for (y = row_and_7; y < h + row_and_7; y++)
-                lflvl->mask[is_uv][0][y][mask_id] |= t;
+                mask[0][y][mask_id] |= t;
         } else if (is_uv) {
             int t8 = t & 0x01, t4 = t - t8;
 
             for (y = row_and_7; y < h + row_and_7; y++) {
-                lflvl->mask[is_uv][0][y][2] |= t4;
-                lflvl->mask[is_uv][0][y][1] |= t8;
+                mask[0][y][2] |= t4;
+                mask[0][y][1] |= t8;
             }
-            lflvl->mask[is_uv][1][row_and_7][2 - !(row_and_7 & 7)] |= m_col;
+            mask[1][row_and_7][2 - !(row_and_7 & 7)] |= m_col;
         } else {
             int t8 = t & 0x11, t4 = t - t8;
 
             for (y = row_and_7; y < h + row_and_7; y++) {
-                lflvl->mask[is_uv][0][y][2] |= t4;
-                lflvl->mask[is_uv][0][y][1] |= t8;
+                mask[0][y][2] |= t4;
+                mask[0][y][1] |= t8;
             }
-            lflvl->mask[is_uv][1][row_and_7][2 - !(row_and_7 & 3)] |= m_col;
+            mask[1][row_and_7][2 - !(row_and_7 & 3)] |= m_col;
         }
     }
 }
@@ -3131,9 +3131,9 @@ static void decode_b(AVCodecContext *ctx, int row, int col,
         int skip_inter = !b->intra && b->skip, col7 = s->col7, row7 = s->row7;
 
         setctx_2d(&lflvl->level[row7 * 8 + col7], w4, h4, 8, lvl);
-        mask_edges(lflvl, 0, row7, col7, x_end, y_end, 0, 0, b->tx, skip_inter);
+        mask_edges(lflvl->mask[0], 0, row7, col7, x_end, y_end, 0, 0, b->tx, skip_inter);
         if (s->ss_h || s->ss_v)
-            mask_edges(lflvl, 1, row7, col7, x_end, y_end,
+            mask_edges(lflvl->mask[1], 1, row7, col7, x_end, y_end,
                        s->cols & 1 && col + w4 >= s->cols ? s->cols & 7 : 0,
                        s->rows & 1 && row + h4 >= s->rows ? s->rows & 7 : 0,
                        b->uvtx, skip_inter);
