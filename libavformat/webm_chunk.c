@@ -70,11 +70,6 @@ static int chunk_mux_init(AVFormatContext *s)
     oc->max_delay          = s->max_delay;
     av_dict_copy(&oc->metadata, s->metadata, 0);
 
-    oc->priv_data = av_mallocz(oc->oformat->priv_data_size);
-    if (!oc->priv_data) {
-        avio_close(oc->pb);
-        return AVERROR(ENOMEM);
-    }
     *(const AVClass**)oc->priv_data = oc->oformat->priv_class;
     av_opt_set_defaults(oc->priv_data);
     av_opt_set_int(oc->priv_data, "dash", 1, 0);
