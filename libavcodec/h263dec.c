@@ -560,7 +560,7 @@ retry:
     if (s->codec_id == AV_CODEC_ID_H263  ||
         s->codec_id == AV_CODEC_ID_H263P ||
         s->codec_id == AV_CODEC_ID_H263I)
-        s->gob_index = ff_h263_get_gob_height(s);
+        s->gob_index = H263_GOB_HEIGHT(s->height);
 
     // for skipping the frame
     s->current_picture.f->pict_type = s->pict_type;

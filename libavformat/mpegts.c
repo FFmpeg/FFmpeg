@@ -75,6 +75,7 @@ typedef void SetServiceCallback (void *opaque, int ret);
 typedef struct MpegTSSectionFilter {
     int section_index;
     int section_h_size;
+    int last_ver;
     uint8_t *section_buf;
     unsigned int check_crc : 1;
     unsigned int end_of_section_reached : 1;
@@ -469,6 +470,8 @@ static MpegTSFilter *mpegts_open_section_filter(MpegTSContext *ts,
     sec->opaque      = opaque;
     sec->section_buf = av_malloc(MAX_SECTION_SIZE);
     sec->check_crc   = check_crc;
+    sec->last_ver    = -1;
+
     if (!sec->section_buf) {
         av_free(filter);
         return NULL;
@@ -1451,6 +1454,7 @@ static void m4sl_cb(MpegTSFilter *filter, const uint8_t *section,
                     int section_len)
 {
     MpegTSContext *ts = filter->u.section_filter.opaque;
+    MpegTSSectionFilter *tssf = &filter->u.section_filter;
     SectionHeader h;
     const uint8_t *p, *p_end;
     AVIOContext pb;
@@ -1465,6 +1469,9 @@ static void m4sl_cb(MpegTSFilter *filter, const uint8_t *section,
         return;
     if (h.tid != M4OD_TID)
         return;
+    if (h.version == tssf->last_ver)
+        return;
+    tssf->last_ver = h.version;
 
     mp4_read_od(s, p, (unsigned) (p_end - p), mp4_descr, &mp4_descr_count,
                 MAX_MP4_DESCR_COUNT);
@@ -1584,7 +1591,9 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
         if (get16(pp, desc_end) < 0)
             break;
         if (mp4_descr_count > 0 &&
-            (st->codec->codec_id == AV_CODEC_ID_AAC_LATM || st->request_probe > 0) &&
+            (st->codec->codec_id == AV_CODEC_ID_AAC_LATM ||
+             (st->request_probe == 0 && st->codec->codec_id == AV_CODEC_ID_NONE) ||
+             st->request_probe > 0) &&
             mp4_descr->dec_config_descr_len && mp4_descr->es_id == pid) {
             AVIOContext pb;
             ffio_init_context(&pb, mp4_descr->dec_config_descr,
@@ -1787,6 +1796,7 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
 static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len)
 {
     MpegTSContext *ts = filter->u.section_filter.opaque;
+    MpegTSSectionFilter *tssf = &filter->u.section_filter;
     SectionHeader h1, *h = &h1;
     PESContext *pes;
     AVStream *st;
@@ -1806,6 +1816,9 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
     p = section;
     if (parse_section_header(h, &p, p_end) < 0)
         return;
+    if (h->version == tssf->last_ver)
+        return;
+    tssf->last_ver = h->version;
 
     av_log(ts->stream, AV_LOG_TRACE, "sid=0x%x sec_num=%d/%d version=%d\n",
             h->id, h->sec_num, h->last_sec_num, h->version);
@@ -1955,6 +1968,7 @@ out:
 static void pat_cb(MpegTSFilter *filter, const uint8_t *section, int section_len)
 {
     MpegTSContext *ts = filter->u.section_filter.opaque;
+    MpegTSSectionFilter *tssf = &filter->u.section_filter;
     SectionHeader h1, *h = &h1;
     const uint8_t *p, *p_end;
     int sid, pmt_pid;
@@ -1972,6 +1986,9 @@ static void pat_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
     if (ts->skip_changes)
         return;
 
+    if (h->version == tssf->last_ver)
+        return;
+    tssf->last_ver = h->version;
     ts->stream->ts_id = h->id;
 
     clear_programs(ts);
@@ -2027,6 +2044,7 @@ static void pat_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
 static void sdt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len)
 {
     MpegTSContext *ts = filter->u.section_filter.opaque;
+    MpegTSSectionFilter *tssf = &filter->u.section_filter;
     SectionHeader h1, *h = &h1;
     const uint8_t *p, *p_end, *desc_list_end, *desc_end;
     int onid, val, sid, desc_list_len, desc_tag, desc_len, service_type;
@@ -2043,6 +2061,10 @@ static void sdt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
         return;
     if (ts->skip_changes)
         return;
+    if (h->version == tssf->last_ver)
+        return;
+    tssf->last_ver = h->version;
+
     onid = get16(&p, p_end);
     if (onid < 0)
         return;
@@ -2349,6 +2371,8 @@ static int handle_packets(MpegTSContext *ts, int64_t nb_packets)
                     av_buffer_unref(&pes->buffer);
                     pes->data_index = 0;
                     pes->state = MPEGTS_SKIP; /* skip until pes header */
+                } else if (ts->pids[i]->type == MPEGTS_SECTION) {
+                    ts->pids[i]->u.section_filter.last_ver = -1;
                 }
                 ts->pids[i]->last_cc = -1;
                 ts->pids[i]->last_pcr = -1;

@@ -364,7 +364,7 @@ void ff_vdpau_h264_set_reference_frames(H264Context *h)
     H264Picture *pic;
     int i, list, pic_frame_idx;
 
-    render = (struct vdpau_render_state *)h->cur_pic_ptr->f.data[0];
+    render = (struct vdpau_render_state *)h->cur_pic_ptr->f->data[0];
     assert(render);
 
     rf = &render->info.h264.referenceFrames[0];
@@ -380,7 +380,7 @@ void ff_vdpau_h264_set_reference_frames(H264Context *h)
                 continue;
             pic_frame_idx = pic->long_ref ? pic->pic_id : pic->frame_num;
 
-            render_ref = (struct vdpau_render_state *)pic->f.data[0];
+            render_ref = (struct vdpau_render_state *)pic->f->data[0];
             assert(render_ref);
 
             rf2 = &render->info.h264.referenceFrames[0];
@@ -448,7 +448,7 @@ void ff_vdpau_h264_picture_start(H264Context *h)
     struct vdpau_render_state *render;
     int i;
 
-    render = (struct vdpau_render_state *)h->cur_pic_ptr->f.data[0];
+    render = (struct vdpau_render_state *)h->cur_pic_ptr->f->data[0];
     assert(render);
 
     for (i = 0; i < 2; ++i) {
@@ -465,7 +465,7 @@ void ff_vdpau_h264_picture_complete(H264Context *h)
 {
     struct vdpau_render_state *render;
 
-    render = (struct vdpau_render_state *)h->cur_pic_ptr->f.data[0];
+    render = (struct vdpau_render_state *)h->cur_pic_ptr->f->data[0];
     assert(render);
 
     render->info.h264.slice_count = h->current_slice;
