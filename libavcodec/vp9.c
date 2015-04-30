@@ -3132,10 +3132,11 @@ static void decode_b(AVCodecContext *ctx, int row, int col,
 
         setctx_2d(&lflvl->level[row7 * 8 + col7], w4, h4, 8, lvl);
         mask_edges(lflvl, 0, row7, col7, x_end, y_end, 0, 0, b->tx, skip_inter);
-        mask_edges(lflvl, 1, row7, col7, x_end, y_end,
-                   s->cols & 1 && col + w4 >= s->cols ? s->cols & 7 : 0,
-                   s->rows & 1 && row + h4 >= s->rows ? s->rows & 7 : 0,
-                   b->uvtx, skip_inter);
+        if (s->ss_h || s->ss_v)
+            mask_edges(lflvl, 1, row7, col7, x_end, y_end,
+                       s->cols & 1 && col + w4 >= s->cols ? s->cols & 7 : 0,
+                       s->rows & 1 && row + h4 >= s->rows ? s->rows & 7 : 0,
+                       b->uvtx, skip_inter);
 
         if (!s->filter.lim_lut[lvl]) {
             int sharp = s->filter.sharpness;
@@ -3444,6 +3445,7 @@ static void loopfilter_sb(AVCodecContext *ctx, struct VP9Filter *lflvl,
     AVFrame *f = s->frames[CUR_FRAME].tf.f;
     uint8_t *dst = f->data[0] + yoff;
     ptrdiff_t ls_y = f->linesize[0], ls_uv = f->linesize[1];
+    uint8_t (*uv_masks)[8][4] = lflvl->mask[s->ss_h | s->ss_v];
     int p;
 
     // FIXME in how far can we interleave the v/h loopfilter calls? E.g.
@@ -3457,8 +3459,8 @@ static void loopfilter_sb(AVCodecContext *ctx, struct VP9Filter *lflvl,
 
     for (p = 0; p < 2; p++) {
         dst = f->data[1 + p] + uvoff;
-        filter_plane_cols(s, col, 1, lflvl->level, lflvl->mask[1][0], dst, ls_uv);
-        filter_plane_rows(s, row, 1, lflvl->level, lflvl->mask[1][1], dst, ls_uv);
+        filter_plane_cols(s, col, s->ss_h, lflvl->level, uv_masks[0], dst, ls_uv);
+        filter_plane_rows(s, row, s->ss_v, lflvl->level, uv_masks[1], dst, ls_uv);
     }
 }
 
