@@ -32,6 +32,7 @@ int ff_load_image(uint8_t *data[4], int linesize[4],
     AVFrame *frame;
     int frame_decoded, ret = 0;
     AVPacket pkt;
+    AVDictionary *opt=NULL;
 
     av_init_packet(&pkt);
 
@@ -57,7 +58,8 @@ int ff_load_image(uint8_t *data[4], int linesize[4],
         goto end;
     }
 
-    if ((ret = avcodec_open2(codec_ctx, codec, NULL)) < 0) {
+    av_dict_set(&opt, "thread_type", "slice", 0);
+    if ((ret = avcodec_open2(codec_ctx, codec, &opt)) < 0) {
         av_log(log_ctx, AV_LOG_ERROR, "Failed to open codec\n");
         goto end;
     }
@@ -97,6 +99,7 @@ end:
     avcodec_close(codec_ctx);
     avformat_close_input(&format_ctx);
     av_frame_free(&frame);
+    av_dict_free(&opt);
 
     if (ret < 0)
         av_log(log_ctx, AV_LOG_ERROR, "Error loading image file '%s'\n", filename);
