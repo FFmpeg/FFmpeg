@@ -2853,11 +2853,14 @@ static void inter_recon(AVCodecContext *ctx)
     }
 }
 
-static av_always_inline void mask_edges(uint8_t (*mask)[8][4], int is_uv,
+static av_always_inline void mask_edges(uint8_t (*mask)[8][4], int ss_h, int ss_v,
                                         int row_and_7, int col_and_7,
                                         int w, int h, int col_end, int row_end,
                                         enum TxfmMode tx, int skip_inter)
 {
+    static const unsigned wide_filter_col_mask[2] = { 0x11, 0x01 };
+    static const unsigned wide_filter_row_mask[2] = { 0x03, 0x07 };
+
     // FIXME I'm pretty sure all loops can be replaced by a single LUT if
     // we make VP9Filter.mask uint64_t (i.e. row/col all single variable)
     // and make the LUT 5-indexed (bl, bp, is_uv, tx and row/col), and then
@@ -2868,14 +2871,14 @@ static av_always_inline void mask_edges(uint8_t (*mask)[8][4], int is_uv,
     // a time, and we only use the topleft block's mode information to set
     // things like block strength. Thus, for any block size smaller than
     // 16x16, ignore the odd portion of the block.
-    if (tx == TX_4X4 && is_uv) {
-        if (h == 1) {
+    if (tx == TX_4X4 && (ss_v | ss_h)) {
+        if (h == ss_v) {
             if (row_and_7 & 1)
                 return;
             if (!row_end)
                 h += 1;
         }
-        if (w == 1) {
+        if (w == ss_h) {
             if (col_and_7 & 1)
                 return;
             if (!col_end)
@@ -2885,58 +2888,46 @@ static av_always_inline void mask_edges(uint8_t (*mask)[8][4], int is_uv,
 
     if (tx == TX_4X4 && !skip_inter) {
         int t = 1 << col_and_7, m_col = (t << w) - t, y;
-        int m_col_odd = (t << (w - 1)) - t;
-
         // on 32-px edges, use the 8-px wide loopfilter; else, use 4-px wide
-        if (is_uv) {
-            int m_row_8 = m_col & 0x01, m_row_4 = m_col - m_row_8;
+        int m_row_8 = m_col & wide_filter_col_mask[ss_h], m_row_4 = m_col - m_row_8;
 
-            for (y = row_and_7; y < h + row_and_7; y++) {
-                int col_mask_id = 2 - !(y & 7);
+        for (y = row_and_7; y < h + row_and_7; y++) {
+            int col_mask_id = 2 - !(y & wide_filter_row_mask[ss_v]);
 
-                mask[0][y][1] |= m_row_8;
-                mask[0][y][2] |= m_row_4;
-                // for odd lines, if the odd col is not being filtered,
-                // skip odd row also:
-                // .---. <-- a
-                // |   |
-                // |___| <-- b
-                // ^   ^
-                // c   d
-                //
-                // if a/c are even row/col and b/d are odd, and d is skipped,
-                // e.g. right edge of size-66x66.webm, then skip b also (bug)
-                if ((col_end & 1) && (y & 1)) {
-                    mask[1][y][col_mask_id] |= m_col_odd;
-                } else {
-                    mask[1][y][col_mask_id] |= m_col;
-                }
+            mask[0][y][1] |= m_row_8;
+            mask[0][y][2] |= m_row_4;
+            // for odd lines, if the odd col is not being filtered,
+            // skip odd row also:
+            // .---. <-- a
+            // |   |
+            // |___| <-- b
+            // ^   ^
+            // c   d
+            //
+            // if a/c are even row/col and b/d are odd, and d is skipped,
+            // e.g. right edge of size-66x66.webm, then skip b also (bug)
+            if ((ss_h & ss_v) && (col_end & 1) && (y & 1)) {
+                mask[1][y][col_mask_id] |= (t << (w - 1)) - t;
+            } else {
+                mask[1][y][col_mask_id] |= m_col;
             }
-        } else {
-            int m_row_8 = m_col & 0x11, m_row_4 = m_col - m_row_8;
-
-            for (y = row_and_7; y < h + row_and_7; y++) {
-                int col_mask_id = 2 - !(y & 3);
-
-                mask[0][y][1] |= m_row_8; // row edge
-                mask[0][y][2] |= m_row_4;
-                mask[1][y][col_mask_id] |= m_col; // col edge
+            if (!ss_h)
                 mask[0][y][3] |= m_col;
+            if (!ss_v)
                 mask[1][y][3] |= m_col;
-            }
         }
     } else {
         int y, t = 1 << col_and_7, m_col = (t << w) - t;
 
         if (!skip_inter) {
             int mask_id = (tx == TX_8X8);
-            int l2 = tx + is_uv - 1, step1d = 1 << l2;
             static const unsigned masks[4] = { 0xff, 0x55, 0x11, 0x01 };
+            int l2 = tx + ss_h - 1, step1d;
             int m_row = m_col & masks[l2];
 
             // at odd UV col/row edges tx16/tx32 loopfilter edges, force
             // 8wd loopfilter to prevent going off the visible edge.
-            if (is_uv && tx > TX_8X8 && (w ^ (w - 1)) == 1) {
+            if (ss_h && tx > TX_8X8 && (w ^ (w - 1)) == 1) {
                 int m_row_16 = ((t << (w - 1)) - t) & masks[l2];
                 int m_row_8 = m_row - m_row_16;
 
@@ -2949,7 +2940,9 @@ static av_always_inline void mask_edges(uint8_t (*mask)[8][4], int is_uv,
                     mask[0][y][mask_id] |= m_row;
             }
 
-            if (is_uv && tx > TX_8X8 && (h ^ (h - 1)) == 1) {
+            l2 = tx + ss_v - 1;
+            step1d = 1 << l2;
+            if (ss_v && tx > TX_8X8 && (h ^ (h - 1)) == 1) {
                 for (y = row_and_7; y < h + row_and_7 - 1; y += step1d)
                     mask[1][y][0] |= m_col;
                 if (y - row_and_7 == h - 1)
@@ -2961,27 +2954,19 @@ static av_always_inline void mask_edges(uint8_t (*mask)[8][4], int is_uv,
         } else if (tx != TX_4X4) {
             int mask_id;
 
-            mask_id = (tx == TX_8X8) || (is_uv && h == 1);
+            mask_id = (tx == TX_8X8) || (h == ss_v);
             mask[1][row_and_7][mask_id] |= m_col;
-            mask_id = (tx == TX_8X8) || (is_uv && w == 1);
+            mask_id = (tx == TX_8X8) || (w == ss_h);
             for (y = row_and_7; y < h + row_and_7; y++)
                 mask[0][y][mask_id] |= t;
-        } else if (is_uv) {
-            int t8 = t & 0x01, t4 = t - t8;
-
-            for (y = row_and_7; y < h + row_and_7; y++) {
-                mask[0][y][2] |= t4;
-                mask[0][y][1] |= t8;
-            }
-            mask[1][row_and_7][2 - !(row_and_7 & 7)] |= m_col;
         } else {
-            int t8 = t & 0x11, t4 = t - t8;
+            int t8 = t & wide_filter_col_mask[ss_h], t4 = t - t8;
 
             for (y = row_and_7; y < h + row_and_7; y++) {
                 mask[0][y][2] |= t4;
                 mask[0][y][1] |= t8;
             }
-            mask[1][row_and_7][2 - !(row_and_7 & 3)] |= m_col;
+            mask[1][row_and_7][2 - !(row_and_7 & wide_filter_row_mask[ss_v])] |= m_col;
         }
     }
 }
@@ -3131,9 +3116,9 @@ static void decode_b(AVCodecContext *ctx, int row, int col,
         int skip_inter = !b->intra && b->skip, col7 = s->col7, row7 = s->row7;
 
         setctx_2d(&lflvl->level[row7 * 8 + col7], w4, h4, 8, lvl);
-        mask_edges(lflvl->mask[0], 0, row7, col7, x_end, y_end, 0, 0, b->tx, skip_inter);
+        mask_edges(lflvl->mask[0], 0, 0, row7, col7, x_end, y_end, 0, 0, b->tx, skip_inter);
         if (s->ss_h || s->ss_v)
-            mask_edges(lflvl->mask[1], 1, row7, col7, x_end, y_end,
+            mask_edges(lflvl->mask[1], s->ss_h, s->ss_v, row7, col7, x_end, y_end,
                        s->cols & 1 && col + w4 >= s->cols ? s->cols & 7 : 0,
                        s->rows & 1 && row + h4 >= s->rows ? s->rows & 7 : 0,
                        b->uvtx, skip_inter);
@@ -3286,20 +3271,20 @@ static void decode_sb_mem(AVCodecContext *ctx, int row, int col, struct VP9Filte
     }
 }
 
-static av_always_inline void filter_plane_cols(VP9Context *s, int col, int ss,
+static av_always_inline void filter_plane_cols(VP9Context *s, int col, int ss_h, int ss_v,
                                                uint8_t *lvl, uint8_t (*mask)[4],
                                                uint8_t *dst, ptrdiff_t ls)
 {
     int y, x;
 
     // filter edges between columns (e.g. block1 | block2)
-    for (y = 0; y < 8; y += 2 << ss, dst += 16 * ls, lvl += 16 << ss) {
-        uint8_t *ptr = dst, *l = lvl, *hmask1 = mask[y], *hmask2 = mask[y + (1 << ss)];
+    for (y = 0; y < 8; y += 2 << ss_v, dst += 16 * ls, lvl += 16 << ss_v) {
+        uint8_t *ptr = dst, *l = lvl, *hmask1 = mask[y], *hmask2 = mask[y + 1 + ss_v];
         unsigned hm1 = hmask1[0] | hmask1[1] | hmask1[2], hm13 = hmask1[3];
         unsigned hm2 = hmask2[1] | hmask2[2], hm23 = hmask2[3];
         unsigned hm = hm1 | hm2 | hm13 | hm23;
 
-        for (x = 1; hm & ~(x - 1); x <<= 1, ptr += 8 >> ss) {
+        for (x = 1; hm & ~(x - 1); x <<= 1, ptr += 8 >> ss_h) {
             if (col || x > 1) {
                 if (hm1 & x) {
                     int L = *l, H = L >> 4;
@@ -3307,13 +3292,13 @@ static av_always_inline void filter_plane_cols(VP9Context *s, int col, int ss,
 
                     if (hmask1[0] & x) {
                         if (hmask2[0] & x) {
-                            av_assert2(l[8 << ss] == L);
+                            av_assert2(l[8 << ss_v] == L);
                             s->dsp.loop_filter_16[0](ptr, ls, E, I, H);
                         } else {
                             s->dsp.loop_filter_8[2][0](ptr, ls, E, I, H);
                         }
                     } else if (hm2 & x) {
-                        L = l[8 << ss];
+                        L = l[8 << ss_v];
                         H |= (L >> 4) << 8;
                         E |= s->filter.mblim_lut[L] << 8;
                         I |= s->filter.lim_lut[L] << 8;
@@ -3325,14 +3310,14 @@ static av_always_inline void filter_plane_cols(VP9Context *s, int col, int ss,
                                             [0](ptr, ls, E, I, H);
                     }
                 } else if (hm2 & x) {
-                    int L = l[8 << ss], H = L >> 4;
+                    int L = l[8 << ss_v], H = L >> 4;
                     int E = s->filter.mblim_lut[L], I = s->filter.lim_lut[L];
 
                     s->dsp.loop_filter_8[!!(hmask2[1] & x)]
                                         [0](ptr + 8 * ls, ls, E, I, H);
                 }
             }
-            if (ss) {
+            if (ss_h) {
                 if (x & 0xAA)
                     l += 2;
             } else {
@@ -3341,7 +3326,7 @@ static av_always_inline void filter_plane_cols(VP9Context *s, int col, int ss,
                     int E = s->filter.mblim_lut[L], I = s->filter.lim_lut[L];
 
                     if (hm23 & x) {
-                        L = l[8];
+                        L = l[8 << ss_v];
                         H |= (L >> 4) << 8;
                         E |= s->filter.mblim_lut[L] << 8;
                         I |= s->filter.lim_lut[L] << 8;
@@ -3350,7 +3335,7 @@ static av_always_inline void filter_plane_cols(VP9Context *s, int col, int ss,
                         s->dsp.loop_filter_8[0][0](ptr + 4, ls, E, I, H);
                     }
                 } else if (hm23 & x) {
-                    int L = l[8], H = L >> 4;
+                    int L = l[8 << ss_v], H = L >> 4;
                     int E = s->filter.mblim_lut[L], I = s->filter.lim_lut[L];
 
                     s->dsp.loop_filter_8[0][0](ptr + 8 * ls + 4, ls, E, I, H);
@@ -3361,7 +3346,7 @@ static av_always_inline void filter_plane_cols(VP9Context *s, int col, int ss,
     }
 }
 
-static av_always_inline void filter_plane_rows(VP9Context *s, int row, int ss,
+static av_always_inline void filter_plane_rows(VP9Context *s, int row, int ss_h, int ss_v,
                                                uint8_t *lvl, uint8_t (*mask)[4],
                                                uint8_t *dst, ptrdiff_t ls)
 {
@@ -3370,50 +3355,50 @@ static av_always_inline void filter_plane_rows(VP9Context *s, int row, int ss,
     //                                 block1
     // filter edges between rows (e.g. ------)
     //                                 block2
-    for (y = 0; y < 8; y++, dst += 8 * ls >> ss) {
+    for (y = 0; y < 8; y++, dst += 8 * ls >> ss_v) {
         uint8_t *ptr = dst, *l = lvl, *vmask = mask[y];
         unsigned vm = vmask[0] | vmask[1] | vmask[2], vm3 = vmask[3];
 
-        for (x = 1; vm & ~(x - 1); x <<= (2 << ss), ptr += 16, l += 2 << ss) {
+        for (x = 1; vm & ~(x - 1); x <<= (2 << ss_h), ptr += 16, l += 2 << ss_h) {
             if (row || y) {
                 if (vm & x) {
                     int L = *l, H = L >> 4;
                     int E = s->filter.mblim_lut[L], I = s->filter.lim_lut[L];
 
                     if (vmask[0] & x) {
-                        if (vmask[0] & (x << (1 + ss))) {
-                            av_assert2(l[1 + ss] == L);
+                        if (vmask[0] & (x << (1 + ss_h))) {
+                            av_assert2(l[1 + ss_h] == L);
                             s->dsp.loop_filter_16[1](ptr, ls, E, I, H);
                         } else {
                             s->dsp.loop_filter_8[2][1](ptr, ls, E, I, H);
                         }
-                    } else if (vm & (x << (1 + ss))) {
-                        L = l[1 + ss];
+                    } else if (vm & (x << (1 + ss_h))) {
+                        L = l[1 + ss_h];
                         H |= (L >> 4) << 8;
                         E |= s->filter.mblim_lut[L] << 8;
                         I |= s->filter.lim_lut[L] << 8;
                         s->dsp.loop_filter_mix2[!!(vmask[1] &  x)]
-                                               [!!(vmask[1] & (x << (1 + ss)))]
+                                               [!!(vmask[1] & (x << (1 + ss_h)))]
                                                [1](ptr, ls, E, I, H);
                     } else {
                         s->dsp.loop_filter_8[!!(vmask[1] & x)]
                                             [1](ptr, ls, E, I, H);
                     }
-                } else if (vm & (x << (1 + ss))) {
-                    int L = l[1 + ss], H = L >> 4;
+                } else if (vm & (x << (1 + ss_h))) {
+                    int L = l[1 + ss_h], H = L >> 4;
                     int E = s->filter.mblim_lut[L], I = s->filter.lim_lut[L];
 
-                    s->dsp.loop_filter_8[!!(vmask[1] & (x << (1 + ss)))]
+                    s->dsp.loop_filter_8[!!(vmask[1] & (x << (1 + ss_h)))]
                                         [1](ptr + 8, ls, E, I, H);
                 }
             }
-            if (!ss) {
+            if (!ss_v) {
                 if (vm3 & x) {
                     int L = *l, H = L >> 4;
                     int E = s->filter.mblim_lut[L], I = s->filter.lim_lut[L];
 
-                    if (vm3 & (x << 1)) {
-                        L = l[1];
+                    if (vm3 & (x << (1 + ss_h))) {
+                        L = l[1 + ss_h];
                         H |= (L >> 4) << 8;
                         E |= s->filter.mblim_lut[L] << 8;
                         I |= s->filter.lim_lut[L] << 8;
@@ -3421,15 +3406,15 @@ static av_always_inline void filter_plane_rows(VP9Context *s, int row, int ss,
                     } else {
                         s->dsp.loop_filter_8[0][1](ptr + ls * 4, ls, E, I, H);
                     }
-                } else if (vm3 & (x << 1)) {
-                    int L = l[1], H = L >> 4;
+                } else if (vm3 & (x << (1 + ss_h))) {
+                    int L = l[1 + ss_h], H = L >> 4;
                     int E = s->filter.mblim_lut[L], I = s->filter.lim_lut[L];
 
                     s->dsp.loop_filter_8[0][1](ptr + ls * 4 + 8, ls, E, I, H);
                 }
             }
         }
-        if (ss) {
+        if (ss_v) {
             if (y & 1)
                 lvl += 16;
         } else {
@@ -3454,13 +3439,13 @@ static void loopfilter_sb(AVCodecContext *ctx, struct VP9Filter *lflvl,
     // 8 pixel blocks, and we won't always do that (we want at least 16px
     // to use SSE2 optimizations, perhaps 32 for AVX2)
 
-    filter_plane_cols(s, col, 0, lflvl->level, lflvl->mask[0][0], dst, ls_y);
-    filter_plane_rows(s, row, 0, lflvl->level, lflvl->mask[0][1], dst, ls_y);
+    filter_plane_cols(s, col, 0, 0, lflvl->level, lflvl->mask[0][0], dst, ls_y);
+    filter_plane_rows(s, row, 0, 0, lflvl->level, lflvl->mask[0][1], dst, ls_y);
 
     for (p = 0; p < 2; p++) {
         dst = f->data[1 + p] + uvoff;
-        filter_plane_cols(s, col, s->ss_h, lflvl->level, uv_masks[0], dst, ls_uv);
-        filter_plane_rows(s, row, s->ss_v, lflvl->level, uv_masks[1], dst, ls_uv);
+        filter_plane_cols(s, col, s->ss_h, s->ss_v, lflvl->level, uv_masks[0], dst, ls_uv);
+        filter_plane_rows(s, row, s->ss_h, s->ss_v, lflvl->level, uv_masks[1], dst, ls_uv);
     }
 }
 
