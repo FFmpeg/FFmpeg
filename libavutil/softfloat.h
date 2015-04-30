@@ -83,7 +83,7 @@ static inline av_const SoftFloat av_mul_sf(SoftFloat a, SoftFloat b){
     a.exp += b.exp;
     av_assert2((int32_t)((a.mant * (int64_t)b.mant) >> ONE_BITS) == (a.mant * (int64_t)b.mant) >> ONE_BITS);
     a.mant = (a.mant * (int64_t)b.mant) >> ONE_BITS;
-    return av_normalize1_sf(a);
+    return av_normalize1_sf((SoftFloat){a.mant, a.exp - 1});
 }
 
 /**
@@ -91,7 +91,7 @@ static inline av_const SoftFloat av_mul_sf(SoftFloat a, SoftFloat b){
  * @return Will not be more denormalized than a.
  */
 static av_const SoftFloat av_div_sf(SoftFloat a, SoftFloat b){
-    a.exp -= b.exp+1;
+    a.exp -= b.exp;
     a.mant = ((int64_t)a.mant<<(ONE_BITS+1)) / b.mant;
     return av_normalize1_sf(a);
 }
@@ -121,14 +121,14 @@ static inline av_const SoftFloat av_sub_sf(SoftFloat a, SoftFloat b){
  * @returns a SoftFloat with value v * 2^frac_bits
  */
 static inline av_const SoftFloat av_int2sf(int v, int frac_bits){
-    return av_normalize_sf((SoftFloat){v, ONE_BITS-frac_bits});
+    return av_normalize_sf((SoftFloat){v, ONE_BITS + 1 - frac_bits});
 }
 
 /**
  * Rounding is to -inf.
  */
 static inline av_const int av_sf2int(SoftFloat v, int frac_bits){
-    v.exp += frac_bits - ONE_BITS;
+    v.exp += frac_bits - (ONE_BITS + 1);
     if(v.exp >= 0) return v.mant <<  v.exp ;
     else           return v.mant >>(-v.exp);
 }
