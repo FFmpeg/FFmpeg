@@ -1561,8 +1561,6 @@ again:
             case NAL_DPB:
             case NAL_DPC:
                 avpriv_request_sample(avctx, "data partitioning");
-                ret = AVERROR(ENOSYS);
-                goto end;
                 break;
             case NAL_SEI:
                 init_get_bits(&h->gb, ptr, bit_length);

@@ -41,12 +41,13 @@
 #include "libavutil/time_internal.h"
 #include "libavutil/timestamp.h"
 
+#define MAX_FILENAME_SIZE 1024
+
 typedef struct WebMChunkContext {
     const AVClass *class;
     int chunk_start_index;
     char *header_filename;
     int chunk_duration;
-    int chunk_count;
     int chunk_index;
     uint64_t duration_written;
     int prev_pts;
@@ -69,11 +70,6 @@ static int chunk_mux_init(AVFormatContext *s)
     oc->max_delay          = s->max_delay;
     av_dict_copy(&oc->metadata, s->metadata, 0);
 
-    oc->priv_data = av_mallocz(oc->oformat->priv_data_size);
-    if (!oc->priv_data) {
-        avio_close(oc->pb);
-        return AVERROR(ENOMEM);
-    }
     *(const AVClass**)oc->priv_data = oc->oformat->priv_class;
     av_opt_set_defaults(oc->priv_data);
     av_opt_set_int(oc->priv_data, "dash", 1, 0);
@@ -86,18 +82,21 @@ static int chunk_mux_init(AVFormatContext *s)
     return 0;
 }
 
-static int set_chunk_filename(AVFormatContext *s, int is_header)
+static int get_chunk_filename(AVFormatContext *s, int is_header, char *filename)
 {
     WebMChunkContext *wc = s->priv_data;
     AVFormatContext *oc = wc->avf;
+    if (!filename) {
+        return AVERROR(EINVAL);
+    }
     if (is_header) {
         if (!wc->header_filename) {
             return AVERROR(EINVAL);
         }
-        av_strlcpy(oc->filename, wc->header_filename, strlen(wc->header_filename) + 1);
+        av_strlcpy(filename, wc->header_filename, strlen(wc->header_filename) + 1);
     } else {
-        if (av_get_frame_filename(oc->filename, sizeof(oc->filename),
-                                  s->filename, wc->chunk_index) < 0) {
+        if (av_get_frame_filename(filename, MAX_FILENAME_SIZE,
+                                  s->filename, wc->chunk_index - 1) < 0) {
             av_log(oc, AV_LOG_ERROR, "Invalid chunk filename template '%s'\n", s->filename);
             return AVERROR(EINVAL);
         }
@@ -114,7 +113,6 @@ static int webm_chunk_write_header(AVFormatContext *s)
     // DASH Streams can only have either one track per file.
     if (s->nb_streams != 1) { return AVERROR_INVALIDDATA; }
 
-    wc->chunk_count = 0;
     wc->chunk_index = wc->chunk_start_index;
     wc->oformat = av_guess_format("webm", s->filename, "video/webm");
     if (!wc->oformat)
@@ -124,8 +122,8 @@ static int webm_chunk_write_header(AVFormatContext *s)
     if (ret < 0)
         return ret;
     oc = wc->avf;
-    ret = set_chunk_filename(s, 1);
-    if (ret< 0)
+    ret = get_chunk_filename(s, 1, oc->filename);
+    if (ret < 0)
         return ret;
     ret = avio_open2(&oc->pb, oc->filename, AVIO_FLAG_WRITE,
                      &s->interrupt_callback, NULL);
@@ -146,15 +144,10 @@ static int chunk_start(AVFormatContext *s)
     AVFormatContext *oc = wc->avf;
     int ret;
 
-    ret = set_chunk_filename(s, 0);
+    ret = avio_open_dyn_buf(&oc->pb);
     if (ret < 0)
         return ret;
     wc->chunk_index++;
-    ret = avio_open2(&oc->pb, oc->filename, AVIO_FLAG_WRITE,
-                     &s->interrupt_callback, NULL);
-    if (ret < 0)
-        return ret;
-    oc->pb->seekable = 0;
     return 0;
 }
 
@@ -163,16 +156,30 @@ static int chunk_end(AVFormatContext *s)
     WebMChunkContext *wc = s->priv_data;
     AVFormatContext *oc = wc->avf;
     int ret;
+    int buffer_size;
+    uint8_t *buffer;
+    AVIOContext *pb;
+    char filename[MAX_FILENAME_SIZE];
 
     if (wc->chunk_start_index == wc->chunk_index)
         return 0;
     // Flush the cluster in WebM muxer.
     oc->oformat->write_packet(oc, NULL);
-    ret = avio_close(oc->pb);
+    buffer_size = avio_close_dyn_buf(oc->pb, &buffer);
+    ret = get_chunk_filename(s, 0, filename);
     if (ret < 0)
-        return ret;
-    wc->chunk_count++;
-    return 0;
+        goto fail;
+    ret = avio_open2(&pb, filename, AVIO_FLAG_WRITE, &s->interrupt_callback, NULL);
+    if (ret < 0)
+        goto fail;
+    avio_write(pb, buffer, buffer_size);
+    ret = avio_close(pb);
+    if (ret < 0)
+        goto fail;
+    oc->pb = NULL;
+fail:
+    av_free(buffer);
+    return (ret < 0) ? ret : 0;
 }
 
 static int webm_chunk_write_packet(AVFormatContext *s, AVPacket *pkt)

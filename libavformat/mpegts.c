@@ -76,6 +76,8 @@ typedef struct MpegTSSectionFilter {
     int section_index;
     int section_h_size;
     int last_ver;
+    unsigned crc;
+    unsigned last_crc;
     uint8_t *section_buf;
     unsigned int check_crc : 1;
     unsigned int end_of_section_reached : 1;
@@ -419,6 +421,9 @@ static void write_section_data(MpegTSContext *ts, MpegTSFilter *tss1,
 
         if (tss->check_crc) {
             crc_valid = !av_crc(av_crc_get_table(AV_CRC_32_IEEE), -1, tss->section_buf, tss->section_h_size);
+            if (tss->section_h_size >= 4)
+                tss->crc = AV_RB32(tss->section_buf + tss->section_h_size - 4);
+
             if (crc_valid) {
                 ts->crc_validity[ tss1->pid ] = 100;
             }else if (ts->crc_validity[ tss1->pid ] > -10) {
@@ -426,8 +431,11 @@ static void write_section_data(MpegTSContext *ts, MpegTSFilter *tss1,
             }else
                 crc_valid = 2;
         }
-        if (crc_valid)
+        if (crc_valid) {
             tss->section_cb(tss1, tss->section_buf, tss->section_h_size);
+            if (crc_valid != 1)
+                tss->last_ver = -1;
+        }
     }
 }
 
@@ -579,6 +587,17 @@ typedef struct SectionHeader {
     uint8_t sec_num;
     uint8_t last_sec_num;
 } SectionHeader;
+
+static int skip_identical(const SectionHeader *h, MpegTSSectionFilter *tssf)
+{
+    if (h->version == tssf->last_ver && tssf->last_crc == tssf->crc)
+        return 1;
+
+    tssf->last_ver = h->version;
+    tssf->last_crc = tssf->crc;
+
+    return 0;
+}
 
 static inline int get8(const uint8_t **pp, const uint8_t *p_end)
 {
@@ -1469,9 +1488,8 @@ static void m4sl_cb(MpegTSFilter *filter, const uint8_t *section,
         return;
     if (h.tid != M4OD_TID)
         return;
-    if (h.version == tssf->last_ver)
+    if (skip_identical(&h, tssf))
         return;
-    tssf->last_ver = h.version;
 
     mp4_read_od(s, p, (unsigned) (p_end - p), mp4_descr, &mp4_descr_count,
                 MAX_MP4_DESCR_COUNT);
@@ -1816,9 +1834,8 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
     p = section;
     if (parse_section_header(h, &p, p_end) < 0)
         return;
-    if (h->version == tssf->last_ver)
+    if (skip_identical(h, tssf))
         return;
-    tssf->last_ver = h->version;
 
     av_log(ts->stream, AV_LOG_TRACE, "sid=0x%x sec_num=%d/%d version=%d\n",
             h->id, h->sec_num, h->last_sec_num, h->version);
@@ -1986,9 +2003,8 @@ static void pat_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
     if (ts->skip_changes)
         return;
 
-    if (h->version == tssf->last_ver)
+    if (skip_identical(h, tssf))
         return;
-    tssf->last_ver = h->version;
     ts->stream->ts_id = h->id;
 
     clear_programs(ts);
@@ -2061,9 +2077,8 @@ static void sdt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
         return;
     if (ts->skip_changes)
         return;
-    if (h->version == tssf->last_ver)
+    if (skip_identical(h, tssf))
         return;
-    tssf->last_ver = h->version;
 
     onid = get16(&p, p_end);
     if (onid < 0)

@@ -47,6 +47,8 @@
 #ifndef AVUTIL_SOFTFLOAT_TABLES_H
 #define AVUTIL_SOFTFLOAT_TABLES_H
 
+#include <stdint.h>
+
 static const int32_t av_sqrttbl_sf[512+1] = { /*  sqrt(x), 0.5<=x<1 */
    0x2d413ccd,0x2d4c8bb3,0x2d57d7c6,0x2d63210a,
    0x2d6e677f,0x2d79ab2a,0x2d84ec0b,0x2d902a23,
