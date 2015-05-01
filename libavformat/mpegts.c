@@ -426,8 +426,11 @@ static void write_section_data(MpegTSContext *ts, MpegTSFilter *tss1,
             }else
                 crc_valid = 2;
         }
-        if (crc_valid)
+        if (crc_valid) {
             tss->section_cb(tss1, tss->section_buf, tss->section_h_size);
+            if (crc_valid != 1)
+                tss->last_ver = -1;
+        }
     }
 }
 
