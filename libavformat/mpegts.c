@@ -76,6 +76,8 @@ typedef struct MpegTSSectionFilter {
     int section_index;
     int section_h_size;
     int last_ver;
+    unsigned crc;
+    unsigned last_crc;
     uint8_t *section_buf;
     unsigned int check_crc : 1;
     unsigned int end_of_section_reached : 1;
@@ -419,6 +421,9 @@ static void write_section_data(MpegTSContext *ts, MpegTSFilter *tss1,
 
         if (tss->check_crc) {
             crc_valid = !av_crc(av_crc_get_table(AV_CRC_32_IEEE), -1, tss->section_buf, tss->section_h_size);
+            if (tss->section_h_size >= 4)
+                tss->crc = AV_RB32(tss->section_buf + tss->section_h_size - 4);
+
             if (crc_valid) {
                 ts->crc_validity[ tss1->pid ] = 100;
             }else if (ts->crc_validity[ tss1->pid ] > -10) {
@@ -585,10 +590,11 @@ typedef struct SectionHeader {
 
 static int skip_identical(const SectionHeader *h, MpegTSSectionFilter *tssf)
 {
-    if (h->version == tssf->last_ver)
+    if (h->version == tssf->last_ver && tssf->last_crc == tssf->crc)
         return 1;
 
     tssf->last_ver = h->version;
+    tssf->last_crc = tssf->crc;
 
     return 0;
 }
