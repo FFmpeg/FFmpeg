@@ -247,7 +247,7 @@ static int libx265_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 {
     libx265Context *ctx = avctx->priv_data;
     x265_picture x265pic;
-    x265_picture x265pic_out = { { 0 } };
+    x265_picture x265pic_out = { 0 };
     x265_nal *nal;
     uint8_t *dst;
     int payload = 0;
