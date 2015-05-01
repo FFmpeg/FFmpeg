@@ -567,8 +567,6 @@ static int plot_cqt(AVFilterLink *inlink)
     /* calculating cqt */
     for (x = 0; x < VIDEO_WIDTH; x++) {
         int u;
-        float g = 1.0f / s->gamma;
-        float g2 = 1.0f / s->gamma2;
         FFTComplex l = {0,0};
         FFTComplex r = {0,0};
 
@@ -584,10 +582,42 @@ static int plot_cqt(AVFilterLink *inlink)
         result[x][0] = l.re * l.re + l.im * l.im;
         result[x][2] = r.re * r.re + r.im * r.im;
         result[x][1] = 0.5f * (result[x][0] + result[x][2]);
-        result[x][3] = (g2 == 1.0f) ? result[x][1] : powf(result[x][1], g2);
-        result[x][0] = 255.0f * powf(FFMIN(1.0f,result[x][0]), g);
-        result[x][1] = 255.0f * powf(FFMIN(1.0f,result[x][1]), g);
-        result[x][2] = 255.0f * powf(FFMIN(1.0f,result[x][2]), g);
+
+        if (s->gamma2 == 1.0f)
+            result[x][3] = result[x][1];
+        else if (s->gamma2 = 2.0f)
+            result[x][3] = sqrtf(result[x][1]);
+        else if (s->gamma2 = 3.0f)
+            result[x][3] = cbrtf(result[x][1]);
+        else if (s->gamma2 = 4.0f)
+            result[x][3] = sqrtf(sqrtf(result[x][1]));
+        else
+            result[x][3] = expf(logf(result[x][1]) * (1.0f / s->gamma2));
+
+        result[x][0] = FFMIN(1.0f, result[x][0]);
+        result[x][1] = FFMIN(1.0f, result[x][1]);
+        result[x][2] = FFMIN(1.0f, result[x][2]);
+        if (s->gamma == 1.0f) {
+            result[x][0] = 255.0f * result[x][0];
+            result[x][1] = 255.0f * result[x][1];
+            result[x][2] = 255.0f * result[x][2];
+        } else if (s->gamma == 2.0f) {
+            result[x][0] = 255.0f * sqrtf(result[x][0]);
+            result[x][1] = 255.0f * sqrtf(result[x][1]);
+            result[x][2] = 255.0f * sqrtf(result[x][2]);
+        } else if (s->gamma == 3.0f) {
+            result[x][0] = 255.0f * cbrtf(result[x][0]);
+            result[x][1] = 255.0f * cbrtf(result[x][1]);
+            result[x][2] = 255.0f * cbrtf(result[x][2]);
+        } else if (s->gamma == 4.0f) {
+            result[x][0] = 255.0f * sqrtf(sqrtf(result[x][0]));
+            result[x][1] = 255.0f * sqrtf(sqrtf(result[x][1]));
+            result[x][2] = 255.0f * sqrtf(sqrtf(result[x][2]));
+        } else {
+            result[x][0] = 255.0f * expf(logf(result[x][0]) * (1.0f / s->gamma));
+            result[x][1] = 255.0f * expf(logf(result[x][1]) * (1.0f / s->gamma));
+            result[x][2] = 255.0f * expf(logf(result[x][2]) * (1.0f / s->gamma));
+        }
     }
 
     if (!s->fullhd) {
