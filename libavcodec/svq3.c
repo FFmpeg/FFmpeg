@@ -902,6 +902,8 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
     // we will overwrite it later during decoding
     av_frame_free(&h->cur_pic.f);
 
+    av_frame_free(&h->last_pic_for_ec.f);
+
     ff_h264dsp_init(&h->h264dsp, 8, 1);
     av_assert0(h->sps.bit_depth_chroma == 0);
     ff_h264_pred_init(&h->hpc, AV_CODEC_ID_SVQ3, 8, 1);
