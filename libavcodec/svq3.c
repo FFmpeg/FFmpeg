@@ -952,6 +952,7 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
     if (marker_found) {
         GetBitContext gb;
         int frame_size_code;
+        int unk0, unk1, unk2, unk3, unk4;
 
         size = AV_RB32(&extradata[4]);
         if (size > extradata_end - extradata - 8) {
@@ -1001,15 +1002,18 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
         s->thirdpel_flag = get_bits1(&gb);
 
         /* unknown fields */
-        skip_bits1(&gb);
-        skip_bits1(&gb);
-        skip_bits1(&gb);
-        skip_bits1(&gb);
+        unk0 = get_bits1(&gb);
+        unk1 = get_bits1(&gb);
+        unk2 = get_bits1(&gb);
+        unk3 = get_bits1(&gb);
 
         h->low_delay = get_bits1(&gb);
 
         /* unknown field */
-        skip_bits1(&gb);
+        unk4 = get_bits1(&gb);
+
+        av_log(avctx, AV_LOG_DEBUG, "Unknown fields %d %d %d %d %d\n",
+               unk0, unk1, unk2, unk3, unk4);
 
         if (skip_1stop_8data_bits(&gb) < 0) {
             ret = AVERROR_INVALIDDATA;
