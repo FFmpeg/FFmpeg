@@ -137,6 +137,8 @@ typedef enum {
     SECTION_ID_PACKET,
     SECTION_ID_PACKETS,
     SECTION_ID_PACKETS_AND_FRAMES,
+    SECTION_ID_PACKET_SIDE_DATA_LIST,
+    SECTION_ID_PACKET_SIDE_DATA,
     SECTION_ID_PIXEL_FORMAT,
     SECTION_ID_PIXEL_FORMAT_FLAGS,
     SECTION_ID_PIXEL_FORMAT_COMPONENT,
@@ -155,6 +157,8 @@ typedef enum {
     SECTION_ID_STREAM_DISPOSITION,
     SECTION_ID_STREAMS,
     SECTION_ID_STREAM_TAGS,
+    SECTION_ID_STREAM_SIDE_DATA_LIST,
+    SECTION_ID_STREAM_SIDE_DATA,
     SECTION_ID_SUBTITLE,
 } SectionID;
 
@@ -174,7 +178,9 @@ static struct section sections[] = {
     [SECTION_ID_LIBRARY_VERSION] =    { SECTION_ID_LIBRARY_VERSION, "library_version", 0, { -1 } },
     [SECTION_ID_PACKETS] =            { SECTION_ID_PACKETS, "packets", SECTION_FLAG_IS_ARRAY, { SECTION_ID_PACKET, -1} },
     [SECTION_ID_PACKETS_AND_FRAMES] = { SECTION_ID_PACKETS_AND_FRAMES, "packets_and_frames", SECTION_FLAG_IS_ARRAY, { SECTION_ID_PACKET, -1} },
-    [SECTION_ID_PACKET] =             { SECTION_ID_PACKET, "packet", 0, { -1 } },
+    [SECTION_ID_PACKET] =             { SECTION_ID_PACKET, "packet", 0, { SECTION_ID_PACKET_SIDE_DATA_LIST, -1 } },
+    [SECTION_ID_PACKET_SIDE_DATA_LIST] ={ SECTION_ID_PACKET_SIDE_DATA_LIST, "side_data_list", SECTION_FLAG_IS_ARRAY, { SECTION_ID_PACKET_SIDE_DATA, -1 } },
+    [SECTION_ID_PACKET_SIDE_DATA] =     { SECTION_ID_PACKET_SIDE_DATA, "side_data", 0, { -1 } },
     [SECTION_ID_PIXEL_FORMATS] =      { SECTION_ID_PIXEL_FORMATS, "pixel_formats", SECTION_FLAG_IS_ARRAY, { SECTION_ID_PIXEL_FORMAT, -1 } },
     [SECTION_ID_PIXEL_FORMAT] =       { SECTION_ID_PIXEL_FORMAT, "pixel_format", 0, { SECTION_ID_PIXEL_FORMAT_FLAGS, SECTION_ID_PIXEL_FORMAT_COMPONENTS, -1 } },
     [SECTION_ID_PIXEL_FORMAT_FLAGS] = { SECTION_ID_PIXEL_FORMAT_FLAGS, "flags", 0, { -1 }, .unique_name = "pixel_format_flags" },
@@ -193,9 +199,11 @@ static struct section sections[] = {
                                           SECTION_ID_PACKETS, SECTION_ID_ERROR, SECTION_ID_PROGRAM_VERSION, SECTION_ID_LIBRARY_VERSIONS,
                                           SECTION_ID_PIXEL_FORMATS, -1} },
     [SECTION_ID_STREAMS] =            { SECTION_ID_STREAMS, "streams", SECTION_FLAG_IS_ARRAY, { SECTION_ID_STREAM, -1 } },
-    [SECTION_ID_STREAM] =             { SECTION_ID_STREAM, "stream", 0, { SECTION_ID_STREAM_DISPOSITION, SECTION_ID_STREAM_TAGS, -1 } },
+    [SECTION_ID_STREAM] =             { SECTION_ID_STREAM, "stream", 0, { SECTION_ID_STREAM_DISPOSITION, SECTION_ID_STREAM_TAGS, SECTION_ID_STREAM_SIDE_DATA_LIST, -1 } },
     [SECTION_ID_STREAM_DISPOSITION] = { SECTION_ID_STREAM_DISPOSITION, "disposition", 0, { -1 }, .unique_name = "stream_disposition" },
     [SECTION_ID_STREAM_TAGS] =        { SECTION_ID_STREAM_TAGS, "tags", SECTION_FLAG_HAS_VARIABLE_FIELDS, { -1 }, .element_name = "tag", .unique_name = "stream_tags" },
+    [SECTION_ID_STREAM_SIDE_DATA_LIST] ={ SECTION_ID_STREAM_SIDE_DATA_LIST, "side_data_list", SECTION_FLAG_IS_ARRAY, { SECTION_ID_STREAM_SIDE_DATA, -1 } },
+    [SECTION_ID_STREAM_SIDE_DATA] =     { SECTION_ID_STREAM_SIDE_DATA, "side_data", 0, { -1 } },
     [SECTION_ID_SUBTITLE] =           { SECTION_ID_SUBTITLE, "subtitle", 0, { -1 } },
 };
 
@@ -1751,6 +1759,25 @@ static void show_packet(WriterContext *w, AVFormatContext *fmt_ctx, AVPacket *pk
     if (pkt->pos != -1) print_fmt    ("pos", "%"PRId64, pkt->pos);
     else                print_str_opt("pos", "N/A");
     print_fmt("flags", "%c",      pkt->flags & AV_PKT_FLAG_KEY ? 'K' : '_');
+
+    if (pkt->side_data_elems) {
+        int i;
+        writer_print_section_header(w, SECTION_ID_PACKET_SIDE_DATA_LIST);
+        for (i = 0; i < pkt->side_data_elems; i++) {
+            AVPacketSideData *sd = &pkt->side_data[i];
+            const char *name;
+            writer_print_section_header(w, SECTION_ID_PACKET_SIDE_DATA);
+            print_str("side_data_type", "unknown");
+            print_int("side_data_size", sd->size);
+            if (sd->type == AV_PKT_DATA_DISPLAYMATRIX && sd->size >= 9*4) {
+                writer_print_integers(w, "displaymatrix", sd->data, 9, " %11d", 3, 4, 1);
+                print_int("rotation", av_display_rotation_get((int32_t *)sd->data));
+            }
+            writer_print_section_footer(w);
+        }
+        writer_print_section_footer(w);
+    }
+
     if (do_show_data)
         writer_print_data(w, "data", pkt->data, pkt->size);
     writer_print_data_hash(w, "data_hash", pkt->data, pkt->size);
@@ -2273,6 +2300,24 @@ static int show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_id
 
     if (do_show_stream_tags)
         ret = show_tags(w, stream->metadata, in_program ? SECTION_ID_PROGRAM_STREAM_TAGS : SECTION_ID_STREAM_TAGS);
+
+    if (stream->nb_side_data) {
+        int i;
+        writer_print_section_header(w, SECTION_ID_STREAM_SIDE_DATA_LIST);
+        for (i = 0; i < stream->nb_side_data; i++) {
+            AVPacketSideData *sd = &stream->side_data[i];
+            const char *name;
+            writer_print_section_header(w, SECTION_ID_STREAM_SIDE_DATA);
+            print_str("side_data_type", "unknown");
+            print_int("side_data_size", sd->size);
+            if (sd->type == AV_PKT_DATA_DISPLAYMATRIX && sd->size >= 9*4) {
+                writer_print_integers(w, "displaymatrix", sd->data, 9, " %11d", 3, 4, 1);
+                print_int("rotation", av_display_rotation_get((int32_t *)sd->data));
+            }
+            writer_print_section_footer(w);
+        }
+        writer_print_section_footer(w);
+    }
 
     writer_print_section_footer(w);
     av_bprint_finalize(&pbuf, NULL);
