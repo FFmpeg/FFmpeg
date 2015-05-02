@@ -122,6 +122,8 @@ typedef struct OptionsContext {
     int        nb_hwaccels;
     SpecifierOpt *hwaccel_devices;
     int        nb_hwaccel_devices;
+    SpecifierOpt *autorotate;
+    int        nb_autorotate;
 
     /* output options */
     StreamMap *stream_maps;
@@ -276,6 +278,7 @@ typedef struct InputStream {
     int top_field_first;
     int guess_layout_max;
 
+    int autorotate;
     int resample_height;
     int resample_width;
     int resample_pix_fmt;

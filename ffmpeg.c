@@ -3647,6 +3647,8 @@ static int process_input(int file_index)
 
             if (av_packet_get_side_data(&pkt, src_sd->type, NULL))
                 continue;
+            if (ist->autorotate && src_sd->type == AV_PKT_DATA_DISPLAYMATRIX)
+                continue;
 
             dst_data = av_packet_new_side_data(&pkt, src_sd->type, src_sd->size);
             if (!dst_data)

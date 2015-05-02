@@ -18,6 +18,7 @@ version <next>:
 - nvenc level and tier options
 - chorus filter
 - Canopus HQ/HQA decoder
+- Automatically rotate videos based on metadata in ffmpeg
 
 
 version 2.6:

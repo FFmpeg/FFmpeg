@@ -602,6 +602,9 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
         ist->ts_scale = 1.0;
         MATCH_PER_STREAM_OPT(ts_scale, dbl, ist->ts_scale, ic, st);
 
+        ist->autorotate = 1;
+        MATCH_PER_STREAM_OPT(autorotate, i, ist->autorotate, ic, st);
+
         MATCH_PER_STREAM_OPT(codec_tags, str, codec_tag, ic, st);
         if (codec_tag) {
             uint32_t tag = strtol(codec_tag, &next, 0);
@@ -3069,6 +3072,9 @@ const OptionDef options[] = {
 #if HAVE_VDPAU_X11
     { "vdpau_api_ver", HAS_ARG | OPT_INT | OPT_EXPERT, { &vdpau_api_ver }, "" },
 #endif
+    { "autorotate",       HAS_ARG | OPT_BOOL | OPT_SPEC |
+                          OPT_EXPERT | OPT_INPUT,                                { .off = OFFSET(autorotate) },
+        "automatically insert correct rotate filters" },
 
     /* audio options */
     { "aframes",        OPT_AUDIO | HAS_ARG  | OPT_PERFILE | OPT_OUTPUT,           { .func_arg = opt_audio_frames },
