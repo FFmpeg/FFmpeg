@@ -33,6 +33,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
+#include "libavutil/display.h"
 #include "libavutil/hash.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
@@ -1860,6 +1861,11 @@ static void show_frame(WriterContext *w, AVFrame *frame, AVStream *stream,
             name = av_frame_side_data_name(sd->type);
             print_str("side_data_type", name ? name : "unknown");
             print_int("side_data_size", sd->size);
+            if (sd->type == AV_FRAME_DATA_DISPLAYMATRIX && sd->size >= 9*4) {
+                abort();
+                writer_print_integers(w, "displaymatrix", sd->data, 9, " %11d", 3, 4, 1);
+                print_int("rotation", av_display_rotation_get((int32_t *)sd->data));
+            }
             writer_print_section_footer(w);
         }
         writer_print_section_footer(w);
