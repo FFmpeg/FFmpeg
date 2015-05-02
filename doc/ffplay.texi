@@ -161,7 +161,7 @@ Force a specific video decoder.
 Force a specific subtitle decoder.
 
 @item -autorotate
-Automatically rotate the video according to presentation metadata. Enabled by
+Automatically rotate the video according to file metadata. Enabled by
 default, use @option{-noautorotate} to disable it.
 
 @item -framedrop
