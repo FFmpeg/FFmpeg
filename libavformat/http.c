@@ -304,12 +304,15 @@ static int http_listen(URLContext *h, const char *uri, int flags,
     HTTPContext *s = h->priv_data;
     int ret;
     static const char header[] = "HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nTransfer-Encoding: chunked\r\n\r\n";
-    char hostname[1024];
+    char hostname[1024], proto[10];
     char lower_url[100];
+    char *lower_proto = "tcp";
     int port, new_location;
-    av_url_split(NULL, 0, NULL, 0, hostname, sizeof(hostname), &port,
+    av_url_split(proto, sizeof(proto), NULL, 0, hostname, sizeof(hostname), &port,
                  NULL, 0, uri);
-    ff_url_join(lower_url, sizeof(lower_url), "tcp", NULL, hostname, port,
+    if (!strcmp(proto, "https"))
+        lower_proto = "tls";
+    ff_url_join(lower_url, sizeof(lower_url), lower_proto, NULL, hostname, port,
                 NULL);
     av_dict_set(options, "listen", "1", 0);
     if ((ret = ffurl_open(&s->hd, lower_url, AVIO_FLAG_READ_WRITE,
