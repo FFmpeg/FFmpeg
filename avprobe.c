@@ -97,8 +97,8 @@ typedef struct PrintContext {
     void (*print_header)(void);
     void (*print_footer)(void);
 
-    void (*print_array_header) (const char *name);
-    void (*print_array_footer) (const char *name);
+    void (*print_array_header) (const char *name, int plain_values);
+    void (*print_array_footer) (const char *name, int plain_values);
     void (*print_object_header)(const char *name);
     void (*print_object_footer)(const char *name);
 
@@ -157,9 +157,21 @@ static void ini_escape_print(const char *s)
     }
 }
 
-static void ini_print_array_header(const char *name)
+static void ini_print_array_header(const char *name, int plain_values)
 {
-    if (octx.prefix[octx.level -1].nb_elems)
+    if (!plain_values) {
+        /* Add a new line if we create a new full group */
+        if (octx.prefix[octx.level -1].nb_elems)
+            avio_printf(probe_out, "\n");
+    } else {
+        ini_escape_print(name);
+        avio_w8(probe_out, '=');
+    }
+}
+
+static void ini_print_array_footer(const char *name, int plain_values)
+{
+    if (plain_values)
         avio_printf(probe_out, "\n");
 }
 
@@ -188,8 +200,14 @@ static void ini_print_object_header(const char *name)
 
 static void ini_print_integer(const char *key, int64_t value)
 {
-    ini_escape_print(key);
-    avio_printf(probe_out, "=%"PRId64"\n", value);
+    if (key) {
+        ini_escape_print(key);
+        avio_printf(probe_out, "=%"PRId64"\n", value);
+    } else {
+        if (octx.prefix[octx.level -1].nb_elems)
+            avio_printf(probe_out, ",");
+        avio_printf(probe_out, "%"PRId64, value);
+    }
 }
 
 
@@ -214,7 +232,7 @@ static void json_print_footer(void)
     avio_printf(probe_out, "}\n");
 }
 
-static void json_print_array_header(const char *name)
+static void json_print_array_header(const char *name, int plain_values)
 {
     if (octx.prefix[octx.level -1].nb_elems)
         avio_printf(probe_out, ",\n");
@@ -223,7 +241,7 @@ static void json_print_array_header(const char *name)
     avio_printf(probe_out, "[\n");
 }
 
-static void json_print_array_footer(const char *name)
+static void json_print_array_footer(const char *name, int plain_values)
 {
     avio_printf(probe_out, "\n");
     AVP_INDENT();
@@ -249,10 +267,18 @@ static void json_print_object_footer(const char *name)
 
 static void json_print_integer(const char *key, int64_t value)
 {
-    if (octx.prefix[octx.level -1].nb_elems)
-        avio_printf(probe_out, ",\n");
-    AVP_INDENT();
-    avio_printf(probe_out, "\"%s\" : %"PRId64"", key, value);
+    if (key) {
+        if (octx.prefix[octx.level -1].nb_elems)
+            avio_printf(probe_out, ",\n");
+        AVP_INDENT();
+        avio_printf(probe_out, "\"%s\" : ", key);
+    } else {
+        if (octx.prefix[octx.level -1].nb_elems)
+            avio_printf(probe_out, ", ");
+        else
+            AVP_INDENT();
+    }
+    avio_printf(probe_out, "%"PRId64, value);
 }
 
 static void json_escape_print(const char *s)
@@ -403,19 +429,19 @@ static void probe_footer(void)
 }
 
 
-static void probe_array_header(const char *name)
+static void probe_array_header(const char *name, int plain_values)
 {
     if (octx.print_array_header)
-        octx.print_array_header(name);
+        octx.print_array_header(name, plain_values);
 
     probe_group_enter(name, ARRAY);
 }
 
-static void probe_array_footer(const char *name)
+static void probe_array_footer(const char *name, int plain_values)
 {
     probe_group_leave();
     if (octx.print_array_footer)
-        octx.print_array_footer(name);
+        octx.print_array_footer(name, plain_values);
 }
 
 static void probe_object_header(const char *name)
@@ -561,10 +587,10 @@ static void show_packets(AVFormatContext *fmt_ctx)
     AVPacket pkt;
 
     av_init_packet(&pkt);
-    probe_array_header("packets");
+    probe_array_header("packets", 0);
     while (!av_read_frame(fmt_ctx, &pkt))
         show_packet(fmt_ctx, &pkt);
-    probe_array_footer("packets");
+    probe_array_footer("packets", 0);
 }
 
 static void show_stream(AVFormatContext *fmt_ctx, int stream_idx)
@@ -779,10 +805,10 @@ static int probe_file(const char *filename)
         show_format(fmt_ctx);
 
     if (do_show_streams) {
-        probe_array_header("streams");
+        probe_array_header("streams", 0);
         for (i = 0; i < fmt_ctx->nb_streams; i++)
             show_stream(fmt_ctx, i);
-        probe_array_footer("streams");
+        probe_array_footer("streams", 0);
     }
 
     if (do_show_packets)
@@ -826,6 +852,7 @@ static int opt_output_format(void *optctx, const char *opt, const char *arg)
         octx.print_header        = ini_print_header;
         octx.print_footer        = ini_print_footer;
         octx.print_array_header  = ini_print_array_header;
+        octx.print_array_footer  = ini_print_array_footer;
         octx.print_object_header = ini_print_object_header;
 
         octx.print_integer = ini_print_integer;
@@ -948,6 +975,7 @@ int main(int argc, char **argv)
     octx.print_footer = ini_print_footer;
 
     octx.print_array_header = ini_print_array_header;
+    octx.print_array_footer = ini_print_array_footer;
     octx.print_object_header = ini_print_object_header;
 
     octx.print_integer = ini_print_integer;
