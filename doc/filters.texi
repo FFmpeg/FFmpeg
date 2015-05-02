@@ -5163,6 +5163,36 @@ framework.
 
 It does not take parameters.
 
+@section find_rect
+
+Find a rectangular object
+
+It accepts the following options:
+
+@table @option
+@item object
+Filepath of the object image, needs to be in gray8.
+
+@item threshold
+Detection threshold, default is 0.5.
+
+@item mipmaps
+Number of mipmaps, default is 3.
+
+@item xmin, ymin, xmax, ymax
+Specifies the rectangle in which to search.
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Generate a representative palette of a given video using @command{ffmpeg}:
+@example
+ffmpeg -i file.ts -vf find_rect=newref.pgm,cover_rect=cover.jpg:mode=cover new.mkv
+@end example
+@end itemize
+
 @anchor{format}
 @section format
 
