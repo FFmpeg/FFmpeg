@@ -3538,7 +3538,7 @@ probe_cc(){
         _flags_filter=armasm_flags
     elif $_cc 2>&1 | grep -q Intel; then
         _type=icl
-        _ident=$($cc 2>&1 | head -n1)
+        _ident=$($_cc 2>&1 | head -n1)
         _depflags='-QMMD -QMF$(@:.o=.d) -QMT$@'
         # Not only is O3 broken on 13.x+ but it is slower on all previous
         # versions (tested) as well.
@@ -3565,7 +3565,7 @@ probe_cc(){
         disable stripping
     elif $_cc 2>&1 | grep -q Microsoft; then
         _type=msvc
-        _ident=$($cc 2>&1 | head -n1)
+        _ident=$($_cc 2>&1 | head -n1)
         _DEPCMD='$(DEP$(1)) $(DEP$(1)FLAGS) $($(1)DEP_FLAGS) $< 2>&1 | awk '\''/including/ { sub(/^.*file: */, ""); gsub(/\\/, "/"); if (!match($$0, / /)) print "$@:", $$0 }'\'' > $(@:.o=.d)'
         _DEPFLAGS='$(CPPFLAGS) $(CFLAGS) -showIncludes -Zs'
         _cflags_speed="-O2"
