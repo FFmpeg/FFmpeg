@@ -532,7 +532,7 @@ int main(int argc, char** argv)
     const uint8_t iv[8] = {0xee, 0xa9, 0xd0, 0xa2, 0x49, 0xfd, 0x3b, 0xa6};
     static uint8_t rpt2[2][16];
     int i, j, err = 0;
-    static int key_bits[3] = {128, 80, 40};
+    static const int key_bits[3] = {128, 80, 40};
     uint8_t temp[8];
     AVCAST5 *cs;
     cs = av_cast5_alloc();
