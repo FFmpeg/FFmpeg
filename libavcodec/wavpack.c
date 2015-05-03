@@ -472,6 +472,14 @@ static inline int wv_unpack_stereo(WavpackFrameContext *s, GetBitContext *gb,
                 s->decorr[i].samplesB[0] = L;
             }
         }
+
+        if (type == AV_SAMPLE_FMT_S16P) {
+            if (FFABS(L) + FFABS(R) > (1<<19)) {
+                av_log(s->avctx, AV_LOG_ERROR, "sample %d %d too large\n", L, R);
+                return AVERROR_INVALIDDATA;
+            }
+        }
+
         pos = (pos + 1) & 7;
         if (s->joint)
             L += (R -= (L >> 1));
