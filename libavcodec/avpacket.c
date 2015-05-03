@@ -336,6 +336,29 @@ uint8_t *av_packet_get_side_data(AVPacket *pkt, enum AVPacketSideDataType type,
     return NULL;
 }
 
+const char *av_packet_side_data_name(enum AVPacketSideDataType type)
+{
+    switch(type) {
+    case AV_PKT_DATA_PALETTE:                   return "Palette";
+    case AV_PKT_DATA_NEW_EXTRADATA:             return "New Extradata";
+    case AV_PKT_DATA_PARAM_CHANGE:              return "Param Change";
+    case AV_PKT_DATA_H263_MB_INFO:              return "H263 MB Info";
+    case AV_PKT_DATA_REPLAYGAIN:                return "Replay Gain";
+    case AV_PKT_DATA_DISPLAYMATRIX:             return "Display Matrix";
+    case AV_PKT_DATA_STEREO3D:                  return "Stereo 3D";
+    case AV_PKT_DATA_AUDIO_SERVICE_TYPE:        return "Audio Service Type";
+    case AV_PKT_DATA_SKIP_SAMPLES:              return "Skip Samples";
+    case AV_PKT_DATA_JP_DUALMONO:               return "JP Dual Mono";
+    case AV_PKT_DATA_STRINGS_METADATA:          return "Strings Metadata";
+    case AV_PKT_DATA_SUBTITLE_POSITION:         return "Subtitle Position";
+    case AV_PKT_DATA_MATROSKA_BLOCKADDITIONAL:  return "Matroska BlockAdditional";
+    case AV_PKT_DATA_WEBVTT_IDENTIFIER:         return "WebVTT ID";
+    case AV_PKT_DATA_WEBVTT_SETTINGS:           return "WebVTT Settings";
+    case AV_PKT_DATA_METADATA_UPDATE:           return "Metadata Update";
+    }
+    return NULL;
+}
+
 #define FF_MERGE_MARKER 0x8c4d9d108e25e9feULL
 
 int av_packet_merge_side_data(AVPacket *pkt){
