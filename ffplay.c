@@ -32,6 +32,7 @@
 
 #include "libavutil/avstring.h"
 #include "libavutil/colorspace.h"
+#include "libavutil/display.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/imgutils.h"
@@ -1995,20 +1996,20 @@ static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const c
 
 /* Note: this macro adds a filter before the lastly added filter, so the
  * processing order of the filters is in reverse */
-#define INSERT_FILT(name, arg) do {                                         \
-    AVFilterContext *filt_ctx;                                              \
-                                                                            \
-    ret = avfilter_graph_create_filter(&filt_ctx,                           \
-                                       avfilter_get_by_name(name),          \
-                                       "ffplay_" name, arg, NULL, graph);   \
-    if (ret < 0)                                                            \
-        goto fail;                                                          \
-                                                                            \
-    ret = avfilter_link(filt_ctx, 0, last_filter, 0);                       \
-    if (ret < 0)                                                            \
-        goto fail;                                                          \
-                                                                            \
-    last_filter = filt_ctx;                                                 \
+#define INSERT_FILT(name, arg) do {                                          \
+    AVFilterContext *filt_ctx;                                               \
+                                                                             \
+    ret = avfilter_graph_create_filter(&filt_ctx,                            \
+                                       avfilter_get_by_name(name),           \
+                                       "ffplay_" name, arg, NULL, graph);    \
+    if (ret < 0)                                                             \
+        goto fail;                                                           \
+                                                                             \
+    ret = avfilter_link(filt_ctx, 0, last_filter, 0);                        \
+    if (ret < 0)                                                             \
+        goto fail;                                                           \
+                                                                             \
+    last_filter = filt_ctx;                                                  \
 } while (0)
 
     /* SDL YUV code is not handling odd width/height for some driver
@@ -2017,6 +2018,9 @@ static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const c
 
     if (autorotate) {
         AVDictionaryEntry *rotate_tag = av_dict_get(is->video_st->metadata, "rotate", NULL, 0);
+        uint8_t* displaymatrix = av_stream_get_side_data(is->video_st,
+                                                         AV_PKT_DATA_DISPLAYMATRIX, NULL);
+
         if (rotate_tag && *rotate_tag->value && strcmp(rotate_tag->value, "0")) {
             if (!strcmp(rotate_tag->value, "90")) {
                 INSERT_FILT("transpose", "clock");
@@ -2029,6 +2033,16 @@ static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const c
                 char rotate_buf[64];
                 snprintf(rotate_buf, sizeof(rotate_buf), "%s*PI/180", rotate_tag->value);
                 INSERT_FILT("rotate", rotate_buf);
+            }
+        } else if (displaymatrix) {
+            double rot = av_display_rotation_get((int32_t*) displaymatrix);
+            if (rot < -135 || rot > 135) {
+                INSERT_FILT("vflip", NULL);
+                INSERT_FILT("hflip", NULL);
+            } else if (rot < -45) {
+                INSERT_FILT("transpose", "dir=clock");
+            } else if (rot > 45) {
+                INSERT_FILT("transpose", "dir=cclock");
             }
         }
     }

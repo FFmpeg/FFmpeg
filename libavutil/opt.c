@@ -85,8 +85,9 @@ static int write_number(void *obj, const AVOption *o, void *dst, double num, int
 {
     if (o->type != AV_OPT_TYPE_FLAGS &&
         (o->max * den < num * intnum || o->min * den > num * intnum)) {
+        num = den ? num*intnum/den : (num*intnum ? INFINITY : NAN);
         av_log(obj, AV_LOG_ERROR, "Value %f for parameter '%s' out of range [%g - %g]\n",
-               num*intnum/den, o->name, o->min, o->max);
+               num, o->name, o->min, o->max);
         return AVERROR(ERANGE);
     }
     if (o->type == AV_OPT_TYPE_FLAGS) {

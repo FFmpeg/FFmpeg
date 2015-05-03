@@ -31,6 +31,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
 #include "libavutil/channel_layout.h"
+#include "libavutil/display.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/pixfmt.h"
@@ -327,6 +328,28 @@ static int insert_trim(int64_t start_time, int64_t duration,
     }
 
     ret = avfilter_init_str(ctx, NULL);
+    if (ret < 0)
+        return ret;
+
+    ret = avfilter_link(*last_filter, *pad_idx, ctx, 0);
+    if (ret < 0)
+        return ret;
+
+    *last_filter = ctx;
+    *pad_idx     = 0;
+    return 0;
+}
+
+static int insert_filter(AVFilterContext **last_filter, int *pad_idx,
+                         const char *filter_name, const char *args)
+{
+    AVFilterGraph *graph = (*last_filter)->graph;
+    AVFilterContext *ctx;
+    int ret;
+
+    ret = avfilter_graph_create_filter(&ctx,
+                                       avfilter_get_by_name(filter_name),
+                                       filter_name, args, NULL, graph);
     if (ret < 0)
         return ret;
 
@@ -675,6 +698,26 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
                                             args.str, NULL, fg->graph)) < 0)
         return ret;
     last_filter = ifilter->filter;
+
+    if (ist->autorotate) {
+        uint8_t* displaymatrix = av_stream_get_side_data(ist->st,
+                                                         AV_PKT_DATA_DISPLAYMATRIX, NULL);
+        if (displaymatrix) {
+            double rot = av_display_rotation_get((int32_t*) displaymatrix);
+            if (rot < -135 || rot > 135) {
+                ret = insert_filter(&last_filter, &pad_idx, "vflip", NULL);
+                if (ret < 0)
+                    return ret;
+                ret = insert_filter(&last_filter, &pad_idx, "hflip", NULL);
+            } else if (rot < -45) {
+                ret = insert_filter(&last_filter, &pad_idx, "transpose", "dir=clock");
+            } else if (rot > 45) {
+                ret = insert_filter(&last_filter, &pad_idx, "transpose", "dir=cclock");
+            }
+            if (ret < 0)
+                return ret;
+        }
+    }
 
     if (ist->framerate.num) {
         AVFilterContext *setpts;

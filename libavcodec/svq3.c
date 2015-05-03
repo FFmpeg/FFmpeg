@@ -78,7 +78,7 @@ typedef struct SVQ3Context {
     H264Picture *last_pic;
     int halfpel_flag;
     int thirdpel_flag;
-    int unknown_flag;
+    int has_watermark;
     int next_slice_index;
     uint32_t watermark_key;
     uint8_t *buf;
@@ -843,7 +843,7 @@ static int svq3_decode_slice_header(AVCodecContext *avctx)
     /* unknown fields */
     skip_bits1(&h->gb);
 
-    if (s->unknown_flag)
+    if (s->has_watermark)
         skip_bits1(&h->gb);
 
     skip_bits1(&h->gb);
@@ -933,7 +933,7 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
 
     s->halfpel_flag  = 1;
     s->thirdpel_flag = 1;
-    s->unknown_flag  = 0;
+    s->has_watermark = 0;
 
     /* prowl for the "SEQH" marker in the extradata */
     extradata     = (unsigned char *)avctx->extradata;
@@ -1020,9 +1020,9 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
             goto fail;
         }
 
-        s->unknown_flag  = get_bits1(&gb);
+        s->has_watermark  = get_bits1(&gb);
         avctx->has_b_frames = !h->low_delay;
-        if (s->unknown_flag) {
+        if (s->has_watermark) {
 #if CONFIG_ZLIB
             unsigned watermark_width  = svq3_get_ue_golomb(&gb);
             unsigned watermark_height = svq3_get_ue_golomb(&gb);
