@@ -1504,7 +1504,7 @@ static void matroska_add_index_entries(MatroskaDemuxContext *matroska)
 {
     EbmlList *index_list;
     MatroskaIndex *index;
-    int index_scale = 1;
+    uint64_t index_scale = 1;
     int i, j;
 
     if (matroska->ctx->flags & AVFMT_FLAG_IGNIDX)
