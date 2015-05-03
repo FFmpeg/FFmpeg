@@ -2004,7 +2004,7 @@ static int matroska_parse_tracks(AVFormatContext *s)
                 snprintf(buf, sizeof(buf), "%s_%d",
                          ff_matroska_video_stereo_plane[planes[j].type], i);
                 for (k=0; k < matroska->tracks.nb_elem; k++)
-                    if (planes[j].uid == tracks[k].uid) {
+                    if (planes[j].uid == tracks[k].uid && s->streams[k]) {
                         av_dict_set(&s->streams[k]->metadata,
                                     "stereo_mode", buf, 0);
                         break;
