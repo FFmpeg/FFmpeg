@@ -229,6 +229,8 @@
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_copy.c">
     </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_cover_rect.c">
+    </ClCompile>
     <ClCompile Include="..\libavfilter\vf_crop.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_cropdetect.c">
@@ -266,6 +268,8 @@
     <ClCompile Include="..\libavfilter\vf_fieldmatch.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_fieldorder.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_find_rect.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_format.c">
     </ClCompile>
