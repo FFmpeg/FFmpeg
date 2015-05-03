@@ -1065,7 +1065,7 @@ exit_loop:
     /* handle p-frames only if a predecessor frame is available */
     ref = s->dispose_op == APNG_DISPOSE_OP_PREVIOUS ?
              s->previous_picture.f : s->last_picture.f;
-    if (ref->data[0]) {
+    if (ref->data[0] && s->last_picture.f->data[0]) {
         if (   !(avpkt->flags & AV_PKT_FLAG_KEY) && avctx->codec_tag != AV_RL32("MPNG")
             && ref->width == p->width
             && ref->height== p->height
