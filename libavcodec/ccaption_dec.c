@@ -338,6 +338,10 @@ static int reap_screen(CCaptionSubContext *ctx, int64_t pts)
         }
 
     }
+    if(screen->row_used && ctx->buffer.len >= 2 ) {
+        ctx->buffer.len -= 2;
+        ctx->buffer.str[ctx->buffer.len] = 0;
+    }
     ctx->startv_time = pts;
     ctx->end_time = pts;
     return ret;
@@ -550,7 +554,7 @@ static int decode(AVCodecContext *avctx, void *data, int *got_sub, AVPacket *avp
             int start_time = av_rescale_q(ctx->start_time, avctx->time_base, (AVRational){ 1, 100 });
             int end_time = av_rescale_q(ctx->end_time, avctx->time_base, (AVRational){ 1, 100 });
             av_dlog(ctx, "cdp writing data (%s)\n",ctx->buffer.str);
-            ret = ff_ass_add_rect(sub, ctx->buffer.str, start_time, end_time - start_time , 0);
+            ret = ff_ass_add_rect_bprint(sub, &ctx->buffer, start_time, end_time - start_time);
             if (ret < 0)
                 return ret;
             sub->pts = av_rescale_q(ctx->start_time, avctx->time_base, AV_TIME_BASE_Q);
