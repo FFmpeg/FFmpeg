@@ -107,7 +107,6 @@ typedef struct VP9Context {
     ptrdiff_t y_stride, uv_stride;
 
     // bitstream header
-    uint8_t profile;
     uint8_t keyframe, last_keyframe;
     uint8_t invisible;
     uint8_t use_last_frame_mvs;
@@ -481,7 +480,7 @@ static enum AVPixelFormat read_colorspace_details(AVCodecContext *ctx)
 
     ctx->colorspace = colorspaces[get_bits(&s->gb, 3)];
     if (ctx->colorspace == AVCOL_SPC_RGB) { // RGB = profile 1
-        if (s->profile == 1) {
+        if (ctx->profile == 1) {
             s->ss_h = s->ss_v = 1;
             res = AV_PIX_FMT_GBRP;
             ctx->color_range = AVCOL_RANGE_JPEG;
@@ -495,7 +494,7 @@ static enum AVPixelFormat read_colorspace_details(AVCodecContext *ctx)
             { AV_PIX_FMT_YUV440P, AV_PIX_FMT_YUV420P },
         };
         ctx->color_range = get_bits1(&s->gb) ? AVCOL_RANGE_JPEG : AVCOL_RANGE_MPEG;
-        if (s->profile == 1) {
+        if (ctx->profile == 1) {
             s->ss_h = get_bits1(&s->gb);
             s->ss_v = get_bits1(&s->gb);
             if ((res = pix_fmt_for_ss[s->ss_v][s->ss_h]) == AV_PIX_FMT_YUV420P) {
@@ -532,10 +531,10 @@ static int decode_frame_header(AVCodecContext *ctx,
         av_log(ctx, AV_LOG_ERROR, "Invalid frame marker\n");
         return AVERROR_INVALIDDATA;
     }
-    s->profile = get_bits1(&s->gb);
-    s->profile |= get_bits1(&s->gb) << 1;
-    if (s->profile > 1) {
-        av_log(ctx, AV_LOG_ERROR, "Profile %d is not yet supported\n", s->profile);
+    ctx->profile  = get_bits1(&s->gb);
+    ctx->profile |= get_bits1(&s->gb) << 1;
+    if (ctx->profile > 1) {
+        av_log(ctx, AV_LOG_ERROR, "Profile %d is not yet supported\n", ctx->profile);
         return AVERROR_INVALIDDATA;
     }
     if (get_bits1(&s->gb)) {
@@ -569,7 +568,7 @@ static int decode_frame_header(AVCodecContext *ctx,
                 av_log(ctx, AV_LOG_ERROR, "Invalid sync code\n");
                 return AVERROR_INVALIDDATA;
             }
-            if (s->profile == 1) {
+            if (ctx->profile == 1) {
                 if ((fmt = read_colorspace_details(ctx)) < 0)
                     return fmt;
             } else {
@@ -4080,6 +4079,12 @@ static int vp9_decode_update_thread_context(AVCodecContext *dst, const AVCodecCo
     return 0;
 }
 
+static const AVProfile profiles[] = {
+    { FF_PROFILE_VP9_0, "Profile 0" },
+    { FF_PROFILE_VP9_1, "Profile 1" },
+    { FF_PROFILE_UNKNOWN },
+};
+
 AVCodec ff_vp9_decoder = {
     .name                  = "vp9",
     .long_name             = NULL_IF_CONFIG_SMALL("Google VP9"),
@@ -4093,4 +4098,5 @@ AVCodec ff_vp9_decoder = {
     .flush                 = vp9_decode_flush,
     .init_thread_copy      = ONLY_IF_THREADS_ENABLED(vp9_decode_init_thread_copy),
     .update_thread_context = ONLY_IF_THREADS_ENABLED(vp9_decode_update_thread_context),
+    .profiles              = NULL_IF_CONFIG_SMALL(profiles),
 };

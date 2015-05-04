@@ -2912,6 +2912,9 @@ typedef struct AVCodecContext {
 #define FF_PROFILE_HEVC_MAIN_STILL_PICTURE          3
 #define FF_PROFILE_HEVC_REXT                        4
 
+#define FF_PROFILE_VP9_0                            0
+#define FF_PROFILE_VP9_1                            1
+
     /**
      * level
      * - encoding: Set by user.
