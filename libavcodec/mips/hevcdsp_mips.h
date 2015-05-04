@@ -67,3 +67,43 @@ MC(qpel, hv, 48);
 MC(qpel, hv, 64);
 
 #undef MC
+
+#define UNI_MC(PEL, DIR, WIDTH)                                                \
+void ff_hevc_put_hevc_uni_##PEL##_##DIR####WIDTH##_8_msa(uint8_t *dst,         \
+                                                         ptrdiff_t dst_stride, \
+                                                         uint8_t *src,         \
+                                                         ptrdiff_t src_stride, \
+                                                         int height,           \
+                                                         intptr_t mx,          \
+                                                         intptr_t my,          \
+                                                         int width)
+
+UNI_MC(pel, pixels, 4);
+UNI_MC(pel, pixels, 6);
+UNI_MC(pel, pixels, 8);
+UNI_MC(pel, pixels, 12);
+UNI_MC(pel, pixels, 16);
+UNI_MC(pel, pixels, 24);
+UNI_MC(pel, pixels, 32);
+UNI_MC(pel, pixels, 48);
+UNI_MC(pel, pixels, 64);
+
+UNI_MC(qpel, h, 4);
+UNI_MC(qpel, h, 8);
+UNI_MC(qpel, h, 12);
+UNI_MC(qpel, h, 16);
+UNI_MC(qpel, h, 24);
+UNI_MC(qpel, h, 32);
+UNI_MC(qpel, h, 48);
+UNI_MC(qpel, h, 64);
+
+UNI_MC(qpel, v, 4);
+UNI_MC(qpel, v, 8);
+UNI_MC(qpel, v, 12);
+UNI_MC(qpel, v, 16);
+UNI_MC(qpel, v, 24);
+UNI_MC(qpel, v, 32);
+UNI_MC(qpel, v, 48);
+UNI_MC(qpel, v, 64);
+
+#undef UNI_MC
