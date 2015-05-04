@@ -163,6 +163,17 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         return ff_filter_frame(ctx->outputs[0], in);
     }
 
+    if (x < 0) {
+        w += x;
+        x = 0;
+    }
+    if (y < 0) {
+        h += y;
+        y = 0;
+    }
+    w = FFMIN(w, in->width  - x);
+    h = FFMIN(h, in->height - y);
+
     if (w > in->width || h > in->height || w <= 0 || h <= 0)
         return AVERROR(EINVAL);
 
