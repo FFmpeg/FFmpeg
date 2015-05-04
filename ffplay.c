@@ -32,7 +32,7 @@
 
 #include "libavutil/avstring.h"
 #include "libavutil/colorspace.h"
-#include "libavutil/display.h"
+#include "libavutil/eval.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/imgutils.h"
@@ -2017,33 +2017,19 @@ static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const c
     INSERT_FILT("crop", "floor(in_w/2)*2:floor(in_h/2)*2");
 
     if (autorotate) {
-        AVDictionaryEntry *rotate_tag = av_dict_get(is->video_st->metadata, "rotate", NULL, 0);
-        uint8_t* displaymatrix = av_stream_get_side_data(is->video_st,
-                                                         AV_PKT_DATA_DISPLAYMATRIX, NULL);
+        double theta  = get_rotation(is->video_st);
 
-        if (rotate_tag && *rotate_tag->value && strcmp(rotate_tag->value, "0")) {
-            if (!strcmp(rotate_tag->value, "90")) {
-                INSERT_FILT("transpose", "clock");
-            } else if (!strcmp(rotate_tag->value, "180")) {
-                INSERT_FILT("hflip", NULL);
-                INSERT_FILT("vflip", NULL);
-            } else if (!strcmp(rotate_tag->value, "270")) {
-                INSERT_FILT("transpose", "cclock");
-            } else {
-                char rotate_buf[64];
-                snprintf(rotate_buf, sizeof(rotate_buf), "%s*PI/180", rotate_tag->value);
-                INSERT_FILT("rotate", rotate_buf);
-            }
-        } else if (displaymatrix) {
-            double rot = av_display_rotation_get((int32_t*) displaymatrix);
-            if (rot < -135 || rot > 135) {
-                INSERT_FILT("vflip", NULL);
-                INSERT_FILT("hflip", NULL);
-            } else if (rot < -45) {
-                INSERT_FILT("transpose", "dir=clock");
-            } else if (rot > 45) {
-                INSERT_FILT("transpose", "dir=cclock");
-            }
+        if (fabs(theta - 90) < 1.0) {
+            INSERT_FILT("transpose", "clock");
+        } else if (fabs(theta - 180) < 1.0) {
+            INSERT_FILT("hflip", NULL);
+            INSERT_FILT("vflip", NULL);
+        } else if (fabs(theta - 270) < 1.0) {
+            INSERT_FILT("transpose", "cclock");
+        } else if (fabs(theta) > 1.0) {
+            char rotate_buf[64];
+            snprintf(rotate_buf, sizeof(rotate_buf), "%f*PI/180", theta);
+            INSERT_FILT("rotate", rotate_buf);
         }
     }
 

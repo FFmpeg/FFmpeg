@@ -1504,7 +1504,7 @@ static void matroska_add_index_entries(MatroskaDemuxContext *matroska)
 {
     EbmlList *index_list;
     MatroskaIndex *index;
-    int index_scale = 1;
+    uint64_t index_scale = 1;
     int i, j;
 
     if (matroska->ctx->flags & AVFMT_FLAG_IGNIDX)
@@ -2012,8 +2012,8 @@ static int matroska_parse_tracks(AVFormatContext *s)
                 snprintf(buf, sizeof(buf), "%s_%d",
                          ff_matroska_video_stereo_plane[planes[j].type], i);
                 for (k=0; k < matroska->tracks.nb_elem; k++)
-                    if (planes[j].uid == tracks[k].uid) {
-                        av_dict_set(&s->streams[k]->metadata,
+                    if (planes[j].uid == tracks[k].uid && tracks[k].stream) {
+                        av_dict_set(&tracks[k].stream->metadata,
                                     "stereo_mode", buf, 0);
                         break;
                     }

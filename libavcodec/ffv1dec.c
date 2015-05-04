@@ -476,7 +476,7 @@ static int read_quant_table(RangeCoder *c, int16_t *quant_table, int scale)
     for (v = 0; i < 128; v++) {
         unsigned len = get_symbol(c, state, 0) + 1;
 
-        if (len > 128 - i)
+        if (len > 128 - i || !len)
             return AVERROR_INVALIDDATA;
 
         while (len--) {
@@ -528,6 +528,8 @@ static int read_extra_header(FFV1Context *f)
     if (f->version > 2) {
         c->bytestream_end -= 4;
         f->micro_version = get_symbol(c, state, 0);
+        if (f->micro_version < 0)
+            return AVERROR_INVALIDDATA;
     }
     f->ac = f->avctx->coder_type = get_symbol(c, state, 0);
     if (f->ac > 1) {
@@ -544,6 +546,12 @@ static int read_extra_header(FFV1Context *f)
     f->plane_count                = 1 + (f->chroma_planes || f->version<4) + f->transparency;
     f->num_h_slices               = 1 + get_symbol(c, state, 0);
     f->num_v_slices               = 1 + get_symbol(c, state, 0);
+
+    if (f->chroma_h_shift > 4U || f->chroma_v_shift > 4U) {
+        av_log(f->avctx, AV_LOG_ERROR, "chroma shift parameters %d %d are invalid\n",
+               f->chroma_h_shift, f->chroma_v_shift);
+        return AVERROR_INVALIDDATA;
+    }
 
     if (f->num_h_slices > (unsigned)f->width  || !f->num_h_slices ||
         f->num_v_slices > (unsigned)f->height || !f->num_v_slices
@@ -648,6 +656,12 @@ static int read_header(FFV1Context *f)
                 av_log(f->avctx, AV_LOG_ERROR, "Invalid change of global parameters\n");
                 return AVERROR_INVALIDDATA;
             }
+        }
+
+        if (chroma_h_shift > 4U || chroma_v_shift > 4U) {
+            av_log(f->avctx, AV_LOG_ERROR, "chroma shift parameters %d %d are invalid\n",
+                   chroma_h_shift, chroma_v_shift);
+            return AVERROR_INVALIDDATA;
         }
 
         f->colorspace                 = colorspace;
