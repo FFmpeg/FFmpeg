@@ -1640,6 +1640,8 @@ AVPacket *pkt)
 
     if ((frame_size = avpriv_dnxhd_get_frame_size(cid)) < 0)
         return -1;
+    if ((sc->interlaced = avpriv_dnxhd_get_interlaced(cid)) < 0)
+        return AVERROR_INVALIDDATA;
 
     switch (cid) {
     case 1235:
