@@ -693,6 +693,8 @@ static int avi_read_header(AVFormatContext *s)
             default:
                 av_log(s, AV_LOG_INFO, "unknown stream type %X\n", tag1);
             }
+            if (ast->sample_size < 0)
+                av_log(s, AV_LOG_WARNING, "sample size %d is invalid\n", ast->sample_size);
             ast->sample_size = FFMAX(ast->sample_size, 0);
             if (ast->sample_size == 0) {
                 st->duration = st->nb_frames;
