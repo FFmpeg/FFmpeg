@@ -53,5 +53,6 @@ int ff_dnxhd_find_cid(AVCodecContext *avctx, int bit_depth);
 void ff_dnxhd_print_profiles(AVCodecContext *avctx, int loglevel);
 
 int avpriv_dnxhd_get_frame_size(int cid);
+int avpriv_dnxhd_get_interlaced(int cid);
 
 #endif /* AVCODEC_DNXHDDATA_H */
