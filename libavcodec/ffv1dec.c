@@ -547,6 +547,12 @@ static int read_extra_header(FFV1Context *f)
     f->num_h_slices               = 1 + get_symbol(c, state, 0);
     f->num_v_slices               = 1 + get_symbol(c, state, 0);
 
+    if (f->chroma_h_shift > 4U || f->chroma_v_shift > 4U) {
+        av_log(f->avctx, AV_LOG_ERROR, "chroma shift parameters %d %d are invalid\n",
+               f->chroma_h_shift, f->chroma_v_shift);
+        return AVERROR_INVALIDDATA;
+    }
+
     if (f->num_h_slices > (unsigned)f->width  || !f->num_h_slices ||
         f->num_v_slices > (unsigned)f->height || !f->num_v_slices
        ) {
@@ -650,6 +656,12 @@ static int read_header(FFV1Context *f)
                 av_log(f->avctx, AV_LOG_ERROR, "Invalid change of global parameters\n");
                 return AVERROR_INVALIDDATA;
             }
+        }
+
+        if (chroma_h_shift > 4U || chroma_v_shift > 4U) {
+            av_log(f->avctx, AV_LOG_ERROR, "chroma shift parameters %d %d are invalid\n",
+                   chroma_h_shift, chroma_v_shift);
+            return AVERROR_INVALIDDATA;
         }
 
         f->colorspace                 = colorspace;
