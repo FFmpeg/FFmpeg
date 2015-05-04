@@ -2249,6 +2249,9 @@ double get_rotation(AVStream *st)
 
     theta -= 360*floor(theta/360 + 0.9/360);
 
+    if (fabs(theta - 90*round(theta/90)) > 2)
+        av_log_ask_for_sample(NULL, "Odd rotation angle\n");
+
     return theta;
 }
 
