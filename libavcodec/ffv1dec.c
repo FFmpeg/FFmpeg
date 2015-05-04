@@ -528,6 +528,8 @@ static int read_extra_header(FFV1Context *f)
     if (f->version > 2) {
         c->bytestream_end -= 4;
         f->micro_version = get_symbol(c, state, 0);
+        if (f->micro_version < 0)
+            return AVERROR_INVALIDDATA;
     }
     f->ac = f->avctx->coder_type = get_symbol(c, state, 0);
     if (f->ac > 1) {
