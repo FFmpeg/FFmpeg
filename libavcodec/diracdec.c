@@ -785,7 +785,10 @@ static void decode_lowdelay(DiracContext *s)
             slice_num++;
 
             buf     += bytes;
-            bufsize -= bytes*8;
+            if (bufsize/8 >= bytes)
+                bufsize -= bytes*8;
+            else
+                bufsize = 0;
         }
 
     avctx->execute(avctx, decode_lowdelay_slice, slices, NULL, slice_num,
