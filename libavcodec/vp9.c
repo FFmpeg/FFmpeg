@@ -4089,6 +4089,8 @@ static int vp9_decode_update_thread_context(AVCodecContext *dst, const AVCodecCo
 static const AVProfile profiles[] = {
     { FF_PROFILE_VP9_0, "Profile 0" },
     { FF_PROFILE_VP9_1, "Profile 1" },
+    { FF_PROFILE_VP9_2, "Profile 2" },
+    { FF_PROFILE_VP9_3, "Profile 3" },
     { FF_PROFILE_UNKNOWN },
 };
 
