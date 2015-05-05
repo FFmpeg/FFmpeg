@@ -1931,8 +1931,8 @@ static int dirac_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             break;
 
         data_unit_size = AV_RB32(buf+buf_idx+5);
-        if (buf_idx + data_unit_size > buf_size || !data_unit_size) {
-            if(buf_idx + data_unit_size > buf_size)
+        if (data_unit_size > buf_size - buf_idx || !data_unit_size) {
+            if(data_unit_size > buf_size - buf_idx)
             av_log(s->avctx, AV_LOG_ERROR,
                    "Data unit with size %d is larger than input buffer, discarding\n",
                    data_unit_size);
