@@ -478,36 +478,47 @@ static enum AVPixelFormat read_colorspace_details(AVCodecContext *ctx)
     };
     VP9Context *s = ctx->priv_data;
     enum AVPixelFormat res;
+    int bits = ctx->profile <= 1 ? 0 : 1 + get_bits1(&s->gb); // 0:8, 1:10, 2:12
 
     ctx->colorspace = colorspaces[get_bits(&s->gb, 3)];
     if (ctx->colorspace == AVCOL_SPC_RGB) { // RGB = profile 1
-        if (ctx->profile == 1) {
+        static const enum AVPixelFormat pix_fmt_rgb[3] = {
+            AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRP10, AV_PIX_FMT_GBRP12
+        };
+        if (ctx->profile & 1) {
             s->ss_h = s->ss_v = 1;
-            res = AV_PIX_FMT_GBRP;
+            res = pix_fmt_rgb[bits];
             ctx->color_range = AVCOL_RANGE_JPEG;
         } else {
-            av_log(ctx, AV_LOG_ERROR, "RGB not supported in profile 0\n");
+            av_log(ctx, AV_LOG_ERROR, "RGB not supported in profile %d\n",
+                   ctx->profile);
             return AVERROR_INVALIDDATA;
         }
     } else {
-        static const enum AVPixelFormat pix_fmt_for_ss[2 /* v */][2 /* h */] = {
-            { AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUV422P },
-            { AV_PIX_FMT_YUV440P, AV_PIX_FMT_YUV420P },
+        static const enum AVPixelFormat pix_fmt_for_ss[3][2 /* v */][2 /* h */] = {
+            { { AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUV422P },
+              { AV_PIX_FMT_YUV440P, AV_PIX_FMT_YUV420P } },
+            { { AV_PIX_FMT_YUV444P10, AV_PIX_FMT_YUV422P10 },
+              { AV_PIX_FMT_YUV440P10, AV_PIX_FMT_YUV420P10 } },
+            { { AV_PIX_FMT_YUV444P12, AV_PIX_FMT_YUV422P12 },
+              { AV_PIX_FMT_YUV440P12, AV_PIX_FMT_YUV420P12 } }
         };
         ctx->color_range = get_bits1(&s->gb) ? AVCOL_RANGE_JPEG : AVCOL_RANGE_MPEG;
-        if (ctx->profile == 1) {
+        if (ctx->profile & 1) {
             s->ss_h = get_bits1(&s->gb);
             s->ss_v = get_bits1(&s->gb);
-            if ((res = pix_fmt_for_ss[s->ss_v][s->ss_h]) == AV_PIX_FMT_YUV420P) {
-                av_log(ctx, AV_LOG_ERROR, "YUV 4:2:0 not supported in profile 1\n");
+            if ((res = pix_fmt_for_ss[bits][s->ss_v][s->ss_h]) == AV_PIX_FMT_YUV420P) {
+                av_log(ctx, AV_LOG_ERROR, "YUV 4:2:0 not supported in profile %d\n",
+                       ctx->profile);
                 return AVERROR_INVALIDDATA;
             } else if (get_bits1(&s->gb)) {
-                av_log(ctx, AV_LOG_ERROR, "Profile 1 color details reserved bit set\n");
+                av_log(ctx, AV_LOG_ERROR, "Profile %d color details reserved bit set\n",
+                       ctx->profile);
                 return AVERROR_INVALIDDATA;
             }
         } else {
             s->ss_h = s->ss_v = 1;
-            res = AV_PIX_FMT_YUV420P;
+            res = pix_fmt_for_ss[bits][1][1];
         }
     }
 
@@ -534,7 +545,8 @@ static int decode_frame_header(AVCodecContext *ctx,
     }
     ctx->profile  = get_bits1(&s->gb);
     ctx->profile |= get_bits1(&s->gb) << 1;
-    if (ctx->profile > 1) {
+    if (ctx->profile == 3) ctx->profile += get_bits1(&s->gb);
+    if (ctx->profile > 3) {
         av_log(ctx, AV_LOG_ERROR, "Profile %d is not yet supported\n", ctx->profile);
         return AVERROR_INVALIDDATA;
     }
@@ -4076,6 +4088,9 @@ static int vp9_decode_update_thread_context(AVCodecContext *dst, const AVCodecCo
     s->ss_h = ssrc->ss_h;
     s->segmentation.enabled = ssrc->segmentation.enabled;
     s->segmentation.update_map = ssrc->segmentation.update_map;
+    s->bytesperpixel = ssrc->bytesperpixel;
+    s->bpp = ssrc->bpp;
+    s->bpp_index = ssrc->bpp_index;
     memcpy(&s->prob_ctx, &ssrc->prob_ctx, sizeof(s->prob_ctx));
     memcpy(&s->lf_delta, &ssrc->lf_delta, sizeof(s->lf_delta));
     if (ssrc->segmentation.enabled) {
