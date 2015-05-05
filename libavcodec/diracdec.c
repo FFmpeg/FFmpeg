@@ -1815,11 +1815,13 @@ static int dirac_decode_data_unit(AVCodecContext *avctx, const uint8_t *buf, int
 {
     DiracContext *s   = avctx->priv_data;
     DiracFrame *pic   = NULL;
-    int ret, i, parse_code = buf[4];
+    int ret, i, parse_code;
     unsigned tmp;
 
     if (size < DATA_UNIT_HEADER_SIZE)
         return -1;
+
+    parse_code = buf[4];
 
     init_get_bits(&s->gb, &buf[13], 8*(size - DATA_UNIT_HEADER_SIZE));
 
