@@ -940,6 +940,7 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
             // if there is no mkv-specific codec ID, use VFW mode
             put_ebml_string(pb, MATROSKA_ID_CODECID, "V_MS/VFW/FOURCC");
             mkv->tracks[i].write_dts = 1;
+            s->internal->avoid_negative_ts_use_pts = 0;
         }
 
         subinfo = start_ebml_master(pb, MATROSKA_ID_TRACKVIDEO, 0);
@@ -1316,8 +1317,10 @@ static int mkv_write_header(AVFormatContext *s)
     else
         mkv->mode = MODE_MATROSKAv2;
 
-    if (s->avoid_negative_ts < 0)
+    if (s->avoid_negative_ts < 0) {
         s->avoid_negative_ts = 1;
+        s->internal->avoid_negative_ts_use_pts = 1;
+    }
 
     if (mkv->mode != MODE_WEBM ||
         av_dict_get(s->metadata, "stereo_mode", NULL, 0) ||
