@@ -451,6 +451,7 @@ static int calculate_bitrate(AVFormatContext *s)
         int64_t len = 0;
         AVStream *st = s->streams[i];
         int64_t duration;
+        int64_t bitrate;
 
         for (j = 0; j < st->nb_index_entries; j++)
             len += st->index_entries[j].size;
@@ -458,7 +459,10 @@ static int calculate_bitrate(AVFormatContext *s)
         if (st->nb_index_entries < 2 || st->codec->bit_rate > 0)
             continue;
         duration = st->index_entries[j-1].timestamp - st->index_entries[0].timestamp;
-        st->codec->bit_rate = av_rescale(8*len, st->time_base.den, duration * st->time_base.num);
+        bitrate = av_rescale(8*len, st->time_base.den, duration * st->time_base.num);
+        if (bitrate <= INT_MAX && bitrate > 0) {
+            st->codec->bit_rate = bitrate;
+        }
     }
     return 1;
 }
@@ -689,6 +693,9 @@ static int avi_read_header(AVFormatContext *s)
             default:
                 av_log(s, AV_LOG_INFO, "unknown stream type %X\n", tag1);
             }
+            if (ast->sample_size < 0)
+                av_log(s, AV_LOG_WARNING, "sample size %d is invalid\n", ast->sample_size);
+            ast->sample_size = FFMAX(ast->sample_size, 0);
             if (ast->sample_size == 0) {
                 st->duration = st->nb_frames;
                 if (st->duration > 0 && avi->io_fsize > 0 && avi->riff_end > avi->io_fsize) {

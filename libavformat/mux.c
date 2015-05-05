@@ -557,10 +557,11 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     if (s->avoid_negative_ts > 0) {
         AVStream *st = s->streams[pkt->stream_index];
         int64_t offset = st->mux_ts_offset;
+        int64_t ts = s->internal->avoid_negative_ts_use_pts ? pkt->pts : pkt->dts;
 
-        if (s->internal->offset == AV_NOPTS_VALUE && pkt->dts != AV_NOPTS_VALUE &&
-            (pkt->dts < 0 || s->avoid_negative_ts == AVFMT_AVOID_NEG_TS_MAKE_ZERO)) {
-            s->internal->offset = -pkt->dts;
+        if (s->internal->offset == AV_NOPTS_VALUE && ts != AV_NOPTS_VALUE &&
+            (ts < 0 || s->avoid_negative_ts == AVFMT_AVOID_NEG_TS_MAKE_ZERO)) {
+            s->internal->offset = -ts;
             s->internal->offset_timebase = st->time_base;
         }
 
@@ -577,15 +578,26 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
         if (pkt->pts != AV_NOPTS_VALUE)
             pkt->pts += offset;
 
-        av_assert2(pkt->dts == AV_NOPTS_VALUE || pkt->dts >= 0 || s->max_interleave_delta > 0);
-        if (pkt->dts != AV_NOPTS_VALUE && pkt->dts < 0) {
-            av_log(s, AV_LOG_WARNING,
-                   "Packets poorly interleaved, failed to avoid negative "
-                   "timestamp %s in stream %d.\n"
-                   "Try -max_interleave_delta 0 as a possible workaround.\n",
-                   av_ts2str(pkt->dts),
-                   pkt->stream_index
-            );
+        if (s->internal->avoid_negative_ts_use_pts) {
+            if (pkt->pts != AV_NOPTS_VALUE && pkt->pts < 0) {
+                av_log(s, AV_LOG_WARNING, "failed to avoid negative "
+                    "pts %s in stream %d.\n"
+                    "Try -avoid_negative_ts 1 as a possible workaround.\n",
+                    av_ts2str(pkt->dts),
+                    pkt->stream_index
+                );
+            }
+        } else {
+            av_assert2(pkt->dts == AV_NOPTS_VALUE || pkt->dts >= 0 || s->max_interleave_delta > 0);
+            if (pkt->dts != AV_NOPTS_VALUE && pkt->dts < 0) {
+                av_log(s, AV_LOG_WARNING,
+                    "Packets poorly interleaved, failed to avoid negative "
+                    "timestamp %s in stream %d.\n"
+                    "Try -max_interleave_delta 0 as a possible workaround.\n",
+                    av_ts2str(pkt->dts),
+                    pkt->stream_index
+                );
+            }
         }
     }
 
