@@ -177,6 +177,7 @@ EXPORTS
     avpriv_dca_convert_bitstream
     avpriv_dirac_parse_sequence_header
     avpriv_dnxhd_get_frame_size
+    avpriv_dnxhd_get_interlaced
     avpriv_do_elbg
     avpriv_dv_frame_profile2
     avpriv_exif_decode_ifd

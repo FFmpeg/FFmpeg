@@ -231,6 +231,8 @@
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_cover_rect.c">
     </ClCompile>
+    <ClCompile Include="..\libavfilter\lavfutils.c">
+    </ClCompile>
     <ClCompile Include="..\libavfilter\vf_crop.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_cropdetect.c">
@@ -359,8 +361,6 @@
     <ClCompile Include="..\libavfilter\vf_qp.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\lswsutils.c">
-    </ClCompile>
-    <ClCompile Include="..\libavfilter\lavfutils.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_removelogo.c">
     </ClCompile>
