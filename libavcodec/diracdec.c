@@ -1745,6 +1745,12 @@ static int dirac_decode_picture_header(DiracContext *s)
                     get_buffer_with_edge(s->avctx, s->ref_pics[i]->avframe, AV_GET_BUFFER_FLAG_REF);
                     break;
                 }
+
+        if (!s->ref_pics[i]) {
+            av_log(s->avctx, AV_LOG_ERROR, "Reference could not be allocated\n");
+            return -1;
+        }
+
     }
 
     /* retire the reference frames that are not used anymore */
