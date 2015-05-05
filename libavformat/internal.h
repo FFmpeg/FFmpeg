@@ -97,6 +97,8 @@ struct AVFormatInternal {
     AVRational offset_timebase;
 
     int inject_global_side_data;
+
+    int avoid_negative_ts_use_pts;
 };
 
 #ifdef __GNUC__
