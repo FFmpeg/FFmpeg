@@ -29,6 +29,7 @@
 #include <inttypes.h>
 
 #include "libavutil/attributes.h"
+#include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
 #include "libavutil/stereo3d.h"
 
@@ -1315,7 +1316,13 @@ static int mpeg_decode_postinit(AVCodecContext *avctx)
         }
     } // MPEG-2
 
-    ff_set_sar(s->avctx, s->avctx->sample_aspect_ratio);
+    if (av_image_check_sar(s->width, s->height,
+                           avctx->sample_aspect_ratio) < 0) {
+        av_log(avctx, AV_LOG_WARNING, "ignoring invalid SAR: %u/%u\n",
+                avctx->sample_aspect_ratio.num,
+                avctx->sample_aspect_ratio.den);
+        avctx->sample_aspect_ratio = (AVRational){ 0, 1 };
+    }
 
     if ((s1->mpeg_enc_ctx_allocated == 0)                   ||
         avctx->coded_width       != s->width                ||
