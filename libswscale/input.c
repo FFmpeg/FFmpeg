@@ -931,9 +931,11 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
     case AV_PIX_FMT_YUV422P9LE:
     case AV_PIX_FMT_YUV420P9LE:
     case AV_PIX_FMT_YUV422P10LE:
+    case AV_PIX_FMT_YUV440P10LE:
     case AV_PIX_FMT_YUV444P10LE:
     case AV_PIX_FMT_YUV420P10LE:
     case AV_PIX_FMT_YUV422P12LE:
+    case AV_PIX_FMT_YUV440P12LE:
     case AV_PIX_FMT_YUV444P12LE:
     case AV_PIX_FMT_YUV420P12LE:
     case AV_PIX_FMT_YUV422P14LE:
@@ -958,9 +960,11 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
     case AV_PIX_FMT_YUV444P9BE:
     case AV_PIX_FMT_YUV422P9BE:
     case AV_PIX_FMT_YUV420P9BE:
+    case AV_PIX_FMT_YUV440P10BE:
     case AV_PIX_FMT_YUV444P10BE:
     case AV_PIX_FMT_YUV422P10BE:
     case AV_PIX_FMT_YUV420P10BE:
+    case AV_PIX_FMT_YUV440P12BE:
     case AV_PIX_FMT_YUV444P12BE:
     case AV_PIX_FMT_YUV422P12BE:
     case AV_PIX_FMT_YUV420P12BE:
@@ -1197,9 +1201,11 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
     case AV_PIX_FMT_YUV422P9LE:
     case AV_PIX_FMT_YUV420P9LE:
     case AV_PIX_FMT_YUV444P10LE:
+    case AV_PIX_FMT_YUV440P10LE:
     case AV_PIX_FMT_YUV422P10LE:
     case AV_PIX_FMT_YUV420P10LE:
     case AV_PIX_FMT_YUV444P12LE:
+    case AV_PIX_FMT_YUV440P12LE:
     case AV_PIX_FMT_YUV422P12LE:
     case AV_PIX_FMT_YUV420P12LE:
     case AV_PIX_FMT_YUV444P14LE:
@@ -1229,9 +1235,11 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
     case AV_PIX_FMT_YUV422P9BE:
     case AV_PIX_FMT_YUV420P9BE:
     case AV_PIX_FMT_YUV444P10BE:
+    case AV_PIX_FMT_YUV440P10BE:
     case AV_PIX_FMT_YUV422P10BE:
     case AV_PIX_FMT_YUV420P10BE:
     case AV_PIX_FMT_YUV444P12BE:
+    case AV_PIX_FMT_YUV440P12BE:
     case AV_PIX_FMT_YUV422P12BE:
     case AV_PIX_FMT_YUV420P12BE:
     case AV_PIX_FMT_YUV444P14BE:
