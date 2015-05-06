@@ -537,7 +537,7 @@ int ff_spatial_idwt_init2(DWTContext *d, IDWTELEM *buffer, int width, int height
         break;
     default:
         av_log(NULL, AV_LOG_ERROR, "Unknown wavelet type %d\n", type);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     if (HAVE_MMX) ff_spatial_idwt_init_mmx(d, type);
