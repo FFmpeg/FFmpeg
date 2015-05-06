@@ -56,6 +56,9 @@ FATE_EXR-$(call DEMDEC, IMAGE2, EXR) += $(FATE_EXR)
 FATE_IMAGE += $(FATE_EXR-yes)
 fate-exr: $(FATE_EXR-yes)
 
+FATE_IMAGE-$(call DEMDEC, IMAGE2, QDRAW) += fate-pict
+fate-pict: CMD = framecrc -i $(TARGET_SAMPLES)/quickdraw/TRU256.PCT -pix_fmt rgb24
+
 FATE_IMAGE-$(call DEMDEC, IMAGE2, PICTOR) += fate-pictor
 fate-pictor: CMD = framecrc -i $(TARGET_SAMPLES)/pictor/MFISH.PIC -pix_fmt rgb24
 
