@@ -19,6 +19,7 @@ version <next>:
 - chorus filter
 - Canopus HQ/HQA decoder
 - Automatically rotate videos based on metadata in ffmpeg
+- improved Quickdraw compatibility
 
 
 version 2.6:
