@@ -1705,8 +1705,9 @@ static int get_buffer_with_edge(AVCodecContext *avctx, AVFrame *f, int flags)
  */
 static int dirac_decode_picture_header(DiracContext *s)
 {
-    int retire, picnum;
-    int i, j, refnum, refdist;
+    unsigned retire, picnum;
+    int i, j;
+    int64_t refdist, refnum;
     GetBitContext *gb = &s->gb;
 
     /* [DIRAC_STD] 11.1.1 Picture Header. picture_header() PICTURE_NUM */
@@ -1722,8 +1723,8 @@ static int dirac_decode_picture_header(DiracContext *s)
 
     s->ref_pics[0] = s->ref_pics[1] = NULL;
     for (i = 0; i < s->num_refs; i++) {
-        refnum = picnum + dirac_get_se_golomb(gb);
-        refdist = INT_MAX;
+        refnum = (picnum + dirac_get_se_golomb(gb)) & 0xFFFFFFFF;
+        refdist = INT64_MAX;
 
         /* find the closest reference to the one we want */
         /* Jordi: this is needed if the referenced picture hasn't yet arrived */
@@ -1755,7 +1756,7 @@ static int dirac_decode_picture_header(DiracContext *s)
 
     /* retire the reference frames that are not used anymore */
     if (s->current_picture->avframe->reference) {
-        retire = picnum + dirac_get_se_golomb(gb);
+        retire = (picnum + dirac_get_se_golomb(gb)) & 0xFFFFFFFF;
         if (retire != picnum) {
             DiracFrame *retire_pic = remove_frame(s->ref_frames, retire);
 
