@@ -569,6 +569,23 @@ static int avi_read_header(AVFormatContext *s)
                 av_log(s, AV_LOG_ERROR, "unknown stream type %X\n", tag1);
                 goto fail;
             }
+
+            if (ast->sample_size < 0) {
+                if (s->error_recognition & AV_EF_EXPLODE) {
+                    av_log(s, AV_LOG_ERROR,
+                           "Invalid sample_size %d at stream %d\n",
+                           ast->sample_size,
+                           stream_index);
+                    goto fail;
+                }
+                av_log(s, AV_LOG_WARNING,
+                       "Invalid sample_size %d at stream %d "
+                       "setting it to 0\n",
+                       ast->sample_size,
+                       stream_index);
+                ast->sample_size = 0;
+            }
+
             if (ast->sample_size == 0)
                 st->duration = st->nb_frames;
             ast->frame_offset = ast->cum_len;
