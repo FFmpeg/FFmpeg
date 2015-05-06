@@ -527,8 +527,8 @@ static int create_stream(AVFormatContext *s)
     gc  = xcb_get_geometry(c->conn, c->screen->root);
     geo = xcb_get_geometry_reply(c->conn, gc, NULL);
 
-    if (c->x + c->width >= geo->width ||
-        c->y + c->height >= geo->height) {
+    if (c->x + c->width > geo->width ||
+        c->y + c->height > geo->height) {
         av_log(s, AV_LOG_ERROR,
                "Capture area %dx%d at position %d.%d "
                "outside the screen size %dx%d\n",
