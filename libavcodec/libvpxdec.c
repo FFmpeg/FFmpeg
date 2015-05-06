@@ -72,6 +72,11 @@ static int set_pix_fmt(AVCodecContext *avctx, struct vpx_image *img)
     case VPX_IMG_FMT_I422:
         avctx->pix_fmt = AV_PIX_FMT_YUV422P;
         return 0;
+#if VPX_IMAGE_ABI_VERSION >= 3
+    case VPX_IMG_FMT_I440:
+        avctx->pix_fmt = AV_PIX_FMT_YUV440P;
+        return 0;
+#endif
     case VPX_IMG_FMT_I444:
         avctx->pix_fmt = AV_PIX_FMT_YUV444P;
         return 0;
@@ -96,6 +101,18 @@ static int set_pix_fmt(AVCodecContext *avctx, struct vpx_image *img)
         } else {
             return AVERROR_INVALIDDATA;
         }
+#if VPX_IMAGE_ABI_VERSION >= 3
+    case VPX_IMG_FMT_I44016:
+        if (img->bit_depth == 10) {
+            avctx->pix_fmt = AV_PIX_FMT_YUV440P10LE;
+            return 0;
+        } else if (img->bit_depth == 12) {
+            avctx->pix_fmt = AV_PIX_FMT_YUV440P12LE;
+            return 0;
+        } else {
+            return AVERROR_INVALIDDATA;
+        }
+#endif
     case VPX_IMG_FMT_I44416:
         if (img->bit_depth == 10) {
             avctx->pix_fmt = AV_PIX_FMT_YUV444P10LE;
