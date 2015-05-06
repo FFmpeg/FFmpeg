@@ -1358,7 +1358,7 @@ static int send_filter_eof(InputStream *ist)
 }
 
 /* pkt = NULL means EOF (needed to flush decoder buffers) */
-static int process_input_packet(InputStream *ist, const AVPacket *pkt)
+static void process_input_packet(InputStream *ist, const AVPacket *pkt)
 {
     int i;
     int got_output;
@@ -1415,11 +1415,17 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt)
             ret = transcode_subtitles(ist, &avpkt, &got_output);
             break;
         default:
-            return -1;
+            return;
         }
 
-        if (ret < 0)
-            return ret;
+        if (ret < 0) {
+            av_log(NULL, AV_LOG_ERROR, "Error while decoding stream #%d:%d\n",
+                   ist->file_index, ist->st->index);
+            if (exit_on_error)
+                exit_program(1);
+            break;
+        }
+
         // touch data and size only if not EOF
         if (pkt) {
             avpkt.data += ret;
@@ -1466,7 +1472,7 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt)
         do_streamcopy(ist, ost, pkt);
     }
 
-    return 0;
+    return;
 }
 
 static void print_sdp(void)
@@ -2481,13 +2487,7 @@ static int process_input(void)
         }
     }
 
-    ret = process_input_packet(ist, &pkt);
-    if (ret < 0) {
-        av_log(NULL, AV_LOG_ERROR, "Error while decoding stream #%d:%d\n",
-               ist->file_index, ist->st->index);
-        if (exit_on_error)
-            exit_program(1);
-    }
+    process_input_packet(ist, &pkt);
 
 discard_packet:
     av_free_packet(&pkt);
