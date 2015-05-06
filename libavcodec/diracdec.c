@@ -896,6 +896,14 @@ static int dirac_unpack_prediction_parameters(DiracContext *s)
     /*[DIRAC_STD] 11.2.4 motion_data_dimensions()
       Calculated in function dirac_unpack_block_motion_data */
 
+    if (s->plane[0].xblen % (1 << s->chroma_x_shift) != 0 ||
+        s->plane[0].yblen % (1 << s->chroma_y_shift) != 0 ||
+        !s->plane[0].xblen || !s->plane[0].yblen) {
+        av_log(s->avctx, AV_LOG_ERROR,
+               "invalid x/y block length (%d/%d) for x/y chroma shift (%d/%d)\n",
+               s->plane[0].xblen, s->plane[0].yblen, s->chroma_x_shift, s->chroma_y_shift);
+        return AVERROR_INVALIDDATA;
+    }
     if (!s->plane[0].xbsep || !s->plane[0].ybsep || s->plane[0].xbsep < s->plane[0].xblen/2 || s->plane[0].ybsep < s->plane[0].yblen/2) {
         av_log(s->avctx, AV_LOG_ERROR, "Block separation too small\n");
         return -1;
