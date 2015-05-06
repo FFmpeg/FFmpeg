@@ -1911,22 +1911,27 @@ static av_always_inline void copy_c(uint8_t *dst, ptrdiff_t dst_stride,
                                     int w, int h)
 {
     do {
-        memcpy(dst, src, w);
+        memcpy(dst, src, w * sizeof(pixel));
 
         dst += dst_stride;
         src += src_stride;
     } while (--h);
 }
 
-static av_always_inline void avg_c(uint8_t *dst, ptrdiff_t dst_stride,
-                                   const uint8_t *src, ptrdiff_t src_stride,
+static av_always_inline void avg_c(uint8_t *_dst, ptrdiff_t dst_stride,
+                                   const uint8_t *_src, ptrdiff_t src_stride,
                                    int w, int h)
 {
+    pixel *dst = (pixel *) _dst;
+    const pixel *src = (const pixel *) _src;
+
+    dst_stride /= sizeof(pixel);
+    src_stride /= sizeof(pixel);
     do {
         int x;
 
         for (x = 0; x < w; x += 4)
-            AV_WN32A(&dst[x], rnd_avg32(AV_RN32A(&dst[x]), AV_RN32(&src[x])));
+            AV_WN4PA(&dst[x], rnd_avg_pixel4(AV_RN4PA(&dst[x]), AV_RN4P(&src[x])));
 
         dst += dst_stride;
         src += src_stride;
@@ -2010,7 +2015,7 @@ static const int16_t vp9_subpel_filters[3][16][8] = {
 };
 
 #define FILTER_8TAP(src, x, F, stride) \
-    av_clip_uint8((F[0] * src[x + -3 * stride] + \
+    av_clip_pixel((F[0] * src[x + -3 * stride] + \
                    F[1] * src[x + -2 * stride] + \
                    F[2] * src[x + -1 * stride] + \
                    F[3] * src[x + +0 * stride] + \
@@ -2019,11 +2024,16 @@ static const int16_t vp9_subpel_filters[3][16][8] = {
                    F[6] * src[x + +3 * stride] + \
                    F[7] * src[x + +4 * stride] + 64) >> 7)
 
-static av_always_inline void do_8tap_1d_c(uint8_t *dst, ptrdiff_t dst_stride,
-                                          const uint8_t *src, ptrdiff_t src_stride,
+static av_always_inline void do_8tap_1d_c(uint8_t *_dst, ptrdiff_t dst_stride,
+                                          const uint8_t *_src, ptrdiff_t src_stride,
                                           int w, int h, ptrdiff_t ds,
                                           const int16_t *filter, int avg)
 {
+    pixel *dst = (pixel *) _dst;
+    const pixel *src = (const pixel *) _src;
+
+    dst_stride /= sizeof(pixel);
+    src_stride /= sizeof(pixel);
     do {
         int x;
 
@@ -2047,21 +2057,25 @@ static av_noinline void opn##_8tap_1d_##dir##_c(uint8_t *dst, ptrdiff_t dst_stri
     do_8tap_1d_c(dst, dst_stride, src, src_stride, w, h, ds, filter, opa); \
 }
 
-filter_8tap_1d_fn(put, 0, v, src_stride)
+filter_8tap_1d_fn(put, 0, v, src_stride / sizeof(pixel))
 filter_8tap_1d_fn(put, 0, h, 1)
-filter_8tap_1d_fn(avg, 1, v, src_stride)
+filter_8tap_1d_fn(avg, 1, v, src_stride / sizeof(pixel))
 filter_8tap_1d_fn(avg, 1, h, 1)
 
 #undef filter_8tap_1d_fn
 
-static av_always_inline void do_8tap_2d_c(uint8_t *dst, ptrdiff_t dst_stride,
-                                          const uint8_t *src, ptrdiff_t src_stride,
+static av_always_inline void do_8tap_2d_c(uint8_t *_dst, ptrdiff_t dst_stride,
+                                          const uint8_t *_src, ptrdiff_t src_stride,
                                           int w, int h, const int16_t *filterx,
                                           const int16_t *filtery, int avg)
 {
     int tmp_h = h + 7;
-    uint8_t tmp[64 * 71], *tmp_ptr = tmp;
+    pixel tmp[64 * 71], *tmp_ptr = tmp;
+    pixel *dst = (pixel *) _dst;
+    const pixel *src = (const pixel *) _src;
 
+    dst_stride /= sizeof(pixel);
+    src_stride /= sizeof(pixel);
     src -= src_stride * 3;
     do {
         int x;
@@ -2125,10 +2139,15 @@ static void avg##_8tap_##type##_##sz##hv_c(uint8_t *dst, ptrdiff_t dst_stride, \
 #define FILTER_BILIN(src, x, mxy, stride) \
     (src[x] + ((mxy * (src[x + stride] - src[x]) + 8) >> 4))
 
-static av_always_inline void do_bilin_1d_c(uint8_t *dst, ptrdiff_t dst_stride,
-                                           const uint8_t *src, ptrdiff_t src_stride,
+static av_always_inline void do_bilin_1d_c(uint8_t *_dst, ptrdiff_t dst_stride,
+                                           const uint8_t *_src, ptrdiff_t src_stride,
                                            int w, int h, ptrdiff_t ds, int mxy, int avg)
 {
+    pixel *dst = (pixel *) _dst;
+    const pixel *src = (const pixel *) _src;
+
+    dst_stride /= sizeof(pixel);
+    src_stride /= sizeof(pixel);
     do {
         int x;
 
@@ -2152,20 +2171,24 @@ static av_noinline void opn##_bilin_1d_##dir##_c(uint8_t *dst, ptrdiff_t dst_str
     do_bilin_1d_c(dst, dst_stride, src, src_stride, w, h, ds, mxy, opa); \
 }
 
-bilin_1d_fn(put, 0, v, src_stride)
+bilin_1d_fn(put, 0, v, src_stride / sizeof(pixel))
 bilin_1d_fn(put, 0, h, 1)
-bilin_1d_fn(avg, 1, v, src_stride)
+bilin_1d_fn(avg, 1, v, src_stride / sizeof(pixel))
 bilin_1d_fn(avg, 1, h, 1)
 
 #undef bilin_1d_fn
 
-static av_always_inline void do_bilin_2d_c(uint8_t *dst, ptrdiff_t dst_stride,
-                                           const uint8_t *src, ptrdiff_t src_stride,
+static av_always_inline void do_bilin_2d_c(uint8_t *_dst, ptrdiff_t dst_stride,
+                                           const uint8_t *_src, ptrdiff_t src_stride,
                                            int w, int h, int mx, int my, int avg)
 {
-    uint8_t tmp[64 * 65], *tmp_ptr = tmp;
+    pixel tmp[64 * 65], *tmp_ptr = tmp;
     int tmp_h = h + 1;
+    pixel *dst = (pixel *) _dst;
+    const pixel *src = (const pixel *) _src;
 
+    dst_stride /= sizeof(pixel);
+    src_stride /= sizeof(pixel);
     do {
         int x;
 
@@ -2299,15 +2322,19 @@ static av_cold void vp9dsp_mc_init(VP9DSPContext *dsp)
 #undef init_subpel3
 }
 
-static av_always_inline void do_scaled_8tap_c(uint8_t *dst, ptrdiff_t dst_stride,
-                                              const uint8_t *src, ptrdiff_t src_stride,
+static av_always_inline void do_scaled_8tap_c(uint8_t *_dst, ptrdiff_t dst_stride,
+                                              const uint8_t *_src, ptrdiff_t src_stride,
                                               int w, int h, int mx, int my,
                                               int dx, int dy, int avg,
                                               const int16_t (*filters)[8])
 {
     int tmp_h = (((h - 1) * dy + my) >> 4) + 8;
-    uint8_t tmp[64 * 135], *tmp_ptr = tmp;
+    pixel tmp[64 * 135], *tmp_ptr = tmp;
+    pixel *dst = (pixel *) _dst;
+    const pixel *src = (const pixel *) _src;
 
+    dst_stride /= sizeof(pixel);
+    src_stride /= sizeof(pixel);
     src -= src_stride * 3;
     do {
         int x;
@@ -2369,14 +2396,18 @@ static void avg##_scaled_##type##_##sz##_c(uint8_t *dst, ptrdiff_t dst_stride, \
                         vp9_subpel_filters[type_idx]); \
 }
 
-static av_always_inline void do_scaled_bilin_c(uint8_t *dst, ptrdiff_t dst_stride,
-                                               const uint8_t *src, ptrdiff_t src_stride,
+static av_always_inline void do_scaled_bilin_c(uint8_t *_dst, ptrdiff_t dst_stride,
+                                               const uint8_t *_src, ptrdiff_t src_stride,
                                                int w, int h, int mx, int my,
                                                int dx, int dy, int avg)
 {
-    uint8_t tmp[64 * 129], *tmp_ptr = tmp;
+    pixel tmp[64 * 129], *tmp_ptr = tmp;
     int tmp_h = (((h - 1) * dy + my) >> 4) + 2;
+    pixel *dst = (pixel *) _dst;
+    const pixel *src = (const pixel *) _src;
 
+    dst_stride /= sizeof(pixel);
+    src_stride /= sizeof(pixel);
     do {
         int x;
         int imx = mx, ioff = 0;
