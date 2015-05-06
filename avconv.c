@@ -1161,13 +1161,8 @@ static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
     decoded_frame = ist->decoded_frame;
 
     ret = avcodec_decode_audio4(avctx, decoded_frame, got_output, pkt);
-    if (!*got_output || ret < 0) {
-        if (!pkt->size) {
-            for (i = 0; i < ist->nb_filters; i++)
-                av_buffersrc_add_frame(ist->filters[i]->filter, NULL);
-        }
+    if (!*got_output || ret < 0)
         return ret;
-    }
 
     ist->samples_decoded += decoded_frame->nb_samples;
     ist->frames_decoded++;
@@ -1257,13 +1252,8 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output)
 
     ret = avcodec_decode_video2(ist->dec_ctx,
                                 decoded_frame, got_output, pkt);
-    if (!*got_output || ret < 0) {
-        if (!pkt->size) {
-            for (i = 0; i < ist->nb_filters; i++)
-                av_buffersrc_add_frame(ist->filters[i]->filter, NULL);
-        }
+    if (!*got_output || ret < 0)
         return ret;
-    }
 
     ist->frames_decoded++;
 
@@ -1356,6 +1346,17 @@ static int transcode_subtitles(InputStream *ist, AVPacket *pkt, int *got_output)
     return ret;
 }
 
+static int send_filter_eof(InputStream *ist)
+{
+    int i, ret;
+    for (i = 0; i < ist->nb_filters; i++) {
+        ret = av_buffersrc_add_frame(ist->filters[i]->filter, NULL);
+        if (ret < 0)
+            return ret;
+    }
+    return 0;
+}
+
 /* pkt = NULL means EOF (needed to flush decoder buffers) */
 static int process_input_packet(InputStream *ist, const AVPacket *pkt)
 {
@@ -1426,6 +1427,15 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt)
         }
         if (!got_output) {
             continue;
+        }
+    }
+
+    /* after flushing, send an EOF on all the filter inputs attached to the stream */
+    if (!pkt && ist->decoding_needed) {
+        int ret = send_filter_eof(ist);
+        if (ret < 0) {
+            av_log(NULL, AV_LOG_FATAL, "Error marking filters as finished\n");
+            exit_program(1);
         }
     }
 
