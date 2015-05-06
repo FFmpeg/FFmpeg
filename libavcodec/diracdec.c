@@ -801,7 +801,10 @@ static int decode_lowdelay(DiracContext *s)
             slice_num++;
 
             buf     += bytes;
-            bufsize -= bytes*8;
+            if (bufsize/8 >= bytes)
+                bufsize -= bytes*8;
+            else
+                bufsize = 0;
         }
 
     avctx->execute(avctx, decode_lowdelay_slice, slices, NULL, slice_num,
@@ -881,7 +884,7 @@ static int dirac_unpack_prediction_parameters(DiracContext *s)
 
     if (idx > 4) {
         av_log(s->avctx, AV_LOG_ERROR, "Block prediction index too high\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     if (idx == 0) {
@@ -899,17 +902,25 @@ static int dirac_unpack_prediction_parameters(DiracContext *s)
     /*[DIRAC_STD] 11.2.4 motion_data_dimensions()
       Calculated in function dirac_unpack_block_motion_data */
 
+    if (s->plane[0].xblen % (1 << s->chroma_x_shift) != 0 ||
+        s->plane[0].yblen % (1 << s->chroma_y_shift) != 0 ||
+        !s->plane[0].xblen || !s->plane[0].yblen) {
+        av_log(s->avctx, AV_LOG_ERROR,
+               "invalid x/y block length (%d/%d) for x/y chroma shift (%d/%d)\n",
+               s->plane[0].xblen, s->plane[0].yblen, s->chroma_x_shift, s->chroma_y_shift);
+        return AVERROR_INVALIDDATA;
+    }
     if (!s->plane[0].xbsep || !s->plane[0].ybsep || s->plane[0].xbsep < s->plane[0].xblen/2 || s->plane[0].ybsep < s->plane[0].yblen/2) {
         av_log(s->avctx, AV_LOG_ERROR, "Block separation too small\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     if (s->plane[0].xbsep > s->plane[0].xblen || s->plane[0].ybsep > s->plane[0].yblen) {
         av_log(s->avctx, AV_LOG_ERROR, "Block separation greater than size\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     if (FFMAX(s->plane[0].xblen, s->plane[0].yblen) > MAX_BLOCKSIZE) {
         av_log(s->avctx, AV_LOG_ERROR, "Unsupported large block size\n");
-        return -1;
+        return AVERROR_PATCHWELCOME;
     }
 
     /*[DIRAC_STD] 11.2.5 Motion vector precision. motion_vector_precision()
@@ -917,7 +928,7 @@ static int dirac_unpack_prediction_parameters(DiracContext *s)
     s->mv_precision = svq3_get_ue_golomb(gb);
     if (s->mv_precision > 3) {
         av_log(s->avctx, AV_LOG_ERROR, "MV precision finer than eighth-pel\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     /*[DIRAC_STD] 11.2.6 Global motion. global_motion()
@@ -956,7 +967,7 @@ static int dirac_unpack_prediction_parameters(DiracContext *s)
       Picture prediction mode, not currently used. */
     if (svq3_get_ue_golomb(gb)) {
         av_log(s->avctx, AV_LOG_ERROR, "Unknown picture prediction mode\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     /* [DIRAC_STD] 11.2.8 Reference picture weight. reference_picture_weights()
@@ -988,7 +999,7 @@ static int dirac_unpack_idwt_params(DiracContext *s)
     tmp = svq3_get_ue_golomb(gb); \
     if (cond) { \
         av_log(s->avctx, AV_LOG_ERROR, errmsg); \
-        return -1; \
+        return AVERROR_INVALIDDATA; \
     }\
     dst = tmp;
 
@@ -1252,7 +1263,7 @@ static int dirac_unpack_block_motion_data(DiracContext *s)
         for (x = 0; x < s->sbwidth; x++) {
             unsigned int split  = dirac_get_arith_uint(arith, CTX_SB_F1, CTX_SB_DATA);
             if (split > 2)
-                return -1;
+                return AVERROR_INVALIDDATA;
             sbsplit[x] = (split + pred_sbsplit(sbsplit+x, s->sbwidth, x, y)) % 3;
         }
         sbsplit += s->sbwidth;
@@ -1620,9 +1631,10 @@ static int dirac_decode_frame_internal(DiracContext *s)
             memset(p->idwt_buf, 0, p->idwt_stride * p->idwt_height * sizeof(IDWTELEM));
             decode_component(s, comp); /* [DIRAC_STD] 13.4.1 core_transform_data() */
         }
-        if (ff_spatial_idwt_init2(&d, p->idwt_buf, p->idwt_width, p->idwt_height, p->idwt_stride,
-                                  s->wavelet_idx+2, s->wavelet_depth, p->idwt_tmp))
-            return -1;
+        ret = ff_spatial_idwt_init2(&d, p->idwt_buf, p->idwt_width, p->idwt_height, p->idwt_stride,
+                                    s->wavelet_idx+2, s->wavelet_depth, p->idwt_tmp);
+        if (ret < 0)
+            return ret;
 
         if (!s->num_refs) { /* intra */
             for (y = 0; y < p->height; y += 16) {
@@ -1702,8 +1714,9 @@ static int get_buffer_with_edge(AVCodecContext *avctx, AVFrame *f, int flags)
  */
 static int dirac_decode_picture_header(DiracContext *s)
 {
-    int retire, picnum;
-    int i, j, refnum, refdist;
+    unsigned retire, picnum;
+    int i, j, ret;
+    int64_t refdist, refnum;
     GetBitContext *gb = &s->gb;
 
     /* [DIRAC_STD] 11.1.1 Picture Header. picture_header() PICTURE_NUM */
@@ -1719,8 +1732,8 @@ static int dirac_decode_picture_header(DiracContext *s)
 
     s->ref_pics[0] = s->ref_pics[1] = NULL;
     for (i = 0; i < s->num_refs; i++) {
-        refnum = picnum + dirac_get_se_golomb(gb);
-        refdist = INT_MAX;
+        refnum = (picnum + dirac_get_se_golomb(gb)) & 0xFFFFFFFF;
+        refdist = INT64_MAX;
 
         /* find the closest reference to the one we want */
         /* Jordi: this is needed if the referenced picture hasn't yet arrived */
@@ -1742,11 +1755,17 @@ static int dirac_decode_picture_header(DiracContext *s)
                     get_buffer_with_edge(s->avctx, s->ref_pics[i]->avframe, AV_GET_BUFFER_FLAG_REF);
                     break;
                 }
+
+        if (!s->ref_pics[i]) {
+            av_log(s->avctx, AV_LOG_ERROR, "Reference could not be allocated\n");
+            return AVERROR_INVALIDDATA;
+        }
+
     }
 
     /* retire the reference frames that are not used anymore */
     if (s->current_picture->avframe->reference) {
-        retire = picnum + dirac_get_se_golomb(gb);
+        retire = (picnum + dirac_get_se_golomb(gb)) & 0xFFFFFFFF;
         if (retire != picnum) {
             DiracFrame *retire_pic = remove_frame(s->ref_frames, retire);
 
@@ -1764,13 +1783,16 @@ static int dirac_decode_picture_header(DiracContext *s)
     }
 
     if (s->num_refs) {
-        if (dirac_unpack_prediction_parameters(s))  /* [DIRAC_STD] 11.2 Picture Prediction Data. picture_prediction() */
-            return -1;
-        if (dirac_unpack_block_motion_data(s))      /* [DIRAC_STD] 12. Block motion data syntax                       */
-            return -1;
+        ret = dirac_unpack_prediction_parameters(s);  /* [DIRAC_STD] 11.2 Picture Prediction Data. picture_prediction() */
+        if (ret < 0)
+            return ret;
+        ret = dirac_unpack_block_motion_data(s);      /* [DIRAC_STD] 12. Block motion data syntax                       */
+        if (ret < 0)
+            return ret;
     }
-    if (dirac_unpack_idwt_params(s))                /* [DIRAC_STD] 11.3 Wavelet transform data                        */
-        return -1;
+    ret = dirac_unpack_idwt_params(s);                /* [DIRAC_STD] 11.3 Wavelet transform data                        */
+    if (ret < 0)
+        return ret;
 
     init_planes(s);
     return 0;
@@ -1815,11 +1837,13 @@ static int dirac_decode_data_unit(AVCodecContext *avctx, const uint8_t *buf, int
 {
     DiracContext *s   = avctx->priv_data;
     DiracFrame *pic   = NULL;
-    int ret, i, parse_code = buf[4];
+    int ret, i, parse_code;
     unsigned tmp;
 
     if (size < DATA_UNIT_HEADER_SIZE)
-        return -1;
+        return AVERROR_INVALIDDATA;
+
+    parse_code = buf[4];
 
     init_get_bits(&s->gb, &buf[13], 8*(size - DATA_UNIT_HEADER_SIZE));
 
@@ -1828,13 +1852,15 @@ static int dirac_decode_data_unit(AVCodecContext *avctx, const uint8_t *buf, int
             return 0;
 
         /* [DIRAC_STD] 10. Sequence header */
-        if (avpriv_dirac_parse_sequence_header(avctx, &s->gb, &s->source))
-            return -1;
+        ret = avpriv_dirac_parse_sequence_header(avctx, &s->gb, &s->source);
+        if (ret < 0)
+            return ret;
 
         avcodec_get_chroma_sub_sample(avctx->pix_fmt, &s->chroma_x_shift, &s->chroma_y_shift);
 
-        if (alloc_sequence_buffers(s))
-            return -1;
+        ret = alloc_sequence_buffers(s);
+        if (ret < 0)
+            return ret;
 
         s->seen_sequence_header = 1;
     } else if (parse_code == pc_eos) { /* [DIRAC_STD] End of Sequence */
@@ -1852,7 +1878,7 @@ static int dirac_decode_data_unit(AVCodecContext *avctx, const uint8_t *buf, int
     } else if (parse_code & 0x8) {  /* picture data unit */
         if (!s->seen_sequence_header) {
             av_log(avctx, AV_LOG_DEBUG, "Dropping frame without sequence header\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
 
         /* find an unused frame */
@@ -1861,7 +1887,7 @@ static int dirac_decode_data_unit(AVCodecContext *avctx, const uint8_t *buf, int
                 pic = &s->all_frames[i];
         if (!pic) {
             av_log(avctx, AV_LOG_ERROR, "framelist full\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
 
         av_frame_unref(pic->avframe);
@@ -1870,7 +1896,7 @@ static int dirac_decode_data_unit(AVCodecContext *avctx, const uint8_t *buf, int
         tmp            =  parse_code & 0x03;                   /* [DIRAC_STD] num_refs()      */
         if (tmp > 2) {
             av_log(avctx, AV_LOG_ERROR, "num_refs of 3\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         s->num_refs    = tmp;
         s->is_arith    = (parse_code & 0x48) == 0x08;          /* [DIRAC_STD] using_ac()      */
@@ -1890,12 +1916,14 @@ static int dirac_decode_data_unit(AVCodecContext *avctx, const uint8_t *buf, int
             return AVERROR(ENOMEM);
 
         /* [DIRAC_STD] 11.1 Picture parse. picture_parse() */
-        if (dirac_decode_picture_header(s))
-            return -1;
+        ret = dirac_decode_picture_header(s);
+        if (ret < 0)
+            return ret;
 
         /* [DIRAC_STD] 13.0 Transform data syntax. transform_data() */
-        if (dirac_decode_frame_internal(s))
-            return -1;
+        ret = dirac_decode_frame_internal(s);
+        if (ret < 0)
+            return ret;
     }
     return 0;
 }
@@ -1937,8 +1965,8 @@ static int dirac_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             break;
 
         data_unit_size = AV_RB32(buf+buf_idx+5);
-        if (buf_idx + data_unit_size > buf_size || !data_unit_size) {
-            if(buf_idx + data_unit_size > buf_size)
+        if (data_unit_size > buf_size - buf_idx || !data_unit_size) {
+            if(data_unit_size > buf_size - buf_idx)
             av_log(s->avctx, AV_LOG_ERROR,
                    "Data unit with size %d is larger than input buffer, discarding\n",
                    data_unit_size);
@@ -1946,10 +1974,11 @@ static int dirac_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             continue;
         }
         /* [DIRAC_STD] dirac_decode_data_unit makes reference to the while defined in 9.3 inside the function parse_sequence() */
-        if (dirac_decode_data_unit(avctx, buf+buf_idx, data_unit_size))
+        ret = dirac_decode_data_unit(avctx, buf+buf_idx, data_unit_size);
+        if (ret < 0)
         {
             av_log(s->avctx, AV_LOG_ERROR,"Error in dirac_decode_data_unit\n");
-            return -1;
+            return ret;
         }
         buf_idx += data_unit_size;
     }

@@ -31,6 +31,7 @@
 #include "vp9data.h"
 #include "vp9dsp.h"
 #include "libavutil/avassert.h"
+#include "libavutil/pixdesc.h"
 
 #define VP9_SYNCCODE 0x498342
 
@@ -641,7 +642,13 @@ static int decode_frame_header(AVCodecContext *ctx,
                 AVFrame *ref = s->refs[s->refidx[i]].f;
                 int refw = ref->width, refh = ref->height;
 
-                if (refw == w && refh == h) {
+                if (ref->format != fmt) {
+                    av_log(ctx, AV_LOG_ERROR,
+                           "Ref pixfmt (%s) did not match current frame (%s)",
+                           av_get_pix_fmt_name(ref->format),
+                           av_get_pix_fmt_name(fmt));
+                    return AVERROR_INVALIDDATA;
+                } else if (refw == w && refh == h) {
                     s->mvscale[i][0] = s->mvscale[i][1] = 0;
                 } else {
                     if (w * 2 < refw || h * 2 < refh || w > 16 * refw || h > 16 * refh) {
