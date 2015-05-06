@@ -263,6 +263,7 @@ Toolchain options:
   --enable-pic             build position-independent code
   --enable-thumb           compile for Thumb instruction set
   --enable-lto             use link-time optimization
+  --env="ENV=override"     override the environment variables
 
 Advanced options (experts only):
   --malloc-prefix=PREFIX   prefix malloc and related names with PREFIX
@@ -1668,6 +1669,7 @@ CMDLINE_SET="
     cpu
     cross_prefix
     dep_cc
+    env
     extra_version
     host_cc
     host_cflags
@@ -2538,6 +2540,10 @@ for opt do
             fi
         ;;
     esac
+done
+
+for e in "$env"; do
+    eval "export $e"
 done
 
 disabled logging && logfile=/dev/null
