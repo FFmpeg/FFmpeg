@@ -707,6 +707,16 @@ static int jpegls_probe(AVProbeData *p)
     return 0;
 }
 
+static int qdraw_probe(AVProbeData *p)
+{
+    const uint8_t *b = p->buf;
+
+    if (!b[10] && AV_RB32(b+11) == 0x1102ff0c && !b[15] ||
+        p->buf_size >= 528 && !b[522] && AV_RB32(b+523) == 0x1102ff0c && !b[527])
+        return AVPROBE_SCORE_EXTENSION + 1;
+    return 0;
+}
+
 static int pictor_probe(AVProbeData *p)
 {
     const uint8_t *b = p->buf;
@@ -793,6 +803,7 @@ IMAGEAUTO_DEMUXER(jpeg,    AV_CODEC_ID_MJPEG)
 IMAGEAUTO_DEMUXER(jpegls,  AV_CODEC_ID_JPEGLS)
 IMAGEAUTO_DEMUXER(pictor,  AV_CODEC_ID_PICTOR)
 IMAGEAUTO_DEMUXER(png,     AV_CODEC_ID_PNG)
+IMAGEAUTO_DEMUXER(qdraw,   AV_CODEC_ID_QDRAW)
 IMAGEAUTO_DEMUXER(sgi,     AV_CODEC_ID_SGI)
 IMAGEAUTO_DEMUXER(sunrast, AV_CODEC_ID_SUNRAST)
 IMAGEAUTO_DEMUXER(tiff,    AV_CODEC_ID_TIFF)
