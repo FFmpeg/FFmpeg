@@ -148,7 +148,7 @@ static void print_guid(ff_asf_guid *g)
 }
 #undef PRINT_IF_GUID
 #else
-#define print_guid(g)
+#define print_guid(g) while(0)
 #endif
 
 static int asf_probe(AVProbeData *pd)
