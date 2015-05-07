@@ -21,6 +21,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/common.h"
 #include "vp9dsp.h"
 
@@ -31,7 +32,7 @@ av_cold void ff_vp9dsp_init(VP9DSPContext *dsp, int bpp)
     } else if (bpp == 10) {
         ff_vp9dsp_init_10(dsp);
     } else {
-        assert(bpp == 12);
+        av_assert0(bpp == 12);
         ff_vp9dsp_init_12(dsp);
     }
 
