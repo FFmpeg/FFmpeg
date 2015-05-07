@@ -87,7 +87,7 @@ endef
 
 define FATE_VP9_PROFILE_SUITE
 FATE_VP9-$(CONFIG_MATROSKA_DEMUXER) += fate-vp9p$(2)-$(1)
-fate-vp9p$(2)-$(1): CMD = framemd5 -i $(TARGET_SAMPLES)/vp9-test-vectors/vp9$(2)-2-$(1).webm
+fate-vp9p$(2)-$(1): CMD = framemd5 -i $(TARGET_SAMPLES)/vp9-test-vectors/vp9$(2)-2-$(1).webm $(3)
 fate-vp9p$(2)-$(1): REF = $(SRC_PATH)/tests/ref/fate/vp9p$(2)-$(1)
 endef
 
@@ -98,6 +98,8 @@ VP9_Q = 00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 \
 VP9_SHARP = 1 2 3 4 5 6 7
 VP9_SIZE_A = 08 10 16 18 32 34 64 66
 VP9_SIZE_B = 196 198 200 202 208 210 224 226
+VP9_CHROMA_SUBSAMPLE = 422 440 444
+VP9_HIGH_BITDEPTH = 10 12
 
 define FATE_VP9_FULL
 $(foreach Q,$(VP9_Q),$(eval $(call FATE_VP9_SUITE,00-quantizer-$(Q))))
@@ -105,9 +107,9 @@ $(foreach SHARP,$(VP9_SHARP),$(eval $(call FATE_VP9_SUITE,01-sharpness-$(SHARP))
 $(foreach W,$(VP9_SIZE_A),$(eval $(foreach H,$(VP9_SIZE_A),$(eval $(call FATE_VP9_SUITE,02-size-$(W)x$(H))))))
 $(foreach W,$(VP9_SIZE_B),$(eval $(foreach H,$(VP9_SIZE_B),$(eval $(call FATE_VP9_SUITE,03-size-$(W)x$(H))))))
 $(eval $(call FATE_VP9_SUITE,03-deltaq))
-$(eval $(call FATE_VP9_PROFILE_SUITE,04-yuv444,1))
-$(eval $(call FATE_VP9_PROFILE_SUITE,04-yuv440,1))
-$(eval $(call FATE_VP9_PROFILE_SUITE,04-yuv422,1))
+$(foreach SS,$(VP9_CHROMA_SUBSAMPLE),$(eval $(call FATE_VP9_PROFILE_SUITE,04-yuv$(SS),1,)))
+$(foreach BD,$(VP9_HIGH_BITDEPTH),$(eval $(call FATE_VP9_PROFILE_SUITE,20-$(BD)bit-yuv420,2,-pix_fmt yuv420p$(BD)le)))
+$(foreach BD,$(VP9_HIGH_BITDEPTH),$(eval $(foreach SS,$(VP9_CHROMA_SUBSAMPLE),$(eval $(call FATE_VP9_PROFILE_SUITE,20-$(BD)bit-yuv$(SS),3,-pix_fmt yuv$(SS)p$(BD)le)))))
 $(eval $(call FATE_VP9_SUITE,06-bilinear))
 $(eval $(call FATE_VP9_SUITE,09-lf_deltas))
 $(eval $(call FATE_VP9_SUITE,10-show-existing-frame))

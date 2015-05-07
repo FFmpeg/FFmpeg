@@ -307,8 +307,10 @@ ipred_func(32, tm, avx2);
 
 #endif /* HAVE_YASM */
 
-av_cold void ff_vp9dsp_init_x86(VP9DSPContext *dsp)
+av_cold void ff_vp9dsp_init_x86(VP9DSPContext *dsp, int bpp)
 {
+    if (bpp != 8) return;
+
 #if HAVE_YASM
     int cpu_flags = av_get_cpu_flags();
 
