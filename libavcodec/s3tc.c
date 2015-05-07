@@ -71,8 +71,10 @@ static inline void dxt1_decode_pixels(GetByteContext *gb, uint32_t *d,
             pixels >>= 2;
             alpha  >>= 4;
         }
-        for (; x<4; x++)
+        for (; x<4; x++) {
             pixels >>= 2;
+            alpha  >>= 4;
+        }
         d += qstride;
     }
 }
