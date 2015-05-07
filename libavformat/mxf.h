@@ -111,7 +111,15 @@ const MXFSamplesPerFrame *ff_mxf_get_samples_per_frame(AVFormatContext *s, AVRat
            "%02x.%02x.%02x.%02x\n",                 \
             s, UID_ARG(x))
 #else
-#define PRINT_KEY(pc, s, x)
+#define PRINT_KEY(pc, s, x) do { if(0)              \
+    av_log(pc, AV_LOG_VERBOSE,                      \
+           "%s "                                    \
+           "0x%02x,0x%02x,0x%02x,0x%02x,"           \
+           "0x%02x,0x%02x,0x%02x,0x%02x,"           \
+           "0x%02x,0x%02x,0x%02x,0x%02x,"           \
+           "0x%02x,0x%02x,0x%02x,0x%02x ",          \
+            s, UID_ARG(x));                         \
+    }while(0)
 #endif
 
 #endif /* AVFORMAT_MXF_H */
