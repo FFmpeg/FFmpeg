@@ -98,7 +98,10 @@ static void jpeg_put_comments(AVCodecContext *avctx, PutBitContext *p)
         put_marker(p, APP0);
         put_bits(p, 16, 16);
         avpriv_put_string(p, "JFIF", 1); /* this puts the trailing zero-byte too */
-        put_bits(p, 16, 0x0201);         /* v 1.02 */
+        /* The most significant byte is used for major revisions, the least
+         * significant byte for minor revisions. Version 1.02 is the current
+         * released revision. */
+        put_bits(p, 16, 0x0102);
         put_bits(p,  8, 0);              /* units type: 0 - aspect ratio */
         put_bits(p, 16, avctx->sample_aspect_ratio.num);
         put_bits(p, 16, avctx->sample_aspect_ratio.den);
