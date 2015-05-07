@@ -535,6 +535,13 @@ static void free_apic(void *obj)
     av_freep(&apic);
 }
 
+static void rstrip_spaces(char *buf)
+{
+    size_t len = strlen(buf);
+    while (len > 0 && buf[len - 1] == ' ')
+        buf[--len] = 0;
+}
+
 static void read_apic(AVFormatContext *s, AVIOContext *pb, int taglen,
                       const char *tag, ID3v2ExtraMeta **extra_meta,
                       int isv34)
@@ -607,6 +614,10 @@ static void read_apic(AVFormatContext *s, AVIOContext *pb, int taglen,
     new_extra->data = apic;
     new_extra->next = *extra_meta;
     *extra_meta     = new_extra;
+
+    // The description must be unique, and some ID3v2 tag writers add spaces
+    // to write several APIC entries with the same description.
+    rstrip_spaces(apic->description);
 
     return;
 
