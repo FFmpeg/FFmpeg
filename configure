@@ -5110,8 +5110,8 @@ enabled libx264           && { use_pkg_config x264 "stdint.h x264.h" x264_encode
                              { check_cpp_condition x264.h "X264_BUILD >= 118" ||
                                die "ERROR: libx264 must be installed and version must be >= 0.118."; }
 enabled libx265           && require_pkg_config x265 x265.h x265_encoder_encode &&
-                             { check_cpp_condition x265.h "X265_BUILD >= 17" ||
-                               die "ERROR: libx265 version must be >= 17."; }
+                             { check_cpp_condition x265.h "X265_BUILD >= 57" ||
+                               die "ERROR: libx265 version must be >= 57."; }
 enabled libxavs           && require libxavs xavs.h xavs_encoder_encode -lxavs
 enabled libxvid           && require libxvid xvid.h xvid_global -lxvidcore
 enabled libzmq            && require_pkg_config libzmq zmq.h zmq_ctx_new
