@@ -1765,9 +1765,9 @@ static void show_packet(WriterContext *w, AVFormatContext *fmt_ctx, AVPacket *pk
         writer_print_section_header(w, SECTION_ID_PACKET_SIDE_DATA_LIST);
         for (i = 0; i < pkt->side_data_elems; i++) {
             AVPacketSideData *sd = &pkt->side_data[i];
-            const char *name;
+            const char *name = av_packet_side_data_name(sd->type);
             writer_print_section_header(w, SECTION_ID_PACKET_SIDE_DATA);
-            print_str("side_data_type", "unknown");
+            print_str("side_data_type", name ? name : "unknown");
             print_int("side_data_size", sd->size);
             if (sd->type == AV_PKT_DATA_DISPLAYMATRIX && sd->size >= 9*4) {
                 writer_print_integers(w, "displaymatrix", sd->data, 9, " %11d", 3, 4, 1);
@@ -2306,9 +2306,10 @@ static int show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_id
         writer_print_section_header(w, SECTION_ID_STREAM_SIDE_DATA_LIST);
         for (i = 0; i < stream->nb_side_data; i++) {
             AVPacketSideData *sd = &stream->side_data[i];
-            const char *name;
+            const char *name = av_packet_side_data_name(sd->type);
+
             writer_print_section_header(w, SECTION_ID_STREAM_SIDE_DATA);
-            print_str("side_data_type", "unknown");
+            print_str("side_data_type", name ? name : "unknown");
             print_int("side_data_size", sd->size);
             if (sd->type == AV_PKT_DATA_DISPLAYMATRIX && sd->size >= 9*4) {
                 writer_print_integers(w, "displaymatrix", sd->data, 9, " %11d", 3, 4, 1);
