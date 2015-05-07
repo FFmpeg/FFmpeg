@@ -872,7 +872,6 @@ static void init_planes(DiracContext *s)
 static int dirac_unpack_prediction_parameters(DiracContext *s)
 {
     static const uint8_t default_blen[] = { 4, 12, 16, 24 };
-    static const uint8_t default_bsep[] = { 4,  8, 12, 16 };
 
     GetBitContext *gb = &s->gb;
     unsigned idx, ref;
@@ -896,8 +895,8 @@ static int dirac_unpack_prediction_parameters(DiracContext *s)
         /*[DIRAC_STD] preset_block_params(index). Table 11.1 */
         s->plane[0].xblen = default_blen[idx-1];
         s->plane[0].yblen = default_blen[idx-1];
-        s->plane[0].xbsep = default_bsep[idx-1];
-        s->plane[0].ybsep = default_bsep[idx-1];
+        s->plane[0].xbsep = 4 * idx;
+        s->plane[0].ybsep = 4 * idx;
     }
     /*[DIRAC_STD] 11.2.4 motion_data_dimensions()
       Calculated in function dirac_unpack_block_motion_data */

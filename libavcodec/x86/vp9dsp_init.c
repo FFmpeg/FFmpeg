@@ -307,10 +307,13 @@ ipred_func(32, tm, avx2);
 
 #endif /* HAVE_YASM */
 
-av_cold void ff_vp9dsp_init_x86(VP9DSPContext *dsp)
+av_cold void ff_vp9dsp_init_x86(VP9DSPContext *dsp, int bpp)
 {
 #if HAVE_YASM
-    int cpu_flags = av_get_cpu_flags();
+    int cpu_flags;
+    if (bpp != 8) return;
+
+    cpu_flags = av_get_cpu_flags();
 
 #define init_fpel(idx1, idx2, sz, type, opt) \
     dsp->mc[idx1][FILTER_8TAP_SMOOTH ][idx2][0][0] = \

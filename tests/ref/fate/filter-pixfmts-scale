@@ -78,6 +78,10 @@ yuv422p16le         7200f2405f7b979bc29f5446653d1fbe
 yuv422p9be          4c44d041f51b499fe419c51be0831c12
 yuv422p9le          b48e78a8a6a3f88269b4f5f810b75603
 yuv440p             a9dd3fab4320c3c9b0eb01d2bf75acb9
+yuv440p10be         e79d6857dd66adf03fd90b7c4ba1a4f8
+yuv440p10le         9cf6444970548a93ec8ceb0e3e4244bc
+yuv440p12be         66eb24b71083413d2ece3ce9f9527b90
+yuv440p12le         d6b60a9453e2ec0c8e487fc82d8b476a
 yuv444p             77387910c01eacca94793a9be37c1aa1
 yuv444p10be         b4e8cef69cb2ad2c24e795325a1d883c
 yuv444p10le         83855dd296a1859c085193c1edbb35e2

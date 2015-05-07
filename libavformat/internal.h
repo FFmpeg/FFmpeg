@@ -34,7 +34,7 @@
 #ifdef DEBUG
 #    define hex_dump_debug(class, buf, size) av_hex_dump_log(class, AV_LOG_DEBUG, buf, size)
 #else
-#    define hex_dump_debug(class, buf, size)
+#    define hex_dump_debug(class, buf, size) do { if (0) av_hex_dump_log(class, AV_LOG_DEBUG, buf, size); } while(0)
 #endif
 
 typedef struct AVCodecTag {

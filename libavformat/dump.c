@@ -293,6 +293,49 @@ static void dump_stereo3d(void *ctx, AVPacketSideData *sd)
         av_log(ctx, AV_LOG_INFO, " (inverted)");
 }
 
+static void dump_audioservicetype(void *ctx, AVPacketSideData *sd)
+{
+    enum AVAudioServiceType *ast = (enum AVAudioServiceType *)sd->data;
+
+    if (sd->size < sizeof(*ast)) {
+        av_log(ctx, AV_LOG_INFO, "invalid data");
+        return;
+    }
+
+    switch (*ast) {
+    case AV_AUDIO_SERVICE_TYPE_MAIN:
+        av_log(ctx, AV_LOG_INFO, "main");
+        break;
+    case AV_AUDIO_SERVICE_TYPE_EFFECTS:
+        av_log(ctx, AV_LOG_INFO, "effects");
+        break;
+    case AV_AUDIO_SERVICE_TYPE_VISUALLY_IMPAIRED:
+        av_log(ctx, AV_LOG_INFO, "visually impaired");
+        break;
+    case AV_AUDIO_SERVICE_TYPE_HEARING_IMPAIRED:
+        av_log(ctx, AV_LOG_INFO, "hearing impaired");
+        break;
+    case AV_AUDIO_SERVICE_TYPE_DIALOGUE:
+        av_log(ctx, AV_LOG_INFO, "dialogue");
+        break;
+    case AV_AUDIO_SERVICE_TYPE_COMMENTARY:
+        av_log(ctx, AV_LOG_INFO, "comentary");
+        break;
+    case AV_AUDIO_SERVICE_TYPE_EMERGENCY:
+        av_log(ctx, AV_LOG_INFO, "emergency");
+        break;
+    case AV_AUDIO_SERVICE_TYPE_VOICE_OVER:
+        av_log(ctx, AV_LOG_INFO, "voice over");
+        break;
+    case AV_AUDIO_SERVICE_TYPE_KARAOKE:
+        av_log(ctx, AV_LOG_INFO, "karaoke");
+        break;
+    default:
+        av_log(ctx, AV_LOG_WARNING, "unknown");
+        break;
+    }
+}
+
 static void dump_sidedata(void *ctx, AVStream *st, const char *indent)
 {
     int i;
@@ -329,6 +372,10 @@ static void dump_sidedata(void *ctx, AVStream *st, const char *indent)
         case AV_PKT_DATA_STEREO3D:
             av_log(ctx, AV_LOG_INFO, "stereo3d: ");
             dump_stereo3d(ctx, &sd);
+            break;
+        case AV_PKT_DATA_AUDIO_SERVICE_TYPE:
+            av_log(ctx, AV_LOG_INFO, "audio service type: ");
+            dump_audioservicetype(ctx, &sd);
             break;
         default:
             av_log(ctx, AV_LOG_WARNING,

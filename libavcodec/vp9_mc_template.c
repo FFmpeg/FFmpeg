@@ -40,6 +40,7 @@ static void FN(inter_pred)(AVCodecContext *ctx)
     AVFrame *ref1 = tref1->f, *ref2;
     int w1 = ref1->width, h1 = ref1->height, w2, h2;
     ptrdiff_t ls_y = s->y_stride, ls_uv = s->uv_stride;
+    int bytesperpixel = BYTES_PER_PIXEL;
 
     if (b->comp) {
         tref2 = &s->refs[s->refidx[b->ref[1]]];
@@ -138,7 +139,7 @@ static void FN(inter_pred)(AVCodecContext *ctx)
             mc_luma_dir(s, mc[4][b->filter][0], s->dst[0], ls_y,
                         ref1->data[0], ref1->linesize[0], tref1,
                         row << 3, col << 3, &b->mv[0][0], 4, 8, w1, h1, 0);
-            mc_luma_dir(s, mc[4][b->filter][0], s->dst[0] + 4, ls_y,
+            mc_luma_dir(s, mc[4][b->filter][0], s->dst[0] + 4 * bytesperpixel, ls_y,
                         ref1->data[0], ref1->linesize[0], tref1,
                         row << 3, (col << 3) + 4, &b->mv[1][0], 4, 8, w1, h1, 0);
             h1 = (h1 + s->ss_v) >> s->ss_v;
@@ -159,7 +160,8 @@ static void FN(inter_pred)(AVCodecContext *ctx)
                               row << (3 - s->ss_v), col << 3,
                               &b->mv[0][0], 4, 8 >> s->ss_v, w1, h1, 0);
                 mc_chroma_dir(s, mc[4][b->filter][0],
-                              s->dst[1] + 4, s->dst[2] + 4, ls_uv,
+                              s->dst[1] + 4 * bytesperpixel,
+                              s->dst[2] + 4 * bytesperpixel, ls_uv,
                               ref1->data[1], ref1->linesize[1],
                               ref1->data[2], ref1->linesize[2], tref1,
                               row << (3 - s->ss_v), (col << 3) + 4,
@@ -170,7 +172,7 @@ static void FN(inter_pred)(AVCodecContext *ctx)
                 mc_luma_dir(s, mc[4][b->filter][1], s->dst[0], ls_y,
                             ref2->data[0], ref2->linesize[0], tref2,
                             row << 3, col << 3, &b->mv[0][1], 4, 8, w2, h2, 1);
-                mc_luma_dir(s, mc[4][b->filter][1], s->dst[0] + 4, ls_y,
+                mc_luma_dir(s, mc[4][b->filter][1], s->dst[0] + 4 * bytesperpixel, ls_y,
                             ref2->data[0], ref2->linesize[0], tref2,
                             row << 3, (col << 3) + 4, &b->mv[1][1], 4, 8, w2, h2, 1);
                 h2 = (h2 + s->ss_v) >> s->ss_v;
@@ -191,7 +193,8 @@ static void FN(inter_pred)(AVCodecContext *ctx)
                                   row << (3 - s->ss_v), col << 3,
                                   &b->mv[0][1], 4, 8 >> s->ss_v, w2, h2, 1);
                     mc_chroma_dir(s, mc[4][b->filter][1],
-                                  s->dst[1] + 4, s->dst[2] + 4, ls_uv,
+                                  s->dst[1] + 4 * bytesperpixel,
+                                  s->dst[2] + 4 * bytesperpixel, ls_uv,
                                   ref2->data[1], ref2->linesize[1],
                                   ref2->data[2], ref2->linesize[2], tref2,
                                   row << (3 - s->ss_v), (col << 3) + 4,
@@ -206,7 +209,7 @@ static void FN(inter_pred)(AVCodecContext *ctx)
             mc_luma_dir(s, mc[4][b->filter][0], s->dst[0], ls_y,
                         ref1->data[0], ref1->linesize[0], tref1,
                         row << 3, col << 3, &b->mv[0][0], 4, 4, w1, h1, 0);
-            mc_luma_dir(s, mc[4][b->filter][0], s->dst[0] + 4, ls_y,
+            mc_luma_dir(s, mc[4][b->filter][0], s->dst[0] + 4 * bytesperpixel, ls_y,
                         ref1->data[0], ref1->linesize[0], tref1,
                         row << 3, (col << 3) + 4, &b->mv[1][0], 4, 4, w1, h1, 0);
             mc_luma_dir(s, mc[4][b->filter][0],
@@ -214,7 +217,7 @@ static void FN(inter_pred)(AVCodecContext *ctx)
                         ref1->data[0], ref1->linesize[0], tref1,
                         (row << 3) + 4, col << 3, &b->mv[2][0], 4, 4, w1, h1, 0);
             mc_luma_dir(s, mc[4][b->filter][0],
-                        s->dst[0] + 4 * ls_y + 4, ls_y,
+                        s->dst[0] + 4 * ls_y + 4 * bytesperpixel, ls_y,
                         ref1->data[0], ref1->linesize[0], tref1,
                         (row << 3) + 4, (col << 3) + 4, &b->mv[3][0], 4, 4, w1, h1, 0);
             if (s->ss_v) {
@@ -239,7 +242,8 @@ static void FN(inter_pred)(AVCodecContext *ctx)
                                   &uvmv, 4, 4, w1, h1, 0);
                     uvmv = ROUNDED_DIV_MVx2(b->mv[1][0], b->mv[3][0]);
                     mc_chroma_dir(s, mc[4][b->filter][0],
-                                  s->dst[1] + 4, s->dst[2] + 4, ls_uv,
+                                  s->dst[1] + 4 * bytesperpixel,
+                                  s->dst[2] + 4 * bytesperpixel, ls_uv,
                                   ref1->data[1], ref1->linesize[1],
                                   ref1->data[2], ref1->linesize[2], tref1,
                                   row << 2, (col << 3) + 4,
@@ -273,7 +277,8 @@ static void FN(inter_pred)(AVCodecContext *ctx)
                                   row << 3, col << 3,
                                   &b->mv[0][0], 4, 4, w1, h1, 0);
                     mc_chroma_dir(s, mc[4][b->filter][0],
-                                  s->dst[1] + 4, s->dst[2] + 4, ls_uv,
+                                  s->dst[1] + 4 * bytesperpixel,
+                                  s->dst[2] + 4 * bytesperpixel, ls_uv,
                                   ref1->data[1], ref1->linesize[1],
                                   ref1->data[2], ref1->linesize[2], tref1,
                                   row << 3, (col << 3) + 4,
@@ -285,7 +290,8 @@ static void FN(inter_pred)(AVCodecContext *ctx)
                                   (row << 3) + 4, col << 3,
                                   &b->mv[2][0], 4, 4, w1, h1, 0);
                     mc_chroma_dir(s, mc[4][b->filter][0],
-                                  s->dst[1] + 4 * ls_uv + 4, s->dst[2] + 4 * ls_uv + 4, ls_uv,
+                                  s->dst[1] + 4 * ls_uv + 4 * bytesperpixel,
+                                  s->dst[2] + 4 * ls_uv + 4 * bytesperpixel, ls_uv,
                                   ref1->data[1], ref1->linesize[1],
                                   ref1->data[2], ref1->linesize[2], tref1,
                                   (row << 3) + 4, (col << 3) + 4,
@@ -297,7 +303,7 @@ static void FN(inter_pred)(AVCodecContext *ctx)
                 mc_luma_dir(s, mc[4][b->filter][1], s->dst[0], ls_y,
                             ref2->data[0], ref2->linesize[0], tref2,
                             row << 3, col << 3, &b->mv[0][1], 4, 4, w2, h2, 1);
-                mc_luma_dir(s, mc[4][b->filter][1], s->dst[0] + 4, ls_y,
+                mc_luma_dir(s, mc[4][b->filter][1], s->dst[0] + 4 * bytesperpixel, ls_y,
                             ref2->data[0], ref2->linesize[0], tref2,
                             row << 3, (col << 3) + 4, &b->mv[1][1], 4, 4, w2, h2, 1);
                 mc_luma_dir(s, mc[4][b->filter][1],
@@ -305,7 +311,7 @@ static void FN(inter_pred)(AVCodecContext *ctx)
                             ref2->data[0], ref2->linesize[0], tref2,
                             (row << 3) + 4, col << 3, &b->mv[2][1], 4, 4, w2, h2, 1);
                 mc_luma_dir(s, mc[4][b->filter][1],
-                            s->dst[0] + 4 * ls_y + 4, ls_y,
+                            s->dst[0] + 4 * ls_y + 4 * bytesperpixel, ls_y,
                             ref2->data[0], ref2->linesize[0], tref2,
                             (row << 3) + 4, (col << 3) + 4, &b->mv[3][1], 4, 4, w2, h2, 1);
                 if (s->ss_v) {
@@ -330,7 +336,8 @@ static void FN(inter_pred)(AVCodecContext *ctx)
                                       &uvmv, 4, 4, w2, h2, 1);
                         uvmv = ROUNDED_DIV_MVx2(b->mv[1][1], b->mv[3][1]);
                         mc_chroma_dir(s, mc[4][b->filter][1],
-                                      s->dst[1] + 4, s->dst[2] + 4, ls_uv,
+                                      s->dst[1] + 4 * bytesperpixel,
+                                      s->dst[2] + 4 * bytesperpixel, ls_uv,
                                       ref2->data[1], ref2->linesize[1],
                                       ref2->data[2], ref2->linesize[2], tref2,
                                       row << 2, (col << 3) + 4,
@@ -364,7 +371,8 @@ static void FN(inter_pred)(AVCodecContext *ctx)
                                       row << 3, col << 3,
                                       &b->mv[0][1], 4, 4, w2, h2, 1);
                         mc_chroma_dir(s, mc[4][b->filter][1],
-                                      s->dst[1] + 4, s->dst[2] + 4, ls_uv,
+                                      s->dst[1] + 4 * bytesperpixel,
+                                      s->dst[2] + 4 * bytesperpixel, ls_uv,
                                       ref2->data[1], ref2->linesize[1],
                                       ref2->data[2], ref2->linesize[2], tref2,
                                       row << 3, (col << 3) + 4,
@@ -376,7 +384,8 @@ static void FN(inter_pred)(AVCodecContext *ctx)
                                       (row << 3) + 4, col << 3,
                                       &b->mv[2][1], 4, 4, w2, h2, 1);
                         mc_chroma_dir(s, mc[4][b->filter][1],
-                                      s->dst[1] + 4 * ls_uv + 4, s->dst[2] + 4 * ls_uv + 4, ls_uv,
+                                      s->dst[1] + 4 * ls_uv + 4 * bytesperpixel,
+                                      s->dst[2] + 4 * ls_uv + 4 * bytesperpixel, ls_uv,
                                       ref2->data[1], ref2->linesize[1],
                                       ref2->data[2], ref2->linesize[2], tref2,
                                       (row << 3) + 4, (col << 3) + 4,

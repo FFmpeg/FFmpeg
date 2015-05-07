@@ -339,6 +339,7 @@ void av_register_all(void)
     REGISTER_DEMUXER (IMAGE_JPEGLS_PIPE,     image_jpegls_pipe);
     REGISTER_DEMUXER (IMAGE_PICTOR_PIPE,     image_pictor_pipe);
     REGISTER_DEMUXER (IMAGE_PNG_PIPE,        image_png_pipe);
+    REGISTER_DEMUXER (IMAGE_QDRAW_PIPE,      image_qdraw_pipe);
     REGISTER_DEMUXER (IMAGE_SGI_PIPE,        image_sgi_pipe);
     REGISTER_DEMUXER (IMAGE_SUNRAST_PIPE,    image_sunrast_pipe);
     REGISTER_DEMUXER (IMAGE_TIFF_PIPE,       image_tiff_pipe);
