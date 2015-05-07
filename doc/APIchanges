@@ -18,6 +18,9 @@ API changes, most recent first:
 2015-05-07 - xxxxxxx - 56.38.100 - avcodec.h
   Add av_packet_side_data_name().
 
+2015-05-07 - 01e59d4 - 56.37.102 - avcodec.h
+  Add FF_PROFILE_VP9_2 and FF_PROFILE_VP9_3.
+
 2015-05-04 - xxxxxxx - 56.37.100 - avcodec.h
   Add FF_PROFILE_VP9_0 and FF_PROFILE_VP9_1.
 
