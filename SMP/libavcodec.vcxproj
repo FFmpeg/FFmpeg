@@ -1277,6 +1277,12 @@
     </ClCompile>
     <ClCompile Include="..\libavcodec\vp9dsp.c">
     </ClCompile>
+    <ClCompile Include="..\libavcodec\vp9dsp_8bpp.c">
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\vp9dsp_10bpp.c">
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\vp9dsp_12bpp.c">
+    </ClCompile>
     <ClCompile Include="..\libavcodec\vqavideo.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\wavpack.c">

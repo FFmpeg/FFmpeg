@@ -1898,6 +1898,15 @@
     <ClCompile Include="..\libavcodec\vp9dsp.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\vp9dsp_8bpp.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\vp9dsp_10bpp.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\vp9dsp_12bpp.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\vqavideo.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
