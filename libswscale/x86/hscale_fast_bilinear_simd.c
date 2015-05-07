@@ -75,7 +75,6 @@ av_cold int ff_init_hscaler_mmxext(int dstW, int xInc, uint8_t *filterCode,
         "add                         $8, %%"REG_a"      \n\t"
         // End
         "9:                                             \n\t"
-        // "int $3                                         \n\t"
         "lea       " LOCAL_MANGLE(0b) ", %0             \n\t"
         "lea       " LOCAL_MANGLE(1b) ", %1             \n\t"
         "lea       " LOCAL_MANGLE(2b) ", %2             \n\t"
@@ -113,7 +112,6 @@ av_cold int ff_init_hscaler_mmxext(int dstW, int xInc, uint8_t *filterCode,
         "add                         $8, %%"REG_a"      \n\t"
         // End
         "9:                                             \n\t"
-        // "int                       $3                   \n\t"
         "lea       " LOCAL_MANGLE(0b) ", %0             \n\t"
         "lea       " LOCAL_MANGLE(1b) ", %1             \n\t"
         "lea       " LOCAL_MANGLE(2b) ", %2             \n\t"
