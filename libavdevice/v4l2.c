@@ -521,12 +521,15 @@ static int mmap_read_frame(AVFormatContext *ctx, AVPacket *pkt)
     // always keep at least one buffer queued
     av_assert0(avpriv_atomic_int_get(&s->buffers_queued) >= 1);
 
+#ifdef V4L2_BUF_FLAG_ERROR
     if (buf.flags & V4L2_BUF_FLAG_ERROR) {
         av_log(ctx, AV_LOG_WARNING,
                "Dequeued v4l2 buffer contains corrupted data (%d bytes).\n",
                buf.bytesused);
         buf.bytesused = 0;
-    } else {
+    } else
+#endif
+    {
         /* CPIA is a compressed format and we don't know the exact number of bytes
          * used by a frame, so set it here as the driver announces it. */
         if (ctx->video_codec_id == AV_CODEC_ID_CPIA)
