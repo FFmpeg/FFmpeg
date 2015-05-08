@@ -286,7 +286,7 @@ static void list_formats(AVFormatContext *ctx, int type)
         } else if (vfd.flags & V4L2_FMT_FLAG_COMPRESSED &&
                    type & V4L_COMPFORMATS) {
             const AVCodecDescriptor *desc = avcodec_descriptor_get(codec_id);
-            av_log(ctx, AV_LOG_INFO, "Compressedll      : %9s : %20s :",
+            av_log(ctx, AV_LOG_INFO, "Compressed: %9s : %20s :",
                    desc ? desc->name : "Unsupported",
                    vfd.description);
         } else {
