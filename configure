@@ -1577,6 +1577,9 @@ ARCH_EXT_LIST_MIPS="
     mipsdspr1
     mipsdspr2
     msa
+"
+
+ARCH_EXT_LIST_LOONGSON="
     loongson3
 "
 
@@ -1617,7 +1620,7 @@ ARCH_EXT_LIST="
     $ARCH_EXT_LIST_PPC
     $ARCH_EXT_LIST_X86
     $ARCH_EXT_LIST_MIPS
-    loongson
+    $ARCH_EXT_LIST_LOONGSON
 "
 
 ARCH_FEATURES="
