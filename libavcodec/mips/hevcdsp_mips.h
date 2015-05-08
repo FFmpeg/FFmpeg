@@ -106,4 +106,13 @@ UNI_MC(qpel, v, 32);
 UNI_MC(qpel, v, 48);
 UNI_MC(qpel, v, 64);
 
+UNI_MC(qpel, hv, 4);
+UNI_MC(qpel, hv, 8);
+UNI_MC(qpel, hv, 12);
+UNI_MC(qpel, hv, 16);
+UNI_MC(qpel, hv, 24);
+UNI_MC(qpel, hv, 32);
+UNI_MC(qpel, hv, 48);
+UNI_MC(qpel, hv, 64);
+
 #undef UNI_MC

@@ -87,6 +87,15 @@ static av_cold void hevc_dsp_init_msa(HEVCDSPContext *c,
         c->put_hevc_qpel_uni[7][1][0] = ff_hevc_put_hevc_uni_qpel_v32_8_msa;
         c->put_hevc_qpel_uni[8][1][0] = ff_hevc_put_hevc_uni_qpel_v48_8_msa;
         c->put_hevc_qpel_uni[9][1][0] = ff_hevc_put_hevc_uni_qpel_v64_8_msa;
+
+        c->put_hevc_qpel_uni[1][1][1] = ff_hevc_put_hevc_uni_qpel_hv4_8_msa;
+        c->put_hevc_qpel_uni[3][1][1] = ff_hevc_put_hevc_uni_qpel_hv8_8_msa;
+        c->put_hevc_qpel_uni[4][1][1] = ff_hevc_put_hevc_uni_qpel_hv12_8_msa;
+        c->put_hevc_qpel_uni[5][1][1] = ff_hevc_put_hevc_uni_qpel_hv16_8_msa;
+        c->put_hevc_qpel_uni[6][1][1] = ff_hevc_put_hevc_uni_qpel_hv24_8_msa;
+        c->put_hevc_qpel_uni[7][1][1] = ff_hevc_put_hevc_uni_qpel_hv32_8_msa;
+        c->put_hevc_qpel_uni[8][1][1] = ff_hevc_put_hevc_uni_qpel_hv48_8_msa;
+        c->put_hevc_qpel_uni[9][1][1] = ff_hevc_put_hevc_uni_qpel_hv64_8_msa;
     }
 }
 #endif  // #if HAVE_MSA
