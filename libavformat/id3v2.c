@@ -763,7 +763,10 @@ int ff_id3v2_parse_apic(AVFormatContext *s, ID3v2ExtraMeta **extra_meta)
         st->disposition      |= AV_DISPOSITION_ATTACHED_PIC;
         st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
         st->codec->codec_id   = apic->id;
-        av_dict_set(&st->metadata, "title",   apic->description, 0);
+
+        if (apic->description[0])
+            av_dict_set(&st->metadata, "title", apic->description, 0);
+
         av_dict_set(&st->metadata, "comment", apic->type, 0);
 
         av_init_packet(&st->attached_pic);
