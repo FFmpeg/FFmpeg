@@ -99,12 +99,14 @@ static void vc1_put_signed_blocks_clamped(VC1Context *v)
             s->idsp.put_signed_pixels_clamped(v->block[v->topleft_blk_idx][3],
                                               s->dest[0] - v_dist * s->linesize - 8,
                                               stride_y);
+            if (!CONFIG_GRAY || !(s->flags & CODEC_FLAG_GRAY)) {
             s->idsp.put_signed_pixels_clamped(v->block[v->topleft_blk_idx][4],
                                               s->dest[1] - 8 * s->uvlinesize - 8,
                                               s->uvlinesize);
             s->idsp.put_signed_pixels_clamped(v->block[v->topleft_blk_idx][5],
                                               s->dest[2] - 8 * s->uvlinesize - 8,
                                               s->uvlinesize);
+            }
         }
         if (s->mb_x == s->mb_width - 1) {
             top_mb_pos = (s->mb_y - 1) * s->mb_stride + s->mb_x;
@@ -124,12 +126,14 @@ static void vc1_put_signed_blocks_clamped(VC1Context *v)
             s->idsp.put_signed_pixels_clamped(v->block[v->top_blk_idx][3],
                                               s->dest[0] - v_dist * s->linesize + 8,
                                               stride_y);
+            if (!CONFIG_GRAY || !(s->flags & CODEC_FLAG_GRAY)) {
             s->idsp.put_signed_pixels_clamped(v->block[v->top_blk_idx][4],
                                               s->dest[1] - 8 * s->uvlinesize,
                                               s->uvlinesize);
             s->idsp.put_signed_pixels_clamped(v->block[v->top_blk_idx][5],
                                               s->dest[2] - 8 * s->uvlinesize,
                                               s->uvlinesize);
+            }
         }
     }
 
