@@ -645,6 +645,8 @@ static av_cold int png_dec_init(AVCodecContext *avctx)
 {
     PNGDecContext *s = avctx->priv_data;
 
+    avctx->color_range = AVCOL_RANGE_JPEG;
+
     s->prev = av_frame_alloc();
     if (!s->prev)
         return AVERROR(ENOMEM);
