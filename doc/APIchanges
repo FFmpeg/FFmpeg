@@ -15,22 +15,28 @@ libavutil:     2014-08-09
 
 API changes, most recent first:
 
-2015-05-04 - xxxxxxx - 56.37.100 - avcodec.h
+2015-05-07 - a7dd933 - 56.38.100 - avcodec.h
+  Add av_packet_side_data_name().
+
+2015-05-07 - 01e59d4 - 56.37.102 - avcodec.h
+  Add FF_PROFILE_VP9_2 and FF_PROFILE_VP9_3.
+
+2015-05-04 - 079b7f6 - 56.37.100 - avcodec.h
   Add FF_PROFILE_VP9_0 and FF_PROFILE_VP9_1.
 
-2015-xx-xx - xxxxxxx - lavf 56.xx.xxx - avformat.h
+2015-04-22 - 748d481 - lavf 56.31.100 - avformat.h
   Add AVFMT_FLAG_FAST_SEEK flag. Some formats (initially mp3) use it to enable
   fast, but inaccurate seeking.
 
-2015-xx-xx - xxxxxxx - lavu 54.12.0
+2015-04-20 - 8e8219e / c253340 - lavu 54.23.100 / 54.12.0 - log.h
   Add AV_LOG_TRACE for extremely verbose debugging.
 
-2015-xx-xx - xxxxxxx - lavf 56.29.100 - avio.h
+2015-04-02 - 26e0e393 - lavf 56.29.100 - avio.h
   Add AVIODirEntryType.AVIO_ENTRY_SERVER.
   Add AVIODirEntryType.AVIO_ENTRY_SHARE.
   Add AVIODirEntryType.AVIO_ENTRY_WORKGROUP.
 
-2015-xx-xx - xxxxxxx - lavu 54.22.100 - avstring.h
+2015-03-31 - 3188696 - lavu 54.22.100 - avstring.h
   Add av_append_path_component()
 
 2015-03-27 - 184084c - lavf 56.27.100 - avio.h url.h
@@ -42,10 +48,10 @@ API changes, most recent first:
   Add ff_alloc_dir_entry().
   Extend URLProtocol with url_open_dir(), url_read_dir(), url_close_dir().
 
-2015-xx-xx - xxxxxxx - lavu 54.21.100 / 54.10.0
+2015-03-29 - 268ff17 / c484561 - lavu 54.21.100 / 54.10.0 - pixfmt.h
   Add AV_PIX_FMT_MMAL for MMAL hardware acceleration.
 
-2015-xx-xx - xxxxxxx - 56.29.100 / lavc 56.22.0
+2015-03-19 - 11fe56c - 56.29.100 / lavc 56.22.0
   Add FF_PROFILE_DTS_EXPRESS.
 
 -------- 8< --------- FFmpeg 2.6 was cut here -------- 8< ---------

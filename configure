@@ -1577,6 +1577,9 @@ ARCH_EXT_LIST_MIPS="
     mipsdspr1
     mipsdspr2
     msa
+"
+
+ARCH_EXT_LIST_LOONGSON="
     loongson3
 "
 
@@ -1617,7 +1620,7 @@ ARCH_EXT_LIST="
     $ARCH_EXT_LIST_PPC
     $ARCH_EXT_LIST_X86
     $ARCH_EXT_LIST_MIPS
-    loongson
+    $ARCH_EXT_LIST_LOONGSON
 "
 
 ARCH_FEATURES="
@@ -2018,7 +2021,6 @@ setend_deps="arm"
 
 map 'eval ${v}_inline_deps=inline_asm' $ARCH_EXT_LIST_ARM
 
-loongson_deps="mips"
 mipsfpu_deps="mips"
 mipsdspr1_deps="mips"
 mipsdspr2_deps="mips"
@@ -4684,8 +4686,6 @@ EOF
     [ $target_os != win32 ] && enabled_all armv6t2 shared !pic && enable_weak_pic
 
 elif enabled mips; then
-
-    check_inline_asm loongson '"dmult.g $1, $2, $3"'
 
     # Enable minimum ISA based on selected options
     if enabled mips64 && (enabled mipsdspr1 || enabled mipsdspr2); then

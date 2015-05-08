@@ -20,6 +20,7 @@ version <next>:
 - Canopus HQ/HQA decoder
 - Automatically rotate videos based on metadata in ffmpeg
 - improved Quickdraw compatibility
+- VP9 high bit-depth and extended colorspaces decoding support
 
 
 version 2.6:

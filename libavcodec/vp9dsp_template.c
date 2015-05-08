@@ -25,6 +25,8 @@
 #include "bit_depth_template.c"
 #include "vp9dsp.h"
 
+#if BIT_DEPTH != 12
+
 // FIXME see whether we can merge parts of this (perhaps at least 4x4 and 8x8)
 // back with h264pred.[ch]
 
@@ -181,6 +183,8 @@ static void hor_32x32_c(uint8_t *_dst, ptrdiff_t stride,
     }
 }
 
+#endif /* BIT_DEPTH != 12 */
+
 static void tm_4x4_c(uint8_t *_dst, ptrdiff_t stride,
                      const uint8_t *_left, const uint8_t *_top)
 {
@@ -304,6 +308,8 @@ static void tm_32x32_c(uint8_t *_dst, ptrdiff_t stride,
         dst += stride;
     }
 }
+
+#if BIT_DEPTH != 12
 
 static void dc_4x4_c(uint8_t *_dst, ptrdiff_t stride,
                      const uint8_t *_left, const uint8_t *_top)
@@ -560,6 +566,8 @@ static void dc_top_32x32_c(uint8_t *_dst, ptrdiff_t stride,
     }
 }
 
+#endif /* BIT_DEPTH != 12 */
+
 static void dc_128_4x4_c(uint8_t *_dst, ptrdiff_t stride,
                          const uint8_t *left, const uint8_t *top)
 {
@@ -756,6 +764,8 @@ static void dc_129_32x32_c(uint8_t *_dst, ptrdiff_t stride,
         dst += stride;
     }
 }
+
+#if BIT_DEPTH != 12
 
 #if BIT_DEPTH == 8
 #define memset_bpc memset
@@ -1065,9 +1075,28 @@ def_hor_up(32)
 
 #undef DST
 
-static av_cold void vp9dsp_intrapred_init(VP9DSPContext *dsp)
+#endif /* BIT_DEPTH != 12 */
+
+#if BIT_DEPTH != 8
+void vp9dsp_intrapred_init_10(VP9DSPContext *dsp);
+#endif
+#if BIT_DEPTH != 10
+static
+#endif
+av_cold void FUNC(vp9dsp_intrapred_init)(VP9DSPContext *dsp)
 {
+#define init_intra_pred_bd_aware(tx, sz) \
+    dsp->intra_pred[tx][TM_VP8_PRED]          = tm_##sz##_c; \
+    dsp->intra_pred[tx][DC_128_PRED]          = dc_128_##sz##_c; \
+    dsp->intra_pred[tx][DC_127_PRED]          = dc_127_##sz##_c; \
+    dsp->intra_pred[tx][DC_129_PRED]          = dc_129_##sz##_c
+
+#if BIT_DEPTH == 12
+    vp9dsp_intrapred_init_10(dsp);
 #define init_intra_pred(tx, sz) \
+    init_intra_pred_bd_aware(tx, sz)
+#else
+    #define init_intra_pred(tx, sz) \
     dsp->intra_pred[tx][VERT_PRED]            = vert_##sz##_c; \
     dsp->intra_pred[tx][HOR_PRED]             = hor_##sz##_c; \
     dsp->intra_pred[tx][DC_PRED]              = dc_##sz##_c; \
@@ -1077,12 +1106,10 @@ static av_cold void vp9dsp_intrapred_init(VP9DSPContext *dsp)
     dsp->intra_pred[tx][HOR_DOWN_PRED]        = hor_down_##sz##_c; \
     dsp->intra_pred[tx][VERT_LEFT_PRED]       = vert_left_##sz##_c; \
     dsp->intra_pred[tx][HOR_UP_PRED]          = hor_up_##sz##_c; \
-    dsp->intra_pred[tx][TM_VP8_PRED]          = tm_##sz##_c; \
     dsp->intra_pred[tx][LEFT_DC_PRED]         = dc_left_##sz##_c; \
     dsp->intra_pred[tx][TOP_DC_PRED]          = dc_top_##sz##_c; \
-    dsp->intra_pred[tx][DC_128_PRED]          = dc_128_##sz##_c; \
-    dsp->intra_pred[tx][DC_127_PRED]          = dc_127_##sz##_c; \
-    dsp->intra_pred[tx][DC_129_PRED]          = dc_129_##sz##_c
+    init_intra_pred_bd_aware(tx, sz)
+#endif
 
     init_intra_pred(TX_4X4,   4x4);
     init_intra_pred(TX_8X8,   8x8);
@@ -1090,6 +1117,7 @@ static av_cold void vp9dsp_intrapred_init(VP9DSPContext *dsp)
     init_intra_pred(TX_32X32, 32x32);
 
 #undef init_intra_pred
+#undef init_intra_pred_bd_aware
 }
 
 #define itxfm_wrapper(type_a, type_b, sz, bits, has_dconly) \
@@ -1906,6 +1934,8 @@ static av_cold void vp9dsp_loopfilter_init(VP9DSPContext *dsp)
     dsp->loop_filter_mix2[1][1][1] = loop_filter_v_88_16_c;
 }
 
+#if BIT_DEPTH != 12
+
 static av_always_inline void copy_c(uint8_t *dst, ptrdiff_t dst_stride,
                                     const uint8_t *src, ptrdiff_t src_stride,
                                     int w, int h)
@@ -1958,6 +1988,8 @@ copy_avg_fn(4)
 
 #undef fpel_fn
 #undef copy_avg_fn
+
+#endif /* BIT_DEPTH != 12 */
 
 static const int16_t vp9_subpel_filters[3][16][8] = {
     [FILTER_8TAP_REGULAR] = {
@@ -2136,6 +2168,8 @@ static void avg##_8tap_##type##_##sz##hv_c(uint8_t *dst, ptrdiff_t dst_stride, \
                        vp9_subpel_filters[type_idx][my]); \
 }
 
+#if BIT_DEPTH != 12
+
 #define FILTER_BILIN(src, x, mxy, stride) \
     (src[x] + ((mxy * (src[x + stride] - src[x]) + 8) >> 4))
 
@@ -2244,6 +2278,13 @@ static void avg##_bilin_##sz##hv_c(uint8_t *dst, ptrdiff_t dst_stride, \
     avg##_bilin_2d_hv_c(dst, dst_stride, src, src_stride, sz, h, mx, my); \
 }
 
+#else
+
+#define bilinf_fn_1d(a, b, c, d)
+#define bilinf_fn_2d(a, b)
+
+#endif
+
 #define filter_fn(sz, avg) \
 filter_fn_1d(sz, h, mx, regular, FILTER_8TAP_REGULAR, avg) \
 filter_fn_1d(sz, v, my, regular, FILTER_8TAP_REGULAR, avg) \
@@ -2275,8 +2316,18 @@ filter_fn_set(avg)
 #undef bilinf_fn_1d
 #undef bilinf_fn_2d
 
-static av_cold void vp9dsp_mc_init(VP9DSPContext *dsp)
+#if BIT_DEPTH != 8
+void vp9dsp_mc_init_10(VP9DSPContext *dsp);
+#endif
+#if BIT_DEPTH != 10
+static
+#endif
+av_cold void FUNC(vp9dsp_mc_init)(VP9DSPContext *dsp)
 {
+#if BIT_DEPTH == 12
+    vp9dsp_mc_init_10(dsp);
+#else /* BIT_DEPTH == 12 */
+
 #define init_fpel(idx1, idx2, sz, type) \
     dsp->mc[idx1][FILTER_8TAP_SMOOTH ][idx2][0][0] = type##sz##_c; \
     dsp->mc[idx1][FILTER_8TAP_REGULAR][idx2][0][0] = type##sz##_c; \
@@ -2296,11 +2347,20 @@ static av_cold void vp9dsp_mc_init(VP9DSPContext *dsp)
 #undef init_copy_avg
 #undef init_fpel
 
-#define init_subpel1(idx1, idx2, idxh, idxv, sz, dir, type) \
+#endif /* BIT_DEPTH == 12 */
+
+#define init_subpel1_bd_aware(idx1, idx2, idxh, idxv, sz, dir, type) \
     dsp->mc[idx1][FILTER_8TAP_SMOOTH ][idx2][idxh][idxv] = type##_8tap_smooth_##sz##dir##_c; \
     dsp->mc[idx1][FILTER_8TAP_REGULAR][idx2][idxh][idxv] = type##_8tap_regular_##sz##dir##_c; \
-    dsp->mc[idx1][FILTER_8TAP_SHARP  ][idx2][idxh][idxv] = type##_8tap_sharp_##sz##dir##_c; \
+    dsp->mc[idx1][FILTER_8TAP_SHARP  ][idx2][idxh][idxv] = type##_8tap_sharp_##sz##dir##_c
+
+#if BIT_DEPTH == 12
+#define init_subpel1 init_subpel1_bd_aware
+#else
+#define init_subpel1(idx1, idx2, idxh, idxv, sz, dir, type) \
+    init_subpel1_bd_aware(idx1, idx2, idxh, idxv, sz, dir, type); \
     dsp->mc[idx1][FILTER_BILINEAR    ][idx2][idxh][idxv] = type##_bilin_##sz##dir##_c
+#endif
 
 #define init_subpel2(idx, idxh, idxv, dir, type) \
     init_subpel1(0, idx, idxh, idxv, 64, dir, type); \
@@ -2320,6 +2380,7 @@ static av_cold void vp9dsp_mc_init(VP9DSPContext *dsp)
 #undef init_subpel1
 #undef init_subpel2
 #undef init_subpel3
+#undef init_subpel1_bd_aware
 }
 
 static av_always_inline void do_scaled_8tap_c(uint8_t *_dst, ptrdiff_t dst_stride,
@@ -2396,6 +2457,8 @@ static void avg##_scaled_##type##_##sz##_c(uint8_t *dst, ptrdiff_t dst_stride, \
                         vp9_subpel_filters[type_idx]); \
 }
 
+#if BIT_DEPTH != 12
+
 static av_always_inline void do_scaled_bilin_c(uint8_t *_dst, ptrdiff_t dst_stride,
                                                const uint8_t *_src, ptrdiff_t src_stride,
                                                int w, int h, int mx, int my,
@@ -2464,6 +2527,12 @@ static void avg##_scaled_bilin_##sz##_c(uint8_t *dst, ptrdiff_t dst_stride, \
     avg##_scaled_bilin_c(dst, dst_stride, src, src_stride, sz, h, mx, my, dx, dy); \
 }
 
+#else
+
+#define scaled_bilinf_fn(a, b)
+
+#endif
+
 #define scaled_filter_fns(sz, avg) \
 scaled_filter_fn(sz,        regular, FILTER_8TAP_REGULAR, avg) \
 scaled_filter_fn(sz,        smooth,  FILTER_8TAP_SMOOTH,  avg) \
@@ -2485,13 +2554,27 @@ scaled_filter_fn_set(avg)
 #undef scaled_filter_fn
 #undef scaled_bilinf_fn
 
-static av_cold void vp9dsp_scaled_mc_init(VP9DSPContext *dsp)
+#if BIT_DEPTH != 8
+void vp9dsp_scaled_mc_init_10(VP9DSPContext *dsp);
+#endif
+#if BIT_DEPTH != 10
+static
+#endif
+av_cold void FUNC(vp9dsp_scaled_mc_init)(VP9DSPContext *dsp)
 {
-#define init_scaled(idx1, idx2, sz, type) \
+#define init_scaled_bd_aware(idx1, idx2, sz, type) \
     dsp->smc[idx1][FILTER_8TAP_SMOOTH ][idx2] = type##_scaled_smooth_##sz##_c; \
     dsp->smc[idx1][FILTER_8TAP_REGULAR][idx2] = type##_scaled_regular_##sz##_c; \
-    dsp->smc[idx1][FILTER_8TAP_SHARP  ][idx2] = type##_scaled_sharp_##sz##_c; \
+    dsp->smc[idx1][FILTER_8TAP_SHARP  ][idx2] = type##_scaled_sharp_##sz##_c
+
+#if BIT_DEPTH == 12
+    vp9dsp_scaled_mc_init_10(dsp);
+#define init_scaled(a,b,c,d) init_scaled_bd_aware(a,b,c,d)
+#else
+#define init_scaled(idx1, idx2, sz, type) \
+    init_scaled_bd_aware(idx1, idx2, sz, type); \
     dsp->smc[idx1][FILTER_BILINEAR    ][idx2] = type##_scaled_bilin_##sz##_c
+#endif
 
 #define init_scaled_put_avg(idx, sz) \
     init_scaled(idx, 0, sz, put); \
@@ -2505,13 +2588,14 @@ static av_cold void vp9dsp_scaled_mc_init(VP9DSPContext *dsp)
 
 #undef init_scaled_put_avg
 #undef init_scaled
+#undef init_scaled_bd_aware
 }
 
 av_cold void FUNC(ff_vp9dsp_init)(VP9DSPContext *dsp)
 {
-    vp9dsp_intrapred_init(dsp);
+    FUNC(vp9dsp_intrapred_init)(dsp);
     vp9dsp_itxfm_init(dsp);
     vp9dsp_loopfilter_init(dsp);
-    vp9dsp_mc_init(dsp);
-    vp9dsp_scaled_mc_init(dsp);
+    FUNC(vp9dsp_mc_init)(dsp);
+    FUNC(vp9dsp_scaled_mc_init)(dsp);
 }

@@ -3852,6 +3852,8 @@ int av_packet_merge_side_data(AVPacket *pkt);
 
 int av_packet_split_side_data(AVPacket *pkt);
 
+const char *av_packet_side_data_name(enum AVPacketSideDataType type);
+
 /**
  * Pack a dictionary for use in side_data.
  *

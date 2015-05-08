@@ -61,6 +61,32 @@ static av_cold void hevc_dsp_init_msa(HEVCDSPContext *c,
         c->put_hevc_qpel[7][1][1] = ff_hevc_put_hevc_qpel_hv32_8_msa;
         c->put_hevc_qpel[8][1][1] = ff_hevc_put_hevc_qpel_hv48_8_msa;
         c->put_hevc_qpel[9][1][1] = ff_hevc_put_hevc_qpel_hv64_8_msa;
+
+        c->put_hevc_qpel_uni[3][0][0] = ff_hevc_put_hevc_uni_pel_pixels8_8_msa;
+        c->put_hevc_qpel_uni[4][0][0] = ff_hevc_put_hevc_uni_pel_pixels12_8_msa;
+        c->put_hevc_qpel_uni[5][0][0] = ff_hevc_put_hevc_uni_pel_pixels16_8_msa;
+        c->put_hevc_qpel_uni[6][0][0] = ff_hevc_put_hevc_uni_pel_pixels24_8_msa;
+        c->put_hevc_qpel_uni[7][0][0] = ff_hevc_put_hevc_uni_pel_pixels32_8_msa;
+        c->put_hevc_qpel_uni[8][0][0] = ff_hevc_put_hevc_uni_pel_pixels48_8_msa;
+        c->put_hevc_qpel_uni[9][0][0] = ff_hevc_put_hevc_uni_pel_pixels64_8_msa;
+
+        c->put_hevc_qpel_uni[1][0][1] = ff_hevc_put_hevc_uni_qpel_h4_8_msa;
+        c->put_hevc_qpel_uni[3][0][1] = ff_hevc_put_hevc_uni_qpel_h8_8_msa;
+        c->put_hevc_qpel_uni[4][0][1] = ff_hevc_put_hevc_uni_qpel_h12_8_msa;
+        c->put_hevc_qpel_uni[5][0][1] = ff_hevc_put_hevc_uni_qpel_h16_8_msa;
+        c->put_hevc_qpel_uni[6][0][1] = ff_hevc_put_hevc_uni_qpel_h24_8_msa;
+        c->put_hevc_qpel_uni[7][0][1] = ff_hevc_put_hevc_uni_qpel_h32_8_msa;
+        c->put_hevc_qpel_uni[8][0][1] = ff_hevc_put_hevc_uni_qpel_h48_8_msa;
+        c->put_hevc_qpel_uni[9][0][1] = ff_hevc_put_hevc_uni_qpel_h64_8_msa;
+
+        c->put_hevc_qpel_uni[1][1][0] = ff_hevc_put_hevc_uni_qpel_v4_8_msa;
+        c->put_hevc_qpel_uni[3][1][0] = ff_hevc_put_hevc_uni_qpel_v8_8_msa;
+        c->put_hevc_qpel_uni[4][1][0] = ff_hevc_put_hevc_uni_qpel_v12_8_msa;
+        c->put_hevc_qpel_uni[5][1][0] = ff_hevc_put_hevc_uni_qpel_v16_8_msa;
+        c->put_hevc_qpel_uni[6][1][0] = ff_hevc_put_hevc_uni_qpel_v24_8_msa;
+        c->put_hevc_qpel_uni[7][1][0] = ff_hevc_put_hevc_uni_qpel_v32_8_msa;
+        c->put_hevc_qpel_uni[8][1][0] = ff_hevc_put_hevc_uni_qpel_v48_8_msa;
+        c->put_hevc_qpel_uni[9][1][0] = ff_hevc_put_hevc_uni_qpel_v64_8_msa;
     }
 }
 #endif  // #if HAVE_MSA

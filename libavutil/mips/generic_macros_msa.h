@@ -38,12 +38,16 @@
     out_m;                        \
 } )
 
+#define LOAD_UH(psrc) *((const v8u16 *)(psrc))
+
 #define LOAD_SH(psrc)             \
 ( {                               \
     v8i16 out_m;                  \
     out_m = *((v8i16 *) (psrc));  \
     out_m;                        \
 } )
+
+#define LOAD_SW(psrc) *((const v4i32 *)(psrc))
 
 #define STORE_UB(vec, pdest) *((v16u8 *)(pdest)) = (vec)
 #define STORE_SB(vec, pdest) *((v16i8 *)(pdest)) = (vec)
@@ -273,11 +277,34 @@
     src3 = LOAD_WORD(psrc + 3 * src_stride);             \
 }
 
+#define LOAD_2VECS_UB(psrc, stride,     \
+                     val0, val1)        \
+{                                       \
+    val0 = LOAD_UB(psrc + 0 * stride);  \
+    val1 = LOAD_UB(psrc + 1 * stride);  \
+}
+
 #define LOAD_2VECS_SB(psrc, stride,     \
                       val0, val1)       \
 {                                       \
     val0 = LOAD_SB(psrc + 0 * stride);  \
     val1 = LOAD_SB(psrc + 1 * stride);  \
+}
+
+#define LOAD_3VECS_UB(psrc, stride,      \
+                      val0, val1, val2)  \
+{                                        \
+    val0 = LOAD_UB(psrc + 0 * stride);   \
+    val1 = LOAD_UB(psrc + 1 * stride);   \
+    val2 = LOAD_UB(psrc + 2 * stride);   \
+}
+
+#define LOAD_3VECS_SB(psrc, stride,      \
+                      val0, val1, val2)  \
+{                                        \
+    val0 = LOAD_SB(psrc + 0 * stride);   \
+    val1 = LOAD_SB(psrc + 1 * stride);   \
+    val2 = LOAD_SB(psrc + 2 * stride);   \
 }
 
 #define LOAD_4VECS_UB(psrc, stride,            \
@@ -298,6 +325,22 @@
     val3 = LOAD_SB(psrc + 3 * stride);         \
 }
 
+#define LOAD_5VECS_UB(psrc, stride,                  \
+                      out0, out1, out2, out3, out4)  \
+{                                                    \
+    LOAD_4VECS_UB((psrc), (stride),                  \
+                  (out0), (out1), (out2), (out3));   \
+    out4 = LOAD_UB(psrc + 4 * stride);               \
+}
+
+#define LOAD_5VECS_SB(psrc, stride,                  \
+                      out0, out1, out2, out3, out4)  \
+{                                                    \
+    LOAD_4VECS_SB((psrc), (stride),                  \
+                  (out0), (out1), (out2), (out3));   \
+    out4 = LOAD_SB(psrc + 4 * stride);               \
+}
+
 #define LOAD_6VECS_SB(psrc, stride,                        \
                       out0, out1, out2, out3, out4, out5)  \
 {                                                          \
@@ -305,6 +348,19 @@
                   (out0), (out1), (out2), (out3));         \
     LOAD_2VECS_SB((psrc + 4 * stride), (stride),           \
                   (out4), (out5));                         \
+}
+
+#define LOAD_7VECS_UB(psrc, stride,            \
+                      val0, val1, val2, val3,  \
+                      val4, val5, val6)        \
+{                                              \
+    val0 = LOAD_UB((psrc) + 0 * (stride));     \
+    val1 = LOAD_UB((psrc) + 1 * (stride));     \
+    val2 = LOAD_UB((psrc) + 2 * (stride));     \
+    val3 = LOAD_UB((psrc) + 3 * (stride));     \
+    val4 = LOAD_UB((psrc) + 4 * (stride));     \
+    val5 = LOAD_UB((psrc) + 5 * (stride));     \
+    val6 = LOAD_UB((psrc) + 6 * (stride));     \
 }
 
 #define LOAD_7VECS_SB(psrc, stride,            \
@@ -340,6 +396,76 @@
                   (out4), (out5), (out6), (out7));  \
 }
 
+#define LOAD_2VECS_UH(psrc, stride,         \
+                      val0, val1)           \
+{                                           \
+    val0 = LOAD_UH((psrc) + 0 * (stride));  \
+    val1 = LOAD_UH((psrc) + 1 * (stride));  \
+}
+
+#define LOAD_2VECS_SH(psrc, stride,         \
+                      val0, val1)           \
+{                                           \
+    val0 = LOAD_SH((psrc) + 0 * (stride));  \
+    val1 = LOAD_SH((psrc) + 1 * (stride));  \
+}
+
+#define LOAD_4VECS_UH(psrc, stride,                            \
+                      val0, val1, val2, val3)                  \
+{                                                              \
+    LOAD_2VECS_UH((psrc), (stride), val0, val1);               \
+    LOAD_2VECS_UH((psrc + 2 * stride), (stride), val2, val3);  \
+}
+
+#define LOAD_4VECS_SH(psrc, stride,                            \
+                      val0, val1, val2, val3)                  \
+{                                                              \
+    LOAD_2VECS_SH((psrc), (stride), val0, val1);               \
+    LOAD_2VECS_SH((psrc + 2 * stride), (stride), val2, val3);  \
+}
+
+#define LOAD_6VECS_SH(psrc, stride,                            \
+                      val0, val1, val2, val3, val4, val5)      \
+{                                                              \
+    LOAD_2VECS_SH((psrc), (stride), val0, val1);               \
+    LOAD_2VECS_SH((psrc + 2 * stride), (stride), val2, val3);  \
+    LOAD_2VECS_SH((psrc + 4 * stride), (stride), val4, val5);  \
+}
+
+#define LOAD_8VECS_UH(psrc, stride,               \
+                      val0, val1, val2, val3,     \
+                      val4, val5, val6, val7)     \
+{                                                 \
+    LOAD_4VECS_UH((psrc), (stride),               \
+                  val0, val1, val2, val3);        \
+    LOAD_4VECS_UH((psrc + 4 * stride), (stride),  \
+                  val4, val5, val6, val7);        \
+}
+
+#define LOAD_8VECS_SH(psrc, stride,               \
+                      val0, val1, val2, val3,     \
+                      val4, val5, val6, val7)     \
+{                                                 \
+    LOAD_4VECS_SH((psrc), (stride),               \
+                  val0, val1, val2, val3);        \
+    LOAD_4VECS_SH((psrc + 4 * stride), (stride),  \
+                  val4, val5, val6, val7);        \
+}
+
+#define LOAD_16VECS_SH(psrc, stride,                \
+                       val0, val1, val2, val3,      \
+                       val4, val5, val6, val7,      \
+                       val8, val9, val10, val11,    \
+                       val12, val13, val14, val15)  \
+{                                                   \
+    LOAD_8VECS_SH((psrc), (stride),                 \
+                  val0, val1, val2, val3,           \
+                  val4, val5, val6, val7);          \
+    LOAD_8VECS_SH((psrc + 8 * (stride)), (stride),  \
+                  val8, val9, val10, val11,         \
+                  val12, val13, val14, val15);      \
+}
+
 #define STORE_4VECS_UB(dst_out, pitch,           \
                        in0, in1, in2, in3)       \
 {                                                \
@@ -356,6 +482,16 @@
     STORE_SB((in1), ((dst_out) + (pitch)));      \
     STORE_SB((in2), ((dst_out) + 2 * (pitch)));  \
     STORE_SB((in3), ((dst_out) + 3 * (pitch)));  \
+}
+
+#define STORE_8VECS_UB(dst_out, pitch_in,                 \
+                       in0, in1, in2, in3,                \
+                       in4, in5, in6, in7)                \
+{                                                         \
+    STORE_4VECS_UB(dst_out, pitch_in,                     \
+                   in0, in1, in2, in3);                   \
+    STORE_4VECS_UB((dst_out + 4 * (pitch_in)), pitch_in,  \
+                   in4, in5, in6, in7);                   \
 }
 
 #define STORE_2VECS_SH(ptr, stride,       \
@@ -419,6 +555,16 @@
     out_m;                                                \
 } )
 
+#define CLIP_UNSIGNED_CHAR_W(in)                          \
+( {                                                       \
+    v4i32 max_m = __msa_ldi_w(255);                       \
+    v4i32 out_m;                                          \
+                                                          \
+    out_m = __msa_maxi_s_w((v4i32) (in), 0);              \
+    out_m = __msa_min_s_w((v4i32) max_m, (v4i32) out_m);  \
+    out_m;                                                \
+} )
+
 #define TRANSPOSE4x4_B_UB(in0, in1, in2, in3,                   \
                           out0, out1, out2, out3)               \
 {                                                               \
@@ -456,6 +602,87 @@
     out2 = (v16u8) __msa_ilvl_w((v4i32) tmp1_m, (v4i32) tmp0_m);    \
     out1 = (v16u8) __msa_ilvl_d((v2i64) out2, (v2i64) out0);        \
     out3 = (v16u8) __msa_ilvl_d((v2i64) out0, (v2i64) out2);        \
+}
+
+#define TRANSPOSE8x4_B_UH(in0, in1, in2, in3,                       \
+                          in4, in5, in6, in7,                       \
+                          out0, out1, out2, out3)                   \
+{                                                                   \
+    v16i8 tmp0_m, tmp1_m, tmp2_m, tmp3_m;                           \
+                                                                    \
+    tmp0_m = (v16i8) __msa_ilvev_w((v4i32) (in4), (v4i32) (in0));   \
+    tmp1_m = (v16i8) __msa_ilvev_w((v4i32) (in5), (v4i32) (in1));   \
+    tmp2_m = __msa_ilvr_b(tmp1_m, tmp0_m);                          \
+    tmp0_m = (v16i8) __msa_ilvev_w((v4i32) (in6), (v4i32) (in2));   \
+    tmp1_m = (v16i8) __msa_ilvev_w((v4i32) (in7), (v4i32) (in3));   \
+                                                                    \
+    tmp3_m = __msa_ilvr_b(tmp1_m, tmp0_m);                          \
+    tmp0_m = (v16i8) __msa_ilvr_h((v8i16) tmp3_m, (v8i16) tmp2_m);  \
+    tmp1_m = (v16i8) __msa_ilvl_h((v8i16) tmp3_m, (v8i16) tmp2_m);  \
+                                                                    \
+    out0 = (v8u16) __msa_ilvr_w((v4i32) tmp1_m, (v4i32) tmp0_m);    \
+    out2 = (v8u16) __msa_ilvl_w((v4i32) tmp1_m, (v4i32) tmp0_m);    \
+    out1 = (v8u16) __msa_ilvl_d((v2i64) out2, (v2i64) out0);        \
+    out3 = (v8u16) __msa_ilvl_d((v2i64) out0, (v2i64) out2);        \
+}
+
+#define TRANSPOSE8x8_B_UB(in0, in1, in2, in3,                     \
+                          in4, in5, in6, in7,                     \
+                          out0, out1, out2, out3,                 \
+                          out4, out5, out6, out7)                 \
+{                                                                 \
+    v16i8 tmp0_m, tmp1_m, tmp2_m, tmp3_m;                         \
+    v16i8 tmp4_m, tmp5_m, tmp6_m, tmp7_m;                         \
+    v16i8 zero_m = { 0 };                                         \
+                                                                  \
+    tmp0_m = __msa_ilvr_b((v16i8) (in2), (v16i8) (in0));          \
+    tmp1_m = __msa_ilvr_b((v16i8) (in3), (v16i8) (in1));          \
+    tmp2_m = __msa_ilvr_b((v16i8) (in6), (v16i8) (in4));          \
+    tmp3_m = __msa_ilvr_b((v16i8) (in7), (v16i8) (in5));          \
+                                                                  \
+    tmp4_m = __msa_ilvr_b((v16i8) tmp1_m, (v16i8) tmp0_m);        \
+    tmp5_m = __msa_ilvl_b((v16i8) tmp1_m, (v16i8) tmp0_m);        \
+    tmp6_m = __msa_ilvr_b((v16i8) tmp3_m, (v16i8) tmp2_m);        \
+    tmp7_m = __msa_ilvl_b((v16i8) tmp3_m, (v16i8) tmp2_m);        \
+                                                                  \
+    out0 = (v16u8) __msa_ilvr_w((v4i32) tmp6_m, (v4i32) tmp4_m);  \
+    out2 = (v16u8) __msa_ilvl_w((v4i32) tmp6_m, (v4i32) tmp4_m);  \
+    out4 = (v16u8) __msa_ilvr_w((v4i32) tmp7_m, (v4i32) tmp5_m);  \
+    out6 = (v16u8) __msa_ilvl_w((v4i32) tmp7_m, (v4i32) tmp5_m);  \
+                                                                  \
+    out1 = (v16u8) __msa_sldi_b(zero_m, (v16i8) out0, 8);         \
+    out3 = (v16u8) __msa_sldi_b(zero_m, (v16i8) out2, 8);         \
+    out5 = (v16u8) __msa_sldi_b(zero_m, (v16i8) out4, 8);         \
+    out7 = (v16u8) __msa_sldi_b(zero_m, (v16i8) out6, 8);         \
+}
+
+#define TRANSPOSE8x8_B_UH(in0, in1, in2, in3,                     \
+                          in4, in5, in6, in7,                     \
+                          out0, out1, out2, out3,                 \
+                          out4, out5, out6, out7)                 \
+{                                                                 \
+    v16i8 tmp0_m, tmp1_m, tmp2_m, tmp3_m;                         \
+    v16i8 tmp4_m, tmp5_m, tmp6_m, tmp7_m;                         \
+    v16i8 zero_m = { 0 };                                         \
+                                                                  \
+    tmp0_m = __msa_ilvr_b((v16i8) (in2), (v16i8) (in0));          \
+    tmp1_m = __msa_ilvr_b((v16i8) (in3), (v16i8) (in1));          \
+    tmp2_m = __msa_ilvr_b((v16i8) (in6), (v16i8) (in4));          \
+    tmp3_m = __msa_ilvr_b((v16i8) (in7), (v16i8) (in5));          \
+                                                                  \
+    tmp4_m = __msa_ilvr_b((v16i8) tmp1_m, (v16i8) tmp0_m);        \
+    tmp5_m = __msa_ilvl_b((v16i8) tmp1_m, (v16i8) tmp0_m);        \
+    tmp6_m = __msa_ilvr_b((v16i8) tmp3_m, (v16i8) tmp2_m);        \
+    tmp7_m = __msa_ilvl_b((v16i8) tmp3_m, (v16i8) tmp2_m);        \
+                                                                  \
+    out0 = (v8u16) __msa_ilvr_w((v4i32) tmp6_m, (v4i32) tmp4_m);  \
+    out2 = (v8u16) __msa_ilvl_w((v4i32) tmp6_m, (v4i32) tmp4_m);  \
+    out4 = (v8u16) __msa_ilvr_w((v4i32) tmp7_m, (v4i32) tmp5_m);  \
+    out6 = (v8u16) __msa_ilvl_w((v4i32) tmp7_m, (v4i32) tmp5_m);  \
+    out1 = (v8u16) __msa_sldi_b(zero_m, (v16i8) out0, 8);         \
+    out3 = (v8u16) __msa_sldi_b(zero_m, (v16i8) out2, 8);         \
+    out5 = (v8u16) __msa_sldi_b(zero_m, (v16i8) out4, 8);         \
+    out7 = (v8u16) __msa_sldi_b(zero_m, (v16i8) out6, 8);         \
 }
 
 #define TRANSPOSE16x8_B_UB(in0, in1, in2, in3,                       \
@@ -509,6 +736,61 @@
     (out7) = (v16u8) __msa_ilvod_w((v4i32) tmp3_m, (v4i32) tmp2_m);  \
 }
 
+#define TRANSPOSE8x8_H_SH(in0, in1, in2, in3,                      \
+                          in4, in5, in6, in7,                      \
+                          out0, out1, out2, out3,                  \
+                          out4, out5, out6, out7)                  \
+{                                                                  \
+    v8i16 s0_m, s1_m;                                              \
+    v8i16 tmp0_m, tmp1_m, tmp2_m, tmp3_m;                          \
+    v8i16 tmp4_m, tmp5_m, tmp6_m, tmp7_m;                          \
+                                                                   \
+    s0_m = __msa_ilvr_h((v8i16) (in6), (v8i16) (in4));             \
+    s1_m = __msa_ilvr_h((v8i16) (in7), (v8i16) (in5));             \
+    tmp0_m = __msa_ilvr_h((v8i16) s1_m, (v8i16) s0_m);             \
+    tmp1_m = __msa_ilvl_h((v8i16) s1_m, (v8i16) s0_m);             \
+                                                                   \
+    s0_m = __msa_ilvl_h((v8i16) (in6), (v8i16) (in4));             \
+    s1_m = __msa_ilvl_h((v8i16) (in7), (v8i16) (in5));             \
+    tmp2_m = __msa_ilvr_h((v8i16) s1_m, (v8i16) s0_m);             \
+    tmp3_m = __msa_ilvl_h((v8i16) s1_m, (v8i16) s0_m);             \
+                                                                   \
+    s0_m = __msa_ilvr_h((v8i16) (in2), (v8i16) (in0));             \
+    s1_m = __msa_ilvr_h((v8i16) (in3), (v8i16) (in1));             \
+    tmp4_m = __msa_ilvr_h((v8i16) s1_m, (v8i16) s0_m);             \
+    tmp5_m = __msa_ilvl_h((v8i16) s1_m, (v8i16) s0_m);             \
+                                                                   \
+    s0_m = __msa_ilvl_h((v8i16) (in2), (v8i16) (in0));             \
+    s1_m = __msa_ilvl_h((v8i16) (in3), (v8i16) (in1));             \
+    tmp6_m = __msa_ilvr_h((v8i16) s1_m, (v8i16) s0_m);             \
+    tmp7_m = __msa_ilvl_h((v8i16) s1_m, (v8i16) s0_m);             \
+                                                                   \
+    out0 = (v8i16) __msa_pckev_d((v2i64) tmp0_m, (v2i64) tmp4_m);  \
+    out1 = (v8i16) __msa_pckod_d((v2i64) tmp0_m, (v2i64) tmp4_m);  \
+    out2 = (v8i16) __msa_pckev_d((v2i64) tmp1_m, (v2i64) tmp5_m);  \
+    out3 = (v8i16) __msa_pckod_d((v2i64) tmp1_m, (v2i64) tmp5_m);  \
+    out4 = (v8i16) __msa_pckev_d((v2i64) tmp2_m, (v2i64) tmp6_m);  \
+    out5 = (v8i16) __msa_pckod_d((v2i64) tmp2_m, (v2i64) tmp6_m);  \
+    out6 = (v8i16) __msa_pckev_d((v2i64) tmp3_m, (v2i64) tmp7_m);  \
+    out7 = (v8i16) __msa_pckod_d((v2i64) tmp3_m, (v2i64) tmp7_m);  \
+}
+
+#define TRANSPOSE4x4_W(in0, in1, in2, in3,                    \
+                       out0, out1, out2, out3)                \
+{                                                             \
+    v4i32 s0_m, s1_m, s2_m, s3_m;                             \
+                                                              \
+    s0_m = __msa_ilvr_w((v4i32) (in1), (v4i32) (in0));        \
+    s1_m = __msa_ilvl_w((v4i32) (in1), (v4i32) (in0));        \
+    s2_m = __msa_ilvr_w((v4i32) (in3), (v4i32) (in2));        \
+    s3_m = __msa_ilvl_w((v4i32) (in3), (v4i32) (in2));        \
+                                                              \
+    out0 = (v4i32) __msa_ilvr_d((v2i64) s2_m, (v2i64) s0_m);  \
+    out1 = (v4i32) __msa_ilvl_d((v2i64) s2_m, (v2i64) s0_m);  \
+    out2 = (v4i32) __msa_ilvr_d((v2i64) s3_m, (v2i64) s1_m);  \
+    out3 = (v4i32) __msa_ilvl_d((v2i64) s3_m, (v2i64) s1_m);  \
+}
+
 #define ILV_B_LRLR_SB(in0, in1, in2, in3,               \
                       out0, out1, out2, out3)           \
 {                                                       \
@@ -525,6 +807,24 @@
     out1 = (v8u16) __msa_ilvr_b((v16i8) (in1), (v16i8) (in0));  \
     out2 = (v8u16) __msa_ilvl_b((v16i8) (in3), (v16i8) (in2));  \
     out3 = (v8u16) __msa_ilvr_b((v16i8) (in3), (v16i8) (in2));  \
+}
+
+#define ILV_B_LRLR_SH(in0, in1, in2, in3,                       \
+                      out0, out1, out2, out3)                   \
+{                                                               \
+    out0 = (v8i16) __msa_ilvl_b((v16i8) (in1), (v16i8) (in0));  \
+    out1 = (v8i16) __msa_ilvr_b((v16i8) (in1), (v16i8) (in0));  \
+    out2 = (v8i16) __msa_ilvl_b((v16i8) (in3), (v16i8) (in2));  \
+    out3 = (v8i16) __msa_ilvr_b((v16i8) (in3), (v16i8) (in2));  \
+}
+
+#define ILV_H_LRLR_SW(in0, in1, in2, in3,                       \
+                      out0, out1, out2, out3)                   \
+{                                                               \
+    out0 = (v4i32) __msa_ilvl_h((v8i16) (in1), (v8i16) (in0));  \
+    out1 = (v4i32) __msa_ilvr_h((v8i16) (in1), (v8i16) (in0));  \
+    out2 = (v4i32) __msa_ilvl_h((v8i16) (in3), (v8i16) (in2));  \
+    out3 = (v4i32) __msa_ilvr_h((v8i16) (in3), (v8i16) (in2));  \
 }
 
 #define ILVR_B_2VECS_UB(in0_r, in1_r, in0_l, in1_l,                 \
@@ -597,6 +897,13 @@
     out1 = (v8i16) __msa_ilvr_b((v16i8) (in1_l), (v16i8) (in1_r));  \
 }
 
+#define ILVR_B_3VECS_SH(in0_r, in1_r, in2_r, in0_l, in1_l, in2_l,   \
+                        out0, out1, out2)                           \
+{                                                                   \
+    ILVR_B_2VECS_SH(in0_r, in1_r, in0_l, in1_l,  out0, out1);       \
+    out2 = (v8i16) __msa_ilvr_b((v16i8) (in2_l), (v16i8) (in2_r));  \
+}
+
 #define ILVR_B_4VECS_UH(in0_r, in1_r, in2_r, in3_r,  \
                         in0_l, in1_l, in2_l, in3_l,  \
                         out0, out1, out2, out3)      \
@@ -624,6 +931,16 @@
     out1 = __msa_ilvr_h((v8i16) (in1_l), (v8i16) (in1_r));  \
 }
 
+#define ILVR_H_4VECS_SH(in0_r, in1_r, in2_r, in3_r,  \
+                        in0_l, in1_l, in2_l, in3_l,  \
+                        out0, out1, out2, out3)      \
+{                                                    \
+    ILVR_H_2VECS_SH(in0_r, in1_r, in0_l, in1_l,      \
+                    out0, out1);                     \
+    ILVR_H_2VECS_SH(in2_r, in3_r, in2_l, in3_l,      \
+                    out2, out3);                     \
+}
+
 #define ILVR_H_6VECS_SH(in0_r, in1_r, in2_r,     \
                         in3_r, in4_r, in5_r,     \
                         in0_l, in1_l, in2_l,     \
@@ -637,6 +954,23 @@
                     out2, out3);                 \
     ILVR_H_2VECS_SH(in4_r, in5_r, in4_l, in5_l,  \
                     out4, out5);                 \
+}
+
+#define ILVR_H_8VECS_SH(in0_r, in1_r, in2_r, in3_r,  \
+                        in4_r, in5_r, in6_r, in7_r,  \
+                        in0_l, in1_l, in2_l, in3_l,  \
+                        in4_l, in5_l, in6_l, in7_l,  \
+                        out0, out1, out2, out3,      \
+                        out4, out5, out6, out7)      \
+{                                                    \
+    ILVR_H_2VECS_SH(in0_r, in1_r, in0_l, in1_l,      \
+                    out0, out1);                     \
+    ILVR_H_2VECS_SH(in2_r, in3_r, in2_l, in3_l,      \
+                    out2, out3);                     \
+    ILVR_H_2VECS_SH(in4_r, in5_r, in4_l, in5_l,      \
+                    out4, out5);                     \
+    ILVR_H_2VECS_SH(in6_r, in7_r, in6_l, in7_l,      \
+                    out6, out7);                     \
 }
 
 #define ILVL_B_2VECS_SB(in0_r, in1_r, in0_l, in1_l,         \
@@ -678,6 +1012,16 @@
     out1 = __msa_ilvl_h((v8i16) (in1_l), (v8i16) (in1_r));  \
 }
 
+#define ILVL_H_4VECS_SH(in0_r, in1_r, in2_r, in3_r,  \
+                        in0_l, in1_l, in2_l, in3_l,  \
+                        out0, out1, out2, out3)      \
+{                                                    \
+    ILVL_H_2VECS_SH(in0_r, in1_r, in0_l, in1_l,      \
+                    out0, out1);                     \
+    ILVL_H_2VECS_SH(in2_r, in3_r, in2_l, in3_l,      \
+                    out2, out3);                     \
+}
+
 #define ILVL_H_6VECS_SH(in0_r, in1_r, in2_r,     \
                         in3_r, in4_r, in5_r,     \
                         in0_l, in1_l, in2_l,     \
@@ -691,6 +1035,23 @@
                     out2, out3);                 \
     ILVL_H_2VECS_SH(in4_r, in5_r, in4_l, in5_l,  \
                     out4, out5);                 \
+}
+
+#define ILVL_H_8VECS_SH(in0_r, in1_r, in2_r, in3_r,  \
+                        in4_r, in5_r, in6_r, in7_r,  \
+                        in0_l, in1_l, in2_l, in3_l,  \
+                        in4_l, in5_l, in6_l, in7_l,  \
+                        out0, out1, out2, out3,      \
+                        out4, out5, out6, out7)      \
+{                                                    \
+    ILVL_H_2VECS_SH(in0_r, in1_r, in0_l, in1_l,      \
+                    out0, out1);                     \
+    ILVL_H_2VECS_SH(in2_r, in3_r, in2_l, in3_l,      \
+                    out2, out3);                     \
+    ILVL_H_2VECS_SH(in4_r, in5_r, in4_l, in5_l,      \
+                    out4, out5);                     \
+    ILVL_H_2VECS_SH(in6_r, in7_r, in6_l, in7_l,      \
+                    out6, out7);                     \
 }
 
 #define ILVR_D_2VECS_SB(out0, in0_l, in0_r,                         \
@@ -756,6 +1117,12 @@
     out3 = __msa_pckev_b((v16i8) (in3_l), (v16i8) (in3_r));  \
 }
 
+#define XORI_B_2VECS_UB(val0, val1, out0, out1, xor_val)  \
+{                                                         \
+    out0 = __msa_xori_b((v16u8) (val0), (xor_val));       \
+    out1 = __msa_xori_b((v16u8) (val1), (xor_val));       \
+}
+
 #define XORI_B_2VECS_SB(val0, val1,                          \
                         out0, out1, xor_val)                 \
 {                                                            \
@@ -770,6 +1137,13 @@
     XORI_B_2VECS_SB(val0, val1,                              \
                     out0, out1, xor_val);                    \
     out2 = (v16i8) __msa_xori_b((v16u8) (val2), (xor_val));  \
+}
+
+#define XORI_B_4VECS_UB(val0, val1, val2, val3,           \
+                        out0, out1, out2, out3, xor_val)  \
+{                                                         \
+    XORI_B_2VECS_UB(val0, val1, out0, out1, xor_val);     \
+    XORI_B_2VECS_UB(val2, val3, out2, out3, xor_val);     \
 }
 
 #define XORI_B_4VECS_SB(val0, val1, val2, val3,  \
@@ -790,6 +1164,15 @@
                     out0, out1, out2, xor_val);        \
     XORI_B_2VECS_SB(val3, val4,                        \
                     out3, out4, xor_val);              \
+}
+
+#define XORI_B_6VECS_SB(val0, val1, val2, val3, val4, val5,  \
+                        out0, out1, out2, out3, out4, out5,  \
+                        xor_val)                             \
+{                                                            \
+    XORI_B_4VECS_SB(val0, val1, val2, val3,                  \
+                    out0, out1, out2, out3, xor_val);        \
+    XORI_B_2VECS_SB(val4, val5,out4, out5, xor_val);         \
 }
 
 #define XORI_B_7VECS_SB(val0, val1, val2, val3,        \
@@ -842,6 +1225,140 @@
     out3 = (v8u16) __msa_srl_h((v8i16) (in3), (v8i16) (shift_right_vec));  \
 }
 
+#define SRAR_SATURATE_SIGNED_H(input, right_shift_vec, sat_val)        \
+( {                                                                    \
+    v8i16 out_m;                                                       \
+                                                                       \
+    out_m = __msa_srar_h((v8i16) (input), (v8i16) (right_shift_vec));  \
+    out_m = __msa_sat_s_h(out_m, (sat_val));                           \
+    out_m;                                                             \
+} )
+
+#define PCKEV_2B_XORI128_STORE_4_BYTES_4(in1, in2,         \
+                                         pdst, stride)     \
+{                                                          \
+    uint32_t out0_m, out1_m, out2_m, out3_m;               \
+    v16i8 tmp0_m;                                          \
+    uint8_t *dst_m = (uint8_t *) (pdst);                   \
+                                                           \
+    tmp0_m = __msa_pckev_b((v16i8) (in2), (v16i8) (in1));  \
+    tmp0_m = (v16i8) __msa_xori_b((v16u8) tmp0_m, 128);    \
+                                                           \
+    out0_m = __msa_copy_u_w((v4i32) tmp0_m, 0);            \
+    out1_m = __msa_copy_u_w((v4i32) tmp0_m, 1);            \
+    out2_m = __msa_copy_u_w((v4i32) tmp0_m, 2);            \
+    out3_m = __msa_copy_u_w((v4i32) tmp0_m, 3);            \
+                                                           \
+    STORE_WORD(dst_m, out0_m);                             \
+    dst_m += stride;                                       \
+    STORE_WORD(dst_m, out1_m);                             \
+    dst_m += stride;                                       \
+    STORE_WORD(dst_m, out2_m);                             \
+    dst_m += stride;                                       \
+    STORE_WORD(dst_m, out3_m);                             \
+}
+
+#define PCKEV_B_XORI128_STORE_8_BYTES(in1, in2, pdest)    \
+{                                                         \
+    uint64_t out_m;                                       \
+    v16i8 tmp_m;                                          \
+                                                          \
+    tmp_m = __msa_pckev_b((v16i8) (in1), (v16i8) (in2));  \
+    tmp_m = (v16i8) __msa_xori_b((v16u8) tmp_m, 128);     \
+    out_m = __msa_copy_u_d((v2i64) tmp_m, 0);             \
+    STORE_DWORD((pdest), out_m);                          \
+}
+
+#define PCKEV_B_XORI128_STORE_8_BYTES_2(in1, in2,          \
+                                        pdst, stride)      \
+{                                                          \
+    uint64_t out0_m, out1_m;                               \
+    v16i8 tmp0_m;                                          \
+    uint8_t *dst_m = (uint8_t *) (pdst);                   \
+                                                           \
+    tmp0_m = __msa_pckev_b((v16i8) (in2), (v16i8) (in1));  \
+    tmp0_m = (v16i8) __msa_xori_b((v16u8) tmp0_m, 128);    \
+                                                           \
+    out0_m = __msa_copy_u_d((v2i64) tmp0_m, 0);            \
+    out1_m = __msa_copy_u_d((v2i64) tmp0_m, 1);            \
+                                                           \
+    STORE_DWORD(dst_m, out0_m);                            \
+    dst_m += stride;                                       \
+    STORE_DWORD(dst_m, out1_m);                            \
+}
+
+#define PCKEV_B_XORI128_STORE_6_BYTES_4(in1, in2, in3, in4,  \
+                                        pdst, stride)        \
+{                                                            \
+    uint32_t out0_m, out1_m, out2_m, out3_m;                 \
+    uint16_t out4_m, out5_m, out6_m, out7_m;                 \
+    v16i8 tmp0_m, tmp1_m;                                    \
+    uint8_t *dst_m = (uint8_t *) (pdst);                     \
+                                                             \
+    tmp0_m = __msa_pckev_b((v16i8) (in2), (v16i8) (in1));    \
+    tmp1_m = __msa_pckev_b((v16i8) (in4), (v16i8) (in3));    \
+                                                             \
+    tmp0_m = (v16i8) __msa_xori_b((v16u8) tmp0_m, 128);      \
+    tmp1_m = (v16i8) __msa_xori_b((v16u8) tmp1_m, 128);      \
+                                                             \
+    out0_m = __msa_copy_u_w((v4i32) tmp0_m, 0);              \
+    out1_m = __msa_copy_u_w((v4i32) tmp0_m, 2);              \
+    out2_m = __msa_copy_u_w((v4i32) tmp1_m, 0);              \
+    out3_m = __msa_copy_u_w((v4i32) tmp1_m, 2);              \
+                                                             \
+    out4_m = __msa_copy_u_h((v8i16) tmp0_m, 2);              \
+    out5_m = __msa_copy_u_h((v8i16) tmp0_m, 6);              \
+    out6_m = __msa_copy_u_h((v8i16) tmp1_m, 2);              \
+    out7_m = __msa_copy_u_h((v8i16) tmp1_m, 6);              \
+                                                             \
+    STORE_WORD(dst_m, out0_m);                               \
+    STORE_HWORD((dst_m + 4), out4_m);                        \
+    dst_m += stride;                                         \
+    STORE_WORD(dst_m, out1_m);                               \
+    STORE_HWORD((dst_m + 4), out5_m);                        \
+    dst_m += stride;                                         \
+    STORE_WORD(dst_m, out2_m);                               \
+    STORE_HWORD((dst_m + 4), out6_m);                        \
+    dst_m += stride;                                         \
+    STORE_WORD(dst_m, out3_m);                               \
+    STORE_HWORD((dst_m + 4), out7_m);                        \
+}
+
+#define PCKEV_B_4_XORI128_STORE_8_BYTES_4(in1, in2, in3, in4,  \
+                                          pdst, stride)        \
+{                                                              \
+    uint64_t out0_m, out1_m, out2_m, out3_m;                   \
+    v16i8 tmp0_m, tmp1_m;                                      \
+    uint8_t *dst_m = (uint8_t *) (pdst);                       \
+                                                               \
+    tmp0_m = __msa_pckev_b((v16i8) (in2), (v16i8) (in1));      \
+    tmp1_m = __msa_pckev_b((v16i8) (in4), (v16i8) (in3));      \
+                                                               \
+    tmp0_m = (v16i8) __msa_xori_b((v16u8) tmp0_m, 128);        \
+    tmp1_m = (v16i8) __msa_xori_b((v16u8) tmp1_m, 128);        \
+                                                               \
+    out0_m = __msa_copy_u_d((v2i64) tmp0_m, 0);                \
+    out1_m = __msa_copy_u_d((v2i64) tmp0_m, 1);                \
+    out2_m = __msa_copy_u_d((v2i64) tmp1_m, 0);                \
+    out3_m = __msa_copy_u_d((v2i64) tmp1_m, 1);                \
+                                                               \
+    STORE_DWORD(dst_m, out0_m);                                \
+    dst_m += stride;                                           \
+    STORE_DWORD(dst_m, out1_m);                                \
+    dst_m += stride;                                           \
+    STORE_DWORD(dst_m, out2_m);                                \
+    dst_m += stride;                                           \
+    STORE_DWORD(dst_m, out3_m);                                \
+}
+#define PCKEV_B_XORI128_STORE_VEC(in1, in2, pdest)        \
+{                                                         \
+    v16i8 tmp_m;                                          \
+                                                          \
+    tmp_m = __msa_pckev_b((v16i8) (in1), (v16i8) (in2));  \
+    tmp_m = (v16i8) __msa_xori_b((v16u8) tmp_m, 128);     \
+    STORE_SB(tmp_m, (pdest));                             \
+}
+
 #define PCKEV_B_STORE_4_BYTES_4(in1, in2, in3, in4,        \
                                 pdst, stride)              \
 {                                                          \
@@ -888,6 +1405,22 @@
     STORE_DWORD(dst_m, out2_m);                            \
     dst_m += stride;                                       \
     STORE_DWORD(dst_m, out3_m);                            \
+}
+
+#define UNPCK_SIGNED_B_TO_H(in, out1, out2)            \
+{                                                      \
+    v16i8 tmp_m;                                       \
+                                                       \
+    tmp_m = __msa_clti_s_b((v16i8) (in), 0);           \
+    out1 = (v8i16) __msa_ilvr_b(tmp_m, (v16i8) (in));  \
+    out2 = (v8i16) __msa_ilvl_b(tmp_m, (v16i8) (in));  \
+}
+
+#define SWAP_VECS(Vec0, Vec1)  \
+{                              \
+    Vec0 = Vec0 ^ Vec1;        \
+    Vec1 = Vec0 ^ Vec1;        \
+    Vec0 = Vec0 ^ Vec1;        \
 }
 
 #endif  /* AVUTIL_MIPS_GENERIC_MACROS_MSA_H */
