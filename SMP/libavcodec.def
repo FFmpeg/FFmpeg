@@ -70,6 +70,7 @@ EXPORTS
     av_packet_ref
     av_packet_rescale_ts
     av_packet_shrink_side_data
+    av_packet_side_data_name
     av_packet_split_side_data
     av_packet_unpack_dictionary
     av_packet_unref
