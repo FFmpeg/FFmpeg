@@ -1155,7 +1155,7 @@ static void iterative_me(SnowContext *s){
                 }
             }
         }
-        av_log(s->avctx, AV_LOG_ERROR, "pass:%d changed:%d\n", pass, change);
+        av_log(s->avctx, AV_LOG_DEBUG, "pass:%d changed:%d\n", pass, change);
         if(!change)
             break;
     }
