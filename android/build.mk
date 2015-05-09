@@ -95,8 +95,8 @@ LOCAL_CFLAGS += \
 	-Wno-pointer-to-int-cast -Wstrict-prototypes -Wempty-body -Wno-parentheses \
 	-Wno-switch -Wno-format-zero-length -Wno-pointer-sign \
 	-Werror=format-security -Werror=implicit-function-declaration -Werror=missing-prototypes \
-	-Werror=return-type -Werror=vla -Wformat -Wno-maybe-uninitialized
+	-Werror=return-type -Werror=vla -Wformat -Wno-maybe-uninitialized -fPIC
 
-LOCAL_LDFLAGS := -Wl,--no-fatal-warnings
+LOCAL_LDFLAGS := -Wl,--no-fatal-warnings -Wl,-Bsymbolic
 
 LOCAL_SHARED_LIBRARIES := $(sort $(FFLIBS-yes:%=lib%) $(FFLIBS:%=lib%))
