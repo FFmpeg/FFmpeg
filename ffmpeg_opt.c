@@ -2859,7 +2859,7 @@ const OptionDef options[] = {
     { "itsscale",       HAS_ARG | OPT_DOUBLE | OPT_SPEC |
                         OPT_EXPERT | OPT_INPUT,                      { .off = OFFSET(ts_scale) },
         "set the input ts scale", "scale" },
-    { "timestamp",      HAS_ARG | OPT_PERFILE,                       { .func_arg = opt_recording_timestamp },
+    { "timestamp",      HAS_ARG | OPT_PERFILE | OPT_OUTPUT,          { .func_arg = opt_recording_timestamp },
         "set the recording timestamp ('now' to set the current time)", "time" },
     { "metadata",       HAS_ARG | OPT_STRING | OPT_SPEC | OPT_OUTPUT, { .off = OFFSET(metadata) },
         "add metadata", "string=string" },
