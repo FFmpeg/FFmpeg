@@ -84,6 +84,8 @@ static void put_dc(ERContext *s, uint8_t *dest_y, uint8_t *dest_cb,
         dcv = 0;
     else if (dcv > 2040)
         dcv = 2040;
+
+    if (dest_cr)
     for (y = 0; y < 8; y++) {
         int x;
         for (x = 0; x < 8; x++) {
@@ -1228,6 +1230,9 @@ void ff_er_frame_end(ERContext *s)
                 dc_ptr[(n & 1) + (n >> 1) * s->b8_stride] = (dc + 4) >> 3;
             }
 
+            if (!s->cur_pic.f->data[2])
+                continue;
+
             dcu = dcv = 0;
             for (y = 0; y < 8; y++) {
                 int x;
@@ -1268,6 +1273,8 @@ void ff_er_frame_end(ERContext *s)
             dest_y  = s->cur_pic.f->data[0] + mb_x * 16 + mb_y * 16 * linesize[0];
             dest_cb = s->cur_pic.f->data[1] + mb_x *  8 + mb_y *  8 * linesize[1];
             dest_cr = s->cur_pic.f->data[2] + mb_x *  8 + mb_y *  8 * linesize[2];
+            if (!s->cur_pic.f->data[2])
+                dest_cb = dest_cr = NULL;
 
             put_dc(s, dest_y, dest_cb, dest_cr, mb_x, mb_y);
         }
@@ -1278,18 +1285,21 @@ void ff_er_frame_end(ERContext *s)
         /* filter horizontal block boundaries */
         h_block_filter(s, s->cur_pic.f->data[0], s->mb_width * 2,
                        s->mb_height * 2, linesize[0], 1);
-        h_block_filter(s, s->cur_pic.f->data[1], s->mb_width,
-                       s->mb_height, linesize[1], 0);
-        h_block_filter(s, s->cur_pic.f->data[2], s->mb_width,
-                       s->mb_height, linesize[2], 0);
 
         /* filter vertical block boundaries */
         v_block_filter(s, s->cur_pic.f->data[0], s->mb_width * 2,
                        s->mb_height * 2, linesize[0], 1);
-        v_block_filter(s, s->cur_pic.f->data[1], s->mb_width,
-                       s->mb_height, linesize[1], 0);
-        v_block_filter(s, s->cur_pic.f->data[2], s->mb_width,
-                       s->mb_height, linesize[2], 0);
+
+        if (s->cur_pic.f->data[2]) {
+            h_block_filter(s, s->cur_pic.f->data[1], s->mb_width,
+                        s->mb_height, linesize[1], 0);
+            h_block_filter(s, s->cur_pic.f->data[2], s->mb_width,
+                        s->mb_height, linesize[2], 0);
+            v_block_filter(s, s->cur_pic.f->data[1], s->mb_width,
+                        s->mb_height, linesize[1], 0);
+            v_block_filter(s, s->cur_pic.f->data[2], s->mb_width,
+                        s->mb_height, linesize[2], 0);
+        }
     }
 
 ec_clean:
