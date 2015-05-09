@@ -1112,13 +1112,15 @@ static void iterative_me(SnowContext *s){
                     /* fullpel ME */
                     //FIXME avoid subpel interpolation / round to nearest integer
                     do{
+                        int newx = block->mx;
+                        int newy = block->my;
                         dia_change=0;
                         for(i=0; i<FFMAX(s->avctx->dia_size, 1); i++){
                             for(j=0; j<i; j++){
-                                dia_change |= check_block_inter(s, mb_x, mb_y, block->mx+4*(i-j), block->my+(4*j), obmc_edged, &best_rd);
-                                dia_change |= check_block_inter(s, mb_x, mb_y, block->mx-4*(i-j), block->my-(4*j), obmc_edged, &best_rd);
-                                dia_change |= check_block_inter(s, mb_x, mb_y, block->mx+4*(i-j), block->my-(4*j), obmc_edged, &best_rd);
-                                dia_change |= check_block_inter(s, mb_x, mb_y, block->mx-4*(i-j), block->my+(4*j), obmc_edged, &best_rd);
+                                dia_change |= check_block_inter(s, mb_x, mb_y, newx+4*(i-j), newy+(4*j), obmc_edged, &best_rd);
+                                dia_change |= check_block_inter(s, mb_x, mb_y, newx-4*(i-j), newy-(4*j), obmc_edged, &best_rd);
+                                dia_change |= check_block_inter(s, mb_x, mb_y, newx+4*(i-j), newy-(4*j), obmc_edged, &best_rd);
+                                dia_change |= check_block_inter(s, mb_x, mb_y, newx-4*(i-j), newy+(4*j), obmc_edged, &best_rd);
                             }
                         }
                     }while(dia_change);

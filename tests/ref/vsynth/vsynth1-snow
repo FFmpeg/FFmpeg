@@ -1,4 +1,4 @@
-e4de85f539ef50b08d2a1dc7e57c7f49 *tests/data/fate/vsynth1-snow.avi
-136080 tests/data/fate/vsynth1-snow.avi
-91021b7d6d7908648fe78cc1975af8c4 *tests/data/fate/vsynth1-snow.out.rawvideo
+61915927233f94db766dd968e750d6a8 *tests/data/fate/vsynth1-snow.avi
+136324 tests/data/fate/vsynth1-snow.avi
+443a1fbdfea490453e790b7e99c0c8df *tests/data/fate/vsynth1-snow.out.rawvideo
 stddev:   22.77 PSNR: 20.98 MAXDIFF:  172 bytes:  7603200/  7603200
