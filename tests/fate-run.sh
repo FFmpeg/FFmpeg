@@ -160,7 +160,7 @@ video_filter(){
     raw_src="${target_path}/tests/vsynth1/%02d.pgm"
     printf '%-20s' $label
     avconv $DEC_OPTS -f image2 -vcodec pgmyuv -i $raw_src \
-        $FLAGS $ENC_OPTS -vf "$filters" -vcodec rawvideo $* -f nut md5:
+        $FLAGS $ENC_OPTS -vf "$filters" -vcodec rawvideo -frames:v 5 $* -f nut md5:
 }
 
 pixfmts(){
@@ -180,7 +180,7 @@ pixfmts(){
     outertest=$test
     for pix_fmt in $pix_fmts; do
         test=$pix_fmt
-        video_filter "format=$pix_fmt,$filter=$filter_args" -pix_fmt $pix_fmt
+        video_filter "format=$pix_fmt,$filter=$filter_args" -pix_fmt $pix_fmt -frames:v 1
     done
 
     rm $exclude_fmts $out_fmts
