@@ -3277,8 +3277,8 @@ skip_idct:
         if(!readable){
             s->hdsp.put_pixels_tab[0][0](s->dest[0], dest_y ,   linesize,16);
             if (!CONFIG_GRAY || !(s->flags & CODEC_FLAG_GRAY)) {
-            s->hdsp.put_pixels_tab[s->chroma_x_shift][0](s->dest[1], dest_cb, uvlinesize,16 >> s->chroma_y_shift);
-            s->hdsp.put_pixels_tab[s->chroma_x_shift][0](s->dest[2], dest_cr, uvlinesize,16 >> s->chroma_y_shift);
+                s->hdsp.put_pixels_tab[s->chroma_x_shift][0](s->dest[1], dest_cb, uvlinesize,16 >> s->chroma_y_shift);
+                s->hdsp.put_pixels_tab[s->chroma_x_shift][0](s->dest[2], dest_cr, uvlinesize,16 >> s->chroma_y_shift);
             }
         }
     }
