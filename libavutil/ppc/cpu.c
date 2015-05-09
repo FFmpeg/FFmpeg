@@ -94,15 +94,30 @@ out:
     close(fd);
     return ret;
 #elif CONFIG_RUNTIME_CPUDETECT
+#define PVR_G4_7400  0x000C
+#define PVR_G5_970   0x0039
+#define PVR_G5_970FX 0x003C
+#define PVR_G5_970MP 0x0044
+#define PVR_G5_970GX 0x0045
+#define PVR_POWER6   0x003E
+#define PVR_POWER7   0x003F
+#define PVR_POWER8   0x004B
+#define PVR_CELL_PPU 0x0070
+
     int proc_ver;
     // Support of mfspr PVR emulation added in Linux 2.6.17.
     __asm__ volatile("mfspr %0, 287" : "=r" (proc_ver));
     proc_ver >>= 16;
     if (proc_ver  & 0x8000 ||
-        proc_ver == 0x000c ||
-        proc_ver == 0x0039 || proc_ver == 0x003c ||
-        proc_ver == 0x0044 || proc_ver == 0x0045 ||
-        proc_ver == 0x0070)
+        proc_ver == PVR_G4_7400  ||
+        proc_ver == PVR_G5_970   ||
+        proc_ver == PVR_G5_970FX ||
+        proc_ver == PVR_G5_970MP ||
+        proc_ver == PVR_G5_970GX ||
+        proc_ver == PVR_POWER6   ||
+        proc_ver == PVR_POWER7   ||
+        proc_ver == PVR_POWER8   ||
+        proc_ver == PVR_CELL_PPU)
         return AV_CPU_FLAG_ALTIVEC;
     return 0;
 #else
