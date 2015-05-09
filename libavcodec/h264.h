@@ -721,6 +721,11 @@ typedef struct H264Context {
 
     int frame_recovered;    ///< Initial frame has been completely recovered
 
+    /* for frame threading, this is set to 1
+     * after finish_setup() has been called, so we cannot modify
+     * some context properties (which are supposed to stay constant between
+     * slices) anymore */
+    int setup_finished;
 
     // Timestamp stuff
     int sei_buffering_period_present;   ///< Buffering period SEI flag
