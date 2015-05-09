@@ -1235,6 +1235,9 @@ static enum AVPixelFormat mpeg_get_pixelformat(AVCodecContext *avctx)
     MpegEncContext *s = &s1->mpeg_enc_ctx;
     const enum AVPixelFormat *pix_fmts;
 
+    if (CONFIG_GRAY && (avctx->flags & CODEC_FLAG_GRAY))
+        return AV_PIX_FMT_GRAY8;
+
     if (s->chroma_format < 2)
         pix_fmts = avctx->codec_id == AV_CODEC_ID_MPEG1VIDEO ?
                                 mpeg1_hwaccel_pixfmt_list_420 :
