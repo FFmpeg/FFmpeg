@@ -912,7 +912,7 @@ static av_always_inline int check_block(SnowContext *s, int mb_x, int mb_y, int 
         block->type &= ~BLOCK_INTRA;
     }
 
-    rd= get_block_rd(s, mb_x, mb_y, 0, obmc_edged);
+    rd= get_block_rd(s, mb_x, mb_y, 0, obmc_edged) + s->intra_penalty * !!intra;
 
 //FIXME chroma
     if(rd < *best_rd){
@@ -1877,6 +1877,7 @@ static const AVOption options[] = {
     FF_MPV_COMMON_OPTS
     { "memc_only",      "Only do ME/MC (I frames -> ref, P frame -> ME+MC).",   OFFSET(memc_only), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VE },
     { "no_bitstream",   "Skip final bitstream writeout.",                    OFFSET(no_bitstream), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VE },
+    { "intra_penalty",  "Penalty for intra blocks in block decission",      OFFSET(intra_penalty), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE },
     { NULL },
 };
 
