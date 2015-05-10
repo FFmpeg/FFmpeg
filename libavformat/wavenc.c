@@ -92,7 +92,7 @@ typedef struct WAVMuxContext {
 static inline void bwf_write_bext_string(AVFormatContext *s, const char *key, int maxlen)
 {
     AVDictionaryEntry *tag;
-    int len = 0;
+    size_t len = 0;
 
     if (tag = av_dict_get(s->metadata, key, NULL, 0)) {
         len = strlen(tag->value);
@@ -122,9 +122,9 @@ static void bwf_write_bext_chunk(AVFormatContext *s)
 
     if (tmp_tag = av_dict_get(s->metadata, "umid", NULL, 0)) {
         unsigned char umidpart_str[17] = {0};
-        int i;
+        int64_t i;
         uint64_t umidpart;
-        int len = strlen(tmp_tag->value+2);
+        size_t len = strlen(tmp_tag->value+2);
 
         for (i = 0; i < len/16; i++) {
             memcpy(umidpart_str, tmp_tag->value + 2 + (i*16), 16);
