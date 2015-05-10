@@ -1654,6 +1654,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         s->m.pict_type = pic->pict_type;
         s->m.me_method= s->avctx->me_method;
         s->m.me.scene_change_score=0;
+        s->m.me.dia_size = avctx->dia_size;
         s->m.flags= s->avctx->flags;
         s->m.quarter_sample= (s->avctx->flags & CODEC_FLAG_QPEL)!=0;
         s->m.out_format= FMT_H263;
