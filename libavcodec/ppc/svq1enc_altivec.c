@@ -32,7 +32,7 @@
 #include "libavutil/ppc/util_altivec.h"
 #include "libavcodec/svq1enc.h"
 
-#if HAVE_ALTIVEC
+#if HAVE_ALTIVEC && HAVE_BIGENDIAN
 static int ssd_int8_vs_int16_altivec(const int8_t *pix1, const int16_t *pix2,
                                      int size)
 {
@@ -76,7 +76,7 @@ static int ssd_int8_vs_int16_altivec(const int8_t *pix1, const int16_t *pix2,
 
 av_cold void ff_svq1enc_init_ppc(SVQ1EncContext *c)
 {
-#if HAVE_ALTIVEC
+#if HAVE_ALTIVEC && HAVE_BIGENDIAN
     if (!PPC_ALTIVEC(av_get_cpu_flags()))
         return;
 

@@ -27,7 +27,7 @@
 #include "libavutil/ppc/util_altivec.h"
 #include "libavcodec/vc1dsp.h"
 
-#if HAVE_ALTIVEC
+#if HAVE_ALTIVEC && HAVE_BIGENDIAN
 
 // main steps of 8x8 transform
 #define STEP8(s0, s1, s2, s3, s4, s5, s6, s7, vec_rnd) \
@@ -344,7 +344,7 @@ static void vc1_inv_trans_8x4_altivec(uint8_t *dest, int stride, int16_t *block)
 
 av_cold void ff_vc1dsp_init_ppc(VC1DSPContext *dsp)
 {
-#if HAVE_ALTIVEC
+#if HAVE_ALTIVEC && HAVE_BIGENDIAN
     if (!PPC_ALTIVEC(av_get_cpu_flags()))
         return;
 

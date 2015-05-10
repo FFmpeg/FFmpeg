@@ -29,7 +29,7 @@
 #include "libavutil/ppc/util_altivec.h"
 #include "libavcodec/mpegvideoencdsp.h"
 
-#if HAVE_ALTIVEC
+#if HAVE_ALTIVEC && HAVE_BIGENDIAN
 
 static int pix_norm1_altivec(uint8_t *pix, int line_size)
 {
@@ -93,7 +93,7 @@ static int pix_sum_altivec(uint8_t *pix, int line_size)
 av_cold void ff_mpegvideoencdsp_init_ppc(MpegvideoEncDSPContext *c,
                                          AVCodecContext *avctx)
 {
-#if HAVE_ALTIVEC
+#if HAVE_ALTIVEC && HAVE_BIGENDIAN
     if (!PPC_ALTIVEC(av_get_cpu_flags()))
         return;
 

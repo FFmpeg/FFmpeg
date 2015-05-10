@@ -27,7 +27,7 @@
 #include "libavutil/ppc/util_altivec.h"
 #include "libavcodec/h264chroma.h"
 
-#if HAVE_ALTIVEC
+#if HAVE_ALTIVEC && HAVE_BIGENDIAN
 #define PUT_OP_U8_ALTIVEC(d, s, dst) d = s
 #define AVG_OP_U8_ALTIVEC(d, s, dst) d = vec_avg(dst, s)
 
@@ -50,7 +50,7 @@
 
 av_cold void ff_h264chroma_init_ppc(H264ChromaContext *c, int bit_depth)
 {
-#if HAVE_ALTIVEC
+#if HAVE_ALTIVEC && HAVE_BIGENDIAN
     const int high_bit_depth = bit_depth > 8;
 
     if (!PPC_ALTIVEC(av_get_cpu_flags()))

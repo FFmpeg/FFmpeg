@@ -28,7 +28,7 @@
 #include "libavcodec/h264qpel.h"
 #include "hpeldsp_altivec.h"
 
-#if HAVE_ALTIVEC
+#if HAVE_ALTIVEC && HAVE_BIGENDIAN
 
 #define PUT_OP_U8_ALTIVEC(d, s, dst) d = s
 #define AVG_OP_U8_ALTIVEC(d, s, dst) d = vec_avg(dst, s)
@@ -286,7 +286,7 @@ H264_MC(avg_, 16, altivec)
 
 av_cold void ff_h264qpel_init_ppc(H264QpelContext *c, int bit_depth)
 {
-#if HAVE_ALTIVEC
+#if HAVE_ALTIVEC && HAVE_BIGENDIAN
     const int high_bit_depth = bit_depth > 8;
 
     if (!PPC_ALTIVEC(av_get_cpu_flags()))

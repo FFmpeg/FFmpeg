@@ -28,7 +28,7 @@
 #include "libavcodec/h264data.h"
 #include "libavcodec/h264dsp.h"
 
-#if HAVE_ALTIVEC
+#if HAVE_ALTIVEC && HAVE_BIGENDIAN
 
 /****************************************************************************
  * IDCT transform:
@@ -745,7 +745,7 @@ H264_WEIGHT( 8)
 av_cold void ff_h264dsp_init_ppc(H264DSPContext *c, const int bit_depth,
                                  const int chroma_format_idc)
 {
-#if HAVE_ALTIVEC
+#if HAVE_ALTIVEC && HAVE_BIGENDIAN
     if (!PPC_ALTIVEC(av_get_cpu_flags()))
         return;
 

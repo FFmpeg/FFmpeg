@@ -32,7 +32,7 @@
 #include "libavutil/ppc/util_altivec.h"
 #include "libavcodec/mpegvideo.h"
 
-#if HAVE_ALTIVEC
+#if HAVE_ALTIVEC && HAVE_BIGENDIAN
 
 /* AltiVec version of dct_unquantize_h263
    this code assumes `block' is 16 bytes-aligned */
@@ -117,7 +117,7 @@ static void dct_unquantize_h263_altivec(MpegEncContext *s,
 
 av_cold void ff_mpv_common_init_ppc(MpegEncContext *s)
 {
-#if HAVE_ALTIVEC
+#if HAVE_ALTIVEC && HAVE_BIGENDIAN
     if (!PPC_ALTIVEC(av_get_cpu_flags()))
         return;
 

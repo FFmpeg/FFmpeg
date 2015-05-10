@@ -34,7 +34,7 @@
 #include "libavcodec/mpegvideo.h"
 #include "libavcodec/me_cmp.h"
 
-#if HAVE_ALTIVEC
+#if HAVE_ALTIVEC && HAVE_BIGENDIAN
 static int sad16_x2_altivec(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
                             ptrdiff_t stride, int h)
 {
@@ -746,7 +746,7 @@ static int hadamard8_diff16_altivec(MpegEncContext *s, uint8_t *dst,
 
 av_cold void ff_me_cmp_init_ppc(MECmpContext *c, AVCodecContext *avctx)
 {
-#if HAVE_ALTIVEC
+#if HAVE_ALTIVEC && HAVE_BIGENDIAN
     if (!PPC_ALTIVEC(av_get_cpu_flags()))
         return;
 

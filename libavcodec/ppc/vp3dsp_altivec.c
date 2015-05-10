@@ -28,7 +28,7 @@
 #include "libavutil/ppc/util_altivec.h"
 #include "libavcodec/vp3dsp.h"
 
-#if HAVE_ALTIVEC
+#if HAVE_ALTIVEC && HAVE_BIGENDIAN
 
 static const vec_s16 constants =
     {0, 64277, 60547, 54491, 46341, 36410, 25080, 12785};
@@ -179,7 +179,7 @@ static void vp3_idct_add_altivec(uint8_t *dst, int stride, int16_t block[64])
 
 av_cold void ff_vp3dsp_init_ppc(VP3DSPContext *c, int flags)
 {
-#if HAVE_ALTIVEC
+#if HAVE_ALTIVEC && HAVE_BIGENDIAN
     if (!PPC_ALTIVEC(av_get_cpu_flags()))
         return;
 

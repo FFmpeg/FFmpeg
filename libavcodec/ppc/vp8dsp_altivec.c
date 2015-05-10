@@ -29,7 +29,7 @@
 #include "libavcodec/vp8dsp.h"
 #include "hpeldsp_altivec.h"
 
-#if HAVE_ALTIVEC
+#if HAVE_ALTIVEC && HAVE_BIGENDIAN
 #define REPT4(...) { __VA_ARGS__, __VA_ARGS__, __VA_ARGS__, __VA_ARGS__ }
 
 // h subpel filter uses msum to multiply+add 4 pixel taps at once
@@ -315,7 +315,7 @@ static void put_vp8_pixels16_altivec(uint8_t *dst, ptrdiff_t dstride, uint8_t *s
 
 av_cold void ff_vp78dsp_init_ppc(VP8DSPContext *c)
 {
-#if HAVE_ALTIVEC
+#if HAVE_ALTIVEC && HAVE_BIGENDIAN
     if (!PPC_ALTIVEC(av_get_cpu_flags()))
         return;
 

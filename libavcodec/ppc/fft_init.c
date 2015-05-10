@@ -39,7 +39,7 @@
 void ff_fft_calc_altivec(FFTContext *s, FFTComplex *z);
 void ff_fft_calc_interleave_altivec(FFTContext *s, FFTComplex *z);
 
-#if HAVE_GNU_AS && HAVE_ALTIVEC
+#if HAVE_GNU_AS && HAVE_ALTIVEC && HAVE_BIGENDIAN
 static void imdct_half_altivec(FFTContext *s, FFTSample *output, const FFTSample *input)
 {
     int j, k;
@@ -143,7 +143,7 @@ static void imdct_calc_altivec(FFTContext *s, FFTSample *output, const FFTSample
 
 av_cold void ff_fft_init_ppc(FFTContext *s)
 {
-#if HAVE_GNU_AS && HAVE_ALTIVEC
+#if HAVE_GNU_AS && HAVE_ALTIVEC && HAVE_BIGENDIAN
     if (!PPC_ALTIVEC(av_get_cpu_flags()))
         return;
 

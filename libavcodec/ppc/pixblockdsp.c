@@ -33,7 +33,7 @@
 #include "libavcodec/avcodec.h"
 #include "libavcodec/pixblockdsp.h"
 
-#if HAVE_ALTIVEC
+#if HAVE_ALTIVEC && HAVE_BIGENDIAN
 
 static void get_pixels_altivec(int16_t *restrict block, const uint8_t *pixels,
                                int line_size)
@@ -137,7 +137,7 @@ av_cold void ff_pixblockdsp_init_ppc(PixblockDSPContext *c,
                                      AVCodecContext *avctx,
                                      unsigned high_bit_depth)
 {
-#if HAVE_ALTIVEC
+#if HAVE_ALTIVEC && HAVE_BIGENDIAN
     if (!PPC_ALTIVEC(av_get_cpu_flags()))
         return;
 

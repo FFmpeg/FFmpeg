@@ -29,7 +29,7 @@
 #include "libavutil/ppc/types_altivec.h"
 #include "libavcodec/apedsp.h"
 
-#if HAVE_ALTIVEC
+#if HAVE_ALTIVEC && HAVE_BIGENDIAN
 static int32_t scalarproduct_and_madd_int16_altivec(int16_t *v1,
                                                     const int16_t *v2,
                                                     const int16_t *v3,
@@ -73,7 +73,7 @@ static int32_t scalarproduct_and_madd_int16_altivec(int16_t *v1,
 
 av_cold void ff_apedsp_init_ppc(APEDSPContext *c)
 {
-#if HAVE_ALTIVEC
+#if HAVE_ALTIVEC && HAVE_BIGENDIAN
     if (!PPC_ALTIVEC(av_get_cpu_flags()))
         return;
 

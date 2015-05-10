@@ -29,7 +29,7 @@
 #include "libavcodec/fdctdsp.h"
 #include "fdct.h"
 
-#if HAVE_ALTIVEC
+#if HAVE_ALTIVEC && HAVE_BIGENDIAN
 
 #define vs16(v)   ((vector signed short) (v))
 #define vs32(v)     ((vector signed int) (v))
@@ -465,7 +465,7 @@ void ff_fdct_altivec(int16_t *block)
 av_cold void ff_fdctdsp_init_ppc(FDCTDSPContext *c, AVCodecContext *avctx,
                                  unsigned high_bit_depth)
 {
-#if HAVE_ALTIVEC
+#if HAVE_ALTIVEC && HAVE_BIGENDIAN
     if (!PPC_ALTIVEC(av_get_cpu_flags()))
         return;
 

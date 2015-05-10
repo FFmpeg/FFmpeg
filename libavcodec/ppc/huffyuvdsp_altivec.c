@@ -32,7 +32,7 @@
 #include "libavutil/ppc/util_altivec.h"
 #include "libavcodec/huffyuvdsp.h"
 
-#if HAVE_ALTIVEC
+#if HAVE_ALTIVEC && HAVE_BIGENDIAN
 static void add_bytes_altivec(uint8_t *dst, uint8_t *src, int w)
 {
     register int i;
@@ -53,7 +53,7 @@ static void add_bytes_altivec(uint8_t *dst, uint8_t *src, int w)
 
 av_cold void ff_huffyuvdsp_init_ppc(HuffYUVDSPContext *c)
 {
-#if HAVE_ALTIVEC
+#if HAVE_ALTIVEC && HAVE_BIGENDIAN
     if (!PPC_ALTIVEC(av_get_cpu_flags()))
         return;
 

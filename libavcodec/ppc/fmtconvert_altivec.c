@@ -26,7 +26,7 @@
 #include "libavutil/ppc/util_altivec.h"
 #include "libavcodec/fmtconvert.h"
 
-#if HAVE_ALTIVEC
+#if HAVE_ALTIVEC && HAVE_BIGENDIAN
 
 static void int32_to_float_fmul_scalar_altivec(float *dst, const int32_t *src,
                                                float mul, int len)
@@ -57,7 +57,7 @@ static void int32_to_float_fmul_scalar_altivec(float *dst, const int32_t *src,
 av_cold void ff_fmt_convert_init_ppc(FmtConvertContext *c,
                                      AVCodecContext *avctx)
 {
-#if HAVE_ALTIVEC
+#if HAVE_ALTIVEC && HAVE_BIGENDIAN
     if (!PPC_ALTIVEC(av_get_cpu_flags()))
         return;
 

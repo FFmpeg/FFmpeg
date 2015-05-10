@@ -289,7 +289,7 @@ static void hScale_altivec_real(SwsContext *c, int16_t *dst, int dstW,
 
 av_cold void ff_sws_init_swscale_ppc(SwsContext *c)
 {
-#if HAVE_ALTIVEC
+#if HAVE_ALTIVEC && HAVE_BIGENDIAN
     enum AVPixelFormat dstFormat = c->dstFormat;
 
     if (!(av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC))
