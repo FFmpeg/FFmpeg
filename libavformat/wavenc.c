@@ -120,7 +120,7 @@ static void bwf_write_bext_chunk(AVFormatContext *s)
     avio_wl64(s->pb, time_reference);
     avio_wl16(s->pb, 1);  // set version to 1
 
-    if (tmp_tag = av_dict_get(s->metadata, "umid", NULL, 0)) {
+    if ((tmp_tag = av_dict_get(s->metadata, "umid", NULL, 0)) && strlen(tmp_tag->value) > 2) {
         unsigned char umidpart_str[17] = {0};
         int64_t i;
         uint64_t umidpart;
