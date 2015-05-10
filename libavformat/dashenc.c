@@ -494,7 +494,7 @@ static int write_manifest(AVFormatContext *s, int final)
     }
 
     if (c->has_video) {
-        avio_printf(out, "\t\t<AdaptationSet id=\"video\" segmentAlignment=\"true\" bitstreamSwitching=\"true\">\n");
+        avio_printf(out, "\t\t<AdaptationSet contentType=\"video\" segmentAlignment=\"true\" bitstreamSwitching=\"true\">\n");
         for (i = 0; i < s->nb_streams; i++) {
             AVStream *st = s->streams[i];
             OutputStream *os = &c->streams[i];
@@ -509,7 +509,7 @@ static int write_manifest(AVFormatContext *s, int final)
         avio_printf(out, "\t\t</AdaptationSet>\n");
     }
     if (c->has_audio) {
-        avio_printf(out, "\t\t<AdaptationSet id=\"audio\" segmentAlignment=\"true\" bitstreamSwitching=\"true\">\n");
+        avio_printf(out, "\t\t<AdaptationSet contentType=\"audio\" segmentAlignment=\"true\" bitstreamSwitching=\"true\">\n");
         for (i = 0; i < s->nb_streams; i++) {
             AVStream *st = s->streams[i];
             OutputStream *os = &c->streams[i];
