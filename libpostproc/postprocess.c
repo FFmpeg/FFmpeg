@@ -737,7 +737,7 @@ pp_mode *pp_get_mode_by_name_and_quality(const char *name, int quality)
         /* replace stuff from the replace Table */
         for(i=0; replaceTable[2*i]; i++){
             if(!strcmp(replaceTable[2*i], filterName)){
-                int newlen= strlen(replaceTable[2*i + 1]);
+                size_t newlen = strlen(replaceTable[2*i + 1]);
                 int plen;
                 int spaceLeft;
 
