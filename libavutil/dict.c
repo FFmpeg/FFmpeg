@@ -92,7 +92,7 @@ int av_dict_set(AVDictionary **pm, const char *key, const char *value, int flags
         if (flags & AV_DICT_DONT_STRDUP_VAL) {
             m->elems[m->count].value = (char*)(intptr_t)value;
         } else if (oldval && flags & AV_DICT_APPEND) {
-            int len = strlen(oldval) + strlen(value) + 1;
+            size_t len = strlen(oldval) + strlen(value) + 1;
             char *newval = av_mallocz(len);
             if (!newval)
                 return AVERROR(ENOMEM);
