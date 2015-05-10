@@ -254,7 +254,7 @@ FATE_FILTER_VSYNTH-$(call ALLYES, PERMS_FILTER HUE_FILTER) += fate-filter-hue
 fate-filter-hue: CMD = video_filter "perms=random,hue=s=sin(2*PI*t)+1"
 
 FATE_FILTER_VSYNTH-$(CONFIG_IDET_FILTER) += fate-filter-idet
-fate-filter-idet: CMD = video_filter "idet"
+fate-filter-idet: CMD = framecrc -flags bitexact -idct simple -i $(SRC) -vf idet -vframes 25 -flags +bitexact
 
 FATE_FILTER_VSYNTH-$(CONFIG_PAD_FILTER) += fate-filter-pad
 fate-filter-pad: CMD = video_filter "pad=iw*1.5:ih*1.5:iw*0.3:ih*0.2"
@@ -275,7 +275,7 @@ FATE_FILTER_VSYNTH-$(call ALLYES, QP_FILTER PP_FILTER) += fate-filter-qp
 fate-filter-qp: CMD = video_filter "qp=17,pp=be/hb/vb/tn/l5/al"
 
 FATE_FILTER_VSYNTH-$(CONFIG_SELECT_FILTER) += fate-filter-select
-fate-filter-select: CMD = video_filter "select=not(eq(mod(n\,2)\,0)+eq(mod(n\,3)\,0))"
+fate-filter-select: CMD = framecrc -flags bitexact -idct simple -i $(SRC) -vf "select=not(eq(mod(n\,2)\,0)+eq(mod(n\,3)\,0))" -vframes 25 -flags +bitexact
 
 FATE_FILTER_VSYNTH-$(CONFIG_SETDAR_FILTER) += fate-filter-setdar
 fate-filter-setdar: CMD = video_filter "setdar=dar=16/9"
