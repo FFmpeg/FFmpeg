@@ -702,9 +702,11 @@ static int add_segment(OutputStream *os, const char *file,
         return AVERROR(ENOMEM);
     av_strlcpy(seg->file, file, sizeof(seg->file));
     seg->time = time;
-    if (seg->time < 0) // If pts<0, it is expected to be cut away with an edit list
-        seg->time = 0;
     seg->duration = duration;
+    if (seg->time < 0) { // If pts<0, it is expected to be cut away with an edit list
+        seg->duration += seg->time;
+        seg->time = 0;
+    }
     seg->start_pos = start_pos;
     seg->range_length = range_length;
     seg->index_length = index_length;
