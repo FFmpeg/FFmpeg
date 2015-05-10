@@ -109,7 +109,7 @@ int av_dict_set(AVDictionary **pm, const char *key, const char *value,
         m->elems[m->count].key = copy_key;
         m->elems[m->count].value = copy_value;
         if (oldval && flags & AV_DICT_APPEND) {
-            int len = strlen(oldval) + strlen(copy_value) + 1;
+            size_t len = strlen(oldval) + strlen(copy_value) + 1;
             char *newval = av_mallocz(len);
             if (!newval)
                 goto err_out;

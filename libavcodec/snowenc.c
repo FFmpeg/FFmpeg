@@ -912,7 +912,7 @@ static av_always_inline int check_block(SnowContext *s, int mb_x, int mb_y, int 
         block->type &= ~BLOCK_INTRA;
     }
 
-    rd= get_block_rd(s, mb_x, mb_y, 0, obmc_edged);
+    rd= get_block_rd(s, mb_x, mb_y, 0, obmc_edged) + s->intra_penalty * !!intra;
 
 //FIXME chroma
     if(rd < *best_rd){
@@ -1112,13 +1112,15 @@ static void iterative_me(SnowContext *s){
                     /* fullpel ME */
                     //FIXME avoid subpel interpolation / round to nearest integer
                     do{
+                        int newx = block->mx;
+                        int newy = block->my;
                         dia_change=0;
                         for(i=0; i<FFMAX(s->avctx->dia_size, 1); i++){
                             for(j=0; j<i; j++){
-                                dia_change |= check_block_inter(s, mb_x, mb_y, block->mx+4*(i-j), block->my+(4*j), obmc_edged, &best_rd);
-                                dia_change |= check_block_inter(s, mb_x, mb_y, block->mx-4*(i-j), block->my-(4*j), obmc_edged, &best_rd);
-                                dia_change |= check_block_inter(s, mb_x, mb_y, block->mx+4*(i-j), block->my-(4*j), obmc_edged, &best_rd);
-                                dia_change |= check_block_inter(s, mb_x, mb_y, block->mx-4*(i-j), block->my+(4*j), obmc_edged, &best_rd);
+                                dia_change |= check_block_inter(s, mb_x, mb_y, newx+4*(i-j), newy+(4*j), obmc_edged, &best_rd);
+                                dia_change |= check_block_inter(s, mb_x, mb_y, newx-4*(i-j), newy-(4*j), obmc_edged, &best_rd);
+                                dia_change |= check_block_inter(s, mb_x, mb_y, newx-(4*j), newy+4*(i-j), obmc_edged, &best_rd);
+                                dia_change |= check_block_inter(s, mb_x, mb_y, newx+(4*j), newy-4*(i-j), obmc_edged, &best_rd);
                             }
                         }
                     }while(dia_change);
@@ -1155,7 +1157,7 @@ static void iterative_me(SnowContext *s){
                 }
             }
         }
-        av_log(s->avctx, AV_LOG_ERROR, "pass:%d changed:%d\n", pass, change);
+        av_log(s->avctx, AV_LOG_DEBUG, "pass:%d changed:%d\n", pass, change);
         if(!change)
             break;
     }
@@ -1652,6 +1654,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         s->m.pict_type = pic->pict_type;
         s->m.me_method= s->avctx->me_method;
         s->m.me.scene_change_score=0;
+        s->m.me.dia_size = avctx->dia_size;
         s->m.flags= s->avctx->flags;
         s->m.quarter_sample= (s->avctx->flags & CODEC_FLAG_QPEL)!=0;
         s->m.out_format= FMT_H263;
@@ -1877,6 +1880,7 @@ static const AVOption options[] = {
     FF_MPV_COMMON_OPTS
     { "memc_only",      "Only do ME/MC (I frames -> ref, P frame -> ME+MC).",   OFFSET(memc_only), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VE },
     { "no_bitstream",   "Skip final bitstream writeout.",                    OFFSET(no_bitstream), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VE },
+    { "intra_penalty",  "Penalty for intra blocks in block decission",      OFFSET(intra_penalty), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE },
     { NULL },
 };
 
