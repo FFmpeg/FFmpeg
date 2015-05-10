@@ -47,14 +47,14 @@
 #define WORD_s2 0x18,0x19,0x1a,0x1b
 #define WORD_s3 0x1c,0x1d,0x1e,0x1f
 
-#define vcprm(a,b,c,d) (const vector unsigned char){WORD_ ## a, WORD_ ## b, WORD_ ## c, WORD_ ## d}
+#define vcprm(a,b,c,d) (const vec_u8){WORD_ ## a, WORD_ ## b, WORD_ ## c, WORD_ ## d}
 
 
 // Transpose 8x8 matrix of 16-bit elements (in-place)
 #define TRANSPOSE8(a,b,c,d,e,f,g,h) \
 do { \
-    vector signed short A1, B1, C1, D1, E1, F1, G1, H1; \
-    vector signed short A2, B2, C2, D2, E2, F2, G2, H2; \
+    vec_s16 A1, B1, C1, D1, E1, F1, G1, H1; \
+    vec_s16 A2, B2, C2, D2, E2, F2, G2, H2; \
  \
     A1 = vec_mergeh (a, e); \
     B1 = vec_mergel (a, e); \
@@ -87,11 +87,11 @@ do { \
 
 /** @brief loads unaligned vector @a *src with offset @a offset
     and returns it */
-static inline vector unsigned char unaligned_load(int offset, uint8_t *src)
+static inline vec_u8 unaligned_load(int offset, uint8_t *src)
 {
-    register vector unsigned char first = vec_ld(offset, src);
-    register vector unsigned char second = vec_ld(offset+15, src);
-    register vector unsigned char mask = vec_lvsl(offset, src);
+    register vec_u8 first = vec_ld(offset, src);
+    register vec_u8 second = vec_ld(offset + 15, src);
+    register vec_u8 mask = vec_lvsl(offset, src);
     return vec_perm(first, second, mask);
 }
 
@@ -102,7 +102,7 @@ static inline vector unsigned char unaligned_load(int offset, uint8_t *src)
 static inline vec_u8 load_with_perm_vec(int offset, uint8_t *src, vec_u8 perm_vec)
 {
     vec_u8 a = vec_ld(offset, src);
-    vec_u8 b = vec_ld(offset+15, src);
+    vec_u8 b = vec_ld(offset + 15, src);
     return vec_perm(a, b, perm_vec);
 }
 
