@@ -24,20 +24,6 @@
 #include <stdint.h>
 #include "config.h"
 
-/*
- * -O0 would compile the packed struct version, which is used by
- * default, in an overly verbose fashion, so we override it here.
- */
-#if HAVE_BIGENDIAN
-#define AV_RB64(p) (*(const uint64_t *)(p))
-#define AV_WB64(p, v) (*(uint64_t *)(p) = (v))
-
-#else
-#define AV_RL64(p) (*(const uint64_t *)(p))
-#define AV_WL64(p, v) (*(uint64_t *)(p) = (v))
-
-#endif
-
 #if HAVE_XFORM_ASM
 
 #if HAVE_BIGENDIAN
