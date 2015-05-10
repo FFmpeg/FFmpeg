@@ -109,7 +109,7 @@ int ff_text_peek_r8(FFTextReader *r)
 }
 
 AVPacket *ff_subtitles_queue_insert(FFDemuxSubtitlesQueue *q,
-                                    const uint8_t *event, int len, int merge)
+                                    const uint8_t *event, size_t len, int merge)
 {
     AVPacket *subs, *sub;
 
@@ -303,7 +303,7 @@ int ff_smil_extract_next_text_chunk(FFTextReader *tr, AVBPrint *buf, char *c)
 const char *ff_smil_get_attr_ptr(const char *s, const char *attr)
 {
     int in_quotes = 0;
-    const int len = strlen(attr);
+    const size_t len = strlen(attr);
 
     while (*s) {
         while (*s) {
