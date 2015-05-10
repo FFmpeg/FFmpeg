@@ -116,7 +116,7 @@ typedef struct {
  *              previous one instead of adding a new entry, 0 otherwise
  */
 AVPacket *ff_subtitles_queue_insert(FFDemuxSubtitlesQueue *q,
-                                    const uint8_t *event, int len, int merge);
+                                    const uint8_t *event, size_t len, int merge);
 
 /**
  * Set missing durations and sort subtitles by PTS, and then byte position.
