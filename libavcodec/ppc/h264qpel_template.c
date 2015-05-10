@@ -28,7 +28,7 @@
 #include "libavutil/ppc/types_altivec.h"
 #include "libavutil/ppc/util_altivec.h"
 
-#define ASSERT_ALIGNED(ptr) av_assert2(((unsigned long)ptr&0x0000000F));
+#define ASSERT_ALIGNED(ptr) av_assert2(!((uintptr_t)ptr&0x0000000F));
 
 #if HAVE_BIGENDIAN
 #define load_alignment(s, ali, pm2, pm1, pp0, pp1, pp2, pp3){\
