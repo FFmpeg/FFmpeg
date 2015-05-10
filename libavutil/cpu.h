@@ -54,6 +54,8 @@
 #define AV_CPU_FLAG_BMI2        0x40000 ///< Bit Manipulation Instruction Set 2
 
 #define AV_CPU_FLAG_ALTIVEC      0x0001 ///< standard
+#define AV_CPU_FLAG_VSX          0x0002 ///< ISA 2.06
+#define AV_CPU_FLAG_POWER8       0x0004 ///< ISA 2.07
 
 #define AV_CPU_FLAG_ARMV5TE      (1 << 0)
 #define AV_CPU_FLAG_ARMV6        (1 << 1)

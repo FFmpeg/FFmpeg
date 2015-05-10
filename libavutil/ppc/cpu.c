@@ -85,6 +85,14 @@ int ff_get_cpu_flags_ppc(void)
             if (buf[i] == AT_HWCAP) {
                 if (buf[i + 1] & PPC_FEATURE_HAS_ALTIVEC)
                     ret = AV_CPU_FLAG_ALTIVEC;
+#ifdef PPC_FEATURE_HAS_VSX
+                if (buf[i + 1] & PPC_FEATURE_HAS_VSX)
+                    ret |= AV_CPU_FLAG_VSX;
+#endif
+#ifdef PPC_FEATURE_ARCH_2_07
+                if (buf[i + 1] & PPC_FEATURE_HAS_POWER8)
+                    ret |= AV_CPU_FLAG_POWER8;
+#endif
                 goto out;
             }
         }
@@ -103,7 +111,7 @@ out:
 #define PVR_POWER7   0x003F
 #define PVR_POWER8   0x004B
 #define PVR_CELL_PPU 0x0070
-
+    int ret = 0;
     int proc_ver;
     // Support of mfspr PVR emulation added in Linux 2.6.17.
     __asm__ volatile("mfspr %0, 287" : "=r" (proc_ver));
@@ -118,8 +126,14 @@ out:
         proc_ver == PVR_POWER7   ||
         proc_ver == PVR_POWER8   ||
         proc_ver == PVR_CELL_PPU)
-        return AV_CPU_FLAG_ALTIVEC;
-    return 0;
+        ret = AV_CPU_FLAG_ALTIVEC;
+    if (proc_ver == PVR_POWER7 ||
+        proc_ver == PVR_POWER8)
+        ret |= AV_CPU_FLAG_VSX;
+    if (proc_ver == PVR_POWER8)
+        ret |= AV_CPU_FLAG_POWER8;
+
+    return ret;
 #else
     // Since we were compiled for AltiVec, just assume we have it
     // until someone comes up with a proper way (not involving signal hacks).
