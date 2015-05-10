@@ -306,7 +306,7 @@ static int http_listen(URLContext *h, const char *uri, int flags,
     static const char header[] = "HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nTransfer-Encoding: chunked\r\n\r\n";
     char hostname[1024], proto[10];
     char lower_url[100];
-    char *lower_proto = "tcp";
+    const char *lower_proto = "tcp";
     int port, new_location;
     av_url_split(proto, sizeof(proto), NULL, 0, hostname, sizeof(hostname), &port,
                  NULL, 0, uri);
