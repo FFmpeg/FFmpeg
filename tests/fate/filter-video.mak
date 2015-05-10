@@ -349,7 +349,7 @@ FATE_FILTER_PIXFMTS-$(CONFIG_FIELD_FILTER) += fate-filter-pixfmts-field
 fate-filter-pixfmts-field: CMD = pixfmts "bottom"
 
 FATE_FILTER_PIXFMTS-$(call ALLYES, TELECINE_FILTER FIELDMATCH_FILTER) += fate-filter-pixfmts-fieldmatch
-fate-filter-pixfmts-fieldmatch: CMD = pixfmts "" "telecine,"
+fate-filter-pixfmts-fieldmatch: CMD = pixfmts "" "telecine," 25
 
 FATE_FILTER_PIXFMTS-$(CONFIG_FIELDORDER_FILTER) += fate-filter-pixfmts-fieldorder
 fate-filter-pixfmts-fieldorder: CMD = pixfmts "tff" "setfield=bff,"
@@ -376,7 +376,7 @@ FATE_FILTER_PIXFMTS-$(CONFIG_PAD_FILTER) += fate-filter-pixfmts-pad
 fate-filter-pixfmts-pad:   CMD = pixfmts "500:400:20:20"
 
 FATE_FILTER_PIXFMTS-$(call ALLYES, TELECINE_FILTER PULLUP_FILTER) += fate-filter-pixfmts-pullup
-fate-filter-pixfmts-pullup: CMD = pixfmts "" "telecine,"
+fate-filter-pixfmts-pullup: CMD = pixfmts "" "telecine," 25
 
 FATE_FILTER_PIXFMTS-$(CONFIG_ROTATE_FILTER) += fate-filter-pixfmts-rotate
 fate-filter-pixfmts-rotate: CMD = pixfmts "2*PI*n/50"
