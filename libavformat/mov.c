@@ -2602,6 +2602,11 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
 static int mov_open_dref(MOVContext *c, AVIOContext **pb, const char *src, MOVDref *ref,
                          AVIOInterruptCB *int_cb)
 {
+    AVOpenCallback open_func = c->fc->open_cb;
+
+    if (!open_func)
+        open_func = ffio_open2_wrapper;
+
     /* try relative path, we do not try the absolute because it can leak information about our
        system to an attacker */
     if (ref->nlvl_to > 0 && ref->nlvl_from > 0 && ref->path[0] != '/') {
@@ -2634,19 +2639,22 @@ static int mov_open_dref(MOVContext *c, AVIOContext **pb, const char *src, MOVDr
                 av_strlcat(filename, "../", sizeof(filename));
 
             av_strlcat(filename, ref->path + l + 1, sizeof(filename));
-            if (!c->use_absolute_path)
+            if (!c->use_absolute_path && !c->fc->open_cb)
                 if(strstr(ref->path + l + 1, "..") || ref->nlvl_from > 1)
                     return AVERROR(ENOENT);
 
             if (strlen(filename) + 1 == sizeof(filename))
                 return AVERROR(ENOENT);
-            if (!avio_open2(pb, filename, AVIO_FLAG_READ, int_cb, NULL))
+            if (!open_func(c->fc, pb, filename, AVIO_FLAG_READ, int_cb, NULL))
                 return 0;
         }
     } else if (c->use_absolute_path) {
         av_log(c->fc, AV_LOG_WARNING, "Using absolute path on user request, "
                "this is a possible security issue\n");
-        if (!avio_open2(pb, ref->path, AVIO_FLAG_READ, int_cb, NULL))
+        if (!open_func(c->fc, pb, ref->path, AVIO_FLAG_READ, int_cb, NULL))
+            return 0;
+    } else if (c->fc->open_cb) {
+        if (!open_func(c->fc, pb, ref->path, AVIO_FLAG_READ, int_cb, NULL))
             return 0;
     }
 
