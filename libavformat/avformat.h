@@ -1791,7 +1791,7 @@ typedef struct AVFormatContext {
      * The function should behave like avio_open2(), AVFormatContext is provided
      * as contextual information and to reach AVFormatContext.opaque.
      *
-     * If NULL then avio_open2() is used.
+     * If NULL then some simple checks are used together with avio_open2().
      *
      * Must not be accessed directly from outside avformat.
      * @See av_format_set_open_cb()
