@@ -99,7 +99,7 @@ size_t av_strlcat(char *dst, const char *src, size_t size)
 
 size_t av_strlcatf(char *dst, size_t size, const char *fmt, ...)
 {
-    int len = strlen(dst);
+    size_t len = strlen(dst);
     va_list vl;
 
     va_start(vl, fmt);
