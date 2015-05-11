@@ -633,8 +633,6 @@ static int decode_idat_chunk(AVCodecContext *avctx, PNGDecContext *s,
             return AVERROR_INVALIDDATA;
         }
 
-        avctx->color_range = AVCOL_RANGE_JPEG;
-
         if ((ret = ff_thread_get_buffer(avctx, &s->picture, AV_GET_BUFFER_FLAG_REF)) < 0)
             return ret;
         ff_thread_finish_setup(avctx);
@@ -1244,6 +1242,8 @@ static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
 static av_cold int png_dec_init(AVCodecContext *avctx)
 {
     PNGDecContext *s = avctx->priv_data;
+
+    avctx->color_range = AVCOL_RANGE_JPEG;
 
     s->avctx = avctx;
     s->previous_picture.f = av_frame_alloc();

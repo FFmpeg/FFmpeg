@@ -546,12 +546,15 @@ static int put_flac_codecpriv(AVFormatContext *s,
                              "Lavf" : LIBAVFORMAT_IDENT;
         AVDictionary *dict = NULL;
         uint8_t buf[32], *data, *p;
-        int len;
+        int64_t len;
 
         snprintf(buf, sizeof(buf), "0x%"PRIx64, codec->channel_layout);
         av_dict_set(&dict, "WAVEFORMATEXTENSIBLE_CHANNEL_MASK", buf, 0);
 
         len = ff_vorbiscomment_length(dict, vendor);
+        if (len >= ((1<<24) - 4))
+            return AVERROR(EINVAL);
+
         data = av_malloc(len + 4);
         if (!data) {
             av_dict_free(&dict);

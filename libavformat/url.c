@@ -68,7 +68,7 @@ int ff_url_join(char *str, int size, const char *proto,
         av_strlcatf(str, size, ":%d", port);
     if (fmt) {
         va_list vl;
-        int len = strlen(str);
+        size_t len = strlen(str);
 
         va_start(vl, fmt);
         vsnprintf(str + len, size > len ? size - len : 0, fmt, vl);

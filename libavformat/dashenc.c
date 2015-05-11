@@ -503,7 +503,7 @@ static int write_manifest(AVFormatContext *s, int final)
     }
 
     if (c->has_video) {
-        avio_printf(out, "\t\t<AdaptationSet id=\"video\" segmentAlignment=\"true\" bitstreamSwitching=\"true\">\n");
+        avio_printf(out, "\t\t<AdaptationSet contentType=\"video\" segmentAlignment=\"true\" bitstreamSwitching=\"true\">\n");
         for (i = 0; i < s->nb_streams; i++) {
             AVStream *st = s->streams[i];
             OutputStream *os = &c->streams[i];
@@ -518,7 +518,7 @@ static int write_manifest(AVFormatContext *s, int final)
         avio_printf(out, "\t\t</AdaptationSet>\n");
     }
     if (c->has_audio) {
-        avio_printf(out, "\t\t<AdaptationSet id=\"audio\" segmentAlignment=\"true\" bitstreamSwitching=\"true\">\n");
+        avio_printf(out, "\t\t<AdaptationSet contentType=\"audio\" segmentAlignment=\"true\" bitstreamSwitching=\"true\">\n");
         for (i = 0; i < s->nb_streams; i++) {
             AVStream *st = s->streams[i];
             OutputStream *os = &c->streams[i];
@@ -702,9 +702,11 @@ static int add_segment(OutputStream *os, const char *file,
         return AVERROR(ENOMEM);
     av_strlcpy(seg->file, file, sizeof(seg->file));
     seg->time = time;
-    if (seg->time < 0) // If pts<0, it is expected to be cut away with an edit list
-        seg->time = 0;
     seg->duration = duration;
+    if (seg->time < 0) { // If pts<0, it is expected to be cut away with an edit list
+        seg->duration += seg->time;
+        seg->time = 0;
+    }
     seg->start_pos = start_pos;
     seg->range_length = range_length;
     seg->index_length = index_length;
