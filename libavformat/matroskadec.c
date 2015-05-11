@@ -1608,6 +1608,12 @@ static int matroska_parse_tracks(AVFormatContext *s)
             track->video.fourcc = AV_RL32(track->codec_priv.data);
             codec_id            = ff_codec_get_id(ff_codec_movvideo_tags,
                                                   track->video.fourcc);
+            if (codec_id == AV_CODEC_ID_NONE) {
+                char buf[32];
+                av_get_codec_tag_string(buf, sizeof(buf), track->video.fourcc);
+                av_log(matroska->ctx, AV_LOG_ERROR,
+                       "mov FourCC not found %s.\n", buf);
+            }
         } else if (codec_id == AV_CODEC_ID_PCM_S16BE) {
             switch (track->audio.bitdepth) {
             case  8:
