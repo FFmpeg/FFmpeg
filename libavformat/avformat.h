@@ -1237,6 +1237,8 @@ typedef struct AVChapter {
 typedef int (*av_format_control_message)(struct AVFormatContext *s, int type,
                                          void *data, size_t data_size);
 
+typedef int (*AVOpenCallback)(struct AVFormatContext *s, AVIOContext **pb, const char *url, int flags,
+                              const AVIOInterruptCB *int_cb, AVDictionary **options);
 
 /**
  * The duration of a video can be estimated through various ways, and this enum can be used
@@ -1780,6 +1782,23 @@ typedef struct AVFormatContext {
      * Demuxing: Set by user.
      */
     enum AVCodecID data_codec_id;
+
+    /**
+     * Called to open further IO contexts when needed for demuxing.
+     *
+     * This can be set by the user application to perform security checks on
+     * the URLs before opening them.
+     * The function should behave like avio_open2(), AVFormatContext is provided
+     * as contextual information and to reach AVFormatContext.opaque.
+     *
+     * If NULL then avio_open2() is used.
+     *
+     * Must not be accessed directly from outside avformat.
+     * @See av_format_set_open_cb()
+     *
+     * Demuxing: Set by user.
+     */
+    int (*open_cb)(struct AVFormatContext *s, AVIOContext **p, const char *url, int flags, const AVIOInterruptCB *int_cb, AVDictionary **options);
 } AVFormatContext;
 
 int av_format_get_probe_score(const AVFormatContext *s);
@@ -1797,6 +1816,8 @@ void *    av_format_get_opaque(const AVFormatContext *s);
 void      av_format_set_opaque(AVFormatContext *s, void *opaque);
 av_format_control_message av_format_get_control_message_cb(const AVFormatContext *s);
 void      av_format_set_control_message_cb(AVFormatContext *s, av_format_control_message callback);
+AVOpenCallback av_format_get_open_cb(const AVFormatContext *s);
+void      av_format_set_open_cb(AVFormatContext *s, AVOpenCallback callback);
 
 /**
  * This function will cause global side data to be injected in the next packet

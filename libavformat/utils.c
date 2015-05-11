@@ -112,6 +112,7 @@ MAKE_ACCESSORS(AVFormatContext, format, AVCodec *, data_codec)
 MAKE_ACCESSORS(AVFormatContext, format, int, metadata_header_padding)
 MAKE_ACCESSORS(AVFormatContext, format, void *, opaque)
 MAKE_ACCESSORS(AVFormatContext, format, av_format_control_message, control_message_cb)
+MAKE_ACCESSORS(AVFormatContext, format, AVOpenCallback, open_cb)
 
 int64_t av_stream_get_end_pts(const AVStream *st)
 {
