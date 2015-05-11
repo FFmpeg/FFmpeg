@@ -38,9 +38,9 @@ const AVMetadataConv ff_vorbiscomment_metadata_conv[] = {
     { 0 }
 };
 
-int ff_vorbiscomment_length(AVDictionary *m, const char *vendor_string)
+int64_t ff_vorbiscomment_length(AVDictionary *m, const char *vendor_string)
 {
-    int len = 8;
+    int64_t len = 8;
     len += strlen(vendor_string);
     if (m) {
         AVDictionaryEntry *tag = NULL;
