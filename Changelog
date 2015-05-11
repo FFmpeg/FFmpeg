@@ -12,6 +12,7 @@ version <next>:
 - VP8 in Ogg demuxing
 - OpenH264 encoder wrapper
 - Support DNx100 (960x720@8)
+- Direct3D11-accelerated decoding
 - DXVA2-accelerated HEVC decoding
 - AAC ELD 480 decoding
 - Intel QSV-accelerated H.264 decoding

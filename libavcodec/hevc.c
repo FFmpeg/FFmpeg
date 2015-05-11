@@ -446,6 +446,9 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps)
 #if CONFIG_HEVC_DXVA2_HWACCEL
         *fmt++ = AV_PIX_FMT_DXVA2_VLD;
 #endif
+#if CONFIG_HEVC_D3D11VA_HWACCEL
+        *fmt++ = AV_PIX_FMT_D3D11VA_VLD;
+#endif
     }
 
     *fmt++ = sps->pix_fmt;

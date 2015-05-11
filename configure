@@ -133,6 +133,7 @@ Component options:
   --disable-faan           disable floating point AAN (I)DCT code
 
 Hardware accelerators:
+  --enable-d3d11va         enable D3D11VA code
   --enable-dxva2           enable DXVA2 code
   --enable-vaapi           enable VAAPI code
   --enable-vda             enable VDA code
@@ -1206,6 +1207,7 @@ FEATURE_LIST="
 "
 
 HWACCEL_LIST="
+    d3d11va
     dxva2
     vaapi
     vda
@@ -1396,6 +1398,7 @@ HEADERS_LIST="
     dev_video_meteor_ioctl_meteor_h
     direct_h
     dlfcn_h
+    d3d11_h
     dxva_h
     gsm_h
     io_h
@@ -1551,6 +1554,8 @@ HAVE_LIST="
     $TYPES_LIST
     atomics_native
     dos_paths
+    d3d11_cobj
+    d3d11va_lib
     dxva2_lib
     libc_msvcrt
     libdc1394_1
@@ -1965,6 +1970,7 @@ zmbv_decoder_deps="zlib"
 zmbv_encoder_deps="zlib"
 
 # hardware accelerators
+d3d11va_deps="d3d11_h dxva_h"
 dxva2_deps="dxva2api_h"
 vaapi_deps="va_va_h"
 vda_deps="VideoDecodeAcceleration_VDADecoder_h pthreads"
@@ -1975,6 +1981,8 @@ h263_vaapi_hwaccel_deps="vaapi"
 h263_vaapi_hwaccel_select="h263_decoder"
 h263_vdpau_hwaccel_deps="vdpau"
 h263_vdpau_hwaccel_select="h263_decoder"
+h264_d3d11va_hwaccel_deps="d3d11va"
+h264_d3d11va_hwaccel_select="h264_decoder"
 h264_dxva2_hwaccel_deps="dxva2"
 h264_dxva2_hwaccel_select="h264_decoder"
 h264_mmal_decoder_deps="mmal"
@@ -1990,10 +1998,14 @@ h264_vda_old_hwaccel_deps="vda"
 h264_vda_old_hwaccel_select="h264_decoder"
 h264_vdpau_hwaccel_deps="vdpau"
 h264_vdpau_hwaccel_select="h264_decoder"
+hevc_d3d11va_hwaccel_deps="d3d11va DXVA_PicParams_HEVC"
+hevc_d3d11va_hwaccel_select="hevc_decoder"
 hevc_dxva2_hwaccel_deps="dxva2 DXVA_PicParams_HEVC"
 hevc_dxva2_hwaccel_select="hevc_decoder"
 mpeg1_vdpau_hwaccel_deps="vdpau"
 mpeg1_vdpau_hwaccel_select="mpeg1video_decoder"
+mpeg2_d3d11va_hwaccel_deps="d3d11va"
+mpeg2_d3d11va_hwaccel_select="mpeg2video_decoder"
 mpeg2_dxva2_hwaccel_deps="dxva2"
 mpeg2_dxva2_hwaccel_select="mpeg2video_decoder"
 mpeg2_vaapi_hwaccel_deps="vaapi"
@@ -2004,12 +2016,15 @@ mpeg4_vaapi_hwaccel_deps="vaapi"
 mpeg4_vaapi_hwaccel_select="mpeg4_decoder"
 mpeg4_vdpau_hwaccel_deps="vdpau"
 mpeg4_vdpau_hwaccel_select="mpeg4_decoder"
+vc1_d3d11va_hwaccel_deps="d3d11va"
+vc1_d3d11va_hwaccel_select="vc1_decoder"
 vc1_dxva2_hwaccel_deps="dxva2"
 vc1_dxva2_hwaccel_select="vc1_decoder"
 vc1_vaapi_hwaccel_deps="vaapi"
 vc1_vaapi_hwaccel_select="vc1_decoder"
 vc1_vdpau_hwaccel_deps="vdpau"
 vc1_vdpau_hwaccel_select="vc1_decoder"
+wmv3_d3d11va_hwaccel_select="vc1_d3d11va_hwaccel"
 wmv3_dxva2_hwaccel_select="vc1_dxva2_hwaccel"
 wmv3_vaapi_hwaccel_select="vc1_vaapi_hwaccel"
 wmv3_vdpau_hwaccel_select="vc1_vdpau_hwaccel"
@@ -2288,7 +2303,7 @@ enable swscale_alpha
 enable valgrind_backtrace
 
 # By default, enable only those hwaccels that have no external dependencies.
-enable dxva2 vda vdpau
+enable d3d11va dxva2 vda vdpau
 
 # build settings
 SHFLAGS='-shared -Wl,-soname,$$(@F)'
@@ -4155,6 +4170,7 @@ check_struct windows.h "CONDITION_VARIABLE" Ptr
 
 check_header direct.h
 check_header dlfcn.h
+check_header d3d11.h
 check_header dxva.h
 check_header dxva2api.h
 check_header io.h
@@ -4371,6 +4387,15 @@ if enabled x11grab; then
     require Xext X11/extensions/XShm.h XShmCreateImage -lXext
     require Xfixes X11/extensions/Xfixes.h XFixesGetCursorImage -lXfixes
 fi
+
+enabled d3d11_h &&
+    check_cc <<EOF && enable d3d11_cobj
+#define _WIN32_WINNT 0x0600
+#define COBJMACROS
+#include <windows.h>
+#include <d3d11.h>
+int main(void) { ID3D11VideoDecoder *o = NULL; ID3D11VideoDecoder_Release(o); return 0; }
+EOF
 
 enabled vaapi && enabled xlib &&
     check_lib2 "va/va.h va/va_x11.h" vaGetDisplay -lva -lva-x11 &&
@@ -4592,6 +4617,10 @@ check_deps $CONFIG_LIST       \
            $CONFIG_EXTRA      \
            $HAVE_LIST         \
            $ALL_COMPONENTS    \
+
+enabled_all d3d11va d3d11_cobj CoTaskMemFree &&
+    prepend avconv_libs $($ldflags_filter "-lole32") &&
+    enable d3d11va_lib
 
 enabled_all dxva2 CoTaskMemFree &&
     prepend avconv_libs $($ldflags_filter "-lole32") &&
