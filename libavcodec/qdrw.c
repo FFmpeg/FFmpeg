@@ -61,7 +61,7 @@ static int parse_palette(AVCodecContext *avctx, GetByteContext *gbc,
         bytestream2_skip(gbc, 1);
         b = bytestream2_get_byte(gbc);
         bytestream2_skip(gbc, 1);
-        pal[idx] = (r << 16) | (g << 8) | b;
+        pal[idx] = (0xFFU << 24) | (r << 16) | (g << 8) | b;
     }
     return 0;
 }
