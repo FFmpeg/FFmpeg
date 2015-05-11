@@ -1186,7 +1186,7 @@ static int matroska_probe(AVProbeData *p)
      * availability of that array of characters inside the header.
      * Not fully fool-proof, but good enough. */
     for (i = 0; i < FF_ARRAY_ELEMS(matroska_doctypes); i++) {
-        int probelen = strlen(matroska_doctypes[i]);
+        size_t probelen = strlen(matroska_doctypes[i]);
         if (total < probelen)
             continue;
         for (n = 4 + size; n <= 4 + size + total - probelen; n++)
