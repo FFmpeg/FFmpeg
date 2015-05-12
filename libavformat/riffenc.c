@@ -269,8 +269,8 @@ void ff_parse_specific_params(AVStream *st, int *au_rate,
 
 void ff_riff_write_info_tag(AVIOContext *pb, const char *tag, const char *str)
 {
-    int len = strlen(str);
-    if (len > 0) {
+    size_t len = strlen(str);
+    if (len > 0 && len < UINT32_MAX) {
         len++;
         ffio_wfourcc(pb, tag);
         avio_wl32(pb, len);
