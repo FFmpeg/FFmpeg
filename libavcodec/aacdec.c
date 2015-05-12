@@ -3079,7 +3079,6 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
         goto fail;
     }
 
-    *got_frame_ptr = !!samples;
     if (samples) {
         ac->frame->nb_samples = samples;
         ac->frame->sample_rate = avctx->sample_rate;
