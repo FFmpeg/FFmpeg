@@ -31,21 +31,23 @@
 #include "libavcodec/avfft.h"
 #include "libavutil/eval.h"
 
+#define MAX_PLANES 4
+
 typedef struct {
     const AVClass *class;
 
     RDFTContext *rdft;
-    int rdft_hbits[3];
-    int rdft_vbits[3];
-    size_t rdft_hlen[3];
-    size_t rdft_vlen[3];
-    FFTSample *rdft_hdata[3];
-    FFTSample *rdft_vdata[3];
+    int rdft_hbits[MAX_PLANES];
+    int rdft_vbits[MAX_PLANES];
+    size_t rdft_hlen[MAX_PLANES];
+    size_t rdft_vlen[MAX_PLANES];
+    FFTSample *rdft_hdata[MAX_PLANES];
+    FFTSample *rdft_vdata[MAX_PLANES];
 
-    int dc[3];
-    char *weight_str[3];
-    AVExpr *weight_expr[3];
-    double *weight[3];
+    int dc[MAX_PLANES];
+    char *weight_str[MAX_PLANES];
+    AVExpr *weight_expr[MAX_PLANES];
+    double *weight[MAX_PLANES];
 
 } FFTFILTContext;
 
@@ -291,7 +293,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 {
     FFTFILTContext *fftfilt = ctx->priv;
     int i;
-    for (i = 0; i < 3; i++) {
+    for (i = 0; i < MAX_PLANES; i++) {
         av_free(fftfilt->rdft_hdata[i]);
         av_free(fftfilt->rdft_vdata[i]);
         av_expr_free(fftfilt->weight_expr[i]);
