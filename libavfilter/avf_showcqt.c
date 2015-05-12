@@ -585,11 +585,11 @@ static int plot_cqt(AVFilterLink *inlink)
 
         if (s->gamma2 == 1.0f)
             result[x][3] = result[x][1];
-        else if (s->gamma2 = 2.0f)
+        else if (s->gamma2 == 2.0f)
             result[x][3] = sqrtf(result[x][1]);
-        else if (s->gamma2 = 3.0f)
+        else if (s->gamma2 == 3.0f)
             result[x][3] = cbrtf(result[x][1]);
-        else if (s->gamma2 = 4.0f)
+        else if (s->gamma2 == 4.0f)
             result[x][3] = sqrtf(sqrtf(result[x][1]));
         else
             result[x][3] = expf(logf(result[x][1]) * (1.0f / s->gamma2));
