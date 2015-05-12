@@ -462,6 +462,9 @@ static int parse_rps(GetBitContext *gb, unsigned int rps_idx,
         unsigned int num_negative_pics = get_ue_golomb_long(gb);
         unsigned int num_positive_pics = get_ue_golomb_long(gb);
 
+        if ((num_positive_pics + (uint64_t)num_negative_pics) * 2 > get_bits_left(gb))
+            return AVERROR_INVALIDDATA;
+
         num_delta_pocs[rps_idx] = num_negative_pics + num_positive_pics;
 
         for (i = 0; i < num_negative_pics; i++) {
