@@ -1216,15 +1216,13 @@ static int matroska_decode_buffer(uint8_t **buf, int *buf_size,
             newpktdata = av_realloc(pkt_data, pkt_size);
             if (!newpktdata) {
                 inflateEnd(&zstream);
+                result = AVERROR(ENOMEM);
                 goto failed;
             }
             pkt_data          = newpktdata;
             zstream.avail_out = pkt_size - zstream.total_out;
             zstream.next_out  = pkt_data + zstream.total_out;
-            if (pkt_data) {
-                result = inflate(&zstream, Z_NO_FLUSH);
-            } else
-                result = Z_MEM_ERROR;
+            result = inflate(&zstream, Z_NO_FLUSH);
         } while (result == Z_OK && pkt_size < 10000000);
         pkt_size = zstream.total_out;
         inflateEnd(&zstream);
@@ -1251,15 +1249,13 @@ static int matroska_decode_buffer(uint8_t **buf, int *buf_size,
             newpktdata = av_realloc(pkt_data, pkt_size);
             if (!newpktdata) {
                 BZ2_bzDecompressEnd(&bzstream);
+                result = AVERROR(ENOMEM);
                 goto failed;
             }
             pkt_data           = newpktdata;
             bzstream.avail_out = pkt_size - bzstream.total_out_lo32;
             bzstream.next_out  = pkt_data + bzstream.total_out_lo32;
-            if (pkt_data) {
-                result = BZ2_bzDecompress(&bzstream);
-            } else
-                result = BZ_MEM_ERROR;
+            result = BZ2_bzDecompress(&bzstream);
         } while (result == BZ_OK && pkt_size < 10000000);
         pkt_size = bzstream.total_out_lo32;
         BZ2_bzDecompressEnd(&bzstream);
