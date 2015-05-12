@@ -133,6 +133,40 @@ static void diff_pixels_altivec(int16_t *restrict block, const uint8_t *s1,
 
 #endif /* HAVE_ALTIVEC */
 
+#if HAVE_VSX
+static void get_pixels_vsx(int16_t *restrict block, const uint8_t *pixels,
+                           int line_size)
+{
+    int i;
+    for (i = 0; i < 8; i++) {
+        vec_s16 shorts = vsx_ld_u8_s16(0, pixels);
+
+        vec_vsx_st(shorts, i * 16, block);
+
+        pixels += line_size;
+    }
+}
+
+static void diff_pixels_vsx(int16_t *restrict block, const uint8_t *s1,
+                            const uint8_t *s2, int stride)
+{
+    int i;
+    vec_s16 shorts1, shorts2;
+    for (i = 0; i < 8; i++) {
+        shorts1 = vsx_ld_u8_s16(0, s1);
+        shorts2 = vsx_ld_u8_s16(0, s2);
+
+        shorts1 = vec_sub(shorts1, shorts2);
+
+        vec_vsx_st(shorts1, 0, block);
+
+        s1    += stride;
+        s2    += stride;
+        block += 8;
+    }
+}
+#endif /* HAVE_VSX */
+
 av_cold void ff_pixblockdsp_init_ppc(PixblockDSPContext *c,
                                      AVCodecContext *avctx,
                                      unsigned high_bit_depth)
@@ -147,4 +181,14 @@ av_cold void ff_pixblockdsp_init_ppc(PixblockDSPContext *c,
         c->get_pixels = get_pixels_altivec;
     }
 #endif /* HAVE_ALTIVEC */
+
+#if HAVE_VSX
+    if (!PPC_VSX(av_get_cpu_flags()))
+        return;
+
+    c->diff_pixels = diff_pixels_vsx;
+
+    if (!high_bit_depth)
+        c->get_pixels = get_pixels_vsx;
+#endif /* HAVE_VSX */
 }

@@ -111,4 +111,16 @@ static inline vec_u8 load_with_perm_vec(int offset, uint8_t *src, vec_u8 perm_ve
 
 #endif /* HAVE_ALTIVEC */
 
+#if HAVE_VSX
+#if HAVE_BIGENDIAN
+#define vsx_ld_u8_s16(off, p)                               \
+    ((vec_s16)vec_mergeh((vec_u8)vec_splat_u8(0),           \
+                         (vec_u8)vec_vsx_ld((off), (p))))
+#else
+#define vsx_ld_u8_s16(off, p)                               \
+    ((vec_s16)vec_mergeh((vec_u8)vec_vsx_ld((off), (p)),    \
+                         (vec_u8)vec_splat_u8(0)))
+#endif /* HAVE_BIGENDIAN */
+#endif /* HAVE_VSX */
+
 #endif /* AVUTIL_PPC_UTIL_ALTIVEC_H */
