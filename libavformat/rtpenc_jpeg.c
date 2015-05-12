@@ -80,6 +80,11 @@ void ff_rtp_send_jpeg(AVFormatContext *s1, const uint8_t *buf, int size)
         } else if (buf[i + 1] == SOS) {
             /* SOS is last marker in the header */
             i += AV_RB16(&buf[i + 2]) + 2;
+            if (i > size) {
+                av_log(s1, AV_LOG_ERROR,
+                       "Insufficient data. Aborted!\n");
+                return;
+            }
             break;
         }
     }
