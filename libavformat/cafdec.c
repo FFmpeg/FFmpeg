@@ -134,6 +134,7 @@ static int read_kuki_chunk(AVFormatContext *s, int64_t size)
             return AVERROR_INVALIDDATA;
         }
 
+        av_freep(&st->codec->extradata);
         if (ff_alloc_extradata(st->codec, ALAC_HEADER))
             return AVERROR(ENOMEM);
 
@@ -166,6 +167,7 @@ static int read_kuki_chunk(AVFormatContext *s, int64_t size)
             avio_skip(pb, size - ALAC_NEW_KUKI);
         }
     } else {
+        av_freep(&st->codec->extradata);
         if (ff_get_extradata(st->codec, pb, size) < 0)
             return AVERROR(ENOMEM);
     }
