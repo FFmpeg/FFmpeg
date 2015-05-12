@@ -170,9 +170,6 @@
       <xsd:sequence>
         <xsd:element name="disposition" type="ffprobe:streamDispositionType" minOccurs="0" maxOccurs="1"/>
         <xsd:element name="tag" type="ffprobe:tagType" minOccurs="0" maxOccurs="unbounded"/>
-      </xsd:sequence>
-      <xsd:sequence>
-        <xsd:element name="tag" type="ffprobe:tagType" minOccurs="0" maxOccurs="unbounded"/>
         <xsd:element name="side_data_list" type="ffprobe:packetSideDataListType"   minOccurs="0" maxOccurs="1" />
       </xsd:sequence>
 
