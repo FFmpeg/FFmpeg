@@ -132,7 +132,7 @@ static void blur(CoverContext *cover, AVFrame *in, int offx, int offy)
                     s += data[x + h*stride] * scale;
                     c += scale;
                 }
-                data[x + y*stride] = (s + (c>>1)) / c;
+                data[x + y*stride] = c ? (s + (c>>1)) / c : 0;
             }
         }
     }
