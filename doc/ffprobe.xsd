@@ -272,6 +272,8 @@
     <xsd:complexType name="programVersionType">
       <xsd:attribute name="version"          type="xsd:string" use="required"/>
       <xsd:attribute name="copyright"        type="xsd:string" use="required"/>
+      <xsd:attribute name="build_date"       type="xsd:string"/>
+      <xsd:attribute name="build_time"       type="xsd:string"/>
       <xsd:attribute name="compiler_ident"   type="xsd:string" use="required"/>
       <xsd:attribute name="configuration"    type="xsd:string" use="required"/>
     </xsd:complexType>
