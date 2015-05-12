@@ -219,6 +219,14 @@ int av_image_alloc(uint8_t *pointers[4], int linesizes[4],
     if (desc->flags & AV_PIX_FMT_FLAG_PAL || desc->flags & AV_PIX_FMT_FLAG_PSEUDOPAL)
         avpriv_set_systematic_pal2((uint32_t*)pointers[1], pix_fmt);
 
+    if ((desc->flags & AV_PIX_FMT_FLAG_PAL ||
+         desc->flags & AV_PIX_FMT_FLAG_PSEUDOPAL) &&
+        pointers[1] - pointers[0] > linesizes[0] * h) {
+        /* zero-initialize the padding before the palette */
+        memset(pointers[0] + linesizes[0] * h, 0,
+               pointers[1] - pointers[0] - linesizes[0] * h);
+    }
+
     return ret;
 }
 
