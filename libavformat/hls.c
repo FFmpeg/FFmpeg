@@ -1340,6 +1340,12 @@ static int hls_read_header(AVFormatContext *s)
         pls->cur_seq_no = select_cur_seq_no(c, pls);
 
         pls->read_buffer = av_malloc(INITIAL_BUFFER_SIZE);
+        if (!pls->read_buffer){
+            ret = AVERROR(ENOMEM);
+            avformat_free_context(pls->ctx);
+            pls->ctx = NULL;
+            goto fail;
+        }
         ffio_init_context(&pls->pb, pls->read_buffer, INITIAL_BUFFER_SIZE, 0, pls,
                           read_data, NULL, NULL);
         pls->pb.seekable = 0;
