@@ -127,7 +127,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     ZPContext *s = ctx->priv;
     double var_values[VARS_NB], nb_frames, zoom, dx, dy;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(in->format);
-    AVFrame *out;
+    AVFrame *out = NULL;
     int i, k, x, y, w, h, ret = 0;
 
     var_values[VAR_IN_W]  = var_values[VAR_IW] = in->width;
@@ -232,6 +232,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         ret = ff_filter_frame(outlink, out);
         if (ret < 0)
             break;
+        out = NULL;
 
         sws_freeContext(s->sws);
         s->sws = NULL;
@@ -245,6 +246,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 fail:
     sws_freeContext(s->sws);
     s->sws = NULL;
+    av_frame_free(&out);
     av_frame_free(&in);
     return ret;
 }
