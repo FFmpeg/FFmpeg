@@ -3021,6 +3021,12 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
             AV_WL32(side, 2*AV_RL32(side));
     }
 
+    if (!ac->frame->data[0] && samples) {
+        av_log(avctx, AV_LOG_ERROR, "no frame data found\n");
+        err = AVERROR_INVALIDDATA;
+        goto fail;
+    }
+
     *got_frame_ptr = !!samples;
     if (samples) {
         ac->frame->nb_samples = samples;
