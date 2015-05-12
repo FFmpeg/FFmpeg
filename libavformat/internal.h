@@ -487,4 +487,7 @@ enum AVWriteUncodedFrameFlags {
  */
 int ff_copy_whitelists(AVFormatContext *dst, AVFormatContext *src);
 
+int ffio_open2_wrapper(struct AVFormatContext *s, AVIOContext **pb, const char *url, int flags,
+                       const AVIOInterruptCB *int_cb, AVDictionary **options);
+
 #endif /* AVFORMAT_INTERNAL_H */

@@ -157,7 +157,4 @@ int ffio_close_null_buf(AVIOContext *s);
  */
 void ffio_free_dyn_buf(AVIOContext **s);
 
-int ffio_open2_wrapper(struct AVFormatContext *s, AVIOContext **pb, const char *url, int flags,
-                       const AVIOInterruptCB *int_cb, AVDictionary **options);
-
 #endif /* AVFORMAT_AVIO_INTERNAL_H */
