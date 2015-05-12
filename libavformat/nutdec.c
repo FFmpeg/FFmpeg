@@ -540,6 +540,8 @@ static int decode_info_header(NUTContext *nut)
             return ret;
         }
         value = get_s(bc);
+        str_value[0] = 0;
+
         if (value == -1) {
             type = "UTF-8";
             get_str(bc, str_value, sizeof(str_value));
