@@ -258,6 +258,10 @@ Select the pattern type used to interpret the provided filename.
 
 @var{pattern_type} accepts one of the following values.
 @table @option
+@item none
+Disable pattern matching, therefore the video will only contain the specified
+image. You should use this option if you do not want to create sequences from
+multiple images and your filenames may contain special pattern characters.
 @item sequence
 Select a sequence pattern type, used to specify a sequence of files
 indexed by sequential numbers.

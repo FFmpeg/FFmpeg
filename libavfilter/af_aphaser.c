@@ -206,6 +206,10 @@ static int config_output(AVFilterLink *outlink)
     AVFilterLink *inlink = outlink->src->inputs[0];
 
     p->delay_buffer_length = p->delay * 0.001 * inlink->sample_rate + 0.5;
+    if (p->delay_buffer_length <= 0) {
+        av_log(outlink->src, AV_LOG_ERROR, "delay is too small\n");
+        return AVERROR(EINVAL);
+    }
     p->delay_buffer = av_calloc(p->delay_buffer_length, sizeof(*p->delay_buffer) * inlink->channels);
     p->modulation_buffer_length = inlink->sample_rate / p->speed + 0.5;
     p->modulation_buffer = av_malloc_array(p->modulation_buffer_length, sizeof(*p->modulation_buffer));

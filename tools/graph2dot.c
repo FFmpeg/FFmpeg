@@ -153,7 +153,7 @@ int main(int argc, char **argv)
 
     /* read from infile and put it in a buffer */
     {
-        unsigned int count = 0;
+        int64_t count = 0;
         struct line *line, *last_line, *first_line;
         char *p;
         last_line = first_line = av_malloc(sizeof(struct line));
@@ -181,7 +181,7 @@ int main(int argc, char **argv)
         }
         p = graph_string;
         for (line = first_line; line->next; line = line->next) {
-            unsigned int l = strlen(line->data);
+            size_t l = strlen(line->data);
             memcpy(p, line->data, l);
             p += l;
         }

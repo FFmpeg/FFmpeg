@@ -42,10 +42,10 @@ typedef struct DCAParseContext {
 
 #define IS_EXSS_MARKER(state)   ((state & 0xFFFFFFFF) == DCA_SYNCWORD_SUBSTREAM)
 
-#define IS_MARKER(state)    (IS_CORE_MARKER(state) || IS_EXSS_MARKER(state))
+#define IS_MARKER(state)        (IS_CORE_MARKER(state) || IS_EXSS_MARKER(state))
 
-#define CORE_MARKER(state)  ((state >> 16) & 0xFFFFFFFF)
-#define EXSS_MARKER(state)  (state & 0xFFFFFFFF)
+#define CORE_MARKER(state)      ((state >> 16) & 0xFFFFFFFF)
+#define EXSS_MARKER(state)      (state & 0xFFFFFFFF)
 
 /**
  * Find the end of the current frame in the bitstream.
@@ -66,7 +66,9 @@ static int dca_find_frame_end(DCAParseContext *pc1, const uint8_t *buf,
         for (i = 0; i < buf_size; i++) {
             state = (state << 8) | buf[i];
             if (IS_MARKER(state)) {
-                if (!pc1->lastmarker || CORE_MARKER(state) == pc1->lastmarker || pc1->lastmarker == DCA_SYNCWORD_SUBSTREAM) {
+                if (!pc1->lastmarker ||
+                    pc1->lastmarker == CORE_MARKER(state) ||
+                    pc1->lastmarker == DCA_SYNCWORD_SUBSTREAM) {
                     start_found = 1;
                     if (IS_EXSS_MARKER(state))
                         pc1->lastmarker = EXSS_MARKER(state);
@@ -82,7 +84,9 @@ static int dca_find_frame_end(DCAParseContext *pc1, const uint8_t *buf,
         for (; i < buf_size; i++) {
             pc1->size++;
             state = (state << 8) | buf[i];
-            if (IS_MARKER(state) && (CORE_MARKER(state) == pc1->lastmarker || pc1->lastmarker == DCA_SYNCWORD_SUBSTREAM)) {
+            if (IS_MARKER(state) &&
+                (pc1->lastmarker == CORE_MARKER(state) ||
+                 pc1->lastmarker == DCA_SYNCWORD_SUBSTREAM)) {
                 if (pc1->framesize > pc1->size)
                     continue;
                 pc->frame_start_found = 0;

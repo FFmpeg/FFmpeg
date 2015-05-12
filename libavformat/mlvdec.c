@@ -28,6 +28,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/rational.h"
 #include "avformat.h"
+#include "avio_internal.h"
 #include "internal.h"
 #include "riff.h"
 
@@ -331,11 +332,17 @@ static int read_header(AVFormatContext *avctx)
     if (strlen(avctx->filename) > 2) {
         int i;
         char *filename = av_strdup(avctx->filename);
+        AVOpenCallback open_func = avctx->open_cb;
+
         if (!filename)
             return AVERROR(ENOMEM);
+
+        if (!open_func)
+            open_func = ffio_open2_wrapper;
+
         for (i = 0; i < 100; i++) {
             snprintf(filename + strlen(filename) - 2, 3, "%02d", i);
-            if (avio_open2(&mlv->pb[i], filename, AVIO_FLAG_READ, &avctx->interrupt_callback, NULL) < 0)
+            if (open_func(avctx, &mlv->pb[i], filename, AVIO_FLAG_READ, &avctx->interrupt_callback, NULL) < 0)
                 break;
             if (check_file_header(mlv->pb[i], guid) < 0) {
                 av_log(avctx, AV_LOG_WARNING, "ignoring %s; bad format or guid mismatch\n", filename);

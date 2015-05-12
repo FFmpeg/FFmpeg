@@ -195,6 +195,7 @@ pixfmts(){
     filter=${filter%_*}
     filter_args=$1
     prefilter_chain=$2
+    nframes=${3:-1}
 
     showfiltfmts="$target_exec $target_path/libavfilter/filtfmts-test"
     scale_exclude_fmts=${outfile}_scale_exclude_fmts
@@ -213,7 +214,7 @@ pixfmts(){
     outertest=$test
     for pix_fmt in $pix_fmts; do
         test=$pix_fmt
-        video_filter "${prefilter_chain}format=$pix_fmt,$filter=$filter_args" -pix_fmt $pix_fmt -frames:v 1
+        video_filter "${prefilter_chain}format=$pix_fmt,$filter=$filter_args" -pix_fmt $pix_fmt -frames:v $nframes
     done
 
     rm $in_fmts $scale_in_fmts $scale_out_fmts $scale_exclude_fmts
