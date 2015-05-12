@@ -35,6 +35,7 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/crc.h"
+#include "libavutil/opt.h"
 #include "avcodec.h"
 #include "internal.h"
 #include "get_bits.h"
@@ -48,6 +49,7 @@
 
 
 typedef struct FLACContext {
+    AVClass *class;
     struct FLACStreaminfo flac_stream_info;
 
     AVCodecContext *avctx;                  ///< parent AVCodecContext
@@ -61,6 +63,7 @@ typedef struct FLACContext {
     int32_t *decoded[FLAC_MAX_CHANNELS];    ///< decoded samples
     uint8_t *decoded_buffer;
     unsigned int decoded_buffer_size;
+    int buggy_lpc;                          ///< use workaround for old lavc encoded files
 
     FLACDSPContext dsp;
 } FLACContext;
@@ -343,7 +346,13 @@ static int decode_subframe_lpc(FLACContext *s, int32_t *decoded, int pred_order,
     if ((ret = decode_residuals(s, decoded, pred_order)) < 0)
         return ret;
 
-    s->dsp.lpc(decoded, coeffs, pred_order, qlevel, s->blocksize);
+    if (   (    s->buggy_lpc && s->flac_stream_info.bps <= 16)
+        || (   !s->buggy_lpc && bps <= 16
+            && bps + coeff_prec + av_log2(pred_order) <= 32)) {
+        s->dsp.lpc16(decoded, coeffs, pred_order, qlevel, s->blocksize);
+    } else {
+        s->dsp.lpc32(decoded, coeffs, pred_order, qlevel, s->blocksize);
+    }
 
     return 0;
 }
@@ -605,6 +614,18 @@ static av_cold int flac_decode_close(AVCodecContext *avctx)
     return 0;
 }
 
+static const AVOption options[] = {
+{ "use_buggy_lpc", "emulate old buggy lavc behavior", offsetof(FLACContext, buggy_lpc), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, 1, AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_AUDIO_PARAM },
+{ NULL },
+};
+
+static const AVClass flac_decoder_class = {
+    "FLAC decoder",
+    av_default_item_name,
+    options,
+    LIBAVUTIL_VERSION_INT,
+};
+
 AVCodec ff_flac_decoder = {
     .name           = "flac",
     .long_name      = NULL_IF_CONFIG_SMALL("FLAC (Free Lossless Audio Codec)"),
@@ -621,4 +642,5 @@ AVCodec ff_flac_decoder = {
                                                       AV_SAMPLE_FMT_S32,
                                                       AV_SAMPLE_FMT_S32P,
                                                       AV_SAMPLE_FMT_NONE },
+    .priv_class     = &flac_decoder_class,
 };
