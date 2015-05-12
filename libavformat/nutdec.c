@@ -509,6 +509,8 @@ static int decode_info_header(NUTContext *nut)
     for (i = 0; i < count; i++) {
         get_str(bc, name, sizeof(name));
         value = get_s(bc);
+        str_value[0] = 0;
+
         if (value == -1) {
             type = "UTF-8";
             get_str(bc, str_value, sizeof(str_value));
