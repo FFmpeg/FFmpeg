@@ -73,7 +73,7 @@ static int xiph_handle_packet(AVFormatContext *ctx, PayloadContext *data,
         }
         pkt_len = AV_RB16(data->split_buf + data->split_pos);
         data->split_pos += 2;
-        if (data->split_pos + pkt_len > data->split_buf_len) {
+        if (pkt_len > data->split_buf_len - data->split_pos) {
             av_log(ctx, AV_LOG_ERROR, "Not enough data to return\n");
             return AVERROR_INVALIDDATA;
         }
