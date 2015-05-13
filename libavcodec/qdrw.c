@@ -129,6 +129,10 @@ static int decode_frame(AVCodecContext *avctx,
         && AV_RB32(&avpkt->data[522]) == 0x001102FF)
         bytestream2_skip(&gbc, 512);
 
+    /* PICT images start with a 512 bytes empty header */
+    if (bytestream2_peek_be32(&gbc) == 0)
+        bytestream2_skip(&gbc, 512);
+
     /* smallest PICT header */
     if (bytestream2_get_bytes_left(&gbc) < 40) {
         av_log(avctx, AV_LOG_ERROR, "Frame is too small %d\n",
