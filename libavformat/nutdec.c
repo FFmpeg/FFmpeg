@@ -822,10 +822,8 @@ static int nut_read_header(AVFormatContext *s)
 
     ff_metadata_conv_ctx(s, NULL, ff_nut_metadata_conv);
 
-end:
-    if (ret < 0)
-        nut_read_close(s);
-    return FFMIN(ret, 0);
+    return 0;
+
 fail:
     nut_read_close(s);
 
