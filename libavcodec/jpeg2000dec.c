@@ -1601,7 +1601,7 @@ static int jp2_find_codestream(Jpeg2000DecoderContext *s)
                         int cn   = bytestream2_get_be16(&s->g);
                         int av_unused typ  = bytestream2_get_be16(&s->g);
                         int asoc = bytestream2_get_be16(&s->g);
-                        if (cn < 4 || asoc < 4)
+                        if (cn < 4 && asoc < 4)
                             s->cdef[cn] = asoc;
                         atom_size  -= 6;
                         atom2_size -= 6;
