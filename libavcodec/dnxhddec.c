@@ -129,7 +129,9 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
     }
 
     if (memcmp(buf, header_prefix, 5) && memcmp(buf, header_prefix444, 5)) {
-        av_log(ctx->avctx, AV_LOG_ERROR, "error in header\n");
+        av_log(ctx->avctx, AV_LOG_ERROR,
+               "unknown header 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X\n",
+               buf[0], buf[1], buf[2], buf[3], buf[4]);
         return AVERROR_INVALIDDATA;
     }
     if (buf[5] & 2) { /* interlaced */
