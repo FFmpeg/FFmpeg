@@ -1797,6 +1797,12 @@ static int matroska_parse_tracks(AVFormatContext *s)
             }
             if (codec_id == AV_CODEC_ID_NONE && AV_RL32(track->codec_priv.data+4) == AV_RL32("SMI "))
                 codec_id = AV_CODEC_ID_SVQ3;
+            if (codec_id == AV_CODEC_ID_NONE) {
+                char buf[32];
+                av_get_codec_tag_string(buf, sizeof(buf), fourcc);
+                av_log(matroska->ctx, AV_LOG_ERROR,
+                       "mov FourCC not found %s.\n", buf);
+            }
         } else if (codec_id == AV_CODEC_ID_PCM_S16BE) {
             switch (track->audio.bitdepth) {
             case  8:
