@@ -150,7 +150,7 @@ int ff_mjpeg_decode_dqt(MJpegDecodeContext *s)
                                  s->quant_matrixes[index][s->scantable.permutated[8]]) >> 1;
         av_log(s->avctx, AV_LOG_DEBUG, "qscale[%d]: %d\n",
                index, s->qscale[index]);
-        len -= 65;
+        len -= 1 + 64 * (1+pr);
     }
     return 0;
 }
