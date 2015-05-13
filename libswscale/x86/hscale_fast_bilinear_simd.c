@@ -196,24 +196,21 @@ void ff_hyscale_fast_mmxext(SwsContext *c, int16_t *dst,
     int16_t *filter    = c->hLumFilter;
     void    *mmxextFilterCode = c->lumMmxextFilterCode;
     int i;
+#if ARCH_X86_64
+    uint64_t retsave;
+#else
 #if defined(PIC)
     uint64_t ebxsave;
 #endif
-#if ARCH_X86_64
-    uint64_t retsave;
 #endif
 
     __asm__ volatile(
-#if defined(PIC)
-        "mov               %%"REG_b", %5        \n\t"
 #if ARCH_X86_64
         "mov               -8(%%rsp), %%"REG_a" \n\t"
-        "mov               %%"REG_a", %6        \n\t"
-#endif
+        "mov               %%"REG_a", %5        \n\t"  // retsave
 #else
-#if ARCH_X86_64
-        "mov               -8(%%rsp), %%"REG_a" \n\t"
-        "mov               %%"REG_a", %5        \n\t"
+#if defined(PIC)
+        "mov               %%"REG_b", %5        \n\t"  // ebxsave
 #endif
 #endif
         "pxor                  %%mm7, %%mm7     \n\t"
@@ -254,25 +251,22 @@ void ff_hyscale_fast_mmxext(SwsContext *c, int16_t *dst,
         CALL_MMXEXT_FILTER_CODE
         CALL_MMXEXT_FILTER_CODE
 
-#if defined(PIC)
-        "mov                      %5, %%"REG_b" \n\t"
-#if ARCH_X86_64
-        "mov                      %6, %%"REG_a" \n\t"
-        "mov               %%"REG_a", -8(%%rsp) \n\t"
-#endif
-#else
 #if ARCH_X86_64
         "mov                      %5, %%"REG_a" \n\t"
         "mov               %%"REG_a", -8(%%rsp) \n\t"
+#else
+#if defined(PIC)
+        "mov                      %5, %%"REG_b" \n\t"
 #endif
 #endif
         :: "m" (src), "m" (dst), "m" (filter), "m" (filterPos),
            "m" (mmxextFilterCode)
+#if ARCH_X86_64
+          ,"m"(retsave)
+#else
 #if defined(PIC)
           ,"m" (ebxsave)
 #endif
-#if ARCH_X86_64
-          ,"m"(retsave)
 #endif
         : "%"REG_a, "%"REG_c, "%"REG_d, "%"REG_S, "%"REG_D
 #if ARCH_X86_64 || !defined(PIC)
@@ -292,24 +286,20 @@ void ff_hcscale_fast_mmxext(SwsContext *c, int16_t *dst1, int16_t *dst2,
     int16_t *filter    = c->hChrFilter;
     void    *mmxextFilterCode = c->chrMmxextFilterCode;
     int i;
+#if ARCH_X86_64
+    DECLARE_ALIGNED(8, uint64_t, retsave);
+#else
 #if defined(PIC)
     DECLARE_ALIGNED(8, uint64_t, ebxsave);
 #endif
-#if ARCH_X86_64
-    DECLARE_ALIGNED(8, uint64_t, retsave);
 #endif
-
     __asm__ volatile(
-#if defined(PIC)
-        "mov          %%"REG_b", %7         \n\t"
 #if ARCH_X86_64
         "mov          -8(%%rsp), %%"REG_a"  \n\t"
-        "mov          %%"REG_a", %8         \n\t"
-#endif
+        "mov          %%"REG_a", %7         \n\t"  // retsave
 #else
-#if ARCH_X86_64
-        "mov          -8(%%rsp), %%"REG_a"  \n\t"
-        "mov          %%"REG_a", %7         \n\t"
+#if defined(PIC)
+        "mov          %%"REG_b", %7         \n\t"  // ebxsave
 #endif
 #endif
         "pxor             %%mm7, %%mm7      \n\t"
@@ -338,25 +328,22 @@ void ff_hcscale_fast_mmxext(SwsContext *c, int16_t *dst1, int16_t *dst2,
         CALL_MMXEXT_FILTER_CODE
         CALL_MMXEXT_FILTER_CODE
 
-#if defined(PIC)
-        "mov %7, %%"REG_b"    \n\t"
-#if ARCH_X86_64
-        "mov                 %8, %%"REG_a"  \n\t"
-        "mov          %%"REG_a", -8(%%rsp)  \n\t"
-#endif
-#else
 #if ARCH_X86_64
         "mov                 %7, %%"REG_a"  \n\t"
         "mov          %%"REG_a", -8(%%rsp)  \n\t"
+#else
+#if defined(PIC)
+        "mov %7, %%"REG_b"    \n\t"
 #endif
 #endif
         :: "m" (src1), "m" (dst1), "m" (filter), "m" (filterPos),
            "m" (mmxextFilterCode), "m" (src2), "m"(dst2)
+#if ARCH_X86_64
+          ,"m"(retsave)
+#else
 #if defined(PIC)
           ,"m" (ebxsave)
 #endif
-#if ARCH_X86_64
-          ,"m"(retsave)
 #endif
         : "%"REG_a, "%"REG_c, "%"REG_d, "%"REG_S, "%"REG_D
 #if ARCH_X86_64 || !defined(PIC)
