@@ -480,6 +480,11 @@ int ff_hevc_decode_nal_vps(HEVCContext *s)
         if (vps->vps_poc_proportional_to_timing_flag)
             vps->vps_num_ticks_poc_diff_one = get_ue_golomb_long(gb) + 1;
         vps->vps_num_hrd_parameters = get_ue_golomb_long(gb);
+        if (vps->vps_num_hrd_parameters > (unsigned)vps->vps_num_layer_sets) {
+            av_log(s->avctx, AV_LOG_ERROR,
+                   "vps_num_hrd_parameters %d is invalid\n", vps->vps_num_hrd_parameters);
+            goto err;
+        }
         for (i = 0; i < vps->vps_num_hrd_parameters; i++) {
             int common_inf_present = 1;
 
