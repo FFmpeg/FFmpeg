@@ -275,7 +275,7 @@ void ff_hyscale_fast_mmxext(SwsContext *c, int16_t *dst,
           ,"m"(retsave)
 #endif
         : "%"REG_a, "%"REG_c, "%"REG_d, "%"REG_S, "%"REG_D
-#if !defined(PIC)
+#if ARCH_X86_64 || !defined(PIC)
          ,"%"REG_b
 #endif
     );
@@ -359,7 +359,7 @@ void ff_hcscale_fast_mmxext(SwsContext *c, int16_t *dst1, int16_t *dst2,
           ,"m"(retsave)
 #endif
         : "%"REG_a, "%"REG_c, "%"REG_d, "%"REG_S, "%"REG_D
-#if !defined(PIC)
+#if ARCH_X86_64 || !defined(PIC)
          ,"%"REG_b
 #endif
     );
