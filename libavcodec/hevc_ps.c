@@ -1129,14 +1129,14 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
     if (pps->tiles_enabled_flag) {
         pps->num_tile_columns = get_ue_golomb_long(gb) + 1;
         pps->num_tile_rows    = get_ue_golomb_long(gb) + 1;
-        if (pps->num_tile_columns == 0 ||
+        if (pps->num_tile_columns <= 0 ||
             pps->num_tile_columns >= sps->width) {
             av_log(s->avctx, AV_LOG_ERROR, "num_tile_columns_minus1 out of range: %d\n",
                    pps->num_tile_columns - 1);
             ret = AVERROR_INVALIDDATA;
             goto err;
         }
-        if (pps->num_tile_rows == 0 ||
+        if (pps->num_tile_rows <= 0 ||
             pps->num_tile_rows >= sps->height) {
             av_log(s->avctx, AV_LOG_ERROR, "num_tile_rows_minus1 out of range: %d\n",
                    pps->num_tile_rows - 1);
