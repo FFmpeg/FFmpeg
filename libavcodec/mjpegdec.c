@@ -204,6 +204,11 @@ int ff_mjpeg_decode_dht(MJpegDecodeContext *s)
 
     len = get_bits(&s->gb, 16) - 2;
 
+    if (8*len > get_bits_left(&s->gb)) {
+        av_log(s->avctx, AV_LOG_ERROR, "dht: len %d is too large\n", len);
+        return AVERROR_INVALIDDATA;
+    }
+
     while (len > 0) {
         if (len < 17)
             return AVERROR_INVALIDDATA;
