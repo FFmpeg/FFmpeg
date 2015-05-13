@@ -679,6 +679,13 @@ static int hls_slice_header(HEVCContext *s)
             int offset_len = get_ue_golomb_long(gb) + 1;
             int segments = offset_len >> 4;
             int rest = (offset_len & 15);
+
+            if (offset_len < 1 || offset_len > 32) {
+                sh->num_entry_point_offsets = 0;
+                av_log(s->avctx, AV_LOG_ERROR, "offset_len %d is invalid\n", offset_len);
+                return AVERROR_INVALIDDATA;
+            }
+
             av_freep(&sh->entry_point_offset);
             av_freep(&sh->offset);
             av_freep(&sh->size);
