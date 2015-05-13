@@ -163,6 +163,11 @@ int ff_mjpeg_decode_dqt(MJpegDecodeContext *s)
 
     len = get_bits(&s->gb, 16) - 2;
 
+    if (8*len > get_bits_left(&s->gb)) {
+        av_log(s->avctx, AV_LOG_ERROR, "dqt: len %d is too large\n", len);
+        return AVERROR_INVALIDDATA;
+    }
+
     while (len >= 65) {
         int pr = get_bits(&s->gb, 4);
         if (pr > 1) {
