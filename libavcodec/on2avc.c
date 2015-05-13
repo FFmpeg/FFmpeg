@@ -119,12 +119,12 @@ static int on2avc_decode_band_types(On2AVCContext *c, GetBitContext *gb)
         run_len   = 1;
         do {
             run = get_bits(gb, bits_per_sect);
+            if (run > num_bands - band - run_len) {
+                av_log(c->avctx, AV_LOG_ERROR, "Invalid band type run\n");
+                return AVERROR_INVALIDDATA;
+            }
             run_len += run;
         } while (run == esc_val);
-        if (band + run_len > num_bands) {
-            av_log(c->avctx, AV_LOG_ERROR, "Invalid band type run\n");
-            return AVERROR_INVALIDDATA;
-        }
         for (i = band; i < band + run_len; i++) {
             c->band_type[i]    = band_type;
             c->band_run_end[i] = band + run_len;
