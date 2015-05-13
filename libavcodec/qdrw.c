@@ -124,13 +124,9 @@ static int decode_frame(AVCodecContext *avctx,
     int w, h, ret;
 
     bytestream2_init(&gbc, avpkt->data, avpkt->size);
-    if (   avpkt->size >= 552
-        && AV_RB32(&avpkt->data[ 10]) != 0x001102FF
-        && AV_RB32(&avpkt->data[522]) == 0x001102FF)
-        bytestream2_skip(&gbc, 512);
-
-    /* PICT images start with a 512 bytes empty header */
-    if (bytestream2_peek_be32(&gbc) == 0)
+    while (   bytestream2_get_bytes_left(&gbc) >= 552
+           && (   !AV_RB16(&avpkt->data[bytestream2_tell(&gbc)+6])
+               || !AV_RB16(&avpkt->data[bytestream2_tell(&gbc)+8])))
         bytestream2_skip(&gbc, 512);
 
     /* smallest PICT header */
