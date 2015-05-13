@@ -128,6 +128,7 @@ can be passed.
 @example
 slot=                                   # some unique identifier
 repo=git://git.libav.org/libav.git      # the source repository
+#branch=release/10                      # the branch to test
 samples=/path/to/fate/samples
 workdir=                                # directory in which to do all the work
 fate_recv="ssh -T fate@@fate.libav.org"  # command to submit report
