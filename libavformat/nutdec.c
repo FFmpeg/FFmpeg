@@ -766,7 +766,7 @@ static int nut_read_header(AVFormatContext *s)
     NUTContext *nut = s->priv_data;
     AVIOContext *bc = s->pb;
     int64_t pos;
-    int initialized_stream_count, ret = 0;
+    int initialized_stream_count;
 
     nut->avf = s;
 
