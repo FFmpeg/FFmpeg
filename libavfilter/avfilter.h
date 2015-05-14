@@ -40,7 +40,6 @@
 #include "libavutil/samplefmt.h"
 #include "libavutil/pixfmt.h"
 #include "libavutil/rational.h"
-#include "libavcodec/avcodec.h"
 
 #include <stddef.h>
 
