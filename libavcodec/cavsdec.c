@@ -1146,6 +1146,12 @@ static int decode_seq_header(AVSContext *h)
     skip_bits(&h->gb, 3); //sample_precision
     h->aspect_ratio = get_bits(&h->gb, 4);
     frame_rate_code = get_bits(&h->gb, 4);
+    if (frame_rate_code == 0 || frame_rate_code > 13) {
+        av_log(h->avctx, AV_LOG_WARNING,
+               "frame_rate_code %d is invalid\n", frame_rate_code);
+        frame_rate_code = 1;
+    }
+
     skip_bits(&h->gb, 18); //bit_rate_lower
     skip_bits1(&h->gb);    //marker_bit
     skip_bits(&h->gb, 12); //bit_rate_upper
