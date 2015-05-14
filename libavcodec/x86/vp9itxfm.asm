@@ -868,7 +868,8 @@ VP9_IDCT_IDCT_8x8_ADD_XMM avx, 13
 
     ; m6=out0, m5=out1, m4=t2, m3=t3, m7=t6, m0=t7, m2=out6, m1=out7
 
-%if cpuflag(ssse3)
+    ; unfortunately, the code below overflows in some cases
+%if 0; cpuflag(ssse3)
     SUMSUB_BA                w,  3,  4,  2
     SUMSUB_BA                w,  0,  7,  2
     pmulhrsw                m3, W_11585x2_REG
@@ -1647,7 +1648,8 @@ VP9_IDCT_IDCT_16x16_ADD_XMM avx
     VP9_RND_SH_SUMSUB_BA     4,  7,  0,  2,  1, [pd_8192]
     PSIGNW                  m4, [pw_m1]                     ; m4=out13[w], m7=t15[w]
 
-%if cpuflag(ssse3)
+    ; unfortunately, the code below overflows in some cases
+%if 0; cpuflag(ssse3)
     SUMSUB_BA                w,  7,  6,  1
     pmulhrsw                m7, [pw_m11585x2]               ; m7=out5[w]
     pmulhrsw                m6, [pw_11585x2]                ; m6=out10[w]
