@@ -1197,8 +1197,12 @@ static int dvbsub_parse_region_segment(AVCodecContext *avctx,
         region->buf_size = region->width * region->height;
 
         region->pbuf = av_malloc(region->buf_size);
-        if (!region->pbuf)
+        if (!region->pbuf) {
+            region->buf_size =
+            region->width =
+            region->height = 0;
             return AVERROR(ENOMEM);
+        }
 
         fill = 1;
         region->dirty = 0;
