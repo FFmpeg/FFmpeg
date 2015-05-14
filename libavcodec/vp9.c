@@ -2782,13 +2782,23 @@ static av_always_inline void mc_chroma_scaled(VP9Context *s, vp9_scaled_mc_func 
                                               int bw, int bh, int w, int h, int bytesperpixel,
                                               const uint16_t *scale, const uint8_t *step)
 {
-    // BUG https://code.google.com/p/webm/issues/detail?id=820
-    int mx = scale_mv(mv->x << !s->ss_h, 0) + (scale_mv(x * 16, 0) & ~15) + (scale_mv(x * 32, 0) & 15);
-    int my = scale_mv(mv->y << !s->ss_v, 1) + (scale_mv(y * 16, 1) & ~15) + (scale_mv(y * 32, 1) & 15);
-#undef scale_mv
+    int mx, my;
     int refbw_m1, refbh_m1;
     int th;
 
+    if (s->ss_h) {
+        // BUG https://code.google.com/p/webm/issues/detail?id=820
+        mx = scale_mv(mv->x, 0) + (scale_mv(x * 16, 0) & ~15) + (scale_mv(x * 32, 0) & 15);
+    } else {
+        mx = scale_mv(mv->x << 1, 0) + scale_mv(x * 16, 0);
+    }
+    if (s->ss_v) {
+        // BUG https://code.google.com/p/webm/issues/detail?id=820
+        my = scale_mv(mv->y, 1) + (scale_mv(y * 16, 1) & ~15) + (scale_mv(y * 32, 1) & 15);
+    } else {
+        my = scale_mv(mv->y << 1, 1) + scale_mv(y * 16, 1);
+    }
+#undef scale_mv
     y = my >> 4;
     x = mx >> 4;
     ref_u += y * src_stride_u + x * bytesperpixel;
