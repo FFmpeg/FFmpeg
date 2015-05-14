@@ -53,6 +53,7 @@ static void FN(inter_pred)(AVCodecContext *ctx)
     if (b->bs > BS_8x8) {
         VP56mv uvmv;
 
+#if SCALED == 0
         if (b->bs == BS_8x4) {
             mc_luma_dir(s, mc[3][b->filter][0], s->dst[0], ls_y,
                         ref1->data[0], ref1->linesize[0], tref1,
@@ -201,7 +202,9 @@ static void FN(inter_pred)(AVCodecContext *ctx)
                                   &b->mv[1][1], 4, 8 >> s->ss_v, w2, h2, 1);
                 }
             }
-        } else {
+        } else
+#endif
+        {
             av_assert2(b->bs == BS_4x4);
 
             // FIXME if two horizontally adjacent blocks have the same MV,

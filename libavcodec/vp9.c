@@ -2833,6 +2833,7 @@ static av_always_inline void mc_chroma_scaled(VP9Context *s, vp9_scaled_mc_func 
     mc_chroma_scaled(s, s->dsp.s##mc, dstu, dstv, dst_ls, srcu, srcu_ls, srcv, srcv_ls, tref, \
                      row, col, mv, bw, bh, w, h, bytesperpixel, \
                      s->mvscale[b->ref[i]], s->mvstep[b->ref[i]])
+#define SCALED 1
 #define FN(x) x##_scaled_8bpp
 #define BYTES_PER_PIXEL 1
 #include "vp9_mc_template.c"
@@ -2845,6 +2846,7 @@ static av_always_inline void mc_chroma_scaled(VP9Context *s, vp9_scaled_mc_func 
 #undef mc_chroma_dir
 #undef FN
 #undef BYTES_PER_PIXEL
+#undef SCALED
 
 static av_always_inline void mc_luma_unscaled(VP9Context *s, vp9_mc_func (*mc)[2],
                                               uint8_t *dst, ptrdiff_t dst_stride,
@@ -2930,6 +2932,7 @@ static av_always_inline void mc_chroma_unscaled(VP9Context *s, vp9_mc_func (*mc)
                       row, col, mv, bw, bh, w, h, i) \
     mc_chroma_unscaled(s, s->dsp.mc, dstu, dstv, dst_ls, srcu, srcu_ls, srcv, srcv_ls, tref, \
                        row, col, mv, bw, bh, w, h, bytesperpixel)
+#define SCALED 0
 #define FN(x) x##_8bpp
 #define BYTES_PER_PIXEL 1
 #include "vp9_mc_template.c"
@@ -2942,6 +2945,7 @@ static av_always_inline void mc_chroma_unscaled(VP9Context *s, vp9_mc_func (*mc)
 #undef mc_chroma_dir_dir
 #undef FN
 #undef BYTES_PER_PIXEL
+#undef SCALED
 
 static av_always_inline void inter_recon(AVCodecContext *ctx, int bytesperpixel)
 {
