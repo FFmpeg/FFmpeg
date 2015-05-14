@@ -2641,7 +2641,6 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
 
     /* parse the NAL units */
     for (i = 0; i < s->nb_nals; i++) {
-        int ret;
         s->skipped_bytes = s->skipped_bytes_nal[i];
         s->skipped_bytes_pos = s->skipped_bytes_pos_nal[i];
 
