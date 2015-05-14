@@ -153,6 +153,7 @@ typedef struct VP9Context {
         uint8_t temporal;
         uint8_t absolute_vals;
         uint8_t update_map;
+        uint8_t ignore_refmap;
         struct {
             uint8_t q_enabled;
             uint8_t lf_enabled;
@@ -724,6 +725,7 @@ static int decode_frame_header(AVCodecContext *ctx,
                      s->uvdc_qdelta == 0 && s->uvac_qdelta == 0;
 
     /* segmentation header info */
+    s->segmentation.ignore_refmap = 0;
     if ((s->segmentation.enabled = get_bits1(&s->gb))) {
         if ((s->segmentation.update_map = get_bits1(&s->gb))) {
             for (i = 0; i < 7; i++)
@@ -738,10 +740,11 @@ static int decode_frame_header(AVCodecContext *ctx,
         if ((!s->segmentation.update_map || s->segmentation.temporal) &&
             (w != s->frames[CUR_FRAME].tf.f->width ||
              h != s->frames[CUR_FRAME].tf.f->height)) {
-            av_log(ctx, AV_LOG_ERROR,
+            av_log(ctx, AV_LOG_WARNING,
                    "Reference segmap (temp=%d,update=%d) enabled on size-change!\n",
                    s->segmentation.temporal, s->segmentation.update_map);
-            return AVERROR_INVALIDDATA;
+                s->segmentation.ignore_refmap = 1;
+            //return AVERROR_INVALIDDATA;
         }
 
         if (get_bits1(&s->gb)) {
@@ -1457,7 +1460,7 @@ static void decode_mode(AVCodecContext *ctx)
                 vp56_rac_get_prob_branchy(&s->c,
                     s->prob.segpred[s->above_segpred_ctx[col] +
                                     s->left_segpred_ctx[row7]]))) {
-        if (!s->errorres) {
+        if (!s->errorres && !s->segmentation.ignore_refmap) {
             int pred = 8, x;
             uint8_t *refsegmap = s->frames[REF_FRAME_SEGMAP].segmentation_map;
 
