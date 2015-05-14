@@ -856,6 +856,10 @@ static int dca_subframe_header(DCAContext *s, int base_channel, int block_index)
 
     if (!base_channel) {
         s->subsubframes[s->current_subframe]    = get_bits(&s->gb, 2) + 1;
+        if (block_index + s->subsubframes[s->current_subframe] > s->sample_blocks/8) {
+            s->subsubframes[s->current_subframe] = 1;
+            return AVERROR_INVALIDDATA;
+        }
         s->partial_samples[s->current_subframe] = get_bits(&s->gb, 3);
     }
 
