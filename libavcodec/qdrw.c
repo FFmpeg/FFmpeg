@@ -145,6 +145,7 @@ static int decode_frame(AVCodecContext *avctx,
     GetByteContext gbc;
     int colors;
     int w, h, ret;
+    int ver;
 
     bytestream2_init(&gbc, avpkt->data, avpkt->size);
     if (   bytestream2_get_bytes_left(&gbc) >= 552
@@ -152,6 +153,8 @@ static int decode_frame(AVCodecContext *avctx,
            &&  check_header(gbc.buffer + 512, bytestream2_get_bytes_left(&gbc) - 512)
        )
         bytestream2_skip(&gbc, 512);
+
+    ver = check_header(gbc.buffer, bytestream2_get_bytes_left(&gbc));
 
     /* smallest PICT header */
     if (bytestream2_get_bytes_left(&gbc) < 40) {
@@ -170,12 +173,15 @@ static int decode_frame(AVCodecContext *avctx,
 
     /* version 1 is identified by 0x1101
      * it uses byte-aligned opcodes rather than word-aligned */
-    if (bytestream2_get_be32(&gbc) != 0x001102FF) {
+    if (ver == 1) {
         avpriv_request_sample(avctx, "QuickDraw version 1");
+        return AVERROR_PATCHWELCOME;
+    } else if (ver != 2) {
+        avpriv_request_sample(avctx, "QuickDraw version unknown (%X)", bytestream2_get_be32(&gbc));
         return AVERROR_PATCHWELCOME;
     }
 
-    bytestream2_skip(&gbc, 26);
+    bytestream2_skip(&gbc, 4+26);
 
     while (bytestream2_get_bytes_left(&gbc) >= 4) {
         int bppcnt, bpp;
