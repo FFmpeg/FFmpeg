@@ -1123,6 +1123,7 @@ static int decode_seq_header(AVSContext *h)
 {
     int frame_rate_code;
     int width, height;
+    int ret;
 
     h->profile = get_bits(&h->gb, 8);
     h->level   = get_bits(&h->gb, 8);
@@ -1139,9 +1140,6 @@ static int decode_seq_header(AVSContext *h)
         av_log(h->avctx, AV_LOG_ERROR, "Dimensions invalid\n");
         return AVERROR_INVALIDDATA;
     }
-    h->width  = width;
-    h->height = height;
-
     skip_bits(&h->gb, 2); //chroma format
     skip_bits(&h->gb, 3); //sample_precision
     h->aspect_ratio = get_bits(&h->gb, 4);
@@ -1150,11 +1148,16 @@ static int decode_seq_header(AVSContext *h)
     skip_bits1(&h->gb);    //marker_bit
     skip_bits(&h->gb, 12); //bit_rate_upper
     h->low_delay =  get_bits1(&h->gb);
+
+    ret = ff_set_dimensions(h->avctx, width, height);
+    if (ret < 0)
+        return ret;
+
+    h->width  = width;
+    h->height = height;
     h->mb_width  = (h->width  + 15) >> 4;
     h->mb_height = (h->height + 15) >> 4;
     h->avctx->framerate = ff_mpeg12_frame_rate_tab[frame_rate_code];
-    h->avctx->width  = h->width;
-    h->avctx->height = h->height;
     if (!h->top_qp)
         return ff_cavs_init_top_lines(h);
     return 0;
