@@ -570,6 +570,11 @@ static int decode_residual_block(AVSContext *h, GetBitContext *gb,
                 return AVERROR_INVALIDDATA;
             }
             esc_code = get_ue_code(gb, esc_golomb_order);
+            if (esc_code < 0 || esc_code > 32767) {
+                av_log(h->avctx, AV_LOG_ERROR, "esc_code invalid\n");
+                return AVERROR_INVALIDDATA;
+            }
+
             level    = esc_code + (run > r->max_run ? 1 : r->level_add[run]);
             while (level > r->inc_limit)
                 r++;
