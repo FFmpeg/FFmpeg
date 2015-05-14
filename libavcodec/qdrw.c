@@ -114,6 +114,29 @@ static int decode_rle(AVCodecContext *avctx, AVFrame *p, GetByteContext *gbc,
     return 0;
 }
 
+static int check_header(const char *buf, int buf_size)
+{
+    unsigned w, h, v0, v1;
+
+    if (buf_size < 40)
+        return 0;
+
+    w = AV_RB16(buf+6);
+    h = AV_RB16(buf+8);
+    v0 = AV_RB16(buf+10);
+    v1 = AV_RB16(buf+12);
+
+    if (!w || !h)
+        return 0;
+
+    if (v0 == 0x1101)
+        return 1;
+    if (v0 == 0x0011 && v1 == 0x02FF)
+        return 2;
+    return 0;
+}
+
+
 static int decode_frame(AVCodecContext *avctx,
                         void *data, int *got_frame,
                         AVPacket *avpkt)
@@ -124,9 +147,10 @@ static int decode_frame(AVCodecContext *avctx,
     int w, h, ret;
 
     bytestream2_init(&gbc, avpkt->data, avpkt->size);
-    while (   bytestream2_get_bytes_left(&gbc) >= 552
-           && (   !AV_RB16(&avpkt->data[bytestream2_tell(&gbc)+6])
-               || !AV_RB16(&avpkt->data[bytestream2_tell(&gbc)+8])))
+    if (   bytestream2_get_bytes_left(&gbc) >= 552
+           && !check_header(gbc.buffer      , bytestream2_get_bytes_left(&gbc))
+           &&  check_header(gbc.buffer + 512, bytestream2_get_bytes_left(&gbc) - 512)
+       )
         bytestream2_skip(&gbc, 512);
 
     /* smallest PICT header */
