@@ -183,6 +183,7 @@ static int decode_picture_header(AVCodecContext *avctx, const uint8_t *buf, cons
 
     if (ctx->slice_count != slice_count || !ctx->slices) {
         av_freep(&ctx->slices);
+        ctx->slice_count = 0;
         ctx->slices = av_mallocz_array(slice_count, sizeof(*ctx->slices));
         if (!ctx->slices)
             return AVERROR(ENOMEM);
