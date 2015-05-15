@@ -2849,7 +2849,7 @@ static int transcode_init(void)
             }
 
             if (enc_ctx->codec_type == AVMEDIA_TYPE_VIDEO) {
-                if (ost->filter && !ost->frame_rate.num)
+                if (!ost->frame_rate.num)
                     ost->frame_rate = av_buffersink_get_frame_rate(ost->filter->filter);
                 if (ist && !ost->frame_rate.num)
                     ost->frame_rate = ist->framerate;
