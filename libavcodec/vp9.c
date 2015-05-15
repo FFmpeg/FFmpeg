@@ -800,9 +800,9 @@ static int decode_frame_header(AVCodecContext *ctx,
         sh = s->filter.level >= 32;
         if (s->segmentation.feat[i].lf_enabled) {
             if (s->segmentation.absolute_vals)
-                lflvl = s->segmentation.feat[i].lf_val;
+                lflvl = av_clip_uintp2(s->segmentation.feat[i].lf_val, 6);
             else
-                lflvl = s->filter.level + s->segmentation.feat[i].lf_val;
+                lflvl = av_clip_uintp2(s->filter.level + s->segmentation.feat[i].lf_val, 6);
         } else {
             lflvl  = s->filter.level;
         }
