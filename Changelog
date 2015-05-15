@@ -1,6 +1,77 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 2.6.3:
+- avcodec/libtheoraenc: Check for av_malloc failure
+- ffmpeg_opt: Fix -timestamp parsing
+- hevc: make avcodec_decode_video2() fail if get_format() fails
+- avcodec/cavsdec: Use ff_set_dimensions()
+- swr: fix alignment issue caused by 8ch sse functions
+- avcodec/mjpegdec: fix len computation in ff_mjpeg_decode_dqt()
+- avcodec/jpeg2000dec: fix boolean operator
+- avcodec/hevc_ps: Explicitly check num_tile_* for negative values
+- avformat/matroskadec: Cleanup error handling for bz2 & zlib
+- avformat/nutdec: Fix use of uinitialized value
+- tools/graph2dot: use larger data types than int for array/string sizes
+- avformat/matroskaenc: Check ff_vorbiscomment_length in put_flac_codecpriv()
+- avcodec/mpeg12dec: use the correct dimensions for checking SAR
+- xcbgrab: Validate the capture area
+- xcbgrab: Do not assume the non shm image data is always available
+- avfilter/lavfutils: disable frame threads when decoding a single image
+- avformat/mov: Do not read ACLR into extradata for H.264
+- ffmpeg: remove incorrect network deinit
+- OpenCL: Avoid potential buffer overflow in cmdutils_opencl.c
+- libvpxenc: only set noise reduction w/vp8
+- vp9: remove another optimization branch in iadst16 which causes overflows.
+- lavf: Reset global flag on deinit
+- network: Do not leave context locked on error
+- vp9: remove one optimization branch in iadst16 which causes overflows.
+- fate: Include branch information in the payload header
+- avformat/utils: Ensure that AVFMT_FLAG_CUSTOM_IO is set before use
+- avformat/img2dec: do not rewind custom io buffers
+- avcodec/alsdec: Use av_mallocz_array() for chan_data to ensure the arrays never contain random data
+- avcodec/atrac3plusdsp: fix on stack alignment
+- swresample/swresample-test: Randomly wipe out channel counts
+- swresample: Check channel layouts and channels against each other and print human readable error messages
+- swresample: Allow reinitialization without ever setting channel layouts (cherry picked from commit 80a28c7509a11114e1aea5b208d56c6646d69c07)
+- swresample: Allow reinitialization without ever setting channel counts
+- dashenc: replace attribute id with contentType for the AdaptationSet element
+- avformat/matroskaenc: Use avoid_negative_ts_use_pts if no stream writes dts
+- avformat/mux: Add avoid_negative_ts_use_pts
+- tests/fate-run: do not attempt to parse tiny_psnrs output if it failed
+- cafdec: free extradata before allocating it
+- imgutils: initialize palette padding bytes in av_image_alloc
+- aacdec: don't return frames without data
+- id3v2: catch avio_read errors in check_tag
+- avi: Validate sample_size
+- aacsbr: break infinite loop in sbr_hf_calc_npatches
+- diracdec: avoid overflow of bytes*8 in decode_lowdelay
+- diracdec: prevent overflow in data_unit_size check
+- avformat/matroskadec: Use tracks[k]->stream instead of s->streams[k]
+- matroskadec: use uint64_t instead of int for index_scale
+- pngdec: don't use AV_PIX_FMT_MONOBLACK for apng
+- pngdec: return correct error code from decode_frame_common
+- nutdec: fix illegal count check in decode_main_header
+- nutdec: fix memleaks on error in nut_read_header
+- apedec: prevent out of array writes in decode_array_0000
+- apedec: set s->samples only when init_frame_decoder succeeded
+- swscale/ppc/swscale_altivec.c: POWER LE support in yuv2planeX_8() delete macro GET_VF() it was wrong
+- alac: reject rice_limit 0 if compression is used
+- alsdec: only adapt order for positive max_order
+- bink: check vst->index_entries before using it
+- mpeg4videodec: only allow a positive length
+- aacpsy: correct calculation of minath in psy_3gpp_init
+- alsdec: validate time diff index
+- alsdec: ensure channel reordering is reversible
+- ac3: validate end in ff_ac3_bit_alloc_calc_mask
+- aacpsy: avoid psy_band->threshold becoming NaN
+- aasc: return correct buffer size from aasc_decode_frame
+- matroskadec: export cover art correctly
+- mxfenc: don't try to write footer without header
+- mxfenc: fix memleaks in mxf_write_footer
+- rtpenc_mpegts: Set chain->rtp_ctx only after avformat_write_header succeeded
+- rtpenc_mpegts: Free the right ->pb in the error path in the init function
+
 version 2.6.2:
 - avcodec/h264: Do not fail with randomly truncated VUIs
 - avcodec/h264_ps: Move truncation check from VUI to SPS
