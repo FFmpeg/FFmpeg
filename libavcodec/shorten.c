@@ -279,7 +279,7 @@ static int decode_subframe_lpc(ShortenContext *s, int command, int channel,
     if (command == FN_QLPC) {
         /* read/validate prediction order */
         pred_order = get_ur_golomb_shorten(&s->gb, LPCQSIZE);
-        if (pred_order > s->nwrap) {
+        if ((unsigned)pred_order > s->nwrap) {
             av_log(s->avctx, AV_LOG_ERROR, "invalid pred_order %d\n",
                    pred_order);
             return AVERROR(EINVAL);
