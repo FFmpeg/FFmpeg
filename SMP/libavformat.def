@@ -19,6 +19,7 @@ EXPORTS
     av_format_get_data_codec
     av_format_get_metadata_header_padding
     av_format_get_opaque
+    av_format_get_open_cb
     av_format_get_probe_score
     av_format_get_subtitle_codec
     av_format_get_video_codec
@@ -28,6 +29,7 @@ EXPORTS
     av_format_set_data_codec
     av_format_set_metadata_header_padding
     av_format_set_opaque
+    av_format_set_open_cb
     av_format_set_subtitle_codec
     av_format_set_video_codec
     av_get_frame_filename
