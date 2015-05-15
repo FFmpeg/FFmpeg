@@ -1822,8 +1822,13 @@ static int dca_xbr_parse_frame(DCAContext *s)
     for(i = 0; i < num_chsets; i++) {
         n_xbr_ch[i] = get_bits(&s->gb, 3) + 1;
         k = get_bits(&s->gb, 2) + 5;
-        for(j = 0; j < n_xbr_ch[i]; j++)
+        for(j = 0; j < n_xbr_ch[i]; j++) {
             active_bands[i][j] = get_bits(&s->gb, k) + 1;
+            if (active_bands[i][j] > DCA_SUBBANDS) {
+                av_log(s->avctx, AV_LOG_ERROR, "too many active subbands (%d)\n", active_bands[i][j]);
+                return AVERROR_INVALIDDATA;
+            }
+        }
     }
 
     /* skip to the end of the header */
