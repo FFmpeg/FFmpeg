@@ -111,6 +111,8 @@ static int get_stats(AVCodecContext *avctx, int eos)
         // libtheora generates a summary header at the end
         memcpy(h->stats, buf, bytes);
         avctx->stats_out = av_malloc(b64_size);
+        if (!avctx->stats_out)
+            return AVERROR(ENOMEM);
         av_base64_encode(avctx->stats_out, b64_size, h->stats, h->stats_offset);
     }
     return 0;
