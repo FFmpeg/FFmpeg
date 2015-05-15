@@ -369,6 +369,11 @@ static int read_header(ShortenContext *s)
         s->nmean = get_uint(s, 0);
 
         skip_bytes = get_uint(s, NSKIPSIZE);
+        if ((unsigned)skip_bytes > get_bits_left(&s->gb)/8) {
+            av_log(s->avctx, AV_LOG_ERROR, "invalid skip_bytes: %d\n", skip_bytes);
+            return AVERROR_INVALIDDATA;
+        }
+
         for (i = 0; i < skip_bytes; i++)
             skip_bits(&s->gb, 8);
     }
