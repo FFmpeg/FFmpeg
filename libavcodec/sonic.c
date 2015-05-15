@@ -769,13 +769,19 @@ static av_cold int sonic_decode_init(AVCodecContext *avctx)
 
     if (version == 1)
     {
+        int sample_rate_index;
         s->channels = get_bits(&gb, 2);
-        s->samplerate = samplerate_table[get_bits(&gb, 4)];
+        sample_rate_index = get_bits(&gb, 4);
+        if (sample_rate_index >= FF_ARRAY_ELEMS(samplerate_table)) {
+            av_log(avctx, AV_LOG_ERROR, "Invalid sample_rate_index %d\n", sample_rate_index);
+            return AVERROR_INVALIDDATA;
+        }
+        s->samplerate = samplerate_table[sample_rate_index];
         av_log(avctx, AV_LOG_INFO, "Sonicv2 chans: %d samprate: %d\n",
             s->channels, s->samplerate);
     }
 
-    if (s->channels > MAX_CHANNELS)
+    if (s->channels > MAX_CHANNELS || s->channels < 1)
     {
         av_log(avctx, AV_LOG_ERROR, "Only mono and stereo streams are supported by now\n");
         return AVERROR_INVALIDDATA;
