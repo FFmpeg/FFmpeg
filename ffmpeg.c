@@ -3337,6 +3337,8 @@ static int check_keyboard_interaction(int64_t cur_time)
                         ret = AVERROR_PATCHWELCOME;
                     } else {
                         ret = avfilter_graph_queue_command(fg->graph, target, command, arg, 0, time);
+                        if (ret < 0)
+                            fprintf(stderr, "Queing command failed with error %s\n", av_err2str(ret));
                     }
                 }
             }
