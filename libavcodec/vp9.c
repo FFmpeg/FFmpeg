@@ -3108,8 +3108,12 @@ static av_always_inline void mask_edges(uint8_t (*mask)[8][4], int ss_h, int ss_
             }
             if (!ss_h)
                 mask[0][y][3] |= m_col;
-            if (!ss_v)
-                mask[1][y][3] |= m_col;
+            if (!ss_v) {
+                if (ss_h && (col_end & 1))
+                    mask[1][y][3] |= (t << (w - 1)) - t;
+                else
+                    mask[1][y][3] |= m_col;
+            }
         }
     } else {
         int y, t = 1 << col_and_7, m_col = (t << w) - t;
