@@ -129,8 +129,7 @@ static int allocate_buffers(ShortenContext *s)
             av_log(s->avctx, AV_LOG_ERROR, "nmean too large\n");
             return AVERROR_INVALIDDATA;
         }
-        if (s->blocksize + s->nwrap >= UINT_MAX / sizeof(int32_t) ||
-            s->blocksize + s->nwrap <= (unsigned)s->nwrap) {
+        if (s->blocksize + (uint64_t)s->nwrap >= UINT_MAX / sizeof(int32_t)) {
             av_log(s->avctx, AV_LOG_ERROR,
                    "s->blocksize + s->nwrap too large\n");
             return AVERROR_INVALIDDATA;
