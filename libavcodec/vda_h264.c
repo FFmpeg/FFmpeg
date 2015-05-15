@@ -430,7 +430,7 @@ int ff_vda_default_init(AVCodecContext *avctx)
     CFMutableDictionaryRef buffer_attributes;
     CFMutableDictionaryRef io_surface_properties;
     CFNumberRef cv_pix_fmt;
-    int32_t fmt = 'avc1', pix_fmt = kCVPixelFormatType_422YpCbCr8;
+    int32_t fmt = 'avc1', pix_fmt = vda_ctx->cv_pix_fmt_type;
 
     // kCVPixelFormatType_420YpCbCr8Planar;
 

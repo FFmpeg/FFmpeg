@@ -1933,8 +1933,9 @@ static int dirac_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     AVFrame *picture    = data;
     uint8_t *buf        = pkt->data;
     int buf_size        = pkt->size;
-    int i, data_unit_size, buf_idx = 0;
+    int i, buf_idx      = 0;
     int ret;
+    unsigned data_unit_size;
 
     /* release unused frames */
     for (i = 0; i < MAX_FRAMES; i++)

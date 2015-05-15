@@ -256,6 +256,11 @@ static void h264_idct8_add_altivec(uint8_t *dst, int16_t *dct, int stride)
     ALTIVEC_STORE_SUM_CLIP(&dst[7*stride], idct7, perm_ldv, perm_stv, sel);
 }
 
+#if HAVE_BIGENDIAN
+#define DST_LD vec_ld
+#else
+#define DST_LD vec_vsx_ld
+#endif
 static av_always_inline void h264_idct_dc_add_internal(uint8_t *dst, int16_t *block, int stride, int size)
 {
     vec_s16 dc16;
@@ -275,18 +280,17 @@ static av_always_inline void h264_idct_dc_add_internal(uint8_t *dst, int16_t *bl
     dcplus = vec_packsu(dc16, zero_s16v);
     dcminus = vec_packsu(vec_sub(zero_s16v, dc16), zero_s16v);
 
+#if HAVE_BIGENDIAN
     aligner = vec_lvsr(0, dst);
-#if !HAVE_BIGENDIAN
-    aligner = vec_perm(aligner, zero_u8v, vcswapc());
-#endif
     dcplus = vec_perm(dcplus, dcplus, aligner);
     dcminus = vec_perm(dcminus, dcminus, aligner);
+#endif
 
     for (i = 0; i < size; i += 4) {
-        v0 = vec_ld(0, dst+0*stride);
-        v1 = vec_ld(0, dst+1*stride);
-        v2 = vec_ld(0, dst+2*stride);
-        v3 = vec_ld(0, dst+3*stride);
+        v0 = DST_LD(0, dst+0*stride);
+        v1 = DST_LD(0, dst+1*stride);
+        v2 = DST_LD(0, dst+2*stride);
+        v3 = DST_LD(0, dst+3*stride);
 
         v0 = vec_adds(v0, dcplus);
         v1 = vec_adds(v1, dcplus);
@@ -298,10 +302,10 @@ static av_always_inline void h264_idct_dc_add_internal(uint8_t *dst, int16_t *bl
         v2 = vec_subs(v2, dcminus);
         v3 = vec_subs(v3, dcminus);
 
-        vec_st(v0, 0, dst+0*stride);
-        vec_st(v1, 0, dst+1*stride);
-        vec_st(v2, 0, dst+2*stride);
-        vec_st(v3, 0, dst+3*stride);
+        VEC_ST(v0, 0, dst+0*stride);
+        VEC_ST(v1, 0, dst+1*stride);
+        VEC_ST(v2, 0, dst+2*stride);
+        VEC_ST(v3, 0, dst+3*stride);
 
         dst += 4*stride;
     }

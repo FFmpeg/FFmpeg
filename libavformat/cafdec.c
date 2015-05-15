@@ -129,8 +129,12 @@ static int read_kuki_chunk(AVFormatContext *s, int64_t size)
             avio_skip(pb, size);
             return AVERROR_INVALIDDATA;
         }
-        avio_read(pb, preamble, ALAC_PREAMBLE);
+        if (avio_read(pb, preamble, ALAC_PREAMBLE) != ALAC_PREAMBLE) {
+            av_log(s, AV_LOG_ERROR, "failed to read preamble\n");
+            return AVERROR_INVALIDDATA;
+        }
 
+        av_freep(&st->codec->extradata);
         if (ff_alloc_extradata(st->codec, ALAC_HEADER))
             return AVERROR(ENOMEM);
 
@@ -144,17 +148,26 @@ static int read_kuki_chunk(AVFormatContext *s, int64_t size)
                 av_freep(&st->codec->extradata);
                 return AVERROR_INVALIDDATA;
             }
-            avio_read(pb, st->codec->extradata, ALAC_HEADER);
+            if (avio_read(pb, st->codec->extradata, ALAC_HEADER) != ALAC_HEADER) {
+                av_log(s, AV_LOG_ERROR, "failed to read kuki header\n");
+                av_freep(&st->codec->extradata);
+                return AVERROR_INVALIDDATA;
+            }
             avio_skip(pb, size - ALAC_PREAMBLE - ALAC_HEADER);
         } else {
             AV_WB32(st->codec->extradata, 36);
             memcpy(&st->codec->extradata[4], "alac", 4);
             AV_WB32(&st->codec->extradata[8], 0);
             memcpy(&st->codec->extradata[12], preamble, 12);
-            avio_read(pb, &st->codec->extradata[24], ALAC_NEW_KUKI - 12);
+            if (avio_read(pb, &st->codec->extradata[24], ALAC_NEW_KUKI - 12) != ALAC_NEW_KUKI - 12) {
+                av_log(s, AV_LOG_ERROR, "failed to read new kuki header\n");
+                av_freep(&st->codec->extradata);
+                return AVERROR_INVALIDDATA;
+            }
             avio_skip(pb, size - ALAC_NEW_KUKI);
         }
     } else {
+        av_freep(&st->codec->extradata);
         if (ff_get_extradata(st->codec, pb, size) < 0)
             return AVERROR(ENOMEM);
     }

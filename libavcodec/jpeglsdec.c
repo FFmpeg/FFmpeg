@@ -280,6 +280,7 @@ static inline void ls_decode_line(JLSState *state, MJpegDecodeContext *s,
 
             if (x >= w) {
                 av_log(NULL, AV_LOG_ERROR, "run overflow\n");
+                av_assert0(x <= w);
                 return;
             }
 

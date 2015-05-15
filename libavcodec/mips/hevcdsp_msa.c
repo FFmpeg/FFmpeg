@@ -46,6 +46,24 @@
     out;                                                                       \
 } )
 
+#define HEVC_RND_W_CLIP_UNSIGNED_CHAR_W_VEC2(vec0_r, vec0_l,           \
+                                             vec1_r, vec1_l,           \
+                                             out0, out1)               \
+{                                                                      \
+    (vec0_r) = __msa_srari_w((vec0_r), 6);                             \
+    (vec0_l) = __msa_srari_w((vec0_l), 6);                             \
+    (vec1_r) = __msa_srari_w((vec1_r), 6);                             \
+    (vec1_l) = __msa_srari_w((vec1_l), 6);                             \
+                                                                       \
+    (vec0_r) = CLIP_UNSIGNED_CHAR_W((vec0_r));                         \
+    (vec0_l) = CLIP_UNSIGNED_CHAR_W((vec0_l));                         \
+    (vec1_r) = CLIP_UNSIGNED_CHAR_W((vec1_r));                         \
+    (vec1_l) = CLIP_UNSIGNED_CHAR_W((vec1_l));                         \
+                                                                       \
+    out0 = (v4i32) __msa_pckev_h((v8i16) (vec0_l), (v8i16) (vec0_r));  \
+    out1 = (v4i32) __msa_pckev_h((v8i16) (vec1_l), (v8i16) (vec1_r));  \
+}
+
 static void hevc_copy_4w_msa(uint8_t * __restrict src, int32_t src_stride,
                              int16_t * __restrict dst, int32_t dst_stride,
                              int32_t height)
@@ -2270,6 +2288,469 @@ static void hevc_hv_8t_64w_msa(uint8_t * __restrict src, int32_t src_stride,
                                filter_x, filter_y, height, 64);
 }
 
+static void hevc_hv_uni_8t_4w_msa(uint8_t * __restrict src,
+                                  int32_t src_stride,
+                                  uint8_t * __restrict dst,
+                                  int32_t dst_stride,
+                                  const int8_t * __restrict filter_x,
+                                  const int8_t * __restrict filter_y,
+                                  int32_t height)
+{
+    uint32_t loop_cnt;
+    uint32_t out0, out1;
+    v16i8 src0, src1, src2, src3, src4, src5, src6, src7, src8;
+    v8i16 filt0, filt1, filt2, filt3, filter_vec;
+    v4i32 filt_h0, filt_h1, filt_h2, filt_h3;
+    v16i8 mask1, mask2, mask3;
+    v8u16 const_vec;
+    v16i8 vec0, vec1, vec2, vec3, vec4, vec5, vec6, vec7;
+    v16i8 vec8, vec9, vec10, vec11, vec12, vec13, vec14, vec15;
+    v8i16 dst30, dst41, dst52, dst63, dst66, dst87;
+    v4i32 dst0_r, dst1_r;
+    v8i16 dst10_r, dst32_r, dst54_r, dst76_r;
+    v8i16 dst21_r, dst43_r, dst65_r, dst87_r;
+    v16i8 tmp;
+    v16i8 mask0 = { 0, 1, 1, 2, 2, 3, 3, 4, 16, 17, 17, 18, 18, 19, 19, 20 };
+    v8i16 mask4 = { 0, 4, 1, 5, 2, 6, 3, 7 };
+
+    src -= ((3 * src_stride) + 3);
+
+    filter_vec = LOAD_SH(filter_x);
+    filt0 = __msa_splati_h(filter_vec, 0);
+    filt1 = __msa_splati_h(filter_vec, 1);
+    filt2 = __msa_splati_h(filter_vec, 2);
+    filt3 = __msa_splati_h(filter_vec, 3);
+
+    filter_vec = LOAD_SH(filter_y);
+    tmp = __msa_clti_s_b((v16i8) filter_vec, 0);
+    filter_vec = (v8i16) __msa_ilvr_b(tmp, (v16i8) filter_vec);
+
+    filt_h0 = __msa_splati_w((v4i32) filter_vec, 0);
+    filt_h1 = __msa_splati_w((v4i32) filter_vec, 1);
+    filt_h2 = __msa_splati_w((v4i32) filter_vec, 2);
+    filt_h3 = __msa_splati_w((v4i32) filter_vec, 3);
+
+    mask1 = mask0 + 2;
+    mask2 = mask0 + 4;
+    mask3 = mask0 + 6;
+
+    const_vec = (v8u16) __msa_ldi_h(128);
+    const_vec <<= 6;
+
+    LOAD_7VECS_SB(src, src_stride,
+                  src0, src1, src2, src3, src4, src5, src6);
+    src += (7 * src_stride);
+
+    XORI_B_7VECS_SB(src0, src1, src2, src3, src4, src5, src6,
+                    src0, src1, src2, src3, src4, src5, src6, 128);
+
+    /* Row 0 Row 1 Row 2 Row 3 */
+    vec0 = __msa_vshf_b(mask0, src3, src0);
+    vec1 = __msa_vshf_b(mask1, src3, src0);
+    vec2 = __msa_vshf_b(mask2, src3, src0);
+    vec3 = __msa_vshf_b(mask3, src3, src0);
+
+    vec4 = __msa_vshf_b(mask0, src4, src1);
+    vec5 = __msa_vshf_b(mask1, src4, src1);
+    vec6 = __msa_vshf_b(mask2, src4, src1);
+    vec7 = __msa_vshf_b(mask3, src4, src1);
+
+    vec8 = __msa_vshf_b(mask0, src5, src2);
+    vec9 = __msa_vshf_b(mask1, src5, src2);
+    vec10 = __msa_vshf_b(mask2, src5, src2);
+    vec11 = __msa_vshf_b(mask3, src5, src2);
+
+    vec12 = __msa_vshf_b(mask0, src6, src3);
+    vec13 = __msa_vshf_b(mask1, src6, src3);
+    vec14 = __msa_vshf_b(mask2, src6, src3);
+    vec15 = __msa_vshf_b(mask3, src6, src3);
+
+    dst30 = HEVC_FILT_8TAP_DPADD_H(vec0, vec1, vec2, vec3,
+                                   filt0, filt1, filt2, filt3, const_vec);
+
+    dst41 = HEVC_FILT_8TAP_DPADD_H(vec4, vec5, vec6, vec7,
+                                   filt0, filt1, filt2, filt3, const_vec);
+
+    dst52 = HEVC_FILT_8TAP_DPADD_H(vec8, vec9, vec10, vec11,
+                                   filt0, filt1, filt2, filt3, const_vec);
+
+    dst63 = HEVC_FILT_8TAP_DPADD_H(vec12, vec13, vec14, vec15,
+                                   filt0, filt1, filt2, filt3, const_vec);
+
+    dst10_r = __msa_ilvr_h(dst41, dst30);
+    dst21_r = __msa_ilvr_h(dst52, dst41);
+    dst32_r = __msa_ilvr_h(dst63, dst52);
+
+    dst43_r = __msa_ilvl_h(dst41, dst30);
+    dst54_r = __msa_ilvl_h(dst52, dst41);
+    dst65_r = __msa_ilvl_h(dst63, dst52);
+
+    dst66 = (v8i16) __msa_splati_d((v2i64) dst63, 1);
+
+    for (loop_cnt = height >> 1; loop_cnt--;) {
+        src7 = LOAD_SB(src);
+        src += src_stride;
+        src8 = LOAD_SB(src);
+        src += src_stride;
+
+        XORI_B_2VECS_SB(src7, src8, src7, src8, 128);
+
+        vec0 = __msa_vshf_b(mask0, src8, src7);
+        vec1 = __msa_vshf_b(mask1, src8, src7);
+        vec2 = __msa_vshf_b(mask2, src8, src7);
+        vec3 = __msa_vshf_b(mask3, src8, src7);
+
+        dst87 = HEVC_FILT_8TAP_DPADD_H(vec0, vec1, vec2, vec3,
+                                       filt0, filt1, filt2, filt3, const_vec);
+
+        dst76_r = __msa_ilvr_h(dst87, dst66);
+
+        dst0_r = HEVC_FILT_8TAP_DPADD_W(dst10_r, dst32_r, dst54_r, dst76_r,
+                                        filt_h0, filt_h1, filt_h2, filt_h3);
+
+        dst87_r = __msa_vshf_h(mask4, dst87, dst87);
+
+        dst1_r = HEVC_FILT_8TAP_DPADD_W(dst21_r, dst43_r, dst65_r, dst87_r,
+                                        filt_h0, filt_h1, filt_h2, filt_h3);
+
+        dst0_r >>= 6;
+        dst1_r >>= 6;
+
+        dst0_r = __msa_srari_w(dst0_r, 6);
+        dst1_r = __msa_srari_w(dst1_r, 6);
+
+        dst0_r = CLIP_UNSIGNED_CHAR_W(dst0_r);
+        dst1_r = CLIP_UNSIGNED_CHAR_W(dst1_r);
+
+        dst0_r = (v4i32) __msa_pckev_h((v8i16) dst1_r, (v8i16) dst0_r);
+        dst0_r = (v4i32) __msa_pckev_b((v16i8) dst0_r, (v16i8) dst0_r);
+
+        out0 = __msa_copy_u_w(dst0_r, 0);
+        out1 = __msa_copy_u_w(dst0_r, 1);
+
+        STORE_WORD(dst, out0);
+        dst += dst_stride;
+        STORE_WORD(dst, out1);
+        dst += dst_stride;
+
+        dst10_r = dst32_r;
+        dst32_r = dst54_r;
+        dst54_r = dst76_r;
+
+        dst21_r = dst43_r;
+        dst43_r = dst65_r;
+        dst65_r = dst87_r;
+
+        dst66 = (v8i16) __msa_splati_d((v2i64) dst87, 1);
+    }
+}
+
+static void hevc_hv_uni_8t_8multx2mult_msa(uint8_t * __restrict src,
+                                           int32_t src_stride,
+                                           uint8_t * __restrict dst,
+                                           int32_t dst_stride,
+                                           const int8_t * __restrict filter_x,
+                                           const int8_t * __restrict filter_y,
+                                           int32_t height, int32_t width)
+{
+    uint32_t loop_cnt, cnt;
+    uint64_t out0, out1;
+    uint8_t *src_tmp;
+    uint8_t *dst_tmp;
+    v16i8 src0, src1, src2, src3, src4, src5, src6, src7, src8;
+    v8i16 filt0, filt1, filt2, filt3, filter_vec;
+    v4i32 filt_h0, filt_h1, filt_h2, filt_h3;
+    v16i8 mask1, mask2, mask3;
+    v8u16 const_vec;
+    v16i8 vec0, vec1, vec2, vec3, vec4, vec5, vec6, vec7;
+    v16i8 vec8, vec9, vec10, vec11, vec12, vec13, vec14, vec15;
+    v8i16 dst0, dst1, dst2, dst3, dst4, dst5, dst6, dst7, dst8;
+    v4i32 dst0_r, dst0_l, dst1_r, dst1_l;
+    v8i16 dst10_r, dst32_r, dst54_r, dst76_r;
+    v8i16 dst10_l, dst32_l, dst54_l, dst76_l;
+    v8i16 dst21_r, dst43_r, dst65_r, dst87_r;
+    v8i16 dst21_l, dst43_l, dst65_l, dst87_l;
+    v16i8 tmp;
+    v16i8 mask0 = { 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8 };
+
+    src -= ((3 * src_stride) + 3);
+
+    const_vec = (v8u16) __msa_ldi_h(128);
+    const_vec <<= 6;
+
+    filter_vec = LOAD_SH(filter_x);
+    filt0 = __msa_splati_h(filter_vec, 0);
+    filt1 = __msa_splati_h(filter_vec, 1);
+    filt2 = __msa_splati_h(filter_vec, 2);
+    filt3 = __msa_splati_h(filter_vec, 3);
+
+    filter_vec = LOAD_SH(filter_y);
+    tmp = __msa_clti_s_b((v16i8) filter_vec, 0);
+    filter_vec = (v8i16) __msa_ilvr_b(tmp, (v16i8) filter_vec);
+
+    filt_h0 = __msa_splati_w((v4i32) filter_vec, 0);
+    filt_h1 = __msa_splati_w((v4i32) filter_vec, 1);
+    filt_h2 = __msa_splati_w((v4i32) filter_vec, 2);
+    filt_h3 = __msa_splati_w((v4i32) filter_vec, 3);
+
+    mask1 = mask0 + 2;
+    mask2 = mask0 + 4;
+    mask3 = mask0 + 6;
+
+    for (cnt = width >> 3; cnt--;) {
+        src_tmp = src;
+        dst_tmp = dst;
+
+        LOAD_7VECS_SB(src_tmp, src_stride,
+                      src0, src1, src2, src3, src4, src5, src6);
+        src_tmp += (7 * src_stride);
+
+        XORI_B_7VECS_SB(src0, src1, src2, src3, src4, src5, src6,
+                        src0, src1, src2, src3, src4, src5, src6, 128);
+
+        /* Row 0 Row 1 Row 2 Row 3 */
+        vec0 = __msa_vshf_b(mask0, src0, src0);
+        vec1 = __msa_vshf_b(mask1, src0, src0);
+        vec2 = __msa_vshf_b(mask2, src0, src0);
+        vec3 = __msa_vshf_b(mask3, src0, src0);
+
+        vec4 = __msa_vshf_b(mask0, src1, src1);
+        vec5 = __msa_vshf_b(mask1, src1, src1);
+        vec6 = __msa_vshf_b(mask2, src1, src1);
+        vec7 = __msa_vshf_b(mask3, src1, src1);
+
+        vec8 = __msa_vshf_b(mask0, src2, src2);
+        vec9 = __msa_vshf_b(mask1, src2, src2);
+        vec10 = __msa_vshf_b(mask2, src2, src2);
+        vec11 = __msa_vshf_b(mask3, src2, src2);
+
+        vec12 = __msa_vshf_b(mask0, src3, src3);
+        vec13 = __msa_vshf_b(mask1, src3, src3);
+        vec14 = __msa_vshf_b(mask2, src3, src3);
+        vec15 = __msa_vshf_b(mask3, src3, src3);
+
+        dst0 = HEVC_FILT_8TAP_DPADD_H(vec0, vec1, vec2, vec3,
+                                      filt0, filt1, filt2, filt3, const_vec);
+
+        dst1 = HEVC_FILT_8TAP_DPADD_H(vec4, vec5, vec6, vec7,
+                                      filt0, filt1, filt2, filt3, const_vec);
+
+        dst2 = HEVC_FILT_8TAP_DPADD_H(vec8, vec9, vec10, vec11,
+                                      filt0, filt1, filt2, filt3, const_vec);
+
+        dst3 = HEVC_FILT_8TAP_DPADD_H(vec12, vec13, vec14, vec15,
+                                      filt0, filt1, filt2, filt3, const_vec);
+
+        vec0 = __msa_vshf_b(mask0, src4, src4);
+        vec1 = __msa_vshf_b(mask1, src4, src4);
+        vec2 = __msa_vshf_b(mask2, src4, src4);
+        vec3 = __msa_vshf_b(mask3, src4, src4);
+
+        vec4 = __msa_vshf_b(mask0, src5, src5);
+        vec5 = __msa_vshf_b(mask1, src5, src5);
+        vec6 = __msa_vshf_b(mask2, src5, src5);
+        vec7 = __msa_vshf_b(mask3, src5, src5);
+
+        vec8 = __msa_vshf_b(mask0, src6, src6);
+        vec9 = __msa_vshf_b(mask1, src6, src6);
+        vec10 = __msa_vshf_b(mask2, src6, src6);
+        vec11 = __msa_vshf_b(mask3, src6, src6);
+
+        dst4 = HEVC_FILT_8TAP_DPADD_H(vec0, vec1, vec2, vec3,
+                                      filt0, filt1, filt2, filt3, const_vec);
+
+        dst5 = HEVC_FILT_8TAP_DPADD_H(vec4, vec5, vec6, vec7,
+                                      filt0, filt1, filt2, filt3, const_vec);
+
+        dst6 = HEVC_FILT_8TAP_DPADD_H(vec8, vec9, vec10, vec11,
+                                      filt0, filt1, filt2, filt3, const_vec);
+
+        ILVR_H_6VECS_SH(dst0, dst2, dst4, dst1, dst3, dst5,
+                        dst1, dst3, dst5, dst2, dst4, dst6,
+                        dst10_r, dst32_r, dst54_r, dst21_r, dst43_r, dst65_r);
+
+        ILVL_H_6VECS_SH(dst0, dst2, dst4, dst1, dst3, dst5,
+                        dst1, dst3, dst5, dst2, dst4, dst6,
+                        dst10_l, dst32_l, dst54_l, dst21_l, dst43_l, dst65_l);
+
+        for (loop_cnt = height >> 1; loop_cnt--;) {
+            src7 = LOAD_SB(src_tmp);
+            src_tmp += src_stride;
+
+            src7 = (v16i8) __msa_xori_b((v16u8) src7, 128);
+
+            vec0 = __msa_vshf_b(mask0, src7, src7);
+            vec1 = __msa_vshf_b(mask1, src7, src7);
+            vec2 = __msa_vshf_b(mask2, src7, src7);
+            vec3 = __msa_vshf_b(mask3, src7, src7);
+
+            dst7 = HEVC_FILT_8TAP_DPADD_H(vec0, vec1, vec2, vec3,
+                                          filt0, filt1, filt2, filt3,
+                                          const_vec);
+
+            dst76_r = __msa_ilvr_h(dst7, dst6);
+            dst76_l = __msa_ilvl_h(dst7, dst6);
+
+            dst0_r = HEVC_FILT_8TAP_DPADD_W(dst10_r, dst32_r, dst54_r, dst76_r,
+                                            filt_h0, filt_h1, filt_h2, filt_h3);
+
+            dst0_l = HEVC_FILT_8TAP_DPADD_W(dst10_l, dst32_l, dst54_l, dst76_l,
+                                            filt_h0, filt_h1, filt_h2, filt_h3);
+
+            dst0_r >>= 6;
+            dst0_l >>= 6;
+
+            /* Row 8 */
+            src8 = LOAD_SB(src_tmp);
+            src_tmp += src_stride;
+
+            src8 = (v16i8) __msa_xori_b((v16u8) src8, 128);
+
+            vec0 = __msa_vshf_b(mask0, src8, src8);
+            vec1 = __msa_vshf_b(mask1, src8, src8);
+            vec2 = __msa_vshf_b(mask2, src8, src8);
+            vec3 = __msa_vshf_b(mask3, src8, src8);
+
+            dst8 = HEVC_FILT_8TAP_DPADD_H(vec0, vec1, vec2, vec3,
+                                          filt0, filt1, filt2, filt3,
+                                          const_vec);
+
+            dst87_r = __msa_ilvr_h(dst8, dst7);
+            dst87_l = __msa_ilvl_h(dst8, dst7);
+
+            dst1_r = HEVC_FILT_8TAP_DPADD_W(dst21_r, dst43_r, dst65_r, dst87_r,
+                                            filt_h0, filt_h1, filt_h2, filt_h3);
+
+            dst1_l = HEVC_FILT_8TAP_DPADD_W(dst21_l, dst43_l, dst65_l, dst87_l,
+                                            filt_h0, filt_h1, filt_h2, filt_h3);
+
+            dst1_r >>= 6;
+            dst1_l >>= 6;
+
+            HEVC_RND_W_CLIP_UNSIGNED_CHAR_W_VEC2(dst0_r, dst0_l, dst1_r, dst1_l,
+                                                 dst0_r, dst1_r);
+
+            dst0_r = (v4i32) __msa_pckev_b((v16i8) dst1_r, (v16i8) dst0_r);
+
+            out0 = __msa_copy_u_d((v2i64) dst0_r, 0);
+            out1 = __msa_copy_u_d((v2i64) dst0_r, 1);
+
+            STORE_DWORD(dst_tmp, out0);
+            dst_tmp += dst_stride;
+            STORE_DWORD(dst_tmp, out1);
+            dst_tmp += dst_stride;
+
+            dst10_r = dst32_r;
+            dst32_r = dst54_r;
+            dst54_r = dst76_r;
+
+            dst10_l = dst32_l;
+            dst32_l = dst54_l;
+            dst54_l = dst76_l;
+
+            dst21_r = dst43_r;
+            dst43_r = dst65_r;
+            dst65_r = dst87_r;
+
+            dst21_l = dst43_l;
+            dst43_l = dst65_l;
+            dst65_l = dst87_l;
+
+            dst6 = dst8;
+        }
+
+        src += 8;
+        dst += 8;
+    }
+}
+
+static void hevc_hv_uni_8t_8w_msa(uint8_t * __restrict src,
+                                  int32_t src_stride,
+                                  uint8_t * __restrict dst,
+                                  int32_t dst_stride,
+                                  const int8_t * __restrict filter_x,
+                                  const int8_t * __restrict filter_y,
+                                  int32_t height)
+{
+    hevc_hv_uni_8t_8multx2mult_msa(src, src_stride, dst, dst_stride,
+                                   filter_x, filter_y, height, 8);
+}
+
+static void hevc_hv_uni_8t_12w_msa(uint8_t * __restrict src,
+                                   int32_t src_stride,
+                                   uint8_t * __restrict dst,
+                                   int32_t dst_stride,
+                                   const int8_t * __restrict filter_x,
+                                   const int8_t * __restrict filter_y,
+                                   int32_t height)
+{
+    hevc_hv_uni_8t_8multx2mult_msa(src, src_stride, dst, dst_stride,
+                                   filter_x, filter_y, height, 8);
+
+    hevc_hv_uni_8t_4w_msa(src + 8, src_stride, dst + 8, dst_stride,
+                          filter_x, filter_y, height);
+}
+
+static void hevc_hv_uni_8t_16w_msa(uint8_t * __restrict src,
+                                   int32_t src_stride,
+                                   uint8_t * __restrict dst,
+                                   int32_t dst_stride,
+                                   const int8_t * __restrict filter_x,
+                                   const int8_t * __restrict filter_y,
+                                   int32_t height)
+{
+    hevc_hv_uni_8t_8multx2mult_msa(src, src_stride, dst, dst_stride,
+                                   filter_x, filter_y, height, 16);
+}
+
+static void hevc_hv_uni_8t_24w_msa(uint8_t * __restrict src,
+                                   int32_t src_stride,
+                                   uint8_t * __restrict dst,
+                                   int32_t dst_stride,
+                                   const int8_t * __restrict filter_x,
+                                   const int8_t * __restrict filter_y,
+                                   int32_t height)
+{
+    hevc_hv_uni_8t_8multx2mult_msa(src, src_stride, dst, dst_stride,
+                                   filter_x, filter_y, height, 24);
+}
+
+static void hevc_hv_uni_8t_32w_msa(uint8_t * __restrict src,
+                                   int32_t src_stride,
+                                   uint8_t * __restrict dst,
+                                   int32_t dst_stride,
+                                   const int8_t * __restrict filter_x,
+                                   const int8_t * __restrict filter_y,
+                                   int32_t height)
+{
+    hevc_hv_uni_8t_8multx2mult_msa(src, src_stride, dst, dst_stride,
+                                   filter_x, filter_y, height, 32);
+}
+
+static void hevc_hv_uni_8t_48w_msa(uint8_t * __restrict src,
+                                   int32_t src_stride,
+                                   uint8_t * __restrict dst,
+                                   int32_t dst_stride,
+                                   const int8_t * __restrict filter_x,
+                                   const int8_t * __restrict filter_y,
+                                   int32_t height)
+{
+    hevc_hv_uni_8t_8multx2mult_msa(src, src_stride, dst, dst_stride,
+                                   filter_x, filter_y, height, 48);
+}
+
+static void hevc_hv_uni_8t_64w_msa(uint8_t * __restrict src,
+                                   int32_t src_stride,
+                                   uint8_t * __restrict dst,
+                                   int32_t dst_stride,
+                                   const int8_t * __restrict filter_x,
+                                   const int8_t * __restrict filter_y,
+                                   int32_t height)
+{
+    hevc_hv_uni_8t_8multx2mult_msa(src, src_stride, dst, dst_stride,
+                                   filter_x, filter_y, height, 64);
+}
+
 static uint8_t mc_filt_mask_arr[16 * 3] = {
     /* 8 width cases */
     0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8,
@@ -4177,3 +4658,34 @@ UNI_MC(qpel, v, 48, 8, vt, my);
 UNI_MC(qpel, v, 64, 8, vt, my);
 
 #undef UNI_MC
+
+#define UNI_MC_HV(PEL, DIR, WIDTH, TAP, DIR1)                           \
+void ff_hevc_put_hevc_uni_##PEL##_##DIR####WIDTH##_8_msa(uint8_t *dst,  \
+                                                         ptrdiff_t      \
+                                                         dst_stride,    \
+                                                         uint8_t *src,  \
+                                                         ptrdiff_t      \
+                                                         src_stride,    \
+                                                         int height,    \
+                                                         intptr_t mx,   \
+                                                         intptr_t my,   \
+                                                         int width)     \
+{                                                                       \
+    const int8_t *filter_x = ff_hevc_##PEL##_filters[mx - 1];           \
+    const int8_t *filter_y = ff_hevc_##PEL##_filters[my - 1];           \
+                                                                        \
+    hevc_##DIR1##_uni_##TAP##t_##WIDTH##w_msa(src, src_stride, dst,     \
+                                              dst_stride, filter_x,     \
+                                              filter_y, height);        \
+}
+
+UNI_MC_HV(qpel, hv, 4, 8, hv);
+UNI_MC_HV(qpel, hv, 8, 8, hv);
+UNI_MC_HV(qpel, hv, 12, 8, hv);
+UNI_MC_HV(qpel, hv, 16, 8, hv);
+UNI_MC_HV(qpel, hv, 24, 8, hv);
+UNI_MC_HV(qpel, hv, 32, 8, hv);
+UNI_MC_HV(qpel, hv, 48, 8, hv);
+UNI_MC_HV(qpel, hv, 64, 8, hv);
+
+#undef UNI_MC_HV

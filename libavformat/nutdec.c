@@ -524,6 +524,8 @@ static int decode_info_header(NUTContext *nut)
     for (i = 0; i < count; i++) {
         get_str(bc, name, sizeof(name));
         value = get_s(bc);
+        str_value[0] = 0;
+
         if (value == -1) {
             type = "UTF-8";
             get_str(bc, str_value, sizeof(str_value));
@@ -764,7 +766,7 @@ static int nut_read_header(AVFormatContext *s)
     NUTContext *nut = s->priv_data;
     AVIOContext *bc = s->pb;
     int64_t pos;
-    int initialized_stream_count, ret = 0;
+    int initialized_stream_count;
 
     nut->avf = s;
 
@@ -820,10 +822,8 @@ static int nut_read_header(AVFormatContext *s)
 
     ff_metadata_conv_ctx(s, NULL, ff_nut_metadata_conv);
 
-end:
-    if (ret < 0)
-        nut_read_close(s);
-    return FFMIN(ret, 0);
+    return 0;
+
 fail:
     nut_read_close(s);
 

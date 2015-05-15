@@ -163,6 +163,11 @@ int ff_mjpeg_decode_dqt(MJpegDecodeContext *s)
 
     len = get_bits(&s->gb, 16) - 2;
 
+    if (8*len > get_bits_left(&s->gb)) {
+        av_log(s->avctx, AV_LOG_ERROR, "dqt: len %d is too large\n", len);
+        return AVERROR_INVALIDDATA;
+    }
+
     while (len >= 65) {
         int pr = get_bits(&s->gb, 4);
         if (pr > 1) {
@@ -184,7 +189,7 @@ int ff_mjpeg_decode_dqt(MJpegDecodeContext *s)
                                  s->quant_matrixes[index][s->scantable.permutated[8]]) >> 1;
         av_log(s->avctx, AV_LOG_DEBUG, "qscale[%d]: %d\n",
                index, s->qscale[index]);
-        len -= 65;
+        len -= 1 + 64 * (1+pr);
     }
     return 0;
 }
@@ -198,6 +203,11 @@ int ff_mjpeg_decode_dht(MJpegDecodeContext *s)
     int ret = 0;
 
     len = get_bits(&s->gb, 16) - 2;
+
+    if (8*len > get_bits_left(&s->gb)) {
+        av_log(s->avctx, AV_LOG_ERROR, "dht: len %d is too large\n", len);
+        return AVERROR_INVALIDDATA;
+    }
 
     while (len > 0) {
         if (len < 17)

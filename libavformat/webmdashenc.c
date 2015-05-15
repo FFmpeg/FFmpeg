@@ -88,7 +88,7 @@ static double get_duration(AVFormatContext *s)
     return max / 1000;
 }
 
-static void write_header(AVFormatContext *s)
+static int write_header(AVFormatContext *s)
 {
     WebMDashMuxContext *w = s->priv_data;
     double min_buffer_time = 1.0;
@@ -111,7 +111,9 @@ static void write_header(AVFormatContext *s)
         struct tm gmt_buffer;
         struct tm *gmt = gmtime_r(&local_time, &gmt_buffer);
         char gmt_iso[21];
-        strftime(gmt_iso, 21, "%Y-%m-%dT%H:%M:%SZ", gmt);
+        if (!strftime(gmt_iso, 21, "%Y-%m-%dT%H:%M:%SZ", gmt)) {
+            return AVERROR_UNKNOWN;
+        }
         if (w->debug_mode) {
             av_strlcpy(gmt_iso, "", 1);
         }
@@ -125,6 +127,7 @@ static void write_header(AVFormatContext *s)
             avio_printf(s->pb, "  value=\"%s\"/>\n", w->utc_timing_url);
         }
     }
+    return 0;
 }
 
 static void write_footer(AVFormatContext *s)
@@ -474,10 +477,12 @@ static int webm_dash_manifest_write_header(AVFormatContext *s)
     WebMDashMuxContext *w = s->priv_data;
     ret = parse_adaptation_sets(s);
     if (ret < 0) {
-        free_adaptation_sets(s);
-        return ret;
+        goto fail;
     }
-    write_header(s);
+    ret = write_header(s);
+    if (ret < 0) {
+        goto fail;
+    }
     avio_printf(s->pb, "<Period id=\"0\"");
     avio_printf(s->pb, " start=\"PT%gS\"", start);
     if (!w->is_live) {
@@ -488,14 +493,15 @@ static int webm_dash_manifest_write_header(AVFormatContext *s)
     for (i = 0; i < w->nb_as; i++) {
         ret = write_adaptation_set(s, i);
         if (ret < 0) {
-            free_adaptation_sets(s);
-            return ret;
+            goto fail;
         }
     }
 
     avio_printf(s->pb, "</Period>\n");
     write_footer(s);
-    return 0;
+fail:
+    free_adaptation_sets(s);
+    return ret < 0 ? ret : 0;
 }
 
 static int webm_dash_manifest_write_packet(AVFormatContext *s, AVPacket *pkt)

@@ -563,6 +563,11 @@ static int decode_residual_block(AVSContext *h, GetBitContext *gb,
                 return AVERROR_INVALIDDATA;
             }
             esc_code = get_ue_code(gb, esc_golomb_order);
+            if (esc_code < 0 || esc_code > 32767) {
+                av_log(h->avctx, AV_LOG_ERROR, "esc_code invalid\n");
+                return AVERROR_INVALIDDATA;
+            }
+
             level    = esc_code + (run > r->max_run ? 1 : r->level_add[run]);
             while (level > r->inc_limit)
                 r++;
@@ -1118,6 +1123,7 @@ static int decode_seq_header(AVSContext *h)
 {
     int frame_rate_code;
     int width, height;
+    int ret;
 
     h->profile = get_bits(&h->gb, 8);
     h->level   = get_bits(&h->gb, 8);
@@ -1134,22 +1140,30 @@ static int decode_seq_header(AVSContext *h)
         av_log(h->avctx, AV_LOG_ERROR, "Dimensions invalid\n");
         return AVERROR_INVALIDDATA;
     }
-    h->width  = width;
-    h->height = height;
-
     skip_bits(&h->gb, 2); //chroma format
     skip_bits(&h->gb, 3); //sample_precision
     h->aspect_ratio = get_bits(&h->gb, 4);
     frame_rate_code = get_bits(&h->gb, 4);
+    if (frame_rate_code == 0 || frame_rate_code > 13) {
+        av_log(h->avctx, AV_LOG_WARNING,
+               "frame_rate_code %d is invalid\n", frame_rate_code);
+        frame_rate_code = 1;
+    }
+
     skip_bits(&h->gb, 18); //bit_rate_lower
     skip_bits1(&h->gb);    //marker_bit
     skip_bits(&h->gb, 12); //bit_rate_upper
     h->low_delay =  get_bits1(&h->gb);
+
+    ret = ff_set_dimensions(h->avctx, width, height);
+    if (ret < 0)
+        return ret;
+
+    h->width  = width;
+    h->height = height;
     h->mb_width  = (h->width  + 15) >> 4;
     h->mb_height = (h->height + 15) >> 4;
     h->avctx->framerate = ff_mpeg12_frame_rate_tab[frame_rate_code];
-    h->avctx->width  = h->width;
-    h->avctx->height = h->height;
     if (!h->top_qp)
         return ff_cavs_init_top_lines(h);
     return 0;

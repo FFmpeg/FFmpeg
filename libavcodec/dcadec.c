@@ -229,6 +229,14 @@ static int dca_parse_audio_coding_header(DCAContext *s, int base_channel,
     }
 
     nchans = get_bits(&s->gb, 3) + 1;
+    if (xxch && nchans >= 3) {
+        av_log(s->avctx, AV_LOG_ERROR, "nchans %d is too large\n", nchans);
+        return AVERROR_INVALIDDATA;
+    } else if (nchans + base_channel > DCA_PRIM_CHANNELS_MAX) {
+        av_log(s->avctx, AV_LOG_ERROR, "channel sum %d + %d is too large\n", nchans, base_channel);
+        return AVERROR_INVALIDDATA;
+    }
+
     s->total_channels = nchans + base_channel;
     s->prim_channels  = s->total_channels;
 
@@ -429,6 +437,10 @@ static int dca_subframe_header(DCAContext *s, int base_channel, int block_index)
 
     if (!base_channel) {
         s->subsubframes[s->current_subframe]    = get_bits(&s->gb, 2) + 1;
+        if (block_index + s->subsubframes[s->current_subframe] > s->sample_blocks/8) {
+            s->subsubframes[s->current_subframe] = 1;
+            return AVERROR_INVALIDDATA;
+        }
         s->partial_samples[s->current_subframe] = get_bits(&s->gb, 3);
     }
 

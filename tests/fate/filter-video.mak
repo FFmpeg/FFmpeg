@@ -245,13 +245,13 @@ FATE_FILTER_VSYNTH-$(CONFIG_VFLIP_FILTER) += fate-filter-vflip_vflip
 fate-filter-vflip_vflip: CMD = video_filter "vflip,vflip"
 
 FATE_FILTER_VSYNTH-$(call ALLYES, FORMAT_FILTER PERMS_FILTER EDGEDETECT_FILTER) += fate-filter-edgedetect
-fate-filter-edgedetect: CMD = video_filter "format=gray,perms=random,edgedetect"
+fate-filter-edgedetect: CMD = video_filter "format=gray,perms=random,edgedetect" -vframes 20
 
 FATE_FILTER_VSYNTH-$(call ALLYES, FORMAT_FILTER PERMS_FILTER EDGEDETECT_FILTER) += fate-filter-edgedetect-colormix
-fate-filter-edgedetect-colormix: CMD = video_filter "format=gbrp,perms=random,edgedetect=mode=colormix"
+fate-filter-edgedetect-colormix: CMD = video_filter "format=gbrp,perms=random,edgedetect=mode=colormix" -vframes 20
 
 FATE_FILTER_VSYNTH-$(call ALLYES, PERMS_FILTER HUE_FILTER) += fate-filter-hue
-fate-filter-hue: CMD = video_filter "perms=random,hue=s=sin(2*PI*t)+1"
+fate-filter-hue: CMD = video_filter "perms=random,hue=s=sin(2*PI*t)+1" -vframes 20
 
 FATE_FILTER_VSYNTH-$(CONFIG_IDET_FILTER) += fate-filter-idet
 fate-filter-idet: CMD = framecrc -flags bitexact -idct simple -i $(SRC) -vf idet -vframes 25 -flags +bitexact

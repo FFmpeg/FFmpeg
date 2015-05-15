@@ -189,7 +189,7 @@ static void skip_sub_layer_hrd_parameters(GetBitContext *gb,
     }
 }
 
-static void skip_hrd_parameters(GetBitContext *gb, uint8_t cprms_present_flag,
+static int skip_hrd_parameters(GetBitContext *gb, uint8_t cprms_present_flag,
                                 unsigned int max_sub_layers_minus1)
 {
     unsigned int i;
@@ -246,8 +246,11 @@ static void skip_hrd_parameters(GetBitContext *gb, uint8_t cprms_present_flag,
         else
             low_delay_hrd_flag = get_bits1(gb);
 
-        if (!low_delay_hrd_flag)
+        if (!low_delay_hrd_flag) {
             cpb_cnt_minus1 = get_ue_golomb_long(gb);
+            if (cpb_cnt_minus1 > 31)
+                return AVERROR_INVALIDDATA;
+        }
 
         if (nal_hrd_parameters_present_flag)
             skip_sub_layer_hrd_parameters(gb, cpb_cnt_minus1,
@@ -257,6 +260,8 @@ static void skip_hrd_parameters(GetBitContext *gb, uint8_t cprms_present_flag,
             skip_sub_layer_hrd_parameters(gb, cpb_cnt_minus1,
                                           sub_pic_hrd_params_present_flag);
     }
+
+    return 0;
 }
 
 static void skip_timing_info(GetBitContext *gb)
@@ -456,6 +461,9 @@ static int parse_rps(GetBitContext *gb, unsigned int rps_idx,
     } else {
         unsigned int num_negative_pics = get_ue_golomb_long(gb);
         unsigned int num_positive_pics = get_ue_golomb_long(gb);
+
+        if ((num_positive_pics + (uint64_t)num_negative_pics) * 2 > get_bits_left(gb))
+            return AVERROR_INVALIDDATA;
 
         num_delta_pocs[rps_idx] = num_negative_pics + num_positive_pics;
 
