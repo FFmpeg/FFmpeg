@@ -2886,7 +2886,7 @@ static int transcode_init(void)
                 break;
             case AVMEDIA_TYPE_VIDEO:
                 enc_ctx->time_base = av_inv_q(ost->frame_rate);
-                if (ost->filter && !(enc_ctx->time_base.num && enc_ctx->time_base.den))
+                if (!(enc_ctx->time_base.num && enc_ctx->time_base.den))
                     enc_ctx->time_base = ost->filter->filter->inputs[0]->time_base;
                 if (   av_q2d(enc_ctx->time_base) < 0.001 && video_sync_method != VSYNC_PASSTHROUGH
                    && (video_sync_method == VSYNC_CFR || video_sync_method == VSYNC_VSCFR || (video_sync_method == VSYNC_AUTO && !(oc->oformat->flags & AVFMT_VARIABLE_FPS)))){
