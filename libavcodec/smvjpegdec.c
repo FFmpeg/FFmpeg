@@ -155,6 +155,10 @@ static int smvjpeg_decode_frame(AVCodecContext *avctx, void *data, int *data_siz
     if (!cur_frame) {
         av_frame_unref(mjpeg_data);
         ret = avcodec_decode_video2(s->avctx, mjpeg_data, &s->mjpeg_data_size, avpkt);
+        if (ret < 0) {
+            s->mjpeg_data_size = 0;
+            return ret;
+        }
     } else if (!s->mjpeg_data_size)
         return AVERROR(EINVAL);
 
