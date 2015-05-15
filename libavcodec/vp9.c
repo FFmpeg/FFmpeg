@@ -2298,7 +2298,7 @@ static int decode_coeffs_b32_16bpp(VP9Context *s, int16_t *coef, int n_coeffs,
                                    nnz, scan, nb, band_counts, qmul);
 }
 
-static av_always_inline void decode_coeffs(AVCodecContext *ctx, int is8bitsperpixel)
+static av_always_inline int decode_coeffs(AVCodecContext *ctx, int is8bitsperpixel)
 {
     VP9Context *s = ctx->priv_data;
     VP9Block *b = s->b;
@@ -2327,6 +2327,7 @@ static av_always_inline void decode_coeffs(AVCodecContext *ctx, int is8bitsperpi
     const int16_t *y_band_counts = band_counts[b->tx];
     const int16_t *uv_band_counts = band_counts[b->uvtx];
     int bytesperpixel = is8bitsperpixel ? 1 : 2;
+    int total_coeff = 0;
 
 #define MERGE(la, end, step, rd) \
     for (n = 0; n < end; n += step) \
@@ -2346,6 +2347,7 @@ static av_always_inline void decode_coeffs(AVCodecContext *ctx, int is8bitsperpi
                                      c, e, p, a[x] + l[y], yscans[txtp], \
                                      ynbs[txtp], y_band_counts, qmul[0]); \
             a[x] = l[y] = !!res; \
+            total_coeff |= !!res; \
             if (step >= 4) { \
                 AV_WN16A(&s->eob[n], res); \
             } else { \
@@ -2419,6 +2421,7 @@ static av_always_inline void decode_coeffs(AVCodecContext *ctx, int is8bitsperpi
                                      16 * step * step, c, e, p, a[x] + l[y], \
                                      uvscan, uvnb, uv_band_counts, qmul[1]); \
             a[x] = l[y] = !!res; \
+            total_coeff |= !!res; \
             if (step >= 4) { \
                 AV_WN16A(&s->uveob[pl][n], res); \
             } else { \
@@ -2458,16 +2461,18 @@ static av_always_inline void decode_coeffs(AVCodecContext *ctx, int is8bitsperpi
             break;
         }
     }
+
+    return total_coeff;
 }
 
-static void decode_coeffs_8bpp(AVCodecContext *ctx)
+static int decode_coeffs_8bpp(AVCodecContext *ctx)
 {
-    decode_coeffs(ctx, 1);
+    return decode_coeffs(ctx, 1);
 }
 
-static void decode_coeffs_16bpp(AVCodecContext *ctx)
+static int decode_coeffs_16bpp(AVCodecContext *ctx)
 {
-    decode_coeffs(ctx, 0);
+    return decode_coeffs(ctx, 0);
 }
 
 static av_always_inline int check_intra_mode(VP9Context *s, int mode, uint8_t **a,
@@ -3180,10 +3185,17 @@ static void decode_b(AVCodecContext *ctx, int row, int col,
                            (s->ss_v && h4 * 2 == (1 << b->tx)));
 
         if (!b->skip) {
+            int has_coeffs;
+
             if (bytesperpixel == 1) {
-                decode_coeffs_8bpp(ctx);
+                has_coeffs = decode_coeffs_8bpp(ctx);
             } else {
-                decode_coeffs_16bpp(ctx);
+                has_coeffs = decode_coeffs_16bpp(ctx);
+            }
+            if (!has_coeffs && b->bs <= BS_8x8 && !b->intra) {
+                b->skip = 1;
+                memset(&s->above_skip_ctx[col], 1, w4);
+                memset(&s->left_skip_ctx[s->row7], 1, h4);
             }
         } else {
             int row7 = s->row7;
