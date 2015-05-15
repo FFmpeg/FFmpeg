@@ -650,9 +650,6 @@ static int svq1_decode_frame(AVCodecContext *avctx, void *data,
 
         src = (uint32_t *)(s->pkt_swapped + 4);
 
-        if (buf_size < 36)
-            return AVERROR_INVALIDDATA;
-
         for (i = 0; i < 4; i++)
             src[i] = ((src[i] << 16) | (src[i] >> 16)) ^ src[7 - i];
     }
