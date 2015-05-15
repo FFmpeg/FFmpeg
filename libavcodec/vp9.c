@@ -3314,7 +3314,7 @@ static void decode_b(AVCodecContext *ctx, int row, int col,
         int w = FFMIN(s->cols - col, w4) * 8 >> s->ss_h;
         int h = FFMIN(s->rows - row, h4) * 8 >> s->ss_v, n, o = 0;
 
-        for (n = 1; o < w; n++) {
+        for (n = s->ss_h; o < w; n++) {
             int bw = 64 >> n;
 
             av_assert2(n <= 4);
