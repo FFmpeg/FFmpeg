@@ -698,6 +698,15 @@ static int decode_frame_header(AVCodecContext *ctx,
     s->framectxid   = c = get_bits(&s->gb, 2);
 
     /* loopfilter header data */
+    if (s->keyframe || s->errorres || s->intraonly) {
+        // reset loopfilter defaults
+        s->lf_delta.ref[0] = 1;
+        s->lf_delta.ref[1] = 0;
+        s->lf_delta.ref[2] = -1;
+        s->lf_delta.ref[3] = -1;
+        s->lf_delta.mode[0] = 0;
+        s->lf_delta.mode[1] = 0;
+    }
     s->filter.level = get_bits(&s->gb, 6);
     sharp = get_bits(&s->gb, 3);
     // if sharpness changed, reinit lim/mblim LUTs. if it didn't change, keep
