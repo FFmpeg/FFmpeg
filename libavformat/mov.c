@@ -229,7 +229,7 @@ static int mov_metadata_loci(MOVContext *c, AVIOContext *pb, unsigned len)
     avio_skip(pb, 1); // role
     len -= 1;
 
-    if (len < 14) {
+    if (len < 12) {
         av_log(c->fc, AV_LOG_ERROR, "no space for coordinates left (%d)\n", len);
         return AVERROR_INVALIDDATA;
     }
