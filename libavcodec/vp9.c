@@ -1111,7 +1111,7 @@ static void find_ref_mvs(VP9Context *s,
     int row = s->row, col = s->col, row7 = s->row7;
     const int8_t (*p)[2] = mv_ref_blk_off[b->bs];
 #define INVALID_MV 0x80008000U
-    uint32_t mem = INVALID_MV;
+    uint32_t mem = INVALID_MV, mem_sub8x8 = INVALID_MV;
     int i;
 
 #define RETURN_DIRECT_MV(mv) \
@@ -1142,15 +1142,25 @@ static void find_ref_mvs(VP9Context *s,
         if (sb > 0) { \
             VP56mv tmp; \
             uint32_t m; \
-            clamp_mv(&tmp, &mv, s); \
-            m = AV_RN32A(&tmp); \
-            if (!idx) { \
-                AV_WN32A(pmv, m); \
-                return; \
-            } else if (mem == INVALID_MV) { \
-                mem = m; \
-            } else if (m != mem) { \
-                AV_WN32A(pmv, m); \
+            av_assert2(idx == 1); \
+            av_assert2(mem != INVALID_MV); \
+            if (mem_sub8x8 == INVALID_MV) { \
+                clamp_mv(&tmp, &mv, s); \
+                m = AV_RN32A(&tmp); \
+                if (m != mem) { \
+                    AV_WN32A(pmv, m); \
+                    return; \
+                } \
+                mem_sub8x8 = AV_RN32A(&mv); \
+            } else if (mem_sub8x8 != AV_RN32A(&mv)) { \
+                clamp_mv(&tmp, &mv, s); \
+                m = AV_RN32A(&tmp); \
+                if (m != mem) { \
+                    AV_WN32A(pmv, m); \
+                } else { \
+                    /* BUG I'm pretty sure this isn't the intention */ \
+                    AV_WN32A(pmv, 0); \
+                } \
                 return; \
             } \
         } else { \
