@@ -429,8 +429,11 @@ static av_cold int vc1_decode_init(AVCodecContext *avctx)
         return -1;
     if (!(avctx->flags & CODEC_FLAG_GRAY))
         avctx->pix_fmt = ff_get_format(avctx, avctx->codec->pix_fmts);
-    else
+    else {
         avctx->pix_fmt = AV_PIX_FMT_GRAY8;
+        if (avctx->color_range == AVCOL_RANGE_UNSPECIFIED)
+            avctx->color_range = AVCOL_RANGE_MPEG;
+    }
     v->s.avctx = avctx;
 
     if ((ret = ff_vc1_init_common(v)) < 0)
