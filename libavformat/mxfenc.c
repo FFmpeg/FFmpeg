@@ -79,6 +79,7 @@ typedef struct MXFStreamContext {
     int interlaced;          ///< whether picture is interlaced
     int field_dominance;     ///< tff=1, bff=2
     int component_depth;
+    int h_chroma_sub_sample;
     int temporal_reordering;
     AVRational aspect_ratio; ///< display aspect ratio
     int closed_gop;          ///< gop is closed, used in mpeg-2 frame parsing
@@ -1027,7 +1028,7 @@ static void mxf_write_cdci_common(AVFormatContext *s, AVStream *st, const UID ke
 
     // horizontal subsampling
     mxf_write_local_tag(pb, 4, 0x3302);
-    avio_wb32(pb, 2);
+    avio_wb32(pb, sc->h_chroma_sub_sample);
 
     // frame layout
     mxf_write_local_tag(pb, 1, 0x320C);
@@ -2035,9 +2036,11 @@ static int mxf_write_header(AVFormatContext *s)
             AVRational rate, tbc = st->time_base;
             // Default component depth to 8
             sc->component_depth = 8;
+            sc->h_chroma_sub_sample = 2;
 
             if (pix_desc) {
-                sc->component_depth = pix_desc->comp[0].depth_minus1 + 1;
+                sc->component_depth     = pix_desc->comp[0].depth_minus1 + 1;
+                sc->h_chroma_sub_sample = 1 << pix_desc->log2_chroma_w;
             }
 
             mxf->timecode_base = (tbc.den + tbc.num/2) / tbc.num;
