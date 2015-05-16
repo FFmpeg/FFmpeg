@@ -2750,6 +2750,7 @@ static av_always_inline void mc_luma_scaled(VP9Context *s, vp9_scaled_mc_func sm
                                             const uint8_t *ref, ptrdiff_t ref_stride,
                                             ThreadFrame *ref_frame,
                                             ptrdiff_t y, ptrdiff_t x, const VP56mv *in_mv,
+                                            int px, int py, int pw, int ph,
                                             int bw, int bh, int w, int h, int bytesperpixel,
                                             const uint16_t *scale, const uint8_t *step)
 {
@@ -2759,8 +2760,8 @@ static av_always_inline void mc_luma_scaled(VP9Context *s, vp9_scaled_mc_func sm
     int th;
     VP56mv mv;
 
-    mv.x = av_clip(in_mv->x, -(x + bw + 4) << 3, (s->cols * 8 - x + 3) << 3);
-    mv.y = av_clip(in_mv->y, -(y + bh + 4) << 3, (s->rows * 8 - y + 3) << 3);
+    mv.x = av_clip(in_mv->x, -(x + pw - px + 4) << 3, (s->cols * 8 - x + px + 3) << 3);
+    mv.y = av_clip(in_mv->y, -(y + ph - py + 4) << 3, (s->rows * 8 - y + py + 3) << 3);
     // BUG libvpx seems to scale the two components separately. This introduces
     // rounding errors but we have to reproduce them to be exactly compatible
     // with the output from libvpx...
@@ -2798,6 +2799,7 @@ static av_always_inline void mc_chroma_scaled(VP9Context *s, vp9_scaled_mc_func 
                                               const uint8_t *ref_v, ptrdiff_t src_stride_v,
                                               ThreadFrame *ref_frame,
                                               ptrdiff_t y, ptrdiff_t x, const VP56mv *in_mv,
+                                              int px, int py, int pw, int ph,
                                               int bw, int bh, int w, int h, int bytesperpixel,
                                               const uint16_t *scale, const uint8_t *step)
 {
@@ -2808,18 +2810,18 @@ static av_always_inline void mc_chroma_scaled(VP9Context *s, vp9_scaled_mc_func 
 
     if (s->ss_h) {
         // BUG https://code.google.com/p/webm/issues/detail?id=820
-        mv.x = av_clip(in_mv->x, -(x + bw + 4) << 4, (s->cols * 4 - x + 3) << 4);
+        mv.x = av_clip(in_mv->x, -(x + pw - px + 4) << 4, (s->cols * 4 - x + px + 3) << 4);
         mx = scale_mv(mv.x, 0) + (scale_mv(x * 16, 0) & ~15) + (scale_mv(x * 32, 0) & 15);
     } else {
-        mv.x = av_clip(in_mv->x, -(x + bw + 4) << 3, (s->cols * 8 - x + 3) << 3);
+        mv.x = av_clip(in_mv->x, -(x + pw - px + 4) << 3, (s->cols * 8 - x + px + 3) << 3);
         mx = scale_mv(mv.x << 1, 0) + scale_mv(x * 16, 0);
     }
     if (s->ss_v) {
         // BUG https://code.google.com/p/webm/issues/detail?id=820
-        mv.y = av_clip(in_mv->y, -(y + bh + 4) << 4, (s->rows * 4 - y + 3) << 4);
+        mv.y = av_clip(in_mv->y, -(y + ph - py + 4) << 4, (s->rows * 4 - y + py + 3) << 4);
         my = scale_mv(mv.y, 1) + (scale_mv(y * 16, 1) & ~15) + (scale_mv(y * 32, 1) & 15);
     } else {
-        mv.y = av_clip(in_mv->y, -(y + bh + 4) << 3, (s->rows * 8 - y + 3) << 3);
+        mv.y = av_clip(in_mv->y, -(y + ph - py + 4) << 3, (s->rows * 8 - y + py + 3) << 3);
         my = scale_mv(mv.y << 1, 1) + scale_mv(y * 16, 1);
     }
 #undef scale_mv
@@ -2858,14 +2860,15 @@ static av_always_inline void mc_chroma_scaled(VP9Context *s, vp9_scaled_mc_func 
     }
 }
 
-#define mc_luma_dir(s, mc, dst, dst_ls, src, src_ls, tref, row, col, mv, bw, bh, w, h, i) \
+#define mc_luma_dir(s, mc, dst, dst_ls, src, src_ls, tref, row, col, mv, \
+                    px, py, pw, ph, bw, bh, w, h, i) \
     mc_luma_scaled(s, s->dsp.s##mc, dst, dst_ls, src, src_ls, tref, row, col, \
-                   mv, bw, bh, w, h, bytesperpixel, \
+                   mv, px, py, pw, ph, bw, bh, w, h, bytesperpixel, \
                    s->mvscale[b->ref[i]], s->mvstep[b->ref[i]])
 #define mc_chroma_dir(s, mc, dstu, dstv, dst_ls, srcu, srcu_ls, srcv, srcv_ls, tref, \
-                      row, col, mv, bw, bh, w, h, i) \
+                      row, col, mv, px, py, pw, ph, bw, bh, w, h, i) \
     mc_chroma_scaled(s, s->dsp.s##mc, dstu, dstv, dst_ls, srcu, srcu_ls, srcv, srcv_ls, tref, \
-                     row, col, mv, bw, bh, w, h, bytesperpixel, \
+                     row, col, mv, px, py, pw, ph, bw, bh, w, h, bytesperpixel, \
                      s->mvscale[b->ref[i]], s->mvstep[b->ref[i]])
 #define SCALED 1
 #define FN(x) x##_scaled_8bpp
@@ -2959,11 +2962,12 @@ static av_always_inline void mc_chroma_unscaled(VP9Context *s, vp9_mc_func (*mc)
     }
 }
 
-#define mc_luma_dir(s, mc, dst, dst_ls, src, src_ls, tref, row, col, mv, bw, bh, w, h, i) \
+#define mc_luma_dir(s, mc, dst, dst_ls, src, src_ls, tref, row, col, mv, \
+                    px, py, pw, ph, bw, bh, w, h, i) \
     mc_luma_unscaled(s, s->dsp.mc, dst, dst_ls, src, src_ls, tref, row, col, \
                      mv, bw, bh, w, h, bytesperpixel)
 #define mc_chroma_dir(s, mc, dstu, dstv, dst_ls, srcu, srcu_ls, srcv, srcv_ls, tref, \
-                      row, col, mv, bw, bh, w, h, i) \
+                      row, col, mv, px, py, pw, ph, bw, bh, w, h, i) \
     mc_chroma_unscaled(s, s->dsp.mc, dstu, dstv, dst_ls, srcu, srcu_ls, srcv, srcv_ls, tref, \
                        row, col, mv, bw, bh, w, h, bytesperpixel)
 #define SCALED 0
