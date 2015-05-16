@@ -280,13 +280,13 @@ static void list_formats(AVFormatContext *ctx, int type)
         if (!(vfd.flags & V4L2_FMT_FLAG_COMPRESSED) &&
             type & V4L_RAWFORMATS) {
             const char *fmt_name = av_get_pix_fmt_name(pix_fmt);
-            av_log(ctx, AV_LOG_INFO, "Raw       : %9s : %20s :",
+            av_log(ctx, AV_LOG_INFO, "Raw       : %11s : %20s :",
                    fmt_name ? fmt_name : "Unsupported",
                    vfd.description);
         } else if (vfd.flags & V4L2_FMT_FLAG_COMPRESSED &&
                    type & V4L_COMPFORMATS) {
             const AVCodecDescriptor *desc = avcodec_descriptor_get(codec_id);
-            av_log(ctx, AV_LOG_INFO, "Compressed: %9s : %20s :",
+            av_log(ctx, AV_LOG_INFO, "Compressed: %11s : %20s :",
                    desc ? desc->name : "Unsupported",
                    vfd.description);
         } else {
