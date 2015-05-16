@@ -614,11 +614,11 @@ static int decode_frame_header(AVCodecContext *ctx,
         } else {
             s->refreshrefmask = get_bits(&s->gb, 8);
             s->refidx[0]      = get_bits(&s->gb, 3);
-            s->signbias[0]    = get_bits1(&s->gb);
+            s->signbias[0]    = get_bits1(&s->gb) && !s->errorres;
             s->refidx[1]      = get_bits(&s->gb, 3);
-            s->signbias[1]    = get_bits1(&s->gb);
+            s->signbias[1]    = get_bits1(&s->gb) && !s->errorres;
             s->refidx[2]      = get_bits(&s->gb, 3);
-            s->signbias[2]    = get_bits1(&s->gb);
+            s->signbias[2]    = get_bits1(&s->gb) && !s->errorres;
             if (!s->refs[s->refidx[0]].f->data[0] ||
                 !s->refs[s->refidx[1]].f->data[0] ||
                 !s->refs[s->refidx[2]].f->data[0]) {
@@ -648,8 +648,7 @@ static int decode_frame_header(AVCodecContext *ctx,
             s->highprecisionmvs = get_bits1(&s->gb);
             s->filtermode = get_bits1(&s->gb) ? FILTER_SWITCHABLE :
                                                 get_bits(&s->gb, 2);
-            s->allowcompinter = !s->errorres &&
-                                (s->signbias[0] != s->signbias[1] ||
+            s->allowcompinter = (s->signbias[0] != s->signbias[1] ||
                                  s->signbias[0] != s->signbias[2]);
             if (s->allowcompinter) {
                 if (s->signbias[0] == s->signbias[1]) {
