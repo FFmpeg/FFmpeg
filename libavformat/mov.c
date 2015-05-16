@@ -211,8 +211,10 @@ static int mov_metadata_loci(MOVContext *c, AVIOContext *pb, unsigned len)
     double longitude, latitude;
     const char *key = "location";
 
-    if (len < 4 + 2 + 1 + 1 + 4 + 4 + 4)
+    if (len < 4 + 2 + 1 + 1 + 4 + 4 + 4) {
+        av_log(c->fc, AV_LOG_ERROR, "loci too short\n");
         return AVERROR_INVALIDDATA;
+    }
 
     avio_skip(pb, 4); // version+flags
     langcode = avio_rb16(pb);
@@ -220,13 +222,17 @@ static int mov_metadata_loci(MOVContext *c, AVIOContext *pb, unsigned len)
     len -= 6;
 
     len -= avio_get_str(pb, len, buf, sizeof(buf)); // place name
-    if (len < 1)
+    if (len < 1) {
+        av_log(c->fc, AV_LOG_ERROR, "place name too long\n");
         return AVERROR_INVALIDDATA;
+    }
     avio_skip(pb, 1); // role
     len -= 1;
 
-    if (len < 14)
+    if (len < 14) {
+        av_log(c->fc, AV_LOG_ERROR, "no space for coordinates left (%d)\n", len);
         return AVERROR_INVALIDDATA;
+    }
     longitude = ((int32_t) avio_rb32(pb)) / (float) (1 << 16);
     latitude  = ((int32_t) avio_rb32(pb)) / (float) (1 << 16);
 
