@@ -39,6 +39,7 @@
 #include "libavutil/random_seed.h"
 #include "libavutil/timecode.h"
 #include "libavutil/avassert.h"
+#include "libavutil/pixdesc.h"
 #include "libavutil/time_internal.h"
 #include "libavcodec/bytestream.h"
 #include "libavcodec/dnxhddata.h"
@@ -2029,10 +2030,16 @@ static int mxf_write_header(AVFormatContext *s)
         }
 
         if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
+            const AVPixFmtDescriptor *pix_desc = av_pix_fmt_desc_get(st->codec->pix_fmt);
             // TODO: should be avg_frame_rate
             AVRational rate, tbc = st->time_base;
             // Default component depth to 8
             sc->component_depth = 8;
+
+            if (pix_desc) {
+                sc->component_depth = pix_desc->comp[0].depth_minus1 + 1;
+            }
+
             mxf->timecode_base = (tbc.den + tbc.num/2) / tbc.num;
             spf = ff_mxf_get_samples_per_frame(s, tbc);
             if (!spf) {
