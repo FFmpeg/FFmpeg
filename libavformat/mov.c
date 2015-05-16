@@ -244,9 +244,9 @@ static int mov_metadata_loci(MOVContext *c, AVIOContext *pb, unsigned len)
     avio_skip(pb, 1); // role
     len -= 1;
 
-    if (len < 14) {
+    if (len < 12) {
         av_log(c->fc, AV_LOG_ERROR,
-               "loci too short (%u bytes left, need at least %d)\n", len, 14);
+               "loci too short (%u bytes left, need at least %d)\n", len, 12);
         return AVERROR_INVALIDDATA;
     }
     longitude = ((int32_t) avio_rb32(pb)) / (float) (1 << 16);
