@@ -2662,6 +2662,11 @@ static int mov_open_dref(MOVContext *c, AVIOContext **pb, const char *src, MOVDr
     } else if (c->fc->open_cb) {
         if (!open_func(c->fc, pb, ref->path, AVIO_FLAG_READ, int_cb, NULL))
             return 0;
+    } else {
+        av_log(c->fc, AV_LOG_ERROR,
+               "Absolute path %s not tried for security reasons, "
+               "set demuxer option use_absolute_path to allow absolute paths\n",
+               ref->path);
     }
 
     return AVERROR(ENOENT);
