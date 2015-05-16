@@ -1105,6 +1105,11 @@ static void do_video_out(AVFormatContext *s,
 
             ost->forced_keyframes_expr_const_values[FKF_N] += 1;
         }
+            // For 'keep-source-keyframes' option
+        else if(ost->forced_keyframes && !strncmp(ost->forced_keyframes, "source", 6) 
+             && in_picture->key_frame==1){
+            forced_keyframe = 1;
+        }
 
         if (forced_keyframe) {
             in_picture->pict_type = AV_PICTURE_TYPE_I;
@@ -2942,7 +2947,10 @@ static int transcode_init(void)
                         ost->forced_keyframes_expr_const_values[FKF_N_FORCED] = 0;
                         ost->forced_keyframes_expr_const_values[FKF_PREV_FORCED_N] = NAN;
                         ost->forced_keyframes_expr_const_values[FKF_PREV_FORCED_T] = NAN;
-                    } else {
+                    } 
+                        // Don't parse the 'forced_keyframes' in case of 'keep-source-keyframes',
+                        // parse it only for static kf timings
+                    else if(strncmp(ost->forced_keyframes, "source", 6)) {
                         parse_forced_key_frames(ost->forced_keyframes, ost, ost->enc_ctx);
                     }
                 }
