@@ -32,6 +32,7 @@ version <next>:
 - Automatically rotate videos based on metadata in avconv
 - improved Quickdraw compatibility
 - NVIDIA NVENC-accelerated H.264 and HEVC encoding support
+- Multipart JPEG demuxer
 
 
 version 11:

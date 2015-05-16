@@ -163,7 +163,7 @@ void av_register_all(void)
     REGISTER_MUXDEMUX(MPEGTS,           mpegts);
     REGISTER_DEMUXER (MPEGTSRAW,        mpegtsraw);
     REGISTER_DEMUXER (MPEGVIDEO,        mpegvideo);
-    REGISTER_MUXER   (MPJPEG,           mpjpeg);
+    REGISTER_MUXDEMUX(MPJPEG,           mpjpeg);
     REGISTER_DEMUXER (MSNWC_TCP,        msnwc_tcp);
     REGISTER_DEMUXER (MTV,              mtv);
     REGISTER_DEMUXER (MV,               mv);

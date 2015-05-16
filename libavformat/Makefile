@@ -205,6 +205,7 @@ OBJS-$(CONFIG_MPEGPS_DEMUXER)            += mpeg.o
 OBJS-$(CONFIG_MPEGTS_DEMUXER)            += mpegts.o isom.o
 OBJS-$(CONFIG_MPEGTS_MUXER)              += mpegtsenc.o
 OBJS-$(CONFIG_MPEGVIDEO_DEMUXER)         += mpegvideodec.o rawdec.o
+OBJS-$(CONFIG_MPJPEG_DEMUXER)            += mpjpegdec.o
 OBJS-$(CONFIG_MPJPEG_MUXER)              += mpjpeg.o
 OBJS-$(CONFIG_MSNWC_TCP_DEMUXER)         += msnwc_tcp.o
 OBJS-$(CONFIG_MTV_DEMUXER)               += mtv.o
