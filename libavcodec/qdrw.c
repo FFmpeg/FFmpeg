@@ -95,6 +95,8 @@ static int decode_rle(AVCodecContext *avctx, AVFrame *p, GetByteContext *gbc,
                         pos -= offset;
                         pos++;
                     }
+                    if (pos >= offset)
+                        return AVERROR_INVALIDDATA;
                 }
                 left  -= 2;
             } else { /* copy */
@@ -105,6 +107,8 @@ static int decode_rle(AVCodecContext *avctx, AVFrame *p, GetByteContext *gbc,
                         pos -= offset;
                         pos++;
                     }
+                    if (pos >= offset)
+                        return AVERROR_INVALIDDATA;
                 }
                 left  -= 2 + code;
             }
