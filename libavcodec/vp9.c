@@ -867,7 +867,8 @@ static int decode_frame_header(AVCodecContext *ctx,
     }
 
     if (s->keyframe || s->intraonly) {
-        memset(s->counts.coef, 0, sizeof(s->counts.coef) + sizeof(s->counts.eob));
+        memset(s->counts.coef, 0, sizeof(s->counts.coef));
+        memset(s->counts.eob,  0, sizeof(s->counts.eob));
     } else {
         memset(&s->counts, 0, sizeof(s->counts));
     }

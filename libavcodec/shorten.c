@@ -129,8 +129,7 @@ static int allocate_buffers(ShortenContext *s)
             av_log(s->avctx, AV_LOG_ERROR, "nmean too large\n");
             return AVERROR_INVALIDDATA;
         }
-        if (s->blocksize + s->nwrap >= UINT_MAX / sizeof(int32_t) ||
-            s->blocksize + s->nwrap <= (unsigned)s->nwrap) {
+        if (s->blocksize + (uint64_t)s->nwrap >= UINT_MAX / sizeof(int32_t)) {
             av_log(s->avctx, AV_LOG_ERROR,
                    "s->blocksize + s->nwrap too large\n");
             return AVERROR_INVALIDDATA;
@@ -278,7 +277,7 @@ static int decode_subframe_lpc(ShortenContext *s, int command, int channel,
     if (command == FN_QLPC) {
         /* read/validate prediction order */
         pred_order = get_ur_golomb_shorten(&s->gb, LPCQSIZE);
-        if (pred_order > s->nwrap) {
+        if ((unsigned)pred_order > s->nwrap) {
             av_log(s->avctx, AV_LOG_ERROR, "invalid pred_order %d\n",
                    pred_order);
             return AVERROR(EINVAL);
@@ -370,6 +369,11 @@ static int read_header(ShortenContext *s)
         s->nmean = get_uint(s, 0);
 
         skip_bytes = get_uint(s, NSKIPSIZE);
+        if ((unsigned)skip_bytes > get_bits_left(&s->gb)/8) {
+            av_log(s->avctx, AV_LOG_ERROR, "invalid skip_bytes: %d\n", skip_bytes);
+            return AVERROR_INVALIDDATA;
+        }
+
         for (i = 0; i < skip_bytes; i++)
             skip_bits(&s->gb, 8);
     }

@@ -470,7 +470,7 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
             if (current_run == 34)
                 current_run += get_bits(gb, 12);
 
-            if (current_superblock + current_run > s->superblock_count) {
+            if (current_run > s->superblock_count - current_superblock) {
                 av_log(s->avctx, AV_LOG_ERROR,
                        "Invalid partially coded superblock run length\n");
                 return -1;

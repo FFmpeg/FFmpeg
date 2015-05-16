@@ -1104,6 +1104,10 @@ static void do_video_out(AVFormatContext *s,
             }
 
             ost->forced_keyframes_expr_const_values[FKF_N] += 1;
+        } else if (   ost->forced_keyframes
+                   && !strncmp(ost->forced_keyframes, "source", 6)
+                   && in_picture->key_frame==1) {
+            forced_keyframe = 1;
         }
 
         if (forced_keyframe) {
@@ -2849,7 +2853,7 @@ static int transcode_init(void)
             }
 
             if (enc_ctx->codec_type == AVMEDIA_TYPE_VIDEO) {
-                if (ost->filter && !ost->frame_rate.num)
+                if (!ost->frame_rate.num)
                     ost->frame_rate = av_buffersink_get_frame_rate(ost->filter->filter);
                 if (ist && !ost->frame_rate.num)
                     ost->frame_rate = ist->framerate;
@@ -2886,7 +2890,7 @@ static int transcode_init(void)
                 break;
             case AVMEDIA_TYPE_VIDEO:
                 enc_ctx->time_base = av_inv_q(ost->frame_rate);
-                if (ost->filter && !(enc_ctx->time_base.num && enc_ctx->time_base.den))
+                if (!(enc_ctx->time_base.num && enc_ctx->time_base.den))
                     enc_ctx->time_base = ost->filter->filter->inputs[0]->time_base;
                 if (   av_q2d(enc_ctx->time_base) < 0.001 && video_sync_method != VSYNC_PASSTHROUGH
                    && (video_sync_method == VSYNC_CFR || video_sync_method == VSYNC_VSCFR || (video_sync_method == VSYNC_AUTO && !(oc->oformat->flags & AVFMT_VARIABLE_FPS)))){
@@ -2942,7 +2946,10 @@ static int transcode_init(void)
                         ost->forced_keyframes_expr_const_values[FKF_N_FORCED] = 0;
                         ost->forced_keyframes_expr_const_values[FKF_PREV_FORCED_N] = NAN;
                         ost->forced_keyframes_expr_const_values[FKF_PREV_FORCED_T] = NAN;
-                    } else {
+
+                        // Don't parse the 'forced_keyframes' in case of 'keep-source-keyframes',
+                        // parse it only for static kf timings
+                    } else if(strncmp(ost->forced_keyframes, "source", 6)) {
                         parse_forced_key_frames(ost->forced_keyframes, ost, ost->enc_ctx);
                     }
                 }
@@ -3337,6 +3344,8 @@ static int check_keyboard_interaction(int64_t cur_time)
                         ret = AVERROR_PATCHWELCOME;
                     } else {
                         ret = avfilter_graph_queue_command(fg->graph, target, command, arg, 0, time);
+                        if (ret < 0)
+                            fprintf(stderr, "Queing command failed with error %s\n", av_err2str(ret));
                     }
                 }
             }

@@ -166,7 +166,7 @@ static inline void put_bits(PutBitContext *s, int n, unsigned int value)
         av_assert2(s->buf_ptr+3<s->buf_end);
         AV_WL32(s->buf_ptr, bit_buf);
         s->buf_ptr += 4;
-        bit_buf     = (bit_left == 32) ? 0 : value >> bit_left;
+        bit_buf     = value >> bit_left;
         bit_left   += 32;
     }
     bit_left -= n;

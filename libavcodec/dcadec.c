@@ -1242,8 +1242,13 @@ int ff_dca_xbr_parse_frame(DCAContext *s)
     for(i = 0; i < num_chsets; i++) {
         n_xbr_ch[i] = get_bits(&s->gb, 3) + 1;
         k = get_bits(&s->gb, 2) + 5;
-        for(j = 0; j < n_xbr_ch[i]; j++)
+        for(j = 0; j < n_xbr_ch[i]; j++) {
             active_bands[i][j] = get_bits(&s->gb, k) + 1;
+            if (active_bands[i][j] > DCA_SUBBANDS) {
+                av_log(s->avctx, AV_LOG_ERROR, "too many active subbands (%d)\n", active_bands[i][j]);
+                return AVERROR_INVALIDDATA;
+            }
+        }
     }
 
     /* skip to the end of the header */
@@ -1285,23 +1290,34 @@ int ff_dca_xbr_parse_frame(DCAContext *s)
                 for(i = 0; i < n_xbr_ch[chset]; i++) {
                     const uint32_t *scale_table;
                     int nbits;
+                    int scale_table_size;
 
                     if (s->scalefactor_huffman[chan_base+i] == 6) {
                         scale_table = ff_dca_scale_factor_quant7;
+                        scale_table_size = FF_ARRAY_ELEMS(ff_dca_scale_factor_quant7);
                     } else {
                         scale_table = ff_dca_scale_factor_quant6;
+                        scale_table_size = FF_ARRAY_ELEMS(ff_dca_scale_factor_quant6);
                     }
 
                     nbits = anctemp[i];
 
                     for(j = 0; j < active_bands[chset][i]; j++) {
                         if(abits_high[i][j] > 0) {
-                            scale_table_high[i][j][0] =
-                                scale_table[get_bits(&s->gb, nbits)];
+                            int index = get_bits(&s->gb, nbits);
+                            if (index >= scale_table_size) {
+                                av_log(s->avctx, AV_LOG_ERROR, "scale table index %d invalid\n", index);
+                                return AVERROR_INVALIDDATA;
+                            }
+                            scale_table_high[i][j][0] = scale_table[index];
 
                             if(xbr_tmode && s->transition_mode[i][j]) {
-                                scale_table_high[i][j][1] =
-                                    scale_table[get_bits(&s->gb, nbits)];
+                                int index = get_bits(&s->gb, nbits);
+                                if (index >= scale_table_size) {
+                                    av_log(s->avctx, AV_LOG_ERROR, "scale table index %d invalid\n", index);
+                                    return AVERROR_INVALIDDATA;
+                                }
+                                scale_table_high[i][j][1] = scale_table[index];
                             }
                         }
                     }
