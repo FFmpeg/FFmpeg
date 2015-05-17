@@ -2757,9 +2757,13 @@ static int transcode_init(void)
                 if (!ost->st->side_data)
                     return AVERROR(ENOMEM);
 
+                ost->st->nb_side_data = 0;
                 for (j = 0; j < ist->st->nb_side_data; j++) {
                     const AVPacketSideData *sd_src = &ist->st->side_data[j];
-                    AVPacketSideData *sd_dst = &ost->st->side_data[j];
+                    AVPacketSideData *sd_dst = &ost->st->side_data[ost->st->nb_side_data];
+
+                    if (ost->rotate_overridden && sd_src->type == AV_PKT_DATA_DISPLAYMATRIX)
+                        continue;
 
                     sd_dst->data = av_malloc(sd_src->size);
                     if (!sd_dst->data)
