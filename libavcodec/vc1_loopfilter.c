@@ -110,7 +110,7 @@ void ff_vc1_loop_filter_iblk_delayed(VC1Context *v, int pq)
                 if (s->mb_x >= 2)
                     v->vc1dsp.vc1_h_loop_filter16(s->dest[0] - 16 * s->linesize - 16, s->linesize, pq);
                 v->vc1dsp.vc1_h_loop_filter16(s->dest[0] - 16 * s->linesize - 8, s->linesize, pq);
-                if (s->mb_x >= 2 && !(s->flags & CODEC_FLAG_GRAY)) {
+                if (s->mb_x >= 2 && (!CONFIG_GRAY || !(s->flags & CODEC_FLAG_GRAY))) {
                     for (j = 0; j < 2; j++) {
                         v->vc1dsp.vc1_h_loop_filter8(s->dest[j + 1] - 8 * s->uvlinesize - 8, s->uvlinesize, pq);
                     }
@@ -121,7 +121,7 @@ void ff_vc1_loop_filter_iblk_delayed(VC1Context *v, int pq)
                 if (s->mb_x)
                     v->vc1dsp.vc1_h_loop_filter16(s->dest[0] - 16 * s->linesize, s->linesize, pq);
                 v->vc1dsp.vc1_h_loop_filter16(s->dest[0] - 16 * s->linesize + 8, s->linesize, pq);
-                if (s->mb_x && !(s->flags & CODEC_FLAG_GRAY)) {
+                if (s->mb_x && (!CONFIG_GRAY || !(s->flags & CODEC_FLAG_GRAY))) {
                     for (j = 0; j < 2; j++) {
                         v->vc1dsp.vc1_h_loop_filter8(s->dest[j + 1] - 8 * s->uvlinesize, s->uvlinesize, pq);
                     }
