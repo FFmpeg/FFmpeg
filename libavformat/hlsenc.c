@@ -50,6 +50,9 @@ typedef enum HLSFlags {
     // Generate a single media file and use byte ranges in the playlist.
     HLS_SINGLE_FILE = (1 << 0),
     HLS_DELETE_SEGMENTS = (1 << 1),
+    HLS_ROUND_DURATIONS = (1 << 2),
+    HLS_DISCONT_START = (1 << 3),
+    HLS_OMIT_ENDLIST = (1 << 4),
 } HLSFlags;
 
 typedef struct HLSContext {
@@ -76,6 +79,7 @@ typedef struct HLSContext {
     int64_t start_pos;    // last segment starting position
     int64_t size;         // last segment size
     int nb_entries;
+    int discontinuity_set;
 
     HLSSegment *segments;
     HLSSegment *last_segment;
@@ -262,6 +266,7 @@ static int hls_window(AVFormatContext *s, int last)
             target_duration = ceil(en->duration);
     }
 
+    hls->discontinuity_set = 0;
     avio_printf(out, "#EXTM3U\n");
     avio_printf(out, "#EXT-X-VERSION:%d\n", version);
     if (hls->allowcache == 0 || hls->allowcache == 1) {
@@ -272,9 +277,15 @@ static int hls_window(AVFormatContext *s, int last)
 
     av_log(s, AV_LOG_VERBOSE, "EXT-X-MEDIA-SEQUENCE:%"PRId64"\n",
            sequence);
-
+    if((hls->flags & HLS_DISCONT_START) && sequence==hls->start_sequence && hls->discontinuity_set==0 ){
+        avio_printf(out, "#EXT-X-DISCONTINUITY\n");
+        hls->discontinuity_set = 1;
+    }
     for (en = hls->segments; en; en = en->next) {
-        avio_printf(out, "#EXTINF:%f,\n", en->duration);
+        if (hls->flags & HLS_ROUND_DURATIONS)
+            avio_printf(out, "#EXTINF:%d,\n",  (int)round(en->duration));
+        else
+            avio_printf(out, "#EXTINF:%f,\n", en->duration);
         if (hls->flags & HLS_SINGLE_FILE)
              avio_printf(out, "#EXT-X-BYTERANGE:%"PRIi64"@%"PRIi64"\n",
                          en->size, en->pos);
@@ -283,7 +294,7 @@ static int hls_window(AVFormatContext *s, int last)
         avio_printf(out, "%s\n", en->filename);
     }
 
-    if (last)
+    if (last && (hls->flags & HLS_OMIT_ENDLIST)==0)
         avio_printf(out, "#EXT-X-ENDLIST\n");
 
 fail:
@@ -512,6 +523,9 @@ static const AVOption options[] = {
     {"hls_flags",     "set flags affecting HLS playlist and media file generation", OFFSET(flags), AV_OPT_TYPE_FLAGS, {.i64 = 0 }, 0, UINT_MAX, E, "flags"},
     {"single_file",   "generate a single media file indexed with byte ranges", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_SINGLE_FILE }, 0, UINT_MAX,   E, "flags"},
     {"delete_segments", "delete segment files that are no longer part of the playlist", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_DELETE_SEGMENTS }, 0, UINT_MAX,   E, "flags"},
+    {"round_durations", "round durations in m3u8 to whole numbers", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_ROUND_DURATIONS }, 0, UINT_MAX,   E, "flags"},
+    {"discont_start", "Start the m3u8 with a discontinuity", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_DISCONT_START }, 0, UINT_MAX,   E, "flags"},
+    {"omit_endlist", "Do not append an endlist when ending stream", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_OMIT_ENDLIST }, 0, UINT_MAX,   E, "flags"},
 
     { NULL },
 };
