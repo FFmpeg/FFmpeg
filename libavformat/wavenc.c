@@ -425,7 +425,7 @@ static int wav_write_trailer(AVFormatContext *s)
     avio_flush(pb);
 
     if (s->pb->seekable) {
-        if (wav->write_peak != 2) {
+        if (wav->write_peak != 2 && avio_tell(pb) - wav->data < UINT32_MAX) {
             ff_end_tag(pb, wav->data);
             avio_flush(pb);
         }
@@ -440,12 +440,16 @@ static int wav_write_trailer(AVFormatContext *s)
         data_size = file_size - wav->data;
         if (wav->rf64 == RF64_ALWAYS || (wav->rf64 == RF64_AUTO && file_size - 8 > UINT32_MAX)) {
             rf64 = 1;
-        } else {
+        } else if (file_size - 8 <= UINT32_MAX) {
             avio_seek(pb, 4, SEEK_SET);
             avio_wl32(pb, (uint32_t)(file_size - 8));
             avio_seek(pb, file_size, SEEK_SET);
 
             avio_flush(pb);
+        } else {
+            av_log(s, AV_LOG_ERROR,
+                   "Filesize %"PRId64" invalid for wav, output file will be broken\n",
+                   file_size);
         }
 
         number_of_samples = av_rescale(wav->maxpts - wav->minpts + wav->last_duration,

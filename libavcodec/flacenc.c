@@ -838,8 +838,13 @@ static int encode_residual_ch(FlacEncodeContext *s, int ch)
             order = av_clip(order, min_order - 1, max_order - 1);
             if (order == last_order)
                 continue;
-            s->flac_dsp.lpc_encode(res, smp, n, order+1, coefs[order],
-                                   shift[order]);
+            if (s->bps_code * 4 + s->options.lpc_coeff_precision + av_log2(order) <= 32) {
+                s->flac_dsp.lpc16_encode(res, smp, n, order+1, coefs[order],
+                                         shift[order]);
+            } else {
+                s->flac_dsp.lpc32_encode(res, smp, n, order+1, coefs[order],
+                                         shift[order]);
+            }
             bits[i] = find_subframe_rice_params(s, sub, order+1);
             if (bits[i] < bits[opt_index]) {
                 opt_index = i;
@@ -853,7 +858,11 @@ static int encode_residual_ch(FlacEncodeContext *s, int ch)
         opt_order = 0;
         bits[0]   = UINT32_MAX;
         for (i = min_order-1; i < max_order; i++) {
-            s->flac_dsp.lpc_encode(res, smp, n, i+1, coefs[i], shift[i]);
+            if (s->bps_code * 4 + s->options.lpc_coeff_precision + av_log2(i) <= 32) {
+                s->flac_dsp.lpc16_encode(res, smp, n, i+1, coefs[i], shift[i]);
+            } else {
+                s->flac_dsp.lpc32_encode(res, smp, n, i+1, coefs[i], shift[i]);
+            }
             bits[i] = find_subframe_rice_params(s, sub, i+1);
             if (bits[i] < bits[opt_order])
                 opt_order = i;
@@ -871,7 +880,11 @@ static int encode_residual_ch(FlacEncodeContext *s, int ch)
             for (i = last-step; i <= last+step; i += step) {
                 if (i < min_order-1 || i >= max_order || bits[i] < UINT32_MAX)
                     continue;
-                s->flac_dsp.lpc_encode(res, smp, n, i+1, coefs[i], shift[i]);
+                if (s->bps_code * 4 + s->options.lpc_coeff_precision + av_log2(i) <= 32) {
+                    s->flac_dsp.lpc32_encode(res, smp, n, i+1, coefs[i], shift[i]);
+                } else {
+                    s->flac_dsp.lpc16_encode(res, smp, n, i+1, coefs[i], shift[i]);
+                }
                 bits[i] = find_subframe_rice_params(s, sub, i+1);
                 if (bits[i] < bits[opt_order])
                     opt_order = i;
@@ -886,7 +899,11 @@ static int encode_residual_ch(FlacEncodeContext *s, int ch)
     for (i = 0; i < sub->order; i++)
         sub->coefs[i] = coefs[sub->order-1][i];
 
-    s->flac_dsp.lpc_encode(res, smp, n, sub->order, sub->coefs, sub->shift);
+    if (s->bps_code * 4 + s->options.lpc_coeff_precision + av_log2(opt_order) <= 32) {
+        s->flac_dsp.lpc16_encode(res, smp, n, sub->order, sub->coefs, sub->shift);
+    } else {
+        s->flac_dsp.lpc32_encode(res, smp, n, sub->order, sub->coefs, sub->shift);
+    }
 
     find_subframe_rice_params(s, sub, sub->order);
 

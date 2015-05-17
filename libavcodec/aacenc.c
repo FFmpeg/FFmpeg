@@ -733,9 +733,9 @@ static av_cold int dsp_init(AVCodecContext *avctx, AACEncContext *s)
     ff_init_ff_sine_windows(10);
     ff_init_ff_sine_windows(7);
 
-    if (ret = ff_mdct_init(&s->mdct1024, 11, 0, 32768.0))
+    if ((ret = ff_mdct_init(&s->mdct1024, 11, 0, 32768.0)) < 0)
         return ret;
-    if (ret = ff_mdct_init(&s->mdct128,   8, 0, 32768.0))
+    if ((ret = ff_mdct_init(&s->mdct128,   8, 0, 32768.0)) < 0)
         return ret;
 
     return 0;

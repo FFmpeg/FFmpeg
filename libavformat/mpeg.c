@@ -550,7 +550,7 @@ redo:
             codec_id = AV_CODEC_ID_ADPCM_ADX;
             // Auto-detect AC-3
             request_probe = 50;
-        } else if (m->imkh_cctv && startcode == 0x1c0) {
+        } else if (m->imkh_cctv && startcode == 0x1c0 && len > 80) {
             codec_id = AV_CODEC_ID_PCM_ALAW;
             request_probe = 50;
         } else {

@@ -1270,7 +1270,7 @@ static int reap_filters(int flush)
                 if (ret != AVERROR(EAGAIN) && ret != AVERROR_EOF) {
                     av_log(NULL, AV_LOG_WARNING,
                            "Error in av_buffersink_get_frame_flags(): %s\n", av_err2str(ret));
-                } else if (flush) {
+                } else if (flush && ret == AVERROR_EOF) {
                     if (filter->inputs[0]->type == AVMEDIA_TYPE_VIDEO)
                         do_video_out(of->ctx, ost, NULL, AV_NOPTS_VALUE);
                 }

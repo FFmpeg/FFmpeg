@@ -399,7 +399,7 @@ int avformat_write_header(AVFormatContext *s, AVDictionary **options)
 {
     int ret = 0;
 
-    if (ret = init_muxer(s, options))
+    if ((ret = init_muxer(s, options)) < 0)
         return ret;
 
     if (s->oformat->write_header) {
