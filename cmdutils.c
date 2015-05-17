@@ -2101,7 +2101,7 @@ double get_rotation(AVStream *st)
             theta = 0;
     }
     if (displaymatrix && !theta)
-        theta = av_display_rotation_get((int32_t*) displaymatrix);
+        theta = -av_display_rotation_get((int32_t*) displaymatrix);
 
     theta -= 360*floor(theta/360 + 0.9/360);
 
