@@ -367,7 +367,7 @@ static inline int get_ur_golomb_jpegls(GetBitContext *gb, int k, int limit,
 static inline int get_sr_golomb(GetBitContext *gb, int k, int limit,
                                 int esc_len)
 {
-    int v = get_ur_golomb(gb, k, limit, esc_len);
+    unsigned v = get_ur_golomb(gb, k, limit, esc_len);
     return (v >> 1) ^ -(v & 1);
 }
 
@@ -377,7 +377,7 @@ static inline int get_sr_golomb(GetBitContext *gb, int k, int limit,
 static inline int get_sr_golomb_flac(GetBitContext *gb, int k, int limit,
                                      int esc_len)
 {
-    int v = get_ur_golomb_jpegls(gb, k, limit, esc_len);
+    unsigned v = get_ur_golomb_jpegls(gb, k, limit, esc_len);
     return (v >> 1) ^ -(v & 1);
 }
 
