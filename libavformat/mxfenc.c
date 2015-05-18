@@ -79,6 +79,7 @@ typedef struct MXFStreamContext {
     int interlaced;          ///< whether picture is interlaced
     int field_dominance;     ///< tff=1, bff=2
     int component_depth;
+    int color_siting;
     int h_chroma_sub_sample;
     int temporal_reordering;
     AVRational aspect_ratio; ///< display aspect ratio
@@ -416,6 +417,7 @@ static const MXFLocalTagPair mxf_local_tag_batch[] = {
     // CDCI Picture Essence Descriptor
     { 0x3301, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x04,0x01,0x05,0x03,0x0A,0x00,0x00,0x00}}, /* Component Depth */
     { 0x3302, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x01,0x04,0x01,0x05,0x01,0x05,0x00,0x00,0x00}}, /* Horizontal Subsampling */
+    { 0x3303, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x01,0x04,0x01,0x05,0x01,0x06,0x00,0x00,0x00}}, /* Color Siting */
     // Generic Sound Essence Descriptor
     { 0x3D02, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x04,0x04,0x02,0x03,0x01,0x04,0x00,0x00,0x00}}, /* Locked/Unlocked */
     { 0x3D03, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x05,0x04,0x02,0x03,0x01,0x01,0x01,0x00,0x00}}, /* Audio sampling rate */
@@ -993,7 +995,7 @@ static void mxf_write_cdci_common(AVFormatContext *s, AVStream *st, const UID ke
     int stored_height = (st->codec->height+15)/16*16;
     int display_height;
     int f1, f2;
-    unsigned desc_size = size+8+8+8+8+8+8+8+5+16+sc->interlaced*4+12+20;
+    unsigned desc_size = size+8+8+8+8+8+8+8+5+16+sc->interlaced*4+12+20+5;
     if (sc->interlaced && sc->field_dominance)
         desc_size += 5;
 
@@ -1029,6 +1031,10 @@ static void mxf_write_cdci_common(AVFormatContext *s, AVStream *st, const UID ke
     // horizontal subsampling
     mxf_write_local_tag(pb, 4, 0x3302);
     avio_wb32(pb, sc->h_chroma_sub_sample);
+
+    // color siting
+    mxf_write_local_tag(pb, 1, 0x3303);
+    avio_w8(pb, sc->color_siting);
 
     // frame layout
     mxf_write_local_tag(pb, 1, 0x320C);
@@ -2037,10 +2043,17 @@ static int mxf_write_header(AVFormatContext *s)
             // Default component depth to 8
             sc->component_depth = 8;
             sc->h_chroma_sub_sample = 2;
+            sc->color_siting = 0xFF;
 
             if (pix_desc) {
                 sc->component_depth     = pix_desc->comp[0].depth_minus1 + 1;
                 sc->h_chroma_sub_sample = 1 << pix_desc->log2_chroma_w;
+            }
+            switch (ff_choose_chroma_location(s, st)) {
+            case AVCHROMA_LOC_TOPLEFT: sc->color_siting = 0; break;
+            case AVCHROMA_LOC_LEFT:    sc->color_siting = 6; break;
+            case AVCHROMA_LOC_TOP:     sc->color_siting = 1; break;
+            case AVCHROMA_LOC_CENTER:  sc->color_siting = 3; break;
             }
 
             mxf->timecode_base = (tbc.den + tbc.num/2) / tbc.num;
