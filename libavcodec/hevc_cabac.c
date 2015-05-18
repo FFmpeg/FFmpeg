@@ -913,7 +913,7 @@ int ff_hevc_cbf_luma_decode(HEVCContext *s, int trafo_depth)
     return GET_CABAC(elem_offset[CBF_LUMA] + !trafo_depth);
 }
 
-static int ff_hevc_transform_skip_flag_decode(HEVCContext *s, int c_idx)
+static int hevc_transform_skip_flag_decode(HEVCContext *s, int c_idx)
 {
     return GET_CABAC(elem_offset[TRANSFORM_SKIP_FLAG] + !!c_idx);
 }
@@ -1115,7 +1115,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
 
         if (s->pps->transform_skip_enabled_flag &&
             log2_trafo_size <= s->pps->log2_max_transform_skip_block_size) {
-            transform_skip_flag = ff_hevc_transform_skip_flag_decode(s, c_idx);
+            transform_skip_flag = hevc_transform_skip_flag_decode(s, c_idx);
         }
 
         if (c_idx == 0) {
