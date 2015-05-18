@@ -868,7 +868,8 @@ VP9_IDCT_IDCT_8x8_ADD_XMM avx, 13
 
     ; m6=out0, m5=out1, m4=t2, m3=t3, m7=t6, m0=t7, m2=out6, m1=out7
 
-%if cpuflag(ssse3)
+    ; unfortunately, the code below overflows in some cases
+%if 0; cpuflag(ssse3)
     SUMSUB_BA                w,  3,  4,  2
     SUMSUB_BA                w,  0,  7,  2
     pmulhrsw                m3, W_11585x2_REG
@@ -996,7 +997,7 @@ IADST8_FN iadst, IADST8, iadst, IADST8, avx, 16
 ;    SUMSUB_BA            w, x13, x14, 7       ; t6, t9
 ;    SUMSUB_BA            w, x15, x12, 7       ; t7, t8
 
-%macro VP9_IDCT16_1D_START 5 ; src, nnzc, stride, scratch, scratch_stride
+%macro VP9_IDCT16_1D_START 6 ; src, nnzc, stride, scratch, scratch_stride, is_iadst
 %if %2 <= 4
     mova                m3, [%1+ 1*%3]      ; IN(1)
     mova                m0, [%1+ 3*%3]      ; IN(3)
@@ -1089,7 +1090,7 @@ IADST8_FN iadst, IADST8, iadst, IADST8, avx, 16
     ; m15=t0, m14=t1, m13=t2, m12=t3, m11=t4, m10=t5, m9=t6, m8=t7
     ; m7=t8, m6=t9, m2=t10, m3=t11, m4=t12, m5=t13, m1=t14, m0=t15
 
-%if cpuflag(ssse3)
+%if cpuflag(ssse3) && %6 == 0
     SUMSUB_BA            w,  2,  5, 7
     SUMSUB_BA            w,  3,  4, 7
     pmulhrsw            m5, [pw_11585x2]    ; t10
@@ -1163,7 +1164,7 @@ IADST8_FN iadst, IADST8, iadst, IADST8, avx, 16
     SUMSUB_BA            w,  4,  6, 2       ; t4,  t5
     SUMSUB_BA            w,  7,  5, 2       ; t7,  t6
 
-%if cpuflag(ssse3)
+%if cpuflag(ssse3) && %6 == 0
     SUMSUB_BA            w,  6,  5, 2
     pmulhrsw            m5, [pw_11585x2]                              ; t5
     pmulhrsw            m6, [pw_11585x2]                              ; t6
@@ -1183,7 +1184,7 @@ IADST8_FN iadst, IADST8, iadst, IADST8, avx, 16
     mova                m3, [%1+ 8*%3]      ; IN(8)
 
     ; from 3 stages back
-%if cpuflag(ssse3)
+%if cpuflag(ssse3) && %6 == 0
     SUMSUB_BA            w,  3,  2, 5
     pmulhrsw            m3, [pw_11585x2]    ; t0
     pmulhrsw            m2, [pw_11585x2]    ; t1
@@ -1248,9 +1249,9 @@ IADST8_FN iadst, IADST8, iadst, IADST8, avx, 16
 %endif
 %endmacro
 
-%macro VP9_IDCT16_1D 2-3 16 ; src, pass, nnzc
+%macro VP9_IDCT16_1D 2-4 16, 1 ; src, pass, nnzc, is_iadst
 %if %2 == 1
-    VP9_IDCT16_1D_START %1, %3, 32, tmpq, 16
+    VP9_IDCT16_1D_START %1, %3, 32, tmpq, 16, %4
 
 %if ARCH_X86_64
     ; backup a different register
@@ -1317,7 +1318,7 @@ IADST8_FN iadst, IADST8, iadst, IADST8, avx, 16
     mova     [tmpq+15*16], m7
 %endif
 %else ; %2 == 2
-    VP9_IDCT16_1D_START %1, %3, 32, %1, 32
+    VP9_IDCT16_1D_START %1, %3, 32, %1, 32, %4
 
 %if cpuflag(ssse3)
 %define ROUND_REG [pw_512]
@@ -1467,12 +1468,12 @@ cglobal vp9_idct_idct_16x16_add, 4, 6, 16, 512, dst, stride, block, eob
 %if cpuflag(ssse3)
 .idct8x8:
     mov               tmpq, rsp
-    VP9_IDCT16_1D   blockq, 1, 8
+    VP9_IDCT16_1D   blockq, 1, 8, 0
 
     mov               cntd, 2
     mov           dst_bakq, dstq
 .loop2_8x8:
-    VP9_IDCT16_1D     tmpq, 2, 8
+    VP9_IDCT16_1D     tmpq, 2, 8, 0
     lea               dstq, [dst_bakq+8]
     add               tmpq, 16
     dec               cntd
@@ -1488,7 +1489,7 @@ cglobal vp9_idct_idct_16x16_add, 4, 6, 16, 512, dst, stride, block, eob
     mov               cntd, 2
     mov               tmpq, rsp
 .loop1_full:
-    VP9_IDCT16_1D   blockq, 1
+    VP9_IDCT16_1D   blockq, 1, 16, 0
     add             blockq, 16
     add               tmpq, 256
     dec               cntd
@@ -1499,7 +1500,7 @@ cglobal vp9_idct_idct_16x16_add, 4, 6, 16, 512, dst, stride, block, eob
     mov               tmpq, rsp
     mov           dst_bakq, dstq
 .loop2_full:
-    VP9_IDCT16_1D     tmpq, 2
+    VP9_IDCT16_1D     tmpq, 2, 16, 0
     lea               dstq, [dst_bakq+8]
     add               tmpq, 16
     dec               cntd
@@ -1647,7 +1648,8 @@ VP9_IDCT_IDCT_16x16_ADD_XMM avx
     VP9_RND_SH_SUMSUB_BA     4,  7,  0,  2,  1, [pd_8192]
     PSIGNW                  m4, [pw_m1]                     ; m4=out13[w], m7=t15[w]
 
-%if cpuflag(ssse3)
+    ; unfortunately, the code below overflows in some cases
+%if 0; cpuflag(ssse3)
     SUMSUB_BA                w,  7,  6,  1
     pmulhrsw                m7, [pw_m11585x2]               ; m7=out5[w]
     pmulhrsw                m6, [pw_11585x2]                ; m6=out10[w]
@@ -1899,7 +1901,7 @@ IADST16_FN iadst, IADST16, iadst, IADST16, avx
 %macro VP9_IDCT32_1D 2-3 32 ; src, pass, nnzc
 %assign %%str 16*%2*%2
     ; first do t0-15, this can be done identical to idct16x16
-    VP9_IDCT16_1D_START %1, %3/2, 64*2, tmpq, 2*%%str
+    VP9_IDCT16_1D_START %1, %3/2, 64*2, tmpq, 2*%%str, 1
 
     ; store everything on stack to make space available for t16-31
     ; we store interleaved with the output of the second half (t16-31)
@@ -2130,7 +2132,7 @@ IADST16_FN iadst, IADST16, iadst, IADST16, avx
     ; m0=t16, m1=t17, m2=t18, m3=t19, m11=t20, m10=t21, m9=t22, m8=t23,
     ; m7=t24, m6=t25, m5=t26, m4=t27, m12=t28, m13=t29, m14=t30, m15=t31
 
-%if cpuflag(ssse3)
+%if 0; cpuflag(ssse3)
 %if ARCH_X86_64
     SUMSUB_BA             w,  4,  7,  8
     SUMSUB_BA             w,  5,  1,  8

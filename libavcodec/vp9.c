@@ -153,6 +153,7 @@ typedef struct VP9Context {
         uint8_t temporal;
         uint8_t absolute_vals;
         uint8_t update_map;
+        uint8_t ignore_refmap;
         struct {
             uint8_t q_enabled;
             uint8_t lf_enabled;
@@ -613,11 +614,11 @@ static int decode_frame_header(AVCodecContext *ctx,
         } else {
             s->refreshrefmask = get_bits(&s->gb, 8);
             s->refidx[0]      = get_bits(&s->gb, 3);
-            s->signbias[0]    = get_bits1(&s->gb);
+            s->signbias[0]    = get_bits1(&s->gb) && !s->errorres;
             s->refidx[1]      = get_bits(&s->gb, 3);
-            s->signbias[1]    = get_bits1(&s->gb);
+            s->signbias[1]    = get_bits1(&s->gb) && !s->errorres;
             s->refidx[2]      = get_bits(&s->gb, 3);
-            s->signbias[2]    = get_bits1(&s->gb);
+            s->signbias[2]    = get_bits1(&s->gb) && !s->errorres;
             if (!s->refs[s->refidx[0]].f->data[0] ||
                 !s->refs[s->refidx[1]].f->data[0] ||
                 !s->refs[s->refidx[2]].f->data[0]) {
@@ -647,8 +648,8 @@ static int decode_frame_header(AVCodecContext *ctx,
             s->highprecisionmvs = get_bits1(&s->gb);
             s->filtermode = get_bits1(&s->gb) ? FILTER_SWITCHABLE :
                                                 get_bits(&s->gb, 2);
-            s->allowcompinter = s->signbias[0] != s->signbias[1] ||
-                                s->signbias[0] != s->signbias[2];
+            s->allowcompinter = (s->signbias[0] != s->signbias[1] ||
+                                 s->signbias[0] != s->signbias[2]);
             if (s->allowcompinter) {
                 if (s->signbias[0] == s->signbias[1]) {
                     s->fixcompref    = 2;
@@ -697,6 +698,15 @@ static int decode_frame_header(AVCodecContext *ctx,
     s->framectxid   = c = get_bits(&s->gb, 2);
 
     /* loopfilter header data */
+    if (s->keyframe || s->errorres || s->intraonly) {
+        // reset loopfilter defaults
+        s->lf_delta.ref[0] = 1;
+        s->lf_delta.ref[1] = 0;
+        s->lf_delta.ref[2] = -1;
+        s->lf_delta.ref[3] = -1;
+        s->lf_delta.mode[0] = 0;
+        s->lf_delta.mode[1] = 0;
+    }
     s->filter.level = get_bits(&s->gb, 6);
     sharp = get_bits(&s->gb, 3);
     // if sharpness changed, reinit lim/mblim LUTs. if it didn't change, keep
@@ -724,6 +734,7 @@ static int decode_frame_header(AVCodecContext *ctx,
                      s->uvdc_qdelta == 0 && s->uvac_qdelta == 0;
 
     /* segmentation header info */
+    s->segmentation.ignore_refmap = 0;
     if ((s->segmentation.enabled = get_bits1(&s->gb))) {
         if ((s->segmentation.update_map = get_bits1(&s->gb))) {
             for (i = 0; i < 7; i++)
@@ -738,10 +749,11 @@ static int decode_frame_header(AVCodecContext *ctx,
         if ((!s->segmentation.update_map || s->segmentation.temporal) &&
             (w != s->frames[CUR_FRAME].tf.f->width ||
              h != s->frames[CUR_FRAME].tf.f->height)) {
-            av_log(ctx, AV_LOG_ERROR,
+            av_log(ctx, AV_LOG_WARNING,
                    "Reference segmap (temp=%d,update=%d) enabled on size-change!\n",
                    s->segmentation.temporal, s->segmentation.update_map);
-            return AVERROR_INVALIDDATA;
+                s->segmentation.ignore_refmap = 1;
+            //return AVERROR_INVALIDDATA;
         }
 
         if (get_bits1(&s->gb)) {
@@ -788,9 +800,9 @@ static int decode_frame_header(AVCodecContext *ctx,
         sh = s->filter.level >= 32;
         if (s->segmentation.feat[i].lf_enabled) {
             if (s->segmentation.absolute_vals)
-                lflvl = s->segmentation.feat[i].lf_val;
+                lflvl = av_clip_uintp2(s->segmentation.feat[i].lf_val, 6);
             else
-                lflvl = s->filter.level + s->segmentation.feat[i].lf_val;
+                lflvl = av_clip_uintp2(s->filter.level + s->segmentation.feat[i].lf_val, 6);
         } else {
             lflvl  = s->filter.level;
         }
@@ -1100,7 +1112,7 @@ static void find_ref_mvs(VP9Context *s,
     int row = s->row, col = s->col, row7 = s->row7;
     const int8_t (*p)[2] = mv_ref_blk_off[b->bs];
 #define INVALID_MV 0x80008000U
-    uint32_t mem = INVALID_MV;
+    uint32_t mem = INVALID_MV, mem_sub8x8 = INVALID_MV;
     int i;
 
 #define RETURN_DIRECT_MV(mv) \
@@ -1131,15 +1143,25 @@ static void find_ref_mvs(VP9Context *s,
         if (sb > 0) { \
             VP56mv tmp; \
             uint32_t m; \
-            clamp_mv(&tmp, &mv, s); \
-            m = AV_RN32A(&tmp); \
-            if (!idx) { \
-                AV_WN32A(pmv, m); \
-                return; \
-            } else if (mem == INVALID_MV) { \
-                mem = m; \
-            } else if (m != mem) { \
-                AV_WN32A(pmv, m); \
+            av_assert2(idx == 1); \
+            av_assert2(mem != INVALID_MV); \
+            if (mem_sub8x8 == INVALID_MV) { \
+                clamp_mv(&tmp, &mv, s); \
+                m = AV_RN32A(&tmp); \
+                if (m != mem) { \
+                    AV_WN32A(pmv, m); \
+                    return; \
+                } \
+                mem_sub8x8 = AV_RN32A(&mv); \
+            } else if (mem_sub8x8 != AV_RN32A(&mv)) { \
+                clamp_mv(&tmp, &mv, s); \
+                m = AV_RN32A(&tmp); \
+                if (m != mem) { \
+                    AV_WN32A(pmv, m); \
+                } else { \
+                    /* BUG I'm pretty sure this isn't the intention */ \
+                    AV_WN32A(pmv, 0); \
+                } \
                 return; \
             } \
         } else { \
@@ -1458,7 +1480,7 @@ static void decode_mode(AVCodecContext *ctx)
                 vp56_rac_get_prob_branchy(&s->c,
                     s->prob.segpred[s->above_segpred_ctx[col] +
                                     s->left_segpred_ctx[row7]]))) {
-        if (!s->errorres) {
+        if (!s->errorres && !s->segmentation.ignore_refmap) {
             int pred = 8, x;
             uint8_t *refsegmap = s->frames[REF_FRAME_SEGMAP].segmentation_map;
 
@@ -2296,7 +2318,7 @@ static int decode_coeffs_b32_16bpp(VP9Context *s, int16_t *coef, int n_coeffs,
                                    nnz, scan, nb, band_counts, qmul);
 }
 
-static av_always_inline void decode_coeffs(AVCodecContext *ctx, int is8bitsperpixel)
+static av_always_inline int decode_coeffs(AVCodecContext *ctx, int is8bitsperpixel)
 {
     VP9Context *s = ctx->priv_data;
     VP9Block *b = s->b;
@@ -2325,6 +2347,7 @@ static av_always_inline void decode_coeffs(AVCodecContext *ctx, int is8bitsperpi
     const int16_t *y_band_counts = band_counts[b->tx];
     const int16_t *uv_band_counts = band_counts[b->uvtx];
     int bytesperpixel = is8bitsperpixel ? 1 : 2;
+    int total_coeff = 0;
 
 #define MERGE(la, end, step, rd) \
     for (n = 0; n < end; n += step) \
@@ -2344,6 +2367,7 @@ static av_always_inline void decode_coeffs(AVCodecContext *ctx, int is8bitsperpi
                                      c, e, p, a[x] + l[y], yscans[txtp], \
                                      ynbs[txtp], y_band_counts, qmul[0]); \
             a[x] = l[y] = !!res; \
+            total_coeff |= !!res; \
             if (step >= 4) { \
                 AV_WN16A(&s->eob[n], res); \
             } else { \
@@ -2417,6 +2441,7 @@ static av_always_inline void decode_coeffs(AVCodecContext *ctx, int is8bitsperpi
                                      16 * step * step, c, e, p, a[x] + l[y], \
                                      uvscan, uvnb, uv_band_counts, qmul[1]); \
             a[x] = l[y] = !!res; \
+            total_coeff |= !!res; \
             if (step >= 4) { \
                 AV_WN16A(&s->uveob[pl][n], res); \
             } else { \
@@ -2456,16 +2481,18 @@ static av_always_inline void decode_coeffs(AVCodecContext *ctx, int is8bitsperpi
             break;
         }
     }
+
+    return total_coeff;
 }
 
-static void decode_coeffs_8bpp(AVCodecContext *ctx)
+static int decode_coeffs_8bpp(AVCodecContext *ctx)
 {
-    decode_coeffs(ctx, 1);
+    return decode_coeffs(ctx, 1);
 }
 
-static void decode_coeffs_16bpp(AVCodecContext *ctx)
+static int decode_coeffs_16bpp(AVCodecContext *ctx)
 {
-    decode_coeffs(ctx, 0);
+    return decode_coeffs(ctx, 0);
 }
 
 static av_always_inline int check_intra_mode(VP9Context *s, int mode, uint8_t **a,
@@ -2733,18 +2760,24 @@ static av_always_inline void mc_luma_scaled(VP9Context *s, vp9_scaled_mc_func sm
                                             uint8_t *dst, ptrdiff_t dst_stride,
                                             const uint8_t *ref, ptrdiff_t ref_stride,
                                             ThreadFrame *ref_frame,
-                                            ptrdiff_t y, ptrdiff_t x, const VP56mv *mv,
+                                            ptrdiff_t y, ptrdiff_t x, const VP56mv *in_mv,
+                                            int px, int py, int pw, int ph,
                                             int bw, int bh, int w, int h, int bytesperpixel,
                                             const uint16_t *scale, const uint8_t *step)
 {
 #define scale_mv(n, dim) (((int64_t)(n) * scale[dim]) >> 14)
+    int mx, my;
+    int refbw_m1, refbh_m1;
+    int th;
+    VP56mv mv;
+
+    mv.x = av_clip(in_mv->x, -(x + pw - px + 4) << 3, (s->cols * 8 - x + px + 3) << 3);
+    mv.y = av_clip(in_mv->y, -(y + ph - py + 4) << 3, (s->rows * 8 - y + py + 3) << 3);
     // BUG libvpx seems to scale the two components separately. This introduces
     // rounding errors but we have to reproduce them to be exactly compatible
     // with the output from libvpx...
-    int mx = scale_mv(mv->x * 2, 0) + scale_mv(x * 16, 0);
-    int my = scale_mv(mv->y * 2, 1) + scale_mv(y * 16, 1);
-    int refbw_m1, refbh_m1;
-    int th;
+    mx = scale_mv(mv.x * 2, 0) + scale_mv(x * 16, 0);
+    my = scale_mv(mv.y * 2, 1) + scale_mv(y * 16, 1);
 
     y = my >> 4;
     x = mx >> 4;
@@ -2776,17 +2809,33 @@ static av_always_inline void mc_chroma_scaled(VP9Context *s, vp9_scaled_mc_func 
                                               const uint8_t *ref_u, ptrdiff_t src_stride_u,
                                               const uint8_t *ref_v, ptrdiff_t src_stride_v,
                                               ThreadFrame *ref_frame,
-                                              ptrdiff_t y, ptrdiff_t x, const VP56mv *mv,
+                                              ptrdiff_t y, ptrdiff_t x, const VP56mv *in_mv,
+                                              int px, int py, int pw, int ph,
                                               int bw, int bh, int w, int h, int bytesperpixel,
                                               const uint16_t *scale, const uint8_t *step)
 {
-    // BUG https://code.google.com/p/webm/issues/detail?id=820
-    int mx = scale_mv(mv->x << !s->ss_h, 0) + (scale_mv(x * 16, 0) & ~15) + (scale_mv(x * 32, 0) & 15);
-    int my = scale_mv(mv->y << !s->ss_v, 1) + (scale_mv(y * 16, 1) & ~15) + (scale_mv(y * 32, 1) & 15);
-#undef scale_mv
+    int mx, my;
     int refbw_m1, refbh_m1;
     int th;
+    VP56mv mv;
 
+    if (s->ss_h) {
+        // BUG https://code.google.com/p/webm/issues/detail?id=820
+        mv.x = av_clip(in_mv->x, -(x + pw - px + 4) << 4, (s->cols * 4 - x + px + 3) << 4);
+        mx = scale_mv(mv.x, 0) + (scale_mv(x * 16, 0) & ~15) + (scale_mv(x * 32, 0) & 15);
+    } else {
+        mv.x = av_clip(in_mv->x, -(x + pw - px + 4) << 3, (s->cols * 8 - x + px + 3) << 3);
+        mx = scale_mv(mv.x << 1, 0) + scale_mv(x * 16, 0);
+    }
+    if (s->ss_v) {
+        // BUG https://code.google.com/p/webm/issues/detail?id=820
+        mv.y = av_clip(in_mv->y, -(y + ph - py + 4) << 4, (s->rows * 4 - y + py + 3) << 4);
+        my = scale_mv(mv.y, 1) + (scale_mv(y * 16, 1) & ~15) + (scale_mv(y * 32, 1) & 15);
+    } else {
+        mv.y = av_clip(in_mv->y, -(y + ph - py + 4) << 3, (s->rows * 8 - y + py + 3) << 3);
+        my = scale_mv(mv.y << 1, 1) + scale_mv(y * 16, 1);
+    }
+#undef scale_mv
     y = my >> 4;
     x = mx >> 4;
     ref_u += y * src_stride_u + x * bytesperpixel;
@@ -2822,15 +2871,17 @@ static av_always_inline void mc_chroma_scaled(VP9Context *s, vp9_scaled_mc_func 
     }
 }
 
-#define mc_luma_dir(s, mc, dst, dst_ls, src, src_ls, tref, row, col, mv, bw, bh, w, h, i) \
+#define mc_luma_dir(s, mc, dst, dst_ls, src, src_ls, tref, row, col, mv, \
+                    px, py, pw, ph, bw, bh, w, h, i) \
     mc_luma_scaled(s, s->dsp.s##mc, dst, dst_ls, src, src_ls, tref, row, col, \
-                   mv, bw, bh, w, h, bytesperpixel, \
+                   mv, px, py, pw, ph, bw, bh, w, h, bytesperpixel, \
                    s->mvscale[b->ref[i]], s->mvstep[b->ref[i]])
 #define mc_chroma_dir(s, mc, dstu, dstv, dst_ls, srcu, srcu_ls, srcv, srcv_ls, tref, \
-                      row, col, mv, bw, bh, w, h, i) \
+                      row, col, mv, px, py, pw, ph, bw, bh, w, h, i) \
     mc_chroma_scaled(s, s->dsp.s##mc, dstu, dstv, dst_ls, srcu, srcu_ls, srcv, srcv_ls, tref, \
-                     row, col, mv, bw, bh, w, h, bytesperpixel, \
+                     row, col, mv, px, py, pw, ph, bw, bh, w, h, bytesperpixel, \
                      s->mvscale[b->ref[i]], s->mvstep[b->ref[i]])
+#define SCALED 1
 #define FN(x) x##_scaled_8bpp
 #define BYTES_PER_PIXEL 1
 #include "vp9_mc_template.c"
@@ -2843,6 +2894,7 @@ static av_always_inline void mc_chroma_scaled(VP9Context *s, vp9_scaled_mc_func 
 #undef mc_chroma_dir
 #undef FN
 #undef BYTES_PER_PIXEL
+#undef SCALED
 
 static av_always_inline void mc_luma_unscaled(VP9Context *s, vp9_mc_func (*mc)[2],
                                               uint8_t *dst, ptrdiff_t dst_stride,
@@ -2921,13 +2973,15 @@ static av_always_inline void mc_chroma_unscaled(VP9Context *s, vp9_mc_func (*mc)
     }
 }
 
-#define mc_luma_dir(s, mc, dst, dst_ls, src, src_ls, tref, row, col, mv, bw, bh, w, h, i) \
+#define mc_luma_dir(s, mc, dst, dst_ls, src, src_ls, tref, row, col, mv, \
+                    px, py, pw, ph, bw, bh, w, h, i) \
     mc_luma_unscaled(s, s->dsp.mc, dst, dst_ls, src, src_ls, tref, row, col, \
                      mv, bw, bh, w, h, bytesperpixel)
 #define mc_chroma_dir(s, mc, dstu, dstv, dst_ls, srcu, srcu_ls, srcv, srcv_ls, tref, \
-                      row, col, mv, bw, bh, w, h, i) \
+                      row, col, mv, px, py, pw, ph, bw, bh, w, h, i) \
     mc_chroma_unscaled(s, s->dsp.mc, dstu, dstv, dst_ls, srcu, srcu_ls, srcv, srcv_ls, tref, \
                        row, col, mv, bw, bh, w, h, bytesperpixel)
+#define SCALED 0
 #define FN(x) x##_8bpp
 #define BYTES_PER_PIXEL 1
 #include "vp9_mc_template.c"
@@ -2940,6 +2994,7 @@ static av_always_inline void mc_chroma_unscaled(VP9Context *s, vp9_mc_func (*mc)
 #undef mc_chroma_dir_dir
 #undef FN
 #undef BYTES_PER_PIXEL
+#undef SCALED
 
 static av_always_inline void inter_recon(AVCodecContext *ctx, int bytesperpixel)
 {
@@ -3077,8 +3132,12 @@ static av_always_inline void mask_edges(uint8_t (*mask)[8][4], int ss_h, int ss_
             }
             if (!ss_h)
                 mask[0][y][3] |= m_col;
-            if (!ss_v)
-                mask[1][y][3] |= m_col;
+            if (!ss_v) {
+                if (ss_h && (col_end & 1))
+                    mask[1][y][3] |= (t << (w - 1)) - t;
+                else
+                    mask[1][y][3] |= m_col;
+            }
         }
     } else {
         int y, t = 1 << col_and_7, m_col = (t << w) - t;
@@ -3164,10 +3223,17 @@ static void decode_b(AVCodecContext *ctx, int row, int col,
                            (s->ss_v && h4 * 2 == (1 << b->tx)));
 
         if (!b->skip) {
+            int has_coeffs;
+
             if (bytesperpixel == 1) {
-                decode_coeffs_8bpp(ctx);
+                has_coeffs = decode_coeffs_8bpp(ctx);
             } else {
-                decode_coeffs_16bpp(ctx);
+                has_coeffs = decode_coeffs_16bpp(ctx);
+            }
+            if (!has_coeffs && b->bs <= BS_8x8 && !b->intra) {
+                b->skip = 1;
+                memset(&s->above_skip_ctx[col], 1, w4);
+                memset(&s->left_skip_ctx[s->row7], 1, h4);
             }
         } else {
             int row7 = s->row7;
@@ -3272,7 +3338,7 @@ static void decode_b(AVCodecContext *ctx, int row, int col,
         int w = FFMIN(s->cols - col, w4) * 8 >> s->ss_h;
         int h = FFMIN(s->rows - row, h4) * 8 >> s->ss_v, n, o = 0;
 
-        for (n = 1; o < w; n++) {
+        for (n = s->ss_h; o < w; n++) {
             int bw = 64 >> n;
 
             av_assert2(n <= 4);
