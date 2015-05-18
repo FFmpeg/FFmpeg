@@ -927,7 +927,20 @@ static int open_input_file(OptionsContext *o, const char *filename)
 
     /* if seeking requested, we execute it */
     if (o->start_time != AV_NOPTS_VALUE) {
-        ret = avformat_seek_file(ic, -1, INT64_MIN, timestamp, timestamp, 0);
+        int64_t seek_timestamp = timestamp;
+
+        if (!(ic->iformat->flags & AVFMT_SEEK_TO_PTS)) {
+            int dts_heuristic = 0;
+            for (i=0; i<ic->nb_streams; i++) {
+                AVCodecContext *avctx = ic->streams[i]->codec;
+                if (avctx->has_b_frames)
+                    dts_heuristic = 1;
+            }
+            if (dts_heuristic) {
+                seek_timestamp -= 3*AV_TIME_BASE / 23;
+            }
+        }
+        ret = avformat_seek_file(ic, -1, INT64_MIN, seek_timestamp, seek_timestamp, 0);
         if (ret < 0) {
             av_log(NULL, AV_LOG_WARNING, "%s: could not seek to position %0.3f\n",
                    filename, (double)timestamp / AV_TIME_BASE);
