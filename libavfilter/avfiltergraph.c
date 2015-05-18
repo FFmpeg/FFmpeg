@@ -1119,7 +1119,7 @@ static int graph_config_formats(AVFilterGraph *graph, AVClass *log_ctx)
     return 0;
 }
 
-static int ff_avfilter_graph_config_pointers(AVFilterGraph *graph,
+static int graph_config_pointers(AVFilterGraph *graph,
                                              AVClass *log_ctx)
 {
     unsigned i, j;
@@ -1211,7 +1211,7 @@ int avfilter_graph_config(AVFilterGraph *graphctx, void *log_ctx)
         return ret;
     if ((ret = graph_config_links(graphctx, log_ctx)))
         return ret;
-    if ((ret = ff_avfilter_graph_config_pointers(graphctx, log_ctx)))
+    if ((ret = graph_config_pointers(graphctx, log_ctx)))
         return ret;
 
     return 0;
