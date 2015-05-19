@@ -317,7 +317,7 @@ static int decode_rle(GetBitContext *gb, uint8_t *pal_dst, int pal_stride,
     if (next_code != 1 << current_length)
         return AVERROR_INVALIDDATA;
 
-    if (i = init_vlc(&vlc, 9, alphabet_size, bits, 1, 1, codes, 4, 4, 0))
+    if ((i = init_vlc(&vlc, 9, alphabet_size, bits, 1, 1, codes, 4, 4, 0)) < 0)
         return i;
 
     /* frame decode */
