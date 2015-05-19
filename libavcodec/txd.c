@@ -26,17 +26,24 @@
 #include "avcodec.h"
 #include "bytestream.h"
 #include "internal.h"
-#include "s3tc.h"
+#include "texturedsp.h"
+
+#define TXD_DXT1 0x31545844
+#define TXD_DXT3 0x33545844
 
 static int txd_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                             AVPacket *avpkt) {
     GetByteContext gb;
+    TextureDSPContext dxtc;
     AVFrame * const p = data;
     unsigned int version, w, h, d3d_format, depth, stride, flags;
     unsigned int y, v;
     uint8_t *ptr;
     uint32_t *pal;
+    int i, j;
     int ret;
+
+    ff_texturedsp_init(&dxtc);
 
     bytestream2_init(&gb, avpkt->data, avpkt->size);
     version         = bytestream2_get_le32(&gb);
@@ -57,7 +64,7 @@ static int txd_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     if (depth == 8) {
         avctx->pix_fmt = AV_PIX_FMT_PAL8;
     } else if (depth == 16 || depth == 32) {
-        avctx->pix_fmt = AV_PIX_FMT_RGB32;
+        avctx->pix_fmt = AV_PIX_FMT_RGBA;
     } else {
         av_log(avctx, AV_LOG_ERROR, "depth of %i is unsupported\n", depth);
         return AVERROR_PATCHWELCOME;
@@ -65,6 +72,9 @@ static int txd_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
     if ((ret = ff_set_dimensions(avctx, w, h)) < 0)
         return ret;
+
+    avctx->coded_width  = FFALIGN(w, 4);
+    avctx->coded_height = FFALIGN(h, 4);
 
     if ((ret = ff_get_buffer(avctx, p, 0)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
@@ -93,11 +103,23 @@ static int txd_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         case 0:
             if (!(flags & 1))
                 goto unsupported;
-        case FF_S3TC_DXT1:
-            ff_decode_dxt1(&gb, ptr, w, h, stride);
+        case TXD_DXT1:
+            for (j = 0; j < avctx->height; j += 4) {
+                for (i = 0; i < avctx->width; i += 4) {
+                    uint8_t *p = ptr + i * 4 + j * stride;
+                    int step = dxtc.dxt1_block(p, stride, gb.buffer);
+                    bytestream2_skip(&gb, step);
+                }
+            }
             break;
-        case FF_S3TC_DXT3:
-            ff_decode_dxt3(&gb, ptr, w, h, stride);
+        case TXD_DXT3:
+            for (j = 0; j < avctx->height; j += 4) {
+                for (i = 0; i < avctx->width; i += 4) {
+                    uint8_t *p = ptr + i * 4 + j * stride;
+                    int step = dxtc.dxt3_block(p, stride, gb.buffer);
+                    bytestream2_skip(&gb, step);
+                }
+            }
             break;
         default:
             goto unsupported;
