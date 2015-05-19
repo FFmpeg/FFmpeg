@@ -465,12 +465,6 @@ static inline void set_ue_golomb(PutBitContext *pb, int i)
 {
     av_assert2(i >= 0);
 
-#if 0
-    if (i = 0) {
-        put_bits(pb, 1, 1);
-        return;
-    }
-#endif
     if (i < 256)
         put_bits(pb, ff_ue_golomb_len[i], i + 1);
     else {
