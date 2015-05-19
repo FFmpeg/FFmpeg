@@ -1278,9 +1278,7 @@ static int update_md5_sum(FlacEncodeContext *s, const void *samples)
 
         for (i = 0; i < s->frame.blocksize * s->channels; i++) {
             int32_t v = samples0[i] >> 8;
-            *tmp++    = (v      ) & 0xFF;
-            *tmp++    = (v >>  8) & 0xFF;
-            *tmp++    = (v >> 16) & 0xFF;
+            AV_WL24(tmp + 3*i, v);
         }
         buf = s->md5_buffer;
     }
