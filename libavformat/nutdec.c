@@ -47,6 +47,8 @@ static int get_str(AVIOContext *bc, char *string, unsigned int maxlen)
     while (len > maxlen) {
         avio_r8(bc);
         len--;
+        if (bc->eof_reached)
+            len = maxlen;
     }
 
     if (maxlen)
@@ -213,8 +215,11 @@ static int skip_reserved(AVIOContext *bc, int64_t pos)
         avio_seek(bc, pos, SEEK_CUR);
         return AVERROR_INVALIDDATA;
     } else {
-        while (pos--)
+        while (pos--) {
+            if (bc->eof_reached)
+                return AVERROR_INVALIDDATA;
             avio_r8(bc);
+        }
         return 0;
     }
 }
@@ -293,8 +298,13 @@ static int decode_main_header(NUTContext *nut)
         if (tmp_fields > 7)
             tmp_head_idx = ffio_read_varlen(bc);
 
-        while (tmp_fields-- > 8)
+        while (tmp_fields-- > 8) {
+            if (bc->eof_reached) {
+                av_log(s, AV_LOG_ERROR, "reached EOF while decoding main header\n");
+                return AVERROR_INVALIDDATA;
+            }
             ffio_read_varlen(bc);
+        }
 
         if (count == 0 || i + count > 256) {
             av_log(s, AV_LOG_ERROR, "illegal count %d at %d\n", count, i);
@@ -995,8 +1005,13 @@ static int decode_frame_header(NUTContext *nut, int64_t *pts, int *stream_id,
         *header_idx = ffio_read_varlen(bc);
     if (flags & FLAG_RESERVED)
         reserved_count = ffio_read_varlen(bc);
-    for (i = 0; i < reserved_count; i++)
+    for (i = 0; i < reserved_count; i++) {
+        if (bc->eof_reached) {
+            av_log(s, AV_LOG_ERROR, "reached EOF while decoding frame header\n");
+            return AVERROR_INVALIDDATA;
+        }
         ffio_read_varlen(bc);
+    }
 
     if (*header_idx >= (unsigned)nut->header_count) {
         av_log(s, AV_LOG_ERROR, "header_idx invalid\n");
