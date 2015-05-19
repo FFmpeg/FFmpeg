@@ -492,7 +492,7 @@ static int decode_info_header(NUTContext *nut)
     AVIOContext *bc    = s->pb;
     uint64_t tmp, chapter_start, chapter_len;
     unsigned int stream_id_plus1, count;
-    int chapter_id, i;
+    int chapter_id, i, ret;
     int64_t value, end;
     char name[256], str_value[1024], type_str[256];
     const char *type;
@@ -534,7 +534,11 @@ static int decode_info_header(NUTContext *nut)
     }
 
     for (i = 0; i < count; i++) {
-        get_str(bc, name, sizeof(name));
+        ret = get_str(bc, name, sizeof(name));
+        if (ret < 0) {
+            av_log(s, AV_LOG_ERROR, "get_str failed while decoding info header\n");
+            return ret;
+        }
         value = get_s(bc);
         if (value == -1) {
             type = "UTF-8";
@@ -855,14 +859,18 @@ static int read_sm_data(AVFormatContext *s, AVIOContext *bc, AVPacket *pkt, int 
     int sample_rate = 0;
     int width = 0;
     int height = 0;
-    int i;
+    int i, ret;
 
     for (i=0; i<count; i++) {
         uint8_t name[256], str_value[256], type_str[256];
         int value;
         if (avio_tell(bc) >= maxpos)
             return AVERROR_INVALIDDATA;
-        get_str(bc, name, sizeof(name));
+        ret = get_str(bc, name, sizeof(name));
+        if (ret < 0) {
+            av_log(s, AV_LOG_ERROR, "get_str failed while reading sm data\n");
+            return ret;
+        }
         value = get_s(bc);
 
         if (value == -1) {
