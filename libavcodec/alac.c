@@ -317,7 +317,8 @@ static int decode_element(AVCodecContext *avctx, AVFrame *frame, int ch_index,
         int rice_history_mult[2];
 
         if (!alac->rice_limit) {
-            avpriv_request_sample(alac->avctx, "Compression with rice limit 0");
+            avpriv_request_sample(alac->avctx,
+                                  "Compression with rice limit 0");
             return AVERROR(ENOSYS);
         }
 
