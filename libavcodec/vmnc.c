@@ -419,10 +419,18 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             c->pic->pict_type = AV_PICTURE_TYPE_I;
             depth = bytestream2_get_byte(gb);
             if (depth != c->bpp) {
-                av_log(avctx, AV_LOG_INFO,
-                       "Depth mismatch. Container %i bpp, "
-                       "Frame data: %i bpp\n",
-                       c->bpp, depth);
+                av_log(avctx, AV_LOG_WARNING, "Depth mismatch. "
+                       "Container %i bpp / Codec %i bpp\n", c->bpp, depth);
+
+                if (depth != 8 && depth != 16 && depth != 32) {
+                    av_log(avctx, AV_LOG_ERROR,
+                           "Unsupported codec bitdepth %i\n", depth);
+                    return AVERROR_INVALIDDATA;
+                }
+
+                /* reset values */
+                c->bpp  = depth;
+                c->bpp2 = c->bpp / 8;
             }
             bytestream2_skip(gb, 1);
             c->bigendian = bytestream2_get_byte(gb);
@@ -524,6 +532,9 @@ static av_cold int decode_init(AVCodecContext *avctx)
     case 16:
         avctx->pix_fmt = AV_PIX_FMT_RGB555;
         break;
+    case 24:
+        /* 24 bits is not technically supported, but some clients might
+         * mistakenly set it -- delay the actual check until decode_frame() */
     case 32:
         avctx->pix_fmt = AV_PIX_FMT_RGB32;
         break;
