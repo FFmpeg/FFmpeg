@@ -96,7 +96,7 @@ static int mov_text_decode_frame(AVCodecContext *avctx,
     char *ptr = avpkt->data;
     char *end;
     //char *ptr_temp;
-    int text_length, tsmb_type, style_entries, tsmb_size;
+    int text_length, tsmb_type, style_entries, tsmb_size, tracksize;
     int **style_start = {0,};
     int **style_end = {0,};
     int **style_flags = {0,};
@@ -135,19 +135,30 @@ static int mov_text_decode_frame(AVCodecContext *avctx,
                             (AVRational){1,100});
 
     tsmb_size = 0;
+    tracksize = 2 + text_length;
     // Note that the spec recommends lines be no longer than 2048 characters.
     av_bprint_init(&buf, 0, AV_BPRINT_SIZE_UNLIMITED);
     if (text_length + 2 != avpkt->size) {
-        while (text_length + 2 + tsmb_size < avpkt->size)  {
-            tsmb = ptr + text_length + tsmb_size;
+        while (tracksize + 8 <= avpkt->size) {
+            // A box is a minimum of 8 bytes.
+            tsmb = ptr + tracksize - 2;
             tsmb_size = AV_RB32(tsmb);
             tsmb += 4;
             tsmb_type = AV_RB32(tsmb);
             tsmb += 4;
 
+            if (tracksize + tsmb_size > avpkt->size)
+                break;
+
             if (tsmb_type == MKBETAG('s','t','y','l')) {
+                if (tracksize + 10 > avpkt->size)
+                    break;
                 style_entries = AV_RB16(tsmb);
                 tsmb += 2;
+
+                // A single style record is of length 12 bytes.
+                if (tracksize + 10 + style_entries * 12 > avpkt->size)
+                    break;
 
                 for(i = 0; i < style_entries; i++) {
                     style_pos = av_malloc(4);
@@ -176,6 +187,7 @@ static int mov_text_decode_frame(AVCodecContext *avctx,
                 av_freep(&style_end);
                 av_freep(&style_flags);
             }
+            tracksize = tracksize + tsmb_size;
         }
     } else
         text_to_ass(&buf, ptr, end, NULL, NULL, 0, 0);
