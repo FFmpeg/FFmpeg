@@ -113,9 +113,12 @@ fate-acodec-dca2: CMP_SHIFT = -2048
 fate-acodec-dca2: CMP_TARGET = 527
 fate-acodec-dca2: SIZE_TOLERANCE = 1632
 
-FATE_ACODEC-$(call ENCDEC, FLAC, FLAC) += fate-acodec-flac
+FATE_ACODEC-$(call ENCDEC, FLAC, FLAC) += fate-acodec-flac fate-acodec-flac-exact-rice
 fate-acodec-flac: FMT = flac
 fate-acodec-flac: CODEC = flac -compression_level 2
+
+fate-acodec-flac-exact-rice: FMT = flac
+fate-acodec-flac-exact-rice: CODEC = flac -compression_level 2 -exact_rice_parameters 1
 
 FATE_ACODEC-$(call ENCDEC, G723_1, G723_1) += fate-acodec-g723_1
 fate-acodec-g723_1: tests/data/asynth-8000-1.wav
