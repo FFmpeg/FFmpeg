@@ -1129,7 +1129,8 @@ static int nut_read_packet(AVFormatContext *s, AVPacket *pkt)
         default:
 resync:
             av_log(s, AV_LOG_DEBUG, "syncing from %"PRId64"\n", pos);
-            tmp = find_any_startcode(bc, nut->last_syncpoint_pos + 1);
+            tmp = find_any_startcode(bc, FFMAX(nut->last_syncpoint_pos, nut->last_resync_pos) + 1);
+            nut->last_resync_pos = avio_tell(bc);
             if (tmp == 0)
                 return AVERROR_INVALIDDATA;
             av_log(s, AV_LOG_DEBUG, "sync\n");
@@ -1229,6 +1230,8 @@ static int read_seek(AVFormatContext *s, int stream_index,
         av_log(NULL, AV_LOG_ERROR, "no syncpoint at backptr pos\n");
     for (i = 0; i < s->nb_streams; i++)
         nut->stream[i].skip_until_key_frame = 1;
+
+    nut->last_resync_pos = 0;
 
     return 0;
 }

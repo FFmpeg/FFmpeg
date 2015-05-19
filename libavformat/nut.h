@@ -102,6 +102,7 @@ typedef struct NUTContext {
     unsigned int max_distance;
     unsigned int time_base_count;
     int64_t last_syncpoint_pos;
+    int64_t last_resync_pos;
     int header_count;
     AVRational *time_base;
     struct AVTreeNode *syncpoints;
