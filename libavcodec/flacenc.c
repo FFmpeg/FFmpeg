@@ -63,6 +63,7 @@ typedef struct CompressionOptions {
     int max_partition_order;
     int ch_mode;
     int exact_rice_parameters;
+    int multi_dim_quant;
 } CompressionOptions;
 
 typedef struct RiceContext {
@@ -932,6 +933,49 @@ static int encode_residual_ch(FlacEncodeContext *s, int ch)
         opt_order++;
     }
 
+    if (s->options.multi_dim_quant) {
+        int allsteps = 1;
+        int i, step, improved;
+        int64_t best_score = INT64_MAX;
+        int32_t qmax;
+
+        qmax = (1 << (s->options.lpc_coeff_precision - 1)) - 1;
+
+        for (i=0; i<opt_order; i++)
+            allsteps *= 3;
+
+        do {
+            improved = 0;
+            for (step = 0; step < allsteps; step++) {
+                int tmp = step;
+                int32_t lpc_try[MAX_LPC_ORDER];
+                int64_t score = 0;
+                int diffsum = 0;
+
+                for (i=0; i<opt_order; i++) {
+                    int diff = ((tmp + 1) % 3) - 1;
+                    lpc_try[i] = av_clip(coefs[opt_order - 1][i] + diff, -qmax, qmax);
+                    tmp /= 3;
+                    diffsum += !!diff;
+                }
+                if (diffsum >8)
+                    continue;
+
+                if (s->bps_code * 4 + s->options.lpc_coeff_precision + av_log2(opt_order - 1) <= 32) {
+                    s->flac_dsp.lpc16_encode(res, smp, n, opt_order, lpc_try, shift[opt_order-1]);
+                } else {
+                    s->flac_dsp.lpc32_encode(res, smp, n, opt_order, lpc_try, shift[opt_order-1]);
+                }
+                score = find_subframe_rice_params(s, sub, opt_order);
+                if (score < best_score) {
+                    best_score = score;
+                    memcpy(coefs[opt_order-1], lpc_try, sizeof(coefs[opt_order-1]));
+                    improved=1;
+                }
+            }
+        } while(improved);
+    }
+
     sub->order     = opt_order;
     sub->type_code = sub->type | (sub->order-1);
     sub->shift     = shift[sub->order-1];
@@ -1411,6 +1455,7 @@ static const AVOption options[] = {
 { "right_side", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FLAC_CHMODE_RIGHT_SIDE  }, INT_MIN, INT_MAX, FLAGS, "ch_mode" },
 { "mid_side",   NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FLAC_CHMODE_MID_SIDE    }, INT_MIN, INT_MAX, FLAGS, "ch_mode" },
 { "exact_rice_parameters", "Calculate rice parameters exactly", offsetof(FlacEncodeContext, options.exact_rice_parameters), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, FLAGS },
+{ "multi_dim_quant",       "Multi-dimensional quantization",    offsetof(FlacEncodeContext, options.multi_dim_quant),       AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, FLAGS },
 { NULL },
 };
 
