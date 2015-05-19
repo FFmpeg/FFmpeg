@@ -334,8 +334,16 @@ static inline int get_ur_golomb_jpegls(GetBitContext *gb, int k, int limit,
 
         if (i < limit - 1) {
             if (k) {
-                buf = SHOW_UBITS(re, gb, k);
-                LAST_SKIP_BITS(re, gb, k);
+                if (k > MIN_CACHE_BITS - 1) {
+                    buf = SHOW_UBITS(re, gb, 16) << (k-16);
+                    LAST_SKIP_BITS(re, gb, 16);
+                    UPDATE_CACHE(re, gb);
+                    buf |= SHOW_UBITS(re, gb, k-16);
+                    LAST_SKIP_BITS(re, gb, k-16);
+                } else {
+                    buf = SHOW_UBITS(re, gb, k);
+                    LAST_SKIP_BITS(re, gb, k);
+                }
             } else {
                 buf = 0;
             }
@@ -359,7 +367,7 @@ static inline int get_ur_golomb_jpegls(GetBitContext *gb, int k, int limit,
 static inline int get_sr_golomb(GetBitContext *gb, int k, int limit,
                                 int esc_len)
 {
-    int v = get_ur_golomb(gb, k, limit, esc_len);
+    unsigned v = get_ur_golomb(gb, k, limit, esc_len);
     return (v >> 1) ^ -(v & 1);
 }
 
@@ -369,7 +377,7 @@ static inline int get_sr_golomb(GetBitContext *gb, int k, int limit,
 static inline int get_sr_golomb_flac(GetBitContext *gb, int k, int limit,
                                      int esc_len)
 {
-    int v = get_ur_golomb_jpegls(gb, k, limit, esc_len);
+    unsigned v = get_ur_golomb_jpegls(gb, k, limit, esc_len);
     return (v >> 1) ^ -(v & 1);
 }
 
@@ -457,12 +465,6 @@ static inline void set_ue_golomb(PutBitContext *pb, int i)
 {
     av_assert2(i >= 0);
 
-#if 0
-    if (i = 0) {
-        put_bits(pb, 1, 1);
-        return;
-    }
-#endif
     if (i < 256)
         put_bits(pb, ff_ue_golomb_len[i], i + 1);
     else {

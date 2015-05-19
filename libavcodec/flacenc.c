@@ -62,13 +62,13 @@ typedef struct CompressionOptions {
     int min_partition_order;
     int max_partition_order;
     int ch_mode;
+    int exact_rice_parameters;
 } CompressionOptions;
 
 typedef struct RiceContext {
     enum CodingMode coding_mode;
     int porder;
     int params[MAX_PARTITIONS];
-    uint32_t udata[FLAC_MAX_BLOCKSIZE];
 } RiceContext;
 
 typedef struct FlacSubframe {
@@ -79,7 +79,11 @@ typedef struct FlacSubframe {
     int order;
     int32_t coefs[MAX_LPC_ORDER];
     int shift;
+
     RiceContext rc;
+    uint32_t rc_udata[FLAC_MAX_BLOCKSIZE];
+    uint64_t rc_sums[32][MAX_PARTITIONS];
+
     int32_t samples[FLAC_MAX_BLOCKSIZE];
     int32_t residual[FLAC_MAX_BLOCKSIZE+11];
 } FlacSubframe;
@@ -586,24 +590,44 @@ static int find_optimal_param(uint64_t sum, int n, int max_param)
     return FFMIN(k, max_param);
 }
 
+static int find_optimal_param_exact(uint64_t sums[32][MAX_PARTITIONS], int i, int max_param)
+{
+    int bestk = 0;
+    int64_t bestbits = INT64_MAX;
+    int k;
+
+    for (k = 0; k <= max_param; k++) {
+        int64_t bits = sums[k][i];
+        if (bits < bestbits) {
+            bestbits = bits;
+            bestk = k;
+        }
+    }
+
+    return bestk;
+}
 
 static uint64_t calc_optimal_rice_params(RiceContext *rc, int porder,
-                                         uint64_t *sums, int n, int pred_order)
+                                         uint64_t sums[32][MAX_PARTITIONS],
+                                         int n, int pred_order, int max_param, int exact)
 {
     int i;
-    int k, cnt, part, max_param;
+    int k, cnt, part;
     uint64_t all_bits;
-
-    max_param = (1 << rc->coding_mode) - 2;
 
     part     = (1 << porder);
     all_bits = 4 * part;
 
     cnt = (n >> porder) - pred_order;
     for (i = 0; i < part; i++) {
-        k = find_optimal_param(sums[i], cnt, max_param);
+        if (exact) {
+            k = find_optimal_param_exact(sums, i, max_param);
+            all_bits += sums[k][i];
+        } else {
+            k = find_optimal_param(sums[0][i], cnt, max_param);
+            all_bits += rice_encode_count(sums[0][i], cnt, k);
+        }
         rc->params[i] = k;
-        all_bits += rice_encode_count(sums[i], cnt, k);
         cnt = n >> porder;
     }
 
@@ -613,42 +637,57 @@ static uint64_t calc_optimal_rice_params(RiceContext *rc, int porder,
 }
 
 
-static void calc_sum_top(int pmax, uint32_t *data, int n, int pred_order,
-                         uint64_t sums[MAX_PARTITIONS])
+static void calc_sum_top(int pmax, int kmax, uint32_t *data, int n, int pred_order,
+                         uint64_t sums[32][MAX_PARTITIONS])
 {
-    int i;
+    int i, k;
     int parts;
     uint32_t *res, *res_end;
 
     /* sums for highest level */
     parts   = (1 << pmax);
-    res     = &data[pred_order];
-    res_end = &data[n >> pmax];
-    for (i = 0; i < parts; i++) {
-        uint64_t sum = 0;
-        while (res < res_end)
-            sum += *(res++);
-        sums[i] = sum;
-        res_end += n >> pmax;
+
+    for (k = 0; k <= kmax; k++) {
+        res     = &data[pred_order];
+        res_end = &data[n >> pmax];
+        for (i = 0; i < parts; i++) {
+            if (kmax) {
+                uint64_t sum = (1LL + k) * (res_end - res);
+                while (res < res_end)
+                    sum += *(res++) >> k;
+                sums[k][i] = sum;
+            } else {
+                uint64_t sum = 0;
+                while (res < res_end)
+                    sum += *(res++);
+                sums[k][i] = sum;
+            }
+            res_end += n >> pmax;
+        }
     }
 }
 
-static void calc_sum_next(int level, uint64_t sums[MAX_PARTITIONS])
+static void calc_sum_next(int level, uint64_t sums[32][MAX_PARTITIONS], int kmax)
 {
-    int i;
+    int i, k;
     int parts = (1 << level);
-    for (i = 0; i < parts; i++)
-        sums[i] = sums[2*i] + sums[2*i+1];
+    for (i = 0; i < parts; i++) {
+        for (k=0; k<=kmax; k++)
+            sums[k][i] = sums[k][2*i] + sums[k][2*i+1];
+    }
 }
 
-static uint64_t calc_rice_params(RiceContext *rc, int pmin, int pmax,
-                                 int32_t *data, int n, int pred_order)
+static uint64_t calc_rice_params(RiceContext *rc,
+                                 uint32_t udata[FLAC_MAX_BLOCKSIZE],
+                                 uint64_t sums[32][MAX_PARTITIONS],
+                                 int pmin, int pmax,
+                                 int32_t *data, int n, int pred_order, int exact)
 {
     int i;
     uint64_t bits[MAX_PARTITION_ORDER+1];
     int opt_porder;
     RiceContext tmp_rc;
-    uint64_t sums[MAX_PARTITIONS];
+    int kmax = (1 << rc->coding_mode) - 2;
 
     av_assert1(pmin >= 0 && pmin <= MAX_PARTITION_ORDER);
     av_assert1(pmax >= 0 && pmax <= MAX_PARTITION_ORDER);
@@ -657,21 +696,21 @@ static uint64_t calc_rice_params(RiceContext *rc, int pmin, int pmax,
     tmp_rc.coding_mode = rc->coding_mode;
 
     for (i = 0; i < n; i++)
-        rc->udata[i] = (2 * data[i]) ^ (data[i] >> 31);
+        udata[i] = (2 * data[i]) ^ (data[i] >> 31);
 
-    calc_sum_top(pmax, rc->udata, n, pred_order, sums);
+    calc_sum_top(pmax, exact ? kmax : 0, udata, n, pred_order, sums);
 
     opt_porder = pmin;
     bits[pmin] = UINT32_MAX;
     for (i = pmax; ; ) {
-        bits[i] = calc_optimal_rice_params(&tmp_rc, i, sums, n, pred_order);
+        bits[i] = calc_optimal_rice_params(&tmp_rc, i, sums, n, pred_order, kmax, exact);
         if (bits[i] < bits[opt_porder]) {
             opt_porder = i;
             *rc = tmp_rc;
         }
         if (i == pmin)
             break;
-        calc_sum_next(--i, sums);
+        calc_sum_next(--i, sums, exact ? kmax : 0);
     }
 
     return bits[opt_porder];
@@ -698,8 +737,8 @@ static uint64_t find_subframe_rice_params(FlacEncodeContext *s,
     uint64_t bits = 8 + pred_order * sub->obits + 2 + sub->rc.coding_mode;
     if (sub->type == FLAC_SUBFRAME_LPC)
         bits += 4 + 5 + pred_order * s->options.lpc_coeff_precision;
-    bits += calc_rice_params(&sub->rc, pmin, pmax, sub->residual,
-                             s->frame.blocksize, pred_order);
+    bits += calc_rice_params(&sub->rc, sub->rc_udata, sub->rc_sums, pmin, pmax, sub->residual,
+                             s->frame.blocksize, pred_order, s->options.exact_rice_parameters);
     return bits;
 }
 
@@ -1373,6 +1412,7 @@ static const AVOption options[] = {
 { "left_side",  NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FLAC_CHMODE_LEFT_SIDE   }, INT_MIN, INT_MAX, FLAGS, "ch_mode" },
 { "right_side", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FLAC_CHMODE_RIGHT_SIDE  }, INT_MIN, INT_MAX, FLAGS, "ch_mode" },
 { "mid_side",   NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FLAC_CHMODE_MID_SIDE    }, INT_MIN, INT_MAX, FLAGS, "ch_mode" },
+{ "exact_rice_parameters", "Calculate rice parameters exactly", offsetof(FlacEncodeContext, options.exact_rice_parameters), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, FLAGS },
 { NULL },
 };
 

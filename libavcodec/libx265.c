@@ -342,10 +342,10 @@ static const enum AVPixelFormat x265_csp_twelve[] = {
 
 static av_cold void libx265_encode_init_csp(AVCodec *codec)
 {
-    if (x265_max_bit_depth == 8)
-        codec->pix_fmts = x265_csp_eight;
-    else if (x265_max_bit_depth == 12)
+    if (x265_api_get(10))
         codec->pix_fmts = x265_csp_twelve;
+    else if (x265_api_get(8))
+        codec->pix_fmts = x265_csp_eight;
 }
 
 #define OFFSET(x) offsetof(libx265Context, x)
