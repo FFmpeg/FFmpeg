@@ -92,6 +92,7 @@ typedef struct OptionsContext {
 
     /* input/output options */
     int64_t start_time;
+    int64_t start_bytes;
     const char *format;
 
     SpecifierOpt *codec_names;

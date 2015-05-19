@@ -99,6 +99,7 @@
 #endif
 
 #include <time.h>
+#include <process.h>
 
 #include "ffmpeg.h"
 #include "cmdutils.h"

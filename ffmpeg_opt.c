@@ -25,6 +25,8 @@
 
 #include "libavformat/avformat.h"
 
+#include "libavformat/utils.c"
+
 #include "libavcodec/avcodec.h"
 
 #include "libavfilter/avfilter.h"
@@ -901,6 +903,17 @@ static int open_input_file(OptionsContext *o, const char *filename)
         if (ret < 0) {
             av_log(NULL, AV_LOG_WARNING, "%s: could not seek to position %0.3f\n",
                    filename, (double)timestamp / AV_TIME_BASE);
+        }
+    }
+
+    /* if byte seeking requested */
+    if (o->start_bytes != AV_NOPTS_VALUE) {
+        av_log(NULL, AV_LOG_INFO, "Seeking to %0" PRId64 "\n", o->start_bytes);
+        ff_read_frame_flush(ic);
+        ret = seek_frame_byte(ic, 0, o->start_bytes, 0);
+        if (ret < 0) {
+            av_log(NULL, AV_LOG_WARNING, "%s: could not seek to position %0" PRId64 "\n",
+                   filename, o->start_bytes);
         }
     }
 
@@ -2792,6 +2805,9 @@ const OptionDef options[] = {
     { "ss",             HAS_ARG | OPT_TIME | OPT_OFFSET |
                         OPT_INPUT | OPT_OUTPUT,                      { .off = OFFSET(start_time) },
         "set the start time offset", "time_off" },
+    { "bss",             HAS_ARG | OPT_INT64 | OPT_OFFSET |
+                        OPT_INPUT | OPT_OUTPUT,                      { .off = OFFSET(start_bytes) },
+      "set the start byte offset", "byte_off" },
     { "accurate_seek",  OPT_BOOL | OPT_OFFSET | OPT_EXPERT |
                         OPT_INPUT,                                   { .off = OFFSET(accurate_seek) },
         "enable/disable accurate seeking with -ss" },
