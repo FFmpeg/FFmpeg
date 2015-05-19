@@ -509,7 +509,7 @@ static void copy_samples(FlacEncodeContext *s, const void *samples)
 }
 
 
-static uint64_t rice_count_exact(int32_t *res, int n, int k)
+static uint64_t rice_count_exact(const int32_t *res, int n, int k)
 {
     int i;
     uint64_t count = 0;
@@ -637,12 +637,12 @@ static uint64_t calc_optimal_rice_params(RiceContext *rc, int porder,
 }
 
 
-static void calc_sum_top(int pmax, int kmax, uint32_t *data, int n, int pred_order,
+static void calc_sum_top(int pmax, int kmax, const uint32_t *data, int n, int pred_order,
                          uint64_t sums[32][MAX_PARTITIONS])
 {
     int i, k;
     int parts;
-    uint32_t *res, *res_end;
+    const uint32_t *res, *res_end;
 
     /* sums for highest level */
     parts   = (1 << pmax);
@@ -681,7 +681,7 @@ static uint64_t calc_rice_params(RiceContext *rc,
                                  uint32_t udata[FLAC_MAX_BLOCKSIZE],
                                  uint64_t sums[32][MAX_PARTITIONS],
                                  int pmin, int pmax,
-                                 int32_t *data, int n, int pred_order, int exact)
+                                 const int32_t *data, int n, int pred_order, int exact)
 {
     int i;
     uint64_t bits[MAX_PARTITION_ORDER+1];
@@ -1038,7 +1038,7 @@ static void remove_wasted_bits(FlacEncodeContext *s)
 }
 
 
-static int estimate_stereo_mode(int32_t *left_ch, int32_t *right_ch, int n,
+static int estimate_stereo_mode(const int32_t *left_ch, const int32_t *right_ch, int n,
                                 int max_rice_param)
 {
     int i, best;
