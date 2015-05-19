@@ -667,7 +667,9 @@ static uint64_t calc_rice_params(RiceContext *rc, int pmin, int pmax,
         bits[i] = calc_optimal_rice_params(&tmp_rc, i, sums, n, pred_order);
         if (bits[i] < bits[opt_porder]) {
             opt_porder = i;
-            *rc = tmp_rc;
+            rc->coding_mode = tmp_rc.coding_mode;
+            rc->porder      = tmp_rc.porder;
+            memcpy(rc->params, tmp_rc.params, sizeof(rc->params));
         }
         if (i == pmin)
             break;
