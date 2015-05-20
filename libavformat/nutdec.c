@@ -1220,6 +1220,7 @@ static int read_seek(AVFormatContext *s, int stream_index,
     av_log(NULL, AV_LOG_DEBUG, "SEEKTO: %"PRId64"\n", pos2);
     pos = find_startcode(s->pb, SYNCPOINT_STARTCODE, pos2);
     avio_seek(s->pb, pos, SEEK_SET);
+    nut->last_syncpoint_pos = pos;
     av_log(NULL, AV_LOG_DEBUG, "SP: %"PRId64"\n", pos);
     if (pos2 > pos || pos2 + 15 < pos)
         av_log(NULL, AV_LOG_ERROR, "no syncpoint at backptr pos\n");
