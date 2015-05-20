@@ -398,7 +398,7 @@ static int hls_slice_header(HEVCContext *s)
 {
     GetBitContext *gb = &s->HEVClc->gb;
     SliceHeader *sh   = &s->sh;
-    int i, j, ret;
+    int i, ret;
 
     // Coded parameters
     sh->first_slice_in_pic_flag = get_bits1(gb);
