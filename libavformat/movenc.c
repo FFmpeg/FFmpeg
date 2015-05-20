@@ -1607,10 +1607,10 @@ static int mov_write_colr_tag(AVIOContext *pb, MOVTrack *track)
     default:                  avio_wb16(pb, 2);
     }
     switch (track->enc->colorspace) {
-    case AVCOL_TRC_BT709:     avio_wb16(pb, 1); break;
+    case AVCOL_SPC_BT709:     avio_wb16(pb, 1); break;
     case AVCOL_SPC_BT470BG:
-    case AVCOL_PRI_SMPTE170M: avio_wb16(pb, 6); break;
-    case AVCOL_PRI_SMPTE240M: avio_wb16(pb, 7); break;
+    case AVCOL_SPC_SMPTE170M: avio_wb16(pb, 6); break;
+    case AVCOL_SPC_SMPTE240M: avio_wb16(pb, 7); break;
     default:                  avio_wb16(pb, 2);
     }
 
