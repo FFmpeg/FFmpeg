@@ -537,6 +537,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
         avctx->pix_fmt = AV_PIX_FMT_RGB555;
         break;
     case 24:
+        /* 24 bits is not technically supported, but some clients might
+         * mistakenly set it, so let's assume they actually meant 32 bits */
         c->bpp = 32;
     case 32:
         avctx->pix_fmt = AV_PIX_FMT_0RGB32;
