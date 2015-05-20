@@ -63,6 +63,7 @@ typedef struct CompressionOptions {
     int max_partition_order;
     int ch_mode;
     int exact_rice_parameters;
+    int multi_dim_quant;
 } CompressionOptions;
 
 typedef struct RiceContext {
@@ -509,7 +510,7 @@ static void copy_samples(FlacEncodeContext *s, const void *samples)
 }
 
 
-static uint64_t rice_count_exact(int32_t *res, int n, int k)
+static uint64_t rice_count_exact(const int32_t *res, int n, int k)
 {
     int i;
     uint64_t count = 0;
@@ -637,12 +638,12 @@ static uint64_t calc_optimal_rice_params(RiceContext *rc, int porder,
 }
 
 
-static void calc_sum_top(int pmax, int kmax, uint32_t *data, int n, int pred_order,
+static void calc_sum_top(int pmax, int kmax, const uint32_t *data, int n, int pred_order,
                          uint64_t sums[32][MAX_PARTITIONS])
 {
     int i, k;
     int parts;
-    uint32_t *res, *res_end;
+    const uint32_t *res, *res_end;
 
     /* sums for highest level */
     parts   = (1 << pmax);
@@ -681,7 +682,7 @@ static uint64_t calc_rice_params(RiceContext *rc,
                                  uint32_t udata[FLAC_MAX_BLOCKSIZE],
                                  uint64_t sums[32][MAX_PARTITIONS],
                                  int pmin, int pmax,
-                                 int32_t *data, int n, int pred_order, int exact)
+                                 const int32_t *data, int n, int pred_order, int exact)
 {
     int i;
     uint64_t bits[MAX_PARTITION_ORDER+1];
@@ -932,6 +933,49 @@ static int encode_residual_ch(FlacEncodeContext *s, int ch)
         opt_order++;
     }
 
+    if (s->options.multi_dim_quant) {
+        int allsteps = 1;
+        int i, step, improved;
+        int64_t best_score = INT64_MAX;
+        int32_t qmax;
+
+        qmax = (1 << (s->options.lpc_coeff_precision - 1)) - 1;
+
+        for (i=0; i<opt_order; i++)
+            allsteps *= 3;
+
+        do {
+            improved = 0;
+            for (step = 0; step < allsteps; step++) {
+                int tmp = step;
+                int32_t lpc_try[MAX_LPC_ORDER];
+                int64_t score = 0;
+                int diffsum = 0;
+
+                for (i=0; i<opt_order; i++) {
+                    int diff = ((tmp + 1) % 3) - 1;
+                    lpc_try[i] = av_clip(coefs[opt_order - 1][i] + diff, -qmax, qmax);
+                    tmp /= 3;
+                    diffsum += !!diff;
+                }
+                if (diffsum >8)
+                    continue;
+
+                if (s->bps_code * 4 + s->options.lpc_coeff_precision + av_log2(opt_order - 1) <= 32) {
+                    s->flac_dsp.lpc16_encode(res, smp, n, opt_order, lpc_try, shift[opt_order-1]);
+                } else {
+                    s->flac_dsp.lpc32_encode(res, smp, n, opt_order, lpc_try, shift[opt_order-1]);
+                }
+                score = find_subframe_rice_params(s, sub, opt_order);
+                if (score < best_score) {
+                    best_score = score;
+                    memcpy(coefs[opt_order-1], lpc_try, sizeof(coefs[opt_order-1]));
+                    improved=1;
+                }
+            }
+        } while(improved);
+    }
+
     sub->order     = opt_order;
     sub->type_code = sub->type | (sub->order-1);
     sub->shift     = shift[sub->order-1];
@@ -1038,7 +1082,7 @@ static void remove_wasted_bits(FlacEncodeContext *s)
 }
 
 
-static int estimate_stereo_mode(int32_t *left_ch, int32_t *right_ch, int n,
+static int estimate_stereo_mode(const int32_t *left_ch, const int32_t *right_ch, int n,
                                 int max_rice_param)
 {
     int i, best;
@@ -1278,9 +1322,7 @@ static int update_md5_sum(FlacEncodeContext *s, const void *samples)
 
         for (i = 0; i < s->frame.blocksize * s->channels; i++) {
             int32_t v = samples0[i] >> 8;
-            *tmp++    = (v      ) & 0xFF;
-            *tmp++    = (v >>  8) & 0xFF;
-            *tmp++    = (v >> 16) & 0xFF;
+            AV_WL24(tmp + 3*i, v);
         }
         buf = s->md5_buffer;
     }
@@ -1413,6 +1455,7 @@ static const AVOption options[] = {
 { "right_side", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FLAC_CHMODE_RIGHT_SIDE  }, INT_MIN, INT_MAX, FLAGS, "ch_mode" },
 { "mid_side",   NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FLAC_CHMODE_MID_SIDE    }, INT_MIN, INT_MAX, FLAGS, "ch_mode" },
 { "exact_rice_parameters", "Calculate rice parameters exactly", offsetof(FlacEncodeContext, options.exact_rice_parameters), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, FLAGS },
+{ "multi_dim_quant",       "Multi-dimensional quantization",    offsetof(FlacEncodeContext, options.multi_dim_quant),       AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, FLAGS },
 { NULL },
 };
 

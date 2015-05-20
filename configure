@@ -3923,7 +3923,7 @@ elif enabled mips; then
             check_ldflags "-mabi=64"
         ;;
         loongson3*)
-            enable mipsfpu
+            disable mipsfpu
             disable mips32r2
             disable mips32r5
             disable mips64r6
