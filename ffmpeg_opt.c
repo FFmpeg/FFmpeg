@@ -112,6 +112,7 @@ static int input_sync;
 static int override_ffserver  = 0;
 static int input_stream_potentially_available = 0;
 static int ignore_unknown_streams = 0;
+static int copy_unknown_streams = 0;
 
 static void uninit_options(OptionsContext *o)
 {
@@ -1566,6 +1567,19 @@ static OutputStream *new_data_stream(OptionsContext *o, AVFormatContext *oc, int
     return ost;
 }
 
+static OutputStream *new_unknown_stream(OptionsContext *o, AVFormatContext *oc, int source_index)
+{
+    OutputStream *ost;
+
+    ost = new_output_stream(o, oc, AVMEDIA_TYPE_UNKNOWN, source_index);
+    if (!ost->stream_copy) {
+        av_log(NULL, AV_LOG_FATAL, "Unknown stream encoding not supported yet (only streamcopy)\n");
+        exit_program(1);
+    }
+
+    return ost;
+}
+
 static OutputStream *new_attachment_stream(OptionsContext *o, AVFormatContext *oc, int source_index)
 {
     OutputStream *ost = new_output_stream(o, oc, AVMEDIA_TYPE_ATTACHMENT, source_index);
@@ -2018,6 +2032,11 @@ loop_end:
                 case AVMEDIA_TYPE_SUBTITLE:   ost = new_subtitle_stream  (o, oc, src_idx); break;
                 case AVMEDIA_TYPE_DATA:       ost = new_data_stream      (o, oc, src_idx); break;
                 case AVMEDIA_TYPE_ATTACHMENT: ost = new_attachment_stream(o, oc, src_idx); break;
+                case AVMEDIA_TYPE_UNKNOWN:
+                    if (copy_unknown_streams) {
+                        ost = new_unknown_stream   (o, oc, src_idx);
+                        break;
+                    }
                 default:
                     av_log(NULL, ignore_unknown_streams ? AV_LOG_WARNING : AV_LOG_FATAL,
                            "Cannot map stream #%d:%d - unsupported type.\n",
@@ -2025,7 +2044,8 @@ loop_end:
                     if (!ignore_unknown_streams) {
                         av_log(NULL, AV_LOG_FATAL,
                                "If you want unsupported types ignored instead "
-                               "of failing, please use the -ignore_unknown option\n");
+                               "of failing, please use the -ignore_unknown option\n"
+                               "If you want them copied, please use -copy_unknown\n");
                         exit_program(1);
                     }
                 }
@@ -2864,6 +2884,8 @@ const OptionDef options[] = {
         "never overwrite output files" },
     { "ignore_unknown", OPT_BOOL,                                    {              &ignore_unknown_streams },
         "Ignore unknown stream types" },
+    { "copy_unknown",   OPT_BOOL | OPT_EXPERT,                       {              &copy_unknown_streams },
+        "Copy unknown stream types" },
     { "c",              HAS_ARG | OPT_STRING | OPT_SPEC |
                         OPT_INPUT | OPT_OUTPUT,                      { .off       = OFFSET(codec_names) },
         "codec name", "codec" },
