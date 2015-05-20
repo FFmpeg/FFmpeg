@@ -2019,7 +2019,7 @@ loop_end:
                 case AVMEDIA_TYPE_DATA:       ost = new_data_stream      (o, oc, src_idx); break;
                 case AVMEDIA_TYPE_ATTACHMENT: ost = new_attachment_stream(o, oc, src_idx); break;
                 default:
-                    av_log(NULL, ignore_unknown_streams ? AV_LOG_FATAL : AV_LOG_WARNING,
+                    av_log(NULL, ignore_unknown_streams ? AV_LOG_WARNING : AV_LOG_FATAL,
                            "Cannot map stream #%d:%d - unsupported type.\n",
                            map->file_index, map->stream_index);
                     if (!ignore_unknown_streams) {
