@@ -2022,8 +2022,12 @@ loop_end:
                     av_log(NULL, ignore_unknown_streams ? AV_LOG_FATAL : AV_LOG_WARNING,
                            "Cannot map stream #%d:%d - unsupported type.\n",
                            map->file_index, map->stream_index);
-                    if (!ignore_unknown_streams)
+                    if (!ignore_unknown_streams) {
+                        av_log(NULL, AV_LOG_FATAL,
+                               "If you want unsupported types ignored instead"
+                               "of failing, please use the -ignore_unknown option\n");
                         exit_program(1);
+                    }
                 }
             }
         }
