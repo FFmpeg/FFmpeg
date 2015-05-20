@@ -2024,7 +2024,7 @@ loop_end:
                            map->file_index, map->stream_index);
                     if (!ignore_unknown_streams) {
                         av_log(NULL, AV_LOG_FATAL,
-                               "If you want unsupported types ignored instead"
+                               "If you want unsupported types ignored instead "
                                "of failing, please use the -ignore_unknown option\n");
                         exit_program(1);
                     }
