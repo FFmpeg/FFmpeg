@@ -21,6 +21,7 @@ version <next>:
 - Automatically rotate videos based on metadata in ffmpeg
 - improved Quickdraw compatibility
 - VP9 high bit-depth and extended colorspaces decoding support
+- WebPAnimEncoder API when available for encoding and muxing WebP
 
 
 version 2.6:
