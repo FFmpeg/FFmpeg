@@ -1,6 +1,46 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 2.5.7
+- avformat/nutdec: Fix recovery when immedeately after seeking a failure happens
+- nutdec: fix memleaks on error in nut_read_header
+- rtpenc_jpeg: handle case of picture dimensions not dividing by 8
+- avformat/mov: Fix parsing short loci
+- avcodec/shorten: Fix code depending on signed overflow behavior
+- avcodec/proresdec2: Reset slice_count on deallocation
+- ffmpeg_opt: Fix -timestamp parsing
+- hevc: make avcodec_decode_video2() fail if get_format() fails
+- avcodec/mpeg4audio: add some padding/alignment to MAX_PCE_SIZE
+- swr: fix alignment issue caused by 8ch sse functions
+- libswscale/x86/hscale_fast_bilinear_simd.c: Include BX in the clobber list on x86_64, because it isn't implicitly included when PIC is on.
+- aacdec: don't return frames without data
+- avformat/matroskadec: Cleanup error handling for bz2 & zlib
+- avformat/nutdec: Fix use of uinitialized value
+- tools/graph2dot: use larger data types than int for array/string sizes
+- id3v2: catch avio_read errors in check_tag
+- aacsbr: break infinite loop in sbr_hf_calc_npatches
+- diracdec: avoid overflow of bytes*8 in decode_lowdelay
+- diracdec: prevent overflow in data_unit_size check
+- avidec: avoid infinite loop due to negative ast->sample_size
+- pngdec: don't use AV_PIX_FMT_MONOBLACK for apng
+- avcodec/wavpack: Check L/R values before use to avoid harmless integer overflow and undefined behavior in fate
+- xcbgrab: Validate the capture area
+- xcbgrab: Do not assume the non shm image data is always available
+- avfilter/lavfutils: disable frame threads when decoding a single image
+- nutdec: fix illegal count check in decode_main_header
+- ffmpeg: remove incorrect network deinit
+- OpenCL: Avoid potential buffer overflow in cmdutils_opencl.c
+- apedec: set s->samples only when init_frame_decoder succeeded
+- swscale/ppc/swscale_altivec.c: POWER LE support in yuv2planeX_8() delete macro GET_VF()
+- libvpxenc: only set noise reduction w/vp8
+- tests/fate-run: do not attempt to parse tiny_psnrs output if it failed
+- alac: reject rice_limit 0 if compression is used
+- alsdec: only adapt order for positive max_order
+- alsdec: check sample pointer range in revert_channel_correlation
+- tests: drop bc dependency
+- fate: Include branch information in the payload header
+
+
 version 2.5.6
 - avcodec/atrac3plusdsp: fix on stack alignment
 - ac3: validate end in ff_ac3_bit_alloc_calc_mask
