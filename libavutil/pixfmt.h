@@ -530,7 +530,8 @@ enum AVColorRange {
 /**
  * Location of chroma samples.
  *
- * Illustration showing the location, the left shows only luma, the right
+ * Illustration showing the location of the first chroma sample,
+ * the left shows only luma, the right
  * shows the location of the chroma samples, the 2 could be imagined to overlay
  * each other but are drawn seperately due to limitations of ASCII
  *  ______        ______
