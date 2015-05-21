@@ -534,10 +534,13 @@ enum AVColorRange {
  * image, the left shows only luma, the right
  * shows the location of the chroma sample, the 2 could be imagined to overlay
  * each other but are drawn seperately due to limitations of ASCII
- *  ______        ______
- * |X   X ...    |3 4 X ...     X are luma samples,
- * |             |1 2           1-6 are possible chroma positions
- * |X   X ...    |5 6 X ...     0 is undefined/unknown position
+ *
+ *                1st 2nd       1st 2nd luma sample positions
+ *                 v   v         v   v
+ *                 ______        ______
+ *1st luma line > |X   X ...    |3 4 X ...     X are luma samples,
+ *                |             |1 2           1-6 are possible chroma positions
+ *2nd luma line > |X   X ...    |5 6 X ...     0 is undefined/unknown position
  */
 enum AVChromaLocation {
     AVCHROMA_LOC_UNSPECIFIED = 0,
