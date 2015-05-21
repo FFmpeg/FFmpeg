@@ -47,11 +47,15 @@ static int get_str(AVIOContext *bc, char *string, unsigned int maxlen)
     while (len > maxlen) {
         avio_r8(bc);
         len--;
+        if (bc->eof_reached)
+            len = maxlen;
     }
 
     if (maxlen)
         string[FFMIN(len, maxlen - 1)] = 0;
 
+    if (bc->eof_reached)
+        return AVERROR_EOF;
     if (maxlen == len)
         return -1;
     else
@@ -211,8 +215,11 @@ static int skip_reserved(AVIOContext *bc, int64_t pos)
         avio_seek(bc, pos, SEEK_CUR);
         return AVERROR_INVALIDDATA;
     } else {
-        while (pos--)
+        while (pos--) {
+            if (bc->eof_reached)
+                return AVERROR_INVALIDDATA;
             avio_r8(bc);
+        }
         return 0;
     }
 }
@@ -291,8 +298,13 @@ static int decode_main_header(NUTContext *nut)
         if (tmp_fields > 7)
             tmp_head_idx = ffio_read_varlen(bc);
 
-        while (tmp_fields-- > 8)
+        while (tmp_fields-- > 8) {
+            if (bc->eof_reached) {
+                av_log(s, AV_LOG_ERROR, "reached EOF while decoding main header\n");
+                return AVERROR_INVALIDDATA;
+            }
             ffio_read_varlen(bc);
+        }
 
         if (count <= 0 || count > 256 - (i <= 'N') - i) {
             av_log(s, AV_LOG_ERROR, "illegal count %d at %d\n", count, i);
@@ -480,7 +492,7 @@ static int decode_info_header(NUTContext *nut)
     AVIOContext *bc    = s->pb;
     uint64_t tmp, chapter_start, chapter_len;
     unsigned int stream_id_plus1, count;
-    int chapter_id, i;
+    int chapter_id, i, ret;
     int64_t value, end;
     char name[256], str_value[1024], type_str[256];
     const char *type;
@@ -522,7 +534,11 @@ static int decode_info_header(NUTContext *nut)
     }
 
     for (i = 0; i < count; i++) {
-        get_str(bc, name, sizeof(name));
+        ret = get_str(bc, name, sizeof(name));
+        if (ret < 0) {
+            av_log(s, AV_LOG_ERROR, "get_str failed while decoding info header\n");
+            return ret;
+        }
         value = get_s(bc);
         str_value[0] = 0;
 
@@ -840,14 +856,18 @@ static int read_sm_data(AVFormatContext *s, AVIOContext *bc, AVPacket *pkt, int 
     int sample_rate = 0;
     int width = 0;
     int height = 0;
-    int i;
+    int i, ret;
 
     for (i=0; i<count; i++) {
         uint8_t name[256], str_value[256], type_str[256];
         int value;
         if (avio_tell(bc) >= maxpos)
             return AVERROR_INVALIDDATA;
-        get_str(bc, name, sizeof(name));
+        ret = get_str(bc, name, sizeof(name));
+        if (ret < 0) {
+            av_log(s, AV_LOG_ERROR, "get_str failed while reading sm data\n");
+            return ret;
+        }
         value = get_s(bc);
 
         if (value == -1) {
@@ -990,8 +1010,13 @@ static int decode_frame_header(NUTContext *nut, int64_t *pts, int *stream_id,
         *header_idx = ffio_read_varlen(bc);
     if (flags & FLAG_RESERVED)
         reserved_count = ffio_read_varlen(bc);
-    for (i = 0; i < reserved_count; i++)
+    for (i = 0; i < reserved_count; i++) {
+        if (bc->eof_reached) {
+            av_log(s, AV_LOG_ERROR, "reached EOF while decoding frame header\n");
+            return AVERROR_INVALIDDATA;
+        }
         ffio_read_varlen(bc);
+    }
 
     if (*header_idx >= (unsigned)nut->header_count) {
         av_log(s, AV_LOG_ERROR, "header_idx invalid\n");
@@ -1124,7 +1149,8 @@ static int nut_read_packet(AVFormatContext *s, AVPacket *pkt)
         default:
 resync:
             av_log(s, AV_LOG_DEBUG, "syncing from %"PRId64"\n", pos);
-            tmp = find_any_startcode(bc, nut->last_syncpoint_pos + 1);
+            tmp = find_any_startcode(bc, FFMAX(nut->last_syncpoint_pos, nut->last_resync_pos) + 1);
+            nut->last_resync_pos = avio_tell(bc);
             if (tmp == 0)
                 return AVERROR_INVALIDDATA;
             av_log(s, AV_LOG_DEBUG, "sync\n");
@@ -1218,11 +1244,14 @@ static int read_seek(AVFormatContext *s, int stream_index,
     av_log(NULL, AV_LOG_DEBUG, "SEEKTO: %"PRId64"\n", pos2);
     pos = find_startcode(s->pb, SYNCPOINT_STARTCODE, pos2);
     avio_seek(s->pb, pos, SEEK_SET);
+    nut->last_syncpoint_pos = pos;
     av_log(NULL, AV_LOG_DEBUG, "SP: %"PRId64"\n", pos);
     if (pos2 > pos || pos2 + 15 < pos)
         av_log(NULL, AV_LOG_ERROR, "no syncpoint at backptr pos\n");
     for (i = 0; i < s->nb_streams; i++)
         nut->stream[i].skip_until_key_frame = 1;
+
+    nut->last_resync_pos = 0;
 
     return 0;
 }

@@ -883,6 +883,7 @@ SKIPHEADERS-$(CONFIG_VDA)              += vda.h vda_internal.h
 SKIPHEADERS-$(CONFIG_VDPAU)            += vdpau.h vdpau_internal.h
 
 TESTPROGS = imgconvert                                                  \
+            mathops                                                    \
             options                                                     \
             avfft                                                       \
 

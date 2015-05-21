@@ -280,9 +280,18 @@ static int set_pix_fmt(AVCodecContext *avctx, vpx_codec_caps_t codec_caps,
         *img_fmt = VPX_IMG_FMT_I420;
         return 0;
     case AV_PIX_FMT_YUV422P:
+        enccfg->g_profile = 1;
+        *img_fmt = VPX_IMG_FMT_I422;
+        return 0;
+#if VPX_IMAGE_ABI_VERSION >= 3
+    case AV_PIX_FMT_YUV440P:
+        enccfg->g_profile = 1;
+        *img_fmt = VPX_IMG_FMT_I440;
+        return 0;
+#endif
     case AV_PIX_FMT_YUV444P:
         enccfg->g_profile = 1;
-        *img_fmt = avctx->pix_fmt == AV_PIX_FMT_YUV422P ? VPX_IMG_FMT_I422 : VPX_IMG_FMT_I444;
+        *img_fmt = VPX_IMG_FMT_I444;
         return 0;
 #ifdef VPX_IMG_FMT_HIGHBITDEPTH
     case AV_PIX_FMT_YUV420P10LE:
@@ -307,6 +316,19 @@ static int set_pix_fmt(AVCodecContext *avctx, vpx_codec_caps_t codec_caps,
             return 0;
         }
         break;
+#if VPX_IMAGE_ABI_VERSION >= 3
+    case AV_PIX_FMT_YUV440P10LE:
+    case AV_PIX_FMT_YUV440P12LE:
+        if (codec_caps & VPX_CODEC_CAP_HIGHBITDEPTH) {
+            enccfg->g_bit_depth = enccfg->g_input_bit_depth =
+                avctx->pix_fmt == AV_PIX_FMT_YUV440P10LE ? 10 : 12;
+            enccfg->g_profile = 3;
+            *img_fmt = VPX_IMG_FMT_I44016;
+            *flags |= VPX_CODEC_USE_HIGHBITDEPTH;
+            return 0;
+        }
+        break;
+#endif
     case AV_PIX_FMT_YUV444P10LE:
     case AV_PIX_FMT_YUV444P12LE:
         if (codec_caps & VPX_CODEC_CAP_HIGHBITDEPTH) {

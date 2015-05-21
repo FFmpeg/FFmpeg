@@ -111,6 +111,7 @@ static int do_psnr            = 0;
 static int input_sync;
 static int override_ffserver  = 0;
 static int input_stream_potentially_available = 0;
+static int ignore_unknown_streams = 0;
 
 static void uninit_options(OptionsContext *o)
 {
@@ -2018,9 +2019,15 @@ loop_end:
                 case AVMEDIA_TYPE_DATA:       ost = new_data_stream      (o, oc, src_idx); break;
                 case AVMEDIA_TYPE_ATTACHMENT: ost = new_attachment_stream(o, oc, src_idx); break;
                 default:
-                    av_log(NULL, AV_LOG_FATAL, "Cannot map stream #%d:%d - unsupported type.\n",
+                    av_log(NULL, ignore_unknown_streams ? AV_LOG_WARNING : AV_LOG_FATAL,
+                           "Cannot map stream #%d:%d - unsupported type.\n",
                            map->file_index, map->stream_index);
-                    exit_program(1);
+                    if (!ignore_unknown_streams) {
+                        av_log(NULL, AV_LOG_FATAL,
+                               "If you want unsupported types ignored instead "
+                               "of failing, please use the -ignore_unknown option\n");
+                        exit_program(1);
+                    }
                 }
             }
         }
@@ -2855,6 +2862,8 @@ const OptionDef options[] = {
         "overwrite output files" },
     { "n",              OPT_BOOL,                                    {              &no_file_overwrite },
         "never overwrite output files" },
+    { "ignore_unknown", OPT_BOOL,                                    {              &ignore_unknown_streams },
+        "Ignore unknown stream types" },
     { "c",              HAS_ARG | OPT_STRING | OPT_SPEC |
                         OPT_INPUT | OPT_OUTPUT,                      { .off       = OFFSET(codec_names) },
         "codec name", "codec" },
