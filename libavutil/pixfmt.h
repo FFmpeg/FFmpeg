@@ -541,8 +541,8 @@ enum AVColorRange {
  */
 enum AVChromaLocation {
     AVCHROMA_LOC_UNSPECIFIED = 0,
-    AVCHROMA_LOC_LEFT        = 1, ///< mpeg2/4, h264 default
-    AVCHROMA_LOC_CENTER      = 2, ///< mpeg1, jpeg, h263
+    AVCHROMA_LOC_LEFT        = 1, ///< mpeg2/4 4:2:0, h264 default for 4:2:0
+    AVCHROMA_LOC_CENTER      = 2, ///< mpeg1 4:2:0, jpeg 4:2:0, h263 4:2:0
     AVCHROMA_LOC_TOPLEFT     = 3, ///< DV
     AVCHROMA_LOC_TOP         = 4,
     AVCHROMA_LOC_BOTTOMLEFT  = 5,
