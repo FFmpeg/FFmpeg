@@ -96,12 +96,13 @@ static int mov_text_decode_frame(AVCodecContext *avctx,
     char *ptr = avpkt->data;
     char *end;
     //char *ptr_temp;
-    int text_length, tsmb_type, style_entries, tsmb_size, tracksize;
+    int text_length, tsmb_type, style_entries;
+    uint64_t tsmb_size, tracksize;
     int **style_start = {0,};
     int **style_end = {0,};
     int **style_flags = {0,};
     const uint8_t *tsmb;
-    int index, i;
+    int index, i, size_var;
     int *flag;
     int *style_pos;
 
@@ -147,17 +148,27 @@ static int mov_text_decode_frame(AVCodecContext *avctx,
             tsmb_type = AV_RB32(tsmb);
             tsmb += 4;
 
+            if (tsmb_size == 1) {
+                if (tracksize + 16 > avpkt->size)
+                    break;
+                tsmb_size = AV_RB64(tsmb);
+                tsmb += 8;
+                size_var = 18;
+            } else
+                size_var = 10;
+            //size_var is equal to 10 or 18 depending on the size of box
+
             if (tracksize + tsmb_size > avpkt->size)
                 break;
 
             if (tsmb_type == MKBETAG('s','t','y','l')) {
-                if (tracksize + 10 > avpkt->size)
+                if (tracksize + size_var > avpkt->size)
                     break;
                 style_entries = AV_RB16(tsmb);
                 tsmb += 2;
 
                 // A single style record is of length 12 bytes.
-                if (tracksize + 10 + style_entries * 12 > avpkt->size)
+                if (tracksize + size_var + style_entries * 12 > avpkt->size)
                     break;
 
                 for(i = 0; i < style_entries; i++) {
