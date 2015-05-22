@@ -665,6 +665,10 @@ static int find_and_decode_index(NUTContext *nut)
                     has_keyframe[n++] = flag;
                 has_keyframe[n++] = !flag;
             } else {
+                if (x <= 1) {
+                    av_log(s, AV_LOG_ERROR, "index: x %"PRIu64" is invalid\n", x);
+                    goto fail;
+                }
                 while (x != 1) {
                     if (n >= syncpoint_count + 1) {
                         av_log(s, AV_LOG_ERROR, "index overflow B\n");
