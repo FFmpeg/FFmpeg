@@ -213,7 +213,7 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
     struct addrinfo hints = { 0 }, *ai = NULL;
     const char *proxy_path;
     int use_proxy;
-#if CONFIG_OPENSSL
+#if CONFIG_OPENSSL && !CONFIG_GNUTLS
     BIO *bio;
 #endif
 
