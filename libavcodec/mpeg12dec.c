@@ -1141,10 +1141,6 @@ static av_cold int mpeg_decode_init(AVCodecContext *avctx)
     s->repeat_field                = 0;
     s->mpeg_enc_ctx.codec_id       = avctx->codec->id;
     avctx->color_range             = AVCOL_RANGE_MPEG;
-    if (avctx->codec->id == AV_CODEC_ID_MPEG1VIDEO)
-        avctx->chroma_sample_location = AVCHROMA_LOC_CENTER;
-    else
-        avctx->chroma_sample_location = AVCHROMA_LOC_LEFT;
     return 0;
 }
 
@@ -1366,6 +1362,8 @@ static int mpeg_decode_postinit(AVCodecContext *avctx)
             // MPEG-1 fps
             avctx->framerate = ff_mpeg12_frame_rate_tab[s->frame_rate_index];
             avctx->ticks_per_frame     = 1;
+
+            avctx->chroma_sample_location = AVCHROMA_LOC_CENTER;
         } else { // MPEG-2
             // MPEG-2 fps
             av_reduce(&s->avctx->framerate.num,
@@ -1374,6 +1372,12 @@ static int mpeg_decode_postinit(AVCodecContext *avctx)
                       ff_mpeg12_frame_rate_tab[s->frame_rate_index].den * s1->frame_rate_ext.den,
                       1 << 30);
             avctx->ticks_per_frame = 2;
+
+            switch (s->chroma_format) {
+            case 1: avctx->chroma_sample_location = AVCHROMA_LOC_LEFT; break;
+            case 2:
+            case 3: avctx->chroma_sample_location = AVCHROMA_LOC_TOPLEFT; break;
+            }
         } // MPEG-2
 
         avctx->pix_fmt = mpeg_get_pixelformat(avctx);
