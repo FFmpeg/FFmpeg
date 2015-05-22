@@ -39,6 +39,31 @@
         if ((c)->cred) \
             gnutls_certificate_free_credentials((c)->cred); \
     } while (0)
+
+static ssize_t gnutls_url_pull(gnutls_transport_ptr_t transport,
+                               void *buf, size_t len)
+{
+    URLContext *h = (URLContext*) transport;
+    int ret = ffurl_read(h, buf, len);
+    if (ret >= 0)
+        return ret;
+    if (ret == AVERROR_EXIT)
+        return 0;
+    errno = EIO;
+    return -1;
+}
+static ssize_t gnutls_url_push(gnutls_transport_ptr_t transport,
+                               const void *buf, size_t len)
+{
+    URLContext *h = (URLContext*) transport;
+    int ret = ffurl_write(h, buf, len);
+    if (ret >= 0)
+        return ret;
+    if (ret == AVERROR_EXIT)
+        return 0;
+    errno = EIO;
+    return -1;
+}
 #elif CONFIG_OPENSSL
 #include <openssl/bio.h>
 #include <openssl/ssl.h>
@@ -52,6 +77,70 @@
         if ((c)->ctx) \
             SSL_CTX_free((c)->ctx); \
     } while (0)
+
+static int url_bio_create(BIO *b)
+{
+    b->init = 1;
+    b->ptr = NULL;
+    b->flags = 0;
+    return 1;
+}
+
+static int url_bio_destroy(BIO *b)
+{
+    return 1;
+}
+
+static int url_bio_bread(BIO *b, char *buf, int len)
+{
+    URLContext *h = b->ptr;
+    int ret = ffurl_read(h, buf, len);
+    if (ret >= 0)
+        return ret;
+    BIO_clear_retry_flags(b);
+    if (ret == AVERROR_EXIT)
+        return 0;
+    return -1;
+}
+
+static int url_bio_bwrite(BIO *b, const char *buf, int len)
+{
+    URLContext *h = b->ptr;
+    int ret = ffurl_write(h, buf, len);
+    if (ret >= 0)
+        return ret;
+    BIO_clear_retry_flags(b);
+    if (ret == AVERROR_EXIT)
+        return 0;
+    return -1;
+}
+
+static long url_bio_ctrl(BIO *b, int cmd, long num, void *ptr)
+{
+    if (cmd == BIO_CTRL_FLUSH) {
+        BIO_clear_retry_flags(b);
+        return 1;
+    }
+    return 0;
+}
+
+static int url_bio_bputs(BIO *b, const char *str)
+{
+    return url_bio_bwrite(b, str, strlen(str));
+}
+
+static BIO_METHOD url_bio_method = {
+    .type = BIO_TYPE_SOURCE_SINK,
+    .name = "urlprotocol bio",
+    .bwrite = url_bio_bwrite,
+    .bread = url_bio_bread,
+    .bputs = url_bio_bputs,
+    .bgets = NULL,
+    .ctrl = url_bio_ctrl,
+    .create = url_bio_create,
+    .destroy = url_bio_destroy,
+};
+
 #endif
 #if HAVE_POLL_H
 #include <poll.h>
@@ -67,7 +156,6 @@ typedef struct TLSContext {
     SSL_CTX *ctx;
     SSL *ssl;
 #endif
-    int fd;
     char *ca_file;
     int verify;
     char *cert_file;
@@ -95,10 +183,8 @@ static const AVClass tls_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-static int do_tls_poll(URLContext *h, int ret)
+static int print_tls_error(URLContext *h, int ret)
 {
-    TLSContext *c = h->priv_data;
-    struct pollfd p = { c->fd, 0, 0 };
 #if CONFIG_GNUTLS
     switch (ret) {
     case GNUTLS_E_AGAIN:
@@ -109,33 +195,12 @@ static int do_tls_poll(URLContext *h, int ret)
         break;
     default:
         av_log(h, AV_LOG_ERROR, "%s\n", gnutls_strerror(ret));
-        return AVERROR(EIO);
+        break;
     }
-    if (gnutls_record_get_direction(c->session))
-        p.events = POLLOUT;
-    else
-        p.events = POLLIN;
 #elif CONFIG_OPENSSL
-    ret = SSL_get_error(c->ssl, ret);
-    if (ret == SSL_ERROR_WANT_READ) {
-        p.events = POLLIN;
-    } else if (ret == SSL_ERROR_WANT_WRITE) {
-        p.events = POLLOUT;
-    } else {
-        av_log(h, AV_LOG_ERROR, "%s\n", ERR_error_string(ERR_get_error(), NULL));
-        return AVERROR(EIO);
-    }
+    av_log(h, AV_LOG_ERROR, "%s\n", ERR_error_string(ERR_get_error(), NULL));
 #endif
-    if (h->flags & AVIO_FLAG_NONBLOCK)
-        return AVERROR(EAGAIN);
-    while (1) {
-        int n = poll(&p, 1, 100);
-        if (n > 0)
-            break;
-        if (ff_check_interrupt(&h->interrupt_callback))
-            return AVERROR(EINTR);
-    }
-    return 0;
+    return AVERROR(EIO);
 }
 
 static void set_options(URLContext *h, const char *uri)
@@ -174,6 +239,9 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
     struct addrinfo hints = { 0 }, *ai = NULL;
     const char *proxy_path;
     int use_proxy;
+#if CONFIG_OPENSSL && !CONFIG_GNUTLS
+    BIO *bio;
+#endif
 
     if ((ret = ff_tls_init()) < 0)
         return ret;
@@ -219,7 +287,6 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
                      &h->interrupt_callback, options);
     if (ret)
         goto fail;
-    c->fd = ffurl_get_file_handle(c->tcp);
 
 #if CONFIG_GNUTLS
     gnutls_init(&c->session, c->listen ? GNUTLS_SERVER : GNUTLS_CLIENT);
@@ -252,15 +319,14 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
     } else if (c->cert_file || c->key_file)
         av_log(h, AV_LOG_ERROR, "cert and key required\n");
     gnutls_credentials_set(c->session, GNUTLS_CRD_CERTIFICATE, c->cred);
-    gnutls_transport_set_ptr(c->session, (gnutls_transport_ptr_t)
-                                         (intptr_t) c->fd);
+    gnutls_transport_set_pull_function(c->session, gnutls_url_pull);
+    gnutls_transport_set_push_function(c->session, gnutls_url_push);
+    gnutls_transport_set_ptr(c->session, c->tcp);
     gnutls_priority_set_direct(c->session, "NORMAL", NULL);
-    while (1) {
-        ret = gnutls_handshake(c->session);
-        if (ret == 0)
-            break;
-        if ((ret = do_tls_poll(h, ret)) < 0)
-            goto fail;
+    ret = gnutls_handshake(c->session);
+    if (ret) {
+        ret = print_tls_error(h, ret);
+        goto fail;
     }
     if (c->verify) {
         unsigned int status, cert_list_size;
@@ -328,20 +394,19 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
         ret = AVERROR(EIO);
         goto fail;
     }
-    SSL_set_fd(c->ssl, c->fd);
+    bio = BIO_new(&url_bio_method);
+    bio->ptr = c->tcp;
+    SSL_set_bio(c->ssl, bio, bio);
     if (!c->listen && !numerichost)
         SSL_set_tlsext_host_name(c->ssl, host);
-    while (1) {
-        ret = c->listen ? SSL_accept(c->ssl) : SSL_connect(c->ssl);
-        if (ret > 0)
-            break;
-        if (ret == 0) {
-            av_log(h, AV_LOG_ERROR, "Unable to negotiate TLS/SSL session\n");
-            ret = AVERROR(EIO);
-            goto fail;
-        }
-        if ((ret = do_tls_poll(h, ret)) < 0)
-            goto fail;
+    ret = c->listen ? SSL_accept(c->ssl) : SSL_connect(c->ssl);
+    if (ret == 0) {
+        av_log(h, AV_LOG_ERROR, "Unable to negotiate TLS/SSL session\n");
+        ret = AVERROR(EIO);
+        goto fail;
+    } else if (ret < 0) {
+        ret = print_tls_error(h, ret);
+        goto fail;
     }
 #endif
     return 0;
@@ -356,31 +421,23 @@ fail:
 static int tls_read(URLContext *h, uint8_t *buf, int size)
 {
     TLSContext *c = h->priv_data;
-    while (1) {
-        int ret = TLS_read(c, buf, size);
-        if (ret > 0)
-            return ret;
-        if (ret == 0)
-            return AVERROR_EOF;
-        if ((ret = do_tls_poll(h, ret)) < 0)
-            return ret;
-    }
-    return 0;
+    int ret = TLS_read(c, buf, size);
+    if (ret > 0)
+        return ret;
+    if (ret == 0)
+        return AVERROR_EOF;
+    return print_tls_error(h, ret);
 }
 
 static int tls_write(URLContext *h, const uint8_t *buf, int size)
 {
     TLSContext *c = h->priv_data;
-    while (1) {
-        int ret = TLS_write(c, buf, size);
-        if (ret > 0)
-            return ret;
-        if (ret == 0)
-            return AVERROR_EOF;
-        if ((ret = do_tls_poll(h, ret)) < 0)
-            return ret;
-    }
-    return 0;
+    int ret = TLS_write(c, buf, size);
+    if (ret > 0)
+        return ret;
+    if (ret == 0)
+        return AVERROR_EOF;
+    return print_tls_error(h, ret);
 }
 
 static int tls_close(URLContext *h)

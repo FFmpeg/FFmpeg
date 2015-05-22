@@ -835,6 +835,14 @@ ffmpeg -i INPUT -map 0:m:language:eng OUTPUT
 
 Note that using this option disables the default mappings for this output file.
 
+@item -ignore_unknown
+Ignore input streams with unknown type instead of failing if copying
+such streams is attempted.
+
+@item -copy_unknown
+Allow input streams with unknown type to be copied instead of failing if copying
+such streams is attempted.
+
 @item -map_channel [@var{input_file_id}.@var{stream_specifier}.@var{channel_id}|-1][:@var{output_file_id}.@var{stream_specifier}]
 Map an audio channel from a given input to an output. If
 @var{output_file_id}.@var{stream_specifier} is not set, the audio channel will

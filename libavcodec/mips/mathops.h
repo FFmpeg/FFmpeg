@@ -43,19 +43,6 @@ static inline av_const int MULH(int a, int b)
     return c;
 }
 
-#define UMULH UMULH
-static inline av_const unsigned UMULH(unsigned a, unsigned b)
-{
-    unsigned c;
-    __asm__ ("dmultu %1, %2     \n\t"
-             "mflo %0           \n\t"
-             "dsrl %0, %0, 32   \n\t"
-             : "=r"(c)
-             : "r"(a),"r"(b)
-             : "hi", "lo");
-    return c;
-}
-
 #define mid_pred mid_pred
 static inline av_const int mid_pred(int a, int b, int c)
 {
@@ -72,44 +59,6 @@ static inline av_const int mid_pred(int a, int b, int c)
              : "$8");
     return t;
 }
-
-#define ff_sqrt ff_sqrt
-static inline av_const unsigned int ff_sqrt(unsigned int a)
-{
-    unsigned int b;
-
-    __asm__ ("ctc1 %1, $f0      \n\t"
-             "sqrt.s $f2, $f0   \n\t"
-             "cvt.w.s $f0, $f2  \n\t"
-             "cfc1 %0, $f0      \n\t"
-             : "=r"(b)
-             : "r"(a));
-    return b;
-}
-
-static inline av_const int64_t MAC64(int64_t d, int a, int b)
-{
-    int64_t m;
-    __asm__ ("dmult %2, %3     \n\t"
-             "mflo  %1         \n\t"
-             "daddu %0, %0, %1 \n\t"
-             : "+r"(d), "=&r"(m) : "r"(a), "r"(b)
-             : "hi", "lo");
-    return d;
-}
-#define MAC64(d, a, b) ((d) = MAC64(d, a, b))
-
-static inline av_const int64_t MLS64(int64_t d, int a, int b)
-{
-    int64_t m;
-    __asm__ ("dmult %2, %3     \n\t"
-             "mflo  %1         \n\t"
-             "dsubu %0, %0, %1 \n\t"
-             : "+r"(d), "=&r"(m) : "r"(a), "r"(b)
-             : "hi", "lo");
-    return d;
-}
-#define MLS64(d, a, b) ((d) = MLS64(d, a, b))
 
 #endif /* HAVE_LOONGSON3 */
 

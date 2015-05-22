@@ -4240,7 +4240,10 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
         mov->found_mdat = 0;
         if (!mov->next_root_atom)
             return AVERROR_EOF;
-        avio_seek(s->pb, mov->next_root_atom, SEEK_SET);
+        if (avio_seek(s->pb, mov->next_root_atom, SEEK_SET) != mov->next_root_atom) {
+            av_log(mov->fc, AV_LOG_ERROR, "next root atom offset 0x%"PRIx64": partial file\n", mov->next_root_atom);
+            return AVERROR_INVALIDDATA;
+        }
         mov->next_root_atom = 0;
         if (mov_read_default(mov, s->pb, (MOVAtom){ AV_RL32("root"), INT64_MAX }) < 0 ||
             avio_feof(s->pb))

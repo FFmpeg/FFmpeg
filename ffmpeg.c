@@ -2822,6 +2822,7 @@ static int transcode_init(void)
                 enc_ctx->width  = dec_ctx->width;
                 enc_ctx->height = dec_ctx->height;
                 break;
+            case AVMEDIA_TYPE_UNKNOWN:
             case AVMEDIA_TYPE_DATA:
             case AVMEDIA_TYPE_ATTACHMENT:
                 break;
