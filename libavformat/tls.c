@@ -47,10 +47,9 @@ static ssize_t gnutls_url_pull(gnutls_transport_ptr_t transport,
     int ret = ffurl_read(h, buf, len);
     if (ret >= 0)
         return ret;
-    if (ret == AVERROR(EAGAIN))
-        errno = EAGAIN;
-    else
-        errno = EIO;
+    if (ret == AVERROR_EXIT)
+        return 0;
+    errno = EIO;
     return -1;
 }
 static ssize_t gnutls_url_push(gnutls_transport_ptr_t transport,
@@ -60,10 +59,9 @@ static ssize_t gnutls_url_push(gnutls_transport_ptr_t transport,
     int ret = ffurl_write(h, buf, len);
     if (ret >= 0)
         return ret;
-    if (ret == AVERROR(EAGAIN))
-        errno = EAGAIN;
-    else
-        errno = EIO;
+    if (ret == AVERROR_EXIT)
+        return 0;
+    errno = EIO;
     return -1;
 }
 #elif CONFIG_OPENSSL
@@ -100,8 +98,8 @@ static int url_bio_bread(BIO *b, char *buf, int len)
     if (ret >= 0)
         return ret;
     BIO_clear_retry_flags(b);
-    if (ret == AVERROR(EAGAIN))
-        BIO_set_retry_read(b);
+    if (ret == AVERROR_EXIT)
+        return 0;
     return -1;
 }
 
@@ -112,8 +110,8 @@ static int url_bio_bwrite(BIO *b, const char *buf, int len)
     if (ret >= 0)
         return ret;
     BIO_clear_retry_flags(b);
-    if (ret == AVERROR(EAGAIN))
-        BIO_set_retry_write(b);
+    if (ret == AVERROR_EXIT)
+        return 0;
     return -1;
 }
 
@@ -217,16 +215,7 @@ static int do_tls_poll(URLContext *h, int ret)
         return AVERROR(EIO);
     }
 #endif
-    if (h->flags & AVIO_FLAG_NONBLOCK)
-        return AVERROR(EAGAIN);
-    while (1) {
-        int n = poll(&p, 1, 100);
-        if (n > 0)
-            break;
-        if (ff_check_interrupt(&h->interrupt_callback))
-            return AVERROR(EINTR);
-    }
-    return 0;
+    return AVERROR(EIO);
 }
 
 static void set_options(URLContext *h, const char *uri)
@@ -346,7 +335,6 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
     } else if (c->cert_file || c->key_file)
         av_log(h, AV_LOG_ERROR, "cert and key required\n");
     gnutls_credentials_set(c->session, GNUTLS_CRD_CERTIFICATE, c->cred);
-    c->tcp->flags |= AVIO_FLAG_NONBLOCK;
     gnutls_transport_set_pull_function(c->session, gnutls_url_pull);
     gnutls_transport_set_push_function(c->session, gnutls_url_push);
     gnutls_transport_set_ptr(c->session, c->tcp);
@@ -425,7 +413,6 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
         goto fail;
     }
     bio = BIO_new(&url_bio_method);
-    c->tcp->flags |= AVIO_FLAG_NONBLOCK;
     bio->ptr = c->tcp;
     SSL_set_bio(c->ssl, bio, bio);
     if (!c->listen && !numerichost)
