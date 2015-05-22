@@ -2627,6 +2627,17 @@ static int mxf_interleave(AVFormatContext *s, AVPacket *out, AVPacket *pkt, int 
                                mxf_interleave_get_packet, mxf_compare_timestamps);
 }
 
+static const AVOption mxf_options[] = {
+    { NULL },
+};
+
+static const AVClass mxf_muxer_class = {
+    .class_name     = "MXF muxer",
+    .item_name      = av_default_item_name,
+    .option         = mxf_options,
+    .version        = LIBAVUTIL_VERSION_INT,
+};
+
 static const AVOption d10_options[] = {
     { "d10_channelcount", "Force/set channelcount in generic sound essence descriptor",
       offsetof(MXFContext, channel_count), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 8, AV_OPT_FLAG_ENCODING_PARAM},
@@ -2666,6 +2677,7 @@ AVOutputFormat ff_mxf_muxer = {
     .write_trailer     = mxf_write_footer,
     .flags             = AVFMT_NOTIMESTAMPS,
     .interleave_packet = mxf_interleave,
+    .priv_class        = &mxf_muxer_class,
 };
 
 AVOutputFormat ff_mxf_d10_muxer = {
