@@ -53,7 +53,7 @@ typedef struct RLTable {
  * @param static_store static uint8_t array[2][2*MAX_RUN + MAX_LEVEL + 3] which will hold
  *                     the level and run tables, if this is NULL av_malloc() will be used
  */
-void ff_rl_init(RLTable *rl, uint8_t static_store[2][2*MAX_RUN + MAX_LEVEL + 3]);
+int ff_rl_init(RLTable *rl, uint8_t static_store[2][2*MAX_RUN + MAX_LEVEL + 3]);
 void ff_rl_init_vlc(RLTable *rl);
 
 /**

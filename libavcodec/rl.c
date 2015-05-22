@@ -34,8 +34,8 @@ void ff_rl_free(RLTable *rl)
     }
 }
 
-av_cold void ff_rl_init(RLTable *rl,
-                        uint8_t static_store[2][2 * MAX_RUN + MAX_LEVEL + 3])
+av_cold int ff_rl_init(RLTable *rl,
+                       uint8_t static_store[2][2 * MAX_RUN + MAX_LEVEL + 3])
 {
     int8_t  max_level[MAX_RUN + 1], max_run[MAX_LEVEL + 1];
     uint8_t index_run[MAX_RUN + 1];
@@ -43,7 +43,7 @@ av_cold void ff_rl_init(RLTable *rl,
 
     /* If table is static, we can quit if rl->max_level[0] is not NULL */
     if (static_store && rl->max_level[0])
-        return;
+        return 0;
 
     /* compute max_level[], max_run[] and index_run[] */
     for (last = 0; last < 2; last++) {
@@ -70,20 +70,34 @@ av_cold void ff_rl_init(RLTable *rl,
         }
         if (static_store)
             rl->max_level[last] = static_store[last];
-        else
+        else {
             rl->max_level[last] = av_malloc(MAX_RUN + 1);
+            if (!rl->max_level[last])
+                goto fail;
+        }
         memcpy(rl->max_level[last], max_level, MAX_RUN + 1);
         if (static_store)
             rl->max_run[last]   = static_store[last] + MAX_RUN + 1;
-        else
+        else {
             rl->max_run[last]   = av_malloc(MAX_LEVEL + 1);
+            if (!rl->max_run[last])
+                goto fail;
+        }
         memcpy(rl->max_run[last], max_run, MAX_LEVEL + 1);
         if (static_store)
             rl->index_run[last] = static_store[last] + MAX_RUN + MAX_LEVEL + 2;
-        else
+        else {
             rl->index_run[last] = av_malloc(MAX_RUN + 1);
+            if (!rl->index_run[last])
+                goto fail;
+        }
         memcpy(rl->index_run[last], index_run, MAX_RUN + 1);
     }
+    return 0;
+
+fail:
+    ff_rl_free(rl);
+    return AVERROR(ENOMEM);
 }
 
 av_cold void ff_rl_init_vlc(RLTable *rl)
