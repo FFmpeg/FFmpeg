@@ -1016,7 +1016,7 @@ av_cold int ff_mpv_encode_end(AVCodecContext *avctx)
         av_frame_free(&s->tmp_frames[i]);
 
     ff_free_picture_tables(&s->new_picture);
-    ff_mpeg_unref_picture(s, &s->new_picture);
+    ff_mpeg_unref_picture(s->avctx, &s->new_picture);
 
     av_freep(&s->avctx->stats_out);
     av_freep(&s->ac_stats);
@@ -1519,7 +1519,7 @@ no_output_pic:
            s->reordered_input_picture[0]->f->pict_type !=
                AV_PICTURE_TYPE_B ? 3 : 0;
 
-        ff_mpeg_unref_picture(s, &s->new_picture);
+        ff_mpeg_unref_picture(s->avctx, &s->new_picture);
         if ((ret = ff_mpeg_ref_picture(s, &s->new_picture, s->reordered_input_picture[0])))
             return ret;
 
@@ -1554,14 +1554,14 @@ no_output_pic:
                 s->new_picture.f->data[i] += INPLACE_OFFSET;
             }
         }
-        ff_mpeg_unref_picture(s, &s->current_picture);
+        ff_mpeg_unref_picture(s->avctx, &s->current_picture);
         if ((ret = ff_mpeg_ref_picture(s, &s->current_picture,
                                        s->current_picture_ptr)) < 0)
             return ret;
 
         s->picture_number = s->new_picture.f->display_picture_number;
     } else {
-        ff_mpeg_unref_picture(s, &s->new_picture);
+        ff_mpeg_unref_picture(s->avctx, &s->new_picture);
     }
     return 0;
 }
@@ -1635,13 +1635,13 @@ static int frame_start(MpegEncContext *s)
     if (s->pict_type != AV_PICTURE_TYPE_B && s->last_picture_ptr &&
         s->last_picture_ptr != s->next_picture_ptr &&
         s->last_picture_ptr->f->buf[0]) {
-        ff_mpeg_unref_picture(s, s->last_picture_ptr);
+        ff_mpeg_unref_picture(s->avctx, s->last_picture_ptr);
     }
 
     s->current_picture_ptr->f->pict_type = s->pict_type;
     s->current_picture_ptr->f->key_frame = s->pict_type == AV_PICTURE_TYPE_I;
 
-    ff_mpeg_unref_picture(s, &s->current_picture);
+    ff_mpeg_unref_picture(s->avctx, &s->current_picture);
     if ((ret = ff_mpeg_ref_picture(s, &s->current_picture,
                                    s->current_picture_ptr)) < 0)
         return ret;
@@ -1653,14 +1653,14 @@ static int frame_start(MpegEncContext *s)
     }
 
     if (s->last_picture_ptr) {
-        ff_mpeg_unref_picture(s, &s->last_picture);
+        ff_mpeg_unref_picture(s->avctx, &s->last_picture);
         if (s->last_picture_ptr->f->buf[0] &&
             (ret = ff_mpeg_ref_picture(s, &s->last_picture,
                                        s->last_picture_ptr)) < 0)
             return ret;
     }
     if (s->next_picture_ptr) {
-        ff_mpeg_unref_picture(s, &s->next_picture);
+        ff_mpeg_unref_picture(s->avctx, &s->next_picture);
         if (s->next_picture_ptr->f->buf[0] &&
             (ret = ff_mpeg_ref_picture(s, &s->next_picture,
                                        s->next_picture_ptr)) < 0)
@@ -1914,7 +1914,7 @@ vbv_retry:
     /* release non-reference frames */
     for (i = 0; i < MAX_PICTURE_COUNT; i++) {
         if (!s->picture[i].reference)
-            ff_mpeg_unref_picture(s, &s->picture[i]);
+            ff_mpeg_unref_picture(s->avctx, &s->picture[i]);
     }
 
     av_assert1((s->frame_bits & 7) == 0);

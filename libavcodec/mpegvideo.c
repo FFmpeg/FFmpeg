@@ -536,14 +536,14 @@ static int alloc_frame_buffer(MpegEncContext *s, Picture *pic)
                         s->uvlinesize != pic->f->linesize[1])) {
         av_log(s->avctx, AV_LOG_ERROR,
                "get_buffer() failed (stride changed)\n");
-        ff_mpeg_unref_picture(s, pic);
+        ff_mpeg_unref_picture(s->avctx, pic);
         return -1;
     }
 
     if (pic->f->linesize[1] != pic->f->linesize[2]) {
         av_log(s->avctx, AV_LOG_ERROR,
                "get_buffer() failed (uv stride mismatch)\n");
-        ff_mpeg_unref_picture(s, pic);
+        ff_mpeg_unref_picture(s->avctx, pic);
         return -1;
     }
 
@@ -551,7 +551,7 @@ static int alloc_frame_buffer(MpegEncContext *s, Picture *pic)
         (ret = frame_size_alloc(s, pic->f->linesize[0])) < 0) {
         av_log(s->avctx, AV_LOG_ERROR,
                "get_buffer() failed to allocate context scratch buffers.\n");
-        ff_mpeg_unref_picture(s, pic);
+        ff_mpeg_unref_picture(s->avctx, pic);
         return ret;
     }
 
@@ -698,7 +698,7 @@ int ff_alloc_picture(MpegEncContext *s, Picture *pic, int shared)
     return 0;
 fail:
     av_log(s->avctx, AV_LOG_ERROR, "Error allocating a picture.\n");
-    ff_mpeg_unref_picture(s, pic);
+    ff_mpeg_unref_picture(s->avctx, pic);
     ff_free_picture_tables(pic);
     return AVERROR(ENOMEM);
 }
@@ -706,17 +706,17 @@ fail:
 /**
  * Deallocate a picture.
  */
-void ff_mpeg_unref_picture(MpegEncContext *s, Picture *pic)
+void ff_mpeg_unref_picture(AVCodecContext *avctx, Picture *pic)
 {
     int off = offsetof(Picture, mb_mean) + sizeof(pic->mb_mean);
 
     pic->tf.f = pic->f;
     /* WM Image / Screen codecs allocate internal buffers with different
      * dimensions / colorspaces; ignore user-defined callbacks for these. */
-    if (s->codec_id != AV_CODEC_ID_WMV3IMAGE &&
-        s->codec_id != AV_CODEC_ID_VC1IMAGE  &&
-        s->codec_id != AV_CODEC_ID_MSS2)
-        ff_thread_release_buffer(s->avctx, &pic->tf);
+    if (avctx->codec->id != AV_CODEC_ID_WMV3IMAGE &&
+        avctx->codec->id != AV_CODEC_ID_VC1IMAGE  &&
+        avctx->codec->id != AV_CODEC_ID_MSS2)
+        ff_thread_release_buffer(avctx, &pic->tf);
     else if (pic->f)
         av_frame_unref(pic->f);
 
@@ -807,7 +807,7 @@ int ff_mpeg_ref_picture(MpegEncContext *s, Picture *dst, Picture *src)
 
     return 0;
 fail:
-    ff_mpeg_unref_picture(s, dst);
+    ff_mpeg_unref_picture(s->avctx, dst);
     return ret;
 }
 
@@ -994,7 +994,7 @@ int ff_mpeg_update_thread_context(AVCodecContext *dst,
     av_assert0(!s->picture || s->picture != s1->picture);
     if(s->picture)
     for (i = 0; i < MAX_PICTURE_COUNT; i++) {
-        ff_mpeg_unref_picture(s, &s->picture[i]);
+        ff_mpeg_unref_picture(s->avctx, &s->picture[i]);
         if (s1->picture[i].f->buf[0] &&
             (ret = ff_mpeg_ref_picture(s, &s->picture[i], &s1->picture[i])) < 0)
             return ret;
@@ -1002,7 +1002,7 @@ int ff_mpeg_update_thread_context(AVCodecContext *dst,
 
 #define UPDATE_PICTURE(pic)\
 do {\
-    ff_mpeg_unref_picture(s, &s->pic);\
+    ff_mpeg_unref_picture(s->avctx, &s->pic);\
     if (s1->pic.f && s1->pic.f->buf[0])\
         ret = ff_mpeg_ref_picture(s, &s->pic, &s1->pic);\
     else\
@@ -1549,22 +1549,22 @@ void ff_mpv_common_end(MpegEncContext *s)
     if (s->picture) {
         for (i = 0; i < MAX_PICTURE_COUNT; i++) {
             ff_free_picture_tables(&s->picture[i]);
-            ff_mpeg_unref_picture(s, &s->picture[i]);
+            ff_mpeg_unref_picture(s->avctx, &s->picture[i]);
             av_frame_free(&s->picture[i].f);
         }
     }
     av_freep(&s->picture);
     ff_free_picture_tables(&s->last_picture);
-    ff_mpeg_unref_picture(s, &s->last_picture);
+    ff_mpeg_unref_picture(s->avctx, &s->last_picture);
     av_frame_free(&s->last_picture.f);
     ff_free_picture_tables(&s->current_picture);
-    ff_mpeg_unref_picture(s, &s->current_picture);
+    ff_mpeg_unref_picture(s->avctx, &s->current_picture);
     av_frame_free(&s->current_picture.f);
     ff_free_picture_tables(&s->next_picture);
-    ff_mpeg_unref_picture(s, &s->next_picture);
+    ff_mpeg_unref_picture(s->avctx, &s->next_picture);
     av_frame_free(&s->next_picture.f);
     ff_free_picture_tables(&s->new_picture);
-    ff_mpeg_unref_picture(s, &s->new_picture);
+    ff_mpeg_unref_picture(s->avctx, &s->new_picture);
     av_frame_free(&s->new_picture.f);
 
     free_context_frame(s);
@@ -1679,7 +1679,7 @@ static void release_unused_pictures(MpegEncContext *s)
     /* release non reference frames */
     for (i = 0; i < MAX_PICTURE_COUNT; i++) {
         if (!s->picture[i].reference)
-            ff_mpeg_unref_picture(s, &s->picture[i]);
+            ff_mpeg_unref_picture(s->avctx, &s->picture[i]);
     }
 }
 
@@ -1735,7 +1735,7 @@ int ff_find_unused_picture(MpegEncContext *s, int shared)
         if (s->picture[ret].needs_realloc) {
             s->picture[ret].needs_realloc = 0;
             ff_free_picture_tables(&s->picture[ret]);
-            ff_mpeg_unref_picture(s, &s->picture[ret]);
+            ff_mpeg_unref_picture(s->avctx, &s->picture[ret]);
         }
     }
     return ret;
@@ -1776,7 +1776,7 @@ int ff_mpv_frame_start(MpegEncContext *s, AVCodecContext *avctx)
     if (s->pict_type != AV_PICTURE_TYPE_B && s->last_picture_ptr &&
         s->last_picture_ptr != s->next_picture_ptr &&
         s->last_picture_ptr->f->buf[0]) {
-        ff_mpeg_unref_picture(s, s->last_picture_ptr);
+        ff_mpeg_unref_picture(s->avctx, s->last_picture_ptr);
     }
 
     /* release forgotten pictures */
@@ -1788,11 +1788,11 @@ int ff_mpv_frame_start(MpegEncContext *s, AVCodecContext *avctx)
             if (!(avctx->active_thread_type & FF_THREAD_FRAME))
                 av_log(avctx, AV_LOG_ERROR,
                        "releasing zombie picture\n");
-            ff_mpeg_unref_picture(s, &s->picture[i]);
+            ff_mpeg_unref_picture(s->avctx, &s->picture[i]);
         }
     }
 
-    ff_mpeg_unref_picture(s, &s->current_picture);
+    ff_mpeg_unref_picture(s->avctx, &s->current_picture);
 
     release_unused_pictures(s);
 
@@ -1936,14 +1936,14 @@ int ff_mpv_frame_start(MpegEncContext *s, AVCodecContext *avctx)
     memset(s->next_picture.f->data, 0, sizeof(s->next_picture.f->data));
 #endif
     if (s->last_picture_ptr) {
-        ff_mpeg_unref_picture(s, &s->last_picture);
+        ff_mpeg_unref_picture(s->avctx, &s->last_picture);
         if (s->last_picture_ptr->f->buf[0] &&
             (ret = ff_mpeg_ref_picture(s, &s->last_picture,
                                        s->last_picture_ptr)) < 0)
             return ret;
     }
     if (s->next_picture_ptr) {
-        ff_mpeg_unref_picture(s, &s->next_picture);
+        ff_mpeg_unref_picture(s->avctx, &s->next_picture);
         if (s->next_picture_ptr->f->buf[0] &&
             (ret = ff_mpeg_ref_picture(s, &s->next_picture,
                                        s->next_picture_ptr)) < 0)
@@ -3367,12 +3367,12 @@ void ff_mpeg_flush(AVCodecContext *avctx){
         return;
 
     for (i = 0; i < MAX_PICTURE_COUNT; i++)
-        ff_mpeg_unref_picture(s, &s->picture[i]);
+        ff_mpeg_unref_picture(s->avctx, &s->picture[i]);
     s->current_picture_ptr = s->last_picture_ptr = s->next_picture_ptr = NULL;
 
-    ff_mpeg_unref_picture(s, &s->current_picture);
-    ff_mpeg_unref_picture(s, &s->last_picture);
-    ff_mpeg_unref_picture(s, &s->next_picture);
+    ff_mpeg_unref_picture(s->avctx, &s->current_picture);
+    ff_mpeg_unref_picture(s->avctx, &s->last_picture);
+    ff_mpeg_unref_picture(s->avctx, &s->next_picture);
 
     s->mb_x= s->mb_y= 0;
     s->closed_gop= 0;
