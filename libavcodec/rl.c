@@ -22,7 +22,7 @@
 
 #include "rl.h"
 
-av_cold void ff_init_rl(RLTable *rl,
+av_cold void ff_rl_init(RLTable *rl,
                         uint8_t static_store[2][2 * MAX_RUN + MAX_LEVEL + 3])
 {
     int8_t  max_level[MAX_RUN + 1], max_run[MAX_LEVEL + 1];
@@ -74,7 +74,7 @@ av_cold void ff_init_rl(RLTable *rl,
     }
 }
 
-av_cold void ff_init_vlc_rl(RLTable *rl)
+av_cold void ff_rl_init_vlc(RLTable *rl)
 {
     int i, q;
 
