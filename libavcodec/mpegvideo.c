@@ -773,7 +773,7 @@ do {\
     return 0;
 }
 
-int ff_mpeg_ref_picture(MpegEncContext *s, Picture *dst, Picture *src)
+int ff_mpeg_ref_picture(AVCodecContext *avctx, Picture *dst, Picture *src)
 {
     int ret;
 
@@ -807,7 +807,7 @@ int ff_mpeg_ref_picture(MpegEncContext *s, Picture *dst, Picture *src)
 
     return 0;
 fail:
-    ff_mpeg_unref_picture(s->avctx, dst);
+    ff_mpeg_unref_picture(avctx, dst);
     return ret;
 }
 
@@ -996,7 +996,7 @@ int ff_mpeg_update_thread_context(AVCodecContext *dst,
     for (i = 0; i < MAX_PICTURE_COUNT; i++) {
         ff_mpeg_unref_picture(s->avctx, &s->picture[i]);
         if (s1->picture[i].f->buf[0] &&
-            (ret = ff_mpeg_ref_picture(s, &s->picture[i], &s1->picture[i])) < 0)
+            (ret = ff_mpeg_ref_picture(s->avctx, &s->picture[i], &s1->picture[i])) < 0)
             return ret;
     }
 
@@ -1004,7 +1004,7 @@ int ff_mpeg_update_thread_context(AVCodecContext *dst,
 do {\
     ff_mpeg_unref_picture(s->avctx, &s->pic);\
     if (s1->pic.f && s1->pic.f->buf[0])\
-        ret = ff_mpeg_ref_picture(s, &s->pic, &s1->pic);\
+        ret = ff_mpeg_ref_picture(s->avctx, &s->pic, &s1->pic);\
     else\
         ret = update_picture_tables(&s->pic, &s1->pic);\
     if (ret < 0)\
@@ -1838,7 +1838,7 @@ int ff_mpv_frame_start(MpegEncContext *s, AVCodecContext *avctx)
     //     s->current_picture_ptr->quality = s->new_picture_ptr->quality;
     s->current_picture_ptr->f->key_frame = s->pict_type == AV_PICTURE_TYPE_I;
 
-    if ((ret = ff_mpeg_ref_picture(s, &s->current_picture,
+    if ((ret = ff_mpeg_ref_picture(s->avctx, &s->current_picture,
                                    s->current_picture_ptr)) < 0)
         return ret;
 
@@ -1938,14 +1938,14 @@ int ff_mpv_frame_start(MpegEncContext *s, AVCodecContext *avctx)
     if (s->last_picture_ptr) {
         ff_mpeg_unref_picture(s->avctx, &s->last_picture);
         if (s->last_picture_ptr->f->buf[0] &&
-            (ret = ff_mpeg_ref_picture(s, &s->last_picture,
+            (ret = ff_mpeg_ref_picture(s->avctx, &s->last_picture,
                                        s->last_picture_ptr)) < 0)
             return ret;
     }
     if (s->next_picture_ptr) {
         ff_mpeg_unref_picture(s->avctx, &s->next_picture);
         if (s->next_picture_ptr->f->buf[0] &&
-            (ret = ff_mpeg_ref_picture(s, &s->next_picture,
+            (ret = ff_mpeg_ref_picture(s->avctx, &s->next_picture,
                                        s->next_picture_ptr)) < 0)
             return ret;
     }

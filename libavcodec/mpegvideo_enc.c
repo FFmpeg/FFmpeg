@@ -1520,7 +1520,7 @@ no_output_pic:
                AV_PICTURE_TYPE_B ? 3 : 0;
 
         ff_mpeg_unref_picture(s->avctx, &s->new_picture);
-        if ((ret = ff_mpeg_ref_picture(s, &s->new_picture, s->reordered_input_picture[0])))
+        if ((ret = ff_mpeg_ref_picture(s->avctx, &s->new_picture, s->reordered_input_picture[0])))
             return ret;
 
         if (s->reordered_input_picture[0]->shared || s->avctx->rc_buffer_size) {
@@ -1555,7 +1555,7 @@ no_output_pic:
             }
         }
         ff_mpeg_unref_picture(s->avctx, &s->current_picture);
-        if ((ret = ff_mpeg_ref_picture(s, &s->current_picture,
+        if ((ret = ff_mpeg_ref_picture(s->avctx, &s->current_picture,
                                        s->current_picture_ptr)) < 0)
             return ret;
 
@@ -1642,7 +1642,7 @@ static int frame_start(MpegEncContext *s)
     s->current_picture_ptr->f->key_frame = s->pict_type == AV_PICTURE_TYPE_I;
 
     ff_mpeg_unref_picture(s->avctx, &s->current_picture);
-    if ((ret = ff_mpeg_ref_picture(s, &s->current_picture,
+    if ((ret = ff_mpeg_ref_picture(s->avctx, &s->current_picture,
                                    s->current_picture_ptr)) < 0)
         return ret;
 
@@ -1655,14 +1655,14 @@ static int frame_start(MpegEncContext *s)
     if (s->last_picture_ptr) {
         ff_mpeg_unref_picture(s->avctx, &s->last_picture);
         if (s->last_picture_ptr->f->buf[0] &&
-            (ret = ff_mpeg_ref_picture(s, &s->last_picture,
+            (ret = ff_mpeg_ref_picture(s->avctx, &s->last_picture,
                                        s->last_picture_ptr)) < 0)
             return ret;
     }
     if (s->next_picture_ptr) {
         ff_mpeg_unref_picture(s->avctx, &s->next_picture);
         if (s->next_picture_ptr->f->buf[0] &&
-            (ret = ff_mpeg_ref_picture(s, &s->next_picture,
+            (ret = ff_mpeg_ref_picture(s->avctx, &s->next_picture,
                                        s->next_picture_ptr)) < 0)
             return ret;
     }
