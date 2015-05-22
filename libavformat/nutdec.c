@@ -544,11 +544,15 @@ static int decode_info_header(NUTContext *nut)
 
         if (value == -1) {
             type = "UTF-8";
-            get_str(bc, str_value, sizeof(str_value));
+            ret = get_str(bc, str_value, sizeof(str_value));
         } else if (value == -2) {
-            get_str(bc, type_str, sizeof(type_str));
+            ret = get_str(bc, type_str, sizeof(type_str));
+            if (ret < 0) {
+                av_log(s, AV_LOG_ERROR, "get_str failed while decoding info header\n");
+                return ret;
+            }
             type = type_str;
-            get_str(bc, str_value, sizeof(str_value));
+            ret = get_str(bc, str_value, sizeof(str_value));
         } else if (value == -3) {
             type  = "s";
             value = get_s(bc);
@@ -560,6 +564,11 @@ static int decode_info_header(NUTContext *nut)
             get_s(bc);
         } else {
             type = "v";
+        }
+
+        if (ret < 0) {
+            av_log(s, AV_LOG_ERROR, "get_str failed while decoding info header\n");
+            return ret;
         }
 
         if (stream_id_plus1 > s->nb_streams) {
@@ -875,13 +884,21 @@ static int read_sm_data(AVFormatContext *s, AVIOContext *bc, AVPacket *pkt, int 
         value = get_s(bc);
 
         if (value == -1) {
-            get_str(bc, str_value, sizeof(str_value));
+            ret = get_str(bc, str_value, sizeof(str_value));
+            if (ret < 0) {
+                av_log(s, AV_LOG_ERROR, "get_str failed while reading sm data\n");
+                return ret;
+            }
             av_log(s, AV_LOG_WARNING, "Unknown string %s / %s\n", name, str_value);
         } else if (value == -2) {
             uint8_t *dst = NULL;
             int64_t v64, value_len;
 
-            get_str(bc, type_str, sizeof(type_str));
+            ret = get_str(bc, type_str, sizeof(type_str));
+            if (ret < 0) {
+                av_log(s, AV_LOG_ERROR, "get_str failed while reading sm data\n");
+                return ret;
+            }
             value_len = ffio_read_varlen(bc);
             if (avio_tell(bc) + value_len >= maxpos)
                 return AVERROR_INVALIDDATA;
