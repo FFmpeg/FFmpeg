@@ -163,7 +163,7 @@ static int get_consumed_bytes(MpegEncContext *s, int buf_size)
         /* We would have to scan through the whole buf to handle the weird
          * reordering ... */
         return buf_size;
-    } else if (s->flags & CODEC_FLAG_TRUNCATED) {
+    } else if (s->avctx->flags & CODEC_FLAG_TRUNCATED) {
         pos -= s->parse_context.last_index;
         // padding is not really read so this might be -1
         if (pos < 0)
@@ -414,9 +414,6 @@ int ff_h263_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     int slice_ret = 0;
     AVFrame *pict = data;
 
-    s->flags  = avctx->flags;
-    s->flags2 = avctx->flags2;
-
     /* no supplementary picture */
     if (buf_size == 0) {
         /* special case for last picture */
@@ -431,7 +428,7 @@ int ff_h263_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         return 0;
     }
 
-    if (s->flags & CODEC_FLAG_TRUNCATED) {
+    if (s->avctx->flags & CODEC_FLAG_TRUNCATED) {
         int next;
 
         if (CONFIG_MPEG4_DECODER && s->codec_id == AV_CODEC_ID_MPEG4) {

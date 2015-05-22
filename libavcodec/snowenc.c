@@ -69,7 +69,6 @@ static av_cold int encode_init(AVCodecContext *avctx)
     s->version=0;
 
     s->m.avctx   = avctx;
-    s->m.flags   = avctx->flags;
     s->m.bit_rate= avctx->bit_rate;
 
     s->m.me.temp      =
@@ -1655,7 +1654,6 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         s->m.me_method= s->avctx->me_method;
         s->m.me.scene_change_score=0;
         s->m.me.dia_size = avctx->dia_size;
-        s->m.flags= s->avctx->flags;
         s->m.quarter_sample= (s->avctx->flags & CODEC_FLAG_QPEL)!=0;
         s->m.out_format= FMT_H263;
         s->m.unrestricted_mv= 1;

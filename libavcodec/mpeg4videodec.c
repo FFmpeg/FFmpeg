@@ -2222,7 +2222,7 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb)
 
     s->pict_type = get_bits(gb, 2) + AV_PICTURE_TYPE_I;        /* pict type: I = 0 , P = 1 */
     if (s->pict_type == AV_PICTURE_TYPE_B && s->low_delay &&
-        ctx->vol_control_parameters == 0 && !(s->flags & CODEC_FLAG_LOW_DELAY)) {
+        ctx->vol_control_parameters == 0 && !(s->avctx->flags & CODEC_FLAG_LOW_DELAY)) {
         av_log(s->avctx, AV_LOG_ERROR, "low_delay flag set incorrectly, clearing it\n");
         s->low_delay = 0;
     }
@@ -2601,7 +2601,7 @@ int ff_mpeg4_decode_picture_header(Mpeg4DecContext *ctx, GetBitContext *gb)
     }
 
 end:
-    if (s->flags & CODEC_FLAG_LOW_DELAY)
+    if (s->avctx->flags & CODEC_FLAG_LOW_DELAY)
         s->low_delay = 1;
     s->avctx->has_b_frames = !s->low_delay;
 
