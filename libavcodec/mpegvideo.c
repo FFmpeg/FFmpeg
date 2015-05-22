@@ -1966,8 +1966,6 @@ int ff_mpv_frame_start(MpegEncContext *s, AVCodecContext *avctx)
         }
     }
 
-    s->err_recognition = avctx->err_recognition;
-
     /* set dequantizer, we can't do it during init as
      * it might change for mpeg4 and we can't do it in the header
      * decode as init is not called for mpeg4 there yet */
