@@ -56,6 +56,11 @@ typedef struct RLTable {
 void ff_rl_init(RLTable *rl, uint8_t static_store[2][2*MAX_RUN + MAX_LEVEL + 3]);
 void ff_rl_init_vlc(RLTable *rl);
 
+/**
+ * Free the contents of a dynamically allocated table.
+ */
+void ff_rl_free(RLTable *rl);
+
 #define INIT_VLC_RL(rl, static_size)\
 {\
     int q;\
