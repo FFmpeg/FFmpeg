@@ -24,6 +24,9 @@
  * WebP encoder using libwebp: common structs and methods.
  */
 
+#ifndef AVCODEC_LIBWEBPENC_COMMON_H
+#define AVCODEC_LIBWEBPENC_COMMON_H
+
 #include <webp/encode.h>
 
 #include "libavutil/common.h"
@@ -87,3 +90,5 @@ static const AVCodecDefault libwebp_defaults[] = {
     { "global_quality",     "-1" },
     { NULL },
 };
+
+#endif /* AVCODEC_LIBWEBPENC_COMMON_H */
