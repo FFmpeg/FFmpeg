@@ -27,9 +27,7 @@
 #include "config.h"
 #include "libwebpenc_common.h"
 
-#if HAVE_WEBP_MUX_H
 #include <webp/mux.h>
-#endif
 
 typedef struct LibWebPAnimContext {
     LibWebPContextCommon cc;

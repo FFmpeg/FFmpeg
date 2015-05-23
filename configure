@@ -1695,7 +1695,6 @@ HEADERS_LIST="
     udplite_h
     unistd_h
     valgrind_valgrind_h
-    webp_mux_h
     windows_h
     winsock2_h
 "
@@ -1898,7 +1897,6 @@ CONFIG_EXTRA="
     intrax8
     jpegtables
     lgplv3
-    libwebp_anim
     llauddsp
     llviddsp
     lpc
