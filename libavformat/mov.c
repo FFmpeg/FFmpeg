@@ -2175,10 +2175,11 @@ static int mov_read_stsz(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     sc->sample_count = i;
 
+    av_free(buf);
+
     if (pb->eof_reached)
         return AVERROR_EOF;
 
-    av_free(buf);
     return 0;
 }
 
@@ -2286,6 +2287,7 @@ static int mov_read_ctts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return 0;
     if (entries >= UINT_MAX / sizeof(*sc->ctts_data))
         return AVERROR_INVALIDDATA;
+    av_freep(&sc->ctts_data);
     sc->ctts_data = av_malloc(entries * sizeof(*sc->ctts_data));
     if (!sc->ctts_data)
         return AVERROR(ENOMEM);
