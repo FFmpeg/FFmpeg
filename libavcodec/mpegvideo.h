@@ -243,15 +243,12 @@ typedef struct MpegEncContext {
     enum AVCodecID codec_id;     /* see AV_CODEC_ID_xxx */
     int fixed_qscale; ///< fixed qscale if non zero
     int encoding;     ///< true if we are encoding (vs decoding)
-    int flags;        ///< AVCodecContext.flags (HQ, MV4, ...)
-    int flags2;       ///< AVCodecContext.flags2
     int max_b_frames; ///< max number of b-frames for encoding
     int luma_elim_threshold;
     int chroma_elim_threshold;
     int strict_std_compliance; ///< strictly follow the std (MPEG4, ...)
     int workaround_bugs;       ///< workaround bugs in encoders which cannot be detected automatically
     int codec_tag;             ///< internal codec_tag upper case converted from avctx codec_tag
-    int stream_codec_tag;      ///< internal stream_codec_tag upper case converted from avctx stream_codec_tag
     /* the following fields are managed internally by the encoder */
 
     /* sequence parameters */
@@ -491,7 +488,6 @@ typedef struct MpegEncContext {
     GetBitContext last_resync_gb;    ///< used to search for the next resync marker
     int mb_num_left;                 ///< number of MBs left in this video packet (for partitioned Slices only)
     int next_p_frame_damaged;        ///< set if the next p frame is damaged, to avoid showing trashed b frames
-    int err_recognition;
 
     ParseContext parse_context;
 
@@ -784,7 +780,8 @@ void ff_print_debug_info2(AVCodecContext *avctx, AVFrame *pict, uint8_t *mbskip_
 int ff_mpv_export_qp_table(MpegEncContext *s, AVFrame *f, Picture *p, int qp_type);
 
 void ff_write_quant_matrix(PutBitContext *pb, uint16_t *matrix);
-int ff_find_unused_picture(MpegEncContext *s, int shared);
+
+int ff_find_unused_picture(AVCodecContext *avctx, Picture *picture, int shared);
 int ff_update_duplicate_context(MpegEncContext *dst, MpegEncContext *src);
 int ff_mpeg_update_thread_context(AVCodecContext *dst, const AVCodecContext *src);
 void ff_set_qscale(MpegEncContext * s, int qscale);
@@ -906,8 +903,8 @@ void ff_wmv2_encode_mb(MpegEncContext * s,
                        int16_t block[6][64],
                        int motion_x, int motion_y);
 
-int ff_mpeg_ref_picture(MpegEncContext *s, Picture *dst, Picture *src);
-void ff_mpeg_unref_picture(MpegEncContext *s, Picture *picture);
+int ff_mpeg_ref_picture(AVCodecContext *avctx, Picture *dst, Picture *src);
+void ff_mpeg_unref_picture(AVCodecContext *avctx, Picture *picture);
 void ff_free_picture_tables(Picture *pic);
 
 

@@ -163,7 +163,7 @@ static int get_consumed_bytes(MpegEncContext *s, int buf_size)
         /* We would have to scan through the whole buf to handle the weird
          * reordering ... */
         return buf_size;
-    } else if (s->flags & CODEC_FLAG_TRUNCATED) {
+    } else if (s->avctx->flags & CODEC_FLAG_TRUNCATED) {
         pos -= s->parse_context.last_index;
         // padding is not really read so this might be -1
         if (pos < 0)
@@ -287,7 +287,7 @@ static int decode_slice(MpegEncContext *s)
                 ff_er_add_slice(&s->er, s->resync_mb_x, s->resync_mb_y,
                                 s->mb_x, s->mb_y, ER_MB_ERROR & part_mask);
 
-                if (s->err_recognition & AV_EF_IGNORE_ERR)
+                if (s->avctx->err_recognition & AV_EF_IGNORE_ERR)
                     continue;
                 return AVERROR_INVALIDDATA;
             }
@@ -376,7 +376,7 @@ static int decode_slice(MpegEncContext *s)
         /* buggy padding but the frame should still end approximately at
          * the bitstream end */
         if ((s->workaround_bugs & FF_BUG_NO_PADDING) &&
-            (s->err_recognition & (AV_EF_BUFFER|AV_EF_AGGRESSIVE)))
+            (s->avctx->err_recognition & (AV_EF_BUFFER|AV_EF_AGGRESSIVE)))
             max_extra += 48;
         else if ((s->workaround_bugs & FF_BUG_NO_PADDING))
             max_extra += 256 * 256 * 256 * 64;
@@ -414,9 +414,6 @@ int ff_h263_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     int slice_ret = 0;
     AVFrame *pict = data;
 
-    s->flags  = avctx->flags;
-    s->flags2 = avctx->flags2;
-
     /* no supplementary picture */
     if (buf_size == 0) {
         /* special case for last picture */
@@ -431,7 +428,7 @@ int ff_h263_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         return 0;
     }
 
-    if (s->flags & CODEC_FLAG_TRUNCATED) {
+    if (s->avctx->flags & CODEC_FLAG_TRUNCATED) {
         int next;
 
         if (CONFIG_MPEG4_DECODER && s->codec_id == AV_CODEC_ID_MPEG4) {
@@ -524,7 +521,7 @@ retry:
     }
 
     if (!s->current_picture_ptr || s->current_picture_ptr->f->data[0]) {
-        int i = ff_find_unused_picture(s, 0);
+        int i = ff_find_unused_picture(s->avctx, s->picture, 0);
         if (i < 0)
             return i;
         s->current_picture_ptr = &s->picture[i];

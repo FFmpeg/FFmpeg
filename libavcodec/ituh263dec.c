@@ -460,7 +460,7 @@ static int h263_decode_block(MpegEncContext * s, int16_t * block,
             level = get_bits(&s->gb, 8);
             if((level&0x7F) == 0){
                 av_log(s->avctx, AV_LOG_ERROR, "illegal dc %d at %d %d\n", level, s->mb_x, s->mb_y);
-                if(s->err_recognition & (AV_EF_BITSTREAM|AV_EF_COMPLIANT))
+                if (s->avctx->err_recognition & (AV_EF_BITSTREAM|AV_EF_COMPLIANT))
                     return -1;
             }
             if (level == 255)
