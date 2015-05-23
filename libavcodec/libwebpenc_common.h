@@ -57,8 +57,6 @@ int ff_libwebp_get_frame(AVCodecContext *avctx, LibWebPContextCommon *s,
                          const AVFrame *frame, AVFrame **alt_frame_ptr,
                          WebPPicture **pic_ptr);
 
-int ff_libwebp_encode_close_common(AVCodecContext *avctx);
-
 #define OFFSET(x) offsetof(LibWebPContextCommon, x)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
