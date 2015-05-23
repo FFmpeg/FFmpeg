@@ -83,6 +83,13 @@ static int libwebp_encode_close(AVCodecContext *avctx)
     return ff_libwebp_encode_close_common(avctx);
 }
 
+static const AVClass class = {
+    .class_name = "libwebp",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVCodec ff_libwebp_encoder = {
     .name           = "libwebp",
     .long_name      = NULL_IF_CONFIG_SMALL("libwebp WebP image"),

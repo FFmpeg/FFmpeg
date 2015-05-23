@@ -77,14 +77,6 @@ static const AVOption options[] = {
     { NULL },
 };
 
-
-static const AVClass class = {
-    .class_name = "libwebp",
-    .item_name  = av_default_item_name,
-    .option     = options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
-
 static const AVCodecDefault libwebp_defaults[] = {
     { "compression_level",  "4"  },
     { "global_quality",     "-1" },

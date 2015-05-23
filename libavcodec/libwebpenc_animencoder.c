@@ -124,6 +124,13 @@ static int libwebp_anim_encode_close(AVCodecContext *avctx)
     return ret;
 }
 
+static const AVClass class = {
+    .class_name = "libwebp_anim",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVCodec ff_libwebp_anim_encoder = {
     .name           = "libwebp_anim",
     .long_name      = NULL_IF_CONFIG_SMALL("libwebp WebP image"),
