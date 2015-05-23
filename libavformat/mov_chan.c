@@ -566,6 +566,11 @@ int ff_mov_read_chan(AVFormatContext *s, AVIOContext *pb, AVStream *st,
     label_mask = 0;
     for (i = 0; i < num_descr; i++) {
         uint32_t label;
+        if (pb->eof_reached) {
+            av_log(s, AV_LOG_ERROR,
+                   "reached EOF while reading channel layout\n");
+            return AVERROR_INVALIDDATA;
+        }
         label     = avio_rb32(pb);          // mChannelLabel
         avio_rb32(pb);                      // mChannelFlags
         avio_rl32(pb);                      // mCoordinates[0]
