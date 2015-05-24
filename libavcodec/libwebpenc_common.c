@@ -252,10 +252,3 @@ int ff_libwebp_get_frame(AVCodecContext *avctx, LibWebPContextCommon *s,
 end:
     return ret;
 }
-
-int ff_libwebp_encode_close_common(AVCodecContext *avctx)
-{
-    LibWebPContextCommon *s  = avctx->priv_data;
-    av_frame_free(&s->ref);
-    return 0;
-}

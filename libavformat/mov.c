@@ -445,7 +445,8 @@ static int mov_read_chpl(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         if ((atom.size -= 9+str_len) < 0)
             return 0;
 
-        avio_read(pb, str, str_len);
+        if (avio_read(pb, str, str_len) != str_len)
+            return AVERROR_INVALIDDATA;
         str[str_len] = 0;
         avpriv_new_chapter(c->fc, i, (AVRational){1,10000000}, start, AV_NOPTS_VALUE, str);
     }
@@ -497,7 +498,8 @@ static int mov_read_dref(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
             volume_len = avio_r8(pb);
             volume_len = FFMIN(volume_len, 27);
-            avio_read(pb, dref->volume, 27);
+            if (avio_read(pb, dref->volume, 27) != 27)
+                return AVERROR_INVALIDDATA;
             dref->volume[volume_len] = 0;
             av_log(c->fc, AV_LOG_DEBUG, "volume %s, len %d\n", dref->volume, volume_len);
 
@@ -505,7 +507,8 @@ static int mov_read_dref(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
             len = avio_r8(pb);
             len = FFMIN(len, 63);
-            avio_read(pb, dref->filename, 63);
+            if (avio_read(pb, dref->filename, 63) != 63)
+                return AVERROR_INVALIDDATA;
             dref->filename[len] = 0;
             av_log(c->fc, AV_LOG_DEBUG, "filename %s, len %d\n", dref->filename, len);
 
@@ -532,7 +535,10 @@ static int mov_read_dref(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                     dref->path = av_mallocz(len+1);
                     if (!dref->path)
                         return AVERROR(ENOMEM);
-                    avio_read(pb, dref->path, len);
+                    if (avio_read(pb, dref->path, len) != len) {
+                        av_freep(&dref->path);
+                        return AVERROR_INVALIDDATA;
+                    }
                     if (type == 18) // no additional processing needed
                         continue;
                     if (len > volume_len && !strncmp(dref->path, dref->volume, volume_len)) {
@@ -549,8 +555,10 @@ static int mov_read_dref(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                     dref->dir = av_malloc(len+1);
                     if (!dref->dir)
                         return AVERROR(ENOMEM);
-                    if (avio_read(pb, dref->dir, len) != len)
+                    if (avio_read(pb, dref->dir, len) != len) {
+                        av_freep(&dref->dir);
                         return AVERROR_INVALIDDATA;
+                    }
                     dref->dir[len] = 0;
                     for (j = 0; j < len; j++)
                         if (dref->dir[j] == ':')
@@ -606,7 +614,10 @@ static int mov_read_hdlr(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         title_str = av_malloc(title_size + 1); /* Add null terminator */
         if (!title_str)
             return AVERROR(ENOMEM);
-        avio_read(pb, title_str, title_size);
+        if (avio_read(pb, title_str, title_size) != title_size) {
+            av_freep(&title_str);
+            return AVERROR_INVALIDDATA;
+        }
         title_str[title_size] = 0;
         if (title_str[0]) {
             int off = (!c->isom && title_str[0] == title_size - 1);
@@ -787,7 +798,8 @@ static int mov_read_ftyp(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     char* comp_brands_str;
     uint8_t type[5] = {0};
 
-    avio_read(pb, type, 4);
+    if (avio_read(pb, type, 4) != 4)
+        return AVERROR_INVALIDDATA;
     if (strcmp(type, "qt  "))
         c->isom = 1;
     av_log(c->fc, AV_LOG_DEBUG, "ISO: File Type Major Brand: %.4s\n",(char *)&type);
@@ -801,7 +813,10 @@ static int mov_read_ftyp(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     comp_brands_str = av_malloc(comp_brand_size + 1); /* Add null terminator */
     if (!comp_brands_str)
         return AVERROR(ENOMEM);
-    avio_read(pb, comp_brands_str, comp_brand_size);
+    if (avio_read(pb, comp_brands_str, comp_brand_size) != comp_brand_size) {
+        av_freep(&comp_brands_str);
+        return AVERROR_INVALIDDATA;
+    }
     comp_brands_str[comp_brand_size] = 0;
     av_dict_set(&c->fc->metadata, "compatible_brands", comp_brands_str, 0);
     av_freep(&comp_brands_str);
@@ -994,7 +1009,8 @@ static int mov_read_colr(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return 0;
     st = c->fc->streams[c->fc->nb_streams - 1];
 
-    avio_read(pb, color_parameter_type, 4);
+    if (avio_read(pb, color_parameter_type, 4) != 4)
+        return AVERROR_INVALIDDATA;
     if (strncmp(color_parameter_type, "nclx", 4) &&
         strncmp(color_parameter_type, "nclc", 4)) {
         av_log(c->fc, AV_LOG_WARNING, "unsupported color_parameter_type %s\n",
@@ -2175,10 +2191,11 @@ static int mov_read_stsz(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     sc->sample_count = i;
 
+    av_free(buf);
+
     if (pb->eof_reached)
         return AVERROR_EOF;
 
-    av_free(buf);
     return 0;
 }
 
@@ -2286,6 +2303,7 @@ static int mov_read_ctts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return 0;
     if (entries >= UINT_MAX / sizeof(*sc->ctts_data))
         return AVERROR_INVALIDDATA;
+    av_freep(&sc->ctts_data);
     sc->ctts_data = av_malloc(entries * sizeof(*sc->ctts_data));
     if (!sc->ctts_data)
         return AVERROR(ENOMEM);
@@ -2829,7 +2847,10 @@ static int mov_read_custom_2plus(MOVContext *c, AVIOContext *pb, int size)
         *p = av_malloc(len + 1);
         if (!*p)
             break;
-        avio_read(pb, *p, len);
+        if (avio_read(pb, *p, len) != len) {
+            av_freep(p);
+            return AVERROR_INVALIDDATA;
+        }
         (*p)[len] = 0;
     }
 
@@ -3314,7 +3335,11 @@ static int mov_read_cmov(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         av_free(cmov_data);
         return AVERROR(ENOMEM);
     }
-    avio_read(pb, cmov_data, cmov_len);
+    if (avio_read(pb, cmov_data, cmov_len) != cmov_len) {
+        av_freep(&cmov_data);
+        av_freep(&moov_data);
+        return AVERROR_INVALIDDATA;
+    }
     if (uncompress (moov_data, (uLongf *) &moov_len, (const Bytef *)cmov_data, cmov_len) != Z_OK)
         goto free_and_return;
     if (ffio_init_context(&ctx, moov_data, moov_len, 0, NULL, NULL, NULL, NULL) != 0)
@@ -3575,7 +3600,8 @@ static int mov_read_default(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                 c->moov_retry) {
                 uint8_t buf[8];
                 uint32_t *type = (uint32_t *)buf + 1;
-                avio_read(pb, buf, 8);
+                if (avio_read(pb, buf, 8) != 8)
+                    return AVERROR_INVALIDDATA;
                 avio_seek(pb, -8, SEEK_CUR);
                 if (*type == MKTAG('m','v','h','d') ||
                     *type == MKTAG('c','m','o','v')) {

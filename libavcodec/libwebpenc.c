@@ -80,7 +80,10 @@ end:
 
 static int libwebp_encode_close(AVCodecContext *avctx)
 {
-    return ff_libwebp_encode_close_common(avctx);
+    LibWebPContextCommon *s  = avctx->priv_data;
+    av_frame_free(&s->ref);
+
+    return 0;
 }
 
 static const AVClass class = {

@@ -409,7 +409,7 @@ static int avi_write_header(AVFormatContext *s)
             avio_wl32(pb, 0); // video format   = unknown
             avio_wl32(pb, 0); // video standard = unknown
             // TODO: should be avg_frame_rate
-            avio_wl32(pb, lrintf(1.0 / av_q2d(st->time_base)));
+            avio_wl32(pb, (2LL*st->time_base.den + st->time_base.num - 1) / (2LL * st->time_base.num));
             avio_wl32(pb, enc->width);
             avio_wl32(pb, enc->height);
             avio_wl16(pb, den);

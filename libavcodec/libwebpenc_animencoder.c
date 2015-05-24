@@ -116,12 +116,11 @@ end:
 
 static int libwebp_anim_encode_close(AVCodecContext *avctx)
 {
-    int ret = ff_libwebp_encode_close_common(avctx);
-    if (!ret) {
-        LibWebPAnimContext *s = avctx->priv_data;
-        WebPAnimEncoderDelete(s->enc);
-    }
-    return ret;
+    LibWebPAnimContext *s = avctx->priv_data;
+    av_frame_free(&s->cc.ref);
+    WebPAnimEncoderDelete(s->enc);
+
+    return 0;
 }
 
 static const AVClass class = {
