@@ -4877,9 +4877,9 @@ static uint32_t rgb_to_yuv(uint32_t rgb)
     g = (rgb >>  8) & 0xFF;
     b = (rgb      ) & 0xFF;
 
-    y  = av_clip_uint8( 16. +  0.257 * r + 0.504 * g + 0.098 * b);
-    cb = av_clip_uint8(128. -  0.148 * r - 0.291 * g + 0.439 * b);
-    cr = av_clip_uint8(128. +  0.439 * r - 0.368 * g - 0.071 * b);
+    y  = av_clip_uint8(( 16000 +  257 * r + 504 * g +  98 * b)/1000);
+    cb = av_clip_uint8((128000 -  148 * r - 291 * g + 439 * b)/1000);
+    cr = av_clip_uint8((128000 +  439 * r - 368 * g -  71 * b)/1000);
 
     return (y << 16) | (cr << 8) | cb;
 }
