@@ -236,7 +236,7 @@ static int swf_write_header(AVFormatContext *s)
     }
 
     if (!swf->audio_enc)
-        swf->samples_per_frame = (44100.0 * rate_base) / rate;
+        swf->samples_per_frame = (44100LL * rate_base) / rate;
     else
         swf->samples_per_frame = (swf->audio_enc->sample_rate * rate_base) / rate;
 
