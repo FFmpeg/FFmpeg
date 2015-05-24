@@ -406,7 +406,7 @@ static void h263_encode_block(MpegEncContext * s, int16_t * block, int n)
 }
 
 /* Encode MV differences on H.263+ with Unrestricted MV mode */
-static void h263p_encode_umotion(MpegEncContext * s, int val)
+static void h263p_encode_umotion(PutBitContext *pb, int val)
 {
     short sval = 0;
     short i = 0;
@@ -416,11 +416,11 @@ static void h263p_encode_umotion(MpegEncContext * s, int val)
     int tcode;
 
     if ( val == 0)
-        put_bits(&s->pb, 1, 1);
+        put_bits(pb, 1, 1);
     else if (val == 1)
-        put_bits(&s->pb, 3, 0);
+        put_bits(pb, 3, 0);
     else if (val == -1)
-        put_bits(&s->pb, 3, 2);
+        put_bits(pb, 3, 2);
     else {
 
         sval = ((val < 0) ? (short)(-val):(short)val);
@@ -439,7 +439,7 @@ static void h263p_encode_umotion(MpegEncContext * s, int val)
             i--;
         }
         code = ((code << 1) | (val < 0)) << 1;
-        put_bits(&s->pb, (2*n_bits)+1, code);
+        put_bits(pb, (2*n_bits)+1, code);
     }
 }
 
@@ -496,8 +496,8 @@ void ff_h263_encode_mb(MpegEncContext * s,
                                                 motion_y - pred_y, 1);
             }
             else {
-                h263p_encode_umotion(s, motion_x - pred_x);
-                h263p_encode_umotion(s, motion_y - pred_y);
+                h263p_encode_umotion(&s->pb, motion_x - pred_x);
+                h263p_encode_umotion(&s->pb, motion_y - pred_y);
                 if (((motion_x - pred_x) == 1) && ((motion_y - pred_y) == 1))
                     /* To prevent Start Code emulation */
                     put_bits(&s->pb,1,1);
@@ -525,8 +525,8 @@ void ff_h263_encode_mb(MpegEncContext * s,
                                                     motion_y - pred_y, 1);
                 }
                 else {
-                    h263p_encode_umotion(s, motion_x - pred_x);
-                    h263p_encode_umotion(s, motion_y - pred_y);
+                    h263p_encode_umotion(&s->pb, motion_x - pred_x);
+                    h263p_encode_umotion(&s->pb, motion_y - pred_y);
                     if (((motion_x - pred_x) == 1) && ((motion_y - pred_y) == 1))
                         /* To prevent Start Code emulation */
                         put_bits(&s->pb,1,1);
