@@ -160,6 +160,13 @@ int av_nearer_q(AVRational q, AVRational q1, AVRational q2);
 int av_find_nearest_q_idx(AVRational q, const AVRational* q_list);
 
 /**
+ * Converts a AVRational to a IEEE 32bit float.
+ *
+ * The float is returned in a uint32_t and its value is platform indepenant.
+ */
+uint32_t av_q2intfloat(AVRational q);
+
+/**
  * @}
  */
 
