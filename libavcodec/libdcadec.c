@@ -58,7 +58,10 @@ static int dcadec_decode_frame(AVCodecContext *avctx, void *data,
         if (!s->buffer)
             return AVERROR(ENOMEM);
 
-        if ((ret = avpriv_dca_convert_bitstream(avpkt->data, avpkt->size, s->buffer, s->buffer_size)) < 0)
+        for (i = 0, ret = AVERROR_INVALIDDATA; i < input_size - 3 && ret < 0; i++)
+            ret = avpriv_dca_convert_bitstream(input + i, input_size - i, s->buffer, s->buffer_size);
+
+        if (ret < 0)
             return ret;
 
         input      = s->buffer;
