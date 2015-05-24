@@ -80,6 +80,7 @@ typedef struct MXFStreamContext {
     int field_dominance;     ///< tff=1, bff=2
     int component_depth;
     int color_siting;
+    int signal_standard;
     int h_chroma_sub_sample;
     int temporal_reordering;
     AVRational aspect_ratio; ///< display aspect ratio
@@ -414,6 +415,7 @@ static const MXFLocalTagPair mxf_local_tag_batch[] = {
     { 0x320E, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x01,0x04,0x01,0x01,0x01,0x01,0x00,0x00,0x00}}, /* Aspect Ratio */
     { 0x3201, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x04,0x01,0x06,0x01,0x00,0x00,0x00,0x00}}, /* Picture Essence Coding */
     { 0x3212, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x04,0x01,0x03,0x01,0x06,0x00,0x00,0x00}}, /* Field Dominance (Opt) */
+    { 0x3215, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x05,0x04,0x05,0x01,0x13,0x00,0x00,0x00,0x00}}, /* Signal Standard */
     // CDCI Picture Essence Descriptor
     { 0x3301, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x04,0x01,0x05,0x03,0x0A,0x00,0x00,0x00}}, /* Component Depth */
     { 0x3302, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x01,0x04,0x01,0x05,0x01,0x05,0x00,0x00,0x00}}, /* Horizontal Subsampling */
@@ -998,6 +1000,8 @@ static void mxf_write_cdci_common(AVFormatContext *s, AVStream *st, const UID ke
     unsigned desc_size = size+8+8+8+8+8+8+8+5+16+sc->interlaced*4+12+20+5;
     if (sc->interlaced && sc->field_dominance)
         desc_size += 5;
+    if (sc->signal_standard)
+        desc_size += 5;
 
     mxf_write_generic_desc(s, st, key, desc_size);
 
@@ -1035,6 +1039,11 @@ static void mxf_write_cdci_common(AVFormatContext *s, AVStream *st, const UID ke
     // color siting
     mxf_write_local_tag(pb, 1, 0x3303);
     avio_w8(pb, sc->color_siting);
+
+    if (sc->signal_standard) {
+        mxf_write_local_tag(pb, 1, 0x3215);
+        avio_w8(pb, sc->signal_standard);
+    }
 
     // frame layout
     mxf_write_local_tag(pb, 1, 0x320C);
@@ -2091,6 +2100,8 @@ static int mxf_write_header(AVFormatContext *s)
                 mxf->edit_unit_byte_count += klv_fill_size(mxf->edit_unit_byte_count);
                 mxf->edit_unit_byte_count += 16 + 4 + 4 + spf->samples_per_frame[0]*8*4;
                 mxf->edit_unit_byte_count += klv_fill_size(mxf->edit_unit_byte_count);
+
+                sc->signal_standard = 1;
             }
         } else if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
             if (st->codec->sample_rate != 48000) {
