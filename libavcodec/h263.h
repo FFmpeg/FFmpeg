@@ -123,7 +123,7 @@ int av_const h263_get_picture_format(int width, int height);
 
 void ff_clean_h263_qscales(MpegEncContext *s);
 int ff_h263_resync(MpegEncContext *s);
-void ff_h263_encode_motion(MpegEncContext * s, int val, int f_code);
+void ff_h263_encode_motion(PutBitContext *pb, int val, int f_code);
 
 
 static inline int h263_get_motion_length(int val, int f_code){
@@ -149,8 +149,8 @@ static inline void ff_h263_encode_motion_vector(MpegEncContext * s, int x, int y
             h263_get_motion_length(x, f_code)
            +h263_get_motion_length(y, f_code));
     }else{
-        ff_h263_encode_motion(s, x, f_code);
-        ff_h263_encode_motion(s, y, f_code);
+        ff_h263_encode_motion(&s->pb, x, f_code);
+        ff_h263_encode_motion(&s->pb, y, f_code);
     }
 }
 

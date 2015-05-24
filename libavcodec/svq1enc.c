@@ -421,8 +421,8 @@ static int svq1_encode_plane(SVQ1EncContext *s, int plane,
                     av_assert1(my     >= -32 && my     <= 31);
                     av_assert1(pred_x >= -32 && pred_x <= 31);
                     av_assert1(pred_y >= -32 && pred_y <= 31);
-                    ff_h263_encode_motion(&s->m, mx - pred_x, 1);
-                    ff_h263_encode_motion(&s->m, my - pred_y, 1);
+                    ff_h263_encode_motion(&s->m.pb, mx - pred_x, 1);
+                    ff_h263_encode_motion(&s->m.pb, my - pred_y, 1);
                     s->reorder_pb[5] = s->m.pb;
                     score[1]        += lambda * put_bits_count(&s->reorder_pb[5]);
 

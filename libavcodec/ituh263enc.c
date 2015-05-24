@@ -642,14 +642,14 @@ void ff_h263_encode_mb(MpegEncContext * s,
     }
 }
 
-void ff_h263_encode_motion(MpegEncContext * s, int val, int f_code)
+void ff_h263_encode_motion(PutBitContext *pb, int val, int f_code)
 {
     int range, bit_size, sign, code, bits;
 
     if (val == 0) {
         /* zero vector */
         code = 0;
-        put_bits(&s->pb, ff_mvtab[code][1], ff_mvtab[code][0]);
+        put_bits(pb, ff_mvtab[code][1], ff_mvtab[code][0]);
     } else {
         bit_size = f_code - 1;
         range = 1 << bit_size;
@@ -663,9 +663,9 @@ void ff_h263_encode_motion(MpegEncContext * s, int val, int f_code)
         code = (val >> bit_size) + 1;
         bits = val & (range - 1);
 
-        put_bits(&s->pb, ff_mvtab[code][1] + 1, (ff_mvtab[code][0] << 1) | sign);
+        put_bits(pb, ff_mvtab[code][1] + 1, (ff_mvtab[code][0] << 1) | sign);
         if (bit_size > 0) {
-            put_bits(&s->pb, bit_size, bits);
+            put_bits(pb, bit_size, bits);
         }
     }
 }
