@@ -39,7 +39,7 @@ static int msrle_decode_pal4(AVCodecContext *avctx, AVPicture *pic,
     unsigned int pixel_ptr = 0;
     int row_dec = pic->linesize[0];
     int row_ptr = (avctx->height - 1) * row_dec;
-    int frame_size = row_dec * avctx->height;
+    int frame_size = FFABS(row_dec) * avctx->height;
     int i;
 
     while (row_ptr >= 0) {
