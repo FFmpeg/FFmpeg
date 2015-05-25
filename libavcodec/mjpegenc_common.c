@@ -342,20 +342,30 @@ void ff_mjpeg_escape_FF(PutBitContext *pb, int start)
     }
 }
 
-void ff_mjpeg_encode_stuffing(MpegEncContext *s)
+int ff_mjpeg_encode_stuffing(MpegEncContext *s)
 {
     int i;
     PutBitContext *pbc = &s->pb;
     int mb_y = s->mb_y - !s->mb_x;
+
+    int ret = ff_mpv_reallocate_putbitbuffer(s, put_bits_count(&s->pb) / 8 + 100,
+                                                put_bits_count(&s->pb) / 4 + 1000);
+    if (ret < 0) {
+        av_log(s->avctx, AV_LOG_ERROR, "Buffer reallocation failed\n");
+        goto fail;
+    }
 
     ff_mjpeg_escape_FF(pbc, s->esc_pos);
 
     if((s->avctx->active_thread_type & FF_THREAD_SLICE) && mb_y < s->mb_height)
         put_marker(pbc, RST0 + (mb_y&7));
     s->esc_pos = put_bits_count(pbc) >> 3;
+fail:
 
     for(i=0; i<3; i++)
         s->last_dc[i] = 128 << s->intra_dc_precision;
+
+    return ret;
 }
 
 void ff_mjpeg_encode_picture_trailer(PutBitContext *pb, int header_bits)
