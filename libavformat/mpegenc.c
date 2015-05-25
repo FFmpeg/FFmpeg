@@ -321,7 +321,7 @@ static av_cold int mpeg_mux_init(AVFormatContext *ctx)
     } else
         s->packet_size = 2048;
     if (ctx->max_delay < 0)     /* Not set by the caller */
-        ctx->max_delay = 0.7*AV_TIME_BASE;
+        ctx->max_delay = AV_TIME_BASE*7/10;
 
     s->vcd_padding_bytes_written = 0;
     s->vcd_padding_bitrate_num   = 0;
