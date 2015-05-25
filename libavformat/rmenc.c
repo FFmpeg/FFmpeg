@@ -102,7 +102,7 @@ static int rv10_write_header(AVFormatContext *ctx,
         nb_packets += stream->nb_packets;
         packet_total_size += stream->packet_total_size;
         /* select maximum duration */
-        v = (int) (1000.0 * (float)stream->total_frames / stream->frame_rate);
+        v = 1000LL * stream->total_frames / stream->frame_rate;
         if (v > duration)
             duration = v;
     }
