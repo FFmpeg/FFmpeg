@@ -32,14 +32,13 @@
 #define STYLE_FLAG_UNDERLINE    4
 
 static int text_to_ass(AVBPrint *buf, const char *text, const char *text_end,
-                        int **style_start, int **style_end,
-                        int **style_flags, int style_entries)
+                        char **style_start, char **style_end,
+                        uint8_t **style_flags, int style_entries)
 {
     int i = 0;
-    int style_pos = 0;
     while (text < text_end) {
         for (i = 0; i < style_entries; i++) {
-            if (*style_flags[i] && style_pos == *style_start[i]) {
+            if (*style_flags[i] && text == style_start[i]) {
                 if (*style_flags[i] & STYLE_FLAG_BOLD)
                     av_bprintf(buf, "{\\b1}");
                 if (*style_flags[i] & STYLE_FLAG_ITALIC)
@@ -61,7 +60,7 @@ static int text_to_ass(AVBPrint *buf, const char *text, const char *text_end,
         }
 
         for (i = 0; i < style_entries; i++) {
-            if (*style_flags[i] && style_pos == *style_end[i]) {
+            if (*style_flags[i] && text == style_end[i]) {
                 if (*style_flags[i] & STYLE_FLAG_BOLD)
                     av_bprintf(buf, "{\\b0}");
                 if (*style_flags[i] & STYLE_FLAG_ITALIC)
@@ -71,7 +70,6 @@ static int text_to_ass(AVBPrint *buf, const char *text, const char *text_end,
             }
         }
         text++;
-        style_pos++;
     }
 
     return 0;
@@ -98,13 +96,13 @@ static int mov_text_decode_frame(AVCodecContext *avctx,
     //char *ptr_temp;
     int text_length, tsmb_type, style_entries;
     uint64_t tsmb_size, tracksize;
-    int **style_start = {0,};
-    int **style_end = {0,};
-    int **style_flags = {0,};
+    char **style_start = { 0, };
+    char **style_end = { 0, };
+    uint8_t **style_flags = { 0, };
     const uint8_t *tsmb;
     int index, i, size_var;
-    int *flag;
-    int *style_pos;
+    uint8_t *flag;
+    char *style_pos;
 
     if (!ptr || avpkt->size < 2)
         return AVERROR_INVALIDDATA;
@@ -172,19 +170,19 @@ static int mov_text_decode_frame(AVCodecContext *avctx,
                     break;
 
                 for(i = 0; i < style_entries; i++) {
-                    style_pos = av_malloc(4);
-                    *style_pos = AV_RB16(tsmb);
+                    style_pos = ptr + AV_RB16(tsmb);
                     index = i;
                     av_dynarray_add(&style_start, &index, style_pos);
                     tsmb += 2;
-                    style_pos = av_malloc(4);
-                    *style_pos = AV_RB16(tsmb);
+                    style_pos = ptr + AV_RB16(tsmb);
                     index = i;
                     av_dynarray_add(&style_end, &index, style_pos);
                     tsmb += 2;
                     // fontID = AV_RB16(tsmb);
                     tsmb += 2;
-                    flag = av_malloc(4);
+                    flag = av_malloc(1);
+                    if (!flag)
+                        return AVERROR(ENOMEM);
                     *flag = AV_RB8(tsmb);
                     index = i;
                     av_dynarray_add(&style_flags, &index, flag);
@@ -194,6 +192,10 @@ static int mov_text_decode_frame(AVCodecContext *avctx,
                     tsmb += 4;
                 }
                 text_to_ass(&buf, ptr, end, style_start, style_end, style_flags, style_entries);
+
+                for(i = 0; i < style_entries; i++) {
+                    av_freep(&style_flags[i]);
+                }
                 av_freep(&style_start);
                 av_freep(&style_end);
                 av_freep(&style_flags);
