@@ -2719,6 +2719,35 @@ static void update_mb_info(MpegEncContext *s, int startcode)
     write_mb_info(s);
 }
 
+int ff_mpv_reallocate_putbitbuffer(MpegEncContext *s, size_t threshold, size_t size_increase)
+{
+    if (   s->pb.buf_end - s->pb.buf - (put_bits_count(&s->pb)>>3) < threshold
+        && s->slice_context_count == 1
+        && s->pb.buf == s->avctx->internal->byte_buffer) {
+        int lastgob_pos = s->ptr_lastgob - s->pb.buf;
+        int vbv_pos     = s->vbv_delay_ptr - s->pb.buf;
+
+        uint8_t *new_buffer = NULL;
+        int new_buffer_size = 0;
+
+        av_fast_padded_malloc(&new_buffer, &new_buffer_size,
+                              s->avctx->internal->byte_buffer_size + size_increase);
+        if (!new_buffer)
+            return AVERROR(ENOMEM);
+
+        memcpy(new_buffer, s->avctx->internal->byte_buffer, s->avctx->internal->byte_buffer_size);
+        av_free(s->avctx->internal->byte_buffer);
+        s->avctx->internal->byte_buffer      = new_buffer;
+        s->avctx->internal->byte_buffer_size = new_buffer_size;
+        rebase_put_bits(&s->pb, new_buffer, new_buffer_size);
+        s->ptr_lastgob   = s->pb.buf + lastgob_pos;
+        s->vbv_delay_ptr = s->pb.buf + vbv_pos;
+    }
+    if (s->pb.buf_end - s->pb.buf - (put_bits_count(&s->pb)>>3) < threshold)
+        return AVERROR(EINVAL);
+    return 0;
+}
+
 static int encode_thread(AVCodecContext *c, void *arg){
     MpegEncContext *s= *(void**)arg;
     int mb_x, mb_y, pdif = 0;
@@ -2795,30 +2824,10 @@ static int encode_thread(AVCodecContext *c, void *arg){
 //            int d;
             int dmin= INT_MAX;
             int dir;
+            int size_increase =  s->avctx->internal->byte_buffer_size/4
+                               + s->mb_width*MAX_MB_BYTES;
 
-            if (   s->pb.buf_end - s->pb.buf - (put_bits_count(&s->pb)>>3) < MAX_MB_BYTES
-                && s->slice_context_count == 1
-                && s->pb.buf == s->avctx->internal->byte_buffer) {
-                int new_size =  s->avctx->internal->byte_buffer_size
-                              + s->avctx->internal->byte_buffer_size/4
-                              + s->mb_width*MAX_MB_BYTES;
-                int lastgob_pos = s->ptr_lastgob - s->pb.buf;
-                int vbv_pos     = s->vbv_delay_ptr - s->pb.buf;
-
-                uint8_t *new_buffer = NULL;
-                int new_buffer_size = 0;
-
-                av_fast_padded_malloc(&new_buffer, &new_buffer_size, new_size);
-                if (new_buffer) {
-                    memcpy(new_buffer, s->avctx->internal->byte_buffer, s->avctx->internal->byte_buffer_size);
-                    av_free(s->avctx->internal->byte_buffer);
-                    s->avctx->internal->byte_buffer      = new_buffer;
-                    s->avctx->internal->byte_buffer_size = new_buffer_size;
-                    rebase_put_bits(&s->pb, new_buffer, new_buffer_size);
-                    s->ptr_lastgob   = s->pb.buf + lastgob_pos;
-                    s->vbv_delay_ptr = s->pb.buf + vbv_pos;
-                }
-            }
+            ff_mpv_reallocate_putbitbuffer(s, MAX_MB_BYTES, size_increase);
             if(s->pb.buf_end - s->pb.buf - (put_bits_count(&s->pb)>>3) < MAX_MB_BYTES){
                 av_log(s->avctx, AV_LOG_ERROR, "encoded frame too large\n");
                 return -1;
