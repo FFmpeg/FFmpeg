@@ -69,6 +69,8 @@ void avpriv_copy_bits(PutBitContext *pb, const uint8_t *src, int length)
     if (length == 0)
         return;
 
+    av_assert0(length <= put_bits_left(pb));
+
     if (CONFIG_SMALL || words < 16 || put_bits_count(pb) & 7) {
         for (i = 0; i < words; i++)
             put_bits(pb, 16, AV_RB16(src + 2 * i));
