@@ -28,7 +28,11 @@
 #include "config.h"
 
 #include "dxva2.h"
+
+#if CONFIG_D3D11VA
 #include "d3d11va.h"
+#endif
+
 #if HAVE_DXVA_H
 #include <dxva.h>
 #endif
@@ -39,13 +43,16 @@
 typedef void DECODER_BUFFER_DESC;
 
 typedef union {
+#if CONFIG_D3D11VA
     struct AVD3D11VAContext  d3d11va;
+#endif
     struct dxva_context      dxva2;
 } AVDXVAContext;
 
-#define D3D11VA_CONTEXT(ctx) (&ctx->d3d11va)
 #define DXVA2_CONTEXT(ctx)   (&ctx->dxva2)
 
+#if CONFIG_D3D11VA
+#define D3D11VA_CONTEXT(ctx) (&ctx->d3d11va)
 #define DXVA_CONTEXT_WORKAROUND(avctx, ctx)     (avctx->pix_fmt == AV_PIX_FMT_D3D11VA_VLD ? ctx->d3d11va.workaround : ctx->dxva2.workaround)
 #define DXVA_CONTEXT_COUNT(avctx, ctx)          (avctx->pix_fmt == AV_PIX_FMT_D3D11VA_VLD ? ctx->d3d11va.surface_count : ctx->dxva2.surface_count)
 #define DXVA_CONTEXT_SURFACE(avctx, ctx, i)     (avctx->pix_fmt == AV_PIX_FMT_D3D11VA_VLD ? ctx->d3d11va.surface[i] : ctx->dxva2.surface[i])
@@ -55,6 +62,17 @@ typedef union {
 #define DXVA_CONTEXT_CFG_BITSTREAM(avctx, ctx)  (avctx->pix_fmt == AV_PIX_FMT_D3D11VA_VLD ? ctx->d3d11va.cfg->ConfigBitstreamRaw : ctx->dxva2.cfg->ConfigBitstreamRaw)
 #define DXVA_CONTEXT_CFG_INTRARESID(avctx, ctx) (avctx->pix_fmt == AV_PIX_FMT_D3D11VA_VLD ? ctx->d3d11va.cfg->ConfigIntraResidUnsigned : ctx->dxva2.cfg->ConfigIntraResidUnsigned)
 #define DXVA_CONTEXT_CFG_RESIDACCEL(avctx, ctx) (avctx->pix_fmt == AV_PIX_FMT_D3D11VA_VLD ? ctx->d3d11va.cfg->ConfigResidDiffAccelerator : ctx->dxva2.cfg->ConfigResidDiffAccelerator)
+#else
+#define DXVA_CONTEXT_WORKAROUND(avctx, ctx)     (ctx->dxva2.workaround)
+#define DXVA_CONTEXT_COUNT(avctx, ctx)          (ctx->dxva2.surface_count)
+#define DXVA_CONTEXT_SURFACE(avctx, ctx, i)     (ctx->dxva2.surface[i])
+#define DXVA_CONTEXT_DECODER(avctx, ctx)        (ctx->dxva2.decoder)
+#define DXVA_CONTEXT_REPORT_ID(avctx, ctx)      (*(&ctx->dxva2.report_id))
+#define DXVA_CONTEXT_CFG(avctx, ctx)            (ctx->dxva2.cfg)
+#define DXVA_CONTEXT_CFG_BITSTREAM(avctx, ctx)  (ctx->dxva2.cfg->ConfigBitstreamRaw)
+#define DXVA_CONTEXT_CFG_INTRARESID(avctx, ctx) (ctx->dxva2.cfg->ConfigIntraResidUnsigned)
+#define DXVA_CONTEXT_CFG_RESIDACCEL(avctx, ctx) (ctx->dxva2.cfg->ConfigResidDiffAccelerator)
+#endif
 
 void *ff_dxva2_get_surface(const AVFrame *frame);
 
