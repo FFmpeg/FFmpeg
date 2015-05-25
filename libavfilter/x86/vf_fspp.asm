@@ -65,13 +65,13 @@ cglobal store_slice, 2, 7, 0, dst, src, width, dither_height, dither, tmp, tmp2
     mov       tmpq, src_strideq
     and       widthq, ~7
     sub       dst_strideq, widthq
-    movd      m5, ditherq ; log2_scale
+    movd      m5, ditherd ; log2_scale
     xor       ditherq, -1 ; log2_scale
     mov       tmp2q, tmpq
     add       ditherq, 7 ; log2_scale
     neg       tmpq
     sub       tmp2q, widthq
-    movd      m2, ditherq ; log2_scale
+    movd      m2, ditherd ; log2_scale
     add       tmp2q, tmp2q
     lea       ditherq, [pb_dither]
     mov       src_strideq, tmp2q
@@ -132,12 +132,12 @@ cglobal store_slice2, 0, 7, 0, dst, src, width, dither_height, dither, tmp, tmp2
     mov       tmpq, src_strideq
     and       widthq, ~7
     sub       dst_strideq, widthq
-    movd      m5, ditherq ; log2_scale
+    movd      m5, ditherd ; log2_scale
     xor       ditherq, -1 ; log2_scale
     mov       tmp2q, tmpq
     add       ditherq, 7 ; log2_scale
     sub       tmp2q, widthq
-    movd      m2, ditherq ; log2_scale
+    movd      m2, ditherd ; log2_scale
     add       tmp2q, tmp2q
     lea       ditherq, [pb_dither]
     mov       src_strideq, tmp2q
