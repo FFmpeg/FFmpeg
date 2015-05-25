@@ -149,6 +149,7 @@ Component options:
   --disable-pixelutils     disable pixel utils in libavutil
 
 Hardware accelerators:
+  --enable-d3d11va         enable D3D11VA code
   --disable-dxva2          disable DXVA2 code [autodetect]
   --disable-vaapi          disable VAAPI code [autodetect]
   --disable-vda            disable VDA code [autodetect]
@@ -1448,6 +1449,7 @@ FEATURE_LIST="
 "
 
 HWACCEL_LIST="
+    d3d11va
     dxva2
     vaapi
     vda
@@ -1670,6 +1672,7 @@ HEADERS_LIST="
     dev_video_meteor_ioctl_meteor_h
     direct_h
     dlfcn_h
+    d3d11_h
     dxva_h
     ES2_gl_h
     gsm_h
@@ -1845,6 +1848,8 @@ HAVE_LIST="
     $TYPES_LIST
     atomics_native
     dos_paths
+    d3d11_cobj
+    d3d11va_lib
     dxva2api_cobj
     dxva2_lib
     libc_msvcrt
@@ -2314,6 +2319,7 @@ zmbv_encoder_select="zlib"
 
 # hardware accelerators
 crystalhd_deps="libcrystalhd_libcrystalhd_if_h"
+d3d11va_deps="d3d11_h dxva_h"
 dxva2_deps="dxva2api_h"
 vaapi_deps="va_va_h"
 vda_deps="VideoDecodeAcceleration_VDADecoder_h pthreads"
@@ -2326,6 +2332,8 @@ h263_vaapi_hwaccel_select="h263_decoder"
 h263_vdpau_hwaccel_deps="vdpau"
 h263_vdpau_hwaccel_select="h263_decoder"
 h264_crystalhd_decoder_select="crystalhd h264_mp4toannexb_bsf h264_parser"
+h264_d3d11va_hwaccel_deps="d3d11va"
+h264_d3d11va_hwaccel_select="h264_decoder"
 h264_dxva2_hwaccel_deps="dxva2"
 h264_dxva2_hwaccel_select="h264_decoder"
 h264_mmal_decoder_deps="mmal"
@@ -2345,6 +2353,8 @@ h264_vdpau_decoder_deps="vdpau"
 h264_vdpau_decoder_select="h264_decoder"
 h264_vdpau_hwaccel_deps="vdpau"
 h264_vdpau_hwaccel_select="h264_decoder"
+hevc_d3d11va_hwaccel_deps="d3d11va DXVA_PicParams_HEVC"
+hevc_d3d11va_hwaccel_select="hevc_decoder"
 hevc_dxva2_hwaccel_deps="dxva2 DXVA_PicParams_HEVC"
 hevc_dxva2_hwaccel_select="hevc_decoder"
 mpeg_vdpau_decoder_deps="vdpau"
@@ -2358,6 +2368,8 @@ mpeg1_vdpau_hwaccel_select="mpeg1video_decoder"
 mpeg1_xvmc_hwaccel_deps="xvmc"
 mpeg1_xvmc_hwaccel_select="mpeg1video_decoder"
 mpeg2_crystalhd_decoder_select="crystalhd"
+mpeg2_d3d11va_hwaccel_deps="d3d11va"
+mpeg2_d3d11va_hwaccel_select="mpeg2video_decoder"
 mpeg2_dxva2_hwaccel_deps="dxva2"
 mpeg2_dxva2_hwaccel_select="mpeg2video_decoder"
 mpeg2_vaapi_hwaccel_deps="vaapi"
@@ -2375,6 +2387,8 @@ mpeg4_vdpau_hwaccel_deps="vdpau"
 mpeg4_vdpau_hwaccel_select="mpeg4_decoder"
 msmpeg4_crystalhd_decoder_select="crystalhd"
 vc1_crystalhd_decoder_select="crystalhd"
+vc1_d3d11va_hwaccel_deps="d3d11va"
+vc1_d3d11va_hwaccel_select="vc1_decoder"
 vc1_dxva2_hwaccel_deps="dxva2"
 vc1_dxva2_hwaccel_select="vc1_decoder"
 vc1_vaapi_hwaccel_deps="vaapi"
@@ -2384,6 +2398,7 @@ vc1_vdpau_decoder_select="vc1_decoder"
 vc1_vdpau_hwaccel_deps="vdpau"
 vc1_vdpau_hwaccel_select="vc1_decoder"
 wmv3_crystalhd_decoder_select="crystalhd"
+wmv3_d3d11va_hwaccel_select="vc1_d3d11va_hwaccel"
 wmv3_dxva2_hwaccel_select="vc1_dxva2_hwaccel"
 wmv3_vaapi_hwaccel_select="vc1_vaapi_hwaccel"
 wmv3_vdpau_decoder_select="vc1_vdpau_decoder"
@@ -2814,7 +2829,7 @@ sws_max_filter_size_default=256
 set_default sws_max_filter_size
 
 # Enable hwaccels by default.
-enable dxva2 vaapi vda vdpau xvmc
+enable d3d11va dxva2 vaapi vda vdpau xvmc
 enable xlib
 
 # build settings
@@ -4945,6 +4960,7 @@ enabled xlib &&
 
 check_header direct.h
 check_header dlfcn.h
+check_header d3d11.h
 check_header dxva.h
 check_header dxva2api.h -D_WIN32_WINNT=0x0600
 check_header io.h
@@ -5293,6 +5309,15 @@ enabled dxva2api_h &&
 int main(void) { IDirectXVideoDecoder *o = NULL; IDirectXVideoDecoder_Release(o); return 0; }
 EOF
 
+enabled d3d11_h &&
+    check_cc <<EOF && enable d3d11_cobj
+#define _WIN32_WINNT 0x0600
+#define COBJMACROS
+#include <windows.h>
+#include <d3d11.h>
+int main(void) { ID3D11VideoDecoder *o = NULL; ID3D11VideoDecoder_Release(o); return 0; }
+EOF
+
 enabled vaapi &&
     check_lib va/va.h vaInitialize -lva ||
     disable vaapi
@@ -5549,6 +5574,10 @@ if test $target_os = "haiku"; then
     disable memalign
     disable posix_memalign
 fi
+
+enabled_all d3d11va d3d11_cobj CoTaskMemFree &&
+    prepend ffmpeg_libs $($ldflags_filter "-lole32") &&
+    enable d3d11va_lib
 
 enabled_all dxva2 dxva2api_cobj CoTaskMemFree &&
     prepend ffmpeg_libs $($ldflags_filter "-lole32" "-luser32") &&
