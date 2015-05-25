@@ -722,8 +722,12 @@ BRANCH_INSTR jz, je, jnz, jne, jl, jle, jnl, jnle, jg, jge, jng, jnge, ja, jae, 
 ; This is needed for ELF, otherwise the GNU linker assumes the stack is
 ; executable by default.
 %ifidn __OUTPUT_FORMAT__,elf
-SECTION .note.GNU-stack noalloc noexec nowrite progbits
+[section .note.GNU-stack noalloc noexec nowrite progbits]
 %endif
+
+; Overrides the default .text section.
+; Silences warnings when defining structures.
+%define __SECT__
 
 ; cpuflags
 
