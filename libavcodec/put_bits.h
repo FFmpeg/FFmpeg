@@ -217,6 +217,7 @@ static inline void skip_put_bytes(PutBitContext *s, int n)
 {
     av_assert2((put_bits_count(s) & 7) == 0);
     av_assert2(s->bit_left == 32);
+    av_assert0(n <= s->buf_end - s->buf_ptr);
     s->buf_ptr += n;
 }
 
