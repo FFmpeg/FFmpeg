@@ -149,7 +149,7 @@ Component options:
   --disable-pixelutils     disable pixel utils in libavutil
 
 Hardware accelerators:
-  --enable-d3d11va         enable D3D11VA code
+  --disable-d3d11va        disable D3D11VA code [autodetect]
   --disable-dxva2          disable DXVA2 code [autodetect]
   --disable-vaapi          disable VAAPI code [autodetect]
   --disable-vda            disable VDA code [autodetect]
