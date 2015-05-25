@@ -2341,9 +2341,9 @@ static int opt_target(void *optctx, const char *opt, const char *arg)
         opt_default(NULL, "g", norm == PAL ? "15" : "18");
 
         opt_default(NULL, "b:v", "1150000");
-        opt_default(NULL, "maxrate", "1150000");
-        opt_default(NULL, "minrate", "1150000");
-        opt_default(NULL, "bufsize", "327680"); // 40*1024*8;
+        opt_default(NULL, "maxrate:v", "1150000");
+        opt_default(NULL, "minrate:v", "1150000");
+        opt_default(NULL, "bufsize:v", "327680"); // 40*1024*8;
 
         opt_default(NULL, "b:a", "224000");
         parse_option(o, "ar", "44100", options);
@@ -2370,9 +2370,9 @@ static int opt_target(void *optctx, const char *opt, const char *arg)
         opt_default(NULL, "g", norm == PAL ? "15" : "18");
 
         opt_default(NULL, "b:v", "2040000");
-        opt_default(NULL, "maxrate", "2516000");
-        opt_default(NULL, "minrate", "0"); // 1145000;
-        opt_default(NULL, "bufsize", "1835008"); // 224*1024*8;
+        opt_default(NULL, "maxrate:v", "2516000");
+        opt_default(NULL, "minrate:v", "0"); // 1145000;
+        opt_default(NULL, "bufsize:v", "1835008"); // 224*1024*8;
         opt_default(NULL, "scan_offset", "1");
 
         opt_default(NULL, "b:a", "224000");
@@ -2392,9 +2392,9 @@ static int opt_target(void *optctx, const char *opt, const char *arg)
         opt_default(NULL, "g", norm == PAL ? "15" : "18");
 
         opt_default(NULL, "b:v", "6000000");
-        opt_default(NULL, "maxrate", "9000000");
-        opt_default(NULL, "minrate", "0"); // 1500000;
-        opt_default(NULL, "bufsize", "1835008"); // 224*1024*8;
+        opt_default(NULL, "maxrate:v", "9000000");
+        opt_default(NULL, "minrate:v", "0"); // 1500000;
+        opt_default(NULL, "bufsize:v", "1835008"); // 224*1024*8;
 
         opt_default(NULL, "packetsize", "2048");  // from www.mpucoder.com: DVD sectors contain 2048 bytes of data, this is also the size of one pack.
         opt_default(NULL, "muxrate", "10080000"); // from mplex project: data_rate = 1260000. mux_rate = data_rate * 8

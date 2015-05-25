@@ -77,7 +77,7 @@ typedef struct MpegMuxContext {
     int is_dvd;
     int64_t last_scr; /* current system clock */
 
-    double vcd_padding_bitrate; // FIXME floats
+    int64_t vcd_padding_bitrate_num;
     int64_t vcd_padding_bytes_written;
 
     int preload;
@@ -321,10 +321,10 @@ static av_cold int mpeg_mux_init(AVFormatContext *ctx)
     } else
         s->packet_size = 2048;
     if (ctx->max_delay < 0)     /* Not set by the caller */
-        ctx->max_delay = 0.7*AV_TIME_BASE;
+        ctx->max_delay = AV_TIME_BASE*7/10;
 
     s->vcd_padding_bytes_written = 0;
-    s->vcd_padding_bitrate       = 0;
+    s->vcd_padding_bitrate_num   = 0;
 
     s->audio_bound = 0;
     s->video_bound = 0;
@@ -456,7 +456,7 @@ static av_cold int mpeg_mux_init(AVFormatContext *ctx)
     }
 
     if (s->is_vcd) {
-        double overhead_rate;
+        int64_t overhead_rate;
 
         /* The VCD standard mandates that the mux_rate field is 3528
          * (see standard p. IV-6).
@@ -476,12 +476,12 @@ static av_cold int mpeg_mux_init(AVFormatContext *ctx)
 
         /* Add the header overhead to the data rate.
          * 2279 data bytes per audio pack, 2294 data bytes per video pack */
-        overhead_rate  = ((audio_bitrate / 8.0) / 2279) * (2324 - 2279);
-        overhead_rate += ((video_bitrate / 8.0) / 2294) * (2324 - 2294);
-        overhead_rate *= 8;
+        overhead_rate  = audio_bitrate * 2294LL * (2324 - 2279);
+        overhead_rate += video_bitrate * 2279LL * (2324 - 2294);
 
         /* Add padding so that the full bitrate is 2324*75 bytes/sec */
-        s->vcd_padding_bitrate = 2324 * 75 * 8 - (bitrate + overhead_rate);
+        s->vcd_padding_bitrate_num = (2324LL * 75 * 8 - bitrate) * 2279 * 2294 - overhead_rate;
+#define VCD_PADDING_BITRATE_DEN (2279 * 2294)
     }
 
     if (s->is_vcd || s->is_mpeg2)
@@ -534,12 +534,12 @@ static int get_vcd_padding_size(AVFormatContext *ctx, int64_t pts)
     MpegMuxContext *s = ctx->priv_data;
     int pad_bytes = 0;
 
-    if (s->vcd_padding_bitrate > 0 && pts != AV_NOPTS_VALUE) {
+    if (s->vcd_padding_bitrate_num > 0 && pts != AV_NOPTS_VALUE) {
         int64_t full_pad_bytes;
 
         // FIXME: this is wrong
         full_pad_bytes =
-            (int64_t)((s->vcd_padding_bitrate * (pts / 90000.0)) / 8.0);
+            av_rescale(s->vcd_padding_bitrate_num, pts, 90000LL * 8 * VCD_PADDING_BITRATE_DEN);
         pad_bytes = (int)(full_pad_bytes - s->vcd_padding_bytes_written);
 
         if (pad_bytes < 0)
