@@ -42,7 +42,7 @@
 #include "mpegutils.h"
 #include "rectangle.h"
 #include "thread.h"
-#include "vdpau_internal.h"
+#include "vdpau_compat.h"
 
 void ff_h264_unref_picture(H264Context *h, H264Picture *pic)
 {

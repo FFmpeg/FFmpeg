@@ -32,6 +32,7 @@
 #include <assert.h>
 
 #include "vdpau.h"
+#include "vdpau_compat.h"
 #include "vdpau_internal.h"
 
 /**

@@ -45,7 +45,7 @@
 #include "mpegvideo.h"
 #include "thread.h"
 #include "version.h"
-#include "vdpau_internal.h"
+#include "vdpau_compat.h"
 #include "xvmc_internal.h"
 
 typedef struct Mpeg1Context {

@@ -35,7 +35,7 @@
 #include "msmpeg4data.h"
 #include "vc1.h"
 #include "vc1data.h"
-#include "vdpau_internal.h"
+#include "vdpau_compat.h"
 #include "libavutil/avassert.h"
 
 
