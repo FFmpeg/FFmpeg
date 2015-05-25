@@ -3489,6 +3489,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
         (h->width  != h->avctx->coded_width   ||
          h->height != h->avctx->coded_height  ||
          needs_reinit)) {
+        h->context_initialized = 0;
         if (h != h0) {
             av_log(h->avctx, AV_LOG_ERROR, "changing width/height on "
                    "slice %d\n", h0->current_slice + 1);
