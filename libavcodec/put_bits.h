@@ -252,6 +252,7 @@ static inline void skip_put_bits(PutBitContext *s, int n)
 static inline void set_put_bits_buffer_size(PutBitContext *s, int size)
 {
     s->buf_end = s->buf + size;
+    s->size_in_bits = 8*size;
 }
 
 #endif /* AVCODEC_PUT_BITS_H */
