@@ -22,6 +22,7 @@ version <next>:
 - improved Quickdraw compatibility
 - VP9 high bit-depth and extended colorspaces decoding support
 - WebPAnimEncoder API when available for encoding and muxing WebP
+- Direct3D11-accelerated decoding
 
 
 version 2.6:

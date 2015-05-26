@@ -45,7 +45,7 @@
 #include "mpegvideo.h"
 #include "thread.h"
 #include "version.h"
-#include "vdpau_internal.h"
+#include "vdpau_compat.h"
 #include "xvmc_internal.h"
 
 typedef struct Mpeg1Context {
@@ -1203,6 +1203,9 @@ static const enum AVPixelFormat mpeg2_hwaccel_pixfmt_list_420[] = {
 #endif
 #if CONFIG_MPEG2_DXVA2_HWACCEL
     AV_PIX_FMT_DXVA2_VLD,
+#endif
+#if CONFIG_MPEG2_D3D11VA_HWACCEL
+    AV_PIX_FMT_D3D11VA_VLD,
 #endif
 #if CONFIG_MPEG2_VAAPI_HWACCEL
     AV_PIX_FMT_VAAPI_VLD,

@@ -42,7 +42,7 @@ static void fill_picture_entry(DXVA_PicEntry_H264 *pic,
     pic->bPicEntry = index | (flag << 7);
 }
 
-static void fill_picture_parameters(struct dxva_context *ctx, const H264Context *h,
+static void fill_picture_parameters(const AVCodecContext *avctx, AVDXVAContext *ctx, const H264Context *h,
                                     DXVA_PicParams_H264 *pp)
 {
     const H264Picture *current_picture = h->cur_pic_ptr;
@@ -51,7 +51,7 @@ static void fill_picture_parameters(struct dxva_context *ctx, const H264Context 
     memset(pp, 0, sizeof(*pp));
     /* Configure current picture */
     fill_picture_entry(&pp->CurrPic,
-                       ff_dxva2_get_surface_index(ctx, current_picture->f),
+                       ff_dxva2_get_surface_index(avctx, ctx, current_picture->f),
                        h->picture_structure == PICT_BOTTOM_FIELD);
     /* Configure the set of references */
     pp->UsedForReferenceFlags  = 0;
@@ -67,7 +67,7 @@ static void fill_picture_parameters(struct dxva_context *ctx, const H264Context 
         }
         if (r) {
             fill_picture_entry(&pp->RefFrameList[i],
-                               ff_dxva2_get_surface_index(ctx, r->f),
+                               ff_dxva2_get_surface_index(avctx, ctx, r->f),
                                r->long_ref != 0);
 
             if ((r->reference & PICT_TOP_FIELD) && r->field_poc[0] != INT_MAX)
@@ -114,13 +114,13 @@ static void fill_picture_parameters(struct dxva_context *ctx, const H264Context 
 
     pp->bit_depth_luma_minus8         = h->sps.bit_depth_luma - 8;
     pp->bit_depth_chroma_minus8       = h->sps.bit_depth_chroma - 8;
-    if (ctx->workaround & FF_DXVA2_WORKAROUND_SCALING_LIST_ZIGZAG)
+    if (DXVA_CONTEXT_WORKAROUND(avctx, ctx) & FF_DXVA2_WORKAROUND_SCALING_LIST_ZIGZAG)
         pp->Reserved16Bits            = 0;
-    else if (ctx->workaround & FF_DXVA2_WORKAROUND_INTEL_CLEARVIDEO)
+    else if (DXVA_CONTEXT_WORKAROUND(avctx, ctx) & FF_DXVA2_WORKAROUND_INTEL_CLEARVIDEO)
         pp->Reserved16Bits            = 0x34c;
     else
         pp->Reserved16Bits            = 3; /* FIXME is there a way to detect the right mode ? */
-    pp->StatusReportFeedbackNumber    = 1 + ctx->report_id++;
+    pp->StatusReportFeedbackNumber    = 1 + DXVA_CONTEXT_REPORT_ID(avctx, ctx)++;
     pp->CurrFieldOrderCnt[0] = 0;
     if ((h->picture_structure & PICT_TOP_FIELD) &&
         current_picture->field_poc[0] != INT_MAX)
@@ -156,11 +156,11 @@ static void fill_picture_parameters(struct dxva_context *ctx, const H264Context 
     //pp->SliceGroupMap[810];               /* XXX not implemented by FFmpeg */
 }
 
-static void fill_scaling_lists(struct dxva_context *ctx, const H264Context *h, DXVA_Qmatrix_H264 *qm)
+static void fill_scaling_lists(const AVCodecContext *avctx, AVDXVAContext *ctx, const H264Context *h, DXVA_Qmatrix_H264 *qm)
 {
     unsigned i, j;
     memset(qm, 0, sizeof(*qm));
-    if (ctx->workaround & FF_DXVA2_WORKAROUND_SCALING_LIST_ZIGZAG) {
+    if (DXVA_CONTEXT_WORKAROUND(avctx, ctx) & FF_DXVA2_WORKAROUND_SCALING_LIST_ZIGZAG) {
         for (i = 0; i < 6; i++)
             for (j = 0; j < 16; j++)
                 qm->bScalingLists4x4[i][j] = h->pps.scaling_matrix4[i][j];
@@ -181,11 +181,11 @@ static void fill_scaling_lists(struct dxva_context *ctx, const H264Context *h, D
     }
 }
 
-static int is_slice_short(struct dxva_context *ctx)
+static int is_slice_short(const AVCodecContext *avctx, AVDXVAContext *ctx)
 {
-    assert(ctx->cfg->ConfigBitstreamRaw == 1 ||
-           ctx->cfg->ConfigBitstreamRaw == 2);
-    return ctx->cfg->ConfigBitstreamRaw == 2;
+    assert(DXVA_CONTEXT_CFG_BITSTREAM(avctx, ctx) == 1 ||
+           DXVA_CONTEXT_CFG_BITSTREAM(avctx, ctx) == 2);
+    return DXVA_CONTEXT_CFG_BITSTREAM(avctx, ctx) == 2;
 }
 
 static void fill_slice_short(DXVA_Slice_H264_Short *slice,
@@ -212,7 +212,7 @@ static void fill_slice_long(AVCodecContext *avctx, DXVA_Slice_H264_Long *slice,
 {
     const H264Context *h = avctx->priv_data;
     H264SliceContext *sl = &h->slice_ctx[0];
-    struct dxva_context *ctx = avctx->hwaccel_context;
+    AVDXVAContext *ctx = avctx->hwaccel_context;
     unsigned list;
 
     memset(slice, 0, sizeof(*slice));
@@ -243,10 +243,10 @@ static void fill_slice_long(AVCodecContext *avctx, DXVA_Slice_H264_Long *slice,
                 const H264Picture *r = sl->ref_list[list][i].parent;
                 unsigned plane;
                 unsigned index;
-                if (ctx->workaround & FF_DXVA2_WORKAROUND_INTEL_CLEARVIDEO)
-                    index = ff_dxva2_get_surface_index(ctx, r->f);
+                if (DXVA_CONTEXT_WORKAROUND(avctx, ctx) & FF_DXVA2_WORKAROUND_INTEL_CLEARVIDEO)
+                    index = ff_dxva2_get_surface_index(avctx, ctx, r->f);
                 else
-                    index = get_refpic_index(pp, ff_dxva2_get_surface_index(ctx, r->f));
+                    index = get_refpic_index(pp, ff_dxva2_get_surface_index(avctx, ctx, r->f));
                 fill_picture_entry(&slice->RefPicList[list][i], index,
                                    r->reference == PICT_BOTTOM_FIELD);
                 for (plane = 0; plane < 3; plane++) {
@@ -289,28 +289,44 @@ static void fill_slice_long(AVCodecContext *avctx, DXVA_Slice_H264_Long *slice,
 }
 
 static int commit_bitstream_and_slice_buffer(AVCodecContext *avctx,
-                                             DXVA2_DecodeBufferDesc *bs,
-                                             DXVA2_DecodeBufferDesc *sc)
+                                             DECODER_BUFFER_DESC *bs,
+                                             DECODER_BUFFER_DESC *sc)
 {
     const H264Context *h = avctx->priv_data;
     const unsigned mb_count = h->mb_width * h->mb_height;
-    struct dxva_context *ctx = avctx->hwaccel_context;
+    AVDXVAContext *ctx = avctx->hwaccel_context;
     const H264Picture *current_picture = h->cur_pic_ptr;
     struct dxva2_picture_context *ctx_pic = current_picture->hwaccel_picture_private;
     DXVA_Slice_H264_Short *slice = NULL;
-    void     *dxva_data_ptr;
+    void     *dxva_data_ptr = NULL;
     uint8_t  *dxva_data, *current, *end;
-    unsigned dxva_size;
+    unsigned dxva_size = 0;
     void     *slice_data;
     unsigned slice_size;
     unsigned padding;
     unsigned i;
+    unsigned type;
 
     /* Create an annex B bitstream buffer with only slice NAL and finalize slice */
-    if (FAILED(IDirectXVideoDecoder_GetBuffer(ctx->decoder,
-                                              DXVA2_BitStreamDateBufferType,
-                                              &dxva_data_ptr, &dxva_size)))
-        return -1;
+#if CONFIG_D3D11VA
+    if (avctx->pix_fmt == AV_PIX_FMT_D3D11VA_VLD) {
+        type = D3D11_VIDEO_DECODER_BUFFER_BITSTREAM;
+        if (FAILED(ID3D11VideoContext_GetDecoderBuffer(D3D11VA_CONTEXT(ctx)->video_context,
+                                                       D3D11VA_CONTEXT(ctx)->decoder,
+                                                       type,
+                                                       &dxva_size, &dxva_data_ptr)))
+            return -1;
+    }
+#endif
+#if CONFIG_DXVA2
+    if (avctx->pix_fmt == AV_PIX_FMT_DXVA2_VLD) {
+        type = DXVA2_BitStreamDateBufferType;
+        if (FAILED(IDirectXVideoDecoder_GetBuffer(DXVA2_CONTEXT(ctx)->decoder,
+                                                  type,
+                                                  &dxva_data_ptr, &dxva_size)))
+            return -1;
+    }
+#endif
 
     dxva_data = dxva_data_ptr;
     current = dxva_data;
@@ -326,7 +342,7 @@ static int commit_bitstream_and_slice_buffer(AVCodecContext *avctx,
         assert(offsetof(DXVA_Slice_H264_Short, SliceBytesInBuffer) ==
                offsetof(DXVA_Slice_H264_Long,  SliceBytesInBuffer));
 
-        if (is_slice_short(ctx))
+        if (is_slice_short(avctx, ctx))
             slice = &ctx_pic->slice_short[i];
         else
             slice = (DXVA_Slice_H264_Short*)&ctx_pic->slice_long[i];
@@ -341,7 +357,7 @@ static int commit_bitstream_and_slice_buffer(AVCodecContext *avctx,
         slice->BSNALunitDataLocation = current - dxva_data;
         slice->SliceBytesInBuffer    = start_code_size + size;
 
-        if (!is_slice_short(ctx)) {
+        if (!is_slice_short(avctx, ctx)) {
             DXVA_Slice_H264_Long *slice_long = (DXVA_Slice_H264_Long*)slice;
             if (i < ctx_pic->slice_count - 1)
                 slice_long->NumMbsForSlice =
@@ -363,18 +379,43 @@ static int commit_bitstream_and_slice_buffer(AVCodecContext *avctx,
 
         slice->SliceBytesInBuffer += padding;
     }
-    if (FAILED(IDirectXVideoDecoder_ReleaseBuffer(ctx->decoder,
-                                                  DXVA2_BitStreamDateBufferType)))
-        return -1;
+#if CONFIG_D3D11VA
+    if (avctx->pix_fmt == AV_PIX_FMT_D3D11VA_VLD)
+        if (FAILED(ID3D11VideoContext_ReleaseDecoderBuffer(D3D11VA_CONTEXT(ctx)->video_context, D3D11VA_CONTEXT(ctx)->decoder, type)))
+            return -1;
+#endif
+#if CONFIG_DXVA2
+    if (avctx->pix_fmt == AV_PIX_FMT_DXVA2_VLD)
+        if (FAILED(IDirectXVideoDecoder_ReleaseBuffer(DXVA2_CONTEXT(ctx)->decoder, type)))
+            return -1;
+#endif
     if (i < ctx_pic->slice_count)
         return -1;
 
-    memset(bs, 0, sizeof(*bs));
-    bs->CompressedBufferType = DXVA2_BitStreamDateBufferType;
-    bs->DataSize             = current - dxva_data;
-    bs->NumMBsInBuffer       = mb_count;
+#if CONFIG_D3D11VA
+    if (avctx->pix_fmt == AV_PIX_FMT_D3D11VA_VLD) {
+        D3D11_VIDEO_DECODER_BUFFER_DESC *dsc11 = bs;
+        memset(dsc11, 0, sizeof(*dsc11));
+        dsc11->BufferType           = type;
+        dsc11->DataSize             = current - dxva_data;
+        dsc11->NumMBsInBuffer       = mb_count;
 
-    if (is_slice_short(ctx)) {
+        type = D3D11_VIDEO_DECODER_BUFFER_SLICE_CONTROL;
+    }
+#endif
+#if CONFIG_DXVA2
+    if (avctx->pix_fmt == AV_PIX_FMT_DXVA2_VLD) {
+        DXVA2_DecodeBufferDesc *dsc2 = bs;
+        memset(dsc2, 0, sizeof(*dsc2));
+        dsc2->CompressedBufferType = type;
+        dsc2->DataSize             = current - dxva_data;
+        dsc2->NumMBsInBuffer       = mb_count;
+
+        type = DXVA2_SliceControlBufferType;
+    }
+#endif
+
+    if (is_slice_short(avctx, ctx)) {
         slice_data = ctx_pic->slice_short;
         slice_size = ctx_pic->slice_count * sizeof(*ctx_pic->slice_short);
     } else {
@@ -383,7 +424,7 @@ static int commit_bitstream_and_slice_buffer(AVCodecContext *avctx,
     }
     assert((bs->DataSize & 127) == 0);
     return ff_dxva2_commit_buffer(avctx, ctx, sc,
-                                  DXVA2_SliceControlBufferType,
+                                  type,
                                   slice_data, slice_size, mb_count);
 }
 
@@ -393,18 +434,20 @@ static int dxva2_h264_start_frame(AVCodecContext *avctx,
                                   av_unused uint32_t size)
 {
     const H264Context *h = avctx->priv_data;
-    struct dxva_context *ctx = avctx->hwaccel_context;
+    AVDXVAContext *ctx = avctx->hwaccel_context;
     struct dxva2_picture_context *ctx_pic = h->cur_pic_ptr->hwaccel_picture_private;
 
-    if (!ctx->decoder || !ctx->cfg || ctx->surface_count <= 0)
+    if (DXVA_CONTEXT_DECODER(avctx, ctx) == NULL ||
+        DXVA_CONTEXT_CFG(avctx, ctx) == NULL ||
+        DXVA_CONTEXT_COUNT(avctx, ctx) <= 0)
         return -1;
     assert(ctx_pic);
 
     /* Fill up DXVA_PicParams_H264 */
-    fill_picture_parameters(ctx, h, &ctx_pic->pp);
+    fill_picture_parameters(avctx, ctx, h, &ctx_pic->pp);
 
     /* Fill up DXVA_Qmatrix_H264 */
-    fill_scaling_lists(ctx, h, &ctx_pic->qm);
+    fill_scaling_lists(avctx, ctx, h, &ctx_pic->qm);
 
     ctx_pic->slice_count    = 0;
     ctx_pic->bitstream_size = 0;
@@ -418,7 +461,7 @@ static int dxva2_h264_decode_slice(AVCodecContext *avctx,
 {
     const H264Context *h = avctx->priv_data;
     const H264SliceContext *sl = &h->slice_ctx[0];
-    struct dxva_context *ctx = avctx->hwaccel_context;
+    AVDXVAContext *ctx = avctx->hwaccel_context;
     const H264Picture *current_picture = h->cur_pic_ptr;
     struct dxva2_picture_context *ctx_pic = current_picture->hwaccel_picture_private;
     unsigned position;
@@ -431,7 +474,7 @@ static int dxva2_h264_decode_slice(AVCodecContext *avctx,
     ctx_pic->bitstream_size += size;
 
     position = buffer - ctx_pic->bitstream;
-    if (is_slice_short(ctx))
+    if (is_slice_short(avctx, ctx))
         fill_slice_short(&ctx_pic->slice_short[ctx_pic->slice_count],
                          position, size);
     else
@@ -463,6 +506,7 @@ static int dxva2_h264_end_frame(AVCodecContext *avctx)
     return ret;
 }
 
+#if CONFIG_H264_DXVA2_HWACCEL
 AVHWAccel ff_h264_dxva2_hwaccel = {
     .name           = "h264_dxva2",
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -473,3 +517,17 @@ AVHWAccel ff_h264_dxva2_hwaccel = {
     .end_frame      = dxva2_h264_end_frame,
     .frame_priv_data_size = sizeof(struct dxva2_picture_context),
 };
+#endif
+
+#if CONFIG_H264_D3D11VA_HWACCEL
+AVHWAccel ff_h264_d3d11va_hwaccel = {
+    .name           = "h264_d3d11va",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = AV_CODEC_ID_H264,
+    .pix_fmt        = AV_PIX_FMT_D3D11VA_VLD,
+    .start_frame    = dxva2_h264_start_frame,
+    .decode_slice   = dxva2_h264_decode_slice,
+    .end_frame      = dxva2_h264_end_frame,
+    .frame_priv_data_size = sizeof(struct dxva2_picture_context),
+};
+#endif

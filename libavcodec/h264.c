@@ -49,7 +49,7 @@
 #include "rectangle.h"
 #include "svq3.h"
 #include "thread.h"
-#include "vdpau_internal.h"
+#include "vdpau_compat.h"
 
 const uint16_t ff_h264_mb_sizes[4] = { 256, 384, 512, 768 };
 
