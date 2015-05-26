@@ -1942,10 +1942,11 @@ static int mov_read_stsz(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     sc->sample_count = i;
 
+    av_free(buf);
+
     if (pb->eof_reached)
         return AVERROR_EOF;
 
-    av_free(buf);
     return 0;
 }
 
@@ -2027,6 +2028,8 @@ static int mov_read_ctts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     entries = avio_rb32(pb);
 
     av_log(c->fc, AV_LOG_TRACE, "track[%i].ctts.entries = %i\n", c->fc->nb_streams-1, entries);
+
+    av_freep(&sc->ctts_data);
 
     if (!entries)
         return 0;
