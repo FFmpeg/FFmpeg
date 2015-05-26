@@ -2263,6 +2263,13 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                 AVIndexEntry *e;
                 unsigned size, samples;
 
+                if (sc->samples_per_frame > 1 && !sc->bytes_per_frame) {
+                    avpriv_request_sample(mov->fc,
+                           "Zero bytes per frame, but %d samples per frame",
+                           sc->samples_per_frame);
+                    return;
+                }
+
                 if (sc->samples_per_frame >= 160) { // gsm
                     samples = sc->samples_per_frame;
                     size = sc->bytes_per_frame;
