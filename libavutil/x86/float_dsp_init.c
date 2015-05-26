@@ -146,7 +146,7 @@ av_cold void ff_float_dsp_init_x86(AVFloatDSPContext *fdsp)
     if (EXTERNAL_SSE2(cpu_flags)) {
         fdsp->vector_dmul_scalar = ff_vector_dmul_scalar_sse2;
     }
-    if (EXTERNAL_AVX(cpu_flags)) {
+    if (EXTERNAL_AVX_FAST(cpu_flags)) {
         fdsp->vector_fmul = ff_vector_fmul_avx;
         fdsp->vector_fmac_scalar = ff_vector_fmac_scalar_avx;
         fdsp->vector_dmul_scalar = ff_vector_dmul_scalar_avx;

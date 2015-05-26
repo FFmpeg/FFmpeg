@@ -48,7 +48,7 @@ av_cold void ff_fft_init_x86(FFTContext *s)
         s->fft_calc    = ff_fft_calc_sse;
         s->fft_permutation = FF_FFT_PERM_SWAP_LSBS;
     }
-    if (EXTERNAL_AVX(cpu_flags) && s->nbits >= 5) {
+    if (EXTERNAL_AVX_FAST(cpu_flags) && s->nbits >= 5) {
         /* AVX for SB */
         s->imdct_half      = ff_imdct_half_avx;
         s->fft_calc        = ff_fft_calc_avx;
