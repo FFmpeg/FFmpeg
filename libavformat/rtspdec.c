@@ -32,6 +32,7 @@
 #include "rtpproto.h"
 #include "rtsp.h"
 #include "rdt.h"
+#include "tls.h"
 #include "url.h"
 
 static const struct RTSPStatusMessage {

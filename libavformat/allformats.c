@@ -291,7 +291,8 @@ void av_register_all(void)
     REGISTER_PROTOCOL(SCTP,             sctp);
     REGISTER_PROTOCOL(SRTP,             srtp);
     REGISTER_PROTOCOL(TCP,              tcp);
-    REGISTER_PROTOCOL(TLS,              tls);
+    REGISTER_PROTOCOL(TLS_GNUTLS,       tls_gnutls);
+    REGISTER_PROTOCOL(TLS_OPENSSL,      tls_openssl);
     REGISTER_PROTOCOL(UDP,              udp);
     REGISTER_PROTOCOL(UNIX,             unix);
 
