@@ -638,7 +638,7 @@ avplay sap://[ff0e::2:7ffe]
 
 @section tcp
 
-Trasmission Control Protocol.
+Transmission Control Protocol.
 
 The required syntax for a TCP url is:
 @example
