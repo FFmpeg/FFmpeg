@@ -81,6 +81,7 @@ bool configGenerator::buildDefaultValues( )
     fastToggleConfigValue( "swscale_alpha", true );
 
     // Enable hwaccels by default.
+    fastToggleConfigValue( "d3d11va", true );
     fastToggleConfigValue( "dxva2", true );
 
     //Enable x86 hardware architectures
@@ -132,6 +133,7 @@ bool configGenerator::buildDefaultValues( )
     fastToggleConfigValue( "cpunop", true );
     fastToggleConfigValue( "CryptGenRandom", true );
     fastToggleConfigValue( "direct_h", true );
+    fastToggleConfigValue( "d3d11_h", true );
     fastToggleConfigValue( "dxva_h", true );
     fastToggleConfigValue( "ebp_available", true );
     fastToggleConfigValue( "ebx_available", true );
@@ -167,6 +169,7 @@ bool configGenerator::buildDefaultValues( )
     fastToggleConfigValue( "Sleep", true );
     fastToggleConfigValue( "CONDITION_VARIABLE_Ptr", true );
     fastToggleConfigValue( "DXVA_PicParams_HEVC", true );
+    fastToggleConfigValue( "ID3D11VideoDecoder", true );
     fastToggleConfigValue( "socklen_t", true );
     fastToggleConfigValue( "struct_addrinfo", true );
     fastToggleConfigValue( "struct_group_source_req", true );
@@ -182,6 +185,8 @@ bool configGenerator::buildDefaultValues( )
     fastToggleConfigValue( "wglgetprocaddress", true );
 
     fastToggleConfigValue( "dos_paths", true );
+    fastToggleConfigValue( "d3d11_cobj", true );
+    fastToggleConfigValue( "d3d11va_lib", true );
     fastToggleConfigValue( "dxva2api_cobj", true );
     fastToggleConfigValue( "dxva2_lib", true );
 
