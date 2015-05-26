@@ -59,7 +59,7 @@ int ff_dxva2_commit_buffer(AVCodecContext *avctx,
     void     *dxva_data;
     unsigned dxva_size;
     int      result;
-    HRESULT hr;
+    HRESULT hr = 0;
 
 #if CONFIG_D3D11VA
     if (avctx->pix_fmt == AV_PIX_FMT_D3D11VA_VLD)
@@ -136,7 +136,7 @@ int ff_dxva2_common_end_frame(AVCodecContext *avctx, AVFrame *frame,
     D3D11_VIDEO_DECODER_BUFFER_DESC buffer11[4];
 #endif
     DXVA2_DecodeBufferDesc          buffer2[4];
-    DECODER_BUFFER_DESC             *buffer,*buffer_slice;
+    DECODER_BUFFER_DESC             *buffer = NULL, *buffer_slice = NULL;
     int result, runs = 0;
     HRESULT hr;
     unsigned type;
