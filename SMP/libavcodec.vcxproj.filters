@@ -2479,6 +2479,9 @@
     <ClInclude Include="..\libavcodec\dv_profile.h">
       <Filter>Header Files\libavcodec</Filter>
     </ClInclude>
+    <ClInclude Include="..\libavcodec\d3d11va.h">
+      <Filter>Header Files\libavcodec</Filter>
+    </ClInclude>
     <ClInclude Include="..\libavcodec\dxva2.h">
       <Filter>Header Files\libavcodec</Filter>
     </ClInclude>
