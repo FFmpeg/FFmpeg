@@ -17,6 +17,7 @@ flags=K
 
 [packets_and_frames.frame.0]
 media_type=audio
+stream_index=0
 key_frame=1
 pkt_pts=0
 pkt_pts_time=0.000000
@@ -50,6 +51,7 @@ flags=K
 
 [packets_and_frames.frame.1]
 media_type=video
+stream_index=1
 key_frame=1
 pkt_pts=0
 pkt_pts_time=0.000000
@@ -89,6 +91,7 @@ flags=K
 
 [packets_and_frames.frame.2]
 media_type=video
+stream_index=2
 key_frame=1
 pkt_pts=0
 pkt_pts_time=0.000000
@@ -128,6 +131,7 @@ flags=K
 
 [packets_and_frames.frame.3]
 media_type=audio
+stream_index=0
 key_frame=1
 pkt_pts=1024
 pkt_pts_time=0.023220
@@ -161,6 +165,7 @@ flags=K
 
 [packets_and_frames.frame.4]
 media_type=video
+stream_index=1
 key_frame=1
 pkt_pts=2048
 pkt_pts_time=0.040000
@@ -200,6 +205,7 @@ flags=K
 
 [packets_and_frames.frame.5]
 media_type=video
+stream_index=2
 key_frame=1
 pkt_pts=2048
 pkt_pts_time=0.040000
@@ -239,6 +245,7 @@ flags=K
 
 [packets_and_frames.frame.6]
 media_type=audio
+stream_index=0
 key_frame=1
 pkt_pts=2048
 pkt_pts_time=0.046440
@@ -272,6 +279,7 @@ flags=K
 
 [packets_and_frames.frame.7]
 media_type=audio
+stream_index=0
 key_frame=1
 pkt_pts=3072
 pkt_pts_time=0.069660
@@ -305,6 +313,7 @@ flags=K
 
 [packets_and_frames.frame.8]
 media_type=video
+stream_index=1
 key_frame=1
 pkt_pts=4096
 pkt_pts_time=0.080000
@@ -344,6 +353,7 @@ flags=K
 
 [packets_and_frames.frame.9]
 media_type=video
+stream_index=2
 key_frame=1
 pkt_pts=4096
 pkt_pts_time=0.080000
@@ -383,6 +393,7 @@ flags=K
 
 [packets_and_frames.frame.10]
 media_type=audio
+stream_index=0
 key_frame=1
 pkt_pts=4096
 pkt_pts_time=0.092880
@@ -416,6 +427,7 @@ flags=K
 
 [packets_and_frames.frame.11]
 media_type=audio
+stream_index=0
 key_frame=1
 pkt_pts=5120
 pkt_pts_time=0.116100
@@ -449,6 +461,7 @@ flags=K
 
 [packets_and_frames.frame.12]
 media_type=video
+stream_index=1
 key_frame=1
 pkt_pts=6144
 pkt_pts_time=0.120000
@@ -488,6 +501,7 @@ flags=K
 
 [packets_and_frames.frame.13]
 media_type=video
+stream_index=2
 key_frame=1
 pkt_pts=6144
 pkt_pts_time=0.120000
