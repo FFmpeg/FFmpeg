@@ -328,7 +328,7 @@ static void export_stream_params(AVCodecContext *avctx,
 
 static int set_sps(HEVCContext *s, const HEVCSPS *sps, enum AVPixelFormat pix_fmt)
 {
-    #define HWACCEL_MAX (CONFIG_HEVC_DXVA2_HWACCEL)
+    #define HWACCEL_MAX (CONFIG_HEVC_DXVA2_HWACCEL + CONFIG_HEVC_D3D11VA_HWACCEL)
     enum AVPixelFormat pix_fmts[HWACCEL_MAX + 2], *fmt = pix_fmts;
     int ret, i;
 
