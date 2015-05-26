@@ -132,6 +132,7 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC (COMFORTNOISE,      comfortnoise);
     REGISTER_DECODER(CSCD,              cscd);
     REGISTER_DECODER(CYUV,              cyuv);
+    REGISTER_DECODER(DDS,               dds);
     REGISTER_DECODER(DFA,               dfa);
     REGISTER_ENCDEC (DNXHD,             dnxhd);
     REGISTER_ENCDEC (DPX,               dpx);

@@ -35,6 +35,7 @@ version <next>:
 - Multipart JPEG demuxer
 - Support the extended vp9 profiles in the libvpx wrapper
 - Hap decoder and encoder
+- DirectDraw Surface image/texture decoder
 
 
 version 11:
