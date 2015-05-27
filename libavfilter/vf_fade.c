@@ -115,12 +115,30 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_RGBA,     AV_PIX_FMT_BGRA,
         AV_PIX_FMT_NONE
     };
+    static const enum AVPixelFormat pix_fmts_alpha[] = {
+        AV_PIX_FMT_YUVA420P, AV_PIX_FMT_YUVA422P, AV_PIX_FMT_YUVA444P,
+        AV_PIX_FMT_ARGB,     AV_PIX_FMT_ABGR,
+        AV_PIX_FMT_RGBA,     AV_PIX_FMT_BGRA,
+        AV_PIX_FMT_NONE
+    };
+    static const enum AVPixelFormat pix_fmts_rgba[] = {
+        AV_PIX_FMT_ARGB,     AV_PIX_FMT_ABGR,
+        AV_PIX_FMT_RGBA,     AV_PIX_FMT_BGRA,
+        AV_PIX_FMT_NONE
+    };
     AVFilterFormats *fmts_list;
 
-    if (s->black_fade)
-        fmts_list = ff_make_format_list(pix_fmts);
-    else
-        fmts_list = ff_make_format_list(pix_fmts_rgb);
+    if (s->alpha) {
+        if (s->black_fade)
+            fmts_list = ff_make_format_list(pix_fmts_alpha);
+        else
+            fmts_list = ff_make_format_list(pix_fmts_rgba);
+    } else {
+        if (s->black_fade)
+            fmts_list = ff_make_format_list(pix_fmts);
+        else
+            fmts_list = ff_make_format_list(pix_fmts_rgb);
+    }
     if (!fmts_list)
         return AVERROR(ENOMEM);
     return ff_set_common_formats(ctx, fmts_list);
