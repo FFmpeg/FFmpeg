@@ -24,7 +24,7 @@
 SECTION_RODATA
 pf_inv16:  times 4 dd 0x3D800000 ; 1/16
 
-SECTION_TEXT
+SECTION .text
 
 ; void decode_hf(float dst[DCA_SUBBANDS][8], const int32_t vq_num[DCA_SUBBANDS],
 ;                const int8_t hf_vq[1024][32], intptr_t vq_offset,

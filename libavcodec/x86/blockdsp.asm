@@ -23,7 +23,7 @@
 
 %include "libavutil/x86/x86util.asm"
 
-SECTION_TEXT
+SECTION .text
 
 ;----------------------------------------
 ; void ff_clear_block(int16_t *blocks);

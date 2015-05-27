@@ -34,7 +34,7 @@ ps_noise13      dd  0.0,  1.0, 0.0, -1.0
 cextern         sbr_noise_table
 cextern         ps_neg
 
-SECTION_TEXT
+SECTION .text
 
 INIT_XMM sse
 cglobal sbr_sum_square, 2, 3, 6

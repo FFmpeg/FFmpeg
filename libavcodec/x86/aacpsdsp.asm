@@ -26,7 +26,7 @@ SECTION_RODATA
 
 ps_p1m1p1m1: dd 0, 0x80000000, 0, 0x80000000
 
-SECTION_TEXT
+SECTION .text
 
 ;*************************************************************************
 ;void ff_ps_add_squares_<opt>(float *dst, const float (*src)[2], int n);

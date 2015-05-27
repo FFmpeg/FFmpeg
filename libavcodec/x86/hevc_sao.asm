@@ -36,7 +36,7 @@ cextern pw_2
 cextern pb_1
 cextern pb_2
 
-SECTION_TEXT
+SECTION .text
 
 %define MAX_PB_SIZE  64
 %define PADDING_SIZE 32 ; AV_INPUT_BUFFER_PADDING_SIZE

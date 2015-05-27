@@ -28,7 +28,7 @@ pb_bswap32: db 3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12
 
 cextern pb_80
 
-SECTION_TEXT
+SECTION .text
 
 ; %1 = aligned/unaligned
 %macro BSWAP_LOOPS  1

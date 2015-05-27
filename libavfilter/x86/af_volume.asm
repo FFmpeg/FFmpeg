@@ -29,7 +29,7 @@ pw_1:         times 8 dw 1
 pw_128:       times 8 dw 128
 pq_128:       times 2 dq 128
 
-SECTION_TEXT
+SECTION .text
 
 ;------------------------------------------------------------------------------
 ; void ff_scale_samples_s16(uint8_t *dst, const uint8_t *src, int len,

@@ -33,7 +33,7 @@ pw_4:    times 16 dw 4
 pw_8:    times 16 dw 8
 pw_div9: times 16 dw ((1<<16)+4)/9
 
-SECTION_TEXT
+SECTION .text
 
 ;*** Preprocessor helpers
 

@@ -40,7 +40,6 @@ max_pixels_12:          times 16 dw ((1 << 12)-1)
 cextern pd_1
 cextern pb_0
 
-SECTION_TEXT 32
 %macro EPEL_TABLE 4
 hevc_epel_filters_%4_%1 times %2 d%3 -2, 58
                         times %2 d%3 10, -2
@@ -87,6 +86,8 @@ QPEL_TABLE 12, 4, w, sse4
 
 QPEL_TABLE  8,16, b, avx2
 QPEL_TABLE 10, 8, w, avx2
+
+SECTION .text
 
 %define MAX_PB_SIZE  64
 
