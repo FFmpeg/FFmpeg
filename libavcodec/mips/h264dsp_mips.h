@@ -68,4 +68,20 @@ void ff_weight_h264_pixels8_8_msa(uint8_t *src, int stride, int height,
 void ff_weight_h264_pixels4_8_msa(uint8_t *src, int stride, int height,
                                   int log2_denom, int weight, int offset);
 
+void ff_h264_weight_pixels16_8_mmi(uint8_t *block, int stride, int height,
+        int log2_denom, int weight, int offset);
+void ff_h264_biweight_pixels16_8_mmi(uint8_t *dst, uint8_t *src,
+        int stride, int height, int log2_denom, int weightd, int weights,
+        int offset);
+void ff_h264_weight_pixels8_8_mmi(uint8_t *block, int stride, int height,
+        int log2_denom, int weight, int offset);
+void ff_h264_biweight_pixels8_8_mmi(uint8_t *dst, uint8_t *src,
+        int stride, int height, int log2_denom, int weightd, int weights,
+        int offset);
+void ff_h264_weight_pixels4_8_mmi(uint8_t *block, int stride, int height,
+        int log2_denom, int weight, int offset);
+void ff_h264_biweight_pixels4_8_mmi(uint8_t *dst, uint8_t *src,
+        int stride, int height, int log2_denom, int weightd, int weights,
+        int offset);
+
 #endif  // #ifndef H264_DSP_MIPS_H
