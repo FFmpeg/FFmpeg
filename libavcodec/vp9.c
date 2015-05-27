@@ -219,7 +219,29 @@ static int decode_frame_header(AVCodecContext *avctx,
             return AVERROR_INVALIDDATA;
         }
         s->fullrange = get_bits1(&s->gb);
-        // for profile 1, here follows the subsampling bits
+
+        // subsampling bits
+        if (s->profile == 1 || s->profile == 3) {
+            s->sub_x = get_bits1(&s->gb);
+            s->sub_y = get_bits1(&s->gb);
+            if (s->sub_x && s->sub_y) {
+                av_log(avctx, AV_LOG_ERROR,
+                       "4:2:0 color not supported in profile 1 or 3\n");
+                return AVERROR_INVALIDDATA;
+            }
+            if (get_bits1(&s->gb)) { // reserved bit
+                av_log(avctx, AV_LOG_ERROR, "Reserved bit should be zero\n");
+                return AVERROR_INVALIDDATA;
+            }
+        } else {
+            s->sub_x = s->sub_y = 1;
+        }
+        if (!s->sub_x || !s->sub_y) {
+            avpriv_report_missing_feature(avctx, "Subsampling %d:%d",
+                                          s->sub_x, s->sub_y);
+            return AVERROR_PATCHWELCOME;
+        }
+
         s->refreshrefmask = 0xff;
         w = get_bits(&s->gb, 16) + 1;
         h = get_bits(&s->gb, 16) + 1;

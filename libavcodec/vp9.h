@@ -277,6 +277,8 @@ typedef struct VP9Context {
     uint8_t use_last_frame_mvs;
     uint8_t errorres;
     uint8_t colorspace;
+    uint8_t sub_x;
+    uint8_t sub_y;
     uint8_t fullrange;
     uint8_t intraonly;
     uint8_t resetctx;
