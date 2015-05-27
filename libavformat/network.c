@@ -29,8 +29,8 @@
 
 int ff_tls_init(void)
 {
-    int ret;
 #if CONFIG_TLS_OPENSSL_PROTOCOL
+    int ret;
     if ((ret = ff_openssl_init()) < 0)
         return ret;
 #endif
