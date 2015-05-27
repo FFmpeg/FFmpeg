@@ -52,4 +52,10 @@ typedef struct TLSShared {
 
 int ff_tls_open_underlying(TLSShared *c, URLContext *parent, const char *uri, AVDictionary **options);
 
+void ff_gnutls_init(void);
+void ff_gnutls_deinit(void);
+
+int ff_openssl_init(void);
+void ff_openssl_deinit(void);
+
 #endif /* AVFORMAT_TLS_H */

@@ -19,6 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <errno.h>
+
 #include <gnutls/gnutls.h>
 #include <gnutls/x509.h>
 
@@ -28,9 +30,15 @@
 #include "os_support.h"
 #include "url.h"
 #include "tls.h"
+#include "libavcodec/internal.h"
 #include "libavutil/avstring.h"
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
+
+#if HAVE_THREADS && GNUTLS_VERSION_NUMBER <= 0x020b00
+#include <gcrypt.h>
+GCRY_THREAD_OPTION_PTHREAD_IMPL;
+#endif
 
 typedef struct TLSContext {
     const AVClass *class;
@@ -39,6 +47,24 @@ typedef struct TLSContext {
     gnutls_certificate_credentials_t cred;
     int need_shutdown;
 } TLSContext;
+
+void ff_gnutls_init(void)
+{
+    avpriv_lock_avformat();
+#if HAVE_THREADS && GNUTLS_VERSION_NUMBER < 0x020b00
+    if (gcry_control(GCRYCTL_ANY_INITIALIZATION_P) == 0)
+        gcry_control(GCRYCTL_SET_THREAD_CBS, &gcry_threads_pthread);
+#endif
+    gnutls_global_init();
+    avpriv_unlock_avformat();
+}
+
+void ff_gnutls_deinit(void)
+{
+    avpriv_lock_avformat();
+    gnutls_global_deinit();
+    avpriv_unlock_avformat();
+}
 
 static int print_tls_error(URLContext *h, int ret)
 {
@@ -67,7 +93,7 @@ static int tls_close(URLContext *h)
         gnutls_certificate_free_credentials(c->cred);
     if (c->tls_shared.tcp)
         ffurl_close(c->tls_shared.tcp);
-    ff_tls_deinit();
+    ff_gnutls_deinit();
     return 0;
 }
 
@@ -103,8 +129,7 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
     TLSShared *c = &p->tls_shared;
     int ret;
 
-    if ((ret = ff_tls_init()) < 0)
-        return ret;
+    ff_gnutls_init();
 
     if ((ret = ff_tls_open_underlying(c, h, uri, options)) < 0)
         goto fail;

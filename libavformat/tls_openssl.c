@@ -25,13 +25,18 @@
 #include "os_support.h"
 #include "url.h"
 #include "tls.h"
+#include "libavcodec/internal.h"
 #include "libavutil/avstring.h"
+#include "libavutil/avutil.h"
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
+#include "libavutil/thread.h"
 
 #include <openssl/bio.h>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
+
+static int openssl_init;
 
 typedef struct TLSContext {
     const AVClass *class;
@@ -39,6 +44,72 @@ typedef struct TLSContext {
     SSL_CTX *ctx;
     SSL *ssl;
 } TLSContext;
+
+#if HAVE_THREADS
+#include <openssl/crypto.h>
+pthread_mutex_t *openssl_mutexes;
+static void openssl_lock(int mode, int type, const char *file, int line)
+{
+    if (mode & CRYPTO_LOCK)
+        pthread_mutex_lock(&openssl_mutexes[type]);
+    else
+        pthread_mutex_unlock(&openssl_mutexes[type]);
+}
+#if !defined(WIN32) && OPENSSL_VERSION_NUMBER < 0x10000000
+static unsigned long openssl_thread_id(void)
+{
+    return (intptr_t) pthread_self();
+}
+#endif
+#endif
+
+int ff_openssl_init(void)
+{
+    avpriv_lock_avformat();
+    if (!openssl_init) {
+        SSL_library_init();
+        SSL_load_error_strings();
+#if HAVE_THREADS
+        if (!CRYPTO_get_locking_callback()) {
+            int i;
+            openssl_mutexes = av_malloc_array(sizeof(pthread_mutex_t), CRYPTO_num_locks());
+            if (!openssl_mutexes) {
+                avpriv_unlock_avformat();
+                return AVERROR(ENOMEM);
+            }
+
+            for (i = 0; i < CRYPTO_num_locks(); i++)
+                pthread_mutex_init(&openssl_mutexes[i], NULL);
+            CRYPTO_set_locking_callback(openssl_lock);
+#if !defined(WIN32) && OPENSSL_VERSION_NUMBER < 0x10000000
+            CRYPTO_set_id_callback(openssl_thread_id);
+#endif
+        }
+#endif
+    }
+    openssl_init++;
+    avpriv_unlock_avformat();
+
+    return 0;
+}
+
+void ff_openssl_deinit(void)
+{
+    avpriv_lock_avformat();
+    openssl_init--;
+    if (!openssl_init) {
+#if HAVE_THREADS
+        if (CRYPTO_get_locking_callback() == openssl_lock) {
+            int i;
+            CRYPTO_set_locking_callback(NULL);
+            for (i = 0; i < CRYPTO_num_locks(); i++)
+                pthread_mutex_destroy(&openssl_mutexes[i]);
+            av_free(openssl_mutexes);
+        }
+#endif
+    }
+    avpriv_unlock_avformat();
+}
 
 static int print_tls_error(URLContext *h, int ret)
 {
@@ -57,7 +128,7 @@ static int tls_close(URLContext *h)
         SSL_CTX_free(c->ctx);
     if (c->tls_shared.tcp)
         ffurl_close(c->tls_shared.tcp);
-    ff_tls_deinit();
+    ff_openssl_deinit();
     return 0;
 }
 
@@ -131,7 +202,7 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
     BIO *bio;
     int ret;
 
-    if ((ret = ff_tls_init()) < 0)
+    if ((ret = ff_openssl_init()) < 0)
         return ret;
 
     if ((ret = ff_tls_open_underlying(c, h, uri, options)) < 0)
