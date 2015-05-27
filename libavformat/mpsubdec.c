@@ -58,7 +58,7 @@ static int mpsub_read_header(AVFormatContext *s)
     AVBPrint buf;
     AVRational pts_info = (AVRational){ 100, 1 }; // ts based by default
     int res = 0;
-    float multiplier = 100.0;
+    int multiplier = 100;
     float current_pts = 0;
 
     av_bprint_init(&buf, 0, AV_BPRINT_SIZE_UNLIMITED);
@@ -76,7 +76,7 @@ static int mpsub_read_header(AVFormatContext *s)
         if (sscanf(line, "FORMAT=%d", &fps) == 1 && fps > 3 && fps < 100) {
             /* frame based timing */
             pts_info = (AVRational){ fps, 1 };
-            multiplier = 1.0;
+            multiplier = 1;
         } else if (sscanf(line, "%f %f", &start, &duration) == 2) {
             AVPacket *sub;
             const int64_t pos = avio_tell(s->pb);
