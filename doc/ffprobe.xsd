@@ -87,6 +87,7 @@
       </xsd:sequence>
 
       <xsd:attribute name="media_type"    type="xsd:string" use="required"/>
+      <xsd:attribute name="stream_index"  type="xsd:int"  />
       <xsd:attribute name="key_frame"     type="xsd:int"    use="required"/>
       <xsd:attribute name="pts"           type="xsd:long" />
       <xsd:attribute name="pts_time"      type="xsd:float"/>

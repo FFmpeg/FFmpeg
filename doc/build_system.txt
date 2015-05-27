@@ -16,6 +16,9 @@ DESTDIR
     Destination directory for the install targets, useful to prepare packages
     or install FFmpeg in cross-environments.
 
+GEN
+    Set to ‘1’ to generate the missing or mismatched references.
+
 Makefile targets:
 
 all

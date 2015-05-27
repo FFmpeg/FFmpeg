@@ -1801,7 +1801,7 @@ static int mov_write_tmcd_tag(AVIOContext *pb, MOVTrack *track)
     int64_t pos = avio_tell(pb);
 #if 1
     int frame_duration = av_rescale(track->timescale, track->enc->time_base.num, track->enc->time_base.den);
-    int nb_frames = 1.0/av_q2d(track->enc->time_base) + 0.5;
+    int nb_frames = ROUNDED_DIV(track->enc->time_base.den, track->enc->time_base.num);
     AVDictionaryEntry *t = NULL;
 
     if (nb_frames > 255) {
@@ -5154,10 +5154,15 @@ static int mov_write_header(AVFormatContext *s)
             }
             if (track->mode != MODE_MOV &&
                 track->enc->codec_id == AV_CODEC_ID_MP3 && track->timescale < 16000) {
-                av_log(s, AV_LOG_ERROR, "track %d: muxing mp3 at %dhz is not supported\n",
-                       i, track->enc->sample_rate);
-                ret = AVERROR(EINVAL);
-                goto error;
+                if (track->enc->strict_std_compliance >= FF_COMPLIANCE_NORMAL) {
+                    av_log(s, AV_LOG_ERROR, "track %d: muxing mp3 at %dhz is not standard, to mux anyway set strict to -1\n",
+                        i, track->enc->sample_rate);
+                    ret = AVERROR(EINVAL);
+                    goto error;
+                } else {
+                    av_log(s, AV_LOG_WARNING, "track %d: muxing mp3 at %dhz is not standard in MP4\n",
+                           i, track->enc->sample_rate);
+                }
             }
         } else if (st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE) {
             track->timescale = st->time_base.den;

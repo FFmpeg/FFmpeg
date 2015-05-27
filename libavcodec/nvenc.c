@@ -680,7 +680,7 @@ static av_cold int nvenc_encode_init(AVCodecContext *avctx)
         av_reduce(&dw, &dh,
                   ctx->init_encode_params.darWidth * 44,
                   ctx->init_encode_params.darHeight * 45,
-                  1024 * 1204);
+                  1024 * 1024);
         ctx->init_encode_params.darHeight = dh;
         ctx->init_encode_params.darWidth = dw;
     }

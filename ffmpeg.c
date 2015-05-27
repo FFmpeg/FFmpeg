@@ -1342,6 +1342,7 @@ static void print_final_stats(int64_t total_size)
     uint64_t data_size = 0;
     float percent = -1.0;
     int i, j;
+    int pass1_used = 1;
 
     for (i = 0; i < nb_output_streams; i++) {
         OutputStream *ost = output_streams[i];
@@ -1353,6 +1354,9 @@ static void print_final_stats(int64_t total_size)
         }
         extra_size += ost->enc_ctx->extradata_size;
         data_size  += ost->data_size;
+        if (   (ost->enc_ctx->flags & (CODEC_FLAG_PASS1 | CODEC_FLAG_PASS2))
+            != CODEC_FLAG_PASS1)
+            pass1_used = 0;
     }
 
     if (data_size && total_size>0 && total_size >= data_size)
@@ -1439,7 +1443,12 @@ static void print_final_stats(int64_t total_size)
                total_packets, total_size);
     }
     if(video_size + data_size + audio_size + subtitle_size + extra_size == 0){
-        av_log(NULL, AV_LOG_WARNING, "Output file is empty, nothing was encoded (check -ss / -t / -frames parameters if used)\n");
+        av_log(NULL, AV_LOG_WARNING, "Output file is empty, nothing was encoded ");
+        if (pass1_used) {
+            av_log(NULL, AV_LOG_WARNING, "\n");
+        } else {
+            av_log(NULL, AV_LOG_WARNING, "(check -ss / -t / -frames parameters if used)\n");
+        }
     }
 }
 

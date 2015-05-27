@@ -1824,6 +1824,7 @@ static void show_frame(WriterContext *w, AVFrame *frame, AVStream *stream,
     s = av_get_media_type_string(stream->codec->codec_type);
     if (s) print_str    ("media_type", s);
     else   print_str_opt("media_type", "unknown");
+    print_int("stream_index",           stream->index);
     print_int("key_frame",              frame->key_frame);
     print_ts  ("pkt_pts",               frame->pkt_pts);
     print_time("pkt_pts_time",          frame->pkt_pts, &stream->time_base);
