@@ -54,6 +54,8 @@ typedef struct {
     int is_cbr;
 } MP3DecContext;
 
+static int check(AVFormatContext *s, int64_t pos);
+
 /* mp3 read */
 
 static int mp3_read_probe(AVProbeData *p)
@@ -369,6 +371,16 @@ static int mp3_read_header(AVFormatContext *s)
     ret = ff_replaygain_export(st, s->metadata);
     if (ret < 0)
         return ret;
+
+    off = avio_tell(s->pb);
+    for (i = 0; i < 64 * 1024; i++) {
+        if (check(s, off + i) >= 0) {
+            av_log(s, AV_LOG_INFO, "Skipping %d bytes of junk at %lld.\n", i, (long long)off);
+            avio_seek(s->pb, off + i, SEEK_SET);
+            break;
+        }
+        avio_seek(s->pb, off, SEEK_SET);
+    }
 
     // the seek index is relative to the end of the xing vbr headers
     for (i = 0; i < st->nb_index_entries; i++)
