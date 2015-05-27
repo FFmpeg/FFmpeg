@@ -15,6 +15,9 @@ libavutil:     2014-08-09
 
 API changes, most recent first:
 
+2015-05-27 - xxxxxxx - lavu 54.26.100 - cpu.h
+  Add AV_CPU_FLAG_AVXSLOW.
+
 2015-05-26 - xxxxxxx - lavu 54.25.100 - rational.h
   Add av_q2intfloat().
 
