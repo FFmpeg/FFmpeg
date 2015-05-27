@@ -347,6 +347,7 @@ EXPORTS
     av_pix_fmt_get_chroma_sub_sample
     av_pix_fmt_swap_endianness
     av_pixelutils_get_sad_fn
+    av_q2intfloat
     av_rc4_crypt
     av_rc4_init
     av_read_image_line
