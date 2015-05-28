@@ -77,6 +77,8 @@
         bn_new(bn);                                 \
         if (bn)                                     \
             ret = (mpz_set_str(bn, buf, 16) == 0);  \
+        else                                        \
+            ret = 1;                                \
     } while (0)
 #define bn_modexp(bn, y, q, p)      mpz_powm(bn, y, q, p)
 #define bn_random(bn, num_bytes)                    \
