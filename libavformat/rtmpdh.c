@@ -134,7 +134,7 @@ static FFBigNum dh_generate_key(FF_DH *dh)
 }
 
 static int dh_compute_key(FF_DH *dh, FFBigNum pub_key_bn,
-                          uint32_t pub_key_len, uint8_t *secret_key)
+                          uint32_t secret_key_len, uint8_t *secret_key)
 {
     FFBigNum k;
     int num_bytes;
@@ -148,11 +148,11 @@ static int dh_compute_key(FF_DH *dh, FFBigNum pub_key_bn,
         return -1;
 
     bn_modexp(k, pub_key_bn, dh->priv_key, dh->p);
-    bn_bn2bin(k, secret_key, pub_key_len);
+    bn_bn2bin(k, secret_key, secret_key_len);
     bn_free(k);
 
     /* return the length of the shared secret key like DH_compute_key */
-    return pub_key_len;
+    return secret_key_len;
 }
 
 void ff_dh_free(FF_DH *dh)
