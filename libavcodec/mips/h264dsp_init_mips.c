@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2015 Parag Salasakar (Parag.Salasakar@imgtec.com)
+ * Copyright (c) 2015 Zhou Xiaoyong <zhouxiaoyong@loongson.cn>
  *
  * This file is part of FFmpeg.
  *
@@ -65,10 +66,30 @@ static av_cold void h264dsp_init_msa(H264DSPContext *c,
 }
 #endif  // #if HAVE_MSA
 
+#if HAVE_LOONGSON3
+static av_cold void h264dsp_init_mmi(H264DSPContext * c,
+                                     const int bit_depth,
+                                     const int chroma_format_idc)
+{
+    if (bit_depth == 8) {
+        c->weight_h264_pixels_tab[0] = ff_h264_weight_pixels16_8_mmi;
+        c->weight_h264_pixels_tab[1] = ff_h264_weight_pixels8_8_mmi;
+        c->weight_h264_pixels_tab[2] = ff_h264_weight_pixels4_8_mmi;
+
+        c->biweight_h264_pixels_tab[0] = ff_h264_biweight_pixels16_8_mmi;
+        c->biweight_h264_pixels_tab[1] = ff_h264_biweight_pixels8_8_mmi;
+        c->biweight_h264_pixels_tab[2] = ff_h264_biweight_pixels4_8_mmi;
+    }
+}
+#endif /* HAVE_LOONGSON3 */
+
 av_cold void ff_h264dsp_init_mips(H264DSPContext *c, const int bit_depth,
                                   const int chroma_format_idc)
 {
 #if HAVE_MSA
     h264dsp_init_msa(c, bit_depth, chroma_format_idc);
 #endif  // #if HAVE_MSA
+#if HAVE_LOONGSON3
+    h264dsp_init_mmi(c, bit_depth, chroma_format_idc);
+#endif /* HAVE_LOONGSON3 */
 }

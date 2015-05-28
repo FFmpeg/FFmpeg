@@ -645,6 +645,8 @@ static int read_header(FFV1Context *f)
         chroma_h_shift      = get_symbol(c, state, 0);
         chroma_v_shift      = get_symbol(c, state, 0);
         transparency        = get_rac(c, state);
+        if (colorspace == 0 && f->avctx->skip_alpha)
+            transparency = 0;
 
         if (f->plane_count) {
             if (colorspace          != f->colorspace                 ||
@@ -675,7 +677,6 @@ static int read_header(FFV1Context *f)
     }
 
     if (f->colorspace == 0) {
-        if (f->avctx->skip_alpha) f->transparency = 0;
         if (!f->transparency && !f->chroma_planes) {
             if (f->avctx->bits_per_raw_sample <= 8)
                 f->avctx->pix_fmt = AV_PIX_FMT_GRAY8;
