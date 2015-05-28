@@ -313,7 +313,8 @@ int ff_dh_write_public_key(FF_DH *dh, uint8_t *pub_key, int pub_key_len)
 }
 
 int ff_dh_compute_shared_secret_key(FF_DH *dh, const uint8_t *pub_key,
-                                    int pub_key_len, uint8_t *secret_key)
+                                    int pub_key_len, uint8_t *secret_key,
+                                    int secret_key_len)
 {
     FFBigNum q1 = NULL, pub_key_bn = NULL;
     int ret;
@@ -333,7 +334,7 @@ int ff_dh_compute_shared_secret_key(FF_DH *dh, const uint8_t *pub_key,
     /* when the public key is valid we have to compute the shared secret key */
     if ((ret = dh_is_valid_public_key(pub_key_bn, dh->p, q1)) < 0) {
         goto fail;
-    } else if ((ret = dh_compute_key(dh, pub_key_bn, pub_key_len,
+    } else if ((ret = dh_compute_key(dh, pub_key_bn, secret_key_len,
                                      secret_key)) < 0) {
         ret = AVERROR(EINVAL);
         goto fail;

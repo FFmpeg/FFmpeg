@@ -163,7 +163,7 @@ int ff_rtmpe_compute_secret_key(URLContext *h, const uint8_t *serverdata,
 
     /* compute the shared secret secret in order to compute RC4 keys */
     if ((ret = ff_dh_compute_shared_secret_key(rt->dh, serverdata + server_pos,
-                                               128, secret_key)) < 0)
+                                               128, secret_key, sizeof(secret_key))) < 0)
         return ret;
 
     /* set output key */
