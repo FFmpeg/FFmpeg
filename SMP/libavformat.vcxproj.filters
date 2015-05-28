@@ -1194,6 +1194,9 @@
     <ClCompile Include="..\libavformat\tcp.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavformat\tls_gnutls.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavformat\tls.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>

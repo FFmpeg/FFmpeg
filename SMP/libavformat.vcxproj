@@ -843,6 +843,8 @@
     </ClCompile>
     <ClCompile Include="..\libavformat\tcp.c">
     </ClCompile>
+    <ClCompile Include="..\libavformat\tls_gnutls.c">
+    </ClCompile>
     <ClCompile Include="..\libavformat\tls.c">
     </ClCompile>
     <ClCompile Include="..\libavformat\udp.c">
