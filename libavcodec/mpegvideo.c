@@ -1049,8 +1049,10 @@ do {\
             av_fast_malloc(&s->bitstream_buffer,
                            &s->allocated_bitstream_buffer_size,
                            s1->allocated_bitstream_buffer_size);
-            if (!s->bitstream_buffer)
+            if (!s->bitstream_buffer) {
+                s->bitstream_buffer_size = 0;
                 return AVERROR(ENOMEM);
+            }
         }
         s->bitstream_buffer_size = s1->bitstream_buffer_size;
         memcpy(s->bitstream_buffer, s1->bitstream_buffer,
