@@ -519,6 +519,7 @@ static int append_to_cached_buf(AVCodecContext *avctx,
     if (ctx->buf_size >= sizeof(ctx->buf) - buf_size) {
         av_log(avctx, AV_LOG_WARNING, "Attempt to reconstruct "
                "too large SPU packets aborted.\n");
+        ctx->buf_size = 0;
         return AVERROR_INVALIDDATA;
     }
     memcpy(ctx->buf + ctx->buf_size, buf, buf_size);
