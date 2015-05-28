@@ -81,12 +81,12 @@
             ret = 1;                                \
     } while (0)
 #define bn_modexp(bn, y, q, p)      mpz_powm(bn, y, q, p)
-#define bn_random(bn, num_bytes)                    \
+#define bn_random(bn, num_bits)                     \
     do {                                            \
         gmp_randstate_t rs;                         \
         gmp_randinit_mt(rs);                        \
         gmp_randseed_ui(rs, av_get_random_seed());  \
-        mpz_urandomb(bn, rs, num_bytes);            \
+        mpz_urandomb(bn, rs, num_bits);             \
         gmp_randclear(rs);                          \
     } while (0)
 #elif CONFIG_GCRYPT
@@ -102,7 +102,7 @@
 #define bn_bin2bn(bn, buf, len)     gcry_mpi_scan(&bn, GCRYMPI_FMT_USG, buf, len, NULL)
 #define bn_hex2bn(bn, buf, ret)     ret = (gcry_mpi_scan(&bn, GCRYMPI_FMT_HEX, buf, 0, 0) == 0)
 #define bn_modexp(bn, y, q, p)      gcry_mpi_powm(bn, y, q, p)
-#define bn_random(bn, num_bytes)    gcry_mpi_randomize(bn, num_bytes, GCRY_WEAK_RANDOM)
+#define bn_random(bn, num_bits)     gcry_mpi_randomize(bn, num_bits, GCRY_WEAK_RANDOM)
 #endif
 
 #define MAX_BYTES 18000
@@ -120,7 +120,7 @@ static FFBigNum dh_generate_key(FF_DH *dh)
     bn_new(dh->priv_key);
     if (!dh->priv_key)
         return NULL;
-    bn_random(dh->priv_key, num_bytes);
+    bn_random(dh->priv_key, 8 * num_bytes);
 
     bn_new(dh->pub_key);
     if (!dh->pub_key) {
