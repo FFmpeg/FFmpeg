@@ -209,12 +209,12 @@ static void fill_scaling_lists(AVDXVAContext *ctx, const HEVCContext *h, DXVA_Qm
             qm->ucScalingLists2[i][j] = sl->sl[2][i][pos];
 
             if (i < 2)
-                qm->ucScalingLists3[i][j] = sl->sl[3][i][pos];
+                qm->ucScalingLists3[i][j] = sl->sl[3][i * 3][pos];
         }
 
         qm->ucScalingListDCCoefSizeID2[i] = sl->sl_dc[0][i];
         if (i < 2)
-            qm->ucScalingListDCCoefSizeID3[i] = sl->sl_dc[1][i];
+            qm->ucScalingListDCCoefSizeID3[i] = sl->sl_dc[1][i * 3];
     }
 }
 
