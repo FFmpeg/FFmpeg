@@ -23,6 +23,7 @@ version <next>:
 - VP9 high bit-depth and extended colorspaces decoding support
 - WebPAnimEncoder API when available for encoding and muxing WebP
 - Direct3D11-accelerated decoding
+- Support Secure Transport
 
 
 version 2.6:

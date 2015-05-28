@@ -276,6 +276,8 @@ External library support:
   --enable-openssl         enable openssl, needed for https support
                            if gnutls is not used [no]
   --disable-sdl            disable sdl [autodetect]
+  --disable-securetransport disable Secure Transport, needed for TLS support
+                           on OSX if openssl and gnutls are not used [autodetect]
   --enable-x11grab         enable X11 grabbing (legacy) [no]
   --disable-xlib           disable xlib [autodetect]
   --disable-zlib           disable zlib [autodetect]
@@ -1424,6 +1426,7 @@ EXTERNAL_LIBRARY_LIST="
     opengl
     openssl
     sdl
+    securetransport
     x11grab
     xlib
     zlib
@@ -2636,9 +2639,10 @@ sctp_protocol_deps="struct_sctp_event_subscribe"
 sctp_protocol_select="network"
 srtp_protocol_select="rtp_protocol"
 tcp_protocol_select="network"
-tls_gnutls_protocol_deps="gnutls"
-tls_openssl_protocol_deps="openssl !tls_gnutls_protocol"
-tls_protocol_deps_any="tls_gnutls_protocol tls_openssl_protocol"
+tls_securetransport_protocol_deps="securetransport"
+tls_gnutls_protocol_deps="gnutls !tls_securetransport_protocol"
+tls_openssl_protocol_deps="openssl !tls_securetransport_protocol !tls_gnutls_protocol"
+tls_protocol_deps_any="tls_securetransport_protocol tls_gnutls_protocol tls_openssl_protocol"
 tls_protocol_select="tcp_protocol"
 udp_protocol_select="network"
 udplite_protocol_select="network"
@@ -5212,6 +5216,10 @@ if ! disabled sdl; then
     fi
 fi
 enabled sdl && add_cflags $sdl_cflags && add_extralibs $sdl_libs
+
+disabled securetransport || { check_func SecIdentityCreate "-Wl,-framework,CoreFoundation -Wl,-framework,Security" &&
+    check_lib2 Security/SecureTransport.h SSLCreateContext "-Wl,-framework,CoreFoundation -Wl,-framework,Security" &&
+    enable securetransport; }
 
 makeinfo --version > /dev/null 2>&1 && enable makeinfo  || disable makeinfo
 enabled makeinfo && (makeinfo --version | \
