@@ -386,6 +386,8 @@ static int avi_write_header(AVFormatContext *s)
                 t = NULL;
                 if (langstr) {
                     char* str = av_asprintf("Subtitle - %s-xx;02", langstr);
+                    if (!str)
+                        return AVERROR(ENOMEM);
                     ff_riff_write_info_tag(s->pb, "strn", str);
                     av_free(str);
                 }
