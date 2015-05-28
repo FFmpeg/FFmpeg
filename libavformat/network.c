@@ -153,6 +153,10 @@ int ff_socket(int af, int type, int proto)
             fcntl(fd, F_SETFD, FD_CLOEXEC);
 #endif
     }
+#ifdef SO_NOSIGPIPE
+    if (fd != -1)
+        setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, &(int){1}, sizeof(int));
+#endif
     return fd;
 }
 
