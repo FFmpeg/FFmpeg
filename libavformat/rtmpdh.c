@@ -189,7 +189,14 @@ void ff_dh_free(FF_DH *dh)
 
 #define dh_new()                                DH_new()
 #define dh_generate_key(dh)                     DH_generate_key(dh)
-#define dh_compute_key(dh, pub, len, secret)    DH_compute_key(secret, pub, dh)
+
+static int dh_compute_key(FF_DH *dh, FFBigNum pub_key_bn,
+                          uint32_t secret_key_len, uint8_t *secret_key)
+{
+    if (secret_key_len < DH_size(dh))
+        return AVERROR(EINVAL);
+    return DH_compute_key(secret_key, pub_key_bn, dh);
+}
 
 void ff_dh_free(FF_DH *dh)
 {
