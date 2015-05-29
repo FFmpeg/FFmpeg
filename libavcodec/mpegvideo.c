@@ -846,10 +846,7 @@ static int init_duplicate_context(MpegEncContext *s)
     }
     if (s->avctx->codec_tag == AV_RL32("VCR2")) {
         // exchange uv
-        int16_t (*tmp)[64];
-        tmp           = s->pblocks[4];
-        s->pblocks[4] = s->pblocks[5];
-        s->pblocks[5] = tmp;
+        FFSWAP(void *, s->pblocks[4], s->pblocks[5]);
     }
 
     if (s->out_format == FMT_H263) {
@@ -927,10 +924,7 @@ int ff_update_duplicate_context(MpegEncContext *dst, MpegEncContext *src)
     }
     if (dst->avctx->codec_tag == AV_RL32("VCR2")) {
         // exchange uv
-        int16_t (*tmp)[64];
-        tmp             = dst->pblocks[4];
-        dst->pblocks[4] = dst->pblocks[5];
-        dst->pblocks[5] = tmp;
+        FFSWAP(void *, dst->pblocks[4], dst->pblocks[5]);
     }
     if (!dst->edge_emu_buffer &&
         (ret = frame_size_alloc(dst, dst->linesize)) < 0) {
