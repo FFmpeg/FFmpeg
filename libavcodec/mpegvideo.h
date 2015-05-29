@@ -851,17 +851,6 @@ int ff_msmpeg4_decode_picture_header(MpegEncContext * s);
 int ff_msmpeg4_decode_ext_header(MpegEncContext * s, int buf_size);
 int ff_msmpeg4_decode_init(AVCodecContext *avctx);
 int ff_msmpeg4_encode_init(MpegEncContext *s);
-int ff_wmv2_decode_picture_header(MpegEncContext * s);
-int ff_wmv2_decode_secondary_picture_header(MpegEncContext * s);
-void ff_wmv2_add_mb(MpegEncContext *s, int16_t block[6][64], uint8_t *dest_y, uint8_t *dest_cb, uint8_t *dest_cr);
-void ff_mspel_motion(MpegEncContext *s,
-                               uint8_t *dest_y, uint8_t *dest_cb, uint8_t *dest_cr,
-                               uint8_t **ref_picture, op_pixels_func (*pix_op)[4],
-                               int motion_x, int motion_y, int h);
-int ff_wmv2_encode_picture_header(MpegEncContext * s, int picture_number);
-void ff_wmv2_encode_mb(MpegEncContext * s,
-                       int16_t block[6][64],
-                       int motion_x, int motion_y);
 
 int ff_mpeg_ref_picture(AVCodecContext *avctx, Picture *dst, Picture *src);
 void ff_mpeg_unref_picture(AVCodecContext *avctx, Picture *picture);

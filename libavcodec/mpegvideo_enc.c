@@ -56,6 +56,7 @@
 #include "mpeg4video.h"
 #include "internal.h"
 #include "bytestream.h"
+#include "wmv2.h"
 #include <limits.h>
 
 #define QUANT_BIAS_SHIFT 8

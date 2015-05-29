@@ -44,6 +44,7 @@
 #include "qpeldsp.h"
 #include "xvmc_internal.h"
 #include "thread.h"
+#include "wmv2.h"
 #include <limits.h>
 
 static const uint8_t ff_default_chroma_qscale_table[32] = {
