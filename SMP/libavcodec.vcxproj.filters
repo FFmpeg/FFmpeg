@@ -470,6 +470,9 @@
     <ClCompile Include="..\libavcodec\mpegvideodsp.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\rl.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\mpegvideo_motion.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>

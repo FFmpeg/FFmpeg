@@ -303,6 +303,8 @@
     </ClCompile>
     <ClCompile Include="..\libavcodec\mpegvideodsp.c">
     </ClCompile>
+    <ClCompile Include="..\libavcodec\rl.c">
+    </ClCompile>
     <ClCompile Include="..\libavcodec\mpegvideo_motion.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\mpegutils.c">
