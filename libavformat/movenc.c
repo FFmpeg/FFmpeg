@@ -2371,7 +2371,9 @@ static int mov_write_tkhd_tag(AVIOContext *pb, MOVMuxContext *mov,
             int64_t track_width_1616 = av_rescale(st->sample_aspect_ratio.num,
                                                   track->enc->width * 0x10000LL,
                                                   st->sample_aspect_ratio.den);
-            if (!track_width_1616 || track->height != track->enc->height)
+            if (!track_width_1616 ||
+                track->height != track->enc->height ||
+                track_width_1616 > UINT32_MAX)
                 track_width_1616 = track->enc->width * 0x10000;
             avio_wb32(pb, track_width_1616);
             avio_wb32(pb, track->height * 0x10000);
