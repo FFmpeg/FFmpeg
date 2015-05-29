@@ -817,13 +817,6 @@ int ff_epzs_motion_search(MpegEncContext * s, int *mx_ptr, int *my_ptr,
 int ff_get_mb_score(MpegEncContext * s, int mx, int my, int src_index,
                                int ref_index, int size, int h, int add_rate);
 
-void ff_mpeg1_encode_picture_header(MpegEncContext *s, int picture_number);
-void ff_mpeg1_encode_mb(MpegEncContext *s,
-                        int16_t block[8][64],
-                        int motion_x, int motion_y);
-void ff_mpeg1_encode_init(MpegEncContext *s);
-void ff_mpeg1_encode_slice_header(MpegEncContext *s);
-
 extern const uint8_t ff_aic_dc_scale_table[32];
 extern const uint8_t ff_h263_chroma_qscale_table[32];
 
