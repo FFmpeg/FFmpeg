@@ -22,7 +22,7 @@
 #ifdef DEBUG
 #define dbgprintf printf
 #else
-#define dbgprintf(...)
+#define dbgprintf(...) do { if (0) printf(__VA_ARGS__); } while (0)
 #endif
 
 int main(int argc, char *argv[])

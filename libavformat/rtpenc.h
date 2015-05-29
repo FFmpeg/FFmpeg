@@ -56,6 +56,7 @@ struct RTPMuxContext {
      * (1, 2 or 4)
      */
     int nal_length_size;
+    int buffered_nals;
 
     int flags;
 
@@ -80,7 +81,8 @@ typedef struct RTPMuxContext RTPMuxContext;
 
 void ff_rtp_send_data(AVFormatContext *s1, const uint8_t *buf1, int len, int m);
 
-void ff_rtp_send_h264(AVFormatContext *s1, const uint8_t *buf1, int size);
+void ff_rtp_send_h264_hevc(AVFormatContext *s1, const uint8_t *buf1, int size);
+void ff_rtp_send_h261(AVFormatContext *s1, const uint8_t *buf1, int size);
 void ff_rtp_send_h263(AVFormatContext *s1, const uint8_t *buf1, int size);
 void ff_rtp_send_h263_rfc2190(AVFormatContext *s1, const uint8_t *buf1, int size,
                               const uint8_t *mb_info, int mb_info_size);

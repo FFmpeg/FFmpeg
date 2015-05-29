@@ -35,11 +35,12 @@
 typedef struct CropDetectContext {
     const AVClass *class;
     int x1, y1, x2, y2;
-    int limit;
+    float limit;
     int round;
     int reset_count;
     int frame_nb;
     int max_pixsteps[4];
+    int max_outliers;
 } CropDetectContext;
 
 static int query_formats(AVFilterContext *ctx)
@@ -49,28 +50,66 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUVJ422P,
         AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUVJ444P,
         AV_PIX_FMT_YUV411P, AV_PIX_FMT_GRAY8,
+        AV_PIX_FMT_YUV440P, AV_PIX_FMT_YUV410P,
+        AV_PIX_FMT_YUV420P9 , AV_PIX_FMT_YUV422P9 , AV_PIX_FMT_YUV444P9,
+        AV_PIX_FMT_YUV420P10, AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV444P10,
+        AV_PIX_FMT_YUV420P12, AV_PIX_FMT_YUV422P12, AV_PIX_FMT_YUV444P12,
+        AV_PIX_FMT_YUV420P14, AV_PIX_FMT_YUV422P14, AV_PIX_FMT_YUV444P14,
+        AV_PIX_FMT_YUV420P16, AV_PIX_FMT_YUV422P16, AV_PIX_FMT_YUV444P16,
         AV_PIX_FMT_NV12,    AV_PIX_FMT_NV21,
+        AV_PIX_FMT_RGB24,   AV_PIX_FMT_BGR24,
+        AV_PIX_FMT_RGBA,    AV_PIX_FMT_BGRA,
         AV_PIX_FMT_NONE
     };
 
-    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
-    return 0;
+    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
+    if (!fmts_list)
+        return AVERROR(ENOMEM);
+    return ff_set_common_formats(ctx, fmts_list);
 }
 
 static int checkline(void *ctx, const unsigned char *src, int stride, int len, int bpp)
 {
     int total = 0;
     int div = len;
+    const uint16_t *src16 = (const uint16_t *)src;
 
     switch (bpp) {
     case 1:
+        while (len >= 8) {
+            total += src[       0] + src[  stride] + src[2*stride] + src[3*stride]
+                  +  src[4*stride] + src[5*stride] + src[6*stride] + src[7*stride];
+            src += 8*stride;
+            len -= 8;
+        }
         while (--len >= 0) {
             total += src[0];
             src += stride;
         }
         break;
+    case 2:
+        stride >>= 1;
+        while (len >= 8) {
+            total += src16[       0] + src16[  stride] + src16[2*stride] + src16[3*stride]
+                  +  src16[4*stride] + src16[5*stride] + src16[6*stride] + src16[7*stride];
+            src16 += 8*stride;
+            len -= 8;
+        }
+        while (--len >= 0) {
+            total += src16[0];
+            src16 += stride;
+        }
+        break;
     case 3:
     case 4:
+        while (len >= 4) {
+            total += src[0]        + src[1         ] + src[2         ]
+                  +  src[  stride] + src[1+  stride] + src[2+  stride]
+                  +  src[2*stride] + src[1+2*stride] + src[2+2*stride]
+                  +  src[3*stride] + src[1+3*stride] + src[2+3*stride];
+            src += 4*stride;
+            len -= 4;
+        }
         while (--len >= 0) {
             total += src[0] + src[1] + src[2];
             src += stride;
@@ -90,7 +129,7 @@ static av_cold int init(AVFilterContext *ctx)
 
     s->frame_nb = -2;
 
-    av_log(ctx, AV_LOG_VERBOSE, "limit:%d round:%d reset_count:%d\n",
+    av_log(ctx, AV_LOG_VERBOSE, "limit:%f round:%d reset_count:%d\n",
            s->limit, s->round, s->reset_count);
 
     return 0;
@@ -100,9 +139,12 @@ static int config_input(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
     CropDetectContext *s = ctx->priv;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
 
-    av_image_fill_max_pixsteps(s->max_pixsteps, NULL,
-                               av_pix_fmt_desc_get(inlink->format));
+    av_image_fill_max_pixsteps(s->max_pixsteps, NULL, desc);
+
+    if (s->limit < 1.0)
+        s->limit *= (1 << (desc->comp[0].depth_minus1 + 1)) - 1;
 
     s->x1 = inlink->w - 1;
     s->y1 = inlink->h - 1;
@@ -113,8 +155,7 @@ static int config_input(AVFilterLink *inlink)
 }
 
 #define SET_META(key, value) \
-    snprintf(buf, sizeof(buf), "%d", value);  \
-    av_dict_set(metadata, key, buf, 0)
+    av_dict_set_int(metadata, key, value, 0)
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
@@ -123,7 +164,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     int bpp = s->max_pixsteps[0];
     int w, h, x, y, shrink_by;
     AVDictionary **metadata;
-    char buf[32];
+    int outliers, last_y;
+    int limit = round(s->limit);
 
     // ignore first 2 frames - they may be empty
     if (++s->frame_nb > 0) {
@@ -138,33 +180,23 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
             s->frame_nb = 1;
         }
 
-        for (y = 0; y < s->y1; y++) {
-            if (checkline(ctx, frame->data[0] + frame->linesize[0] * y, bpp, frame->width, bpp) > s->limit) {
-                s->y1 = y;
-                break;
-            }
+#define FIND(DST, FROM, NOEND, INC, STEP0, STEP1, LEN) \
+        outliers = 0;\
+        for (last_y = y = FROM; NOEND; y = y INC) {\
+            if (checkline(ctx, frame->data[0] + STEP0 * y, STEP1, LEN, bpp) > limit) {\
+                if (++outliers > s->max_outliers) { \
+                    DST = last_y;\
+                    break;\
+                }\
+            } else\
+                last_y = y INC;\
         }
 
-        for (y = frame->height - 1; y > s->y2; y--) {
-            if (checkline(ctx, frame->data[0] + frame->linesize[0] * y, bpp, frame->width, bpp) > s->limit) {
-                s->y2 = y;
-                break;
-            }
-        }
+        FIND(s->y1,                 0,               y < s->y1, +1, frame->linesize[0], bpp, frame->width);
+        FIND(s->y2, frame->height - 1, y > FFMAX(s->y2, s->y1), -1, frame->linesize[0], bpp, frame->width);
+        FIND(s->x1,                 0,               y < s->x1, +1, bpp, frame->linesize[0], frame->height);
+        FIND(s->x2,  frame->width - 1, y > FFMAX(s->x2, s->x1), -1, bpp, frame->linesize[0], frame->height);
 
-        for (y = 0; y < s->x1; y++) {
-            if (checkline(ctx, frame->data[0] + bpp*y, frame->linesize[0], frame->height, bpp) > s->limit) {
-                s->x1 = y;
-                break;
-            }
-        }
-
-        for (y = frame->width - 1; y > s->x2; y--) {
-            if (checkline(ctx, frame->data[0] + bpp*y, frame->linesize[0], frame->height, bpp) > s->limit) {
-                s->x2 = y;
-                break;
-            }
-        }
 
         // round x and y (up), important for yuv colorspaces
         // make sure they stay rounded!
@@ -212,10 +244,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 
 static const AVOption cropdetect_options[] = {
-    { "limit", "Threshold below which the pixel is considered black", OFFSET(limit),       AV_OPT_TYPE_INT, { .i64 = 24 }, 0, 255, FLAGS },
+    { "limit", "Threshold below which the pixel is considered black", OFFSET(limit),       AV_OPT_TYPE_FLOAT, { .dbl = 24.0/255 }, 0, 65535, FLAGS },
     { "round", "Value by which the width/height should be divisible", OFFSET(round),       AV_OPT_TYPE_INT, { .i64 = 16 }, 0, INT_MAX, FLAGS },
     { "reset", "Recalculate the crop area after this many frames",    OFFSET(reset_count), AV_OPT_TYPE_INT, { .i64 = 0 },  0, INT_MAX, FLAGS },
     { "reset_count", "Recalculate the crop area after this many frames",OFFSET(reset_count),AV_OPT_TYPE_INT,{ .i64 = 0 },  0, INT_MAX, FLAGS },
+    { "max_outliers", "Threshold count of outliers",                  OFFSET(max_outliers),AV_OPT_TYPE_INT, { .i64 = 0 },  0, INT_MAX, FLAGS },
     { NULL }
 };
 

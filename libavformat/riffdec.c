@@ -80,20 +80,37 @@ static void parse_waveformatex(AVIOContext *pb, AVCodecContext *c)
     }
 }
 
-int ff_get_wav_header(AVIOContext *pb, AVCodecContext *codec, int size)
+/* "big_endian" values are needed for RIFX file format */
+int ff_get_wav_header(AVIOContext *pb, AVCodecContext *codec, int size, int big_endian)
 {
     int id;
 
-    id                 = avio_rl16(pb);
+    if (size < 14)
+        avpriv_request_sample(codec, "wav header size < 14");
+
     codec->codec_type  = AVMEDIA_TYPE_AUDIO;
-    codec->channels    = avio_rl16(pb);
-    codec->sample_rate = avio_rl32(pb);
-    codec->bit_rate    = avio_rl32(pb) * 8;
-    codec->block_align = avio_rl16(pb);
+    if (!big_endian) {
+        id                 = avio_rl16(pb);
+        codec->channels    = avio_rl16(pb);
+        codec->sample_rate = avio_rl32(pb);
+        codec->bit_rate    = avio_rl32(pb) * 8;
+        codec->block_align = avio_rl16(pb);
+    } else {
+        id                 = avio_rb16(pb);
+        codec->channels    = avio_rb16(pb);
+        codec->sample_rate = avio_rb32(pb);
+        codec->bit_rate    = avio_rb32(pb) * 8;
+        codec->block_align = avio_rb16(pb);
+    }
     if (size == 14) {  /* We're dealing with plain vanilla WAVEFORMAT */
         codec->bits_per_coded_sample = 8;
-    } else
-        codec->bits_per_coded_sample = avio_rl16(pb);
+    } else {
+        if (!big_endian) {
+            codec->bits_per_coded_sample = avio_rl16(pb);
+        } else {
+            codec->bits_per_coded_sample = avio_rb16(pb);
+        }
+    }
     if (id == 0xFFFE) {
         codec->codec_tag = 0;
     } else {
@@ -103,6 +120,10 @@ int ff_get_wav_header(AVIOContext *pb, AVCodecContext *codec, int size)
     }
     if (size >= 18) {  /* We're obviously dealing with WAVEFORMATEX */
         int cbSize = avio_rl16(pb); /* cbSize */
+        if (big_endian) {
+            avpriv_report_missing_feature(codec, "WAVEFORMATEX support for RIFX files\n");
+            return AVERROR_PATCHWELCOME;
+        }
         size  -= 18;
         cbSize = FFMIN(size, cbSize);
         if (cbSize >= 22 && id == 0xfffe) { /* WAVEFORMATEXTENSIBLE */
@@ -111,7 +132,7 @@ int ff_get_wav_header(AVIOContext *pb, AVCodecContext *codec, int size)
             size   -= 22;
         }
         if (cbSize > 0) {
-            av_free(codec->extradata);
+            av_freep(&codec->extradata);
             if (ff_get_extradata(codec, pb, cbSize) < 0)
                 return AVERROR(ENOMEM);
             size -= cbSize;
@@ -191,7 +212,7 @@ int ff_read_riff_info(AVFormatContext *s, int64_t size)
 
         chunk_code = avio_rl32(pb);
         chunk_size = avio_rl32(pb);
-        if (url_feof(pb)) {
+        if (avio_feof(pb)) {
             if (chunk_code || chunk_size) {
                 av_log(s, AV_LOG_WARNING, "INFO subchunk truncated\n");
                 return AVERROR_INVALIDDATA;

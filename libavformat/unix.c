@@ -74,12 +74,11 @@ static int unix_open(URLContext *h, const char *filename, int flags)
         return ff_neterrno();
 
     if (s->listen) {
-        fd = ff_listen_bind(fd, (struct sockaddr *)&s->addr,
-                            sizeof(s->addr), s->timeout, h);
-        if (fd < 0) {
-            ret = fd;
+        ret = ff_listen_bind(fd, (struct sockaddr *)&s->addr,
+                             sizeof(s->addr), s->timeout, h);
+        if (ret < 0)
             goto fail;
-        }
+        fd = ret;
     } else {
         ret = ff_listen_connect(fd, (struct sockaddr *)&s->addr,
                                 sizeof(s->addr), s->timeout, h, 0);
@@ -123,7 +122,7 @@ static int unix_write(URLContext *h, const uint8_t *buf, int size)
         if (ret < 0)
             return ret;
     }
-    ret = send(s->fd, buf, size, 0);
+    ret = send(s->fd, buf, size, MSG_NOSIGNAL);
     return ret < 0 ? ff_neterrno() : ret;
 }
 

@@ -51,7 +51,10 @@ typedef struct {
     int *sink_stream_map;
     int *sink_eof;
     int *stream_sink_map;
+    int *sink_stream_subcc_map;
     AVFrame *decoded_frame;
+    int nb_sinks;
+    AVPacket subcc_packet;
 } LavfiContext;
 
 static int *create_all_formats(int n)
@@ -82,10 +85,32 @@ av_cold static int lavfi_read_close(AVFormatContext *avctx)
     av_freep(&lavfi->sink_stream_map);
     av_freep(&lavfi->sink_eof);
     av_freep(&lavfi->stream_sink_map);
+    av_freep(&lavfi->sink_stream_subcc_map);
     av_freep(&lavfi->sinks);
     avfilter_graph_free(&lavfi->graph);
     av_frame_free(&lavfi->decoded_frame);
 
+    return 0;
+}
+
+static int create_subcc_streams(AVFormatContext *avctx)
+{
+    LavfiContext *lavfi = avctx->priv_data;
+    AVStream *st;
+    int stream_idx, sink_idx;
+
+    for (stream_idx = 0; stream_idx < lavfi->nb_sinks; stream_idx++) {
+        sink_idx = lavfi->stream_sink_map[stream_idx];
+        if (lavfi->sink_stream_subcc_map[sink_idx]) {
+            lavfi->sink_stream_subcc_map[sink_idx] = avctx->nb_streams;
+            if (!(st = avformat_new_stream(avctx, NULL)))
+                return AVERROR(ENOMEM);
+            st->codec->codec_id = AV_CODEC_ID_EIA_608;
+            st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
+        } else {
+            lavfi->sink_stream_subcc_map[sink_idx] = -1;
+        }
+    }
     return 0;
 }
 
@@ -119,19 +144,19 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx)
         AVIOContext *avio = NULL;
         ret = avio_open(&avio, lavfi->graph_filename, AVIO_FLAG_READ);
         if (ret < 0)
-            FAIL(ret);
+            goto end;
         av_bprint_init(&graph_file_pb, 0, AV_BPRINT_SIZE_UNLIMITED);
         ret = avio_read_to_bprint(avio, &graph_file_pb, INT_MAX);
-        avio_close(avio);
+        avio_closep(&avio);
         av_bprint_chars(&graph_file_pb, '\0', 1);
         if (!ret && !av_bprint_is_complete(&graph_file_pb))
             ret = AVERROR(ENOMEM);
         if (ret) {
             av_bprint_finalize(&graph_file_pb, NULL);
-            FAIL(ret);
+            goto end;
         }
         if ((ret = av_bprint_finalize(&graph_file_pb, &lavfi->graph_str)))
-            FAIL(ret);
+            goto end;
     }
 
     if (!lavfi->graph_str)
@@ -143,7 +168,7 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx)
 
     if ((ret = avfilter_graph_parse_ptr(lavfi->graph, lavfi->graph_str,
                                     &input_links, &output_links, avctx)) < 0)
-        FAIL(ret);
+        goto end;
 
     if (input_links) {
         av_log(avctx, AV_LOG_ERROR,
@@ -153,12 +178,15 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx)
 
     /* count the outputs */
     for (n = 0, inout = output_links; inout; n++, inout = inout->next);
+    lavfi->nb_sinks = n;
 
     if (!(lavfi->sink_stream_map = av_malloc(sizeof(int) * n)))
         FAIL(AVERROR(ENOMEM));
     if (!(lavfi->sink_eof = av_mallocz(sizeof(int) * n)))
         FAIL(AVERROR(ENOMEM));
     if (!(lavfi->stream_sink_map = av_malloc(sizeof(int) * n)))
+        FAIL(AVERROR(ENOMEM));
+    if (!(lavfi->sink_stream_subcc_map = av_malloc(sizeof(int) * n)))
         FAIL(AVERROR(ENOMEM));
 
     for (i = 0; i < n; i++)
@@ -167,13 +195,21 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx)
     /* parse the output link names - they need to be of the form out0, out1, ...
      * create a mapping between them and the streams */
     for (i = 0, inout = output_links; inout; i++, inout = inout->next) {
-        int stream_idx;
-        if (!strcmp(inout->name, "out"))
-            stream_idx = 0;
-        else if (sscanf(inout->name, "out%d\n", &stream_idx) != 1) {
+        int stream_idx = 0, suffix = 0, use_subcc = 0;
+        sscanf(inout->name, "out%n%d%n", &suffix, &stream_idx, &suffix);
+        if (!suffix) {
             av_log(avctx,  AV_LOG_ERROR,
                    "Invalid outpad name '%s'\n", inout->name);
             FAIL(AVERROR(EINVAL));
+        }
+        if (inout->name[suffix]) {
+            if (!strcmp(inout->name + suffix, "+subcc")) {
+                use_subcc = 1;
+            } else {
+                av_log(avctx,  AV_LOG_ERROR,
+                       "Invalid outpad suffix '%s'\n", inout->name);
+                FAIL(AVERROR(EINVAL));
+            }
         }
 
         if ((unsigned)stream_idx >= n) {
@@ -181,14 +217,6 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx)
                    "Invalid index was specified in output '%s', "
                    "must be a non-negative value < %d\n",
                    inout->name, n);
-            FAIL(AVERROR(EINVAL));
-        }
-
-        /* is an audio or video output? */
-        type = inout->filter_ctx->output_pads[inout->pad_idx].type;
-        if (type != AVMEDIA_TYPE_VIDEO && type != AVMEDIA_TYPE_AUDIO) {
-            av_log(avctx,  AV_LOG_ERROR,
-                   "Output '%s' is not a video or audio output, not yet supported\n", inout->name);
             FAIL(AVERROR(EINVAL));
         }
 
@@ -200,6 +228,7 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx)
         }
         lavfi->sink_stream_map[i] = stream_idx;
         lavfi->stream_sink_map[stream_idx] = i;
+        lavfi->sink_stream_subcc_map[i] = !!use_subcc;
     }
 
     /* for each open output create a corresponding stream */
@@ -211,7 +240,7 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx)
     }
 
     /* create a sink for each output and connect them to the graph */
-    lavfi->sinks = av_malloc_array(avctx->nb_streams, sizeof(AVFilterContext *));
+    lavfi->sinks = av_malloc_array(lavfi->nb_sinks, sizeof(AVFilterContext *));
     if (!lavfi->sinks)
         FAIL(AVERROR(ENOMEM));
 
@@ -252,16 +281,20 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx)
                                  AV_OPT_SEARCH_CHILDREN);
             if (ret < 0)
                 goto end;
+        } else {
+            av_log(avctx,  AV_LOG_ERROR,
+                   "Output '%s' is not a video or audio output, not yet supported\n", inout->name);
+            FAIL(AVERROR(EINVAL));
         }
 
         lavfi->sinks[i] = sink;
         if ((ret = avfilter_link(inout->filter_ctx, inout->pad_idx, sink, 0)) < 0)
-            FAIL(ret);
+            goto end;
     }
 
     /* configure the graph */
     if ((ret = avfilter_graph_config(lavfi->graph, avctx)) < 0)
-        FAIL(ret);
+        goto end;
 
     if (lavfi->dump_graph) {
         char *dump = avfilter_graph_dump(lavfi->graph, lavfi->dump_graph);
@@ -271,7 +304,7 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx)
     }
 
     /* fill each stream with the information in the corresponding sink */
-    for (i = 0; i < avctx->nb_streams; i++) {
+    for (i = 0; i < lavfi->nb_sinks; i++) {
         AVFilterLink *link = lavfi->sinks[lavfi->stream_sink_map[i]]->inputs[0];
         AVStream *st = avctx->streams[i];
         st->codec->codec_type = link->type;
@@ -302,6 +335,9 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx)
         }
     }
 
+    if ((ret = create_subcc_streams(avctx)) < 0)
+        FAIL(ret);
+
     if (!(lavfi->decoded_frame = av_frame_alloc()))
         FAIL(AVERROR(ENOMEM));
 
@@ -312,6 +348,30 @@ end:
     if (ret < 0)
         lavfi_read_close(avctx);
     return ret;
+}
+
+static int create_subcc_packet(AVFormatContext *avctx, AVFrame *frame,
+                               int sink_idx)
+{
+    LavfiContext *lavfi = avctx->priv_data;
+    AVFrameSideData *sd;
+    int stream_idx, i, ret;
+
+    if ((stream_idx = lavfi->sink_stream_subcc_map[sink_idx]) < 0)
+        return 0;
+    for (i = 0; i < frame->nb_side_data; i++)
+        if (frame->side_data[i]->type == AV_FRAME_DATA_A53_CC)
+            break;
+    if (i >= frame->nb_side_data)
+        return 0;
+    sd = frame->side_data[i];
+    if ((ret = av_new_packet(&lavfi->subcc_packet, sd->size)) < 0)
+        return ret;
+    memcpy(lavfi->subcc_packet.data, sd->data, sd->size);
+    lavfi->subcc_packet.stream_index = stream_idx;
+    lavfi->subcc_packet.pts = frame->pts;
+    lavfi->subcc_packet.pos = av_frame_get_pkt_pos(frame);
+    return 0;
 }
 
 static int lavfi_read_packet(AVFormatContext *avctx, AVPacket *pkt)
@@ -325,9 +385,17 @@ static int lavfi_read_packet(AVFormatContext *avctx, AVPacket *pkt)
     int ret, i;
     int size = 0;
 
+    if (lavfi->subcc_packet.size) {
+        *pkt = lavfi->subcc_packet;
+        av_init_packet(&lavfi->subcc_packet);
+        lavfi->subcc_packet.size = 0;
+        lavfi->subcc_packet.data = NULL;
+        return pkt->size;
+    }
+
     /* iterate through all the graph sinks. Select the sink with the
      * minimum PTS */
-    for (i = 0; i < avctx->nb_streams; i++) {
+    for (i = 0; i < lavfi->nb_sinks; i++) {
         AVRational tb = lavfi->sinks[i]->inputs[0]->time_base;
         double d;
         int ret;
@@ -399,6 +467,12 @@ static int lavfi_read_packet(AVFormatContext *avctx, AVPacket *pkt)
         }
         memcpy(metadata, meta_buf.str, meta_buf.len);
         av_bprint_finalize(&meta_buf, NULL);
+    }
+
+    if ((ret = create_subcc_packet(avctx, frame, min_pts_sink_idx)) < 0) {
+        av_frame_unref(frame);
+        av_packet_unref(pkt);
+        return ret;
     }
 
     pkt->stream_index = stream_idx;

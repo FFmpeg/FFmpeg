@@ -22,7 +22,7 @@
 #include "internal.h"
 #include "libavutil/common.h"
 
-typedef struct {
+typedef struct ZeroCodecContext {
     AVFrame  *previous_frame;
     z_stream zstream;
 } ZeroCodecContext;

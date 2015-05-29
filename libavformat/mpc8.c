@@ -27,7 +27,7 @@
 #include "avio_internal.h"
 
 /// Two-byte MPC tag
-#define MKMPCTAG(a, b) (a | (b << 8))
+#define MKMPCTAG(a, b) ((a) | ((b) << 8))
 
 #define TAG_MPCK MKTAG('M','P','C','K')
 
@@ -47,7 +47,7 @@ enum MPCPacketTags{
 
 static const int mpc8_rate[8] = { 44100, 48000, 37800, 32000, -1, -1, -1, -1 };
 
-typedef struct {
+typedef struct MPCContext {
     int ver;
     int64_t header_pos;
     int64_t samples;
@@ -57,7 +57,7 @@ typedef struct {
 
 static inline int64_t bs_get_v(const uint8_t **bs)
 {
-    int64_t v = 0;
+    uint64_t v = 0;
     int br = 0;
     int c;
 
@@ -91,7 +91,7 @@ static int mpc8_probe(AVProbeData *p)
         size = bs_get_v(&bs);
         if (size < 2)
             return 0;
-        if (bs + size - 2 >= bs_end)
+        if (size >= bs_end - bs + 2)
             return AVPROBE_SCORE_EXTENSION - 1; // seems to be valid MPC but no header yet
         if (header_found) {
             if (size < 11 || size > 28)
@@ -108,7 +108,7 @@ static int mpc8_probe(AVProbeData *p)
 
 static inline int64_t gb_get_v(GetBitContext *gb)
 {
-    int64_t v = 0;
+    uint64_t v = 0;
     int bits = 0;
     while(get_bits1(gb) && bits < 64-7){
         v <<= 7;
@@ -220,9 +220,13 @@ static int mpc8_read_header(AVFormatContext *s)
         return AVERROR_INVALIDDATA;
     }
 
-    while(!url_feof(pb)){
+    while(!avio_feof(pb)){
         pos = avio_tell(pb);
         mpc8_get_chunk_header(pb, &tag, &size);
+        if (size < 0) {
+            av_log(s, AV_LOG_ERROR, "Invalid chunk length\n");
+            return AVERROR_INVALIDDATA;
+        }
         if(tag == TAG_STREAMHDR)
             break;
         mpc8_handle_chunk(s, tag, pos, size);
@@ -275,7 +279,7 @@ static int mpc8_read_packet(AVFormatContext *s, AVPacket *pkt)
     int tag;
     int64_t pos, size;
 
-    while(!url_feof(s->pb)){
+    while(!avio_feof(s->pb)){
         pos = avio_tell(s->pb);
 
         /* don't return bogus packets with the ape tag data */

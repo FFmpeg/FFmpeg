@@ -88,7 +88,7 @@ static const uint8_t wrong_run[102] = {
 av_const int ff_h263_aspect_to_info(AVRational aspect){
     int i;
 
-    if(aspect.num==0) aspect= (AVRational){1,1};
+    if(aspect.num==0 || aspect.den==0) aspect= (AVRational){1,1};
 
     for(i=1; i<6; i++){
         if(av_cmp_q(ff_h263_pixel_aspect[i], aspect) == 0){
@@ -406,7 +406,7 @@ static void h263_encode_block(MpegEncContext * s, int16_t * block, int n)
 }
 
 /* Encode MV differences on H.263+ with Unrestricted MV mode */
-static void h263p_encode_umotion(MpegEncContext * s, int val)
+static void h263p_encode_umotion(PutBitContext *pb, int val)
 {
     short sval = 0;
     short i = 0;
@@ -416,11 +416,11 @@ static void h263p_encode_umotion(MpegEncContext * s, int val)
     int tcode;
 
     if ( val == 0)
-        put_bits(&s->pb, 1, 1);
+        put_bits(pb, 1, 1);
     else if (val == 1)
-        put_bits(&s->pb, 3, 0);
+        put_bits(pb, 3, 0);
     else if (val == -1)
-        put_bits(&s->pb, 3, 2);
+        put_bits(pb, 3, 2);
     else {
 
         sval = ((val < 0) ? (short)(-val):(short)val);
@@ -439,7 +439,7 @@ static void h263p_encode_umotion(MpegEncContext * s, int val)
             i--;
         }
         code = ((code << 1) | (val < 0)) << 1;
-        put_bits(&s->pb, (2*n_bits)+1, code);
+        put_bits(pb, (2*n_bits)+1, code);
     }
 }
 
@@ -451,7 +451,7 @@ void ff_h263_encode_mb(MpegEncContext * s,
     int16_t pred_dc;
     int16_t rec_intradc[6];
     int16_t *dc_ptr[6];
-    const int interleaved_stats= (s->flags&CODEC_FLAG_PASS1);
+    const int interleaved_stats = s->avctx->flags & CODEC_FLAG_PASS1;
 
     if (!s->mb_intra) {
         /* compute cbp */
@@ -496,8 +496,8 @@ void ff_h263_encode_mb(MpegEncContext * s,
                                                 motion_y - pred_y, 1);
             }
             else {
-                h263p_encode_umotion(s, motion_x - pred_x);
-                h263p_encode_umotion(s, motion_y - pred_y);
+                h263p_encode_umotion(&s->pb, motion_x - pred_x);
+                h263p_encode_umotion(&s->pb, motion_y - pred_y);
                 if (((motion_x - pred_x) == 1) && ((motion_y - pred_y) == 1))
                     /* To prevent Start Code emulation */
                     put_bits(&s->pb,1,1);
@@ -525,8 +525,8 @@ void ff_h263_encode_mb(MpegEncContext * s,
                                                     motion_y - pred_y, 1);
                 }
                 else {
-                    h263p_encode_umotion(s, motion_x - pred_x);
-                    h263p_encode_umotion(s, motion_y - pred_y);
+                    h263p_encode_umotion(&s->pb, motion_x - pred_x);
+                    h263p_encode_umotion(&s->pb, motion_y - pred_y);
                     if (((motion_x - pred_x) == 1) && ((motion_y - pred_y) == 1))
                         /* To prevent Start Code emulation */
                         put_bits(&s->pb,1,1);
@@ -642,14 +642,14 @@ void ff_h263_encode_mb(MpegEncContext * s,
     }
 }
 
-void ff_h263_encode_motion(MpegEncContext * s, int val, int f_code)
+void ff_h263_encode_motion(PutBitContext *pb, int val, int f_code)
 {
     int range, bit_size, sign, code, bits;
 
     if (val == 0) {
         /* zero vector */
         code = 0;
-        put_bits(&s->pb, ff_mvtab[code][1], ff_mvtab[code][0]);
+        put_bits(pb, ff_mvtab[code][1], ff_mvtab[code][0]);
     } else {
         bit_size = f_code - 1;
         range = 1 << bit_size;
@@ -663,9 +663,9 @@ void ff_h263_encode_motion(MpegEncContext * s, int val, int f_code)
         code = (val >> bit_size) + 1;
         bits = val & (range - 1);
 
-        put_bits(&s->pb, ff_mvtab[code][1] + 1, (ff_mvtab[code][0] << 1) | sign);
+        put_bits(pb, ff_mvtab[code][1] + 1, (ff_mvtab[code][0] << 1) | sign);
         if (bit_size > 0) {
-            put_bits(&s->pb, bit_size, bits);
+            put_bits(pb, bit_size, bits);
         }
     }
 }
@@ -764,8 +764,8 @@ av_cold void ff_h263_encode_init(MpegEncContext *s)
     if (!done) {
         done = 1;
 
-        ff_init_rl(&ff_h263_rl_inter, ff_h263_static_rl_table_store[0]);
-        ff_init_rl(&ff_rl_intra_aic, ff_h263_static_rl_table_store[1]);
+        ff_rl_init(&ff_h263_rl_inter, ff_h263_static_rl_table_store[0]);
+        ff_rl_init(&ff_rl_intra_aic, ff_h263_static_rl_table_store[1]);
 
         init_uni_h263_rl_tab(&ff_rl_intra_aic, NULL, uni_h263_intra_aic_rl_len);
         init_uni_h263_rl_tab(&ff_h263_rl_inter    , NULL, uni_h263_inter_rl_len);

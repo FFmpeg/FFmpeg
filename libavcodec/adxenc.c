@@ -43,14 +43,12 @@ static void adx_encode(ADXContext *c, uint8_t *adx, const int16_t *wav,
     int s0, s1, s2, d;
     int max = 0;
     int min = 0;
-    int data[BLOCK_SAMPLES];
 
     s1 = prev->s1;
     s2 = prev->s2;
     for (i = 0, j = 0; j < 32; i += channels, j++) {
         s0 = wav[i];
         d = ((s0 << COEFF_BITS) - c->coeff[0] * s1 - c->coeff[1] * s2) >> COEFF_BITS;
-        data[j] = d;
         if (max < d)
             max = d;
         if (min > d)
@@ -58,10 +56,10 @@ static void adx_encode(ADXContext *c, uint8_t *adx, const int16_t *wav,
         s2 = s1;
         s1 = s0;
     }
-    prev->s1 = s1;
-    prev->s2 = s2;
 
     if (max == 0 && min == 0) {
+        prev->s1 = s1;
+        prev->s2 = s2;
         memset(adx, 0, BLOCK_SIZE);
         return;
     }
@@ -77,8 +75,23 @@ static void adx_encode(ADXContext *c, uint8_t *adx, const int16_t *wav,
     AV_WB16(adx, scale);
 
     init_put_bits(&pb, adx + 2, 16);
-    for (i = 0; i < BLOCK_SAMPLES; i++)
-        put_sbits(&pb, 4, av_clip(data[i] / scale, -8, 7));
+
+    s1 = prev->s1;
+    s2 = prev->s2;
+    for (i = 0, j = 0; j < 32; i += channels, j++) {
+        d = ((wav[i] << COEFF_BITS) - c->coeff[0] * s1 - c->coeff[1] * s2) >> COEFF_BITS;
+
+        d = av_clip_intp2(ROUNDED_DIV(d, scale), 3);
+
+        put_sbits(&pb, 4, d);
+
+        s0 = ((d << COEFF_BITS) * scale + c->coeff[0] * s1 + c->coeff[1] * s2) >> COEFF_BITS;
+        s2 = s1;
+        s1 = s0;
+    }
+    prev->s1 = s1;
+    prev->s2 = s2;
+
     flush_put_bits(&pb);
 }
 

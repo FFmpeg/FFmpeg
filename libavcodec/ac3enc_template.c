@@ -57,7 +57,7 @@ int AC3_NAME(allocate_sample_buffers)(AC3EncodeContext *s)
 
     FF_ALLOC_OR_GOTO(s->avctx, s->windowed_samples, AC3_WINDOW_SIZE *
                      sizeof(*s->windowed_samples), alloc_fail);
-    FF_ALLOC_OR_GOTO(s->avctx, s->planar_samples, s->channels * sizeof(*s->planar_samples),
+    FF_ALLOC_ARRAY_OR_GOTO(s->avctx, s->planar_samples, s->channels, sizeof(*s->planar_samples),
                      alloc_fail);
     for (ch = 0; ch < s->channels; ch++) {
         FF_ALLOCZ_OR_GOTO(s->avctx, s->planar_samples[ch],
@@ -108,7 +108,7 @@ static void apply_mdct(AC3EncodeContext *s)
             const SampleType *input_samples = &s->planar_samples[ch][blk * AC3_BLOCK_SIZE];
 
 #if CONFIG_AC3ENC_FLOAT
-            s->fdsp.vector_fmul(s->windowed_samples, input_samples,
+            s->fdsp->vector_fmul(s->windowed_samples, input_samples,
                                 s->mdct_window, AC3_WINDOW_SIZE);
 #else
             s->ac3dsp.apply_window_int16(s->windowed_samples, input_samples,
@@ -263,7 +263,7 @@ static void apply_channel_coupling(AC3EncodeContext *s)
                 energy_cpl = energy[blk][CPL_CH][bnd];
                 energy_ch = energy[blk][ch][bnd];
                 blk1 = blk+1;
-                while (!s->blocks[blk1].new_cpl_coords[ch] && blk1 < s->num_blocks) {
+                while (blk1 < s->num_blocks && !s->blocks[blk1].new_cpl_coords[ch]) {
                     if (s->blocks[blk1].cpl_in_use) {
                         energy_cpl += energy[blk1][CPL_CH][bnd];
                         energy_ch += energy[blk1][ch][bnd];
@@ -443,7 +443,7 @@ int AC3_NAME(encode_frame)(AVCodecContext *avctx, AVPacket *avpkt,
     ff_ac3_output_frame(s, avpkt->data);
 
     if (frame->pts != AV_NOPTS_VALUE)
-        avpkt->pts = frame->pts - ff_samples_to_time_base(avctx, avctx->delay);
+        avpkt->pts = frame->pts - ff_samples_to_time_base(avctx, avctx->initial_padding);
 
     *got_packet_ptr = 1;
     return 0;

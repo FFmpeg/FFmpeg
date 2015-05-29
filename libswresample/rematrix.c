@@ -56,6 +56,7 @@
 #define TOP_BACK_LEFT          15
 #define TOP_BACK_CENTER        16
 #define TOP_BACK_RIGHT         17
+#define NUM_NAMED_CHANNELS     18
 
 int swr_set_matrix(struct SwrContext *s, const double *matrix, int stride)
 {
@@ -64,8 +65,8 @@ int swr_set_matrix(struct SwrContext *s, const double *matrix, int stride)
     if (!s || s->in_convert) // s needs to be allocated but not initialized
         return AVERROR(EINVAL);
     memset(s->matrix, 0, sizeof(s->matrix));
-    nb_in  = av_get_channel_layout_nb_channels(s->in_ch_layout);
-    nb_out = av_get_channel_layout_nb_channels(s->out_ch_layout);
+    nb_in  = av_get_channel_layout_nb_channels(s->user_in_ch_layout);
+    nb_out = av_get_channel_layout_nb_channels(s->user_out_ch_layout);
     for (out = 0; out < nb_out; out++) {
         for (in = 0; in < nb_in; in++)
             s->matrix[out][in] = matrix[in];
@@ -112,7 +113,7 @@ static int sane_layout(int64_t layout){
 av_cold static int auto_matrix(SwrContext *s)
 {
     int i, j, out_i;
-    double matrix[64][64]={{0}};
+    double matrix[NUM_NAMED_CHANNELS][NUM_NAMED_CHANNELS]={{0}};
     int64_t unaccounted, in_ch_layout, out_ch_layout;
     double maxcoef=0;
     char buf[128];
@@ -145,7 +146,7 @@ av_cold static int auto_matrix(SwrContext *s)
     }
 
     memset(s->matrix, 0, sizeof(s->matrix));
-    for(i=0; i<64; i++){
+    for(i=0; i<FF_ARRAY_ELEMS(matrix); i++){
         if(in_ch_layout & out_ch_layout & (1ULL<<i))
             matrix[i][i]= 1.0;
     }
@@ -298,17 +299,20 @@ av_cold static int auto_matrix(SwrContext *s)
     for(out_i=i=0; i<64; i++){
         double sum=0;
         int in_i=0;
+        if((out_ch_layout & (1ULL<<i)) == 0)
+            continue;
         for(j=0; j<64; j++){
-            s->matrix[out_i][in_i]= matrix[i][j];
-            if(matrix[i][j]){
-                sum += fabs(matrix[i][j]);
-            }
-            if(in_ch_layout & (1ULL<<j))
-                in_i++;
+            if((in_ch_layout & (1ULL<<j)) == 0)
+               continue;
+            if (i < FF_ARRAY_ELEMS(matrix) && j < FF_ARRAY_ELEMS(matrix[0]))
+                s->matrix[out_i][in_i]= matrix[i][j];
+            else
+                s->matrix[out_i][in_i]= i == j && (in_ch_layout & out_ch_layout & (1ULL<<i));
+            sum += fabs(s->matrix[out_i][in_i]);
+            in_i++;
         }
         maxcoef= FFMAX(maxcoef, sum);
-        if(out_ch_layout & (1ULL<<i))
-            out_i++;
+        out_i++;
     }
     if(s->rematrix_volume  < 0)
         maxcoef = -s->rematrix_volume;
@@ -411,7 +415,8 @@ av_cold int swri_rematrix_init(SwrContext *s){
         s->matrix_ch[i][0]= ch_in;
     }
 
-    if(HAVE_YASM && HAVE_MMX) swri_rematrix_init_x86(s);
+    if(HAVE_YASM && HAVE_MMX)
+        return swri_rematrix_init_x86(s);
 
     return 0;
 }

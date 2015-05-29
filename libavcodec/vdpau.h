@@ -150,6 +150,46 @@ AVVDPAU_Render2 av_vdpau_hwaccel_get_render2(const AVVDPAUContext *);
 void av_vdpau_hwaccel_set_render2(AVVDPAUContext *, AVVDPAU_Render2);
 
 /**
+ * Associate a VDPAU device with a codec context for hardware acceleration.
+ * This function is meant to be called from the get_format() codec callback,
+ * or earlier. It can also be called after avcodec_flush_buffers() to change
+ * the underlying VDPAU device mid-stream (e.g. to recover from non-transparent
+ * display preemption).
+ *
+ * @note get_format() must return AV_PIX_FMT_VDPAU if this function completes
+ * successfully.
+ *
+ * @param avctx decoding context whose get_format() callback is invoked
+ * @param device VDPAU device handle to use for hardware acceleration
+ * @param get_proc_address VDPAU device driver
+ * @param flags zero of more OR'd AV_HWACCEL_FLAG_* flags
+ *
+ * @return 0 on success, an AVERROR code on failure.
+ */
+int av_vdpau_bind_context(AVCodecContext *avctx, VdpDevice device,
+                          VdpGetProcAddress *get_proc_address, unsigned flags);
+
+/**
+ * Gets the parameters to create an adequate VDPAU video surface for the codec
+ * context using VDPAU hardware decoding acceleration.
+ *
+ * @note Behavior is undefined if the context was not successfully bound to a
+ * VDPAU device using av_vdpau_bind_context().
+ *
+ * @param avctx the codec context being used for decoding the stream
+ * @param type storage space for the VDPAU video surface chroma type
+ *              (or NULL to ignore)
+ * @param width storage space for the VDPAU video surface pixel width
+ *              (or NULL to ignore)
+ * @param height storage space for the VDPAU video surface pixel height
+ *              (or NULL to ignore)
+ *
+ * @return 0 on success, a negative AVERROR code on failure.
+ */
+int av_vdpau_get_surface_parameters(AVCodecContext *avctx, VdpChromaType *type,
+                                    uint32_t *width, uint32_t *height);
+
+/**
  * Allocate an AVVDPAUContext.
  *
  * @return Newly-allocated AVVDPAUContext or NULL on failure.

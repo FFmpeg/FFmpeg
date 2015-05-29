@@ -37,6 +37,7 @@
 #include "internal.h"
 #include "thread.h"
 #include "jpeg2000.h"
+#include "jpeg2000dsp.h"
 
 #define JP2_SIG_TYPE    0x6A502020
 #define JP2_SIG_VALUE   0x0D0A870A
@@ -93,6 +94,7 @@ typedef struct Jpeg2000DecoderContext {
     int             curtileno;
 
     Jpeg2000Tile    *tile;
+    Jpeg2000DSPContext dsp;
 
     /*options parameters*/
     int             reduction_factor;
@@ -199,7 +201,7 @@ static int pix_fmt_match(enum AVPixelFormat pix_fmt, int components,
 // pix_fmts with lower bpp have to be listed before
 // similar pix_fmts with higher bpp.
 #define RGB_PIXEL_FORMATS   AV_PIX_FMT_PAL8,AV_PIX_FMT_RGB24,AV_PIX_FMT_RGBA,AV_PIX_FMT_RGB48,AV_PIX_FMT_RGBA64
-#define GRAY_PIXEL_FORMATS  AV_PIX_FMT_GRAY8,AV_PIX_FMT_GRAY8A,AV_PIX_FMT_GRAY16
+#define GRAY_PIXEL_FORMATS  AV_PIX_FMT_GRAY8,AV_PIX_FMT_GRAY8A,AV_PIX_FMT_GRAY16,AV_PIX_FMT_YA16
 #define YUV_PIXEL_FORMATS   AV_PIX_FMT_YUV410P,AV_PIX_FMT_YUV411P,AV_PIX_FMT_YUVA420P, \
                             AV_PIX_FMT_YUV420P,AV_PIX_FMT_YUV422P,AV_PIX_FMT_YUVA422P, \
                             AV_PIX_FMT_YUV440P,AV_PIX_FMT_YUV444P,AV_PIX_FMT_YUVA444P, \
@@ -1141,26 +1143,10 @@ static void dequantization_int(int x, int y, Jpeg2000Cblk *cblk,
     }
 }
 
-/* Inverse ICT parameters in float and integer.
- * int value = (float value) * (1<<16) */
-static const float f_ict_params[4] = {
-    1.402f,
-    0.34413f,
-    0.71414f,
-    1.772f
-};
-static const int   i_ict_params[4] = {
-     91881,
-     22553,
-     46802,
-    116130
-};
-
-static void mct_decode(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile)
+static inline void mct_decode(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile)
 {
     int i, csize = 1;
-    int32_t *src[3],  i0,  i1,  i2;
-    float   *srcf[3], i0f, i1f, i2f;
+    void *src[3];
 
     for (i = 1; i < 3; i++)
         if (tile->codsty[0].transform != tile->codsty[i].transform) {
@@ -1170,47 +1156,14 @@ static void mct_decode(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile)
 
     for (i = 0; i < 3; i++)
         if (tile->codsty[0].transform == FF_DWT97)
-            srcf[i] = tile->comp[i].f_data;
+            src[i] = tile->comp[i].f_data;
         else
-            src [i] = tile->comp[i].i_data;
+            src[i] = tile->comp[i].i_data;
 
     for (i = 0; i < 2; i++)
         csize *= tile->comp[0].coord[i][1] - tile->comp[0].coord[i][0];
 
-    switch (tile->codsty[0].transform) {
-    case FF_DWT97:
-        for (i = 0; i < csize; i++) {
-            i0f = *srcf[0] + (f_ict_params[0] * *srcf[2]);
-            i1f = *srcf[0] - (f_ict_params[1] * *srcf[1])
-                           - (f_ict_params[2] * *srcf[2]);
-            i2f = *srcf[0] + (f_ict_params[3] * *srcf[1]);
-            *srcf[0]++ = i0f;
-            *srcf[1]++ = i1f;
-            *srcf[2]++ = i2f;
-        }
-        break;
-    case FF_DWT97_INT:
-        for (i = 0; i < csize; i++) {
-            i0 = *src[0] + (((i_ict_params[0] * *src[2]) + (1 << 15)) >> 16);
-            i1 = *src[0] - (((i_ict_params[1] * *src[1]) + (1 << 15)) >> 16)
-                         - (((i_ict_params[2] * *src[2]) + (1 << 15)) >> 16);
-            i2 = *src[0] + (((i_ict_params[3] * *src[1]) + (1 << 15)) >> 16);
-            *src[0]++ = i0;
-            *src[1]++ = i1;
-            *src[2]++ = i2;
-        }
-        break;
-    case FF_DWT53:
-        for (i = 0; i < csize; i++) {
-            i1 = *src[0] - (*src[2] + *src[1] >> 2);
-            i0 = i1 + *src[2];
-            i2 = i1 + *src[1];
-            *src[0]++ = i0;
-            *src[1]++ = i1;
-            *src[2]++ = i2;
-        }
-        break;
-    }
+    s->dsp.mct_decode[tile->codsty[0].transform](src[0], src[1], src[2], csize);
 }
 
 static int jpeg2000_decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
@@ -1606,7 +1559,7 @@ static int jp2_find_codestream(Jpeg2000DecoderContext *s)
                         int cn   = bytestream2_get_be16(&s->g);
                         int av_unused typ  = bytestream2_get_be16(&s->g);
                         int asoc = bytestream2_get_be16(&s->g);
-                        if (cn < 4 || asoc < 4)
+                        if (cn < 4 && asoc < 4)
                             s->cdef[cn] = asoc;
                     }
                 }
@@ -1617,6 +1570,15 @@ static int jp2_find_codestream(Jpeg2000DecoderContext *s)
         }
         bytestream2_seek(&s->g, atom_end, SEEK_SET);
     }
+
+    return 0;
+}
+
+static av_cold int jpeg2000_decode_init(AVCodecContext *avctx)
+{
+    Jpeg2000DecoderContext *s = avctx->priv_data;
+
+    ff_jpeg2000dsp_init(&s->dsp);
 
     return 0;
 }
@@ -1731,6 +1693,7 @@ AVCodec ff_jpeg2000_decoder = {
     .capabilities     = CODEC_CAP_FRAME_THREADS,
     .priv_data_size   = sizeof(Jpeg2000DecoderContext),
     .init_static_data = jpeg2000_init_static_data,
+    .init             = jpeg2000_decode_init,
     .decode           = jpeg2000_decode_frame,
     .priv_class       = &jpeg2000_class,
     .max_lowres       = 5,

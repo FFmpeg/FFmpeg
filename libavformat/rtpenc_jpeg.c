@@ -40,8 +40,8 @@ void ff_rtp_send_jpeg(AVFormatContext *s1, const uint8_t *buf, int size)
     s->timestamp = s->cur_timestamp;
 
     /* convert video pixel dimensions from pixels to blocks */
-    w = s1->streams[0]->codec->width  >> 3;
-    h = s1->streams[0]->codec->height >> 3;
+    w = FF_CEIL_RSHIFT(s1->streams[0]->codec->width, 3);
+    h = FF_CEIL_RSHIFT(s1->streams[0]->codec->height, 3);
 
     /* get the pixel format type or fail */
     if (s1->streams[0]->codec->pix_fmt == AV_PIX_FMT_YUVJ422P ||
@@ -84,6 +84,11 @@ void ff_rtp_send_jpeg(AVFormatContext *s1, const uint8_t *buf, int size)
         } else if (buf[i + 1] == SOS) {
             /* SOS is last marker in the header */
             i += AV_RB16(&buf[i + 2]) + 2;
+            if (i > size) {
+                av_log(s1, AV_LOG_ERROR,
+                       "Insufficient data. Aborted!\n");
+                return;
+            }
             break;
         }
     }

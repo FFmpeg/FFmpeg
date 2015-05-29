@@ -39,6 +39,7 @@ static av_cold int utvideo_encode_init(AVCodecContext *avctx)
     UtVideoContext *utv = (UtVideoContext *)avctx->priv_data;
     UtVideoExtra *info;
     uint32_t flags, in_format;
+    int ret;
 
     switch (avctx->pix_fmt) {
     case AV_PIX_FMT_YUV420P:
@@ -85,7 +86,7 @@ static av_cold int utvideo_encode_init(AVCodecContext *avctx)
     /* Alloc extradata buffer */
     info = (UtVideoExtra *)av_malloc(sizeof(*info));
 
-    if (info == NULL) {
+    if (!info) {
         av_log(avctx, AV_LOG_ERROR, "Could not allocate extradata buffer.\n");
         return AVERROR(ENOMEM);
     }
@@ -94,12 +95,18 @@ static av_cold int utvideo_encode_init(AVCodecContext *avctx)
      * We use this buffer to hold the data that Ut Video returns,
      * since we cannot decode planes separately with it.
      */
-    utv->buf_size = avpicture_get_size(avctx->pix_fmt,
-                                       avctx->width, avctx->height);
+    ret = avpicture_get_size(avctx->pix_fmt, avctx->width, avctx->height);
+    if (ret < 0) {
+        av_free(info);
+        return ret;
+    }
+    utv->buf_size = ret;
+
     utv->buffer = (uint8_t *)av_malloc(utv->buf_size);
 
     if (utv->buffer == NULL) {
         av_log(avctx, AV_LOG_ERROR, "Could not allocate output buffer.\n");
+        av_free(info);
         return AVERROR(ENOMEM);
     }
 
@@ -204,7 +211,7 @@ static av_cold int utvideo_encode_close(AVCodecContext *avctx)
 {
     UtVideoContext *utv = (UtVideoContext *)avctx->priv_data;
 
-    av_freep(&avctx->coded_frame);
+    av_frame_free(&avctx->coded_frame);
     av_freep(&avctx->extradata);
     av_freep(&utv->buffer);
 

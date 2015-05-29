@@ -88,7 +88,7 @@ static int microdvd_read_header(AVFormatContext *s)
     if (!st)
         return AVERROR(ENOMEM);
 
-    while (!url_feof(s->pb)) {
+    while (!avio_feof(s->pb)) {
         char *p;
         AVPacket *sub;
         int64_t pos = avio_tell(s->pb);
@@ -112,6 +112,7 @@ static int microdvd_read_header(AVFormatContext *s)
                 && frame <= 1 && fps > 3 && fps < 100) {
                 pts_info = av_d2q(fps, 100000);
                 has_real_fps = 1;
+                continue;
             }
             if (!st->codec->extradata && sscanf(line, "{DEFAULT}{}%c", &c) == 1) {
                 st->codec->extradata = av_strdup(line + 11);

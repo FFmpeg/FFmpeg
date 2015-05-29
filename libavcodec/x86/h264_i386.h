@@ -36,6 +36,12 @@
 
 #if HAVE_INLINE_ASM
 
+#if ARCH_X86_64
+#define REG64 "r"
+#else
+#define REG64 "m"
+#endif
+
 //FIXME use some macros to avoid duplicating get_cabac (cannot be done yet
 //as that would make optimization work hard)
 #if HAVE_7REGS && !BROKEN_COMPILER
@@ -140,7 +146,7 @@ static int decode_significance_8x8_x86(CABACContext *c,
         "3:                                     \n\t"
 
         "mov %10, %0                            \n\t"
-        "movzbl (%0, %6), %k6                   \n\t"
+        "movzb (%0, %6), %6                     \n\t"
         "add %9, %6                             \n\t"
 
         BRANCHLESS_GET_CABAC("%4", "%q4", "(%6)", "%3", "%w3",
@@ -151,14 +157,14 @@ static int decode_significance_8x8_x86(CABACContext *c,
                              AV_STRINGIFY(H264_MLPS_STATE_OFFSET),
                              "%15")
 
-        "mov %1, %k6                            \n\t"
+        "mov %1, %6                             \n\t"
         "test $1, %4                            \n\t"
         " jz 4f                                 \n\t"
 
 #ifdef BROKEN_RELOCATIONS
-        "movzbl %c14(%15, %q6), %k6\n\t"
+        "movzb %c14(%15, %q6), %6\n\t"
 #else
-        "movzbl "MANGLE(ff_h264_cabac_tables)"+%c14(%k6), %k6\n\t"
+        "movzb "MANGLE(ff_h264_cabac_tables)"+%c14(%6), %6\n\t"
 #endif
         "add %11, %6                            \n\t"
 
@@ -171,8 +177,8 @@ static int decode_significance_8x8_x86(CABACContext *c,
                              "%15")
 
         "mov %2, %0                             \n\t"
-        "mov %1, %k6                            \n\t"
-        "movl %k6, (%0)                         \n\t"
+        "mov %1, %6                             \n\t"
+        "mov %k6, (%0)                          \n\t"
 
         "test $1, %4                            \n\t"
         " jnz 5f                                \n\t"
@@ -180,19 +186,19 @@ static int decode_significance_8x8_x86(CABACContext *c,
         "add"OPSIZE"  $4, %2                    \n\t"
 
         "4:                                     \n\t"
-        "addl $1, %k6                           \n\t"
-        "mov %k6, %1                            \n\t"
-        "cmpl $63, %k6                          \n\t"
+        "add $1, %6                             \n\t"
+        "mov %6, %1                             \n\t"
+        "cmp $63, %6                            \n\t"
         " jb 3b                                 \n\t"
         "mov %2, %0                             \n\t"
-        "movl %k6, (%0)                         \n\t"
+        "mov %k6, (%0)                          \n\t"
         "5:                                     \n\t"
         "addl %8, %k0                           \n\t"
         "shr $2, %k0                            \n\t"
-        : "=&q"(coeff_count), "+m"(last), "+m"(index), "+&r"(c->low),
+        : "=&q"(coeff_count), "+"REG64(last), "+"REG64(index), "+&r"(c->low),
           "=&r"(bit), "+&r"(c->range), "=&r"(state)
         : "r"(c), "m"(minusindex), "m"(significant_coeff_ctx_base),
-          "m"(sig_off), "m"(last_coeff_ctx_base),
+          REG64(sig_off), REG64(last_coeff_ctx_base),
           "i"(offsetof(CABACContext, bytestream)),
           "i"(offsetof(CABACContext, bytestream_end)),
           "i"(H264_LAST_COEFF_FLAG_OFFSET_8x8_OFFSET) TABLES_ARG

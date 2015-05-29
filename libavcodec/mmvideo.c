@@ -49,7 +49,7 @@
 typedef struct MmContext {
     AVCodecContext *avctx;
     AVFrame *frame;
-    int palette[AVPALETTE_COUNT];
+    unsigned int palette[AVPALETTE_COUNT];
     GetByteContext gb;
 } MmContext;
 
@@ -60,6 +60,13 @@ static av_cold int mm_decode_init(AVCodecContext *avctx)
     s->avctx = avctx;
 
     avctx->pix_fmt = AV_PIX_FMT_PAL8;
+
+    if (!avctx->width || !avctx->height ||
+        (avctx->width & 1) || (avctx->height & 1)) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid video dimensions: %dx%d\n",
+               avctx->width, avctx->height);
+        return AVERROR(EINVAL);
+    }
 
     s->frame = av_frame_alloc();
     if (!s->frame)
@@ -109,7 +116,7 @@ static int mm_decode_intra(MmContext * s, int half_horiz, int half_vert)
 
         if (color) {
             memset(s->frame->data[0] + y*s->frame->linesize[0] + x, color, run_length);
-            if (half_vert)
+            if (half_vert && y + half_vert < s->avctx->height)
                 memset(s->frame->data[0] + (y+1)*s->frame->linesize[0] + x, color, run_length);
         }
         x+= run_length;

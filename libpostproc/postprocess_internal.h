@@ -69,14 +69,13 @@
 #define TEMP_NOISE_FILTER               0x100000
 #define FORCE_QUANT                     0x200000
 #define BITEXACT                        0x1000000
+#define VISUALIZE                       0x2000000
 
 //use if you want a faster postprocessing code
 //cannot differentiate between chroma & luma filters (both on or both off)
 //obviously the -pp option on the command line has no effect except turning the here selected
 //filters on
 //#define COMPILE_TIME_MODE 0x77
-
-#define CLIP av_clip_uint8
 
 /**
  * Postprocessing filter.
@@ -144,8 +143,11 @@ typedef struct PPContext{
     DECLARE_ALIGNED(8, uint64_t, pQPb);
     DECLARE_ALIGNED(8, uint64_t, pQPb2);
 
-    DECLARE_ALIGNED(8, uint64_t, mmxDcOffset)[64];
-    DECLARE_ALIGNED(8, uint64_t, mmxDcThreshold)[64];
+    DECLARE_ALIGNED(32, uint64_t, pQPb_block)[4];
+    DECLARE_ALIGNED(32, uint64_t, pQPb2_block)[4];
+
+    DECLARE_ALIGNED(32, uint64_t, mmxDcOffset)[64];
+    DECLARE_ALIGNED(32, uint64_t, mmxDcThreshold)[64];
 
     QP_STORE_T *stdQPTable;       ///< used to fix MPEG2 style qscale
     QP_STORE_T *nonBQPTable;
@@ -153,6 +155,9 @@ typedef struct PPContext{
 
     int QP;
     int nonBQP;
+
+    DECLARE_ALIGNED(32, int, QP_block)[4];
+    DECLARE_ALIGNED(32, int, nonBQP_block)[4];
 
     int frameNum;
 

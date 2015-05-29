@@ -70,12 +70,6 @@ typedef struct {
     cl_context context;
     cl_device_id device_id;
     cl_command_queue command_queue;
-#if FF_API_OLD_OPENCL
-    char *build_options;
-    int program_count;
-    cl_program programs[MAX_KERNEL_CODE_NUM];
-    int kernel_count;
-#endif
     int kernel_code_count;
     KernelCode kernel_code[MAX_KERNEL_CODE_NUM];
     AVOpenCLDeviceList device_list;
@@ -86,9 +80,6 @@ typedef struct {
 static const AVOption opencl_options[] = {
      { "platform_idx",        "set platform index value",  OFFSET(platform_idx),  AV_OPT_TYPE_INT,    {.i64=-1}, -1, INT_MAX},
      { "device_idx",          "set device index value",    OFFSET(device_idx),    AV_OPT_TYPE_INT,    {.i64=-1}, -1, INT_MAX},
-#if FF_API_OLD_OPENCL
-     { "build_options",       "build options of opencl",   OFFSET(build_options), AV_OPT_TYPE_STRING, {.str="-I."},  CHAR_MIN, CHAR_MAX},
-#endif
      { NULL }
 };
 
@@ -190,9 +181,11 @@ static void free_device_list(AVOpenCLDeviceList *device_list)
         if (!device_list->platform_node[i])
             continue;
         for (j = 0; j < device_list->platform_node[i]->device_num; j++) {
+            av_freep(&(device_list->platform_node[i]->device_node[j]->device_name));
             av_freep(&(device_list->platform_node[i]->device_node[j]));
         }
         av_freep(&device_list->platform_node[i]->device_node);
+        av_freep(&(device_list->platform_node[i]->platform_name));
         av_freep(&device_list->platform_node[i]);
     }
     av_freep(&device_list->platform_node);
@@ -207,13 +200,15 @@ static int get_device_list(AVOpenCLDeviceList *device_list)
     cl_platform_id *platform_ids = NULL;
     cl_device_id *device_ids = NULL;
     AVOpenCLDeviceNode *device_node = NULL;
+    size_t platform_name_size = 0;
+    size_t device_name_size = 0;
     status = clGetPlatformIDs(0, NULL, &device_list->platform_num);
     if (status != CL_SUCCESS) {
         av_log(&opencl_ctx, AV_LOG_ERROR,
                "Could not get OpenCL platform ids: %s\n", av_opencl_errstr(status));
         return AVERROR_EXTERNAL;
     }
-    platform_ids = av_mallocz(device_list->platform_num * sizeof(cl_platform_id));
+    platform_ids = av_mallocz_array(device_list->platform_num, sizeof(cl_platform_id));
     if (!platform_ids)
         return AVERROR(ENOMEM);
     status = clGetPlatformIDs(device_list->platform_num, platform_ids, NULL);
@@ -223,7 +218,7 @@ static int get_device_list(AVOpenCLDeviceList *device_list)
         ret = AVERROR_EXTERNAL;
         goto end;
     }
-    device_list->platform_node = av_mallocz(device_list->platform_num * sizeof(AVOpenCLPlatformNode *));
+    device_list->platform_node = av_mallocz_array(device_list->platform_num, sizeof(AVOpenCLPlatformNode *));
     if (!device_list->platform_node) {
         ret = AVERROR(ENOMEM);
         goto end;
@@ -241,22 +236,39 @@ static int get_device_list(AVOpenCLDeviceList *device_list)
         }
         device_list->platform_node[i]->platform_id = platform_ids[i];
         status = clGetPlatformInfo(platform_ids[i], CL_PLATFORM_VENDOR,
-                                   sizeof(device_list->platform_node[i]->platform_name),
-                                   device_list->platform_node[i]->platform_name, NULL);
+                                   0, NULL, &platform_name_size);
+        if (status != CL_SUCCESS) {
+            av_log(&opencl_ctx, AV_LOG_WARNING,
+                    "Could not get size of platform name: %s\n", av_opencl_errstr(status));
+        } else {
+            device_list->platform_node[i]->platform_name = av_malloc(platform_name_size * sizeof(char));
+            if (!device_list->platform_node[i]->platform_name) {
+                av_log(&opencl_ctx, AV_LOG_WARNING,
+                        "Could not allocate memory for device name: %s\n", av_opencl_errstr(status));
+            } else {
+                status = clGetPlatformInfo(platform_ids[i], CL_PLATFORM_VENDOR,
+                                           platform_name_size * sizeof(char),
+                                           device_list->platform_node[i]->platform_name, NULL);
+                if (status != CL_SUCCESS) {
+                    av_log(&opencl_ctx, AV_LOG_WARNING,
+                            "Could not get platform name: %s\n", av_opencl_errstr(status));
+                }
+            }
+        }
         total_devices_num = 0;
         for (j = 0; j < FF_ARRAY_ELEMS(device_type); j++) {
             status = clGetDeviceIDs(device_list->platform_node[i]->platform_id,
                                     device_type[j], 0, NULL, &devices_num[j]);
             total_devices_num += devices_num[j];
         }
-        device_list->platform_node[i]->device_node = av_mallocz(total_devices_num * sizeof(AVOpenCLDeviceNode *));
+        device_list->platform_node[i]->device_node = av_mallocz_array(total_devices_num, sizeof(AVOpenCLDeviceNode *));
         if (!device_list->platform_node[i]->device_node) {
             ret = AVERROR(ENOMEM);
             goto end;
         }
         for (j = 0; j < FF_ARRAY_ELEMS(device_type); j++) {
             if (devices_num[j]) {
-                device_ids = av_mallocz(devices_num[j] * sizeof(cl_device_id));
+                device_ids = av_mallocz_array(devices_num[j], sizeof(cl_device_id));
                 if (!device_ids) {
                     ret = AVERROR(ENOMEM);
                     goto end;
@@ -280,8 +292,21 @@ static int get_device_list(AVOpenCLDeviceList *device_list)
                     device_node->device_id = device_ids[k];
                     device_node->device_type = device_type[j];
                     status = clGetDeviceInfo(device_node->device_id, CL_DEVICE_NAME,
-                                             sizeof(device_node->device_name), device_node->device_name,
-                                             NULL);
+                                             0, NULL, &device_name_size);
+                    if (status != CL_SUCCESS) {
+                        av_log(&opencl_ctx, AV_LOG_WARNING,
+                                "Could not get size of device name: %s\n", av_opencl_errstr(status));
+                        continue;
+                    }
+                    device_node->device_name = av_malloc(device_name_size * sizeof(char));
+                    if (!device_node->device_name) {
+                        av_log(&opencl_ctx, AV_LOG_WARNING,
+                                "Could not allocate memory for device name: %s\n", av_opencl_errstr(status));
+                        continue;
+                    }
+                    status = clGetDeviceInfo(device_node->device_id, CL_DEVICE_NAME,
+                                             device_name_size * sizeof(char),
+                                             device_node->device_name, NULL);
                     if (status != CL_SUCCESS) {
                         av_log(&opencl_ctx, AV_LOG_WARNING,
                                 "Could not get device name: %s\n", av_opencl_errstr(status));
@@ -475,19 +500,6 @@ cl_command_queue av_opencl_get_command_queue(void)
     return opencl_ctx.command_queue;
 }
 
-#if FF_API_OLD_OPENCL
-int av_opencl_create_kernel(AVOpenCLKernelEnv *env, const char *kernel_name)
-{
-    av_log(&opencl_ctx, AV_LOG_ERROR, "Could not create OpenCL kernel %s, please update libavfilter.\n", kernel_name);
-    return AVERROR(EINVAL);
-}
-
-void av_opencl_release_kernel(AVOpenCLKernelEnv *env)
-{
-    av_log(&opencl_ctx, AV_LOG_ERROR, "Could not release OpenCL kernel, please update libavfilter.\n");
-}
-#endif
-
 static int init_opencl_env(OpenclContext *opencl_ctx, AVOpenCLExternalEnv *ext_opencl_env)
 {
     cl_int status;
@@ -610,6 +622,7 @@ end:
 
 void av_opencl_uninit(void)
 {
+    int i;
     cl_int status;
     LOCK_OPENCL;
     opencl_ctx.init_count--;
@@ -632,6 +645,9 @@ void av_opencl_uninit(void)
                    "Could not release OpenCL context: %s\n", av_opencl_errstr(status));
         }
         opencl_ctx.context = NULL;
+    }
+    for (i = 0; i < opencl_ctx.kernel_code_count; i++) {
+        opencl_ctx.kernel_code[i].is_compiled = 0;
     }
     free_device_list(&opencl_ctx.device_list);
 end:

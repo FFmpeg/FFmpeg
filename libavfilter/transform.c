@@ -136,16 +136,6 @@ void avfilter_mul_matrix(const float *m1, float scalar, float *result)
         result[i] = m1[i] * scalar;
 }
 
-static inline int mirror(int v, int m)
-{
-    while ((unsigned)v > (unsigned)m) {
-        v = -v;
-        if (v < 0)
-            v += 2 * m;
-    }
-    return v;
-}
-
 int avfilter_transform(const uint8_t *src, uint8_t *dst,
                         int src_stride, int dst_stride,
                         int width, int height, const float *matrix,
@@ -186,8 +176,8 @@ int avfilter_transform(const uint8_t *src, uint8_t *dst,
                     def = src[(int)y_s * src_stride + (int)x_s];
                     break;
                 case FILL_MIRROR:
-                    x_s = mirror(x_s,  width-1);
-                    y_s = mirror(y_s, height-1);
+                    x_s = avpriv_mirror(x_s,  width-1);
+                    y_s = avpriv_mirror(y_s, height-1);
 
                     av_assert2(x_s >= 0 && y_s >= 0);
                     av_assert2(x_s < width && y_s < height);

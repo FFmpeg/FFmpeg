@@ -117,17 +117,18 @@ static av_cold void uninit(AVFilterContext *ctx)
 
 static int query_formats(AVFilterContext *ctx)
 {
-    static const enum AVPixelFormat pix_fmts[] = {
-        AV_PIX_FMT_YUV444P,  AV_PIX_FMT_YUV422P,  AV_PIX_FMT_YUV420P,
-        AV_PIX_FMT_YUV411P,  AV_PIX_FMT_YUV410P,  AV_PIX_FMT_YUVA420P,
-        AV_PIX_FMT_YUV440P,  AV_PIX_FMT_GRAY8,
-        AV_PIX_FMT_YUVJ444P, AV_PIX_FMT_YUVJ422P, AV_PIX_FMT_YUVJ420P,
-        AV_PIX_FMT_YUVJ440P,
-        AV_PIX_FMT_NONE
-    };
+    AVFilterFormats *formats = NULL;
+    int fmt;
 
-    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
-    return 0;
+    for (fmt = 0; av_pix_fmt_desc_get(fmt); fmt++) {
+        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(fmt);
+        if (!(desc->flags & (AV_PIX_FMT_FLAG_HWACCEL | AV_PIX_FMT_FLAG_BITSTREAM | AV_PIX_FMT_FLAG_PAL)) &&
+            (desc->flags & AV_PIX_FMT_FLAG_PLANAR || desc->nb_components == 1) &&
+            (!(desc->flags & AV_PIX_FMT_FLAG_BE) == !HAVE_BIGENDIAN || desc->comp[0].depth_minus1 == 7))
+            ff_add_format(&formats, fmt);
+    }
+
+    return ff_set_common_formats(ctx, formats);
 }
 
 static int config_input(AVFilterLink *inlink)
@@ -141,8 +142,8 @@ static int config_input(AVFilterLink *inlink)
     char *expr;
     int ret;
 
-    if (!(s->temp[0] = av_malloc(FFMAX(w, h))) ||
-        !(s->temp[1] = av_malloc(FFMAX(w, h))))
+    if (!(s->temp[0] = av_malloc(2*FFMAX(w, h))) ||
+        !(s->temp[1] = av_malloc(2*FFMAX(w, h))))
         return AVERROR(ENOMEM);
 
     s->hsub = desc->log2_chroma_w;
@@ -202,7 +203,7 @@ static int config_input(AVFilterLink *inlink)
     return 0;
 }
 
-static inline void blur(uint8_t *dst, int dst_step, const uint8_t *src, int src_step,
+static inline void blur8(uint8_t *dst, int dst_step, const uint8_t *src, int src_step,
                         int len, int radius)
 {
     /* Naive boxblur would sum source pixels from x-radius .. x+radius
@@ -221,56 +222,100 @@ static inline void blur(uint8_t *dst, int dst_step, const uint8_t *src, int src_
      */
     const int length = radius*2 + 1;
     const int inv = ((1<<16) + length/2)/length;
-    int x, sum = 0;
+    int x, sum = src[radius*src_step];
 
     for (x = 0; x < radius; x++)
         sum += src[x*src_step]<<1;
-    sum += src[radius*src_step];
+
+    sum = sum*inv + (1<<15);
 
     for (x = 0; x <= radius; x++) {
-        sum += src[(radius+x)*src_step] - src[(radius-x)*src_step];
-        dst[x*dst_step] = (sum*inv + (1<<15))>>16;
+        sum += (src[(radius+x)*src_step] - src[(radius-x)*src_step])*inv;
+        dst[x*dst_step] = sum>>16;
     }
 
     for (; x < len-radius; x++) {
-        sum += src[(radius+x)*src_step] - src[(x-radius-1)*src_step];
-        dst[x*dst_step] = (sum*inv + (1<<15))>>16;
+        sum += (src[(radius+x)*src_step] - src[(x-radius-1)*src_step])*inv;
+        dst[x*dst_step] = sum >>16;
     }
 
     for (; x < len; x++) {
-        sum += src[(2*len-radius-x-1)*src_step] - src[(x-radius-1)*src_step];
-        dst[x*dst_step] = (sum*inv + (1<<15))>>16;
+        sum += (src[(2*len-radius-x-1)*src_step] - src[(x-radius-1)*src_step])*inv;
+        dst[x*dst_step] = sum>>16;
     }
 }
 
+static inline void blur16(uint16_t *dst, int dst_step, const uint16_t *src, int src_step,
+                          int len, int radius)
+{
+    const int length = radius*2 + 1;
+    const int inv = ((1<<16) + length/2)/length;
+    int x, sum = src[radius*src_step];
+
+    for (x = 0; x < radius; x++)
+        sum += src[x*src_step]<<1;
+
+    sum = sum*inv + (1<<15);
+
+    for (x = 0; x <= radius; x++) {
+        sum += (src[(radius+x)*src_step] - src[(radius-x)*src_step])*inv;
+        dst[x*dst_step] = sum>>16;
+    }
+
+    for (; x < len-radius; x++) {
+        sum += (src[(radius+x)*src_step] - src[(x-radius-1)*src_step])*inv;
+        dst[x*dst_step] = sum >>16;
+    }
+
+    for (; x < len; x++) {
+        sum += (src[(2*len-radius-x-1)*src_step] - src[(x-radius-1)*src_step])*inv;
+        dst[x*dst_step] = sum>>16;
+    }
+}
+
+static inline void blur(uint8_t *dst, int dst_step, const uint8_t *src, int src_step,
+                        int len, int radius, int pixsize)
+{
+    if (pixsize == 1) blur8 (dst, dst_step   , src, src_step   , len, radius);
+    else              blur16((uint16_t*)dst, dst_step>>1, (const uint16_t*)src, src_step>>1, len, radius);
+}
+
 static inline void blur_power(uint8_t *dst, int dst_step, const uint8_t *src, int src_step,
-                              int len, int radius, int power, uint8_t *temp[2])
+                              int len, int radius, int power, uint8_t *temp[2], int pixsize)
 {
     uint8_t *a = temp[0], *b = temp[1];
 
     if (radius && power) {
-        blur(a, 1, src, src_step, len, radius);
+        blur(a, pixsize, src, src_step, len, radius, pixsize);
         for (; power > 2; power--) {
             uint8_t *c;
-            blur(b, 1, a, 1, len, radius);
+            blur(b, pixsize, a, pixsize, len, radius, pixsize);
             c = a; a = b; b = c;
         }
         if (power > 1) {
-            blur(dst, dst_step, a, 1, len, radius);
+            blur(dst, dst_step, a, pixsize, len, radius, pixsize);
         } else {
             int i;
-            for (i = 0; i < len; i++)
-                dst[i*dst_step] = a[i];
+            if (pixsize == 1) {
+                for (i = 0; i < len; i++)
+                    dst[i*dst_step] = a[i];
+            } else
+                for (i = 0; i < len; i++)
+                    *(uint16_t*)(dst + i*dst_step) = ((uint16_t*)a)[i];
         }
     } else {
         int i;
-        for (i = 0; i < len; i++)
-            dst[i*dst_step] = src[i*src_step];
+        if (pixsize == 1) {
+            for (i = 0; i < len; i++)
+                dst[i*dst_step] = src[i*src_step];
+        } else
+            for (i = 0; i < len; i++)
+                *(uint16_t*)(dst + i*dst_step) = *(uint16_t*)(src + i*src_step);
     }
 }
 
 static void hblur(uint8_t *dst, int dst_linesize, const uint8_t *src, int src_linesize,
-                  int w, int h, int radius, int power, uint8_t *temp[2])
+                  int w, int h, int radius, int power, uint8_t *temp[2], int pixsize)
 {
     int y;
 
@@ -278,12 +323,12 @@ static void hblur(uint8_t *dst, int dst_linesize, const uint8_t *src, int src_li
         return;
 
     for (y = 0; y < h; y++)
-        blur_power(dst + y*dst_linesize, 1, src + y*src_linesize, 1,
-                   w, radius, power, temp);
+        blur_power(dst + y*dst_linesize, pixsize, src + y*src_linesize, pixsize,
+                   w, radius, power, temp, pixsize);
 }
 
 static void vblur(uint8_t *dst, int dst_linesize, const uint8_t *src, int src_linesize,
-                  int w, int h, int radius, int power, uint8_t *temp[2])
+                  int w, int h, int radius, int power, uint8_t *temp[2], int pixsize)
 {
     int x;
 
@@ -291,8 +336,8 @@ static void vblur(uint8_t *dst, int dst_linesize, const uint8_t *src, int src_li
         return;
 
     for (x = 0; x < w; x++)
-        blur_power(dst + x, dst_linesize, src + x, src_linesize,
-                   h, radius, power, temp);
+        blur_power(dst + x*pixsize, dst_linesize, src + x*pixsize, src_linesize,
+                   h, radius, power, temp, pixsize);
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
@@ -305,6 +350,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     int cw = FF_CEIL_RSHIFT(inlink->w, s->hsub), ch = FF_CEIL_RSHIFT(in->height, s->vsub);
     int w[4] = { inlink->w, cw, cw, inlink->w };
     int h[4] = { in->height, ch, ch, in->height };
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
+    const int depth = desc->comp[0].depth_minus1 + 1;
+    const int pixsize = (depth+7)/8;
 
     out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {
@@ -317,13 +365,13 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         hblur(out->data[plane], out->linesize[plane],
               in ->data[plane], in ->linesize[plane],
               w[plane], h[plane], s->radius[plane], s->power[plane],
-              s->temp);
+              s->temp, pixsize);
 
     for (plane = 0; plane < 4 && in->data[plane] && in->linesize[plane]; plane++)
         vblur(out->data[plane], out->linesize[plane],
               out->data[plane], out->linesize[plane],
               w[plane], h[plane], s->radius[plane], s->power[plane],
-              s->temp);
+              s->temp, pixsize);
 
     av_frame_free(&in);
 

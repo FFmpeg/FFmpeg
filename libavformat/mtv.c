@@ -112,7 +112,7 @@ static int mtv_read_header(AVFormatContext *s)
     mtv->audio_identifier  = avio_rl24(pb);
     mtv->audio_br          = avio_rl16(pb);
     mtv->img_colorfmt      = avio_rl24(pb);
-    mtv->img_bpp           = avio_r8(pb)>>3;
+    mtv->img_bpp           = avio_r8(pb);
     mtv->img_width         = avio_rl16(pb);
     mtv->img_height        = avio_rl16(pb);
     mtv->img_segment_size  = avio_rl16(pb);
@@ -128,17 +128,17 @@ static int mtv_read_header(AVFormatContext *s)
 
     /* Calculate width and height if missing from header */
 
-    if(!mtv->img_width && mtv->img_height)
-        mtv->img_width=mtv->img_segment_size / (mtv->img_bpp)
+    if (!mtv->img_width && mtv->img_height > 0 && mtv->img_bpp >= 8)
+        mtv->img_width=mtv->img_segment_size / (mtv->img_bpp>>3)
                         / mtv->img_height;
 
-    if(!mtv->img_height && mtv->img_width)
-        mtv->img_height=mtv->img_segment_size / (mtv->img_bpp)
+    if (!mtv->img_height && mtv->img_width > 0 && mtv->img_bpp >= 8)
+        mtv->img_height=mtv->img_segment_size / (mtv->img_bpp>>3)
                         / mtv->img_width;
 
     if(!mtv->img_height || !mtv->img_width || !mtv->img_segment_size){
         av_log(s, AV_LOG_ERROR, "width or height or segment_size is invalid and I cannot calculate them from other information\n");
-        return AVERROR(EINVAL);
+        return AVERROR_INVALIDDATA;
     }
 
     avio_skip(pb, 4);
@@ -200,7 +200,7 @@ static int mtv_read_packet(AVFormatContext *s, AVPacket *pkt)
     AVIOContext *pb = s->pb;
     int ret;
 
-    if((avio_tell(pb) - s->data_offset + mtv->img_segment_size) % mtv->full_segment_size)
+    if((avio_tell(pb) - s->internal->data_offset + mtv->img_segment_size) % mtv->full_segment_size)
     {
         avio_skip(pb, MTV_AUDIO_PADDING_SIZE);
 

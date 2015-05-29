@@ -42,6 +42,7 @@ hiegrep2(){
     cat $TMP
 }
 
+hiegrep 'static[^(]*\*[a-zA-Z_]*\[' 'pointer array is not const' $*
 hiegrep '[[:space:]]$'    'trailing whitespace' $*
 hiegrep "$(echo x | tr 'x' '\t')"         'tabs' $*
 #hiegrep ':\+$'          'Empty lines' $*

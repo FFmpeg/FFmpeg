@@ -658,8 +658,8 @@ int ff_hevc_skip_flag_decode(HEVCContext *s, int x0, int y0, int x_cb, int y_cb)
 {
     int min_cb_width = s->sps->min_cb_width;
     int inc = 0;
-    int x0b = x0 & ((1 << s->sps->log2_ctb_size) - 1);
-    int y0b = y0 & ((1 << s->sps->log2_ctb_size) - 1);
+    int x0b = av_mod_uintp2(x0, s->sps->log2_ctb_size);
+    int y0b = av_mod_uintp2(y0, s->sps->log2_ctb_size);
 
     if (s->HEVClc->ctb_left_flag || x0b)
         inc = !!SAMPLE_CTB(s->skip_flag, x_cb - 1, y_cb);
@@ -723,8 +723,8 @@ int ff_hevc_pred_mode_decode(HEVCContext *s)
 int ff_hevc_split_coding_unit_flag_decode(HEVCContext *s, int ct_depth, int x0, int y0)
 {
     int inc = 0, depth_left = 0, depth_top = 0;
-    int x0b  = x0 & ((1 << s->sps->log2_ctb_size) - 1);
-    int y0b  = y0 & ((1 << s->sps->log2_ctb_size) - 1);
+    int x0b  = av_mod_uintp2(x0, s->sps->log2_ctb_size);
+    int y0b  = av_mod_uintp2(y0, s->sps->log2_ctb_size);
     int x_cb = x0 >> s->sps->log2_min_cb_size;
     int y_cb = y0 >> s->sps->log2_min_cb_size;
 
@@ -835,7 +835,7 @@ int ff_hevc_inter_pred_idc_decode(HEVCContext *s, int nPbW, int nPbH)
 {
     if (nPbW + nPbH == 12)
         return GET_CABAC(elem_offset[INTER_PRED_IDC] + 4);
-    if (GET_CABAC(elem_offset[INTER_PRED_IDC] + s->HEVClc->ct.depth))
+    if (GET_CABAC(elem_offset[INTER_PRED_IDC] + s->HEVClc->ct_depth))
         return PRED_BI;
 
     return GET_CABAC(elem_offset[INTER_PRED_IDC] + 4);
@@ -913,7 +913,7 @@ int ff_hevc_cbf_luma_decode(HEVCContext *s, int trafo_depth)
     return GET_CABAC(elem_offset[CBF_LUMA] + !trafo_depth);
 }
 
-static int ff_hevc_transform_skip_flag_decode(HEVCContext *s, int c_idx)
+static int hevc_transform_skip_flag_decode(HEVCContext *s, int c_idx)
 {
     return GET_CABAC(elem_offset[TRANSFORM_SKIP_FLAG] + !!c_idx);
 }
@@ -1079,7 +1079,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
     int vshift = s->sps->vshift[c_idx];
     uint8_t *dst = &s->frame->data[c_idx][(y0 >> vshift) * stride +
                                           ((x0 >> hshift) << s->sps->pixel_shift)];
-    int16_t *coeffs = lc->tu.coeffs[c_idx > 0];
+    int16_t *coeffs = (int16_t*)(c_idx ? lc->edge_emu_buffer2 : lc->edge_emu_buffer);
     uint8_t significant_coeff_group_flag[8][8] = {{0}};
     int explicit_rdpcm_flag = 0;
     int explicit_rdpcm_dir_flag;
@@ -1115,7 +1115,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
 
         if (s->pps->transform_skip_enabled_flag &&
             log2_trafo_size <= s->pps->log2_max_transform_skip_block_size) {
-            transform_skip_flag = ff_hevc_transform_skip_flag_decode(s, c_idx);
+            transform_skip_flag = hevc_transform_skip_flag_decode(s, c_idx);
         }
 
         if (c_idx == 0) {
@@ -1552,7 +1552,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
         }
     }
     if (lc->tu.cross_pf) {
-        int16_t *coeffs_y = lc->tu.coeffs[0];
+        int16_t *coeffs_y = (int16_t*)lc->edge_emu_buffer;
 
         for (i = 0; i < (trafo_size * trafo_size); i++) {
             coeffs[i] = coeffs[i] + ((lc->tu.res_scale_val * coeffs_y[i]) >> 3);

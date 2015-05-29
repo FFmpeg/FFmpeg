@@ -50,6 +50,7 @@
 #include "config.h"
 #include "libavcodec/fft.h"
 #include "libavcodec/fft_table.h"
+#include "libavutil/mips/asmdefs.h"
 
 /**
  * FFT transform
@@ -65,29 +66,15 @@ static void ff_fft_calc_mips(FFTContext *s, FFTComplex *z)
     float w_re, w_im;
     float *w_re_ptr, *w_im_ptr;
     const int fft_size = (1 << s->nbits);
-    int s_n = s->nbits;
-    int tem1, tem2;
     float pom,  pom1,  pom2,  pom3;
     float temp, temp1, temp3, temp4;
     FFTComplex * tmpz_n2, * tmpz_n34, * tmpz_n4;
     FFTComplex * tmpz_n2_i, * tmpz_n34_i, * tmpz_n4_i, * tmpz_i;
 
-    /**
-    *num_transforms = (0x2aab >> (16 - s->nbits)) | 1;
-    */
-    __asm__ volatile (
-        "li   %[tem1], 16                                      \n\t"
-        "sub  %[s_n],  %[tem1], %[s_n]                         \n\t"
-        "li   %[tem2], 10923                                   \n\t"
-        "srav %[tem2], %[tem2], %[s_n]                         \n\t"
-        "ori  %[num_t],%[tem2], 1                              \n\t"
-        : [num_t]"=r"(num_transforms), [s_n]"+r"(s_n),
-          [tem1]"=&r"(tem1), [tem2]"=&r"(tem2)
-    );
-
+    num_transforms = (0x2aab >> (16 - s->nbits)) | 1;
 
     for (n=0; n<num_transforms; n++) {
-        offset = fft_offsets_lut[n] << 2;
+        offset = ff_fft_offsets_lut[n] << 2;
         tmpz = z + offset;
 
         tmp1 = tmpz[0].re + tmpz[1].re;
@@ -116,7 +103,7 @@ static void ff_fft_calc_mips(FFTContext *s, FFTComplex *z)
     num_transforms = (num_transforms >> 1) | 1;
 
     for (n=0; n<num_transforms; n++) {
-        offset = fft_offsets_lut[n] << 3;
+        offset = ff_fft_offsets_lut[n] << 3;
         tmpz = z + offset;
 
         __asm__ volatile (
@@ -214,20 +201,12 @@ static void ff_fft_calc_mips(FFTContext *s, FFTComplex *z)
     n4 = 4;
 
     for (nbits=4; nbits<=s->nbits; nbits++) {
-        /*
-        * num_transforms = (num_transforms >> 1) | 1;
-        */
-        __asm__ volatile (
-            "sra %[num_t], %[num_t], 1               \n\t"
-            "ori %[num_t], %[num_t], 1               \n\t"
-
-            : [num_t] "+r" (num_transforms)
-        );
+        num_transforms = (num_transforms >> 1) | 1;
         n2  = 2 * n4;
         n34 = 3 * n4;
 
         for (n=0; n<num_transforms; n++) {
-            offset = fft_offsets_lut[n] << nbits;
+            offset = ff_fft_offsets_lut[n] << nbits;
             tmpz = z + offset;
 
             tmpz_n2  = tmpz +  n2;
@@ -390,14 +369,14 @@ static void ff_imdct_half_mips(FFTContext *s, FFTSample *output, const FFTSample
             "mul.s          %[temp11],      %[temp5],   %[temp6]                \t\n"
             "mul.s          %[temp12],      %[temp5],   %[temp7]                \t\n"
             "lwc1           %[temp8],       0(%[in3])                           \t\n"
-            "addiu          %[tcos1],       %[tcos1],   8                       \t\n"
-            "addiu          %[tsin1],       %[tsin1],   8                       \t\n"
-            "addiu          %[in1],         %[in1],     16                      \t\n"
+            PTR_ADDIU "     %[tcos1],       %[tcos1],   8                       \t\n"
+            PTR_ADDIU "     %[tsin1],       %[tsin1],   8                       \t\n"
+            PTR_ADDIU "     %[in1],         %[in1],     16                      \t\n"
             "nmsub.s        %[temp11],      %[temp11],  %[temp8],   %[temp7]    \t\n"
             "madd.s         %[temp12],      %[temp12],  %[temp8],   %[temp6]    \t\n"
-            "addiu          %[in2],         %[in2],     -16                     \t\n"
-            "addiu          %[in3],         %[in3],     16                      \t\n"
-            "addiu          %[in4],         %[in4],     -16                     \t\n"
+            PTR_ADDIU "     %[in2],         %[in2],     -16                     \t\n"
+            PTR_ADDIU "     %[in3],         %[in3],     16                      \t\n"
+            PTR_ADDIU "     %[in4],         %[in4],     -16                     \t\n"
 
             : [temp1]"=&f"(temp1), [temp2]"=&f"(temp2),
               [temp3]"=&f"(temp3), [temp4]"=&f"(temp4),
@@ -521,7 +500,7 @@ av_cold void ff_fft_init_mips(FFTContext *s)
 {
     int n=0;
 
-    ff_fft_lut_init(fft_offsets_lut, 0, 1 << 16, &n);
+    ff_fft_lut_init(ff_fft_offsets_lut, 0, 1 << 16, &n);
     ff_init_ff_cos_tabs(16);
 
 #if HAVE_INLINE_ASM

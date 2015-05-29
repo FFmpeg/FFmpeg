@@ -58,6 +58,7 @@
 #define AVCODEC_MIPS_AACDEC_FLOAT_H
 
 #include "libavcodec/aac.h"
+#include "libavutil/mips/asmdefs.h"
 
 #if HAVE_INLINE_ASM && HAVE_MIPSFPU
 static inline float *VMUL2_mips(float *dst, const float *v, unsigned idx,
@@ -68,16 +69,16 @@ static inline float *VMUL2_mips(float *dst, const float *v, unsigned idx,
     float *ret;
 
     __asm__ volatile(
-        "andi    %[temp3],  %[idx],       15           \n\t"
-        "ext     %[temp4],  %[idx],       4,      4    \n\t"
+        "andi    %[temp3],  %[idx],       0x0F         \n\t"
+        "andi    %[temp4],  %[idx],       0xF0         \n\t"
         "sll     %[temp3],  %[temp3],     2            \n\t"
-        "sll     %[temp4],  %[temp4],     2            \n\t"
+        "srl     %[temp4],  %[temp4],     2            \n\t"
         "lwc1    %[temp2],  0(%[scale])                \n\t"
         "lwxc1   %[temp0],  %[temp3](%[v])             \n\t"
         "lwxc1   %[temp1],  %[temp4](%[v])             \n\t"
         "mul.s   %[temp0],  %[temp0],     %[temp2]     \n\t"
         "mul.s   %[temp1],  %[temp1],     %[temp2]     \n\t"
-        "addiu   %[ret],    %[dst],       8            \n\t"
+        PTR_ADDIU "%[ret],  %[dst],       8            \n\t"
         "swc1    %[temp0],  0(%[dst])                  \n\t"
         "swc1    %[temp1],  4(%[dst])                  \n\t"
 
@@ -99,14 +100,13 @@ static inline float *VMUL4_mips(float *dst, const float *v, unsigned idx,
     float *ret;
 
     __asm__ volatile(
-        "andi    %[temp0],  %[idx],       3           \n\t"
-        "ext     %[temp1],  %[idx],       2,      2   \n\t"
-        "ext     %[temp2],  %[idx],       4,      2   \n\t"
-        "ext     %[temp3],  %[idx],       6,      2   \n\t"
+        "andi    %[temp0],  %[idx],       0x03        \n\t"
+        "andi    %[temp1],  %[idx],       0x0C        \n\t"
+        "andi    %[temp2],  %[idx],       0x30        \n\t"
+        "andi    %[temp3],  %[idx],       0xC0        \n\t"
         "sll     %[temp0],  %[temp0],     2           \n\t"
-        "sll     %[temp1],  %[temp1],     2           \n\t"
-        "sll     %[temp2],  %[temp2],     2           \n\t"
-        "sll     %[temp3],  %[temp3],     2           \n\t"
+        "srl     %[temp2],  %[temp2],     2           \n\t"
+        "srl     %[temp3],  %[temp3],     4           \n\t"
         "lwc1    %[temp4],  0(%[scale])               \n\t"
         "lwxc1   %[temp5],  %[temp0](%[v])            \n\t"
         "lwxc1   %[temp6],  %[temp1](%[v])            \n\t"
@@ -116,7 +116,7 @@ static inline float *VMUL4_mips(float *dst, const float *v, unsigned idx,
         "mul.s   %[temp6],  %[temp6],     %[temp4]    \n\t"
         "mul.s   %[temp7],  %[temp7],     %[temp4]    \n\t"
         "mul.s   %[temp8],  %[temp8],     %[temp4]    \n\t"
-        "addiu   %[ret],    %[dst],       16          \n\t"
+        PTR_ADDIU "%[ret],  %[dst],       16          \n\t"
         "swc1    %[temp5],  0(%[dst])                 \n\t"
         "swc1    %[temp6],  4(%[dst])                 \n\t"
         "swc1    %[temp7],  8(%[dst])                 \n\t"
@@ -142,14 +142,14 @@ static inline float *VMUL2S_mips(float *dst, const float *v, unsigned idx,
     float *ret;
 
     __asm__ volatile(
-        "andi    %[temp0],  %[idx],       15         \n\t"
-        "ext     %[temp1],  %[idx],       4,     4   \n\t"
+        "andi    %[temp0],  %[idx],       0x0F       \n\t"
+        "andi    %[temp1],  %[idx],       0xF0       \n\t"
         "lw      %[temp4],  0(%[scale])              \n\t"
         "srl     %[temp2],  %[sign],      1          \n\t"
         "sll     %[temp3],  %[sign],      31         \n\t"
         "sll     %[temp2],  %[temp2],     31         \n\t"
         "sll     %[temp0],  %[temp0],     2          \n\t"
-        "sll     %[temp1],  %[temp1],     2          \n\t"
+        "srl     %[temp1],  %[temp1],     2          \n\t"
         "lwxc1   %[temp8],  %[temp0](%[v])           \n\t"
         "lwxc1   %[temp9],  %[temp1](%[v])           \n\t"
         "xor     %[temp5],  %[temp4],     %[temp2]   \n\t"
@@ -158,7 +158,7 @@ static inline float *VMUL2S_mips(float *dst, const float *v, unsigned idx,
         "mtc1    %[temp4],  %[temp7]                 \n\t"
         "mul.s   %[temp8],  %[temp8],     %[temp6]   \n\t"
         "mul.s   %[temp9],  %[temp9],     %[temp7]   \n\t"
-        "addiu   %[ret],    %[dst],       8          \n\t"
+        PTR_ADDIU "%[ret],  %[dst],       8          \n\t"
         "swc1    %[temp8],  0(%[dst])                \n\t"
         "swc1    %[temp9],  4(%[dst])                \n\t"
 
@@ -185,22 +185,24 @@ static inline float *VMUL4S_mips(float *dst, const float *v, unsigned idx,
 
     __asm__ volatile(
         "lw      %[temp0],   0(%[scale])               \n\t"
-        "and     %[temp1],   %[idx],       3           \n\t"
-        "ext     %[temp2],   %[idx],       2,      2   \n\t"
-        "ext     %[temp3],   %[idx],       4,      2   \n\t"
-        "ext     %[temp4],   %[idx],       6,      2   \n\t"
-        "sll     %[temp1],   %[temp1],     2           \n\t"
-        "sll     %[temp2],   %[temp2],     2           \n\t"
-        "sll     %[temp3],   %[temp3],     2           \n\t"
-        "sll     %[temp4],   %[temp4],     2           \n\t"
+        "andi    %[temp1],  %[idx],       0x03         \n\t"
+        "andi    %[temp2],  %[idx],       0x0C         \n\t"
+        "andi    %[temp3],  %[idx],       0x30         \n\t"
+        "andi    %[temp4],  %[idx],       0xC0         \n\t"
+        "sll     %[temp1],  %[temp1],     2            \n\t"
+        "srl     %[temp3],  %[temp3],     2            \n\t"
+        "srl     %[temp4],  %[temp4],     4            \n\t"
         "lwxc1   %[temp10],  %[temp1](%[v])            \n\t"
         "lwxc1   %[temp11],  %[temp2](%[v])            \n\t"
         "lwxc1   %[temp12],  %[temp3](%[v])            \n\t"
         "lwxc1   %[temp13],  %[temp4](%[v])            \n\t"
         "and     %[temp1],   %[sign],      %[mask]     \n\t"
-        "ext     %[temp2],   %[idx],       12,     1   \n\t"
-        "ext     %[temp3],   %[idx],       13,     1   \n\t"
-        "ext     %[temp4],   %[idx],       14,     1   \n\t"
+        "srl     %[temp2],   %[idx],       12          \n\t"
+        "srl     %[temp3],   %[idx],       13          \n\t"
+        "srl     %[temp4],   %[idx],       14          \n\t"
+        "andi    %[temp2],   %[temp2],     1           \n\t"
+        "andi    %[temp3],   %[temp3],     1           \n\t"
+        "andi    %[temp4],   %[temp4],     1           \n\t"
         "sllv    %[sign],    %[sign],      %[temp2]    \n\t"
         "xor     %[temp1],   %[temp0],     %[temp1]    \n\t"
         "and     %[temp2],   %[sign],      %[mask]     \n\t"
@@ -219,7 +221,7 @@ static inline float *VMUL4S_mips(float *dst, const float *v, unsigned idx,
         "mul.s   %[temp11],  %[temp11],    %[temp15]   \n\t"
         "mul.s   %[temp12],  %[temp12],    %[temp16]   \n\t"
         "mul.s   %[temp13],  %[temp13],    %[temp17]   \n\t"
-        "addiu   %[ret],     %[dst],       16          \n\t"
+        PTR_ADDIU "%[ret],   %[dst],       16          \n\t"
         "swc1    %[temp10],  0(%[dst])                 \n\t"
         "swc1    %[temp11],  4(%[dst])                 \n\t"
         "swc1    %[temp12],  8(%[dst])                 \n\t"

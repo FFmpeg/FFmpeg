@@ -114,7 +114,7 @@ AVFILTER_DEFINE_CLASS(removelogo);
  * opinion. This will calculate only at init-time, so you can put a
  * long expression here without effecting performance.
  */
-#define apply_mask_fudge_factor(x) (((x) >> 2) + x)
+#define apply_mask_fudge_factor(x) (((x) >> 2) + (x))
 
 /**
  * Pre-process an image to give distance information.
@@ -206,8 +206,10 @@ static void convert_mask_to_strength_mask(uint8_t *data, int linesize,
 static int query_formats(AVFilterContext *ctx)
 {
     static const enum AVPixelFormat pix_fmts[] = { AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE };
-    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
-    return 0;
+    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
+    if (!fmts_list)
+        return AVERROR(ENOMEM);
+    return ff_set_common_formats(ctx, fmts_list);
 }
 
 static int load_mask(uint8_t **mask, int *w, int *h,

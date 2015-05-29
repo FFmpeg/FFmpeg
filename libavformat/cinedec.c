@@ -1,5 +1,5 @@
 /*
- * Phanton Cine demuxer
+ * Phantom Cine demuxer
  * Copyright (c) 2010-2011 Peter Ross <pross@xvid.org>
  *
  * This file is part of FFmpeg.
@@ -27,6 +27,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "libavcodec/bmp.h"
+#include "libavutil/intfloat.h"
 #include "avformat.h"
 #include "internal.h"
 
@@ -70,12 +71,20 @@ static int cine_read_probe(AVProbeData *p)
     return 0;
 }
 
-static int set_metadata_int(AVDictionary **dict, const char *key, int value)
+static int set_metadata_int(AVDictionary **dict, const char *key, int value, int allow_zero)
 {
-    if (value) {
-        char buf[64];
-        snprintf(buf, sizeof(buf), "%i", value);
-        return av_dict_set(dict, key, buf, 0);
+    if (value || allow_zero) {
+        return av_dict_set_int(dict, key, value, 0);
+    }
+    return 0;
+}
+
+static int set_metadata_float(AVDictionary **dict, const char *key, float value, int allow_zero)
+{
+    if (value != 0 || allow_zero) {
+        char tmp[64];
+        snprintf(tmp, sizeof(tmp), "%f", value);
+        return av_dict_set(dict, key, tmp, 0);
     }
     return 0;
 }
@@ -168,18 +177,21 @@ static int cine_read_header(AVFormatContext *avctx)
 
     avio_skip(pb, 20); // Shutter .. bEnableColor
 
-    set_metadata_int(&st->metadata, "camera_version", avio_rl32(pb));
-    set_metadata_int(&st->metadata, "firmware_version", avio_rl32(pb));
-    set_metadata_int(&st->metadata, "software_version", avio_rl32(pb));
-    set_metadata_int(&st->metadata, "recording_timezone", avio_rl32(pb));
+    set_metadata_int(&st->metadata, "camera_version", avio_rl32(pb), 0);
+    set_metadata_int(&st->metadata, "firmware_version", avio_rl32(pb), 0);
+    set_metadata_int(&st->metadata, "software_version", avio_rl32(pb), 0);
+    set_metadata_int(&st->metadata, "recording_timezone", avio_rl32(pb), 0);
 
     CFA = avio_rl32(pb);
 
-    set_metadata_int(&st->metadata, "brightness", avio_rl32(pb));
-    set_metadata_int(&st->metadata, "contrast", avio_rl32(pb));
-    set_metadata_int(&st->metadata, "gamma", avio_rl32(pb));
+    set_metadata_int(&st->metadata, "brightness", avio_rl32(pb), 1);
+    set_metadata_int(&st->metadata, "contrast", avio_rl32(pb), 1);
+    set_metadata_int(&st->metadata, "gamma", avio_rl32(pb), 1);
 
-    avio_skip(pb, 72); // Reserved1 .. WBView
+    avio_skip(pb, 12 + 16); // Reserved1 .. AutoExpRect
+    set_metadata_float(&st->metadata, "wbgain[0].r", av_int2float(avio_rl32(pb)), 1);
+    set_metadata_float(&st->metadata, "wbgain[0].b", av_int2float(avio_rl32(pb)), 1);
+    avio_skip(pb, 36); // WBGain[1].. WBView
 
     st->codec->bits_per_coded_sample = avio_rl32(pb);
 
@@ -227,7 +239,11 @@ static int cine_read_header(AVFormatContext *avctx)
         return AVERROR_INVALIDDATA;
     }
 
-    avio_skip(pb, 696); // Conv8Min ... ImHeightAcq
+    avio_skip(pb, 668); // Conv8Min ... Sensor
+
+    set_metadata_int(&st->metadata, "shutter_ns", avio_rl32(pb), 0);
+
+    avio_skip(pb, 24); // EDRShutterNs ... ImHeightAcq
 
 #define DESCRIPTION_SIZE 4096
     description = av_malloc(DESCRIPTION_SIZE + 1);
@@ -240,6 +256,14 @@ static int cine_read_header(AVFormatContext *avctx)
         av_dict_set(&st->metadata, "description", description, AV_DICT_DONT_STRDUP_VAL);
     else
         av_free(description);
+
+    avio_skip(pb, 1176); // RisingEdge ... cmUser
+
+    set_metadata_int(&st->metadata, "enable_crop", avio_rl32(pb), 1);
+    set_metadata_int(&st->metadata, "crop_left", avio_rl32(pb), 1);
+    set_metadata_int(&st->metadata, "crop_top", avio_rl32(pb), 1);
+    set_metadata_int(&st->metadata, "crop_right", avio_rl32(pb), 1);
+    set_metadata_int(&st->metadata, "crop_bottom", avio_rl32(pb), 1);
 
     /* parse image offsets */
     avio_seek(pb, offImageOffsets, SEEK_SET);

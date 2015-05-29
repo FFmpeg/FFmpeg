@@ -1634,6 +1634,16 @@ static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_
 #define BGR2V_IDX "16*4+16*34"
     int y;
     const x86_reg chromWidth= width>>1;
+
+    if (height > 2) {
+        ff_rgb24toyv12_c(src, ydst, udst, vdst, width, 2, lumStride, chromStride, srcStride, rgb2yuv);
+        src  += 2*srcStride;
+        ydst += 2*lumStride;
+        udst += chromStride;
+        vdst += chromStride;
+        height -= 2;
+    }
+
     for (y=0; y<height-2; y+=2) {
         int i;
         for (i=0; i<2; i++) {
@@ -1877,6 +1887,7 @@ static void RENAME(interleaveBytes)(const uint8_t *src1, const uint8_t *src2, ui
     for (h=0; h < height; h++) {
         int w;
 
+        if (width >= 16)
 #if COMPILE_TEMPLATE_SSE2
         __asm__(
             "xor              %%"REG_a", %%"REG_a"  \n\t"

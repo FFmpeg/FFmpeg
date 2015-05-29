@@ -1,6 +1,6 @@
 /*
  * Sierra VMD video decoder
- * Copyright (C) 2004 the ffmpeg project
+ * Copyright (c) 2004 The FFmpeg Project
  *
  * This file is part of FFmpeg.
  *
@@ -339,6 +339,9 @@ static int vmd_decode(VmdVideoContext *s, AVFrame *frame)
                         ofs += slen;
                         bytestream2_skip(&gb, len);
                     } else {
+                        if (ofs + len > frame_width ||
+                            bytestream2_get_bytes_left(&gb) < len)
+                            return AVERROR_INVALIDDATA;
                         bytestream2_get_buffer(&gb, &dp[ofs], len);
                         ofs += len;
                     }

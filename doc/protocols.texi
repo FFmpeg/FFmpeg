@@ -63,7 +63,7 @@ cache:@var{URL}
 
 Physical concatenation protocol.
 
-Allow to read and seek from many resource in sequence as if they were
+Read and seek from many resources in sequence as if they were
 a unique resource.
 
 A URL accepted by this protocol has the syntax:
@@ -117,7 +117,7 @@ ffmpeg -i "data:image/gif;base64,R0lGODdhCAAIAMIEAAAAAAAA//8AAP//AP/////////////
 
 File access protocol.
 
-Allow to read from or write to a file.
+Read from or write to a file.
 
 A file URL can have the form:
 @example
@@ -155,7 +155,7 @@ time, which is valuable for files on slow medium.
 
 FTP (File Transfer Protocol).
 
-Allow to read from or write to remote resources using FTP protocol.
+Read from or write to remote resources using FTP protocol.
 
 Following syntax is required.
 @example
@@ -255,7 +255,7 @@ Export the MIME type.
 If set to 1 request ICY (SHOUTcast) metadata from the server. If the server
 supports this, the metadata has to be retrieved by the application by reading
 the @option{icy_metadata_headers} and @option{icy_metadata_packet} options.
-The default is 0.
+The default is 1.
 
 @item icy_metadata_headers
 If the server supports ICY metadata, this contains the ICY-specific HTTP reply
@@ -277,6 +277,31 @@ Set initial byte offset.
 
 @item end_offset
 Try to limit the request to bytes preceding this offset.
+
+@item listen
+If set to 1 enables experimental HTTP server. This can be used to send data when
+used as an output option, or read data from a client with HTTP POST when used as
+an input option.
+@example
+# Server side (sending):
+ffmpeg -i somefile.ogg -c copy -listen 1 -f ogg http://@var{server}:@var{port}
+
+# Client side (receiving):
+ffmpeg -i http://@var{server}:@var{port} -c copy somefile.ogg
+
+# Client can also be done with wget:
+wget http://@var{server}:@var{port} -O somefile.ogg
+
+# Server side (receiving):
+ffmpeg -listen 1 -i http://@var{server}:@var{port} -c copy somefile.ogg
+
+# Client side (sending):
+ffmpeg -i somefile.ogg -chunked_post 0 -c copy -f ogg http://@var{server}:@var{port}
+
+# Client can also be done with wget:
+wget --post-file=somefile.ogg http://@var{server}:@var{port}
+@end example
+
 @end table
 
 @subsection HTTP Cookies
@@ -291,6 +316,50 @@ by a newline.
 The required syntax to play a stream specifying a cookie is:
 @example
 ffplay -cookies "nlqptid=nltid=tsn; path=/; domain=somedomain.com;" http://somedomain.com/somestream.m3u8
+@end example
+
+@section Icecast
+
+Icecast protocol (stream to Icecast servers)
+
+This protocol accepts the following options:
+
+@table @option
+@item ice_genre
+Set the stream genre.
+
+@item ice_name
+Set the stream name.
+
+@item ice_description
+Set the stream description.
+
+@item ice_url
+Set the stream website URL.
+
+@item ice_public
+Set if the stream should be public.
+The default is 0 (not public).
+
+@item user_agent
+Override the User-Agent header. If not specified a string of the form
+"Lavf/<version>" will be used.
+
+@item password
+Set the Icecast mountpoint password.
+
+@item content_type
+Set the stream content type. This must be set if it is different from
+audio/mpeg.
+
+@item legacy_icecast
+This enables support for Icecast versions < 2.4.0, that do not support the
+HTTP PUT method but the SOURCE method.
+
+@end table
+
+@example
+icecast://[@var{username}[:@var{password}]@@]@var{server}:@var{port}/@var{mountpoint}
 @end example
 
 @section mmst
@@ -330,7 +399,7 @@ be seekable, so they will fail with the MD5 output protocol.
 
 UNIX pipe access protocol.
 
-Allow to read and write from UNIX pipes.
+Read and write from UNIX pipes.
 
 The accepted syntax is:
 @example
@@ -570,7 +639,7 @@ For more information see: @url{http://www.samba.org/}.
 
 Secure File Transfer Protocol via libssh
 
-Allow to read from or write to remote resources using SFTP protocol.
+Read from or write to remote resources using SFTP protocol.
 
 Following syntax is required.
 
@@ -706,7 +775,7 @@ port will be used for the local RTP and RTCP ports.
 
 @item
 If @option{localrtcpport} (the local RTCP port) is not set it will be
-set to the the local RTP port value plus 1.
+set to the local RTP port value plus 1.
 @end enumerate
 
 @section rtsp
@@ -1011,7 +1080,9 @@ subfile,,start,153391104,end,268142592,,:/media/dvd/VIDEO_TS/VTS_08_1.VOB
 @end example
 
 Play an AVI file directly from a TAR archive:
+@example
 subfile,,start,183241728,end,366490624,,:archive.tar
+@end example
 
 @section tcp
 
@@ -1037,8 +1108,8 @@ Set raise error timeout, expressed in microseconds.
 This option is only relevant in read mode: if no data arrived in more
 than this time interval, raise error.
 
-@item listen_timeout=@var{microseconds}
-Set listen timeout, expressed in microseconds.
+@item listen_timeout=@var{milliseconds}
+Set listen timeout, expressed in milliseconds.
 @end table
 
 The following example shows how to setup a listening TCP connection

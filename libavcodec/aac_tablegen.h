@@ -31,7 +31,7 @@
 #include "libavutil/mathematics.h"
 float ff_aac_pow2sf_tab[428];
 
-void ff_aac_tableinit(void)
+av_cold void ff_aac_tableinit(void)
 {
     int i;
     for (i = 0; i < 428; i++)

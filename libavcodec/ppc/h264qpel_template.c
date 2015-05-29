@@ -18,13 +18,87 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/mem.h"
-
-#ifdef DEBUG
-#define ASSERT_ALIGNED(ptr) assert(((unsigned long)ptr&0x0000000F));
-#else
-#define ASSERT_ALIGNED(ptr) ;
+#include "config.h"
+#if HAVE_UNISTD_H
+#include <unistd.h>
 #endif
+
+#include "libavutil/avassert.h"
+#include "libavutil/mem.h"
+#include "libavutil/ppc/types_altivec.h"
+#include "libavutil/ppc/util_altivec.h"
+
+#define ASSERT_ALIGNED(ptr) av_assert2(!((uintptr_t)ptr&0x0000000F));
+
+#if HAVE_BIGENDIAN
+#define load_alignment(s, ali, pm2, pm1, pp0, pp1, pp2, pp3){\
+    vec_u8 srcR1 = vec_ld(-2, s);\
+    vec_u8 srcR2 = vec_ld(14, s);\
+    switch (ali) {\
+    default: {\
+        srcM2 = vec_perm(srcR1, srcR2, pm2);\
+        srcM1 = vec_perm(srcR1, srcR2, pm1);\
+        srcP0 = vec_perm(srcR1, srcR2, pp0);\
+        srcP1 = vec_perm(srcR1, srcR2, pp1);\
+        srcP2 = vec_perm(srcR1, srcR2, pp2);\
+        srcP3 = vec_perm(srcR1, srcR2, pp3);\
+    } break;\
+    case 11: {\
+        srcM2 = vec_perm(srcR1, srcR2, pm2);\
+        srcM1 = vec_perm(srcR1, srcR2, pm1);\
+        srcP0 = vec_perm(srcR1, srcR2, pp0);\
+        srcP1 = vec_perm(srcR1, srcR2, pp1);\
+        srcP2 = vec_perm(srcR1, srcR2, pp2);\
+        srcP3 = srcR2;\
+    } break;\
+    case 12: {\
+        vec_u8 srcR3 = vec_ld(30, s);\
+        srcM2 = vec_perm(srcR1, srcR2, pm2);\
+        srcM1 = vec_perm(srcR1, srcR2, pm1);\
+        srcP0 = vec_perm(srcR1, srcR2, pp0);\
+        srcP1 = vec_perm(srcR1, srcR2, pp1);\
+        srcP2 = srcR2;\
+        srcP3 = vec_perm(srcR2, srcR3, pp3);\
+    } break;\
+    case 13: {\
+        vec_u8 srcR3 = vec_ld(30, s);\
+        srcM2 = vec_perm(srcR1, srcR2, pm2);\
+        srcM1 = vec_perm(srcR1, srcR2, pm1);\
+        srcP0 = vec_perm(srcR1, srcR2, pp0);\
+        srcP1 = srcR2;\
+        srcP2 = vec_perm(srcR2, srcR3, pp2);\
+        srcP3 = vec_perm(srcR2, srcR3, pp3);\
+    } break;\
+    case 14: {\
+        vec_u8 srcR3 = vec_ld(30, s);\
+        srcM2 = vec_perm(srcR1, srcR2, pm2);\
+        srcM1 = vec_perm(srcR1, srcR2, pm1);\
+        srcP0 = srcR2;\
+        srcP1 = vec_perm(srcR2, srcR3, pp1);\
+        srcP2 = vec_perm(srcR2, srcR3, pp2);\
+        srcP3 = vec_perm(srcR2, srcR3, pp3);\
+    } break;\
+    case 15: {\
+        vec_u8 srcR3 = vec_ld(30, s);\
+        srcM2 = vec_perm(srcR1, srcR2, pm2);\
+        srcM1 = srcR2;\
+        srcP0 = vec_perm(srcR2, srcR3, pp0);\
+        srcP1 = vec_perm(srcR2, srcR3, pp1);\
+        srcP2 = vec_perm(srcR2, srcR3, pp2);\
+        srcP3 = vec_perm(srcR2, srcR3, pp3);\
+    } break;\
+    }\
+ }
+#else
+#define load_alignment(s, ali, pm2, pm1, pp0, pp1, pp2, pp3){\
+    srcM2 =  vec_vsx_ld(-2, s);\
+    srcM1 = vec_vsx_ld(-1, s);\
+    srcP0 = vec_vsx_ld(0, s);\
+    srcP1 = vec_vsx_ld(1, s);\
+    srcP2 = vec_vsx_ld(2, s);\
+    srcP3 = vec_vsx_ld(3, s);\
+ }
+#endif /* HAVE_BIGENDIAN */
 
 /* this code assume stride % 16 == 0 */
 #ifdef PREFIX_h264_qpel16_h_lowpass_altivec
@@ -35,12 +109,7 @@ static void PREFIX_h264_qpel16_h_lowpass_altivec(uint8_t *dst,
     register int i;
 
     LOAD_ZERO;
-    const vec_u8 permM2 = vec_lvsl(-2, src);
-    const vec_u8 permM1 = vec_lvsl(-1, src);
-    const vec_u8 permP0 = vec_lvsl(+0, src);
-    const vec_u8 permP1 = vec_lvsl(+1, src);
-    const vec_u8 permP2 = vec_lvsl(+2, src);
-    const vec_u8 permP3 = vec_lvsl(+3, src);
+    vec_u8 permM2, permM1, permP0, permP1, permP2, permP3;
     const vec_s16 v5ss = vec_splat_s16(5);
     const vec_u16 v5us = vec_splat_u16(5);
     const vec_s16 v20ss = vec_sl(vec_splat_s16(5),vec_splat_u16(2));
@@ -59,79 +128,32 @@ static void PREFIX_h264_qpel16_h_lowpass_altivec(uint8_t *dst,
 
     vec_u8 sum, fsum;
 
+#if HAVE_BIGENDIAN
+    permM2 = vec_lvsl(-2, src);
+    permM1 = vec_lvsl(-1, src);
+    permP0 = vec_lvsl(+0, src);
+    permP1 = vec_lvsl(+1, src);
+    permP2 = vec_lvsl(+2, src);
+    permP3 = vec_lvsl(+3, src);
+#endif /* HAVE_BIGENDIAN */
+
     for (i = 0 ; i < 16 ; i ++) {
-        vec_u8 srcR1 = vec_ld(-2, src);
-        vec_u8 srcR2 = vec_ld(14, src);
+        load_alignment(src, align, permM2, permM1, permP0, permP1, permP2, permP3);
 
-        switch (align) {
-        default: {
-            srcM2 = vec_perm(srcR1, srcR2, permM2);
-            srcM1 = vec_perm(srcR1, srcR2, permM1);
-            srcP0 = vec_perm(srcR1, srcR2, permP0);
-            srcP1 = vec_perm(srcR1, srcR2, permP1);
-            srcP2 = vec_perm(srcR1, srcR2, permP2);
-            srcP3 = vec_perm(srcR1, srcR2, permP3);
-        } break;
-        case 11: {
-            srcM2 = vec_perm(srcR1, srcR2, permM2);
-            srcM1 = vec_perm(srcR1, srcR2, permM1);
-            srcP0 = vec_perm(srcR1, srcR2, permP0);
-            srcP1 = vec_perm(srcR1, srcR2, permP1);
-            srcP2 = vec_perm(srcR1, srcR2, permP2);
-            srcP3 = srcR2;
-        } break;
-        case 12: {
-            vec_u8 srcR3 = vec_ld(30, src);
-            srcM2 = vec_perm(srcR1, srcR2, permM2);
-            srcM1 = vec_perm(srcR1, srcR2, permM1);
-            srcP0 = vec_perm(srcR1, srcR2, permP0);
-            srcP1 = vec_perm(srcR1, srcR2, permP1);
-            srcP2 = srcR2;
-            srcP3 = vec_perm(srcR2, srcR3, permP3);
-        } break;
-        case 13: {
-            vec_u8 srcR3 = vec_ld(30, src);
-            srcM2 = vec_perm(srcR1, srcR2, permM2);
-            srcM1 = vec_perm(srcR1, srcR2, permM1);
-            srcP0 = vec_perm(srcR1, srcR2, permP0);
-            srcP1 = srcR2;
-            srcP2 = vec_perm(srcR2, srcR3, permP2);
-            srcP3 = vec_perm(srcR2, srcR3, permP3);
-        } break;
-        case 14: {
-            vec_u8 srcR3 = vec_ld(30, src);
-            srcM2 = vec_perm(srcR1, srcR2, permM2);
-            srcM1 = vec_perm(srcR1, srcR2, permM1);
-            srcP0 = srcR2;
-            srcP1 = vec_perm(srcR2, srcR3, permP1);
-            srcP2 = vec_perm(srcR2, srcR3, permP2);
-            srcP3 = vec_perm(srcR2, srcR3, permP3);
-        } break;
-        case 15: {
-            vec_u8 srcR3 = vec_ld(30, src);
-            srcM2 = vec_perm(srcR1, srcR2, permM2);
-            srcM1 = srcR2;
-            srcP0 = vec_perm(srcR2, srcR3, permP0);
-            srcP1 = vec_perm(srcR2, srcR3, permP1);
-            srcP2 = vec_perm(srcR2, srcR3, permP2);
-            srcP3 = vec_perm(srcR2, srcR3, permP3);
-        } break;
-        }
+        srcP0A = (vec_s16) VEC_MERGEH(zero_u8v, srcP0);
+        srcP0B = (vec_s16) VEC_MERGEL(zero_u8v, srcP0);
+        srcP1A = (vec_s16) VEC_MERGEH(zero_u8v, srcP1);
+        srcP1B = (vec_s16) VEC_MERGEL(zero_u8v, srcP1);
 
-        srcP0A = (vec_s16) vec_mergeh(zero_u8v, srcP0);
-        srcP0B = (vec_s16) vec_mergel(zero_u8v, srcP0);
-        srcP1A = (vec_s16) vec_mergeh(zero_u8v, srcP1);
-        srcP1B = (vec_s16) vec_mergel(zero_u8v, srcP1);
+        srcP2A = (vec_s16) VEC_MERGEH(zero_u8v, srcP2);
+        srcP2B = (vec_s16) VEC_MERGEL(zero_u8v, srcP2);
+        srcP3A = (vec_s16) VEC_MERGEH(zero_u8v, srcP3);
+        srcP3B = (vec_s16) VEC_MERGEL(zero_u8v, srcP3);
 
-        srcP2A = (vec_s16) vec_mergeh(zero_u8v, srcP2);
-        srcP2B = (vec_s16) vec_mergel(zero_u8v, srcP2);
-        srcP3A = (vec_s16) vec_mergeh(zero_u8v, srcP3);
-        srcP3B = (vec_s16) vec_mergel(zero_u8v, srcP3);
-
-        srcM1A = (vec_s16) vec_mergeh(zero_u8v, srcM1);
-        srcM1B = (vec_s16) vec_mergel(zero_u8v, srcM1);
-        srcM2A = (vec_s16) vec_mergeh(zero_u8v, srcM2);
-        srcM2B = (vec_s16) vec_mergel(zero_u8v, srcM2);
+        srcM1A = (vec_s16) VEC_MERGEH(zero_u8v, srcM1);
+        srcM1B = (vec_s16) VEC_MERGEL(zero_u8v, srcM1);
+        srcM2A = (vec_s16) VEC_MERGEH(zero_u8v, srcM2);
+        srcM2B = (vec_s16) VEC_MERGEL(zero_u8v, srcM2);
 
         sum1A = vec_adds(srcP0A, srcP1A);
         sum1B = vec_adds(srcP0B, srcP1B);
@@ -178,7 +200,10 @@ static void PREFIX_h264_qpel16_v_lowpass_altivec(uint8_t *dst,
     register int i;
 
     LOAD_ZERO;
-    const vec_u8 perm = vec_lvsl(0, src);
+    vec_u8 perm;
+#if HAVE_BIGENDIAN
+    perm = vec_lvsl(0, src);
+#endif
     const vec_s16 v20ss = vec_sl(vec_splat_s16(5),vec_splat_u16(2));
     const vec_u16 v5us = vec_splat_u16(5);
     const vec_s16 v5ss = vec_splat_s16(5);
@@ -186,52 +211,41 @@ static void PREFIX_h264_qpel16_v_lowpass_altivec(uint8_t *dst,
 
     const uint8_t *srcbis = src - (srcStride * 2);
 
-    const vec_u8 srcM2a = vec_ld(0, srcbis);
-    const vec_u8 srcM2b = vec_ld(16, srcbis);
-    const vec_u8 srcM2 = vec_perm(srcM2a, srcM2b, perm);
-    //srcbis += srcStride;
-    const vec_u8 srcM1a = vec_ld(0, srcbis += srcStride);
-    const vec_u8 srcM1b = vec_ld(16, srcbis);
-    const vec_u8 srcM1 = vec_perm(srcM1a, srcM1b, perm);
-    //srcbis += srcStride;
-    const vec_u8 srcP0a = vec_ld(0, srcbis += srcStride);
-    const vec_u8 srcP0b = vec_ld(16, srcbis);
-    const vec_u8 srcP0 = vec_perm(srcP0a, srcP0b, perm);
-    //srcbis += srcStride;
-    const vec_u8 srcP1a = vec_ld(0, srcbis += srcStride);
-    const vec_u8 srcP1b = vec_ld(16, srcbis);
-    const vec_u8 srcP1 = vec_perm(srcP1a, srcP1b, perm);
-    //srcbis += srcStride;
-    const vec_u8 srcP2a = vec_ld(0, srcbis += srcStride);
-    const vec_u8 srcP2b = vec_ld(16, srcbis);
-    const vec_u8 srcP2 = vec_perm(srcP2a, srcP2b, perm);
-    //srcbis += srcStride;
+    const vec_u8 srcM2 = load_with_perm_vec(0, srcbis, perm);
+    srcbis += srcStride;
+    const vec_u8 srcM1 = load_with_perm_vec(0, srcbis, perm);
+    srcbis += srcStride;
+    const vec_u8 srcP0 = load_with_perm_vec(0, srcbis, perm);
+    srcbis += srcStride;
+    const vec_u8 srcP1 = load_with_perm_vec(0, srcbis, perm);
+    srcbis += srcStride;
+    const vec_u8 srcP2 = load_with_perm_vec(0, srcbis, perm);
+    srcbis += srcStride;
 
-    vec_s16 srcM2ssA = (vec_s16) vec_mergeh(zero_u8v, srcM2);
-    vec_s16 srcM2ssB = (vec_s16) vec_mergel(zero_u8v, srcM2);
-    vec_s16 srcM1ssA = (vec_s16) vec_mergeh(zero_u8v, srcM1);
-    vec_s16 srcM1ssB = (vec_s16) vec_mergel(zero_u8v, srcM1);
-    vec_s16 srcP0ssA = (vec_s16) vec_mergeh(zero_u8v, srcP0);
-    vec_s16 srcP0ssB = (vec_s16) vec_mergel(zero_u8v, srcP0);
-    vec_s16 srcP1ssA = (vec_s16) vec_mergeh(zero_u8v, srcP1);
-    vec_s16 srcP1ssB = (vec_s16) vec_mergel(zero_u8v, srcP1);
-    vec_s16 srcP2ssA = (vec_s16) vec_mergeh(zero_u8v, srcP2);
-    vec_s16 srcP2ssB = (vec_s16) vec_mergel(zero_u8v, srcP2);
+    vec_s16 srcM2ssA = (vec_s16) VEC_MERGEH(zero_u8v, srcM2);
+    vec_s16 srcM2ssB = (vec_s16) VEC_MERGEL(zero_u8v, srcM2);
+    vec_s16 srcM1ssA = (vec_s16) VEC_MERGEH(zero_u8v, srcM1);
+    vec_s16 srcM1ssB = (vec_s16) VEC_MERGEL(zero_u8v, srcM1);
+    vec_s16 srcP0ssA = (vec_s16) VEC_MERGEH(zero_u8v, srcP0);
+    vec_s16 srcP0ssB = (vec_s16) VEC_MERGEL(zero_u8v, srcP0);
+    vec_s16 srcP1ssA = (vec_s16) VEC_MERGEH(zero_u8v, srcP1);
+    vec_s16 srcP1ssB = (vec_s16) VEC_MERGEL(zero_u8v, srcP1);
+    vec_s16 srcP2ssA = (vec_s16) VEC_MERGEH(zero_u8v, srcP2);
+    vec_s16 srcP2ssB = (vec_s16) VEC_MERGEL(zero_u8v, srcP2);
 
     vec_s16 pp1A, pp1B, pp2A, pp2B, pp3A, pp3B,
               psumA, psumB, sumA, sumB,
               srcP3ssA, srcP3ssB,
               sum1A, sum1B, sum2A, sum2B, sum3A, sum3B;
 
-    vec_u8 sum, fsum, srcP3a, srcP3b, srcP3;
+    vec_u8 sum, fsum, srcP3;
 
     for (i = 0 ; i < 16 ; i++) {
-        srcP3a = vec_ld(0, srcbis += srcStride);
-        srcP3b = vec_ld(16, srcbis);
-        srcP3 = vec_perm(srcP3a, srcP3b, perm);
-        srcP3ssA = (vec_s16) vec_mergeh(zero_u8v, srcP3);
-        srcP3ssB = (vec_s16) vec_mergel(zero_u8v, srcP3);
-        //srcbis += srcStride;
+        srcP3 = load_with_perm_vec(0, srcbis, perm);
+        srcbis += srcStride;
+
+        srcP3ssA = (vec_s16) VEC_MERGEH(zero_u8v, srcP3);
+        srcP3ssB = (vec_s16) VEC_MERGEL(zero_u8v, srcP3);
 
         sum1A = vec_adds(srcP0ssA, srcP1ssA);
         sum1B = vec_adds(srcP0ssB, srcP1ssB);
@@ -288,12 +302,7 @@ static void PREFIX_h264_qpel16_hv_lowpass_altivec(uint8_t *dst, int16_t *tmp,
 {
     register int i;
     LOAD_ZERO;
-    const vec_u8 permM2 = vec_lvsl(-2, src);
-    const vec_u8 permM1 = vec_lvsl(-1, src);
-    const vec_u8 permP0 = vec_lvsl(+0, src);
-    const vec_u8 permP1 = vec_lvsl(+1, src);
-    const vec_u8 permP2 = vec_lvsl(+2, src);
-    const vec_u8 permP3 = vec_lvsl(+3, src);
+    vec_u8 permM2, permM1, permP0, permP1, permP2, permP3;
     const vec_s16 v20ss = vec_sl(vec_splat_s16(5),vec_splat_u16(2));
     const vec_u32 v10ui = vec_splat_u32(10);
     const vec_s16 v5ss = vec_splat_s16(5);
@@ -325,81 +334,35 @@ static void PREFIX_h264_qpel16_hv_lowpass_altivec(uint8_t *dst, int16_t *tmp,
     vec_u8 fsum, sumv, sum;
     vec_s16 ssume, ssumo;
 
+#if HAVE_BIGENDIAN
+    permM2 = vec_lvsl(-2, src);
+    permM1 = vec_lvsl(-1, src);
+    permP0 = vec_lvsl(+0, src);
+    permP1 = vec_lvsl(+1, src);
+    permP2 = vec_lvsl(+2, src);
+    permP3 = vec_lvsl(+3, src);
+#endif /* HAVE_BIGENDIAN */
+
     src -= (2 * srcStride);
     for (i = 0 ; i < 21 ; i ++) {
         vec_u8 srcM2, srcM1, srcP0, srcP1, srcP2, srcP3;
-        vec_u8 srcR1 = vec_ld(-2, src);
-        vec_u8 srcR2 = vec_ld(14, src);
 
-        switch (align) {
-        default: {
-            srcM2 = vec_perm(srcR1, srcR2, permM2);
-            srcM1 = vec_perm(srcR1, srcR2, permM1);
-            srcP0 = vec_perm(srcR1, srcR2, permP0);
-            srcP1 = vec_perm(srcR1, srcR2, permP1);
-            srcP2 = vec_perm(srcR1, srcR2, permP2);
-            srcP3 = vec_perm(srcR1, srcR2, permP3);
-        } break;
-        case 11: {
-            srcM2 = vec_perm(srcR1, srcR2, permM2);
-            srcM1 = vec_perm(srcR1, srcR2, permM1);
-            srcP0 = vec_perm(srcR1, srcR2, permP0);
-            srcP1 = vec_perm(srcR1, srcR2, permP1);
-            srcP2 = vec_perm(srcR1, srcR2, permP2);
-            srcP3 = srcR2;
-        } break;
-        case 12: {
-            vec_u8 srcR3 = vec_ld(30, src);
-            srcM2 = vec_perm(srcR1, srcR2, permM2);
-            srcM1 = vec_perm(srcR1, srcR2, permM1);
-            srcP0 = vec_perm(srcR1, srcR2, permP0);
-            srcP1 = vec_perm(srcR1, srcR2, permP1);
-            srcP2 = srcR2;
-            srcP3 = vec_perm(srcR2, srcR3, permP3);
-        } break;
-        case 13: {
-            vec_u8 srcR3 = vec_ld(30, src);
-            srcM2 = vec_perm(srcR1, srcR2, permM2);
-            srcM1 = vec_perm(srcR1, srcR2, permM1);
-            srcP0 = vec_perm(srcR1, srcR2, permP0);
-            srcP1 = srcR2;
-            srcP2 = vec_perm(srcR2, srcR3, permP2);
-            srcP3 = vec_perm(srcR2, srcR3, permP3);
-        } break;
-        case 14: {
-            vec_u8 srcR3 = vec_ld(30, src);
-            srcM2 = vec_perm(srcR1, srcR2, permM2);
-            srcM1 = vec_perm(srcR1, srcR2, permM1);
-            srcP0 = srcR2;
-            srcP1 = vec_perm(srcR2, srcR3, permP1);
-            srcP2 = vec_perm(srcR2, srcR3, permP2);
-            srcP3 = vec_perm(srcR2, srcR3, permP3);
-        } break;
-        case 15: {
-            vec_u8 srcR3 = vec_ld(30, src);
-            srcM2 = vec_perm(srcR1, srcR2, permM2);
-            srcM1 = srcR2;
-            srcP0 = vec_perm(srcR2, srcR3, permP0);
-            srcP1 = vec_perm(srcR2, srcR3, permP1);
-            srcP2 = vec_perm(srcR2, srcR3, permP2);
-            srcP3 = vec_perm(srcR2, srcR3, permP3);
-        } break;
-        }
+        load_alignment(src, align, permM2, permM1, permP0, permP1, permP2, permP3);
 
-        srcP0A = (vec_s16) vec_mergeh(zero_u8v, srcP0);
-        srcP0B = (vec_s16) vec_mergel(zero_u8v, srcP0);
-        srcP1A = (vec_s16) vec_mergeh(zero_u8v, srcP1);
-        srcP1B = (vec_s16) vec_mergel(zero_u8v, srcP1);
+        srcP0A = (vec_s16) VEC_MERGEH(zero_u8v, srcP0);
+        srcP0B = (vec_s16) VEC_MERGEL(zero_u8v, srcP0);
+        srcP1A = (vec_s16) VEC_MERGEH(zero_u8v, srcP1);
+        srcP1B = (vec_s16) VEC_MERGEL(zero_u8v, srcP1);
 
-        srcP2A = (vec_s16) vec_mergeh(zero_u8v, srcP2);
-        srcP2B = (vec_s16) vec_mergel(zero_u8v, srcP2);
-        srcP3A = (vec_s16) vec_mergeh(zero_u8v, srcP3);
-        srcP3B = (vec_s16) vec_mergel(zero_u8v, srcP3);
+        srcP2A = (vec_s16) VEC_MERGEH(zero_u8v, srcP2);
+        srcP2B = (vec_s16) VEC_MERGEL(zero_u8v, srcP2);
+        srcP3A = (vec_s16) VEC_MERGEH(zero_u8v, srcP3);
+        srcP3B = (vec_s16) VEC_MERGEL(zero_u8v, srcP3);
 
-        srcM1A = (vec_s16) vec_mergeh(zero_u8v, srcM1);
-        srcM1B = (vec_s16) vec_mergel(zero_u8v, srcM1);
-        srcM2A = (vec_s16) vec_mergeh(zero_u8v, srcM2);
-        srcM2B = (vec_s16) vec_mergel(zero_u8v, srcM2);
+        srcM1A = (vec_s16) VEC_MERGEH(zero_u8v, srcM1);
+        srcM1B = (vec_s16) VEC_MERGEL(zero_u8v, srcM1);
+        srcM2A = (vec_s16) VEC_MERGEH(zero_u8v, srcM2);
+        srcM2B = (vec_s16) VEC_MERGEL(zero_u8v, srcM2);
 
         sum1A = vec_adds(srcP0A, srcP1A);
         sum1B = vec_adds(srcP0B, srcP1B);
@@ -448,8 +411,8 @@ static void PREFIX_h264_qpel16_hv_lowpass_altivec(uint8_t *dst, int16_t *tmp,
         const vec_s16 sum1B = vec_adds(tmpP0ssB, tmpP1ssB);
         const vec_s16 sum2A = vec_adds(tmpM1ssA, tmpP2ssA);
         const vec_s16 sum2B = vec_adds(tmpM1ssB, tmpP2ssB);
-        const vec_s16 sum3A = vec_adds(tmpM2ssA, tmpP3ssA);
-        const vec_s16 sum3B = vec_adds(tmpM2ssB, tmpP3ssB);
+        vec_s16 sum3A = vec_adds(tmpM2ssA, tmpP3ssA);
+        vec_s16 sum3B = vec_adds(tmpM2ssB, tmpP3ssB);
 
         tmpbis += tmpStride;
 
@@ -474,10 +437,14 @@ static void PREFIX_h264_qpel16_hv_lowpass_altivec(uint8_t *dst, int16_t *tmp,
         pp2Be = vec_mule(sum2B, v5ss);
         pp2Bo = vec_mulo(sum2B, v5ss);
 
-        pp3Ae = vec_sra((vec_s32)sum3A, v16ui);
         pp3Ao = vec_mulo(sum3A, v1ss);
-        pp3Be = vec_sra((vec_s32)sum3B, v16ui);
         pp3Bo = vec_mulo(sum3B, v1ss);
+#if !HAVE_BIGENDIAN
+        sum3A = (vec_s16)vec_perm(sum3A, sum3A,vcswapi2s(0,1,2,3));
+        sum3B = (vec_s16)vec_perm(sum3B, sum3B,vcswapi2s(0,1,2,3));
+#endif
+        pp3Ae = vec_sra((vec_s32)sum3A, v16ui);
+        pp3Be = vec_sra((vec_s32)sum3B, v16ui);
 
         pp1cAe = vec_add(pp1Ae, v512si);
         pp1cAo = vec_add(pp1Ao, v512si);

@@ -18,9 +18,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <sixel.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <sys/signal.h>
+#include <termios.h>
+#include <sys/ioctl.h>
+#include <sys/select.h>
+#include <sixel.h>
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avdevice.h"
@@ -32,7 +36,6 @@ typedef struct SIXELContext {
     AVRational time_base;   /* time base */
     int64_t    time_frame;  /* current time */
     AVRational framerate;
-    char *reset_position;
     int row;
     int col;
     int reqcolors;
@@ -45,6 +48,8 @@ typedef struct SIXELContext {
     int dropframe;
     int ignoredelay;
 } SIXELContext;
+
+static FILE *sixel_output_file = NULL;
 
 static int detect_scene_change(SIXELContext *const c)
 {
@@ -115,6 +120,58 @@ static int prepare_static_palette(SIXELContext *const c,
     return 0;
 }
 
+
+static void scroll_on_demand(int pixelheight)
+{
+    struct winsize size = {0, 0, 0, 0};
+    struct termios old_termios;
+    struct termios new_termios;
+    int row = 0;
+    int col = 0;
+    int cellheight;
+    int scroll;
+    fd_set rfds;
+    struct timeval tv;
+    int ret = 0;
+
+    ioctl(STDOUT_FILENO, TIOCGWINSZ, &size);
+    if (size.ws_ypixel <= 0) {
+        fprintf(sixel_output_file, "\033[H\0337");
+        return;
+    }
+    /* set the terminal to cbreak mode */
+    tcgetattr(STDIN_FILENO, &old_termios);
+    memcpy(&new_termios, &old_termios, sizeof(old_termios));
+    new_termios.c_lflag &= ~(ECHO | ICANON);
+    new_termios.c_cc[VMIN] = 1;
+    new_termios.c_cc[VTIME] = 0;
+    tcsetattr(STDIN_FILENO, TCSAFLUSH, &new_termios);
+
+    /* request cursor position report */
+    fprintf(sixel_output_file, "\033[6n");
+    /* wait 1 sec */
+    tv.tv_sec = 1;
+    tv.tv_usec = 0;
+    FD_ZERO(&rfds);
+    FD_SET(STDIN_FILENO, &rfds);
+    ret = select(STDIN_FILENO + 1, &rfds, NULL, NULL, &tv);
+    if (ret != (-1)) {
+        if (scanf("\033[%d;%dR", &row, &col) == 2) {
+            cellheight = pixelheight * size.ws_row / size.ws_ypixel + 1;
+            scroll = cellheight + row - size.ws_row + 1;
+            if (scroll > 0) {
+                fprintf(sixel_output_file, "\033[%dS\033[%dA", scroll, scroll);
+            }
+            fprintf(sixel_output_file, "\0337");
+        } else {
+            fprintf(sixel_output_file, "\033[H\0337");
+        }
+    }
+
+    tcsetattr(STDIN_FILENO, TCSAFLUSH, &old_termios);
+}
+
+
 static int prepare_dynamic_palette(SIXELContext *const c,
                                    AVCodecContext *const codec,
                                    AVPacket *const pkt)
@@ -144,8 +201,6 @@ static int prepare_dynamic_palette(SIXELContext *const c,
     return 0;
 }
 
-static FILE *sixel_output_file = NULL;
-
 static int sixel_write(char *data, int size, void *priv)
 {
     return fwrite(data, 1, size, (FILE *)priv);
@@ -156,7 +211,6 @@ static int sixel_write_header(AVFormatContext *s)
     SIXELContext *c = s->priv_data;
     AVCodecContext *codec = s->streams[0]->codec;
     int ret = 0;
-    static char reset_position[256];
 
     if (s->nb_streams > 1
         || codec->codec_type != AVMEDIA_TYPE_VIDEO
@@ -179,9 +233,7 @@ static int sixel_write_header(AVFormatContext *s)
         c->output = sixel_output_create(sixel_write, sixel_output_file);
     }
     if (isatty(fileno(sixel_output_file))) {
-        fprintf(sixel_output_file,
-                "\0337"            /* save cursor position */
-                "\033[?25l");      /* hide cursor */
+        fprintf(sixel_output_file, "\033[?25l");      /* hide cursor */
     } else {
         c->ignoredelay = 1;
     }
@@ -192,11 +244,6 @@ static int sixel_write_header(AVFormatContext *s)
     c->dither = NULL;
     c->testdither = sixel_dither_create(c->reqcolors);
 
-    if (c->row <= 1 && c->col <= 1)
-        strcpy(reset_position, "\033[H");
-    else
-        sprintf(reset_position, "\033[%d;%dH", c->row, c->col);
-    c->reset_position = reset_position;
     c->time_base = s->streams[0]->codec->time_base;
     c->time_frame = av_gettime() / av_q2d(c->time_base);
 
@@ -211,6 +258,7 @@ static int sixel_write_packet(AVFormatContext *s, AVPacket *pkt)
     int64_t curtime, delay;
     struct timespec ts;
     int late_threshold;
+    static int dirty = 0;
 
     if (!c->ignoredelay) {
         /* calculate the time of the next frame */
@@ -231,7 +279,14 @@ static int sixel_write_packet(AVFormatContext *s, AVPacket *pkt)
         }
     }
 
-    fprintf(sixel_output_file, "%s", c->reset_position);
+    if (dirty == 0) {
+        if (c->row <= 1 && c->col <= 1)
+            scroll_on_demand(codec->height);
+        else
+            fprintf(sixel_output_file, "\033[%d;%dH\0337", c->row, c->col);
+        dirty = 1;
+    }
+    fprintf(sixel_output_file, "\0338");
 
     if (c->fixedpal) {
         ret = prepare_static_palette(c, codec);
@@ -257,9 +312,9 @@ static int sixel_write_trailer(AVFormatContext *s)
     if (isatty(fileno(sixel_output_file))) {
         fprintf(sixel_output_file,
                 "\033\\"      /* terminate DCS sequence */
-                "\0338"       /* restore cursor position */
                 "\033[?25h"); /* show cursor */
     }
+
     fflush(sixel_output_file);
     if (sixel_output_file && sixel_output_file != stdout) {
         fclose(sixel_output_file);
@@ -277,6 +332,7 @@ static int sixel_write_trailer(AVFormatContext *s)
         sixel_dither_unref(c->dither);
         c->dither = NULL;
     }
+
     return 0;
 }
 

@@ -143,7 +143,7 @@ static int redspark_read_packet(AVFormatContext *s, AVPacket *pkt)
     uint32_t size = 8 * codec->channels;
     int ret;
 
-    if (url_feof(s->pb) || redspark->samples_count == s->streams[0]->duration)
+    if (avio_feof(s->pb) || redspark->samples_count == s->streams[0]->duration)
         return AVERROR_EOF;
 
     ret = av_get_packet(s->pb, pkt, size);

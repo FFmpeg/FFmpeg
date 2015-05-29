@@ -143,7 +143,7 @@ static int vda_old_h264_end_frame(AVCodecContext *avctx)
     H264Context *h                      = avctx->priv_data;
     VDAContext *vda                     = avctx->internal->hwaccel_priv_data;
     struct vda_context *vda_ctx         = avctx->hwaccel_context;
-    AVFrame *frame                      = &h->cur_pic_ptr->f;
+    AVFrame *frame                      = h->cur_pic_ptr->f;
     struct vda_buffer *context;
     AVBufferRef *buffer;
     int status;
@@ -320,9 +320,20 @@ static int vda_h264_start_frame(AVCodecContext *avctx,
                                 uint32_t size)
 {
     VDAContext *vda = avctx->internal->hwaccel_priv_data;
+    H264Context *h  = avctx->priv_data;
 
-    vda->bitstream_size = 0;
-
+    if (h->is_avc == 1) {
+        void *tmp;
+        vda->bitstream_size = 0;
+        tmp = av_fast_realloc(vda->bitstream,
+                              &vda->allocated_size,
+                              size);
+        vda->bitstream = tmp;
+        memcpy(vda->bitstream, buffer, size);
+        vda->bitstream_size = size;
+    } else {
+        vda->bitstream_size = 0;
+    }
     return 0;
 }
 
@@ -331,7 +342,11 @@ static int vda_h264_decode_slice(AVCodecContext *avctx,
                                  uint32_t size)
 {
     VDAContext *vda       = avctx->internal->hwaccel_priv_data;
+    H264Context *h  = avctx->priv_data;
     void *tmp;
+
+    if (h->is_avc == 1)
+        return 0;
 
     tmp = av_fast_realloc(vda->bitstream,
                           &vda->allocated_size,
@@ -360,7 +375,7 @@ static int vda_h264_end_frame(AVCodecContext *avctx)
     H264Context *h        = avctx->priv_data;
     VDAContext *vda       = avctx->internal->hwaccel_priv_data;
     AVVDAContext *vda_ctx = avctx->hwaccel_context;
-    AVFrame *frame        = &h->cur_pic_ptr->f;
+    AVFrame *frame        = h->cur_pic_ptr->f;
     uint32_t flush_flags  = 1 << 0; ///< kVDADecoderFlush_emitFrames
     CFDataRef coded_frame;
     OSStatus status;
@@ -380,24 +395,25 @@ static int vda_h264_end_frame(AVCodecContext *avctx)
 
     CFRelease(coded_frame);
 
+    if (!vda->frame)
+        return AVERROR_UNKNOWN;
+
     if (status != kVDADecoderNoErr) {
         av_log(avctx, AV_LOG_ERROR, "Failed to decode frame (%d)\n", status);
         return AVERROR_UNKNOWN;
     }
 
-    if (vda->frame) {
-        av_buffer_unref(&frame->buf[0]);
+    av_buffer_unref(&frame->buf[0]);
 
-        frame->buf[0] = av_buffer_create((uint8_t*)vda->frame,
-                                         sizeof(vda->frame),
-                                         release_buffer, NULL,
-                                         AV_BUFFER_FLAG_READONLY);
-        if (!frame->buf)
-            return AVERROR(ENOMEM);
+    frame->buf[0] = av_buffer_create((uint8_t*)vda->frame,
+                                     sizeof(vda->frame),
+                                     release_buffer, NULL,
+                                     AV_BUFFER_FLAG_READONLY);
+    if (!frame->buf)
+        return AVERROR(ENOMEM);
 
-        frame->data[3] = (uint8_t*)vda->frame;
-        vda->frame = NULL;
-    }
+    frame->data[3] = (uint8_t*)vda->frame;
+    vda->frame = NULL;
 
     return 0;
 }
@@ -414,7 +430,7 @@ int ff_vda_default_init(AVCodecContext *avctx)
     CFMutableDictionaryRef buffer_attributes;
     CFMutableDictionaryRef io_surface_properties;
     CFNumberRef cv_pix_fmt;
-    int32_t fmt = 'avc1', pix_fmt = kCVPixelFormatType_422YpCbCr8;
+    int32_t fmt = 'avc1', pix_fmt = vda_ctx->cv_pix_fmt_type;
 
     // kCVPixelFormatType_420YpCbCr8Planar;
 

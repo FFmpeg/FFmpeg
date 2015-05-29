@@ -1,6 +1,6 @@
 /*
  * Interplay MVE Video Decoder
- * Copyright (C) 2003 the ffmpeg project
+ * Copyright (c) 2003 The FFmpeg Project
  *
  * This file is part of FFmpeg.
  *
@@ -79,7 +79,7 @@ static int copy_from(IpvideoContext *s, AVFrame *src, AVFrame *dst, int delta_x,
             motion_offset, s->upper_motion_limit_offset);
         return AVERROR_INVALIDDATA;
     }
-    if (src->data[0] == NULL) {
+    if (!src->data[0]) {
         av_log(s->avctx, AV_LOG_ERROR, "Invalid decode type, corrupted header?\n");
         return AVERROR(EINVAL);
     }
@@ -118,7 +118,7 @@ static int ipvideo_decode_block_opcode_0x2(IpvideoContext *s, AVFrame *frame)
         y =   8 + ((B - 56) / 29);
     }
 
-    av_dlog(s->avctx, "motion byte = %d, (x, y) = (%d, %d)\n", B, x, y);
+    ff_tlog(s->avctx, "motion byte = %d, (x, y) = (%d, %d)\n", B, x, y);
     return copy_from(s, s->second_last_frame, frame, x, y);
 }
 
@@ -144,7 +144,7 @@ static int ipvideo_decode_block_opcode_0x3(IpvideoContext *s, AVFrame *frame)
         y = -(  8 + ((B - 56) / 29));
     }
 
-    av_dlog(s->avctx, "motion byte = %d, (x, y) = (%d, %d)\n", B, x, y);
+    ff_tlog(s->avctx, "motion byte = %d, (x, y) = (%d, %d)\n", B, x, y);
     return copy_from(s, frame, frame, x, y);
 }
 
@@ -165,7 +165,7 @@ static int ipvideo_decode_block_opcode_0x4(IpvideoContext *s, AVFrame *frame)
     x = -8 + BL;
     y = -8 + BH;
 
-    av_dlog(s->avctx, "motion byte = %d, (x, y) = (%d, %d)\n", B, x, y);
+    ff_tlog(s->avctx, "motion byte = %d, (x, y) = (%d, %d)\n", B, x, y);
     return copy_from(s, s->last_frame, frame, x, y);
 }
 
@@ -178,7 +178,7 @@ static int ipvideo_decode_block_opcode_0x5(IpvideoContext *s, AVFrame *frame)
     x = bytestream2_get_byte(&s->stream_ptr);
     y = bytestream2_get_byte(&s->stream_ptr);
 
-    av_dlog(s->avctx, "motion bytes = %d, %d\n", x, y);
+    ff_tlog(s->avctx, "motion bytes = %d, %d\n", x, y);
     return copy_from(s, s->last_frame, frame, x, y);
 }
 
@@ -553,7 +553,7 @@ static int ipvideo_decode_block_opcode_0x6_16(IpvideoContext *s, AVFrame *frame)
     x = bytestream2_get_byte(&s->stream_ptr);
     y = bytestream2_get_byte(&s->stream_ptr);
 
-    av_dlog(s->avctx, "motion bytes = %d, %d\n", x, y);
+    ff_tlog(s->avctx, "motion bytes = %d, %d\n", x, y);
     return copy_from(s, s->second_last_frame, frame, x, y);
 }
 
@@ -928,7 +928,7 @@ static void ipvideo_decode_opcodes(IpvideoContext *s, AVFrame *frame)
         for (x = 0; x < s->avctx->width; x += 8) {
             opcode = get_bits(&gb, 4);
 
-            av_dlog(s->avctx,
+            ff_tlog(s->avctx,
                     "  block @ (%3d, %3d): encoding 0x%X, data ptr offset %d\n",
                     x, y, opcode, bytestream2_tell(&s->stream_ptr));
 

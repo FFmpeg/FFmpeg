@@ -24,6 +24,7 @@
 #include <stdarg.h>
 #include "avutil.h"
 #include "attributes.h"
+#include "version.h"
 
 typedef enum {
     AV_CLASS_CATEGORY_NA = 0,
@@ -45,6 +46,16 @@ typedef enum {
     AV_CLASS_CATEGORY_DEVICE_INPUT,
     AV_CLASS_CATEGORY_NB, ///< not part of ABI/API
 }AVClassCategory;
+
+#define AV_IS_INPUT_DEVICE(category) \
+    (((category) == AV_CLASS_CATEGORY_DEVICE_VIDEO_INPUT) || \
+     ((category) == AV_CLASS_CATEGORY_DEVICE_AUDIO_INPUT) || \
+     ((category) == AV_CLASS_CATEGORY_DEVICE_INPUT))
+
+#define AV_IS_OUTPUT_DEVICE(category) \
+    (((category) == AV_CLASS_CATEGORY_DEVICE_VIDEO_OUTPUT) || \
+     ((category) == AV_CLASS_CATEGORY_DEVICE_AUDIO_OUTPUT) || \
+     ((category) == AV_CLASS_CATEGORY_DEVICE_OUTPUT))
 
 struct AVOptionRanges;
 
@@ -188,6 +199,11 @@ typedef struct AVClass {
 #define AV_LOG_MAX_OFFSET (AV_LOG_DEBUG - AV_LOG_QUIET)
 
 /**
+ * Extremely verbose debugging, useful for libav* development.
+ */
+#define AV_LOG_TRACE    56
+
+/**
  * @}
  */
 
@@ -199,7 +215,7 @@ typedef struct AVClass {
  * Requires 256color terminal support. Uses outside debugging is not
  * recommended.
  */
-#define AV_LOG_C(x) (x << 8)
+#define AV_LOG_C(x) ((x) << 8)
 
 /**
  * Send the specified message to the log if the level is less than or equal
@@ -209,7 +225,7 @@ typedef struct AVClass {
  * @see av_log_set_callback
  *
  * @param avcl A pointer to an arbitrary struct of which the first field is a
- *        pointer to an AVClass struct.
+ *        pointer to an AVClass struct or NULL if general log.
  * @param level The importance level of the message expressed using a @ref
  *        lavu_log_constants "Logging Constant".
  * @param fmt The format string (printf-compatible) that specifies how
@@ -301,8 +317,10 @@ AVClassCategory av_default_get_category(void *ptr);
 void av_log_format_line(void *ptr, int level, const char *fmt, va_list vl,
                         char *line, int line_size, int *print_prefix);
 
+#if FF_API_DLOG
 /**
  * av_dlog macros
+ * @deprecated unused
  * Useful to print debug messages that shouldn't get compiled in normally.
  */
 
@@ -311,6 +329,7 @@ void av_log_format_line(void *ptr, int level, const char *fmt, va_list vl,
 #else
 #    define av_dlog(pctx, ...) do { if (0) av_log(pctx, AV_LOG_DEBUG, __VA_ARGS__); } while (0)
 #endif
+#endif /* FF_API_DLOG */
 
 /**
  * Skip repeated messages, this requires the user app to use av_log() instead of

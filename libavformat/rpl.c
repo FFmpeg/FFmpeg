@@ -60,7 +60,7 @@ static int read_line(AVIOContext * pb, char* line, int bufsize)
             break;
         if (b == '\n') {
             line[i] = '\0';
-            return url_feof(pb) ? -1 : 0;
+            return avio_feof(pb) ? -1 : 0;
         }
         line[i] = b;
     }
@@ -278,7 +278,7 @@ static int rpl_read_packet(AVFormatContext *s, AVPacket *pkt)
     AVIOContext *pb = s->pb;
     AVStream* stream;
     AVIndexEntry* index_entry;
-    uint32_t ret;
+    int ret;
 
     if (rpl->chunk_part == s->nb_streams) {
         rpl->chunk_number++;
@@ -308,6 +308,8 @@ static int rpl_read_packet(AVFormatContext *s, AVPacket *pkt)
             return AVERROR(EIO);
 
         ret = av_get_packet(pb, pkt, frame_size);
+        if (ret < 0)
+            return ret;
         if (ret != frame_size) {
             av_free_packet(pkt);
             return AVERROR(EIO);
@@ -323,6 +325,8 @@ static int rpl_read_packet(AVFormatContext *s, AVPacket *pkt)
         }
     } else {
         ret = av_get_packet(pb, pkt, index_entry->size);
+        if (ret < 0)
+            return ret;
         if (ret != index_entry->size) {
             av_free_packet(pkt);
             return AVERROR(EIO);

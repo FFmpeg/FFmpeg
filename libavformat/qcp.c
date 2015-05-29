@@ -30,8 +30,9 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "riff.h"
 
-typedef struct {
+typedef struct QCPContext {
     uint32_t data_size;                     ///< size of data chunk
 
 #define QCP_MAX_MODE 4
@@ -106,7 +107,8 @@ static int qcp_read_header(AVFormatContext *s)
     } else if (!memcmp(buf, guid_smv, 16)) {
         st->codec->codec_id = AV_CODEC_ID_SMV;
     } else {
-        av_log(s, AV_LOG_ERROR, "Unknown codec GUID.\n");
+        av_log(s, AV_LOG_ERROR, "Unknown codec GUID "FF_PRI_GUID".\n",
+               FF_ARG_GUID(buf));
         return AVERROR_INVALIDDATA;
     }
     avio_skip(pb, 2 + 80); // codec-version + codec-name
@@ -139,7 +141,7 @@ static int qcp_read_packet(AVFormatContext *s, AVPacket *pkt)
     QCPContext    *c  = s->priv_data;
     unsigned int  chunk_size, tag;
 
-    while(!url_feof(pb)) {
+    while(!avio_feof(pb)) {
         if (c->data_size) {
             int pkt_size, ret, mode = avio_r8(pb);
 

@@ -25,6 +25,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
+#include "libavutil/time_internal.h"
 #include "avformat.h"
 #include "internal.h"
 
@@ -316,7 +317,7 @@ static int lex_time(struct sbg_parser *p, int64_t *rt)
         int errcode = c; \
         if (errcode <= 0) \
             return errcode ? errcode : AVERROR_INVALIDDATA; \
-    } while(0);
+    } while (0)
 
 static int parse_immediate(struct sbg_parser *p)
 {
@@ -905,14 +906,14 @@ static void expand_timestamps(void *log, struct sbg_script *s)
     } else {
         /* Mixed relative/absolute ts: expand */
         time_t now0;
-        struct tm *tm;
+        struct tm *tm, tmpbuf;
 
         av_log(log, AV_LOG_WARNING,
                "Scripts with mixed absolute and relative timestamps can give "
                "unexpected results (pause, seeking, time zone change).\n");
 #undef time
         time(&now0);
-        tm = localtime(&now0);
+        tm = localtime_r(&now0, &tmpbuf);
         now = tm ? tm->tm_hour * 3600 + tm->tm_min * 60 + tm->tm_sec :
                    now0 % DAY;
         av_log(log, AV_LOG_INFO, "Using %02d:%02d:%02d as NOW.\n",

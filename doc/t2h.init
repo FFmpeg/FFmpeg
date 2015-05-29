@@ -1,3 +1,7 @@
+# Init file for texi2html.
+
+# This is deprecated, and the makeinfo/texi2any version is doc/t2h.pm
+
 # no horiz rules between sections
 $end_section = \&FFmpeg_end_section;
 sub FFmpeg_end_section($$)
@@ -11,6 +15,7 @@ my $TEMPLATE_HEADER1 = $ENV{"FFMPEG_HEADER1"} || <<EOT;
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <title>FFmpeg documentation</title>
+    <link rel="stylesheet" href="bootstrap.min.css" />
     <link rel="stylesheet" href="style.min.css" />
 EOT
 

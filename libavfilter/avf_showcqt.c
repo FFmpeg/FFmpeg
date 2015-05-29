@@ -26,6 +26,7 @@
 #include "libavutil/xga_font_data.h"
 #include "libavutil/qsort.h"
 #include "libavutil/time.h"
+#include "libavutil/eval.h"
 #include "avfilter.h"
 #include "internal.h"
 
@@ -49,6 +50,13 @@
 #define SPECTOGRAM_START (VIDEO_HEIGHT-SPECTOGRAM_HEIGHT)
 #define BASE_FREQ 20.051392800492
 #define COEFF_CLAMP 1.0e-4
+#define TLENGTH_MIN 0.001
+#define TLENGTH_DEFAULT "384/f*tc/(384/f+tc)"
+#define VOLUME_MIN 1e-10
+#define VOLUME_MAX 100.0
+#define FONTCOLOR_DEFAULT "st(0, (midi(f)-59.5)/12);" \
+    "st(1, if(between(ld(0),0,1), 0.5-0.5*cos(2*PI*ld(0)), 0));" \
+    "r(1-ld(1)) + b(ld(1))"
 
 typedef struct {
     FFTSample value;
@@ -68,18 +76,21 @@ typedef struct {
     uint8_t *font_alpha;
     char *fontfile;     /* using freetype */
     int coeffs_len[VIDEO_WIDTH];
-    uint8_t font_color[VIDEO_WIDTH];
+    uint8_t fontcolor_value[VIDEO_WIDTH*3];  /* result of fontcolor option */
     int64_t frame_count;
     int spectogram_count;
     int spectogram_index;
     int fft_bits;
     int req_fullfilled;
     int remaining_fill;
-    double volume;
+    char *tlength;
+    char *volume;
+    char *fontcolor;
     double timeclamp;   /* lower timeclamp, time-accurate, higher timeclamp, freq-accurate (at low freq)*/
     float coeffclamp;   /* lower coeffclamp, more precise, higher coeffclamp, faster */
     int fullhd;         /* if true, output video is at full HD resolution, otherwise it will be halved */
     float gamma;        /* lower gamma, more contrast, higher gamma, more range */
+    float gamma2;       /* gamma of bargraph */
     int fps;            /* the required fps is so strict, so it's enough to be int, but 24000/1001 etc cannot be encoded */
     int count;          /* fps * count = transform rate */
 } ShowCQTContext;
@@ -88,14 +99,17 @@ typedef struct {
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
 
 static const AVOption showcqt_options[] = {
-    { "volume", "set volume", OFFSET(volume), AV_OPT_TYPE_DOUBLE, { .dbl = 16 }, 0.1, 100, FLAGS },
+    { "volume", "set volume", OFFSET(volume), AV_OPT_TYPE_STRING, { .str = "16" }, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "tlength", "set transform length", OFFSET(tlength), AV_OPT_TYPE_STRING, { .str = TLENGTH_DEFAULT }, CHAR_MIN, CHAR_MAX, FLAGS },
     { "timeclamp", "set timeclamp", OFFSET(timeclamp), AV_OPT_TYPE_DOUBLE, { .dbl = 0.17 }, 0.1, 1.0, FLAGS },
     { "coeffclamp", "set coeffclamp", OFFSET(coeffclamp), AV_OPT_TYPE_FLOAT, { .dbl = 1 }, 0.1, 10, FLAGS },
     { "gamma", "set gamma", OFFSET(gamma), AV_OPT_TYPE_FLOAT, { .dbl = 3 }, 1, 7, FLAGS },
+    { "gamma2", "set gamma of bargraph", OFFSET(gamma2), AV_OPT_TYPE_FLOAT, { .dbl = 1 }, 1, 7, FLAGS },
     { "fullhd", "set full HD resolution", OFFSET(fullhd), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, FLAGS },
     { "fps", "set video fps", OFFSET(fps), AV_OPT_TYPE_INT, { .i64 = 25 }, 10, 100, FLAGS },
     { "count", "set number of transform per frame", OFFSET(count), AV_OPT_TYPE_INT, { .i64 = 6 }, 1, 30, FLAGS },
     { "fontfile", "set font file", OFFSET(fontfile), AV_OPT_TYPE_STRING, { .str = NULL }, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "fontcolor", "set font color", OFFSET(fontcolor), AV_OPT_TYPE_STRING, { .str = FONTCOLOR_DEFAULT }, CHAR_MIN, CHAR_MAX, FLAGS },
     { NULL }
 };
 
@@ -191,7 +205,7 @@ static void load_freetype_font(AVFilterContext *ctx)
     if (FT_Set_Char_Size(face, 16*64 * linear_hori_advance / face->glyph->linearHoriAdvance, 0, 0, 0))
         goto fail;
 
-    s->font_alpha = av_malloc(font_height * video_width);
+    s->font_alpha = av_malloc_array(font_height, video_width);
     if (!s->font_alpha)
         goto fail;
 
@@ -246,6 +260,51 @@ static void load_freetype_font(AVFilterContext *ctx)
 }
 #endif
 
+static double a_weighting(void *p, double f)
+{
+    double ret = 12200.0*12200.0 * (f*f*f*f);
+    ret /= (f*f + 20.6*20.6) * (f*f + 12200.0*12200.0) *
+           sqrt((f*f + 107.7*107.7) * (f*f + 737.9*737.9));
+    return ret;
+}
+
+static double b_weighting(void *p, double f)
+{
+    double ret = 12200.0*12200.0 * (f*f*f);
+    ret /= (f*f + 20.6*20.6) * (f*f + 12200.0*12200.0) * sqrt(f*f + 158.5*158.5);
+    return ret;
+}
+
+static double c_weighting(void *p, double f)
+{
+    double ret = 12200.0*12200.0 * (f*f);
+    ret /= (f*f + 20.6*20.6) * (f*f + 12200.0*12200.0);
+    return ret;
+}
+
+static double midi(void *p, double f)
+{
+    return log2(f/440.0) * 12.0 + 69.0;
+}
+
+static double r_func(void *p, double x)
+{
+    x = av_clipd(x, 0.0, 1.0);
+    return (int)(x*255.0+0.5) << 16;
+}
+
+static double g_func(void *p, double x)
+{
+    x = av_clipd(x, 0.0, 1.0);
+    return (int)(x*255.0+0.5) << 8;
+}
+
+static double b_func(void *p, double x)
+{
+    x = av_clipd(x, 0.0, 1.0);
+    return (int)(x*255.0+0.5);
+}
+
 static inline int qsort_sparsecoeff(const SparseCoeff *a, const SparseCoeff *b)
 {
     if (fabsf(a->value) >= fabsf(b->value))
@@ -259,7 +318,14 @@ static int config_output(AVFilterLink *outlink)
     AVFilterContext *ctx = outlink->src;
     AVFilterLink *inlink = ctx->inputs[0];
     ShowCQTContext *s = ctx->priv;
-    int fft_len, k, x, y;
+    AVExpr *tlength_expr = NULL, *volume_expr = NULL, *fontcolor_expr = NULL;
+    uint8_t *fontcolor_value = s->fontcolor_value;
+    static const char * const expr_vars[] = { "timeclamp", "tc", "frequency", "freq", "f", NULL };
+    static const char * const expr_func_names[] = { "a_weighting", "b_weighting", "c_weighting", NULL };
+    static const char * const expr_fontcolor_func_names[] = { "midi", "r", "g", "b", NULL };
+    static double (* const expr_funcs[])(void *, double) = { a_weighting, b_weighting, c_weighting, NULL };
+    static double (* const expr_fontcolor_funcs[])(void *, double) = { midi, r_func, g_func, b_func, NULL };
+    int fft_len, k, x, y, ret;
     int num_coeffs = 0;
     int rate = inlink->sample_rate;
     double max_len = rate * (double) s->timeclamp;
@@ -286,17 +352,6 @@ static int config_output(AVFilterLink *outlink)
     if (!s->fft_data || !s->coeff_sort || !s->fft_result_left || !s->fft_result_right || !s->fft_context)
         return AVERROR(ENOMEM);
 
-    /* initializing font */
-    for (x = 0; x < video_width; x++) {
-        if (x >= (12*3+8)*8*video_scale && x < (12*4+8)*8*video_scale) {
-            float fx = (x-(12*3+8)*8*video_scale) * (2.0f/(192.0f*video_scale));
-            float sv = sinf(M_PI*fx);
-            s->font_color[x] = sv*sv*255.0f + 0.5f;
-        } else {
-            s->font_color[x] = 0;
-        }
-    }
-
 #if CONFIG_LIBFREETYPE
     load_freetype_font(ctx);
 #else
@@ -307,12 +362,27 @@ static int config_output(AVFilterLink *outlink)
 
     av_log(ctx, AV_LOG_INFO, "Calculating spectral kernel, please wait\n");
     start_time = av_gettime_relative();
+    ret = av_expr_parse(&tlength_expr, s->tlength, expr_vars, NULL, NULL, NULL, NULL, 0, ctx);
+    if (ret < 0)
+        goto eval_error;
+
+    ret = av_expr_parse(&volume_expr, s->volume, expr_vars, expr_func_names,
+                        expr_funcs, NULL, NULL, 0, ctx);
+    if (ret < 0)
+        goto eval_error;
+
+    ret = av_expr_parse(&fontcolor_expr, s->fontcolor, expr_vars, expr_fontcolor_func_names,
+                        expr_fontcolor_funcs, NULL, NULL, 0, ctx);
+    if (ret < 0)
+        goto eval_error;
+
     for (k = 0; k < VIDEO_WIDTH; k++) {
         int hlen = fft_len >> 1;
         float total = 0;
         float partial = 0;
         double freq = BASE_FREQ * exp2(k * (1.0/192.0));
-        double tlen = rate * (24.0 * 16.0) /freq;
+        double tlen, tlength, volume;
+        double expr_vars_val[] = { s->timeclamp, s->timeclamp, freq, freq, freq, 0 };
         /* a window function from Albert H. Nuttall,
          * "Some Windows with Very Good Sidelobe Behavior"
          * -93.32 dB peak sidelobe and 18 dB/octave asymptotic decay
@@ -324,10 +394,41 @@ static int config_output(AVFilterLink *outlink)
         double sv_step, cv_step, sv, cv;
         double sw_step, cw_step, sw, cw, w;
 
-        tlen = tlen * max_len / (tlen + max_len);
+        tlength = av_expr_eval(tlength_expr, expr_vars_val, NULL);
+        if (isnan(tlength)) {
+            av_log(ctx, AV_LOG_WARNING, "at freq %g: tlength is nan, setting it to %g\n", freq, s->timeclamp);
+            tlength = s->timeclamp;
+        } else if (tlength < TLENGTH_MIN) {
+            av_log(ctx, AV_LOG_WARNING, "at freq %g: tlength is %g, setting it to %g\n", freq, tlength, TLENGTH_MIN);
+            tlength = TLENGTH_MIN;
+        } else if (tlength > s->timeclamp) {
+            av_log(ctx, AV_LOG_WARNING, "at freq %g: tlength is %g, setting it to %g\n", freq, tlength, s->timeclamp);
+            tlength = s->timeclamp;
+        }
+
+        volume = FFABS(av_expr_eval(volume_expr, expr_vars_val, NULL));
+        if (isnan(volume)) {
+            av_log(ctx, AV_LOG_WARNING, "at freq %g: volume is nan, setting it to 0\n", freq);
+            volume = VOLUME_MIN;
+        } else if (volume < VOLUME_MIN) {
+            volume = VOLUME_MIN;
+        } else if (volume > VOLUME_MAX) {
+            av_log(ctx, AV_LOG_WARNING, "at freq %g: volume is %g, setting it to %g\n", freq, volume, VOLUME_MAX);
+            volume = VOLUME_MAX;
+        }
+
+        if (s->fullhd || !(k & 1)) {
+            int fontcolor = av_expr_eval(fontcolor_expr, expr_vars_val, NULL);
+            fontcolor_value[0] = (fontcolor >> 16) & 0xFF;
+            fontcolor_value[1] = (fontcolor >> 8) & 0xFF;
+            fontcolor_value[2] = fontcolor & 0xFF;
+            fontcolor_value += 3;
+        }
+
+        tlen = tlength * rate;
         s->fft_data[0].re = 0;
         s->fft_data[0].im = 0;
-        s->fft_data[hlen].re = (1.0 + a1 + a2 + a3) * (1.0/tlen) * s->volume * (1.0/fft_len);
+        s->fft_data[hlen].re = (1.0 + a1 + a2 + a3) * (1.0/tlen) * volume * (1.0/fft_len);
         s->fft_data[hlen].im = 0;
         sv_step = sv = sin(2.0*M_PI*freq*(1.0/rate));
         cv_step = cv = cos(2.0*M_PI*freq*(1.0/rate));
@@ -341,7 +442,7 @@ static int config_output(AVFilterLink *outlink)
             cw2 = cw * cw - sw * sw;
             sw2 = cw * sw + sw * cw;
             cw3 = cw * cw2 - sw * sw2;
-            w = (1.0 + a1 * cw + a2 * cw2 + a3 * cw3) * (1.0/tlen) * s->volume * (1.0/fft_len);
+            w = (1.0 + a1 * cw + a2 * cw2 + a3 * cw3) * (1.0/tlen) * volume * (1.0/fft_len);
             s->fft_data[hlen + x].re = w * cv;
             s->fft_data[hlen + x].im = w * sv;
             s->fft_data[hlen - x].re = s->fft_data[hlen + x].re;
@@ -378,14 +479,19 @@ static int config_output(AVFilterLink *outlink)
                 s->coeffs_len[k] = fft_len - x;
                 num_coeffs += s->coeffs_len[k];
                 s->coeffs[k] = av_malloc_array(s->coeffs_len[k], sizeof(*s->coeffs[k]));
-                if (!s->coeffs[k])
-                    return AVERROR(ENOMEM);
+                if (!s->coeffs[k]) {
+                    ret = AVERROR(ENOMEM);
+                    goto eval_error;
+                }
                 for (y = 0; y < s->coeffs_len[k]; y++)
                     s->coeffs[k][y] = s->coeff_sort[x+y];
                 break;
             }
         }
     }
+    av_expr_free(fontcolor_expr);
+    av_expr_free(volume_expr);
+    av_expr_free(tlength_expr);
     end_time = av_gettime_relative();
     av_log(ctx, AV_LOG_INFO, "Elapsed time %.6f s (fft_len=%u, num_coeffs=%u)\n", 1e-6 * (end_time-start_time), fft_len, num_coeffs);
 
@@ -411,6 +517,12 @@ static int config_output(AVFilterLink *outlink)
     outlink->time_base = av_make_q(1, s->fps);
     outlink->frame_rate = av_make_q(s->fps, 1);
     return 0;
+
+eval_error:
+    av_expr_free(fontcolor_expr);
+    av_expr_free(volume_expr);
+    av_expr_free(tlength_expr);
+    return ret;
 }
 
 static int plot_cqt(AVFilterLink *inlink)
@@ -455,7 +567,6 @@ static int plot_cqt(AVFilterLink *inlink)
     /* calculating cqt */
     for (x = 0; x < VIDEO_WIDTH; x++) {
         int u;
-        float g = 1.0f / s->gamma;
         FFTComplex l = {0,0};
         FFTComplex r = {0,0};
 
@@ -471,10 +582,42 @@ static int plot_cqt(AVFilterLink *inlink)
         result[x][0] = l.re * l.re + l.im * l.im;
         result[x][2] = r.re * r.re + r.im * r.im;
         result[x][1] = 0.5f * (result[x][0] + result[x][2]);
-        result[x][3] = result[x][1];
-        result[x][0] = 255.0f * powf(FFMIN(1.0f,result[x][0]), g);
-        result[x][1] = 255.0f * powf(FFMIN(1.0f,result[x][1]), g);
-        result[x][2] = 255.0f * powf(FFMIN(1.0f,result[x][2]), g);
+
+        if (s->gamma2 == 1.0f)
+            result[x][3] = result[x][1];
+        else if (s->gamma2 == 2.0f)
+            result[x][3] = sqrtf(result[x][1]);
+        else if (s->gamma2 == 3.0f)
+            result[x][3] = cbrtf(result[x][1]);
+        else if (s->gamma2 == 4.0f)
+            result[x][3] = sqrtf(sqrtf(result[x][1]));
+        else
+            result[x][3] = expf(logf(result[x][1]) * (1.0f / s->gamma2));
+
+        result[x][0] = FFMIN(1.0f, result[x][0]);
+        result[x][1] = FFMIN(1.0f, result[x][1]);
+        result[x][2] = FFMIN(1.0f, result[x][2]);
+        if (s->gamma == 1.0f) {
+            result[x][0] = 255.0f * result[x][0];
+            result[x][1] = 255.0f * result[x][1];
+            result[x][2] = 255.0f * result[x][2];
+        } else if (s->gamma == 2.0f) {
+            result[x][0] = 255.0f * sqrtf(result[x][0]);
+            result[x][1] = 255.0f * sqrtf(result[x][1]);
+            result[x][2] = 255.0f * sqrtf(result[x][2]);
+        } else if (s->gamma == 3.0f) {
+            result[x][0] = 255.0f * cbrtf(result[x][0]);
+            result[x][1] = 255.0f * cbrtf(result[x][1]);
+            result[x][2] = 255.0f * cbrtf(result[x][2]);
+        } else if (s->gamma == 4.0f) {
+            result[x][0] = 255.0f * sqrtf(sqrtf(result[x][0]));
+            result[x][1] = 255.0f * sqrtf(sqrtf(result[x][1]));
+            result[x][2] = 255.0f * sqrtf(sqrtf(result[x][2]));
+        } else {
+            result[x][0] = 255.0f * expf(logf(result[x][0]) * (1.0f / s->gamma));
+            result[x][1] = 255.0f * expf(logf(result[x][1]) * (1.0f / s->gamma));
+            result[x][2] = 255.0f * expf(logf(result[x][2]) * (1.0f / s->gamma));
+        }
     }
 
     if (!s->fullhd) {
@@ -526,12 +669,13 @@ static int plot_cqt(AVFilterLink *inlink)
             for (y = 0; y < font_height; y++) {
                 uint8_t *lineptr = data + (spectogram_height + y) * linesize;
                 uint8_t *spectogram_src = s->spectogram + s->spectogram_index * linesize;
+                uint8_t *fontcolor_value = s->fontcolor_value;
                 for (x = 0; x < video_width; x++) {
                     uint8_t alpha = s->font_alpha[y*video_width+x];
-                    uint8_t color = s->font_color[x];
-                    lineptr[3*x] = (spectogram_src[3*x] * (255-alpha) + (255-color) * alpha + 255) >> 8;
-                    lineptr[3*x+1] = (spectogram_src[3*x+1] * (255-alpha) + 255) >> 8;
-                    lineptr[3*x+2] = (spectogram_src[3*x+2] * (255-alpha) + color * alpha + 255) >> 8;
+                    lineptr[3*x] = (spectogram_src[3*x] * (255-alpha) + fontcolor_value[0] * alpha + 255) >> 8;
+                    lineptr[3*x+1] = (spectogram_src[3*x+1] * (255-alpha) + fontcolor_value[1] * alpha + 255) >> 8;
+                    lineptr[3*x+2] = (spectogram_src[3*x+2] * (255-alpha) + fontcolor_value[2] * alpha + 255) >> 8;
+                    fontcolor_value += 3;
                 }
             }
         } else {
@@ -551,16 +695,16 @@ static int plot_cqt(AVFilterLink *inlink)
                         int mask;
                         for (mask = 0x80; mask; mask >>= 1) {
                             if (mask & avpriv_vga16_font[str[u] * 16 + v]) {
-                                p[0] = 255 - s->font_color[ux];
-                                p[1] = 0;
-                                p[2] = s->font_color[ux];
+                                p[0] = s->fontcolor_value[3*ux];
+                                p[1] = s->fontcolor_value[3*ux+1];
+                                p[2] = s->fontcolor_value[3*ux+2];
                                 if (video_scale == 2) {
                                     p[linesize] = p[0];
                                     p[linesize+1] = p[1];
                                     p[linesize+2] = p[2];
-                                    p[3] = p[linesize+3] = 255 - s->font_color[ux+1];
-                                    p[4] = p[linesize+4] = 0;
-                                    p[5] = p[linesize+5] = s->font_color[ux+1];
+                                    p[3] = p[linesize+3] = s->fontcolor_value[3*ux+3];
+                                    p[4] = p[linesize+4] = s->fontcolor_value[3*ux+4];
+                                    p[5] = p[linesize+5] = s->fontcolor_value[3*ux+5];
                                 }
                             }
                             p  += 3 * video_scale;
@@ -609,7 +753,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
                 s->fft_data[x] = s->fft_data[x+step];
             s->remaining_fill += step;
         }
-        return AVERROR(EOF);
+        return AVERROR_EOF;
     }
 
     remaining = insamples->nb_samples;

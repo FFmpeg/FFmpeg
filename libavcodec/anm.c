@@ -47,8 +47,10 @@ static av_cold int decode_init(AVCodecContext *avctx)
         return AVERROR(ENOMEM);
 
     bytestream2_init(&s->gb, avctx->extradata, avctx->extradata_size);
-    if (bytestream2_get_bytes_left(&s->gb) < 16 * 8 + 4 * 256)
+    if (bytestream2_get_bytes_left(&s->gb) < 16 * 8 + 4 * 256) {
+        av_frame_free(&s->frame);
         return AVERROR_INVALIDDATA;
+    }
 
     bytestream2_skipu(&s->gb, 16 * 8);
     for (i = 0; i < 256; i++)

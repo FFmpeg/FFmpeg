@@ -74,6 +74,7 @@ typedef struct MOVFragmentInfo {
     int64_t time;
     int64_t duration;
     int64_t tfrf_offset;
+    int size;
 } MOVFragmentInfo;
 
 typedef struct MOVTrack {
@@ -111,6 +112,8 @@ typedef struct MOVTrack {
     uint32_t    tref_tag;
     int         tref_id; ///< trackID of the referenced track
     int64_t     start_dts;
+    int64_t     start_cts;
+    int64_t     end_pts;
 
     int         hint_track;   ///< the track that hints this track, -1 if no hint track is set
     int         src_track;    ///< the track that this hint (or tmcd) track describes
@@ -128,20 +131,24 @@ typedef struct MOVTrack {
     AVIOContext *mdat_buf;
     int64_t     data_offset;
     int64_t     frag_start;
-    int64_t     tfrf_offset;
+    int         frag_discont;
+    int         entries_flushed;
 
     int         nb_frag_info;
     MOVFragmentInfo *frag_info;
     unsigned    frag_info_capacity;
 
     struct {
-        int64_t struct_offset;
         int     first_packet_seq;
         int     first_packet_entry;
+        int     first_packet_seen;
+        int     first_frag_written;
         int     packet_seq;
         int     packet_entry;
         int     slices;
     } vc1_info;
+
+    void       *eac3_priv;
 } MOVTrack;
 
 typedef struct MOVMuxContext {
@@ -163,14 +170,15 @@ typedef struct MOVMuxContext {
     int iods_video_profile;
     int iods_audio_profile;
 
+    int moov_written;
     int fragments;
     int max_fragment_duration;
     int min_fragment_duration;
     int max_fragment_size;
     int ism_lookahead;
     AVIOContext *mdat_buf;
+    int first_trun;
 
-    int use_editlist;
     int video_track_timescale;
 
     int reserved_moov_size; ///< 0 for disabled, -1 for automatic, size otherwise
@@ -179,17 +187,31 @@ typedef struct MOVMuxContext {
     char *major_brand;
 
     int per_stream_grouping;
+    AVFormatContext *fc;
+
+    int use_editlist;
+    float gamma;
+
+    int frag_interleave;
+    int missing_duration_warned;
 } MOVMuxContext;
 
-#define FF_MOV_FLAG_RTP_HINT 1
-#define FF_MOV_FLAG_FRAGMENT 2
-#define FF_MOV_FLAG_EMPTY_MOOV 4
-#define FF_MOV_FLAG_FRAG_KEYFRAME 8
-#define FF_MOV_FLAG_SEPARATE_MOOF 16
-#define FF_MOV_FLAG_FRAG_CUSTOM 32
-#define FF_MOV_FLAG_ISML 64
-#define FF_MOV_FLAG_FASTSTART 128
-#define FF_MOV_FLAG_OMIT_TFHD_OFFSET 256
+#define FF_MOV_FLAG_RTP_HINT              (1 <<  0)
+#define FF_MOV_FLAG_FRAGMENT              (1 <<  1)
+#define FF_MOV_FLAG_EMPTY_MOOV            (1 <<  2)
+#define FF_MOV_FLAG_FRAG_KEYFRAME         (1 <<  3)
+#define FF_MOV_FLAG_SEPARATE_MOOF         (1 <<  4)
+#define FF_MOV_FLAG_FRAG_CUSTOM           (1 <<  5)
+#define FF_MOV_FLAG_ISML                  (1 <<  6)
+#define FF_MOV_FLAG_FASTSTART             (1 <<  7)
+#define FF_MOV_FLAG_OMIT_TFHD_OFFSET      (1 <<  8)
+#define FF_MOV_FLAG_DISABLE_CHPL          (1 <<  9)
+#define FF_MOV_FLAG_DEFAULT_BASE_MOOF     (1 << 10)
+#define FF_MOV_FLAG_DASH                  (1 << 11)
+#define FF_MOV_FLAG_FRAG_DISCONT          (1 << 12)
+#define FF_MOV_FLAG_DELAY_MOOV            (1 << 13)
+#define FF_MOV_FLAG_WRITE_COLR            (1 << 14)
+#define FF_MOV_FLAG_WRITE_GAMA            (1 << 15)
 
 int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt);
 

@@ -71,6 +71,8 @@ typedef struct PSContext {
     DECLARE_ALIGNED(16, float, H12)[2][PS_MAX_NUM_ENV+1][PS_MAX_NR_IIDICC];
     DECLARE_ALIGNED(16, float, H21)[2][PS_MAX_NUM_ENV+1][PS_MAX_NR_IIDICC];
     DECLARE_ALIGNED(16, float, H22)[2][PS_MAX_NUM_ENV+1][PS_MAX_NR_IIDICC];
+    DECLARE_ALIGNED(16, float, Lbuf)[91][32][2];
+    DECLARE_ALIGNED(16, float, Rbuf)[91][32][2];
     int8_t opd_hist[PS_MAX_NR_IIDICC];
     int8_t ipd_hist[PS_MAX_NR_IIDICC];
     PSDSPContext dsp;

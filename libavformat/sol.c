@@ -50,18 +50,15 @@ static int sol_probe(AVProbeData *p)
 
 static enum AVCodecID sol_codec_id(int magic, int type)
 {
-    if (magic == 0x0B8D)
-    {
-        if (type & SOL_DPCM) return AV_CODEC_ID_SOL_DPCM;
-        else return AV_CODEC_ID_PCM_U8;
-    }
     if (type & SOL_DPCM)
-    {
-        if (type & SOL_16BIT) return AV_CODEC_ID_SOL_DPCM;
-        else if (magic == 0x0C8D) return AV_CODEC_ID_SOL_DPCM;
-        else return AV_CODEC_ID_SOL_DPCM;
-    }
-    if (type & SOL_16BIT) return AV_CODEC_ID_PCM_S16LE;
+        return AV_CODEC_ID_SOL_DPCM;
+
+    if (magic == 0x0B8D)
+        return AV_CODEC_ID_PCM_U8;
+
+    if (type & SOL_16BIT)
+        return AV_CODEC_ID_PCM_S16LE;
+
     return AV_CODEC_ID_PCM_U8;
 }
 
@@ -131,7 +128,7 @@ static int sol_read_packet(AVFormatContext *s,
 {
     int ret;
 
-    if (url_feof(s->pb))
+    if (avio_feof(s->pb))
         return AVERROR(EIO);
     ret= av_get_packet(s->pb, pkt, MAX_SIZE);
     if (ret < 0)

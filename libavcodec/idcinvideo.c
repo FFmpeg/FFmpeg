@@ -1,6 +1,6 @@
 /*
  * id Quake II CIN Video Decoder
- * Copyright (C) 2003 the ffmpeg project
+ * Copyright (c) 2003 The FFmpeg Project
  *
  * This file is part of FFmpeg.
  *
@@ -56,8 +56,7 @@
 #define HUF_TOKENS 256
 #define PALETTE_COUNT 256
 
-typedef struct
-{
+typedef struct hnode {
   int count;
   unsigned char used;
   int children[2];

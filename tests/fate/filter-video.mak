@@ -23,6 +23,33 @@ fate-filter-mcdeint-medium: CMD = framecrc -flags bitexact -idct simple -i $(TAR
 
 FATE_FILTER-$(call ALLYES, MCDEINT_FILTER, MPEGTS_DEMUXER, MPEG2VIDEO_DECODER SNOW_ENCODER) += $(FATE_MCDEINT)
 
+FATE_FILTER-$(call ALLYES, CODECVIEW_FILTER RM_DEMUXER RV40_DECODER) += fate-filter-codecview-mvs
+fate-filter-codecview-mvs: CMD = framecrc -flags2 +export_mvs -i $(TARGET_SAMPLES)/real/spygames-2MB.rmvb -vf codecview=mv=pf+bf+bb -vframes 60 -an
+
+FATE_FILTER-$(call ALLYES, SHOWPALETTE_FILTER FLIC_DEMUXER FLIC_DECODER) += fate-filter-showpalette
+fate-filter-showpalette: CMD = framecrc -i $(TARGET_SAMPLES)/fli/fli-engines.fli -vf showpalette=3 -pix_fmt bgra
+
+FATE_FILTER_PALETTEGEN += fate-filter-palettegen-1
+fate-filter-palettegen-1: CMD = framecrc -i $(TARGET_SAMPLES)/filter/anim.mkv -vf palettegen -pix_fmt bgra
+
+FATE_FILTER_PALETTEGEN += fate-filter-palettegen-2
+fate-filter-palettegen-2: CMD = framecrc -i $(TARGET_SAMPLES)/filter/anim.mkv -vf palettegen=max_colors=128:reserve_transparent=0:stats_mode=diff -pix_fmt bgra
+
+fate-filter-palettegen: $(FATE_FILTER_PALETTEGEN)
+FATE_FILTER-$(call ALLYES, PALETTEGEN_FILTER MATROSKA_DEMUXER H264_DECODER) += $(FATE_FILTER_PALETTEGEN)
+
+FATE_FILTER_PALETTEUSE += fate-filter-paletteuse-nodither
+fate-filter-paletteuse-nodither: CMD = framecrc -i $(TARGET_SAMPLES)/filter/anim.mkv -i $(TARGET_SAMPLES)/filter/anim-palette.png -lavfi paletteuse=none -pix_fmt bgra
+
+FATE_FILTER_PALETTEUSE += fate-filter-paletteuse-bayer
+fate-filter-paletteuse-bayer: CMD = framecrc -i $(TARGET_SAMPLES)/filter/anim.mkv -i $(TARGET_SAMPLES)/filter/anim-palette.png -lavfi paletteuse=bayer -pix_fmt bgra
+
+FATE_FILTER_PALETTEUSE += fate-filter-paletteuse-sierra2_4a
+fate-filter-paletteuse-sierra2_4a: CMD = framecrc -i $(TARGET_SAMPLES)/filter/anim.mkv -i $(TARGET_SAMPLES)/filter/anim-palette.png -lavfi paletteuse=sierra2_4a:diff_mode=rectangle -pix_fmt bgra
+
+fate-filter-paletteuse: $(FATE_FILTER_PALETTEUSE)
+FATE_FILTER-$(call ALLYES, PALETTEUSE_FILTER MATROSKA_DEMUXER H264_DECODER IMAGE2_DEMUXER PNG_DECODER) += $(FATE_FILTER_PALETTEUSE)
+
 FATE_SAMPLES_AVCONV += $(FATE_FILTER-yes)
 
 FATE_FILTER-$(call ALLYES, AVDEVICE LIFE_FILTER) += fate-filter-lavd-life
@@ -52,12 +79,14 @@ FATE_FILTER_VSYNTH-$(call ALLYES, INTERLACE_FILTER FIELDORDER_FILTER) += fate-fi
 fate-filter-fieldorder: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf interlace=tff,fieldorder=bff -sws_flags +accurate_rnd+bitexact
 
 define FATE_FPFILTER_SUITE
-FATE_FILTER_VSYNTH-$(CONFIG_FRAMEPACK_FILTER) += fate-filter-framepack-$(1)
+FATE_FILTER_FRAMEPACK += fate-filter-framepack-$(1)
 fate-filter-framepack-$(1): CMD = framecrc -c:v pgmyuv -i $(TARGET_PATH)/tests/vsynth1/%02d.pgm -c:v pgmyuv -i $(TARGET_PATH)/tests/vsynth1/%02d.pgm -filter_complex framepack=$(1) -frames 15
 endef
 
 FPMODES = columns frameseq lines sbs tab
 $(foreach MODE,$(FPMODES),$(eval $(call FATE_FPFILTER_SUITE,$(MODE))))
+FATE_FILTER_VSYNTH-$(CONFIG_FRAMEPACK_FILTER) += $(FATE_FILTER_FRAMEPACK)
+fate-filter-framepack: $(FATE_FILTER_FRAMEPACK)
 
 FATE_FILTER_VSYNTH-$(CONFIG_GRADFUN_FILTER) += fate-filter-gradfun
 fate-filter-gradfun: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf gradfun
@@ -153,6 +182,13 @@ fate-filter-hq3x: CMD = framecrc -i $(TARGET_SAMPLES)/filter/pixelart%d.png -vf 
 fate-filter-hq4x: CMD = framecrc -i $(TARGET_SAMPLES)/filter/pixelart%d.png -vf hqx=4 -pix_fmt bgra
 fate-filter-hqx: $(FATE_FILTER_HQX-yes)
 
+FATE_FILTER_XBR-$(call ALLYES, IMAGE2_DEMUXER PNG_DECODER XBR_FILTER) = fate-filter-2xbr fate-filter-3xbr fate-filter-4xbr
+FATE_FILTER-yes += $(FATE_FILTER_XBR-yes)
+fate-filter-2xbr: CMD = framecrc -i $(TARGET_SAMPLES)/filter/pixelart%d.png -vf xbr=2 -pix_fmt bgra
+fate-filter-3xbr: CMD = framecrc -i $(TARGET_SAMPLES)/filter/pixelart%d.png -vf xbr=3 -pix_fmt bgra
+fate-filter-4xbr: CMD = framecrc -i $(TARGET_SAMPLES)/filter/pixelart%d.png -vf xbr=4 -pix_fmt bgra
+fate-filter-xbr: $(FATE_FILTER_XBR-yes)
+
 FATE_FILTER-$(call ALLYES, UTVIDEO_DECODER AVI_DEMUXER PERMS_FILTER CURVES_FILTER) += fate-filter-curves
 fate-filter-curves: CMD = framecrc -i $(TARGET_SAMPLES)/utvideo/utvideo_rgb_median.avi -vf perms=random,curves=vintage
 
@@ -209,40 +245,37 @@ FATE_FILTER_VSYNTH-$(CONFIG_VFLIP_FILTER) += fate-filter-vflip_vflip
 fate-filter-vflip_vflip: CMD = video_filter "vflip,vflip"
 
 FATE_FILTER_VSYNTH-$(call ALLYES, FORMAT_FILTER PERMS_FILTER EDGEDETECT_FILTER) += fate-filter-edgedetect
-fate-filter-edgedetect: CMD = video_filter "format=gray,perms=random,edgedetect"
+fate-filter-edgedetect: CMD = video_filter "format=gray,perms=random,edgedetect" -vframes 20
 
 FATE_FILTER_VSYNTH-$(call ALLYES, FORMAT_FILTER PERMS_FILTER EDGEDETECT_FILTER) += fate-filter-edgedetect-colormix
-fate-filter-edgedetect-colormix: CMD = video_filter "format=gbrp,perms=random,edgedetect=mode=colormix"
+fate-filter-edgedetect-colormix: CMD = video_filter "format=gbrp,perms=random,edgedetect=mode=colormix" -vframes 20
 
 FATE_FILTER_VSYNTH-$(call ALLYES, PERMS_FILTER HUE_FILTER) += fate-filter-hue
-fate-filter-hue: CMD = video_filter "perms=random,hue=s=sin(2*PI*t)+1"
+fate-filter-hue: CMD = video_filter "perms=random,hue=s=sin(2*PI*t)+1" -vframes 20
 
 FATE_FILTER_VSYNTH-$(CONFIG_IDET_FILTER) += fate-filter-idet
-fate-filter-idet: CMD = video_filter "idet"
+fate-filter-idet: CMD = framecrc -flags bitexact -idct simple -i $(SRC) -vf idet -vframes 25 -flags +bitexact
 
 FATE_FILTER_VSYNTH-$(CONFIG_PAD_FILTER) += fate-filter-pad
 fate-filter-pad: CMD = video_filter "pad=iw*1.5:ih*1.5:iw*0.3:ih*0.2"
 
-FATE_FILTER_VSYNTH-$(CONFIG_PP_FILTER) += fate-filter-pp
-fate-filter-pp: CMD = video_filter "pp=be/hb/vb/tn/l5/al"
+FATE_FILTER_PP = fate-filter-pp fate-filter-pp1 fate-filter-pp2 fate-filter-pp3 fate-filter-pp4 fate-filter-pp5 fate-filter-pp6
+FATE_FILTER_VSYNTH-$(CONFIG_PP_FILTER) += $(FATE_FILTER_PP)
+$(FATE_FILTER_PP): fate-vsynth1-mpeg4-qprd
 
-FATE_FILTER_VSYNTH-$(CONFIG_PP_FILTER) += fate-filter-pp2
-fate-filter-pp2: CMD = video_filter "pp=be/fq|16/h1/v1/lb"
-
-FATE_FILTER_VSYNTH-$(CONFIG_PP_FILTER) += fate-filter-pp3
-fate-filter-pp3: CMD = video_filter "pp=be/fq|8/ha|128|7/va/li"
-
-FATE_FILTER_VSYNTH-$(CONFIG_PP_FILTER) += fate-filter-pp4
+fate-filter-pp:  CMD = framecrc -flags bitexact -idct simple -i $(TARGET_PATH)/tests/data/fate/vsynth1-mpeg4-qprd.avi -vframes 5 -flags +bitexact -vf "pp=be/hb/vb/tn/l5/al"
+fate-filter-pp1: CMD = video_filter "pp=fq|4/be/hb/vb/tn/l5/al"
+fate-filter-pp2: CMD = video_filter "qp=x+y,pp=be/h1/v1/lb"
+fate-filter-pp3: CMD = video_filter "qp=x+y,pp=be/ha|128|7/va/li"
 fate-filter-pp4: CMD = video_filter "pp=be/ci"
-
-FATE_FILTER_VSYNTH-$(CONFIG_PP_FILTER) += fate-filter-pp5
 fate-filter-pp5: CMD = video_filter "pp=md"
-
-FATE_FILTER_VSYNTH-$(CONFIG_PP_FILTER) += fate-filter-pp6
 fate-filter-pp6: CMD = video_filter "pp=be/fd"
 
+FATE_FILTER_VSYNTH-$(call ALLYES, QP_FILTER PP_FILTER) += fate-filter-qp
+fate-filter-qp: CMD = video_filter "qp=17,pp=be/hb/vb/tn/l5/al"
+
 FATE_FILTER_VSYNTH-$(CONFIG_SELECT_FILTER) += fate-filter-select
-fate-filter-select: CMD = video_filter "select=not(eq(mod(n\,2)\,0)+eq(mod(n\,3)\,0))"
+fate-filter-select: CMD = framecrc -flags bitexact -idct simple -i $(SRC) -vf "select=not(eq(mod(n\,2)\,0)+eq(mod(n\,3)\,0))" -vframes 25 -flags +bitexact
 
 FATE_FILTER_VSYNTH-$(CONFIG_SETDAR_FILTER) += fate-filter-setdar
 fate-filter-setdar: CMD = video_filter "setdar=dar=16/9"
@@ -289,7 +322,9 @@ tests/pixfmts.mak: ffmpeg$(EXESUF)
 	$(Q)$(TARGET_EXEC) $(TARGET_PATH)/$< -pix_fmts list 2> /dev/null | awk 'NR > 8 && /^IO/ { printf $$2 " " }' >> $@
 	$(Q)printf "\n" >> $@
 
-ifneq (,$(RUNNING_FATE))
+RUNNING_PIXFMTS_TESTS := $(filter check fate fate-list fate-filter fate-vfilter fate-filter-pixdesc%,$(MAKECMDGOALS))
+
+ifneq (,$(RUNNING_PIXFMTS_TESTS))
 -include tests/pixfmts.mak
 endif
 
@@ -314,7 +349,7 @@ FATE_FILTER_PIXFMTS-$(CONFIG_FIELD_FILTER) += fate-filter-pixfmts-field
 fate-filter-pixfmts-field: CMD = pixfmts "bottom"
 
 FATE_FILTER_PIXFMTS-$(call ALLYES, TELECINE_FILTER FIELDMATCH_FILTER) += fate-filter-pixfmts-fieldmatch
-fate-filter-pixfmts-fieldmatch: CMD = pixfmts "" "telecine,"
+fate-filter-pixfmts-fieldmatch: CMD = pixfmts "" "telecine," 25
 
 FATE_FILTER_PIXFMTS-$(CONFIG_FIELDORDER_FILTER) += fate-filter-pixfmts-fieldorder
 fate-filter-pixfmts-fieldorder: CMD = pixfmts "tff" "setfield=bff,"
@@ -341,7 +376,7 @@ FATE_FILTER_PIXFMTS-$(CONFIG_PAD_FILTER) += fate-filter-pixfmts-pad
 fate-filter-pixfmts-pad:   CMD = pixfmts "500:400:20:20"
 
 FATE_FILTER_PIXFMTS-$(call ALLYES, TELECINE_FILTER PULLUP_FILTER) += fate-filter-pixfmts-pullup
-fate-filter-pixfmts-pullup: CMD = pixfmts "" "telecine,"
+fate-filter-pixfmts-pullup: CMD = pixfmts "" "telecine," 25
 
 FATE_FILTER_PIXFMTS-$(CONFIG_ROTATE_FILTER) += fate-filter-pixfmts-rotate
 fate-filter-pixfmts-rotate: CMD = pixfmts "2*PI*n/50"

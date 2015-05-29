@@ -1,6 +1,6 @@
 /*
  * Wing Commander/Xan Video Decoder
- * Copyright (C) 2003 the ffmpeg project
+ * Copyright (c) 2003 The FFmpeg Project
  *
  * This file is part of FFmpeg.
  *
@@ -556,7 +556,7 @@ static int xan_decode_frame(AVCodecContext *avctx,
         int i;
         tag  = bytestream2_get_le32(&ctx);
         size = bytestream2_get_be32(&ctx);
-        if(size < 0) {
+        if (size < 0) {
             av_log(avctx, AV_LOG_ERROR, "Invalid tag size %d\n", size);
             return AVERROR_INVALIDDATA;
         }
@@ -567,8 +567,8 @@ static int xan_decode_frame(AVCodecContext *avctx,
                 return AVERROR_INVALIDDATA;
             if (s->palettes_count >= PALETTES_MAX)
                 return AVERROR_INVALIDDATA;
-            tmpptr = av_realloc(s->palettes,
-                                (s->palettes_count + 1) * AVPALETTE_SIZE);
+            tmpptr = av_realloc_array(s->palettes,
+                                      s->palettes_count + 1, AVPALETTE_SIZE);
             if (!tmpptr)
                 return AVERROR(ENOMEM);
             s->palettes = tmpptr;

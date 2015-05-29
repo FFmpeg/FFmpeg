@@ -31,7 +31,7 @@
 
 #define ADTS_HEADER_SIZE 7
 
-typedef struct {
+typedef struct ADTSContext {
     AVClass *class;
     int write_adts;
     int objecttype;
@@ -45,7 +45,7 @@ typedef struct {
 
 #define ADTS_MAX_FRAME_BYTES ((1 << 13) - 1)
 
-static int adts_decode_extradata(AVFormatContext *s, ADTSContext *adts, uint8_t *buf, int size)
+static int adts_decode_extradata(AVFormatContext *s, ADTSContext *adts, const uint8_t *buf, int size)
 {
     GetBitContext gb;
     PutBitContext pb;
@@ -63,23 +63,23 @@ static int adts_decode_extradata(AVFormatContext *s, ADTSContext *adts, uint8_t 
 
     if (adts->objecttype > 3U) {
         av_log(s, AV_LOG_ERROR, "MPEG-4 AOT %d is not allowed in ADTS\n", adts->objecttype+1);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     if (adts->sample_rate_index == 15) {
         av_log(s, AV_LOG_ERROR, "Escape sample rate index illegal in ADTS\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     if (get_bits(&gb, 1)) {
         av_log(s, AV_LOG_ERROR, "960/120 MDCT window is not allowed in ADTS\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     if (get_bits(&gb, 1)) {
         av_log(s, AV_LOG_ERROR, "Scalable configurations are not allowed in ADTS\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     if (get_bits(&gb, 1)) {
         av_log(s, AV_LOG_ERROR, "Extension flag is not allowed in ADTS\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     if (!adts->channel_conf) {
         init_put_bits(&pb, adts->pce_data, MAX_PCE_SIZE);
@@ -101,9 +101,9 @@ static int adts_write_header(AVFormatContext *s)
 
     if (adts->id3v2tag)
         ff_id3v2_write_simple(s, 4, ID3v2_DEFAULT_MAGIC);
-    if (avc->extradata_size > 0 &&
-            adts_decode_extradata(s, adts, avc->extradata, avc->extradata_size) < 0)
-        return -1;
+    if (avc->extradata_size > 0)
+        return adts_decode_extradata(s, adts, avc->extradata,
+                                     avc->extradata_size);
 
     return 0;
 }

@@ -166,7 +166,7 @@ static int decode_rle(AVCodecContext *avctx, AVSubtitleRect *rect,
 
     rle_bitmap_end = buf + buf_size;
 
-    rect->pict.data[0] = av_malloc(rect->w * rect->h);
+    rect->pict.data[0] = av_malloc_array(rect->w, rect->h);
 
     if (!rect->pict.data[0])
         return AVERROR(ENOMEM);
@@ -213,7 +213,7 @@ static int decode_rle(AVCodecContext *avctx, AVSubtitleRect *rect,
         return AVERROR_INVALIDDATA;
     }
 
-    av_dlog(avctx, "Pixel Count = %d, Area = %d\n", pixel_count, rect->w * rect->h);
+    ff_dlog(avctx, "Pixel Count = %d, Area = %d\n", pixel_count, rect->w * rect->h);
 
     return 0;
 }
@@ -357,7 +357,7 @@ static int parse_palette_segment(AVCodecContext *avctx,
         YUV_TO_RGB1(cb, cr);
         YUV_TO_RGB2(r, g, b, y);
 
-        av_dlog(avctx, "Color %d := (%d,%d,%d,%d)\n", color_id, r, g, b, alpha);
+        ff_dlog(avctx, "Color %d := (%d,%d,%d,%d)\n", color_id, r, g, b, alpha);
 
         /* Store color in palette */
         palette->clut[color_id] = RGBA(r,g,b,alpha);
@@ -390,7 +390,7 @@ static int parse_presentation_segment(AVCodecContext *avctx,
 
     ctx->presentation.pts = pts;
 
-    av_dlog(avctx, "Video Dimensions %dx%d\n",
+    ff_dlog(avctx, "Video Dimensions %dx%d\n",
             w, h);
     ret = ff_set_dimensions(avctx, w, h);
     if (ret < 0)
@@ -456,7 +456,7 @@ static int parse_presentation_segment(AVCodecContext *avctx,
             ctx->presentation.objects[i].crop_h = bytestream_get_be16(&buf);
         }
 
-        av_dlog(avctx, "Subtitle Placement x=%d, y=%d\n",
+        ff_dlog(avctx, "Subtitle Placement x=%d, y=%d\n",
                 ctx->presentation.objects[i].x, ctx->presentation.objects[i].y);
 
         if (ctx->presentation.objects[i].x > avctx->width ||
@@ -509,7 +509,7 @@ static int display_end_segment(AVCodecContext *avctx, void *data,
     // Blank if last object_count was 0.
     if (!ctx->presentation.object_count)
         return 1;
-    sub->rects = av_mallocz(sizeof(*sub->rects) * ctx->presentation.object_count);
+    sub->rects = av_mallocz_array(ctx->presentation.object_count, sizeof(*sub->rects));
     if (!sub->rects) {
         return AVERROR(ENOMEM);
     }
@@ -602,16 +602,16 @@ static int decode(AVCodecContext *avctx, void *data, int *data_size,
     int           segment_length;
     int i, ret;
 
-    av_dlog(avctx, "PGS sub packet:\n");
+    ff_dlog(avctx, "PGS sub packet:\n");
 
     for (i = 0; i < buf_size; i++) {
-        av_dlog(avctx, "%02x ", buf[i]);
+        ff_dlog(avctx, "%02x ", buf[i]);
         if (i % 16 == 15)
-            av_dlog(avctx, "\n");
+            ff_dlog(avctx, "\n");
     }
 
     if (i & 15)
-        av_dlog(avctx, "\n");
+        ff_dlog(avctx, "\n");
 
     *data_size = 0;
 
@@ -626,7 +626,7 @@ static int decode(AVCodecContext *avctx, void *data, int *data_size,
         segment_type   = bytestream_get_byte(&buf);
         segment_length = bytestream_get_be16(&buf);
 
-        av_dlog(avctx, "Segment Length %d, Segment Type %x\n", segment_length, segment_type);
+        ff_dlog(avctx, "Segment Length %d, Segment Type %x\n", segment_length, segment_type);
 
         if (segment_type != DISPLAY_SEGMENT && segment_length > buf_end - buf)
             break;

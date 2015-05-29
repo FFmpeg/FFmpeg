@@ -41,7 +41,7 @@ typedef enum {
     MASK_LASSO
 } mask_type;
 
-typedef struct {
+typedef struct IffContext {
     AVFrame *frame;
     int planesize;
     uint8_t * planebuf;
@@ -677,11 +677,15 @@ static int decode_frame(AVCodecContext *avctx,
     const uint8_t *buf_end = buf + buf_size;
     int y, plane, res;
     GetByteContext gb;
+    const AVPixFmtDescriptor *desc;
 
     if ((res = extract_header(avctx, avpkt)) < 0)
         return res;
     if ((res = ff_reget_buffer(avctx, s->frame)) < 0)
         return res;
+
+    desc = av_pix_fmt_desc_get(avctx->pix_fmt);
+
     if (!s->init && avctx->bits_per_coded_sample <= 8 &&
         avctx->pix_fmt == AV_PIX_FMT_PAL8) {
         if ((res = cmap_read_palette(avctx, (uint32_t *)s->frame->data[1])) < 0)
@@ -721,7 +725,6 @@ static int decode_frame(AVCodecContext *avctx,
             } else
                 return unsupported(avctx);
         } else if (avctx->codec_tag == MKTAG('D', 'E', 'E', 'P')) {
-            const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
             int raw_width = avctx->width * (av_get_bits_per_pixel(desc) >> 3);
             int x;
             for (y = 0; y < avctx->height && buf < buf_end; y++) {
@@ -838,7 +841,6 @@ static int decode_frame(AVCodecContext *avctx,
             } else
                 return unsupported(avctx);
         } else if (avctx->codec_tag == MKTAG('D', 'E', 'E', 'P')) { // IFF-DEEP
-            const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
             if (av_get_bits_per_pixel(desc) == 32)
                 decode_deep_rle32(s->frame->data[0], buf, buf_size, avctx->width, avctx->height, s->frame->linesize[0]);
             else
@@ -847,16 +849,15 @@ static int decode_frame(AVCodecContext *avctx,
         break;
     case 4:
         bytestream2_init(&gb, buf, buf_size);
-        if (avctx->codec_tag == MKTAG('R', 'G', 'B', '8'))
+        if (avctx->codec_tag == MKTAG('R', 'G', 'B', '8') && avctx->pix_fmt == AV_PIX_FMT_RGB32)
             decode_rgb8(&gb, s->frame->data[0], avctx->width, avctx->height, s->frame->linesize[0]);
-        else if (avctx->codec_tag == MKTAG('R', 'G', 'B', 'N'))
+        else if (avctx->codec_tag == MKTAG('R', 'G', 'B', 'N') && avctx->pix_fmt == AV_PIX_FMT_RGB444)
             decode_rgbn(&gb, s->frame->data[0], avctx->width, avctx->height, s->frame->linesize[0]);
         else
             return unsupported(avctx);
         break;
     case 5:
         if (avctx->codec_tag == MKTAG('D', 'E', 'E', 'P')) {
-            const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
             if (av_get_bits_per_pixel(desc) == 32)
                 decode_deep_tvdc32(s->frame->data[0], buf, buf_size, avctx->width, avctx->height, s->frame->linesize[0], s->tvdc);
             else

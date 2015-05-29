@@ -54,6 +54,7 @@
  */
 #include "config.h"
 #include "libavcodec/acelp_vectors.h"
+#include "libavutil/mips/asmdefs.h"
 
 #if HAVE_INLINE_ASM
 static void ff_weighted_vector_sumf_mips(
@@ -75,11 +76,11 @@ static void ff_weighted_vector_sumf_mips(
         "mul.s  $f5,       %[weight_coeff_a], $f3                            \n\t"
         "madd.s $f2,       $f2,               %[weight_coeff_b], $f1         \n\t"
         "madd.s $f5,       $f5,               %[weight_coeff_b], $f4         \n\t"
-        "addiu  %[in_a],   8                                                 \n\t"
-        "addiu  %[in_b],   8                                                 \n\t"
+        PTR_ADDIU "%[in_a],8                                                 \n\t"
+        PTR_ADDIU "%[in_b],8                                                 \n\t"
         "swc1   $f2,       0(%[out])                                         \n\t"
         "swc1   $f5,       4(%[out])                                         \n\t"
-        "addiu  %[out],    8                                                 \n\t"
+        PTR_ADDIU "%[out], 8                                                 \n\t"
         "bne   %[in_a],    %[a_end],          ff_weighted_vector_sumf_madd%= \n\t"
 
         "ff_weighted_vector_sumf_end%=:                                      \n\t"

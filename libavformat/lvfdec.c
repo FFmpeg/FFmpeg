@@ -51,7 +51,7 @@ static int lvf_read_header(AVFormatContext *s)
 
     avio_skip(s->pb, 1012);
 
-    while (!url_feof(s->pb)) {
+    while (!avio_feof(s->pb)) {
         id          = avio_rl32(s->pb);
         size        = avio_rl32(s->pb);
         next_offset = avio_tell(s->pb) + size;
@@ -108,7 +108,7 @@ static int lvf_read_packet(AVFormatContext *s, AVPacket *pkt)
     int ret, is_video = 0;
 
     pos = avio_tell(s->pb);
-    while (!url_feof(s->pb)) {
+    while (!avio_feof(s->pb)) {
         id    = avio_rl32(s->pb);
         size  = avio_rl32(s->pb);
 

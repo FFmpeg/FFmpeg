@@ -45,7 +45,7 @@ Miscellaneous Areas
 
 documentation                           Stefano Sabatini, Mike Melanson, Timothy Gu
 build system (configure, makefiles)     Diego Biurrun, Mans Rullgard
-project server                          Árpád Gereöffy, Michael Niedermayer, Reimar Doeffinger, Alexander Strasser
+project server                          Árpád Gereöffy, Michael Niedermayer, Reimar Doeffinger, Alexander Strasser, Lou Logan
 presets                                 Robert Swain
 metadata subsystem                      Aurelien Jacobs
 release management                      Michael Niedermayer
@@ -59,7 +59,7 @@ fate.ffmpeg.org                         Timothy Gu
 Trac bug tracker                        Alexander Strasser, Michael Niedermayer, Carl Eugen Hoyos, Lou Logan
 mailing lists                           Michael Niedermayer, Baptiste Coudurier, Lou Logan
 Google+                                 Paul B Mahol, Michael Niedermayer, Alexander Strasser
-Twitter                                 Lou Logan
+Twitter                                 Lou Logan, Reynaldo H. Verdejo Pinochet
 Launchpad                               Timothy Gu
 
 
@@ -156,6 +156,7 @@ Codecs:
   celp_filters.*                        Vitor Sessak
   cinepak.c                             Roberto Togni
   cinepakenc.c                          Rl / Aetey G.T. AB
+  ccaption_dec.c                        Anshul Maheshwari
   cljr                                  Alex Beregszaszi
   cllc.c                                Derek Buitenhuis
   cook.c, cookdata.h                    Benjamin Larsson
@@ -165,6 +166,7 @@ Codecs:
   dca.c                                 Kostya Shishkov, Benjamin Larsson
   dnxhd*                                Baptiste Coudurier
   dpcm.c                                Mike Melanson
+  dss_sp.c                              Oleksij Rempel, Michael Niedermayer
   dv.c                                  Roman Shaposhnik
   dvbsubdec.c                           Anshul Maheshwari
   dxa.c                                 Kostya Shishkov
@@ -226,6 +228,7 @@ Codecs:
   msvideo1.c                            Mike Melanson
   nellymoserdec.c                       Benjamin Larsson
   nuv.c                                 Reimar Doeffinger
+  nvenc.c                               Timo Rothenpieler
   paf.*                                 Paul B Mahol
   pcx.c                                 Ivo van Poorten
   pgssubdec.c                           Reimar Doeffinger
@@ -309,6 +312,7 @@ libavdevice
 
 
   avfoundation.m                        Thilo Borgmann
+  decklink*                             Deti Fliegl
   dshow.c                               Roger Pack (CC rogerdpack@gmail.com)
   fbdev_enc.c                           Lukasz Marek
   gdigrab.c                             Roger Pack (CC rogerdpack@gmail.com)
@@ -319,7 +323,7 @@ libavdevice
   pulse_audio_enc.c                     Lukasz Marek
   qtkit.m                               Thilo Borgmann
   sdl                                   Stefano Sabatini
-  v4l2.c                                Luca Abeni
+  v4l2.c                                Giorgio Vazzana
   vfwcap.c                              Ramiro Polla
   xv.c                                  Lukasz Marek
 
@@ -343,6 +347,7 @@ Filters:
   af_compand.c                          Paul B Mahol
   af_ladspa.c                           Paul B Mahol
   af_pan.c                              Nicolas George
+  af_silenceremove.c                    Paul B Mahol
   avf_avectorscope.c                    Paul B Mahol
   avf_showcqt.c                         Muhammad Faiz
   vf_blend.c                            Paul B Mahol
@@ -353,7 +358,9 @@ Filters:
   vf_extractplanes.c                    Paul B Mahol
   vf_histogram.c                        Paul B Mahol
   vf_hqx.c                              Clément Bœsch
+  vf_idet.c                             Pascal Massimino
   vf_il.c                               Paul B Mahol
+  vf_lenscorrection.c                   Daniel Oberhoff
   vf_mergeplanes.c                      Paul B Mahol
   vf_psnr.c                             Paul B Mahol
   vf_scale.c                            Michael Niedermayer
@@ -382,6 +389,7 @@ Muxers/Demuxers:
   aiffdec.c                             Baptiste Coudurier, Matthieu Bouron
   aiffenc.c                             Baptiste Coudurier, Matthieu Bouron
   ape.c                                 Kostya Shishkov
+  apngdec.c                             Benoit Fouet
   ass*                                  Aurelien Jacobs
   astdec.c                              Paul B Mahol
   astenc.c                              James Almer
@@ -394,6 +402,7 @@ Muxers/Demuxers:
   cdxl.c                                Paul B Mahol
   crc.c                                 Michael Niedermayer
   daud.c                                Reimar Doeffinger
+  dss.c                                 Oleksij Rempel, Michael Niedermayer
   dtshddec.c                            Paul B Mahol
   dv.c                                  Roman Shaposhnik
   dxa.c                                 Kostya Shishkov
@@ -458,12 +467,19 @@ Muxers/Demuxers:
   rmdec.c, rmenc.c                      Ronald S. Bultje, Kostya Shishkov
   rtmp*                                 Kostya Shishkov
   rtp.c, rtpenc.c                       Martin Storsjo
+  rtpdec_ac3.*                          Gilles Chanteperdrix
+  rtpdec_dv.*                           Thomas Volkert
+  rtpdec_h261.*, rtpenc_h261.*          Thomas Volkert
+  rtpdec_hevc.*, rtpenc_hevc.*          Thomas Volkert
+  rtpdec_mpa_robust.*                   Gilles Chanteperdrix
   rtpdec_asf.*                          Ronald S. Bultje
+  rtpdec_vp9.c                          Thomas Volkert
   rtpenc_mpv.*, rtpenc_aac.*            Martin Storsjo
   rtsp.c                                Luca Barbato
   sbgdec.c                              Nicolas George
   sdp.c                                 Martin Storsjo
   segafilm.c                            Mike Melanson
+  segment.c                             Stefano Sabatini
   siff.c                                Kostya Shishkov
   smacker.c                             Kostya Shishkov
   smjpeg*                               Paul B Mahol
@@ -490,6 +506,7 @@ Protocols:
   libssh.c                              Lukasz Marek
   mms*.c                                Ronald S. Bultje
   udp.c                                 Luca Abeni
+  icecast.c                             Marvin Scholz
 
 
 libswresample
@@ -528,9 +545,10 @@ x86                                     Michael Niedermayer
 Releases
 ========
 
-2.3                                     Michael Niedermayer
+2.6                                     Michael Niedermayer
+2.5                                     Michael Niedermayer
+2.4                                     Michael Niedermayer
 2.2                                     Michael Niedermayer
-1.2                                     Michael Niedermayer
 
 If you want to maintain an older release, please contact us
 

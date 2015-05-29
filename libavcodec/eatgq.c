@@ -53,7 +53,7 @@ static av_cold int tgq_decode_init(AVCodecContext *avctx)
     s->avctx = avctx;
     ff_init_scantable_permutation(idct_permutation, FF_IDCT_PERM_NONE);
     ff_init_scantable(idct_permutation, &s->scantable, ff_zigzag_direct);
-    avctx->time_base = (AVRational){1, 15};
+    avctx->framerate = (AVRational){ 15, 1 };
     avctx->pix_fmt   = AV_PIX_FMT_YUV420P;
     return 0;
 }

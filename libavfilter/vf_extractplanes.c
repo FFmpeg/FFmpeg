@@ -134,7 +134,7 @@ static int query_formats(AVFilterContext *ctx)
 static int config_input(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
-    ExtractPlanesContext *e = ctx->priv;
+    ExtractPlanesContext *s = ctx->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
     int plane_avail, ret, i;
     uint8_t rgba_map[4];
@@ -143,20 +143,20 @@ static int config_input(AVFilterLink *inlink)
                                                  PLANE_Y |
                                 ((desc->nb_components > 2) ? PLANE_U|PLANE_V : 0)) |
                   ((desc->flags & AV_PIX_FMT_FLAG_ALPHA) ? PLANE_A : 0);
-    if (e->requested_planes & ~plane_avail) {
+    if (s->requested_planes & ~plane_avail) {
         av_log(ctx, AV_LOG_ERROR, "Requested planes not available.\n");
         return AVERROR(EINVAL);
     }
-    if ((ret = av_image_fill_linesizes(e->linesize, inlink->format, inlink->w)) < 0)
+    if ((ret = av_image_fill_linesizes(s->linesize, inlink->format, inlink->w)) < 0)
         return ret;
 
-    e->depth = (desc->comp[0].depth_minus1 + 1) >> 3;
-    e->step = av_get_padded_bits_per_pixel(desc) >> 3;
-    e->is_packed_rgb = !(desc->flags & AV_PIX_FMT_FLAG_PLANAR);
+    s->depth = (desc->comp[0].depth_minus1 + 1) >> 3;
+    s->step = av_get_padded_bits_per_pixel(desc) >> 3;
+    s->is_packed_rgb = !(desc->flags & AV_PIX_FMT_FLAG_PLANAR);
     if (desc->flags & AV_PIX_FMT_FLAG_RGB) {
         ff_fill_rgba_map(rgba_map, inlink->format);
         for (i = 0; i < 4; i++)
-            e->map[i] = rgba_map[e->map[i]];
+            s->map[i] = rgba_map[s->map[i]];
     }
 
     return 0;
@@ -166,11 +166,11 @@ static int config_output(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
     AVFilterLink *inlink = ctx->inputs[0];
-    ExtractPlanesContext *e = ctx->priv;
+    ExtractPlanesContext *s = ctx->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
     const int output = outlink->srcpad - ctx->output_pads;
 
-    if (e->map[output] == 1 || e->map[output] == 2) {
+    if (s->map[output] == 1 || s->map[output] == 2) {
         outlink->h = FF_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
         outlink->w = FF_CEIL_RSHIFT(inlink->w, desc->log2_chroma_w);
     }
@@ -206,12 +206,12 @@ static void extract_from_packed(uint8_t *dst, int dst_linesize,
 static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
     AVFilterContext *ctx = inlink->dst;
-    ExtractPlanesContext *e = ctx->priv;
+    ExtractPlanesContext *s = ctx->priv;
     int i, eof = 0, ret = 0;
 
     for (i = 0; i < ctx->nb_outputs; i++) {
         AVFilterLink *outlink = ctx->outputs[i];
-        const int idx = e->map[i];
+        const int idx = s->map[i];
         AVFrame *out;
 
         if (outlink->closed)
@@ -224,16 +224,16 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
         }
         av_frame_copy_props(out, frame);
 
-        if (e->is_packed_rgb) {
+        if (s->is_packed_rgb) {
             extract_from_packed(out->data[0], out->linesize[0],
                                 frame->data[0], frame->linesize[0],
                                 outlink->w, outlink->h,
-                                e->depth,
-                                e->step, idx);
+                                s->depth,
+                                s->step, idx);
         } else {
             av_image_copy_plane(out->data[0], out->linesize[0],
                                 frame->data[idx], frame->linesize[idx],
-                                e->linesize[idx], outlink->h);
+                                s->linesize[idx], outlink->h);
         }
 
         ret = ff_filter_frame(outlink, out);
@@ -253,8 +253,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 
 static av_cold int init(AVFilterContext *ctx)
 {
-    ExtractPlanesContext *e = ctx->priv;
-    int planes = (e->requested_planes & 0xf) | (e->requested_planes >> 4);
+    ExtractPlanesContext *s = ctx->priv;
+    int planes = (s->requested_planes & 0xf) | (s->requested_planes >> 4);
     int i;
 
     for (i = 0; i < 4; i++) {
@@ -267,7 +267,7 @@ static av_cold int init(AVFilterContext *ctx)
         name = av_asprintf("out%d", ctx->nb_outputs);
         if (!name)
             return AVERROR(ENOMEM);
-        e->map[ctx->nb_outputs] = i;
+        s->map[ctx->nb_outputs] = i;
         pad.name = name;
         pad.type = AVMEDIA_TYPE_VIDEO;
         pad.config_props = config_output;
@@ -313,9 +313,9 @@ AVFilter ff_vf_extractplanes = {
 
 static av_cold int init_alphaextract(AVFilterContext *ctx)
 {
-    ExtractPlanesContext *e = ctx->priv;
+    ExtractPlanesContext *s = ctx->priv;
 
-    e->requested_planes = PLANE_A;
+    s->requested_planes = PLANE_A;
 
     return init(ctx);
 }

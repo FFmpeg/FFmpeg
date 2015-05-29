@@ -143,13 +143,13 @@ filter_h6_shuf1: db 0, 5, 1, 6, 2, 7, 3, 8, 4, 9, 5, 10, 6, 11,  7, 12
 filter_h6_shuf2: db 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6,  7, 7,  8,  8,  9
 filter_h6_shuf3: db 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8,  9, 9, 10, 10, 11
 
-pw_256:   times 8 dw 256
 pw_20091: times 4 dw 20091
 pw_17734: times 4 dw 17734
 
 cextern pw_3
 cextern pw_4
 cextern pw_64
+cextern pw_256
 
 SECTION .text
 

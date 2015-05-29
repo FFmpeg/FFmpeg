@@ -30,9 +30,10 @@
 #define BITSTREAM_READER_LE
 #include "avcodec.h"
 #include "get_bits.h"
+#include "ivi.h"
 #include "ivi_dsp.h"
-#include "ivi_common.h"
 #include "indeo4data.h"
+#include "internal.h"
 
 #define IVI4_PIC_SIZE_ESC   7
 
@@ -140,7 +141,7 @@ static int decode_pic_hdr(IVI45DecContext *ctx, AVCodecContext *avctx)
 
     /* null frames don't contain anything else so we just return */
     if (ctx->frame_type >= IVI4_FRAMETYPE_NULL_FIRST) {
-        av_dlog(avctx, "Null frame encountered!\n");
+        ff_dlog(avctx, "Null frame encountered!\n");
         return 0;
     }
 
@@ -149,7 +150,7 @@ static int decode_pic_hdr(IVI45DecContext *ctx, AVCodecContext *avctx)
     /* we don't do that because Indeo 4 videos can be decoded anyway */
     if (get_bits1(&ctx->gb)) {
         skip_bits_long(&ctx->gb, 32);
-        av_dlog(avctx, "Password-protected clip!\n");
+        ff_dlog(avctx, "Password-protected clip!\n");
     }
 
     pic_size_indx = get_bits(&ctx->gb, 3);
@@ -244,7 +245,7 @@ static int decode_pic_hdr(IVI45DecContext *ctx, AVCodecContext *avctx)
 
     /* skip picture header extension if any */
     while (get_bits1(&ctx->gb)) {
-        av_dlog(avctx, "Pic hdr extension encountered!\n");
+        ff_dlog(avctx, "Pic hdr extension encountered!\n");
         skip_bits(&ctx->gb, 8);
     }
 

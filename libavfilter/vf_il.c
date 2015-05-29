@@ -38,7 +38,7 @@ enum FilterMode {
 
 typedef struct {
     const AVClass *class;
-    enum FilterMode luma_mode, chroma_mode, alpha_mode;
+    int luma_mode, chroma_mode, alpha_mode; ///<FilterMode
     int luma_swap, chroma_swap, alpha_swap;
     int nb_planes;
     int linesize[4], chroma_height;
@@ -92,23 +92,22 @@ static int query_formats(AVFilterContext *ctx)
             ff_add_format(&formats, fmt);
     }
 
-    ff_set_common_formats(ctx, formats);
-    return 0;
+    return ff_set_common_formats(ctx, formats);
 }
 
 static int config_input(AVFilterLink *inlink)
 {
-    IlContext *il = inlink->dst->priv;
+    IlContext *s = inlink->dst->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
     int ret;
 
-    il->nb_planes = av_pix_fmt_count_planes(inlink->format);
+    s->nb_planes = av_pix_fmt_count_planes(inlink->format);
 
-    il->has_alpha = !!(desc->flags & AV_PIX_FMT_FLAG_ALPHA);
-    if ((ret = av_image_fill_linesizes(il->linesize, inlink->format, inlink->w)) < 0)
+    s->has_alpha = !!(desc->flags & AV_PIX_FMT_FLAG_ALPHA);
+    if ((ret = av_image_fill_linesizes(s->linesize, inlink->format, inlink->w)) < 0)
         return ret;
 
-    il->chroma_height = FF_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
+    s->chroma_height = FF_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
 
     return 0;
 }
@@ -146,7 +145,7 @@ static void interleave(uint8_t *dst, uint8_t *src, int w, int h,
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
 {
-    IlContext *il = inlink->dst->priv;
+    IlContext *s = inlink->dst->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
     AVFrame *out;
     int comp;
@@ -159,23 +158,23 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
     av_frame_copy_props(out, inpicref);
 
     interleave(out->data[0], inpicref->data[0],
-               il->linesize[0], inlink->h,
+               s->linesize[0], inlink->h,
                out->linesize[0], inpicref->linesize[0],
-               il->luma_mode, il->luma_swap);
+               s->luma_mode, s->luma_swap);
 
-    for (comp = 1; comp < (il->nb_planes - il->has_alpha); comp++) {
+    for (comp = 1; comp < (s->nb_planes - s->has_alpha); comp++) {
         interleave(out->data[comp], inpicref->data[comp],
-                   il->linesize[comp], il->chroma_height,
+                   s->linesize[comp], s->chroma_height,
                    out->linesize[comp], inpicref->linesize[comp],
-                   il->chroma_mode, il->chroma_swap);
+                   s->chroma_mode, s->chroma_swap);
     }
 
-    if (il->has_alpha) {
-        comp = il->nb_planes - 1;
+    if (s->has_alpha) {
+        comp = s->nb_planes - 1;
         interleave(out->data[comp], inpicref->data[comp],
-                   il->linesize[comp], inlink->h,
+                   s->linesize[comp], inlink->h,
                    out->linesize[comp], inpicref->linesize[comp],
-                   il->alpha_mode, il->alpha_swap);
+                   s->alpha_mode, s->alpha_swap);
     }
 
     av_frame_free(&inpicref);

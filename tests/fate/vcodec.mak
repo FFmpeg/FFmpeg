@@ -1,5 +1,6 @@
 fate-vsynth1-%: SRC = tests/data/vsynth1.yuv
 fate-vsynth2-%: SRC = tests/data/vsynth2.yuv
+fate-vsynth_lena-%: SRC = tests/data/vsynth_lena.yuv
 fate-vsynth3-%: SRC = tests/data/vsynth3.yuv
 fate-vsynth%: CODEC = $(word 3, $(subst -, ,$(@)))
 fate-vsynth%: FMT = avi
@@ -16,6 +17,10 @@ fate-vsynth%-asv1:               ENCOPTS = -qscale 10
 
 FATE_VCODEC-$(call ENCDEC, ASV2, AVI)   += asv2
 fate-vsynth%-asv2:               ENCOPTS = -qscale 10
+
+FATE_VCODEC-$(call ENCDEC, CINEPAK, MOV) += cinepak
+fate-vsynth%-cinepak:            ENCOPTS  = -vcodec cinepak -frames 3
+fate-vsynth%-cinepak:            FMT      = mov
 
 FATE_VCODEC-$(call ENCDEC, CLJR, AVI)   += cljr
 fate-vsynth%-cljr:               ENCOPTS = -strict -1
@@ -36,10 +41,15 @@ fate-vsynth%-dnxhd-720p-10bit:   ENCOPTS = -s hd720 -b 90M              \
                                            -pix_fmt yuv422p10 -frames 5 -qmax 8
 fate-vsynth%-dnxhd-720p-10bit:   FMT     = dnxhd
 
-FATE_VCODEC-$(call ENCDEC, DNXHD, MOV)  += dnxhd-1080i
+FATE_VCODEC-$(call ENCDEC, DNXHD, MOV)  += dnxhd-1080i dnxhd-1080i-colr
 fate-vsynth%-dnxhd-1080i:        ENCOPTS = -s hd1080 -b 120M -flags +ildct \
                                            -pix_fmt yuv422p -frames 5 -qmax 8
 fate-vsynth%-dnxhd-1080i:        FMT     = mov
+
+fate-vsynth%-dnxhd-1080i-colr:   ENCOPTS = -s hd1080 -b 120M -flags +ildct -movflags write_colr \
+                                           -pix_fmt yuv422p -frames 5 -qmax 8
+fate-vsynth%-dnxhd-1080i-colr:   DECOPTS = -sws_flags area+accurate_rnd+bitexact
+fate-vsynth%-dnxhd-1080i-colr:   FMT     = mov
 
 FATE_VCODEC-$(call ENCDEC, DVVIDEO, DV) += dv dv-411 dv-50
 fate-vsynth%-dv:                 CODEC   = dvvideo
@@ -91,11 +101,13 @@ fate-vsynth%-h263:               ENCOPTS = -qscale 10
 fate-vsynth%-h263-obmc:          ENCOPTS = -qscale 10 -obmc 1
 fate-vsynth%-h263p:              ENCOPTS = -qscale 2 -flags +aic -umv 1 -aiv 1 -ps 300
 
-FATE_VCODEC-$(call ENCDEC, HUFFYUV, AVI) += huffyuv huffyuvbgr24
+FATE_VCODEC-$(call ENCDEC, HUFFYUV, AVI) += huffyuv huffyuvbgr24 huffyuvbgra
 fate-vsynth%-huffyuv:            ENCOPTS = -vcodec huffyuv -pix_fmt yuv422p -sws_flags neighbor
 fate-vsynth%-huffyuv:            DECOPTS = -sws_flags neighbor
 fate-vsynth%-huffyuvbgr24:       ENCOPTS = -vcodec huffyuv -pix_fmt bgr24 -sws_flags neighbor
 fate-vsynth%-huffyuvbgr24:       DECOPTS = -sws_flags neighbor
+fate-vsynth%-huffyuvbgra:        ENCOPTS = -vcodec huffyuv -pix_fmt bgr32 -sws_flags neighbor
+fate-vsynth%-huffyuvbgra:        DECOPTS = -sws_flags neighbor
 
 FATE_VCODEC-$(call ENCDEC, JPEGLS, AVI) += jpegls
 fate-vsynth%-jpegls:             ENCOPTS = -sws_flags neighbor+full_chroma_int
@@ -110,10 +122,11 @@ fate-vsynth%-jpeg2000-97:             DECINOPTS = -vcodec jpeg2000
 FATE_VCODEC-$(call ENCDEC, LJPEG MJPEG, AVI) += ljpeg
 fate-vsynth%-ljpeg:              ENCOPTS = -strict -1
 
-FATE_VCODEC-$(call ENCDEC, MJPEG, AVI)  += mjpeg mjpeg-422 mjpeg-444
+FATE_VCODEC-$(call ENCDEC, MJPEG, AVI)  += mjpeg mjpeg-422 mjpeg-444 mjpeg-trell
 fate-vsynth%-mjpeg:              ENCOPTS = -qscale 9 -pix_fmt yuvj420p
 fate-vsynth%-mjpeg-422:          ENCOPTS = -qscale 9 -pix_fmt yuvj422p
 fate-vsynth%-mjpeg-444:          ENCOPTS = -qscale 9 -pix_fmt yuvj444p
+fate-vsynth%-mjpeg-trell:        ENCOPTS = -qscale 9 -pix_fmt yuvj420p -trellis 1
 
 FATE_VCODEC-$(call ENCDEC, MPEG1VIDEO, MPEG1VIDEO MPEGVIDEO) += mpeg1 mpeg1b
 fate-vsynth%-mpeg1:              FMT     = mpeg1video
@@ -292,6 +305,11 @@ fate-vsynth%-wmv2:               ENCOPTS = -qscale 10
 FATE_VCODEC-$(call ENCDEC, RAWVIDEO, AVI) += yuv
 fate-vsynth%-yuv:                CODEC = rawvideo
 
+FATE_VCODEC-$(call ENCDEC, XFACE, NUT) += xface
+fate-vsynth%-xface:              ENCOPTS = -s 48x48 -sws_flags neighbor+bitexact
+fate-vsynth%-xface:              DECOPTS = -sws_flags neighbor+bitexact
+fate-vsynth%-xface:              FMT = nut
+
 FATE_VCODEC-$(call ENCDEC, YUV4, AVI) += yuv4
 
 FATE_VCODEC-$(call ENCDEC, Y41P, AVI) += y41p
@@ -301,11 +319,12 @@ FATE_VCODEC-$(call ENCDEC, ZLIB, AVI) += zlib
 FATE_VCODEC += $(FATE_VCODEC-yes)
 FATE_VSYNTH1 = $(FATE_VCODEC:%=fate-vsynth1-%)
 FATE_VSYNTH2 = $(FATE_VCODEC:%=fate-vsynth2-%)
+FATE_VSYNTH_LENA = $(FATE_VCODEC:%=fate-vsynth_lena-%)
 # Redundant tests because they just resize the input
 RESIZE_OFF   = dnxhd-720p dnxhd-720p-rd dnxhd-720p-10bit dnxhd-1080i \
                dv dv-411 dv-50 avui snow snow-hpel snow-ll
 # Incorrect parameters - usually size or color format restrictions
-INC_PAR_OFF  = h261 h261-trellis h263 h263p h263-obmc msvideo1 \
+INC_PAR_OFF  = cinepak h261 h261-trellis h263 h263p h263-obmc msvideo1 \
                roqvideo rv10 rv20 y41p qtrlegray
 VSYNTH3_OFF  = $(RESIZE_OFF) $(INC_PAR_OFF)
 
@@ -314,11 +333,14 @@ FATE_VSYNTH3 = $(FATE_VCODEC3:%=fate-vsynth3-%)
 
 $(FATE_VSYNTH1): tests/data/vsynth1.yuv
 $(FATE_VSYNTH2): tests/data/vsynth2.yuv
+$(FATE_VSYNTH_LENA): tests/data/vsynth_lena.yuv
 $(FATE_VSYNTH3): tests/data/vsynth3.yuv
 
 FATE_AVCONV += $(FATE_VSYNTH1) $(FATE_VSYNTH2) $(FATE_VSYNTH3)
+FATE_SAMPLES_AVCONV += $(FATE_VSYNTH_LENA)
 
 fate-vsynth1: $(FATE_VSYNTH1)
 fate-vsynth2: $(FATE_VSYNTH2)
+fate-vsynth_lena: $(FATE_VSYNTH_LENA)
 fate-vsynth3: $(FATE_VSYNTH3)
-fate-vcodec:  fate-vsynth1 fate-vsynth2 fate-vsynth3
+fate-vcodec:  fate-vsynth1 fate-vsynth_lena fate-vsynth2 fate-vsynth3

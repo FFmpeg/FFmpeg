@@ -69,8 +69,8 @@ enum MCDeintParity {
 
 typedef struct {
     const AVClass *class;
-    enum MCDeintMode mode;
-    enum MCDeintParity parity;
+    int mode;           ///< MCDeintMode
+    int parity;         ///< MCDeintParity
     int qp;
     AVCodecContext *enc_ctx;
 } MCDeintContext;
@@ -117,7 +117,7 @@ static int config_props(AVFilterLink *inlink)
     enc_ctx->width  = inlink->w;
     enc_ctx->height = inlink->h;
     enc_ctx->time_base = (AVRational){1,25};  // meaningless
-    enc_ctx->gop_size = 300;
+    enc_ctx->gop_size = INT_MAX;
     enc_ctx->max_b_frames = 0;
     enc_ctx->pix_fmt = AV_PIX_FMT_YUV420P;
     enc_ctx->flags = CODEC_FLAG_QSCALE | CODEC_FLAG_LOW_DELAY;
@@ -126,6 +126,7 @@ static int config_props(AVFilterLink *inlink)
     enc_ctx->me_cmp = enc_ctx->me_sub_cmp = FF_CMP_SAD;
     enc_ctx->mb_cmp = FF_CMP_SSE;
     av_dict_set(&opts, "memc_only", "1", 0);
+    av_dict_set(&opts, "no_bitstream", "1", 0);
 
     switch (mcdeint->mode) {
     case MODE_EXTRA_SLOW:
@@ -159,13 +160,13 @@ static av_cold void uninit(AVFilterContext *ctx)
 
 static int query_formats(AVFilterContext *ctx)
 {
-    static const enum PixelFormat pix_fmts[] = {
+    static const enum AVPixelFormat pix_fmts[] = {
         AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE
     };
-
-    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
-
-    return 0;
+    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
+    if (!fmts_list)
+        return AVERROR(ENOMEM);
+    return ff_set_common_formats(ctx, fmts_list);
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *inpic)
@@ -173,7 +174,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpic)
     MCDeintContext *mcdeint = inlink->dst->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
     AVFrame *outpic, *frame_dec;
-    AVPacket pkt;
+    AVPacket pkt = {0};
     int x, y, i, ret, got_frame = 0;
 
     outpic = ff_get_video_buffer(outlink, outlink->w, outlink->h);
@@ -185,8 +186,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpic)
     inpic->quality = mcdeint->qp * FF_QP2LAMBDA;
 
     av_init_packet(&pkt);
-    pkt.data = NULL;    // packet data will be allocated by the encoder
-    pkt.size = 0;
 
     ret = avcodec_encode_video2(mcdeint->enc_ctx, &pkt, inpic, &got_frame);
     if (ret < 0)

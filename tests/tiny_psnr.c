@@ -150,16 +150,16 @@ static int run_psnr(FILE *f[2], int len, int shift, int skip_bytes)
         for (i = 0; i < 2; i++) {
             uint8_t *p = buf[i];
             if (fread(p, 1, 12, f[i]) != 12)
-                return 1;
+                return -1;
             if (!memcmp(p, "RIFF", 4) &&
                 !memcmp(p + 8, "WAVE", 4)) {
                 if (fread(p, 1, 8, f[i]) != 8)
-                    return 1;
+                    return -1;
                 while (memcmp(p, "data", 4)) {
                     int s = p[4] | p[5] << 8 | p[6] << 16 | p[7] << 24;
                     fseek(f[i], s, SEEK_CUR);
                     if (fread(p, 1, 8, f[i]) != 8)
-                        return 1;
+                        return -1;
                 }
             } else {
                 fseek(f[i], -12, SEEK_CUR);
@@ -180,8 +180,7 @@ static int run_psnr(FILE *f[2], int len, int shift, int skip_bytes)
             switch (len) {
             case 1:
             case 2: {
-                int64_t a = buf[0][j];
-                int64_t b = buf[1][j];
+                int64_t a, b;
                 int dist;
                 if (len == 2) {
                     a = get_s16l(buf[0] + j);
@@ -274,6 +273,9 @@ int main(int argc, char *argv[])
     int max_psnr   = -1;
     int max_psnr_shift = 0;
 
+    if (shift_last > shift_first)
+        shift_first -= shift_last - shift_first;
+
     if (argc > 3) {
         if (!strcmp(argv[3], "u8")) {
             len = 1;
@@ -313,6 +315,9 @@ int main(int argc, char *argv[])
             max_psnr_shift = shift;
         }
     }
+    if (max_psnr < 0)
+        return 2;
+
     if (shift_last > shift_first)
         printf("Best PSNR is %3d.%02d for shift %i\n", (int)(max_psnr / F), (int)(max_psnr % F), max_psnr_shift);
     return 0;

@@ -342,7 +342,14 @@ static int filter_frame(AVFilterLink *link, AVFrame *frame)
         return -1;
     }
 
-    if ((yadif->deint && !yadif->cur->interlaced_frame) || ctx->is_disabled) {
+    if (!yadif->prev)
+        return 0;
+
+    if ((yadif->deint && !yadif->cur->interlaced_frame) ||
+        ctx->is_disabled ||
+        (yadif->deint && !yadif->prev->interlaced_frame && yadif->prev->repeat_pict) ||
+        (yadif->deint && !yadif->next->interlaced_frame && yadif->next->repeat_pict)
+    ) {
         yadif->out  = av_frame_clone(yadif->cur);
         if (!yadif->out)
             return AVERROR(ENOMEM);
@@ -352,9 +359,6 @@ static int filter_frame(AVFilterLink *link, AVFrame *frame)
             yadif->out->pts *= 2;
         return ff_filter_frame(ctx->outputs[0], yadif->out);
     }
-
-    if (!yadif->prev)
-        return 0;
 
     yadif->out = ff_get_video_buffer(ctx->outputs[0], link->w, link->h);
     if (!yadif->out)
@@ -448,13 +452,19 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUVA422P,
         AV_PIX_FMT_YUVA444P,
         AV_PIX_FMT_GBRP,
+        AV_PIX_FMT_GBRP9,
+        AV_PIX_FMT_GBRP10,
+        AV_PIX_FMT_GBRP12,
+        AV_PIX_FMT_GBRP14,
+        AV_PIX_FMT_GBRP16,
         AV_PIX_FMT_GBRAP,
         AV_PIX_FMT_NONE
     };
 
-    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
-
-    return 0;
+    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
+    if (!fmts_list)
+        return AVERROR(ENOMEM);
+    return ff_set_common_formats(ctx, fmts_list);
 }
 
 static int config_props(AVFilterLink *link)

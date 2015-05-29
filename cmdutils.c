@@ -41,8 +41,10 @@
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
+#include "libavutil/display.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/libm.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/eval.h"
@@ -166,7 +168,7 @@ void show_help_options(const OptionDef *options, const char *msg, int req_flags,
     int first;
 
     first = 1;
-    for (po = options; po->name != NULL; po++) {
+    for (po = options; po->name; po++) {
         char buf[64];
 
         if (((po->flags & req_flags) != req_flags) ||
@@ -205,7 +207,7 @@ static const OptionDef *find_option(const OptionDef *po, const char *name)
     const char *p = strchr(name, ':');
     int len = p ? p - name : strlen(name);
 
-    while (po->name != NULL) {
+    while (po->name) {
         if (!strncmp(name, po->name, len) && strlen(po->name) == len)
             break;
         po++;
@@ -254,7 +256,7 @@ static void prepare_app_arguments(int *argc_ptr, char ***argv_ptr)
 
     win32_argv_utf8 = av_mallocz(sizeof(char *) * (win32_argc + 1) + buffsize);
     argstr_flat     = (char *)win32_argv_utf8 + sizeof(char *) * (win32_argc + 1);
-    if (win32_argv_utf8 == NULL) {
+    if (!win32_argv_utf8) {
         LocalFree(argv_w);
         return;
     }
@@ -290,10 +292,14 @@ static int write_option(void *optctx, const OptionDef *po, const char *opt,
     if (po->flags & OPT_SPEC) {
         SpecifierOpt **so = dst;
         char *p = strchr(opt, ':');
+        char *str;
 
         dstcount = (int *)(so + 1);
         *so = grow_array(*so, sizeof(**so), dstcount, *dstcount + 1);
-        (*so)[*dstcount - 1].specifier = av_strdup(p ? p + 1 : "");
+        str = av_strdup(p ? p + 1 : "");
+        if (!str)
+            return AVERROR(ENOMEM);
+        (*so)[*dstcount - 1].specifier = str;
         dst = &(*so)[*dstcount - 1].u;
     }
 
@@ -301,6 +307,8 @@ static int write_option(void *optctx, const OptionDef *po, const char *opt,
         char *str;
         str = av_strdup(arg);
         av_freep(dst);
+        if (!str)
+            return AVERROR(ENOMEM);
         *(char **)dst = str;
     } else if (po->flags & OPT_BOOL || po->flags & OPT_INT) {
         *(int *)dst = parse_number_or_die(opt, arg, OPT_INT64, INT_MIN, INT_MAX);
@@ -444,7 +452,7 @@ int locate_option(int argc, char **argv, const OptionDef *options,
              (po->name && !strcmp(optname, po->name)))
             return i;
 
-        if (po->flags & HAS_ARG)
+        if (!po->name || po->flags & HAS_ARG)
             i++;
     }
     return 0;
@@ -474,10 +482,22 @@ static void dump_argument(const char *a)
     fputc('"', report_file);
 }
 
+static void check_options(const OptionDef *po)
+{
+    while (po->name) {
+        if (po->flags & OPT_PERFILE)
+            av_assert0(po->flags & (OPT_INPUT | OPT_OUTPUT));
+        po++;
+    }
+}
+
 void parse_loglevel(int argc, char **argv, const OptionDef *options)
 {
     int idx = locate_option(argc, argv, options, "loglevel");
     const char *env;
+
+    check_options(options);
+
     if (!idx)
         idx = locate_option(argc, argv, options, "v");
     if (idx && argv[idx + 1])
@@ -839,6 +859,7 @@ int opt_loglevel(void *optctx, const char *opt, const char *arg)
         { "info"   , AV_LOG_INFO    },
         { "verbose", AV_LOG_VERBOSE },
         { "debug"  , AV_LOG_DEBUG   },
+        { "trace"  , AV_LOG_TRACE   },
     };
     char *tail;
     int level;
@@ -959,9 +980,10 @@ static int init_report(const char *env)
 
     report_file = fopen(filename.str, "w");
     if (!report_file) {
+        int ret = AVERROR(errno);
         av_log(NULL, AV_LOG_ERROR, "Failed to open report \"%s\": %s\n",
                filename.str, strerror(errno));
-        return AVERROR(errno);
+        return ret;
     }
     av_log_set_callback(log_callback_report);
     av_log(NULL, AV_LOG_INFO,
@@ -1074,8 +1096,7 @@ static void print_program_info(int flags, int level)
         av_log(NULL, level, " Copyright (c) %d-%d the FFmpeg developers",
                program_birth_year, CONFIG_THIS_YEAR);
     av_log(NULL, level, "\n");
-    av_log(NULL, level, "%sbuilt on %s %s with %s\n",
-           indent, __DATE__, __TIME__, CC_IDENT);
+    av_log(NULL, level, "%sbuilt with %s\n", indent, CC_IDENT);
 
     av_log(NULL, level, "%sconfiguration: " FFMPEG_CONFIGURATION "\n", indent);
 }
@@ -1212,12 +1233,7 @@ static int is_device(const AVClass *avclass)
 {
     if (!avclass)
         return 0;
-    return avclass->category == AV_CLASS_CATEGORY_DEVICE_VIDEO_OUTPUT ||
-           avclass->category == AV_CLASS_CATEGORY_DEVICE_VIDEO_INPUT ||
-           avclass->category == AV_CLASS_CATEGORY_DEVICE_AUDIO_OUTPUT ||
-           avclass->category == AV_CLASS_CATEGORY_DEVICE_AUDIO_INPUT ||
-           avclass->category == AV_CLASS_CATEGORY_DEVICE_OUTPUT ||
-           avclass->category == AV_CLASS_CATEGORY_DEVICE_INPUT;
+    return AV_IS_INPUT_DEVICE(avclass->category) || AV_IS_OUTPUT_DEVICE(avclass->category);
 }
 
 static int show_formats_devices(void *optctx, const char *opt, const char *arg, int device_only)
@@ -1242,7 +1258,7 @@ static int show_formats_devices(void *optctx, const char *opt, const char *arg, 
             is_dev = is_device(ofmt->priv_class);
             if (!is_dev && device_only)
                 continue;
-            if ((name == NULL || strcmp(ofmt->name, name) < 0) &&
+            if ((!name || strcmp(ofmt->name, name) < 0) &&
                 strcmp(ofmt->name, last_name) > 0) {
                 name      = ofmt->name;
                 long_name = ofmt->long_name;
@@ -1253,7 +1269,7 @@ static int show_formats_devices(void *optctx, const char *opt, const char *arg, 
             is_dev = is_device(ifmt->priv_class);
             if (!is_dev && device_only)
                 continue;
-            if ((name == NULL || strcmp(ifmt->name, name) < 0) &&
+            if ((!name || strcmp(ifmt->name, name) < 0) &&
                 strcmp(ifmt->name, last_name) > 0) {
                 name      = ifmt->name;
                 long_name = ifmt->long_name;
@@ -1262,7 +1278,7 @@ static int show_formats_devices(void *optctx, const char *opt, const char *arg, 
             if (name && strcmp(ifmt->name, name) == 0)
                 decode = 1;
         }
-        if (name == NULL)
+        if (!name)
             break;
         last_name = name;
 
@@ -1534,16 +1550,17 @@ int show_protocols(void *optctx, const char *opt, const char *arg)
     printf("Supported file protocols:\n"
            "Input:\n");
     while ((name = avio_enum_protocols(&opaque, 0)))
-        printf("%s\n", name);
+        printf("  %s\n", name);
     printf("Output:\n");
     while ((name = avio_enum_protocols(&opaque, 1)))
-        printf("%s\n", name);
+        printf("  %s\n", name);
     return 0;
 }
 
 int show_filters(void *optctx, const char *opt, const char *arg)
 {
-    const AVFilter av_unused(*filter) = NULL;
+#if CONFIG_AVFILTER
+    const AVFilter *filter = NULL;
     char descr[64], *descr_cur;
     int i, j;
     const AVFilterPad *pad;
@@ -1551,12 +1568,11 @@ int show_filters(void *optctx, const char *opt, const char *arg)
     printf("Filters:\n"
            "  T.. = Timeline support\n"
            "  .S. = Slice threading\n"
-           "  ..C = Commmand support\n"
+           "  ..C = Command support\n"
            "  A = Audio input/output\n"
            "  V = Video input/output\n"
            "  N = Dynamic number and/or type of input/output\n"
            "  | = Source or sink filter\n");
-#if CONFIG_AVFILTER
     while ((filter = avfilter_next(filter))) {
         descr_cur = descr;
         for (i = 0; i < 2; i++) {
@@ -1581,6 +1597,8 @@ int show_filters(void *optctx, const char *opt, const char *arg)
                filter->process_command                        ? 'C' : '.',
                filter->name, descr, filter->description);
     }
+#else
+    printf("No filters available: libavfilter disabled\n");
 #endif
     return 0;
 }
@@ -1639,19 +1657,19 @@ int show_layouts(void *optctx, const char *opt, const char *arg)
     const char *name, *descr;
 
     printf("Individual channels:\n"
-           "NAME        DESCRIPTION\n");
+           "NAME           DESCRIPTION\n");
     for (i = 0; i < 63; i++) {
         name = av_get_channel_name((uint64_t)1 << i);
         if (!name)
             continue;
         descr = av_get_channel_description((uint64_t)1 << i);
-        printf("%-12s%s\n", name, descr);
+        printf("%-14s %s\n", name, descr);
     }
     printf("\nStandard channel layouts:\n"
-           "NAME        DECOMPOSITION\n");
+           "NAME           DECOMPOSITION\n");
     for (i = 0; !av_get_standard_channel_layout(i, &layout, &name); i++) {
         if (name) {
-            printf("%-12s", name);
+            printf("%-14s ", name);
             for (j = 1; j; j <<= 1)
                 if ((layout & j))
                     printf("%s%s", (layout & (j - 1)) ? "+" : "", av_get_channel_name(j));
@@ -1818,6 +1836,8 @@ int show_help(void *optctx, const char *opt, const char *arg)
     av_log_set_callback(log_callback_help);
 
     topic = av_strdup(arg ? arg : "");
+    if (!topic)
+        return AVERROR(ENOMEM);
     par = strchr(topic, '=');
     if (par)
         *par++ = 0;
@@ -1857,35 +1877,48 @@ int read_yesno(void)
 
 int cmdutils_read_file(const char *filename, char **bufptr, size_t *size)
 {
-    int ret;
+    int64_t ret;
     FILE *f = av_fopen_utf8(filename, "rb");
 
     if (!f) {
+        ret = AVERROR(errno);
         av_log(NULL, AV_LOG_ERROR, "Cannot read file '%s': %s\n", filename,
                strerror(errno));
-        return AVERROR(errno);
+        return ret;
     }
-    fseek(f, 0, SEEK_END);
-    *size = ftell(f);
-    fseek(f, 0, SEEK_SET);
-    if (*size == (size_t)-1) {
-        av_log(NULL, AV_LOG_ERROR, "IO error: %s\n", strerror(errno));
-        fclose(f);
-        return AVERROR(errno);
+
+    ret = fseek(f, 0, SEEK_END);
+    if (ret == -1) {
+        ret = AVERROR(errno);
+        goto out;
     }
+
+    ret = ftell(f);
+    if (ret < 0) {
+        ret = AVERROR(errno);
+        goto out;
+    }
+    *size = ret;
+
+    ret = fseek(f, 0, SEEK_SET);
+    if (ret == -1) {
+        ret = AVERROR(errno);
+        goto out;
+    }
+
     *bufptr = av_malloc(*size + 1);
     if (!*bufptr) {
         av_log(NULL, AV_LOG_ERROR, "Could not allocate file buffer\n");
-        fclose(f);
-        return AVERROR(ENOMEM);
+        ret = AVERROR(ENOMEM);
+        goto out;
     }
     ret = fread(*bufptr, 1, *size, f);
     if (ret < *size) {
         av_free(*bufptr);
         if (ferror(f)) {
+            ret = AVERROR(errno);
             av_log(NULL, AV_LOG_ERROR, "Error while reading file '%s': %s\n",
                    filename, strerror(errno));
-            ret = AVERROR(errno);
         } else
             ret = AVERROR_EOF;
     } else {
@@ -1893,6 +1926,9 @@ int cmdutils_read_file(const char *filename, char **bufptr, size_t *size)
         (*bufptr)[(*size)++] = '\0';
     }
 
+out:
+    if (ret < 0)
+        av_log(NULL, AV_LOG_ERROR, "IO error: %s\n", av_err2str(ret));
     fclose(f);
     return ret;
 }
@@ -1992,7 +2028,7 @@ AVDictionary *filter_codec_opts(AVDictionary *opts, enum AVCodecID codec_id,
             switch (check_stream_specifier(s, st, p + 1)) {
             case  1: *p = 0; break;
             case  0:         continue;
-            default:         return NULL;
+            default:         exit_program(1);
             }
 
         if (av_opt_find(&cc, t->key, NULL, flags, AV_OPT_SEARCH_FAKE_OBJ) ||
@@ -2039,7 +2075,7 @@ void *grow_array(void *array, int elem_size, int *size, int new_size)
         exit_program(1);
     }
     if (*size < new_size) {
-        uint8_t *tmp = av_realloc(array, new_size*elem_size);
+        uint8_t *tmp = av_realloc_array(array, new_size, elem_size);
         if (!tmp) {
             av_log(NULL, AV_LOG_ERROR, "Could not alloc buffer.\n");
             exit_program(1);
@@ -2050,3 +2086,186 @@ void *grow_array(void *array, int elem_size, int *size, int new_size)
     }
     return array;
 }
+
+double get_rotation(AVStream *st)
+{
+    AVDictionaryEntry *rotate_tag = av_dict_get(st->metadata, "rotate", NULL, 0);
+    uint8_t* displaymatrix = av_stream_get_side_data(st,
+                                                     AV_PKT_DATA_DISPLAYMATRIX, NULL);
+    double theta = 0;
+
+    if (rotate_tag && *rotate_tag->value && strcmp(rotate_tag->value, "0")) {
+        char *tail;
+        theta = av_strtod(rotate_tag->value, &tail);
+        if (*tail)
+            theta = 0;
+    }
+    if (displaymatrix && !theta)
+        theta = -av_display_rotation_get((int32_t*) displaymatrix);
+
+    theta -= 360*floor(theta/360 + 0.9/360);
+
+    if (fabs(theta - 90*round(theta/90)) > 2)
+        av_log_ask_for_sample(NULL, "Odd rotation angle\n");
+
+    return theta;
+}
+
+#if CONFIG_AVDEVICE
+static int print_device_sources(AVInputFormat *fmt, AVDictionary *opts)
+{
+    int ret, i;
+    AVDeviceInfoList *device_list = NULL;
+
+    if (!fmt || !fmt->priv_class  || !AV_IS_INPUT_DEVICE(fmt->priv_class->category))
+        return AVERROR(EINVAL);
+
+    printf("Audo-detected sources for %s:\n", fmt->name);
+    if (!fmt->get_device_list) {
+        ret = AVERROR(ENOSYS);
+        printf("Cannot list sources. Not implemented.\n");
+        goto fail;
+    }
+
+    if ((ret = avdevice_list_input_sources(fmt, NULL, opts, &device_list)) < 0) {
+        printf("Cannot list sources.\n");
+        goto fail;
+    }
+
+    for (i = 0; i < device_list->nb_devices; i++) {
+        printf("%s %s [%s]\n", device_list->default_device == i ? "*" : " ",
+               device_list->devices[i]->device_name, device_list->devices[i]->device_description);
+    }
+
+  fail:
+    avdevice_free_list_devices(&device_list);
+    return ret;
+}
+
+static int print_device_sinks(AVOutputFormat *fmt, AVDictionary *opts)
+{
+    int ret, i;
+    AVDeviceInfoList *device_list = NULL;
+
+    if (!fmt || !fmt->priv_class  || !AV_IS_OUTPUT_DEVICE(fmt->priv_class->category))
+        return AVERROR(EINVAL);
+
+    printf("Audo-detected sinks for %s:\n", fmt->name);
+    if (!fmt->get_device_list) {
+        ret = AVERROR(ENOSYS);
+        printf("Cannot list sinks. Not implemented.\n");
+        goto fail;
+    }
+
+    if ((ret = avdevice_list_output_sinks(fmt, NULL, opts, &device_list)) < 0) {
+        printf("Cannot list sinks.\n");
+        goto fail;
+    }
+
+    for (i = 0; i < device_list->nb_devices; i++) {
+        printf("%s %s [%s]\n", device_list->default_device == i ? "*" : " ",
+               device_list->devices[i]->device_name, device_list->devices[i]->device_description);
+    }
+
+  fail:
+    avdevice_free_list_devices(&device_list);
+    return ret;
+}
+
+static int show_sinks_sources_parse_arg(const char *arg, char **dev, AVDictionary **opts)
+{
+    int ret;
+    if (arg) {
+        char *opts_str = NULL;
+        av_assert0(dev && opts);
+        *dev = av_strdup(arg);
+        if (!*dev)
+            return AVERROR(ENOMEM);
+        if ((opts_str = strchr(*dev, ','))) {
+            *(opts_str++) = '\0';
+            if (opts_str[0] && ((ret = av_dict_parse_string(opts, opts_str, "=", ":", 0)) < 0)) {
+                av_freep(dev);
+                return ret;
+            }
+        }
+    } else
+        printf("\nDevice name is not provided.\n"
+                "You can pass devicename[,opt1=val1[,opt2=val2...]] as an argument.\n\n");
+    return 0;
+}
+
+int show_sources(void *optctx, const char *opt, const char *arg)
+{
+    AVInputFormat *fmt = NULL;
+    char *dev = NULL;
+    AVDictionary *opts = NULL;
+    int ret = 0;
+    int error_level = av_log_get_level();
+
+    av_log_set_level(AV_LOG_ERROR);
+
+    if ((ret = show_sinks_sources_parse_arg(arg, &dev, &opts)) < 0)
+        goto fail;
+
+    do {
+        fmt = av_input_audio_device_next(fmt);
+        if (fmt) {
+            if (!strcmp(fmt->name, "lavfi"))
+                continue; //it's pointless to probe lavfi
+            if (dev && !av_match_name(dev, fmt->name))
+                continue;
+            print_device_sources(fmt, opts);
+        }
+    } while (fmt);
+    do {
+        fmt = av_input_video_device_next(fmt);
+        if (fmt) {
+            if (dev && !av_match_name(dev, fmt->name))
+                continue;
+            print_device_sources(fmt, opts);
+        }
+    } while (fmt);
+  fail:
+    av_dict_free(&opts);
+    av_free(dev);
+    av_log_set_level(error_level);
+    return ret;
+}
+
+int show_sinks(void *optctx, const char *opt, const char *arg)
+{
+    AVOutputFormat *fmt = NULL;
+    char *dev = NULL;
+    AVDictionary *opts = NULL;
+    int ret = 0;
+    int error_level = av_log_get_level();
+
+    av_log_set_level(AV_LOG_ERROR);
+
+    if ((ret = show_sinks_sources_parse_arg(arg, &dev, &opts)) < 0)
+        goto fail;
+
+    do {
+        fmt = av_output_audio_device_next(fmt);
+        if (fmt) {
+            if (dev && !av_match_name(dev, fmt->name))
+                continue;
+            print_device_sinks(fmt, opts);
+        }
+    } while (fmt);
+    do {
+        fmt = av_output_video_device_next(fmt);
+        if (fmt) {
+            if (dev && !av_match_name(dev, fmt->name))
+                continue;
+            print_device_sinks(fmt, opts);
+        }
+    } while (fmt);
+  fail:
+    av_dict_free(&opts);
+    av_free(dev);
+    av_log_set_level(error_level);
+    return ret;
+}
+
+#endif

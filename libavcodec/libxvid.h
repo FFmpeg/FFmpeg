@@ -26,7 +26,6 @@
  * common functions for use with the Xvid wrappers
  */
 
-
 int ff_tempfile(const char *prefix, char **filename);
 
 #endif /* AVCODEC_LIBXVID_H */

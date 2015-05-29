@@ -30,4 +30,4 @@ typedef struct {
     void *ctx;
 } FFOpenclParam;
 
-int ff_opencl_set_parameter(FFOpenclParam *opencl_param, ...);
+int avpriv_opencl_set_parameter(FFOpenclParam *opencl_param, ...);

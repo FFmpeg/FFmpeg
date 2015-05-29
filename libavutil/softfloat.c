@@ -26,10 +26,21 @@
 
 #undef printf
 
+static const SoftFloat FLOAT_0_017776489257 = {0x1234, 12};
+static const SoftFloat FLOAT_1374_40625 = {0xabcd, 25};
+static const SoftFloat FLOAT_0_1249694824218 = {0xFFF, 15};
+
+
+static av_const double av_sf2double(SoftFloat v) {
+    v.exp -= ONE_BITS +1;
+    if(v.exp > 0) return (double)v.mant * (double)(1 << v.exp);
+    else          return (double)v.mant / (double)(1 << (-v.exp));
+}
+
 int main(void){
     SoftFloat one= av_int2sf(1, 0);
-    SoftFloat sf1, sf2;
-    double d1, d2;
+    SoftFloat sf1, sf2, sf3;
+    double d1, d2, d3;
     int i, j;
     av_log_set_level(AV_LOG_DEBUG);
 
@@ -67,5 +78,21 @@ int main(void){
         STOP_TIMER("softfloat add mul")
     }
     printf("test2 sf    =%d (%d %d)\n", av_sf2int(sf1, 24), sf1.exp, sf1.mant);
+
+    d1 = 0.0177764893;
+    d2 = 1374.40625;
+    d3 = 0.1249694824;
+    d2 += d1;
+    d3 += d2;
+    printf("test3 double: %.10lf\n", d3);
+
+    sf1 = FLOAT_0_017776489257;
+    sf2 = FLOAT_1374_40625;
+    sf3 = FLOAT_0_1249694824218;
+    sf2 = av_add_sf(sf1, sf2);
+    sf3 = av_add_sf(sf3, sf2);
+    printf("test3 softfloat: %.10lf (0x%08x %d)\n", (double)av_sf2double(sf3), sf3.mant, sf3.exp);
+
     return 0;
+
 }

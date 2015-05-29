@@ -264,7 +264,7 @@ static int encode_dvd_subtitles(AVCodecContext *avctx,
     int x2, y2;
     int forced = 0;
 
-    if (rects == 0 || h->rects == NULL)
+    if (rects == 0 || !h->rects)
         return AVERROR(EINVAL);
     for (i = 0; i < rects; i++)
         if (h->rects[i]->type != SUBTITLE_BITMAP) {

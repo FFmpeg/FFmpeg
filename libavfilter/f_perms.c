@@ -37,7 +37,7 @@ typedef struct {
     const AVClass *class;
     AVLFG lfg;
     int64_t random_seed;
-    enum mode mode;
+    int mode;
 } PermsContext;
 
 #define OFFSET(x) offsetof(PermsContext, x)
@@ -72,7 +72,7 @@ static av_cold int init(AVFilterContext *ctx)
 }
 
 enum perm                        {  RO,   RW  };
-static const char *perm_str[2] = { "RO", "RW" };
+static const char * const perm_str[2] = { "RO", "RW" };
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {

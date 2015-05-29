@@ -1,4 +1,5 @@
 \input texinfo @c -*- texinfo -*-
+@documentencoding UTF-8
 
 @settitle Platform Specific Information
 @titlepage
@@ -96,9 +97,9 @@ the FFmpeg Windows Help Forum at @url{http://ffmpeg.zeranoe.com/forum/}.
 
 @section Native Windows compilation using MinGW or MinGW-w64
 
-FFmpeg can be built to run natively on Windows using the MinGW or MinGW-w64
-toolchains. Install the latest versions of MSYS and MinGW or MinGW-w64 from
-@url{http://www.mingw.org/} or @url{http://mingw-w64.sourceforge.net/}.
+FFmpeg can be built to run natively on Windows using the MinGW-w64
+toolchain. Install the latest versions of MSYS2 and MinGW-w64 from
+@url{http://msys2.github.io/} and/or @url{http://mingw-w64.sourceforge.net/}.
 You can find detailed installation instructions in the download section and
 the FAQ.
 
@@ -106,7 +107,7 @@ Notes:
 
 @itemize
 
-@item Building natively using MSYS can be sped up by disabling implicit rules
+@item Building natively using MSYS2 can be sped up by disabling implicit rules
 in the Makefile by calling @code{make -r} instead of plain @code{make}. This
 speed up is close to non-existent for normal one-off builds and is only
 noticeable when running make for a second time (for example during
@@ -133,13 +134,12 @@ You will need the following prerequisites:
 (if using MSVC 2012 or earlier)
 @item @uref{http://code.google.com/p/msinttypes/, msinttypes}
 (if using MSVC 2012 or earlier)
-@item @uref{http://www.mingw.org/, MSYS}
+@item @uref{http://msys2.github.io/, MSYS2}
 @item @uref{http://yasm.tortall.net/, YASM}
-@item @uref{http://gnuwin32.sourceforge.net/packages/bc.htm, bc for Windows} if
-you want to run @uref{fate.html, FATE}.
+(Also available via MSYS2's package manager.)
 @end itemize
 
-To set up a proper environment in MSYS, you need to run @code{msys.bat} from
+To set up a proper environment in MSYS2, you need to run @code{msys_shell.bat} from
 the Visual Studio or Intel Compiler command prompt.
 
 Place @code{yasm.exe} somewhere in your @code{PATH}. If using MSVC 2012 or
@@ -278,12 +278,12 @@ llrint() in its C library.
 Install your Cygwin with all the "Base" packages, plus the
 following "Devel" ones:
 @example
-binutils, gcc4-core, make, git, mingw-runtime, texi2html
+binutils, gcc4-core, make, git, mingw-runtime, texinfo
 @end example
 
 In order to run FATE you will also need the following "Utils" packages:
 @example
-bc, diffutils
+diffutils
 @end example
 
 If you want to build FFmpeg with additional libraries, download Cygwin

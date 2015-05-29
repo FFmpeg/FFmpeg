@@ -20,6 +20,7 @@
  */
 
 #include "libavutil/intreadwrite.h"
+
 #include "avformat.h"
 #include "internal.h"
 #include "oggdec.h"
@@ -45,7 +46,8 @@ static int vp8_header(AVFormatContext *s, int idx)
         }
 
         if (p[6] != 1) {
-            av_log(s, AV_LOG_WARNING, "Unknown OggVP8 version %d.%d\n", p[6], p[7]);
+            av_log(s, AV_LOG_WARNING,
+                   "Unknown OggVP8 version %d.%d\n", p[6], p[7]);
             return AVERROR_INVALIDDATA;
         }
 
@@ -53,10 +55,10 @@ static int vp8_header(AVFormatContext *s, int idx)
         st->codec->height           = AV_RB16(p + 10);
         st->sample_aspect_ratio.num = AV_RB24(p + 12);
         st->sample_aspect_ratio.den = AV_RB24(p + 15);
-        framerate.den               = AV_RB32(p + 18);
-        framerate.num               = AV_RB32(p + 22);
+        framerate.num               = AV_RB32(p + 18);
+        framerate.den               = AV_RB32(p + 22);
 
-        avpriv_set_pts_info(st, 64, framerate.num, framerate.den);
+        avpriv_set_pts_info(st, 64, framerate.den, framerate.num);
         st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
         st->codec->codec_id   = AV_CODEC_ID_VP8;
         st->need_parsing      = AVSTREAM_PARSE_HEADERS;
@@ -64,7 +66,7 @@ static int vp8_header(AVFormatContext *s, int idx)
     case 0x02:
         if (p[6] != 0x20)
             return AVERROR_INVALIDDATA;
-        ff_vorbis_comment(s, &st->metadata, p + 7, os->psize - 7, 1);
+        ff_vorbis_stream_comment(s, st, p + 7, os->psize - 7);
         break;
     default:
         av_log(s, AV_LOG_ERROR, "Unknown VP8 header type 0x%02X\n", p[5]);
@@ -74,7 +76,8 @@ static int vp8_header(AVFormatContext *s, int idx)
     return 1;
 }
 
-static uint64_t vp8_gptopts(AVFormatContext *s, int idx, uint64_t granule, int64_t *dts)
+static uint64_t vp8_gptopts(AVFormatContext *s, int idx,
+                            uint64_t granule, int64_t *dts)
 {
     struct ogg *ogg = s->priv_data;
     struct ogg_stream *os = ogg->streams + idx;
@@ -97,7 +100,8 @@ static int vp8_packet(AVFormatContext *s, int idx)
     struct ogg_stream *os = ogg->streams + idx;
     uint8_t *p = os->buf + os->pstart;
 
-    if ((!os->lastpts || os->lastpts == AV_NOPTS_VALUE) && !(os->flags & OGG_FLAG_EOS)) {
+    if ((!os->lastpts || os->lastpts == AV_NOPTS_VALUE) &&
+        !(os->flags & OGG_FLAG_EOS)) {
         int seg;
         int duration;
         uint8_t *last_pkt = p;
@@ -113,7 +117,8 @@ static int vp8_packet(AVFormatContext *s, int idx)
             }
             next_pkt += os->segments[seg];
         }
-        os->lastpts = os->lastdts = vp8_gptopts(s, idx, os->granule, NULL) - duration;
+        os->lastpts =
+        os->lastdts = vp8_gptopts(s, idx, os->granule, NULL) - duration;
         if(s->streams[idx]->start_time == AV_NOPTS_VALUE) {
             s->streams[idx]->start_time = os->lastpts;
             if (s->streams[idx]->duration)

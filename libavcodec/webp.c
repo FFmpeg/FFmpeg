@@ -694,6 +694,11 @@ static int decode_entropy_coded_image(WebPContext *s, enum ImageRole role,
                 length = offset + get_bits(&s->gb, extra_bits) + 1;
             }
             prefix_code = huff_reader_get_symbol(&hg[HUFF_IDX_DIST], &s->gb);
+            if (prefix_code > 39) {
+                av_log(s->avctx, AV_LOG_ERROR,
+                       "distance prefix code too large: %d\n", prefix_code);
+                return AVERROR_INVALIDDATA;
+            }
             if (prefix_code < 4) {
                 distance = prefix_code + 1;
             } else {
@@ -1028,7 +1033,7 @@ static int apply_color_indexing_transform(WebPContext *s)
     ImageContext *img;
     ImageContext *pal;
     int i, x, y;
-    uint8_t *p, *pi;
+    uint8_t *p;
 
     img = &s->image[IMAGE_ROLE_ARGB];
     pal = &s->image[IMAGE_ROLE_COLOR_INDEXING];
@@ -1061,16 +1066,33 @@ static int apply_color_indexing_transform(WebPContext *s)
         av_free(line);
     }
 
-    for (y = 0; y < img->frame->height; y++) {
-        for (x = 0; x < img->frame->width; x++) {
-            p = GET_PIXEL(img->frame, x, y);
-            i = p[2];
-            if (i >= pal->frame->width) {
-                av_log(s->avctx, AV_LOG_ERROR, "invalid palette index %d\n", i);
-                return AVERROR_INVALIDDATA;
+    // switch to local palette if it's worth initializing it
+    if (img->frame->height * img->frame->width > 300) {
+        uint8_t palette[256 * 4];
+        const int size = pal->frame->width * 4;
+        av_assert0(size <= 1024U);
+        memcpy(palette, GET_PIXEL(pal->frame, 0, 0), size);   // copy palette
+        // set extra entries to transparent black
+        memset(palette + size, 0, 256 * 4 - size);
+        for (y = 0; y < img->frame->height; y++) {
+            for (x = 0; x < img->frame->width; x++) {
+                p = GET_PIXEL(img->frame, x, y);
+                i = p[2];
+                AV_COPY32(p, &palette[i * 4]);
             }
-            pi = GET_PIXEL(pal->frame, i, 0);
-            AV_COPY32(p, pi);
+        }
+    } else {
+        for (y = 0; y < img->frame->height; y++) {
+            for (x = 0; x < img->frame->width; x++) {
+                p = GET_PIXEL(img->frame, x, y);
+                i = p[2];
+                if (i >= pal->frame->width) {
+                    AV_WB32(p, 0x00000000);
+                } else {
+                    const uint8_t *pi = GET_PIXEL(pal->frame, i, 0);
+                    AV_COPY32(p, pi);
+                }
+            }
         }
     }
 
@@ -1082,14 +1104,14 @@ static int vp8_lossless_decode_frame(AVCodecContext *avctx, AVFrame *p,
                                      unsigned int data_size, int is_alpha_chunk)
 {
     WebPContext *s = avctx->priv_data;
-    int w, h, ret, i;
+    int w, h, ret, i, used;
 
     if (!is_alpha_chunk) {
         s->lossless = 1;
         avctx->pix_fmt = AV_PIX_FMT_ARGB;
     }
 
-    ret = init_get_bits(&s->gb, data_start, data_size * 8);
+    ret = init_get_bits8(&s->gb, data_start, data_size);
     if (ret < 0)
         return ret;
 
@@ -1132,8 +1154,16 @@ static int vp8_lossless_decode_frame(AVCodecContext *avctx, AVFrame *p,
     /* parse transformations */
     s->nb_transforms = 0;
     s->reduced_width = 0;
+    used = 0;
     while (get_bits1(&s->gb)) {
         enum TransformType transform = get_bits(&s->gb, 2);
+        if (used & (1 << transform)) {
+            av_log(avctx, AV_LOG_ERROR, "Transform %d used more than once\n",
+                   transform);
+            ret = AVERROR_INVALIDDATA;
+            goto free_and_return;
+        }
+        used |= (1 << transform);
         s->transforms[s->nb_transforms++] = transform;
         switch (transform) {
         case PREDICTOR_TRANSFORM:

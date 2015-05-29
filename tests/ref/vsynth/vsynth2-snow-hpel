@@ -1,4 +1,4 @@
-fa6986c9ebaa087b037d099acefa0ade *tests/data/fate/vsynth2-snow-hpel.avi
-61760 tests/data/fate/vsynth2-snow-hpel.avi
-8680d40905f423999d65b996c4dcb984 *tests/data/fate/vsynth2-snow-hpel.out.rawvideo
-stddev:   10.45 PSNR: 27.74 MAXDIFF:  123 bytes:  7603200/  7603200
+9bc409e4794ee50691a26c9c836d31a7 *tests/data/fate/vsynth2-snow-hpel.avi
+79728 tests/data/fate/vsynth2-snow-hpel.avi
+2cc64d8171175a1532fd7d3ed3011fbf *tests/data/fate/vsynth2-snow-hpel.out.rawvideo
+stddev:   13.70 PSNR: 25.39 MAXDIFF:  162 bytes:  7603200/  7603200

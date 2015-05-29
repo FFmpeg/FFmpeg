@@ -504,7 +504,27 @@ YUV2RGBFUNC(yuv2rgb_c_8_ordered_dither, uint8_t, 0)
     LOADCHROMA(3);
     PUTRGB8(dst_2, py_2, 3, 6 + 8);
     PUTRGB8(dst_1, py_1, 3, 6);
-CLOSEYUV2RGBFUNC(8)
+
+ENDYUV2RGBLINE(8, 0)
+    const uint8_t *d32 = ff_dither_8x8_32[y & 7];
+    const uint8_t *d64 = ff_dither_8x8_73[y & 7];
+    LOADCHROMA(0);
+    PUTRGB8(dst_1, py_1, 0, 0);
+    PUTRGB8(dst_2, py_2, 0, 0 + 8);
+
+    LOADCHROMA(1);
+    PUTRGB8(dst_2, py_2, 1, 2 + 8);
+    PUTRGB8(dst_1, py_1, 1, 2);
+
+ENDYUV2RGBLINE(8, 1)
+    const uint8_t *d32 = ff_dither_8x8_32[y & 7];
+    const uint8_t *d64 = ff_dither_8x8_73[y & 7];
+    LOADCHROMA(0);
+    PUTRGB8(dst_1, py_1, 0, 0);
+    PUTRGB8(dst_2, py_2, 0, 0 + 8);
+
+ENDYUV2RGBFUNC()
+
 
 YUV2RGBFUNC(yuv2rgb_c_4_ordered_dither, uint8_t, 0)
     const uint8_t * d64 = ff_dither_8x8_73[y & 7];
@@ -537,7 +557,27 @@ YUV2RGBFUNC(yuv2rgb_c_4_ordered_dither, uint8_t, 0)
     LOADCHROMA(3);
     PUTRGB4D(dst_2, py_2, 3, 6 + 8);
     PUTRGB4D(dst_1, py_1, 3, 6);
-CLOSEYUV2RGBFUNC(4)
+
+ENDYUV2RGBLINE(4, 0)
+    const uint8_t * d64 = ff_dither_8x8_73[y & 7];
+    const uint8_t *d128 = ff_dither_8x8_220[y & 7];
+    int acc;
+    LOADCHROMA(0);
+    PUTRGB4D(dst_1, py_1, 0, 0);
+    PUTRGB4D(dst_2, py_2, 0, 0 + 8);
+
+    LOADCHROMA(1);
+    PUTRGB4D(dst_2, py_2, 1, 2 + 8);
+    PUTRGB4D(dst_1, py_1, 1, 2);
+
+ENDYUV2RGBLINE(4, 1)
+    const uint8_t * d64 = ff_dither_8x8_73[y & 7];
+    const uint8_t *d128 = ff_dither_8x8_220[y & 7];
+    int acc;
+    LOADCHROMA(0);
+    PUTRGB4D(dst_1, py_1, 0, 0);
+    PUTRGB4D(dst_2, py_2, 0, 0 + 8);
+ENDYUV2RGBFUNC()
 
 YUV2RGBFUNC(yuv2rgb_c_4b_ordered_dither, uint8_t, 0)
     const uint8_t *d64  = ff_dither_8x8_73[y & 7];
@@ -568,7 +608,23 @@ YUV2RGBFUNC(yuv2rgb_c_4b_ordered_dither, uint8_t, 0)
     LOADCHROMA(3);
     PUTRGB4DB(dst_2, py_2, 3, 6 + 8);
     PUTRGB4DB(dst_1, py_1, 3, 6);
-CLOSEYUV2RGBFUNC(8)
+ENDYUV2RGBLINE(8, 0)
+    const uint8_t *d64  = ff_dither_8x8_73[y & 7];
+    const uint8_t *d128 = ff_dither_8x8_220[y & 7];
+    LOADCHROMA(0);
+    PUTRGB4DB(dst_1, py_1, 0, 0);
+    PUTRGB4DB(dst_2, py_2, 0, 0 + 8);
+
+    LOADCHROMA(1);
+    PUTRGB4DB(dst_2, py_2, 1, 2 + 8);
+    PUTRGB4DB(dst_1, py_1, 1, 2);
+ENDYUV2RGBLINE(8, 1)
+    const uint8_t *d64  = ff_dither_8x8_73[y & 7];
+    const uint8_t *d128 = ff_dither_8x8_220[y & 7];
+    LOADCHROMA(0);
+    PUTRGB4DB(dst_1, py_1, 0, 0);
+    PUTRGB4DB(dst_2, py_2, 0, 0 + 8);
+ENDYUV2RGBFUNC()
 
 YUV2RGBFUNC(yuv2rgb_c_1_ordered_dither, uint8_t, 0)
     const uint8_t *d128 = ff_dither_8x8_220[y & 7];
@@ -664,7 +720,7 @@ static void fill_table(uint8_t* table[256 + 2*YUVRGB_TABLE_HEADROOM], const int 
     y_table -= elemsize * (inc >> 9);
 
     for (i = 0; i < 256 + 2*YUVRGB_TABLE_HEADROOM; i++) {
-        int64_t cb = av_clip(i-YUVRGB_TABLE_HEADROOM, 0, 255)*inc;
+        int64_t cb = av_clip_uint8(i-YUVRGB_TABLE_HEADROOM)*inc;
         table[i] = y_table + elemsize * (cb >> 16);
     }
 }
@@ -675,7 +731,7 @@ static void fill_gv_table(int table[256 + 2*YUVRGB_TABLE_HEADROOM], const int el
     int off    = -(inc >> 9);
 
     for (i = 0; i < 256 + 2*YUVRGB_TABLE_HEADROOM; i++) {
-        int64_t cb = av_clip(i-YUVRGB_TABLE_HEADROOM, 0, 255)*inc;
+        int64_t cb = av_clip_uint8(i-YUVRGB_TABLE_HEADROOM)*inc;
         table[i] = elemsize * (off + (cb >> 16));
     }
 }
@@ -771,9 +827,13 @@ av_cold int ff_yuv2rgb_c_init_tables(SwsContext *c, const int inv_table[4],
 
     av_freep(&c->yuvTable);
 
+#define ALLOC_YUV_TABLE(x)          \
+        c->yuvTable = av_malloc(x); \
+        if (!c->yuvTable)           \
+            return AVERROR(ENOMEM);
     switch (bpp) {
     case 1:
-        c->yuvTable = av_malloc(1024);
+        ALLOC_YUV_TABLE(1024);
         y_table     = c->yuvTable;
         yb = -(384 << 16) - oy;
         for (i = 0; i < 1024 - 110; i++) {
@@ -788,7 +848,7 @@ av_cold int ff_yuv2rgb_c_init_tables(SwsContext *c, const int inv_table[4],
         rbase       = isRgb ? 3 : 0;
         gbase       = 1;
         bbase       = isRgb ? 0 : 3;
-        c->yuvTable = av_malloc(1024 * 3);
+        ALLOC_YUV_TABLE(1024 * 3);
         y_table     = c->yuvTable;
         yb = -(384 << 16) - oy;
         for (i = 0; i < 1024 - 110; i++) {
@@ -807,7 +867,7 @@ av_cold int ff_yuv2rgb_c_init_tables(SwsContext *c, const int inv_table[4],
         rbase       = isRgb ? 5 : 0;
         gbase       = isRgb ? 2 : 3;
         bbase       = isRgb ? 0 : 6;
-        c->yuvTable = av_malloc(1024 * 3);
+        ALLOC_YUV_TABLE(1024 * 3);
         y_table     = c->yuvTable;
         yb = -(384 << 16) - oy;
         for (i = 0; i < 1024 - 38; i++) {
@@ -826,7 +886,7 @@ av_cold int ff_yuv2rgb_c_init_tables(SwsContext *c, const int inv_table[4],
         rbase       = isRgb ? 8 : 0;
         gbase       = 4;
         bbase       = isRgb ? 0 : 8;
-        c->yuvTable = av_malloc(1024 * 3 * 2);
+        ALLOC_YUV_TABLE(1024 * 3 * 2);
         y_table16   = c->yuvTable;
         yb = -(384 << 16) - oy;
         for (i = 0; i < 1024; i++) {
@@ -849,7 +909,7 @@ av_cold int ff_yuv2rgb_c_init_tables(SwsContext *c, const int inv_table[4],
         rbase       = isRgb ? bpp - 5 : 0;
         gbase       = 5;
         bbase       = isRgb ? 0 : (bpp - 5);
-        c->yuvTable = av_malloc(1024 * 3 * 2);
+        ALLOC_YUV_TABLE(1024 * 3 * 2);
         y_table16   = c->yuvTable;
         yb = -(384 << 16) - oy;
         for (i = 0; i < 1024; i++) {
@@ -869,7 +929,7 @@ av_cold int ff_yuv2rgb_c_init_tables(SwsContext *c, const int inv_table[4],
         break;
     case 24:
     case 48:
-        c->yuvTable = av_malloc(1024);
+        ALLOC_YUV_TABLE(1024);
         y_table     = c->yuvTable;
         yb = -(384 << 16) - oy;
         for (i = 0; i < 1024; i++) {
@@ -891,7 +951,7 @@ av_cold int ff_yuv2rgb_c_init_tables(SwsContext *c, const int inv_table[4],
         needAlpha = CONFIG_SWSCALE_ALPHA && isALPHA(c->srcFormat);
         if (!needAlpha)
             abase = (base + 24) & 31;
-        c->yuvTable = av_malloc(1024 * 3 * 4);
+        ALLOC_YUV_TABLE(1024 * 3 * 4);
         y_table32   = c->yuvTable;
         yb = -(384 << 16) - oy;
         for (i = 0; i < 1024; i++) {

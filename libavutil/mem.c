@@ -184,21 +184,22 @@ void *av_realloc_f(void *ptr, size_t nelem, size_t elsize)
 
 int av_reallocp(void *ptr, size_t size)
 {
-    void **ptrptr = ptr;
-    void *ret;
+    void *val;
 
     if (!size) {
         av_freep(ptr);
         return 0;
     }
-    ret = av_realloc(*ptrptr, size);
 
-    if (!ret) {
+    memcpy(&val, ptr, sizeof(val));
+    val = av_realloc(val, size);
+
+    if (!val) {
         av_freep(ptr);
         return AVERROR(ENOMEM);
     }
 
-    *ptrptr = ret;
+    memcpy(ptr, &val, sizeof(val));
     return 0;
 }
 
@@ -211,10 +212,14 @@ void *av_realloc_array(void *ptr, size_t nmemb, size_t size)
 
 int av_reallocp_array(void *ptr, size_t nmemb, size_t size)
 {
-    void **ptrptr = ptr;
-    *ptrptr = av_realloc_f(*ptrptr, nmemb, size);
-    if (!*ptrptr && nmemb && size)
+    void *val;
+
+    memcpy(&val, ptr, sizeof(val));
+    val = av_realloc_f(val, nmemb, size);
+    memcpy(ptr, &val, sizeof(val));
+    if (!val && nmemb && size)
         return AVERROR(ENOMEM);
+
     return 0;
 }
 
@@ -235,9 +240,11 @@ void av_free(void *ptr)
 
 void av_freep(void *arg)
 {
-    void **ptr = (void **)arg;
-    av_free(*ptr);
-    *ptr = NULL;
+    void *val;
+
+    memcpy(&val, arg, sizeof(val));
+    memcpy(arg, &(void *){ NULL }, sizeof(val));
+    av_free(val);
 }
 
 void *av_mallocz(size_t size)
@@ -259,12 +266,32 @@ char *av_strdup(const char *s)
 {
     char *ptr = NULL;
     if (s) {
-        int len = strlen(s) + 1;
+        size_t len = strlen(s) + 1;
         ptr = av_realloc(NULL, len);
         if (ptr)
             memcpy(ptr, s, len);
     }
     return ptr;
+}
+
+char *av_strndup(const char *s, size_t len)
+{
+    char *ret = NULL, *end;
+
+    if (!s)
+        return NULL;
+
+    end = memchr(s, 0, len);
+    if (end)
+        len = end - s;
+
+    ret = av_realloc(NULL, len + 1);
+    if (!ret)
+        return NULL;
+
+    memcpy(ret, s, len);
+    ret[len] = 0;
+    return ret;
 }
 
 void *av_memdup(const void *p, size_t size)
@@ -280,11 +307,12 @@ void *av_memdup(const void *p, size_t size)
 
 int av_dynarray_add_nofree(void *tab_ptr, int *nb_ptr, void *elem)
 {
-    void **tab = *(void ***)tab_ptr;
+    void **tab;
+    memcpy(&tab, tab_ptr, sizeof(tab));
 
     AV_DYNARRAY_ADD(INT_MAX, sizeof(*tab), tab, *nb_ptr, {
         tab[*nb_ptr] = elem;
-        *(void ***)tab_ptr = tab;
+        memcpy(tab_ptr, &tab, sizeof(tab));
     }, {
         return AVERROR(ENOMEM);
     });
@@ -293,11 +321,12 @@ int av_dynarray_add_nofree(void *tab_ptr, int *nb_ptr, void *elem)
 
 void av_dynarray_add(void *tab_ptr, int *nb_ptr, void *elem)
 {
-    void **tab = *(void ***)tab_ptr;
+    void **tab;
+    memcpy(&tab, tab_ptr, sizeof(tab));
 
     AV_DYNARRAY_ADD(INT_MAX, sizeof(*tab), tab, *nb_ptr, {
         tab[*nb_ptr] = elem;
-        *(void ***)tab_ptr = tab;
+        memcpy(tab_ptr, &tab, sizeof(tab));
     }, {
         *nb_ptr = 0;
         av_freep(tab_ptr);
@@ -467,13 +496,15 @@ void *av_fast_realloc(void *ptr, unsigned int *size, size_t min_size)
 
 static inline int ff_fast_malloc(void *ptr, unsigned int *size, size_t min_size, int zero_realloc)
 {
-    void **p = ptr;
+    void *val;
+
     if (min_size < *size)
         return 0;
     min_size = FFMAX(17 * min_size / 16 + 32, min_size);
-    av_free(*p);
-    *p = zero_realloc ? av_mallocz(min_size) : av_malloc(min_size);
-    if (!*p)
+    av_freep(ptr);
+    val = zero_realloc ? av_mallocz(min_size) : av_malloc(min_size);
+    memcpy(ptr, &val, sizeof(val));
+    if (!val)
         min_size = 0;
     *size = min_size;
     return 1;

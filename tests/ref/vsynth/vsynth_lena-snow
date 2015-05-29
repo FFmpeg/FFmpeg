@@ -1,0 +1,4 @@
+8e96f337e8f4ccac7d72ef517e1d2208 *tests/data/fate/vsynth_lena-snow.avi
+57680 tests/data/fate/vsynth_lena-snow.avi
+90963cfd2359d460001c94d94256dc2b *tests/data/fate/vsynth_lena-snow.out.rawvideo
+stddev:   10.48 PSNR: 27.72 MAXDIFF:  119 bytes:  7603200/  7603200

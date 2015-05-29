@@ -147,7 +147,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     if (avctx->codec_id == AV_CODEC_ID_MPEG1VIDEO && avctx->height > 2800)
         avctx->thread_count = 1;
 
-    if (ff_MPV_encode_init(avctx) < 0)
+    if (ff_mpv_encode_init(avctx) < 0)
         return -1;
 
     if (find_frame_rate_index(s) < 0) {
@@ -199,7 +199,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     if (s->strict_std_compliance > FF_COMPLIANCE_UNOFFICIAL) {
         if ((avctx->width & 0xFFF) == 0 || (avctx->height & 0xFFF) == 0) {
-            av_log(avctx, AV_LOG_ERROR, "Width or Height are not allowed to be multiplies of 4096\n"
+            av_log(avctx, AV_LOG_ERROR, "Width or Height are not allowed to be multiples of 4096\n"
                                         "add '-strict %d' if you want to use them anyway.\n", FF_COMPLIANCE_UNOFFICIAL);
             return AVERROR(EINVAL);
         }
@@ -384,7 +384,7 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
         put_bits(&s->pb, 1, 1);
         put_bits(&s->pb, 6, (uint32_t)((time_code / fps) % 60));
         put_bits(&s->pb, 6, (uint32_t)((time_code % fps)));
-        put_bits(&s->pb, 1, !!(s->flags & CODEC_FLAG_CLOSED_GOP) || s->intra_only || !s->gop_picture_number);
+        put_bits(&s->pb, 1, !!(s->avctx->flags & CODEC_FLAG_CLOSED_GOP) || s->intra_only || !s->gop_picture_number);
         put_bits(&s->pb, 1, 0);                     // broken link
     }
 }
@@ -606,7 +606,8 @@ static void mpeg1_encode_motion(MpegEncContext *s, int val, int f_or_b_code)
 
 static inline void encode_dc(MpegEncContext *s, int diff, int component)
 {
-    if (((unsigned) (diff + 255)) >= 511) {
+    unsigned int diff_u = diff + 255;
+    if (diff_u >= 511) {
         int index;
 
         if (diff < 0) {
@@ -619,12 +620,12 @@ static inline void encode_dc(MpegEncContext *s, int diff, int component)
             put_bits(&s->pb,
                      ff_mpeg12_vlc_dc_lum_bits[index] + index,
                      (ff_mpeg12_vlc_dc_lum_code[index] << index) +
-                     (diff & ((1 << index) - 1)));
+                     av_mod_uintp2(diff, index));
         else
             put_bits(&s->pb,
                      ff_mpeg12_vlc_dc_chroma_bits[index] + index,
                      (ff_mpeg12_vlc_dc_chroma_code[index] << index) +
-                     (diff & ((1 << index) - 1)));
+                     av_mod_uintp2(diff, index));
     } else {
         if (component == 0)
             put_bits(&s->pb,
@@ -1015,8 +1016,8 @@ av_cold void ff_mpeg1_encode_init(MpegEncContext *s)
         int i;
 
         done = 1;
-        ff_init_rl(&ff_rl_mpeg1, ff_mpeg12_static_rl_table_store[0]);
-        ff_init_rl(&ff_rl_mpeg2, ff_mpeg12_static_rl_table_store[1]);
+        ff_rl_init(&ff_rl_mpeg1, ff_mpeg12_static_rl_table_store[0]);
+        ff_rl_init(&ff_rl_mpeg2, ff_mpeg12_static_rl_table_store[1]);
 
         for (i = 0; i < 64; i++) {
             mpeg1_max_level[0][i] = ff_rl_mpeg1.max_level[0][i];
@@ -1040,12 +1041,12 @@ av_cold void ff_mpeg1_encode_init(MpegEncContext *s)
 
             bits = ff_mpeg12_vlc_dc_lum_bits[index] + index;
             code = (ff_mpeg12_vlc_dc_lum_code[index] << index) +
-                   (diff & ((1 << index) - 1));
+                    av_mod_uintp2(diff, index);
             mpeg1_lum_dc_uni[i + 255] = bits + (code << 8);
 
             bits = ff_mpeg12_vlc_dc_chroma_bits[index] + index;
             code = (ff_mpeg12_vlc_dc_chroma_code[index] << index) +
-                   (diff & ((1 << index) - 1));
+                    av_mod_uintp2(diff, index);
             mpeg1_chr_dc_uni[i + 255] = bits + (code << 8);
         }
 
@@ -1149,8 +1150,8 @@ AVCodec ff_mpeg1video_encoder = {
     .id                   = AV_CODEC_ID_MPEG1VIDEO,
     .priv_data_size       = sizeof(MpegEncContext),
     .init                 = encode_init,
-    .encode2              = ff_MPV_encode_picture,
-    .close                = ff_MPV_encode_end,
+    .encode2              = ff_mpv_encode_picture,
+    .close                = ff_mpv_encode_end,
     .supported_framerates = ff_mpeg12_frame_rate_tab + 1,
     .pix_fmts             = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV420P,
                                                            AV_PIX_FMT_NONE },
@@ -1165,8 +1166,8 @@ AVCodec ff_mpeg2video_encoder = {
     .id                   = AV_CODEC_ID_MPEG2VIDEO,
     .priv_data_size       = sizeof(MpegEncContext),
     .init                 = encode_init,
-    .encode2              = ff_MPV_encode_picture,
-    .close                = ff_MPV_encode_end,
+    .encode2              = ff_mpv_encode_picture,
+    .close                = ff_mpv_encode_end,
     .supported_framerates = ff_mpeg2_frame_rate_tab,
     .pix_fmts             = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV420P,
                                                            AV_PIX_FMT_YUV422P,

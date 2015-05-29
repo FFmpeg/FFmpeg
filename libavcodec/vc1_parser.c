@@ -29,6 +29,7 @@
 #include "parser.h"
 #include "vc1.h"
 #include "get_bits.h"
+#include "internal.h"
 
 /** The maximum number of bytes of a sequence, entry point or
  *  frame header whose values we pay any attention to */
@@ -47,7 +48,7 @@ typedef enum {
     ONE
 } VC1ParseSearchState;
 
-typedef struct {
+typedef struct VC1ParseContext {
     ParseContext pc;
     VC1Context v;
     uint8_t prev_start_code;
@@ -112,6 +113,8 @@ static void vc1_extract_header(AVCodecParserContext *s, AVCodecContext *avctx,
 
         break;
     }
+    if (avctx->framerate.num)
+        avctx->time_base = av_inv_q(av_mul_q(avctx->framerate, (AVRational){avctx->ticks_per_frame, 1}));
 }
 
 static int vc1_parse(AVCodecParserContext *s,
@@ -127,6 +130,7 @@ static int vc1_parse(AVCodecParserContext *s,
     uint8_t *unesc_buffer = vpc->unesc_buffer;
     size_t unesc_index = vpc->unesc_index;
     VC1ParseSearchState search_state = vpc->search_state;
+    int start_code_found = 0;
     int next = END_NOT_FOUND;
     int i = vpc->bytes_to_skip;
 
@@ -137,8 +141,8 @@ static int vc1_parse(AVCodecParserContext *s,
         next = 0;
     }
     while (i < buf_size) {
-        int start_code_found = 0;
         uint8_t b;
+        start_code_found = 0;
         while (i < buf_size && unesc_index < UNESCAPED_THRESHOLD) {
             b = buf[i++];
             unesc_buffer[unesc_index++] = b;
@@ -173,7 +177,7 @@ static int vc1_parse(AVCodecParserContext *s,
         if (unesc_index >= UNESCAPED_THRESHOLD && !start_code_found) {
             while (i < buf_size) {
                 if (search_state == NO_MATCH) {
-                    i += vpc->v.vc1dsp.vc1_find_start_code_candidate(buf + i, buf_size - i);
+                    i += vpc->v.vc1dsp.startcode_find_candidate(buf + i, buf_size - i);
                     if (i < buf_size) {
                         search_state = ONE_ZERO;
                     }
@@ -228,8 +232,6 @@ static int vc1_parse(AVCodecParserContext *s,
         }
     }
 
-    vpc->v.first_pic_header_flag = 1;
-
     /* If we return with a valid pointer to a combined frame buffer
      * then on the next call then we'll have been unhelpfully rewound
      * by up to 4 bytes (depending upon whether the start code
@@ -249,20 +251,18 @@ static int vc1_parse(AVCodecParserContext *s,
 static int vc1_split(AVCodecContext *avctx,
                            const uint8_t *buf, int buf_size)
 {
-    int i;
-    uint32_t state= -1;
-    int charged=0;
+    uint32_t state = -1;
+    int charged = 0;
+    const uint8_t *ptr = buf, *end = buf + buf_size;
 
-    for(i=0; i<buf_size; i++){
-        state= (state<<8) | buf[i];
-        if(IS_MARKER(state)){
-            if(state == VC1_CODE_SEQHDR || state == VC1_CODE_ENTRYPOINT){
-                charged=1;
-            }else if(charged){
-                return i-3;
-            }
-        }
+    while (ptr < end) {
+        ptr = avpriv_find_start_code(ptr, end, &state);
+        if (state == VC1_CODE_SEQHDR || state == VC1_CODE_ENTRYPOINT) {
+            charged = 1;
+        } else if (charged && IS_MARKER(state))
+            return ptr - 4 - buf;
     }
+
     return 0;
 }
 

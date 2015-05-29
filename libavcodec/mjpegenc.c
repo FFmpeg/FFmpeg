@@ -33,10 +33,40 @@
 #include "libavutil/pixdesc.h"
 
 #include "avcodec.h"
+#include "jpegtables.h"
 #include "mjpegenc_common.h"
 #include "mpegvideo.h"
 #include "mjpeg.h"
 #include "mjpegenc.h"
+
+static uint8_t uni_ac_vlc_len[64 * 64 * 2];
+static uint8_t uni_chroma_ac_vlc_len[64 * 64 * 2];
+
+static av_cold void init_uni_ac_vlc(const uint8_t huff_size_ac[256], uint8_t *uni_ac_vlc_len)
+{
+    int i;
+
+    for (i = 0; i < 128; i++) {
+        int level = i - 64;
+        int run;
+        if (!level)
+            continue;
+        for (run = 0; run < 64; run++) {
+            int len, code, nbits;
+            int alevel = FFABS(level);
+
+            len = (run >> 4) * huff_size_ac[0xf0];
+
+            nbits= av_log2_16bit(alevel) + 1;
+            code = ((15&run) << 4) | nbits;
+
+            len += huff_size_ac[code] + nbits;
+
+            uni_ac_vlc_len[UNI_AC_ENC_INDEX(run, i)] = len;
+            // We ignore EOB as its just a constant which does not change generally
+        }
+    }
+}
 
 av_cold int ff_mjpeg_encode_init(MpegEncContext *s)
 {
@@ -72,13 +102,20 @@ av_cold int ff_mjpeg_encode_init(MpegEncContext *s)
                                  avpriv_mjpeg_bits_ac_chrominance,
                                  avpriv_mjpeg_val_ac_chrominance);
 
+    init_uni_ac_vlc(m->huff_size_ac_luminance,   uni_ac_vlc_len);
+    init_uni_ac_vlc(m->huff_size_ac_chrominance, uni_chroma_ac_vlc_len);
+    s->intra_ac_vlc_length      =
+    s->intra_ac_vlc_last_length = uni_ac_vlc_len;
+    s->intra_chroma_ac_vlc_length      =
+    s->intra_chroma_ac_vlc_last_length = uni_chroma_ac_vlc_len;
+
     s->mjpeg_ctx = m;
     return 0;
 }
 
-void ff_mjpeg_encode_close(MpegEncContext *s)
+av_cold void ff_mjpeg_encode_close(MpegEncContext *s)
 {
-    av_free(s->mjpeg_ctx);
+    av_freep(&s->mjpeg_ctx);
 }
 
 static void encode_block(MpegEncContext *s, int16_t *block, int n)
@@ -209,39 +246,45 @@ static int amv_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
         pic->data[i] += pic->linesize[i] * (vsample * s->height / V_MAX - 1);
         pic->linesize[i] *= -1;
     }
-    ret = ff_MPV_encode_picture(avctx, pkt, pic, got_packet);
+    ret = ff_mpv_encode_picture(avctx, pkt, pic, got_packet);
     av_frame_free(&pic);
     return ret;
 }
 
 #if CONFIG_MJPEG_ENCODER
+FF_MPV_GENERIC_CLASS(mjpeg)
+
 AVCodec ff_mjpeg_encoder = {
     .name           = "mjpeg",
     .long_name      = NULL_IF_CONFIG_SMALL("MJPEG (Motion JPEG)"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_MJPEG,
     .priv_data_size = sizeof(MpegEncContext),
-    .init           = ff_MPV_encode_init,
-    .encode2        = ff_MPV_encode_picture,
-    .close          = ff_MPV_encode_end,
+    .init           = ff_mpv_encode_init,
+    .encode2        = ff_mpv_encode_picture,
+    .close          = ff_mpv_encode_end,
     .capabilities   = CODEC_CAP_SLICE_THREADS | CODEC_CAP_FRAME_THREADS | CODEC_CAP_INTRA_ONLY,
     .pix_fmts       = (const enum AVPixelFormat[]){
         AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ422P, AV_PIX_FMT_YUVJ444P, AV_PIX_FMT_NONE
     },
+    .priv_class     = &mjpeg_class,
 };
 #endif
 #if CONFIG_AMV_ENCODER
+FF_MPV_GENERIC_CLASS(amv)
+
 AVCodec ff_amv_encoder = {
     .name           = "amv",
     .long_name      = NULL_IF_CONFIG_SMALL("AMV Video"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_AMV,
     .priv_data_size = sizeof(MpegEncContext),
-    .init           = ff_MPV_encode_init,
+    .init           = ff_mpv_encode_init,
     .encode2        = amv_encode_picture,
-    .close          = ff_MPV_encode_end,
+    .close          = ff_mpv_encode_end,
     .pix_fmts       = (const enum AVPixelFormat[]){
-        AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ422P, AV_PIX_FMT_NONE
+        AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_NONE
     },
+    .priv_class     = &amv_class,
 };
 #endif

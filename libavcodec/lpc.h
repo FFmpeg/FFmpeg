@@ -24,6 +24,7 @@
 
 #include <stdint.h>
 #include "libavutil/avassert.h"
+#include "libavutil/lls.h"
 
 #define ORDER_METHOD_EST     0
 #define ORDER_METHOD_2LEVEL  1
@@ -79,6 +80,9 @@ typedef struct LPCContext {
      */
     void (*lpc_compute_autocorr)(const double *data, int len, int lag,
                                  double *autoc);
+
+    // TODO: these should be allocated to reduce ABI compatibility issues
+    LLSModel lls_models[2];
 } LPCContext;
 
 
@@ -153,7 +157,7 @@ static inline int compute_lpc_coefs(const LPC_TYPE *autoc, int max_order,
                                     int normalize)
 {
     int i, j;
-    LPC_TYPE err;
+    LPC_TYPE err = 0;
     LPC_TYPE *lpc_last = lpc;
 
     av_assert2(normalize || !fail);

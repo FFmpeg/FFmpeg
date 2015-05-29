@@ -33,7 +33,7 @@
 #define AIFF                    0
 #define AIFF_C_VERSION1         0xA2805140
 
-typedef struct {
+typedef struct AIFFInputContext {
     int64_t data_end;
     int block_duration;
 } AIFFInputContext;
@@ -58,7 +58,7 @@ static int get_tag(AVIOContext *pb, uint32_t * tag)
 {
     int size;
 
-    if (url_feof(pb))
+    if (avio_feof(pb))
         return AVERROR(EIO);
 
     *tag = avio_rl32(pb);
@@ -116,7 +116,9 @@ static unsigned int get_aiff_header(AVFormatContext *s, int size,
     size -= 18;
 
     /* get codec id for AIFF-C */
-    if (version == AIFF_C_VERSION1) {
+    if (size < 4) {
+        version = AIFF;
+    } else if (version == AIFF_C_VERSION1) {
         codec->codec_tag = avio_rl32(pb);
         codec->codec_id  = ff_codec_get_id(ff_codec_aiff_tags, codec->codec_tag);
         size -= 4;
@@ -221,6 +223,11 @@ static int aiff_read_header(AVFormatContext *s)
     while (filesize > 0) {
         /* parse different chunks */
         size = get_tag(pb, &tag);
+
+        if (size == AVERROR_EOF && offset > 0 && st->codec->block_align) {
+            av_log(s, AV_LOG_WARNING, "header parser hit EOF\n");
+            goto got_sound;
+        }
         if (size < 0)
             return size;
 
@@ -304,6 +311,9 @@ static int aiff_read_header(AVFormatContext *s)
             if(ff_mov_read_chan(s, pb, st, size) < 0)
                 return AVERROR_INVALIDDATA;
             break;
+        case 0:
+            if (offset > 0 && st->codec->block_align) // COMM && SSND
+                goto got_sound;
         default: /* Jump */
             if (size & 1)   /* Always even aligned */
                 size++;

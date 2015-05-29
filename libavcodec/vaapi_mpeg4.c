@@ -21,6 +21,7 @@
  */
 
 #include "vaapi_internal.h"
+#include "internal.h"
 #include "h263.h"
 #include "mpeg4video.h"
 
@@ -49,7 +50,7 @@ static int vaapi_mpeg4_start_frame(AVCodecContext *avctx, av_unused const uint8_
     VAIQMatrixBufferMPEG4 *iq_matrix;
     int i;
 
-    av_dlog(avctx, "vaapi_mpeg4_start_frame()\n");
+    ff_dlog(avctx, "vaapi_mpeg4_start_frame()\n");
 
     vactx->slice_param_size = sizeof(VASliceParameterBufferMPEG4);
 
@@ -88,8 +89,8 @@ static int vaapi_mpeg4_start_frame(AVCodecContext *avctx, av_unused const uint8_
     pic_param->vop_fields.bits.alternate_vertical_scan_flag = s->alternate_scan;
     pic_param->vop_fcode_forward                        = s->f_code;
     pic_param->vop_fcode_backward                       = s->b_code;
-    pic_param->vop_time_increment_resolution            = avctx->time_base.den;
-    pic_param->num_macroblocks_in_gob                   = s->mb_width * ff_h263_get_gob_height(s);
+    pic_param->vop_time_increment_resolution            = avctx->framerate.num;
+    pic_param->num_macroblocks_in_gob                   = s->mb_width * H263_GOB_HEIGHT(s->height);
     pic_param->num_gobs_in_vop                          = (s->mb_width * s->mb_height) / pic_param->num_macroblocks_in_gob;
     pic_param->TRB                                      = s->pb_time;
     pic_param->TRD                                      = s->pp_time;
@@ -122,7 +123,7 @@ static int vaapi_mpeg4_decode_slice(AVCodecContext *avctx, const uint8_t *buffer
     MpegEncContext * const s = avctx->priv_data;
     VASliceParameterBufferMPEG4 *slice_param;
 
-    av_dlog(avctx, "vaapi_mpeg4_decode_slice(): buffer %p, size %d\n", buffer, size);
+    ff_dlog(avctx, "vaapi_mpeg4_decode_slice(): buffer %p, size %d\n", buffer, size);
 
     /* Fill in VASliceParameterBufferMPEG4 */
     slice_param = (VASliceParameterBufferMPEG4 *)ff_vaapi_alloc_slice(avctx->hwaccel_context, buffer, size);

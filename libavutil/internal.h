@@ -39,6 +39,7 @@
 #include "timer.h"
 #include "cpu.h"
 #include "dict.h"
+#include "pixfmt.h"
 #include "version.h"
 
 #if ARCH_X86
@@ -46,7 +47,7 @@
 #endif
 
 #ifndef emms_c
-#   define emms_c()
+#   define emms_c() while(0)
 #endif
 
 #ifndef attribute_align_arg
@@ -79,9 +80,6 @@
 #    define FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
-#ifndef INT_BIT
-#    define INT_BIT (CHAR_BIT * sizeof(int))
-#endif
 
 #define FF_MEMORY_POISON 0x2a
 
@@ -131,7 +129,7 @@
 #define FF_ALLOC_OR_GOTO(ctx, p, size, label)\
 {\
     p = av_malloc(size);\
-    if (p == NULL && (size) != 0) {\
+    if (!(p) && (size) != 0) {\
         av_log(ctx, AV_LOG_ERROR, "Cannot allocate memory.\n");\
         goto label;\
     }\
@@ -140,7 +138,7 @@
 #define FF_ALLOCZ_OR_GOTO(ctx, p, size, label)\
 {\
     p = av_mallocz(size);\
-    if (p == NULL && (size) != 0) {\
+    if (!(p) && (size) != 0) {\
         av_log(ctx, AV_LOG_ERROR, "Cannot allocate memory.\n");\
         goto label;\
     }\
@@ -149,7 +147,7 @@
 #define FF_ALLOC_ARRAY_OR_GOTO(ctx, p, nelem, elsize, label)\
 {\
     p = av_malloc_array(nelem, elsize);\
-    if (p == NULL) {\
+    if (!p) {\
         av_log(ctx, AV_LOG_ERROR, "Cannot allocate memory.\n");\
         goto label;\
     }\
@@ -158,7 +156,7 @@
 #define FF_ALLOCZ_ARRAY_OR_GOTO(ctx, p, nelem, elsize, label)\
 {\
     p = av_mallocz_array(nelem, elsize);\
-    if (p == NULL) {\
+    if (!p) {\
         av_log(ctx, AV_LOG_ERROR, "Cannot allocate memory.\n");\
         goto label;\
     }\
@@ -166,7 +164,7 @@
 
 #include "libm.h"
 
-#if defined(_MSC_VER)
+#if defined(_MSC_VER) && _MSC_VER < 1900
 #pragma comment(linker, "/include:"EXTERN_PREFIX"avpriv_strtod")
 #pragma comment(linker, "/include:"EXTERN_PREFIX"avpriv_snprintf")
 #endif
@@ -256,8 +254,25 @@ void avpriv_request_sample(void *avc,
  */
 int avpriv_open(const char *filename, int flags, ...);
 
+int avpriv_set_systematic_pal2(uint32_t pal[256], enum AVPixelFormat pix_fmt);
+
+static av_always_inline av_const int avpriv_mirror(int x, int w)
+{
+    if (!w)
+        return 0;
+
+    while ((unsigned)x > (unsigned)w) {
+        x = -x;
+        if (x < 0)
+            x += 2 * w;
+    }
+    return x;
+}
+
 #if FF_API_GET_CHANNEL_LAYOUT_COMPAT
 uint64_t ff_get_channel_layout(const char *name, int compat);
 #endif
+
+void ff_check_pixfmt_descriptors(void);
 
 #endif /* AVUTIL_INTERNAL_H */

@@ -58,11 +58,11 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             uint32_t pixel;
             uint16_t r = *src++ >> 6;
             uint16_t g = *src++ >> 6;
-            uint16_t b = *src++ >> 4;
+            uint16_t b = *src++ >> 6;
             if (avctx->codec_id == AV_CODEC_ID_R210)
-                pixel = (r << 20) | (g << 10) | b >> 2;
+                pixel = (r << 20) | (g << 10) | b;
             else
-                pixel = (r << 22) | (g << 12) | b;
+                pixel = (r << 22) | (g << 12) | (b << 2);
             if (avctx->codec_id == AV_CODEC_ID_AVRP)
                 bytestream_put_le32(&dst, pixel);
             else
@@ -80,7 +80,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
 static av_cold int encode_close(AVCodecContext *avctx)
 {
-    av_freep(&avctx->coded_frame);
+    av_frame_free(&avctx->coded_frame);
 
     return 0;
 }

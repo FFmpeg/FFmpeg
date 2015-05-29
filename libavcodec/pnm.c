@@ -63,9 +63,9 @@ int ff_pnm_decode_header(AVCodecContext *avctx, PNMContext * const s)
     int h, w, depth, maxval;
 
     pnm_get(s, buf1, sizeof(buf1));
-    s->type= buf1[1]-'0';
     if(buf1[0] != 'P')
         return AVERROR_INVALIDDATA;
+    s->type= buf1[1]-'0';
 
     if (s->type==1 || s->type==4) {
         avctx->pix_fmt = AV_PIX_FMT_MONOWHITE;
@@ -122,8 +122,11 @@ int ff_pnm_decode_header(AVCodecContext *avctx, PNMContext * const s)
                 avctx->pix_fmt = AV_PIX_FMT_GRAY16;
             }
         } else if (depth == 2) {
-            if (maxval == 255)
+            if (maxval < 256) {
                 avctx->pix_fmt = AV_PIX_FMT_GRAY8A;
+            } else {
+                avctx->pix_fmt = AV_PIX_FMT_YA16;
+            }
         } else if (depth == 3) {
             if (maxval < 256) {
                 avctx->pix_fmt = AV_PIX_FMT_RGB24;

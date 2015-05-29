@@ -68,7 +68,7 @@ static int tak_read_header(AVFormatContext *s)
         return 0;
     }
 
-    while (!url_feof(pb)) {
+    while (!avio_feof(pb)) {
         enum TAKMetaDataType type;
         int size;
 

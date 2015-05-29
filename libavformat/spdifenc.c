@@ -51,6 +51,7 @@
 #include "spdif.h"
 #include "libavcodec/ac3.h"
 #include "libavcodec/dca.h"
+#include "libavcodec/dca_syncwords.h"
 #include "libavcodec/aacadtsdec.h"
 #include "libavutil/opt.h"
 
@@ -251,25 +252,25 @@ static int spdif_header_dts(AVFormatContext *s, AVPacket *pkt)
         return AVERROR_INVALIDDATA;
 
     switch (syncword_dts) {
-    case DCA_MARKER_RAW_BE:
+    case DCA_SYNCWORD_CORE_BE:
         blocks = (AV_RB16(pkt->data + 4) >> 2) & 0x7f;
         core_size = ((AV_RB24(pkt->data + 5) >> 4) & 0x3fff) + 1;
         sample_rate = avpriv_dca_sample_rates[(pkt->data[8] >> 2) & 0x0f];
         break;
-    case DCA_MARKER_RAW_LE:
+    case DCA_SYNCWORD_CORE_LE:
         blocks = (AV_RL16(pkt->data + 4) >> 2) & 0x7f;
         ctx->extra_bswap = 1;
         break;
-    case DCA_MARKER_14B_BE:
+    case DCA_SYNCWORD_CORE_14B_BE:
         blocks =
             (((pkt->data[5] & 0x07) << 4) | ((pkt->data[6] & 0x3f) >> 2));
         break;
-    case DCA_MARKER_14B_LE:
+    case DCA_SYNCWORD_CORE_14B_LE:
         blocks =
             (((pkt->data[4] & 0x07) << 4) | ((pkt->data[7] & 0x3f) >> 2));
         ctx->extra_bswap = 1;
         break;
-    case DCA_HD_MARKER:
+    case DCA_SYNCWORD_SUBSTREAM:
         /* We only handle HD frames that are paired with core. However,
            sometimes DTS-HD streams with core have a stray HD frame without
            core in the beginning of the stream. */

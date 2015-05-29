@@ -224,9 +224,11 @@ av_cold void ff_spp_init_x86(SPPContext *s)
 
     if (cpu_flags & AV_CPU_FLAG_MMX) {
         s->store_slice = store_slice_mmx;
-        switch (s->mode) {
-        case 0: s->requantize = hardthresh_mmx; break;
-        case 1: s->requantize = softthresh_mmx; break;
+        if (av_get_int(s->dct, "bits_per_sample", NULL) <= 8) {
+            switch (s->mode) {
+            case 0: s->requantize = hardthresh_mmx; break;
+            case 1: s->requantize = softthresh_mmx; break;
+            }
         }
     }
 #endif

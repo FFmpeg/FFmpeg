@@ -286,7 +286,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     }
 
     avctx->frame_size = info.frameLength;
-    avctx->delay      = info.encoderDelay;
+    avctx->initial_padding = info.encoderDelay;
     ff_af_queue_init(avctx, &s->afq);
 
     if (avctx->flags & CODEC_FLAG_GLOBAL_HEADER) {

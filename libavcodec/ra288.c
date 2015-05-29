@@ -1,6 +1,6 @@
 /*
  * RealAudio 2.0 (28.8K)
- * Copyright (c) 2003 the ffmpeg project
+ * Copyright (c) 2003 The FFmpeg Project
  *
  * This file is part of FFmpeg.
  *
@@ -37,8 +37,8 @@
 #define RA288_BLOCK_SIZE        5
 #define RA288_BLOCKS_PER_FRAME 32
 
-typedef struct {
-    AVFloatDSPContext fdsp;
+typedef struct RA288Context {
+    AVFloatDSPContext *fdsp;
     DECLARE_ALIGNED(32, float,   sp_lpc)[FFALIGN(36, 16)];   ///< LPC coefficients for speech data (spec: A)
     DECLARE_ALIGNED(32, float, gain_lpc)[FFALIGN(10, 16)];   ///< LPC coefficients for gain        (spec: GB)
 
@@ -59,6 +59,15 @@ typedef struct {
     float gain_rec[11];
 } RA288Context;
 
+static av_cold int ra288_decode_close(AVCodecContext *avctx)
+{
+    RA288Context *ractx = avctx->priv_data;
+
+    av_freep(&ractx->fdsp);
+
+    return 0;
+}
+
 static av_cold int ra288_decode_init(AVCodecContext *avctx)
 {
     RA288Context *ractx = avctx->priv_data;
@@ -72,7 +81,9 @@ static av_cold int ra288_decode_init(AVCodecContext *avctx)
         return AVERROR_PATCHWELCOME;
     }
 
-    avpriv_float_dsp_init(&ractx->fdsp, avctx->flags & CODEC_FLAG_BITEXACT);
+    ractx->fdsp = avpriv_float_dsp_alloc(avctx->flags & CODEC_FLAG_BITEXACT);
+    if (!ractx->fdsp)
+        return AVERROR(ENOMEM);
 
     return 0;
 }
@@ -146,7 +157,7 @@ static void do_hybrid_window(RA288Context *ractx,
 
     av_assert2(order>=0);
 
-    ractx->fdsp.vector_fmul(work, window, hist, FFALIGN(order + n + non_rec, 16));
+    ractx->fdsp->vector_fmul(work, window, hist, FFALIGN(order + n + non_rec, 16));
 
     convolve(buffer1, work + order    , n      , order);
     convolve(buffer2, work + order + n, non_rec, order);
@@ -173,7 +184,7 @@ static void backward_filter(RA288Context *ractx,
     do_hybrid_window(ractx, order, n, non_rec, temp, hist, rec, window);
 
     if (!compute_lpc_coefs(temp, order, lpc, 0, 1, 1))
-        ractx->fdsp.vector_fmul(lpc, lpc, tab, FFALIGN(order, 16));
+        ractx->fdsp->vector_fmul(lpc, lpc, tab, FFALIGN(order, 16));
 
     memmove(hist, hist + n, move_size*sizeof(*hist));
 }
@@ -235,5 +246,6 @@ AVCodec ff_ra_288_decoder = {
     .priv_data_size = sizeof(RA288Context),
     .init           = ra288_decode_init,
     .decode         = ra288_decode_frame,
+    .close          = ra288_decode_close,
     .capabilities   = CODEC_CAP_DR1,
 };

@@ -27,11 +27,12 @@
 #include "libavutil/bprint.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/opt.h"
-#include "libswresample/swresample.h" // only for SWR_CH_MAX
 #include "avfilter.h"
 #include "audio.h"
 #include "bufferqueue.h"
 #include "internal.h"
+
+#define SWR_CH_MAX 32
 
 typedef struct {
     const AVClass *class;

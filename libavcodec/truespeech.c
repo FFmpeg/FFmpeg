@@ -35,7 +35,7 @@
 /**
  * TrueSpeech decoder context
  */
-typedef struct {
+typedef struct TSContext {
     BswapDSPContext bdsp;
     /* input data */
     DECLARE_ALIGNED(16, uint8_t, buffer)[32];

@@ -31,6 +31,8 @@
 
 #define SAMPLES 1000
 
+#define SWR_CH_MAX 32
+
 #define ASSERT_LEVEL 2
 
 static double get(uint8_t *a[], int ch, int index, int ch_count, enum AVSampleFormat f){
@@ -151,7 +153,7 @@ static void audiogen(void *data, enum AVSampleFormat sample_fmt,
     unsigned static rnd;
 
 #define PUT_SAMPLE set(data, ch, k, channels, sample_fmt, v);
-#define uint_rand(x) (x = x * 1664525 + 1013904223)
+#define uint_rand(x) ((x) = (x) * 1664525 + 1013904223)
 #define dbl_rand(x) (uint_rand(x)*2.0 / (double)UINT_MAX - 1)
     k = 0;
 
@@ -312,6 +314,11 @@ int main(int argc, char **argv){
             fprintf(stderr, "Failed to init backw_ctx\n");
             return 1;
         }
+        if (uint_rand(rand_seed) % 3 == 0)
+            av_opt_set_int(forw_ctx, "ich", 0, 0);
+        if (uint_rand(rand_seed) % 3 == 0)
+            av_opt_set_int(forw_ctx, "och", 0, 0);
+
         if(swr_init( forw_ctx) < 0)
             fprintf(stderr, "swr_init(->) failed\n");
         if(swr_init(backw_ctx) < 0)

@@ -1,6 +1,6 @@
 /*
  * Wing Commander III Movie (.mve) File Demuxer
- * Copyright (c) 2003 The ffmpeg Project
+ * Copyright (c) 2003 The FFmpeg Project
  *
  * This file is part of FFmpeg.
  *
@@ -159,7 +159,7 @@ static int wc3_read_header(AVFormatContext *s)
         fourcc_tag = avio_rl32(pb);
         /* chunk sizes are 16-bit aligned */
         size = (avio_rb32(pb) + 1) & (~1);
-        if (url_feof(pb))
+        if (avio_feof(pb))
             return AVERROR(EIO);
 
     } while (fourcc_tag != BRCH_TAG);
@@ -211,7 +211,7 @@ static int wc3_read_packet(AVFormatContext *s,
         fourcc_tag = avio_rl32(pb);
         /* chunk sizes are 16-bit aligned */
         size = (avio_rb32(pb) + 1) & (~1);
-        if (url_feof(pb))
+        if (avio_feof(pb))
             return AVERROR(EIO);
 
         switch (fourcc_tag) {

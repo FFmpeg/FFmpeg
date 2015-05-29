@@ -10,8 +10,10 @@
         <xsd:sequence>
             <xsd:element name="program_version"  type="ffprobe:programVersionType"  minOccurs="0" maxOccurs="1" />
             <xsd:element name="library_versions" type="ffprobe:libraryVersionsType" minOccurs="0" maxOccurs="1" />
+            <xsd:element name="pixel_formats"    type="ffprobe:pixelFormatsType"    minOccurs="0" maxOccurs="1" />
             <xsd:element name="packets"  type="ffprobe:packetsType" minOccurs="0" maxOccurs="1" />
             <xsd:element name="frames"   type="ffprobe:framesType"  minOccurs="0" maxOccurs="1" />
+            <xsd:element name="packets_and_frames" type="ffprobe:packetsAndFramesType" minOccurs="0" maxOccurs="1" />
             <xsd:element name="programs" type="ffprobe:programsType" minOccurs="0" maxOccurs="1" />
             <xsd:element name="streams"  type="ffprobe:streamsType" minOccurs="0" maxOccurs="1" />
             <xsd:element name="chapters" type="ffprobe:chaptersType" minOccurs="0" maxOccurs="1" />
@@ -35,7 +37,22 @@
         </xsd:sequence>
     </xsd:complexType>
 
+    <xsd:complexType name="packetsAndFramesType">
+        <xsd:sequence>
+            <xsd:choice minOccurs="0" maxOccurs="unbounded">
+                <xsd:element name="packet" type="ffprobe:packetType" minOccurs="0" maxOccurs="unbounded"/>
+                <xsd:element name="frame" type="ffprobe:frameType" minOccurs="0" maxOccurs="unbounded"/>
+                <xsd:element name="subtitle" type="ffprobe:subtitleType" minOccurs="0" maxOccurs="unbounded"/>
+            </xsd:choice>
+        </xsd:sequence>
+    </xsd:complexType>
+
     <xsd:complexType name="packetType">
+      <xsd:sequence>
+        <xsd:element name="tag" type="ffprobe:tagType" minOccurs="0" maxOccurs="unbounded"/>
+        <xsd:element name="side_data_list" type="ffprobe:packetSideDataListType"   minOccurs="0" maxOccurs="1" />
+      </xsd:sequence>
+
       <xsd:attribute name="codec_type"    type="xsd:string" use="required" />
       <xsd:attribute name="stream_index"  type="xsd:int" use="required" />
       <xsd:attribute name="pts"           type="xsd:long"  />
@@ -50,6 +67,17 @@
       <xsd:attribute name="pos"           type="xsd:long"  />
       <xsd:attribute name="flags"         type="xsd:string" use="required" />
       <xsd:attribute name="data"          type="xsd:string" />
+      <xsd:attribute name="data_hash"     type="xsd:string" />
+    </xsd:complexType>
+
+    <xsd:complexType name="packetSideDataListType">
+        <xsd:sequence>
+            <xsd:element name="side_data" type="ffprobe:packetSideDataType" minOccurs="1" maxOccurs="unbounded"/>
+        </xsd:sequence>
+    </xsd:complexType>
+    <xsd:complexType name="packetSideDataType">
+        <xsd:attribute name="side_data_type"              type="xsd:string"/>
+        <xsd:attribute name="side_data_size"              type="xsd:int"   />
     </xsd:complexType>
 
     <xsd:complexType name="frameType">
@@ -59,6 +87,7 @@
       </xsd:sequence>
 
       <xsd:attribute name="media_type"    type="xsd:string" use="required"/>
+      <xsd:attribute name="stream_index"  type="xsd:int"  />
       <xsd:attribute name="key_frame"     type="xsd:int"    use="required"/>
       <xsd:attribute name="pts"           type="xsd:long" />
       <xsd:attribute name="pts_time"      type="xsd:float"/>
@@ -142,6 +171,7 @@
       <xsd:sequence>
         <xsd:element name="disposition" type="ffprobe:streamDispositionType" minOccurs="0" maxOccurs="1"/>
         <xsd:element name="tag" type="ffprobe:tagType" minOccurs="0" maxOccurs="unbounded"/>
+        <xsd:element name="side_data_list" type="ffprobe:packetSideDataListType"   minOccurs="0" maxOccurs="1" />
       </xsd:sequence>
 
       <xsd:attribute name="index"            type="xsd:int" use="required"/>
@@ -153,10 +183,13 @@
       <xsd:attribute name="codec_tag"        type="xsd:string" use="required"/>
       <xsd:attribute name="codec_tag_string" type="xsd:string" use="required"/>
       <xsd:attribute name="extradata"        type="xsd:string" />
+      <xsd:attribute name="extradata_hash"   type="xsd:string" />
 
       <!-- video attributes -->
       <xsd:attribute name="width"                type="xsd:int"/>
       <xsd:attribute name="height"               type="xsd:int"/>
+      <xsd:attribute name="coded_width"          type="xsd:int"/>
+      <xsd:attribute name="coded_height"         type="xsd:int"/>
       <xsd:attribute name="has_b_frames"         type="xsd:int"/>
       <xsd:attribute name="sample_aspect_ratio"  type="xsd:string"/>
       <xsd:attribute name="display_aspect_ratio" type="xsd:string"/>
@@ -164,7 +197,11 @@
       <xsd:attribute name="level"                type="xsd:int"/>
       <xsd:attribute name="color_range"          type="xsd:string"/>
       <xsd:attribute name="color_space"          type="xsd:string"/>
+      <xsd:attribute name="color_transfer"       type="xsd:string"/>
+      <xsd:attribute name="color_primaries"      type="xsd:string"/>
+      <xsd:attribute name="chroma_location"      type="xsd:string"/>
       <xsd:attribute name="timecode"             type="xsd:string"/>
+      <xsd:attribute name="refs"                 type="xsd:int"/>
 
       <!-- audio attributes -->
       <xsd:attribute name="sample_fmt"       type="xsd:string"/>
@@ -183,6 +220,7 @@
       <xsd:attribute name="duration"         type="xsd:float"/>
       <xsd:attribute name="bit_rate"         type="xsd:int"/>
       <xsd:attribute name="max_bit_rate"     type="xsd:int"/>
+      <xsd:attribute name="bits_per_raw_sample" type="xsd:int"/>
       <xsd:attribute name="nb_frames"        type="xsd:int"/>
       <xsd:attribute name="nb_read_frames"   type="xsd:int"/>
       <xsd:attribute name="nb_read_packets"  type="xsd:int"/>
@@ -235,8 +273,8 @@
     <xsd:complexType name="programVersionType">
       <xsd:attribute name="version"          type="xsd:string" use="required"/>
       <xsd:attribute name="copyright"        type="xsd:string" use="required"/>
-      <xsd:attribute name="build_date"       type="xsd:string" use="required"/>
-      <xsd:attribute name="build_time"       type="xsd:string" use="required"/>
+      <xsd:attribute name="build_date"       type="xsd:string"/>
+      <xsd:attribute name="build_time"       type="xsd:string"/>
       <xsd:attribute name="compiler_ident"   type="xsd:string" use="required"/>
       <xsd:attribute name="configuration"    type="xsd:string" use="required"/>
     </xsd:complexType>
@@ -273,5 +311,46 @@
         <xsd:sequence>
           <xsd:element name="library_version" type="ffprobe:libraryVersionType" minOccurs="0" maxOccurs="unbounded"/>
         </xsd:sequence>
+    </xsd:complexType>
+
+    <xsd:complexType name="pixelFormatFlagsType">
+      <xsd:attribute name="big_endian" type="xsd:int" use="required"/>
+      <xsd:attribute name="palette"    type="xsd:int" use="required"/>
+      <xsd:attribute name="bitstream"  type="xsd:int" use="required"/>
+      <xsd:attribute name="hwaccel"    type="xsd:int" use="required"/>
+      <xsd:attribute name="planar"     type="xsd:int" use="required"/>
+      <xsd:attribute name="rgb"        type="xsd:int" use="required"/>
+      <xsd:attribute name="pseudopal"  type="xsd:int" use="required"/>
+      <xsd:attribute name="alpha"      type="xsd:int" use="required"/>
+    </xsd:complexType>
+
+    <xsd:complexType name="pixelFormatComponentType">
+      <xsd:attribute name="index"      type="xsd:int" use="required"/>
+      <xsd:attribute name="bit_depth"  type="xsd:int" use="required"/>
+    </xsd:complexType>
+
+    <xsd:complexType name="pixelFormatComponentsType">
+      <xsd:sequence>
+        <xsd:element name="component" type="ffprobe:pixelFormatComponentType" minOccurs="0" maxOccurs="unbounded"/>
+      </xsd:sequence>
+    </xsd:complexType>
+
+    <xsd:complexType name="pixelFormatType">
+      <xsd:sequence>
+        <xsd:element name="flags" type="ffprobe:pixelFormatFlagsType" minOccurs="0" maxOccurs="1"/>
+        <xsd:element name="components" type="ffprobe:pixelFormatComponentsType" minOccurs="0" maxOccurs="1"/>
+      </xsd:sequence>
+
+      <xsd:attribute name="name"                type="xsd:string" use="required"/>
+      <xsd:attribute name="nb_components"       type="xsd:int"    use="required"/>
+      <xsd:attribute name="log2_chroma_w"       type="xsd:int"/>
+      <xsd:attribute name="log2_chroma_h"       type="xsd:int"/>
+      <xsd:attribute name="bits_per_pixel"      type="xsd:int"/>
+    </xsd:complexType>
+
+    <xsd:complexType name="pixelFormatsType">
+      <xsd:sequence>
+        <xsd:element name="pixel_format" type="ffprobe:pixelFormatType" minOccurs="0" maxOccurs="unbounded"/>
+      </xsd:sequence>
     </xsd:complexType>
 </xsd:schema>

@@ -23,6 +23,7 @@
 #include "libavutil/dict.h"
 #include "libavutil/opt.h"
 #include "libavutil/time.h"
+#include "libavutil/avassert.h"
 #include "os_support.h"
 #include "avformat.h"
 #if CONFIG_NETWORK
@@ -98,7 +99,7 @@ int ffurl_register_protocol(URLProtocol *protocol)
 {
     URLProtocol **p;
     p = &first_protocol;
-    while (*p != NULL)
+    while (*p)
         p = &(*p)->next;
     *p             = protocol;
     protocol->next = NULL;
@@ -261,7 +262,7 @@ int ffurl_alloc(URLContext **puc, const char *filename, int flags,
        return url_alloc_for_protocol(puc, p, filename, flags, int_cb);
 
     *puc = NULL;
-    if (av_strstart("https:", filename, NULL))
+    if (av_strstart(filename, "https:", NULL))
         av_log(NULL, AV_LOG_WARNING, "https protocol not found, recompile with openssl or gnutls enabled.\n");
     return AVERROR_PROTOCOL_NOT_FOUND;
 }
@@ -349,7 +350,9 @@ int ffurl_write(URLContext *h, const unsigned char *buf, int size)
     if (h->max_packet_size && size > h->max_packet_size)
         return AVERROR(EIO);
 
-    return retry_transfer_wrapper(h, (unsigned char *)buf, size, size, (void*)h->prot->url_write);
+    return retry_transfer_wrapper(h, (unsigned char *)buf, size, size,
+                                  (int (*)(struct URLContext *, uint8_t *, int))
+                                  h->prot->url_write);
 }
 
 int64_t ffurl_seek(URLContext *h, int64_t pos, int whence)
@@ -414,6 +417,79 @@ int avio_check(const char *url, int flags)
 
     ffurl_close(h);
     return ret;
+}
+
+int avio_open_dir(AVIODirContext **s, const char *url, AVDictionary **options)
+{
+    URLContext *h = NULL;
+    AVIODirContext *ctx = NULL;
+    int ret;
+    av_assert0(s);
+
+    ctx = av_mallocz(sizeof(*ctx));
+    if (!ctx) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+
+    if ((ret = ffurl_alloc(&h, url, AVIO_FLAG_READ, NULL)) < 0)
+        goto fail;
+
+    if (h->prot->url_open_dir && h->prot->url_read_dir && h->prot->url_close_dir) {
+        if (options && h->prot->priv_data_class &&
+            (ret = av_opt_set_dict(h->priv_data, options)) < 0)
+            goto fail;
+        ret = h->prot->url_open_dir(h);
+    } else
+        ret = AVERROR(ENOSYS);
+    if (ret < 0)
+        goto fail;
+
+    ctx->url_context = h;
+    *s = ctx;
+    return 0;
+
+  fail:
+    av_free(ctx);
+    *s = NULL;
+    ffurl_close(h);
+    return ret;
+}
+
+int avio_read_dir(AVIODirContext *s, AVIODirEntry **next)
+{
+    URLContext *h;
+    int ret;
+
+    if (!s || !s->url_context)
+        return AVERROR(EINVAL);
+    h = s->url_context;
+    if ((ret = h->prot->url_read_dir(h, next)) < 0)
+        avio_free_directory_entry(next);
+    return ret;
+}
+
+int avio_close_dir(AVIODirContext **s)
+{
+    URLContext *h;
+
+    av_assert0(s);
+    if (!(*s) || !(*s)->url_context)
+        return AVERROR(EINVAL);
+    h = (*s)->url_context;
+    h->prot->url_close_dir(h);
+    ffurl_close(h);
+    av_freep(s);
+    *s = NULL;
+    return 0;
+}
+
+void avio_free_directory_entry(AVIODirEntry **entry)
+{
+    if (!entry || !*entry)
+        return;
+    av_free((*entry)->name);
+    av_freep(entry);
 }
 
 int64_t ffurl_size(URLContext *h)

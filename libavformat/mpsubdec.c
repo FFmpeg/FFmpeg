@@ -58,14 +58,14 @@ static int mpsub_read_header(AVFormatContext *s)
     AVBPrint buf;
     AVRational pts_info = (AVRational){ 100, 1 }; // ts based by default
     int res = 0;
-    float multiplier = 100.0;
-    float current_pts = 0;
+    int multiplier = 100;
+    double current_pts = 0;
 
     av_bprint_init(&buf, 0, AV_BPRINT_SIZE_UNLIMITED);
 
-    while (!url_feof(s->pb)) {
+    while (!avio_feof(s->pb)) {
         char line[1024];
-        float start, duration;
+        double start, duration;
         int fps, len = ff_get_line(s->pb, line, sizeof(line));
 
         if (!len)
@@ -76,8 +76,8 @@ static int mpsub_read_header(AVFormatContext *s)
         if (sscanf(line, "FORMAT=%d", &fps) == 1 && fps > 3 && fps < 100) {
             /* frame based timing */
             pts_info = (AVRational){ fps, 1 };
-            multiplier = 1.0;
-        } else if (sscanf(line, "%f %f", &start, &duration) == 2) {
+            multiplier = 1;
+        } else if (sscanf(line, "%lf %lf", &start, &duration) == 2) {
             AVPacket *sub;
             const int64_t pos = avio_tell(s->pb);
 

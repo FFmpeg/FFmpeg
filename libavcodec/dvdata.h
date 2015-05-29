@@ -26,13 +26,6 @@ extern const uint8_t ff_dv_zigzag248_direct[64];
 extern const uint8_t ff_dv_quant_shifts[22][4];
 extern const uint8_t ff_dv_quant_offset[4];
 
-extern const int ff_dv_iweight_88[64];
-extern const int ff_dv_iweight_248[64];
-extern const int ff_dv_iweight_1080_y[64];
-extern const int ff_dv_iweight_1080_c[64];
-extern const int ff_dv_iweight_720_y[64];
-extern const int ff_dv_iweight_720_c[64];
-
 #define NB_DV_VLC 409
 
 extern const uint16_t ff_dv_vlc_bits[NB_DV_VLC];

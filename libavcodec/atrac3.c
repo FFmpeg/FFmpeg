@@ -42,7 +42,6 @@
 #include "avcodec.h"
 #include "bytestream.h"
 #include "fft.h"
-#include "fmtconvert.h"
 #include "get_bits.h"
 #include "internal.h"
 
@@ -108,8 +107,7 @@ typedef struct ATRAC3Context {
 
     AtracGCContext    gainc_ctx;
     FFTContext        mdct_ctx;
-    FmtConvertContext fmt_conv;
-    AVFloatDSPContext fdsp;
+    AVFloatDSPContext *fdsp;
 } ATRAC3Context;
 
 static DECLARE_ALIGNED(32, float, mdct_window)[MDCT_SIZE];
@@ -142,7 +140,7 @@ static void imlt(ATRAC3Context *q, float *input, float *output, int odd_band)
     q->mdct_ctx.imdct_calc(&q->mdct_ctx, output, input);
 
     /* Perform windowing on the output. */
-    q->fdsp.vector_fmul(output, output, mdct_window, MDCT_SIZE);
+    q->fdsp->vector_fmul(output, output, mdct_window, MDCT_SIZE);
 }
 
 /*
@@ -190,8 +188,9 @@ static av_cold int atrac3_decode_close(AVCodecContext *avctx)
 {
     ATRAC3Context *q = avctx->priv_data;
 
-    av_free(q->units);
-    av_free(q->decoded_bytes_buffer);
+    av_freep(&q->units);
+    av_freep(&q->decoded_bytes_buffer);
+    av_freep(&q->fdsp);
 
     ff_mdct_end(&q->mdct_ctx);
 
@@ -888,7 +887,7 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
 
     q->decoded_bytes_buffer = av_mallocz(FFALIGN(avctx->block_align, 4) +
                                          FF_INPUT_BUFFER_PADDING_SIZE);
-    if (q->decoded_bytes_buffer == NULL)
+    if (!q->decoded_bytes_buffer)
         return AVERROR(ENOMEM);
 
     avctx->sample_fmt = AV_SAMPLE_FMT_FLTP;
@@ -915,11 +914,10 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
     }
 
     ff_atrac_init_gain_compensation(&q->gainc_ctx, 4, 3);
-    avpriv_float_dsp_init(&q->fdsp, avctx->flags & CODEC_FLAG_BITEXACT);
-    ff_fmt_convert_init(&q->fmt_conv, avctx);
+    q->fdsp = avpriv_float_dsp_alloc(avctx->flags & CODEC_FLAG_BITEXACT);
 
     q->units = av_mallocz_array(avctx->channels, sizeof(*q->units));
-    if (!q->units) {
+    if (!q->units || !q->fdsp) {
         atrac3_decode_close(avctx);
         return AVERROR(ENOMEM);
     }

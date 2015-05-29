@@ -67,7 +67,7 @@ static int nc_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     uint32_t state=-1;
     while (state != NC_VIDEO_FLAG) {
-        if (url_feof(s->pb))
+        if (avio_feof(s->pb))
             return AVERROR(EIO);
         state = (state<<8) + avio_r8(s->pb);
     }

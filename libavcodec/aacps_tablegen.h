@@ -70,7 +70,7 @@ static const float g2_Q4[] = {
      0.16486303567403f,  0.23279856662996f, 0.25f
 };
 
-static void make_filters_from_proto(float (*filter)[8][2], const float *proto, int bands)
+static av_cold void make_filters_from_proto(float (*filter)[8][2], const float *proto, int bands)
 {
     int q, n;
     for (q = 0; q < bands; q++) {
@@ -82,7 +82,7 @@ static void make_filters_from_proto(float (*filter)[8][2], const float *proto, i
     }
 }
 
-static void ps_tableinit(void)
+static av_cold void ps_tableinit(void)
 {
     static const float ipdopd_sin[] = { 0, M_SQRT1_2, 1,  M_SQRT1_2,  0, -M_SQRT1_2, -1, -M_SQRT1_2 };
     static const float ipdopd_cos[] = { 1, M_SQRT1_2, 0, -M_SQRT1_2, -1, -M_SQRT1_2,  0,  M_SQRT1_2 };

@@ -1,4 +1,5 @@
 \input texinfo @c -*- texinfo -*-
+@documentencoding UTF-8
 
 @settitle ffprobe Documentation
 @titlepage
@@ -119,6 +120,10 @@ Show payload data, as a hexadecimal and ASCII dump. Coupled with
 
 The dump is printed as the "data" field. It may contain newlines.
 
+@item -show_data_hash @var{algorithm}
+Show a hash of payload data, for packets with @option{-show_packets} and for
+codec extradata with @option{-show_streams}.
+
 @item -show_error
 Show information about the error found when trying to probe the input.
 
@@ -180,7 +185,7 @@ format : stream=codec_type
 
 To show all the tags in the stream and format sections:
 @example
-format_tags : format_tags
+stream_tags : format_tags
 @end example
 
 To show only the @code{title} tag (if available) in the stream
@@ -317,6 +322,12 @@ Show information related to program and library versions. This is the
 equivalent of setting both @option{-show_program_version} and
 @option{-show_library_versions} options.
 
+@item -show_pixel_formats
+Show information about all pixel formats supported by FFmpeg.
+
+Pixel format information for each format is printed within a section
+with name "PIXEL_FORMAT".
+
 @item -bitexact
 Force bitexact output, useful to produce output which is not dependent
 on the specific build.
@@ -436,17 +447,17 @@ writer).
 It can assume one of the following values:
 @table @option
 @item c
-Perform C-like escaping. Strings containing a newline ('\n'), carriage
-return ('\r'), a tab ('\t'), a form feed ('\f'), the escaping
-character ('\') or the item separator character @var{SEP} are escaped using C-like fashioned
-escaping, so that a newline is converted to the sequence "\n", a
-carriage return to "\r", '\' to "\\" and the separator @var{SEP} is
-converted to "\@var{SEP}".
+Perform C-like escaping. Strings containing a newline (@samp{\n}), carriage
+return (@samp{\r}), a tab (@samp{\t}), a form feed (@samp{\f}), the escaping
+character (@samp{\}) or the item separator character @var{SEP} are escaped
+using C-like fashioned escaping, so that a newline is converted to the
+sequence @samp{\n}, a carriage return to @samp{\r}, @samp{\} to @samp{\\} and
+the separator @var{SEP} is converted to @samp{\@var{SEP}}.
 
 @item csv
 Perform CSV-like escaping, as described in RFC4180.  Strings
-containing a newline ('\n'), a carriage return ('\r'), a double quote
-('"'), or @var{SEP} are enclosed in double-quotes.
+containing a newline (@samp{\n}), a carriage return (@samp{\r}), a double quote
+(@samp{"}), or @var{SEP} are enclosed in double-quotes.
 
 @item none
 Perform no escaping.
@@ -474,7 +485,7 @@ The description of the accepted options follows.
 Separator character used to separate the chapter, the section name, IDs and
 potential tags in the printed field key.
 
-Default value is '.'.
+Default value is @samp{.}.
 
 @item hierarchical, h
 Specify if the section name specification should be hierarchical. If
@@ -496,21 +507,22 @@ The following conventions are adopted:
 @item
 all key and values are UTF-8
 @item
-'.' is the subgroup separator
+@samp{.} is the subgroup separator
 @item
-newline, '\t', '\f', '\b' and the following characters are escaped
+newline, @samp{\t}, @samp{\f}, @samp{\b} and the following characters are
+escaped
 @item
-'\' is the escape character
+@samp{\} is the escape character
 @item
-'#' is the comment indicator
+@samp{#} is the comment indicator
 @item
-'=' is the key/value separator
+@samp{=} is the key/value separator
 @item
-':' is not used but usually parsed as key/value separator
+@samp{:} is not used but usually parsed as key/value separator
 @end itemize
 
 This writer accepts options as a list of @var{key}=@var{value} pairs,
-separated by ":".
+separated by @samp{:}.
 
 The description of the accepted options follows.
 

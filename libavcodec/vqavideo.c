@@ -1,6 +1,6 @@
 /*
  * Westwood Studios VQA Video Decoder
- * Copyright (C) 2003 the ffmpeg project
+ * Copyright (c) 2003 The FFmpeg Project
  *
  * This file is part of FFmpeg.
  *
@@ -231,10 +231,16 @@ static int decode_format80(VqaContext *s, int src_size,
     unsigned char color;
     int i;
 
+    if (src_size < 0 || src_size > bytestream2_get_bytes_left(&s->gb)) {
+        av_log(s->avctx, AV_LOG_ERROR, "Chunk size %d is out of range\n",
+               src_size);
+        return AVERROR_INVALIDDATA;
+    }
+
     start = bytestream2_tell(&s->gb);
     while (bytestream2_tell(&s->gb) - start < src_size) {
         opcode = bytestream2_get_byte(&s->gb);
-        av_dlog(s->avctx, "opcode %02X: ", opcode);
+        ff_tlog(s->avctx, "opcode %02X: ", opcode);
 
         /* 0x80 means that frame is finished */
         if (opcode == 0x80)
@@ -250,7 +256,7 @@ static int decode_format80(VqaContext *s, int src_size,
 
             count   = bytestream2_get_le16(&s->gb);
             src_pos = bytestream2_get_le16(&s->gb);
-            av_dlog(s->avctx, "(1) copy %X bytes from absolute pos %X\n", count, src_pos);
+            ff_tlog(s->avctx, "(1) copy %X bytes from absolute pos %X\n", count, src_pos);
             CHECK_COUNT();
             CHECK_COPY(src_pos);
             for (i = 0; i < count; i++)
@@ -261,7 +267,7 @@ static int decode_format80(VqaContext *s, int src_size,
 
             count = bytestream2_get_le16(&s->gb);
             color = bytestream2_get_byte(&s->gb);
-            av_dlog(s->avctx, "(2) set %X bytes to %02X\n", count, color);
+            ff_tlog(s->avctx, "(2) set %X bytes to %02X\n", count, color);
             CHECK_COUNT();
             memset(&dest[dest_index], color, count);
             dest_index += count;
@@ -270,7 +276,7 @@ static int decode_format80(VqaContext *s, int src_size,
 
             count = (opcode & 0x3F) + 3;
             src_pos = bytestream2_get_le16(&s->gb);
-            av_dlog(s->avctx, "(3) copy %X bytes from absolute pos %X\n", count, src_pos);
+            ff_tlog(s->avctx, "(3) copy %X bytes from absolute pos %X\n", count, src_pos);
             CHECK_COUNT();
             CHECK_COPY(src_pos);
             for (i = 0; i < count; i++)
@@ -280,7 +286,7 @@ static int decode_format80(VqaContext *s, int src_size,
         } else if (opcode > 0x80) {
 
             count = opcode & 0x3F;
-            av_dlog(s->avctx, "(4) copy %X bytes from source to dest\n", count);
+            ff_tlog(s->avctx, "(4) copy %X bytes from source to dest\n", count);
             CHECK_COUNT();
             bytestream2_get_buffer(&s->gb, &dest[dest_index], count);
             dest_index += count;
@@ -289,7 +295,7 @@ static int decode_format80(VqaContext *s, int src_size,
 
             count = ((opcode & 0x70) >> 4) + 3;
             src_pos = bytestream2_get_byte(&s->gb) | ((opcode & 0x0F) << 8);
-            av_dlog(s->avctx, "(5) copy %X bytes from relpos %X\n", count, src_pos);
+            ff_tlog(s->avctx, "(5) copy %X bytes from relpos %X\n", count, src_pos);
             CHECK_COUNT();
             CHECK_COPY(dest_index - src_pos);
             for (i = 0; i < count; i++)

@@ -34,6 +34,7 @@
 #include "huffyuvencdsp.h"
 #include "internal.h"
 #include "put_bits.h"
+#include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 
 static inline void diff_bytes(HYuvContext *s, uint8_t *dst,
@@ -487,14 +488,30 @@ static int encode_422_bitstream(HYuvContext *s, int offset, int count)
     return 0;
 }
 
-static int encode_plane_bitstream(HYuvContext *s, int count, int plane)
+static int encode_plane_bitstream(HYuvContext *s, int width, int plane)
 {
-    int i;
+    int i, count = width/2;
 
     if (s->pb.buf_end - s->pb.buf - (put_bits_count(&s->pb) >> 3) < count * s->bps / 2) {
         av_log(s->avctx, AV_LOG_ERROR, "encoded frame too large\n");
         return -1;
     }
+
+#define LOADEND\
+            int y0 = s->temp[0][width-1];
+#define LOADEND_14\
+            int y0 = s->temp16[0][width-1] & mask;
+#define LOADEND_16\
+            int y0 = s->temp16[0][width-1];
+#define STATEND\
+            s->stats[plane][y0]++;
+#define STATEND_16\
+            s->stats[plane][y0>>2]++;
+#define WRITEEND\
+            put_bits(&s->pb, s->len[plane][y0], s->bits[plane][y0]);
+#define WRITEEND_16\
+            put_bits(&s->pb, s->len[plane][y0>>2], s->bits[plane][y0>>2]);\
+            put_bits(&s->pb, 2, y0&3);
 
 #define LOAD2\
             int y0 = s->temp[0][2 * i];\
@@ -520,13 +537,15 @@ static int encode_plane_bitstream(HYuvContext *s, int count, int plane)
             put_bits(&s->pb, s->len[plane][y1>>2], s->bits[plane][y1>>2]);\
             put_bits(&s->pb, 2, y1&3);
 
-    count /= 2;
-
     if (s->bps <= 8) {
     if (s->flags & CODEC_FLAG_PASS1) {
         for (i = 0; i < count; i++) {
             LOAD2;
             STAT2;
+        }
+        if (width&1) {
+            LOADEND;
+            STATEND;
         }
     }
     if (s->avctx->flags2 & CODEC_FLAG2_NO_OUTPUT)
@@ -538,10 +557,19 @@ static int encode_plane_bitstream(HYuvContext *s, int count, int plane)
             STAT2;
             WRITE2;
         }
+        if (width&1) {
+            LOADEND;
+            STATEND;
+            WRITEEND;
+        }
     } else {
         for (i = 0; i < count; i++) {
             LOAD2;
             WRITE2;
+        }
+        if (width&1) {
+            LOADEND;
+            WRITEEND;
         }
     }
     } else if (s->bps <= 14) {
@@ -551,6 +579,10 @@ static int encode_plane_bitstream(HYuvContext *s, int count, int plane)
                 LOAD2_14;
                 STAT2;
             }
+            if (width&1) {
+                LOADEND_14;
+                STATEND;
+            }
         }
         if (s->avctx->flags2 & CODEC_FLAG2_NO_OUTPUT)
             return 0;
@@ -561,10 +593,19 @@ static int encode_plane_bitstream(HYuvContext *s, int count, int plane)
                 STAT2;
                 WRITE2;
             }
+            if (width&1) {
+                LOADEND_14;
+                STATEND;
+                WRITEEND;
+            }
         } else {
             for (i = 0; i < count; i++) {
                 LOAD2_14;
                 WRITE2;
+            }
+            if (width&1) {
+                LOADEND_14;
+                WRITEEND;
             }
         }
     } else {
@@ -572,6 +613,10 @@ static int encode_plane_bitstream(HYuvContext *s, int count, int plane)
             for (i = 0; i < count; i++) {
                 LOAD2_16;
                 STAT2_16;
+            }
+            if (width&1) {
+                LOADEND_16;
+                STATEND_16;
             }
         }
         if (s->avctx->flags2 & CODEC_FLAG2_NO_OUTPUT)
@@ -583,10 +628,19 @@ static int encode_plane_bitstream(HYuvContext *s, int count, int plane)
                 STAT2_16;
                 WRITE2_16;
             }
+            if (width&1) {
+                LOADEND_16;
+                STATEND_16;
+                WRITEEND_16;
+            }
         } else {
             for (i = 0; i < count; i++) {
                 LOAD2_16;
                 WRITE2_16;
+            }
+            if (width&1) {
+                LOADEND_16;
+                WRITEEND_16;
             }
         }
     }
@@ -990,6 +1044,27 @@ static av_cold int encode_end(AVCodecContext *avctx)
     return 0;
 }
 
+static const AVOption options[] = {
+    { "non_deterministic", "Allow multithreading for e.g. context=1 at the expense of determinism",
+      offsetof(HYuvContext, non_determ), AV_OPT_TYPE_INT, { .i64 = 1 },
+      0, 1, AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM },
+    { NULL },
+};
+
+static const AVClass normal_class = {
+    .class_name = "huffyuv",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
+static const AVClass ff_class = {
+    .class_name = "ffvhuff",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVCodec ff_huffyuv_encoder = {
     .name           = "huffyuv",
     .long_name      = NULL_IF_CONFIG_SMALL("Huffyuv / HuffYUV"),
@@ -1000,10 +1075,13 @@ AVCodec ff_huffyuv_encoder = {
     .encode2        = encode_frame,
     .close          = encode_end,
     .capabilities   = CODEC_CAP_FRAME_THREADS | CODEC_CAP_INTRA_ONLY,
+    .priv_class     = &normal_class,
     .pix_fmts       = (const enum AVPixelFormat[]){
         AV_PIX_FMT_YUV422P, AV_PIX_FMT_RGB24,
         AV_PIX_FMT_RGB32, AV_PIX_FMT_NONE
     },
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |
+                      FF_CODEC_CAP_INIT_CLEANUP,
 };
 
 #if CONFIG_FFVHUFF_ENCODER
@@ -1017,6 +1095,7 @@ AVCodec ff_ffvhuff_encoder = {
     .encode2        = encode_frame,
     .close          = encode_end,
     .capabilities   = CODEC_CAP_FRAME_THREADS | CODEC_CAP_INTRA_ONLY,
+    .priv_class     = &ff_class,
     .pix_fmts       = (const enum AVPixelFormat[]){
         AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUV411P,
         AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUV440P,
@@ -1035,5 +1114,7 @@ AVCodec ff_ffvhuff_encoder = {
         AV_PIX_FMT_RGB24,
         AV_PIX_FMT_RGB32, AV_PIX_FMT_NONE
     },
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |
+                      FF_CODEC_CAP_INIT_CLEANUP,
 };
 #endif

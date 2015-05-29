@@ -317,7 +317,7 @@ static int decode_rle(GetBitContext *gb, uint8_t *pal_dst, int pal_stride,
     if (next_code != 1 << current_length)
         return AVERROR_INVALIDDATA;
 
-    if (i = init_vlc(&vlc, 9, alphabet_size, bits, 1, 1, codes, 4, 4, 0))
+    if ((i = init_vlc(&vlc, 9, alphabet_size, bits, 1, 1, codes, 4, 4, 0)) < 0)
         return i;
 
     /* frame decode */
@@ -397,8 +397,8 @@ static int decode_wmv9(AVCodecContext *avctx, const uint8_t *buf, int buf_size,
 
     avctx->pix_fmt = AV_PIX_FMT_YUV420P;
 
-    if ((ret = ff_MPV_frame_start(s, avctx)) < 0) {
-        av_log(v->s.avctx, AV_LOG_ERROR, "ff_MPV_frame_start error\n");
+    if ((ret = ff_mpv_frame_start(s, avctx)) < 0) {
+        av_log(v->s.avctx, AV_LOG_ERROR, "ff_mpv_frame_start error\n");
         avctx->pix_fmt = AV_PIX_FMT_RGB24;
         return ret;
     }
@@ -418,7 +418,7 @@ static int decode_wmv9(AVCodecContext *avctx, const uint8_t *buf, int buf_size,
 
     ff_er_frame_end(&s->er);
 
-    ff_MPV_frame_end(s);
+    ff_mpv_frame_end(s);
 
     f = s->current_picture.f;
 

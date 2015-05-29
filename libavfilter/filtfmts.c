@@ -21,8 +21,10 @@
 #include <stdio.h>
 
 #include "libavutil/channel_layout.h"
+#include "libavutil/mem.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/samplefmt.h"
+
 #include "libavfilter/avfilter.h"
 #include "libavfilter/formats.h"
 
@@ -38,7 +40,7 @@ static void print_formats(AVFilterContext *filter_ctx)
             for (j = 0; j < fmts->nb_formats; j++)                    \
                 if(av_get_pix_fmt_name(fmts->formats[j]))               \
                 printf(#INOUT "PUT[%d] %s: fmt:%s\n",                   \
-                       i, filter_ctx->inout##put_pads[i].name,      \
+                       i, avfilter_pad_get_name(filter_ctx->inout##put_pads, i),      \
                        av_get_pix_fmt_name(fmts->formats[j]));          \
         } else if (filter_ctx->inout##puts[i]->type == AVMEDIA_TYPE_AUDIO) { \
             AVFilterFormats *fmts;                                      \
@@ -47,7 +49,7 @@ static void print_formats(AVFilterContext *filter_ctx)
             fmts = filter_ctx->inout##puts[i]->outin##_formats;         \
             for (j = 0; j < fmts->nb_formats; j++)                    \
                 printf(#INOUT "PUT[%d] %s: fmt:%s\n",                   \
-                       i, filter_ctx->inout##put_pads[i].name,      \
+                       i, avfilter_pad_get_name(filter_ctx->inout##put_pads, i),      \
                        av_get_sample_fmt_name(fmts->formats[j]));       \
                                                                         \
             layouts = filter_ctx->inout##puts[i]->outin##_channel_layouts; \
@@ -56,7 +58,7 @@ static void print_formats(AVFilterContext *filter_ctx)
                 av_get_channel_layout_string(buf, sizeof(buf), -1,      \
                                              layouts->channel_layouts[j]);         \
                 printf(#INOUT "PUT[%d] %s: chlayout:%s\n",              \
-                       i, filter_ctx->inout##put_pads[i].name, buf); \
+                       i, avfilter_pad_get_name(filter_ctx->inout##put_pads, i), buf); \
             }                                                           \
         }                                                               \
     }                                                                   \
@@ -73,6 +75,7 @@ int main(int argc, char **argv)
     const char *filter_name;
     const char *filter_args = NULL;
     int i;
+    int ret = 0;
 
     av_log_set_level(AV_LOG_DEBUG);
 
@@ -113,12 +116,22 @@ int main(int argc, char **argv)
     /* create a link for each of the input pads */
     for (i = 0; i < filter_ctx->nb_inputs; i++) {
         AVFilterLink *link = av_mallocz(sizeof(AVFilterLink));
-        link->type = filter_ctx->input_pads[i].type;
+        if (!link) {
+            fprintf(stderr, "Unable to allocate memory for filter input link\n");
+            ret = 1;
+            goto fail;
+        }
+        link->type = avfilter_pad_get_type(filter_ctx->input_pads, i);
         filter_ctx->inputs[i] = link;
     }
     for (i = 0; i < filter_ctx->nb_outputs; i++) {
         AVFilterLink *link = av_mallocz(sizeof(AVFilterLink));
-        link->type = filter_ctx->output_pads[i].type;
+        if (!link) {
+            fprintf(stderr, "Unable to allocate memory for filter output link\n");
+            ret = 1;
+            goto fail;
+        }
+        link->type = avfilter_pad_get_type(filter_ctx->output_pads, i);
         filter_ctx->outputs[i] = link;
     }
 
@@ -129,8 +142,9 @@ int main(int argc, char **argv)
 
     print_formats(filter_ctx);
 
+fail:
     avfilter_free(filter_ctx);
     avfilter_graph_free(&graph_ctx);
     fflush(stdout);
-    return 0;
+    return ret;
 }

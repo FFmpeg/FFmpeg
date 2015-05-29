@@ -165,7 +165,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     zret = deflateInit(&c->zstream, c->compression);
     if (zret != Z_OK) {
         av_log(avctx, AV_LOG_ERROR, "Deflate init error: %d\n", zret);
-        return 1;
+        return AVERROR_UNKNOWN;
     }
 
     return 0;
@@ -199,4 +199,6 @@ AVCodec ff_zlib_encoder = {
     .close          = encode_end,
     .capabilities   = CODEC_CAP_FRAME_THREADS | CODEC_CAP_INTRA_ONLY,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_BGR24, AV_PIX_FMT_NONE },
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |
+                      FF_CODEC_CAP_INIT_CLEANUP,
 };

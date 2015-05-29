@@ -62,10 +62,17 @@
     b2 = vec_mergeh( a1, a3 ); \
     b3 = vec_mergel( a1, a3 )
 
+#if HAVE_BIGENDIAN
+#define vdst_load(d)              \
+    vdst_orig = vec_ld(0, dst);   \
+    vdst = vec_perm(vdst_orig, zero_u8v, vdst_mask);
+#else
+#define vdst_load(d) vdst = vec_vsx_ld(0, dst)
+#endif
+
 #define VEC_LOAD_U8_ADD_S16_STORE_U8(va)                      \
-    vdst_orig = vec_ld(0, dst);                               \
-    vdst = vec_perm(vdst_orig, zero_u8v, vdst_mask);          \
-    vdst_ss = (vec_s16) vec_mergeh(zero_u8v, vdst);         \
+    vdst_load();                                              \
+    vdst_ss = (vec_s16) VEC_MERGEH(zero_u8v, vdst);           \
     va = vec_add(va, vdst_ss);                                \
     va_u8 = vec_packsu(va, zero_s16v);                        \
     va_u32 = vec_splat((vec_u32)va_u8, 0);                  \
@@ -165,26 +172,43 @@ static void h264_idct_add_altivec(uint8_t *dst, int16_t *block, int stride)
     d7 = vec_sub(b0v, b7v); \
 }
 
-#define ALTIVEC_STORE_SUM_CLIP(dest, idctv, perm_ldv, perm_stv, sel) { \
-    /* unaligned load */                                       \
-    vec_u8 hv = vec_ld( 0, dest );                           \
-    vec_u8 lv = vec_ld( 7, dest );                           \
-    vec_u8 dstv   = vec_perm( hv, lv, (vec_u8)perm_ldv );  \
-    vec_s16 idct_sh6 = vec_sra(idctv, sixv);                 \
-    vec_u16 dst16 = (vec_u16)vec_mergeh(zero_u8v, dstv);   \
-    vec_s16 idstsum = vec_adds(idct_sh6, (vec_s16)dst16);  \
-    vec_u8 idstsum8 = vec_packsu(zero_s16v, idstsum);        \
-    vec_u8 edgehv;                                           \
-    /* unaligned store */                                      \
-    vec_u8 bodyv  = vec_perm( idstsum8, idstsum8, perm_stv );\
-    vec_u8 edgelv = vec_perm( sel, zero_u8v, perm_stv );     \
+#if HAVE_BIGENDIAN
+#define GET_2PERM(ldv, stv, d)  \
+    ldv = vec_lvsl(0, d);       \
+    stv = vec_lvsr(8, d);
+#define dstv_load(d)            \
+    vec_u8 hv = vec_ld( 0, d ); \
+    vec_u8 lv = vec_ld( 7, d);  \
+    vec_u8 dstv   = vec_perm( hv, lv, (vec_u8)perm_ldv );
+#define dest_unligned_store(d)                                 \
+    vec_u8 edgehv;                                             \
+    vec_u8 bodyv  = vec_perm( idstsum8, idstsum8, perm_stv );  \
+    vec_u8 edgelv = vec_perm( sel, zero_u8v, perm_stv );       \
     lv    = vec_sel( lv, bodyv, edgelv );                      \
-    vec_st( lv, 7, dest );                                     \
-    hv    = vec_ld( 0, dest );                                 \
+    vec_st( lv, 7, d );                                        \
+    hv    = vec_ld( 0, d );                                    \
     edgehv = vec_perm( zero_u8v, sel, perm_stv );              \
     hv    = vec_sel( hv, bodyv, edgehv );                      \
-    vec_st( hv, 0, dest );                                     \
- }
+    vec_st( hv, 0, d );
+#else
+
+#define GET_2PERM(ldv, stv, d) {}
+#define dstv_load(d) vec_u8 dstv = vec_vsx_ld(0, d)
+#define dest_unligned_store(d)\
+    vec_u8 dst8 = vec_perm((vec_u8)idstsum8, dstv, vcprm(2,3,s2,s3));\
+    vec_vsx_st(dst8, 0, d)
+#endif /* HAVE_BIGENDIAN */
+
+#define ALTIVEC_STORE_SUM_CLIP(dest, idctv, perm_ldv, perm_stv, sel) { \
+    /* unaligned load */                                       \
+    dstv_load(dest);                                           \
+    vec_s16 idct_sh6 = vec_sra(idctv, sixv);                 \
+    vec_u16 dst16 = (vec_u16)VEC_MERGEH(zero_u8v, dstv);   \
+    vec_s16 idstsum = vec_adds(idct_sh6, (vec_s16)dst16);  \
+    vec_u8 idstsum8 = vec_packsu(zero_s16v, idstsum);        \
+    /* unaligned store */                                      \
+    dest_unligned_store(dest);\
+}
 
 static void h264_idct8_add_altivec(uint8_t *dst, int16_t *dct, int stride)
 {
@@ -192,8 +216,8 @@ static void h264_idct8_add_altivec(uint8_t *dst, int16_t *dct, int stride)
     vec_s16 d0, d1, d2, d3, d4, d5, d6, d7;
     vec_s16 idct0, idct1, idct2, idct3, idct4, idct5, idct6, idct7;
 
-    vec_u8 perm_ldv = vec_lvsl(0, dst);
-    vec_u8 perm_stv = vec_lvsr(8, dst);
+    vec_u8 perm_ldv, perm_stv;
+    GET_2PERM(perm_ldv, perm_stv, dst);
 
     const vec_u16 onev = vec_splat_u16(1);
     const vec_u16 twov = vec_splat_u16(2);
@@ -232,32 +256,41 @@ static void h264_idct8_add_altivec(uint8_t *dst, int16_t *dct, int stride)
     ALTIVEC_STORE_SUM_CLIP(&dst[7*stride], idct7, perm_ldv, perm_stv, sel);
 }
 
+#if HAVE_BIGENDIAN
+#define DST_LD vec_ld
+#else
+#define DST_LD vec_vsx_ld
+#endif
 static av_always_inline void h264_idct_dc_add_internal(uint8_t *dst, int16_t *block, int stride, int size)
 {
     vec_s16 dc16;
     vec_u8 dcplus, dcminus, v0, v1, v2, v3, aligner;
+    vec_s32 v_dc32;
     LOAD_ZERO;
     DECLARE_ALIGNED(16, int, dc);
     int i;
 
     dc = (block[0] + 32) >> 6;
     block[0] = 0;
-    dc16 = vec_splat((vec_s16) vec_lde(0, &dc), 1);
+    v_dc32 = vec_lde(0, &dc);
+    dc16 = VEC_SPLAT16((vec_s16)v_dc32, 1);
 
     if (size == 4)
-        dc16 = vec_sld(dc16, zero_s16v, 8);
+        dc16 = VEC_SLD16(dc16, zero_s16v, 8);
     dcplus = vec_packsu(dc16, zero_s16v);
     dcminus = vec_packsu(vec_sub(zero_s16v, dc16), zero_s16v);
 
+#if HAVE_BIGENDIAN
     aligner = vec_lvsr(0, dst);
     dcplus = vec_perm(dcplus, dcplus, aligner);
     dcminus = vec_perm(dcminus, dcminus, aligner);
+#endif
 
     for (i = 0; i < size; i += 4) {
-        v0 = vec_ld(0, dst+0*stride);
-        v1 = vec_ld(0, dst+1*stride);
-        v2 = vec_ld(0, dst+2*stride);
-        v3 = vec_ld(0, dst+3*stride);
+        v0 = DST_LD(0, dst+0*stride);
+        v1 = DST_LD(0, dst+1*stride);
+        v2 = DST_LD(0, dst+2*stride);
+        v3 = DST_LD(0, dst+3*stride);
 
         v0 = vec_adds(v0, dcplus);
         v1 = vec_adds(v1, dcplus);
@@ -269,10 +302,10 @@ static av_always_inline void h264_idct_dc_add_internal(uint8_t *dst, int16_t *bl
         v2 = vec_subs(v2, dcminus);
         v3 = vec_subs(v3, dcminus);
 
-        vec_st(v0, 0, dst+0*stride);
-        vec_st(v1, 0, dst+1*stride);
-        vec_st(v2, 0, dst+2*stride);
-        vec_st(v3, 0, dst+3*stride);
+        VEC_ST(v0, 0, dst+0*stride);
+        VEC_ST(v1, 0, dst+1*stride);
+        VEC_ST(v2, 0, dst+2*stride);
+        VEC_ST(v3, 0, dst+3*stride);
 
         dst += 4*stride;
     }
@@ -633,6 +666,9 @@ void weight_h264_W_altivec(uint8_t *block, int stride, int height,
     temp[2] = offset;
 
     vtemp = (vec_s16)vec_ld(0, temp);
+#if !HAVE_BIGENDIAN
+    vtemp =(vec_s16)vec_perm(vtemp, vtemp, vcswapi2s(0,1,2,3));
+#endif
     vlog2_denom = (vec_u16)vec_splat(vtemp, 1);
     vweight = vec_splat(vtemp, 3);
     voffset = vec_splat(vtemp, 5);
@@ -641,8 +677,8 @@ void weight_h264_W_altivec(uint8_t *block, int stride, int height,
     for (y = 0; y < height; y++) {
         vblock = vec_ld(0, block);
 
-        v0 = (vec_s16)vec_mergeh(zero_u8v, vblock);
-        v1 = (vec_s16)vec_mergel(zero_u8v, vblock);
+        v0 = (vec_s16)VEC_MERGEH(zero_u8v, vblock);
+        v1 = (vec_s16)VEC_MERGEL(zero_u8v, vblock);
 
         if (w == 16 || aligned) {
             v0 = vec_mladd(v0, vweight, zero_s16v);
@@ -679,6 +715,9 @@ void biweight_h264_W_altivec(uint8_t *dst, uint8_t *src, int stride, int height,
     temp[3] = offset;
 
     vtemp = (vec_s16)vec_ld(0, temp);
+#if !HAVE_BIGENDIAN
+    vtemp =(vec_s16)vec_perm(vtemp, vtemp, vcswapi2s(0,1,2,3));
+#endif
     vlog2_denom = (vec_u16)vec_splat(vtemp, 1);
     vweights = vec_splat(vtemp, 3);
     vweightd = vec_splat(vtemp, 5);
@@ -690,10 +729,10 @@ void biweight_h264_W_altivec(uint8_t *dst, uint8_t *src, int stride, int height,
         vdst = vec_ld(0, dst);
         vsrc = vec_ld(0, src);
 
-        v0 = (vec_s16)vec_mergeh(zero_u8v, vdst);
-        v1 = (vec_s16)vec_mergel(zero_u8v, vdst);
-        v2 = (vec_s16)vec_mergeh(zero_u8v, vsrc);
-        v3 = (vec_s16)vec_mergel(zero_u8v, vsrc);
+        v0 = (vec_s16)VEC_MERGEH(zero_u8v, vdst);
+        v1 = (vec_s16)VEC_MERGEL(zero_u8v, vdst);
+        v2 = (vec_s16)VEC_MERGEH(zero_u8v, vsrc);
+        v3 = (vec_s16)VEC_MERGEL(zero_u8v, vsrc);
 
         if (w == 8) {
             if (src_aligned)

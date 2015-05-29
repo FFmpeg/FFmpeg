@@ -163,8 +163,8 @@ static void pulse_add_detected_device(PulseAudioDeviceList *info,
     return;
 
   fail:
-    av_free(new_device->device_description);
-    av_free(new_device->device_name);
+    av_freep(&new_device->device_description);
+    av_freep(&new_device->device_name);
     av_free(new_device);
 
 }

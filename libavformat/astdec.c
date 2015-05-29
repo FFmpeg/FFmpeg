@@ -84,7 +84,7 @@ static int ast_read_packet(AVFormatContext *s, AVPacket *pkt)
     int64_t pos;
     int ret;
 
-    if (url_feof(s->pb))
+    if (avio_feof(s->pb))
         return AVERROR_EOF;
 
     pos  = avio_tell(s->pb);

@@ -72,7 +72,7 @@ static inline uint16_t dv_audio_12to16(uint16_t sample)
     return result;
 }
 
-static const uint8_t *dv_extract_pack(uint8_t *frame, enum dv_pack_type t)
+static const uint8_t *dv_extract_pack(const uint8_t *frame, enum dv_pack_type t)
 {
     int offs;
     int c;
@@ -116,7 +116,7 @@ static const int dv_audio_frequency[3] = {
  * 3. Audio is always returned as 16bit linear samples: 12bit nonlinear samples
  *    are converted into 16bit linear ones.
  */
-static int dv_extract_audio(uint8_t *frame, uint8_t **ppcm,
+static int dv_extract_audio(const uint8_t *frame, uint8_t **ppcm,
                             const AVDVProfile *sys)
 {
     int size, chan, i, j, d, of, smpls, freq, quant, half_ch;
@@ -219,7 +219,7 @@ static int dv_extract_audio(uint8_t *frame, uint8_t **ppcm,
     return size;
 }
 
-static int dv_extract_audio_info(DVDemuxContext *c, uint8_t *frame)
+static int dv_extract_audio_info(DVDemuxContext *c, const uint8_t *frame)
 {
     const uint8_t *as_pack;
     int freq, stype, smpls, quant, i, ach;
@@ -279,7 +279,7 @@ static int dv_extract_audio_info(DVDemuxContext *c, uint8_t *frame)
     return (c->sys->audio_min_samples[freq] + smpls) * 4; /* 2ch, 2bytes */
 }
 
-static int dv_extract_video_info(DVDemuxContext *c, uint8_t *frame)
+static int dv_extract_video_info(DVDemuxContext *c, const uint8_t *frame)
 {
     const uint8_t *vsc_pack;
     AVCodecContext *avctx;
@@ -307,7 +307,7 @@ static int dv_extract_video_info(DVDemuxContext *c, uint8_t *frame)
     return size;
 }
 
-static int dv_extract_timecode(DVDemuxContext* c, uint8_t* frame, char *tc)
+static int dv_extract_timecode(DVDemuxContext* c, const uint8_t* frame, char *tc)
 {
     const uint8_t *tc_pack;
 
@@ -422,10 +422,10 @@ static int64_t dv_frame_offset(AVFormatContext *s, DVDemuxContext *c,
                                int64_t timestamp, int flags)
 {
     // FIXME: sys may be wrong if last dv_read_packet() failed (buffer is junk)
-    const AVDVProfile *sys = av_dv_codec_profile(c->vst->codec->width, c->vst->codec->height,
-                                                 c->vst->codec->pix_fmt);
+    const AVDVProfile *sys = av_dv_codec_profile2(c->vst->codec->coded_width, c->vst->codec->coded_height,
+                                                  c->vst->codec->pix_fmt, c->vst->codec->time_base);
     int64_t offset;
-    int64_t size       = avio_size(s->pb) - s->data_offset;
+    int64_t size       = avio_size(s->pb) - s->internal->data_offset;
     int64_t max_offset = ((size - 1) / sys->frame_size) * sys->frame_size;
 
     offset = sys->frame_size * timestamp;
@@ -435,7 +435,7 @@ static int64_t dv_frame_offset(AVFormatContext *s, DVDemuxContext *c,
     else if (offset < 0)
         offset = 0;
 
-    return offset + s->data_offset;
+    return offset + s->internal->data_offset;
 }
 
 void ff_dv_offset_reset(DVDemuxContext *c, int64_t frame_offset)
@@ -472,6 +472,9 @@ static int dv_read_timecode(AVFormatContext *s) {
                                         partial_frame_size);
 
     RawDVContext *c = s->priv_data;
+    if (!partial_frame)
+        return AVERROR(ENOMEM);
+
     ret = avio_read(s->pb, partial_frame, partial_frame_size);
     if (ret < 0)
         goto finish;
@@ -504,7 +507,7 @@ static int dv_read_header(AVFormatContext *s)
 
     state = avio_rb32(s->pb);
     while ((state & 0xffffff7f) != 0x1f07003f) {
-        if (url_feof(s->pb)) {
+        if (avio_feof(s->pb)) {
             av_log(s, AV_LOG_ERROR, "Cannot find DV header.\n");
             return -1;
         }
@@ -580,7 +583,7 @@ static int dv_read_seek(AVFormatContext *s, int stream_index,
 static int dv_read_close(AVFormatContext *s)
 {
     RawDVContext *c = s->priv_data;
-    av_free(c->dv_demux);
+    av_freep(&c->dv_demux);
     return 0;
 }
 

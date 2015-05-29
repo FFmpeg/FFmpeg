@@ -19,7 +19,7 @@
 #include "bit_depth_template.c"
 
 static void FUNCC(get_pixels)(int16_t *av_restrict block, const uint8_t *_pixels,
-                              int line_size)
+                              ptrdiff_t line_size)
 {
     const pixel *pixels = (const pixel *) _pixels;
     int i;

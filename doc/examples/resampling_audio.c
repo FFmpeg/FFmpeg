@@ -199,8 +199,7 @@ int main(int argc, char **argv)
             fmt, dst_ch_layout, dst_nb_channels, dst_rate, dst_filename);
 
 end:
-    if (dst_file)
-        fclose(dst_file);
+    fclose(dst_file);
 
     if (src_data)
         av_freep(&src_data[0]);

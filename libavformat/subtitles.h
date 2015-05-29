@@ -22,6 +22,7 @@
 #define AVFORMAT_SUBTITLES_H
 
 #include <stdint.h>
+#include <stddef.h>
 #include "avformat.h"
 #include "libavutil/bprint.h"
 
@@ -29,6 +30,74 @@ enum sub_sort {
     SUB_SORT_TS_POS = 0,    ///< sort by timestamps, then position
     SUB_SORT_POS_TS,        ///< sort by position, then timestamps
 };
+
+enum ff_utf_type {
+    FF_UTF_8,       // or other 8 bit encodings
+    FF_UTF16LE,
+    FF_UTF16BE,
+};
+
+typedef struct {
+    int type;
+    AVIOContext *pb;
+    unsigned char buf[8];
+    int buf_pos, buf_len;
+    AVIOContext buf_pb;
+} FFTextReader;
+
+/**
+ * Initialize the FFTextReader from the given AVIOContext. This function will
+ * read some bytes from pb, and test for UTF-8 or UTF-16 BOMs. Further accesses
+ * to FFTextReader will read more data from pb.
+ * If s is not NULL, the user will be warned if a UTF-16 conversion takes place.
+ *
+ * The purpose of FFTextReader is to transparently convert read data to UTF-8
+ * if the stream had a UTF-16 BOM.
+ *
+ * @param s Pointer to provide av_log context
+ * @param r object which will be initialized
+ * @param pb stream to read from (referenced as long as FFTextReader is in use)
+ */
+void ff_text_init_avio(void *s, FFTextReader *r, AVIOContext *pb);
+
+/**
+ * Similar to ff_text_init_avio(), but sets it up to read from a bounded buffer.
+ *
+ * @param r object which will be initialized
+ * @param buf buffer to read from (referenced as long as FFTextReader is in use)
+ * @param size size of buf
+ */
+void ff_text_init_buf(FFTextReader *r, void *buf, size_t size);
+
+/**
+ * Return the byte position of the next byte returned by ff_text_r8(). For
+ * UTF-16 source streams, this will return the original position, but it will
+ * be incorrect if a codepoint was only partially read with ff_text_r8().
+ */
+int64_t ff_text_pos(FFTextReader *r);
+
+/**
+ * Return the next byte. The return value is always 0 - 255. Returns 0 on EOF.
+ * If the source stream is UTF-16, this reads from the stream converted to
+ * UTF-8. On invalid UTF-16, 0 is returned.
+ */
+int ff_text_r8(FFTextReader *r);
+
+/**
+ * Return non-zero if EOF was reached.
+ */
+int ff_text_eof(FFTextReader *r);
+
+/**
+ * Like ff_text_r8(), but don't remove the byte from the buffer.
+ */
+int ff_text_peek_r8(FFTextReader *r);
+
+/**
+ * Read the given number of bytes (in UTF-8). On error or EOF, \0 bytes are
+ * written.
+ */
+void ff_text_read(FFTextReader *r, char *buf, size_t size);
 
 typedef struct {
     AVPacket *subs;         ///< array of subtitles packets
@@ -47,7 +116,7 @@ typedef struct {
  *              previous one instead of adding a new entry, 0 otherwise
  */
 AVPacket *ff_subtitles_queue_insert(FFDemuxSubtitlesQueue *q,
-                                    const uint8_t *event, int len, int merge);
+                                    const uint8_t *event, size_t len, int merge);
 
 /**
  * Set missing durations and sort subtitles by PTS, and then byte position.
@@ -77,7 +146,7 @@ void ff_subtitles_queue_clean(FFDemuxSubtitlesQueue *q);
  *
  * @param c cached character, to avoid a backward seek
  */
-int ff_smil_extract_next_chunk(AVIOContext *pb, AVBPrint *buf, char *c);
+int ff_smil_extract_next_text_chunk(FFTextReader *tr, AVBPrint *buf, char *c);
 
 /**
  * SMIL helper to point on the value of an attribute in the given tag.
@@ -88,19 +157,24 @@ int ff_smil_extract_next_chunk(AVIOContext *pb, AVBPrint *buf, char *c);
 const char *ff_smil_get_attr_ptr(const char *s, const char *attr);
 
 /**
- * @brief Read a subtitles chunk.
+ * @brief Same as ff_subtitles_read_text_chunk(), but read from an AVIOContext.
+ */
+void ff_subtitles_read_chunk(AVIOContext *pb, AVBPrint *buf);
+
+/**
+ * @brief Read a subtitles chunk from FFTextReader.
  *
  * A chunk is defined by a multiline "event", ending with a second line break.
  * The trailing line breaks are trimmed. CRLF are supported.
  * Example: "foo\r\nbar\r\n\r\nnext" will print "foo\r\nbar" into buf, and pb
  * will focus on the 'n' of the "next" string.
  *
- * @param pb  I/O context
+ * @param tr  I/O context
  * @param buf an initialized buf where the chunk is written
  *
  * @note buf is cleared before writing into it.
  */
-void ff_subtitles_read_chunk(AVIOContext *pb, AVBPrint *buf);
+void ff_subtitles_read_text_chunk(FFTextReader *tr, AVBPrint *buf);
 
 /**
  * Get the number of characters to increment to jump to the next line, or to
@@ -120,5 +194,17 @@ static av_always_inline int ff_subtitles_next_line(const char *ptr)
         n++;
     return n;
 }
+
+/**
+ * Read a line of text. Discards line ending characters.
+ * The function handles the following line breaks schemes:
+ * LF, CRLF (MS), or standalone CR (old MacOS).
+ *
+ * Returns the number of bytes written to buf. Always writes a terminating 0,
+ * similar as with snprintf.
+ *
+ * @note returns a negative error code if a \0 byte is found
+ */
+ptrdiff_t ff_subtitles_read_line(FFTextReader *tr, char *buf, size_t size);
 
 #endif /* AVFORMAT_SUBTITLES_H */

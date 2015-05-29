@@ -25,6 +25,9 @@
 #include "avcodec.h"
 #include "libavutil/bprint.h"
 
+#define ASS_DEFAULT_PLAYRESX 384
+#define ASS_DEFAULT_PLAYRESY 288
+
 /**
  * @name Default values for ASS style
  * @{
@@ -90,6 +93,13 @@ int ff_ass_subtitle_header_default(AVCodecContext *avctx);
  */
 int ff_ass_add_rect(AVSubtitle *sub, const char *dialog,
                     int ts_start, int duration, int raw);
+
+/**
+ * Same as ff_ass_add_rect_bprint, but taking an AVBPrint buffer instead of a
+ * string, and assuming raw=0.
+ */
+int ff_ass_add_rect_bprint(AVSubtitle *sub, AVBPrint *buf,
+                           int ts_start, int duration);
 
 /**
  * Add an ASS dialog line to an AVBPrint buffer.

@@ -23,7 +23,7 @@
 #include "asm.h"
 
 static void get_pixels_mvi(int16_t *restrict block,
-                           const uint8_t *restrict pixels, int line_size)
+                           const uint8_t *restrict pixels, ptrdiff_t line_size)
 {
     int h = 8;
 

@@ -1,4 +1,5 @@
 \input texinfo @c -*- texinfo -*-
+@documentencoding UTF-8
 
 @settitle ffmpeg Documentation
 @titlepage
@@ -79,7 +80,7 @@ The format option may be needed for raw input files.
 The transcoding process in @command{ffmpeg} for each output can be described by
 the following diagram:
 
-@example
+@verbatim
  _______              ______________
 |       |            |              |
 | input |  demuxer   | encoded data |   decoder
@@ -98,7 +99,7 @@ the following diagram:
 |________|           |______________|
 
 
-@end example
+@end verbatim
 
 @command{ffmpeg} calls the libavformat library (containing demuxers) to read
 input files and get packets containing encoded data from them. When there are
@@ -123,7 +124,7 @@ Simple filtergraphs are those that have exactly one input and output, both of
 the same type. In the above diagram they can be represented by simply inserting
 an additional step between decoding and encoding:
 
-@example
+@verbatim
  _________                        ______________
 |         |                      |              |
 | decoded |                      | encoded data |
@@ -135,19 +136,19 @@ an additional step between decoding and encoding:
                 | frames   |
                 |__________|
 
-@end example
+@end verbatim
 
 Simple filtergraphs are configured with the per-stream @option{-filter} option
 (with @option{-vf} and @option{-af} aliases for video and audio respectively).
 A simple filtergraph for video can look for example like this:
 
-@example
+@verbatim
  _______        _____________        _______        ________
 |       |      |             |      |       |      |        |
 | input | ---> | deinterlace | ---> | scale | ---> | output |
 |_______|      |_____________|      |_______|      |________|
 
-@end example
+@end verbatim
 
 Note that some filters change frame properties but not frame contents. E.g. the
 @code{fps} filter in the example above changes number of frames, but does not
@@ -160,7 +161,7 @@ processing chain applied to one stream. This is the case, for example, when the 
 more than one input and/or output, or when output stream type is different from
 input. They can be represented with the following diagram:
 
-@example
+@verbatim
  _________
 |         |
 | input 0 |\                    __________
@@ -178,7 +179,7 @@ input. They can be represented with the following diagram:
 | input 2 |/
 |_________|
 
-@end example
+@end verbatim
 
 Complex filtergraphs are configured with the @option{-filter_complex} option.
 Note that this option is global, since a complex filtergraph, by its nature,
@@ -197,14 +198,14 @@ step for the specified stream, so it does only demuxing and muxing. It is useful
 for changing the container format or modifying container-level metadata. The
 diagram above will, in this case, simplify to this:
 
-@example
+@verbatim
  _______              ______________            ________
 |       |            |              |          |        |
 | input |  demuxer   | encoded data |  muxer   | output |
 | file  | ---------> | packets      | -------> | file   |
 |_______|            |______________|          |________|
 
-@end example
+@end verbatim
 
 Since there is no decoding or encoding, it is very fast and there is no quality
 loss. However, it might not work in some cases because of many factors. Applying
@@ -339,7 +340,7 @@ ffmpeg -i in.avi -metadata title="my title" out.flv
 
 To set the language of the first audio stream:
 @example
-ffmpeg -i INPUT -metadata:s:a:1 language=eng OUTPUT
+ffmpeg -i INPUT -metadata:s:a:0 language=eng OUTPUT
 @end example
 
 @item -target @var{type} (@emph{output})
@@ -360,7 +361,7 @@ ffmpeg -i myfile.avi -target vcd -bf 2 /tmp/vcd.mpg
 @end example
 
 @item -dframes @var{number} (@emph{output})
-Set the number of data frames to record. This is an alias for @code{-frames:d}.
+Set the number of data frames to output. This is an alias for @code{-frames:d}.
 
 @item -frames[:@var{stream_specifier}] @var{framecount} (@emph{output,per-stream})
 Stop writing to the stream after @var{framecount} frames.
@@ -461,18 +462,24 @@ Technical note -- attachments are implemented as codec extradata, so this
 option can actually be used to extract extradata from any stream, not just
 attachments.
 
+@item -noautorotate
+Disable automatically rotating video based on file metadata.
+
 @end table
 
 @section Video Options
 
 @table @option
 @item -vframes @var{number} (@emph{output})
-Set the number of video frames to record. This is an alias for @code{-frames:v}.
+Set the number of video frames to output. This is an alias for @code{-frames:v}.
 @item -r[:@var{stream_specifier}] @var{fps} (@emph{input/output,per-stream})
 Set frame rate (Hz value, fraction or abbreviation).
 
 As an input option, ignore any timestamps stored in the file and instead
 generate timestamps assuming constant frame rate @var{fps}.
+This is not the same as the @option{-framerate} option used for some input formats
+like image2 or v4l2 (it used to be the same in older versions of FFmpeg).
+If in doubt use @option{-framerate} instead of the input option @option{-r}.
 
 As an output option, duplicate or drop input frames to achieve constant output
 frame rate @var{fps}.
@@ -689,7 +696,7 @@ If this option is not specified, the default adapter is used.
 
 @table @option
 @item -aframes @var{number} (@emph{output})
-Set the number of audio frames to record. This is an alias for @code{-frames:a}.
+Set the number of audio frames to output. This is an alias for @code{-frames:a}.
 @item -ar[:@var{stream_specifier}] @var{freq} (@emph{input/output,per-stream})
 Set the audio sampling frequency. For output streams it is set by
 default to the frequency of the corresponding input stream. For input
@@ -821,7 +828,20 @@ To map all the streams except the second audio, use negative mappings
 ffmpeg -i INPUT -map 0 -map -0:a:1 OUTPUT
 @end example
 
+To pick the English audio stream:
+@example
+ffmpeg -i INPUT -map 0:m:language:eng OUTPUT
+@end example
+
 Note that using this option disables the default mappings for this output file.
+
+@item -ignore_unknown
+Ignore input streams with unknown type instead of failing if copying
+such streams is attempted.
+
+@item -copy_unknown
+Allow input streams with unknown type to be copied instead of failing if copying
+such streams is attempted.
 
 @item -map_channel [@var{input_file_id}.@var{stream_specifier}.@var{channel_id}|-1][:@var{output_file_id}.@var{stream_specifier}]
 Map an audio channel from a given input to an output. If
@@ -986,6 +1006,13 @@ With -map you can select from which stream the timestamps should be
 taken. You can leave either video or audio unchanged and sync the
 remaining stream(s) to the unchanged one.
 
+@item -frame_drop_threshold @var{parameter}
+Frame drop threshold, which specifies how much behind video frames can
+be before they are dropped. In frame rate units, so 1.0 is one frame.
+The default is -1.1. One possible usecase is to avoid framedrops in case
+of noisy timestamps or to increase frame drop precision in case of exact
+timestamps.
+
 @item -async @var{samples_per_second}
 Audio sync method. "Stretches/squeezes" the audio stream to match the timestamps,
 the parameter is the maximum samples per second by which the audio is changed.
@@ -1007,6 +1034,12 @@ Note that, depending on the @option{vsync} option or on specific muxer
 processing (e.g. in case the format option @option{avoid_negative_ts}
 is enabled) the output timestamps may mismatch with the input
 timestamps even when this option is selected.
+
+@item -start_at_zero
+When used with @option{copyts}, shift input timestamps so they start at zero.
+
+This means that using e.g. @code{-ss 50} will make output timestamps start at
+50 seconds, regardless of what timestamp the input file started at.
 
 @item -copytb @var{mode}
 Specify how to set the encoder timebase when stream copying.  @var{mode} is an
@@ -1136,6 +1169,19 @@ This option enables or disables accurate seeking in input files with the
 transcoding. Use @option{-noaccurate_seek} to disable it, which may be useful
 e.g. when copying some streams and transcoding the others.
 
+@item -seek_timestamp (@emph{input})
+This option enables or disables seeking by timestamp in input files with the
+@option{-ss} option. It is disabled by default. If enabled, the argument
+to the @option{-ss} option is considered an actual timestamp, and is not
+offset by the start time of the file. This matters only for files which do
+not start from timestamp 0, such as transport streams.
+
+@item -thread_queue_size @var{size} (@emph{input})
+This option sets the maximum number of queued packets when reading from the
+file or device. With low latency / high rate live streams, packets may be
+discarded if they are not read in a timely manner; raising this value can
+avoid it.
+
 @item -override_ffserver (@emph{global})
 Overrides the input specifications from @command{ffserver}. Using this
 option you can map any input stream to @command{ffserver} and control
@@ -1145,6 +1191,11 @@ requested by @command{ffserver}.
 
 The option is intended for cases where features are needed that cannot be
 specified to @command{ffserver} but can be to @command{ffmpeg}.
+
+@item -sdp_file @var{file} (@emph{global})
+Print sdp information to @var{file}.
+This allows dumping sdp information when at least one output isn't an
+rtp stream.
 
 @item -discard (@emph{input})
 Allows discarding specific streams or frames of streams at the demuxer.
@@ -1195,7 +1246,10 @@ awkward to specify on the command line. Lines starting with the hash
 ('#') character are ignored and are used to provide comments. Check
 the @file{presets} directory in the FFmpeg source tree for examples.
 
-Preset files are specified with the @code{vpre}, @code{apre},
+There are two types of preset files: ffpreset and avpreset files.
+
+@subsection ffpreset files
+ffpreset files are specified with the @code{vpre}, @code{apre},
 @code{spre}, and @code{fpre} options. The @code{fpre} option takes the
 filename of the preset instead of a preset name as input and can be
 used for any kind of codec. For the @code{vpre}, @code{apre}, and
@@ -1220,6 +1274,26 @@ directories, where @var{codec_name} is the name of the codec to which
 the preset file options will be applied. For example, if you select
 the video codec with @code{-vcodec libvpx} and use @code{-vpre 1080p},
 then it will search for the file @file{libvpx-1080p.ffpreset}.
+
+@subsection avpreset files
+avpreset files are specified with the @code{pre} option. They work similar to
+ffpreset files, but they only allow encoder- specific options. Therefore, an
+@var{option}=@var{value} pair specifying an encoder cannot be used.
+
+When the @code{pre} option is specified, ffmpeg will look for files with the
+suffix .avpreset in the directories @file{$AVCONV_DATADIR} (if set), and
+@file{$HOME/.avconv}, and in the datadir defined at configuration time (usually
+@file{PREFIX/share/ffmpeg}), in that order.
+
+First ffmpeg searches for a file named @var{codec_name}-@var{arg}.avpreset in
+the above-mentioned directories, where @var{codec_name} is the name of the codec
+to which the preset file options will be applied. For example, if you select the
+video codec with @code{-vcodec libvpx} and use @code{-pre 1080p}, then it will
+search for the file @file{libvpx-1080p.avpreset}.
+
+If no such file is found, then ffmpeg will search for a file named
+@var{arg}.avpreset in the same directories.
+
 @c man end OPTIONS
 
 @chapter Tips
@@ -1265,21 +1339,6 @@ quality).
 
 @chapter Examples
 @c man begin EXAMPLES
-
-@section Preset files
-
-A preset file contains a sequence of @var{option=value} pairs, one for
-each line, specifying a sequence of options which can be specified also on
-the command line. Lines starting with the hash ('#') character are ignored and
-are used to provide comments. Empty lines are also ignored. Check the
-@file{presets} directory in the FFmpeg source tree for examples.
-
-Preset files are specified with the @code{pre} option, this option takes a
-preset name as input.  FFmpeg searches for a file named @var{preset_name}.avpreset in
-the directories @file{$AVCONV_DATADIR} (if set), and @file{$HOME/.ffmpeg}, and in
-the data directory defined at configuration time (usually @file{$PREFIX/share/ffmpeg})
-in that order.  For example, if the argument is @code{libx264-max}, it will
-search for the file @file{libx264-max.avpreset}.
 
 @section Video and Audio grabbing
 
@@ -1428,7 +1487,7 @@ combination with -ss to start extracting from a certain point in time.
 
 For creating a video from many images:
 @example
-ffmpeg -f image2 -i foo-%03d.jpeg -r 12 -s WxH foo.avi
+ffmpeg -f image2 -framerate 12 -i foo-%03d.jpeg -s WxH foo.avi
 @end example
 
 The syntax @code{foo-%03d.jpeg} specifies to use a decimal number
@@ -1443,18 +1502,18 @@ image2-specific @code{-pattern_type glob} option.
 For example, for creating a video from filenames matching the glob pattern
 @code{foo-*.jpeg}:
 @example
-ffmpeg -f image2 -pattern_type glob -i 'foo-*.jpeg' -r 12 -s WxH foo.avi
+ffmpeg -f image2 -pattern_type glob -framerate 12 -i 'foo-*.jpeg' -s WxH foo.avi
 @end example
 
 @item
 You can put many streams of the same type in the output:
 
 @example
-ffmpeg -i test1.avi -i test2.avi -map 0:3 -map 0:2 -map 0:1 -map 0:0 -c copy test12.nut
+ffmpeg -i test1.avi -i test2.avi -map 1:1 -map 1:0 -map 0:1 -map 0:0 -c copy -y test12.nut
 @end example
 
-The resulting output file @file{test12.avi} will contain first four streams from
-the input file in reverse order.
+The resulting output file @file{test12.nut} will contain the first four streams
+from the input files in reverse order.
 
 @item
 To force CBR video output:

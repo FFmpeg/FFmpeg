@@ -50,7 +50,7 @@ static void get_line(AVIOContext *s, uint8_t *buf, int size)
                 buf[i++] = c;
         }
         buf[i] = 0;
-    } while (!url_feof(s) && (buf[0] == ';' || buf[0] == '#' || buf[0] == 0));
+    } while (!avio_feof(s) && (buf[0] == ';' || buf[0] == '#' || buf[0] == 0));
 }
 
 static AVChapter *read_chapter(AVFormatContext *s)
@@ -78,10 +78,11 @@ static AVChapter *read_chapter(AVFormatContext *s)
     return avpriv_new_chapter(s, s->nb_chapters, tb, start, end, NULL);
 }
 
-static uint8_t *unescape(uint8_t *buf, int size)
+static uint8_t *unescape(const uint8_t *buf, int size)
 {
     uint8_t *ret = av_malloc(size + 1);
-    uint8_t *p1  = ret, *p2 = buf;
+    uint8_t *p1  = ret;
+    const uint8_t *p2 = buf;
 
     if (!ret)
         return NULL;
@@ -95,9 +96,10 @@ static uint8_t *unescape(uint8_t *buf, int size)
     return ret;
 }
 
-static int read_tag(uint8_t *line, AVDictionary **m)
+static int read_tag(const uint8_t *line, AVDictionary **m)
 {
-    uint8_t *key, *value, *p = line;
+    uint8_t *key, *value;
+    const uint8_t *p = line;
 
     /* find first not escaped '=' */
     while (1) {
@@ -128,7 +130,7 @@ static int read_header(AVFormatContext *s)
     AVDictionary **m = &s->metadata;
     uint8_t line[1024];
 
-    while(!url_feof(s->pb)) {
+    while(!avio_feof(s->pb)) {
         get_line(s->pb, line, sizeof(line));
 
         if (!memcmp(line, ID_STREAM, strlen(ID_STREAM))) {

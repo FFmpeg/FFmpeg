@@ -55,6 +55,10 @@ static av_cold int libssh_create_ssh_session(LIBSSHContext *libssh, const char* 
         ssh_options_set(libssh->session, SSH_OPTIONS_TIMEOUT_USEC, &timeout);
     }
 
+    if (ssh_options_parse_config(libssh->session, NULL) < 0) {
+        av_log(libssh, AV_LOG_WARNING, "Could not parse the config file.\n");
+    }
+
     if (ssh_connect(libssh->session) != SSH_OK) {
         av_log(libssh, AV_LOG_ERROR, "Connection failed: %s\n", ssh_get_error(libssh->session));
         return AVERROR(EIO);
@@ -187,7 +191,7 @@ static av_cold int libssh_open(URLContext *h, const char *url, int flags)
 {
     LIBSSHContext *libssh = h->priv_data;
     char proto[10], path[MAX_URL_SIZE], hostname[1024], credencials[1024];
-    int port = 22, ret;
+    int port, ret;
     const char *user = NULL, *pass = NULL;
     char *end = NULL;
 
@@ -198,8 +202,9 @@ static av_cold int libssh_open(URLContext *h, const char *url, int flags)
                  path, sizeof(path),
                  url);
 
-    if (port <= 0 || port > 65535)
-        port = 22;
+    // a port of 0 will use a port from ~/.ssh/config or the default value 22
+    if (port < 0 || port > 65535)
+        port = 0;
 
     if ((ret = libssh_create_ssh_session(libssh, hostname, port)) < 0)
         goto fail;

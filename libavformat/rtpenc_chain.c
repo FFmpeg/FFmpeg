@@ -75,6 +75,7 @@ int ff_rtp_chain_mux_open(AVFormatContext **out, AVFormatContext *s,
     rtpctx->start_time_realtime = s->start_time_realtime;
 
     avcodec_copy_context(rtpctx->streams[0]->codec, st->codec);
+    rtpctx->streams[0]->time_base = st->time_base;
 
     if (handle) {
         ret = ffio_fdopen(&rtpctx->pb, handle);
@@ -88,11 +89,9 @@ int ff_rtp_chain_mux_open(AVFormatContext **out, AVFormatContext *s,
 
     if (ret) {
         if (handle && rtpctx->pb) {
-            avio_close(rtpctx->pb);
+            avio_closep(&rtpctx->pb);
         } else if (rtpctx->pb) {
-            uint8_t *ptr;
-            avio_close_dyn_buf(rtpctx->pb, &ptr);
-            av_free(ptr);
+            ffio_free_dyn_buf(&rtpctx->pb);
         }
         avformat_free_context(rtpctx);
         return ret;

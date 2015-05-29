@@ -23,12 +23,12 @@
 #include <string.h>
 
 #include "avassert.h"
+#include "avstring.h"
 #include "common.h"
 #include "pixfmt.h"
 #include "pixdesc.h"
 #include "internal.h"
 #include "intreadwrite.h"
-#include "avstring.h"
 #include "version.h"
 
 void av_read_image_line(uint16_t *dst,
@@ -258,6 +258,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
             { 0, 0, 1, 0, 7 },        /* Y */
         },
         .flags = AV_PIX_FMT_FLAG_PSEUDOPAL,
+        .alias = "gray8,y8",
     },
     [AV_PIX_FMT_MONOWHITE] = {
         .name = "monow",
@@ -568,6 +569,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
             { 0, 1, 1, 0, 15 },       /* Y */
         },
         .flags = AV_PIX_FMT_FLAG_BE,
+        .alias = "y16be",
     },
     [AV_PIX_FMT_GRAY16LE] = {
         .name = "gray16le",
@@ -577,6 +579,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
         .comp = {
             { 0, 1, 1, 0, 15 },       /* Y */
         },
+        .alias = "y16le",
     },
     [AV_PIX_FMT_YUV440P] = {
         .name = "yuv440p",
@@ -601,6 +604,54 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
             { 2, 0, 1, 0, 7 },        /* V */
         },
         .flags = AV_PIX_FMT_FLAG_PLANAR,
+    },
+    [AV_PIX_FMT_YUV440P10LE] = {
+        .name = "yuv440p10le",
+        .nb_components = 3,
+        .log2_chroma_w = 0,
+        .log2_chroma_h = 1,
+        .comp = {
+            { 0, 1, 1, 0, 9 },        /* Y */
+            { 1, 1, 1, 0, 9 },        /* U */
+            { 2, 1, 1, 0, 9 },        /* V */
+        },
+        .flags = AV_PIX_FMT_FLAG_PLANAR,
+    },
+    [AV_PIX_FMT_YUV440P10BE] = {
+        .name = "yuv440p10be",
+        .nb_components = 3,
+        .log2_chroma_w = 0,
+        .log2_chroma_h = 1,
+        .comp = {
+            { 0, 1, 1, 0, 9 },        /* Y */
+            { 1, 1, 1, 0, 9 },        /* U */
+            { 2, 1, 1, 0, 9 },        /* V */
+        },
+        .flags = AV_PIX_FMT_FLAG_BE | AV_PIX_FMT_FLAG_PLANAR,
+    },
+    [AV_PIX_FMT_YUV440P12LE] = {
+        .name = "yuv440p12le",
+        .nb_components = 3,
+        .log2_chroma_w = 0,
+        .log2_chroma_h = 1,
+        .comp = {
+            { 0, 1, 1, 0, 11 },        /* Y */
+            { 1, 1, 1, 0, 11 },        /* U */
+            { 2, 1, 1, 0, 11 },        /* V */
+        },
+        .flags = AV_PIX_FMT_FLAG_PLANAR,
+    },
+    [AV_PIX_FMT_YUV440P12BE] = {
+        .name = "yuv440p12be",
+        .nb_components = 3,
+        .log2_chroma_w = 0,
+        .log2_chroma_h = 1,
+        .comp = {
+            { 0, 1, 1, 0, 11 },        /* Y */
+            { 1, 1, 1, 0, 11 },        /* U */
+            { 2, 1, 1, 0, 11 },        /* V */
+        },
+        .flags = AV_PIX_FMT_FLAG_BE | AV_PIX_FMT_FLAG_PLANAR,
     },
     [AV_PIX_FMT_YUVA420P] = {
         .name = "yuva420p",
@@ -1535,6 +1586,12 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
         },
         .flags = AV_PIX_FMT_FLAG_BE | AV_PIX_FMT_FLAG_PLANAR,
     },
+    [AV_PIX_FMT_D3D11VA_VLD] = {
+        .name = "d3d11va_vld",
+        .log2_chroma_w = 1,
+        .log2_chroma_h = 1,
+        .flags = AV_PIX_FMT_FLAG_HWACCEL,
+    },
     [AV_PIX_FMT_DXVA2_VLD] = {
         .name = "dxva2_vld",
         .log2_chroma_w = 1,
@@ -1547,14 +1604,33 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
         .log2_chroma_h = 1,
         .flags = AV_PIX_FMT_FLAG_HWACCEL,
     },
-    [AV_PIX_FMT_GRAY8A] = {
-        .name = "gray8a",
+    [AV_PIX_FMT_YA8] = {
+        .name = "ya8",
         .nb_components = 2,
         .comp = {
             { 0, 1, 1, 0, 7 },        /* Y */
             { 0, 1, 2, 0, 7 },        /* A */
         },
         .flags = AV_PIX_FMT_FLAG_ALPHA,
+        .alias = "gray8a",
+    },
+    [AV_PIX_FMT_YA16LE] = {
+        .name = "ya16le",
+        .nb_components = 2,
+        .comp = {
+            { 0, 3, 1, 0, 15 },        /* Y */
+            { 0, 3, 3, 0, 15 },        /* A */
+        },
+        .flags = AV_PIX_FMT_FLAG_ALPHA,
+    },
+    [AV_PIX_FMT_YA16BE] = {
+        .name = "ya16be",
+        .nb_components = 2,
+        .comp = {
+            { 0, 3, 1, 0, 15 },        /* Y */
+            { 0, 3, 3, 0, 15 },        /* A */
+        },
+        .flags = AV_PIX_FMT_FLAG_BE | AV_PIX_FMT_FLAG_ALPHA,
     },
     [AV_PIX_FMT_GBRP] = {
         .name = "gbrp",
@@ -1699,7 +1775,8 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
             { 1, 0, 1, 0, 7 },        /* B */
             { 3, 0, 1, 0, 7 },        /* A */
         },
-        .flags = AV_PIX_FMT_FLAG_PLANAR | AV_PIX_FMT_FLAG_RGB | AV_PIX_FMT_FLAG_ALPHA,
+        .flags = AV_PIX_FMT_FLAG_PLANAR | AV_PIX_FMT_FLAG_RGB |
+                 AV_PIX_FMT_FLAG_ALPHA,
     },
     [AV_PIX_FMT_GBRAP16LE] = {
         .name = "gbrap16le",
@@ -1712,7 +1789,8 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
             { 1, 1, 1, 0, 15 },       /* B */
             { 3, 1, 1, 0, 15 },       /* A */
         },
-        .flags = AV_PIX_FMT_FLAG_PLANAR | AV_PIX_FMT_FLAG_RGB | AV_PIX_FMT_FLAG_ALPHA,
+        .flags = AV_PIX_FMT_FLAG_PLANAR | AV_PIX_FMT_FLAG_RGB |
+                 AV_PIX_FMT_FLAG_ALPHA,
     },
     [AV_PIX_FMT_GBRAP16BE] = {
         .name = "gbrap16be",
@@ -1725,7 +1803,8 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
             { 1, 1, 1, 0, 15 },       /* B */
             { 3, 1, 1, 0, 15 },       /* A */
         },
-        .flags = AV_PIX_FMT_FLAG_BE | AV_PIX_FMT_FLAG_PLANAR | AV_PIX_FMT_FLAG_RGB | AV_PIX_FMT_FLAG_ALPHA,
+        .flags = AV_PIX_FMT_FLAG_BE | AV_PIX_FMT_FLAG_PLANAR |
+                 AV_PIX_FMT_FLAG_RGB | AV_PIX_FMT_FLAG_ALPHA,
     },
     [AV_PIX_FMT_VDPAU] = {
         .name = "vdpau",
@@ -1878,6 +1957,41 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
         .name = "vda",
         .flags = AV_PIX_FMT_FLAG_HWACCEL,
     },
+    [AV_PIX_FMT_QSV] = {
+        .name = "qsv",
+        .flags = AV_PIX_FMT_FLAG_HWACCEL,
+    },
+    [AV_PIX_FMT_MMAL] = {
+        .name = "mmal",
+        .flags = AV_PIX_FMT_FLAG_HWACCEL,
+    },
+};
+
+static const char *color_range_names[AVCOL_RANGE_NB] = {
+    "unknown", "tv", "pc",
+};
+
+static const char *color_primaries_names[AVCOL_PRI_NB] = {
+    "reserved", "bt709", "unknown", "reserved", "bt470m",
+    "bt470bg", "smpte170m", "smpte240m", "film", "bt2020",
+};
+
+static const char *color_transfer_names[AVCOL_TRC_NB] = {
+    "reserved", "bt709", "unknown", "reserved", "bt470m",
+    "bt470bg", "smpte170m", "smpte240m", "linear", "log100",
+    "log316", "iec61966-2-4", "bt1361e", "iec61966-2-1",
+    "bt2020-10", "bt2020-20",
+};
+
+static const char *color_space_names[AVCOL_SPC_NB] = {
+    "gbr", "bt709", "unknown", "reserved", "fcc",
+    "bt470bg", "smpte170m", "smpte240m", "ycgco",
+    "bt2020nc", "bt2020c",
+};
+
+static const char *chroma_location_names[AVCHROMA_LOC_NB] = {
+    "unspecified", "left", "center", "topleft",
+    "top", "bottomleft", "bottom",
 };
 
 FF_DISABLE_DEPRECATION_WARNINGS
@@ -1887,7 +2001,8 @@ static enum AVPixelFormat get_pix_fmt_internal(const char *name)
 
     for (pix_fmt = 0; pix_fmt < AV_PIX_FMT_NB; pix_fmt++)
         if (av_pix_fmt_descriptors[pix_fmt].name &&
-            !strcmp(av_pix_fmt_descriptors[pix_fmt].name, name))
+            (!strcmp(av_pix_fmt_descriptors[pix_fmt].name, name) ||
+             av_match_name(name, av_pix_fmt_descriptors[pix_fmt].alias)))
             return pix_fmt;
 
     return AV_PIX_FMT_NONE;
@@ -1999,7 +2114,6 @@ enum AVPixelFormat av_pix_fmt_desc_get_id(const AVPixFmtDescriptor *desc)
 
     return desc - av_pix_fmt_descriptors;
 }
-FF_ENABLE_DEPRECATION_WARNINGS
 
 int av_pix_fmt_get_chroma_sub_sample(enum AVPixelFormat pix_fmt,
                                      int *h_shift, int *v_shift)
@@ -2068,6 +2182,7 @@ void ff_check_pixfmt_descriptors(void){
         }
     }
 }
+FF_ENABLE_DEPRECATION_WARNINGS
 
 
 enum AVPixelFormat av_pix_fmt_swap_endianness(enum AVPixelFormat pix_fmt)
@@ -2282,6 +2397,36 @@ enum AVPixelFormat av_find_best_pix_fmt_of_2(enum AVPixelFormat dst_pix_fmt1, en
     return dst_pix_fmt;
 }
 
+const char *av_color_range_name(enum AVColorRange range)
+{
+    return (unsigned) range < AVCOL_RANGE_NB ?
+        color_range_names[range] : NULL;
+}
+
+const char *av_color_primaries_name(enum AVColorPrimaries primaries)
+{
+    return (unsigned) primaries < AVCOL_PRI_NB ?
+        color_primaries_names[primaries] : NULL;
+}
+
+const char *av_color_transfer_name(enum AVColorTransferCharacteristic transfer)
+{
+    return (unsigned) transfer < AVCOL_TRC_NB ?
+        color_transfer_names[transfer] : NULL;
+}
+
+const char *av_color_space_name(enum AVColorSpace space)
+{
+    return (unsigned) space < AVCOL_SPC_NB ?
+        color_space_names[space] : NULL;
+}
+
+const char *av_chroma_location_name(enum AVChromaLocation location)
+{
+    return (unsigned) location < AVCHROMA_LOC_NB ?
+        chroma_location_names[location] : NULL;
+}
+
 #ifdef TEST
 
 int main(void){
@@ -2309,3 +2454,4 @@ int main(void){
 }
 
 #endif
+

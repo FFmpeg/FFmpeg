@@ -98,7 +98,7 @@ int attribute_align_arg av_buffersrc_add_frame_flags(AVFilterContext *ctx, AVFra
 
     if (frame && frame->channel_layout &&
         av_get_channel_layout_nb_channels(frame->channel_layout) != av_frame_get_channels(frame)) {
-        av_log(0, AV_LOG_ERROR, "Layout indicates a different number of channels than actually present\n");
+        av_log(ctx, AV_LOG_ERROR, "Layout indicates a different number of channels than actually present\n");
         return AVERROR(EINVAL);
     }
 
@@ -242,6 +242,7 @@ do {                                                                    \
     ref_out = av_buffer_create(data, data_size, compat_unref_buffer,    \
                                dummy_ref, (buf->perms & AV_PERM_WRITE) ? 0 : AV_BUFFER_FLAG_READONLY);                           \
     if (!ref_out) {                                                     \
+        av_buffer_unref(&dummy_ref);                                    \
         av_frame_unref(frame);                                          \
         ret = AVERROR(ENOMEM);                                          \
         goto fail;                                                      \

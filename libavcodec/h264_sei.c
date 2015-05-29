@@ -281,7 +281,7 @@ static int decode_display_orientation(H264Context *h)
 
 int ff_h264_decode_sei(H264Context *h)
 {
-    while (get_bits_left(&h->gb) > 16) {
+    while (get_bits_left(&h->gb) > 16 && show_bits(&h->gb, 16)) {
         int type = 0;
         unsigned size = 0;
         unsigned next;

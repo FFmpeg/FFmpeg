@@ -34,7 +34,6 @@
 
 #include "libavformat/version.h"
 
-
 #define AVIO_SEEKABLE_NORMAL 0x0001 /**< Seeking works like for a local file */
 
 /**
@@ -52,6 +51,50 @@ typedef struct AVIOInterruptCB {
     int (*callback)(void*);
     void *opaque;
 } AVIOInterruptCB;
+
+/**
+ * Directory entry types.
+ */
+enum AVIODirEntryType {
+    AVIO_ENTRY_UNKNOWN,
+    AVIO_ENTRY_BLOCK_DEVICE,
+    AVIO_ENTRY_CHARACTER_DEVICE,
+    AVIO_ENTRY_DIRECTORY,
+    AVIO_ENTRY_NAMED_PIPE,
+    AVIO_ENTRY_SYMBOLIC_LINK,
+    AVIO_ENTRY_SOCKET,
+    AVIO_ENTRY_FILE,
+    AVIO_ENTRY_SERVER,
+    AVIO_ENTRY_SHARE,
+    AVIO_ENTRY_WORKGROUP,
+};
+
+/**
+ * Describes single entry of the directory.
+ *
+ * Only name and type fields are guaranteed be set.
+ * Rest of fields are protocol or/and platform dependent and might be unknown.
+ */
+typedef struct AVIODirEntry {
+    char *name;                           /**< Filename */
+    int type;                             /**< Type of the entry */
+    int utf8;                             /**< Set to 1 when name is encoded with UTF-8, 0 otherwise.
+                                               Name can be encoded with UTF-8 eventhough 0 is set. */
+    int64_t size;                         /**< File size in bytes, -1 if unknown. */
+    int64_t modification_timestamp;       /**< Time of last modification in microseconds since unix
+                                               epoch, -1 if unknown. */
+    int64_t access_timestamp;             /**< Time of last access in microseconds since unix epoch,
+                                               -1 if unknown. */
+    int64_t status_change_timestamp;      /**< Time of last status change in microseconds since unix
+                                               epoch, -1 if unknown. */
+    int64_t user_id;                      /**< User ID of owner, -1 if unknown. */
+    int64_t group_id;                     /**< Group ID of owner, -1 if unknown. */
+    int64_t filemode;                     /**< Unix file mode, -1 if unknown. */
+} AVIODirEntry;
+
+typedef struct AVIODirContext {
+    struct URLContext *url_context;
+} AVIODirContext;
 
 /**
  * Bytestream IO Context.
@@ -181,11 +224,57 @@ const char *avio_find_protocol_name(const char *url);
 int avio_check(const char *url, int flags);
 
 /**
+ * Open directory for reading.
+ *
+ * @param s       directory read context. Pointer to a NULL pointer must be passed.
+ * @param url     directory to be listed.
+ * @param options A dictionary filled with protocol-private options. On return
+ *                this parameter will be destroyed and replaced with a dictionary
+ *                containing options that were not found. May be NULL.
+ * @return >=0 on success or negative on error.
+ */
+int avio_open_dir(AVIODirContext **s, const char *url, AVDictionary **options);
+
+/**
+ * Get next directory entry.
+ *
+ * Returned entry must be freed with avio_free_directory_entry(). In particular
+ * it may outlive AVIODirContext.
+ *
+ * @param s         directory read context.
+ * @param[out] next next entry or NULL when no more entries.
+ * @return >=0 on success or negative on error. End of list is not considered an
+ *             error.
+ */
+int avio_read_dir(AVIODirContext *s, AVIODirEntry **next);
+
+/**
+ * Close directory.
+ *
+ * @note Entries created using avio_read_dir() are not deleted and must be
+ * freeded with avio_free_directory_entry().
+ *
+ * @param s         directory read context.
+ * @return >=0 on success or negative on error.
+ */
+int avio_close_dir(AVIODirContext **s);
+
+/**
+ * Free entry allocated by avio_read_dir().
+ *
+ * @param entry entry to be freed.
+ */
+void avio_free_directory_entry(AVIODirEntry **entry);
+
+/**
  * Allocate and initialize an AVIOContext for buffered I/O. It must be later
  * freed with av_free().
  *
  * @param buffer Memory block for input/output operations via AVIOContext.
  *        The buffer must be allocated with av_malloc() and friends.
+ *        It may be freed and replaced with a new buffer by libavformat.
+ *        AVIOContext.buffer holds the buffer currently in use,
+ *        which must be later freed with av_free().
  * @param buffer_size The buffer size is very important for performance.
  *        For protocols with fixed blocksize it should be set to this blocksize.
  *        For others a typical size is a cache page, e.g. 4kb.
@@ -229,6 +318,12 @@ int avio_put_str(AVIOContext *s, const char *str);
  * @return number of bytes written.
  */
 int avio_put_str16le(AVIOContext *s, const char *str);
+
+/**
+ * Convert an UTF-8 string to UTF-16BE and write it.
+ * @return number of bytes written.
+ */
+int avio_put_str16be(AVIOContext *s, const char *str);
 
 /**
  * Passing this as the "whence" parameter to a seek function causes it to
@@ -276,16 +371,27 @@ int64_t avio_size(AVIOContext *s);
  * feof() equivalent for AVIOContext.
  * @return non zero if and only if end of file
  */
+int avio_feof(AVIOContext *s);
+#if FF_API_URL_FEOF
+/**
+ * @deprecated use avio_feof()
+ */
+attribute_deprecated
 int url_feof(AVIOContext *s);
+#endif
 
 /** @warning currently size is limited */
 int avio_printf(AVIOContext *s, const char *fmt, ...) av_printf_format(2, 3);
 
 /**
- * Force flushing of buffered data to the output s.
+ * Force flushing of buffered data.
  *
- * Force the buffered data to be immediately written to the output,
+ * For write streams, force the buffered data to be immediately written to the output,
  * without to wait to fill the internal buffer.
+ *
+ * For read streams, discard all currently buffered data, and advance the
+ * reported file position to that of the underlying stream. This does not
+ * read new data, and does not perform any seeks.
  */
 void avio_flush(AVIOContext *s);
 
@@ -499,6 +605,9 @@ int     avio_pause(AVIOContext *h, int pause);
  */
 int64_t avio_seek_time(AVIOContext *h, int stream_index,
                        int64_t timestamp, int flags);
+
+/* Avoid a warning. The header can not be included because it breaks c++. */
+struct AVBPrint;
 
 /**
  * Read contents of h into print buffer, up to max_size bytes, or up to EOF.

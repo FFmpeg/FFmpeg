@@ -24,7 +24,7 @@
 #define WFRAC_BITS  16   // fractional bits for window
 #define OUT_SHIFT (WFRAC_BITS + FRAC_BITS - 15)
 
-const   tbl_rev128.s align=4
+const   tbl_rev128.s, align=4
         .byte           12, 13, 14, 15
         .byte            8,  9, 10, 11
         .byte            4,  5,  6,  7

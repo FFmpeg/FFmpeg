@@ -32,7 +32,7 @@ pw_bap_mul1: dw 21846, 21846, 0, 32768, 21846, 21846, 0, 32768
 pw_bap_mul2: dw 5, 7, 0, 7, 5, 7, 0, 7
 
 ; used in ff_ac3_extract_exponents()
-pd_1:   times 4 dd 1
+cextern pd_1
 pd_151: times 4 dd 151
 
 ; used in ff_apply_window_int16()

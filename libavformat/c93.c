@@ -24,13 +24,13 @@
 #include "voc.h"
 #include "libavutil/intreadwrite.h"
 
-typedef struct {
+typedef struct C93BlockRecord {
     uint16_t index;
     uint8_t length;
     uint8_t frames;
 } C93BlockRecord;
 
-typedef struct {
+typedef struct C93DemuxContext {
     VocDecContext voc;
 
     C93BlockRecord block_records[512];

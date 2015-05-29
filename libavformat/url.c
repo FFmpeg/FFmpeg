@@ -68,7 +68,7 @@ int ff_url_join(char *str, int size, const char *proto,
         av_strlcatf(str, size, ":%d", port);
     if (fmt) {
         va_list vl;
-        int len = strlen(str);
+        size_t len = strlen(str);
 
         va_start(vl, fmt);
         vsnprintf(str + len, size > len ? size - len : 0, fmt, vl);
@@ -111,7 +111,7 @@ void ff_make_absolute_url(char *buf, int size, const char *base,
 
     /* Strip off any query string from base */
     path_query = strchr(buf, '?');
-    if (path_query != NULL)
+    if (path_query)
         *path_query = '\0';
 
     /* Is relative path just a new query part? */
@@ -144,4 +144,20 @@ void ff_make_absolute_url(char *buf, int size, const char *base,
         rel += 3;
     }
     av_strlcat(buf, rel, size);
+}
+
+AVIODirEntry *ff_alloc_dir_entry(void)
+{
+    AVIODirEntry *entry = av_mallocz(sizeof(AVIODirEntry));
+    if (entry) {
+        entry->type = AVIO_ENTRY_UNKNOWN;
+        entry->size = -1;
+        entry->modification_timestamp = -1;
+        entry->access_timestamp = -1;
+        entry->status_change_timestamp = -1;
+        entry->user_id = -1;
+        entry->group_id = -1;
+        entry->filemode = -1;
+    }
+    return entry;
 }

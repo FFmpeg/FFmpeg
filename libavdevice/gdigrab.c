@@ -440,6 +440,8 @@ static void paint_mouse_pointer(AVFormatContext *s1, struct gdigrab *gdigrab)
         POINT pos;
         RECT clip_rect = gdigrab->clip_rect;
         HWND hwnd = gdigrab->hwnd;
+        info.hbmMask = NULL;
+        info.hbmColor = NULL;
 
         if (ci.flags != CURSOR_SHOWING)
             return;
@@ -481,6 +483,10 @@ static void paint_mouse_pointer(AVFormatContext *s1, struct gdigrab *gdigrab)
         }
 
 icon_error:
+        if (info.hbmMask)
+            DeleteObject(info.hbmMask);
+        if (info.hbmColor)
+            DeleteObject(info.hbmColor);
         if (icon)
             DestroyCursor(icon);
     } else {

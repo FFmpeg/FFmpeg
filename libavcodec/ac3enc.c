@@ -36,6 +36,7 @@
 #include "libavutil/internal.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"
+#include "internal.h"
 #include "me_cmp.h"
 #include "put_bits.h"
 #include "audiodsp.h"
@@ -1687,43 +1688,43 @@ static void dprint_options(AC3EncodeContext *s)
     case 16:  av_strlcpy(strbuf, "E-AC-3 (enhanced)",       32); break;
     default: snprintf(strbuf, 32, "ERROR");
     }
-    av_dlog(avctx, "bitstream_id: %s (%d)\n", strbuf, s->bitstream_id);
-    av_dlog(avctx, "sample_fmt: %s\n", av_get_sample_fmt_name(avctx->sample_fmt));
+    ff_dlog(avctx, "bitstream_id: %s (%d)\n", strbuf, s->bitstream_id);
+    ff_dlog(avctx, "sample_fmt: %s\n", av_get_sample_fmt_name(avctx->sample_fmt));
     av_get_channel_layout_string(strbuf, 32, s->channels, avctx->channel_layout);
-    av_dlog(avctx, "channel_layout: %s\n", strbuf);
-    av_dlog(avctx, "sample_rate: %d\n", s->sample_rate);
-    av_dlog(avctx, "bit_rate: %d\n", s->bit_rate);
-    av_dlog(avctx, "blocks/frame: %d (code=%d)\n", s->num_blocks, s->num_blks_code);
+    ff_dlog(avctx, "channel_layout: %s\n", strbuf);
+    ff_dlog(avctx, "sample_rate: %d\n", s->sample_rate);
+    ff_dlog(avctx, "bit_rate: %d\n", s->bit_rate);
+    ff_dlog(avctx, "blocks/frame: %d (code=%d)\n", s->num_blocks, s->num_blks_code);
     if (s->cutoff)
-        av_dlog(avctx, "cutoff: %d\n", s->cutoff);
+        ff_dlog(avctx, "cutoff: %d\n", s->cutoff);
 
-    av_dlog(avctx, "per_frame_metadata: %s\n",
+    ff_dlog(avctx, "per_frame_metadata: %s\n",
             opt->allow_per_frame_metadata?"on":"off");
     if (s->has_center)
-        av_dlog(avctx, "center_mixlev: %0.3f (%d)\n", opt->center_mix_level,
+        ff_dlog(avctx, "center_mixlev: %0.3f (%d)\n", opt->center_mix_level,
                 s->center_mix_level);
     else
-        av_dlog(avctx, "center_mixlev: {not written}\n");
+        ff_dlog(avctx, "center_mixlev: {not written}\n");
     if (s->has_surround)
-        av_dlog(avctx, "surround_mixlev: %0.3f (%d)\n", opt->surround_mix_level,
+        ff_dlog(avctx, "surround_mixlev: %0.3f (%d)\n", opt->surround_mix_level,
                 s->surround_mix_level);
     else
-        av_dlog(avctx, "surround_mixlev: {not written}\n");
+        ff_dlog(avctx, "surround_mixlev: {not written}\n");
     if (opt->audio_production_info) {
-        av_dlog(avctx, "mixing_level: %ddB\n", opt->mixing_level);
+        ff_dlog(avctx, "mixing_level: %ddB\n", opt->mixing_level);
         switch (opt->room_type) {
         case AC3ENC_OPT_NOT_INDICATED: av_strlcpy(strbuf, "notindicated", 32); break;
         case AC3ENC_OPT_LARGE_ROOM:    av_strlcpy(strbuf, "large", 32);        break;
         case AC3ENC_OPT_SMALL_ROOM:    av_strlcpy(strbuf, "small", 32);        break;
         default: snprintf(strbuf, 32, "ERROR (%d)", opt->room_type);
         }
-        av_dlog(avctx, "room_type: %s\n", strbuf);
+        ff_dlog(avctx, "room_type: %s\n", strbuf);
     } else {
-        av_dlog(avctx, "mixing_level: {not written}\n");
-        av_dlog(avctx, "room_type: {not written}\n");
+        ff_dlog(avctx, "mixing_level: {not written}\n");
+        ff_dlog(avctx, "room_type: {not written}\n");
     }
-    av_dlog(avctx, "copyright: %s\n", opt->copyright?"on":"off");
-    av_dlog(avctx, "dialnorm: %ddB\n", opt->dialogue_level);
+    ff_dlog(avctx, "copyright: %s\n", opt->copyright?"on":"off");
+    ff_dlog(avctx, "dialnorm: %ddB\n", opt->dialogue_level);
     if (s->channel_mode == AC3_CHMODE_STEREO) {
         switch (opt->dolby_surround_mode) {
         case AC3ENC_OPT_NOT_INDICATED: av_strlcpy(strbuf, "notindicated", 32); break;
@@ -1731,11 +1732,11 @@ static void dprint_options(AC3EncodeContext *s)
         case AC3ENC_OPT_MODE_OFF:      av_strlcpy(strbuf, "off", 32);          break;
         default: snprintf(strbuf, 32, "ERROR (%d)", opt->dolby_surround_mode);
         }
-        av_dlog(avctx, "dsur_mode: %s\n", strbuf);
+        ff_dlog(avctx, "dsur_mode: %s\n", strbuf);
     } else {
-        av_dlog(avctx, "dsur_mode: {not written}\n");
+        ff_dlog(avctx, "dsur_mode: {not written}\n");
     }
-    av_dlog(avctx, "original: %s\n", opt->original?"on":"off");
+    ff_dlog(avctx, "original: %s\n", opt->original?"on":"off");
 
     if (s->bitstream_id == 6) {
         if (opt->extended_bsi_1) {
@@ -1745,17 +1746,17 @@ static void dprint_options(AC3EncodeContext *s)
             case AC3ENC_OPT_DOWNMIX_LORO:  av_strlcpy(strbuf, "loro", 32);         break;
             default: snprintf(strbuf, 32, "ERROR (%d)", opt->preferred_stereo_downmix);
             }
-            av_dlog(avctx, "dmix_mode: %s\n", strbuf);
-            av_dlog(avctx, "ltrt_cmixlev: %0.3f (%d)\n",
+            ff_dlog(avctx, "dmix_mode: %s\n", strbuf);
+            ff_dlog(avctx, "ltrt_cmixlev: %0.3f (%d)\n",
                     opt->ltrt_center_mix_level, s->ltrt_center_mix_level);
-            av_dlog(avctx, "ltrt_surmixlev: %0.3f (%d)\n",
+            ff_dlog(avctx, "ltrt_surmixlev: %0.3f (%d)\n",
                     opt->ltrt_surround_mix_level, s->ltrt_surround_mix_level);
-            av_dlog(avctx, "loro_cmixlev: %0.3f (%d)\n",
+            ff_dlog(avctx, "loro_cmixlev: %0.3f (%d)\n",
                     opt->loro_center_mix_level, s->loro_center_mix_level);
-            av_dlog(avctx, "loro_surmixlev: %0.3f (%d)\n",
+            ff_dlog(avctx, "loro_surmixlev: %0.3f (%d)\n",
                     opt->loro_surround_mix_level, s->loro_surround_mix_level);
         } else {
-            av_dlog(avctx, "extended bitstream info 1: {not written}\n");
+            ff_dlog(avctx, "extended bitstream info 1: {not written}\n");
         }
         if (opt->extended_bsi_2) {
             switch (opt->dolby_surround_ex_mode) {
@@ -1764,23 +1765,23 @@ static void dprint_options(AC3EncodeContext *s)
             case AC3ENC_OPT_MODE_OFF:      av_strlcpy(strbuf, "off", 32);          break;
             default: snprintf(strbuf, 32, "ERROR (%d)", opt->dolby_surround_ex_mode);
             }
-            av_dlog(avctx, "dsurex_mode: %s\n", strbuf);
+            ff_dlog(avctx, "dsurex_mode: %s\n", strbuf);
             switch (opt->dolby_headphone_mode) {
             case AC3ENC_OPT_NOT_INDICATED: av_strlcpy(strbuf, "notindicated", 32); break;
             case AC3ENC_OPT_MODE_ON:       av_strlcpy(strbuf, "on", 32);           break;
             case AC3ENC_OPT_MODE_OFF:      av_strlcpy(strbuf, "off", 32);          break;
             default: snprintf(strbuf, 32, "ERROR (%d)", opt->dolby_headphone_mode);
             }
-            av_dlog(avctx, "dheadphone_mode: %s\n", strbuf);
+            ff_dlog(avctx, "dheadphone_mode: %s\n", strbuf);
 
             switch (opt->ad_converter_type) {
             case AC3ENC_OPT_ADCONV_STANDARD: av_strlcpy(strbuf, "standard", 32); break;
             case AC3ENC_OPT_ADCONV_HDCD:     av_strlcpy(strbuf, "hdcd", 32);     break;
             default: snprintf(strbuf, 32, "ERROR (%d)", opt->ad_converter_type);
             }
-            av_dlog(avctx, "ad_conv_type: %s\n", strbuf);
+            ff_dlog(avctx, "ad_conv_type: %s\n", strbuf);
         } else {
-            av_dlog(avctx, "extended bitstream info 2: {not written}\n");
+            ff_dlog(avctx, "extended bitstream info 2: {not written}\n");
         }
     }
 #endif
@@ -2035,6 +2036,7 @@ av_cold int ff_ac3_encode_close(AVCodecContext *avctx)
     av_freep(&s->qmant_buffer);
     av_freep(&s->cpl_coord_exp_buffer);
     av_freep(&s->cpl_coord_mant_buffer);
+    av_freep(&s->fdsp);
     for (blk = 0; blk < s->num_blocks; blk++) {
         AC3Block *block = &s->blocks[blk];
         av_freep(&block->mdct_coef);
@@ -2327,50 +2329,50 @@ static av_cold int allocate_buffers(AC3EncodeContext *s)
     if (s->allocate_sample_buffers(s))
         goto alloc_fail;
 
-    FF_ALLOC_OR_GOTO(avctx, s->bap_buffer, total_coefs *
+    FF_ALLOC_ARRAY_OR_GOTO(avctx, s->bap_buffer, total_coefs,
                      sizeof(*s->bap_buffer), alloc_fail);
-    FF_ALLOC_OR_GOTO(avctx, s->bap1_buffer, total_coefs *
+    FF_ALLOC_ARRAY_OR_GOTO(avctx, s->bap1_buffer, total_coefs,
                      sizeof(*s->bap1_buffer), alloc_fail);
-    FF_ALLOCZ_OR_GOTO(avctx, s->mdct_coef_buffer, total_coefs *
+    FF_ALLOCZ_ARRAY_OR_GOTO(avctx, s->mdct_coef_buffer, total_coefs,
                       sizeof(*s->mdct_coef_buffer), alloc_fail);
-    FF_ALLOC_OR_GOTO(avctx, s->exp_buffer, total_coefs *
+    FF_ALLOC_ARRAY_OR_GOTO(avctx, s->exp_buffer, total_coefs,
                      sizeof(*s->exp_buffer), alloc_fail);
-    FF_ALLOC_OR_GOTO(avctx, s->grouped_exp_buffer, channel_blocks * 128 *
+    FF_ALLOC_ARRAY_OR_GOTO(avctx, s->grouped_exp_buffer, channel_blocks, 128 *
                      sizeof(*s->grouped_exp_buffer), alloc_fail);
-    FF_ALLOC_OR_GOTO(avctx, s->psd_buffer, total_coefs *
+    FF_ALLOC_ARRAY_OR_GOTO(avctx, s->psd_buffer, total_coefs,
                      sizeof(*s->psd_buffer), alloc_fail);
-    FF_ALLOC_OR_GOTO(avctx, s->band_psd_buffer, channel_blocks * 64 *
+    FF_ALLOC_ARRAY_OR_GOTO(avctx, s->band_psd_buffer, channel_blocks, 64 *
                      sizeof(*s->band_psd_buffer), alloc_fail);
-    FF_ALLOC_OR_GOTO(avctx, s->mask_buffer, channel_blocks * 64 *
+    FF_ALLOC_ARRAY_OR_GOTO(avctx, s->mask_buffer, channel_blocks, 64 *
                      sizeof(*s->mask_buffer), alloc_fail);
-    FF_ALLOC_OR_GOTO(avctx, s->qmant_buffer, total_coefs *
+    FF_ALLOC_ARRAY_OR_GOTO(avctx, s->qmant_buffer, total_coefs,
                      sizeof(*s->qmant_buffer), alloc_fail);
     if (s->cpl_enabled) {
-        FF_ALLOC_OR_GOTO(avctx, s->cpl_coord_exp_buffer, channel_blocks * 16 *
+        FF_ALLOC_ARRAY_OR_GOTO(avctx, s->cpl_coord_exp_buffer, channel_blocks, 16 *
                          sizeof(*s->cpl_coord_exp_buffer), alloc_fail);
-        FF_ALLOC_OR_GOTO(avctx, s->cpl_coord_mant_buffer, channel_blocks * 16 *
+        FF_ALLOC_ARRAY_OR_GOTO(avctx, s->cpl_coord_mant_buffer, channel_blocks, 16 *
                          sizeof(*s->cpl_coord_mant_buffer), alloc_fail);
     }
     for (blk = 0; blk < s->num_blocks; blk++) {
         AC3Block *block = &s->blocks[blk];
-        FF_ALLOCZ_OR_GOTO(avctx, block->mdct_coef, channels * sizeof(*block->mdct_coef),
+        FF_ALLOCZ_ARRAY_OR_GOTO(avctx, block->mdct_coef, channels, sizeof(*block->mdct_coef),
                           alloc_fail);
-        FF_ALLOCZ_OR_GOTO(avctx, block->exp, channels * sizeof(*block->exp),
+        FF_ALLOCZ_ARRAY_OR_GOTO(avctx, block->exp, channels, sizeof(*block->exp),
                           alloc_fail);
-        FF_ALLOCZ_OR_GOTO(avctx, block->grouped_exp, channels * sizeof(*block->grouped_exp),
+        FF_ALLOCZ_ARRAY_OR_GOTO(avctx, block->grouped_exp, channels, sizeof(*block->grouped_exp),
                           alloc_fail);
-        FF_ALLOCZ_OR_GOTO(avctx, block->psd, channels * sizeof(*block->psd),
+        FF_ALLOCZ_ARRAY_OR_GOTO(avctx, block->psd, channels, sizeof(*block->psd),
                           alloc_fail);
-        FF_ALLOCZ_OR_GOTO(avctx, block->band_psd, channels * sizeof(*block->band_psd),
+        FF_ALLOCZ_ARRAY_OR_GOTO(avctx, block->band_psd, channels, sizeof(*block->band_psd),
                           alloc_fail);
-        FF_ALLOCZ_OR_GOTO(avctx, block->mask, channels * sizeof(*block->mask),
+        FF_ALLOCZ_ARRAY_OR_GOTO(avctx, block->mask, channels, sizeof(*block->mask),
                           alloc_fail);
-        FF_ALLOCZ_OR_GOTO(avctx, block->qmant, channels * sizeof(*block->qmant),
+        FF_ALLOCZ_ARRAY_OR_GOTO(avctx, block->qmant, channels, sizeof(*block->qmant),
                           alloc_fail);
         if (s->cpl_enabled) {
-            FF_ALLOCZ_OR_GOTO(avctx, block->cpl_coord_exp, channels * sizeof(*block->cpl_coord_exp),
+            FF_ALLOCZ_ARRAY_OR_GOTO(avctx, block->cpl_coord_exp, channels, sizeof(*block->cpl_coord_exp),
                               alloc_fail);
-            FF_ALLOCZ_OR_GOTO(avctx, block->cpl_coord_mant, channels * sizeof(*block->cpl_coord_mant),
+            FF_ALLOCZ_ARRAY_OR_GOTO(avctx, block->cpl_coord_mant, channels, sizeof(*block->cpl_coord_mant),
                               alloc_fail);
         }
 
@@ -2393,11 +2395,11 @@ static av_cold int allocate_buffers(AC3EncodeContext *s)
     }
 
     if (!s->fixed_point) {
-        FF_ALLOCZ_OR_GOTO(avctx, s->fixed_coef_buffer, total_coefs *
+        FF_ALLOCZ_ARRAY_OR_GOTO(avctx, s->fixed_coef_buffer, total_coefs,
                           sizeof(*s->fixed_coef_buffer), alloc_fail);
         for (blk = 0; blk < s->num_blocks; blk++) {
             AC3Block *block = &s->blocks[blk];
-            FF_ALLOCZ_OR_GOTO(avctx, block->fixed_coef, channels *
+            FF_ALLOCZ_ARRAY_OR_GOTO(avctx, block->fixed_coef, channels,
                               sizeof(*block->fixed_coef), alloc_fail);
             for (ch = 0; ch < channels; ch++)
                 block->fixed_coef[ch] = &s->fixed_coef_buffer[AC3_MAX_COEFS * (s->num_blocks * ch + blk)];
@@ -2405,7 +2407,7 @@ static av_cold int allocate_buffers(AC3EncodeContext *s)
     } else {
         for (blk = 0; blk < s->num_blocks; blk++) {
             AC3Block *block = &s->blocks[blk];
-            FF_ALLOCZ_OR_GOTO(avctx, block->fixed_coef, channels *
+            FF_ALLOCZ_ARRAY_OR_GOTO(avctx, block->fixed_coef, channels,
                               sizeof(*block->fixed_coef), alloc_fail);
             for (ch = 0; ch < channels; ch++)
                 block->fixed_coef[ch] = (int32_t *)block->mdct_coef[ch];
@@ -2434,7 +2436,7 @@ av_cold int ff_ac3_encode_init(AVCodecContext *avctx)
         return ret;
 
     avctx->frame_size = AC3_BLOCK_SIZE * s->num_blocks;
-    avctx->delay      = AC3_BLOCK_SIZE;
+    avctx->initial_padding = AC3_BLOCK_SIZE;
 
     s->bitstream_mode = avctx->audio_service_type;
     if (s->bitstream_mode == AV_AUDIO_SERVICE_TYPE_KARAOKE)

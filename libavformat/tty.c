@@ -34,7 +34,7 @@
 #include "internal.h"
 #include "sauce.h"
 
-typedef struct {
+typedef struct TtyDemuxContext {
     AVClass *class;
     int chars_per_frame;
     uint64_t fsize;  /**< file size less metadata buffer */
@@ -113,7 +113,7 @@ static int read_packet(AVFormatContext *avctx, AVPacket *pkt)
     TtyDemuxContext *s = avctx->priv_data;
     int n;
 
-    if (url_feof(avctx->pb))
+    if (avio_feof(avctx->pb))
         return AVERROR_EOF;
 
     n = s->chars_per_frame;

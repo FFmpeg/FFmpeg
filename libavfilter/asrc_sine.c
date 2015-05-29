@@ -153,11 +153,28 @@ static av_cold int query_formats(AVFilterContext *ctx)
     int sample_rates[] = { sine->sample_rate, -1 };
     static const enum AVSampleFormat sample_fmts[] = { AV_SAMPLE_FMT_S16,
                                                        AV_SAMPLE_FMT_NONE };
+    AVFilterFormats *formats;
+    AVFilterChannelLayouts *layouts;
+    int ret;
 
-    ff_set_common_formats (ctx, ff_make_format_list(sample_fmts));
-    ff_set_common_channel_layouts(ctx, avfilter_make_format64_list(chlayouts));
-    ff_set_common_samplerates(ctx, ff_make_format_list(sample_rates));
-    return 0;
+    formats = ff_make_format_list(sample_fmts);
+    if (!formats)
+        return AVERROR(ENOMEM);
+    ret = ff_set_common_formats (ctx, formats);
+    if (ret < 0)
+        return ret;
+
+    layouts = avfilter_make_format64_list(chlayouts);
+    if (!layouts)
+        return AVERROR(ENOMEM);
+    ret = ff_set_common_channel_layouts(ctx, layouts);
+    if (ret < 0)
+        return ret;
+
+    formats = ff_make_format_list(sample_rates);
+    if (!formats)
+        return AVERROR(ENOMEM);
+    return ff_set_common_samplerates(ctx, formats);
 }
 
 static av_cold int config_props(AVFilterLink *outlink)

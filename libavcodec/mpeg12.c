@@ -70,21 +70,21 @@ static const uint8_t table_mb_btype[11][2] = {
 #define INIT_2D_VLC_RL(rl, static_size)\
 {\
     static RL_VLC_ELEM rl_vlc_table[static_size];\
-    INIT_VLC_STATIC(&rl.vlc, TEX_VLC_BITS, rl.n + 2,\
-                    &rl.table_vlc[0][1], 4, 2,\
-                    &rl.table_vlc[0][0], 4, 2, static_size);\
-\
     rl.rl_vlc[0] = rl_vlc_table;\
-    init_2d_vlc_rl(&rl);\
+    init_2d_vlc_rl(&rl, static_size);\
 }
 
-static av_cold void init_2d_vlc_rl(RLTable *rl)
+static av_cold void init_2d_vlc_rl(RLTable *rl, unsigned static_size)
 {
     int i;
+    VLC_TYPE table[680][2] = {{0}};
+    VLC vlc = { .table = table, .table_allocated = static_size };
+    av_assert0(static_size <= FF_ARRAY_ELEMS(table));
+    init_vlc(&vlc, TEX_VLC_BITS, rl->n + 2, &rl->table_vlc[0][1], 4, 2, &rl->table_vlc[0][0], 4, 2, INIT_VLC_USE_NEW_STATIC);
 
-    for (i = 0; i < rl->vlc.table_size; i++) {
-        int code = rl->vlc.table[i][0];
-        int len  = rl->vlc.table[i][1];
+    for (i = 0; i < vlc.table_size; i++) {
+        int code = vlc.table[i][0];
+        int len  = vlc.table[i][1];
         int level, run;
 
         if (len == 0) { // illegal code
@@ -170,8 +170,8 @@ av_cold void ff_mpeg12_init_vlcs(void)
         INIT_VLC_STATIC(&ff_mb_btype_vlc, MB_BTYPE_VLC_BITS, 11,
                         &table_mb_btype[0][1], 2, 1,
                         &table_mb_btype[0][0], 2, 1, 64);
-        ff_init_rl(&ff_rl_mpeg1, ff_mpeg12_static_rl_table_store[0]);
-        ff_init_rl(&ff_rl_mpeg2, ff_mpeg12_static_rl_table_store[1]);
+        ff_rl_init(&ff_rl_mpeg1, ff_mpeg12_static_rl_table_store[0]);
+        ff_rl_init(&ff_rl_mpeg2, ff_mpeg12_static_rl_table_store[1]);
 
         INIT_2D_VLC_RL(ff_rl_mpeg1, 680);
         INIT_2D_VLC_RL(ff_rl_mpeg2, 674);
@@ -234,7 +234,7 @@ int ff_mpeg1_find_frame_end(ParseContext *pc, const uint8_t *buf, int buf_size, 
                 }
             }
             if (pc->frame_start_found == 0 && s && state == PICTURE_START_CODE) {
-                ff_fetch_timestamp(s, i - 3, 1);
+                ff_fetch_timestamp(s, i - 3, 1, i > 3);
             }
         }
     }

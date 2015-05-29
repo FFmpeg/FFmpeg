@@ -71,15 +71,35 @@ const int16_t ff_g722_low_inv_quant6[64] = {
      211,   170,   130,    91,    54,    17,   -54,   -17
 };
 
-/**
- * quadrature mirror filter (QMF) coefficients
- *
- * ITU-T G.722 Table 11
- */
-static const int16_t qmf_coeffs[12] = {
-    3, -11, 12, 32, -210, 951, 3876, -805, 362, -156, 53, -11,
-};
+static inline void s_zero(int cur_diff, struct G722Band *band)
+{
+    int s_zero = 0;
 
+    #define ACCUM(k, x, d) do { \
+            int tmp = x; \
+            band->zero_mem[k] = ((band->zero_mem[k] * 255) >> 8) + \
+               d*((band->diff_mem[k]^cur_diff) < 0 ? -128 : 128); \
+            band->diff_mem[k] = tmp; \
+            s_zero += (tmp * band->zero_mem[k]) >> 15; \
+        } while (0)
+    if (cur_diff) {
+        ACCUM(5, band->diff_mem[4], 1);
+        ACCUM(4, band->diff_mem[3], 1);
+        ACCUM(3, band->diff_mem[2], 1);
+        ACCUM(2, band->diff_mem[1], 1);
+        ACCUM(1, band->diff_mem[0], 1);
+        ACCUM(0, cur_diff << 1, 1);
+    } else {
+        ACCUM(5, band->diff_mem[4], 0);
+        ACCUM(4, band->diff_mem[3], 0);
+        ACCUM(3, band->diff_mem[2], 0);
+        ACCUM(2, band->diff_mem[1], 0);
+        ACCUM(1, band->diff_mem[0], 0);
+        ACCUM(0, cur_diff << 1, 0);
+    }
+    #undef ACCUM
+    band->s_zero = s_zero;
+}
 
 /**
  * adaptive predictor
@@ -89,7 +109,7 @@ static const int16_t qmf_coeffs[12] = {
  */
 static void do_adaptive_prediction(struct G722Band *band, const int cur_diff)
 {
-    int sg[2], limit, i, cur_qtzd_reconst;
+    int sg[2], limit, cur_qtzd_reconst;
 
     const int cur_part_reconst = band->s_zero + cur_diff < 0;
 
@@ -104,23 +124,7 @@ static void do_adaptive_prediction(struct G722Band *band, const int cur_diff)
     limit = 15360 - band->pole_mem[1];
     band->pole_mem[0] = av_clip(-192 * sg[0] + (band->pole_mem[0] * 255 >> 8), -limit, limit);
 
-
-    if (cur_diff) {
-        for (i = 0; i < 6; i++)
-            band->zero_mem[i] = ((band->zero_mem[i]*255) >> 8) +
-                                ((band->diff_mem[i]^cur_diff) < 0 ? -128 : 128);
-    } else
-        for (i = 0; i < 6; i++)
-            band->zero_mem[i] = (band->zero_mem[i]*255) >> 8;
-
-    for (i = 5; i > 0; i--)
-        band->diff_mem[i] = band->diff_mem[i-1];
-    band->diff_mem[0] = av_clip_int16(cur_diff << 1);
-
-    band->s_zero = 0;
-    for (i = 5; i >= 0; i--)
-        band->s_zero += (band->zero_mem[i]*band->diff_mem[i]) >> 15;
-
+    s_zero(cur_diff, band);
 
     cur_qtzd_reconst = av_clip_int16((band->s_predictor + cur_diff) << 1);
     band->s_predictor = av_clip_int16(band->s_zero +
@@ -156,16 +160,4 @@ void ff_g722_update_high_predictor(struct G722Band *band, const int dhigh,
     band->log_factor   = av_clip((band->log_factor * 127 >> 7) +
                                  high_log_factor_step[ihigh&1], 0, 22528);
     band->scale_factor = linear_scale_factor(band->log_factor - (10 << 11));
-}
-
-void ff_g722_apply_qmf(const int16_t *prev_samples, int *xout1, int *xout2)
-{
-    int i;
-
-    *xout1 = 0;
-    *xout2 = 0;
-    for (i = 0; i < 12; i++) {
-        MAC16(*xout2, prev_samples[2*i  ], qmf_coeffs[i   ]);
-        MAC16(*xout1, prev_samples[2*i+1], qmf_coeffs[11-i]);
-    }
 }

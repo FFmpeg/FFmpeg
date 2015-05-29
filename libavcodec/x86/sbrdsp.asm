@@ -25,13 +25,14 @@ SECTION_RODATA
 ; mask equivalent for multiply by -1.0 1.0
 ps_mask         times 2 dd 1<<31, 0
 ps_mask2        times 2 dd 0, 1<<31
-ps_neg          times 4 dd 1<<31
+ps_mask3        dd  0, 0, 0, 1<<31
 ps_noise0       times 2 dd  1.0,  0.0,
 ps_noise2       times 2 dd -1.0,  0.0
 ps_noise13      dd  0.0,  1.0, 0.0, -1.0
                 dd  0.0, -1.0, 0.0,  1.0
                 dd  0.0,  1.0, 0.0, -1.0
 cextern         sbr_noise_table
+cextern         ps_neg
 
 SECTION_TEXT
 
@@ -445,3 +446,118 @@ cglobal sbr_qmf_deint_neg, 2,4,4,v,src,vrev,c
     add        cq, mmsize
     jl      .loop
     REP_RET
+
+%macro SBR_AUTOCORRELATE 0
+cglobal sbr_autocorrelate, 2,3,8,32, x, phi, cnt
+    mov   cntq, 37*8
+    add     xq, cntq
+    neg   cntq
+
+%if cpuflag(sse3)
+%define   MOVH  movsd
+    movddup m5, [xq+cntq]
+%else
+%define   MOVH  movlps
+    movlps  m5, [xq+cntq]
+    movlhps m5, m5
+%endif
+    MOVH    m7, [xq+cntq+8 ]
+    MOVH    m1, [xq+cntq+16]
+    shufps  m7, m7, q0110
+    shufps  m1, m1, q0110
+    mulps   m3, m5, m7   ;              x[0][0] * x[1][0], x[0][1] * x[1][1], x[0][0] * x[1][1], x[0][1] * x[1][0]
+    mulps   m4, m5, m5   ;              x[0][0] * x[0][0], x[0][1] * x[0][1];
+    mulps   m5, m1       ; real_sum2  = x[0][0] * x[2][0], x[0][1] * x[2][1]; imag_sum2 = x[0][0] * x[2][1], x[0][1] * x[2][0]
+    movaps  [rsp   ], m3
+    movaps  [rsp+16], m4
+    add   cntq, 8
+
+    MOVH    m2, [xq+cntq+16]
+    movlhps m7, m7
+    shufps  m2, m2, q0110
+    mulps   m6, m7, m1   ; real_sum1  = x[1][0] * x[2][0], x[1][1] * x[2][1]; imag_sum1 += x[1][0] * x[2][1], x[1][1] * x[2][0]
+    mulps   m4, m7, m2
+    mulps   m7, m7       ; real_sum0  = x[1][0] * x[1][0], x[1][1] * x[1][1];
+    addps   m5, m4       ; real_sum2 += x[1][0] * x[3][0], x[1][1] * x[3][1]; imag_sum2 += x[1][0] * x[3][1], x[1][1] * x[3][0]
+
+align 16
+.loop:
+    add   cntq, 8
+    MOVH    m0, [xq+cntq+16]
+    movlhps m1, m1
+    shufps  m0, m0, q0110
+    mulps   m3, m1, m2
+    mulps   m4, m1, m0
+    mulps   m1, m1
+    addps   m6, m3       ; real_sum1 += x[i][0] * x[i + 1][0], x[i][1] * x[i + 1][1]; imag_sum1 += x[i][0] * x[i + 1][1], x[i][1] * x[i + 1][0];
+    addps   m5, m4       ; real_sum2 += x[i][0] * x[i + 2][0], x[i][1] * x[i + 2][1]; imag_sum2 += x[i][0] * x[i + 2][1], x[i][1] * x[i + 2][0];
+    addps   m7, m1       ; real_sum0 += x[i][0] * x[i][0],     x[i][1] * x[i][1];
+    add   cntq, 8
+    MOVH    m1, [xq+cntq+16]
+    movlhps m2, m2
+    shufps  m1, m1, q0110
+    mulps   m3, m2, m0
+    mulps   m4, m2, m1
+    mulps   m2, m2
+    addps   m6, m3       ; real_sum1 += x[i][0] * x[i + 1][0], x[i][1] * x[i + 1][1]; imag_sum1 += x[i][0] * x[i + 1][1], x[i][1] * x[i + 1][0];
+    addps   m5, m4       ; real_sum2 += x[i][0] * x[i + 2][0], x[i][1] * x[i + 2][1]; imag_sum2 += x[i][0] * x[i + 2][1], x[i][1] * x[i + 2][0];
+    addps   m7, m2       ; real_sum0 += x[i][0] * x[i][0],     x[i][1] * x[i][1];
+    add   cntq, 8
+    MOVH    m2, [xq+cntq+16]
+    movlhps m0, m0
+    shufps  m2, m2, q0110
+    mulps   m3, m0, m1
+    mulps   m4, m0, m2
+    mulps   m0, m0
+    addps   m6, m3       ; real_sum1 += x[i][0] * x[i + 1][0], x[i][1] * x[i + 1][1]; imag_sum1 += x[i][0] * x[i + 1][1], x[i][1] * x[i + 1][0];
+    addps   m5, m4       ; real_sum2 += x[i][0] * x[i + 2][0], x[i][1] * x[i + 2][1]; imag_sum2 += x[i][0] * x[i + 2][1], x[i][1] * x[i + 2][0];
+    addps   m7, m0       ; real_sum0 += x[i][0] * x[i][0],     x[i][1] * x[i][1];
+    jl .loop
+
+    movlhps m1, m1
+    mulps   m4, m1, m2
+    mulps   m1, m1
+    addps   m4, m6       ; real_sum1 + x[38][0] * x[39][0], x[38][1] * x[39][1]; imag_sum1 + x[38][0] * x[39][1], x[38][1] * x[39][0];
+    addps   m1, m7       ; real_sum0 + x[38][0] * x[38][0], x[38][1] * x[38][1];
+    addps   m6, [rsp   ] ; real_sum1 + x[ 0][0] * x[ 1][0], x[ 0][1] * x[ 1][1]; imag_sum1 + x[ 0][0] * x[ 1][1], x[ 0][1] * x[ 1][0];
+    addps   m7, [rsp+16] ; real_sum0 + x[ 0][0] * x[ 0][0], x[ 0][1] * x[ 0][1];
+
+    xorps   m4, [ps_mask3]
+    xorps   m5, [ps_mask3]
+    xorps   m6, [ps_mask3]
+%if cpuflag(sse3)
+    movshdup m2, m1
+    haddps  m4, m5
+    haddps  m7, m6
+    addss   m1, m2
+%else
+    movaps  m3, m4
+    movaps  m2, m5
+    movaps  m0, m6
+    shufps  m3, m3, q0301
+    shufps  m2, m2, q0301
+    shufps  m0, m0, q0301
+    addps   m4, m3
+    addps   m5, m2
+    addps   m6, m0
+
+    movss   m2, m7
+    movss   m3, m1
+    shufps  m7, m7, q0001
+    shufps  m1, m1, q0001
+    addss   m7, m2
+    addss   m1, m3
+    shufps  m4, m5, q2020
+    shufps  m7, m6, q2020
+%endif
+    movaps  [phiq     ], m4
+    movhps  [phiq+0x18], m7
+    movss   [phiq+0x28], m7
+    movss   [phiq+0x10], m1
+    RET
+%endmacro
+
+INIT_XMM sse
+SBR_AUTOCORRELATE
+INIT_XMM sse3
+SBR_AUTOCORRELATE

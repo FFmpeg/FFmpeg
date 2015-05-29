@@ -723,10 +723,10 @@ static void OPNAME ## pixels16x16_c(uint8_t *block, const uint8_t *pixels, ptrdi
     }\
 }
 
-#define op_put(a, b) a = av_clip_uint8(b)
-#define op_avg(a, b) a = (a + av_clip_uint8(b) + 1) >> 1
-#define op4_avg(a, b) a = rnd_avg32(a, b)
-#define op4_put(a, b) a = b
+#define op_put(a, b) (a) = av_clip_uint8(b)
+#define op_avg(a, b) (a) = ((a) + av_clip_uint8(b) + 1) >> 1
+#define op4_avg(a, b) (a) = rnd_avg32(a, b)
+#define op4_put(a, b) (a) = (b)
 
 VC1_MSPEL_MC(op_put, op4_put, put_)
 VC1_MSPEL_MC(op_avg, op4_avg, avg_)
@@ -1025,7 +1025,7 @@ av_cold void ff_vc1dsp_init(VC1DSPContext *dsp)
     dsp->sprite_v_double_twoscale = sprite_v_double_twoscale_c;
 #endif /* CONFIG_WMV3IMAGE_DECODER || CONFIG_VC1IMAGE_DECODER */
 
-    dsp->vc1_find_start_code_candidate = ff_startcode_find_candidate_c;
+    dsp->startcode_find_candidate = ff_startcode_find_candidate_c;
 
     if (ARCH_AARCH64)
         ff_vc1dsp_init_aarch64(dsp);

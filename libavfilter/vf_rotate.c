@@ -38,7 +38,7 @@
 
 #include <float.h>
 
-static const char *var_names[] = {
+static const char * const var_names[] = {
     "in_w" , "iw",  ///< width of the input video
     "in_h" , "ih",  ///< height of the input video
     "out_w", "ow",  ///< width of the input video
@@ -130,7 +130,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 
 static int query_formats(AVFilterContext *ctx)
 {
-    static enum PixelFormat pix_fmts[] = {
+    static const enum AVPixelFormat pix_fmts[] = {
         AV_PIX_FMT_GBRP,   AV_PIX_FMT_GBRAP,
         AV_PIX_FMT_ARGB,   AV_PIX_FMT_RGBA,
         AV_PIX_FMT_ABGR,   AV_PIX_FMT_BGRA,
@@ -145,8 +145,10 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_NONE
     };
 
-    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
-    return 0;
+    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
+    if (!fmts_list)
+        return AVERROR(ENOMEM);
+    return ff_set_common_formats(ctx, fmts_list);
 }
 
 static double get_rotated_w(void *opaque, double angle)

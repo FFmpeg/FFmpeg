@@ -335,7 +335,7 @@ static int escape130_decode_frame(AVCodecContext *avctx, void *data,
         new_cr += new_cr_stride;
     }
 
-    av_dlog(avctx, "Frame data: provided %d bytes, used %d bytes\n",
+    ff_dlog(avctx, "Frame data: provided %d bytes, used %d bytes\n",
             buf_size, get_bits_count(&gb) >> 3);
 
     FFSWAP(uint8_t*, s->old_y, s->new_y);

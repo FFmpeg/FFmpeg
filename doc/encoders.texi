@@ -494,6 +494,85 @@ Selected by Encoder (default)
 
 @end table
 
+@anchor{flac}
+@section flac
+
+FLAC (Free Lossless Audio Codec) Encoder
+
+@subsection Options
+
+The following options are supported by FFmpeg's flac encoder.
+
+@table @option
+@item compression_level
+Sets the compression level, which chooses defaults for many other options
+if they are not set explicitly.
+
+@item frame_size
+Sets the size of the frames in samples per channel.
+
+@item lpc_coeff_precision
+Sets the LPC coefficient precision, valid values are from 1 to 15, 15 is the
+default.
+
+@item lpc_type
+Sets the first stage LPC algorithm
+@table @samp
+@item none
+LPC is not used
+
+@item fixed
+fixed LPC coefficients
+
+@item levinson
+
+@item cholesky
+@end table
+
+@item lpc_passes
+Number of passes to use for Cholesky factorization during LPC analysis
+
+@item min_partition_order
+The minimum partition order
+
+@item max_partition_order
+The maximum partition order
+
+@item prediction_order_method
+@table @samp
+@item estimation
+@item 2level
+@item 4level
+@item 8level
+@item search
+Bruteforce search
+@item log
+@end table
+
+@item ch_mode
+Channel mode
+@table @samp
+@item auto
+The mode is chosen automatically for each frame
+@item indep
+Chanels are independently coded
+@item left_side
+@item right_side
+@item mid_side
+@end table
+
+@item exact_rice_parameters
+Chooses if rice parameters are calculated exactly or approximately.
+if set to 1 then they are chosen exactly, which slows the code down slightly and
+improves compression slightly.
+
+@item multi_dim_quant
+Multi Dimensional Quantization. If set to 1 then a 2nd stage LPC algorithm is
+applied after the first stage to finetune the coefficients. This is quite slow
+and slightly improves compression.
+
+@end table
+
 @anchor{libfaac}
 @section libfaac
 
@@ -1330,7 +1409,7 @@ ffmpeg -i INPUT -codec:v libtheora -b:v 1000k OUTPUT.ogg
 
 @section libvpx
 
-VP8 format supported through libvpx.
+VP8/VP9 format supported through libvpx.
 
 Requires the presence of the libvpx headers and library during configuration.
 You need to explicitly configure the build with @code{--enable-libvpx}.
@@ -1441,6 +1520,9 @@ g_lag_in_frames
 
 @item vp8flags error_resilient
 g_error_resilient
+
+@item aq_mode
+@code{VP9E_SET_AQ_MODE}
 
 @end table
 
@@ -1742,6 +1824,10 @@ Enable calculation and printing SSIM stats after the encoding.
 Enable the use of Periodic Intra Refresh instead of IDR frames when set
 to 1.
 
+@item avcintra-class (@emph{class})
+Configure the encoder to generate AVC-Intra.
+Valid values are 50,100 and 200
+
 @item bluray-compat (@emph{bluray-compat})
 Configure the encoder to be compatible with the bluray standard.
 It is a shorthand for setting "bluray-compat=1 force-cfr=1".
@@ -1878,6 +1964,34 @@ no-fast-pskip=1:subq=6:8x8dct=0:trellis=0 OUTPUT
 
 Encoding ffpresets for common usages are provided so they can be used with the
 general presets system (e.g. passing the @option{pre} option).
+
+@section libx265
+
+x265 H.265/HEVC encoder wrapper.
+
+This encoder requires the presence of the libx265 headers and library
+during configuration. You need to explicitly configure the build with
+@option{--enable-libx265}.
+
+@subsection Options
+
+@table @option
+@item preset
+Set the x265 preset.
+
+@item tune
+Set the x265 tune parameter.
+
+@item x265-params
+Set x265 options using a list of @var{key}=@var{value} couples separated
+by ":". See @command{x265 --help} for a list of options.
+
+For example to specify libx265 encoding options with @option{-x265-params}:
+
+@example
+ffmpeg -i input -c:v libx265 -x265-params crf=26:psy-rd=1 output.mp4
+@end example
+@end table
 
 @section libxvid
 
@@ -2136,7 +2250,7 @@ Use @var{0} to disable alpha plane coding.
 @subsection Speed considerations
 
 In the default mode of operation the encoder has to honor frame constraints
-(i.e. not produc frames with size bigger than requested) while still making
+(i.e. not produce frames with size bigger than requested) while still making
 output picture as good as possible.
 A frame containing a lot of small details is harder to compress and the encoder
 would spend more time searching for appropriate quantizers for each slice.

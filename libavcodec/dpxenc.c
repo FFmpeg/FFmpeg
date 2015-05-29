@@ -28,6 +28,7 @@
 typedef struct DPXContext {
     int big_endian;
     int bits_per_component;
+    int num_components;
     int descriptor;
     int planar;
 } DPXContext;
@@ -39,6 +40,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     s->big_endian         = !!(desc->flags & AV_PIX_FMT_FLAG_BE);
     s->bits_per_component = desc->comp[0].depth_minus1 + 1;
+    s->num_components     = desc->nb_components;
     s->descriptor         = (desc->flags & AV_PIX_FMT_FLAG_ALPHA) ? 51 : 50;
     s->planar             = !!(desc->flags & AV_PIX_FMT_FLAG_PLANAR);
 
@@ -142,7 +144,9 @@ static void encode_gbrp12(AVCodecContext *avctx, const AVPicture *pic, uint16_t 
     const uint16_t *src[3] = {(uint16_t*)pic->data[0],
                               (uint16_t*)pic->data[1],
                               (uint16_t*)pic->data[2]};
-    int x, y, i;
+    int x, y, i, pad;
+    pad = avctx->width*6;
+    pad = (FFALIGN(pad, 4) - pad) >> 1;
     for (y = 0; y < avctx->height; y++) {
         for (x = 0; x < avctx->width; x++) {
             uint16_t value[3];
@@ -158,6 +162,8 @@ static void encode_gbrp12(AVCodecContext *avctx, const AVPicture *pic, uint16_t 
             for (i = 0; i < 3; i++)
                 write16(dst++, value[i]);
         }
+        for (i = 0; i < pad; i++)
+            *dst++ = 0;
         for (i = 0; i < 3; i++)
             src[i] += pic->linesize[i]/2;
     }
@@ -167,14 +173,25 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                         const AVFrame *frame, int *got_packet)
 {
     DPXContext *s = avctx->priv_data;
-    int size, ret;
+    int size, ret, need_align, len;
     uint8_t *buf;
 
 #define HEADER_SIZE 1664  /* DPX Generic header */
     if (s->bits_per_component == 10)
         size = avctx->height * avctx->width * 4;
-    else
-        size = avpicture_get_size(avctx->pix_fmt, avctx->width, avctx->height);
+    else if (s->bits_per_component == 12) {
+        // 3 components, 12 bits put on 16 bits
+        len  = avctx->width*6;
+        size = FFALIGN(len, 4);
+        need_align = size - len;
+        size *= avctx->height;
+    } else {
+        // N components, M bits
+        len = avctx->width * s->num_components * s->bits_per_component >> 3;
+        size = FFALIGN(len, 4);
+        need_align = size - len;
+        size *= avctx->height;
+    }
     if ((ret = ff_alloc_packet2(avctx, pkt, size + HEADER_SIZE)) < 0)
         return ret;
     buf = pkt->data;
@@ -211,9 +228,22 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     switch(s->bits_per_component) {
     case 8:
     case 16:
-        size = avpicture_layout((const AVPicture*)frame, avctx->pix_fmt,
-                                avctx->width, avctx->height,
-                                buf + HEADER_SIZE, pkt->size - HEADER_SIZE);
+        if (need_align) {
+            int j;
+            const uint8_t *src = frame->data[0];
+            uint8_t *dst = pkt->data + HEADER_SIZE;
+            size = (len + need_align) * avctx->height;
+            for (j=0; j<avctx->height; j++) {
+                memcpy(dst, src, len);
+                memset(dst + len, 0, need_align);
+                dst += len + need_align;
+                src += frame->linesize[0];
+            }
+        } else {
+            size = avpicture_layout((const AVPicture*)frame, avctx->pix_fmt,
+                                    avctx->width, avctx->height,
+                                    buf + HEADER_SIZE, pkt->size - HEADER_SIZE);
+        }
         if (size < 0)
             return size;
         break;

@@ -62,13 +62,6 @@ static const AVClass rawdec_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-#if LIBAVCODEC_VERSION_MAJOR < 55
-enum AVPixelFormat ff_find_pix_fmt(const PixelFormatTag *tags, unsigned int fourcc)
-{
-    return avpriv_find_pix_fmt(tags, fourcc);
-}
-#endif
-
 static av_cold int raw_init_decoder(AVCodecContext *avctx)
 {
     RawVideoContext *context = avctx->priv_data;
@@ -103,19 +96,6 @@ static av_cold int raw_init_decoder(AVCodecContext *avctx)
             avpriv_set_systematic_pal2((uint32_t*)context->palette->data, avctx->pix_fmt);
         else
             memset(context->palette->data, 0, AVPALETTE_SIZE);
-    }
-
-    if ((avctx->bits_per_coded_sample == 4 || avctx->bits_per_coded_sample == 2) &&
-        avctx->pix_fmt == AV_PIX_FMT_PAL8 &&
-       (!avctx->codec_tag || avctx->codec_tag == MKTAG('r','a','w',' '))) {
-        context->is_2_4_bpp = 1;
-        context->frame_size = avpicture_get_size(avctx->pix_fmt,
-                                                 FFALIGN(avctx->width, 16),
-                                                 avctx->height);
-    } else {
-        context->is_lt_16bpp = av_get_bits_per_pixel(desc) == 16 && avctx->bits_per_coded_sample && avctx->bits_per_coded_sample < 16;
-        context->frame_size = avpicture_get_size(avctx->pix_fmt, avctx->width,
-                                                 avctx->height);
     }
 
     if ((avctx->extradata_size >= 9 &&
@@ -175,10 +155,27 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
     int buf_size                   = avpkt->size;
     int linesize_align             = 4;
     int res, len;
-    int need_copy                  = !avpkt->buf || context->is_2_4_bpp || context->is_yuv2 || context->is_lt_16bpp;
+    int need_copy;
 
     AVFrame   *frame   = data;
     AVPicture *picture = data;
+
+    if ((avctx->bits_per_coded_sample == 4 || avctx->bits_per_coded_sample == 2) &&
+        avctx->pix_fmt == AV_PIX_FMT_PAL8 &&
+       (!avctx->codec_tag || avctx->codec_tag == MKTAG('r','a','w',' '))) {
+        context->is_2_4_bpp = 1;
+        context->frame_size = avpicture_get_size(avctx->pix_fmt,
+                                                 FFALIGN(avctx->width, 16),
+                                                 avctx->height);
+    } else {
+        context->is_lt_16bpp = av_get_bits_per_pixel(desc) == 16 && avctx->bits_per_coded_sample && avctx->bits_per_coded_sample < 16;
+        context->frame_size = avpicture_get_size(avctx->pix_fmt, avctx->width,
+                                                 avctx->height);
+    }
+    if (context->frame_size < 0)
+        return context->frame_size;
+
+    need_copy = !avpkt->buf || context->is_2_4_bpp || context->is_yuv2 || context->is_lt_16bpp;
 
     frame->pict_type        = AV_PICTURE_TYPE_I;
     frame->key_frame        = 1;
@@ -375,4 +372,5 @@ AVCodec ff_rawvideo_decoder = {
     .close          = raw_close_decoder,
     .decode         = raw_decode,
     .priv_class     = &rawdec_class,
+    .capabilities   = CODEC_CAP_PARAM_CHANGE,
 };

@@ -20,11 +20,96 @@
 
 #include "avformat.h"
 #include "subtitles.h"
+#include "avio_internal.h"
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 
+void ff_text_init_avio(void *s, FFTextReader *r, AVIOContext *pb)
+{
+    int i;
+    r->pb = pb;
+    r->buf_pos = r->buf_len = 0;
+    r->type = FF_UTF_8;
+    for (i = 0; i < 2; i++)
+        r->buf[r->buf_len++] = avio_r8(r->pb);
+    if (strncmp("\xFF\xFE", r->buf, 2) == 0) {
+        r->type = FF_UTF16LE;
+        r->buf_pos += 2;
+    } else if (strncmp("\xFE\xFF", r->buf, 2) == 0) {
+        r->type = FF_UTF16BE;
+        r->buf_pos += 2;
+    } else {
+        r->buf[r->buf_len++] = avio_r8(r->pb);
+        if (strncmp("\xEF\xBB\xBF", r->buf, 3) == 0) {
+            // UTF8
+            r->buf_pos += 3;
+        }
+    }
+    if (s && (r->type == FF_UTF16LE || r->type == FF_UTF16BE))
+        av_log(s, AV_LOG_INFO,
+               "UTF16 is automatically converted to UTF8, do not specify a character encoding\n");
+}
+
+void ff_text_init_buf(FFTextReader *r, void *buf, size_t size)
+{
+    memset(&r->buf_pb, 0, sizeof(r->buf_pb));
+    ffio_init_context(&r->buf_pb, buf, size, 0, NULL, NULL, NULL, NULL);
+    ff_text_init_avio(NULL, r, &r->buf_pb);
+}
+
+int64_t ff_text_pos(FFTextReader *r)
+{
+    return avio_tell(r->pb) - r->buf_len + r->buf_pos;
+}
+
+int ff_text_r8(FFTextReader *r)
+{
+    uint32_t val;
+    uint8_t tmp;
+    if (r->buf_pos < r->buf_len)
+        return r->buf[r->buf_pos++];
+    if (r->type == FF_UTF16LE) {
+        GET_UTF16(val, avio_rl16(r->pb), return 0;)
+    } else if (r->type == FF_UTF16BE) {
+        GET_UTF16(val, avio_rb16(r->pb), return 0;)
+    } else {
+        return avio_r8(r->pb);
+    }
+    if (!val)
+        return 0;
+    r->buf_pos = 0;
+    r->buf_len = 0;
+    PUT_UTF8(val, tmp, r->buf[r->buf_len++] = tmp;)
+    return r->buf[r->buf_pos++]; // buf_len is at least 1
+}
+
+void ff_text_read(FFTextReader *r, char *buf, size_t size)
+{
+    for ( ; size > 0; size--)
+        *buf++ = ff_text_r8(r);
+}
+
+int ff_text_eof(FFTextReader *r)
+{
+    return r->buf_pos >= r->buf_len && avio_feof(r->pb);
+}
+
+int ff_text_peek_r8(FFTextReader *r)
+{
+    int c;
+    if (r->buf_pos < r->buf_len)
+        return r->buf[r->buf_pos];
+    c = ff_text_r8(r);
+    if (!avio_feof(r->pb)) {
+        r->buf_pos = 0;
+        r->buf_len = 1;
+        r->buf[0] = c;
+    }
+    return c;
+}
+
 AVPacket *ff_subtitles_queue_insert(FFDemuxSubtitlesQueue *q,
-                                    const uint8_t *event, int len, int merge)
+                                    const uint8_t *event, size_t len, int merge)
 {
     AVPacket *subs, *sub;
 
@@ -192,20 +277,20 @@ void ff_subtitles_queue_clean(FFDemuxSubtitlesQueue *q)
     q->nb_subs = q->allocated_size = q->current_sub_idx = 0;
 }
 
-int ff_smil_extract_next_chunk(AVIOContext *pb, AVBPrint *buf, char *c)
+int ff_smil_extract_next_text_chunk(FFTextReader *tr, AVBPrint *buf, char *c)
 {
     int i = 0;
     char end_chr;
 
     if (!*c) // cached char?
-        *c = avio_r8(pb);
+        *c = ff_text_r8(tr);
     if (!*c)
         return 0;
 
     end_chr = *c == '<' ? '>' : '<';
     do {
         av_bprint_chars(buf, *c, 1);
-        *c = avio_r8(pb);
+        *c = ff_text_r8(tr);
         i++;
     } while (*c != end_chr && *c);
     if (end_chr == '>') {
@@ -218,7 +303,7 @@ int ff_smil_extract_next_chunk(AVIOContext *pb, AVBPrint *buf, char *c)
 const char *ff_smil_get_attr_ptr(const char *s, const char *attr)
 {
     int in_quotes = 0;
-    const int len = strlen(attr);
+    const size_t len = strlen(attr);
 
     while (*s) {
         while (*s) {
@@ -240,7 +325,7 @@ static inline int is_eol(char c)
     return c == '\r' || c == '\n';
 }
 
-void ff_subtitles_read_chunk(AVIOContext *pb, AVBPrint *buf)
+void ff_subtitles_read_text_chunk(FFTextReader *tr, AVBPrint *buf)
 {
     char eol_buf[5], last_was_cr = 0;
     int n = 0, i = 0, nb_eol = 0;
@@ -248,7 +333,7 @@ void ff_subtitles_read_chunk(AVIOContext *pb, AVBPrint *buf)
     av_bprint_clear(buf);
 
     for (;;) {
-        char c = avio_r8(pb);
+        char c = ff_text_r8(tr);
 
         if (!c)
             break;
@@ -280,4 +365,34 @@ void ff_subtitles_read_chunk(AVIOContext *pb, AVBPrint *buf)
         av_bprint_chars(buf, c, 1);
         n++;
     }
+}
+
+void ff_subtitles_read_chunk(AVIOContext *pb, AVBPrint *buf)
+{
+    FFTextReader tr;
+    tr.buf_pos = tr.buf_len = 0;
+    tr.type = 0;
+    tr.pb = pb;
+    ff_subtitles_read_text_chunk(&tr, buf);
+}
+
+ptrdiff_t ff_subtitles_read_line(FFTextReader *tr, char *buf, size_t size)
+{
+    size_t cur = 0;
+    if (!size)
+        return 0;
+    while (cur + 1 < size) {
+        unsigned char c = ff_text_r8(tr);
+        if (!c)
+            return ff_text_eof(tr) ? cur : AVERROR_INVALIDDATA;
+        if (c == '\r' || c == '\n')
+            break;
+        buf[cur++] = c;
+        buf[cur] = '\0';
+    }
+    if (ff_text_peek_r8(tr) == '\r')
+        ff_text_r8(tr);
+    if (ff_text_peek_r8(tr) == '\n')
+        ff_text_r8(tr);
+    return cur;
 }

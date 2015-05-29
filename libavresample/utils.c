@@ -21,6 +21,7 @@
 #include "libavutil/common.h"
 #include "libavutil/dict.h"
 // #include "libavutil/error.h"
+#include "libavutil/frame.h"
 #include "libavutil/log.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
@@ -101,16 +102,10 @@ int avresample_open(AVAudioResampleContext *avr)
                av_get_sample_fmt_name(avr->internal_sample_fmt));
     }
 
-    /* treat all mono as planar for easier comparison */
-    if (avr->in_channels == 1)
-        avr->in_sample_fmt = av_get_planar_sample_fmt(avr->in_sample_fmt);
-    if (avr->out_channels == 1)
-        avr->out_sample_fmt = av_get_planar_sample_fmt(avr->out_sample_fmt);
-
     /* we may need to add an extra conversion in order to remap channels if
        the output format is not planar */
     if (avr->use_channel_map && !avr->mixing_needed && !avr->resample_needed &&
-        !av_sample_fmt_is_planar(avr->out_sample_fmt)) {
+        !ff_sample_fmt_is_planar(avr->out_sample_fmt, avr->out_channels)) {
         avr->internal_sample_fmt = av_get_planar_sample_fmt(avr->out_sample_fmt);
     }
 
@@ -119,7 +114,7 @@ int avresample_open(AVAudioResampleContext *avr)
         avr->in_convert_needed = avr->in_sample_fmt != avr->internal_sample_fmt;
     else
         avr->in_convert_needed = avr->use_channel_map &&
-                                 !av_sample_fmt_is_planar(avr->out_sample_fmt);
+                                 !ff_sample_fmt_is_planar(avr->out_sample_fmt, avr->out_channels);
 
     if (avr->resample_needed || avr->mixing_needed || avr->in_convert_needed)
         avr->out_convert_needed = avr->internal_sample_fmt != avr->out_sample_fmt;
@@ -132,46 +127,46 @@ int avresample_open(AVAudioResampleContext *avr)
     if (avr->use_channel_map) {
         if (avr->in_copy_needed) {
             avr->remap_point = REMAP_IN_COPY;
-            av_dlog(avr, "remap channels during in_copy\n");
+            av_log(avr, AV_LOG_TRACE, "remap channels during in_copy\n");
         } else if (avr->in_convert_needed) {
             avr->remap_point = REMAP_IN_CONVERT;
-            av_dlog(avr, "remap channels during in_convert\n");
+            av_log(avr, AV_LOG_TRACE, "remap channels during in_convert\n");
         } else if (avr->out_convert_needed) {
             avr->remap_point = REMAP_OUT_CONVERT;
-            av_dlog(avr, "remap channels during out_convert\n");
+            av_log(avr, AV_LOG_TRACE, "remap channels during out_convert\n");
         } else {
             avr->remap_point = REMAP_OUT_COPY;
-            av_dlog(avr, "remap channels during out_copy\n");
+            av_log(avr, AV_LOG_TRACE, "remap channels during out_copy\n");
         }
 
 #ifdef DEBUG
         {
             int ch;
-            av_dlog(avr, "output map: ");
+            av_log(avr, AV_LOG_TRACE, "output map: ");
             if (avr->ch_map_info.do_remap)
                 for (ch = 0; ch < avr->in_channels; ch++)
-                    av_dlog(avr, " % 2d", avr->ch_map_info.channel_map[ch]);
+                    av_log(avr, AV_LOG_TRACE, " % 2d", avr->ch_map_info.channel_map[ch]);
             else
-                av_dlog(avr, "n/a");
-            av_dlog(avr, "\n");
-            av_dlog(avr, "copy map:   ");
+                av_log(avr, AV_LOG_TRACE, "n/a");
+            av_log(avr, AV_LOG_TRACE, "\n");
+            av_log(avr, AV_LOG_TRACE, "copy map:   ");
             if (avr->ch_map_info.do_copy)
                 for (ch = 0; ch < avr->in_channels; ch++)
-                    av_dlog(avr, " % 2d", avr->ch_map_info.channel_copy[ch]);
+                    av_log(avr, AV_LOG_TRACE, " % 2d", avr->ch_map_info.channel_copy[ch]);
             else
-                av_dlog(avr, "n/a");
-            av_dlog(avr, "\n");
-            av_dlog(avr, "zero map:   ");
+                av_log(avr, AV_LOG_TRACE, "n/a");
+            av_log(avr, AV_LOG_TRACE, "\n");
+            av_log(avr, AV_LOG_TRACE, "zero map:   ");
             if (avr->ch_map_info.do_zero)
                 for (ch = 0; ch < avr->in_channels; ch++)
-                    av_dlog(avr, " % 2d", avr->ch_map_info.channel_zero[ch]);
+                    av_log(avr, AV_LOG_TRACE, " % 2d", avr->ch_map_info.channel_zero[ch]);
             else
-                av_dlog(avr, "n/a");
-            av_dlog(avr, "\n");
-            av_dlog(avr, "input map:  ");
+                av_log(avr, AV_LOG_TRACE, "n/a");
+            av_log(avr, AV_LOG_TRACE, "\n");
+            av_log(avr, AV_LOG_TRACE, "input map:  ");
             for (ch = 0; ch < avr->in_channels; ch++)
-                av_dlog(avr, " % 2d", avr->ch_map_info.input_map[ch]);
-            av_dlog(avr, "\n");
+                av_log(avr, AV_LOG_TRACE, " % 2d", avr->ch_map_info.input_map[ch]);
+            av_log(avr, AV_LOG_TRACE, "\n");
         }
 #endif
     } else
@@ -300,7 +295,7 @@ static int handle_buffered_output(AVAudioResampleContext *avr,
             /* if there are any samples in the output FIFO or if the
                user-supplied output buffer is not large enough for all samples,
                we add to the output FIFO */
-            av_dlog(avr, "[FIFO] add %s to out_fifo\n", converted->name);
+            av_log(avr, AV_LOG_TRACE, "[FIFO] add %s to out_fifo\n", converted->name);
             ret = ff_audio_data_add_to_fifo(avr->out_fifo, converted, 0,
                                             converted->nb_samples);
             if (ret < 0)
@@ -310,25 +305,25 @@ static int handle_buffered_output(AVAudioResampleContext *avr,
         /* if the user specified an output buffer, read samples from the output
            FIFO to the user output */
         if (output && output->allocated_samples > 0) {
-            av_dlog(avr, "[FIFO] read from out_fifo to output\n");
-            av_dlog(avr, "[end conversion]\n");
+            av_log(avr, AV_LOG_TRACE, "[FIFO] read from out_fifo to output\n");
+            av_log(avr, AV_LOG_TRACE, "[end conversion]\n");
             return ff_audio_data_read_from_fifo(avr->out_fifo, output,
                                                 output->allocated_samples);
         }
     } else if (converted) {
         /* copy directly to output if it is large enough or there is not any
            data in the output FIFO */
-        av_dlog(avr, "[copy] %s to output\n", converted->name);
+        av_log(avr, AV_LOG_TRACE, "[copy] %s to output\n", converted->name);
         output->nb_samples = 0;
         ret = ff_audio_data_copy(output, converted,
                                  avr->remap_point == REMAP_OUT_COPY ?
                                  &avr->ch_map_info : NULL);
         if (ret < 0)
             return ret;
-        av_dlog(avr, "[end conversion]\n");
+        av_log(avr, AV_LOG_TRACE, "[end conversion]\n");
         return output->nb_samples;
     }
-    av_dlog(avr, "[end conversion]\n");
+    av_log(avr, AV_LOG_TRACE, "[end conversion]\n");
     return 0;
 }
 
@@ -359,7 +354,7 @@ int attribute_align_arg avresample_convert(AVAudioResampleContext *avr,
                                    avr->out_buffer->allocated_channels);
     }
 
-    av_dlog(avr, "[start conversion]\n");
+    av_log(avr, AV_LOG_TRACE, "[start conversion]\n");
 
     /* initialize output_buffer with output data */
     direct_output = output && av_audio_fifo_size(avr->out_fifo) == 0;
@@ -385,7 +380,7 @@ int attribute_align_arg avresample_convert(AVAudioResampleContext *avr,
             !avr->out_convert_needed && direct_output && out_samples >= in_samples) {
             /* in some rare cases we can copy input to output and upmix
                directly in the output buffer */
-            av_dlog(avr, "[copy] %s to output\n", current_buffer->name);
+            av_log(avr, AV_LOG_TRACE, "[copy] %s to output\n", current_buffer->name);
             ret = ff_audio_data_copy(&output_buffer, current_buffer,
                                      avr->remap_point == REMAP_OUT_COPY ?
                                      &avr->ch_map_info : NULL);
@@ -397,7 +392,7 @@ int attribute_align_arg avresample_convert(AVAudioResampleContext *avr,
             /* if remapping channels during output copy, we may need to
              * use an intermediate buffer in order to remap before adding
              * samples to the output fifo */
-            av_dlog(avr, "[copy] %s to out_buffer\n", current_buffer->name);
+            av_log(avr, AV_LOG_TRACE, "[copy] %s to out_buffer\n", current_buffer->name);
             ret = ff_audio_data_copy(avr->out_buffer, current_buffer,
                                      &avr->ch_map_info);
             if (ret < 0)
@@ -411,13 +406,13 @@ int attribute_align_arg avresample_convert(AVAudioResampleContext *avr,
                                             current_buffer->nb_samples);
                 if (ret < 0)
                     return ret;
-                av_dlog(avr, "[convert] %s to in_buffer\n", current_buffer->name);
+                av_log(avr, AV_LOG_TRACE, "[convert] %s to in_buffer\n", current_buffer->name);
                 ret = ff_audio_convert(avr->ac_in, avr->in_buffer,
                                        current_buffer);
                 if (ret < 0)
                     return ret;
             } else {
-                av_dlog(avr, "[copy] %s to in_buffer\n", current_buffer->name);
+                av_log(avr, AV_LOG_TRACE, "[copy] %s to in_buffer\n", current_buffer->name);
                 ret = ff_audio_data_copy(avr->in_buffer, current_buffer,
                                          avr->remap_point == REMAP_IN_COPY ?
                                          &avr->ch_map_info : NULL);
@@ -426,7 +421,7 @@ int attribute_align_arg avresample_convert(AVAudioResampleContext *avr,
             }
             ff_audio_data_set_channels(avr->in_buffer, avr->in_channels);
             if (avr->downmix_needed) {
-                av_dlog(avr, "[downmix] in_buffer\n");
+                av_log(avr, AV_LOG_TRACE, "[downmix] in_buffer\n");
                 ret = ff_audio_mix(avr->am, avr->in_buffer);
                 if (ret < 0)
                     return ret;
@@ -448,7 +443,7 @@ int attribute_align_arg avresample_convert(AVAudioResampleContext *avr,
             resample_out = &output_buffer;
         else
             resample_out = avr->resample_out_buffer;
-        av_dlog(avr, "[resample] %s to %s\n",
+        av_log(avr, AV_LOG_TRACE, "[resample] %s to %s\n",
                 current_buffer ? current_buffer->name : "null",
                 resample_out->name);
         ret = ff_audio_resample(avr->resample, resample_out,
@@ -458,7 +453,7 @@ int attribute_align_arg avresample_convert(AVAudioResampleContext *avr,
 
         /* if resampling did not produce any samples, just return 0 */
         if (resample_out->nb_samples == 0) {
-            av_dlog(avr, "[end conversion]\n");
+            av_log(avr, AV_LOG_TRACE, "[end conversion]\n");
             return 0;
         }
 
@@ -466,7 +461,7 @@ int attribute_align_arg avresample_convert(AVAudioResampleContext *avr,
     }
 
     if (avr->upmix_needed) {
-        av_dlog(avr, "[upmix] %s\n", current_buffer->name);
+        av_log(avr, AV_LOG_TRACE, "[upmix] %s\n", current_buffer->name);
         ret = ff_audio_mix(avr->am, current_buffer);
         if (ret < 0)
             return ret;
@@ -474,26 +469,26 @@ int attribute_align_arg avresample_convert(AVAudioResampleContext *avr,
 
     /* if we resampled or upmixed directly to output, return here */
     if (current_buffer == &output_buffer) {
-        av_dlog(avr, "[end conversion]\n");
+        av_log(avr, AV_LOG_TRACE, "[end conversion]\n");
         return current_buffer->nb_samples;
     }
 
     if (avr->out_convert_needed) {
         if (direct_output && out_samples >= current_buffer->nb_samples) {
             /* convert directly to output */
-            av_dlog(avr, "[convert] %s to output\n", current_buffer->name);
+            av_log(avr, AV_LOG_TRACE, "[convert] %s to output\n", current_buffer->name);
             ret = ff_audio_convert(avr->ac_out, &output_buffer, current_buffer);
             if (ret < 0)
                 return ret;
 
-            av_dlog(avr, "[end conversion]\n");
+            av_log(avr, AV_LOG_TRACE, "[end conversion]\n");
             return output_buffer.nb_samples;
         } else {
             ret = ff_audio_data_realloc(avr->out_buffer,
                                         current_buffer->nb_samples);
             if (ret < 0)
                 return ret;
-            av_dlog(avr, "[convert] %s to out_buffer\n", current_buffer->name);
+            av_log(avr, AV_LOG_TRACE, "[convert] %s to out_buffer\n", current_buffer->name);
             ret = ff_audio_convert(avr->ac_out, avr->out_buffer,
                                    current_buffer);
             if (ret < 0)
@@ -504,6 +499,138 @@ int attribute_align_arg avresample_convert(AVAudioResampleContext *avr,
 
     return handle_buffered_output(avr, output ? &output_buffer : NULL,
                                   current_buffer);
+}
+
+int avresample_config(AVAudioResampleContext *avr, AVFrame *out, AVFrame *in)
+{
+    if (avresample_is_open(avr)) {
+        avresample_close(avr);
+    }
+
+    if (in) {
+        avr->in_channel_layout  = in->channel_layout;
+        avr->in_sample_rate     = in->sample_rate;
+        avr->in_sample_fmt      = in->format;
+    }
+
+    if (out) {
+        avr->out_channel_layout = out->channel_layout;
+        avr->out_sample_rate    = out->sample_rate;
+        avr->out_sample_fmt     = out->format;
+    }
+
+    return 0;
+}
+
+static int config_changed(AVAudioResampleContext *avr,
+                          AVFrame *out, AVFrame *in)
+{
+    int ret = 0;
+
+    if (in) {
+        if (avr->in_channel_layout != in->channel_layout ||
+            avr->in_sample_rate    != in->sample_rate ||
+            avr->in_sample_fmt     != in->format) {
+            ret |= AVERROR_INPUT_CHANGED;
+        }
+    }
+
+    if (out) {
+        if (avr->out_channel_layout != out->channel_layout ||
+            avr->out_sample_rate    != out->sample_rate ||
+            avr->out_sample_fmt     != out->format) {
+            ret |= AVERROR_OUTPUT_CHANGED;
+        }
+    }
+
+    return ret;
+}
+
+static inline int convert_frame(AVAudioResampleContext *avr,
+                                AVFrame *out, AVFrame *in)
+{
+    int ret;
+    uint8_t **out_data = NULL, **in_data = NULL;
+    int out_linesize = 0, in_linesize = 0;
+    int out_nb_samples = 0, in_nb_samples = 0;
+
+    if (out) {
+        out_data       = out->extended_data;
+        out_linesize   = out->linesize[0];
+        out_nb_samples = out->nb_samples;
+    }
+
+    if (in) {
+        in_data       = in->extended_data;
+        in_linesize   = in->linesize[0];
+        in_nb_samples = in->nb_samples;
+    }
+
+    ret = avresample_convert(avr, out_data, out_linesize,
+                             out_nb_samples,
+                             in_data, in_linesize,
+                             in_nb_samples);
+
+    if (ret < 0) {
+        if (out)
+            out->nb_samples = 0;
+        return ret;
+    }
+
+    if (out)
+        out->nb_samples = ret;
+
+    return 0;
+}
+
+static inline int available_samples(AVFrame *out)
+{
+    int samples;
+    int bytes_per_sample = av_get_bytes_per_sample(out->format);
+    if (!bytes_per_sample)
+        return AVERROR(EINVAL);
+
+    samples = out->linesize[0] / bytes_per_sample;
+    if (av_sample_fmt_is_planar(out->format)) {
+        return samples;
+    } else {
+        int channels = av_get_channel_layout_nb_channels(out->channel_layout);
+        return samples / channels;
+    }
+}
+
+int avresample_convert_frame(AVAudioResampleContext *avr,
+                             AVFrame *out, AVFrame *in)
+{
+    int ret, setup = 0;
+
+    if (!avresample_is_open(avr)) {
+        if ((ret = avresample_config(avr, out, in)) < 0)
+            return ret;
+        if ((ret = avresample_open(avr)) < 0)
+            return ret;
+        setup = 1;
+    } else {
+        // return as is or reconfigure for input changes?
+        if ((ret = config_changed(avr, out, in)))
+            return ret;
+    }
+
+    if (out) {
+        if (!out->linesize[0]) {
+            out->nb_samples = avresample_get_out_samples(avr, in->nb_samples);
+            if ((ret = av_frame_get_buffer(out, 0)) < 0) {
+                if (setup)
+                    avresample_close(avr);
+                return ret;
+            }
+        } else {
+            if (!out->nb_samples)
+                out->nb_samples = available_samples(out);
+        }
+    }
+
+    return convert_frame(avr, out, in);
 }
 
 int avresample_get_matrix(AVAudioResampleContext *avr, double *matrix,

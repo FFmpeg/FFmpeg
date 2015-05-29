@@ -63,7 +63,7 @@ AVFILTER_DEFINE_CLASS(vidstabdetect);
 static av_cold int init(AVFilterContext *ctx)
 {
     StabData *sd = ctx->priv;
-    vs_set_mem_and_log_functions();
+    ff_vs_init();
     sd->class = &vidstabdetect_class;
     av_log(ctx, AV_LOG_VERBOSE, "vidstabdetect filter: init %s\n", LIBVIDSTAB_VERSION);
     return 0;
@@ -93,8 +93,10 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_NONE
     };
 
-    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
-    return 0;
+    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
+    if (!fmts_list)
+        return AVERROR(ENOMEM);
+    return ff_set_common_formats(ctx, fmts_list);
 }
 
 static int config_input(AVFilterLink *inlink)
@@ -106,7 +108,8 @@ static int config_input(AVFilterLink *inlink)
     VSFrameInfo fi;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
 
-    vsFrameInfoInit(&fi, inlink->w, inlink->h, av_2_vs_pixel_format(ctx, inlink->format));
+    vsFrameInfoInit(&fi, inlink->w, inlink->h,
+                    ff_av2vs_pixfmt(ctx, inlink->format));
     if (fi.bytesPerPixel != av_get_bits_per_pixel(desc)/8) {
         av_log(ctx, AV_LOG_ERROR, "pixel-format error: wrong bits/per/pixel, please report a BUG");
         return AVERROR(EINVAL);
@@ -175,8 +178,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         return AVERROR(AVERROR_EXTERNAL);
     } else {
         if (vsWriteToFile(md, sd->f, &localmotions) != VS_OK) {
+            int ret = AVERROR(errno);
             av_log(ctx, AV_LOG_ERROR, "cannot write to transform file");
-            return AVERROR(errno);
+            return ret;
         }
         vs_vector_del(&localmotions);
     }

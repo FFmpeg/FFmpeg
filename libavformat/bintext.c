@@ -310,7 +310,7 @@ static int read_packet(AVFormatContext *s,
             return AVERROR(EIO);
         bin->fsize = -1; /* done */
     } else if (!bin->fsize) {
-        if (url_feof(s->pb))
+        if (avio_feof(s->pb))
             return AVERROR(EIO);
         if (av_get_packet(s->pb, pkt, bin->chars_per_frame) < 0)
             return AVERROR(EIO);

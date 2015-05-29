@@ -23,7 +23,7 @@ Reduce buffering.
 
 @item probesize @var{integer} (@emph{input})
 Set probing size in bytes, i.e. the size of the data to analyze to get
-stream information. A higher value will allow to detect more
+stream information. A higher value will enable detecting more
 information in case it is dispersed into the stream, but will increase
 latency. Must be an integer not lesser than 32. It is 5000000 by default.
 
@@ -37,6 +37,8 @@ Possible values:
 @table @samp
 @item ignidx
 Ignore index.
+@item fastseek
+Enable fast, but inaccurate seeks for some formats.
 @item genpts
 Generate PTS.
 @item nofillin
@@ -55,6 +57,10 @@ Do not merge side data.
 Enable RTP MP4A-LATM payload.
 @item nobuffer
 Reduce the latency introduced by optional buffering
+@item bitexact
+Only write platform-, build- and time-independent data.
+This ensures that file and data checksums are reproducible and match between
+platforms. Its primary use is for regression testing.
 @end table
 
 @item seek2any @var{integer} (@emph{input})
@@ -63,7 +69,7 @@ Default is 0.
 
 @item analyzeduration @var{integer} (@emph{input})
 Specify how many microseconds are analyzed to probe the input. A
-higher value will allow to detect more accurate information, but will
+higher value will enable detecting more accurate information, but will
 increase latency. It defaults to 5,000,000 microseconds = 5 seconds.
 
 @item cryptokey @var{hexadecimal string} (@emph{input})
@@ -168,6 +174,18 @@ The offset is added by the muxer to the output timestamps.
 Specifying a positive offset means that the corresponding streams are
 delayed bt the time duration specified in @var{offset}. Default value
 is @code{0} (meaning that no offset is applied).
+
+@item format_whitelist @var{list} (@emph{input})
+"," separated List of allowed demuxers. By default all are allowed.
+
+@item dump_separator @var{string} (@emph{input})
+Separator used to separate the fields printed on the command line about the
+Stream parameters.
+For example to separate the fields with newlines and indention:
+@example
+ffprobe -dump_separator "
+                          "  -i ~/videos/matrixbench_mpeg2.mpg
+@end example
 @end table
 
 @c man end FORMAT OPTIONS

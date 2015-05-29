@@ -55,7 +55,7 @@ static const AVClass *format_child_class_next(const AVClass *prev)
     AVOutputFormat *ofmt = NULL;
 
     if (!prev)
-        return &ffio_url_class;
+        return &ff_avio_class;
 
     while ((ifmt = av_iformat_next(ifmt)))
         if (ifmt->priv_class == prev)
@@ -116,6 +116,8 @@ AVFormatContext *avformat_alloc_context(void)
         avformat_free_context(ic);
         return NULL;
     }
+    ic->internal->offset = AV_NOPTS_VALUE;
+    ic->internal->raw_packet_buffer_remaining_size = RAW_PACKET_BUFFER_SIZE;
 
     return ic;
 }

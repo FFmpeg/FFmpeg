@@ -40,6 +40,11 @@ static int adx_read_packet(AVFormatContext *s, AVPacket *pkt)
     AVCodecContext *avctx = s->streams[0]->codec;
     int ret, size;
 
+    if (avctx->channels <= 0) {
+        av_log(s, AV_LOG_ERROR, "invalid number of channels %d\n", avctx->channels);
+        return AVERROR_INVALIDDATA;
+    }
+
     size = BLOCK_SIZE * avctx->channels;
 
     pkt->pos = avio_tell(s->pb);
@@ -83,7 +88,13 @@ static int adx_read_header(AVFormatContext *s)
         av_log(s, AV_LOG_ERROR, "Invalid extradata size.\n");
         return AVERROR_INVALIDDATA;
     }
+    avctx->channels    = AV_RB8(avctx->extradata + 7);
     avctx->sample_rate = AV_RB32(avctx->extradata + 8);
+
+    if (avctx->channels <= 0) {
+        av_log(s, AV_LOG_ERROR, "invalid number of channels %d\n", avctx->channels);
+        return AVERROR_INVALIDDATA;
+    }
 
     st->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
     st->codec->codec_id    = s->iformat->raw_codec_id;

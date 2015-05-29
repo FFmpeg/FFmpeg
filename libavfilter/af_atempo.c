@@ -949,7 +949,13 @@ static int yae_flush(ATempoContext *atempo,
         }
     }
 
-    // flush the remaininder of the current fragment:
+    // check whether all of the input samples have been consumed:
+    if (frag->position[0] + frag->nsamples < atempo->position[0]) {
+        yae_advance_to_next_frag(atempo);
+        return AVERROR(EAGAIN);
+    }
+
+    // flush the remainder of the current fragment:
     start_here = FFMAX(atempo->position[1], overlap_end);
     stop_here  = frag->position[1] + frag->nsamples;
     offset     = start_here - frag->position[1];
@@ -1006,26 +1012,29 @@ static int query_formats(AVFilterContext *ctx)
         AV_SAMPLE_FMT_DBL,
         AV_SAMPLE_FMT_NONE
     };
+    int ret;
 
     layouts = ff_all_channel_layouts();
     if (!layouts) {
         return AVERROR(ENOMEM);
     }
-    ff_set_common_channel_layouts(ctx, layouts);
+    ret = ff_set_common_channel_layouts(ctx, layouts);
+    if (ret < 0)
+        return ret;
 
     formats = ff_make_format_list(sample_fmts);
     if (!formats) {
         return AVERROR(ENOMEM);
     }
-    ff_set_common_formats(ctx, formats);
+    ret = ff_set_common_formats(ctx, formats);
+    if (ret < 0)
+        return ret;
 
     formats = ff_all_samplerates();
     if (!formats) {
         return AVERROR(ENOMEM);
     }
-    ff_set_common_samplerates(ctx, formats);
-
-    return 0;
+    return ff_set_common_samplerates(ctx, formats);
 }
 
 static int config_props(AVFilterLink *inlink)

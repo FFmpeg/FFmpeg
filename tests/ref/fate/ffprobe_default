@@ -15,6 +15,7 @@ flags=K
 [/PACKET]
 [FRAME]
 media_type=audio
+stream_index=0
 key_frame=1
 pkt_pts=0
 pkt_pts_time=0.000000
@@ -48,6 +49,7 @@ flags=K
 [/PACKET]
 [FRAME]
 media_type=video
+stream_index=1
 key_frame=1
 pkt_pts=0
 pkt_pts_time=0.000000
@@ -87,6 +89,7 @@ flags=K
 [/PACKET]
 [FRAME]
 media_type=video
+stream_index=2
 key_frame=1
 pkt_pts=0
 pkt_pts_time=0.000000
@@ -126,6 +129,7 @@ flags=K
 [/PACKET]
 [FRAME]
 media_type=audio
+stream_index=0
 key_frame=1
 pkt_pts=1024
 pkt_pts_time=0.023220
@@ -159,6 +163,7 @@ flags=K
 [/PACKET]
 [FRAME]
 media_type=video
+stream_index=1
 key_frame=1
 pkt_pts=2048
 pkt_pts_time=0.040000
@@ -198,6 +203,7 @@ flags=K
 [/PACKET]
 [FRAME]
 media_type=video
+stream_index=2
 key_frame=1
 pkt_pts=2048
 pkt_pts_time=0.040000
@@ -237,6 +243,7 @@ flags=K
 [/PACKET]
 [FRAME]
 media_type=audio
+stream_index=0
 key_frame=1
 pkt_pts=2048
 pkt_pts_time=0.046440
@@ -270,6 +277,7 @@ flags=K
 [/PACKET]
 [FRAME]
 media_type=audio
+stream_index=0
 key_frame=1
 pkt_pts=3072
 pkt_pts_time=0.069660
@@ -303,6 +311,7 @@ flags=K
 [/PACKET]
 [FRAME]
 media_type=video
+stream_index=1
 key_frame=1
 pkt_pts=4096
 pkt_pts_time=0.080000
@@ -342,6 +351,7 @@ flags=K
 [/PACKET]
 [FRAME]
 media_type=video
+stream_index=2
 key_frame=1
 pkt_pts=4096
 pkt_pts_time=0.080000
@@ -381,6 +391,7 @@ flags=K
 [/PACKET]
 [FRAME]
 media_type=audio
+stream_index=0
 key_frame=1
 pkt_pts=4096
 pkt_pts_time=0.092880
@@ -414,6 +425,7 @@ flags=K
 [/PACKET]
 [FRAME]
 media_type=audio
+stream_index=0
 key_frame=1
 pkt_pts=5120
 pkt_pts_time=0.116100
@@ -447,6 +459,7 @@ flags=K
 [/PACKET]
 [FRAME]
 media_type=video
+stream_index=1
 key_frame=1
 pkt_pts=6144
 pkt_pts_time=0.120000
@@ -486,6 +499,7 @@ flags=K
 [/PACKET]
 [FRAME]
 media_type=video
+stream_index=2
 key_frame=1
 pkt_pts=6144
 pkt_pts_time=0.120000
@@ -531,6 +545,7 @@ duration_ts=N/A
 duration=N/A
 bit_rate=705600
 max_bit_rate=N/A
+bits_per_raw_sample=N/A
 nb_frames=N/A
 nb_read_frames=6
 nb_read_packets=6
@@ -558,6 +573,8 @@ codec_tag_string=RGB[24]
 codec_tag=0x18424752
 width=320
 height=240
+coded_width=320
+coded_height=240
 has_b_frames=0
 sample_aspect_ratio=1:1
 display_aspect_ratio=4:3
@@ -565,7 +582,11 @@ pix_fmt=rgb24
 level=-99
 color_range=N/A
 color_space=unknown
+color_transfer=unknown
+color_primaries=unknown
+chroma_location=unspecified
 timecode=N/A
+refs=1
 id=N/A
 r_frame_rate=25/1
 avg_frame_rate=25/1
@@ -576,6 +597,7 @@ duration_ts=N/A
 duration=N/A
 bit_rate=N/A
 max_bit_rate=N/A
+bits_per_raw_sample=N/A
 nb_frames=N/A
 nb_read_frames=4
 nb_read_packets=4
@@ -604,6 +626,8 @@ codec_tag_string=RGB[24]
 codec_tag=0x18424752
 width=100
 height=100
+coded_width=100
+coded_height=100
 has_b_frames=0
 sample_aspect_ratio=1:1
 display_aspect_ratio=1:1
@@ -611,7 +635,11 @@ pix_fmt=rgb24
 level=-99
 color_range=N/A
 color_space=unknown
+color_transfer=unknown
+color_primaries=unknown
+chroma_location=unspecified
 timecode=N/A
+refs=1
 id=N/A
 r_frame_rate=25/1
 avg_frame_rate=25/1
@@ -622,6 +650,7 @@ duration_ts=N/A
 duration=N/A
 bit_rate=N/A
 max_bit_rate=N/A
+bits_per_raw_sample=N/A
 nb_frames=N/A
 nb_read_frames=4
 nb_read_packets=4

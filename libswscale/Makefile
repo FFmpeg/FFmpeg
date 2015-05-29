@@ -15,6 +15,8 @@ OBJS = hscale_fast_bilinear.o                           \
        utils.o                                          \
        yuv2rgb.o                                        \
 
+OBJS-$(CONFIG_SHARED)        += log2_tab.o
+
 # Windows resource file
 SLIBOBJS-$(HAVE_GNU_WINDRES) += swscaleres.o
 

@@ -236,7 +236,7 @@ static int swf_write_header(AVFormatContext *s)
     }
 
     if (!swf->audio_enc)
-        swf->samples_per_frame = (44100.0 * rate_base) / rate;
+        swf->samples_per_frame = (44100LL * rate_base) / rate;
     else
         swf->samples_per_frame = (swf->audio_enc->sample_rate * rate_base) / rate;
 
@@ -279,8 +279,8 @@ static int swf_write_header(AVFormatContext *s)
         avio_w8(pb, 0x41); /* clipped bitmap fill */
         avio_wl16(pb, BITMAP_ID); /* bitmap ID */
         /* position of the bitmap */
-        put_swf_matrix(pb, (int)(1.0 * (1 << FRAC_BITS)), 0,
-                       0, (int)(1.0 * (1 << FRAC_BITS)), 0, 0);
+        put_swf_matrix(pb, 1 << FRAC_BITS, 0,
+                       0,  1 << FRAC_BITS, 0, 0);
         avio_w8(pb, 0); /* no line style */
 
         /* shape drawing */

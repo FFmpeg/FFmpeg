@@ -38,14 +38,17 @@
 #include "internal.h"
 #include "pthread_internal.h"
 #include "thread.h"
+#include "version.h"
 
 #include "libavutil/avassert.h"
 #include "libavutil/buffer.h"
 #include "libavutil/common.h"
 #include "libavutil/cpu.h"
 #include "libavutil/frame.h"
+#include "libavutil/internal.h"
 #include "libavutil/log.h"
 #include "libavutil/mem.h"
+#include "libavutil/opt.h"
 
 /**
  * Context used by codec threads and stored in their AVCodecInternal thread_ctx.
@@ -196,6 +199,7 @@ static int update_context_from_thread(AVCodecContext *dst, AVCodecContext *src, 
 
     if (dst != src) {
         dst->time_base = src->time_base;
+        dst->framerate = src->framerate;
         dst->width     = src->width;
         dst->height    = src->height;
         dst->pix_fmt   = src->pix_fmt;
@@ -208,7 +212,11 @@ static int update_context_from_thread(AVCodecContext *dst, AVCodecContext *src, 
 
         dst->bits_per_coded_sample = src->bits_per_coded_sample;
         dst->sample_aspect_ratio   = src->sample_aspect_ratio;
+#if FF_API_AFD
+FF_DISABLE_DEPRECATION_WARNINGS
         dst->dtg_active_format     = src->dtg_active_format;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif /* FF_API_AFD */
 
         dst->profile = src->profile;
         dst->level   = src->level;
@@ -279,13 +287,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     if (src->slice_count && src->slice_offset) {
         if (dst->slice_count < src->slice_count) {
-            int *tmp = av_realloc(dst->slice_offset, src->slice_count *
-                                  sizeof(*dst->slice_offset));
-            if (!tmp) {
-                av_free(dst->slice_offset);
-                return AVERROR(ENOMEM);
-            }
-            dst->slice_offset = tmp;
+            int err = av_reallocp_array(&dst->slice_offset, src->slice_count,
+                                        sizeof(*dst->slice_offset));
+            if (err < 0)
+                return err;
         }
         memcpy(dst->slice_offset, src->slice_offset,
                src->slice_count * sizeof(*dst->slice_offset));
@@ -570,8 +575,6 @@ void ff_frame_thread_free(AVCodecContext *avctx, int thread_count)
         if (codec->close)
             codec->close(p->avctx);
 
-        avctx->codec = NULL;
-
         release_delayed_buffers(p);
         av_frame_free(&p->frame);
     }
@@ -599,6 +602,10 @@ void ff_frame_thread_free(AVCodecContext *avctx, int thread_count)
     av_freep(&fctx->threads);
     pthread_mutex_destroy(&fctx->buffer_mutex);
     av_freep(&avctx->internal->thread_ctx);
+
+    if (avctx->priv_data && avctx->codec && avctx->codec->priv_class)
+        av_opt_free(avctx->priv_data);
+    avctx->codec = NULL;
 }
 
 int ff_frame_thread_init(AVCodecContext *avctx)
@@ -647,8 +654,8 @@ int ff_frame_thread_init(AVCodecContext *avctx)
 
         p->frame = av_frame_alloc();
         if (!p->frame) {
-            err = AVERROR(ENOMEM);
             av_freep(&copy);
+            err = AVERROR(ENOMEM);
             goto error;
         }
 

@@ -1,6 +1,6 @@
 /*
  * FLI/FLC Animation File Demuxer
- * Copyright (c) 2003 The ffmpeg Project
+ * Copyright (c) 2003 The FFmpeg Project
  *
  * This file is part of FFmpeg.
  *
@@ -175,7 +175,7 @@ static int flic_read_header(AVFormatContext *s)
         avio_seek(pb, 12, SEEK_SET);
 
         /* send over abbreviated FLIC header chunk */
-        av_free(st->codec->extradata);
+        av_freep(&st->codec->extradata);
         if (ff_alloc_extradata(st->codec, 12))
             return AVERROR(ENOMEM);
         memcpy(st->codec->extradata, header, 12);

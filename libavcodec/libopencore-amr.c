@@ -1,6 +1,6 @@
 /*
  * AMR Audio decoder stub
- * Copyright (c) 2003 the ffmpeg project
+ * Copyright (c) 2003 The FFmpeg Project
  *
  * This file is part of FFmpeg.
  *
@@ -99,7 +99,7 @@ static int amr_nb_decode_frame(AVCodecContext *avctx, void *data,
     enum Mode dec_mode;
     int packet_size, ret;
 
-    av_dlog(avctx, "amr_decode_frame buf=%p buf_size=%d frame_count=%d!!\n",
+    ff_dlog(avctx, "amr_decode_frame buf=%p buf_size=%d frame_count=%d!!\n",
             buf, buf_size, avctx->frame_number);
 
     /* get output buffer */
@@ -116,7 +116,7 @@ static int amr_nb_decode_frame(AVCodecContext *avctx, void *data,
         return AVERROR_INVALIDDATA;
     }
 
-    av_dlog(avctx, "packet_size=%d buf= 0x%X %X %X %X\n",
+    ff_dlog(avctx, "packet_size=%d buf= 0x%X %X %X %X\n",
               packet_size, buf[0], buf[1], buf[2], buf[3]);
     /* call decoder */
     Decoder_Interface_Decode(s->dec_state, buf, (short *)frame->data[0], 0);
@@ -199,7 +199,7 @@ static av_cold int amr_nb_encode_init(AVCodecContext *avctx)
     }
 
     avctx->frame_size  = 160;
-    avctx->delay       =  50;
+    avctx->initial_padding = 50;
     ff_af_queue_init(avctx, &s->afq);
 
     s->enc_state = Encoder_Interface_init(s->enc_dtx);
@@ -246,7 +246,7 @@ static int amr_nb_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                 return AVERROR(ENOMEM);
             memcpy(flush_buf, samples, frame->nb_samples * sizeof(*flush_buf));
             samples = flush_buf;
-            if (frame->nb_samples < avctx->frame_size - avctx->delay)
+            if (frame->nb_samples < avctx->frame_size - avctx->initial_padding)
                 s->enc_last_frame = -1;
         }
         if ((ret = ff_af_queue_add(&s->afq, frame)) < 0) {
@@ -265,7 +265,7 @@ static int amr_nb_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
     written = Encoder_Interface_Encode(s->enc_state, s->enc_mode, samples,
                                        avpkt->data, 0);
-    av_dlog(avctx, "amr_nb_encode_frame encoded %u bytes, bitrate %u, first byte was %#02x\n",
+    ff_dlog(avctx, "amr_nb_encode_frame encoded %u bytes, bitrate %u, first byte was %#02x\n",
             written, s->enc_mode, avpkt->data[0]);
 
     /* Get the next frame pts/duration */

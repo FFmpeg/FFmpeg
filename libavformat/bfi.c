@@ -116,7 +116,7 @@ static int bfi_read_packet(AVFormatContext * s, AVPacket * pkt)
     BFIContext *bfi = s->priv_data;
     AVIOContext *pb = s->pb;
     int ret, audio_offset, video_offset, chunk_size, audio_size = 0;
-    if (bfi->nframes == 0 || url_feof(pb)) {
+    if (bfi->nframes == 0 || avio_feof(pb)) {
         return AVERROR_EOF;
     }
 
@@ -124,7 +124,7 @@ static int bfi_read_packet(AVFormatContext * s, AVPacket * pkt)
     if (!bfi->avflag) {
         uint32_t state = 0;
         while(state != MKTAG('S','A','V','I')){
-            if (url_feof(pb))
+            if (avio_feof(pb))
                 return AVERROR(EIO);
             state = 256*state + avio_r8(pb);
         }
