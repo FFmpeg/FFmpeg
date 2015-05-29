@@ -87,6 +87,7 @@ Standard options:
   --shlibdir=DIR           install shared libs in DIR [LIBDIR]
   --incdir=DIR             install includes in DIR [PREFIX/include]
   --mandir=DIR             install man page in DIR [PREFIX/share/man]
+  --pkgconfigdir=DIR       install pkg-config files in DIR [LIBDIR/pkgconfig]
   --enable-rpath           use rpath to allow installing libraries in paths
                            not part of the dynamic linker search path
                            use rpath when linking programs [USE WITH CARE]
@@ -1954,6 +1955,7 @@ PATHS_LIST="
     incdir
     libdir
     mandir
+    pkgconfigdir
     prefix
     shlibdir
 "
@@ -4487,6 +4489,7 @@ check_cpp_condition stdlib.h "defined(__PIC__) || defined(__pic__) || defined(PI
 
 set_default libdir
 : ${shlibdir_default:="$libdir"}
+: ${pkgconfigdir_default:="$libdir/pkgconfig"}
 
 set_default $PATHS_LIST
 set_default nm
@@ -5799,6 +5802,7 @@ BINDIR=\$(DESTDIR)$bindir
 DATADIR=\$(DESTDIR)$datadir
 DOCDIR=\$(DESTDIR)$docdir
 MANDIR=\$(DESTDIR)$mandir
+PKGCONFIGDIR=\$(DESTDIR)$pkgconfigdir
 SRC_PATH=$source_path
 ifndef MAIN_MAKEFILE
 SRC_PATH:=\$(SRC_PATH:.%=..%)
