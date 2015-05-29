@@ -26,7 +26,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Author:  Nedeljko Babic (nbabic@mips.com)
+ * Author:  Nedeljko Babic (nedeljko.babic imgtec com)
  *
  * This file is part of FFmpeg.
  *
@@ -47,7 +47,7 @@
 
 #include "fixed_dsp.h"
 
-static void vector_fmul_window_fixed_scaled_c(int16_t *dst, const int32_t *src0,
+static void vector_fmul_window_scaled_c(int16_t *dst, const int32_t *src0,
                                        const int32_t *src1, const int32_t *win,
                                        int len, uint8_t bits)
 {
@@ -68,7 +68,7 @@ static void vector_fmul_window_fixed_scaled_c(int16_t *dst, const int32_t *src0,
     }
 }
 
-static void vector_fmul_window_fixed_c(int32_t *dst, const int32_t *src0,
+static void vector_fmul_window_c(int32_t *dst, const int32_t *src0,
                                        const int32_t *src1, const int32_t *win,
                                        int len)
 {
@@ -95,8 +95,8 @@ AVFixedDSPContext * avpriv_alloc_fixed_dsp(int bit_exact)
     if (!fdsp)
         return NULL;
 
-    fdsp->vector_fmul_window_scaled = vector_fmul_window_fixed_scaled_c;
-    fdsp->vector_fmul_window = vector_fmul_window_fixed_c;
+    fdsp->vector_fmul_window_scaled = vector_fmul_window_scaled_c;
+    fdsp->vector_fmul_window = vector_fmul_window_c;
 
     return fdsp;
 }
