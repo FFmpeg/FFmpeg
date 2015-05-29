@@ -519,6 +519,7 @@ static int append_to_cached_buf(AVCodecContext *avctx,
     if (ctx->buf_size >= sizeof(ctx->buf) - buf_size) {
         av_log(avctx, AV_LOG_WARNING, "Attempt to reconstruct "
                "too large SPU packets aborted.\n");
+        ctx->buf_size = 0;
         return AVERROR_INVALIDDATA;
     }
     memcpy(ctx->buf + ctx->buf_size, buf, buf_size);
@@ -718,10 +719,15 @@ static av_cold int dvdsub_init(AVCodecContext *avctx)
     return 1;
 }
 
-static av_cold int dvdsub_close(AVCodecContext *avctx)
+static void dvdsub_flush(AVCodecContext *avctx)
 {
     DVDSubContext *ctx = avctx->priv_data;
     ctx->buf_size = 0;
+}
+
+static av_cold int dvdsub_close(AVCodecContext *avctx)
+{
+    dvdsub_flush(avctx);
     return 0;
 }
 
@@ -748,6 +754,7 @@ AVCodec ff_dvdsub_decoder = {
     .priv_data_size = sizeof(DVDSubContext),
     .init           = dvdsub_init,
     .decode         = dvdsub_decode,
+    .flush          = dvdsub_flush,
     .close          = dvdsub_close,
     .priv_class     = &dvdsub_class,
 };

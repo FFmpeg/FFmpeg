@@ -140,8 +140,8 @@ int avpriv_ac3_parse_header2(GetBitContext *gbc, AC3HeaderInfo **phdr)
         hdr->channel_mode = get_bits(gbc, 3);
         hdr->lfe_on = get_bits1(gbc);
 
-        hdr->bit_rate = (uint32_t)(8.0 * hdr->frame_size * hdr->sample_rate /
-                        (hdr->num_blocks * 256.0));
+        hdr->bit_rate = 8LL * hdr->frame_size * hdr->sample_rate /
+                        (hdr->num_blocks * 256);
         hdr->channels = ff_ac3_channels_tab[hdr->channel_mode] + hdr->lfe_on;
     }
     hdr->channel_layout = avpriv_ac3_channel_layout_tab[hdr->channel_mode];

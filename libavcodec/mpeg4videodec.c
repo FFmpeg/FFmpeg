@@ -2612,9 +2612,9 @@ av_cold void ff_mpeg4videodec_static_init(void) {
     static int done = 0;
 
     if (!done) {
-        ff_init_rl(&ff_mpeg4_rl_intra, ff_mpeg4_static_rl_table_store[0]);
-        ff_init_rl(&ff_rvlc_rl_inter, ff_mpeg4_static_rl_table_store[1]);
-        ff_init_rl(&ff_rvlc_rl_intra, ff_mpeg4_static_rl_table_store[2]);
+        ff_rl_init(&ff_mpeg4_rl_intra, ff_mpeg4_static_rl_table_store[0]);
+        ff_rl_init(&ff_rvlc_rl_inter, ff_mpeg4_static_rl_table_store[1]);
+        ff_rl_init(&ff_rvlc_rl_intra, ff_mpeg4_static_rl_table_store[2]);
         INIT_VLC_RL(ff_mpeg4_rl_intra, 554);
         INIT_VLC_RL(ff_rvlc_rl_inter, 1072);
         INIT_VLC_RL(ff_rvlc_rl_intra, 1072);
@@ -2670,8 +2670,10 @@ int ff_mpeg4_frame_end(AVCodecContext *avctx, const uint8_t *buf, int buf_size)
             av_fast_padded_malloc(&s->bitstream_buffer,
                            &s->allocated_bitstream_buffer_size,
                            buf_size - current_pos);
-            if (!s->bitstream_buffer)
+            if (!s->bitstream_buffer) {
+                s->bitstream_buffer_size = 0;
                 return AVERROR(ENOMEM);
+            }
             memcpy(s->bitstream_buffer, buf + current_pos,
                    buf_size - current_pos);
             s->bitstream_buffer_size = buf_size - current_pos;

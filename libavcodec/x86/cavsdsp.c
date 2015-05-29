@@ -142,7 +142,7 @@ static void cavs_idct8_add_mmx(uint8_t *dst, int16_t *block, int stride)
     LOCAL_ALIGNED(16, int16_t, b2, [64]);
 
     for(i=0; i<2; i++){
-        cavs_idct8_1d(block+4*i, ff_pw_4.a);
+        cavs_idct8_1d(block + 4 * i, ff_pw_4.a);
 
         __asm__ volatile(
             "psraw     $3, %%mm7  \n\t"
@@ -153,7 +153,7 @@ static void cavs_idct8_add_mmx(uint8_t *dst, int16_t *block, int stride)
             "psraw     $3, %%mm2  \n\t"
             "psraw     $3, %%mm1  \n\t"
             "psraw     $3, %%mm0  \n\t"
-            "movq   %%mm7,   (%0) \n\t"
+            "movq   %%mm7,  (%0)  \n\t"
             TRANSPOSE4( %%mm0, %%mm2, %%mm4, %%mm6, %%mm7 )
             "movq   %%mm0,  8(%0)  \n\t"
             "movq   %%mm6, 24(%0)  \n\t"
@@ -166,7 +166,7 @@ static void cavs_idct8_add_mmx(uint8_t *dst, int16_t *block, int stride)
             "movq   %%mm0, 32(%0)  \n\t"
             "movq   %%mm3, 48(%0)  \n\t"
             :
-            : "r"(b2+32*i)
+            : "r"(b2 + 32 * i)
             : "memory"
         );
     }

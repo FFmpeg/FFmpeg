@@ -627,7 +627,7 @@ static const AVOption options[] = {
     { "safe", "enable safe mode",
       OFFSET(safe), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 1, DEC },
     { "auto_convert", "automatically convert bitstream format",
-      OFFSET(auto_convert), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, DEC },
+      OFFSET(auto_convert), AV_OPT_TYPE_INT, {.i64 = 1}, 0, 1, DEC },
     { NULL }
 };
 
