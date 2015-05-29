@@ -88,10 +88,6 @@ enum OutputFormat {
 #define EXT_START_CODE          0x000001b5
 #define USER_START_CODE         0x000001b2
 
-/* encoding scans */
-extern const uint8_t ff_alternate_horizontal_scan[64];
-extern const uint8_t ff_alternate_vertical_scan[64];
-
 struct MpegEncContext;
 
 /**
@@ -820,10 +816,6 @@ int ff_epzs_motion_search(MpegEncContext * s, int *mx_ptr, int *my_ptr,
                              int ref_mv_scale, int size, int h);
 int ff_get_mb_score(MpegEncContext * s, int mx, int my, int src_index,
                                int ref_index, int size, int h, int add_rate);
-
-/* mpeg12.c */
-extern const uint8_t ff_mpeg1_dc_scale_table[128];
-extern const uint8_t * const ff_mpeg2_dc_scale_table[4];
 
 void ff_mpeg1_encode_picture_header(MpegEncContext *s, int picture_number);
 void ff_mpeg1_encode_mb(MpegEncContext *s,

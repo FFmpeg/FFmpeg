@@ -32,6 +32,7 @@
 #include "error_resilience.h"
 #include "mpeg12.h"
 #include "mpeg12data.h"
+#include "mpegvideodata.h"
 #include "bytestream.h"
 #include "thread.h"
 

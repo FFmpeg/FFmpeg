@@ -32,6 +32,7 @@
 #include "libavutil/attributes.h"
 #include "avcodec.h"
 #include "mpegvideo.h"
+#include "mpegvideodata.h"
 #include "h263.h"
 #include "mathops.h"
 #include "mpegutils.h"

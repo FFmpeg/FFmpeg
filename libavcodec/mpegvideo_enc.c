@@ -40,6 +40,7 @@
 #include "idctdsp.h"
 #include "mpeg12.h"
 #include "mpegvideo.h"
+#include "mpegvideodata.h"
 #include "h261.h"
 #include "h263.h"
 #include "mjpegenc_common.h"

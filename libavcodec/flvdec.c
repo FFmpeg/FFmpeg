@@ -23,6 +23,7 @@
 #include "flv.h"
 #include "h263.h"
 #include "mpegvideo.h"
+#include "mpegvideodata.h"
 
 void ff_flv2_decode_ac_esc(GetBitContext *gb, int *level, int *run, int *last)
 {

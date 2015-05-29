@@ -25,6 +25,7 @@
 #include "internal.h"
 #include "mpegutils.h"
 #include "mpegvideo.h"
+#include "mpegvideodata.h"
 #include "mpeg4video.h"
 #include "h263.h"
 #include "thread.h"

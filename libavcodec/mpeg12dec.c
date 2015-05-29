@@ -41,6 +41,7 @@
 #include "mpeg12data.h"
 #include "mpegutils.h"
 #include "mpegvideo.h"
+#include "mpegvideodata.h"
 #include "thread.h"
 #include "version.h"
 #include "xvmc_internal.h"

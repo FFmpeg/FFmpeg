@@ -31,6 +31,7 @@
 #include "mpegvideo.h"
 #include "h263.h"
 #include "h261.h"
+#include "mpegvideodata.h"
 
 int ff_h261_get_picture_format(int width, int height)
 {
