@@ -137,11 +137,6 @@ static int dh_compute_key(FF_DH *dh, FFBigNum pub_key_bn,
                           uint32_t secret_key_len, uint8_t *secret_key)
 {
     FFBigNum k;
-    int num_bytes;
-
-    num_bytes = bn_num_bytes(dh->p);
-    if (num_bytes <= 0 || num_bytes > MAX_BYTES)
-        return -1;
 
     bn_new(k);
     if (!k)
