@@ -21,6 +21,7 @@ MIPSFPU-OBJS-$(CONFIG_AAC_ENCODER)        += mips/iirfilter_mips.o
 OBJS-$(CONFIG_HEVC_DECODER)               += mips/hevcdsp_init_mips.o
 OBJS-$(CONFIG_H264DSP)                    += mips/h264dsp_init_mips.o
 MSA-OBJS-$(CONFIG_HEVC_DECODER)           += mips/hevcdsp_msa.o            \
-                                             mips/hevc_mc_uni_msa.o
+                                             mips/hevc_mc_uni_msa.o        \
+                                             mips/hevc_mc_bi_msa.o
 MSA-OBJS-$(CONFIG_H264DSP)                += mips/h264dsp_msa.o
 LOONGSON3-OBJS-$(CONFIG_H264DSP)          += mips/h264dsp_mmi.o
