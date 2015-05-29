@@ -32,6 +32,7 @@
 #include "internal.h"
 #include "mpeg_er.h"
 #include "mpegvideo.h"
+#include "msmpeg4.h"
 #include "msmpeg4data.h"
 #include "vc1.h"
 #include "vc1data.h"

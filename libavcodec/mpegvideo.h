@@ -840,18 +840,6 @@ int ff_rv10_encode_picture_header(MpegEncContext *s, int picture_number);
 int ff_rv_decode_dc(MpegEncContext *s, int n);
 void ff_rv20_encode_picture_header(MpegEncContext *s, int picture_number);
 
-
-/* msmpeg4.c */
-void ff_msmpeg4_encode_picture_header(MpegEncContext * s, int picture_number);
-void ff_msmpeg4_encode_ext_header(MpegEncContext * s);
-void ff_msmpeg4_encode_mb(MpegEncContext * s,
-                          int16_t block[6][64],
-                          int motion_x, int motion_y);
-int ff_msmpeg4_decode_picture_header(MpegEncContext * s);
-int ff_msmpeg4_decode_ext_header(MpegEncContext * s, int buf_size);
-int ff_msmpeg4_decode_init(AVCodecContext *avctx);
-int ff_msmpeg4_encode_init(MpegEncContext *s);
-
 int ff_mpeg_ref_picture(AVCodecContext *avctx, Picture *dst, Picture *src);
 void ff_mpeg_unref_picture(AVCodecContext *avctx, Picture *picture);
 void ff_free_picture_tables(Picture *pic);
