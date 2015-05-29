@@ -180,7 +180,6 @@ static int read_frame(BVID_DemuxContext *vid, AVIOContext *pb, AVPacket *pkt,
     if ((ret = av_new_packet(pkt, vidbuf_nbytes)) < 0)
         goto fail;
     memcpy(pkt->data, vidbuf_start, vidbuf_nbytes);
-    av_free(vidbuf_start);
 
     pkt->pos = position;
     pkt->stream_index = vid->video_index;
@@ -192,13 +191,17 @@ static int read_frame(BVID_DemuxContext *vid, AVIOContext *pb, AVPacket *pkt,
     if (vid->palette) {
         uint8_t *pdata = av_packet_new_side_data(pkt, AV_PKT_DATA_PALETTE,
                                                  BVID_PALETTE_SIZE);
-        if (pdata)
-            memcpy(pdata, vid->palette, BVID_PALETTE_SIZE);
+        if (!pdata) {
+            ret = AVERROR(ENOMEM);
+            av_log(s, AV_LOG_ERROR, "Failed to allocate palette side data\n");
+            goto fail;
+        }
+        memcpy(pdata, vid->palette, BVID_PALETTE_SIZE);
+
         av_freep(&vid->palette);
     }
 
     vid->nframes--;  // used to check if all the frames were read
-    return 0;
 fail:
     av_free(vidbuf_start);
     return ret;
@@ -213,7 +216,7 @@ static int vid_read_packet(AVFormatContext *s,
     int audio_length;
     int ret_value;
 
-    if(vid->is_finished || url_feof(pb))
+    if(vid->is_finished || avio_feof(pb))
         return AVERROR_EOF;
 
     block_type = avio_r8(pb);

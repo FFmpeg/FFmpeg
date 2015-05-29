@@ -31,6 +31,8 @@
 #ifndef AVUTIL_DICT_H
 #define AVUTIL_DICT_H
 
+#include <stdint.h>
+
 #include "version.h"
 
 /**
@@ -99,7 +101,7 @@ typedef struct AVDictionary AVDictionary;
  * @param flags a collection of AV_DICT_* flags controlling how the entry is retrieved
  * @return found entry or NULL in case no matching entry was found in the dictionary
  */
-AVDictionaryEntry *av_dict_get(FF_CONST_AVUTIL53 AVDictionary *m, const char *key,
+AVDictionaryEntry *av_dict_get(const AVDictionary *m, const char *key,
                                const AVDictionaryEntry *prev, int flags);
 
 /**
@@ -113,6 +115,9 @@ int av_dict_count(const AVDictionary *m);
 /**
  * Set the given entry in *pm, overwriting an existing entry.
  *
+ * Note: If AV_DICT_DONT_STRDUP_KEY or AV_DICT_DONT_STRDUP_VAL is set,
+ * these arguments will be freed on error.
+ *
  * @param pm pointer to a pointer to a dictionary struct. If *pm is NULL
  * a dictionary struct is allocated and put in *pm.
  * @param key entry key to add to *pm (will be av_strduped depending on flags)
@@ -121,6 +126,14 @@ int av_dict_count(const AVDictionary *m);
  * @return >= 0 on success otherwise an error code <0
  */
 int av_dict_set(AVDictionary **pm, const char *key, const char *value, int flags);
+
+/**
+ * Convenience wrapper for av_dict_set that converts the value to a string
+ * and stores it.
+ *
+ * Note: If AV_DICT_DONT_STRDUP_KEY is set, key will be freed on error.
+ */
+int av_dict_set_int(AVDictionary **pm, const char *key, int64_t value, int flags);
 
 /**
  * Parse the key/value pairs list and add the parsed entries to a dictionary.
@@ -150,13 +163,31 @@ int av_dict_parse_string(AVDictionary **pm, const char *str,
  * @param flags flags to use when setting entries in *dst
  * @note metadata is read using the AV_DICT_IGNORE_SUFFIX flag
  */
-void av_dict_copy(AVDictionary **dst, FF_CONST_AVUTIL53 AVDictionary *src, int flags);
+void av_dict_copy(AVDictionary **dst, const AVDictionary *src, int flags);
 
 /**
  * Free all the memory allocated for an AVDictionary struct
  * and all keys and values.
  */
 void av_dict_free(AVDictionary **m);
+
+/**
+ * Get dictionary entries as a string.
+ *
+ * Create a string containing dictionary's entries.
+ * Such string may be passed back to av_dict_parse_string().
+ * @note String is escaped with backslashes ('\').
+ *
+ * @param[in]  m             dictionary
+ * @param[out] buffer        Pointer to buffer that will be allocated with string containg entries.
+ *                           Buffer must be freed by the caller when is no longer needed.
+ * @param[in]  key_val_sep   character used to separate key from value
+ * @param[in]  pairs_sep     character used to separate two pairs from each other
+ * @return                   >= 0 on success, negative on error
+ * @warning Separators cannot be neither '\\' nor '\0'. They also cannot be the same.
+ */
+int av_dict_get_string(const AVDictionary *m, char **buffer,
+                       const char key_val_sep, const char pairs_sep);
 
 /**
  * @}

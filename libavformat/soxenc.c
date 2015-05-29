@@ -37,7 +37,7 @@
 #include "rawenc.h"
 #include "sox.h"
 
-typedef struct {
+typedef struct SoXContext {
     int64_t header_size;
 } SoXContext;
 
@@ -72,7 +72,7 @@ static int sox_write_header(AVFormatContext *s)
         avio_wb32(pb, comment_size);
     } else {
         av_log(s, AV_LOG_ERROR, "invalid codec; use pcm_s32le or pcm_s32be\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
 
     if (comment_len)

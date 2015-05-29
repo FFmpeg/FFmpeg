@@ -29,7 +29,7 @@
 
 #define MAX_EXTRADATA_SIZE 1024
 
-typedef struct {
+typedef struct LATMContext {
     AVClass *av_class;
     int off;
     int channel_conf;

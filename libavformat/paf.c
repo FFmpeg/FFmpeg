@@ -26,7 +26,7 @@
 
 #define MAGIC "Packed Animation File V1.0\n(c) 1992-96 Amazing Studio\x0a\x1a"
 
-typedef struct {
+typedef struct PAFDemuxContext {
     uint32_t buffer_size;
     uint32_t frame_blks;
     uint32_t nb_frames;
@@ -199,7 +199,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
     if (p->current_frame >= p->nb_frames)
         return AVERROR_EOF;
 
-    if (url_feof(pb))
+    if (avio_feof(pb))
         return AVERROR_EOF;
 
     if (p->got_audio) {

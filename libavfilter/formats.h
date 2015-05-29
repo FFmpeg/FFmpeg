@@ -142,25 +142,25 @@ AVFilterChannelLayouts *avfilter_make_format64_list(const int64_t *fmts);
  * layouts/sample rates. If there are no links hooked to this filter, the list
  * is freed.
  */
-void ff_set_common_channel_layouts(AVFilterContext *ctx,
-                                   AVFilterChannelLayouts *layouts);
-void ff_set_common_samplerates(AVFilterContext *ctx,
-                               AVFilterFormats *samplerates);
+int ff_set_common_channel_layouts(AVFilterContext *ctx,
+                                  AVFilterChannelLayouts *layouts);
+int ff_set_common_samplerates(AVFilterContext *ctx,
+                              AVFilterFormats *samplerates);
 
 /**
  * A helper for query_formats() which sets all links to the same list of
  * formats. If there are no links hooked to this filter, the list of formats is
  * freed.
  */
-void ff_set_common_formats(AVFilterContext *ctx, AVFilterFormats *formats);
+int ff_set_common_formats(AVFilterContext *ctx, AVFilterFormats *formats);
 
 int ff_add_channel_layout(AVFilterChannelLayouts **l, uint64_t channel_layout);
 
 /**
  * Add *ref as a new reference to f.
  */
-void ff_channel_layouts_ref(AVFilterChannelLayouts *f,
-                            AVFilterChannelLayouts **ref);
+int ff_channel_layouts_ref(AVFilterChannelLayouts *f,
+                           AVFilterChannelLayouts **ref);
 
 /**
  * Remove a reference to a channel layouts list.
@@ -233,7 +233,7 @@ AVFilterFormats *ff_merge_formats(AVFilterFormats *a, AVFilterFormats *b,
  *  | |____| |    | |____|
  *  |________|    |________________________
  */
-void ff_formats_ref(AVFilterFormats *formats, AVFilterFormats **ref);
+int ff_formats_ref(AVFilterFormats *formats, AVFilterFormats **ref);
 
 /**
  * If *ref is non-NULL, remove *ref as a reference to the format list

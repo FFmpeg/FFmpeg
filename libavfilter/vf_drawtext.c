@@ -52,6 +52,7 @@
 #include "libavutil/random_seed.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/timecode.h"
+#include "libavutil/time_internal.h"
 #include "libavutil/tree.h"
 #include "libavutil/lfg.h"
 #include "avfilter.h"
@@ -135,7 +136,7 @@ enum expansion_mode {
 
 typedef struct DrawTextContext {
     const AVClass *class;
-    enum expansion_mode exp_mode;   ///< expansion mode to use for the text
+    int exp_mode;                   ///< expansion mode to use for the text
     int reinit;                     ///< tells if the filter is being reinited
 #if CONFIG_LIBFONTCONFIG
     uint8_t *font;              ///< font to be used
@@ -158,6 +159,7 @@ typedef struct DrawTextContext {
     unsigned int fontsize;          ///< font size to use
 
     short int draw_box;             ///< draw box around text - true or false
+    int boxborderw;                 ///< box border width
     int use_kerning;                ///< font kerning is used - true/false
     int tabsize;                    ///< tab size
     int fix_bounds;                 ///< do we let it go out of frame bounds - t/f
@@ -177,11 +179,9 @@ typedef struct DrawTextContext {
     AVExpr *x_pexpr, *y_pexpr;      ///< parsed expressions for x and y
     int64_t basetime;               ///< base pts time in the real world for display
     double var_values[VAR_VARS_NB];
-#if FF_API_DRAWTEXT_OLD_TIMELINE
-    char   *draw_expr;              ///< expression for draw
-    AVExpr *draw_pexpr;             ///< parsed expression for draw
-    int draw;                       ///< set to zero to prevent drawing
-#endif
+    char   *a_expr;
+    AVExpr *a_pexpr;
+    int alpha;
     AVLFG  prng;                    ///< random
     char       *tc_opt_string;      ///< specified timecode option string
     AVRational  tc_rate;            ///< frame rate for timecode
@@ -208,6 +208,7 @@ static const AVOption drawtext_options[]= {
     {"bordercolor", "set border color",     OFFSET(bordercolor.rgba),   AV_OPT_TYPE_COLOR,  {.str="black"}, CHAR_MIN, CHAR_MAX, FLAGS},
     {"shadowcolor", "set shadow color",     OFFSET(shadowcolor.rgba),   AV_OPT_TYPE_COLOR,  {.str="black"}, CHAR_MIN, CHAR_MAX, FLAGS},
     {"box",         "set box",              OFFSET(draw_box),           AV_OPT_TYPE_INT,    {.i64=0},     0,        1       , FLAGS},
+    {"boxborderw",  "set box border width", OFFSET(boxborderw),         AV_OPT_TYPE_INT,    {.i64=0},     INT_MIN,  INT_MAX , FLAGS},
     {"fontsize",    "set font size",        OFFSET(fontsize),           AV_OPT_TYPE_INT,    {.i64=0},     0,        INT_MAX , FLAGS},
     {"x",           "set x expression",     OFFSET(x_expr),             AV_OPT_TYPE_STRING, {.str="0"},   CHAR_MIN, CHAR_MAX, FLAGS},
     {"y",           "set y expression",     OFFSET(y_expr),             AV_OPT_TYPE_STRING, {.str="0"},   CHAR_MIN, CHAR_MAX, FLAGS},
@@ -216,9 +217,6 @@ static const AVOption drawtext_options[]= {
     {"borderw",     "set border width",     OFFSET(borderw),            AV_OPT_TYPE_INT,    {.i64=0},     INT_MIN,  INT_MAX , FLAGS},
     {"tabsize",     "set tab size",         OFFSET(tabsize),            AV_OPT_TYPE_INT,    {.i64=4},     0,        INT_MAX , FLAGS},
     {"basetime",    "set base time",        OFFSET(basetime),           AV_OPT_TYPE_INT64,  {.i64=AV_NOPTS_VALUE}, INT64_MIN, INT64_MAX , FLAGS},
-#if FF_API_DRAWTEXT_OLD_TIMELINE
-    {"draw",        "if false do not draw (deprecated)", OFFSET(draw_expr), AV_OPT_TYPE_STRING, {.str=NULL},   CHAR_MIN, CHAR_MAX, FLAGS},
-#endif
 #if CONFIG_LIBFONTCONFIG
     { "font",        "Font name",            OFFSET(font),               AV_OPT_TYPE_STRING, { .str = "Sans" },           .flags = FLAGS },
 #endif
@@ -234,6 +232,7 @@ static const AVOption drawtext_options[]= {
     {"r",               "set rate (timecode only)",         OFFSET(tc_rate),       AV_OPT_TYPE_RATIONAL, {.dbl=0},           0,  INT_MAX, FLAGS},
     {"rate",            "set rate (timecode only)",         OFFSET(tc_rate),       AV_OPT_TYPE_RATIONAL, {.dbl=0},           0,  INT_MAX, FLAGS},
     {"reload",     "reload text file for each frame",                       OFFSET(reload),     AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS},
+    { "alpha",       "apply alpha while rendering", OFFSET(a_expr),      AV_OPT_TYPE_STRING, { .str = "1"     },          .flags = FLAGS },
     {"fix_bounds", "if true, check and fix text coords to avoid clipping",  OFFSET(fix_bounds), AV_OPT_TYPE_INT, {.i64=1}, 0, 1, FLAGS},
     {"start_number", "start frame number for n/frame_num variable", OFFSET(start_number), AV_OPT_TYPE_INT, {.i64=0}, 0, INT_MAX, FLAGS},
 
@@ -268,11 +267,11 @@ AVFILTER_DEFINE_CLASS(drawtext);
 #define FT_ERRORDEF(e, v, s) { (e), (s) },
 #define FT_ERROR_END_LIST { 0, NULL } };
 
-struct ft_error
+static const struct ft_error
 {
     int err;
     const char *err_msg;
-} static ft_errors[] =
+} ft_errors[] =
 #include FT_ERRORS_H
 
 #define FT_ERRMSG(e) ft_errors[e].err_msg
@@ -485,7 +484,7 @@ static int load_textfile(AVFilterContext *ctx)
         return err;
     }
 
-    if (!(tmp = av_realloc(s->text, textbuf_size + 1))) {
+    if (textbuf_size > SIZE_MAX - 1 || !(tmp = av_realloc(s->text, textbuf_size + 1))) {
         av_file_unmap(textbuf, textbuf_size);
         return AVERROR(ENOMEM);
     }
@@ -596,12 +595,6 @@ static av_cold int init(AVFilterContext *ctx)
     DrawTextContext *s = ctx->priv;
     Glyph *glyph;
 
-#if FF_API_DRAWTEXT_OLD_TIMELINE
-    if (s->draw_expr)
-        av_log(ctx, AV_LOG_WARNING, "'draw' option is deprecated and will be removed soon, "
-               "you are encouraged to use the generic timeline support through the 'enable' option\n");
-#endif
-
     if (!s->fontfile && !CONFIG_LIBFONTCONFIG) {
         av_log(ctx, AV_LOG_ERROR, "No font filename provided\n");
         return AVERROR(EINVAL);
@@ -693,8 +686,7 @@ static av_cold int init(AVFilterContext *ctx)
 
 static int query_formats(AVFilterContext *ctx)
 {
-    ff_set_common_formats(ctx, ff_draw_supported_pixel_formats(0));
-    return 0;
+    return ff_set_common_formats(ctx, ff_draw_supported_pixel_formats(0));
 }
 
 static int glyph_enu_free(void *opaque, void *elem)
@@ -713,10 +705,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 
     av_expr_free(s->x_pexpr);
     av_expr_free(s->y_pexpr);
-#if FF_API_DRAWTEXT_OLD_TIMELINE
-    av_expr_free(s->draw_pexpr);
-    s->x_pexpr = s->y_pexpr = s->draw_pexpr = NULL;
-#endif
+    s->x_pexpr = s->y_pexpr = NULL;
     av_freep(&s->positions);
     s->nb_positions = 0;
 
@@ -759,25 +748,16 @@ static int config_input(AVFilterLink *inlink)
 
     av_expr_free(s->x_pexpr);
     av_expr_free(s->y_pexpr);
-#if FF_API_DRAWTEXT_OLD_TIMELINE
-    av_expr_free(s->draw_pexpr);
-    s->x_pexpr = s->y_pexpr = s->draw_pexpr = NULL;
-#else
     s->x_pexpr = s->y_pexpr = NULL;
-#endif
 
     if ((ret = av_expr_parse(&s->x_pexpr, s->x_expr, var_names,
                              NULL, NULL, fun2_names, fun2, 0, ctx)) < 0 ||
         (ret = av_expr_parse(&s->y_pexpr, s->y_expr, var_names,
+                             NULL, NULL, fun2_names, fun2, 0, ctx)) < 0 ||
+        (ret = av_expr_parse(&s->a_pexpr, s->a_expr, var_names,
                              NULL, NULL, fun2_names, fun2, 0, ctx)) < 0)
 
         return AVERROR(EINVAL);
-#if FF_API_DRAWTEXT_OLD_TIMELINE
-    if (s->draw_expr &&
-        (ret = av_expr_parse(&s->draw_pexpr, s->draw_expr, var_names,
-                             NULL, NULL, fun2_names, fun2, 0, ctx)) < 0)
-        return ret;
-#endif
 
     return 0;
 }
@@ -871,13 +851,6 @@ static int func_metadata(AVFilterContext *ctx, AVBPrint *bp,
     return 0;
 }
 
-#if !HAVE_LOCALTIME_R
-static void localtime_r(const time_t *t, struct tm *tm)
-{
-    *tm = *localtime(t);
-}
-#endif
-
 static int func_strftime(AVFilterContext *ctx, AVBPrint *bp,
                          char *fct, unsigned argc, char **argv, int tag)
 {
@@ -889,7 +862,7 @@ static int func_strftime(AVFilterContext *ctx, AVBPrint *bp,
     if (tag == 'L')
         localtime_r(&now, &tm);
     else
-        tm = *gmtime(&now);
+        tm = *gmtime_r(&now, &tm);
     av_bprint_strftime(bp, fmt, &tm);
     return 0;
 }
@@ -1085,7 +1058,8 @@ static int expand_text(AVFilterContext *ctx, char *text, AVBPrint *bp)
 
 static int draw_glyphs(DrawTextContext *s, AVFrame *frame,
                        int width, int height,
-                       FFDrawColor *color, int x, int y, int borderw)
+                       FFDrawColor *color,
+                       int x, int y, int borderw)
 {
     char *text = s->expanded_text.str;
     uint32_t code = 0;
@@ -1125,6 +1099,29 @@ static int draw_glyphs(DrawTextContext *s, AVFrame *frame,
     return 0;
 }
 
+
+static void update_color_with_alpha(DrawTextContext *s, FFDrawColor *color, const FFDrawColor incolor)
+{
+    *color = incolor;
+    color->rgba[3] = (color->rgba[3] * s->alpha) / 255;
+    ff_draw_color(&s->dc, color, color->rgba);
+}
+
+static void update_alpha(DrawTextContext *s)
+{
+    double alpha = av_expr_eval(s->a_pexpr, s->var_values, &s->prng);
+
+    if (isnan(alpha))
+        return;
+
+    if (alpha >= 1.0)
+        s->alpha = 255;
+    else if (alpha <= 0)
+        s->alpha = 0;
+    else
+        s->alpha = 256 * alpha;
+}
+
 static int draw_text(AVFilterContext *ctx, AVFrame *frame,
                      int width, int height)
 {
@@ -1146,6 +1143,11 @@ static int draw_text(AVFilterContext *ctx, AVFrame *frame,
     time_t now = time(0);
     struct tm ltime;
     AVBPrint *bp = &s->expanded_text;
+
+    FFDrawColor fontcolor;
+    FFDrawColor shadowcolor;
+    FFDrawColor bordercolor;
+    FFDrawColor boxcolor;
 
     av_bprint_clear(bp);
 
@@ -1271,39 +1273,36 @@ static int draw_text(AVFilterContext *ctx, AVFrame *frame,
     s->x = s->var_values[VAR_X] = av_expr_eval(s->x_pexpr, s->var_values, &s->prng);
     s->y = s->var_values[VAR_Y] = av_expr_eval(s->y_pexpr, s->var_values, &s->prng);
     s->x = s->var_values[VAR_X] = av_expr_eval(s->x_pexpr, s->var_values, &s->prng);
-#if FF_API_DRAWTEXT_OLD_TIMELINE
-    if (s->draw_pexpr){
-    s->draw = av_expr_eval(s->draw_pexpr, s->var_values, &s->prng);
 
-    if(!s->draw)
-        return 0;
-    }
-    if (ctx->is_disabled)
-        return 0;
-#endif
+    update_alpha(s);
+    update_color_with_alpha(s, &fontcolor  , s->fontcolor  );
+    update_color_with_alpha(s, &shadowcolor, s->shadowcolor);
+    update_color_with_alpha(s, &bordercolor, s->bordercolor);
+    update_color_with_alpha(s, &boxcolor   , s->boxcolor   );
 
     box_w = FFMIN(width - 1 , max_text_line_w);
     box_h = FFMIN(height - 1, y + s->max_glyph_h);
 
     /* draw box */
     if (s->draw_box)
-        ff_blend_rectangle(&s->dc, &s->boxcolor,
+        ff_blend_rectangle(&s->dc, &boxcolor,
                            frame->data, frame->linesize, width, height,
-                           s->x, s->y, box_w, box_h);
+                           s->x - s->boxborderw, s->y - s->boxborderw,
+                           box_w + s->boxborderw * 2, box_h + s->boxborderw * 2);
 
     if (s->shadowx || s->shadowy) {
         if ((ret = draw_glyphs(s, frame, width, height,
-                               &s->shadowcolor, s->shadowx, s->shadowy, 0)) < 0)
+                               &shadowcolor, s->shadowx, s->shadowy, 0)) < 0)
             return ret;
     }
 
     if (s->borderw) {
         if ((ret = draw_glyphs(s, frame, width, height,
-                               &s->bordercolor, 0, 0, s->borderw)) < 0)
+                               &bordercolor, 0, 0, s->borderw)) < 0)
             return ret;
     }
     if ((ret = draw_glyphs(s, frame, width, height,
-                           &s->fontcolor, 0, 0, 0)) < 0)
+                           &fontcolor, 0, 0, 0)) < 0)
         return ret;
 
     return 0;
@@ -1317,12 +1316,16 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     int ret;
 
     if (s->reload) {
-        if ((ret = load_textfile(ctx)) < 0)
+        if ((ret = load_textfile(ctx)) < 0) {
+            av_frame_free(&frame);
             return ret;
+        }
 #if CONFIG_LIBFRIBIDI
         if (s->text_shaping)
-            if ((ret = shape_text(ctx)) < 0)
+            if ((ret = shape_text(ctx)) < 0) {
+                av_frame_free(&frame);
                 return ret;
+            }
 #endif
     }
 
@@ -1373,9 +1376,5 @@ AVFilter ff_vf_drawtext = {
     .inputs        = avfilter_vf_drawtext_inputs,
     .outputs       = avfilter_vf_drawtext_outputs,
     .process_command = command,
-#if FF_API_DRAWTEXT_OLD_TIMELINE
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
-#else
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
-#endif
 };

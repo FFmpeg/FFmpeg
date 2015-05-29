@@ -151,6 +151,11 @@ static inline int decode_block_intra(MadContext *s, int16_t * block)
                 break;
             } else if (level != 0) {
                 i += run;
+                if (i > 63) {
+                    av_log(s->avctx, AV_LOG_ERROR,
+                           "ac-tex damaged at %d %d\n", s->mb_x, s->mb_y);
+                    return -1;
+                }
                 j = scantable[i];
                 level = (level*quant_matrix[j]) >> 4;
                 level = (level-1)|1;
@@ -165,6 +170,11 @@ static inline int decode_block_intra(MadContext *s, int16_t * block)
                 run = SHOW_UBITS(re, &s->gb, 6)+1; LAST_SKIP_BITS(re, &s->gb, 6);
 
                 i += run;
+                if (i > 63) {
+                    av_log(s->avctx, AV_LOG_ERROR,
+                           "ac-tex damaged at %d %d\n", s->mb_x, s->mb_y);
+                    return -1;
+                }
                 j = scantable[i];
                 if (level < 0) {
                     level = -level;
@@ -175,10 +185,6 @@ static inline int decode_block_intra(MadContext *s, int16_t * block)
                     level = (level*quant_matrix[j]) >> 4;
                     level = (level-1)|1;
                 }
-            }
-            if (i > 63) {
-                av_log(s->avctx, AV_LOG_ERROR, "ac-tex damaged at %d %d\n", s->mb_x, s->mb_y);
-                return -1;
             }
 
             block[j] = level;
@@ -257,7 +263,7 @@ static int decode_frame(AVCodecContext *avctx,
     inter = (chunk_type == MADm_TAG || chunk_type == MADe_TAG);
     bytestream2_skip(&gb, 10);
 
-    av_reduce(&avctx->time_base.num, &avctx->time_base.den,
+    av_reduce(&avctx->framerate.den, &avctx->framerate.num,
               bytestream2_get_le16(&gb), 1000, 1<<30);
 
     width  = bytestream2_get_le16(&gb);
@@ -329,7 +335,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 {
     MadContext *t = avctx->priv_data;
     av_frame_free(&t->last_frame);
-    av_free(t->bitstream_buf);
+    av_freep(&t->bitstream_buf);
     return 0;
 }
 

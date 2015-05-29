@@ -1,5 +1,6 @@
 /*
  * FLV decoding.
+ *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -17,22 +18,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "mpegvideo.h"
-#include "h263.h"
-#include "flv.h"
 #include "libavutil/imgutils.h"
 
-void ff_flv2_decode_ac_esc(GetBitContext *gb, int *level, int *run, int *last)
-{
-    int is11 = get_bits1(gb);
-    *last = get_bits1(gb);
-    *run  = get_bits(gb, 6);
-    if (is11) {
-        *level = get_sbits(gb, 11);
-    } else {
-        *level = get_sbits(gb, 7);
-    }
-}
+#include "flv.h"
+#include "h263.h"
+#include "mpegvideo.h"
 
 int ff_flv_decode_picture_header(MpegEncContext *s)
 {
@@ -133,8 +123,6 @@ AVCodec ff_flv_decoder = {
     .decode         = ff_h263_decode_frame,
     .capabilities   = CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
     .max_lowres     = 3,
-    .pix_fmts       = (const enum AVPixelFormat[]) {
-        AV_PIX_FMT_YUV420P,
-        AV_PIX_FMT_NONE
-    },
+    .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV420P,
+                                                     AV_PIX_FMT_NONE },
 };

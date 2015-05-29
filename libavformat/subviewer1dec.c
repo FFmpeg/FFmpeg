@@ -53,7 +53,7 @@ static int subviewer1_read_header(AVFormatContext *s)
     st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
     st->codec->codec_id   = AV_CODEC_ID_SUBVIEWER1;
 
-    while (!url_feof(s->pb)) {
+    while (!avio_feof(s->pb)) {
         char line[4096];
         int len = ff_get_line(s->pb, line, sizeof(line));
         int hh, mm, ss;

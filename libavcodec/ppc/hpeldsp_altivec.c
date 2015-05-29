@@ -38,12 +38,11 @@
 /* next one assumes that ((line_size % 16) == 0) */
 void ff_put_pixels16_altivec(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
 {
-    register vector unsigned char pixelsv1, pixelsv2;
-    register vector unsigned char pixelsv1B, pixelsv2B;
-    register vector unsigned char pixelsv1C, pixelsv2C;
-    register vector unsigned char pixelsv1D, pixelsv2D;
+    register vector unsigned char pixelsv1;
+    register vector unsigned char pixelsv1B;
+    register vector unsigned char pixelsv1C;
+    register vector unsigned char pixelsv1D;
 
-    register vector unsigned char perm = vec_lvsl(0, pixels);
     int i;
     register ptrdiff_t line_size_2 = line_size << 1;
     register ptrdiff_t line_size_3 = line_size + line_size_2;
@@ -55,22 +54,14 @@ void ff_put_pixels16_altivec(uint8_t *block, const uint8_t *pixels, ptrdiff_t li
 // -funroll-loops w/ this is bad - 74 cycles again.
 // all this is on a 7450, tuning for the 7450
     for (i = 0; i < h; i += 4) {
-        pixelsv1  = vec_ld( 0, pixels);
-        pixelsv2  = vec_ld(15, pixels);
-        pixelsv1B = vec_ld(line_size, pixels);
-        pixelsv2B = vec_ld(15 + line_size, pixels);
-        pixelsv1C = vec_ld(line_size_2, pixels);
-        pixelsv2C = vec_ld(15 + line_size_2, pixels);
-        pixelsv1D = vec_ld(line_size_3, pixels);
-        pixelsv2D = vec_ld(15 + line_size_3, pixels);
-        vec_st(vec_perm(pixelsv1, pixelsv2, perm),
-               0, (unsigned char*)block);
-        vec_st(vec_perm(pixelsv1B, pixelsv2B, perm),
-               line_size, (unsigned char*)block);
-        vec_st(vec_perm(pixelsv1C, pixelsv2C, perm),
-               line_size_2, (unsigned char*)block);
-        vec_st(vec_perm(pixelsv1D, pixelsv2D, perm),
-               line_size_3, (unsigned char*)block);
+        pixelsv1  = unaligned_load( 0, pixels);
+        pixelsv1B = unaligned_load(line_size, pixels);
+        pixelsv1C = unaligned_load(line_size_2, pixels);
+        pixelsv1D = unaligned_load(line_size_3, pixels);
+        VEC_ST(pixelsv1, 0, (unsigned char*)block);
+        VEC_ST(pixelsv1B, line_size, (unsigned char*)block);
+        VEC_ST(pixelsv1C, line_size_2, (unsigned char*)block);
+        VEC_ST(pixelsv1D, line_size_3, (unsigned char*)block);
         pixels+=line_size_4;
         block +=line_size_4;
     }
@@ -80,15 +71,12 @@ void ff_put_pixels16_altivec(uint8_t *block, const uint8_t *pixels, ptrdiff_t li
 #define op_avg(a,b)  a = ( ((a)|(b)) - ((((a)^(b))&0xFEFEFEFEUL)>>1) )
 void ff_avg_pixels16_altivec(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
 {
-    register vector unsigned char pixelsv1, pixelsv2, pixelsv, blockv;
-    register vector unsigned char perm = vec_lvsl(0, pixels);
-    int i;
+    register vector unsigned char pixelsv, blockv;
 
+    int i;
     for (i = 0; i < h; i++) {
-        pixelsv1 = vec_ld( 0, pixels);
-        pixelsv2 = vec_ld(16,pixels);
         blockv = vec_ld(0, block);
-        pixelsv = vec_perm(pixelsv1, pixelsv2, perm);
+        pixelsv = VEC_LD( 0, pixels);
         blockv = vec_avg(blockv,pixelsv);
         vec_st(blockv, 0, (unsigned char*)block);
         pixels+=line_size;
@@ -108,9 +96,7 @@ static void avg_pixels8_altivec(uint8_t * block, const uint8_t * pixels, ptrdiff
        int rightside = ((unsigned long)block & 0x0000000F);
 
        blockv = vec_ld(0, block);
-       pixelsv1 = vec_ld( 0, pixels);
-       pixelsv2 = vec_ld(16, pixels);
-       pixelsv = vec_perm(pixelsv1, pixelsv2, vec_lvsl(0, pixels));
+       pixelsv = VEC_LD( 0, pixels);
 
        if (rightside) {
            pixelsv = vec_perm(blockv, pixelsv, vcprm(0,1,s0,s1));
@@ -132,21 +118,16 @@ static void put_pixels8_xy2_altivec(uint8_t *block, const uint8_t *pixels, ptrdi
 {
     register int i;
     register vector unsigned char pixelsv1, pixelsv2, pixelsavg;
-    register vector unsigned char blockv, temp1, temp2;
+    register vector unsigned char blockv;
     register vector unsigned short pixelssum1, pixelssum2, temp3;
     register const vector unsigned char vczero = (const vector unsigned char)vec_splat_u8(0);
     register const vector unsigned short vctwo = (const vector unsigned short)vec_splat_u16(2);
 
-    temp1 = vec_ld(0, pixels);
-    temp2 = vec_ld(16, pixels);
-    pixelsv1 = vec_perm(temp1, temp2, vec_lvsl(0, pixels));
-    if ((((unsigned long)pixels) & 0x0000000F) ==  0x0000000F) {
-        pixelsv2 = temp2;
-    } else {
-        pixelsv2 = vec_perm(temp1, temp2, vec_lvsl(1, pixels));
-    }
-    pixelsv1 = vec_mergeh(vczero, pixelsv1);
-    pixelsv2 = vec_mergeh(vczero, pixelsv2);
+    pixelsv1 = VEC_LD(0, pixels);
+    pixelsv2 = VEC_LD(1, pixels);
+    pixelsv1 = VEC_MERGEH(vczero, pixelsv1);
+    pixelsv2 = VEC_MERGEH(vczero, pixelsv2);
+
     pixelssum1 = vec_add((vector unsigned short)pixelsv1,
                          (vector unsigned short)pixelsv2);
     pixelssum1 = vec_add(pixelssum1, vctwo);
@@ -155,17 +136,10 @@ static void put_pixels8_xy2_altivec(uint8_t *block, const uint8_t *pixels, ptrdi
         int rightside = ((unsigned long)block & 0x0000000F);
         blockv = vec_ld(0, block);
 
-        temp1 = vec_ld(line_size, pixels);
-        temp2 = vec_ld(line_size + 16, pixels);
-        pixelsv1 = vec_perm(temp1, temp2, vec_lvsl(line_size, pixels));
-        if (((((unsigned long)pixels) + line_size) & 0x0000000F) ==  0x0000000F) {
-            pixelsv2 = temp2;
-        } else {
-            pixelsv2 = vec_perm(temp1, temp2, vec_lvsl(line_size + 1, pixels));
-        }
-
-        pixelsv1 = vec_mergeh(vczero, pixelsv1);
-        pixelsv2 = vec_mergeh(vczero, pixelsv2);
+        pixelsv1 = unaligned_load(line_size, pixels);
+        pixelsv2 = unaligned_load(line_size+1, pixels);
+        pixelsv1 = VEC_MERGEH(vczero, pixelsv1);
+        pixelsv2 = VEC_MERGEH(vczero, pixelsv2);
         pixelssum2 = vec_add((vector unsigned short)pixelsv1,
                              (vector unsigned short)pixelsv2);
         temp3 = vec_add(pixelssum1, pixelssum2);
@@ -191,22 +165,16 @@ static void put_no_rnd_pixels8_xy2_altivec(uint8_t *block, const uint8_t *pixels
 {
     register int i;
     register vector unsigned char pixelsv1, pixelsv2, pixelsavg;
-    register vector unsigned char blockv, temp1, temp2;
+    register vector unsigned char blockv;
     register vector unsigned short pixelssum1, pixelssum2, temp3;
     register const vector unsigned char vczero = (const vector unsigned char)vec_splat_u8(0);
     register const vector unsigned short vcone = (const vector unsigned short)vec_splat_u16(1);
     register const vector unsigned short vctwo = (const vector unsigned short)vec_splat_u16(2);
 
-    temp1 = vec_ld(0, pixels);
-    temp2 = vec_ld(16, pixels);
-    pixelsv1 = vec_perm(temp1, temp2, vec_lvsl(0, pixels));
-    if ((((unsigned long)pixels) & 0x0000000F) ==  0x0000000F) {
-        pixelsv2 = temp2;
-    } else {
-        pixelsv2 = vec_perm(temp1, temp2, vec_lvsl(1, pixels));
-    }
-    pixelsv1 = vec_mergeh(vczero, pixelsv1);
-    pixelsv2 = vec_mergeh(vczero, pixelsv2);
+    pixelsv1 = VEC_LD(0, pixels);
+    pixelsv2 = VEC_LD(1, pixels);
+    pixelsv1 = VEC_MERGEH(vczero, pixelsv1);
+    pixelsv2 = VEC_MERGEH(vczero, pixelsv2);
     pixelssum1 = vec_add((vector unsigned short)pixelsv1,
                          (vector unsigned short)pixelsv2);
     pixelssum1 = vec_add(pixelssum1, vcone);
@@ -215,17 +183,10 @@ static void put_no_rnd_pixels8_xy2_altivec(uint8_t *block, const uint8_t *pixels
         int rightside = ((unsigned long)block & 0x0000000F);
         blockv = vec_ld(0, block);
 
-        temp1 = vec_ld(line_size, pixels);
-        temp2 = vec_ld(line_size + 16, pixels);
-        pixelsv1 = vec_perm(temp1, temp2, vec_lvsl(line_size, pixels));
-        if (((((unsigned long)pixels) + line_size) & 0x0000000F) ==  0x0000000F) {
-            pixelsv2 = temp2;
-        } else {
-            pixelsv2 = vec_perm(temp1, temp2, vec_lvsl(line_size + 1, pixels));
-        }
-
-        pixelsv1 = vec_mergeh(vczero, pixelsv1);
-        pixelsv2 = vec_mergeh(vczero, pixelsv2);
+        pixelsv1 = unaligned_load(line_size, pixels);
+        pixelsv2 = unaligned_load(line_size+1, pixels);
+        pixelsv1 = VEC_MERGEH(vczero, pixelsv1);
+        pixelsv2 = VEC_MERGEH(vczero, pixelsv2);
         pixelssum2 = vec_add((vector unsigned short)pixelsv1,
                              (vector unsigned short)pixelsv2);
         temp3 = vec_add(pixelssum1, pixelssum2);
@@ -251,24 +212,18 @@ static void put_pixels16_xy2_altivec(uint8_t * block, const uint8_t * pixels, pt
 {
     register int i;
     register vector unsigned char pixelsv1, pixelsv2, pixelsv3, pixelsv4;
-    register vector unsigned char blockv, temp1, temp2;
+    register vector unsigned char blockv;
     register vector unsigned short temp3, temp4,
         pixelssum1, pixelssum2, pixelssum3, pixelssum4;
     register const vector unsigned char vczero = (const vector unsigned char)vec_splat_u8(0);
     register const vector unsigned short vctwo = (const vector unsigned short)vec_splat_u16(2);
 
-    temp1 = vec_ld(0, pixels);
-    temp2 = vec_ld(16, pixels);
-    pixelsv1 = vec_perm(temp1, temp2, vec_lvsl(0, pixels));
-    if ((((unsigned long)pixels) & 0x0000000F) ==  0x0000000F) {
-        pixelsv2 = temp2;
-    } else {
-        pixelsv2 = vec_perm(temp1, temp2, vec_lvsl(1, pixels));
-    }
-    pixelsv3 = vec_mergel(vczero, pixelsv1);
-    pixelsv4 = vec_mergel(vczero, pixelsv2);
-    pixelsv1 = vec_mergeh(vczero, pixelsv1);
-    pixelsv2 = vec_mergeh(vczero, pixelsv2);
+    pixelsv1 = VEC_LD(0, pixels);
+    pixelsv2 = VEC_LD(1, pixels);
+    pixelsv3 = VEC_MERGEL(vczero, pixelsv1);
+    pixelsv4 = VEC_MERGEL(vczero, pixelsv2);
+    pixelsv1 = VEC_MERGEH(vczero, pixelsv1);
+    pixelsv2 = VEC_MERGEH(vczero, pixelsv2);
     pixelssum3 = vec_add((vector unsigned short)pixelsv3,
                          (vector unsigned short)pixelsv4);
     pixelssum3 = vec_add(pixelssum3, vctwo);
@@ -279,20 +234,13 @@ static void put_pixels16_xy2_altivec(uint8_t * block, const uint8_t * pixels, pt
     for (i = 0; i < h ; i++) {
         blockv = vec_ld(0, block);
 
-        temp1 = vec_ld(line_size, pixels);
-        temp2 = vec_ld(line_size + 16, pixels);
-        pixelsv1 = vec_perm(temp1, temp2, vec_lvsl(line_size, pixels));
-        if (((((unsigned long)pixels) + line_size) & 0x0000000F) ==  0x0000000F) {
-            pixelsv2 = temp2;
-        } else {
-            pixelsv2 = vec_perm(temp1, temp2, vec_lvsl(line_size + 1, pixels));
-        }
+        pixelsv1 = unaligned_load(line_size, pixels);
+        pixelsv2 = unaligned_load(line_size+1, pixels);
 
-        pixelsv3 = vec_mergel(vczero, pixelsv1);
-        pixelsv4 = vec_mergel(vczero, pixelsv2);
-        pixelsv1 = vec_mergeh(vczero, pixelsv1);
-        pixelsv2 = vec_mergeh(vczero, pixelsv2);
-
+        pixelsv3 = VEC_MERGEL(vczero, pixelsv1);
+        pixelsv4 = VEC_MERGEL(vczero, pixelsv2);
+        pixelsv1 = VEC_MERGEH(vczero, pixelsv1);
+        pixelsv2 = VEC_MERGEH(vczero, pixelsv2);
         pixelssum4 = vec_add((vector unsigned short)pixelsv3,
                              (vector unsigned short)pixelsv4);
         pixelssum2 = vec_add((vector unsigned short)pixelsv1,
@@ -319,25 +267,19 @@ static void put_no_rnd_pixels16_xy2_altivec(uint8_t * block, const uint8_t * pix
 {
     register int i;
     register vector unsigned char pixelsv1, pixelsv2, pixelsv3, pixelsv4;
-    register vector unsigned char blockv, temp1, temp2;
+    register vector unsigned char blockv;
     register vector unsigned short temp3, temp4,
         pixelssum1, pixelssum2, pixelssum3, pixelssum4;
     register const vector unsigned char vczero = (const vector unsigned char)vec_splat_u8(0);
     register const vector unsigned short vcone = (const vector unsigned short)vec_splat_u16(1);
     register const vector unsigned short vctwo = (const vector unsigned short)vec_splat_u16(2);
 
-    temp1 = vec_ld(0, pixels);
-    temp2 = vec_ld(16, pixels);
-    pixelsv1 = vec_perm(temp1, temp2, vec_lvsl(0, pixels));
-    if ((((unsigned long)pixels) & 0x0000000F) ==  0x0000000F) {
-        pixelsv2 = temp2;
-    } else {
-        pixelsv2 = vec_perm(temp1, temp2, vec_lvsl(1, pixels));
-    }
-    pixelsv3 = vec_mergel(vczero, pixelsv1);
-    pixelsv4 = vec_mergel(vczero, pixelsv2);
-    pixelsv1 = vec_mergeh(vczero, pixelsv1);
-    pixelsv2 = vec_mergeh(vczero, pixelsv2);
+    pixelsv1 = VEC_LD(0, pixels);
+    pixelsv2 = VEC_LD(1, pixels);
+    pixelsv3 = VEC_MERGEL(vczero, pixelsv1);
+    pixelsv4 = VEC_MERGEL(vczero, pixelsv2);
+    pixelsv1 = VEC_MERGEH(vczero, pixelsv1);
+    pixelsv2 = VEC_MERGEH(vczero, pixelsv2);
     pixelssum3 = vec_add((vector unsigned short)pixelsv3,
                          (vector unsigned short)pixelsv4);
     pixelssum3 = vec_add(pixelssum3, vcone);
@@ -346,22 +288,13 @@ static void put_no_rnd_pixels16_xy2_altivec(uint8_t * block, const uint8_t * pix
     pixelssum1 = vec_add(pixelssum1, vcone);
 
     for (i = 0; i < h ; i++) {
-        blockv = vec_ld(0, block);
+        pixelsv1 = unaligned_load(line_size, pixels);
+        pixelsv2 = unaligned_load(line_size+1, pixels);
 
-        temp1 = vec_ld(line_size, pixels);
-        temp2 = vec_ld(line_size + 16, pixels);
-        pixelsv1 = vec_perm(temp1, temp2, vec_lvsl(line_size, pixels));
-        if (((((unsigned long)pixels) + line_size) & 0x0000000F) ==  0x0000000F) {
-            pixelsv2 = temp2;
-        } else {
-            pixelsv2 = vec_perm(temp1, temp2, vec_lvsl(line_size + 1, pixels));
-        }
-
-        pixelsv3 = vec_mergel(vczero, pixelsv1);
-        pixelsv4 = vec_mergel(vczero, pixelsv2);
-        pixelsv1 = vec_mergeh(vczero, pixelsv1);
-        pixelsv2 = vec_mergeh(vczero, pixelsv2);
-
+        pixelsv3 = VEC_MERGEL(vczero, pixelsv1);
+        pixelsv4 = VEC_MERGEL(vczero, pixelsv2);
+        pixelsv1 = VEC_MERGEH(vczero, pixelsv1);
+        pixelsv2 = VEC_MERGEH(vczero, pixelsv2);
         pixelssum4 = vec_add((vector unsigned short)pixelsv3,
                              (vector unsigned short)pixelsv4);
         pixelssum2 = vec_add((vector unsigned short)pixelsv1,
@@ -376,7 +309,7 @@ static void put_no_rnd_pixels16_xy2_altivec(uint8_t * block, const uint8_t * pix
 
         blockv = vec_packsu(temp3, temp4);
 
-        vec_st(blockv, 0, block);
+        VEC_ST(blockv, 0, block);
 
         block += line_size;
         pixels += line_size;
@@ -388,7 +321,7 @@ static void avg_pixels8_xy2_altivec(uint8_t *block, const uint8_t *pixels, ptrdi
 {
     register int i;
     register vector unsigned char pixelsv1, pixelsv2, pixelsavg;
-    register vector unsigned char blockv, temp1, temp2, blocktemp;
+    register vector unsigned char blockv, blocktemp;
     register vector unsigned short pixelssum1, pixelssum2, temp3;
 
     register const vector unsigned char vczero = (const vector unsigned char)
@@ -396,16 +329,10 @@ static void avg_pixels8_xy2_altivec(uint8_t *block, const uint8_t *pixels, ptrdi
     register const vector unsigned short vctwo = (const vector unsigned short)
                                         vec_splat_u16(2);
 
-    temp1 = vec_ld(0, pixels);
-    temp2 = vec_ld(16, pixels);
-    pixelsv1 = vec_perm(temp1, temp2, vec_lvsl(0, pixels));
-    if ((((unsigned long)pixels) & 0x0000000F) ==  0x0000000F) {
-        pixelsv2 = temp2;
-    } else {
-        pixelsv2 = vec_perm(temp1, temp2, vec_lvsl(1, pixels));
-    }
-    pixelsv1 = vec_mergeh(vczero, pixelsv1);
-    pixelsv2 = vec_mergeh(vczero, pixelsv2);
+    pixelsv1 = VEC_LD(0, pixels);
+    pixelsv2 = VEC_LD(1, pixels);
+    pixelsv1 = VEC_MERGEH(vczero, pixelsv1);
+    pixelsv2 = VEC_MERGEH(vczero, pixelsv2);
     pixelssum1 = vec_add((vector unsigned short)pixelsv1,
                          (vector unsigned short)pixelsv2);
     pixelssum1 = vec_add(pixelssum1, vctwo);
@@ -414,17 +341,11 @@ static void avg_pixels8_xy2_altivec(uint8_t *block, const uint8_t *pixels, ptrdi
         int rightside = ((unsigned long)block & 0x0000000F);
         blockv = vec_ld(0, block);
 
-        temp1 = vec_ld(line_size, pixels);
-        temp2 = vec_ld(line_size + 16, pixels);
-        pixelsv1 = vec_perm(temp1, temp2, vec_lvsl(line_size, pixels));
-        if (((((unsigned long)pixels) + line_size) & 0x0000000F) ==  0x0000000F) {
-            pixelsv2 = temp2;
-        } else {
-            pixelsv2 = vec_perm(temp1, temp2, vec_lvsl(line_size + 1, pixels));
-        }
+        pixelsv1 = unaligned_load(line_size, pixels);
+        pixelsv2 = unaligned_load(line_size+1, pixels);
 
-        pixelsv1 = vec_mergeh(vczero, pixelsv1);
-        pixelsv2 = vec_mergeh(vczero, pixelsv2);
+        pixelsv1 = VEC_MERGEH(vczero, pixelsv1);
+        pixelsv2 = VEC_MERGEH(vczero, pixelsv2);
         pixelssum2 = vec_add((vector unsigned short)pixelsv1,
                              (vector unsigned short)pixelsv2);
         temp3 = vec_add(pixelssum1, pixelssum2);

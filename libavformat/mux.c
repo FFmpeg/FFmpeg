@@ -44,9 +44,6 @@
 #include "network.h"
 #endif
 
-#undef NDEBUG
-#include <assert.h>
-
 /**
  * @file
  * muxing functions for use within libavformat
@@ -118,6 +115,36 @@ AVRational ff_choose_timebase(AVFormatContext *s, AVStream *st, int min_precisio
     return q;
 }
 
+enum AVChromaLocation ff_choose_chroma_location(AVFormatContext *s, AVStream *st)
+{
+    AVCodecContext *avctx = st->codec;
+    const AVPixFmtDescriptor *pix_desc = av_pix_fmt_desc_get(avctx->pix_fmt);
+
+    if (avctx->chroma_sample_location != AVCHROMA_LOC_UNSPECIFIED)
+        return avctx->chroma_sample_location;
+
+    if (pix_desc) {
+        if (pix_desc->log2_chroma_h == 0) {
+            return AVCHROMA_LOC_TOPLEFT;
+        } else if (pix_desc->log2_chroma_w == 1 && pix_desc->log2_chroma_h == 1) {
+            if (avctx->field_order == AV_FIELD_UNKNOWN || avctx->field_order == AV_FIELD_PROGRESSIVE) {
+                switch (avctx->codec_id) {
+                case AV_CODEC_ID_MJPEG:
+                case AV_CODEC_ID_MPEG1VIDEO: return AVCHROMA_LOC_CENTER;
+                }
+            }
+            if (avctx->field_order == AV_FIELD_UNKNOWN || avctx->field_order != AV_FIELD_PROGRESSIVE) {
+                switch (avctx->codec_id) {
+                case AV_CODEC_ID_MPEG2VIDEO: return AVCHROMA_LOC_LEFT;
+                }
+            }
+        }
+    }
+
+    return AVCHROMA_LOC_UNSPECIFIED;
+
+}
+
 int avformat_alloc_output_context2(AVFormatContext **avctx, AVOutputFormat *oformat,
                                    const char *format, const char *filename)
 {
@@ -171,16 +198,6 @@ error:
     return ret;
 }
 
-#if FF_API_ALLOC_OUTPUT_CONTEXT
-AVFormatContext *avformat_alloc_output_context(const char *format,
-                                               AVOutputFormat *oformat, const char *filename)
-{
-    AVFormatContext *avctx;
-    int ret = avformat_alloc_output_context2(&avctx, oformat, format, filename);
-    return ret < 0 ? NULL : avctx;
-}
-#endif
-
 static int validate_codec_tag(AVFormatContext *s, AVStream *st)
 {
     const AVCodecTag *avctag;
@@ -209,7 +226,7 @@ static int validate_codec_tag(AVFormatContext *s, AVStream *st)
     }
     if (id != AV_CODEC_ID_NONE)
         return 0;
-    if (tag >= 0 && (st->codec->strict_std_compliance >= FF_COMPLIANCE_NORMAL))
+    if (tag >= 0 && (s->strict_std_compliance >= FF_COMPLIANCE_NORMAL))
         return 0;
     return 1;
 }
@@ -412,7 +429,7 @@ int avformat_write_header(AVFormatContext *s, AVDictionary **options)
 {
     int ret = 0;
 
-    if (ret = init_muxer(s, options))
+    if ((ret = init_muxer(s, options)) < 0)
         return ret;
 
     if (s->oformat->write_header) {
@@ -421,16 +438,19 @@ int avformat_write_header(AVFormatContext *s, AVDictionary **options)
             ret = s->pb->error;
         if (ret < 0)
             return ret;
+        if (s->flush_packets && s->pb && s->pb->error >= 0 && s->flags & AVFMT_FLAG_FLUSH_PACKETS)
+            avio_flush(s->pb);
     }
 
     if ((ret = init_pts(s)) < 0)
         return ret;
 
     if (s->avoid_negative_ts < 0) {
+        av_assert2(s->avoid_negative_ts == AVFMT_AVOID_NEG_TS_AUTO);
         if (s->oformat->flags & (AVFMT_TS_NEGATIVE | AVFMT_NOTIMESTAMPS)) {
             s->avoid_negative_ts = 0;
         } else
-            s->avoid_negative_ts = 1;
+            s->avoid_negative_ts = AVFMT_AVOID_NEG_TS_MAKE_NON_NEGATIVE;
     }
 
     return 0;
@@ -452,7 +472,8 @@ static int compute_pkt_fields2(AVFormatContext *s, AVStream *st, AVPacket *pkt)
     int num, den, i;
     int frame_size;
 
-    av_dlog(s, "compute_pkt_fields2: pts:%s dts:%s cur_dts:%s b:%d size:%d st:%d\n",
+    if (s->debug & FF_FDEBUG_TS)
+        av_log(s, AV_LOG_TRACE, "compute_pkt_fields2: pts:%s dts:%s cur_dts:%s b:%d size:%d st:%d\n",
             av_ts2str(pkt->pts), av_ts2str(pkt->dts), av_ts2str(st->cur_dts), delay, pkt->size, pkt->stream_index);
 
     if (pkt->duration < 0 && st->codec->codec_type != AVMEDIA_TYPE_SUBTITLE) {
@@ -463,7 +484,7 @@ static int compute_pkt_fields2(AVFormatContext *s, AVStream *st, AVPacket *pkt)
 
     /* duration field */
     if (pkt->duration == 0) {
-        ff_compute_frame_duration(&num, &den, st, NULL, pkt);
+        ff_compute_frame_duration(s, &num, &den, st, NULL, pkt);
         if (den && num) {
             pkt->duration = av_rescale(1, num * (int64_t)st->time_base.den * st->codec->ticks_per_frame, den * (int64_t)st->time_base.num);
         }
@@ -497,6 +518,7 @@ static int compute_pkt_fields2(AVFormatContext *s, AVStream *st, AVPacket *pkt)
 
     if (st->cur_dts && st->cur_dts != AV_NOPTS_VALUE &&
         ((!(s->oformat->flags & AVFMT_TS_NONSTRICT) &&
+          st->codec->codec_type != AVMEDIA_TYPE_SUBTITLE &&
           st->cur_dts >= pkt->dts) || st->cur_dts > pkt->dts)) {
         av_log(s, AV_LOG_ERROR,
                "Application provided invalid, non monotonically increasing dts to muxer in stream %d: %s >= %s\n",
@@ -504,13 +526,17 @@ static int compute_pkt_fields2(AVFormatContext *s, AVStream *st, AVPacket *pkt)
         return AVERROR(EINVAL);
     }
     if (pkt->dts != AV_NOPTS_VALUE && pkt->pts != AV_NOPTS_VALUE && pkt->pts < pkt->dts) {
-        av_log(s, AV_LOG_ERROR, "pts (%s) < dts (%s) in stream %d\n",
-               av_ts2str(pkt->pts), av_ts2str(pkt->dts), st->index);
+        av_log(s, AV_LOG_ERROR,
+               "pts (%s) < dts (%s) in stream %d\n",
+               av_ts2str(pkt->pts), av_ts2str(pkt->dts),
+               st->index);
         return AVERROR(EINVAL);
     }
 
-    av_dlog(s, "av_write_frame: pts2:%s dts2:%s\n",
+    if (s->debug & FF_FDEBUG_TS)
+        av_log(s, AV_LOG_TRACE, "av_write_frame: pts2:%s dts2:%s\n",
             av_ts2str(pkt->pts), av_ts2str(pkt->dts));
+
     st->cur_dts = pkt->dts;
     st->pts.val = pkt->dts;
 
@@ -519,7 +545,7 @@ static int compute_pkt_fields2(AVFormatContext *s, AVStream *st, AVPacket *pkt)
     case AVMEDIA_TYPE_AUDIO:
         frame_size = (pkt->flags & AV_PKT_FLAG_UNCODED_FRAME) ?
                      ((AVFrame *)pkt->data)->nb_samples :
-                     ff_get_audio_frame_size(st->codec, pkt->size, 1);
+                     av_get_audio_frame_duration(st->codec, pkt->size);
 
         /* HACK/FIXME, we skip the initial 0 size packets as they are most
          * likely equal to the encoder delay, but it would be better if we
@@ -561,16 +587,18 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     if (s->avoid_negative_ts > 0) {
         AVStream *st = s->streams[pkt->stream_index];
         int64_t offset = st->mux_ts_offset;
+        int64_t ts = s->internal->avoid_negative_ts_use_pts ? pkt->pts : pkt->dts;
 
-        if ((pkt->dts < 0 || s->avoid_negative_ts == 2) && pkt->dts != AV_NOPTS_VALUE && !s->offset) {
-            s->offset = -pkt->dts;
-            s->offset_timebase = st->time_base;
+        if (s->internal->offset == AV_NOPTS_VALUE && ts != AV_NOPTS_VALUE &&
+            (ts < 0 || s->avoid_negative_ts == AVFMT_AVOID_NEG_TS_MAKE_ZERO)) {
+            s->internal->offset = -ts;
+            s->internal->offset_timebase = st->time_base;
         }
 
-        if (s->offset && !offset) {
+        if (s->internal->offset != AV_NOPTS_VALUE && !offset) {
             offset = st->mux_ts_offset =
-                av_rescale_q_rnd(s->offset,
-                                 s->offset_timebase,
+                av_rescale_q_rnd(s->internal->offset,
+                                 s->internal->offset_timebase,
                                  st->time_base,
                                  AV_ROUND_UP);
         }
@@ -580,7 +608,27 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
         if (pkt->pts != AV_NOPTS_VALUE)
             pkt->pts += offset;
 
-        av_assert2(pkt->dts == AV_NOPTS_VALUE || pkt->dts >= 0);
+        if (s->internal->avoid_negative_ts_use_pts) {
+            if (pkt->pts != AV_NOPTS_VALUE && pkt->pts < 0) {
+                av_log(s, AV_LOG_WARNING, "failed to avoid negative "
+                    "pts %s in stream %d.\n"
+                    "Try -avoid_negative_ts 1 as a possible workaround.\n",
+                    av_ts2str(pkt->dts),
+                    pkt->stream_index
+                );
+            }
+        } else {
+            av_assert2(pkt->dts == AV_NOPTS_VALUE || pkt->dts >= 0 || s->max_interleave_delta > 0);
+            if (pkt->dts != AV_NOPTS_VALUE && pkt->dts < 0) {
+                av_log(s, AV_LOG_WARNING,
+                    "Packets poorly interleaved, failed to avoid negative "
+                    "timestamp %s in stream %d.\n"
+                    "Try -max_interleave_delta 0 as a possible workaround.\n",
+                    av_ts2str(pkt->dts),
+                    pkt->stream_index
+                );
+            }
+        }
     }
 
     did_split = av_packet_split_side_data(pkt);
@@ -691,7 +739,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if (s->streams[pkt->stream_index]->last_in_packet_buffer) {
         next_point = &(st->last_in_packet_buffer->next);
     } else {
-        next_point = &s->packet_buffer;
+        next_point = &s->internal->packet_buffer;
     }
 
     if (chunked) {
@@ -715,7 +763,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         if (chunked && !(this_pktl->pkt.flags & CHUNK_START))
             goto next_non_null;
 
-        if (compare(s, &s->packet_buffer_end->pkt, pkt)) {
+        if (compare(s, &s->internal->packet_buffer_end->pkt, pkt)) {
             while (   *next_point
                    && ((chunked && !((*next_point)->pkt.flags&CHUNK_START))
                        || !compare(s, &(*next_point)->pkt, pkt)))
@@ -723,12 +771,12 @@ FF_ENABLE_DEPRECATION_WARNINGS
             if (*next_point)
                 goto next_non_null;
         } else {
-            next_point = &(s->packet_buffer_end->next);
+            next_point = &(s->internal->packet_buffer_end->next);
         }
     }
     av_assert1(!*next_point);
 
-    s->packet_buffer_end = this_pktl;
+    s->internal->packet_buffer_end = this_pktl;
 next_non_null:
 
     this_pktl->next = *next_point;
@@ -789,11 +837,11 @@ int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out,
         flush = 1;
 
     if (s->max_interleave_delta > 0 &&
-        s->packet_buffer &&
+        s->internal->packet_buffer &&
         !flush &&
         s->internal->nb_interleaved_streams == stream_count+noninterleaved_count
     ) {
-        AVPacket *top_pkt = &s->packet_buffer->pkt;
+        AVPacket *top_pkt = &s->internal->packet_buffer->pkt;
         int64_t delta_dts = INT64_MIN;
         int64_t top_dts = av_rescale_q(top_pkt->dts,
                                        s->streams[top_pkt->stream_index]->time_base,
@@ -823,13 +871,13 @@ int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out,
 
     if (stream_count && flush) {
         AVStream *st;
-        pktl = s->packet_buffer;
+        pktl = s->internal->packet_buffer;
         *out = pktl->pkt;
         st   = s->streams[out->stream_index];
 
-        s->packet_buffer = pktl->next;
-        if (!s->packet_buffer)
-            s->packet_buffer_end = NULL;
+        s->internal->packet_buffer = pktl->next;
+        if (!s->internal->packet_buffer)
+            s->internal->packet_buffer_end = NULL;
 
         if (st->last_in_packet_buffer == pktl)
             st->last_in_packet_buffer = NULL;
@@ -873,8 +921,10 @@ int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt)
     if (pkt) {
         AVStream *st = s->streams[pkt->stream_index];
 
-        av_dlog(s, "av_interleaved_write_frame size:%d dts:%s pts:%s\n",
+        if (s->debug & FF_FDEBUG_TS)
+            av_log(s, AV_LOG_TRACE, "av_interleaved_write_frame size:%d dts:%s pts:%s\n",
                 pkt->size, av_ts2str(pkt->dts), av_ts2str(pkt->pts));
+
         if ((ret = compute_pkt_fields2(s, st, pkt)) < 0 && !(s->oformat->flags & AVFMT_NOTIMESTAMPS))
             goto fail;
 
@@ -883,7 +933,7 @@ int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt)
             goto fail;
         }
     } else {
-        av_dlog(s, "av_interleaved_write_frame FLUSH\n");
+        av_log(s, AV_LOG_TRACE, "av_interleaved_write_frame FLUSH\n");
         flush = 1;
     }
 
@@ -921,7 +971,7 @@ int av_write_trailer(AVFormatContext *s)
     for (;; ) {
         AVPacket pkt;
         ret = interleave_packet(s, &pkt, NULL, 1);
-        if (ret < 0) //FIXME cleanup needed for ret<0 ?
+        if (ret < 0)
             goto fail;
         if (!ret)
             break;
@@ -938,10 +988,14 @@ int av_write_trailer(AVFormatContext *s)
             goto fail;
     }
 
-    if (s->oformat->write_trailer)
-        ret = s->oformat->write_trailer(s);
-
 fail:
+    if (s->oformat->write_trailer)
+        if (ret >= 0) {
+        ret = s->oformat->write_trailer(s);
+        } else {
+            s->oformat->write_trailer(s);
+        }
+
     if (s->pb)
        avio_flush(s->pb);
     if (ret == 0)

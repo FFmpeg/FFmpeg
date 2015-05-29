@@ -40,12 +40,10 @@
 # include <openjpeg.h>
 #endif
 
-typedef struct {
+typedef struct LibOpenJPEGContext {
     AVClass *avclass;
     opj_image_t *image;
-    opj_cio_t *stream;
     opj_cparameters_t enc_params;
-    opj_cinfo_t *compress;
     opj_event_mgr_t event_mgr;
     int format;
     int profile;
@@ -73,6 +71,43 @@ static void info_callback(const char *msg, void *data)
     av_log(data, AV_LOG_DEBUG, "%s\n", msg);
 }
 
+static void cinema_parameters(opj_cparameters_t *p)
+{
+    p->tile_size_on = 0;
+    p->cp_tdx = 1;
+    p->cp_tdy = 1;
+
+    /* Tile part */
+    p->tp_flag = 'C';
+    p->tp_on = 1;
+
+    /* Tile and Image shall be at (0, 0) */
+    p->cp_tx0 = 0;
+    p->cp_ty0 = 0;
+    p->image_offset_x0 = 0;
+    p->image_offset_y0 = 0;
+
+    /* Codeblock size= 32 * 32 */
+    p->cblockw_init = 32;
+    p->cblockh_init = 32;
+    p->csty |= 0x01;
+
+    /* The progression order shall be CPRL */
+    p->prog_order = CPRL;
+
+    /* No ROI */
+    p->roi_compno = -1;
+
+    /* No subsampling */
+    p->subsampling_dx = 1;
+    p->subsampling_dy = 1;
+
+    /* 9-7 transform */
+    p->irreversible = 1;
+
+    p->tcp_mct = 1;
+}
+
 static opj_image_t *mj2_create_image(AVCodecContext *avctx, opj_cparameters_t *parameters)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
@@ -93,8 +128,9 @@ static opj_image_t *mj2_create_image(AVCodecContext *avctx, opj_cparameters_t *p
 
     switch (avctx->pix_fmt) {
     case AV_PIX_FMT_GRAY8:
-    case AV_PIX_FMT_GRAY8A:
+    case AV_PIX_FMT_YA8:
     case AV_PIX_FMT_GRAY16:
+    case AV_PIX_FMT_YA16:
         color_space = CLRSPC_GRAY;
         break;
     case AV_PIX_FMT_RGB24:
@@ -193,52 +229,13 @@ static av_cold int libopenjpeg_encode_init(AVCodecContext *avctx)
     ctx->enc_params.tcp_rates[0] = FFMAX(avctx->compression_level, 0) * 2;
 
     if (ctx->cinema_mode > 0) {
-        ctx->enc_params.irreversible = 1;
-        ctx->enc_params.tcp_mct = 1;
-        ctx->enc_params.tile_size_on = 0;
-        /* no subsampling */
-        ctx->enc_params.cp_tdx=1;
-        ctx->enc_params.cp_tdy=1;
-        ctx->enc_params.subsampling_dx = 1;
-        ctx->enc_params.subsampling_dy = 1;
-        /* Tile and Image shall be at (0,0) */
-        ctx->enc_params.cp_tx0 = 0;
-        ctx->enc_params.cp_ty0 = 0;
-        ctx->enc_params.image_offset_x0 = 0;
-        ctx->enc_params.image_offset_y0 = 0;
-        /* Codeblock size= 32*32 */
-        ctx->enc_params.cblockw_init = 32;
-        ctx->enc_params.cblockh_init = 32;
-        ctx->enc_params.csty |= 0x01;
-        /* No ROI */
-        ctx->enc_params.roi_compno = -1;
-
-        if (ctx->enc_params.prog_order != CPRL) {
-            av_log(avctx, AV_LOG_ERROR, "prog_order forced to CPRL\n");
-            ctx->enc_params.prog_order = CPRL;
-        }
-        ctx->enc_params.tp_flag = 'C';
-        ctx->enc_params.tp_on = 1;
-    }
-
-    ctx->compress = opj_create_compress(ctx->format);
-    if (!ctx->compress) {
-        av_log(avctx, AV_LOG_ERROR, "Error creating the compressor\n");
-        return AVERROR(ENOMEM);
+        cinema_parameters(&ctx->enc_params);
     }
 
     ctx->image = mj2_create_image(avctx, &ctx->enc_params);
     if (!ctx->image) {
         av_log(avctx, AV_LOG_ERROR, "Error creating the mj2 image\n");
         err = AVERROR(EINVAL);
-        goto fail;
-    }
-    opj_setup_encoder(ctx->compress, &ctx->enc_params, ctx->image);
-
-    ctx->stream = opj_cio_open((opj_common_ptr) ctx->compress, NULL, 0);
-    if (!ctx->stream) {
-        av_log(avctx, AV_LOG_ERROR, "Error creating the cio stream\n");
-        err = AVERROR(ENOMEM);
         goto fail;
     }
 
@@ -248,22 +245,12 @@ static av_cold int libopenjpeg_encode_init(AVCodecContext *avctx)
         goto fail;
     }
 
-    memset(&ctx->event_mgr, 0, sizeof(opj_event_mgr_t));
-    ctx->event_mgr.info_handler    = info_callback;
-    ctx->event_mgr.error_handler = error_callback;
-    ctx->event_mgr.warning_handler = warning_callback;
-    opj_set_event_mgr((opj_common_ptr) ctx->compress, &ctx->event_mgr, avctx);
-
     return 0;
 
 fail:
-    opj_cio_close(ctx->stream);
-    ctx->stream = NULL;
-    opj_destroy_compress(ctx->compress);
-    ctx->compress = NULL;
     opj_image_destroy(ctx->image);
     ctx->image = NULL;
-    av_freep(&avctx->coded_frame);
+    av_frame_free(&avctx->coded_frame);
     return err;
 }
 
@@ -474,9 +461,9 @@ static int libopenjpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                                     const AVFrame *frame, int *got_packet)
 {
     LibOpenJPEGContext *ctx = avctx->priv_data;
-    opj_cinfo_t *compress   = ctx->compress;
     opj_image_t *image      = ctx->image;
-    opj_cio_t *stream       = ctx->stream;
+    opj_cinfo_t *compress   = NULL;
+    opj_cio_t *stream       = NULL;
     int cpyresult = 0;
     int ret, len;
     AVFrame *gbrframe;
@@ -484,7 +471,7 @@ static int libopenjpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     switch (avctx->pix_fmt) {
     case AV_PIX_FMT_RGB24:
     case AV_PIX_FMT_RGBA:
-    case AV_PIX_FMT_GRAY8A:
+    case AV_PIX_FMT_YA8:
         cpyresult = libopenjpeg_copy_packed8(avctx, frame, image);
         break;
     case AV_PIX_FMT_XYZ12:
@@ -492,6 +479,7 @@ static int libopenjpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         break;
     case AV_PIX_FMT_RGB48:
     case AV_PIX_FMT_RGBA64:
+    case AV_PIX_FMT_YA16:
         cpyresult = libopenjpeg_copy_packed16(avctx, frame, image);
         break;
     case AV_PIX_FMT_GBR24P:
@@ -569,7 +557,26 @@ static int libopenjpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         return -1;
     }
 
-    cio_seek(stream, 0);
+    compress = opj_create_compress(ctx->format);
+    if (!compress) {
+        av_log(avctx, AV_LOG_ERROR, "Error creating the compressor\n");
+        return AVERROR(ENOMEM);
+    }
+
+    opj_setup_encoder(compress, &ctx->enc_params, image);
+
+    stream = opj_cio_open((opj_common_ptr) compress, NULL, 0);
+    if (!stream) {
+        av_log(avctx, AV_LOG_ERROR, "Error creating the cio stream\n");
+        return AVERROR(ENOMEM);
+    }
+
+    memset(&ctx->event_mgr, 0, sizeof(opj_event_mgr_t));
+    ctx->event_mgr.info_handler    = info_callback;
+    ctx->event_mgr.error_handler   = error_callback;
+    ctx->event_mgr.warning_handler = warning_callback;
+    opj_set_event_mgr((opj_common_ptr) compress, &ctx->event_mgr, avctx);
+
     if (!opj_encode(compress, stream, image, NULL)) {
         av_log(avctx, AV_LOG_ERROR, "Error during the opj encode\n");
         return -1;
@@ -583,6 +590,12 @@ static int libopenjpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     memcpy(pkt->data, stream->buffer, len);
     pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;
+
+    opj_cio_close(stream);
+    stream = NULL;
+    opj_destroy_compress(compress);
+    compress = NULL;
+
     return 0;
 }
 
@@ -590,13 +603,9 @@ static av_cold int libopenjpeg_encode_close(AVCodecContext *avctx)
 {
     LibOpenJPEGContext *ctx = avctx->priv_data;
 
-    opj_cio_close(ctx->stream);
-    ctx->stream = NULL;
-    opj_destroy_compress(ctx->compress);
-    ctx->compress = NULL;
     opj_image_destroy(ctx->image);
     ctx->image = NULL;
-    av_freep(&avctx->coded_frame);
+    av_frame_free(&avctx->coded_frame);
     return 0;
 }
 
@@ -650,7 +659,7 @@ AVCodec ff_libopenjpeg_encoder = {
         AV_PIX_FMT_RGB24, AV_PIX_FMT_RGBA, AV_PIX_FMT_RGB48,
         AV_PIX_FMT_RGBA64, AV_PIX_FMT_GBR24P,
         AV_PIX_FMT_GBRP9, AV_PIX_FMT_GBRP10, AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRP14, AV_PIX_FMT_GBRP16,
-        AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY8A, AV_PIX_FMT_GRAY16,
+        AV_PIX_FMT_GRAY8, AV_PIX_FMT_YA8, AV_PIX_FMT_GRAY16, AV_PIX_FMT_YA16,
         AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUVA420P,
         AV_PIX_FMT_YUV440P, AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUVA422P,
         AV_PIX_FMT_YUV411P, AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUVA444P,

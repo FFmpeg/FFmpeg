@@ -222,6 +222,9 @@ $(foreach N,$(HEVC_SAMPLES_422_10BIN),$(eval $(call FATE_HEVC_TEST_422_10BIN,$(N
 $(foreach N,$(HEVC_SAMPLES_444_8BIT),$(eval $(call FATE_HEVC_TEST_444_8BIT,$(N))))
 $(foreach N,$(HEVC_SAMPLES_444_12BIT),$(eval $(call FATE_HEVC_TEST_444_12BIT,$(N))))
 
+fate-hevc-paramchange-yuv420p-yuv420p10: CMD = framecrc -vsync 0 -i $(TARGET_SAMPLES)/hevc/paramchange_yuv420p_yuv420p10.hevc -sws_flags area+accurate_rnd+bitexact
+FATE_HEVC += fate-hevc-paramchange-yuv420p-yuv420p10
+
 FATE_HEVC-$(call DEMDEC, HEVC, HEVC) += $(FATE_HEVC)
 
 FATE_SAMPLES_AVCONV += $(FATE_HEVC-yes)

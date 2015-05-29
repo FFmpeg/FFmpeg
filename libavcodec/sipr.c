@@ -44,7 +44,7 @@
 #include "sipr.h"
 #include "siprdata.h"
 
-typedef struct {
+typedef struct SiprModeParam {
     const char *mode_name;
     uint16_t bits_per_frame;
     uint8_t subframe_count;
@@ -139,7 +139,7 @@ const float ff_pow_0_5[] = {
     1.0/(1 << 13), 1.0/(1 << 14), 1.0/(1 << 15), 1.0/(1 << 16)
 };
 
-static void dequant(float *out, const int *idx, const float *cbs[])
+static void dequant(float *out, const int *idx, const float * const cbs[])
 {
     int i;
     int stride  = 2;

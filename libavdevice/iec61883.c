@@ -216,11 +216,11 @@ static int iec61883_parse_queue_hdv(struct iec61883_data *dv, AVPacket *pkt)
 
     while (dv->queue_first) {
         packet = dv->queue_first;
-        size = ff_mpegts_parse_packet(dv->mpeg_demux, pkt, packet->buf,
-                                      packet->len);
+        size = avpriv_mpegts_parse_packet(dv->mpeg_demux, pkt, packet->buf,
+                                          packet->len);
         dv->queue_first = packet->next;
-        av_free(packet->buf);
-        av_free(packet);
+        av_freep(&packet->buf);
+        av_freep(&packet);
         dv->packets--;
 
         if (size > 0)
@@ -350,13 +350,13 @@ static int iec61883_read_header(AVFormatContext *context)
     if (!dv->max_packets)
         dv->max_packets = 100;
 
-    if (dv->type == IEC61883_HDV) {
+    if (CONFIG_MPEGTS_DEMUXER && dv->type == IEC61883_HDV) {
 
         /* Init HDV receive */
 
         avformat_new_stream(context, NULL);
 
-        dv->mpeg_demux = ff_mpegts_parse_open(context);
+        dv->mpeg_demux = avpriv_mpegts_parse_open(context);
         if (!dv->mpeg_demux)
             goto fail;
 
@@ -444,10 +444,10 @@ static int iec61883_close(AVFormatContext *context)
     pthread_mutex_destroy(&dv->mutex);
 #endif
 
-    if (dv->type == IEC61883_HDV) {
+    if (CONFIG_MPEGTS_DEMUXER && dv->type == IEC61883_HDV) {
         iec61883_mpeg2_recv_stop(dv->iec61883_mpeg2);
         iec61883_mpeg2_close(dv->iec61883_mpeg2);
-        ff_mpegts_parse_close(dv->mpeg_demux);
+        avpriv_mpegts_parse_close(dv->mpeg_demux);
     } else {
         iec61883_dv_fb_stop(dv->iec61883_dv);
         iec61883_dv_fb_close(dv->iec61883_dv);
@@ -455,8 +455,8 @@ static int iec61883_close(AVFormatContext *context)
     while (dv->queue_first) {
         DVPacket *packet = dv->queue_first;
         dv->queue_first = packet->next;
-        av_free(packet->buf);
-        av_free(packet);
+        av_freep(&packet->buf);
+        av_freep(&packet);
     }
 
     iec61883_cmp_disconnect(dv->raw1394, dv->node, dv->output_port,

@@ -35,7 +35,7 @@
 #define ISS_SIG_LEN 15
 #define MAX_TOKEN_SIZE 20
 
-typedef struct {
+typedef struct IssDemuxContext {
     int packet_size;
     int sample_start_pos;
 } IssDemuxContext;

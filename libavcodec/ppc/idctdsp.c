@@ -209,16 +209,26 @@ static void idct_add_altivec(uint8_t *dest, int stride, int16_t *blk)
 
     IDCT;
 
+#if HAVE_BIGENDIAN
     p0    = vec_lvsl(0, dest);
     p1    = vec_lvsl(stride, dest);
     p     = vec_splat_u8(-1);
     perm0 = vec_mergeh(p, p0);
     perm1 = vec_mergeh(p, p1);
+#endif
+
+#if HAVE_BIGENDIAN
+#define GET_TMP2(dest, prm)                                 \
+    tmp  = vec_ld(0, dest);                                 \
+    tmp2 = (vec_s16) vec_perm(tmp, (vec_u8) zero, prm);
+#else
+#define GET_TMP2(dest, prm)                                 \
+    tmp  = vec_vsx_ld(0, dest);                             \
+    tmp2 = (vec_s16) vec_mergeh(tmp, (vec_u8) zero)
+#endif
 
 #define ADD(dest, src, perm)                                \
-    /* *(uint64_t *) &tmp = *(uint64_t *) dest; */          \
-    tmp  = vec_ld(0, dest);                                 \
-    tmp2 = (vec_s16) vec_perm(tmp, (vec_u8) zero, perm);    \
+    GET_TMP2(dest, perm);                                   \
     tmp3 = vec_adds(tmp2, src);                             \
     tmp  = vec_packsu(tmp3, tmp3);                          \
     vec_ste((vec_u32) tmp, 0, (unsigned int *) dest);       \

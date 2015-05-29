@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007  FFmpeg Project
+ * Copyright (C) 2007 The FFmpeg Project
  *
  * This file is part of FFmpeg.
  *
@@ -36,8 +36,8 @@
  * @param[out] header_len The sizes of each of the three headers.
  * @return On error a negative value is returned, on success zero.
  */
-int avpriv_split_xiph_headers(uint8_t *extradata, int extradata_size,
-                              int first_header_size, uint8_t *header_start[3],
+int avpriv_split_xiph_headers(const uint8_t *extradata, int extradata_size,
+                              int first_header_size, const uint8_t *header_start[3],
                               int header_len[3]);
 
 #endif /* AVCODEC_XIPH_H */

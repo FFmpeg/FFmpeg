@@ -46,7 +46,7 @@ int ff_h261_get_picture_format(int width, int height)
         return 1;
     // ERROR
     else
-        return -1;
+        return AVERROR(EINVAL);
 }
 
 void ff_h261_encode_picture_header(MpegEncContext *s, int picture_number)
@@ -61,8 +61,8 @@ void ff_h261_encode_picture_header(MpegEncContext *s, int picture_number)
 
     put_bits(&s->pb, 20, 0x10); /* PSC */
 
-    temp_ref = s->picture_number * (int64_t)30000 * s->avctx->time_base.num /
-               (1001 * (int64_t)s->avctx->time_base.den);   // FIXME maybe this should use a timestamp
+    temp_ref = s->picture_number * 30000LL * s->avctx->time_base.num /
+               (1001LL * s->avctx->time_base.den);   // FIXME maybe this should use a timestamp
     put_sbits(&s->pb, 5, temp_ref); /* TemporalReference */
 
     put_bits(&s->pb, 1, 0); /* split screen off */
@@ -250,12 +250,13 @@ void ff_h261_encode_mb(MpegEncContext *s, int16_t block[6][64],
         /* mvd indicates if this block is motion compensated */
         mvd = motion_x | motion_y;
 
-        if ((cbp | mvd | s->dquant) == 0) {
+        if ((cbp | mvd) == 0) {
             /* skip macroblock */
             s->skip_count++;
             s->mb_skip_run++;
             s->last_mv[0][0][0] = 0;
             s->last_mv[0][0][1] = 0;
+            s->qscale -= s->dquant;
             return;
         }
     }
@@ -274,13 +275,15 @@ void ff_h261_encode_mb(MpegEncContext *s, int16_t block[6][64],
             h->mtype += 3;
         if (s->loop_filter)
             h->mtype += 3;
-        if (cbp || s->dquant)
+        if (cbp)
             h->mtype++;
         av_assert1(h->mtype > 1);
     }
 
-    if (s->dquant)
+    if (s->dquant && cbp) {
         h->mtype++;
+    } else
+        s->qscale -= s->dquant;
 
     put_bits(&s->pb,
              ff_h261_mtype_bits[h->mtype],
@@ -382,9 +385,9 @@ AVCodec ff_h261_encoder = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_H261,
     .priv_data_size = sizeof(H261Context),
-    .init           = ff_MPV_encode_init,
-    .encode2        = ff_MPV_encode_picture,
-    .close          = ff_MPV_encode_end,
+    .init           = ff_mpv_encode_init,
+    .encode2        = ff_mpv_encode_picture,
+    .close          = ff_mpv_encode_end,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV420P,
                                                      AV_PIX_FMT_NONE },
     .priv_class     = &h261_class,

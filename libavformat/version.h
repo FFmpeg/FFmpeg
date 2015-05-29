@@ -29,9 +29,9 @@
 
 #include "libavutil/version.h"
 
-#define LIBAVFORMAT_VERSION_MAJOR 55
-#define LIBAVFORMAT_VERSION_MINOR 50
-#define LIBAVFORMAT_VERSION_MICRO 100
+#define LIBAVFORMAT_VERSION_MAJOR 56
+#define LIBAVFORMAT_VERSION_MINOR  33
+#define LIBAVFORMAT_VERSION_MICRO 101
 
 #define LIBAVFORMAT_VERSION_INT AV_VERSION_INT(LIBAVFORMAT_VERSION_MAJOR, \
                                                LIBAVFORMAT_VERSION_MINOR, \
@@ -48,11 +48,8 @@
  * dropped at a future version bump. The defines themselves are not part of
  * the public API and may change, break or disappear at any time.
  */
-#ifndef FF_API_REFERENCE_DTS
-#define FF_API_REFERENCE_DTS            (LIBAVFORMAT_VERSION_MAJOR < 56)
-#endif
 #ifndef FF_API_LAVF_BITEXACT
-#define FF_API_LAVF_BITEXACT            (LIBAVFORMAT_VERSION_MAJOR < 56)
+#define FF_API_LAVF_BITEXACT            (LIBAVFORMAT_VERSION_MAJOR < 57)
 #endif
 #ifndef FF_API_LAVF_FRAC
 #define FF_API_LAVF_FRAC                (LIBAVFORMAT_VERSION_MAJOR < 57)
@@ -60,33 +57,11 @@
 #ifndef FF_API_LAVF_CODEC_TB
 #define FF_API_LAVF_CODEC_TB            (LIBAVFORMAT_VERSION_MAJOR < 57)
 #endif
+#ifndef FF_API_URL_FEOF
+#define FF_API_URL_FEOF                 (LIBAVFORMAT_VERSION_MAJOR < 57)
+#endif
 
-#ifndef FF_API_ALLOC_OUTPUT_CONTEXT
-#define FF_API_ALLOC_OUTPUT_CONTEXT    (LIBAVFORMAT_VERSION_MAJOR < 56)
-#endif
-#ifndef FF_API_FORMAT_PARAMETERS
-#define FF_API_FORMAT_PARAMETERS       (LIBAVFORMAT_VERSION_MAJOR < 56)
-#endif
-#ifndef FF_API_NEW_STREAM
-#define FF_API_NEW_STREAM              (LIBAVFORMAT_VERSION_MAJOR < 56)
-#endif
-#ifndef FF_API_SET_PTS_INFO
-#define FF_API_SET_PTS_INFO            (LIBAVFORMAT_VERSION_MAJOR < 56)
-#endif
-#ifndef FF_API_CLOSE_INPUT_FILE
-#define FF_API_CLOSE_INPUT_FILE        (LIBAVFORMAT_VERSION_MAJOR < 56)
-#endif
-#ifndef FF_API_READ_PACKET
-#define FF_API_READ_PACKET             (LIBAVFORMAT_VERSION_MAJOR < 56)
-#endif
-#ifndef FF_API_ASS_SSA
-#define FF_API_ASS_SSA                 (LIBAVFORMAT_VERSION_MAJOR < 56)
-#endif
 #ifndef FF_API_R_FRAME_RATE
 #define FF_API_R_FRAME_RATE            1
 #endif
-#ifndef FF_API_PROBE_MIME
-#define FF_API_PROBE_MIME               (LIBAVFORMAT_VERSION_MAJOR > 55)
-#endif
-
 #endif /* AVFORMAT_VERSION_H */

@@ -32,6 +32,9 @@
 #include "libavutil/opt.h"
 #include "libavutil/dict.h"
 #include "libavutil/avassert.h"
+#include "libavutil/crc.h"
+#include "libavutil/mathematics.h"
+#include "libavutil/replaygain.h"
 
 static int id3v1_set_string(AVFormatContext *s, const char *key,
                             uint8_t *buf, int buf_size)
@@ -55,7 +58,7 @@ static int id3v1_create_tag(AVFormatContext *s, uint8_t *buf)
     count += id3v1_set_string(s, "TIT2",    buf +  3, 30 + 1);       //title
     count += id3v1_set_string(s, "TPE1",    buf + 33, 30 + 1);       //author|artist
     count += id3v1_set_string(s, "TALB",    buf + 63, 30 + 1);       //album
-    count += id3v1_set_string(s, "TDRL",    buf + 93,  4 + 1);       //date
+    count += id3v1_set_string(s, "TDRC",    buf + 93,  4 + 1);       //date
     count += id3v1_set_string(s, "comment", buf + 97, 30 + 1);
     if ((tag = av_dict_get(s->metadata, "TRCK", NULL, 0))) { //track
         buf[125] = 0;
@@ -77,8 +80,8 @@ static int id3v1_create_tag(AVFormatContext *s, uint8_t *buf)
 
 #define XING_NUM_BAGS 400
 #define XING_TOC_SIZE 100
-// maximum size of the xing frame: offset/Xing/flags/frames/size/TOC
-#define XING_MAX_SIZE (32 + 4 + 4 + 4 + 4 + XING_TOC_SIZE)
+// size of the XING/LAME data, starting from the Xing tag
+#define XING_SIZE 156
 
 typedef struct MP3Context {
     const AVClass *class;
@@ -88,7 +91,18 @@ typedef struct MP3Context {
     int write_xing;
 
     /* xing header */
-    int64_t xing_offset;
+    // a buffer containing the whole XING/LAME frame
+    uint8_t *xing_frame;
+    int      xing_frame_size;
+
+    AVCRC    audio_crc;     // CRC of the audio data
+    uint32_t audio_size;    // total size of the audio data
+
+    // offset of the XING/LAME frame in the file
+    int64_t  xing_frame_offset;
+    // offset of the XING/INFO tag in the frame
+    int xing_offset;
+
     int32_t frames;
     int32_t size;
     uint32_t want;
@@ -116,16 +130,17 @@ static int mp3_write_xing(AVFormatContext *s)
 {
     MP3Context       *mp3 = s->priv_data;
     AVCodecContext *codec = s->streams[mp3->audio_stream_idx]->codec;
-    int32_t          header;
+    AVDictionaryEntry *enc = av_dict_get(s->streams[mp3->audio_stream_idx]->metadata, "encoder", NULL, 0);
+    AVIOContext *dyn_ctx;
+    int32_t        header;
     MPADecodeHeader  mpah;
     int srate_idx, i, channels;
     int bitrate_idx;
     int best_bitrate_idx = -1;
     int best_bitrate_error = INT_MAX;
-    int xing_offset;
+    int ret;
     int ver = 0;
     int bytes_needed;
-    const char *vendor = (s->flags & AVFMT_FLAG_BITEXACT) ? "Lavf" : LIBAVFORMAT_IDENT;
 
     if (!s->pb->seekable || !mp3->write_xing)
         return 0;
@@ -178,16 +193,8 @@ static int mp3_write_xing(AVFormatContext *s)
         header |= mask;
 
         avpriv_mpegaudio_decode_header(&mpah, header);
-        xing_offset=xing_offtbl[mpah.lsf == 1][mpah.nb_channels == 1];
-        bytes_needed = 4              // header
-               + xing_offset
-               + 4              // xing tag
-               + 4              // frames/size/toc flags
-               + 4              // frames
-               + 4              // size
-               + XING_TOC_SIZE   // toc
-               + 24
-               ;
+        mp3->xing_offset = xing_offtbl[mpah.lsf == 1][mpah.nb_channels == 1] + 4;
+        bytes_needed     = mp3->xing_offset + XING_SIZE;
 
         if (bytes_needed <= mpah.frame_size)
             break;
@@ -195,32 +202,73 @@ static int mp3_write_xing(AVFormatContext *s)
         header &= ~mask;
     }
 
-    avio_wb32(s->pb, header);
+    ret = avio_open_dyn_buf(&dyn_ctx);
+    if (ret < 0)
+        return ret;
 
-    ffio_fill(s->pb, 0, xing_offset);
-    mp3->xing_offset = avio_tell(s->pb);
-    ffio_wfourcc(s->pb, "Xing");
-    avio_wb32(s->pb, 0x01 | 0x02 | 0x04);  // frames / size / TOC
+    avio_wb32(dyn_ctx, header);
+
+    ffio_fill(dyn_ctx, 0, mp3->xing_offset - 4);
+    ffio_wfourcc(dyn_ctx, "Xing");
+    avio_wb32(dyn_ctx, 0x01 | 0x02 | 0x04 | 0x08);  // frames / size / TOC / vbr scale
 
     mp3->size = mpah.frame_size;
     mp3->want=1;
     mp3->seen=0;
     mp3->pos=0;
 
-    avio_wb32(s->pb, 0);  // frames
-    avio_wb32(s->pb, 0);  // size
+    avio_wb32(dyn_ctx, 0);  // frames
+    avio_wb32(dyn_ctx, 0);  // size
 
-    // toc
-    for (i = 0; i < XING_TOC_SIZE; ++i)
-        avio_w8(s->pb, (uint8_t)(255 * i / XING_TOC_SIZE));
+    // TOC
+    for (i = 0; i < XING_TOC_SIZE; i++)
+        avio_w8(dyn_ctx, (uint8_t)(255 * i / XING_TOC_SIZE));
 
-    for (i = 0; i < strlen(vendor); ++i)
-        avio_w8(s->pb, vendor[i]);
-    for (; i < 21; ++i)
-        avio_w8(s->pb, 0);
-    avio_wb24(s->pb, FFMAX(codec->delay - 528 - 1, 0)<<12);
+    // vbr quality
+    // we write it, because some (broken) tools always expect it to be present
+    avio_wb32(dyn_ctx, 0);
 
-    ffio_fill(s->pb, 0, mpah.frame_size - bytes_needed);
+    // encoder short version string
+    if (enc) {
+        uint8_t encoder_str[9] = { 0 };
+        if (   strlen(enc->value) > sizeof(encoder_str)
+            && !strcmp("Lavc libmp3lame", enc->value)) {
+            memcpy(encoder_str, "Lavf lame", 9);
+        } else
+            memcpy(encoder_str, enc->value, FFMIN(strlen(enc->value), sizeof(encoder_str)));
+
+        avio_write(dyn_ctx, encoder_str, sizeof(encoder_str));
+    } else
+        avio_write(dyn_ctx, "Lavf\0\0\0\0\0", 9);
+
+    avio_w8(dyn_ctx, 0);      // tag revision 0 / unknown vbr method
+    avio_w8(dyn_ctx, 0);      // unknown lowpass filter value
+    ffio_fill(dyn_ctx, 0, 8); // empty replaygain fields
+    avio_w8(dyn_ctx, 0);      // unknown encoding flags
+    avio_w8(dyn_ctx, 0);      // unknown abr/minimal bitrate
+
+    // encoder delay
+    if (codec->initial_padding - 528 - 1 >= 1 << 12) {
+        av_log(s, AV_LOG_WARNING, "Too many samples of initial padding.\n");
+    }
+    avio_wb24(dyn_ctx, FFMAX(codec->initial_padding - 528 - 1, 0)<<12);
+
+    avio_w8(dyn_ctx,   0); // misc
+    avio_w8(dyn_ctx,   0); // mp3gain
+    avio_wb16(dyn_ctx, 0); // preset
+
+    // audio length and CRCs (will be updated later)
+    avio_wb32(dyn_ctx, 0); // music length
+    avio_wb16(dyn_ctx, 0); // music crc
+    avio_wb16(dyn_ctx, 0); // tag crc
+
+    ffio_fill(dyn_ctx, 0, mpah.frame_size - bytes_needed);
+
+    mp3->xing_frame_size   = avio_close_dyn_buf(dyn_ctx, &mp3->xing_frame);
+    mp3->xing_frame_offset = avio_tell(s->pb);
+    avio_write(s->pb, mp3->xing_frame, mp3->xing_frame_size);
+
+    mp3->audio_size = mp3->xing_frame_size;
 
     return 0;
 }
@@ -294,8 +342,12 @@ static int mp3_write_audio_packet(AVFormatContext *s, AVPacket *pkt)
             return 0;
 #endif
 
-        if (mp3->xing_offset)
+        if (mp3->xing_offset) {
             mp3_xing_add_frame(mp3, pkt);
+            mp3->audio_size += pkt->size;
+            mp3->audio_crc   = av_crc(av_crc_get_table(AV_CRC_16_ANSI_LE),
+                                      mp3->audio_crc, pkt->data, pkt->size);
+        }
     }
 
     return ff_raw_write_packet(s, pkt);
@@ -324,26 +376,58 @@ static int mp3_queue_flush(AVFormatContext *s)
 static void mp3_update_xing(AVFormatContext *s)
 {
     MP3Context  *mp3 = s->priv_data;
-    int i;
+    AVReplayGain *rg;
+    uint16_t tag_crc;
+    uint8_t *toc;
+    int i, rg_size;
 
     /* replace "Xing" identification string with "Info" for CBR files. */
-    if (!mp3->has_variable_bitrate) {
-        avio_seek(s->pb, mp3->xing_offset, SEEK_SET);
-        ffio_wfourcc(s->pb, "Info");
-    }
+    if (!mp3->has_variable_bitrate)
+        AV_WL32(mp3->xing_frame + mp3->xing_offset, MKTAG('I', 'n', 'f', 'o'));
 
-    avio_seek(s->pb, mp3->xing_offset + 8, SEEK_SET);
-    avio_wb32(s->pb, mp3->frames);
-    avio_wb32(s->pb, mp3->size);
+    AV_WB32(mp3->xing_frame + mp3->xing_offset + 8,  mp3->frames);
+    AV_WB32(mp3->xing_frame + mp3->xing_offset + 12, mp3->size);
 
-    avio_w8(s->pb, 0);  // first toc entry has to be zero.
-
+    toc    = mp3->xing_frame + mp3->xing_offset + 16;
+    toc[0] = 0;  // first toc entry has to be zero.
     for (i = 1; i < XING_TOC_SIZE; ++i) {
         int j = i * mp3->pos / XING_TOC_SIZE;
         int seek_point = 256LL * mp3->bag[j] / mp3->size;
-        avio_w8(s->pb, FFMIN(seek_point, 255));
+        toc[i] = FFMIN(seek_point, 255);
     }
 
+    /* write replaygain */
+    rg = (AVReplayGain*)av_stream_get_side_data(s->streams[0], AV_PKT_DATA_REPLAYGAIN,
+                                                &rg_size);
+    if (rg && rg_size >= sizeof(*rg)) {
+        uint16_t val;
+
+        AV_WB32(mp3->xing_frame + mp3->xing_offset + 131,
+                av_rescale(rg->track_peak, 1 << 23, 100000));
+
+        if (rg->track_gain != INT32_MIN) {
+            val  = FFABS(rg->track_gain / 10000) & ((1 << 9) - 1);
+            val |= (rg->track_gain < 0) << 9;
+            val |= 1 << 13;
+            AV_WB16(mp3->xing_frame + mp3->xing_offset + 135, val);
+        }
+
+        if (rg->album_gain != INT32_MIN) {
+            val  = FFABS(rg->album_gain / 10000) & ((1 << 9) - 1);
+            val |= (rg->album_gain < 0) << 9;
+            val |= 1 << 14;
+            AV_WB16(mp3->xing_frame + mp3->xing_offset + 137, val);
+        }
+    }
+
+    AV_WB32(mp3->xing_frame + mp3->xing_offset + XING_SIZE - 8, mp3->audio_size);
+    AV_WB16(mp3->xing_frame + mp3->xing_offset + XING_SIZE - 4, mp3->audio_crc);
+
+    tag_crc = av_crc(av_crc_get_table(AV_CRC_16_ANSI_LE), 0, mp3->xing_frame, 190);
+    AV_WB16(mp3->xing_frame + mp3->xing_offset + XING_SIZE - 2, tag_crc);
+
+    avio_seek(s->pb,  mp3->xing_frame_offset, SEEK_SET);
+    avio_write(s->pb, mp3->xing_frame, mp3->xing_frame_size);
     avio_seek(s->pb, 0, SEEK_END);
 }
 
@@ -365,6 +449,8 @@ static int mp3_write_trailer(struct AVFormatContext *s)
 
     if (mp3->xing_offset)
         mp3_update_xing(s);
+
+    av_freep(&mp3->xing_frame);
 
     return 0;
 }
@@ -421,8 +507,12 @@ static int mp3_write_packet(AVFormatContext *s, AVPacket *pkt)
             /* buffer audio packets until we get all the pictures */
             AVPacketList *pktl = av_mallocz(sizeof(*pktl));
             int ret;
-            if (!pktl)
-                return AVERROR(ENOMEM);
+            if (!pktl) {
+                av_log(s, AV_LOG_WARNING, "Not enough memory to buffer audio. Skipping picture streams\n");
+                mp3->pics_to_write = 0;
+                mp3_queue_flush(s);
+                return mp3_write_audio_packet(s, pkt);
+            }
 
             ret = av_copy_packet(&pktl->pkt, pkt);
             if (ret < 0) {

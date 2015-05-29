@@ -85,7 +85,7 @@ typedef struct MPADecodeContext {
     int err_recognition;
     AVCodecContext* avctx;
     MPADSPContext mpadsp;
-    AVFloatDSPContext fdsp;
+    AVFloatDSPContext *fdsp;
     AVFrame *frame;
 } MPADecodeContext;
 
@@ -279,7 +279,7 @@ static av_cold void decode_init_static(void)
         scale_factor_mult[i][0] = MULLx(norm, FIXR(1.0          * 2.0), FRAC_BITS);
         scale_factor_mult[i][1] = MULLx(norm, FIXR(0.7937005259 * 2.0), FRAC_BITS);
         scale_factor_mult[i][2] = MULLx(norm, FIXR(0.6299605249 * 2.0), FRAC_BITS);
-        av_dlog(NULL, "%d: norm=%x s=%x %x %x\n", i, norm,
+        ff_dlog(NULL, "%d: norm=%x s=%x %x %x\n", i, norm,
                 scale_factor_mult[i][0],
                 scale_factor_mult[i][1],
                 scale_factor_mult[i][2]);
@@ -381,14 +381,14 @@ static av_cold void decode_init_static(void)
             k = i & 1;
             is_table_lsf[j][k ^ 1][i] = FIXR(f);
             is_table_lsf[j][k    ][i] = FIXR(1.0);
-            av_dlog(NULL, "is_table_lsf %d %d: %f %f\n",
+            ff_dlog(NULL, "is_table_lsf %d %d: %f %f\n",
                     i, j, (float) is_table_lsf[j][0][i],
                     (float) is_table_lsf[j][1][i]);
         }
     }
 
     for (i = 0; i < 8; i++) {
-        float ci, cs, ca;
+        double ci, cs, ca;
         ci = ci_table[i];
         cs = 1.0 / sqrt(1.0 + ci * ci);
         ca = cs * ci;
@@ -406,6 +406,16 @@ static av_cold void decode_init_static(void)
     }
 }
 
+#if USE_FLOATS
+static av_cold int decode_close(AVCodecContext * avctx)
+{
+    MPADecodeContext *s = avctx->priv_data;
+    av_freep(&s->fdsp);
+
+    return 0;
+}
+#endif
+
 static av_cold int decode_init(AVCodecContext * avctx)
 {
     static int initialized_tables = 0;
@@ -418,7 +428,12 @@ static av_cold int decode_init(AVCodecContext * avctx)
 
     s->avctx = avctx;
 
-    avpriv_float_dsp_init(&s->fdsp, avctx->flags & CODEC_FLAG_BITEXACT);
+#if USE_FLOATS
+    s->fdsp = avpriv_float_dsp_alloc(avctx->flags & CODEC_FLAG_BITEXACT);
+    if (!s->fdsp)
+        return AVERROR(ENOMEM);
+#endif
+
     ff_mpadsp_init(&s->mpadsp);
 
     if (avctx->request_sample_fmt == OUT_FMT &&
@@ -569,7 +584,7 @@ static int mp_decode_layer2(MPADecodeContext *s)
     else
         bound = sblimit;
 
-    av_dlog(s->avctx, "bound=%d sblimit=%d\n", bound, sblimit);
+    ff_dlog(s->avctx, "bound=%d sblimit=%d\n", bound, sblimit);
 
     /* sanity check */
     if (bound > sblimit)
@@ -888,7 +903,7 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
 
             exponent= exponents[s_index];
 
-            av_dlog(s->avctx, "region=%d n=%d x=%d y=%d exp=%d\n",
+            ff_dlog(s->avctx, "region=%d n=%d x=%d y=%d exp=%d\n",
                     i, g->region_size[i] - j, x, y, exponent);
             if (y & 16) {
                 x = y >> 5;
@@ -954,7 +969,7 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
         last_pos = pos;
 
         code = get_vlc2(&s->gb, vlc->table, vlc->bits, 1);
-        av_dlog(s->avctx, "t=%d code=%d\n", g->count1table_select, code);
+        ff_dlog(s->avctx, "t=%d code=%d\n", g->count1table_select, code);
         g->sb_hybrid[s_index+0] =
         g->sb_hybrid[s_index+1] =
         g->sb_hybrid[s_index+2] =
@@ -1138,7 +1153,7 @@ found2:
         /* NOTE: the 1/sqrt(2) normalization factor is included in the
            global gain */
 #if USE_FLOATS
-       s->fdsp.butterflies_float(g0->sb_hybrid, g1->sb_hybrid, 576);
+       s->fdsp->butterflies_float(g0->sb_hybrid, g1->sb_hybrid, 576);
 #else
         tab0 = g0->sb_hybrid;
         tab1 = g1->sb_hybrid;
@@ -1318,7 +1333,7 @@ static int mp_decode_layer3(MPADecodeContext *s)
 
     for (gr = 0; gr < nb_granules; gr++) {
         for (ch = 0; ch < s->nb_channels; ch++) {
-            av_dlog(s->avctx, "gr=%d ch=%d: side_info\n", gr, ch);
+            ff_dlog(s->avctx, "gr=%d ch=%d: side_info\n", gr, ch);
             g = &s->granules[ch][gr];
             g->part2_3_length = get_bits(&s->gb, 12);
             g->big_values     = get_bits(&s->gb,  9);
@@ -1359,7 +1374,7 @@ static int mp_decode_layer3(MPADecodeContext *s)
                 /* compute huffman coded region sizes */
                 region_address1 = get_bits(&s->gb, 4);
                 region_address2 = get_bits(&s->gb, 3);
-                av_dlog(s->avctx, "region1=%d region2=%d\n",
+                ff_dlog(s->avctx, "region1=%d region2=%d\n",
                         region_address1, region_address2);
                 init_long_region(s, g, region_address1, region_address2);
             }
@@ -1371,7 +1386,7 @@ static int mp_decode_layer3(MPADecodeContext *s)
                 g->preflag = get_bits1(&s->gb);
             g->scalefac_scale     = get_bits1(&s->gb);
             g->count1table_select = get_bits1(&s->gb);
-            av_dlog(s->avctx, "block_type=%d switch_point=%d\n",
+            ff_dlog(s->avctx, "block_type=%d switch_point=%d\n",
                     g->block_type, g->switch_point);
         }
     }
@@ -1382,7 +1397,7 @@ static int mp_decode_layer3(MPADecodeContext *s)
         int extrasize = av_clip(get_bits_left(&s->gb) >> 3, 0, EXTRABYTES);
         av_assert1((get_bits_count(&s->gb) & 7) == 0);
         /* now we get bits from the main_data_begin offset */
-        av_dlog(s->avctx, "seekback:%d, lastbuf:%d\n",
+        ff_dlog(s->avctx, "seekback:%d, lastbuf:%d\n",
                 main_data_begin, s->last_buf_size);
 
         memcpy(s->last_buf + s->last_buf_size, ptr, extrasize);
@@ -1424,7 +1439,7 @@ static int mp_decode_layer3(MPADecodeContext *s)
                 /* MPEG1 scale factors */
                 slen1 = slen_table[0][g->scalefac_compress];
                 slen2 = slen_table[1][g->scalefac_compress];
-                av_dlog(s->avctx, "slen1=%d slen2=%d\n", slen1, slen2);
+                ff_dlog(s->avctx, "slen1=%d slen2=%d\n", slen1, slen2);
                 if (g->block_type == 2) {
                     n = g->switch_point ? 17 : 18;
                     j = 0;
@@ -1603,7 +1618,7 @@ static int mp_decode_frame(MPADecodeContext *s, OUT_INT **samples,
 
     /* get output buffer */
     if (!samples) {
-        av_assert0(s->frame != NULL);
+        av_assert0(s->frame);
         s->frame->nb_samples = s->avctx->frame_size;
         if ((ret = ff_get_buffer(s->avctx, s->frame, 0)) < 0)
             return ret;
@@ -1819,7 +1834,7 @@ static av_cold int decode_close_mp3on4(AVCodecContext * avctx)
     int i;
 
     for (i = 0; i < s->frames; i++)
-        av_free(s->mp3decctx[i]);
+        av_freep(&s->mp3decctx[i]);
 
     return 0;
 }
@@ -1831,7 +1846,7 @@ static av_cold int decode_init_mp3on4(AVCodecContext * avctx)
     MPEG4AudioConfig cfg;
     int i;
 
-    if ((avctx->extradata_size < 2) || (avctx->extradata == NULL)) {
+    if ((avctx->extradata_size < 2) || !avctx->extradata) {
         av_log(avctx, AV_LOG_ERROR, "Codec extradata missing or too short.\n");
         return AVERROR_INVALIDDATA;
     }

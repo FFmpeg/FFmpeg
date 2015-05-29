@@ -76,8 +76,12 @@ static int process(
         AudioData *src, int src_size, int *consumed){
     size_t idone, odone;
     soxr_error_t error = soxr_set_error((soxr_t)c, soxr_set_num_channels((soxr_t)c, src->ch_count));
-    error = soxr_process((soxr_t)c, src->ch, (size_t)src_size,
-            &idone, dst->ch, (size_t)dst_size, &odone);
+    if (!error)
+        error = soxr_process((soxr_t)c, src->ch, (size_t)src_size,
+                             &idone, dst->ch, (size_t)dst_size, &odone);
+    else
+        idone = 0;
+
     *consumed = (int)idone;
     return error? -1 : odone;
 }
@@ -93,7 +97,7 @@ static int invert_initial_buffer(struct ResampleContext *c, AudioData *dst, cons
     return 0;
 }
 
-struct Resampler const soxr_resampler={
+struct Resampler const swri_soxr_resampler={
     create, destroy, process, flush, NULL /* set_compensation */, get_delay,
     invert_initial_buffer,
 };

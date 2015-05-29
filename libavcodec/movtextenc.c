@@ -41,7 +41,7 @@ static av_cold int mov_text_encode_init(AVCodecContext *avctx)
      * For now, we'll use a fixed default style. When we add styling
      * support, this will be generated from the ASS style.
      */
-    static uint8_t text_sample_entry[] = {
+    static const uint8_t text_sample_entry[] = {
         0x00, 0x00, 0x00, 0x00, // uint32_t displayFlags
         0x01,                   // int8_t horizontal-justification
         0xFF,                   // int8_t vertical-justification

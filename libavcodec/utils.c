@@ -66,6 +66,9 @@
 #include "compat/os2threads.h"
 #endif
 
+#include "libavutil/ffversion.h"
+const char av_codec_ffversion[] = "FFmpeg version " FFMPEG_VERSION;
+
 #if HAVE_PTHREADS || HAVE_W32THREADS || HAVE_OS2THREADS
 static int default_lockmgr_cb(void **arg, enum AVLockOp op)
 {
@@ -119,28 +122,10 @@ static int volatile entangled_thread_counter = 0;
 static void *codec_mutex;
 static void *avformat_mutex;
 
-#if CONFIG_RAISE_MAJOR
-#    define LIBNAME "LIBAVCODEC_155"
-#else
-#    define LIBNAME "LIBAVCODEC_55"
-#endif
-
-#if FF_API_FAST_MALLOC && CONFIG_SHARED && HAVE_SYMVER
-FF_SYMVER(void*, av_fast_realloc, (void *ptr, unsigned int *size, size_t min_size), LIBNAME)
-{
-    return av_fast_realloc(ptr, size, min_size);
-}
-
-FF_SYMVER(void, av_fast_malloc, (void *ptr, unsigned int *size, size_t min_size), LIBNAME)
-{
-    av_fast_malloc(ptr, size, min_size);
-}
-#endif
-
 static inline int ff_fast_malloc(void *ptr, unsigned int *size, size_t min_size, int zero_realloc)
 {
     void **p = ptr;
-    if (min_size < *size)
+    if (min_size <= *size && *p)
         return 0;
     min_size = FFMAX(17 * min_size / 16 + 32, min_size);
     av_free(*p);
@@ -261,7 +246,7 @@ int ff_set_sar(AVCodecContext *avctx, AVRational sar)
     int ret = av_image_check_sar(avctx->width, avctx->height, sar);
 
     if (ret < 0) {
-        av_log(avctx, AV_LOG_WARNING, "ignoring invalid SAR: %u/%u\n",
+        av_log(avctx, AV_LOG_WARNING, "ignoring invalid SAR: %d/%d\n",
                sar.num, sar.den);
         avctx->sample_aspect_ratio = (AVRational){ 0, 1 };
         return ret;
@@ -297,6 +282,12 @@ void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height,
     int i;
     int w_align = 1;
     int h_align = 1;
+    AVPixFmtDescriptor const *desc = av_pix_fmt_desc_get(s->pix_fmt);
+
+    if (desc) {
+        w_align = 1 << desc->log2_chroma_w;
+        h_align = 1 << desc->log2_chroma_h;
+    }
 
     switch (s->pix_fmt) {
     case AV_PIX_FMT_YUV420P:
@@ -306,8 +297,8 @@ void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height,
     case AV_PIX_FMT_YUV422P:
     case AV_PIX_FMT_YUV440P:
     case AV_PIX_FMT_YUV444P:
-    case AV_PIX_FMT_GBRAP:
     case AV_PIX_FMT_GBRP:
+    case AV_PIX_FMT_GBRAP:
     case AV_PIX_FMT_GRAY8:
     case AV_PIX_FMT_GRAY16BE:
     case AV_PIX_FMT_GRAY16LE:
@@ -350,6 +341,10 @@ void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height,
     case AV_PIX_FMT_YUVA422P10BE:
     case AV_PIX_FMT_YUVA422P16LE:
     case AV_PIX_FMT_YUVA422P16BE:
+    case AV_PIX_FMT_YUV440P10LE:
+    case AV_PIX_FMT_YUV440P10BE:
+    case AV_PIX_FMT_YUV440P12LE:
+    case AV_PIX_FMT_YUV440P12BE:
     case AV_PIX_FMT_YUV444P9LE:
     case AV_PIX_FMT_YUV444P9BE:
     case AV_PIX_FMT_YUV444P10LE:
@@ -374,6 +369,8 @@ void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height,
     case AV_PIX_FMT_GBRP12BE:
     case AV_PIX_FMT_GBRP14LE:
     case AV_PIX_FMT_GBRP14BE:
+    case AV_PIX_FMT_GBRP16LE:
+    case AV_PIX_FMT_GBRP16BE:
         w_align = 16; //FIXME assume 16 pixel per macroblock
         h_align = 16 * 2; // interlaced needs 2 macroblocks height
         break;
@@ -381,7 +378,7 @@ void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height,
     case AV_PIX_FMT_YUVJ411P:
     case AV_PIX_FMT_UYYVYY411:
         w_align = 32;
-        h_align = 8;
+        h_align = 16 * 2;
         break;
     case AV_PIX_FMT_YUV410P:
         if (s->codec_id == AV_CODEC_ID_SVQ1) {
@@ -403,6 +400,10 @@ void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height,
             w_align = 4;
             h_align = 4;
         }
+        if (s->codec_id == AV_CODEC_ID_JV) {
+            w_align = 8;
+            h_align = 8;
+        }
         break;
     case AV_PIX_FMT_BGR24:
         if ((s->codec_id == AV_CODEC_ID_MSZH) ||
@@ -418,8 +419,6 @@ void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height,
         }
         break;
     default:
-        w_align = 1;
-        h_align = 1;
         break;
     }
 
@@ -661,7 +660,7 @@ static int video_get_buffer(AVCodecContext *s, AVFrame *pic)
     FramePool *pool = s->internal->pool;
     int i;
 
-    if (pic->data[0] != NULL) {
+    if (pic->data[0]) {
         av_log(s, AV_LOG_ERROR, "pic->data[0]!=NULL in avcodec_default_get_buffer\n");
         return -1;
     }
@@ -743,34 +742,35 @@ FF_ENABLE_DEPRECATION_WARNINGS
 int ff_init_buffer_info(AVCodecContext *avctx, AVFrame *frame)
 {
     AVPacket *pkt = avctx->internal->pkt;
+    int i;
+    static const struct {
+        enum AVPacketSideDataType packet;
+        enum AVFrameSideDataType frame;
+    } sd[] = {
+        { AV_PKT_DATA_REPLAYGAIN ,   AV_FRAME_DATA_REPLAYGAIN },
+        { AV_PKT_DATA_DISPLAYMATRIX, AV_FRAME_DATA_DISPLAYMATRIX },
+        { AV_PKT_DATA_STEREO3D,      AV_FRAME_DATA_STEREO3D },
+        { AV_PKT_DATA_AUDIO_SERVICE_TYPE, AV_FRAME_DATA_AUDIO_SERVICE_TYPE },
+    };
 
     if (pkt) {
-        uint8_t *packet_sd;
-        AVFrameSideData *frame_sd;
-        int size;
         frame->pkt_pts = pkt->pts;
         av_frame_set_pkt_pos     (frame, pkt->pos);
         av_frame_set_pkt_duration(frame, pkt->duration);
         av_frame_set_pkt_size    (frame, pkt->size);
 
-        /* copy the replaygain data to the output frame */
-        packet_sd = av_packet_get_side_data(pkt, AV_PKT_DATA_REPLAYGAIN, &size);
-        if (packet_sd) {
-            frame_sd = av_frame_new_side_data(frame, AV_FRAME_DATA_REPLAYGAIN, size);
-            if (!frame_sd)
-                return AVERROR(ENOMEM);
+        for (i = 0; i < FF_ARRAY_ELEMS(sd); i++) {
+            int size;
+            uint8_t *packet_sd = av_packet_get_side_data(pkt, sd[i].packet, &size);
+            if (packet_sd) {
+                AVFrameSideData *frame_sd = av_frame_new_side_data(frame,
+                                                                   sd[i].frame,
+                                                                   size);
+                if (!frame_sd)
+                    return AVERROR(ENOMEM);
 
-            memcpy(frame_sd->data, packet_sd, size);
-        }
-
-        /* copy the displaymatrix to the output frame */
-        packet_sd = av_packet_get_side_data(pkt, AV_PKT_DATA_DISPLAYMATRIX, &size);
-        if (packet_sd) {
-            frame_sd = av_frame_new_side_data(frame, AV_FRAME_DATA_DISPLAYMATRIX, size);
-            if (!frame_sd)
-                return AVERROR(ENOMEM);
-
-            memcpy(frame_sd->data, packet_sd, size);
+                memcpy(frame_sd->data, packet_sd, size);
+            }
         }
     } else {
         frame->pkt_pts = AV_NOPTS_VALUE;
@@ -780,7 +780,6 @@ int ff_init_buffer_info(AVCodecContext *avctx, AVFrame *frame)
     }
     frame->reordered_opaque = avctx->reordered_opaque;
 
-#if FF_API_AVFRAME_COLORSPACE
     if (frame->color_primaries == AVCOL_PRI_UNSPECIFIED)
         frame->color_primaries = avctx->color_primaries;
     if (frame->color_trc == AVCOL_TRC_UNSPECIFIED)
@@ -791,7 +790,6 @@ int ff_init_buffer_info(AVCodecContext *avctx, AVFrame *frame)
         av_frame_set_color_range(frame, avctx->color_range);
     if (frame->chroma_location == AVCHROMA_LOC_UNSPECIFIED)
         frame->chroma_location = avctx->chroma_sample_location;
-#endif
 
     switch (avctx->codec->type) {
     case AVMEDIA_TYPE_VIDEO:
@@ -897,10 +895,13 @@ static int get_buffer_internal(AVCodecContext *avctx, AVFrame *frame, int flags)
     if ((ret = ff_init_buffer_info(avctx, frame)) < 0)
         return ret;
 
-    if (hwaccel && hwaccel->alloc_frame) {
-        ret = hwaccel->alloc_frame(avctx, frame);
-        goto end;
-    }
+    if (hwaccel) {
+        if (hwaccel->alloc_frame) {
+            ret = hwaccel->alloc_frame(avctx, frame);
+            goto end;
+        }
+    } else
+        avctx->sw_pix_fmt = avctx->pix_fmt;
 
 #if FF_API_GET_BUFFER
 FF_DISABLE_DEPRECATION_WARNINGS
@@ -954,6 +955,7 @@ do {                                                                    \
     ref_out = av_buffer_create(data, data_size, compat_release_buffer,  \
                                dummy_ref, 0);                           \
     if (!ref_out) {                                                     \
+        av_buffer_unref(&dummy_ref);                                    \
         av_frame_unref(frame);                                          \
         ret = AVERROR(ENOMEM);                                          \
         goto fail;                                                      \
@@ -1160,50 +1162,91 @@ static AVHWAccel *find_hwaccel(enum AVCodecID codec_id,
     return NULL;
 }
 
+static int setup_hwaccel(AVCodecContext *avctx,
+                         const enum AVPixelFormat fmt,
+                         const char *name)
+{
+    AVHWAccel *hwa = find_hwaccel(avctx->codec_id, fmt);
+    int ret        = 0;
+
+    if (!hwa) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Could not find an AVHWAccel for the pixel format: %s",
+               name);
+        return AVERROR(ENOENT);
+    }
+
+    if (hwa->priv_data_size) {
+        avctx->internal->hwaccel_priv_data = av_mallocz(hwa->priv_data_size);
+        if (!avctx->internal->hwaccel_priv_data)
+            return AVERROR(ENOMEM);
+    }
+
+    if (hwa->init) {
+        ret = hwa->init(avctx);
+        if (ret < 0) {
+            av_freep(&avctx->internal->hwaccel_priv_data);
+            return ret;
+        }
+    }
+
+    avctx->hwaccel = hwa;
+
+    return 0;
+}
 
 int ff_get_format(AVCodecContext *avctx, const enum AVPixelFormat *fmt)
 {
     const AVPixFmtDescriptor *desc;
-    enum AVPixelFormat ret = avctx->get_format(avctx, fmt);
+    enum AVPixelFormat *choices;
+    enum AVPixelFormat ret;
+    unsigned n = 0;
 
-    desc = av_pix_fmt_desc_get(ret);
-    if (!desc)
+    while (fmt[n] != AV_PIX_FMT_NONE)
+        ++n;
+
+    av_assert0(n >= 1);
+    avctx->sw_pix_fmt = fmt[n - 1];
+    av_assert2(!is_hwaccel_pix_fmt(avctx->sw_pix_fmt));
+
+    choices = av_malloc_array(n + 1, sizeof(*choices));
+    if (!choices)
         return AV_PIX_FMT_NONE;
 
-    if (avctx->hwaccel && avctx->hwaccel->uninit)
-        avctx->hwaccel->uninit(avctx);
-    av_freep(&avctx->internal->hwaccel_priv_data);
-    avctx->hwaccel = NULL;
+    memcpy(choices, fmt, (n + 1) * sizeof(*choices));
 
-    if (desc->flags & AV_PIX_FMT_FLAG_HWACCEL &&
-        !(avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU)) {
-        AVHWAccel *hwaccel;
-        int err;
+    for (;;) {
+        if (avctx->hwaccel && avctx->hwaccel->uninit)
+            avctx->hwaccel->uninit(avctx);
+        av_freep(&avctx->internal->hwaccel_priv_data);
+        avctx->hwaccel = NULL;
 
-        hwaccel = find_hwaccel(avctx->codec_id, ret);
-        if (!hwaccel) {
-            av_log(avctx, AV_LOG_ERROR,
-                   "Could not find an AVHWAccel for the pixel format: %s",
-                   desc->name);
-            return AV_PIX_FMT_NONE;
+        ret = avctx->get_format(avctx, choices);
+
+        desc = av_pix_fmt_desc_get(ret);
+        if (!desc) {
+            ret = AV_PIX_FMT_NONE;
+            break;
         }
 
-        if (hwaccel->priv_data_size) {
-            avctx->internal->hwaccel_priv_data = av_mallocz(hwaccel->priv_data_size);
-            if (!avctx->internal->hwaccel_priv_data)
-                return AV_PIX_FMT_NONE;
-        }
+        if (!(desc->flags & AV_PIX_FMT_FLAG_HWACCEL))
+            break;
+        if (avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU)
+            break;
 
-        if (hwaccel->init) {
-            err = hwaccel->init(avctx);
-            if (err < 0) {
-                av_freep(&avctx->internal->hwaccel_priv_data);
-                return AV_PIX_FMT_NONE;
-            }
-        }
-        avctx->hwaccel = hwaccel;
+        if (!setup_hwaccel(avctx, ret, desc->name))
+            break;
+
+        /* Remove failed hwaccel from choices */
+        for (n = 0; choices[n] != ret; n++)
+            av_assert0(choices[n] != AV_PIX_FMT_NONE);
+
+        do
+            choices[n] = choices[n + 1];
+        while (choices[n++] != AV_PIX_FMT_NONE);
     }
 
+    av_freep(&choices);
     return ret;
 }
 
@@ -1243,7 +1286,7 @@ int av_codec_get_max_lowres(const AVCodec *codec)
     return codec->max_lowres;
 }
 
-static void avcodec_get_subtitle_defaults(AVSubtitle *sub)
+static void get_subtitle_defaults(AVSubtitle *sub)
 {
     memset(sub, 0, sizeof(*sub));
     sub->pts = AV_NOPTS_VALUE;
@@ -1280,7 +1323,7 @@ int attribute_align_arg ff_codec_open2_recursive(AVCodecContext *avctx, const AV
 
     ret = avcodec_open2(avctx, codec, options);
 
-    ff_lock_avcodec(avctx);
+    ff_lock_avcodec(avctx, codec);
     return ret;
 }
 
@@ -1310,7 +1353,7 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
     if (options)
         av_dict_copy(&tmp, *options, 0);
 
-    ret = ff_lock_avcodec(avctx);
+    ret = ff_lock_avcodec(avctx, codec);
     if (ret < 0)
         return ret;
 
@@ -1351,6 +1394,12 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
     }
     if ((ret = av_opt_set_dict(avctx, &tmp)) < 0)
         goto free_and_end;
+
+    if (avctx->codec_whitelist && av_match_list(codec->name, avctx->codec_whitelist, ',') <= 0) {
+        av_log(avctx, AV_LOG_ERROR, "Codec (%s) not on whitelist\n", codec->name);
+        ret = AVERROR(EINVAL);
+        goto free_and_end;
+    }
 
     // only call ff_set_dimensions() for non H.264/VP6F codecs so as not to overwrite previously setup dimensions
     if (!(avctx->coded_width && avctx->coded_height && avctx->width && avctx->height &&
@@ -1433,7 +1482,7 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
     if (CONFIG_FRAME_THREAD_ENCODER) {
         ff_unlock_avcodec(); //we will instanciate a few encoders thus kick the counter to prevent false detection of a problem
         ret = ff_frame_thread_encoder_init(avctx, options ? *options : NULL);
-        ff_lock_avcodec(avctx);
+        ff_lock_avcodec(avctx, codec);
         if (ret < 0)
             goto free_and_end;
     }
@@ -1454,6 +1503,12 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
         ret = AVERROR(EINVAL);
         goto free_and_end;
     }
+
+#if FF_API_VISMV
+    if (avctx->debug_mv)
+        av_log(avctx, AV_LOG_WARNING, "The 'vismv' option is deprecated, "
+               "see the codecview filter instead.\n");
+#endif
 
     if (av_codec_is_encoder(avctx->codec)) {
         int i;
@@ -1491,6 +1546,12 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
                 ret = AVERROR(EINVAL);
                 goto free_and_end;
             }
+            if (avctx->codec->pix_fmts[i] == AV_PIX_FMT_YUVJ420P ||
+                avctx->codec->pix_fmts[i] == AV_PIX_FMT_YUVJ411P ||
+                avctx->codec->pix_fmts[i] == AV_PIX_FMT_YUVJ422P ||
+                avctx->codec->pix_fmts[i] == AV_PIX_FMT_YUVJ440P ||
+                avctx->codec->pix_fmts[i] == AV_PIX_FMT_YUVJ444P)
+                avctx->color_range = AVCOL_RANGE_JPEG;
         }
         if (avctx->codec->supported_samplerates) {
             for (i = 0; avctx->codec->supported_samplerates[i] != 0; i++)
@@ -1533,9 +1594,7 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
         } else if (avctx->channel_layout) {
             avctx->channels = av_get_channel_layout_nb_channels(avctx->channel_layout);
         }
-        if(avctx->codec_type == AVMEDIA_TYPE_VIDEO &&
-           avctx->codec_id != AV_CODEC_ID_PNG // For mplayer
-        ) {
+        if(avctx->codec_type == AVMEDIA_TYPE_VIDEO) {
             if (avctx->width <= 0 || avctx->height <= 0) {
                 av_log(avctx, AV_LOG_ERROR, "dimensions not set\n");
                 ret = AVERROR(EINVAL);
@@ -1556,6 +1615,11 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
     avctx->pts_correction_last_pts =
     avctx->pts_correction_last_dts = INT64_MIN;
 
+    if (   !CONFIG_GRAY && avctx->flags & CODEC_FLAG_GRAY
+        && avctx->codec_descriptor->type == AVMEDIA_TYPE_VIDEO)
+        av_log(avctx, AV_LOG_WARNING,
+               "gray decoding requested but not enabled at configuration time\n");
+
     if (   avctx->codec->init && (!(avctx->active_thread_type&FF_THREAD_FRAME)
         || avctx->internal->frame_thread_encoder)) {
         ret = avctx->codec->init(avctx);
@@ -1565,6 +1629,11 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
     }
 
     ret=0;
+
+#if FF_API_AUDIOENC_DELAY
+    if (av_codec_is_encoder(avctx->codec))
+        avctx->delay = avctx->initial_padding;
+#endif
 
     if (av_codec_is_decoder(avctx->codec)) {
         if (!avctx->bit_rate)
@@ -1610,9 +1679,9 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
 #if CONFIG_ICONV
                     iconv_t cd = iconv_open("UTF-8", avctx->sub_charenc);
                     if (cd == (iconv_t)-1) {
+                        ret = AVERROR(errno);
                         av_log(avctx, AV_LOG_ERROR, "Unable to open iconv context "
                                "with input character encoding \"%s\"\n", avctx->sub_charenc);
-                        ret = AVERROR(errno);
                         goto free_and_end;
                     }
                     iconv_close(cd);
@@ -1626,7 +1695,16 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
                 }
             }
         }
+
+#if FF_API_AVCTX_TIMEBASE
+        if (avctx->framerate.num > 0 && avctx->framerate.den > 0)
+            avctx->time_base = av_inv_q(av_mul_q(avctx->framerate, (AVRational){avctx->ticks_per_frame, 1}));
+#endif
     }
+    if (codec->priv_data_size > 0 && avctx->priv_data && codec->priv_class) {
+        av_assert0(*(const AVClass **)avctx->priv_data == codec->priv_class);
+    }
+
 end:
     ff_unlock_avcodec();
     if (options) {
@@ -1636,6 +1714,14 @@ end:
 
     return ret;
 free_and_end:
+    if (avctx->codec &&
+        (avctx->codec->caps_internal & FF_CODEC_CAP_INIT_CLEANUP))
+        avctx->codec->close(avctx);
+
+    if (codec->priv_class && codec->priv_data_size)
+        av_opt_free(avctx->priv_data);
+    av_opt_free(avctx);
+
     av_dict_free(&tmp);
     av_freep(&avctx->priv_data);
     if (avctx->internal) {
@@ -1787,6 +1873,13 @@ int attribute_align_arg avcodec_encode_audio2(AVCodecContext *avctx,
         frame = extended_frame;
     }
 
+    /* extract audio service type metadata */
+    if (frame) {
+        AVFrameSideData *sd = av_frame_get_side_data(frame, AV_FRAME_DATA_AUDIO_SERVICE_TYPE);
+        if (sd && sd->size >= sizeof(enum AVAudioServiceType))
+            avctx->audio_service_type = *(enum AVAudioServiceType*)sd->data;
+    }
+
     /* check for valid frame size */
     if (frame) {
         if (avctx->codec->capabilities & CODEC_CAP_SMALL_LAST_FRAME) {
@@ -1877,6 +1970,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
 end:
     av_frame_free(&padded_frame);
     av_free(extended_frame);
+
+#if FF_API_AUDIOENC_DELAY
+    avctx->delay = avctx->initial_padding;
+#endif
 
     return ret;
 }
@@ -2028,6 +2125,11 @@ int attribute_align_arg avcodec_encode_video2(AVCodecContext *avctx,
 
     if (av_image_check_size(avctx->width, avctx->height, 0, avctx))
         return AVERROR(EINVAL);
+
+    if (frame && frame->format == AV_PIX_FMT_NONE)
+        av_log(avctx, AV_LOG_WARNING, "AVFrame.format is not set\n");
+    if (frame && (frame->width == 0 || frame->height == 0))
+        av_log(avctx, AV_LOG_WARNING, "AVFrame.width or height is not set\n");
 
     av_assert0(avctx->codec->encode2);
 
@@ -2332,6 +2434,11 @@ fail:
      * make sure it's set correctly */
     av_assert0(!picture->extended_data || picture->extended_data == picture->data);
 
+#if FF_API_AVCTX_TIMEBASE
+    if (avctx->framerate.num > 0 && avctx->framerate.den > 0)
+        avctx->time_base = av_inv_q(av_mul_q(avctx->framerate, (AVRational){avctx->ticks_per_frame, 1}));
+#endif
+
     return ret;
 }
 
@@ -2415,6 +2522,8 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
         uint8_t *side;
         int side_size;
         uint32_t discard_padding = 0;
+        uint8_t skip_reason = 0;
+        uint8_t discard_reason = 0;
         // copy to ensure we do not change avpkt
         AVPacket tmp = *avpkt;
         int did_split = av_packet_split_side_data(&tmp);
@@ -2452,11 +2561,14 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
         side= av_packet_get_side_data(avctx->internal->pkt, AV_PKT_DATA_SKIP_SAMPLES, &side_size);
         if(side && side_size>=10) {
             avctx->internal->skip_samples = AV_RL32(side);
-            av_log(avctx, AV_LOG_DEBUG, "skip %d samples due to side data\n",
-                   avctx->internal->skip_samples);
             discard_padding = AV_RL32(side + 4);
+            av_log(avctx, AV_LOG_DEBUG, "skip %d / discard %d samples due to side data\n",
+                   avctx->internal->skip_samples, (int)discard_padding);
+            skip_reason = AV_RL8(side + 8);
+            discard_reason = AV_RL8(side + 9);
         }
-        if (avctx->internal->skip_samples && *got_frame_ptr) {
+        if (avctx->internal->skip_samples && *got_frame_ptr &&
+            !(avctx->flags2 & CODEC_FLAG2_SKIP_MANUAL)) {
             if(frame->nb_samples <= avctx->internal->skip_samples){
                 *got_frame_ptr = 0;
                 avctx->internal->skip_samples -= frame->nb_samples;
@@ -2485,7 +2597,8 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
             }
         }
 
-        if (discard_padding > 0 && discard_padding <= frame->nb_samples && *got_frame_ptr) {
+        if (discard_padding > 0 && discard_padding <= frame->nb_samples && *got_frame_ptr &&
+            !(avctx->flags2 & CODEC_FLAG2_SKIP_MANUAL)) {
             if (discard_padding == frame->nb_samples) {
                 *got_frame_ptr = 0;
             } else {
@@ -2499,8 +2612,19 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
                     av_log(avctx, AV_LOG_WARNING, "Could not update timestamps for discarded samples.\n");
                 }
                 av_log(avctx, AV_LOG_DEBUG, "discard %d/%d samples\n",
-                       discard_padding, frame->nb_samples);
+                       (int)discard_padding, frame->nb_samples);
                 frame->nb_samples -= discard_padding;
+            }
+        }
+
+        if ((avctx->flags2 & CODEC_FLAG2_SKIP_MANUAL) && *got_frame_ptr) {
+            AVFrameSideData *fside = av_frame_new_side_data(frame, AV_FRAME_DATA_SKIP_SAMPLES, 10);
+            if (fside) {
+                AV_WL32(fside->data, avctx->internal->skip_samples);
+                AV_WL32(fside->data + 4, discard_padding);
+                AV_WL8(fside->data + 8, skip_reason);
+                AV_WL8(fside->data + 9, discard_reason);
+                avctx->internal->skip_samples = 0;
             }
         }
 fail:
@@ -2564,10 +2688,10 @@ static int recode_subtitle(AVCodecContext *avctx,
     if (iconv(cd, &inb, &inl, &outb, &outl) == (size_t)-1 ||
         iconv(cd, NULL, NULL, &outb, &outl) == (size_t)-1 ||
         outl >= outpkt->size || inl != 0) {
+        ret = FFMIN(AVERROR(errno), -1);
         av_log(avctx, AV_LOG_ERROR, "Unable to recode subtitle event \"%s\" "
                "from %s to UTF-8\n", inpkt->data, avctx->sub_charenc);
         av_free_packet(&tmp);
-        ret = AVERROR(errno);
         goto end;
     }
     outpkt->size -= outl;
@@ -2620,7 +2744,7 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
     }
 
     *got_sub_ptr = 0;
-    avcodec_get_subtitle_defaults(sub);
+    get_subtitle_defaults(sub);
 
     if ((avctx->codec->capabilities & CODEC_CAP_DELAY) || avpkt->size) {
         AVPacket pkt_recoded;
@@ -2889,7 +3013,9 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
     const char *profile = NULL;
     const AVCodec *p;
     int bitrate;
+    int new_line = 0;
     AVRational display_aspect_ratio;
+    const char *separator = enc->dump_separator ? (const char *)enc->dump_separator : ", ";
 
     if (!buf || buf_size <= 0)
         return;
@@ -2914,6 +3040,13 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
 
     if (profile)
         snprintf(buf + strlen(buf), buf_size - strlen(buf), " (%s)", profile);
+    if (   enc->codec_type == AVMEDIA_TYPE_VIDEO
+        && av_log_get_level() >= AV_LOG_VERBOSE
+        && enc->refs)
+        snprintf(buf + strlen(buf), buf_size - strlen(buf),
+                 ", %d reference frame%s",
+                 enc->refs, enc->refs > 1 ? "s" : "");
+
     if (enc->codec_tag) {
         char tag_buf[32];
         av_get_codec_tag_string(tag_buf, sizeof(tag_buf), enc->codec_tag);
@@ -2923,32 +3056,60 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
 
     switch (enc->codec_type) {
     case AVMEDIA_TYPE_VIDEO:
-        if (enc->pix_fmt != AV_PIX_FMT_NONE) {
+        {
             char detail[256] = "(";
-            const char *colorspace_name;
+
+            av_strlcat(buf, separator, buf_size);
+
             snprintf(buf + strlen(buf), buf_size - strlen(buf),
-                     ", %s",
+                 "%s", enc->pix_fmt == AV_PIX_FMT_NONE ? "none" :
                      av_get_pix_fmt_name(enc->pix_fmt));
-            if (enc->bits_per_raw_sample &&
+            if (enc->bits_per_raw_sample && enc->pix_fmt != AV_PIX_FMT_NONE &&
                 enc->bits_per_raw_sample <= av_pix_fmt_desc_get(enc->pix_fmt)->comp[0].depth_minus1)
                 av_strlcatf(detail, sizeof(detail), "%d bpc, ", enc->bits_per_raw_sample);
             if (enc->color_range != AVCOL_RANGE_UNSPECIFIED)
-                av_strlcatf(detail, sizeof(detail),
-                            enc->color_range == AVCOL_RANGE_MPEG ? "tv, ": "pc, ");
+                av_strlcatf(detail, sizeof(detail), "%s, ",
+                            av_color_range_name(enc->color_range));
 
-            colorspace_name = av_get_colorspace_name(enc->colorspace);
-            if (colorspace_name)
-                av_strlcatf(detail, sizeof(detail), "%s, ", colorspace_name);
+            if (enc->colorspace != AVCOL_SPC_UNSPECIFIED ||
+                enc->color_primaries != AVCOL_PRI_UNSPECIFIED ||
+                enc->color_trc != AVCOL_TRC_UNSPECIFIED) {
+                if (enc->colorspace != (int)enc->color_primaries ||
+                    enc->colorspace != (int)enc->color_trc) {
+                    new_line = 1;
+                    av_strlcatf(detail, sizeof(detail), "%s/%s/%s, ",
+                                av_color_space_name(enc->colorspace),
+                                av_color_primaries_name(enc->color_primaries),
+                                av_color_transfer_name(enc->color_trc));
+                } else
+                    av_strlcatf(detail, sizeof(detail), "%s, ",
+                                av_get_colorspace_name(enc->colorspace));
+            }
+
+            if (av_log_get_level() >= AV_LOG_DEBUG &&
+                enc->chroma_sample_location != AVCHROMA_LOC_UNSPECIFIED)
+                av_strlcatf(detail, sizeof(detail), "%s, ",
+                            av_chroma_location_name(enc->chroma_sample_location));
 
             if (strlen(detail) > 1) {
                 detail[strlen(detail) - 2] = 0;
                 av_strlcatf(buf, buf_size, "%s)", detail);
             }
         }
+
         if (enc->width) {
+            av_strlcat(buf, new_line ? separator : ", ", buf_size);
+
             snprintf(buf + strlen(buf), buf_size - strlen(buf),
-                     ", %dx%d",
+                     "%dx%d",
                      enc->width, enc->height);
+
+            if (av_log_get_level() >= AV_LOG_VERBOSE &&
+                (enc->width != enc->coded_width ||
+                 enc->height != enc->coded_height))
+                snprintf(buf + strlen(buf), buf_size - strlen(buf),
+                         " (%dx%d)", enc->coded_width, enc->coded_height);
+
             if (enc->sample_aspect_ratio.num) {
                 av_reduce(&display_aspect_ratio.num, &display_aspect_ratio.den,
                           enc->width * enc->sample_aspect_ratio.num,
@@ -2972,16 +3133,21 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
         }
         break;
     case AVMEDIA_TYPE_AUDIO:
+        av_strlcat(buf, separator, buf_size);
+
         if (enc->sample_rate) {
             snprintf(buf + strlen(buf), buf_size - strlen(buf),
-                     ", %d Hz", enc->sample_rate);
+                     "%d Hz, ", enc->sample_rate);
         }
-        av_strlcat(buf, ", ", buf_size);
         av_get_channel_layout_string(buf + strlen(buf), buf_size - strlen(buf), enc->channels, enc->channel_layout);
         if (enc->sample_fmt != AV_SAMPLE_FMT_NONE) {
             snprintf(buf + strlen(buf), buf_size - strlen(buf),
                      ", %s", av_get_sample_fmt_name(enc->sample_fmt));
         }
+        if (   enc->bits_per_raw_sample > 0
+            && enc->bits_per_raw_sample != av_get_bytes_per_sample(enc->sample_fmt) * 8)
+            snprintf(buf + strlen(buf), buf_size - strlen(buf),
+                     " (%d bit)", enc->bits_per_raw_sample);
         break;
     case AVMEDIA_TYPE_DATA:
         if (av_log_get_level() >= AV_LOG_DEBUG) {
@@ -3197,6 +3363,7 @@ int av_get_audio_frame_duration(AVCodecContext *avctx, int frame_bytes)
     case AV_CODEC_ID_MP1:          return  384;
     case AV_CODEC_ID_ATRAC1:       return  512;
     case AV_CODEC_ID_ATRAC3:       return 1024;
+    case AV_CODEC_ID_ATRAC3P:      return 2048;
     case AV_CODEC_ID_MP2:
     case AV_CODEC_ID_MUSEPACK7:    return 1152;
     case AV_CODEC_ID_AC3:          return 1536;
@@ -3328,6 +3495,17 @@ int av_get_audio_frame_duration(AVCodecContext *avctx, int frame_bytes)
         }
     }
 
+    /* Fall back on using frame_size */
+    if (avctx->frame_size > 1 && frame_bytes)
+        return avctx->frame_size;
+
+    //For WMA we currently have no other means to calculate duration thus we
+    //do it here by assuming CBR, which is true for all known cases.
+    if (avctx->bit_rate>0 && frame_bytes>0 && avctx->sample_rate>0 && avctx->block_align>1) {
+        if (avctx->codec_id == AV_CODEC_ID_WMAV1 || avctx->codec_id == AV_CODEC_ID_WMAV2)
+            return  (frame_bytes * 8LL * avctx->sample_rate) / avctx->bit_rate;
+    }
+
     return 0;
 }
 
@@ -3409,32 +3587,48 @@ AVHWAccel *av_hwaccel_next(const AVHWAccel *hwaccel)
 int av_lockmgr_register(int (*cb)(void **mutex, enum AVLockOp op))
 {
     if (lockmgr_cb) {
-        if (lockmgr_cb(&codec_mutex, AV_LOCK_DESTROY))
-            return -1;
-        if (lockmgr_cb(&avformat_mutex, AV_LOCK_DESTROY))
-            return -1;
+        // There is no good way to rollback a failure to destroy the
+        // mutex, so we ignore failures.
+        lockmgr_cb(&codec_mutex,    AV_LOCK_DESTROY);
+        lockmgr_cb(&avformat_mutex, AV_LOCK_DESTROY);
+        lockmgr_cb     = NULL;
+        codec_mutex    = NULL;
+        avformat_mutex = NULL;
     }
 
-    lockmgr_cb = cb;
-
-    if (lockmgr_cb) {
-        if (lockmgr_cb(&codec_mutex, AV_LOCK_CREATE))
-            return -1;
-        if (lockmgr_cb(&avformat_mutex, AV_LOCK_CREATE))
-            return -1;
+    if (cb) {
+        void *new_codec_mutex    = NULL;
+        void *new_avformat_mutex = NULL;
+        int err;
+        if (err = cb(&new_codec_mutex, AV_LOCK_CREATE)) {
+            return err > 0 ? AVERROR_UNKNOWN : err;
+        }
+        if (err = cb(&new_avformat_mutex, AV_LOCK_CREATE)) {
+            // Ignore failures to destroy the newly created mutex.
+            cb(&new_codec_mutex, AV_LOCK_DESTROY);
+            return err > 0 ? AVERROR_UNKNOWN : err;
+        }
+        lockmgr_cb     = cb;
+        codec_mutex    = new_codec_mutex;
+        avformat_mutex = new_avformat_mutex;
     }
+
     return 0;
 }
 
-int ff_lock_avcodec(AVCodecContext *log_ctx)
+int ff_lock_avcodec(AVCodecContext *log_ctx, const AVCodec *codec)
 {
     if (lockmgr_cb) {
         if ((*lockmgr_cb)(&codec_mutex, AV_LOCK_OBTAIN))
             return -1;
     }
-    entangled_thread_counter++;
-    if (entangled_thread_counter != 1) {
-        av_log(log_ctx, AV_LOG_ERROR, "Insufficient thread locking around avcodec_open/close()\n");
+
+    if (avpriv_atomic_int_add_and_fetch(&entangled_thread_counter, 1) != 1 &&
+        !(codec->caps_internal & FF_CODEC_CAP_INIT_THREADSAFE)) {
+        av_log(log_ctx, AV_LOG_ERROR,
+               "Insufficient thread locking. At least %d threads are "
+               "calling avcodec_open2() at the same time right now.\n",
+               entangled_thread_counter);
         if (!lockmgr_cb)
             av_log(log_ctx, AV_LOG_ERROR, "No lock manager is set, please see av_lockmgr_register()\n");
         ff_avcodec_locked = 1;
@@ -3450,11 +3644,12 @@ int ff_unlock_avcodec(void)
 {
     av_assert0(ff_avcodec_locked);
     ff_avcodec_locked = 0;
-    entangled_thread_counter--;
+    avpriv_atomic_int_add_and_fetch(&entangled_thread_counter, -1);
     if (lockmgr_cb) {
         if ((*lockmgr_cb)(&codec_mutex, AV_LOCK_RELEASE))
             return -1;
     }
+
     return 0;
 }
 
@@ -3493,6 +3688,8 @@ int ff_thread_ref_frame(ThreadFrame *dst, ThreadFrame *src)
     ret = av_frame_ref(dst->f, src->f);
     if (ret < 0)
         return ret;
+
+    av_assert0(!dst->progress);
 
     if (src->progress &&
         !(dst->progress = av_buffer_ref(src->progress))) {
@@ -3591,6 +3788,11 @@ int avpriv_bprint_to_extradata(AVCodecContext *avctx, struct AVBPrint *buf)
     ret = av_bprint_finalize(buf, &str);
     if (ret < 0)
         return ret;
+    if (!av_bprint_is_complete(buf)) {
+        av_free(str);
+        return AVERROR(ENOMEM);
+    }
+
     avctx->extradata = str;
     /* Note: the string is NUL terminated (so extradata can be read as a
      * string), but the ending character is not accounted in the size (in

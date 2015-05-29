@@ -107,7 +107,7 @@ AVFILTER_DEFINE_CLASS(vidstabtransform);
 static av_cold int init(AVFilterContext *ctx)
 {
     TransformContext *tc = ctx->priv;
-    vs_set_mem_and_log_functions();
+    ff_vs_init();
     tc->class = &vidstabtransform_class;
     av_log(ctx, AV_LOG_VERBOSE, "vidstabtransform filter: init %s\n", LIBVIDSTAB_VERSION);
     return 0;
@@ -132,8 +132,10 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_NONE
     };
 
-    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
-    return 0;
+    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
+    if (!fmts_list)
+        return AVERROR(ENOMEM);
+    return ff_set_common_formats(ctx, fmts_list);
 }
 
 
@@ -151,9 +153,9 @@ static int config_input(AVFilterLink *inlink)
     VSFrameInfo fi_dest;
 
     if (!vsFrameInfoInit(&fi_src, inlink->w, inlink->h,
-                         av_2_vs_pixel_format(ctx, inlink->format)) ||
+                         ff_av2vs_pixfmt(ctx, inlink->format)) ||
         !vsFrameInfoInit(&fi_dest, inlink->w, inlink->h,
-                         av_2_vs_pixel_format(ctx, inlink->format))) {
+                         ff_av2vs_pixfmt(ctx, inlink->format))) {
         av_log(ctx, AV_LOG_ERROR, "unknown pixel format: %i (%s)",
                inlink->format, desc->name);
         return AVERROR(EINVAL);
@@ -207,9 +209,10 @@ static int config_input(AVFilterLink *inlink)
     av_log(ctx, AV_LOG_INFO, "    interpol  = %s\n", getInterpolationTypeName(tc->conf.interpolType));
 
     f = fopen(tc->input, "r");
-    if (f == NULL) {
+    if (!f) {
+        int ret = AVERROR(errno);
         av_log(ctx, AV_LOG_ERROR, "cannot open input file %s\n", tc->input);
-        return AVERROR(errno);
+        return ret;
     } else {
         VSManyLocalMotions mlms;
         if (vsReadLocalMotionsFile(f, &mlms) == VS_OK) {

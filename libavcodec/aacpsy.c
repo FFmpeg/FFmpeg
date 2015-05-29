@@ -162,7 +162,7 @@ typedef struct AacPsyContext{
 /**
  * LAME psy model preset struct
  */
-typedef struct {
+typedef struct PsyLamePreset {
     int   quality;  ///< Quality to map the rest of the vaules to.
      /* This is overloaded to be both kbps per channel in ABR mode, and
       * requested quality in constant quality mode.
@@ -313,7 +313,7 @@ static av_cold int psy_3gpp_init(FFPsyContext *ctx) {
     ctx->bitres.size   = 6144 - pctx->frame_bits;
     ctx->bitres.size  -= ctx->bitres.size % 8;
     pctx->fill_level   = ctx->bitres.size;
-    minath = ath(3410, ATH_ADD);
+    minath = ath(3410 - 0.733 * ATH_ADD, ATH_ADD);
     for (j = 0; j < 2; j++) {
         AacPsyCoeffs *coeffs = pctx->psy_coef[j];
         const uint8_t *band_sizes = ctx->bands[j];
@@ -717,7 +717,7 @@ static void psy_3gpp_analyze_channel(FFPsyContext *ctx, int channel,
             }
             desired_pe_no_ah = FFMAX(desired_pe - (pe - pe_no_ah), 0.0f);
             if (active_lines > 0.0f)
-                reduction += calc_reduction_3gpp(a, desired_pe_no_ah, pe_no_ah, active_lines);
+                reduction = calc_reduction_3gpp(a, desired_pe_no_ah, pe_no_ah, active_lines);
 
             pe = 0.0f;
             for (w = 0; w < wi->num_windows*16; w += 16) {
@@ -727,7 +727,10 @@ static void psy_3gpp_analyze_channel(FFPsyContext *ctx, int channel,
                     if (active_lines > 0.0f)
                         band->thr = calc_reduced_thr_3gpp(band, coeffs[g].min_snr, reduction);
                     pe += calc_pe_3gpp(band);
-                    band->norm_fac = band->active_lines / band->thr;
+                    if (band->thr > 0.0f)
+                        band->norm_fac = band->active_lines / band->thr;
+                    else
+                        band->norm_fac = 0.0f;
                     norm_fac += band->norm_fac;
                 }
             }

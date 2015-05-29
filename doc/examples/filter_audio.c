@@ -45,6 +45,7 @@
 
 #include "libavutil/channel_layout.h"
 #include "libavutil/md5.h"
+#include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/samplefmt.h"
 

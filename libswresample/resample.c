@@ -338,7 +338,7 @@ static int multiple_resample(ResampleContext *c, AudioData *dst, int dst_size, A
 static int64_t get_delay(struct SwrContext *s, int64_t base){
     ResampleContext *c = s->resample;
     int64_t num = s->in_buffer_count - (c->filter_length-1)/2;
-    num <<= c->phase_shift;
+    num *= 1 << c->phase_shift;
     num -= c->index;
     num *= c->src_incr;
     num -= c->frac;
@@ -399,11 +399,11 @@ static int invert_initial_buffer(ResampleContext *c, AudioData *dst, const Audio
 
     res = num - *out_sz;
     *out_idx = c->filter_length + (c->index >> c->phase_shift);
-    *out_sz = 1 + c->filter_length * 2 - *out_idx;
+    *out_sz = FFMAX(*out_sz + c->filter_length,
+                    1 + c->filter_length * 2) - *out_idx;
     c->index &= c->phase_mask;
-    av_assert1(res > 0);
 
-    return res;
+    return FFMAX(res, 0);
 }
 
 struct Resampler const swri_resampler={

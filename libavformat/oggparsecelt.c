@@ -74,7 +74,7 @@ static int celt_header(AVFormatContext *s, int idx)
     } else if (priv && priv->extra_headers_left) {
         /* Extra headers (vorbiscomment) */
 
-        ff_vorbis_comment(s, &st->metadata, p, os->psize, 1);
+        ff_vorbis_stream_comment(s, st, p, os->psize);
         priv->extra_headers_left--;
         return 1;
     } else {

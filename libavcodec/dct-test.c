@@ -42,6 +42,7 @@
 #include "dct.h"
 #include "idctdsp.h"
 #include "simple_idct.h"
+#include "xvididct.h"
 #include "aandcttab.h"
 #include "faandct.h"
 #include "faanidct.h"
@@ -57,13 +58,15 @@ struct algo {
 
 static const struct algo fdct_tab[] = {
     { "REF-DBL",     ff_ref_fdct,          FF_IDCT_PERM_NONE },
-    { "FAAN",        ff_faandct,           FF_IDCT_PERM_NONE },
     { "IJG-AAN-INT", ff_fdct_ifast,        FF_IDCT_PERM_NONE },
     { "IJG-LLM-INT", ff_jpeg_fdct_islow_8, FF_IDCT_PERM_NONE },
+#if CONFIG_FAANDCT
+    { "FAAN",        ff_faandct,           FF_IDCT_PERM_NONE },
+#endif /* CONFIG_FAANDCT */
 };
 
 static void ff_prores_idct_wrap(int16_t *dst){
-    DECLARE_ALIGNED(16, static int16_t, qmat)[64];
+    LOCAL_ALIGNED(16, int16_t, qmat, [64]);
     int i;
 
     for(i=0; i<64; i++){
@@ -76,11 +79,16 @@ static void ff_prores_idct_wrap(int16_t *dst){
 }
 
 static const struct algo idct_tab[] = {
-    { "FAANI",       ff_faanidct,          FF_IDCT_PERM_NONE },
     { "REF-DBL",     ff_ref_idct,          FF_IDCT_PERM_NONE },
     { "INT",         ff_j_rev_dct,         FF_IDCT_PERM_LIBMPEG2 },
     { "SIMPLE-C",    ff_simple_idct_8,     FF_IDCT_PERM_NONE },
     { "PR-C",        ff_prores_idct_wrap,  FF_IDCT_PERM_NONE, 0, 1 },
+#if CONFIG_FAANIDCT
+    { "FAANI",       ff_faanidct,          FF_IDCT_PERM_NONE },
+#endif /* CONFIG_FAANIDCT */
+#if CONFIG_MPEG4_DECODER
+    { "XVID",        ff_xvid_idct,         FF_IDCT_PERM_NONE, 0, 1 },
+#endif /* CONFIG_MPEG4_DECODER */
 };
 
 #if ARCH_ARM
@@ -90,8 +98,8 @@ static const struct algo idct_tab[] = {
 #elif ARCH_X86
 #include "x86/dct-test.c"
 #else
-static const struct algo fdct_tab_arch[] = { 0 };
-static const struct algo idct_tab_arch[] = { 0 };
+static const struct algo fdct_tab_arch[] = { { 0 } };
+static const struct algo idct_tab_arch[] = { { 0 } };
 #endif
 
 #define AANSCALE_BITS 12

@@ -28,6 +28,11 @@
 #include "config.h"
 
 #include "dxva2.h"
+
+#if CONFIG_D3D11VA
+#include "d3d11va.h"
+#endif
+
 #if HAVE_DXVA_H
 #include <dxva.h>
 #endif
@@ -35,13 +40,48 @@
 #include "avcodec.h"
 #include "mpegvideo.h"
 
+typedef void DECODER_BUFFER_DESC;
+
+typedef union {
+#if CONFIG_D3D11VA
+    struct AVD3D11VAContext  d3d11va;
+#endif
+    struct dxva_context      dxva2;
+} AVDXVAContext;
+
+#define DXVA2_CONTEXT(ctx)   (&ctx->dxva2)
+
+#if CONFIG_D3D11VA
+#define D3D11VA_CONTEXT(ctx) (&ctx->d3d11va)
+#define DXVA_CONTEXT_WORKAROUND(avctx, ctx)     (avctx->pix_fmt == AV_PIX_FMT_D3D11VA_VLD ? ctx->d3d11va.workaround : ctx->dxva2.workaround)
+#define DXVA_CONTEXT_COUNT(avctx, ctx)          (avctx->pix_fmt == AV_PIX_FMT_D3D11VA_VLD ? ctx->d3d11va.surface_count : ctx->dxva2.surface_count)
+#define DXVA_CONTEXT_SURFACE(avctx, ctx, i)     (avctx->pix_fmt == AV_PIX_FMT_D3D11VA_VLD ? ctx->d3d11va.surface[i] : ctx->dxva2.surface[i])
+#define DXVA_CONTEXT_DECODER(avctx, ctx)        (avctx->pix_fmt == AV_PIX_FMT_D3D11VA_VLD ? ctx->d3d11va.decoder : ctx->dxva2.decoder)
+#define DXVA_CONTEXT_REPORT_ID(avctx, ctx)      (*(avctx->pix_fmt == AV_PIX_FMT_D3D11VA_VLD ? &ctx->d3d11va.report_id : &ctx->dxva2.report_id))
+#define DXVA_CONTEXT_CFG(avctx, ctx)            (avctx->pix_fmt == AV_PIX_FMT_D3D11VA_VLD ? ctx->d3d11va.cfg : ctx->dxva2.cfg)
+#define DXVA_CONTEXT_CFG_BITSTREAM(avctx, ctx)  (avctx->pix_fmt == AV_PIX_FMT_D3D11VA_VLD ? ctx->d3d11va.cfg->ConfigBitstreamRaw : ctx->dxva2.cfg->ConfigBitstreamRaw)
+#define DXVA_CONTEXT_CFG_INTRARESID(avctx, ctx) (avctx->pix_fmt == AV_PIX_FMT_D3D11VA_VLD ? ctx->d3d11va.cfg->ConfigIntraResidUnsigned : ctx->dxva2.cfg->ConfigIntraResidUnsigned)
+#define DXVA_CONTEXT_CFG_RESIDACCEL(avctx, ctx) (avctx->pix_fmt == AV_PIX_FMT_D3D11VA_VLD ? ctx->d3d11va.cfg->ConfigResidDiffAccelerator : ctx->dxva2.cfg->ConfigResidDiffAccelerator)
+#else
+#define DXVA_CONTEXT_WORKAROUND(avctx, ctx)     (ctx->dxva2.workaround)
+#define DXVA_CONTEXT_COUNT(avctx, ctx)          (ctx->dxva2.surface_count)
+#define DXVA_CONTEXT_SURFACE(avctx, ctx, i)     (ctx->dxva2.surface[i])
+#define DXVA_CONTEXT_DECODER(avctx, ctx)        (ctx->dxva2.decoder)
+#define DXVA_CONTEXT_REPORT_ID(avctx, ctx)      (*(&ctx->dxva2.report_id))
+#define DXVA_CONTEXT_CFG(avctx, ctx)            (ctx->dxva2.cfg)
+#define DXVA_CONTEXT_CFG_BITSTREAM(avctx, ctx)  (ctx->dxva2.cfg->ConfigBitstreamRaw)
+#define DXVA_CONTEXT_CFG_INTRARESID(avctx, ctx) (ctx->dxva2.cfg->ConfigIntraResidUnsigned)
+#define DXVA_CONTEXT_CFG_RESIDACCEL(avctx, ctx) (ctx->dxva2.cfg->ConfigResidDiffAccelerator)
+#endif
+
 void *ff_dxva2_get_surface(const AVFrame *frame);
 
-unsigned ff_dxva2_get_surface_index(const struct dxva_context *,
+unsigned ff_dxva2_get_surface_index(const AVCodecContext *avctx,
+                                    const AVDXVAContext *,
                                     const AVFrame *frame);
 
-int ff_dxva2_commit_buffer(AVCodecContext *, struct dxva_context *,
-                           DXVA2_DecodeBufferDesc *,
+int ff_dxva2_commit_buffer(AVCodecContext *, AVDXVAContext *,
+                           DECODER_BUFFER_DESC *,
                            unsigned type, const void *data, unsigned size,
                            unsigned mb_count);
 
@@ -50,7 +90,7 @@ int ff_dxva2_common_end_frame(AVCodecContext *, AVFrame *,
                               const void *pp, unsigned pp_size,
                               const void *qm, unsigned qm_size,
                               int (*commit_bs_si)(AVCodecContext *,
-                                                  DXVA2_DecodeBufferDesc *bs,
-                                                  DXVA2_DecodeBufferDesc *slice));
+                                                  DECODER_BUFFER_DESC *bs,
+                                                  DECODER_BUFFER_DESC *slice));
 
 #endif /* AVCODEC_DXVA_INTERNAL_H */

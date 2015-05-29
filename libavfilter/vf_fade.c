@@ -115,12 +115,15 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_RGBA,     AV_PIX_FMT_BGRA,
         AV_PIX_FMT_NONE
     };
+    AVFilterFormats *fmts_list;
 
     if (s->black_fade)
-        ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
+        fmts_list = ff_make_format_list(pix_fmts);
     else
-        ff_set_common_formats(ctx, ff_make_format_list(pix_fmts_rgb));
-    return 0;
+        fmts_list = ff_make_format_list(pix_fmts_rgb);
+    if (!fmts_list)
+        return AVERROR(ENOMEM);
+    return ff_set_common_formats(ctx, fmts_list);
 }
 
 const static enum AVPixelFormat studio_level_pix_fmts[] = {
@@ -138,7 +141,9 @@ static int config_props(AVFilterLink *inlink)
     s->hsub = pixdesc->log2_chroma_w;
     s->vsub = pixdesc->log2_chroma_h;
 
-    s->bpp = av_get_bits_per_pixel(pixdesc) >> 3;
+    s->bpp = pixdesc->flags & AV_PIX_FMT_FLAG_PLANAR ?
+             1 :
+             av_get_bits_per_pixel(pixdesc) >> 3;
     s->alpha &= !!(pixdesc->flags & AV_PIX_FMT_FLAG_ALPHA);
     s->is_packed_rgb = ff_fill_rgba_map(s->rgba_map, inlink->format) >= 0;
 

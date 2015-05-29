@@ -31,10 +31,10 @@ v210_chroma_shuf: db 0,1,8,9,6,7,-1,-1,2,3,4,5,12,13,-1,-1
 
 SECTION .text
 
-%macro v210_planar_unpack 2
+%macro v210_planar_unpack 1
 
 ; v210_planar_unpack(const uint32_t *src, uint16_t *y, uint16_t *u, uint16_t *v, int width)
-cglobal v210_planar_unpack_%1_%2, 5, 5, 7
+cglobal v210_planar_unpack_%1, 5, 5, 7
     movsxdifnidn r4, r4d
     lea    r1, [r1+2*r4]
     add    r2, r4
@@ -73,16 +73,18 @@ cglobal v210_planar_unpack_%1_%2, 5, 5, 7
     REP_RET
 %endmacro
 
-INIT_XMM
-v210_planar_unpack unaligned, ssse3
+INIT_XMM ssse3
+v210_planar_unpack unaligned
+
 %if HAVE_AVX_EXTERNAL
-INIT_AVX
-v210_planar_unpack unaligned, avx
+INIT_XMM avx
+v210_planar_unpack unaligned
 %endif
 
-INIT_XMM
-v210_planar_unpack aligned, ssse3
+INIT_XMM ssse3
+v210_planar_unpack aligned
+
 %if HAVE_AVX_EXTERNAL
-INIT_AVX
-v210_planar_unpack aligned, avx
+INIT_XMM avx
+v210_planar_unpack aligned
 %endif

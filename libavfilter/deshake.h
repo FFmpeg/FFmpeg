@@ -24,8 +24,8 @@
 
 #include "config.h"
 #include "avfilter.h"
-#include "libavcodec/dsputil.h"
 #include "transform.h"
+#include "libavutil/pixelutils.h"
 #if CONFIG_OPENCL
 #include "libavutil/opencl.h"
 #endif
@@ -48,7 +48,7 @@ typedef struct {
 } MotionVector;
 
 typedef struct {
-    MotionVector vector;  ///< Motion vector
+    MotionVector vec;     ///< Motion vector
     double angle;         ///< Angle of rotation
     double zoom;          ///< Zoom percentage
 } Transform;
@@ -71,8 +71,13 @@ typedef struct {
 
 #endif
 
+#define MAX_R 64
+
 typedef struct {
     const AVClass *class;
+    int counts[2*MAX_R+1][2*MAX_R+1]; /// < Scratch buffer for motion search
+    double *angles;            ///< Scratch buffer for block angles
+    unsigned angles_size;
     AVFrame *ref;              ///< Previous frame
     int rx;                    ///< Maximum horizontal shift
     int ry;                    ///< Maximum vertical shift
@@ -80,8 +85,7 @@ typedef struct {
     int blocksize;             ///< Size of blocks to compare
     int contrast;              ///< Contrast threshold
     int search;                ///< Motion search method
-    AVCodecContext *avctx;
-    DSPContext c;              ///< Context providing optimized SAD methods
+    av_pixelutils_sad_fn sad;  ///< Sum of the absolute difference function
     Transform last;            ///< Transform from last frame
     int refcount;              ///< Number of reference frames (defines averaging window)
     FILE *fp;

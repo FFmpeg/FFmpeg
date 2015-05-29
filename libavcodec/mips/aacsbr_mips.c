@@ -53,6 +53,7 @@
 
 #include "libavcodec/aac.h"
 #include "libavcodec/aacsbr.h"
+#include "libavutil/mips/asmdefs.h"
 
 #define ENVELOPE_ADJUSTMENT_OFFSET 2
 
@@ -81,9 +82,9 @@ static int sbr_lf_gen_mips(AACContext *ac, SpectralBandReplication *sbr,
         "sw     $0,            20(%[p_x1_low])          \n\t"
         "sw     $0,            24(%[p_x1_low])          \n\t"
         "sw     $0,            28(%[p_x1_low])          \n\t"
-        "addiu  %[p_x1_low],   %[p_x1_low],      32     \n\t"
+        PTR_ADDIU "%[p_x1_low],%[p_x1_low],      32     \n\t"
         "bne    %[p_x1_low],   %[loop_end],      1b     \n\t"
-        "addiu  %[p_x1_low],   %[p_x1_low],      -10240 \n\t"
+        PTR_ADDIU "%[p_x1_low],%[p_x1_low],      -10240 \n\t"
 
         : [p_x1_low]"+r"(p_x1_low)
         : [loop_end]"r"(loop_end)
@@ -110,8 +111,8 @@ static int sbr_lf_gen_mips(AACContext *ac, SpectralBandReplication *sbr,
                 "sw     %[temp5],   20(%[p_x_low])          \n\t"
                 "sw     %[temp6],   24(%[p_x_low])          \n\t"
                 "sw     %[temp7],   28(%[p_x_low])          \n\t"
-                "addiu  %[p_x_low], %[p_x_low],     32      \n\t"
-                "addiu  %[p_w],     %[p_w],         1024    \n\t"
+                PTR_ADDIU "%[p_x_low], %[p_x_low],  32      \n\t"
+                PTR_ADDIU "%[p_w],     %[p_w],      1024    \n\t"
 
                 : [temp0]"=&r"(temp0), [temp1]"=&r"(temp1),
                   [temp2]"=&r"(temp2), [temp3]"=&r"(temp3),
@@ -147,8 +148,8 @@ static int sbr_lf_gen_mips(AACContext *ac, SpectralBandReplication *sbr,
                 "sw     %[temp5],    20(%[p_x1_low])        \n\t"
                 "sw     %[temp6],    24(%[p_x1_low])        \n\t"
                 "sw     %[temp7],    28(%[p_x1_low])        \n\t"
-                "addiu  %[p_x1_low], %[p_x1_low],   32      \n\t"
-                "addiu  %[p_w1],     %[p_w1],       1024    \n\t"
+                PTR_ADDIU "%[p_x1_low], %[p_x1_low], 32     \n\t"
+                PTR_ADDIU "%[p_w1],     %[p_w1],     1024   \n\t"
 
                 : [temp0]"=&r"(temp0), [temp1]"=&r"(temp1),
                   [temp2]"=&r"(temp2), [temp3]"=&r"(temp3),
@@ -188,9 +189,9 @@ static int sbr_x_gen_mips(SpectralBandReplication *sbr, float X[2][38][64],
         "sw     $0,      20(%[x1])            \n\t"
         "sw     $0,      24(%[x1])            \n\t"
         "sw     $0,      28(%[x1])            \n\t"
-        "addiu  %[x1],   %[x1],      32       \n\t"
+        PTR_ADDIU "%[x1],%[x1],      32       \n\t"
         "bne    %[x1],   %[j],       1b       \n\t"
-        "addiu  %[x1],   %[x1],      -19456   \n\t"
+        PTR_ADDIU "%[x1],%[x1],      -19456   \n\t"
 
         : [x1]"+r"(x1)
         : [j]"r"(j)
@@ -210,8 +211,8 @@ static int sbr_x_gen_mips(SpectralBandReplication *sbr, float X[2][38][64],
                 "lw      %[temp1],    4(%[X_low1])           \n\t"
                 "sw      %[temp0],    0(%[x1])               \n\t"
                 "sw      %[temp1],    9728(%[x1])            \n\t"
-                "addiu   %[x1],       %[x1],         256     \n\t"
-                "addiu   %[X_low1],   %[X_low1],     8       \n\t"
+                PTR_ADDIU "%[x1],     %[x1],         256     \n\t"
+                PTR_ADDIU "%[X_low1], %[X_low1],     8       \n\t"
                 "addiu   %[i],        %[i],          1       \n\t"
                 "bne     %[i],        %[i_Temp],     2b      \n\t"
 
@@ -235,8 +236,8 @@ static int sbr_x_gen_mips(SpectralBandReplication *sbr, float X[2][38][64],
                 "lw      %[temp1],   4(%[Y01])           \n\t"
                 "sw      %[temp0],   0(%[x1])            \n\t"
                 "sw      %[temp1],   9728(%[x1])         \n\t"
-                "addiu   %[x1],      %[x1],      256     \n\t"
-                "addiu   %[Y01],     %[Y01],     512     \n\t"
+                PTR_ADDIU "%[x1],    %[x1],      256     \n\t"
+                PTR_ADDIU "%[Y01],   %[Y01],     512     \n\t"
                 "addiu   %[i],       %[i],       1       \n\t"
                 "bne     %[i],       %[i_Temp],  3b      \n\t"
 
@@ -263,8 +264,8 @@ static int sbr_x_gen_mips(SpectralBandReplication *sbr, float X[2][38][64],
             "lw      %[temp1],   4(%[X_low1])           \n\t"
             "sw      %[temp0],   0(%[x1])               \n\t"
             "sw      %[temp1],   9728(%[x1])            \n\t"
-            "addiu   %[x1],      %[x1],         256     \n\t"
-            "addiu   %[X_low1],  %[X_low1],     8       \n\t"
+            PTR_ADDIU "%[x1],    %[x1],         256     \n\t"
+            PTR_ADDIU "%[X_low1],%[X_low1],     8       \n\t"
             "addiu   %[i],       %[i],          1       \n\t"
             "bne     %[i],       %[temp3],      4b      \n\t"
 
@@ -291,8 +292,8 @@ static int sbr_x_gen_mips(SpectralBandReplication *sbr, float X[2][38][64],
            "lw      %[temp1],   4(%[Y11])               \n\t"
            "sw      %[temp0],   0(%[x1])                \n\t"
            "sw      %[temp1],   9728(%[x1])             \n\t"
-           "addiu   %[x1],      %[x1],          256     \n\t"
-           "addiu   %[Y11],     %[Y11],         512     \n\t"
+           PTR_ADDIU "%[x1],    %[x1],          256     \n\t"
+           PTR_ADDIU "%[Y11],   %[Y11],         512     \n\t"
            "addiu   %[i],       %[i],           1       \n\t"
            "bne     %[i],       %[temp2],       5b      \n\t"
 
@@ -370,10 +371,10 @@ static void sbr_hf_assemble_mips(float Y1[38][64][2],
                     "sw      %[temp2],   4(%[q_temp1])           \n\t"
                     "sw      %[temp3],   8(%[q_temp1])           \n\t"
                     "sw      %[temp4],   12(%[q_temp1])          \n\t"
-                    "addiu   %[pok],     %[pok],           16    \n\t"
-                    "addiu   %[g_temp1], %[g_temp1],       16    \n\t"
-                    "addiu   %[pok1],    %[pok1],          16    \n\t"
-                    "addiu   %[q_temp1], %[q_temp1],       16    \n\t"
+                    PTR_ADDIU "%[pok],     %[pok],         16    \n\t"
+                    PTR_ADDIU "%[g_temp1], %[g_temp1],     16    \n\t"
+                    PTR_ADDIU "%[pok1],    %[pok1],        16    \n\t"
+                    PTR_ADDIU "%[q_temp1], %[q_temp1],     16    \n\t"
 
                     : [temp1]"=&r"(temp1), [temp2]"=&r"(temp2),
                       [temp3]"=&r"(temp3), [temp4]"=&r"(temp4),
@@ -390,10 +391,10 @@ static void sbr_hf_assemble_mips(float Y1[38][64][2],
                     "lw      %[temp2],   0(%[pok1])             \n\t"
                     "sw      %[temp1],   0(%[g_temp1])          \n\t"
                     "sw      %[temp2],   0(%[q_temp1])          \n\t"
-                    "addiu   %[pok],     %[pok],          4     \n\t"
-                    "addiu   %[g_temp1], %[g_temp1],      4     \n\t"
-                    "addiu   %[pok1],    %[pok1],         4     \n\t"
-                    "addiu   %[q_temp1], %[q_temp1],      4     \n\t"
+                    PTR_ADDIU "%[pok],     %[pok],        4     \n\t"
+                    PTR_ADDIU "%[g_temp1], %[g_temp1],    4     \n\t"
+                    PTR_ADDIU "%[pok1],    %[pok1],       4     \n\t"
+                    PTR_ADDIU "%[q_temp1], %[q_temp1],    4     \n\t"
 
                     : [temp1]"=&r"(temp1), [temp2]"=&r"(temp2),
                       [temp3]"=&r"(temp3), [temp4]"=&r"(temp4),
@@ -460,8 +461,8 @@ static void sbr_hf_assemble_mips(float Y1[38][64][2],
                         "madd.s  %[temp5],  %[temp3],  %[temp1], %[B_f]  \n\t"
                         "swc1    %[temp4],  0(%[out])                    \n\t"
                         "swc1    %[temp5],  8(%[out])                    \n\t"
-                        "addiu   %[in],     %[in],     8                 \n\t"
-                        "addiu   %[out],    %[out],    16                \n\t"
+                        PTR_ADDIU "%[in],   %[in],     8                 \n\t"
+                        PTR_ADDIU "%[out],  %[out],    16                \n\t"
 
                         : [temp0]"=&f" (temp0), [temp1]"=&f"(temp1),
                           [temp4]"=&f" (temp4), [temp5]"=&f"(temp5),

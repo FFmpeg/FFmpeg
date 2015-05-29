@@ -37,10 +37,10 @@ static int a64_write_header(AVFormatContext *s)
 
     if (avctx->extradata_size < 4) {
         av_log(s, AV_LOG_ERROR, "Missing extradata\n");
-        return AVERROR(EINVAL);
+        return AVERROR_INVALIDDATA;
     }
 
-    switch (avctx->codec->id) {
+    switch (avctx->codec_id) {
     case AV_CODEC_ID_A64_MULTI:
         header[2] = 0x00;
         header[3] = AV_RB32(avctx->extradata+0);
@@ -52,7 +52,7 @@ static int a64_write_header(AVFormatContext *s)
         header[4] = 3;
         break;
     default:
-        return AVERROR(EINVAL);
+        return AVERROR_INVALIDDATA;
     }
     avio_write(s->pb, header, 2);
     return 0;

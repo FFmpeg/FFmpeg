@@ -125,7 +125,7 @@ static void ac3_bit_alloc_calc_bap_c(int16_t *mask, int16_t *psd,
         band_end = FFMIN(band_end, end);
 
         for (; bin < band_end; bin++) {
-            int address = av_clip((psd[bin] - m) >> 5, 0, 63);
+            int address = av_clip_uintp2((psd[bin] - m) >> 5, 6);
             bap[bin] = bap_tab[address];
         }
     } while (end > band_end);

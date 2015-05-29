@@ -86,9 +86,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     int i, plane, vsub = desc->log2_chroma_h;
 
     for (plane = 0; plane < 4 && frame->data[plane] && frame->linesize[plane]; plane++) {
-        int64_t linesize = av_image_get_linesize(frame->format, frame->width, plane);
         uint8_t *data = frame->data[plane];
         int h = plane == 1 || plane == 2 ? FF_CEIL_RSHIFT(inlink->h, vsub) : inlink->h;
+        int linesize = av_image_get_linesize(frame->format, frame->width, plane);
 
         if (linesize < 0)
             return linesize;
@@ -104,7 +104,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     }
 
     av_log(ctx, AV_LOG_INFO,
-           "n:%"PRId64" pts:%s pts_time:%s pos:%"PRId64" "
+           "n:%4"PRId64" pts:%7s pts_time:%-7s pos:%9"PRId64" "
            "fmt:%s sar:%d/%d s:%dx%d i:%c iskey:%d type:%c "
            "checksum:%08"PRIX32" plane_checksum:[%08"PRIX32,
            inlink->frame_count,
@@ -147,6 +147,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
             av_log(ctx, AV_LOG_INFO, "displaymatrix: rotation of %.2f degrees",
                    av_display_rotation_get((int32_t *)sd->data));
             break;
+        case AV_FRAME_DATA_AFD:
+            av_log(ctx, AV_LOG_INFO, "afd: value of %"PRIu8, sd->data[0]);
+            break;
         default:
             av_log(ctx, AV_LOG_WARNING, "unknown side data type %d (%d bytes)",
                    sd->type, sd->size);
@@ -159,11 +162,36 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     return ff_filter_frame(inlink->dst->outputs[0], frame);
 }
 
+static int config_props(AVFilterContext *ctx, AVFilterLink *link, int is_out)
+{
+
+    av_log(ctx, AV_LOG_INFO, "config %s time_base: %d/%d, frame_rate: %d/%d\n",
+           is_out ? "out" :"in",
+           link->time_base.num, link->time_base.den,
+           link->frame_rate.num, link->frame_rate.den
+    );
+
+    return 0;
+}
+
+static int config_props_in(AVFilterLink *link)
+{
+    AVFilterContext *ctx = link->dst;
+    return config_props(ctx, link, 0);
+}
+
+static int config_props_out(AVFilterLink *link)
+{
+    AVFilterContext *ctx = link->src;
+    return config_props(ctx, link, 1);
+}
+
 static const AVFilterPad avfilter_vf_showinfo_inputs[] = {
     {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
         .filter_frame = filter_frame,
+        .config_props  = config_props_in,
     },
     { NULL }
 };
@@ -171,7 +199,8 @@ static const AVFilterPad avfilter_vf_showinfo_inputs[] = {
 static const AVFilterPad avfilter_vf_showinfo_outputs[] = {
     {
         .name = "default",
-        .type = AVMEDIA_TYPE_VIDEO
+        .type = AVMEDIA_TYPE_VIDEO,
+        .config_props  = config_props_out,
     },
     { NULL }
 };

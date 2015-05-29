@@ -430,7 +430,7 @@ static inline void mpeg4_encode_blocks(MpegEncContext *s, int16_t block[6][64],
     int i;
 
     if (scan_table) {
-        if (s->flags2 & CODEC_FLAG2_NO_OUTPUT) {
+        if (s->avctx->flags2 & CODEC_FLAG2_NO_OUTPUT) {
             for (i = 0; i < 6; i++)
                 skip_put_bits(&s->pb,
                               mpeg4_get_block_length(s, block[i], i,
@@ -442,7 +442,7 @@ static inline void mpeg4_encode_blocks(MpegEncContext *s, int16_t block[6][64],
                                    intra_dc[i], scan_table[i], dc_pb, ac_pb);
         }
     } else {
-        if (s->flags2 & CODEC_FLAG2_NO_OUTPUT) {
+        if (s->avctx->flags2 & CODEC_FLAG2_NO_OUTPUT) {
             for (i = 0; i < 6; i++)
                 skip_put_bits(&s->pb,
                               mpeg4_get_block_length(s, block[i], i, 0,
@@ -507,7 +507,7 @@ void ff_mpeg4_encode_mb(MpegEncContext *s, int16_t block[6][64],
     PutBitContext *const pb2    = s->data_partitioning ? &s->pb2 : &s->pb;
     PutBitContext *const tex_pb = s->data_partitioning && s->pict_type != AV_PICTURE_TYPE_B ? &s->tex_pb : &s->pb;
     PutBitContext *const dc_pb  = s->data_partitioning && s->pict_type != AV_PICTURE_TYPE_I ? &s->pb2 : &s->pb;
-    const int interleaved_stats = (s->flags & CODEC_FLAG_PASS1) && !s->data_partitioning ? 1 : 0;
+    const int interleaved_stats = (s->avctx->flags & CODEC_FLAG_PASS1) && !s->data_partitioning ? 1 : 0;
 
     if (!s->mb_intra) {
         int i, cbp;
@@ -832,7 +832,7 @@ void ff_mpeg4_encode_mb(MpegEncContext *s, int16_t block[6][64],
         for (i = 0; i < 6; i++)
             dc_diff[i] = ff_mpeg4_pred_dc(s, i, block[i][0], &dir[i], 1);
 
-        if (s->flags & CODEC_FLAG_AC_PRED) {
+        if (s->avctx->flags & CODEC_FLAG_AC_PRED) {
             s->ac_pred = decide_ac_pred(s, block, dir, scan_table, zigzag_last_index);
         } else {
             for (i = 0; i < 6; i++)
@@ -932,7 +932,7 @@ static void mpeg4_encode_gop_header(MpegEncContext *s)
     put_bits(&s->pb, 1, 1);
     put_bits(&s->pb, 6, seconds);
 
-    put_bits(&s->pb, 1, !!(s->flags & CODEC_FLAG_CLOSED_GOP));
+    put_bits(&s->pb, 1, !!(s->avctx->flags & CODEC_FLAG_CLOSED_GOP));
     put_bits(&s->pb, 1, 0);  // broken link == NO
 
     ff_mpeg4_stuffing(&s->pb);
@@ -1078,7 +1078,7 @@ static void mpeg4_encode_vol_header(MpegEncContext *s,
     ff_mpeg4_stuffing(&s->pb);
 
     /* user data */
-    if (!(s->flags & CODEC_FLAG_BITEXACT)) {
+    if (!(s->avctx->flags & CODEC_FLAG_BITEXACT)) {
         put_bits(&s->pb, 16, 0);
         put_bits(&s->pb, 16, 0x1B2);    /* user_data */
         avpriv_put_string(&s->pb, LIBAVCODEC_IDENT, 0);
@@ -1092,7 +1092,7 @@ void ff_mpeg4_encode_picture_header(MpegEncContext *s, int picture_number)
     int time_div, time_mod;
 
     if (s->pict_type == AV_PICTURE_TYPE_I) {
-        if (!(s->flags & CODEC_FLAG_GLOBAL_HEADER)) {
+        if (!(s->avctx->flags & CODEC_FLAG_GLOBAL_HEADER)) {
             if (s->strict_std_compliance < FF_COMPLIANCE_VERY_STRICT)  // HACK, the reference sw is buggy
                 mpeg4_encode_visual_object_header(s);
             if (s->strict_std_compliance < FF_COMPLIANCE_VERY_STRICT || picture_number == 0)  // HACK, the reference sw is buggy
@@ -1300,7 +1300,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
 
-    if ((ret = ff_MPV_encode_init(avctx)) < 0)
+    if ((ret = ff_mpv_encode_init(avctx)) < 0)
         return ret;
 
     if (!done) {
@@ -1308,7 +1308,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
         init_uni_dc_tab();
 
-        ff_init_rl(&ff_mpeg4_rl_intra, ff_mpeg4_static_rl_table_store[0]);
+        ff_rl_init(&ff_mpeg4_rl_intra, ff_mpeg4_static_rl_table_store[0]);
 
         init_uni_mpeg4_rl_tab(&ff_mpeg4_rl_intra, uni_mpeg4_intra_rl_bits, uni_mpeg4_intra_rl_len);
         init_uni_mpeg4_rl_tab(&ff_h263_rl_inter, uni_mpeg4_inter_rl_bits, uni_mpeg4_inter_rl_len);
@@ -1325,7 +1325,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     s->y_dc_scale_table         = ff_mpeg4_y_dc_scale_table;
     s->c_dc_scale_table         = ff_mpeg4_c_dc_scale_table;
 
-    if (s->flags & CODEC_FLAG_GLOBAL_HEADER) {
+    if (s->avctx->flags & CODEC_FLAG_GLOBAL_HEADER) {
         s->avctx->extradata = av_malloc(1024);
         init_put_bits(&s->pb, s->avctx->extradata, 1024);
 
@@ -1414,8 +1414,8 @@ AVCodec ff_mpeg4_encoder = {
     .id             = AV_CODEC_ID_MPEG4,
     .priv_data_size = sizeof(MpegEncContext),
     .init           = encode_init,
-    .encode2        = ff_MPV_encode_picture,
-    .close          = ff_MPV_encode_end,
+    .encode2        = ff_mpv_encode_picture,
+    .close          = ff_mpv_encode_end,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE },
     .capabilities   = CODEC_CAP_DELAY | CODEC_CAP_SLICE_THREADS,
     .priv_class     = &mpeg4enc_class,

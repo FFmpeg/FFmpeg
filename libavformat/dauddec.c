@@ -41,7 +41,7 @@ static int daud_header(AVFormatContext *s) {
 static int daud_packet(AVFormatContext *s, AVPacket *pkt) {
     AVIOContext *pb = s->pb;
     int ret, size;
-    if (url_feof(pb))
+    if (avio_feof(pb))
         return AVERROR(EIO);
     size = avio_rb16(pb);
     avio_rb16(pb); // unknown

@@ -52,7 +52,7 @@
 #define STREAM_TYPE_AUDIO_AAC_LATM  0x11
 #define STREAM_TYPE_VIDEO_MPEG4     0x10
 #define STREAM_TYPE_VIDEO_H264      0x1b
-#define STREAM_TYPE_VIDEO_HEVC      0x24 //Definition of 0x24 HEVC video MPEG TS stream type
+#define STREAM_TYPE_VIDEO_HEVC      0x24
 #define STREAM_TYPE_VIDEO_CAVS      0x42
 #define STREAM_TYPE_VIDEO_VC1       0xea
 #define STREAM_TYPE_VIDEO_DIRAC     0xd1
@@ -63,10 +63,10 @@
 
 typedef struct MpegTSContext MpegTSContext;
 
-MpegTSContext *ff_mpegts_parse_open(AVFormatContext *s);
-int ff_mpegts_parse_packet(MpegTSContext *ts, AVPacket *pkt,
-                           const uint8_t *buf, int len);
-void ff_mpegts_parse_close(MpegTSContext *ts);
+MpegTSContext *avpriv_mpegts_parse_open(AVFormatContext *s);
+int avpriv_mpegts_parse_packet(MpegTSContext *ts, AVPacket *pkt,
+                               const uint8_t *buf, int len);
+void avpriv_mpegts_parse_close(MpegTSContext *ts);
 
 typedef struct SLConfigDescr {
     int use_au_start;

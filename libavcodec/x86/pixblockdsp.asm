@@ -26,9 +26,8 @@
 SECTION .text
 
 INIT_MMX mmx
-; void ff_get_pixels_mmx(int16_t *block, const uint8_t *pixels, int line_size)
+; void ff_get_pixels_mmx(int16_t *block, const uint8_t *pixels, ptrdiff_t line_size)
 cglobal get_pixels, 3,4
-    movsxdifnidn r2, r2d
     add          r0, 128
     mov          r3, -128
     pxor         m7, m7
@@ -52,7 +51,6 @@ cglobal get_pixels, 3,4
 
 INIT_XMM sse2
 cglobal get_pixels, 3, 4, 5
-    movsxdifnidn r2, r2d
     lea          r3, [r2*3]
     pxor         m4, m4
     movh         m0, [r1]

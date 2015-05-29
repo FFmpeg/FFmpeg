@@ -1,6 +1,6 @@
 /*
  * Sierra VMD Format Demuxer
- * Copyright (c) 2004 The ffmpeg Project
+ * Copyright (c) 2004 The FFmpeg Project
  *
  * This file is part of FFmpeg.
  *
@@ -36,7 +36,7 @@
 #define VMD_HEADER_SIZE 0x0330
 #define BYTES_PER_FRAME_RECORD 16
 
-typedef struct {
+typedef struct vmd_frame {
   int stream_index;
   int64_t frame_offset;
   unsigned int frame_size;
@@ -183,7 +183,7 @@ static int vmd_read_header(AVFormatContext *s)
         return -1;
     }
     raw_frame_table = av_malloc(raw_frame_table_size);
-    vmd->frame_table = av_malloc((vmd->frame_count * vmd->frames_per_block + sound_buffers) * sizeof(vmd_frame));
+    vmd->frame_table = av_malloc_array(vmd->frame_count * vmd->frames_per_block + sound_buffers, sizeof(vmd_frame));
     if (!raw_frame_table || !vmd->frame_table) {
         ret = AVERROR(ENOMEM);
         goto error;

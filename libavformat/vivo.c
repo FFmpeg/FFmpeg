@@ -75,7 +75,7 @@ static int vivo_get_packet_header(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     unsigned c, get_length = 0;
 
-    if (url_feof(pb))
+    if (avio_feof(pb))
         return AVERROR_EOF;
 
     c = avio_r8(pb);
@@ -250,7 +250,7 @@ static int vivo_read_packet(AVFormatContext *s, AVPacket *pkt)
 
 restart:
 
-    if (url_feof(pb))
+    if (avio_feof(pb))
         return AVERROR_EOF;
 
     switch (vivo->type) {
@@ -281,7 +281,7 @@ restart:
 
     while (vivo->sequence == old_sequence &&
            (((vivo->type - 1) >> 1) == ((old_type - 1) >> 1))) {
-        if (url_feof(pb)) {
+        if (avio_feof(pb)) {
             ret = AVERROR_EOF;
             break;
         }

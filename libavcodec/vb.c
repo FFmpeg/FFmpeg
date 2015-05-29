@@ -251,6 +251,12 @@ static av_cold int decode_init(AVCodecContext *avctx)
     c->frame      = av_mallocz(avctx->width * avctx->height);
     c->prev_frame = av_mallocz(avctx->width * avctx->height);
 
+    if (!c->frame || !c->prev_frame) {
+        av_freep(&c->frame);
+        av_freep(&c->prev_frame);
+        return AVERROR(ENOMEM);
+    }
+
     return 0;
 }
 

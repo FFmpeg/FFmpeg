@@ -131,6 +131,9 @@ int ff_ac3_bit_alloc_calc_mask(AC3BitAllocParameters *s, int16_t *band_psd,
     int band_start, band_end, begin, end1;
     int lowcomp, fastleak, slowleak;
 
+    if (end <= 0)
+        return AVERROR_INVALIDDATA;
+
     /* excitation function */
     band_start = ff_ac3_bin_to_band_tab[start];
     band_end   = ff_ac3_bin_to_band_tab[end-1] + 1;
@@ -200,9 +203,9 @@ int ff_ac3_bit_alloc_calc_mask(AC3BitAllocParameters *s, int16_t *band_psd,
             if (band >= AC3_CRITICAL_BANDS || dba_lengths[seg] > AC3_CRITICAL_BANDS-band)
                 return -1;
             if (dba_values[seg] >= 4) {
-                delta = (dba_values[seg] - 3) << 7;
+                delta = (dba_values[seg] - 3) * 128;
             } else {
-                delta = (dba_values[seg] - 4) << 7;
+                delta = (dba_values[seg] - 4) * 128;
             }
             for (i = 0; i < dba_lengths[seg]; i++) {
                 mask[band++] += delta;

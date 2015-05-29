@@ -296,7 +296,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     memset(&c->zstream, 0, sizeof(z_stream));
     c->comp_size = avctx->width * avctx->height + 1024 +
         ((avctx->width + ZMBV_BLOCK - 1) / ZMBV_BLOCK) * ((avctx->height + ZMBV_BLOCK - 1) / ZMBV_BLOCK) * 2 + 4;
-    if ((c->work_buf = av_malloc(c->comp_size)) == NULL) {
+    if (!(c->work_buf = av_malloc(c->comp_size))) {
         av_log(avctx, AV_LOG_ERROR, "Can't allocate work buffer.\n");
         return AVERROR(ENOMEM);
     }
@@ -305,12 +305,12 @@ static av_cold int encode_init(AVCodecContext *avctx)
                            ((c->comp_size + 63) >> 6) + 11;
 
     /* Allocate compression buffer */
-    if ((c->comp_buf = av_malloc(c->comp_size)) == NULL) {
+    if (!(c->comp_buf = av_malloc(c->comp_size))) {
         av_log(avctx, AV_LOG_ERROR, "Can't allocate compression buffer.\n");
         return AVERROR(ENOMEM);
     }
     c->pstride = FFALIGN(avctx->width, 16);
-    if ((c->prev = av_malloc(c->pstride * avctx->height)) == NULL) {
+    if (!(c->prev = av_malloc(c->pstride * avctx->height))) {
         av_log(avctx, AV_LOG_ERROR, "Can't allocate picture.\n");
         return AVERROR(ENOMEM);
     }

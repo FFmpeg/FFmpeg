@@ -81,7 +81,7 @@ static const uint8_t run_value_bits_short[16] = {
     3, 3, 3, 3, 3, 3, 3, 6, 6, 6, 6, 6, 6, 6, 6, 9
 };
 
-static const uint8_t *run_value_bits[2] = {
+static const uint8_t * const run_value_bits[2] = {
     run_value_bits_long, run_value_bits_short
 };
 
@@ -221,6 +221,7 @@ static void quantize_and_encode_band_cost_SQUAD_mips(struct AACEncContext *s,
     for (i = 0; i < size; i += 4) {
         int curidx;
         int *in_int = (int *)&in[i];
+        int t0, t1, t2, t3, t4, t5, t6, t7;
 
         qc1 = scaled[i  ] * Q34 + 0.4054f;
         qc2 = scaled[i+1] * Q34 + 0.4054f;
@@ -235,31 +236,31 @@ static void quantize_and_encode_band_cost_SQUAD_mips(struct AACEncContext *s,
             "slt    %[qc2], $zero,  %[qc2]  \n\t"
             "slt    %[qc3], $zero,  %[qc3]  \n\t"
             "slt    %[qc4], $zero,  %[qc4]  \n\t"
-            "lw     $t0,    0(%[in_int])    \n\t"
-            "lw     $t1,    4(%[in_int])    \n\t"
-            "lw     $t2,    8(%[in_int])    \n\t"
-            "lw     $t3,    12(%[in_int])   \n\t"
-            "srl    $t0,    $t0,    31      \n\t"
-            "srl    $t1,    $t1,    31      \n\t"
-            "srl    $t2,    $t2,    31      \n\t"
-            "srl    $t3,    $t3,    31      \n\t"
-            "subu   $t4,    $zero,  %[qc1]  \n\t"
-            "subu   $t5,    $zero,  %[qc2]  \n\t"
-            "subu   $t6,    $zero,  %[qc3]  \n\t"
-            "subu   $t7,    $zero,  %[qc4]  \n\t"
-            "movn   %[qc1], $t4,    $t0     \n\t"
-            "movn   %[qc2], $t5,    $t1     \n\t"
-            "movn   %[qc3], $t6,    $t2     \n\t"
-            "movn   %[qc4], $t7,    $t3     \n\t"
+            "lw     %[t0],  0(%[in_int])    \n\t"
+            "lw     %[t1],  4(%[in_int])    \n\t"
+            "lw     %[t2],  8(%[in_int])    \n\t"
+            "lw     %[t3],  12(%[in_int])   \n\t"
+            "srl    %[t0],  %[t0],  31      \n\t"
+            "srl    %[t1],  %[t1],  31      \n\t"
+            "srl    %[t2],  %[t2],  31      \n\t"
+            "srl    %[t3],  %[t3],  31      \n\t"
+            "subu   %[t4],  $zero,  %[qc1]  \n\t"
+            "subu   %[t5],  $zero,  %[qc2]  \n\t"
+            "subu   %[t6],  $zero,  %[qc3]  \n\t"
+            "subu   %[t7],  $zero,  %[qc4]  \n\t"
+            "movn   %[qc1], %[t4],  %[t0]   \n\t"
+            "movn   %[qc2], %[t5],  %[t1]   \n\t"
+            "movn   %[qc3], %[t6],  %[t2]   \n\t"
+            "movn   %[qc4], %[t7],  %[t3]   \n\t"
 
             ".set pop                       \n\t"
 
             : [qc1]"+r"(qc1), [qc2]"+r"(qc2),
-              [qc3]"+r"(qc3), [qc4]"+r"(qc4)
+              [qc3]"+r"(qc3), [qc4]"+r"(qc4),
+              [t0]"=&r"(t0), [t1]"=&r"(t1), [t2]"=&r"(t2), [t3]"=&r"(t3),
+              [t4]"=&r"(t4), [t5]"=&r"(t5), [t6]"=&r"(t6), [t7]"=&r"(t7)
             : [in_int]"r"(in_int)
-            : "t0", "t1", "t2", "t3",
-              "t4", "t5", "t6", "t7",
-              "memory"
+            : "memory"
         );
 
         curidx = qc1;
@@ -295,6 +296,7 @@ static void quantize_and_encode_band_cost_UQUAD_mips(struct AACEncContext *s,
         int *in_int = (int *)&in[i];
         uint8_t v_bits;
         unsigned int v_codes;
+        int t0, t1, t2, t3, t4;
 
         qc1 = scaled[i  ] * Q34 + 0.4054f;
         qc2 = scaled[i+1] * Q34 + 0.4054f;
@@ -305,50 +307,51 @@ static void quantize_and_encode_band_cost_UQUAD_mips(struct AACEncContext *s,
             ".set push                              \n\t"
             ".set noreorder                         \n\t"
 
-            "ori    $t4,        $zero,      2       \n\t"
+            "ori    %[t4],      $zero,      2       \n\t"
             "ori    %[sign],    $zero,      0       \n\t"
-            "slt    $t0,        $t4,        %[qc1]  \n\t"
-            "slt    $t1,        $t4,        %[qc2]  \n\t"
-            "slt    $t2,        $t4,        %[qc3]  \n\t"
-            "slt    $t3,        $t4,        %[qc4]  \n\t"
-            "movn   %[qc1],     $t4,        $t0     \n\t"
-            "movn   %[qc2],     $t4,        $t1     \n\t"
-            "movn   %[qc3],     $t4,        $t2     \n\t"
-            "movn   %[qc4],     $t4,        $t3     \n\t"
-            "lw     $t0,        0(%[in_int])        \n\t"
-            "lw     $t1,        4(%[in_int])        \n\t"
-            "lw     $t2,        8(%[in_int])        \n\t"
-            "lw     $t3,        12(%[in_int])       \n\t"
-            "slt    $t0,        $t0,        $zero   \n\t"
-            "movn   %[sign],    $t0,        %[qc1]  \n\t"
-            "slt    $t1,        $t1,        $zero   \n\t"
-            "slt    $t2,        $t2,        $zero   \n\t"
-            "slt    $t3,        $t3,        $zero   \n\t"
-            "sll    $t0,        %[sign],    1       \n\t"
-            "or     $t0,        $t0,        $t1     \n\t"
-            "movn   %[sign],    $t0,        %[qc2]  \n\t"
-            "slt    $t4,        $zero,      %[qc1]  \n\t"
-            "slt    $t1,        $zero,      %[qc2]  \n\t"
+            "slt    %[t0],      %[t4],      %[qc1]  \n\t"
+            "slt    %[t1],      %[t4],      %[qc2]  \n\t"
+            "slt    %[t2],      %[t4],      %[qc3]  \n\t"
+            "slt    %[t3],      %[t4],      %[qc4]  \n\t"
+            "movn   %[qc1],     %[t4],      %[t0]   \n\t"
+            "movn   %[qc2],     %[t4],      %[t1]   \n\t"
+            "movn   %[qc3],     %[t4],      %[t2]   \n\t"
+            "movn   %[qc4],     %[t4],      %[t3]   \n\t"
+            "lw     %[t0],      0(%[in_int])        \n\t"
+            "lw     %[t1],      4(%[in_int])        \n\t"
+            "lw     %[t2],      8(%[in_int])        \n\t"
+            "lw     %[t3],      12(%[in_int])       \n\t"
+            "slt    %[t0],      %[t0],      $zero   \n\t"
+            "movn   %[sign],    %[t0],      %[qc1]  \n\t"
+            "slt    %[t1],      %[t1],      $zero   \n\t"
+            "slt    %[t2],      %[t2],      $zero   \n\t"
+            "slt    %[t3],      %[t3],      $zero   \n\t"
+            "sll    %[t0],      %[sign],    1       \n\t"
+            "or     %[t0],      %[t0],      %[t1]   \n\t"
+            "movn   %[sign],    %[t0],      %[qc2]  \n\t"
+            "slt    %[t4],      $zero,      %[qc1]  \n\t"
+            "slt    %[t1],      $zero,      %[qc2]  \n\t"
             "slt    %[count],   $zero,      %[qc3]  \n\t"
-            "sll    $t0,        %[sign],    1       \n\t"
-            "or     $t0,        $t0,        $t2     \n\t"
-            "movn   %[sign],    $t0,        %[qc3]  \n\t"
-            "slt    $t2,        $zero,      %[qc4]  \n\t"
-            "addu   %[count],   %[count],   $t4     \n\t"
-            "addu   %[count],   %[count],   $t1     \n\t"
-            "sll    $t0,        %[sign],    1       \n\t"
-            "or     $t0,        $t0,        $t3     \n\t"
-            "movn   %[sign],    $t0,        %[qc4]  \n\t"
-            "addu   %[count],   %[count],   $t2     \n\t"
+            "sll    %[t0],      %[sign],    1       \n\t"
+            "or     %[t0],      %[t0],      %[t2]   \n\t"
+            "movn   %[sign],    %[t0],      %[qc3]  \n\t"
+            "slt    %[t2],      $zero,      %[qc4]  \n\t"
+            "addu   %[count],   %[count],   %[t4]   \n\t"
+            "addu   %[count],   %[count],   %[t1]   \n\t"
+            "sll    %[t0],      %[sign],    1       \n\t"
+            "or     %[t0],      %[t0],      %[t3]   \n\t"
+            "movn   %[sign],    %[t0],      %[qc4]  \n\t"
+            "addu   %[count],   %[count],   %[t2]   \n\t"
 
             ".set pop                               \n\t"
 
             : [qc1]"+r"(qc1), [qc2]"+r"(qc2),
               [qc3]"+r"(qc3), [qc4]"+r"(qc4),
-              [sign]"=&r"(sign), [count]"=&r"(count)
+              [sign]"=&r"(sign), [count]"=&r"(count),
+              [t0]"=&r"(t0), [t1]"=&r"(t1), [t2]"=&r"(t2), [t3]"=&r"(t3),
+              [t4]"=&r"(t4)
             : [in_int]"r"(in_int)
-            : "t0", "t1", "t2", "t3", "t4",
-              "memory"
+            : "memory"
         );
 
         curidx = qc1;
@@ -385,6 +388,7 @@ static void quantize_and_encode_band_cost_SPAIR_mips(struct AACEncContext *s,
         int *in_int = (int *)&in[i];
         uint8_t v_bits;
         unsigned int v_codes;
+        int t0, t1, t2, t3, t4, t5, t6, t7;
 
         qc1 = scaled[i  ] * Q34 + 0.4054f;
         qc2 = scaled[i+1] * Q34 + 0.4054f;
@@ -395,40 +399,40 @@ static void quantize_and_encode_band_cost_SPAIR_mips(struct AACEncContext *s,
             ".set push                      \n\t"
             ".set noreorder                 \n\t"
 
-            "ori    $t4,    $zero,  4       \n\t"
-            "slt    $t0,    $t4,    %[qc1]  \n\t"
-            "slt    $t1,    $t4,    %[qc2]  \n\t"
-            "slt    $t2,    $t4,    %[qc3]  \n\t"
-            "slt    $t3,    $t4,    %[qc4]  \n\t"
-            "movn   %[qc1], $t4,    $t0     \n\t"
-            "movn   %[qc2], $t4,    $t1     \n\t"
-            "movn   %[qc3], $t4,    $t2     \n\t"
-            "movn   %[qc4], $t4,    $t3     \n\t"
-            "lw     $t0,    0(%[in_int])    \n\t"
-            "lw     $t1,    4(%[in_int])    \n\t"
-            "lw     $t2,    8(%[in_int])    \n\t"
-            "lw     $t3,    12(%[in_int])   \n\t"
-            "srl    $t0,    $t0,    31      \n\t"
-            "srl    $t1,    $t1,    31      \n\t"
-            "srl    $t2,    $t2,    31      \n\t"
-            "srl    $t3,    $t3,    31      \n\t"
-            "subu   $t4,    $zero,  %[qc1]  \n\t"
-            "subu   $t5,    $zero,  %[qc2]  \n\t"
-            "subu   $t6,    $zero,  %[qc3]  \n\t"
-            "subu   $t7,    $zero,  %[qc4]  \n\t"
-            "movn   %[qc1], $t4,    $t0     \n\t"
-            "movn   %[qc2], $t5,    $t1     \n\t"
-            "movn   %[qc3], $t6,    $t2     \n\t"
-            "movn   %[qc4], $t7,    $t3     \n\t"
+            "ori    %[t4],  $zero,  4       \n\t"
+            "slt    %[t0],  %[t4],  %[qc1]  \n\t"
+            "slt    %[t1],  %[t4],  %[qc2]  \n\t"
+            "slt    %[t2],  %[t4],  %[qc3]  \n\t"
+            "slt    %[t3],  %[t4],  %[qc4]  \n\t"
+            "movn   %[qc1], %[t4],  %[t0]   \n\t"
+            "movn   %[qc2], %[t4],  %[t1]   \n\t"
+            "movn   %[qc3], %[t4],  %[t2]   \n\t"
+            "movn   %[qc4], %[t4],  %[t3]   \n\t"
+            "lw     %[t0],  0(%[in_int])    \n\t"
+            "lw     %[t1],  4(%[in_int])    \n\t"
+            "lw     %[t2],  8(%[in_int])    \n\t"
+            "lw     %[t3],  12(%[in_int])   \n\t"
+            "srl    %[t0],  %[t0],  31      \n\t"
+            "srl    %[t1],  %[t1],  31      \n\t"
+            "srl    %[t2],  %[t2],  31      \n\t"
+            "srl    %[t3],  %[t3],  31      \n\t"
+            "subu   %[t4],  $zero,  %[qc1]  \n\t"
+            "subu   %[t5],  $zero,  %[qc2]  \n\t"
+            "subu   %[t6],  $zero,  %[qc3]  \n\t"
+            "subu   %[t7],  $zero,  %[qc4]  \n\t"
+            "movn   %[qc1], %[t4],  %[t0]   \n\t"
+            "movn   %[qc2], %[t5],  %[t1]   \n\t"
+            "movn   %[qc3], %[t6],  %[t2]   \n\t"
+            "movn   %[qc4], %[t7],  %[t3]   \n\t"
 
             ".set pop                       \n\t"
 
             : [qc1]"+r"(qc1), [qc2]"+r"(qc2),
-              [qc3]"+r"(qc3), [qc4]"+r"(qc4)
+              [qc3]"+r"(qc3), [qc4]"+r"(qc4),
+              [t0]"=&r"(t0), [t1]"=&r"(t1), [t2]"=&r"(t2), [t3]"=&r"(t3),
+              [t4]"=&r"(t4), [t5]"=&r"(t5), [t6]"=&r"(t6), [t7]"=&r"(t7)
             : [in_int]"r"(in_int)
-            : "t0", "t1", "t2", "t3",
-              "t4", "t5", "t6", "t7",
-              "memory"
+            : "memory"
         );
 
         curidx = 9 * qc1;
@@ -463,6 +467,7 @@ static void quantize_and_encode_band_cost_UPAIR7_mips(struct AACEncContext *s,
         int *in_int = (int *)&in[i];
         uint8_t v_bits;
         unsigned int v_codes;
+        int t0, t1, t2, t3, t4;
 
         qc1 = scaled[i  ] * Q34 + 0.4054f;
         qc2 = scaled[i+1] * Q34 + 0.4054f;
@@ -473,46 +478,48 @@ static void quantize_and_encode_band_cost_UPAIR7_mips(struct AACEncContext *s,
             ".set push                              \n\t"
             ".set noreorder                         \n\t"
 
-            "ori    $t4,        $zero,      7       \n\t"
+            "ori    %[t4],      $zero,      7       \n\t"
             "ori    %[sign1],   $zero,      0       \n\t"
             "ori    %[sign2],   $zero,      0       \n\t"
-            "slt    $t0,        $t4,        %[qc1]  \n\t"
-            "slt    $t1,        $t4,        %[qc2]  \n\t"
-            "slt    $t2,        $t4,        %[qc3]  \n\t"
-            "slt    $t3,        $t4,        %[qc4]  \n\t"
-            "movn   %[qc1],     $t4,        $t0     \n\t"
-            "movn   %[qc2],     $t4,        $t1     \n\t"
-            "movn   %[qc3],     $t4,        $t2     \n\t"
-            "movn   %[qc4],     $t4,        $t3     \n\t"
-            "lw     $t0,        0(%[in_int])        \n\t"
-            "lw     $t1,        4(%[in_int])        \n\t"
-            "lw     $t2,        8(%[in_int])        \n\t"
-            "lw     $t3,        12(%[in_int])       \n\t"
-            "slt    $t0,        $t0,        $zero   \n\t"
-            "movn   %[sign1],   $t0,        %[qc1]  \n\t"
-            "slt    $t2,        $t2,        $zero   \n\t"
-            "movn   %[sign2],   $t2,        %[qc3]  \n\t"
-            "slt    $t1,        $t1,        $zero   \n\t"
-            "sll    $t0,        %[sign1],   1       \n\t"
-            "or     $t0,        $t0,        $t1     \n\t"
-            "movn   %[sign1],   $t0,        %[qc2]  \n\t"
-            "slt    $t3,        $t3,        $zero   \n\t"
-            "sll    $t0,        %[sign2],   1       \n\t"
-            "or     $t0,        $t0,        $t3     \n\t"
-            "movn   %[sign2],   $t0,        %[qc4]  \n\t"
+            "slt    %[t0],      %[t4],      %[qc1]  \n\t"
+            "slt    %[t1],      %[t4],      %[qc2]  \n\t"
+            "slt    %[t2],      %[t4],      %[qc3]  \n\t"
+            "slt    %[t3],      %[t4],      %[qc4]  \n\t"
+            "movn   %[qc1],     %[t4],      %[t0]   \n\t"
+            "movn   %[qc2],     %[t4],      %[t1]   \n\t"
+            "movn   %[qc3],     %[t4],      %[t2]   \n\t"
+            "movn   %[qc4],     %[t4],      %[t3]   \n\t"
+            "lw     %[t0],      0(%[in_int])        \n\t"
+            "lw     %[t1],      4(%[in_int])        \n\t"
+            "lw     %[t2],      8(%[in_int])        \n\t"
+            "lw     %[t3],      12(%[in_int])       \n\t"
+            "slt    %[t0],      %[t0],      $zero   \n\t"
+            "movn   %[sign1],   %[t0],      %[qc1]  \n\t"
+            "slt    %[t2],      %[t2],      $zero   \n\t"
+            "movn   %[sign2],   %[t2],      %[qc3]  \n\t"
+            "slt    %[t1],      %[t1],      $zero   \n\t"
+            "sll    %[t0],      %[sign1],   1       \n\t"
+            "or     %[t0],      %[t0],      %[t1]   \n\t"
+            "movn   %[sign1],   %[t0],      %[qc2]  \n\t"
+            "slt    %[t3],      %[t3],      $zero   \n\t"
+            "sll    %[t0],      %[sign2],   1       \n\t"
+            "or     %[t0],      %[t0],      %[t3]   \n\t"
+            "movn   %[sign2],   %[t0],      %[qc4]  \n\t"
             "slt    %[count1],  $zero,      %[qc1]  \n\t"
-            "slt    $t1,        $zero,      %[qc2]  \n\t"
+            "slt    %[t1],      $zero,      %[qc2]  \n\t"
             "slt    %[count2],  $zero,      %[qc3]  \n\t"
-            "slt    $t2,        $zero,      %[qc4]  \n\t"
-            "addu   %[count1],  %[count1],  $t1     \n\t"
-            "addu   %[count2],  %[count2],  $t2     \n\t"
+            "slt    %[t2],      $zero,      %[qc4]  \n\t"
+            "addu   %[count1],  %[count1],  %[t1]   \n\t"
+            "addu   %[count2],  %[count2],  %[t2]   \n\t"
 
             ".set pop                               \n\t"
 
             : [qc1]"+r"(qc1), [qc2]"+r"(qc2),
               [qc3]"+r"(qc3), [qc4]"+r"(qc4),
               [sign1]"=&r"(sign1), [count1]"=&r"(count1),
-              [sign2]"=&r"(sign2), [count2]"=&r"(count2)
+              [sign2]"=&r"(sign2), [count2]"=&r"(count2),
+              [t0]"=&r"(t0), [t1]"=&r"(t1), [t2]"=&r"(t2), [t3]"=&r"(t3),
+              [t4]"=&r"(t4)
             : [in_int]"r"(in_int)
             : "t0", "t1", "t2", "t3", "t4",
               "memory"
@@ -554,6 +561,7 @@ static void quantize_and_encode_band_cost_UPAIR12_mips(struct AACEncContext *s,
         int *in_int = (int *)&in[i];
         uint8_t v_bits;
         unsigned int v_codes;
+        int t0, t1, t2, t3, t4;
 
         qc1 = scaled[i  ] * Q34 + 0.4054f;
         qc2 = scaled[i+1] * Q34 + 0.4054f;
@@ -564,49 +572,50 @@ static void quantize_and_encode_band_cost_UPAIR12_mips(struct AACEncContext *s,
             ".set push                              \n\t"
             ".set noreorder                         \n\t"
 
-            "ori    $t4,        $zero,      12      \n\t"
+            "ori    %[t4],      $zero,      12      \n\t"
             "ori    %[sign1],   $zero,      0       \n\t"
             "ori    %[sign2],   $zero,      0       \n\t"
-            "slt    $t0,        $t4,        %[qc1]  \n\t"
-            "slt    $t1,        $t4,        %[qc2]  \n\t"
-            "slt    $t2,        $t4,        %[qc3]  \n\t"
-            "slt    $t3,        $t4,        %[qc4]  \n\t"
-            "movn   %[qc1],     $t4,        $t0     \n\t"
-            "movn   %[qc2],     $t4,        $t1     \n\t"
-            "movn   %[qc3],     $t4,        $t2     \n\t"
-            "movn   %[qc4],     $t4,        $t3     \n\t"
-            "lw     $t0,        0(%[in_int])        \n\t"
-            "lw     $t1,        4(%[in_int])        \n\t"
-            "lw     $t2,        8(%[in_int])        \n\t"
-            "lw     $t3,        12(%[in_int])       \n\t"
-            "slt    $t0,        $t0,        $zero   \n\t"
-            "movn   %[sign1],   $t0,        %[qc1]  \n\t"
-            "slt    $t2,        $t2,        $zero   \n\t"
-            "movn   %[sign2],   $t2,        %[qc3]  \n\t"
-            "slt    $t1,        $t1,        $zero   \n\t"
-            "sll    $t0,        %[sign1],   1       \n\t"
-            "or     $t0,        $t0,        $t1     \n\t"
-            "movn   %[sign1],   $t0,        %[qc2]  \n\t"
-            "slt    $t3,        $t3,        $zero   \n\t"
-            "sll    $t0,        %[sign2],   1       \n\t"
-            "or     $t0,        $t0,        $t3     \n\t"
-            "movn   %[sign2],   $t0,        %[qc4]  \n\t"
+            "slt    %[t0],      %[t4],      %[qc1]  \n\t"
+            "slt    %[t1],      %[t4],      %[qc2]  \n\t"
+            "slt    %[t2],      %[t4],      %[qc3]  \n\t"
+            "slt    %[t3],      %[t4],      %[qc4]  \n\t"
+            "movn   %[qc1],     %[t4],      %[t0]   \n\t"
+            "movn   %[qc2],     %[t4],      %[t1]   \n\t"
+            "movn   %[qc3],     %[t4],      %[t2]   \n\t"
+            "movn   %[qc4],     %[t4],      %[t3]   \n\t"
+            "lw     %[t0],      0(%[in_int])        \n\t"
+            "lw     %[t1],      4(%[in_int])        \n\t"
+            "lw     %[t2],      8(%[in_int])        \n\t"
+            "lw     %[t3],      12(%[in_int])       \n\t"
+            "slt    %[t0],      %[t0],      $zero   \n\t"
+            "movn   %[sign1],   %[t0],      %[qc1]  \n\t"
+            "slt    %[t2],      %[t2],      $zero   \n\t"
+            "movn   %[sign2],   %[t2],      %[qc3]  \n\t"
+            "slt    %[t1],      %[t1],      $zero   \n\t"
+            "sll    %[t0],      %[sign1],   1       \n\t"
+            "or     %[t0],      %[t0],      %[t1]   \n\t"
+            "movn   %[sign1],   %[t0],      %[qc2]  \n\t"
+            "slt    %[t3],      %[t3],      $zero   \n\t"
+            "sll    %[t0],      %[sign2],   1       \n\t"
+            "or     %[t0],      %[t0],      %[t3]   \n\t"
+            "movn   %[sign2],   %[t0],      %[qc4]  \n\t"
             "slt    %[count1],  $zero,      %[qc1]  \n\t"
-            "slt    $t1,        $zero,      %[qc2]  \n\t"
+            "slt    %[t1],      $zero,      %[qc2]  \n\t"
             "slt    %[count2],  $zero,      %[qc3]  \n\t"
-            "slt    $t2,        $zero,      %[qc4]  \n\t"
-            "addu   %[count1],  %[count1],  $t1     \n\t"
-            "addu   %[count2],  %[count2],  $t2     \n\t"
+            "slt    %[t2],      $zero,      %[qc4]  \n\t"
+            "addu   %[count1],  %[count1],  %[t1]   \n\t"
+            "addu   %[count2],  %[count2],  %[t2]   \n\t"
 
             ".set pop                               \n\t"
 
             : [qc1]"+r"(qc1), [qc2]"+r"(qc2),
               [qc3]"+r"(qc3), [qc4]"+r"(qc4),
               [sign1]"=&r"(sign1), [count1]"=&r"(count1),
-              [sign2]"=&r"(sign2), [count2]"=&r"(count2)
+              [sign2]"=&r"(sign2), [count2]"=&r"(count2),
+              [t0]"=&r"(t0), [t1]"=&r"(t1), [t2]"=&r"(t2), [t3]"=&r"(t3),
+              [t4]"=&r"(t4)
             : [in_int]"r"(in_int)
-            : "t0", "t1", "t2", "t3", "t4",
-              "memory"
+            : "memory"
         );
 
         curidx  = 13 * qc1;
@@ -648,6 +657,7 @@ static void quantize_and_encode_band_cost_ESC_mips(struct AACEncContext *s,
             int *in_int = (int *)&in[i];
             uint8_t v_bits;
             unsigned int v_codes;
+            int t0, t1, t2, t3, t4;
 
             qc1 = scaled[i  ] * Q34 + 0.4054f;
             qc2 = scaled[i+1] * Q34 + 0.4054f;
@@ -658,49 +668,50 @@ static void quantize_and_encode_band_cost_ESC_mips(struct AACEncContext *s,
                 ".set push                                  \n\t"
                 ".set noreorder                             \n\t"
 
-                "ori        $t4,        $zero,      16      \n\t"
+                "ori        %[t4],      $zero,      16      \n\t"
                 "ori        %[sign1],   $zero,      0       \n\t"
                 "ori        %[sign2],   $zero,      0       \n\t"
-                "slt        $t0,        $t4,        %[qc1]  \n\t"
-                "slt        $t1,        $t4,        %[qc2]  \n\t"
-                "slt        $t2,        $t4,        %[qc3]  \n\t"
-                "slt        $t3,        $t4,        %[qc4]  \n\t"
-                "movn       %[qc1],     $t4,        $t0     \n\t"
-                "movn       %[qc2],     $t4,        $t1     \n\t"
-                "movn       %[qc3],     $t4,        $t2     \n\t"
-                "movn       %[qc4],     $t4,        $t3     \n\t"
-                "lw         $t0,        0(%[in_int])        \n\t"
-                "lw         $t1,        4(%[in_int])        \n\t"
-                "lw         $t2,        8(%[in_int])        \n\t"
-                "lw         $t3,        12(%[in_int])       \n\t"
-                "slt        $t0,        $t0,        $zero   \n\t"
-                "movn       %[sign1],   $t0,        %[qc1]  \n\t"
-                "slt        $t2,        $t2,        $zero   \n\t"
-                "movn       %[sign2],   $t2,        %[qc3]  \n\t"
-                "slt        $t1,        $t1,        $zero   \n\t"
-                "sll        $t0,        %[sign1],   1       \n\t"
-                "or         $t0,        $t0,        $t1     \n\t"
-                "movn       %[sign1],   $t0,        %[qc2]  \n\t"
-                "slt        $t3,        $t3,        $zero   \n\t"
-                "sll        $t0,        %[sign2],   1       \n\t"
-                "or         $t0,        $t0,        $t3     \n\t"
-                "movn       %[sign2],   $t0,        %[qc4]  \n\t"
+                "slt        %[t0],      %[t4],      %[qc1]  \n\t"
+                "slt        %[t1],      %[t4],      %[qc2]  \n\t"
+                "slt        %[t2],      %[t4],      %[qc3]  \n\t"
+                "slt        %[t3],      %[t4],      %[qc4]  \n\t"
+                "movn       %[qc1],     %[t4],      %[t0]   \n\t"
+                "movn       %[qc2],     %[t4],      %[t1]   \n\t"
+                "movn       %[qc3],     %[t4],      %[t2]   \n\t"
+                "movn       %[qc4],     %[t4],      %[t3]   \n\t"
+                "lw         %[t0],      0(%[in_int])        \n\t"
+                "lw         %[t1],      4(%[in_int])        \n\t"
+                "lw         %[t2],      8(%[in_int])        \n\t"
+                "lw         %[t3],      12(%[in_int])       \n\t"
+                "slt        %[t0],      %[t0],      $zero   \n\t"
+                "movn       %[sign1],   %[t0],      %[qc1]  \n\t"
+                "slt        %[t2],      %[t2],      $zero   \n\t"
+                "movn       %[sign2],   %[t2],      %[qc3]  \n\t"
+                "slt        %[t1],      %[t1],      $zero   \n\t"
+                "sll        %[t0],      %[sign1],   1       \n\t"
+                "or         %[t0],      %[t0],      %[t1]   \n\t"
+                "movn       %[sign1],   %[t0],      %[qc2]  \n\t"
+                "slt        %[t3],      %[t3],      $zero   \n\t"
+                "sll        %[t0],      %[sign2],   1       \n\t"
+                "or         %[t0],      %[t0],      %[t3]   \n\t"
+                "movn       %[sign2],   %[t0],      %[qc4]  \n\t"
                 "slt        %[count1],  $zero,      %[qc1]  \n\t"
-                "slt        $t1,        $zero,      %[qc2]  \n\t"
+                "slt        %[t1],      $zero,      %[qc2]  \n\t"
                 "slt        %[count2],  $zero,      %[qc3]  \n\t"
-                "slt        $t2,        $zero,      %[qc4]  \n\t"
-                "addu       %[count1],  %[count1],  $t1     \n\t"
-                "addu       %[count2],  %[count2],  $t2     \n\t"
+                "slt        %[t2],      $zero,      %[qc4]  \n\t"
+                "addu       %[count1],  %[count1],  %[t1]   \n\t"
+                "addu       %[count2],  %[count2],  %[t2]   \n\t"
 
                 ".set pop                                   \n\t"
 
                 : [qc1]"+r"(qc1), [qc2]"+r"(qc2),
                   [qc3]"+r"(qc3), [qc4]"+r"(qc4),
                   [sign1]"=&r"(sign1), [count1]"=&r"(count1),
-                  [sign2]"=&r"(sign2), [count2]"=&r"(count2)
+                  [sign2]"=&r"(sign2), [count2]"=&r"(count2),
+                  [t0]"=&r"(t0), [t1]"=&r"(t1), [t2]"=&r"(t2), [t3]"=&r"(t3),
+                  [t4]"=&r"(t4)
                 : [in_int]"r"(in_int)
-                : "t0", "t1", "t2", "t3", "t4",
-                  "memory"
+                : "memory"
             );
 
             curidx = 17 * qc1;
@@ -723,6 +734,7 @@ static void quantize_and_encode_band_cost_ESC_mips(struct AACEncContext *s,
             uint8_t v_bits;
             unsigned int v_codes;
             int c1, c2, c3, c4;
+            int t0, t1, t2, t3, t4;
 
             qc1 = scaled[i  ] * Q34 + 0.4054f;
             qc2 = scaled[i+1] * Q34 + 0.4054f;
@@ -733,7 +745,7 @@ static void quantize_and_encode_band_cost_ESC_mips(struct AACEncContext *s,
                 ".set push                                  \n\t"
                 ".set noreorder                             \n\t"
 
-                "ori        $t4,        $zero,      16      \n\t"
+                "ori        %[t4],      $zero,      16      \n\t"
                 "ori        %[sign1],   $zero,      0       \n\t"
                 "ori        %[sign2],   $zero,      0       \n\t"
                 "shll_s.w   %[c1],      %[qc1],     18      \n\t"
@@ -744,36 +756,36 @@ static void quantize_and_encode_band_cost_ESC_mips(struct AACEncContext *s,
                 "srl        %[c2],      %[c2],      18      \n\t"
                 "srl        %[c3],      %[c3],      18      \n\t"
                 "srl        %[c4],      %[c4],      18      \n\t"
-                "slt        $t0,        $t4,        %[qc1]  \n\t"
-                "slt        $t1,        $t4,        %[qc2]  \n\t"
-                "slt        $t2,        $t4,        %[qc3]  \n\t"
-                "slt        $t3,        $t4,        %[qc4]  \n\t"
-                "movn       %[qc1],     $t4,        $t0     \n\t"
-                "movn       %[qc2],     $t4,        $t1     \n\t"
-                "movn       %[qc3],     $t4,        $t2     \n\t"
-                "movn       %[qc4],     $t4,        $t3     \n\t"
-                "lw         $t0,        0(%[in_int])        \n\t"
-                "lw         $t1,        4(%[in_int])        \n\t"
-                "lw         $t2,        8(%[in_int])        \n\t"
-                "lw         $t3,        12(%[in_int])       \n\t"
-                "slt        $t0,        $t0,        $zero   \n\t"
-                "movn       %[sign1],   $t0,        %[qc1]  \n\t"
-                "slt        $t2,        $t2,        $zero   \n\t"
-                "movn       %[sign2],   $t2,        %[qc3]  \n\t"
-                "slt        $t1,        $t1,        $zero   \n\t"
-                "sll        $t0,        %[sign1],   1       \n\t"
-                "or         $t0,        $t0,        $t1     \n\t"
-                "movn       %[sign1],   $t0,        %[qc2]  \n\t"
-                "slt        $t3,        $t3,        $zero   \n\t"
-                "sll        $t0,        %[sign2],   1       \n\t"
-                "or         $t0,        $t0,        $t3     \n\t"
-                "movn       %[sign2],   $t0,        %[qc4]  \n\t"
+                "slt        %[t0],      %[t4],      %[qc1]  \n\t"
+                "slt        %[t1],      %[t4],      %[qc2]  \n\t"
+                "slt        %[t2],      %[t4],      %[qc3]  \n\t"
+                "slt        %[t3],      %[t4],      %[qc4]  \n\t"
+                "movn       %[qc1],     %[t4],      %[t0]   \n\t"
+                "movn       %[qc2],     %[t4],      %[t1]   \n\t"
+                "movn       %[qc3],     %[t4],      %[t2]   \n\t"
+                "movn       %[qc4],     %[t4],      %[t3]   \n\t"
+                "lw         %[t0],      0(%[in_int])        \n\t"
+                "lw         %[t1],      4(%[in_int])        \n\t"
+                "lw         %[t2],      8(%[in_int])        \n\t"
+                "lw         %[t3],      12(%[in_int])       \n\t"
+                "slt        %[t0],      %[t0],      $zero   \n\t"
+                "movn       %[sign1],   %[t0],      %[qc1]  \n\t"
+                "slt        %[t2],      %[t2],      $zero   \n\t"
+                "movn       %[sign2],   %[t2],      %[qc3]  \n\t"
+                "slt        %[t1],      %[t1],      $zero   \n\t"
+                "sll        %[t0],      %[sign1],   1       \n\t"
+                "or         %[t0],      %[t0],      %[t1]   \n\t"
+                "movn       %[sign1],   %[t0],      %[qc2]  \n\t"
+                "slt        %[t3],      %[t3],      $zero   \n\t"
+                "sll        %[t0],      %[sign2],   1       \n\t"
+                "or         %[t0],      %[t0],      %[t3]   \n\t"
+                "movn       %[sign2],   %[t0],      %[qc4]  \n\t"
                 "slt        %[count1],  $zero,      %[qc1]  \n\t"
-                "slt        $t1,        $zero,      %[qc2]  \n\t"
+                "slt        %[t1],      $zero,      %[qc2]  \n\t"
                 "slt        %[count2],  $zero,      %[qc3]  \n\t"
-                "slt        $t2,        $zero,      %[qc4]  \n\t"
-                "addu       %[count1],  %[count1],  $t1     \n\t"
-                "addu       %[count2],  %[count2],  $t2     \n\t"
+                "slt        %[t2],      $zero,      %[qc4]  \n\t"
+                "addu       %[count1],  %[count1],  %[t1]   \n\t"
+                "addu       %[count2],  %[count2],  %[t2]   \n\t"
 
                 ".set pop                                   \n\t"
 
@@ -782,10 +794,11 @@ static void quantize_and_encode_band_cost_ESC_mips(struct AACEncContext *s,
                   [sign1]"=&r"(sign1), [count1]"=&r"(count1),
                   [sign2]"=&r"(sign2), [count2]"=&r"(count2),
                   [c1]"=&r"(c1), [c2]"=&r"(c2),
-                  [c3]"=&r"(c3), [c4]"=&r"(c4)
+                  [c3]"=&r"(c3), [c4]"=&r"(c4),
+                  [t0]"=&r"(t0), [t1]"=&r"(t1), [t2]"=&r"(t2), [t3]"=&r"(t3),
+                  [t4]"=&r"(t4)
                 : [in_int]"r"(in_int)
-                : "t0", "t1", "t2", "t3", "t4",
-                  "memory"
+                : "memory"
             );
 
             curidx = 17 * qc1;
@@ -889,6 +902,7 @@ static float get_band_numbits_SQUAD_mips(struct AACEncContext *s,
     for (i = 0; i < size; i += 4) {
         int curidx;
         int *in_int = (int *)&in[i];
+        int t0, t1, t2, t3, t4, t5, t6, t7;
 
         qc1 = scaled[i  ] * Q34 + 0.4054f;
         qc2 = scaled[i+1] * Q34 + 0.4054f;
@@ -903,31 +917,31 @@ static float get_band_numbits_SQUAD_mips(struct AACEncContext *s,
             "slt    %[qc2], $zero,  %[qc2]  \n\t"
             "slt    %[qc3], $zero,  %[qc3]  \n\t"
             "slt    %[qc4], $zero,  %[qc4]  \n\t"
-            "lw     $t0,    0(%[in_int])    \n\t"
-            "lw     $t1,    4(%[in_int])    \n\t"
-            "lw     $t2,    8(%[in_int])    \n\t"
-            "lw     $t3,    12(%[in_int])   \n\t"
-            "srl    $t0,    $t0,    31      \n\t"
-            "srl    $t1,    $t1,    31      \n\t"
-            "srl    $t2,    $t2,    31      \n\t"
-            "srl    $t3,    $t3,    31      \n\t"
-            "subu   $t4,    $zero,  %[qc1]  \n\t"
-            "subu   $t5,    $zero,  %[qc2]  \n\t"
-            "subu   $t6,    $zero,  %[qc3]  \n\t"
-            "subu   $t7,    $zero,  %[qc4]  \n\t"
-            "movn   %[qc1], $t4,    $t0     \n\t"
-            "movn   %[qc2], $t5,    $t1     \n\t"
-            "movn   %[qc3], $t6,    $t2     \n\t"
-            "movn   %[qc4], $t7,    $t3     \n\t"
+            "lw     %[t0],  0(%[in_int])    \n\t"
+            "lw     %[t1],  4(%[in_int])    \n\t"
+            "lw     %[t2],  8(%[in_int])    \n\t"
+            "lw     %[t3],  12(%[in_int])   \n\t"
+            "srl    %[t0],  %[t0],  31      \n\t"
+            "srl    %[t1],  %[t1],  31      \n\t"
+            "srl    %[t2],  %[t2],  31      \n\t"
+            "srl    %[t3],  %[t3],  31      \n\t"
+            "subu   %[t4],  $zero,  %[qc1]  \n\t"
+            "subu   %[t5],  $zero,  %[qc2]  \n\t"
+            "subu   %[t6],  $zero,  %[qc3]  \n\t"
+            "subu   %[t7],  $zero,  %[qc4]  \n\t"
+            "movn   %[qc1], %[t4],  %[t0]   \n\t"
+            "movn   %[qc2], %[t5],  %[t1]   \n\t"
+            "movn   %[qc3], %[t6],  %[t2]   \n\t"
+            "movn   %[qc4], %[t7],  %[t3]   \n\t"
 
             ".set pop                       \n\t"
 
             : [qc1]"+r"(qc1), [qc2]"+r"(qc2),
-              [qc3]"+r"(qc3), [qc4]"+r"(qc4)
+              [qc3]"+r"(qc3), [qc4]"+r"(qc4),
+              [t0]"=&r"(t0), [t1]"=&r"(t1), [t2]"=&r"(t2), [t3]"=&r"(t3),
+              [t4]"=&r"(t4), [t5]"=&r"(t5), [t6]"=&r"(t6), [t7]"=&r"(t7)
             : [in_int]"r"(in_int)
-            : "t0", "t1", "t2", "t3",
-              "t4", "t5", "t6", "t7",
-              "memory"
+            : "memory"
         );
 
         curidx = qc1;
@@ -959,6 +973,7 @@ static float get_band_numbits_UQUAD_mips(struct AACEncContext *s,
 
     for (i = 0; i < size; i += 4) {
         int curidx;
+        int t0, t1, t2, t3, t4;
 
         qc1 = scaled[i  ] * Q34 + 0.4054f;
         qc2 = scaled[i+1] * Q34 + 0.4054f;
@@ -969,22 +984,22 @@ static float get_band_numbits_UQUAD_mips(struct AACEncContext *s,
             ".set push                      \n\t"
             ".set noreorder                 \n\t"
 
-            "ori    $t4,    $zero,  2       \n\t"
-            "slt    $t0,    $t4,    %[qc1]  \n\t"
-            "slt    $t1,    $t4,    %[qc2]  \n\t"
-            "slt    $t2,    $t4,    %[qc3]  \n\t"
-            "slt    $t3,    $t4,    %[qc4]  \n\t"
-            "movn   %[qc1], $t4,    $t0     \n\t"
-            "movn   %[qc2], $t4,    $t1     \n\t"
-            "movn   %[qc3], $t4,    $t2     \n\t"
-            "movn   %[qc4], $t4,    $t3     \n\t"
+            "ori    %[t4],  $zero,  2       \n\t"
+            "slt    %[t0],  %[t4],  %[qc1]  \n\t"
+            "slt    %[t1],  %[t4],  %[qc2]  \n\t"
+            "slt    %[t2],  %[t4],  %[qc3]  \n\t"
+            "slt    %[t3],  %[t4],  %[qc4]  \n\t"
+            "movn   %[qc1], %[t4],  %[t0]   \n\t"
+            "movn   %[qc2], %[t4],  %[t1]   \n\t"
+            "movn   %[qc3], %[t4],  %[t2]   \n\t"
+            "movn   %[qc4], %[t4],  %[t3]   \n\t"
 
             ".set pop                       \n\t"
 
             : [qc1]"+r"(qc1), [qc2]"+r"(qc2),
-              [qc3]"+r"(qc3), [qc4]"+r"(qc4)
-            :
-            : "t0", "t1", "t2", "t3", "t4"
+              [qc3]"+r"(qc3), [qc4]"+r"(qc4),
+              [t0]"=&r"(t0), [t1]"=&r"(t1), [t2]"=&r"(t2), [t3]"=&r"(t3),
+              [t4]"=&r"(t4)
         );
 
         curidx = qc1;
@@ -1017,6 +1032,7 @@ static float get_band_numbits_SPAIR_mips(struct AACEncContext *s,
     for (i = 0; i < size; i += 4) {
         int curidx, curidx2;
         int *in_int = (int *)&in[i];
+        int t0, t1, t2, t3, t4, t5, t6, t7;
 
         qc1 = scaled[i  ] * Q34 + 0.4054f;
         qc2 = scaled[i+1] * Q34 + 0.4054f;
@@ -1027,40 +1043,40 @@ static float get_band_numbits_SPAIR_mips(struct AACEncContext *s,
             ".set push                      \n\t"
             ".set noreorder                 \n\t"
 
-            "ori    $t4,    $zero,  4       \n\t"
-            "slt    $t0,    $t4,    %[qc1]  \n\t"
-            "slt    $t1,    $t4,    %[qc2]  \n\t"
-            "slt    $t2,    $t4,    %[qc3]  \n\t"
-            "slt    $t3,    $t4,    %[qc4]  \n\t"
-            "movn   %[qc1], $t4,    $t0     \n\t"
-            "movn   %[qc2], $t4,    $t1     \n\t"
-            "movn   %[qc3], $t4,    $t2     \n\t"
-            "movn   %[qc4], $t4,    $t3     \n\t"
-            "lw     $t0,    0(%[in_int])    \n\t"
-            "lw     $t1,    4(%[in_int])    \n\t"
-            "lw     $t2,    8(%[in_int])    \n\t"
-            "lw     $t3,    12(%[in_int])   \n\t"
-            "srl    $t0,    $t0,    31      \n\t"
-            "srl    $t1,    $t1,    31      \n\t"
-            "srl    $t2,    $t2,    31      \n\t"
-            "srl    $t3,    $t3,    31      \n\t"
-            "subu   $t4,    $zero,  %[qc1]  \n\t"
-            "subu   $t5,    $zero,  %[qc2]  \n\t"
-            "subu   $t6,    $zero,  %[qc3]  \n\t"
-            "subu   $t7,    $zero,  %[qc4]  \n\t"
-            "movn   %[qc1], $t4,    $t0     \n\t"
-            "movn   %[qc2], $t5,    $t1     \n\t"
-            "movn   %[qc3], $t6,    $t2     \n\t"
-            "movn   %[qc4], $t7,    $t3     \n\t"
+            "ori    %[t4],  $zero,  4       \n\t"
+            "slt    %[t0],  %[t4],  %[qc1]  \n\t"
+            "slt    %[t1],  %[t4],  %[qc2]  \n\t"
+            "slt    %[t2],  %[t4],  %[qc3]  \n\t"
+            "slt    %[t3],  %[t4],  %[qc4]  \n\t"
+            "movn   %[qc1], %[t4],  %[t0]   \n\t"
+            "movn   %[qc2], %[t4],  %[t1]   \n\t"
+            "movn   %[qc3], %[t4],  %[t2]   \n\t"
+            "movn   %[qc4], %[t4],  %[t3]   \n\t"
+            "lw     %[t0],  0(%[in_int])    \n\t"
+            "lw     %[t1],  4(%[in_int])    \n\t"
+            "lw     %[t2],  8(%[in_int])    \n\t"
+            "lw     %[t3],  12(%[in_int])   \n\t"
+            "srl    %[t0],  %[t0],  31      \n\t"
+            "srl    %[t1],  %[t1],  31      \n\t"
+            "srl    %[t2],  %[t2],  31      \n\t"
+            "srl    %[t3],  %[t3],  31      \n\t"
+            "subu   %[t4],  $zero,  %[qc1]  \n\t"
+            "subu   %[t5],  $zero,  %[qc2]  \n\t"
+            "subu   %[t6],  $zero,  %[qc3]  \n\t"
+            "subu   %[t7],  $zero,  %[qc4]  \n\t"
+            "movn   %[qc1], %[t4],  %[t0]   \n\t"
+            "movn   %[qc2], %[t5],  %[t1]   \n\t"
+            "movn   %[qc3], %[t6],  %[t2]   \n\t"
+            "movn   %[qc4], %[t7],  %[t3]   \n\t"
 
             ".set pop                       \n\t"
 
             : [qc1]"+r"(qc1), [qc2]"+r"(qc2),
-              [qc3]"+r"(qc3), [qc4]"+r"(qc4)
+              [qc3]"+r"(qc3), [qc4]"+r"(qc4),
+              [t0]"=&r"(t0), [t1]"=&r"(t1), [t2]"=&r"(t2), [t3]"=&r"(t3),
+              [t4]"=&r"(t4), [t5]"=&r"(t5), [t6]"=&r"(t6), [t7]"=&r"(t7)
             : [in_int]"r"(in_int)
-            : "t0", "t1", "t2", "t3",
-              "t4", "t5", "t6", "t7",
-              "memory"
+            : "memory"
         );
 
         curidx  = 9 * qc1;
@@ -1089,6 +1105,7 @@ static float get_band_numbits_UPAIR7_mips(struct AACEncContext *s,
 
     for (i = 0; i < size; i += 4) {
         int curidx, curidx2;
+        int t0, t1, t2, t3, t4;
 
         qc1 = scaled[i  ] * Q34 + 0.4054f;
         qc2 = scaled[i+1] * Q34 + 0.4054f;
@@ -1099,22 +1116,22 @@ static float get_band_numbits_UPAIR7_mips(struct AACEncContext *s,
             ".set push                      \n\t"
             ".set noreorder                 \n\t"
 
-            "ori    $t4,    $zero,  7       \n\t"
-            "slt    $t0,    $t4,    %[qc1]  \n\t"
-            "slt    $t1,    $t4,    %[qc2]  \n\t"
-            "slt    $t2,    $t4,    %[qc3]  \n\t"
-            "slt    $t3,    $t4,    %[qc4]  \n\t"
-            "movn   %[qc1], $t4,    $t0     \n\t"
-            "movn   %[qc2], $t4,    $t1     \n\t"
-            "movn   %[qc3], $t4,    $t2     \n\t"
-            "movn   %[qc4], $t4,    $t3     \n\t"
+            "ori    %[t4],  $zero,  7       \n\t"
+            "slt    %[t0],  %[t4],  %[qc1]  \n\t"
+            "slt    %[t1],  %[t4],  %[qc2]  \n\t"
+            "slt    %[t2],  %[t4],  %[qc3]  \n\t"
+            "slt    %[t3],  %[t4],  %[qc4]  \n\t"
+            "movn   %[qc1], %[t4],  %[t0]   \n\t"
+            "movn   %[qc2], %[t4],  %[t1]   \n\t"
+            "movn   %[qc3], %[t4],  %[t2]   \n\t"
+            "movn   %[qc4], %[t4],  %[t3]   \n\t"
 
             ".set pop                       \n\t"
 
             : [qc1]"+r"(qc1), [qc2]"+r"(qc2),
-              [qc3]"+r"(qc3), [qc4]"+r"(qc4)
-            :
-            : "t0", "t1", "t2", "t3", "t4"
+              [qc3]"+r"(qc3), [qc4]"+r"(qc4),
+              [t0]"=&r"(t0), [t1]"=&r"(t1), [t2]"=&r"(t2), [t3]"=&r"(t3),
+              [t4]"=&r"(t4)
         );
 
         curidx  = 8 * qc1;
@@ -1146,6 +1163,7 @@ static float get_band_numbits_UPAIR12_mips(struct AACEncContext *s,
 
     for (i = 0; i < size; i += 4) {
         int curidx, curidx2;
+        int t0, t1, t2, t3, t4;
 
         qc1 = scaled[i  ] * Q34 + 0.4054f;
         qc2 = scaled[i+1] * Q34 + 0.4054f;
@@ -1156,22 +1174,22 @@ static float get_band_numbits_UPAIR12_mips(struct AACEncContext *s,
             ".set push                      \n\t"
             ".set noreorder                 \n\t"
 
-            "ori    $t4,    $zero,  12      \n\t"
-            "slt    $t0,    $t4,    %[qc1]  \n\t"
-            "slt    $t1,    $t4,    %[qc2]  \n\t"
-            "slt    $t2,    $t4,    %[qc3]  \n\t"
-            "slt    $t3,    $t4,    %[qc4]  \n\t"
-            "movn   %[qc1], $t4,    $t0     \n\t"
-            "movn   %[qc2], $t4,    $t1     \n\t"
-            "movn   %[qc3], $t4,    $t2     \n\t"
-            "movn   %[qc4], $t4,    $t3     \n\t"
+            "ori    %[t4],  $zero,  12      \n\t"
+            "slt    %[t0],  %[t4],  %[qc1]  \n\t"
+            "slt    %[t1],  %[t4],  %[qc2]  \n\t"
+            "slt    %[t2],  %[t4],  %[qc3]  \n\t"
+            "slt    %[t3],  %[t4],  %[qc4]  \n\t"
+            "movn   %[qc1], %[t4],  %[t0]   \n\t"
+            "movn   %[qc2], %[t4],  %[t1]   \n\t"
+            "movn   %[qc3], %[t4],  %[t2]   \n\t"
+            "movn   %[qc4], %[t4],  %[t3]   \n\t"
 
             ".set pop                       \n\t"
 
             : [qc1]"+r"(qc1), [qc2]"+r"(qc2),
-              [qc3]"+r"(qc3), [qc4]"+r"(qc4)
-            :
-            : "t0", "t1", "t2", "t3", "t4"
+              [qc3]"+r"(qc3), [qc4]"+r"(qc4),
+              [t0]"=&r"(t0), [t1]"=&r"(t1), [t2]"=&r"(t2), [t3]"=&r"(t3),
+              [t4]"=&r"(t4)
         );
 
         curidx  = 13 * qc1;
@@ -1205,6 +1223,7 @@ static float get_band_numbits_ESC_mips(struct AACEncContext *s,
         int curidx, curidx2;
         int cond0, cond1, cond2, cond3;
         int c1, c2, c3, c4;
+        int t4, t5;
 
         qc1 = scaled[i  ] * Q34 + 0.4054f;
         qc2 = scaled[i+1] * Q34 + 0.4054f;
@@ -1215,8 +1234,8 @@ static float get_band_numbits_ESC_mips(struct AACEncContext *s,
             ".set push                                  \n\t"
             ".set noreorder                             \n\t"
 
-            "ori        $t4,        $zero,  15          \n\t"
-            "ori        $t5,        $zero,  16          \n\t"
+            "ori        %[t4],      $zero,  15          \n\t"
+            "ori        %[t5],      $zero,  16          \n\t"
             "shll_s.w   %[c1],      %[qc1], 18          \n\t"
             "shll_s.w   %[c2],      %[qc2], 18          \n\t"
             "shll_s.w   %[c3],      %[qc3], 18          \n\t"
@@ -1225,23 +1244,23 @@ static float get_band_numbits_ESC_mips(struct AACEncContext *s,
             "srl        %[c2],      %[c2],  18          \n\t"
             "srl        %[c3],      %[c3],  18          \n\t"
             "srl        %[c4],      %[c4],  18          \n\t"
-            "slt        %[cond0],   $t4,    %[qc1]      \n\t"
-            "slt        %[cond1],   $t4,    %[qc2]      \n\t"
-            "slt        %[cond2],   $t4,    %[qc3]      \n\t"
-            "slt        %[cond3],   $t4,    %[qc4]      \n\t"
-            "movn       %[qc1],     $t5,    %[cond0]    \n\t"
-            "movn       %[qc2],     $t5,    %[cond1]    \n\t"
-            "movn       %[qc3],     $t5,    %[cond2]    \n\t"
-            "movn       %[qc4],     $t5,    %[cond3]    \n\t"
-            "ori        $t5,        $zero,  31          \n\t"
+            "slt        %[cond0],   %[t4],  %[qc1]      \n\t"
+            "slt        %[cond1],   %[t4],  %[qc2]      \n\t"
+            "slt        %[cond2],   %[t4],  %[qc3]      \n\t"
+            "slt        %[cond3],   %[t4],  %[qc4]      \n\t"
+            "movn       %[qc1],     %[t5],  %[cond0]    \n\t"
+            "movn       %[qc2],     %[t5],  %[cond1]    \n\t"
+            "movn       %[qc3],     %[t5],  %[cond2]    \n\t"
+            "movn       %[qc4],     %[t5],  %[cond3]    \n\t"
+            "ori        %[t5],      $zero,  31          \n\t"
             "clz        %[c1],      %[c1]               \n\t"
             "clz        %[c2],      %[c2]               \n\t"
             "clz        %[c3],      %[c3]               \n\t"
             "clz        %[c4],      %[c4]               \n\t"
-            "subu       %[c1],      $t5,    %[c1]       \n\t"
-            "subu       %[c2],      $t5,    %[c2]       \n\t"
-            "subu       %[c3],      $t5,    %[c3]       \n\t"
-            "subu       %[c4],      $t5,    %[c4]       \n\t"
+            "subu       %[c1],      %[t5],  %[c1]       \n\t"
+            "subu       %[c2],      %[t5],  %[c2]       \n\t"
+            "subu       %[c3],      %[t5],  %[c3]       \n\t"
+            "subu       %[c4],      %[t5],  %[c4]       \n\t"
             "sll        %[c1],      %[c1],  1           \n\t"
             "sll        %[c2],      %[c2],  1           \n\t"
             "sll        %[c3],      %[c3],  1           \n\t"
@@ -1266,9 +1285,8 @@ static float get_band_numbits_ESC_mips(struct AACEncContext *s,
               [cond0]"=&r"(cond0), [cond1]"=&r"(cond1),
               [cond2]"=&r"(cond2), [cond3]"=&r"(cond3),
               [c1]"=&r"(c1), [c2]"=&r"(c2),
-              [c3]"=&r"(c3), [c4]"=&r"(c4)
-            :
-            : "t4", "t5"
+              [c3]"=&r"(c3), [c4]"=&r"(c4),
+              [t4]"=&r"(t4), [t5]"=&r"(t5)
         );
 
         curidx = 17 * qc1;
@@ -1370,6 +1388,7 @@ static float get_band_cost_SQUAD_mips(struct AACEncContext *s,
         int   *in_int = (int   *)&in[i];
         float *in_pos = (float *)&in[i];
         float di0, di1, di2, di3;
+        int t0, t1, t2, t3, t4, t5, t6, t7;
 
         qc1 = scaled[i  ] * Q34 + 0.4054f;
         qc2 = scaled[i+1] * Q34 + 0.4054f;
@@ -1384,31 +1403,31 @@ static float get_band_cost_SQUAD_mips(struct AACEncContext *s,
             "slt        %[qc2], $zero,  %[qc2]          \n\t"
             "slt        %[qc3], $zero,  %[qc3]          \n\t"
             "slt        %[qc4], $zero,  %[qc4]          \n\t"
-            "lw         $t0,    0(%[in_int])            \n\t"
-            "lw         $t1,    4(%[in_int])            \n\t"
-            "lw         $t2,    8(%[in_int])            \n\t"
-            "lw         $t3,    12(%[in_int])           \n\t"
-            "srl        $t0,    $t0,    31              \n\t"
-            "srl        $t1,    $t1,    31              \n\t"
-            "srl        $t2,    $t2,    31              \n\t"
-            "srl        $t3,    $t3,    31              \n\t"
-            "subu       $t4,    $zero,  %[qc1]          \n\t"
-            "subu       $t5,    $zero,  %[qc2]          \n\t"
-            "subu       $t6,    $zero,  %[qc3]          \n\t"
-            "subu       $t7,    $zero,  %[qc4]          \n\t"
-            "movn       %[qc1], $t4,    $t0             \n\t"
-            "movn       %[qc2], $t5,    $t1             \n\t"
-            "movn       %[qc3], $t6,    $t2             \n\t"
-            "movn       %[qc4], $t7,    $t3             \n\t"
+            "lw         %[t0],  0(%[in_int])            \n\t"
+            "lw         %[t1],  4(%[in_int])            \n\t"
+            "lw         %[t2],  8(%[in_int])            \n\t"
+            "lw         %[t3],  12(%[in_int])           \n\t"
+            "srl        %[t0],  %[t0],  31              \n\t"
+            "srl        %[t1],  %[t1],  31              \n\t"
+            "srl        %[t2],  %[t2],  31              \n\t"
+            "srl        %[t3],  %[t3],  31              \n\t"
+            "subu       %[t4],  $zero,  %[qc1]          \n\t"
+            "subu       %[t5],  $zero,  %[qc2]          \n\t"
+            "subu       %[t6],  $zero,  %[qc3]          \n\t"
+            "subu       %[t7],  $zero,  %[qc4]          \n\t"
+            "movn       %[qc1], %[t4],  %[t0]           \n\t"
+            "movn       %[qc2], %[t5],  %[t1]           \n\t"
+            "movn       %[qc3], %[t6],  %[t2]           \n\t"
+            "movn       %[qc4], %[t7],  %[t3]           \n\t"
 
             ".set pop                                   \n\t"
 
             : [qc1]"+r"(qc1), [qc2]"+r"(qc2),
-              [qc3]"+r"(qc3), [qc4]"+r"(qc4)
+              [qc3]"+r"(qc3), [qc4]"+r"(qc4),
+              [t0]"=&r"(t0), [t1]"=&r"(t1), [t2]"=&r"(t2), [t3]"=&r"(t3),
+              [t4]"=&r"(t4), [t5]"=&r"(t5), [t6]"=&r"(t6), [t7]"=&r"(t7)
             : [in_int]"r"(in_int)
-            : "t0", "t1", "t2", "t3",
-              "t4", "t5", "t6", "t7",
-              "memory"
+            : "memory"
         );
 
         curidx = qc1;
@@ -1481,6 +1500,7 @@ static float get_band_cost_UQUAD_mips(struct AACEncContext *s,
         int curidx;
         float *in_pos = (float *)&in[i];
         float di0, di1, di2, di3;
+        int t0, t1, t2, t3, t4;
 
         qc1 = scaled[i  ] * Q34 + 0.4054f;
         qc2 = scaled[i+1] * Q34 + 0.4054f;
@@ -1491,22 +1511,22 @@ static float get_band_cost_UQUAD_mips(struct AACEncContext *s,
             ".set push                                  \n\t"
             ".set noreorder                             \n\t"
 
-            "ori        $t4,    $zero,  2               \n\t"
-            "slt        $t0,    $t4,    %[qc1]          \n\t"
-            "slt        $t1,    $t4,    %[qc2]          \n\t"
-            "slt        $t2,    $t4,    %[qc3]          \n\t"
-            "slt        $t3,    $t4,    %[qc4]          \n\t"
-            "movn       %[qc1], $t4,    $t0             \n\t"
-            "movn       %[qc2], $t4,    $t1             \n\t"
-            "movn       %[qc3], $t4,    $t2             \n\t"
-            "movn       %[qc4], $t4,    $t3             \n\t"
+            "ori        %[t4],  $zero,  2               \n\t"
+            "slt        %[t0],  %[t4],  %[qc1]          \n\t"
+            "slt        %[t1],  %[t4],  %[qc2]          \n\t"
+            "slt        %[t2],  %[t4],  %[qc3]          \n\t"
+            "slt        %[t3],  %[t4],  %[qc4]          \n\t"
+            "movn       %[qc1], %[t4],  %[t0]           \n\t"
+            "movn       %[qc2], %[t4],  %[t1]           \n\t"
+            "movn       %[qc3], %[t4],  %[t2]           \n\t"
+            "movn       %[qc4], %[t4],  %[t3]           \n\t"
 
             ".set pop                                   \n\t"
 
             : [qc1]"+r"(qc1), [qc2]"+r"(qc2),
-              [qc3]"+r"(qc3), [qc4]"+r"(qc4)
-            :
-            : "t0", "t1", "t2", "t3", "t4"
+              [qc3]"+r"(qc3), [qc4]"+r"(qc4),
+              [t0]"=&r"(t0), [t1]"=&r"(t1), [t2]"=&r"(t2), [t3]"=&r"(t3),
+              [t4]"=&r"(t4)
         );
 
         curidx = qc1;
@@ -1583,6 +1603,7 @@ static float get_band_cost_SPAIR_mips(struct AACEncContext *s,
         int   *in_int = (int   *)&in[i];
         float *in_pos = (float *)&in[i];
         float di0, di1, di2, di3;
+        int t0, t1, t2, t3, t4, t5, t6, t7;
 
         qc1 = scaled[i  ] * Q34 + 0.4054f;
         qc2 = scaled[i+1] * Q34 + 0.4054f;
@@ -1593,40 +1614,40 @@ static float get_band_cost_SPAIR_mips(struct AACEncContext *s,
             ".set push                                  \n\t"
             ".set noreorder                             \n\t"
 
-            "ori        $t4,    $zero,  4               \n\t"
-            "slt        $t0,    $t4,    %[qc1]          \n\t"
-            "slt        $t1,    $t4,    %[qc2]          \n\t"
-            "slt        $t2,    $t4,    %[qc3]          \n\t"
-            "slt        $t3,    $t4,    %[qc4]          \n\t"
-            "movn       %[qc1], $t4,    $t0             \n\t"
-            "movn       %[qc2], $t4,    $t1             \n\t"
-            "movn       %[qc3], $t4,    $t2             \n\t"
-            "movn       %[qc4], $t4,    $t3             \n\t"
-            "lw         $t0,    0(%[in_int])            \n\t"
-            "lw         $t1,    4(%[in_int])            \n\t"
-            "lw         $t2,    8(%[in_int])            \n\t"
-            "lw         $t3,    12(%[in_int])           \n\t"
-            "srl        $t0,    $t0,    31              \n\t"
-            "srl        $t1,    $t1,    31              \n\t"
-            "srl        $t2,    $t2,    31              \n\t"
-            "srl        $t3,    $t3,    31              \n\t"
-            "subu       $t4,    $zero,  %[qc1]          \n\t"
-            "subu       $t5,    $zero,  %[qc2]          \n\t"
-            "subu       $t6,    $zero,  %[qc3]          \n\t"
-            "subu       $t7,    $zero,  %[qc4]          \n\t"
-            "movn       %[qc1], $t4,    $t0             \n\t"
-            "movn       %[qc2], $t5,    $t1             \n\t"
-            "movn       %[qc3], $t6,    $t2             \n\t"
-            "movn       %[qc4], $t7,    $t3             \n\t"
+            "ori        %[t4],  $zero,  4               \n\t"
+            "slt        %[t0],  %[t4],  %[qc1]          \n\t"
+            "slt        %[t1],  %[t4],  %[qc2]          \n\t"
+            "slt        %[t2],  %[t4],  %[qc3]          \n\t"
+            "slt        %[t3],  %[t4],  %[qc4]          \n\t"
+            "movn       %[qc1], %[t4],  %[t0]           \n\t"
+            "movn       %[qc2], %[t4],  %[t1]           \n\t"
+            "movn       %[qc3], %[t4],  %[t2]           \n\t"
+            "movn       %[qc4], %[t4],  %[t3]           \n\t"
+            "lw         %[t0],  0(%[in_int])            \n\t"
+            "lw         %[t1],  4(%[in_int])            \n\t"
+            "lw         %[t2],  8(%[in_int])            \n\t"
+            "lw         %[t3],  12(%[in_int])           \n\t"
+            "srl        %[t0],  %[t0],  31              \n\t"
+            "srl        %[t1],  %[t1],  31              \n\t"
+            "srl        %[t2],  %[t2],  31              \n\t"
+            "srl        %[t3],  %[t3],  31              \n\t"
+            "subu       %[t4],  $zero,  %[qc1]          \n\t"
+            "subu       %[t5],  $zero,  %[qc2]          \n\t"
+            "subu       %[t6],  $zero,  %[qc3]          \n\t"
+            "subu       %[t7],  $zero,  %[qc4]          \n\t"
+            "movn       %[qc1], %[t4],  %[t0]           \n\t"
+            "movn       %[qc2], %[t5],  %[t1]           \n\t"
+            "movn       %[qc3], %[t6],  %[t2]           \n\t"
+            "movn       %[qc4], %[t7],  %[t3]           \n\t"
 
             ".set pop                                   \n\t"
 
             : [qc1]"+r"(qc1), [qc2]"+r"(qc2),
-              [qc3]"+r"(qc3), [qc4]"+r"(qc4)
+              [qc3]"+r"(qc3), [qc4]"+r"(qc4),
+              [t0]"=&r"(t0), [t1]"=&r"(t1), [t2]"=&r"(t2), [t3]"=&r"(t3),
+              [t4]"=&r"(t4), [t5]"=&r"(t5), [t6]"=&r"(t6), [t7]"=&r"(t7)
             : [in_int]"r"(in_int)
-            : "t0", "t1", "t2", "t3",
-              "t4", "t5", "t6", "t7",
-              "memory"
+            : "memory"
         );
 
         curidx = 9 * qc1;
@@ -1700,6 +1721,7 @@ static float get_band_cost_UPAIR7_mips(struct AACEncContext *s,
         int   *in_int = (int   *)&in[i];
         float *in_pos = (float *)&in[i];
         float di0, di1, di2, di3;
+        int t0, t1, t2, t3, t4;
 
         qc1 = scaled[i  ] * Q34 + 0.4054f;
         qc2 = scaled[i+1] * Q34 + 0.4054f;
@@ -1710,49 +1732,50 @@ static float get_band_cost_UPAIR7_mips(struct AACEncContext *s,
             ".set push                                          \n\t"
             ".set noreorder                                     \n\t"
 
-            "ori        $t4,        $zero,      7               \n\t"
+            "ori        %[t4],      $zero,      7               \n\t"
             "ori        %[sign1],   $zero,      0               \n\t"
             "ori        %[sign2],   $zero,      0               \n\t"
-            "slt        $t0,        $t4,        %[qc1]          \n\t"
-            "slt        $t1,        $t4,        %[qc2]          \n\t"
-            "slt        $t2,        $t4,        %[qc3]          \n\t"
-            "slt        $t3,        $t4,        %[qc4]          \n\t"
-            "movn       %[qc1],     $t4,        $t0             \n\t"
-            "movn       %[qc2],     $t4,        $t1             \n\t"
-            "movn       %[qc3],     $t4,        $t2             \n\t"
-            "movn       %[qc4],     $t4,        $t3             \n\t"
-            "lw         $t0,        0(%[in_int])                \n\t"
-            "lw         $t1,        4(%[in_int])                \n\t"
-            "lw         $t2,        8(%[in_int])                \n\t"
-            "lw         $t3,        12(%[in_int])               \n\t"
-            "slt        $t0,        $t0,        $zero           \n\t"
-            "movn       %[sign1],   $t0,        %[qc1]          \n\t"
-            "slt        $t2,        $t2,        $zero           \n\t"
-            "movn       %[sign2],   $t2,        %[qc3]          \n\t"
-            "slt        $t1,        $t1,        $zero           \n\t"
-            "sll        $t0,        %[sign1],   1               \n\t"
-            "or         $t0,        $t0,        $t1             \n\t"
-            "movn       %[sign1],   $t0,        %[qc2]          \n\t"
-            "slt        $t3,        $t3,        $zero           \n\t"
-            "sll        $t0,        %[sign2],   1               \n\t"
-            "or         $t0,        $t0,        $t3             \n\t"
-            "movn       %[sign2],   $t0,        %[qc4]          \n\t"
+            "slt        %[t0],      %[t4],      %[qc1]          \n\t"
+            "slt        %[t1],      %[t4],      %[qc2]          \n\t"
+            "slt        %[t2],      %[t4],      %[qc3]          \n\t"
+            "slt        %[t3],      %[t4],      %[qc4]          \n\t"
+            "movn       %[qc1],     %[t4],      %[t0]           \n\t"
+            "movn       %[qc2],     %[t4],      %[t1]           \n\t"
+            "movn       %[qc3],     %[t4],      %[t2]           \n\t"
+            "movn       %[qc4],     %[t4],      %[t3]           \n\t"
+            "lw         %[t0],      0(%[in_int])                \n\t"
+            "lw         %[t1],      4(%[in_int])                \n\t"
+            "lw         %[t2],      8(%[in_int])                \n\t"
+            "lw         %[t3],      12(%[in_int])               \n\t"
+            "slt        %[t0],      %[t0],      $zero           \n\t"
+            "movn       %[sign1],   %[t0],      %[qc1]          \n\t"
+            "slt        %[t2],      %[t2],      $zero           \n\t"
+            "movn       %[sign2],   %[t2],      %[qc3]          \n\t"
+            "slt        %[t1],      %[t1],      $zero           \n\t"
+            "sll        %[t0],      %[sign1],   1               \n\t"
+            "or         %[t0],      %[t0],      %[t1]           \n\t"
+            "movn       %[sign1],   %[t0],      %[qc2]          \n\t"
+            "slt        %[t3],      %[t3],      $zero           \n\t"
+            "sll        %[t0],      %[sign2],   1               \n\t"
+            "or         %[t0],      %[t0],      %[t3]           \n\t"
+            "movn       %[sign2],   %[t0],      %[qc4]          \n\t"
             "slt        %[count1],  $zero,      %[qc1]          \n\t"
-            "slt        $t1,        $zero,      %[qc2]          \n\t"
+            "slt        %[t1],      $zero,      %[qc2]          \n\t"
             "slt        %[count2],  $zero,      %[qc3]          \n\t"
-            "slt        $t2,        $zero,      %[qc4]          \n\t"
-            "addu       %[count1],  %[count1],  $t1             \n\t"
-            "addu       %[count2],  %[count2],  $t2             \n\t"
+            "slt        %[t2],      $zero,      %[qc4]          \n\t"
+            "addu       %[count1],  %[count1],  %[t1]           \n\t"
+            "addu       %[count2],  %[count2],  %[t2]           \n\t"
 
             ".set pop                                           \n\t"
 
             : [qc1]"+r"(qc1), [qc2]"+r"(qc2),
               [qc3]"+r"(qc3), [qc4]"+r"(qc4),
               [sign1]"=&r"(sign1), [count1]"=&r"(count1),
-              [sign2]"=&r"(sign2), [count2]"=&r"(count2)
+              [sign2]"=&r"(sign2), [count2]"=&r"(count2),
+              [t0]"=&r"(t0), [t1]"=&r"(t1), [t2]"=&r"(t2), [t3]"=&r"(t3),
+              [t4]"=&r"(t4)
             : [in_int]"r"(in_int)
-            : "t0", "t1", "t2", "t3", "t4",
-              "memory"
+            : "memory"
         );
 
         curidx = 8 * qc1;
@@ -1832,6 +1855,7 @@ static float get_band_cost_UPAIR12_mips(struct AACEncContext *s,
         int   *in_int = (int   *)&in[i];
         float *in_pos = (float *)&in[i];
         float di0, di1, di2, di3;
+        int t0, t1, t2, t3, t4;
 
         qc1 = scaled[i  ] * Q34 + 0.4054f;
         qc2 = scaled[i+1] * Q34 + 0.4054f;
@@ -1842,49 +1866,50 @@ static float get_band_cost_UPAIR12_mips(struct AACEncContext *s,
             ".set push                                          \n\t"
             ".set noreorder                                     \n\t"
 
-            "ori        $t4,        $zero,      12              \n\t"
+            "ori        %[t4],      $zero,      12              \n\t"
             "ori        %[sign1],   $zero,      0               \n\t"
             "ori        %[sign2],   $zero,      0               \n\t"
-            "slt        $t0,        $t4,        %[qc1]          \n\t"
-            "slt        $t1,        $t4,        %[qc2]          \n\t"
-            "slt        $t2,        $t4,        %[qc3]          \n\t"
-            "slt        $t3,        $t4,        %[qc4]          \n\t"
-            "movn       %[qc1],     $t4,        $t0             \n\t"
-            "movn       %[qc2],     $t4,        $t1             \n\t"
-            "movn       %[qc3],     $t4,        $t2             \n\t"
-            "movn       %[qc4],     $t4,        $t3             \n\t"
-            "lw         $t0,        0(%[in_int])                \n\t"
-            "lw         $t1,        4(%[in_int])                \n\t"
-            "lw         $t2,        8(%[in_int])                \n\t"
-            "lw         $t3,        12(%[in_int])               \n\t"
-            "slt        $t0,        $t0,        $zero           \n\t"
-            "movn       %[sign1],   $t0,        %[qc1]          \n\t"
-            "slt        $t2,        $t2,        $zero           \n\t"
-            "movn       %[sign2],   $t2,        %[qc3]          \n\t"
-            "slt        $t1,        $t1,        $zero           \n\t"
-            "sll        $t0,        %[sign1],   1               \n\t"
-            "or         $t0,        $t0,        $t1             \n\t"
-            "movn       %[sign1],   $t0,        %[qc2]          \n\t"
-            "slt        $t3,        $t3,        $zero           \n\t"
-            "sll        $t0,        %[sign2],   1               \n\t"
-            "or         $t0,        $t0,        $t3             \n\t"
-            "movn       %[sign2],   $t0,        %[qc4]          \n\t"
+            "slt        %[t0],      %[t4],      %[qc1]          \n\t"
+            "slt        %[t1],      %[t4],      %[qc2]          \n\t"
+            "slt        %[t2],      %[t4],      %[qc3]          \n\t"
+            "slt        %[t3],      %[t4],      %[qc4]          \n\t"
+            "movn       %[qc1],     %[t4],      %[t0]           \n\t"
+            "movn       %[qc2],     %[t4],      %[t1]           \n\t"
+            "movn       %[qc3],     %[t4],      %[t2]           \n\t"
+            "movn       %[qc4],     %[t4],      %[t3]           \n\t"
+            "lw         %[t0],      0(%[in_int])                \n\t"
+            "lw         %[t1],      4(%[in_int])                \n\t"
+            "lw         %[t2],      8(%[in_int])                \n\t"
+            "lw         %[t3],      12(%[in_int])               \n\t"
+            "slt        %[t0],      %[t0],      $zero           \n\t"
+            "movn       %[sign1],   %[t0],      %[qc1]          \n\t"
+            "slt        %[t2],      %[t2],      $zero           \n\t"
+            "movn       %[sign2],   %[t2],      %[qc3]          \n\t"
+            "slt        %[t1],      %[t1],      $zero           \n\t"
+            "sll        %[t0],      %[sign1],   1               \n\t"
+            "or         %[t0],      %[t0],      %[t1]           \n\t"
+            "movn       %[sign1],   %[t0],      %[qc2]          \n\t"
+            "slt        %[t3],      %[t3],      $zero           \n\t"
+            "sll        %[t0],      %[sign2],   1               \n\t"
+            "or         %[t0],      %[t0],      %[t3]           \n\t"
+            "movn       %[sign2],   %[t0],      %[qc4]          \n\t"
             "slt        %[count1],  $zero,      %[qc1]          \n\t"
-            "slt        $t1,        $zero,      %[qc2]          \n\t"
+            "slt        %[t1],      $zero,      %[qc2]          \n\t"
             "slt        %[count2],  $zero,      %[qc3]          \n\t"
-            "slt        $t2,        $zero,      %[qc4]          \n\t"
-            "addu       %[count1],  %[count1],  $t1             \n\t"
-            "addu       %[count2],  %[count2],  $t2             \n\t"
+            "slt        %[t2],      $zero,      %[qc4]          \n\t"
+            "addu       %[count1],  %[count1],  %[t1]           \n\t"
+            "addu       %[count2],  %[count2],  %[t2]           \n\t"
 
             ".set pop                                           \n\t"
 
             : [qc1]"+r"(qc1), [qc2]"+r"(qc2),
               [qc3]"+r"(qc3), [qc4]"+r"(qc4),
               [sign1]"=&r"(sign1), [count1]"=&r"(count1),
-              [sign2]"=&r"(sign2), [count2]"=&r"(count2)
+              [sign2]"=&r"(sign2), [count2]"=&r"(count2),
+              [t0]"=&r"(t0), [t1]"=&r"(t1), [t2]"=&r"(t2), [t3]"=&r"(t3),
+              [t4]"=&r"(t4)
             : [in_int]"r"(in_int)
-            : "t0", "t1", "t2", "t3", "t4",
-              "memory"
+            : "memory"
         );
 
         curidx = 13 * qc1;
@@ -1964,6 +1989,7 @@ static float get_band_cost_ESC_mips(struct AACEncContext *s,
         float di1, di2, di3, di4;
         int cond0, cond1, cond2, cond3;
         int c1, c2, c3, c4;
+        int t6, t7;
 
         qc1 = scaled[i  ] * Q34 + 0.4054f;
         qc2 = scaled[i+1] * Q34 + 0.4054f;
@@ -1974,8 +2000,8 @@ static float get_band_cost_ESC_mips(struct AACEncContext *s,
             ".set push                                  \n\t"
             ".set noreorder                             \n\t"
 
-            "ori        $t4,        $zero,  15          \n\t"
-            "ori        $t5,        $zero,  16          \n\t"
+            "ori        %[t6],      $zero,  15          \n\t"
+            "ori        %[t7],      $zero,  16          \n\t"
             "shll_s.w   %[c1],      %[qc1], 18          \n\t"
             "shll_s.w   %[c2],      %[qc2], 18          \n\t"
             "shll_s.w   %[c3],      %[qc3], 18          \n\t"
@@ -1984,14 +2010,14 @@ static float get_band_cost_ESC_mips(struct AACEncContext *s,
             "srl        %[c2],      %[c2],  18          \n\t"
             "srl        %[c3],      %[c3],  18          \n\t"
             "srl        %[c4],      %[c4],  18          \n\t"
-            "slt        %[cond0],   $t4,    %[qc1]      \n\t"
-            "slt        %[cond1],   $t4,    %[qc2]      \n\t"
-            "slt        %[cond2],   $t4,    %[qc3]      \n\t"
-            "slt        %[cond3],   $t4,    %[qc4]      \n\t"
-            "movn       %[qc1],     $t5,    %[cond0]    \n\t"
-            "movn       %[qc2],     $t5,    %[cond1]    \n\t"
-            "movn       %[qc3],     $t5,    %[cond2]    \n\t"
-            "movn       %[qc4],     $t5,    %[cond3]    \n\t"
+            "slt        %[cond0],   %[t6],  %[qc1]      \n\t"
+            "slt        %[cond1],   %[t6],  %[qc2]      \n\t"
+            "slt        %[cond2],   %[t6],  %[qc3]      \n\t"
+            "slt        %[cond3],   %[t6],  %[qc4]      \n\t"
+            "movn       %[qc1],     %[t7],  %[cond0]    \n\t"
+            "movn       %[qc2],     %[t7],  %[cond1]    \n\t"
+            "movn       %[qc3],     %[t7],  %[cond2]    \n\t"
+            "movn       %[qc4],     %[t7],  %[cond3]    \n\t"
 
             ".set pop                                   \n\t"
 
@@ -2000,9 +2026,8 @@ static float get_band_cost_ESC_mips(struct AACEncContext *s,
               [cond0]"=&r"(cond0), [cond1]"=&r"(cond1),
               [cond2]"=&r"(cond2), [cond3]"=&r"(cond3),
               [c1]"=&r"(c1), [c2]"=&r"(c2),
-              [c3]"=&r"(c3), [c4]"=&r"(c4)
-            :
-            : "t4", "t5"
+              [c3]"=&r"(c3), [c4]"=&r"(c4),
+              [t6]"=&r"(t6), [t7]"=&r"(t7)
         );
 
         curidx = 17 * qc1;

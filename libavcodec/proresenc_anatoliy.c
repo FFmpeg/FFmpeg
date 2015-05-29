@@ -156,8 +156,7 @@ typedef struct {
 
 static void encode_codeword(PutBitContext *pb, int val, int codebook)
 {
-    unsigned int rice_order, exp_order, switch_bits, first_exp, exp, zeros,
-            mask;
+    unsigned int rice_order, exp_order, switch_bits, first_exp, exp, zeros;
 
     /* number of bits to switch between rice and exp golomb */
     switch_bits = codebook & 3;
@@ -174,10 +173,9 @@ static void encode_codeword(PutBitContext *pb, int val, int codebook)
         put_bits(pb, zeros, 0);
         put_bits(pb, exp + 1, val);
     } else if (rice_order) {
-        mask = (1 << rice_order) - 1;
         put_bits(pb, (val >> rice_order), 0);
         put_bits(pb, 1, 1);
-        put_bits(pb, rice_order, val & mask);
+        put_sbits(pb, rice_order, val);
     } else {
         put_bits(pb, val, 0);
         put_bits(pb, 1, 1);
@@ -286,7 +284,8 @@ static int encode_slice_plane(AVCodecContext *avctx, int mb_count,
 {
     ProresContext* ctx = avctx->priv_data;
     FDCTDSPContext *fdsp = &ctx->fdsp;
-    DECLARE_ALIGNED(16, int16_t, blocks)[DEFAULT_SLICE_MB_WIDTH << 8], *block;
+    LOCAL_ALIGNED(16, int16_t, blocks, [DEFAULT_SLICE_MB_WIDTH << 8]);
+    int16_t *block;
     int i, blocks_per_slice;
     PutBitContext pb;
 
@@ -304,7 +303,7 @@ static int encode_slice_plane(AVCodecContext *avctx, int mb_count,
     }
 
     blocks_per_slice = mb_count << (2 - chroma);
-    init_put_bits(&pb, buf, buf_size << 3);
+    init_put_bits(&pb, buf, buf_size);
 
     encode_dc_coeffs(&pb, blocks, blocks_per_slice, qmat);
     encode_ac_coeffs(avctx, &pb, blocks, blocks_per_slice, qmat);
@@ -601,7 +600,7 @@ static av_cold int prores_encode_init(AVCodecContext *avctx)
 static av_cold int prores_encode_close(AVCodecContext *avctx)
 {
     ProresContext* ctx = avctx->priv_data;
-    av_freep(&avctx->coded_frame);
+    av_frame_free(&avctx->coded_frame);
     av_freep(&ctx->fill_y);
 
     return 0;

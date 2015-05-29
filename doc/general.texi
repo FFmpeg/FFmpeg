@@ -1,4 +1,5 @@
 \input texinfo @c -*- texinfo -*-
+@documentencoding UTF-8
 
 @settitle General Documentation
 @titlepage
@@ -108,6 +109,14 @@ Go to @url{http://www.wavpack.com/} and follow the instructions for
 installing the library. Then pass @code{--enable-libwavpack} to configure to
 enable it.
 
+@section OpenH264
+
+FFmpeg can make use of the OpenH264 library for H.264 encoding.
+
+Go to @url{http://www.openh264.org/} and follow the instructions for
+installing the library. Then pass @code{--enable-libopenh264} to configure to
+enable it.
+
 @section x264
 
 FFmpeg can make use of the x264 library for H.264 encoding.
@@ -130,7 +139,7 @@ Go to @url{http://x265.org/developers.html} and follow the instructions
 for installing the library. Then pass @code{--enable-libx265} to configure
 to enable it.
 
-@float note
+@float NOTE
 x265 is under the GNU Public License Version 2 or later
 (see @url{http://www.gnu.org/licenses/old-licenses/gpl-2.0.html} for
 details), you must upgrade FFmpeg's license to GPL in order to use it.
@@ -143,7 +152,7 @@ by Google as part of the WebRTC project. libilbc is a packaging friendly
 copy of the iLBC codec. FFmpeg can make use of the libilbc library for
 iLBC encoding and decoding.
 
-Go to @url{https://github.com/dekkers/libilbc} and follow the instructions for
+Go to @url{https://github.com/TimothyGu/libilbc} and follow the instructions for
 installing the library. Then pass @code{--enable-libilbc} to configure to
 enable it.
 
@@ -170,8 +179,8 @@ included in compat/avisynth/, which allows the user to enable support
 without needing to search for these headers themselves.
 
 For Windows, supported AviSynth variants are
-@url{http://avisynth.nl, AviSynth 2.5 or 2.6} for 32-bit builds and
-@url{http://avs-plus.net, AviSynth+ 0.1} for 32-bit and 64-bit builds.
+@url{http://avisynth.nl, AviSynth 2.6 RC1 or higher} for 32-bit builds and
+@url{http://avs-plus.net, AviSynth+ r1718 or higher} for 32-bit and 64-bit builds.
 
 For Linux and OS X, the supported AviSynth variant is
 @url{https://github.com/avxsynth/avxsynth, AvxSynth}.
@@ -213,6 +222,7 @@ library:
     @tab Audio format used on the Nintendo Gamecube.
 @item AFC                       @tab   @tab X
     @tab Audio format used on the Nintendo Gamecube.
+@item APNG                      @tab X @tab X
 @item ASF                       @tab X @tab X
 @item AST                       @tab X @tab X
     @tab Audio format used on the Nintendo Wii.
@@ -243,6 +253,10 @@ library:
     @tab Used in the game Cyberia from Interplay.
 @item Delphine Software International CIN @tab   @tab X
     @tab Multimedia format used by Delphine Software games.
+@item Digital Speech Standard (DSS) @tab   @tab X
+@item Canopus HQ                @tab   @tab X
+@item Canopus HQA               @tab   @tab X
+@item Canopus HQX               @tab   @tab X
 @item CD+G                      @tab   @tab X
     @tab Video format used by CD+G karaoke disks
 @item Phantom Cine              @tab   @tab X
@@ -454,6 +468,8 @@ library:
 @item Sony Wave64 (W64)         @tab X @tab X
 @item SoX native format         @tab X @tab X
 @item SUN AU format             @tab X @tab X
+@item SUP raw PGS subtitles     @tab   @tab X
+@item TDSC                      @tab   @tab X
 @item Text files                @tab   @tab X
 @item THP                       @tab   @tab X
     @tab Used on the Nintendo GameCube.
@@ -495,6 +511,7 @@ following image formats are supported:
 @item Alias PIX    @tab X @tab X
     @tab Alias/Wavefront PIX image format
 @item animated GIF @tab X @tab X
+@item APNG         @tab X @tab X
 @item BMP          @tab X @tab X
     @tab Microsoft BMP image
 @item BRender PIX  @tab   @tab X
@@ -652,7 +669,7 @@ following image formats are supported:
 @item H.263 / H.263-1996     @tab  X  @tab  X
 @item H.263+ / H.263-1998 / H.263 version 2  @tab  X  @tab  X
 @item H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10  @tab  E  @tab  X
-    @tab encoding supported through external library libx264
+    @tab encoding supported through external library libx264 and OpenH264
 @item HEVC                   @tab  X  @tab  X
     @tab encoding supported through the external library libx265
 @item HNM version 4          @tab     @tab  X
@@ -888,10 +905,12 @@ following image formats are supported:
     @tab decoding supported through external library libcelt
 @item Delphine Software International CIN audio  @tab     @tab  X
     @tab Codec used in Delphine Software International games.
+@item Digital Speech Standard - Standard Play mode (DSS SP) @tab     @tab  X
 @item Discworld II BMV Audio @tab     @tab  X
 @item COOK                   @tab     @tab  X
     @tab All versions except 5.1 are supported.
 @item DCA (DTS Coherent Acoustics)  @tab  X  @tab  X
+    @tab supported extensions: XCh, XLL (partially)
 @item DPCM id RoQ            @tab  X  @tab  X
     @tab Used in Quake III, Jedi Knight 2 and other computer games.
 @item DPCM Interplay         @tab     @tab  X
@@ -1030,6 +1049,7 @@ performance on systems without hardware floating point support).
 @item PJS (Phoenix)    @tab   @tab X @tab   @tab X
 @item RealText         @tab   @tab X @tab   @tab X
 @item SAMI             @tab   @tab X @tab   @tab X
+@item Spruce format (STL) @tab   @tab X @tab   @tab X
 @item SSA/ASS          @tab X @tab X @tab X @tab X
 @item SubRip (SRT)     @tab X @tab X @tab X @tab X
 @item SubViewer v1     @tab   @tab X @tab   @tab X
@@ -1055,6 +1075,7 @@ performance on systems without hardware floating point support).
 @item HLS          @tab X
 @item HTTP         @tab X
 @item HTTPS        @tab X
+@item Icecast      @tab X
 @item MMSH         @tab X
 @item MMST         @tab X
 @item pipe         @tab X

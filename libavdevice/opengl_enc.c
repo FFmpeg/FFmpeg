@@ -31,6 +31,7 @@
 #include "config.h"
 
 #if HAVE_WINDOWS_H
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #endif
 #if HAVE_OPENGL_GL3_H
@@ -164,7 +165,7 @@ typedef struct OpenGLVertexInfo
 } OpenGLVertexInfo;
 
 /* defines 2 triangles to display */
-static GLushort g_index[6] =
+static const GLushort g_index[6] =
 {
     0, 1, 2,
     0, 3, 2,

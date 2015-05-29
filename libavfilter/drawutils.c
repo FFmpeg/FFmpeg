@@ -75,7 +75,9 @@ int ff_fill_line_with_color(uint8_t *line[4], int pixel_step[4], int w, uint8_t 
         for (i = 0; i < 4; i++)
             dst_color[rgba_map[i]] = rgba_color[i];
 
-        line[0] = av_malloc(w * pixel_step[0]);
+        line[0] = av_malloc_array(w, pixel_step[0]);
+        if (!line[0])
+            return AVERROR(ENOMEM);
         for (i = 0; i < w; i++)
             memcpy(line[0] + i * pixel_step[0], dst_color, pixel_step[0]);
         if (rgba_map_ptr)
@@ -95,6 +97,11 @@ int ff_fill_line_with_color(uint8_t *line[4], int pixel_step[4], int w, uint8_t 
             pixel_step[plane] = 1;
             line_size = FF_CEIL_RSHIFT(w, hsub1) * pixel_step[plane];
             line[plane] = av_malloc(line_size);
+            if (!line[plane]) {
+                while(plane && line[plane-1])
+                    av_freep(&line[--plane]);
+                return AVERROR(ENOMEM);
+            }
             memset(line[plane], dst_color[plane], line_size);
         }
     }

@@ -31,21 +31,28 @@ typedef struct {
 
 static int srt_probe(AVProbeData *p)
 {
-    const unsigned char *ptr = p->buf;
-    int i, v, num = 0;
+    int v;
+    char buf[64], *pbuf;
+    FFTextReader tr;
 
-    if (AV_RB24(ptr) == 0xEFBBBF)
-        ptr += 3;  /* skip UTF-8 BOM */
+    ff_text_init_buf(&tr, p->buf, p->buf_size);
 
-    while (*ptr == '\r' || *ptr == '\n')
-        ptr++;
-    for (i=0; i<2; i++) {
-        if ((num == i || num + 1 == i)
-            && sscanf(ptr, "%*d:%*2d:%*2d%*1[,.]%*3d --> %*d:%*2d:%*2d%*1[,.]%3d", &v) == 1)
-            return AVPROBE_SCORE_MAX;
-        num = atoi(ptr);
-        ptr += ff_subtitles_next_line(ptr);
-    }
+    while (ff_text_peek_r8(&tr) == '\r' || ff_text_peek_r8(&tr) == '\n')
+        ff_text_r8(&tr);
+
+    /* Check if the first non-empty line is a number. We do not check what the
+     * number is because in practice it can be anything. */
+    if (ff_subtitles_read_line(&tr, buf, sizeof(buf)) < 0 ||
+        strtol(buf, &pbuf, 10) < 0 || *pbuf)
+        return 0;
+
+    /* Check if the next line matches a SRT timestamp */
+    if (ff_subtitles_read_line(&tr, buf, sizeof(buf)) < 0)
+        return 0;
+    if (buf[0] >= '0' && buf[1] <= '9' && strstr(buf, " --> ")
+        && sscanf(buf, "%*d:%*2d:%*2d%*1[,.]%*3d --> %*d:%*2d:%*2d%*1[,.]%3d", &v) == 1)
+        return AVPROBE_SCORE_MAX;
+
     return 0;
 }
 
@@ -79,6 +86,8 @@ static int srt_read_header(AVFormatContext *s)
     AVBPrint buf;
     AVStream *st = avformat_new_stream(s, NULL);
     int res = 0;
+    FFTextReader tr;
+    ff_text_init_avio(s, &tr, s->pb);
 
     if (!st)
         return AVERROR(ENOMEM);
@@ -88,11 +97,11 @@ static int srt_read_header(AVFormatContext *s)
 
     av_bprint_init(&buf, 0, AV_BPRINT_SIZE_UNLIMITED);
 
-    while (!url_feof(s->pb)) {
-        ff_subtitles_read_chunk(s->pb, &buf);
+    while (!ff_text_eof(&tr)) {
+        ff_subtitles_read_text_chunk(&tr, &buf);
 
         if (buf.len) {
-            int64_t pos = avio_tell(s->pb);
+            int64_t pos = ff_text_pos(&tr);
             int64_t pts;
             int duration;
             const char *ptr = buf.str;

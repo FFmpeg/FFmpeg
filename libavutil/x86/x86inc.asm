@@ -99,9 +99,6 @@
     %endif
 %endmacro
 
-; Always use long nops (reduces 0x90 spam in disassembly on x86_32)
-CPUNOP amdnop
-
 ; Macros to eliminate most code duplication between x86_32 and x86_64:
 ; Currently this works only for leaf functions which load all their arguments
 ; into registers at the start, and make no other use of the stack. Luckily that
@@ -725,8 +722,12 @@ BRANCH_INSTR jz, je, jnz, jne, jl, jle, jnl, jnle, jg, jge, jng, jnge, ja, jae, 
 ; This is needed for ELF, otherwise the GNU linker assumes the stack is
 ; executable by default.
 %ifidn __OUTPUT_FORMAT__,elf
-SECTION .note.GNU-stack noalloc noexec nowrite progbits
+[section .note.GNU-stack noalloc noexec nowrite progbits]
 %endif
+
+; Overrides the default .text section.
+; Silences warnings when defining structures.
+%define __SECT__
 
 ; cpuflags
 
@@ -759,19 +760,26 @@ SECTION .note.GNU-stack noalloc noexec nowrite progbits
 %define    cpuflag(x) ((cpuflags & (cpuflags_ %+ x)) == (cpuflags_ %+ x))
 %define notcpuflag(x) ((cpuflags & (cpuflags_ %+ x)) != (cpuflags_ %+ x))
 
-; Takes up to 2 cpuflags from the above list.
+; Takes an arbitrary number of cpuflags from the above list.
 ; All subsequent functions (up to the next INIT_CPUFLAGS) is built for the specified cpu.
 ; You shouldn't need to invoke this macro directly, it's a subroutine for INIT_MMX &co.
-%macro INIT_CPUFLAGS 0-2
-    CPUNOP amdnop
+%macro INIT_CPUFLAGS 0-*
+    %xdefine SUFFIX
+    %undef cpuname
+    %assign cpuflags 0
+
     %if %0 >= 1
-        %xdefine cpuname %1
-        %assign cpuflags cpuflags_%1
-        %if %0 >= 2
-            %xdefine cpuname %1_%2
-            %assign cpuflags cpuflags | cpuflags_%2
-        %endif
+        %rep %0
+            %ifdef cpuname
+                %xdefine cpuname cpuname %+ _%1
+            %else
+                %xdefine cpuname %1
+            %endif
+            %assign cpuflags cpuflags | cpuflags_%1
+            %rotate 1
+        %endrep
         %xdefine SUFFIX _ %+ cpuname
+
         %if cpuflag(avx)
             %assign avx_enabled 1
         %endif
@@ -782,23 +790,22 @@ SECTION .note.GNU-stack noalloc noexec nowrite progbits
         %endif
         %if cpuflag(aligned)
             %define movu mova
-        %elifidn %1, sse3
+        %elif cpuflag(sse3) && notcpuflag(ssse3)
             %define movu lddqu
         %endif
-        %if notcpuflag(sse2)
-            CPUNOP basicnop
-        %endif
+    %endif
+
+    %if cpuflag(sse2)
+        CPUNOP amdnop
     %else
-        %xdefine SUFFIX
-        %undef cpuname
-        %undef cpuflags
+        CPUNOP basicnop
     %endif
 %endmacro
 
 ; Merge mmx and sse*
-; m# is a simd regsiter of the currently selected size
-; xm# is the corresponding xmmreg (if selcted xmm or ymm size), or mmreg (if selected mmx)
-; ym# is the corresponding ymmreg (if selcted xmm or ymm size), or mmreg (if selected mmx)
+; m# is a simd register of the currently selected size
+; xm# is the corresponding xmm register if mmsize >= 16, otherwise the same as m#
+; ym# is the corresponding ymm register if mmsize >= 32, otherwise the same as m#
 ; (All 3 remain in sync through SWAP.)
 
 %macro CAT_XDEFINE 3
@@ -821,12 +828,12 @@ SECTION .note.GNU-stack noalloc noexec nowrite progbits
     %assign %%i 0
     %rep 8
     CAT_XDEFINE m, %%i, mm %+ %%i
-    CAT_XDEFINE nmm, %%i, %%i
+    CAT_XDEFINE nnmm, %%i, %%i
     %assign %%i %%i+1
     %endrep
     %rep 8
     CAT_UNDEF m, %%i
-    CAT_UNDEF nmm, %%i
+    CAT_UNDEF nnmm, %%i
     %assign %%i %%i+1
     %endrep
     INIT_CPUFLAGS %1
@@ -847,18 +854,10 @@ SECTION .note.GNU-stack noalloc noexec nowrite progbits
     %assign %%i 0
     %rep num_mmregs
     CAT_XDEFINE m, %%i, xmm %+ %%i
-    CAT_XDEFINE nxmm, %%i, %%i
+    CAT_XDEFINE nnxmm, %%i, %%i
     %assign %%i %%i+1
     %endrep
     INIT_CPUFLAGS %1
-%endmacro
-
-; FIXME: INIT_AVX can be replaced by INIT_XMM avx
-%macro INIT_AVX 0
-    INIT_XMM
-    %assign avx_enabled 1
-    %define PALIGNR PALIGNR_SSSE3
-    %define RESET_MM_PERMUTATION INIT_AVX
 %endmacro
 
 %macro INIT_YMM 0-1+
@@ -876,7 +875,7 @@ SECTION .note.GNU-stack noalloc noexec nowrite progbits
     %assign %%i 0
     %rep num_mmregs
     CAT_XDEFINE m, %%i, ymm %+ %%i
-    CAT_XDEFINE nymm, %%i, %%i
+    CAT_XDEFINE nnymm, %%i, %%i
     %assign %%i %%i+1
     %endrep
     INIT_CPUFLAGS %1
@@ -892,7 +891,7 @@ INIT_XMM
     %define xmmxmm%1 xmm%1
     %define xmmymm%1 xmm%1
     %define ymmmm%1   mm%1
-    %define ymmxmm%1 ymm%1
+    %define ymmxmm%1 xmm%1
     %define ymmymm%1 ymm%1
     %define xm%1 xmm %+ m%1
     %define ym%1 ymm %+ m%1
@@ -925,7 +924,7 @@ INIT_XMM
 %endrep
 %rep %0/2
     %xdefine m%1 %%tmp%2
-    CAT_XDEFINE n, m%1, %1
+    CAT_XDEFINE nn, m%1, %1
     %rotate 2
 %endrep
 %endmacro
@@ -943,16 +942,16 @@ INIT_XMM
         %xdefine %%tmp m%1
         %xdefine m%1 m%2
         %xdefine m%2 %%tmp
-        CAT_XDEFINE n, m%1, %1
-        CAT_XDEFINE n, m%2, %2
+        CAT_XDEFINE nn, m%1, %1
+        CAT_XDEFINE nn, m%2, %2
     %rotate 1
     %endrep
 %endmacro
 
 %macro SWAP_INTERNAL_NAME 2-*
-    %xdefine %%args n %+ %1
+    %xdefine %%args nn %+ %1
     %rep %0-1
-        %xdefine %%args %%args, n %+ %2
+        %xdefine %%args %%args, nn %+ %2
     %rotate 1
     %endrep
     SWAP_INTERNAL_NUM %%args
@@ -979,7 +978,7 @@ INIT_XMM
         %assign %%i 0
         %rep num_mmregs
             CAT_XDEFINE m, %%i, %1_m %+ %%i
-            CAT_XDEFINE n, m %+ %%i, %%i
+            CAT_XDEFINE nn, m %+ %%i, %%i
         %assign %%i %%i+1
         %endrep
     %endif
@@ -1052,15 +1051,16 @@ INIT_XMM
 %endmacro
 
 ;%1 == instruction
-;%2 == 1 if float, 0 if int
-;%3 == 1 if non-destructive or 4-operand (xmm, xmm, xmm, imm), 0 otherwise
-;%4 == 1 if commutative (i.e. doesn't matter which src arg is which), 0 if not
-;%5+: operands
-%macro RUN_AVX_INSTR 5-8+
-    %ifnum sizeof%6
+;%2 == minimal instruction set
+;%3 == 1 if float, 0 if int
+;%4 == 1 if non-destructive or 4-operand (xmm, xmm, xmm, imm), 0 otherwise
+;%5 == 1 if commutative (i.e. doesn't matter which src arg is which), 0 if not
+;%6+: operands
+%macro RUN_AVX_INSTR 6-9+
+    %ifnum sizeof%7
+        %assign __sizeofreg sizeof%7
+    %elifnum sizeof%6
         %assign __sizeofreg sizeof%6
-    %elifnum sizeof%5
-        %assign __sizeofreg sizeof%5
     %else
         %assign __sizeofreg mmsize
     %endif
@@ -1069,325 +1069,335 @@ INIT_XMM
         %xdefine __instr v%1
     %else
         %xdefine __instr %1
-        %if %0 >= 7+%3
+        %if %0 >= 8+%4
             %assign __emulate_avx 1
+        %endif
+    %endif
+    %ifnidn %2, fnord
+        %ifdef cpuname
+            %if notcpuflag(%2)
+                %error use of ``%1'' %2 instruction in cpuname function: current_function
+            %elif cpuflags_%2 < cpuflags_sse && notcpuflag(sse2) && __sizeofreg > 8
+                %error use of ``%1'' sse2 instruction in cpuname function: current_function
+            %endif
         %endif
     %endif
 
     %if __emulate_avx
-        %xdefine __src1 %6
-        %xdefine __src2 %7
-        %ifnidn %5, %6
-            %if %0 >= 8
-                CHECK_AVX_INSTR_EMU {%1 %5, %6, %7, %8}, %5, %7, %8
+        %xdefine __src1 %7
+        %xdefine __src2 %8
+        %ifnidn %6, %7
+            %if %0 >= 9
+                CHECK_AVX_INSTR_EMU {%1 %6, %7, %8, %9}, %6, %8, %9
             %else
-                CHECK_AVX_INSTR_EMU {%1 %5, %6, %7}, %5, %7
+                CHECK_AVX_INSTR_EMU {%1 %6, %7, %8}, %6, %8
             %endif
-            %if %4 && %3 == 0
-                %ifnid %7
+            %if %5 && %4 == 0
+                %ifnid %8
                     ; 3-operand AVX instructions with a memory arg can only have it in src2,
                     ; whereas SSE emulation prefers to have it in src1 (i.e. the mov).
                     ; So, if the instruction is commutative with a memory arg, swap them.
-                    %xdefine __src1 %7
-                    %xdefine __src2 %6
+                    %xdefine __src1 %8
+                    %xdefine __src2 %7
                 %endif
             %endif
             %if __sizeofreg == 8
-                MOVQ %5, __src1
-            %elif %2
-                MOVAPS %5, __src1
+                MOVQ %6, __src1
+            %elif %3
+                MOVAPS %6, __src1
             %else
-                MOVDQA %5, __src1
+                MOVDQA %6, __src1
             %endif
         %endif
-        %if %0 >= 8
-            %1 %5, __src2, %8
+        %if %0 >= 9
+            %1 %6, __src2, %9
         %else
-            %1 %5, __src2
+            %1 %6, __src2
         %endif
-    %elif %0 >= 8
-        __instr %5, %6, %7, %8
+    %elif %0 >= 9
+        __instr %6, %7, %8, %9
+    %elif %0 == 8
+        __instr %6, %7, %8
     %elif %0 == 7
-        __instr %5, %6, %7
-    %elif %0 == 6
-        __instr %5, %6
+        __instr %6, %7
     %else
-        __instr %5
+        __instr %6
     %endif
 %endmacro
 
 ;%1 == instruction
-;%2 == 1 if float, 0 if int
-;%3 == 1 if non-destructive or 4-operand (xmm, xmm, xmm, imm), 0 otherwise
-;%4 == 1 if commutative (i.e. doesn't matter which src arg is which), 0 if not
-%macro AVX_INSTR 1-4 0, 1, 0
-    %macro %1 1-9 fnord, fnord, fnord, fnord, %1, %2, %3, %4
+;%2 == minimal instruction set
+;%3 == 1 if float, 0 if int
+;%4 == 1 if non-destructive or 4-operand (xmm, xmm, xmm, imm), 0 otherwise
+;%5 == 1 if commutative (i.e. doesn't matter which src arg is which), 0 if not
+%macro AVX_INSTR 1-5 fnord, 0, 1, 0
+    %macro %1 1-10 fnord, fnord, fnord, fnord, %1, %2, %3, %4, %5
         %ifidn %2, fnord
-            RUN_AVX_INSTR %6, %7, %8, %9, %1
+            RUN_AVX_INSTR %6, %7, %8, %9, %10, %1
         %elifidn %3, fnord
-            RUN_AVX_INSTR %6, %7, %8, %9, %1, %2
+            RUN_AVX_INSTR %6, %7, %8, %9, %10, %1, %2
         %elifidn %4, fnord
-            RUN_AVX_INSTR %6, %7, %8, %9, %1, %2, %3
+            RUN_AVX_INSTR %6, %7, %8, %9, %10, %1, %2, %3
         %elifidn %5, fnord
-            RUN_AVX_INSTR %6, %7, %8, %9, %1, %2, %3, %4
+            RUN_AVX_INSTR %6, %7, %8, %9, %10, %1, %2, %3, %4
         %else
-            RUN_AVX_INSTR %6, %7, %8, %9, %1, %2, %3, %4, %5
+            RUN_AVX_INSTR %6, %7, %8, %9, %10, %1, %2, %3, %4, %5
         %endif
     %endmacro
 %endmacro
 
 ; Instructions with both VEX and non-VEX encodings
 ; Non-destructive instructions are written without parameters
-AVX_INSTR addpd, 1, 0, 1
-AVX_INSTR addps, 1, 0, 1
-AVX_INSTR addsd, 1, 0, 1
-AVX_INSTR addss, 1, 0, 1
-AVX_INSTR addsubpd, 1, 0, 0
-AVX_INSTR addsubps, 1, 0, 0
-AVX_INSTR aesdec, 0, 0, 0
-AVX_INSTR aesdeclast, 0, 0, 0
-AVX_INSTR aesenc, 0, 0, 0
-AVX_INSTR aesenclast, 0, 0, 0
+AVX_INSTR addpd, sse2, 1, 0, 1
+AVX_INSTR addps, sse, 1, 0, 1
+AVX_INSTR addsd, sse2, 1, 0, 1
+AVX_INSTR addss, sse, 1, 0, 1
+AVX_INSTR addsubpd, sse3, 1, 0, 0
+AVX_INSTR addsubps, sse3, 1, 0, 0
+AVX_INSTR aesdec, fnord, 0, 0, 0
+AVX_INSTR aesdeclast, fnord, 0, 0, 0
+AVX_INSTR aesenc, fnord, 0, 0, 0
+AVX_INSTR aesenclast, fnord, 0, 0, 0
 AVX_INSTR aesimc
 AVX_INSTR aeskeygenassist
-AVX_INSTR andnpd, 1, 0, 0
-AVX_INSTR andnps, 1, 0, 0
-AVX_INSTR andpd, 1, 0, 1
-AVX_INSTR andps, 1, 0, 1
-AVX_INSTR blendpd, 1, 0, 0
-AVX_INSTR blendps, 1, 0, 0
-AVX_INSTR blendvpd, 1, 0, 0
-AVX_INSTR blendvps, 1, 0, 0
-AVX_INSTR cmppd, 1, 1, 0
-AVX_INSTR cmpps, 1, 1, 0
-AVX_INSTR cmpsd, 1, 1, 0
-AVX_INSTR cmpss, 1, 1, 0
-AVX_INSTR comisd
-AVX_INSTR comiss
-AVX_INSTR cvtdq2pd
-AVX_INSTR cvtdq2ps
-AVX_INSTR cvtpd2dq
-AVX_INSTR cvtpd2ps
-AVX_INSTR cvtps2dq
-AVX_INSTR cvtps2pd
-AVX_INSTR cvtsd2si
-AVX_INSTR cvtsd2ss
-AVX_INSTR cvtsi2sd
-AVX_INSTR cvtsi2ss
-AVX_INSTR cvtss2sd
-AVX_INSTR cvtss2si
-AVX_INSTR cvttpd2dq
-AVX_INSTR cvttps2dq
-AVX_INSTR cvttsd2si
-AVX_INSTR cvttss2si
-AVX_INSTR divpd, 1, 0, 0
-AVX_INSTR divps, 1, 0, 0
-AVX_INSTR divsd, 1, 0, 0
-AVX_INSTR divss, 1, 0, 0
-AVX_INSTR dppd, 1, 1, 0
-AVX_INSTR dpps, 1, 1, 0
-AVX_INSTR extractps
-AVX_INSTR haddpd, 1, 0, 0
-AVX_INSTR haddps, 1, 0, 0
-AVX_INSTR hsubpd, 1, 0, 0
-AVX_INSTR hsubps, 1, 0, 0
-AVX_INSTR insertps, 1, 1, 0
-AVX_INSTR lddqu
-AVX_INSTR ldmxcsr
-AVX_INSTR maskmovdqu
-AVX_INSTR maxpd, 1, 0, 1
-AVX_INSTR maxps, 1, 0, 1
-AVX_INSTR maxsd, 1, 0, 1
-AVX_INSTR maxss, 1, 0, 1
-AVX_INSTR minpd, 1, 0, 1
-AVX_INSTR minps, 1, 0, 1
-AVX_INSTR minsd, 1, 0, 1
-AVX_INSTR minss, 1, 0, 1
-AVX_INSTR movapd
-AVX_INSTR movaps
-AVX_INSTR movd
-AVX_INSTR movddup
-AVX_INSTR movdqa
-AVX_INSTR movdqu
-AVX_INSTR movhlps, 1, 0, 0
-AVX_INSTR movhpd, 1, 0, 0
-AVX_INSTR movhps, 1, 0, 0
-AVX_INSTR movlhps, 1, 0, 0
-AVX_INSTR movlpd, 1, 0, 0
-AVX_INSTR movlps, 1, 0, 0
-AVX_INSTR movmskpd
-AVX_INSTR movmskps
-AVX_INSTR movntdq
-AVX_INSTR movntdqa
-AVX_INSTR movntpd
-AVX_INSTR movntps
-AVX_INSTR movq
-AVX_INSTR movsd, 1, 0, 0
-AVX_INSTR movshdup
-AVX_INSTR movsldup
-AVX_INSTR movss, 1, 0, 0
-AVX_INSTR movupd
-AVX_INSTR movups
-AVX_INSTR mpsadbw, 0, 1, 0
-AVX_INSTR mulpd, 1, 0, 1
-AVX_INSTR mulps, 1, 0, 1
-AVX_INSTR mulsd, 1, 0, 1
-AVX_INSTR mulss, 1, 0, 1
-AVX_INSTR orpd, 1, 0, 1
-AVX_INSTR orps, 1, 0, 1
-AVX_INSTR pabsb
-AVX_INSTR pabsd
-AVX_INSTR pabsw
-AVX_INSTR packsswb, 0, 0, 0
-AVX_INSTR packssdw, 0, 0, 0
-AVX_INSTR packuswb, 0, 0, 0
-AVX_INSTR packusdw, 0, 0, 0
-AVX_INSTR paddb, 0, 0, 1
-AVX_INSTR paddw, 0, 0, 1
-AVX_INSTR paddd, 0, 0, 1
-AVX_INSTR paddq, 0, 0, 1
-AVX_INSTR paddsb, 0, 0, 1
-AVX_INSTR paddsw, 0, 0, 1
-AVX_INSTR paddusb, 0, 0, 1
-AVX_INSTR paddusw, 0, 0, 1
-AVX_INSTR palignr, 0, 1, 0
-AVX_INSTR pand, 0, 0, 1
-AVX_INSTR pandn, 0, 0, 0
-AVX_INSTR pavgb, 0, 0, 1
-AVX_INSTR pavgw, 0, 0, 1
-AVX_INSTR pblendvb, 0, 0, 0
-AVX_INSTR pblendw, 0, 1, 0
-AVX_INSTR pclmulqdq, 0, 1, 0
-AVX_INSTR pcmpestri
-AVX_INSTR pcmpestrm
-AVX_INSTR pcmpistri
-AVX_INSTR pcmpistrm
-AVX_INSTR pcmpeqb, 0, 0, 1
-AVX_INSTR pcmpeqw, 0, 0, 1
-AVX_INSTR pcmpeqd, 0, 0, 1
-AVX_INSTR pcmpeqq, 0, 0, 1
-AVX_INSTR pcmpgtb, 0, 0, 0
-AVX_INSTR pcmpgtw, 0, 0, 0
-AVX_INSTR pcmpgtd, 0, 0, 0
-AVX_INSTR pcmpgtq, 0, 0, 0
-AVX_INSTR pextrb
-AVX_INSTR pextrd
-AVX_INSTR pextrq
-AVX_INSTR pextrw
-AVX_INSTR phaddw, 0, 0, 0
-AVX_INSTR phaddd, 0, 0, 0
-AVX_INSTR phaddsw, 0, 0, 0
-AVX_INSTR phminposuw
-AVX_INSTR phsubw, 0, 0, 0
-AVX_INSTR phsubd, 0, 0, 0
-AVX_INSTR phsubsw, 0, 0, 0
-AVX_INSTR pinsrb, 0, 1, 0
-AVX_INSTR pinsrd, 0, 1, 0
-AVX_INSTR pinsrq, 0, 1, 0
-AVX_INSTR pinsrw, 0, 1, 0
-AVX_INSTR pmaddwd, 0, 0, 1
-AVX_INSTR pmaddubsw, 0, 0, 0
-AVX_INSTR pmaxsb, 0, 0, 1
-AVX_INSTR pmaxsw, 0, 0, 1
-AVX_INSTR pmaxsd, 0, 0, 1
-AVX_INSTR pmaxub, 0, 0, 1
-AVX_INSTR pmaxuw, 0, 0, 1
-AVX_INSTR pmaxud, 0, 0, 1
-AVX_INSTR pminsb, 0, 0, 1
-AVX_INSTR pminsw, 0, 0, 1
-AVX_INSTR pminsd, 0, 0, 1
-AVX_INSTR pminub, 0, 0, 1
-AVX_INSTR pminuw, 0, 0, 1
-AVX_INSTR pminud, 0, 0, 1
-AVX_INSTR pmovmskb
-AVX_INSTR pmovsxbw
-AVX_INSTR pmovsxbd
-AVX_INSTR pmovsxbq
-AVX_INSTR pmovsxwd
-AVX_INSTR pmovsxwq
-AVX_INSTR pmovsxdq
-AVX_INSTR pmovzxbw
-AVX_INSTR pmovzxbd
-AVX_INSTR pmovzxbq
-AVX_INSTR pmovzxwd
-AVX_INSTR pmovzxwq
-AVX_INSTR pmovzxdq
-AVX_INSTR pmuldq, 0, 0, 1
-AVX_INSTR pmulhrsw, 0, 0, 1
-AVX_INSTR pmulhuw, 0, 0, 1
-AVX_INSTR pmulhw, 0, 0, 1
-AVX_INSTR pmullw, 0, 0, 1
-AVX_INSTR pmulld, 0, 0, 1
-AVX_INSTR pmuludq, 0, 0, 1
-AVX_INSTR por, 0, 0, 1
-AVX_INSTR psadbw, 0, 0, 1
-AVX_INSTR pshufb, 0, 0, 0
-AVX_INSTR pshufd
-AVX_INSTR pshufhw
-AVX_INSTR pshuflw
-AVX_INSTR psignb, 0, 0, 0
-AVX_INSTR psignw, 0, 0, 0
-AVX_INSTR psignd, 0, 0, 0
-AVX_INSTR psllw, 0, 0, 0
-AVX_INSTR pslld, 0, 0, 0
-AVX_INSTR psllq, 0, 0, 0
-AVX_INSTR pslldq, 0, 0, 0
-AVX_INSTR psraw, 0, 0, 0
-AVX_INSTR psrad, 0, 0, 0
-AVX_INSTR psrlw, 0, 0, 0
-AVX_INSTR psrld, 0, 0, 0
-AVX_INSTR psrlq, 0, 0, 0
-AVX_INSTR psrldq, 0, 0, 0
-AVX_INSTR psubb, 0, 0, 0
-AVX_INSTR psubw, 0, 0, 0
-AVX_INSTR psubd, 0, 0, 0
-AVX_INSTR psubq, 0, 0, 0
-AVX_INSTR psubsb, 0, 0, 0
-AVX_INSTR psubsw, 0, 0, 0
-AVX_INSTR psubusb, 0, 0, 0
-AVX_INSTR psubusw, 0, 0, 0
-AVX_INSTR ptest
-AVX_INSTR punpckhbw, 0, 0, 0
-AVX_INSTR punpckhwd, 0, 0, 0
-AVX_INSTR punpckhdq, 0, 0, 0
-AVX_INSTR punpckhqdq, 0, 0, 0
-AVX_INSTR punpcklbw, 0, 0, 0
-AVX_INSTR punpcklwd, 0, 0, 0
-AVX_INSTR punpckldq, 0, 0, 0
-AVX_INSTR punpcklqdq, 0, 0, 0
-AVX_INSTR pxor, 0, 0, 1
-AVX_INSTR rcpps, 1, 0, 0
-AVX_INSTR rcpss, 1, 0, 0
-AVX_INSTR roundpd
-AVX_INSTR roundps
-AVX_INSTR roundsd
-AVX_INSTR roundss
-AVX_INSTR rsqrtps, 1, 0, 0
-AVX_INSTR rsqrtss, 1, 0, 0
-AVX_INSTR shufpd, 1, 1, 0
-AVX_INSTR shufps, 1, 1, 0
-AVX_INSTR sqrtpd, 1, 0, 0
-AVX_INSTR sqrtps, 1, 0, 0
-AVX_INSTR sqrtsd, 1, 0, 0
-AVX_INSTR sqrtss, 1, 0, 0
-AVX_INSTR stmxcsr
-AVX_INSTR subpd, 1, 0, 0
-AVX_INSTR subps, 1, 0, 0
-AVX_INSTR subsd, 1, 0, 0
-AVX_INSTR subss, 1, 0, 0
-AVX_INSTR ucomisd
-AVX_INSTR ucomiss
-AVX_INSTR unpckhpd, 1, 0, 0
-AVX_INSTR unpckhps, 1, 0, 0
-AVX_INSTR unpcklpd, 1, 0, 0
-AVX_INSTR unpcklps, 1, 0, 0
-AVX_INSTR xorpd, 1, 0, 1
-AVX_INSTR xorps, 1, 0, 1
+AVX_INSTR andnpd, sse2, 1, 0, 0
+AVX_INSTR andnps, sse, 1, 0, 0
+AVX_INSTR andpd, sse2, 1, 0, 1
+AVX_INSTR andps, sse, 1, 0, 1
+AVX_INSTR blendpd, sse4, 1, 0, 0
+AVX_INSTR blendps, sse4, 1, 0, 0
+AVX_INSTR blendvpd, sse4, 1, 0, 0
+AVX_INSTR blendvps, sse4, 1, 0, 0
+AVX_INSTR cmppd, sse2, 1, 1, 0
+AVX_INSTR cmpps, sse, 1, 1, 0
+AVX_INSTR cmpsd, sse2, 1, 1, 0
+AVX_INSTR cmpss, sse, 1, 1, 0
+AVX_INSTR comisd, sse2
+AVX_INSTR comiss, sse
+AVX_INSTR cvtdq2pd, sse2
+AVX_INSTR cvtdq2ps, sse2
+AVX_INSTR cvtpd2dq, sse2
+AVX_INSTR cvtpd2ps, sse2
+AVX_INSTR cvtps2dq, sse2
+AVX_INSTR cvtps2pd, sse2
+AVX_INSTR cvtsd2si, sse2
+AVX_INSTR cvtsd2ss, sse2
+AVX_INSTR cvtsi2sd, sse2
+AVX_INSTR cvtsi2ss, sse
+AVX_INSTR cvtss2sd, sse2
+AVX_INSTR cvtss2si, sse
+AVX_INSTR cvttpd2dq, sse2
+AVX_INSTR cvttps2dq, sse2
+AVX_INSTR cvttsd2si, sse2
+AVX_INSTR cvttss2si, sse
+AVX_INSTR divpd, sse2, 1, 0, 0
+AVX_INSTR divps, sse, 1, 0, 0
+AVX_INSTR divsd, sse2, 1, 0, 0
+AVX_INSTR divss, sse, 1, 0, 0
+AVX_INSTR dppd, sse4, 1, 1, 0
+AVX_INSTR dpps, sse4, 1, 1, 0
+AVX_INSTR extractps, sse4
+AVX_INSTR haddpd, sse3, 1, 0, 0
+AVX_INSTR haddps, sse3, 1, 0, 0
+AVX_INSTR hsubpd, sse3, 1, 0, 0
+AVX_INSTR hsubps, sse3, 1, 0, 0
+AVX_INSTR insertps, sse4, 1, 1, 0
+AVX_INSTR lddqu, sse3
+AVX_INSTR ldmxcsr, sse
+AVX_INSTR maskmovdqu, sse2
+AVX_INSTR maxpd, sse2, 1, 0, 1
+AVX_INSTR maxps, sse, 1, 0, 1
+AVX_INSTR maxsd, sse2, 1, 0, 1
+AVX_INSTR maxss, sse, 1, 0, 1
+AVX_INSTR minpd, sse2, 1, 0, 1
+AVX_INSTR minps, sse, 1, 0, 1
+AVX_INSTR minsd, sse2, 1, 0, 1
+AVX_INSTR minss, sse, 1, 0, 1
+AVX_INSTR movapd, sse2
+AVX_INSTR movaps, sse
+AVX_INSTR movd, mmx
+AVX_INSTR movddup, sse3
+AVX_INSTR movdqa, sse2
+AVX_INSTR movdqu, sse2
+AVX_INSTR movhlps, sse, 1, 0, 0
+AVX_INSTR movhpd, sse2, 1, 0, 0
+AVX_INSTR movhps, sse, 1, 0, 0
+AVX_INSTR movlhps, sse, 1, 0, 0
+AVX_INSTR movlpd, sse2, 1, 0, 0
+AVX_INSTR movlps, sse, 1, 0, 0
+AVX_INSTR movmskpd, sse2
+AVX_INSTR movmskps, sse
+AVX_INSTR movntdq, sse2
+AVX_INSTR movntdqa, sse4
+AVX_INSTR movntpd, sse2
+AVX_INSTR movntps, sse
+AVX_INSTR movq, mmx
+AVX_INSTR movsd, sse2, 1, 0, 0
+AVX_INSTR movshdup, sse3
+AVX_INSTR movsldup, sse3
+AVX_INSTR movss, sse, 1, 0, 0
+AVX_INSTR movupd, sse2
+AVX_INSTR movups, sse
+AVX_INSTR mpsadbw, sse4
+AVX_INSTR mulpd, sse2, 1, 0, 1
+AVX_INSTR mulps, sse, 1, 0, 1
+AVX_INSTR mulsd, sse2, 1, 0, 1
+AVX_INSTR mulss, sse, 1, 0, 1
+AVX_INSTR orpd, sse2, 1, 0, 1
+AVX_INSTR orps, sse, 1, 0, 1
+AVX_INSTR pabsb, ssse3
+AVX_INSTR pabsd, ssse3
+AVX_INSTR pabsw, ssse3
+AVX_INSTR packsswb, mmx, 0, 0, 0
+AVX_INSTR packssdw, mmx, 0, 0, 0
+AVX_INSTR packuswb, mmx, 0, 0, 0
+AVX_INSTR packusdw, sse4, 0, 0, 0
+AVX_INSTR paddb, mmx, 0, 0, 1
+AVX_INSTR paddw, mmx, 0, 0, 1
+AVX_INSTR paddd, mmx, 0, 0, 1
+AVX_INSTR paddq, sse2, 0, 0, 1
+AVX_INSTR paddsb, mmx, 0, 0, 1
+AVX_INSTR paddsw, mmx, 0, 0, 1
+AVX_INSTR paddusb, mmx, 0, 0, 1
+AVX_INSTR paddusw, mmx, 0, 0, 1
+AVX_INSTR palignr, ssse3
+AVX_INSTR pand, mmx, 0, 0, 1
+AVX_INSTR pandn, mmx, 0, 0, 0
+AVX_INSTR pavgb, mmx2, 0, 0, 1
+AVX_INSTR pavgw, mmx2, 0, 0, 1
+AVX_INSTR pblendvb, sse4, 0, 0, 0
+AVX_INSTR pblendw, sse4
+AVX_INSTR pclmulqdq
+AVX_INSTR pcmpestri, sse42
+AVX_INSTR pcmpestrm, sse42
+AVX_INSTR pcmpistri, sse42
+AVX_INSTR pcmpistrm, sse42
+AVX_INSTR pcmpeqb, mmx, 0, 0, 1
+AVX_INSTR pcmpeqw, mmx, 0, 0, 1
+AVX_INSTR pcmpeqd, mmx, 0, 0, 1
+AVX_INSTR pcmpeqq, sse4, 0, 0, 1
+AVX_INSTR pcmpgtb, mmx, 0, 0, 0
+AVX_INSTR pcmpgtw, mmx, 0, 0, 0
+AVX_INSTR pcmpgtd, mmx, 0, 0, 0
+AVX_INSTR pcmpgtq, sse42, 0, 0, 0
+AVX_INSTR pextrb, sse4
+AVX_INSTR pextrd, sse4
+AVX_INSTR pextrq, sse4
+AVX_INSTR pextrw, mmx2
+AVX_INSTR phaddw, ssse3, 0, 0, 0
+AVX_INSTR phaddd, ssse3, 0, 0, 0
+AVX_INSTR phaddsw, ssse3, 0, 0, 0
+AVX_INSTR phminposuw, sse4
+AVX_INSTR phsubw, ssse3, 0, 0, 0
+AVX_INSTR phsubd, ssse3, 0, 0, 0
+AVX_INSTR phsubsw, ssse3, 0, 0, 0
+AVX_INSTR pinsrb, sse4
+AVX_INSTR pinsrd, sse4
+AVX_INSTR pinsrq, sse4
+AVX_INSTR pinsrw, mmx2
+AVX_INSTR pmaddwd, mmx, 0, 0, 1
+AVX_INSTR pmaddubsw, ssse3, 0, 0, 0
+AVX_INSTR pmaxsb, sse4, 0, 0, 1
+AVX_INSTR pmaxsw, mmx2, 0, 0, 1
+AVX_INSTR pmaxsd, sse4, 0, 0, 1
+AVX_INSTR pmaxub, mmx2, 0, 0, 1
+AVX_INSTR pmaxuw, sse4, 0, 0, 1
+AVX_INSTR pmaxud, sse4, 0, 0, 1
+AVX_INSTR pminsb, sse4, 0, 0, 1
+AVX_INSTR pminsw, mmx2, 0, 0, 1
+AVX_INSTR pminsd, sse4, 0, 0, 1
+AVX_INSTR pminub, mmx2, 0, 0, 1
+AVX_INSTR pminuw, sse4, 0, 0, 1
+AVX_INSTR pminud, sse4, 0, 0, 1
+AVX_INSTR pmovmskb, mmx2
+AVX_INSTR pmovsxbw, sse4
+AVX_INSTR pmovsxbd, sse4
+AVX_INSTR pmovsxbq, sse4
+AVX_INSTR pmovsxwd, sse4
+AVX_INSTR pmovsxwq, sse4
+AVX_INSTR pmovsxdq, sse4
+AVX_INSTR pmovzxbw, sse4
+AVX_INSTR pmovzxbd, sse4
+AVX_INSTR pmovzxbq, sse4
+AVX_INSTR pmovzxwd, sse4
+AVX_INSTR pmovzxwq, sse4
+AVX_INSTR pmovzxdq, sse4
+AVX_INSTR pmuldq, sse4, 0, 0, 1
+AVX_INSTR pmulhrsw, ssse3, 0, 0, 1
+AVX_INSTR pmulhuw, mmx2, 0, 0, 1
+AVX_INSTR pmulhw, mmx, 0, 0, 1
+AVX_INSTR pmullw, mmx, 0, 0, 1
+AVX_INSTR pmulld, sse4, 0, 0, 1
+AVX_INSTR pmuludq, sse2, 0, 0, 1
+AVX_INSTR por, mmx, 0, 0, 1
+AVX_INSTR psadbw, mmx2, 0, 0, 1
+AVX_INSTR pshufb, ssse3, 0, 0, 0
+AVX_INSTR pshufd, sse2
+AVX_INSTR pshufhw, sse2
+AVX_INSTR pshuflw, sse2
+AVX_INSTR psignb, ssse3, 0, 0, 0
+AVX_INSTR psignw, ssse3, 0, 0, 0
+AVX_INSTR psignd, ssse3, 0, 0, 0
+AVX_INSTR psllw, mmx, 0, 0, 0
+AVX_INSTR pslld, mmx, 0, 0, 0
+AVX_INSTR psllq, mmx, 0, 0, 0
+AVX_INSTR pslldq, sse2, 0, 0, 0
+AVX_INSTR psraw, mmx, 0, 0, 0
+AVX_INSTR psrad, mmx, 0, 0, 0
+AVX_INSTR psrlw, mmx, 0, 0, 0
+AVX_INSTR psrld, mmx, 0, 0, 0
+AVX_INSTR psrlq, mmx, 0, 0, 0
+AVX_INSTR psrldq, sse2, 0, 0, 0
+AVX_INSTR psubb, mmx, 0, 0, 0
+AVX_INSTR psubw, mmx, 0, 0, 0
+AVX_INSTR psubd, mmx, 0, 0, 0
+AVX_INSTR psubq, sse2, 0, 0, 0
+AVX_INSTR psubsb, mmx, 0, 0, 0
+AVX_INSTR psubsw, mmx, 0, 0, 0
+AVX_INSTR psubusb, mmx, 0, 0, 0
+AVX_INSTR psubusw, mmx, 0, 0, 0
+AVX_INSTR ptest, sse4
+AVX_INSTR punpckhbw, mmx, 0, 0, 0
+AVX_INSTR punpckhwd, mmx, 0, 0, 0
+AVX_INSTR punpckhdq, mmx, 0, 0, 0
+AVX_INSTR punpckhqdq, sse2, 0, 0, 0
+AVX_INSTR punpcklbw, mmx, 0, 0, 0
+AVX_INSTR punpcklwd, mmx, 0, 0, 0
+AVX_INSTR punpckldq, mmx, 0, 0, 0
+AVX_INSTR punpcklqdq, sse2, 0, 0, 0
+AVX_INSTR pxor, mmx, 0, 0, 1
+AVX_INSTR rcpps, sse, 1, 0, 0
+AVX_INSTR rcpss, sse, 1, 0, 0
+AVX_INSTR roundpd, sse4
+AVX_INSTR roundps, sse4
+AVX_INSTR roundsd, sse4
+AVX_INSTR roundss, sse4
+AVX_INSTR rsqrtps, sse, 1, 0, 0
+AVX_INSTR rsqrtss, sse, 1, 0, 0
+AVX_INSTR shufpd, sse2, 1, 1, 0
+AVX_INSTR shufps, sse, 1, 1, 0
+AVX_INSTR sqrtpd, sse2, 1, 0, 0
+AVX_INSTR sqrtps, sse, 1, 0, 0
+AVX_INSTR sqrtsd, sse2, 1, 0, 0
+AVX_INSTR sqrtss, sse, 1, 0, 0
+AVX_INSTR stmxcsr, sse
+AVX_INSTR subpd, sse2, 1, 0, 0
+AVX_INSTR subps, sse, 1, 0, 0
+AVX_INSTR subsd, sse2, 1, 0, 0
+AVX_INSTR subss, sse, 1, 0, 0
+AVX_INSTR ucomisd, sse2
+AVX_INSTR ucomiss, sse
+AVX_INSTR unpckhpd, sse2, 1, 0, 0
+AVX_INSTR unpckhps, sse, 1, 0, 0
+AVX_INSTR unpcklpd, sse2, 1, 0, 0
+AVX_INSTR unpcklps, sse, 1, 0, 0
+AVX_INSTR xorpd, sse2, 1, 0, 1
+AVX_INSTR xorps, sse, 1, 0, 1
 
 ; 3DNow instructions, for sharing code between AVX, SSE and 3DN
-AVX_INSTR pfadd, 1, 0, 1
-AVX_INSTR pfsub, 1, 0, 0
-AVX_INSTR pfmul, 1, 0, 1
+AVX_INSTR pfadd, 3dnow, 1, 0, 1
+AVX_INSTR pfsub, 3dnow, 1, 0, 0
+AVX_INSTR pfmul, 3dnow, 1, 0, 1
 
 ; base-4 constants for shuffles
 %assign i 0

@@ -33,6 +33,10 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/timer.h"
 
+#ifndef AV_READ_TIME
+#define AV_READ_TIME(x) 0
+#endif
+
 #if HAVE_UNISTD_H
 #include <unistd.h> /* for getopt */
 #endif
@@ -71,6 +75,9 @@ struct hash_impl {
 #include "libavutil/sha512.h"
 #include "libavutil/ripemd.h"
 #include "libavutil/aes.h"
+#include "libavutil/camellia.h"
+#include "libavutil/cast5.h"
+#include "libavutil/twofish.h"
 
 #define IMPL_USE_lavu IMPL_USE
 
@@ -107,6 +114,35 @@ static void run_lavu_aes128(uint8_t *output,
     av_aes_crypt(aes, output, input, size >> 4, NULL, 0);
 }
 
+static void run_lavu_camellia(uint8_t *output,
+                              const uint8_t *input, unsigned size)
+{
+    static struct AVCAMELLIA *camellia;
+    if (!camellia && !(camellia = av_camellia_alloc()))
+        fatal_error("out of memory");
+    av_camellia_init(camellia, hardcoded_key, 128);
+    av_camellia_crypt(camellia, output, input, size >> 4, NULL, 0);
+}
+
+static void run_lavu_cast128(uint8_t *output,
+                             const uint8_t *input, unsigned size)
+{
+    static struct AVCAST5 *cast;
+    if (!cast && !(cast = av_cast5_alloc()))
+        fatal_error("out of memory");
+    av_cast5_init(cast, hardcoded_key, 128);
+    av_cast5_crypt(cast, output, input, size >> 3, 0);
+}
+
+static void run_lavu_twofish(uint8_t *output,
+                              const uint8_t *input, unsigned size)
+{
+    static struct AVTWOFISH *twofish;
+    if (!twofish && !(twofish = av_twofish_alloc()))
+        fatal_error("out of memory");
+    av_twofish_init(twofish, hardcoded_key, 128);
+    av_twofish_crypt(twofish, output, input, size >> 4, NULL, 0);
+}
 /***************************************************************************
  * crypto: OpenSSL's libcrypto
  ***************************************************************************/
@@ -117,6 +153,8 @@ static void run_lavu_aes128(uint8_t *output,
 #include <openssl/sha.h>
 #include <openssl/ripemd.h>
 #include <openssl/aes.h>
+#include <openssl/camellia.h>
+#include <openssl/cast.h>
 
 #define DEFINE_CRYPTO_WRAPPER(suffix, function)                              \
 static void run_crypto_ ## suffix(uint8_t *output,                           \
@@ -141,6 +179,29 @@ static void run_crypto_aes128(uint8_t *output,
     size -= 15;
     for (i = 0; i < size; i += 16)
         AES_encrypt(input + i, output + i, &aes);
+}
+
+static void run_crypto_camellia(uint8_t *output,
+                                const uint8_t *input, unsigned size)
+{
+    CAMELLIA_KEY camellia;
+    unsigned i;
+
+    Camellia_set_key(hardcoded_key, 128, &camellia);
+    size -= 15;
+    for (i = 0; i < size; i += 16)
+        Camellia_ecb_encrypt(input + i, output + i, &camellia, 1);
+}
+
+static void run_crypto_cast128(uint8_t *output,
+                               const uint8_t *input, unsigned size)
+{
+    CAST_KEY cast;
+    unsigned i;
+
+    CAST_set_key(&cast, 16, hardcoded_key);
+    for (i = 0; i < size; i += 8)
+        CAST_ecb_encrypt(input + i, output + i, &cast, 1);
 }
 
 #define IMPL_USE_crypto(...) IMPL_USE(__VA_ARGS__)
@@ -173,10 +234,40 @@ static void run_gcrypt_aes128(uint8_t *output,
                               const uint8_t *input, unsigned size)
 {
     static gcry_cipher_hd_t aes;
-    if (aes == NULL)
+    if (!aes)
         gcry_cipher_open(&aes, GCRY_CIPHER_AES128, GCRY_CIPHER_MODE_ECB, 0);
     gcry_cipher_setkey(aes, hardcoded_key, 16);
     gcry_cipher_encrypt(aes, output, size, input, size);
+}
+
+static void run_gcrypt_camellia(uint8_t *output,
+                                const uint8_t *input, unsigned size)
+{
+    static gcry_cipher_hd_t camellia;
+    if (!camellia)
+        gcry_cipher_open(&camellia, GCRY_CIPHER_CAMELLIA128, GCRY_CIPHER_MODE_ECB, 0);
+    gcry_cipher_setkey(camellia, hardcoded_key, 16);
+    gcry_cipher_encrypt(camellia, output, size, input, size);
+}
+
+static void run_gcrypt_cast128(uint8_t *output,
+                              const uint8_t *input, unsigned size)
+{
+    static gcry_cipher_hd_t cast;
+    if (!cast)
+        gcry_cipher_open(&cast, GCRY_CIPHER_CAST5, GCRY_CIPHER_MODE_ECB, 0);
+    gcry_cipher_setkey(cast, hardcoded_key, 16);
+    gcry_cipher_encrypt(cast, output, size, input, size);
+}
+
+static void run_gcrypt_twofish(uint8_t *output,
+                                const uint8_t *input, unsigned size)
+{
+    static gcry_cipher_hd_t twofish;
+    if (!twofish)
+        gcry_cipher_open(&twofish, GCRY_CIPHER_TWOFISH128, GCRY_CIPHER_MODE_ECB, 0);
+    gcry_cipher_setkey(twofish, hardcoded_key, 16);
+    gcry_cipher_encrypt(twofish, output, size, input, size);
 }
 
 #define IMPL_USE_gcrypt(...) IMPL_USE(__VA_ARGS__)
@@ -219,6 +310,42 @@ static void run_tomcrypt_aes128(uint8_t *output,
     for (i = 0; i < size; i += 16)
         aes_ecb_encrypt(input + i, output + i, &aes);
 }
+
+static void run_tomcrypt_camellia(uint8_t *output,
+                                  const uint8_t *input, unsigned size)
+{
+    symmetric_key camellia;
+    unsigned i;
+
+    camellia_setup(hardcoded_key, 16, 0, &camellia);
+    size -= 15;
+    for (i = 0; i < size; i += 16)
+        camellia_ecb_encrypt(input + i, output + i, &camellia);
+}
+
+static void run_tomcrypt_cast128(uint8_t *output,
+                                const uint8_t *input, unsigned size)
+{
+    symmetric_key cast;
+    unsigned i;
+
+    cast5_setup(hardcoded_key, 16, 0, &cast);
+    for (i = 0; i < size; i += 8)
+        cast5_ecb_encrypt(input + i, output + i, &cast);
+}
+
+static void run_tomcrypt_twofish(uint8_t *output,
+                                const uint8_t *input, unsigned size)
+{
+    symmetric_key twofish;
+    unsigned i;
+
+    twofish_setup(hardcoded_key, 16, 0, &twofish);
+    size -= 15;
+    for (i = 0; i < size; i += 16)
+        twofish_ecb_encrypt(input + i, output + i, &twofish);
+}
+
 
 #define IMPL_USE_tomcrypt(...) IMPL_USE(__VA_ARGS__)
 #else
@@ -302,6 +429,11 @@ struct hash_impl implementations[] = {
                                       "7c25b9e118c200a189fcd5a01ef106a4e200061f3e97dbf50ba065745fd46bef")
     IMPL_ALL("RIPEMD-160", ripemd160, "62a5321e4fc8784903bb43ab7752c75f8b25af00")
     IMPL_ALL("AES-128",    aes128,    "crc:ff6bc888")
+    IMPL_ALL("CAMELLIA",   camellia,  "crc:7abb59a7")
+    IMPL_ALL("CAST-128",   cast128,   "crc:456aa584")
+    IMPL(lavu,     "TWOFISH", twofish, "crc:9edbd5c1")
+    IMPL(gcrypt,   "TWOFISH", twofish, "crc:9edbd5c1")
+    IMPL(tomcrypt, "TWOFISH", twofish, "crc:9edbd5c1")
 };
 
 int main(int argc, char **argv)

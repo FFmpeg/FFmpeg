@@ -98,15 +98,6 @@ static const double icoeff[2][5] = {
     }
 };
 
-static inline int mirror(int x, int w)
-{
-    while ((unsigned)x > (unsigned)w) {
-        x = -x;
-        if (x < 0)
-            x += 2 * w;
-    }
-    return x;
-}
 
 static inline void decompose(float *dst_l, float *dst_h, const float *src,
                              int linesize, int w)
@@ -116,8 +107,8 @@ static inline void decompose(float *dst_l, float *dst_h, const float *src,
         double sum_l = src[x * linesize] * coeff[0][0];
         double sum_h = src[x * linesize] * coeff[1][0];
         for (i = 1; i <= 4; i++) {
-            const double s = src[mirror(x - i, w - 1) * linesize]
-                           + src[mirror(x + i, w - 1) * linesize];
+            const double s = src[avpriv_mirror(x - i, w - 1) * linesize]
+                           + src[avpriv_mirror(x + i, w - 1) * linesize];
 
             sum_l += coeff[0][i] * s;
             sum_h += coeff[1][i] * s;
@@ -135,8 +126,8 @@ static inline void compose(float *dst, const float *src_l, const float *src_h,
         double sum_l = src_l[x * linesize] * icoeff[0][0];
         double sum_h = src_h[x * linesize] * icoeff[1][0];
         for (i = 1; i <= 4; i++) {
-            const int x0 = mirror(x - i, w - 1) * linesize;
-            const int x1 = mirror(x + i, w - 1) * linesize;
+            const int x0 = avpriv_mirror(x - i, w - 1) * linesize;
+            const int x1 = avpriv_mirror(x + i, w - 1) * linesize;
 
             sum_l += icoeff[0][i] * (src_l[x0] + src_l[x1]);
             sum_h += icoeff[1][i] * (src_h[x0] + src_h[x1]);
@@ -276,8 +267,10 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUVA420P,
         AV_PIX_FMT_NONE
     };
-    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
-    return 0;
+    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
+    if (!fmts_list)
+        return AVERROR(ENOMEM);
+    return ff_set_common_formats(ctx, fmts_list);
 }
 
 static int config_input(AVFilterLink *inlink)

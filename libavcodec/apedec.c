@@ -505,10 +505,7 @@ static inline int ape_decode_value_3860(APEContext *ctx, GetBitContext *gb,
         rice->k++;
 
     /* Convert to signed */
-    if (x & 1)
-        return (x >> 1) + 1;
-    else
-        return -(x >> 1);
+    return ((x >> 1) ^ ((x & 1) - 1)) + 1;
 }
 
 static inline int ape_decode_value_3900(APEContext *ctx, APERice *rice)
@@ -542,10 +539,7 @@ static inline int ape_decode_value_3900(APEContext *ctx, APERice *rice)
     update_rice(rice, x);
 
     /* Convert to signed */
-    if (x & 1)
-        return (x >> 1) + 1;
-    else
-        return -(x >> 1);
+    return ((x >> 1) ^ ((x & 1) - 1)) + 1;
 }
 
 static inline int ape_decode_value_3990(APEContext *ctx, APERice *rice)
@@ -588,10 +582,7 @@ static inline int ape_decode_value_3990(APEContext *ctx, APERice *rice)
     update_rice(rice, x);
 
     /* Convert to signed */
-    if (x & 1)
-        return (x >> 1) + 1;
-    else
-        return -(x >> 1);
+    return ((x >> 1) ^ ((x & 1) - 1)) + 1;
 }
 
 static void decode_array_0000(APEContext *ctx, GetBitContext *gb,
@@ -601,14 +592,14 @@ static void decode_array_0000(APEContext *ctx, GetBitContext *gb,
     int ksummax, ksummin;
 
     rice->ksum = 0;
-    for (i = 0; i < 5; i++) {
+    for (i = 0; i < FFMIN(blockstodecode, 5); i++) {
         out[i] = get_rice_ook(&ctx->gb, 10);
         rice->ksum += out[i];
     }
     rice->k = av_log2(rice->ksum / 10) + 1;
     if (rice->k >= 24)
         return;
-    for (; i < 64; i++) {
+    for (; i < FFMIN(blockstodecode, 64); i++) {
         out[i] = get_rice_ook(&ctx->gb, rice->k);
         rice->ksum += out[i];
         rice->k = av_log2(rice->ksum / ((i + 1) * 2)) + 1;
@@ -634,12 +625,8 @@ static void decode_array_0000(APEContext *ctx, GetBitContext *gb,
         }
     }
 
-    for (i = 0; i < blockstodecode; i++) {
-        if (out[i] & 1)
-            out[i] = (out[i] >> 1) + 1;
-        else
-            out[i] = -(out[i] >> 1);
-    }
+    for (i = 0; i < blockstodecode; i++)
+        out[i] = ((out[i] >> 1) ^ ((out[i] & 1) - 1)) + 1;
 }
 
 static void entropy_decode_mono_0000(APEContext *ctx, int blockstodecode)
@@ -899,11 +886,11 @@ static av_always_inline int filter_3800(APEPredictor *p,
     return p->filterA[filter];
 }
 
-static void long_filter_high_3800(int32_t *buffer, int order, int shift,
-                                  int32_t *coeffs, int32_t *delay, int length)
+static void long_filter_high_3800(int32_t *buffer, int order, int shift, int length)
 {
     int i, j;
     int32_t dotprod, sign;
+    int32_t coeffs[256], delay[256];
 
     memset(coeffs, 0, order * sizeof(*coeffs));
     for (i = 0; i < order; i++)
@@ -947,13 +934,12 @@ static void predictor_decode_stereo_3800(APEContext *ctx, int count)
     APEPredictor *p = &ctx->predictor;
     int32_t *decoded0 = ctx->decoded[0];
     int32_t *decoded1 = ctx->decoded[1];
-    int32_t coeffs[256], delay[256];
     int start = 4, shift = 10;
 
     if (ctx->compression_level == COMPRESSION_LEVEL_HIGH) {
         start = 16;
-        long_filter_high_3800(decoded0, 16, 9, coeffs, delay, count);
-        long_filter_high_3800(decoded1, 16, 9, coeffs, delay, count);
+        long_filter_high_3800(decoded0, 16, 9, count);
+        long_filter_high_3800(decoded1, 16, 9, count);
     } else if (ctx->compression_level == COMPRESSION_LEVEL_EXTRA_HIGH) {
         int order = 128, shift2 = 11;
 
@@ -965,8 +951,8 @@ static void predictor_decode_stereo_3800(APEContext *ctx, int count)
             long_filter_ehigh_3830(decoded1 + order, count - order);
         }
         start = order;
-        long_filter_high_3800(decoded0, order, shift2, coeffs, delay, count);
-        long_filter_high_3800(decoded1, order, shift2, coeffs, delay, count);
+        long_filter_high_3800(decoded0, order, shift2, count);
+        long_filter_high_3800(decoded1, order, shift2, count);
     }
 
     while (count--) {
@@ -1002,12 +988,11 @@ static void predictor_decode_mono_3800(APEContext *ctx, int count)
 {
     APEPredictor *p = &ctx->predictor;
     int32_t *decoded0 = ctx->decoded[0];
-    int32_t coeffs[256], delay[256];
     int start = 4, shift = 10;
 
     if (ctx->compression_level == COMPRESSION_LEVEL_HIGH) {
         start = 16;
-        long_filter_high_3800(decoded0, 16, 9, coeffs, delay, count);
+        long_filter_high_3800(decoded0, 16, 9, count);
     } else if (ctx->compression_level == COMPRESSION_LEVEL_EXTRA_HIGH) {
         int order = 128, shift2 = 11;
 
@@ -1018,7 +1003,7 @@ static void predictor_decode_mono_3800(APEContext *ctx, int count)
             long_filter_ehigh_3830(decoded0 + order, count - order);
         }
         start = order;
-        long_filter_high_3800(decoded0, order, shift2, coeffs, delay, count);
+        long_filter_high_3800(decoded0, order, shift2, count);
     }
 
     while (count--) {
@@ -1476,13 +1461,13 @@ static int ape_decode_frame(AVCodecContext *avctx, void *data,
                    nblocks);
             return AVERROR_INVALIDDATA;
         }
-        s->samples = nblocks;
 
         /* Initialize the frame decoder */
         if (init_frame_decoder(s) < 0) {
             av_log(avctx, AV_LOG_ERROR, "Error reading frame header\n");
             return AVERROR_INVALIDDATA;
         }
+        s->samples = nblocks;
     }
 
     if (!s->data) {

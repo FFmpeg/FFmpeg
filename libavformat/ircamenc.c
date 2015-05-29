@@ -43,7 +43,7 @@ static int ircam_write_header(AVFormatContext *s)
     }
 
     avio_wl32(s->pb, 0x0001A364);
-    avio_wl32(s->pb, av_float2int(codec->sample_rate));
+    avio_wl32(s->pb, av_q2intfloat((AVRational){codec->sample_rate, 1}));
     avio_wl32(s->pb, codec->channels);
     avio_wl32(s->pb, tag);
     ffio_fill(s->pb, 0, 1008);

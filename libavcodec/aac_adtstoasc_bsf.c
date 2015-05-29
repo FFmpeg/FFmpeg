@@ -57,7 +57,7 @@ static int aac_adtstoasc_filter(AVBitStreamFilterContext *bsfc,
 
     if (avpriv_aac_parse_header(&gb, &hdr) < 0) {
         av_log(avctx, AV_LOG_ERROR, "Error parsing ADTS frame header!\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     if (!hdr.crc_absent && hdr.num_aac_frames > 1) {
@@ -90,6 +90,10 @@ static int aac_adtstoasc_filter(AVBitStreamFilterContext *bsfc,
         av_free(avctx->extradata);
         avctx->extradata_size = 2 + pce_size;
         avctx->extradata = av_mallocz(avctx->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
+        if (!avctx->extradata) {
+            avctx->extradata_size = 0;
+            return AVERROR(ENOMEM);
+        }
 
         init_put_bits(&pb, avctx->extradata, avctx->extradata_size);
         put_bits(&pb, 5, hdr.object_type);

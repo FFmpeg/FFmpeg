@@ -46,7 +46,7 @@ echov(){
 AVCONV_OPTS="-nostats -y -cpuflags $cpuflags"
 COMMON_OPTS="-flags +bitexact -idct simple -sws_flags +accurate_rnd+bitexact -fflags +bitexact"
 DEC_OPTS="$COMMON_OPTS -threads $threads"
-ENC_OPTS="$COMMON_OPTS -threads 1 -dct fastint"
+ENC_OPTS="$COMMON_OPTS -threads $threads -dct fastint"
 
 run_avconv()
 {

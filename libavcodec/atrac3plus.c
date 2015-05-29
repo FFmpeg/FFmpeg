@@ -84,52 +84,52 @@ av_cold void ff_atrac3p_init_vlcs(void)
 {
     int i, wl_vlc_offs, ct_vlc_offs, sf_vlc_offs, tab_offset;
 
-    static int wl_nb_bits[4]  = { 2, 3, 5, 5 };
-    static int wl_nb_codes[4] = { 3, 5, 8, 8 };
-    static const uint8_t *wl_bits[4] = {
+    static const int wl_nb_bits[4]  = { 2, 3, 5, 5 };
+    static const int wl_nb_codes[4] = { 3, 5, 8, 8 };
+    static const uint8_t * const wl_bits[4] = {
         atrac3p_wl_huff_bits1, atrac3p_wl_huff_bits2,
         atrac3p_wl_huff_bits3, atrac3p_wl_huff_bits4
     };
-    static const uint8_t *wl_codes[4] = {
+    static const uint8_t * const wl_codes[4] = {
         atrac3p_wl_huff_code1, atrac3p_wl_huff_code2,
         atrac3p_wl_huff_code3, atrac3p_wl_huff_code4
     };
-    static const uint8_t *wl_xlats[4] = {
+    static const uint8_t * const wl_xlats[4] = {
         atrac3p_wl_huff_xlat1, atrac3p_wl_huff_xlat2, NULL, NULL
     };
 
-    static int ct_nb_bits[4]  = { 3, 4, 4, 4 };
-    static int ct_nb_codes[4] = { 4, 8, 8, 8 };
-    static const uint8_t *ct_bits[4]  = {
+    static const int ct_nb_bits[4]  = { 3, 4, 4, 4 };
+    static const int ct_nb_codes[4] = { 4, 8, 8, 8 };
+    static const uint8_t * const ct_bits[4]  = {
         atrac3p_ct_huff_bits1, atrac3p_ct_huff_bits2,
         atrac3p_ct_huff_bits2, atrac3p_ct_huff_bits3
     };
-    static const uint8_t *ct_codes[4] = {
+    static const uint8_t * const ct_codes[4] = {
         atrac3p_ct_huff_code1, atrac3p_ct_huff_code2,
         atrac3p_ct_huff_code2, atrac3p_ct_huff_code3
     };
-    static const uint8_t *ct_xlats[4] = {
+    static const uint8_t * const ct_xlats[4] = {
         NULL, NULL, atrac3p_ct_huff_xlat1, NULL
     };
 
-    static int sf_nb_bits[8]  = {  9,  9,  9,  9,  6,  6,  7,  7 };
-    static int sf_nb_codes[8] = { 64, 64, 64, 64, 16, 16, 16, 16 };
-    static const uint8_t  *sf_bits[8]  = {
+    static const  int sf_nb_bits[8]  = {  9,  9,  9,  9,  6,  6,  7,  7 };
+    static const  int sf_nb_codes[8] = { 64, 64, 64, 64, 16, 16, 16, 16 };
+    static const uint8_t  * const sf_bits[8]  = {
         atrac3p_sf_huff_bits1, atrac3p_sf_huff_bits1, atrac3p_sf_huff_bits2,
         atrac3p_sf_huff_bits3, atrac3p_sf_huff_bits4, atrac3p_sf_huff_bits4,
         atrac3p_sf_huff_bits5, atrac3p_sf_huff_bits6
     };
-    static const uint16_t *sf_codes[8] = {
+    static const uint16_t * const sf_codes[8] = {
         atrac3p_sf_huff_code1, atrac3p_sf_huff_code1, atrac3p_sf_huff_code2,
         atrac3p_sf_huff_code3, atrac3p_sf_huff_code4, atrac3p_sf_huff_code4,
         atrac3p_sf_huff_code5, atrac3p_sf_huff_code6
     };
-    static const uint8_t  *sf_xlats[8] = {
+    static const uint8_t  * const sf_xlats[8] = {
         atrac3p_sf_huff_xlat1, atrac3p_sf_huff_xlat2, NULL, NULL,
         atrac3p_sf_huff_xlat4, atrac3p_sf_huff_xlat5, NULL, NULL
     };
 
-    static const uint8_t *gain_cbs[11] = {
+    static const uint8_t * const gain_cbs[11] = {
         atrac3p_huff_gain_npoints1_cb, atrac3p_huff_gain_npoints1_cb,
         atrac3p_huff_gain_lev1_cb, atrac3p_huff_gain_lev2_cb,
         atrac3p_huff_gain_lev3_cb, atrac3p_huff_gain_lev4_cb,
@@ -137,7 +137,7 @@ av_cold void ff_atrac3p_init_vlcs(void)
         atrac3p_huff_gain_loc4_cb, atrac3p_huff_gain_loc2_cb,
         atrac3p_huff_gain_loc5_cb
     };
-    static const uint8_t *gain_xlats[11] = {
+    static const uint8_t * const gain_xlats[11] = {
         NULL, atrac3p_huff_gain_npoints2_xlat, atrac3p_huff_gain_lev1_xlat,
         atrac3p_huff_gain_lev2_xlat, atrac3p_huff_gain_lev3_xlat,
         atrac3p_huff_gain_lev4_xlat, atrac3p_huff_gain_loc3_xlat,
@@ -145,13 +145,13 @@ av_cold void ff_atrac3p_init_vlcs(void)
         atrac3p_huff_gain_loc2_xlat, atrac3p_huff_gain_loc5_xlat
     };
 
-    static const uint8_t *tone_cbs[7] = {
+    static const uint8_t * const tone_cbs[7] = {
         atrac3p_huff_tonebands_cb,  atrac3p_huff_numwavs1_cb,
         atrac3p_huff_numwavs2_cb,   atrac3p_huff_wav_ampsf1_cb,
         atrac3p_huff_wav_ampsf2_cb, atrac3p_huff_wav_ampsf3_cb,
         atrac3p_huff_freq_cb
     };
-    static const uint8_t *tone_xlats[7] = {
+    static const uint8_t * const tone_xlats[7] = {
         NULL, NULL, atrac3p_huff_numwavs2_xlat, atrac3p_huff_wav_ampsf1_xlat,
         atrac3p_huff_wav_ampsf2_xlat, atrac3p_huff_wav_ampsf3_xlat,
         atrac3p_huff_freq_xlat
@@ -820,7 +820,7 @@ static void decode_qu_spectra(GetBitContext *gb, const Atrac3pSpecCodeTab *tab,
     int num_coeffs = tab->num_coeffs;
     int bits       = tab->bits;
     int is_signed  = tab->is_signed;
-    unsigned val, mask = (1 << bits) - 1;
+    unsigned val;
 
     for (pos = 0; pos < num_specs;) {
         if (group_size == 1 || get_bits1(gb)) {
@@ -828,7 +828,7 @@ static void decode_qu_spectra(GetBitContext *gb, const Atrac3pSpecCodeTab *tab,
                 val = get_vlc2(gb, vlc_tab->table, vlc_tab->bits, 1);
 
                 for (i = 0; i < num_coeffs; i++) {
-                    cf = val & mask;
+                    cf = av_mod_uintp2(val, bits);
                     if (is_signed)
                         cf = sign_extend(cf, bits);
                     else if (cf && get_bits1(gb))
@@ -1575,7 +1575,7 @@ static void decode_tones_amplitude(GetBitContext *gb, Atrac3pChanUnitCtx *ctx,
 {
     int mode, sb, j, i, diff, maxdiff, fi, delta, pred;
     Atrac3pWaveParam *wsrc, *wref;
-    int refwaves[48];
+    int refwaves[48] = { 0 };
     Atrac3pWavesData *dst = ctx->channels[ch_num].tones_info;
     Atrac3pWavesData *ref = ctx->channels[0].tones_info;
 

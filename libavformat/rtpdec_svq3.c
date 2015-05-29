@@ -28,6 +28,7 @@
 
 #include <string.h>
 #include "libavutil/intreadwrite.h"
+#include "avio_internal.h"
 #include "internal.h"
 #include "rtp.h"
 #include "rtpdec.h"
@@ -81,11 +82,7 @@ static int svq3_parse_packet (AVFormatContext *s, PayloadContext *sv,
     if (start_packet) {
         int res;
 
-        if (sv->pktbuf) {
-            uint8_t *tmp;
-            avio_close_dyn_buf(sv->pktbuf, &tmp);
-            av_free(tmp);
-        }
+        ffio_free_dyn_buf(&sv->pktbuf);
         if ((res = avio_open_dyn_buf(&sv->pktbuf)) < 0)
             return res;
         sv->timestamp   = *timestamp;
@@ -108,26 +105,16 @@ static int svq3_parse_packet (AVFormatContext *s, PayloadContext *sv,
     return AVERROR(EAGAIN);
 }
 
-static PayloadContext *svq3_extradata_new(void)
+static void svq3_close_context(PayloadContext *sv)
 {
-    return av_mallocz(sizeof(PayloadContext));
-}
-
-static void svq3_extradata_free(PayloadContext *sv)
-{
-    if (sv->pktbuf) {
-        uint8_t *buf;
-        avio_close_dyn_buf(sv->pktbuf, &buf);
-        av_free(buf);
-    }
-    av_free(sv);
+    ffio_free_dyn_buf(&sv->pktbuf);
 }
 
 RTPDynamicProtocolHandler ff_svq3_dynamic_handler = {
     .enc_name         = "X-SV3V-ES",
     .codec_type       = AVMEDIA_TYPE_VIDEO,
     .codec_id         = AV_CODEC_ID_NONE,      // see if (config_packet) above
-    .alloc            = svq3_extradata_new,
-    .free             = svq3_extradata_free,
+    .priv_data_size   = sizeof(PayloadContext),
+    .close            = svq3_close_context,
     .parse_packet     = svq3_parse_packet,
 };

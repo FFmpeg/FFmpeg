@@ -1,5 +1,5 @@
 /*
- * copyright (C) 2003 the ffmpeg project
+ * copyright (C) 2003 The FFmpeg Project
  *
  * This file is part of FFmpeg.
  *
@@ -26,7 +26,7 @@
 
 /* these coefficients dequantize intraframe Y plane coefficients
  * (note: same as JPEG) */
-static const int16_t vp31_intra_y_dequant[64] = {
+static const int8_t vp31_intra_y_dequant[64] = {
     16, 11, 10, 16,  24,  40,  51,  61,
     12, 12, 14, 19,  26,  58,  60,  55,
     14, 13, 16, 24,  40,  57,  69,  56,
@@ -39,7 +39,7 @@ static const int16_t vp31_intra_y_dequant[64] = {
 
 /* these coefficients dequantize intraframe C plane coefficients
  * (note: same as JPEG) */
-static const int16_t vp31_intra_c_dequant[64] = {
+static const int8_t vp31_intra_c_dequant[64] = {
     17, 18, 24, 47, 99, 99, 99, 99,
     18, 21, 26, 66, 99, 99, 99, 99,
     24, 26, 56, 99, 99, 99, 99, 99,
@@ -51,7 +51,7 @@ static const int16_t vp31_intra_c_dequant[64] = {
 };
 
 /* these coefficients dequantize interframe coefficients (all planes) */
-static const int16_t vp31_inter_dequant[64] = {
+static const int8_t vp31_inter_dequant[64] = {
     16, 16, 16, 20, 24, 28,  32,  40,
     16, 16, 20, 24, 28, 32,  40,  48,
     16, 20, 24, 28, 32, 40,  48,  64,
@@ -62,7 +62,7 @@ static const int16_t vp31_inter_dequant[64] = {
     40, 48, 64, 64, 64, 96, 128, 128
 };
 
-static const int16_t vp31_dc_scale_factor[64] = {
+static const uint8_t vp31_dc_scale_factor[64] = {
     220, 200, 190, 180, 170, 170, 160, 160,
     150, 150, 140, 140, 130, 130, 120, 120,
     110, 110, 100, 100,  90,  90,  90,  80,
@@ -176,7 +176,7 @@ static const uint8_t motion_vector_vlc_table[63][2] = {
     { 0xFC, 8 }, { 0xFD, 8 }, { 0xFE, 8 }, { 0xFF, 8 }
 };
 
-static const int motion_vector_table[63] = {
+static const int8_t motion_vector_table[63] = {
      0,   1, -1,
      2,  -2,
      3,  -3,
@@ -198,21 +198,21 @@ static const int8_t fixed_motion_vector_table[64] = {
 };
 
 /* only tokens 0..6 indicate eob runs */
-static const int eob_run_base[7] = {
+static const uint8_t eob_run_base[7] = {
     1, 2, 3, 4, 8, 16, 0
 };
-static const int eob_run_get_bits[7] = {
+static const uint8_t eob_run_get_bits[7] = {
     0, 0, 0, 2, 3, 4, 12
 };
 
-static const int zero_run_base[32] = {
+static const uint8_t zero_run_base[32] = {
     0,  0, 0, 0, 0, 0, 0,   /* 0..6 are never used */
     0,  0,                  /* 7..8 */
     0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /* 9..22 */
     1,  2, 3, 4, 5,         /* 23..27 */
     6, 10, 1, 2             /* 28..31 */
 };
-static const int zero_run_get_bits[32] = {
+static const uint8_t zero_run_get_bits[32] = {
     0, 0, 0, 0, 0, 0, 0,    /* 0..6 are never used */
     3, 6,                   /* 7..8 */
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /* 9..22 */
@@ -220,7 +220,7 @@ static const int zero_run_get_bits[32] = {
     2, 3, 0, 1              /* 28..31 */
 };
 
-static const int coeff_get_bits[32] = {
+static const uint8_t coeff_get_bits[32] = {
     0, 0, 0, 0, 0, 0, 0,    /* 0..6 are never used */
     0, 0, 0, 0, 0, 0,       /* 7..12 use constant coeffs */
     1, 1, 1, 1,             /* 13..16 are constants but still need sign bit */

@@ -51,11 +51,17 @@ enum var_name {
     VAR_NB
 };
 
+enum EvalMode {
+    EVAL_MODE_INIT,
+    EVAL_MODE_FRAME,
+    EVAL_MODE_NB
+};
+
 typedef struct {
     const AVClass *class;
     const AVPixFmtDescriptor *desc;
     int backward;
-    enum EvalMode { EVAL_MODE_INIT, EVAL_MODE_FRAME, EVAL_MODE_NB } eval_mode;
+    int eval_mode;                      ///< EvalMode
 #define DEF_EXPR_FIELDS(name) AVExpr *name##_pexpr; char *name##_expr; double name
     DEF_EXPR_FIELDS(angle);
     DEF_EXPR_FIELDS(x0);
@@ -130,8 +136,10 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_GRAY8,
         AV_PIX_FMT_NONE
     };
-    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
-    return 0;
+    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
+    if (!fmts_list)
+        return AVERROR(ENOMEM);
+    return ff_set_common_formats(ctx, fmts_list);
 }
 
 static double get_natural_factor(const VignetteContext *s, int x, int y)
@@ -161,14 +169,19 @@ static void update_context(VignetteContext *s, AVFilterLink *inlink, AVFrame *fr
         s->var_values[VAR_T]   = TS2T(frame->pts, inlink->time_base);
         s->var_values[VAR_PTS] = TS2D(frame->pts);
     } else {
-        s->var_values[VAR_N]   = 0;
+        s->var_values[VAR_N]   = NAN;
         s->var_values[VAR_T]   = NAN;
         s->var_values[VAR_PTS] = NAN;
     }
 
-    s->angle = av_clipf(av_expr_eval(s->angle_pexpr, s->var_values, NULL), 0, M_PI_2);
+    s->angle = av_expr_eval(s->angle_pexpr, s->var_values, NULL);
     s->x0 = av_expr_eval(s->x0_pexpr, s->var_values, NULL);
     s->y0 = av_expr_eval(s->y0_pexpr, s->var_values, NULL);
+
+    if (isnan(s->x0) || isnan(s->y0) || isnan(s->angle))
+        s->eval_mode = EVAL_MODE_FRAME;
+
+    s->angle = av_clipf(s->angle, 0, M_PI_2);
 
     if (s->backward) {
         for (y = 0; y < inlink->h; y++) {

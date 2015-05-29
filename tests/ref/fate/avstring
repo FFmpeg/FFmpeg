@@ -25,3 +25,12 @@ Testing av_get_token()
 |'foo : \ \  '   : blahblah| -> |foo : \ \  | + |: blahblah|
 |'\fo\o:': blahblah| -> |\fo\o:| + |: blahblah|
 |\'fo\o\:':  foo  '  :blahblah| -> |'foo::  foo  | + |:blahblah|
+Testing av_append_path_component()
+(null) = (null)
+path = path
+comp = comp
+path/comp = path/comp
+path/comp = path/comp
+path/comp = path/comp
+path/comp = path/comp
+path/path2/comp/comp2 = path/path2/comp/comp2

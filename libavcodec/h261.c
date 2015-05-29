@@ -87,6 +87,6 @@ av_cold void ff_h261_common_init(void)
     if (done)
         return;
 
-    ff_init_rl(&ff_h261_rl_tcoeff, ff_h261_rl_table_store);
+    ff_rl_init(&ff_h261_rl_tcoeff, ff_h261_rl_table_store);
     done = 1;
 }

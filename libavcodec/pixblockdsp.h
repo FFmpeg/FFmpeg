@@ -26,7 +26,7 @@
 typedef struct PixblockDSPContext {
     void (*get_pixels)(int16_t *block /* align 16 */,
                        const uint8_t *pixels /* align 8 */,
-                       int line_size);
+                       ptrdiff_t line_size);
     void (*diff_pixels)(int16_t *block /* align 16 */,
                         const uint8_t *s1 /* align 8 */,
                         const uint8_t *s2 /* align 8 */,

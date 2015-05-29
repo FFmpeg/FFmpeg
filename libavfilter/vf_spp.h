@@ -23,7 +23,6 @@
 #define AVFILTER_SPP_H
 
 #include "libavcodec/avcodec.h"
-#include "libavcodec/pixblockdsp.h"
 #include "libavcodec/avdct.h"
 #include "avfilter.h"
 
@@ -38,9 +37,8 @@ typedef struct {
     int qscale_type;
     int temp_linesize;
     uint8_t *src;
-    int16_t *temp;
+    uint16_t *temp;
     AVCodecContext *avctx;
-    PixblockDSPContext pdsp;
     AVDCT *dct;
     int8_t *non_b_qp_table;
     int non_b_qp_alloc_size;

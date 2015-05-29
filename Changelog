@@ -2,6 +2,98 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version <next>:
+- FFT video filter
+- TDSC decoder
+- DTS lossless extension (XLL) decoding (not lossless, disabled by default)
+- showwavespic filter
+- DTS decoding through libdcadec
+- Drop support for nvenc API before 5.0
+- nvenc H265 encoder
+- Detelecine filter
+- Intel QSV-accelerated H.264 encoding
+- MMAL-accelerated H.264 decoding
+- basic APNG encoder and muxer with default extension "apng"
+- unpack DivX-style packed B-frames in MPEG-4 bitstream filter
+- WebM Live Chunk Muxer
+- nvenc level and tier options
+- chorus filter
+- Canopus HQ/HQA decoder
+- Automatically rotate videos based on metadata in ffmpeg
+- improved Quickdraw compatibility
+- VP9 high bit-depth and extended colorspaces decoding support
+- WebPAnimEncoder API when available for encoding and muxing WebP
+- Direct3D11-accelerated decoding
+
+
+version 2.6:
+- nvenc encoder
+- 10bit spp filter
+- colorlevels filter
+- RIFX format for *.wav files
+- RTP/mpegts muxer
+- non continuous cache protocol support
+- tblend filter
+- cropdetect support for non 8bpp, absolute (if limit >= 1) and relative (if limit < 1.0) threshold
+- Camellia symmetric block cipher
+- OpenH264 encoder wrapper
+- VOC seeking support
+- Closed caption Decoder
+- fspp, uspp, pp7 MPlayer postprocessing filters ported to native filters
+- showpalette filter
+- Twofish symmetric block cipher
+- Support DNx100 (960x720@8)
+- eq2 filter ported from libmpcodecs as eq filter
+- removed libmpcodecs
+- Changed default DNxHD colour range in QuickTime .mov derivatives to mpeg range
+- ported softpulldown filter from libmpcodecs as repeatfields filter
+- dcshift filter
+- RTP depacketizer for loss tolerant payload format for MP3 audio (RFC 5219)
+- RTP depacketizer for AC3 payload format (RFC 4184)
+- palettegen and paletteuse filters
+- VP9 RTP payload format (draft 0) experimental depacketizer
+- RTP depacketizer for DV (RFC 6469)
+- DXVA2-accelerated HEVC decoding
+- AAC ELD 480 decoding
+- Intel QSV-accelerated H.264 decoding
+- DSS SP decoder and DSS demuxer
+- Fix stsd atom corruption in DNxHD QuickTimes
+- Canopus HQX decoder
+- RTP depacketization of T.140 text (RFC 4103)
+- Port MIPS optimizations to 64-bit
+
+
+version 2.5:
+- HEVC/H.265 RTP payload format (draft v6) packetizer
+- SUP/PGS subtitle demuxer
+- ffprobe -show_pixel_formats option
+- CAST128 symmetric block cipher, ECB mode
+- STL subtitle demuxer and decoder
+- libutvideo YUV 4:2:2 10bit support
+- XCB-based screen-grabber
+- UDP-Lite support (RFC 3828)
+- xBR scaling filter
+- AVFoundation screen capturing support
+- ffserver supports codec private options
+- creating DASH compatible fragmented MP4, MPEG-DASH segmenting muxer
+- WebP muxer with animated WebP support
+- zygoaudio decoding support
+- APNG demuxer
+- postproc visualization support
+
+
+version 2.4:
+- Icecast protocol
+- ported lenscorrection filter from frei0r filter
+- large optimizations in dctdnoiz to make it usable
+- ICY metadata are now requested by default with the HTTP protocol
+- support for using metadata in stream specifiers in fftools
+- LZMA compression support in TIFF decoder
+- H.261 RTP payload format (RFC 4587) depacketizer and experimental packetizer
+- HEVC/H.265 RTP payload format (draft v6) depacketizer
+- added codecview filter to visualize information exported by some codecs
+- Matroska 3D support thorugh side data
+- HTML generation using texi2html is deprecated in favor of makeinfo/texi2any
+- silenceremove filter
 
 
 version 2.3:
@@ -27,7 +119,7 @@ version 2.3:
 - libbs2b-based stereo-to-binaural audio filter
 - libx264 reference frames count limiting depending on level
 - native Opus decoder
-- display matrix export and rotation api
+- display matrix export and rotation API
 - WebVTT encoder
 - showcqt multimedia filter
 - zoompan filter
@@ -69,6 +161,7 @@ version 2.2:
 - libx265 encoder
 - dejudder filter
 - Autodetect VDA like all other hardware accelerations
+- aliases and defaults for Ogg subtypes (opus, spx)
 
 
 version 2.1:

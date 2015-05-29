@@ -94,7 +94,7 @@ typedef struct Indeo3DecodeContext {
 
     int16_t         width, height;
     uint32_t        frame_num;      ///< current frame number (zero-based)
-    uint32_t        data_size;      ///< size of the frame data in bytes
+    int             data_size;      ///< size of the frame data in bytes
     uint16_t        frame_flags;    ///< frame properties
     uint8_t         cb_offset;      ///< needed for selecting VQ tables
     uint8_t         buf_sel;        ///< active frame buffer: 0 - primary, 1 -secondary
@@ -118,8 +118,8 @@ static uint8_t requant_tab[8][128];
  */
 static av_cold void build_requant_tab(void)
 {
-    static int8_t offsets[8] = { 1, 1, 2, -3, -3, 3, 4, 4 };
-    static int8_t deltas [8] = { 0, 1, 0,  4,  4, 1, 0, 1 };
+    static const int8_t offsets[8] = { 1, 1, 2, -3, -3, 3, 4, 4 };
+    static const int8_t deltas [8] = { 0, 1, 0,  4,  4, 1, 0, 1 };
 
     int i, j, step;
 
@@ -899,7 +899,8 @@ static int decode_frame_headers(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
     GetByteContext gb;
     const uint8_t   *bs_hdr;
     uint32_t        frame_num, word2, check_sum, data_size;
-    uint32_t        y_offset, u_offset, v_offset, starts[3], ends[3];
+    int             y_offset, u_offset, v_offset;
+    uint32_t        starts[3], ends[3];
     uint16_t        height, width;
     int             i, j;
 
@@ -944,7 +945,7 @@ static int decode_frame_headers(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
     if (width != ctx->width || height != ctx->height) {
         int res;
 
-        av_dlog(avctx, "Frame dimensions changed!\n");
+        ff_dlog(avctx, "Frame dimensions changed!\n");
 
         if (width  < 16 || width  > 640 ||
             height < 16 || height > 480 ||
@@ -981,7 +982,8 @@ static int decode_frame_headers(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
     ctx->y_data_size = ends[0] - starts[0];
     ctx->v_data_size = ends[1] - starts[1];
     ctx->u_data_size = ends[2] - starts[2];
-    if (FFMAX3(y_offset, v_offset, u_offset) >= ctx->data_size - 16 ||
+    if (FFMIN3(y_offset, v_offset, u_offset) < 0 ||
+        FFMAX3(y_offset, v_offset, u_offset) >= ctx->data_size - 16 ||
         FFMIN3(y_offset, v_offset, u_offset) < gb.buffer - bs_hdr + 16 ||
         FFMIN3(ctx->y_data_size, ctx->v_data_size, ctx->u_data_size) <= 0) {
         av_log(avctx, AV_LOG_ERROR, "One of the y/u/v offsets is invalid\n");

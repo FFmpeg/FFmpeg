@@ -336,7 +336,7 @@ function fft_pass_neon
 endfunc
 
 .macro  def_fft n, n2, n4
-function fft\n\()_neon  align=6
+function fft\n\()_neon, align=6
         sub             sp,  sp,  #16
         stp             x28, x30, [sp]
         add             x28, x0,  #\n4*2*8
@@ -415,7 +415,7 @@ function ff_fft_permute_neon, export=1
         ret
 endfunc
 
-const   fft_tab_neon
+const   fft_tab_neon, relocate=1
         .quad fft4_neon
         .quad fft8_neon
         .quad fft16_neon

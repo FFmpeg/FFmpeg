@@ -37,11 +37,12 @@ typedef struct {
 
 static int realtext_probe(AVProbeData *p)
 {
-    const unsigned char *ptr = p->buf;
+    char buf[7];
+    FFTextReader tr;
+    ff_text_init_buf(&tr, p->buf, p->buf_size);
+    ff_text_read(&tr, buf, sizeof(buf));
 
-    if (AV_RB24(ptr) == 0xEFBBBF)
-        ptr += 3;  /* skip UTF-8 BOM */
-    return !av_strncasecmp(ptr, "<window", 7) ? AVPROBE_SCORE_EXTENSION : 0;
+    return !av_strncasecmp(buf, "<window", 7) ? AVPROBE_SCORE_EXTENSION : 0;
 }
 
 static int read_ts(const char *s)
@@ -63,6 +64,8 @@ static int realtext_read_header(AVFormatContext *s)
     AVBPrint buf;
     char c = 0;
     int res = 0, duration = read_ts("60"); // default duration is 60 seconds
+    FFTextReader tr;
+    ff_text_init_avio(s, &tr, s->pb);
 
     if (!st)
         return AVERROR(ENOMEM);
@@ -72,10 +75,10 @@ static int realtext_read_header(AVFormatContext *s)
 
     av_bprint_init(&buf, 0, AV_BPRINT_SIZE_UNLIMITED);
 
-    while (!url_feof(s->pb)) {
+    while (!ff_text_eof(&tr)) {
         AVPacket *sub;
-        const int64_t pos = avio_tell(s->pb) - (c != 0);
-        int n = ff_smil_extract_next_chunk(s->pb, &buf, &c);
+        const int64_t pos = ff_text_pos(&tr) - (c != 0);
+        int n = ff_smil_extract_next_text_chunk(&tr, &buf, &c);
 
         if (n == 0)
             break;

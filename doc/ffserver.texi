@@ -1,4 +1,5 @@
 \input texinfo @c -*- texinfo -*-
+@documentencoding UTF-8
 
 @settitle ffserver Documentation
 @titlepage
@@ -66,12 +67,12 @@ http://@var{ffserver_ip_address}:@var{http_port}/@var{feed_name}
 
 where @var{ffserver_ip_address} is the IP address of the machine where
 @command{ffserver} is installed, @var{http_port} is the port number of
-the HTTP server (configured through the @option{Port} option), and
+the HTTP server (configured through the @option{HTTPPort} option), and
 @var{feed_name} is the name of the corresponding feed defined in the
 configuration file.
 
 Each feed is associated to a file which is stored on disk. This stored
-file is used to allow to send pre-recorded data to a player as fast as
+file is used to send pre-recorded data to a player as fast as
 possible when new content is added in real-time to the stream.
 
 A "live-stream" or "stream" is a resource published by
@@ -101,7 +102,7 @@ http://@var{ffserver_ip_address}:@var{rtsp_port}/@var{stream_name}[@var{options}
 the configuration file. @var{options} is a list of options specified
 after the URL which affects how the stream is served by
 @command{ffserver}. @var{http_port} and @var{rtsp_port} are the HTTP
-and RTSP ports configured with the options @var{Port} and
+and RTSP ports configured with the options @var{HTTPPort} and
 @var{RTSPPort} respectively.
 
 In case the stream is associated to a feed, the encoding parameters
@@ -117,7 +118,8 @@ Multiple streams can be connected to the same feed.
 
 For example, you can have a situation described by the following
 graph:
-@example
+
+@verbatim
                _________       __________
               |         |     |          |
 ffmpeg 1 -----| feed 1  |-----| stream 1 |
@@ -142,7 +144,8 @@ ffmpeg 2 -----| feed 3  |-----| stream 4 |
               |         |     |          |
               | file 1  |-----| stream 5 |
               |_________|     |__________|
-@end example
+
+@end verbatim
 
 @anchor{FFM}
 @section FFM, FFM2 formats
@@ -203,11 +206,9 @@ WARNING: trying to stream test1.mpg doesn't work with WMP as it tries to
 transfer the entire file before starting to play.
 The same is true of AVI files.
 
-@section What happens next?
-
-You should edit the ffserver.conf file to suit your needs (in terms of
-frame rates etc). Then install ffserver and ffmpeg, write a script to start
-them up, and off you go.
+You should edit the @file{ffserver.conf} file to suit your needs (in
+terms of frame rates etc). Then install @command{ffserver} and
+@command{ffmpeg}, write a script to start them up, and off you go.
 
 @section What else can it do?
 
@@ -354,19 +355,28 @@ allow everybody else.
 
 @section Global options
 @table @option
+@item HTTPPort @var{port_number}
 @item Port @var{port_number}
 @item RTSPPort @var{port_number}
 
-Set TCP port number on which the HTTP/RTSP server is listening. You
-must select a different port from your standard HTTP web server if it
-is running on the same computer.
+@var{HTTPPort} sets the HTTP server listening TCP port number,
+@var{RTSPPort} sets the RTSP server listening TCP port number.
+
+@var{Port} is the equivalent of @var{HTTPPort} and is deprecated.
+
+You must select a different port from your standard HTTP web server if
+it is running on the same computer.
 
 If not specified, no corresponding server will be created.
 
+@item HTTPBindAddress @var{ip_address}
 @item BindAddress @var{ip_address}
 @item RTSPBindAddress @var{ip_address}
 Set address on which the HTTP/RTSP server is bound. Only useful if you
 have several network interfaces.
+
+@var{BindAddress} is the equivalent of @var{HTTPBindAddress} and is
+deprecated.
 
 @item MaxHTTPConnections @var{n}
 Set number of simultaneous HTTP connections that can be handled. It
@@ -401,6 +411,12 @@ ignored, and the log is written to standard output.
 Set no-daemon mode. This option is currently ignored since now
 @command{ffserver} will always work in no-daemon mode, and is
 deprecated.
+
+@item UseDefaults
+@item NoDefaults
+Control whether default codec options are used for the all streams or not.
+Each stream may overwrite this setting for its own. Default is @var{UseDefaults}.
+The lastest occurrence overrides previous if multiple definitions.
 @end table
 
 @section Feed section
@@ -564,6 +580,11 @@ deprecated in favor of @option{Metadata}.
 @item Metadata @var{key} @var{value}
 Set metadata value on the output stream.
 
+@item UseDefaults
+@item NoDefaults
+Control whether default codec options are used for the stream or not.
+Default is @var{UseDefaults} unless disabled globally.
+
 @item NoAudio
 @item NoVideo
 Suppress audio/video.
@@ -582,8 +603,9 @@ Set sampling frequency for audio. When using low bitrates, you should
 lower this frequency to 22050 or 11025. The supported frequencies
 depend on the selected audio codec.
 
-@item AVOptionAudio @var{option} @var{value} (@emph{encoding,audio})
-Set generic option for audio stream.
+@item AVOptionAudio [@var{codec}:]@var{option} @var{value} (@emph{encoding,audio})
+Set generic or private option for audio stream.
+Private option must be prefixed with codec name or codec must be defined before.
 
 @item AVPresetAudio @var{preset} (@emph{encoding,audio})
 Set preset for audio stream.
@@ -660,8 +682,9 @@ Set video @option{qdiff} encoding option.
 @item DarkMask @var{float} (@emph{encoding,video})
 Set @option{lumi_mask}/@option{dark_mask} encoding options.
 
-@item AVOptionVideo @var{option} @var{value} (@emph{encoding,video})
-Set generic option for video stream.
+@item AVOptionVideo [@var{codec}:]@var{option} @var{value} (@emph{encoding,video})
+Set generic or private option for video stream.
+Private option must be prefixed with codec name or codec must be defined before.
 
 @item AVPresetVideo @var{preset} (@emph{encoding,video})
 Set preset for video stream.

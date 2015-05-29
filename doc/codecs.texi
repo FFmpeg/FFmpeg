@@ -7,7 +7,7 @@ all the encoders and decoders. In addition each codec may support
 so-called private options, which are specific for a given codec.
 
 Sometimes, a global option may only affect a specific kind of codec,
-and may be unsensical or ignored by another, so you need to be aware
+and may be nonsensical or ignored by another, so you need to be aware
 of the meaning of the specified options. Also some options are
 meant only for decoding or encoding.
 
@@ -71,7 +71,9 @@ Force low delay.
 @item global_header
 Place global headers in extradata instead of every keyframe.
 @item bitexact
-Use only bitexact stuff (except (I)DCT).
+Only write platform-, build- and time-independent data. (except (I)DCT).
+This ensures that file and data checksums are reproducible and match between
+platforms. Its primary use is for regression testing.
 @item aic
 Apply H263 advanced intra coding / mpeg4 ac prediction.
 @item cbp
@@ -493,10 +495,14 @@ visualize block types
 picture buffer allocations
 @item thread_ops
 threading operations
+@item nomc
+skip motion compensation
 @end table
 
 @item vismv @var{integer} (@emph{decoding,video})
 Visualize motion vectors (MVs).
+
+This option is deprecated, see the codecview filter instead.
 
 Possible values:
 @table @samp
@@ -797,6 +803,9 @@ Frame data might be split into multiple chunks.
 Show all frames before the first keyframe.
 @item skiprd
 Deprecated, use mpegvideo private options instead.
+@item export_mvs
+Export motion vectors into frame side-data (see @code{AV_FRAME_DATA_MOTION_VECTORS})
+for codecs that support it. See also @file{doc/examples/export_mvs.c}.
 @end table
 
 @item error @var{integer} (@emph{encoding,video})
@@ -855,6 +864,14 @@ Possible values:
 @item mpeg2_aac_low
 
 @item mpeg2_aac_he
+
+@item mpeg4_sp
+
+@item mpeg4_core
+
+@item mpeg4_main
+
+@item mpeg4_asp
 
 @item dts
 
@@ -1109,6 +1126,19 @@ Interlaced video, bottom coded first, top displayed first
 Set to 1 to disable processing alpha (transparency). This works like the
 @samp{gray} flag in the @option{flags} option which skips chroma information
 instead of alpha. Default is 0.
+
+@item codec_whitelist @var{list} (@emph{input})
+"," separated List of allowed decoders. By default all are allowed.
+
+@item dump_separator @var{string} (@emph{input})
+Separator used to separate the fields printed on the command line about the
+Stream parameters.
+For example to separate the fields with newlines and indention:
+@example
+ffprobe -dump_separator "
+                          "  -i ~/videos/matrixbench_mpeg2.mpg
+@end example
+
 @end table
 
 @c man end CODEC OPTIONS

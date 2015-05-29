@@ -121,6 +121,7 @@
  */
 
 #include <stdint.h>
+#include "libavutil/frame.h"
 #include "libavutil/samplefmt.h"
 
 #include "libswresample/version.h"
@@ -211,6 +212,10 @@ struct SwrContext *swr_alloc(void);
 
 /**
  * Initialize context after user parameters have been set.
+ * @note The context must be configured using the AVOption API.
+ *
+ * @see av_opt_set_int()
+ * @see av_opt_set_dict()
  *
  * @param[in,out]   s Swr context to initialize
  * @return AVERROR error code in case of failure.
@@ -460,6 +465,66 @@ const char *swresample_configuration(void);
  * @returns     the license of libswresample, determined at build-time
  */
 const char *swresample_license(void);
+
+/**
+ * @}
+ *
+ * @name AVFrame based API
+ * @{
+ */
+
+/**
+ * Convert the samples in the input AVFrame and write them to the output AVFrame.
+ *
+ * Input and output AVFrames must have channel_layout, sample_rate and format set.
+ *
+ * If the output AVFrame does not have the data pointers allocated the nb_samples
+ * field will be set using av_frame_get_buffer()
+ * is called to allocate the frame.
+ *
+ * The output AVFrame can be NULL or have fewer allocated samples than required.
+ * In this case, any remaining samples not written to the output will be added
+ * to an internal FIFO buffer, to be returned at the next call to this function
+ * or to swr_convert().
+ *
+ * If converting sample rate, there may be data remaining in the internal
+ * resampling delay buffer. swr_get_delay() tells the number of
+ * remaining samples. To get this data as output, call this function or
+ * swr_convert() with NULL input.
+ *
+ * If the SwrContext configuration does not match the output and
+ * input AVFrame settings the conversion does not take place and depending on
+ * which AVFrame is not matching AVERROR_OUTPUT_CHANGED, AVERROR_INPUT_CHANGED
+ * or the result of a bitwise-OR of them is returned.
+ *
+ * @see swr_delay()
+ * @see swr_convert()
+ * @see swr_get_delay()
+ *
+ * @param swr             audio resample context
+ * @param output          output AVFrame
+ * @param input           input AVFrame
+ * @return                0 on success, AVERROR on failure or nonmatching
+ *                        configuration.
+ */
+int swr_convert_frame(SwrContext *swr,
+                      AVFrame *output, const AVFrame *input);
+
+/**
+ * Configure or reconfigure the SwrContext using the information
+ * provided by the AVFrames.
+ *
+ * The original resampling context is reset even on failure.
+ * The function calls swr_close() internally if the context is open.
+ *
+ * @see swr_close();
+ *
+ * @param swr             audio resample context
+ * @param output          output AVFrame
+ * @param input           input AVFrame
+ * @return                0 on success, AVERROR on failure.
+ */
+int swr_config_frame(SwrContext *swr, const AVFrame *out, const AVFrame *in);
 
 /**
  * @}

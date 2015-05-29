@@ -50,7 +50,7 @@ static const uint8_t ansi_to_cga[16] = {
     0,  4,  2,  6,  1,  5,  3, 7, 8, 12, 10, 14,  9, 13, 11, 15
 };
 
-typedef struct {
+typedef struct AnsiContext {
     AVFrame *frame;
     int x;                /**< x cursor position (pixels) */
     int y;                /**< y cursor position (pixels) */
@@ -90,9 +90,11 @@ static av_cold int decode_init(AVCodecContext *avctx)
     s->fg          = DEFAULT_FG_COLOR;
     s->bg          = DEFAULT_BG_COLOR;
 
-    if (!avctx->width || !avctx->height)
-        ff_set_dimensions(avctx, 80 << 3, 25 << 4);
-
+    if (!avctx->width || !avctx->height) {
+        int ret = ff_set_dimensions(avctx, 80 << 3, 25 << 4);
+        if (ret < 0)
+            return ret;
+    }
     return 0;
 }
 

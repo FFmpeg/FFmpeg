@@ -123,7 +123,7 @@ static void dct_unquantize_h263_intra_neon(MpegEncContext *s, int16_t *block,
 }
 
 
-av_cold void ff_MPV_common_init_neon(MpegEncContext *s)
+av_cold void ff_mpv_common_init_neon(MpegEncContext *s)
 {
     int cpu_flags = av_get_cpu_flags();
 

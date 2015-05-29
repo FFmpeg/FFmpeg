@@ -27,10 +27,13 @@
 #include "avdevice.h"
 
 #define COBJMACROS
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #define NO_DSHOW_STRSAFE
 #include <dshow.h>
 #include <dvdmedia.h>
+
+#include "libavcodec/internal.h"
 
 /* EC_DEVICE_LOST is not defined in MinGW dshow headers. */
 #ifndef EC_DEVICE_LOST
@@ -43,12 +46,8 @@ void ff_print_AUDIO_STREAM_CONFIG_CAPS(const AUDIO_STREAM_CONFIG_CAPS *caps);
 void ff_print_AM_MEDIA_TYPE(const AM_MEDIA_TYPE *type);
 void ff_printGUID(const GUID *g);
 
-#if DSHOWDEBUG
 extern const AVClass *ff_dshow_context_class_ptr;
-#define dshowdebug(...) av_log(&ff_dshow_context_class_ptr, AV_LOG_DEBUG, __VA_ARGS__)
-#else
-#define dshowdebug(...)
-#endif
+#define dshowdebug(...) ff_dlog(&ff_dshow_context_class_ptr, __VA_ARGS__)
 
 static inline void nothing(void *foo)
 {
@@ -62,6 +61,11 @@ struct GUIDoffset {
 enum dshowDeviceType {
     VideoDevice = 0,
     AudioDevice = 1,
+};
+
+enum dshowSourceFilterType {
+    VideoSourceDevice = 0,
+    AudioSourceDevice = 1,
 };
 
 #define DECLARE_QUERYINTERFACE(class, ...)                                   \
@@ -222,7 +226,7 @@ libAVEnumPins       *libAVEnumPins_Create (libAVPin *pin, libAVFilter *filter);
  * libAVEnumMediaTypes
  ****************************************************************************/
 struct libAVEnumMediaTypes {
-    IEnumPinsVtbl *vtbl;
+    IEnumMediaTypesVtbl *vtbl;
     long ref;
     int pos;
     AM_MEDIA_TYPE type;
@@ -275,5 +279,74 @@ long          WINAPI libAVFilter_QueryVendorInfo(libAVFilter *, wchar_t **);
 
 void                 libAVFilter_Destroy(libAVFilter *);
 libAVFilter         *libAVFilter_Create (void *, void *, enum dshowDeviceType);
+
+/*****************************************************************************
+ * dshow_ctx
+ ****************************************************************************/
+struct dshow_ctx {
+    const AVClass *class;
+
+    IGraphBuilder *graph;
+
+    char *device_name[2];
+    int video_device_number;
+    int audio_device_number;
+
+    int   list_options;
+    int   list_devices;
+    int   audio_buffer_size;
+    int   crossbar_video_input_pin_number;
+    int   crossbar_audio_input_pin_number;
+    char *video_pin_name;
+    char *audio_pin_name;
+    int   show_video_device_dialog;
+    int   show_audio_device_dialog;
+    int   show_video_crossbar_connection_dialog;
+    int   show_audio_crossbar_connection_dialog;
+    int   show_analog_tv_tuner_dialog;
+    int   show_analog_tv_tuner_audio_dialog;
+    char *audio_filter_load_file;
+    char *audio_filter_save_file;
+    char *video_filter_load_file;
+    char *video_filter_save_file;
+
+    IBaseFilter *device_filter[2];
+    IPin        *device_pin[2];
+    libAVFilter *capture_filter[2];
+    libAVPin    *capture_pin[2];
+
+    HANDLE mutex;
+    HANDLE event[2]; /* event[0] is set by DirectShow
+                      * event[1] is set by callback() */
+    AVPacketList *pktl;
+
+    int eof;
+
+    int64_t curbufsize[2];
+    unsigned int video_frame_num;
+
+    IMediaControl *control;
+    IMediaEvent *media_event;
+
+    enum AVPixelFormat pixel_format;
+    enum AVCodecID video_codec_id;
+    char *framerate;
+
+    int requested_width;
+    int requested_height;
+    AVRational requested_framerate;
+
+    int sample_rate;
+    int sample_size;
+    int channels;
+};
+
+/*****************************************************************************
+ * CrossBar
+ ****************************************************************************/
+HRESULT dshow_try_setup_crossbar_options(ICaptureGraphBuilder2 *graph_builder2,
+    IBaseFilter *device_filter, enum dshowDeviceType devtype, AVFormatContext *avctx);
+
+void dshow_show_filter_properties(IBaseFilter *pFilter, AVFormatContext *avctx);
 
 #endif /* AVDEVICE_DSHOW_H */

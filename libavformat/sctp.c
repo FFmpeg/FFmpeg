@@ -48,6 +48,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "libavutil/parseutils.h"
+#include "libavutil/opt.h"
 #include "avformat.h"
 #include "internal.h"
 #include "network.h"
@@ -98,7 +99,7 @@ static int ff_sctp_recvmsg(int s, void *msg, size_t len, struct sockaddr *from,
     if (msg_flags)
         *msg_flags = inmsg.msg_flags;
 
-    for (cmsg = CMSG_FIRSTHDR(&inmsg); cmsg != NULL;
+    for (cmsg = CMSG_FIRSTHDR(&inmsg); cmsg;
          cmsg = CMSG_NXTHDR(&inmsg, cmsg)) {
         if ((IPPROTO_SCTP == cmsg->cmsg_level) &&
             (SCTP_SNDRCV  == cmsg->cmsg_type))
@@ -143,15 +144,36 @@ static int ff_sctp_send(int s, const void *msg, size_t len,
         memcpy(CMSG_DATA(cmsg), sinfo, sizeof(struct sctp_sndrcvinfo));
     }
 
-    return sendmsg(s, &outmsg, flags);
+    return sendmsg(s, &outmsg, flags | MSG_NOSIGNAL);
 }
 
 typedef struct SCTPContext {
+    const AVClass *class;
     int fd;
+    int listen;
+    int timeout;
+    int listen_timeout;
     int max_streams;
     struct sockaddr_storage dest_addr;
-    socklen_t dest_addr_len;
 } SCTPContext;
+
+#define OFFSET(x) offsetof(SCTPContext, x)
+#define D AV_OPT_FLAG_DECODING_PARAM
+#define E AV_OPT_FLAG_ENCODING_PARAM
+static const AVOption options[] = {
+    { "listen",          "Listen for incoming connections",  OFFSET(listen),         AV_OPT_TYPE_INT, { .i64 = 0 },     0,       1,         .flags = D|E },
+    { "timeout",         "Connection timeout (in milliseconds)", OFFSET(timeout),    AV_OPT_TYPE_INT, { .i64 = 10000 }, INT_MIN, INT_MAX,   .flags = D|E },
+    { "listen_timeout",  "Bind timeout (in milliseconds)",   OFFSET(listen_timeout), AV_OPT_TYPE_INT, { .i64 = -1 },    INT_MIN, INT_MAX,   .flags = D|E },
+    { "max_streams",     "Max stream to allocate",           OFFSET(max_streams), AV_OPT_TYPE_INT, { .i64 = 0 },              0, INT16_MAX, .flags = D|E },
+    { NULL }
+};
+
+static const AVClass sctp_class = {
+    .class_name = "sctp",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
 
 static int sctp_open(URLContext *h, const char *uri, int flags)
 {
@@ -164,7 +186,7 @@ static int sctp_open(URLContext *h, const char *uri, int flags)
     SCTPContext *s = h->priv_data;
     const char *p;
     char buf[256];
-    int ret, listen_socket = 0;
+    int ret;
     char hostname[1024], proto[1024], path[1024];
     char portstr[10];
 
@@ -177,11 +199,10 @@ static int sctp_open(URLContext *h, const char *uri, int flags)
         return AVERROR(EINVAL);
     }
 
-    s->max_streams = 0;
     p = strchr(uri, '?');
     if (p) {
         if (av_find_info_tag(buf, sizeof(buf), "listen", p))
-            listen_socket = 1;
+            s->listen = 1;
         if (av_find_info_tag(buf, sizeof(buf), "max_streams", p))
             s->max_streams = strtol(buf, NULL, 10);
     }
@@ -198,23 +219,29 @@ static int sctp_open(URLContext *h, const char *uri, int flags)
 
     cur_ai = ai;
 
+restart:
     fd = ff_socket(cur_ai->ai_family, SOCK_STREAM, IPPROTO_SCTP);
-    if (fd < 0)
+    if (fd < 0) {
+        ret = ff_neterrno();
         goto fail;
+    }
 
-    s->dest_addr_len = sizeof(s->dest_addr);
+    if (s->listen) {
+        if ((fd = ff_listen_bind(fd, cur_ai->ai_addr, cur_ai->ai_addrlen,
+                                 s->listen_timeout, h)) < 0) {
+            ret = fd;
+            goto fail1;
+        }
+    } else {
+        if ((ret = ff_listen_connect(fd, cur_ai->ai_addr, cur_ai->ai_addrlen,
+                                     s->timeout, h, !!cur_ai->ai_next)) < 0) {
 
-    if (listen_socket) {
-        int fd1;
-        ret = bind(fd, cur_ai->ai_addr, cur_ai->ai_addrlen);
-        listen(fd, 100);
-        fd1 = accept(fd, NULL, NULL);
-        closesocket(fd);
-        fd  = fd1;
-    } else
-        ret = connect(fd, cur_ai->ai_addr, cur_ai->ai_addrlen);
-
-    ff_socket_nonblock(fd, 1);
+            if (ret == AVERROR_EXIT)
+                goto fail1;
+            else
+                goto fail;
+        }
+    }
 
     event.sctp_data_io_event = 1;
     /* TODO: Subscribe to more event types and handle them */
@@ -223,17 +250,20 @@ static int sctp_open(URLContext *h, const char *uri, int flags)
                    sizeof(event)) != 0) {
         av_log(h, AV_LOG_ERROR,
                "SCTP ERROR: Unable to subscribe to events\n");
-        goto fail;
+        goto fail1;
     }
 
     if (s->max_streams) {
         initparams.sinit_max_instreams = s->max_streams;
         initparams.sinit_num_ostreams  = s->max_streams;
         if (setsockopt(fd, IPPROTO_SCTP, SCTP_INITMSG, &initparams,
-                       sizeof(initparams)) < 0)
+                       sizeof(initparams)) < 0) {
             av_log(h, AV_LOG_ERROR,
                    "SCTP ERROR: Unable to initialize socket max streams %d\n",
                    s->max_streams);
+            ret = ff_neterrno();
+            goto fail1;
+        }
     }
 
     h->priv_data   = s;
@@ -243,6 +273,15 @@ static int sctp_open(URLContext *h, const char *uri, int flags)
     return 0;
 
 fail:
+    if (cur_ai->ai_next) {
+        /* Retry with the next sockaddr */
+        cur_ai = cur_ai->ai_next;
+        if (fd >= 0)
+            closesocket(fd);
+        ret = 0;
+        goto restart;
+    }
+fail1:
     ret = AVERROR(EIO);
     freeaddrinfo(ai);
     return ret;
@@ -298,11 +337,11 @@ static int sctp_write(URLContext *h, const uint8_t *buf, int size)
         info.sinfo_stream           = AV_RB16(buf);
         if (info.sinfo_stream > s->max_streams) {
             av_log(h, AV_LOG_ERROR, "bad input data\n");
-            return AVERROR(EINVAL);
+            return AVERROR_BUG;
         }
         ret = ff_sctp_send(s->fd, buf + 2, size - 2, &info, MSG_EOR);
     } else
-        ret = send(s->fd, buf, size, 0);
+        ret = send(s->fd, buf, size, MSG_NOSIGNAL);
 
     return ret < 0 ? ff_neterrno() : ret;
 }
@@ -329,4 +368,5 @@ URLProtocol ff_sctp_protocol = {
     .url_get_file_handle = sctp_get_file_handle,
     .priv_data_size      = sizeof(SCTPContext),
     .flags               = URL_PROTOCOL_FLAG_NETWORK,
+    .priv_data_class     = &sctp_class,
 };

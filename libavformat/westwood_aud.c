@@ -1,6 +1,6 @@
 /*
  * Westwood Studios AUD Format Demuxer
- * Copyright (c) 2003 The ffmpeg Project
+ * Copyright (c) 2003 The FFmpeg Project
  *
  * This file is part of FFmpeg.
  *
@@ -151,7 +151,7 @@ static int wsaud_read_packet(AVFormatContext *s,
            Specifically, this is needed to signal when a packet should be
            decoding as raw 8-bit pcm or variable-size ADPCM. */
         int out_size = AV_RL16(&preamble[2]);
-        if ((ret = av_new_packet(pkt, chunk_size + 4)))
+        if ((ret = av_new_packet(pkt, chunk_size + 4)) < 0)
             return ret;
         if ((ret = avio_read(pb, &pkt->data[4], chunk_size)) != chunk_size)
             return ret < 0 ? ret : AVERROR(EIO);

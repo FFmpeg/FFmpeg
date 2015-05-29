@@ -64,15 +64,15 @@ static int lrc_write_header(AVFormatContext *s)
     }
     for(metadata_item = NULL;
        (metadata_item = av_dict_get(s->metadata, "", metadata_item,
-                                    AV_DICT_IGNORE_SUFFIX)) != NULL;) {
+                                    AV_DICT_IGNORE_SUFFIX));) {
         char *delim;
         if(!metadata_item->value[0]) {
             continue;
         }
-        while((delim = strchr(metadata_item->value, '\n')) != NULL) {
+        while((delim = strchr(metadata_item->value, '\n'))) {
             *delim = ' ';
         }
-        while((delim = strchr(metadata_item->value, '\r')) != NULL) {
+        while((delim = strchr(metadata_item->value, '\r'))) {
             *delim = ' ';
         }
         avio_printf(s->pb, "[%s:%s]\n",

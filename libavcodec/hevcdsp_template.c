@@ -42,72 +42,45 @@ static void FUNC(put_pcm)(uint8_t *_dst, ptrdiff_t stride, int width, int height
     }
 }
 
-static void FUNC(transform_add4x4)(uint8_t *_dst, int16_t *coeffs,
-                                       ptrdiff_t stride)
+static av_always_inline void FUNC(transquant_bypass)(uint8_t *_dst, int16_t *coeffs,
+                                                     ptrdiff_t stride, int size)
 {
     int x, y;
     pixel *dst = (pixel *)_dst;
 
     stride /= sizeof(pixel);
 
-    for (y = 0; y < 4; y++) {
-        for (x = 0; x < 4; x++) {
+    for (y = 0; y < size; y++) {
+        for (x = 0; x < size; x++) {
             dst[x] = av_clip_pixel(dst[x] + *coeffs);
             coeffs++;
         }
         dst += stride;
     }
+}
+
+static void FUNC(transform_add4x4)(uint8_t *_dst, int16_t *coeffs,
+                                       ptrdiff_t stride)
+{
+    FUNC(transquant_bypass)(_dst, coeffs, stride, 4);
 }
 
 static void FUNC(transform_add8x8)(uint8_t *_dst, int16_t *coeffs,
                                        ptrdiff_t stride)
 {
-    int x, y;
-    pixel *dst = (pixel *)_dst;
-
-    stride /= sizeof(pixel);
-
-    for (y = 0; y < 8; y++) {
-        for (x = 0; x < 8; x++) {
-            dst[x] = av_clip_pixel(dst[x] + *coeffs);
-            coeffs++;
-        }
-        dst += stride;
-    }
+    FUNC(transquant_bypass)(_dst, coeffs, stride, 8);
 }
 
 static void FUNC(transform_add16x16)(uint8_t *_dst, int16_t *coeffs,
                                          ptrdiff_t stride)
 {
-    int x, y;
-    pixel *dst = (pixel *)_dst;
-
-    stride /= sizeof(pixel);
-
-    for (y = 0; y < 16; y++) {
-        for (x = 0; x < 16; x++) {
-            dst[x] = av_clip_pixel(dst[x] + *coeffs);
-            coeffs++;
-        }
-        dst += stride;
-    }
+    FUNC(transquant_bypass)(_dst, coeffs, stride, 16);
 }
 
 static void FUNC(transform_add32x32)(uint8_t *_dst, int16_t *coeffs,
                                          ptrdiff_t stride)
 {
-    int x, y;
-    pixel *dst = (pixel *)_dst;
-
-    stride /= sizeof(pixel);
-
-    for (y = 0; y < 32; y++) {
-        for (x = 0; x < 32; x++) {
-            dst[x] = av_clip_pixel(dst[x] + *coeffs);
-            coeffs++;
-        }
-        dst += stride;
-    }
+    FUNC(transquant_bypass)(_dst, coeffs, stride, 32);
 }
 
 
@@ -329,17 +302,15 @@ IDCT_DC(32)
 #undef ADD_AND_SCALE
 
 static void FUNC(sao_band_filter_0)(uint8_t *_dst, uint8_t *_src,
-                                  ptrdiff_t stride_dst, ptrdiff_t stride_src, SAOParams *sao,
-                                  int *borders, int width, int height,
-                                  int c_idx)
+                                    ptrdiff_t stride_dst, ptrdiff_t stride_src,
+                                    int16_t *sao_offset_val, int sao_left_class,
+                                    int width, int height)
 {
     pixel *dst = (pixel *)_dst;
     pixel *src = (pixel *)_src;
     int offset_table[32] = { 0 };
     int k, y, x;
     int shift  = BIT_DEPTH - 5;
-    int16_t *sao_offset_val = sao->offset_val[c_idx];
-    int sao_left_class  = sao->band_position[c_idx];
 
     stride_dst /= sizeof(pixel);
     stride_src /= sizeof(pixel);
@@ -354,12 +325,10 @@ static void FUNC(sao_band_filter_0)(uint8_t *_dst, uint8_t *_src,
     }
 }
 
-#define CMP(a, b) ((a) > (b) ? 1 : ((a) == (b) ? 0 : -1))
+#define CMP(a, b) (((a) > (b)) - ((a) < (b)))
 
-static void FUNC(sao_edge_filter)(uint8_t *_dst, uint8_t *_src,
-                                  ptrdiff_t stride_dst, ptrdiff_t stride_src, SAOParams *sao,
-                                  int width, int height,
-                                  int c_idx, int init_x, int init_y) {
+static void FUNC(sao_edge_filter)(uint8_t *_dst, uint8_t *_src, ptrdiff_t stride_dst, int16_t *sao_offset_val,
+                                  int eo, int width, int height) {
 
     static const uint8_t edge_idx[] = { 1, 2, 0, 3, 4 };
     static const int8_t pos[4][2][2] = {
@@ -368,36 +337,78 @@ static void FUNC(sao_edge_filter)(uint8_t *_dst, uint8_t *_src,
         { { -1, -1 }, {  1, 1 } }, // 45 degree
         { {  1, -1 }, { -1, 1 } }, // 135 degree
     };
-    int16_t *sao_offset_val = sao->offset_val[c_idx];
-    int sao_eo_class    = sao->eo_class[c_idx];
     pixel *dst = (pixel *)_dst;
     pixel *src = (pixel *)_src;
-
-    int y_stride_src = init_y * stride_src;
-    int y_stride_dst = init_y * stride_dst;
-    int pos_0_0  = pos[sao_eo_class][0][0];
-    int pos_0_1  = pos[sao_eo_class][0][1];
-    int pos_1_0  = pos[sao_eo_class][1][0];
-    int pos_1_1  = pos[sao_eo_class][1][1];
+    int a_stride, b_stride;
     int x, y;
+    ptrdiff_t stride_src = (2*MAX_PB_SIZE + FF_INPUT_BUFFER_PADDING_SIZE) / sizeof(pixel);
+    stride_dst /= sizeof(pixel);
 
-    int y_stride_0_1 = (init_y + pos_0_1) * stride_src;
-    int y_stride_1_1 = (init_y + pos_1_1) * stride_src;
-    for (y = init_y; y < height; y++) {
-        for (x = init_x; x < width; x++) {
-            int diff0             = CMP(src[x + y_stride_src], src[x + pos_0_0 + y_stride_0_1]);
-            int diff1             = CMP(src[x + y_stride_src], src[x + pos_1_0 + y_stride_1_1]);
+    a_stride = pos[eo][0][0] + pos[eo][0][1] * stride_src;
+    b_stride = pos[eo][1][0] + pos[eo][1][1] * stride_src;
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x++) {
+            int diff0 = CMP(src[x], src[x + a_stride]);
+            int diff1 = CMP(src[x], src[x + b_stride]);
             int offset_val        = edge_idx[2 + diff0 + diff1];
-            dst[x + y_stride_dst] = av_clip_pixel(src[x + y_stride_src] + sao_offset_val[offset_val]);
+            dst[x] = av_clip_pixel(src[x] + sao_offset_val[offset_val]);
         }
-        y_stride_src += stride_src;
-        y_stride_dst += stride_dst;
-        y_stride_0_1 += stride_src;
-        y_stride_1_1 += stride_src;
+        src += stride_src;
+        dst += stride_dst;
     }
 }
 
-static void FUNC(sao_edge_filter_0)(uint8_t *_dst, uint8_t *_src,
+static void FUNC(sao_edge_restore_0)(uint8_t *_dst, uint8_t *_src,
+                                    ptrdiff_t stride_dst, ptrdiff_t stride_src, SAOParams *sao,
+                                    int *borders, int _width, int _height,
+                                    int c_idx, uint8_t *vert_edge,
+                                    uint8_t *horiz_edge, uint8_t *diag_edge)
+{
+    int x, y;
+    pixel *dst = (pixel *)_dst;
+    pixel *src = (pixel *)_src;
+    int16_t *sao_offset_val = sao->offset_val[c_idx];
+    int sao_eo_class    = sao->eo_class[c_idx];
+    int init_x = 0, width = _width, height = _height;
+
+    stride_dst /= sizeof(pixel);
+    stride_src /= sizeof(pixel);
+
+    if (sao_eo_class != SAO_EO_VERT) {
+        if (borders[0]) {
+            int offset_val = sao_offset_val[0];
+            for (y = 0; y < height; y++) {
+                dst[y * stride_dst] = av_clip_pixel(src[y * stride_src] + offset_val);
+            }
+            init_x = 1;
+        }
+        if (borders[2]) {
+            int offset_val = sao_offset_val[0];
+            int offset     = width - 1;
+            for (x = 0; x < height; x++) {
+                dst[x * stride_dst + offset] = av_clip_pixel(src[x * stride_src + offset] + offset_val);
+            }
+            width--;
+        }
+    }
+    if (sao_eo_class != SAO_EO_HORIZ) {
+        if (borders[1]) {
+            int offset_val = sao_offset_val[0];
+            for (x = init_x; x < width; x++)
+                dst[x] = av_clip_pixel(src[x] + offset_val);
+        }
+        if (borders[3]) {
+            int offset_val   = sao_offset_val[0];
+            int y_stride_dst = stride_dst * (height - 1);
+            int y_stride_src = stride_src * (height - 1);
+            for (x = init_x; x < width; x++)
+                dst[x + y_stride_dst] = av_clip_pixel(src[x + y_stride_src] + offset_val);
+            height--;
+        }
+    }
+}
+
+static void FUNC(sao_edge_restore_1)(uint8_t *_dst, uint8_t *_src,
                                     ptrdiff_t stride_dst, ptrdiff_t stride_src, SAOParams *sao,
                                     int *borders, int _width, int _height,
                                     int c_idx, uint8_t *vert_edge,
@@ -446,61 +457,6 @@ static void FUNC(sao_edge_filter_0)(uint8_t *_dst, uint8_t *_src,
             height--;
         }
     }
-
-    FUNC(sao_edge_filter)((uint8_t *)dst, (uint8_t *)src, stride_dst, stride_src, sao, width, height, c_idx, init_x, init_y);
-}
-
-static void FUNC(sao_edge_filter_1)(uint8_t *_dst, uint8_t *_src,
-                                    ptrdiff_t stride_dst, ptrdiff_t stride_src, SAOParams *sao,
-                                    int *borders, int _width, int _height,
-                                    int c_idx, uint8_t *vert_edge,
-                                    uint8_t *horiz_edge, uint8_t *diag_edge)
-{
-    int x, y;
-    pixel *dst = (pixel *)_dst;
-    pixel *src = (pixel *)_src;
-    int16_t *sao_offset_val = sao->offset_val[c_idx];
-    int sao_eo_class    = sao->eo_class[c_idx];
-    int init_x = 0, init_y = 0, width = _width, height = _height;
-
-    stride_dst /= sizeof(pixel);
-    stride_src /= sizeof(pixel);
-
-    if (sao_eo_class != SAO_EO_VERT) {
-        if (borders[0]) {
-            int offset_val = sao_offset_val[0];
-            for (y = 0; y < height; y++) {
-                dst[y * stride_dst] = av_clip_pixel(src[y * stride_src] + offset_val);
-            }
-            init_x = 1;
-        }
-        if (borders[2]) {
-            int offset_val = sao_offset_val[0];
-            int offset     = width - 1;
-            for (x = 0; x < height; x++) {
-                dst[x * stride_dst + offset] = av_clip_pixel(src[x * stride_src + offset] + offset_val);
-            }
-            width--;
-        }
-    }
-    if (sao_eo_class != SAO_EO_HORIZ) {
-        if (borders[1]) {
-            int offset_val = sao_offset_val[0];
-            for (x = init_x; x < width; x++)
-                dst[x] = av_clip_pixel(src[x] + offset_val);
-            init_y = 1;
-        }
-        if (borders[3]) {
-            int offset_val   = sao_offset_val[0];
-            int y_stride_dst = stride_dst * (height - 1);
-            int y_stride_src = stride_src * (height - 1);
-            for (x = init_x; x < width; x++)
-                dst[x + y_stride_dst] = av_clip_pixel(src[x + y_stride_src] + offset_val);
-            height--;
-        }
-    }
-
-    FUNC(sao_edge_filter)((uint8_t *)dst, (uint8_t *)src, stride_dst, stride_src, sao, width, height, c_idx, init_x, init_y);
 
     {
         int save_upper_left  = !diag_edge[0] && sao_eo_class == SAO_EO_135D && !borders[0] && !borders[1];
@@ -543,7 +499,7 @@ static void FUNC(sao_edge_filter_1)(uint8_t *_dst, uint8_t *_src,
 ////////////////////////////////////////////////////////////////////////////////
 //
 ////////////////////////////////////////////////////////////////////////////////
-static void FUNC(put_hevc_pel_pixels)(int16_t *dst, ptrdiff_t dststride,
+static void FUNC(put_hevc_pel_pixels)(int16_t *dst,
                                       uint8_t *_src, ptrdiff_t _srcstride,
                                       int height, intptr_t mx, intptr_t my, int width)
 {
@@ -555,7 +511,7 @@ static void FUNC(put_hevc_pel_pixels)(int16_t *dst, ptrdiff_t dststride,
         for (x = 0; x < width; x++)
             dst[x] = src[x] << (14 - BIT_DEPTH);
         src += srcstride;
-        dst += dststride;
+        dst += MAX_PB_SIZE;
     }
 }
 
@@ -576,7 +532,7 @@ static void FUNC(put_hevc_pel_uni_pixels)(uint8_t *_dst, ptrdiff_t _dststride, u
 }
 
 static void FUNC(put_hevc_pel_bi_pixels)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                         int16_t *src2, ptrdiff_t src2stride,
+                                         int16_t *src2,
                                          int height, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
@@ -597,7 +553,7 @@ static void FUNC(put_hevc_pel_bi_pixels)(uint8_t *_dst, ptrdiff_t _dststride, ui
             dst[x] = av_clip_pixel(((src[x] << (14 - BIT_DEPTH)) + src2[x] + offset) >> shift);
         src  += srcstride;
         dst  += dststride;
-        src2 += src2stride;
+        src2 += MAX_PB_SIZE;
     }
 }
 
@@ -626,7 +582,7 @@ static void FUNC(put_hevc_pel_uni_w_pixels)(uint8_t *_dst, ptrdiff_t _dststride,
 }
 
 static void FUNC(put_hevc_pel_bi_w_pixels)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                           int16_t *src2, ptrdiff_t src2stride,
+                                           int16_t *src2,
                                            int height, int denom, int wx0, int wx1,
                                            int ox0, int ox1, intptr_t mx, intptr_t my, int width)
 {
@@ -647,7 +603,7 @@ static void FUNC(put_hevc_pel_bi_w_pixels)(uint8_t *_dst, ptrdiff_t _dststride, 
         }
         src  += srcstride;
         dst  += dststride;
-        src2 += src2stride;
+        src2 += MAX_PB_SIZE;
     }
 }
 
@@ -664,7 +620,7 @@ static void FUNC(put_hevc_pel_bi_w_pixels)(uint8_t *_dst, ptrdiff_t _dststride, 
      filter[6] * src[x + 3 * stride] +                                         \
      filter[7] * src[x + 4 * stride])
 
-static void FUNC(put_hevc_qpel_h)(int16_t *dst,  ptrdiff_t dststride,
+static void FUNC(put_hevc_qpel_h)(int16_t *dst,
                                   uint8_t *_src, ptrdiff_t _srcstride,
                                   int height, intptr_t mx, intptr_t my, int width)
 {
@@ -676,11 +632,11 @@ static void FUNC(put_hevc_qpel_h)(int16_t *dst,  ptrdiff_t dststride,
         for (x = 0; x < width; x++)
             dst[x] = QPEL_FILTER(src, 1) >> (BIT_DEPTH - 8);
         src += srcstride;
-        dst += dststride;
+        dst += MAX_PB_SIZE;
     }
 }
 
-static void FUNC(put_hevc_qpel_v)(int16_t *dst,  ptrdiff_t dststride,
+static void FUNC(put_hevc_qpel_v)(int16_t *dst,
                                   uint8_t *_src, ptrdiff_t _srcstride,
                                   int height, intptr_t mx, intptr_t my, int width)
 {
@@ -692,12 +648,11 @@ static void FUNC(put_hevc_qpel_v)(int16_t *dst,  ptrdiff_t dststride,
         for (x = 0; x < width; x++)
             dst[x] = QPEL_FILTER(src, srcstride) >> (BIT_DEPTH - 8);
         src += srcstride;
-        dst += dststride;
+        dst += MAX_PB_SIZE;
     }
 }
 
 static void FUNC(put_hevc_qpel_hv)(int16_t *dst,
-                                   ptrdiff_t dststride,
                                    uint8_t *_src,
                                    ptrdiff_t _srcstride,
                                    int height, intptr_t mx,
@@ -725,7 +680,7 @@ static void FUNC(put_hevc_qpel_hv)(int16_t *dst,
         for (x = 0; x < width; x++)
             dst[x] = QPEL_FILTER(tmp, MAX_PB_SIZE) >> 6;
         tmp += MAX_PB_SIZE;
-        dst += dststride;
+        dst += MAX_PB_SIZE;
     }
 }
 
@@ -756,7 +711,7 @@ static void FUNC(put_hevc_qpel_uni_h)(uint8_t *_dst,  ptrdiff_t _dststride,
 }
 
 static void FUNC(put_hevc_qpel_bi_h)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                     int16_t *src2, ptrdiff_t src2stride,
+                                     int16_t *src2,
                                      int height, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
@@ -779,7 +734,7 @@ static void FUNC(put_hevc_qpel_bi_h)(uint8_t *_dst, ptrdiff_t _dststride, uint8_
             dst[x] = av_clip_pixel(((QPEL_FILTER(src, 1) >> (BIT_DEPTH - 8)) + src2[x] + offset) >> shift);
         src  += srcstride;
         dst  += dststride;
-        src2 += src2stride;
+        src2 += MAX_PB_SIZE;
     }
 }
 
@@ -811,7 +766,7 @@ static void FUNC(put_hevc_qpel_uni_v)(uint8_t *_dst,  ptrdiff_t _dststride,
 
 
 static void FUNC(put_hevc_qpel_bi_v)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                     int16_t *src2, ptrdiff_t src2stride,
+                                     int16_t *src2,
                                      int height, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
@@ -834,7 +789,7 @@ static void FUNC(put_hevc_qpel_bi_v)(uint8_t *_dst, ptrdiff_t _dststride, uint8_
             dst[x] = av_clip_pixel(((QPEL_FILTER(src, srcstride) >> (BIT_DEPTH - 8)) + src2[x] + offset) >> shift);
         src  += srcstride;
         dst  += dststride;
-        src2 += src2stride;
+        src2 += MAX_PB_SIZE;
     }
 }
 
@@ -879,7 +834,7 @@ static void FUNC(put_hevc_qpel_uni_hv)(uint8_t *_dst,  ptrdiff_t _dststride,
 }
 
 static void FUNC(put_hevc_qpel_bi_hv)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                      int16_t *src2, ptrdiff_t src2stride,
+                                      int16_t *src2,
                                       int height, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
@@ -914,7 +869,7 @@ static void FUNC(put_hevc_qpel_bi_hv)(uint8_t *_dst, ptrdiff_t _dststride, uint8
             dst[x] = av_clip_pixel(((QPEL_FILTER(tmp, MAX_PB_SIZE) >> 6) + src2[x] + offset) >> shift);
         tmp  += MAX_PB_SIZE;
         dst  += dststride;
-        src2 += src2stride;
+        src2 += MAX_PB_SIZE;
     }
 }
 
@@ -946,7 +901,7 @@ static void FUNC(put_hevc_qpel_uni_w_h)(uint8_t *_dst,  ptrdiff_t _dststride,
 }
 
 static void FUNC(put_hevc_qpel_bi_w_h)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                       int16_t *src2, ptrdiff_t src2stride,
+                                       int16_t *src2,
                                        int height, int denom, int wx0, int wx1,
                                        int ox0, int ox1, intptr_t mx, intptr_t my, int width)
 {
@@ -969,7 +924,7 @@ static void FUNC(put_hevc_qpel_bi_w_h)(uint8_t *_dst, ptrdiff_t _dststride, uint
                                     ((ox0 + ox1 + 1) << log2Wd)) >> (log2Wd + 1));
         src  += srcstride;
         dst  += dststride;
-        src2 += src2stride;
+        src2 += MAX_PB_SIZE;
     }
 }
 
@@ -1001,7 +956,7 @@ static void FUNC(put_hevc_qpel_uni_w_v)(uint8_t *_dst,  ptrdiff_t _dststride,
 }
 
 static void FUNC(put_hevc_qpel_bi_w_v)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                       int16_t *src2, ptrdiff_t src2stride,
+                                       int16_t *src2,
                                        int height, int denom, int wx0, int wx1,
                                        int ox0, int ox1, intptr_t mx, intptr_t my, int width)
 {
@@ -1024,7 +979,7 @@ static void FUNC(put_hevc_qpel_bi_w_v)(uint8_t *_dst, ptrdiff_t _dststride, uint
                                     ((ox0 + ox1 + 1) << log2Wd)) >> (log2Wd + 1));
         src  += srcstride;
         dst  += dststride;
-        src2 += src2stride;
+        src2 += MAX_PB_SIZE;
     }
 }
 
@@ -1070,7 +1025,7 @@ static void FUNC(put_hevc_qpel_uni_w_hv)(uint8_t *_dst,  ptrdiff_t _dststride,
 }
 
 static void FUNC(put_hevc_qpel_bi_w_hv)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                        int16_t *src2, ptrdiff_t src2stride,
+                                        int16_t *src2,
                                         int height, int denom, int wx0, int wx1,
                                         int ox0, int ox1, intptr_t mx, intptr_t my, int width)
 {
@@ -1105,7 +1060,7 @@ static void FUNC(put_hevc_qpel_bi_w_hv)(uint8_t *_dst, ptrdiff_t _dststride, uin
                                     ((ox0 + ox1 + 1) << log2Wd)) >> (log2Wd + 1));
         tmp  += MAX_PB_SIZE;
         dst  += dststride;
-        src2 += src2stride;
+        src2 += MAX_PB_SIZE;
     }
 }
 
@@ -1118,7 +1073,7 @@ static void FUNC(put_hevc_qpel_bi_w_hv)(uint8_t *_dst, ptrdiff_t _dststride, uin
      filter[2] * src[x + stride] +                                             \
      filter[3] * src[x + 2 * stride])
 
-static void FUNC(put_hevc_epel_h)(int16_t *dst, ptrdiff_t dststride,
+static void FUNC(put_hevc_epel_h)(int16_t *dst,
                                   uint8_t *_src, ptrdiff_t _srcstride,
                                   int height, intptr_t mx, intptr_t my, int width)
 {
@@ -1130,11 +1085,11 @@ static void FUNC(put_hevc_epel_h)(int16_t *dst, ptrdiff_t dststride,
         for (x = 0; x < width; x++)
             dst[x] = EPEL_FILTER(src, 1) >> (BIT_DEPTH - 8);
         src += srcstride;
-        dst += dststride;
+        dst += MAX_PB_SIZE;
     }
 }
 
-static void FUNC(put_hevc_epel_v)(int16_t *dst, ptrdiff_t dststride,
+static void FUNC(put_hevc_epel_v)(int16_t *dst,
                                   uint8_t *_src, ptrdiff_t _srcstride,
                                   int height, intptr_t mx, intptr_t my, int width)
 {
@@ -1147,11 +1102,11 @@ static void FUNC(put_hevc_epel_v)(int16_t *dst, ptrdiff_t dststride,
         for (x = 0; x < width; x++)
             dst[x] = EPEL_FILTER(src, srcstride) >> (BIT_DEPTH - 8);
         src += srcstride;
-        dst += dststride;
+        dst += MAX_PB_SIZE;
     }
 }
 
-static void FUNC(put_hevc_epel_hv)(int16_t *dst, ptrdiff_t dststride,
+static void FUNC(put_hevc_epel_hv)(int16_t *dst,
                                    uint8_t *_src, ptrdiff_t _srcstride,
                                    int height, intptr_t mx, intptr_t my, int width)
 {
@@ -1178,7 +1133,7 @@ static void FUNC(put_hevc_epel_hv)(int16_t *dst, ptrdiff_t dststride,
         for (x = 0; x < width; x++)
             dst[x] = EPEL_FILTER(tmp, MAX_PB_SIZE) >> 6;
         tmp += MAX_PB_SIZE;
-        dst += dststride;
+        dst += MAX_PB_SIZE;
     }
 }
 
@@ -1207,7 +1162,7 @@ static void FUNC(put_hevc_epel_uni_h)(uint8_t *_dst, ptrdiff_t _dststride, uint8
 }
 
 static void FUNC(put_hevc_epel_bi_h)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                     int16_t *src2, ptrdiff_t src2stride,
+                                     int16_t *src2,
                                      int height, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
@@ -1229,7 +1184,7 @@ static void FUNC(put_hevc_epel_bi_h)(uint8_t *_dst, ptrdiff_t _dststride, uint8_
         }
         dst  += dststride;
         src  += srcstride;
-        src2 += src2stride;
+        src2 += MAX_PB_SIZE;
     }
 }
 
@@ -1258,7 +1213,7 @@ static void FUNC(put_hevc_epel_uni_v)(uint8_t *_dst, ptrdiff_t _dststride, uint8
 }
 
 static void FUNC(put_hevc_epel_bi_v)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                     int16_t *src2, ptrdiff_t src2stride,
+                                     int16_t *src2,
                                      int height, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
@@ -1279,7 +1234,7 @@ static void FUNC(put_hevc_epel_bi_v)(uint8_t *_dst, ptrdiff_t _dststride, uint8_
             dst[x] = av_clip_pixel(((EPEL_FILTER(src, srcstride) >> (BIT_DEPTH - 8)) + src2[x] + offset) >> shift);
         dst  += dststride;
         src  += srcstride;
-        src2 += src2stride;
+        src2 += MAX_PB_SIZE;
     }
 }
 
@@ -1322,7 +1277,7 @@ static void FUNC(put_hevc_epel_uni_hv)(uint8_t *_dst, ptrdiff_t _dststride, uint
 }
 
 static void FUNC(put_hevc_epel_bi_hv)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                      int16_t *src2, ptrdiff_t src2stride,
+                                      int16_t *src2,
                                       int height, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
@@ -1357,7 +1312,7 @@ static void FUNC(put_hevc_epel_bi_hv)(uint8_t *_dst, ptrdiff_t _dststride, uint8
             dst[x] = av_clip_pixel(((EPEL_FILTER(tmp, MAX_PB_SIZE) >> 6) + src2[x] + offset) >> shift);
         tmp  += MAX_PB_SIZE;
         dst  += dststride;
-        src2 += src2stride;
+        src2 += MAX_PB_SIZE;
     }
 }
 
@@ -1388,7 +1343,7 @@ static void FUNC(put_hevc_epel_uni_w_h)(uint8_t *_dst, ptrdiff_t _dststride, uin
 }
 
 static void FUNC(put_hevc_epel_bi_w_h)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                       int16_t *src2, ptrdiff_t src2stride,
+                                       int16_t *src2,
                                        int height, int denom, int wx0, int wx1,
                                        int ox0, int ox1, intptr_t mx, intptr_t my, int width)
 {
@@ -1409,7 +1364,7 @@ static void FUNC(put_hevc_epel_bi_w_h)(uint8_t *_dst, ptrdiff_t _dststride, uint
                                     ((ox0 + ox1 + 1) << log2Wd)) >> (log2Wd + 1));
         src  += srcstride;
         dst  += dststride;
-        src2 += src2stride;
+        src2 += MAX_PB_SIZE;
     }
 }
 
@@ -1440,7 +1395,7 @@ static void FUNC(put_hevc_epel_uni_w_v)(uint8_t *_dst, ptrdiff_t _dststride, uin
 }
 
 static void FUNC(put_hevc_epel_bi_w_v)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                       int16_t *src2, ptrdiff_t src2stride,
+                                       int16_t *src2,
                                        int height, int denom, int wx0, int wx1,
                                        int ox0, int ox1, intptr_t mx, intptr_t my, int width)
 {
@@ -1461,7 +1416,7 @@ static void FUNC(put_hevc_epel_bi_w_v)(uint8_t *_dst, ptrdiff_t _dststride, uint
                                     ((ox0 + ox1 + 1) << log2Wd)) >> (log2Wd + 1));
         src  += srcstride;
         dst  += dststride;
-        src2 += src2stride;
+        src2 += MAX_PB_SIZE;
     }
 }
 
@@ -1505,7 +1460,7 @@ static void FUNC(put_hevc_epel_uni_w_hv)(uint8_t *_dst, ptrdiff_t _dststride, ui
 }
 
 static void FUNC(put_hevc_epel_bi_w_hv)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                        int16_t *src2, ptrdiff_t src2stride,
+                                        int16_t *src2,
                                         int height, int denom, int wx0, int wx1,
                                         int ox0, int ox1, intptr_t mx, intptr_t my, int width)
 {
@@ -1540,7 +1495,7 @@ static void FUNC(put_hevc_epel_bi_w_hv)(uint8_t *_dst, ptrdiff_t _dststride, uin
                                     ((ox0 + ox1 + 1) << log2Wd)) >> (log2Wd + 1));
         tmp  += MAX_PB_SIZE;
         dst  += dststride;
-        src2 += src2stride;
+        src2 += MAX_PB_SIZE;
     }
 }// line zero
 #define P3 pix[-4 * xstride]
@@ -1693,21 +1648,21 @@ static void FUNC(hevc_loop_filter_chroma)(uint8_t *_pix, ptrdiff_t _xstride,
 }
 
 static void FUNC(hevc_h_loop_filter_chroma)(uint8_t *pix, ptrdiff_t stride,
-                                            int *tc, uint8_t *no_p,
+                                            int32_t *tc, uint8_t *no_p,
                                             uint8_t *no_q)
 {
     FUNC(hevc_loop_filter_chroma)(pix, stride, sizeof(pixel), tc, no_p, no_q);
 }
 
 static void FUNC(hevc_v_loop_filter_chroma)(uint8_t *pix, ptrdiff_t stride,
-                                            int *tc, uint8_t *no_p,
+                                            int32_t *tc, uint8_t *no_p,
                                             uint8_t *no_q)
 {
     FUNC(hevc_loop_filter_chroma)(pix, sizeof(pixel), stride, tc, no_p, no_q);
 }
 
 static void FUNC(hevc_h_loop_filter_luma)(uint8_t *pix, ptrdiff_t stride,
-                                          int beta, int *tc, uint8_t *no_p,
+                                          int beta, int32_t *tc, uint8_t *no_p,
                                           uint8_t *no_q)
 {
     FUNC(hevc_loop_filter_luma)(pix, stride, sizeof(pixel),
@@ -1715,7 +1670,7 @@ static void FUNC(hevc_h_loop_filter_luma)(uint8_t *pix, ptrdiff_t stride,
 }
 
 static void FUNC(hevc_v_loop_filter_luma)(uint8_t *pix, ptrdiff_t stride,
-                                          int beta, int *tc, uint8_t *no_p,
+                                          int beta, int32_t *tc, uint8_t *no_p,
                                           uint8_t *no_q)
 {
     FUNC(hevc_loop_filter_luma)(pix, sizeof(pixel), stride,

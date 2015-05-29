@@ -97,7 +97,7 @@ static int pmp_header(AVFormatContext *s)
     for (i = 0; i < index_cnt; i++) {
         uint32_t size = avio_rl32(pb);
         int flags = size & 1 ? AVINDEX_KEYFRAME : 0;
-        if (url_feof(pb)) {
+        if (avio_feof(pb)) {
             av_log(s, AV_LOG_FATAL, "Encountered EOF while reading index.\n");
             return AVERROR_INVALIDDATA;
         }
@@ -133,7 +133,7 @@ static int pmp_packet(AVFormatContext *s, AVPacket *pkt)
     int ret = 0;
     int i;
 
-    if (url_feof(pb))
+    if (avio_feof(pb))
         return AVERROR_EOF;
     if (pmp->cur_stream == 0) {
         int num_packets;

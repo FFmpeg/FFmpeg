@@ -76,7 +76,7 @@ enum EOFAction {
     EOF_ACTION_PASS
 };
 
-static const char *eof_action_str[] = {
+static const char * const eof_action_str[] = {
     "repeat", "endall", "pass"
 };
 
@@ -92,6 +92,20 @@ static const char *eof_action_str[] = {
 #define U 1
 #define V 2
 
+enum EvalMode {
+    EVAL_MODE_INIT,
+    EVAL_MODE_FRAME,
+    EVAL_MODE_NB
+};
+
+enum OverlayFormat {
+    OVERLAY_FORMAT_YUV420,
+    OVERLAY_FORMAT_YUV422,
+    OVERLAY_FORMAT_YUV444,
+    OVERLAY_FORMAT_RGB,
+    OVERLAY_FORMAT_NB
+};
+
 typedef struct OverlayContext {
     const AVClass *class;
     int x, y;                   ///< position of overlayed picture
@@ -103,8 +117,8 @@ typedef struct OverlayContext {
     uint8_t overlay_is_packed_rgb;
     uint8_t overlay_rgba_map[4];
     uint8_t overlay_has_alpha;
-    enum OverlayFormat { OVERLAY_FORMAT_YUV420, OVERLAY_FORMAT_YUV422, OVERLAY_FORMAT_YUV444, OVERLAY_FORMAT_RGB, OVERLAY_FORMAT_NB} format;
-    enum EvalMode { EVAL_MODE_INIT, EVAL_MODE_FRAME, EVAL_MODE_NB } eval_mode;
+    int format;                 ///< OverlayFormat
+    int eval_mode;              ///< EvalMode
 
     FFDualInputContext dinput;
 
@@ -115,7 +129,7 @@ typedef struct OverlayContext {
     double var_values[VAR_VARS_NB];
     char *x_expr, *y_expr;
 
-    enum EOFAction eof_action;  ///< action to take on EOF from source
+    int eof_action;             ///< action to take on EOF from source
 
     AVExpr *x_pexpr, *y_pexpr;
 } OverlayContext;

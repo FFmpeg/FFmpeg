@@ -73,7 +73,7 @@ static int pcm_dvd_parse_header(AVCodecContext *avctx, const uint8_t *header)
     s->last_header = -1;
 
     if (avctx->debug & FF_DEBUG_PICT_INFO)
-        av_dlog(avctx, "pcm_dvd_parse_header: header = %02x%02x%02x\n",
+        ff_dlog(avctx, "pcm_dvd_parse_header: header = %02x%02x%02x\n",
                 header[0], header[1], header[2]);
     /*
      * header[0] emphasis (1), muse(1), reserved(1), frame number(5)
@@ -139,7 +139,7 @@ static int pcm_dvd_parse_header(AVCodecContext *avctx, const uint8_t *header)
     }
 
     if (avctx->debug & FF_DEBUG_PICT_INFO)
-        av_dlog(avctx,
+        ff_dlog(avctx,
                 "pcm_dvd_parse_header: %d channels, %d bits per sample, %d Hz, %d bit/s\n",
                 avctx->channels, avctx->bits_per_coded_sample,
                 avctx->sample_rate, avctx->bit_rate);
@@ -158,21 +158,21 @@ static void *pcm_dvd_decode_samples(AVCodecContext *avctx, const uint8_t *src,
     GetByteContext gb;
     int i;
     uint8_t t;
-    int samples;
 
     bytestream2_init(&gb, src, blocks * s->block_size);
     switch (avctx->bits_per_coded_sample) {
-    case 16:
+    case 16: {
 #if HAVE_BIGENDIAN
         bytestream2_get_buffer(&gb, dst16, blocks * s->block_size);
         dst16 += blocks * s->block_size / 2;
 #else
-        samples = blocks * avctx->channels;
+        int samples = blocks * avctx->channels;
         do {
             *dst16++ = bytestream2_get_be16u(&gb);
         } while (--samples);
 #endif
         return dst16;
+    }
     case 20:
         if (avctx->channels == 1) {
             do {

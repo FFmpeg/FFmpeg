@@ -55,7 +55,7 @@ static av_cold int ra144_encode_init(AVCodecContext * avctx)
         return -1;
     }
     avctx->frame_size = NBLOCKS * BLOCKSIZE;
-    avctx->delay      = avctx->frame_size;
+    avctx->initial_padding = avctx->frame_size;
     avctx->bit_rate = 8000;
     ractx = avctx->priv_data;
     ractx->lpc_coef[0] = ractx->lpc_tables[0];

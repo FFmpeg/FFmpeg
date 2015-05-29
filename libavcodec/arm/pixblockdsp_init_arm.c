@@ -24,7 +24,7 @@
 #include "libavcodec/avcodec.h"
 #include "libavcodec/pixblockdsp.h"
 
-void ff_get_pixels_armv6(int16_t *block, const uint8_t *pixels, int stride);
+void ff_get_pixels_armv6(int16_t *block, const uint8_t *pixels, ptrdiff_t stride);
 void ff_diff_pixels_armv6(int16_t *block, const uint8_t *s1,
                           const uint8_t *s2, int stride);
 

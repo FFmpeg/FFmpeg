@@ -1,6 +1,6 @@
 /*
  * Autodesk RLE Decoder
- * Copyright (C) 2005 the ffmpeg project
+ * Copyright (c) 2005 The FFmpeg Project
  *
  * This file is part of FFmpeg.
  *
@@ -137,7 +137,7 @@ static int aasc_decode_frame(AVCodecContext *avctx,
         return ret;
 
     /* report that the buffer was completely consumed */
-    return buf_size;
+    return avpkt->size;
 }
 
 static av_cold int aasc_decode_end(AVCodecContext *avctx)

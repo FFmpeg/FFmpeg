@@ -218,7 +218,8 @@ static void print_md5(uint8_t *md5)
 int main(void){
     uint8_t md5val[16];
     int i;
-    uint8_t in[1000];
+    volatile uint8_t in[1000]; // volatile to workaround http://llvm.org/bugs/show_bug.cgi?id=20849
+    // FIXME remove volatile once it has been fixed and all fate clients are updated
 
     for (i = 0; i < 1000; i++)
         in[i] = i * i;

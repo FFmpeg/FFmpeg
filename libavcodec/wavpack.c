@@ -253,6 +253,10 @@ static int wv_get_value(WavpackFrameContext *ctx, GetBitContext *gb,
     return sign ? ~ret : ret;
 
 error:
+    ret = get_bits_left(gb);
+    if (ret <= 0) {
+        av_log(ctx->avctx, AV_LOG_ERROR, "Too few bits (%d) left\n", ret);
+    }
     *last = 1;
     return 0;
 }
@@ -468,6 +472,14 @@ static inline int wv_unpack_stereo(WavpackFrameContext *s, GetBitContext *gb,
                 s->decorr[i].samplesB[0] = L;
             }
         }
+
+        if (type == AV_SAMPLE_FMT_S16P) {
+            if (FFABS(L) + FFABS(R) > (1<<19)) {
+                av_log(s->avctx, AV_LOG_ERROR, "sample %d %d too large\n", L, R);
+                return AVERROR_INVALIDDATA;
+            }
+        }
+
         pos = (pos + 1) & 7;
         if (s->joint)
             L += (R -= (L >> 1));
@@ -902,7 +914,10 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
                 chmask = bytestream2_get_le32(&gb);
                 break;
             case 5:
-                bytestream2_skip(&gb, 1);
+                size = bytestream2_get_byte(&gb);
+                if (avctx->channels != size)
+                    av_log(avctx, AV_LOG_WARNING, "%i channels signalled"
+                           " instead of %i.\n", size, avctx->channels);
                 chan  |= (bytestream2_get_byte(&gb) & 0xF) << 8;
                 chmask = bytestream2_get_le16(&gb);
                 break;

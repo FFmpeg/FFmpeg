@@ -8,6 +8,16 @@ fate-aes: libavutil/aes-test$(EXESUF)
 fate-aes: CMD = run libavutil/aes-test
 fate-aes: REF = /dev/null
 
+FATE_LIBAVUTIL += fate-camellia
+fate-camellia: libavutil/camellia-test$(EXESUF)
+fate-camellia: CMD = run libavutil/camellia-test
+fate-camellia: REF = /dev/null
+
+FATE_LIBAVUTIL += fate-cast5
+fate-cast5: libavutil/cast5-test$(EXESUF)
+fate-cast5: CMD = run libavutil/cast5-test
+fate-cast5: REF = /dev/null
+
 FATE_LIBAVUTIL += fate-atomic
 fate-atomic: libavutil/atomic-test$(EXESUF)
 fate-atomic: CMD = run libavutil/atomic-test
@@ -31,9 +41,8 @@ fate-bprint: CMD = run libavutil/bprint-test
 
 FATE_LIBAVUTIL += fate-cpu
 fate-cpu: libavutil/cpu-test$(EXESUF)
-fate-cpu: CMD = runecho libavutil/cpu-test
+fate-cpu: CMD = runecho libavutil/cpu-test $(CPUFLAGS:%=-c%) $(THREADS:%=-t%)
 fate-cpu: REF = /dev/null
-fate-cpu: CMP = null
 
 FATE_LIBAVUTIL += fate-crc
 fate-crc: libavutil/crc-test$(EXESUF)
@@ -43,6 +52,10 @@ FATE_LIBAVUTIL += fate-des
 fate-des: libavutil/des-test$(EXESUF)
 fate-des: CMD = run libavutil/des-test
 fate-des: REF = /dev/null
+
+FATE_LIBAVUTIL += fate-dict
+fate-dict: libavutil/dict-test$(EXESUF)
+fate-dict: CMD = run libavutil/dict-test
 
 FATE_LIBAVUTIL += fate-eval
 fate-eval: libavutil/eval-test$(EXESUF)
@@ -54,7 +67,7 @@ fate-fifo: CMD = run libavutil/fifo-test
 
 FATE_LIBAVUTIL += fate-float-dsp
 fate-float-dsp: libavutil/float_dsp-test$(EXESUF)
-fate-float-dsp: CMD = run libavutil/float_dsp-test
+fate-float-dsp: CMD = run libavutil/float_dsp-test $(CPUFLAGS:%=-c%)
 fate-float-dsp: CMP = null
 fate-float-dsp: REF = /dev/null
 
@@ -73,6 +86,10 @@ fate-murmur3: CMD = run libavutil/murmur3-test
 FATE_LIBAVUTIL += fate-parseutils
 fate-parseutils: libavutil/parseutils-test$(EXESUF)
 fate-parseutils: CMD = run libavutil/parseutils-test
+
+FATE_LIBAVUTIL-$(CONFIG_PIXELUTILS) += fate-pixelutils
+fate-pixelutils: libavutil/pixelutils-test$(EXESUF)
+fate-pixelutils: CMD = run libavutil/pixelutils-test
 
 FATE_LIBAVUTIL += fate-random_seed
 fate-random_seed: libavutil/random_seed-test$(EXESUF)
@@ -95,9 +112,19 @@ fate-tree: libavutil/tree-test$(EXESUF)
 fate-tree: CMD = run libavutil/tree-test
 fate-tree: REF = /dev/null
 
+FATE_LIBAVUTIL += fate-twofish
+fate-twofish: libavutil/twofish-test$(EXESUF)
+fate-twofish: CMD = run libavutil/twofish-test
+fate-twofish: REF = /dev/null
+
 FATE_LIBAVUTIL += fate-xtea
 fate-xtea: libavutil/xtea-test$(EXESUF)
 fate-xtea: CMD = run libavutil/xtea-test
 
+FATE_LIBAVUTIL += fate-opt
+fate-opt: libavutil/opt-test$(EXESUF)
+fate-opt: CMD = run libavutil/opt-test
+
+FATE_LIBAVUTIL += $(FATE_LIBAVUTIL-yes)
 FATE-$(CONFIG_AVUTIL) += $(FATE_LIBAVUTIL)
 fate-libavutil: $(FATE_LIBAVUTIL)

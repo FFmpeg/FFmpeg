@@ -363,7 +363,6 @@ static int config_audio_input(AVFilterLink *inlink)
 static int config_audio_output(AVFilterLink *outlink)
 {
     int i;
-    int idx_bitposn = 0;
     AVFilterContext *ctx = outlink->src;
     EBUR128Context *ebur128 = ctx->priv;
     const int nb_channels = av_get_channel_layout_nb_channels(outlink->channel_layout);
@@ -379,22 +378,15 @@ static int config_audio_output(AVFilterLink *outlink)
         return AVERROR(ENOMEM);
 
     for (i = 0; i < nb_channels; i++) {
-
-        /* find the next bit that is set starting from the right */
-        while ((outlink->channel_layout & 1ULL<<idx_bitposn) == 0 && idx_bitposn < 63)
-            idx_bitposn++;
-
         /* channel weighting */
-        if ((1ULL<<idx_bitposn & AV_CH_LOW_FREQUENCY) ||
-            (1ULL<<idx_bitposn & AV_CH_LOW_FREQUENCY_2)) {
+        const uint16_t chl = av_channel_layout_extract_channel(outlink->channel_layout, i);
+        if (chl & (AV_CH_LOW_FREQUENCY|AV_CH_LOW_FREQUENCY_2)) {
             ebur128->ch_weighting[i] = 0;
-        } else if (1ULL<<idx_bitposn & BACK_MASK) {
+        } else if (chl & BACK_MASK) {
             ebur128->ch_weighting[i] = 1.41;
         } else {
             ebur128->ch_weighting[i] = 1.0;
         }
-
-        idx_bitposn++;
 
         if (!ebur128->ch_weighting[i])
             continue;

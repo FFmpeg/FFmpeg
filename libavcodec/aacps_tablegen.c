@@ -82,7 +82,7 @@ int main(void)
     write_float_3d_array(f34_2_4, 4, 8, 2);
     printf("};\n");
 
-    printf("static TABLE_CONST DECLARE_ALIGNED(16, float, Q_fract_allpass)[2][50][3][2] = {\n");
+    printf("static const DECLARE_ALIGNED(16, float, Q_fract_allpass)[2][50][3][2] = {\n");
     write_float_4d_array(Q_fract_allpass, 2, 50, 3, 2);
     printf("};\n");
     printf("static const DECLARE_ALIGNED(16, float, phi_fract)[2][50][2] = {\n");

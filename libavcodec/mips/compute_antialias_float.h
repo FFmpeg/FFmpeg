@@ -55,13 +55,14 @@
 #ifndef AVCODEC_MIPS_COMPUTE_ANTIALIAS_FLOAT_H
 #define AVCODEC_MIPS_COMPUTE_ANTIALIAS_FLOAT_H
 
+#include "libavutil/mips/asmdefs.h"
+
 #if HAVE_INLINE_ASM
 static void compute_antialias_mips_float(MPADecodeContext *s,
                                         GranuleDef *g)
 {
     float *ptr, *ptr_end;
     float *csa = &csa_table[0][0];
-    int n;
     /* temporary variables */
     float in1, in2, in3, in4, in5, in6, in7, in8;
     float out1, out2, out3, out4;
@@ -72,10 +73,8 @@ static void compute_antialias_mips_float(MPADecodeContext *s,
         if (!g->switch_point)
             return;
         /* XXX: check this for 8000Hz case */
-        n = 1;
         ptr_end = ptr + 18;
     } else {
-        n = 31;
         ptr_end = ptr + 558;
     }
 
@@ -161,7 +160,7 @@ static void compute_antialias_mips_float(MPADecodeContext *s,
         "mul.s   %[out4], %[in5],  %[in7]                               \t\n"
         "swc1    %[out1], -7*4(%[ptr])                                  \t\n"
         "swc1    %[out2], 6*4(%[ptr])                                   \t\n"
-        "addiu   %[ptr],  %[ptr],  72                                   \t\n"
+        PTR_ADDIU "%[ptr],%[ptr],  72                                   \t\n"
         "nmsub.s %[out3], %[out3], %[in7], %[in8]                       \t\n"
         "madd.s  %[out4], %[out4], %[in6], %[in8]                       \t\n"
         "swc1    %[out3], -26*4(%[ptr])                                 \t\n"

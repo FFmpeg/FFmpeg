@@ -61,7 +61,8 @@ static int ico_check_attributes(AVFormatContext *s, const AVCodecContext *c)
             return AVERROR(EINVAL);
         }
     } else {
-        av_log(s, AV_LOG_ERROR, "Unsupported codec %s\n", c->codec_name);
+        const AVCodecDescriptor *codesc = avcodec_descriptor_get(c->codec_id);
+        av_log(s, AV_LOG_ERROR, "Unsupported codec %s\n", codesc ? codesc->name : "");
         return AVERROR(EINVAL);
     }
 

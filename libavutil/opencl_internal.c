@@ -23,7 +23,7 @@
 #include "opencl_internal.h"
 #include "libavutil/log.h"
 
-int ff_opencl_set_parameter(FFOpenclParam *opencl_param, ...)
+int avpriv_opencl_set_parameter(FFOpenclParam *opencl_param, ...)
 {
     int ret = 0;
     va_list arg_ptr;

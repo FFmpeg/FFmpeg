@@ -72,7 +72,7 @@ int8_t *av_frame_get_qp_table(AVFrame *f, int *stride, int *type)
 
 const char *av_get_colorspace_name(enum AVColorSpace val)
 {
-    static const char *name[] = {
+    static const char * const name[] = {
         [AVCOL_SPC_RGB]       = "GBR",
         [AVCOL_SPC_BT709]     = "bt709",
         [AVCOL_SPC_FCC]       = "fcc",
@@ -104,22 +104,32 @@ static void get_frame_defaults(AVFrame *frame)
     frame->sample_aspect_ratio = (AVRational){ 0, 1 };
     frame->format              = -1; /* unknown */
     frame->extended_data       = frame->data;
-#if FF_API_AVFRAME_COLORSPACE
     frame->color_primaries     = AVCOL_PRI_UNSPECIFIED;
     frame->color_trc           = AVCOL_TRC_UNSPECIFIED;
     frame->colorspace          = AVCOL_SPC_UNSPECIFIED;
     frame->color_range         = AVCOL_RANGE_UNSPECIFIED;
     frame->chroma_location     = AVCHROMA_LOC_UNSPECIFIED;
-#endif
 }
 
 static void free_side_data(AVFrameSideData **ptr_sd)
 {
     AVFrameSideData *sd = *ptr_sd;
 
-    av_freep(&sd->data);
+    av_buffer_unref(&sd->buf);
     av_dict_free(&sd->metadata);
     av_freep(ptr_sd);
+}
+
+static void wipe_side_data(AVFrame *frame)
+{
+    int i;
+
+    for (i = 0; i < frame->nb_side_data; i++) {
+        free_side_data(&frame->side_data[i]);
+    }
+    frame->nb_side_data = 0;
+
+    av_freep(&frame->side_data);
 }
 
 AVFrame *av_frame_alloc(void)
@@ -265,6 +275,91 @@ int av_frame_get_buffer(AVFrame *frame, int align)
     return AVERROR(EINVAL);
 }
 
+static int frame_copy_props(AVFrame *dst, const AVFrame *src, int force_copy)
+{
+    int i;
+
+    dst->key_frame              = src->key_frame;
+    dst->pict_type              = src->pict_type;
+    dst->sample_aspect_ratio    = src->sample_aspect_ratio;
+    dst->pts                    = src->pts;
+    dst->repeat_pict            = src->repeat_pict;
+    dst->interlaced_frame       = src->interlaced_frame;
+    dst->top_field_first        = src->top_field_first;
+    dst->palette_has_changed    = src->palette_has_changed;
+    dst->sample_rate            = src->sample_rate;
+    dst->opaque                 = src->opaque;
+#if FF_API_AVFRAME_LAVC
+    dst->type                   = src->type;
+#endif
+    dst->pkt_pts                = src->pkt_pts;
+    dst->pkt_dts                = src->pkt_dts;
+    dst->pkt_pos                = src->pkt_pos;
+    dst->pkt_size               = src->pkt_size;
+    dst->pkt_duration           = src->pkt_duration;
+    dst->reordered_opaque       = src->reordered_opaque;
+    dst->quality                = src->quality;
+    dst->best_effort_timestamp  = src->best_effort_timestamp;
+    dst->coded_picture_number   = src->coded_picture_number;
+    dst->display_picture_number = src->display_picture_number;
+    dst->flags                  = src->flags;
+    dst->decode_error_flags     = src->decode_error_flags;
+    dst->color_primaries        = src->color_primaries;
+    dst->color_trc              = src->color_trc;
+    dst->colorspace             = src->colorspace;
+    dst->color_range            = src->color_range;
+    dst->chroma_location        = src->chroma_location;
+
+    av_dict_copy(&dst->metadata, src->metadata, 0);
+
+    memcpy(dst->error, src->error, sizeof(dst->error));
+
+    for (i = 0; i < src->nb_side_data; i++) {
+        const AVFrameSideData *sd_src = src->side_data[i];
+        AVFrameSideData *sd_dst;
+        if (   sd_src->type == AV_FRAME_DATA_PANSCAN
+            && (src->width != dst->width || src->height != dst->height))
+            continue;
+        if (force_copy) {
+            sd_dst = av_frame_new_side_data(dst, sd_src->type,
+                                            sd_src->size);
+            if (!sd_dst) {
+                wipe_side_data(dst);
+                return AVERROR(ENOMEM);
+            }
+            memcpy(sd_dst->data, sd_src->data, sd_src->size);
+        } else {
+            sd_dst = av_frame_new_side_data(dst, sd_src->type, 0);
+            if (!sd_dst) {
+                wipe_side_data(dst);
+                return AVERROR(ENOMEM);
+            }
+            sd_dst->buf = av_buffer_ref(sd_src->buf);
+            if (!sd_dst->buf) {
+                wipe_side_data(dst);
+                return AVERROR(ENOMEM);
+            }
+            sd_dst->data = sd_dst->buf->data;
+            sd_dst->size = sd_dst->buf->size;
+        }
+        av_dict_copy(&sd_dst->metadata, sd_src->metadata, 0);
+    }
+
+    dst->qscale_table = NULL;
+    dst->qstride      = 0;
+    dst->qscale_type  = 0;
+    if (src->qp_table_buf) {
+        dst->qp_table_buf = av_buffer_ref(src->qp_table_buf);
+        if (dst->qp_table_buf) {
+            dst->qscale_table = dst->qp_table_buf->data;
+            dst->qstride      = src->qstride;
+            dst->qscale_type  = src->qscale_type;
+        }
+    }
+
+    return 0;
+}
+
 int av_frame_ref(AVFrame *dst, const AVFrame *src)
 {
     int i, ret = 0;
@@ -276,7 +371,7 @@ int av_frame_ref(AVFrame *dst, const AVFrame *src)
     dst->channel_layout = src->channel_layout;
     dst->nb_samples     = src->nb_samples;
 
-    ret = av_frame_copy_props(dst, src);
+    ret = frame_copy_props(dst, src, 0);
     if (ret < 0)
         return ret;
 
@@ -368,10 +463,7 @@ void av_frame_unref(AVFrame *frame)
 {
     int i;
 
-    for (i = 0; i < frame->nb_side_data; i++) {
-        free_side_data(&frame->side_data[i]);
-    }
-    av_freep(&frame->side_data);
+    wipe_side_data(frame);
 
     for (i = 0; i < FF_ARRAY_ELEMS(frame->buf); i++)
         av_buffer_unref(&frame->buf[i]);
@@ -455,73 +547,7 @@ int av_frame_make_writable(AVFrame *frame)
 
 int av_frame_copy_props(AVFrame *dst, const AVFrame *src)
 {
-    int i;
-
-    dst->key_frame              = src->key_frame;
-    dst->pict_type              = src->pict_type;
-    dst->sample_aspect_ratio    = src->sample_aspect_ratio;
-    dst->pts                    = src->pts;
-    dst->repeat_pict            = src->repeat_pict;
-    dst->interlaced_frame       = src->interlaced_frame;
-    dst->top_field_first        = src->top_field_first;
-    dst->palette_has_changed    = src->palette_has_changed;
-    dst->sample_rate            = src->sample_rate;
-    dst->opaque                 = src->opaque;
-#if FF_API_AVFRAME_LAVC
-    dst->type                   = src->type;
-#endif
-    dst->pkt_pts                = src->pkt_pts;
-    dst->pkt_dts                = src->pkt_dts;
-    dst->pkt_pos                = src->pkt_pos;
-    dst->pkt_size               = src->pkt_size;
-    dst->pkt_duration           = src->pkt_duration;
-    dst->reordered_opaque       = src->reordered_opaque;
-    dst->quality                = src->quality;
-    dst->best_effort_timestamp  = src->best_effort_timestamp;
-    dst->coded_picture_number   = src->coded_picture_number;
-    dst->display_picture_number = src->display_picture_number;
-    dst->flags                  = src->flags;
-    dst->decode_error_flags     = src->decode_error_flags;
-#if FF_API_AVFRAME_COLORSPACE
-    dst->color_primaries        = src->color_primaries;
-    dst->color_trc              = src->color_trc;
-    dst->colorspace             = src->colorspace;
-    dst->color_range            = src->color_range;
-    dst->chroma_location        = src->chroma_location;
-#endif
-
-    av_dict_copy(&dst->metadata, src->metadata, 0);
-
-    memcpy(dst->error, src->error, sizeof(dst->error));
-
-    for (i = 0; i < src->nb_side_data; i++) {
-        const AVFrameSideData *sd_src = src->side_data[i];
-        AVFrameSideData *sd_dst = av_frame_new_side_data(dst, sd_src->type,
-                                                         sd_src->size);
-        if (!sd_dst) {
-            for (i = 0; i < dst->nb_side_data; i++) {
-                free_side_data(&dst->side_data[i]);
-            }
-            av_freep(&dst->side_data);
-            return AVERROR(ENOMEM);
-        }
-        memcpy(sd_dst->data, sd_src->data, sd_src->size);
-        av_dict_copy(&sd_dst->metadata, sd_src->metadata, 0);
-    }
-
-    dst->qscale_table = NULL;
-    dst->qstride      = 0;
-    dst->qscale_type  = 0;
-    if (src->qp_table_buf) {
-        dst->qp_table_buf = av_buffer_ref(src->qp_table_buf);
-        if (dst->qp_table_buf) {
-            dst->qscale_table = dst->qp_table_buf->data;
-            dst->qstride      = src->qstride;
-            dst->qscale_type  = src->qscale_type;
-        }
-    }
-
-    return 0;
+    return frame_copy_props(dst, src, 1);
 }
 
 AVBufferRef *av_frame_get_plane_buffer(AVFrame *frame, int plane)
@@ -574,13 +600,16 @@ AVFrameSideData *av_frame_new_side_data(AVFrame *frame,
     if (!ret)
         return NULL;
 
-    ret->data = av_malloc(size);
-    if (!ret->data) {
-        av_freep(&ret);
-        return NULL;
-    }
+    if (size > 0) {
+        ret->buf = av_buffer_alloc(size);
+        if (!ret->buf) {
+            av_freep(&ret);
+            return NULL;
+        }
 
-    ret->size = size;
+        ret->data = ret->buf->data;
+        ret->size = size;
+    }
     ret->type = type;
 
     frame->side_data[frame->nb_side_data++] = ret;
@@ -683,6 +712,7 @@ const char *av_frame_side_data_name(enum AVFrameSideDataType type)
     case AV_FRAME_DATA_DOWNMIX_INFO:    return "Metadata relevant to a downmix procedure";
     case AV_FRAME_DATA_REPLAYGAIN:      return "AVReplayGain";
     case AV_FRAME_DATA_DISPLAYMATRIX:   return "3x3 displaymatrix";
+    case AV_FRAME_DATA_MOTION_VECTORS:  return "Motion vectors";
     }
     return NULL;
 }

@@ -17,6 +17,7 @@
  */
 
 #undef _GNU_SOURCE
+#define _XOPEN_SOURCE 600 /* XSI-compliant version of strerror_r */
 #include "avutil.h"
 #include "avstring.h"
 #include "common.h"
@@ -28,6 +29,8 @@ struct error_entry {
 };
 
 #define ERROR_TAG(tag) AVERROR_##tag, #tag
+#define EERROR_TAG(tag) AVERROR(tag), #tag
+#define AVERROR_INPUT_AND_OUTPUT_CHANGED (AVERROR_INPUT_CHANGED | AVERROR_OUTPUT_CHANGED)
 static const struct error_entry error_entries[] = {
     { ERROR_TAG(BSF_NOT_FOUND),      "Bitstream filter not found"                     },
     { ERROR_TAG(BUG),                "Internal bug, should not have happened"         },
@@ -40,14 +43,26 @@ static const struct error_entry error_entries[] = {
     { ERROR_TAG(EXIT),               "Immediate exit requested"                       },
     { ERROR_TAG(EXTERNAL),           "Generic error in an external library"           },
     { ERROR_TAG(FILTER_NOT_FOUND),   "Filter not found"                               },
+    { ERROR_TAG(INPUT_CHANGED),      "Input changed"                                  },
     { ERROR_TAG(INVALIDDATA),        "Invalid data found when processing input"       },
     { ERROR_TAG(MUXER_NOT_FOUND),    "Muxer not found"                                },
     { ERROR_TAG(OPTION_NOT_FOUND),   "Option not found"                               },
+    { ERROR_TAG(OUTPUT_CHANGED),     "Output changed"                                 },
     { ERROR_TAG(PATCHWELCOME),       "Not yet implemented in FFmpeg, patches welcome" },
     { ERROR_TAG(PROTOCOL_NOT_FOUND), "Protocol not found"                             },
     { ERROR_TAG(STREAM_NOT_FOUND),   "Stream not found"                               },
     { ERROR_TAG(UNKNOWN),            "Unknown error occurred"                         },
     { ERROR_TAG(EXPERIMENTAL),       "Experimental feature"                           },
+    { ERROR_TAG(INPUT_AND_OUTPUT_CHANGED), "Input and output changed"                 },
+    { ERROR_TAG(HTTP_BAD_REQUEST),   "Server returned 400 Bad Request"         },
+    { ERROR_TAG(HTTP_UNAUTHORIZED),  "Server returned 401 Unauthorized (authorization failed)" },
+    { ERROR_TAG(HTTP_FORBIDDEN),     "Server returned 403 Forbidden (access denied)" },
+    { ERROR_TAG(HTTP_NOT_FOUND),     "Server returned 404 Not Found"           },
+    { ERROR_TAG(HTTP_OTHER_4XX),     "Server returned 4XX Client Error, but not one of 40{0,1,3,4}" },
+    { ERROR_TAG(HTTP_SERVER_ERROR),  "Server returned 5XX Server Error reply" },
+#if !HAVE_STRERROR_R
+    { EERROR_TAG(EINVAL),            "Invalid argument" },
+#endif
 };
 
 int av_strerror(int errnum, char *errbuf, size_t errbuf_size)

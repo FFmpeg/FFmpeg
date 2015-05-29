@@ -83,6 +83,23 @@ Loud sounds are fully compressed.  Soft sounds are enhanced.
 
 @end table
 
+@section flac
+
+FLAC audio decoder.
+
+This decoder aims to implement the complete FLAC specification from Xiph.
+
+@subsection FLAC Decoder options
+
+@table @option
+
+@item -use_buggy_lpc
+The lavc FLAC encoder used to produce buggy streams with high lpc values
+(like the default value). This option allows to decode such streams
+correctly by using lavc's old buggy lpc logic for decoding.
+
+@end table
+
 @section ffwavesynth
 
 Internal wave synthetizer.
@@ -190,6 +207,15 @@ The format for this option is a string containing 16 24-bits hexadecimal
 numbers (without 0x prefix) separated by comas, for example @code{0d00ee,
 ee450d, 101010, eaeaea, 0ce60b, ec14ed, ebff0b, 0d617a, 7b7b7b, d1d1d1,
 7b2a0e, 0d950c, 0f007b, cf0dec, cfa80c, 7c127b}.
+
+@item ifo_palette
+Specify the IFO file from which the global palette is obtained.
+(experimental)
+
+@item forced_subs_only
+Only decode subtitle entries marked as forced. Some titles have forced
+and non-forced subtitles in the same track. Setting this flag to @code{1}
+will only keep the forced subtitles. Default value is @code{0}.
 @end table
 
 @section libzvbi-teletext

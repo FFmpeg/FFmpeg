@@ -1,6 +1,6 @@
 /*
  * Sony Playstation (PSX) STR File Demuxer
- * Copyright (c) 2003 The ffmpeg Project
+ * Copyright (c) 2003 The FFmpeg Project
  *
  * This file is part of FFmpeg.
  *
@@ -292,7 +292,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             break;
         }
 
-        if (url_feof(pb))
+        if (avio_feof(pb))
             return AVERROR(EIO);
     }
 }

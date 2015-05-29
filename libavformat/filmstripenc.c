@@ -29,7 +29,7 @@
 
 #define RAND_TAG MKBETAG('R','a','n','d')
 
-typedef struct {
+typedef struct FilmstripMuxContext {
     int nb_frames;
 } FilmstripMuxContext;
 

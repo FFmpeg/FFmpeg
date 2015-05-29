@@ -1,0 +1,4 @@
+517b3a8d84f1ec5d502ddb9ed0bb8580 *tests/data/fate/vsynth_lena-jpegls.avi
+8334622 tests/data/fate/vsynth_lena-jpegls.avi
+3a984506f1ebfc9fb73b6814cab201cc *tests/data/fate/vsynth_lena-jpegls.out.rawvideo
+stddev:    0.66 PSNR: 51.73 MAXDIFF:   14 bytes:  7603200/  7603200

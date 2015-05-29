@@ -22,6 +22,7 @@
 #include "libavutil/parseutils.h"
 #include "libavutil/opt.h"
 #include "libavutil/time.h"
+
 #include "internal.h"
 #include "network.h"
 #include "os_support.h"
@@ -43,13 +44,13 @@ typedef struct TCPContext {
 #define D AV_OPT_FLAG_DECODING_PARAM
 #define E AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
-{"listen", "listen on port instead of connecting", OFFSET(listen), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, D|E },
-{"timeout", "set timeout of socket I/O operations", OFFSET(rw_timeout), AV_OPT_TYPE_INT, {.i64 = -1}, -1, INT_MAX, D|E },
-{"listen_timeout", "set connection awaiting timeout", OFFSET(listen_timeout), AV_OPT_TYPE_INT, {.i64 = -1}, -1, INT_MAX, D|E },
-{NULL}
+    { "listen",          "Listen for incoming connections",  OFFSET(listen),         AV_OPT_TYPE_INT, { .i64 = 0 },     0,       1,       .flags = D|E },
+    { "timeout",     "set timeout (in microseconds) of socket I/O operations", OFFSET(rw_timeout),     AV_OPT_TYPE_INT, { .i64 = -1 },         -1, INT_MAX, .flags = D|E },
+    { "listen_timeout",  "Connection awaiting timeout (in milliseconds)",      OFFSET(listen_timeout), AV_OPT_TYPE_INT, { .i64 = -1 },         -1, INT_MAX, .flags = D|E },
+    { NULL }
 };
 
-static const AVClass tcp_context_class = {
+static const AVClass tcp_class = {
     .class_name = "tcp",
     .item_name  = av_default_item_name,
     .option     = options,
@@ -125,11 +126,11 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     }
 
     if (s->listen) {
-        if ((fd = ff_listen_bind(fd, cur_ai->ai_addr, cur_ai->ai_addrlen,
-                                 s->listen_timeout, h)) < 0) {
-            ret = fd;
+        if ((ret = ff_listen_bind(fd, cur_ai->ai_addr, cur_ai->ai_addrlen,
+                                  s->listen_timeout, h)) < 0) {
             goto fail1;
         }
+        fd = ret;
     } else {
         if ((ret = ff_listen_connect(fd, cur_ai->ai_addr, cur_ai->ai_addrlen,
                                      s->open_timeout / 1000, h, !!cur_ai->ai_next)) < 0) {
@@ -186,7 +187,7 @@ static int tcp_write(URLContext *h, const uint8_t *buf, int size)
         if (ret)
             return ret;
     }
-    ret = send(s->fd, buf, size, 0);
+    ret = send(s->fd, buf, size, MSG_NOSIGNAL);
     return ret < 0 ? ff_neterrno() : ret;
 }
 
@@ -228,6 +229,6 @@ URLProtocol ff_tcp_protocol = {
     .url_get_file_handle = tcp_get_file_handle,
     .url_shutdown        = tcp_shutdown,
     .priv_data_size      = sizeof(TCPContext),
-    .priv_data_class     = &tcp_context_class,
     .flags               = URL_PROTOCOL_FLAG_NETWORK,
+    .priv_data_class     = &tcp_class,
 };

@@ -42,28 +42,28 @@
  */
 #define SHORT_SEEK_THRESHOLD 4096
 
-static void *ffio_url_child_next(void *obj, void *prev)
+static void *ff_avio_child_next(void *obj, void *prev)
 {
     AVIOContext *s = obj;
     return prev ? NULL : s->opaque;
 }
 
-static const AVClass *ffio_url_child_class_next(const AVClass *prev)
+static const AVClass *ff_avio_child_class_next(const AVClass *prev)
 {
     return prev ? NULL : &ffurl_context_class;
 }
 
-static const AVOption ffio_url_options[] = {
+static const AVOption ff_avio_options[] = {
     { NULL },
 };
 
-const AVClass ffio_url_class = {
+const AVClass ff_avio_class = {
     .class_name = "AVIOContext",
     .item_name  = av_default_item_name,
     .version    = LIBAVUTIL_VERSION_INT,
-    .option     = ffio_url_options,
-    .child_next = ffio_url_child_next,
-    .child_class_next = ffio_url_child_class_next,
+    .option     = ff_avio_options,
+    .child_next = ff_avio_child_next,
+    .child_class_next = ff_avio_child_class_next,
 };
 
 static void fill_buffer(AVIOContext *s);
@@ -139,7 +139,7 @@ static void writeout(AVIOContext *s, const uint8_t *data, int len)
 
 static void flush_buffer(AVIOContext *s)
 {
-    if (s->buf_ptr > s->buffer) {
+    if (s->write_flag && s->buf_ptr > s->buffer) {
         writeout(s, s->buffer, s->buf_ptr - s->buffer);
         if (s->update_checksum) {
             s->checksum     = s->update_checksum(s->checksum, s->checksum_ptr,
@@ -148,6 +148,8 @@ static void flush_buffer(AVIOContext *s)
         }
     }
     s->buf_ptr = s->buffer;
+    if (!s->write_flag)
+        s->buf_end = s->buffer;
 }
 
 void avio_w8(AVIOContext *s, int b)
@@ -221,9 +223,12 @@ int64_t avio_seek(AVIOContext *s, int64_t offset, int whence)
             return offset1;
         offset += offset1;
     }
+    if (offset < 0)
+        return AVERROR(EINVAL);
+
     offset1 = offset - pos;
     if (!s->must_flush && (!s->direct || !s->seek) &&
-        offset1 >= 0 && offset1 <= buffer_size) {
+        offset1 >= 0 && offset1 <= buffer_size - s->write_flag) {
         /* can do the seek inside the buffer */
         s->buf_ptr = s->buffer + offset1;
     } else if ((!s->seekable ||
@@ -292,7 +297,7 @@ int64_t avio_size(AVIOContext *s)
     return size;
 }
 
-int url_feof(AVIOContext *s)
+int avio_feof(AVIOContext *s)
 {
     if(!s)
         return 0;
@@ -302,6 +307,13 @@ int url_feof(AVIOContext *s)
     }
     return s->eof_reached;
 }
+
+#if FF_API_URL_FEOF
+int url_feof(AVIOContext *s)
+{
+    return avio_feof(s);
+}
+#endif
 
 void avio_wl32(AVIOContext *s, unsigned int val)
 {
@@ -330,7 +342,7 @@ int avio_put_str(AVIOContext *s, const char *str)
     return len;
 }
 
-int avio_put_str16le(AVIOContext *s, const char *str)
+static inline int put_str16(AVIOContext *s, const char *str, const int be)
 {
     const uint8_t *q = str;
     int ret = 0;
@@ -341,18 +353,33 @@ int avio_put_str16le(AVIOContext *s, const char *str)
         uint16_t tmp;
 
         GET_UTF8(ch, *q++, goto invalid;)
-        PUT_UTF16(ch, tmp, avio_wl16(s, tmp); ret += 2;)
+        PUT_UTF16(ch, tmp, be ? avio_wb16(s, tmp) : avio_wl16(s, tmp);
+                  ret += 2;)
         continue;
 invalid:
-        av_log(s, AV_LOG_ERROR, "Invaid UTF8 sequence in avio_put_str16le\n");
+        av_log(s, AV_LOG_ERROR, "Invaid UTF8 sequence in avio_put_str16%s\n", be ? "be" : "le");
         err = AVERROR(EINVAL);
     }
-    avio_wl16(s, 0);
+    if (be)
+        avio_wb16(s, 0);
+    else
+        avio_wl16(s, 0);
     if (err)
         return err;
     ret += 2;
     return ret;
 }
+
+#define PUT_STR16(type, big_endian)                          \
+int avio_put_str16 ## type(AVIOContext *s, const char *str)  \
+{                                                            \
+return put_str16(s, str, big_endian);                        \
+}
+
+PUT_STR16(le, 0)
+PUT_STR16(be, 1)
+
+#undef PUT_STR16
 
 int ff_get_v_length(uint64_t val)
 {
@@ -548,7 +575,7 @@ int avio_read(AVIOContext *s, unsigned char *buf, int size)
     }
     if (size1 == size) {
         if (s->error)      return s->error;
-        if (url_feof(s))   return AVERROR_EOF;
+        if (avio_feof(s))  return AVERROR_EOF;
     }
     return size1 - size;
 }
@@ -597,7 +624,7 @@ int ffio_read_partial(AVIOContext *s, unsigned char *buf, int size)
     s->buf_ptr += len;
     if (!len) {
         if (s->error)      return s->error;
-        if (url_feof(s))   return AVERROR_EOF;
+        if (avio_feof(s))  return AVERROR_EOF;
     }
     return len;
 }
@@ -667,7 +694,7 @@ int ff_get_line(AVIOContext *s, char *buf, int maxlen)
         if (c && i < maxlen-1)
             buf[i++] = c;
     } while (c != '\n' && c != '\r' && c);
-    if (c == '\r' && avio_r8(s) != '\n')
+    if (c == '\r' && avio_r8(s) != '\n' && !avio_feof(s))
         avio_skip(s, -1);
 
     buf[i] = 0;
@@ -751,7 +778,9 @@ int ffio_fdopen(AVIOContext **s, URLContext *h)
         return AVERROR(ENOMEM);
 
     *s = avio_alloc_context(buffer, buffer_size, h->flags & AVIO_FLAG_WRITE, h,
-                            (void*)ffurl_read, (void*)ffurl_write, (void*)ffurl_seek);
+                            (int (*)(void *, uint8_t *, int)) ffurl_read,
+                            (int (*)(void *, uint8_t *, int)) ffurl_write,
+                            (int64_t (*)(void *, int64_t, int)) ffurl_seek);
     if (!*s) {
         av_free(buffer);
         return AVERROR(ENOMEM);
@@ -763,7 +792,7 @@ int ffio_fdopen(AVIOContext **s, URLContext *h)
         (*s)->read_pause = (int (*)(void *, int))h->prot->url_read_pause;
         (*s)->read_seek  = (int64_t (*)(void *, int, int64_t, int))h->prot->url_read_seek;
     }
-    (*s)->av_class = &ffio_url_class;
+    (*s)->av_class = &ff_avio_class;
     return 0;
 }
 
@@ -776,7 +805,7 @@ int ffio_ensure_seekback(AVIOContext *s, int64_t buf_size)
 
     buf_size += s->buf_ptr - s->buffer + max_buffer_size;
 
-    if (buf_size < filled || s->seekable)
+    if (buf_size < filled || s->seekable || !s->read_packet)
         return 0;
     av_assert0(!s->write_flag);
 
@@ -887,6 +916,12 @@ int avio_open2(AVIOContext **s, const char *filename, int flags,
         return err;
     }
     return 0;
+}
+
+int ffio_open2_wrapper(struct AVFormatContext *s, AVIOContext **pb, const char *url, int flags,
+                       const AVIOInterruptCB *int_cb, AVDictionary **options)
+{
+    return avio_open2(pb, url, flags, int_cb, options);
 }
 
 int avio_close(AVIOContext *s)
@@ -1088,7 +1123,6 @@ int avio_close_dyn_buf(AVIOContext *s, uint8_t **pbuffer)
         *pbuffer = NULL;
         return 0;
     }
-    d = s->opaque;
 
     /* don't attempt to pad fixed-size packet buffers */
     if (!s->max_packet_size) {
@@ -1098,11 +1132,22 @@ int avio_close_dyn_buf(AVIOContext *s, uint8_t **pbuffer)
 
     avio_flush(s);
 
+    d = s->opaque;
     *pbuffer = d->buffer;
     size = d->size;
     av_free(d);
     av_free(s);
     return size - padding;
+}
+
+void ffio_free_dyn_buf(AVIOContext **s)
+{
+    uint8_t *tmp;
+    if (!*s)
+        return;
+    avio_close_dyn_buf(*s, &tmp);
+    av_free(tmp);
+    *s = NULL;
 }
 
 static int null_buf_write(void *opaque, uint8_t *buf, int buf_size)

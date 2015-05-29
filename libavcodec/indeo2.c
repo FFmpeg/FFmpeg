@@ -54,15 +54,13 @@ static int ir2_decode_plane(Ir2Context *ctx, int width, int height, uint8_t *dst
     int i;
     int j;
     int out = 0;
-    int c;
-    int t;
 
     if (width & 1)
         return AVERROR_INVALIDDATA;
 
     /* first line contain absolute values, other lines contain deltas */
     while (out < width) {
-        c = ir2_get_code(&ctx->gb);
+        int c = ir2_get_code(&ctx->gb);
         if (c >= 0x80) { /* we have a run */
             c -= 0x7F;
             if (out + c*2 > width)
@@ -79,7 +77,7 @@ static int ir2_decode_plane(Ir2Context *ctx, int width, int height, uint8_t *dst
     for (j = 1; j < height; j++) {
         out = 0;
         while (out < width) {
-            c = ir2_get_code(&ctx->gb);
+            int c = ir2_get_code(&ctx->gb);
             if (c >= 0x80) { /* we have a skip */
                 c -= 0x7F;
                 if (out + c*2 > width)
@@ -89,7 +87,7 @@ static int ir2_decode_plane(Ir2Context *ctx, int width, int height, uint8_t *dst
                     out++;
                 }
             } else { /* add two deltas from table */
-                t        = dst[out - pitch] + (table[c * 2] - 128);
+                int t    = dst[out - pitch] + (table[c * 2] - 128);
                 t        = av_clip_uint8(t);
                 dst[out] = t;
                 out++;

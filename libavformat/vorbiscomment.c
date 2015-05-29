@@ -38,9 +38,9 @@ const AVMetadataConv ff_vorbiscomment_metadata_conv[] = {
     { 0 }
 };
 
-int ff_vorbiscomment_length(AVDictionary *m, const char *vendor_string)
+int64_t ff_vorbiscomment_length(AVDictionary *m, const char *vendor_string)
 {
-    int len = 8;
+    int64_t len = 8;
     len += strlen(vendor_string);
     if (m) {
         AVDictionaryEntry *tag = NULL;
@@ -61,8 +61,10 @@ int ff_vorbiscomment_write(uint8_t **p, AVDictionary **m,
         AVDictionaryEntry *tag = NULL;
         bytestream_put_le32(p, count);
         while ((tag = av_dict_get(*m, "", tag, AV_DICT_IGNORE_SUFFIX))) {
-            unsigned int len1 = strlen(tag->key);
-            unsigned int len2 = strlen(tag->value);
+            int64_t len1 = strlen(tag->key);
+            int64_t len2 = strlen(tag->value);
+            if (len1+1+len2 > UINT32_MAX)
+                return AVERROR(EINVAL);
             bytestream_put_le32(p, len1+1+len2);
             bytestream_put_buffer(p, tag->key, len1);
             bytestream_put_byte(p, '=');

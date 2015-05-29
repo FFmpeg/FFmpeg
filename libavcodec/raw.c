@@ -146,7 +146,7 @@ const PixelFormatTag ff_raw_pix_fmt_tags[] = {
     { AV_PIX_FMT_YUVA420P,    MKTAG('Y', '4', 11 ,  8 ) },
     { AV_PIX_FMT_YUVA422P,    MKTAG('Y', '4', 10 ,  8 ) },
     { AV_PIX_FMT_YUVA444P,    MKTAG('Y', '4',  0 ,  8 ) },
-    { AV_PIX_FMT_GRAY8A,      MKTAG('Y', '2',  0 ,  8 ) },
+    { AV_PIX_FMT_YA8,         MKTAG('Y', '2',  0 ,  8 ) },
 
     { AV_PIX_FMT_YUVA420P9LE,  MKTAG('Y', '4', 11 ,  9 ) },
     { AV_PIX_FMT_YUVA420P9BE,  MKTAG( 9 , 11 , '4', 'Y') },
@@ -223,6 +223,11 @@ const PixelFormatTag ff_raw_pix_fmt_tags[] = {
 
     { AV_PIX_FMT_NONE, 0 },
 };
+
+const struct PixelFormatTag *avpriv_get_raw_pix_fmt_tags(void)
+{
+    return ff_raw_pix_fmt_tags;
+}
 
 unsigned int avcodec_pix_fmt_to_codec_tag(enum AVPixelFormat fmt)
 {

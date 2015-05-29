@@ -77,9 +77,9 @@ static int decode_frame(AVCodecContext *avctx,
 
     unsigned int offset;
     int magic_num, endian;
-    int x, y, i, ret;
-    int w, h, bits_per_color, descriptor, elements, packing, total_size;
-    int encoding;
+    int x, y, stride, i, ret;
+    int w, h, bits_per_color, descriptor, elements, packing;
+    int encoding, need_align = 0;
 
     unsigned int rgbBuffer = 0;
     int n_datum = 0;
@@ -108,6 +108,16 @@ static int decode_frame(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "Invalid data start offset\n");
         return AVERROR_INVALIDDATA;
     }
+
+    // Check encryption
+    buf = avpkt->data + 660;
+    ret = read32(&buf, endian);
+    if (ret != 0xFFFFFFFF) {
+        avpriv_report_missing_feature(avctx, "Encryption");
+        av_log(avctx, AV_LOG_WARNING, "The image is encrypted and may "
+               "not properly decode.\n");
+    }
+
     // Need to end in 0x304 offset from start of file
     buf = avpkt->data + 0x304;
     w = read32(&buf, endian);
@@ -153,7 +163,7 @@ static int decode_frame(AVCodecContext *avctx,
         if(i) {
             AVRational q = av_d2q(av_int2float(i), 4096);
             if (q.num > 0 && q.den > 0)
-                avctx->time_base = av_inv_q(q);
+                avctx->framerate = q;
         }
     }
 
@@ -163,10 +173,15 @@ static int decode_frame(AVCodecContext *avctx,
         break;
     case 52: // ABGR
     case 51: // RGBA
+    case 103: // UYVA4444
         elements = 4;
         break;
     case 50: // RGB
+    case 102: // UYV444
         elements = 3;
+        break;
+    case 100: // UYVY422
+        elements = 2;
         break;
     default:
         avpriv_report_missing_feature(avctx, "Descriptor %d", descriptor);
@@ -175,24 +190,24 @@ static int decode_frame(AVCodecContext *avctx,
 
     switch (bits_per_color) {
     case 8:
-        total_size = avctx->width * avctx->height * elements;
+        stride = avctx->width * elements;
         break;
     case 10:
         if (!packing) {
             av_log(avctx, AV_LOG_ERROR, "Packing to 32bit required\n");
             return -1;
         }
-        total_size = (avctx->width * elements + 2) / 3 * 4 * avctx->height;
+        stride = (avctx->width * elements + 2) / 3 * 4;
         break;
     case 12:
         if (!packing) {
             av_log(avctx, AV_LOG_ERROR, "Packing to 16bit required\n");
             return -1;
         }
-        total_size = 2 * avctx->width * avctx->height * elements;
+        stride = 2 * avctx->width * elements;
         break;
     case 16:
-        total_size = 2 * avctx->width * avctx->height * elements;
+        stride = 2 * avctx->width * elements;
         break;
     case 1:
     case 32:
@@ -201,6 +216,26 @@ static int decode_frame(AVCodecContext *avctx,
         return AVERROR_PATCHWELCOME;
     default:
         return AVERROR_INVALIDDATA;
+    }
+
+    // Table 3c: Runs will always break at scan line boundaries. Packing
+    // will always break to the next 32-bit word at scan-line boundaries.
+    // Unfortunately, the encoder produced invalid files, so attempt
+    // to detect it
+    need_align = FFALIGN(stride, 4);
+    if (need_align*avctx->height + (int64_t)offset > avpkt->size) {
+        // Alignment seems unappliable, try without
+        if (stride*avctx->height + (int64_t)offset > avpkt->size) {
+            av_log(avctx, AV_LOG_ERROR, "Overread buffer. Invalid header?\n");
+            return AVERROR_INVALIDDATA;
+        } else {
+            av_log(avctx, AV_LOG_INFO, "Decoding DPX without scanline "
+                   "alignment.\n");
+            need_align = 0;
+        }
+    } else {
+        need_align -= stride;
+        stride = FFALIGN(stride, 4);
     }
 
     switch (1000 * descriptor + 10 * bits_per_color + endian) {
@@ -250,6 +285,15 @@ static int decode_frame(AVCodecContext *avctx,
     case 51160:
         avctx->pix_fmt = AV_PIX_FMT_RGBA64LE;
         break;
+    case 100081:
+        avctx->pix_fmt = AV_PIX_FMT_UYVY422;
+        break;
+    case 102081:
+        avctx->pix_fmt = AV_PIX_FMT_YUV444P;
+        break;
+    case 103081:
+        avctx->pix_fmt = AV_PIX_FMT_YUVA444P;
+        break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Unsupported format\n");
         return AVERROR_PATCHWELCOME;
@@ -266,10 +310,6 @@ static int decode_frame(AVCodecContext *avctx,
     for (i=0; i<AV_NUM_DATA_POINTERS; i++)
         ptr[i] = p->data[i];
 
-    if (total_size + (int64_t)offset > avpkt->size) {
-        av_log(avctx, AV_LOG_ERROR, "Overread buffer. Invalid header?\n");
-        return AVERROR_INVALIDDATA;
-    }
     switch (bits_per_color) {
     case 10:
         for (x = 0; x < avctx->height; x++) {
@@ -308,6 +348,8 @@ static int decode_frame(AVCodecContext *avctx,
                 // For 12 bit, ignore alpha
                 if (elements == 4)
                     buf += 2;
+                // Jump to next aligned position
+                buf += need_align;
             }
             for (i = 0; i < 3; i++)
                 ptr[i] += p->linesize[i];
@@ -316,9 +358,26 @@ static int decode_frame(AVCodecContext *avctx,
     case 16:
         elements *= 2;
     case 8:
+        if (   avctx->pix_fmt == AV_PIX_FMT_YUVA444P
+            || avctx->pix_fmt == AV_PIX_FMT_YUV444P) {
+            for (x = 0; x < avctx->height; x++) {
+                ptr[0] = p->data[0] + x * p->linesize[0];
+                ptr[1] = p->data[1] + x * p->linesize[1];
+                ptr[2] = p->data[2] + x * p->linesize[2];
+                ptr[3] = p->data[3] + x * p->linesize[3];
+                for (y = 0; y < avctx->width; y++) {
+                    *ptr[1]++ = *buf++;
+                    *ptr[0]++ = *buf++;
+                    *ptr[2]++ = *buf++;
+                    if (avctx->pix_fmt == AV_PIX_FMT_YUVA444P)
+                        *ptr[3]++ = *buf++;
+                }
+            }
+        } else {
         av_image_copy_plane(ptr[0], p->linesize[0],
-                            buf, elements * avctx->width,
+                            buf, stride,
                             elements * avctx->width, avctx->height);
+        }
         break;
     }
 

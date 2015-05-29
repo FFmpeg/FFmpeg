@@ -50,7 +50,7 @@ void avdevice_register_all(void)
     REGISTER_INDEV   (AVFOUNDATION,     avfoundation);
     REGISTER_INDEV   (BKTR,             bktr);
     REGISTER_OUTDEV  (CACA,             caca);
-    REGISTER_OUTDEV  (DECKLINK,         decklink);
+    REGISTER_INOUTDEV(DECKLINK,         decklink);
     REGISTER_INDEV   (DSHOW,            dshow);
     REGISTER_INDEV   (DV1394,           dv1394);
     REGISTER_INOUTDEV(FBDEV,            fbdev);
@@ -70,6 +70,7 @@ void avdevice_register_all(void)
 //    REGISTER_INDEV   (V4L,              v4l
     REGISTER_INDEV   (VFWCAP,           vfwcap);
     REGISTER_INDEV   (X11GRAB,          x11grab);
+    REGISTER_INDEV   (X11GRAB_XCB,      x11grab_xcb);
     REGISTER_OUTDEV  (XV,               xv);
 
     /* external libraries */

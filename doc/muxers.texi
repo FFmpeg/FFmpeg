@@ -194,15 +194,19 @@ can not be smaller than one centi second.
 Apple HTTP Live Streaming muxer that segments MPEG-TS according to
 the HTTP Live Streaming (HLS) specification.
 
-It creates a playlist file and numbered segment files. The output
-filename specifies the playlist filename; the segment filenames
-receive the same basename as the playlist, a sequential number and
-a .ts extension.
+It creates a playlist file, and one or more segment files. The output filename
+specifies the playlist filename.
+
+By default, the muxer creates a file for each segment produced. These files
+have the same name as the playlist, followed by a sequential number and a
+.ts extension.
 
 For example, to convert an input file with @command{ffmpeg}:
 @example
 ffmpeg -i in.nut out.m3u8
 @end example
+This example will produce the playlist, @file{out.m3u8}, and segment files:
+@file{out0.ts}, @file{out1.ts}, @file{out2.ts}, etc.
 
 See also the @ref{segment} muxer, which provides a more generic and
 flexible implementation of a segmenter, and can be used to perform HLS
@@ -220,6 +224,11 @@ Set the segment length in seconds. Default value is 2.
 Set the maximum number of playlist entries. If set to 0 the list file
 will contain all the segments. Default value is 5.
 
+@item hls_ts_options @var{options_list}
+Set output format options using a :-separated list of key=value
+parameters. Values containing @code{:} special characters must be
+escaped.
+
 @item hls_wrap @var{wrap}
 Set the number after which the segment filename number (the number
 specified in each segment file) wraps. If set to 0 the number will be
@@ -233,6 +242,9 @@ to @var{wrap}.
 Start the playlist sequence number from @var{number}. Default value is
 0.
 
+@item hls_allow_cache @var{allowcache}
+Explicitly set whether the client MAY (1) or MUST NOT (0) cache media segments.
+
 @item hls_base_url @var{baseurl}
 Append @var{baseurl} to every entry in the playlist.
 Useful to generate playlists with absolute paths.
@@ -241,6 +253,30 @@ Note that the playlist sequence number must be unique for each segment
 and it is not to be confused with the segment filename sequence number
 which can be cyclic, for example if the @option{wrap} option is
 specified.
+
+@item hls_segment_filename @var{filename}
+Set the segment filename. Unless hls_flags single_file is set @var{filename}
+is used as a string format with the segment number:
+@example
+ffmpeg in.nut -hls_segment_filename 'file%03d.ts' out.m3u8
+@end example
+This example will produce the playlist, @file{out.m3u8}, and segment files:
+@file{file000.ts}, @file{file001.ts}, @file{file002.ts}, etc.
+
+@item hls_flags single_file
+If this flag is set, the muxer will store all segments in a single MPEG-TS
+file, and will use byte ranges in the playlist. HLS playlists generated with
+this way will have the version number 4.
+For example:
+@example
+ffmpeg -i in.nut -hls_flags single_file out.m3u8
+@end example
+Will produce the playlist, @file{out.m3u8}, and a single segment file,
+@file{out.ts}.
+
+@item hls_flags delete_segments
+Segment files removed from the playlist are deleted after a period of time
+equal to the duration of the segment plus the duration of the playlist.
 @end table
 
 @anchor{ico}
@@ -345,8 +381,7 @@ ffmpeg -f v4l2 -r 1 -i /dev/video0 -f image2 -strftime 1 "%Y-%m-%d_%H-%M-%S.jpg"
 
 @table @option
 @item start_number
-Start the sequence from the specified number. Default value is 1. Must
-be a non-negative number.
+Start the sequence from the specified number. Default value is 0.
 
 @item update
 If set to 1, the filename will always be interpreted as just a
@@ -536,7 +571,6 @@ a short portion of the file. With this option set, there is no initial
 mdat atom, and the moov atom only describes the tracks but has
 a zero duration.
 
-Files written with this option set do not work in QuickTime.
 This option is implicitly set when writing ismv (Smooth Streaming) files.
 @item -movflags separate_moof
 Write a separate moof (movie fragment) atom for each track. Normally,
@@ -551,6 +585,22 @@ This operation can take a while, and will not work in various situations such
 as fragmented output, thus it is not enabled by default.
 @item -movflags rtphint
 Add RTP hinting tracks to the output file.
+@item -movflags disable_chpl
+Disable Nero chapter markers (chpl atom).  Normally, both Nero chapters
+and a QuickTime chapter track are written to the file. With this option
+set, only the QuickTime chapter track will be written. Nero chapters can
+cause failures when the file is reprocessed with certain tagging programs, like
+mp3Tag 2.61a and iTunes 11.3, most likely other versions are affected as well.
+@item -movflags omit_tfhd_offset
+Do not write any absolute base_data_offset in tfhd atoms. This avoids
+tying fragments to absolute byte positions in the file/streams.
+@item -movflags default_base_moof
+Similarly to the omit_tfhd_offset, this flag avoids writing the
+absolute base_data_offset field in tfhd atoms, but does so by using
+the new default-base-is-moof flag instead. This flag is new from
+14496-12:2012. This may make the fragments easier to parse in certain
+circumstances (avoiding basing track fragment location calculations
+on the implicit end of the previous track fragment).
 @end table
 
 @subsection Example
@@ -563,28 +613,37 @@ ffmpeg -re @var{<normal input/transcoding options>} -movflags isml+frag_keyframe
 
 @section mp3
 
-The MP3 muxer writes a raw MP3 stream with an ID3v2 header at the beginning and
-optionally an ID3v1 tag at the end. ID3v2.3 and ID3v2.4 are supported, the
-@code{id3v2_version} option controls which one is used. Setting
-@code{id3v2_version} to 0 will disable the ID3v2 header completely. The legacy
-ID3v1 tag is not written by default, but may be enabled with the
-@code{write_id3v1} option.
+The MP3 muxer writes a raw MP3 stream with the following optional features:
+@itemize @bullet
+@item
+An ID3v2 metadata header at the beginning (enabled by default). Versions 2.3 and
+2.4 are supported, the @code{id3v2_version} private option controls which one is
+used (3 or 4). Setting @code{id3v2_version} to 0 disables the ID3v2 header
+completely.
 
-The muxer may also write a Xing frame at the beginning, which contains the
-number of frames in the file. It is useful for computing duration of VBR files.
-The Xing frame is written if the output stream is seekable and if the
-@code{write_xing} option is set to 1 (the default).
-
-The muxer supports writing ID3v2 attached pictures (APIC frames). The pictures
-are supplied to the muxer in form of a video stream with a single packet. There
-can be any number of those streams, each will correspond to a single APIC frame.
-The stream metadata tags @var{title} and @var{comment} map to APIC
-@var{description} and @var{picture type} respectively. See
+The muxer supports writing attached pictures (APIC frames) to the ID3v2 header.
+The pictures are supplied to the muxer in form of a video stream with a single
+packet. There can be any number of those streams, each will correspond to a
+single APIC frame.  The stream metadata tags @var{title} and @var{comment} map
+to APIC @var{description} and @var{picture type} respectively. See
 @url{http://id3.org/id3v2.4.0-frames} for allowed picture types.
 
 Note that the APIC frames must be written at the beginning, so the muxer will
 buffer the audio frames until it gets all the pictures. It is therefore advised
 to provide the pictures as soon as possible to avoid excessive buffering.
+
+@item
+A Xing/LAME frame right after the ID3v2 header (if present). It is enabled by
+default, but will be written only if the output is seekable. The
+@code{write_xing} private option can be used to disable it.  The frame contains
+various information that may be useful to the decoder, like the audio duration
+or encoder delay.
+
+@item
+A legacy ID3v1 tag at the end of the file (disabled by default). It may be
+enabled with the @code{write_id3v1} private option, but as its capabilities are
+very limited, its usage is not recommended.
+@end itemize
 
 Examples:
 
@@ -630,6 +689,9 @@ Set the transport_stream_id (default 0x0001). This identifies a
 transponder in DVB.
 @item -mpegts_service_id @var{number}
 Set the service_id (default 0x0001) also known as program in DVB.
+@item -mpegts_service_type @var{number}
+Set the program service_type (default @var{digital_tv}), see below
+a list of pre defined values.
 @item -mpegts_pmt_start_pid @var{number}
 Set the first PID for PMT (default 0x1000, max 0x1f00).
 @item -mpegts_start_pid @var{number}
@@ -662,6 +724,27 @@ ffmpeg -i source1.ts -codec copy -f mpegts -tables_version 0 udp://1.1.1.1:1111
 ffmpeg -i source2.ts -codec copy -f mpegts -tables_version 1 udp://1.1.1.1:1111
 ...
 @end example
+@end table
+
+Option mpegts_service_type accepts the following values:
+
+@table @option
+@item hex_value
+Any hexdecimal value between 0x01 to 0xff as defined in ETSI 300 468.
+@item digital_tv
+Digital TV service.
+@item digital_radio
+Digital Radio service.
+@item teletext
+Teletext service.
+@item advanced_codec_digital_radio
+Advanced Codec Digital Radio service.
+@item mpeg2_digital_hdtv
+MPEG2 Digital HDTV service.
+@item advanced_codec_digital_sdtv
+Advanced Codec Digital SDTV service.
+@item advanced_codec_digital_hdtv
+Advanced Codec Digital HDTV service.
 @end table
 
 Option mpegts_flags may take a set of such flags:
@@ -721,7 +804,7 @@ Change the syncpoint usage in nut:
     sensitive and seeking is not possible. Also in general the overhead from
     syncpoints is negligible. Note, -@code{write_index} 0 can be used to disable
     all growing data tables, allowing to mux endless streams with limited memory
-    and wihout these disadvantages.
+    and without these disadvantages.
 @item @var{timestamped} extend the syncpoint with a wallclock field.
 @end table
 The @var{none} and @var{timestamped} flags are experimental.
@@ -746,6 +829,11 @@ is 1 second. A value of 0 will fill all segments, making pages as large as
 possible. A value of 1 will effectively use 1 packet-per-page in most
 situations, giving a small seek granularity at the cost of additional container
 overhead.
+@item -serial_offset @var{value}
+Serial value from which to set the streams serial number.
+Setting it to different and sufficiently large values ensures that the produced
+ogg files can be safely chained.
+
 @end table
 
 @anchor{segment}
@@ -754,8 +842,9 @@ overhead.
 Basic stream segmenter.
 
 This muxer outputs streams to a number of separate files of nearly
-fixed duration. Output filename pattern can be set in a fashion similar to
-@ref{image2}.
+fixed duration. Output filename pattern can be set in a fashion
+similar to @ref{image2}, or by using a @code{strftime} template if
+the @option{strftime} option is enabled.
 
 @code{stream_segment} is a variant of the muxer used to write to
 streaming output formats, i.e. which do not require global headers,
@@ -797,6 +886,11 @@ reference stream. The default value is @code{auto}.
 @item segment_format @var{format}
 Override the inner container format, by default it is guessed by the filename
 extension.
+
+@item segment_format_options @var{options_list}
+Set output format options using a :-separated list of key=value
+parameters. Values containing the @code{:} special character must be
+escaped.
 
 @item segment_list @var{name}
 Generate also a listfile named @var{name}. If not specified no
@@ -930,6 +1024,12 @@ Wrap around segment index once it reaches @var{limit}.
 @item segment_start_number @var{number}
 Set the sequence number of the first segment. Defaults to @code{0}.
 
+@item strftime @var{1|0}
+Use the @code{strftime} function to define the name of the new
+segments to write. If this is selected, the output segment name must
+contain a @code{strftime} function template. Default value is
+@code{0}.
+
 @item reset_timestamps @var{1|0}
 Reset timestamps at the begin of each segment, so that each segment
 will start with near-zero timestamps. It is meant to ease the playback
@@ -945,7 +1045,7 @@ argument must be a time duration specification, and defaults to 0.
 
 @itemize
 @item
-To remux the content of file @file{in.mkv} to a list of segments
+Remux the content of file @file{in.mkv} to a list of segments
 @file{out-000.nut}, @file{out-001.nut}, etc., and write the list of
 generated segments to @file{out.list}:
 @example
@@ -953,14 +1053,20 @@ ffmpeg -i in.mkv -codec copy -map 0 -f segment -segment_list out.list out%03d.nu
 @end example
 
 @item
-As the example above, but segment the input file according to the split
-points specified by the @var{segment_times} option:
+Segment input and set output format options for the output segments:
+@example
+ffmpeg -i in.mkv -f segment -segment_time 10 -segment_format_options movflags=+faststart out%03d.mp4
+@end example
+
+@item
+Segment the input file according to the split points specified by the
+@var{segment_times} option:
 @example
 ffmpeg -i in.mkv -codec copy -map 0 -f segment -segment_list out.csv -segment_times 1,2,3,5,8,13,21 out%03d.nut
 @end example
 
 @item
-As the example above, but use the @command{ffmpeg} @option{force_key_frames}
+Use the @command{ffmpeg} @option{force_key_frames}
 option to force key frames in the input at the specified location, together
 with the segment option @option{segment_time_delta} to account for
 possible roundings operated when setting key frame times.
@@ -979,7 +1085,7 @@ ffmpeg -i in.mkv -codec copy -map 0 -f segment -segment_list out.csv -segment_fr
 @end example
 
 @item
-To convert the @file{in.mkv} to TS segments using the @code{libx264}
+Convert the @file{in.mkv} to TS segments using the @code{libx264}
 and @code{libfaac} encoders:
 @example
 ffmpeg -i in.mkv -map 0 -codec:v libx264 -codec:a libfaac -f ssegment -segment_list out.list out%03d.ts
@@ -1104,7 +1210,17 @@ is the @option{global_header} flag.
 
 WebM DASH Manifest muxer.
 
-This muxer implements the WebM DASH Manifest specification to generate the DASH manifest XML.
+This muxer implements the WebM DASH Manifest specification to generate the DASH
+manifest XML. It also supports manifest generation for DASH live streams.
+
+For more information see:
+
+@itemize @bullet
+@item
+WebM DASH Specification: @url{https://sites.google.com/a/webmproject.org/wiki/adaptive-streaming/webm-dash-specification}
+@item
+ISO DASH Specification: @url{http://standards.iso.org/ittf/PubliclyAvailableStandards/c065274_ISO_IEC_23009-1_2014.zip}
+@end itemize
 
 @subsection Options
 
@@ -1115,6 +1231,32 @@ This muxer supports the following options:
 This option has the following syntax: "id=x,streams=a,b,c id=y,streams=d,e" where x and y are the
 unique identifiers of the adaptation sets and a,b,c,d and e are the indices of the corresponding
 audio and video streams. Any number of adaptation sets can be added using this option.
+
+@item live
+Set this to 1 to create a live stream DASH Manifest. Default: 0.
+
+@item chunk_start_index
+Start index of the first chunk. This will go in the @samp{startNumber} attribute
+of the @samp{SegmentTemplate} element in the manifest. Default: 0.
+
+@item chunk_duration_ms
+Duration of each chunk in milliseconds. This will go in the @samp{duration}
+attribute of the @samp{SegmentTemplate} element in the manifest. Default: 1000.
+
+@item utc_timing_url
+URL of the page that will return the UTC timestamp in ISO format. This will go
+in the @samp{value} attribute of the @samp{UTCTiming} element in the manifest.
+Default: None.
+
+@item time_shift_buffer_depth
+Smallest time (in seconds) shifting buffer for which any Representation is
+guaranteed to be available. This will go in the @samp{timeShiftBufferDepth}
+attribute of the @samp{MPD} element. Default: 60.
+
+@item minimum_update_period
+Minimum update period (in seconds) of the manifest. This will go in the
+@samp{minimumUpdatePeriod} attribute of the @samp{MPD} element. Default: 0.
+
 @end table
 
 @subsection Example
@@ -1128,6 +1270,49 @@ ffmpeg -f webm_dash_manifest -i video1.webm \
        -f webm_dash_manifest \
        -adaptation_sets "id=0,streams=0,1 id=1,streams=2,3" \
        manifest.xml
+@end example
+
+@section webm_chunk
+
+WebM Live Chunk Muxer.
+
+This muxer writes out WebM headers and chunks as separate files which can be
+consumed by clients that support WebM Live streams via DASH.
+
+@subsection Options
+
+This muxer supports the following options:
+
+@table @option
+@item chunk_start_index
+Index of the first chunk (defaults to 0).
+
+@item header
+Filename of the header where the initialization data will be written.
+
+@item audio_chunk_duration
+Duration of each audio chunk in milliseconds (defaults to 5000).
+@end table
+
+@subsection Example
+@example
+ffmpeg -f v4l2 -i /dev/video0 \
+       -f alsa -i hw:0 \
+       -map 0:0 \
+       -c:v libvpx-vp9 \
+       -s 640x360 -keyint_min 30 -g 30 \
+       -f webm_chunk \
+       -header webm_live_video_360.hdr \
+       -chunk_start_index 1 \
+       webm_live_video_360_%d.chk \
+       -map 1:0 \
+       -c:a libvorbis \
+       -b:a 128k \
+       -f webm_chunk \
+       -header webm_live_audio_128.hdr \
+       -chunk_start_index 1 \
+       -audio_chunk_duration 1000 \
+       webm_live_audio_128_%d.chk
 @end example
 
 @c man end MUXERS

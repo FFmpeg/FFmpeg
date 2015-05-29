@@ -176,18 +176,24 @@ int update_dimensions(VP8Context *s, int width, int height, int is_vp7)
     s->top_border  = av_mallocz((s->mb_width + 1) * sizeof(*s->top_border));
     s->thread_data = av_mallocz(MAX_THREADS * sizeof(VP8ThreadData));
 
+    if (!s->macroblocks_base || !s->top_nnz || !s->top_border ||
+        !s->thread_data || (!s->intra4x4_pred_mode_top && !s->mb_layout)) {
+        free_buffers(s);
+        return AVERROR(ENOMEM);
+    }
+
     for (i = 0; i < MAX_THREADS; i++) {
         s->thread_data[i].filter_strength =
             av_mallocz(s->mb_width * sizeof(*s->thread_data[0].filter_strength));
+        if (!s->thread_data[i].filter_strength) {
+            free_buffers(s);
+            return AVERROR(ENOMEM);
+        }
 #if HAVE_THREADS
         pthread_mutex_init(&s->thread_data[i].lock, NULL);
         pthread_cond_init(&s->thread_data[i].cond, NULL);
 #endif
     }
-
-    if (!s->macroblocks_base || !s->top_nnz || !s->top_border ||
-        (!s->intra4x4_pred_mode_top && !s->mb_layout))
-        return AVERROR(ENOMEM);
 
     s->macroblocks = s->macroblocks_base + 1;
 
@@ -688,9 +694,10 @@ static int vp8_decode_frame_header(VP8Context *s, const uint8_t *buf, int buf_si
     buf_size -= header_size;
 
     if (s->keyframe) {
-        if (vp8_rac_get(c))
+        s->colorspace = vp8_rac_get(c);
+        if (s->colorspace)
             av_log(s->avctx, AV_LOG_WARNING, "Unspecified colorspace\n");
-        vp8_rac_get(c); // whether we can skip clamping in dsp functions
+        s->fullrange = vp8_rac_get(c);
     }
 
     if ((s->segmentation.enabled = vp8_rac_get(c)))
@@ -1608,7 +1615,7 @@ void intra_predict(VP8Context *s, VP8ThreadData *td, uint8_t *dst[3],
             for (x = 0; x < 4; x++) {
                 int copy = 0, linesize = s->linesize;
                 uint8_t *dst = ptr + 4 * x;
-                DECLARE_ALIGNED(4, uint8_t, copy_dst)[5 * 8];
+                LOCAL_ALIGNED(4, uint8_t, copy_dst, [5 * 8]);
 
                 if ((y == 0 || x == 3) && mb_y == 0) {
                     topright = tr_top;
@@ -1714,8 +1721,8 @@ void vp8_mc_luma(VP8Context *s, VP8ThreadData *td, uint8_t *dst,
     if (AV_RN32A(mv)) {
         int src_linesize = linesize;
 
-        int mx = (mv->x << 1) & 7, mx_idx = subpel_idx[0][mx];
-        int my = (mv->y << 1) & 7, my_idx = subpel_idx[0][my];
+        int mx = (mv->x * 2) & 7, mx_idx = subpel_idx[0][mx];
+        int my = (mv->y * 2) & 7, my_idx = subpel_idx[0][my];
 
         x_off += mv->x >> 2;
         y_off += mv->y >> 2;
@@ -1915,8 +1922,8 @@ void inter_predict(VP8Context *s, VP8ThreadData *td, uint8_t *dst[3],
                          mb->bmv[2 * y       * 4 + 2 * x + 1].y +
                          mb->bmv[(2 * y + 1) * 4 + 2 * x    ].y +
                          mb->bmv[(2 * y + 1) * 4 + 2 * x + 1].y;
-                uvmv.x = (uvmv.x + 2 + (uvmv.x >> (INT_BIT - 1))) >> 2;
-                uvmv.y = (uvmv.y + 2 + (uvmv.y >> (INT_BIT - 1))) >> 2;
+                uvmv.x = (uvmv.x + 2 + FF_SIGNBIT(uvmv.x)) >> 2;
+                uvmv.y = (uvmv.y + 2 + FF_SIGNBIT(uvmv.y)) >> 2;
                 if (s->profile == 3) {
                     uvmv.x &= ~7;
                     uvmv.y &= ~7;
@@ -2231,14 +2238,14 @@ static void vp8_decode_mv_mb_modes(AVCodecContext *avctx, VP8Frame *cur_frame,
             td->wait_mb_pos = INT_MAX;                                        \
             pthread_mutex_unlock(&otd->lock);                                 \
         }                                                                     \
-    } while (0);
+    } while (0)
 
 #define update_pos(td, mb_y, mb_x)                                            \
     do {                                                                      \
         int pos              = (mb_y << 16) | (mb_x & 0xFFFF);                \
         int sliced_threading = (avctx->active_thread_type == FF_THREAD_SLICE) && \
                                (num_jobs > 1);                                \
-        int is_null          = (next_td == NULL) || (prev_td == NULL);        \
+        int is_null          = !next_td || !prev_td;                          \
         int pos_check        = (is_null) ? 1                                  \
                                          : (next_td != td &&                  \
                                             pos >= next_td->wait_mb_pos) ||   \
@@ -2250,10 +2257,10 @@ static void vp8_decode_mv_mb_modes(AVCodecContext *avctx, VP8Frame *cur_frame,
             pthread_cond_broadcast(&td->cond);                                \
             pthread_mutex_unlock(&td->lock);                                  \
         }                                                                     \
-    } while (0);
+    } while (0)
 #else
-#define check_thread_pos(td, otd, mb_x_check, mb_y_check)
-#define update_pos(td, mb_y, mb_x)
+#define check_thread_pos(td, otd, mb_x_check, mb_y_check) while(0)
+#define update_pos(td, mb_y, mb_x) while(0)
 #endif
 
 static av_always_inline void decode_mb_row_no_filter(AVCodecContext *avctx, void *tdata,
@@ -2546,6 +2553,13 @@ int vp78_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             vp8_release_frame(s, &s->frames[i]);
 
     curframe = s->framep[VP56_FRAME_CURRENT] = vp8_find_free_buffer(s);
+
+    if (!s->colorspace)
+        avctx->colorspace = AVCOL_SPC_BT470BG;
+    if (s->fullrange)
+        avctx->color_range = AVCOL_RANGE_JPEG;
+    else
+        avctx->color_range = AVCOL_RANGE_MPEG;
 
     /* Given that arithmetic probabilities are updated every frame, it's quite
      * likely that the values we have on a random interframe are complete

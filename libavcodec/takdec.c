@@ -371,7 +371,7 @@ static int decode_subframe(TAKDecContext *s, int32_t *decoded,
                            int subframe_size, int prev_subframe_size)
 {
     GetBitContext *gb = &s->gb;
-    int tmp, x, y, i, j, ret = 0;
+    int x, y, i, j, ret = 0;
     int dshift, size, filter_quant, filter_order;
     int tfilter[MAX_PREDICTORS];
 
@@ -421,7 +421,7 @@ static int decode_subframe(TAKDecContext *s, int32_t *decoded,
     s->predictors[2] = get_sbits(gb, size) << (10 - size);
     s->predictors[3] = get_sbits(gb, size) << (10 - size);
     if (filter_order > 4) {
-        tmp = size - get_bits1(gb);
+        int tmp = size - get_bits1(gb);
 
         for (i = 4; i < filter_order; i++) {
             if (!(i & 3))
@@ -448,7 +448,6 @@ static int decode_subframe(TAKDecContext *s, int32_t *decoded,
     x = 1 << (32 - (15 - filter_quant));
     y = 1 << ((15 - filter_quant) - 1);
     for (i = 0, j = filter_order - 1; i < filter_order / 2; i++, j--) {
-        tmp = y + tfilter[j];
         s->filter[j] = x - ((tfilter[i] + y) >> (15 - filter_quant));
         s->filter[i] = x - ((tfilter[j] + y) >> (15 - filter_quant));
     }
@@ -463,7 +462,7 @@ static int decode_subframe(TAKDecContext *s, int32_t *decoded,
     y    = FF_ARRAY_ELEMS(s->residues) - filter_order;
     x    = subframe_size - filter_order;
     while (x > 0) {
-        tmp = FFMIN(y, x);
+        int tmp = FFMIN(y, x);
 
         for (i = 0; i < tmp; i++) {
             int v = 1 << (filter_quant - 1);
@@ -477,7 +476,7 @@ static int decode_subframe(TAKDecContext *s, int32_t *decoded,
                      s->residues[i + j + 1] * s->filter[j + 1] +
                      s->residues[i + j    ] * s->filter[j    ];
             }
-            v = (av_clip(v >> filter_quant, -8192, 8191) << dshift) - *decoded;
+            v = (av_clip_intp2(v >> filter_quant, 13) << dshift) - *decoded;
             *decoded++ = v;
             s->residues[filter_order + i] = v >> dshift;
         }
@@ -653,7 +652,7 @@ static int decorrelate(TAKDecContext *s, int c1, int c2, int length)
                          s->residues[i    ] * s->filter[0];
                 }
 
-                v = (av_clip(v >> 10, -8192, 8191) << dshift) - *p1;
+                v = (av_clip_intp2(v >> 10, 13) << dshift) - *p1;
                 *p1++ = v;
             }
 
@@ -744,6 +743,8 @@ static int tak_decode_frame(AVCodecContext *avctx, void *data,
         int buf_size = av_samples_get_buffer_size(NULL, avctx->channels,
                                                   s->nb_samples,
                                                   AV_SAMPLE_FMT_S32P, 0);
+        if (buf_size < 0)
+            return buf_size;
         av_fast_malloc(&s->decode_buffer, &s->decode_buffer_size, buf_size);
         if (!s->decode_buffer)
             return AVERROR(ENOMEM);

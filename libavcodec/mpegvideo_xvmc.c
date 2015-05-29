@@ -182,7 +182,7 @@ static void ff_xvmc_decode_mb(struct MpegEncContext *s)
         return;
     }
 
-    // from MPV_decode_mb(), update DC predictors for P macroblocks
+    // from ff_mpv_decode_mb(), update DC predictors for P macroblocks
     if (!s->mb_intra) {
         s->last_dc[0] =
         s->last_dc[1] =
@@ -298,7 +298,7 @@ static void ff_xvmc_decode_mb(struct MpegEncContext *s)
             cbp++;
     }
 
-    if (s->flags & CODEC_FLAG_GRAY) {
+    if (s->avctx->flags & CODEC_FLAG_GRAY) {
         if (s->mb_intra) {                                   // intra frames are always full chroma blocks
             for (i = 4; i < blocks_per_mb; i++) {
                 memset(s->pblocks[i], 0, sizeof(*s->pblocks[i]));  // so we need to clear them

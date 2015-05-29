@@ -26,14 +26,15 @@
 
 SECTION_RODATA
 
+cextern pw_1023
+%define pw_pixel_max_10 pw_1023
 pw_pixel_max_12: times 8 dw ((1 << 12)-1)
-pw_pixel_max_10: times 8 dw ((1 << 10)-1)
-pw_m1:           times 8 dw -1
 pw_m2:           times 8 dw -2
 pd_1 :           times 4 dd  1
 
 cextern pw_4
 cextern pw_8
+cextern pw_m1
 
 SECTION .text
 INIT_XMM sse2
@@ -355,19 +356,15 @@ ALIGN 16
     psrld            m8, 16
     paddw            m8, m10
     movd            r7d, m8
-    and              r7, 0xffff; 1dp0 + 1dp3
     pshufd           m8, m8, 0x4E
     movd            r8d, m8
-    and              r8, 0xffff; 0dp0 + 0dp3
 
     pshufd           m8, m11, 0x31
     psrld            m8, 16
     paddw            m8, m11
     movd            r9d, m8
-    and              r9, 0xffff; 1dq0 + 1dq3
     pshufd           m8, m8, 0x4E
     movd           r10d, m8
-    and             r10, 0xffff; 0dq0 + 0dq3
     ; end calc for weak filter
 
     ; filtering mask
@@ -629,7 +626,7 @@ ALIGN 16
 %endmacro
 
 ;-----------------------------------------------------------------------------
-; void ff_hevc_v_loop_filter_chroma(uint8_t *_pix, ptrdiff_t _stride, int *_tc,
+; void ff_hevc_v_loop_filter_chroma(uint8_t *_pix, ptrdiff_t _stride, int32_t *tc,
 ;                                   uint8_t *_no_p, uint8_t *_no_q);
 ;-----------------------------------------------------------------------------
 %macro LOOP_FILTER_CHROMA 0
@@ -664,7 +661,7 @@ cglobal hevc_v_loop_filter_chroma_12, 3, 5, 7, pix, stride, tc, pix0, r3stride
     RET
 
 ;-----------------------------------------------------------------------------
-; void ff_hevc_h_loop_filter_chroma(uint8_t *_pix, ptrdiff_t _stride, int *_tc,
+; void ff_hevc_h_loop_filter_chroma(uint8_t *_pix, ptrdiff_t _stride, int32_t *tc,
 ;                                   uint8_t *_no_p, uint8_t *_no_q);
 ;-----------------------------------------------------------------------------
 cglobal hevc_h_loop_filter_chroma_8, 3, 4, 7, pix, stride, tc, pix0
@@ -728,7 +725,7 @@ LOOP_FILTER_CHROMA
 %macro LOOP_FILTER_LUMA 0
 ;-----------------------------------------------------------------------------
 ; void ff_hevc_v_loop_filter_luma(uint8_t *_pix, ptrdiff_t _stride, int beta,
-;                                 int *_tc, uint8_t *_no_p, uint8_t *_no_q);
+;                                 int32_t *tc, uint8_t *_no_p, uint8_t *_no_q);
 ;-----------------------------------------------------------------------------
 cglobal hevc_v_loop_filter_luma_8, 4, 14, 16, pix, stride, beta, tc, pix0, src3stride
     sub            pixq, 4
@@ -768,7 +765,7 @@ cglobal hevc_v_loop_filter_luma_12, 4, 14, 16, pix, stride, beta, tc, pix0, src3
 
 ;-----------------------------------------------------------------------------
 ; void ff_hevc_h_loop_filter_luma(uint8_t *_pix, ptrdiff_t _stride, int beta,
-;                                 int *_tc, uint8_t *_no_p, uint8_t *_no_q);
+;                                 int32_t *tc, uint8_t *_no_p, uint8_t *_no_q);
 ;-----------------------------------------------------------------------------
 cglobal hevc_h_loop_filter_luma_8, 4, 14, 16, pix, stride, beta, tc, pix0, src3stride
     lea     src3strideq, [3 * strideq]

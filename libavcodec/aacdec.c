@@ -87,7 +87,7 @@
 #include "internal.h"
 #include "get_bits.h"
 #include "fft.h"
-#include "fmtconvert.h"
+#include "imdct15.h"
 #include "lpc.h"
 #include "kbdwin.h"
 #include "sinewin.h"
@@ -102,7 +102,6 @@
 #include "aacadtsdec.h"
 #include "libavutil/intfloat.h"
 
-#include <assert.h>
 #include <errno.h>
 #include <math.h>
 #include <stdint.h>
@@ -425,7 +424,7 @@ static uint64_t sniff_channel_order(uint8_t (*layout_map)[3], int tags)
  * Save current output configuration if and only if it has been locked.
  */
 static void push_output_configuration(AACContext *ac) {
-    if (ac->oc[1].status == OC_LOCKED) {
+    if (ac->oc[1].status == OC_LOCKED || ac->oc[0].status == OC_NONE) {
         ac->oc[0] = ac->oc[1];
     }
     ac->oc[1].status = OC_NONE;
@@ -621,6 +620,12 @@ static ChannelElement *get_che(AACContext *ac, int type, int elem_id)
          * If we seem to have encountered such a stream, transfer
          * the LFE[0] element to the SCE[1]'s mapping */
         if (ac->tags_mapped == tags_per_config[ac->oc[1].m4ac.chan_config] - 1 && (type == TYPE_LFE || type == TYPE_SCE)) {
+            if (!ac->warned_remapping_once && (type != TYPE_LFE || elem_id != 0)) {
+                av_log(ac->avctx, AV_LOG_WARNING,
+                   "This stream seems to incorrectly report its last channel as %s[%d], mapping to LFE[0]\n",
+                   type == TYPE_SCE ? "SCE" : "LFE", elem_id);
+                ac->warned_remapping_once++;
+            }
             ac->tags_mapped++;
             return ac->tag_che_map[type][elem_id] = ac->che[TYPE_LFE][0];
         }
@@ -630,6 +635,22 @@ static ChannelElement *get_che(AACContext *ac, int type, int elem_id)
             return ac->tag_che_map[TYPE_CPE][elem_id] = ac->che[TYPE_CPE][1];
         }
     case 4:
+        /* Some streams incorrectly code 4.0 audio as
+         * SCE[0] CPE[0] LFE[0]
+         * instead of
+         * SCE[0] CPE[0] SCE[1].
+         * If we seem to have encountered such a stream, transfer
+         * the SCE[1] element to the LFE[0]'s mapping */
+        if (ac->tags_mapped == tags_per_config[ac->oc[1].m4ac.chan_config] - 1 && (type == TYPE_LFE || type == TYPE_SCE)) {
+            if (!ac->warned_remapping_once && (type != TYPE_SCE || elem_id != 1)) {
+                av_log(ac->avctx, AV_LOG_WARNING,
+                   "This stream seems to incorrectly report its last channel as %s[%d], mapping to SCE[1]\n",
+                   type == TYPE_SCE ? "SCE" : "LFE", elem_id);
+                ac->warned_remapping_once++;
+            }
+            ac->tags_mapped++;
+            return ac->tag_che_map[type][elem_id] = ac->che[TYPE_SCE][1];
+        }
         if (ac->tags_mapped == 2 &&
             ac->oc[1].m4ac.chan_config == 4 &&
             type == TYPE_SCE) {
@@ -681,6 +702,7 @@ static void decode_channel_map(uint8_t layout_map[][3],
             syn_ele = TYPE_LFE;
             break;
         default:
+            // AAC_CHANNEL_OFF has no channel map
             av_assert0(0);
         }
         layout_map[0][0] = syn_ele;
@@ -778,6 +800,7 @@ static int decode_ga_specific_config(AACContext *ac, AVCodecContext *avctx,
         avpriv_request_sample(avctx, "960/120 MDCT window");
         return AVERROR_PATCHWELCOME;
     }
+    m4ac->frame_length_short = 0;
 
     if (get_bits1(gb))       // dependsOnCoreCoder
         skip_bits(gb, 14);   // coreCoderDelay
@@ -855,11 +878,7 @@ static int decode_eld_specific_config(AACContext *ac, AVCodecContext *avctx,
     m4ac->ps  = 0;
     m4ac->sbr = 0;
 
-    if (get_bits1(gb)) { // frameLengthFlag
-        avpriv_request_sample(avctx, "960/120 MDCT window");
-        return AVERROR_PATCHWELCOME;
-    }
-
+    m4ac->frame_length_short = get_bits1(gb);
     res_flags = get_bits(gb, 3);
     if (res_flags) {
         avpriv_report_missing_feature(avctx,
@@ -881,7 +900,7 @@ static int decode_eld_specific_config(AACContext *ac, AVCodecContext *avctx,
         if (len == 15 + 255)
             len += get_bits(gb, 16);
         if (get_bits_left(gb) < len * 8 + 4) {
-            av_log(ac->avctx, AV_LOG_ERROR, overread_err);
+            av_log(avctx, AV_LOG_ERROR, overread_err);
             return AVERROR_INVALIDDATA;
         }
         skip_bits_long(gb, 8 * len);
@@ -924,10 +943,10 @@ static int decode_audio_specific_config(AACContext *ac,
     GetBitContext gb;
     int i, ret;
 
-    av_dlog(avctx, "audio specific config size %d\n", bit_size >> 3);
+    ff_dlog(avctx, "audio specific config size %d\n", bit_size >> 3);
     for (i = 0; i < bit_size >> 3; i++)
-        av_dlog(avctx, "%02x ", data[i]);
-    av_dlog(avctx, "\n");
+        ff_dlog(avctx, "%02x ", data[i]);
+    ff_dlog(avctx, "\n");
 
     if ((ret = init_get_bits(&gb, data, bit_size)) < 0)
         return ret;
@@ -974,7 +993,7 @@ static int decode_audio_specific_config(AACContext *ac,
         return AVERROR(ENOSYS);
     }
 
-    av_dlog(avctx,
+    ff_dlog(avctx,
             "AOT %d chan config %d sampling index %d (%d) SBR %d PS %d\n",
             m4ac->object_type, m4ac->chan_config, m4ac->sampling_index,
             m4ac->sample_rate, m4ac->sbr,
@@ -1113,8 +1132,10 @@ static av_cold int aac_decode_init(AVCodecContext *avctx)
 
     ff_aac_sbr_init();
 
-    ff_fmt_convert_init(&ac->fmt_conv, avctx);
-    avpriv_float_dsp_init(&ac->fdsp, avctx->flags & CODEC_FLAG_BITEXACT);
+    ac->fdsp = avpriv_float_dsp_alloc(avctx->flags & CODEC_FLAG_BITEXACT);
+    if (!ac->fdsp) {
+        return AVERROR(ENOMEM);
+    }
 
     ac->random_state = 0x1f2e3d4c;
 
@@ -1134,6 +1155,10 @@ static av_cold int aac_decode_init(AVCodecContext *avctx)
     ff_mdct_init(&ac->mdct_ld,    10, 1, 1.0 / (32768.0 * 512.0));
     ff_mdct_init(&ac->mdct_small,  8, 1, 1.0 / (32768.0 * 128.0));
     ff_mdct_init(&ac->mdct_ltp,   11, 0, -2.0 * 32768.0);
+    ret = ff_imdct15_init(&ac->mdct480, 5);
+    if (ret < 0)
+        return ret;
+
     // window initialization
     ff_kbd_window_init(ff_aac_kbd_long_1024, 4.0, 1024);
     ff_kbd_window_init(ff_aac_kbd_short_128, 6.0, 128);
@@ -1205,11 +1230,14 @@ static void decode_ltp(LongTermPrediction *ltp,
 static int decode_ics_info(AACContext *ac, IndividualChannelStream *ics,
                            GetBitContext *gb)
 {
-    int aot = ac->oc[1].m4ac.object_type;
+    const MPEG4AudioConfig *const m4ac = &ac->oc[1].m4ac;
+    const int aot = m4ac->object_type;
+    const int sampling_index = m4ac->sampling_index;
     if (aot != AOT_ER_AAC_ELD) {
         if (get_bits1(gb)) {
             av_log(ac->avctx, AV_LOG_ERROR, "Reserved bit set.\n");
-            return AVERROR_INVALIDDATA;
+            if (ac->avctx->err_recognition & AV_EF_BITSTREAM)
+                return AVERROR_INVALIDDATA;
         }
         ics->window_sequence[1] = ics->window_sequence[0];
         ics->window_sequence[0] = get_bits(gb, 2);
@@ -1238,23 +1266,29 @@ static int decode_ics_info(AACContext *ac, IndividualChannelStream *ics,
             }
         }
         ics->num_windows       = 8;
-        ics->swb_offset        =    ff_swb_offset_128[ac->oc[1].m4ac.sampling_index];
-        ics->num_swb           =   ff_aac_num_swb_128[ac->oc[1].m4ac.sampling_index];
-        ics->tns_max_bands     = ff_tns_max_bands_128[ac->oc[1].m4ac.sampling_index];
+        ics->swb_offset        =    ff_swb_offset_128[sampling_index];
+        ics->num_swb           =   ff_aac_num_swb_128[sampling_index];
+        ics->tns_max_bands     = ff_tns_max_bands_128[sampling_index];
         ics->predictor_present = 0;
     } else {
-        ics->max_sfb               = get_bits(gb, 6);
-        ics->num_windows           = 1;
+        ics->max_sfb           = get_bits(gb, 6);
+        ics->num_windows       = 1;
         if (aot == AOT_ER_AAC_LD || aot == AOT_ER_AAC_ELD) {
-            ics->swb_offset        =     ff_swb_offset_512[ac->oc[1].m4ac.sampling_index];
-            ics->num_swb           =    ff_aac_num_swb_512[ac->oc[1].m4ac.sampling_index];
-            ics->tns_max_bands     =  ff_tns_max_bands_512[ac->oc[1].m4ac.sampling_index];
+            if (m4ac->frame_length_short) {
+                ics->swb_offset    =     ff_swb_offset_480[sampling_index];
+                ics->num_swb       =    ff_aac_num_swb_480[sampling_index];
+                ics->tns_max_bands =  ff_tns_max_bands_480[sampling_index];
+            } else {
+                ics->swb_offset    =     ff_swb_offset_512[sampling_index];
+                ics->num_swb       =    ff_aac_num_swb_512[sampling_index];
+                ics->tns_max_bands =  ff_tns_max_bands_512[sampling_index];
+            }
             if (!ics->num_swb || !ics->swb_offset)
                 return AVERROR_BUG;
         } else {
-            ics->swb_offset        =    ff_swb_offset_1024[ac->oc[1].m4ac.sampling_index];
-            ics->num_swb           =   ff_aac_num_swb_1024[ac->oc[1].m4ac.sampling_index];
-            ics->tns_max_bands     = ff_tns_max_bands_1024[ac->oc[1].m4ac.sampling_index];
+            ics->swb_offset    =    ff_swb_offset_1024[sampling_index];
+            ics->num_swb       =   ff_aac_num_swb_1024[sampling_index];
+            ics->tns_max_bands = ff_tns_max_bands_1024[sampling_index];
         }
         if (aot != AOT_ER_AAC_ELD) {
             ics->predictor_present     = get_bits1(gb);
@@ -1360,7 +1394,7 @@ static int decode_scalefactors(AACContext *ac, float sf[120], GetBitContext *gb,
                                int band_type_run_end[120])
 {
     int g, i, idx = 0;
-    int offset[3] = { global_gain, global_gain - 90, 0 };
+    int offset[3] = { global_gain, global_gain - NOISE_OFFSET, 0 };
     int clipped_offset;
     int noise_flag = 1;
     for (g = 0; g < ics->num_window_groups; g++) {
@@ -1372,7 +1406,7 @@ static int decode_scalefactors(AACContext *ac, float sf[120], GetBitContext *gb,
             } else if ((band_type[idx] == INTENSITY_BT) ||
                        (band_type[idx] == INTENSITY_BT2)) {
                 for (; i < run_end; i++, idx++) {
-                    offset[2] += get_vlc2(gb, vlc_scalefactors.table, 7, 3) - 60;
+                    offset[2] += get_vlc2(gb, vlc_scalefactors.table, 7, 3) - SCALE_DIFF_ZERO;
                     clipped_offset = av_clip(offset[2], -155, 100);
                     if (offset[2] != clipped_offset) {
                         avpriv_request_sample(ac->avctx,
@@ -1385,9 +1419,9 @@ static int decode_scalefactors(AACContext *ac, float sf[120], GetBitContext *gb,
             } else if (band_type[idx] == NOISE_BT) {
                 for (; i < run_end; i++, idx++) {
                     if (noise_flag-- > 0)
-                        offset[1] += get_bits(gb, 9) - 256;
+                        offset[1] += get_bits(gb, NOISE_PRE_BITS) - NOISE_PRE;
                     else
-                        offset[1] += get_vlc2(gb, vlc_scalefactors.table, 7, 3) - 60;
+                        offset[1] += get_vlc2(gb, vlc_scalefactors.table, 7, 3) - SCALE_DIFF_ZERO;
                     clipped_offset = av_clip(offset[1], -100, 155);
                     if (offset[1] != clipped_offset) {
                         avpriv_request_sample(ac->avctx,
@@ -1399,7 +1433,7 @@ static int decode_scalefactors(AACContext *ac, float sf[120], GetBitContext *gb,
                 }
             } else {
                 for (; i < run_end; i++, idx++) {
-                    offset[0] += get_vlc2(gb, vlc_scalefactors.table, 7, 3) - 60;
+                    offset[0] += get_vlc2(gb, vlc_scalefactors.table, 7, 3) - SCALE_DIFF_ZERO;
                     if (offset[0] > 255U) {
                         av_log(ac->avctx, AV_LOG_ERROR,
                                "Scalefactor (%d) out of range.\n", offset[0]);
@@ -1490,13 +1524,12 @@ static void decode_mid_side_stereo(ChannelElement *cpe, GetBitContext *gb,
                                    int ms_present)
 {
     int idx;
+    int max_idx = cpe->ch[0].ics.num_window_groups * cpe->ch[0].ics.max_sfb;
     if (ms_present == 1) {
-        for (idx = 0;
-             idx < cpe->ch[0].ics.num_window_groups * cpe->ch[0].ics.max_sfb;
-             idx++)
+        for (idx = 0; idx < max_idx; idx++)
             cpe->ms_mask[idx] = get_bits1(gb);
     } else if (ms_present == 2) {
-        memset(cpe->ms_mask, 1,  sizeof(cpe->ms_mask[0]) * cpe->ch[0].ics.num_window_groups * cpe->ch[0].ics.max_sfb);
+        memset(cpe->ms_mask, 1, max_idx * sizeof(cpe->ms_mask[0]));
     }
 }
 
@@ -1618,9 +1651,9 @@ static int decode_spectrum_and_dequant(AACContext *ac, float coef[1024],
                         cfo[k] = ac->random_state;
                     }
 
-                    band_energy = ac->fdsp.scalarproduct_float(cfo, cfo, off_len);
+                    band_energy = ac->fdsp->scalarproduct_float(cfo, cfo, off_len);
                     scale = sf[idx] / sqrtf(band_energy);
-                    ac->fdsp.vector_fmul_scalar(cfo, cfo, scale, off_len);
+                    ac->fdsp->vector_fmul_scalar(cfo, cfo, scale, off_len);
                 }
             } else {
                 const float *vq = ff_aac_codebook_vector_vals[cbt_m1];
@@ -1766,7 +1799,7 @@ static int decode_spectrum_and_dequant(AACContext *ac, float coef[1024],
                             }
                         } while (len -= 2);
 
-                        ac->fdsp.vector_fmul_scalar(cfo, cfo, sf[idx], off_len);
+                        ac->fdsp->vector_fmul_scalar(cfo, cfo, sf[idx], off_len);
                     }
                 }
 
@@ -1979,7 +2012,7 @@ static void apply_mid_side_stereo(AACContext *ac, ChannelElement *cpe)
                 cpe->ch[0].band_type[idx] < NOISE_BT &&
                 cpe->ch[1].band_type[idx] < NOISE_BT) {
                 for (group = 0; group < ics->group_len[g]; group++) {
-                    ac->fdsp.butterflies_float(ch0 + group * 128 + offsets[i],
+                    ac->fdsp->butterflies_float(ch0 + group * 128 + offsets[i],
                                                ch1 + group * 128 + offsets[i],
                                                offsets[i+1] - offsets[i]);
                 }
@@ -2018,7 +2051,7 @@ static void apply_intensity_stereo(AACContext *ac,
                         c *= 1 - 2 * cpe->ms_mask[idx];
                     scale = c * sce1->sf[idx];
                     for (group = 0; group < ics->group_len[g]; group++)
-                        ac->fdsp.vector_fmul_scalar(coef1 + group * 128 + offsets[i],
+                        ac->fdsp->vector_fmul_scalar(coef1 + group * 128 + offsets[i],
                                                     coef0 + group * 128 + offsets[i],
                                                     scale,
                                                     offsets[i + 1] - offsets[i]);
@@ -2268,7 +2301,12 @@ static int decode_extension_payload(AACContext *ac, GetBitContext *gb, int cnt,
 {
     int crc_flag = 0;
     int res = cnt;
-    switch (get_bits(gb, 4)) { // extension type
+    int type = get_bits(gb, 4);
+
+    if (ac->avctx->debug & FF_DEBUG_STARTCODE)
+        av_log(ac->avctx, AV_LOG_DEBUG, "extension type: %d len:%d\n", type, cnt);
+
+    switch (type) { // extension type
     case EXT_SBR_DATA_CRC:
         crc_flag++;
     case EXT_SBR_DATA:
@@ -2381,15 +2419,15 @@ static void windowing_and_mdct_ltp(AACContext *ac, float *out,
     const float *swindow_prev = ics->use_kb_window[1] ? ff_aac_kbd_short_128 : ff_sine_128;
 
     if (ics->window_sequence[0] != LONG_STOP_SEQUENCE) {
-        ac->fdsp.vector_fmul(in, in, lwindow_prev, 1024);
+        ac->fdsp->vector_fmul(in, in, lwindow_prev, 1024);
     } else {
         memset(in, 0, 448 * sizeof(float));
-        ac->fdsp.vector_fmul(in + 448, in + 448, swindow_prev, 128);
+        ac->fdsp->vector_fmul(in + 448, in + 448, swindow_prev, 128);
     }
     if (ics->window_sequence[0] != LONG_START_SEQUENCE) {
-        ac->fdsp.vector_fmul_reverse(in + 1024, in + 1024, lwindow, 1024);
+        ac->fdsp->vector_fmul_reverse(in + 1024, in + 1024, lwindow, 1024);
     } else {
-        ac->fdsp.vector_fmul_reverse(in + 1024 + 448, in + 1024 + 448, swindow, 128);
+        ac->fdsp->vector_fmul_reverse(in + 1024 + 448, in + 1024 + 448, swindow, 128);
         memset(in + 1024 + 576, 0, 448 * sizeof(float));
     }
     ac->mdct_ltp.mdct_calc(&ac->mdct_ltp, out, in);
@@ -2442,17 +2480,17 @@ static void update_ltp(AACContext *ac, SingleChannelElement *sce)
     if (ics->window_sequence[0] == EIGHT_SHORT_SEQUENCE) {
         memcpy(saved_ltp,       saved, 512 * sizeof(float));
         memset(saved_ltp + 576, 0,     448 * sizeof(float));
-        ac->fdsp.vector_fmul_reverse(saved_ltp + 448, ac->buf_mdct + 960,     &swindow[64],      64);
+        ac->fdsp->vector_fmul_reverse(saved_ltp + 448, ac->buf_mdct + 960,     &swindow[64],      64);
         for (i = 0; i < 64; i++)
             saved_ltp[i + 512] = ac->buf_mdct[1023 - i] * swindow[63 - i];
     } else if (ics->window_sequence[0] == LONG_START_SEQUENCE) {
         memcpy(saved_ltp,       ac->buf_mdct + 512, 448 * sizeof(float));
         memset(saved_ltp + 576, 0,                  448 * sizeof(float));
-        ac->fdsp.vector_fmul_reverse(saved_ltp + 448, ac->buf_mdct + 960,     &swindow[64],      64);
+        ac->fdsp->vector_fmul_reverse(saved_ltp + 448, ac->buf_mdct + 960,     &swindow[64],      64);
         for (i = 0; i < 64; i++)
             saved_ltp[i + 512] = ac->buf_mdct[1023 - i] * swindow[63 - i];
     } else { // LONG_STOP or ONLY_LONG
-        ac->fdsp.vector_fmul_reverse(saved_ltp,       ac->buf_mdct + 512,     &lwindow[512],     512);
+        ac->fdsp->vector_fmul_reverse(saved_ltp,       ac->buf_mdct + 512,     &lwindow[512],     512);
         for (i = 0; i < 512; i++)
             saved_ltp[i + 512] = ac->buf_mdct[1023 - i] * lwindow[511 - i];
     }
@@ -2493,19 +2531,19 @@ static void imdct_and_windowing(AACContext *ac, SingleChannelElement *sce)
      */
     if ((ics->window_sequence[1] == ONLY_LONG_SEQUENCE || ics->window_sequence[1] == LONG_STOP_SEQUENCE) &&
             (ics->window_sequence[0] == ONLY_LONG_SEQUENCE || ics->window_sequence[0] == LONG_START_SEQUENCE)) {
-        ac->fdsp.vector_fmul_window(    out,               saved,            buf,         lwindow_prev, 512);
+        ac->fdsp->vector_fmul_window(    out,               saved,            buf,         lwindow_prev, 512);
     } else {
         memcpy(                         out,               saved,            448 * sizeof(float));
 
         if (ics->window_sequence[0] == EIGHT_SHORT_SEQUENCE) {
-            ac->fdsp.vector_fmul_window(out + 448 + 0*128, saved + 448,      buf + 0*128, swindow_prev, 64);
-            ac->fdsp.vector_fmul_window(out + 448 + 1*128, buf + 0*128 + 64, buf + 1*128, swindow,      64);
-            ac->fdsp.vector_fmul_window(out + 448 + 2*128, buf + 1*128 + 64, buf + 2*128, swindow,      64);
-            ac->fdsp.vector_fmul_window(out + 448 + 3*128, buf + 2*128 + 64, buf + 3*128, swindow,      64);
-            ac->fdsp.vector_fmul_window(temp,              buf + 3*128 + 64, buf + 4*128, swindow,      64);
+            ac->fdsp->vector_fmul_window(out + 448 + 0*128, saved + 448,      buf + 0*128, swindow_prev, 64);
+            ac->fdsp->vector_fmul_window(out + 448 + 1*128, buf + 0*128 + 64, buf + 1*128, swindow,      64);
+            ac->fdsp->vector_fmul_window(out + 448 + 2*128, buf + 1*128 + 64, buf + 2*128, swindow,      64);
+            ac->fdsp->vector_fmul_window(out + 448 + 3*128, buf + 2*128 + 64, buf + 3*128, swindow,      64);
+            ac->fdsp->vector_fmul_window(temp,              buf + 3*128 + 64, buf + 4*128, swindow,      64);
             memcpy(                     out + 448 + 4*128, temp, 64 * sizeof(float));
         } else {
-            ac->fdsp.vector_fmul_window(out + 448,         saved + 448,      buf,         swindow_prev, 64);
+            ac->fdsp->vector_fmul_window(out + 448,         saved + 448,      buf,         swindow_prev, 64);
             memcpy(                     out + 576,         buf + 64,         448 * sizeof(float));
         }
     }
@@ -2513,9 +2551,9 @@ static void imdct_and_windowing(AACContext *ac, SingleChannelElement *sce)
     // buffer update
     if (ics->window_sequence[0] == EIGHT_SHORT_SEQUENCE) {
         memcpy(                     saved,       temp + 64,         64 * sizeof(float));
-        ac->fdsp.vector_fmul_window(saved + 64,  buf + 4*128 + 64, buf + 5*128, swindow, 64);
-        ac->fdsp.vector_fmul_window(saved + 192, buf + 5*128 + 64, buf + 6*128, swindow, 64);
-        ac->fdsp.vector_fmul_window(saved + 320, buf + 6*128 + 64, buf + 7*128, swindow, 64);
+        ac->fdsp->vector_fmul_window(saved + 64,  buf + 4*128 + 64, buf + 5*128, swindow, 64);
+        ac->fdsp->vector_fmul_window(saved + 192, buf + 5*128 + 64, buf + 6*128, swindow, 64);
+        ac->fdsp->vector_fmul_window(saved + 320, buf + 6*128 + 64, buf + 7*128, swindow, 64);
         memcpy(                     saved + 448, buf + 7*128 + 64,  64 * sizeof(float));
     } else if (ics->window_sequence[0] == LONG_START_SEQUENCE) {
         memcpy(                     saved,       buf + 512,        448 * sizeof(float));
@@ -2540,10 +2578,10 @@ static void imdct_and_windowing_ld(AACContext *ac, SingleChannelElement *sce)
     if (ics->use_kb_window[1]) {
         // AAC LD uses a low overlap sine window instead of a KBD window
         memcpy(out, saved, 192 * sizeof(float));
-        ac->fdsp.vector_fmul_window(out + 192, saved + 192, buf, ff_sine_128, 64);
+        ac->fdsp->vector_fmul_window(out + 192, saved + 192, buf, ff_sine_128, 64);
         memcpy(                     out + 320, buf + 64, 192 * sizeof(float));
     } else {
-        ac->fdsp.vector_fmul_window(out, saved, buf, ff_sine_512, 256);
+        ac->fdsp->vector_fmul_window(out, saved, buf, ff_sine_512, 256);
     }
 
     // buffer update
@@ -2555,12 +2593,13 @@ static void imdct_and_windowing_eld(AACContext *ac, SingleChannelElement *sce)
     float *in    = sce->coeffs;
     float *out   = sce->ret;
     float *saved = sce->saved;
-    const float *const window = ff_aac_eld_window;
     float *buf  = ac->buf_mdct;
     int i;
-    const int n  = 512;
+    const int n  = ac->oc[1].m4ac.frame_length_short ? 480 : 512;
     const int n2 = n >> 1;
     const int n4 = n >> 2;
+    const float *const window = n == 480 ? ff_aac_eld_window_480 :
+                                           ff_aac_eld_window_512;
 
     // Inverse transform, mapped to the conventional IMDCT by
     // Chivukula, R.K.; Reznik, Y.A.; Devarajan, V.,
@@ -2572,7 +2611,10 @@ static void imdct_and_windowing_eld(AACContext *ac, SingleChannelElement *sce)
         temp =  in[i    ]; in[i    ] = -in[n - 1 - i]; in[n - 1 - i] = temp;
         temp = -in[i + 1]; in[i + 1] =  in[n - 2 - i]; in[n - 2 - i] = temp;
     }
-    ac->mdct.imdct_half(&ac->mdct_ld, buf, in);
+    if (n == 480)
+        ac->mdct480->imdct_half(ac->mdct480, buf, in, 1, -1.f/(16*1024*960));
+    else
+        ac->mdct.imdct_half(&ac->mdct_ld, buf, in);
     for (i = 0; i < n; i+=2) {
         buf[i] = -buf[i];
     }
@@ -2716,7 +2758,7 @@ static void spectral_to_sample(AACContext *ac)
     for (type = 3; type >= 0; type--) {
         for (i = 0; i < MAX_ELEM_ID; i++) {
             ChannelElement *che = ac->che[type][i];
-            if (che) {
+            if (che && che->present) {
                 if (type <= TYPE_CPE)
                     apply_channel_coupling(ac, che, type, i, BEFORE_TNS, apply_dependent_coupling);
                 if (ac->oc[1].m4ac.object_type == AOT_AAC_LTP) {
@@ -2748,6 +2790,9 @@ static void spectral_to_sample(AACContext *ac)
                 }
                 if (type <= TYPE_CCE)
                     apply_channel_coupling(ac, che, type, i, AFTER_IMDCT, apply_independent_coupling);
+                che->present = 0;
+            } else if (che) {
+                av_log(ac->avctx, AV_LOG_VERBOSE, "ChannelElement %d.%d missing \n", type, i);
             }
         }
     }
@@ -2802,6 +2847,7 @@ static int parse_adts_frame_header(AACContext *ac, GetBitContext *gb)
         ac->oc[1].m4ac.sample_rate     = hdr_info.sample_rate;
         ac->oc[1].m4ac.sampling_index  = hdr_info.sampling_index;
         ac->oc[1].m4ac.object_type     = hdr_info.object_type;
+        ac->oc[1].m4ac.frame_length_short = 0;
         if (ac->oc[0].status != OC_LOCKED ||
             ac->oc[0].m4ac.chan_config != hdr_info.chan_config ||
             ac->oc[0].m4ac.sample_rate != hdr_info.sample_rate) {
@@ -2818,11 +2864,12 @@ static int aac_decode_er_frame(AVCodecContext *avctx, void *data,
                                int *got_frame_ptr, GetBitContext *gb)
 {
     AACContext *ac = avctx->priv_data;
+    const MPEG4AudioConfig *const m4ac = &ac->oc[1].m4ac;
     ChannelElement *che;
     int err, i;
-    int samples = 1024;
-    int chan_config = ac->oc[1].m4ac.chan_config;
-    int aot = ac->oc[1].m4ac.object_type;
+    int samples = m4ac->frame_length_short ? 960 : 1024;
+    int chan_config = m4ac->chan_config;
+    int aot = m4ac->object_type;
 
     if (aot == AOT_ER_AAC_LD || aot == AOT_ER_AAC_ELD)
         samples >>= 1;
@@ -2834,13 +2881,13 @@ static int aac_decode_er_frame(AVCodecContext *avctx, void *data,
 
     // The FF_PROFILE_AAC_* defines are all object_type - 1
     // This may lead to an undefined profile being signaled
-    ac->avctx->profile = ac->oc[1].m4ac.object_type - 1;
+    ac->avctx->profile = aot - 1;
 
     ac->tags_mapped = 0;
 
     if (chan_config < 0 || chan_config >= 8) {
         avpriv_request_sample(avctx, "Unknown ER channel configuration %d",
-                              ac->oc[1].m4ac.chan_config);
+                              chan_config);
         return AVERROR_INVALIDDATA;
     }
     for (i = 0; i < tags_per_config[chan_config]; i++) {
@@ -2852,6 +2899,7 @@ static int aac_decode_er_frame(AVCodecContext *avctx, void *data,
                    elem_type, elem_id);
             return AVERROR_INVALIDDATA;
         }
+        che->present = 1;
         if (aot != AOT_ER_AAC_ELD)
             skip_bits(gb, 4);
         switch (elem_type) {
@@ -2915,6 +2963,9 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
     while ((elem_type = get_bits(gb, 3)) != TYPE_END) {
         elem_id = get_bits(gb, 4);
 
+        if (avctx->debug & FF_DEBUG_STARTCODE)
+            av_log(avctx, AV_LOG_DEBUG, "Elem type:%x id:%x\n", elem_type, elem_id);
+
         if (elem_type < TYPE_DSE) {
             if (!(che=get_che(ac, elem_type, elem_id))) {
                 av_log(ac->avctx, AV_LOG_ERROR, "channel element %d.%d is not allocated\n",
@@ -2923,6 +2974,7 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
                 goto fail;
             }
             samples = 1024;
+            che->present = 1;
         }
 
         switch (elem_type) {
@@ -3021,7 +3073,12 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
             AV_WL32(side, 2*AV_RL32(side));
     }
 
-    *got_frame_ptr = !!samples;
+    if (!ac->frame->data[0] && samples) {
+        av_log(avctx, AV_LOG_ERROR, "no frame data found\n");
+        err = AVERROR_INVALIDDATA;
+        goto fail;
+    }
+
     if (samples) {
         ac->frame->nb_samples = samples;
         ac->frame->sample_rate = avctx->sample_rate;
@@ -3131,6 +3188,8 @@ static av_cold int aac_decode_close(AVCodecContext *avctx)
     ff_mdct_end(&ac->mdct_small);
     ff_mdct_end(&ac->mdct_ld);
     ff_mdct_end(&ac->mdct_ltp);
+    ff_imdct15_uninit(&ac->mdct480);
+    av_freep(&ac->fdsp);
     return 0;
 }
 
@@ -3388,7 +3447,17 @@ static int latm_decode_frame(AVCodecContext *avctx, void *out,
         return AVERROR_INVALIDDATA;
     }
 
-    if ((err = aac_decode_frame_int(avctx, out, got_frame_ptr, &gb, avpkt)) < 0)
+    switch (latmctx->aac_ctx.oc[1].m4ac.object_type) {
+    case AOT_ER_AAC_LC:
+    case AOT_ER_AAC_LTP:
+    case AOT_ER_AAC_LD:
+    case AOT_ER_AAC_ELD:
+        err = aac_decode_er_frame(avctx, out, got_frame_ptr, &gb);
+        break;
+    default:
+        err = aac_decode_frame_int(avctx, out, got_frame_ptr, &gb, avpkt);
+    }
+    if (err < 0)
         return err;
 
     return muxlength;
@@ -3440,6 +3509,18 @@ static const AVClass aac_decoder_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
+static const AVProfile profiles[] = {
+    { FF_PROFILE_AAC_MAIN,  "Main"     },
+    { FF_PROFILE_AAC_LOW,   "LC"       },
+    { FF_PROFILE_AAC_SSR,   "SSR"      },
+    { FF_PROFILE_AAC_LTP,   "LTP"      },
+    { FF_PROFILE_AAC_HE,    "HE-AAC"   },
+    { FF_PROFILE_AAC_HE_V2, "HE-AACv2" },
+    { FF_PROFILE_AAC_LD,    "LD"       },
+    { FF_PROFILE_AAC_ELD,   "ELD"      },
+    { FF_PROFILE_UNKNOWN },
+};
+
 AVCodec ff_aac_decoder = {
     .name            = "aac",
     .long_name       = NULL_IF_CONFIG_SMALL("AAC (Advanced Audio Coding)"),
@@ -3456,6 +3537,7 @@ AVCodec ff_aac_decoder = {
     .channel_layouts = aac_channel_layout,
     .flush = flush,
     .priv_class      = &aac_decoder_class,
+    .profiles        = profiles,
 };
 
 /*
@@ -3478,4 +3560,5 @@ AVCodec ff_aac_latm_decoder = {
     .capabilities    = CODEC_CAP_CHANNEL_CONF | CODEC_CAP_DR1,
     .channel_layouts = aac_channel_layout,
     .flush = flush,
+    .profiles        = profiles,
 };

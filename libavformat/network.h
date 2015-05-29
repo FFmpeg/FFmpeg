@@ -78,7 +78,7 @@ extern int ff_network_inited_globally;
 int ff_network_init(void);
 void ff_network_close(void);
 
-void ff_tls_init(void);
+int ff_tls_init(void);
 void ff_tls_deinit(void);
 
 int ff_network_wait_fd(int fd, int write);
@@ -110,6 +110,18 @@ struct sockaddr_storage {
     char ss_pad2[112];
 };
 #endif /* !HAVE_STRUCT_SOCKADDR_STORAGE */
+
+typedef union sockaddr_union {
+    struct sockaddr_storage storage;
+    struct sockaddr_in in;
+#if HAVE_STRUCT_SOCKADDR_IN6
+    struct sockaddr_in6 in6;
+#endif
+} sockaddr_union;
+
+#ifndef MSG_NOSIGNAL
+#define MSG_NOSIGNAL 0
+#endif
 
 #if !HAVE_STRUCT_ADDRINFO
 struct addrinfo {

@@ -3,7 +3,7 @@ representing a number as input, which may be followed by one of the SI
 unit prefixes, for example: 'K', 'M', or 'G'.
 
 If 'i' is appended to the SI unit prefix, the complete prefix will be
-interpreted as a unit prefix for binary multiplies, which are based on
+interpreted as a unit prefix for binary multiples, which are based on
 powers of 1024 instead of powers of 1000. Appending 'B' to the SI unit
 prefix multiplies the value by 8. This allows using, for example:
 'KB', 'MiB', 'G' and 'B' as number suffixes.
@@ -46,6 +46,16 @@ in the program with the id @var{program_id}. Otherwise, it matches all streams i
 program.
 @item #@var{stream_id} or i:@var{stream_id}
 Match the stream by stream id (e.g. PID in MPEG-TS container).
+@item m:@var{key}[:@var{value}]
+Matches streams with the metadata tag @var{key} having the specified value. If
+@var{value} is not given, matches streams that contain the given tag with any
+value.
+@item u
+Matches streams with usable configuration, the codec must be defined and the
+essential information such as video dimension or audio sample rate must be present.
+
+Note that in @command{ffmpeg}, matching by metadata will only work properly for
+input files.
 @end table
 
 @section Generic options
@@ -96,7 +106,10 @@ Print detailed information about the filter name @var{filter_name}. Use the
 Show version.
 
 @item -formats
-Show available formats.
+Show available formats (including devices).
+
+@item -devices
+Show available devices.
 
 @item -codecs
 Show all codecs known to libavcodec.
@@ -131,6 +144,22 @@ Show channel names and standard channel layouts.
 @item -colors
 Show recognized color names.
 
+@item -sources @var{device}[,@var{opt1}=@var{val1}[,@var{opt2}=@var{val2}]...]
+Show autodetected sources of the intput device.
+Some devices may provide system-dependent source names that cannot be autodetected.
+The returned list cannot be assumed to be always complete.
+@example
+ffmpeg -sources pulse,server=192.168.0.4
+@end example
+
+@item -sinks @var{device}[,@var{opt1}=@var{val1}[,@var{opt2}=@var{val2}]...]
+Show autodetected sinks of the output device.
+Some devices may provide system-dependent sink names that cannot be autodetected.
+The returned list cannot be assumed to be always complete.
+@example
+ffmpeg -sinks pulse,server=192.168.0.4
+@end example
+
 @item -loglevel [repeat+]@var{loglevel} | -v [repeat+]@var{loglevel}
 Set the logging level used by the library.
 Adding "repeat+" indicates that repeated log output should not be compressed
@@ -139,28 +168,29 @@ omitted. "repeat" can also be used alone.
 If "repeat" is used alone, and with no prior loglevel set, the default
 loglevel will be used. If multiple loglevel parameters are given, using
 'repeat' will not change the loglevel.
-@var{loglevel} is a number or a string containing one of the following values:
+@var{loglevel} is a string or a number containing one of the following values:
 @table @samp
-@item quiet
+@item quiet, -8
 Show nothing at all; be silent.
-@item panic
+@item panic, 0
 Only show fatal errors which could lead the process to crash, such as
 and assert failure. This is not currently used for anything.
-@item fatal
+@item fatal, 8
 Only show fatal errors. These are errors after which the process absolutely
 cannot continue after.
-@item error
+@item error, 16
 Show all errors, including ones which can be recovered from.
-@item warning
+@item warning, 24
 Show all warnings and errors. Any message related to possibly
 incorrect or unexpected events will be shown.
-@item info
+@item info, 32
 Show informative messages during processing. This is in addition to
 warnings and errors. This is the default value.
-@item verbose
+@item verbose, 40
 Same as @code{info}, except more verbose.
-@item debug
+@item debug, 48
 Show everything, including debugging information.
+@item trace, 56
 @end table
 
 By default the program logs to stderr, if coloring is supported by the
@@ -178,20 +208,28 @@ directory.
 This file can be useful for bug reports.
 It also implies @code{-loglevel verbose}.
 
-Setting the environment variable @code{FFREPORT} to any value has the
+Setting the environment variable @env{FFREPORT} to any value has the
 same effect. If the value is a ':'-separated key=value sequence, these
-options will affect the report; options values must be escaped if they
+options will affect the report; option values must be escaped if they
 contain special characters or the options delimiter ':' (see the
-``Quoting and escaping'' section in the ffmpeg-utils manual). The
-following option is recognized:
+``Quoting and escaping'' section in the ffmpeg-utils manual).
+
+The following options are recognized:
 @table @option
 @item file
 set the file name to use for the report; @code{%p} is expanded to the name
 of the program, @code{%t} is expanded to a timestamp, @code{%%} is expanded
 to a plain @code{%}
 @item level
-set the log level
+set the log verbosity level using a numerical value (see @code{-loglevel}).
 @end table
+
+For example, to output a report to a file named @file{ffreport.log}
+using a log level of @code{32} (alias for log level @code{info}):
+
+@example
+FFREPORT=file=ffreport.log:level=32 ffmpeg -i input output
+@end example
 
 Errors in parsing the environment variable are not fatal, and will not
 appear in the report.
@@ -227,10 +265,14 @@ Possible flags for this option are:
 @item sse4.1
 @item sse4.2
 @item avx
+@item avx2
 @item xop
+@item fma3
 @item fma4
 @item 3dnow
 @item 3dnowext
+@item bmi1
+@item bmi2
 @item cmov
 @end table
 @item ARM
@@ -240,6 +282,13 @@ Possible flags for this option are:
 @item armv6t2
 @item vfp
 @item vfpv3
+@item neon
+@item setend
+@end table
+@item AArch64
+@table @samp
+@item armv8
+@item vfp
 @item neon
 @end table
 @item PowerPC
@@ -260,8 +309,41 @@ Possible flags for this option are:
 @end table
 
 @item -opencl_bench
-Benchmark all available OpenCL devices and show the results. This option
-is only available when FFmpeg has been compiled with @code{--enable-opencl}.
+This option is used to benchmark all available OpenCL devices and print the
+results. This option is only available when FFmpeg has been compiled with
+@code{--enable-opencl}.
+
+When FFmpeg is configured with @code{--enable-opencl}, the options for the
+global OpenCL context are set via @option{-opencl_options}. See the
+"OpenCL Options" section in the ffmpeg-utils manual for the complete list of
+supported options. Amongst others, these options include the ability to select
+a specific platform and device to run the OpenCL code on. By default, FFmpeg
+will run on the first device of the first platform. While the options for the
+global OpenCL context provide flexibility to the user in selecting the OpenCL
+device of their choice, most users would probably want to select the fastest
+OpenCL device for their system.
+
+This option assists the selection of the most efficient configuration by
+identifying the appropriate device for the user's system. The built-in
+benchmark is run on all the OpenCL devices and the performance is measured for
+each device. The devices in the results list are sorted based on their
+performance with the fastest device listed first. The user can subsequently
+invoke @command{ffmpeg} using the device deemed most appropriate via
+@option{-opencl_options} to obtain the best performance for the OpenCL
+accelerated code.
+
+Typical usage to use the fastest OpenCL device involve the following steps.
+
+Run the command:
+@example
+ffmpeg -opencl_bench
+@end example
+Note down the platform ID (@var{pidx}) and device ID (@var{didx}) of the first
+i.e. fastest device in the list.
+Select the platform and device using the command:
+@example
+ffmpeg -opencl_options platform_idx=@var{pidx}:device_idx=@var{didx} ...
+@end example
 
 @item -opencl_options options (@emph{global})
 Set OpenCL environment options. This option is only available when

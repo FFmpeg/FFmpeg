@@ -324,7 +324,7 @@ static void mc_block(Plane *p, uint8_t *dst, const uint8_t *src, int stride, int
     }
 }
 
-void ff_snow_pred_block(SnowContext *s, uint8_t *dst, uint8_t *tmp, ptrdiff_t stride, int sx, int sy, int b_w, int b_h, BlockNode *block, int plane_index, int w, int h){
+void ff_snow_pred_block(SnowContext *s, uint8_t *dst, uint8_t *tmp, ptrdiff_t stride, int sx, int sy, int b_w, int b_h, const BlockNode *block, int plane_index, int w, int h){
     if(block->type & BLOCK_INTRA){
         int x, y;
         const unsigned color  = block->color[plane_index];
@@ -434,6 +434,7 @@ av_cold int ff_snow_common_init(AVCodecContext *avctx){
 
     s->avctx= avctx;
     s->max_ref_frames=1; //just make sure it's not an invalid value in case of no initial keyframe
+    s->spatial_decomposition_count = 1;
 
     ff_me_cmp_init(&s->mecc, avctx);
     ff_hpeldsp_init(&s->hdsp, avctx->flags);
@@ -534,8 +535,8 @@ int ff_snow_common_init_after_header(AVCodecContext *avctx) {
         int h= s->avctx->height;
 
         if(plane_index){
-            w>>= s->chroma_h_shift;
-            h>>= s->chroma_v_shift;
+            w = FF_CEIL_RSHIFT(w, s->chroma_h_shift);
+            h = FF_CEIL_RSHIFT(h, s->chroma_v_shift);
         }
         s->plane[plane_index].width = w;
         s->plane[plane_index].height= h;
@@ -589,16 +590,23 @@ static int halfpel_interpol(SnowContext *s, uint8_t *halfpel[4][4], AVFrame *fra
 
     for(p=0; p < s->nb_planes; p++){
         int is_chroma= !!p;
-        int w= is_chroma ? s->avctx->width >>s->chroma_h_shift : s->avctx->width;
-        int h= is_chroma ? s->avctx->height>>s->chroma_v_shift : s->avctx->height;
+        int w= is_chroma ? FF_CEIL_RSHIFT(s->avctx->width,  s->chroma_h_shift) : s->avctx->width;
+        int h= is_chroma ? FF_CEIL_RSHIFT(s->avctx->height, s->chroma_v_shift) : s->avctx->height;
         int ls= frame->linesize[p];
         uint8_t *src= frame->data[p];
 
-        halfpel[1][p] = (uint8_t*) av_malloc(ls * (h + 2 * EDGE_WIDTH)) + EDGE_WIDTH * (1 + ls);
-        halfpel[2][p] = (uint8_t*) av_malloc(ls * (h + 2 * EDGE_WIDTH)) + EDGE_WIDTH * (1 + ls);
-        halfpel[3][p] = (uint8_t*) av_malloc(ls * (h + 2 * EDGE_WIDTH)) + EDGE_WIDTH * (1 + ls);
-        if (!halfpel[1][p] || !halfpel[2][p] || !halfpel[3][p])
+        halfpel[1][p] = av_malloc_array(ls, (h + 2 * EDGE_WIDTH));
+        halfpel[2][p] = av_malloc_array(ls, (h + 2 * EDGE_WIDTH));
+        halfpel[3][p] = av_malloc_array(ls, (h + 2 * EDGE_WIDTH));
+        if (!halfpel[1][p] || !halfpel[2][p] || !halfpel[3][p]) {
+            av_freep(&halfpel[1][p]);
+            av_freep(&halfpel[2][p]);
+            av_freep(&halfpel[3][p]);
             return AVERROR(ENOMEM);
+        }
+        halfpel[1][p] += EDGE_WIDTH * (1 + ls);
+        halfpel[2][p] += EDGE_WIDTH * (1 + ls);
+        halfpel[3][p] += EDGE_WIDTH * (1 + ls);
 
         halfpel[0][p]= src;
         for(y=0; y<h; y++){
@@ -637,8 +645,10 @@ void ff_snow_release_buffer(AVCodecContext *avctx)
     if(s->last_picture[s->max_ref_frames-1]->data[0]){
         av_frame_unref(s->last_picture[s->max_ref_frames-1]);
         for(i=0; i<9; i++)
-            if(s->halfpel_plane[s->max_ref_frames-1][1+i/3][i%3])
+            if(s->halfpel_plane[s->max_ref_frames-1][1+i/3][i%3]) {
                 av_free(s->halfpel_plane[s->max_ref_frames-1][1+i/3][i%3] - EDGE_WIDTH*(1+s->current_picture->linesize[i%3]));
+                s->halfpel_plane[s->max_ref_frames-1][1+i/3][i%3] = NULL;
+            }
     }
 }
 
@@ -703,14 +713,14 @@ av_cold void ff_snow_common_end(SnowContext *s)
     for(i=0; i<MAX_REF_FRAMES; i++){
         av_freep(&s->ref_mvs[i]);
         av_freep(&s->ref_scores[i]);
-        if(s->last_picture[i]->data[0]) {
+        if(s->last_picture[i] && s->last_picture[i]->data[0]) {
             av_assert0(s->last_picture[i]->data[0] != s->current_picture->data[0]);
         }
         av_frame_free(&s->last_picture[i]);
     }
 
-    for(plane_index=0; plane_index < s->nb_planes; plane_index++){
-        for(level=s->spatial_decomposition_count-1; level>=0; level--){
+    for(plane_index=0; plane_index < MAX_PLANES; plane_index++){
+        for(level=MAX_DECOMPOSITIONS-1; level>=0; level--){
             for(orientation=level ? 1 : 0; orientation<4; orientation++){
                 SubBand *b= &s->plane[plane_index].band[level][orientation];
 

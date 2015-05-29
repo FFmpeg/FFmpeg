@@ -27,7 +27,7 @@
 #include "rawenc.h"
 #include "riff.h"
 
-typedef struct {
+typedef struct MMFContext {
     int64_t atrpos, atsqpos, awapos;
     int64_t data_end;
     int stereo;
@@ -82,7 +82,7 @@ static int mmf_write_header(AVFormatContext *s)
 
     mmf->stereo = s->streams[0]->codec->channels > 1;
     if (mmf->stereo &&
-        s->streams[0]->codec->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
+        s->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
         av_log(s, AV_LOG_ERROR, "Yamaha SMAF stereo is experimental, "
                "add '-strict %d' if you want to use it.\n",
                FF_COMPLIANCE_EXPERIMENTAL);
@@ -286,7 +286,7 @@ static int mmf_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     left = mmf->data_end - avio_tell(s->pb);
     size = FFMIN(left, MAX_SIZE);
-    if (url_feof(s->pb) || size <= 0)
+    if (avio_feof(s->pb) || size <= 0)
         return AVERROR_EOF;
 
     ret = av_get_packet(s->pb, pkt, size);

@@ -34,7 +34,6 @@ flac_header (AVFormatContext * s, int idx)
     struct ogg_stream *os = ogg->streams + idx;
     AVStream *st = s->streams[idx];
     GetBitContext gb;
-    FLACStreaminfo si;
     int mdt;
 
     if (os->buf[os->pstart] == 0xff)
@@ -46,6 +45,8 @@ flac_header (AVFormatContext * s, int idx)
 
     if (mdt == OGG_FLAC_METADATA_TYPE_STREAMINFO) {
         uint8_t *streaminfo_start = os->buf + os->pstart + 5 + 4 + 4 + 4;
+        uint32_t samplerate;
+
         skip_bits_long(&gb, 4*8); /* "FLAC" */
         if(get_bits(&gb, 8) != 1) /* unsupported major version */
             return -1;
@@ -56,8 +57,6 @@ flac_header (AVFormatContext * s, int idx)
         if (get_bits_long(&gb, 32) != FLAC_STREAMINFO_SIZE)
             return -1;
 
-        avpriv_flac_parse_streaminfo(st->codec, &si, streaminfo_start);
-
         st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
         st->codec->codec_id = AV_CODEC_ID_FLAC;
         st->need_parsing = AVSTREAM_PARSE_HEADERS;
@@ -66,9 +65,13 @@ flac_header (AVFormatContext * s, int idx)
             return AVERROR(ENOMEM);
         memcpy(st->codec->extradata, streaminfo_start, st->codec->extradata_size);
 
-        avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
+        samplerate = AV_RB24(st->codec->extradata + 10) >> 4;
+        if (!samplerate)
+            return AVERROR_INVALIDDATA;
+
+        avpriv_set_pts_info(st, 64, 1, samplerate);
     } else if (mdt == FLAC_METADATA_TYPE_VORBIS_COMMENT) {
-        ff_vorbis_comment (s, &st->metadata, os->buf + os->pstart + 4, os->psize - 4, 1);
+        ff_vorbis_stream_comment(s, st, os->buf + os->pstart + 4, os->psize - 4);
     }
 
     return 1;

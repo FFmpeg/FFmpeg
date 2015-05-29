@@ -38,7 +38,7 @@ static int ape_tag_read_field(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
     uint8_t key[1024], *value;
-    uint32_t size, flags;
+    int64_t size, flags;
     int i, c;
 
     size = avio_rl32(pb);  /* field size */
@@ -55,20 +55,26 @@ static int ape_tag_read_field(AVFormatContext *s)
         av_log(s, AV_LOG_WARNING, "Invalid APE tag key '%s'.\n", key);
         return -1;
     }
-    if (size >= UINT_MAX)
-        return -1;
+    if (size > INT32_MAX - FF_INPUT_BUFFER_PADDING_SIZE) {
+        av_log(s, AV_LOG_ERROR, "APE tag size too large.\n");
+        return AVERROR_INVALIDDATA;
+    }
     if (flags & APE_TAG_FLAG_IS_BINARY) {
         uint8_t filename[1024];
         enum AVCodecID id;
+        int ret;
         AVStream *st = avformat_new_stream(s, NULL);
         if (!st)
             return AVERROR(ENOMEM);
 
-        size -= avio_get_str(pb, size, filename, sizeof(filename));
-        if (size <= 0) {
+        ret = avio_get_str(pb, size, filename, sizeof(filename));
+        if (ret < 0)
+            return ret;
+        if (size <= ret) {
             av_log(s, AV_LOG_WARNING, "Skipping binary tag '%s'.\n", key);
             return 0;
         }
+        size -= ret;
 
         av_dict_set(&st->metadata, key, filename, 0);
 

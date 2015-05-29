@@ -46,8 +46,20 @@
 #define WORD_s1 0x14,0x15,0x16,0x17
 #define WORD_s2 0x18,0x19,0x1a,0x1b
 #define WORD_s3 0x1c,0x1d,0x1e,0x1f
-
 #define vcprm(a,b,c,d) (const vector unsigned char){WORD_ ## a, WORD_ ## b, WORD_ ## c, WORD_ ## d}
+
+#define SWP_W2S0 0x02,0x03,0x00,0x01
+#define SWP_W2S1 0x06,0x07,0x04,0x05
+#define SWP_W2S2 0x0a,0x0b,0x08,0x09
+#define SWP_W2S3 0x0e,0x0f,0x0c,0x0d
+#define SWP_W2Ss0 0x12,0x13,0x10,0x11
+#define SWP_W2Ss1 0x16,0x17,0x14,0x15
+#define SWP_W2Ss2 0x1a,0x1b,0x18,0x19
+#define SWP_W2Ss3 0x1e,0x1f,0x1c,0x1d
+#define vcswapi2s(a,b,c,d) (const vector unsigned char){SWP_W2S ## a, SWP_W2S ## b, SWP_W2S ## c, SWP_W2S ## d}
+
+#define vcswapc() \
+  (const vector unsigned char){0x0f,0x0e,0x0d,0x0c,0x0b,0x0a,0x09,0x08,0x07,0x06,0x05,0x04,0x03,0x02,0x01,0x00}
 
 
 // Transpose 8x8 matrix of 16-bit elements (in-place)
@@ -85,29 +97,68 @@ do { \
 } while (0)
 
 
+#if HAVE_BIGENDIAN
+#define VEC_LD(offset,b)                                   \
+    vec_perm(vec_ld(offset, b), vec_ld((offset)+15, b), vec_lvsl(offset, b))
+#else
+#define VEC_LD(offset,b)                                   \
+    vec_vsx_ld(offset, b)
+#endif
+
 /** @brief loads unaligned vector @a *src with offset @a offset
     and returns it */
-static inline vector unsigned char unaligned_load(int offset, uint8_t *src)
+#if HAVE_BIGENDIAN
+static inline vector unsigned char unaligned_load(int offset, const uint8_t *src)
 {
     register vector unsigned char first = vec_ld(offset, src);
     register vector unsigned char second = vec_ld(offset+15, src);
     register vector unsigned char mask = vec_lvsl(offset, src);
     return vec_perm(first, second, mask);
 }
-
-/**
- * loads vector known misalignment
- * @param perm_vec the align permute vector to combine the two loads from lvsl
- */
-static inline vec_u8 load_with_perm_vec(int offset, uint8_t *src, vec_u8 perm_vec)
+static inline vec_u8 load_with_perm_vec(int offset, const uint8_t *src, vec_u8 perm_vec)
 {
     vec_u8 a = vec_ld(offset, src);
     vec_u8 b = vec_ld(offset+15, src);
     return vec_perm(a, b, perm_vec);
 }
+#else
+#define unaligned_load(a,b) VEC_LD(a,b)
+#define load_with_perm_vec(a,b,c) VEC_LD(a,b)
+#endif
 
-#define vec_unaligned_load(b)                                   \
-    vec_perm(vec_ld(0, b), vec_ld(15, b), vec_lvsl(0, b));
+
+/**
+ * loads vector known misalignment
+ * @param perm_vec the align permute vector to combine the two loads from lvsl
+ */
+
+#define vec_unaligned_load(b)  VEC_LD(0, b)
+
+#if HAVE_BIGENDIAN
+#define VEC_MERGEH(a, b) vec_mergeh(a, b)
+#define VEC_MERGEL(a, b) vec_mergel(a, b)
+#else
+#define VEC_MERGEH(a, b) vec_mergeh(b, a)
+#define VEC_MERGEL(a, b) vec_mergel(b, a)
+#endif
+
+#if HAVE_BIGENDIAN
+#define VEC_ST(a,b,c) vec_st(a,b,c)
+#else
+#define VEC_ST(a,b,c) vec_vsx_st(a,b,c)
+#endif
+
+#if HAVE_BIGENDIAN
+#define VEC_SPLAT16(a,b) vec_splat((vec_s16)(a), b)
+#else
+#define VEC_SPLAT16(a,b) vec_splat((vec_s16)(vec_perm(a, a, vcswapi2s(0,1,2,3))), b)
+#endif
+
+#if HAVE_BIGENDIAN
+#define VEC_SLD16(a,b,c) vec_sld(a, b, c)
+#else
+#define VEC_SLD16(a,b,c) vec_sld(b, a, c)
+#endif
 
 #endif /* HAVE_ALTIVEC */
 

@@ -1,6 +1,6 @@
 /*
  * Cinepak Video Decoder
- * Copyright (C) 2003 the ffmpeg project
+ * Copyright (c) 2003 The FFmpeg Project
  *
  * This file is part of FFmpeg.
  *
@@ -47,7 +47,7 @@ typedef uint8_t cvid_codebook[12];
 
 #define MAX_STRIPS      32
 
-typedef struct {
+typedef struct cvid_strip {
     uint16_t          id;
     uint16_t          x1, y1;
     uint16_t          x2, y2;
@@ -135,7 +135,7 @@ static int cinepak_decode_vectors (CinepakContext *s, cvid_strip *strip,
     const uint8_t   *eod = (data + size);
     uint32_t         flag, mask;
     uint8_t         *cb0, *cb1, *cb2, *cb3;
-    unsigned int     x, y;
+    int             x, y;
     char            *ip0, *ip1, *ip2, *ip3;
 
     flag = 0;

@@ -53,19 +53,7 @@
 #include "ac3dec.h"
 
 
-/**
- * Table for center mix levels
- * reference: Section 5.4.2.4 cmixlev
- */
-static const uint8_t center_levels[4] = { 4, 5, 6, 5 };
-
-/**
- * Table for surround mix levels
- * reference: Section 5.4.2.5 surmixlev
- */
-static const uint8_t surround_levels[4] = { 4, 6, 7, 6 };
-
-int end_freq_inv_tab[8] =
+static const int end_freq_inv_tab[8] =
 {
     50529027, 44278013, 39403370, 32292987, 27356480, 23729101, 20951060, 18755316
 };
@@ -81,40 +69,69 @@ static void scale_coefs (
     int temp, temp1, temp2, temp3, temp4, temp5, temp6, temp7;
 
     mul = (dynrng & 0x1f) + 0x20;
-    shift = 4 - ((dynrng << 24) >> 29);
-    round = 1 << (shift-1);
-    for (i=0; i<len; i+=8) {
+    shift = 4 - ((dynrng << 23) >> 28);
+    if (shift > 0 ) {
+      round = 1 << (shift-1);
+      for (i=0; i<len; i+=8) {
 
-        temp = src[i] * mul;
-        temp1 = src[i+1] * mul;
-        temp = temp + round;
-        temp2 = src[i+2] * mul;
+          temp = src[i] * mul;
+          temp1 = src[i+1] * mul;
+          temp = temp + round;
+          temp2 = src[i+2] * mul;
 
-        temp1 = temp1 + round;
-        dst[i] = temp >> shift;
-        temp3 = src[i+3] * mul;
-        temp2 = temp2 + round;
+          temp1 = temp1 + round;
+          dst[i] = temp >> shift;
+          temp3 = src[i+3] * mul;
+          temp2 = temp2 + round;
 
-        dst[i+1] = temp1 >> shift;
-        temp4 = src[i + 4] * mul;
-        temp3 = temp3 + round;
-        dst[i+2] = temp2 >> shift;
+          dst[i+1] = temp1 >> shift;
+          temp4 = src[i + 4] * mul;
+          temp3 = temp3 + round;
+          dst[i+2] = temp2 >> shift;
 
-        temp5 = src[i+5] * mul;
-        temp4 = temp4 + round;
-        dst[i+3] = temp3 >> shift;
-        temp6 = src[i+6] * mul;
+          temp5 = src[i+5] * mul;
+          temp4 = temp4 + round;
+          dst[i+3] = temp3 >> shift;
+          temp6 = src[i+6] * mul;
 
-        dst[i+4] = temp4 >> shift;
-        temp5 = temp5 + round;
-        temp7 = src[i+7] * mul;
-        temp6 = temp6 + round;
+          dst[i+4] = temp4 >> shift;
+          temp5 = temp5 + round;
+          temp7 = src[i+7] * mul;
+          temp6 = temp6 + round;
 
-        dst[i+5] = temp5 >> shift;
-        temp7 = temp7 + round;
-        dst[i+6] = temp6 >> shift;
-        dst[i+7] = temp7 >> shift;
+          dst[i+5] = temp5 >> shift;
+          temp7 = temp7 + round;
+          dst[i+6] = temp6 >> shift;
+          dst[i+7] = temp7 >> shift;
 
+      }
+    } else {
+      shift = -shift;
+      for (i=0; i<len; i+=8) {
+
+          temp = src[i] * mul;
+          temp1 = src[i+1] * mul;
+          temp2 = src[i+2] * mul;
+
+          dst[i] = temp << shift;
+          temp3 = src[i+3] * mul;
+
+          dst[i+1] = temp1 << shift;
+          temp4 = src[i + 4] * mul;
+          dst[i+2] = temp2 << shift;
+
+          temp5 = src[i+5] * mul;
+          dst[i+3] = temp3 << shift;
+          temp6 = src[i+6] * mul;
+
+          dst[i+4] = temp4 << shift;
+          temp7 = src[i+7] * mul;
+
+          dst[i+5] = temp5 << shift;
+          dst[i+6] = temp6 << shift;
+          dst[i+7] = temp7 << shift;
+
+      }
     }
 }
 
@@ -147,9 +164,12 @@ static void ac3_downmix_c_fixed16(int16_t **samples, int16_t (*matrix)[2],
     }
 }
 
+#include "eac3dec.c"
 #include "ac3dec.c"
 
 static const AVOption options[] = {
+    { "drc_scale", "percentage of dynamic range compression to apply", OFFSET(drc_scale), AV_OPT_TYPE_FLOAT, {.dbl = 1.0}, 0.0, 6.0, PAR },
+    { "heavy_compr", "heavy dynamic range compression enabled", OFFSET(heavy_compression), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, 1, PAR },
     { NULL},
 };
 

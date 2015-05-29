@@ -89,9 +89,9 @@ static int msnwc_tcp_read_header(AVFormatContext *ctx)
 
     /* Some files start with "connected\r\n\r\n".
      * So skip until we find the first byte of struct size */
-    while(avio_r8(pb) != HEADER_SIZE && !url_feof(pb));
+    while(avio_r8(pb) != HEADER_SIZE && !avio_feof(pb));
 
-    if(url_feof(pb)) {
+    if(avio_feof(pb)) {
         av_log(ctx, AV_LOG_ERROR, "Could not find valid start.\n");
         return -1;
     }

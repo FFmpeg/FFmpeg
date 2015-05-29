@@ -197,7 +197,7 @@ static int pix_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         bytes_pp = 4;
         break;
     case 18:
-        avctx->pix_fmt = AV_PIX_FMT_Y400A;
+        avctx->pix_fmt = AV_PIX_FMT_YA8;
         bytes_pp = 2;
         break;
     default:

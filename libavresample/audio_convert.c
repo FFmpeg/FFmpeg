@@ -288,8 +288,8 @@ AudioConvert *ff_audio_convert_alloc(AVAudioResampleContext *avr,
         return ac;
     }
 
-    in_planar  = av_sample_fmt_is_planar(in_fmt);
-    out_planar = av_sample_fmt_is_planar(out_fmt);
+    in_planar  = ff_sample_fmt_is_planar(in_fmt, channels);
+    out_planar = ff_sample_fmt_is_planar(out_fmt, channels);
 
     if (in_planar == out_planar) {
         ac->func_type = CONV_FUNC_TYPE_FLAT;
@@ -319,7 +319,7 @@ int ff_audio_convert(AudioConvert *ac, AudioData *out, AudioData *in)
 
     if (ac->dc) {
         /* dithered conversion */
-        av_dlog(ac->avr, "%d samples - audio_convert: %s to %s (dithered)\n",
+        av_log(ac->avr, AV_LOG_TRACE, "%d samples - audio_convert: %s to %s (dithered)\n",
                 len, av_get_sample_fmt_name(ac->in_fmt),
                 av_get_sample_fmt_name(ac->out_fmt));
 
@@ -337,7 +337,7 @@ int ff_audio_convert(AudioConvert *ac, AudioData *out, AudioData *in)
             use_generic = 0;
         }
     }
-    av_dlog(ac->avr, "%d samples - audio_convert: %s to %s (%s)\n", len,
+    av_log(ac->avr, AV_LOG_TRACE, "%d samples - audio_convert: %s to %s (%s)\n", len,
             av_get_sample_fmt_name(ac->in_fmt),
             av_get_sample_fmt_name(ac->out_fmt),
             use_generic ? ac->func_descr_generic : ac->func_descr);
@@ -345,13 +345,13 @@ int ff_audio_convert(AudioConvert *ac, AudioData *out, AudioData *in)
     if (ac->apply_map) {
         ChannelMapInfo *map = &ac->avr->ch_map_info;
 
-        if (!av_sample_fmt_is_planar(ac->out_fmt)) {
+        if (!ff_sample_fmt_is_planar(ac->out_fmt, ac->channels)) {
             av_log(ac->avr, AV_LOG_ERROR, "cannot remap packed format during conversion\n");
             return AVERROR(EINVAL);
         }
 
         if (map->do_remap) {
-            if (av_sample_fmt_is_planar(ac->in_fmt)) {
+            if (ff_sample_fmt_is_planar(ac->in_fmt, ac->channels)) {
                 conv_func_flat *convert = use_generic ? ac->conv_flat_generic :
                                                         ac->conv_flat;
 

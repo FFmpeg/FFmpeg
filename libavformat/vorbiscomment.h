@@ -34,7 +34,7 @@
  * For no string, set to an empty string.
  * @return The length in bytes.
  */
-int ff_vorbiscomment_length(AVDictionary *m, const char *vendor_string);
+int64_t ff_vorbiscomment_length(AVDictionary *m, const char *vendor_string);
 
 /**
  * Write a VorbisComment into a buffer. The buffer, p, must have enough

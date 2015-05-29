@@ -43,6 +43,7 @@ typedef struct GIFDemuxContext {
      * invalid and set to value of default_delay.
      */
     int min_delay;
+    int max_delay;
     int default_delay;
 
     /**
@@ -84,7 +85,7 @@ static int resync(AVIOContext *pb)
         int b = avio_r8(pb);
         if (b != gif87a_sig[i] && b != gif89a_sig[i])
             i = -(b != 'G');
-        if (url_feof(pb))
+        if (avio_feof(pb))
             return AVERROR_EOF;
     }
     return 0;
@@ -159,6 +160,7 @@ static int gif_read_ext(AVFormatContext *s)
 
         if (gdc->delay < gdc->min_delay)
             gdc->delay = gdc->default_delay;
+        gdc->delay = FFMIN(gdc->delay, gdc->max_delay);
 
         /* skip the rest of the Graphic Control Extension block */
         if ((ret = avio_skip(pb, sb_size - 3)) < 0 )
@@ -234,7 +236,7 @@ parse_keyframe:
         ret = AVERROR_EOF;
     }
 
-    while (GIF_TRAILER != (block_label = avio_r8(pb)) && !url_feof(pb)) {
+    while (GIF_TRAILER != (block_label = avio_r8(pb)) && !avio_feof(pb)) {
         if (block_label == GIF_EXTENSION_INTRODUCER) {
             if ((ret = gif_read_ext (s)) < 0 )
                 goto resync;
@@ -299,7 +301,7 @@ resync:
     if ((ret >= 0 && !frame_parsed) || ret == AVERROR_EOF) {
         /* This might happen when there is no image block
          * between extension blocks and GIF_TRAILER or EOF */
-        if (!gdc->ignore_loop && (block_label == GIF_TRAILER || url_feof(pb))
+        if (!gdc->ignore_loop && (block_label == GIF_TRAILER || avio_feof(pb))
             && (gdc->total_iter < 0 || ++gdc->iter_count < gdc->total_iter))
             return avio_seek(pb, 0, SEEK_SET);
         return AVERROR_EOF;
@@ -309,6 +311,7 @@ resync:
 
 static const AVOption options[] = {
     { "min_delay"    , "minimum valid delay between frames (in hundredths of second)", offsetof(GIFDemuxContext, min_delay)    , AV_OPT_TYPE_INT, {.i64 = GIF_MIN_DELAY}    , 0, 100 * 60, AV_OPT_FLAG_DECODING_PARAM },
+    { "max_gif_delay", "maximum valid delay between frames (in hundredths of seconds)", offsetof(GIFDemuxContext, max_delay)   , AV_OPT_TYPE_INT, {.i64 = 65535}            , 0, 65535   , AV_OPT_FLAG_DECODING_PARAM },
     { "default_delay", "default delay between frames (in hundredths of second)"      , offsetof(GIFDemuxContext, default_delay), AV_OPT_TYPE_INT, {.i64 = GIF_DEFAULT_DELAY}, 0, 100 * 60, AV_OPT_FLAG_DECODING_PARAM },
     { "ignore_loop"  , "ignore loop setting (netscape extension)"                    , offsetof(GIFDemuxContext, ignore_loop)  , AV_OPT_TYPE_INT, {.i64 = 1}                , 0,        1, AV_OPT_FLAG_DECODING_PARAM },
     { NULL },

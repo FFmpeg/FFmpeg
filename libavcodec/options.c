@@ -27,6 +27,7 @@
 #include "avcodec.h"
 #include "internal.h"
 #include "libavutil/avassert.h"
+#include "libavutil/internal.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include <float.h>              /* FLT_MIN, FLT_MAX */
@@ -94,8 +95,10 @@ int avcodec_get_context_defaults3(AVCodecContext *s, const AVCodec *codec)
     s->av_class = &av_codec_context_class;
 
     s->codec_type = codec ? codec->type : AVMEDIA_TYPE_UNKNOWN;
-    if (codec)
+    if (codec) {
+        s->codec = codec;
         s->codec_id = codec->id;
+    }
 
     if(s->codec_type == AVMEDIA_TYPE_AUDIO)
         flags= AV_OPT_FLAG_AUDIO_PARAM;
@@ -106,6 +109,8 @@ int avcodec_get_context_defaults3(AVCodecContext *s, const AVCodec *codec)
     av_opt_set_defaults2(s, flags, flags);
 
     s->time_base           = (AVRational){0,1};
+    s->framerate           = (AVRational){ 0, 1 };
+    s->pkt_timebase        = (AVRational){ 0, 1 };
     s->get_buffer2         = avcodec_default_get_buffer2;
     s->get_format          = avcodec_default_get_format;
     s->execute             = avcodec_default_execute;
@@ -113,7 +118,6 @@ int avcodec_get_context_defaults3(AVCodecContext *s, const AVCodec *codec)
     s->sample_aspect_ratio = (AVRational){0,1};
     s->pix_fmt             = AV_PIX_FMT_NONE;
     s->sample_fmt          = AV_SAMPLE_FMT_NONE;
-    s->timecode_frame_start = -1;
 
     s->reordered_opaque    = AV_NOPTS_VALUE;
     if(codec && codec->priv_data_size){
@@ -144,7 +148,8 @@ AVCodecContext *avcodec_alloc_context3(const AVCodec *codec)
 {
     AVCodecContext *avctx= av_malloc(sizeof(AVCodecContext));
 
-    if(avctx==NULL) return NULL;
+    if (!avctx)
+        return NULL;
 
     if(avcodec_get_context_defaults3(avctx, codec) < 0){
         av_free(avctx);
@@ -165,6 +170,9 @@ void avcodec_free_context(AVCodecContext **pavctx)
 
     av_freep(&avctx->extradata);
     av_freep(&avctx->subtitle_header);
+    av_freep(&avctx->intra_matrix);
+    av_freep(&avctx->inter_matrix);
+    av_freep(&avctx->rc_override);
 
     av_freep(pavctx);
 }
@@ -182,33 +190,35 @@ int avcodec_copy_context(AVCodecContext *dest, const AVCodecContext *src)
     }
 
     av_opt_free(dest);
+    av_freep(&dest->rc_override);
+    av_freep(&dest->intra_matrix);
+    av_freep(&dest->inter_matrix);
+    av_freep(&dest->extradata);
+    av_freep(&dest->subtitle_header);
 
     memcpy(dest, src, sizeof(*dest));
+    av_opt_copy(dest, src);
 
     dest->priv_data       = orig_priv_data;
+    dest->codec           = orig_codec;
 
-    if (orig_priv_data)
+    if (orig_priv_data && src->codec && src->codec->priv_class &&
+        dest->codec && dest->codec->priv_class)
         av_opt_copy(orig_priv_data, src->priv_data);
 
-    dest->codec           = orig_codec;
 
     /* set values specific to opened codecs back to their default state */
     dest->slice_offset    = NULL;
     dest->hwaccel         = NULL;
     dest->internal        = NULL;
+    dest->coded_frame     = NULL;
 
     /* reallocate values that should be allocated separately */
-    dest->rc_eq           = NULL;
     dest->extradata       = NULL;
     dest->intra_matrix    = NULL;
     dest->inter_matrix    = NULL;
     dest->rc_override     = NULL;
     dest->subtitle_header = NULL;
-    if (src->rc_eq) {
-        dest->rc_eq = av_strdup(src->rc_eq);
-        if (!dest->rc_eq)
-            return AVERROR(ENOMEM);
-    }
 
 #define alloc_and_copy_or_fail(obj, size, pad) \
     if (src->obj && size > 0) { \
@@ -221,6 +231,7 @@ int avcodec_copy_context(AVCodecContext *dest, const AVCodecContext *src)
     }
     alloc_and_copy_or_fail(extradata,    src->extradata_size,
                            FF_INPUT_BUFFER_PADDING_SIZE);
+    dest->extradata_size  = src->extradata_size;
     alloc_and_copy_or_fail(intra_matrix, 64 * sizeof(int16_t), 0);
     alloc_and_copy_or_fail(inter_matrix, 64 * sizeof(int16_t), 0);
     alloc_and_copy_or_fail(rc_override,  src->rc_override_count * sizeof(*src->rc_override), 0);
@@ -235,7 +246,10 @@ fail:
     av_freep(&dest->intra_matrix);
     av_freep(&dest->inter_matrix);
     av_freep(&dest->extradata);
-    av_freep(&dest->rc_eq);
+    av_freep(&dest->subtitle_header);
+    dest->subtitle_header_size = 0;
+    dest->extradata_size = 0;
+    av_opt_free(dest);
     return AVERROR(ENOMEM);
 }
 
@@ -295,3 +309,174 @@ const AVClass *avcodec_get_subtitle_rect_class(void)
 {
     return &av_subtitle_rect_class;
 }
+
+#ifdef TEST
+static int dummy_init(AVCodecContext *ctx)
+{
+    //TODO: this code should set every possible pointer that could be set by codec and is not an option;
+    ctx->extradata_size = 8;
+    ctx->extradata = av_malloc(ctx->extradata_size);
+    ctx->coded_frame = av_frame_alloc();
+    return 0;
+}
+
+static int dummy_close(AVCodecContext *ctx)
+{
+    av_freep(&ctx->extradata);
+    ctx->extradata_size = 0;
+    av_frame_free(&ctx->coded_frame);
+    return 0;
+}
+
+static int dummy_encode(AVCodecContext *ctx, AVPacket *pkt, const AVFrame *frame, int *got_packet)
+{
+    return AVERROR(ENOSYS);
+}
+
+typedef struct Dummy12Context {
+    AVClass  *av_class;
+    int      num;
+    char*    str;
+} Dummy12Context;
+
+typedef struct Dummy3Context {
+    void     *fake_av_class;
+    int      num;
+    char*    str;
+} Dummy3Context;
+
+#define OFFSET(x) offsetof(Dummy12Context, x)
+#define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
+static const AVOption dummy_options[] = {
+    { "str", "set str", OFFSET(str), AV_OPT_TYPE_STRING, { .str = "i'm src default value" }, 0, 0, VE},
+    { "num", "set num", OFFSET(num), AV_OPT_TYPE_INT,    { .i64 = 1500100900 },    0, INT_MAX, VE},
+    { NULL },
+};
+
+static const AVClass dummy_v1_class = {
+    .class_name = "dummy_v1_class",
+    .item_name  = av_default_item_name,
+    .option     = dummy_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
+static const AVClass dummy_v2_class = {
+    .class_name = "dummy_v2_class",
+    .item_name  = av_default_item_name,
+    .option     = dummy_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
+/* codec with options */
+AVCodec dummy_v1_encoder = {
+    .name             = "dummy_v1_codec",
+    .type             = AVMEDIA_TYPE_VIDEO,
+    .id               = AV_CODEC_ID_NONE - 1,
+    .encode2          = dummy_encode,
+    .init             = dummy_init,
+    .close            = dummy_close,
+    .priv_class       = &dummy_v1_class,
+    .priv_data_size   = sizeof(Dummy12Context),
+};
+
+/* codec with options, different class */
+AVCodec dummy_v2_encoder = {
+    .name             = "dummy_v2_codec",
+    .type             = AVMEDIA_TYPE_VIDEO,
+    .id               = AV_CODEC_ID_NONE - 2,
+    .encode2          = dummy_encode,
+    .init             = dummy_init,
+    .close            = dummy_close,
+    .priv_class       = &dummy_v2_class,
+    .priv_data_size   = sizeof(Dummy12Context),
+};
+
+/* codec with priv data, but no class */
+AVCodec dummy_v3_encoder = {
+    .name             = "dummy_v3_codec",
+    .type             = AVMEDIA_TYPE_VIDEO,
+    .id               = AV_CODEC_ID_NONE - 3,
+    .encode2          = dummy_encode,
+    .init             = dummy_init,
+    .close            = dummy_close,
+    .priv_data_size   = sizeof(Dummy3Context),
+};
+
+/* codec without priv data */
+AVCodec dummy_v4_encoder = {
+    .name             = "dummy_v4_codec",
+    .type             = AVMEDIA_TYPE_VIDEO,
+    .id               = AV_CODEC_ID_NONE - 4,
+    .encode2          = dummy_encode,
+    .init             = dummy_init,
+    .close            = dummy_close,
+};
+
+static void test_copy_print_codec(const AVCodecContext *ctx)
+{
+    printf("%-14s: %dx%d prv: %s",
+           ctx->codec ? ctx->codec->name : "NULL",
+           ctx->width, ctx->height,
+           ctx->priv_data ? "set" : "null");
+    if (ctx->codec && ctx->codec->priv_class && ctx->codec->priv_data_size) {
+        int64_t i64;
+        char *str = NULL;
+        av_opt_get_int(ctx->priv_data, "num", 0, &i64);
+        av_opt_get(ctx->priv_data, "str", 0, (uint8_t**)&str);
+        printf(" opts: %"PRId64" %s", i64, str);
+        av_free(str);
+    }
+    printf("\n");
+}
+
+static void test_copy(const AVCodec *c1, const AVCodec *c2)
+{
+    AVCodecContext *ctx1, *ctx2;
+    printf("%s -> %s\nclosed:\n", c1 ? c1->name : "NULL", c2 ? c2->name : "NULL");
+    ctx1 = avcodec_alloc_context3(c1);
+    ctx2 = avcodec_alloc_context3(c2);
+    ctx1->width = ctx1->height = 128;
+    if (ctx2->codec && ctx2->codec->priv_class && ctx2->codec->priv_data_size) {
+        av_opt_set(ctx2->priv_data, "num", "667", 0);
+        av_opt_set(ctx2->priv_data, "str", "i'm dest value before copy", 0);
+    }
+    avcodec_copy_context(ctx2, ctx1);
+    test_copy_print_codec(ctx1);
+    test_copy_print_codec(ctx2);
+    if (ctx1->codec) {
+        printf("opened:\n");
+        avcodec_open2(ctx1, ctx1->codec, NULL);
+        if (ctx2->codec && ctx2->codec->priv_class && ctx2->codec->priv_data_size) {
+            av_opt_set(ctx2->priv_data, "num", "667", 0);
+            av_opt_set(ctx2->priv_data, "str", "i'm dest value before copy", 0);
+        }
+        avcodec_copy_context(ctx2, ctx1);
+        test_copy_print_codec(ctx1);
+        test_copy_print_codec(ctx2);
+        avcodec_close(ctx1);
+    }
+    avcodec_free_context(&ctx1);
+    avcodec_free_context(&ctx2);
+}
+
+int main(void)
+{
+    AVCodec *dummy_codec[] = {
+        &dummy_v1_encoder,
+        &dummy_v2_encoder,
+        &dummy_v3_encoder,
+        &dummy_v4_encoder,
+        NULL,
+    };
+    int i, j;
+
+    for (i = 0; dummy_codec[i]; i++)
+        avcodec_register(dummy_codec[i]);
+
+    printf("testing avcodec_copy_context()\n");
+    for (i = 0; i < FF_ARRAY_ELEMS(dummy_codec); i++)
+        for (j = 0; j < FF_ARRAY_ELEMS(dummy_codec); j++)
+            test_copy(dummy_codec[i], dummy_codec[j]);
+    return 0;
+}
+#endif
