@@ -47,8 +47,10 @@ static int h264_probe(AVProbeData *p)
                 return 0;
             if (ref_zero[type] == -1 && !ref_idc)
                 return 0;
-            if (ref_zero[type] == 2)
-                res++;
+            if (ref_zero[type] == 2) {
+                if (!(code == 0x100 && !p->buf[i + 1] && !p->buf[i + 2]))
+                    res++;
+            }
 
             switch (type) {
             case 1:
