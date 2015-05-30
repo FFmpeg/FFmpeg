@@ -21,6 +21,7 @@
 
 #include "avformat.h"
 #include "rawdec.h"
+#include "libavcodec/internal.h"
 
 static int h264_probe(AVProbeData *p)
 {
@@ -70,6 +71,7 @@ static int h264_probe(AVProbeData *p)
             }
         }
     }
+    ff_tlog(NULL, "sps:%d pps:%d idr:%d sli:%d res:%d\n", sps, pps, idr, sli, res);
 
     if (sps && pps && (idr || sli > 3) && res < (sps + pps + idr))
         return AVPROBE_SCORE_EXTENSION + 1;  // 1 more than .mpg
