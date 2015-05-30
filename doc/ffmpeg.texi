@@ -1221,6 +1221,9 @@ Discard all frames excepts keyframes.
 Discard all frames.
 @end table
 
+@item -xerror (@emph{global})
+Stop and exit on error
+
 @end table
 
 As a special exception, you can use a bitmap subtitle stream as input: it
