@@ -206,9 +206,9 @@ static int mov_read_covr(MOVContext *c, AVIOContext *pb, int type, int len)
 static int mov_metadata_loci(MOVContext *c, AVIOContext *pb, unsigned len)
 {
     char language[4] = { 0 };
-    char buf[100];
+    char buf[200], place[100];
     uint16_t langcode = 0;
-    double longitude, latitude;
+    double longitude, latitude, altitude;
     const char *key = "location";
 
     if (len < 4 + 2 + 1 + 1 + 4 + 4 + 4) {
@@ -221,7 +221,7 @@ static int mov_metadata_loci(MOVContext *c, AVIOContext *pb, unsigned len)
     ff_mov_lang_to_iso639(langcode, language);
     len -= 6;
 
-    len -= avio_get_str(pb, len, buf, sizeof(buf)); // place name
+    len -= avio_get_str(pb, len, place, sizeof(place));
     if (len < 1) {
         av_log(c->fc, AV_LOG_ERROR, "place name too long\n");
         return AVERROR_INVALIDDATA;
@@ -235,9 +235,14 @@ static int mov_metadata_loci(MOVContext *c, AVIOContext *pb, unsigned len)
     }
     longitude = ((int32_t) avio_rb32(pb)) / (float) (1 << 16);
     latitude  = ((int32_t) avio_rb32(pb)) / (float) (1 << 16);
+    altitude  = ((int32_t) avio_rb32(pb)) / (float) (1 << 16);
 
     // Try to output in the same format as the ?xyz field
-    snprintf(buf, sizeof(buf), "%+08.4f%+09.4f/", latitude, longitude);
+    snprintf(buf, sizeof(buf), "%+08.4f%+09.4f",  latitude, longitude);
+    if (altitude)
+        av_strlcatf(buf, sizeof(buf), "%+f", altitude);
+    av_strlcatf(buf, sizeof(buf), "/%s", place);
+
     if (*language && strcmp(language, "und")) {
         char key2[16];
         snprintf(key2, sizeof(key2), "%s-%s", key, language);
@@ -2234,12 +2239,6 @@ static int mov_read_stts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         sample_count=avio_rb32(pb);
         sample_duration = avio_rb32(pb);
 
-        /* sample_duration < 0 is invalid based on the spec */
-        if (sample_duration < 0) {
-            av_log(c->fc, AV_LOG_ERROR, "Invalid SampleDelta %d in STTS, at %d st:%d\n",
-                   sample_duration, i, c->fc->nb_streams-1);
-            sample_duration = 1;
-        }
         if (sample_count < 0) {
             av_log(c->fc, AV_LOG_ERROR, "Invalid sample_count=%d\n", sample_count);
             return AVERROR_INVALIDDATA;
@@ -2439,10 +2438,13 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
         unsigned int distance = 0;
         unsigned int rap_group_index = 0;
         unsigned int rap_group_sample = 0;
+        int64_t last_dts = 0;
+        int64_t dts_correction = 0;
         int rap_group_present = sc->rap_group_count && sc->rap_group;
         int key_off = (sc->keyframe_count && sc->keyframes[0] > 0) || (sc->stps_count && sc->stps_data[0] > 0);
 
         current_dts -= sc->dts_shift;
+        last_dts     = current_dts;
 
         if (!sc->sample_count || st->nb_index_entries)
             return;
@@ -2522,7 +2524,27 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
 
                 current_offset += sample_size;
                 stream_size += sample_size;
+
+                /* A negative sample duration is invalid based on the spec,
+                 * but some samples need it to correct the DTS. */
+                if (sc->stts_data[stts_index].duration < 0) {
+                    av_log(mov->fc, AV_LOG_WARNING,
+                           "Invalid SampleDelta %d in STTS, at %d st:%d\n",
+                           sc->stts_data[stts_index].duration, stts_index,
+                           st->index);
+                    dts_correction += sc->stts_data[stts_index].duration - 1;
+                    sc->stts_data[stts_index].duration = 1;
+                }
                 current_dts += sc->stts_data[stts_index].duration;
+                if (!dts_correction || current_dts + dts_correction > last_dts) {
+                    current_dts += dts_correction;
+                    dts_correction = 0;
+                } else {
+                    /* Avoid creating non-monotonous DTS */
+                    dts_correction += current_dts - last_dts - 1;
+                    current_dts = last_dts + 1;
+                }
+                last_dts = current_dts;
                 distance++;
                 stts_sample++;
                 current_sample++;

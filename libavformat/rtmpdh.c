@@ -81,13 +81,15 @@
             ret = 1;                                \
     } while (0)
 #define bn_modexp(bn, y, q, p)      mpz_powm(bn, y, q, p)
-#define bn_random(bn, num_bits)                     \
-    do {                                            \
-        gmp_randstate_t rs;                         \
-        gmp_randinit_mt(rs);                        \
-        gmp_randseed_ui(rs, av_get_random_seed());  \
-        mpz_urandomb(bn, rs, num_bits);             \
-        gmp_randclear(rs);                          \
+#define bn_random(bn, num_bits)                       \
+    do {                                              \
+        int bits = num_bits;                          \
+        mpz_set_ui(bn, 0);                            \
+        for (bits = num_bits; bits > 0; bits -= 32) { \
+            mpz_mul_2exp(bn, bn, 32);                 \
+            mpz_add_ui(bn, bn, av_get_random_seed()); \
+        }                                             \
+        mpz_fdiv_r_2exp(bn, bn, num_bits);            \
     } while (0)
 #elif CONFIG_GCRYPT
 #define bn_new(bn)                  bn = gcry_mpi_new(1)
