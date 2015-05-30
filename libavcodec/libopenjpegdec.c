@@ -356,6 +356,15 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
         goto done;
     }
 
+    for (i = 0; i < image->numcomps; i++) {
+        if (!image->comps[i].data) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "Image component %d contains no data.\n", i);
+            ret = AVERROR_INVALIDDATA;
+            goto done;
+        }
+    }
+
     desc       = av_pix_fmt_desc_get(avctx->pix_fmt);
     pixel_size = desc->comp[0].step_minus1 + 1;
     ispacked   = libopenjpeg_ispacked(avctx->pix_fmt);
