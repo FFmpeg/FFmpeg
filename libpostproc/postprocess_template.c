@@ -3383,7 +3383,7 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
         }
 
         /* We always get a completely black picture first. */
-        maxClipped= (uint64_t)(sum * c.ppMode.maxClippedThreshold);
+        maxClipped= av_rescale(sum, c.ppMode.maxClippedThreshold.num, c.ppMode.maxClippedThreshold.den);
 
         clipped= sum;
         for(black=255; black>0; black--){
