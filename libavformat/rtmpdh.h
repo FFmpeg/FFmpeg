@@ -38,11 +38,11 @@ typedef gcry_mpi_t FFBigNum;
 #endif
 
 typedef struct FF_DH {
-  FFBigNum p;
-  FFBigNum g;
-  FFBigNum pub_key;
-  FFBigNum priv_key;
-  long length;
+    FFBigNum p;
+    FFBigNum g;
+    FFBigNum pub_key;
+    FFBigNum priv_key;
+    long length;
 } FF_DH;
 
 #elif CONFIG_OPENSSL
