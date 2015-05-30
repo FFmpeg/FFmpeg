@@ -220,6 +220,7 @@ External library support:
   --enable-libxvid         enable Xvid encoding via xvidcore,
                            native MPEG-4/Xvid encoder exists [no]
   --enable-mmal            enable decoding via MMAL [no]
+  --enable-nvenc           enable encoding via NVENC [no]
   --enable-openssl         enable openssl [no]
   --enable-x11grab         enable X11 grabbing (legacy) [no]
   --enable-zlib            enable zlib [autodetect]
@@ -1191,6 +1192,7 @@ EXTERNAL_LIBRARY_LIST="
     libxcb_xfixes
     libxvid
     mmal
+    nvenc
     openssl
     x11grab
     zlib
@@ -1483,6 +1485,7 @@ SYSTEM_FUNCS="
     inet_aton
     isatty
     jack_port_get_latency_range
+    LoadLibrary
     localtime_r
     mach_absolute_time
     MapViewOfFile
@@ -1780,6 +1783,8 @@ mpegaudio_select="mpegaudiodsp"
 mpegaudiodsp_select="dct"
 mpegvideo_select="blockdsp hpeldsp idctdsp me_cmp videodsp"
 mpegvideoenc_select="me_cmp mpegvideo pixblockdsp qpeldsp"
+nvenc_deps_any="dlopen LoadLibrary"
+nvenc_extralibs='$ldl'
 qsvdec_select="qsv"
 qsvenc_select="qsv"
 
@@ -1849,11 +1854,13 @@ h263i_decoder_select="h263_decoder"
 h263p_encoder_select="h263_encoder"
 h264_decoder_select="cabac golomb h264chroma h264dsp h264pred h264qpel startcode videodsp"
 h264_decoder_suggest="error_resilience"
+h264_nvenc_encoder_deps="nvenc"
 h264_qsv_decoder_deps="libmfx"
 h264_qsv_decoder_select="h264_mp4toannexb_bsf h264_parser qsvdec h264_qsv_hwaccel"
 h264_qsv_encoder_deps="libmfx"
 h264_qsv_encoder_select="qsvenc"
 hevc_decoder_select="bswapdsp cabac golomb videodsp"
+hevc_nvenc_encoder_deps="nvenc"
 huffyuv_decoder_select="bswapdsp huffyuvdsp"
 huffyuv_encoder_select="bswapdsp huffman huffyuvencdsp"
 iac_decoder_select="imc_decoder"
@@ -3822,6 +3829,7 @@ die_license_disabled gpl x11grab
 
 die_license_disabled nonfree libfaac
 die_license_disabled nonfree libfdk_aac
+die_license_disabled nonfree nvenc
 die_license_disabled nonfree openssl
 
 die_license_disabled version3 libopencore_amrnb
@@ -4188,6 +4196,7 @@ check_func_headers windows.h CoTaskMemFree -lole32
 check_func_headers windows.h GetProcessAffinityMask
 check_func_headers windows.h GetProcessTimes
 check_func_headers windows.h GetSystemTimeAsFileTime
+check_func_headers windows.h LoadLibrary
 check_func_headers windows.h MapViewOfFile
 check_func_headers windows.h SetConsoleTextAttribute
 check_func_headers windows.h Sleep
@@ -4338,6 +4347,13 @@ if enabled libdc1394; then
     { check_lib libdc1394/dc1394_control.h dc1394_create_handle -ldc1394_control -lraw1394 &&
         enable libdc1394_1; } ||
     die "ERROR: No version of libdc1394 found "
+fi
+
+if enabled nvenc; then
+    check_header cuda.h || die "ERROR: cuda.h not found.";
+    check_header nvEncodeAPI.h || die "ERROR: nvEncodeAPI.h not found.";
+    check_cpp_condition nvEncodeAPI.h "NVENCAPI_MAJOR_VERSION >= 5" ||
+        die "ERROR: NVENC API version 4 or older is not supported";
 fi
 
 if check_pkg_config sdl SDL_events.h SDL_PollEvent; then

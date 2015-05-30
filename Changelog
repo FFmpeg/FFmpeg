@@ -31,6 +31,7 @@ version <next>:
 - Canopus HQ/HQA decoder
 - Automatically rotate videos based on metadata in avconv
 - improved Quickdraw compatibility
+- NVIDIA NVENC-accelerated H.264 and HEVC encoding support
 
 
 version 11:
