@@ -221,7 +221,7 @@ static int mov_read_covr(MOVContext *c, AVIOContext *pb, int type, int len)
 static int mov_metadata_loci(MOVContext *c, AVIOContext *pb, unsigned len)
 {
     char language[4] = { 0 };
-    char buf[100];
+    char buf[200], place[100];
     uint16_t langcode = 0;
     double longitude, latitude;
     const char *key = "location";
@@ -236,7 +236,7 @@ static int mov_metadata_loci(MOVContext *c, AVIOContext *pb, unsigned len)
     ff_mov_lang_to_iso639(langcode, language);
     len -= 6;
 
-    len -= avio_get_str(pb, len, buf, sizeof(buf)); // place name
+    len -= avio_get_str(pb, len, place, sizeof(place));
     if (len < 1) {
         av_log(c->fc, AV_LOG_ERROR, "place name too long\n");
         return AVERROR_INVALIDDATA;
@@ -253,7 +253,7 @@ static int mov_metadata_loci(MOVContext *c, AVIOContext *pb, unsigned len)
     latitude  = ((int32_t) avio_rb32(pb)) / (float) (1 << 16);
 
     // Try to output in the same format as the ?xyz field
-    snprintf(buf, sizeof(buf), "%+08.4f%+09.4f/", latitude, longitude);
+    snprintf(buf, sizeof(buf), "%+08.4f%+09.4f/%s", latitude, longitude, place);
     if (*language && strcmp(language, "und")) {
         char key2[16];
         snprintf(key2, sizeof(key2), "%s-%s", key, language);
