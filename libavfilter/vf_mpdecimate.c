@@ -24,6 +24,7 @@
  * Rich Felker.
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/pixelutils.h"
@@ -46,6 +47,7 @@ typedef struct {
     int drop_count;                ///< if positive: number of frames sequentially dropped
                                    ///< if negative: number of sequential frames which were not dropped
 
+    int packed_bpp;	           ///< width multiplier to give us all the pixels
     int hsub, vsub;                ///< chroma subsampling values
     AVFrame *ref;                  ///< reference picture
     av_pixelutils_sad_fn sad;      ///< sum of absolute difference function
@@ -84,15 +86,21 @@ static int diff_planes(AVFilterContext *ctx,
         for (x = 8; x < w-7; x += 4) {
             d = decimate->sad(cur + y*cur_linesize + x, cur_linesize,
                               ref + y*ref_linesize + x, ref_linesize);
-            if (d > decimate->hi)
+            if (d > decimate->hi) {
+		av_log(ctx, AV_LOG_DEBUG, "%d>=hi ", d);
                 return 1;
+	    }
             if (d > decimate->lo) {
                 c++;
-                if (c > t)
+                if (c > t) {
+		    av_log(ctx, AV_LOG_DEBUG, "lo:%d>=%d ", c, t);
                     return 1;
+		}
             }
         }
     }
+
+    av_log(ctx, AV_LOG_DEBUG, "lo:%d<%d ", c, t);
     return 0;
 }
 
@@ -113,13 +121,28 @@ static int decimate_frame(AVFilterContext *ctx,
         (decimate->drop_count-1) > decimate->max_drop_count)
         return 0;
 
+    // MPlayer's non-planar hack: just look at blocks of 8x8 bytes,
+    // regardless of what they mean, since they should come from the same pixels
+    // in each frame.
+    //  return diff_to_drop_plane(hi,lo,frac, old->planes[0], new->planes[0],
+    //        new->w*(new->bpp/8), new->h, old->stride[0], new->stride[0]);
+
     for (plane = 0; ref->data[plane] && ref->linesize[plane]; plane++) {
+	/* use 8x8 SAD even on subsampled planes.  The blocks won't match up with
+	 * luma blocks, but hopefully nobody is depending on this to catch
+	 * localized chroma changes that wouldn't exceed the thresholds when
+	 * diluted by using what's effectively a larger block size.
+	 */
+	/* also do this on packed planes */
+	/* TODO: does this work right on cropped frames?
+	 *  and do we need to look at AVComponentDescriptor.offset_plus1?
+	 */
         int vsub = plane == 1 || plane == 2 ? decimate->vsub : 0;
         int hsub = plane == 1 || plane == 2 ? decimate->hsub : 0;
         if (diff_planes(ctx,
                         cur->data[plane], cur->linesize[plane],
                         ref->data[plane], ref->linesize[plane],
-                        FF_CEIL_RSHIFT(ref->width,  hsub),
+                        FF_CEIL_RSHIFT(ref->width,  hsub) * decimate->packed_bpp / 8, // bpp=8 for planar
                         FF_CEIL_RSHIFT(ref->height, vsub)))
             return 0;
     }
@@ -147,6 +170,38 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_frame_free(&decimate->ref);
 }
 
+
+#define DECIMATE_PACKED_HACK 0
+
+/*
+ * Enable to allow operation on packed pixel values, but still using a 64byte SAD.
+ * This can save copying the data twice to convert to a planar format and back,
+ * and really speed things up if the hi threshold makes us bail early in the frame
+ *
+ * We operate as if the packed pixel data is a single plane of 8bit component values,
+ * so we're actually computing SADs of all components at once in 64/bpp x 8 blocks.
+ * It's probably not important for most use cases that all components of the same pixel
+ * go in the same SAD block, which lets us get away with this hack for formats like
+ * RGB24, not just RGB0 or RGBA.
+ *
+ * Operating on packed formats changes the sensitivity of the thresholds.
+ * Only 1/3rd (4:4:4) or 1/2 (4:2:2) of the samples in each block will be luma, so
+ * we're a lot less sensitive to changing brightness while color (U and V) stay constant.
+ * This is probably less bad for RGB than for YUV.
+ *
+ * Anyway, this is probably best left disabled.
+ *
+ * We would need different SAD routines to support formats where the LSB of
+ * every byte isn't the LSB of a color component.  Otherwise we could have
+ * false positive duplicate identification from big changes that happen to be
+ * stored in the LSB of a byte, or fail to drop dups because of small component
+ * differences being stored in the high bits of the packed bytes.
+ * e.g. we can't handle AV_PIX_FMT_RGB48LE, AV_PIX_FMT_RGB565LE, or
+ * AV_PIX_FMT_YUV420P10LE
+ */
+
+
+
 static int query_formats(AVFilterContext *ctx)
 {
     static const enum AVPixelFormat pix_fmts[] = {
@@ -156,6 +211,47 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUVJ444P,     AV_PIX_FMT_YUVJ422P,
         AV_PIX_FMT_YUVJ420P,     AV_PIX_FMT_YUVJ440P,
         AV_PIX_FMT_YUVA420P,
+	AV_PIX_FMT_YUVA422P_LIBAV,
+	AV_PIX_FMT_YUVA444P_LIBAV,
+
+	AV_PIX_FMT_GRAY8A,
+	AV_PIX_FMT_YA8,
+
+	AV_PIX_FMT_GBRP,      ///  ff h.264 decoder outputs this for RGB
+
+	AV_PIX_FMT_YUVA444P,
+	AV_PIX_FMT_YUVA422P,
+
+
+#ifdef DECIMATE_PACKED_HACK
+	AV_PIX_FMT_YVYU422,
+	AV_PIX_FMT_UYVY422,     AV_PIX_FMT_UYYVYY411,
+/* Would need more code for these semi-planar formats
+	AV_PIX_FMT_NV12,    AV_PIX_FMT_NV21,
+	AV_PIX_FMT_NV16,
+*/
+	AV_PIX_FMT_ARGB, AV_PIX_FMT_RGBA,
+	AV_PIX_FMT_ABGR, AV_PIX_FMT_BGRA,
+
+	AV_PIX_FMT_BGR24,        AV_PIX_FMT_RGB24,
+
+	// TODO: check that RGB0 really means 0, rather than unused and undefined
+	// Random garbage in the unused bytes would look like changes.
+	AV_PIX_FMT_0RGB,
+	AV_PIX_FMT_RGB0,
+	AV_PIX_FMT_0BGR,
+	AV_PIX_FMT_BGR0,
+
+	// These are 8bits per component, but with different ordering on alternating lines.
+	AV_PIX_FMT_BAYER_BGGR8,
+	AV_PIX_FMT_BAYER_RGGB8,
+	AV_PIX_FMT_BAYER_GBRG8,
+	AV_PIX_FMT_BAYER_GRBG8,
+#endif
+
+// end of packed
+
+
         AV_PIX_FMT_NONE
     };
     AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
@@ -171,6 +267,15 @@ static int config_input(AVFilterLink *inlink)
     const AVPixFmtDescriptor *pix_desc = av_pix_fmt_desc_get(inlink->format);
     decimate->hsub = pix_desc->log2_chroma_w;
     decimate->vsub = pix_desc->log2_chroma_h;
+    decimate->packed_bpp = (pix_desc->flags & AV_PIX_FMT_FLAG_PLANAR) ?
+	8 : av_get_bits_per_pixel(pix_desc);
+
+//    av_pix_fmt_get_chroma_sub_sample(inlink->format, &decimate->hsub, &decimate->vsub);
+
+    av_assert0( !(pix_desc->flags & AV_PIX_FMT_FLAG_BITSTREAM) );
+    av_assert0( !(pix_desc->flags & AV_PIX_FMT_FLAG_PAL) );
+    // We don't handle multi-byte per sample formats at all, BE or LE
+    av_assert0( !(pix_desc->flags & AV_PIX_FMT_FLAG_BE) );
 
     return 0;
 }
