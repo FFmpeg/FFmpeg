@@ -220,8 +220,6 @@ static av_cold int encode_init(AVCodecContext *avctx)
     ff_huffyuvencdsp_init(&s->hencdsp);
 
     avctx->extradata = av_mallocz(3*MAX_N + 4);
-    if (!avctx->extradata)
-        return AVERROR(ENOMEM);
     if (s->flags&CODEC_FLAG_PASS1) {
 #define STATS_OUT_SIZE 21*MAX_N*3 + 4
         avctx->stats_out = av_mallocz(STATS_OUT_SIZE); // 21*256*3(%llu ) + 3(\n) + 1(0) = 16132
@@ -231,7 +229,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     s->version = 2;
 
     avctx->coded_frame = av_frame_alloc();
-    if (!avctx->coded_frame)
+    if (!avctx->extradata || !avctx->coded_frame)
         return AVERROR(ENOMEM);
 
     avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
