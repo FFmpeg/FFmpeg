@@ -32,6 +32,7 @@
 #include "mjpegenc.h"
 #include "msmpeg4.h"
 #include "qpeldsp.h"
+#include "wmv2.h"
 #include <limits.h>
 
 static void gmc1_motion(MpegEncContext *s,

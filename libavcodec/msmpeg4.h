@@ -54,7 +54,6 @@ int ff_msmpeg4_decode_block(MpegEncContext * s, int16_t * block,
                             int n, int coded, const uint8_t *scan_table);
 int ff_msmpeg4_pred_dc(MpegEncContext *s, int n,
                        int16_t **dc_val_ptr, int *dir_ptr);
-int ff_wmv2_decode_mb(MpegEncContext *s, int16_t block[6][64]);
 
 #define CONFIG_MSMPEG4_DECODER (CONFIG_MSMPEG4V1_DECODER || \
                                 CONFIG_MSMPEG4V2_DECODER || \

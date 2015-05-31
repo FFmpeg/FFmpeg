@@ -45,6 +45,7 @@
 #include "msmpeg4.h"
 #include "qpeldsp.h"
 #include "thread.h"
+#include "wmv2.h"
 #include <limits.h>
 
 static const uint8_t ff_default_chroma_qscale_table[32] = {

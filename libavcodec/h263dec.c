@@ -42,6 +42,7 @@
 #include "qpeldsp.h"
 #include "vdpau_compat.h"
 #include "thread.h"
+#include "wmv2.h"
 
 static enum AVPixelFormat h263_get_format(AVCodecContext *avctx)
 {
