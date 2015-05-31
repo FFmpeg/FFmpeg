@@ -155,7 +155,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     s->version = 2;
 
     avctx->coded_frame = av_frame_alloc();
-    if (!avctx->coded_frame)
+    if (!avctx->extradata || !avctx->stats_out || !avctx->coded_frame)
         return AVERROR(ENOMEM);
 
     avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
