@@ -304,6 +304,8 @@ static av_cold int psy_3gpp_init(FFPsyContext *ctx) {
     const float num_bark   = calc_bark((float)bandwidth);
 
     ctx->model_priv_data = av_mallocz(sizeof(AacPsyContext));
+    if (!ctx->model_priv_data)
+        return AVERROR(ENOMEM);
     pctx = (AacPsyContext*) ctx->model_priv_data;
 
     pctx->chan_bitrate = chan_bitrate;
@@ -355,6 +357,10 @@ static av_cold int psy_3gpp_init(FFPsyContext *ctx) {
     }
 
     pctx->ch = av_mallocz_array(ctx->avctx->channels, sizeof(AacPsyChannel));
+    if (!pctx->ch) {
+        av_freep(&pctx);
+        return AVERROR(ENOMEM);
+    }
 
     lame_window_init(pctx, ctx->avctx);
 
