@@ -542,6 +542,8 @@ static av_cold int X264_init(AVCodecContext *avctx)
 
         s = x264_encoder_headers(x4->enc, &nal, &nnal);
         avctx->extradata = p = av_malloc(s);
+        if (!p)
+            return AVERROR(ENOMEM);
 
         for (i = 0; i < nnal; i++) {
             /* Don't put the SEI in extradata. */
@@ -549,6 +551,8 @@ static av_cold int X264_init(AVCodecContext *avctx)
                 av_log(avctx, AV_LOG_INFO, "%s\n", nal[i].p_payload+25);
                 x4->sei_size = nal[i].i_payload;
                 x4->sei      = av_malloc(x4->sei_size);
+                if (!x4->sei)
+                    return AVERROR(ENOMEM);
                 memcpy(x4->sei, nal[i].p_payload, nal[i].i_payload);
                 continue;
             }
