@@ -173,7 +173,9 @@ static int tgv_decode_inter(TgvContext *s, AVFrame *frame,
 
     /* allocate codebook buffers as necessary */
     if (num_mvs > s->num_mvs) {
-        s->mv_codebook = av_realloc(s->mv_codebook, num_mvs*2*sizeof(int));
+        int err = av_reallocp(&s->mv_codebook, num_mvs * 2 * sizeof(int));
+        if (err < 0)
+            return err;
         s->num_mvs = num_mvs;
     }
 
