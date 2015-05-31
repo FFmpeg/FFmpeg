@@ -4017,7 +4017,6 @@ elif enabled ppc; then
         ;;
         power[7-8]*)
             cpuflags="-mcpu=$cpu"
-            enable ldbrx
         ;;
         cell)
             cpuflags="-mcpu=cell"
