@@ -11,6 +11,7 @@ OBJS-$(HAVE_MSA)       += $(MSA-OBJS)        $(MSA-OBJS-yes)
 OBJS-$(HAVE_LOONGSON3) += $(LOONGSON3-OBJS)  $(LOONGSON3-OBJS-yes)
 
 OBJS-$(HAVE_ALTIVEC) += $(ALTIVEC-OBJS) $(ALTIVEC-OBJS-yes)
+OBJS-$(HAVE_VSX)     += $(VSX-OBJS) $(VSX-OBJS-yes)
 
 OBJS-$(HAVE_MMX)     += $(MMX-OBJS)     $(MMX-OBJS-yes)
 OBJS-$(HAVE_YASM)    += $(YASM-OBJS)    $(YASM-OBJS-yes)
