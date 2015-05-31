@@ -36,6 +36,7 @@
 #include "mpeg_er.h"
 #include "mpegvideo.h"
 #include "mpeg4video.h"
+#include "mpegvideodata.h"
 
 #define RV_GET_MAJOR_VER(x)  ((x) >> 28)
 #define RV_GET_MINOR_VER(x) (((x) >> 20) & 0xFF)

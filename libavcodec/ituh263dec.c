@@ -42,6 +42,7 @@
 #include "unary.h"
 #include "flv.h"
 #include "mpeg4video.h"
+#include "mpegvideodata.h"
 
 // The defines below define the number of bits that are read at once for
 // reading vlc values. Changing these may improve speed and data cache needs
