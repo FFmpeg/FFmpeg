@@ -2303,7 +2303,7 @@ static int mov_read_ctts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     if (entries >= UINT_MAX / sizeof(*sc->ctts_data))
         return AVERROR_INVALIDDATA;
     av_freep(&sc->ctts_data);
-    sc->ctts_data = av_malloc(entries * sizeof(*sc->ctts_data));
+    sc->ctts_data = av_realloc(NULL, entries * sizeof(*sc->ctts_data));
     if (!sc->ctts_data)
         return AVERROR(ENOMEM);
 
