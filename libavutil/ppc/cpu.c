@@ -16,13 +16,17 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "config.h"
+
 #ifdef __APPLE__
 #include <sys/sysctl.h>
 #elif defined(__linux__)
 #include <asm/cputable.h>
 #include <linux/auxvec.h>
 #include <fcntl.h>
+#if HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #elif defined(__OpenBSD__)
 #include <sys/param.h>
 #include <sys/sysctl.h>
@@ -35,7 +39,6 @@
 
 #include "libavutil/cpu.h"
 #include "libavutil/cpu_internal.h"
-#include "config.h"
 
 /**
  * This function MAY rely on signal() or fork() in order to make sure AltiVec
