@@ -95,7 +95,13 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
     // allocate sub and set values
     sub->rects =  av_mallocz(sizeof(*sub->rects));
+    if (!sub->rects)
+        return AVERROR(ENOMEM);
     sub->rects[0] = av_mallocz(sizeof(*sub->rects[0]));
+    if (!sub->rects[0]) {
+        av_freep(&sub->rects);
+        return AVERROR(ENOMEM);
+    }
     sub->num_rects = 1;
     sub->rects[0]->x = x; sub->rects[0]->y = y;
     sub->rects[0]->w = w; sub->rects[0]->h = h;
@@ -104,6 +110,13 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     sub->rects[0]->pict.data[0] = av_malloc(w * h);
     sub->rects[0]->nb_colors = 4;
     sub->rects[0]->pict.data[1] = av_mallocz(AVPALETTE_SIZE);
+    if (!sub->rects[0]->pict.data[0] || !sub->rects[0]->pict.data[1]) {
+        av_freep(&sub->rects[0]->pict.data[1]);
+        av_freep(&sub->rects[0]->pict.data[0]);
+        av_freep(&sub->rects[0]);
+        av_freep(&sub->rects);
+        return AVERROR(ENOMEM);
+    }
 
     // read palette
     for (i = 0; i < sub->rects[0]->nb_colors; i++)
