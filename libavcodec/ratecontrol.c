@@ -163,6 +163,8 @@ av_cold int ff_rate_control_init(MpegEncContext *s)
             return -1;
         rcc->entry       = av_mallocz(i * sizeof(RateControlEntry));
         rcc->num_entries = i;
+        if (!rcc->entry)
+            return AVERROR(ENOMEM);
 
         /* init all to skipped p frames
          * (with b frames we might have a not encoded frame at the end FIXME) */
@@ -210,8 +212,10 @@ av_cold int ff_rate_control_init(MpegEncContext *s)
             p = next;
         }
 
-        if (init_pass2(s) < 0)
+        if (init_pass2(s) < 0) {
+            ff_rate_control_uninit(s);
             return -1;
+        }
 
         // FIXME maybe move to end
         if ((s->avctx->flags & CODEC_FLAG_PASS2) && s->avctx->rc_strategy == FF_RC_STRATEGY_XVID) {
@@ -932,6 +936,11 @@ static int init_pass2(MpegEncContext *s)
 
     qscale         = av_malloc(sizeof(double) * rcc->num_entries);
     blurred_qscale = av_malloc(sizeof(double) * rcc->num_entries);
+    if (!qscale || !blurred_qscale) {
+        av_free(qscale);
+        av_free(blurred_qscale);
+        return AVERROR(ENOMEM);
+    }
     toobig = 0;
 
     for (step = 256 * 256; step > 0.0000001; step *= 0.5) {
