@@ -1,6 +1,34 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 10.7:
+- h264: Make sure reinit failures mark the context as not initialized (CVE-2015-3417)
+- msrle: Use FFABS to determine the frame size in msrle_decode_pal4 (CVE-2015-3395)
+- x86: cavs: Remove an unneeded scratch buffer
+- configure: Disable i686 for i586 and lower CPUs (debian/783082)
+- mjpegenc: Fix JFIF header byte ordering (bug/808)
+- nut: Make sure to clean up on read_header failure
+- png: Set the color range as full range
+- avi: Validate sample_size
+- nut: Check chapter creation in decode_info_header
+- alac: Reject rice_limit 0 if compression is used
+- ape: Support _0000 files with nblock smaller than 64
+- mux: Do not leave stale side data pointers in ff_interleave_add_packet()
+- avpacket: Check for and return errors in ff_interleave_add_packet()
+- mpegts: Update the PSI/SI table only if the version change
+- rtsp: Make sure we don't write too many transport entries into a fixed-size array
+- rtpenc_jpeg: Handle case of picture dimensions not dividing by 8
+- mov: Fix little endian audio detection
+- x86: Put COPY3_IF_LT under HAVE_6REGS (gentoo/541930)
+- roqvideoenc: set enc->avctx in roq_encode_init
+- libvpx: Fix mixed use of av_malloc() and av_reallocp()
+- (libav.org/release/10) alsdec: only adapt order for positive max_order
+- alsdec: check sample pointer range in revert_channel_correlation
+- aacpsy: correct calculation of minath in psy_3gpp_init
+- alsdec: limit avctx->bits_per_raw_sample to 32
+- aasc: return correct buffer size from aasc_decode_frame
+- matroskadec: fix crash when parsing invalid mkv
+
 version 10.6:
 - utvideodec: Handle slice_height being zero (CVE-2014-9604)
 - tiff: Check that there is no aliasing in pixel format selection (CVE-2014-8544)
