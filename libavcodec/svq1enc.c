@@ -292,6 +292,8 @@ static int svq1_encode_plane(SVQ1EncContext *s, int plane,
             s->motion_val16[plane] = av_mallocz((s->m.mb_stride *
                                                  (block_height + 2) + 1) *
                                                 2 * sizeof(int16_t));
+            if (!s->motion_val8[plane] || !s->motion_val16[plane])
+                return AVERROR(ENOMEM);
         }
 
         s->m.mb_type = s->mb_type;
@@ -549,6 +551,12 @@ static av_cold int svq1_encode_init(AVCodecContext *avctx)
                                         s->y_block_height * sizeof(int32_t));
     s->ssd_int8_vs_int16   = ssd_int8_vs_int16_c;
 
+    if (!s->m.me.temp || !s->m.me.scratchpad || !s->m.me.map ||
+        !s->m.me.score_map || !s->mb_type || !s->dummy) {
+        svq1_encode_end(avctx);
+        return AVERROR(ENOMEM);
+    }
+
     if (ARCH_PPC)
         ff_svq1enc_init_ppc(s);
     if (ARCH_X86)
@@ -612,8 +620,15 @@ static int svq1_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                               s->frame_width  / (i ? 4 : 1),
                               s->frame_height / (i ? 4 : 1),
                               pict->linesize[i],
-                              s->current_picture->linesize[i]) < 0)
+                              s->current_picture->linesize[i]) < 0) {
+            int j;
+            for (j = 0; j < i; j++) {
+                av_freep(&s->motion_val8[j]);
+                av_freep(&s->motion_val16[j]);
+            }
+            av_freep(&s->scratchbuf);
             return -1;
+        }
 
     // avpriv_align_put_bits(&s->pb);
     while (put_bits_count(&s->pb) & 31)
