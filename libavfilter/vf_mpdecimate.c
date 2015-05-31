@@ -84,15 +84,21 @@ static int diff_planes(AVFilterContext *ctx,
         for (x = 8; x < w-7; x += 4) {
             d = decimate->sad(cur + y*cur_linesize + x, cur_linesize,
                               ref + y*ref_linesize + x, ref_linesize);
-            if (d > decimate->hi)
+            if (d > decimate->hi) {
+                av_log(ctx, AV_LOG_DEBUG, "%d>=hi ", d);
                 return 1;
+            }
             if (d > decimate->lo) {
                 c++;
-                if (c > t)
+                if (c > t) {
+                    av_log(ctx, AV_LOG_DEBUG, "lo:%d>=%d ", c, t);
                     return 1;
+                }
             }
         }
     }
+
+    av_log(ctx, AV_LOG_DEBUG, "lo:%d<%d ", c, t);
     return 0;
 }
 
@@ -114,6 +120,11 @@ static int decimate_frame(AVFilterContext *ctx,
         return 0;
 
     for (plane = 0; ref->data[plane] && ref->linesize[plane]; plane++) {
+        /* use 8x8 SAD even on subsampled planes.  The blocks won't match up with
+         * luma blocks, but hopefully nobody is depending on this to catch
+         * localized chroma changes that wouldn't exceed the thresholds when
+         * diluted by using what's effectively a larger block size.
+         */
         int vsub = plane == 1 || plane == 2 ? decimate->vsub : 0;
         int hsub = plane == 1 || plane == 2 ? decimate->hsub : 0;
         if (diff_planes(ctx,
@@ -131,7 +142,7 @@ static av_cold int init(AVFilterContext *ctx)
 {
     DecimateContext *decimate = ctx->priv;
 
-    decimate->sad = av_pixelutils_get_sad_fn(3, 3, 0, decimate); // 8x8, not aligned on blocksize
+    decimate->sad = av_pixelutils_get_sad_fn(3, 3, 0, ctx); // 8x8, not aligned on blocksize
     if (!decimate->sad)
         return AVERROR(EINVAL);
 
@@ -156,6 +167,15 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUVJ444P,     AV_PIX_FMT_YUVJ422P,
         AV_PIX_FMT_YUVJ420P,     AV_PIX_FMT_YUVJ440P,
         AV_PIX_FMT_YUVA420P,
+
+        AV_PIX_FMT_GRAY8A,
+        AV_PIX_FMT_YA8,
+
+        AV_PIX_FMT_GBRP,
+
+        AV_PIX_FMT_YUVA444P,
+        AV_PIX_FMT_YUVA422P,
+
         AV_PIX_FMT_NONE
     };
     AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);

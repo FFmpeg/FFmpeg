@@ -1,6 +1,15 @@
 FATE_SUBTITLES_ASS-$(call ALLYES, AQTITLE_DEMUXER TEXT_DECODER ICONV) += fate-sub-aqtitle
 fate-sub-aqtitle: CMD = fmtstdout ass -sub_charenc windows-1250 -i $(TARGET_SAMPLES)/sub/AQTitle_capability_tester.aqt
 
+FATE_SUBTITLES_ASS-$(call DEMDEC, ASS, ASS) += fate-sub-ass-to-ass-transcode
+fate-sub-ass-to-ass-transcode: CMD = fmtstdout ass -i $(TARGET_SAMPLES)/sub/1ededcbd7b.ass
+
+FATE_SUBTITLES_ASS-$(CONFIG_ASS_DEMUXER) += fate-sub-ssa-to-ass-remux
+fate-sub-ssa-to-ass-remux: CMD = fmtstdout ass -i $(TARGET_SAMPLES)/sub/a9-misc.ssa -c copy
+
+FATE_SUBTITLES-$(call ALLYES, ASS_DEMUXER, MATROSKA_MUXER) += fate-binsub-mksenc
+fate-binsub-mksenc: CMD = md5 -i $(TARGET_SAMPLES)/sub/1ededcbd7b.ass -c copy -f matroska -flags +bitexact
+
 FATE_SUBTITLES_ASS-$(call DEMDEC, JACOSUB, JACOSUB) += fate-sub-jacosub
 fate-sub-jacosub: CMD = fmtstdout ass -i $(TARGET_SAMPLES)/sub/JACOsub_capability_tester.jss
 

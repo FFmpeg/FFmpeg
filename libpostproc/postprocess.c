@@ -681,7 +681,7 @@ pp_mode *pp_get_mode_by_name_and_quality(const char *name, int quality)
     ppMode->minAllowedY= 16;
     ppMode->baseDcDiff= 256/8;
     ppMode->flatnessThreshold= 56-16-1;
-    ppMode->maxClippedThreshold= 0.01;
+    ppMode->maxClippedThreshold= (AVRational){1,100};
     ppMode->error=0;
 
     memset(temp, 0, GET_MODE_BUFFER_SIZE);
