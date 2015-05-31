@@ -333,6 +333,8 @@ static av_cold int encode_init(AVCodecContext *avctx)
                      avctx->global_quality / 2) / avctx->global_quality;
 
     avctx->extradata                   = av_mallocz(8);
+    if (!avctx->extradata)
+        return AVERROR(ENOMEM);
     avctx->extradata_size              = 8;
     ((uint32_t *) avctx->extradata)[0] = av_le2ne32(a->inv_qscale);
     ((uint32_t *) avctx->extradata)[1] = av_le2ne32(AV_RL32("ASUS"));
