@@ -574,7 +574,7 @@ static int libopenjpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         return AVERROR(ENOMEM);
     }
 
-    memset(&ctx->event_mgr, 0, sizeof(opj_event_mgr_t));
+    memset(&ctx->event_mgr, 0, sizeof(ctx->event_mgr));
     ctx->event_mgr.info_handler    = info_callback;
     ctx->event_mgr.error_handler   = error_callback;
     ctx->event_mgr.warning_handler = warning_callback;
