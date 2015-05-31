@@ -164,6 +164,9 @@ static opj_image_t *mj2_create_image(AVCodecContext *avctx, opj_cparameters_t *p
 
     img = opj_image_create(numcomps, cmptparm, color_space);
 
+    if (!img)
+        return NULL;
+
     // x0, y0 is the top left corner of the image
     // x1, y1 is the width, height of the reference grid
     img->x0 = 0;
