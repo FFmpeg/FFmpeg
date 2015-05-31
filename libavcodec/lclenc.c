@@ -135,6 +135,8 @@ static av_cold int encode_init(AVCodecContext *avctx)
     assert(avctx->width && avctx->height);
 
     avctx->extradata= av_mallocz(8);
+    if (!avctx->extradata)
+        return AVERROR(ENOMEM);
 
     avctx->coded_frame = av_frame_alloc();
     if (!avctx->coded_frame)
