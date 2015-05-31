@@ -342,6 +342,8 @@ Advanced options (experts only):
 Optimization options (experts only):
   --disable-asm            disable all assembly optimizations
   --disable-altivec        disable AltiVec optimizations
+  --disable-vsx            disable VSX optimizations
+  --disable-power8         disable POWER8 optimizations
   --disable-amd3dnow       disable 3DNow! optimizations
   --disable-amd3dnowext    disable 3DNow! extended optimizations
   --disable-mmx            disable MMX optimizations
@@ -1611,6 +1613,7 @@ ARCH_EXT_LIST_PPC="
     altivec
     dcbzl
     ldbrx
+    power8
     ppc4xx
     vsx
 "
@@ -2045,7 +2048,8 @@ altivec_deps="ppc"
 dcbzl_deps="ppc"
 ldbrx_deps="ppc"
 ppc4xx_deps="ppc"
-vsx_deps="ppc"
+vsx_deps="altivec"
+power8_deps="vsx"
 
 cpunop_deps="i686"
 x86_64_select="i686"
@@ -3997,19 +4001,28 @@ elif enabled ppc; then
         ;;
         g4|745*|ppc745*|powerpc745*)
             cpuflags="-mcpu=7450"
+            disable vsx
         ;;
         74*|ppc74*|powerpc74*)
             cpuflags="-mcpu=7400"
+            disable vsx
         ;;
         g5|970|ppc970|powerpc970)
             cpuflags="-mcpu=970"
+            disable vsx
         ;;
-        power[3-8]*)
+        power[3-6]*)
             cpuflags="-mcpu=$cpu"
+            disable vsx
+        ;;
+        power[7-8]*)
+            cpuflags="-mcpu=$cpu"
+            enable ldbrx
         ;;
         cell)
             cpuflags="-mcpu=cell"
             enable ldbrx
+            disable vsx
         ;;
         e500mc)
             cpuflags="-mcpu=e500mc"
@@ -4788,8 +4801,14 @@ EOF
     fi
 
     if enabled vsx; then
-        check_cflags -mvsx
+        check_cflags -mvsx &&
+        check_builtin vec_vsx_ld "altivec.h" "__builtin_vec_vsx_ld" || disable vsx
     fi
+
+    if enabled power8; then
+        check_cpp_condition "altivec.h" "defined(_ARCH_PWR8)" || disable power8
+    fi
+
 elif enabled x86; then
 
     check_builtin rdtsc    intrin.h   "__rdtsc()"
@@ -5741,8 +5760,9 @@ if enabled mips; then
 fi
 if enabled ppc; then
     echo "AltiVec enabled           ${altivec-no}"
+    echo "VSX enabled               ${vsx-no}"
+    echo "POWER8 enabled            ${power8-no}"
     echo "PPC 4xx optimizations     ${ppc4xx-no}"
-    echo "PPC VSX optimizations     ${vsx-no}"
     echo "dcbzl available           ${dcbzl-no}"
 fi
 echo "debug symbols             ${debug-no}"
