@@ -191,6 +191,8 @@ av_cold int ff_dct_init(DCTContext *s, int nbits, enum DCTTransformType inverse)
 
         s->costab = ff_cos_tabs[nbits + 2];
         s->csc2   = av_malloc_array(n / 2, sizeof(FFTSample));
+        if (!s->csc2)
+            return AVERROR(ENOMEM);
 
         if (ff_rdft_init(&s->rdft, nbits, inverse == DCT_III) < 0) {
             av_freep(&s->csc2);
