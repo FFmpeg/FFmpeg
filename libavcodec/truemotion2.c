@@ -171,6 +171,10 @@ static int tm2_build_huff_table(TM2Context *ctx, TM2Codes *code)
     huff.nums    = av_mallocz(huff.max_num * sizeof(int));
     huff.bits    = av_mallocz(huff.max_num * sizeof(uint32_t));
     huff.lens    = av_mallocz(huff.max_num * sizeof(int));
+    if (!huff.nums || !huff.bits || !huff.lens) {
+        res = AVERROR(ENOMEM);
+        goto out;
+    }
 
     res = tm2_read_tree(ctx, 0, 0, &huff);
 
@@ -193,10 +197,16 @@ static int tm2_build_huff_table(TM2Context *ctx, TM2Codes *code)
             code->bits = huff.max_bits;
             code->length = huff.max_num;
             code->recode = av_malloc(code->length * sizeof(int));
+            if (!code->recode) {
+                res = AVERROR(ENOMEM);
+                goto out;
+            }
             for (i = 0; i < code->length; i++)
                 code->recode[i] = huff.nums[i];
         }
     }
+
+out:
     /* free allocated memory */
     av_free(huff.nums);
     av_free(huff.bits);
