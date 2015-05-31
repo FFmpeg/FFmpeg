@@ -46,6 +46,7 @@
 #include "put_bits.h"
 #include "ratecontrol.h"
 #include "parser.h"
+#include "mpegutils.h"
 #include "mpeg12data.h"
 #include "qpeldsp.h"
 #include "thread.h"
@@ -54,13 +55,6 @@
 #include "libavutil/opt.h"
 
 #define FRAME_SKIPPED 100 ///< return value for header parsers if frame is not coded
-
-enum OutputFormat {
-    FMT_MPEG1,
-    FMT_H261,
-    FMT_H263,
-    FMT_MJPEG,
-};
 
 #define MAX_FCODE 7
 

@@ -20,6 +20,7 @@
 
 #include "avcodec.h"
 #include "idctdsp.h"
+#include "mpegutils.h"
 #include "mpegvideo.h"
 #include "msmpeg4data.h"
 #include "simple_idct.h"

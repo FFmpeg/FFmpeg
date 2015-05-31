@@ -115,6 +115,14 @@
 #define CANDIDATE_MB_TYPE_DIRECT0    (1 << 12)
 
 
+enum OutputFormat {
+    FMT_MPEG1,
+    FMT_H261,
+    FMT_H263,
+    FMT_MJPEG,
+};
+
+
 /**
  * Draw a horizontal band if supported.
  *
