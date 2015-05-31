@@ -723,14 +723,14 @@ static inline void rv34_mc(RV34DecContext *r, const int block_type,
     if(s->h_edge_pos - (width << 3) < 6 || s->v_edge_pos - (height << 3) < 6 ||
        (unsigned)(src_x - !!lx*2) > s->h_edge_pos - !!lx*2 - (width <<3) - 4 ||
        (unsigned)(src_y - !!ly*2) > s->v_edge_pos - !!ly*2 - (height<<3) - 4) {
-        uint8_t *uvbuf = s->edge_emu_buffer + 22 * s->linesize;
+        uint8_t *uvbuf = s->sc.edge_emu_buffer + 22 * s->linesize;
 
         srcY -= 2 + 2*s->linesize;
-        s->vdsp.emulated_edge_mc(s->edge_emu_buffer, srcY,
+        s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer, srcY,
                                  s->linesize, s->linesize,
                                  (width << 3) + 6, (height << 3) + 6,
                             src_x - 2, src_y - 2, s->h_edge_pos, s->v_edge_pos);
-        srcY = s->edge_emu_buffer + 2 + 2*s->linesize;
+        srcY = s->sc.edge_emu_buffer + 2 + 2*s->linesize;
         s->vdsp.emulated_edge_mc(uvbuf, srcU,
                                  s->uvlinesize,s->uvlinesize,
                                  (width << 2) + 1, (height << 2) + 1,

@@ -346,25 +346,26 @@ av_cold void ff_mpv_idct_init(MpegEncContext *s)
 static int frame_size_alloc(MpegEncContext *s, int linesize)
 {
     int alloc_size = FFALIGN(FFABS(linesize) + 32, 32);
+    ScratchpadContext *sc = &s->sc;
 
     // edge emu needs blocksize + filter length - 1
     // (= 17x17 for  halfpel / 21x21 for  h264)
     // VC1 computes luma and chroma simultaneously and needs 19X19 + 9x9
     // at uvlinesize. It supports only YUV420 so 24x24 is enough
     // linesize * interlaced * MBsize
-    FF_ALLOCZ_OR_GOTO(s->avctx, s->edge_emu_buffer, alloc_size * 2 * 24,
+    FF_ALLOCZ_OR_GOTO(s->avctx, sc->edge_emu_buffer, alloc_size * 2 * 24,
                       fail);
 
     FF_ALLOCZ_OR_GOTO(s->avctx, s->me.scratchpad, alloc_size * 2 * 16 * 3,
                       fail)
-    s->me.temp         = s->me.scratchpad;
-    s->rd_scratchpad   = s->me.scratchpad;
-    s->b_scratchpad    = s->me.scratchpad;
-    s->obmc_scratchpad = s->me.scratchpad + 16;
+    s->me.temp          = s->me.scratchpad;
+    sc->rd_scratchpad   = s->me.scratchpad;
+    sc->b_scratchpad    = s->me.scratchpad;
+    sc->obmc_scratchpad = s->me.scratchpad + 16;
 
     return 0;
 fail:
-    av_freep(&s->edge_emu_buffer);
+    av_freep(&sc->edge_emu_buffer);
     return AVERROR(ENOMEM);
 }
 
@@ -439,7 +440,7 @@ static int alloc_frame_buffer(MpegEncContext *s, Picture *pic)
         return -1;
     }
 
-    if (!s->edge_emu_buffer &&
+    if (!s->sc.edge_emu_buffer &&
         (ret = frame_size_alloc(s, pic->f->linesize[0])) < 0) {
         av_log(s->avctx, AV_LOG_ERROR,
                "get_buffer() failed to allocate context scratch buffers.\n");
@@ -691,12 +692,12 @@ static int init_duplicate_context(MpegEncContext *s)
     int yc_size = y_size + 2 * c_size;
     int i;
 
-    s->edge_emu_buffer =
+    s->sc.edge_emu_buffer =
     s->me.scratchpad   =
     s->me.temp         =
-    s->rd_scratchpad   =
-    s->b_scratchpad    =
-    s->obmc_scratchpad = NULL;
+    s->sc.rd_scratchpad   =
+    s->sc.b_scratchpad    =
+    s->sc.obmc_scratchpad = NULL;
 
     if (s->encoding) {
         FF_ALLOCZ_OR_GOTO(s->avctx, s->me.map,
@@ -741,12 +742,12 @@ static void free_duplicate_context(MpegEncContext *s)
     if (!s)
         return;
 
-    av_freep(&s->edge_emu_buffer);
+    av_freep(&s->sc.edge_emu_buffer);
     av_freep(&s->me.scratchpad);
     s->me.temp =
-    s->rd_scratchpad =
-    s->b_scratchpad =
-    s->obmc_scratchpad = NULL;
+    s->sc.rd_scratchpad =
+    s->sc.b_scratchpad =
+    s->sc.obmc_scratchpad = NULL;
 
     av_freep(&s->dct_error_sum);
     av_freep(&s->me.map);
@@ -759,12 +760,12 @@ static void free_duplicate_context(MpegEncContext *s)
 static void backup_duplicate_context(MpegEncContext *bak, MpegEncContext *src)
 {
 #define COPY(a) bak->a = src->a
-    COPY(edge_emu_buffer);
+    COPY(sc.edge_emu_buffer);
     COPY(me.scratchpad);
     COPY(me.temp);
-    COPY(rd_scratchpad);
-    COPY(b_scratchpad);
-    COPY(obmc_scratchpad);
+    COPY(sc.rd_scratchpad);
+    COPY(sc.b_scratchpad);
+    COPY(sc.obmc_scratchpad);
     COPY(me.map);
     COPY(me.score_map);
     COPY(blocks);
@@ -802,7 +803,7 @@ int ff_update_duplicate_context(MpegEncContext *dst, MpegEncContext *src)
         dst->pblocks[4] = dst->pblocks[5];
         dst->pblocks[5] = tmp;
     }
-    if (!dst->edge_emu_buffer &&
+    if (!dst->sc.edge_emu_buffer &&
         (ret = frame_size_alloc(dst, dst->linesize)) < 0) {
         av_log(dst->avctx, AV_LOG_ERROR, "failed to allocate context "
                "scratch buffers.\n");
@@ -916,7 +917,7 @@ do {\
     }
 
     // linesize dependend scratch buffer allocation
-    if (!s->edge_emu_buffer)
+    if (!s->sc.edge_emu_buffer)
         if (s1->linesize) {
             if (frame_size_alloc(s, s1->linesize) < 0) {
                 av_log(s->avctx, AV_LOG_ERROR, "Failed to allocate context "
@@ -2013,9 +2014,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
             dest_cb= s->dest[1];
             dest_cr= s->dest[2];
         }else{
-            dest_y = s->b_scratchpad;
-            dest_cb= s->b_scratchpad+16*linesize;
-            dest_cr= s->b_scratchpad+32*linesize;
+            dest_y = s->sc.b_scratchpad;
+            dest_cb= s->sc.b_scratchpad+16*linesize;
+            dest_cr= s->sc.b_scratchpad+32*linesize;
         }
 
         if (!s->mb_intra) {
