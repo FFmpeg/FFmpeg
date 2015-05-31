@@ -101,6 +101,8 @@ static int get_stats(AVCodecContext *avctx, int eos)
     if (!eos) {
         h->stats = av_fast_realloc(h->stats, &h->stats_size,
                                    h->stats_offset + bytes);
+        if (!h->stats)
+            return AVERROR(ENOMEM);
         memcpy(h->stats + h->stats_offset, buf, bytes);
         h->stats_offset += bytes;
     } else {
@@ -108,6 +110,8 @@ static int get_stats(AVCodecContext *avctx, int eos)
         // libtheora generates a summary header at the end
         memcpy(h->stats, buf, bytes);
         avctx->stats_out = av_malloc(b64_size);
+        if (!avctx->stats_out)
+            return AVERROR(ENOMEM);
         av_base64_encode(avctx->stats_out, b64_size, h->stats, h->stats_offset);
     }
     return 0;
@@ -131,6 +135,8 @@ static int submit_stats(AVCodecContext *avctx)
         }
         h->stats_size = strlen(avctx->stats_in) * 3/4;
         h->stats      = av_malloc(h->stats_size);
+        if (!h->stats)
+            return AVERROR(ENOMEM);
         h->stats_size = av_base64_decode(h->stats, avctx->stats_in, h->stats_size);
     }
     while (h->stats_size - h->stats_offset > 0) {
