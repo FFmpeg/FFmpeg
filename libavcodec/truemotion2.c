@@ -177,7 +177,7 @@ static int tm2_build_huff_table(TM2Context *ctx, TM2Codes *code)
 
     if (!huff.nums || !huff.bits || !huff.lens) {
         res = AVERROR(ENOMEM);
-        goto fail;
+        goto out;
     }
 
     res = tm2_read_tree(ctx, 0, 0, &huff);
@@ -203,13 +203,14 @@ static int tm2_build_huff_table(TM2Context *ctx, TM2Codes *code)
             code->recode = av_malloc_array(code->length, sizeof(int));
             if (!code->recode) {
                 res = AVERROR(ENOMEM);
-                goto fail;
+                goto out;
             }
             for (i = 0; i < code->length; i++)
                 code->recode[i] = huff.nums[i];
         }
     }
-fail:
+
+out:
     /* free allocated memory */
     av_free(huff.nums);
     av_free(huff.bits);
