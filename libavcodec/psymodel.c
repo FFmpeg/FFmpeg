@@ -39,6 +39,12 @@ av_cold int ff_psy_init(FFPsyContext *ctx, AVCodecContext *avctx, int num_lens,
     ctx->group     = av_mallocz_array(sizeof(ctx->group[0]), num_groups);
     ctx->bands     = av_malloc_array (sizeof(ctx->bands[0]),      num_lens);
     ctx->num_bands = av_malloc_array (sizeof(ctx->num_bands[0]),  num_lens);
+
+    if (!ctx->ch || !ctx->group || !ctx->bands || !ctx->num_bands) {
+        ff_psy_end(ctx);
+        return AVERROR(ENOMEM);
+    }
+
     memcpy(ctx->bands,     bands,     sizeof(ctx->bands[0])     *  num_lens);
     memcpy(ctx->num_bands, num_bands, sizeof(ctx->num_bands[0]) *  num_lens);
 
@@ -99,6 +105,8 @@ av_cold struct FFPsyPreprocessContext* ff_psy_preprocess_init(AVCodecContext *av
     int i;
     float cutoff_coeff = 0;
     ctx        = av_mallocz(sizeof(FFPsyPreprocessContext));
+    if (!ctx)
+        return NULL;
     ctx->avctx = avctx;
 
     if (avctx->cutoff > 0)
@@ -113,6 +121,10 @@ av_cold struct FFPsyPreprocessContext* ff_psy_preprocess_init(AVCodecContext *av
                                              cutoff_coeff, 0.0, 0.0);
     if (ctx->fcoeffs) {
         ctx->fstate = av_mallocz_array(sizeof(ctx->fstate[0]), avctx->channels);
+        if (!ctx->fstate) {
+            av_free(ctx);
+            return NULL;
+        }
         for (i = 0; i < avctx->channels; i++)
             ctx->fstate[i] = ff_iir_filter_init_state(FILT_ORDER);
     }
