@@ -1273,6 +1273,7 @@ static void find_ref_mvs(VP9Context *s,
     }
 
     AV_ZERO32(pmv);
+    clamp_mv(pmv, pmv, s);
 #undef INVALID_MV
 #undef RETURN_MV
 #undef RETURN_SCALE_MV
