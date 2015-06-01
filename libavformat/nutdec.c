@@ -496,7 +496,7 @@ static int decode_info_header(NUTContext *nut)
                                                     nut->time_base_count],
                                      start, start + chapter_len, NULL);
         if (!chapter) {
-            av_log(s, AV_LOG_ERROR, "could not create chapter\n");
+            av_log(s, AV_LOG_ERROR, "Could not create chapter.\n");
             return AVERROR(ENOMEM);
         }
         metadata = &chapter->metadata;
