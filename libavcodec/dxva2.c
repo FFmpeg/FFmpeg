@@ -135,7 +135,9 @@ int ff_dxva2_common_end_frame(AVCodecContext *avctx, AVFrame *frame,
 #if CONFIG_D3D11VA
     D3D11_VIDEO_DECODER_BUFFER_DESC buffer11[4];
 #endif
+#if CONFIG_DXVA2
     DXVA2_DecodeBufferDesc          buffer2[4];
+#endif
     DECODER_BUFFER_DESC             *buffer = NULL, *buffer_slice = NULL;
     int result, runs = 0;
     HRESULT hr;
