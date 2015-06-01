@@ -1823,8 +1823,6 @@ TOOLCHAIN_FEATURES="
 
 TYPES_LIST="
     CONDITION_VARIABLE_Ptr
-    DXVA_PicParams_HEVC
-    ID3D11VideoDecoder
     socklen_t
     struct_addrinfo
     struct_group_source_req
