@@ -1,6 +1,109 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 2.4.10:
+- diracdec: check if reference could not be allocated
+- diracdec: avoid overflow of bytes*8 in decode_lowdelay
+- diracdec: prevent overflow in data_unit_size check
+- avformat/matroskadec: Use tracks[k]->stream instead of s->streams[k]
+- matroskadec: check s->streams[k] before using it
+- avcodec/ffv1dec: Check chroma shift parameters
+- matroskadec: use uint64_t instead of int for index_scale
+- avcodec/wavpack: Check L/R values before use to avoid harmless integer overflow and undefined behavior in fate
+- nutdec: fix illegal count check in decode_main_header
+- nutdec: check for negative frame rate in decode_info_header
+- ffmpeg: remove incorrect network deinit
+- OpenCL: Avoid potential buffer overflow in cmdutils_opencl.c
+- apedec: set s->samples only when init_frame_decoder succeeded
+- OS/2:Makedef.cmd cleanup
+- avcodec/golomb: get_ur_golomb_jpegls: Fix reading huge k values
+- avformat/mov: Fix parsing short loci
+- avformat/mov: Print reason of loci parsing failure
+- avcodec/hevc: Fix typo in num_entry_point_offsets check
+- avcodec/libtheoraenc: Check for av_malloc failure
+- avcodec/dcadec: Check active_bands
+- avcodec/dcadec: Check scale table index
+- avcodec/sonic: More completely check sample_rate_index and channels
+- avcodec/sonic: check memory allocations
+- avcodec/smvjpegdec: check avcodec_decode_video2() return code
+- avcodec/shorten: More complete pred_order check
+- avcodec/shorten: Check skip_bytes()
+- png: Set the color range as full range
+- mpegts: Update the PSI/SI table only if the version change
+- rtsp: Make sure we don't write too many transport entries into a fixed-size array
+- rtpenc_jpeg: Handle case of picture dimensions not dividing by 8
+- libvpx: Fix mixed use of av_malloc() and av_reallocp()
+- aacpsy: correct calculation of minath in psy_3gpp_init
+- avcodec/shorten: Fix code depending on signed overflow behavior
+- avcodec/proresdec2: Reset slice_count on deallocation
+- ffmpeg_opt: Fix -timestamp parsing
+- avcodec/dcadec: Check subsubframes
+- avcodec/dcadec: Check nchans
+- hevc: make avcodec_decode_video2() fail if get_format() fails
+- avcodec/cavsdec: Check esc_code
+- avcodec/on2avc: Check run more carefully
+- avcodec/mpeg4audio: add some padding/alignment to MAX_PCE_SIZE
+- swr: fix alignment issue caused by 8ch sse functions
+- avcodec/mjpegdec: fix len computation in ff_mjpeg_decode_dqt()
+- avcodec/jpeg2000dec: fix boolean operator
+- avcodec/hevc_ps: Explicitly check num_tile_* for negative values
+- avcodec/hevc_ps: Check vps_num_hrd_parameters
+- avcodec/hevc_ps: More completely check vps_num_layer_sets
+- avcodec/hevc: Check num_entry_point_offsets
+- avcodec/hevc: Check offset_len
+- libswscale/x86/hscale_fast_bilinear_simd.c: Include BX in the clobber list on x86_64, because it isn't implicitly included when PIC is on.
+- avcodec/hevc_sei: Check num_sps_ids_minus1 value
+- avcodec/vqavideo: Check chunk size
+- aacdec: don't return frames without data
+- avformat/hevc: Check num_negative_pics and num_positive_pics
+- avformat/hevc: Check cpb_cnt_minus1
+- avformat/matroskadec: Cleanup error handling for bz2 & zlib
+- avformat/nutdec: Fix use of uinitialized value
+- avformat/rtpenc_jpeg: Check remaining buffer size for SOS
+- avformat/rtpdec_xiph: Check upper bound on len in xiph_handle_packet()
+- tools/graph2dot: use larger data types than int for array/string sizes
+- avformat/matroskaenc: Check ff_vorbiscomment_length in put_flac_codecpriv()
+- avformat/oggenc: Check ff_vorbiscomment_length in ogg_write_vorbiscomment()
+- avformat/flacenc: Check length in flac_write_block_comment()
+- avformat/subtitles: Use size_t for len
+- avformat/url: Use size_t for len from strlen()
+- avutil/avstring: Use size_t in av_strlcatf()
+- avformat/vorbiscomment: Check entry length in ff_vorbiscomment_write()
+- avutil/dict: Use size_t for appending strings
+- libavutil/mem: use size_t for the length in av_strdup()
+- aacsbr: break infinite loop in sbr_hf_calc_npatches
+- diracdec: check that block length is valid
+- ffmpeg_opt: Set the video VBV parameters only for the video stream from -target
+- avcodec/bitstream: Assert that there is enough space left in avpriv_copy_bits()
+- avcodec/put_bits: Assert that there is enough space left in skip_put_bytes()
+- avcodec/mpegvideo_enc: Update the buffer size as more slices are merged
+- avcodec/put_bits: Update size_in_bits in set_put_bits_buffer_size()
+- avformat/wavdec: Increase dts packet threshold to fix more misdetections
+- avformat/wavdec: Increase probe_packets limit
+- nutdec: abort if EOF is reached in decode_info_header/read_sm_data
+- nutdec: stop skipping bytes at EOF
+- nutdec: fix infinite resync loops
+- avformat/nutdec: Check X in 2nd branch of index reading
+- avformat/nutdec: Fix recovery when immedeately after seeking a failure happens
+- avformat/nutdec: Return error on EOF from get_str()
+- avcodec/x86/cavsdsp: remove unneeded tmp
+- nutdec: fix memleaks on error in nut_read_header
+- avformat/avidec: print a warning for negative sample_size
+- avidec: avoid infinite loop due to negative ast->sample_size
+- nutdec: check chapter creation in decode_info_header
+- apedec: prevent out of array writes in decode_array_0000
+- avformat/mpegts: Detect changes in packet through CRC instead of just the 5bit version
+- avformat/mpegts: reset last_ver on corrupted packets
+- avformat/mpegts: Factorize version checking code out
+- avformat/mpegts: Also parse the FMC descriptor if the codec has not been identified yet
+- avformat/mpegts: reset last_version on seeking
+- avformat/mp3dec: Check for avcodec_alloc_context3() failure
+- avformat/mp3dec: properly allocate dummy AVCodecContext
+- lavfi/fade: Do not overread input buffer.
+- tests: drop bc dependency
+- alsdec: limit avctx->bits_per_raw_sample to 32
+
+
 version 2.4.9:
 - alac: reject rice_limit 0 if compression is used
 - lavf: Reset global flag on deinit
