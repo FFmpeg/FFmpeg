@@ -127,6 +127,25 @@ Consider all spec non compliancies as errors.
 Consider things that a sane encoder should not do as an error.
 @end table
 
+@item max_interleave_delta @var{integer} (@emph{output})
+Set maximum buffering duration for interleaving. The duration is
+expressed in microseconds, and defaults to 1000000 (1 second).
+
+To ensure all the streams are interleaved correctly, libavformat will
+wait until it has at least one packet for each stream before actually
+writing any packets to the output file. When some streams are
+"sparse" (i.e. there are large gaps between successive packets), this
+can result in excessive buffering.
+
+This field specifies the maximum difference between the timestamps of the
+first and the last packet in the muxing queue, above which libavformat
+will output a packet regardless of whether it has queued a packet for all
+the streams.
+
+If set to 0, libavformat will continue buffering packets until it has
+a packet for each stream, regardless of the maximum timestamp
+difference between the buffered packets.
+
 @item use_wallclock_as_timestamps @var{integer} (@emph{input})
 Use wallclock as timestamps.
 
