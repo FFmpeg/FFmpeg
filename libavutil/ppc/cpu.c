@@ -104,7 +104,7 @@ int ff_get_cpu_flags_ppc(void)
 out:
     close(fd);
     return ret;
-#elif CONFIG_RUNTIME_CPUDETECT && defined(__linux__) && !ARCH_PPC64
+#elif CONFIG_RUNTIME_CPUDETECT && defined(__linux__)
 #define PVR_G4_7400  0x000C
 #define PVR_G5_970   0x0039
 #define PVR_G5_970FX 0x003C
