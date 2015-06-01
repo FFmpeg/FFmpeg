@@ -1895,6 +1895,7 @@ CONFIG_EXTRA="
     fmtconvert
     frame_thread_encoder
     gcrypt
+    gmp
     golomb
     gplv3
     h263dsp
@@ -1921,7 +1922,6 @@ CONFIG_EXTRA="
     mpegaudiodsp
     mpegvideo
     mpegvideoenc
-    nettle
     pixblockdsp
     qpeldsp
     qsv
@@ -2617,7 +2617,7 @@ x11grab_xcb_indev_deps="libxcb"
 # protocols
 bluray_protocol_deps="libbluray"
 ffrtmpcrypt_protocol_deps="!librtmp_protocol"
-ffrtmpcrypt_protocol_deps_any="gcrypt nettle openssl"
+ffrtmpcrypt_protocol_deps_any="gcrypt gmp openssl"
 ffrtmpcrypt_protocol_select="tcp_protocol"
 ffrtmphttp_protocol_deps="!librtmp_protocol"
 ffrtmphttp_protocol_select="http_protocol"
@@ -5204,7 +5204,7 @@ enabled openssl           && { check_lib openssl/ssl.h SSL_library_init -lssl -l
 enabled qtkit_indev      && { check_header_oc QTKit/QTKit.h || disable qtkit_indev; }
 
 if enabled gnutls; then
-    { check_lib nettle/bignum.h nettle_mpz_get_str_256 -lnettle -lhogweed -lgmp && enable nettle; } ||
+    { check_lib2 gmp.h mpz_export -lgmp && enable gmp; } ||
     { check_lib gcrypt.h gcry_mpi_new -lgcrypt && enable gcrypt; }
 fi
 
