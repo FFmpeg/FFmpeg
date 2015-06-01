@@ -2981,7 +2981,7 @@ void ff_rfps_calculate(AVFormatContext *ic)
 
                 if (st->info->codec_info_duration && st->info->codec_info_duration*av_q2d(st->time_base) < (1001*12.0)/get_std_framerate(j))
                     continue;
-                if (!st->info->codec_info_duration && 1.0 < (1001*12.0)/get_std_framerate(j))
+                if (!st->info->codec_info_duration && get_std_framerate(j) < 1001*12)
                     continue;
 
                 if (av_q2d(st->time_base) * st->info->rfps_duration_sum / st->info->duration_count < (1001*12.0 * 0.8)/get_std_framerate(j))
