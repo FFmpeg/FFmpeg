@@ -73,7 +73,7 @@ av_cold int swri_rematrix_init_x86(struct SwrContext *s){
             s->mix_1_1_simd = ff_mix_1_1_a_float_sse;
             s->mix_2_1_simd = ff_mix_2_1_a_float_sse;
         }
-        if(EXTERNAL_AVX(mm_flags)) {
+        if(EXTERNAL_AVX_FAST(mm_flags)) {
             s->mix_1_1_simd = ff_mix_1_1_a_float_avx;
             s->mix_2_1_simd = ff_mix_2_1_a_float_avx;
         }

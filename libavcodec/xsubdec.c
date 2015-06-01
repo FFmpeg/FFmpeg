@@ -109,10 +109,11 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     sub->rects[0]->nb_colors = 4;
     sub->rects[0]->pict.data[1] = av_mallocz(AVPALETTE_SIZE);
     if (!sub->rects[0]->pict.data[0] || !sub->rects[0]->pict.data[1]) {
+        av_freep(&sub->rects[0]->pict.data[1]);
+        av_freep(&sub->rects[0]->pict.data[0]);
         av_freep(&sub->rects[0]);
         av_freep(&sub->rects);
         return AVERROR(ENOMEM);
-
     }
     sub->num_rects = 1;
 

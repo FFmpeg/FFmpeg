@@ -223,8 +223,10 @@ av_cold int ff_rate_control_init(MpegEncContext *s)
             p = next;
         }
 
-        if (init_pass2(s) < 0)
+        if (init_pass2(s) < 0) {
+            ff_rate_control_uninit(s);
             return -1;
+        }
 
         // FIXME maybe move to end
         if ((s->avctx->flags & CODEC_FLAG_PASS2) && s->avctx->rc_strategy == FF_RC_STRATEGY_XVID) {

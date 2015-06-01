@@ -24,7 +24,17 @@
 #define CPUEXT_SUFFIX(flags, suffix, cpuext)                            \
     (HAVE_ ## cpuext ## suffix && ((flags) & AV_CPU_FLAG_ ## cpuext))
 
+#define CPUEXT_SUFFIX_FAST(flags, suffix, cpuext)                       \
+    (HAVE_ ## cpuext ## suffix && ((flags) & AV_CPU_FLAG_ ## cpuext) && \
+     !((flags) & AV_CPU_FLAG_ ## cpuext ## SLOW))
+
+#define CPUEXT_SUFFIX_SLOW(flags, suffix, cpuext)                       \
+    (HAVE_ ## cpuext ## suffix && ((flags) & AV_CPU_FLAG_ ## cpuext) && \
+     ((flags) & AV_CPU_FLAG_ ## cpuext ## SLOW))
+
 #define CPUEXT(flags, cpuext) CPUEXT_SUFFIX(flags, , cpuext)
+#define CPUEXT_FAST(flags, cpuext) CPUEXT_SUFFIX_FAST(flags, , cpuext)
+#define CPUEXT_SLOW(flags, cpuext) CPUEXT_SUFFIX_SLOW(flags, , cpuext)
 
 int ff_get_cpu_flags_aarch64(void);
 int ff_get_cpu_flags_arm(void);

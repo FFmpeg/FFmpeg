@@ -269,7 +269,7 @@ External library support:
   --disable-lzma           disable lzma [autodetect]
   --enable-decklink        enable Blackmagick DeckLink I/O support [no]
   --enable-mmal            enable decoding via MMAL [no]
-  --enable-nvenc           enable NVIDIA NVENC support [no]
+  --enable-nvenc           enable encoding via NVENC [no]
   --enable-openal          enable OpenAL 1.1 capture support [no]
   --enable-opencl          enable OpenCL code
   --enable-opengl          enable OpenGL rendering [no]
@@ -342,6 +342,8 @@ Advanced options (experts only):
 Optimization options (experts only):
   --disable-asm            disable all assembly optimizations
   --disable-altivec        disable AltiVec optimizations
+  --disable-vsx            disable VSX optimizations
+  --disable-power8         disable POWER8 optimizations
   --disable-amd3dnow       disable 3DNow! optimizations
   --disable-amd3dnowext    disable 3DNow! extended optimizations
   --disable-mmx            disable MMX optimizations
@@ -1611,6 +1613,7 @@ ARCH_EXT_LIST_PPC="
     altivec
     dcbzl
     ldbrx
+    power8
     ppc4xx
     vsx
 "
@@ -1669,6 +1672,7 @@ HEADERS_LIST="
     asm_types_h
     cdio_paranoia_h
     cdio_paranoia_paranoia_h
+    cuda_h
     dev_bktr_ioctl_bt848_h
     dev_bktr_ioctl_meteor_h
     dev_ic_bt8xx_h
@@ -1767,6 +1771,7 @@ SYSTEM_FUNCS="
     isatty
     jack_port_get_latency_range
     kbhit
+    LoadLibrary
     localtime_r
     lzo1x_999_compress
     mach_absolute_time
@@ -2045,7 +2050,8 @@ altivec_deps="ppc"
 dcbzl_deps="ppc"
 ldbrx_deps="ppc"
 ppc4xx_deps="ppc"
-vsx_deps="ppc"
+vsx_deps="altivec"
+power8_deps="vsx"
 
 cpunop_deps="i686"
 x86_64_select="i686"
@@ -2112,6 +2118,8 @@ mpegaudio_select="mpegaudiodsp"
 mpegaudiodsp_select="dct"
 mpegvideo_select="blockdsp h264chroma hpeldsp idctdsp me_cmp videodsp"
 mpegvideoenc_select="me_cmp mpegvideo pixblockdsp qpeldsp"
+nvenc_deps_any="dlopen LoadLibrary"
+nvenc_extralibs='$ldl'
 qsvdec_select="qsv"
 qsvenc_select="qsv"
 
@@ -2189,11 +2197,13 @@ h263p_decoder_select="h263_decoder"
 h263p_encoder_select="h263_encoder"
 h264_decoder_select="cabac golomb h264chroma h264dsp h264pred h264qpel startcode videodsp"
 h264_decoder_suggest="error_resilience"
+h264_nvenc_encoder_deps="nvenc cuda_h"
 h264_qsv_decoder_deps="libmfx"
 h264_qsv_decoder_select="h264_mp4toannexb_bsf h264_parser qsvdec h264_qsv_hwaccel"
 h264_qsv_encoder_deps="libmfx"
 h264_qsv_encoder_select="qsvenc"
 hevc_decoder_select="bswapdsp cabac golomb videodsp"
+hevc_nvenc_encoder_deps="nvenc cuda_h"
 huffyuv_decoder_select="bswapdsp huffyuvdsp llviddsp"
 huffyuv_encoder_select="bswapdsp huffman huffyuvencdsp llviddsp"
 iac_decoder_select="imc_decoder"
@@ -3997,19 +4007,27 @@ elif enabled ppc; then
         ;;
         g4|745*|ppc745*|powerpc745*)
             cpuflags="-mcpu=7450"
+            disable vsx
         ;;
         74*|ppc74*|powerpc74*)
             cpuflags="-mcpu=7400"
+            disable vsx
         ;;
         g5|970|ppc970|powerpc970)
             cpuflags="-mcpu=970"
+            disable vsx
         ;;
-        power[3-8]*)
+        power[3-6]*)
+            cpuflags="-mcpu=$cpu"
+            disable vsx
+        ;;
+        power[7-8]*)
             cpuflags="-mcpu=$cpu"
         ;;
         cell)
             cpuflags="-mcpu=cell"
             enable ldbrx
+            disable vsx
         ;;
         e500mc)
             cpuflags="-mcpu=e500mc"
@@ -4788,8 +4806,14 @@ EOF
     fi
 
     if enabled vsx; then
-        check_cflags -mvsx
+        check_cflags -mvsx &&
+        check_builtin vec_vsx_ld "altivec.h" "__builtin_vec_vsx_ld" || disable vsx
     fi
+
+    if enabled power8; then
+        check_cpp_condition "altivec.h" "defined(_ARCH_PWR8)" || disable power8
+    fi
+
 elif enabled x86; then
 
     check_builtin rdtsc    intrin.h   "__rdtsc()"
@@ -4960,6 +4984,7 @@ check_func_headers windows.h CoTaskMemFree -lole32
 check_func_headers windows.h GetProcessAffinityMask
 check_func_headers windows.h GetProcessTimes
 check_func_headers windows.h GetSystemTimeAsFileTime
+check_func_headers windows.h LoadLibrary
 check_func_headers windows.h MapViewOfFile
 check_func_headers windows.h PeekNamedPipe
 check_func_headers windows.h SetConsoleTextAttribute
@@ -4970,6 +4995,7 @@ check_func_headers glob.h glob
 enabled xlib &&
     check_func_headers "X11/Xlib.h X11/extensions/Xvlib.h" XvGetPortAttribute -lXv -lX11 -lXext
 
+check_header cuda.h
 check_header direct.h
 check_header dlfcn.h
 check_header d3d11.h
@@ -5154,10 +5180,6 @@ enabled mmal              && { check_lib interface/mmal/mmal.h mmal_port_connect
                                     check_lib interface/mmal/mmal.h mmal_port_connect ; }
                                 check_lib interface/mmal/mmal.h mmal_port_connect ; } ||
                                die "ERROR: mmal not found"; }
-enabled nvenc             && { check_header nvEncodeAPI.h || die "ERROR: nvEncodeAPI.h not found."; } &&
-                             { check_cpp_condition nvEncodeAPI.h "NVENCAPI_MAJOR_VERSION >= 5" ||
-                               die "ERROR: NVENC API version 4 or older is not supported"; } &&
-                             { [ $target_os != cygwin ] || die "ERROR: NVENC is not supported on Cygwin currently."; }
 enabled openal            && { { for al_libs in "${OPENAL_LIBS}" "-lopenal" "-lOpenAL32"; do
                                check_lib 'AL/al.h' alGetError "${al_libs}" && break; done } ||
                                die "ERROR: openal not found"; } &&
@@ -5194,6 +5216,14 @@ if enabled libdc1394; then
         enable libdc1394_1; } ||
     die "ERROR: No version of libdc1394 found "
 fi
+
+if enabled nvenc; then
+    check_header nvEncodeAPI.h || die "ERROR: nvEncodeAPI.h not found.";
+    check_cpp_condition nvEncodeAPI.h "NVENCAPI_MAJOR_VERSION >= 5" ||
+        die "ERROR: NVENC API version 4 or older is not supported";
+    { [ $target_os != cygwin ] || die "ERROR: NVENC is not supported on Cygwin currently."; }
+fi
+
 if ! disabled sdl; then
     SDL_CONFIG="${cross_prefix}sdl-config"
     if check_pkg_config sdl SDL_events.h SDL_PollEvent; then
@@ -5741,8 +5771,9 @@ if enabled mips; then
 fi
 if enabled ppc; then
     echo "AltiVec enabled           ${altivec-no}"
+    echo "VSX enabled               ${vsx-no}"
+    echo "POWER8 enabled            ${power8-no}"
     echo "PPC 4xx optimizations     ${ppc4xx-no}"
-    echo "PPC VSX optimizations     ${vsx-no}"
     echo "dcbzl available           ${dcbzl-no}"
 fi
 echo "debug symbols             ${debug-no}"

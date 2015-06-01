@@ -40,6 +40,7 @@
 #include "hpeldsp.h"
 #include "idctdsp.h"
 #include "me_cmp.h"
+#include "motion_est.h"
 #include "mpegvideodsp.h"
 #include "mpegvideoencdsp.h"
 #include "pixblockdsp.h"
@@ -64,7 +65,6 @@ enum OutputFormat {
 };
 
 #define MAX_FCODE 7
-#define MAX_MV 4096
 
 #define MAX_THREADS 32
 #define MAX_PICTURE_COUNT 36
@@ -88,12 +88,6 @@ enum OutputFormat {
 #define SLICE_MAX_START_CODE    0x000001af
 #define EXT_START_CODE          0x000001b5
 #define USER_START_CODE         0x000001b2
-
-/* encoding scans */
-extern const uint8_t ff_alternate_horizontal_scan[64];
-extern const uint8_t ff_alternate_vertical_scan[64];
-
-struct MpegEncContext;
 
 /**
  * Picture.
@@ -148,62 +142,6 @@ typedef struct Picture{
 
     uint64_t error[AV_NUM_DATA_POINTERS];
 } Picture;
-
-/**
- * Motion estimation context.
- */
-typedef struct MotionEstContext{
-    AVCodecContext *avctx;
-    int skip;                          ///< set if ME is skipped for the current MB
-    int co_located_mv[4][2];           ///< mv from last P-frame for direct mode ME
-    int direct_basis_mv[4][2];
-    uint8_t *scratchpad;               ///< data area for the ME algo, so that the ME does not need to malloc/free
-    uint8_t *best_mb;
-    uint8_t *temp_mb[2];
-    uint8_t *temp;
-    int best_bits;
-    uint32_t *map;                     ///< map to avoid duplicate evaluations
-    uint32_t *score_map;               ///< map to store the scores
-    unsigned map_generation;
-    int pre_penalty_factor;
-    int penalty_factor;                /**< an estimate of the bits required to
-                                        code a given mv value, e.g. (1,0) takes
-                                        more bits than (0,0). We have to
-                                        estimate whether any reduction in
-                                        residual is worth the extra bits. */
-    int sub_penalty_factor;
-    int mb_penalty_factor;
-    int flags;
-    int sub_flags;
-    int mb_flags;
-    int pre_pass;                      ///< = 1 for the pre pass
-    int dia_size;
-    int xmin;
-    int xmax;
-    int ymin;
-    int ymax;
-    int pred_x;
-    int pred_y;
-    uint8_t *src[4][4];
-    uint8_t *ref[4][4];
-    int stride;
-    int uvstride;
-    /* temp variables for picture complexity calculation */
-    int64_t mc_mb_var_sum_temp;
-    int64_t mb_var_sum_temp;
-    int scene_change_score;
-/*    cmp, chroma_cmp;*/
-    op_pixels_func (*hpel_put)[4];
-    op_pixels_func (*hpel_avg)[4];
-    qpel_mc_func (*qpel_put)[16];
-    qpel_mc_func (*qpel_avg)[16];
-    uint8_t (*mv_penalty)[MAX_MV*2+1];  ///< amount of bits needed to encode a MV
-    uint8_t *current_mv_penalty;
-    int (*sub_motion_search)(struct MpegEncContext * s,
-                                  int *mx_ptr, int *my_ptr, int dmin,
-                                  int src_index, int ref_index,
-                                  int size, int h);
-}MotionEstContext;
 
 /**
  * MpegEncContext.
@@ -836,72 +774,10 @@ static inline int get_bits_diff(MpegEncContext *s){
     return bits - last;
 }
 
-static inline int ff_h263_round_chroma(int x){
-    static const uint8_t h263_chroma_roundtab[16] = {
-    //  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
-        0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1,
-    };
-    return h263_chroma_roundtab[x & 0xf] + (x >> 3);
-}
-
-/* motion_est.c */
-void ff_estimate_p_frame_motion(MpegEncContext * s,
-                             int mb_x, int mb_y);
-void ff_estimate_b_frame_motion(MpegEncContext * s,
-                             int mb_x, int mb_y);
-int ff_get_best_fcode(MpegEncContext * s, int16_t (*mv_table)[2], int type);
-void ff_fix_long_p_mvs(MpegEncContext * s);
-void ff_fix_long_mvs(MpegEncContext * s, uint8_t *field_select_table, int field_select,
-                     int16_t (*mv_table)[2], int f_code, int type, int truncate);
-int ff_init_me(MpegEncContext *s);
-int ff_pre_estimate_p_frame_motion(MpegEncContext * s, int mb_x, int mb_y);
-int ff_epzs_motion_search(MpegEncContext * s, int *mx_ptr, int *my_ptr,
-                             int P[10][2], int src_index, int ref_index, int16_t (*last_mv)[2],
-                             int ref_mv_scale, int size, int h);
-int ff_get_mb_score(MpegEncContext * s, int mx, int my, int src_index,
-                               int ref_index, int size, int h, int add_rate);
-
-/* mpeg12.c */
-extern const uint8_t ff_mpeg1_dc_scale_table[128];
-extern const uint8_t * const ff_mpeg2_dc_scale_table[4];
-
-void ff_mpeg1_encode_picture_header(MpegEncContext *s, int picture_number);
-void ff_mpeg1_encode_mb(MpegEncContext *s,
-                        int16_t block[8][64],
-                        int motion_x, int motion_y);
-void ff_mpeg1_encode_init(MpegEncContext *s);
-void ff_mpeg1_encode_slice_header(MpegEncContext *s);
-
-extern const uint8_t ff_aic_dc_scale_table[32];
-extern const uint8_t ff_h263_chroma_qscale_table[32];
-
 /* rv10.c */
 int ff_rv10_encode_picture_header(MpegEncContext *s, int picture_number);
 int ff_rv_decode_dc(MpegEncContext *s, int n);
 void ff_rv20_encode_picture_header(MpegEncContext *s, int picture_number);
-
-
-/* msmpeg4.c */
-void ff_msmpeg4_encode_picture_header(MpegEncContext * s, int picture_number);
-void ff_msmpeg4_encode_ext_header(MpegEncContext * s);
-void ff_msmpeg4_encode_mb(MpegEncContext * s,
-                          int16_t block[6][64],
-                          int motion_x, int motion_y);
-int ff_msmpeg4_decode_picture_header(MpegEncContext * s);
-int ff_msmpeg4_decode_ext_header(MpegEncContext * s, int buf_size);
-int ff_msmpeg4_decode_init(AVCodecContext *avctx);
-int ff_msmpeg4_encode_init(MpegEncContext *s);
-int ff_wmv2_decode_picture_header(MpegEncContext * s);
-int ff_wmv2_decode_secondary_picture_header(MpegEncContext * s);
-void ff_wmv2_add_mb(MpegEncContext *s, int16_t block[6][64], uint8_t *dest_y, uint8_t *dest_cb, uint8_t *dest_cr);
-void ff_mspel_motion(MpegEncContext *s,
-                               uint8_t *dest_y, uint8_t *dest_cb, uint8_t *dest_cr,
-                               uint8_t **ref_picture, op_pixels_func (*pix_op)[4],
-                               int motion_x, int motion_y, int h);
-int ff_wmv2_encode_picture_header(MpegEncContext * s, int picture_number);
-void ff_wmv2_encode_mb(MpegEncContext * s,
-                       int16_t block[6][64],
-                       int motion_x, int motion_y);
 
 int ff_mpeg_ref_picture(AVCodecContext *avctx, Picture *dst, Picture *src);
 void ff_mpeg_unref_picture(AVCodecContext *avctx, Picture *picture);

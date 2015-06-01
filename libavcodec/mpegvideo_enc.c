@@ -40,6 +40,7 @@
 #include "idctdsp.h"
 #include "mpeg12.h"
 #include "mpegvideo.h"
+#include "mpegvideodata.h"
 #include "h261.h"
 #include "h263.h"
 #include "mjpegenc_common.h"
@@ -56,6 +57,7 @@
 #include "mpeg4video.h"
 #include "internal.h"
 #include "bytestream.h"
+#include "wmv2.h"
 #include <limits.h>
 #include "sp5x.h"
 
