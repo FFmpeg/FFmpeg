@@ -1985,7 +1985,7 @@ zmbv_encoder_deps="zlib"
 
 # hardware accelerators
 d3d11va_deps="d3d11_h dxva_h ID3D11VideoDecoder"
-dxva2_deps="dxva2api_h"
+dxva2_deps="dxva2api_h LPDIRECT3DSURFACE9"
 vaapi_deps="va_va_h"
 vda_deps="VideoDecodeAcceleration_VDADecoder_h pthreads"
 vda_extralibs="-framework CoreFoundation -framework VideoDecodeAcceleration -framework QuartzCore"
@@ -4235,6 +4235,7 @@ check_struct "sys/time.h sys/resource.h" "struct rusage" ru_maxrss
 
 check_type "windows.h dxva.h" "DXVA_PicParams_HEVC"
 check_type "windows.h d3d11.h" "ID3D11VideoDecoder"
+check_type d3d9.h LPDIRECT3DSURFACE9
 
 if ! disabled w32threads && ! enabled pthreads; then
     check_func_headers "windows.h process.h" _beginthreadex &&
