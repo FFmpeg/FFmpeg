@@ -230,7 +230,7 @@ static void diff_pixels_altivec(int16_t *restrict block, const uint8_t *s1,
 
 #if HAVE_VSX
 static void get_pixels_vsx(int16_t *restrict block, const uint8_t *pixels,
-                           int line_size)
+                           ptrdiff_t line_size)
 {
     int i;
     for (i = 0; i < 8; i++) {
