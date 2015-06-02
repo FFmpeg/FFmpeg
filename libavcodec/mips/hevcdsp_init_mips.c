@@ -62,6 +62,38 @@ static av_cold void hevc_dsp_init_msa(HEVCDSPContext *c,
         c->put_hevc_qpel[8][1][1] = ff_hevc_put_hevc_qpel_hv48_8_msa;
         c->put_hevc_qpel[9][1][1] = ff_hevc_put_hevc_qpel_hv64_8_msa;
 
+        c->put_hevc_epel[1][0][0] = ff_hevc_put_hevc_pel_pixels4_8_msa;
+        c->put_hevc_epel[2][0][0] = ff_hevc_put_hevc_pel_pixels6_8_msa;
+        c->put_hevc_epel[3][0][0] = ff_hevc_put_hevc_pel_pixels8_8_msa;
+        c->put_hevc_epel[4][0][0] = ff_hevc_put_hevc_pel_pixels12_8_msa;
+        c->put_hevc_epel[5][0][0] = ff_hevc_put_hevc_pel_pixels16_8_msa;
+        c->put_hevc_epel[6][0][0] = ff_hevc_put_hevc_pel_pixels24_8_msa;
+        c->put_hevc_epel[7][0][0] = ff_hevc_put_hevc_pel_pixels32_8_msa;
+
+        c->put_hevc_epel[1][0][1] = ff_hevc_put_hevc_epel_h4_8_msa;
+        c->put_hevc_epel[2][0][1] = ff_hevc_put_hevc_epel_h6_8_msa;
+        c->put_hevc_epel[3][0][1] = ff_hevc_put_hevc_epel_h8_8_msa;
+        c->put_hevc_epel[4][0][1] = ff_hevc_put_hevc_epel_h12_8_msa;
+        c->put_hevc_epel[5][0][1] = ff_hevc_put_hevc_epel_h16_8_msa;
+        c->put_hevc_epel[6][0][1] = ff_hevc_put_hevc_epel_h24_8_msa;
+        c->put_hevc_epel[7][0][1] = ff_hevc_put_hevc_epel_h32_8_msa;
+
+        c->put_hevc_epel[1][1][0] = ff_hevc_put_hevc_epel_v4_8_msa;
+        c->put_hevc_epel[2][1][0] = ff_hevc_put_hevc_epel_v6_8_msa;
+        c->put_hevc_epel[3][1][0] = ff_hevc_put_hevc_epel_v8_8_msa;
+        c->put_hevc_epel[4][1][0] = ff_hevc_put_hevc_epel_v12_8_msa;
+        c->put_hevc_epel[5][1][0] = ff_hevc_put_hevc_epel_v16_8_msa;
+        c->put_hevc_epel[6][1][0] = ff_hevc_put_hevc_epel_v24_8_msa;
+        c->put_hevc_epel[7][1][0] = ff_hevc_put_hevc_epel_v32_8_msa;
+
+        c->put_hevc_epel[1][1][1] = ff_hevc_put_hevc_epel_hv4_8_msa;
+        c->put_hevc_epel[2][1][1] = ff_hevc_put_hevc_epel_hv6_8_msa;
+        c->put_hevc_epel[3][1][1] = ff_hevc_put_hevc_epel_hv8_8_msa;
+        c->put_hevc_epel[4][1][1] = ff_hevc_put_hevc_epel_hv12_8_msa;
+        c->put_hevc_epel[5][1][1] = ff_hevc_put_hevc_epel_hv16_8_msa;
+        c->put_hevc_epel[6][1][1] = ff_hevc_put_hevc_epel_hv24_8_msa;
+        c->put_hevc_epel[7][1][1] = ff_hevc_put_hevc_epel_hv32_8_msa;
+
         c->put_hevc_qpel_uni[3][0][0] = ff_hevc_put_hevc_uni_pel_pixels8_8_msa;
         c->put_hevc_qpel_uni[4][0][0] = ff_hevc_put_hevc_uni_pel_pixels12_8_msa;
         c->put_hevc_qpel_uni[5][0][0] = ff_hevc_put_hevc_uni_pel_pixels16_8_msa;

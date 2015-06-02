@@ -66,6 +66,36 @@ MC(qpel, hv, 32);
 MC(qpel, hv, 48);
 MC(qpel, hv, 64);
 
+MC(epel, h, 4);
+MC(epel, h, 6);
+MC(epel, h, 8);
+MC(epel, h, 12);
+MC(epel, h, 16);
+MC(epel, h, 24);
+MC(epel, h, 32);
+MC(epel, h, 48);
+MC(epel, h, 64);
+
+MC(epel, v, 4);
+MC(epel, v, 6);
+MC(epel, v, 8);
+MC(epel, v, 12);
+MC(epel, v, 16);
+MC(epel, v, 24);
+MC(epel, v, 32);
+MC(epel, v, 48);
+MC(epel, v, 64);
+
+MC(epel, hv, 4);
+MC(epel, hv, 6);
+MC(epel, hv, 8);
+MC(epel, hv, 12);
+MC(epel, hv, 16);
+MC(epel, hv, 24);
+MC(epel, hv, 32);
+MC(epel, hv, 48);
+MC(epel, hv, 64);
+
 #undef MC
 
 #define UNI_MC(PEL, DIR, WIDTH)                                                \
