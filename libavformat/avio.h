@@ -196,6 +196,12 @@ typedef struct AVIOContext {
      * This field is internal to libavformat and access from outside is not allowed.
      */
     int orig_buffer_size;
+
+    /**
+     * Threshold to favor readahead over seek.
+     * This is current internal only, do not use from outside.
+     */
+    int short_seek_threshold;
 } AVIOContext;
 
 /* unbuffered I/O */
