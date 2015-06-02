@@ -25,10 +25,9 @@
 #include "avformat.h"
 #include "config.h"
 
-#if CONFIG_NETTLE || CONFIG_GCRYPT
-#if CONFIG_NETTLE
+#if CONFIG_GMP || CONFIG_GCRYPT
+#if CONFIG_GMP
 #include <gmp.h>
-#include <nettle/bignum.h>
 
 typedef mpz_ptr FFBigNum;
 #elif CONFIG_GCRYPT
@@ -38,11 +37,11 @@ typedef gcry_mpi_t FFBigNum;
 #endif
 
 typedef struct FF_DH {
-  FFBigNum p;
-  FFBigNum g;
-  FFBigNum pub_key;
-  FFBigNum priv_key;
-  long length;
+    FFBigNum p;
+    FFBigNum g;
+    FFBigNum pub_key;
+    FFBigNum priv_key;
+    long length;
 } FF_DH;
 
 #elif CONFIG_OPENSSL

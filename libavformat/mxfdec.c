@@ -2995,6 +2995,10 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (mxf->op != OPAtom)
         return mxf_read_packet_old(s, pkt);
 
+    // If we have no streams then we basically are at EOF
+    if (s->nb_streams < 1)
+        return AVERROR_EOF;
+
     /* OPAtom - clip wrapped demuxing */
     /* NOTE: mxf_read_header() makes sure nb_index_tables > 0 for OPAtom */
     st = s->streams[0];

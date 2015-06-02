@@ -1560,7 +1560,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         return ret;
 
     ff_init_range_encoder(c, pkt->data, pkt->size);
-    ff_build_rac_states(c, 0.05*(1LL<<32), 256-8);
+    ff_build_rac_states(c, (1LL<<32)/20, 256-8);
 
     for(i=0; i < s->nb_planes; i++){
         int hshift= i ? s->chroma_h_shift : 0;
@@ -1726,7 +1726,7 @@ redo_frame:
                && !(avctx->flags&CODEC_FLAG_PASS2)
                && s->m.me.scene_change_score > s->avctx->scenechange_threshold){
                 ff_init_range_encoder(c, pkt->data, pkt->size);
-                ff_build_rac_states(c, 0.05*(1LL<<32), 256-8);
+                ff_build_rac_states(c, (1LL<<32)/20, 256-8);
                 pic->pict_type= AV_PICTURE_TYPE_I;
                 s->keyframe=1;
                 s->current_picture->key_frame=1;

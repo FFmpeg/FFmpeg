@@ -1823,8 +1823,6 @@ TOOLCHAIN_FEATURES="
 
 TYPES_LIST="
     CONDITION_VARIABLE_Ptr
-    DXVA_PicParams_HEVC
-    ID3D11VideoDecoder
     socklen_t
     struct_addrinfo
     struct_group_source_req
@@ -1895,6 +1893,7 @@ CONFIG_EXTRA="
     fmtconvert
     frame_thread_encoder
     gcrypt
+    gmp
     golomb
     gplv3
     h263dsp
@@ -1921,7 +1920,6 @@ CONFIG_EXTRA="
     mpegaudiodsp
     mpegvideo
     mpegvideoenc
-    nettle
     pixblockdsp
     qpeldsp
     qsv
@@ -2336,7 +2334,7 @@ zmbv_encoder_select="zlib"
 # hardware accelerators
 crystalhd_deps="libcrystalhd_libcrystalhd_if_h"
 d3d11va_deps="d3d11_h dxva_h ID3D11VideoDecoder"
-dxva2_deps="dxva2api_h"
+dxva2_deps="dxva2api_h LPDIRECT3DSURFACE9"
 vaapi_deps="va_va_h"
 vda_deps="VideoDecodeAcceleration_VDADecoder_h pthreads"
 vda_extralibs="-framework CoreFoundation -framework VideoDecodeAcceleration -framework QuartzCore"
@@ -2617,7 +2615,7 @@ x11grab_xcb_indev_deps="libxcb"
 # protocols
 bluray_protocol_deps="libbluray"
 ffrtmpcrypt_protocol_deps="!librtmp_protocol"
-ffrtmpcrypt_protocol_deps_any="gcrypt nettle openssl"
+ffrtmpcrypt_protocol_deps_any="gcrypt gmp openssl"
 ffrtmpcrypt_protocol_select="tcp_protocol"
 ffrtmphttp_protocol_deps="!librtmp_protocol"
 ffrtmphttp_protocol_select="http_protocol"
@@ -2652,6 +2650,9 @@ tcp_protocol_select="network"
 tls_securetransport_protocol_deps="securetransport"
 tls_gnutls_protocol_deps="gnutls !tls_securetransport_protocol"
 tls_openssl_protocol_deps="openssl !tls_securetransport_protocol !tls_gnutls_protocol"
+tls_gnutls_protocol_select="tcp_protocol"
+tls_openssl_protocol_select="tcp_protocol"
+tls_securetransport_protocol_select="tcp_protocol"
 tls_protocol_deps_any="tls_securetransport_protocol tls_gnutls_protocol tls_openssl_protocol"
 tls_protocol_select="tcp_protocol"
 udp_protocol_select="network"
@@ -5031,6 +5032,7 @@ check_struct "sys/time.h sys/resource.h" "struct rusage" ru_maxrss
 
 check_type "windows.h dxva.h" "DXVA_PicParams_HEVC"
 check_type "windows.h d3d11.h" "ID3D11VideoDecoder"
+check_type d3d9.h LPDIRECT3DSURFACE9
 
 if ! disabled w32threads && ! enabled pthreads; then
     check_func_headers "windows.h process.h" _beginthreadex &&
@@ -5204,7 +5206,7 @@ enabled openssl           && { check_lib openssl/ssl.h SSL_library_init -lssl -l
 enabled qtkit_indev      && { check_header_oc QTKit/QTKit.h || disable qtkit_indev; }
 
 if enabled gnutls; then
-    { check_lib nettle/bignum.h nettle_mpz_get_str_256 -lnettle -lhogweed -lgmp && enable nettle; } ||
+    { check_lib2 gmp.h mpz_export -lgmp && enable gmp; } ||
     { check_lib gcrypt.h gcry_mpi_new -lgcrypt && enable gcrypt; }
 fi
 

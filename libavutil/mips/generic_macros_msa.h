@@ -29,18 +29,23 @@
 #define LD_SB(...) LD_B(v16i8, __VA_ARGS__)
 
 #define LD_H(RTYPE, psrc) *((RTYPE *)(psrc))
+#define LD_UH(...) LD_H(v8u16, __VA_ARGS__)
 #define LD_SH(...) LD_H(v8i16, __VA_ARGS__)
 
 #define LD_W(RTYPE, psrc) *((RTYPE *)(psrc))
+#define LD_UW(...) LD_W(v4u32, __VA_ARGS__)
 #define LD_SW(...) LD_W(v4i32, __VA_ARGS__)
 
 #define ST_B(RTYPE, in, pdst) *((RTYPE *)(pdst)) = (in)
 #define ST_UB(...) ST_B(v16u8, __VA_ARGS__)
+#define ST_SB(...) ST_B(v16i8, __VA_ARGS__)
 
 #define ST_H(RTYPE, in, pdst) *((RTYPE *)(pdst)) = (in)
+#define ST_UH(...) ST_H(v8u16, __VA_ARGS__)
 #define ST_SH(...) ST_H(v8i16, __VA_ARGS__)
 
 #define ST_W(RTYPE, in, pdst) *((RTYPE *)(pdst)) = (in)
+#define ST_UW(...) ST_W(v4u32, __VA_ARGS__)
 #define ST_SW(...) ST_W(v4i32, __VA_ARGS__)
 
 #if (__mips_isa_rev >= 6)
@@ -328,6 +333,46 @@
 #define LD_UB8(...) LD_B8(v16u8, __VA_ARGS__)
 #define LD_SB8(...) LD_B8(v16i8, __VA_ARGS__)
 
+/* Description : Load vectors with 8 halfword elements with stride
+   Arguments   : Inputs  - psrc    (source pointer to load from)
+                         - stride
+                 Outputs - out0, out1
+   Details     : Loads 8 halfword elements in 'out0' from (psrc)
+                 Loads 8 halfword elements in 'out1' from (psrc + stride)
+*/
+#define LD_H2(RTYPE, psrc, stride, out0, out1)  \
+{                                               \
+    out0 = LD_H(RTYPE, (psrc));                 \
+    out1 = LD_H(RTYPE, (psrc) + (stride));      \
+}
+#define LD_UH2(...) LD_H2(v8u16, __VA_ARGS__)
+#define LD_SH2(...) LD_H2(v8i16, __VA_ARGS__)
+
+#define LD_H4(RTYPE, psrc, stride, out0, out1, out2, out3)  \
+{                                                           \
+    LD_H2(RTYPE, (psrc), stride, out0, out1);               \
+    LD_H2(RTYPE, (psrc) + 2 * stride, stride, out2, out3);  \
+}
+#define LD_UH4(...) LD_H4(v8u16, __VA_ARGS__)
+#define LD_SH4(...) LD_H4(v8i16, __VA_ARGS__)
+
+#define LD_H6(RTYPE, psrc, stride, out0, out1, out2, out3, out4, out5)  \
+{                                                                       \
+    LD_H4(RTYPE, (psrc), stride, out0, out1, out2, out3);               \
+    LD_H2(RTYPE, (psrc) + 4 * stride, stride, out4, out5);              \
+}
+#define LD_UH6(...) LD_H6(v8u16, __VA_ARGS__)
+#define LD_SH6(...) LD_H6(v8i16, __VA_ARGS__)
+
+#define LD_H8(RTYPE, psrc, stride,                                      \
+              out0, out1, out2, out3, out4, out5, out6, out7)           \
+{                                                                       \
+    LD_H4(RTYPE, (psrc), stride, out0, out1, out2, out3);               \
+    LD_H4(RTYPE, (psrc) + 4 * stride, stride, out4, out5, out6, out7);  \
+}
+#define LD_UH8(...) LD_H8(v8u16, __VA_ARGS__)
+#define LD_SH8(...) LD_H8(v8i16, __VA_ARGS__)
+
 /* Description : Store vectors of 16 byte elements with stride
    Arguments   : Inputs  - in0, in1, stride
                  Outputs - pdst    (destination pointer to store to)
@@ -478,6 +523,55 @@
                                                                   \
     SW4(out0_m, out1_m, out2_m, out3_m, pblk_4x4_m, stride);      \
 }
+#define ST4x8_UB(in0, in1, pdst, stride)                            \
+{                                                                   \
+    uint8_t *pblk_4x8 = (uint8_t *) (pdst);                         \
+                                                                    \
+    ST4x4_UB(in0, in0, 0, 1, 2, 3, pblk_4x8, stride);               \
+    ST4x4_UB(in1, in1, 0, 1, 2, 3, pblk_4x8 + 4 * stride, stride);  \
+}
+
+/* Description : Store as 6x4 byte block to destination memory from input
+                 vectors
+   Arguments   : Inputs  - in0, in1, pdst, stride
+                 Return Type - unsigned byte
+   Details     : Index 0 word element from input vector 'in0' is copied and
+                 stored on first line followed by index 2 halfword element
+                 Index 2 word element from input vector 'in0' is copied and
+                 stored on second line followed by index 2 halfword element
+                 Index 0 word element from input vector 'in1' is copied and
+                 stored on third line followed by index 2 halfword element
+                 Index 2 word element from input vector 'in1' is copied and
+                 stored on fourth line followed by index 2 halfword element
+*/
+#define ST6x4_UB(in0, in1, pdst, stride)       \
+{                                              \
+    uint32_t out0_m, out1_m, out2_m, out3_m;   \
+    uint16_t out4_m, out5_m, out6_m, out7_m;   \
+    uint8_t *pblk_6x4_m = (uint8_t *) (pdst);  \
+                                               \
+    out0_m = __msa_copy_u_w((v4i32) in0, 0);   \
+    out1_m = __msa_copy_u_w((v4i32) in0, 2);   \
+    out2_m = __msa_copy_u_w((v4i32) in1, 0);   \
+    out3_m = __msa_copy_u_w((v4i32) in1, 2);   \
+                                               \
+    out4_m = __msa_copy_u_h((v8i16) in0, 2);   \
+    out5_m = __msa_copy_u_h((v8i16) in0, 6);   \
+    out6_m = __msa_copy_u_h((v8i16) in1, 2);   \
+    out7_m = __msa_copy_u_h((v8i16) in1, 6);   \
+                                               \
+    SW(out0_m, pblk_6x4_m);                    \
+    SH(out4_m, (pblk_6x4_m + 4));              \
+    pblk_6x4_m += stride;                      \
+    SW(out1_m, pblk_6x4_m);                    \
+    SH(out5_m, (pblk_6x4_m + 4));              \
+    pblk_6x4_m += stride;                      \
+    SW(out2_m, pblk_6x4_m);                    \
+    SH(out6_m, (pblk_6x4_m + 4));              \
+    pblk_6x4_m += stride;                      \
+    SW(out3_m, pblk_6x4_m);                    \
+    SH(out7_m, (pblk_6x4_m + 4));              \
+}
 
 /* Description : Store as 8x2 byte block to destination memory from input vector
    Arguments   : Inputs  - in, pdst, stride
@@ -528,6 +622,15 @@
                                                           \
     ST8x4_UB(in0, in1, pblk_8x8_m, stride);               \
     ST8x4_UB(in2, in3, pblk_8x8_m + 4 * stride, stride);  \
+}
+#define ST12x4_UB(in0, in1, in2, pdst, stride)                \
+{                                                             \
+    uint8_t *pblk_12x4_m = (uint8_t *) (pdst);                \
+                                                              \
+    /* left 8x4 */                                            \
+    ST8x4_UB(in0, in1, pblk_12x4_m, stride);                  \
+    /* right 4x4 */                                           \
+    ST4x4_UB(in2, in2, 0, 1, 2, 3, pblk_12x4_m + 8, stride);  \
 }
 
 /* Description : Store as 12x8 byte block to destination memory from
@@ -1246,6 +1349,8 @@
 }
 #define PCKEV_B4_SB(...) PCKEV_B4(v16i8, __VA_ARGS__)
 #define PCKEV_B4_UB(...) PCKEV_B4(v16u8, __VA_ARGS__)
+#define PCKEV_B4_SH(...) PCKEV_B4(v8i16, __VA_ARGS__)
+#define PCKEV_B4_SW(...) PCKEV_B4(v4i32, __VA_ARGS__)
 
 /* Description : Pack even halfword elements of vector pairs
    Arguments   : Inputs  - in0, in1, in2, in3
@@ -1316,6 +1421,13 @@
     XORI_B2_128(RTYPE, in3, in4);                    \
 }
 #define XORI_B5_128_SB(...) XORI_B5_128(v16i8, __VA_ARGS__)
+
+#define XORI_B6_128(RTYPE, in0, in1, in2, in3, in4, in5)  \
+{                                                         \
+    XORI_B4_128(RTYPE, in0, in1, in2, in3);               \
+    XORI_B2_128(RTYPE, in4, in5);                         \
+}
+#define XORI_B6_128_SB(...) XORI_B6_128(v16i8, __VA_ARGS__)
 
 #define XORI_B7_128(RTYPE, in0, in1, in2, in3, in4, in5, in6)  \
 {                                                              \
@@ -1442,6 +1554,25 @@
 }
 #define SRAR_H4_UH(...) SRAR_H4(v8u16, __VA_ARGS__)
 #define SRAR_H4_SH(...) SRAR_H4(v8i16, __VA_ARGS__)
+
+/* Description : Shift right arithmetic rounded (immediate)
+   Arguments   : Inputs  - in0, in1, in2, in3, shift
+                 Outputs - in0, in1, in2, in3 (in place)
+                 Return Type - as per RTYPE
+   Details     : Each element of vector 'in0' is shifted right arithmetic by
+                 value in 'shift'.
+                 The last discarded bit is added to shifted value for rounding
+                 and the result is in place written to 'in0'
+                 Similar for other pairs
+*/
+#define SRARI_H2(RTYPE, in0, in1, shift)              \
+{                                                     \
+    in0 = (RTYPE) __msa_srari_h((v8i16) in0, shift);  \
+    in1 = (RTYPE) __msa_srari_h((v8i16) in1, shift);  \
+}
+#define SRARI_H2_UH(...) SRARI_H2(v8u16, __VA_ARGS__)
+#define SRARI_H2_SH(...) SRARI_H2(v8i16, __VA_ARGS__)
+
 /* Description : Shift right arithmetic rounded (immediate)
    Arguments   : Inputs  - in0, in1, shift
                  Outputs - in0, in1     (in place)
@@ -1497,6 +1628,25 @@
     v16i8 zero_m = { 0 };                             \
                                                       \
     ILVRL_B2_SH(zero_m, in, out0, out1);              \
+}
+
+/* Description : Sign extend halfword elements from input vector and return
+                 result in pair of vectors
+   Arguments   : Inputs  - in           (1 input halfword vector)
+                 Outputs - out0, out1   (sign extended 2 word vectors)
+                 Return Type - signed word
+   Details     : Sign bit of halfword elements from input vector 'in' is
+                 extracted and interleaved right with same vector 'in0' to
+                 generate 4 signed word elements in 'out0'
+                 Then interleaved left with same vector 'in0' to
+                 generate 4 signed word elements in 'out1'
+*/
+#define UNPCK_SH_SW(in, out0, out1)                  \
+{                                                    \
+    v8i16 tmp_m;                                     \
+                                                     \
+    tmp_m = __msa_clti_s_h((v8i16) in, 0);           \
+    ILVRL_H2_SW(tmp_m, in, out0, out1);              \
 }
 
 /* Description : Transposes input 4x4 byte block

@@ -2649,6 +2649,9 @@ static int http_receive_data(HTTPContext *c)
 
             pb = avio_alloc_context(c->buffer, c->buffer_end - c->buffer,
                                     0, NULL, NULL, NULL, NULL);
+            if (!pb)
+                goto fail;
+
             pb->seekable = 0;
 
             s->pb = pb;
