@@ -58,6 +58,7 @@ typedef struct PNGDecContext {
     int channels;
     int bits_per_pixel;
     int bpp;
+    int has_trns;
 
     uint8_t *image_buf;
     int image_linesize;
@@ -732,6 +733,8 @@ static int decode_trns_chunk(AVCodecContext *avctx, PNGDecContext *s,
     }
     bytestream2_skip(&s->gb, 4);     /* crc */
 
+    s->has_trns = 1;
+
     return 0;
 }
 
@@ -846,6 +849,18 @@ static int decode_fctl_chunk(AVCodecContext *avctx, PNGDecContext *s,
         // No previous frame to revert to for the first frame
         // Spec says to just treat it as a APNG_DISPOSE_OP_BACKGROUND
         s->dispose_op = APNG_DISPOSE_OP_BACKGROUND;
+    }
+
+    if (s->dispose_op == APNG_BLEND_OP_OVER && !s->has_trns && (
+            avctx->pix_fmt == AV_PIX_FMT_RGB24 ||
+            avctx->pix_fmt == AV_PIX_FMT_RGB48BE ||
+            avctx->pix_fmt == AV_PIX_FMT_PAL8 ||
+            avctx->pix_fmt == AV_PIX_FMT_GRAY8 ||
+            avctx->pix_fmt == AV_PIX_FMT_GRAY16BE ||
+            avctx->pix_fmt == AV_PIX_FMT_MONOBLACK
+        )) {
+        // APNG_DISPOSE_OP_OVER is the same as APNG_DISPOSE_OP_SOURCE when there is no alpha channel
+        s->dispose_op = APNG_BLEND_OP_SOURCE;
     }
 
     return 0;
