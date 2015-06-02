@@ -3994,7 +3994,6 @@ elif enabled mips; then
 elif enabled ppc; then
 
     disable ldbrx
-    disable vsx
 
     case $(tolower $cpu) in
         601|ppc601|powerpc601)
@@ -4623,11 +4622,6 @@ unsigned int endian = 'B' << 24 | 'I' << 16 | 'G' << 8 | 'E';
 EOF
 od -t x1 $TMPO | grep -q '42 *49 *47 *45' && enable bigendian
 
-if  [ "$cpu" = "power7" ] || [ "$cpu" = "power8" ] || enabled ppc64; then
-    if ! enabled bigendian && enabled altivec ;then
-        enable vsx
-    fi
-fi
 
 check_gas() {
     log "check_gas using '$as' as AS"
