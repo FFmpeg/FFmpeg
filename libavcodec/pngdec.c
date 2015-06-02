@@ -896,7 +896,8 @@ static int handle_p_frame_apng(AVCodecContext *avctx, PNGDecContext *s,
         return AVERROR(ENOMEM);
 
     if (s->blend_op == APNG_BLEND_OP_OVER &&
-        avctx->pix_fmt != AV_PIX_FMT_RGBA) {
+        avctx->pix_fmt != AV_PIX_FMT_RGBA &&
+        avctx->pix_fmt != AV_PIX_FMT_GRAY8A) {
         avpriv_request_sample(avctx, "Blending with pixel format %s",
                               av_get_pix_fmt_name(avctx->pix_fmt));
         return AVERROR_PATCHWELCOME;
@@ -941,6 +942,11 @@ static int handle_p_frame_apng(AVCodecContext *avctx, PNGDecContext *s,
                 case AV_PIX_FMT_RGBA:
                     foreground_alpha = foreground[3];
                     background_alpha = background[3];
+                    break;
+
+                case AV_PIX_FMT_GRAY8A:
+                    foreground_alpha = foreground[1];
+                    background_alpha = background[1];
                     break;
                 }
 
