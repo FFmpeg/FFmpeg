@@ -1561,8 +1561,6 @@ HAVE_LIST="
     $TYPES_LIST
     atomics_native
     dos_paths
-    d3d11_cobj
-    d3d11va_lib
     dxva2_lib
     libc_msvcrt
     libdc1394_1
@@ -4438,15 +4436,6 @@ if enabled x11grab; then
     require Xfixes X11/extensions/Xfixes.h XFixesGetCursorImage -lXfixes
 fi
 
-enabled d3d11_h &&
-    check_cc <<EOF && enable d3d11_cobj
-#define _WIN32_WINNT 0x0600
-#define COBJMACROS
-#include <windows.h>
-#include <d3d11.h>
-int main(void) { ID3D11VideoDecoder *o = NULL; ID3D11VideoDecoder_Release(o); return 0; }
-EOF
-
 enabled vaapi && enabled xlib &&
     check_lib2 "va/va.h va/va_x11.h" vaGetDisplay -lva -lva-x11 &&
     enable vaapi_x11
@@ -4667,10 +4656,6 @@ check_deps $CONFIG_LIST       \
            $CONFIG_EXTRA      \
            $HAVE_LIST         \
            $ALL_COMPONENTS    \
-
-enabled_all d3d11va d3d11_cobj CoTaskMemFree &&
-    prepend avconv_libs $($ldflags_filter "-lole32") &&
-    enable d3d11va_lib
 
 enabled_all dxva2 CoTaskMemFree &&
     prepend avconv_libs $($ldflags_filter "-lole32") &&
