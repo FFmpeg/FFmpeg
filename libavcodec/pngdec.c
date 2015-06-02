@@ -877,7 +877,7 @@ static int handle_p_frame_apng(AVCodecContext *avctx, PNGDecContext *s,
         return ls;
 
     if (s->blend_op == APNG_BLEND_OP_OVER &&
-        avctx->pix_fmt != AV_PIX_FMT_RGBA && avctx->pix_fmt != AV_PIX_FMT_ARGB) {
+        avctx->pix_fmt != AV_PIX_FMT_RGBA) {
         avpriv_request_sample(avctx, "Blending with pixel format %s",
                               av_get_pix_fmt_name(avctx->pix_fmt));
         return AVERROR_PATCHWELCOME;
@@ -902,11 +902,6 @@ static int handle_p_frame_apng(AVCodecContext *avctx, PNGDecContext *s,
             gi = 1;
             bi = 2;
             ai = 3;
-        } else {
-            ri = 3;
-            gi = 2;
-            bi = 1;
-            ai = 0;
         }
 
         for (j = s->y_offset; j < s->y_offset + s->cur_h; j++) {
