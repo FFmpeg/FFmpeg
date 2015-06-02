@@ -280,3 +280,90 @@ BI_MC(epel, hv, 48);
 BI_MC(epel, hv, 64);
 
 #undef BI_MC
+
+#define BI_W_MC(PEL, DIR, WIDTH)                                               \
+void ff_hevc_put_hevc_bi_w_##PEL##_##DIR####WIDTH##_8_msa(uint8_t *dst,        \
+                                                          ptrdiff_t            \
+                                                          dst_stride,          \
+                                                          uint8_t *src,        \
+                                                          ptrdiff_t            \
+                                                          src_stride,          \
+                                                          int16_t *src_16bit,  \
+                                                          int height,          \
+                                                          int denom,           \
+                                                          int weight0,         \
+                                                          int weight1,         \
+                                                          int offset0,         \
+                                                          int offset1,         \
+                                                          intptr_t mx,         \
+                                                          intptr_t my,         \
+                                                          int width)
+
+BI_W_MC(pel, pixels, 4);
+BI_W_MC(pel, pixels, 6);
+BI_W_MC(pel, pixels, 8);
+BI_W_MC(pel, pixels, 12);
+BI_W_MC(pel, pixels, 16);
+BI_W_MC(pel, pixels, 24);
+BI_W_MC(pel, pixels, 32);
+BI_W_MC(pel, pixels, 48);
+BI_W_MC(pel, pixels, 64);
+
+BI_W_MC(qpel, h, 4);
+BI_W_MC(qpel, h, 8);
+BI_W_MC(qpel, h, 12);
+BI_W_MC(qpel, h, 16);
+BI_W_MC(qpel, h, 24);
+BI_W_MC(qpel, h, 32);
+BI_W_MC(qpel, h, 48);
+BI_W_MC(qpel, h, 64);
+
+BI_W_MC(qpel, v, 4);
+BI_W_MC(qpel, v, 8);
+BI_W_MC(qpel, v, 12);
+BI_W_MC(qpel, v, 16);
+BI_W_MC(qpel, v, 24);
+BI_W_MC(qpel, v, 32);
+BI_W_MC(qpel, v, 48);
+BI_W_MC(qpel, v, 64);
+
+BI_W_MC(qpel, hv, 4);
+BI_W_MC(qpel, hv, 8);
+BI_W_MC(qpel, hv, 12);
+BI_W_MC(qpel, hv, 16);
+BI_W_MC(qpel, hv, 24);
+BI_W_MC(qpel, hv, 32);
+BI_W_MC(qpel, hv, 48);
+BI_W_MC(qpel, hv, 64);
+
+BI_W_MC(epel, h, 4);
+BI_W_MC(epel, h, 6);
+BI_W_MC(epel, h, 8);
+BI_W_MC(epel, h, 12);
+BI_W_MC(epel, h, 16);
+BI_W_MC(epel, h, 24);
+BI_W_MC(epel, h, 32);
+BI_W_MC(epel, h, 48);
+BI_W_MC(epel, h, 64);
+
+BI_W_MC(epel, v, 4);
+BI_W_MC(epel, v, 6);
+BI_W_MC(epel, v, 8);
+BI_W_MC(epel, v, 12);
+BI_W_MC(epel, v, 16);
+BI_W_MC(epel, v, 24);
+BI_W_MC(epel, v, 32);
+BI_W_MC(epel, v, 48);
+BI_W_MC(epel, v, 64);
+
+BI_W_MC(epel, hv, 4);
+BI_W_MC(epel, hv, 6);
+BI_W_MC(epel, hv, 8);
+BI_W_MC(epel, hv, 12);
+BI_W_MC(epel, hv, 16);
+BI_W_MC(epel, hv, 24);
+BI_W_MC(epel, hv, 32);
+BI_W_MC(epel, hv, 48);
+BI_W_MC(epel, hv, 64);
+
+#undef BI_W_MC
