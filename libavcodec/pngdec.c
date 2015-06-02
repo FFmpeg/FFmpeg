@@ -897,7 +897,8 @@ static int handle_p_frame_apng(AVCodecContext *avctx, PNGDecContext *s,
 
     if (s->blend_op == APNG_BLEND_OP_OVER &&
         avctx->pix_fmt != AV_PIX_FMT_RGBA &&
-        avctx->pix_fmt != AV_PIX_FMT_GRAY8A) {
+        avctx->pix_fmt != AV_PIX_FMT_GRAY8A &&
+        avctx->pix_fmt != AV_PIX_FMT_PAL8) {
         avpriv_request_sample(avctx, "Blending with pixel format %s",
                               av_get_pix_fmt_name(avctx->pix_fmt));
         return AVERROR_PATCHWELCOME;
@@ -948,6 +949,11 @@ static int handle_p_frame_apng(AVCodecContext *avctx, PNGDecContext *s,
                     foreground_alpha = foreground[1];
                     background_alpha = background[1];
                     break;
+
+                case AV_PIX_FMT_PAL8:
+                    foreground_alpha = s->palette[foreground[0]] >> 24;
+                    background_alpha = s->palette[background[0]] >> 24;
+                    break;
                 }
 
                 if (foreground_alpha == 0)
@@ -955,6 +961,13 @@ static int handle_p_frame_apng(AVCodecContext *avctx, PNGDecContext *s,
 
                 if (foreground_alpha == 255) {
                     memcpy(background, foreground, s->bpp);
+                    continue;
+                }
+
+                if (avctx->pix_fmt == AV_PIX_FMT_PAL8) {
+                    // TODO: Alpha blending with PAL8 will likely need the entire image converted over to RGBA first
+                    avpriv_request_sample(avctx, "Alpha blending palette samples");
+                    background[0] = foreground[0];
                     continue;
                 }
 
