@@ -291,6 +291,7 @@
     LD_B2(RTYPE, (psrc), stride, out0, out1);         \
     out2 = LD_B(RTYPE, (psrc) + 2 * stride);          \
 }
+#define LD_UB3(...) LD_B3(v16u8, __VA_ARGS__)
 #define LD_SB3(...) LD_B3(v16i8, __VA_ARGS__)
 
 #define LD_B4(RTYPE, psrc, stride, out0, out1, out2, out3)   \
@@ -573,6 +574,18 @@
     SH(out7_m, (pblk_6x4_m + 4));              \
 }
 
+/* Description : Store as 8x1 byte block to destination memory from input vector
+   Arguments   : Inputs  - in, pdst
+   Details     : Index 0 double word element from input vector 'in' is copied
+                 and stored to destination memory at (pdst)
+*/
+#define ST8x1_UB(in, pdst)                   \
+{                                            \
+    uint64_t out0_m;                         \
+    out0_m = __msa_copy_u_d((v2i64) in, 0);  \
+    SD(out0_m, pdst);                        \
+}
+
 /* Description : Store as 8x2 byte block to destination memory from input vector
    Arguments   : Inputs  - in, pdst, stride
    Details     : Index 0 double word element from input vector 'in' is copied
@@ -715,6 +728,23 @@
     SLDI_B2_0(RTYPE, in2, in3, out2, out3, slide_val);  \
 }
 #define SLDI_B4_0_SB(...) SLDI_B4_0(v16i8, __VA_ARGS__)
+
+/* Description : Immediate number of columns to slide
+   Arguments   : Inputs  - in0_0, in0_1, in1_0, in1_1, slide_val
+                 Outputs - out0, out1
+                 Return Type - as per RTYPE
+   Details     : Byte elements from 'in0_0' vector are slide into 'in1_0' by
+                 number of elements specified by 'slide_val'
+*/
+#define SLDI_B2(RTYPE, in0_0, in0_1, in1_0, in1_1, out0, out1, slide_val)  \
+{                                                                          \
+    out0 = (RTYPE) __msa_sldi_b((v16i8) in0_0, (v16i8) in1_0, slide_val);  \
+    out1 = (RTYPE) __msa_sldi_b((v16i8) in0_1, (v16i8) in1_1, slide_val);  \
+}
+#define SLDI_B2_UB(...) SLDI_B2(v16u8, __VA_ARGS__)
+#define SLDI_B2_SB(...) SLDI_B2(v16i8, __VA_ARGS__)
+#define SLDI_B2_SH(...) SLDI_B2(v8i16, __VA_ARGS__)
+
 
 /* Description : Shuffle byte vector elements as per mask vector
    Arguments   : Inputs  - in0, in1, in2, in3, mask0, mask1
@@ -1090,6 +1120,16 @@
 #define ILVR_B2_SB(...) ILVR_B2(v16i8, __VA_ARGS__)
 #define ILVR_B2_UH(...) ILVR_B2(v8u16, __VA_ARGS__)
 #define ILVR_B2_SH(...) ILVR_B2(v8i16, __VA_ARGS__)
+#define ILVR_B2_SW(...) ILVR_B2(v4i32, __VA_ARGS__)
+
+#define ILVR_B3(RTYPE, in0, in1, in2, in3, in4, in5, out0, out1, out2)  \
+{                                                                       \
+    ILVR_B2(RTYPE, in0, in1, in2, in3, out0, out1);                     \
+    out2 = (RTYPE) __msa_ilvr_b((v16i8) in4, (v16i8) in5);              \
+}
+#define ILVR_B3_UB(...) ILVR_B3(v16u8, __VA_ARGS__)
+#define ILVR_B3_UH(...) ILVR_B3(v8u16, __VA_ARGS__)
+#define ILVR_B3_SH(...) ILVR_B3(v8i16, __VA_ARGS__)
 
 #define ILVR_B4(RTYPE, in0, in1, in2, in3, in4, in5, in6, in7,  \
                 out0, out1, out2, out3)                         \
@@ -1306,6 +1346,7 @@
     out0 = (RTYPE) __msa_splati_h((v8i16) in, idx0);  \
     out1 = (RTYPE) __msa_splati_h((v8i16) in, idx1);  \
 }
+#define SPLATI_H2_SB(...) SPLATI_H2(v16i8, __VA_ARGS__)
 #define SPLATI_H2_SH(...) SPLATI_H2(v8i16, __VA_ARGS__)
 
 #define SPLATI_H4(RTYPE, in, idx0, idx1, idx2, idx3,  \
@@ -1427,7 +1468,9 @@
     in0 = (RTYPE) __msa_xori_b((v16u8) in0, 128);  \
     in1 = (RTYPE) __msa_xori_b((v16u8) in1, 128);  \
 }
+#define XORI_B2_128_UB(...) XORI_B2_128(v16u8, __VA_ARGS__)
 #define XORI_B2_128_SB(...) XORI_B2_128(v16i8, __VA_ARGS__)
+#define XORI_B2_128_SH(...) XORI_B2_128(v8i16, __VA_ARGS__)
 
 #define XORI_B3_128(RTYPE, in0, in1, in2)          \
 {                                                  \
@@ -1627,6 +1670,14 @@
 }
 #define SRARI_H2_UH(...) SRARI_H2(v8u16, __VA_ARGS__)
 #define SRARI_H2_SH(...) SRARI_H2(v8i16, __VA_ARGS__)
+
+#define SRARI_H4(RTYPE, in0, in1, in2, in3, shift)    \
+{                                                     \
+    SRARI_H2(RTYPE, in0, in1, shift);                 \
+    SRARI_H2(RTYPE, in2, in3, shift);                 \
+}
+#define SRARI_H4_UH(...) SRARI_H4(v8u16, __VA_ARGS__)
+#define SRARI_H4_SH(...) SRARI_H4(v8i16, __VA_ARGS__)
 
 /* Description : Shift right arithmetic rounded (immediate)
    Arguments   : Inputs  - in0, in1, shift

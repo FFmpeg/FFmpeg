@@ -145,6 +145,36 @@ UNI_MC(qpel, hv, 32);
 UNI_MC(qpel, hv, 48);
 UNI_MC(qpel, hv, 64);
 
+UNI_MC(epel, h, 4);
+UNI_MC(epel, h, 6);
+UNI_MC(epel, h, 8);
+UNI_MC(epel, h, 12);
+UNI_MC(epel, h, 16);
+UNI_MC(epel, h, 24);
+UNI_MC(epel, h, 32);
+UNI_MC(epel, h, 48);
+UNI_MC(epel, h, 64);
+
+UNI_MC(epel, v, 4);
+UNI_MC(epel, v, 6);
+UNI_MC(epel, v, 8);
+UNI_MC(epel, v, 12);
+UNI_MC(epel, v, 16);
+UNI_MC(epel, v, 24);
+UNI_MC(epel, v, 32);
+UNI_MC(epel, v, 48);
+UNI_MC(epel, v, 64);
+
+UNI_MC(epel, hv, 4);
+UNI_MC(epel, hv, 6);
+UNI_MC(epel, hv, 8);
+UNI_MC(epel, hv, 12);
+UNI_MC(epel, hv, 16);
+UNI_MC(epel, hv, 24);
+UNI_MC(epel, hv, 32);
+UNI_MC(epel, hv, 48);
+UNI_MC(epel, hv, 64);
+
 #undef UNI_MC
 
 #define UNI_W_MC(PEL, DIR, WIDTH)                                         \
