@@ -2749,6 +2749,7 @@ Available values for component modes are:
 @item dodge
 @item exclusion
 @item hardlight
+@item hardmix
 @item lighten
 @item multiply
 @item negation
