@@ -969,7 +969,7 @@ static int encode_residual_ch(FlacEncodeContext *s, int ch)
                 score = find_subframe_rice_params(s, sub, opt_order);
                 if (score < best_score) {
                     best_score = score;
-                    memcpy(coefs[opt_order-1], lpc_try, sizeof(coefs[opt_order-1]));
+                    memcpy(coefs[opt_order-1], lpc_try, sizeof(*coefs));
                     improved=1;
                 }
             }
