@@ -154,6 +154,7 @@ bool configGenerator::buildDefaultValues( )
     fastToggleConfigValue( "isatty", true );
     fastToggleConfigValue( "kbhit", true );
     fastToggleConfigValue( "libc_msvcrt", true );
+    fastToggleConfigValue( "LoadLibrary", true );
     fastToggleConfigValue( "local_aligned_32", true );
     fastToggleConfigValue( "local_aligned_16", true );
     fastToggleConfigValue( "local_aligned_8", true );
@@ -168,8 +169,6 @@ bool configGenerator::buildDefaultValues( )
     fastToggleConfigValue( "setmode", true );
     fastToggleConfigValue( "Sleep", true );
     fastToggleConfigValue( "CONDITION_VARIABLE_Ptr", true );
-    fastToggleConfigValue( "DXVA_PicParams_HEVC", true );
-    fastToggleConfigValue( "ID3D11VideoDecoder", true );
     fastToggleConfigValue( "socklen_t", true );
     fastToggleConfigValue( "struct_addrinfo", true );
     fastToggleConfigValue( "struct_group_source_req", true );
@@ -383,13 +382,16 @@ void configGenerator::buildAdditionalDependencies( DependencyList & mAdditionalD
     mAdditionalDependencies["capCreateCaptureWindow"] = true;
     mAdditionalDependencies["CreateDIBSection"] = false;
     mAdditionalDependencies["dv1394"] = false;
+    mAdditionalDependencies["DXVA_PicParams_HEVC"] = true;
     mAdditionalDependencies["dxva2api_h"] = true;
     mAdditionalDependencies["jack_jack_h"] = false;
     mAdditionalDependencies["IBaseFilter"] = true;
+    mAdditionalDependencies["ID3D11VideoDecoder"] = true;
     mAdditionalDependencies["libcrystalhd_libcrystalhd_if_h"] = false;
     mAdditionalDependencies["linux_fb_h"] = false;
     mAdditionalDependencies["linux_videodev_h"] = false;
     mAdditionalDependencies["linux_videodev2_h"] = false;
+    mAdditionalDependencies["LPDIRECT3DSURFACE9"] = true;
     mAdditionalDependencies["snd_pcm_htimestamp"] = false;
     mAdditionalDependencies["va_va_h"] = false;
     mAdditionalDependencies["vdpau_vdpau_h"] = false;
@@ -473,9 +475,14 @@ void configGenerator::buildForcedEnables( string sOptionLower, vector<string> & 
     }
     else if( sOptionLower.compare( "gnutls" ) == 0 )
     {
-        vForceEnable.push_back( "nettle" );
+        vForceEnable.push_back( "nettle" );//deprecated
         vForceEnable.push_back( "gcrypt" );
+        vForceEnable.push_back( "gmp" );
     }
+    else if( sOptionLower.compare( "nvenc" ) == 0 )
+    {
+        vForceEnable.push_back( "cuda_h" );
+    }    
 }
 
 void configGenerator::buildForcedDisables( string sOptionLower, vector<string> & vForceDisable )
@@ -498,8 +505,9 @@ void configGenerator::buildForcedDisables( string sOptionLower, vector<string> &
     }
     else if( sOptionLower.compare( "gnutls" ) == 0 )
     {
-        vForceDisable.push_back( "nettle" );
+        vForceDisable.push_back( "nettle" );//deprecated
         vForceDisable.push_back( "gcrypt" );
+        vForceDisable.push_back( "gmp" );
     }
 }
 
