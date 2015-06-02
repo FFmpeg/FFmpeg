@@ -214,7 +214,7 @@ DEFINE_BLEND(reflect,    (B == 255) ? B : FFMIN(255, (A * A / (255 - B))))
 DEFINE_BLEND(and,        A & B)
 DEFINE_BLEND(or,         A | B)
 DEFINE_BLEND(xor,        A ^ B)
-DEFINE_BLEND(vividlight, (B < 128) ? BURN(A, 2 * B) : DODGE(A, 2 * (B - 128)))
+DEFINE_BLEND(vividlight, (A < 128) ? BURN(2 * A, B) : DODGE(2 * (A - 128), B))
 
 static void blend_expr(const uint8_t *top, int top_linesize,
                        const uint8_t *bottom, int bottom_linesize,
