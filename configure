@@ -2543,7 +2543,7 @@ for opt do
     esac
 done
 
-for e in "$env"; do
+for e in $env; do
     eval "export $e"
 done
 
