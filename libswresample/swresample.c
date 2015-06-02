@@ -255,6 +255,10 @@ av_cold int swr_init(struct SwrContext *s){
 
     if (s->out_sample_rate!=s->in_sample_rate || (s->flags & SWR_FLAG_RESAMPLE)){
         s->resample = s->resampler->init(s->resample, s->out_sample_rate, s->in_sample_rate, s->filter_size, s->phase_shift, s->linear_interp, s->cutoff, s->int_sample_fmt, s->filter_type, s->kaiser_beta, s->precision, s->cheby);
+        if (!s->resample) {
+            av_log(s, AV_LOG_ERROR, "Failed to initilaize resampler\n");
+            return AVERROR(ENOMEM);
+        }
     }else
         s->resampler->free(&s->resample);
     if(    s->int_sample_fmt != AV_SAMPLE_FMT_S16P
