@@ -1120,8 +1120,8 @@ check_pkg_config(){
     pkg_cflags=$($pkg_config --cflags $pkg_config_flags $pkg)
     pkg_libs=$($pkg_config --libs $pkg_config_flags $pkg)
     check_func_headers "$headers" "$funcs" $pkg_cflags $pkg_libs "$@" &&
-        set_safe ${pkg}_cflags $pkg_cflags   &&
-        set_safe ${pkg}_libs   $pkg_libs
+        set_safe "${pkg}_cflags" $pkg_cflags   &&
+        set_safe "${pkg}_libs"   $pkg_libs
 }
 
 check_exec(){
@@ -1225,8 +1225,8 @@ require_cpp(){
 use_pkg_config(){
     pkg="$1"
     check_pkg_config "$@" || return 1
-    add_cflags    $(get_safe ${pkg}_cflags)
-    add_extralibs $(get_safe ${pkg}_libs)
+    add_cflags    $(get_safe "${pkg}_cflags")
+    add_extralibs $(get_safe "${pkg}_libs")
 }
 
 require_pkg_config(){
@@ -1246,11 +1246,11 @@ require_libfreetype(){
         echo "long check_func(void) { return (long) FT_Init_FreeType; }"
         echo "int main(void) { return 0; }"
     } | check_ld "cc" $pkg_cflags $pkg_libs \
-      && set_safe ${pkg}_cflags $pkg_cflags \
-      && set_safe ${pkg}_libs   $pkg_libs \
+      && set_safe "${pkg}_cflags" $pkg_cflags \
+      && set_safe "${pkg}_libs"   $pkg_libs \
       || die "ERROR: $pkg not found"
-    add_cflags    $(get_safe ${pkg}_cflags)
-    add_extralibs $(get_safe ${pkg}_libs)
+    add_cflags    $(get_safe "${pkg}_cflags")
+    add_extralibs $(get_safe "${pkg}_libs")
 }
 
 hostcc_e(){
