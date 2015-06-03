@@ -102,6 +102,9 @@ int ff_wms_parse_sdp_a_line(AVFormatContext *s, const char *p)
         AVDictionary *opts = NULL;
         int len = strlen(p) * 6 / 8;
         char *buf = av_mallocz(len);
+
+        if (!buf)
+            return AVERROR(ENOMEM);
         av_base64_decode(buf, p, len);
 
         if (rtp_asf_fix_header(buf, len) < 0)
@@ -111,14 +114,19 @@ int ff_wms_parse_sdp_a_line(AVFormatContext *s, const char *p)
         if (rt->asf_ctx) {
             avformat_close_input(&rt->asf_ctx);
         }
-        if (!(rt->asf_ctx = avformat_alloc_context()))
+        rt->asf_ctx = avformat_alloc_context();
+        if (!rt->asf_ctx) {
+            av_free(buf);
             return AVERROR(ENOMEM);
+        }
         rt->asf_ctx->pb      = &pb;
         av_dict_set(&opts, "no_resync_search", "1", 0);
         ret = avformat_open_input(&rt->asf_ctx, "", &ff_asf_demuxer, &opts);
         av_dict_free(&opts);
-        if (ret < 0)
+        if (ret < 0) {
+            av_free(buf);
             return ret;
+        }
         av_dict_copy(&s->metadata, rt->asf_ctx->metadata, 0);
         rt->asf_pb_pos = avio_tell(&pb);
         av_free(buf);
