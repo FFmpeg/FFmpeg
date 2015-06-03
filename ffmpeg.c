@@ -971,8 +971,6 @@ static void do_video_out(AVFormatContext *s,
 
     in_picture->pts = ost->sync_opts;
     
-    av_log(NULL, AV_LOG_INFO, "Stop bytes is: %" PRId64 "\n", f->stop_bytes);
-    av_log(NULL, AV_LOG_INFO, "Pkt pos is: %" PRId64 "\n", in_picture->pkt_pos);
     if (f && in_picture->pkt_pos >= f->stop_bytes) {
       close_output_stream(ost);
       return;
@@ -1669,8 +1667,7 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
             return;
         }
     }
-    av_log(NULL, AV_LOG_INFO, "Stop bytes is: %" PRId64 "\n", f->stop_bytes);
-    av_log(NULL, AV_LOG_INFO, "Pkt pos is: %" PRId64 "\n", pkt->pos);
+    
     if (pkt->pos >= f->stop_bytes) {
 	close_output_stream(ost);
 	return;
