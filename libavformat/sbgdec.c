@@ -973,6 +973,8 @@ static int expand_tseq(void *log, struct sbg_script *s, int *nb_ev_max,
     } else {
         ev = alloc_array_elem((void **)&s->events, sizeof(*ev),
                               &s->nb_events, nb_ev_max);
+        if (!ev)
+            return AVERROR(ENOMEM);
         ev->ts          = tseq->ts.t;
         ev->elements    = def->elements;
         ev->nb_elements = def->nb_elements;

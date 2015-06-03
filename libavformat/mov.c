@@ -4316,6 +4316,13 @@ static AVIndexEntry *mov_find_next_sample(AVFormatContext *s, AVStream **st)
     return sample;
 }
 
+static int should_retry(AVIOContext *pb, int error_code) {
+    if (error_code == AVERROR_EOF || avio_feof(pb))
+        return 0;
+
+    return 1;
+}
+
 static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     MOVContext *mov = s->priv_data;
@@ -4351,14 +4358,18 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     if (st->discard != AVDISCARD_ALL) {
-        if (avio_seek(sc->pb, sample->pos, SEEK_SET) != sample->pos) {
+        int64_t ret64 = avio_seek(sc->pb, sample->pos, SEEK_SET);
+        if (ret64 != sample->pos) {
             av_log(mov->fc, AV_LOG_ERROR, "stream %d, offset 0x%"PRIx64": partial file\n",
                    sc->ffindex, sample->pos);
+            sc->current_sample -= should_retry(sc->pb, ret64);
             return AVERROR_INVALIDDATA;
         }
         ret = av_get_packet(sc->pb, pkt, sample->size);
-        if (ret < 0)
+        if (ret < 0) {
+            sc->current_sample -= should_retry(sc->pb, ret);
             return ret;
+        }
         if (sc->has_palette) {
             uint8_t *pal;
 

@@ -200,6 +200,9 @@ static opj_image_t *mj2_create_image(AVCodecContext *avctx, opj_cparameters_t *p
 
     img = opj_image_create(numcomps, cmptparm, color_space);
 
+    if (!img)
+        return NULL;
+
     // x0, y0 is the top left corner of the image
     // x1, y1 is the width, height of the reference grid
     img->x0 = 0;
@@ -571,7 +574,7 @@ static int libopenjpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         return AVERROR(ENOMEM);
     }
 
-    memset(&ctx->event_mgr, 0, sizeof(opj_event_mgr_t));
+    memset(&ctx->event_mgr, 0, sizeof(ctx->event_mgr));
     ctx->event_mgr.info_handler    = info_callback;
     ctx->event_mgr.error_handler   = error_callback;
     ctx->event_mgr.warning_handler = warning_callback;

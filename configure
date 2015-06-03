@@ -328,6 +328,7 @@ Toolchain options:
   --enable-pic             build position-independent code
   --enable-thumb           compile for Thumb instruction set
   --enable-lto             use link-time optimization
+  --env="ENV=override"     override the environment variables
 
 Advanced options (experts only):
   --malloc-prefix=PREFIX   prefix malloc and related names with PREFIX
@@ -1120,8 +1121,8 @@ check_pkg_config(){
     pkg_cflags=$($pkg_config --cflags $pkg_config_flags $pkg)
     pkg_libs=$($pkg_config --libs $pkg_config_flags $pkg)
     check_func_headers "$headers" "$funcs" $pkg_cflags $pkg_libs "$@" &&
-        set_safe ${pkg}_cflags $pkg_cflags   &&
-        set_safe ${pkg}_libs   $pkg_libs
+        set_safe "${pkg}_cflags" $pkg_cflags   &&
+        set_safe "${pkg}_libs"   $pkg_libs
 }
 
 check_exec(){
@@ -1225,8 +1226,8 @@ require_cpp(){
 use_pkg_config(){
     pkg="$1"
     check_pkg_config "$@" || return 1
-    add_cflags    $(get_safe ${pkg}_cflags)
-    add_extralibs $(get_safe ${pkg}_libs)
+    add_cflags    $(get_safe "${pkg}_cflags")
+    add_extralibs $(get_safe "${pkg}_libs")
 }
 
 require_pkg_config(){
@@ -1246,11 +1247,11 @@ require_libfreetype(){
         echo "long check_func(void) { return (long) FT_Init_FreeType; }"
         echo "int main(void) { return 0; }"
     } | check_ld "cc" $pkg_cflags $pkg_libs \
-      && set_safe ${pkg}_cflags $pkg_cflags \
-      && set_safe ${pkg}_libs   $pkg_libs \
+      && set_safe "${pkg}_cflags" $pkg_cflags \
+      && set_safe "${pkg}_libs"   $pkg_libs \
       || die "ERROR: $pkg not found"
-    add_cflags    $(get_safe ${pkg}_cflags)
-    add_extralibs $(get_safe ${pkg}_libs)
+    add_cflags    $(get_safe "${pkg}_cflags")
+    add_extralibs $(get_safe "${pkg}_libs")
 }
 
 hostcc_e(){
@@ -1979,6 +1980,7 @@ CMDLINE_SET="
     cxx
     dep_cc
     doxygen
+    env
     extra_version
     gas
     host_cc
@@ -2647,14 +2649,13 @@ sctp_protocol_deps="struct_sctp_event_subscribe"
 sctp_protocol_select="network"
 srtp_protocol_select="rtp_protocol"
 tcp_protocol_select="network"
-tls_securetransport_protocol_deps="securetransport"
 tls_gnutls_protocol_deps="gnutls !tls_securetransport_protocol"
-tls_openssl_protocol_deps="openssl !tls_securetransport_protocol !tls_gnutls_protocol"
 tls_gnutls_protocol_select="tcp_protocol"
+tls_openssl_protocol_deps="openssl !tls_securetransport_protocol !tls_gnutls_protocol"
 tls_openssl_protocol_select="tcp_protocol"
+tls_securetransport_protocol_deps="securetransport"
 tls_securetransport_protocol_select="tcp_protocol"
 tls_protocol_deps_any="tls_securetransport_protocol tls_gnutls_protocol tls_openssl_protocol"
-tls_protocol_select="tcp_protocol"
 udp_protocol_select="network"
 udplite_protocol_select="network"
 unix_protocol_deps="sys_un_h"
@@ -3075,6 +3076,11 @@ for opt do
             fi
         ;;
     esac
+done
+
+[ "$env" != "" ] &&
+for e in "$env"; do
+    eval "export $e"
 done
 
 disabled logging && logfile=/dev/null
@@ -3987,7 +3993,6 @@ elif enabled mips; then
 elif enabled ppc; then
 
     disable ldbrx
-    disable vsx
 
     case $(tolower $cpu) in
         601|ppc601|powerpc601)
@@ -4616,11 +4621,6 @@ unsigned int endian = 'B' << 24 | 'I' << 16 | 'G' << 8 | 'E';
 EOF
 od -t x1 $TMPO | grep -q '42 *49 *47 *45' && enable bigendian
 
-if  [ "$cpu" = "power7" ] || [ "$cpu" = "power8" ] || enabled ppc64; then
-    if ! enabled bigendian && enabled altivec ;then
-        enable vsx
-    fi
-fi
 
 check_gas() {
     log "check_gas using '$as' as AS"
@@ -5104,7 +5104,9 @@ enabled libcelt           && require libcelt celt/celt.h celt_decode -lcelt0 &&
 enabled libcaca           && require_pkg_config caca caca.h caca_create_canvas
 enabled libdcadec         && require_pkg_config dcadec libdcadec/dca_context.h dcadec_context_create
 enabled libfaac           && require2 libfaac "stdint.h faac.h" faacEncGetVersion -lfaac
-enabled libfdk_aac        && require libfdk_aac fdk-aac/aacenc_lib.h aacEncOpen -lfdk-aac
+enabled libfdk_aac        && { use_pkg_config fdk-aac "fdk-aac/aacenc_lib.h" aacEncOpen ||
+                               { require libfdk_aac fdk-aac/aacenc_lib.h aacEncOpen -lfdk-aac &&
+                                 warn "using libfdk without pkg-config"; } }
 flite_libs="-lflite_cmu_time_awb -lflite_cmu_us_awb -lflite_cmu_us_kal -lflite_cmu_us_kal16 -lflite_cmu_us_rms -lflite_cmu_us_slt -lflite_usenglish -lflite_cmulex -lflite"
 enabled libflite          && require2 libflite "flite/flite.h" flite_init $flite_libs
 enabled fontconfig        && enable libfontconfig

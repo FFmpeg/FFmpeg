@@ -254,6 +254,10 @@ av_cold int swr_init(struct SwrContext *s){
 
     if (s->out_sample_rate!=s->in_sample_rate || (s->flags & SWR_FLAG_RESAMPLE)){
         s->resample = s->resampler->init(s->resample, s->out_sample_rate, s->in_sample_rate, s->filter_size, s->phase_shift, s->linear_interp, s->cutoff, s->int_sample_fmt, s->filter_type, s->kaiser_beta, s->precision, s->cheby);
+        if (!s->resample) {
+            av_log(s, AV_LOG_ERROR, "Failed to initilaize resampler\n");
+            return AVERROR(ENOMEM);
+        }
     }else
         s->resampler->free(&s->resample);
     if(    s->int_sample_fmt != AV_SAMPLE_FMT_S16P
@@ -623,7 +627,8 @@ static int swr_convert_internal(struct SwrContext *s, AudioData *out, int out_co
                 return ret;
             if(ret)
                 for(ch=0; ch<s->dither.noise.ch_count; ch++)
-                    swri_get_dither(s, s->dither.noise.ch[ch], s->dither.noise.count, 12345678913579<<ch, s->dither.noise.fmt);
+                    if((ret=swri_get_dither(s, s->dither.noise.ch[ch], s->dither.noise.count, 12345678913579<<ch, s->dither.noise.fmt))<0)
+                        return ret;
             av_assert0(s->dither.noise.ch_count == preout->ch_count);
 
             if(s->dither.noise_pos + out_count > s->dither.noise.count)

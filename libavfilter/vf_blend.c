@@ -59,6 +59,9 @@ enum BlendMode {
     BLEND_SUBTRACT,
     BLEND_VIVIDLIGHT,
     BLEND_XOR,
+    BLEND_HARDMIX,
+    BLEND_LINEARLIGHT,
+    BLEND_GLOW,
     BLEND_NB
 };
 
@@ -116,8 +119,11 @@ typedef struct {
     { "divide",     "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_DIVIDE},     0, 0, FLAGS, "mode" },\
     { "dodge",      "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_DODGE},      0, 0, FLAGS, "mode" },\
     { "exclusion",  "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_EXCLUSION},  0, 0, FLAGS, "mode" },\
+    { "glow",       "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_GLOW},       0, 0, FLAGS, "mode" },\
     { "hardlight",  "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_HARDLIGHT},  0, 0, FLAGS, "mode" },\
+    { "hardmix",    "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_HARDMIX},    0, 0, FLAGS, "mode" },\
     { "lighten",    "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_LIGHTEN},    0, 0, FLAGS, "mode" },\
+    { "linearlight","", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_LINEARLIGHT},0, 0, FLAGS, "mode" },\
     { "multiply",   "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_MULTIPLY},   0, 0, FLAGS, "mode" },\
     { "negation",   "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_NEGATION},   0, 0, FLAGS, "mode" },\
     { "normal",     "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_NORMAL},     0, 0, FLAGS, "mode" },\
@@ -201,9 +207,10 @@ DEFINE_BLEND(difference128, av_clip_uint8(128 + A - B))
 DEFINE_BLEND(screen,     SCREEN(1, A, B))
 DEFINE_BLEND(overlay,    (A < 128) ? MULTIPLY(2, A, B) : SCREEN(2, A, B))
 DEFINE_BLEND(hardlight,  (B < 128) ? MULTIPLY(2, B, A) : SCREEN(2, B, A))
+DEFINE_BLEND(hardmix,    (A < (255 - B)) ? 0: 255)
 DEFINE_BLEND(darken,     FFMIN(A, B))
 DEFINE_BLEND(lighten,    FFMAX(A, B))
-DEFINE_BLEND(divide,     ((float)A / ((float)B) * 255))
+DEFINE_BLEND(divide,     av_clip_uint8(((float)A / ((float)B) * 255)))
 DEFINE_BLEND(dodge,      DODGE(A, B))
 DEFINE_BLEND(burn,       BURN(A, B))
 DEFINE_BLEND(softlight,  (A > 127) ? B + (255 - B) * (A - 127.5) / 127.5 * (0.5 - FFABS(B - 127.5) / 255): B - B * ((127.5 - A) / 127.5) * (0.5 - FFABS(B - 127.5)/255))
@@ -211,10 +218,12 @@ DEFINE_BLEND(exclusion,  A + B - 2 * A * B / 255)
 DEFINE_BLEND(pinlight,   (B < 128) ? FFMIN(A, 2 * B) : FFMAX(A, 2 * (B - 128)))
 DEFINE_BLEND(phoenix,    FFMIN(A, B) - FFMAX(A, B) + 255)
 DEFINE_BLEND(reflect,    (B == 255) ? B : FFMIN(255, (A * A / (255 - B))))
+DEFINE_BLEND(glow,       (A == 255) ? A : FFMIN(255, (B * B / (255 - A))))
 DEFINE_BLEND(and,        A & B)
 DEFINE_BLEND(or,         A | B)
 DEFINE_BLEND(xor,        A ^ B)
-DEFINE_BLEND(vividlight, (B < 128) ? BURN(A, 2 * B) : DODGE(A, 2 * (B - 128)))
+DEFINE_BLEND(vividlight, (A < 128) ? BURN(2 * A, B) : DODGE(2 * (A - 128), B))
+DEFINE_BLEND(linearlight,av_clip_uint8((B < 128) ? B + 2 * A - 255 : B + 2 * (A - 128)))
 
 static void blend_expr(const uint8_t *top, int top_linesize,
                        const uint8_t *bottom, int bottom_linesize,
@@ -325,8 +334,11 @@ static av_cold int init(AVFilterContext *ctx)
         case BLEND_DIVIDE:     param->blend = blend_divide;     break;
         case BLEND_DODGE:      param->blend = blend_dodge;      break;
         case BLEND_EXCLUSION:  param->blend = blend_exclusion;  break;
+        case BLEND_GLOW:       param->blend = blend_glow;       break;
         case BLEND_HARDLIGHT:  param->blend = blend_hardlight;  break;
+        case BLEND_HARDMIX:    param->blend = blend_hardmix;    break;
         case BLEND_LIGHTEN:    param->blend = blend_lighten;    break;
+        case BLEND_LINEARLIGHT:param->blend = blend_linearlight;break;
         case BLEND_MULTIPLY:   param->blend = blend_multiply;   break;
         case BLEND_NEGATION:   param->blend = blend_negation;   break;
         case BLEND_NORMAL:     param->blend = blend_normal;     break;

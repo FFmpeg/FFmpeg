@@ -802,6 +802,34 @@
 }
 #define DOTP_SB4_SH(...) DOTP_SB4(v8i16, __VA_ARGS__)
 
+/* Description : Dot product of halfword vector elements
+   Arguments   : Inputs  - mult0, mult1
+                           cnst0, cnst1
+                 Outputs - out0, out1
+                 Return Type - signed word
+   Details     : Signed halfword elements from mult0 are multiplied with
+                 signed halfword elements from cnst0 producing a result
+                 twice the size of input i.e. signed word.
+                 Then this multiplication results of adjacent odd-even elements
+                 are added together and stored to the out vector
+                 (2 signed word results)
+*/
+#define DOTP_SH2(RTYPE, mult0, mult1, cnst0, cnst1, out0, out1)   \
+{                                                                 \
+    out0 = (RTYPE) __msa_dotp_s_w((v8i16) mult0, (v8i16) cnst0);  \
+    out1 = (RTYPE) __msa_dotp_s_w((v8i16) mult1, (v8i16) cnst1);  \
+}
+#define DOTP_SH2_SW(...) DOTP_SH2(v4i32, __VA_ARGS__)
+
+#define DOTP_SH4(RTYPE, mult0, mult1, mult2, mult3,           \
+                 cnst0, cnst1, cnst2, cnst3,                  \
+                 out0, out1, out2, out3)                      \
+{                                                             \
+    DOTP_SH2(RTYPE, mult0, mult1, cnst0, cnst1, out0, out1);  \
+    DOTP_SH2(RTYPE, mult2, mult3, cnst2, cnst3, out2, out3);  \
+}
+#define DOTP_SH4_SW(...) DOTP_SH4(v4i32, __VA_ARGS__)
+
 /* Description : Dot product & addition of byte vector elements
    Arguments   : Inputs  - mult0, mult1
                            cnst0, cnst1
@@ -1017,6 +1045,7 @@
     out1 = (RTYPE) __msa_ilvl_h((v8i16) in2, (v8i16) in3);  \
 }
 #define ILVL_H2_SH(...) ILVL_H2(v8i16, __VA_ARGS__)
+#define ILVL_H2_SW(...) ILVL_H2(v4i32, __VA_ARGS__)
 
 #define ILVL_H4(RTYPE, in0, in1, in2, in3, in4, in5, in6, in7,  \
                 out0, out1, out2, out3)                         \
@@ -1088,6 +1117,7 @@
     out1 = (RTYPE) __msa_ilvr_h((v8i16) in2, (v8i16) in3);  \
 }
 #define ILVR_H2_SH(...) ILVR_H2(v8i16, __VA_ARGS__)
+#define ILVR_H2_SW(...) ILVR_H2(v4i32, __VA_ARGS__)
 
 #define ILVR_H3(RTYPE, in0, in1, in2, in3, in4, in5, out0, out1, out2)  \
 {                                                                       \
@@ -1555,6 +1585,31 @@
 #define SRAR_H4_UH(...) SRAR_H4(v8u16, __VA_ARGS__)
 #define SRAR_H4_SH(...) SRAR_H4(v8i16, __VA_ARGS__)
 
+/* Description : Shift right arithmetic rounded words
+   Arguments   : Inputs  - in0, in1, shift
+                 Outputs - in0, in1, (in place)
+                 Return Type - as per RTYPE
+   Details     : Each element of vector 'in0' is shifted right arithmetic by
+                 number of bits respective element holds in vector 'shift'.
+                 The last discarded bit is added to shifted value for rounding
+                 and the result is in place written to 'in0'
+                 Here, 'shift' is a vector passed in
+                 Similar for other pairs
+*/
+#define SRAR_W2(RTYPE, in0, in1, shift)                      \
+{                                                            \
+    in0 = (RTYPE) __msa_srar_w((v4i32) in0, (v4i32) shift);  \
+    in1 = (RTYPE) __msa_srar_w((v4i32) in1, (v4i32) shift);  \
+}
+#define SRAR_W2_SW(...) SRAR_W2(v4i32, __VA_ARGS__)
+
+#define SRAR_W4(RTYPE, in0, in1, in2, in3, shift)  \
+{                                                  \
+    SRAR_W2(RTYPE, in0, in1, shift)                \
+    SRAR_W2(RTYPE, in2, in3, shift)                \
+}
+#define SRAR_W4_SW(...) SRAR_W4(v4i32, __VA_ARGS__)
+
 /* Description : Shift right arithmetic rounded (immediate)
    Arguments   : Inputs  - in0, in1, in2, in3, shift
                  Outputs - in0, in1, in2, in3 (in place)
@@ -1614,6 +1669,23 @@
 {                                                                             \
     MUL2(in0, in1, in2, in3, out0, out1);                                     \
     MUL2(in4, in5, in6, in7, out2, out3);                                     \
+}
+
+/* Description : Addition of 2 pairs of vectors
+   Arguments   : Inputs  - in0, in1, in2, in3
+                 Outputs - out0, out1
+   Details     : Each element from 2 pairs vectors is added and 2 results are
+                 produced
+*/
+#define ADD2(in0, in1, in2, in3, out0, out1)  \
+{                                             \
+    out0 = in0 + in1;                         \
+    out1 = in2 + in3;                         \
+}
+#define ADD4(in0, in1, in2, in3, in4, in5, in6, in7, out0, out1, out2, out3)  \
+{                                                                             \
+    ADD2(in0, in1, in2, in3, out0, out1);                                     \
+    ADD2(in4, in5, in6, in7, out2, out3);                                     \
 }
 
 /* Description : Zero extend unsigned byte elements to halfword elements
