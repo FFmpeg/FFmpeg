@@ -318,9 +318,9 @@ static int http_listen(URLContext *h, const char *uri, int flags,
     if ((ret = ffurl_open(&s->hd, lower_url, AVIO_FLAG_READ_WRITE,
                           &h->interrupt_callback, options)) < 0)
         goto fail;
-    if ((ret = ffurl_write(s->hd, header, strlen(header))) < 0)
-        goto fail;
     if ((ret = http_read_header(h, &new_location)) < 0)
+         goto fail;
+    if ((ret = ffurl_write(s->hd, header, strlen(header))) < 0)
          goto fail;
     return 0;
 
