@@ -3270,7 +3270,6 @@ static int ipc_loop(void *arg)
   double incr, pos, frac;
   
   for (;;) {
-    double x;
     // Read from stdin
     if (fgets(input, sizeof(input), stdin) == NULL) continue;
     switch(input[0]) {
@@ -3353,20 +3352,8 @@ static int ipc_loop(void *arg)
 	  }
 	break;
       case 'x':
-	// Parse everything after x as decimal
-	if (sscanf(input, "x%lf", &x) != 1) break;
-	if (seek_by_bytes || cur_stream->ic->duration <= 0) {
-	  uint64_t size =  avio_size(cur_stream->ic->pb);
-	  stream_seek(cur_stream, size*x/cur_stream->width, 0, 1);
-	} else {
-	  int64_t ts;
-	  frac = x / cur_stream->width;
-	  ts = frac * cur_stream->ic->duration;
-	  if (cur_stream->ic->start_time != AV_NOPTS_VALUE)
-	    ts += cur_stream->ic->start_time;
-	  stream_seek(cur_stream, ts, 0, 0);
-	}
-	break;
+	if (sscanf(input, "x%lf", &incr) != 1) break;
+	goto do_seek;
       default:
 	break;
     }

@@ -884,9 +884,13 @@ static void do_video_out(AVFormatContext *s,
     double duration = 0;
     int frame_size = 0;
     InputStream *ist = NULL;
+    InputFile *f = NULL;
 
     if (ost->source_index >= 0)
         ist = input_streams[ost->source_index];
+    
+    if (ist)
+        f = input_files[ist->file_index];
 
     if(ist && ist->st->start_time != AV_NOPTS_VALUE && ist->st->first_dts != AV_NOPTS_VALUE && ost->frame_rate.num)
         duration = 1/(av_q2d(ost->frame_rate) * av_q2d(enc->time_base));
@@ -966,7 +970,14 @@ static void do_video_out(AVFormatContext *s,
     pkt.size = 0;
 
     in_picture->pts = ost->sync_opts;
-
+    
+    av_log(NULL, AV_LOG_INFO, "Stop bytes is: %" PRId64 "\n", f->stop_bytes);
+    av_log(NULL, AV_LOG_INFO, "Pkt pos is: %" PRId64 "\n", in_picture->pkt_pos);
+    if (f && in_picture->pkt_pos >= f->stop_bytes) {
+      close_output_stream(ost);
+      return;
+    }
+    
 #if 1
     if (!check_recording_time(ost))
 #else
@@ -1658,7 +1669,12 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
             return;
         }
     }
-
+    av_log(NULL, AV_LOG_INFO, "Stop bytes is: %" PRId64 "\n", f->stop_bytes);
+    av_log(NULL, AV_LOG_INFO, "Pkt pos is: %" PRId64 "\n", pkt->pos);
+    if (pkt->pos >= f->stop_bytes) {
+	close_output_stream(ost);
+	return;
+    }
     /* force the input stream PTS */
     if (ost->enc_ctx->codec_type == AVMEDIA_TYPE_VIDEO)
         ost->sync_opts++;

@@ -147,6 +147,7 @@ static void init_options(OptionsContext *o)
     memset(o, 0, sizeof(*o));
 
     o->stop_time = INT64_MAX;
+    o->stop_bytes = INT64_MAX;
     o->mux_max_delay  = 0.7;
     o->start_time     = AV_NOPTS_VALUE;
     o->recording_time = INT64_MAX;
@@ -906,6 +907,8 @@ static int open_input_file(OptionsContext *o, const char *filename)
         }
     }
 
+    av_log(NULL, AV_LOG_INFO, "Stopping at %0" PRId64 "\n", o->stop_bytes);
+    
     /* if byte seeking requested */
     if (o->start_bytes != AV_NOPTS_VALUE) {
         av_log(NULL, AV_LOG_INFO, "Seeking to %0" PRId64 "\n", o->start_bytes);
@@ -932,6 +935,8 @@ static int open_input_file(OptionsContext *o, const char *filename)
     f->ctx        = ic;
     f->ist_index  = nb_input_streams - ic->nb_streams;
     f->start_time = o->start_time;
+    f->start_bytes = o->start_bytes;
+    f->stop_bytes = o->stop_bytes;
     f->recording_time = o->recording_time;
     f->input_ts_offset = o->input_ts_offset;
     f->ts_offset  = o->input_ts_offset - (copy_ts ? 0 : timestamp);
@@ -2800,6 +2805,8 @@ const OptionDef options[] = {
         "duration" },
     { "to",             HAS_ARG | OPT_TIME | OPT_OFFSET | OPT_OUTPUT,  { .off = OFFSET(stop_time) },
         "record or transcode stop time", "time_stop" },
+    { "bto",             HAS_ARG | OPT_INT64 | OPT_OFFSET | OPT_INPUT | OPT_OUTPUT,  { .off = OFFSET(stop_bytes) },
+        "record or transcode stop bytes", "byte_stop" },
     { "fs",             HAS_ARG | OPT_INT64 | OPT_OFFSET | OPT_OUTPUT, { .off = OFFSET(limit_filesize) },
         "set the limit file size in bytes", "limit_size" },
     { "ss",             HAS_ARG | OPT_TIME | OPT_OFFSET |
