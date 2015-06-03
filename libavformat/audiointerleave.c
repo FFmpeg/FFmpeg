@@ -127,7 +127,7 @@ int ff_audio_rechunk_interleave(AVFormatContext *s, AVPacket *out, AVPacket *pkt
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
         if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
-            AVPacket new_pkt;
+            AVPacket new_pkt = { 0 };
             while (interleave_new_audio_packet(s, &new_pkt, i, flush))
                 if ((ret = ff_interleave_add_packet(s, &new_pkt, compare_ts)) < 0)
                     return ret;
