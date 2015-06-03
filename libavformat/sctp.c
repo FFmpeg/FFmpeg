@@ -116,7 +116,7 @@ static int ff_sctp_recvmsg(int s, void *msg, size_t len, struct sockaddr *from,
 static int ff_sctp_send(int s, const void *msg, size_t len,
                         const struct sctp_sndrcvinfo *sinfo, int flags)
 {
-    struct msghdr outmsg;
+    struct msghdr outmsg = { 0 };
     struct iovec iov;
 
     outmsg.msg_name       = NULL;
