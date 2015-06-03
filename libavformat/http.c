@@ -611,17 +611,16 @@ static int process_line(URLContext *h, char *line, int line_count,
             }
             av_log(h, AV_LOG_TRACE, "HTTP version string: %s\n", version);
         } else {
-        /* TODO: reindent */
-        while (!av_isspace(*p) && *p != '\0')
-            p++;
-        while (av_isspace(*p))
-            p++;
-        s->http_code = strtol(p, &end, 10);
+            while (!av_isspace(*p) && *p != '\0')
+                p++;
+            while (av_isspace(*p))
+                p++;
+            s->http_code = strtol(p, &end, 10);
 
-        av_log(h, AV_LOG_TRACE, "http_code=%d\n", s->http_code);
+            av_log(h, AV_LOG_TRACE, "http_code=%d\n", s->http_code);
 
-        if ((ret = check_http_code(h, s->http_code, end)) < 0)
-            return ret;
+            if ((ret = check_http_code(h, s->http_code, end)) < 0)
+                return ret;
         }
     } else {
         while (*p != '\0' && *p != ':')
