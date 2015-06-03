@@ -299,6 +299,23 @@ int ff_http_averror(int status_code, int default_averror)
         return default_averror;
 }
 
+static void handle_http_errors(URLContext *h, int error)
+{
+    static const char bad_request[] = "HTTP/1.1 400 Bad Request\r\nContent-Type: text/plain\r\n\r\n400 Bad Request\r\n";
+    static const char internal_server_error[] = "HTTP/1.1 500 Internal server error\r\nContent-Type: text/plain\r\n\r\n500 Internal server error\r\n";
+    HTTPContext *s = h->priv_data;
+    if (h->is_connected) {
+        switch(error) {
+            case AVERROR_HTTP_BAD_REQUEST:
+                ffurl_write(s->hd, bad_request, strlen(bad_request));
+                break;
+            default:
+                av_log(h, AV_LOG_ERROR, "Unhandled HTTP error.\n");
+                ffurl_write(s->hd, internal_server_error, strlen(internal_server_error));
+        }
+    }
+}
+
 static int http_listen(URLContext *h, const char *uri, int flags,
                        AVDictionary **options) {
     HTTPContext *s = h->priv_data;
@@ -325,6 +342,7 @@ static int http_listen(URLContext *h, const char *uri, int flags,
     return 0;
 
 fail:
+    handle_http_errors(h, ret);
     av_dict_free(&s->chained_options);
     return ret;
 }
