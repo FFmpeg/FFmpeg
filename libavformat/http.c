@@ -563,7 +563,7 @@ static int process_line(URLContext *h, char *line, int line_count,
                         int *new_location)
 {
     HTTPContext *s = h->priv_data;
-    char *tag, *p, *end;
+    char *tag, *p, *end, *method, *resource, *version;
     int ret;
 
     /* end of header */
@@ -574,6 +574,44 @@ static int process_line(URLContext *h, char *line, int line_count,
 
     p = line;
     if (line_count == 0) {
+        if (s->listen) {
+            // HTTP method
+            method = p;
+            while (!av_isspace(*p))
+                p++;
+            *(p++) = '\0';
+            av_log(h, AV_LOG_TRACE, "Received method: %s\n", method);
+            if (s->method) {
+                if (av_strcasecmp(s->method, method)) {
+                    av_log(h, AV_LOG_ERROR, "Received and expected HTTP method do not match. (%s expected, %s received)\n",
+                           s->method, method);
+                    return ff_http_averror(400, AVERROR(EIO));
+                }
+            }
+
+            // HTTP resource
+            while (av_isspace(*p))
+                p++;
+            resource = p;
+            while (!av_isspace(*p))
+                p++;
+            *(p++) = '\0';
+            av_log(h, AV_LOG_TRACE, "Requested resource: %s\n", resource);
+
+            // HTTP version
+            while (av_isspace(*p))
+                p++;
+            version = p;
+            while (!av_isspace(*p))
+                p++;
+            *p = '\0';
+            if (av_strncasecmp(version, "HTTP/", 5)) {
+                av_log(h, AV_LOG_ERROR, "Malformed HTTP version string.\n");
+                return ff_http_averror(400, AVERROR(EIO));
+            }
+            av_log(h, AV_LOG_TRACE, "HTTP version string: %s\n", version);
+        } else {
+        /* TODO: reindent */
         while (!av_isspace(*p) && *p != '\0')
             p++;
         while (av_isspace(*p))
@@ -584,6 +622,7 @@ static int process_line(URLContext *h, char *line, int line_count,
 
         if ((ret = check_http_code(h, s->http_code, end)) < 0)
             return ret;
+        }
     } else {
         while (*p != '\0' && *p != ':')
             p++;
