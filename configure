@@ -3078,8 +3078,7 @@ for opt do
     esac
 done
 
-[ "$env" != "" ] &&
-for e in "$env"; do
+for e in $env; do
     eval "export $e"
 done
 
