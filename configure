@@ -1857,8 +1857,6 @@ HAVE_LIST="
     $TYPES_LIST
     atomics_native
     dos_paths
-    d3d11_cobj
-    d3d11va_lib
     dxva2api_cobj
     dxva2_lib
     libc_msvcrt
@@ -5359,15 +5357,6 @@ enabled dxva2api_h &&
 int main(void) { IDirectXVideoDecoder *o = NULL; IDirectXVideoDecoder_Release(o); return 0; }
 EOF
 
-enabled d3d11_h &&
-    check_cc <<EOF && enable d3d11_cobj
-#define _WIN32_WINNT 0x0600
-#define COBJMACROS
-#include <windows.h>
-#include <d3d11.h>
-int main(void) { ID3D11VideoDecoder *o = NULL; ID3D11VideoDecoder_Release(o); return 0; }
-EOF
-
 enabled vaapi &&
     check_lib va/va.h vaInitialize -lva ||
     disable vaapi
@@ -5624,10 +5613,6 @@ if test $target_os = "haiku"; then
     disable memalign
     disable posix_memalign
 fi
-
-enabled_all d3d11va d3d11_cobj CoTaskMemFree &&
-    prepend ffmpeg_libs $($ldflags_filter "-lole32") &&
-    enable d3d11va_lib
 
 enabled_all dxva2 dxva2api_cobj CoTaskMemFree &&
     prepend ffmpeg_libs $($ldflags_filter "-lole32" "-luser32") &&
