@@ -1,6 +1,9 @@
 FATE_SUBTITLES_ASS-$(call ALLYES, AQTITLE_DEMUXER TEXT_DECODER ICONV) += fate-sub-aqtitle
 fate-sub-aqtitle: CMD = fmtstdout ass -sub_charenc windows-1250 -i $(TARGET_SAMPLES)/sub/AQTitle_capability_tester.aqt
 
+FATE_SUBTITLES_ASS-$(call ALLYES, CCAPTION_DECODER MOVIE_FILTER MPEGTS_DEMUXER) += fate-sub-cc
+fate-sub-cc: CMD = fmtstdout ass -f lavfi -i "movie=$(TARGET_SAMPLES)/sub/Closedcaption_rollup.m2v[out0+subcc]"
+
 FATE_SUBTITLES_ASS-$(call DEMDEC, ASS, ASS) += fate-sub-ass-to-ass-transcode
 fate-sub-ass-to-ass-transcode: CMD = fmtstdout ass -i $(TARGET_SAMPLES)/sub/1ededcbd7b.ass
 
