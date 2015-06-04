@@ -402,6 +402,20 @@ static av_cold void hevc_dsp_init_msa(HEVCDSPContext *c,
         c->put_hevc_epel_bi_w[5][1][1] = ff_hevc_put_hevc_bi_w_epel_hv16_8_msa;
         c->put_hevc_epel_bi_w[6][1][1] = ff_hevc_put_hevc_bi_w_epel_hv24_8_msa;
         c->put_hevc_epel_bi_w[7][1][1] = ff_hevc_put_hevc_bi_w_epel_hv32_8_msa;
+
+        c->idct[0] = ff_hevc_idct_4x4_msa;
+        c->idct[1] = ff_hevc_idct_8x8_msa;
+        c->idct[2] = ff_hevc_idct_16x16_msa;
+        c->idct[3] = ff_hevc_idct_32x32_msa;
+        c->idct_dc[0] = ff_hevc_idct_dc_4x4_msa;
+        c->idct_dc[1] = ff_hevc_idct_dc_8x8_msa;
+        c->idct_dc[2] = ff_hevc_idct_dc_16x16_msa;
+        c->idct_dc[3] = ff_hevc_idct_dc_32x32_msa;
+        c->transform_add[0] = ff_hevc_addblk_4x4_msa;
+        c->transform_add[1] = ff_hevc_addblk_8x8_msa;
+        c->transform_add[2] = ff_hevc_addblk_16x16_msa;
+        c->transform_add[3] = ff_hevc_addblk_32x32_msa;
+        c->idct_4x4_luma = ff_hevc_idct_luma_4x4_msa;
     }
 }
 #endif  // #if HAVE_MSA

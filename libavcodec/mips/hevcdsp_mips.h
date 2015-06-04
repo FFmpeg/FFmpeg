@@ -18,6 +18,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#ifndef AVCODEC_MIPS_HEVCDSP_MIPS_H
+#define AVCODEC_MIPS_HEVCDSP_MIPS_H
+
 #include "libavcodec/hevcdsp.h"
 
 #define MC(PEL, DIR, WIDTH)                                                 \
@@ -427,3 +430,23 @@ BI_W_MC(epel, hv, 48);
 BI_W_MC(epel, hv, 64);
 
 #undef BI_W_MC
+
+void ff_hevc_idct_4x4_msa(int16_t *coeffs, int col_limit);
+void ff_hevc_idct_8x8_msa(int16_t *coeffs, int col_limit);
+void ff_hevc_idct_16x16_msa(int16_t *coeffs, int col_limit);
+void ff_hevc_idct_32x32_msa(int16_t *coeffs, int col_limit);
+void ff_hevc_idct_dc_4x4_msa(int16_t *coeffs);
+void ff_hevc_idct_dc_8x8_msa(int16_t *coeffs);
+void ff_hevc_idct_dc_16x16_msa(int16_t *coeffs);
+void ff_hevc_idct_dc_32x32_msa(int16_t *coeffs);
+void ff_hevc_addblk_4x4_msa(uint8_t *dst, int16_t *pi16Coeffs,
+                            ptrdiff_t stride);
+void ff_hevc_addblk_8x8_msa(uint8_t *dst, int16_t *pi16Coeffs,
+                            ptrdiff_t stride);
+void ff_hevc_addblk_16x16_msa(uint8_t *dst, int16_t *pi16Coeffs,
+                              ptrdiff_t stride);
+void ff_hevc_addblk_32x32_msa(uint8_t *dst, int16_t *pi16Coeffs,
+                              ptrdiff_t stride);
+void ff_hevc_idct_luma_4x4_msa(int16_t *pi16Coeffs);
+
+#endif  // #ifndef AVCODEC_MIPS_HEVCDSP_MIPS_H
