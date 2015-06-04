@@ -381,7 +381,7 @@ static int atrac3p_decode_frame(AVCodecContext *avctx, void *data,
 
     *got_frame_ptr = 1;
 
-    return avctx->block_align;
+    return FFMIN(avctx->block_align, avpkt->size);
 }
 
 AVCodec ff_atrac3p_decoder = {
