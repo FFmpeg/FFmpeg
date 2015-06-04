@@ -103,7 +103,7 @@ int ff_put_wav_header(AVIOContext *pb, AVCodecContext *enc, int flags)
     }
 
     if (enc->codec_id == AV_CODEC_ID_MP2) {
-        blkalign = frame_size;
+        blkalign = (144 * enc->bit_rate - 1)/enc->sample_rate + 1;
     } else if (enc->codec_id == AV_CODEC_ID_MP3) {
         blkalign = 576 * (enc->sample_rate <= (24000 + 32000)/2 ? 1 : 2);
     } else if (enc->codec_id == AV_CODEC_ID_AC3) {
