@@ -347,9 +347,9 @@ static int64_t get_delay(struct SwrContext *s, int64_t base){
 
 static int64_t get_out_samples(struct SwrContext *s, int in_samples) {
     ResampleContext *c = s->resample;
-    // The + 2 are added to allow implementations to be slightly inaccuarte, they should not be needed currently
+    // The + 2 are added to allow implementations to be slightly inaccurate, they should not be needed currently.
     // They also make it easier to proof that changes and optimizations do not
-    // break the upper bound
+    // break the upper bound.
     int64_t num = s->in_buffer_count + 2LL + in_samples;
     num *= 1 << c->phase_shift;
     num -= c->index;
