@@ -835,6 +835,14 @@ static int mpegts_set_stream_info(AVStream *st, PESContext *pes,
         st->codec->codec_id  = old_codec_id;
         st->codec->codec_type = old_codec_type;
     }
+    if ((st->codec->codec_id == AV_CODEC_ID_NONE ||
+            (st->request_probe > 0 && st->request_probe < AVPROBE_SCORE_STREAM_RETRY / 5)) &&
+        !avcodec_is_open(st->codec) &&
+        stream_type ==  6) {
+        st->codec->codec_type = AVMEDIA_TYPE_DATA;
+        st->codec->codec_id   = AV_CODEC_ID_BIN_DATA;
+        st->request_probe = AVPROBE_SCORE_STREAM_RETRY / 5;
+    }
 
     return 0;
 }
