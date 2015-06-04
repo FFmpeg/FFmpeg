@@ -2539,6 +2539,7 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
             ret = ff_thread_decode_frame(avctx, frame, got_frame_ptr, &tmp);
         else {
             ret = avctx->codec->decode(avctx, frame, got_frame_ptr, &tmp);
+            av_assert0(ret <= tmp.size);
             frame->pkt_dts = avpkt->dts;
         }
         if (ret >= 0 && *got_frame_ptr) {
