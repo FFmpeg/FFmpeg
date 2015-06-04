@@ -563,6 +563,7 @@ static int process_line(URLContext *h, char *line, int line_count,
                         int *new_location)
 {
     HTTPContext *s = h->priv_data;
+    const char *auto_method =  h->flags & AVIO_FLAG_READ ? "POST" : "GET";
     char *tag, *p, *end, *method, *resource, *version;
     int ret;
 
@@ -585,6 +586,14 @@ static int process_line(URLContext *h, char *line, int line_count,
                 if (av_strcasecmp(s->method, method)) {
                     av_log(h, AV_LOG_ERROR, "Received and expected HTTP method do not match. (%s expected, %s received)\n",
                            s->method, method);
+                    return ff_http_averror(400, AVERROR(EIO));
+                }
+            } else {
+                // use autodetected HTTP method to expect
+                av_log(h, AV_LOG_TRACE, "Autodetected %s HTTP method\n", auto_method);
+                if (av_strcasecmp(auto_method, method)) {
+                    av_log(h, AV_LOG_ERROR, "Received and autodetected HTTP method did not match "
+                           "(%s autodetected %s received)\n", auto_method, method);
                     return ff_http_averror(400, AVERROR(EIO));
                 }
             }
