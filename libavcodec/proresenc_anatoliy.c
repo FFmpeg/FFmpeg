@@ -542,14 +542,14 @@ static av_cold int prores_encode_init(AVCodecContext *avctx)
 
     if (avctx->pix_fmt != AV_PIX_FMT_YUV422P10) {
         av_log(avctx, AV_LOG_ERROR, "need YUV422P10\n");
-        return -1;
+        return AVERROR_PATCHWELCOME;
     }
     avctx->bits_per_raw_sample = 10;
 
     if (avctx->width & 0x1) {
         av_log(avctx, AV_LOG_ERROR,
                 "frame width needs to be multiple of 2\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
 
     if (avctx->width > 65534 || avctx->height > 65535) {
@@ -578,7 +578,7 @@ static av_cold int prores_encode_init(AVCodecContext *avctx)
                 AV_LOG_ERROR,
                 "unknown profile %d, use [0 - apco, 1 - apcs, 2 - apcn (default), 3 - apch]\n",
                 avctx->profile);
-        return -1;
+        return AVERROR(EINVAL);
     }
 
     ff_fdctdsp_init(&ctx->fdsp, avctx);
