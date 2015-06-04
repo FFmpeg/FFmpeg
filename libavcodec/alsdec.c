@@ -1493,6 +1493,11 @@ static int read_frame_data(ALSDecContext *ctx, unsigned int ra_frame)
 
     // TODO: read_diff_float_data
 
+    if (get_bits_left(gb) < 0) {
+        av_log(ctx->avctx, AV_LOG_ERROR, "Overread %d\n", -get_bits_left(gb));
+        return AVERROR_INVALIDDATA;
+    }
+
     return 0;
 }
 
