@@ -74,4 +74,7 @@ void ff_hevc_pred_init(HEVCPredContext *hpc, int bit_depth)
         HEVC_PRED(8);
         break;
     }
+
+    if (ARCH_MIPS)
+        ff_hevc_pred_init_mips(hpc, bit_depth);
 }

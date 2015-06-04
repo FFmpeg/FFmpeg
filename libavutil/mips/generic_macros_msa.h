@@ -770,7 +770,9 @@
     SLDI_B2_0(RTYPE, in0, in1, out0, out1, slide_val);  \
     SLDI_B2_0(RTYPE, in2, in3, out2, out3, slide_val);  \
 }
+#define SLDI_B4_0_UB(...) SLDI_B4_0(v16u8, __VA_ARGS__)
 #define SLDI_B4_0_SB(...) SLDI_B4_0(v16i8, __VA_ARGS__)
+#define SLDI_B4_0_SH(...) SLDI_B4_0(v8i16, __VA_ARGS__)
 
 /* Description : Immediate number of columns to slide
    Arguments   : Inputs  - in0_0, in0_1, in1_0, in1_1, slide_val
@@ -1037,6 +1039,21 @@
     out_m;                                                \
 } )
 
+/* Description : Horizontal addition of unsigned byte vector elements
+   Arguments   : Inputs  - in0, in1
+                 Outputs - out0, out1
+                 Return Type - as per RTYPE
+   Details     : Each unsigned odd byte element from 'in0' is added to
+                 even unsigned byte element from 'in0' (pairwise) and the
+                 halfword result is stored in 'out0'
+*/
+#define HADD_UB2(RTYPE, in0, in1, out0, out1)                 \
+{                                                             \
+    out0 = (RTYPE) __msa_hadd_u_h((v16u8) in0, (v16u8) in0);  \
+    out1 = (RTYPE) __msa_hadd_u_h((v16u8) in1, (v16u8) in1);  \
+}
+#define HADD_UB2_UH(...) HADD_UB2(v8u16, __VA_ARGS__)
+
 /* Description : Horizontal subtraction of unsigned byte vector elements
    Arguments   : Inputs  - in0, in1
                  Outputs - out0, out1
@@ -1052,6 +1069,20 @@
 }
 #define HSUB_UB2_UH(...) HSUB_UB2(v8u16, __VA_ARGS__)
 #define HSUB_UB2_SH(...) HSUB_UB2(v8i16, __VA_ARGS__)
+
+/* Description : Insert specified word elements from input vectors to 1
+                 destination vector
+   Arguments   : Inputs  - in0, in1, in2, in3 (4 input vectors)
+                 Outputs - out                (output vector)
+                 Return Type - as per RTYPE
+*/
+#define INSERT_W2(RTYPE, in0, in1, out)                 \
+{                                                       \
+    out = (RTYPE) __msa_insert_w((v4i32) out, 0, in0);  \
+    out = (RTYPE) __msa_insert_w((v4i32) out, 1, in1);  \
+}
+#define INSERT_W2_UB(...) INSERT_W2(v16u8, __VA_ARGS__)
+#define INSERT_W2_SB(...) INSERT_W2(v16i8, __VA_ARGS__)
 
 #define INSERT_W4(RTYPE, in0, in1, in2, in3, out)       \
 {                                                       \
@@ -1364,8 +1395,11 @@
     out0 = (RTYPE) __msa_ilvr_b((v16i8) in0, (v16i8) in1);  \
     out1 = (RTYPE) __msa_ilvl_b((v16i8) in0, (v16i8) in1);  \
 }
+#define ILVRL_B2_UB(...) ILVRL_B2(v16u8, __VA_ARGS__)
 #define ILVRL_B2_SB(...) ILVRL_B2(v16i8, __VA_ARGS__)
+#define ILVRL_B2_UH(...) ILVRL_B2(v8u16, __VA_ARGS__)
 #define ILVRL_B2_SH(...) ILVRL_B2(v8i16, __VA_ARGS__)
+#define ILVRL_B2_SW(...) ILVRL_B2(v4i32, __VA_ARGS__)
 
 #define ILVRL_H2(RTYPE, in0, in1, out0, out1)               \
 {                                                           \
@@ -1921,6 +1955,18 @@
 {                                                                             \
     ADD2(in0, in1, in2, in3, out0, out1);                                     \
     ADD2(in4, in5, in6, in7, out2, out3);                                     \
+}
+
+/* Description : Subtraction of 2 pairs of vectors
+   Arguments   : Inputs  - in0, in1, in2, in3
+                 Outputs - out0, out1
+   Details     : Each element from 2 pairs vectors is subtracted and 2 results
+                 are produced
+*/
+#define SUB2(in0, in1, in2, in3, out0, out1)  \
+{                                             \
+    out0 = in0 - in1;                         \
+    out1 = in2 - in3;                         \
 }
 
 /* Description : Sign extend byte elements from input vector and return
