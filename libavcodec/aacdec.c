@@ -291,6 +291,11 @@ static uint64_t sniff_channel_order(uint8_t (*layout_map)[3], int tags)
     if (num_back_channels < 0)
         return 0;
 
+    if (num_side_channels == 0 && num_back_channels >= 4) {
+        num_side_channels = 2;
+        num_back_channels -= 2;
+    }
+
     i = 0;
     if (num_front_channels & 1) {
         e2c_vec[i] = (struct elem_to_channel) {
