@@ -679,7 +679,7 @@ int ff_snow_frame_start(SnowContext *s){
         s->ref_frames= i;
         if(s->ref_frames==0){
             av_log(s->avctx,AV_LOG_ERROR, "No reference frames\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
     }
     if ((ret = ff_snow_get_buffer(s, s->current_picture)) < 0)
