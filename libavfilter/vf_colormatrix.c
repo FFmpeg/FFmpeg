@@ -187,6 +187,8 @@ static av_cold int init(AVFilterContext *ctx)
         return AVERROR(EINVAL);
     }
 
+    calc_coefficients(ctx);
+
     return 0;
 }
 
@@ -399,8 +401,6 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     case COLOR_MODE_SMPTE240M: av_frame_set_colorspace(out, AVCOL_SPC_SMPTE240M); break;
     case COLOR_MODE_BT601    : av_frame_set_colorspace(out, AVCOL_SPC_BT470BG)  ; break;
     }
-
-    calc_coefficients(ctx);
 
     td.src = in;
     td.dst = out;
