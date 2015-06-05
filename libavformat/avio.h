@@ -178,9 +178,21 @@ int avio_put_str(AVIOContext *s, const char *str);
 
 /**
  * Convert an UTF-8 string to UTF-16LE and write it.
+ * @param s the AVIOContext
+ * @param str NULL-terminated UTF-8 string
+ *
  * @return number of bytes written.
  */
 int avio_put_str16le(AVIOContext *s, const char *str);
+
+/**
+ * Convert an UTF-8 string to UTF-16BE and write it.
+ * @param s the AVIOContext
+ * @param str NULL-terminated UTF-8 string
+ *
+ * @return number of bytes written.
+ */
+int avio_put_str16be(AVIOContext *s, const char *str);
 
 /**
  * Passing this as the "whence" parameter to a seek function causes it to
