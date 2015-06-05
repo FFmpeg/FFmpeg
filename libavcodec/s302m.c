@@ -85,7 +85,6 @@ static int s302m_parse_frame_header(AVCodecContext *avctx, const uint8_t *buf,
         case 8:
             avctx->channel_layout = AV_CH_LAYOUT_5POINT1_BACK | AV_CH_LAYOUT_STEREO_DOWNMIX;
     }
-    avctx->sample_rate = 48000;
     avctx->bit_rate    = 48000 * avctx->channels * (avctx->bits_per_raw_sample + 4) +
                          32 * (48000 / (buf_size * 8 /
                                         (avctx->channels *
@@ -196,6 +195,8 @@ static int s302m_decode_frame(AVCodecContext *avctx, void *data,
             return avpkt->size;
         }
     }
+
+    avctx->sample_rate = 48000;
 
     *got_frame_ptr = 1;
 
