@@ -39,7 +39,7 @@ typedef struct SoftFloat{
 static av_const SoftFloat av_normalize_sf(SoftFloat a){
     if(a.mant){
 #if 1
-        while((a.mant + 0x20000000U)<0x40000000U){
+        while((a.mant + 0x1FFFFFFFU)<0x3FFFFFFFU){
             a.mant += a.mant;
             a.exp  -= 1;
         }
