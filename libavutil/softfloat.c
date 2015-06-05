@@ -93,6 +93,16 @@ int main(void){
     sf3 = av_add_sf(sf3, sf2);
     printf("test3 softfloat: %.10lf (0x%08x %d)\n", (double)av_sf2double(sf3), sf3.mant, sf3.exp);
 
+    sf1 = av_int2sf(0xFFFFFFF0, 0);
+    printf("test4 softfloat: %.10lf (0x%08x %d)\n", (double)av_sf2double(sf1), sf1.mant, sf1.exp);
+    sf1 = av_int2sf(0x00000010, 0);
+    printf("test4 softfloat: %.10lf (0x%08x %d)\n", (double)av_sf2double(sf1), sf1.mant, sf1.exp);
+
+    sf1 = av_int2sf(0x1FFFFFFF, 0);
+    printf("test4 softfloat: %.10lf (0x%08x %d)\n", (double)av_sf2double(sf1), sf1.mant, sf1.exp);
+    sf1 = av_int2sf(0xE0000001, 0);
+    printf("test4 softfloat: %.10lf (0x%08x %d)\n", (double)av_sf2double(sf1), sf1.mant, sf1.exp);
+
     return 0;
 
 }
