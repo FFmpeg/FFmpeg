@@ -581,8 +581,10 @@ static int flv_read_metabody(AVFormatContext *s, int64_t next_pos)
     if (!strcmp(buffer, "onCaptionInfo"))
         return TYPE_ONCAPTIONINFO;
 
-    if (strcmp(buffer, "onMetaData") && strcmp(buffer, "onCuePoint"))
+    if (strcmp(buffer, "onMetaData") && strcmp(buffer, "onCuePoint")) {
+        av_log(s, AV_LOG_DEBUG, "Unknown type %s\n", buffer);
         return TYPE_UNKNOWN;
+    }
 
     // find the streams now so that amf_parse_object doesn't need to do
     // the lookup every time it is called.
