@@ -44,7 +44,7 @@ static av_const SoftFloat av_normalize_sf(SoftFloat a){
             a.exp  -= 1;
         }
 #else
-        int s=ONE_BITS + 1 - av_log2(a.mant ^ (a.mant<<1));
+        int s=ONE_BITS - av_log2(FFABS(a.mant));
         a.exp   -= s;
         a.mant <<= s;
 #endif
