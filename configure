@@ -1857,8 +1857,6 @@ HAVE_LIST="
     $TYPES_LIST
     atomics_native
     dos_paths
-    d3d11_cobj
-    d3d11va_lib
     dxva2api_cobj
     dxva2_lib
     libc_msvcrt
@@ -2336,7 +2334,7 @@ zmbv_encoder_select="zlib"
 # hardware accelerators
 crystalhd_deps="libcrystalhd_libcrystalhd_if_h"
 d3d11va_deps="d3d11_h dxva_h ID3D11VideoDecoder"
-dxva2_deps="dxva2api_h LPDIRECT3DSURFACE9"
+dxva2_deps="dxva2api_h DXVA2_ConfigPictureDecode"
 vaapi_deps="va_va_h"
 vda_deps="VideoDecodeAcceleration_VDADecoder_h pthreads"
 vda_extralibs="-framework CoreFoundation -framework VideoDecodeAcceleration -framework QuartzCore"
@@ -3078,8 +3076,7 @@ for opt do
     esac
 done
 
-[ "$env" != "" ] &&
-for e in "$env"; do
+for e in $env; do
     eval "export $e"
 done
 
@@ -5032,7 +5029,7 @@ check_struct "sys/time.h sys/resource.h" "struct rusage" ru_maxrss
 
 check_type "windows.h dxva.h" "DXVA_PicParams_HEVC"
 check_type "windows.h d3d11.h" "ID3D11VideoDecoder"
-check_type d3d9.h LPDIRECT3DSURFACE9
+check_type "d3d9.h dxva2api.h" DXVA2_ConfigPictureDecode -D_WIN32_WINNT=0x0600
 
 if ! disabled w32threads && ! enabled pthreads; then
     check_func_headers "windows.h process.h" _beginthreadex &&
@@ -5360,15 +5357,6 @@ enabled dxva2api_h &&
 int main(void) { IDirectXVideoDecoder *o = NULL; IDirectXVideoDecoder_Release(o); return 0; }
 EOF
 
-enabled d3d11_h &&
-    check_cc <<EOF && enable d3d11_cobj
-#define _WIN32_WINNT 0x0600
-#define COBJMACROS
-#include <windows.h>
-#include <d3d11.h>
-int main(void) { ID3D11VideoDecoder *o = NULL; ID3D11VideoDecoder_Release(o); return 0; }
-EOF
-
 enabled vaapi &&
     check_lib va/va.h vaInitialize -lva ||
     disable vaapi
@@ -5625,10 +5613,6 @@ if test $target_os = "haiku"; then
     disable memalign
     disable posix_memalign
 fi
-
-enabled_all d3d11va d3d11_cobj CoTaskMemFree &&
-    prepend ffmpeg_libs $($ldflags_filter "-lole32") &&
-    enable d3d11va_lib
 
 enabled_all dxva2 dxva2api_cobj CoTaskMemFree &&
     prepend ffmpeg_libs $($ldflags_filter "-lole32" "-luser32") &&

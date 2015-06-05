@@ -39,12 +39,12 @@ typedef struct SoftFloat{
 static av_const SoftFloat av_normalize_sf(SoftFloat a){
     if(a.mant){
 #if 1
-        while((a.mant + 0x20000000U)<0x40000000U){
+        while((a.mant + 0x1FFFFFFFU)<0x3FFFFFFFU){
             a.mant += a.mant;
             a.exp  -= 1;
         }
 #else
-        int s=ONE_BITS + 1 - av_log2(a.mant ^ (a.mant<<1));
+        int s=ONE_BITS - av_log2(FFABS(a.mant));
         a.exp   -= s;
         a.mant <<= s;
 #endif
@@ -60,7 +60,7 @@ static av_const SoftFloat av_normalize_sf(SoftFloat a){
 
 static inline av_const SoftFloat av_normalize1_sf(SoftFloat a){
 #if 1
-    if((int32_t)(a.mant + 0x40000000U) < 0){
+    if((int32_t)(a.mant + 0x40000000U) <= 0){
         a.exp++;
         a.mant>>=1;
     }
@@ -70,7 +70,7 @@ static inline av_const SoftFloat av_normalize1_sf(SoftFloat a){
     int t= a.mant + 0x40000000 < 0;
     return (SoftFloat){ a.mant>>t, a.exp+t};
 #else
-    int t= (a.mant + 0x40000000U)>>31;
+    int t= (a.mant + 0x3FFFFFFFU)>>31;
     return (SoftFloat){a.mant>>t, a.exp+t};
 #endif
 }
@@ -175,53 +175,6 @@ static av_always_inline SoftFloat av_sqrt_sf(SoftFloat val)
 /**
  * Rounding-to-nearest used.
  */
-static av_always_inline void av_sincos_sf(int a, int *s, int *c)
-{
-    int idx, sign;
-    int sv, cv;
-    int st, ct;
-
-    idx = a >> 26;
-    sign = (idx << 27) >> 31;
-    cv = av_costbl_1_sf[idx & 0xf];
-    cv = (cv ^ sign) - sign;
-
-    idx -= 8;
-    sign = (idx << 27) >> 31;
-    sv = av_costbl_1_sf[idx & 0xf];
-    sv = (sv ^ sign) - sign;
-
-    idx = a >> 21;
-    ct = av_costbl_2_sf[idx & 0x1f];
-    st = av_sintbl_2_sf[idx & 0x1f];
-
-    idx = (int)(((int64_t)cv * ct - (int64_t)sv * st + 0x20000000) >> 30);
-
-    sv = (int)(((int64_t)cv * st + (int64_t)sv * ct + 0x20000000) >> 30);
-
-    cv = idx;
-
-    idx = a >> 16;
-    ct = av_costbl_3_sf[idx & 0x1f];
-    st = av_sintbl_3_sf[idx & 0x1f];
-
-    idx = (int)(((int64_t)cv * ct - (int64_t)sv * st + 0x20000000) >> 30);
-
-    sv = (int)(((int64_t)cv * st + (int64_t)sv * ct + 0x20000000) >> 30);
-    cv = idx;
-
-    idx = a >> 11;
-
-    ct = (int)(((int64_t)av_costbl_4_sf[idx & 0x1f] * (0x800 - (a & 0x7ff)) +
-                (int64_t)av_costbl_4_sf[(idx & 0x1f)+1]*(a & 0x7ff) +
-                0x400) >> 11);
-    st = (int)(((int64_t)av_sintbl_4_sf[idx & 0x1f] * (0x800 - (a & 0x7ff)) +
-                (int64_t)av_sintbl_4_sf[(idx & 0x1f) + 1] * (a & 0x7ff) +
-                0x400) >> 11);
-
-    *c = (int)(((int64_t)cv * ct + (int64_t)sv * st + 0x20000000) >> 30);
-
-    *s = (int)(((int64_t)cv * st + (int64_t)sv * ct + 0x20000000) >> 30);
-}
+void av_sincos_sf(int a, int *s, int *c);
 
 #endif /* AVUTIL_SOFTFLOAT_H */

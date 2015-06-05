@@ -37,6 +37,55 @@ static av_const double av_sf2double(SoftFloat v) {
     else          return (double)v.mant / (double)(1 << (-v.exp));
 }
 
+void av_sincos_sf(int a, int *s, int *c)
+{
+    int idx, sign;
+    int sv, cv;
+    int st, ct;
+
+    idx = a >> 26;
+    sign = (idx << 27) >> 31;
+    cv = av_costbl_1_sf[idx & 0xf];
+    cv = (cv ^ sign) - sign;
+
+    idx -= 8;
+    sign = (idx << 27) >> 31;
+    sv = av_costbl_1_sf[idx & 0xf];
+    sv = (sv ^ sign) - sign;
+
+    idx = a >> 21;
+    ct = av_costbl_2_sf[idx & 0x1f];
+    st = av_sintbl_2_sf[idx & 0x1f];
+
+    idx = (int)(((int64_t)cv * ct - (int64_t)sv * st + 0x20000000) >> 30);
+
+    sv = (int)(((int64_t)cv * st + (int64_t)sv * ct + 0x20000000) >> 30);
+
+    cv = idx;
+
+    idx = a >> 16;
+    ct = av_costbl_3_sf[idx & 0x1f];
+    st = av_sintbl_3_sf[idx & 0x1f];
+
+    idx = (int)(((int64_t)cv * ct - (int64_t)sv * st + 0x20000000) >> 30);
+
+    sv = (int)(((int64_t)cv * st + (int64_t)sv * ct + 0x20000000) >> 30);
+    cv = idx;
+
+    idx = a >> 11;
+
+    ct = (int)(((int64_t)av_costbl_4_sf[idx & 0x1f] * (0x800 - (a & 0x7ff)) +
+                (int64_t)av_costbl_4_sf[(idx & 0x1f)+1]*(a & 0x7ff) +
+                0x400) >> 11);
+    st = (int)(((int64_t)av_sintbl_4_sf[idx & 0x1f] * (0x800 - (a & 0x7ff)) +
+                (int64_t)av_sintbl_4_sf[(idx & 0x1f) + 1] * (a & 0x7ff) +
+                0x400) >> 11);
+
+    *c = (int)(((int64_t)cv * ct + (int64_t)sv * st + 0x20000000) >> 30);
+
+    *s = (int)(((int64_t)cv * st + (int64_t)sv * ct + 0x20000000) >> 30);
+}
+
 int main(void){
     SoftFloat one= av_int2sf(1, 0);
     SoftFloat sf1, sf2, sf3;
@@ -92,6 +141,16 @@ int main(void){
     sf2 = av_add_sf(sf1, sf2);
     sf3 = av_add_sf(sf3, sf2);
     printf("test3 softfloat: %.10lf (0x%08x %d)\n", (double)av_sf2double(sf3), sf3.mant, sf3.exp);
+
+    sf1 = av_int2sf(0xFFFFFFF0, 0);
+    printf("test4 softfloat: %.10lf (0x%08x %d)\n", (double)av_sf2double(sf1), sf1.mant, sf1.exp);
+    sf1 = av_int2sf(0x00000010, 0);
+    printf("test4 softfloat: %.10lf (0x%08x %d)\n", (double)av_sf2double(sf1), sf1.mant, sf1.exp);
+
+    sf1 = av_int2sf(0x1FFFFFFF, 0);
+    printf("test4 softfloat: %.10lf (0x%08x %d)\n", (double)av_sf2double(sf1), sf1.mant, sf1.exp);
+    sf1 = av_int2sf(0xE0000001, 0);
+    printf("test4 softfloat: %.10lf (0x%08x %d)\n", (double)av_sf2double(sf1), sf1.mant, sf1.exp);
 
     return 0;
 

@@ -345,6 +345,25 @@ static int64_t get_delay(struct SwrContext *s, int64_t base){
     return av_rescale(num, base, s->in_sample_rate*(int64_t)c->src_incr << c->phase_shift);
 }
 
+static int64_t get_out_samples(struct SwrContext *s, int in_samples) {
+    ResampleContext *c = s->resample;
+    // The + 2 are added to allow implementations to be slightly inaccurate, they should not be needed currently.
+    // They also make it easier to proof that changes and optimizations do not
+    // break the upper bound.
+    int64_t num = s->in_buffer_count + 2LL + in_samples;
+    num *= 1 << c->phase_shift;
+    num -= c->index;
+    num = av_rescale_rnd(num, s->out_sample_rate, ((int64_t)s->in_sample_rate) << c->phase_shift, AV_ROUND_UP) + 2;
+
+    if (c->compensation_distance) {
+        if (num > INT_MAX)
+            return AVERROR(EINVAL);
+
+        num = FFMAX(num, (num * c->ideal_dst_incr - 1) / c->dst_incr + 1);
+    }
+    return num;
+}
+
 static int resample_flush(struct SwrContext *s) {
     AudioData *a= &s->in_buffer;
     int i, j, ret;
@@ -414,4 +433,5 @@ struct Resampler const swri_resampler={
   set_compensation,
   get_delay,
   invert_initial_buffer,
+  get_out_samples,
 };
