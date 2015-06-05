@@ -184,8 +184,6 @@ bool configGenerator::buildDefaultValues( )
     fastToggleConfigValue( "wglgetprocaddress", true );
 
     fastToggleConfigValue( "dos_paths", true );
-    fastToggleConfigValue( "d3d11_cobj", true );
-    fastToggleConfigValue( "d3d11va_lib", true );
     fastToggleConfigValue( "dxva2api_cobj", true );
     fastToggleConfigValue( "dxva2_lib", true );
 
@@ -391,7 +389,7 @@ void configGenerator::buildAdditionalDependencies( DependencyList & mAdditionalD
     mAdditionalDependencies["linux_fb_h"] = false;
     mAdditionalDependencies["linux_videodev_h"] = false;
     mAdditionalDependencies["linux_videodev2_h"] = false;
-    mAdditionalDependencies["LPDIRECT3DSURFACE9"] = true;
+    mAdditionalDependencies["DXVA2_ConfigPictureDecode"] = true;
     mAdditionalDependencies["snd_pcm_htimestamp"] = false;
     mAdditionalDependencies["va_va_h"] = false;
     mAdditionalDependencies["vdpau_vdpau_h"] = false;
