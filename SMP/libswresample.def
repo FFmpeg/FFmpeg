@@ -9,6 +9,7 @@ EXPORTS
     swr_free
     swr_get_class
     swr_get_delay
+    swr_get_out_samples
     swr_init
     swr_inject_silence
     swr_is_initialized
