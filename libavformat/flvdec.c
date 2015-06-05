@@ -547,6 +547,7 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream,
 
 #define TYPE_ONTEXTDATA 1
 #define TYPE_ONCAPTION 2
+#define TYPE_ONCAPTIONINFO 3
 #define TYPE_UNKNOWN 9
 
 static int flv_read_metabody(AVFormatContext *s, int64_t next_pos)
@@ -576,6 +577,9 @@ static int flv_read_metabody(AVFormatContext *s, int64_t next_pos)
 
     if (!strcmp(buffer, "onCaption"))
         return TYPE_ONCAPTION;
+
+    if (!strcmp(buffer, "onCaptionInfo"))
+        return TYPE_ONCAPTIONINFO;
 
     if (strcmp(buffer, "onMetaData") && strcmp(buffer, "onCuePoint"))
         return TYPE_UNKNOWN;
