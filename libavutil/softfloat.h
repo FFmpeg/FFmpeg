@@ -70,7 +70,7 @@ static inline av_const SoftFloat av_normalize1_sf(SoftFloat a){
     int t= a.mant + 0x40000000 < 0;
     return (SoftFloat){ a.mant>>t, a.exp+t};
 #else
-    int t= (a.mant + 0x40000000U)>>31;
+    int t= (a.mant + 0x3FFFFFFFU)>>31;
     return (SoftFloat){a.mant>>t, a.exp+t};
 #endif
 }
