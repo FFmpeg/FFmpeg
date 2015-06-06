@@ -1204,6 +1204,10 @@ static FFServerIPAddressACL* parse_dynamic_acl(FFServerStream *stream,
     }
 
     acl = av_mallocz(sizeof(FFServerIPAddressACL));
+    if (!acl) {
+        fclose(f);
+        return NULL;
+    }
 
     /* Build ACL */
     while (fgets(line, sizeof(line), f)) {
@@ -2123,15 +2127,20 @@ static int http_prepare_data(HTTPContext *c)
     switch(c->state) {
     case HTTPSTATE_SEND_DATA_HEADER:
         ctx = avformat_alloc_context();
+        if (!ctx)
+            return AVERROR(ENOMEM);
         c->fmt_ctx = *ctx;
         av_freep(&ctx);
         av_dict_copy(&(c->fmt_ctx.metadata), c->stream->metadata, 0);
         c->fmt_ctx.streams = av_mallocz_array(c->stream->nb_streams,
                                               sizeof(AVStream *));
+        if (!c->fmt_ctx.streams)
+            return AVERROR(ENOMEM);
 
         for(i=0;i<c->stream->nb_streams;i++) {
             AVStream *src;
             c->fmt_ctx.streams[i] = av_mallocz(sizeof(AVStream));
+
             /* if file or feed, then just take streams from FFServerStream struct */
             if (!c->stream->feed ||
                 c->stream->feed == c->stream)
@@ -2853,6 +2862,8 @@ static int prepare_sdp_description(FFServerStream *stream, uint8_t **pbuffer,
         avc->streams[i]->codec = stream->streams[i]->codec;
     }
     *pbuffer = av_mallocz(2048);
+    if (!*pbuffer)
+        goto sdp_done;
     av_sdp_create(&avc, 1, *pbuffer, 2048);
 
  sdp_done:
@@ -3369,6 +3380,10 @@ static AVStream *add_av_stream1(FFServerStream *stream,
         return NULL;
     if (copy) {
         fst->codec = avcodec_alloc_context3(codec->codec);
+        if (!fst->codec) {
+            av_free(fst);
+            return NULL;
+        }
         avcodec_copy_context(fst->codec, codec);
     } else {
         /* live streams must use the actual feed's codec since it may be
@@ -3650,6 +3665,11 @@ static void build_feed_streams(void)
         }
         if (avio_check(feed->feed_filename, AVIO_FLAG_WRITE) <= 0) {
             AVFormatContext *s = avformat_alloc_context();
+
+            if (!s) {
+                http_log("Failed to allocate context\n");
+                exit(1);
+            }
 
             if (feed->readonly) {
                 http_log("Unable to create feed file '%s' as it is marked readonly\n",
