@@ -1427,6 +1427,31 @@ AVCodec ff_nvenc_encoder = {
 };
 #endif
 
+/* Add an alias for nvenc_h264 */
+#if CONFIG_NVENC_H264_ENCODER
+static const AVClass nvenc_h264_class = {
+    .class_name = "nvenc_h264",
+    .item_name = av_default_item_name,
+    .option = options,
+    .version = LIBAVUTIL_VERSION_INT,
+};
+
+AVCodec ff_nvenc_h264_encoder = {
+    .name = "nvenc_h264",
+    .long_name = NULL_IF_CONFIG_SMALL("Nvidia NVENC h264 encoder"),
+    .type = AVMEDIA_TYPE_VIDEO,
+    .id = AV_CODEC_ID_H264,
+    .priv_data_size = sizeof(NvencContext),
+    .init = nvenc_encode_init,
+    .encode2 = nvenc_encode_frame,
+    .close = nvenc_encode_close,
+    .capabilities = CODEC_CAP_DELAY,
+    .priv_class = &nvenc_h264_class,
+    .defaults = nvenc_defaults,
+    .pix_fmts = pix_fmts_nvenc,
+};
+#endif
+
 #if CONFIG_NVENC_HEVC_ENCODER
 static const AVClass nvenc_hevc_class = {
     .class_name = "nvenc_hevc",
