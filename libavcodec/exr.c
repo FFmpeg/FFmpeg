@@ -1012,6 +1012,22 @@ static int decode_header(EXRContext *s)
     int current_channel_offset = 0;
     int magic_number, version, flags, i;
 
+    s->xmin               = ~0;
+    s->xmax               = ~0;
+    s->ymin               = ~0;
+    s->ymax               = ~0;
+    s->xdelta             = ~0;
+    s->ydelta             = ~0;
+    s->channel_offsets[0] = -1;
+    s->channel_offsets[1] = -1;
+    s->channel_offsets[2] = -1;
+    s->channel_offsets[3] = -1;
+    s->pixel_type         = EXR_UNKNOWN;
+    s->compression        = EXR_UNKN;
+    s->nb_channels        = 0;
+    s->w                  = 0;
+    s->h                  = 0;
+
     if (bytestream2_get_bytes_left(&s->gb) < 10) {
         av_log(s->avctx, AV_LOG_ERROR, "Header too short to parse.\n");
         return AVERROR_INVALIDDATA;
@@ -1352,21 +1368,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
     float one_gamma = 1.0f / s->gamma;
 
     s->avctx              = avctx;
-    s->xmin               = ~0;
-    s->xmax               = ~0;
-    s->ymin               = ~0;
-    s->ymax               = ~0;
-    s->xdelta             = ~0;
-    s->ydelta             = ~0;
-    s->channel_offsets[0] = -1;
-    s->channel_offsets[1] = -1;
-    s->channel_offsets[2] = -1;
-    s->channel_offsets[3] = -1;
-    s->pixel_type         = EXR_UNKNOWN;
-    s->compression        = EXR_UNKN;
-    s->nb_channels        = 0;
-    s->w                  = 0;
-    s->h                  = 0;
 
     if ( one_gamma > 0.9999f && one_gamma < 1.0001f ) {
         for ( i = 0; i < 65536; ++i ) {
