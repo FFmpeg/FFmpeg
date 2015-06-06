@@ -1673,7 +1673,6 @@ HEADERS_LIST="
     asm_types_h
     cdio_paranoia_h
     cdio_paranoia_paranoia_h
-    cuda_h
     dev_bktr_ioctl_bt848_h
     dev_bktr_ioctl_meteor_h
     dev_ic_bt8xx_h
@@ -2195,13 +2194,13 @@ h263p_decoder_select="h263_decoder"
 h263p_encoder_select="h263_encoder"
 h264_decoder_select="cabac golomb h264chroma h264dsp h264pred h264qpel startcode videodsp"
 h264_decoder_suggest="error_resilience"
-h264_nvenc_encoder_deps="nvenc cuda_h"
+h264_nvenc_encoder_deps="nvenc"
 h264_qsv_decoder_deps="libmfx"
 h264_qsv_decoder_select="h264_mp4toannexb_bsf h264_parser qsvdec h264_qsv_hwaccel"
 h264_qsv_encoder_deps="libmfx"
 h264_qsv_encoder_select="qsvenc"
 hevc_decoder_select="bswapdsp cabac golomb videodsp"
-hevc_nvenc_encoder_deps="nvenc cuda_h"
+hevc_nvenc_encoder_deps="nvenc"
 huffyuv_decoder_select="bswapdsp huffyuvdsp llviddsp"
 huffyuv_encoder_select="bswapdsp huffman huffyuvencdsp llviddsp"
 iac_decoder_select="imc_decoder"
@@ -4993,7 +4992,6 @@ check_func_headers glob.h glob
 enabled xlib &&
     check_func_headers "X11/Xlib.h X11/extensions/Xvlib.h" XvGetPortAttribute -lXv -lX11 -lXext
 
-check_header cuda.h
 check_header direct.h
 check_header dlfcn.h
 check_header d3d11.h
@@ -5219,6 +5217,7 @@ if enabled libdc1394; then
 fi
 
 if enabled nvenc; then
+    check_header cuda.h || die "ERROR: cuda.h not found.";
     check_header nvEncodeAPI.h || die "ERROR: nvEncodeAPI.h not found.";
     check_cpp_condition nvEncodeAPI.h "NVENCAPI_MAJOR_VERSION >= 5" ||
         die "ERROR: NVENC API version 4 or older is not supported";
