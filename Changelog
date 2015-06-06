@@ -24,7 +24,6 @@ version <next>:
 - WebPAnimEncoder API when available for encoding and muxing WebP
 - Direct3D11-accelerated decoding
 - Support Secure Transport
-- NVIDIA NVENC-accelerated H.264 and HEVC encoding support
 
 
 version 2.6:

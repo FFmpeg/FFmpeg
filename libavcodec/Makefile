@@ -94,7 +94,6 @@ OBJS-$(CONFIG_MPEGVIDEOENC)            += mpegvideo_enc.o mpeg12data.o  \
                                           mpegvideoencdsp.o
 OBJS-$(CONFIG_NVENC)                   += nvenc_a.o
 OBJS-$(CONFIG_PIXBLOCKDSP)             += pixblockdsp.o
-#OBJS-${CONFIG_NVENC}                   += nvenc_b.o
 OBJS-$(CONFIG_QPELDSP)                 += qpeldsp.o
 OBJS-$(CONFIG_QSV)                     += qsv.o
 OBJS-$(CONFIG_QSVDEC)                  += qsvdec.o
@@ -276,13 +275,11 @@ OBJS-$(CONFIG_H264_DECODER)            += h264.o h264_cabac.o h264_cavlc.o \
                                           h264_refs.o h264_sei.o h264_slice.o
 OBJS-$(CONFIG_H264_MMAL_DECODER)       += mmaldec.o
 OBJS-$(CONFIG_H264_VDA_DECODER)        += vda_h264_dec.o
-#OBJS-$(CONFIG_H264_NVENC_ENCODER)      += nvenc_b_h264.o
 OBJS-$(CONFIG_H264_QSV_DECODER)        += qsvdec_h264.o
 OBJS-$(CONFIG_H264_QSV_ENCODER)        += qsvenc_h264.o
 OBJS-$(CONFIG_HEVC_DECODER)            += hevc.o hevc_mvs.o hevc_ps.o hevc_sei.o \
                                           hevc_cabac.o hevc_refs.o hevcpred.o    \
                                           hevcdsp.o hevc_filter.o
-#OBJS-$(CONFIG_HEVC_NVENC_ENCODER)      += nvenc_b_hevc.o
 OBJS-$(CONFIG_HNM4_VIDEO_DECODER)      += hnm4video.o
 OBJS-$(CONFIG_HQ_HQA_DECODER)          += hq_hqa.o hq_hqadata.o hq_hqadsp.o \
                                           canopus.o
