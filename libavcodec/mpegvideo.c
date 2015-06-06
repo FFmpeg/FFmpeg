@@ -1283,6 +1283,7 @@ av_cold int ff_mpv_common_init(MpegEncContext *s)
         s->parse_context.state = -1;
 
         s->context_initialized = 1;
+        memset(s->thread_context, 0, sizeof(s->thread_context));
         s->thread_context[0]   = s;
 
 //     if (s->width && s->height) {
@@ -1409,6 +1410,7 @@ int ff_mpv_common_frame_size_change(MpegEncContext *s)
     if ((err = init_context_frame(s)))
         goto fail;
 
+    memset(s->thread_context, 0, sizeof(s->thread_context));
     s->thread_context[0]   = s;
 
     if (s->width && s->height) {
