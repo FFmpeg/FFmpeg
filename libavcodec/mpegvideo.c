@@ -2776,7 +2776,7 @@ int ff_mpv_lowest_referenced_row(MpegEncContext *s, int dir)
 
     off = ((FFMAX(-my_min, my_max)<<qpel_shift) + 63) >> 6;
 
-    return FFMIN(FFMAX(s->mb_y + off, 0), s->mb_height-1);
+    return av_clip(s->mb_y + off, 0, s->mb_height - 1);
 unhandled:
     return s->mb_height-1;
 }

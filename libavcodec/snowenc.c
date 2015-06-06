@@ -81,7 +81,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     ff_h263_encode_init(&s->m); //mv_penalty
 
-    s->max_ref_frames = FFMAX(FFMIN(avctx->refs, MAX_REF_FRAMES), 1);
+    s->max_ref_frames = av_clip(avctx->refs, 1, MAX_REF_FRAMES);
 
     if(avctx->flags&CODEC_FLAG_PASS1){
         if(!avctx->stats_out)

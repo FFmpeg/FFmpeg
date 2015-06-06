@@ -37,6 +37,7 @@
 #include <proto/exec.h>
 #endif /* __APPLE__ */
 
+#include "libavutil/avassert.h"
 #include "libavutil/cpu.h"
 #include "libavutil/cpu_internal.h"
 

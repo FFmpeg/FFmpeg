@@ -1619,7 +1619,7 @@ static void hevc_await_progress(HEVCContext *s, HEVCFrame *ref,
         ff_thread_await_progress(&ref->tf, y, 0);
 }
 
-static void hevc_luma_mv_mpv_mode(HEVCContext *s, int x0, int y0, int nPbW,
+static void hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW,
                                   int nPbH, int log2_cb_size, int part_idx,
                                   int merge_idx, MvField *mv)
 {
@@ -1704,7 +1704,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
         ff_hevc_luma_mv_merge_mode(s, x0, y0, nPbW, nPbH, log2_cb_size,
                                    partIdx, merge_idx, &current_mv);
     } else {
-        hevc_luma_mv_mpv_mode(s, x0, y0, nPbW, nPbH, log2_cb_size,
+        hevc_luma_mv_mvp_mode(s, x0, y0, nPbW, nPbH, log2_cb_size,
                               partIdx, merge_idx, &current_mv);
     }
 

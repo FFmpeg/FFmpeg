@@ -315,8 +315,8 @@ static int x11grab_read_header(AVFormatContext *s1)
                       &ret, &ret, &ret);
         x_off -= x11grab->width / 2;
         y_off -= x11grab->height / 2;
-        x_off  = FFMIN(FFMAX(x_off, 0), screen_w - x11grab->width);
-        y_off  = FFMIN(FFMAX(y_off, 0), screen_h - x11grab->height);
+        x_off = av_clip(x_off, 0, screen_w - x11grab->width);
+        y_off = av_clip(y_off, 0, screen_h - x11grab->height);
         av_log(s1, AV_LOG_INFO,
                "followmouse is enabled, resetting grabbing region to x: %d y: %d\n",
                x_off, y_off);
@@ -587,8 +587,8 @@ static int x11grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
                 y_off -= (y_off + follow_mouse) - pointer_y;
         }
         // adjust grabbing region position if it goes out of screen.
-        s->x_off = x_off = FFMIN(FFMAX(x_off, 0), screen_w - s->width);
-        s->y_off = y_off = FFMIN(FFMAX(y_off, 0), screen_h - s->height);
+        s->x_off = x_off = av_clip(x_off, 0, screen_w - s->width);
+        s->y_off = y_off = av_clip(y_off, 0, screen_h - s->height);
 
         if (s->show_region && s->region_win)
             XMoveWindow(dpy, s->region_win,

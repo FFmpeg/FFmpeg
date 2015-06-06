@@ -126,7 +126,7 @@ static const AVOption options[] = {
     { "location", "The actual location of the data received", OFFSET(location), AV_OPT_TYPE_STRING, { 0 }, 0, 0, D | E },
     { "offset", "initial byte offset", OFFSET(off), AV_OPT_TYPE_INT64, { .i64 = 0 }, 0, INT64_MAX, D },
     { "end_offset", "try to limit the request to bytes preceding this offset", OFFSET(end_off), AV_OPT_TYPE_INT64, { .i64 = 0 }, 0, INT64_MAX, D },
-    { "method", "Override the HTTP method", OFFSET(method), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, E },
+    { "method", "Override the HTTP method or set the expected HTTP method from a client", OFFSET(method), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, D | E },
     { "reconnect", "auto reconnect after disconnect before EOF", OFFSET(reconnect), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, D },
     { "listen", "listen on HTTP", OFFSET(listen), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, D | E },
     { NULL }
@@ -299,6 +299,23 @@ int ff_http_averror(int status_code, int default_averror)
         return default_averror;
 }
 
+static void handle_http_errors(URLContext *h, int error)
+{
+    static const char bad_request[] = "HTTP/1.1 400 Bad Request\r\nContent-Type: text/plain\r\n\r\n400 Bad Request\r\n";
+    static const char internal_server_error[] = "HTTP/1.1 500 Internal server error\r\nContent-Type: text/plain\r\n\r\n500 Internal server error\r\n";
+    HTTPContext *s = h->priv_data;
+    if (h->is_connected) {
+        switch(error) {
+            case AVERROR_HTTP_BAD_REQUEST:
+                ffurl_write(s->hd, bad_request, strlen(bad_request));
+                break;
+            default:
+                av_log(h, AV_LOG_ERROR, "Unhandled HTTP error.\n");
+                ffurl_write(s->hd, internal_server_error, strlen(internal_server_error));
+        }
+    }
+}
+
 static int http_listen(URLContext *h, const char *uri, int flags,
                        AVDictionary **options) {
     HTTPContext *s = h->priv_data;
@@ -318,13 +335,14 @@ static int http_listen(URLContext *h, const char *uri, int flags,
     if ((ret = ffurl_open(&s->hd, lower_url, AVIO_FLAG_READ_WRITE,
                           &h->interrupt_callback, options)) < 0)
         goto fail;
-    if ((ret = ffurl_write(s->hd, header, strlen(header))) < 0)
-        goto fail;
     if ((ret = http_read_header(h, &new_location)) < 0)
+         goto fail;
+    if ((ret = ffurl_write(s->hd, header, strlen(header))) < 0)
          goto fail;
     return 0;
 
 fail:
+    handle_http_errors(h, ret);
     av_dict_free(&s->chained_options);
     return ret;
 }
@@ -545,7 +563,8 @@ static int process_line(URLContext *h, char *line, int line_count,
                         int *new_location)
 {
     HTTPContext *s = h->priv_data;
-    char *tag, *p, *end;
+    const char *auto_method =  h->flags & AVIO_FLAG_READ ? "POST" : "GET";
+    char *tag, *p, *end, *method, *resource, *version;
     int ret;
 
     /* end of header */
@@ -556,16 +575,62 @@ static int process_line(URLContext *h, char *line, int line_count,
 
     p = line;
     if (line_count == 0) {
-        while (!av_isspace(*p) && *p != '\0')
-            p++;
-        while (av_isspace(*p))
-            p++;
-        s->http_code = strtol(p, &end, 10);
+        if (s->listen) {
+            // HTTP method
+            method = p;
+            while (!av_isspace(*p))
+                p++;
+            *(p++) = '\0';
+            av_log(h, AV_LOG_TRACE, "Received method: %s\n", method);
+            if (s->method) {
+                if (av_strcasecmp(s->method, method)) {
+                    av_log(h, AV_LOG_ERROR, "Received and expected HTTP method do not match. (%s expected, %s received)\n",
+                           s->method, method);
+                    return ff_http_averror(400, AVERROR(EIO));
+                }
+            } else {
+                // use autodetected HTTP method to expect
+                av_log(h, AV_LOG_TRACE, "Autodetected %s HTTP method\n", auto_method);
+                if (av_strcasecmp(auto_method, method)) {
+                    av_log(h, AV_LOG_ERROR, "Received and autodetected HTTP method did not match "
+                           "(%s autodetected %s received)\n", auto_method, method);
+                    return ff_http_averror(400, AVERROR(EIO));
+                }
+            }
 
-        av_log(h, AV_LOG_TRACE, "http_code=%d\n", s->http_code);
+            // HTTP resource
+            while (av_isspace(*p))
+                p++;
+            resource = p;
+            while (!av_isspace(*p))
+                p++;
+            *(p++) = '\0';
+            av_log(h, AV_LOG_TRACE, "Requested resource: %s\n", resource);
 
-        if ((ret = check_http_code(h, s->http_code, end)) < 0)
-            return ret;
+            // HTTP version
+            while (av_isspace(*p))
+                p++;
+            version = p;
+            while (!av_isspace(*p))
+                p++;
+            *p = '\0';
+            if (av_strncasecmp(version, "HTTP/", 5)) {
+                av_log(h, AV_LOG_ERROR, "Malformed HTTP version string.\n");
+                return ff_http_averror(400, AVERROR(EIO));
+            }
+            av_log(h, AV_LOG_TRACE, "HTTP version string: %s\n", version);
+        } else {
+            while (!av_isspace(*p) && *p != '\0')
+                p++;
+            while (av_isspace(*p))
+                p++;
+            s->http_code = strtol(p, &end, 10);
+
+            av_log(h, AV_LOG_TRACE, "http_code=%d\n", s->http_code);
+
+            if ((ret = check_http_code(h, s->http_code, end)) < 0)
+                return ret;
+        }
     } else {
         while (*p != '\0' && *p != ':')
             p++;

@@ -547,6 +547,7 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream,
 
 #define TYPE_ONTEXTDATA 1
 #define TYPE_ONCAPTION 2
+#define TYPE_ONCAPTIONINFO 3
 #define TYPE_UNKNOWN 9
 
 static int flv_read_metabody(AVFormatContext *s, int64_t next_pos)
@@ -558,7 +559,7 @@ static int flv_read_metabody(AVFormatContext *s, int64_t next_pos)
     int i;
     // only needs to hold the string "onMetaData".
     // Anything longer is something we don't want.
-    char buffer[11];
+    char buffer[32];
 
     astream = NULL;
     vstream = NULL;
@@ -577,8 +578,13 @@ static int flv_read_metabody(AVFormatContext *s, int64_t next_pos)
     if (!strcmp(buffer, "onCaption"))
         return TYPE_ONCAPTION;
 
-    if (strcmp(buffer, "onMetaData") && strcmp(buffer, "onCuePoint"))
+    if (!strcmp(buffer, "onCaptionInfo"))
+        return TYPE_ONCAPTIONINFO;
+
+    if (strcmp(buffer, "onMetaData") && strcmp(buffer, "onCuePoint")) {
+        av_log(s, AV_LOG_DEBUG, "Unknown type %s\n", buffer);
         return TYPE_UNKNOWN;
+    }
 
     // find the streams now so that amf_parse_object doesn't need to do
     // the lookup every time it is called.
@@ -841,7 +847,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
                 int type;
                 meta_pos = avio_tell(s->pb);
                 type = flv_read_metabody(s, next);
-                if (type == 0 && dts == 0 || type < 0) {
+                if (type == 0 && dts == 0 || type < 0 || type == TYPE_UNKNOWN) {
                     goto skip;
                 } else if (type == TYPE_ONTEXTDATA) {
                     avpriv_request_sample(s, "OnTextData packet");
