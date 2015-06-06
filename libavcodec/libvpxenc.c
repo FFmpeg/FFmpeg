@@ -91,6 +91,7 @@ typedef struct VP8EncoderContext {
     int crf;
     int static_thresh;
     int max_intra_rate;
+    int rc_undershoot_pct;
 
     // VP9-only
     int lossless;
@@ -472,7 +473,17 @@ static av_cold int vpx_init(AVCodecContext *avctx,
         enccfg.rc_buf_initial_sz =
             avctx->rc_initial_buffer_occupancy * 1000LL / avctx->bit_rate;
     enccfg.rc_buf_optimal_sz     = enccfg.rc_buf_sz * 5 / 6;
+#if FF_API_MPV_OPT
+    FF_DISABLE_DEPRECATION_WARNINGS
+    if (avctx->rc_buffer_aggressivity != 1.0) {
+        av_log(avctx, AV_LOG_WARNING, "The rc_buffer_aggressivity option is "
+               "deprecated, use the undershoot-pct private option instead.\n");
     enccfg.rc_undershoot_pct     = round(avctx->rc_buffer_aggressivity * 100);
+    }
+    FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+    if (ctx->rc_undershoot_pct >= 0)
+        enccfg.rc_undershoot_pct = ctx->rc_undershoot_pct;
 
     //_enc_init() will balk if kf_min_dist differs from max w/VPX_KF_AUTO
     if (avctx->keyint_min >= 0 && avctx->keyint_min == avctx->gop_size)
@@ -920,6 +931,7 @@ static int vp8_encode(AVCodecContext *avctx, AVPacket *pkt,
                          " is still done over the partition boundary.",       0, AV_OPT_TYPE_CONST, {.i64 = VPX_ERROR_RESILIENT_PARTITIONS}, 0, 0, VE, "er"}, \
     { "crf",              "Select the quality for constant quality mode", offsetof(VP8Context, crf), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 63, VE }, \
     { "static-thresh",    "A change threshold on blocks below which they will be skipped by the encoder", OFFSET(static_thresh), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE }, \
+    { "undershoot-pct",  "Datarate undershoot (min) target (%)", OFFSET(rc_undershoot_pct), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 100, VE }, \
 
 #define LEGACY_OPTIONS \
     {"speed", "", offsetof(VP8Context, cpu_used), AV_OPT_TYPE_INT, {.i64 = 1}, -16, 16, VE}, \
