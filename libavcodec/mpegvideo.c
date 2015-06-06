@@ -1290,8 +1290,9 @@ av_cold int ff_mpv_common_init(MpegEncContext *s)
         if (nb_slices > 1) {
             for (i = 0; i < nb_slices; i++) {
                 if (i) {
-                    s->thread_context[i] = av_malloc(sizeof(MpegEncContext));
-                    memcpy(s->thread_context[i], s, sizeof(MpegEncContext));
+                    s->thread_context[i] = av_memdup(s, sizeof(MpegEncContext));
+                    if (!s->thread_context[i])
+                        goto fail;
                 }
                 if (init_duplicate_context(s->thread_context[i]) < 0)
                     goto fail;
@@ -1418,8 +1419,11 @@ int ff_mpv_common_frame_size_change(MpegEncContext *s)
         if (nb_slices > 1) {
             for (i = 0; i < nb_slices; i++) {
                 if (i) {
-                    s->thread_context[i] = av_malloc(sizeof(MpegEncContext));
-                    memcpy(s->thread_context[i], s, sizeof(MpegEncContext));
+                    s->thread_context[i] = av_memdup(s, sizeof(MpegEncContext));
+                    if (!s->thread_context[i]) {
+                        err = AVERROR(ENOMEM);
+                        goto fail;
+                    }
                 }
                 if ((err = init_duplicate_context(s->thread_context[i])) < 0)
                     goto fail;
