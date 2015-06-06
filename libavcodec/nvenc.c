@@ -192,7 +192,7 @@ static const NvencValuePair nvenc_h264_level_pairs[] = {
     { NULL }
 };
 
-static const NvencValuePair nvenc_h265_level_pairs[] = {
+static const NvencValuePair nvenc_hevc_level_pairs[] = {
     { "auto", NV_ENC_LEVEL_AUTOSELECT },
     { "1"   , NV_ENC_LEVEL_HEVC_1     },
     { "1.0" , NV_ENC_LEVEL_HEVC_1     },
@@ -870,7 +870,7 @@ static av_cold int nvenc_encode_init(AVCodecContext *avctx)
         avctx->profile = FF_PROFILE_HEVC_MAIN;
 
         if (ctx->level) {
-            res = input_string_to_uint32(avctx, nvenc_h265_level_pairs, ctx->level, &ctx->encode_config.encodeCodecConfig.hevcConfig.level);
+            res = input_string_to_uint32(avctx, nvenc_hevc_level_pairs, ctx->level, &ctx->encode_config.encodeCodecConfig.hevcConfig.level);
 
             if (res) {
                 av_log(avctx, AV_LOG_FATAL, "Level \"%s\" is unknown! Supported levels: auto, 1, 2, 2.1, 3, 3.1, 4, 4.1, 5, 5.1, 5.2, 6, 6.1, 6.2\n", ctx->level);
@@ -1427,17 +1427,17 @@ AVCodec ff_nvenc_encoder = {
 };
 #endif
 
-#if CONFIG_NVENC_H265_ENCODER
-static const AVClass nvenc_h265_class = {
-    .class_name = "nvenc_h265",
+#if CONFIG_NVENC_HEVC_ENCODER
+static const AVClass nvenc_hevc_class = {
+    .class_name = "nvenc_hevc",
     .item_name = av_default_item_name,
     .option = options,
     .version = LIBAVUTIL_VERSION_INT,
 };
 
-AVCodec ff_nvenc_h265_encoder = {
-    .name = "nvenc_h265",
-    .long_name = NULL_IF_CONFIG_SMALL("Nvidia NVENC h265 encoder"),
+AVCodec ff_nvenc_hevc_encoder = {
+    .name = "nvenc_hevc",
+    .long_name = NULL_IF_CONFIG_SMALL("Nvidia NVENC hevc encoder"),
     .type = AVMEDIA_TYPE_VIDEO,
     .id = AV_CODEC_ID_H265,
     .priv_data_size = sizeof(NvencContext),
@@ -1445,7 +1445,7 @@ AVCodec ff_nvenc_h265_encoder = {
     .encode2 = nvenc_encode_frame,
     .close = nvenc_encode_close,
     .capabilities = CODEC_CAP_DELAY,
-    .priv_class = &nvenc_h265_class,
+    .priv_class = &nvenc_hevc_class,
     .defaults = nvenc_defaults,
     .pix_fmts = pix_fmts_nvenc,
 };

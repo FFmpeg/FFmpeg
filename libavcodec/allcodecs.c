@@ -236,7 +236,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER(MXPEG,             mxpeg);
     REGISTER_DECODER(NUV,               nuv);
     REGISTER_ENCODER(NVENC,             nvenc);
-    REGISTER_ENCODER(NVENC_H265,        nvenc_h265);
+    REGISTER_ENCODER(NVENC_HEVC,        nvenc_hevc);
     REGISTER_DECODER(PAF_VIDEO,         paf_video);
     REGISTER_ENCDEC (PAM,               pam);
     REGISTER_ENCDEC (PBM,               pbm);
