@@ -4943,6 +4943,8 @@ check_builtin machine_rw_barrier mbarrier.h "__machine_rw_barrier()"
 check_builtin MemoryBarrier windows.h "MemoryBarrier()"
 check_builtin sarestart signal.h "SA_RESTART"
 check_builtin sync_val_compare_and_swap "" "int *ptr; int oldval, newval; __sync_val_compare_and_swap(ptr, oldval, newval)"
+check_builtin gmtime_r time.h "time_t *time; struct tm *tm; gmtime_r(time, tm)"
+check_builtin localtime_r time.h "time_t *time; struct tm *tm; localtime_r(time, tm)"
 
 check_func_headers malloc.h _aligned_malloc     && enable aligned_malloc
 check_func  ${malloc_prefix}memalign            && enable memalign
@@ -4956,9 +4958,7 @@ check_func  gethrtime
 check_func  getopt
 check_func  getrusage
 check_func  gettimeofday
-check_func  gmtime_r
 check_func  isatty
-check_func  localtime_r
 check_func  mach_absolute_time
 check_func  mkstemp
 check_func  mmap
