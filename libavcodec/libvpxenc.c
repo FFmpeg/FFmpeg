@@ -92,6 +92,7 @@ typedef struct VP8EncoderContext {
     int static_thresh;
     int max_intra_rate;
     int rc_undershoot_pct;
+    int rc_overshoot_pct;
 
     // VP9-only
     int lossless;
@@ -484,6 +485,8 @@ static av_cold int vpx_init(AVCodecContext *avctx,
 #endif
     if (ctx->rc_undershoot_pct >= 0)
         enccfg.rc_undershoot_pct = ctx->rc_undershoot_pct;
+    if (ctx->rc_overshoot_pct >= 0)
+        enccfg.rc_overshoot_pct = ctx->rc_overshoot_pct;
 
     //_enc_init() will balk if kf_min_dist differs from max w/VPX_KF_AUTO
     if (avctx->keyint_min >= 0 && avctx->keyint_min == avctx->gop_size)
@@ -932,6 +935,7 @@ static int vp8_encode(AVCodecContext *avctx, AVPacket *pkt,
     { "crf",              "Select the quality for constant quality mode", offsetof(VP8Context, crf), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 63, VE }, \
     { "static-thresh",    "A change threshold on blocks below which they will be skipped by the encoder", OFFSET(static_thresh), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE }, \
     { "undershoot-pct",  "Datarate undershoot (min) target (%)", OFFSET(rc_undershoot_pct), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 100, VE }, \
+    { "overshoot-pct",   "Datarate overshoot (max) target (%)", OFFSET(rc_overshoot_pct), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 1000, VE }, \
 
 #define LEGACY_OPTIONS \
     {"speed", "", offsetof(VP8Context, cpu_used), AV_OPT_TYPE_INT, {.i64 = 1}, -16, 16, VE}, \
