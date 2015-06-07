@@ -2987,6 +2987,9 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
         if (avctx->debug & FF_DEBUG_STARTCODE)
             av_log(avctx, AV_LOG_DEBUG, "Elem type:%x id:%x\n", elem_type, elem_id);
 
+        if (!avctx->channels && elem_type != TYPE_PCE)
+            goto fail;
+
         if (elem_type < TYPE_DSE) {
             if (!(che=get_che(ac, elem_type, elem_id))) {
                 av_log(ac->avctx, AV_LOG_ERROR, "channel element %d.%d is not allocated\n",
@@ -3074,6 +3077,11 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
             err = AVERROR_INVALIDDATA;
             goto fail;
         }
+    }
+
+    if (!avctx->channels) {
+        *got_frame_ptr = 0;
+        return 0;
     }
 
     spectral_to_sample(ac);
