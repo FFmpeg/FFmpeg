@@ -315,11 +315,11 @@ static const AVFilterPad owdenoise_inputs[] = {
 };
 
 static const AVFilterPad owdenoise_outputs[] = {
-     {
-         .name = "default",
-         .type = AVMEDIA_TYPE_VIDEO,
-     },
-     { NULL }
+    {
+        .name = "default",
+        .type = AVMEDIA_TYPE_VIDEO,
+    },
+    { NULL }
 };
 
 AVFilter ff_vf_owdenoise = {
