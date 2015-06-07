@@ -235,8 +235,6 @@ void avcodec_register_all(void)
     REGISTER_DECODER(MVC2,              mvc2);
     REGISTER_DECODER(MXPEG,             mxpeg);
     REGISTER_DECODER(NUV,               nuv);
-    REGISTER_ENCODER(NVENC,             nvenc);
-    REGISTER_ENCODER(NVENC_H265,        nvenc_h265);
     REGISTER_DECODER(PAF_VIDEO,         paf_video);
     REGISTER_ENCDEC (PAM,               pam);
     REGISTER_ENCDEC (PBM,               pbm);
@@ -563,9 +561,10 @@ void avcodec_register_all(void)
     /* external libraries, that shouldn't be used by default if one of the
      * above is available */
     REGISTER_ENCODER(LIBOPENH264,       libopenh264);
-    REGISTER_ENCODER(H264_NVENC,        h264_nvenc);
     REGISTER_ENCODER(H264_QSV,          h264_qsv);
-    REGISTER_ENCODER(HEVC_NVENC,        hevc_nvenc);
+    REGISTER_ENCODER(NVENC,             nvenc);
+    REGISTER_ENCODER(NVENC_H264,        nvenc_h264);
+    REGISTER_ENCODER(NVENC_HEVC,        nvenc_hevc);
 
     /* parsers */
     REGISTER_PARSER(AAC,                aac);

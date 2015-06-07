@@ -465,7 +465,9 @@ static void fill_buffer(AVIOContext *s)
     /* make buffer smaller in case it ended up large after probing */
     if (s->read_packet && s->orig_buffer_size && s->buffer_size > s->orig_buffer_size) {
         if (dst == s->buffer) {
-            ffio_set_buf_size(s, s->orig_buffer_size);
+            int ret = ffio_set_buf_size(s, s->orig_buffer_size);
+            if (ret < 0)
+                av_log(s, AV_LOG_WARNING, "Failed to decrease buffer size\n");
 
             s->checksum_ptr = dst = s->buffer;
         }

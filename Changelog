@@ -8,7 +8,7 @@ version <next>:
 - showwavespic filter
 - DTS decoding through libdcadec
 - Drop support for nvenc API before 5.0
-- nvenc H265 encoder
+- nvenc HEVC encoder
 - Detelecine filter
 - Intel QSV-accelerated H.264 encoding
 - MMAL-accelerated H.264 decoding
