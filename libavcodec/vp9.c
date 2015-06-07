@@ -3841,7 +3841,7 @@ static int vp9_decode_frame(AVCodecContext *ctx, void *frame,
                             tile_row, s->tiling.log2_tile_rows, s->sb_rows);
             if (s->pass != 2) {
                 for (tile_col = 0; tile_col < s->tiling.tile_cols; tile_col++) {
-                    unsigned tile_size;
+                    int64_t tile_size;
 
                     if (tile_col == s->tiling.tile_cols - 1 &&
                         tile_row == s->tiling.tile_rows - 1) {
