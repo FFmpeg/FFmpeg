@@ -154,7 +154,6 @@ bool configGenerator::buildDefaultValues( )
     fastToggleConfigValue( "isatty", true );
     fastToggleConfigValue( "kbhit", true );
     fastToggleConfigValue( "libc_msvcrt", true );
-    fastToggleConfigValue( "LoadLibrary", true );
     fastToggleConfigValue( "local_aligned_32", true );
     fastToggleConfigValue( "local_aligned_16", true );
     fastToggleConfigValue( "local_aligned_8", true );
@@ -477,10 +476,6 @@ void configGenerator::buildForcedEnables( string sOptionLower, vector<string> & 
         vForceEnable.push_back( "gcrypt" );
         vForceEnable.push_back( "gmp" );
     }
-    else if( sOptionLower.compare( "nvenc" ) == 0 )
-    {
-        vForceEnable.push_back( "cuda_h" );
-    }    
 }
 
 void configGenerator::buildForcedDisables( string sOptionLower, vector<string> & vForceDisable )
