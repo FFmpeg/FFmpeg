@@ -45,8 +45,11 @@ typedef struct PNGDecContext {
     int state;
     int width, height;
     int cur_w, cur_h;
+    int last_w, last_h;
     int x_offset, y_offset;
+    int last_x_offset, last_y_offset;
     uint8_t dispose_op, blend_op;
+    uint8_t last_dispose_op;
     int bit_depth;
     int color_type;
     int compression_type;
@@ -56,7 +59,6 @@ typedef struct PNGDecContext {
     int bits_per_pixel;
     int bpp;
 
-    int frame_id;
     uint8_t *image_buf;
     int image_linesize;
     uint32_t palette[256];
@@ -539,12 +541,17 @@ static int decode_ihdr_chunk(AVCodecContext *avctx, PNGDecContext *s,
         return AVERROR_INVALIDDATA;
     }
 
-    s->width  = s->cur_w = bytestream2_get_be32(&s->gb);
-    s->height = s->cur_h = bytestream2_get_be32(&s->gb);
+    s->width  = bytestream2_get_be32(&s->gb);
+    s->height = bytestream2_get_be32(&s->gb);
     if (av_image_check_size(s->width, s->height, 0, avctx)) {
         s->width = s->height = 0;
         av_log(avctx, AV_LOG_ERROR, "Invalid image size\n");
         return AVERROR_INVALIDDATA;
+    }
+    if (s->cur_w == 0 && s->cur_h == 0) {
+        // Only set cur_w/h if update_thread_context() has not set it
+        s->cur_w = s->width;
+        s->cur_h = s->height;
     }
     s->bit_depth        = bytestream2_get_byte(&s->gb);
     s->color_type       = bytestream2_get_byte(&s->gb);
@@ -809,6 +816,12 @@ static int decode_fctl_chunk(AVCodecContext *avctx, PNGDecContext *s,
     if (length != 26)
         return AVERROR_INVALIDDATA;
 
+    s->last_w = s->cur_w;
+    s->last_h = s->cur_h;
+    s->last_x_offset = s->x_offset;
+    s->last_y_offset = s->y_offset;
+    s->last_dispose_op = s->dispose_op;
+
     sequence_number = bytestream2_get_be32(&s->gb);
     s->cur_w        = bytestream2_get_be32(&s->gb);
     s->cur_h        = bytestream2_get_be32(&s->gb);
@@ -829,15 +842,10 @@ static int decode_fctl_chunk(AVCodecContext *avctx, PNGDecContext *s,
         s->cur_w > s->width - s->x_offset|| s->cur_h > s->height - s->y_offset)
             return AVERROR_INVALIDDATA;
 
-    /* always (re)start with a clean frame */
-    if (sequence_number == 0) {
+    if (sequence_number == 0 && s->dispose_op == APNG_DISPOSE_OP_PREVIOUS) {
+        // No previous frame to revert to for the first frame
+        // Spec says to just treat it as a APNG_DISPOSE_OP_BACKGROUND
         s->dispose_op = APNG_DISPOSE_OP_BACKGROUND;
-        s->frame_id = 0;
-    } else {
-        s->frame_id++;
-        if (s->frame_id == 1 && s->dispose_op == APNG_DISPOSE_OP_PREVIOUS)
-            /* previous for the second frame is the first frame */
-            s->dispose_op = APNG_DISPOSE_OP_NONE;
     }
 
     return 0;
@@ -866,15 +874,11 @@ static void handle_p_frame_png(PNGDecContext *s, AVFrame *p)
 static int handle_p_frame_apng(AVCodecContext *avctx, PNGDecContext *s,
                                AVFrame *p)
 {
-    int i, j;
-    uint8_t *pd      = p->data[0];
-    uint8_t *pd_last = s->last_picture.f->data[0];
-    uint8_t *pd_last_region = s->dispose_op == APNG_DISPOSE_OP_PREVIOUS ?
-                                s->previous_picture.f->data[0] : s->last_picture.f->data[0];
-    int ls = FFMIN(av_image_get_linesize(p->format, s->width, 0), s->width * s->bpp);
+    size_t x, y;
+    uint8_t *buffer = av_malloc(s->image_linesize * s->height);
 
-    if (ls < 0)
-        return ls;
+    if (!buffer)
+        return AVERROR(ENOMEM);
 
     if (s->blend_op == APNG_BLEND_OP_OVER &&
         avctx->pix_fmt != AV_PIX_FMT_RGBA) {
@@ -883,76 +887,76 @@ static int handle_p_frame_apng(AVCodecContext *avctx, PNGDecContext *s,
         return AVERROR_PATCHWELCOME;
     }
 
+    // Copy the previous frame to the buffer
     ff_thread_await_progress(&s->last_picture, INT_MAX, 0);
-    if (s->dispose_op == APNG_DISPOSE_OP_PREVIOUS)
-        ff_thread_await_progress(&s->previous_picture, INT_MAX, 0);
+    memcpy(buffer, s->last_picture.f->data[0], s->image_linesize * s->height);
 
-    for (j = 0; j < s->y_offset; j++) {
-        memcpy(pd, pd_last, ls);
-        pd      += s->image_linesize;
-        pd_last += s->image_linesize;
+    // Do the disposal operation specified by the last frame on the frame
+    if (s->last_dispose_op == APNG_DISPOSE_OP_BACKGROUND) {
+        for (y = s->last_y_offset; y < s->last_y_offset + s->last_h; ++y)
+            memset(buffer + s->image_linesize * y + s->bpp * s->last_x_offset, 0, s->bpp * s->last_w);
+    } else if (s->last_dispose_op == APNG_DISPOSE_OP_PREVIOUS) {
+        ff_thread_await_progress(&s->previous_picture, INT_MAX, 0);
+        for (y = s->last_y_offset; y < s->last_y_offset + s->last_h; ++y) {
+            size_t row_start = s->image_linesize * y + s->bpp * s->last_x_offset;
+            memcpy(buffer + row_start, s->previous_picture.f->data[0] + row_start, s->bpp * s->last_w);
+        }
     }
 
-    if (s->dispose_op != APNG_DISPOSE_OP_BACKGROUND && s->blend_op == APNG_BLEND_OP_OVER) {
-        uint8_t ri, gi, bi, ai;
-
-        pd_last_region += s->y_offset * s->image_linesize;
-        if (avctx->pix_fmt == AV_PIX_FMT_RGBA) {
-            ri = 0;
-            gi = 1;
-            bi = 2;
-            ai = 3;
+    // Perform blending
+    if (s->blend_op == APNG_BLEND_OP_SOURCE) {
+        for (y = s->y_offset; y < s->y_offset + s->cur_h; ++y) {
+            size_t row_start = s->image_linesize * y + s->bpp * s->x_offset;
+            memcpy(buffer + row_start, p->data[0] + row_start, s->bpp * s->cur_w);
         }
+    } else { // APNG_BLEND_OP_OVER
+        for (y = s->y_offset; y < s->y_offset + s->cur_h; ++y) {
+            uint8_t *foreground = p->data[0] + s->image_linesize * y + s->bpp * s->x_offset;
+            uint8_t *background = buffer + s->image_linesize * y + s->bpp * s->x_offset;
+            for (x = s->x_offset; x < s->x_offset + s->cur_w; ++x, foreground += s->bpp, background += s->bpp) {
+                size_t b;
+                uint8_t foreground_alpha, background_alpha, output_alpha;
+                uint8_t output[4];
 
-        for (j = s->y_offset; j < s->y_offset + s->cur_h; j++) {
-            i = s->x_offset * s->bpp;
-            if (i)
-                memcpy(pd, pd_last, i);
-            for (; i < (s->x_offset + s->cur_w) * s->bpp; i += s->bpp) {
-                uint8_t alpha = pd[i+ai];
+                // Since we might be blending alpha onto alpha, we use the following equations:
+                // output_alpha = foreground_alpha + (1 - foreground_alpha) * background_alpha
+                // output = (foreground_alpha * foreground + (1 - foreground_alpha) * background_alpha * background) / output_alpha
 
-                /* output = alpha * foreground + (1-alpha) * background */
-                switch (alpha) {
-                case 0:
-                    pd[i+ri] = pd_last_region[i+ri];
-                    pd[i+gi] = pd_last_region[i+gi];
-                    pd[i+bi] = pd_last_region[i+bi];
-                    pd[i+ai] = 0xff;
-                    break;
-                case 255:
-                    break;
-                default:
-                    pd[i+ri] = FAST_DIV255(alpha * pd[i+ri] + (255 - alpha) * pd_last_region[i+ri]);
-                    pd[i+gi] = FAST_DIV255(alpha * pd[i+gi] + (255 - alpha) * pd_last_region[i+gi]);
-                    pd[i+bi] = FAST_DIV255(alpha * pd[i+bi] + (255 - alpha) * pd_last_region[i+bi]);
-                    pd[i+ai] = 0xff;
+                switch (avctx->pix_fmt) {
+                case AV_PIX_FMT_RGBA:
+                    foreground_alpha = foreground[3];
+                    background_alpha = background[3];
                     break;
                 }
+
+                if (foreground_alpha == 0)
+                    continue;
+
+                if (foreground_alpha == 255) {
+                    memcpy(background, foreground, s->bpp);
+                    continue;
+                }
+
+                output_alpha = foreground_alpha + FAST_DIV255((255 - foreground_alpha) * background_alpha);
+
+                for (b = 0; b < s->bpp - 1; ++b) {
+                    if (output_alpha == 0) {
+                        output[b] = 0;
+                    } else if (background_alpha == 255) {
+                        output[b] = FAST_DIV255(foreground_alpha * foreground[b] + (255 - foreground_alpha) * background[b]);
+                    } else {
+                        output[b] = (255 * foreground_alpha * foreground[b] + (255 - foreground_alpha) * background_alpha * background[b]) / (255 * output_alpha);
+                    }
+                }
+                output[b] = output_alpha;
+                memcpy(background, output, s->bpp);
             }
-            if (ls - i)
-                memcpy(pd+i, pd_last+i, ls - i);
-            pd      += s->image_linesize;
-            pd_last += s->image_linesize;
-            pd_last_region += s->image_linesize;
-        }
-    } else {
-        for (j = s->y_offset; j < s->y_offset + s->cur_h; j++) {
-            int end_offset = (s->x_offset + s->cur_w) * s->bpp;
-            int end_len    = ls - end_offset;
-            if (s->x_offset)
-                memcpy(pd, pd_last, s->x_offset * s->bpp);
-            if (end_len)
-                memcpy(pd+end_offset, pd_last+end_offset, end_len);
-            pd      += s->image_linesize;
-            pd_last += s->image_linesize;
         }
     }
 
-    for (j = s->y_offset + s->cur_h; j < s->height; j++) {
-        memcpy(pd, pd_last, ls);
-        pd      += s->image_linesize;
-        pd_last += s->image_linesize;
-    }
+    // Copy blended buffer into the frame and free
+    memcpy(p->data[0], buffer, s->image_linesize * s->height);
+    av_free(buffer);
 
     return 0;
 }
@@ -964,7 +968,6 @@ static int decode_frame_common(AVCodecContext *avctx, PNGDecContext *s,
     uint32_t tag, length;
     int decode_next_dat = 0;
     int ret;
-    AVFrame *ref;
 
     for (;;) {
         length = bytestream2_get_bytes_left(&s->gb);
@@ -1068,13 +1071,11 @@ exit_loop:
         handle_small_bpp(s, p);
 
     /* handle p-frames only if a predecessor frame is available */
-    ref = s->dispose_op == APNG_DISPOSE_OP_PREVIOUS ?
-             s->previous_picture.f : s->last_picture.f;
-    if (ref->data[0] && s->last_picture.f->data[0]) {
+    if (s->last_picture.f->data[0]) {
         if (   !(avpkt->flags & AV_PKT_FLAG_KEY) && avctx->codec_tag != AV_RL32("MPNG")
-            && ref->width == p->width
-            && ref->height== p->height
-            && ref->format== p->format
+            && s->last_picture.f->width == p->width
+            && s->last_picture.f->height== p->height
+            && s->last_picture.f->format== p->format
          ) {
             if (CONFIG_PNG_DECODER && avctx->codec_id != AV_CODEC_ID_APNG)
                 handle_p_frame_png(s, p);
@@ -1219,13 +1220,17 @@ static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
     if (dst == src)
         return 0;
 
-    pdst->frame_id = psrc->frame_id;
-
     ff_thread_release_buffer(dst, &pdst->picture);
     if (psrc->picture.f->data[0] &&
         (ret = ff_thread_ref_frame(&pdst->picture, &psrc->picture)) < 0)
         return ret;
     if (CONFIG_APNG_DECODER && dst->codec_id == AV_CODEC_ID_APNG) {
+        pdst->cur_w = psrc->cur_w;
+        pdst->cur_h = psrc->cur_h;
+        pdst->x_offset = psrc->x_offset;
+        pdst->y_offset = psrc->y_offset;
+        pdst->dispose_op = psrc->dispose_op;
+
         ff_thread_release_buffer(dst, &pdst->last_picture);
         if (psrc->last_picture.f->data[0])
             return ff_thread_ref_frame(&pdst->last_picture, &psrc->last_picture);
