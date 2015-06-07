@@ -497,6 +497,9 @@
     <ClCompile Include="..\libavcodec\mpegvideoencdsp.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\nvenc.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\pixblockdsp.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
