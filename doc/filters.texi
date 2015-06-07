@@ -13037,6 +13037,73 @@ select=n=2:e='mod(n, 2)+1' [odd][even]; [odd] pad=h=2*ih [tmp]; [tmp][even] over
 @end example
 @end itemize
 
+@section selectivecolor
+
+Adjust cyan, magenta, yellow and black (CMYK) to certain ranges of colors (such
+as "reds", "yellows", "greens", "cyans", ...). The adjustment range is defined
+by the "purity" of the color (that is, how saturated it already is).
+
+This filter is similar to the Adobe Photoshop Selective Color tool.
+
+The filter accepts the following options:
+
+@table @option
+@item correction_method
+Select color correction method.
+
+Available values are:
+@table @samp
+@item absolute
+Specified adjustments are applied "as-is" (added/subtracted to original pixel
+component value).
+@item relative
+Specified adjustments are relative to the original component value.
+@end table
+Default is @code{absolute}.
+@item reds
+Adjustments for red pixels (pixels where the red component is the maximum)
+@item yellows
+Adjustments for yellow pixels (pixels where the blue component is the minimum)
+@item greens
+Adjustments for green pixels (pixels where the green component is the maximum)
+@item cyans
+Adjustments for cyan pixels (pixels where the red component is the minimum)
+@item blues
+Adjustments for blue pixels (pixels where the blue component is the maximum)
+@item magentas
+Adjustments for magenta pixels (pixels where the green component is the minimum)
+@item whites
+Adjustments for white pixels (pixels where all components are greater than 128)
+@item neutrals
+Adjustments for all pixels except pure black and pure white
+@item blacks
+Adjustments for black pixels (pixels where all components are lesser than 128)
+@item psfile
+Specify a Photoshop selective color file (@code{.asv}) to import the settings from.
+@end table
+
+All the adjustment settings (@option{reds}, @option{yellows}, ...) accept up to
+4 space separated floating point adjustment values in the [-1,1] range,
+respectively to adjust the amount of cyan, magenta, yellow and black for the
+pixels of its range.
+
+@subsection Examples
+
+@itemize
+@item
+Increase cyan by 55% and reduce yellow by 33% in every green areas, and
+increase magenta by 27% in blue areas:
+@example
+selectivecolor=greens=.5 0 -.33 0:blues=0 .27
+@end example
+
+@item
+Use a Photoshop selective color preset:
+@example
+selectivecolor=psfile=MySelectiveColorPresets/Misty.asv
+@end example
+@end itemize
+
 @section sendcmd, asendcmd
 
 Send commands to filters in the filtergraph.

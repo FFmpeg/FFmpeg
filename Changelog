@@ -17,6 +17,7 @@ version <next>:
 - chromaprint fingerprinting muxer
 - ffplay dynamic volume control
 - displace filter
+- selectivecolor filter
 
 
 version 2.8:
