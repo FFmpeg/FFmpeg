@@ -162,7 +162,7 @@ static int write_manifest(AVFormatContext *s, int final)
     AVIOContext *out;
     char filename[1024], temp_filename[1024];
     int ret, i;
-    float duration = 0;
+    double duration = 0;
 
     if (c->nb_streams > 0)
         duration = c->streams[0].last_ts * av_q2d(s->streams[0]->time_base);
