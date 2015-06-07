@@ -95,7 +95,9 @@ static int ffm_read_data(AVFormatContext *s,
     retry_read:
             if (pb->buffer_size != ffm->packet_size) {
                 int64_t tell = avio_tell(pb);
-                ffio_set_buf_size(pb, ffm->packet_size);
+                int ret = ffio_set_buf_size(pb, ffm->packet_size);
+                if (ret < 0)
+                    return ret;
                 avio_seek(pb, tell, SEEK_SET);
             }
             id = avio_rb16(pb); /* PACKET_ID */
