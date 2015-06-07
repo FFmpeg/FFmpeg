@@ -2065,7 +2065,13 @@ static int open_input_stream(HTTPContext *c, const char *info)
     }
 
     /* set buffer size */
-    if (buf_size > 0) ffio_set_buf_size(s->pb, buf_size);
+    if (buf_size > 0) {
+        ret = ffio_set_buf_size(s->pb, buf_size);
+        if (ret < 0) {
+            http_log("Failed to set buffer size\n");
+            return ret;
+        }
+    }
 
     s->flags |= AVFMT_FLAG_GENPTS;
     c->fmt_in = s;
@@ -3595,7 +3601,12 @@ static void build_feed_streams(void)
 
             if (avformat_open_input(&s, feed->feed_filename, NULL, NULL) >= 0) {
                 /* set buffer size */
-                ffio_set_buf_size(s->pb, FFM_PACKET_SIZE);
+                int ret = ffio_set_buf_size(s->pb, FFM_PACKET_SIZE);
+                if (ret < 0) {
+                    http_log("Failed to set buffer size\n");
+                    exit(1);
+                }
+
                 /* Now see if it matches */
                 if (s->nb_streams == feed->nb_streams) {
                     matches = 1;
