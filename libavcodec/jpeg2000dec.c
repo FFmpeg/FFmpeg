@@ -1148,11 +1148,16 @@ static inline void mct_decode(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile)
     int i, csize = 1;
     void *src[3];
 
-    for (i = 1; i < 3; i++)
+    for (i = 1; i < 3; i++) {
         if (tile->codsty[0].transform != tile->codsty[i].transform) {
             av_log(s->avctx, AV_LOG_ERROR, "Transforms mismatch, MCT not supported\n");
             return;
         }
+        if (memcmp(tile->comp[0].coord, tile->comp[i].coord, sizeof(tile->comp[0].coord))) {
+            av_log(s->avctx, AV_LOG_ERROR, "Coords mismatch, MCT not supported\n");
+            return;
+        }
+    }
 
     for (i = 0; i < 3; i++)
         if (tile->codsty[0].transform == FF_DWT97)
