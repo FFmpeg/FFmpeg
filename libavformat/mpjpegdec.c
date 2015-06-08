@@ -88,7 +88,7 @@ static int mpjpeg_read_probe(AVProbeData *p)
         return AVERROR(ENOMEM);
 
     if (p->buf_size < 2 || p->buf[0] != '-' || p->buf[1] != '-')
-        return 0;
+        goto end;
 
     while (!pb->eof_reached) {
         ret = get_line(pb, line, sizeof(line));
@@ -102,6 +102,7 @@ static int mpjpeg_read_probe(AVProbeData *p)
         }
     }
 
+end:
     av_free(pb);
 
     return ret;
