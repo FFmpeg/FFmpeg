@@ -134,6 +134,11 @@ typedef struct VP8Frame {
     AVBufferRef *seg_map;
 } VP8Frame;
 
+typedef struct VP8intmv {
+    int x;
+    int y;
+} VP8intmv;
+
 #define MAX_THREADS 8
 typedef struct VP8Context {
     VP8ThreadData *thread_data;
@@ -152,8 +157,8 @@ typedef struct VP8Context {
     uint8_t deblock_filter;
     uint8_t mbskip_enabled;
     uint8_t profile;
-    VP56mv mv_min;
-    VP56mv mv_max;
+    VP8intmv mv_min;
+    VP8intmv mv_max;
 
     int8_t sign_bias[4]; ///< one state [0, 1] per ref frame type
     int ref_count[3];
