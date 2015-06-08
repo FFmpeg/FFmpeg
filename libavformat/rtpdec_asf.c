@@ -108,6 +108,8 @@ int ff_wms_parse_sdp_a_line(AVFormatContext *s, const char *p)
         char *buf = av_mallocz(len);
         AVInputFormat *iformat;
 
+        if (!buf)
+            return AVERROR(ENOMEM);
         av_base64_decode(buf, p, len);
 
         if (rtp_asf_fix_header(buf, len) < 0)
@@ -117,10 +119,15 @@ int ff_wms_parse_sdp_a_line(AVFormatContext *s, const char *p)
         if (rt->asf_ctx) {
             avformat_close_input(&rt->asf_ctx);
         }
+
         if (!(iformat = av_find_input_format("asf")))
             return AVERROR_DEMUXER_NOT_FOUND;
-        if (!(rt->asf_ctx = avformat_alloc_context()))
+
+        rt->asf_ctx = avformat_alloc_context();
+        if (!rt->asf_ctx) {
+            av_free(buf);
             return AVERROR(ENOMEM);
+        }
         rt->asf_ctx->pb      = &pb;
         av_dict_set(&opts, "no_resync_search", "1", 0);
 
@@ -131,8 +138,10 @@ int ff_wms_parse_sdp_a_line(AVFormatContext *s, const char *p)
 
         ret = avformat_open_input(&rt->asf_ctx, "", iformat, &opts);
         av_dict_free(&opts);
-        if (ret < 0)
+        if (ret < 0) {
+            av_free(buf);
             return ret;
+        }
         av_dict_copy(&s->metadata, rt->asf_ctx->metadata, 0);
         rt->asf_pb_pos = avio_tell(&pb);
         av_free(buf);
