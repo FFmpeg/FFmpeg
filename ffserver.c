@@ -967,6 +967,10 @@ static int handle_connection(HTTPContext *c)
         /* close connection if trailer sent */
         if (c->state == HTTPSTATE_SEND_DATA_TRAILER)
             return -1;
+        /* Check if it is a single jpeg frame 123 */
+        if (c->stream->single_frame && c->data_count > c->cur_frame_bytes && c->cur_frame_bytes > 0) {
+            close_connection(c);
+        }
         break;
     case HTTPSTATE_RECEIVE_DATA:
         /* no need to read if no events */
