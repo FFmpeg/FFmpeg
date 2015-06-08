@@ -1284,6 +1284,8 @@ static int jpeg2000_decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
             }
         }
     } else {
+        int precision = picture->format == AV_PIX_FMT_XYZ12 ? 16 : s->precision;
+
         for (compno = 0; compno < s->ncomponents; compno++) {
             Jpeg2000Component *comp = tile->comp + compno;
             Jpeg2000CodingStyle *codsty = tile->codsty + compno;
@@ -1310,7 +1312,7 @@ static int jpeg2000_decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
                         /* DC level shift and clip see ISO 15444-1:2002 G.1.2 */
                         val = av_clip(val, 0, (1 << cbps) - 1);
                         /* align 12 bit values in little-endian mode */
-                        *dst = val << (16 - cbps);
+                        *dst = val << (precision - cbps);
                         datap++;
                         dst += pixelsize;
                     }
@@ -1320,7 +1322,7 @@ static int jpeg2000_decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
                         /* DC level shift and clip see ISO 15444-1:2002 G.1.2 */
                         val = av_clip(val, 0, (1 << cbps) - 1);
                         /* align 12 bit values in little-endian mode */
-                        *dst = val << (16 - cbps);
+                        *dst = val << (precision - cbps);
                         i_datap++;
                         dst += pixelsize;
                     }
