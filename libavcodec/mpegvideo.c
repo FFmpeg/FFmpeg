@@ -364,6 +364,7 @@ av_cold void ff_mpv_idct_init(MpegEncContext *s)
 static int frame_size_alloc(MpegEncContext *s, int linesize)
 {
     int alloc_size = FFALIGN(FFABS(linesize) + 64, 32);
+    ScratchpadContext *sc = &s->sc;
 
     if (s->avctx->hwaccel || s->avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU)
         return 0;
@@ -379,19 +380,19 @@ static int frame_size_alloc(MpegEncContext *s, int linesize)
     // at uvlinesize. It supports only YUV420 so 24x24 is enough
     // linesize * interlaced * MBsize
     // we also use this buffer for encoding in encode_mb_internal() needig an additional 32 lines
-    FF_ALLOCZ_ARRAY_OR_GOTO(s->avctx, s->edge_emu_buffer, alloc_size, 4 * 68,
+    FF_ALLOCZ_ARRAY_OR_GOTO(s->avctx, s->sc.edge_emu_buffer, alloc_size, 4 * 68,
                       fail);
 
     FF_ALLOCZ_ARRAY_OR_GOTO(s->avctx, s->me.scratchpad, alloc_size, 4 * 16 * 2,
                       fail)
-    s->me.temp         = s->me.scratchpad;
-    s->rd_scratchpad   = s->me.scratchpad;
-    s->b_scratchpad    = s->me.scratchpad;
-    s->obmc_scratchpad = s->me.scratchpad + 16;
+    s->me.temp          = s->me.scratchpad;
+    sc->rd_scratchpad   = s->me.scratchpad;
+    sc->b_scratchpad    = s->me.scratchpad;
+    sc->obmc_scratchpad = s->me.scratchpad + 16;
 
     return 0;
 fail:
-    av_freep(&s->edge_emu_buffer);
+    av_freep(&sc->edge_emu_buffer);
     return AVERROR(ENOMEM);
 }
 
@@ -466,7 +467,7 @@ static int alloc_frame_buffer(MpegEncContext *s, Picture *pic)
         return -1;
     }
 
-    if (!s->edge_emu_buffer &&
+    if (!s->sc.edge_emu_buffer &&
         (ret = frame_size_alloc(s, pic->f->linesize[0])) < 0) {
         av_log(s->avctx, AV_LOG_ERROR,
                "get_buffer() failed to allocate context scratch buffers.\n");
@@ -740,12 +741,12 @@ static int init_duplicate_context(MpegEncContext *s)
     if (s->mb_height & 1)
         yc_size += 2*s->b8_stride + 2*s->mb_stride;
 
-    s->edge_emu_buffer =
+    s->sc.edge_emu_buffer =
     s->me.scratchpad   =
     s->me.temp         =
-    s->rd_scratchpad   =
-    s->b_scratchpad    =
-    s->obmc_scratchpad = NULL;
+    s->sc.rd_scratchpad   =
+    s->sc.b_scratchpad    =
+    s->sc.obmc_scratchpad = NULL;
 
     if (s->encoding) {
         FF_ALLOCZ_OR_GOTO(s->avctx, s->me.map,
@@ -787,12 +788,12 @@ static void free_duplicate_context(MpegEncContext *s)
     if (!s)
         return;
 
-    av_freep(&s->edge_emu_buffer);
+    av_freep(&s->sc.edge_emu_buffer);
     av_freep(&s->me.scratchpad);
     s->me.temp =
-    s->rd_scratchpad =
-    s->b_scratchpad =
-    s->obmc_scratchpad = NULL;
+    s->sc.rd_scratchpad =
+    s->sc.b_scratchpad =
+    s->sc.obmc_scratchpad = NULL;
 
     av_freep(&s->dct_error_sum);
     av_freep(&s->me.map);
@@ -805,12 +806,12 @@ static void free_duplicate_context(MpegEncContext *s)
 static void backup_duplicate_context(MpegEncContext *bak, MpegEncContext *src)
 {
 #define COPY(a) bak->a = src->a
-    COPY(edge_emu_buffer);
+    COPY(sc.edge_emu_buffer);
     COPY(me.scratchpad);
     COPY(me.temp);
-    COPY(rd_scratchpad);
-    COPY(b_scratchpad);
-    COPY(obmc_scratchpad);
+    COPY(sc.rd_scratchpad);
+    COPY(sc.b_scratchpad);
+    COPY(sc.obmc_scratchpad);
     COPY(me.map);
     COPY(me.score_map);
     COPY(blocks);
@@ -845,7 +846,7 @@ int ff_update_duplicate_context(MpegEncContext *dst, MpegEncContext *src)
         // exchange uv
         FFSWAP(void *, dst->pblocks[4], dst->pblocks[5]);
     }
-    if (!dst->edge_emu_buffer &&
+    if (!dst->sc.edge_emu_buffer &&
         (ret = frame_size_alloc(dst, dst->linesize)) < 0) {
         av_log(dst->avctx, AV_LOG_ERROR, "failed to allocate context "
                "scratch buffers.\n");
@@ -975,7 +976,7 @@ do {\
     }
 
     // linesize dependend scratch buffer allocation
-    if (!s->edge_emu_buffer)
+    if (!s->sc.edge_emu_buffer)
         if (s1->linesize) {
             if (frame_size_alloc(s, s1->linesize) < 0) {
                 av_log(s->avctx, AV_LOG_ERROR, "Failed to allocate context "
@@ -2393,12 +2394,12 @@ static inline int hpel_motion_lowres(MpegEncContext *s,
 
     if ((unsigned)src_x > FFMAX( h_edge_pos - (!!sx) - w,                 0) ||
         (unsigned)src_y > FFMAX((v_edge_pos >> field_based) - (!!sy) - h, 0)) {
-        s->vdsp.emulated_edge_mc(s->edge_emu_buffer, src,
+        s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer, src,
                                  s->linesize, s->linesize,
                                  w + 1, (h + 1) << field_based,
                                  src_x, src_y   << field_based,
                                  h_edge_pos, v_edge_pos);
-        src = s->edge_emu_buffer;
+        src = s->sc.edge_emu_buffer;
         emu = 1;
     }
 
@@ -2495,14 +2496,14 @@ static av_always_inline void mpeg_motion_lowres(MpegEncContext *s,
 
     if ((unsigned) src_x > FFMAX( h_edge_pos - (!!sx) - 2 * block_s,       0) || uvsrc_y<0 ||
         (unsigned) src_y > FFMAX((v_edge_pos >> field_based) - (!!sy) - h, 0)) {
-        s->vdsp.emulated_edge_mc(s->edge_emu_buffer, ptr_y,
+        s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer, ptr_y,
                                  linesize >> field_based, linesize >> field_based,
                                  17, 17 + field_based,
                                 src_x, src_y << field_based, h_edge_pos,
                                 v_edge_pos);
-        ptr_y = s->edge_emu_buffer;
+        ptr_y = s->sc.edge_emu_buffer;
         if (!CONFIG_GRAY || !(s->avctx->flags & CODEC_FLAG_GRAY)) {
-            uint8_t *ubuf = s->edge_emu_buffer + 18 * s->linesize;
+            uint8_t *ubuf = s->sc.edge_emu_buffer + 18 * s->linesize;
             uint8_t *vbuf =ubuf + 9 * s->uvlinesize;
             s->vdsp.emulated_edge_mc(ubuf,  ptr_cb,
                                      uvlinesize >> field_based, uvlinesize >> field_based,
@@ -2583,11 +2584,11 @@ static inline void chroma_4mv_motion_lowres(MpegEncContext *s,
     ptr = ref_picture[1] + offset;
     if ((unsigned) src_x > FFMAX(h_edge_pos - (!!sx) - block_s, 0) ||
         (unsigned) src_y > FFMAX(v_edge_pos - (!!sy) - block_s, 0)) {
-        s->vdsp.emulated_edge_mc(s->edge_emu_buffer, ptr,
+        s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer, ptr,
                                  s->uvlinesize, s->uvlinesize,
                                  9, 9,
                                  src_x, src_y, h_edge_pos, v_edge_pos);
-        ptr = s->edge_emu_buffer;
+        ptr = s->sc.edge_emu_buffer;
         emu = 1;
     }
     sx = (sx << 2) >> lowres;
@@ -2596,11 +2597,11 @@ static inline void chroma_4mv_motion_lowres(MpegEncContext *s,
 
     ptr = ref_picture[2] + offset;
     if (emu) {
-        s->vdsp.emulated_edge_mc(s->edge_emu_buffer, ptr,
+        s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer, ptr,
                                  s->uvlinesize, s->uvlinesize,
                                  9, 9,
                                  src_x, src_y, h_edge_pos, v_edge_pos);
-        ptr = s->edge_emu_buffer;
+        ptr = s->sc.edge_emu_buffer;
     }
     pix_op[op_index](dest_cr, ptr, s->uvlinesize, block_s, sx, sy);
 }
@@ -2932,9 +2933,9 @@ void mpv_decode_mb_internal(MpegEncContext *s, int16_t block[12][64],
             dest_cb= s->dest[1];
             dest_cr= s->dest[2];
         }else{
-            dest_y = s->b_scratchpad;
-            dest_cb= s->b_scratchpad+16*linesize;
-            dest_cr= s->b_scratchpad+32*linesize;
+            dest_y = s->sc.b_scratchpad;
+            dest_cb= s->sc.b_scratchpad+16*linesize;
+            dest_cr= s->sc.b_scratchpad+32*linesize;
         }
 
         if (!s->mb_intra) {

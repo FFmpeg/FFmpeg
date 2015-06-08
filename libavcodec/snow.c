@@ -704,7 +704,7 @@ av_cold void ff_snow_common_end(SnowContext *s)
     av_freep(&s->m.me.scratchpad);
     av_freep(&s->m.me.map);
     av_freep(&s->m.me.score_map);
-    av_freep(&s->m.obmc_scratchpad);
+    av_freep(&s->m.sc.obmc_scratchpad);
 
     av_freep(&s->block);
     av_freep(&s->scratchbuf);

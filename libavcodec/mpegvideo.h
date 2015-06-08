@@ -143,6 +143,13 @@ typedef struct Picture{
     uint64_t error[AV_NUM_DATA_POINTERS];
 } Picture;
 
+typedef struct ScratchpadContext {
+    uint8_t *edge_emu_buffer;     ///< temporary buffer for if MVs point to out-of-frame data
+    uint8_t *rd_scratchpad;       ///< scratchpad for rate distortion mb decision
+    uint8_t *obmc_scratchpad;
+    uint8_t *b_scratchpad;        ///< scratchpad used for writing into write only buffers
+} ScratchpadContext;
+
 /**
  * MpegEncContext.
  */
@@ -266,10 +273,8 @@ typedef struct MpegEncContext {
     uint8_t *mbintra_table;       ///< used to avoid setting {ac, dc, cbp}-pred stuff to zero on inter MB decoding
     uint8_t *cbp_table;           ///< used to store cbp, ac_pred for partitioned decoding
     uint8_t *pred_dir_table;      ///< used to store pred_dir for partitioned decoding
-    uint8_t *edge_emu_buffer;     ///< temporary buffer for if MVs point to out-of-frame data
-    uint8_t *rd_scratchpad;       ///< scratchpad for rate distortion mb decision
-    uint8_t *obmc_scratchpad;
-    uint8_t *b_scratchpad;        ///< scratchpad used for writing into write only buffers
+
+    ScratchpadContext sc;
 
     int qscale;                 ///< QP
     int chroma_qscale;          ///< chroma QP

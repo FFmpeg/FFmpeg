@@ -2100,7 +2100,7 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
              (mb_y * mb_block_height * wrap_c) + mb_x * mb_block_width;
 
     if((mb_x * 16 + 16 > s->width || mb_y * 16 + 16 > s->height) && s->codec_id != AV_CODEC_ID_AMV){
-        uint8_t *ebuf = s->edge_emu_buffer + 36 * wrap_y;
+        uint8_t *ebuf = s->sc.edge_emu_buffer + 36 * wrap_y;
         int cw = (s->width  + s->chroma_x_shift) >> s->chroma_x_shift;
         int ch = (s->height + s->chroma_y_shift) >> s->chroma_y_shift;
         s->vdsp.emulated_edge_mc(ebuf, ptr_y,
@@ -2512,9 +2512,9 @@ static inline void encode_mb_hq(MpegEncContext *s, MpegEncContext *backup, MpegE
 
     if(*next_block){
         memcpy(dest_backup, s->dest, sizeof(s->dest));
-        s->dest[0] = s->rd_scratchpad;
-        s->dest[1] = s->rd_scratchpad + 16*s->linesize;
-        s->dest[2] = s->rd_scratchpad + 16*s->linesize + 8;
+        s->dest[0] = s->sc.rd_scratchpad;
+        s->dest[1] = s->sc.rd_scratchpad + 16*s->linesize;
+        s->dest[2] = s->sc.rd_scratchpad + 16*s->linesize + 8;
         av_assert0(s->linesize >= 32); //FIXME
     }
 
@@ -3213,9 +3213,9 @@ static int encode_thread(AVCodecContext *c, void *arg){
                     ff_h263_update_motion_val(s);
 
                 if(next_block==0){ //FIXME 16 vs linesize16
-                    s->hdsp.put_pixels_tab[0][0](s->dest[0], s->rd_scratchpad                     , s->linesize  ,16);
-                    s->hdsp.put_pixels_tab[1][0](s->dest[1], s->rd_scratchpad + 16*s->linesize    , s->uvlinesize, 8);
-                    s->hdsp.put_pixels_tab[1][0](s->dest[2], s->rd_scratchpad + 16*s->linesize + 8, s->uvlinesize, 8);
+                    s->hdsp.put_pixels_tab[0][0](s->dest[0], s->sc.rd_scratchpad                     , s->linesize  ,16);
+                    s->hdsp.put_pixels_tab[1][0](s->dest[1], s->sc.rd_scratchpad + 16*s->linesize    , s->uvlinesize, 8);
+                    s->hdsp.put_pixels_tab[1][0](s->dest[2], s->sc.rd_scratchpad + 16*s->linesize + 8, s->uvlinesize, 8);
                 }
 
                 if(s->avctx->mb_decision == FF_MB_DECISION_BITS)

@@ -271,25 +271,25 @@ void ff_vc1_mc_1mv(VC1Context *v, int dir)
 
     /* for grayscale we should not try to read from unknown area */
     if (CONFIG_GRAY && s->avctx->flags & CODEC_FLAG_GRAY) {
-        srcU = s->edge_emu_buffer + 18 * s->linesize;
-        srcV = s->edge_emu_buffer + 18 * s->linesize;
+        srcU = s->sc.edge_emu_buffer + 18 * s->linesize;
+        srcV = s->sc.edge_emu_buffer + 18 * s->linesize;
     }
 
     if (v->rangeredfrm || use_ic
         || s->h_edge_pos < 22 || v_edge_pos < 22
         || (unsigned)(src_x - s->mspel) > s->h_edge_pos - (mx&3) - 16 - s->mspel * 3
         || (unsigned)(src_y - 1)        > v_edge_pos    - (my&3) - 16 - 3) {
-        uint8_t *ubuf = s->edge_emu_buffer + 19 * s->linesize;
+        uint8_t *ubuf = s->sc.edge_emu_buffer + 19 * s->linesize;
         uint8_t *vbuf = ubuf + 9 * s->uvlinesize;
         const int k = 17 + s->mspel * 2;
 
         srcY -= s->mspel * (1 + s->linesize);
-        s->vdsp.emulated_edge_mc(s->edge_emu_buffer, srcY,
+        s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer, srcY,
                                  s->linesize, s->linesize,
                                  k, k,
                                  src_x - s->mspel, src_y - s->mspel,
                                  s->h_edge_pos, v_edge_pos);
-        srcY = s->edge_emu_buffer;
+        srcY = s->sc.edge_emu_buffer;
         s->vdsp.emulated_edge_mc(ubuf, srcU,
                                  s->uvlinesize, s->uvlinesize,
                                  8 + 1, 8 + 1,
@@ -467,12 +467,12 @@ void ff_vc1_mc_4mv_luma(VC1Context *v, int n, int dir, int avg)
 
         srcY -= s->mspel * (1 + (s->linesize << fieldmv));
         /* check emulate edge stride and offset */
-        s->vdsp.emulated_edge_mc(s->edge_emu_buffer, srcY,
+        s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer, srcY,
                                  s->linesize, s->linesize,
                                  k, k << fieldmv,
                                  src_x - s->mspel, src_y - (s->mspel << fieldmv),
                                  s->h_edge_pos, v_edge_pos);
-        srcY = s->edge_emu_buffer;
+        srcY = s->sc.edge_emu_buffer;
         /* if we deal with range reduction we need to scale source blocks */
         if (v->rangeredfrm) {
             vc1_scale_luma(srcY, k, s->linesize << fieldmv);
@@ -602,16 +602,16 @@ void ff_vc1_mc_4mv_chroma(VC1Context *v, int dir)
         || s->h_edge_pos < 18 || v_edge_pos < 18
         || (unsigned)uvsrc_x > (s->h_edge_pos >> 1) - 9
         || (unsigned)uvsrc_y > (v_edge_pos    >> 1) - 9) {
-        s->vdsp.emulated_edge_mc(s->edge_emu_buffer, srcU,
+        s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer, srcU,
                                  s->uvlinesize, s->uvlinesize,
                                  8 + 1, 8 + 1, uvsrc_x, uvsrc_y,
                                  s->h_edge_pos >> 1, v_edge_pos >> 1);
-        s->vdsp.emulated_edge_mc(s->edge_emu_buffer + 16, srcV,
+        s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer + 16, srcV,
                                  s->uvlinesize, s->uvlinesize,
                                  8 + 1, 8 + 1, uvsrc_x, uvsrc_y,
                                  s->h_edge_pos >> 1, v_edge_pos >> 1);
-        srcU = s->edge_emu_buffer;
-        srcV = s->edge_emu_buffer + 16;
+        srcU = s->sc.edge_emu_buffer;
+        srcV = s->sc.edge_emu_buffer + 16;
 
         /* if we deal with range reduction we need to scale source blocks */
         if (v->rangeredfrm) {
@@ -704,16 +704,16 @@ void ff_vc1_mc_4mv_chroma4(VC1Context *v, int dir, int dir2, int avg)
             || s->h_edge_pos < 10 || v_edge_pos < (5 << fieldmv)
             || (unsigned)uvsrc_x > (s->h_edge_pos >> 1) - 5
             || (unsigned)uvsrc_y > v_edge_pos - (5 << fieldmv)) {
-            s->vdsp.emulated_edge_mc(s->edge_emu_buffer, srcU,
+            s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer, srcU,
                                      s->uvlinesize, s->uvlinesize,
                                      5, (5 << fieldmv), uvsrc_x, uvsrc_y,
                                      s->h_edge_pos >> 1, v_edge_pos);
-            s->vdsp.emulated_edge_mc(s->edge_emu_buffer + 16, srcV,
+            s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer + 16, srcV,
                                      s->uvlinesize, s->uvlinesize,
                                      5, (5 << fieldmv), uvsrc_x, uvsrc_y,
                                      s->h_edge_pos >> 1, v_edge_pos);
-            srcU = s->edge_emu_buffer;
-            srcV = s->edge_emu_buffer + 16;
+            srcU = s->sc.edge_emu_buffer;
+            srcV = s->sc.edge_emu_buffer + 16;
 
             /* if we deal with intensity compensation we need to scale source blocks */
             if (use_ic) {
@@ -802,24 +802,24 @@ void ff_vc1_interp_mc(VC1Context *v)
 
     /* for grayscale we should not try to read from unknown area */
     if (CONFIG_GRAY && s->avctx->flags & CODEC_FLAG_GRAY) {
-        srcU = s->edge_emu_buffer + 18 * s->linesize;
-        srcV = s->edge_emu_buffer + 18 * s->linesize;
+        srcU = s->sc.edge_emu_buffer + 18 * s->linesize;
+        srcV = s->sc.edge_emu_buffer + 18 * s->linesize;
     }
 
     if (v->rangeredfrm || s->h_edge_pos < 22 || v_edge_pos < 22 || use_ic
         || (unsigned)(src_x - 1) > s->h_edge_pos - (mx & 3) - 16 - 3
         || (unsigned)(src_y - 1) > v_edge_pos    - (my & 3) - 16 - 3) {
-        uint8_t *ubuf = s->edge_emu_buffer + 19 * s->linesize;
+        uint8_t *ubuf = s->sc.edge_emu_buffer + 19 * s->linesize;
         uint8_t *vbuf = ubuf + 9 * s->uvlinesize;
         const int k = 17 + s->mspel * 2;
 
         srcY -= s->mspel * (1 + s->linesize);
-        s->vdsp.emulated_edge_mc(s->edge_emu_buffer, srcY,
+        s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer, srcY,
                                  s->linesize, s->linesize,
                                  k, k,
                                  src_x - s->mspel, src_y - s->mspel,
                                  s->h_edge_pos, v_edge_pos);
-        srcY = s->edge_emu_buffer;
+        srcY = s->sc.edge_emu_buffer;
         s->vdsp.emulated_edge_mc(ubuf, srcU,
                                  s->uvlinesize, s->uvlinesize,
                                  8 + 1, 8 + 1,
