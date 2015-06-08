@@ -34,7 +34,7 @@ static int aac_sync(uint64_t state, AACAC3ParseContext *hdr_info,
     int size;
     union {
         uint64_t u64;
-        uint8_t  u8[8];
+        uint8_t  u8[8 + FF_INPUT_BUFFER_PADDING_SIZE];
     } tmp;
 
     tmp.u64 = av_be2ne64(state);
