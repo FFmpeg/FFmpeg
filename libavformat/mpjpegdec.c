@@ -101,8 +101,8 @@ static int mpjpeg_read_probe(AVProbeData *p)
             break;
         }
     }
-
 end:
+
     av_free(pb);
 
     return ret;
