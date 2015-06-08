@@ -361,16 +361,16 @@ av_cold void ff_mpv_idct_init(MpegEncContext *s)
     ff_init_scantable(s->idsp.idct_permutation, &s->intra_v_scantable, ff_alternate_vertical_scan);
 }
 
-static int frame_size_alloc(MpegEncContext *s, int linesize)
+int ff_mpeg_framesize_alloc(AVCodecContext *avctx, MotionEstContext *me,
+                            ScratchpadContext *sc, int linesize)
 {
     int alloc_size = FFALIGN(FFABS(linesize) + 64, 32);
-    ScratchpadContext *sc = &s->sc;
 
-    if (s->avctx->hwaccel || s->avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU)
+    if (avctx->hwaccel || avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU)
         return 0;
 
     if (linesize < 24) {
-        av_log(s->avctx, AV_LOG_ERROR, "Image too small, temporary buffers cannot function\n");
+        av_log(avctx, AV_LOG_ERROR, "Image too small, temporary buffers cannot function\n");
         return AVERROR_PATCHWELCOME;
     }
 
@@ -380,15 +380,15 @@ static int frame_size_alloc(MpegEncContext *s, int linesize)
     // at uvlinesize. It supports only YUV420 so 24x24 is enough
     // linesize * interlaced * MBsize
     // we also use this buffer for encoding in encode_mb_internal() needig an additional 32 lines
-    FF_ALLOCZ_ARRAY_OR_GOTO(s->avctx, s->sc.edge_emu_buffer, alloc_size, 4 * 68,
+    FF_ALLOCZ_ARRAY_OR_GOTO(avctx, sc->edge_emu_buffer, alloc_size, 4 * 68,
                       fail);
 
-    FF_ALLOCZ_ARRAY_OR_GOTO(s->avctx, s->me.scratchpad, alloc_size, 4 * 16 * 2,
+    FF_ALLOCZ_ARRAY_OR_GOTO(avctx, me->scratchpad, alloc_size, 4 * 16 * 2,
                       fail)
-    s->me.temp          = s->me.scratchpad;
-    sc->rd_scratchpad   = s->me.scratchpad;
-    sc->b_scratchpad    = s->me.scratchpad;
-    sc->obmc_scratchpad = s->me.scratchpad + 16;
+    me->temp            = me->scratchpad;
+    sc->rd_scratchpad   = me->scratchpad;
+    sc->b_scratchpad    = me->scratchpad;
+    sc->obmc_scratchpad = me->scratchpad + 16;
 
     return 0;
 fail:
@@ -468,7 +468,8 @@ static int alloc_frame_buffer(MpegEncContext *s, Picture *pic)
     }
 
     if (!s->sc.edge_emu_buffer &&
-        (ret = frame_size_alloc(s, pic->f->linesize[0])) < 0) {
+        (ret = ff_mpeg_framesize_alloc(s->avctx, &s->me, &s->sc,
+                                       pic->f->linesize[0])) < 0) {
         av_log(s->avctx, AV_LOG_ERROR,
                "get_buffer() failed to allocate context scratch buffers.\n");
         ff_mpeg_unref_picture(s->avctx, pic);
@@ -847,7 +848,8 @@ int ff_update_duplicate_context(MpegEncContext *dst, MpegEncContext *src)
         FFSWAP(void *, dst->pblocks[4], dst->pblocks[5]);
     }
     if (!dst->sc.edge_emu_buffer &&
-        (ret = frame_size_alloc(dst, dst->linesize)) < 0) {
+        (ret = ff_mpeg_framesize_alloc(dst->avctx, &dst->me,
+                                       &dst->sc, dst->linesize)) < 0) {
         av_log(dst->avctx, AV_LOG_ERROR, "failed to allocate context "
                "scratch buffers.\n");
         return ret;
@@ -978,7 +980,8 @@ do {\
     // linesize dependend scratch buffer allocation
     if (!s->sc.edge_emu_buffer)
         if (s1->linesize) {
-            if (frame_size_alloc(s, s1->linesize) < 0) {
+            if (ff_mpeg_framesize_alloc(s->avctx, &s->me,
+                                        &s->sc, s1->linesize) < 0) {
                 av_log(s->avctx, AV_LOG_ERROR, "Failed to allocate context "
                        "scratch buffers.\n");
                 return AVERROR(ENOMEM);

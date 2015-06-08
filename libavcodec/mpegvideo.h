@@ -750,6 +750,8 @@ void ff_mpv_motion(MpegEncContext *s,
  */
 int ff_alloc_picture(MpegEncContext *s, Picture *pic, int shared);
 
+int ff_mpeg_framesize_alloc(AVCodecContext *avctx, MotionEstContext *me,
+                            ScratchpadContext *sc, int linesize);
 /**
  * permute block according to permuatation.
  * @param last last non zero element in scantable order
