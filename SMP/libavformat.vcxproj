@@ -517,6 +517,8 @@
     </ClCompile>
     <ClCompile Include="..\libavformat\mpegvideodec.c">
     </ClCompile>
+    <ClCompile Include="..\libavformat\mpjpegdec.c">
+    </ClCompile>
     <ClCompile Include="..\libavformat\mpjpeg.c">
     </ClCompile>
     <ClCompile Include="..\libavformat\mpl2dec.c">

@@ -705,6 +705,9 @@
     <ClCompile Include="..\libavformat\mpegvideodec.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavformat\mpjpegdec.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavformat\mpjpeg.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
