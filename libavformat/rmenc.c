@@ -29,7 +29,7 @@ typedef struct StreamInfo {
     int packet_max_size;
     /* codec related output */
     int bit_rate;
-    float frame_rate;
+    AVRational frame_rate;
     int nb_frames;    /* current frame number */
     int total_frames; /* total number of frames */
     int num;
@@ -102,7 +102,7 @@ static int rv10_write_header(AVFormatContext *ctx,
         nb_packets += stream->nb_packets;
         packet_total_size += stream->packet_total_size;
         /* select maximum duration */
-        v = 1000LL * stream->total_frames / stream->frame_rate;
+        v = av_rescale_q_rnd(stream->total_frames, (AVRational){1000, 1}, stream->frame_rate, AV_ROUND_ZERO);
         if (v > duration)
             duration = v;
     }
@@ -178,7 +178,7 @@ static int rv10_write_header(AVFormatContext *ctx,
         if (!s->seekable || !stream->total_frames)
             avio_wb32(s, (int)(3600 * 1000));
         else
-            avio_wb32(s, (int)(stream->total_frames * 1000 / stream->frame_rate));
+            avio_wb32(s, av_rescale_q_rnd(stream->total_frames, (AVRational){1000, 1},  stream->frame_rate, AV_ROUND_ZERO));
         put_str8(s, desc);
         put_str8(s, mimetype);
         avio_wb32(s, codec_data_size);
@@ -252,9 +252,9 @@ static int rv10_write_header(AVFormatContext *ctx,
                 ffio_wfourcc(s,"RV20");
             avio_wb16(s, stream->enc->width);
             avio_wb16(s, stream->enc->height);
-            avio_wb16(s, (int) stream->frame_rate); /* frames per seconds ? */
+            avio_wb16(s, stream->frame_rate.num / stream->frame_rate.den); /* frames per seconds ? */
             avio_wb32(s,0);     /* unknown meaning */
-            avio_wb16(s, (int) stream->frame_rate);  /* unknown meaning */
+            avio_wb16(s, stream->frame_rate.num / stream->frame_rate.den);  /* unknown meaning */
             avio_wb32(s,0);     /* unknown meaning */
             avio_wb16(s, 8);    /* unknown meaning */
             /* Seems to be the codec version: only use basic H263. The next
@@ -300,7 +300,7 @@ static void write_packet_header(AVFormatContext *ctx, StreamInfo *stream,
     avio_wb16(s,0); /* version */
     avio_wb16(s,length + 12);
     avio_wb16(s, stream->num); /* stream number */
-    timestamp = (1000 * (float)stream->nb_frames) / stream->frame_rate;
+    timestamp = av_rescale_q_rnd(stream->nb_frames, (AVRational){1000, 1}, stream->frame_rate, AV_ROUND_ZERO);
     avio_wb32(s, timestamp); /* timestamp */
     avio_w8(s, 0); /* reserved */
     avio_w8(s, key_frame ? 2 : 0); /* flags */
@@ -332,7 +332,7 @@ static int rm_write_header(AVFormatContext *s)
         switch(codec->codec_type) {
         case AVMEDIA_TYPE_AUDIO:
             rm->audio_stream = stream;
-            stream->frame_rate = (float)codec->sample_rate / (float)codec->frame_size;
+            stream->frame_rate = (AVRational){codec->sample_rate, codec->frame_size};
             /* XXX: dummy values */
             stream->packet_max_size = 1024;
             stream->nb_packets = 0;
@@ -341,7 +341,7 @@ static int rm_write_header(AVFormatContext *s)
         case AVMEDIA_TYPE_VIDEO:
             rm->video_stream = stream;
             // TODO: should be avg_frame_rate
-            stream->frame_rate = (float)st->time_base.den / (float)st->time_base.num;
+            stream->frame_rate = av_inv_q(st->time_base);
             /* XXX: dummy values */
             stream->packet_max_size = 4096;
             stream->nb_packets = 0;

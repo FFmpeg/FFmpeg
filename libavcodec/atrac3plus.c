@@ -1724,11 +1724,7 @@ static int decode_tones_info(GetBitContext *gb, Atrac3pChanUnitCtx *ctx,
     if (num_channels == 2) {
         get_subband_flags(gb, ctx->waves_info->tone_sharing, ctx->waves_info->num_tone_bands);
         get_subband_flags(gb, ctx->waves_info->tone_master,  ctx->waves_info->num_tone_bands);
-        if (get_subband_flags(gb, ctx->waves_info->phase_shift,
-                              ctx->waves_info->num_tone_bands)) {
-            avpriv_report_missing_feature(avctx, "GHA Phase shifting");
-            return AVERROR_PATCHWELCOME;
-        }
+        get_subband_flags(gb, ctx->waves_info->invert_phase, ctx->waves_info->num_tone_bands);
     }
 
     ctx->waves_info->tones_index = 0;

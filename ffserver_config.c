@@ -862,8 +862,10 @@ static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd,
         } else {
             stream->stream_type = STREAM_TYPE_LIVE;
             /* JPEG cannot be used here, so use single frame MJPEG */
-            if (!strcmp(arg, "jpeg"))
-                strcpy(arg, "mjpeg");
+            if (!strcmp(arg, "jpeg")) {
+                strcpy(arg, "singlejpeg");
+                stream->single_frame=1;
+            }
             stream->fmt = ffserver_guess_format(arg, NULL, NULL);
             if (!stream->fmt)
                 ERROR("Unknown Format: '%s'\n", arg);

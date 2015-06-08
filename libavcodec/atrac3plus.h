@@ -122,7 +122,7 @@ typedef struct Atrac3pWaveSynthParams {
     int num_tone_bands;                     ///< number of PQF bands with tones
     uint8_t tone_sharing[ATRAC3P_SUBBANDS]; ///< 1 - subband-wise tone sharing flags
     uint8_t tone_master[ATRAC3P_SUBBANDS];  ///< 1 - subband-wise tone channel swapping
-    uint8_t phase_shift[ATRAC3P_SUBBANDS];  ///< 1 - subband-wise 180° phase shifting
+    uint8_t invert_phase[ATRAC3P_SUBBANDS]; ///< 1 - subband-wise phase inversion
     int tones_index;                        ///< total sum of tones in this unit
     Atrac3pWaveParam waves[48];
 } Atrac3pWaveSynthParams;

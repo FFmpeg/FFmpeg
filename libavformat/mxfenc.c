@@ -316,6 +316,7 @@ typedef struct MXFContext {
     uint32_t instance_number;
     uint8_t umid[16];        ///< unique material identifier
     int channel_count;
+    int signal_standard;
     uint32_t tagged_value_count;
     AVRational audio_edit_rate;
 } MXFContext;
@@ -2104,6 +2105,8 @@ static int mxf_write_header(AVFormatContext *s)
 
                 sc->signal_standard = 1;
             }
+            if (mxf->signal_standard >= 0)
+                sc->signal_standard = mxf->signal_standard;
         } else if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
             if (st->codec->sample_rate != 48000) {
                 av_log(s, AV_LOG_ERROR, "only 48khz is implemented\n");
@@ -2627,7 +2630,28 @@ static int mxf_interleave(AVFormatContext *s, AVPacket *out, AVPacket *pkt, int 
                                mxf_interleave_get_packet, mxf_compare_timestamps);
 }
 
+#define MXF_COMMON_OPTIONS \
+    { "signal_standard", "Force/set Sigal Standard",\
+      offsetof(MXFContext, signal_standard), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 7, AV_OPT_FLAG_ENCODING_PARAM, "signal_standard"},\
+    { "bt601", "ITU-R BT.601 and BT.656, also SMPTE 125M (525 and 625 line interlaced)",\
+      0, AV_OPT_TYPE_CONST, {.i64 = 1}, -1, 7, AV_OPT_FLAG_ENCODING_PARAM, "signal_standard"},\
+    { "bt1358", "ITU-R BT.1358 and ITU-R BT.799-3, also SMPTE 293M (525 and 625 line progressive)",\
+      0, AV_OPT_TYPE_CONST, {.i64 = 2}, -1, 7, AV_OPT_FLAG_ENCODING_PARAM, "signal_standard"},\
+    { "smpte347m", "SMPTE 347M (540 Mbps mappings)",\
+      0, AV_OPT_TYPE_CONST, {.i64 = 3}, -1, 7, AV_OPT_FLAG_ENCODING_PARAM, "signal_standard"},\
+    { "smpte274m", "SMPTE 274M (1125 line)",\
+      0, AV_OPT_TYPE_CONST, {.i64 = 4}, -1, 7, AV_OPT_FLAG_ENCODING_PARAM, "signal_standard"},\
+    { "smpte296m", "SMPTE 296M (750 line progressive)",\
+      0, AV_OPT_TYPE_CONST, {.i64 = 5}, -1, 7, AV_OPT_FLAG_ENCODING_PARAM, "signal_standard"},\
+    { "smpte349m", "SMPTE 349M (1485 Mbps mappings)",\
+      0, AV_OPT_TYPE_CONST, {.i64 = 6}, -1, 7, AV_OPT_FLAG_ENCODING_PARAM, "signal_standard"},\
+    { "smpte428", "SMPTE 428-1 DCDM",\
+      0, AV_OPT_TYPE_CONST, {.i64 = 7}, -1, 7, AV_OPT_FLAG_ENCODING_PARAM, "signal_standard"},
+
+
+
 static const AVOption mxf_options[] = {
+    MXF_COMMON_OPTIONS
     { NULL },
 };
 
@@ -2641,6 +2665,7 @@ static const AVClass mxf_muxer_class = {
 static const AVOption d10_options[] = {
     { "d10_channelcount", "Force/set channelcount in generic sound essence descriptor",
       offsetof(MXFContext, channel_count), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 8, AV_OPT_FLAG_ENCODING_PARAM},
+    MXF_COMMON_OPTIONS
     { NULL },
 };
 
@@ -2654,6 +2679,7 @@ static const AVClass mxf_d10_muxer_class = {
 static const AVOption opatom_options[] = {
     { "mxf_audio_edit_rate", "Audio edit rate for timecode",
         offsetof(MXFContext, audio_edit_rate), AV_OPT_TYPE_RATIONAL, {.dbl=25}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
+    MXF_COMMON_OPTIONS
     { NULL },
 };
 

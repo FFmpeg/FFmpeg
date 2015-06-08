@@ -67,7 +67,7 @@ int ff_tls_open_underlying(TLSShared *c, URLContext *parent, const char *uri, AV
     if (c->listen)
         snprintf(opts, sizeof(opts), "?listen=1");
 
-    av_url_split(NULL, 0, NULL, 0, c->host, sizeof(c->host), &port, NULL, 0, uri);
+    av_url_split(NULL, 0, NULL, 0, c->underlying_host, sizeof(c->underlying_host), &port, NULL, 0, uri);
 
     p = strchr(uri, '?');
 
@@ -78,16 +78,19 @@ int ff_tls_open_underlying(TLSShared *c, URLContext *parent, const char *uri, AV
             c->listen = 1;
     }
 
-    ff_url_join(buf, sizeof(buf), "tcp", NULL, c->host, port, "%s", p);
+    ff_url_join(buf, sizeof(buf), "tcp", NULL, c->underlying_host, port, "%s", p);
 
     hints.ai_flags = AI_NUMERICHOST;
-    if (!getaddrinfo(c->host, NULL, &hints, &ai)) {
+    if (!getaddrinfo(c->underlying_host, NULL, &hints, &ai)) {
         c->numerichost = 1;
         freeaddrinfo(ai);
     }
 
+    if (!c->host && !(c->host = av_strdup(c->underlying_host)))
+        return AVERROR(ENOMEM);
+
     proxy_path = getenv("http_proxy");
-    use_proxy = !ff_http_match_no_proxy(getenv("no_proxy"), c->host) &&
+    use_proxy = !ff_http_match_no_proxy(getenv("no_proxy"), c->underlying_host) &&
                 proxy_path && av_strstart(proxy_path, "http://", NULL);
 
     if (use_proxy) {
@@ -96,7 +99,7 @@ int ff_tls_open_underlying(TLSShared *c, URLContext *parent, const char *uri, AV
         av_url_split(NULL, 0, proxy_auth, sizeof(proxy_auth),
                      proxy_host, sizeof(proxy_host), &proxy_port, NULL, 0,
                      proxy_path);
-        ff_url_join(dest, sizeof(dest), NULL, NULL, c->host, port, NULL);
+        ff_url_join(dest, sizeof(dest), NULL, NULL, c->underlying_host, port, NULL);
         ff_url_join(buf, sizeof(buf), "httpproxy", proxy_auth, proxy_host,
                     proxy_port, "/%s", dest);
     }

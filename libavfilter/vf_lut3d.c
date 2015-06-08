@@ -617,11 +617,11 @@ static const AVFilterPad lut3d_inputs[] = {
 };
 
 static const AVFilterPad lut3d_outputs[] = {
-     {
-         .name = "default",
-         .type = AVMEDIA_TYPE_VIDEO,
-     },
-     { NULL }
+    {
+        .name = "default",
+        .type = AVMEDIA_TYPE_VIDEO,
+    },
+    { NULL }
 };
 
 AVFilter ff_vf_lut3d = {

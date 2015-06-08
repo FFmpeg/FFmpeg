@@ -392,9 +392,12 @@ static int iec61883_read_header(AVFormatContext *context)
 
 #if THREADS
     dv->thread_loop = 1;
-    pthread_mutex_init(&dv->mutex, NULL);
-    pthread_cond_init(&dv->cond, NULL);
-    pthread_create(&dv->receive_task_thread, NULL, iec61883_receive_task, dv);
+    if (pthread_mutex_init(&dv->mutex, NULL))
+        goto fail;
+    if (pthread_cond_init(&dv->cond, NULL))
+        goto fail;
+    if (pthread_create(&dv->receive_task_thread, NULL, iec61883_receive_task, dv))
+        goto fail;
 #endif
 
     return 0;

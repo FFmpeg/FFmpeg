@@ -222,16 +222,16 @@ static const AVFilterPad codecview_inputs[] = {
         .type           = AVMEDIA_TYPE_VIDEO,
         .filter_frame   = filter_frame,
         .needs_writable = 1,
-     },
-     { NULL }
+    },
+    { NULL }
 };
 
 static const AVFilterPad codecview_outputs[] = {
-     {
-         .name = "default",
-         .type = AVMEDIA_TYPE_VIDEO,
-     },
-     { NULL }
+    {
+        .name = "default",
+        .type = AVMEDIA_TYPE_VIDEO,
+    },
+    { NULL }
 };
 
 AVFilter ff_vf_codecview = {

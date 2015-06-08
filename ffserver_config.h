@@ -79,6 +79,7 @@ typedef struct FFServerStream {
     int multicast_port;           /* first port used for multicast */
     int multicast_ttl;
     int loop;                     /* if true, send the stream in loops (only meaningful if file) */
+    char single_frame;            /* only single frame */
 
     /* feed specific */
     int feed_opened;              /* true if someone is writing to the feed */

@@ -338,11 +338,11 @@ static const AVFilterPad vignette_inputs[] = {
 };
 
 static const AVFilterPad vignette_outputs[] = {
-     {
-         .name = "default",
-         .type = AVMEDIA_TYPE_VIDEO,
-     },
-     { NULL }
+    {
+        .name = "default",
+        .type = AVMEDIA_TYPE_VIDEO,
+    },
+    { NULL }
 };
 
 AVFilter ff_vf_vignette = {
