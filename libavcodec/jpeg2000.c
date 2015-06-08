@@ -364,11 +364,6 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
                 log2_band_prec_height = reslevel->log2_prec_height - 1;
             }
 
-            for (j = 0; j < 2; j++)
-                band->coord[0][j] = ff_jpeg2000_ceildiv(band->coord[0][j], dx);
-            for (j = 0; j < 2; j++)
-                band->coord[1][j] = ff_jpeg2000_ceildiv(band->coord[1][j], dy);
-
             if (reslevel->num_precincts_x * (uint64_t)reslevel->num_precincts_y > INT_MAX) {
                 band->prec = NULL;
                 return AVERROR(ENOMEM);
