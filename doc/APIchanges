@@ -17,19 +17,19 @@ API changes, most recent first:
 
 -------- 8< --------- FFmpeg 2.7 was cut here -------- 8< ---------
 
-2015-06-04 - xxxxxxx - lswr  1.2.100
+2015-06-04 - cc17b43 - lswr  1.2.100
   Add swr_get_out_samples()
 
-2015-05-27 - xxxxxxx - lavu 54.26.100 - cpu.h
+2015-05-27 - c312bfa - lavu 54.26.100 - cpu.h
   Add AV_CPU_FLAG_AVXSLOW.
 
-2015-05-26 - xxxxxxx - lavu 54.25.100 - rational.h
+2015-05-26 - 1fb9b2a - lavu 54.25.100 - rational.h
   Add av_q2intfloat().
 
-2015-05-13 - xxxxxxx - lavc 56.39.100 / 56.23.0
+2015-05-13 - cc48409 / e7c5e17 - lavc 56.39.100 / 56.23.0
   Add av_vda_default_init2.
 
-2015-05-11 - XXXXXXX - lavf 56.33.100 - avformat.h
+2015-05-11 - 541d75f - lavf 56.33.100 - avformat.h
   Add AVOpenCallback AVFormatContext.open_cb
 
 2015-05-07 - a7dd933 - 56.38.100 - avcodec.h
