@@ -900,6 +900,7 @@ static av_cold int sonic_decode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "Only mono and stereo streams are supported by now\n");
         return AVERROR_INVALIDDATA;
     }
+    avctx->channels = s->channels;
 
     s->lossless = get_bits1(&gb);
     if (!s->lossless)
