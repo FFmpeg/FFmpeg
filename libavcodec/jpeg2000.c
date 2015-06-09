@@ -286,7 +286,6 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
              * see ISO/IEC 15444-1:2002 E.1 and A.6.4. */
             switch (qntsty->quantsty) {
                 uint8_t gain;
-                int numbps;
             case JPEG2000_QSTY_NONE:
                 /* TODO: to verify. No quantization in this case */
                 band->f_stepsize = 1;
