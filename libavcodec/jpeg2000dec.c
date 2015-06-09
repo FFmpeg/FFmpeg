@@ -1330,7 +1330,8 @@ static int jpeg2000_decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
             }
         }
     } else {
-        int precision = picture->format == AV_PIX_FMT_XYZ12 ? 16 : s->precision;
+        int precision = picture->format == AV_PIX_FMT_XYZ12 ||
+                        picture->format == AV_PIX_FMT_GRAY16 ? 16 : s->precision;
 
         for (compno = 0; compno < s->ncomponents; compno++) {
             Jpeg2000Component *comp = tile->comp + compno;
