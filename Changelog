@@ -2,6 +2,9 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version <next>:
+
+
+version 2.7:
 - FFT video filter
 - TDSC decoder
 - DTS lossless extension (XLL) decoding (not lossless, disabled by default)
