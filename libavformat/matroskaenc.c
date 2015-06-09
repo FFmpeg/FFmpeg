@@ -1630,7 +1630,7 @@ static int mkv_write_flush_packet(AVFormatContext *s, AVPacket *pkt)
                 mkv_flush_dynbuf(s);
             avio_flush(s->pb);
         }
-        return 0;
+        return 1;
     }
     return mkv_write_packet(s, pkt);
 }
