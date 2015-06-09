@@ -256,7 +256,7 @@ AVOutputFormat ff_webm_chunk_muxer = {
     .mime_type      = "video/webm",
     .extensions     = "chk",
     .flags          = AVFMT_NOFILE | AVFMT_GLOBALHEADER | AVFMT_NEEDNUMBER |
-                      AVFMT_TS_NONSTRICT | AVFMT_ALLOW_FLUSH,
+                      AVFMT_TS_NONSTRICT,
     .priv_data_size = sizeof(WebMChunkContext),
     .write_header   = webm_chunk_write_header,
     .write_packet   = webm_chunk_write_packet,
