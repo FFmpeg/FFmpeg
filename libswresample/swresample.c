@@ -693,7 +693,7 @@ int attribute_align_arg swr_convert(struct SwrContext *s, uint8_t *out_arg[SWR_C
         av_log(s, AV_LOG_ERROR, "Context has not been initialized\n");
         return AVERROR(EINVAL);
     }
-#if ASSERT_LEVEL >1
+#if defined(ASSERT_LEVEL) && ASSERT_LEVEL >1
     max_output = swr_get_out_samples(s, in_count);
 #endif
 

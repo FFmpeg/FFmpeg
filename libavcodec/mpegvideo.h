@@ -47,6 +47,7 @@
 #include "put_bits.h"
 #include "ratecontrol.h"
 #include "parser.h"
+#include "mpegutils.h"
 #include "mpeg12data.h"
 #include "qpeldsp.h"
 #include "thread.h"
@@ -56,13 +57,6 @@
 #include "libavutil/timecode.h"
 
 #define FRAME_SKIPPED 100 ///< return value for header parsers if frame is not coded
-
-enum OutputFormat {
-    FMT_MPEG1,
-    FMT_H261,
-    FMT_H263,
-    FMT_MJPEG,
-};
 
 #define MAX_FCODE 7
 
@@ -142,6 +136,13 @@ typedef struct Picture{
 
     uint64_t error[AV_NUM_DATA_POINTERS];
 } Picture;
+
+typedef struct ScratchpadContext {
+    uint8_t *edge_emu_buffer;     ///< temporary buffer for if MVs point to out-of-frame data
+    uint8_t *rd_scratchpad;       ///< scratchpad for rate distortion mb decision
+    uint8_t *obmc_scratchpad;
+    uint8_t *b_scratchpad;        ///< scratchpad used for writing into write only buffers
+} ScratchpadContext;
 
 /**
  * MpegEncContext.
@@ -266,10 +267,8 @@ typedef struct MpegEncContext {
     uint8_t *mbintra_table;       ///< used to avoid setting {ac, dc, cbp}-pred stuff to zero on inter MB decoding
     uint8_t *cbp_table;           ///< used to store cbp, ac_pred for partitioned decoding
     uint8_t *pred_dir_table;      ///< used to store pred_dir for partitioned decoding
-    uint8_t *edge_emu_buffer;     ///< temporary buffer for if MVs point to out-of-frame data
-    uint8_t *rd_scratchpad;       ///< scratchpad for rate distortion mb decision
-    uint8_t *obmc_scratchpad;
-    uint8_t *b_scratchpad;        ///< scratchpad used for writing into write only buffers
+
+    ScratchpadContext sc;
 
     int qscale;                 ///< QP
     int chroma_qscale;          ///< chroma QP
@@ -743,8 +742,14 @@ void ff_mpv_motion(MpegEncContext *s,
  * Allocate a Picture.
  * The pixels are allocated/set by calling get_buffer() if shared = 0.
  */
-int ff_alloc_picture(MpegEncContext *s, Picture *pic, int shared);
+int ff_alloc_picture(AVCodecContext *avctx, Picture *pic, MotionEstContext *me,
+                     ScratchpadContext *sc, int shared, int encoding,
+                     int chroma_x_shift, int chroma_y_shift, int out_format,
+                     int mb_stride, int mb_width, int mb_height, int b8_stride,
+                     ptrdiff_t *linesize, ptrdiff_t *uvlinesize);
 
+int ff_mpeg_framesize_alloc(AVCodecContext *avctx, MotionEstContext *me,
+                            ScratchpadContext *sc, int linesize);
 /**
  * permute block according to permuatation.
  * @param last last non zero element in scantable order

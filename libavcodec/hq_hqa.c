@@ -121,7 +121,7 @@ static int hq_decode_frame(HQContext *ctx, AVFrame *pic,
     uint32_t slice_off[21];
     int slice, start_off, next_off, i, ret;
 
-    if (prof_num >= NUM_HQ_PROFILES) {
+    if ((unsigned)prof_num >= NUM_HQ_PROFILES) {
         profile = &ff_hq_profile[0];
         avpriv_request_sample(ctx->avctx, "HQ Profile %d", prof_num);
     } else {
@@ -298,7 +298,8 @@ static int hq_hqa_decode_frame(AVCodecContext *avctx, void *data,
     AVFrame *pic = data;
     uint32_t info_tag;
     unsigned int data_size;
-    int tag, ret;
+    int ret;
+    unsigned tag;
 
     bytestream2_init(&ctx->gbc, avpkt->data, avpkt->size);
     if (bytestream2_get_bytes_left(&ctx->gbc) < 4 + 4) {

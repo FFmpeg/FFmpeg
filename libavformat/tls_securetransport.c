@@ -273,13 +273,13 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
     if (s->ca_file) {
         if ((ret = load_ca(h)) < 0)
             goto fail;
-        CHECK_ERROR(SSLSetSessionOption, c->ssl_context, kSSLSessionOptionBreakOnServerAuth, true);
     }
+    if (s->ca_file || !s->verify)
+        CHECK_ERROR(SSLSetSessionOption, c->ssl_context, kSSLSessionOptionBreakOnServerAuth, true);
     if (s->cert_file)
         if ((ret = load_cert(h)) < 0)
             goto fail;
-    if (s->verify)
-        CHECK_ERROR(SSLSetPeerDomainName, c->ssl_context, s->host, strlen(s->host));
+    CHECK_ERROR(SSLSetPeerDomainName, c->ssl_context, s->host, strlen(s->host));
     CHECK_ERROR(SSLSetIOFuncs, c->ssl_context, tls_read_cb, tls_write_cb);
     CHECK_ERROR(SSLSetConnection, c->ssl_context, h);
     while (1) {

@@ -37,6 +37,7 @@
 #include "mpeg_er.h"
 #include "mpeg4video.h"
 #include "mpeg4video_parser.h"
+#include "mpegutils.h"
 #include "mpegvideo.h"
 #include "msmpeg4.h"
 #include "qpeldsp.h"

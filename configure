@@ -3596,9 +3596,6 @@ probe_cc(){
         # -Qvec- -Qsimd- to prevent miscompilation, -GS, fp:precise for consistency
         # with MSVC which enables it by default.
         _cflags='-D_USE_MATH_DEFINES -FIstdlib.h -Dstrtoll=_strtoi64 -Qms0 -Qvec- -Qsimd- -GS -fp:precise'
-        if [ $pfx = hostcc ]; then
-            append _cflags -Dsnprintf=_snprintf
-        fi
         disable stripping
     elif $_cc 2>&1 | grep -q Microsoft; then
         _type=msvc
@@ -3619,11 +3616,6 @@ probe_cc(){
         _ld_path='-libpath:'
         _flags='-nologo'
         _cflags='-D_USE_MATH_DEFINES -D_CRT_SECURE_NO_WARNINGS -Dinline=__inline -FIstdlib.h -Dstrtoll=_strtoi64'
-        if [ $pfx = hostcc ]; then
-            if [ -z "$cl_major_ver" ] || [ $cl_major_ver -le 18 ]; then
-                append _cflags -Dsnprintf=_snprintf
-            fi
-        fi
         disable stripping
     elif $_cc --version 2>/dev/null | grep -q ^cparser; then
         _type=cparser
@@ -4438,6 +4430,16 @@ probe_libc(){
             add_${pfx}cppflags -D__printf__=__gnu_printf__
     elif check_${pfx}cpp_condition crtversion.h "defined _VC_CRT_MAJOR_VERSION"; then
         eval ${pfx}libc_type=msvcrt
+        if check_${pfx}cpp_condition crtversion.h "_VC_CRT_MAJOR_VERSION < 14"; then
+            if [ "$pfx" = host_ ]; then
+                add_host_cppflags -Dsnprintf=_snprintf
+            else
+                add_compat strtod.o strtod=avpriv_strtod
+                add_compat msvcrt/snprintf.o snprintf=avpriv_snprintf   \
+                                             _snprintf=avpriv_snprintf  \
+                                             vsnprintf=avpriv_vsnprintf
+            fi
+        fi
         # The MSVC 2010 headers (Win 7.0 SDK) set _WIN32_WINNT to
         # 0x601 by default unless something else is set by the user.
         # This can easily lead to us detecting functions only present
@@ -4473,14 +4475,6 @@ test -n "$host_libc_type" && enable host_libc_$host_libc_type
 case $libc_type in
     bionic)
         add_compat strtod.o strtod=avpriv_strtod
-        ;;
-    msvcrt)
-        if [ -z "$cl_major_ver" ] || [ $cl_major_ver -le 18 ]; then
-            add_compat strtod.o strtod=avpriv_strtod
-            add_compat msvcrt/snprintf.o snprintf=avpriv_snprintf   \
-                                         _snprintf=avpriv_snprintf  \
-                                         vsnprintf=avpriv_vsnprintf
-        fi
         ;;
 esac
 
