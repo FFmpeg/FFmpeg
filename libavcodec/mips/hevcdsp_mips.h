@@ -431,6 +431,36 @@ BI_W_MC(epel, hv, 64);
 
 #undef BI_W_MC
 
+void ff_hevc_loop_filter_luma_h_8_msa(uint8_t *src,
+                                      ptrdiff_t src_stride,
+                                      int32_t beta, int32_t *tc,
+                                      uint8_t *no_p, uint8_t *no_q);
+
+void ff_hevc_loop_filter_luma_v_8_msa(uint8_t *src,
+                                      ptrdiff_t src_stride,
+                                      int32_t beta, int32_t *tc,
+                                      uint8_t *no_p, uint8_t *no_q);
+
+void ff_hevc_loop_filter_chroma_h_8_msa(uint8_t *src,
+                                        ptrdiff_t src_stride,
+                                        int32_t *tc, uint8_t *no_p,
+                                        uint8_t *no_q);
+
+void ff_hevc_loop_filter_chroma_v_8_msa(uint8_t *src,
+                                        ptrdiff_t src_stride,
+                                        int32_t *tc, uint8_t *no_p,
+                                        uint8_t *no_q);
+
+void ff_hevc_sao_band_filter_0_8_msa(uint8_t *dst, uint8_t *src,
+                                     ptrdiff_t stride_dst, ptrdiff_t stride_src,
+                                     int16_t *sao_offset_val, int sao_left_class,
+                                     int width, int height);
+
+void ff_hevc_sao_edge_filter_8_msa(uint8_t *dst, uint8_t *src,
+                                   ptrdiff_t stride_dst,
+                                   int16_t *sao_offset_val,
+                                   int eo, int width, int height);
+
 void ff_hevc_idct_4x4_msa(int16_t *coeffs, int col_limit);
 void ff_hevc_idct_8x8_msa(int16_t *coeffs, int col_limit);
 void ff_hevc_idct_16x16_msa(int16_t *coeffs, int col_limit);

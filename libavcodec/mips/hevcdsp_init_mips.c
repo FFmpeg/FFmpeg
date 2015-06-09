@@ -403,6 +403,32 @@ static av_cold void hevc_dsp_init_msa(HEVCDSPContext *c,
         c->put_hevc_epel_bi_w[6][1][1] = ff_hevc_put_hevc_bi_w_epel_hv24_8_msa;
         c->put_hevc_epel_bi_w[7][1][1] = ff_hevc_put_hevc_bi_w_epel_hv32_8_msa;
 
+        c->sao_band_filter[0] =
+        c->sao_band_filter[1] =
+        c->sao_band_filter[2] =
+        c->sao_band_filter[3] =
+        c->sao_band_filter[4] = ff_hevc_sao_band_filter_0_8_msa;
+
+        c->sao_edge_filter[0] =
+        c->sao_edge_filter[1] =
+        c->sao_edge_filter[2] =
+        c->sao_edge_filter[3] =
+        c->sao_edge_filter[4] = ff_hevc_sao_edge_filter_8_msa;
+
+        c->hevc_h_loop_filter_luma = ff_hevc_loop_filter_luma_h_8_msa;
+        c->hevc_v_loop_filter_luma = ff_hevc_loop_filter_luma_v_8_msa;
+
+        c->hevc_h_loop_filter_chroma = ff_hevc_loop_filter_chroma_h_8_msa;
+        c->hevc_v_loop_filter_chroma = ff_hevc_loop_filter_chroma_v_8_msa;
+
+        c->hevc_h_loop_filter_luma_c = ff_hevc_loop_filter_luma_h_8_msa;
+        c->hevc_v_loop_filter_luma_c = ff_hevc_loop_filter_luma_v_8_msa;
+
+        c->hevc_h_loop_filter_chroma_c =
+            ff_hevc_loop_filter_chroma_h_8_msa;
+        c->hevc_v_loop_filter_chroma_c =
+            ff_hevc_loop_filter_chroma_v_8_msa;
+
         c->idct[0] = ff_hevc_idct_4x4_msa;
         c->idct[1] = ff_hevc_idct_8x8_msa;
         c->idct[2] = ff_hevc_idct_16x16_msa;
