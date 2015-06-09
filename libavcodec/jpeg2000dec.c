@@ -673,6 +673,22 @@ static uint8_t get_tlm(Jpeg2000DecoderContext *s, int n)
     return 0;
 }
 
+static uint8_t get_plt(Jpeg2000DecoderContext *s, int n)
+{
+    int i;
+
+    av_log(s->avctx, AV_LOG_ERROR,
+            "PLT marker at pos 0x%X\n", bytestream2_tell(&s->g) - 4);
+
+    /*Zplt =*/ bytestream2_get_byte(&s->g);
+
+    for (i = 0; i < n - 3; i++) {
+        bytestream2_get_byte(&s->g);
+    }
+
+    return 0;
+}
+
 static int init_tile(Jpeg2000DecoderContext *s, int tileno)
 {
     int compno;
@@ -1468,6 +1484,10 @@ static int jpeg2000_read_main_headers(Jpeg2000DecoderContext *s)
         case JPEG2000_TLM:
             // Tile-part lengths
             ret = get_tlm(s, len);
+            break;
+        case JPEG2000_PLT:
+            // Packet length, tile-part header
+            ret = get_plt(s, len);
             break;
         default:
             av_log(s->avctx, AV_LOG_ERROR,
