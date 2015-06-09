@@ -1,0 +1,15 @@
+
+              ┌─────────────────────────────────────┐
+              │ RELEASE NOTES for FFmpeg 2.7 "Nash" │
+              └─────────────────────────────────────┘
+
+   The FFmpeg Project proudly presents FFmpeg 2.7 "Nash", about 3
+   months after the release of FFmpeg 2.6.
+
+   A complete Changelog is available at the root of the project, and the
+   complete Git history on http://source.ffmpeg.org.
+
+   We hope you will like this release as much as we enjoyed working on it, and
+   as usual, if you have any questions about it, or any FFmpeg related topic,
+   feel free to join us on the #ffmpeg IRC channel (on irc.freenode.net) or ask
+   on the mailing-lists.
