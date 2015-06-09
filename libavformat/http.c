@@ -325,6 +325,7 @@ static int http_listen(URLContext *h, const char *uri, int flags,
     char lower_url[100];
     const char *lower_proto = "tcp";
     int port, new_location;
+    s->chunked_post = 1;
     av_url_split(proto, sizeof(proto), NULL, 0, hostname, sizeof(hostname), &port,
                  NULL, 0, uri);
     if (!strcmp(proto, "https"))
@@ -1242,7 +1243,8 @@ static int http_shutdown(URLContext *h, int flags)
     HTTPContext *s = h->priv_data;
 
     /* signal end of chunked encoding if used */
-    if ((flags & AVIO_FLAG_WRITE) && s->chunked_post) {
+    if (((flags & AVIO_FLAG_WRITE) && s->chunked_post) ||
+        ((flags & AVIO_FLAG_READ) && s->chunked_post && s->listen)) {
         ret = ffurl_write(s->hd, footer, sizeof(footer) - 1);
         ret = ret > 0 ? 0 : ret;
         s->end_chunked_post = 1;
