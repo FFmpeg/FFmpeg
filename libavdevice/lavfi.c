@@ -339,7 +339,7 @@ static int lavfi_read_packet(AVFormatContext *avctx, AVPacket *pkt)
             continue;
         } else if (ret < 0)
             return ret;
-        d = av_rescale_q(frame->pts, tb, AV_TIME_BASE_Q);
+        d = av_rescale_q_rnd(frame->pts, tb, AV_TIME_BASE_Q, AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX);
         av_dlog(avctx, "sink_idx:%d time:%f\n", i, d);
         av_frame_unref(frame);
 
