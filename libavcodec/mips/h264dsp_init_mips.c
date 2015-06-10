@@ -62,6 +62,21 @@ static av_cold void h264dsp_init_msa(H264DSPContext *c,
         c->biweight_h264_pixels_tab[0] = ff_biweight_h264_pixels16_8_msa;
         c->biweight_h264_pixels_tab[1] = ff_biweight_h264_pixels8_8_msa;
         c->biweight_h264_pixels_tab[2] = ff_biweight_h264_pixels4_8_msa;
+
+        c->h264_idct_add = ff_h264_idct_add_msa;
+        c->h264_idct8_add = ff_h264_idct8_addblk_msa;
+        c->h264_idct_dc_add = ff_h264_idct4x4_addblk_dc_msa;
+        c->h264_idct8_dc_add = ff_h264_idct8_dc_addblk_msa;
+        c->h264_idct_add16 = ff_h264_idct_add16_msa;
+        c->h264_idct8_add4 = ff_h264_idct8_add4_msa;
+
+        if (chroma_format_idc <= 1)
+            c->h264_idct_add8 = ff_h264_idct_add8_msa;
+        else
+            c->h264_idct_add8 = ff_h264_idct_add8_422_msa;
+
+        c->h264_idct_add16intra = ff_h264_idct_add16_intra_msa;
+        c->h264_luma_dc_dequant_idct = ff_h264_deq_idct_luma_dc_msa;
     }  // if (8 == bit_depth)
 }
 #endif  // #if HAVE_MSA
