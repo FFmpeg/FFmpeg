@@ -449,7 +449,7 @@ static int parse_rps(GetBitContext *gb, unsigned int rps_idx,
          *
          * NumDeltaPocs[RefRpsIdx]: num_delta_pocs[rps_idx - 1]
          */
-        for (i = 0; i < num_delta_pocs[rps_idx - 1]; i++) {
+        for (i = 0; i <= num_delta_pocs[rps_idx - 1]; i++) {
             uint8_t use_delta_flag = 0;
             uint8_t used_by_curr_pic_flag = get_bits1(gb);
             if (!used_by_curr_pic_flag)
