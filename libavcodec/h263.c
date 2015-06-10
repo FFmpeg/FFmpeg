@@ -40,9 +40,6 @@
 #include "mpeg4video.h"
 
 
-uint8_t ff_h263_static_rl_table_store[2][2][2*MAX_RUN + MAX_LEVEL + 3];
-
-
 void ff_h263_update_motion_val(MpegEncContext * s){
     const int mb_xy = s->mb_y * s->mb_stride + s->mb_x;
                //FIXME a lot of that is only needed for !low_delay
