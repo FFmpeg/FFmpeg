@@ -60,9 +60,9 @@ typedef struct {
  * @param al_fmt the AL_FORMAT value to find information about.
  * @return A pointer to a structure containing information about the AL_FORMAT value.
  */
-static inline al_format_info* get_al_format_info(ALCenum al_fmt)
+static const inline al_format_info* get_al_format_info(ALCenum al_fmt)
 {
-    static al_format_info info_table[] = {
+    static const al_format_info info_table[] = {
         [AL_FORMAT_MONO8-LOWEST_AL_FORMAT]    = {AL_FORMAT_MONO8, AV_CODEC_ID_PCM_U8, 1},
         [AL_FORMAT_MONO16-LOWEST_AL_FORMAT]   = {AL_FORMAT_MONO16, AV_NE (AV_CODEC_ID_PCM_S16BE, AV_CODEC_ID_PCM_S16LE), 1},
         [AL_FORMAT_STEREO8-LOWEST_AL_FORMAT]  = {AL_FORMAT_STEREO8, AV_CODEC_ID_PCM_U8, 2},
