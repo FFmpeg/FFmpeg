@@ -659,9 +659,4 @@ static inline int get_bits_diff(MpegEncContext *s){
     return bits - last;
 }
 
-/* rv10.c */
-int ff_rv10_encode_picture_header(MpegEncContext *s, int picture_number);
-int ff_rv_decode_dc(MpegEncContext *s, int n);
-void ff_rv20_encode_picture_header(MpegEncContext *s, int picture_number);
-
 #endif /* AVCODEC_MPEGVIDEO_H */

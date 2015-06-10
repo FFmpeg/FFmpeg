@@ -41,6 +41,7 @@
 #include "mpegutils.h"
 #include "unary.h"
 #include "flv.h"
+#include "rv10.h"
 #include "mpeg4video.h"
 #include "mpegvideodata.h"
 
