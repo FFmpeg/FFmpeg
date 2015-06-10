@@ -4489,6 +4489,42 @@ STOP_TIMER("iterative search")
     return last_non_zero;
 }
 
+/**
+ * Permute an 8x8 block according to permuatation.
+ * @param block the block which will be permuted according to
+ *              the given permutation vector
+ * @param permutation the permutation vector
+ * @param last the last non zero coefficient in scantable order, used to
+ *             speed the permutation up
+ * @param scantable the used scantable, this is only used to speed the
+ *                  permutation up, the block is not (inverse) permutated
+ *                  to scantable order!
+ */
+static void block_permute(int16_t *block, uint8_t *permutation,
+                          const uint8_t *scantable, int last)
+{
+    int i;
+    int16_t temp[64];
+
+    if (last <= 0)
+        return;
+    //FIXME it is ok but not clean and might fail for some permutations
+    // if (permutation[1] == 1)
+    // return;
+
+    for (i = 0; i <= last; i++) {
+        const int j = scantable[i];
+        temp[j] = block[j];
+        block[j] = 0;
+    }
+
+    for (i = 0; i <= last; i++) {
+        const int j = scantable[i];
+        const int perm_j = permutation[j];
+        block[perm_j] = temp[j];
+    }
+}
+
 int ff_dct_quantize_c(MpegEncContext *s,
                         int16_t *block, int n,
                         int qscale, int *overflow)
@@ -4564,8 +4600,8 @@ int ff_dct_quantize_c(MpegEncContext *s,
 
     /* we need this permutation so that we correct the IDCT, we only permute the !=0 elements */
     if (s->idsp.perm_type != FF_IDCT_PERM_NONE)
-        ff_block_permute(block, s->idsp.idct_permutation,
-                         scantable, last_non_zero);
+        block_permute(block, s->idsp.idct_permutation,
+                      scantable, last_non_zero);
 
     return last_non_zero;
 }
