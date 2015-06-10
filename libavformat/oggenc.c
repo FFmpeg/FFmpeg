@@ -620,7 +620,7 @@ static int ogg_write_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     ogg_write_pages(s, 2);
-    return 0;
+    return 1;
 }
 
 static int ogg_write_trailer(AVFormatContext *s)

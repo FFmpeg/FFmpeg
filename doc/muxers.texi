@@ -1030,6 +1030,12 @@ segments to write. If this is selected, the output segment name must
 contain a @code{strftime} function template. Default value is
 @code{0}.
 
+@item break_non_keyframes @var{1|0}
+If enabled, allow segments to start on frames other than keyframes. This
+improves behavior on some players when the time between keyframes is
+inconsistent, but may make things worse on others, and can cause some oddities
+during seeking. Defaults to @code{0}.
+
 @item reset_timestamps @var{1|0}
 Reset timestamps at the begin of each segment, so that each segment
 will start with near-zero timestamps. It is meant to ease the playback

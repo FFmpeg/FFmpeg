@@ -433,6 +433,15 @@ done:
     return ret;
 }
 
+static av_cold void libopenjpeg_static_init(AVCodec *codec)
+{
+    const char *version = opj_version();
+    int major, minor;
+
+    if (sscanf(version, "%d.%d", &major, &minor) == 2 && 1000*major + minor <= 1003)
+        codec->capabilities |= CODEC_CAP_EXPERIMENTAL;
+}
+
 #define OFFSET(x) offsetof(LibOpenJPEGContext, x)
 #define VD AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM
 
@@ -460,4 +469,5 @@ AVCodec ff_libopenjpeg_decoder = {
     .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_FRAME_THREADS,
     .max_lowres     = 31,
     .priv_class     = &openjpeg_class,
+    .init_static_data = libopenjpeg_static_init,
 };

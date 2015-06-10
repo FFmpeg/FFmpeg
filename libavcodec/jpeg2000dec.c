@@ -60,7 +60,7 @@ typedef struct Jpeg2000Tile {
     uint8_t             properties[4];
     Jpeg2000CodingStyle codsty[4];
     Jpeg2000QuantStyle  qntsty[4];
-    Jpeg2000TilePart    tile_part[4];
+    Jpeg2000TilePart    tile_part[6];
     uint16_t tp_idx;                    // Tile-part index
 } Jpeg2000Tile;
 
@@ -261,7 +261,7 @@ static int get_siz(Jpeg2000DecoderContext *s)
 
     if (ncomponents > 4) {
         avpriv_request_sample(s->avctx, "Support for %d components",
-                              s->ncomponents);
+                              ncomponents);
         return AVERROR_PATCHWELCOME;
     }
 
@@ -670,6 +670,22 @@ static uint8_t get_tlm(Jpeg2000DecoderContext *s, int n)
             bytestream2_get_be32(&s->g);
         }
     }
+    return 0;
+}
+
+static uint8_t get_plt(Jpeg2000DecoderContext *s, int n)
+{
+    int i;
+
+    av_log(s->avctx, AV_LOG_ERROR,
+            "PLT marker at pos 0x%X\n", bytestream2_tell(&s->g) - 4);
+
+    /*Zplt =*/ bytestream2_get_byte(&s->g);
+
+    for (i = 0; i < n - 3; i++) {
+        bytestream2_get_byte(&s->g);
+    }
+
     return 0;
 }
 
@@ -1314,7 +1330,10 @@ static int jpeg2000_decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
             }
         }
     } else {
-        int precision = picture->format == AV_PIX_FMT_XYZ12 ? 16 : s->precision;
+        int precision = picture->format == AV_PIX_FMT_XYZ12 ||
+                        picture->format == AV_PIX_FMT_RGB48 ||
+                        picture->format == AV_PIX_FMT_RGBA64 ||
+                        picture->format == AV_PIX_FMT_GRAY16 ? 16 : s->precision;
 
         for (compno = 0; compno < s->ncomponents; compno++) {
             Jpeg2000Component *comp = tile->comp + compno;
@@ -1468,6 +1487,10 @@ static int jpeg2000_read_main_headers(Jpeg2000DecoderContext *s)
         case JPEG2000_TLM:
             // Tile-part lengths
             ret = get_tlm(s, len);
+            break;
+        case JPEG2000_PLT:
+            // Packet length, tile-part header
+            ret = get_plt(s, len);
             break;
         default:
             av_log(s->avctx, AV_LOG_ERROR,
