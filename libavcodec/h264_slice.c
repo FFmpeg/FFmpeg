@@ -278,11 +278,11 @@ static int alloc_picture(H264Context *h, H264Picture *pic)
         av_pix_fmt_get_chroma_sub_sample(pic->f.format,
                                          &h_chroma_shift, &v_chroma_shift);
 
-        for(i=0; i<FF_CEIL_RSHIFT(h->avctx->height, v_chroma_shift); i++) {
+        for(i=0; i<FF_CEIL_RSHIFT(pic->f.height, v_chroma_shift); i++) {
             memset(pic->f.data[1] + pic->f.linesize[1]*i,
-                   0x80, FF_CEIL_RSHIFT(h->avctx->width, h_chroma_shift));
+                   0x80, FF_CEIL_RSHIFT(pic->f.width, h_chroma_shift));
             memset(pic->f.data[2] + pic->f.linesize[2]*i,
-                   0x80, FF_CEIL_RSHIFT(h->avctx->width, h_chroma_shift));
+                   0x80, FF_CEIL_RSHIFT(pic->f.width, h_chroma_shift));
         }
     }
 
