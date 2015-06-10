@@ -521,7 +521,7 @@ static int decode_write_frame(const char *outfilename, AVCodecContext *avctx,
         /* the picture is allocated by the decoder, no need to free it */
         snprintf(buf, sizeof(buf), outfilename, *frame_count);
         pgm_save(frame->data[0], frame->linesize[0],
-                 avctx->width, avctx->height, buf);
+                 frame->width, frame->height, buf);
         (*frame_count)++;
     }
     if (pkt->data) {
