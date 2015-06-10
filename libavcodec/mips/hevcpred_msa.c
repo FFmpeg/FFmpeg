@@ -524,7 +524,7 @@ static void hevc_intra_pred_dc_32x32_msa(const uint8_t *src_top,
     v8u16 sum, sum_above, sum_left;
 
     LD_UB2(src_top, 16, src_above1, src_above2);
-    LD_UB2(src_left, 16, src_left1, src_left2);;
+    LD_UB2(src_left, 16, src_left1, src_left2);
     HADD_UB2_UH(src_above1, src_above2, sum_above1, sum_above2);
     HADD_UB2_UH(src_left1, src_left2, sum_left1, sum_left2);
     sum_above = sum_above1 + sum_above2;
