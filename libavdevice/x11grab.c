@@ -52,14 +52,15 @@
 #include <X11/extensions/Xfixes.h>
 #include <X11/extensions/XShm.h>
 
-#include "avdevice.h"
-
+#include "libavutil/internal.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/time.h"
 
 #include "libavformat/internal.h"
+
+#include "avdevice.h"
 
 /** X11 device demuxer context */
 typedef struct X11GrabContext {
@@ -170,6 +171,19 @@ static int setup_shm(AVFormatContext *s, Display *dpy, XImage **image)
 
     *image = img;
     return 0;
+}
+
+static int setup_mouse(Display *dpy, int screen)
+{
+    int ev_ret, ev_err;
+
+    if (XFixesQueryExtension(dpy, &ev_ret, &ev_err)) {
+        Window root = RootWindow(dpy, screen);
+        XFixesSelectCursorInput(dpy, root, XFixesDisplayCursorNotifyMask);
+        return 0;
+    }
+
+    return AVERROR(ENOSYS);
 }
 
 static int pixfmt_from_image(AVFormatContext *s, XImage *image, int *pix_fmt)
@@ -301,8 +315,8 @@ static int x11grab_read_header(AVFormatContext *s1)
                       &ret, &ret, &ret);
         x_off -= x11grab->width / 2;
         y_off -= x11grab->height / 2;
-        x_off  = FFMIN(FFMAX(x_off, 0), screen_w - x11grab->width);
-        y_off  = FFMIN(FFMAX(y_off, 0), screen_h - x11grab->height);
+        x_off = av_clip(x_off, 0, screen_w - x11grab->width);
+        y_off = av_clip(y_off, 0, screen_h - x11grab->height);
         av_log(s1, AV_LOG_INFO,
                "followmouse is enabled, resetting grabbing region to x: %d y: %d\n",
                x_off, y_off);
@@ -324,6 +338,12 @@ static int x11grab_read_header(AVFormatContext *s1)
                           x_off, y_off,
                           x11grab->width, x11grab->height,
                           AllPlanes, ZPixmap);
+    }
+
+    if (x11grab->draw_mouse && setup_mouse(dpy, screen) < 0) {
+        av_log(s1, AV_LOG_WARNING,
+               "XFixes not available, cannot draw the mouse cursor\n");
+        x11grab->draw_mouse = 0;
     }
 
     x11grab->frame_size = x11grab->width * x11grab->height * image->bits_per_pixel / 8;
@@ -391,14 +411,6 @@ static void paint_mouse_pointer(XImage *image, AVFormatContext *s1)
     uint8_t *pix = image->data;
     Window root;
     XSetWindowAttributes attr;
-    Bool pointer_on_screen;
-    Window w;
-    int _;
-
-    root = DefaultRootWindow(dpy);
-    pointer_on_screen = XQueryPointer(dpy, root, &w, &w, &_, &_, &_, &_, &_);
-    if (!pointer_on_screen)
-        return;
 
     /* Code doesn't currently support 16-bit or PAL8 */
     if (image->bits_per_pixel != 24 && image->bits_per_pixel != 32)
@@ -406,14 +418,14 @@ static void paint_mouse_pointer(XImage *image, AVFormatContext *s1)
 
     if (!s->c)
         s->c = XCreateFontCursor(dpy, XC_left_ptr);
+    root = DefaultRootWindow(dpy);
     attr.cursor = s->c;
     XChangeWindowAttributes(dpy, root, CWCursor, &attr);
 
     xcim = XFixesGetCursorImage(dpy);
     if (!xcim) {
         av_log(s1, AV_LOG_WARNING,
-               "XFixes extension not available, impossible to draw cursor\n");
-        s->draw_mouse = 0;
+               "XFixesGetCursorImage failed\n");
         return;
     }
 
@@ -509,8 +521,8 @@ static int x11grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
     int x_off         = s->x_off;
     int y_off         = s->y_off;
     int follow_mouse  = s->follow_mouse;
-    int screen;
-    Window root;
+    int screen, pointer_x, pointer_y, _, same_screen = 1;
+    Window w, root;
     int64_t curtime, delay;
     struct timespec ts;
 
@@ -548,14 +560,16 @@ static int x11grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
 
     screen = DefaultScreen(dpy);
     root   = RootWindow(dpy, screen);
-    if (follow_mouse) {
+
+    if (follow_mouse || s->draw_mouse)
+        same_screen = XQueryPointer(dpy, root, &w, &w,
+                                    &pointer_x, &pointer_y, &_, &_, &_);
+
+    if (follow_mouse && same_screen) {
         int screen_w, screen_h;
-        int pointer_x, pointer_y, _;
-        Window w;
 
         screen_w = DisplayWidth(dpy, screen);
         screen_h = DisplayHeight(dpy, screen);
-        XQueryPointer(dpy, root, &w, &w, &pointer_x, &pointer_y, &_, &_, &_);
         if (follow_mouse == -1) {
             // follow the mouse, put it at center of grabbing region
             x_off += pointer_x - s->width / 2 - x_off;
@@ -573,8 +587,8 @@ static int x11grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
                 y_off -= (y_off + follow_mouse) - pointer_y;
         }
         // adjust grabbing region position if it goes out of screen.
-        s->x_off = x_off = FFMIN(FFMAX(x_off, 0), screen_w - s->width);
-        s->y_off = y_off = FFMIN(FFMAX(y_off, 0), screen_h - s->height);
+        s->x_off = x_off = av_clip(x_off, 0, screen_w - s->width);
+        s->y_off = y_off = av_clip(y_off, 0, screen_h - s->height);
 
         if (s->show_region && s->region_win)
             XMoveWindow(dpy, s->region_win,
@@ -582,7 +596,7 @@ static int x11grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
                         s->y_off - REGION_WIN_BORDER);
     }
 
-    if (s->show_region) {
+    if (s->show_region && same_screen) {
         if (s->region_win) {
             XEvent evt = { .type = NoEventMask };
             // Clean up the events, and do the initial draw or redraw.
@@ -604,7 +618,7 @@ static int x11grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
             av_log(s1, AV_LOG_INFO, "XGetZPixmap() failed\n");
     }
 
-    if (s->draw_mouse)
+    if (s->draw_mouse && same_screen)
         paint_mouse_pointer(image, s1);
 
     return s->frame_size;
@@ -644,6 +658,8 @@ static int x11grab_read_close(AVFormatContext *s1)
 #define OFFSET(x) offsetof(X11GrabContext, x)
 #define DEC AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
+    { "grab_x", "Initial x coordinate.", OFFSET(x_off), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, DEC },
+    { "grab_y", "Initial y coordinate.", OFFSET(y_off), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, DEC },
     { "draw_mouse", "draw the mouse pointer", OFFSET(draw_mouse), AV_OPT_TYPE_INT, {.i64 = 1}, 0, 1, DEC },
 
     { "follow_mouse", "move the grabbing region when the mouse pointer reaches within specified amount of pixels to the edge of region",

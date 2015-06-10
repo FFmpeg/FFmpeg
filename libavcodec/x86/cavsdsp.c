@@ -139,12 +139,10 @@ static inline void cavs_idct8_1d(int16_t *block, uint64_t bias)
 static void cavs_idct8_add_mmx(uint8_t *dst, int16_t *block, int stride)
 {
     int i;
-    DECLARE_ALIGNED(8, int16_t, b2)[64];
+    LOCAL_ALIGNED(16, int16_t, b2, [64]);
 
     for(i=0; i<2; i++){
-        DECLARE_ALIGNED(8, uint64_t, tmp);
-
-        cavs_idct8_1d(block+4*i, ff_pw_4.a);
+        cavs_idct8_1d(block + 4 * i, ff_pw_4.a);
 
         __asm__ volatile(
             "psraw     $3, %%mm7  \n\t"
@@ -155,20 +153,20 @@ static void cavs_idct8_add_mmx(uint8_t *dst, int16_t *block, int stride)
             "psraw     $3, %%mm2  \n\t"
             "psraw     $3, %%mm1  \n\t"
             "psraw     $3, %%mm0  \n\t"
-            "movq   %%mm7,    %0   \n\t"
+            "movq   %%mm7,  (%0)  \n\t"
             TRANSPOSE4( %%mm0, %%mm2, %%mm4, %%mm6, %%mm7 )
-            "movq   %%mm0,  8(%1)  \n\t"
-            "movq   %%mm6, 24(%1)  \n\t"
-            "movq   %%mm7, 40(%1)  \n\t"
-            "movq   %%mm4, 56(%1)  \n\t"
-            "movq    %0,    %%mm7  \n\t"
+            "movq   %%mm0,  8(%0)  \n\t"
+            "movq   %%mm6, 24(%0)  \n\t"
+            "movq   %%mm7, 40(%0)  \n\t"
+            "movq   %%mm4, 56(%0)  \n\t"
+            "movq    (%0),  %%mm7  \n\t"
             TRANSPOSE4( %%mm7, %%mm5, %%mm3, %%mm1, %%mm0 )
-            "movq   %%mm7,   (%1)  \n\t"
-            "movq   %%mm1, 16(%1)  \n\t"
-            "movq   %%mm0, 32(%1)  \n\t"
-            "movq   %%mm3, 48(%1)  \n\t"
-            : "=m"(tmp)
-            : "r"(b2+32*i)
+            "movq   %%mm7,   (%0)  \n\t"
+            "movq   %%mm1, 16(%0)  \n\t"
+            "movq   %%mm0, 32(%0)  \n\t"
+            "movq   %%mm3, 48(%0)  \n\t"
+            :
+            : "r"(b2 + 32 * i)
             : "memory"
         );
     }
@@ -198,7 +196,7 @@ static void cavs_idct8_add_mmx(uint8_t *dst, int16_t *block, int stride)
         );
     }
 
-    ff_add_pixels_clamped_mmx(b2, dst, stride);
+    ff_add_pixels_clamped(b2, dst, stride);
 }
 
 #endif /* HAVE_MMX_INLINE */

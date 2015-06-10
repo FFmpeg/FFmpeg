@@ -1,4 +1,5 @@
 \input texinfo @c -*- texinfo -*-
+@documentencoding UTF-8
 
 @settitle Using git to develop FFmpeg
 
@@ -74,6 +75,7 @@ git config --global core.autocrlf false
 @end example
 
 
+@anchor{Updating the source tree to the latest revision}
 @section Updating the source tree to the latest revision
 
 @example
@@ -329,7 +331,7 @@ git push
 
 Will push the changes to the default remote (@var{origin}).
 Git will prevent you from pushing changes if the local and remote trees are
-out of sync. Refer to and to sync the local tree.
+out of sync. Refer to @ref{Updating the source tree to the latest revision}.
 
 @example
 git remote add <name> <url>

@@ -15,6 +15,8 @@ HEADERS = adler32.h                                                     \
           bprint.h                                                      \
           bswap.h                                                       \
           buffer.h                                                      \
+          cast5.h                                                       \
+          camellia.h                                                    \
           channel_layout.h                                              \
           common.h                                                      \
           cpu.h                                                         \
@@ -30,7 +32,6 @@ HEADERS = adler32.h                                                     \
           hmac.h                                                        \
           imgutils.h                                                    \
           intfloat.h                                                    \
-          intfloat_readwrite.h                                          \
           intreadwrite.h                                                \
           lfg.h                                                         \
           log.h                                                         \
@@ -59,6 +60,7 @@ HEADERS = adler32.h                                                     \
           time.h                                                        \
           timecode.h                                                    \
           timestamp.h                                                   \
+          twofish.h                                                     \
           version.h                                                     \
           xtea.h                                                        \
 
@@ -83,7 +85,10 @@ OBJS = adler32.o                                                        \
        blowfish.o                                                       \
        bprint.o                                                         \
        buffer.o                                                         \
+       cast5.o                                                          \
+       camellia.o                                                       \
        channel_layout.o                                                 \
+       color_utils.o                                                    \
        cpu.o                                                            \
        crc.o                                                            \
        des.o                                                            \
@@ -100,7 +105,6 @@ OBJS = adler32.o                                                        \
        hash.o                                                           \
        hmac.o                                                           \
        imgutils.o                                                       \
-       intfloat_readwrite.o                                             \
        intmath.o                                                        \
        lfg.o                                                            \
        lls.o                                                            \
@@ -127,6 +131,7 @@ OBJS = adler32.o                                                        \
        time.o                                                           \
        timecode.o                                                       \
        tree.o                                                           \
+       twofish.o                                                        \
        utils.o                                                          \
        xga_font_data.o                                                  \
        xtea.o                                                           \
@@ -153,9 +158,12 @@ TESTPROGS = adler32                                                     \
             base64                                                      \
             blowfish                                                    \
             bprint                                                      \
+            cast5                                                       \
+            camellia                                                    \
             cpu                                                         \
             crc                                                         \
             des                                                         \
+            dict                                                        \
             error                                                       \
             eval                                                        \
             file                                                        \
@@ -177,7 +185,9 @@ TESTPROGS = adler32                                                     \
             ripemd                                                      \
             sha                                                         \
             sha512                                                      \
+            softfloat                                                   \
             tree                                                        \
+            twofish                                                     \
             utf8                                                        \
             xtea                                                        \
 

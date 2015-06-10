@@ -27,3 +27,9 @@
     { "opencl_bench", OPT_EXIT, {.func_arg = opt_opencl_bench}, "run benchmark on all OpenCL devices and show results" },
     { "opencl_options", HAS_ARG, {.func_arg = opt_opencl},      "set OpenCL environment options" },
 #endif
+#if CONFIG_AVDEVICE
+    { "sources"    , OPT_EXIT | HAS_ARG, { .func_arg = show_sources },
+      "list sources of the input device", "device" },
+    { "sinks"      , OPT_EXIT | HAS_ARG, { .func_arg = show_sinks },
+      "list sinks of the output device", "device" },
+#endif

@@ -28,7 +28,7 @@
 #define PVA_AUDIO_PAYLOAD       0x02
 #define PVA_MAGIC               (('A' << 8) + 'V')
 
-typedef struct {
+typedef struct PVAContext {
     int continue_pes;
 } PVAContext;
 

@@ -82,7 +82,7 @@ static int s302m_encode2_frame(AVCodecContext *avctx, AVPacket *avpkt,
         return ret;
 
     o = avpkt->data;
-    init_put_bits(&pb, o, buf_size * 8);
+    init_put_bits(&pb, o, buf_size);
     put_bits(&pb, 16, buf_size - AES3_HEADER_LEN);
     put_bits(&pb, 2, (avctx->channels - 2) >> 1);   // number of channels
     put_bits(&pb, 8, 0);                            // channel ID

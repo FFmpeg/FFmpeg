@@ -1,0 +1,4 @@
+e0027fb7a9ab8ac964bba02186b4a829 *tests/data/fate/vsynth_lena-huffyuv.avi
+6108514 tests/data/fate/vsynth_lena-huffyuv.avi
+dde5895817ad9d219f79a52d0bdfb001 *tests/data/fate/vsynth_lena-huffyuv.out.rawvideo
+stddev:    0.00 PSNR:999.99 MAXDIFF:    0 bytes:  7603200/  7603200

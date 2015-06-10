@@ -7,9 +7,17 @@ V
     Disable the default terse mode, the full command issued by make and its
     output will be shown on the screen.
 
+DBG
+    Preprocess x86 external assembler files to a .dbg.asm file in the object
+    directory, which then gets compiled. Helps developping those assembler
+    files.
+
 DESTDIR
     Destination directory for the install targets, useful to prepare packages
     or install FFmpeg in cross-environments.
+
+GEN
+    Set to ‘1’ to generate the missing or mismatched references.
 
 Makefile targets:
 

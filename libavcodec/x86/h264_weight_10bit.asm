@@ -26,11 +26,12 @@
 
 SECTION_RODATA 32
 
-pw_pixel_max: times 8 dw ((1 << 10)-1)
 sq_1: dq 1
       dq 0
 
 cextern pw_1
+cextern pw_1023
+%define pw_pixel_max pw_1023
 
 SECTION .text
 

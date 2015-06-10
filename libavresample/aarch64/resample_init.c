@@ -45,8 +45,8 @@ void ff_resample_one_s32_neon(struct ResampleContext *c, void *dst0,
                               int dst_index, const void *src0,
                               unsigned int index, int frac);
 
-void ff_audio_resample_init_aarch64(ResampleContext *c,
-                                    enum AVSampleFormat sample_fmt)
+av_cold void ff_audio_resample_init_aarch64(ResampleContext *c,
+                                            enum AVSampleFormat sample_fmt)
 {
     int cpu_flags = av_get_cpu_flags();
 

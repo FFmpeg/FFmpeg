@@ -191,6 +191,11 @@ __asm__() block.
 Use external asm (nasm/yasm) or inline asm (__asm__()), do not use intrinsics.
 The latter requires a good optimizing compiler which gcc is not.
 
+When debugging a x86 external asm compilation issue, if lost in the macro
+expansions, add DBG=1 to your make command-line: the input file will be
+preprocessed, stripped of the debug/empty lines, then compiled, showing the
+actual lines causing issues.
+
 Inline asm vs. external asm
 ---------------------------
 Both inline asm (__asm__("..") in a .c file, handled by a compiler such as gcc)

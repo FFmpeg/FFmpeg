@@ -47,7 +47,7 @@ static av_cold int dvvideo_encode_init(AVCodecContext *avctx)
     PixblockDSPContext pdsp;
     int ret;
 
-    s->sys = av_dv_codec_profile(avctx->width, avctx->height, avctx->pix_fmt);
+    s->sys = av_dv_codec_profile2(avctx->width, avctx->height, avctx->pix_fmt, avctx->time_base);
     if (!s->sys) {
         av_log(avctx, AV_LOG_ERROR, "Found no DV profile for %ix%i %s video. "
                                     "Valid DV profiles are:\n",
@@ -176,7 +176,7 @@ static av_always_inline PutBitContext *dv_encode_ac(EncBlockInfo *bi,
             if (bits_left) {
                 size -= bits_left;
                 put_bits(pb, bits_left, vlc >> size);
-                vlc = vlc & ((1 << size) - 1);
+                vlc = av_mod_uintp2(vlc, size);
             }
             if (pb + 1 >= pb_end) {
                 bi->partial_bit_count  = size;
@@ -232,14 +232,14 @@ static const int dv_weight_88[64] = {
     170627, 165371, 160727, 153560, 160727, 144651, 144651, 136258,
 };
 static const int dv_weight_248[64] = {
-    131072, 242189, 257107, 237536, 229376, 200636, 242189, 223754,
-    224969, 196781, 262144, 242189, 229376, 200636, 257107, 237536,
-    211916, 185364, 235923, 217965, 229376, 211916, 206433, 180568,
-    242189, 223754, 224969, 196781, 211916, 185364, 235923, 217965,
-    200704, 175557, 222935, 205965, 200636, 185364, 195068, 170627,
-    229376, 211916, 206433, 180568, 200704, 175557, 222935, 205965,
-    175557, 153560, 188995, 174609, 165371, 144651, 200636, 185364,
-    195068, 170627, 175557, 153560, 188995, 174609, 165371, 144651,
+    131072, 262144, 257107, 257107, 242189, 242189, 242189, 242189,
+    237536, 237536, 229376, 229376, 200636, 200636, 224973, 224973,
+    223754, 223754, 235923, 235923, 229376, 229376, 217965, 217965,
+    211916, 211916, 196781, 196781, 185364, 185364, 206433, 206433,
+    211916, 211916, 222935, 222935, 200636, 200636, 205964, 205964,
+    200704, 200704, 180568, 180568, 175557, 175557, 195068, 195068,
+    185364, 185364, 188995, 188995, 174606, 174606, 175557, 175557,
+    170627, 170627, 153560, 153560, 165371, 165371, 144651, 144651,
 };
 
 static av_always_inline int dv_init_enc_block(EncBlockInfo *bi, uint8_t *data,
@@ -758,7 +758,7 @@ AVCodec ff_dvvideo_encoder = {
     .init           = dvvideo_encode_init,
     .encode2        = dvvideo_encode_frame,
     .close          = dvvideo_encode_close,
-    .capabilities   = CODEC_CAP_SLICE_THREADS,
+    .capabilities   = CODEC_CAP_SLICE_THREADS | CODEC_CAP_FRAME_THREADS | CODEC_CAP_INTRA_ONLY,
     .pix_fmts       = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_YUV411P, AV_PIX_FMT_YUV422P,
         AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE

@@ -20,6 +20,7 @@
 
 #include "avcodec.h"
 #include "idctdsp.h"
+#include "mpegutils.h"
 #include "mpegvideo.h"
 #include "msmpeg4data.h"
 #include "simple_idct.h"
@@ -88,7 +89,7 @@ void ff_wmv2_add_mb(MpegEncContext *s, int16_t block1[6][64],
     wmv2_add_block(w, block1[2], dest_y + 8 * s->linesize,     s->linesize, 2);
     wmv2_add_block(w, block1[3], dest_y + 8 + 8 * s->linesize, s->linesize, 3);
 
-    if (s->flags & CODEC_FLAG_GRAY)
+    if (s->avctx->flags & CODEC_FLAG_GRAY)
         return;
 
     wmv2_add_block(w, block1[4], dest_cb, s->uvlinesize, 4);
@@ -127,11 +128,11 @@ void ff_mspel_motion(MpegEncContext *s, uint8_t *dest_y,
 
     if (src_x < 1 || src_y < 1 || src_x + 17 >= s->h_edge_pos ||
         src_y + h + 1 >= v_edge_pos) {
-        s->vdsp.emulated_edge_mc(s->edge_emu_buffer, ptr - 1 - s->linesize,
+        s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer, ptr - 1 - s->linesize,
                                  s->linesize, s->linesize, 19, 19,
                                  src_x - 1, src_y - 1,
                                  s->h_edge_pos, s->v_edge_pos);
-        ptr = s->edge_emu_buffer + 1 + s->linesize;
+        ptr = s->sc.edge_emu_buffer + 1 + s->linesize;
         emu = 1;
     }
 
@@ -140,7 +141,7 @@ void ff_mspel_motion(MpegEncContext *s, uint8_t *dest_y,
     w->wdsp.put_mspel_pixels_tab[dxy](dest_y     + 8 * linesize, ptr     + 8 * linesize, linesize);
     w->wdsp.put_mspel_pixels_tab[dxy](dest_y + 8 + 8 * linesize, ptr + 8 + 8 * linesize, linesize);
 
-    if (s->flags & CODEC_FLAG_GRAY)
+    if (s->avctx->flags & CODEC_FLAG_GRAY)
         return;
 
     dxy = 0;
@@ -162,23 +163,23 @@ void ff_mspel_motion(MpegEncContext *s, uint8_t *dest_y,
     offset = (src_y * uvlinesize) + src_x;
     ptr    = ref_picture[1] + offset;
     if (emu) {
-        s->vdsp.emulated_edge_mc(s->edge_emu_buffer, ptr,
+        s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer, ptr,
                                  s->uvlinesize, s->uvlinesize,
                                  9, 9,
                                  src_x, src_y,
                                  s->h_edge_pos >> 1, s->v_edge_pos >> 1);
-        ptr = s->edge_emu_buffer;
+        ptr = s->sc.edge_emu_buffer;
     }
     pix_op[1][dxy](dest_cb, ptr, uvlinesize, h >> 1);
 
     ptr = ref_picture[2] + offset;
     if (emu) {
-        s->vdsp.emulated_edge_mc(s->edge_emu_buffer, ptr,
+        s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer, ptr,
                                  s->uvlinesize, s->uvlinesize,
                                  9, 9,
                                  src_x, src_y,
                                  s->h_edge_pos >> 1, s->v_edge_pos >> 1);
-        ptr = s->edge_emu_buffer;
+        ptr = s->sc.edge_emu_buffer;
     }
     pix_op[1][dxy](dest_cr, ptr, uvlinesize, h >> 1);
 }

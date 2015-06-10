@@ -34,8 +34,6 @@
 #define URL_PROTOCOL_FLAG_NESTED_SCHEME 1 /*< The protocol name can be the first part of a nested protocol scheme */
 #define URL_PROTOCOL_FLAG_NETWORK       2 /*< The protocol uses network */
 
-extern int (*url_interrupt_cb)(void);
-
 extern const AVClass ffurl_context_class;
 
 typedef struct URLContext {
@@ -89,6 +87,9 @@ typedef struct URLProtocol {
     const AVClass *priv_data_class;
     int flags;
     int (*url_check)(URLContext *h, int mask);
+    int (*url_open_dir)(URLContext *h);
+    int (*url_read_dir)(URLContext *h, AVIODirEntry **next);
+    int (*url_close_dir)(URLContext *h);
 } URLProtocol;
 
 /**
@@ -281,6 +282,13 @@ int ff_url_join(char *str, int size, const char *proto,
  */
 void ff_make_absolute_url(char *buf, int size, const char *base,
                           const char *rel);
+
+/**
+ * Allocate directory entry with default values.
+ *
+ * @return entry or NULL on error
+ */
+AVIODirEntry *ff_alloc_dir_entry(void);
 
 
 #endif /* AVFORMAT_URL_H */

@@ -55,6 +55,8 @@
 #ifndef AVCODEC_MIPS_COMPUTE_ANTIALIAS_FLOAT_H
 #define AVCODEC_MIPS_COMPUTE_ANTIALIAS_FLOAT_H
 
+#include "libavutil/mips/asmdefs.h"
+
 #if HAVE_INLINE_ASM
 static void compute_antialias_mips_float(MPADecodeContext *s,
                                         GranuleDef *g)
@@ -158,7 +160,7 @@ static void compute_antialias_mips_float(MPADecodeContext *s,
         "mul.s   %[out4], %[in5],  %[in7]                               \t\n"
         "swc1    %[out1], -7*4(%[ptr])                                  \t\n"
         "swc1    %[out2], 6*4(%[ptr])                                   \t\n"
-        "addiu   %[ptr],  %[ptr],  72                                   \t\n"
+        PTR_ADDIU "%[ptr],%[ptr],  72                                   \t\n"
         "nmsub.s %[out3], %[out3], %[in7], %[in8]                       \t\n"
         "madd.s  %[out4], %[out4], %[in6], %[in8]                       \t\n"
         "swc1    %[out3], -26*4(%[ptr])                                 \t\n"

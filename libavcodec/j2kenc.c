@@ -366,14 +366,14 @@ static int init_tiles(Jpeg2000EncoderContext *s)
                         for (j = 0; j < 2; j++)
                             comp->coord[i][j] = comp->coord_o[i][j] = ff_jpeg2000_ceildivpow2(comp->coord[i][j], s->chroma_shift[i]);
 
-                if (ret = ff_jpeg2000_init_component(comp,
+                if ((ret = ff_jpeg2000_init_component(comp,
                                                 codsty,
                                                 qntsty,
                                                 s->cbps[compno],
                                                 compno?1<<s->chroma_shift[0]:1,
                                                 compno?1<<s->chroma_shift[1]:1,
                                                 s->avctx
-                                               ))
+                                               )) < 0)
                     return ret;
             }
         }
@@ -430,7 +430,7 @@ static void init_quantization(Jpeg2000EncoderContext *s)
             int nbands, lev = codsty->nreslevels - reslevelno - 1;
             nbands = reslevelno ? 3 : 1;
             for (bandno = 0; bandno < nbands; bandno++, gbandno++){
-                int expn, mant;
+                int expn, mant = 0;
 
                 if (codsty->transform == FF_DWT97_INT){
                     int bandpos = bandno + (reslevelno>0),
@@ -753,8 +753,8 @@ static int encode_packets(Jpeg2000EncoderContext *s, Jpeg2000Tile *tile, int til
             int precno;
             Jpeg2000ResLevel *reslevel = s->tile[tileno].comp[compno].reslevel + reslevelno;
             for (precno = 0; precno < reslevel->num_precincts_x * reslevel->num_precincts_y; precno++){
-                if (ret = encode_packet(s, reslevel, precno, qntsty->expn + (reslevelno ? 3*reslevelno-2 : 0),
-                              qntsty->nguardbits))
+                if ((ret = encode_packet(s, reslevel, precno, qntsty->expn + (reslevelno ? 3*reslevelno-2 : 0),
+                              qntsty->nguardbits)) < 0)
                     return ret;
             }
         }
@@ -819,7 +819,7 @@ static int encode_tile(Jpeg2000EncoderContext *s, Jpeg2000Tile *tile, int tileno
         Jpeg2000Component *comp = s->tile[tileno].comp + compno;
 
         av_log(s->avctx, AV_LOG_DEBUG,"dwt\n");
-        if (ret = ff_dwt_encode(&comp->dwt, comp->i_data))
+        if ((ret = ff_dwt_encode(&comp->dwt, comp->i_data)) < 0)
             return ret;
         av_log(s->avctx, AV_LOG_DEBUG,"after dwt -> tier1\n");
 
@@ -883,7 +883,7 @@ static int encode_tile(Jpeg2000EncoderContext *s, Jpeg2000Tile *tile, int tileno
 
     av_log(s->avctx, AV_LOG_DEBUG, "rate control\n");
     truncpasses(s, tile);
-    if (ret = encode_packets(s, tile, tileno))
+    if ((ret = encode_packets(s, tile, tileno)) < 0)
         return ret;
     av_log(s->avctx, AV_LOG_DEBUG, "after rate control\n");
     return 0;
@@ -937,11 +937,11 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     if (s->buf_end - s->buf < 2)
         return -1;
     bytestream_put_be16(&s->buf, JPEG2000_SOC);
-    if (ret = put_siz(s))
+    if ((ret = put_siz(s)) < 0)
         return ret;
-    if (ret = put_cod(s))
+    if ((ret = put_cod(s)) < 0)
         return ret;
-    if (ret = put_qcd(s, 0))
+    if ((ret = put_qcd(s, 0)) < 0)
         return ret;
 
     for (tileno = 0; tileno < s->numXtiles * s->numYtiles; tileno++){
@@ -951,7 +951,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         if (s->buf_end - s->buf < 2)
             return -1;
         bytestream_put_be16(&s->buf, JPEG2000_SOD);
-        if (ret = encode_tile(s, s->tile + tileno, tileno))
+        if ((ret = encode_tile(s, s->tile + tileno, tileno)) < 0)
             return ret;
         bytestream_put_be32(&psotptr, s->buf - psotptr + 6);
     }
@@ -1019,7 +1019,7 @@ static av_cold int j2kenc_init(AVCodecContext *avctx)
     init_luts();
 
     init_quantization(s);
-    if (ret=init_tiles(s))
+    if ((ret=init_tiles(s)) < 0)
         return ret;
 
     av_log(s->avctx, AV_LOG_DEBUG, "after init\n");

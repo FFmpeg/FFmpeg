@@ -132,8 +132,10 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_NONE
     };
 
-    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
-    return 0;
+    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
+    if (!fmts_list)
+        return AVERROR(ENOMEM);
+    return ff_set_common_formats(ctx, fmts_list);
 }
 
 
@@ -208,8 +210,9 @@ static int config_input(AVFilterLink *inlink)
 
     f = fopen(tc->input, "r");
     if (!f) {
+        int ret = AVERROR(errno);
         av_log(ctx, AV_LOG_ERROR, "cannot open input file %s\n", tc->input);
-        return AVERROR(errno);
+        return ret;
     } else {
         VSManyLocalMotions mlms;
         if (vsReadLocalMotionsFile(f, &mlms) == VS_OK) {

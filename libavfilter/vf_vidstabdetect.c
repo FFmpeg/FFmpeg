@@ -93,8 +93,10 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_NONE
     };
 
-    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
-    return 0;
+    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
+    if (!fmts_list)
+        return AVERROR(ENOMEM);
+    return ff_set_common_formats(ctx, fmts_list);
 }
 
 static int config_input(AVFilterLink *inlink)
@@ -176,8 +178,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         return AVERROR(AVERROR_EXTERNAL);
     } else {
         if (vsWriteToFile(md, sd->f, &localmotions) != VS_OK) {
+            int ret = AVERROR(errno);
             av_log(ctx, AV_LOG_ERROR, "cannot write to transform file");
-            return AVERROR(errno);
+            return ret;
         }
         vs_vector_del(&localmotions);
     }

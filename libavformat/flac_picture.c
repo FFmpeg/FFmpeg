@@ -33,8 +33,9 @@ int ff_flac_parse_picture(AVFormatContext *s, uint8_t *buf, int buf_size)
     uint8_t mimetype[64], *desc = NULL;
     AVIOContext *pb = NULL;
     AVStream *st;
-    int type, width, height;
-    int len, ret = 0;
+    int width, height, ret = 0;
+    int len;
+    unsigned int type;
 
     pb = avio_alloc_context(buf, buf_size, 0, NULL, NULL, NULL, NULL);
     if (!pb)
@@ -42,7 +43,7 @@ int ff_flac_parse_picture(AVFormatContext *s, uint8_t *buf, int buf_size)
 
     /* read the picture type */
     type = avio_rb32(pb);
-    if (type >= FF_ARRAY_ELEMS(ff_id3v2_picture_types) || type < 0) {
+    if (type >= FF_ARRAY_ELEMS(ff_id3v2_picture_types)) {
         av_log(s, AV_LOG_ERROR, "Invalid picture type: %d.\n", type);
         if (s->error_recognition & AV_EF_EXPLODE) {
             RETURN_ERROR(AVERROR_INVALIDDATA);
@@ -52,7 +53,7 @@ int ff_flac_parse_picture(AVFormatContext *s, uint8_t *buf, int buf_size)
 
     /* picture mimetype */
     len = avio_rb32(pb);
-    if (len <= 0 ||
+    if (len <= 0 || len >= 64 ||
         avio_read(pb, mimetype, FFMIN(len, sizeof(mimetype) - 1)) != len) {
         av_log(s, AV_LOG_ERROR, "Could not read mimetype from an attached "
                "picture.\n");

@@ -55,7 +55,7 @@ static av_cold int tgv_decode_init(AVCodecContext *avctx)
 {
     TgvContext *s = avctx->priv_data;
     s->avctx         = avctx;
-    avctx->time_base = (AVRational){1, 15};
+    avctx->framerate = (AVRational){ 15, 1 };
     avctx->pix_fmt   = AV_PIX_FMT_PAL8;
 
     s->last_frame = av_frame_alloc();
@@ -173,9 +173,10 @@ static int tgv_decode_inter(TgvContext *s, AVFrame *frame,
 
     /* allocate codebook buffers as necessary */
     if (num_mvs > s->num_mvs) {
-        if (av_reallocp_array(&s->mv_codebook, num_mvs, sizeof(*s->mv_codebook))) {
+        int err = av_reallocp_array(&s->mv_codebook, num_mvs, sizeof(*s->mv_codebook));
+        if (err < 0) {
             s->num_mvs = 0;
-            return AVERROR(ENOMEM);
+            return err;
         }
         s->num_mvs = num_mvs;
     }
@@ -349,8 +350,8 @@ static av_cold int tgv_decode_end(AVCodecContext *avctx)
     TgvContext *s = avctx->priv_data;
     av_frame_free(&s->last_frame);
     av_freep(&s->frame_buffer);
-    av_free(s->mv_codebook);
-    av_free(s->block_codebook);
+    av_freep(&s->mv_codebook);
+    av_freep(&s->block_codebook);
     return 0;
 }
 

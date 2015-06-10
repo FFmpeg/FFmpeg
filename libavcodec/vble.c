@@ -32,7 +32,7 @@
 #include "internal.h"
 #include "mathops.h"
 
-typedef struct {
+typedef struct VBLEContext {
     AVCodecContext *avctx;
     HuffYUVDSPContext hdsp;
 

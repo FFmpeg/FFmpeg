@@ -62,7 +62,7 @@ void ff_put_bmp_header(AVIOContext *pb, AVCodecContext *enc, const AVCodecTag *t
 int ff_put_wav_header(AVIOContext *pb, AVCodecContext *enc, int flags);
 
 enum AVCodecID ff_wav_codec_get_id(unsigned int tag, int bps);
-int ff_get_wav_header(AVIOContext *pb, AVCodecContext *codec, int size);
+int ff_get_wav_header(AVIOContext *pb, AVCodecContext *codec, int size, int big_endian);
 
 extern const AVCodecTag ff_codec_bmp_tags[]; // exposed through avformat_get_riff_video_tags()
 extern const AVCodecTag ff_codec_wav_tags[];
@@ -91,10 +91,13 @@ typedef struct AVCodecGuid {
 extern const AVCodecGuid ff_codec_wav_guids[];
 
 #define FF_PRI_GUID \
-    "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x"
+    "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x " \
+    "{%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x}"
 
 #define FF_ARG_GUID(g) \
     g[0], g[1], g[2],  g[3],  g[4],  g[5],  g[6],  g[7], \
+    g[8], g[9], g[10], g[11], g[12], g[13], g[14], g[15],\
+    g[3], g[2], g[1],  g[0],  g[5],  g[4],  g[7],  g[6], \
     g[8], g[9], g[10], g[11], g[12], g[13], g[14], g[15]
 
 #define FF_MEDIASUBTYPE_BASE_GUID \
@@ -107,7 +110,7 @@ static av_always_inline int ff_guidcmp(const void *g1, const void *g2)
 
 int ff_get_guid(AVIOContext *s, ff_asf_guid *g);
 void ff_put_guid(AVIOContext *s, const ff_asf_guid *g);
-const ff_asf_guid *get_codec_guid(enum AVCodecID id, const AVCodecGuid *av_guid);
+const ff_asf_guid *ff_get_codec_guid(enum AVCodecID id, const AVCodecGuid *av_guid);
 
 enum AVCodecID ff_codec_guid_get_id(const AVCodecGuid *guids, ff_asf_guid guid);
 

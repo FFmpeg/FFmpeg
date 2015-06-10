@@ -94,12 +94,12 @@ static int txd_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             if (!(flags & 1))
                 goto unsupported;
         case FF_S3TC_DXT1:
-            if (bytestream2_get_bytes_left(&gb) < (w/4) * (h/4) * 8)
+            if (bytestream2_get_bytes_left(&gb) < FF_CEIL_RSHIFT(w, 2) * FF_CEIL_RSHIFT(h, 2) * 8)
                 return AVERROR_INVALIDDATA;
             ff_decode_dxt1(&gb, ptr, w, h, stride);
             break;
         case FF_S3TC_DXT3:
-            if (bytestream2_get_bytes_left(&gb) < (w/4) * (h/4) * 16)
+            if (bytestream2_get_bytes_left(&gb) < FF_CEIL_RSHIFT(w, 2) * FF_CEIL_RSHIFT(h, 2) * 16)
                 return AVERROR_INVALIDDATA;
             ff_decode_dxt3(&gb, ptr, w, h, stride);
             break;

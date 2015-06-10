@@ -66,7 +66,7 @@ int avpicture_alloc(AVPicture *picture,
 
 void avpicture_free(AVPicture *picture)
 {
-    av_free(picture->data[0]);
+    av_freep(&picture->data[0]);
 }
 
 void av_picture_copy(AVPicture *dst, const AVPicture *src,

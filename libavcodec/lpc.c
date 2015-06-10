@@ -175,7 +175,7 @@ int ff_lpc_calc_coefs(LPCContext *s,
                       int omethod, int max_shift, int zero_shift)
 {
     double autoc[MAX_LPC_ORDER+1];
-    double ref[MAX_LPC_ORDER];
+    double ref[MAX_LPC_ORDER] = { 0 };
     double lpc[MAX_LPC_ORDER][MAX_LPC_ORDER];
     int i, j, pass = 0;
     int opt_order;
@@ -208,7 +208,7 @@ int ff_lpc_calc_coefs(LPCContext *s,
     }
 
     if (lpc_type == FF_LPC_TYPE_CHOLESKY) {
-        LLSModel m[2];
+        LLSModel *m = s->lls_models;
         LOCAL_ALIGNED(32, double, var, [FFALIGN(MAX_LPC_ORDER+1,4)]);
         double av_uninit(weight);
         memset(var, 0, FFALIGN(MAX_LPC_ORDER+1,4)*sizeof(*var));

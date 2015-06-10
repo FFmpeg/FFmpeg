@@ -35,6 +35,7 @@
 #include "libavutil/mem.h"
 #include "mpegvideo.h"
 #include "h263.h"
+#include "internal.h"
 #include "mpeg4video.h"
 #include "msmpeg4.h"
 #include "msmpeg4data.h"
@@ -45,11 +46,14 @@
 static uint8_t rl_length[NB_RL_TABLES][MAX_LEVEL+1][MAX_RUN+1][2];
 
 /* build the table which associate a (x,y) motion vector to a vlc */
-static av_cold void init_mv_table(MVTable *tab)
+static av_cold int init_mv_table(MVTable *tab)
 {
     int i, x, y;
 
     tab->table_mv_index = av_malloc(sizeof(uint16_t) * 4096);
+    if (!tab->table_mv_index)
+        return AVERROR(ENOMEM);
+
     /* mark all entries as not used */
     for(i=0;i<4096;i++)
         tab->table_mv_index[i] = tab->n;
@@ -59,6 +63,8 @@ static av_cold void init_mv_table(MVTable *tab)
         y = tab->table_mvy[i];
         tab->table_mv_index[(x << 6) | y] = i;
     }
+
+    return 0;
 }
 
 void ff_msmpeg4_code012(PutBitContext *pb, int n)
@@ -112,10 +118,10 @@ static int get_size_of_code(MpegEncContext * s, RLTable *rl, int last, int run, 
     return size;
 }
 
-av_cold void ff_msmpeg4_encode_init(MpegEncContext *s)
+av_cold int ff_msmpeg4_encode_init(MpegEncContext *s)
 {
     static int init_done=0;
-    int i;
+    int i, ret;
 
     ff_msmpeg4_common_init(s);
     if(s->msmpeg4_version>=4){
@@ -126,10 +132,12 @@ av_cold void ff_msmpeg4_encode_init(MpegEncContext *s)
     if (!init_done) {
         /* init various encoding tables */
         init_done = 1;
-        init_mv_table(&ff_mv_tables[0]);
-        init_mv_table(&ff_mv_tables[1]);
+        if ((ret = init_mv_table(&ff_mv_tables[0])) < 0)
+            return ret;
+        if ((ret = init_mv_table(&ff_mv_tables[1])) < 0)
+            return ret;
         for(i=0;i<NB_RL_TABLES;i++)
-            ff_init_rl(&ff_rl_table[i], ff_static_rl_table_store[i]);
+            ff_rl_init(&ff_rl_table[i], ff_static_rl_table_store[i]);
 
         for(i=0; i<NB_RL_TABLES; i++){
             int level;
@@ -144,6 +152,8 @@ av_cold void ff_msmpeg4_encode_init(MpegEncContext *s)
             }
         }
     }
+
+    return 0;
 }
 
 static void find_best_tables(MpegEncContext * s)
@@ -230,7 +240,7 @@ void ff_msmpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
     s->per_mb_rl_table = 0;
     if(s->msmpeg4_version==4)
         s->inter_intra_pred= (s->width*s->height < 320*240 && s->bit_rate<=II_BITRATE && s->pict_type==AV_PICTURE_TYPE_P);
-    av_dlog(s, "%d %d %d %d %d\n", s->pict_type, s->bit_rate,
+    ff_dlog(s, "%d %d %d %d %d\n", s->pict_type, s->bit_rate,
             s->inter_intra_pred, s->width, s->height);
 
     if (s->pict_type == AV_PICTURE_TYPE_I) {

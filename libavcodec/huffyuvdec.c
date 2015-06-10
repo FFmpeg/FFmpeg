@@ -272,6 +272,20 @@ static int read_old_huffman_tables(HYuvContext *s)
     return 0;
 }
 
+static av_cold int decode_end(AVCodecContext *avctx)
+{
+    HYuvContext *s = avctx->priv_data;
+    int i;
+
+    ff_huffyuv_common_end(s);
+    av_freep(&s->bitstream_buffer);
+
+    for (i = 0; i < 8; i++)
+        ff_free_vlc(&s->vlc[i]);
+
+    return 0;
+}
+
 static av_cold int decode_init(AVCodecContext *avctx)
 {
     HYuvContext *s = avctx->priv_data;
@@ -327,7 +341,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
         if ((ret = read_huffman_tables(s, avctx->extradata + 4,
                                        avctx->extradata_size - 4)) < 0)
-            return ret;
+            goto error;
     } else {
         switch (avctx->bits_per_coded_sample & 7) {
         case 1:
@@ -355,7 +369,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
         s->context       = 0;
 
         if ((ret = read_old_huffman_tables(s)) < 0)
-            return ret;
+            goto error;
     }
 
     if (s->version <= 2) {
@@ -383,7 +397,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
             s->alpha = 1;
             break;
         default:
-            return AVERROR_INVALIDDATA;
+            ret = AVERROR_INVALIDDATA;
+            goto error;
         }
         av_pix_fmt_get_chroma_sub_sample(avctx->pix_fmt,
                                          &s->chroma_h_shift,
@@ -520,7 +535,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
             avctx->pix_fmt = AV_PIX_FMT_YUVA420P16;
             break;
         default:
-            return AVERROR_INVALIDDATA;
+            ret = AVERROR_INVALIDDATA;
+            goto error;
         }
     }
 
@@ -528,21 +544,26 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     if ((avctx->pix_fmt == AV_PIX_FMT_YUV422P || avctx->pix_fmt == AV_PIX_FMT_YUV420P) && avctx->width & 1) {
         av_log(avctx, AV_LOG_ERROR, "width must be even for this colorspace\n");
-        return AVERROR_INVALIDDATA;
+        ret = AVERROR_INVALIDDATA;
+        goto error;
     }
     if (s->predictor == MEDIAN && avctx->pix_fmt == AV_PIX_FMT_YUV422P &&
         avctx->width % 4) {
         av_log(avctx, AV_LOG_ERROR, "width must be a multiple of 4 "
                "for this combination of colorspace and predictor type.\n");
-        return AVERROR_INVALIDDATA;
+        ret = AVERROR_INVALIDDATA;
+        goto error;
     }
 
     if ((ret = ff_huffyuv_alloc_temp(s)) < 0) {
         ff_huffyuv_common_end(s);
-        return ret;
+        goto error;
     }
 
     return 0;
+  error:
+    decode_end(avctx);
+    return ret;
 }
 
 static av_cold int decode_init_thread_copy(AVCodecContext *avctx)
@@ -1181,11 +1202,10 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                     if (s->predictor == PLANE) {
                         if (s->bitstream_bpp != 32)
                             left[A] = 0;
-                        if ((y & s->interlaced) == 0 &&
-                            y < s->height - 1 - s->interlaced) {
+                        if (y < s->height - 1 - s->interlaced) {
                             s->hdsp.add_bytes(p->data[0] + p->linesize[0] * y,
                                               p->data[0] + p->linesize[0] * y +
-                                              fake_ystride, fake_ystride);
+                                              fake_ystride, 4 * width);
                         }
                     }
                 }
@@ -1207,20 +1227,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     *got_frame = 1;
 
     return (get_bits_count(&s->gb) + 31) / 32 * 4 + table_size;
-}
-
-static av_cold int decode_end(AVCodecContext *avctx)
-{
-    HYuvContext *s = avctx->priv_data;
-    int i;
-
-    ff_huffyuv_common_end(s);
-    av_freep(&s->bitstream_buffer);
-
-    for (i = 0; i < 8; i++)
-        ff_free_vlc(&s->vlc[i]);
-
-    return 0;
 }
 
 AVCodec ff_huffyuv_decoder = {

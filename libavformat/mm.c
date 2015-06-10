@@ -54,7 +54,7 @@
 #define MM_PALETTE_COUNT    128
 #define MM_PALETTE_SIZE     (MM_PALETTE_COUNT*3)
 
-typedef struct {
+typedef struct MmDemuxContext {
   unsigned int audio_pts, video_pts;
 } MmDemuxContext;
 

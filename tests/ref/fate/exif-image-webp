@@ -1,5 +1,6 @@
 [FRAME]
 media_type=video
+stream_index=0
 key_frame=1
 pkt_pts=0
 pkt_pts_time=0.000000
@@ -9,7 +10,7 @@ best_effort_timestamp=0
 best_effort_timestamp_time=0.000000
 pkt_duration=1
 pkt_duration_time=0.040000
-pkt_pos=N/A
+pkt_pos=0
 pkt_size=39276
 width=400
 height=225

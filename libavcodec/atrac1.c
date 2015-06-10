@@ -57,7 +57,7 @@
 /**
  * Sound unit struct, one unit is used per channel
  */
-typedef struct {
+typedef struct AT1SUCtx {
     int                 log2_block_count[AT1_QMF_BANDS];    ///< log2 number of blocks in a band
     int                 num_bfus;                           ///< number of Block Floating Units
     float*              spectrum[2];
@@ -71,7 +71,7 @@ typedef struct {
 /**
  * The atrac1 context, holds all needed parameters for decoding
  */
-typedef struct {
+typedef struct AT1Ctx {
     AT1SUCtx            SUs[AT1_MAX_CHANNELS];              ///< channel sound unit
     DECLARE_ALIGNED(32, float, spec)[AT1_SU_SAMPLES];      ///< the mdct spectrum buffer
 
@@ -80,7 +80,7 @@ typedef struct {
     DECLARE_ALIGNED(32, float, high)[512];
     float*              bands[3];
     FFTContext          mdct_ctx[3];
-    AVFloatDSPContext   fdsp;
+    AVFloatDSPContext   *fdsp;
 } AT1Ctx;
 
 /** size of the transform in samples in the long mode for each QMF band */
@@ -140,7 +140,7 @@ static int at1_imdct_block(AT1SUCtx* su, AT1Ctx *q)
             at1_imdct(q, &q->spec[pos], &su->spectrum[0][ref_pos + start_pos], nbits, band_num);
 
             /* overlap and window */
-            q->fdsp.vector_fmul_window(&q->bands[band_num][start_pos], prev_buf,
+            q->fdsp->vector_fmul_window(&q->bands[band_num][start_pos], prev_buf,
                                        &su->spectrum[0][ref_pos + start_pos], ff_sine_32, 16);
 
             prev_buf = &su->spectrum[0][ref_pos+start_pos + 16];
@@ -324,6 +324,8 @@ static av_cold int atrac1_decode_end(AVCodecContext * avctx)
     ff_mdct_end(&q->mdct_ctx[1]);
     ff_mdct_end(&q->mdct_ctx[2]);
 
+    av_freep(&q->fdsp);
+
     return 0;
 }
 
@@ -359,7 +361,7 @@ static av_cold int atrac1_decode_init(AVCodecContext *avctx)
 
     ff_atrac_generate_tables();
 
-    avpriv_float_dsp_init(&q->fdsp, avctx->flags & CODEC_FLAG_BITEXACT);
+    q->fdsp = avpriv_float_dsp_alloc(avctx->flags & CODEC_FLAG_BITEXACT);
 
     q->bands[0] = q->low;
     q->bands[1] = q->mid;

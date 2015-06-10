@@ -96,6 +96,7 @@ void pp_free_context(pp_context *ppContext);
 #define PP_FORMAT_422    (0x00000001|PP_FORMAT)
 #define PP_FORMAT_411    (0x00000002|PP_FORMAT)
 #define PP_FORMAT_444    (0x00000000|PP_FORMAT)
+#define PP_FORMAT_440    (0x00000010|PP_FORMAT)
 
 #define PP_PICT_TYPE_QP2  0x00000010 ///< MPEG2 style QScale
 

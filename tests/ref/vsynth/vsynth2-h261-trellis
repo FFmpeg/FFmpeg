@@ -1,4 +1,4 @@
-616cb40cf84704d177e207ee85a24531 *tests/data/fate/vsynth2-h261-trellis.avi
-184582 tests/data/fate/vsynth2-h261-trellis.avi
-f9df8cd110a2f3d9706dd2f29a1d0a89 *tests/data/fate/vsynth2-h261-trellis.out.rawvideo
-stddev:    6.32 PSNR: 32.11 MAXDIFF:   89 bytes:  7603200/  7603200
+f5105d846793cd12f1fedffd917a240d *tests/data/fate/vsynth2-h261-trellis.avi
+249856 tests/data/fate/vsynth2-h261-trellis.avi
+15452237f6c333690d3e05f354f63196 *tests/data/fate/vsynth2-h261-trellis.out.rawvideo
+stddev:    7.10 PSNR: 31.10 MAXDIFF:   96 bytes:  7603200/  7603200

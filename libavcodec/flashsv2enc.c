@@ -192,7 +192,7 @@ static av_cold int flashsv2_encode_init(AVCodecContext * avctx)
 
     if ((avctx->width > 4095) || (avctx->height > 4095)) {
         av_log(avctx, AV_LOG_ERROR,
-               "Input dimensions too large, input must be max 4096x4096 !\n");
+               "Input dimensions too large, input must be max 4095x4095 !\n");
         return -1;
     }
     if ((avctx->width < 16) || (avctx->height < 16)) {
@@ -287,7 +287,7 @@ static int write_header(FlashSV2Context * s, uint8_t * buf, int buf_size)
     if (buf_size < 5)
         return -1;
 
-    init_put_bits(&pb, buf, buf_size * 8);
+    init_put_bits(&pb, buf, buf_size);
 
     put_bits(&pb, 4, (s->block_width  >> 4) - 1);
     put_bits(&pb, 12, s->image_width);
@@ -806,8 +806,8 @@ static int reconfigure_at_keyframe(FlashSV2Context * s, const uint8_t * image,
         s->block_width  = block_width;
         s->block_height = block_height;
         if (s->rows * s->cols > s->blocks_size / sizeof(Block)) {
-            s->frame_blocks = av_realloc(s->frame_blocks, s->rows * s->cols * sizeof(Block));
-            s->key_blocks = av_realloc(s->key_blocks, s->cols * s->rows * sizeof(Block));
+            s->frame_blocks = av_realloc_array(s->frame_blocks, s->rows, s->cols * sizeof(Block));
+            s->key_blocks = av_realloc_array(s->key_blocks, s->cols, s->rows * sizeof(Block));
             if (!s->frame_blocks || !s->key_blocks) {
                 av_log(s->avctx, AV_LOG_ERROR, "Memory allocation failed.\n");
                 return -1;

@@ -412,14 +412,24 @@ static void gbr24pToUV_half_c(uint8_t *_dstU, uint8_t *_dstV,
     }
 }
 
-static void rgba64ToA_c(uint8_t *_dst, const uint8_t *_src, const uint8_t *unused1,
-                        const uint8_t *unused2, int width, uint32_t *unused)
+static void rgba64leToA_c(uint8_t *_dst, const uint8_t *_src, const uint8_t *unused1,
+                          const uint8_t *unused2, int width, uint32_t *unused)
 {
     int16_t *dst = (int16_t *)_dst;
     const uint16_t *src = (const uint16_t *)_src;
     int i;
     for (i = 0; i < width; i++)
-        dst[i] = src[4 * i + 3];
+        dst[i] = AV_RL16(src + 4 * i + 3);
+}
+
+static void rgba64beToA_c(uint8_t *_dst, const uint8_t *_src, const uint8_t *unused1,
+                          const uint8_t *unused2, int width, uint32_t *unused)
+{
+    int16_t *dst = (int16_t *)_dst;
+    const uint16_t *src = (const uint16_t *)_src;
+    int i;
+    for (i = 0; i < width; i++)
+        dst[i] = AV_RB16(src + 4 * i + 3);
 }
 
 static void abgrToA_c(uint8_t *_dst, const uint8_t *src, const uint8_t *unused1, const uint8_t *unused2, int width, uint32_t *unused)
@@ -921,9 +931,11 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
     case AV_PIX_FMT_YUV422P9LE:
     case AV_PIX_FMT_YUV420P9LE:
     case AV_PIX_FMT_YUV422P10LE:
+    case AV_PIX_FMT_YUV440P10LE:
     case AV_PIX_FMT_YUV444P10LE:
     case AV_PIX_FMT_YUV420P10LE:
     case AV_PIX_FMT_YUV422P12LE:
+    case AV_PIX_FMT_YUV440P12LE:
     case AV_PIX_FMT_YUV444P12LE:
     case AV_PIX_FMT_YUV420P12LE:
     case AV_PIX_FMT_YUV422P14LE:
@@ -948,9 +960,11 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
     case AV_PIX_FMT_YUV444P9BE:
     case AV_PIX_FMT_YUV422P9BE:
     case AV_PIX_FMT_YUV420P9BE:
+    case AV_PIX_FMT_YUV440P10BE:
     case AV_PIX_FMT_YUV444P10BE:
     case AV_PIX_FMT_YUV422P10BE:
     case AV_PIX_FMT_YUV420P10BE:
+    case AV_PIX_FMT_YUV440P12BE:
     case AV_PIX_FMT_YUV444P12BE:
     case AV_PIX_FMT_YUV422P12BE:
     case AV_PIX_FMT_YUV420P12BE:
@@ -1187,9 +1201,11 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
     case AV_PIX_FMT_YUV422P9LE:
     case AV_PIX_FMT_YUV420P9LE:
     case AV_PIX_FMT_YUV444P10LE:
+    case AV_PIX_FMT_YUV440P10LE:
     case AV_PIX_FMT_YUV422P10LE:
     case AV_PIX_FMT_YUV420P10LE:
     case AV_PIX_FMT_YUV444P12LE:
+    case AV_PIX_FMT_YUV440P12LE:
     case AV_PIX_FMT_YUV422P12LE:
     case AV_PIX_FMT_YUV420P12LE:
     case AV_PIX_FMT_YUV444P14LE:
@@ -1219,9 +1235,11 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
     case AV_PIX_FMT_YUV422P9BE:
     case AV_PIX_FMT_YUV420P9BE:
     case AV_PIX_FMT_YUV444P10BE:
+    case AV_PIX_FMT_YUV440P10BE:
     case AV_PIX_FMT_YUV422P10BE:
     case AV_PIX_FMT_YUV420P10BE:
     case AV_PIX_FMT_YUV444P12BE:
+    case AV_PIX_FMT_YUV440P12BE:
     case AV_PIX_FMT_YUV422P12BE:
     case AV_PIX_FMT_YUV420P12BE:
     case AV_PIX_FMT_YUV444P14BE:
@@ -1249,11 +1267,9 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
 #endif
     case AV_PIX_FMT_YA16LE:
         c->lumToYV12 = read_ya16le_gray_c;
-        c->alpToYV12 = read_ya16le_alpha_c;
         break;
     case AV_PIX_FMT_YA16BE:
         c->lumToYV12 = read_ya16be_gray_c;
-        c->alpToYV12 = read_ya16be_alpha_c;
         break;
     case AV_PIX_FMT_YUYV422:
     case AV_PIX_FMT_YVYU422:
@@ -1361,9 +1377,9 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
         }
         switch (srcFormat) {
         case AV_PIX_FMT_BGRA64LE:
+        case AV_PIX_FMT_RGBA64LE:  c->alpToYV12 = rgba64leToA_c; break;
         case AV_PIX_FMT_BGRA64BE:
-        case AV_PIX_FMT_RGBA64LE:
-        case AV_PIX_FMT_RGBA64BE:  c->alpToYV12 = rgba64ToA_c; break;
+        case AV_PIX_FMT_RGBA64BE:  c->alpToYV12 = rgba64beToA_c; break;
         case AV_PIX_FMT_BGRA:
         case AV_PIX_FMT_RGBA:
             c->alpToYV12 = rgbaToA_c;
@@ -1374,6 +1390,12 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
             break;
         case AV_PIX_FMT_YA8:
             c->alpToYV12 = uyvyToY_c;
+            break;
+        case AV_PIX_FMT_YA16LE:
+            c->alpToYV12 = read_ya16le_alpha_c;
+            break;
+        case AV_PIX_FMT_YA16BE:
+            c->alpToYV12 = read_ya16be_alpha_c;
             break;
         case AV_PIX_FMT_PAL8 :
             c->alpToYV12 = palToA_c;

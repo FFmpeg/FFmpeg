@@ -289,6 +289,8 @@ static av_cold int movie_common_init(AVFilterContext *ctx)
         snprintf(name, sizeof(name), "out%d", i);
         pad.type          = movie->st[i].st->codec->codec_type;
         pad.name          = av_strdup(name);
+        if (!pad.name)
+            return AVERROR(ENOMEM);
         pad.config_props  = movie_config_output_props;
         pad.request_frame = movie_request_frame;
         ff_insert_outpad(ctx, i, &pad);

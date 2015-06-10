@@ -13,7 +13,16 @@ bitstream filter using the option @code{--disable-bsf=BSF}.
 The option @code{-bsfs} of the ff* tools will display the list of
 all the supported bitstream filters included in your build.
 
-Below is a description of the currently available bitstream filters.
+The ff* tools have a -bsf option applied per stream, taking a
+comma-separated list of filters, whose parameters follow the filter
+name after a '='.
+
+@example
+ffmpeg -i INPUT -c:v copy -bsf:v filter1[=opt1=str1/opt2=str2][,filter2] OUTPUT
+@end example
+
+Below is a description of the currently available bitstream filters,
+with their parameters, if any.
 
 @section aac_adtstoasc
 
@@ -130,14 +139,41 @@ ffmpeg -i frame_%d.jpg -c:v copy rotated.avi
 
 @section mp3_header_decompress
 
+@section mpeg4_unpack_bframes
+
+Unpack DivX-style packed B-frames.
+
+DivX-style packed B-frames are not valid MPEG-4 and were only a
+workaround for the broken Video for Windows subsystem.
+They use more space, can cause minor AV sync issues, require more
+CPU power to decode (unless the player has some decoded picture queue
+to compensate the 2,0,2,0 frame per packet style) and cause
+trouble if copied into a standard container like mp4 or mpeg-ps/ts,
+because MPEG-4 decoders may not be able to decode them, since they are
+not valid MPEG-4.
+
+For example to fix an AVI file containing an MPEG-4 stream with
+DivX-style packed B-frames using @command{ffmpeg}, you can use the command:
+
+@example
+ffmpeg -i INPUT.avi -codec copy -bsf:v mpeg4_unpack_bframes OUTPUT.avi
+@end example
+
 @section noise
 
 Damages the contents of packets without damaging the container. Can be
 used for fuzzing or testing error resilience/concealment.
 
+Parameters:
+A numeral string, whose value is related to how often output bytes will
+be modified. Therefore, values below or equal to 0 are forbidden, and
+the lower the more frequent bytes will be modified, with 1 meaning
+every byte is modified.
+
 @example
-ffmpeg -i INPUT -c copy -bsf noise output.mkv
+ffmpeg -i INPUT -c copy -bsf noise[=1] output.mkv
 @end example
+applies the modification to every byte.
 
 @section remove_extra
 

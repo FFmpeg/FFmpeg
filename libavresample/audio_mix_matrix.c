@@ -60,7 +60,7 @@
 
 static av_always_inline int even(uint64_t layout)
 {
-    return (!layout || (layout & (layout - 1)));
+    return (!layout || !!(layout & (layout - 1)));
 }
 
 static int sane_layout(uint64_t layout)

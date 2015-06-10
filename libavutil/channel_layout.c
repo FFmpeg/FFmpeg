@@ -138,8 +138,8 @@ static uint64_t get_channel_layout_single(const char *name, int name_len)
                        "switch to the syntax '%.*sc' otherwise it will be interpreted as a "
                        "channel layout number in a later version\n",
                        name_len, name, name_len, name);
-                return layout;
             }
+            return layout;
         }
     } else {
 #endif

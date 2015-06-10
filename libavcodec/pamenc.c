@@ -57,6 +57,12 @@ static int pam_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         maxval     = 255;
         tuple_type = "GRAYSCALE_ALPHA";
         break;
+    case AV_PIX_FMT_YA16BE:
+        n          = w * 4;
+        depth      = 2;
+        maxval     = 0xFFFF;
+        tuple_type = "GRAYSCALE_ALPHA";
+        break;
     case AV_PIX_FMT_RGB24:
         n          = w * 3;
         depth      = 3;
@@ -148,6 +154,10 @@ AVCodec ff_pam_encoder = {
     .close          = pam_encode_close,
     .encode2        = pam_encode_frame,
     .pix_fmts       = (const enum AVPixelFormat[]){
-        AV_PIX_FMT_RGB24, AV_PIX_FMT_RGBA, AV_PIX_FMT_RGB48BE, AV_PIX_FMT_RGBA64BE, AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY8A, AV_PIX_FMT_GRAY16BE, AV_PIX_FMT_MONOBLACK, AV_PIX_FMT_NONE
+        AV_PIX_FMT_RGB24, AV_PIX_FMT_RGBA,
+        AV_PIX_FMT_RGB48BE, AV_PIX_FMT_RGBA64BE,
+        AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY8A,
+        AV_PIX_FMT_GRAY16BE, AV_PIX_FMT_YA16BE,
+        AV_PIX_FMT_MONOBLACK, AV_PIX_FMT_NONE
     },
 };

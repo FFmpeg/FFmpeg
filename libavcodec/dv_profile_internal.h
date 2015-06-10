@@ -19,9 +19,17 @@
 #ifndef AVCODEC_DV_PROFILE_INTERNAL_H
 #define AVCODEC_DV_PROFILE_INTERNAL_H
 
+#include "dv_profile.h"
+
 /**
  *  Print all allowed DV profiles into logctx at specified logging level.
  */
 void ff_dv_print_profiles(void *logctx, int loglevel);
+
+/**
+ * Get a DV profile for the provided compressed frame.
+ */
+const AVDVProfile* ff_dv_frame_profile(AVCodecContext* codec, const AVDVProfile *sys,
+                                       const uint8_t *frame, unsigned buf_size);
 
 #endif /* AVCODEC_DV_PROFILE_INTERNAL_H */

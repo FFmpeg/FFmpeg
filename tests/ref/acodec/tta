@@ -1,0 +1,4 @@
+aeeb0f2e75d044dbe2f89b7e70a54c82 *tests/data/fate/acodec-tta.matroska
+331080 tests/data/fate/acodec-tta.matroska
+95e54b261530a1bcf6de6fe3b21dc5f6 *tests/data/fate/acodec-tta.out.wav
+stddev:    0.00 PSNR:999.99 MAXDIFF:    0 bytes:  1058400/  1058400

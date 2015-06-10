@@ -64,10 +64,10 @@ static const AVOption swscale_options[] = {
     { "param0",          "scaler param 0",                OFFSET(param[0]),  AV_OPT_TYPE_DOUBLE, { .dbl = SWS_PARAM_DEFAULT  }, INT_MIN, INT_MAX,        VE },
     { "param1",          "scaler param 1",                OFFSET(param[1]),  AV_OPT_TYPE_DOUBLE, { .dbl = SWS_PARAM_DEFAULT  }, INT_MIN, INT_MAX,        VE },
 
-    { "src_v_chr_pos",   "source vertical chroma position in luma grid/256"  , OFFSET(src_v_chr_pos), AV_OPT_TYPE_INT, { .i64 = -1            }, -1,      512,             VE },
-    { "src_h_chr_pos",   "source horizontal chroma position in luma grid/256", OFFSET(src_h_chr_pos), AV_OPT_TYPE_INT, { .i64 = -1            }, -1,      512,             VE },
-    { "dst_v_chr_pos",   "destination vertical chroma position in luma grid/256"  , OFFSET(dst_v_chr_pos), AV_OPT_TYPE_INT, { .i64 = -1            }, -1,      512,             VE },
-    { "dst_h_chr_pos",   "destination horizontal chroma position in luma grid/256", OFFSET(dst_h_chr_pos), AV_OPT_TYPE_INT, { .i64 = -1            }, -1,      512,             VE },
+    { "src_v_chr_pos",   "source vertical chroma position in luma grid/256"  ,      OFFSET(src_v_chr_pos), AV_OPT_TYPE_INT, { .i64 = -513 }, -513,      512,             VE },
+    { "src_h_chr_pos",   "source horizontal chroma position in luma grid/256",      OFFSET(src_h_chr_pos), AV_OPT_TYPE_INT, { .i64 = -513 }, -513,      512,             VE },
+    { "dst_v_chr_pos",   "destination vertical chroma position in luma grid/256"  , OFFSET(dst_v_chr_pos), AV_OPT_TYPE_INT, { .i64 = -513 }, -513,      512,             VE },
+    { "dst_h_chr_pos",   "destination horizontal chroma position in luma grid/256", OFFSET(dst_h_chr_pos), AV_OPT_TYPE_INT, { .i64 = -513 }, -513,      512,             VE },
 
     { "sws_dither",      "set dithering algorithm",       OFFSET(dither),    AV_OPT_TYPE_INT,    { .i64  = SWS_DITHER_AUTO    }, 0,       NB_SWS_DITHER,  VE, "sws_dither" },
     { "auto",            "leave choice to sws",           0,                 AV_OPT_TYPE_CONST,  { .i64  = SWS_DITHER_AUTO    }, INT_MIN, INT_MAX,        VE, "sws_dither" },
@@ -75,6 +75,9 @@ static const AVOption swscale_options[] = {
     { "ed",              "error diffusion",               0,                 AV_OPT_TYPE_CONST,  { .i64  = SWS_DITHER_ED      }, INT_MIN, INT_MAX,        VE, "sws_dither" },
     { "a_dither",        "arithmetic addition dither",    0,                 AV_OPT_TYPE_CONST,  { .i64  = SWS_DITHER_A_DITHER}, INT_MIN, INT_MAX,        VE, "sws_dither" },
     { "x_dither",        "arithmetic xor dither",         0,                 AV_OPT_TYPE_CONST,  { .i64  = SWS_DITHER_X_DITHER}, INT_MIN, INT_MAX,        VE, "sws_dither" },
+    { "gamma",           "gamma correct scaling", OFFSET(gamma_flag),        AV_OPT_TYPE_INT,    { .i64  = 0                  }, 0,       INT_MAX,        VE, "gamma" },
+    { "true",            "enable",                        0,                 AV_OPT_TYPE_CONST,  { .i64  = 1                  }, INT_MIN, INT_MAX,        VE, "gamma" },
+    { "false",           "disable",                       0,                 AV_OPT_TYPE_CONST,  { .i64  = 0                  }, INT_MIN, INT_MAX,        VE, "gamma" },
 
     { NULL }
 };

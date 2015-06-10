@@ -1,0 +1,4 @@
+4d23a72fe7e29f98f38888804eacd111 *tests/data/fate/vsynth_lena-rv20.rm
+153304 tests/data/fate/vsynth_lena-rv20.rm
+6fa5dc1c2f00f858fc4895ad640891a2 *tests/data/fate/vsynth_lena-rv20.out.rawvideo
+stddev:    5.48 PSNR: 33.35 MAXDIFF:   81 bytes:  7603200/  7603200

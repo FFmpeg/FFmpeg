@@ -66,7 +66,7 @@ static const struct algo fdct_tab[] = {
 };
 
 static void ff_prores_idct_wrap(int16_t *dst){
-    DECLARE_ALIGNED(16, static int16_t, qmat)[64];
+    LOCAL_ALIGNED(16, int16_t, qmat, [64]);
     int i;
 
     for(i=0; i<64; i++){
@@ -98,8 +98,8 @@ static const struct algo idct_tab[] = {
 #elif ARCH_X86
 #include "x86/dct-test.c"
 #else
-static const struct algo fdct_tab_arch[] = { 0 };
-static const struct algo idct_tab_arch[] = { 0 };
+static const struct algo fdct_tab_arch[] = { { 0 } };
+static const struct algo idct_tab_arch[] = { { 0 } };
 #endif
 
 #define AANSCALE_BITS 12

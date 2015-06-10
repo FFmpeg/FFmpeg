@@ -29,12 +29,10 @@
 #if CONFIG_VDPAU
 #include <vdpau/vdpau.h>
 #endif
-#include "h264.h"
+
+#include "libavutil/frame.h"
 
 #include "avcodec.h"
-#include "mpeg4video.h"
-#include "mpegvideo.h"
-#include "version.h"
 
 /** Extract VdpVideoSurface from an AVFrame */
 static inline uintptr_t ff_vdpau_get_surface_id(AVFrame *pic)
@@ -44,22 +42,56 @@ static inline uintptr_t ff_vdpau_get_surface_id(AVFrame *pic)
 
 struct vdpau_picture_context;
 #if CONFIG_VDPAU
-#if !FF_API_BUFS_VDPAU
-union AVVDPAUPictureInfo {
+union VDPAUPictureInfo {
     VdpPictureInfoH264        h264;
     VdpPictureInfoMPEG1Or2    mpeg;
     VdpPictureInfoVC1          vc1;
     VdpPictureInfoMPEG4Part2 mpeg4;
-};
-#else
-#include "vdpau.h"
+#ifdef VDP_DECODER_PROFILE_H264_HIGH_444_PREDICTIVE
+    VdpPictureInfoH264Predictive h264_predictive;
 #endif
+};
+
+#include "vdpau.h"
+
+typedef struct VDPAUHWContext {
+    AVVDPAUContext context;
+    VdpDevice device;
+    VdpGetProcAddress *get_proc_address;
+    char reset;
+    unsigned char flags;
+} VDPAUHWContext;
+
+typedef struct VDPAUContext {
+    /**
+     * VDPAU device handle
+     */
+    VdpDevice device;
+
+    /**
+     * VDPAU decoder handle
+     */
+    VdpDecoder decoder;
+
+    /**
+     * VDPAU device driver
+     */
+    VdpGetProcAddress *get_proc_address;
+
+    /**
+     * VDPAU decoder render callback
+     */
+    VdpDecoderRender *render;
+
+    uint32_t width;
+    uint32_t height;
+} VDPAUContext;
 
 struct vdpau_picture_context {
     /**
      * VDPAU picture information.
      */
-    union AVVDPAUPictureInfo info;
+    union VDPAUPictureInfo info;
 
     /**
      * Allocated size of the bitstream_buffers table.
@@ -76,29 +108,19 @@ struct vdpau_picture_context {
      */
     VdpBitstreamBuffer *bitstream_buffers;
 };
-#endif
+
+int ff_vdpau_common_init(AVCodecContext *avctx, VdpDecoderProfile profile,
+                         int level);
+#endif //CONFIG_VDPAU
+
+int ff_vdpau_common_uninit(AVCodecContext *avctx);
 
 int ff_vdpau_common_start_frame(struct vdpau_picture_context *pic,
                                 const uint8_t *buffer, uint32_t size);
+int ff_vdpau_common_end_frame(AVCodecContext *avctx, AVFrame *frame,
+                              struct vdpau_picture_context *pic);
 int ff_vdpau_mpeg_end_frame(AVCodecContext *avctx);
 int ff_vdpau_add_buffer(struct vdpau_picture_context *pic, const uint8_t *buf,
                         uint32_t buf_size);
-
-
-void ff_vdpau_add_data_chunk(uint8_t *data, const uint8_t *buf,
-                             int buf_size);
-
-void ff_vdpau_mpeg_picture_complete(MpegEncContext *s, const uint8_t *buf,
-                                    int buf_size, int slice_count);
-
-void ff_vdpau_h264_picture_start(H264Context *h);
-void ff_vdpau_h264_set_reference_frames(H264Context *h);
-void ff_vdpau_h264_picture_complete(H264Context *h);
-
-void ff_vdpau_vc1_decode_picture(MpegEncContext *s, const uint8_t *buf,
-                                 int buf_size);
-
-void ff_vdpau_mpeg4_decode_picture(Mpeg4DecContext *s, const uint8_t *buf,
-                                   int buf_size);
 
 #endif /* AVCODEC_VDPAU_INTERNAL_H */

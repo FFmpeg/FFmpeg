@@ -27,6 +27,7 @@
 #include "xface.h"
 #include "avcodec.h"
 #include "internal.h"
+#include "libavutil/avassert.h"
 
 typedef struct XFaceContext {
     AVClass *class;
@@ -73,7 +74,7 @@ static int all_white(char *bitmap, int w, int h)
 }
 
 typedef struct {
-    const ProbRange *prob_ranges[XFACE_PIXELS*2];
+    ProbRange prob_ranges[XFACE_PIXELS*2];
     int prob_ranges_idx;
 } ProbRangesQueue;
 
@@ -81,7 +82,7 @@ static inline int pq_push(ProbRangesQueue *pq, const ProbRange *p)
 {
     if (pq->prob_ranges_idx >= XFACE_PIXELS * 2 - 1)
         return -1;
-    pq->prob_ranges[pq->prob_ranges_idx++] = p;
+    pq->prob_ranges[pq->prob_ranges_idx++] = *p;
     return 0;
 }
 
@@ -146,7 +147,7 @@ static int xface_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                               const AVFrame *frame, int *got_packet)
 {
     XFaceContext *xface = avctx->priv_data;
-    ProbRangesQueue pq = {{ 0 }, 0};
+    ProbRangesQueue pq = {{{ 0 }}, 0};
     uint8_t bitmap_copy[XFACE_PIXELS];
     BigInt b = {0};
     int i, j, k, ret = 0;
@@ -192,13 +193,15 @@ static int xface_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     encode_block(xface->bitmap + XFACE_WIDTH * 32 + 32, 16, 16, 0, &pq);
 
     while (pq.prob_ranges_idx > 0)
-        push_integer(&b, pq.prob_ranges[--pq.prob_ranges_idx]);
+        push_integer(&b, &pq.prob_ranges[--pq.prob_ranges_idx]);
 
     /* write the inverted big integer in b to intbuf */
     i = 0;
+    av_assert0(b.nb_words < XFACE_MAX_WORDS);
     while (b.nb_words) {
         uint8_t r;
         ff_big_div(&b, XFACE_PRINTS, &r);
+        av_assert0(i < sizeof(intbuf));
         intbuf[i++] = r + XFACE_FIRST_PRINT;
     }
 
@@ -220,7 +223,7 @@ static int xface_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
 static av_cold int xface_encode_close(AVCodecContext *avctx)
 {
-    av_freep(&avctx->coded_frame);
+    av_frame_free(&avctx->coded_frame);
 
     return 0;
 }
@@ -234,5 +237,5 @@ AVCodec ff_xface_encoder = {
     .init           = xface_encode_init,
     .close          = xface_encode_close,
     .encode2        = xface_encode_frame,
-    .pix_fmts       = (const enum PixelFormat[]) { AV_PIX_FMT_MONOWHITE, AV_PIX_FMT_NONE },
+    .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_MONOWHITE, AV_PIX_FMT_NONE },
 };

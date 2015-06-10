@@ -286,21 +286,21 @@ static int hevc_parse(AVCodecParserContext *s,
 // Split after the parameter sets at the beginning of the stream if they exist.
 static int hevc_split(AVCodecContext *avctx, const uint8_t *buf, int buf_size)
 {
-    int i;
+    const uint8_t *ptr = buf, *end = buf + buf_size;
     uint32_t state = -1;
-    int has_ps = 0;
+    int has_ps = 0, nut;
 
-    for (i = 0; i < buf_size; i++) {
-        state = (state << 8) | buf[i];
-        if (((state >> 8) & 0xFFFFFF) == START_CODE) {
-            int nut = (state >> 1) & 0x3F;
-            if (nut >= NAL_VPS && nut <= NAL_PPS)
-                has_ps = 1;
-            else if (has_ps)
-                return i - 3;
-            else // no parameter set at the beginning of the stream
-                return 0;
-        }
+    while (ptr < end) {
+        ptr = avpriv_find_start_code(ptr, end, &state);
+        if ((state >> 8) != START_CODE)
+            break;
+        nut = (state >> 1) & 0x3F;
+        if (nut >= NAL_VPS && nut <= NAL_PPS)
+            has_ps = 1;
+        else if (has_ps)
+            return ptr - 4 - buf;
+        else // no parameter set at the beginning of the stream
+            return 0;
     }
     return 0;
 }
@@ -309,6 +309,8 @@ static int hevc_init(AVCodecParserContext *s)
 {
     HEVCContext  *h  = &((HEVCParseContext *)s->priv_data)->h;
     h->HEVClc = av_mallocz(sizeof(HEVCLocalContext));
+    if (!h->HEVClc)
+        return AVERROR(ENOMEM);
     h->skipped_bytes_pos_size = INT_MAX;
 
     return 0;
@@ -331,7 +333,6 @@ static void hevc_close(AVCodecParserContext *s)
     for (i = 0; i < FF_ARRAY_ELEMS(h->pps_list); i++)
         av_buffer_unref(&h->pps_list[i]);
 
-    av_buffer_unref(&h->current_sps);
     h->sps = NULL;
 
     for (i = 0; i < h->nals_allocated; i++)

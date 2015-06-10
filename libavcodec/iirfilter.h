@@ -104,14 +104,14 @@ struct FFIIRFilterState* ff_iir_filter_init_state(int order);
  *
  * @param coeffs pointer allocated with ff_iir_filter_init_coeffs()
  */
-void ff_iir_filter_free_coeffs(struct FFIIRFilterCoeffs *coeffs);
+void ff_iir_filter_free_coeffsp(struct FFIIRFilterCoeffs **coeffs);
 
 /**
- * Free filter state.
+ * Free and zero filter state.
  *
- * @param state pointer allocated with ff_iir_filter_init_state()
+ * @param state pointer to pointer allocated with ff_iir_filter_init_state()
  */
-void ff_iir_filter_free_state(struct FFIIRFilterState *state);
+void ff_iir_filter_free_statep(struct FFIIRFilterState **state);
 
 /**
  * Perform IIR filtering on signed 16-bit input samples.

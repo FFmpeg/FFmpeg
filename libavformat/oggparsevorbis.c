@@ -213,7 +213,7 @@ int ff_vorbis_comment(AVFormatContext *as, AVDictionary **m,
 struct oggvorbis_private {
     unsigned int len[3];
     unsigned char *packet[3];
-    VorbisParseContext vp;
+    AVVorbisParseContext *vp;
     int64_t final_pts;
     int final_duration;
 };
@@ -253,9 +253,11 @@ static void vorbis_cleanup(AVFormatContext *s, int idx)
     struct ogg_stream *os = ogg->streams + idx;
     struct oggvorbis_private *priv = os->private;
     int i;
-    if (os->private)
+    if (os->private) {
+        av_vorbis_parse_free(&priv->vp);
         for (i = 0; i < 3; i++)
             av_freep(&priv->packet[i]);
+    }
 }
 
 static int vorbis_update_metadata(AVFormatContext *s, int idx)
@@ -302,13 +304,13 @@ static int vorbis_header(AVFormatContext *s, int idx)
             return AVERROR(ENOMEM);
     }
 
+    priv = os->private;
+
     if (!(pkt_type & 1))
-        return 0;
+        return priv->vp ? 0 : AVERROR_INVALIDDATA;
 
     if (os->psize < 1 || pkt_type > 5)
         return AVERROR_INVALIDDATA;
-
-    priv = os->private;
 
     if (priv->packet[pkt_type >> 1])
         return AVERROR_INVALIDDATA;
@@ -385,10 +387,12 @@ static int vorbis_header(AVFormatContext *s, int idx)
             return ret;
         }
         st->codec->extradata_size = ret;
-        if ((ret = avpriv_vorbis_parse_extradata(st->codec, &priv->vp))) {
+
+        priv->vp = av_vorbis_parse_init(st->codec->extradata, st->codec->extradata_size);
+        if (!priv->vp) {
             av_freep(&st->codec->extradata);
             st->codec->extradata_size = 0;
-            return ret;
+            return AVERROR_UNKNOWN;
         }
     }
 
@@ -411,10 +415,10 @@ static int vorbis_packet(AVFormatContext *s, int idx)
         uint8_t *last_pkt  = os->buf + os->pstart;
         uint8_t *next_pkt  = last_pkt;
 
-        avpriv_vorbis_parse_reset(&priv->vp);
+        av_vorbis_parse_reset(priv->vp);
         duration = 0;
         seg = os->segp;
-        d = avpriv_vorbis_parse_frame_flags(&priv->vp, last_pkt, 1, &flags);
+        d = av_vorbis_parse_frame_flags(priv->vp, last_pkt, 1, &flags);
         if (d < 0) {
             os->pflags |= AV_PKT_FLAG_CORRUPT;
             return 0;
@@ -426,7 +430,7 @@ static int vorbis_packet(AVFormatContext *s, int idx)
         last_pkt = next_pkt =  next_pkt + os->psize;
         for (; seg < os->nsegs; seg++) {
             if (os->segments[seg] < 255) {
-                int d = avpriv_vorbis_parse_frame_flags(&priv->vp, last_pkt, 1, &flags);
+                int d = av_vorbis_parse_frame_flags(priv->vp, last_pkt, 1, &flags);
                 if (d < 0) {
                     duration = os->granule;
                     break;
@@ -451,12 +455,12 @@ static int vorbis_packet(AVFormatContext *s, int idx)
                 s->streams[idx]->duration -= s->streams[idx]->start_time;
         }
         priv->final_pts          = AV_NOPTS_VALUE;
-        avpriv_vorbis_parse_reset(&priv->vp);
+        av_vorbis_parse_reset(priv->vp);
     }
 
     /* parse packet duration */
     if (os->psize > 0) {
-        duration = avpriv_vorbis_parse_frame_flags(&priv->vp, os->buf + os->pstart, 1, &flags);
+        duration = av_vorbis_parse_frame_flags(priv->vp, os->buf + os->pstart, 1, &flags);
         if (duration < 0) {
             os->pflags |= AV_PKT_FLAG_CORRUPT;
             return 0;

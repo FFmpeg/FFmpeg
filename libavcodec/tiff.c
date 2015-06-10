@@ -29,6 +29,7 @@
 #include <zlib.h>
 #endif
 #if CONFIG_LZMA
+#define LZMA_API_STATIC
 #include <lzma.h>
 #endif
 
@@ -510,7 +511,9 @@ static int tiff_unpack_strip(TiffContext *s, AVFrame *p, uint8_t *dst, int strid
         }
         dst = s->yuv_line;
         stride = 0;
-        width = s->width * s->subsampling[1] + 2*(s->width / s->subsampling[0]);
+
+        width = (s->width - 1) / s->subsampling[0] + 1;
+        width = width * s->subsampling[0] * s->subsampling[1] + 2*width;
         av_assert0(width <= bytes_per_row);
         av_assert0(s->bpp == 24);
     }
@@ -654,6 +657,14 @@ static int init_image(TiffContext *s, ThreadFrame *frame)
 {
     int ret;
     int create_gray_palette = 0;
+
+    // make sure there is no aliasing in the following switch
+    if (s->bpp >= 100 || s->bppcount >= 10) {
+        av_log(s->avctx, AV_LOG_ERROR,
+               "Unsupported image parameters: bpp=%d, bppcount=%d\n",
+               s->bpp, s->bppcount);
+        return AVERROR_INVALIDDATA;
+    }
 
     switch (s->planar * 1000 + s->bpp * 10 + s->bppcount) {
     case 11:
@@ -812,13 +823,13 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
         s->height = value;
         break;
     case TIFF_BPP:
-        s->bppcount = count;
-        if (count > 4) {
+        if (count > 4U) {
             av_log(s->avctx, AV_LOG_ERROR,
                    "This format is not supported (bpp=%d, %d components)\n",
-                   s->bpp, count);
+                   value, count);
             return AVERROR_INVALIDDATA;
         }
+        s->bppcount = count;
         if (count == 1)
             s->bpp = value;
         else {
@@ -1148,6 +1159,13 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
         }
     }
 end:
+    if (s->bpp > 64U) {
+        av_log(s->avctx, AV_LOG_ERROR,
+                "This format is not supported (bpp=%d, %d components)\n",
+                s->bpp, count);
+        s->bpp = 0;
+        return AVERROR_INVALIDDATA;
+    }
     bytestream2_seek(&s->gb, start, SEEK_SET);
     return 0;
 }
@@ -1247,75 +1265,79 @@ static int decode_frame(AVCodecContext *avctx,
     planes = s->planar ? s->bppcount : 1;
     for (plane = 0; plane < planes; plane++) {
         stride = p->linesize[plane];
-        dst    = p->data[plane];
-    for (i = 0; i < s->height; i += s->rps) {
-        if (s->stripsizesoff)
-            ssize = ff_tget(&stripsizes, s->sstype, le);
-        else
-            ssize = s->stripsize;
-
-        if (s->strippos)
-            soff = ff_tget(&stripdata, s->sot, le);
-        else
-            soff = s->stripoff;
-
-        if (soff > avpkt->size || ssize > avpkt->size - soff) {
-            av_log(avctx, AV_LOG_ERROR, "Invalid strip size/offset\n");
-            return AVERROR_INVALIDDATA;
-        }
-        if ((ret = tiff_unpack_strip(s, p, dst, stride, avpkt->data + soff, ssize, i,
-                                     FFMIN(s->rps, s->height - i))) < 0) {
-            if (avctx->err_recognition & AV_EF_EXPLODE)
-                return ret;
-            break;
-        }
-        dst += s->rps * stride;
-    }
-    if (s->predictor == 2) {
-        if (s->photometric == TIFF_PHOTOMETRIC_YCBCR) {
-            av_log(s->avctx, AV_LOG_ERROR, "predictor == 2 with YUV is unsupported");
-            return AVERROR_PATCHWELCOME;
-        }
-        dst   = p->data[plane];
-        soff  = s->bpp >> 3;
-        if (s->planar)
-            soff  = FFMAX(soff / s->bppcount, 1);
-        ssize = s->width * soff;
-        if (s->avctx->pix_fmt == AV_PIX_FMT_RGB48LE ||
-            s->avctx->pix_fmt == AV_PIX_FMT_RGBA64LE ||
-            s->avctx->pix_fmt == AV_PIX_FMT_GBRP16LE ||
-            s->avctx->pix_fmt == AV_PIX_FMT_GBRAP16LE) {
-            for (i = 0; i < s->height; i++) {
-                for (j = soff; j < ssize; j += 2)
-                    AV_WL16(dst + j, AV_RL16(dst + j) + AV_RL16(dst + j - soff));
-                dst += stride;
-            }
-        } else if (s->avctx->pix_fmt == AV_PIX_FMT_RGB48BE ||
-                   s->avctx->pix_fmt == AV_PIX_FMT_RGBA64BE ||
-                   s->avctx->pix_fmt == AV_PIX_FMT_GBRP16BE ||
-                   s->avctx->pix_fmt == AV_PIX_FMT_GBRAP16BE) {
-            for (i = 0; i < s->height; i++) {
-                for (j = soff; j < ssize; j += 2)
-                    AV_WB16(dst + j, AV_RB16(dst + j) + AV_RB16(dst + j - soff));
-                dst += stride;
-            }
-        } else {
-            for (i = 0; i < s->height; i++) {
-                for (j = soff; j < ssize; j++)
-                    dst[j] += dst[j - soff];
-                dst += stride;
-            }
-        }
-    }
-
-    if (s->photometric == TIFF_PHOTOMETRIC_WHITE_IS_ZERO) {
         dst = p->data[plane];
-        for (i = 0; i < s->height; i++) {
-            for (j = 0; j < p->linesize[plane]; j++)
-                dst[j] = (s->avctx->pix_fmt == AV_PIX_FMT_PAL8 ? (1<<s->bpp) - 1 : 255) - dst[j];
-            dst += stride;
+        for (i = 0; i < s->height; i += s->rps) {
+            if (s->stripsizesoff)
+                ssize = ff_tget(&stripsizes, s->sstype, le);
+            else
+                ssize = s->stripsize;
+
+            if (s->strippos)
+                soff = ff_tget(&stripdata, s->sot, le);
+            else
+                soff = s->stripoff;
+
+            if (soff > avpkt->size || ssize > avpkt->size - soff) {
+                av_log(avctx, AV_LOG_ERROR, "Invalid strip size/offset\n");
+                return AVERROR_INVALIDDATA;
+            }
+            if ((ret = tiff_unpack_strip(s, p, dst, stride, avpkt->data + soff, ssize, i,
+                                         FFMIN(s->rps, s->height - i))) < 0) {
+                if (avctx->err_recognition & AV_EF_EXPLODE)
+                    return ret;
+                break;
+            }
+            dst += s->rps * stride;
         }
-    }
+        if (s->predictor == 2) {
+            if (s->photometric == TIFF_PHOTOMETRIC_YCBCR) {
+                av_log(s->avctx, AV_LOG_ERROR, "predictor == 2 with YUV is unsupported");
+                return AVERROR_PATCHWELCOME;
+            }
+            dst   = p->data[plane];
+            soff  = s->bpp >> 3;
+            if (s->planar)
+                soff  = FFMAX(soff / s->bppcount, 1);
+            ssize = s->width * soff;
+            if (s->avctx->pix_fmt == AV_PIX_FMT_RGB48LE ||
+                s->avctx->pix_fmt == AV_PIX_FMT_RGBA64LE ||
+                s->avctx->pix_fmt == AV_PIX_FMT_GRAY16LE ||
+                s->avctx->pix_fmt == AV_PIX_FMT_YA16LE ||
+                s->avctx->pix_fmt == AV_PIX_FMT_GBRP16LE ||
+                s->avctx->pix_fmt == AV_PIX_FMT_GBRAP16LE) {
+                for (i = 0; i < s->height; i++) {
+                    for (j = soff; j < ssize; j += 2)
+                        AV_WL16(dst + j, AV_RL16(dst + j) + AV_RL16(dst + j - soff));
+                    dst += stride;
+                }
+            } else if (s->avctx->pix_fmt == AV_PIX_FMT_RGB48BE ||
+                       s->avctx->pix_fmt == AV_PIX_FMT_RGBA64BE ||
+                       s->avctx->pix_fmt == AV_PIX_FMT_GRAY16BE ||
+                       s->avctx->pix_fmt == AV_PIX_FMT_YA16BE ||
+                       s->avctx->pix_fmt == AV_PIX_FMT_GBRP16BE ||
+                       s->avctx->pix_fmt == AV_PIX_FMT_GBRAP16BE) {
+                for (i = 0; i < s->height; i++) {
+                    for (j = soff; j < ssize; j += 2)
+                        AV_WB16(dst + j, AV_RB16(dst + j) + AV_RB16(dst + j - soff));
+                    dst += stride;
+                }
+            } else {
+                for (i = 0; i < s->height; i++) {
+                    for (j = soff; j < ssize; j++)
+                        dst[j] += dst[j - soff];
+                    dst += stride;
+                }
+            }
+        }
+
+        if (s->photometric == TIFF_PHOTOMETRIC_WHITE_IS_ZERO) {
+            dst = p->data[plane];
+            for (i = 0; i < s->height; i++) {
+                for (j = 0; j < stride; j++)
+                    dst[j] = (s->avctx->pix_fmt == AV_PIX_FMT_PAL8 ? (1<<s->bpp) - 1 : 255) - dst[j];
+                dst += stride;
+            }
+        }
     }
 
     if (s->planar && s->bppcount > 2) {

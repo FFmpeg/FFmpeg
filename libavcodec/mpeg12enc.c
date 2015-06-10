@@ -384,7 +384,7 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
         put_bits(&s->pb, 1, 1);
         put_bits(&s->pb, 6, (uint32_t)((time_code / fps) % 60));
         put_bits(&s->pb, 6, (uint32_t)((time_code % fps)));
-        put_bits(&s->pb, 1, !!(s->flags & CODEC_FLAG_CLOSED_GOP) || s->intra_only || !s->gop_picture_number);
+        put_bits(&s->pb, 1, !!(s->avctx->flags & CODEC_FLAG_CLOSED_GOP) || s->intra_only || !s->gop_picture_number);
         put_bits(&s->pb, 1, 0);                     // broken link
     }
 }
@@ -606,7 +606,8 @@ static void mpeg1_encode_motion(MpegEncContext *s, int val, int f_or_b_code)
 
 static inline void encode_dc(MpegEncContext *s, int diff, int component)
 {
-    if (((unsigned) (diff + 255)) >= 511) {
+    unsigned int diff_u = diff + 255;
+    if (diff_u >= 511) {
         int index;
 
         if (diff < 0) {
@@ -619,12 +620,12 @@ static inline void encode_dc(MpegEncContext *s, int diff, int component)
             put_bits(&s->pb,
                      ff_mpeg12_vlc_dc_lum_bits[index] + index,
                      (ff_mpeg12_vlc_dc_lum_code[index] << index) +
-                     (diff & ((1 << index) - 1)));
+                     av_mod_uintp2(diff, index));
         else
             put_bits(&s->pb,
                      ff_mpeg12_vlc_dc_chroma_bits[index] + index,
                      (ff_mpeg12_vlc_dc_chroma_code[index] << index) +
-                     (diff & ((1 << index) - 1)));
+                     av_mod_uintp2(diff, index));
     } else {
         if (component == 0)
             put_bits(&s->pb,
@@ -1015,8 +1016,8 @@ av_cold void ff_mpeg1_encode_init(MpegEncContext *s)
         int i;
 
         done = 1;
-        ff_init_rl(&ff_rl_mpeg1, ff_mpeg12_static_rl_table_store[0]);
-        ff_init_rl(&ff_rl_mpeg2, ff_mpeg12_static_rl_table_store[1]);
+        ff_rl_init(&ff_rl_mpeg1, ff_mpeg12_static_rl_table_store[0]);
+        ff_rl_init(&ff_rl_mpeg2, ff_mpeg12_static_rl_table_store[1]);
 
         for (i = 0; i < 64; i++) {
             mpeg1_max_level[0][i] = ff_rl_mpeg1.max_level[0][i];
@@ -1040,12 +1041,12 @@ av_cold void ff_mpeg1_encode_init(MpegEncContext *s)
 
             bits = ff_mpeg12_vlc_dc_lum_bits[index] + index;
             code = (ff_mpeg12_vlc_dc_lum_code[index] << index) +
-                   (diff & ((1 << index) - 1));
+                    av_mod_uintp2(diff, index);
             mpeg1_lum_dc_uni[i + 255] = bits + (code << 8);
 
             bits = ff_mpeg12_vlc_dc_chroma_bits[index] + index;
             code = (ff_mpeg12_vlc_dc_chroma_code[index] << index) +
-                   (diff & ((1 << index) - 1));
+                    av_mod_uintp2(diff, index);
             mpeg1_chr_dc_uni[i + 255] = bits + (code << 8);
         }
 

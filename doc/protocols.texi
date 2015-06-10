@@ -63,7 +63,7 @@ cache:@var{URL}
 
 Physical concatenation protocol.
 
-Allow to read and seek from many resource in sequence as if they were
+Read and seek from many resources in sequence as if they were
 a unique resource.
 
 A URL accepted by this protocol has the syntax:
@@ -117,7 +117,7 @@ ffmpeg -i "data:image/gif;base64,R0lGODdhCAAIAMIEAAAAAAAA//8AAP//AP/////////////
 
 File access protocol.
 
-Allow to read from or write to a file.
+Read from or write to a file.
 
 A file URL can have the form:
 @example
@@ -155,7 +155,7 @@ time, which is valuable for files on slow medium.
 
 FTP (File Transfer Protocol).
 
-Allow to read from or write to remote resources using FTP protocol.
+Read from or write to remote resources using FTP protocol.
 
 Following syntax is required.
 @example
@@ -277,6 +277,41 @@ Set initial byte offset.
 
 @item end_offset
 Try to limit the request to bytes preceding this offset.
+
+@item method
+When used as a client option it sets the HTTP method for the request.
+
+When used as a server option it sets the HTTP method that is going to be
+expected from the client(s).
+If the expected and the received HTTP method do not match the client will
+be given a Bad Request response.
+When unset the HTTP method is not checked for now. This will be replaced by
+autodetection in the future.
+
+@item listen
+If set to 1 enables experimental HTTP server. This can be used to send data when
+used as an output option, or read data from a client with HTTP POST when used as
+an input option.
+@example
+# Server side (sending):
+ffmpeg -i somefile.ogg -c copy -listen 1 -f ogg http://@var{server}:@var{port}
+
+# Client side (receiving):
+ffmpeg -i http://@var{server}:@var{port} -c copy somefile.ogg
+
+# Client can also be done with wget:
+wget http://@var{server}:@var{port} -O somefile.ogg
+
+# Server side (receiving):
+ffmpeg -listen 1 -i http://@var{server}:@var{port} -c copy somefile.ogg
+
+# Client side (sending):
+ffmpeg -i somefile.ogg -chunked_post 0 -c copy -f ogg http://@var{server}:@var{port}
+
+# Client can also be done with wget:
+wget --post-file=somefile.ogg http://@var{server}:@var{port}
+@end example
+
 @end table
 
 @subsection HTTP Cookies
@@ -374,7 +409,7 @@ be seekable, so they will fail with the MD5 output protocol.
 
 UNIX pipe access protocol.
 
-Allow to read and write from UNIX pipes.
+Read and write from UNIX pipes.
 
 The accepted syntax is:
 @example
@@ -614,7 +649,7 @@ For more information see: @url{http://www.samba.org/}.
 
 Secure File Transfer Protocol via libssh
 
-Allow to read from or write to remote resources using SFTP protocol.
+Read from or write to remote resources using SFTP protocol.
 
 Following syntax is required.
 
@@ -750,7 +785,7 @@ port will be used for the local RTP and RTCP ports.
 
 @item
 If @option{localrtcpport} (the local RTCP port) is not set it will be
-set to the the local RTP port value plus 1.
+set to the local RTP port value plus 1.
 @end enumerate
 
 @section rtsp
@@ -1055,7 +1090,9 @@ subfile,,start,153391104,end,268142592,,:/media/dvd/VIDEO_TS/VTS_08_1.VOB
 @end example
 
 Play an AVI file directly from a TAR archive:
+@example
 subfile,,start,183241728,end,366490624,,:archive.tar
+@end example
 
 @section tcp
 
@@ -1081,8 +1118,8 @@ Set raise error timeout, expressed in microseconds.
 This option is only relevant in read mode: if no data arrived in more
 than this time interval, raise error.
 
-@item listen_timeout=@var{microseconds}
-Set listen timeout, expressed in microseconds.
+@item listen_timeout=@var{milliseconds}
+Set listen timeout, expressed in milliseconds.
 @end table
 
 The following example shows how to setup a listening TCP connection

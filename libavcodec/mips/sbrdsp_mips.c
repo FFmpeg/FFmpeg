@@ -56,41 +56,9 @@
 
 #include "config.h"
 #include "libavcodec/sbrdsp.h"
+#include "libavutil/mips/asmdefs.h"
 
 #if HAVE_INLINE_ASM
-static void sbr_neg_odd_64_mips(float *x)
-{
-    int Temp1, Temp2, Temp3, Temp4, Temp5;
-    float *x1    = &x[1];
-    float *x_end = x1 + 64;
-
-    /* loop unrolled 4 times */
-    __asm__ volatile (
-        "lui    %[Temp5],   0x8000                  \n\t"
-    "1:                                             \n\t"
-        "lw     %[Temp1],   0(%[x1])                \n\t"
-        "lw     %[Temp2],   8(%[x1])                \n\t"
-        "lw     %[Temp3],   16(%[x1])               \n\t"
-        "lw     %[Temp4],   24(%[x1])               \n\t"
-        "xor    %[Temp1],   %[Temp1],   %[Temp5]    \n\t"
-        "xor    %[Temp2],   %[Temp2],   %[Temp5]    \n\t"
-        "xor    %[Temp3],   %[Temp3],   %[Temp5]    \n\t"
-        "xor    %[Temp4],   %[Temp4],   %[Temp5]    \n\t"
-        "sw     %[Temp1],   0(%[x1])                \n\t"
-        "sw     %[Temp2],   8(%[x1])                \n\t"
-        "sw     %[Temp3],   16(%[x1])               \n\t"
-        "sw     %[Temp4],   24(%[x1])               \n\t"
-        "addiu  %[x1],      %[x1],      32          \n\t"
-        "bne    %[x1],      %[x_end],   1b          \n\t"
-
-        : [Temp1]"=&r"(Temp1), [Temp2]"=&r"(Temp2),
-          [Temp3]"=&r"(Temp3), [Temp4]"=&r"(Temp4),
-          [Temp5]"=&r"(Temp5), [x1]"+r"(x1)
-        : [x_end]"r"(x_end)
-        : "memory"
-    );
-}
-
 static void sbr_qmf_pre_shuffle_mips(float *z)
 {
     int Temp1, Temp2, Temp3, Temp4, Temp5, Temp6;
@@ -113,7 +81,7 @@ static void sbr_qmf_pre_shuffle_mips(float *z)
         "xor    %[Temp3],   %[Temp3],   %[Temp6]    \n\t"
         "xor    %[Temp4],   %[Temp4],   %[Temp6]    \n\t"
         "xor    %[Temp5],   %[Temp5],   %[Temp6]    \n\t"
-        "addiu  %[z2],      %[z2],      -20         \n\t"
+        PTR_ADDIU "%[z2],   %[z2],      -20         \n\t"
         "sw     %[Temp1],   32(%[z1])               \n\t"
         "sw     %[Temp2],   24(%[z1])               \n\t"
         "sw     %[Temp3],   16(%[z1])               \n\t"
@@ -129,8 +97,8 @@ static void sbr_qmf_pre_shuffle_mips(float *z)
         "sw     %[Temp3],   20(%[z1])               \n\t"
         "sw     %[Temp4],   28(%[z1])               \n\t"
         "sw     %[Temp5],   36(%[z1])               \n\t"
-        "addiu  %[z3],      %[z3],      20          \n\t"
-        "addiu  %[z1],      %[z1],      40          \n\t"
+        PTR_ADDIU "%[z3],   %[z3],      20          \n\t"
+        PTR_ADDIU "%[z1],   %[z1],      40          \n\t"
         "bne    %[z1],      %[z4],      1b          \n\t"
         "lw     %[Temp1],   132(%[z])               \n\t"
         "lw     %[Temp2],   128(%[z])               \n\t"
@@ -171,7 +139,7 @@ static void sbr_qmf_post_shuffle_mips(float W[32][2], const float *z)
         "xor    %[Temp2],   %[Temp2],   %[Temp5]    \n\t"
         "xor    %[Temp3],   %[Temp3],   %[Temp5]    \n\t"
         "xor    %[Temp4],   %[Temp4],   %[Temp5]    \n\t"
-        "addiu  %[z2],      %[z2],      -16         \n\t"
+        PTR_ADDIU "%[z2],   %[z2],      -16         \n\t"
         "sw     %[Temp1],   24(%[W_ptr])            \n\t"
         "sw     %[Temp2],   16(%[W_ptr])            \n\t"
         "sw     %[Temp3],   8(%[W_ptr])             \n\t"
@@ -184,8 +152,8 @@ static void sbr_qmf_post_shuffle_mips(float W[32][2], const float *z)
         "sw     %[Temp2],   12(%[W_ptr])            \n\t"
         "sw     %[Temp3],   20(%[W_ptr])            \n\t"
         "sw     %[Temp4],   28(%[W_ptr])            \n\t"
-        "addiu  %[z1],      %[z1],      16          \n\t"
-        "addiu  %[W_ptr],   %[W_ptr],   32          \n\t"
+        PTR_ADDIU "%[z1],   %[z1],      16          \n\t"
+        PTR_ADDIU "%[W_ptr],%[W_ptr],   32          \n\t"
         "bne    %[z1],      %[z_end],   1b          \n\t"
 
         : [Temp1]"=&r"(Temp1), [Temp2]"=&r"(Temp2),
@@ -319,7 +287,7 @@ static float sbr_sum_square_mips(float (*x)[2], int n)
         "lwc1      %[temp2],   8(%[p_x])                            \n\t"
         "lwc1      %[temp3],   12(%[p_x])                           \n\t"
     "1:                                                             \n\t"
-        "addiu     %[p_x],     %[p_x],       16                     \n\t"
+        PTR_ADDIU "%[p_x],     %[p_x],       16                     \n\t"
         "madd.s    %[sum0],    %[sum0],      %[temp0],   %[temp0]   \n\t"
         "lwc1      %[temp0],   0(%[p_x])                            \n\t"
         "madd.s    %[sum1],    %[sum1],      %[temp1],   %[temp1]   \n\t"
@@ -454,10 +422,10 @@ static void sbr_qmf_deint_bfly_mips(float *v, const float *src0, const float *sr
             "swc1       %[temp6],   56(%[v0])              \n\t"
             "swc1       %[temp11],  -60(%[v1])             \n\t"
             "swc1       %[temp9],   60(%[v0])              \n\t"
-            "addiu      %[src0],    %[src0],    64         \n\t"
-            "addiu      %[src1],    %[src1],    -64        \n\t"
-            "addiu      %[v0],      %[v0],      64         \n\t"
-            "addiu      %[v1],      %[v1],      -64        \n\t"
+            PTR_ADDIU " %[src0],    %[src0],    64         \n\t"
+            PTR_ADDIU " %[src1],    %[src1],    -64        \n\t"
+            PTR_ADDIU " %[v0],      %[v0],      64         \n\t"
+            PTR_ADDIU " %[v1],      %[v1],      -64        \n\t"
 
             : [v0]"+r"(v0), [v1]"+r"(v1), [src0]"+r"(psrc0), [src1]"+r"(psrc1),
               [temp0]"=&f"(temp0), [temp1]"=&f"(temp1), [temp2]"=&f"(temp2),
@@ -470,6 +438,7 @@ static void sbr_qmf_deint_bfly_mips(float *v, const float *src0, const float *sr
     }
 }
 
+#if !HAVE_LOONGSON3
 static void sbr_autocorrelate_mips(const float x[40][2], float phi[3][2][2])
 {
     int i;
@@ -506,7 +475,7 @@ static void sbr_autocorrelate_mips(const float x[40][2], float phi[3][2][2])
         "add.s   %[imag_sum_1], %[imag_sum_1], %[temp_r2]           \n\t"
         "add.s   %[real_sum_2], %[real_sum_2], %[temp_r3]           \n\t"
         "add.s   %[imag_sum_2], %[imag_sum_2], %[temp_r4]           \n\t"
-        "addiu   %[p_x],        %[p_x],        8                    \n\t"
+        PTR_ADDIU "%[p_x],      %[p_x],        8                    \n\t"
 
         : [temp0]"=&f"(temp0), [temp1]"=&f"(temp1), [temp2]"=&f"(temp2),
           [temp3]"=&f"(temp3), [temp4]"=&f"(temp4), [temp5]"=&f"(temp5),
@@ -576,7 +545,7 @@ static void sbr_autocorrelate_mips(const float x[40][2], float phi[3][2][2])
             "add.s   %[imag_sum_1], %[imag_sum_1], %[temp_r2]           \n\t"
             "add.s   %[real_sum_2], %[real_sum_2], %[temp_r3]           \n\t"
             "add.s   %[imag_sum_2], %[imag_sum_2], %[temp_r4]           \n\t"
-            "addiu   %[p_x],        %[p_x],        24                   \n\t"
+            PTR_ADDIU "%[p_x],      %[p_x],        24                   \n\t"
 
             : [temp0]"=&f"(temp0), [temp1]"=&f"(temp1), [temp2]"=&f"(temp2),
               [temp3]"=&f"(temp3), [temp4]"=&f"(temp4), [temp5]"=&f"(temp5),
@@ -638,6 +607,7 @@ static void sbr_autocorrelate_mips(const float x[40][2], float phi[3][2][2])
         : "memory"
     );
 }
+#endif /* !HAVE_LOONGSON3 */
 
 static void sbr_hf_gen_mips(float (*X_high)[2], const float (*X_low)[2],
                          const float alpha0[2], const float alpha1[2],
@@ -667,8 +637,8 @@ static void sbr_hf_gen_mips(float (*X_high)[2], const float (*X_low)[2],
             "lwc1    %[temp8],    4(%[alpha])                            \n\t"
             "lwc1    %[temp9],    8(%[alpha])                            \n\t"
             "lwc1    %[temp10],   12(%[alpha])                           \n\t"
-            "addiu   %[p_x_high], %[p_x_high],     8                     \n\t"
-            "addiu   %[p_x_low],  %[p_x_low],      8                     \n\t"
+            PTR_ADDIU "%[p_x_high], %[p_x_high],   8                     \n\t"
+            PTR_ADDIU "%[p_x_low],  %[p_x_low],    8                     \n\t"
             "mul.s   %[temp11],   %[temp1],        %[temp8]              \n\t"
             "msub.s  %[temp11],   %[temp11],       %[temp0],  %[temp7]   \n\t"
             "madd.s  %[temp11],   %[temp11],       %[temp2],  %[temp9]   \n\t"
@@ -697,14 +667,14 @@ static void sbr_hf_gen_mips(float (*X_high)[2], const float (*X_low)[2],
 static void sbr_hf_g_filt_mips(float (*Y)[2], const float (*X_high)[40][2],
                             const float *g_filt, int m_max, intptr_t ixh)
 {
-    float *p_y, *p_x, *p_g;
+    const float *p_x, *p_g, *loop_end;
+    float *p_y;
     float temp0, temp1, temp2;
-    int loop_end;
 
-    p_g = (float*)&g_filt[0];
+    p_g = &g_filt[0];
     p_y = &Y[0][0];
-    p_x = (float*)&X_high[0][ixh][0];
-    loop_end = (int)((int*)p_g + m_max);
+    p_x = &X_high[0][ixh][0];
+    loop_end = p_g + m_max;
 
     __asm__ volatile(
         ".set    push                                \n\t"
@@ -715,12 +685,12 @@ static void sbr_hf_g_filt_mips(float (*Y)[2], const float (*X_high)[40][2],
         "lwc1    %[temp2],   4(%[p_x])               \n\t"
         "mul.s   %[temp1],   %[temp1],     %[temp0]  \n\t"
         "mul.s   %[temp2],   %[temp2],     %[temp0]  \n\t"
-        "addiu   %[p_g],     %[p_g],       4         \n\t"
-        "addiu   %[p_x],     %[p_x],       320       \n\t"
+        PTR_ADDIU "%[p_g],   %[p_g],       4         \n\t"
+        PTR_ADDIU "%[p_x],   %[p_x],       320       \n\t"
         "swc1    %[temp1],   0(%[p_y])               \n\t"
         "swc1    %[temp2],   4(%[p_y])               \n\t"
         "bne     %[p_g],     %[loop_end],  1b        \n\t"
-        " addiu  %[p_y],     %[p_y],       8         \n\t"
+        PTR_ADDIU "%[p_y],   %[p_y],       8         \n\t"
         ".set    pop                                 \n\t"
 
         : [temp0]"=&f"(temp0), [temp1]"=&f"(temp1),
@@ -752,7 +722,7 @@ static void sbr_hf_apply_noise_0_mips(float (*Y)[2], const float *s_m,
             "addiu   %[noise],    %[noise],              1                    \n\t"
             "andi    %[noise],    %[noise],              0x1ff                \n\t"
             "sll     %[temp0],    %[noise], 3                                 \n\t"
-            "addu    %[ff_table], %[ff_sbr_noise_table], %[temp0]             \n\t"
+            PTR_ADDU "%[ff_table],%[ff_sbr_noise_table], %[temp0]             \n\t"
             "add.s   %[y0],       %[y0],                 %[temp1]             \n\t"
             "mfc1    %[temp3],    %[temp1]                                    \n\t"
             "bne     %[temp3],    $0,                    1f                   \n\t"
@@ -798,7 +768,7 @@ static void sbr_hf_apply_noise_1_mips(float (*Y)[2], const float *s_m,
             "addiu  %[noise],    %[noise],               1                    \n\t"
             "andi   %[noise],    %[noise],               0x1ff                \n\t"
             "sll    %[temp0],    %[noise],               3                    \n\t"
-            "addu   %[ff_table], %[ff_sbr_noise_table], %[temp0]              \n\t"
+            PTR_ADDU "%[ff_table],%[ff_sbr_noise_table],%[temp0]              \n\t"
             "madd.s %[y1],       %[y1],                 %[temp1], %[phi_sign] \n\t"
             "bne    %[temp3],    $0,                    1f                    \n\t"
             "lwc1   %[y0],       0(%[Y1])                                     \n\t"
@@ -843,7 +813,7 @@ static void sbr_hf_apply_noise_2_mips(float (*Y)[2], const float *s_m,
             "addiu  %[noise],    %[noise],              1                  \n\t"
             "andi   %[noise],    %[noise],              0x1ff              \n\t"
             "sll    %[temp0],    %[noise],              3                  \n\t"
-            "addu   %[ff_table], %[ff_sbr_noise_table], %[temp0]           \n\t"
+            PTR_ADDU "%[ff_table],%[ff_sbr_noise_table],%[temp0]           \n\t"
             "sub.s  %[y0],       %[y0],                 %[temp1]           \n\t"
             "mfc1   %[temp3],    %[temp1]                                  \n\t"
             "bne    %[temp3],    $0,                    1f                 \n\t"
@@ -889,7 +859,7 @@ static void sbr_hf_apply_noise_3_mips(float (*Y)[2], const float *s_m,
             "addiu   %[noise],    %[noise],              1                     \n\t"
             "andi    %[noise],    %[noise],              0x1ff                 \n\t"
             "sll     %[temp0],    %[noise],              3                     \n\t"
-            "addu    %[ff_table], %[ff_sbr_noise_table], %[temp0]              \n\t"
+            PTR_ADDU "%[ff_table],%[ff_sbr_noise_table], %[temp0]              \n\t"
             "nmsub.s %[y1],       %[y1],                 %[temp1], %[phi_sign] \n\t"
             "mfc1    %[temp3],    %[temp1]                                     \n\t"
             "bne     %[temp3],    $0,                    1f                    \n\t"
@@ -920,14 +890,15 @@ static void sbr_hf_apply_noise_3_mips(float (*Y)[2], const float *s_m,
 void ff_sbrdsp_init_mips(SBRDSPContext *s)
 {
 #if HAVE_INLINE_ASM
-    s->neg_odd_64 = sbr_neg_odd_64_mips;
     s->qmf_pre_shuffle = sbr_qmf_pre_shuffle_mips;
     s->qmf_post_shuffle = sbr_qmf_post_shuffle_mips;
 #if HAVE_MIPSFPU
     s->sum64x5 = sbr_sum64x5_mips;
     s->sum_square = sbr_sum_square_mips;
     s->qmf_deint_bfly = sbr_qmf_deint_bfly_mips;
+#if !HAVE_LOONGSON3
     s->autocorrelate = sbr_autocorrelate_mips;
+#endif /* !HAVE_LOONGSON3 */
     s->hf_gen = sbr_hf_gen_mips;
     s->hf_g_filt = sbr_hf_g_filt_mips;
 

@@ -56,6 +56,8 @@
 #ifndef AVCODEC_MIPS_AACPSY_MIPS_H
 #define AVCODEC_MIPS_AACPSY_MIPS_H
 
+#include "libavutil/mips/asmdefs.h"
+
 #if HAVE_INLINE_ASM && HAVE_MIPSFPU && ( PSY_LAME_FIR_LEN == 21 )
 static void calc_thr_3gpp_mips(const FFPsyWindowInfo *wi, const int num_bands,
                                AacPsyChannel *pch, const uint8_t *band_sizes,
@@ -185,7 +187,7 @@ static void psy_hp_filter_mips(const float *firbuf, float *hpfsmpl, const float 
         "madd.s %[sum1],    %[sum1],    $f8,    %[coeff3]   \n\t"
         "madd.s %[sum2],    %[sum2],    $f11,   %[coeff3]   \n\t"
         "lwc1   $f1,        36(%[fb])                       \n\t"
-        "addiu  %[fb],      %[fb],      16                  \n\t"
+        PTR_ADDIU "%[fb],   %[fb],      16                  \n\t"
         "madd.s %[sum4],    %[sum4],    $f0,    %[coeff3]   \n\t"
         "madd.s %[sum3],    %[sum3],    $f1,    %[coeff3]   \n\t"
         "madd.s %[sum1],    %[sum1],    $f1,    %[coeff4]   \n\t"
@@ -207,7 +209,7 @@ static void psy_hp_filter_mips(const float *firbuf, float *hpfsmpl, const float 
         "swc1   %[sum4],    12(%[hp])                       \n\t"
         "swc1   %[sum3],    8(%[hp])                        \n\t"
         "bne    %[fb],      %[fb_end],  1b                  \n\t"
-        " addiu %[hp],      %[hp],      16                  \n\t"
+        PTR_ADDIU "%[hp],   %[hp],      16                  \n\t"
 
         ".set pop                                           \n\t"
 

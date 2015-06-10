@@ -80,11 +80,11 @@ av_cold void ff_init_scantable_permutation(uint8_t *idct_permutation,
     }
 }
 
-void (*ff_put_pixels_clamped)(const int16_t *block, uint8_t *pixels, int line_size);
-void (*ff_add_pixels_clamped)(const int16_t *block, uint8_t *pixels, int line_size);
+void (*ff_put_pixels_clamped)(const int16_t *block, uint8_t *pixels, ptrdiff_t line_size);
+void (*ff_add_pixels_clamped)(const int16_t *block, uint8_t *pixels, ptrdiff_t line_size);
 
 static void put_pixels_clamped_c(const int16_t *block, uint8_t *av_restrict pixels,
-                                 int line_size)
+                                 ptrdiff_t line_size)
 {
     int i;
 
@@ -138,7 +138,7 @@ static void put_pixels_clamped2_c(const int16_t *block, uint8_t *av_restrict pix
 
 static void put_signed_pixels_clamped_c(const int16_t *block,
                                         uint8_t *av_restrict pixels,
-                                        int line_size)
+                                        ptrdiff_t line_size)
 {
     int i, j;
 
@@ -158,7 +158,7 @@ static void put_signed_pixels_clamped_c(const int16_t *block,
 }
 
 static void add_pixels_clamped_c(const int16_t *block, uint8_t *av_restrict pixels,
-                                 int line_size)
+                                 ptrdiff_t line_size)
 {
     int i;
 
@@ -258,7 +258,7 @@ av_cold void ff_idctdsp_init(IDCTDSPContext *c, AVCodecContext *avctx)
         c->idct      = ff_j_rev_dct1;
         c->perm_type = FF_IDCT_PERM_NONE;
     } else {
-        if (avctx->bits_per_raw_sample == 10) {
+        if (avctx->bits_per_raw_sample == 10 || avctx->bits_per_raw_sample == 9) {
             c->idct_put              = ff_simple_idct_put_10;
             c->idct_add              = ff_simple_idct_add_10;
             c->idct                  = ff_simple_idct_10;

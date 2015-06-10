@@ -683,19 +683,23 @@ int av_expr_parse(AVExpr **expr, const char *s,
     if ((ret = parse_expr(&e, &p)) < 0)
         goto end;
     if (*p.s) {
-        av_expr_free(e);
         av_log(&p, AV_LOG_ERROR, "Invalid chars '%s' at the end of expression '%s'\n", p.s, s0);
         ret = AVERROR(EINVAL);
         goto end;
     }
     if (!verify_expr(e)) {
-        av_expr_free(e);
         ret = AVERROR(EINVAL);
         goto end;
     }
     e->var= av_mallocz(sizeof(double) *VARS);
+    if (!e->var) {
+        ret = AVERROR(ENOMEM);
+        goto end;
+    }
     *expr = e;
+    e = NULL;
 end:
+    av_expr_free(e);
     av_free(w);
     return ret;
 }

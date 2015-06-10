@@ -23,11 +23,14 @@
 
 #include "noise_shaping_data.c"
 
-void swri_get_dither(SwrContext *s, void *dst, int len, unsigned seed, enum AVSampleFormat noise_fmt) {
+int swri_get_dither(SwrContext *s, void *dst, int len, unsigned seed, enum AVSampleFormat noise_fmt) {
     double scale = s->dither.noise_scale;
 #define TMP_EXTRA 2
     double *tmp = av_malloc_array(len + TMP_EXTRA, sizeof(double));
     int i;
+
+    if (!tmp)
+        return AVERROR(ENOMEM);
 
     for(i=0; i<len + TMP_EXTRA; i++){
         double v;
@@ -70,9 +73,10 @@ void swri_get_dither(SwrContext *s, void *dst, int len, unsigned seed, enum AVSa
     }
 
     av_free(tmp);
+    return 0;
 }
 
-int swri_dither_init(SwrContext *s, enum AVSampleFormat out_fmt, enum AVSampleFormat in_fmt)
+av_cold int swri_dither_init(SwrContext *s, enum AVSampleFormat out_fmt, enum AVSampleFormat in_fmt)
 {
     int i;
     double scale = 0;
@@ -84,14 +88,14 @@ int swri_dither_init(SwrContext *s, enum AVSampleFormat out_fmt, enum AVSampleFo
     in_fmt  = av_get_packed_sample_fmt( in_fmt);
 
     if(in_fmt == AV_SAMPLE_FMT_FLT || in_fmt == AV_SAMPLE_FMT_DBL){
-        if(out_fmt == AV_SAMPLE_FMT_S32) scale = 1.0/(1L<<31);
-        if(out_fmt == AV_SAMPLE_FMT_S16) scale = 1.0/(1L<<15);
-        if(out_fmt == AV_SAMPLE_FMT_U8 ) scale = 1.0/(1L<< 7);
+        if(out_fmt == AV_SAMPLE_FMT_S32) scale = 1.0/(1LL<<31);
+        if(out_fmt == AV_SAMPLE_FMT_S16) scale = 1.0/(1LL<<15);
+        if(out_fmt == AV_SAMPLE_FMT_U8 ) scale = 1.0/(1LL<< 7);
     }
     if(in_fmt == AV_SAMPLE_FMT_S32 && out_fmt == AV_SAMPLE_FMT_S32 && (s->dither.output_sample_bits&31)) scale = 1;
-    if(in_fmt == AV_SAMPLE_FMT_S32 && out_fmt == AV_SAMPLE_FMT_S16) scale = 1L<<16;
-    if(in_fmt == AV_SAMPLE_FMT_S32 && out_fmt == AV_SAMPLE_FMT_U8 ) scale = 1L<<24;
-    if(in_fmt == AV_SAMPLE_FMT_S16 && out_fmt == AV_SAMPLE_FMT_U8 ) scale = 1L<<8;
+    if(in_fmt == AV_SAMPLE_FMT_S32 && out_fmt == AV_SAMPLE_FMT_S16) scale = 1<<16;
+    if(in_fmt == AV_SAMPLE_FMT_S32 && out_fmt == AV_SAMPLE_FMT_U8 ) scale = 1<<24;
+    if(in_fmt == AV_SAMPLE_FMT_S16 && out_fmt == AV_SAMPLE_FMT_U8 ) scale = 1<<8;
 
     scale *= s->dither.scale;
 

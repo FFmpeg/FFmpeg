@@ -286,18 +286,17 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
              * see ISO/IEC 15444-1:2002 E.1 and A.6.4. */
             switch (qntsty->quantsty) {
                 uint8_t gain;
-                int numbps;
             case JPEG2000_QSTY_NONE:
                 /* TODO: to verify. No quantization in this case */
                 band->f_stepsize = 1;
                 break;
             case JPEG2000_QSTY_SI:
                 /*TODO: Compute formula to implement. */
-                numbps = cbps +
-                         lut_gain[codsty->transform == FF_DWT53][bandno + (reslevelno > 0)];
-                band->f_stepsize = SHL(2048 + qntsty->mant[gbandno],
-                                       2 + numbps - qntsty->expn[gbandno]);
-                break;
+//                 numbps = cbps +
+//                          lut_gain[codsty->transform == FF_DWT53][bandno + (reslevelno > 0)];
+//                 band->f_stepsize = SHL(2048 + qntsty->mant[gbandno],
+//                                        2 + numbps - qntsty->expn[gbandno]);
+//                 break;
             case JPEG2000_QSTY_SE:
                 /* Exponent quantization step.
                  * Formula:
@@ -364,21 +363,18 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
                 log2_band_prec_height = reslevel->log2_prec_height - 1;
             }
 
-            for (j = 0; j < 2; j++)
-                band->coord[0][j] = ff_jpeg2000_ceildiv(band->coord[0][j], dx);
-            for (j = 0; j < 2; j++)
-                band->coord[1][j] = ff_jpeg2000_ceildiv(band->coord[1][j], dy);
-
-            band->prec = av_mallocz_array(reslevel->num_precincts_x *
-                                          (uint64_t)reslevel->num_precincts_y,
-                                          sizeof(*band->prec));
+            if (reslevel->num_precincts_x * (uint64_t)reslevel->num_precincts_y > INT_MAX) {
+                band->prec = NULL;
+                return AVERROR(ENOMEM);
+            }
+            nb_precincts = reslevel->num_precincts_x * reslevel->num_precincts_y;
+            band->prec = av_mallocz_array(nb_precincts, sizeof(*band->prec));
             if (!band->prec)
                 return AVERROR(ENOMEM);
 
-            nb_precincts = reslevel->num_precincts_x * reslevel->num_precincts_y;
-
             for (precno = 0; precno < nb_precincts; precno++) {
                 Jpeg2000Prec *prec = band->prec + precno;
+                int nb_codeblocks;
 
                 /* TODO: Explain formula for JPEG200 DCINEMA. */
                 /* TODO: Verify with previous count of codeblocks per band */
@@ -425,12 +421,15 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
                 if (!prec->zerobits)
                     return AVERROR(ENOMEM);
 
-                prec->cblk = av_mallocz_array(prec->nb_codeblocks_width *
-                                              (uint64_t)prec->nb_codeblocks_height,
-                                              sizeof(*prec->cblk));
+                if (prec->nb_codeblocks_width * (uint64_t)prec->nb_codeblocks_height > INT_MAX) {
+                    prec->cblk = NULL;
+                    return AVERROR(ENOMEM);
+                }
+                nb_codeblocks = prec->nb_codeblocks_width * prec->nb_codeblocks_height;
+                prec->cblk = av_mallocz_array(nb_codeblocks, sizeof(*prec->cblk));
                 if (!prec->cblk)
                     return AVERROR(ENOMEM);
-                for (cblkno = 0; cblkno < prec->nb_codeblocks_width * prec->nb_codeblocks_height; cblkno++) {
+                for (cblkno = 0; cblkno < nb_codeblocks; cblkno++) {
                     Jpeg2000Cblk *cblk = prec->cblk + cblkno;
                     uint16_t Cx0, Cy0;
 

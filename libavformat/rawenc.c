@@ -205,7 +205,7 @@ AVOutputFormat ff_h263_muxer = {
 AVOutputFormat ff_h264_muxer = {
     .name              = "h264",
     .long_name         = NULL_IF_CONFIG_SMALL("raw H.264 video"),
-    .extensions        = "h264",
+    .extensions        = "h264,264",
     .audio_codec       = AV_CODEC_ID_NONE,
     .video_codec       = AV_CODEC_ID_H264,
     .write_header      = force_one_stream,
@@ -249,6 +249,17 @@ AVOutputFormat ff_mjpeg_muxer = {
     .write_header      = force_one_stream,
     .write_packet      = ff_raw_write_packet,
     .flags             = AVFMT_NOTIMESTAMPS,
+};
+
+AVOutputFormat ff_singlejpeg_muxer = {
+    .name              = "singlejpeg",
+    .long_name         = NULL_IF_CONFIG_SMALL("JPEG single image"),
+    .mime_type         = "image/jpeg",
+    .audio_codec       = AV_CODEC_ID_NONE,
+    .video_codec       = AV_CODEC_ID_MJPEG,
+    .write_packet      = ff_raw_write_packet,
+    .flags             = AVFMT_NOTIMESTAMPS,
+    .write_header      = force_one_stream,
 };
 #endif
 

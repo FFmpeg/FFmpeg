@@ -29,28 +29,61 @@
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "yuv2rgb_altivec.h"
+#include "libavutil/ppc/util_altivec.h"
 
 #if HAVE_ALTIVEC
 #define vzero vec_splat_s32(0)
 
-#define yuv2planeX_8(d1, d2, l1, src, x, perm, filter) do {     \
-        vector signed short l2  = vec_ld(((x) << 1) + 16, src); \
-        vector signed short ls  = vec_perm(l1, l2, perm);       \
-        vector signed int   i1  = vec_mule(filter, ls);         \
-        vector signed int   i2  = vec_mulo(filter, ls);         \
-        vector signed int   vf1 = vec_mergeh(i1, i2);           \
-        vector signed int   vf2 = vec_mergel(i1, i2);           \
-        d1 = vec_add(d1, vf1);                                  \
-        d2 = vec_add(d2, vf2);                                  \
-        l1 = l2;                                                \
+#if HAVE_BIGENDIAN
+#define  GET_LS(a,b,c,s) {\
+        vector signed short l2  = vec_ld(((b) << 1) + 16, s);\
+        ls  = vec_perm(a, l2, c);\
+        a = l2;\
+    }
+#else
+#define  GET_LS(a,b,c,s) {\
+        ls  = a;\
+        a = vec_vsx_ld(((b) << 1)  + 16, s);\
+    }
+#endif
+
+#define yuv2planeX_8(d1, d2, l1, src, x, perm, filter) do {\
+        vector signed short ls;\
+        GET_LS(l1, x, perm, src);\
+        vector signed int   i1  = vec_mule(filter, ls);\
+        vector signed int   i2  = vec_mulo(filter, ls);\
+        vector signed int   vf1, vf2;\
+        vf1 = vec_mergeh(i1, i2);\
+        vf2 = vec_mergel(i1, i2);\
+        d1 = vec_add(d1, vf1);\
+        d2 = vec_add(d2, vf2);\
     } while (0)
+
+#if HAVE_BIGENDIAN
+#define LOAD_FILTER(vf,f) {\
+        vector unsigned char perm0 = vec_lvsl(joffset, f);\
+        vf = vec_ld(joffset, f);\
+        vf = vec_perm(vf, vf, perm0);\
+}
+#define LOAD_L1(ll1,s,p){\
+        p = vec_lvsl(xoffset, s);\
+        ll1   = vec_ld(xoffset, s);\
+}
+#else
+#define LOAD_FILTER(vf,f) {\
+        vf = vec_vsx_ld(joffset, f);\
+}
+#define LOAD_L1(ll1,s,p){\
+        ll1  = vec_vsx_ld(xoffset, s);\
+}
+#endif
 
 static void yuv2planeX_16_altivec(const int16_t *filter, int filterSize,
                                   const int16_t **src, uint8_t *dest,
                                   const uint8_t *dither, int offset, int x)
 {
     register int i, j;
-    DECLARE_ALIGNED(16, int, val)[16];
+    LOCAL_ALIGNED(16, int, val, [16]);
     vector signed int vo1, vo2, vo3, vo4;
     vector unsigned short vs1, vs2;
     vector unsigned char vf;
@@ -66,14 +99,13 @@ static void yuv2planeX_16_altivec(const int16_t *filter, int filterSize,
     vo4 = vec_ld(48, val);
 
     for (j = 0; j < filterSize; j++) {
-        vector signed short l1, vLumFilter = vec_ld(j << 1, filter);
-        vector unsigned char perm, perm0 = vec_lvsl(j << 1, filter);
-        vLumFilter = vec_perm(vLumFilter, vLumFilter, perm0);
-        vLumFilter = vec_splat(vLumFilter, 0); // lumFilter[j] is loaded 8 times in vLumFilter
-
-        perm = vec_lvsl(x << 1, src[j]);
-        l1   = vec_ld(x << 1, src[j]);
-
+        unsigned int joffset=j<<1;
+        unsigned int xoffset=x<<1;
+        vector unsigned char perm;
+        vector signed short l1,vLumFilter;
+        LOAD_FILTER(vLumFilter,filter);
+        vLumFilter = vec_splat(vLumFilter, 0);
+        LOAD_L1(l1,src[j],perm);
         yuv2planeX_8(vo1, vo2, l1, src[j], x,     perm, vLumFilter);
         yuv2planeX_8(vo3, vo4, l1, src[j], x + 8, perm, vLumFilter);
     }
@@ -85,8 +117,9 @@ static void yuv2planeX_16_altivec(const int16_t *filter, int filterSize,
     vs1 = vec_packsu(vo1, vo2);
     vs2 = vec_packsu(vo3, vo4);
     vf  = vec_packsu(vs1, vs2);
-    vec_st(vf, 0, dest);
+    VEC_ST(vf, 0, dest);
 }
+
 
 static inline void yuv2planeX_u(const int16_t *filter, int filterSize,
                                 const int16_t **src, uint8_t *dest, int dstW,
@@ -118,12 +151,64 @@ static void yuv2planeX_altivec(const int16_t *filter, int filterSize,
     yuv2planeX_u(filter, filterSize, src, dest, dstW, dither, offset, i);
 }
 
+#if HAVE_BIGENDIAN
+// The 3 above is 2 (filterSize == 4) + 1 (sizeof(short) == 2).
+
+// The neat trick: We only care for half the elements,
+// high or low depending on (i<<3)%16 (it's 0 or 8 here),
+// and we're going to use vec_mule, so we choose
+// carefully how to "unpack" the elements into the even slots.
+#define GET_VF4(a, vf, f) {\
+    vf = vec_ld(a<< 3, f);\
+    if ((a << 3) % 16)\
+        vf = vec_mergel(vf, (vector signed short)vzero);\
+    else\
+        vf = vec_mergeh(vf, (vector signed short)vzero);\
+}
+#define FIRST_LOAD(sv, pos, s, per) {\
+    sv = vec_ld(pos, s);\
+    per = vec_lvsl(pos, s);\
+}
+#define UPDATE_PTR(s0, d0, s1, d1) {\
+    d0 = s0;\
+    d1 = s1;\
+}
+#define LOAD_SRCV(pos, a, s, per, v0, v1, vf) {\
+    v1 = vec_ld(pos + a + 16, s);\
+    vf = vec_perm(v0, v1, per);\
+}
+#define LOAD_SRCV8(pos, a, s, per, v0, v1, vf) {\
+    if ((((uintptr_t)s + pos) % 16) > 8) {\
+        v1 = vec_ld(pos + a + 16, s);\
+    }\
+    vf = vec_perm(v0, src_v1, per);\
+}
+#define GET_VFD(a, b, f, vf0, vf1, per, vf, off) {\
+    vf1 = vec_ld((a * 2 * filterSize) + (b * 2) + 16 + off, f);\
+    vf  = vec_perm(vf0, vf1, per);\
+}
+#else /* else of #if HAVE_BIGENDIAN */
+#define GET_VF4(a, vf, f) {\
+    vf = (vector signed short)vec_vsx_ld(a << 3, f);\
+    vf = vec_mergeh(vf, (vector signed short)vzero);\
+}
+#define FIRST_LOAD(sv, pos, s, per) {}
+#define UPDATE_PTR(s0, d0, s1, d1) {}
+#define LOAD_SRCV(pos, a, s, per, v0, v1, vf) {\
+    vf = vec_vsx_ld(pos + a, s);\
+}
+#define LOAD_SRCV8(pos, a, s, per, v0, v1, vf) LOAD_SRCV(pos, a, s, per, v0, v1, vf)
+#define GET_VFD(a, b, f, vf0, vf1, per, vf, off) {\
+    vf  = vec_vsx_ld((a * 2 * filterSize) + (b * 2) + off, f);\
+}
+#endif /* end of #if HAVE_BIGENDIAN */
+
 static void hScale_altivec_real(SwsContext *c, int16_t *dst, int dstW,
                                 const uint8_t *src, const int16_t *filter,
                                 const int32_t *filterPos, int filterSize)
 {
     register int i;
-    DECLARE_ALIGNED(16, int, tempo)[4];
+    LOCAL_ALIGNED(16, int, tempo, [4]);
 
     if (filterSize % 4) {
         for (i = 0; i < dstW; i++) {
@@ -140,57 +225,32 @@ static void hScale_altivec_real(SwsContext *c, int16_t *dst, int dstW,
             for (i = 0; i < dstW; i++) {
                 register int srcPos = filterPos[i];
 
-                vector unsigned char src_v0 = vec_ld(srcPos, src);
-                vector unsigned char src_v1, src_vF;
+                vector unsigned char src_vF = unaligned_load(srcPos, src);
                 vector signed short src_v, filter_v;
                 vector signed int val_vEven, val_s;
-                if ((((uintptr_t)src + srcPos) % 16) > 12) {
-                    src_v1 = vec_ld(srcPos + 16, src);
-                }
-                src_vF = vec_perm(src_v0, src_v1, vec_lvsl(srcPos, src));
-
                 src_v = // vec_unpackh sign-extends...
-                        (vector signed short)(vec_mergeh((vector unsigned char)vzero, src_vF));
+                        (vector signed short)(VEC_MERGEH((vector unsigned char)vzero, src_vF));
                 // now put our elements in the even slots
                 src_v = vec_mergeh(src_v, (vector signed short)vzero);
-
-                filter_v = vec_ld(i << 3, filter);
-                // The 3 above is 2 (filterSize == 4) + 1 (sizeof(short) == 2).
-
-                // The neat trick: We only care for half the elements,
-                // high or low depending on (i<<3)%16 (it's 0 or 8 here),
-                // and we're going to use vec_mule, so we choose
-                // carefully how to "unpack" the elements into the even slots.
-                if ((i << 3) % 16)
-                    filter_v = vec_mergel(filter_v, (vector signed short)vzero);
-                else
-                    filter_v = vec_mergeh(filter_v, (vector signed short)vzero);
-
+                GET_VF4(i, filter_v, filter);
                 val_vEven = vec_mule(src_v, filter_v);
                 val_s     = vec_sums(val_vEven, vzero);
                 vec_st(val_s, 0, tempo);
                 dst[i] = FFMIN(tempo[3] >> 7, (1 << 15) - 1);
             }
         break;
-
         case 8:
             for (i = 0; i < dstW; i++) {
                 register int srcPos = filterPos[i];
-
-                vector unsigned char src_v0 = vec_ld(srcPos, src);
-                vector unsigned char src_v1, src_vF;
+                vector unsigned char src_vF, src_v0, src_v1;
+                vector unsigned char permS;
                 vector signed short src_v, filter_v;
                 vector signed int val_v, val_s;
-                if ((((uintptr_t)src + srcPos) % 16) > 8) {
-                    src_v1 = vec_ld(srcPos + 16, src);
-                }
-                src_vF = vec_perm(src_v0, src_v1, vec_lvsl(srcPos, src));
-
+                FIRST_LOAD(src_v0, srcPos, src, permS);
+                LOAD_SRCV8(srcPos, 0, src, permS, src_v0, src_v1, src_vF);
                 src_v = // vec_unpackh sign-extends...
-                        (vector signed short)(vec_mergeh((vector unsigned char)vzero, src_vF));
+                        (vector signed short)(VEC_MERGEH((vector unsigned char)vzero, src_vF));
                 filter_v = vec_ld(i << 4, filter);
-                // the 4 above is 3 (filterSize == 8) + 1 (sizeof(short) == 2)
-
                 val_v = vec_msums(src_v, filter_v, (vector signed int)vzero);
                 val_s = vec_sums(val_v, vzero);
                 vec_st(val_s, 0, tempo);
@@ -202,85 +262,64 @@ static void hScale_altivec_real(SwsContext *c, int16_t *dst, int dstW,
             for (i = 0; i < dstW; i++) {
                 register int srcPos = filterPos[i];
 
-                vector unsigned char src_v0 = vec_ld(srcPos, src);
-                vector unsigned char src_v1 = vec_ld(srcPos + 16, src);
-                vector unsigned char src_vF = vec_perm(src_v0, src_v1, vec_lvsl(srcPos, src));
-
+                vector unsigned char src_vF = unaligned_load(srcPos, src);
                 vector signed short src_vA = // vec_unpackh sign-extends...
-                                             (vector signed short)(vec_mergeh((vector unsigned char)vzero, src_vF));
+                                             (vector signed short)(VEC_MERGEH((vector unsigned char)vzero, src_vF));
                 vector signed short src_vB = // vec_unpackh sign-extends...
-                                             (vector signed short)(vec_mergel((vector unsigned char)vzero, src_vF));
-
+                                             (vector signed short)(VEC_MERGEL((vector unsigned char)vzero, src_vF));
                 vector signed short filter_v0 = vec_ld(i << 5, filter);
                 vector signed short filter_v1 = vec_ld((i << 5) + 16, filter);
-                // the 5 above are 4 (filterSize == 16) + 1 (sizeof(short) == 2)
 
                 vector signed int val_acc = vec_msums(src_vA, filter_v0, (vector signed int)vzero);
                 vector signed int val_v   = vec_msums(src_vB, filter_v1, val_acc);
 
                 vector signed int val_s = vec_sums(val_v, vzero);
 
-                vec_st(val_s, 0, tempo);
+                VEC_ST(val_s, 0, tempo);
                 dst[i] = FFMIN(tempo[3] >> 7, (1 << 15) - 1);
             }
         break;
 
         default:
             for (i = 0; i < dstW; i++) {
-                register int j;
+                register int j, offset = i * 2 * filterSize;
                 register int srcPos = filterPos[i];
 
                 vector signed int val_s, val_v = (vector signed int)vzero;
-                vector signed short filter_v0R = vec_ld(i * 2 * filterSize, filter);
-                vector unsigned char permF     = vec_lvsl((i * 2 * filterSize), filter);
-
-                vector unsigned char src_v0 = vec_ld(srcPos, src);
-                vector unsigned char permS  = vec_lvsl(srcPos, src);
+                vector signed short filter_v0R;
+                vector unsigned char permF, src_v0, permS;
+                FIRST_LOAD(filter_v0R, offset, filter, permF);
+                FIRST_LOAD(src_v0, srcPos, src, permS);
 
                 for (j = 0; j < filterSize - 15; j += 16) {
-                    vector unsigned char src_v1 = vec_ld(srcPos + j + 16, src);
-                    vector unsigned char src_vF = vec_perm(src_v0, src_v1, permS);
-
+                    vector unsigned char src_v1, src_vF;
+                    vector signed short filter_v1R, filter_v2R, filter_v0, filter_v1;
+                    LOAD_SRCV(srcPos, j, src, permS, src_v0, src_v1, src_vF);
                     vector signed short src_vA = // vec_unpackh sign-extends...
-                                                 (vector signed short)(vec_mergeh((vector unsigned char)vzero, src_vF));
+                                                 (vector signed short)(VEC_MERGEH((vector unsigned char)vzero, src_vF));
                     vector signed short src_vB = // vec_unpackh sign-extends...
-                                                 (vector signed short)(vec_mergel((vector unsigned char)vzero, src_vF));
-
-                    vector signed short filter_v1R = vec_ld((i * 2 * filterSize) + (j * 2) + 16, filter);
-                    vector signed short filter_v2R = vec_ld((i * 2 * filterSize) + (j * 2) + 32, filter);
-                    vector signed short filter_v0  = vec_perm(filter_v0R, filter_v1R, permF);
-                    vector signed short filter_v1  = vec_perm(filter_v1R, filter_v2R, permF);
+                                                 (vector signed short)(VEC_MERGEL((vector unsigned char)vzero, src_vF));
+                    GET_VFD(i, j, filter, filter_v0R, filter_v1R, permF, filter_v0, 0);
+                    GET_VFD(i, j, filter, filter_v1R, filter_v2R, permF, filter_v1, 16);
 
                     vector signed int val_acc = vec_msums(src_vA, filter_v0, val_v);
                     val_v = vec_msums(src_vB, filter_v1, val_acc);
-
-                    filter_v0R = filter_v2R;
-                    src_v0     = src_v1;
+                    UPDATE_PTR(filter_v2R, filter_v0R, src_v1, src_v0);
                 }
 
                 if (j < filterSize - 7) {
                     // loading src_v0 is useless, it's already done above
-                    // vector unsigned char src_v0 = vec_ld(srcPos + j, src);
                     vector unsigned char src_v1, src_vF;
                     vector signed short src_v, filter_v1R, filter_v;
-                    if ((((uintptr_t)src + srcPos) % 16) > 8) {
-                        src_v1 = vec_ld(srcPos + j + 16, src);
-                    }
-                    src_vF = vec_perm(src_v0, src_v1, permS);
-
+                    LOAD_SRCV8(srcPos, j, src, permS, src_v0, src_v1, src_vF);
                     src_v = // vec_unpackh sign-extends...
-                            (vector signed short)(vec_mergeh((vector unsigned char)vzero, src_vF));
-                    // loading filter_v0R is useless, it's already done above
-                    // vector signed short filter_v0R = vec_ld((i * 2 * filterSize) + j, filter);
-                    filter_v1R = vec_ld((i * 2 * filterSize) + (j * 2) + 16, filter);
-                    filter_v   = vec_perm(filter_v0R, filter_v1R, permF);
-
+                            (vector signed short)(VEC_MERGEH((vector unsigned char)vzero, src_vF));
+                    GET_VFD(i, j, filter, filter_v0R, filter_v1R, permF, filter_v, 0);
                     val_v = vec_msums(src_v, filter_v, val_v);
                 }
-
                 val_s = vec_sums(val_v, vzero);
 
-                vec_st(val_s, 0, tempo);
+                VEC_ST(val_s, 0, tempo);
                 dst[i] = FFMIN(tempo[3] >> 7, (1 << 15) - 1);
             }
         }

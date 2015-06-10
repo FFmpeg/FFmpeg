@@ -14,17 +14,117 @@
 # FFmpeg is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-# Lesser General Public License for more details.
+# General Public License for more details.
 #
-# You should have received a copy of the GNU Lesser General Public
+# You should have received a copy of the GNU General Public
 # License along with FFmpeg; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 # no navigation elements
 set_from_init_file('HEADERS', 0);
 
-# TOC and Chapter headings link
-set_from_init_file('TOC_LINKS', 1);
+sub ffmpeg_heading_command($$$$$)
+{
+    my $self = shift;
+    my $cmdname = shift;
+    my $command = shift;
+    my $args = shift;
+    my $content = shift;
+
+    my $result = '';
+
+    # not clear that it may really happen
+    if ($self->in_string) {
+        $result .= $self->command_string($command) ."\n" if ($cmdname ne 'node');
+        $result .= $content if (defined($content));
+        return $result;
+    }
+
+    my $element_id = $self->command_id($command);
+    $result .= "<a name=\"$element_id\"></a>\n"
+        if (defined($element_id) and $element_id ne '');
+
+    print STDERR "Process $command "
+        .Texinfo::Structuring::_print_root_command_texi($command)."\n"
+            if ($self->get_conf('DEBUG'));
+    my $element;
+    if ($Texinfo::Common::root_commands{$command->{'cmdname'}}
+        and $command->{'parent'}
+        and $command->{'parent'}->{'type'}
+        and $command->{'parent'}->{'type'} eq 'element') {
+        $element = $command->{'parent'};
+    }
+    if ($element) {
+        $result .= &{$self->{'format_element_header'}}($self, $cmdname,
+                                                       $command, $element);
+    }
+
+    my $heading_level;
+    # node is used as heading if there is nothing else.
+    if ($cmdname eq 'node') {
+        if (!$element or (!$element->{'extra'}->{'section'}
+            and $element->{'extra'}->{'node'}
+            and $element->{'extra'}->{'node'} eq $command
+             # bogus node may not have been normalized
+            and defined($command->{'extra'}->{'normalized'}))) {
+            if ($command->{'extra'}->{'normalized'} eq 'Top') {
+                $heading_level = 0;
+            } else {
+                $heading_level = 3;
+            }
+        }
+    } else {
+        $heading_level = $command->{'level'};
+    }
+
+    my $heading = $self->command_text($command);
+    # $heading not defined may happen if the command is a @node, for example
+    # if there is an error in the node.
+    if (defined($heading) and $heading ne '' and defined($heading_level)) {
+
+        if ($Texinfo::Common::root_commands{$cmdname}
+            and $Texinfo::Common::sectioning_commands{$cmdname}) {
+            my $content_href = $self->command_contents_href($command, 'contents',
+                                                            $self->{'current_filename'});
+            if ($content_href) {
+                my $this_href = $content_href =~ s/^\#toc-/\#/r;
+                $heading .= '<span class="pull-right">'.
+                              '<a class="anchor hidden-xs" '.
+                                 "href=\"$this_href\" aria-hidden=\"true\">".
+            ($ENV{"FA_ICONS"} ? '<i class="fa fa-link"></i>'
+                              : '#').
+                              '</a> '.
+                              '<a class="anchor hidden-xs"'.
+                                 "href=\"$content_href\" aria-hidden=\"true\">".
+            ($ENV{"FA_ICONS"} ? '<i class="fa fa-navicon"></i>'
+                              : 'TOC').
+                              '</a>'.
+                            '</span>';
+            }
+        }
+
+        if ($self->in_preformatted()) {
+            $result .= $heading."\n";
+        } else {
+            # if the level was changed, set the command name right
+            if ($cmdname ne 'node'
+                and $heading_level ne $Texinfo::Common::command_structuring_level{$cmdname}) {
+                $cmdname
+                    = $Texinfo::Common::level_to_structuring_command{$cmdname}->[$heading_level];
+            }
+            $result .= &{$self->{'format_heading_text'}}(
+                        $self, $cmdname, $heading,
+                        $heading_level +
+                        $self->get_conf('CHAPTER_HEADER_LEVEL') - 1, $command);
+        }
+    }
+    $result .= $content if (defined($content));
+    return $result;
+}
+
+foreach my $command (keys(%Texinfo::Common::sectioning_commands), 'node') {
+    texinfo_register_command_formatting($command, \&ffmpeg_heading_command);
+}
 
 # print the TOC where @contents is used
 set_from_init_file('INLINE_CONTENTS', 1);
@@ -69,6 +169,7 @@ EOT
 
     my $head2 = $ENV{"FFMPEG_HEADER2"} || <<EOT;
     </title>
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
     <link rel="stylesheet" type="text/css" href="bootstrap.min.css">
     <link rel="stylesheet" type="text/css" href="style.min.css">
   </head>
@@ -84,6 +185,23 @@ EOT
     return $head1 . $head_title . $head2 . $head_title . $head3;
 }
 texinfo_register_formatting_function('begin_file', \&ffmpeg_begin_file);
+
+sub ffmpeg_program_string($)
+{
+  my $self = shift;
+  if (defined($self->get_conf('PROGRAM'))
+      and $self->get_conf('PROGRAM') ne ''
+      and defined($self->get_conf('PACKAGE_URL'))) {
+    return $self->convert_tree(
+      $self->gdt('This document was generated using @uref{{program_homepage}, @emph{{program}}}.',
+         { 'program_homepage' => $self->get_conf('PACKAGE_URL'),
+           'program' => $self->get_conf('PROGRAM') }));
+  } else {
+    return $self->convert_tree(
+      $self->gdt('This document was generated automatically.'));
+  }
+}
+texinfo_register_formatting_function('program_string', \&ffmpeg_program_string);
 
 # Customized file ending
 sub ffmpeg_end_file($)

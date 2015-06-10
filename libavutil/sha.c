@@ -51,13 +51,13 @@ struct AVSHA *av_sha_alloc(void)
 
 /* (R0+R1), R2, R3, R4 are the different operations used in SHA1 */
 #define blk0(i) (block[i] = AV_RB32(buffer + 4 * (i)))
-#define blk(i)  (block[i] = rol(block[i-3] ^ block[i-8] ^ block[i-14] ^ block[i-16], 1))
+#define blk(i)  (block[i] = rol(block[(i)-3] ^ block[(i)-8] ^ block[(i)-14] ^ block[(i)-16], 1))
 
-#define R0(v,w,x,y,z,i) z += ((w&(x^y))^y)     + blk0(i) + 0x5A827999 + rol(v, 5); w = rol(w, 30);
-#define R1(v,w,x,y,z,i) z += ((w&(x^y))^y)     + blk (i) + 0x5A827999 + rol(v, 5); w = rol(w, 30);
-#define R2(v,w,x,y,z,i) z += ( w^x     ^y)     + blk (i) + 0x6ED9EBA1 + rol(v, 5); w = rol(w, 30);
-#define R3(v,w,x,y,z,i) z += (((w|x)&y)|(w&x)) + blk (i) + 0x8F1BBCDC + rol(v, 5); w = rol(w, 30);
-#define R4(v,w,x,y,z,i) z += ( w^x     ^y)     + blk (i) + 0xCA62C1D6 + rol(v, 5); w = rol(w, 30);
+#define R0(v,w,x,y,z,i) z += (((w)&((x)^(y)))^(y))       + blk0(i) + 0x5A827999 + rol(v, 5); w = rol(w, 30);
+#define R1(v,w,x,y,z,i) z += (((w)&((x)^(y)))^(y))       + blk (i) + 0x5A827999 + rol(v, 5); w = rol(w, 30);
+#define R2(v,w,x,y,z,i) z += ( (w)^(x)       ^(y))       + blk (i) + 0x6ED9EBA1 + rol(v, 5); w = rol(w, 30);
+#define R3(v,w,x,y,z,i) z += ((((w)|(x))&(y))|((w)&(x))) + blk (i) + 0x8F1BBCDC + rol(v, 5); w = rol(w, 30);
+#define R4(v,w,x,y,z,i) z += ( (w)^(x)       ^(y))       + blk (i) + 0xCA62C1D6 + rol(v, 5); w = rol(w, 30);
 
 /* Hash a single 512-bit block. This is the core of the algorithm. */
 

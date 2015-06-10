@@ -21,6 +21,7 @@
 #ifndef AVUTIL_ATOMIC_WIN32_H
 #define AVUTIL_ATOMIC_WIN32_H
 
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
 #define avpriv_atomic_int_get atomic_int_get_win32

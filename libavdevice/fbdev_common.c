@@ -84,8 +84,13 @@ int ff_fbdev_get_device_list(AVDeviceInfoList *device_list)
     for (i = 0; i <= 31; i++) {
         snprintf(device_file, sizeof(device_file), "/dev/fb%d", i);
 
-        if ((fd = avpriv_open(device_file, O_RDWR)) < 0)
+        if ((fd = avpriv_open(device_file, O_RDWR)) < 0) {
+            int err = AVERROR(errno);
+            if (err != AVERROR(ENOENT))
+                av_log(NULL, AV_LOG_ERROR, "Could not open framebuffer device '%s': %s\n",
+                       device_file, av_err2str(err));
             continue;
+        }
         if (ioctl(fd, FBIOGET_VSCREENINFO, &varinfo) == -1)
             goto fail_device;
         if (ioctl(fd, FBIOGET_FSCREENINFO, &fixinfo) == -1)
@@ -116,8 +121,8 @@ int ff_fbdev_get_device_list(AVDeviceInfoList *device_list)
 
       fail_device:
         if (device) {
-            av_free(device->device_name);
-            av_free(device->device_description);
+            av_freep(&device->device_name);
+            av_freep(&device->device_description);
             av_freep(&device);
         }
         if (fd >= 0)

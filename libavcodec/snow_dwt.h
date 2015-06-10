@@ -21,6 +21,7 @@
 #ifndef AVCODEC_SNOW_DWT_H
 #define AVCODEC_SNOW_DWT_H
 
+#include <stddef.h>
 #include <stdint.h>
 
 typedef int DWTELEM;
@@ -105,8 +106,8 @@ void ff_snow_inner_add_yblock(const uint8_t *obmc, const int obmc_stride,
                               int src_y, int src_stride, slice_buffer *sb,
                               int add, uint8_t *dst8);
 
-int ff_w53_32_c(struct MpegEncContext *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h);
-int ff_w97_32_c(struct MpegEncContext *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h);
+int ff_w53_32_c(struct MpegEncContext *v, uint8_t *pix1, uint8_t *pix2, ptrdiff_t line_size, int h);
+int ff_w97_32_c(struct MpegEncContext *v, uint8_t *pix1, uint8_t *pix2, ptrdiff_t line_size, int h);
 
 void ff_spatial_dwt(int *buffer, int *temp, int width, int height, int stride,
                     int type, int decomposition_count);

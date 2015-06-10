@@ -40,6 +40,7 @@ pb_81: times 8 db 0x81
 cextern pb_1
 cextern pb_3
 cextern pb_80
+cextern pb_FE
 
 cextern pw_8
 
@@ -145,6 +146,49 @@ cglobal vp3_h_loop_filter, 3, 4
     STORE_4_WORDS m4
     lea           r0, [r0+r1*4  ]
     STORE_4_WORDS m3
+    RET
+
+%macro PAVGB_NO_RND 0
+    mova   m4, m0
+    mova   m5, m2
+    pand   m4, m1
+    pand   m5, m3
+    pxor   m1, m0
+    pxor   m3, m2
+    pand   m1, m6
+    pand   m3, m6
+    psrlq  m1, 1
+    psrlq  m3, 1
+    paddb  m4, m1
+    paddb  m5, m3
+%endmacro
+
+INIT_MMX mmx
+cglobal put_vp_no_rnd_pixels8_l2, 5, 6, 0, dst, src1, src2, stride, h, stride3
+    mova   m6, [pb_FE]
+    lea    stride3q,[strideq+strideq*2]
+.loop
+    mova   m0, [src1q]
+    mova   m1, [src2q]
+    mova   m2, [src1q+strideq]
+    mova   m3, [src2q+strideq]
+    PAVGB_NO_RND
+    mova   [dstq], m4
+    mova   [dstq+strideq], m5
+
+    mova   m0, [src1q+strideq*2]
+    mova   m1, [src2q+strideq*2]
+    mova   m2, [src1q+stride3q]
+    mova   m3, [src2q+stride3q]
+    PAVGB_NO_RND
+    mova   [dstq+strideq*2], m4
+    mova   [dstq+stride3q],  m5
+
+    lea    src1q, [src1q+strideq*4]
+    lea    src2q, [src2q+strideq*4]
+    lea    dstq,  [dstq+strideq*4]
+    sub    hd, 4
+    jnz .loop
     RET
 
 ; from original comments: The Macro does IDct on 4 1-D Dcts

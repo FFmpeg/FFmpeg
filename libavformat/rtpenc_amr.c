@@ -30,13 +30,18 @@
 void ff_rtp_send_amr(AVFormatContext *s1, const uint8_t *buff, int size)
 {
     RTPMuxContext *s          = s1->priv_data;
+    AVStream *st              = s1->streams[0];
     int max_header_toc_size   = 1 + s->max_frames_per_packet;
     uint8_t *p;
     int len;
 
     /* Test if the packet must be sent. */
     len = s->buf_ptr - s->buf;
-    if (s->num_frames == s->max_frames_per_packet || (len && len + size - 1 > s->max_payload_size)) {
+    if (s->num_frames &&
+        (s->num_frames == s->max_frames_per_packet ||
+         len + size - 1 > s->max_payload_size ||
+         av_compare_ts(s->cur_timestamp - s->timestamp, st->time_base,
+                       s1->max_delay, AV_TIME_BASE_Q) >= 0)) {
         int header_size = s->num_frames + 1;
         p = s->buf + max_header_toc_size - header_size;
         if (p != s->buf)

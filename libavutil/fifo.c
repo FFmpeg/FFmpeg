@@ -74,12 +74,12 @@ void av_fifo_reset(AVFifoBuffer *f)
     f->wndx = f->rndx = 0;
 }
 
-int av_fifo_size(FF_CONST_AVUTIL53 AVFifoBuffer *f)
+int av_fifo_size(const AVFifoBuffer *f)
 {
     return (uint32_t)(f->wndx - f->rndx);
 }
 
-int av_fifo_space(FF_CONST_AVUTIL53 AVFifoBuffer *f)
+int av_fifo_space(const AVFifoBuffer *f)
 {
     return f->end - f->buffer - av_fifo_size(f);
 }

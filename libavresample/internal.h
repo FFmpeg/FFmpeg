@@ -110,4 +110,7 @@ struct AVAudioResampleContext {
 
 void ff_audio_resample_init_aarch64(ResampleContext *c,
                                     enum AVSampleFormat sample_fmt);
+void ff_audio_resample_init_arm(ResampleContext *c,
+                                enum AVSampleFormat sample_fmt);
+
 #endif /* AVRESAMPLE_INTERNAL_H */

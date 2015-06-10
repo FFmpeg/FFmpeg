@@ -87,6 +87,28 @@ static av_always_inline void predict_slice_buffered(SnowContext *s, slice_buffer
                    mb_x - 1, mb_y - 1,
                    add, 0, plane_index);
     }
+
+    if(s->avmv && mb_y < mb_h && plane_index == 0)
+        for(mb_x=0; mb_x<mb_w; mb_x++){
+            AVMotionVector *avmv = s->avmv + s->avmv_index;
+            const int b_width = s->b_width  << s->block_max_depth;
+            const int b_stride= b_width;
+            BlockNode *bn= &s->block[mb_x + mb_y*b_stride];
+
+            if (bn->type)
+                continue;
+
+            s->avmv_index++;
+
+            avmv->w = block_w;
+            avmv->h = block_h;
+            avmv->dst_x = block_w*mb_x - block_w/2;
+            avmv->dst_y = block_h*mb_y - block_h/2;
+            avmv->src_x = avmv->dst_x + (bn->mx * s->mv_scale)/8;
+            avmv->src_y = avmv->dst_y + (bn->my * s->mv_scale)/8;
+            avmv->source= -1 - bn->ref;
+            avmv->flags = 0;
+        }
 }
 
 static inline void decode_subband_slice_buffered(SnowContext *s, SubBand *b, slice_buffer * sb, int start_y, int h, int save_state[1]){
@@ -152,7 +174,7 @@ static int decode_q_branch(SnowContext *s, int level, int x, int y){
         int l = left->color[0];
         int cb= left->color[1];
         int cr= left->color[2];
-        int ref = 0;
+        unsigned ref = 0;
         int ref_context= av_log2(2*left->ref) + av_log2(2*top->ref);
         int mx_context= av_log2(2*FFABS(left->mx - top->mx)) + 0*av_log2(2*FFABS(tr->mx - top->mx));
         int my_context= av_log2(2*FFABS(left->my - top->my)) + 0*av_log2(2*FFABS(tr->my - top->my));
@@ -379,7 +401,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
     int ret;
 
     if ((ret = ff_snow_common_init(avctx)) < 0) {
-        ff_snow_common_end(avctx->priv_data);
         return ret;
     }
 
@@ -442,6 +463,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
     if((res = ff_snow_frame_start(s)) < 0)
         return res;
+
+    s->current_picture->pict_type = s->keyframe ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
+
     //keyframe flag duplication mess FIXME
     if(avctx->debug&FF_DEBUG_PICT_INFO)
         av_log(avctx, AV_LOG_ERROR,
@@ -451,6 +475,12 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                s->spatial_decomposition_type,
                s->spatial_decomposition_count
               );
+
+    av_assert0(!s->avmv);
+    if (s->avctx->flags2 & CODEC_FLAG2_EXPORT_MVS) {
+        s->avmv = av_malloc_array(s->b_width * s->b_height, sizeof(AVMotionVector) << (s->block_max_depth*2));
+    }
+    s->avmv_index = 0;
 
     if ((res = decode_blocks(s)) < 0)
         return res;
@@ -570,6 +600,16 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         res = av_frame_ref(picture, s->current_picture);
     else
         res = av_frame_ref(picture, s->mconly_picture);
+    if (res >= 0 && s->avmv_index) {
+        AVFrameSideData *sd;
+
+        sd = av_frame_new_side_data(picture, AV_FRAME_DATA_MOTION_VECTORS, s->avmv_index * sizeof(AVMotionVector));
+        if (!sd)
+            return AVERROR(ENOMEM);
+        memcpy(sd->data, s->avmv, s->avmv_index * sizeof(AVMotionVector));
+    }
+
+    av_freep(&s->avmv);
 
     if (res < 0)
         return res;
@@ -603,4 +643,6 @@ AVCodec ff_snow_decoder = {
     .close          = decode_end,
     .decode         = decode_frame,
     .capabilities   = CODEC_CAP_DR1 /*| CODEC_CAP_DRAW_HORIZ_BAND*/,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |
+                      FF_CODEC_CAP_INIT_CLEANUP,
 };

@@ -44,6 +44,7 @@ static const AVOption options[] = {
 static int text_decode_frame(AVCodecContext *avctx, void *data,
                              int *got_sub_ptr, AVPacket *avpkt)
 {
+    int ret = 0;
     AVBPrint buf;
     AVSubtitle *sub = data;
     const char *ptr = avpkt->data;
@@ -55,14 +56,12 @@ static int text_decode_frame(AVCodecContext *avctx, void *data,
     av_bprint_init(&buf, 0, AV_BPRINT_SIZE_UNLIMITED);
     if (ptr && avpkt->size > 0 && *ptr) {
         ff_ass_bprint_text_event(&buf, ptr, avpkt->size, text->linebreaks, text->keep_ass_markup);
-        if (!av_bprint_is_complete(&buf)) {
-            av_bprint_finalize(&buf, NULL);
-            return AVERROR(ENOMEM);
-        }
-        ff_ass_add_rect(sub, buf.str, ts_start, ts_duration, 0);
+        ret = ff_ass_add_rect_bprint(sub, &buf, ts_start, ts_duration);
     }
-    *got_sub_ptr = sub->num_rects > 0;
     av_bprint_finalize(&buf, NULL);
+    if (ret < 0)
+        return ret;
+    *got_sub_ptr = sub->num_rects > 0;
     return avpkt->size;
 }
 
@@ -89,7 +88,7 @@ AVCodec ff_text_decoder = {
 };
 #endif
 
-#if CONFIG_VPLAYER_DECODER || CONFIG_PJS_DECODER || CONFIG_SUBVIEWER1_DECODER
+#if CONFIG_VPLAYER_DECODER || CONFIG_PJS_DECODER || CONFIG_SUBVIEWER1_DECODER || CONFIG_STL_DECODER
 
 static int linebreak_init(AVCodecContext *avctx)
 {
@@ -111,6 +110,22 @@ AVCodec ff_vplayer_decoder = {
     .decode         = text_decode_frame,
     .init           = linebreak_init,
     .priv_class     = &vplayer_decoder_class,
+};
+#endif
+
+#if CONFIG_STL_DECODER
+#define stl_options options
+DECLARE_CLASS(stl);
+
+AVCodec ff_stl_decoder = {
+    .name           = "stl",
+    .long_name      = NULL_IF_CONFIG_SMALL("Spruce subtitle format"),
+    .priv_data_size = sizeof(TextContext),
+    .type           = AVMEDIA_TYPE_SUBTITLE,
+    .id             = AV_CODEC_ID_STL,
+    .decode         = text_decode_frame,
+    .init           = linebreak_init,
+    .priv_class     = &stl_decoder_class,
 };
 #endif
 

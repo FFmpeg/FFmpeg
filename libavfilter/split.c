@@ -52,6 +52,8 @@ static av_cold int split_init(AVFilterContext *ctx)
         snprintf(name, sizeof(name), "output%d", i);
         pad.type = ctx->filter->inputs[0].type;
         pad.name = av_strdup(name);
+        if (!pad.name)
+            return AVERROR(ENOMEM);
 
         ff_insert_outpad(ctx, i, &pad);
     }

@@ -394,7 +394,7 @@ static av_cold int tta_decode_close(AVCodecContext *avctx) {
     TTAContext *s = avctx->priv_data;
 
     if (s->bps < 3)
-        av_free(s->decode_buffer);
+        av_freep(&s->decode_buffer);
     s->decode_buffer = NULL;
     av_freep(&s->ch_ctx);
 

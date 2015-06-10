@@ -48,7 +48,7 @@ static av_cold int utvideo_encode_close(AVCodecContext *avctx)
     UtvideoContext *c = avctx->priv_data;
     int i;
 
-    av_freep(&avctx->coded_frame);
+    av_frame_free(&avctx->coded_frame);
     av_freep(&c->slice_bits);
     for (i = 0; i < 4; i++)
         av_freep(&c->slice_buffer[i]);
@@ -389,7 +389,7 @@ static int write_huff_codes(uint8_t *src, uint8_t *dst, int dst_size,
 }
 
 static int encode_plane(AVCodecContext *avctx, uint8_t *src,
-                        uint8_t *dst, int stride,
+                        uint8_t *dst, int stride, int plane_no,
                         int width, int height, PutByteContext *pb)
 {
     UtvideoContext *c        = avctx->priv_data;
@@ -399,6 +399,7 @@ static int encode_plane(AVCodecContext *avctx, uint8_t *src,
     HuffEntry he[256];
 
     uint32_t offset = 0, slice_len = 0;
+    const int cmask = ~(!plane_no && avctx->pix_fmt == AV_PIX_FMT_YUV420P);
     int      i, sstart, send = 0;
     int      symbol;
     int      ret;
@@ -408,7 +409,7 @@ static int encode_plane(AVCodecContext *avctx, uint8_t *src,
     case PRED_NONE:
         for (i = 0; i < c->slices; i++) {
             sstart = send;
-            send   = height * (i + 1) / c->slices;
+            send   = height * (i + 1) / c->slices & cmask;
             av_image_copy_plane(dst + sstart * width, width,
                                 src + sstart * stride, stride,
                                 width, send - sstart);
@@ -417,7 +418,7 @@ static int encode_plane(AVCodecContext *avctx, uint8_t *src,
     case PRED_LEFT:
         for (i = 0; i < c->slices; i++) {
             sstart = send;
-            send   = height * (i + 1) / c->slices;
+            send   = height * (i + 1) / c->slices & cmask;
             left_predict(src + sstart * stride, dst + sstart * width,
                          stride, width, send - sstart);
         }
@@ -425,7 +426,7 @@ static int encode_plane(AVCodecContext *avctx, uint8_t *src,
     case PRED_MEDIAN:
         for (i = 0; i < c->slices; i++) {
             sstart = send;
-            send   = height * (i + 1) / c->slices;
+            send   = height * (i + 1) / c->slices & cmask;
             median_predict(c, src + sstart * stride, dst + sstart * width,
                            stride, width, send - sstart);
         }
@@ -489,7 +490,7 @@ static int encode_plane(AVCodecContext *avctx, uint8_t *src,
     send = 0;
     for (i = 0; i < c->slices; i++) {
         sstart  = send;
-        send    = height * (i + 1) / c->slices;
+        send    = height * (i + 1) / c->slices & cmask;
 
         /*
          * Write the huffman codes to a buffer,
@@ -571,7 +572,7 @@ static int utvideo_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     case AV_PIX_FMT_RGBA:
         for (i = 0; i < c->planes; i++) {
             ret = encode_plane(avctx, c->slice_buffer[i] + 2 * c->slice_stride,
-                               c->slice_buffer[i], c->slice_stride,
+                               c->slice_buffer[i], c->slice_stride, i,
                                width, height, &pb);
 
             if (ret) {
@@ -583,7 +584,7 @@ static int utvideo_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     case AV_PIX_FMT_YUV422P:
         for (i = 0; i < c->planes; i++) {
             ret = encode_plane(avctx, pic->data[i], c->slice_buffer[0],
-                               pic->linesize[i], width >> !!i, height, &pb);
+                               pic->linesize[i], i, width >> !!i, height, &pb);
 
             if (ret) {
                 av_log(avctx, AV_LOG_ERROR, "Error encoding plane %d.\n", i);
@@ -594,7 +595,7 @@ static int utvideo_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     case AV_PIX_FMT_YUV420P:
         for (i = 0; i < c->planes; i++) {
             ret = encode_plane(avctx, pic->data[i], c->slice_buffer[0],
-                               pic->linesize[i], width >> !!i, height >> !!i,
+                               pic->linesize[i], i, width >> !!i, height >> !!i,
                                &pb);
 
             if (ret) {

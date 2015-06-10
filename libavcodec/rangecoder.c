@@ -133,7 +133,7 @@ int main(void)
     av_lfg_init(&prng, 1);
 
     ff_init_range_encoder(&c, b, SIZE);
-    ff_build_rac_states(&c, 0.05 * (1LL << 32), 128 + 64 + 32 + 16);
+    ff_build_rac_states(&c, (1LL << 32) / 20, 128 + 64 + 32 + 16);
 
     memset(state, 128, sizeof(state));
 

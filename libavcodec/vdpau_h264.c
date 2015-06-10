@@ -24,6 +24,7 @@
 #include <vdpau/vdpau.h>
 
 #include "avcodec.h"
+#include "internal.h"
 #include "h264.h"
 #include "mpegutils.h"
 #include "vdpau.h"
@@ -50,7 +51,7 @@ static void vdpau_h264_clear_rf(VdpReferenceFrameH264 *rf)
 static void vdpau_h264_set_rf(VdpReferenceFrameH264 *rf, H264Picture *pic,
                               int pic_structure)
 {
-    VdpVideoSurface surface = ff_vdpau_get_surface_id(&pic->f);
+    VdpVideoSurface surface = ff_vdpau_get_surface_id(pic->f);
 
     if (pic_structure == 0)
         pic_structure = pic->reference;
@@ -87,7 +88,7 @@ static void vdpau_h264_set_reference_frames(AVCodecContext *avctx)
             if (!pic || !pic->reference)
                 continue;
             pic_frame_idx = pic->long_ref ? pic->pic_id : pic->frame_num;
-            surface_ref = ff_vdpau_get_surface_id(&pic->f);
+            surface_ref = ff_vdpau_get_surface_id(pic->f);
 
             rf2 = &info->referenceFrames[0];
             while (rf2 != rf) {
@@ -122,6 +123,9 @@ static int vdpau_h264_start_frame(AVCodecContext *avctx,
     H264Picture *pic = h->cur_pic_ptr;
     struct vdpau_picture_context *pic_ctx = pic->hwaccel_picture_private;
     VdpPictureInfoH264 *info = &pic_ctx->info.h264;
+#ifdef VDP_DECODER_PROFILE_H264_HIGH_444_PREDICTIVE
+    VdpPictureInfoH264Predictive *info2 = &pic_ctx->info.h264_predictive;
+#endif
 
     /* init VdpPictureInfoH264 */
     info->slice_count                            = 0;
@@ -148,6 +152,10 @@ static int vdpau_h264_start_frame(AVCodecContext *avctx,
     info->log2_max_pic_order_cnt_lsb_minus4      = h->sps.poc_type ? 0 : h->sps.log2_max_poc_lsb - 4;
     info->delta_pic_order_always_zero_flag       = h->sps.delta_pic_order_always_zero_flag;
     info->direct_8x8_inference_flag              = h->sps.direct_8x8_inference_flag;
+#ifdef VDP_DECODER_PROFILE_H264_HIGH_444_PREDICTIVE
+    info2->qpprime_y_zero_transform_bypass_flag  = h->sps.transform_bypass;
+    info2->separate_colour_plane_flag            = h->sps.residual_color_transform_flag;
+#endif
     info->entropy_coding_mode_flag               = h->pps.cabac;
     info->pic_order_present_flag                 = h->pps.pic_order_present;
     info->deblocking_filter_control_present_flag = h->pps.deblocking_filter_parameters_present;
@@ -189,41 +197,65 @@ static int vdpau_h264_decode_slice(AVCodecContext *avctx,
 
 static int vdpau_h264_end_frame(AVCodecContext *avctx)
 {
-    int res = 0;
-    AVVDPAUContext *hwctx = avctx->hwaccel_context;
     H264Context *h = avctx->priv_data;
+    H264SliceContext *sl = &h->slice_ctx[0];
     H264Picture *pic = h->cur_pic_ptr;
     struct vdpau_picture_context *pic_ctx = pic->hwaccel_picture_private;
-    VdpVideoSurface surf = ff_vdpau_get_surface_id(&pic->f);
+    int val;
 
-#if FF_API_BUFS_VDPAU
-FF_DISABLE_DEPRECATION_WARNINGS
-    hwctx->info = pic_ctx->info;
-    hwctx->bitstream_buffers = pic_ctx->bitstream_buffers;
-    hwctx->bitstream_buffers_used = pic_ctx->bitstream_buffers_used;
-    hwctx->bitstream_buffers_allocated = pic_ctx->bitstream_buffers_allocated;
-FF_ENABLE_DEPRECATION_WARNINGS
+    val = ff_vdpau_common_end_frame(avctx, pic->f, pic_ctx);
+    if (val < 0)
+        return val;
+
+    ff_h264_draw_horiz_band(h, sl, 0, h->avctx->height);
+    return 0;
+}
+
+static int vdpau_h264_init(AVCodecContext *avctx)
+{
+    VdpDecoderProfile profile;
+    uint32_t level = avctx->level;
+
+    switch (avctx->profile & ~FF_PROFILE_H264_INTRA) {
+    case FF_PROFILE_H264_BASELINE:
+        profile = VDP_DECODER_PROFILE_H264_BASELINE;
+        break;
+    case FF_PROFILE_H264_CONSTRAINED_BASELINE:
+#ifdef VDP_DECODER_PROFILE_H264_CONSTRAINED_BASELINE
+        profile = VDP_DECODER_PROFILE_H264_CONSTRAINED_BASELINE;
+        break;
 #endif
-
-    if (!hwctx->render) {
-        res = hwctx->render2(avctx, &pic->f, (void *)&pic_ctx->info,
-                             pic_ctx->bitstream_buffers_used, pic_ctx->bitstream_buffers);
-    } else
-    hwctx->render(hwctx->decoder, surf, (void *)&pic_ctx->info,
-                  pic_ctx->bitstream_buffers_used, pic_ctx->bitstream_buffers);
-
-    ff_h264_draw_horiz_band(h, 0, h->avctx->height);
-    av_freep(&pic_ctx->bitstream_buffers);
-
-#if FF_API_BUFS_VDPAU
-FF_DISABLE_DEPRECATION_WARNINGS
-    hwctx->bitstream_buffers = NULL;
-    hwctx->bitstream_buffers_used = 0;
-    hwctx->bitstream_buffers_allocated = 0;
-FF_ENABLE_DEPRECATION_WARNINGS
+    case FF_PROFILE_H264_MAIN:
+        profile = VDP_DECODER_PROFILE_H264_MAIN;
+        break;
+    case FF_PROFILE_H264_HIGH:
+        profile = VDP_DECODER_PROFILE_H264_HIGH;
+        break;
+#ifdef VDP_DECODER_PROFILE_H264_EXTENDED
+    case FF_PROFILE_H264_EXTENDED:
+        profile = VDP_DECODER_PROFILE_H264_EXTENDED;
+        break;
 #endif
+    case FF_PROFILE_H264_HIGH_10:
+        /* XXX: High 10 can be treated as High so long as only 8-bits per
+         * formats are supported. */
+        profile = VDP_DECODER_PROFILE_H264_HIGH;
+        break;
+#ifdef VDP_DECODER_PROFILE_H264_HIGH_444_PREDICTIVE
+    case FF_PROFILE_H264_HIGH_422:
+    case FF_PROFILE_H264_HIGH_444_PREDICTIVE:
+    case FF_PROFILE_H264_CAVLC_444:
+        profile = VDP_DECODER_PROFILE_H264_HIGH_444_PREDICTIVE;
+        break;
+#endif
+    default:
+        return AVERROR(ENOTSUP);
+    }
 
-    return res;
+    if ((avctx->profile & FF_PROFILE_H264_INTRA) && avctx->level == 11)
+        level = VDP_DECODER_LEVEL_H264_1b;
+
+    return ff_vdpau_common_init(avctx, profile, level);
 }
 
 AVHWAccel ff_h264_vdpau_hwaccel = {
@@ -235,4 +267,7 @@ AVHWAccel ff_h264_vdpau_hwaccel = {
     .end_frame      = vdpau_h264_end_frame,
     .decode_slice   = vdpau_h264_decode_slice,
     .frame_priv_data_size = sizeof(struct vdpau_picture_context),
+    .init           = vdpau_h264_init,
+    .uninit         = ff_vdpau_common_uninit,
+    .priv_data_size = sizeof(VDPAUContext),
 };

@@ -26,16 +26,6 @@
 #include "libavcodec/x86/dirac_dwt.h"
 
 
-static inline int mirror(int v, int m)
-{
-    while ((unsigned)v > (unsigned)m) {
-        v = -v;
-        if (v < 0)
-            v += 2 * m;
-    }
-    return v;
-}
-
 static void vertical_compose53iL0(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2,
                                   int width)
 {
@@ -307,8 +297,8 @@ static void spatial_compose_dirac53i_dy(DWTContext *d, int level, int width, int
 
     int y= cs->y;
     IDWTELEM *b[4] = { cs->b[0], cs->b[1] };
-    b[2] = d->buffer + mirror(y+1, height-1)*stride;
-    b[3] = d->buffer + mirror(y+2, height-1)*stride;
+    b[2] = d->buffer + avpriv_mirror(y+1, height-1)*stride;
+    b[3] = d->buffer + avpriv_mirror(y+2, height-1)*stride;
 
         if(y+1<(unsigned)height) vertical_compose_l0(b[1], b[2], b[3], width);
         if(y+0<(unsigned)height) vertical_compose_h0(b[0], b[1], b[2], width);
@@ -400,8 +390,8 @@ static void spatial_compose_daub97i_dy(DWTContext *d, int level, int width, int 
     IDWTELEM *b[6];
     for (i = 0; i < 4; i++)
         b[i] = cs->b[i];
-    b[4] = d->buffer + mirror(y+3, height-1)*stride;
-    b[5] = d->buffer + mirror(y+4, height-1)*stride;
+    b[4] = d->buffer + avpriv_mirror(y+3, height-1)*stride;
+    b[5] = d->buffer + avpriv_mirror(y+4, height-1)*stride;
 
         if(y+3<(unsigned)height) vertical_compose_l1(b[3], b[4], b[5], width);
         if(y+2<(unsigned)height) vertical_compose_h1(b[2], b[3], b[4], width);
@@ -419,17 +409,17 @@ static void spatial_compose_daub97i_dy(DWTContext *d, int level, int width, int 
 
 static void spatial_compose97i_init2(DWTCompose *cs, IDWTELEM *buffer, int height, int stride)
 {
-    cs->b[0] = buffer + mirror(-3-1, height-1)*stride;
-    cs->b[1] = buffer + mirror(-3  , height-1)*stride;
-    cs->b[2] = buffer + mirror(-3+1, height-1)*stride;
-    cs->b[3] = buffer + mirror(-3+2, height-1)*stride;
+    cs->b[0] = buffer + avpriv_mirror(-3-1, height-1)*stride;
+    cs->b[1] = buffer + avpriv_mirror(-3  , height-1)*stride;
+    cs->b[2] = buffer + avpriv_mirror(-3+1, height-1)*stride;
+    cs->b[3] = buffer + avpriv_mirror(-3+2, height-1)*stride;
     cs->y = -3;
 }
 
 static void spatial_compose53i_init2(DWTCompose *cs, IDWTELEM *buffer, int height, int stride)
 {
-    cs->b[0] = buffer + mirror(-1-1, height-1)*stride;
-    cs->b[1] = buffer + mirror(-1  , height-1)*stride;
+    cs->b[0] = buffer + avpriv_mirror(-1-1, height-1)*stride;
+    cs->b[1] = buffer + avpriv_mirror(-1  , height-1)*stride;
     cs->y = -1;
 }
 
@@ -547,7 +537,7 @@ int ff_spatial_idwt_init2(DWTContext *d, IDWTELEM *buffer, int width, int height
         break;
     default:
         av_log(NULL, AV_LOG_ERROR, "Unknown wavelet type %d\n", type);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     if (HAVE_MMX) ff_spatial_idwt_init_mmx(d, type);

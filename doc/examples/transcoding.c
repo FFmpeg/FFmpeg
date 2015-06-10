@@ -116,6 +116,10 @@ static int open_output_file(const char *filename)
                 || dec_ctx->codec_type == AVMEDIA_TYPE_AUDIO) {
             /* in this example, we choose transcoding to same codec */
             encoder = avcodec_find_encoder(dec_ctx->codec_id);
+            if (!encoder) {
+                av_log(NULL, AV_LOG_FATAL, "Neccessary encoder not found\n");
+                return AVERROR_INVALIDDATA;
+            }
 
             /* In this example, we transcode to same properties (picture size,
              * sample rate etc.). These properties can be changed for output
@@ -385,17 +389,9 @@ static int encode_write_frame(AVFrame *filt_frame, unsigned int stream_index, in
 
     /* prepare packet for muxing */
     enc_pkt.stream_index = stream_index;
-    enc_pkt.dts = av_rescale_q_rnd(enc_pkt.dts,
-            ofmt_ctx->streams[stream_index]->codec->time_base,
-            ofmt_ctx->streams[stream_index]->time_base,
-            AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX);
-    enc_pkt.pts = av_rescale_q_rnd(enc_pkt.pts,
-            ofmt_ctx->streams[stream_index]->codec->time_base,
-            ofmt_ctx->streams[stream_index]->time_base,
-            AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX);
-    enc_pkt.duration = av_rescale_q(enc_pkt.duration,
-            ofmt_ctx->streams[stream_index]->codec->time_base,
-            ofmt_ctx->streams[stream_index]->time_base);
+    av_packet_rescale_ts(&enc_pkt,
+                         ofmt_ctx->streams[stream_index]->codec->time_base,
+                         ofmt_ctx->streams[stream_index]->time_base);
 
     av_log(NULL, AV_LOG_DEBUG, "Muxing frame\n");
     /* mux encoded frame */
@@ -509,14 +505,9 @@ int main(int argc, char **argv)
                 ret = AVERROR(ENOMEM);
                 break;
             }
-            packet.dts = av_rescale_q_rnd(packet.dts,
-                    ifmt_ctx->streams[stream_index]->time_base,
-                    ifmt_ctx->streams[stream_index]->codec->time_base,
-                    AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX);
-            packet.pts = av_rescale_q_rnd(packet.pts,
-                    ifmt_ctx->streams[stream_index]->time_base,
-                    ifmt_ctx->streams[stream_index]->codec->time_base,
-                    AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX);
+            av_packet_rescale_ts(&packet,
+                                 ifmt_ctx->streams[stream_index]->time_base,
+                                 ifmt_ctx->streams[stream_index]->codec->time_base);
             dec_func = (type == AVMEDIA_TYPE_VIDEO) ? avcodec_decode_video2 :
                 avcodec_decode_audio4;
             ret = dec_func(ifmt_ctx->streams[stream_index]->codec, frame,
@@ -538,14 +529,9 @@ int main(int argc, char **argv)
             }
         } else {
             /* remux this frame without reencoding */
-            packet.dts = av_rescale_q_rnd(packet.dts,
-                    ifmt_ctx->streams[stream_index]->time_base,
-                    ofmt_ctx->streams[stream_index]->time_base,
-                    AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX);
-            packet.pts = av_rescale_q_rnd(packet.pts,
-                    ifmt_ctx->streams[stream_index]->time_base,
-                    ofmt_ctx->streams[stream_index]->time_base,
-                    AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX);
+            av_packet_rescale_ts(&packet,
+                                 ifmt_ctx->streams[stream_index]->time_base,
+                                 ofmt_ctx->streams[stream_index]->time_base);
 
             ret = av_interleaved_write_frame(ofmt_ctx, &packet);
             if (ret < 0)
@@ -587,7 +573,7 @@ end:
     av_free(filter_ctx);
     avformat_close_input(&ifmt_ctx);
     if (ofmt_ctx && !(ofmt_ctx->oformat->flags & AVFMT_NOFILE))
-        avio_close(ofmt_ctx->pb);
+        avio_closep(&ofmt_ctx->pb);
     avformat_free_context(ofmt_ctx);
 
     if (ret < 0)

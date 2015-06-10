@@ -117,16 +117,16 @@ av_cold int ffv1_init_slice_contexts(FFV1Context *f)
     av_assert0(f->slice_count > 0);
 
     for (i = 0; i < f->slice_count; i++) {
-        FFV1Context *fs = av_mallocz(sizeof(*fs));
         int sx          = i % f->num_h_slices;
         int sy          = i / f->num_h_slices;
         int sxs         = f->avctx->width  *  sx      / f->num_h_slices;
         int sxe         = f->avctx->width  * (sx + 1) / f->num_h_slices;
         int sys         = f->avctx->height *  sy      / f->num_v_slices;
         int sye         = f->avctx->height * (sy + 1) / f->num_v_slices;
+        FFV1Context *fs = av_mallocz(sizeof(*fs));
 
         if (!fs)
-            return AVERROR(ENOMEM);
+            goto memfail;
 
         f->slice_context[i] = fs;
         memcpy(fs, f, sizeof(*fs));
@@ -139,10 +139,19 @@ av_cold int ffv1_init_slice_contexts(FFV1Context *f)
 
         fs->sample_buffer = av_malloc_array((fs->width + 6), 3 * MAX_PLANES *
                                       sizeof(*fs->sample_buffer));
-        if (!fs->sample_buffer)
-            return AVERROR(ENOMEM);
+        if (!fs->sample_buffer) {
+            av_freep(&f->slice_context[i]);
+            goto memfail;
+        }
     }
     return 0;
+
+memfail:
+    while(--i >= 0) {
+        av_freep(&f->slice_context[i]->sample_buffer);
+        av_freep(&f->slice_context[i]);
+    }
+    return AVERROR(ENOMEM);
 }
 
 int ffv1_allocate_initial_states(FFV1Context *f)

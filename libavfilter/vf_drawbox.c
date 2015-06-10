@@ -47,6 +47,7 @@ static const char *const var_names[] = {
     "h",              ///< height of the rendered box
     "w",              ///< width  of the rendered box
     "t",
+    "max",
     NULL
 };
 
@@ -63,6 +64,7 @@ enum var_name {
     VAR_H,
     VAR_W,
     VAR_T,
+    VAR_MAX,
     VARS_NB
 };
 
@@ -110,9 +112,10 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUV440P,  AV_PIX_FMT_YUVJ440P,
         AV_PIX_FMT_NONE
     };
-
-    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
-    return 0;
+    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
+    if (!fmts_list)
+        return AVERROR(ENOMEM);
+    return ff_set_common_formats(ctx, fmts_list);
 }
 
 static int config_input(AVFilterLink *inlink)
@@ -142,30 +145,35 @@ static int config_input(AVFilterLink *inlink)
 
     for (i = 0; i <= NUM_EXPR_EVALS; i++) {
         /* evaluate expressions, fail on last iteration */
+        var_values[VAR_MAX] = inlink->w;
         if ((ret = av_expr_parse_and_eval(&res, (expr = s->x_expr),
                                           var_names, var_values,
                                           NULL, NULL, NULL, NULL, NULL, 0, ctx)) < 0 && i == NUM_EXPR_EVALS)
             goto fail;
         s->x = var_values[VAR_X] = res;
 
+        var_values[VAR_MAX] = inlink->h;
         if ((ret = av_expr_parse_and_eval(&res, (expr = s->y_expr),
                                           var_names, var_values,
                                           NULL, NULL, NULL, NULL, NULL, 0, ctx)) < 0 && i == NUM_EXPR_EVALS)
             goto fail;
         s->y = var_values[VAR_Y] = res;
 
+        var_values[VAR_MAX] = inlink->w - s->x;
         if ((ret = av_expr_parse_and_eval(&res, (expr = s->w_expr),
                                           var_names, var_values,
                                           NULL, NULL, NULL, NULL, NULL, 0, ctx)) < 0 && i == NUM_EXPR_EVALS)
             goto fail;
         s->w = var_values[VAR_W] = res;
 
+        var_values[VAR_MAX] = inlink->h - s->y;
         if ((ret = av_expr_parse_and_eval(&res, (expr = s->h_expr),
                                           var_names, var_values,
                                           NULL, NULL, NULL, NULL, NULL, 0, ctx)) < 0 && i == NUM_EXPR_EVALS)
             goto fail;
         s->h = var_values[VAR_H] = res;
 
+        var_values[VAR_MAX] = INT_MAX;
         if ((ret = av_expr_parse_and_eval(&res, (expr = s->t_expr),
                                           var_names, var_values,
                                           NULL, NULL, NULL, NULL, NULL, 0, ctx)) < 0 && i == NUM_EXPR_EVALS)

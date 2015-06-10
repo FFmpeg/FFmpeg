@@ -1,0 +1,4 @@
+0d061b0b7bedcd59e5c90a99f58ceeae *tests/data/fate/vsynth_lena-yuv.avi
+7610052 tests/data/fate/vsynth_lena-yuv.avi
+dde5895817ad9d219f79a52d0bdfb001 *tests/data/fate/vsynth_lena-yuv.out.rawvideo
+stddev:    0.00 PSNR:999.99 MAXDIFF:    0 bytes:  7603200/  7603200

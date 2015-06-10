@@ -26,6 +26,7 @@
 #include "s3tc.h"
 
 static inline void dxt1_decode_pixels(GetByteContext *gb, uint32_t *d,
+                                      unsigned int w, unsigned int h,
                                       unsigned int qstride, unsigned int flag,
                                       uint64_t alpha) {
     unsigned int x, y, c0, c1, a = (!flag * 255u) << 24;
@@ -62,11 +63,15 @@ static inline void dxt1_decode_pixels(GetByteContext *gb, uint32_t *d,
     colors[2] = rb2 + g2 + a;
 
     pixels = bytestream2_get_le32(gb);
-    for (y=0; y<4; y++) {
-        for (x=0; x<4; x++) {
+    for (y=0; y<h; y++) {
+        for (x=0; x<w; x++) {
             a        = (alpha & 0x0f) << 28;
             a       += a >> 4;
             d[x]     = a + colors[pixels&3];
+            pixels >>= 2;
+            alpha  >>= 4;
+        }
+        for (; x<4; x++) {
             pixels >>= 2;
             alpha  >>= 4;
         }
@@ -77,21 +82,21 @@ static inline void dxt1_decode_pixels(GetByteContext *gb, uint32_t *d,
 void ff_decode_dxt1(GetByteContext *gb, uint8_t *dst,
                     const unsigned int w, const unsigned int h,
                     const unsigned int stride) {
-    unsigned int bx, by, qstride = stride/4;
+    unsigned int x, y, qstride = stride/4;
     uint32_t *d = (uint32_t *) dst;
 
-    for (by=0; by < h/4; by++, d += stride-w)
-        for (bx = 0; bx < w / 4; bx++, d += 4)
-            dxt1_decode_pixels(gb, d, qstride, 0, 0LL);
+    for (y=0; y < h; y += 4, d += stride-w)
+        for (x = 0; x < w; d += FFMIN(4, w-x), x += 4)
+            dxt1_decode_pixels(gb, d, FFMIN(4, w-x), FFMIN(4, h-y), qstride, 0, 0LL);
 }
 
 void ff_decode_dxt3(GetByteContext *gb, uint8_t *dst,
                     const unsigned int w, const unsigned int h,
                     const unsigned int stride) {
-    unsigned int bx, by, qstride = stride/4;
+    unsigned int x, y, qstride = stride/4;
     uint32_t *d = (uint32_t *) dst;
 
-    for (by=0; by < h/4; by++, d += stride-w)
-        for (bx = 0; bx < w / 4; bx++, d += 4)
-            dxt1_decode_pixels(gb, d, qstride, 1, bytestream2_get_le64(gb));
+    for (y=0; y < h; y += 4, d += stride-w)
+        for (x = 0; x < w; d += FFMIN(4, w-x), x += 4)
+            dxt1_decode_pixels(gb, d, FFMIN(4, w-x), FFMIN(4, h-y), qstride, 1, bytestream2_get_le64(gb));
 }

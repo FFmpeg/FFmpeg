@@ -41,13 +41,28 @@ typedef struct {
     char *font_name;      /**< font face (case sensitive) */
     int   font_size;      /**< font height */
     int   primary_color;  /**< color that a subtitle will normally appear in */
+    int   secondary_color;
+    int   outline_color;  /**< color for outline in ASS, called tertiary in SSA */
     int   back_color;     /**< color of the subtitle outline or shadow */
     int   bold;           /**< whether text is bold (1) or not (0) */
     int   italic;         /**< whether text is italic (1) or not (0) */
     int   underline;      /**< whether text is underlined (1) or not (0) */
+    int   strikeout;
+    float scalex;
+    float scaley;
+    float spacing;
+    float angle;
+    int   border_style;
+    float outline;
+    float shadow;
     int   alignment;      /**< position of the text (left, center, top...),
                                defined after the layout of the numpad
                                (1-3 sub, 4-6 mid, 7-9 top) */
+    int   margin_l;
+    int   margin_r;
+    int   margin_v;
+    int   alpha_level;
+    int   encoding;
 } ASSStyle;
 
 /**
@@ -58,6 +73,11 @@ typedef struct {
     int   start;    /**< start time of the dialog in centiseconds */
     int   end;      /**< end time of the dialog in centiseconds */
     char *style;    /**< name of the ASSStyle to use with this dialog */
+    char *name;
+    int   margin_l;
+    int   margin_r;
+    int   margin_v;
+    char *effect;
     char *text;     /**< actual text which will be displayed as a subtitle,
                          can include style override control codes (see
                          ff_ass_split_override_codes()) */

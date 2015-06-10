@@ -1,4 +1,5 @@
 \input texinfo @c -*- texinfo -*-
+@documentencoding UTF-8
 
 @settitle ffserver Documentation
 @titlepage
@@ -71,7 +72,7 @@ the HTTP server (configured through the @option{HTTPPort} option), and
 configuration file.
 
 Each feed is associated to a file which is stored on disk. This stored
-file is used to allow to send pre-recorded data to a player as fast as
+file is used to send pre-recorded data to a player as fast as
 possible when new content is added in real-time to the stream.
 
 A "live-stream" or "stream" is a resource published by
@@ -117,7 +118,8 @@ Multiple streams can be connected to the same feed.
 
 For example, you can have a situation described by the following
 graph:
-@example
+
+@verbatim
                _________       __________
               |         |     |          |
 ffmpeg 1 -----| feed 1  |-----| stream 1 |
@@ -142,7 +144,8 @@ ffmpeg 2 -----| feed 3  |-----| stream 4 |
               |         |     |          |
               | file 1  |-----| stream 5 |
               |_________|     |__________|
-@end example
+
+@end verbatim
 
 @anchor{FFM}
 @section FFM, FFM2 formats
@@ -408,6 +411,12 @@ ignored, and the log is written to standard output.
 Set no-daemon mode. This option is currently ignored since now
 @command{ffserver} will always work in no-daemon mode, and is
 deprecated.
+
+@item UseDefaults
+@item NoDefaults
+Control whether default codec options are used for the all streams or not.
+Each stream may overwrite this setting for its own. Default is @var{UseDefaults}.
+The lastest occurrence overrides previous if multiple definitions.
 @end table
 
 @section Feed section
@@ -571,6 +580,11 @@ deprecated in favor of @option{Metadata}.
 @item Metadata @var{key} @var{value}
 Set metadata value on the output stream.
 
+@item UseDefaults
+@item NoDefaults
+Control whether default codec options are used for the stream or not.
+Default is @var{UseDefaults} unless disabled globally.
+
 @item NoAudio
 @item NoVideo
 Suppress audio/video.
@@ -589,8 +603,9 @@ Set sampling frequency for audio. When using low bitrates, you should
 lower this frequency to 22050 or 11025. The supported frequencies
 depend on the selected audio codec.
 
-@item AVOptionAudio @var{option} @var{value} (@emph{encoding,audio})
-Set generic option for audio stream.
+@item AVOptionAudio [@var{codec}:]@var{option} @var{value} (@emph{encoding,audio})
+Set generic or private option for audio stream.
+Private option must be prefixed with codec name or codec must be defined before.
 
 @item AVPresetAudio @var{preset} (@emph{encoding,audio})
 Set preset for audio stream.
@@ -667,8 +682,9 @@ Set video @option{qdiff} encoding option.
 @item DarkMask @var{float} (@emph{encoding,video})
 Set @option{lumi_mask}/@option{dark_mask} encoding options.
 
-@item AVOptionVideo @var{option} @var{value} (@emph{encoding,video})
-Set generic option for video stream.
+@item AVOptionVideo [@var{codec}:]@var{option} @var{value} (@emph{encoding,video})
+Set generic or private option for video stream.
+Private option must be prefixed with codec name or codec must be defined before.
 
 @item AVPresetVideo @var{preset} (@emph{encoding,video})
 Set preset for video stream.

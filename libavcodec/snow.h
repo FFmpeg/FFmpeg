@@ -22,6 +22,8 @@
 #ifndef AVCODEC_SNOW_H
 #define AVCODEC_SNOW_H
 
+#include "libavutil/motion_vector.h"
+
 #include "hpeldsp.h"
 #include "me_cmp.h"
 #include "qpeldsp.h"
@@ -29,6 +31,8 @@
 
 #include "rangecoder.h"
 #include "mathops.h"
+
+#define FF_MPV_OFFSET(x) (offsetof(MpegEncContext, x) + offsetof(SnowContext, m))
 #include "mpegvideo.h"
 #include "h264qpel.h"
 
@@ -171,11 +175,15 @@ typedef struct SnowContext{
     slice_buffer sb;
     int memc_only;
     int no_bitstream;
+    int intra_penalty;
 
     MpegEncContext m; // needed for motion estimation, should not be used for anything else, the idea is to eventually make the motion estimation independent of MpegEncContext, so this will be removed then (FIXME/XXX)
 
     uint8_t *scratchbuf;
     uint8_t *emu_edge_buffer;
+
+    AVMotionVector *avmv;
+    int avmv_index;
 }SnowContext;
 
 /* Tables */
@@ -231,7 +239,7 @@ void ff_snow_reset_contexts(SnowContext *s);
 int ff_snow_alloc_blocks(SnowContext *s);
 int ff_snow_frame_start(SnowContext *s);
 void ff_snow_pred_block(SnowContext *s, uint8_t *dst, uint8_t *tmp, ptrdiff_t stride,
-                     int sx, int sy, int b_w, int b_h, BlockNode *block,
+                     int sx, int sy, int b_w, int b_h, const BlockNode *block,
                      int plane_index, int w, int h);
 int ff_snow_get_buffer(SnowContext *s, AVFrame *frame);
 /* common inline functions */

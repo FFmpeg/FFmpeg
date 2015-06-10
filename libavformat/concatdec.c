@@ -23,6 +23,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
+#include "libavutil/timestamp.h"
 #include "avformat.h"
 #include "internal.h"
 #include "url.h"
@@ -288,6 +289,10 @@ static int open_file(AVFormatContext *avf, unsigned fileno)
         return AVERROR(ENOMEM);
 
     cat->avf->interrupt_callback = avf->interrupt_callback;
+
+    if ((ret = ff_copy_whitelists(cat->avf, avf)) < 0)
+        return ret;
+
     if ((ret = avformat_open_input(&cat->avf, file->url, NULL, NULL)) < 0 ||
         (ret = avformat_find_stream_info(cat->avf, NULL)) < 0) {
         av_log(avf, AV_LOG_ERROR, "Impossible to open '%s'\n", file->url);
@@ -345,7 +350,7 @@ static int concat_read_header(AVFormatContext *avf)
                 FAIL(AVERROR_INVALIDDATA);
             }
             if ((ret = add_file(avf, filename, &file, &nb_files_alloc)) < 0)
-                FAIL(ret);
+                goto fail;
         } else if (!strcmp(keyword, "duration")) {
             char *dur_str = get_keyword(&cursor);
             int64_t dur;
@@ -357,7 +362,7 @@ static int concat_read_header(AVFormatContext *avf)
             if ((ret = av_parse_time(&dur, dur_str, 1)) < 0) {
                 av_log(avf, AV_LOG_ERROR, "Line %d: invalid duration '%s'\n",
                        line, dur_str);
-                FAIL(ret);
+                goto fail;
             }
             file->duration = dur;
         } else if (!strcmp(keyword, "stream")) {
@@ -387,7 +392,7 @@ static int concat_read_header(AVFormatContext *avf)
         }
     }
     if (ret < 0)
-        FAIL(ret);
+        goto fail;
     if (!cat->nb_files)
         FAIL(AVERROR_INVALIDDATA);
 
@@ -408,7 +413,7 @@ static int concat_read_header(AVFormatContext *avf)
     cat->stream_match_mode = avf->nb_streams ? MATCH_EXACT_ID :
                                                MATCH_ONE_TO_ONE;
     if ((ret = open_file(avf, 0)) < 0)
-        FAIL(ret);
+        goto fail;
     return 0;
 
 fail:
@@ -473,8 +478,12 @@ static int concat_read_packet(AVFormatContext *avf, AVPacket *pkt)
 {
     ConcatContext *cat = avf->priv_data;
     int ret;
-    int64_t delta;
+    int64_t file_start_time, delta;
     ConcatStream *cs;
+    AVStream *st;
+
+    if (!cat->avf)
+        return AVERROR(EIO);
 
     while (1) {
         ret = av_read_frame(cat->avf, pkt);
@@ -500,13 +509,25 @@ static int concat_read_packet(AVFormatContext *avf, AVPacket *pkt)
     if ((ret = filter_packet(avf, cs, pkt)))
         return ret;
 
-    delta = av_rescale_q(cat->cur_file->start_time - cat->avf->start_time,
+    st = cat->avf->streams[pkt->stream_index];
+    av_log(avf, AV_LOG_DEBUG, "file:%d stream:%d pts:%s pts_time:%s dts:%s dts_time:%s",
+           (unsigned)(cat->cur_file - cat->files), pkt->stream_index,
+           av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, &st->time_base),
+           av_ts2str(pkt->dts), av_ts2timestr(pkt->dts, &st->time_base));
+
+    file_start_time = cat->avf->start_time;
+    if (file_start_time == AV_NOPTS_VALUE)
+        file_start_time = 0;
+    delta = av_rescale_q(cat->cur_file->start_time - file_start_time,
                          AV_TIME_BASE_Q,
                          cat->avf->streams[pkt->stream_index]->time_base);
     if (pkt->pts != AV_NOPTS_VALUE)
         pkt->pts += delta;
     if (pkt->dts != AV_NOPTS_VALUE)
         pkt->dts += delta;
+    av_log(avf, AV_LOG_DEBUG, " -> pts:%s pts_time:%s dts:%s dts_time:%s\n",
+           av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, &st->time_base),
+           av_ts2str(pkt->dts), av_ts2timestr(pkt->dts, &st->time_base));
     return ret;
 }
 
@@ -606,7 +627,7 @@ static const AVOption options[] = {
     { "safe", "enable safe mode",
       OFFSET(safe), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 1, DEC },
     { "auto_convert", "automatically convert bitstream format",
-      OFFSET(auto_convert), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, DEC },
+      OFFSET(auto_convert), AV_OPT_TYPE_INT, {.i64 = 1}, 0, 1, DEC },
     { NULL }
 };
 

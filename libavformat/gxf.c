@@ -560,7 +560,7 @@ static int gxf_packet(AVFormatContext *s, AVPacket *pkt) {
 }
 
 static int gxf_seek(AVFormatContext *s, int stream_index, int64_t timestamp, int flags) {
-    int res = 0;
+    int64_t res = 0;
     uint64_t pos;
     uint64_t maxlen = 100 * 1024 * 1024;
     AVStream *st = s->streams[0];

@@ -233,6 +233,28 @@ static const uint8_t dnxhd_1256_chroma_weight[] = {
     34, 37, 39, 44, 51, 56, 61, 70,
 };
 
+static const uint8_t dnxhd_1258_luma_weight[] = {
+     0, 32, 36, 36,  40,  40, 55, 60,
+    34, 36, 37, 40,  41,  48, 57, 82,
+    35, 36, 41, 41,  46,  52, 73, 82,
+    37, 40, 42, 45,  50,  65, 80, 87,
+    39, 41, 44, 49,  62,  78, 88, 90,
+    41, 44, 49, 58,  73,  90, 95, 95,
+    43, 52, 55, 68,  90, 100, 97, 93,
+    52, 53, 71, 82, 107, 103, 99, 99,
+};
+
+static const uint8_t dnxhd_1258_chroma_weight[] = {
+     0, 32, 37,  38,  49,  53,  65,  66,
+    35, 37, 40,  49,  56,  64,  65,  82,
+    36, 42, 50,  56,  64,  67,  73,  85,
+    46, 50, 57,  63,  71,  72,  89,  87,
+    49, 58, 65,  72,  78,  88,  88,  90,
+    60, 64, 74,  81,  84,  90,  95, 134,
+    62, 74, 77,  80,  90, 114, 129, 125,
+    74, 74, 90, 100, 128, 125, 116, 116,
+};
+
 static const uint8_t dnxhd_1237_dc_codes[12] = {
     0, 12, 13, 1, 2, 3, 4, 5, 14, 30, 62, 63,
 };
@@ -956,6 +978,14 @@ static const uint8_t dnxhd_1252_ac_flags[257] = {
     3,
 };
 
+static const uint8_t dnxhd_1258_dc_codes[14] = {
+    0, 12, 13, 1, 2, 3, 4, 5, 14, 30, 62, 63, 0, 0,
+};
+
+static const uint8_t dnxhd_1258_dc_bits[14] = {
+    3, 4, 4, 3, 3, 3, 3, 3, 4, 5, 6, 6, 0, 0,
+};
+
 const CIDEntry ff_dnxhd_cid_table[] = {
     { 1235, 1920, 1080, 0, 917504, 917504, 6, 10, 4,
       dnxhd_1235_luma_weight, dnxhd_1235_chroma_weight,
@@ -1045,6 +1075,14 @@ const CIDEntry ff_dnxhd_cid_table[] = {
       dnxhd_1235_1238_1241_run_codes, dnxhd_1235_1238_1241_run_bits, dnxhd_1235_1241_run,
       { 350, 390, 440, 730, 880 },
       { { 24000, 1001 }, { 25, 1 }, { 30000, 1001 }, { 50, 1 }, { 60000, 1001 } } },
+    { 1258, 960, 720, 0, 212992, 212992, 4, 8, 5,
+      dnxhd_1258_luma_weight, dnxhd_1258_chroma_weight,
+      dnxhd_1258_dc_codes, dnxhd_1258_dc_bits,
+      dnxhd_1252_ac_codes, dnxhd_1252_ac_bits, dnxhd_1252_ac_level,
+      dnxhd_1252_ac_flags,
+      dnxhd_1251_run_codes, dnxhd_1251_run_bits, dnxhd_1251_run,
+      { 42, 60, 75, 115 } },
+
 };
 
 int ff_dnxhd_get_cid_table(int cid)
@@ -1062,6 +1100,14 @@ int avpriv_dnxhd_get_frame_size(int cid)
     if (i<0)
         return i;
     return ff_dnxhd_cid_table[i].frame_size;
+}
+
+int avpriv_dnxhd_get_interlaced(int cid)
+{
+    int i = ff_dnxhd_get_cid_table(cid);
+    if (i < 0)
+        return i;
+    return ff_dnxhd_cid_table[i].interlaced;
 }
 
 int ff_dnxhd_find_cid(AVCodecContext *avctx, int bit_depth)
