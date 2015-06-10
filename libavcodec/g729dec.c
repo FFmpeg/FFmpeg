@@ -421,7 +421,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
         return ret;
     out_frame = (int16_t*) frame->data[0];
 
-    if (buf_size == 10) {
+    if (buf_size % 10 == 0) {
         packet_type = FORMAT_G729_8K;
         format = &format_g729_8k;
         //Reset voice decision
@@ -512,7 +512,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
 
         if (frame_erasure) {
             ctx->rand_value = g729_prng(ctx->rand_value);
-            fc_indexes   = ctx->rand_value & ((1 << format->fc_indexes_bits) - 1);
+            fc_indexes   = av_mod_uintp2(ctx->rand_value, format->fc_indexes_bits);
 
             ctx->rand_value = g729_prng(ctx->rand_value);
             pulses_signs = ctx->rand_value;
@@ -711,7 +711,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
     memmove(ctx->exc_base, ctx->exc_base + 2 * SUBFRAME_SIZE, (PITCH_DELAY_MAX+INTERPOL_LEN)*sizeof(int16_t));
 
     *got_frame_ptr = 1;
-    return buf_size;
+    return packet_type == FORMAT_G729_8K ? 10 : 8;
 }
 
 AVCodec ff_g729_decoder = {
@@ -722,5 +722,5 @@ AVCodec ff_g729_decoder = {
     .priv_data_size = sizeof(G729Context),
     .init           = decoder_init,
     .decode         = decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = CODEC_CAP_SUBFRAMES | CODEC_CAP_DR1,
 };

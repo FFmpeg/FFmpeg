@@ -90,6 +90,10 @@ static int aac_adtstoasc_filter(AVBitStreamFilterContext *bsfc,
         av_free(avctx->extradata);
         avctx->extradata_size = 2 + pce_size;
         avctx->extradata = av_mallocz(avctx->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
+        if (!avctx->extradata) {
+            avctx->extradata_size = 0;
+            return AVERROR(ENOMEM);
+        }
 
         init_put_bits(&pb, avctx->extradata, avctx->extradata_size);
         put_bits(&pb, 5, hdr.object_type);

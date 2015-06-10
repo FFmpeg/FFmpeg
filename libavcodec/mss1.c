@@ -197,6 +197,8 @@ static av_cold int mss1_decode_init(AVCodecContext *avctx)
         return AVERROR(ENOMEM);
 
     ret = ff_mss12_decode_init(&c->ctx, 0, &c->sc, NULL);
+    if (ret < 0)
+        av_frame_free(&c->pic);
 
     avctx->pix_fmt = AV_PIX_FMT_PAL8;
 

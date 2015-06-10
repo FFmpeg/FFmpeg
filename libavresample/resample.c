@@ -172,6 +172,8 @@ ResampleContext *ff_audio_resample_init(AVAudioResampleContext *avr)
 
     if (ARCH_AARCH64)
         ff_audio_resample_init_aarch64(c, avr->internal_sample_fmt);
+    if (ARCH_ARM)
+        ff_audio_resample_init_arm(c, avr->internal_sample_fmt);
 
     felem_size = av_get_bytes_per_sample(avr->internal_sample_fmt);
     c->filter_bank = av_mallocz(c->filter_length * (phase_count + 1) * felem_size);
@@ -432,7 +434,9 @@ int ff_audio_resample(ResampleContext *c, AudioData *dst, AudioData *src)
         int bps = av_get_bytes_per_sample(c->avr->internal_sample_fmt);
         int i;
 
-        ret = ff_audio_data_realloc(c->buffer, in_samples + c->padding_size);
+        ret = ff_audio_data_realloc(c->buffer,
+                                    FFMAX(in_samples, in_leftover) +
+                                    c->padding_size);
         if (ret < 0) {
             av_log(c->avr, AV_LOG_ERROR, "Error reallocating resampling buffer\n");
             return AVERROR(ENOMEM);
@@ -483,7 +487,7 @@ int ff_audio_resample(ResampleContext *c, AudioData *dst, AudioData *src)
     ff_audio_data_drain(c->buffer, consumed);
     c->initial_padding_samples = FFMAX(c->initial_padding_samples - consumed, 0);
 
-    av_dlog(c->avr, "resampled %d in + %d leftover to %d out + %d leftover\n",
+    av_log(c->avr, AV_LOG_TRACE, "resampled %d in + %d leftover to %d out + %d leftover\n",
             in_samples, in_leftover, out_samples, c->buffer->nb_samples);
 
     dst->nb_samples = out_samples;

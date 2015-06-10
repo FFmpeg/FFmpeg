@@ -28,7 +28,7 @@
 #include "libavutil/crc.h"
 #include "libavutil/dict.h"
 
-typedef struct {
+typedef struct TTAContext {
     int totalframes, currentframe;
     int frame_size;
     int last_frame_size;
@@ -56,12 +56,14 @@ static int tta_read_header(AVFormatContext *s)
     TTAContext *c = s->priv_data;
     AVStream *st;
     int i, channels, bps, samplerate;
-    uint64_t framepos, start_offset;
+    int64_t framepos, start_offset;
     uint32_t nb_samples, crc;
 
     ff_id3v1_read(s);
 
     start_offset = avio_tell(s->pb);
+    if (start_offset < 0)
+        return start_offset;
     ffio_init_checksum(s->pb, tta_check_crc, UINT32_MAX);
     if (avio_rl32(s->pb) != AV_RL32("TTA1"))
         return AVERROR_INVALIDDATA;
@@ -82,7 +84,7 @@ static int tta_read_header(AVFormatContext *s)
     }
 
     crc = ffio_get_checksum(s->pb) ^ UINT32_MAX;
-    if (crc != avio_rl32(s->pb)) {
+    if (crc != avio_rl32(s->pb) && s->error_recognition & AV_EF_CRCCHECK) {
         av_log(s, AV_LOG_ERROR, "Header CRC error\n");
         return AVERROR_INVALIDDATA;
     }
@@ -107,7 +109,10 @@ static int tta_read_header(AVFormatContext *s)
     st->start_time = 0;
     st->duration = nb_samples;
 
-    framepos = avio_tell(s->pb) + 4*c->totalframes + 4;
+    framepos = avio_tell(s->pb);
+    if (framepos < 0)
+        return framepos;
+    framepos += 4 * c->totalframes + 4;
 
     if (ff_alloc_extradata(st->codec, avio_tell(s->pb) - start_offset))
         return AVERROR(ENOMEM);
@@ -118,12 +123,14 @@ static int tta_read_header(AVFormatContext *s)
     ffio_init_checksum(s->pb, tta_check_crc, UINT32_MAX);
     for (i = 0; i < c->totalframes; i++) {
         uint32_t size = avio_rl32(s->pb);
-        av_add_index_entry(st, framepos, i * c->frame_size, size, 0,
-                           AVINDEX_KEYFRAME);
+        int r;
+        if ((r = av_add_index_entry(st, framepos, i * c->frame_size, size, 0,
+                                    AVINDEX_KEYFRAME)) < 0)
+            return r;
         framepos += size;
     }
     crc = ffio_get_checksum(s->pb) ^ UINT32_MAX;
-    if (crc != avio_rl32(s->pb)) {
+    if (crc != avio_rl32(s->pb) && s->error_recognition & AV_EF_CRCCHECK) {
         av_log(s, AV_LOG_ERROR, "Seek table CRC error\n");
         return AVERROR_INVALIDDATA;
     }
@@ -152,6 +159,11 @@ static int tta_read_packet(AVFormatContext *s, AVPacket *pkt)
     // FIXME!
     if (c->currentframe >= c->totalframes)
         return AVERROR_EOF;
+
+    if (st->nb_index_entries < c->totalframes) {
+        av_log(s, AV_LOG_ERROR, "Index entry disappeared\n");
+        return AVERROR_INVALIDDATA;
+    }
 
     size = st->index_entries[c->currentframe].size;
 

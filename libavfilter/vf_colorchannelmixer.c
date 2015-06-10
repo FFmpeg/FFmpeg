@@ -81,17 +81,19 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_NONE
     };
 
-    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
-    return 0;
+    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
+    if (!fmts_list)
+        return AVERROR(ENOMEM);
+    return ff_set_common_formats(ctx, fmts_list);
 }
 
 static int config_output(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
-    ColorChannelMixerContext *cm = ctx->priv;
+    ColorChannelMixerContext *s = ctx->priv;
     int i, j, size, *buffer;
 
-    ff_fill_rgba_map(cm->rgba_map, outlink->format);
+    ff_fill_rgba_map(s->rgba_map, outlink->format);
 
     switch (outlink->format) {
     case AV_PIX_FMT_RGB48:
@@ -104,34 +106,34 @@ static int config_output(AVFilterLink *outlink)
         size = 256;
     }
 
-    cm->buffer = buffer = av_malloc(16 * size * sizeof(*cm->buffer));
-    if (!cm->buffer)
+    s->buffer = buffer = av_malloc(16 * size * sizeof(*s->buffer));
+    if (!s->buffer)
         return AVERROR(ENOMEM);
 
     for (i = 0; i < 4; i++)
         for (j = 0; j < 4; j++, buffer += size)
-            cm->lut[i][j] = buffer;
+            s->lut[i][j] = buffer;
 
     for (i = 0; i < size; i++) {
-        cm->lut[R][R][i] = round(i * cm->rr);
-        cm->lut[R][G][i] = round(i * cm->rg);
-        cm->lut[R][B][i] = round(i * cm->rb);
-        cm->lut[R][A][i] = round(i * cm->ra);
+        s->lut[R][R][i] = round(i * s->rr);
+        s->lut[R][G][i] = round(i * s->rg);
+        s->lut[R][B][i] = round(i * s->rb);
+        s->lut[R][A][i] = round(i * s->ra);
 
-        cm->lut[G][R][i] = round(i * cm->gr);
-        cm->lut[G][G][i] = round(i * cm->gg);
-        cm->lut[G][B][i] = round(i * cm->gb);
-        cm->lut[G][A][i] = round(i * cm->ga);
+        s->lut[G][R][i] = round(i * s->gr);
+        s->lut[G][G][i] = round(i * s->gg);
+        s->lut[G][B][i] = round(i * s->gb);
+        s->lut[G][A][i] = round(i * s->ga);
 
-        cm->lut[B][R][i] = round(i * cm->br);
-        cm->lut[B][G][i] = round(i * cm->bg);
-        cm->lut[B][B][i] = round(i * cm->bb);
-        cm->lut[B][A][i] = round(i * cm->ba);
+        s->lut[B][R][i] = round(i * s->br);
+        s->lut[B][G][i] = round(i * s->bg);
+        s->lut[B][B][i] = round(i * s->bb);
+        s->lut[B][A][i] = round(i * s->ba);
 
-        cm->lut[A][R][i] = round(i * cm->ar);
-        cm->lut[A][G][i] = round(i * cm->ag);
-        cm->lut[A][B][i] = round(i * cm->ab);
-        cm->lut[A][A][i] = round(i * cm->aa);
+        s->lut[A][R][i] = round(i * s->ar);
+        s->lut[A][G][i] = round(i * s->ag);
+        s->lut[A][B][i] = round(i * s->ab);
+        s->lut[A][A][i] = round(i * s->aa);
     }
 
     return 0;
@@ -140,12 +142,12 @@ static int config_output(AVFilterLink *outlink)
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     AVFilterContext *ctx = inlink->dst;
-    ColorChannelMixerContext *cm = ctx->priv;
+    ColorChannelMixerContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
-    const uint8_t roffset = cm->rgba_map[R];
-    const uint8_t goffset = cm->rgba_map[G];
-    const uint8_t boffset = cm->rgba_map[B];
-    const uint8_t aoffset = cm->rgba_map[A];
+    const uint8_t roffset = s->rgba_map[R];
+    const uint8_t goffset = s->rgba_map[G];
+    const uint8_t boffset = s->rgba_map[B];
+    const uint8_t aoffset = s->rgba_map[A];
     const uint8_t *srcrow = in->data[0];
     uint8_t *dstrow;
     AVFrame *out;
@@ -175,15 +177,15 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                 const uint8_t gin = src[j + goffset];
                 const uint8_t bin = src[j + boffset];
 
-                dst[j + roffset] = av_clip_uint8(cm->lut[R][R][rin] +
-                                                 cm->lut[R][G][gin] +
-                                                 cm->lut[R][B][bin]);
-                dst[j + goffset] = av_clip_uint8(cm->lut[G][R][rin] +
-                                                 cm->lut[G][G][gin] +
-                                                 cm->lut[G][B][bin]);
-                dst[j + boffset] = av_clip_uint8(cm->lut[B][R][rin] +
-                                                 cm->lut[B][G][gin] +
-                                                 cm->lut[B][B][bin]);
+                dst[j + roffset] = av_clip_uint8(s->lut[R][R][rin] +
+                                                 s->lut[R][G][gin] +
+                                                 s->lut[R][B][bin]);
+                dst[j + goffset] = av_clip_uint8(s->lut[G][R][rin] +
+                                                 s->lut[G][G][gin] +
+                                                 s->lut[G][B][bin]);
+                dst[j + boffset] = av_clip_uint8(s->lut[B][R][rin] +
+                                                 s->lut[B][G][gin] +
+                                                 s->lut[B][B][bin]);
             }
 
             srcrow += in->linesize[0];
@@ -203,15 +205,15 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                 const uint8_t gin = src[j + goffset];
                 const uint8_t bin = src[j + boffset];
 
-                dst[j + roffset] = av_clip_uint8(cm->lut[R][R][rin] +
-                                                 cm->lut[R][G][gin] +
-                                                 cm->lut[R][B][bin]);
-                dst[j + goffset] = av_clip_uint8(cm->lut[G][R][rin] +
-                                                 cm->lut[G][G][gin] +
-                                                 cm->lut[G][B][bin]);
-                dst[j + boffset] = av_clip_uint8(cm->lut[B][R][rin] +
-                                                 cm->lut[B][G][gin] +
-                                                 cm->lut[B][B][bin]);
+                dst[j + roffset] = av_clip_uint8(s->lut[R][R][rin] +
+                                                 s->lut[R][G][gin] +
+                                                 s->lut[R][B][bin]);
+                dst[j + goffset] = av_clip_uint8(s->lut[G][R][rin] +
+                                                 s->lut[G][G][gin] +
+                                                 s->lut[G][B][bin]);
+                dst[j + boffset] = av_clip_uint8(s->lut[B][R][rin] +
+                                                 s->lut[B][G][gin] +
+                                                 s->lut[B][B][bin]);
                 if (in != out)
                     dst[j + aoffset] = 0;
             }
@@ -234,22 +236,22 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                 const uint8_t bin = src[j + boffset];
                 const uint8_t ain = src[j + aoffset];
 
-                dst[j + roffset] = av_clip_uint8(cm->lut[R][R][rin] +
-                                                 cm->lut[R][G][gin] +
-                                                 cm->lut[R][B][bin] +
-                                                 cm->lut[R][A][ain]);
-                dst[j + goffset] = av_clip_uint8(cm->lut[G][R][rin] +
-                                                 cm->lut[G][G][gin] +
-                                                 cm->lut[G][B][bin] +
-                                                 cm->lut[G][A][ain]);
-                dst[j + boffset] = av_clip_uint8(cm->lut[B][R][rin] +
-                                                 cm->lut[B][G][gin] +
-                                                 cm->lut[B][B][bin] +
-                                                 cm->lut[B][A][ain]);
-                dst[j + aoffset] = av_clip_uint8(cm->lut[A][R][rin] +
-                                                 cm->lut[A][G][gin] +
-                                                 cm->lut[A][B][bin] +
-                                                 cm->lut[A][A][ain]);
+                dst[j + roffset] = av_clip_uint8(s->lut[R][R][rin] +
+                                                 s->lut[R][G][gin] +
+                                                 s->lut[R][B][bin] +
+                                                 s->lut[R][A][ain]);
+                dst[j + goffset] = av_clip_uint8(s->lut[G][R][rin] +
+                                                 s->lut[G][G][gin] +
+                                                 s->lut[G][B][bin] +
+                                                 s->lut[G][A][ain]);
+                dst[j + boffset] = av_clip_uint8(s->lut[B][R][rin] +
+                                                 s->lut[B][G][gin] +
+                                                 s->lut[B][B][bin] +
+                                                 s->lut[B][A][ain]);
+                dst[j + aoffset] = av_clip_uint8(s->lut[A][R][rin] +
+                                                 s->lut[A][G][gin] +
+                                                 s->lut[A][B][bin] +
+                                                 s->lut[A][A][ain]);
             }
 
             srcrow += in->linesize[0];
@@ -267,15 +269,15 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                 const uint16_t gin = src[j + goffset];
                 const uint16_t bin = src[j + boffset];
 
-                dst[j + roffset] = av_clip_uint16(cm->lut[R][R][rin] +
-                                                  cm->lut[R][G][gin] +
-                                                  cm->lut[R][B][bin]);
-                dst[j + goffset] = av_clip_uint16(cm->lut[G][R][rin] +
-                                                  cm->lut[G][G][gin] +
-                                                  cm->lut[G][B][bin]);
-                dst[j + boffset] = av_clip_uint16(cm->lut[B][R][rin] +
-                                                  cm->lut[B][G][gin] +
-                                                  cm->lut[B][B][bin]);
+                dst[j + roffset] = av_clip_uint16(s->lut[R][R][rin] +
+                                                  s->lut[R][G][gin] +
+                                                  s->lut[R][B][bin]);
+                dst[j + goffset] = av_clip_uint16(s->lut[G][R][rin] +
+                                                  s->lut[G][G][gin] +
+                                                  s->lut[G][B][bin]);
+                dst[j + boffset] = av_clip_uint16(s->lut[B][R][rin] +
+                                                  s->lut[B][G][gin] +
+                                                  s->lut[B][B][bin]);
             }
 
             srcrow += in->linesize[0];
@@ -294,22 +296,22 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                 const uint16_t bin = src[j + boffset];
                 const uint16_t ain = src[j + aoffset];
 
-                dst[j + roffset] = av_clip_uint16(cm->lut[R][R][rin] +
-                                                  cm->lut[R][G][gin] +
-                                                  cm->lut[R][B][bin] +
-                                                  cm->lut[R][A][ain]);
-                dst[j + goffset] = av_clip_uint16(cm->lut[G][R][rin] +
-                                                  cm->lut[G][G][gin] +
-                                                  cm->lut[G][B][bin] +
-                                                  cm->lut[G][A][ain]);
-                dst[j + boffset] = av_clip_uint16(cm->lut[B][R][rin] +
-                                                  cm->lut[B][G][gin] +
-                                                  cm->lut[B][B][bin] +
-                                                  cm->lut[B][A][ain]);
-                dst[j + aoffset] = av_clip_uint16(cm->lut[A][R][rin] +
-                                                  cm->lut[A][G][gin] +
-                                                  cm->lut[A][B][bin] +
-                                                  cm->lut[A][A][ain]);
+                dst[j + roffset] = av_clip_uint16(s->lut[R][R][rin] +
+                                                  s->lut[R][G][gin] +
+                                                  s->lut[R][B][bin] +
+                                                  s->lut[R][A][ain]);
+                dst[j + goffset] = av_clip_uint16(s->lut[G][R][rin] +
+                                                  s->lut[G][G][gin] +
+                                                  s->lut[G][B][bin] +
+                                                  s->lut[G][A][ain]);
+                dst[j + boffset] = av_clip_uint16(s->lut[B][R][rin] +
+                                                  s->lut[B][G][gin] +
+                                                  s->lut[B][B][bin] +
+                                                  s->lut[B][A][ain]);
+                dst[j + aoffset] = av_clip_uint16(s->lut[A][R][rin] +
+                                                  s->lut[A][G][gin] +
+                                                  s->lut[A][B][bin] +
+                                                  s->lut[A][A][ain]);
             }
 
             srcrow += in->linesize[0];
@@ -324,9 +326,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
 static av_cold void uninit(AVFilterContext *ctx)
 {
-    ColorChannelMixerContext *cm = ctx->priv;
+    ColorChannelMixerContext *s = ctx->priv;
 
-    av_freep(&cm->buffer);
+    av_freep(&s->buffer);
 }
 
 static const AVFilterPad colorchannelmixer_inputs[] = {

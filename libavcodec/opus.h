@@ -61,6 +61,15 @@
 #define ROUND_MUL16(a,b)  ((MUL16(a, b) + 16384) >> 15)
 #define opus_ilog(i) (av_log2(i) + !!(i))
 
+#define OPUS_TS_HEADER     0x7FE0        // 0x3ff (11 bits)
+#define OPUS_TS_MASK       0xFFE0        // top 11 bits
+
+static const uint8_t opus_default_extradata[30] = {
+    'O', 'p', 'u', 's', 'H', 'e', 'a', 'd',
+    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+};
+
 enum OpusMode {
     OPUS_MODE_SILK,
     OPUS_MODE_HYBRID,
@@ -167,7 +176,7 @@ typedef struct OpusContext {
     int             nb_streams;
     int      nb_stereo_streams;
 
-    AVFloatDSPContext fdsp;
+    AVFloatDSPContext *fdsp;
     int16_t gain_i;
     float   gain;
 
@@ -270,7 +279,7 @@ static av_always_inline unsigned int opus_getrawbits(OpusRangeCoder *rc, unsigne
         rc->rb.bytes--;
     }
 
-    value = rc->rb.cacheval & ((1<<count)-1);
+    value = av_mod_uintp2(rc->rb.cacheval, count);
     rc->rb.cacheval    >>= count;
     rc->rb.cachelen     -= count;
     rc->total_read_bits += count;

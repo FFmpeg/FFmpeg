@@ -11,7 +11,8 @@ CFLAGS += -Wall -g
 CFLAGS := $(shell pkg-config --cflags $(FFMPEG_LIBS)) $(CFLAGS)
 LDLIBS := $(shell pkg-config --libs $(FFMPEG_LIBS)) $(LDLIBS)
 
-EXAMPLES=       avio_reading                       \
+EXAMPLES=       avio_list_dir                      \
+                avio_reading                       \
                 decoding_encoding                  \
                 demuxing_decoding                  \
                 extract_mvs                        \
@@ -29,6 +30,7 @@ OBJS=$(addsuffix .o,$(EXAMPLES))
 
 # the following examples make explicit use of the math library
 avcodec:           LDLIBS += -lm
+decoding_encoding: LDLIBS += -lm
 muxing:            LDLIBS += -lm
 resampling_audio:  LDLIBS += -lm
 

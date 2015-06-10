@@ -26,8 +26,9 @@
 
 SECTION_RODATA
 
+cextern pw_1023
+%define pw_pixel_max_10 pw_1023
 pw_pixel_max_12: times 8 dw ((1 << 12)-1)
-pw_pixel_max_10: times 8 dw ((1 << 10)-1)
 pw_m2:           times 8 dw -2
 pd_1 :           times 4 dd  1
 

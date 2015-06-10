@@ -1,4 +1,5 @@
 \input texinfo @c -*- texinfo -*-
+@documentencoding UTF-8
 
 @settitle ffplay Documentation
 @titlepage
@@ -37,10 +38,14 @@ Force displayed height.
 Set frame size (WxH or abbreviation), needed for videos which do
 not contain a header with the frame size like raw YUV.  This option
 has been deprecated in favor of private options, try -video_size.
+@item -fs
+Start in fullscreen mode.
 @item -an
 Disable audio.
 @item -vn
 Disable video.
+@item -sn
+Disable subtitles.
 @item -ss @var{pos}
 Seek to a given position in seconds.
 @item -t @var{duration}
@@ -109,15 +114,10 @@ duration, the codec parameters, the current position in the stream and
 the audio/video synchronisation drift. It is on by default, to
 explicitly disable it you need to specify @code{-nostats}.
 
-@item -bug
-Work around bugs.
 @item -fast
 Non-spec-compliant optimizations.
 @item -genpts
 Generate pts.
-@item -rtp_tcp
-Force RTP/TCP protocol usage instead of RTP/UDP. It is only meaningful
-if you are streaming with the RTSP protocol.
 @item -sync @var{type}
 Set the master clock to audio (@code{type=audio}), video
 (@code{type=video}) or external (@code{type=ext}). Default is audio. The
@@ -125,23 +125,20 @@ master clock is used to control audio-video synchronization. Most media
 players use audio as master clock, but in some cases (streaming or high
 quality broadcast) it is necessary to change that. This option is mainly
 used for debugging purposes.
-@item -threads @var{count}
-Set the thread count.
-@item -ast @var{audio_stream_number}
-Select the desired audio stream number, counting from 0. The number
-refers to the list of all the input audio streams. If it is greater
-than the number of audio streams minus one, then the last one is
-selected, if it is negative the audio playback is disabled.
-@item -vst @var{video_stream_number}
-Select the desired video stream number, counting from 0. The number
-refers to the list of all the input video streams. If it is greater
-than the number of video streams minus one, then the last one is
-selected, if it is negative the video playback is disabled.
-@item -sst @var{subtitle_stream_number}
-Select the desired subtitle stream number, counting from 0. The number
-refers to the list of all the input subtitle streams. If it is greater
-than the number of subtitle streams minus one, then the last one is
-selected, if it is negative the subtitle rendering is disabled.
+@item -ast @var{audio_stream_specifier}
+Select the desired audio stream using the given stream specifier. The stream
+specifiers are described in the @ref{Stream specifiers} chapter. If this option
+is not specified, the "best" audio stream is selected in the program of the
+already selected video stream.
+@item -vst @var{video_stream_specifier}
+Select the desired video stream using the given stream specifier. The stream
+specifiers are described in the @ref{Stream specifiers} chapter. If this option
+is not specified, the "best" video stream is selected.
+@item -sst @var{subtitle_stream_specifier}
+Select the desired subtitle stream using the given stream specifier. The stream
+specifiers are described in the @ref{Stream specifiers} chapter. If this option
+is not specified, the "best" subtitle stream is selected in the program of the
+already selected video or audio stream.
 @item -autoexit
 Exit when video is done playing.
 @item -exitonkeydown
@@ -164,8 +161,20 @@ Force a specific video decoder.
 Force a specific subtitle decoder.
 
 @item -autorotate
-Automatically rotate the video according to presentation metadata. Set by
-default, use -noautorotate to disable.
+Automatically rotate the video according to file metadata. Enabled by
+default, use @option{-noautorotate} to disable it.
+
+@item -framedrop
+Drop video frames if video is out of sync. Enabled by default if the master
+clock is not set to video. Use this option to enable frame dropping for all
+master clock sources, use @option{-noframedrop} to disable it.
+
+@item -infbuf
+Do not limit the input buffer size, read as much data as possible from the
+input as soon as possible. Enabled by default for realtime streams, where data
+may be dropped if not read in time. Use this option to enable infinite buffers
+for all inputs, use @option{-noinfbuf} to disable it.
+
 @end table
 
 @section While playing

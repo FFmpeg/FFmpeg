@@ -132,6 +132,8 @@ int attribute_align_arg av_buffersink_get_frame_flags(AVFilterContext *ctx, AVFr
 
     /* no picref available, fetch it from the filterchain */
     if (!av_fifo_size(buf->fifo)) {
+        if (inlink->closed)
+            return AVERROR_EOF;
         if (flags & AV_BUFFERSINK_FLAG_NO_REQUEST)
             return AVERROR(EAGAIN);
         if ((ret = ff_request_frame(inlink)) < 0)

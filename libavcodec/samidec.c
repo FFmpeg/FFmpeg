@@ -91,6 +91,7 @@ static int sami_paragraph_to_ass(AVCodecContext *avctx, const char *src)
                     break;
                 if (*p == '>')
                     p++;
+                continue;
             }
             if (!av_isspace(*p))
                 av_bprint_chars(dst, *p, 1);
@@ -104,7 +105,7 @@ static int sami_paragraph_to_ass(AVCodecContext *avctx, const char *src)
     av_bprint_clear(&sami->full);
     if (sami->source.len)
         av_bprintf(&sami->full, "{\\i1}%s{\\i0}\\N", sami->source.str);
-    av_bprintf(&sami->full, "%s\r\n", sami->content.str);
+    av_bprintf(&sami->full, "%s", sami->content.str);
 
 end:
     av_free(dupsrc);
@@ -122,7 +123,9 @@ static int sami_decode_frame(AVCodecContext *avctx,
         int ts_start     = av_rescale_q(avpkt->pts, avctx->time_base, (AVRational){1,100});
         int ts_duration  = avpkt->duration != -1 ?
                            av_rescale_q(avpkt->duration, avctx->time_base, (AVRational){1,100}) : -1;
-        ff_ass_add_rect(sub, sami->full.str, ts_start, ts_duration, 0);
+        int ret = ff_ass_add_rect_bprint(sub, &sami->full, ts_start, ts_duration);
+        if (ret < 0)
+            return ret;
     }
     *got_sub_ptr = sub->num_rects > 0;
     return avpkt->size;

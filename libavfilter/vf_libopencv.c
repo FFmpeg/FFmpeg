@@ -63,9 +63,10 @@ static int query_formats(AVFilterContext *ctx)
     static const enum AVPixelFormat pix_fmts[] = {
         AV_PIX_FMT_BGR24, AV_PIX_FMT_BGRA, AV_PIX_FMT_GRAY8, AV_PIX_FMT_NONE
     };
-
-    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
-    return 0;
+    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
+    if (!fmts_list)
+        return AVERROR(ENOMEM);
+    return ff_set_common_formats(ctx, fmts_list);
 }
 
 typedef struct OCVContext {
@@ -205,7 +206,7 @@ static int parse_iplconvkernel(IplConvKernel **kernel, char *buf, void *log_ctx)
 {
     char shape_filename[128] = "", shape_str[32] = "rect";
     int cols = 0, rows = 0, anchor_x = 0, anchor_y = 0, shape = CV_SHAPE_RECT;
-    int *values = NULL, ret;
+    int *values = NULL, ret = 0;
 
     sscanf(buf, "%dx%d+%dx%d/%32[^=]=%127s", &cols, &rows, &anchor_x, &anchor_y, shape_str, shape_filename);
 
@@ -219,30 +220,36 @@ static int parse_iplconvkernel(IplConvKernel **kernel, char *buf, void *log_ctx)
     } else {
         av_log(log_ctx, AV_LOG_ERROR,
                "Shape unspecified or type '%s' unknown.\n", shape_str);
-        return AVERROR(EINVAL);
+        ret = AVERROR(EINVAL);
+        goto out;
     }
 
     if (rows <= 0 || cols <= 0) {
         av_log(log_ctx, AV_LOG_ERROR,
                "Invalid non-positive values for shape size %dx%d\n", cols, rows);
-        return AVERROR(EINVAL);
+        ret = AVERROR(EINVAL);
+        goto out;
     }
 
     if (anchor_x < 0 || anchor_y < 0 || anchor_x >= cols || anchor_y >= rows) {
         av_log(log_ctx, AV_LOG_ERROR,
                "Shape anchor %dx%d is not inside the rectangle with size %dx%d.\n",
                anchor_x, anchor_y, cols, rows);
-        return AVERROR(EINVAL);
+        ret = AVERROR(EINVAL);
+        goto out;
     }
 
     *kernel = cvCreateStructuringElementEx(cols, rows, anchor_x, anchor_y, shape, values);
-    av_freep(&values);
-    if (!*kernel)
-        return AVERROR(ENOMEM);
+    if (!*kernel) {
+        ret = AVERROR(ENOMEM);
+        goto out;
+    }
 
     av_log(log_ctx, AV_LOG_VERBOSE, "Structuring element: w:%d h:%d x:%d y:%d shape:%s\n",
            rows, cols, anchor_x, anchor_y, shape_str);
-    return 0;
+out:
+    av_freep(&values);
+    return ret;
 }
 
 typedef struct DilateContext {
@@ -255,19 +262,24 @@ static av_cold int dilate_init(AVFilterContext *ctx, const char *args)
     OCVContext *s = ctx->priv;
     DilateContext *dilate = s->priv;
     char default_kernel_str[] = "3x3+0x0/rect";
-    char *kernel_str;
+    char *kernel_str = NULL;
     const char *buf = args;
     int ret;
 
-    if (args)
+    if (args) {
         kernel_str = av_get_token(&buf, "|");
-    else
-        kernel_str = av_strdup(default_kernel_str);
-    if (!kernel_str)
-        return AVERROR(ENOMEM);
-    if ((ret = parse_iplconvkernel(&dilate->kernel, kernel_str, ctx)) < 0)
-        return ret;
+
+        if (!kernel_str)
+            return AVERROR(ENOMEM);
+    }
+
+    ret = parse_iplconvkernel(&dilate->kernel,
+                              (!kernel_str || !*kernel_str) ? default_kernel_str
+                                                            : kernel_str,
+                              ctx);
     av_free(kernel_str);
+    if (ret < 0)
+        return ret;
 
     if (!buf || sscanf(buf, "|%d", &dilate->nb_iterations) != 1)
         dilate->nb_iterations = 1;
@@ -310,7 +322,7 @@ typedef struct OCVFilterEntry {
     void (*end_frame_filter)(AVFilterContext *ctx, IplImage *inimg, IplImage *outimg);
 } OCVFilterEntry;
 
-static OCVFilterEntry ocv_filter_entries[] = {
+static const OCVFilterEntry ocv_filter_entries[] = {
     { "dilate", sizeof(DilateContext), dilate_init, dilate_uninit, dilate_end_frame_filter },
     { "erode",  sizeof(DilateContext), dilate_init, dilate_uninit, erode_end_frame_filter  },
     { "smooth", sizeof(SmoothContext), smooth_init, NULL, smooth_end_frame_filter },
@@ -326,7 +338,7 @@ static av_cold int init(AVFilterContext *ctx)
         return AVERROR(EINVAL);
     }
     for (i = 0; i < FF_ARRAY_ELEMS(ocv_filter_entries); i++) {
-        OCVFilterEntry *entry = &ocv_filter_entries[i];
+        const OCVFilterEntry *entry = &ocv_filter_entries[i];
         if (!strcmp(s->name, entry->name)) {
             s->init             = entry->init;
             s->uninit           = entry->uninit;
@@ -348,7 +360,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 
     if (s->uninit)
         s->uninit(ctx);
-    av_free(s->priv);
+    av_freep(&s->priv);
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)

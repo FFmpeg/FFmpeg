@@ -34,7 +34,7 @@ void ff_mjpeg_encode_picture_header(AVCodecContext *avctx, PutBitContext *pb,
                                     uint16_t chroma_intra_matrix[64]);
 void ff_mjpeg_encode_picture_trailer(PutBitContext *pb, int header_bits);
 void ff_mjpeg_escape_FF(PutBitContext *pb, int start);
-void ff_mjpeg_encode_stuffing(MpegEncContext *s);
+int ff_mjpeg_encode_stuffing(MpegEncContext *s);
 void ff_mjpeg_init_hvsample(AVCodecContext *avctx, int hsample[3], int vsample[3]);
 
 void ff_mjpeg_encode_dc(PutBitContext *pb, int val,

@@ -25,7 +25,7 @@ void ff_vector_fmul_altivec(float *dst, const float *src0, const float *src1,
                             int len)
 {
     int i;
-    vector float d0, d1, s, zero = (vector float)vec_splat_u32(0);
+    vec_f d0, d1, s, zero = (vec_f)vec_splat_u32(0);
     for (i = 0; i < len - 7; i += 8) {
         d0 = vec_ld( 0, src0 + i);
         s  = vec_ld( 0, src1 + i);
@@ -40,15 +40,15 @@ void ff_vector_fmul_altivec(float *dst, const float *src0, const float *src1,
 void ff_vector_fmul_window_altivec(float *dst, const float *src0,
                                    const float *src1, const float *win, int len)
 {
-    vector float zero, t0, t1, s0, s1, wi, wj;
-    const vector unsigned char reverse = vcprm(3, 2, 1, 0);
+    vec_f zero, t0, t1, s0, s1, wi, wj;
+    const vec_u8 reverse = vcprm(3, 2, 1, 0);
     int i, j;
 
     dst  += len;
     win  += len;
     src0 += len;
 
-    zero = (vector float)vec_splat_u32(0);
+    zero = (vec_f)vec_splat_u32(0);
 
     for (i = -len * 4, j = len * 4 - 16; i < 0; i += 16, j -= 16) {
         s0 = vec_ld(i, src0);
@@ -75,20 +75,18 @@ void ff_vector_fmul_add_altivec(float *dst, const float *src0,
                                 int len)
 {
     int i;
-    vector float d, s0, s1, s2, t0, t1, edges;
-    vector unsigned char align = vec_lvsr(0,dst),
-                         mask = vec_lvsl(0, dst);
+    vec_f d, ss0, ss1, ss2, t0, t1, edges;
 
     for (i = 0; i < len - 3; i += 4) {
         t0 = vec_ld(0, dst + i);
         t1 = vec_ld(15, dst + i);
-        s0 = vec_ld(0, src0 + i);
-        s1 = vec_ld(0, src1 + i);
-        s2 = vec_ld(0, src2 + i);
-        edges = vec_perm(t1, t0, mask);
-        d = vec_madd(s0, s1, s2);
-        t1 = vec_perm(d, edges, align);
-        t0 = vec_perm(edges, d, align);
+        ss0 = vec_ld(0, src0 + i);
+        ss1 = vec_ld(0, src1 + i);
+        ss2 = vec_ld(0, src2 + i);
+        edges = vec_perm(t1, t0, vcprm(0, 1, 2, 3));
+        d = vec_madd(ss0, ss1, ss2);
+        t1 = vec_perm(d, edges, vcprm(s0,s1,s2,s3));
+        t0 = vec_perm(edges, d, vcprm(s0,s1,s2,s3));
         vec_st(t1, 15, dst + i);
         vec_st(t0, 0, dst + i);
     }
@@ -98,8 +96,8 @@ void ff_vector_fmul_reverse_altivec(float *dst, const float *src0,
                                     const float *src1, int len)
 {
     int i;
-    vector float d, s0, s1, h0, l0,
-                s2, s3, zero = (vector float) vec_splat_u32(0);
+    vec_f d, s0, s1, h0, l0, s2, s3;
+    vec_f zero = (vec_f)vec_splat_u32(0);
 
     src1 += len-4;
     for(i = 0; i < len - 7; i += 8) {

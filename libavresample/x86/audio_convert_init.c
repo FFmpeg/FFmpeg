@@ -226,11 +226,13 @@ av_cold void ff_audio_convert_init_x86(AudioConvert *ac)
         ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_FLTP,
                                   6, 16, 4, "SSE4", ff_conv_fltp_to_flt_6ch_sse4);
     }
-    if (EXTERNAL_AVX(cpu_flags)) {
+    if (EXTERNAL_AVX_FAST(cpu_flags)) {
         ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_S32,
                                   0, 32, 16, "AVX", ff_conv_s32_to_flt_avx);
         ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_S32, AV_SAMPLE_FMT_FLT,
                                   0, 32, 32, "AVX", ff_conv_flt_to_s32_avx);
+    }
+    if (EXTERNAL_AVX(cpu_flags)) {
         ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_S16P,
                                   2, 16, 16, "AVX", ff_conv_s16p_to_s16_2ch_avx);
         ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_S16P,

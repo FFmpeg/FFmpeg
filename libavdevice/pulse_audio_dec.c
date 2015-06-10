@@ -23,10 +23,13 @@
 
 #include <pulse/rtclock.h>
 #include <pulse/error.h>
-#include "libavformat/avformat.h"
-#include "libavformat/internal.h"
+
+#include "libavutil/internal.h"
 #include "libavutil/opt.h"
 #include "libavutil/time.h"
+
+#include "libavformat/avformat.h"
+#include "libavformat/internal.h"
 #include "pulse_audio_common.h"
 #include "timefilter.h"
 
@@ -58,7 +61,7 @@ typedef struct PulseData {
             rerror = AVERROR_EXTERNAL;                          \
             goto label;                                         \
         }                                                       \
-    } while(0);
+    } while (0)
 
 #define CHECK_DEAD_GOTO(p, rerror, label)                               \
     do {                                                                \
@@ -67,7 +70,7 @@ typedef struct PulseData {
             rerror = AVERROR_EXTERNAL;                                  \
             goto label;                                                 \
         }                                                               \
-    } while(0);
+    } while (0)
 
 static void context_state_cb(pa_context *c, void *userdata) {
     PulseData *p = userdata;

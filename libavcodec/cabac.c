@@ -174,7 +174,7 @@ int main(void){
     CABACContext c;
     uint8_t b[9*SIZE];
     uint8_t r[9*SIZE];
-    int i;
+    int i, ret = 0;
     uint8_t state[10]= {0};
     AVLFG prng;
 
@@ -188,15 +188,11 @@ int main(void){
     }
 
     for(i=0; i<SIZE; i++){
-START_TIMER
         put_cabac_bypass(&c, r[i]&1);
-STOP_TIMER("put_cabac_bypass")
     }
 
     for(i=0; i<SIZE; i++){
-START_TIMER
         put_cabac(&c, state, r[i]&1);
-STOP_TIMER("put_cabac")
     }
 
     put_cabac_terminate(&c, 1);
@@ -206,22 +202,24 @@ STOP_TIMER("put_cabac")
     memset(state, 0, sizeof(state));
 
     for(i=0; i<SIZE; i++){
-START_TIMER
-        if( (r[i]&1) != get_cabac_bypass(&c) )
+        if( (r[i]&1) != get_cabac_bypass(&c) ) {
             av_log(NULL, AV_LOG_ERROR, "CABAC bypass failure at %d\n", i);
-STOP_TIMER("get_cabac_bypass")
+            ret = 1;
+        }
     }
 
     for(i=0; i<SIZE; i++){
-START_TIMER
-        if( (r[i]&1) != get_cabac_noinline(&c, state) )
+        if( (r[i]&1) != get_cabac_noinline(&c, state) ) {
             av_log(NULL, AV_LOG_ERROR, "CABAC failure at %d\n", i);
-STOP_TIMER("get_cabac")
+            ret = 1;
+        }
     }
-    if(!get_cabac_terminate(&c))
+    if(!get_cabac_terminate(&c)) {
         av_log(NULL, AV_LOG_ERROR, "where's the Terminator?\n");
+        ret = 1;
+    }
 
-    return 0;
+    return ret;
 }
 
 #endif /* TEST */

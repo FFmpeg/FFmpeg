@@ -24,6 +24,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "bswapdsp.h"
+#include "canopus.h"
 #include "get_bits.h"
 #include "avcodec.h"
 #include "internal.h"
@@ -362,7 +363,11 @@ static int cllc_decode_frame(AVCodecContext *avctx, void *data,
     GetBitContext gb;
     int coding_type, ret;
 
-    /* Skip the INFO header if present */
+    if (avpkt->size < 4 + 4) {
+        av_log(avctx, AV_LOG_ERROR, "Frame is too small %d.\n", avpkt->size);
+        return AVERROR_INVALIDDATA;
+    }
+
     info_offset = 0;
     info_tag    = AV_RL32(src);
     if (info_tag == MKTAG('I', 'N', 'F', 'O')) {
@@ -373,11 +378,10 @@ static int cllc_decode_frame(AVCodecContext *avctx, void *data,
                    info_offset);
             return AVERROR_INVALIDDATA;
         }
+        ff_canopus_parse_info_tag(avctx, src + 8, info_offset);
 
         info_offset += 8;
         src         += info_offset;
-
-        av_log(avctx, AV_LOG_DEBUG, "Skipping INFO chunk.\n");
     }
 
     data_size = (avpkt->size - info_offset) & ~1;
@@ -394,7 +398,8 @@ static int cllc_decode_frame(AVCodecContext *avctx, void *data,
     ctx->bdsp.bswap16_buf((uint16_t *) ctx->swapped_buf, (uint16_t *) src,
                           data_size / 2);
 
-    init_get_bits(&gb, ctx->swapped_buf, data_size * 8);
+    if ((ret = init_get_bits8(&gb, ctx->swapped_buf, data_size)) < 0)
+        return ret;
 
     /*
      * Read in coding type. The types are as follows:

@@ -60,8 +60,10 @@ static av_cold int init(AVFilterContext *ctx)
     int i;
     int ret;
 
-    if (!s->pix_fmts)
+    if (!s->pix_fmts) {
+        av_log(ctx, AV_LOG_ERROR, "Empty output format string.\n");
         return AVERROR(EINVAL);
+    }
 
     /* count the formats */
     cur = s->pix_fmts;
@@ -132,8 +134,7 @@ static int query_formats(AVFilterContext *ctx)
     if (!formats)
         return AVERROR(ENOMEM);
 
-    ff_set_common_formats(ctx, formats);
-    return 0;
+    return ff_set_common_formats(ctx, formats);
 }
 
 

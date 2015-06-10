@@ -80,6 +80,7 @@ typedef struct X264Context {
     int slice_max_size;
     char *stats;
     int nal_hrd;
+    int avcintra_class;
     char *x264_params;
 } X264Context;
 
@@ -100,7 +101,7 @@ static void X264_log(void *p, int level, const char *fmt, va_list args)
 
 
 static int encode_nals(AVCodecContext *ctx, AVPacket *pkt,
-                       x264_nal_t *nals, int nnal)
+                       const x264_nal_t *nals, int nnal)
 {
     X264Context *x4 = ctx->priv_data;
     uint8_t *p;
@@ -147,6 +148,7 @@ static int avfmt2_num_planes(int avfmt)
     case AV_PIX_FMT_YUV444P:
         return 3;
 
+    case AV_PIX_FMT_BGR0:
     case AV_PIX_FMT_BGR24:
     case AV_PIX_FMT_RGB24:
         return 1;
@@ -183,6 +185,8 @@ static int X264_frame(AVCodecContext *ctx, AVPacket *pkt, const AVFrame *frame,
             frame->pict_type == AV_PICTURE_TYPE_P ? X264_TYPE_P :
             frame->pict_type == AV_PICTURE_TYPE_B ? X264_TYPE_B :
                                             X264_TYPE_AUTO;
+
+        if (x4->avcintra_class < 0) {
         if (x4->params.b_interlaced && x4->params.b_tff != frame->top_field_first) {
             x4->params.b_tff = frame->top_field_first;
             x264_encoder_reconfig(x4->enc, &x4->params);
@@ -226,6 +230,7 @@ static int X264_frame(AVCodecContext *ctx, AVPacket *pkt, const AVFrame *frame,
             x4->params.rc.f_rf_constant_max = x4->crf_max;
             x264_encoder_reconfig(x4->enc, &x4->params);
         }
+        }
 
         side_data = av_frame_get_side_data(frame, AV_FRAME_DATA_STEREO3D);
         if (side_data) {
@@ -264,11 +269,11 @@ static int X264_frame(AVCodecContext *ctx, AVPacket *pkt, const AVFrame *frame,
     }
     do {
         if (x264_encoder_encode(x4->enc, &nal, &nnal, frame? &x4->pic: NULL, &pic_out) < 0)
-            return -1;
+            return AVERROR_EXTERNAL;
 
         ret = encode_nals(ctx, pkt, nal, nnal);
         if (ret < 0)
-            return -1;
+            return ret;
     } while (!ret && !frame && x264_encoder_delayed_frames(x4->enc));
 
     pkt->pts = pic_out.i_pts;
@@ -301,10 +306,12 @@ static av_cold int X264_close(AVCodecContext *avctx)
     X264Context *x4 = avctx->priv_data;
 
     av_freep(&avctx->extradata);
-    av_free(x4->sei);
+    av_freep(&x4->sei);
 
-    if (x4->enc)
+    if (x4->enc) {
         x264_encoder_close(x4->enc);
+        x4->enc = NULL;
+    }
 
     av_frame_free(&avctx->coded_frame);
 
@@ -340,6 +347,8 @@ static int convert_pix_fmt(enum AVPixelFormat pix_fmt)
     case AV_PIX_FMT_YUV444P9:
     case AV_PIX_FMT_YUV444P10: return X264_CSP_I444;
 #ifdef X264_CSP_BGR
+    case AV_PIX_FMT_BGR0:
+        return X264_CSP_BGRA;
     case AV_PIX_FMT_BGR24:
         return X264_CSP_BGR;
 
@@ -528,6 +537,13 @@ static av_cold int X264_init(AVCodecContext *avctx)
         x4->params.b_bluray_compat = x4->bluray_compat;
         x4->params.b_vfr_input = 0;
     }
+    if (x4->avcintra_class >= 0)
+#if X264_BUILD >= 142
+        x4->params.i_avcintra_class = x4->avcintra_class;
+#else
+        av_log(avctx, AV_LOG_ERROR,
+               "x264 too old for AVC Intra, at least version 142 needed\n");
+#endif
     if (x4->b_bias != INT_MIN)
         x4->params.i_bframe_bias              = x4->b_bias;
     if (x4->b_pyramid >= 0)
@@ -676,7 +692,7 @@ static av_cold int X264_init(AVCodecContext *avctx)
 
     x4->enc = x264_encoder_open(&x4->params);
     if (!x4->enc)
-        return -1;
+        return AVERROR_EXTERNAL;
 
     avctx->coded_frame = av_frame_alloc();
     if (!avctx->coded_frame)
@@ -689,6 +705,8 @@ static av_cold int X264_init(AVCodecContext *avctx)
 
         s = x264_encoder_headers(x4->enc, &nal, &nnal);
         avctx->extradata = p = av_malloc(s);
+        if (!p)
+            return AVERROR(ENOMEM);
 
         for (i = 0; i < nnal; i++) {
             /* Don't put the SEI in extradata. */
@@ -696,6 +714,8 @@ static av_cold int X264_init(AVCodecContext *avctx)
                 av_log(avctx, AV_LOG_INFO, "%s\n", nal[i].p_payload+25);
                 x4->sei_size = nal[i].i_payload;
                 x4->sei      = av_malloc(x4->sei_size);
+                if (!x4->sei)
+                    return AVERROR(ENOMEM);
                 memcpy(x4->sei, nal[i].p_payload, nal[i].i_payload);
                 continue;
             }
@@ -733,6 +753,7 @@ static const enum AVPixelFormat pix_fmts_10bit[] = {
 };
 static const enum AVPixelFormat pix_fmts_8bit_rgb[] = {
 #ifdef X264_CSP_BGR
+    AV_PIX_FMT_BGR0,
     AV_PIX_FMT_BGR24,
     AV_PIX_FMT_RGB24,
 #endif
@@ -766,7 +787,10 @@ static const AVOption options[] = {
     { "aq-mode",       "AQ method",                                       OFFSET(aq_mode),       AV_OPT_TYPE_INT,    { .i64 = -1 }, -1, INT_MAX, VE, "aq_mode"},
     { "none",          NULL,                              0, AV_OPT_TYPE_CONST, {.i64 = X264_AQ_NONE},         INT_MIN, INT_MAX, VE, "aq_mode" },
     { "variance",      "Variance AQ (complexity mask)",   0, AV_OPT_TYPE_CONST, {.i64 = X264_AQ_VARIANCE},     INT_MIN, INT_MAX, VE, "aq_mode" },
-    { "autovariance",  "Auto-variance AQ (experimental)", 0, AV_OPT_TYPE_CONST, {.i64 = X264_AQ_AUTOVARIANCE}, INT_MIN, INT_MAX, VE, "aq_mode" },
+    { "autovariance",  "Auto-variance AQ",                0, AV_OPT_TYPE_CONST, {.i64 = X264_AQ_AUTOVARIANCE}, INT_MIN, INT_MAX, VE, "aq_mode" },
+#if X264_BUILD >= 144
+    { "autovariance-biased", "Auto-variance AQ with bias to dark scenes", 0, AV_OPT_TYPE_CONST, {.i64 = X264_AQ_AUTOVARIANCE_BIASED}, INT_MIN, INT_MAX, VE, "aq_mode" },
+#endif
     { "aq-strength",   "AQ strength. Reduces blocking and blurring in flat and textured areas.", OFFSET(aq_strength), AV_OPT_TYPE_FLOAT, {.dbl = -1}, -1, FLT_MAX, VE},
     { "psy",           "Use psychovisual optimizations.",                 OFFSET(psy),           AV_OPT_TYPE_INT,    { .i64 = -1 }, -1, 1, VE },
     { "psy-rd",        "Strength of psychovisual optimization, in <psy-rd>:<psy-trellis> format.", OFFSET(psy_rd), AV_OPT_TYPE_STRING,  {0 }, 0, 0, VE},
@@ -805,6 +829,7 @@ static const AVOption options[] = {
     { "none",          NULL, 0, AV_OPT_TYPE_CONST, {.i64 = X264_NAL_HRD_NONE}, INT_MIN, INT_MAX, VE, "nal-hrd" },
     { "vbr",           NULL, 0, AV_OPT_TYPE_CONST, {.i64 = X264_NAL_HRD_VBR},  INT_MIN, INT_MAX, VE, "nal-hrd" },
     { "cbr",           NULL, 0, AV_OPT_TYPE_CONST, {.i64 = X264_NAL_HRD_CBR},  INT_MIN, INT_MAX, VE, "nal-hrd" },
+    { "avcintra-class","AVC-Intra class 50/100/200",                      OFFSET(avcintra_class),AV_OPT_TYPE_INT,     { .i64 = -1 }, -1, 200   , VE},
     { "x264-params",  "Override the x264 configuration using a :-separated list of key=value parameters", OFFSET(x264_params), AV_OPT_TYPE_STRING, { 0 }, 0, 0, VE },
     { NULL },
 };
@@ -867,6 +892,8 @@ AVCodec ff_libx264_encoder = {
     .priv_class       = &x264_class,
     .defaults         = x264_defaults,
     .init_static_data = X264_init_static,
+    .caps_internal    = FF_CODEC_CAP_INIT_THREADSAFE |
+                        FF_CODEC_CAP_INIT_CLEANUP,
 };
 
 AVCodec ff_libx264rgb_encoder = {

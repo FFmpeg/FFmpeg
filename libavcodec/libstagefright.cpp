@@ -364,7 +364,8 @@ static int Stagefright_decode_frame(AVCodecContext *avctx, void *data,
     AVFrame *ret_frame;
 
     if (!s->thread_started) {
-        pthread_create(&s->decode_thread_id, NULL, &decode_thread, avctx);
+        if(pthread_create(&s->decode_thread_id, NULL, &decode_thread, avctx))
+            return AVERROR(ENOMEM);
         s->thread_started = true;
     }
 

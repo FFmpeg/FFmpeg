@@ -31,7 +31,7 @@
 #include "avformat.h"
 #include "internal.h"
 
-typedef struct {
+typedef struct CdataDemuxContext {
   unsigned int channels;
   unsigned int audio_pts;
 } CdataDemuxContext;

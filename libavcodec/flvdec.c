@@ -23,6 +23,7 @@
 #include "flv.h"
 #include "h263.h"
 #include "mpegvideo.h"
+#include "mpegvideodata.h"
 
 int ff_flv_decode_picture_header(MpegEncContext *s)
 {

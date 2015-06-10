@@ -1,0 +1,364 @@
+Testing default values
+num=0
+toggle=1
+string=default
+escape=\=,
+flags=1
+rational=1/1
+video_rate=25/1
+width=200 height=300
+pix_fmt=0bgr
+sample_fmt=s16
+duration=1000
+color=255 192 203 255
+channel_layout=311=311
+binary=62 69 6e 0
+binary_size=4
+num64=1
+flt=0.333333
+dbl=0.333333
+TestContext AVOptions:
+  -num               <int>        E....... set num (from 0 to 100) (default 0)
+  -toggle            <int>        E....... set toggle (from 0 to 1) (default 1)
+  -rational          <rational>   E....... set rational (from 0 to 10) (default 1/1)
+  -string            <string>     E....... set string (default "default")
+  -escape            <string>     E....... set escape str (default "\=,")
+  -flags             <flags>      E....... set flags (default 1)
+     cool                         E....... set cool flag
+     lame                         E....... set lame flag
+     mu                           E....... set mu flag
+  -size              <image_size> E....... set size (default "200x300")
+  -pix_fmt           <pix_fmt>    E....... set pixfmt (default 0bgr)
+  -sample_fmt        <sample_fmt> E....... set samplefmt (default s16)
+  -video_rate        <video_rate> E....... set videorate (default "25")
+  -duration          <duration>   E....... set duration (default 1000)
+  -color             <color>      E....... set color (default "pink")
+  -cl                <channel_layout> E....... set channel layout (default 0x137)
+  -bin               <binary>     E....... set binary value
+  -bin1              <binary>     E....... set binary value
+  -bin2              <binary>     E....... set binary value
+  -num64             <int64>      E....... set num 64bit (from 0 to 100) (default 1)
+  -flt               <float>      E....... set float (from 0 to 100) (default 0.333333)
+  -dbl               <double>     E....... set double (from 0 to 100) (default 0.333333)
+
+Testing av_opt_is_set_to_default()
+name:       num default:1 error:
+name:    toggle default:0 error:
+name:  rational default:0 error:
+name:    string default:0 error:
+name:    escape default:0 error:
+name:     flags default:0 error:
+name:      cool default:1 error:Option not found
+name:      lame default:1 error:Option not found
+name:        mu default:1 error:Option not found
+name:      size default:0 error:
+name:   pix_fmt default:0 error:
+name:sample_fmt default:0 error:
+name:video_rate default:0 error:
+name:  duration default:0 error:
+name:     color default:0 error:
+name:        cl default:0 error:
+name:       bin default:0 error:
+name:      bin1 default:1 error:
+name:      bin2 default:1 error:
+name:     num64 default:0 error:
+name:       flt default:0 error:
+name:       dbl default:0 error:
+name:       num default:1 error:
+name:    toggle default:1 error:
+name:  rational default:1 error:
+name:    string default:1 error:
+name:    escape default:1 error:
+name:     flags default:1 error:
+name:      cool default:1 error:Option not found
+name:      lame default:1 error:Option not found
+name:        mu default:1 error:Option not found
+name:      size default:1 error:
+name:   pix_fmt default:1 error:
+name:sample_fmt default:1 error:
+name:video_rate default:1 error:
+name:  duration default:1 error:
+name:     color default:1 error:
+name:        cl default:1 error:
+name:       bin default:1 error:
+name:      bin1 default:1 error:
+name:      bin2 default:1 error:
+name:     num64 default:1 error:
+name:       flt default:1 error:
+name:       dbl default:1 error:
+
+Test av_opt_serialize()
+num=0,toggle=1,rational=1/1,string=default,escape=\\\=\,,flags=0x00000001,size=200x300,pix_fmt=0bgr,sample_fmt=s16,video_rate=25/1,duration=0:00:00.001000,color=0xffc0cbff,cl=0x137,bin=62696E00,bin1=,bin2=,num64=1,flt=0.333333,dbl=0.333333
+Setting entry with key 'num' to value '0'
+Setting entry with key 'toggle' to value '1'
+Setting entry with key 'rational' to value '1/1'
+Setting entry with key 'string' to value 'default'
+Setting entry with key 'escape' to value '\=,'
+Setting entry with key 'flags' to value '0x00000001'
+Setting entry with key 'size' to value '200x300'
+Setting entry with key 'pix_fmt' to value '0bgr'
+Setting entry with key 'sample_fmt' to value 's16'
+Setting entry with key 'video_rate' to value '25/1'
+Setting entry with key 'duration' to value '0:00:00.001000'
+Setting entry with key 'color' to value '0xffc0cbff'
+Setting entry with key 'cl' to value '0x137'
+Setting entry with key 'bin' to value '62696E00'
+Setting entry with key 'bin1' to value ''
+Setting entry with key 'bin2' to value ''
+Setting entry with key 'num64' to value '1'
+Setting entry with key 'flt' to value '0.333333'
+Setting entry with key 'dbl' to value '0.333333'
+num=0,toggle=1,rational=1/1,string=default,escape=\\\=\,,flags=0x00000001,size=200x300,pix_fmt=0bgr,sample_fmt=s16,video_rate=25/1,duration=0:00:00.001000,color=0xffc0cbff,cl=0x137,bin=62696E00,bin1=,bin2=,num64=1,flt=0.333333,dbl=0.333333
+
+Testing av_set_options_string()
+Setting options string ''
+OK    ''
+Setting options string ':'
+Missing key or no key/value separator found after key ':'
+Error ':'
+Setting options string '='
+Missing key or no key/value separator found after key ''
+Error '='
+Setting options string 'foo=:'
+Setting entry with key 'foo' to value ''
+Key 'foo' not found.
+Error 'foo=:'
+Setting options string ':=foo'
+Setting entry with key ':' to value 'foo'
+Key ':' not found.
+Error ':=foo'
+Setting options string '=foo'
+Missing key or no key/value separator found after key ''
+Error '=foo'
+Setting options string 'foo='
+Setting entry with key 'foo' to value ''
+Key 'foo' not found.
+Error 'foo='
+Setting options string 'foo'
+Missing key or no key/value separator found after key 'foo'
+Error 'foo'
+Setting options string 'foo=val'
+Setting entry with key 'foo' to value 'val'
+Key 'foo' not found.
+Error 'foo=val'
+Setting options string 'foo==val'
+Setting entry with key 'foo' to value '=val'
+Key 'foo' not found.
+Error 'foo==val'
+Setting options string 'toggle=:'
+Setting entry with key 'toggle' to value ''
+Undefined constant or missing '(' in ''
+Unable to parse option value ""
+Error 'toggle=:'
+Setting options string 'string=:'
+Setting entry with key 'string' to value ''
+OK    'string=:'
+Setting options string 'toggle=1 : foo'
+Setting entry with key 'toggle' to value '1'
+Missing key or no key/value separator found after key 'foo'
+Error 'toggle=1 : foo'
+Setting options string 'toggle=100'
+Setting entry with key 'toggle' to value '100'
+Value 100.000000 for parameter 'toggle' out of range [0 - 1]
+Error 'toggle=100'
+Setting options string 'toggle==1'
+Setting entry with key 'toggle' to value '=1'
+Undefined constant or missing '(' in '=1'
+Unable to parse option value "=1"
+Error 'toggle==1'
+Setting options string 'flags=+mu-lame : num=42: toggle=0'
+Setting entry with key 'flags' to value '+mu-lame'
+Setting entry with key 'num' to value '42'
+Setting entry with key 'toggle' to value '0'
+OK    'flags=+mu-lame : num=42: toggle=0'
+Setting options string 'num=42 : string=blahblah'
+Setting entry with key 'num' to value '42'
+Setting entry with key 'string' to value 'blahblah'
+OK    'num=42 : string=blahblah'
+Setting options string 'rational=0 : rational=1/2 : rational=1/-1'
+Setting entry with key 'rational' to value '0'
+Setting entry with key 'rational' to value '1/2'
+Setting entry with key 'rational' to value '1/-1'
+Value -1.000000 for parameter 'rational' out of range [0 - 10]
+Value -1.000000 for parameter 'rational' out of range [0 - 10]
+Error 'rational=0 : rational=1/2 : rational=1/-1'
+Setting options string 'rational=-1/0'
+Error 'rational=-1/0'
+Setting options string 'size=1024x768'
+Setting entry with key 'size' to value '1024x768'
+OK    'size=1024x768'
+Setting options string 'size=pal'
+Setting entry with key 'size' to value 'pal'
+OK    'size=pal'
+Setting options string 'size=bogus'
+Setting entry with key 'size' to value 'bogus'
+Unable to parse option value "bogus" as image size
+Error 'size=bogus'
+Setting options string 'pix_fmt=yuv420p'
+Setting entry with key 'pix_fmt' to value 'yuv420p'
+OK    'pix_fmt=yuv420p'
+Setting options string 'pix_fmt=2'
+Setting entry with key 'pix_fmt' to value '2'
+OK    'pix_fmt=2'
+Setting options string 'pix_fmt=bogus'
+Setting entry with key 'pix_fmt' to value 'bogus'
+Unable to parse option value "bogus" as pixel format
+Error 'pix_fmt=bogus'
+Setting options string 'sample_fmt=s16'
+Setting entry with key 'sample_fmt' to value 's16'
+OK    'sample_fmt=s16'
+Setting options string 'sample_fmt=2'
+Setting entry with key 'sample_fmt' to value '2'
+OK    'sample_fmt=2'
+Setting options string 'sample_fmt=bogus'
+Setting entry with key 'sample_fmt' to value 'bogus'
+Unable to parse option value "bogus" as sample format
+Error 'sample_fmt=bogus'
+Setting options string 'video_rate=pal'
+Setting entry with key 'video_rate' to value 'pal'
+OK    'video_rate=pal'
+Setting options string 'video_rate=25'
+Setting entry with key 'video_rate' to value '25'
+OK    'video_rate=25'
+Setting options string 'video_rate=30000/1001'
+Setting entry with key 'video_rate' to value '30000/1001'
+OK    'video_rate=30000/1001'
+Setting options string 'video_rate=30/1.001'
+Setting entry with key 'video_rate' to value '30/1.001'
+OK    'video_rate=30/1.001'
+Setting options string 'video_rate=bogus'
+Setting entry with key 'video_rate' to value 'bogus'
+Undefined constant or missing '(' in 'bogus'
+Unable to parse option value "bogus" as video rate
+Error 'video_rate=bogus'
+Setting options string 'duration=bogus'
+Setting entry with key 'duration' to value 'bogus'
+Unable to parse option value "bogus" as duration
+Error 'duration=bogus'
+Setting options string 'duration=123.45'
+Setting entry with key 'duration' to value '123.45'
+OK    'duration=123.45'
+Setting options string 'duration=1\:23\:45.67'
+Setting entry with key 'duration' to value '1:23:45.67'
+OK    'duration=1\:23\:45.67'
+Setting options string 'color=blue'
+Setting entry with key 'color' to value 'blue'
+OK    'color=blue'
+Setting options string 'color=0x223300'
+Setting entry with key 'color' to value '0x223300'
+OK    'color=0x223300'
+Setting options string 'color=0x42FF07AA'
+Setting entry with key 'color' to value '0x42FF07AA'
+OK    'color=0x42FF07AA'
+Setting options string 'cl=stereo+downmix'
+Setting entry with key 'cl' to value 'stereo+downmix'
+OK    'cl=stereo+downmix'
+Setting options string 'cl=foo'
+Setting entry with key 'cl' to value 'foo'
+Unable to parse option value "foo" as channel layout
+Error 'cl=foo'
+Setting options string 'bin=boguss'
+Setting entry with key 'bin' to value 'boguss'
+Error 'bin=boguss'
+Setting options string 'bin=111'
+Setting entry with key 'bin' to value '111'
+Error 'bin=111'
+Setting options string 'bin=ffff'
+Setting entry with key 'bin' to value 'ffff'
+OK    'bin=ffff'
+Setting options string 'num64=bogus'
+Setting entry with key 'num64' to value 'bogus'
+Undefined constant or missing '(' in 'bogus'
+Unable to parse option value "bogus"
+Error 'num64=bogus'
+Setting options string 'num64=44'
+Setting entry with key 'num64' to value '44'
+OK    'num64=44'
+Setting options string 'num64=44.4'
+Setting entry with key 'num64' to value '44.4'
+OK    'num64=44.4'
+Setting options string 'num64=-1'
+Setting entry with key 'num64' to value '-1'
+Value -1.000000 for parameter 'num64' out of range [0 - 100]
+Error 'num64=-1'
+Setting options string 'num64=101'
+Setting entry with key 'num64' to value '101'
+Value 101.000000 for parameter 'num64' out of range [0 - 100]
+Error 'num64=101'
+Setting options string 'flt=bogus'
+Setting entry with key 'flt' to value 'bogus'
+Undefined constant or missing '(' in 'bogus'
+Unable to parse option value "bogus"
+Error 'flt=bogus'
+Setting options string 'flt=2'
+Setting entry with key 'flt' to value '2'
+OK    'flt=2'
+Setting options string 'flt=2.2'
+Setting entry with key 'flt' to value '2.2'
+OK    'flt=2.2'
+Setting options string 'flt=-1'
+Setting entry with key 'flt' to value '-1'
+Value -1.000000 for parameter 'flt' out of range [0 - 100]
+Error 'flt=-1'
+Setting options string 'flt=101'
+Setting entry with key 'flt' to value '101'
+Value 101.000000 for parameter 'flt' out of range [0 - 100]
+Error 'flt=101'
+Setting options string 'dbl=bogus'
+Setting entry with key 'dbl' to value 'bogus'
+Undefined constant or missing '(' in 'bogus'
+Unable to parse option value "bogus"
+Error 'dbl=bogus'
+Setting options string 'dbl=2'
+Setting entry with key 'dbl' to value '2'
+OK    'dbl=2'
+Setting options string 'dbl=2.2'
+Setting entry with key 'dbl' to value '2.2'
+OK    'dbl=2.2'
+Setting options string 'dbl=-1'
+Setting entry with key 'dbl' to value '-1'
+Value -1.000000 for parameter 'dbl' out of range [0 - 100]
+Error 'dbl=-1'
+Setting options string 'dbl=101'
+Setting entry with key 'dbl' to value '101'
+Value 101.000000 for parameter 'dbl' out of range [0 - 100]
+Error 'dbl=101'
+
+Testing av_opt_set_from_string()
+Setting options string ''
+OK    ''
+Setting options string '5'
+Setting 'num' to value '5'
+OK    '5'
+Setting options string '5:hello'
+Setting 'num' to value '5'
+Setting 'string' to value 'hello'
+OK    '5:hello'
+Setting options string '5:hello:size=pal'
+Setting 'num' to value '5'
+Setting 'string' to value 'hello'
+Setting 'size' to value 'pal'
+OK    '5:hello:size=pal'
+Setting options string '5:size=pal:hello'
+Setting 'num' to value '5'
+Setting 'size' to value 'pal'
+No option name near 'hello'
+Error '5:size=pal:hello'
+Setting options string ':'
+Setting 'num' to value ''
+Undefined constant or missing '(' in ''
+Unable to parse option value ""
+Error ':'
+Setting options string '='
+Setting '' to value ''
+Option '' not found
+Error '='
+Setting options string ' 5 : hello : size = pal '
+Setting 'num' to value '5'
+Setting 'string' to value 'hello'
+Setting 'size' to value 'pal'
+OK    ' 5 : hello : size = pal '
+Setting options string 'a_very_long_option_name_that_will_need_to_be_ellipsized_around_here=42'
+Setting 'a_very_long_option_name_that_will_need_to_be_ellipsized_around_here' to value '42'
+Option 'a_very_long_option_name_that_will_need_to_be_ellipsized_around_here' not found
+Error 'a_very_long_option_name_that_will_need_to_be_ellipsized_around_here=42'

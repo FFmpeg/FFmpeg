@@ -69,6 +69,7 @@ int av_reduce(int *dst_num, int *dst_den,
         den = next_den;
     }
     av_assert2(av_gcd(a1.num, a1.den) <= 1U);
+    av_assert2(a1.num <= max && a1.den <= max);
 
     *dst_num = sign ? -a1.num : a1.num;
     *dst_den = a1.den;
@@ -147,6 +148,40 @@ int av_find_nearest_q_idx(AVRational q, const AVRational* q_list)
     return nearest_q_idx;
 }
 
+uint32_t av_q2intfloat(AVRational q) {
+    int64_t n;
+    int shift;
+    int sign = 0;
+
+    if (q.den < 0) {
+        q.den *= -1;
+        q.num *= -1;
+    }
+    if (q.num < 0) {
+        q.num *= -1;
+        sign = 1;
+    }
+
+    if (!q.num && !q.den) return 0xFFC00000;
+    if (!q.num) return 0;
+    if (!q.den) return 0x7F800000 | (q.num & 0x80000000);
+
+    shift = 23 + av_log2(q.den) - av_log2(q.num);
+    if (shift >= 0) n = av_rescale(q.num, 1LL<<shift, q.den);
+    else            n = av_rescale(q.num, 1, ((int64_t)q.den) << -shift);
+
+    shift -= n >= (1<<24);
+    shift += n <  (1<<23);
+
+    if (shift >= 0) n = av_rescale(q.num, 1LL<<shift, q.den);
+    else            n = av_rescale(q.num, 1, ((int64_t)q.den) << -shift);
+
+    av_assert1(n <  (1<<24));
+    av_assert1(n >= (1<<23));
+
+    return sign<<31 | (150-shift)<<23 | (n - (1<<23));
+}
+
 #ifdef TEST
 int main(void)
 {
@@ -201,6 +236,20 @@ int main(void)
             }
         }
     }
+
+    for (a.den = 1; a.den < 0x100000000U/3; a.den*=3) {
+        for (a.num = -1; a.num < (1<<27); a.num += 1 + a.num/100) {
+            float f  = av_int2float(av_q2intfloat(a));
+            float f2 = av_q2d(a);
+            if (fabs(f - f2) > fabs(f)/5000000) {
+                av_log(NULL, AV_LOG_ERROR, "%d/%d %f %f\n", a.num,
+                       a.den, f, f2);
+                return 1;
+            }
+
+        }
+    }
+
     return 0;
 }
 #endif

@@ -21,7 +21,7 @@
 
 /**
  * @file
- * Fieldmatching filter, ported from VFM filter (VapouSsynth) by Clément.
+ * Fieldmatching filter, ported from VFM filter (VapourSynth) by Clément.
  * Fredrik Mellbin is the author of the VIVTC/VFM filter, which is itself a
  * light clone of the TIVTC/TFM (AviSynth) filter written by Kevin Stone
  * (tritical), the original author.
@@ -86,13 +86,13 @@ typedef struct {
     /* options */
     int order;
     int ppsrc;
-    enum matching_mode mode;
+    int mode;                       ///< matching_mode
     int field;
     int mchroma;
     int y0, y1;
     int64_t scthresh;
     double scthresh_flt;
-    enum comb_matching_mode combmatch;
+    int combmatch;                  ///< comb_matching_mode
     int combdbg;
     int cthresh;
     int chroma;
@@ -285,9 +285,9 @@ static int calc_combed_score(const FieldMatchContext *fm, const AVFrame *src)
             cmkpV  += cmk_linesizeUV;
             cmkpU  += cmk_linesizeUV;
             for (x = 1; x < width - 1; x++) {
-#define HAS_FF_AROUND(p, lz) (p[x-1 - lz] == 0xff || p[x - lz] == 0xff || p[x+1 - lz] == 0xff || \
-                              p[x-1     ] == 0xff ||                      p[x+1     ] == 0xff || \
-                              p[x-1 + lz] == 0xff || p[x + lz] == 0xff || p[x+1 + lz] == 0xff)
+#define HAS_FF_AROUND(p, lz) (p[(x)-1 - (lz)] == 0xff || p[(x) - (lz)] == 0xff || p[(x)+1 - (lz)] == 0xff || \
+                              p[(x)-1       ] == 0xff ||                          p[(x)+1       ] == 0xff || \
+                              p[(x)-1 + (lz)] == 0xff || p[(x) + (lz)] == 0xff || p[(x)+1 + (lz)] == 0xff)
                 if ((cmkpV[x] == 0xff && HAS_FF_AROUND(cmkpV, cmk_linesizeUV)) ||
                     (cmkpU[x] == 0xff && HAS_FF_AROUND(cmkpU, cmk_linesizeUV))) {
                     ((uint16_t*)cmkp)[x]  = 0xffff;
@@ -855,8 +855,10 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUV411P,  AV_PIX_FMT_YUV410P,
         AV_PIX_FMT_NONE
     };
-    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
-    return 0;
+    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
+    if (!fmts_list)
+        return AVERROR(ENOMEM);
+    return ff_set_common_formats(ctx, fmts_list);
 }
 
 static int config_input(AVFilterLink *inlink)

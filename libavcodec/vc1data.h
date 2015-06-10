@@ -94,8 +94,6 @@ extern VLC ff_vc1_ac_coeff_table[8];
 #define VC1_IF_MBMODE_VLC_BITS 5
 //@}
 
-
-/* Denominator used for ff_vc1_bfraction_lut */
 #define B_FRACTION_DEN  256
 
 /* pre-computed scales for all bfractions and base=256 */

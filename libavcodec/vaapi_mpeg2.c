@@ -22,6 +22,7 @@
 
 #include "mpegutils.h"
 #include "vaapi_internal.h"
+#include "internal.h"
 
 /** Reconstruct bitstream f_code */
 static inline int mpeg2_get_f_code(MpegEncContext *s)
@@ -44,7 +45,7 @@ static int vaapi_mpeg2_start_frame(AVCodecContext *avctx, av_unused const uint8_
     VAIQMatrixBufferMPEG2 *iq_matrix;
     int i;
 
-    av_dlog(avctx, "vaapi_mpeg2_start_frame()\n");
+    ff_dlog(avctx, "vaapi_mpeg2_start_frame()\n");
 
     vactx->slice_param_size = sizeof(VASliceParameterBufferMPEG2);
 
@@ -106,7 +107,7 @@ static int vaapi_mpeg2_decode_slice(AVCodecContext *avctx, const uint8_t *buffer
     GetBitContext gb;
     uint32_t quantiser_scale_code, intra_slice_flag, macroblock_offset;
 
-    av_dlog(avctx, "vaapi_mpeg2_decode_slice(): buffer %p, size %d\n", buffer, size);
+    ff_dlog(avctx, "vaapi_mpeg2_decode_slice(): buffer %p, size %d\n", buffer, size);
 
     /* Determine macroblock_offset */
     init_get_bits(&gb, buffer, 8 * size);

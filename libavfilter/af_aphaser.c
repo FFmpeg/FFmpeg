@@ -37,7 +37,7 @@ typedef struct AudioPhaserContext {
     double decay;
     double speed;
 
-    enum WaveType type;
+    int type;
 
     int delay_buffer_length;
     double *delay_buffer;
@@ -94,23 +94,26 @@ static int query_formats(AVFilterContext *ctx)
         AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_S16P,
         AV_SAMPLE_FMT_NONE
     };
+    int ret;
 
     layouts = ff_all_channel_layouts();
     if (!layouts)
         return AVERROR(ENOMEM);
-    ff_set_common_channel_layouts(ctx, layouts);
+    ret = ff_set_common_channel_layouts(ctx, layouts);
+    if (ret < 0)
+        return ret;
 
     formats = ff_make_format_list(sample_fmts);
     if (!formats)
         return AVERROR(ENOMEM);
-    ff_set_common_formats(ctx, formats);
+    ret = ff_set_common_formats(ctx, formats);
+    if (ret < 0)
+        return ret;
 
     formats = ff_all_samplerates();
     if (!formats)
         return AVERROR(ENOMEM);
-    ff_set_common_samplerates(ctx, formats);
-
-    return 0;
+    return ff_set_common_samplerates(ctx, formats);
 }
 
 #define MOD(a, b) (((a) >= (b)) ? (a) - (b) : (a))
@@ -203,6 +206,10 @@ static int config_output(AVFilterLink *outlink)
     AVFilterLink *inlink = outlink->src->inputs[0];
 
     p->delay_buffer_length = p->delay * 0.001 * inlink->sample_rate + 0.5;
+    if (p->delay_buffer_length <= 0) {
+        av_log(outlink->src, AV_LOG_ERROR, "delay is too small\n");
+        return AVERROR(EINVAL);
+    }
     p->delay_buffer = av_calloc(p->delay_buffer_length, sizeof(*p->delay_buffer) * inlink->channels);
     p->modulation_buffer_length = inlink->sample_rate / p->speed + 0.5;
     p->modulation_buffer = av_malloc_array(p->modulation_buffer_length, sizeof(*p->modulation_buffer));

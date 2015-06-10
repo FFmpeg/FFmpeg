@@ -44,7 +44,7 @@ typedef struct AudioVectorScopeContext {
     AVFrame *outpicref;
     int w, h;
     int hw, hh;
-    enum VectorScopeMode mode;
+    int mode;
     int contrast[3];
     int fade[3];
     double zoom;
@@ -75,37 +75,37 @@ static const AVOption avectorscope_options[] = {
 
 AVFILTER_DEFINE_CLASS(avectorscope);
 
-static void draw_dot(AudioVectorScopeContext *p, unsigned x, unsigned y)
+static void draw_dot(AudioVectorScopeContext *s, unsigned x, unsigned y)
 {
-    const int linesize = p->outpicref->linesize[0];
+    const int linesize = s->outpicref->linesize[0];
     uint8_t *dst;
 
-    if (p->zoom > 1) {
-        if (y >= p->h || x >= p->w)
+    if (s->zoom > 1) {
+        if (y >= s->h || x >= s->w)
             return;
     } else {
-        y = FFMIN(y, p->h - 1);
-        x = FFMIN(x, p->w - 1);
+        y = FFMIN(y, s->h - 1);
+        x = FFMIN(x, s->w - 1);
     }
 
-    dst = &p->outpicref->data[0][y * linesize + x * 4];
-    dst[0] = FFMIN(dst[0] + p->contrast[0], 255);
-    dst[1] = FFMIN(dst[1] + p->contrast[1], 255);
-    dst[2] = FFMIN(dst[2] + p->contrast[2], 255);
+    dst = &s->outpicref->data[0][y * linesize + x * 4];
+    dst[0] = FFMIN(dst[0] + s->contrast[0], 255);
+    dst[1] = FFMIN(dst[1] + s->contrast[1], 255);
+    dst[2] = FFMIN(dst[2] + s->contrast[2], 255);
 }
 
-static void fade(AudioVectorScopeContext *p)
+static void fade(AudioVectorScopeContext *s)
 {
-    const int linesize = p->outpicref->linesize[0];
+    const int linesize = s->outpicref->linesize[0];
     int i, j;
 
-    if (p->fade[0] || p->fade[1] || p->fade[2]) {
-        uint8_t *d = p->outpicref->data[0];
-        for (i = 0; i < p->h; i++) {
-            for (j = 0; j < p->w*4; j+=4) {
-                d[j+0] = FFMAX(d[j+0] - p->fade[0], 0);
-                d[j+1] = FFMAX(d[j+1] - p->fade[1], 0);
-                d[j+2] = FFMAX(d[j+2] - p->fade[2], 0);
+    if (s->fade[0] || s->fade[1] || s->fade[2]) {
+        uint8_t *d = s->outpicref->data[0];
+        for (i = 0; i < s->h; i++) {
+            for (j = 0; j < s->w*4; j+=4) {
+                d[j+0] = FFMAX(d[j+0] - s->fade[0], 0);
+                d[j+1] = FFMAX(d[j+1] - s->fade[1], 0);
+                d[j+2] = FFMAX(d[j+2] - s->fade[2], 0);
             }
             d += linesize;
         }
@@ -145,10 +145,10 @@ static int query_formats(AVFilterContext *ctx)
 static int config_input(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
-    AudioVectorScopeContext *p = ctx->priv;
+    AudioVectorScopeContext *s = ctx->priv;
     int nb_samples;
 
-    nb_samples = FFMAX(1024, ((double)inlink->sample_rate / av_q2d(p->frame_rate)) + 0.5);
+    nb_samples = FFMAX(1024, ((double)inlink->sample_rate / av_q2d(s->frame_rate)) + 0.5);
     inlink->partial_buf_size =
     inlink->min_samples =
     inlink->max_samples = nb_samples;
@@ -158,15 +158,15 @@ static int config_input(AVFilterLink *inlink)
 
 static int config_output(AVFilterLink *outlink)
 {
-    AudioVectorScopeContext *p = outlink->src->priv;
+    AudioVectorScopeContext *s = outlink->src->priv;
 
-    outlink->w = p->w;
-    outlink->h = p->h;
+    outlink->w = s->w;
+    outlink->h = s->h;
     outlink->sample_aspect_ratio = (AVRational){1,1};
-    outlink->frame_rate = p->frame_rate;
+    outlink->frame_rate = s->frame_rate;
 
-    p->hw = p->w / 2;
-    p->hh = p->h / 2;
+    s->hw = s->w / 2;
+    s->hh = s->h / 2;
 
     return 0;
 }
@@ -175,35 +175,35 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
 {
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
-    AudioVectorScopeContext *p = ctx->priv;
-    const int hw = p->hw;
-    const int hh = p->hh;
+    AudioVectorScopeContext *s = ctx->priv;
+    const int hw = s->hw;
+    const int hh = s->hh;
     unsigned x, y;
-    const double zoom = p->zoom;
+    const double zoom = s->zoom;
     int i;
 
-    if (!p->outpicref || p->outpicref->width  != outlink->w ||
-                         p->outpicref->height != outlink->h) {
-        av_frame_free(&p->outpicref);
-        p->outpicref = ff_get_video_buffer(outlink, outlink->w, outlink->h);
-        if (!p->outpicref) {
+    if (!s->outpicref || s->outpicref->width  != outlink->w ||
+                         s->outpicref->height != outlink->h) {
+        av_frame_free(&s->outpicref);
+        s->outpicref = ff_get_video_buffer(outlink, outlink->w, outlink->h);
+        if (!s->outpicref) {
             av_frame_free(&insamples);
             return AVERROR(ENOMEM);
         }
 
         for (i = 0; i < outlink->h; i++)
-            memset(p->outpicref->data[0] + i * p->outpicref->linesize[0], 0, outlink->w * 4);
+            memset(s->outpicref->data[0] + i * s->outpicref->linesize[0], 0, outlink->w * 4);
     }
-    p->outpicref->pts = insamples->pts;
+    s->outpicref->pts = insamples->pts;
 
-    fade(p);
+    fade(s);
 
     switch (insamples->format) {
     case AV_SAMPLE_FMT_S16:
         for (i = 0; i < insamples->nb_samples; i++) {
             int16_t *src = (int16_t *)insamples->data[0] + i * 2;
 
-            if (p->mode == LISSAJOUS) {
+            if (s->mode == LISSAJOUS) {
                 x = ((src[1] - src[0]) * zoom / (float)(UINT16_MAX) + 1) * hw;
                 y = (1.0 - (src[0] + src[1]) * zoom / (float)UINT16_MAX) * hh;
             } else {
@@ -211,14 +211,14 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
                 y = (src[0] * zoom / (float)INT16_MAX + 1) * hh;
             }
 
-            draw_dot(p, x, y);
+            draw_dot(s, x, y);
         }
         break;
     case AV_SAMPLE_FMT_FLT:
         for (i = 0; i < insamples->nb_samples; i++) {
             float *src = (float *)insamples->data[0] + i * 2;
 
-            if (p->mode == LISSAJOUS) {
+            if (s->mode == LISSAJOUS) {
                 x = ((src[1] - src[0]) * zoom / 2 + 1) * hw;
                 y = (1.0 - (src[0] + src[1]) * zoom / 2) * hh;
             } else {
@@ -226,21 +226,21 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
                 y = (src[0] * zoom + 1) * hh;
             }
 
-            draw_dot(p, x, y);
+            draw_dot(s, x, y);
         }
         break;
     }
 
     av_frame_free(&insamples);
 
-    return ff_filter_frame(outlink, av_frame_clone(p->outpicref));
+    return ff_filter_frame(outlink, av_frame_clone(s->outpicref));
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
 {
-    AudioVectorScopeContext *p = ctx->priv;
+    AudioVectorScopeContext *s = ctx->priv;
 
-    av_frame_free(&p->outpicref);
+    av_frame_free(&s->outpicref);
 }
 
 static const AVFilterPad audiovectorscope_inputs[] = {

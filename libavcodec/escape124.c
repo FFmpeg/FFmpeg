@@ -76,7 +76,7 @@ static av_cold int escape124_decode_close(AVCodecContext *avctx)
     Escape124Context *s = avctx->priv_data;
 
     for (i = 0; i < 3; i++)
-        av_free(s->codebooks[i].blocks);
+        av_freep(&s->codebooks[i].blocks);
 
     av_frame_free(&s->frame);
 
@@ -143,10 +143,11 @@ static MacroBlock decode_macroblock(Escape124Context* s, GetBitContext* gb,
     // This function reads a maximum of 22 bits; the callers
     // guard this function appropriately
     unsigned block_index, depth;
-
-    if (get_bits1(gb)) {
+    int value = get_bits1(gb);
+    if (value) {
         static const char transitions[3][2] = { {2, 1}, {0, 2}, {1, 0} };
-        *codebook_index = transitions[*codebook_index][get_bits1(gb)];
+        value = get_bits1(gb);
+        *codebook_index = transitions[*codebook_index][value];
     }
 
     depth = s->codebooks[*codebook_index].depth;
@@ -263,7 +264,7 @@ static int escape124_decode_frame(AVCodecContext *avctx,
                     cb_size = s->num_superblocks << cb_depth;
                 }
             }
-            av_free(s->codebooks[i].blocks);
+            av_freep(&s->codebooks[i].blocks);
             s->codebooks[i] = unpack_codebook(&gb, cb_depth, cb_size);
             if (!s->codebooks[i].blocks)
                 return -1;

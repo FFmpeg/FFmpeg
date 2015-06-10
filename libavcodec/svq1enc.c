@@ -96,7 +96,7 @@ static int encode_block(SVQ1EncContext *s, uint8_t *src, uint8_t *ref,
     int w            = 2 << (level + 2 >> 1);
     int h            = 2 << (level + 1 >> 1);
     int size         = w * h;
-    int16_t block[7][256];
+    int16_t (*block)[256] = s->encoded_block_levels[level];
     const int8_t *codebook_sum, *codebook;
     const uint16_t(*mean_vlc)[2];
     const uint8_t(*multistage_vlc)[2];
@@ -283,7 +283,6 @@ static int svq1_encode_plane(SVQ1EncContext *s, int plane,
         s->m.pict_type                     = f->pict_type;
         s->m.me_method                     = s->avctx->me_method;
         s->m.me.scene_change_score         = 0;
-        s->m.flags                         = s->avctx->flags;
         // s->m.out_format                    = FMT_H263;
         // s->m.unrestricted_mv               = 1;
         s->m.lambda                        = f->quality;
@@ -301,6 +300,8 @@ static int svq1_encode_plane(SVQ1EncContext *s, int plane,
             s->motion_val16[plane] = av_mallocz((s->m.mb_stride *
                                                  (block_height + 2) + 1) *
                                                 2 * sizeof(int16_t));
+            if (!s->motion_val8[plane] || !s->motion_val16[plane])
+                return AVERROR(ENOMEM);
         }
 
         s->m.mb_type = s->mb_type;
@@ -420,8 +421,8 @@ static int svq1_encode_plane(SVQ1EncContext *s, int plane,
                     av_assert1(my     >= -32 && my     <= 31);
                     av_assert1(pred_x >= -32 && pred_x <= 31);
                     av_assert1(pred_y >= -32 && pred_y <= 31);
-                    ff_h263_encode_motion(&s->m, mx - pred_x, 1);
-                    ff_h263_encode_motion(&s->m, my - pred_y, 1);
+                    ff_h263_encode_motion(&s->m.pb, mx - pred_x, 1);
+                    ff_h263_encode_motion(&s->m.pb, my - pred_y, 1);
                     s->reorder_pb[5] = s->m.pb;
                     score[1]        += lambda * put_bits_count(&s->reorder_pb[5]);
 
@@ -555,6 +556,12 @@ static av_cold int svq1_encode_init(AVCodecContext *avctx)
                                         s->y_block_height * sizeof(int32_t));
     s->ssd_int8_vs_int16   = ssd_int8_vs_int16_c;
 
+    if (!s->m.me.temp || !s->m.me.scratchpad || !s->m.me.map ||
+        !s->m.me.score_map || !s->mb_type || !s->dummy) {
+        svq1_encode_end(avctx);
+        return AVERROR(ENOMEM);
+    }
+
     if (ARCH_PPC)
         ff_svq1enc_init_ppc(s);
     if (ARCH_X86)
@@ -582,11 +589,19 @@ static int svq1_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     }
 
     if (!s->current_picture->data[0]) {
-        if ((ret = ff_get_buffer(avctx, s->current_picture, 0))< 0 ||
-            (ret = ff_get_buffer(avctx, s->last_picture, 0))   < 0) {
+        if ((ret = ff_get_buffer(avctx, s->current_picture, 0)) < 0) {
             return ret;
         }
-        s->scratchbuf = av_malloc(s->current_picture->linesize[0] * 16 * 3);
+    }
+    if (!s->last_picture->data[0]) {
+        ret = ff_get_buffer(avctx, s->last_picture, 0);
+        if (ret < 0)
+            return ret;
+    }
+    if (!s->scratchbuf) {
+        s->scratchbuf = av_malloc_array(s->current_picture->linesize[0], 16 * 3);
+        if (!s->scratchbuf)
+            return AVERROR(ENOMEM);
     }
 
     FFSWAP(AVFrame*, s->current_picture, s->last_picture);
@@ -607,8 +622,15 @@ static int svq1_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                               s->frame_width  / (i ? 4 : 1),
                               s->frame_height / (i ? 4 : 1),
                               pict->linesize[i],
-                              s->current_picture->linesize[i]) < 0)
+                              s->current_picture->linesize[i]) < 0) {
+            int j;
+            for (j = 0; j < i; j++) {
+                av_freep(&s->motion_val8[j]);
+                av_freep(&s->motion_val16[j]);
+            }
+            av_freep(&s->scratchbuf);
             return -1;
+        }
 
     // avpriv_align_put_bits(&s->pb);
     while (put_bits_count(&s->pb) & 31)

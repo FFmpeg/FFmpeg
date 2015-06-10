@@ -321,7 +321,7 @@ static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
                 int err;
 
                 size = avio_rl32(s->pb) - 4;
-                if (!size || size + 4L > frame_size) {
+                if (!size || size + 4LL > frame_size) {
                     av_log(s, AV_LOG_ERROR, "Invalid audio part size\n");
                     return AVERROR_INVALIDDATA;
                 }

@@ -40,7 +40,7 @@
 #include "proresdsp.h"
 #include "get_bits.h"
 
-typedef struct {
+typedef struct ProresThreadData {
     const uint8_t *index;            ///< pointers to the data of this slice
     int slice_num;
     int x_pos, y_pos;
@@ -51,7 +51,7 @@ typedef struct {
     DECLARE_ALIGNED(16, int16_t, qmat_chroma_scaled)[64];
 } ProresThreadData;
 
-typedef struct {
+typedef struct ProresContext {
     ProresDSPContext dsp;
     AVFrame    *frame;
     ScanTable  scantable;
@@ -263,7 +263,7 @@ static int decode_picture_header(ProresContext *ctx, const uint8_t *buf,
 
     if (ctx->total_slices != num_slices) {
         av_freep(&ctx->slice_data);
-        ctx->slice_data = av_malloc((num_slices + 1) * sizeof(ctx->slice_data[0]));
+        ctx->slice_data = av_malloc_array(num_slices + 1, sizeof(ctx->slice_data[0]));
         if (!ctx->slice_data)
             return AVERROR(ENOMEM);
         ctx->total_slices = num_slices;
@@ -366,6 +366,7 @@ static inline void decode_dc_coeffs(GetBitContext *gb, int16_t *out,
     }
 }
 
+#define MAX_PADDING 16
 
 /**
  * Decode AC coefficients for all blocks in a slice.
@@ -390,7 +391,7 @@ static inline int decode_ac_coeffs(GetBitContext *gb, int16_t *out,
         lev_cb_index = ff_prores_lev_to_cb_index[FFMIN(level, 9)];
 
         bits_left = get_bits_left(gb);
-        if (bits_left <= 0 || (bits_left <= 8 && !show_bits(gb, bits_left)))
+        if (bits_left <= 0 || (bits_left <= MAX_PADDING && !show_bits(gb, bits_left)))
             return 0;
 
         run = decode_vlc_codeword(gb, ff_prores_ac_codebook[run_cb_index]);
@@ -398,7 +399,7 @@ static inline int decode_ac_coeffs(GetBitContext *gb, int16_t *out,
             return AVERROR_INVALIDDATA;
 
         bits_left = get_bits_left(gb);
-        if (bits_left <= 0 || (bits_left <= 8 && !show_bits(gb, bits_left)))
+        if (bits_left <= 0 || (bits_left <= MAX_PADDING && !show_bits(gb, bits_left)))
             return AVERROR_INVALIDDATA;
 
         level = decode_vlc_codeword(gb, ff_prores_ac_codebook[lev_cb_index]) + 1;

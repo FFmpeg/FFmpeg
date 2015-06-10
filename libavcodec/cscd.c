@@ -30,7 +30,7 @@
 #endif
 #include "libavutil/lzo.h"
 
-typedef struct {
+typedef struct CamStudioContext {
     AVFrame *pic;
     int linelen, height, bpp;
     unsigned int decomp_size;

@@ -59,13 +59,13 @@ static int mpl2_event_to_ass(AVBPrint *buf, const char *p)
         }
     }
 
-    av_bprintf(buf, "\r\n");
     return 0;
 }
 
 static int mpl2_decode_frame(AVCodecContext *avctx, void *data,
                              int *got_sub_ptr, AVPacket *avpkt)
 {
+    int ret = 0;
     AVBPrint buf;
     AVSubtitle *sub = data;
     const char *ptr = avpkt->data;
@@ -74,15 +74,12 @@ static int mpl2_decode_frame(AVCodecContext *avctx, void *data,
                              av_rescale_q(avpkt->duration, avctx->time_base, (AVRational){1,100}) : -1;
 
     av_bprint_init(&buf, 0, AV_BPRINT_SIZE_UNLIMITED);
-    if (ptr && avpkt->size > 0 && *ptr && !mpl2_event_to_ass(&buf, ptr)) {
-        if (!av_bprint_is_complete(&buf)) {
-            av_bprint_finalize(&buf, NULL);
-            return AVERROR(ENOMEM);
-        }
-        ff_ass_add_rect(sub, buf.str, ts_start, ts_duration, 0);
-    }
-    *got_sub_ptr = sub->num_rects > 0;
+    if (ptr && avpkt->size > 0 && *ptr && !mpl2_event_to_ass(&buf, ptr))
+        ret = ff_ass_add_rect_bprint(sub, &buf, ts_start, ts_duration);
     av_bprint_finalize(&buf, NULL);
+    if (ret < 0)
+        return ret;
+    *got_sub_ptr = sub->num_rects > 0;
     return avpkt->size;
 }
 

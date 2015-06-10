@@ -172,6 +172,9 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
         context->frame_size = avpicture_get_size(avctx->pix_fmt, avctx->width,
                                                  avctx->height);
     }
+    if (context->frame_size < 0)
+        return context->frame_size;
+
     need_copy = !avpkt->buf || context->is_2_4_bpp || context->is_yuv2 || context->is_lt_16bpp;
 
     frame->pict_type        = AV_PICTURE_TYPE_I;

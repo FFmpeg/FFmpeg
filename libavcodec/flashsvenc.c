@@ -94,9 +94,9 @@ static av_cold int flashsv_encode_end(AVCodecContext *avctx)
 
     deflateEnd(&s->zstream);
 
-    av_free(s->encbuffer);
-    av_free(s->previous_frame);
-    av_free(s->tmpblock);
+    av_freep(&s->encbuffer);
+    av_freep(&s->previous_frame);
+    av_freep(&s->tmpblock);
 
     av_frame_free(&avctx->coded_frame);
 
@@ -151,7 +151,7 @@ static int encode_bitstream(FlashSVContext *s, const AVFrame *p, uint8_t *buf,
     int buf_pos, res;
     int pred_blocks = 0;
 
-    init_put_bits(&pb, buf, buf_size * 8);
+    init_put_bits(&pb, buf, buf_size);
 
     put_bits(&pb,  4, block_width / 16 - 1);
     put_bits(&pb, 12, s->image_width);
@@ -197,7 +197,7 @@ static int encode_bitstream(FlashSVContext *s, const AVFrame *p, uint8_t *buf,
 
                 bytestream_put_be16(&ptr, zsize);
                 buf_pos += zsize + 2;
-                av_dlog(s->avctx, "buf_pos = %d\n", buf_pos);
+                ff_dlog(s->avctx, "buf_pos = %d\n", buf_pos);
             } else {
                 pred_blocks++;
                 bytestream_put_be16(&ptr, 0);
@@ -265,7 +265,7 @@ static int flashsv_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         avctx->coded_frame->pict_type      = AV_PICTURE_TYPE_I;
         avctx->coded_frame->key_frame      = 1;
         s->last_key_frame = avctx->frame_number;
-        av_dlog(avctx, "Inserting keyframe at frame %d\n", avctx->frame_number);
+        ff_dlog(avctx, "Inserting keyframe at frame %d\n", avctx->frame_number);
     } else {
         avctx->coded_frame->pict_type = AV_PICTURE_TYPE_P;
         avctx->coded_frame->key_frame = 0;

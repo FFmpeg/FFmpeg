@@ -28,13 +28,13 @@
 #include "avformat.h"
 #include "internal.h"
 
-typedef struct {
+typedef struct Page {
     int base_record;
     unsigned int nb_records;
     int size;
 } Page;
 
-typedef struct {
+typedef struct AnmDemuxContext {
     unsigned int nb_pages;    /**< total pages in file */
     unsigned int nb_records;  /**< total records in file */
     int page_table_offset;

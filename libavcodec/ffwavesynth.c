@@ -345,8 +345,8 @@ static av_cold int wavesynth_init(AVCodecContext *avc)
     return 0;
 
 fail:
-    av_free(ws->inter);
-    av_free(ws->sin);
+    av_freep(&ws->inter);
+    av_freep(&ws->sin);
     return r;
 }
 
@@ -463,8 +463,8 @@ static av_cold int wavesynth_close(AVCodecContext *avc)
 {
     struct wavesynth_context *ws = avc->priv_data;
 
-    av_free(ws->sin);
-    av_free(ws->inter);
+    av_freep(&ws->sin);
+    av_freep(&ws->inter);
     return 0;
 }
 

@@ -640,9 +640,9 @@ static uint32_t log2sample(uint32_t v, int limit, uint32_t *result)
         dbits = nbits_table[v];
         *result += (dbits << 8) + wp_log2_table[(v << (9 - dbits)) & 0xff];
     } else {
-        if (v < (1L << 16))
+        if (v < (1 << 16))
             dbits = nbits_table[v >> 8] + 8;
-        else if (v < (1L << 24))
+        else if (v < (1 << 24))
             dbits = nbits_table[v >> 16] + 16;
         else
             dbits = nbits_table[v >> 24] + 24;
@@ -1967,8 +1967,8 @@ static int wv_stereo(WavPackEncodeContext *s,
 #define count_bits(av) ( \
  (av) < (1 << 8) ? nbits_table[av] : \
   ( \
-   (av) < (1L << 16) ? nbits_table[(av) >> 8] + 8 : \
-   ((av) < (1L << 24) ? nbits_table[(av) >> 16] + 16 : nbits_table[(av) >> 24] + 24) \
+   (av) < (1 << 16) ? nbits_table[(av) >> 8] + 8 : \
+   ((av) < (1 << 24) ? nbits_table[(av) >> 16] + 16 : nbits_table[(av) >> 24] + 24) \
   ) \
 )
 
@@ -2143,7 +2143,6 @@ static void pack_int32(WavPackEncodeContext *s,
                        int nb_samples)
 {
     const int sent_bits = s->int32_sent_bits;
-    int32_t value, mask = (1 << sent_bits) - 1;
     PutBitContext *pb = &s->pb;
     int i, pre_shift;
 
@@ -2154,15 +2153,12 @@ static void pack_int32(WavPackEncodeContext *s,
 
     if (s->flags & WV_MONO_DATA) {
         for (i = 0; i < nb_samples; i++) {
-            value = (samples_l[i] >> pre_shift) & mask;
-            put_bits(pb, sent_bits, value);
+            put_sbits(pb, sent_bits, samples_l[i] >> pre_shift);
         }
     } else {
         for (i = 0; i < nb_samples; i++) {
-            value = (samples_l[i] >> pre_shift) & mask;
-            put_bits(pb, sent_bits, value);
-            value = (samples_r[i] >> pre_shift) & mask;
-            put_bits(pb, sent_bits, value);
+            put_sbits(pb, sent_bits, samples_l[i] >> pre_shift);
+            put_sbits(pb, sent_bits, samples_r[i] >> pre_shift);
         }
     }
 }

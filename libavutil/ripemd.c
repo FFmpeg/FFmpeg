@@ -34,9 +34,8 @@ typedef struct AVRIPEMD {
     uint64_t count;       ///< number of bytes in buffer
     uint8_t  buffer[64];  ///< 512-bit buffer of input values used in hash updating
     uint32_t state[10];   ///< current hash value
-    uint8_t  ext;         ///< extension (0 for 128 and 160, 1 for 256 and 320)
     /** function used to update hash for 512-bit input block */
-    void     (*transform)(uint32_t *state, const uint8_t buffer[64], int ext);
+    void     (*transform)(uint32_t *state, const uint8_t buffer[64]);
 } AVRIPEMD;
 
 const int av_ripemd_size = sizeof(AVRIPEMD);
@@ -88,8 +87,6 @@ static const int WB[80] = {
 
 #define rol(value, bits) ((value << bits) | (value >> (32 - bits)))
 
-#define SWAP(a,b) if (ext) { t = a; a = b; b = t; }
-
 #define ROUND128_0_TO_15(a,b,c,d,e,f,g,h)                               \
     a = rol(a + ((  b ^ c  ^ d)      + block[WA[n]]),         ROTA[n]); \
     e = rol(e + ((((f ^ g) & h) ^ g) + block[WB[n]] + KB[0]), ROTB[n]); \
@@ -110,21 +107,40 @@ static const int WB[80] = {
     e = rol(e + ((  f ^ g  ^ h)      + block[WB[n]]),         ROTB[n]); \
     n++
 
-static void ripemd128_transform(uint32_t *state, const uint8_t buffer[64], int ext)
+#define R128_0                          \
+    ROUND128_0_TO_15(a,b,c,d,e,f,g,h);  \
+    ROUND128_0_TO_15(d,a,b,c,h,e,f,g);  \
+    ROUND128_0_TO_15(c,d,a,b,g,h,e,f);  \
+    ROUND128_0_TO_15(b,c,d,a,f,g,h,e)
+
+#define R128_16                         \
+    ROUND128_16_TO_31(a,b,c,d,e,f,g,h); \
+    ROUND128_16_TO_31(d,a,b,c,h,e,f,g); \
+    ROUND128_16_TO_31(c,d,a,b,g,h,e,f); \
+    ROUND128_16_TO_31(b,c,d,a,f,g,h,e)
+
+#define R128_32                         \
+    ROUND128_32_TO_47(a,b,c,d,e,f,g,h); \
+    ROUND128_32_TO_47(d,a,b,c,h,e,f,g); \
+    ROUND128_32_TO_47(c,d,a,b,g,h,e,f); \
+    ROUND128_32_TO_47(b,c,d,a,f,g,h,e)
+
+#define R128_48                         \
+    ROUND128_48_TO_63(a,b,c,d,e,f,g,h); \
+    ROUND128_48_TO_63(d,a,b,c,h,e,f,g); \
+    ROUND128_48_TO_63(c,d,a,b,g,h,e,f); \
+    ROUND128_48_TO_63(b,c,d,a,f,g,h,e)
+
+static void ripemd128_transform(uint32_t *state, const uint8_t buffer[64])
 {
-    uint32_t a, b, c, d, e, f, g, h, t;
+    uint32_t a, b, c, d, e, f, g, h, av_unused t;
     uint32_t block[16];
     int n;
 
-    if (ext) {
-        a = state[0]; b = state[1]; c = state[2]; d = state[3];
-        e = state[4]; f = state[5]; g = state[6]; h = state[7];
-    } else {
-        a = e = state[0];
-        b = f = state[1];
-        c = g = state[2];
-        d = h = state[3];
-    }
+    a = e = state[0];
+    b = f = state[1];
+    c = g = state[2];
+    d = h = state[3];
 
     for (n = 0; n < 16; n++)
         block[n] = AV_RL32(buffer + 4 * n);
@@ -136,77 +152,100 @@ static void ripemd128_transform(uint32_t *state, const uint8_t buffer[64], int e
         t = d; d = c; c = b; b = a; a = t;
         t = h; h = g; g = f; f = e; e = t;
     }
-    SWAP(a,e)
 
     for (; n < 32;) {
         ROUND128_16_TO_31(a,b,c,d,e,f,g,h);
         t = d; d = c; c = b; b = a; a = t;
         t = h; h = g; g = f; f = e; e = t;
     }
-    SWAP(b,f)
 
     for (; n < 48;) {
         ROUND128_32_TO_47(a,b,c,d,e,f,g,h);
         t = d; d = c; c = b; b = a; a = t;
         t = h; h = g; g = f; f = e; e = t;
     }
-    SWAP(c,g)
 
     for (; n < 64;) {
         ROUND128_48_TO_63(a,b,c,d,e,f,g,h);
         t = d; d = c; c = b; b = a; a = t;
         t = h; h = g; g = f; f = e; e = t;
     }
-    SWAP(d,h)
 #else
 
-#define R128_0                         \
-    ROUND128_0_TO_15(a,b,c,d,e,f,g,h); \
-    ROUND128_0_TO_15(d,a,b,c,h,e,f,g); \
-    ROUND128_0_TO_15(c,d,a,b,g,h,e,f); \
-    ROUND128_0_TO_15(b,c,d,a,f,g,h,e)
-
     R128_0; R128_0; R128_0; R128_0;
-    SWAP(a,e)
-
-#define R128_16                         \
-    ROUND128_16_TO_31(a,b,c,d,e,f,g,h); \
-    ROUND128_16_TO_31(d,a,b,c,h,e,f,g); \
-    ROUND128_16_TO_31(c,d,a,b,g,h,e,f); \
-    ROUND128_16_TO_31(b,c,d,a,f,g,h,e)
 
     R128_16; R128_16; R128_16; R128_16;
-    SWAP(b,f)
-
-#define R128_32                         \
-    ROUND128_32_TO_47(a,b,c,d,e,f,g,h); \
-    ROUND128_32_TO_47(d,a,b,c,h,e,f,g); \
-    ROUND128_32_TO_47(c,d,a,b,g,h,e,f); \
-    ROUND128_32_TO_47(b,c,d,a,f,g,h,e)
 
     R128_32; R128_32; R128_32; R128_32;
-    SWAP(c,g)
-
-#define R128_48                         \
-    ROUND128_48_TO_63(a,b,c,d,e,f,g,h); \
-    ROUND128_48_TO_63(d,a,b,c,h,e,f,g); \
-    ROUND128_48_TO_63(c,d,a,b,g,h,e,f); \
-    ROUND128_48_TO_63(b,c,d,a,f,g,h,e)
 
     R128_48; R128_48; R128_48; R128_48;
-    SWAP(d,h)
 #endif
 
-    if (ext) {
-        state[0] += a; state[1] += b; state[2] += c; state[3] += d;
-        state[4] += e; state[5] += f; state[6] += g; state[7] += h;
-    } else {
-        h += c + state[1];
-        state[1] = state[2] + d + e;
-        state[2] = state[3] + a + f;
-        state[3] = state[0] + b + g;
-        state[0] = h;
+    h += c + state[1];
+    state[1] = state[2] + d + e;
+    state[2] = state[3] + a + f;
+    state[3] = state[0] + b + g;
+    state[0] = h;
+}
+
+static void ripemd256_transform(uint32_t *state, const uint8_t buffer[64])
+{
+    uint32_t a, b, c, d, e, f, g, h, av_unused t;
+    uint32_t block[16];
+    int n;
+
+    a = state[0]; b = state[1]; c = state[2]; d = state[3];
+    e = state[4]; f = state[5]; g = state[6]; h = state[7];
+
+    for (n = 0; n < 16; n++)
+        block[n] = AV_RL32(buffer + 4 * n);
+    n = 0;
+
+#if CONFIG_SMALL
+    for (; n < 16;) {
+        ROUND128_0_TO_15(a,b,c,d,e,f,g,h);
+        t = d; d = c; c = b; b = a; a = t;
+        t = h; h = g; g = f; f = e; e = t;
     }
+    FFSWAP(uint32_t, a, e);
+
+    for (; n < 32;) {
+        ROUND128_16_TO_31(a,b,c,d,e,f,g,h);
+        t = d; d = c; c = b; b = a; a = t;
+        t = h; h = g; g = f; f = e; e = t;
+    }
+    FFSWAP(uint32_t, b, f);
+
+    for (; n < 48;) {
+        ROUND128_32_TO_47(a,b,c,d,e,f,g,h);
+        t = d; d = c; c = b; b = a; a = t;
+        t = h; h = g; g = f; f = e; e = t;
+    }
+    FFSWAP(uint32_t, c, g);
+
+    for (; n < 64;) {
+        ROUND128_48_TO_63(a,b,c,d,e,f,g,h);
+        t = d; d = c; c = b; b = a; a = t;
+        t = h; h = g; g = f; f = e; e = t;
+    }
+    FFSWAP(uint32_t, d, h);
+#else
+
+    R128_0; R128_0; R128_0; R128_0;
+    FFSWAP(uint32_t, a, e);
+
+    R128_16; R128_16; R128_16; R128_16;
+    FFSWAP(uint32_t, b, f);
+
+    R128_32; R128_32; R128_32; R128_32;
+    FFSWAP(uint32_t, c, g);
+
+    R128_48; R128_48; R128_48; R128_48;
+    FFSWAP(uint32_t, d, h);
+#endif
+
+    state[0] += a; state[1] += b; state[2] += c; state[3] += d;
+    state[4] += e; state[5] += f; state[6] += g; state[7] += h;
 }
 
 #define ROTATE(x,y) \
@@ -239,22 +278,52 @@ static void ripemd128_transform(uint32_t *state, const uint8_t buffer[64], int e
     f = rol(f + ((  g ^ h  ^ i)      + block[WB[n]]),         ROTB[n]) + j; \
     ROTATE(c,h)
 
-static void ripemd160_transform(uint32_t *state, const uint8_t buffer[64], int ext)
+#define R160_0                              \
+    ROUND160_0_TO_15(a,b,c,d,e,f,g,h,i,j);  \
+    ROUND160_0_TO_15(e,a,b,c,d,j,f,g,h,i);  \
+    ROUND160_0_TO_15(d,e,a,b,c,i,j,f,g,h);  \
+    ROUND160_0_TO_15(c,d,e,a,b,h,i,j,f,g);  \
+    ROUND160_0_TO_15(b,c,d,e,a,g,h,i,j,f)
+
+#define R160_16                             \
+    ROUND160_16_TO_31(e,a,b,c,d,j,f,g,h,i); \
+    ROUND160_16_TO_31(d,e,a,b,c,i,j,f,g,h); \
+    ROUND160_16_TO_31(c,d,e,a,b,h,i,j,f,g); \
+    ROUND160_16_TO_31(b,c,d,e,a,g,h,i,j,f); \
+    ROUND160_16_TO_31(a,b,c,d,e,f,g,h,i,j)
+
+#define R160_32                             \
+    ROUND160_32_TO_47(d,e,a,b,c,i,j,f,g,h); \
+    ROUND160_32_TO_47(c,d,e,a,b,h,i,j,f,g); \
+    ROUND160_32_TO_47(b,c,d,e,a,g,h,i,j,f); \
+    ROUND160_32_TO_47(a,b,c,d,e,f,g,h,i,j); \
+    ROUND160_32_TO_47(e,a,b,c,d,j,f,g,h,i)
+
+#define R160_48                             \
+    ROUND160_48_TO_63(c,d,e,a,b,h,i,j,f,g); \
+    ROUND160_48_TO_63(b,c,d,e,a,g,h,i,j,f); \
+    ROUND160_48_TO_63(a,b,c,d,e,f,g,h,i,j); \
+    ROUND160_48_TO_63(e,a,b,c,d,j,f,g,h,i); \
+    ROUND160_48_TO_63(d,e,a,b,c,i,j,f,g,h)
+
+#define R160_64                             \
+    ROUND160_64_TO_79(b,c,d,e,a,g,h,i,j,f); \
+    ROUND160_64_TO_79(a,b,c,d,e,f,g,h,i,j); \
+    ROUND160_64_TO_79(e,a,b,c,d,j,f,g,h,i); \
+    ROUND160_64_TO_79(d,e,a,b,c,i,j,f,g,h); \
+    ROUND160_64_TO_79(c,d,e,a,b,h,i,j,f,g)
+
+static void ripemd160_transform(uint32_t *state, const uint8_t buffer[64])
 {
-    uint32_t a, b, c, d, e, f, g, h, i, j, t;
+    uint32_t a, b, c, d, e, f, g, h, i, j, av_unused t;
     uint32_t block[16];
     int n;
 
-    if (ext) {
-        a = state[0]; b = state[1]; c = state[2]; d = state[3]; e = state[4];
-        f = state[5]; g = state[6]; h = state[7]; i = state[8]; j = state[9];
-    } else {
-        a = f = state[0];
-        b = g = state[1];
-        c = h = state[2];
-        d = i = state[3];
-        e = j = state[4];
-    }
+    a = f = state[0];
+    b = g = state[1];
+    c = h = state[2];
+    d = i = state[3];
+    e = j = state[4];
 
     for (n = 0; n < 16; n++)
         block[n] = AV_RL32(buffer + 4 * n);
@@ -266,104 +335,129 @@ static void ripemd160_transform(uint32_t *state, const uint8_t buffer[64], int e
         t = e; e = d; d = c; c = b; b = a; a = t;
         t = j; j = i; i = h; h = g; g = f; f = t;
     }
-    SWAP(b,g)
 
     for (; n < 32;) {
         ROUND160_16_TO_31(a,b,c,d,e,f,g,h,i,j);
         t = e; e = d; d = c; c = b; b = a; a = t;
         t = j; j = i; i = h; h = g; g = f; f = t;
     }
-    SWAP(d,i)
 
     for (; n < 48;) {
         ROUND160_32_TO_47(a,b,c,d,e,f,g,h,i,j);
         t = e; e = d; d = c; c = b; b = a; a = t;
         t = j; j = i; i = h; h = g; g = f; f = t;
     }
-    SWAP(a,f)
 
     for (; n < 64;) {
         ROUND160_48_TO_63(a,b,c,d,e,f,g,h,i,j);
         t = e; e = d; d = c; c = b; b = a; a = t;
         t = j; j = i; i = h; h = g; g = f; f = t;
     }
-    SWAP(c,h)
 
     for (; n < 80;) {
         ROUND160_64_TO_79(a,b,c,d,e,f,g,h,i,j);
         t = e; e = d; d = c; c = b; b = a; a = t;
         t = j; j = i; i = h; h = g; g = f; f = t;
     }
-    SWAP(e,j)
 #else
-
-#define R160_0                             \
-    ROUND160_0_TO_15(a,b,c,d,e,f,g,h,i,j); \
-    ROUND160_0_TO_15(e,a,b,c,d,j,f,g,h,i); \
-    ROUND160_0_TO_15(d,e,a,b,c,i,j,f,g,h); \
-    ROUND160_0_TO_15(c,d,e,a,b,h,i,j,f,g); \
-    ROUND160_0_TO_15(b,c,d,e,a,g,h,i,j,f)
 
     R160_0; R160_0; R160_0;
     ROUND160_0_TO_15(a,b,c,d,e,f,g,h,i,j);
-    SWAP(a,f)
-
-#define R160_16                             \
-    ROUND160_16_TO_31(e,a,b,c,d,j,f,g,h,i); \
-    ROUND160_16_TO_31(d,e,a,b,c,i,j,f,g,h); \
-    ROUND160_16_TO_31(c,d,e,a,b,h,i,j,f,g); \
-    ROUND160_16_TO_31(b,c,d,e,a,g,h,i,j,f); \
-    ROUND160_16_TO_31(a,b,c,d,e,f,g,h,i,j)
 
     R160_16; R160_16; R160_16;
     ROUND160_16_TO_31(e,a,b,c,d,j,f,g,h,i);
-    SWAP(b,g)
-
-#define R160_32                             \
-    ROUND160_32_TO_47(d,e,a,b,c,i,j,f,g,h); \
-    ROUND160_32_TO_47(c,d,e,a,b,h,i,j,f,g); \
-    ROUND160_32_TO_47(b,c,d,e,a,g,h,i,j,f); \
-    ROUND160_32_TO_47(a,b,c,d,e,f,g,h,i,j); \
-    ROUND160_32_TO_47(e,a,b,c,d,j,f,g,h,i)
 
     R160_32; R160_32; R160_32;
     ROUND160_32_TO_47(d,e,a,b,c,i,j,f,g,h);
-    SWAP(c,h)
-
-#define R160_48                             \
-    ROUND160_48_TO_63(c,d,e,a,b,h,i,j,f,g); \
-    ROUND160_48_TO_63(b,c,d,e,a,g,h,i,j,f); \
-    ROUND160_48_TO_63(a,b,c,d,e,f,g,h,i,j); \
-    ROUND160_48_TO_63(e,a,b,c,d,j,f,g,h,i); \
-    ROUND160_48_TO_63(d,e,a,b,c,i,j,f,g,h)
 
     R160_48; R160_48; R160_48;
     ROUND160_48_TO_63(c,d,e,a,b,h,i,j,f,g);
-    SWAP(d,i)
-
-#define R160_64                             \
-    ROUND160_64_TO_79(b,c,d,e,a,g,h,i,j,f); \
-    ROUND160_64_TO_79(a,b,c,d,e,f,g,h,i,j); \
-    ROUND160_64_TO_79(e,a,b,c,d,j,f,g,h,i); \
-    ROUND160_64_TO_79(d,e,a,b,c,i,j,f,g,h); \
-    ROUND160_64_TO_79(c,d,e,a,b,h,i,j,f,g)
 
     R160_64; R160_64; R160_64;
     ROUND160_64_TO_79(b,c,d,e,a,g,h,i,j,f);
-    SWAP(e,j)
 #endif
 
-    if (ext) {
-        state[0] += a; state[1] += b; state[2] += c; state[3] += d; state[4] += e;
-        state[5] += f; state[6] += g; state[7] += h; state[8] += i; state[9] += j;
-    } else {
-        i += c + state[1];
-        state[1] = state[2] + d + j;
-        state[2] = state[3] + e + f;
-        state[3] = state[4] + a + g;
-        state[4] = state[0] + b + h;
-        state[0] = i;
+    i += c + state[1];
+    state[1] = state[2] + d + j;
+    state[2] = state[3] + e + f;
+    state[3] = state[4] + a + g;
+    state[4] = state[0] + b + h;
+    state[0] = i;
+}
+
+static void ripemd320_transform(uint32_t *state, const uint8_t buffer[64])
+{
+    uint32_t a, b, c, d, e, f, g, h, i, j, av_unused t;
+    uint32_t block[16];
+    int n;
+
+    a = state[0]; b = state[1]; c = state[2]; d = state[3]; e = state[4];
+    f = state[5]; g = state[6]; h = state[7]; i = state[8]; j = state[9];
+
+    for (n = 0; n < 16; n++)
+        block[n] = AV_RL32(buffer + 4 * n);
+    n = 0;
+
+#if CONFIG_SMALL
+    for (; n < 16;) {
+        ROUND160_0_TO_15(a,b,c,d,e,f,g,h,i,j);
+        t = e; e = d; d = c; c = b; b = a; a = t;
+        t = j; j = i; i = h; h = g; g = f; f = t;
     }
+    FFSWAP(uint32_t, b, g);
+
+    for (; n < 32;) {
+        ROUND160_16_TO_31(a,b,c,d,e,f,g,h,i,j);
+        t = e; e = d; d = c; c = b; b = a; a = t;
+        t = j; j = i; i = h; h = g; g = f; f = t;
+    }
+    FFSWAP(uint32_t, d, i);
+
+    for (; n < 48;) {
+        ROUND160_32_TO_47(a,b,c,d,e,f,g,h,i,j);
+        t = e; e = d; d = c; c = b; b = a; a = t;
+        t = j; j = i; i = h; h = g; g = f; f = t;
+    }
+    FFSWAP(uint32_t, a, f);
+
+    for (; n < 64;) {
+        ROUND160_48_TO_63(a,b,c,d,e,f,g,h,i,j);
+        t = e; e = d; d = c; c = b; b = a; a = t;
+        t = j; j = i; i = h; h = g; g = f; f = t;
+    }
+    FFSWAP(uint32_t, c, h);
+
+    for (; n < 80;) {
+        ROUND160_64_TO_79(a,b,c,d,e,f,g,h,i,j);
+        t = e; e = d; d = c; c = b; b = a; a = t;
+        t = j; j = i; i = h; h = g; g = f; f = t;
+    }
+    FFSWAP(uint32_t, e, j);
+#else
+
+    R160_0; R160_0; R160_0;
+    ROUND160_0_TO_15(a,b,c,d,e,f,g,h,i,j);
+    FFSWAP(uint32_t, a, f);
+
+    R160_16; R160_16; R160_16;
+    ROUND160_16_TO_31(e,a,b,c,d,j,f,g,h,i);
+    FFSWAP(uint32_t, b, g);
+
+    R160_32; R160_32; R160_32;
+    ROUND160_32_TO_47(d,e,a,b,c,i,j,f,g,h);
+    FFSWAP(uint32_t, c, h);
+
+    R160_48; R160_48; R160_48;
+    ROUND160_48_TO_63(c,d,e,a,b,h,i,j,f,g);
+    FFSWAP(uint32_t, d, i);
+
+    R160_64; R160_64; R160_64;
+    ROUND160_64_TO_79(b,c,d,e,a,g,h,i,j,f);
+    FFSWAP(uint32_t, e, j);
+#endif
+
+    state[0] += a; state[1] += b; state[2] += c; state[3] += d; state[4] += e;
+    state[5] += f; state[6] += g; state[7] += h; state[8] += i; state[9] += j;
 }
 
 av_cold int av_ripemd_init(AVRIPEMD *ctx, int bits)
@@ -376,7 +470,6 @@ av_cold int av_ripemd_init(AVRIPEMD *ctx, int bits)
         ctx->state[2] = 0x98BADCFE;
         ctx->state[3] = 0x10325476;
         ctx->transform = ripemd128_transform;
-        ctx->ext = 0;
         break;
     case 160: // RIPEMD-160
         ctx->state[0] = 0x67452301;
@@ -385,7 +478,6 @@ av_cold int av_ripemd_init(AVRIPEMD *ctx, int bits)
         ctx->state[3] = 0x10325476;
         ctx->state[4] = 0xC3D2E1F0;
         ctx->transform = ripemd160_transform;
-        ctx->ext = 0;
         break;
     case 256: // RIPEMD-256
         ctx->state[0] = 0x67452301;
@@ -396,8 +488,7 @@ av_cold int av_ripemd_init(AVRIPEMD *ctx, int bits)
         ctx->state[5] = 0xFEDCBA98;
         ctx->state[6] = 0x89ABCDEF;
         ctx->state[7] = 0x01234567;
-        ctx->transform = ripemd128_transform;
-        ctx->ext = 1;
+        ctx->transform = ripemd256_transform;
         break;
     case 320: // RIPEMD-320
         ctx->state[0] = 0x67452301;
@@ -410,8 +501,7 @@ av_cold int av_ripemd_init(AVRIPEMD *ctx, int bits)
         ctx->state[7] = 0x89ABCDEF;
         ctx->state[8] = 0x01234567;
         ctx->state[9] = 0x3C2D1E0F;
-        ctx->transform = ripemd160_transform;
-        ctx->ext = 1;
+        ctx->transform = ripemd320_transform;
         break;
     default:
         return -1;
@@ -430,16 +520,16 @@ void av_ripemd_update(AVRIPEMD* ctx, const uint8_t* data, unsigned int len)
     for (i = 0; i < len; i++) {
         ctx->buffer[j++] = data[i];
         if (64 == j) {
-            ctx->transform(ctx->state, ctx->buffer, ctx->ext);
+            ctx->transform(ctx->state, ctx->buffer);
             j = 0;
         }
     }
 #else
     if ((j + len) > 63) {
         memcpy(&ctx->buffer[j], data, (i = 64 - j));
-        ctx->transform(ctx->state, ctx->buffer, ctx->ext);
+        ctx->transform(ctx->state, ctx->buffer);
         for (; i + 63 < len; i += 64)
-            ctx->transform(ctx->state, &data[i], ctx->ext);
+            ctx->transform(ctx->state, &data[i]);
         j = 0;
     } else
         i = 0;

@@ -177,7 +177,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     d = av_expr_eval(setpts->expr, setpts->var_values, NULL);
     frame->pts = D2TS(d);
 
-    av_dlog(inlink->dst,
+    av_log(inlink->dst, AV_LOG_TRACE,
             "N:%"PRId64" PTS:%s T:%f POS:%s",
             (int64_t)setpts->var_values[VAR_N],
             d2istr(setpts->var_values[VAR_PTS]),
@@ -185,16 +185,16 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
             d2istr(setpts->var_values[VAR_POS]));
     switch (inlink->type) {
     case AVMEDIA_TYPE_VIDEO:
-        av_dlog(inlink->dst, " INTERLACED:%"PRId64,
+        av_log(inlink->dst, AV_LOG_TRACE, " INTERLACED:%"PRId64,
                 (int64_t)setpts->var_values[VAR_INTERLACED]);
         break;
     case AVMEDIA_TYPE_AUDIO:
-        av_dlog(inlink->dst, " NB_SAMPLES:%"PRId64" NB_CONSUMED_SAMPLES:%"PRId64,
+        av_log(inlink->dst, AV_LOG_TRACE, " NB_SAMPLES:%"PRId64" NB_CONSUMED_SAMPLES:%"PRId64,
                 (int64_t)setpts->var_values[VAR_NB_SAMPLES],
                 (int64_t)setpts->var_values[VAR_NB_CONSUMED_SAMPLES]);
         break;
     }
-    av_dlog(inlink->dst, " -> PTS:%s T:%f\n", d2istr(d), TS2T(d, inlink->time_base));
+    av_log(inlink->dst, AV_LOG_TRACE, " -> PTS:%s T:%f\n", d2istr(d), TS2T(d, inlink->time_base));
 
     if (inlink->type == AVMEDIA_TYPE_VIDEO) {
         setpts->var_values[VAR_N] += 1.0;

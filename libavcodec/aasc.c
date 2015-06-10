@@ -137,7 +137,7 @@ static int aasc_decode_frame(AVCodecContext *avctx,
         return ret;
 
     /* report that the buffer was completely consumed */
-    return buf_size;
+    return avpkt->size;
 }
 
 static av_cold int aasc_decode_end(AVCodecContext *avctx)

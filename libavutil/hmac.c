@@ -127,7 +127,7 @@ void av_hmac_free(AVHMAC *c)
 {
     if (!c)
         return;
-    av_free(c->hash);
+    av_freep(&c->hash);
     av_free(c);
 }
 
@@ -245,6 +245,8 @@ int main(void)
     /* SHA-2 */
     while (i <= AV_HMAC_SHA512) {
         hmac = av_hmac_alloc(i);
+        if (!hmac)
+            return 1;
         // RFC 4231 test vectors
         test(hmac, key1, sizeof(key1), data1, sizeof(data1));
         test(hmac, key2, sizeof(key2), data2, sizeof(data2));

@@ -112,7 +112,7 @@ typedef struct {
 static void add_serial_pair(WtvSyncEntry ** list, int * count, int64_t serial, int64_t value)
 {
     int new_count = *count + 1;
-    WtvSyncEntry *new_list = av_realloc(*list, new_count * sizeof(WtvSyncEntry));
+    WtvSyncEntry *new_list = av_realloc_array(*list, new_count, sizeof(WtvSyncEntry));
     if (!new_list)
         return;
     new_list[*count] = (WtvSyncEntry){serial, value};
@@ -265,12 +265,12 @@ static int write_stream_codec_info(AVFormatContext *s, AVStream *st)
     int hdr_size = 0;
 
     if (st->codec->codec_type  == AVMEDIA_TYPE_VIDEO) {
-        g = get_codec_guid(st->codec->codec_id, ff_video_guids);
+        g = ff_get_codec_guid(st->codec->codec_id, ff_video_guids);
         media_type = &ff_mediatype_video;
         format_type = st->codec->codec_id == AV_CODEC_ID_MPEG2VIDEO ? &ff_format_mpeg2_video : &ff_format_videoinfo2;
         tags = ff_codec_bmp_tags;
     } else if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
-        g = get_codec_guid(st->codec->codec_id, ff_codec_wav_guids);
+        g = ff_get_codec_guid(st->codec->codec_id, ff_codec_wav_guids);
         media_type = &ff_mediatype_audio;
         format_type = &ff_format_waveformatex;
         tags = ff_codec_wav_tags;

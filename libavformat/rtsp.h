@@ -70,6 +70,7 @@ enum RTSPControlTransport {
 };
 
 #define RTSP_DEFAULT_PORT   554
+#define RTSPS_DEFAULT_PORT  322
 #define RTSP_MAX_TRANSPORTS 8
 #define RTSP_TCP_MAX_PACKET_SIZE 1472
 #define RTSP_DEFAULT_NB_AUDIO_CHANNELS 1
@@ -404,6 +405,9 @@ typedef struct RTSPState {
      * User-Agent string
      */
     char *user_agent;
+
+    char default_lang[4];
+    int buffer_size;
 } RTSPState;
 
 #define RTSP_FLAG_FILTER_SRC  0x1    /**< Filter incoming UDP packets -

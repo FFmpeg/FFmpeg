@@ -29,8 +29,9 @@
 #ifndef AVCODEC_IVI_DSP_H
 #define AVCODEC_IVI_DSP_H
 
-#include "avcodec.h"
-#include "ivi_common.h"
+#include <stdint.h>
+
+#include "ivi.h"
 
 /**
  *  5/3 wavelet recomposition filter for Indeo5

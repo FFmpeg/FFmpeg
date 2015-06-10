@@ -17,6 +17,7 @@
         {
             "type": "frame",
             "media_type": "audio",
+            "stream_index": 0,
             "key_frame": 1,
             "pkt_pts": 0,
             "pkt_pts_time": "0.000000",
@@ -49,6 +50,7 @@
         {
             "type": "frame",
             "media_type": "video",
+            "stream_index": 1,
             "key_frame": 1,
             "pkt_pts": 0,
             "pkt_pts_time": "0.000000",
@@ -88,6 +90,7 @@
         {
             "type": "frame",
             "media_type": "video",
+            "stream_index": 2,
             "key_frame": 1,
             "pkt_pts": 0,
             "pkt_pts_time": "0.000000",
@@ -127,6 +130,7 @@
         {
             "type": "frame",
             "media_type": "audio",
+            "stream_index": 0,
             "key_frame": 1,
             "pkt_pts": 1024,
             "pkt_pts_time": "0.023220",
@@ -159,6 +163,7 @@
         {
             "type": "frame",
             "media_type": "video",
+            "stream_index": 1,
             "key_frame": 1,
             "pkt_pts": 2048,
             "pkt_pts_time": "0.040000",
@@ -198,6 +203,7 @@
         {
             "type": "frame",
             "media_type": "video",
+            "stream_index": 2,
             "key_frame": 1,
             "pkt_pts": 2048,
             "pkt_pts_time": "0.040000",
@@ -237,6 +243,7 @@
         {
             "type": "frame",
             "media_type": "audio",
+            "stream_index": 0,
             "key_frame": 1,
             "pkt_pts": 2048,
             "pkt_pts_time": "0.046440",
@@ -269,6 +276,7 @@
         {
             "type": "frame",
             "media_type": "audio",
+            "stream_index": 0,
             "key_frame": 1,
             "pkt_pts": 3072,
             "pkt_pts_time": "0.069660",
@@ -301,6 +309,7 @@
         {
             "type": "frame",
             "media_type": "video",
+            "stream_index": 1,
             "key_frame": 1,
             "pkt_pts": 4096,
             "pkt_pts_time": "0.080000",
@@ -340,6 +349,7 @@
         {
             "type": "frame",
             "media_type": "video",
+            "stream_index": 2,
             "key_frame": 1,
             "pkt_pts": 4096,
             "pkt_pts_time": "0.080000",
@@ -379,6 +389,7 @@
         {
             "type": "frame",
             "media_type": "audio",
+            "stream_index": 0,
             "key_frame": 1,
             "pkt_pts": 4096,
             "pkt_pts_time": "0.092880",
@@ -411,6 +422,7 @@
         {
             "type": "frame",
             "media_type": "audio",
+            "stream_index": 0,
             "key_frame": 1,
             "pkt_pts": 5120,
             "pkt_pts_time": "0.116100",
@@ -443,6 +455,7 @@
         {
             "type": "frame",
             "media_type": "video",
+            "stream_index": 1,
             "key_frame": 1,
             "pkt_pts": 6144,
             "pkt_pts_time": "0.120000",
@@ -482,6 +495,7 @@
         {
             "type": "frame",
             "media_type": "video",
+            "stream_index": 2,
             "key_frame": 1,
             "pkt_pts": 6144,
             "pkt_pts_time": "0.120000",
@@ -552,11 +566,14 @@
             "codec_tag": "0x18424752",
             "width": 320,
             "height": 240,
+            "coded_width": 320,
+            "coded_height": 240,
             "has_b_frames": 0,
             "sample_aspect_ratio": "1:1",
             "display_aspect_ratio": "4:3",
             "pix_fmt": "rgb24",
             "level": -99,
+            "refs": 1,
             "r_frame_rate": "25/1",
             "avg_frame_rate": "25/1",
             "time_base": "1/51200",
@@ -592,11 +609,14 @@
             "codec_tag": "0x18424752",
             "width": 100,
             "height": 100,
+            "coded_width": 100,
+            "coded_height": 100,
             "has_b_frames": 0,
             "sample_aspect_ratio": "1:1",
             "display_aspect_ratio": "1:1",
             "pix_fmt": "rgb24",
             "level": -99,
+            "refs": 1,
             "r_frame_rate": "25/1",
             "avg_frame_rate": "25/1",
             "time_base": "1/51200",

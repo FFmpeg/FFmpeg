@@ -60,7 +60,6 @@ static av_cold int encode_init(AVCodecContext *avctx)
     }
 
     if ((ret = ff_snow_common_init(avctx)) < 0) {
-        ff_snow_common_end(avctx->priv_data);
         return ret;
     }
     ff_mpegvideoencdsp_init(&s->mpvencdsp, avctx);
@@ -70,20 +69,19 @@ static av_cold int encode_init(AVCodecContext *avctx)
     s->version=0;
 
     s->m.avctx   = avctx;
-    s->m.flags   = avctx->flags;
     s->m.bit_rate= avctx->bit_rate;
 
     s->m.me.temp      =
     s->m.me.scratchpad= av_mallocz_array((avctx->width+64), 2*16*2*sizeof(uint8_t));
     s->m.me.map       = av_mallocz(ME_MAP_SIZE*sizeof(uint32_t));
     s->m.me.score_map = av_mallocz(ME_MAP_SIZE*sizeof(uint32_t));
-    s->m.obmc_scratchpad= av_mallocz(MB_SIZE*MB_SIZE*12*sizeof(uint32_t));
-    if (!s->m.me.scratchpad || !s->m.me.map || !s->m.me.score_map || !s->m.obmc_scratchpad)
+    s->m.sc.obmc_scratchpad= av_mallocz(MB_SIZE*MB_SIZE*12*sizeof(uint32_t));
+    if (!s->m.me.scratchpad || !s->m.me.map || !s->m.me.score_map || !s->m.sc.obmc_scratchpad)
         return AVERROR(ENOMEM);
 
     ff_h263_encode_init(&s->m); //mv_penalty
 
-    s->max_ref_frames = FFMAX(FFMIN(avctx->refs, MAX_REF_FRAMES), 1);
+    s->max_ref_frames = av_clip(avctx->refs, 1, MAX_REF_FRAMES);
 
     if(avctx->flags&CODEC_FLAG_PASS1){
         if(!avctx->stats_out)
@@ -124,7 +122,8 @@ static av_cold int encode_init(AVCodecContext *avctx)
     ff_set_cmp(&s->mecc, s->mecc.me_sub_cmp, s->avctx->me_sub_cmp);
 
     s->input_picture = av_frame_alloc();
-    if (!s->input_picture)
+    avctx->coded_frame = av_frame_alloc();
+    if (!s->input_picture || !avctx->coded_frame)
         return AVERROR(ENOMEM);
 
     if ((ret = ff_snow_get_buffer(s, s->input_picture)) < 0)
@@ -502,7 +501,7 @@ static int get_dc(SnowContext *s, int mb_x, int mb_y, int plane_index){
     const int obmc_stride= plane_index ? (2*block_size)>>s->chroma_h_shift : 2*block_size;
     const int ref_stride= s->current_picture->linesize[plane_index];
     uint8_t *src= s-> input_picture->data[plane_index];
-    IDWTELEM *dst= (IDWTELEM*)s->m.obmc_scratchpad + plane_index*block_size*block_size*4; //FIXME change to unsigned
+    IDWTELEM *dst= (IDWTELEM*)s->m.sc.obmc_scratchpad + plane_index*block_size*block_size*4; //FIXME change to unsigned
     const int b_stride = s->b_width << s->block_max_depth;
     const int w= p->width;
     const int h= p->height;
@@ -547,7 +546,7 @@ static int get_dc(SnowContext *s, int mb_x, int mb_y, int plane_index){
     }
     *b= backup;
 
-    return av_clip( ROUNDED_DIV(ab<<LOG2_OBMC_MAX, aa), 0, 255); //FIXME we should not need clipping
+    return av_clip_uint8( ROUNDED_DIV(ab<<LOG2_OBMC_MAX, aa) ); //FIXME we should not need clipping
 }
 
 static inline int get_block_bits(SnowContext *s, int x, int y, int w){
@@ -597,7 +596,7 @@ static int get_block_rd(SnowContext *s, int mb_x, int mb_y, int plane_index, uin
     const int ref_stride= s->current_picture->linesize[plane_index];
     uint8_t *dst= s->current_picture->data[plane_index];
     uint8_t *src= s->  input_picture->data[plane_index];
-    IDWTELEM *pred= (IDWTELEM*)s->m.obmc_scratchpad + plane_index*block_size*block_size*4;
+    IDWTELEM *pred= (IDWTELEM*)s->m.sc.obmc_scratchpad + plane_index*block_size*block_size*4;
     uint8_t *cur = s->scratchbuf;
     uint8_t *tmp = s->emu_edge_buffer;
     const int b_stride = s->b_width << s->block_max_depth;
@@ -912,7 +911,7 @@ static av_always_inline int check_block(SnowContext *s, int mb_x, int mb_y, int 
         block->type &= ~BLOCK_INTRA;
     }
 
-    rd= get_block_rd(s, mb_x, mb_y, 0, obmc_edged);
+    rd= get_block_rd(s, mb_x, mb_y, 0, obmc_edged) + s->intra_penalty * !!intra;
 
 //FIXME chroma
     if(rd < *best_rd){
@@ -1112,13 +1111,15 @@ static void iterative_me(SnowContext *s){
                     /* fullpel ME */
                     //FIXME avoid subpel interpolation / round to nearest integer
                     do{
+                        int newx = block->mx;
+                        int newy = block->my;
                         dia_change=0;
                         for(i=0; i<FFMAX(s->avctx->dia_size, 1); i++){
                             for(j=0; j<i; j++){
-                                dia_change |= check_block_inter(s, mb_x, mb_y, block->mx+4*(i-j), block->my+(4*j), obmc_edged, &best_rd);
-                                dia_change |= check_block_inter(s, mb_x, mb_y, block->mx-4*(i-j), block->my-(4*j), obmc_edged, &best_rd);
-                                dia_change |= check_block_inter(s, mb_x, mb_y, block->mx+4*(i-j), block->my-(4*j), obmc_edged, &best_rd);
-                                dia_change |= check_block_inter(s, mb_x, mb_y, block->mx-4*(i-j), block->my+(4*j), obmc_edged, &best_rd);
+                                dia_change |= check_block_inter(s, mb_x, mb_y, newx+4*(i-j), newy+(4*j), obmc_edged, &best_rd);
+                                dia_change |= check_block_inter(s, mb_x, mb_y, newx-4*(i-j), newy-(4*j), obmc_edged, &best_rd);
+                                dia_change |= check_block_inter(s, mb_x, mb_y, newx-(4*j), newy+4*(i-j), obmc_edged, &best_rd);
+                                dia_change |= check_block_inter(s, mb_x, mb_y, newx+(4*j), newy-4*(i-j), obmc_edged, &best_rd);
                             }
                         }
                     }while(dia_change);
@@ -1155,7 +1156,7 @@ static void iterative_me(SnowContext *s){
                 }
             }
         }
-        av_log(s->avctx, AV_LOG_ERROR, "pass:%d changed:%d\n", pass, change);
+        av_log(s->avctx, AV_LOG_DEBUG, "pass:%d changed:%d\n", pass, change);
         if(!change)
             break;
     }
@@ -1559,17 +1560,17 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         return ret;
 
     ff_init_range_encoder(c, pkt->data, pkt->size);
-    ff_build_rac_states(c, 0.05*(1LL<<32), 256-8);
+    ff_build_rac_states(c, (1LL<<32)/20, 256-8);
 
     for(i=0; i < s->nb_planes; i++){
         int hshift= i ? s->chroma_h_shift : 0;
         int vshift= i ? s->chroma_v_shift : 0;
-        for(y=0; y<(height>>vshift); y++)
+        for(y=0; y<FF_CEIL_RSHIFT(height, vshift); y++)
             memcpy(&s->input_picture->data[i][y * s->input_picture->linesize[i]],
                    &pict->data[i][y * pict->linesize[i]],
-                   width>>hshift);
+                   FF_CEIL_RSHIFT(width, hshift));
         s->mpvencdsp.draw_edges(s->input_picture->data[i], s->input_picture->linesize[i],
-                                width >> hshift, height >> vshift,
+                                FF_CEIL_RSHIFT(width, hshift), FF_CEIL_RSHIFT(height, vshift),
                                 EDGE_WIDTH >> hshift, EDGE_WIDTH >> vshift,
                                 EDGE_TOP | EDGE_BOTTOM);
 
@@ -1620,7 +1621,10 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     }
 
     ff_snow_frame_start(s);
-    avctx->coded_frame= s->current_picture;
+    av_frame_unref(avctx->coded_frame);
+    ret = av_frame_ref(avctx->coded_frame, s->current_picture);
+    if (ret < 0)
+        return ret;
 
     s->m.current_picture_ptr= &s->m.current_picture;
     s->m.current_picture.f = s->current_picture;
@@ -1649,7 +1653,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         s->m.pict_type = pic->pict_type;
         s->m.me_method= s->avctx->me_method;
         s->m.me.scene_change_score=0;
-        s->m.flags= s->avctx->flags;
+        s->m.me.dia_size = avctx->dia_size;
         s->m.quarter_sample= (s->avctx->flags & CODEC_FLAG_QPEL)!=0;
         s->m.out_format= FMT_H263;
         s->m.unrestricted_mv= 1;
@@ -1722,7 +1726,7 @@ redo_frame:
                && !(avctx->flags&CODEC_FLAG_PASS2)
                && s->m.me.scene_change_score > s->avctx->scenechange_threshold){
                 ff_init_range_encoder(c, pkt->data, pkt->size);
-                ff_build_rac_states(c, 0.05*(1LL<<32), 256-8);
+                ff_build_rac_states(c, (1LL<<32)/20, 256-8);
                 pic->pict_type= AV_PICTURE_TYPE_I;
                 s->keyframe=1;
                 s->current_picture->key_frame=1;
@@ -1862,7 +1866,8 @@ static av_cold int encode_end(AVCodecContext *avctx)
     ff_snow_common_end(s);
     ff_rate_control_uninit(&s->m);
     av_frame_free(&s->input_picture);
-    av_free(avctx->stats_out);
+    av_frame_free(&avctx->coded_frame);
+    av_freep(&avctx->stats_out);
 
     return 0;
 }
@@ -1870,8 +1875,10 @@ static av_cold int encode_end(AVCodecContext *avctx)
 #define OFFSET(x) offsetof(SnowContext, x)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
+    FF_MPV_COMMON_OPTS
     { "memc_only",      "Only do ME/MC (I frames -> ref, P frame -> ME+MC).",   OFFSET(memc_only), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VE },
     { "no_bitstream",   "Skip final bitstream writeout.",                    OFFSET(no_bitstream), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VE },
+    { "intra_penalty",  "Penalty for intra blocks in block decission",      OFFSET(intra_penalty), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE },
     { NULL },
 };
 
@@ -1897,6 +1904,8 @@ AVCodec ff_snow_encoder = {
         AV_PIX_FMT_NONE
     },
     .priv_class     = &snowenc_class,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |
+                      FF_CODEC_CAP_INIT_CLEANUP,
 };
 
 
@@ -1918,8 +1927,13 @@ int main(void){
     s.spatial_decomposition_count=6;
     s.spatial_decomposition_type=1;
 
-    s.temp_dwt_buffer  = av_mallocz(width * sizeof(DWTELEM));
-    s.temp_idwt_buffer = av_mallocz(width * sizeof(IDWTELEM));
+    s.temp_dwt_buffer  = av_mallocz_array(width, sizeof(DWTELEM));
+    s.temp_idwt_buffer = av_mallocz_array(width, sizeof(IDWTELEM));
+
+    if (!s.temp_dwt_buffer || !s.temp_idwt_buffer) {
+        fprintf(stderr, "Failed to allocate memory\n");
+        return 1;
+    }
 
     av_lfg_init(&prng, 1);
 

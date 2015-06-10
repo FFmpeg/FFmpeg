@@ -23,9 +23,9 @@
 #include "libavutil/lls.h"
 #include "libavutil/x86/cpu.h"
 
-void ff_update_lls_sse2(LLSModel *m, double *var);
-void ff_update_lls_avx(LLSModel *m, double *var);
-double ff_evaluate_lls_sse2(LLSModel *m, double *var, int order);
+void ff_update_lls_sse2(LLSModel *m, const double *var);
+void ff_update_lls_avx(LLSModel *m, const double *var);
+double ff_evaluate_lls_sse2(LLSModel *m, const double *var, int order);
 
 av_cold void ff_init_lls_x86(LLSModel *m)
 {
@@ -35,7 +35,7 @@ av_cold void ff_init_lls_x86(LLSModel *m)
         if (m->indep_count >= 4)
             m->evaluate_lls = ff_evaluate_lls_sse2;
     }
-    if (EXTERNAL_AVX(cpu_flags)) {
+    if (EXTERNAL_AVX_FAST(cpu_flags)) {
         m->update_lls = ff_update_lls_avx;
     }
 }

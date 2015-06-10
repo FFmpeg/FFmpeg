@@ -158,6 +158,7 @@ static av_cold int sunrast_encode_init(AVCodecContext *avctx)
     case AV_PIX_FMT_PAL8 :
         s->maptype   = RMT_EQUAL_RGB;
         s->maplength = 3 * 256;
+        /* fall-through */
     case AV_PIX_FMT_GRAY8:
         s->depth = 8;
         break;

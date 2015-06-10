@@ -103,10 +103,10 @@ av_cold void ff_synth_filter_init_x86(SynthFilterContext *s)
     if (EXTERNAL_SSE2(cpu_flags)) {
         s->synth_filter_float = synth_filter_sse2;
     }
-    if (EXTERNAL_AVX(cpu_flags)) {
+    if (EXTERNAL_AVX_FAST(cpu_flags)) {
         s->synth_filter_float = synth_filter_avx;
     }
-    if (EXTERNAL_FMA3(cpu_flags)) {
+    if (EXTERNAL_FMA3(cpu_flags) && !(cpu_flags & AV_CPU_FLAG_AVXSLOW)) {
         s->synth_filter_float = synth_filter_fma3;
     }
 #endif /* HAVE_YASM */

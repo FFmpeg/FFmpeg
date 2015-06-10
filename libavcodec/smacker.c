@@ -589,6 +589,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     /* decode huffman trees from extradata */
     if(avctx->extradata_size < 16){
         av_log(avctx, AV_LOG_ERROR, "Extradata missing!\n");
+        decode_end(avctx);
         return AVERROR(EINVAL);
     }
 

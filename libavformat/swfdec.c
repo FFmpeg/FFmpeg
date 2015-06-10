@@ -24,6 +24,7 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
+#include "libavcodec/get_bits.h"
 #include "swf.h"
 
 static const AVCodecTag swf_audio_codec_tags[] = {
@@ -55,6 +56,9 @@ static int get_swf_tag(AVIOContext *pb, int *len_ptr)
 
 static int swf_probe(AVProbeData *p)
 {
+    GetBitContext gb;
+    int len, xmin, xmax, ymin, ymax;
+
     if(p->buf_size < 15)
         return 0;
 
@@ -63,7 +67,20 @@ static int swf_probe(AVProbeData *p)
         && AV_RB24(p->buf) != AV_RB24("FWS"))
         return 0;
 
-    if (p->buf[3] >= 20)
+    init_get_bits8(&gb, p->buf + 3, p->buf_size - 3);
+
+    skip_bits(&gb, 40);
+    len = get_bits(&gb, 5);
+    if (!len)
+        return 0;
+    xmin = get_bits_long(&gb, len);
+    xmax = get_bits_long(&gb, len);
+    ymin = get_bits_long(&gb, len);
+    ymax = get_bits_long(&gb, len);
+    if (xmin || ymin || !xmax || !ymax)
+        return 0;
+
+    if (p->buf[3] >= 20 || xmax < 16 || ymax < 16)
         return AVPROBE_SCORE_MAX / 4;
 
     return AVPROBE_SCORE_MAX;

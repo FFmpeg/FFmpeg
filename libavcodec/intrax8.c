@@ -303,7 +303,7 @@ static int x8_setup_spatial_predictor(IntraX8Context * const w, const int chroma
     int sum;
     int quant;
 
-    w->dsp.setup_spatial_compensation(s->dest[chroma], s->edge_emu_buffer,
+    w->dsp.setup_spatial_compensation(s->dest[chroma], s->sc.edge_emu_buffer,
                                       s->current_picture.f->linesize[chroma>0],
                                       &range, &sum, w->edges);
     if(chroma){
@@ -639,7 +639,7 @@ static int x8_decode_intra_mb(IntraX8Context* const w, const int chroma){
     if(w->flat_dc){
         dsp_x8_put_solidcolor(w->predicted_dc, s->dest[chroma], s->current_picture.f->linesize[!!chroma]);
     }else{
-        w->dsp.spatial_compensation[w->orient]( s->edge_emu_buffer,
+        w->dsp.spatial_compensation[w->orient]( s->sc.edge_emu_buffer,
                                             s->dest[chroma],
                                             s->current_picture.f->linesize[!!chroma] );
     }

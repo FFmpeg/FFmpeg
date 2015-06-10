@@ -26,11 +26,11 @@
 
 SECTION_RODATA 32
 
+cextern pw_1023
+%define pw_pixel_max pw_1023
 cextern pw_16
 cextern pw_1
-pb_0: times 32 db 0 ; we do not use cextern here as old llvm-gcc fails to align it correctly
-
-pw_pixel_max: times 8 dw ((1 << 10)-1)
+cextern pb_0
 
 pad10: times 8 dw 10*1023
 pad20: times 8 dw 20*1023

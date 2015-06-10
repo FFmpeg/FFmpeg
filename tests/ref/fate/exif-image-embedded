@@ -1,5 +1,6 @@
 [FRAME]
 media_type=video
+stream_index=1
 key_frame=1
 pkt_pts=N/A
 pkt_pts_time=N/A
@@ -26,6 +27,7 @@ TAG:UserComment=AppleMark
 [/FRAME]
 [FRAME]
 media_type=audio
+stream_index=0
 key_frame=1
 pkt_pts=353600
 pkt_pts_time=0.025057
@@ -44,6 +46,7 @@ channel_layout=stereo
 [/FRAME]
 [FRAME]
 media_type=audio
+stream_index=0
 key_frame=1
 pkt_pts=368640
 pkt_pts_time=0.026122
@@ -62,6 +65,7 @@ channel_layout=stereo
 [/FRAME]
 [FRAME]
 media_type=audio
+stream_index=0
 key_frame=1
 pkt_pts=737280
 pkt_pts_time=0.052245
@@ -80,6 +84,7 @@ channel_layout=stereo
 [/FRAME]
 [FRAME]
 media_type=audio
+stream_index=0
 key_frame=1
 pkt_pts=1105920
 pkt_pts_time=0.078367
@@ -98,6 +103,7 @@ channel_layout=stereo
 [/FRAME]
 [FRAME]
 media_type=audio
+stream_index=0
 key_frame=1
 pkt_pts=1474560
 pkt_pts_time=0.104490
@@ -116,6 +122,7 @@ channel_layout=stereo
 [/FRAME]
 [FRAME]
 media_type=audio
+stream_index=0
 key_frame=1
 pkt_pts=1843200
 pkt_pts_time=0.130612
@@ -134,6 +141,7 @@ channel_layout=stereo
 [/FRAME]
 [FRAME]
 media_type=audio
+stream_index=0
 key_frame=1
 pkt_pts=2211840
 pkt_pts_time=0.156735
@@ -152,6 +160,7 @@ channel_layout=stereo
 [/FRAME]
 [FRAME]
 media_type=audio
+stream_index=0
 key_frame=1
 pkt_pts=2580480
 pkt_pts_time=0.182857
@@ -170,6 +179,7 @@ channel_layout=stereo
 [/FRAME]
 [FRAME]
 media_type=audio
+stream_index=0
 key_frame=1
 pkt_pts=2949120
 pkt_pts_time=0.208980
@@ -188,6 +198,7 @@ channel_layout=stereo
 [/FRAME]
 [FRAME]
 media_type=audio
+stream_index=0
 key_frame=1
 pkt_pts=3317760
 pkt_pts_time=0.235102
@@ -206,6 +217,7 @@ channel_layout=stereo
 [/FRAME]
 [FRAME]
 media_type=audio
+stream_index=0
 key_frame=1
 pkt_pts=3686400
 pkt_pts_time=0.261224
@@ -224,6 +236,7 @@ channel_layout=stereo
 [/FRAME]
 [FRAME]
 media_type=audio
+stream_index=0
 key_frame=1
 pkt_pts=4055040
 pkt_pts_time=0.287347
@@ -242,6 +255,7 @@ channel_layout=stereo
 [/FRAME]
 [FRAME]
 media_type=audio
+stream_index=0
 key_frame=1
 pkt_pts=4423680
 pkt_pts_time=0.313469
@@ -260,6 +274,7 @@ channel_layout=stereo
 [/FRAME]
 [FRAME]
 media_type=audio
+stream_index=0
 key_frame=1
 pkt_pts=4792320
 pkt_pts_time=0.339592
@@ -278,6 +293,7 @@ channel_layout=stereo
 [/FRAME]
 [FRAME]
 media_type=audio
+stream_index=0
 key_frame=1
 pkt_pts=5160960
 pkt_pts_time=0.365714
@@ -296,6 +312,7 @@ channel_layout=stereo
 [/FRAME]
 [FRAME]
 media_type=audio
+stream_index=0
 key_frame=1
 pkt_pts=5529600
 pkt_pts_time=0.391837
@@ -314,6 +331,7 @@ channel_layout=stereo
 [/FRAME]
 [FRAME]
 media_type=audio
+stream_index=0
 key_frame=1
 pkt_pts=5898240
 pkt_pts_time=0.417959
@@ -332,6 +350,7 @@ channel_layout=stereo
 [/FRAME]
 [FRAME]
 media_type=audio
+stream_index=0
 key_frame=1
 pkt_pts=6266880
 pkt_pts_time=0.444082
@@ -350,6 +369,7 @@ channel_layout=stereo
 [/FRAME]
 [FRAME]
 media_type=audio
+stream_index=0
 key_frame=1
 pkt_pts=6635520
 pkt_pts_time=0.470204
@@ -368,6 +388,7 @@ channel_layout=stereo
 [/FRAME]
 [FRAME]
 media_type=audio
+stream_index=0
 key_frame=1
 pkt_pts=7004160
 pkt_pts_time=0.496327
@@ -386,6 +407,7 @@ channel_layout=stereo
 [/FRAME]
 [FRAME]
 media_type=audio
+stream_index=0
 key_frame=1
 pkt_pts=7372800
 pkt_pts_time=0.522449

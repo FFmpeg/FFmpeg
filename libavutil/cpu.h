@@ -43,6 +43,7 @@
 #define AV_CPU_FLAG_SSE4         0x0100 ///< Penryn SSE4.1 functions
 #define AV_CPU_FLAG_SSE42        0x0200 ///< Nehalem SSE4.2 functions
 #define AV_CPU_FLAG_AVX          0x4000 ///< AVX functions: requires OS support even if YMM registers aren't used
+#define AV_CPU_FLAG_AVXSLOW   0x8000000 ///< AVX supported, but slow when using YMM registers (e.g. Bulldozer)
 #define AV_CPU_FLAG_XOP          0x0400 ///< Bulldozer XOP functions
 #define AV_CPU_FLAG_FMA4         0x0800 ///< Bulldozer FMA4 functions
 // #if LIBAVUTIL_VERSION_MAJOR <52
@@ -56,6 +57,8 @@
 #define AV_CPU_FLAG_BMI2        0x40000 ///< Bit Manipulation Instruction Set 2
 
 #define AV_CPU_FLAG_ALTIVEC      0x0001 ///< standard
+#define AV_CPU_FLAG_VSX          0x0002 ///< ISA 2.06
+#define AV_CPU_FLAG_POWER8       0x0004 ///< ISA 2.07
 
 #define AV_CPU_FLAG_ARMV5TE      (1 << 0)
 #define AV_CPU_FLAG_ARMV6        (1 << 1)

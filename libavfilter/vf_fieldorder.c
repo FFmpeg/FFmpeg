@@ -104,7 +104,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
         av_frame_copy_props(out, frame);
     }
 
-    av_dlog(ctx,
+    av_log(ctx, AV_LOG_TRACE,
             "picture will move %s one line\n",
             s->dst_tff ? "up" : "down");
     h = frame->height;

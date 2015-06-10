@@ -1,5 +1,5 @@
 /*
- * Phanton Cine demuxer
+ * Phantom Cine demuxer
  * Copyright (c) 2010-2011 Peter Ross <pross@xvid.org>
  *
  * This file is part of FFmpeg.
@@ -27,6 +27,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "libavcodec/bmp.h"
+#include "libavutil/intfloat.h"
 #include "avformat.h"
 #include "internal.h"
 
@@ -74,6 +75,16 @@ static int set_metadata_int(AVDictionary **dict, const char *key, int value, int
 {
     if (value || allow_zero) {
         return av_dict_set_int(dict, key, value, 0);
+    }
+    return 0;
+}
+
+static int set_metadata_float(AVDictionary **dict, const char *key, float value, int allow_zero)
+{
+    if (value != 0 || allow_zero) {
+        char tmp[64];
+        snprintf(tmp, sizeof(tmp), "%f", value);
+        return av_dict_set(dict, key, tmp, 0);
     }
     return 0;
 }
@@ -177,7 +188,10 @@ static int cine_read_header(AVFormatContext *avctx)
     set_metadata_int(&st->metadata, "contrast", avio_rl32(pb), 1);
     set_metadata_int(&st->metadata, "gamma", avio_rl32(pb), 1);
 
-    avio_skip(pb, 72); // Reserved1 .. WBView
+    avio_skip(pb, 12 + 16); // Reserved1 .. AutoExpRect
+    set_metadata_float(&st->metadata, "wbgain[0].r", av_int2float(avio_rl32(pb)), 1);
+    set_metadata_float(&st->metadata, "wbgain[0].b", av_int2float(avio_rl32(pb)), 1);
+    avio_skip(pb, 36); // WBGain[1].. WBView
 
     st->codec->bits_per_coded_sample = avio_rl32(pb);
 

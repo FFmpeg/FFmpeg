@@ -37,11 +37,27 @@
 #include "mpeg_er.h"
 #include "mpeg4video.h"
 #include "mpeg4video_parser.h"
+#include "mpegutils.h"
 #include "mpegvideo.h"
 #include "msmpeg4.h"
 #include "qpeldsp.h"
-#include "vdpau_internal.h"
+#include "vdpau_compat.h"
 #include "thread.h"
+#include "wmv2.h"
+
+static enum AVPixelFormat h263_get_format(AVCodecContext *avctx)
+{
+    if (avctx->codec->id == AV_CODEC_ID_MSS2)
+        return AV_PIX_FMT_YUV420P;
+
+    if (CONFIG_GRAY && (avctx->flags & CODEC_FLAG_GRAY)) {
+        if (avctx->color_range == AVCOL_RANGE_UNSPECIFIED)
+            avctx->color_range = AVCOL_RANGE_MPEG;
+        return AV_PIX_FMT_GRAY8;
+    }
+
+    return avctx->pix_fmt = ff_get_format(avctx, avctx->codec->pix_fmts);
+}
 
 av_cold int ff_h263_decode_init(AVCodecContext *avctx)
 {
@@ -57,10 +73,6 @@ av_cold int ff_h263_decode_init(AVCodecContext *avctx)
     s->quant_precision = 5;
     s->decode_mb       = ff_h263_decode_mb;
     s->low_delay       = 1;
-    if (avctx->codec->id == AV_CODEC_ID_MSS2)
-        avctx->pix_fmt = AV_PIX_FMT_YUV420P;
-    else
-        avctx->pix_fmt = ff_get_format(avctx, avctx->codec->pix_fmts);
     s->unrestricted_mv = 1;
 
     /* select sub codec */
@@ -113,13 +125,15 @@ av_cold int ff_h263_decode_init(AVCodecContext *avctx)
     }
     s->codec_id    = avctx->codec->id;
 
-    if (avctx->stream_codec_tag == AV_RL32("l263") && avctx->extradata_size == 56 && avctx->extradata[0] == 1)
-        s->ehc_mode = 1;
+    if (avctx->codec_tag == AV_RL32("L263") || avctx->codec_tag == AV_RL32("S263"))
+        if (avctx->extradata_size == 56 && avctx->extradata[0] == 1)
+            s->ehc_mode = 1;
 
     /* for h263, we allocate the images after having read the header */
     if (avctx->codec->id != AV_CODEC_ID_H263 &&
         avctx->codec->id != AV_CODEC_ID_H263P &&
         avctx->codec->id != AV_CODEC_ID_MPEG4) {
+        avctx->pix_fmt = h263_get_format(avctx);
         ff_mpv_idct_init(s);
         if ((ret = ff_mpv_common_init(s)) < 0)
             return ret;
@@ -151,7 +165,7 @@ static int get_consumed_bytes(MpegEncContext *s, int buf_size)
         /* We would have to scan through the whole buf to handle the weird
          * reordering ... */
         return buf_size;
-    } else if (s->flags & CODEC_FLAG_TRUNCATED) {
+    } else if (s->avctx->flags & CODEC_FLAG_TRUNCATED) {
         pos -= s->parse_context.last_index;
         // padding is not really read so this might be -1
         if (pos < 0)
@@ -235,10 +249,10 @@ static int decode_slice(MpegEncContext *s)
 
             s->mv_dir  = MV_DIR_FORWARD;
             s->mv_type = MV_TYPE_16X16;
-            av_dlog(s, "%d %d %06X\n",
+            ff_dlog(s, "%d %d %06X\n",
                     ret, get_bits_count(&s->gb), show_bits(&s->gb, 24));
 
-            tprintf(NULL, "Decoding MB at %dx%d\n", s->mb_x, s->mb_y);
+            ff_tlog(NULL, "Decoding MB at %dx%d\n", s->mb_x, s->mb_y);
             ret = s->decode_mb(s, s->block);
 
             if (s->pict_type != AV_PICTURE_TYPE_B)
@@ -275,7 +289,7 @@ static int decode_slice(MpegEncContext *s)
                 ff_er_add_slice(&s->er, s->resync_mb_x, s->resync_mb_y,
                                 s->mb_x, s->mb_y, ER_MB_ERROR & part_mask);
 
-                if (s->err_recognition & AV_EF_IGNORE_ERR)
+                if (s->avctx->err_recognition & AV_EF_IGNORE_ERR)
                     continue;
                 return AVERROR_INVALIDDATA;
             }
@@ -336,8 +350,17 @@ static int decode_slice(MpegEncContext *s)
         s->padding_bug_score += 32;
     }
 
+    if (s->codec_id == AV_CODEC_ID_H263          &&
+        (s->workaround_bugs & FF_BUG_AUTODETECT) &&
+        get_bits_left(&s->gb) >= 64              &&
+        AV_RB64(s->gb.buffer_end - 8) == 0xCDCDCDCDFC7F0000) {
+
+        s->padding_bug_score += 32;
+    }
+
     if (s->workaround_bugs & FF_BUG_AUTODETECT) {
-        if (s->padding_bug_score > -2 && !s->data_partitioning)
+        if (
+            (s->padding_bug_score > -2 && !s->data_partitioning))
             s->workaround_bugs |= FF_BUG_NO_PADDING;
         else
             s->workaround_bugs &= ~FF_BUG_NO_PADDING;
@@ -355,7 +378,7 @@ static int decode_slice(MpegEncContext *s)
         /* buggy padding but the frame should still end approximately at
          * the bitstream end */
         if ((s->workaround_bugs & FF_BUG_NO_PADDING) &&
-            (s->err_recognition & (AV_EF_BUFFER|AV_EF_AGGRESSIVE)))
+            (s->avctx->err_recognition & (AV_EF_BUFFER|AV_EF_AGGRESSIVE)))
             max_extra += 48;
         else if ((s->workaround_bugs & FF_BUG_NO_PADDING))
             max_extra += 256 * 256 * 256 * 64;
@@ -393,9 +416,6 @@ int ff_h263_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     int slice_ret = 0;
     AVFrame *pict = data;
 
-    s->flags  = avctx->flags;
-    s->flags2 = avctx->flags2;
-
     /* no supplementary picture */
     if (buf_size == 0) {
         /* special case for last picture */
@@ -410,7 +430,7 @@ int ff_h263_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         return 0;
     }
 
-    if (s->flags & CODEC_FLAG_TRUNCATED) {
+    if (s->avctx->flags & CODEC_FLAG_TRUNCATED) {
         int next;
 
         if (CONFIG_MPEG4_DECODER && s->codec_id == AV_CODEC_ID_MPEG4) {
@@ -444,7 +464,7 @@ retry:
         }
     }
 
-    if (s->bitstream_buffer_size && (s->divx_packed || buf_size < 20)) // divx 5.01+/xvid frame reorder
+    if (s->bitstream_buffer_size && (s->divx_packed || buf_size <= MAX_NVOP_SIZE)) // divx 5.01+/xvid frame reorder
         ret = init_get_bits8(&s->gb, s->bitstream_buffer,
                              s->bitstream_buffer_size);
     else
@@ -496,12 +516,14 @@ retry:
         return ret;
     }
 
-    if (!s->context_initialized)
+    if (!s->context_initialized) {
+        avctx->pix_fmt = h263_get_format(avctx);
         if ((ret = ff_mpv_common_init(s)) < 0)
             return ret;
+    }
 
     if (!s->current_picture_ptr || s->current_picture_ptr->f->data[0]) {
-        int i = ff_find_unused_picture(s, 0);
+        int i = ff_find_unused_picture(s->avctx, s->picture, 0);
         if (i < 0)
             return i;
         s->current_picture_ptr = &s->picture[i];
@@ -532,12 +554,18 @@ retry:
 
         if ((ret = ff_mpv_common_frame_size_change(s)))
             return ret;
+
+        if (avctx->pix_fmt != h263_get_format(avctx)) {
+            av_log(avctx, AV_LOG_ERROR, "format change not supported\n");
+            avctx->pix_fmt = AV_PIX_FMT_NONE;
+            return AVERROR_UNKNOWN;
+        }
     }
 
     if (s->codec_id == AV_CODEC_ID_H263  ||
         s->codec_id == AV_CODEC_ID_H263P ||
         s->codec_id == AV_CODEC_ID_H263I)
-        s->gob_index = ff_h263_get_gob_height(s);
+        s->gob_index = H263_GOB_HEIGHT(s->height);
 
     // for skipping the frame
     s->current_picture.f->pict_type = s->pict_type;

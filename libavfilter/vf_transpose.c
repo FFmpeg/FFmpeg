@@ -56,8 +56,8 @@ typedef struct TransContext {
     int hsub, vsub;
     int pixsteps[4];
 
-    PassthroughType passthrough; ///< landscape passthrough mode enabled
-    enum TransposeDir dir;
+    int passthrough;    ///< PassthroughType, landscape passthrough mode enabled
+    int dir;            ///< TransposeDir
 } TransContext;
 
 static int query_formats(AVFilterContext *ctx)
@@ -75,8 +75,7 @@ static int query_formats(AVFilterContext *ctx)
     }
 
 
-    ff_set_common_formats(ctx, pix_fmts);
-    return 0;
+    return ff_set_common_formats(ctx, pix_fmts);
 }
 
 static int config_props_output(AVFilterLink *outlink)

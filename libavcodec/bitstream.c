@@ -31,6 +31,7 @@
 #include "libavutil/atomic.h"
 #include "libavutil/avassert.h"
 #include "avcodec.h"
+#include "internal.h"
 #include "mathops.h"
 #include "get_bits.h"
 #include "put_bits.h"
@@ -68,6 +69,8 @@ void avpriv_copy_bits(PutBitContext *pb, const uint8_t *src, int length)
 
     if (length == 0)
         return;
+
+    av_assert0(length <= put_bits_left(pb));
 
     if (CONFIG_SMALL || words < 16 || put_bits_count(pb) & 7) {
         for (i = 0; i < words; i++)
@@ -130,7 +133,7 @@ static av_always_inline uint32_t bitswap_32(uint32_t x)
            (uint32_t)ff_reverse[ x >> 24];
 }
 
-typedef struct {
+typedef struct VLCcode {
     uint8_t bits;
     uint16_t symbol;
     /** codeword, with the first bit-to-be-read in the msb
@@ -169,7 +172,7 @@ static int build_table(VLC *vlc, int table_nb_bits, int nb_codes,
     if (table_nb_bits > 30)
        return -1;
     table_index = alloc_table(vlc, table_size, flags & INIT_VLC_USE_NEW_STATIC);
-    av_dlog(NULL, "new table index=%d size=%d\n", table_index, table_size);
+    ff_dlog(NULL, "new table index=%d size=%d\n", table_index, table_size);
     if (table_index < 0)
         return table_index;
     table = (volatile VLC_TYPE (*)[2])&vlc->table[table_index];
@@ -179,7 +182,7 @@ static int build_table(VLC *vlc, int table_nb_bits, int nb_codes,
         n      = codes[i].bits;
         code   = codes[i].code;
         symbol = codes[i].symbol;
-        av_dlog(NULL, "i=%d n=%d code=0x%x\n", i, n, code);
+        ff_dlog(NULL, "i=%d n=%d code=0x%x\n", i, n, code);
         if (n <= table_nb_bits) {
             /* no need to add another table */
             j = code >> (32 - table_nb_bits);
@@ -191,7 +194,7 @@ static int build_table(VLC *vlc, int table_nb_bits, int nb_codes,
             }
             for (k = 0; k < nb; k++) {
                 int bits = table[j][1];
-                av_dlog(NULL, "%4x: code=%d n=%d\n", j, i, n);
+                ff_dlog(NULL, "%4x: code=%d n=%d\n", j, i, n);
                 if (bits != 0 && bits != n) {
                     av_log(NULL, AV_LOG_ERROR, "incorrect codes\n");
                     return AVERROR_INVALIDDATA;
@@ -221,7 +224,7 @@ static int build_table(VLC *vlc, int table_nb_bits, int nb_codes,
             subtable_bits = FFMIN(subtable_bits, table_nb_bits);
             j = (flags & INIT_VLC_LE) ? bitswap_32(code_prefix) >> (32 - table_nb_bits) : code_prefix;
             table[j][1] = -subtable_bits;
-            av_dlog(NULL, "%4x: n=%d (subtable)\n",
+            ff_dlog(NULL, "%4x: n=%d (subtable)\n",
                     j, codes[i].bits + table_nb_bits);
             index = build_table(vlc, subtable_bits, k-i, codes+i, flags);
             if (index < 0)

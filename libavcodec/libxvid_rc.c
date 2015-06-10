@@ -47,9 +47,9 @@ av_cold int ff_xvid_rate_control_init(MpegEncContext *s)
     xvid_plugin_2pass2_t xvid_2pass2  = { 0 };
 
     fd = av_tempfile("xvidrc.", &tmp_name, 0, s->avctx);
-    if (fd == -1) {
+    if (fd < 0) {
         av_log(NULL, AV_LOG_ERROR, "Can't create temporary pass2 file.\n");
-        return -1;
+        return fd;
     }
 
     for (i = 0; i < s->rc_context.num_entries; i++) {
@@ -68,10 +68,11 @@ av_cold int ff_xvid_rate_control_init(MpegEncContext *s)
                  (rce->header_bits + rce->mv_bits + 7) / 8);
 
         if (write(fd, tmp, strlen(tmp)) < 0) {
-            av_log(NULL, AV_LOG_ERROR, "Error %s writing 2pass logfile\n", strerror(errno));
+            int ret = AVERROR(errno);
+            av_log(NULL, AV_LOG_ERROR, "Error %s writing 2pass logfile\n", av_err2str(ret));
             av_free(tmp_name);
             close(fd);
-            return AVERROR(errno);
+            return ret;
         }
     }
 

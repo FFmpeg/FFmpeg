@@ -20,11 +20,11 @@
 ; */
 %include "libavutil/x86/x86util.asm"
 
-SECTION_RODATA 32
-max_pixels_10:          times 16  dw ((1 << 10)-1)
-
-
 SECTION .text
+
+cextern pw_1023
+%define max_pixels_10 pw_1023
+
 
 ;the tr_add macros and functions were largely inspired by x264 project's code in the h264_idct.asm file
 %macro TR_ADD_MMX_4_8 0

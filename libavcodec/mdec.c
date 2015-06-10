@@ -88,7 +88,12 @@ static inline int mdec_decode_block_intra(MDECContext *a, int16_t *block, int n)
             if (level == 127) {
                 break;
             } else if (level != 0) {
-                i    += run;
+                i += run;
+                if (i > 63) {
+                    av_log(a->avctx, AV_LOG_ERROR,
+                           "ac-tex damaged at %d %d\n", a->mb_x, a->mb_y);
+                    return AVERROR_INVALIDDATA;
+                }
                 j     = scantable[i];
                 level = (level * qscale * quant_matrix[j]) >> 3;
                 level = (level ^ SHOW_SBITS(re, &a->gb, 1)) - SHOW_SBITS(re, &a->gb, 1);
@@ -98,8 +103,13 @@ static inline int mdec_decode_block_intra(MDECContext *a, int16_t *block, int n)
                 run = SHOW_UBITS(re, &a->gb, 6)+1; LAST_SKIP_BITS(re, &a->gb, 6);
                 UPDATE_CACHE(re, &a->gb);
                 level = SHOW_SBITS(re, &a->gb, 10); SKIP_BITS(re, &a->gb, 10);
-                i    += run;
-                j     = scantable[i];
+                i += run;
+                if (i > 63) {
+                    av_log(a->avctx, AV_LOG_ERROR,
+                           "ac-tex damaged at %d %d\n", a->mb_x, a->mb_y);
+                    return AVERROR_INVALIDDATA;
+                }
+                j = scantable[i];
                 if (level < 0) {
                     level = -level;
                     level = (level * qscale * quant_matrix[j]) >> 3;
@@ -109,10 +119,6 @@ static inline int mdec_decode_block_intra(MDECContext *a, int16_t *block, int n)
                     level = (level * qscale * quant_matrix[j]) >> 3;
                     level = (level - 1) | 1;
                 }
-            }
-            if (i > 63) {
-                av_log(a->avctx, AV_LOG_ERROR, "ac-tex damaged at %d %d\n", a->mb_x, a->mb_y);
-                return AVERROR_INVALIDDATA;
             }
 
             block[j] = level;

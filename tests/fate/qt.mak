@@ -46,6 +46,9 @@ fate-rpza: CMD = framecrc -i $(TARGET_SAMPLES)/rpza/rpza2.mov -t 2 -pix_fmt rgb2
 FATE_QT-$(call DEMDEC, MOV, SVQ1) += fate-svq1
 fate-svq1: CMD = framecrc -i $(TARGET_SAMPLES)/svq1/marymary-shackles.mov -an -t 10
 
+FATE_QT-$(call DEMDEC, MOV, SVQ1) += fate-svq1-headerswap
+fate-svq1-headerswap: CMD = framecrc -i $(TARGET_SAMPLES)/svq1/ct_ending_cut.mov -frames 4
+
 FATE_QT-$(call ALLYES, MOV_DEMUXER SVQ3_DECODER ZLIB) += fate-svq3
 fate-svq3: CMD = framecrc -i $(TARGET_SAMPLES)/svq3/Vertical400kbit.sorenson3.mov -t 6 -an
 

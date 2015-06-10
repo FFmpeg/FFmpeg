@@ -177,7 +177,7 @@ static int tm2_build_huff_table(TM2Context *ctx, TM2Codes *code)
 
     if (!huff.nums || !huff.bits || !huff.lens) {
         res = AVERROR(ENOMEM);
-        goto fail;
+        goto out;
     }
 
     res = tm2_read_tree(ctx, 0, 0, &huff);
@@ -203,13 +203,14 @@ static int tm2_build_huff_table(TM2Context *ctx, TM2Codes *code)
             code->recode = av_malloc_array(code->length, sizeof(int));
             if (!code->recode) {
                 res = AVERROR(ENOMEM);
-                goto fail;
+                goto out;
             }
             for (i = 0; i < code->length; i++)
                 code->recode[i] = huff.nums[i];
         }
     }
-fail:
+
+out:
     /* free allocated memory */
     av_free(huff.nums);
     av_free(huff.bits);
@@ -996,14 +997,14 @@ static av_cold int decode_end(AVCodecContext *avctx)
     av_free(l->last);
     av_free(l->clast);
     for (i = 0; i < TM2_NUM_STREAMS; i++)
-        av_free(l->tokens[i]);
+        av_freep(&l->tokens[i]);
     if (l->Y1) {
-        av_free(l->Y1_base);
-        av_free(l->U1_base);
-        av_free(l->V1_base);
-        av_free(l->Y2_base);
-        av_free(l->U2_base);
-        av_free(l->V2_base);
+        av_freep(&l->Y1_base);
+        av_freep(&l->U1_base);
+        av_freep(&l->V1_base);
+        av_freep(&l->Y2_base);
+        av_freep(&l->U2_base);
+        av_freep(&l->V2_base);
     }
     av_freep(&l->buffer);
     l->buffer_size = 0;

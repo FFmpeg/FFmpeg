@@ -66,6 +66,8 @@ static av_always_inline int pthread_create(pthread_t *thread, const pthread_attr
     struct thread_arg *thread_arg;
 
     thread_arg = av_mallocz(sizeof(struct thread_arg));
+    if (!thread_arg)
+        return ENOMEM;
 
     thread_arg->start_routine = start_routine;
     thread_arg->arg = arg;

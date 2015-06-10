@@ -32,10 +32,10 @@
 
 #include "libavutil/float_dsp.h"
 #include "avcodec.h"
+#include "imdct15.h"
 #include "fft.h"
 #include "mpeg4audio.h"
 #include "sbr.h"
-#include "fmtconvert.h"
 
 #include <stdint.h>
 
@@ -141,6 +141,10 @@ typedef struct PredictorState {
 #define SCALE_MAX_DIFF   60    ///< maximum scalefactor difference allowed by standard
 #define SCALE_DIFF_ZERO  60    ///< codebook index corresponding to zero scalefactor indices difference
 
+#define NOISE_PRE       256    ///< preamble for NOISE_BT, put in bitstream with the first noise band
+#define NOISE_PRE_BITS    9    ///< length of preamble
+#define NOISE_OFFSET     90    ///< subtracted from global gain, used as offset for the preamble
+
 /**
  * Long Term Prediction
  */
@@ -233,7 +237,8 @@ typedef struct SingleChannelElement {
     float sf[120];                                  ///< scalefactors
     int sf_idx[128];                                ///< scalefactor indices (used by encoder)
     uint8_t zeroes[128];                            ///< band is not coded (used by encoder)
-    DECLARE_ALIGNED(32, float,   coeffs)[1024];     ///< coefficients for IMDCT
+    DECLARE_ALIGNED(32, float,   pcoeffs)[1024];    ///< coefficients for IMDCT, pristine
+    DECLARE_ALIGNED(32, float,   coeffs)[1024];     ///< coefficients for IMDCT, maybe processed
     DECLARE_ALIGNED(32, float,   saved)[1536];      ///< overlap
     DECLARE_ALIGNED(32, float,   ret_buf)[2048];    ///< PCM output buffer
     DECLARE_ALIGNED(16, float,   ltp_state)[3072];  ///< time signal for LTP
@@ -245,6 +250,7 @@ typedef struct SingleChannelElement {
  * channel element - generic struct for SCE/CPE/CCE/LFE
  */
 typedef struct ChannelElement {
+    int present;
     // CPE specific
     int common_window;        ///< Set if channels share a common 'IndividualChannelStream' in bitstream.
     int     ms_mode;          ///< Signals mid/side stereo flags coding mode (used by encoder)
@@ -274,6 +280,7 @@ struct AACContext {
     ChannelElement          *che[4][MAX_ELEM_ID];
     ChannelElement  *tag_che_map[4][MAX_ELEM_ID];
     int tags_mapped;
+    int warned_remapping_once;
     /** @} */
 
     /**
@@ -292,8 +299,8 @@ struct AACContext {
     FFTContext mdct_small;
     FFTContext mdct_ld;
     FFTContext mdct_ltp;
-    FmtConvertContext fmt_conv;
-    AVFloatDSPContext fdsp;
+    IMDCT15Context *mdct480;
+    AVFloatDSPContext *fdsp;
     int random_state;
     /** @} */
 

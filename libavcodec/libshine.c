@@ -71,7 +71,7 @@ static int libshine_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     SHINEContext *s = avctx->priv_data;
     MPADecodeHeader hdr;
     unsigned char *data;
-    long written;
+    int written;
     int ret, len;
 
     if (frame)

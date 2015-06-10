@@ -48,7 +48,7 @@ typedef struct {
 } MotionVector;
 
 typedef struct {
-    MotionVector vector;  ///< Motion vector
+    MotionVector vec;     ///< Motion vector
     double angle;         ///< Angle of rotation
     double zoom;          ///< Zoom percentage
 } Transform;

@@ -173,7 +173,7 @@ static void add_rect_clamped_c(uint8_t *dst, const uint16_t *src, int stride,
     c->PFX ## _dirac_pixels_tab[WIDTH>>4][2] = ff_ ## PFX ## _dirac_pixels ## WIDTH ## _l4_c; \
     c->PFX ## _dirac_pixels_tab[WIDTH>>4][3] = ff_ ## PFX ## _dirac_pixels ## WIDTH ## _bilinear_c
 
-void ff_diracdsp_init(DiracDSPContext *c)
+av_cold void ff_diracdsp_init(DiracDSPContext *c)
 {
     c->dirac_hpel_filter = dirac_hpel_filter;
     c->add_rect_clamped = add_rect_clamped_c;

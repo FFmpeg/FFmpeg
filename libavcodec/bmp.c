@@ -215,9 +215,13 @@ static int bmp_decode_frame(AVCodecContext *avctx,
     n = ((avctx->width * depth + 31) / 8) & ~3;
 
     if (n * avctx->height > dsize && comp != BMP_RLE4 && comp != BMP_RLE8) {
-        av_log(avctx, AV_LOG_ERROR, "not enough data (%d < %d)\n",
-               dsize, n * avctx->height);
-        return AVERROR_INVALIDDATA;
+        n = (avctx->width * depth + 7) / 8;
+        if (n * avctx->height > dsize) {
+            av_log(avctx, AV_LOG_ERROR, "not enough data (%d < %d)\n",
+                   dsize, n * avctx->height);
+            return AVERROR_INVALIDDATA;
+        }
+        av_log(avctx, AV_LOG_ERROR, "data size too small, assuming missing line alignment\n");
     }
 
     // RLE may skip decoding some picture areas, so blank picture before decoding

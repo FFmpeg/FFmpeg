@@ -43,18 +43,25 @@ void av_register_bitstream_filter(AVBitStreamFilter *bsf)
 
 AVBitStreamFilterContext *av_bitstream_filter_init(const char *name)
 {
-    AVBitStreamFilter *bsf = first_bitstream_filter;
+    AVBitStreamFilter *bsf = NULL;
 
-    while (bsf) {
+    while (bsf = av_bitstream_filter_next(bsf)) {
         if (!strcmp(name, bsf->name)) {
             AVBitStreamFilterContext *bsfc =
                 av_mallocz(sizeof(AVBitStreamFilterContext));
+            if (!bsfc)
+                return NULL;
             bsfc->filter    = bsf;
-            bsfc->priv_data =
-                bsf->priv_data_size ? av_mallocz(bsf->priv_data_size) : NULL;
+            bsfc->priv_data = NULL;
+            if (bsf->priv_data_size) {
+                bsfc->priv_data = av_mallocz(bsf->priv_data_size);
+                if (!bsfc->priv_data) {
+                    av_freep(&bsfc);
+                    return NULL;
+                }
+            }
             return bsfc;
         }
-        bsf = bsf->next;
     }
     return NULL;
 }

@@ -443,6 +443,20 @@ int show_formats(void *optctx, const char *opt, const char *arg);
  */
 int show_devices(void *optctx, const char *opt, const char *arg);
 
+#if CONFIG_AVDEVICE
+/**
+ * Print a listing containing audodetected sinks of the output device.
+ * Device name with options may be passed as an argument to limit results.
+ */
+int show_sinks(void *optctx, const char *opt, const char *arg);
+
+/**
+ * Print a listing containing audodetected sources of the input device.
+ * Device name with options may be passed as an argument to limit results.
+ */
+int show_sources(void *optctx, const char *opt, const char *arg);
+#endif
+
 /**
  * Print a listing containing all the codecs supported by the
  * program.
@@ -582,5 +596,7 @@ void *grow_array(void *array, int elem_size, int *size, int new_size);
 #define GET_CH_LAYOUT_DESC(ch_layout)\
     char name[128];\
     av_get_channel_layout_string(name, sizeof(name), 0, ch_layout);
+
+double get_rotation(AVStream *st);
 
 #endif /* CMDUTILS_H */

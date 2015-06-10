@@ -64,7 +64,7 @@ do_audio_only()
 }
 
 if [ -n "$do_avi" ] ; then
-do_lavf avi "" "-acodec mp2 -ar 44100 -ab 64k"
+do_lavf avi "" "-acodec mp2 -ar 44100 -ab 64k -threads 1"
 fi
 
 if [ -n "$do_asf" ] ; then
@@ -79,19 +79,27 @@ do_avconv $file $DEC_OPTS -f image2 -vcodec pgmyuv -i $raw_src $DEC_OPTS -ar 441
 fi
 
 if [ -n "$do_mpg" ] ; then
-do_lavf_timecode mpg "-ab 64k -ar 44100"
+do_lavf_timecode mpg "-ab 64k -ar 44100 -threads 1"
 fi
 
 if [ -n "$do_mxf" ] ; then
-do_lavf_timecode mxf "-ar 48000 -bf 2"
+do_lavf_timecode mxf "-ar 48000 -bf 2 -threads 1"
 fi
 
 if [ -n "$do_mxf_d10" ]; then
 do_lavf mxf_d10 "-ar 48000 -ac 2" "-r 25 -vf scale=720:576,pad=720:608:0:32 -vcodec mpeg2video -g 0 -flags +ildct+low_delay -dc 10 -non_linear_quant 1 -intra_vlc 1 -qscale 1 -ps 1 -qmin 1 -rc_max_vbv_use 1 -rc_min_vbv_use 1 -pix_fmt yuv422p -minrate 30000k -maxrate 30000k -b 30000k -bufsize 1200000 -top 1 -rc_init_occupancy 1200000 -qmax 12 -f mxf_d10"
 fi
 
+if [ -n "$do_mxf_opatom" ]; then
+do_lavf mxf_opatom "" "-s 1920x1080 -vcodec dnxhd -pix_fmt yuv422p -vb 36M -f mxf_opatom -map 0"
+fi
+
+if [ -n "$do_mxf_opatom_audio" ]; then
+do_lavf mxf_opatom_audio "-ar 48000 -ac 1" "-f mxf_opatom -mxf_audio_edit_rate 25 -map 1"
+fi
+
 if [ -n "$do_ts" ] ; then
-do_lavf ts "" "-ab 64k -mpegts_transport_stream_id 42 -ar 44100"
+do_lavf ts "" "-ab 64k -mpegts_transport_stream_id 42 -ar 44100 -threads 1"
 fi
 
 if [ -n "$do_swf" ] ; then
@@ -99,7 +107,7 @@ do_lavf swf "" "-an"
 fi
 
 if [ -n "$do_ffm" ] ; then
-do_lavf ffm "" "-ar 44100"
+do_lavf ffm "" "-ar 44100 -threads 1"
 fi
 
 if [ -n "$do_flm" ] ; then
@@ -111,13 +119,13 @@ do_lavf flv "" "-an"
 fi
 
 if [ -n "$do_mov" ] ; then
-mov_common_opt="-acodec pcm_alaw -vcodec mpeg4"
+mov_common_opt="-acodec pcm_alaw -vcodec mpeg4 -threads 1"
 do_lavf mov "" "-movflags +rtphint $mov_common_opt"
 do_lavf_timecode mov "-movflags +faststart $mov_common_opt"
 fi
 
 if [ -n "$do_ismv" ] ; then
-do_lavf_timecode ismv "-an -vcodec mpeg4"
+do_lavf_timecode ismv "-an -vcodec mpeg4 -threads 1"
 fi
 
 if [ -n "$do_dv_fmt" ] ; then
@@ -127,19 +135,19 @@ do_lavf dv "-ar 48000 -channel_layout stereo" "-r 25 -s pal"
 fi
 
 if [ -n "$do_gxf" ] ; then
-do_lavf_timecode_nodrop gxf "-ar 48000 -r 25 -s pal -ac 1"
-do_lavf_timecode_drop   gxf "-ar 48000 -s ntsc -ac 1"
-do_lavf gxf "-ar 48000" "-r 25 -s pal -ac 1"
+do_lavf_timecode_nodrop gxf "-ar 48000 -r 25 -s pal -ac 1 -threads 1"
+do_lavf_timecode_drop   gxf "-ar 48000 -s ntsc -ac 1 -threads 1"
+do_lavf gxf "-ar 48000" "-r 25 -s pal -ac 1 -threads 1"
 fi
 
 if [ -n "$do_nut" ] ; then
-do_lavf nut "" "-acodec mp2 -ab 64k -ar 44100"
+do_lavf nut "" "-acodec mp2 -ab 64k -ar 44100 -threads 1"
 fi
 
 if [ -n "$do_mkv" ] ; then
 do_lavf mkv "" "-acodec mp2 -ab 64k -vcodec mpeg4 \
- -attach ${raw_src%/*}/00.pgm -metadata:s:t mimetype=image/x-portable-greymap"
-do_lavf mkv "" "-acodec mp2 -ab 64k -vcodec mpeg4 -ar 44100"
+ -attach ${raw_src%/*}/00.pgm -metadata:s:t mimetype=image/x-portable-greymap -threads 1"
+do_lavf mkv "" "-acodec mp2 -ab 64k -vcodec mpeg4 -ar 44100 -threads 1"
 fi
 
 if [ -n "$do_mp3" ] ; then
@@ -157,7 +165,7 @@ do_lavf_fate ogg "vp3/coeff_level64.mkv"
 fi
 
 if [ -n "$do_wtv" ] ; then
-do_lavf wtv "" "-acodec mp2"
+do_lavf wtv "" "-acodec mp2 -threads 1"
 fi
 
 

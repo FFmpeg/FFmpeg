@@ -25,7 +25,7 @@
 
 #include "libavutil/log.h"
 
-extern const AVClass ffio_url_class;
+extern const AVClass ff_avio_class;
 
 int ffio_init_context(AVIOContext *s,
                   unsigned char *buffer,
@@ -84,6 +84,13 @@ static av_always_inline void ffio_wfourcc(AVIOContext *pb, const uint8_t *s)
 int ffio_rewind_with_probe_data(AVIOContext *s, unsigned char **buf, int buf_size);
 
 uint64_t ffio_read_varlen(AVIOContext *bc);
+
+/**
+ * Read size bytes from AVIOContext into buf.
+ * Check that exactly size bytes have been read.
+ * @return number of bytes read or AVERROR
+ */
+int ffio_read_size(AVIOContext *s, unsigned char *buf, int size);
 
 /** @warning must be called before any I/O */
 int ffio_set_buf_size(AVIOContext *s, int buf_size);
@@ -149,5 +156,12 @@ int ffio_open_null_buf(AVIOContext **s);
  * @return the number of bytes written to the null buffer
  */
 int ffio_close_null_buf(AVIOContext *s);
+
+/**
+ * Free a dynamic buffer.
+ *
+ * @param s a pointer to an IO context opened by avio_open_dyn_buf()
+ */
+void ffio_free_dyn_buf(AVIOContext **s);
 
 #endif /* AVFORMAT_AVIO_INTERNAL_H */

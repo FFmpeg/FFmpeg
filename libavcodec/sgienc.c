@@ -153,7 +153,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
         /* Make an intermediate consecutive buffer. */
         if (!(encode_buf = av_malloc(width)))
-            return -1;
+            return AVERROR(ENOMEM);
 
         for (z = 0; z < depth; z++) {
             in_buf = p->data[0] + p->linesize[0] * (height - 1) + z;

@@ -183,7 +183,7 @@ void ff_vaapi_common_end_frame(AVCodecContext *avctx)
 {
     struct vaapi_context * const vactx = avctx->hwaccel_context;
 
-    av_dlog(avctx, "ff_vaapi_common_end_frame()\n");
+    ff_dlog(avctx, "ff_vaapi_common_end_frame()\n");
 
     destroy_buffers(vactx->display, &vactx->pic_param_buf_id, 1);
     destroy_buffers(vactx->display, &vactx->iq_matrix_buf_id, 1);
@@ -196,5 +196,31 @@ void ff_vaapi_common_end_frame(AVCodecContext *avctx)
     vactx->slice_count         = 0;
     vactx->slice_params_alloc  = 0;
 }
+
+#if CONFIG_H263_VAAPI_HWACCEL  || CONFIG_MPEG1_VAAPI_HWACCEL || \
+    CONFIG_MPEG2_VAAPI_HWACCEL || CONFIG_MPEG4_VAAPI_HWACCEL || \
+    CONFIG_VC1_VAAPI_HWACCEL   || CONFIG_WMV3_VAAPI_HWACCEL
+int ff_vaapi_mpeg_end_frame(AVCodecContext *avctx)
+{
+    struct vaapi_context * const vactx = avctx->hwaccel_context;
+    MpegEncContext *s = avctx->priv_data;
+    int ret;
+
+    ret = ff_vaapi_commit_slices(vactx);
+    if (ret < 0)
+        goto finish;
+
+    ret = ff_vaapi_render_picture(vactx,
+                                  ff_vaapi_get_surface_id(s->current_picture_ptr->f));
+    if (ret < 0)
+        goto finish;
+
+    ff_mpeg_draw_horiz_band(s, 0, s->avctx->height);
+
+finish:
+    ff_vaapi_common_end_frame(avctx);
+    return ret;
+}
+#endif
 
 /* @} */

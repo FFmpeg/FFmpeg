@@ -21,6 +21,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/pixdesc.h"
 
 #include "internal.h"
@@ -46,6 +47,9 @@ void ff_hevc_unref_frame(HEVCContext *s, HEVCFrame *frame, int flags)
         frame->refPicList = NULL;
 
         frame->collocated_ref = NULL;
+
+        av_buffer_unref(&frame->hwaccel_priv_buf);
+        frame->hwaccel_picture_private = NULL;
     }
 }
 
@@ -106,6 +110,18 @@ static HEVCFrame *alloc_frame(HEVCContext *s)
 
         frame->frame->top_field_first  = s->picture_struct == AV_PICTURE_STRUCTURE_TOP_FIELD;
         frame->frame->interlaced_frame = (s->picture_struct == AV_PICTURE_STRUCTURE_TOP_FIELD) || (s->picture_struct == AV_PICTURE_STRUCTURE_BOTTOM_FIELD);
+
+        if (s->avctx->hwaccel) {
+            const AVHWAccel *hwaccel = s->avctx->hwaccel;
+            av_assert0(!frame->hwaccel_picture_private);
+            if (hwaccel->frame_priv_data_size) {
+                frame->hwaccel_priv_buf = av_buffer_allocz(hwaccel->frame_priv_data_size);
+                if (!frame->hwaccel_priv_buf)
+                    goto fail;
+                frame->hwaccel_picture_private = frame->hwaccel_priv_buf->data;
+            }
+        }
+
         return frame;
 fail:
         ff_hevc_unref_frame(s, frame, ~0);
@@ -173,7 +189,7 @@ int ff_hevc_output_frame(HEVCContext *s, AVFrame *out, int flush)
             if ((frame->flags & HEVC_FRAME_FLAG_OUTPUT) &&
                 frame->sequence == s->seq_output) {
                 nb_output++;
-                if (frame->poc < min_poc) {
+                if (frame->poc < min_poc || nb_output == 1) {
                     min_poc = frame->poc;
                     min_idx = i;
                 }
@@ -370,8 +386,9 @@ static HEVCFrame *find_ref_idx(HEVCContext *s, int poc)
         }
     }
 
-    av_log(s->avctx, AV_LOG_ERROR,
-           "Could not find ref with POC %d\n", poc);
+    if (s->nal_unit_type != NAL_CRA_NUT && !IS_BLA(s))
+        av_log(s->avctx, AV_LOG_ERROR,
+               "Could not find ref with POC %d\n", poc);
     return NULL;
 }
 
@@ -390,17 +407,19 @@ static HEVCFrame *generate_missing_ref(HEVCContext *s, int poc)
     if (!frame)
         return NULL;
 
-    if (!s->sps->pixel_shift) {
-        for (i = 0; frame->frame->buf[i]; i++)
-            memset(frame->frame->buf[i]->data, 1 << (s->sps->bit_depth - 1),
-                   frame->frame->buf[i]->size);
-    } else {
-        for (i = 0; frame->frame->data[i]; i++)
-            for (y = 0; y < (s->sps->height >> s->sps->vshift[i]); y++)
-                for (x = 0; x < (s->sps->width >> s->sps->hshift[i]); x++) {
-                    AV_WN16(frame->frame->data[i] + y * frame->frame->linesize[i] + 2 * x,
-                            1 << (s->sps->bit_depth - 1));
-                }
+    if (!s->avctx->hwaccel) {
+        if (!s->sps->pixel_shift) {
+            for (i = 0; frame->frame->buf[i]; i++)
+                memset(frame->frame->buf[i]->data, 1 << (s->sps->bit_depth - 1),
+                       frame->frame->buf[i]->size);
+        } else {
+            for (i = 0; frame->frame->data[i]; i++)
+                for (y = 0; y < (s->sps->height >> s->sps->vshift[i]); y++)
+                    for (x = 0; x < (s->sps->width >> s->sps->hshift[i]); x++) {
+                        AV_WN16(frame->frame->data[i] + y * frame->frame->linesize[i] + 2 * x,
+                                1 << (s->sps->bit_depth - 1));
+                    }
+        }
     }
 
     frame->poc      = poc;
@@ -441,7 +460,7 @@ int ff_hevc_frame_rps(HEVCContext *s)
     const ShortTermRPS *short_rps = s->sh.short_term_rps;
     const LongTermRPS  *long_rps  = &s->sh.long_term_rps;
     RefPicList               *rps = s->rps;
-    int i, ret;
+    int i, ret = 0;
 
     if (!short_rps) {
         rps[0].nb_refs = rps[1].nb_refs = 0;
@@ -475,7 +494,7 @@ int ff_hevc_frame_rps(HEVCContext *s)
 
         ret = add_candidate_ref(s, &rps[list], poc, HEVC_FRAME_FLAG_SHORT_REF);
         if (ret < 0)
-            return ret;
+            goto fail;
     }
 
     /* add the long refs */
@@ -485,14 +504,15 @@ int ff_hevc_frame_rps(HEVCContext *s)
 
         ret = add_candidate_ref(s, &rps[list], poc, HEVC_FRAME_FLAG_LONG_REF);
         if (ret < 0)
-            return ret;
+            goto fail;
     }
 
+fail:
     /* release any frames that are now unused */
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++)
         ff_hevc_unref_frame(s, &s->DPB[i], 0);
 
-    return 0;
+    return ret;
 }
 
 int ff_hevc_compute_poc(HEVCContext *s, int poc_lsb)
