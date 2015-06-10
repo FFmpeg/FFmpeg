@@ -324,7 +324,12 @@ av_cold void ff_h261_encode_init(MpegEncContext *s)
     s->c_dc_scale_table = ff_mpeg1_dc_scale_table;
 }
 
-FF_MPV_GENERIC_CLASS(h261)
+static const AVClass h261_class = {
+    .class_name = "h261 encoder",
+    .item_name  = av_default_item_name,
+    .option     = ff_mpv_generic_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
 
 AVCodec ff_h261_encoder = {
     .name           = "h261",
