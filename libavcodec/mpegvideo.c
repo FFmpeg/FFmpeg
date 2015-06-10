@@ -1140,16 +1140,6 @@ void ff_mpv_common_end(MpegEncContext *s)
     s->linesize = s->uvlinesize = 0;
 }
 
-static void release_unused_pictures(AVCodecContext *avctx, Picture *picture)
-{
-    int i;
-
-    /* release non reference frames */
-    for (i = 0; i < MAX_PICTURE_COUNT; i++) {
-        if (!picture[i].reference)
-            ff_mpeg_unref_picture(avctx, &picture[i]);
-    }
-}
 
 static void gray_frame(AVFrame *frame)
 {
@@ -1204,7 +1194,11 @@ int ff_mpv_frame_start(MpegEncContext *s, AVCodecContext *avctx)
 
     ff_mpeg_unref_picture(s->avctx, &s->current_picture);
 
-    release_unused_pictures(s->avctx, s->picture);
+    /* release non reference frames */
+    for (i = 0; i < MAX_PICTURE_COUNT; i++) {
+        if (!s->picture[i].reference)
+            ff_mpeg_unref_picture(s->avctx, &s->picture[i]);
+    }
 
     if (s->current_picture_ptr && !s->current_picture_ptr->f->buf[0]) {
         // we already have a unused image
