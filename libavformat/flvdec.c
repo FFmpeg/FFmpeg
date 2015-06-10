@@ -896,8 +896,9 @@ skip:
         }
         av_log(s, AV_LOG_TRACE, "%d %X %d \n", stream_type, flags, st->discard);
 
-        if ((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_KEY ||
-            stream_type == FLV_STREAM_TYPE_AUDIO)
+        if (s->pb->seekable &&
+            ((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_KEY ||
+              stream_type == FLV_STREAM_TYPE_AUDIO))
             av_add_index_entry(st, pos, dts, size, 0, AVINDEX_KEYFRAME);
 
         if (  (st->discard >= AVDISCARD_NONKEY && !((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_KEY || (stream_type == FLV_STREAM_TYPE_AUDIO)))
