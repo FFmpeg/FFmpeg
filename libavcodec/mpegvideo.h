@@ -631,8 +631,6 @@ void ff_mpv_report_decode_progress(MpegEncContext *s);
 int ff_mpv_frame_start(MpegEncContext *s, AVCodecContext *avctx);
 void ff_mpv_frame_end(MpegEncContext *s);
 
-int ff_mpv_lowest_referenced_row(MpegEncContext *s, int dir);
-
 int ff_mpv_encode_init(AVCodecContext *avctx);
 void ff_mpv_encode_init_x86(MpegEncContext *s);
 

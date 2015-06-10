@@ -2329,7 +2329,7 @@ static inline void MPV_motion_lowres(MpegEncContext *s,
 /**
  * find the lowest MB row referenced in the MVs
  */
-int ff_mpv_lowest_referenced_row(MpegEncContext *s, int dir)
+static int lowest_referenced_row(MpegEncContext *s, int dir)
 {
     int my_max = INT_MIN, my_min = INT_MAX, qpel_shift = !s->quarter_sample;
     int my, off, i, mvs;
@@ -2524,12 +2524,12 @@ void mpv_decode_mb_internal(MpegEncContext *s, int16_t block[12][64],
                 if(HAVE_THREADS && s->avctx->active_thread_type&FF_THREAD_FRAME) {
                     if (s->mv_dir & MV_DIR_FORWARD) {
                         ff_thread_await_progress(&s->last_picture_ptr->tf,
-                                                 ff_mpv_lowest_referenced_row(s, 0),
+                                                 lowest_referenced_row(s, 0),
                                                  0);
                     }
                     if (s->mv_dir & MV_DIR_BACKWARD) {
                         ff_thread_await_progress(&s->next_picture_ptr->tf,
-                                                 ff_mpv_lowest_referenced_row(s, 1),
+                                                 lowest_referenced_row(s, 1),
                                                  0);
                     }
                 }
