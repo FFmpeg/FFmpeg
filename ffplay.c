@@ -3464,28 +3464,29 @@ static int ipc_loop(void *arg)
       case 'd':
 	incr = -60.0;
 	do_seek:
-	  if (seek_by_bytes) {
-	    if (cur_stream->video_stream >= 0 && cur_stream->video_current_pos >= 0) {
-	      pos = cur_stream->video_current_pos;
-	    } else if (cur_stream->audio_stream >= 0 && cur_stream->audio_pkt.pos >= 0) {
-	      pos = cur_stream->audio_pkt.pos;
-	    } else
-	      pos = avio_tell(cur_stream->ic->pb);
-	    if (cur_stream->ic->bit_rate)
-	      incr *= cur_stream->ic->bit_rate / 8.0;
-	    else
-	      incr *= 180000.0;
-	    pos += incr;
-	    stream_seek(cur_stream, pos, incr, 1);
-	  } else {
-	    pos = get_master_clock(cur_stream);
-	    if (isnan(pos))
-	      pos = (double)cur_stream->seek_pos / AV_TIME_BASE;
-	    pos += incr;
-	    if (cur_stream->ic->start_time != AV_NOPTS_VALUE && pos < cur_stream->ic->start_time / (double)AV_TIME_BASE)
-	      pos = cur_stream->ic->start_time / (double)AV_TIME_BASE;
-	    stream_seek(cur_stream, (int64_t)(pos * AV_TIME_BASE), (int64_t)(incr * AV_TIME_BASE), 0);
-	  }
+	if (seek_by_bytes) {
+	  pos = -1;
+	  if (pos < 0 && cur_stream->video_stream >= 0)
+	    pos = frame_queue_last_pos(&cur_stream->pictq);
+	  if (pos < 0 && cur_stream->audio_stream >= 0)
+	    pos = frame_queue_last_pos(&cur_stream->sampq);
+	  if (pos < 0)
+	    pos = avio_tell(cur_stream->ic->pb);
+	  if (cur_stream->ic->bit_rate)
+	    incr *= cur_stream->ic->bit_rate / 8.0;
+	  else
+	    incr *= 180000.0;
+	  pos += incr;
+	  stream_seek(cur_stream, pos, incr, 1);
+	} else {
+	  pos = get_master_clock(cur_stream);
+	  if (isnan(pos))
+	    pos = (double)cur_stream->seek_pos / AV_TIME_BASE;
+	  pos += incr;
+	  if (cur_stream->ic->start_time != AV_NOPTS_VALUE && pos < cur_stream->ic->start_time / (double)AV_TIME_BASE)
+	    pos = cur_stream->ic->start_time / (double)AV_TIME_BASE;
+	  stream_seek(cur_stream, (int64_t)(pos * AV_TIME_BASE), (int64_t)(incr * AV_TIME_BASE), 0);
+	}
 	break;
       case 'x':
 	// Parse everything after x as decimal
