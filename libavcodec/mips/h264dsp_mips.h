@@ -68,6 +68,33 @@ void ff_weight_h264_pixels8_8_msa(uint8_t *src, int stride, int height,
 void ff_weight_h264_pixels4_8_msa(uint8_t *src, int stride, int height,
                                   int log2_denom, int weight, int offset);
 
+void ff_h264_intra_predict_plane_8x8_msa(uint8_t *src, ptrdiff_t stride);
+void ff_h264_intra_predict_dc_4blk_8x8_msa(uint8_t *src, ptrdiff_t stride);
+void ff_h264_intra_predict_hor_dc_8x8_msa(uint8_t *src, ptrdiff_t stride);
+void ff_h264_intra_predict_vert_dc_8x8_msa(uint8_t *src, ptrdiff_t stride);
+void ff_h264_intra_predict_mad_cow_dc_l0t_8x8_msa(uint8_t *src,
+                                                  ptrdiff_t stride);
+void ff_h264_intra_predict_mad_cow_dc_0lt_8x8_msa(uint8_t *src,
+                                                  ptrdiff_t stride);
+void ff_h264_intra_predict_mad_cow_dc_l00_8x8_msa(uint8_t *src,
+                                                  ptrdiff_t stride);
+void ff_h264_intra_predict_mad_cow_dc_0l0_8x8_msa(uint8_t *src,
+                                                  ptrdiff_t stride);
+void ff_h264_intra_predict_plane_16x16_msa(uint8_t *src, ptrdiff_t stride);
+void ff_h264_intra_pred_vert_8x8_msa(uint8_t *src, ptrdiff_t stride);
+void ff_h264_intra_pred_horiz_8x8_msa(uint8_t *src, ptrdiff_t stride);
+void ff_h264_intra_pred_dc_16x16_msa(uint8_t *src, ptrdiff_t stride);
+void ff_h264_intra_pred_vert_16x16_msa(uint8_t *src, ptrdiff_t stride);
+void ff_h264_intra_pred_horiz_16x16_msa(uint8_t *src, ptrdiff_t stride);
+void ff_h264_intra_pred_dc_left_16x16_msa(uint8_t *src, ptrdiff_t stride);
+void ff_h264_intra_pred_dc_top_16x16_msa(uint8_t *src, ptrdiff_t stride);
+void ff_h264_intra_pred_dc_128_8x8_msa(uint8_t *src, ptrdiff_t stride);
+void ff_h264_intra_pred_dc_128_16x16_msa(uint8_t *src, ptrdiff_t stride);
+void ff_vp8_pred8x8_127_dc_8_msa(uint8_t *src, ptrdiff_t stride);
+void ff_vp8_pred8x8_129_dc_8_msa(uint8_t *src, ptrdiff_t stride);
+void ff_vp8_pred16x16_127_dc_8_msa(uint8_t *src, ptrdiff_t stride);
+void ff_vp8_pred16x16_129_dc_8_msa(uint8_t *src, ptrdiff_t stride);
+
 void ff_h264_weight_pixels16_8_mmi(uint8_t *block, int stride, int height,
         int log2_denom, int weight, int offset);
 void ff_h264_biweight_pixels16_8_mmi(uint8_t *dst, uint8_t *src,

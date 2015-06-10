@@ -2307,4 +2307,15 @@
                                                           \
     SW4(out0_m, out1_m, out2_m, out3_m, pdst, stride);    \
 }
+
+/* Description : Pack even byte elements and store byte vector in destination
+                 memory
+   Arguments   : Inputs  - in0, in1, pdst
+*/
+#define PCKEV_ST_SB(in0, in1, pdst)                   \
+{                                                     \
+    v16i8 tmp_m;                                      \
+    tmp_m = __msa_pckev_b((v16i8) in1, (v16i8) in0);  \
+    ST_SB(tmp_m, (pdst));                             \
+}
 #endif  /* AVUTIL_MIPS_GENERIC_MACROS_MSA_H */
