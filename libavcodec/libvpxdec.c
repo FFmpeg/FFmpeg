@@ -56,7 +56,6 @@ static av_cold int vpx_init(AVCodecContext *avctx,
         return AVERROR(EINVAL);
     }
 
-    avctx->pix_fmt = AV_PIX_FMT_YUV420P;
     return 0;
 }
 
@@ -82,7 +81,8 @@ static int vp8_decode(AVCodecContext *avctx,
     }
 
     if ((img = vpx_codec_get_frame(&ctx->decoder, &iter))) {
-        if (img->fmt != VPX_IMG_FMT_I420) {
+        avctx->pix_fmt = ff_vpx_imgfmt_to_pixfmt(img->fmt);
+        if (avctx->pix_fmt == AV_PIX_FMT_NONE) {
             av_log(avctx, AV_LOG_ERROR, "Unsupported output colorspace (%d)\n",
                    img->fmt);
             return AVERROR_INVALIDDATA;
@@ -133,9 +133,6 @@ AVCodec ff_libvpx_vp8_decoder = {
 #if CONFIG_LIBVPX_VP9_DECODER
 static av_cold int vp9_init(AVCodecContext *avctx)
 {
-    int ret;
-    if ((ret = ff_vp9_check_experimental(avctx)))
-        return ret;
     return vpx_init(avctx, &vpx_codec_vp9_dx_algo);
 }
 

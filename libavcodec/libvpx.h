@@ -23,6 +23,7 @@
 
 #include "avcodec.h"
 
-int ff_vp9_check_experimental(AVCodecContext *avctx);
+enum AVPixelFormat ff_vpx_imgfmt_to_pixfmt(vpx_img_fmt_t img);
+vpx_img_fmt_t ff_vpx_pixfmt_to_imgfmt(enum AVPixelFormat pix);
 
 #endif /* AVCODEC_LIBVPX_H */
