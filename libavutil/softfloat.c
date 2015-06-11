@@ -23,12 +23,6 @@
 #include "common.h"
 #include "log.h"
 
-static av_const double av_sf2double(SoftFloat v) {
-    v.exp -= ONE_BITS +1;
-    if(v.exp > 0) return (double)v.mant * (double)(1 << v.exp);
-    else          return (double)v.mant / (double)(1 << (-v.exp));
-}
-
 void av_sincos_sf(int a, int *s, int *c)
 {
     int idx, sign;
