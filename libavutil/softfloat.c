@@ -19,17 +19,9 @@
  */
 
 #include <inttypes.h>
-#include <stdio.h>
 #include "softfloat.h"
 #include "common.h"
 #include "log.h"
-
-#undef printf
-
-static const SoftFloat FLOAT_0_017776489257 = {0x1234, 12};
-static const SoftFloat FLOAT_1374_40625 = {0xabcd, 25};
-static const SoftFloat FLOAT_0_1249694824218 = {0xFFF, 15};
-
 
 static av_const double av_sf2double(SoftFloat v) {
     v.exp -= ONE_BITS +1;
@@ -85,6 +77,14 @@ void av_sincos_sf(int a, int *s, int *c)
 
     *s = (int)(((int64_t)cv * st + (int64_t)sv * ct + 0x20000000) >> 30);
 }
+
+#ifdef TEST
+#include <stdio.h>
+
+static const SoftFloat FLOAT_0_017776489257 = {0x1234, 12};
+static const SoftFloat FLOAT_1374_40625 = {0xabcd, 25};
+static const SoftFloat FLOAT_0_1249694824218 = {0xFFF, 15};
+
 
 int main(void){
     SoftFloat one= av_int2sf(1, 0);
@@ -155,3 +155,4 @@ int main(void){
     return 0;
 
 }
+#endif
