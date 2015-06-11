@@ -807,6 +807,12 @@ static int jpeg2000_decode_packet(Jpeg2000DecoderContext *s,
                 return newpasses;
             if ((llen = getlblockinc(s)) < 0)
                 return llen;
+            if (cblk->lblock + llen + av_log2(newpasses) > 16) {
+                avpriv_request_sample(s->avctx,
+                                      "Block with length beyond 16 bits\n");
+                return AVERROR_PATCHWELCOME;
+            }
+
             cblk->lblock += llen;
             if ((ret = get_bits(s, av_log2(newpasses) + cblk->lblock)) < 0)
                 return ret;
