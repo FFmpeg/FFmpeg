@@ -22,11 +22,11 @@
 #include "libavutil/mips/generic_macros_msa.h"
 #include "hevcpred_mips.h"
 
-static int8_t intra_pred_angle_up[17] = {
+static const int8_t intra_pred_angle_up[17] = {
     -32, -26, -21, -17, -13, -9, -5, -2, 0, 2, 5, 9, 13, 17, 21, 26, 32
 };
 
-static int8_t intra_pred_angle_low[16] = {
+static const int8_t intra_pred_angle_low[16] = {
     32, 26, 21, 17, 13, 9, 5, 2, 0, -2, -5, -9, -13, -17, -21, -26
 };
 
