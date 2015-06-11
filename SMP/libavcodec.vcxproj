@@ -311,6 +311,8 @@
     </ClCompile>
     <ClCompile Include="..\libavcodec\mpegvideodata.c">
     </ClCompile>
+    <ClCompile Include="..\libavcodec\mpegpicture.c">
+    </ClCompile>
     <ClCompile Include="..\libavcodec\mpegvideo_enc.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\mpeg12data.c">

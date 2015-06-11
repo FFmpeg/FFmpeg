@@ -482,6 +482,9 @@
     <ClCompile Include="..\libavcodec\mpegvideodata.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\mpegpicture.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\mpegvideo_enc.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
