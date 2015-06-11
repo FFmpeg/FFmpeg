@@ -747,6 +747,33 @@
     SW(out15_m, pblk_12x8_m + 8);                                        \
 }
 
+/* Description : average with rounding (in0 + in1 + 1) / 2.
+   Arguments   : Inputs  - in0, in1, in2, in3,
+                 Outputs - out0, out1
+                 Return Type - signed byte
+   Details     : Each byte element from 'in0' vector is added with each byte
+                 element from 'in1' vector. The addition of the elements plus 1
+                (for rounding) is done unsigned with full precision,
+                i.e. the result has one extra bit. Unsigned division by 2
+                (or logical shift right by one bit) is performed before writing
+                the result to vector 'out0'
+                Similar for the pair of 'in2' and 'in3'
+*/
+#define AVER_UB2(RTYPE, in0, in1, in2, in3, out0, out1)       \
+{                                                             \
+    out0 = (RTYPE) __msa_aver_u_b((v16u8) in0, (v16u8) in1);  \
+    out1 = (RTYPE) __msa_aver_u_b((v16u8) in2, (v16u8) in3);  \
+}
+#define AVER_UB2_UB(...) AVER_UB2(v16u8, __VA_ARGS__)
+
+#define AVER_UB4(RTYPE, in0, in1, in2, in3, in4, in5, in6, in7, \
+                 out0, out1, out2, out3)                        \
+{                                                               \
+    AVER_UB2(RTYPE, in0, in1, in2, in3, out0, out1)             \
+    AVER_UB2(RTYPE, in4, in5, in6, in7, out2, out3)             \
+}
+#define AVER_UB4_UB(...) AVER_UB4(v16u8, __VA_ARGS__)
+
 /* Description : Immediate number of columns to slide with zero
    Arguments   : Inputs  - in0, in1, slide_val
                  Outputs - out0, out1
@@ -858,6 +885,34 @@
     out1 = (RTYPE) __msa_vshf_w((v4i32) mask1, (v4i32) in3, (v4i32) in2); \
 }
 #define VSHF_W2_SB(...) VSHF_W2(v16i8, __VA_ARGS__)
+
+/* Description : Dot product of byte vector elements
+   Arguments   : Inputs  - mult0, mult1
+                           cnst0, cnst1
+                 Outputs - out0, out1
+                 Return Type - unsigned halfword
+   Details     : Unsigned byte elements from mult0 are multiplied with
+                 unsigned byte elements from cnst0 producing a result
+                 twice the size of input i.e. unsigned halfword.
+                 Then this multiplication results of adjacent odd-even elements
+                 are added together and stored to the out vector
+                 (2 unsigned halfword results)
+*/
+#define DOTP_UB2(RTYPE, mult0, mult1, cnst0, cnst1, out0, out1)   \
+{                                                                 \
+    out0 = (RTYPE) __msa_dotp_u_h((v16u8) mult0, (v16u8) cnst0);  \
+    out1 = (RTYPE) __msa_dotp_u_h((v16u8) mult1, (v16u8) cnst1);  \
+}
+#define DOTP_UB2_UH(...) DOTP_UB2(v8u16, __VA_ARGS__)
+
+#define DOTP_UB4(RTYPE, mult0, mult1, mult2, mult3,           \
+                 cnst0, cnst1, cnst2, cnst3,                  \
+                 out0, out1, out2, out3)                      \
+{                                                             \
+    DOTP_UB2(RTYPE, mult0, mult1, cnst0, cnst1, out0, out1);  \
+    DOTP_UB2(RTYPE, mult2, mult3, cnst2, cnst3, out2, out3);  \
+}
+#define DOTP_UB4_UH(...) DOTP_UB4(v8u16, __VA_ARGS__)
 
 /* Description : Dot product of byte vector elements
    Arguments   : Inputs  - mult0, mult1
@@ -1363,6 +1418,7 @@
     out0 = (RTYPE) __msa_ilvr_d((v2i64) (in0), (v2i64) (in1));  \
     out1 = (RTYPE) __msa_ilvr_d((v2i64) (in2), (v2i64) (in3));  \
 }
+#define ILVR_D2_UB(...) ILVR_D2(v16u8, __VA_ARGS__)
 #define ILVR_D2_SB(...) ILVR_D2(v16i8, __VA_ARGS__)
 #define ILVR_D2_SH(...) ILVR_D2(v8i16, __VA_ARGS__)
 

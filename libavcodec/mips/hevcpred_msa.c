@@ -22,11 +22,11 @@
 #include "libavutil/mips/generic_macros_msa.h"
 #include "hevcpred_mips.h"
 
-static int8_t intra_pred_angle_up[17] = {
+static const int8_t intra_pred_angle_up[17] = {
     -32, -26, -21, -17, -13, -9, -5, -2, 0, 2, 5, 9, 13, 17, 21, 26, 32
 };
 
-static int8_t intra_pred_angle_low[16] = {
+static const int8_t intra_pred_angle_low[16] = {
     32, 26, 21, 17, 13, 9, 5, 2, 0, -2, -5, -9, -13, -17, -21, -26
 };
 
@@ -524,7 +524,7 @@ static void hevc_intra_pred_dc_32x32_msa(const uint8_t *src_top,
     v8u16 sum, sum_above, sum_left;
 
     LD_UB2(src_top, 16, src_above1, src_above2);
-    LD_UB2(src_left, 16, src_left1, src_left2);;
+    LD_UB2(src_left, 16, src_left1, src_left2);
     HADD_UB2_UH(src_above1, src_above2, sum_above1, sum_above2);
     HADD_UB2_UH(src_left1, src_left2, sum_left1, sum_left2);
     sum_above = sum_above1 + sum_above2;

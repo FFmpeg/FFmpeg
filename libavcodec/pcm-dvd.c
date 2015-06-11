@@ -73,7 +73,7 @@ static int pcm_dvd_parse_header(AVCodecContext *avctx, const uint8_t *header)
     s->last_header = -1;
 
     if (avctx->debug & FF_DEBUG_PICT_INFO)
-        ff_dlog(avctx, "pcm_dvd_parse_header: header = %02x%02x%02x\n",
+        av_log(avctx, AV_LOG_DEBUG, "pcm_dvd_parse_header: header = %02x%02x%02x\n",
                 header[0], header[1], header[2]);
     /*
      * header[0] emphasis (1), muse(1), reserved(1), frame number(5)

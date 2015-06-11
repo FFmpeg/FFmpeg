@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2015 Zhou Xiaoyong <zhouxiaoyong@loongson.cn>
+ * Copyright (c) 2015 Shivraj Patil (Shivraj.Patil@imgtec.com)
  *
  * This file is part of FFmpeg.
  *
@@ -20,6 +21,23 @@
 
 #include "h264chroma_mips.h"
 
+#if HAVE_MSA
+static av_cold void h264chroma_init_msa(H264ChromaContext *c, int bit_depth)
+{
+    const int high_bit_depth = bit_depth > 8;
+
+    if (!high_bit_depth) {
+        c->put_h264_chroma_pixels_tab[0] = ff_put_h264_chroma_mc8_msa;
+        c->put_h264_chroma_pixels_tab[1] = ff_put_h264_chroma_mc4_msa;
+        c->put_h264_chroma_pixels_tab[2] = ff_put_h264_chroma_mc2_msa;
+
+        c->avg_h264_chroma_pixels_tab[0] = ff_avg_h264_chroma_mc8_msa;
+        c->avg_h264_chroma_pixels_tab[1] = ff_avg_h264_chroma_mc4_msa;
+        c->avg_h264_chroma_pixels_tab[2] = ff_avg_h264_chroma_mc2_msa;
+    }
+}
+#endif  // #if HAVE_MSA
+
 #if HAVE_LOONGSON3
 static av_cold void h264chroma_init_mmi(H264ChromaContext *c, int bit_depth)
 {
@@ -36,6 +54,9 @@ static av_cold void h264chroma_init_mmi(H264ChromaContext *c, int bit_depth)
 
 av_cold void ff_h264chroma_init_mips(H264ChromaContext *c, int bit_depth)
 {
+#if HAVE_MSA
+    h264chroma_init_msa(c, bit_depth);
+#endif  // #if HAVE_MSA
 #if HAVE_LOONGSON3
     h264chroma_init_mmi(c, bit_depth);
 #endif /* HAVE_LOONGSON3 */

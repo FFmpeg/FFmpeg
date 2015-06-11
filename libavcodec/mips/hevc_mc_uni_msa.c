@@ -249,7 +249,7 @@ static void copy_width64_msa(uint8_t *src, int32_t src_stride,
     copy_16multx8mult_msa(src, src_stride, dst, dst_stride, height, 64);
 }
 
-uint8_t mc_filt_mask_arr[16 * 3] = {
+static const uint8_t mc_filt_mask_arr[16 * 3] = {
     /* 8 width cases */
     0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8,
     /* 4 width cases */

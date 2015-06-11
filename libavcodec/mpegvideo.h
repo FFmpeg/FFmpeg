@@ -41,6 +41,7 @@
 #include "idctdsp.h"
 #include "me_cmp.h"
 #include "motion_est.h"
+#include "mpegpicture.h"
 #include "mpegvideodsp.h"
 #include "mpegvideoencdsp.h"
 #include "pixblockdsp.h"
@@ -61,7 +62,6 @@
 #define MAX_FCODE 7
 
 #define MAX_THREADS 32
-#define MAX_PICTURE_COUNT 36
 
 #define MAX_B_FRAMES 16
 
@@ -70,8 +70,6 @@
 #define MAX_MB_BYTES (30*16*16*3/8 + 120)
 
 #define INPLACE_OFFSET 16
-
-#define EDGE_WIDTH 16
 
 /* Start codes. */
 #define SEQ_END_CODE            0x000001b7
@@ -82,67 +80,6 @@
 #define SLICE_MAX_START_CODE    0x000001af
 #define EXT_START_CODE          0x000001b5
 #define USER_START_CODE         0x000001b2
-
-/**
- * Picture.
- */
-typedef struct Picture{
-    struct AVFrame *f;
-    ThreadFrame tf;
-
-    AVBufferRef *qscale_table_buf;
-    int8_t *qscale_table;
-
-    AVBufferRef *motion_val_buf[2];
-    int16_t (*motion_val[2])[2];
-
-    AVBufferRef *mb_type_buf;
-    uint32_t *mb_type;          ///< types and macros are defined in mpegutils.h
-
-    AVBufferRef *mbskip_table_buf;
-    uint8_t *mbskip_table;
-
-    AVBufferRef *ref_index_buf[2];
-    int8_t *ref_index[2];
-
-    AVBufferRef *mb_var_buf;
-    uint16_t *mb_var;           ///< Table for MB variances
-
-    AVBufferRef *mc_mb_var_buf;
-    uint16_t *mc_mb_var;        ///< Table for motion compensated MB variances
-
-    int alloc_mb_width;         ///< mb_width used to allocate tables
-    int alloc_mb_height;        ///< mb_height used to allocate tables
-
-    AVBufferRef *mb_mean_buf;
-    uint8_t *mb_mean;           ///< Table for MB luminance
-
-    AVBufferRef *hwaccel_priv_buf;
-    /**
-     * hardware accelerator private data
-     */
-    void *hwaccel_picture_private;
-
-    int field_picture;          ///< whether or not the picture was encoded in separate fields
-
-    int64_t mb_var_sum;         ///< sum of MB variance for current frame
-    int64_t mc_mb_var_sum;      ///< motion compensated MB variance for current frame
-
-    int b_frame_score;
-    int needs_realloc;          ///< Picture needs to be reallocated (eg due to a frame size change)
-
-    int reference;
-    int shared;
-
-    uint64_t error[AV_NUM_DATA_POINTERS];
-} Picture;
-
-typedef struct ScratchpadContext {
-    uint8_t *edge_emu_buffer;     ///< temporary buffer for if MVs point to out-of-frame data
-    uint8_t *rd_scratchpad;       ///< scratchpad for rate distortion mb decision
-    uint8_t *obmc_scratchpad;
-    uint8_t *b_scratchpad;        ///< scratchpad used for writing into write only buffers
-} ScratchpadContext;
 
 /**
  * MpegEncContext.
@@ -694,8 +631,6 @@ void ff_mpv_report_decode_progress(MpegEncContext *s);
 int ff_mpv_frame_start(MpegEncContext *s, AVCodecContext *avctx);
 void ff_mpv_frame_end(MpegEncContext *s);
 
-int ff_mpv_lowest_referenced_row(MpegEncContext *s, int dir);
-
 int ff_mpv_encode_init(AVCodecContext *avctx);
 void ff_mpv_encode_init_x86(MpegEncContext *s);
 
@@ -718,7 +653,6 @@ int ff_mpv_export_qp_table(MpegEncContext *s, AVFrame *f, Picture *p, int qp_typ
 
 void ff_write_quant_matrix(PutBitContext *pb, uint16_t *matrix);
 
-int ff_find_unused_picture(AVCodecContext *avctx, Picture *picture, int shared);
 int ff_update_duplicate_context(MpegEncContext *dst, MpegEncContext *src);
 int ff_mpeg_update_thread_context(AVCodecContext *dst, const AVCodecContext *src);
 void ff_set_qscale(MpegEncContext * s, int qscale);
@@ -737,24 +671,6 @@ void ff_mpv_motion(MpegEncContext *s,
                    uint8_t **ref_picture,
                    op_pixels_func (*pix_op)[4],
                    qpel_mc_func (*qpix_op)[16]);
-
-/**
- * Allocate a Picture.
- * The pixels are allocated/set by calling get_buffer() if shared = 0.
- */
-int ff_alloc_picture(AVCodecContext *avctx, Picture *pic, MotionEstContext *me,
-                     ScratchpadContext *sc, int shared, int encoding,
-                     int chroma_x_shift, int chroma_y_shift, int out_format,
-                     int mb_stride, int mb_width, int mb_height, int b8_stride,
-                     ptrdiff_t *linesize, ptrdiff_t *uvlinesize);
-
-int ff_mpeg_framesize_alloc(AVCodecContext *avctx, MotionEstContext *me,
-                            ScratchpadContext *sc, int linesize);
-/**
- * permute block according to permuatation.
- * @param last last non zero element in scantable order
- */
-void ff_block_permute(int16_t *block, uint8_t *permutation, const uint8_t *scantable, int last);
 
 static inline void ff_update_block_index(MpegEncContext *s){
     const int block_size= 8 >> s->avctx->lowres;
@@ -783,10 +699,5 @@ static inline int get_bits_diff(MpegEncContext *s){
 int ff_rv10_encode_picture_header(MpegEncContext *s, int picture_number);
 int ff_rv_decode_dc(MpegEncContext *s, int n);
 void ff_rv20_encode_picture_header(MpegEncContext *s, int picture_number);
-
-int ff_mpeg_ref_picture(AVCodecContext *avctx, Picture *dst, Picture *src);
-void ff_mpeg_unref_picture(AVCodecContext *avctx, Picture *picture);
-void ff_free_picture_tables(Picture *pic);
-
 
 #endif /* AVCODEC_MPEGVIDEO_H */
