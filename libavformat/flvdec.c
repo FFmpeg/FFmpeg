@@ -737,7 +737,8 @@ skip:
 static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     FLVContext *flv = s->priv_data;
-    int ret, i, type, size, flags, is_audio;
+    int ret, i, size, flags, is_audio;
+    enum FlvTagType type;
     int64_t next, pos;
     int64_t dts, pts = AV_NOPTS_VALUE;
     int sample_rate = 0, channels = 0;
