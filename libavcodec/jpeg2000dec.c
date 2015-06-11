@@ -860,7 +860,30 @@ static int jpeg2000_decode_packets(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile
     s->bit_index = 8;
     switch (tile->codsty[0].prog_order) {
     case JPEG2000_PGOD_RLCP:
-        avpriv_request_sample(s->avctx, "Progression order RLCP");
+        av_log(s->avctx, AV_LOG_WARNING, "Progression order RLCP\n");
+        ok_reslevel = 1;
+        for (reslevelno = 0; ok_reslevel; reslevelno++) {
+            ok_reslevel = 0;
+            for (layno = 0; layno < tile->codsty[0].nlayers; layno++) {
+                for (compno = 0; compno < s->ncomponents; compno++) {
+                    Jpeg2000CodingStyle *codsty = tile->codsty + compno;
+                    Jpeg2000QuantStyle *qntsty  = tile->qntsty + compno;
+                    if (reslevelno < codsty->nreslevels) {
+                        Jpeg2000ResLevel *rlevel = tile->comp[compno].reslevel +
+                                                reslevelno;
+                        ok_reslevel = 1;
+                        for (precno = 0; precno < rlevel->num_precincts_x * rlevel->num_precincts_y; precno++)
+                            if ((ret = jpeg2000_decode_packet(s,
+                                                              codsty, rlevel,
+                                                              precno, layno,
+                                                              qntsty->expn + (reslevelno ? 3 * (reslevelno - 1) + 1 : 0),
+                                                              qntsty->nguardbits)) < 0)
+                                return ret;
+                    }
+                }
+            }
+        }
+        break;
 
     case JPEG2000_PGOD_LRCP:
         for (layno = 0; layno < tile->codsty[0].nlayers; layno++) {
