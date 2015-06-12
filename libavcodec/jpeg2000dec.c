@@ -989,8 +989,11 @@ static int jpeg2000_decode_packets(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile
                         prcy   = ff_jpeg2000_ceildivpow2(y, reducedresno) >> rlevel->log2_prec_height;
                         precno = prcx + rlevel->num_precincts_x * prcy;
 
-                        if (prcx >= rlevel->num_precincts_x || prcy >= rlevel->num_precincts_y)
-                            return AVERROR_PATCHWELCOME;
+                        if (prcx >= rlevel->num_precincts_x || prcy >= rlevel->num_precincts_y) {
+                            av_log(s->avctx, AV_LOG_WARNING, "prc %d %d outside limits %d %d\n",
+                                   prcx, prcy, rlevel->num_precincts_x, rlevel->num_precincts_y);
+                            continue;
+                        }
 
                         for (layno = 0; layno < tile->codsty[0].nlayers; layno++) {
                             if ((ret = jpeg2000_decode_packet(s, tile, &tp_index, codsty, rlevel,
