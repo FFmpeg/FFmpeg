@@ -758,13 +758,19 @@ static int getlblockinc(Jpeg2000DecoderContext *s)
     return res;
 }
 
-static int jpeg2000_decode_packet(Jpeg2000DecoderContext *s,
+static int jpeg2000_decode_packet(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile, int *tp_index,
                                   Jpeg2000CodingStyle *codsty,
                                   Jpeg2000ResLevel *rlevel, int precno,
                                   int layno, uint8_t *expn, int numgbits)
 {
     int bandno, cblkno, ret, nb_code_blocks;
     int cwsno;
+
+    if (bytestream2_get_bytes_left(&s->g) == 0 && s->bit_index == 8) {
+        if (*tp_index < FF_ARRAY_ELEMS(tile->tile_part) - 1) {
+            s->g = tile->tile_part[++(*tp_index)].tpg;
+        }
+    }
 
     if (!(ret = get_bits(s, 1))) {
         jpeg2000_flush(s);
@@ -895,6 +901,7 @@ static int jpeg2000_decode_packets(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile
     int ret = 0;
     int layno, reslevelno, compno, precno, ok_reslevel;
     int x, y;
+    int tp_index = 0;
 
     s->bit_index = 8;
     switch (tile->codsty[0].prog_order) {
@@ -912,7 +919,7 @@ static int jpeg2000_decode_packets(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile
                                                 reslevelno;
                         ok_reslevel = 1;
                         for (precno = 0; precno < rlevel->num_precincts_x * rlevel->num_precincts_y; precno++)
-                            if ((ret = jpeg2000_decode_packet(s,
+                            if ((ret = jpeg2000_decode_packet(s, tile, &tp_index,
                                                               codsty, rlevel,
                                                               precno, layno,
                                                               qntsty->expn + (reslevelno ? 3 * (reslevelno - 1) + 1 : 0),
@@ -937,7 +944,7 @@ static int jpeg2000_decode_packets(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile
                                                 reslevelno;
                         ok_reslevel = 1;
                         for (precno = 0; precno < rlevel->num_precincts_x * rlevel->num_precincts_y; precno++)
-                            if ((ret = jpeg2000_decode_packet(s,
+                            if ((ret = jpeg2000_decode_packet(s, tile, &tp_index,
                                                               codsty, rlevel,
                                                               precno, layno,
                                                               qntsty->expn + (reslevelno ? 3 * (reslevelno - 1) + 1 : 0),
@@ -953,11 +960,6 @@ static int jpeg2000_decode_packets(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile
         for (compno = 0; compno < s->ncomponents; compno++) {
             Jpeg2000CodingStyle *codsty = tile->codsty + compno;
             Jpeg2000QuantStyle *qntsty  = tile->qntsty + compno;
-
-            /* Set bit stream buffer address according to tile-part.
-             * For DCinema one tile-part per component, so can be
-             * indexed by component. */
-            s->g = tile->tile_part[compno].tpg;
 
             /* Position loop (y axis)
              * TODO: Automate computing of step 256.
@@ -989,7 +991,7 @@ static int jpeg2000_decode_packets(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile
                             return AVERROR_PATCHWELCOME;
 
                         for (layno = 0; layno < tile->codsty[0].nlayers; layno++) {
-                            if ((ret = jpeg2000_decode_packet(s, codsty, rlevel,
+                            if ((ret = jpeg2000_decode_packet(s, tile, &tp_index, codsty, rlevel,
                                                               precno, layno,
                                                               qntsty->expn + (reslevelno ? 3 * (reslevelno - 1) + 1 : 0),
                                                               qntsty->nguardbits)) < 0)
