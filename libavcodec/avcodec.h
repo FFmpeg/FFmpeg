@@ -500,6 +500,7 @@ enum AVCodecID {
     AV_CODEC_ID_DSD_MSBF    = MKBETAG('D','S','D','M'),
     AV_CODEC_ID_DSD_LSBF_PLANAR = MKBETAG('D','S','D','1'),
     AV_CODEC_ID_DSD_MSBF_PLANAR = MKBETAG('D','S','D','8'),
+    AV_CODEC_ID_4GV         = MKBETAG('s','4','g','v'),
 
     /* subtitle codecs */
     AV_CODEC_ID_FIRST_SUBTITLE = 0x17000,          ///< A dummy ID pointing at the start of subtitle codecs.
