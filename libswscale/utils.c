@@ -1036,6 +1036,7 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
         return AVERROR(EINVAL);
     }
     }
+    av_assert2(desc_src && desc_dst);
 
     i = flags & (SWS_POINT         |
                  SWS_AREA          |
