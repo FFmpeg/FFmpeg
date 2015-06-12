@@ -201,12 +201,14 @@ int av_picture_crop(AVPicture *dst, const AVPicture *src,
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
     int y_shift;
     int x_shift;
+    int max_step[4];
 
     if (pix_fmt < 0 || pix_fmt >= AV_PIX_FMT_NB)
         return -1;
 
     y_shift = desc->log2_chroma_h;
     x_shift = desc->log2_chroma_w;
+    av_image_fill_max_pixsteps(max_step, NULL, desc);
 
     if (is_yuv_planar(desc)) {
     dst->data[0] = src->data[0] + (top_band * src->linesize[0]) + left_band;
@@ -215,9 +217,7 @@ int av_picture_crop(AVPicture *dst, const AVPicture *src,
     } else{
         if(top_band % (1<<y_shift) || left_band % (1<<x_shift))
             return -1;
-        if(left_band) //FIXME add support for this too
-            return -1;
-        dst->data[0] = src->data[0] + (top_band * src->linesize[0]) + left_band;
+        dst->data[0] = src->data[0] + (top_band * src->linesize[0]) + (left_band * max_step[0]);
     }
 
     dst->linesize[0] = src->linesize[0];
