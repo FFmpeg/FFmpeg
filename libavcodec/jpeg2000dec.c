@@ -171,6 +171,8 @@ static int pix_fmt_match(enum AVPixelFormat pix_fmt, int components,
     int match = 1;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
 
+    av_assert2(desc);
+
     if (desc->nb_components != components) {
         return 0;
     }
