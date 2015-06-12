@@ -860,7 +860,8 @@ static int seg_write_trailer(struct AVFormatContext *s)
     if (!seg->write_header_trailer) {
         if ((ret = segment_end(s, 0, 1)) < 0)
             goto fail;
-        open_null_ctx(&oc->pb);
+        if ((ret = open_null_ctx(&oc->pb)) < 0)
+            goto fail;
         ret = av_write_trailer(oc);
         close_null_ctxp(&oc->pb);
     } else {
