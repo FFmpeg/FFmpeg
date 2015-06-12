@@ -59,6 +59,7 @@
 #include "internal.h"
 #include "bytestream.h"
 #include "wmv2.h"
+#include "rv10.h"
 #include <limits.h>
 #include "sp5x.h"
 
