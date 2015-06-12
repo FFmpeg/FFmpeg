@@ -387,6 +387,7 @@ EXPORTS
     av_sha_final
     av_sha_init
     av_sha_update
+    av_sincos_sf
     av_small_strptime
     av_stereo3d_alloc
     av_stereo3d_create_side_data

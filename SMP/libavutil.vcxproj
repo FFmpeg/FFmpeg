@@ -169,6 +169,8 @@
     </ClCompile>
     <ClCompile Include="..\libavutil\sha512.c">
     </ClCompile>
+    <ClCompile Include="..\libavutil\softfloat.c">
+    </ClCompile>
     <ClCompile Include="..\libavutil\stereo3d.c">
     </ClCompile>
     <ClCompile Include="..\libavutil\threadmessage.c">
