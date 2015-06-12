@@ -220,7 +220,8 @@ static int pix_fmt_match(enum AVPixelFormat pix_fmt, int components,
 static const enum AVPixelFormat rgb_pix_fmts[]  = {RGB_PIXEL_FORMATS};
 static const enum AVPixelFormat gray_pix_fmts[] = {GRAY_PIXEL_FORMATS};
 static const enum AVPixelFormat yuv_pix_fmts[]  = {YUV_PIXEL_FORMATS};
-static const enum AVPixelFormat xyz_pix_fmts[]  = {XYZ_PIXEL_FORMATS};
+static const enum AVPixelFormat xyz_pix_fmts[]  = {XYZ_PIXEL_FORMATS,
+                                                   YUV_PIXEL_FORMATS};
 static const enum AVPixelFormat all_pix_fmts[]  = {RGB_PIXEL_FORMATS,
                                                    GRAY_PIXEL_FORMATS,
                                                    YUV_PIXEL_FORMATS,
