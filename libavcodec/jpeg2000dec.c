@@ -899,7 +899,7 @@ static int jpeg2000_decode_packets(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile
     s->bit_index = 8;
     switch (tile->codsty[0].prog_order) {
     case JPEG2000_PGOD_RLCP:
-        av_log(s->avctx, AV_LOG_WARNING, "Progression order RLCP\n");
+        av_log(s->avctx, AV_LOG_DEBUG, "Progression order RLCP\n");
         ok_reslevel = 1;
         for (reslevelno = 0; ok_reslevel; reslevelno++) {
             ok_reslevel = 0;
