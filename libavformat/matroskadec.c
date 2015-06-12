@@ -995,6 +995,15 @@ static int ebml_parse_nest(MatroskaDemuxContext *matroska, EbmlSyntax *syntax,
     return res;
 }
 
+static int is_ebml_id_valid(uint32_t id)
+{
+    // Due to endian nonsense in Matroska, the highest byte with any bits set
+    // will contain the leading length bit. This bit in turn identifies the
+    // total byte length of the element by its position within the byte.
+    unsigned int bits = av_log2(id);
+    return id && (bits + 7) / 8 ==  (8 - bits % 8);
+}
+
 /*
  * Allocate and return the entry for the level1 element with the given ID. If
  * an entry already exists, return the existing entry.
@@ -1004,6 +1013,9 @@ static MatroskaLevel1Element *matroska_find_level1_elem(MatroskaDemuxContext *ma
 {
     int i;
     MatroskaLevel1Element *elem;
+
+    if (!is_ebml_id_valid(id))
+        return NULL;
 
     // Some files link to all clusters; useless.
     if (id == MATROSKA_ID_CLUSTER)
