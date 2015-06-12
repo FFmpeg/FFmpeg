@@ -682,7 +682,7 @@ static uint8_t get_plt(Jpeg2000DecoderContext *s, int n)
 {
     int i;
 
-    av_log(s->avctx, AV_LOG_ERROR,
+    av_log(s->avctx, AV_LOG_DEBUG,
             "PLT marker at pos 0x%X\n", bytestream2_tell(&s->g) - 4);
 
     /*Zplt =*/ bytestream2_get_byte(&s->g);
