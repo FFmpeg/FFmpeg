@@ -163,11 +163,15 @@ typedef struct Jpeg2000Cblk {
     uint8_t ninclpasses; // number coding of passes included in codestream
     uint8_t nonzerobits;
     uint16_t length;
-    uint16_t lengthinc;
+    uint16_t lengthinc[JPEG2000_MAX_PASSES];
+    uint8_t nb_lengthinc;
     uint8_t lblock;
     uint8_t zero;
     uint8_t data[8192];
-    Jpeg2000Pass passes[100];
+    int nb_terminations;
+    int nb_terminationsinc;
+    int data_start[JPEG2000_MAX_PASSES];
+    Jpeg2000Pass passes[JPEG2000_MAX_PASSES];
     uint16_t coord[2][2]; // border coordinates {{x0, x1}, {y0, y1}}
 } Jpeg2000Cblk; // code block
 
@@ -263,5 +267,22 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
 void ff_jpeg2000_reinit(Jpeg2000Component *comp, Jpeg2000CodingStyle *codsty);
 
 void ff_jpeg2000_cleanup(Jpeg2000Component *comp, Jpeg2000CodingStyle *codsty);
+
+static inline int needs_termination(int style, int passno) {
+    if (style & JPEG2000_CBLK_BYPASS) {
+        int type = passno % 3;
+        passno /= 3;
+        if (type == 0 && passno > 2)
+            return 2;
+        if (type == 2 && passno > 2)
+            return 1;
+        if (style & JPEG2000_CBLK_TERMALL) {
+            return passno > 2 ? 2 : 1;
+        }
+    }
+    if (style & JPEG2000_CBLK_TERMALL)
+        return 1;
+    return 0;
+}
 
 #endif /* AVCODEC_JPEG2000_H */
