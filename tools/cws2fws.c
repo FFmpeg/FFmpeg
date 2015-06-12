@@ -31,6 +31,7 @@ int main(int argc, char *argv[])
     char buf_in[1024], buf_out[65536];
     z_stream zstream;
     struct stat statbuf;
+    int ret = 1;
 
     if (argc < 3) {
         printf("Usage: %s <infile.swf> <outfile.swf>\n", argv[0]);
@@ -52,14 +53,12 @@ int main(int argc, char *argv[])
 
     if (read(fd_in, &buf_in, 8) != 8) {
         printf("Header error\n");
-        close(fd_in);
-        close(fd_out);
-        return 1;
+        goto out;
     }
 
     if (buf_in[0] != 'C' || buf_in[1] != 'W' || buf_in[2] != 'S') {
         printf("Not a compressed flash file\n");
-        return 1;
+        goto out;
     }
 
     fstat(fd_in, &statbuf);
@@ -73,7 +72,7 @@ int main(int argc, char *argv[])
     buf_in[0] = 'F';
     if (write(fd_out, &buf_in, 8) < 8) {
         perror("Error writing output file");
-        return 1;
+        goto out;
     }
 
     zstream.zalloc = NULL;
@@ -97,7 +96,7 @@ int main(int argc, char *argv[])
         if (ret != Z_STREAM_END && ret != Z_OK) {
             printf("Error while decompressing: %d\n", ret);
             inflateEnd(&zstream);
-            return 1;
+            goto out;
         }
 
         dbgprintf("a_in: %d t_in: %lu a_out: %d t_out: %lu -- %lu out\n",
@@ -107,7 +106,8 @@ int main(int argc, char *argv[])
         if (write(fd_out, &buf_out, zstream.total_out - last_out) <
             zstream.total_out - last_out) {
             perror("Error writing output file");
-            return 1;
+            inflateEnd(&zstream);
+            goto out;
         }
 
         i += len;
@@ -128,12 +128,15 @@ int main(int argc, char *argv[])
         lseek(fd_out, 4, SEEK_SET);
         if (write(fd_out, &buf_in, 4) < 4) {
             perror("Error writing output file");
-            return 1;
+            inflateEnd(&zstream);
+            goto out;
         }
     }
 
+    ret = 0;
     inflateEnd(&zstream);
+out:
     close(fd_in);
     close(fd_out);
-    return 0;
+    return ret;
 }
