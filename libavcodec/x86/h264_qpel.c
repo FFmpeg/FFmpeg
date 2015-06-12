@@ -23,8 +23,8 @@
 #include "libavutil/cpu.h"
 #include "libavutil/x86/asm.h"
 #include "libavutil/x86/cpu.h"
+#include "libavcodec/h264.h"
 #include "libavcodec/h264qpel.h"
-#include "libavcodec/mpegvideo.h"
 #include "libavcodec/pixels.h"
 #include "fpel.h"
 
