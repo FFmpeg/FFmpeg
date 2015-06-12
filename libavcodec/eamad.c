@@ -29,6 +29,7 @@
  */
 
 #include "avcodec.h"
+#include "blockdsp.h"
 #include "bytestream.h"
 #include "bswapdsp.h"
 #include "get_bits.h"
@@ -36,9 +37,8 @@
 #include "eaidct.h"
 #include "idctdsp.h"
 #include "internal.h"
-#include "mpeg12.h"
 #include "mpeg12data.h"
-#include "libavutil/imgutils.h"
+#include "mpeg12vlc.h"
 
 #define EA_PREAMBLE_SIZE    8
 #define MADk_TAG MKTAG('M', 'A', 'D', 'k')    /* MAD i-frame */
