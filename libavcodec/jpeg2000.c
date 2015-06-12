@@ -468,7 +468,7 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
                     cblk->zero      = 0;
                     cblk->lblock    = 3;
                     cblk->length    = 0;
-                    cblk->lengthinc = 0;
+                    memset(cblk->lengthinc, 0, sizeof(cblk->lengthinc));
                     cblk->npasses   = 0;
                 }
             }

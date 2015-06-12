@@ -97,6 +97,7 @@ int ffio_init_context(AVIOContext *s,
     s->seekable        = seek ? AVIO_SEEKABLE_NORMAL : 0;
     s->max_packet_size = 0;
     s->update_checksum = NULL;
+    s->short_seek_threshold = SHORT_SEEK_THRESHOLD;
 
     if (!read_packet && !write_flag) {
         s->pos     = buffer_size;
@@ -232,7 +233,7 @@ int64_t avio_seek(AVIOContext *s, int64_t offset, int whence)
         /* can do the seek inside the buffer */
         s->buf_ptr = s->buffer + offset1;
     } else if ((!s->seekable ||
-               offset1 <= s->buf_end + SHORT_SEEK_THRESHOLD - s->buffer) &&
+               offset1 <= s->buf_end + s->short_seek_threshold - s->buffer) &&
                !s->write_flag && offset1 >= 0 &&
                (!s->direct || !s->seek) &&
               (whence != SEEK_END || force)) {

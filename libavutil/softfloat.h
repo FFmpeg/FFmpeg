@@ -36,6 +36,12 @@ typedef struct SoftFloat{
     int32_t  exp;
 }SoftFloat;
 
+static inline av_const double av_sf2double(SoftFloat v) {
+    v.exp -= ONE_BITS +1;
+    if(v.exp > 0) return (double)v.mant * (double)(1 << v.exp);
+    else          return (double)v.mant / (double)(1 << (-v.exp));
+}
+
 static av_const SoftFloat av_normalize_sf(SoftFloat a){
     if(a.mant){
 #if 1

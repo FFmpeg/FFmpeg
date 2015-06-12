@@ -4033,6 +4033,9 @@ elif enabled ppc; then
             disable altivec
             disable dcbzl
         ;;
+        *)
+            disable vsx
+        ;;
     esac
 
 elif enabled sparc; then
