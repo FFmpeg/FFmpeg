@@ -60,7 +60,12 @@ void ff_rv20_encode_picture_header(MpegEncContext *s, int picture_number){
     }
 }
 
-FF_MPV_GENERIC_CLASS(rv20)
+static const AVClass rv20_class = {
+    .class_name = "rv20 encoder",
+    .item_name  = av_default_item_name,
+    .option     = ff_mpv_generic_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
 
 AVCodec ff_rv20_encoder = {
     .name           = "rv20",

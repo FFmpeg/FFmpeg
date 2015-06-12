@@ -213,7 +213,12 @@ void ff_wmv2_encode_mb(MpegEncContext *s, int16_t block[6][64],
         s->p_tex_bits += get_bits_diff(s);
 }
 
-FF_MPV_GENERIC_CLASS(wmv2)
+static const AVClass wmv2_class = {
+    .class_name = "wmv2 encoder",
+    .item_name  = av_default_item_name,
+    .option     = ff_mpv_generic_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
 
 AVCodec ff_wmv2_encoder = {
     .name           = "wmv2",

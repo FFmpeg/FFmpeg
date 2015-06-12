@@ -4667,7 +4667,12 @@ AVCodec ff_h263p_encoder = {
     .priv_class     = &h263p_class,
 };
 
-FF_MPV_GENERIC_CLASS(msmpeg4v2)
+static const AVClass msmpeg4v2_class = {
+    .class_name = "msmpeg4v2 encoder",
+    .item_name  = av_default_item_name,
+    .option     = ff_mpv_generic_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
 
 AVCodec ff_msmpeg4v2_encoder = {
     .name           = "msmpeg4v2",
@@ -4682,7 +4687,12 @@ AVCodec ff_msmpeg4v2_encoder = {
     .priv_class     = &msmpeg4v2_class,
 };
 
-FF_MPV_GENERIC_CLASS(msmpeg4v3)
+static const AVClass msmpeg4v3_class = {
+    .class_name = "msmpeg4v3 encoder",
+    .item_name  = av_default_item_name,
+    .option     = ff_mpv_generic_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
 
 AVCodec ff_msmpeg4v3_encoder = {
     .name           = "msmpeg4",
@@ -4697,7 +4707,12 @@ AVCodec ff_msmpeg4v3_encoder = {
     .priv_class     = &msmpeg4v3_class,
 };
 
-FF_MPV_GENERIC_CLASS(wmv1)
+static const AVClass wmv1_class = {
+    .class_name = "wmv1 encoder",
+    .item_name  = av_default_item_name,
+    .option     = ff_mpv_generic_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
 
 AVCodec ff_wmv1_encoder = {
     .name           = "wmv1",

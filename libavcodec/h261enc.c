@@ -378,7 +378,12 @@ av_cold void ff_h261_encode_init(MpegEncContext *s)
     s->intra_ac_vlc_last_length = s->inter_ac_vlc_last_length = uni_h261_rl_len + 128*64;
 }
 
-FF_MPV_GENERIC_CLASS(h261)
+static const AVClass h261_class = {
+    .class_name = "h261 encoder",
+    .item_name  = av_default_item_name,
+    .option     = ff_mpv_generic_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
 
 AVCodec ff_h261_encoder = {
     .name           = "h261",
