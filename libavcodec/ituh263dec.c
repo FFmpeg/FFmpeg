@@ -36,6 +36,7 @@
 #include "avcodec.h"
 #include "mpegvideo.h"
 #include "h263.h"
+#include "h263data.h"
 #include "internal.h"
 #include "mathops.h"
 #include "mpegutils.h"

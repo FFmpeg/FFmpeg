@@ -43,6 +43,7 @@
 #include "mpegvideodata.h"
 #include "h261.h"
 #include "h263.h"
+#include "h263data.h"
 #include "mjpegenc_common.h"
 #include "mathops.h"
 #include "mpegutils.h"
