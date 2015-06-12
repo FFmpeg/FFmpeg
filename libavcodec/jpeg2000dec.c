@@ -805,6 +805,11 @@ static int jpeg2000_decode_packet(Jpeg2000DecoderContext *s,
             }
             if ((newpasses = getnpasses(s)) < 0)
                 return newpasses;
+            av_assert2(newpasses > 0);
+            if (cblk->npasses + newpasses >= JPEG2000_MAX_PASSES) {
+                avpriv_request_sample(s->avctx, "Too many passes\n");
+                return AVERROR_PATCHWELCOME;
+            }
             if ((llen = getlblockinc(s)) < 0)
                 return llen;
             if (cblk->lblock + llen + av_log2(newpasses) > 16) {

@@ -71,6 +71,8 @@ enum Jpeg2000Quantsty { // quantization style
 #define JPEG2000_MAX_DECLEVELS 32
 #define JPEG2000_MAX_RESLEVELS (JPEG2000_MAX_DECLEVELS + 1)
 
+#define JPEG2000_MAX_PASSES 100
+
 // T1 flags
 // flags determining significance of neighbor coefficients
 #define JPEG2000_T1_SIG_N  0x0001
