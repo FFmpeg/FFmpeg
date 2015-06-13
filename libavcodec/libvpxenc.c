@@ -128,6 +128,9 @@ static const char *const ctlidstr[] = {
     [VP9E_SET_TILE_ROWS]               = "VP9E_SET_TILE_ROWS",
     [VP9E_SET_FRAME_PARALLEL_DECODING] = "VP9E_SET_FRAME_PARALLEL_DECODING",
     [VP9E_SET_AQ_MODE]                 = "VP9E_SET_AQ_MODE",
+#if VPX_ENCODER_ABI_VERSION > 8
+    [VP9E_SET_COLOR_SPACE]             = "VP9E_SET_COLOR_SPACE",
+#endif
 #endif
 };
 
@@ -349,6 +352,29 @@ static int set_pix_fmt(AVCodecContext *avctx, vpx_codec_caps_t codec_caps,
     av_log(avctx, AV_LOG_ERROR, "Unsupported pixel format.\n");
     return AVERROR_INVALIDDATA;
 }
+
+#if VPX_ENCODER_ABI_VERSION > 8
+static void set_colorspace(AVCodecContext *avctx)
+{
+    enum vpx_color_space vpx_cs;
+
+    switch (avctx->colorspace) {
+    case AVCOL_SPC_RGB:         vpx_cs = VPX_CS_SRGB;      break;
+    case AVCOL_SPC_BT709:       vpx_cs = VPX_CS_BT_709;    break;
+    case AVCOL_SPC_UNSPECIFIED: vpx_cs = VPX_CS_UNKNOWN;   break;
+    case AVCOL_SPC_RESERVED:    vpx_cs = VPX_CS_RESERVED;  break;
+    case AVCOL_SPC_BT470BG:     vpx_cs = VPX_CS_BT_601;    break;
+    case AVCOL_SPC_SMPTE170M:   vpx_cs = VPX_CS_SMPTE_170; break;
+    case AVCOL_SPC_SMPTE240M:   vpx_cs = VPX_CS_SMPTE_240; break;
+    case AVCOL_SPC_BT2020_NCL:  vpx_cs = VPX_CS_BT_2020;   break;
+    default:
+        av_log(avctx, AV_LOG_WARNING, "Unsupported colorspace (%d)\n",
+               avctx->colorspace);
+        return;
+    }
+    codecctl_int(avctx, VP9E_SET_COLOR_SPACE, vpx_cs);
+}
+#endif
 #endif
 
 static av_cold int vpx_init(AVCodecContext *avctx,
@@ -593,6 +619,9 @@ static av_cold int vpx_init(AVCodecContext *avctx,
             codecctl_int(avctx, VP9E_SET_FRAME_PARALLEL_DECODING, ctx->frame_parallel);
         if (ctx->aq_mode >= 0)
             codecctl_int(avctx, VP9E_SET_AQ_MODE, ctx->aq_mode);
+#if VPX_ENCODER_ABI_VERSION > 8
+        set_colorspace(avctx);
+#endif
     }
 #endif
 
