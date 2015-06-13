@@ -215,6 +215,7 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
             (comp->coord[1][1] - comp->coord[1][0]);
 
     if (codsty->transform == FF_DWT97) {
+        csize += FF_INPUT_BUFFER_PADDING_SIZE / sizeof(*comp->f_data);
         comp->i_data = NULL;
         comp->f_data = av_mallocz_array(csize, sizeof(*comp->f_data));
         if (!comp->f_data)

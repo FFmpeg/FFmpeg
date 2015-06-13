@@ -1,7 +1,6 @@
 /*
- * JPEG 2000 DSP functions
- * Copyright (c) 2007 Kamil Nowosad
- * Copyright (c) 2013 Nicolas Bertrand <nicoinattendu@gmail.com>
+ * SIMD optimized JPEG 2000 DSP functions
+ * Copyright (c) 2015 James Almer
  *
  * This file is part of FFmpeg.
  *
@@ -20,17 +19,22 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_JPEG2000DSP_H
-#define AVCODEC_JPEG2000DSP_H
+#include "libavutil/attributes.h"
+#include "libavutil/cpu.h"
+#include "libavutil/x86/cpu.h"
+#include "libavcodec/jpeg2000dsp.h"
 
-#include <stdint.h>
-#include "jpeg2000dwt.h"
+void ff_ict_float_sse(void *src0, void *src1, void *src2, int csize);
+void ff_ict_float_avx(void *src0, void *src1, void *src2, int csize);
 
-typedef struct Jpeg2000DSPContext {
-    void (*mct_decode[FF_DWT_NB])(void *src0, void *src1, void *src2, int csize);
-} Jpeg2000DSPContext;
+av_cold void ff_jpeg2000dsp_init_x86(Jpeg2000DSPContext *c)
+{
+    int cpu_flags = av_get_cpu_flags();
+    if (EXTERNAL_SSE(cpu_flags)) {
+        c->mct_decode[FF_DWT97] = ff_ict_float_sse;
+    }
 
-void ff_jpeg2000dsp_init(Jpeg2000DSPContext *c);
-void ff_jpeg2000dsp_init_x86(Jpeg2000DSPContext *c);
-
-#endif /* AVCODEC_JPEG2000DSP_H */
+    if (EXTERNAL_AVX_FAST(cpu_flags)) {
+        c->mct_decode[FF_DWT97] = ff_ict_float_avx;
+    }
+}
