@@ -3029,6 +3029,45 @@ colorbalance=rs=.3
 @end example
 @end itemize
 
+@section colorkey
+RGB colorspace color keying.
+
+The filter accepts the following options:
+
+@table @option
+@item color
+The color which will be replaced with transparency.
+
+@item similarity
+Similarity percentage with the key color.
+
+0.01 matches only the exact key color, while 1.0 matches everything.
+
+@item blend
+Blend percentage.
+
+0.0 makes pixels either fully transparent, or not transparent at all.
+
+Higher values result in semi-transparent pixels, with a higher transparency
+the more similar the pixels color is to the key color.
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Make every green pixel in the input image transparent:
+@example
+ffmpeg -i input.png -vf colorkey=green out.png
+@end example
+
+@item
+Overlay a greenscreen-video on top of a static background image.
+@example
+ffmpeg -i background.png -i video.mp4 -filter_complex "[1:v]colorkey=0x3BBD1E:0.3:0.2[ckout];[0:v][ckout]overlay[out]" -map "[out]" output.flv
+@end example
+@end itemize
+
 @section colorlevels
 
 Adjust video input frames using levels.
