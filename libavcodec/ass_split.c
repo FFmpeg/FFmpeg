@@ -356,6 +356,8 @@ static int ass_split(ASSSplitContext *ctx, const char *buf)
 ASSSplitContext *ff_ass_split(const char *buf)
 {
     ASSSplitContext *ctx = av_mallocz(sizeof(*ctx));
+    if (!ctx)
+        return NULL;
     ctx->current_section = -1;
     if (ass_split(ctx, buf) < 0) {
         ff_ass_split_free(ctx);
