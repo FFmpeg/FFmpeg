@@ -1383,7 +1383,7 @@ DERING_CORE((%0, %1, 8)    ,(%%REGd, %1, 4),%%mm2,%%mm4,%%mm0,%%mm3,%%mm5,%%mm1,
 #ifdef DEBUG_DERING_THRESHOLD
                     __asm__ volatile("emms\n\t":);
                     {
-                    static long long numPixels=0;
+                    static uint64_t numPixels=0;
                     if(x!=1 && x!=8 && y!=1 && y!=8) numPixels++;
 //                    if((max-min)<20 || (max-min)*QP<200)
 //                    if((max-min)*QP < 500)

@@ -1,6 +1,5 @@
 /*
- * H.26L/H.264/AVC/JVT/14496-10/... encoder/decoder
- * Copyright (c) 2003-2010 Michael Niedermayer <michaelni@gmx.at>
+ * RV10/RV20 decoder
  *
  * This file is part of FFmpeg.
  *
@@ -19,22 +18,16 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_H264QPEL_H
-#define AVCODEC_H264QPEL_H
+#ifndef AVCODEC_RV10_H
+#define AVCODEC_RV10_H
 
-#include "qpeldsp.h"
+#include <stdint.h>
 
-typedef struct H264QpelContext {
-    qpel_mc_func put_h264_qpel_pixels_tab[4][16];
-    qpel_mc_func avg_h264_qpel_pixels_tab[4][16];
-} H264QpelContext;
+#include "mpegvideo.h"
 
-void ff_h264qpel_init(H264QpelContext *c, int bit_depth);
+int ff_rv_decode_dc(MpegEncContext *s, int n);
 
-void ff_h264qpel_init_aarch64(H264QpelContext *c, int bit_depth);
-void ff_h264qpel_init_arm(H264QpelContext *c, int bit_depth);
-void ff_h264qpel_init_ppc(H264QpelContext *c, int bit_depth);
-void ff_h264qpel_init_x86(H264QpelContext *c, int bit_depth);
-void ff_h264qpel_init_mips(H264QpelContext *c, int bit_depth);
+int ff_rv10_encode_picture_header(MpegEncContext *s, int picture_number);
+void ff_rv20_encode_picture_header(MpegEncContext *s, int picture_number);
 
-#endif /* AVCODEC_H264QPEL_H */
+#endif /* AVCODEC_RV10_H */

@@ -186,7 +186,7 @@ static int on2avc_decode_band_scales(On2AVCContext *c, GetBitContext *gb)
 
 static inline float on2avc_scale(int v, float scale)
 {
-    return v * sqrtf(fabsf(v)) * scale;
+    return v * sqrtf(abs(v)) * scale;
 }
 
 // spectral data is coded completely differently - there are no unsigned codebooks

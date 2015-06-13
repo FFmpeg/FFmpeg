@@ -166,6 +166,7 @@ typedef struct MXFDescriptor {
     enum MXFMetadataSetType type;
     UID essence_container_ul;
     UID essence_codec_ul;
+    UID codec_ul;
     AVRational sample_rate;
     AVRational aspect_ratio;
     int width;
@@ -974,6 +975,9 @@ static int mxf_read_generic_descriptor(void *arg, AVIOContext *pb, int tag, int 
     case 0x3004:
         avio_read(pb, descriptor->essence_container_ul, 16);
         break;
+    case 0x3005:
+        avio_read(pb, descriptor->codec_ul, 16);
+        break;
     case 0x3006:
         descriptor->linked_track_id = avio_rb32(pb);
         break;
@@ -1149,6 +1153,11 @@ static const MXFCodecUL mxf_sound_essence_container_uls[] = {
 static const MXFCodecUL mxf_data_essence_container_uls[] = {
     { { 0x06,0x0e,0x2b,0x34,0x04,0x01,0x01,0x09,0x0d,0x01,0x03,0x01,0x02,0x0e,0x00,0x00 }, 16, 0 },
     { { 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 },  0, AV_CODEC_ID_NONE },
+};
+
+static const MXFCodecUL mxf_codec_uls[] = {
+    { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x09,0x04,0x01,0x02,0x02,0x03,0x01,0x01,0x00 }, 14,   AV_CODEC_ID_JPEG2000 },
+    { { 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 },  0,      AV_CODEC_ID_NONE },
 };
 
 static const char* const mxf_data_essence_descriptor[] = {
@@ -1950,6 +1959,11 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
         /* TODO: drop PictureEssenceCoding and SoundEssenceCompression, only check EssenceContainer */
         codec_ul = mxf_get_codec_ul(ff_mxf_codec_uls, &descriptor->essence_codec_ul);
         st->codec->codec_id = (enum AVCodecID)codec_ul->id;
+        if (st->codec->codec_id == AV_CODEC_ID_NONE) {
+            codec_ul = mxf_get_codec_ul(mxf_codec_uls, &descriptor->codec_ul);
+            st->codec->codec_id = (enum AVCodecID)codec_ul->id;
+        }
+
         av_log(mxf->fc, AV_LOG_VERBOSE, "%s: Universal Label: ",
                avcodec_get_name(st->codec->codec_id));
         for (k = 0; k < 16; k++) {

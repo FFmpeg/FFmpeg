@@ -591,6 +591,9 @@ static int h264_init_context(AVCodecContext *avctx, H264Context *h)
     int i;
 
     h->avctx                 = avctx;
+    h->backup_width          = -1;
+    h->backup_height         = -1;
+    h->backup_pix_fmt        = AV_PIX_FMT_NONE;
     h->dequant_coeff_pps     = -1;
     h->current_sps_id        = -1;
     h->cur_chroma_format_idc = -1;
@@ -1675,6 +1678,14 @@ static int output_frame(H264Context *h, AVFrame *dst, H264Picture *srcp)
 
     av_dict_set(&dst->metadata, "stereo_mode", ff_h264_sei_stereo_mode(h), 0);
 
+    h->backup_width   = h->avctx->width;
+    h->backup_height  = h->avctx->height;
+    h->backup_pix_fmt = h->avctx->pix_fmt;
+
+    h->avctx->width   = dst->width;
+    h->avctx->height  = dst->height;
+    h->avctx->pix_fmt = dst->format;
+
     if (srcp->sei_recovery_frame_cnt == 0)
         dst->key_frame = 1;
     if (!srcp->crop)
@@ -1725,6 +1736,19 @@ static int h264_decode_frame(AVCodecContext *avctx, void *data,
     int ret;
 
     h->flags = avctx->flags;
+
+    if (h->backup_width != -1) {
+        avctx->width    = h->backup_width;
+        h->backup_width = -1;
+    }
+    if (h->backup_height != -1) {
+        avctx->height    = h->backup_height;
+        h->backup_height = -1;
+    }
+    if (h->backup_pix_fmt != AV_PIX_FMT_NONE) {
+        avctx->pix_fmt    = h->backup_pix_fmt;
+        h->backup_pix_fmt = AV_PIX_FMT_NONE;
+    }
 
     ff_h264_unref_picture(h, &h->last_pic_for_ec);
 

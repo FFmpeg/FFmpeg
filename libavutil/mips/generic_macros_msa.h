@@ -883,6 +883,14 @@
 }
 #define VSHF_H2_SH(...) VSHF_H2(v8i16, __VA_ARGS__)
 
+#define VSHF_H3(RTYPE, in0, in1, in2, in3, in4, in5, mask0, mask1, mask2,  \
+                out0, out1, out2)                                          \
+{                                                                          \
+    VSHF_H2(RTYPE, in0, in1, in2, in3, mask0, mask1, out0, out1);          \
+    out2 = (RTYPE) __msa_vshf_h((v8i16) mask2, (v8i16) in5, (v8i16) in4);  \
+}
+#define VSHF_H3_SH(...) VSHF_H3(v8i16, __VA_ARGS__)
+
 /* Description : Shuffle byte vector elements as per mask vector
    Arguments   : Inputs  - in0, in1, in2, in3, mask0, mask1
                  Outputs - out0, out1
@@ -1107,6 +1115,29 @@
     out_m;                                                \
 } )
 
+/* Description : Horizontal addition of signed byte vector elements
+   Arguments   : Inputs  - in0, in1
+                 Outputs - out0, out1
+                 Return Type - as per RTYPE
+   Details     : Each signed odd byte element from 'in0' is added to
+                 even signed byte element from 'in0' (pairwise) and the
+                 halfword result is stored in 'out0'
+*/
+#define HADD_SB2(RTYPE, in0, in1, out0, out1)                 \
+{                                                             \
+    out0 = (RTYPE) __msa_hadd_s_h((v16i8) in0, (v16i8) in0);  \
+    out1 = (RTYPE) __msa_hadd_s_h((v16i8) in1, (v16i8) in1);  \
+}
+#define HADD_SB2_SH(...) HADD_SB2(v8i16, __VA_ARGS__)
+
+#define HADD_SB4(RTYPE, in0, in1, in2, in3, out0, out1, out2, out3)  \
+{                                                                    \
+    HADD_SB2(RTYPE, in0, in1, out0, out1);                           \
+    HADD_SB2(RTYPE, in2, in3, out2, out3);                           \
+}
+#define HADD_SB4_UH(...) HADD_SB4(v8u16, __VA_ARGS__)
+#define HADD_SB4_SH(...) HADD_SB4(v8i16, __VA_ARGS__)
+
 /* Description : Horizontal addition of unsigned byte vector elements
    Arguments   : Inputs  - in0, in1
                  Outputs - out0, out1
@@ -1212,6 +1243,8 @@
     out1 = (RTYPE) __msa_ilvev_h((v8i16) in3, (v8i16) in2);  \
 }
 #define ILVEV_H2_UB(...) ILVEV_H2(v16u8, __VA_ARGS__)
+#define ILVEV_H2_SH(...) ILVEV_H2(v8i16, __VA_ARGS__)
+#define ILVEV_H2_SW(...) ILVEV_H2(v4i32, __VA_ARGS__)
 
 /* Description : Interleave even word elements from vectors
    Arguments   : Inputs  - in0, in1, in2, in3
@@ -1737,6 +1770,24 @@
     PCKEV_D2(RTYPE, in4, in5, in6, in7, out2, out3);             \
 }
 #define PCKEV_D4_UB(...) PCKEV_D4(v16u8, __VA_ARGS__)
+
+/* Description : Pack odd double word elements of vector pairs
+   Arguments   : Inputs  - in0, in1
+                 Outputs - out0, out1
+                 Return Type - as per RTYPE
+   Details     : As operation is on same input 'in0' vector, index 1 double word
+                 element is overwritten to index 0 and result is written to out0
+                 As operation is on same input 'in1' vector, index 1 double word
+                 element is overwritten to index 0 and result is written to out1
+*/
+#define PCKOD_D2(RTYPE, in0, in1, in2, in3, out0, out1)      \
+{                                                            \
+    out0 = (RTYPE) __msa_pckod_d((v2i64) in0, (v2i64) in1);  \
+    out1 = (RTYPE) __msa_pckod_d((v2i64) in2, (v2i64) in3);  \
+}
+#define PCKOD_D2_UB(...) PCKOD_D2(v16u8, __VA_ARGS__)
+#define PCKOD_D2_SH(...) PCKOD_D2(v8i16, __VA_ARGS__)
+#define PCKOD_D2_SD(...) PCKOD_D2(v2i64, __VA_ARGS__)
 
 /* Description : Each byte element is logically xor'ed with immediate 128
    Arguments   : Inputs  - in0, in1
@@ -2336,6 +2387,37 @@
     out3 = (v4i32) __msa_ilvl_d((v2i64) s3_m, (v2i64) s1_m);            \
 }
 
+/* Description : Average rounded byte elements from pair of vectors and store
+                 8x4 byte block in destination memory
+   Arguments   : Inputs  - in0, in1, in2, in3, in4, in5, in6, in7, pdst, stride
+                 Outputs -
+                 Return Type -
+   Details     : Each byte element from input vector pair 'in0' and 'in1' are
+                 average rounded (a + b + 1)/2 and stored in 'tmp0_m'
+                 Each byte element from input vector pair 'in2' and 'in3' are
+                 average rounded (a + b + 1)/2 and stored in 'tmp1_m'
+                 Each byte element from input vector pair 'in4' and 'in5' are
+                 average rounded (a + b + 1)/2 and stored in 'tmp2_m'
+                 Each byte element from input vector pair 'in6' and 'in7' are
+                 average rounded (a + b + 1)/2 and stored in 'tmp3_m'
+                 The half vector results from all 4 vectors are stored in
+                 destination memory as 8x4 byte block
+*/
+#define AVER_ST8x4_UB(in0, in1, in2, in3, in4, in5, in6, in7, pdst, stride)  \
+{                                                                            \
+    uint64_t out0_m, out1_m, out2_m, out3_m;                                 \
+    v16u8 tp0_m, tp1_m, tp2_m, tp3_m;                                        \
+                                                                             \
+    AVER_UB4_UB(in0, in1, in2, in3, in4, in5, in6, in7,                      \
+                tp0_m, tp1_m, tp2_m, tp3_m);                                 \
+                                                                             \
+    out0_m = __msa_copy_u_d((v2i64) tp0_m, 0);                               \
+    out1_m = __msa_copy_u_d((v2i64) tp1_m, 0);                               \
+    out2_m = __msa_copy_u_d((v2i64) tp2_m, 0);                               \
+    out3_m = __msa_copy_u_d((v2i64) tp3_m, 0);                               \
+    SD4(out0_m, out1_m, out2_m, out3_m, pdst, stride);                       \
+}
+
 /* Description : Add block 4x4
    Arguments   : Inputs  - in0, in1, in2, in3, pdst, stride
                  Outputs -
@@ -2368,6 +2450,30 @@
     SW4(out0_m, out1_m, out2_m, out3_m, pdst, stride);            \
 }
 
+/* Description : Dot product and addition of 3 signed halfword input vectors
+   Arguments   : Inputs  - in0, in1, in2, coeff0, coeff1, coeff2
+                 Outputs - out0_m
+                 Return Type - signed halfword
+   Details     : Dot product of 'in0' with 'coeff0'
+                 Dot product of 'in1' with 'coeff1'
+                 Dot product of 'in2' with 'coeff2'
+                 Addition of all the 3 vector results
+
+                 out0_m = (in0 * coeff0) + (in1 * coeff1) + (in2 * coeff2)
+*/
+#define DPADD_SH3_SH(in0, in1, in2, coeff0, coeff1, coeff2)         \
+( {                                                                 \
+    v8i16 tmp1_m;                                                   \
+    v8i16 out0_m;                                                   \
+                                                                    \
+    out0_m = __msa_dotp_s_h((v16i8) in0, (v16i8) coeff0);           \
+    out0_m = __msa_dpadd_s_h(out0_m, (v16i8) in1, (v16i8) coeff1);  \
+    tmp1_m = __msa_dotp_s_h((v16i8) in2, (v16i8) coeff2);           \
+    out0_m = __msa_adds_s_h(out0_m, tmp1_m);                        \
+                                                                    \
+    out0_m;                                                         \
+} )
+
 /* Description : Pack even elements of input vectors & xor with 128
    Arguments   : Inputs  - in0, in1
                  Outputs - out_m
@@ -2383,6 +2489,24 @@
     out_m = (v16u8) __msa_xori_b((v16u8) out_m, 128);         \
     out_m;                                                    \
 } )
+
+/* Description : Converts inputs to unsigned bytes, interleave, average & store
+                 as 8x4 unsigned byte block
+   Arguments   : Inputs  - in0, in1, in2, in3, dst0, dst1, dst2, dst3,
+                           pdst, stride
+*/
+#define CONVERT_UB_AVG_ST8x4_UB(in0, in1, in2, in3,                    \
+                                dst0, dst1, dst2, dst3, pdst, stride)  \
+{                                                                      \
+    v16u8 tmp0_m, tmp1_m, tmp2_m, tmp3_m;                              \
+    uint8_t *pdst_m = (uint8_t *) (pdst);                              \
+                                                                       \
+    tmp0_m = PCKEV_XORI128_UB(in0, in1);                               \
+    tmp1_m = PCKEV_XORI128_UB(in2, in3);                               \
+    ILVR_D2_UB(dst1, dst0, dst3, dst2, tmp2_m, tmp3_m);                \
+    AVER_UB2_UB(tmp0_m, tmp2_m, tmp1_m, tmp3_m, tmp0_m, tmp1_m);       \
+    ST8x4_UB(tmp0_m, tmp1_m, pdst_m, stride);                          \
+}
 
 /* Description : Pack even byte elements, extract 0 & 2 index words from pair
                  of results and store 4 words in destination memory as per

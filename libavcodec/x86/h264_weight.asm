@@ -136,9 +136,9 @@ WEIGHT_FUNC_HALF_MM 8, 8
     or   off_regd, 1
     add        r4, 1
     cmp        r6d, 128
-     je .nonnormal
+    je .nonnormal
     cmp        r5, 128
-     jne .normal
+    jne .normal
 .nonnormal
     sar        r5, 1
     sar        r6, 1

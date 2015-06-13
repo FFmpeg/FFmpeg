@@ -1,6 +1,7 @@
 /*
- * H.26L/H.264/AVC/JVT/14496-10/... encoder/decoder
- * Copyright (c) 2003-2010 Michael Niedermayer <michaelni@gmx.at>
+ * MPEG1/2 VLC
+ * copyright (c) 2000,2001 Fabrice Bellard
+ * copyright (c) 2002-2004 Michael Niedermayer <michaelni@gmx.at>
  *
  * This file is part of FFmpeg.
  *
@@ -19,22 +20,33 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_H264QPEL_H
-#define AVCODEC_H264QPEL_H
+/**
+ * @file
+ * MPEG1/2 VLC.
+ */
 
-#include "qpeldsp.h"
+#ifndef AVCODEC_MPEG12VLC_H
+#define AVCODEC_MPEG12VLC_H
 
-typedef struct H264QpelContext {
-    qpel_mc_func put_h264_qpel_pixels_tab[4][16];
-    qpel_mc_func avg_h264_qpel_pixels_tab[4][16];
-} H264QpelContext;
+#include "get_bits.h"
 
-void ff_h264qpel_init(H264QpelContext *c, int bit_depth);
+#define DC_VLC_BITS 9
+#define MV_VLC_BITS 9
+#define TEX_VLC_BITS 9
 
-void ff_h264qpel_init_aarch64(H264QpelContext *c, int bit_depth);
-void ff_h264qpel_init_arm(H264QpelContext *c, int bit_depth);
-void ff_h264qpel_init_ppc(H264QpelContext *c, int bit_depth);
-void ff_h264qpel_init_x86(H264QpelContext *c, int bit_depth);
-void ff_h264qpel_init_mips(H264QpelContext *c, int bit_depth);
+#define MBINCR_VLC_BITS 9
+#define MB_PAT_VLC_BITS 9
+#define MB_PTYPE_VLC_BITS 6
+#define MB_BTYPE_VLC_BITS 6
 
-#endif /* AVCODEC_H264QPEL_H */
+extern VLC ff_dc_lum_vlc;
+extern VLC ff_dc_chroma_vlc;
+extern VLC ff_mbincr_vlc;
+extern VLC ff_mb_ptype_vlc;
+extern VLC ff_mb_btype_vlc;
+extern VLC ff_mb_pat_vlc;
+extern VLC ff_mv_vlc;
+
+void ff_mpeg12_init_vlcs(void);
+
+#endif /* AVCODEC_MPEG12VLC_H */

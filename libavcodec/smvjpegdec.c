@@ -164,7 +164,9 @@ static int smvjpeg_decode_frame(AVCodecContext *avctx, void *data, int *data_siz
         return AVERROR(EINVAL);
 
     desc = av_pix_fmt_desc_get(s->avctx->pix_fmt);
-    if (desc && mjpeg_data->height % (s->frames_per_jpeg << desc->log2_chroma_h)) {
+    av_assert0(desc);
+
+    if (mjpeg_data->height % (s->frames_per_jpeg << desc->log2_chroma_h)) {
         av_log(avctx, AV_LOG_ERROR, "Invalid height\n");
         return AVERROR_INVALIDDATA;
     }

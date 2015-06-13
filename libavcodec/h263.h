@@ -24,6 +24,7 @@
 #include "libavutil/rational.h"
 #include "get_bits.h"
 #include "mpegvideo.h"
+#include "h263data.h"
 #include "rl.h"
 
 #if !FF_API_ASPECT_EXTENDED
@@ -42,38 +43,9 @@
 
 #define H263_GOB_HEIGHT(h) ((h) <= 400 ? 1 : (h) <= 800 ? 2 : 4)
 
-extern const AVRational ff_h263_pixel_aspect[16];
-extern const uint8_t ff_h263_cbpy_tab[16][2];
-
-extern const uint8_t ff_cbpc_b_tab[4][2];
-
-extern const uint8_t ff_mvtab[33][2];
-
-extern const uint8_t ff_h263_intra_MCBPC_code[9];
-extern const uint8_t ff_h263_intra_MCBPC_bits[9];
-
-extern const uint8_t ff_h263_inter_MCBPC_code[28];
-extern const uint8_t ff_h263_inter_MCBPC_bits[28];
-extern const uint8_t ff_h263_mbtype_b_tab[15][2];
-
 extern VLC ff_h263_intra_MCBPC_vlc;
 extern VLC ff_h263_inter_MCBPC_vlc;
 extern VLC ff_h263_cbpy_vlc;
-
-extern const uint16_t ff_inter_vlc[103][2];
-extern const int8_t ff_inter_level[102];
-extern const int8_t ff_inter_run[102];
-
-extern RLTable ff_h263_rl_inter;
-
-extern RLTable ff_rl_intra_aic;
-
-extern const uint16_t ff_h263_format[8][2];
-extern const uint8_t ff_modified_quant_tab[2][32];
-extern const uint16_t ff_mba_max[6];
-extern const uint8_t ff_mba_length[7];
-
-extern uint8_t ff_h263_static_rl_table_store[2][2][2*MAX_RUN + MAX_LEVEL + 3];
 
 extern const enum AVPixelFormat ff_h263_hwaccel_pixfmt_list_420[];
 

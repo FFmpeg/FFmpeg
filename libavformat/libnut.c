@@ -179,7 +179,7 @@ static size_t av_read(void * h, size_t len, uint8_t * buf) {
     return avio_read(bc, buf, len);
 }
 
-static off_t av_seek(void * h, long long pos, int whence) {
+static off_t av_seek(void * h, int64_t pos, int whence) {
     AVIOContext * bc = h;
     if (whence == SEEK_END) {
         pos = avio_size(bc) + pos;
