@@ -103,7 +103,7 @@ typedef struct ASSSplitContext ASSSplitContext;
  * Split a full ASS file or a ASS header from a string buffer and store
  * the split structure in a newly allocated context.
  *
- * @param buf String containing the ASS formated data.
+ * @param buf String containing the ASS formatted data.
  * @return Newly allocated struct containing split data.
  */
 ASSSplitContext *ff_ass_split(const char *buf);
