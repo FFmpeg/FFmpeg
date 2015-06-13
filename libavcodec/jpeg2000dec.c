@@ -966,18 +966,24 @@ static int jpeg2000_decode_packets(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile
             Jpeg2000QuantStyle *qntsty  = tile->qntsty + compno;
             int step_x = 32;
             int step_y = 32;
+            int maxlogstep_x = 0;
+            int maxlogstep_y = 0;
 
             for (reslevelno = 0; reslevelno < codsty->nreslevels; reslevelno++) {
                 uint8_t reducedresno = codsty->nreslevels - 1 -reslevelno; //  ==> N_L - r
                 Jpeg2000ResLevel *rlevel = comp->reslevel + reslevelno;
                 step_x = FFMIN(step_x, rlevel->log2_prec_width  + reducedresno);
                 step_y = FFMIN(step_y, rlevel->log2_prec_height + reducedresno);
+                maxlogstep_x = FFMAX(maxlogstep_x, rlevel->log2_prec_width  + reducedresno);
+                maxlogstep_y = FFMAX(maxlogstep_y, rlevel->log2_prec_height + reducedresno);
             }
             step_x = 1<<step_x;
             step_y = 1<<step_y;
 
-            for (y = 0; y < s->height; y += step_y) {
-                for (x = 0; x < s->width; x += step_x) {
+            y = comp->coord_o[1][0] >> maxlogstep_y << maxlogstep_y;
+            for (; y < comp->coord_o[1][1]; y += step_y) {
+                x = comp->coord_o[0][0] >> maxlogstep_x << maxlogstep_x;
+                for (; x < comp->coord_o[0][1]; x += step_x) {
                     for (reslevelno = 0; reslevelno < codsty->nreslevels; reslevelno++) {
                         uint16_t prcx, prcy;
                         uint8_t reducedresno = codsty->nreslevels - 1 -reslevelno; //  ==> N_L - r
