@@ -749,6 +749,8 @@
     </ClCompile>
     <ClCompile Include="..\libavcodec\intelh263dec.c">
     </ClCompile>
+    <ClCompile Include="..\libavcodec\h263data.c">
+    </ClCompile>
     <ClCompile Include="..\libavcodec\mpeg4videoenc.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\ituh263enc.c">

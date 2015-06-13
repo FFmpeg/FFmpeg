@@ -1124,6 +1124,9 @@
     <ClCompile Include="..\libavcodec\intelh263dec.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\h263data.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\mpeg4videoenc.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
