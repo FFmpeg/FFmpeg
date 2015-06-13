@@ -963,15 +963,20 @@ static int jpeg2000_decode_packets(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile
         for (compno = 0; compno < s->ncomponents; compno++) {
             Jpeg2000CodingStyle *codsty = tile->codsty + compno;
             Jpeg2000QuantStyle *qntsty  = tile->qntsty + compno;
+            int step_x = 32;
+            int step_y = 32;
 
-            /* Position loop (y axis)
-             * TODO: Automate computing of step 256.
-             * Fixed here, but to be computed before entering here. */
-            for (y = 0; y < s->height; y += 256) {
-                /* Position loop (y axis)
-                 * TODO: automate computing of step 256.
-                 * Fixed here, but to be computed before entering here. */
-                for (x = 0; x < s->width; x += 256) {
+            for (reslevelno = 0; reslevelno < codsty->nreslevels; reslevelno++) {
+                uint8_t reducedresno = codsty->nreslevels - 1 -reslevelno; //  ==> N_L - r
+                Jpeg2000ResLevel *rlevel = tile->comp[compno].reslevel + reslevelno;
+                step_x = FFMIN(step_x, rlevel->log2_prec_width  + reducedresno);
+                step_y = FFMIN(step_y, rlevel->log2_prec_height + reducedresno);
+            }
+            step_x = 1<<step_x;
+            step_y = 1<<step_y;
+
+            for (y = 0; y < s->height; y += step_y) {
+                for (x = 0; x < s->width; x += step_x) {
                     for (reslevelno = 0; reslevelno < codsty->nreslevels; reslevelno++) {
                         uint16_t prcx, prcy;
                         uint8_t reducedresno = codsty->nreslevels - 1 -reslevelno; //  ==> N_L - r
