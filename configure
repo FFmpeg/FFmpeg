@@ -5239,8 +5239,8 @@ disabled securetransport || { check_func SecIdentityCreate "-Wl,-framework,CoreF
     enable securetransport; }
 
 makeinfo --version > /dev/null 2>&1 && enable makeinfo  || disable makeinfo
-enabled makeinfo && (makeinfo --version | \
-                     grep -q 'makeinfo (GNU texinfo) 5' > /dev/null 2>&1) \
+enabled makeinfo \
+    && [ 0$(makeinfo --version | grep "texinfo" | sed 's/.*texinfo[^0-9]*\([0-9]*\)\..*/\1/') -ge 5 ] \
     && enable makeinfo_html || disable makeinfo_html
 disabled makeinfo_html && texi2html --help 2> /dev/null | grep -q 'init-file' && enable texi2html || disable texi2html
 perl -v            > /dev/null 2>&1 && enable perl      || disable perl
