@@ -250,7 +250,9 @@ AVOutputFormat ff_mjpeg_muxer = {
     .write_packet      = ff_raw_write_packet,
     .flags             = AVFMT_NOTIMESTAMPS,
 };
+#endif
 
+#if CONFIG_SINGLEJPEG_MUXER
 AVOutputFormat ff_singlejpeg_muxer = {
     .name              = "singlejpeg",
     .long_name         = NULL_IF_CONFIG_SMALL("JPEG single image"),
