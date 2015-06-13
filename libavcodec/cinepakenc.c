@@ -327,7 +327,7 @@ static int64_t calculate_mode_score(CinepakEncContext *s, int h, strip_info *inf
                    (info->v4_size ? CHUNK_HEADER_SIZE + info->v4_size * entry_size : 0) +
                    CHUNK_HEADER_SIZE) << 3;
 
-    //av_log(s->avctx, AV_LOG_INFO, "sizes %3i %3i -> %9lli score mb_count %i", info->v1_size, info->v4_size, (long long int)ret, mb_count);
+    //av_log(s->avctx, AV_LOG_INFO, "sizes %3i %3i -> %9"PRId64" score mb_count %i", info->v1_size, info->v4_size, ret, mb_count);
 
 #ifdef CINEPAK_REPORT_SERR
     *serr = 0;
@@ -897,7 +897,7 @@ static int quantize(CinepakEncContext *s, int h, AVPicture *pict,
 // check that we did it right in the beginning of the function
     av_assert0(i >= size); // training set is no smaller than the codebook
 
-    //av_log(s->avctx, AV_LOG_INFO, "isv1 %i size= %i i= %i error %lli\n", v1mode, size, i, (long long int)total_error);
+    //av_log(s->avctx, AV_LOG_INFO, "isv1 %i size= %i i= %i error %"PRId64"\n", v1mode, size, i, total_error);
 
     return size;
 }
@@ -1050,7 +1050,7 @@ static int rd_strip(CinepakEncContext *s, int y, int h, int keyframe, AVPicture 
                     }
                 }
 
-                //av_log(s->avctx, AV_LOG_INFO, "%3i %3i score = %lli\n", v1_size, v4_size, (long long int)score);
+                //av_log(s->avctx, AV_LOG_INFO, "%3i %3i score = %"PRId64"\n", v1_size, v4_size, score);
 
                 if(best_size == 0 || score < *best_score) {
 
@@ -1060,10 +1060,10 @@ static int rd_strip(CinepakEncContext *s, int y, int h, int keyframe, AVPicture 
 #endif
                     best_size = encode_mode(s, h, scratch_pict, last_pict, &info, s->strip_buf + STRIP_HEADER_SIZE);
 
-                    //av_log(s->avctx, AV_LOG_INFO, "mode %i, %3i, %3i: %18lli %i B", mode, info.v1_size, info.v4_size, (long long int)score, best_size);
+                    //av_log(s->avctx, AV_LOG_INFO, "mode %i, %3i, %3i: %18"PRId64" %i B", mode, info.v1_size, info.v4_size, score, best_size);
                     //av_log(s->avctx, AV_LOG_INFO, "\n");
 #ifdef CINEPAK_REPORT_SERR
-                    av_log(s->avctx, AV_LOG_INFO, "mode %i, %3i, %3i: %18lli %i B\n", mode, v1_size, v4_size, (long long int)serr, best_size);
+                    av_log(s->avctx, AV_LOG_INFO, "mode %i, %3i, %3i: %18"PRId64" %i B\n", mode, v1_size, v4_size, serr, best_size);
 #endif
 
 #ifdef CINEPAKENC_DEBUG
@@ -1224,9 +1224,9 @@ static int rd_frame(CinepakEncContext *s, const AVFrame *frame, int isakeyframe,
             best_serr = serr;
 #endif
             best_size = size + write_cvid_header(s, s->frame_buf, num_strips, size, isakeyframe);
-            //av_log(s->avctx, AV_LOG_INFO, "best number of strips so far: %2i, %12lli, %i B\n", num_strips, (long long int)score, best_size);
+            //av_log(s->avctx, AV_LOG_INFO, "best number of strips so far: %2i, %12"PRId64", %i B\n", num_strips, score, best_size);
 #ifdef CINEPAK_REPORT_SERR
-            av_log(s->avctx, AV_LOG_INFO, "best number of strips so far: %2i, %12lli, %i B\n", num_strips, (long long int)serr, best_size);
+            av_log(s->avctx, AV_LOG_INFO, "best number of strips so far: %2i, %12"PRId64", %i B\n", num_strips, serr, best_size);
 #endif
 
             FFSWAP(AVFrame *, s->best_frame, s->scratch_frame);

@@ -377,7 +377,7 @@ static int mp3_read_header(AVFormatContext *s)
         if (!(i&1023))
             ffio_ensure_seekback(s->pb, i + 1024 + 4);
         if (check(s, off + i) >= 0) {
-            av_log(s, AV_LOG_INFO, "Skipping %d bytes of junk at %lld.\n", i, (long long)off);
+            av_log(s, AV_LOG_INFO, "Skipping %d bytes of junk at %"PRId64".\n", i, off);
             avio_seek(s->pb, off + i, SEEK_SET);
             break;
         }

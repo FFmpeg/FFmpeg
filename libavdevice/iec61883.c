@@ -271,7 +271,7 @@ static int iec61883_read_header(AVFormatContext *context)
     }
 
     if (dv->device_guid) {
-        if (sscanf(dv->device_guid, "%llx", (long long unsigned int *)&guid) != 1) {
+        if (sscanf(dv->device_guid, "%"SCNu64, &guid) != 1) {
             av_log(context, AV_LOG_INFO, "Invalid dvguid parameter: %s\n",
                    dv->device_guid);
             goto fail;
