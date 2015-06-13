@@ -968,6 +968,7 @@ static int jpeg2000_decode_packets(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile
             int step_y = 32;
             int maxlogstep_x = 0;
             int maxlogstep_y = 0;
+            int start_x, start_y;
 
             for (reslevelno = 0; reslevelno < codsty->nreslevels; reslevelno++) {
                 uint8_t reducedresno = codsty->nreslevels - 1 -reslevelno; //  ==> N_L - r
@@ -980,26 +981,27 @@ static int jpeg2000_decode_packets(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile
             step_x = 1<<step_x;
             step_y = 1<<step_y;
 
-            y = comp->coord_o[1][0] >> maxlogstep_y << maxlogstep_y;
-            for (; y < comp->coord_o[1][1]; y += step_y) {
-                x = comp->coord_o[0][0] >> maxlogstep_x << maxlogstep_x;
-                for (; x < comp->coord_o[0][1]; x += step_x) {
+            start_y = comp->coord_o[1][0] >> maxlogstep_y << maxlogstep_y;
+            start_x = comp->coord_o[0][0] >> maxlogstep_x << maxlogstep_x;
+            for (y = start_y; y < comp->coord_o[1][1]; y += step_y) {
+                for (x = start_x; x < comp->coord_o[0][1]; x += step_x) {
                     for (reslevelno = 0; reslevelno < codsty->nreslevels; reslevelno++) {
-                        uint16_t prcx, prcy;
+                        unsigned prcx, prcy;
                         uint8_t reducedresno = codsty->nreslevels - 1 -reslevelno; //  ==> N_L - r
                         Jpeg2000ResLevel *rlevel = comp->reslevel + reslevelno;
 
-                        if (!((y % (1 << (rlevel->log2_prec_height + reducedresno)) == 0) ||
-                              (y == 0))) // TODO: 2nd condition simplified as try0 always =0 for dcinema
+                        if (y % (1 << (rlevel->log2_prec_height + reducedresno)))
                             continue;
 
-                        if (!((x % (1 << (rlevel->log2_prec_width + reducedresno)) == 0) ||
-                              (x == 0))) // TODO: 2nd condition simplified as try0 always =0 for dcinema
+                        if (x % (1 << (rlevel->log2_prec_width + reducedresno)))
                             continue;
 
                         // check if a precinct exists
                         prcx   = ff_jpeg2000_ceildivpow2(x, reducedresno) >> rlevel->log2_prec_width;
                         prcy   = ff_jpeg2000_ceildivpow2(y, reducedresno) >> rlevel->log2_prec_height;
+                        prcx  -= ff_jpeg2000_ceildivpow2(comp->coord_o[0][0], reducedresno) >> rlevel->log2_prec_width;
+                        prcy  -= ff_jpeg2000_ceildivpow2(comp->coord_o[1][0], reducedresno) >> rlevel->log2_prec_height;
+
                         precno = prcx + rlevel->num_precincts_x * prcy;
 
                         if (prcx >= rlevel->num_precincts_x || prcy >= rlevel->num_precincts_y) {
