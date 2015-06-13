@@ -479,7 +479,7 @@ static av_cold int vpx_init(AVCodecContext *avctx,
     if (avctx->rc_buffer_aggressivity != 1.0) {
         av_log(avctx, AV_LOG_WARNING, "The rc_buffer_aggressivity option is "
                "deprecated, use the undershoot-pct private option instead.\n");
-    enccfg.rc_undershoot_pct     = round(avctx->rc_buffer_aggressivity * 100);
+        enccfg.rc_undershoot_pct = round(avctx->rc_buffer_aggressivity * 100);
     }
     FF_ENABLE_DEPRECATION_WARNINGS
 #endif
