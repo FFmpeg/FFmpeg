@@ -106,3 +106,39 @@ INIT_XMM sse
 ICT_FLOAT 10
 INIT_YMM avx
 ICT_FLOAT 9
+
+;***************************************************************************
+; ff_rct_int_<opt>(int32_t *src0, int32_t *src1, int32_t *src2, int csize)
+;***************************************************************************
+%macro RCT_INT 0
+cglobal rct_int, 4, 4, 4, src0, src1, src2, csize
+    shl  csized, 2
+    add   src0q, csizeq
+    add   src1q, csizeq
+    add   src2q, csizeq
+    neg  csizeq
+
+align 16
+.loop:
+    mova   m1, [src1q+csizeq]
+    mova   m2, [src2q+csizeq]
+    mova   m0, [src0q+csizeq]
+    paddd  m3, m1, m2
+    psrad  m3, 2
+    psubd  m0, m3
+    paddd  m1, m0
+    paddd  m2, m0
+    mova   [src1q+csizeq], m0
+    mova   [src2q+csizeq], m1
+    mova   [src0q+csizeq], m2
+    add  csizeq, mmsize
+    jl .loop
+    REP_RET
+%endmacro
+
+INIT_XMM sse2
+RCT_INT
+%if HAVE_AVX2_EXTERNAL
+INIT_YMM avx2
+RCT_INT
+%endif

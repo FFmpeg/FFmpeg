@@ -221,6 +221,7 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
         if (!comp->f_data)
             return AVERROR(ENOMEM);
     } else {
+        csize += FF_INPUT_BUFFER_PADDING_SIZE / sizeof(*comp->i_data);
         comp->f_data = NULL;
         comp->i_data = av_mallocz_array(csize, sizeof(*comp->i_data));
         if (!comp->i_data)
