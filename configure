@@ -4033,9 +4033,6 @@ elif enabled ppc; then
             disable altivec
             disable dcbzl
         ;;
-        *)
-            disable vsx
-        ;;
     esac
 
 elif enabled sparc; then
@@ -4610,6 +4607,9 @@ unsigned int endian = 'B' << 24 | 'I' << 16 | 'G' << 8 | 'E';
 EOF
 od -t x1 $TMPO | grep -q '42 *49 *47 *45' && enable bigendian
 
+if ! enabled ppc64 || enabled bigendian; then
+    disable vsx
+fi
 
 check_gas() {
     log "check_gas using '$as' as AS"
