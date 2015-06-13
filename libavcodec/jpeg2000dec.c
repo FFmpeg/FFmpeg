@@ -961,6 +961,7 @@ static int jpeg2000_decode_packets(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile
 
     case JPEG2000_PGOD_CPRL:
         for (compno = 0; compno < s->ncomponents; compno++) {
+            Jpeg2000Component *comp     = tile->comp + compno;
             Jpeg2000CodingStyle *codsty = tile->codsty + compno;
             Jpeg2000QuantStyle *qntsty  = tile->qntsty + compno;
             int step_x = 32;
@@ -968,7 +969,7 @@ static int jpeg2000_decode_packets(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile
 
             for (reslevelno = 0; reslevelno < codsty->nreslevels; reslevelno++) {
                 uint8_t reducedresno = codsty->nreslevels - 1 -reslevelno; //  ==> N_L - r
-                Jpeg2000ResLevel *rlevel = tile->comp[compno].reslevel + reslevelno;
+                Jpeg2000ResLevel *rlevel = comp->reslevel + reslevelno;
                 step_x = FFMIN(step_x, rlevel->log2_prec_width  + reducedresno);
                 step_y = FFMIN(step_y, rlevel->log2_prec_height + reducedresno);
             }
@@ -980,7 +981,7 @@ static int jpeg2000_decode_packets(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile
                     for (reslevelno = 0; reslevelno < codsty->nreslevels; reslevelno++) {
                         uint16_t prcx, prcy;
                         uint8_t reducedresno = codsty->nreslevels - 1 -reslevelno; //  ==> N_L - r
-                        Jpeg2000ResLevel *rlevel = tile->comp[compno].reslevel + reslevelno;
+                        Jpeg2000ResLevel *rlevel = comp->reslevel + reslevelno;
 
                         if (!((y % (1 << (rlevel->log2_prec_height + reducedresno)) == 0) ||
                               (y == 0))) // TODO: 2nd condition simplified as try0 always =0 for dcinema
