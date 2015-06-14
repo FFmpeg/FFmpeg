@@ -1206,6 +1206,14 @@
 #define HSUB_UB2_UH(...) HSUB_UB2(v8u16, __VA_ARGS__)
 #define HSUB_UB2_SH(...) HSUB_UB2(v8i16, __VA_ARGS__)
 
+#define HSUB_UB4(RTYPE, in0, in1, in2, in3, out0, out1, out2, out3)  \
+{                                                                    \
+    HSUB_UB2(RTYPE, in0, in1, out0, out1);                           \
+    HSUB_UB2(RTYPE, in2, in3, out2, out3);                           \
+}
+#define HSUB_UB4_UH(...) HSUB_UB4(v8u16, __VA_ARGS__)
+#define HSUB_UB4_SH(...) HSUB_UB4(v8i16, __VA_ARGS__)
+
 /* Description : Insert specified word elements from input vectors to 1
                  destination vector
    Arguments   : Inputs  - in0, in1, in2, in3 (4 input vectors)
