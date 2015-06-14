@@ -108,6 +108,7 @@
     <YASM Include="..\libavcodec\x86\hevc_idct.asm" />
     <YASM Include="..\libavcodec\x86\hevc_res_add.asm" />
     <YASM Include="..\libavcodec\x86\hevc_sao.asm" />
+    <YASM Include="..\libavcodec\x86\jpeg2000dsp.asm" />
     <YASM Include="..\libavcodec\x86\mlpdsp.asm" />
     <YASM Include="..\libavcodec\x86\xvididct.asm" />
     <YASM Include="..\libavcodec\x86\proresdsp.asm" />
@@ -858,6 +859,7 @@
     <ClCompile Include="..\libavcodec\jpeg2000dec.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\jpeg2000dsp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_jpeg2000dsp.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavcodec\mqcdec.c">
     </ClCompile>
@@ -1630,6 +1632,8 @@
     <ClCompile Include="..\libavcodec\x86\dnxhdenc_init.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\x86\hevcdsp_init.c">
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\x86\jpeg2000dsp_init.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\x86\mlpdsp_init.c">
     </ClCompile>

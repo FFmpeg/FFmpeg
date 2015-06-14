@@ -223,6 +223,8 @@
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_colorchannelmixer.c">
     </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_colorkey.c">
+    </ClCompile>
     <ClCompile Include="..\libavfilter\vf_colorlevels.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_colormatrix.c">
