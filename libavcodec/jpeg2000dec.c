@@ -133,8 +133,10 @@ static int tag_tree_decode(Jpeg2000DecoderContext *s, Jpeg2000TgtNode *node,
     Jpeg2000TgtNode *stack[30];
     int sp = -1, curval = 0;
 
-    if (!node)
+    if (!node) {
+        av_log(s->avctx, AV_LOG_ERROR, "missing node\n");
         return AVERROR_INVALIDDATA;
+    }
 
     while (node && !node->vis) {
         stack[++sp] = node;
@@ -237,8 +239,10 @@ static int get_siz(Jpeg2000DecoderContext *s)
     const enum AVPixelFormat *possible_fmts = NULL;
     int possible_fmts_nb = 0;
 
-    if (bytestream2_get_bytes_left(&s->g) < 36)
+    if (bytestream2_get_bytes_left(&s->g) < 36) {
+        av_log(s->avctx, AV_LOG_ERROR, "Insufficient space for SIZ\n");
         return AVERROR_INVALIDDATA;
+    }
 
     s->avctx->profile = bytestream2_get_be16u(&s->g); // Rsiz
     s->width          = bytestream2_get_be32u(&s->g); // Width
@@ -276,8 +280,10 @@ static int get_siz(Jpeg2000DecoderContext *s)
         return AVERROR_INVALIDDATA;
     }
 
-    if (bytestream2_get_bytes_left(&s->g) < 3 * s->ncomponents)
+    if (bytestream2_get_bytes_left(&s->g) < 3 * s->ncomponents) {
+        av_log(s->avctx, AV_LOG_ERROR, "Insufficient space for %d components in SIZ\n", s->ncomponents);
         return AVERROR_INVALIDDATA;
+    }
 
     for (i = 0; i < s->ncomponents; i++) { // Ssiz_i XRsiz_i, YRsiz_i
         uint8_t x    = bytestream2_get_byteu(&s->g);
@@ -398,8 +404,10 @@ static int get_cox(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *c)
 {
     uint8_t byte;
 
-    if (bytestream2_get_bytes_left(&s->g) < 5)
+    if (bytestream2_get_bytes_left(&s->g) < 5) {
+        av_log(s->avctx, AV_LOG_ERROR, "Insufficient space for COX\n");
         return AVERROR_INVALIDDATA;
+    }
 
     /*  nreslevels = number of resolution levels
                    = number of decomposition level +1 */
@@ -468,8 +476,10 @@ static int get_cod(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *c,
     Jpeg2000CodingStyle tmp;
     int compno, ret;
 
-    if (bytestream2_get_bytes_left(&s->g) < 5)
+    if (bytestream2_get_bytes_left(&s->g) < 5) {
+        av_log(s->avctx, AV_LOG_ERROR, "Insufficient space for COD\n");
         return AVERROR_INVALIDDATA;
+    }
 
     tmp.csty = bytestream2_get_byteu(&s->g);
 
@@ -502,8 +512,10 @@ static int get_coc(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *c,
 {
     int compno, ret;
 
-    if (bytestream2_get_bytes_left(&s->g) < 2)
+    if (bytestream2_get_bytes_left(&s->g) < 2) {
+        av_log(s->avctx, AV_LOG_ERROR, "Insufficient space for COC\n");
         return AVERROR_INVALIDDATA;
+    }
 
     compno = bytestream2_get_byteu(&s->g);
 
@@ -1700,8 +1712,10 @@ static int jpeg2000_read_main_headers(Jpeg2000DecoderContext *s)
             break;
 
         len = bytestream2_get_be16(&s->g);
-        if (len < 2 || bytestream2_get_bytes_left(&s->g) < len - 2)
+        if (len < 2 || bytestream2_get_bytes_left(&s->g) < len - 2) {
+            av_log(s->avctx, AV_LOG_ERROR, "Invalid len %d left=%d\n", len, bytestream2_get_bytes_left(&s->g));
             return AVERROR_INVALIDDATA;
+        }
 
         switch (marker) {
         case JPEG2000_SIZ:
