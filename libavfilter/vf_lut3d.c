@@ -707,6 +707,8 @@ static int config_clut(AVFilterLink *inlink)
     LUT3DContext *lut3d = ctx->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
 
+    av_assert0(desc);
+
     lut3d->clut_is16bit = 0;
     switch (inlink->format) {
     case AV_PIX_FMT_RGB48:

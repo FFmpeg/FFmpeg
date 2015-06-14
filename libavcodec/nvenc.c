@@ -1376,6 +1376,7 @@ static int nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 }
 
 static const enum AVPixelFormat pix_fmts_nvenc[] = {
+    AV_PIX_FMT_YUV420P,
     AV_PIX_FMT_NV12,
     AV_PIX_FMT_NONE
 };

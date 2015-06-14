@@ -44,6 +44,7 @@ OBJS-$(CONFIG_CAVS_DECODER)            += x86/cavsdsp.o
 OBJS-$(CONFIG_DCA_DECODER)             += x86/dcadsp_init.o
 OBJS-$(CONFIG_DNXHD_ENCODER)           += x86/dnxhdenc_init.o
 OBJS-$(CONFIG_HEVC_DECODER)            += x86/hevcdsp_init.o
+OBJS-$(CONFIG_JPEG2000_DECODER)        += x86/jpeg2000dsp_init.o
 OBJS-$(CONFIG_MLP_DECODER)             += x86/mlpdsp_init.o
 OBJS-$(CONFIG_MPEG4_DECODER)           += x86/xvididct_init.o
 OBJS-$(CONFIG_PNG_DECODER)             += x86/pngdsp_init.o
@@ -138,6 +139,7 @@ YASM-OBJS-$(CONFIG_HEVC_DECODER)       += x86/hevc_mc.o                 \
                                           x86/hevc_idct.o               \
                                           x86/hevc_res_add.o            \
                                           x86/hevc_sao.o
+YASM-OBJS-$(CONFIG_JPEG2000_DECODER)   += x86/jpeg2000dsp.o
 YASM-OBJS-$(CONFIG_MLP_DECODER)        += x86/mlpdsp.o
 YASM-OBJS-$(CONFIG_MPEG4_DECODER)      += x86/xvididct.o
 YASM-OBJS-$(CONFIG_PNG_DECODER)        += x86/pngdsp.o

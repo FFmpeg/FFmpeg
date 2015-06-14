@@ -95,4 +95,7 @@ av_cold void ff_jpeg2000dsp_init(Jpeg2000DSPContext *c)
     c->mct_decode[FF_DWT97]     = ict_float;
     c->mct_decode[FF_DWT53]     = rct_int;
     c->mct_decode[FF_DWT97_INT] = ict_int;
+
+    if (ARCH_X86)
+        ff_jpeg2000dsp_init_x86(c);
 }
