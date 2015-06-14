@@ -1,0 +1,33 @@
+#!/bin/bash
+#
+# Generate configurations for various FFMPEG targets
+TARGETS="armv5te armv7-a armv7-a-neon armv8-a silvermont x86"
+SYSROOT_BASE="../../prebuilts/ndk/current/platforms/android-21"
+TOOLS_BASE="../../prebuilts/gcc/linux-x86"
+
+BASE_CONFIG="--disable-static --enable-shared --enable-optimizations --disable-doc --disable-symver --disable-ffmpeg --disable-ffplay --disable-ffprobe --disable-ffserver --disable-avdevice --disable-devices --disable-filters --disable-demuxer=srt --disable-demuxer=microdvd --disable-demuxer=jacosub --disable-demuxer=sami --disable-demuxer=realtext --disable-demuxer=dts --disable-demuxer=subviewer --disable-demuxer=subviewer1 --disable-demuxer=pjs --disable-demuxer=vplayer --disable-demuxer=mpl2 --disable-decoder=ass --disable-decoder=srt --disable-decoder=subrip --disable-decoder=microdvd --disable-decoder=jacosub --disable-decoder=sami --disable-decoder=realtext --disable-decoder=movtext --disable-decoder=subviewer --disable-decoder=subviewer1 --disable-decoder=pjs --disable-decoder=vplayer --disable-decoder=mpl2 --enable-zlib --enable-pic --disable-debug"
+
+OPTS_armv5te="--arch=arm --cpu=armv5te --build_suffix= --cross-prefix=${TOOLS_BASE}/arm/arm-linux-androideabi-4.8/bin/arm-linux-androideabi- --enable-cross-compile --sysroot=${SYSROOT_BASE}/arch-arm --target-os=linux"
+
+OPTS_armv7_a="--arch=arm --disable-neon --cpu=armv7-a --build_suffix= --cross-prefix=${TOOLS_BASE}/arm/arm-linux-androideabi-4.8/bin/arm-linux-androideabi- --enable-cross-compile --sysroot=${SYSROOT_BASE}/arch-arm --target-os=linux"
+
+OPTS_armv7_a_neon="--arch=arm --cpu=armv7-a --build_suffix= --cross-prefix=${TOOLS_BASE}/arm/arm-linux-androideabi-4.8/bin/arm-linux-androideabi- --enable-cross-compile --sysroot=${SYSROOT_BASE}/arch-arm --target-os=linux"
+
+OPTS_armv8_a="--arch=aarch64 --target-os=linux --enable-cross-compile --cross-prefix=${TOOLS_BASE}/aarch64/aarch64-linux-android-4.9/bin/aarch64-linux-android- --sysroot=${SYSROOT_BASE}/arch-arm64 --target-os=linux"
+
+OPTS_silvermont="--arch=x86 --build_suffix= --cross-prefix=${TOOLS_BASE}/x86/x86_64-linux-android-4.9/bin/x86_64-linux-android- --enable-cross-compile --sysroot=${SYSROOT_BASE}/arch-x86 --target-os=linux --extra-cflags=-m32"
+
+OPTS_x86="--arch=x86 --cpu=i686 --build_suffix= --cross-prefix=${TOOLS_BASE}/x86/x86_64-linux-android-4.8/bin/x86_64-linux-android- --enable-cross-compile --sysroot=${SYSROOT_BASE}/arch-x86 --target-os=linux --extra-cflags=-m32"
+
+for TARGET in $TARGETS;do
+    echo "Generating configuration for: ${TARGET}"
+    rm -f config.mak config.h
+    ARCH_OPTS=OPTS_`echo $TARGET | tr "-" "_"`
+    echo "configure ${!ARCH_OPTS} $BASE_CONFIG"
+    ./configure ${!ARCH_OPTS} $BASE_CONFIG
+    cp config.mak android/config-${TARGET}.mak
+    cat config.h | sed -e "s/^#define \(ARCH_.*\|HAVE_.*\) \(.*\)/#ifdef \1\n#undef \1\n#endif\n#define \1 \2/g" > android/include/config-${TARGET}.h
+done
+
+cp config.asm android/include/
+cp libavutil/avconfig.h android/include/libavutil/
