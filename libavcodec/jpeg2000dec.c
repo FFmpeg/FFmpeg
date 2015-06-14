@@ -1524,8 +1524,8 @@ static int jpeg2000_decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
                                     cblk->coord[1][1] - cblk->coord[1][0],
                                     bandpos);
 
-                        x = cblk->coord[0][0];
-                        y = cblk->coord[1][0];
+                        x = cblk->coord[0][0] - band->coord[0][0];
+                        y = cblk->coord[1][0] - band->coord[1][0];
 
                         if (codsty->transform == FF_DWT97)
                             dequantization_float(x, y, cblk, comp, &t1, band);
