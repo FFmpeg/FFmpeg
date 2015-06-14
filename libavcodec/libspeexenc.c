@@ -76,7 +76,7 @@
  *     encodes them with just enough bits to reproduce the background noise.
  *
  * Discontinuous Transmission (DTX)
- *     DTX is an addition to VAD/VBR operation, that allows to stop transmitting
+ *     DTX is an addition to VAD/VBR operation, that makes it possible to stop transmitting
  *     completely when the background noise is stationary.
  *     In file-based operation only 5 bits are used for such frames.
  */
