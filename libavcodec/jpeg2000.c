@@ -382,24 +382,24 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
                 /* TODO: Verify with previous count of codeblocks per band */
 
                 /* Compute P_x0 */
-                prec->coord[0][0] = (precno % reslevel->num_precincts_x) *
+                prec->coord[0][0] = ((band->coord[0][0] >> reslevel->log2_prec_width) + precno % reslevel->num_precincts_x) *
                                     (1 << log2_band_prec_width);
-                prec->coord[0][0] = FFMAX(prec->coord[0][0], band->coord[0][0] - band->coord[0][0]);
+                prec->coord[0][0] = FFMAX(prec->coord[0][0], band->coord[0][0]);
 
                 /* Compute P_y0 */
-                prec->coord[1][0] = (precno / reslevel->num_precincts_x) *
+                prec->coord[1][0] = ((band->coord[1][0] >> reslevel->log2_prec_height) + precno / reslevel->num_precincts_x) *
                                     (1 << log2_band_prec_height);
-                prec->coord[1][0] = FFMAX(prec->coord[1][0], band->coord[1][0] - band->coord[1][0]);
+                prec->coord[1][0] = FFMAX(prec->coord[1][0], band->coord[1][0]);
 
                 /* Compute P_x1 */
                 prec->coord[0][1] = prec->coord[0][0] +
                                     (1 << log2_band_prec_width);
-                prec->coord[0][1] = FFMIN(prec->coord[0][1], band->coord[0][1] - band->coord[0][0]);
+                prec->coord[0][1] = FFMIN(prec->coord[0][1], band->coord[0][1]);
 
                 /* Compute P_y1 */
                 prec->coord[1][1] = prec->coord[1][0] +
                                     (1 << log2_band_prec_height);
-                prec->coord[1][1] = FFMIN(prec->coord[1][1], band->coord[1][1] - band->coord[1][0]);
+                prec->coord[1][1] = FFMIN(prec->coord[1][1], band->coord[1][1]);
 
                 prec->nb_codeblocks_width =
                     ff_jpeg2000_ceildivpow2(prec->coord[0][1] -
@@ -437,22 +437,22 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
 
                     /* Compute coordinates of codeblocks */
                     /* Compute Cx0*/
-                    Cx0 = (prec->coord[0][0] >> band->log2_cblk_width) << band->log2_cblk_width;
+                    Cx0 = ((prec->coord[0][0] - band->coord[0][0]) >> band->log2_cblk_width) << band->log2_cblk_width;
                     Cx0 = Cx0 + ((cblkno % prec->nb_codeblocks_width)  << band->log2_cblk_width);
-                    cblk->coord[0][0] = FFMAX(Cx0, prec->coord[0][0]);
+                    cblk->coord[0][0] = FFMAX(Cx0, prec->coord[0][0] - band->coord[0][0]);
 
                     /* Compute Cy0*/
-                    Cy0 = (prec->coord[1][0] >> band->log2_cblk_height) << band->log2_cblk_height;
+                    Cy0 = ((prec->coord[1][0] - band->coord[1][0]) >> band->log2_cblk_height) << band->log2_cblk_height;
                     Cy0 = Cy0 + ((cblkno / prec->nb_codeblocks_width)   << band->log2_cblk_height);
-                    cblk->coord[1][0] = FFMAX(Cy0, prec->coord[1][0]);
+                    cblk->coord[1][0] = FFMAX(Cy0, prec->coord[1][0] - band->coord[1][0]);
 
                     /* Compute Cx1 */
                     cblk->coord[0][1] = FFMIN(Cx0 + (1 << band->log2_cblk_width),
-                                              prec->coord[0][1]);
+                                              prec->coord[0][1] - band->coord[0][0]);
 
                     /* Compute Cy1 */
                     cblk->coord[1][1] = FFMIN(Cy0 + (1 << band->log2_cblk_height),
-                                              prec->coord[1][1]);
+                                              prec->coord[1][1] - band->coord[1][0]);
                     /* Update code-blocks coordinates according sub-band position */
                     if ((bandno + !!reslevelno) & 1) {
                         cblk->coord[0][0] += comp->reslevel[reslevelno-1].coord[0][1] -
