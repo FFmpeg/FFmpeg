@@ -973,6 +973,7 @@ static int jpeg2000_decode_packets(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile
         break;
 
     case JPEG2000_PGOD_LRCP:
+        av_log(s->avctx, AV_LOG_DEBUG, "Progression order LRCP\n");
         for (layno = 0; layno < tile->codsty[0].nlayers; layno++) {
             ok_reslevel = 1;
             for (reslevelno = 0; ok_reslevel; reslevelno++) {
@@ -998,6 +999,7 @@ static int jpeg2000_decode_packets(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile
         break;
 
     case JPEG2000_PGOD_CPRL:
+        av_log(s->avctx, AV_LOG_DEBUG, "Progression order CPRL\n");
         for (compno = 0; compno < s->ncomponents; compno++) {
             Jpeg2000Component *comp     = tile->comp + compno;
             Jpeg2000CodingStyle *codsty = tile->codsty + compno;
