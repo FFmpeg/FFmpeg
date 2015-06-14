@@ -402,13 +402,14 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
                 prec->coord[1][1] = FFMIN(prec->coord[1][1], band->coord[1][1]);
 
                 prec->nb_codeblocks_width =
-                    ff_jpeg2000_ceildivpow2(prec->coord[0][1] -
-                                            prec->coord[0][0],
-                                            band->log2_cblk_width);
+                    ff_jpeg2000_ceildivpow2(prec->coord[0][1],
+                                            band->log2_cblk_width)
+                    - (prec->coord[0][0] >> band->log2_cblk_width);
                 prec->nb_codeblocks_height =
-                    ff_jpeg2000_ceildivpow2(prec->coord[1][1] -
-                                            prec->coord[1][0],
-                                            band->log2_cblk_height);
+                    ff_jpeg2000_ceildivpow2(prec->coord[1][1],
+                                            band->log2_cblk_height)
+                    - (prec->coord[1][0] >> band->log2_cblk_height);
+
 
                 /* Tag trees initialization */
                 prec->cblkincl =
