@@ -81,22 +81,24 @@ static int decode_packet(int *got_frame, int cached)
             fprintf(stderr, "Error decoding video frame (%s)\n", av_err2str(ret));
             return ret;
         }
-        if (video_dec_ctx->width != width || video_dec_ctx->height != height ||
-            video_dec_ctx->pix_fmt != pix_fmt) {
-            /* To handle this change, one could call av_image_alloc again and
-             * decode the following frames into another rawvideo file. */
-            fprintf(stderr, "Error: Width, height and pixel format have to be "
-                    "constant in a rawvideo file, but the width, height or "
-                    "pixel format of the input video changed:\n"
-                    "old: width = %d, height = %d, format = %s\n"
-                    "new: width = %d, height = %d, format = %s\n",
-                    width, height, av_get_pix_fmt_name(pix_fmt),
-                    video_dec_ctx->width, video_dec_ctx->height,
-                    av_get_pix_fmt_name(video_dec_ctx->pix_fmt));
-            return -1;
-        }
 
         if (*got_frame) {
+
+            if (frame->width != width || frame->height != height ||
+                frame->format != pix_fmt) {
+                /* To handle this change, one could call av_image_alloc again and
+                 * decode the following frames into another rawvideo file. */
+                fprintf(stderr, "Error: Width, height and pixel format have to be "
+                        "constant in a rawvideo file, but the width, height or "
+                        "pixel format of the input video changed:\n"
+                        "old: width = %d, height = %d, format = %s\n"
+                        "new: width = %d, height = %d, format = %s\n",
+                        width, height, av_get_pix_fmt_name(pix_fmt),
+                        frame->width, frame->height,
+                        av_get_pix_fmt_name(frame->format));
+                return -1;
+            }
+
             printf("video_frame%s n:%d coded_n:%d pts:%s\n",
                    cached ? "(cached)" : "",
                    video_frame_count++, frame->coded_picture_number,
