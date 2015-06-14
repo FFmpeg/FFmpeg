@@ -1027,6 +1027,27 @@
 }
 #define DPADD_SB4_SH(...) DPADD_SB4(v8i16, __VA_ARGS__)
 
+/* Description : Dot product & addition of byte vector elements
+   Arguments   : Inputs  - mult0, mult1
+                           cnst0, cnst1
+                 Outputs - out0, out1
+                 Return Type - unsigned halfword
+   Details     : Unsigned byte elements from mult0 are multiplied with
+                 unsigned byte elements from cnst0 producing a result
+                 twice the size of input i.e. unsigned halfword.
+                 Then this multiplication results of adjacent odd-even elements
+                 are added to the out vector
+                 (2 unsigned halfword results)
+*/
+#define DPADD_UB2(RTYPE, mult0, mult1, cnst0, cnst1, out0, out1)   \
+{                                                                  \
+    out0 = (RTYPE) __msa_dpadd_u_h((v8u16) out0,                   \
+                                   (v16u8) mult0, (v16u8) cnst0);  \
+    out1 = (RTYPE) __msa_dpadd_u_h((v8u16) out1,                   \
+                                   (v16u8) mult1, (v16u8) cnst1);  \
+}
+#define DPADD_UB2_UH(...) DPADD_UB2(v8u16, __VA_ARGS__)
+
 /* Description : Dot product & addition of halfword vector elements
    Arguments   : Inputs  - mult0, mult1
                            cnst0, cnst1
