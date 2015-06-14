@@ -333,7 +333,7 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
                 for (i = 0; i < 2; i++)
                     for (j = 0; j < 2; j++)
                         band->coord[i][j] =
-                            ff_jpeg2000_ceildivpow2(comp->coord_o[i][j] - comp->coord_o[i][0],
+                            ff_jpeg2000_ceildivpow2(comp->coord_o[i][j],
                                                     declvl - 1);
                 log2_band_prec_width  = reslevel->log2_prec_width;
                 log2_band_prec_height = reslevel->log2_prec_height;
@@ -349,7 +349,7 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
                     for (j = 0; j < 2; j++)
                         /* Formula example for tbx_0 = ceildiv((tcx_0 - 2 ^ (declvl - 1) * x0_b) / declvl) */
                         band->coord[i][j] =
-                            ff_jpeg2000_ceildivpow2(comp->coord_o[i][j] - comp->coord_o[i][0] -
+                            ff_jpeg2000_ceildivpow2(comp->coord_o[i][j] -
                                                     (((bandno + 1 >> i) & 1) << declvl - 1),
                                                     declvl);
                 /* TODO: Manage case of 3 band offsets here or
@@ -384,22 +384,22 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
                 /* Compute P_x0 */
                 prec->coord[0][0] = (precno % reslevel->num_precincts_x) *
                                     (1 << log2_band_prec_width);
-                prec->coord[0][0] = FFMAX(prec->coord[0][0], band->coord[0][0]);
+                prec->coord[0][0] = FFMAX(prec->coord[0][0], band->coord[0][0] - band->coord[0][0]);
 
                 /* Compute P_y0 */
                 prec->coord[1][0] = (precno / reslevel->num_precincts_x) *
                                     (1 << log2_band_prec_height);
-                prec->coord[1][0] = FFMAX(prec->coord[1][0], band->coord[1][0]);
+                prec->coord[1][0] = FFMAX(prec->coord[1][0], band->coord[1][0] - band->coord[1][0]);
 
                 /* Compute P_x1 */
                 prec->coord[0][1] = prec->coord[0][0] +
                                     (1 << log2_band_prec_width);
-                prec->coord[0][1] = FFMIN(prec->coord[0][1], band->coord[0][1]);
+                prec->coord[0][1] = FFMIN(prec->coord[0][1], band->coord[0][1] - band->coord[0][0]);
 
                 /* Compute P_y1 */
                 prec->coord[1][1] = prec->coord[1][0] +
                                     (1 << log2_band_prec_height);
-                prec->coord[1][1] = FFMIN(prec->coord[1][1], band->coord[1][1]);
+                prec->coord[1][1] = FFMIN(prec->coord[1][1], band->coord[1][1] - band->coord[1][0]);
 
                 prec->nb_codeblocks_width =
                     ff_jpeg2000_ceildivpow2(prec->coord[0][1] -
