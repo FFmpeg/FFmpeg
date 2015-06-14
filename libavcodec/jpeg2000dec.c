@@ -352,6 +352,24 @@ static int get_siz(Jpeg2000DecoderContext *s)
             break;
         }
     }
+
+    if (i == possible_fmts_nb) {
+        if (ncomponents == 4 &&
+            s->cdy[0] == 1 && s->cdx[0] == 1 &&
+            s->cdy[1] == 1 && s->cdx[1] == 1 &&
+            s->cdy[2] == s->cdy[3] && s->cdx[2] == s->cdx[3]) {
+            if (s->precision == 8 && s->cdy[2] == 2 && s->cdx[2] == 2 && !s->pal8) {
+                s->avctx->pix_fmt = AV_PIX_FMT_YUVA420P;
+                s->cdef[0] = 0;
+                s->cdef[1] = 1;
+                s->cdef[2] = 2;
+                s->cdef[3] = 3;
+                i = 0;
+            }
+        }
+    }
+
+
     if (i == possible_fmts_nb) {
         av_log(s->avctx, AV_LOG_ERROR,
                "Unknown pix_fmt, profile: %d, colour_space: %d, "
