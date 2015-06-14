@@ -87,7 +87,7 @@ static int tls_close(URLContext *h)
 {
     TLSContext *c = h->priv_data;
     if (c->need_shutdown)
-        gnutls_bye(c->session, GNUTLS_SHUT_RDWR);
+        gnutls_bye(c->session, GNUTLS_SHUT_WR);
     if (c->session)
         gnutls_deinit(c->session);
     if (c->cred)
