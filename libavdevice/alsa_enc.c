@@ -26,7 +26,7 @@
  * @author Luca Abeni ( lucabe72 email it )
  * @author Benoit Fouet ( benoit fouet free fr )
  *
- * This avdevice encoder allows to play audio to an ALSA (Advanced Linux
+ * This avdevice encoder can play audio to an ALSA (Advanced Linux
  * Sound Architecture) device.
  *
  * The filename parameter is the name of an ALSA PCM device capable of
