@@ -1,4 +1,4 @@
-#ifndef AVUTIL_FFVERSION_H
-#define AVUTIL_FFVERSION_H
-#define FFMPEG_VERSION "8827553"
-#endif /* AVUTIL_FFVERSION_H */
+#ifndef FFVERSION_H
+#define FFVERSION_H
+#define FFMPEG_VERSION "d7a1c6c-cyanogenmod"
+#endif /* FFVERSION_H */
