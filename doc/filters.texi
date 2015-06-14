@@ -522,7 +522,7 @@ select half of sine wave
 select exponential sine wave
 @item log
 select logarithmic
-@item par
+@item ipar
 select inverted parabola
 @item qua
 select quadratic
@@ -532,6 +532,18 @@ select cubic
 select square root
 @item cbr
 select cubic root
+@item par
+select parabola
+@item exp
+select exponential
+@item iqsin
+select inverted quarter of sine wave
+@item ihsin
+select inverted half of sine wave
+@item dese
+select double-exponential seat
+@item desi
+select double-exponential sigmoid
 @end table
 @end table
 

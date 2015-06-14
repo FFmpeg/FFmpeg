@@ -42,7 +42,7 @@ typedef struct {
                          int64_t start, int range, int curve);
 } AudioFadeContext;
 
-enum CurveType { TRI, QSIN, ESIN, HSIN, LOG, PAR, QUA, CUB, SQU, CBR };
+enum CurveType { TRI, QSIN, ESIN, HSIN, LOG, IPAR, QUA, CUB, SQU, CBR, PAR, EXP, IQSIN, IHSIN, DESE, DESI, NB_CURVES };
 
 #define OFFSET(x) offsetof(AudioFadeContext, x)
 #define FLAGS AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
@@ -60,18 +60,24 @@ static const AVOption afade_options[] = {
     { "st",           "set time to start fading",                    OFFSET(start_time),   AV_OPT_TYPE_DURATION, {.i64 = 0. }, 0, INT32_MAX, FLAGS },
     { "duration",     "set fade duration",                           OFFSET(duration),     AV_OPT_TYPE_DURATION, {.i64 = 0. }, 0, INT32_MAX, FLAGS },
     { "d",            "set fade duration",                           OFFSET(duration),     AV_OPT_TYPE_DURATION, {.i64 = 0. }, 0, INT32_MAX, FLAGS },
-    { "curve",        "set fade curve type",                         OFFSET(curve),        AV_OPT_TYPE_INT,    {.i64 = TRI  }, TRI, CBR, FLAGS, "curve" },
-    { "c",            "set fade curve type",                         OFFSET(curve),        AV_OPT_TYPE_INT,    {.i64 = TRI  }, TRI, CBR, FLAGS, "curve" },
+    { "curve",        "set fade curve type",                         OFFSET(curve),        AV_OPT_TYPE_INT,    {.i64 = TRI  }, 0, NB_CURVES - 1, FLAGS, "curve" },
+    { "c",            "set fade curve type",                         OFFSET(curve),        AV_OPT_TYPE_INT,    {.i64 = TRI  }, 0, NB_CURVES - 1, FLAGS, "curve" },
     { "tri",          "linear slope",                                0,                    AV_OPT_TYPE_CONST,  {.i64 = TRI  }, 0, 0, FLAGS, "curve" },
     { "qsin",         "quarter of sine wave",                        0,                    AV_OPT_TYPE_CONST,  {.i64 = QSIN }, 0, 0, FLAGS, "curve" },
     { "esin",         "exponential sine wave",                       0,                    AV_OPT_TYPE_CONST,  {.i64 = ESIN }, 0, 0, FLAGS, "curve" },
     { "hsin",         "half of sine wave",                           0,                    AV_OPT_TYPE_CONST,  {.i64 = HSIN }, 0, 0, FLAGS, "curve" },
     { "log",          "logarithmic",                                 0,                    AV_OPT_TYPE_CONST,  {.i64 = LOG  }, 0, 0, FLAGS, "curve" },
-    { "par",          "inverted parabola",                           0,                    AV_OPT_TYPE_CONST,  {.i64 = PAR  }, 0, 0, FLAGS, "curve" },
+    { "ipar",         "inverted parabola",                           0,                    AV_OPT_TYPE_CONST,  {.i64 = IPAR }, 0, 0, FLAGS, "curve" },
     { "qua",          "quadratic",                                   0,                    AV_OPT_TYPE_CONST,  {.i64 = QUA  }, 0, 0, FLAGS, "curve" },
     { "cub",          "cubic",                                       0,                    AV_OPT_TYPE_CONST,  {.i64 = CUB  }, 0, 0, FLAGS, "curve" },
     { "squ",          "square root",                                 0,                    AV_OPT_TYPE_CONST,  {.i64 = SQU  }, 0, 0, FLAGS, "curve" },
     { "cbr",          "cubic root",                                  0,                    AV_OPT_TYPE_CONST,  {.i64 = CBR  }, 0, 0, FLAGS, "curve" },
+    { "par",          "parabola",                                    0,                    AV_OPT_TYPE_CONST,  {.i64 = PAR  }, 0, 0, FLAGS, "curve" },
+    { "exp",          "exponential",                                 0,                    AV_OPT_TYPE_CONST,  {.i64 = EXP  }, 0, 0, FLAGS, "curve" },
+    { "iqsin",        "inverted quarter of sine wave",               0,                    AV_OPT_TYPE_CONST,  {.i64 = IQSIN}, 0, 0, FLAGS, "curve" },
+    { "ihsin",        "inverted half of sine wave",                  0,                    AV_OPT_TYPE_CONST,  {.i64 = IHSIN}, 0, 0, FLAGS, "curve" },
+    { "dese",         "double-exponential seat",                     0,                    AV_OPT_TYPE_CONST,  {.i64 = DESE }, 0, 0, FLAGS, "curve" },
+    { "desi",         "double-exponential sigmoid",                  0,                    AV_OPT_TYPE_CONST,  {.i64 = DESI }, 0, 0, FLAGS, "curve" },
     { NULL }
 };
 
@@ -130,16 +136,28 @@ static double fade_gain(int curve, int64_t index, int range)
     case QSIN:
         gain = sin(gain * M_PI / 2.0);
         break;
+    case IQSIN:
+        gain = 0.636943 * asin(gain);
+        break;
     case ESIN:
         gain = 1.0 - cos(M_PI / 4.0 * (pow(2.0*gain - 1, 3) + 1));
         break;
     case HSIN:
         gain = (1.0 - cos(gain * M_PI)) / 2.0;
         break;
-    case LOG:
+    case IHSIN:
+        gain = 0.318471 * acos(1 - 2 * gain);
+        break;
+    case EXP:
         gain = pow(0.1, (1 - gain) * 5.0);
         break;
+    case LOG:
+        gain = av_clipd(0.0868589 * log(100000 * gain), 0, 1.0);
+        break;
     case PAR:
+        gain = 1 - sqrt(1 - gain);
+        break;
+    case IPAR:
         gain = (1 - (1 - gain) * (1 - gain));
         break;
     case QUA:
@@ -153,6 +171,12 @@ static double fade_gain(int curve, int64_t index, int range)
         break;
     case CBR:
         gain = cbrt(gain);
+        break;
+    case DESE:
+        gain = gain <= 0.5 ? pow(2 * gain, 1/3.) / 2: 1 - pow(2 * (1 - gain), 1/3.) / 2;
+        break;
+    case DESI:
+        gain = gain <= 0.5 ? pow(2 * gain, 3) / 2: 1 - pow(2 * (1 - gain), 3) / 2;
         break;
     }
 
