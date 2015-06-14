@@ -1217,21 +1217,31 @@ typedef struct AVCodecContext {
     /* video only */
     /**
      * picture width / height.
+     *
+     * @note Those fields may not match the values of the last
+     * AVFrame outputted by avcodec_decode_video2 due frame
+     * reordering.
+     *
      * - encoding: MUST be set by user.
      * - decoding: May be set by the user before opening the decoder if known e.g.
      *             from the container. Some decoders will require the dimensions
      *             to be set by the caller. During decoding, the decoder may
-     *             overwrite those values as required.
+     *             overwrite those values as required while parsing the data.
      */
     int width, height;
 
     /**
      * Bitstream width / height, may be different from width/height e.g. when
      * the decoded frame is cropped before being output.
+     *
+     * @note Those field may not match the value of the last
+     * AVFrame outputted by avcodec_decode_video2 due frame
+     * reordering.
+     *
      * - encoding: unused
      * - decoding: May be set by the user before opening the decoder if known
      *             e.g. from the container. During decoding, the decoder may
-     *             overwrite those values as required.
+     *             overwrite those values as required while parsing the data.
      */
     int coded_width, coded_height;
 
@@ -1250,8 +1260,14 @@ typedef struct AVCodecContext {
      * Pixel format, see AV_PIX_FMT_xxx.
      * May be set by the demuxer if known from headers.
      * May be overriden by the decoder if it knows better.
+     *
+     * @note This field may not match the value of the last
+     * AVFrame outputted by avcodec_decode_video2 due frame
+     * reordering.
+     *
      * - encoding: Set by user.
-     * - decoding: Set by user if known, overridden by libavcodec if known
+     * - decoding: Set by user if known, overridden by libavcodec while
+     *             parsing the data.
      */
     enum AVPixelFormat pix_fmt;
 
