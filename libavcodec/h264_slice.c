@@ -1549,12 +1549,15 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
              * vectors.  Given we are concealing a lost frame, this probably
              * is not noticeable by comparison, but it should be fixed. */
             if (h->short_ref_count) {
-                if (prev) {
+                if (prev &&
+                    h->short_ref[0]->f->width == prev->f->width &&
+                    h->short_ref[0]->f->height == prev->f->height &&
+                    h->short_ref[0]->f->format == prev->f->format) {
                     av_image_copy(h->short_ref[0]->f->data,
                                   h->short_ref[0]->f->linesize,
                                   (const uint8_t **)prev->f->data,
                                   prev->f->linesize,
-                                  h->avctx->pix_fmt,
+                                  prev->f->format,
                                   h->mb_width  * 16,
                                   h->mb_height * 16);
                     h->short_ref[0]->poc = prev->poc + 2;
