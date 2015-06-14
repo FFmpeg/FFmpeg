@@ -915,8 +915,8 @@ static int jpeg2000_decode_packet(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
                     || sizeof(cblk->data) < cblk->length + cblk->lengthinc[cwsno] + 4
                 ) {
                     av_log(s->avctx, AV_LOG_ERROR,
-                        "Block length %"PRIu16" or lengthinc %d is too large\n",
-                        cblk->length, cblk->lengthinc[cwsno]);
+                        "Block length %"PRIu16" or lengthinc %d is too large, left %d\n",
+                        cblk->length, cblk->lengthinc[cwsno], bytestream2_get_bytes_left(&s->g));
                     return AVERROR_INVALIDDATA;
                 }
 
