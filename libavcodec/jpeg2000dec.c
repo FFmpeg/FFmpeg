@@ -355,13 +355,20 @@ static int get_siz(Jpeg2000DecoderContext *s)
     if (i == possible_fmts_nb) {
         av_log(s->avctx, AV_LOG_ERROR,
                "Unknown pix_fmt, profile: %d, colour_space: %d, "
-               "components: %d, precision: %d, "
-               "cdx[1]: %d, cdy[1]: %d, cdx[2]: %d, cdy[2]: %d\n",
+               "components: %d, precision: %d\n"
+               "cdx[0]: %d, cdy[0]: %d\n"
+               "cdx[1]: %d, cdy[1]: %d\n"
+               "cdx[2]: %d, cdy[2]: %d\n"
+               "cdx[3]: %d, cdy[3]: %d\n",
                s->avctx->profile, s->colour_space, ncomponents, s->precision,
-               ncomponents > 2 ? s->cdx[1] : 0,
-               ncomponents > 2 ? s->cdy[1] : 0,
+               s->cdx[0],
+               s->cdy[0],
+               ncomponents > 1 ? s->cdx[1] : 0,
+               ncomponents > 1 ? s->cdy[1] : 0,
                ncomponents > 2 ? s->cdx[2] : 0,
-               ncomponents > 2 ? s->cdy[2] : 0);
+               ncomponents > 2 ? s->cdy[2] : 0,
+               ncomponents > 3 ? s->cdx[3] : 0,
+               ncomponents > 3 ? s->cdy[3] : 0);
         return AVERROR_PATCHWELCOME;
     }
     s->avctx->bits_per_raw_sample = s->precision;
