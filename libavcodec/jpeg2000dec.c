@@ -812,8 +812,8 @@ static int jpeg2000_decode_packet(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
         }
     }
 
-    if (bytestream2_peek_be32(&s->g) == 0xFF910004)
-        bytestream2_skip(&s->g, 6);
+    if (bytestream2_peek_be32(&s->g) == JPEG2000_SOP_FIXED_BYTES)
+        bytestream2_skip(&s->g, JPEG2000_SOP_BYTE_LENGTH);
 
     if (!(ret = get_bits(s, 1))) {
         jpeg2000_flush(s);
