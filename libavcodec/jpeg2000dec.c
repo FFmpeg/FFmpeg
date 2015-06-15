@@ -1102,6 +1102,9 @@ static int jpeg2000_decode_packets(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile
                         int xc = x / s->cdx[compno];
                         int yc = y / s->cdy[compno];
 
+                        if (reslevelno >= codsty->nreslevels)
+                            continue;
+
                         if (yc % (1 << (rlevel->log2_prec_height + reducedresno)))
                             continue;
 
