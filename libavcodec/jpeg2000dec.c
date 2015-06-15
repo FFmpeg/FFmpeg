@@ -1125,7 +1125,7 @@ static int jpeg2000_decode_packets(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile
                             continue;
                         }
 
-                        if (reslevelno < codsty->nreslevels) {
+                        {
                             Jpeg2000ResLevel *rlevel = tile->comp[compno].reslevel +
                                                     reslevelno;
                             ok_reslevel = 1;
