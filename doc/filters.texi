@@ -1436,6 +1436,11 @@ noisy environment:
 compand=.3|.3:1|1:-90/-60|-60/-40|-40/-30|-20/-20:6:0:-90:0.2
 @end example
 
+Another example for audio with whisper and explosion parts:
+@example
+compand=0|0:1|1:-90/-900|-70/-70|-30/-9|0/-3:6:0:0:0
+@end example
+
 @item
 A noise gate for when the noise is at a lower level than the signal:
 @example
