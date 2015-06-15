@@ -1,4 +1,4 @@
-f60260ca447624a19ad8307abad7a431 *tests/data/fate/vsynth2-mpeg4.mp4
-159432 tests/data/fate/vsynth2-mpeg4.mp4
+5476cf4dc144eac67b12737fd8966641 *tests/data/fate/vsynth2-mpeg4.mp4
+159493 tests/data/fate/vsynth2-mpeg4.mp4
 871fda3853f4766669ad875923920bd5 *tests/data/fate/vsynth2-mpeg4.out.rawvideo
 stddev:    6.02 PSNR: 32.53 MAXDIFF:   89 bytes:  7603200/  7603200
