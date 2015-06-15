@@ -1788,11 +1788,11 @@ static int jpeg2000_read_bitstream_packets(Jpeg2000DecoderContext *s)
     for (tileno = 0; tileno < s->numXtiles * s->numYtiles; tileno++) {
         Jpeg2000Tile *tile = s->tile + tileno;
 
-        if (ret = init_tile(s, tileno))
+        if ((ret = init_tile(s, tileno)) < 0)
             return ret;
 
         s->g = tile->tile_part[0].tpg;
-        if (ret = jpeg2000_decode_packets(s, tile))
+        if ((ret = jpeg2000_decode_packets(s, tile)) < 0)
             return ret;
     }
 
