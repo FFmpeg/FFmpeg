@@ -1231,13 +1231,13 @@ static void decode_sigpass(Jpeg2000T1Context *t1, int width, int height,
     for (y0 = 0; y0 < height; y0 += 4)
         for (x = 0; x < width; x++)
             for (y = y0; y < height && y < y0 + 4; y++) {
-                if ((t1->flags[y+1][x+1] & JPEG2000_T1_SIG_NB)
+                int flags_mask = -1;
+                if (vert_causal_ctx_csty_symbol && y == y0 + 3)
+                    flags_mask &= ~(JPEG2000_T1_SIG_S | JPEG2000_T1_SIG_SW | JPEG2000_T1_SIG_SE | JPEG2000_T1_SGN_S);
+                if ((t1->flags[y+1][x+1] & JPEG2000_T1_SIG_NB & flags_mask)
                 && !(t1->flags[y+1][x+1] & (JPEG2000_T1_SIG | JPEG2000_T1_VIS))) {
-                    int flags_mask = -1;
-                    if (vert_causal_ctx_csty_symbol && y == y0 + 3)
-                        flags_mask &= ~(JPEG2000_T1_SIG_S | JPEG2000_T1_SIG_SW | JPEG2000_T1_SIG_SE);
                     if (ff_mqc_decode(&t1->mqc, t1->mqc.cx_states + ff_jpeg2000_getsigctxno(t1->flags[y+1][x+1] & flags_mask, bandno))) {
-                        int xorbit, ctxno = ff_jpeg2000_getsgnctxno(t1->flags[y+1][x+1], &xorbit);
+                        int xorbit, ctxno = ff_jpeg2000_getsgnctxno(t1->flags[y+1][x+1] & flags_mask, &xorbit);
                         if (t1->mqc.raw)
                              t1->data[y][x] = ff_mqc_decode(&t1->mqc, t1->mqc.cx_states + ctxno) ? -mask : mask;
                         else
@@ -1253,7 +1253,7 @@ static void decode_sigpass(Jpeg2000T1Context *t1, int width, int height,
 }
 
 static void decode_refpass(Jpeg2000T1Context *t1, int width, int height,
-                           int bpno)
+                           int bpno, int vert_causal_ctx_csty_symbol)
 {
     int phalf, nhalf;
     int y0, x, y;
@@ -1265,7 +1265,9 @@ static void decode_refpass(Jpeg2000T1Context *t1, int width, int height,
         for (x = 0; x < width; x++)
             for (y = y0; y < height && y < y0 + 4; y++)
                 if ((t1->flags[y + 1][x + 1] & (JPEG2000_T1_SIG | JPEG2000_T1_VIS)) == JPEG2000_T1_SIG) {
-                    int ctxno = ff_jpeg2000_getrefctxno(t1->flags[y + 1][x + 1]);
+                    int flags_mask = (vert_causal_ctx_csty_symbol && y == y0 + 3) ?
+                        ~(JPEG2000_T1_SIG_S | JPEG2000_T1_SIG_SW | JPEG2000_T1_SIG_SE | JPEG2000_T1_SGN_S) : -1;
+                    int ctxno = ff_jpeg2000_getrefctxno(t1->flags[y + 1][x + 1] & flags_mask);
                     int r     = ff_mqc_decode(&t1->mqc,
                                               t1->mqc.cx_states + ctxno)
                                 ? phalf : nhalf;
@@ -1282,11 +1284,14 @@ static void decode_clnpass(Jpeg2000DecoderContext *s, Jpeg2000T1Context *t1,
 
     for (y0 = 0; y0 < height; y0 += 4) {
         for (x = 0; x < width; x++) {
+            int flags_mask = -1;
+            if (vert_causal_ctx_csty_symbol)
+                flags_mask &= ~(JPEG2000_T1_SIG_S | JPEG2000_T1_SIG_SW | JPEG2000_T1_SIG_SE | JPEG2000_T1_SGN_S);
             if (y0 + 3 < height &&
                 !((t1->flags[y0 + 1][x + 1] & (JPEG2000_T1_SIG_NB | JPEG2000_T1_VIS | JPEG2000_T1_SIG)) ||
                   (t1->flags[y0 + 2][x + 1] & (JPEG2000_T1_SIG_NB | JPEG2000_T1_VIS | JPEG2000_T1_SIG)) ||
                   (t1->flags[y0 + 3][x + 1] & (JPEG2000_T1_SIG_NB | JPEG2000_T1_VIS | JPEG2000_T1_SIG)) ||
-                  (t1->flags[y0 + 4][x + 1] & (JPEG2000_T1_SIG_NB | JPEG2000_T1_VIS | JPEG2000_T1_SIG)))) {
+                  (t1->flags[y0 + 4][x + 1] & (JPEG2000_T1_SIG_NB | JPEG2000_T1_VIS | JPEG2000_T1_SIG) & flags_mask))) {
                 if (!ff_mqc_decode(&t1->mqc, t1->mqc.cx_states + MQC_CX_RL))
                     continue;
                 runlen = ff_mqc_decode(&t1->mqc,
@@ -1301,18 +1306,18 @@ static void decode_clnpass(Jpeg2000DecoderContext *s, Jpeg2000T1Context *t1,
             }
 
             for (y = y0 + runlen; y < y0 + 4 && y < height; y++) {
+                int flags_mask = -1;
+                if (vert_causal_ctx_csty_symbol && y == y0 + 3)
+                    flags_mask &= ~(JPEG2000_T1_SIG_S | JPEG2000_T1_SIG_SW | JPEG2000_T1_SIG_SE | JPEG2000_T1_SGN_S);
                 if (!dec) {
                     if (!(t1->flags[y+1][x+1] & (JPEG2000_T1_SIG | JPEG2000_T1_VIS))) {
-                        int flags_mask = -1;
-                        if (vert_causal_ctx_csty_symbol && y == y0 + 3)
-                            flags_mask &= ~(JPEG2000_T1_SIG_S | JPEG2000_T1_SIG_SW | JPEG2000_T1_SIG_SE);
                         dec = ff_mqc_decode(&t1->mqc, t1->mqc.cx_states + ff_jpeg2000_getsigctxno(t1->flags[y+1][x+1] & flags_mask,
                                                                                              bandno));
                     }
                 }
                 if (dec) {
                     int xorbit;
-                    int ctxno = ff_jpeg2000_getsgnctxno(t1->flags[y + 1][x + 1],
+                    int ctxno = ff_jpeg2000_getsgnctxno(t1->flags[y + 1][x + 1] & flags_mask,
                                                         &xorbit);
                     t1->data[y][x] = (ff_mqc_decode(&t1->mqc,
                                                     t1->mqc.cx_states + ctxno) ^
@@ -1371,7 +1376,7 @@ static int decode_cblk(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *codsty,
                            vert_causal_ctx_csty_symbol);
             break;
         case 1:
-            decode_refpass(t1, width, height, bpno + 1);
+            decode_refpass(t1, width, height, bpno + 1, vert_causal_ctx_csty_symbol);
             break;
         case 2:
             av_assert2(!t1->mqc.raw);
