@@ -1388,8 +1388,8 @@ static int decode_cblk(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *codsty,
         if (codsty->cblk_style & JPEG2000_CBLK_RESET) // XXX no testcase for just this
             ff_mqc_init_contexts(&t1->mqc);
 
-        if ((coder_type = needs_termination(codsty->cblk_style, pass_cnt))) {
-            if (term_cnt >= cblk->nb_terminations) {
+        if (passno && (coder_type = needs_termination(codsty->cblk_style, pass_cnt))) {
+            if (term_cnt > cblk->nb_terminations) {
                 av_log(s->avctx, AV_LOG_ERROR, "Missing needed termination \n");
                 return AVERROR_INVALIDDATA;
             }
