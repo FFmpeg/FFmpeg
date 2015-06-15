@@ -1602,6 +1602,14 @@ static int matroska_parse_tracks(AVFormatContext *s)
         if (!track->codec_id)
             continue;
 
+        if (track->audio.samplerate < 0 || track->audio.samplerate > INT_MAX ||
+            isnan(track->audio.samplerate)) {
+            av_log(matroska->ctx, AV_LOG_WARNING,
+                   "Invalid sample rate %f, defaulting to 8000 instead.\n",
+                   track->audio.samplerate);
+            track->audio.samplerate = 8000;
+        }
+
         if (track->type == MATROSKA_TRACK_TYPE_VIDEO) {
             if (!track->default_duration && track->video.frame_rate > 0)
                 track->default_duration = 1000000000 / track->video.frame_rate;
