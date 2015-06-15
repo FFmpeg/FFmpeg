@@ -41,18 +41,18 @@
 #define NUT_MIN_VERSION 2
 
 typedef enum{
-    FLAG_KEY        =   1, ///<if set, frame is keyframe
-    FLAG_EOR        =   2, ///<if set, stream has no relevance on presentation. (EOR)
-    FLAG_CODED_PTS  =   8, ///<if set, coded_pts is in the frame header
-    FLAG_STREAM_ID  =  16, ///<if set, stream_id is coded in the frame header
-    FLAG_SIZE_MSB   =  32, ///<if set, data_size_msb is at frame header, otherwise data_size_msb is 0
-    FLAG_CHECKSUM   =  64, ///<if set, the frame header contains a checksum
-    FLAG_RESERVED   = 128, ///<if set, reserved_count is coded in the frame header
-    FLAG_SM_DATA    = 256, ///<if set, side / meta data is stored in the frame header.
-    FLAG_HEADER_IDX =1024, ///<If set, header_idx is coded in the frame header.
-    FLAG_MATCH_TIME =2048, ///<If set, match_time_delta is coded in the frame header
-    FLAG_CODED      =4096, ///<if set, coded_flags are stored in the frame header
-    FLAG_INVALID    =8192, ///<if set, frame_code is invalid
+    FLAG_KEY        =   1, // if set, frame is keyframe
+    FLAG_EOR        =   2, // if set, stream has no relevance on presentation. (EOR)
+    FLAG_CODED_PTS  =   8, // if set, coded_pts is in the frame header
+    FLAG_STREAM_ID  =  16, // if set, stream_id is coded in the frame header
+    FLAG_SIZE_MSB   =  32, // if set, data_size_msb is at frame header, otherwise data_size_msb is 0
+    FLAG_CHECKSUM   =  64, // if set, the frame header contains a checksum
+    FLAG_RESERVED   = 128, // if set, reserved_count is coded in the frame header
+    FLAG_SM_DATA    = 256, // if set, side / meta data is stored in the frame header.
+    FLAG_HEADER_IDX =1024, // If set, header_idx is coded in the frame header.
+    FLAG_MATCH_TIME =2048, // If set, match_time_delta is coded in the frame header
+    FLAG_CODED      =4096, // if set, coded_flags are stored in the frame header
+    FLAG_INVALID    =8192, // if set, frame_code is invalid
 } Flag;
 
 typedef struct Syncpoint {
@@ -96,7 +96,7 @@ typedef struct NUTContext {
     FrameCode frame_code[256];
     uint8_t header_len[128];
     const uint8_t *header[128];
-    uint64_t next_startcode;     ///< stores the next startcode if it has already been parsed but the stream is not seekable
+    uint64_t next_startcode;     // stores the next startcode if it has already been parsed but the stream is not seekable
     StreamContext *stream;
     ChapterContext *chapter;
     unsigned int max_distance;
