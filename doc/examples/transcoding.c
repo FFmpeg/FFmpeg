@@ -117,7 +117,7 @@ static int open_output_file(const char *filename)
             /* in this example, we choose transcoding to same codec */
             encoder = avcodec_find_encoder(dec_ctx->codec_id);
             if (!encoder) {
-                av_log(NULL, AV_LOG_FATAL, "Neccessary encoder not found\n");
+                av_log(NULL, AV_LOG_FATAL, "Necessary encoder not found\n");
                 return AVERROR_INVALIDDATA;
             }
 

@@ -124,7 +124,7 @@ static double fade_gain(int curve, int64_t index, int range)
 {
     double gain;
 
-    gain = FFMAX(0.0, FFMIN(1.0, 1.0 * index / range));
+    gain = av_clipd(1.0 * index / range, 0, 1.0);
 
     switch (curve) {
     case QSIN:

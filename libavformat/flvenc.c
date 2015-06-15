@@ -562,7 +562,7 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     if (enc->codec_id == AV_CODEC_ID_H264 || enc->codec_id == AV_CODEC_ID_MPEG4) {
-        /* check if extradata looks like mp4 formated */
+        /* check if extradata looks like mp4 formatted */
         if (enc->extradata_size > 0 && *(uint8_t*)enc->extradata != 1)
             if ((ret = ff_avc_parse_nal_units_buf(pkt->data, &data, &size)) < 0)
                 return ret;

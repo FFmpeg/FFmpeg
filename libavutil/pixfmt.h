@@ -530,7 +530,7 @@ enum AVColorRange {
  * Illustration showing the location of the first (top left) chroma sample of the
  * image, the left shows only luma, the right
  * shows the location of the chroma sample, the 2 could be imagined to overlay
- * each other but are drawn seperately due to limitations of ASCII
+ * each other but are drawn separately due to limitations of ASCII
  *
  *                1st 2nd       1st 2nd horizontal luma sample positions
  *                 v   v         v   v

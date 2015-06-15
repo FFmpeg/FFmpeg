@@ -58,6 +58,9 @@ enum Jpeg2000Markers {
     JPEG2000_EOC = 0xffd9, // end of codestream
 };
 
+#define JPEG2000_SOP_FIXED_BYTES 0xFF910004
+#define JPEG2000_SOP_BYTE_LENGTH 6
+
 enum Jpeg2000Quantsty { // quantization style
     JPEG2000_QSTY_NONE, // no quantization
     JPEG2000_QSTY_SI,   // scalar derived

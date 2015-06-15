@@ -79,7 +79,7 @@ typedef struct AVIODirEntry {
     char *name;                           /**< Filename */
     int type;                             /**< Type of the entry */
     int utf8;                             /**< Set to 1 when name is encoded with UTF-8, 0 otherwise.
-                                               Name can be encoded with UTF-8 eventhough 0 is set. */
+                                               Name can be encoded with UTF-8 even though 0 is set. */
     int64_t size;                         /**< File size in bytes, -1 if unknown. */
     int64_t modification_timestamp;       /**< Time of last modification in microseconds since unix
                                                epoch, -1 if unknown. */
