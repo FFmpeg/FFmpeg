@@ -185,6 +185,27 @@
 
 #define DATA_HEADER_SIZE 50
 
+typedef struct ASFStream {
+    int num;
+    unsigned char seq;
+    /* use for reading */
+    AVPacket pkt;
+    int frag_offset;
+    int timestamp;
+    int64_t duration;
+
+    int ds_span;                /* descrambling  */
+    int ds_packet_size;
+    int ds_chunk_size;
+
+    int64_t packet_pos;
+
+    uint16_t stream_language_index;
+
+    int      palette_changed;
+    uint32_t palette[256];
+} ASFStream;
+
 typedef struct ASFContext {
     uint32_t seqno;
     int is_streamed;

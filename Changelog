@@ -36,6 +36,7 @@ version <next>:
 - Support the extended vp9 profiles in the libvpx wrapper
 - Hap decoder and encoder
 - DirectDraw Surface image/texture decoder
+- rewritten ASF demuxer
 
 
 version 11:
