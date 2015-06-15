@@ -70,6 +70,7 @@ static int exchange(MqcState *mqc, uint8_t *cxstate, int lps)
 
 void ff_mqc_initdec(MqcState *mqc, uint8_t *bp, int raw, int reset)
 {
+    mqc->raw = raw;
     if (reset)
         ff_mqc_init_contexts(mqc);
     mqc->bp = bp;
@@ -77,7 +78,6 @@ void ff_mqc_initdec(MqcState *mqc, uint8_t *bp, int raw, int reset)
     bytein(mqc);
     mqc->c = mqc->c << 7;
     mqc->a = 0x8000;
-    mqc->raw = raw;
 }
 
 static int mqc_decode_bypass(MqcState *mqc) {
