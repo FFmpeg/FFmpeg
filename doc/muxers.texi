@@ -263,6 +263,62 @@ ffmpeg in.nut -hls_segment_filename 'file%03d.ts' out.m3u8
 This example will produce the playlist, @file{out.m3u8}, and segment files:
 @file{file000.ts}, @file{file001.ts}, @file{file002.ts}, etc.
 
+@item hls_key_info_file @var{key_info_file}
+Use the information in @var{key_info_file} for segment encryption. The first
+line of @var{key_info_file} specifies the key URI written to the playlist. The
+key URL is used to access the encryption key during playback. The second line
+specifies the path to the key file used to obtain the key during the encryption
+process. The key file is read as a single packed array of 16 octets in binary
+format. The optional third line specifies the initialization vector (IV) as a
+hexadecimal string to be used instead of the segment sequence number (default)
+for encryption. Changes to @var{key_info_file} will result in segment
+encryption with the new key/IV and an entry in the playlist for the new key
+URI/IV.
+
+Key info file format:
+@example
+@var{key URI}
+@var{key file path}
+@var{IV} (optional)
+@end example
+
+Example key URIs:
+@example
+http://server/file.key
+/path/to/file.key
+file.key
+@end example
+
+Example key file paths:
+@example
+file.key
+/path/to/file.key
+@end example
+
+Example IV:
+@example
+0123456789ABCDEF0123456789ABCDEF
+@end example
+
+Key info file example:
+@example
+http://server/file.key
+/path/to/file.key
+0123456789ABCDEF0123456789ABCDEF
+@end example
+
+Example shell script:
+@example
+#!/bin/sh
+BASE_URL=${1:-'.'}
+openssl rand 16 > file.key
+echo $BASE_URL/file.key > file.keyinfo
+echo file.key >> file.keyinfo
+echo $(openssl rand -hex 16) >> file.keyinfo
+ffmpeg -f lavfi -re -i testsrc -c:v h264 -hls_flags delete_segments \
+  -hls_key_info_file file.keyinfo out.m3u8
+@end example
+
 @item hls_flags single_file
 If this flag is set, the muxer will store all segments in a single MPEG-TS
 file, and will use byte ranges in the playlist. HLS playlists generated with

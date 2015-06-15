@@ -37,11 +37,17 @@
 #include "internal.h"
 #include "os_support.h"
 
+#define KEYSIZE 16
+#define LINE_BUFFER_SIZE 1024
+
 typedef struct HLSSegment {
     char filename[1024];
     double duration; /* in seconds */
     int64_t pos;
     int64_t size;
+
+    char key_uri[LINE_BUFFER_SIZE + 1];
+    char iv_string[KEYSIZE*2 + 1];
 
     struct HLSSegment *next;
 } HLSSegment;
@@ -89,6 +95,12 @@ typedef struct HLSContext {
     char *baseurl;
     char *format_options_str;
     AVDictionary *format_options;
+
+    char *key_info_file;
+    char key_file[LINE_BUFFER_SIZE + 1];
+    char key_uri[LINE_BUFFER_SIZE + 1];
+    char key_string[KEYSIZE*2 + 1];
+    char iv_string[KEYSIZE*2 + 1];
 } HLSContext;
 
 static int hls_delete_old_segments(HLSContext *hls) {
@@ -156,6 +168,60 @@ fail:
     return ret;
 }
 
+static int hls_encryption_start(AVFormatContext *s)
+{
+    HLSContext *hls = s->priv_data;
+    int ret;
+    AVIOContext *pb;
+    uint8_t key[KEYSIZE];
+
+    if ((ret = avio_open2(&pb, hls->key_info_file, AVIO_FLAG_READ,
+                           &s->interrupt_callback, NULL)) < 0) {
+        av_log(hls, AV_LOG_ERROR,
+                "error opening key info file %s\n", hls->key_info_file);
+        return ret;
+    }
+
+    ff_get_line(pb, hls->key_uri, sizeof(hls->key_uri));
+    hls->key_uri[strcspn(hls->key_uri, "\r\n")] = '\0';
+
+    ff_get_line(pb, hls->key_file, sizeof(hls->key_file));
+    hls->key_file[strcspn(hls->key_file, "\r\n")] = '\0';
+
+    ff_get_line(pb, hls->iv_string, sizeof(hls->iv_string));
+    hls->iv_string[strcspn(hls->iv_string, "\r\n")] = '\0';
+
+    avio_close(pb);
+
+    if (!*hls->key_uri) {
+        av_log(hls, AV_LOG_ERROR, "no key URI specified in key info file\n");
+        return AVERROR(EINVAL);
+    }
+
+    if (!*hls->key_file) {
+        av_log(hls, AV_LOG_ERROR, "no key file specified in key info file\n");
+        return AVERROR(EINVAL);
+    }
+
+    if ((ret = avio_open2(&pb, hls->key_file, AVIO_FLAG_READ,
+                           &s->interrupt_callback, NULL)) < 0) {
+        av_log(hls, AV_LOG_ERROR, "error opening key file %s\n", hls->key_file);
+        return ret;
+    }
+
+    ret = avio_read(pb, key, sizeof(key));
+    avio_close(pb);
+    if (ret != sizeof(key)) {
+        av_log(hls, AV_LOG_ERROR, "error reading key file %s\n", hls->key_file);
+        if (ret >= 0 || ret == AVERROR_EOF)
+            ret = AVERROR(EINVAL);
+        return ret;
+    }
+    ff_data_to_hex(hls->key_string, key, sizeof(key), 0);
+
+    return 0;
+}
+
 static int hls_mux_init(AVFormatContext *s)
 {
     HLSContext *hls = s->priv_data;
@@ -202,6 +268,11 @@ static int hls_append_segment(HLSContext *hls, double duration, int64_t pos,
     en->size     = size;
     en->next     = NULL;
 
+    if (hls->key_info_file) {
+        av_strlcpy(en->key_uri, hls->key_uri, sizeof(en->key_uri));
+        av_strlcpy(en->iv_string, hls->iv_string, sizeof(en->iv_string));
+    }
+
     if (!hls->segments)
         hls->segments = en;
     else
@@ -239,6 +310,10 @@ static void hls_free_segments(HLSSegment *p)
     }
 }
 
+static void print_encryption_tag(HLSContext *hls, HLSSegment *en)
+{
+}
+
 static int hls_window(AVFormatContext *s, int last)
 {
     HLSContext *hls = s->priv_data;
@@ -252,6 +327,8 @@ static int hls_window(AVFormatContext *s, int last)
     const char *proto = avio_find_protocol_name(s->filename);
     int use_rename = proto && !strcmp(proto, "file");
     static unsigned warned_non_file;
+    char *key_uri = NULL;
+    char *iv_string = NULL;
 
     if (!use_rename && !warned_non_file++)
         av_log(s, AV_LOG_ERROR, "Cannot use rename on non file protocol, this may lead to races and temporarly partial files\n");
@@ -282,6 +359,16 @@ static int hls_window(AVFormatContext *s, int last)
         hls->discontinuity_set = 1;
     }
     for (en = hls->segments; en; en = en->next) {
+        if (hls->key_info_file && (!key_uri || strcmp(en->key_uri, key_uri) ||
+                                    av_strcasecmp(en->iv_string, iv_string))) {
+            avio_printf(out, "#EXT-X-KEY:METHOD=AES-128,URI=\"%s\"", en->key_uri);
+            if (*en->iv_string)
+                avio_printf(out, ",IV=0x%s", en->iv_string);
+            avio_printf(out, "\n");
+            key_uri = en->key_uri;
+            iv_string = en->iv_string;
+        }
+
         if (hls->flags & HLS_ROUND_DURATIONS)
             avio_printf(out, "#EXTINF:%d,\n",  (int)round(en->duration));
         else
@@ -308,6 +395,8 @@ static int hls_start(AVFormatContext *s)
 {
     HLSContext *c = s->priv_data;
     AVFormatContext *oc = c->avf;
+    AVDictionary *options = NULL;
+    char *filename, iv_string[KEYSIZE*2 + 1];
     int err = 0;
 
     if (c->flags & HLS_SINGLE_FILE)
@@ -321,9 +410,33 @@ static int hls_start(AVFormatContext *s)
         }
     c->number++;
 
-    if ((err = avio_open2(&oc->pb, oc->filename, AVIO_FLAG_WRITE,
+    if (c->key_info_file) {
+        if ((err = hls_encryption_start(s)) < 0)
+            return err;
+        if ((err = av_dict_set(&options, "encryption_key", c->key_string, 0))
+                < 0)
+            return err;
+        err = av_strlcpy(iv_string, c->iv_string, sizeof(iv_string));
+        if (!err)
+            snprintf(iv_string, sizeof(iv_string), "%032"PRIx64, c->sequence);
+        if ((err = av_dict_set(&options, "encryption_iv", iv_string, 0)) < 0)
+            return err;
+
+        filename = av_asprintf("crypto:%s", oc->filename);
+        if (!filename) {
+            av_dict_free(&options);
+            return AVERROR(ENOMEM);
+        }
+        err = avio_open2(&oc->pb, filename, AVIO_FLAG_WRITE,
+                         &s->interrupt_callback, &options);
+        av_free(filename);
+        av_dict_free(&options);
+        if (err < 0)
+            return err;
+    } else
+        if ((err = avio_open2(&oc->pb, oc->filename, AVIO_FLAG_WRITE,
                           &s->interrupt_callback, NULL)) < 0)
-        return err;
+            return err;
 
     if (oc->oformat->priv_class && oc->priv_data)
         av_opt_set(oc->priv_data, "mpegts_flags", "resend_headers", 0);
@@ -520,6 +633,7 @@ static const AVOption options[] = {
     {"hls_allow_cache", "explicitly set whether the client MAY (1) or MUST NOT (0) cache media segments", OFFSET(allowcache), AV_OPT_TYPE_INT, {.i64 = -1}, INT_MIN, INT_MAX, E},
     {"hls_base_url",  "url to prepend to each playlist entry",   OFFSET(baseurl), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       E},
     {"hls_segment_filename", "filename template for segment files", OFFSET(segment_filename),   AV_OPT_TYPE_STRING, {.str = NULL},            0,       0,         E},
+    {"hls_key_info_file",    "file with key URI and key file path", OFFSET(key_info_file),      AV_OPT_TYPE_STRING, {.str = NULL},            0,       0,         E},
     {"hls_flags",     "set flags affecting HLS playlist and media file generation", OFFSET(flags), AV_OPT_TYPE_FLAGS, {.i64 = 0 }, 0, UINT_MAX, E, "flags"},
     {"single_file",   "generate a single media file indexed with byte ranges", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_SINGLE_FILE }, 0, UINT_MAX,   E, "flags"},
     {"delete_segments", "delete segment files that are no longer part of the playlist", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_DELETE_SEGMENTS }, 0, UINT_MAX,   E, "flags"},
