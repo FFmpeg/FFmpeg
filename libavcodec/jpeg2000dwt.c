@@ -290,8 +290,11 @@ static void sr_1d53(int *p, int i0, int i1)
 {
     int i;
 
-    if (i1 == i0 + 1)
+    if (i1 <= i0 + 1) {
+        if (i0 == 1)
+            p[1] >>= 1;
         return;
+    }
 
     extend53(p, i0, i1);
 
