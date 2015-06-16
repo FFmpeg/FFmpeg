@@ -89,6 +89,7 @@ void avcodec_register_all(void)
     REGISTER_HWACCEL(MPEG1_VDPAU,       mpeg1_vdpau);
     REGISTER_HWACCEL(MPEG2_D3D11VA,     mpeg2_d3d11va);
     REGISTER_HWACCEL(MPEG2_DXVA2,       mpeg2_dxva2);
+    REGISTER_HWACCEL(MPEG2_QSV,         mpeg2_qsv);
     REGISTER_HWACCEL(MPEG2_VAAPI,       mpeg2_vaapi);
     REGISTER_HWACCEL(MPEG2_VDPAU,       mpeg2_vdpau);
     REGISTER_HWACCEL(MPEG4_VAAPI,       mpeg4_vaapi);
@@ -203,6 +204,7 @@ void avcodec_register_all(void)
 #endif /* FF_API_XVMC */
     REGISTER_ENCDEC (MPEG1VIDEO,        mpeg1video);
     REGISTER_ENCDEC (MPEG2VIDEO,        mpeg2video);
+    REGISTER_DECODER(MPEG2_QSV,         mpeg2_qsv);
     REGISTER_ENCDEC (MPEG4,             mpeg4);
     REGISTER_DECODER(MSA1,              msa1);
     REGISTER_DECODER(MSMPEG4V1,         msmpeg4v1);
