@@ -310,7 +310,7 @@ http://server/file.key
 Example shell script:
 @example
 #!/bin/sh
-BASE_URL=${1:-'.'}
+BASE_URL=$@{1:-'.'@}
 openssl rand 16 > file.key
 echo $BASE_URL/file.key > file.keyinfo
 echo file.key >> file.keyinfo
