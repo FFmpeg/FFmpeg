@@ -153,6 +153,7 @@ static int qsv_retrieve_enc_params(AVCodecContext *avctx, QSVEncContext *q)
         (mfxExtBuffer*)&extradata,
     };
 
+    int need_pps = avctx->codec_id != AV_CODEC_ID_MPEG2VIDEO;
     int ret;
 
     q->param.ExtParam    = ext_buffers;
@@ -164,19 +165,20 @@ static int qsv_retrieve_enc_params(AVCodecContext *avctx, QSVEncContext *q)
 
     q->packet_size = q->param.mfx.BufferSizeInKB * 1000;
 
-    if (!extradata.SPSBufSize || !extradata.PPSBufSize) {
+    if (!extradata.SPSBufSize || (need_pps && !extradata.PPSBufSize)) {
         av_log(avctx, AV_LOG_ERROR, "No extradata returned from libmfx.\n");
         return AVERROR_UNKNOWN;
     }
 
-    avctx->extradata = av_malloc(extradata.SPSBufSize + extradata.PPSBufSize +
+    avctx->extradata = av_malloc(extradata.SPSBufSize + need_pps * extradata.PPSBufSize +
                                  FF_INPUT_BUFFER_PADDING_SIZE);
     if (!avctx->extradata)
         return AVERROR(ENOMEM);
 
     memcpy(avctx->extradata,                        sps_buf, extradata.SPSBufSize);
-    memcpy(avctx->extradata + extradata.SPSBufSize, pps_buf, extradata.PPSBufSize);
-    avctx->extradata_size = extradata.SPSBufSize + extradata.PPSBufSize;
+    if (need_pps)
+        memcpy(avctx->extradata + extradata.SPSBufSize, pps_buf, extradata.PPSBufSize);
+    avctx->extradata_size = extradata.SPSBufSize + need_pps * extradata.PPSBufSize;
     memset(avctx->extradata + avctx->extradata_size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
 
     return 0;

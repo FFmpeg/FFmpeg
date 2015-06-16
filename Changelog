@@ -38,6 +38,7 @@ version <next>:
 - DirectDraw Surface image/texture decoder
 - rewritten ASF demuxer
 - Go2Meeting decoding support
+- Intel QSV-accelerated MPEG-2 video encoding
 
 
 version 11:
