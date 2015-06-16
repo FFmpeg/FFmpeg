@@ -484,6 +484,7 @@ void avcodec_register_all(void)
     REGISTER_ENCODER(H264_NVENC,        h264_nvenc);
     REGISTER_ENCODER(H264_QSV,          h264_qsv);
     REGISTER_ENCODER(HEVC_NVENC,        hevc_nvenc);
+    REGISTER_ENCODER(HEVC_QSV,          hevc_qsv);
     REGISTER_ENCODER(MPEG2_QSV,         mpeg2_qsv);
 
     /* parsers */

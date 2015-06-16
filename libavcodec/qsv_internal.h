@@ -30,6 +30,10 @@
 
 #define ASYNC_DEPTH_DEFAULT 4       // internal parallelism
 
+#define QSV_VERSION_ATLEAST(MAJOR, MINOR)   \
+    (MFX_VERSION_MAJOR > (MAJOR) ||         \
+     MFX_VERSION_MAJOR == (MAJOR) && MFX_VERSION_MINOR >= (MINOR))
+
 typedef struct QSVFrame {
     AVFrame *frame;
     mfxFrameSurface1 *surface;
@@ -46,6 +50,7 @@ int ff_qsv_error(int mfx_err);
 
 int ff_qsv_codec_id_to_mfx(enum AVCodecID codec_id);
 
-int ff_qsv_init_internal_session(AVCodecContext *avctx, mfxSession *session);
+int ff_qsv_init_internal_session(AVCodecContext *avctx, mfxSession *session,
+                                 const char *load_plugins);
 
 #endif /* AVCODEC_QSV_INTERNAL_H */

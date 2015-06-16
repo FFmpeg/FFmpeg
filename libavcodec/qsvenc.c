@@ -49,6 +49,8 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
         return AVERROR_BUG;
     q->param.mfx.CodecId = ret;
 
+    q->width_align = avctx->codec_id == AV_CODEC_ID_HEVC ? 32 : 16;
+
     if (avctx->level > 0)
         q->param.mfx.CodecLevel = avctx->level;
 
@@ -65,7 +67,7 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
     q->param.mfx.BufferSizeInKB     = 0;
 
     q->param.mfx.FrameInfo.FourCC         = MFX_FOURCC_NV12;
-    q->param.mfx.FrameInfo.Width          = FFALIGN(avctx->width, 16);
+    q->param.mfx.FrameInfo.Width          = FFALIGN(avctx->width, q->width_align);
     q->param.mfx.FrameInfo.Height         = FFALIGN(avctx->height, 32);
     q->param.mfx.FrameInfo.CropX          = 0;
     q->param.mfx.FrameInfo.CropY          = 0;
@@ -124,15 +126,19 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
         break;
     }
 
-    q->extco.Header.BufferId      = MFX_EXTBUFF_CODING_OPTION;
-    q->extco.Header.BufferSz      = sizeof(q->extco);
-    q->extco.CAVLC                = avctx->coder_type == FF_CODER_TYPE_VLC ?
-                                    MFX_CODINGOPTION_ON : MFX_CODINGOPTION_UNKNOWN;
+    // the HEVC encoder plugin currently fails if coding options
+    // are provided
+    if (avctx->codec_id != AV_CODEC_ID_HEVC) {
+        q->extco.Header.BufferId      = MFX_EXTBUFF_CODING_OPTION;
+        q->extco.Header.BufferSz      = sizeof(q->extco);
+        q->extco.CAVLC                = avctx->coder_type == FF_CODER_TYPE_VLC ?
+                                        MFX_CODINGOPTION_ON : MFX_CODINGOPTION_UNKNOWN;
 
-    q->extparam[0] = (mfxExtBuffer *)&q->extco;
+        q->extparam[0] = (mfxExtBuffer *)&q->extco;
 
-    q->param.ExtParam    = q->extparam;
-    q->param.NumExtParam = FF_ARRAY_ELEMS(q->extparam);
+        q->param.ExtParam    = q->extparam;
+        q->param.NumExtParam = FF_ARRAY_ELEMS(q->extparam);
+    }
 
     return 0;
 }
@@ -199,7 +205,8 @@ int ff_qsv_enc_init(AVCodecContext *avctx, QSVEncContext *q)
     }
 
     if (!q->session) {
-        ret = ff_qsv_init_internal_session(avctx, &q->internal_session);
+        ret = ff_qsv_init_internal_session(avctx, &q->internal_session,
+                                           q->load_plugins);
         if (ret < 0)
             return ret;
 
@@ -303,9 +310,9 @@ static int submit_frame(QSVEncContext *q, const AVFrame *frame,
     }
 
     /* make a copy if the input is not padded as libmfx requires */
-    if (frame->height & 31 || frame->linesize[0] & 15) {
+    if (frame->height & 31 || frame->linesize[0] & (q->width_align - 1)) {
         qf->frame->height = FFALIGN(frame->height, 32);
-        qf->frame->width  = FFALIGN(frame->width, 16);
+        qf->frame->width  = FFALIGN(frame->width, q->width_align);
 
         ret = ff_get_buffer(q->avctx, qf->frame, AV_GET_BUFFER_FLAG_REF);
         if (ret < 0)

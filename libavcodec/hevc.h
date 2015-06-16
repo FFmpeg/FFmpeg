@@ -1008,6 +1008,9 @@ void ff_hevc_pred_init(HEVCPredContext *hpc, int bit_depth);
 int ff_hevc_extract_rbsp(const uint8_t *src, int length,
                          HEVCNAL *nal);
 
+int ff_hevc_encode_nal_vps(HEVCVPS *vps, unsigned int id,
+                           uint8_t *buf, int buf_size);
+
 extern const uint8_t ff_hevc_qpel_extra_before[4];
 extern const uint8_t ff_hevc_qpel_extra_after[4];
 extern const uint8_t ff_hevc_qpel_extra[4];
