@@ -310,10 +310,6 @@ static void hls_free_segments(HLSSegment *p)
     }
 }
 
-static void print_encryption_tag(HLSContext *hls, HLSSegment *en)
-{
-}
-
 static int hls_window(AVFormatContext *s, int last)
 {
     HLSContext *hls = s->priv_data;
