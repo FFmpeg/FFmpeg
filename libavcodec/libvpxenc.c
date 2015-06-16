@@ -479,7 +479,7 @@ static av_cold int vpx_init(AVCodecContext *avctx,
     if (avctx->rc_buffer_aggressivity != 1.0) {
         av_log(avctx, AV_LOG_WARNING, "The rc_buffer_aggressivity option is "
                "deprecated, use the undershoot-pct private option instead.\n");
-    enccfg.rc_undershoot_pct     = round(avctx->rc_buffer_aggressivity * 100);
+        enccfg.rc_undershoot_pct = round(avctx->rc_buffer_aggressivity * 100);
     }
     FF_ENABLE_DEPRECATION_WARNINGS
 #endif
@@ -964,10 +964,10 @@ static const AVOption vp9_options[] = {
     { "tile-rows",       "Number of tile rows to use, log2",            OFFSET(tile_rows),       AV_OPT_TYPE_INT, {.i64 = -1}, -1, 2, VE},
     { "frame-parallel",  "Enable frame parallel decodability features", OFFSET(frame_parallel),  AV_OPT_TYPE_INT, {.i64 = -1}, -1, 1, VE},
     { "aq-mode",         "adaptive quantization mode",                  OFFSET(aq_mode),         AV_OPT_TYPE_INT, {.i64 = -1}, -1, 3, VE, "aq_mode"},
-    { "none",            "Aq not used",         0, AV_OPT_TYPE_CONST, {.i64 = 0}, 0, 0, VE, "aq_mode" }, \
-    { "variance",        "Variance based Aq",   0, AV_OPT_TYPE_CONST, {.i64 = 1}, 0, 0, VE, "aq_mode" }, \
-    { "complexity",      "Complexity based Aq", 0, AV_OPT_TYPE_CONST, {.i64 = 2}, 0, 0, VE, "aq_mode" }, \
-    { "cyclic",          "Cyclic Refresh Aq",   0, AV_OPT_TYPE_CONST, {.i64 = 3}, 0, 0, VE, "aq_mode" }, \
+    { "none",            "Aq not used",         0, AV_OPT_TYPE_CONST, {.i64 = 0}, 0, 0, VE, "aq_mode" },
+    { "variance",        "Variance based Aq",   0, AV_OPT_TYPE_CONST, {.i64 = 1}, 0, 0, VE, "aq_mode" },
+    { "complexity",      "Complexity based Aq", 0, AV_OPT_TYPE_CONST, {.i64 = 2}, 0, 0, VE, "aq_mode" },
+    { "cyclic",          "Cyclic Refresh Aq",   0, AV_OPT_TYPE_CONST, {.i64 = 3}, 0, 0, VE, "aq_mode" },
     LEGACY_OPTIONS
     { NULL }
 };

@@ -1416,113 +1416,141 @@ You need to explicitly configure the build with @code{--enable-libvpx}.
 
 @subsection Options
 
-Mapping from FFmpeg to libvpx options with conversion notes in parentheses.
+The following options are supported by the libvpx wrapper. The
+@command{vpxenc}-equivalent options or values are listed in parentheses
+for easy migration.
+
+To reduce the duplication of documentation, only the private options
+and some others requiring special attention are documented here. For
+the documentation of the undocumented generic options, see
+@ref{codec-options,,the Codec Options chapter}.
+
+To get more documentation of the libvpx options, invoke the command
+@command{ffmpeg -h encoder=libvpx}, @command{ffmpeg -h encoder=libvpx-vp9} or
+@command{vpxenc --help}. Further information is available in the libvpx API
+documentation.
 
 @table @option
 
-@item threads
-g_threads
+@item b (@emph{target-bitrate})
+Set bitrate in bits/s. Note that FFmpeg's @option{b} option is
+expressed in bits/s, while @command{vpxenc}'s @option{target-bitrate} is in
+kilobits/s.
 
-@item profile
-g_profile
+@item g (@emph{kf-max-dist})
 
-@item vb
-rc_target_bitrate
+@item keyint_min (@emph{kf-min-dist})
 
-@item g
-kf_max_dist
+@item qmin (@emph{min-q})
 
-@item keyint_min
-kf_min_dist
+@item qmax (@emph{max-q})
 
-@item qmin
-rc_min_quantizer
+@item bufsize (@emph{buf-sz}, @emph{buf-optimal-sz})
+Set ratecontrol buffer size (in bits). Note @command{vpxenc}'s options are
+specified in milliseconds, the libvpx wrapper converts this value as follows:
+@code{buf-sz = bufsize * 1000 / bitrate},
+@code{buf-optimal-sz = bufsize * 1000 / bitrate * 5 / 6}.
 
-@item qmax
-rc_max_quantizer
+@item rc_init_occupancy (@emph{buf-initial-sz})
+Set number of bits which should be loaded into the rc buffer before decoding
+starts. Note @command{vpxenc}'s option is specified in milliseconds, the libvpx
+wrapper converts this value as follows:
+@code{rc_init_occupancy * 1000 / bitrate}.
 
-@item bufsize, vb
-rc_buf_sz
-@code{(bufsize * 1000 / vb)}
+@item undershoot-pct
+Set datarate undershoot (min) percentage of the target bitrate.
 
-rc_buf_optimal_sz
-@code{(bufsize * 1000 / vb * 5 / 6)}
+@item overshoot-pct
+Set datarate overshoot (max) percentage of the target bitrate.
 
-@item rc_init_occupancy, vb
-rc_buf_initial_sz
-@code{(rc_init_occupancy * 1000 / vb)}
+@item skip_threshold (@emph{drop-frame})
 
-@item rc_buffer_aggressivity
-rc_undershoot_pct
+@item qcomp (@emph{bias-pct})
 
-@item skip_threshold
-rc_dropframe_thresh
+@item maxrate (@emph{maxsection-pct})
+Set GOP max bitrate in bits/s. Note @command{vpxenc}'s option is specified as a
+percentage of the target bitrate, the libvpx wrapper converts this value as
+follows: @code{(maxrate * 100 / bitrate)}.
 
-@item qcomp
-rc_2pass_vbr_bias_pct
+@item minrate (@emph{minsection-pct})
+Set GOP min bitrate in bits/s. Note @command{vpxenc}'s option is specified as a
+percentage of the target bitrate, the libvpx wrapper converts this value as
+follows: @code{(minrate * 100 / bitrate)}.
 
-@item maxrate, vb
-rc_2pass_vbr_maxsection_pct
-@code{(maxrate * 100 / vb)}
+@item minrate, maxrate, b @emph{end-usage=cbr}
+@code{(minrate == maxrate == bitrate)}.
 
-@item minrate, vb
-rc_2pass_vbr_minsection_pct
-@code{(minrate * 100 / vb)}
+@item crf (@emph{end-usage=cq}, @emph{cq-level})
 
-@item minrate, maxrate, vb
-@code{VPX_CBR}
-@code{(minrate == maxrate == vb)}
-
-@item crf
-@code{VPX_CQ}, @code{VP8E_SET_CQ_LEVEL}
-
-@item quality
-@table @option
-@item @var{best}
-@code{VPX_DL_BEST_QUALITY}
-@item @var{good}
-@code{VPX_DL_GOOD_QUALITY}
-@item @var{realtime}
-@code{VPX_DL_REALTIME}
+@item quality, deadline (@emph{deadline})
+@table @samp
+@item best
+Use best quality deadline. Poorly named and quite slow, this option should be
+avoided as it may give worse quality output than good.
+@item good
+Use good quality deadline. This is a good trade-off between speed and quality
+when used with the @option{cpu-used} option.
+@item realtime
+Use realtime quality deadline.
 @end table
 
-@item speed
-@code{VP8E_SET_CPUUSED}
+@item speed, cpu-used (@emph{cpu-used})
+Set quality/speed ratio modifier. Higher values speed up the encode at the cost
+of quality.
 
-@item nr
-@code{VP8E_SET_NOISE_SENSITIVITY}
+@item nr (@emph{noise-sensitivity})
 
-@item mb_threshold
-@code{VP8E_SET_STATIC_THRESHOLD}
+@item static-thresh
+Set a change threshold on blocks below which they will be skipped by the
+encoder.
 
-@item slices
-@code{VP8E_SET_TOKEN_PARTITIONS}
+@item slices (@emph{token-parts})
+Note that FFmpeg's @option{slices} option gives the total number of partitions,
+while @command{vpxenc}'s @option{token-parts} is given as
+@code{log2(partitions)}.
 
 @item max-intra-rate
-@code{VP8E_SET_MAX_INTRA_BITRATE_PCT}
+Set maximum I-frame bitrate as a percentage of the target bitrate. A value of 0
+means unlimited.
 
 @item force_key_frames
 @code{VPX_EFLAG_FORCE_KF}
 
 @item Alternate reference frame related
 @table @option
-@item vp8flags altref
-@code{VP8E_SET_ENABLEAUTOALTREF}
-@item @var{arnr_max_frames}
-@code{VP8E_SET_ARNR_MAXFRAMES}
-@item @var{arnr_type}
-@code{VP8E_SET_ARNR_TYPE}
-@item @var{arnr_strength}
-@code{VP8E_SET_ARNR_STRENGTH}
-@item @var{rc_lookahead}
-g_lag_in_frames
+@item auto-alt-ref
+Enable use of alternate reference frames (2-pass only).
+@item arnr-max-frames
+Set altref noise reduction max frame count.
+@item arnr-type
+Set altref noise reduction filter type: backward, forward, centered.
+@item arnr-strength
+Set altref noise reduction filter strength.
+@item rc-lookahead, lag-in-frames (@emph{lag-in-frames})
+Set number of frames to look ahead for frametype and ratecontrol.
 @end table
 
-@item vp8flags error_resilient
-g_error_resilient
+@item error-resilient
+Enable error resiliency features.
 
-@item aq_mode
-@code{VP9E_SET_AQ_MODE}
+@item VP9-specific options
+@table @option
+@item lossless
+Enable lossless mode.
+@item tile-columns
+Set number of tile columns to use. Note this is given as
+@code{log2(tile_columns)}. For example, 8 tile columns would be requested by
+setting the @option{tile-columns} option to 3.
+@item tile-rows
+Set number of tile rows to use. Note this is given as @code{log2(tile_rows)}.
+For example, 4 tile rows would be requested by setting the @option{tile-rows}
+option to 2.
+@item frame-parallel
+Enable frame parallel decodability features.
+@item aq-mode
+Set adaptive quantization mode (0: off (default), 1: variance 2: complexity, 3:
+cyclic refresh).
+@end table
 
 @end table
 

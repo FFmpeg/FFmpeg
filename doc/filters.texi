@@ -522,7 +522,7 @@ select half of sine wave
 select exponential sine wave
 @item log
 select logarithmic
-@item par
+@item ipar
 select inverted parabola
 @item qua
 select quadratic
@@ -532,6 +532,18 @@ select cubic
 select square root
 @item cbr
 select cubic root
+@item par
+select parabola
+@item exp
+select exponential
+@item iqsin
+select inverted quarter of sine wave
+@item ihsin
+select inverted half of sine wave
+@item dese
+select double-exponential seat
+@item desi
+select double-exponential sigmoid
 @end table
 @end table
 
@@ -1434,6 +1446,11 @@ Make music with both quiet and loud passages suitable for listening to in a
 noisy environment:
 @example
 compand=.3|.3:1|1:-90/-60|-60/-40|-40/-30|-20/-20:6:0:-90:0.2
+@end example
+
+Another example for audio with whisper and explosion parts:
+@example
+compand=0|0:1|1:-90/-900|-70/-70|-30/-9|0/-3:6:0:0:0
 @end example
 
 @item

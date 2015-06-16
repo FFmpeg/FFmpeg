@@ -705,7 +705,7 @@ static uint64_t calc_rice_params(RiceContext *rc,
     bits[pmin] = UINT32_MAX;
     for (i = pmax; ; ) {
         bits[i] = calc_optimal_rice_params(&tmp_rc, i, sums, n, pred_order, kmax, exact);
-        if (bits[i] < bits[opt_porder]) {
+        if (bits[i] < bits[opt_porder] || pmax == pmin) {
             opt_porder = i;
             *rc = tmp_rc;
         }
