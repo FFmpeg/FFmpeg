@@ -1178,7 +1178,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
     {
         .id        = AV_CODEC_ID_SMVJPEG,
         .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "smv",
+        .name      = "smvjpeg",
         .long_name = NULL_IF_CONFIG_SMALL("Sigmatel Motion Video"),
     },
 
