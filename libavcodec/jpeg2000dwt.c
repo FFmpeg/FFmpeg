@@ -25,6 +25,7 @@
  * Discrete wavelet transform
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/common.h"
 #include "libavutil/mem.h"
 #include "jpeg2000dwt.h"
@@ -109,6 +110,7 @@ static void dwt_encode53(DWTContext *s, int *t)
             lp;
         int *l;
 
+        av_assert1(!mh && !mv);
         // HOR_SD
         l = line + mh;
         for (lp = 0; lp < lv; lp++){
@@ -179,6 +181,7 @@ static void dwt_encode97_float(DWTContext *s, float *t)
             lp;
         float *l;
 
+        av_assert1(!mh && !mv);
         // HOR_SD
         l = line + mh;
         for (lp = 0; lp < lv; lp++){
@@ -249,6 +252,8 @@ static void dwt_encode97_int(DWTContext *s, int *t)
             mv = s->mod[lev][1],
             lp;
         int *l;
+
+        av_assert1(!mh && !mv);
 
         // HOR_SD
         l = line + mh;
