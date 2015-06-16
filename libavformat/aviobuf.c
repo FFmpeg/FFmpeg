@@ -783,6 +783,7 @@ int ffio_ensure_seekback(AVIOContext *s, int64_t buf_size)
     int max_buffer_size = s->max_packet_size ?
                           s->max_packet_size : IO_BUFFER_SIZE;
     int filled = s->buf_end - s->buffer;
+    ptrdiff_t checksum_ptr_offset = s->checksum_ptr ? s->checksum_ptr - s->buffer : -1;
 
     buf_size += s->buf_ptr - s->buffer + max_buffer_size;
 
@@ -800,6 +801,8 @@ int ffio_ensure_seekback(AVIOContext *s, int64_t buf_size)
     s->buf_end = buffer + (s->buf_end - s->buffer);
     s->buffer = buffer;
     s->buffer_size = buf_size;
+    if (checksum_ptr_offset >= 0)
+        s->checksum_ptr = s->buffer + checksum_ptr_offset;
     return 0;
 }
 
