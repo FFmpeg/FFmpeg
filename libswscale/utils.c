@@ -1158,6 +1158,14 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
     if (flags & SWS_FULL_CHR_H_INT &&
         isAnyRGB(dstFormat)        &&
         !isPlanarRGB(dstFormat)    &&
+        dstFormat != AV_PIX_FMT_RGBA64LE &&
+        dstFormat != AV_PIX_FMT_RGBA64BE &&
+        dstFormat != AV_PIX_FMT_BGRA64LE &&
+        dstFormat != AV_PIX_FMT_BGRA64BE &&
+        dstFormat != AV_PIX_FMT_RGB48LE &&
+        dstFormat != AV_PIX_FMT_RGB48BE &&
+        dstFormat != AV_PIX_FMT_BGR48LE &&
+        dstFormat != AV_PIX_FMT_BGR48BE &&
         dstFormat != AV_PIX_FMT_RGBA  &&
         dstFormat != AV_PIX_FMT_ARGB  &&
         dstFormat != AV_PIX_FMT_BGRA  &&
