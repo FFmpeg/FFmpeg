@@ -365,6 +365,8 @@ static void sr_1d97_float(float *p, int i0, int i1)
     if (i1 <= i0 + 1) {
         if (i0 == 1)
             p[1] *= F_LFTG_K/2;
+        else
+            p[0] *= F_LFTG_X/2;
         return;
     }
 
@@ -440,6 +442,8 @@ static void sr_1d97_int(int32_t *p, int i0, int i1)
     if (i1 <= i0 + 1) {
         if (i0 == 1)
             p[1] = (p[1] * I_LFTG_K + (1<<16)) >> 17;
+        else
+            p[0] = (p[0] * I_LFTG_X + (1<<16)) >> 17;
         return;
     }
 
