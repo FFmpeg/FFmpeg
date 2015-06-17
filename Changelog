@@ -3,6 +3,7 @@ releases are sorted from youngest to oldest.
 
 version <next>:
 - colorkey video filter
+- BFSTM demuxer
 
 
 version 2.7:

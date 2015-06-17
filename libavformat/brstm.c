@@ -32,11 +32,21 @@ typedef struct BRSTMDemuxContext {
     uint32_t    last_block_used_bytes;
     uint8_t     *table;
     uint8_t     *adpc;
+    int         bfstm;
 } BRSTMDemuxContext;
 
 static int probe(AVProbeData *p)
 {
     if (AV_RL32(p->buf) == MKTAG('R','S','T','M') &&
+        (AV_RL16(p->buf + 4) == 0xFFFE ||
+         AV_RL16(p->buf + 4) == 0xFEFF))
+        return AVPROBE_SCORE_MAX / 3 * 2;
+    return 0;
+}
+
+static int probe_bfstm(AVProbeData *p)
+{
+    if (AV_RL32(p->buf) == MKTAG('F','S','T','M') &&
         (AV_RL16(p->buf + 4) == 0xFFFE ||
          AV_RL16(p->buf + 4) == 0xFEFF))
         return AVPROBE_SCORE_MAX / 3 * 2;
@@ -57,10 +67,12 @@ static int read_header(AVFormatContext *s)
 {
     BRSTMDemuxContext *b = s->priv_data;
     int bom, major, minor, codec, chunk;
-    int64_t pos, h1offset, toffset;
+    int64_t h1offset, pos, toffset, data_offset = 0;
     uint32_t size, start, asize;
     AVStream *st;
     int ret = AVERROR_EOF;
+
+    b->bfstm = !strcmp("bfstm", s->iformat->name);
 
     st = avformat_new_stream(s, NULL);
     if (!st)
@@ -79,19 +91,65 @@ static int read_header(AVFormatContext *s)
         return AVERROR_PATCHWELCOME;
     }
 
-    major = avio_r8(s->pb);
-    minor = avio_r8(s->pb);
-    avio_skip(s->pb, 4); // size of file
-    size = avio_rb16(s->pb);
-    if (size < 14)
-        return AVERROR_INVALIDDATA;
+    if (!b->bfstm) {
+        major = avio_r8(s->pb);
+        minor = avio_r8(s->pb);
+        avio_skip(s->pb, 4); // size of file
+        size = avio_rb16(s->pb);
+        if (size < 14)
+            return AVERROR_INVALIDDATA;
 
-    avio_skip(s->pb, size - 14);
-    pos = avio_tell(s->pb);
-    if (avio_rl32(s->pb) != MKTAG('H','E','A','D'))
-        return AVERROR_INVALIDDATA;
+        avio_skip(s->pb, size - 14);
+        pos = avio_tell(s->pb);
+        if (avio_rl32(s->pb) != MKTAG('H','E','A','D'))
+            return AVERROR_INVALIDDATA;
+    } else {
+        uint32_t info_offset = 0, info_size;
+        uint16_t section_count, header_size, i;
+
+        header_size = avio_rb16(s->pb); // 6
+
+        avio_skip(s->pb, 4); // Unknown constant 0x00030000
+        avio_skip(s->pb, 4); // size of file
+        section_count = avio_rb16(s->pb);
+        avio_skip(s->pb, 2); // padding
+        for (i = 0; avio_tell(s->pb) < header_size
+                    && !(data_offset && info_offset)
+                    && i < section_count; i++) {
+            uint32_t flag = avio_rb32(s->pb);
+            switch (flag) {
+            case 0x40000000:
+                info_offset = avio_rb32(s->pb);
+                info_size   = avio_rb32(s->pb);
+                break;
+            case 0x40010000:
+                avio_skip(s->pb, 4); // seek offset
+                avio_skip(s->pb, 4); // seek size
+                break;
+            case 0x40020000:
+                data_offset = avio_rb32(s->pb);
+                avio_skip(s->pb, 4); //data_size = avio_rb32(s->pb);
+                break;
+            case 0x40030000:
+                avio_skip(s->pb, 4); // REGN offset
+                avio_skip(s->pb, 4); // REGN size
+                break;
+            }
+        }
+
+        if (!info_offset || !data_offset)
+            return AVERROR_INVALIDDATA;
+
+        start = data_offset + 8;
+
+        avio_skip(s->pb, info_offset - avio_tell(s->pb));
+        pos = avio_tell(s->pb);
+        if (avio_rl32(s->pb) != MKTAG('I','N','F','O'))
+            return AVERROR_INVALIDDATA;
+    }
+
     size = avio_rb32(s->pb);
-    if (size < 256)
+    if (size < 192)
         return AVERROR_INVALIDDATA;
     avio_skip(s->pb, 4); // unknown
     h1offset = avio_rb32(s->pb);
@@ -121,17 +179,22 @@ static int read_header(AVFormatContext *s)
         return AVERROR_INVALIDDATA;
 
     avio_skip(s->pb, 1); // padding
+    if (b->bfstm)
+        avio_skip(s->pb, 2); // padding
+
     st->codec->sample_rate = avio_rb16(s->pb);
     if (!st->codec->sample_rate)
         return AVERROR_INVALIDDATA;
 
-    avio_skip(s->pb, 2); // padding
+    if (!b->bfstm)
+        avio_skip(s->pb, 2); // padding
     avio_skip(s->pb, 4); // loop start sample
     st->start_time = 0;
     st->duration = avio_rb32(s->pb);
     avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
 
-    start = avio_rb32(s->pb);
+    if (!b->bfstm)
+        start = avio_rb32(s->pb);
     b->current_block = 0;
     b->block_count = avio_rb32(s->pb);
     if (b->block_count > UINT16_MAX) {
@@ -157,7 +220,10 @@ static int read_header(AVFormatContext *s)
         int ch;
 
         avio_skip(s->pb, pos + toffset - avio_tell(s->pb));
-        toffset = avio_rb32(s->pb) + 16LL;
+        if (!b->bfstm)
+            toffset = avio_rb32(s->pb) + 16LL;
+        else
+            toffset = toffset + avio_rb32(s->pb) + st->codec->channels * 8 - 8;
         if (toffset > size)
             return AVERROR_INVALIDDATA;
 
@@ -171,7 +237,15 @@ static int read_header(AVFormatContext *s)
                 ret = AVERROR_INVALIDDATA;
                 goto fail;
             }
-            avio_skip(s->pb, 24);
+            avio_skip(s->pb, b->bfstm ? 14 : 24);
+        }
+
+        if (b->bfstm) {
+            st->codec->extradata_size = 32 * st->codec->channels;
+            st->codec->extradata = av_malloc(st->codec->extradata_size);
+            if (!st->codec->extradata)
+                return AVERROR(ENOMEM);
+            memcpy(st->codec->extradata, b->table, st->codec->extradata_size);
         }
     }
 
@@ -179,7 +253,11 @@ static int read_header(AVFormatContext *s)
         ret = AVERROR_INVALIDDATA;
         goto fail;
     }
-    avio_skip(s->pb, size - (avio_tell(s->pb) - pos));
+
+    if (!b->bfstm)
+        avio_skip(s->pb, size - (avio_tell(s->pb) - pos));
+    else
+        avio_skip(s->pb, data_offset - avio_tell(s->pb));
 
     while (!avio_feof(s->pb)) {
         chunk = avio_rl32(s->pb);
@@ -214,13 +292,13 @@ static int read_header(AVFormatContext *s)
             break;
         case MKTAG('D','A','T','A'):
             if ((start < avio_tell(s->pb)) ||
-                (!b->adpc && codec == AV_CODEC_ID_ADPCM_THP)) {
+                (!b->adpc && codec == AV_CODEC_ID_ADPCM_THP && !b->bfstm)) {
                 ret = AVERROR_INVALIDDATA;
                 goto fail;
             }
             avio_skip(s->pb, start - avio_tell(s->pb));
 
-            if (major != 1 || minor)
+            if ((major != 1 || minor) && !b->bfstm)
                 avpriv_request_sample(s, "Version %d.%d", major, minor);
 
             return 0;
@@ -257,7 +335,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
         return AVERROR_EOF;
     }
 
-    if (codec->codec_id == AV_CODEC_ID_ADPCM_THP) {
+    if (codec->codec_id == AV_CODEC_ID_ADPCM_THP && !codec->extradata) {
         uint8_t *dst;
 
         if (av_new_packet(pkt, 8 + (32 + 4) * codec->channels + size) < 0)
@@ -294,4 +372,15 @@ AVInputFormat ff_brstm_demuxer = {
     .read_packet    = read_packet,
     .read_close     = read_close,
     .extensions     = "brstm",
+};
+
+AVInputFormat ff_bfstm_demuxer = {
+    .name           = "bfstm",
+    .long_name      = NULL_IF_CONFIG_SMALL("BFSTM (Binary Cafe Stream)"),
+    .priv_data_size = sizeof(BRSTMDemuxContext),
+    .read_probe     = probe_bfstm,
+    .read_header    = read_header,
+    .read_packet    = read_packet,
+    .read_close     = read_close,
+    .extensions     = "bfstm",
 };
