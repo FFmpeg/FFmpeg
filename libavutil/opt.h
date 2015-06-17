@@ -213,7 +213,7 @@
  * In some cases it may be more convenient to put all options into an
  * AVDictionary and call av_opt_set_dict() on it. A specific case of this
  * are the format/codec open functions in lavf/lavc which take a dictionary
- * filled with option as a parameter. This allows to set some options
+ * filled with option as a parameter. This makes it possible to set some options
  * that cannot be set otherwise, since e.g. the input file format is not known
  * before the file is actually opened.
  */

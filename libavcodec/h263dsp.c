@@ -121,4 +121,6 @@ av_cold void ff_h263dsp_init(H263DSPContext *ctx)
 
     if (ARCH_X86)
         ff_h263dsp_init_x86(ctx);
+    if (ARCH_MIPS)
+        ff_h263dsp_init_mips(ctx);
 }

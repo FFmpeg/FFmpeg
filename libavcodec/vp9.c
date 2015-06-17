@@ -3286,7 +3286,7 @@ static void decode_b(AVCodecContext *ctx, int row, int col,
     }
 
     // emulated overhangs if the stride of the target buffer can't hold. This
-    // allows to support emu-edge and so on even if we have large block
+    // makes it possible to support emu-edge and so on even if we have large block
     // overhangs
     emu[0] = (col + w4) * 8 > f->linesize[0] ||
              (row + h4) > s->rows;

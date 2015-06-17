@@ -95,7 +95,7 @@ This decoder aims to implement the complete FLAC specification from Xiph.
 
 @item -use_buggy_lpc
 The lavc FLAC encoder used to produce buggy streams with high lpc values
-(like the default value). This option allows to decode such streams
+(like the default value). This option makes it possible to decode such streams
 correctly by using lavc's old buggy lpc logic for decoding.
 
 @end table

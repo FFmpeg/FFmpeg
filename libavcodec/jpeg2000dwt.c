@@ -25,6 +25,7 @@
  * Discrete wavelet transform
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/common.h"
 #include "libavutil/mem.h"
 #include "jpeg2000dwt.h"
@@ -109,6 +110,7 @@ static void dwt_encode53(DWTContext *s, int *t)
             lp;
         int *l;
 
+        av_assert1(!mh && !mv);
         // HOR_SD
         l = line + mh;
         for (lp = 0; lp < lv; lp++){
@@ -179,6 +181,7 @@ static void dwt_encode97_float(DWTContext *s, float *t)
             lp;
         float *l;
 
+        av_assert1(!mh && !mv);
         // HOR_SD
         l = line + mh;
         for (lp = 0; lp < lv; lp++){
@@ -250,6 +253,8 @@ static void dwt_encode97_int(DWTContext *s, int *t)
             lp;
         int *l;
 
+        av_assert1(!mh && !mv);
+
         // HOR_SD
         l = line + mh;
         for (lp = 0; lp < lv; lp++){
@@ -290,8 +295,11 @@ static void sr_1d53(int *p, int i0, int i1)
 {
     int i;
 
-    if (i1 == i0 + 1)
+    if (i1 <= i0 + 1) {
+        if (i0 == 1)
+            p[1] >>= 1;
         return;
+    }
 
     extend53(p, i0, i1);
 
@@ -354,8 +362,13 @@ static void sr_1d97_float(float *p, int i0, int i1)
 {
     int i;
 
-    if (i1 == i0 + 1)
+    if (i1 <= i0 + 1) {
+        if (i0 == 1)
+            p[1] *= F_LFTG_K/2;
+        else
+            p[0] *= F_LFTG_X/2;
         return;
+    }
 
     extend97_float(p, i0, i1);
 
@@ -426,8 +439,13 @@ static void sr_1d97_int(int32_t *p, int i0, int i1)
 {
     int i;
 
-    if (i1 == i0 + 1)
+    if (i1 <= i0 + 1) {
+        if (i0 == 1)
+            p[1] = (p[1] * I_LFTG_K + (1<<16)) >> 17;
+        else
+            p[0] = (p[0] * I_LFTG_X + (1<<16)) >> 17;
         return;
+    }
 
     extend97_int(p, i0, i1);
 

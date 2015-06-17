@@ -80,7 +80,7 @@
     "movq      %%mm"#R1", "#OFF"(%1)   \n\t"    \
     "add       %2, %0                  \n\t"
 
-/** Sacrifying mm6 allows to pipeline loads from src */
+/** Sacrificing mm6 makes it possible to pipeline loads from src */
 static void vc1_put_ver_16b_shift2_mmx(int16_t *dst,
                                        const uint8_t *src, x86_reg stride,
                                        int rnd, int64_t shift)

@@ -27,7 +27,7 @@
  * @author Benoit Fouet ( benoit fouet free fr )
  * @author Nicolas George ( nicolas george normalesup org )
  *
- * This avdevice decoder allows to capture audio from an ALSA (Advanced
+ * This avdevice decoder can capture audio from an ALSA (Advanced
  * Linux Sound Architecture) device.
  *
  * The filename parameter is the name of an ALSA PCM device capable of

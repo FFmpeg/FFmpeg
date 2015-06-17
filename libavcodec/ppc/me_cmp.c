@@ -504,7 +504,7 @@ static int hadamard8_diff8x8_altivec(MpegEncContext *s, uint8_t *dst,
 }
 
 /*
- * 16x8 works with 16 elements; it allows to avoid replicating loads, and
+ * 16x8 works with 16 elements; it can avoid replicating loads, and
  * gives the compiler more room for scheduling. It's only used from
  * inside hadamard8_diff16_altivec.
  *

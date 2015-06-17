@@ -92,6 +92,7 @@ void av_register_all(void)
     REGISTER_DEMUXER (BINK,             bink);
     REGISTER_MUXDEMUX(BIT,              bit);
     REGISTER_DEMUXER (BMV,              bmv);
+    REGISTER_DEMUXER (BFSTM,            bfstm);
     REGISTER_DEMUXER (BRSTM,            brstm);
     REGISTER_DEMUXER (BOA,              boa);
     REGISTER_DEMUXER (C93,              c93);

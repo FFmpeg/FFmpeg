@@ -67,7 +67,7 @@
  * with an AVFMT_NOFILE format).
  *
  * @section lavf_options Passing options to (de)muxers
- * Lavf allows to configure muxers and demuxers using the @ref avoptions
+ * It is possible to configure lavf muxers and demuxers using the @ref avoptions
  * mechanism. Generic (format-independent) libavformat options are provided by
  * AVFormatContext, they can be examined from a user program by calling
  * av_opt_next() / av_opt_find() on an allocated AVFormatContext (or its AVClass
@@ -234,7 +234,7 @@
  * @defgroup lavf_io I/O Read/Write
  * @{
  * @section lavf_io_dirlist Directory listing
- * The directory listing API allows to list files on remote servers.
+ * The directory listing API makes it possible to list files on remote servers.
  *
  * Some of possible use cases:
  * - an "open file" dialog to choose files from a remote location,
@@ -2361,7 +2361,7 @@ int av_write_uncoded_frame(AVFormatContext *s, int stream_index,
 /**
  * Write a uncoded frame to an output media file.
  *
- * If the muxer supports it, this function allows to write an AVFrame
+ * If the muxer supports it, this function makes it possible to write an AVFrame
  * structure directly, without encoding it into a packet.
  * It is mostly useful for devices and similar special muxers that use raw
  * video or PCM data and will not serialize it into a byte stream.

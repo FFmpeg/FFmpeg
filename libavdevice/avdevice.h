@@ -324,7 +324,7 @@ int avdevice_dev_to_app_control_message(struct AVFormatContext *s,
  * Following API allows user to probe device capabilities (supported codecs,
  * pixel formats, sample formats, resolutions, channel counts, etc).
  * It is build on top op AVOption API.
- * Queried capabilities allows to set up converters of video or audio
+ * Queried capabilities make it possible to set up converters of video or audio
  * parameters that fit to the device.
  *
  * List of capabilities that can be queried:
