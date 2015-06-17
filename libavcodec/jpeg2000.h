@@ -159,6 +159,8 @@ typedef struct Jpeg2000QuantStyle {
 typedef struct Jpeg2000Pass {
     uint16_t rate;
     int64_t disto;
+    uint8_t flushed[4];
+    int flushed_len;
 } Jpeg2000Pass;
 
 typedef struct Jpeg2000Cblk {
