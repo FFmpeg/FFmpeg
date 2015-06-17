@@ -1125,9 +1125,6 @@ static int jpeg2000_decode_packets(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile
                             continue;
                         }
 
-                        {
-                            Jpeg2000ResLevel *rlevel = tile->comp[compno].reslevel +
-                                                    reslevelno;
                             ok_reslevel = 1;
                             for (layno = 0; layno < tile->codsty[0].nlayers; layno++) {
                                 if ((ret = jpeg2000_decode_packet(s, tile, &tp_index,
@@ -1137,7 +1134,6 @@ static int jpeg2000_decode_packets(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile
                                                                 qntsty->nguardbits)) < 0)
                                     return ret;
                             }
-                        }
                     }
                 }
             }
