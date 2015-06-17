@@ -1,4 +1,4 @@
-ba27504dcabe43d6608798c9cadc5cca *tests/data/fate/vsynth_lena-jpeg2000-97.avi
-1118956 tests/data/fate/vsynth_lena-jpeg2000-97.avi
-9d69ac6d46152ed2d6dd6a90d5793c80 *tests/data/fate/vsynth_lena-jpeg2000-97.out.rawvideo
-stddev:    5.32 PSNR: 33.61 MAXDIFF:   60 bytes:  7603200/  7603200
+52771e812599277d65585b5849836bda *tests/data/fate/vsynth_lena-jpeg2000-97.avi
+1118958 tests/data/fate/vsynth_lena-jpeg2000-97.avi
+1e53a235d1378010e14859d4d0d740f7 *tests/data/fate/vsynth_lena-jpeg2000-97.out.rawvideo
+stddev:    4.94 PSNR: 34.24 MAXDIFF:   60 bytes:  7603200/  7603200
