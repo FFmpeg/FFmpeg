@@ -612,7 +612,7 @@ static void encode_cblk(Jpeg2000EncoderContext *s, Jpeg2000T1Context *t1, Jpeg20
                     break;
         }
 
-        cblk->passes[passno].rate = 3 + ff_mqc_length(&t1->mqc);
+        cblk->passes[passno].rate = ff_mqc_flush_to(&t1->mqc, cblk->passes[passno].flushed, &cblk->passes[passno].flushed_len);
         wmsedec += (int64_t)nmsedec << (2*bpno);
         cblk->passes[passno].disto = wmsedec;
 
@@ -624,8 +624,7 @@ static void encode_cblk(Jpeg2000EncoderContext *s, Jpeg2000T1Context *t1, Jpeg20
     cblk->npasses = passno;
     cblk->ninclpasses = passno;
 
-    // TODO: optional flush on each pass
-    cblk->passes[passno-1].rate = ff_mqc_flush(&t1->mqc);
+    cblk->passes[passno-1].rate = ff_mqc_flush_to(&t1->mqc, cblk->passes[passno-1].flushed, &cblk->passes[passno-1].flushed_len);
 }
 
 /* tier-2 routines: */
@@ -732,7 +731,10 @@ static int encode_packet(Jpeg2000EncoderContext *s, Jpeg2000ResLevel *rlevel, in
                 if (cblk->ninclpasses){
                     if (s->buf_end - s->buf < cblk->passes[cblk->ninclpasses-1].rate)
                         return -1;
-                    bytestream_put_buffer(&s->buf, cblk->data, cblk->passes[cblk->ninclpasses-1].rate);
+                    bytestream_put_buffer(&s->buf, cblk->data,   cblk->passes[cblk->ninclpasses-1].rate
+                                                               - cblk->passes[cblk->ninclpasses-1].flushed_len);
+                    bytestream_put_buffer(&s->buf, cblk->passes[cblk->ninclpasses-1].flushed,
+                                                   cblk->passes[cblk->ninclpasses-1].flushed_len);
                 }
             }
         }

@@ -150,8 +150,13 @@ static void sd_1d97_float(float *p, int i0, int i1)
 {
     int i;
 
-    if (i1 == i0 + 1)
+    if (i1 <= i0 + 1) {
+        if (i0 == 1)
+            p[1] *= F_LFTG_X;
+        else
+            p[0] *= F_LFTG_K;
         return;
+    }
 
     extend97_float(p, i0, i1);
     i0++; i1++;
@@ -222,8 +227,13 @@ static void sd_1d97_int(int *p, int i0, int i1)
 {
     int i;
 
-    if (i1 == i0 + 1)
+    if (i1 <= i0 + 1) {
+        if (i0 == 1)
+            p[1] = (p[1] * I_LFTG_X + (1<<15)) >> 16;
+        else
+            p[0] = (p[0] * I_LFTG_K + (1<<15)) >> 16;
         return;
+    }
 
     extend97_int(p, i0, i1);
     i0++; i1++;

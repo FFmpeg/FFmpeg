@@ -78,5 +78,6 @@ typedef struct QpelDSPContext {
 void ff_qpeldsp_init(QpelDSPContext *c);
 
 void ff_qpeldsp_init_x86(QpelDSPContext *c);
+void ff_qpeldsp_init_mips(QpelDSPContext *c);
 
 #endif /* AVCODEC_QPELDSP_H */
