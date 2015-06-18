@@ -191,8 +191,7 @@ static int X264_frame(AVCodecContext *ctx, AVPacket *pkt, const AVFrame *frame,
             x4->params.b_tff = frame->top_field_first;
             x264_encoder_reconfig(x4->enc, &x4->params);
         }
-        if (x4->params.vui.i_sar_height != ctx->sample_aspect_ratio.den ||
-            x4->params.vui.i_sar_width  != ctx->sample_aspect_ratio.num) {
+        if (x4->params.vui.i_sar_height*ctx->sample_aspect_ratio.num != ctx->sample_aspect_ratio.den * x4->params.vui.i_sar_width) {
             x4->params.vui.i_sar_height = ctx->sample_aspect_ratio.den;
             x4->params.vui.i_sar_width  = ctx->sample_aspect_ratio.num;
             x264_encoder_reconfig(x4->enc, &x4->params);
