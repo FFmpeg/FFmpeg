@@ -1119,13 +1119,13 @@ static int jpeg2000_decode_packets(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile
 
                         precno = prcx + rlevel->num_precincts_x * prcy;
 
+                        ok_reslevel = 1;
                         if (prcx >= rlevel->num_precincts_x || prcy >= rlevel->num_precincts_y) {
                             av_log(s->avctx, AV_LOG_WARNING, "prc %d %d outside limits %d %d\n",
                                    prcx, prcy, rlevel->num_precincts_x, rlevel->num_precincts_y);
                             continue;
                         }
 
-                            ok_reslevel = 1;
                             for (layno = 0; layno < tile->codsty[0].nlayers; layno++) {
                                 if ((ret = jpeg2000_decode_packet(s, tile, &tp_index,
                                                                 codsty, rlevel,
