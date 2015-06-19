@@ -34,6 +34,12 @@ fate-mathops: CMD = run libavcodec/mathops-test
 fate-mathops: CMP = null
 fate-mathops: REF = /dev/null
 
+FATE_LIBAVCODEC-$(CONFIG_JPEG2000_ENCODER) += fate-j2k-dwt
+fate-j2k-dwt: libavcodec/jpeg2000dwt-test$(EXESUF)
+fate-j2k-dwt: CMD = run libavcodec/jpeg2000dwt-test
+fate-j2k-dwt: REF = /dev/null
+
+
 FATE_LIBAVCODEC-$(call ENCDEC, FLAC, FLAC) += fate-api-flac
 fate-api-flac: libavcodec/api-flac-test$(EXESUF)
 fate-api-flac: CMD = run libavcodec/api-flac-test
