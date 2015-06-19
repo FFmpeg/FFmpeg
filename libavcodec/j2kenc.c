@@ -271,7 +271,7 @@ static int put_cod(Jpeg2000EncoderContext *s)
     bytestream_put_byte(&s->buf, 0); // progression level
     bytestream_put_be16(&s->buf, 1); // num of layers
     if(s->avctx->pix_fmt == AV_PIX_FMT_YUV444P){
-        bytestream_put_byte(&s->buf, 2); // ICT
+        bytestream_put_byte(&s->buf, 0); // unspecified
     }else{
         bytestream_put_byte(&s->buf, 0); // unspecified
     }
