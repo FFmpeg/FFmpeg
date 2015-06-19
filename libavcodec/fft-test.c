@@ -285,7 +285,7 @@ int main(int argc, char **argv)
             break;
         case 'c':
         {
-            int cpuflags = av_get_cpu_flags();
+            unsigned cpuflags = av_get_cpu_flags();
 
             if (av_parse_cpu_caps(&cpuflags, optarg) < 0)
                 return 1;
