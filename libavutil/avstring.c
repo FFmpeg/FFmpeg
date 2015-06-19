@@ -502,7 +502,7 @@ int main(void)
     printf("Testing av_append_path_component()\n");
     #define TEST_APPEND_PATH_COMPONENT(path, component, expected) \
         fullpath = av_append_path_component((path), (component)); \
-        printf("%s = %s\n", fullpath, expected); \
+        printf("%s = %s\n", fullpath ? fullpath : "(null)", expected); \
         av_free(fullpath);
     TEST_APPEND_PATH_COMPONENT(NULL, NULL, "(null)")
     TEST_APPEND_PATH_COMPONENT("path", NULL, "path");
