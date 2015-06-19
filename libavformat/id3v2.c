@@ -535,6 +535,13 @@ static void free_apic(void *obj)
     av_freep(&apic);
 }
 
+static void rstrip_spaces(char *buf)
+{
+    size_t len = strlen(buf);
+    while (len > 0 && buf[len - 1] == ' ')
+        buf[--len] = 0;
+}
+
 static void read_apic(AVFormatContext *s, AVIOContext *pb, int taglen,
                       const char *tag, ID3v2ExtraMeta **extra_meta,
                       int isv34)
@@ -607,6 +614,10 @@ static void read_apic(AVFormatContext *s, AVIOContext *pb, int taglen,
     new_extra->data = apic;
     new_extra->next = *extra_meta;
     *extra_meta     = new_extra;
+
+    // The description must be unique, and some ID3v2 tag writers add spaces
+    // to write several APIC entries with the same description.
+    rstrip_spaces(apic->description);
 
     return;
 
@@ -1082,6 +1093,9 @@ int ff_id3v2_parse_apic(AVFormatContext *s, ID3v2ExtraMeta **extra_meta)
         st->disposition      |= AV_DISPOSITION_ATTACHED_PIC;
         st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
         st->codec->codec_id   = apic->id;
+
+        if (AV_RB64(apic->buf->data) == 0x89504e470d0a1a0a)
+            st->codec->codec_id = AV_CODEC_ID_PNG;
 
         if (apic->description[0])
             av_dict_set(&st->metadata, "title", apic->description, 0);

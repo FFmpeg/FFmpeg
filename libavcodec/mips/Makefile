@@ -26,6 +26,7 @@ OBJS-$(CONFIG_H264CHROMA)                 += mips/h264chroma_init_mips.o
 OBJS-$(CONFIG_H264PRED)                   += mips/h264pred_init_mips.o
 OBJS-$(CONFIG_H263DSP)                    += mips/h263dsp_init_mips.o
 OBJS-$(CONFIG_QPELDSP)                    += mips/qpeldsp_init_mips.o
+OBJS-$(CONFIG_HPELDSP)                    += mips/hpeldsp_init_mips.o
 MSA-OBJS-$(CONFIG_HEVC_DECODER)           += mips/hevcdsp_msa.o            \
                                              mips/hevc_mc_uni_msa.o        \
                                              mips/hevc_mc_uniw_msa.o       \
@@ -41,5 +42,6 @@ MSA-OBJS-$(CONFIG_H264CHROMA)             += mips/h264chroma_msa.o
 MSA-OBJS-$(CONFIG_H264PRED)               += mips/h264pred_msa.o
 MSA-OBJS-$(CONFIG_H263DSP)                += mips/h263dsp_msa.o
 MSA-OBJS-$(CONFIG_QPELDSP)                += mips/qpeldsp_msa.o
+MSA-OBJS-$(CONFIG_HPELDSP)                += mips/hpeldsp_msa.o
 LOONGSON3-OBJS-$(CONFIG_H264DSP)          += mips/h264dsp_mmi.o
 LOONGSON3-OBJS-$(CONFIG_H264CHROMA)       += mips/h264chroma_mmi.o

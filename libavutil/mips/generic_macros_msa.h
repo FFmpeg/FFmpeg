@@ -804,6 +804,15 @@
 #define SLDI_B2_0_SB(...) SLDI_B2_0(v16i8, __VA_ARGS__)
 #define SLDI_B2_0_SW(...) SLDI_B2_0(v4i32, __VA_ARGS__)
 
+#define SLDI_B3_0(RTYPE, in0, in1, in2, out0, out1, out2,  slide_val)     \
+{                                                                         \
+    v16i8 zero_m = { 0 };                                                 \
+    SLDI_B2_0(RTYPE, in0, in1, out0, out1, slide_val);                    \
+    out2 = (RTYPE) __msa_sldi_b((v16i8) zero_m, (v16i8) in2, slide_val);  \
+}
+#define SLDI_B3_0_UB(...) SLDI_B3_0(v16u8, __VA_ARGS__)
+#define SLDI_B3_0_SB(...) SLDI_B3_0(v16i8, __VA_ARGS__)
+
 #define SLDI_B4_0(RTYPE, in0, in1, in2, in3,            \
                   out0, out1, out2, out3, slide_val)    \
 {                                                       \
@@ -1173,6 +1182,13 @@
     out1 = (RTYPE) __msa_hadd_u_h((v16u8) in1, (v16u8) in1);  \
 }
 #define HADD_UB2_UH(...) HADD_UB2(v8u16, __VA_ARGS__)
+
+#define HADD_UB3(RTYPE, in0, in1, in2, out0, out1, out2)      \
+{                                                             \
+    HADD_UB2(RTYPE, in0, in1, out0, out1);                    \
+    out2 = (RTYPE) __msa_hadd_u_h((v16u8) in2, (v16u8) in2);  \
+}
+#define HADD_UB3_UH(...) HADD_UB3(v8u16, __VA_ARGS__)
 
 /* Description : Horizontal subtraction of unsigned byte vector elements
    Arguments   : Inputs  - in0, in1
@@ -2408,6 +2424,67 @@
     out3 = (v4i32) __msa_ilvl_d((v2i64) s3_m, (v2i64) s1_m);            \
 }
 
+/* Description : Average byte elements from pair of vectors and store 8x4 byte
+                 block in destination memory
+   Arguments   : Inputs  - in0, in1, in2, in3, in4, in5, in6, in7, pdst, stride
+                 Outputs -
+                 Return Type -
+   Details     : Each byte element from input vector pair 'in0' and 'in1' are
+                 averaged (a + b)/2 and stored in 'tmp0_m'
+                 Each byte element from input vector pair 'in2' and 'in3' are
+                 averaged (a + b)/2 and stored in 'tmp1_m'
+                 Each byte element from input vector pair 'in4' and 'in5' are
+                 averaged (a + b)/2 and stored in 'tmp2_m'
+                 Each byte element from input vector pair 'in6' and 'in7' are
+                 averaged (a + b)/2 and stored in 'tmp3_m'
+                 The half vector results from all 4 vectors are stored in
+                 destination memory as 8x4 byte block
+*/
+#define AVE_ST8x4_UB(in0, in1, in2, in3, in4, in5, in6, in7, pdst, stride)  \
+{                                                                           \
+    uint64_t out0_m, out1_m, out2_m, out3_m;                                \
+    v16u8 tmp0_m, tmp1_m, tmp2_m, tmp3_m;                                   \
+                                                                            \
+    tmp0_m = __msa_ave_u_b((v16u8) in0, (v16u8) in1);                       \
+    tmp1_m = __msa_ave_u_b((v16u8) in2, (v16u8) in3);                       \
+    tmp2_m = __msa_ave_u_b((v16u8) in4, (v16u8) in5);                       \
+    tmp3_m = __msa_ave_u_b((v16u8) in6, (v16u8) in7);                       \
+                                                                            \
+    out0_m = __msa_copy_u_d((v2i64) tmp0_m, 0);                             \
+    out1_m = __msa_copy_u_d((v2i64) tmp1_m, 0);                             \
+    out2_m = __msa_copy_u_d((v2i64) tmp2_m, 0);                             \
+    out3_m = __msa_copy_u_d((v2i64) tmp3_m, 0);                             \
+    SD4(out0_m, out1_m, out2_m, out3_m, pdst, stride);                      \
+}
+
+/* Description : Average byte elements from pair of vectors and store 16x4 byte
+                 block in destination memory
+   Arguments   : Inputs  - in0, in1, in2, in3, in4, in5, in6, in7, pdst, stride
+                 Outputs -
+                 Return Type -
+   Details     : Each byte element from input vector pair 'in0' and 'in1' are
+                 averaged (a + b)/2 and stored in 'tmp0_m'
+                 Each byte element from input vector pair 'in2' and 'in3' are
+                 averaged (a + b)/2 and stored in 'tmp1_m'
+                 Each byte element from input vector pair 'in4' and 'in5' are
+                 averaged (a + b)/2 and stored in 'tmp2_m'
+                 Each byte element from input vector pair 'in6' and 'in7' are
+                 averaged (a + b)/2 and stored in 'tmp3_m'
+                 The results from all 4 vectors are stored in destination
+                 memory as 16x4 byte block
+*/
+#define AVE_ST16x4_UB(in0, in1, in2, in3, in4, in5, in6, in7, pdst, stride)  \
+{                                                                            \
+    v16u8 tmp0_m, tmp1_m, tmp2_m, tmp3_m;                                    \
+                                                                             \
+    tmp0_m = __msa_ave_u_b((v16u8) in0, (v16u8) in1);                        \
+    tmp1_m = __msa_ave_u_b((v16u8) in2, (v16u8) in3);                        \
+    tmp2_m = __msa_ave_u_b((v16u8) in4, (v16u8) in5);                        \
+    tmp3_m = __msa_ave_u_b((v16u8) in6, (v16u8) in7);                        \
+                                                                             \
+    ST_UB4(tmp0_m, tmp1_m, tmp2_m, tmp3_m, pdst, stride);                    \
+}
+
 /* Description : Average rounded byte elements from pair of vectors and store
                  8x4 byte block in destination memory
    Arguments   : Inputs  - in0, in1, in2, in3, in4, in5, in6, in7, pdst, stride
@@ -2437,6 +2514,91 @@
     out2_m = __msa_copy_u_d((v2i64) tp2_m, 0);                               \
     out3_m = __msa_copy_u_d((v2i64) tp3_m, 0);                               \
     SD4(out0_m, out1_m, out2_m, out3_m, pdst, stride);                       \
+}
+
+/* Description : Average rounded byte elements from pair of vectors and store
+                 16x4 byte block in destination memory
+   Arguments   : Inputs  - in0, in1, in2, in3, in4, in5, in6, in7, pdst, stride
+                 Outputs -
+                 Return Type -
+   Details     : Each byte element from input vector pair 'in0' and 'in1' are
+                 average rounded (a + b + 1)/2 and stored in 'tmp0_m'
+                 Each byte element from input vector pair 'in2' and 'in3' are
+                 average rounded (a + b + 1)/2 and stored in 'tmp1_m'
+                 Each byte element from input vector pair 'in4' and 'in5' are
+                 average rounded (a + b + 1)/2 and stored in 'tmp2_m'
+                 Each byte element from input vector pair 'in6' and 'in7' are
+                 average rounded (a + b + 1)/2 and stored in 'tmp3_m'
+                 The vector results from all 4 vectors are stored in
+                 destination memory as 16x4 byte block
+*/
+#define AVER_ST16x4_UB(in0, in1, in2, in3, in4, in5, in6, in7, pdst, stride)  \
+{                                                                             \
+    v16u8 t0_m, t1_m, t2_m, t3_m;                                             \
+                                                                              \
+    AVER_UB4_UB(in0, in1, in2, in3, in4, in5, in6, in7,                       \
+                t0_m, t1_m, t2_m, t3_m);                                      \
+    ST_UB4(t0_m, t1_m, t2_m, t3_m, pdst, stride);                             \
+}
+
+/* Description : Average rounded byte elements from pair of vectors,
+                 average rounded with destination and store 8x4 byte block
+                 in destination memory
+   Arguments   : Inputs  - in0, in1, in2, in3, in4, in5, in6, in7, pdst, stride
+                 Outputs -
+                 Return Type -
+   Details     : Each byte element from input vector pair 'in0' and 'in1' are
+                 average rounded (a + b + 1)/2 and stored in 'tmp0_m'
+                 Each byte element from input vector pair 'in2' and 'in3' are
+                 average rounded (a + b + 1)/2 and stored in 'tmp1_m'
+                 Each byte element from input vector pair 'in4' and 'in5' are
+                 average rounded (a + b + 1)/2 and stored in 'tmp2_m'
+                 Each byte element from input vector pair 'in6' and 'in7' are
+                 average rounded (a + b + 1)/2 and stored in 'tmp3_m'
+                 The half vector results from all 4 vectors are stored in
+                 destination memory as 8x4 byte block
+*/
+#define AVER_DST_ST8x4_UB(in0, in1, in2, in3, in4, in5, in6, in7,  \
+                          pdst, stride)                            \
+{                                                                  \
+    v16u8 tmp0_m, tmp1_m, tmp2_m, tmp3_m;                          \
+    v16u8 dst0_m, dst1_m, dst2_m, dst3_m;                          \
+                                                                   \
+    LD_UB4(pdst, stride, dst0_m, dst1_m, dst2_m, dst3_m);          \
+    AVER_UB4_UB(in0, in1, in2, in3, in4, in5, in6, in7,            \
+                tmp0_m, tmp1_m, tmp2_m, tmp3_m);                   \
+    AVER_ST8x4_UB(dst0_m, tmp0_m, dst1_m, tmp1_m,                  \
+                  dst2_m, tmp2_m, dst3_m, tmp3_m, pdst, stride);   \
+}
+
+/* Description : Average rounded byte elements from pair of vectors,
+                 average rounded with destination and store 16x4 byte block
+                 in destination memory
+   Arguments   : Inputs  - in0, in1, in2, in3, in4, in5, in6, in7, pdst, stride
+                 Outputs -
+                 Return Type -
+   Details     : Each byte element from input vector pair 'in0' and 'in1' are
+                 average rounded (a + b + 1)/2 and stored in 'tmp0_m'
+                 Each byte element from input vector pair 'in2' and 'in3' are
+                 average rounded (a + b + 1)/2 and stored in 'tmp1_m'
+                 Each byte element from input vector pair 'in4' and 'in5' are
+                 average rounded (a + b + 1)/2 and stored in 'tmp2_m'
+                 Each byte element from input vector pair 'in6' and 'in7' are
+                 average rounded (a + b + 1)/2 and stored in 'tmp3_m'
+                 The vector results from all 4 vectors are stored in
+                 destination memory as 16x4 byte block
+*/
+#define AVER_DST_ST16x4_UB(in0, in1, in2, in3, in4, in5, in6, in7,  \
+                           pdst, stride)                            \
+{                                                                   \
+    v16u8 tmp0_m, tmp1_m, tmp2_m, tmp3_m;                           \
+    v16u8 dst0_m, dst1_m, dst2_m, dst3_m;                           \
+                                                                    \
+    LD_UB4(pdst, stride, dst0_m, dst1_m, dst2_m, dst3_m);           \
+    AVER_UB4_UB(in0, in1, in2, in3, in4, in5, in6, in7,             \
+                tmp0_m, tmp1_m, tmp2_m, tmp3_m);                    \
+    AVER_ST16x4_UB(dst0_m, tmp0_m, dst1_m, tmp1_m,                  \
+                   dst2_m, tmp2_m, dst3_m, tmp3_m, pdst, stride);   \
 }
 
 /* Description : Add block 4x4

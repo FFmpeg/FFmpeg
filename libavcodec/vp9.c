@@ -3988,7 +3988,8 @@ static int vp9_decode_frame(AVCodecContext *ctx, void *frame,
     int size = pkt->size;
     VP9Context *s = ctx->priv_data;
     int res, tile_row, tile_col, i, ref, row, col;
-    int retain_segmap_ref = s->segmentation.enabled && !s->segmentation.update_map;
+    int retain_segmap_ref = s->segmentation.enabled && !s->segmentation.update_map
+                            && s->frames[REF_FRAME_SEGMAP].segmentation_map;
     ptrdiff_t yoff, uvoff, ls_y, ls_uv;
     AVFrame *f;
     int bytesperpixel;

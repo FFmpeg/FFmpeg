@@ -22,6 +22,7 @@
  */
 
 #include "libavutil/common.h"
+#include "libavutil/opt.h"
 #include "avcodec.h"
 #include "internal.h"
 #include "get_bits.h"
@@ -36,6 +37,7 @@ typedef struct FICThreadContext {
 } FICThreadContext;
 
 typedef struct FICContext {
+    AVClass *class;
     AVCodecContext *avctx;
     AVFrame *frame;
     AVFrame *final_frame;
@@ -51,6 +53,7 @@ typedef struct FICContext {
     int num_slices, slice_h;
 
     uint8_t cursor_buf[4096];
+    int skip_cursor;
 } FICContext;
 
 static const uint8_t fic_qmat_hq[64] = {
@@ -263,7 +266,7 @@ static int fic_decode_frame(AVCodecContext *avctx, void *data,
     int msize;
     int tsize;
     int cur_x, cur_y;
-    int skip_cursor = 0;
+    int skip_cursor = ctx->skip_cursor;
     uint8_t *sdata;
 
     if ((ret = ff_reget_buffer(avctx, ctx->frame)) < 0)
@@ -452,6 +455,18 @@ static av_cold int fic_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
+static const AVOption options[] = {
+{ "skip_cursor", "skip the cursor", offsetof(FICContext, skip_cursor), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, 1, AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_VIDEO_PARAM },
+{ NULL },
+};
+
+static const AVClass fic_decoder_class = {
+    .class_name = "FIC encoder",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVCodec ff_fic_decoder = {
     .name           = "fic",
     .long_name      = NULL_IF_CONFIG_SMALL("Mirillis FIC"),
@@ -462,4 +477,5 @@ AVCodec ff_fic_decoder = {
     .decode         = fic_decode_frame,
     .close          = fic_decode_close,
     .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_SLICE_THREADS,
+    .priv_class     = &fic_decoder_class,
 };
