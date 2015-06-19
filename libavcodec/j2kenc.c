@@ -31,11 +31,15 @@
 #include "bytestream.h"
 #include "jpeg2000.h"
 #include "libavutil/common.h"
+#include "libavutil/opt.h"
 
 #define NMSEDEC_BITS 7
 #define NMSEDEC_FRACBITS (NMSEDEC_BITS-1)
 #define WMSEDEC_SHIFT 13 ///< must be >= 13
 #define LAMBDA_SCALE (100000000LL << (WMSEDEC_SHIFT - 13))
+
+#define CODEC_JP2 1
+#define CODEC_J2K 0
 
 static int lut_nmsedec_ref [1<<NMSEDEC_BITS],
            lut_nmsedec_ref0[1<<NMSEDEC_BITS],
@@ -59,6 +63,7 @@ typedef struct {
 } Jpeg2000Tile;
 
 typedef struct {
+    AVClass *class;
     AVCodecContext *avctx;
     const AVFrame *picture;
 
@@ -81,6 +86,8 @@ typedef struct {
     Jpeg2000QuantStyle  qntsty;
 
     Jpeg2000Tile *tile;
+
+    int format;
 } Jpeg2000EncoderContext;
 
 
@@ -916,11 +923,17 @@ static void reinit(Jpeg2000EncoderContext *s)
     }
 }
 
+static void update_size(uint8_t *size, const uint8_t *end)
+{
+    AV_WB32(size, end-size);
+}
+
 static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                         const AVFrame *pict, int *got_packet)
 {
     int tileno, ret;
     Jpeg2000EncoderContext *s = avctx->priv_data;
+    uint8_t *chunkstart, *jp2cstart, *jp2hstart;
 
     if ((ret = ff_alloc_packet2(avctx, pkt, avctx->width*avctx->height*9 + FF_MIN_BUFFER_SIZE)) < 0)
         return ret;
@@ -935,6 +948,57 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     copy_frame(s);
     reinit(s);
+
+    if (s->format == CODEC_JP2) {
+        av_assert0(s->buf == pkt->data);
+
+        bytestream_put_be32(&s->buf, 0x0000000C);
+        bytestream_put_be32(&s->buf, 0x6A502020);
+        bytestream_put_be32(&s->buf, 0x0D0A870A);
+
+        chunkstart = s->buf;
+        bytestream_put_be32(&s->buf, 0);
+        bytestream_put_buffer(&s->buf, "ftyp", 4);
+        bytestream_put_buffer(&s->buf, "jp2\040\040", 4);
+        bytestream_put_be32(&s->buf, 0);
+        update_size(chunkstart, s->buf);
+
+        jp2hstart = s->buf;
+        bytestream_put_be32(&s->buf, 0);
+        bytestream_put_buffer(&s->buf, "jp2h", 4);
+
+        chunkstart = s->buf;
+        bytestream_put_be32(&s->buf, 0);
+        bytestream_put_buffer(&s->buf, "ihdr", 4);
+        bytestream_put_be32(&s->buf, avctx->height);
+        bytestream_put_be32(&s->buf, avctx->width);
+        bytestream_put_be16(&s->buf, s->ncomponents);
+        bytestream_put_byte(&s->buf, s->cbps[0]);
+        bytestream_put_byte(&s->buf, 7);
+        bytestream_put_byte(&s->buf, 0);
+        bytestream_put_byte(&s->buf, 0);
+        update_size(chunkstart, s->buf);
+
+        chunkstart = s->buf;
+        bytestream_put_be32(&s->buf, 0);
+        bytestream_put_buffer(&s->buf, "colr", 4);
+        bytestream_put_byte(&s->buf, 1);
+        bytestream_put_byte(&s->buf, 0);
+        bytestream_put_byte(&s->buf, 0);
+        if (s->ncomponents == 1) {
+            bytestream_put_be32(&s->buf, 17);
+        } else if (avctx->pix_fmt == AV_PIX_FMT_RGB24) {
+            bytestream_put_be32(&s->buf, 16);
+        } else {
+            bytestream_put_be32(&s->buf, 18);
+        }
+        update_size(chunkstart, s->buf);
+        update_size(jp2hstart, s->buf);
+
+        jp2cstart = s->buf;
+        bytestream_put_be32(&s->buf, 0);
+        bytestream_put_buffer(&s->buf, "jp2c", 4);
+    }
 
     if (s->buf_end - s->buf < 2)
         return -1;
@@ -960,6 +1024,9 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     if (s->buf_end - s->buf < 2)
         return -1;
     bytestream_put_be16(&s->buf, JPEG2000_EOC);
+
+    if (s->format == CODEC_JP2)
+        update_size(jp2cstart, s->buf);
 
     av_log(s->avctx, AV_LOG_DEBUG, "end\n");
     pkt->size = s->buf - s->buf_start;
@@ -1037,6 +1104,24 @@ static int j2kenc_destroy(AVCodecContext *avctx)
     return 0;
 }
 
+// taken from the libopenjpeg wraper so it matches
+
+#define OFFSET(x) offsetof(Jpeg2000EncoderContext, x)
+#define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
+static const AVOption options[] = {
+    { "format",        "Codec Format",      OFFSET(format),        AV_OPT_TYPE_INT,   { .i64 = CODEC_J2K   }, CODEC_J2K, CODEC_JP2,   VE, "format"      },
+    { "j2k",           NULL,                0,                     AV_OPT_TYPE_CONST, { .i64 = CODEC_J2K   }, 0,         0,           VE, "format"      },
+    { "jp2",           NULL,                0,                     AV_OPT_TYPE_CONST, { .i64 = CODEC_JP2   }, 0,         0,           VE, "format"      },
+    { NULL }
+};
+
+static const AVClass j2k_class = {
+    .class_name = "jpeg 2000 encoder",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVCodec ff_jpeg2000_encoder = {
     .name           = "jpeg2000",
     .long_name      = NULL_IF_CONFIG_SMALL("JPEG 2000"),
@@ -1053,5 +1138,6 @@ AVCodec ff_jpeg2000_encoder = {
         AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV444P,
         AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUV411P,*/
         AV_PIX_FMT_NONE
-    }
+    },
+    .priv_class     = &j2k_class,
 };
