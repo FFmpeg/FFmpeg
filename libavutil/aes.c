@@ -311,8 +311,8 @@ int main(int argc, char **argv)
         AVAES ae, ad;
         AVLFG prng;
 
-        av_aes_init(&ae, "PI=3.141592654..", 128, 0);
-        av_aes_init(&ad, "PI=3.141592654..", 128, 1);
+        av_aes_init(&ae, (const uint8_t*)"PI=3.141592654..", 128, 0);
+        av_aes_init(&ad, (const uint8_t*)"PI=3.141592654..", 128, 1);
         av_lfg_init(&prng, 1);
 
         for (i = 0; i < 10000; i++) {
