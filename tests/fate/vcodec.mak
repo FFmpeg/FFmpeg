@@ -68,9 +68,19 @@ fate-vsynth%-dv-50:              ENCOPTS = -dct int -s pal -pix_fmt yuv422p \
 fate-vsynth%-dv-50:              DECOPTS = -sws_flags neighbor
 fate-vsynth%-dv-50:              FMT     = dv
 
-FATE_VCODEC-$(call ENCDEC, FFV1, AVI)   += ffv1 ffv1.0
+FATE_VCODEC-$(call ENCDEC, FFV1, AVI)   += ffv1 ffv1.0 ffv1.3-420 ffv1.3-422p10 ffv1.3-444p16 ffv1.3-bgr
 fate-vsynth%-ffv1:               ENCOPTS = -slices 4
 fate-vsynth%-ffv1.0:             CODEC   = ffv1
+fate-vsynth%-ffv1.3-420:         ENCOPTS = -vcodec ffv1 -level 3 -pix_fmt yuv420p
+fate-vsynth%-ffv1.3-422p10:      ENCOPTS = -vcodec ffv1 -level 3 -pix_fmt yuv422p10 \
+                                           -sws_flags neighbor+bitexact
+fate-vsynth%-ffv1.3-422p10:      DECOPTS = -sws_flags neighbor+bitexact
+fate-vsynth%-ffv1.3-444p16:      ENCOPTS = -vcodec ffv1 -level 3 -pix_fmt yuv444p16 \
+                                           -sws_flags neighbor+bitexact
+fate-vsynth%-ffv1.3-444p16:      DECOPTS = -sws_flags neighbor+bitexact
+fate-vsynth%-ffv1.3-bgr:         ENCOPTS = -vcodec ffv1 -level 3 -pix_fmt bgr0 \
+                                           -sws_flags neighbor+bitexact
+fate-vsynth%-ffv1.3-bgr:         DECOPTS = -sws_flags neighbor+bitexact
 
 FATE_VCODEC-$(call ENCDEC, FFVHUFF, AVI) += ffvhuff ffvhuff444 ffvhuff420p12 ffvhuff422p10left ffvhuff444p16
 fate-vsynth%-ffvhuff444:         ENCOPTS = -vcodec ffvhuff -pix_fmt yuv444p
