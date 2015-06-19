@@ -3,6 +3,27 @@ releases are sorted from youngest to oldest.
 
 version <next>:
 
+version 2.7.1:
+- postproc: fix unaligned access
+- avformat: clarify what package needs to be compiled with SSL support
+- avcodec/libx264: Avoid reconfig on equivalent aspect ratios
+- avcodec/flacenc: Fix Invalid Rice order
+- tls_gnutls: fix hang on disconnection
+- avcodec/hevc_ps: Only discard overread VPS if a previous is available
+- ffmpeg: Free last_frame instead of just unref
+- avcodec/ffv1enc: fix bps for >8bit yuv when not explicitly set
+- avio: fix potential crashes when combining ffio_ensure_seekback + crc
+- examples/demuxing_decoding: use properties from frame instead of video_dec_ctx
+- h264: er: Copy from the previous reference only if compatible
+- doc: fix spelling errors
+- configure: only disable VSX for !ppc64el
+- ffmpeg_opt: Check for localtime() failure
+- avformat/singlejpeg: fix standalone compilation
+- configure: Disable VSX on unspecified / generic CPUs
+- avformat: Fix bug in parse_rps for HEVC.
+- takdec: ensure chan2 is a valid channel index
+- avcodec/h264_slice: Use AVFrame dimensions for grayscale handling
+
 
 version 2.7:
 - FFT video filter
