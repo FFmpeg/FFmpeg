@@ -75,17 +75,20 @@ static av_cold int encode_init(AVCodecContext *avctx)
     return 0;
 }
 
-#define write16(p, value) \
-do { \
-    if (s->big_endian) AV_WB16(p, value); \
-    else               AV_WL16(p, value); \
-} while(0)
+static av_always_inline void write16_internal(int big_endian, void *p, int value)
+{
+    if (big_endian) AV_WB16(p, value);
+    else            AV_WL16(p, value);
+}
 
-#define write32(p, value) \
-do { \
-    if (s->big_endian) AV_WB32(p, value); \
-    else               AV_WL32(p, value); \
-} while(0)
+static av_always_inline void write32_internal(int big_endian, void *p, int value)
+{
+    if (big_endian) AV_WB32(p, value);
+    else            AV_WL32(p, value);
+}
+
+#define write16(p, value) write16_internal(s->big_endian, p, value)
+#define write32(p, value) write32_internal(s->big_endian, p, value)
 
 static void encode_rgb48_10bit(AVCodecContext *avctx, const AVPicture *pic, uint8_t *dst)
 {
