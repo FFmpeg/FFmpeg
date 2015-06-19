@@ -84,8 +84,11 @@ static void sd_1d53(int *p, int i0, int i1)
 {
     int i;
 
-    if (i1 == i0 + 1)
+    if (i1 <= i0 + 1) {
+        if (i0 == 1)
+            p[1] <<= 1;
         return;
+    }
 
     extend53(p, i0, i1);
 
@@ -109,8 +112,6 @@ static void dwt_encode53(DWTContext *s, int *t)
             mv = s->mod[lev][1],
             lp;
         int *l;
-
-        av_assert1(!mh && !mv);
 
         // VER_SD
         l = line + mv;
@@ -630,7 +631,6 @@ int main(void) {
     for (i = 0; i < 40; i++) {
         for (j=0; j<4; j++)
             border[0][j] = av_lfg_get(&prng) % MAX_W;
-        border[0][0] = border [1][0] =0;
         if (border[0][0] >= border[0][1] || border[1][0] >= border[1][1])
             continue;
         decomp_levels = av_lfg_get(&prng) % FF_DWT_MAX_DECLVLS;
