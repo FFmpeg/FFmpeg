@@ -108,7 +108,7 @@ static volatile int checksum;
 int main(int argc, char **argv)
 {
     int i;
-    char data[LEN];
+    uint8_t data[LEN];
 
     av_log_set_level(AV_LOG_DEBUG);
 
