@@ -86,6 +86,7 @@ static const int swf_index_tables[4][16] = {
 typedef struct ADPCMDecodeContext {
     ADPCMChannelStatus status[10];
     int vqa_version;                /**< VQA version. Used for ADPCM_IMA_WS */
+    int has_status;
 } ADPCMDecodeContext;
 
 static av_cold int adpcm_decode_init(AVCodecContext * avctx)
@@ -1455,10 +1456,15 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
                 for (n = 0; n < 16; n++)
                     table[i][n] = THP_GET16(gb);
 
-            /* Initialize the previous sample.  */
-            for (i = 0; i < avctx->channels; i++) {
-                c->status[i].sample1 = THP_GET16(gb);
-                c->status[i].sample2 = THP_GET16(gb);
+            if (!c->has_status) {
+                /* Initialize the previous sample.  */
+                for (i = 0; i < avctx->channels; i++) {
+                    c->status[i].sample1 = THP_GET16(gb);
+                    c->status[i].sample2 = THP_GET16(gb);
+                }
+                c->has_status = 1;
+            } else {
+                bytestream2_skip(&gb, avctx->channels * 4);
             }
         }
 
@@ -1562,6 +1568,12 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
     return bytestream2_tell(&gb);
 }
 
+static void adpcm_flush(AVCodecContext *avctx)
+{
+    ADPCMDecodeContext *c = avctx->priv_data;
+    c->has_status = 0;
+}
+
 
 static const enum AVSampleFormat sample_fmts_s16[]  = { AV_SAMPLE_FMT_S16,
                                                         AV_SAMPLE_FMT_NONE };
@@ -1580,6 +1592,7 @@ AVCodec ff_ ## name_ ## _decoder = {                        \
     .priv_data_size = sizeof(ADPCMDecodeContext),           \
     .init           = adpcm_decode_init,                    \
     .decode         = adpcm_decode_frame,                   \
+    .flush          = adpcm_flush,                          \
     .capabilities   = CODEC_CAP_DR1,                        \
     .sample_fmts    = sample_fmts_,                         \
 }
