@@ -223,7 +223,7 @@ static int read_header(AVFormatContext *s)
     }
 
     b->block_size = read32(s);
-    if (b->block_size > UINT16_MAX / st->codec->channels)
+    if (b->block_size > UINT32_MAX / st->codec->channels)
         return AVERROR_INVALIDDATA;
     b->block_size *= st->codec->channels;
 
