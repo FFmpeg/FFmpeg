@@ -121,7 +121,7 @@ static void vector_fmul_c(int *dst, const int *src0, const int *src1, int len)
     }
 }
 
-static int ff_scalarproduct_fixed_c(const int *v1, const int *v2, int len)
+static int scalarproduct_fixed_c(const int *v1, const int *v2, int len)
 {
     /** p is initialized with 0x40000000 so that the proper rounding will occur
       * at the end */
@@ -158,7 +158,7 @@ AVFixedDSPContext * avpriv_alloc_fixed_dsp(int bit_exact)
     fdsp->vector_fmul_add = vector_fmul_add_c;
     fdsp->vector_fmul_reverse = vector_fmul_reverse_c;
     fdsp->butterflies_fixed = butterflies_fixed_c;
-    fdsp->scalarproduct_fixed = ff_scalarproduct_fixed_c;
+    fdsp->scalarproduct_fixed = scalarproduct_fixed_c;
 
     return fdsp;
 }
