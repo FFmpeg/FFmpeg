@@ -32,6 +32,7 @@ typedef struct BRSTMDemuxContext {
     uint32_t    last_block_used_bytes;
     uint32_t    last_block_size;
     uint32_t    last_block_samples;
+    uint32_t    data_start;
     uint8_t     *table;
     uint8_t     *adpc;
     int         little_endian;
@@ -312,6 +313,8 @@ static int read_header(AVFormatContext *s)
                           codec == AV_CODEC_ID_ADPCM_THP_LE))
                 avio_skip(s->pb, 24);
 
+            b->data_start = avio_tell(s->pb);
+
             if ((major != 1 || minor) && !bfstm)
                 avpriv_request_sample(s, "Version %d.%d", major, minor);
 
@@ -391,6 +394,24 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
+static int read_seek(AVFormatContext *s, int stream_index,
+                     int64_t timestamp, int flags)
+{
+    AVStream *st = s->streams[stream_index];
+    BRSTMDemuxContext *b = s->priv_data;
+    int64_t ret = 0;
+
+    timestamp /= b->samples_per_block;
+    ret = avio_seek(s->pb, b->data_start + timestamp * b->block_size *
+                           st->codec->channels, SEEK_SET);
+    if (ret < 0)
+        return ret;
+
+    b->current_block = timestamp;
+    ff_update_cur_dts(s, st, timestamp * b->samples_per_block);
+    return 0;
+}
+
 AVInputFormat ff_brstm_demuxer = {
     .name           = "brstm",
     .long_name      = NULL_IF_CONFIG_SMALL("BRSTM (Binary Revolution Stream)"),
@@ -399,6 +420,7 @@ AVInputFormat ff_brstm_demuxer = {
     .read_header    = read_header,
     .read_packet    = read_packet,
     .read_close     = read_close,
+    .read_seek      = read_seek,
     .extensions     = "brstm",
 };
 
@@ -410,5 +432,6 @@ AVInputFormat ff_bfstm_demuxer = {
     .read_header    = read_header,
     .read_packet    = read_packet,
     .read_close     = read_close,
+    .read_seek      = read_seek,
     .extensions     = "bfstm,bcstm",
 };
