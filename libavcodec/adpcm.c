@@ -648,8 +648,14 @@ static int get_nb_samples(AVCodecContext *avctx, GetByteContext *gb,
         *coded_samples  = (avctx->codec->id == AV_CODEC_ID_ADPCM_THP_LE) ?
                           bytestream2_get_le32(gb) :
                           bytestream2_get_be32(gb);
-        *coded_samples -= *coded_samples % 14;
-        nb_samples      = (buf_size - (8 + 36 * ch)) / (8 * ch) * 14;
+        buf_size       -= 8 + 36 * ch;
+        buf_size       /= ch;
+        nb_samples      = buf_size / 8 * 14;
+        if (buf_size % 8 > 1) {
+            nb_samples     += (buf_size % 8 - 1) * 2;
+            if (*coded_samples & 1)
+                nb_samples -= 1;
+        }
         break;
     case AV_CODEC_ID_ADPCM_AFC:
         nb_samples = buf_size / (9 * ch) * 16;
@@ -1458,7 +1464,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
             samples = samples_p[ch];
 
             /* Read in every sample for this channel.  */
-            for (i = 0; i < nb_samples / 14; i++) {
+            for (i = 0; i < (nb_samples + 13) / 14; i++) {
                 int byte = bytestream2_get_byteu(&gb);
                 int index = (byte >> 4) & 7;
                 unsigned int exp = byte & 0x0F;
@@ -1466,7 +1472,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
                 int factor2 = table[ch][index * 2 + 1];
 
                 /* Decode 14 samples.  */
-                for (n = 0; n < 14; n++) {
+                for (n = 0; n < 14 && (i * 14 + n < nb_samples); n++) {
                     int32_t sampledat;
 
                     if (n & 1) {
