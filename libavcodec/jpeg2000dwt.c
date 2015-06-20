@@ -659,7 +659,7 @@ int main(void) {
 
     for (i = 0; i < 40; i++) {
         for (j=0; j<4; j++)
-            border[0][j] = av_lfg_get(&prng) % MAX_W;
+            border[j>>1][j&1] = av_lfg_get(&prng) % MAX_W;
         if (border[0][0] >= border[0][1] || border[1][0] >= border[1][1])
             continue;
         decomp_levels = av_lfg_get(&prng) % FF_DWT_MAX_DECLVLS;
