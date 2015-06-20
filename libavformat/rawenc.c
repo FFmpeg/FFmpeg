@@ -56,6 +56,25 @@ AVOutputFormat ff_ac3_muxer = {
 #endif
 
 #if CONFIG_ADX_MUXER
+
+static int adx_write_trailer(AVFormatContext *s)
+{
+    AVIOContext *pb = s->pb;
+    AVCodecContext *avctx = s->streams[0]->codec;
+
+    if (pb->seekable) {
+        int64_t file_size = avio_tell(pb);
+        uint64_t sample_count = (file_size - 36) / avctx->channels / 18 * 32;
+        if (sample_count <= UINT32_MAX) {
+            avio_seek(pb, 12, SEEK_SET);
+            avio_wb32(pb, sample_count);
+            avio_seek(pb, file_size, SEEK_SET);
+        }
+    }
+
+    return 0;
+}
+
 AVOutputFormat ff_adx_muxer = {
     .name              = "adx",
     .long_name         = NULL_IF_CONFIG_SMALL("CRI ADX"),
@@ -64,6 +83,7 @@ AVOutputFormat ff_adx_muxer = {
     .video_codec       = AV_CODEC_ID_NONE,
     .write_header      = force_one_stream,
     .write_packet      = ff_raw_write_packet,
+    .write_trailer     = adx_write_trailer,
     .flags             = AVFMT_NOTIMESTAMPS,
 };
 #endif
