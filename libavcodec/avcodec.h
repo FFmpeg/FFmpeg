@@ -401,6 +401,7 @@ enum AVCodecID {
     AV_CODEC_ID_ADPCM_DTK  = MKBETAG('D','T','K',' '),
     AV_CODEC_ID_ADPCM_IMA_RAD = MKBETAG('R','A','D',' '),
     AV_CODEC_ID_ADPCM_G726LE = MKBETAG('6','2','7','G'),
+    AV_CODEC_ID_ADPCM_THP_LE = MKBETAG('T','H','P','L'),
 
     /* AMR */
     AV_CODEC_ID_AMR_NB = 0x12000,

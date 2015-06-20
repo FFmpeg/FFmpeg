@@ -4,6 +4,7 @@ releases are sorted from youngest to oldest.
 version <next>:
 - colorkey video filter
 - BFSTM demuxer
+- little-endian ADPCM_THP decoder
 
 
 version 2.7:
