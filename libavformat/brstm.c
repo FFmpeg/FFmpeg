@@ -296,7 +296,17 @@ static int read_header(AVFormatContext *s)
                     ret = AVERROR(ENOMEM);
                     goto fail;
                 }
-                avio_read(s->pb, b->adpc, asize);
+                if (bfstm && codec != AV_CODEC_ID_ADPCM_THP_LE) {
+                    // Big-endian BFSTMs have little-endian SEEK tables
+                    // for some strange reason.
+                    int i;
+                    for (i = 0; i < asize; i += 2) {
+                        b->adpc[i+1] = avio_r8(s->pb);
+                        b->adpc[i]   = avio_r8(s->pb);
+                    }
+                } else {
+                    avio_read(s->pb, b->adpc, asize);
+                }
                 avio_skip(s->pb, size - asize);
             }
             break;
