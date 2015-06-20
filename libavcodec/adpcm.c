@@ -1451,15 +1451,15 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
                 for (n = 0; n < 16; n++)
                     table[i][n] = THP_GET16(tb);
         } else {
-        for (i = 0; i < avctx->channels; i++)
-            for (n = 0; n < 16; n++)
-                table[i][n] = THP_GET16(gb);
+            for (i = 0; i < avctx->channels; i++)
+                for (n = 0; n < 16; n++)
+                    table[i][n] = THP_GET16(gb);
 
-        /* Initialize the previous sample.  */
-        for (i = 0; i < avctx->channels; i++) {
-            c->status[i].sample1 = THP_GET16(gb);
-            c->status[i].sample2 = THP_GET16(gb);
-        }
+            /* Initialize the previous sample.  */
+            for (i = 0; i < avctx->channels; i++) {
+                c->status[i].sample1 = THP_GET16(gb);
+                c->status[i].sample2 = THP_GET16(gb);
+            }
         }
 
         for (ch = 0; ch < avctx->channels; ch++) {
