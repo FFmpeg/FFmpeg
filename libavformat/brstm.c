@@ -32,7 +32,6 @@ typedef struct BRSTMDemuxContext {
     uint32_t    last_block_used_bytes;
     uint8_t     *table;
     uint8_t     *adpc;
-    int         bfstm;
     int         little_endian;
 } BRSTMDemuxContext;
 
@@ -91,8 +90,7 @@ static int read_header(AVFormatContext *s)
     uint32_t size, start, asize;
     AVStream *st;
     int ret = AVERROR_EOF;
-
-    b->bfstm = !strcmp("bfstm", s->iformat->name);
+    int bfstm = !strcmp("bfstm", s->iformat->name);
 
     st = avformat_new_stream(s, NULL);
     if (!st)
@@ -110,7 +108,7 @@ static int read_header(AVFormatContext *s)
     if (bom == 0xFFFE)
         b->little_endian = 1;
 
-    if (!b->bfstm) {
+    if (!bfstm) {
         major = avio_r8(s->pb);
         minor = avio_r8(s->pb);
         avio_skip(s->pb, 4); // size of file
@@ -202,18 +200,18 @@ static int read_header(AVFormatContext *s)
 
     avio_skip(s->pb, 1); // padding
 
-    st->codec->sample_rate = b->bfstm ? read32(s) : read16(s);
+    st->codec->sample_rate = bfstm ? read32(s) : read16(s);
     if (!st->codec->sample_rate)
         return AVERROR_INVALIDDATA;
 
-    if (!b->bfstm)
+    if (!bfstm)
         avio_skip(s->pb, 2); // padding
     avio_skip(s->pb, 4); // loop start sample
     st->start_time = 0;
     st->duration = read32(s);
     avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
 
-    if (!b->bfstm)
+    if (!bfstm)
         start = read32(s);
     b->current_block = 0;
     b->block_count = read32(s);
@@ -240,7 +238,7 @@ static int read_header(AVFormatContext *s)
         int ch;
 
         avio_skip(s->pb, pos + toffset - avio_tell(s->pb));
-        if (!b->bfstm)
+        if (!bfstm)
             toffset = read32(s) + 16LL;
         else
             toffset = toffset + read32(s) + st->codec->channels * 8 - 8;
@@ -274,10 +272,7 @@ static int read_header(AVFormatContext *s)
         goto fail;
     }
 
-    if (!b->bfstm)
-        avio_skip(s->pb, size - (avio_tell(s->pb) - pos));
-    else
-        avio_skip(s->pb, data_offset - avio_tell(s->pb));
+    avio_skip(s->pb, size - (avio_tell(s->pb) - pos));
 
     while (!avio_feof(s->pb)) {
         chunk = avio_rl32(s->pb);
@@ -315,13 +310,13 @@ static int read_header(AVFormatContext *s)
             if ((start < avio_tell(s->pb)) ||
                 (!b->adpc && (codec == AV_CODEC_ID_ADPCM_THP ||
                               codec == AV_CODEC_ID_ADPCM_THP_LE)
-                          && !b->bfstm)) {
+                          && !bfstm)) {
                 ret = AVERROR_INVALIDDATA;
                 goto fail;
             }
             avio_skip(s->pb, start - avio_tell(s->pb));
 
-            if ((major != 1 || minor) && !b->bfstm)
+            if ((major != 1 || minor) && !bfstm)
                 avpriv_request_sample(s, "Version %d.%d", major, minor);
 
             return 0;
