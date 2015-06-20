@@ -131,6 +131,42 @@ static int file_check(URLContext *h, int mask)
     return ret;
 }
 
+static int file_delete(URLContext *h)
+{
+#if HAVE_UNISTD_H
+    int ret;
+    const char *filename = h->filename;
+    av_strstart(filename, "file:", &filename);
+
+    ret = rmdir(filename);
+    if (ret < 0 && errno == ENOTDIR)
+        ret = unlink(filename);
+    if (ret < 0)
+        return AVERROR(errno);
+
+    return ret;
+#else
+    return AVERROR(ENOSYS);
+#endif /* HAVE_UNISTD_H */
+}
+
+static int file_move(URLContext *h_src, URLContext *h_dst)
+{
+#if HAVE_UNISTD_H
+    const char *filename_src = h_src->filename;
+    const char *filename_dst = h_dst->filename;
+    av_strstart(filename_src, "file:", &filename_src);
+    av_strstart(filename_dst, "file:", &filename_src);
+
+    if (rename(filename_src, filename_dst) < 0)
+        return AVERROR(errno);
+
+    return 0;
+#else
+    return AVERROR(ENOSYS);
+#endif /* HAVE_UNISTD_H */
+}
+
 #if CONFIG_FILE_PROTOCOL
 
 static int file_open(URLContext *h, const char *filename, int flags)
@@ -198,6 +234,8 @@ URLProtocol ff_file_protocol = {
     .url_close           = file_close,
     .url_get_file_handle = file_get_handle,
     .url_check           = file_check,
+    .url_delete          = file_delete,
+    .url_move            = file_move,
     .priv_data_size      = sizeof(FileContext),
     .priv_data_class     = &file_class,
 };
