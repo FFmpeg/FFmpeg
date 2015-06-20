@@ -77,6 +77,8 @@ static int vda_retrieve_data(AVCodecContext *s, AVFrame *frame)
                   frame->width, frame->height);
 
     ret = av_frame_copy_props(vda->tmp_frame, frame);
+    CVPixelBufferUnlockBaseAddress(pixbuf, kCVPixelBufferLock_ReadOnly);
+
     if (ret < 0)
         return ret;
 
