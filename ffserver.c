@@ -504,8 +504,7 @@ static void start_multicast(void)
         random1 = av_lfg_get(&random_state);
 
         /* open the RTP connection */
-        snprintf(session_id, sizeof(session_id), "%08x%08x",
-                 random0, random1);
+        snprintf(session_id, sizeof(session_id), "%08x%08x", random0, random1);
 
         /* choose a port if none given */
         if (stream->multicast_port == 0) {
@@ -1166,8 +1165,10 @@ static int modify_current_stream(HTTPContext *c, char *rates)
                 break;
         }
 
-        if (c->switch_feed_streams[i] >= 0 && c->switch_feed_streams[i] != c->feed_streams[i])
+        if (c->switch_feed_streams[i] >= 0 &&
+            c->switch_feed_streams[i] != c->feed_streams[i]) {
             action_required = 1;
+        }
     }
 
     return action_required;
@@ -1271,9 +1272,7 @@ static int validate_acl(FFServerStream *stream, HTTPContext *c)
 
     if (stream->dynamic_acl[0]) {
         acl = parse_dynamic_acl(stream, c);
-
         ret = validate_acl_list(acl, c);
-
         free_acl_list(acl);
     }
 
