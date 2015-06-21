@@ -67,7 +67,17 @@ static void destroy(struct ResampleContext * *c){
 }
 
 static int flush(struct SwrContext *s){
+    s->delayed_samples_fixup = soxr_delay((soxr_t)s->resample);
+
     soxr_process((soxr_t)s->resample, NULL, 0, NULL, NULL, 0, NULL);
+
+    {
+        float f;
+        size_t idone, odone;
+        soxr_process((soxr_t)s->resample, &f, 0, &idone, &f, 0, &odone);
+        s->delayed_samples_fixup -= soxr_delay((soxr_t)s->resample);
+    }
+
     return 0;
 }
 
@@ -87,18 +97,34 @@ static int process(
 }
 
 static int64_t get_delay(struct SwrContext *s, int64_t base){
-    double delay_s = soxr_delay((soxr_t)s->resample) / s->out_sample_rate;
+    double delayed_samples = soxr_delay((soxr_t)s->resample);
+    double delay_s;
+
+    if (s->flushed)
+        delayed_samples += s->delayed_samples_fixup;
+
+    delay_s = delayed_samples / s->out_sample_rate;
+
     return (int64_t)(delay_s * base + .5);
 }
 
 static int invert_initial_buffer(struct ResampleContext *c, AudioData *dst, const AudioData *src,
-                                 int in_count, int *out_idx, int *out_sz)
-{
+                                 int in_count, int *out_idx, int *out_sz){
     return 0;
+}
+
+static int64_t get_out_samples(struct SwrContext *s, int in_samples){
+    double out_samples = (double)s->out_sample_rate / s->in_sample_rate * in_samples;
+    double delayed_samples = soxr_delay((soxr_t)s->resample);
+
+    if (s->flushed)
+        delayed_samples += s->delayed_samples_fixup;
+
+    return (int64_t)(out_samples + delayed_samples + 1 + .5);
 }
 
 struct Resampler const swri_soxr_resampler={
     create, destroy, process, flush, NULL /* set_compensation */, get_delay,
-    invert_initial_buffer,
+    invert_initial_buffer, get_out_samples
 };
 

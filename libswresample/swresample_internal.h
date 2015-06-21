@@ -157,6 +157,7 @@ struct SwrContext {
     int64_t outpts;                                 ///< output PTS
     int64_t firstpts;                               ///< first PTS
     int drop_output;                                ///< number of output samples to drop
+    double delayed_samples_fixup;                   ///< soxr 0.1.1: needed to fixup delayed_samples after flush has been called.
 
     struct AudioConvert *in_convert;                ///< input conversion context
     struct AudioConvert *out_convert;               ///< output conversion context
