@@ -184,7 +184,9 @@ static int read_header(AVFormatContext *s)
 
     switch (codec) {
     case 0: codec = AV_CODEC_ID_PCM_S8_PLANAR;    break;
-    case 1: codec = AV_CODEC_ID_PCM_S16BE_PLANAR; break;
+    case 1: codec = b->little_endian ?
+                    AV_CODEC_ID_PCM_S16LE_PLANAR :
+                    AV_CODEC_ID_PCM_S16BE_PLANAR; break;
     case 2: codec = b->little_endian ?
                     AV_CODEC_ID_ADPCM_THP_LE :
                     AV_CODEC_ID_ADPCM_THP;        break;
