@@ -314,8 +314,17 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
                 av_log(avctx, AV_LOG_ERROR, "Unknown quantization format\n");
                 break;
             }
-            band->f_stepsize *= 1<<lut_gain[codsty->transform != FF_DWT53][bandno + (reslevelno > 0)];
-
+            if (codsty->transform != FF_DWT53) {
+                switch (bandno + (reslevelno > 0)) {
+                    case 1:
+                    case 2:
+                        band->f_stepsize *= F_LFTG_X * 2;
+                        break;
+                    case 3:
+                        band->f_stepsize *= F_LFTG_X * F_LFTG_X * 4;
+                        break;
+                }
+            }
             /* FIXME: In openjepg code stespize = stepsize * 0.5. Why?
              * If not set output of entropic decoder is not correct. */
             if (!av_codec_is_encoder(avctx->codec))

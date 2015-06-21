@@ -197,7 +197,7 @@ static void dwt_encode97_float(DWTContext *s, float *t)
             for (i =   mh; i < lh; i+=2, j++)
                 t[w*lp + j] = F_LFTG_X * l[i];
             for (i = 1-mh; i < lh; i+=2, j++)
-                t[w*lp + j] = F_LFTG_K * l[i];
+                t[w*lp + j] = l[i];
         }
 
         // VER_SD
@@ -214,7 +214,7 @@ static void dwt_encode97_float(DWTContext *s, float *t)
             for (i =   mv; i < lv; i+=2, j++)
                 t[w*j + lp] = F_LFTG_X * l[i];
             for (i = 1-mv; i < lv; i+=2, j++)
-                t[w*j + lp] = F_LFTG_K * l[i];
+                t[w*j + lp] = l[i];
         }
     }
 }
@@ -273,7 +273,7 @@ static void dwt_encode97_int(DWTContext *s, int *t)
             for (i =   mv; i < lv; i+=2, j++)
                 t[w*j + lp] = ((l[i] * I_LFTG_X) + (1 << 15)) >> 16;
             for (i = 1-mv; i < lv; i+=2, j++)
-                t[w*j + lp] = ((l[i] * I_LFTG_K) + (1 << 15)) >> 16;
+                t[w*j + lp] = l[i];
         }
 
         // HOR_SD
@@ -290,7 +290,7 @@ static void dwt_encode97_int(DWTContext *s, int *t)
             for (i =   mh; i < lh; i+=2, j++)
                 t[w*lp + j] = ((l[i] * I_LFTG_X) + (1 << 15)) >> 16;
             for (i = 1-mh; i < lh; i+=2, j++)
-                t[w*lp + j] = ((l[i] * I_LFTG_K) + (1 << 15)) >> 16;
+                t[w*lp + j] = l[i];
         }
 
     }
@@ -414,7 +414,7 @@ static void dwt_decode97_float(DWTContext *s, float *t)
             for (i = mh; i < lh; i += 2, j++)
                 l[i] = data[w * lp + j] * F_LFTG_K;
             for (i = 1 - mh; i < lh; i += 2, j++)
-                l[i] = data[w * lp + j] * F_LFTG_X;
+                l[i] = data[w * lp + j];
 
             sr_1d97_float(line, mh, mh + lh);
 
@@ -430,7 +430,7 @@ static void dwt_decode97_float(DWTContext *s, float *t)
             for (i = mv; i < lv; i += 2, j++)
                 l[i] = data[w * j + lp] * F_LFTG_K;
             for (i = 1 - mv; i < lv; i += 2, j++)
-                l[i] = data[w * j + lp] * F_LFTG_X;
+                l[i] = data[w * j + lp];
 
             sr_1d97_float(line, mv, mv + lv);
 
@@ -491,7 +491,7 @@ static void dwt_decode97_int(DWTContext *s, int32_t *t)
             for (i = mh; i < lh; i += 2, j++)
                 l[i] = ((data[w * lp + j] * I_LFTG_K) + (1 << 15)) >> 16;
             for (i = 1 - mh; i < lh; i += 2, j++)
-                l[i] = ((data[w * lp + j] * I_LFTG_X) + (1 << 15)) >> 16;
+                l[i] = data[w * lp + j];
 
             sr_1d97_int(line, mh, mh + lh);
 
@@ -507,7 +507,7 @@ static void dwt_decode97_int(DWTContext *s, int32_t *t)
             for (i = mv; i < lv; i += 2, j++)
                 l[i] = ((data[w * j + lp] * I_LFTG_K) + (1 << 15)) >> 16;
             for (i = 1 - mv; i < lv; i += 2, j++)
-                l[i] = ((data[w * j + lp] * I_LFTG_X) + (1 << 15)) >> 16;
+                l[i] = data[w * j + lp];
 
             sr_1d97_int(line, mv, mv + lv);
 
