@@ -615,6 +615,7 @@ void ff_dwt_destroy(DWTContext *s)
 static int test_dwt(int *array, int *ref, uint16_t border[2][2], int decomp_levels, int type, int max_diff) {
     int ret, j;
     DWTContext s1={{{0}}}, *s= &s1;
+    int64_t err2 = 0;
 
     ret = ff_jpeg2000_dwt_init(s,  border, decomp_levels, type);
     if (ret < 0) {
@@ -637,9 +638,15 @@ static int test_dwt(int *array, int *ref, uint16_t border[2][2], int decomp_leve
                     j, array[j], ref[j],decomp_levels, border[0][0], border[0][1], border[1][0], border[1][1]);
             return 2;
         }
+        err2 += (array[j] - ref[j]) * (array[j] - ref[j]);
         array[j] = ref[j];
     }
     ff_dwt_destroy(s);
+
+    printf("%s, decomp:%2d border %3d %3d %3d %3d milli-err2:%9"PRId64"\n",
+           type == FF_DWT53 ? "5/3i" : "9/7i",
+           decomp_levels, border[0][0], border[0][1], border[1][0], border[1][1],
+           1000*err2 / ((border[0][1] - border[0][0])*(border[1][1] - border[1][0])));
 
     return 0;
 }
