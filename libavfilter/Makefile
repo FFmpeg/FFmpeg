@@ -197,6 +197,7 @@ OBJS-$(CONFIG_SIGNALSTATS_FILTER)            += vf_signalstats.o
 OBJS-$(CONFIG_SMARTBLUR_FILTER)              += vf_smartblur.o
 OBJS-$(CONFIG_SPLIT_FILTER)                  += split.o
 OBJS-$(CONFIG_SPP_FILTER)                    += vf_spp.o
+OBJS-$(CONFIG_SSIM_FILTER)                   += vf_ssim.o dualinput.o framesync.o
 OBJS-$(CONFIG_STEREO3D_FILTER)               += vf_stereo3d.o
 OBJS-$(CONFIG_SUBTITLES_FILTER)              += vf_subtitles.o
 OBJS-$(CONFIG_SUPER2XSAI_FILTER)             += vf_super2xsai.o

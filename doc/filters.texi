@@ -8834,6 +8834,64 @@ in [-30,0] will filter edges. Default value is 0.
 If a chroma option is not explicitly set, the corresponding luma value
 is set.
 
+@section ssim
+
+Obtain the SSIM (Structural SImilarity Metric) between two input videos.
+
+This filter takes in input two input videos, the first input is
+considered the "main" source and is passed unchanged to the
+output. The second input is used as a "reference" video for computing
+the SSIM.
+
+Both video inputs must have the same resolution and pixel format for
+this filter to work correctly. Also it assumes that both inputs
+have the same number of frames, which are compared one by one.
+
+The filter stores the calculated SSIM of each frame.
+
+The description of the accepted parameters follows.
+
+@table @option
+@item stats_file, f
+If specified the filter will use the named file to save the PSNR of
+each individual frame.
+@end table
+
+The file printed if @var{stats_file} is selected, contains a sequence of
+key/value pairs of the form @var{key}:@var{value} for each compared
+couple of frames.
+
+A description of each shown parameter follows:
+
+@table @option
+@item n
+sequential number of the input frame, starting from 1
+
+@item Y, U, V, R, G, B
+SSIM of the compared frames for the component specified by the suffix.
+
+@item All
+SSIM of the compared frames for the whole frame.
+
+@item dB
+Same as above but in dB representation.
+@end table
+
+For example:
+@example
+movie=ref_movie.mpg, setpts=PTS-STARTPTS [main];
+[main][ref] ssim="stats_file=stats.log" [out]
+@end example
+
+On this example the input file being processed is compared with the
+reference file @file{ref_movie.mpg}. The SSIM of each individual frame
+is stored in @file{stats.log}.
+
+Another example with both psnr and ssim at same time:
+@example
+ffmpeg -i main.mpg -i ref.mpg -lavfi  "ssim;[0:v][1:v]psnr" -f null -
+@end example
+
 @section stereo3d
 
 Convert between different stereoscopic image formats.
