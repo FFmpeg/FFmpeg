@@ -92,5 +92,9 @@ fate-filter-volume: CMD = md5 -i $(SRC) -af aperms=random,volume=precision=fixed
 fate-filter-volume: CMP = oneline
 fate-filter-volume: REF = 4d6ba75ef3e32d305d066b9bc771d6f4
 
+FATE_AFILTER-yes += fate-filter-formats
+fate-filter-formats: libavfilter/formats-test$(EXESUF)
+fate-filter-formats: CMD = run libavfilter/formats-test
+
 FATE_SAMPLES_AVCONV += $(FATE_AFILTER-yes)
 fate-afilter: $(FATE_AFILTER-yes)

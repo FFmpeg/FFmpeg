@@ -37,7 +37,6 @@ fate-mathops: REF = /dev/null
 FATE_LIBAVCODEC-$(CONFIG_JPEG2000_ENCODER) += fate-j2k-dwt
 fate-j2k-dwt: libavcodec/jpeg2000dwt-test$(EXESUF)
 fate-j2k-dwt: CMD = run libavcodec/jpeg2000dwt-test
-fate-j2k-dwt: REF = /dev/null
 
 
 FATE_LIBAVCODEC-$(call ENCDEC, FLAC, FLAC) += fate-api-flac

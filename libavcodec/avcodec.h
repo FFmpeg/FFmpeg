@@ -401,6 +401,7 @@ enum AVCodecID {
     AV_CODEC_ID_ADPCM_DTK  = MKBETAG('D','T','K',' '),
     AV_CODEC_ID_ADPCM_IMA_RAD = MKBETAG('R','A','D',' '),
     AV_CODEC_ID_ADPCM_G726LE = MKBETAG('6','2','7','G'),
+    AV_CODEC_ID_ADPCM_THP_LE = MKBETAG('T','H','P','L'),
 
     /* AMR */
     AV_CODEC_ID_AMR_NB = 0x12000,
@@ -499,6 +500,7 @@ enum AVCodecID {
     AV_CODEC_ID_DSD_MSBF    = MKBETAG('D','S','D','M'),
     AV_CODEC_ID_DSD_LSBF_PLANAR = MKBETAG('D','S','D','1'),
     AV_CODEC_ID_DSD_MSBF_PLANAR = MKBETAG('D','S','D','8'),
+    AV_CODEC_ID_4GV         = MKBETAG('s','4','g','v'),
 
     /* subtitle codecs */
     AV_CODEC_ID_FIRST_SUBTITLE = 0x17000,          ///< A dummy ID pointing at the start of subtitle codecs.

@@ -121,7 +121,6 @@ int ff_mqc_flush(MqcState *mqc)
 
 int ff_mqc_flush_to(MqcState *mqc, uint8_t *dst, int *dst_len)
 {
-    int len;
     MqcState mqc2 = *mqc;
     mqc2.bpstart=
     mqc2.bp = dst;

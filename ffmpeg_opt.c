@@ -40,6 +40,7 @@
 #include "libavutil/parseutils.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/pixfmt.h"
+#include "libavutil/time_internal.h"
 
 #define MATCH_PER_STREAM_OPT(name, type, outvar, fmtctx, st)\
 {\
@@ -2237,6 +2238,7 @@ loop_end:
         char type, *val;
         const char *stream_spec;
         int index = 0, j, ret = 0;
+        char now_time[256];
 
         val = strchr(o->metadata[i].u.str, '=');
         if (!val) {
@@ -2245,6 +2247,17 @@ loop_end:
             exit_program(1);
         }
         *val++ = 0;
+
+        if (!strcmp(o->metadata[i].u.str, "creation_time") &&
+            !strcmp(val, "now")) {
+            time_t now = time(0);
+            struct tm *ptm, tmbuf;
+            ptm = localtime_r(&now, &tmbuf);
+            if (ptm) {
+                if (strftime(now_time, sizeof(now_time), "%Y-%m-%d %H:%M:%S", ptm))
+                    val = now_time;
+            }
+        }
 
         parse_meta_type(o->metadata[i].specifier, &type, &index, &stream_spec);
         if (type == 's') {

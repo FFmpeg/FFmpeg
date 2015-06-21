@@ -210,7 +210,13 @@ av_cold int swr_init(struct SwrContext *s){
                  s->rematrix_custom;
 
     if(s->int_sample_fmt == AV_SAMPLE_FMT_NONE){
-        if(av_get_planar_sample_fmt(s->in_sample_fmt) <= AV_SAMPLE_FMT_S16P){
+        if(   av_get_planar_sample_fmt(s-> in_sample_fmt) <= AV_SAMPLE_FMT_S16P
+           && av_get_planar_sample_fmt(s->out_sample_fmt) <= AV_SAMPLE_FMT_S16P){
+            s->int_sample_fmt= AV_SAMPLE_FMT_S16P;
+        }else if(   av_get_planar_sample_fmt(s-> in_sample_fmt) <= AV_SAMPLE_FMT_S16P
+           && !s->rematrix
+           && s->out_sample_rate==s->in_sample_rate
+           && !(s->flags & SWR_FLAG_RESAMPLE)){
             s->int_sample_fmt= AV_SAMPLE_FMT_S16P;
         }else if(   av_get_planar_sample_fmt(s-> in_sample_fmt) == AV_SAMPLE_FMT_S32P
                  && av_get_planar_sample_fmt(s->out_sample_fmt) == AV_SAMPLE_FMT_S32P
@@ -220,10 +226,10 @@ av_cold int swr_init(struct SwrContext *s){
         }else if(av_get_planar_sample_fmt(s->in_sample_fmt) <= AV_SAMPLE_FMT_FLTP){
             s->int_sample_fmt= AV_SAMPLE_FMT_FLTP;
         }else{
-            av_log(s, AV_LOG_DEBUG, "Using double precision mode\n");
             s->int_sample_fmt= AV_SAMPLE_FMT_DBLP;
         }
     }
+    av_log(s, AV_LOG_DEBUG, "Using %s internally between filters\n", av_get_sample_fmt_name(s->int_sample_fmt));
 
     if(   s->int_sample_fmt != AV_SAMPLE_FMT_S16P
         &&s->int_sample_fmt != AV_SAMPLE_FMT_S32P

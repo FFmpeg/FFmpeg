@@ -1824,6 +1824,13 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .props     = AV_CODEC_PROP_LOSSY,
     },
     {
+        .id        = AV_CODEC_ID_ADPCM_THP_LE,
+        .type      = AVMEDIA_TYPE_AUDIO,
+        .name      = "adpcm_thp_le",
+        .long_name = NULL_IF_CONFIG_SMALL("ADPCM Nintendo Gamecube THP (Little-Endian)"),
+        .props     = AV_CODEC_PROP_LOSSY,
+    },
+    {
         .id        = AV_CODEC_ID_ADPCM_IMA_AMV,
         .type      = AVMEDIA_TYPE_AUDIO,
         .name      = "adpcm_ima_amv",
@@ -2514,6 +2521,13 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .type      = AVMEDIA_TYPE_AUDIO,
         .name      = "smv",
         .long_name = NULL_IF_CONFIG_SMALL("SMV (Selectable Mode Vocoder)"),
+        .props     = AV_CODEC_PROP_LOSSY,
+    },
+    {
+        .id        = AV_CODEC_ID_4GV,
+        .type      = AVMEDIA_TYPE_AUDIO,
+        .name      = "4gv",
+        .long_name = NULL_IF_CONFIG_SMALL("4GV (Fourth Generation Vocoder)"),
         .props     = AV_CODEC_PROP_LOSSY,
     },
     {

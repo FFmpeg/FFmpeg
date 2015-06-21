@@ -84,8 +84,9 @@ static const int swf_index_tables[4][16] = {
 /* end of tables */
 
 typedef struct ADPCMDecodeContext {
-    ADPCMChannelStatus status[6];
+    ADPCMChannelStatus status[10];
     int vqa_version;                /**< VQA version. Used for ADPCM_IMA_WS */
+    int has_status;
 } ADPCMDecodeContext;
 
 static av_cold int adpcm_decode_init(AVCodecContext * avctx)
@@ -104,8 +105,11 @@ static av_cold int adpcm_decode_init(AVCodecContext * avctx)
     case AV_CODEC_ID_ADPCM_EA_R2:
     case AV_CODEC_ID_ADPCM_EA_R3:
     case AV_CODEC_ID_ADPCM_EA_XAS:
-    case AV_CODEC_ID_ADPCM_THP:
         max_channels = 6;
+        break;
+    case AV_CODEC_ID_ADPCM_THP:
+    case AV_CODEC_ID_ADPCM_THP_LE:
+        max_channels = 10;
         break;
     }
     if (avctx->channels < min_channels || avctx->channels > max_channels) {
@@ -145,6 +149,7 @@ static av_cold int adpcm_decode_init(AVCodecContext * avctx)
         case AV_CODEC_ID_ADPCM_EA_R3:
         case AV_CODEC_ID_ADPCM_EA_XAS:
         case AV_CODEC_ID_ADPCM_THP:
+        case AV_CODEC_ID_ADPCM_THP_LE:
         case AV_CODEC_ID_ADPCM_AFC:
         case AV_CODEC_ID_ADPCM_DTK:
             avctx->sample_fmt = AV_SAMPLE_FMT_S16P;
@@ -636,15 +641,24 @@ static int get_nb_samples(AVCodecContext *avctx, GetByteContext *gb,
         break;
     }
     case AV_CODEC_ID_ADPCM_THP:
+    case AV_CODEC_ID_ADPCM_THP_LE:
         if (avctx->extradata) {
-            nb_samples = buf_size / (8 * ch) * 14;
+            nb_samples = buf_size * 14 / (8 * ch);
             break;
         }
         has_coded_samples = 1;
         bytestream2_skip(gb, 4); // channel size
-        *coded_samples  = bytestream2_get_be32(gb);
-        *coded_samples -= *coded_samples % 14;
-        nb_samples      = (buf_size - (8 + 36 * ch)) / (8 * ch) * 14;
+        *coded_samples  = (avctx->codec->id == AV_CODEC_ID_ADPCM_THP_LE) ?
+                          bytestream2_get_le32(gb) :
+                          bytestream2_get_be32(gb);
+        buf_size       -= 8 + 36 * ch;
+        buf_size       /= ch;
+        nb_samples      = buf_size / 8 * 14;
+        if (buf_size % 8 > 1) {
+            nb_samples     += (buf_size % 8 - 1) * 2;
+            if (*coded_samples & 1)
+                nb_samples -= 1;
+        }
         break;
     case AV_CODEC_ID_ADPCM_AFC:
         nb_samples = buf_size / (9 * ch) * 16;
@@ -1415,9 +1429,16 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
         break;
     }
     case AV_CODEC_ID_ADPCM_THP:
+    case AV_CODEC_ID_ADPCM_THP_LE:
     {
-        int table[6][16];
+        int table[10][16];
         int ch;
+
+#define THP_GET16(g) \
+    sign_extend( \
+        avctx->codec->id == AV_CODEC_ID_ADPCM_THP_LE ? \
+        bytestream2_get_le16u(&(g)) : \
+        bytestream2_get_be16u(&(g)), 16)
 
         if (avctx->extradata) {
             GetByteContext tb;
@@ -1429,24 +1450,29 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
             bytestream2_init(&tb, avctx->extradata, avctx->extradata_size);
             for (i = 0; i < avctx->channels; i++)
                 for (n = 0; n < 16; n++)
-                    table[i][n] = sign_extend(bytestream2_get_be16u(&tb), 16);
+                    table[i][n] = THP_GET16(tb);
         } else {
-        for (i = 0; i < avctx->channels; i++)
-            for (n = 0; n < 16; n++)
-                table[i][n] = sign_extend(bytestream2_get_be16u(&gb), 16);
+            for (i = 0; i < avctx->channels; i++)
+                for (n = 0; n < 16; n++)
+                    table[i][n] = THP_GET16(gb);
 
-        /* Initialize the previous sample.  */
-        for (i = 0; i < avctx->channels; i++) {
-            c->status[i].sample1 = sign_extend(bytestream2_get_be16u(&gb), 16);
-            c->status[i].sample2 = sign_extend(bytestream2_get_be16u(&gb), 16);
-        }
+            if (!c->has_status) {
+                /* Initialize the previous sample.  */
+                for (i = 0; i < avctx->channels; i++) {
+                    c->status[i].sample1 = THP_GET16(gb);
+                    c->status[i].sample2 = THP_GET16(gb);
+                }
+                c->has_status = 1;
+            } else {
+                bytestream2_skip(&gb, avctx->channels * 4);
+            }
         }
 
         for (ch = 0; ch < avctx->channels; ch++) {
             samples = samples_p[ch];
 
             /* Read in every sample for this channel.  */
-            for (i = 0; i < nb_samples / 14; i++) {
+            for (i = 0; i < (nb_samples + 13) / 14; i++) {
                 int byte = bytestream2_get_byteu(&gb);
                 int index = (byte >> 4) & 7;
                 unsigned int exp = byte & 0x0F;
@@ -1454,7 +1480,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
                 int factor2 = table[ch][index * 2 + 1];
 
                 /* Decode 14 samples.  */
-                for (n = 0; n < 14; n++) {
+                for (n = 0; n < 14 && (i * 14 + n < nb_samples); n++) {
                     int32_t sampledat;
 
                     if (n & 1) {
@@ -1542,6 +1568,12 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
     return bytestream2_tell(&gb);
 }
 
+static void adpcm_flush(AVCodecContext *avctx)
+{
+    ADPCMDecodeContext *c = avctx->priv_data;
+    c->has_status = 0;
+}
+
 
 static const enum AVSampleFormat sample_fmts_s16[]  = { AV_SAMPLE_FMT_S16,
                                                         AV_SAMPLE_FMT_NONE };
@@ -1560,6 +1592,7 @@ AVCodec ff_ ## name_ ## _decoder = {                        \
     .priv_data_size = sizeof(ADPCMDecodeContext),           \
     .init           = adpcm_decode_init,                    \
     .decode         = adpcm_decode_frame,                   \
+    .flush          = adpcm_flush,                          \
     .capabilities   = CODEC_CAP_DR1,                        \
     .sample_fmts    = sample_fmts_,                         \
 }
@@ -1593,6 +1626,7 @@ ADPCM_DECODER(AV_CODEC_ID_ADPCM_SBPRO_2,     sample_fmts_s16,  adpcm_sbpro_2,   
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_SBPRO_3,     sample_fmts_s16,  adpcm_sbpro_3,     "ADPCM Sound Blaster Pro 2.6-bit");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_SBPRO_4,     sample_fmts_s16,  adpcm_sbpro_4,     "ADPCM Sound Blaster Pro 4-bit");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_SWF,         sample_fmts_s16,  adpcm_swf,         "ADPCM Shockwave Flash");
+ADPCM_DECODER(AV_CODEC_ID_ADPCM_THP_LE,      sample_fmts_s16p, adpcm_thp_le,      "ADPCM Nintendo Gamecube THP (little-endian)");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_THP,         sample_fmts_s16p, adpcm_thp,         "ADPCM Nintendo Gamecube THP");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_XA,          sample_fmts_s16p, adpcm_xa,          "ADPCM CDROM XA");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_YAMAHA,      sample_fmts_s16,  adpcm_yamaha,      "ADPCM Yamaha");

@@ -60,7 +60,7 @@ typedef struct Jpeg2000Tile {
     uint8_t             properties[4];
     Jpeg2000CodingStyle codsty[4];
     Jpeg2000QuantStyle  qntsty[4];
-    Jpeg2000TilePart    tile_part[32];
+    Jpeg2000TilePart    tile_part[256];
     uint16_t tp_idx;                    // Tile-part index
 } Jpeg2000Tile;
 
@@ -627,7 +627,7 @@ static int get_sot(Jpeg2000DecoderContext *s, int n)
     Jpeg2000TilePart *tp;
     uint16_t Isot;
     uint32_t Psot;
-    uint8_t TPsot;
+    unsigned TPsot;
 
     if (bytestream2_get_bytes_left(&s->g) < 8)
         return AVERROR_INVALIDDATA;
@@ -652,10 +652,7 @@ static int get_sot(Jpeg2000DecoderContext *s, int n)
         return AVERROR_INVALIDDATA;
     }
 
-    if (TPsot >= FF_ARRAY_ELEMS(s->tile[Isot].tile_part)) {
-        avpriv_request_sample(s->avctx, "Support for %"PRIu8" components", TPsot);
-        return AVERROR_PATCHWELCOME;
-    }
+    av_assert0(TPsot < FF_ARRAY_ELEMS(s->tile[Isot].tile_part));
 
     s->tile[Isot].tp_idx = TPsot;
     tp             = s->tile[Isot].tile_part + TPsot;
