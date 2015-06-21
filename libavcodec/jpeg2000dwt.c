@@ -37,8 +37,6 @@
 #define F_LFTG_BETA   0.052980118572961f
 #define F_LFTG_GAMMA  0.882911075530934f
 #define F_LFTG_DELTA  0.443506852043971f
-#define F_LFTG_K      1.230174104914001f
-#define F_LFTG_X      0.812893066115961f
 
 /* Lifting parameters in integer format.
  * Computed as param = (float param) * (1 << 16) */
