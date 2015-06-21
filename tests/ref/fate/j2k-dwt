@@ -1,60 +1,60 @@
 5/3i, decomp:15 border 151 170 140 183 milli-err2:        0
-9/7i, decomp:15 border 151 170 140 183 milli-err2:    13030
-9/7f, decomp:15 border 151 170 140 183 err2:              0.2626
+9/7i, decomp:15 border 151 170 140 183 milli-err2:    13160
+9/7f, decomp:15 border 151 170 140 183 err2:              0.0001
 5/3i, decomp:21 border 173 201  81 189 milli-err2:        0
-9/7i, decomp:21 border 173 201  81 189 milli-err2:    21587
-9/7f, decomp:21 border 173 201  81 189 err2:              0.3460
+9/7i, decomp:21 border 173 201  81 189 milli-err2:    24635
+9/7f, decomp:21 border 173 201  81 189 err2:              0.0001
 5/3i, decomp:22 border 213 227  76 245 milli-err2:        0
-9/7i, decomp:22 border 213 227  76 245 milli-err2:    13454
-9/7f, decomp:22 border 213 227  76 245 err2:              0.2393
+9/7i, decomp:22 border 213 227  76 245 milli-err2:    15253
+9/7f, decomp:22 border 213 227  76 245 err2:              0.0001
 5/3i, decomp:13 border 134 157 184 203 milli-err2:        0
-9/7i, decomp:13 border 134 157 184 203 milli-err2:    19745
-9/7f, decomp:13 border 134 157 184 203 err2:              0.1715
+9/7i, decomp:13 border 134 157 184 203 milli-err2:    21846
+9/7f, decomp:13 border 134 157 184 203 err2:              0.0001
 5/3i, decomp: 1 border 204 237   6 106 milli-err2:        0
-9/7i, decomp: 1 border 204 237   6 106 milli-err2:     2236
-9/7f, decomp: 1 border 204 237   6 106 err2:              0.0063
+9/7i, decomp: 1 border 204 237   6 106 milli-err2:     2317
+9/7f, decomp: 1 border 204 237   6 106 err2:              0.0000
 5/3i, decomp:28 border  76 211  13 210 milli-err2:        0
-9/7i, decomp:28 border  76 211  13 210 milli-err2:    22341
-9/7f, decomp:28 border  76 211  13 210 err2:              0.3931
+9/7i, decomp:28 border  76 211  13 210 milli-err2:    21360
+9/7f, decomp:28 border  76 211  13 210 err2:              0.0002
 5/3i, decomp:21 border  76  99  43 123 milli-err2:        0
-9/7i, decomp:21 border  76  99  43 123 milli-err2:    15450
-9/7f, decomp:21 border  76  99  43 123 err2:              0.2005
+9/7i, decomp:21 border  76  99  43 123 milli-err2:    13513
+9/7f, decomp:21 border  76  99  43 123 err2:              0.0001
 5/3i, decomp:15 border 192 243 174 204 milli-err2:        0
-9/7i, decomp:15 border 192 243 174 204 milli-err2:    56308
-9/7f, decomp:15 border 192 243 174 204 err2:              0.3373
+9/7i, decomp:15 border 192 243 174 204 milli-err2:    13302
+9/7f, decomp:15 border 192 243 174 204 err2:              0.0001
 5/3i, decomp:21 border  17  68  93 204 milli-err2:        0
-9/7i, decomp:21 border  17  68  93 204 milli-err2:    26234
-9/7f, decomp:21 border  17  68  93 204 err2:              0.2765
+9/7i, decomp:21 border  17  68  93 204 milli-err2:    22975
+9/7f, decomp:21 border  17  68  93 204 err2:              0.0001
 5/3i, decomp:11 border 142 168  82 174 milli-err2:        0
-9/7i, decomp:11 border 142 168  82 174 milli-err2:    14802
-9/7f, decomp:11 border 142 168  82 174 err2:              0.2064
+9/7i, decomp:11 border 142 168  82 174 milli-err2:    11936
+9/7f, decomp:11 border 142 168  82 174 err2:              0.0001
 5/3i, decomp:23 border 142 209 171 235 milli-err2:        0
-9/7i, decomp:23 border 142 209 171 235 milli-err2:    26230
-9/7f, decomp:23 border 142 209 171 235 err2:              0.3092
+9/7i, decomp:23 border 142 209 171 235 milli-err2:    19428
+9/7f, decomp:23 border 142 209 171 235 err2:              0.0001
 5/3i, decomp:30 border  37 185  79 245 milli-err2:        0
-9/7i, decomp:30 border  37 185  79 245 milli-err2:    18994
-9/7f, decomp:30 border  37 185  79 245 err2:              0.3921
+9/7i, decomp:30 border  37 185  79 245 milli-err2:    22981
+9/7f, decomp:30 border  37 185  79 245 err2:              0.0002
 5/3i, decomp: 5 border 129 236  30 243 milli-err2:        0
-9/7i, decomp: 5 border 129 236  30 243 milli-err2:    14600
-9/7f, decomp: 5 border 129 236  30 243 err2:              0.1252
+9/7i, decomp: 5 border 129 236  30 243 milli-err2:    16632
+9/7f, decomp: 5 border 129 236  30 243 err2:              0.0001
 5/3i, decomp:10 border   5 160 146 247 milli-err2:        0
-9/7i, decomp:10 border   5 160 146 247 milli-err2:    43905
-9/7f, decomp:10 border   5 160 146 247 err2:              0.2753
+9/7i, decomp:10 border   5 160 146 247 milli-err2:    39669
+9/7f, decomp:10 border   5 160 146 247 err2:              0.0002
 5/3i, decomp: 5 border 104 162   6  47 milli-err2:        0
-9/7i, decomp: 5 border 104 162   6  47 milli-err2:    12942
-9/7f, decomp: 5 border 104 162   6  47 err2:              0.1237
+9/7i, decomp: 5 border 104 162   6  47 milli-err2:    18290
+9/7f, decomp: 5 border 104 162   6  47 err2:              0.0001
 5/3i, decomp:24 border  78 250 102 218 milli-err2:        0
-9/7i, decomp:24 border  78 250 102 218 milli-err2:    24997
-9/7f, decomp:24 border  78 250 102 218 err2:              0.3907
+9/7i, decomp:24 border  78 250 102 218 milli-err2:    36623
+9/7f, decomp:24 border  78 250 102 218 err2:              0.0002
 5/3i, decomp:28 border  86  98  56  79 milli-err2:        0
-9/7i, decomp:28 border  86  98  56  79 milli-err2:     8112
-9/7f, decomp:28 border  86  98  56  79 err2:              0.3094
+9/7i, decomp:28 border  86  98  56  79 milli-err2:     9891
+9/7f, decomp:28 border  86  98  56  79 err2:              0.0001
 5/3i, decomp: 6 border  95 238 197 214 milli-err2:        0
-9/7i, decomp: 6 border  95 238 197 214 milli-err2:    12925
-9/7f, decomp: 6 border  95 238 197 214 err2:              0.1481
+9/7i, decomp: 6 border  95 238 197 214 milli-err2:    17172
+9/7f, decomp: 6 border  95 238 197 214 err2:              0.0001
 5/3i, decomp:17 border  77 169  93 165 milli-err2:        0
-9/7i, decomp:17 border  77 169  93 165 milli-err2:    24949
-9/7f, decomp:17 border  77 169  93 165 err2:              0.4816
+9/7i, decomp:17 border  77 169  93 165 milli-err2:    23573
+9/7f, decomp:17 border  77 169  93 165 err2:              0.0001
 5/3i, decomp:22 border 178 187   7 119 milli-err2:        0
-9/7i, decomp:22 border 178 187   7 119 milli-err2:     9838
-9/7f, decomp:22 border 178 187   7 119 err2:              0.0999
+9/7i, decomp:22 border 178 187   7 119 milli-err2:    11305
+9/7f, decomp:22 border 178 187   7 119 err2:              0.0000

@@ -38,10 +38,7 @@
 #define F_LFTG_GAMMA  0.882911075530934f
 #define F_LFTG_DELTA  0.443506852043971f
 #define F_LFTG_K      1.230174104914001f
-#define F_LFTG_X      1.625732422f
-/* FIXME: Why use 1.625732422 instead of 1/F_LFTG_K?
- * Incorrect value in JPEG2000 norm.
- * see (ISO/IEC 15444:1 (version 2002) F.3.8.2 */
+#define F_LFTG_X      1.625786132231922f
 
 /* Lifting parameters in integer format.
  * Computed as param = (float param) * (1 << 16) */
@@ -50,7 +47,7 @@
 #define I_LFTG_GAMMA   57862
 #define I_LFTG_DELTA   29066
 #define I_LFTG_K       80621
-#define I_LFTG_X      106544
+#define I_LFTG_X      106548
 
 static inline void extend53(int *p, int i0, int i1)
 {
