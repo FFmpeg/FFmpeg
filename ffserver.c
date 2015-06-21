@@ -2217,7 +2217,8 @@ static int http_prepare_data(HTTPContext *c)
                        ffm file, so must wait for more data */
                     c->state = HTTPSTATE_WAIT_FEED;
                     return 1; /* state changed */
-                } else if (ret == AVERROR(EAGAIN)) {
+                }
+                if (ret == AVERROR(EAGAIN)) {
                     /* input not ready, come back later */
                     return 0;
                 }
