@@ -31,3 +31,6 @@ done
 
 cp config.asm android/include/
 cp libavutil/avconfig.h android/include/libavutil/
+
+# Not sure why this gets configured wrong..
+perl -pi -e "s/define HAVE_EBP_AVAILABLE 1/define HAVE_EBP_AVAILABLE 0/g" android/include/config-silvermont.h android/include/config-x86.h android/include/config.asm
