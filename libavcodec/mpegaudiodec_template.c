@@ -1686,7 +1686,7 @@ static int decode_frame(AVCodecContext * avctx, void *data, int *got_frame_ptr,
     if (!avctx->bit_rate)
         avctx->bit_rate = s->bit_rate;
 
-    if (s->frame_size <= 0 || s->frame_size > buf_size) {
+    if (s->frame_size <= 0) {
         av_log(avctx, AV_LOG_ERROR, "incomplete frame\n");
         return AVERROR_INVALIDDATA;
     } else if (s->frame_size < buf_size) {

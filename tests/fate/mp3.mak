@@ -1,6 +1,6 @@
 FATE_MP3 += fate-mp3-float-conf-compl
 fate-mp3-float-conf-compl: CMD = pcm -acodec mp3float -i $(TARGET_SAMPLES)/mp3-conformance/compl.bit
-fate-mp3-float-conf-compl: REF = $(SAMPLES)/mp3-conformance/compl.pcm
+fate-mp3-float-conf-compl: REF = $(SAMPLES)/mp3-conformance/compl_2.pcm
 
 FATE_MP3 += fate-mp3-float-conf-he_32khz
 fate-mp3-float-conf-he_32khz: CMD = pcm -acodec mp3float -i $(TARGET_SAMPLES)/mp3-conformance/he_32khz.bit -fs 343296
