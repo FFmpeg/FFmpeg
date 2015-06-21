@@ -15,7 +15,7 @@ OPTS_armv7_a_neon="--arch=arm --cpu=armv7-a --build_suffix= --cross-prefix=${TOO
 
 OPTS_armv8_a="--arch=aarch64 --target-os=linux --enable-cross-compile --cross-prefix=${TOOLS_BASE}/aarch64/aarch64-linux-android-4.9/bin/aarch64-linux-android- --sysroot=${SYSROOT_BASE}/arch-arm64 --target-os=linux"
 
-OPTS_silvermont="--arch=x86 --build_suffix= --cross-prefix=${TOOLS_BASE}/x86/x86_64-linux-android-4.9/bin/x86_64-linux-android- --enable-cross-compile --sysroot=${SYSROOT_BASE}/arch-x86 --target-os=linux --extra-cflags=-m32"
+OPTS_silvermont="--arch=x86 --cpu=silvermont --build_suffix= --cross-prefix=${TOOLS_BASE}/x86/x86_64-linux-android-4.9/bin/x86_64-linux-android- --enable-cross-compile --sysroot=${SYSROOT_BASE}/arch-x86 --target-os=linux --extra-cflags=-m32"
 
 OPTS_x86="--arch=x86 --cpu=i686 --build_suffix= --cross-prefix=${TOOLS_BASE}/x86/x86_64-linux-android-4.8/bin/x86_64-linux-android- --enable-cross-compile --sysroot=${SYSROOT_BASE}/arch-x86 --target-os=linux --extra-cflags=-m32"
 
