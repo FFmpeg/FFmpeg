@@ -38,7 +38,7 @@
 #define F_LFTG_GAMMA  0.882911075530934f
 #define F_LFTG_DELTA  0.443506852043971f
 #define F_LFTG_K      1.230174104914001f
-#define F_LFTG_X      1.625786132231922f
+#define F_LFTG_X      0.812893066115961f
 
 /* Lifting parameters in integer format.
  * Computed as param = (float param) * (1 << 16) */
@@ -47,7 +47,7 @@
 #define I_LFTG_GAMMA   57862
 #define I_LFTG_DELTA   29066
 #define I_LFTG_K       80621
-#define I_LFTG_X      106548
+#define I_LFTG_X       53274
 
 static inline void extend53(int *p, int i0, int i1)
 {
@@ -151,7 +151,7 @@ static void sd_1d97_float(float *p, int i0, int i1)
 
     if (i1 <= i0 + 1) {
         if (i0 == 1)
-            p[1] *= F_LFTG_X;
+            p[1] *= F_LFTG_X * 2;
         else
             p[0] *= F_LFTG_K;
         return;
@@ -197,9 +197,9 @@ static void dwt_encode97_float(DWTContext *s, float *t)
 
             // copy back and deinterleave
             for (i =   mh; i < lh; i+=2, j++)
-                t[w*lp + j] = F_LFTG_X * l[i] / 2;
+                t[w*lp + j] = F_LFTG_X * l[i];
             for (i = 1-mh; i < lh; i+=2, j++)
-                t[w*lp + j] = F_LFTG_K * l[i] / 2;
+                t[w*lp + j] = F_LFTG_K * l[i];
         }
 
         // VER_SD
@@ -214,9 +214,9 @@ static void dwt_encode97_float(DWTContext *s, float *t)
 
             // copy back and deinterleave
             for (i =   mv; i < lv; i+=2, j++)
-                t[w*j + lp] = F_LFTG_X * l[i] / 2;
+                t[w*j + lp] = F_LFTG_X * l[i];
             for (i = 1-mv; i < lv; i+=2, j++)
-                t[w*j + lp] = F_LFTG_K * l[i] / 2;
+                t[w*j + lp] = F_LFTG_K * l[i];
         }
     }
 }
@@ -227,7 +227,7 @@ static void sd_1d97_int(int *p, int i0, int i1)
 
     if (i1 <= i0 + 1) {
         if (i0 == 1)
-            p[1] = (p[1] * I_LFTG_X + (1<<15)) >> 16;
+            p[1] = (p[1] * I_LFTG_X + (1<<14)) >> 15;
         else
             p[0] = (p[0] * I_LFTG_K + (1<<15)) >> 16;
         return;
@@ -273,9 +273,9 @@ static void dwt_encode97_int(DWTContext *s, int *t)
 
             // copy back and deinterleave
             for (i =   mv; i < lv; i+=2, j++)
-                t[w*j + lp] = ((l[i] * I_LFTG_X) + (1 << 16)) >> 17;
+                t[w*j + lp] = ((l[i] * I_LFTG_X) + (1 << 15)) >> 16;
             for (i = 1-mv; i < lv; i+=2, j++)
-                t[w*j + lp] = ((l[i] * I_LFTG_K) + (1 << 16)) >> 17;
+                t[w*j + lp] = ((l[i] * I_LFTG_K) + (1 << 15)) >> 16;
         }
 
         // HOR_SD
@@ -290,9 +290,9 @@ static void dwt_encode97_int(DWTContext *s, int *t)
 
             // copy back and deinterleave
             for (i =   mh; i < lh; i+=2, j++)
-                t[w*lp + j] = ((l[i] * I_LFTG_X) + (1 << 16)) >> 17;
+                t[w*lp + j] = ((l[i] * I_LFTG_X) + (1 << 15)) >> 16;
             for (i = 1-mh; i < lh; i+=2, j++)
-                t[w*lp + j] = ((l[i] * I_LFTG_K) + (1 << 16)) >> 17;
+                t[w*lp + j] = ((l[i] * I_LFTG_K) + (1 << 15)) >> 16;
         }
 
     }
@@ -373,7 +373,7 @@ static void sr_1d97_float(float *p, int i0, int i1)
         if (i0 == 1)
             p[1] *= F_LFTG_K/2;
         else
-            p[0] *= F_LFTG_X/2;
+            p[0] *= F_LFTG_X;
         return;
     }
 
@@ -450,7 +450,7 @@ static void sr_1d97_int(int32_t *p, int i0, int i1)
         if (i0 == 1)
             p[1] = (p[1] * I_LFTG_K + (1<<16)) >> 17;
         else
-            p[0] = (p[0] * I_LFTG_X + (1<<16)) >> 17;
+            p[0] = (p[0] * I_LFTG_X + (1<<15)) >> 16;
         return;
     }
 

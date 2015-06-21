@@ -305,9 +305,6 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
                  * delta_b = 2 ^ (R_b - expn_b) * (1 + (mant_b / 2 ^ 11))
                  * R_b = R_I + log2 (gain_b )
                  * see ISO/IEC 15444-1:2002 E.1.1 eqn. E-3 and E-4 */
-                /* TODO/WARN: value of log2 (gain_b ) not taken into account
-                 * but it works (compared to OpenJPEG). Why?
-                 * Further investigation needed. */
                 gain            = cbps;
                 band->f_stepsize  = pow(2.0, gain - qntsty->expn[gbandno]);
                 band->f_stepsize *= qntsty->mant[gbandno] / 2048.0 + 1.0;
@@ -317,6 +314,8 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
                 av_log(avctx, AV_LOG_ERROR, "Unknown quantization format\n");
                 break;
             }
+            band->f_stepsize *= 1<<lut_gain[codsty->transform != FF_DWT53][bandno + (reslevelno > 0)];
+
             /* FIXME: In openjepg code stespize = stepsize * 0.5. Why?
              * If not set output of entropic decoder is not correct. */
             if (!av_codec_is_encoder(avctx->codec))
