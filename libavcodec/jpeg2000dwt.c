@@ -188,7 +188,6 @@ static void dwt_encode97_float(DWTContext *s, float *t)
             lp;
         float *l;
 
-        av_assert1(!mh && !mv);
         // HOR_SD
         l = line + mh;
         for (lp = 0; lp < lv; lp++){
@@ -651,9 +650,49 @@ static int test_dwt(int *array, int *ref, uint16_t border[2][2], int decomp_leve
     return 0;
 }
 
+static int test_dwtf(float *array, float *ref, uint16_t border[2][2], int decomp_levels, float max_diff) {
+    int ret, j;
+    DWTContext s1={{{0}}}, *s= &s1;
+    double err2 = 0;
+
+    ret = ff_jpeg2000_dwt_init(s,  border, decomp_levels, FF_DWT97);
+    if (ret < 0) {
+        fprintf(stderr, "ff_jpeg2000_dwt_init failed\n");
+        return 1;
+    }
+    ret = ff_dwt_encode(s, array);
+    if (ret < 0) {
+        fprintf(stderr, "ff_dwt_encode failed\n");
+        return 1;
+    }
+    ret = ff_dwt_decode(s, array);
+    if (ret < 0) {
+        fprintf(stderr, "ff_dwt_encode failed\n");
+        return 1;
+    }
+    for (j = 0; j<MAX_W * MAX_W; j++) {
+        if (FFABS(array[j] - ref[j]) > max_diff) {
+            fprintf(stderr, "missmatch at %d (%f != %f) decomp:%d border %d %d %d %d\n",
+                    j, array[j], ref[j],decomp_levels, border[0][0], border[0][1], border[1][0], border[1][1]);
+            return 2;
+        }
+        err2 += (array[j] - ref[j]) * (array[j] - ref[j]);
+        array[j] = ref[j];
+    }
+    ff_dwt_destroy(s);
+
+    printf("9/7f, decomp:%2d border %3d %3d %3d %3d err2:%20.4f\n",
+           decomp_levels, border[0][0], border[0][1], border[1][0], border[1][1],
+           err2 / ((border[0][1] - border[0][0])*(border[1][1] - border[1][0])));
+
+    return 0;
+}
+
 int main(void) {
     int array[MAX_W * MAX_W];
     int ref  [MAX_W * MAX_W];
+    float arrayf[MAX_W * MAX_W];
+    float reff  [MAX_W * MAX_W];
     AVLFG prng;
     int i,j;
     uint16_t border[2][2];
@@ -662,7 +701,7 @@ int main(void) {
     av_lfg_init(&prng, 1);
 
     for (i = 0; i<MAX_W * MAX_W; i++)
-        array[i] = ref[i] =  av_lfg_get(&prng) % 2048;
+        arrayf[i] = reff[i] = array[i] = ref[i] =  av_lfg_get(&prng) % 2048;
 
     for (i = 0; i < 100; i++) {
         for (j=0; j<4; j++)
@@ -675,6 +714,9 @@ int main(void) {
         if (ret)
             return ret;
         ret = test_dwt(array, ref, border, decomp_levels, FF_DWT97_INT, FFMIN(7+5*decomp_levels, 15+3*decomp_levels));
+        if (ret)
+            return ret;
+        ret = test_dwtf(arrayf, reff, border, decomp_levels, 1.0);
         if (ret)
             return ret;
     }
