@@ -2220,17 +2220,16 @@ static int http_prepare_data(HTTPContext *c)
                 } else if (ret == AVERROR(EAGAIN)) {
                     /* input not ready, come back later */
                     return 0;
+                }
+                if (c->stream->loop) {
+                    avformat_close_input(&c->fmt_in);
+                    if (open_input_stream(c, "") < 0)
+                        goto no_loop;
+                    goto redo;
                 } else {
-                    if (c->stream->loop) {
-                        avformat_close_input(&c->fmt_in);
-                        if (open_input_stream(c, "") < 0)
-                            goto no_loop;
-                        goto redo;
-                    } else {
                     no_loop:
                         /* must send trailer now because EOF or error */
                         c->state = HTTPSTATE_SEND_DATA_TRAILER;
-                    }
                 }
             } else {
                 int source_index = pkt.stream_index;
