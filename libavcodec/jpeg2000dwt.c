@@ -265,8 +265,6 @@ static void dwt_encode97_int(DWTContext *s, int *t)
             lp;
         int *l;
 
-        av_assert1(!mh && !mv);
-
         // VER_SD
         l = line + mv;
         for (lp = 0; lp < lh; lp++) {
@@ -667,6 +665,9 @@ int main(void) {
         decomp_levels = av_lfg_get(&prng) % FF_DWT_MAX_DECLVLS;
 
         ret = test_dwt(array, ref, border, decomp_levels, FF_DWT53, 0);
+        if (ret)
+            return ret;
+        ret = test_dwt(array, ref, border, decomp_levels, FF_DWT97_INT, FFMIN(7+5*decomp_levels, 15+3*decomp_levels));
         if (ret)
             return ret;
     }
