@@ -367,6 +367,7 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
 
         /* test interlaced mode */
         if (s->first_picture   &&
+            (s->multiscope != 2 || s->avctx->time_base.den >= 25 * s->avctx->time_base.num) &&
             s->org_height != 0 &&
             s->height < ((s->org_height * 3) / 4)) {
             s->interlaced                    = 1;
@@ -1830,6 +1831,8 @@ static int mjpeg_decode_com(MJpegDecodeContext *s)
             else if ((!strncmp(cbuf, "Intel(R) JPEG Library, version 1", 32) && s->avctx->codec_tag) ||
                      (!strncmp(cbuf, "Metasoft MJPEG Codec", 20)))
                 s->flipped = 1;
+            else if (!strcmp(cbuf, "MULTISCOPE II"))
+                s->multiscope = 2;
 
             av_free(cbuf);
         }
