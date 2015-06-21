@@ -657,7 +657,7 @@ int main(void) {
     for (i = 0; i<MAX_W * MAX_W; i++)
         array[i] = ref[i] =  av_lfg_get(&prng) % 2048;
 
-    for (i = 0; i < 40; i++) {
+    for (i = 0; i < 100; i++) {
         for (j=0; j<4; j++)
             border[j>>1][j&1] = av_lfg_get(&prng) % MAX_W;
         if (border[0][0] >= border[0][1] || border[1][0] >= border[1][1])
