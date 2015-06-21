@@ -23,6 +23,7 @@
 #include "libavutil/internal.h"
 #include "libavutil/opt.h"
 #include "avformat.h"
+#include <dirent.h>
 #include <fcntl.h>
 #if HAVE_IO_H
 #include <io.h>
@@ -51,6 +52,7 @@ typedef struct FileContext {
     int fd;
     int trunc;
     int blocksize;
+    DIR *dir;
 } FileContext;
 
 static const AVOption file_options[] = {
@@ -225,6 +227,88 @@ static int file_close(URLContext *h)
     return close(c->fd);
 }
 
+static int file_open_dir(URLContext *h)
+{
+    FileContext *c = h->priv_data;
+
+    c->dir = opendir(h->filename);
+    if (!c->dir)
+        return AVERROR(errno);
+
+    return 0;
+}
+
+static int file_read_dir(URLContext *h, AVIODirEntry **next)
+{
+    FileContext *c = h->priv_data;
+    struct dirent *dir;
+    char *fullpath = NULL;
+
+    *next = ff_alloc_dir_entry();
+    if (!*next)
+        return AVERROR(ENOMEM);
+    do {
+        errno = 0;
+        dir = readdir(c->dir);
+        if (!dir) {
+            av_freep(next);
+            return AVERROR(errno);
+        }
+    } while (!strcmp(dir->d_name, ".") || !strcmp(dir->d_name, ".."));
+
+    fullpath = av_append_path_component(h->filename, dir->d_name);
+    if (fullpath) {
+        struct stat st;
+        if (!stat(fullpath, &st)) {
+            (*next)->group_id = st.st_gid;
+            (*next)->user_id = st.st_uid;
+            (*next)->size = st.st_size;
+            (*next)->filemode = st.st_mode & 0777;
+            (*next)->modification_timestamp = INT64_C(1000000) * st.st_mtime;
+            (*next)->access_timestamp =  INT64_C(1000000) * st.st_atime;
+            (*next)->status_change_timestamp = INT64_C(1000000) * st.st_ctime;
+        }
+        av_free(fullpath);
+    }
+
+    (*next)->name = av_strdup(dir->d_name);
+    switch (dir->d_type) {
+    case DT_FIFO:
+        (*next)->type = AVIO_ENTRY_NAMED_PIPE;
+        break;
+    case DT_CHR:
+        (*next)->type = AVIO_ENTRY_CHARACTER_DEVICE;
+        break;
+    case DT_DIR:
+        (*next)->type = AVIO_ENTRY_DIRECTORY;
+        break;
+    case DT_BLK:
+        (*next)->type = AVIO_ENTRY_BLOCK_DEVICE;
+        break;
+    case DT_REG:
+        (*next)->type = AVIO_ENTRY_FILE;
+        break;
+    case DT_LNK:
+        (*next)->type = AVIO_ENTRY_SYMBOLIC_LINK;
+        break;
+    case DT_SOCK:
+        (*next)->type = AVIO_ENTRY_SOCKET;
+        break;
+    case DT_UNKNOWN:
+    default:
+        (*next)->type = AVIO_ENTRY_UNKNOWN;
+        break;
+    }
+    return 0;
+}
+
+static int file_close_dir(URLContext *h)
+{
+    FileContext *c = h->priv_data;
+    closedir(c->dir);
+    return 0;
+}
+
 URLProtocol ff_file_protocol = {
     .name                = "file",
     .url_open            = file_open,
@@ -238,6 +322,9 @@ URLProtocol ff_file_protocol = {
     .url_move            = file_move,
     .priv_data_size      = sizeof(FileContext),
     .priv_data_class     = &file_class,
+    .url_open_dir        = file_open_dir,
+    .url_read_dir        = file_read_dir,
+    .url_close_dir       = file_close_dir,
 };
 
 #endif /* CONFIG_FILE_PROTOCOL */
