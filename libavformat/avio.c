@@ -421,6 +421,44 @@ int avio_check(const char *url, int flags)
     return ret;
 }
 
+int avio_move(const char *url_src, const char *url_dst)
+{
+    URLContext *h_src, *h_dst;
+    int ret = ffurl_alloc(&h_src, url_src, AVIO_FLAG_READ_WRITE, NULL);
+    if (ret < 0)
+        return ret;
+    ret = ffurl_alloc(&h_dst, url_dst, AVIO_FLAG_WRITE, NULL);
+    if (ret < 0) {
+        ffurl_close(h_src);
+        return ret;
+    }
+
+    if (h_src->prot == h_dst->prot && h_src->prot->url_move)
+        ret = h_src->prot->url_move(h_src, h_dst);
+    else
+        ret = AVERROR(ENOSYS);
+
+    ffurl_close(h_src);
+    ffurl_close(h_dst);
+    return ret;
+}
+
+int avio_delete(const char *url)
+{
+    URLContext *h;
+    int ret = ffurl_alloc(&h, url, AVIO_FLAG_WRITE, NULL);
+    if (ret < 0)
+        return ret;
+
+    if (h->prot->url_delete)
+        ret = h->prot->url_delete(h);
+    else
+        ret = AVERROR(ENOSYS);
+
+    ffurl_close(h);
+    return ret;
+}
+
 int avio_open_dir(AVIODirContext **s, const char *url, AVDictionary **options)
 {
     URLContext *h = NULL;

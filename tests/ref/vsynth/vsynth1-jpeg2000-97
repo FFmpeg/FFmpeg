@@ -1,4 +1,4 @@
-4cac63aaf880ab0ee199ac44e520640a *tests/data/fate/vsynth1-jpeg2000-97.avi
-2188956 tests/data/fate/vsynth1-jpeg2000-97.avi
-d9227e7a7413cb48362654d879df985a *tests/data/fate/vsynth1-jpeg2000-97.out.rawvideo
-stddev:    6.18 PSNR: 32.30 MAXDIFF:   57 bytes:  7603200/  7603200
+a19cc0e1a1c1bf76ff5a0b63a0bdfbd1 *tests/data/fate/vsynth1-jpeg2000-97.avi
+3654420 tests/data/fate/vsynth1-jpeg2000-97.avi
+3b71c0f8aebf45122da77d892a6ebf00 *tests/data/fate/vsynth1-jpeg2000-97.out.rawvideo
+stddev:    4.23 PSNR: 35.59 MAXDIFF:   53 bytes:  7603200/  7603200

@@ -504,8 +504,7 @@ static void start_multicast(void)
         random1 = av_lfg_get(&random_state);
 
         /* open the RTP connection */
-        snprintf(session_id, sizeof(session_id), "%08x%08x",
-                 random0, random1);
+        snprintf(session_id, sizeof(session_id), "%08x%08x", random0, random1);
 
         /* choose a port if none given */
         if (stream->multicast_port == 0) {
@@ -1166,8 +1165,10 @@ static int modify_current_stream(HTTPContext *c, char *rates)
                 break;
         }
 
-        if (c->switch_feed_streams[i] >= 0 && c->switch_feed_streams[i] != c->feed_streams[i])
+        if (c->switch_feed_streams[i] >= 0 &&
+            c->switch_feed_streams[i] != c->feed_streams[i]) {
             action_required = 1;
+        }
     }
 
     return action_required;
@@ -1271,9 +1272,7 @@ static int validate_acl(FFServerStream *stream, HTTPContext *c)
 
     if (stream->dynamic_acl[0]) {
         acl = parse_dynamic_acl(stream, c);
-
         ret = validate_acl_list(acl, c);
-
         free_acl_list(acl);
     }
 
@@ -2120,11 +2119,10 @@ static int64_t get_packet_send_clock(HTTPContext *c)
     frame_bytes = c->cur_frame_bytes;
     if (frame_bytes <= 0)
         return c->cur_pts;
-    else {
-        bytes_left = c->buffer_end - c->buffer_ptr;
-        bytes_sent = frame_bytes - bytes_left;
-        return c->cur_pts + (c->cur_frame_duration * bytes_sent) / frame_bytes;
-    }
+
+    bytes_left = c->buffer_end - c->buffer_ptr;
+    bytes_sent = frame_bytes - bytes_left;
+    return c->cur_pts + (c->cur_frame_duration * bytes_sent) / frame_bytes;
 }
 
 
@@ -2219,20 +2217,20 @@ static int http_prepare_data(HTTPContext *c)
                        ffm file, so must wait for more data */
                     c->state = HTTPSTATE_WAIT_FEED;
                     return 1; /* state changed */
-                } else if (ret == AVERROR(EAGAIN)) {
+                }
+                if (ret == AVERROR(EAGAIN)) {
                     /* input not ready, come back later */
                     return 0;
+                }
+                if (c->stream->loop) {
+                    avformat_close_input(&c->fmt_in);
+                    if (open_input_stream(c, "") < 0)
+                        goto no_loop;
+                    goto redo;
                 } else {
-                    if (c->stream->loop) {
-                        avformat_close_input(&c->fmt_in);
-                        if (open_input_stream(c, "") < 0)
-                            goto no_loop;
-                        goto redo;
-                    } else {
                     no_loop:
                         /* must send trailer now because EOF or error */
                         c->state = HTTPSTATE_SEND_DATA_TRAILER;
-                    }
                 }
             } else {
                 int source_index = pkt.stream_index;

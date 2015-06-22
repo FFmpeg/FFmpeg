@@ -38,7 +38,7 @@ fate-lavr-resample-$(3)-$(1)-$(2): CMD = ffmpeg -i $(TARGET_PATH)/tests/data/asy
 fate-lavr-resample-$(3)-$(1)-$(2): CMP = oneoff
 fate-lavr-resample-$(3)-$(1)-$(2): CMP_UNIT = $(5)
 fate-lavr-resample-$(3)-$(1)-$(2): FUZZ = 6
-fate-lavr-resample-$(3)-$(1)-$(2): REF = $(SAMPLES)/lavr/lavr-resample-$(3)-$(1)-$(2)-v2
+fate-lavr-resample-$(3)-$(1)-$(2): REF = $(SAMPLES)/lavr/lavr-resample-$(3)-$(1)-$(2)-v3
 endef
 
 $(call CROSS_TEST,$(SAMPLERATES),RESAMPLE,s16p,s16le,s16)
