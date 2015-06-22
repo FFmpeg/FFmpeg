@@ -728,7 +728,7 @@ int main(void) {
         ret = test_dwt(array, ref, border, decomp_levels, FF_DWT97_INT, FFMIN(7+5*decomp_levels, 15+3*decomp_levels));
         if (ret)
             return ret;
-        ret = test_dwtf(arrayf, reff, border, decomp_levels, 1.0);
+        ret = test_dwtf(arrayf, reff, border, decomp_levels, 0.05);
         if (ret)
             return ret;
     }
