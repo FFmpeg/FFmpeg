@@ -104,6 +104,7 @@ EXPORTS
     avio_close_dir
     avio_close_dyn_buf
     avio_closep
+    avio_delete
     avio_enum_protocols
     avio_feof
     avio_find_protocol_name
@@ -112,6 +113,7 @@ EXPORTS
     avio_get_str
     avio_get_str16be
     avio_get_str16le
+    avio_move
     avio_open
     avio_open2
     avio_open_dir
