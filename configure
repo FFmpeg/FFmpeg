@@ -1930,6 +1930,8 @@ CONFIG_EXTRA="
     sinewin
     snappy
     startcode
+    texturedsp
+    texturedspenc
     tpeldsp
     videodsp
     vp3dsp
