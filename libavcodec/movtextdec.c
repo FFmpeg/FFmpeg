@@ -27,23 +27,40 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mem.h"
 
-#define STYLE_FLAG_BOLD         1
-#define STYLE_FLAG_ITALIC       2
-#define STYLE_FLAG_UNDERLINE    4
+#define STYLE_FLAG_BOLD         (1<<0)
+#define STYLE_FLAG_ITALIC       (1<<1)
+#define STYLE_FLAG_UNDERLINE    (1<<2)
+
+typedef struct {
+    uint16_t style_start;
+    uint16_t style_end;
+    uint8_t style_flag;
+} StyleBox;
 
 static int text_to_ass(AVBPrint *buf, const char *text, const char *text_end,
-                        char **style_start, char **style_end,
-                        uint8_t **style_flags, int style_entries)
+                        StyleBox **s, int style_entries)
 {
     int i = 0;
+    int text_pos = 0;
     while (text < text_end) {
         for (i = 0; i < style_entries; i++) {
-            if (*style_flags[i] && text == style_start[i]) {
-                if (*style_flags[i] & STYLE_FLAG_BOLD)
+            if (s[i]->style_flag && text_pos == s[i]->style_end) {
+                if (s[i]->style_flag & STYLE_FLAG_BOLD)
+                    av_bprintf(buf, "{\\b0}");
+                if (s[i]->style_flag & STYLE_FLAG_ITALIC)
+                    av_bprintf(buf, "{\\i0}");
+                if (s[i]->style_flag & STYLE_FLAG_UNDERLINE)
+                    av_bprintf(buf, "{\\u0}");
+            }
+        }
+
+        for (i = 0; i < style_entries; i++) {
+            if (s[i]->style_flag && text_pos == s[i]->style_start) {
+                if (s[i]->style_flag & STYLE_FLAG_BOLD)
                     av_bprintf(buf, "{\\b1}");
-                if (*style_flags[i] & STYLE_FLAG_ITALIC)
+                if (s[i]->style_flag & STYLE_FLAG_ITALIC)
                     av_bprintf(buf, "{\\i1}");
-                if (*style_flags[i] & STYLE_FLAG_UNDERLINE)
+                if (s[i]->style_flag & STYLE_FLAG_UNDERLINE)
                     av_bprintf(buf, "{\\u1}");
             }
         }
@@ -58,18 +75,8 @@ static int text_to_ass(AVBPrint *buf, const char *text, const char *text_end,
             av_bprint_chars(buf, *text, 1);
             break;
         }
-
-        for (i = 0; i < style_entries; i++) {
-            if (*style_flags[i] && text == style_end[i]) {
-                if (*style_flags[i] & STYLE_FLAG_BOLD)
-                    av_bprintf(buf, "{\\b0}");
-                if (*style_flags[i] & STYLE_FLAG_ITALIC)
-                    av_bprintf(buf, "{\\i0}");
-                if (*style_flags[i] & STYLE_FLAG_UNDERLINE)
-                    av_bprintf(buf, "{\\u0}");
-            }
-        }
         text++;
+        text_pos++;
     }
 
     return 0;
@@ -96,13 +103,10 @@ static int mov_text_decode_frame(AVCodecContext *avctx,
     //char *ptr_temp;
     int text_length, tsmb_type, style_entries;
     uint64_t tsmb_size, tracksize;
-    char **style_start = { 0, };
-    char **style_end = { 0, };
-    uint8_t **style_flags = { 0, };
+    StyleBox **s = {0, };
+    StyleBox *s_temp;
     const uint8_t *tsmb;
-    int index, i, size_var;
-    uint8_t *flag;
-    char *style_pos;
+    int count, i, size_var;
 
     if (!ptr || avpkt->size < 2)
         return AVERROR_INVALIDDATA;
@@ -168,42 +172,39 @@ static int mov_text_decode_frame(AVCodecContext *avctx,
                 // A single style record is of length 12 bytes.
                 if (tracksize + size_var + style_entries * 12 > avpkt->size)
                     break;
+                count = 0;
 
                 for(i = 0; i < style_entries; i++) {
-                    style_pos = ptr + AV_RB16(tsmb);
-                    index = i;
-                    av_dynarray_add(&style_start, &index, style_pos);
+                    s_temp = av_malloc(sizeof(*s_temp));
+                    if (!s_temp)
+                        goto error;
+
+                    s_temp->style_start = AV_RB16(tsmb);
                     tsmb += 2;
-                    style_pos = ptr + AV_RB16(tsmb);
-                    index = i;
-                    av_dynarray_add(&style_end, &index, style_pos);
+                    s_temp->style_end = AV_RB16(tsmb);
                     tsmb += 2;
                     // fontID = AV_RB16(tsmb);
                     tsmb += 2;
-                    flag = av_malloc(1);
-                    if (!flag)
-                        return AVERROR(ENOMEM);
-                    *flag = AV_RB8(tsmb);
-                    index = i;
-                    av_dynarray_add(&style_flags, &index, flag);
+                    s_temp->style_flag = AV_RB8(tsmb);
+                    av_dynarray_add(&s, &count, s_temp);
+                    if(!s)
+                        goto error;
                     //fontsize=AV_RB8(tsmb);
                     tsmb += 2;
                     // text-color-rgba
                     tsmb += 4;
                 }
-                text_to_ass(&buf, ptr, end, style_start, style_end, style_flags, style_entries);
+                text_to_ass(&buf, ptr, end, s, style_entries);
 
-                for(i = 0; i < style_entries; i++) {
-                    av_freep(&style_flags[i]);
+                for(i = 0; i < count; i++) {
+                    av_freep(&s[i]);
                 }
-                av_freep(&style_start);
-                av_freep(&style_end);
-                av_freep(&style_flags);
+                av_freep(&s);
             }
             tracksize = tracksize + tsmb_size;
         }
     } else
-        text_to_ass(&buf, ptr, end, NULL, NULL, 0, 0);
+        text_to_ass(&buf, ptr, end, NULL, 0);
 
     ret = ff_ass_add_rect_bprint(sub, &buf, ts_start, ts_end - ts_start);
     av_bprint_finalize(&buf, NULL);
@@ -211,6 +212,16 @@ static int mov_text_decode_frame(AVCodecContext *avctx,
         return ret;
     *got_sub_ptr = sub->num_rects > 0;
     return avpkt->size;
+
+error:
+    for(i = 0; i < count; i++) {
+        av_freep(&s[i]);
+    }
+    av_freep(&s);
+    if (s_temp)
+        av_freep(&s_temp);
+    av_bprint_finalize(&buf, NULL);
+    return AVERROR(ENOMEM);
 }
 
 AVCodec ff_movtext_decoder = {
