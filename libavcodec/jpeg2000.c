@@ -315,14 +315,19 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
                 break;
             }
             if (codsty->transform != FF_DWT53) {
+                int lband = 0;
                 switch (bandno + (reslevelno > 0)) {
                     case 1:
                     case 2:
                         band->f_stepsize *= F_LFTG_X * 2;
+                        lband = 1;
                         break;
                     case 3:
                         band->f_stepsize *= F_LFTG_X * F_LFTG_X * 4;
                         break;
+                }
+                if (codsty->transform == FF_DWT97) {
+                    band->f_stepsize *= pow(F_LFTG_K, 2*(codsty->nreslevels2decode - reslevelno) + lband - 2);
                 }
             }
             /* FIXME: In openjepg code stespize = stepsize * 0.5. Why?

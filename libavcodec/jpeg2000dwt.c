@@ -196,7 +196,7 @@ static void dwt_encode97_float(DWTContext *s, float *t)
 
             // copy back and deinterleave
             for (i =   mh; i < lh; i+=2, j++)
-                t[w*lp + j] = F_LFTG_X * l[i];
+                t[w*lp + j] = l[i];
             for (i = 1-mh; i < lh; i+=2, j++)
                 t[w*lp + j] = l[i];
         }
@@ -213,7 +213,7 @@ static void dwt_encode97_float(DWTContext *s, float *t)
 
             // copy back and deinterleave
             for (i =   mv; i < lv; i+=2, j++)
-                t[w*j + lp] = F_LFTG_X * l[i];
+                t[w*j + lp] = l[i];
             for (i = 1-mv; i < lv; i+=2, j++)
                 t[w*j + lp] = l[i];
         }
@@ -421,7 +421,7 @@ static void dwt_decode97_float(DWTContext *s, float *t)
             int i, j = 0;
             // copy with interleaving
             for (i = mh; i < lh; i += 2, j++)
-                l[i] = data[w * lp + j] * F_LFTG_K;
+                l[i] = data[w * lp + j];
             for (i = 1 - mh; i < lh; i += 2, j++)
                 l[i] = data[w * lp + j];
 
@@ -437,7 +437,7 @@ static void dwt_decode97_float(DWTContext *s, float *t)
             int i, j = 0;
             // copy with interleaving
             for (i = mv; i < lv; i += 2, j++)
-                l[i] = data[w * j + lp] * F_LFTG_K;
+                l[i] = data[w * j + lp];
             for (i = 1 - mv; i < lv; i += 2, j++)
                 l[i] = data[w * j + lp];
 
