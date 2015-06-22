@@ -1928,6 +1928,7 @@ CONFIG_EXTRA="
     rtpdec
     rtpenc_chain
     sinewin
+    snappy
     startcode
     tpeldsp
     videodsp
