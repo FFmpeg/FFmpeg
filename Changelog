@@ -31,6 +31,7 @@ version 2.7:
 - Direct3D11-accelerated decoding
 - Support Secure Transport
 - Multipart JPEG demuxer
+- Hap decoder and encoder
 
 
 version 2.6:

@@ -293,6 +293,7 @@ enum AVCodecID {
     AV_CODEC_ID_HQX,
     AV_CODEC_ID_TDSC,
     AV_CODEC_ID_HQ_HQA,
+    AV_CODEC_ID_HAP,
 
     AV_CODEC_ID_BRENDER_PIX= MKBETAG('B','P','I','X'),
     AV_CODEC_ID_Y41P       = MKBETAG('Y','4','1','P'),
