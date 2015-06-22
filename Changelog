@@ -5,6 +5,7 @@ version <next>:
 - colorkey video filter
 - BFSTM/BCSTM demuxer
 - little-endian ADPCM_THP decoder
+- DirectDraw Surface image/texture decoder
 
 
 version 2.7:

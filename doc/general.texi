@@ -275,6 +275,7 @@ library:
 @item Deluxe Paint Animation    @tab   @tab X
 @item DFA                       @tab   @tab X
     @tab This format is used in Chronomaster game
+@item DirectDraw Surface        @tab   @tab X
 @item DSD Stream File (DSF)     @tab   @tab X
 @item DV video                  @tab X @tab X
 @item DXA                       @tab   @tab X

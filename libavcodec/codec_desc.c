@@ -1283,6 +1283,14 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
+        .id        = AV_CODEC_ID_DDS,
+        .type      = AVMEDIA_TYPE_VIDEO,
+        .name      = "dds",
+        .long_name = NULL_IF_CONFIG_SMALL("DirectDraw Surface image decoder"),
+        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY |
+                     AV_CODEC_PROP_LOSSLESS,
+    },
+    {
         .id        = AV_CODEC_ID_DPX,
         .type      = AVMEDIA_TYPE_VIDEO,
         .name      = "dpx",
