@@ -121,7 +121,7 @@ fate-sgi-rgba64-rle: CMD = framecrc -i $(TARGET_SAMPLES)/sgi/maya_rgba64_rle.sgi
 
 FATE_SGI-$(call DEMDEC, IMAGE2, SGI) += $(FATE_SGI)
 
-FATE_SAMPLES_AVCONV += $(FATE_SGI-yes)
+FATE_IMAGE += $(FATE_SGI-yes)
 fate-sgi: $(FATE_SGI-yes)
 
 FATE_SUNRASTER += fate-sunraster-1bit-raw
