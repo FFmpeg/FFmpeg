@@ -700,11 +700,12 @@ static int test_dwtf(float *array, float *ref, uint16_t border[2][2], int decomp
     return 0;
 }
 
+static int array[MAX_W * MAX_W];
+static int ref  [MAX_W * MAX_W];
+static float arrayf[MAX_W * MAX_W];
+static float reff  [MAX_W * MAX_W];
+
 int main(void) {
-    int array[MAX_W * MAX_W];
-    int ref  [MAX_W * MAX_W];
-    float arrayf[MAX_W * MAX_W];
-    float reff  [MAX_W * MAX_W];
     AVLFG prng;
     int i,j;
     uint16_t border[2][2];
