@@ -40,12 +40,13 @@
 
 /* Lifting parameters in integer format.
  * Computed as param = (float param) * (1 << 16) */
-#define I_LFTG_ALPHA  103949
-#define I_LFTG_BETA     3472
-#define I_LFTG_GAMMA   57862
-#define I_LFTG_DELTA   29066
-#define I_LFTG_K       80621
-#define I_LFTG_X       53274
+#define I_LFTG_ALPHA  103949ll
+#define I_LFTG_BETA     3472ll
+#define I_LFTG_GAMMA   57862ll
+#define I_LFTG_DELTA   29066ll
+#define I_LFTG_K       80621ll
+#define I_LFTG_X       53274ll
+#define I_PRESHIFT 8
 
 static inline void extend53(int *p, int i0, int i1)
 {
@@ -246,10 +247,15 @@ static void sd_1d97_int(int *p, int i0, int i1)
 
 static void dwt_encode97_int(DWTContext *s, int *t)
 {
-    int lev,
-        w = s->linelen[s->ndeclevels-1][0];
+    int lev;
+    int w = s->linelen[s->ndeclevels-1][0];
+    int h = s->linelen[s->ndeclevels-1][1];
+    int i;
     int *line = s->i_linebuf;
     line += 5;
+
+    for (i = 0; i < w * h; i++)
+        t[i] <<= I_PRESHIFT;
 
     for (lev = s->ndeclevels-1; lev >= 0; lev--){
         int lh = s->linelen[lev][0],
@@ -294,6 +300,9 @@ static void dwt_encode97_int(DWTContext *s, int *t)
         }
 
     }
+
+    for (i = 0; i < w * h; i++)
+        t[i] = (t[i] + ((1<<I_PRESHIFT)>>1)) >> I_PRESHIFT;
 }
 
 static void sr_1d53(int *p, int i0, int i1)
@@ -471,10 +480,15 @@ static void dwt_decode97_int(DWTContext *s, int32_t *t)
 {
     int lev;
     int w       = s->linelen[s->ndeclevels - 1][0];
+    int h       = s->linelen[s->ndeclevels - 1][1];
+    int i;
     int32_t *line = s->i_linebuf;
     int32_t *data = t;
     /* position at index O of line range [0-5,w+5] cf. extend function */
     line += 5;
+
+    for (i = 0; i < w * h; i++)
+        data[i] <<= I_PRESHIFT;
 
     for (lev = 0; lev < s->ndeclevels; lev++) {
         int lh = s->linelen[lev][0],
@@ -515,6 +529,9 @@ static void dwt_decode97_int(DWTContext *s, int32_t *t)
                 data[w * i + lp] = l[i];
         }
     }
+
+    for (i = 0; i < w * h; i++)
+        data[i] = (data[i] + ((1<<I_PRESHIFT)>>1)) >> I_PRESHIFT;
 }
 
 int ff_jpeg2000_dwt_init(DWTContext *s, uint16_t border[2][2],
