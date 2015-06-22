@@ -173,6 +173,8 @@ av_cold int swr_init(struct SwrContext *s){
     s-> in_ch_layout = s-> user_in_ch_layout;
     s->out_ch_layout = s->user_out_ch_layout;
 
+    s->int_sample_fmt= s->user_int_sample_fmt;
+
     if(av_get_channel_layout_nb_channels(s-> in_ch_layout) > SWR_CH_MAX) {
         av_log(s, AV_LOG_WARNING, "Input channel layout 0x%"PRIx64" is invalid or unsupported.\n", s-> in_ch_layout);
         s->in_ch_layout = 0;
