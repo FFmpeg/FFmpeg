@@ -929,7 +929,9 @@ static av_cold void rgb2rgb_init_c(void)
     rgb24to15          = rgb24to15_c;
     rgb24to16          = rgb24to16_c;
     rgb24tobgr24       = rgb24tobgr24_c;
+#if !HAVE_BIGENDIAN
     shuffle_bytes_2103 = shuffle_bytes_2103_c;
+#endif
     rgb32tobgr16       = rgb32tobgr16_c;
     rgb32tobgr15       = rgb32tobgr15_c;
     yv12toyuy2         = yv12toyuy2_c;
