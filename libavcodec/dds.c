@@ -626,8 +626,13 @@ static int dds_decode(AVCodecContext *avctx, void *data,
         int linesize = av_image_get_linesize(avctx->pix_fmt, frame->width, 0);
 
         if (ctx->paletted) {
+            int i;
             /* Use the first 1024 bytes as palette, then copy the rest. */
             bytestream2_get_buffer(gbc, frame->data[1], 256 * 4);
+            if (HAVE_BIGENDIAN)
+                for (i = 0; i < 256; i++)
+                    AV_WB32(frame->data[1] + i*4, AV_RL32(frame->data[1] + i*4));
+
             frame->palette_has_changed = 1;
         }
 
