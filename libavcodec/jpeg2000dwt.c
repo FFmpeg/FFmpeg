@@ -693,7 +693,7 @@ static int test_dwtf(float *array, float *ref, uint16_t border[2][2], int decomp
     }
     ff_dwt_destroy(s);
 
-    printf("9/7f, decomp:%2d border %3d %3d %3d %3d err2:%20.4f\n",
+    printf("9/7f, decomp:%2d border %3d %3d %3d %3d err2:%20.3f\n",
            decomp_levels, border[0][0], border[0][1], border[1][0], border[1][1],
            err2 / ((border[0][1] - border[0][0])*(border[1][1] - border[1][0])));
 
