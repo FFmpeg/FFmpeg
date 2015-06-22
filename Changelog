@@ -5,6 +5,7 @@ version <next>:
 - colorkey video filter
 - BFSTM/BCSTM demuxer
 - little-endian ADPCM_THP decoder
+- Hap decoder and encoder
 - DirectDraw Surface image/texture decoder
 
 
@@ -32,7 +33,6 @@ version 2.7:
 - Direct3D11-accelerated decoding
 - Support Secure Transport
 - Multipart JPEG demuxer
-- Hap decoder and encoder
 
 
 version 2.6:
