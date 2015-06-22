@@ -133,6 +133,7 @@ static void clear_context(SwrContext *s){
     swri_audio_convert_free(&s->full_convert);
     swri_rematrix_free(s);
 
+    s->delayed_samples_fixup = 0;
     s->flushed = 0;
 }
 
