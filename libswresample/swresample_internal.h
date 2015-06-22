@@ -95,6 +95,7 @@ struct SwrContext {
     int user_used_ch_count;                         ///< User set used channel count
     int64_t user_in_ch_layout;                      ///< User set input channel layout
     int64_t user_out_ch_layout;                     ///< User set output channel layout
+    enum AVSampleFormat user_int_sample_fmt;        ///< User set internal sample format
 
     struct DitherContext dither;
 
