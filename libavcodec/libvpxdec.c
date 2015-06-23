@@ -62,6 +62,13 @@ static av_cold int vpx_init(AVCodecContext *avctx,
 // returns 0 on success, AVERROR_INVALIDDATA otherwise
 static int set_pix_fmt(AVCodecContext *avctx, struct vpx_image *img)
 {
+#if VPX_IMAGE_ABI_VERSION >= 3
+    static const enum AVColorSpace colorspaces[8] = {
+        AVCOL_SPC_UNSPECIFIED, AVCOL_SPC_BT470BG, AVCOL_SPC_BT709, AVCOL_SPC_SMPTE170M,
+        AVCOL_SPC_SMPTE240M, AVCOL_SPC_BT2020_NCL, AVCOL_SPC_RESERVED, AVCOL_SPC_RGB,
+    };
+    avctx->colorspace = colorspaces[img->cs];
+#endif
     if (avctx->codec_id == AV_CODEC_ID_VP8 && img->fmt != VPX_IMG_FMT_I420)
         return AVERROR_INVALIDDATA;
     switch (img->fmt) {
