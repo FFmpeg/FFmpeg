@@ -61,6 +61,7 @@
 #define MV0F_TAG MKTAG('M', 'V', '0', 'F')
 #define MVIh_TAG MKTAG('M', 'V', 'I', 'h')  /* CMV header */
 #define MVIf_TAG MKTAG('M', 'V', 'I', 'f')  /* CMV I-frame */
+#define AVP6_TAG MKTAG('A', 'V', 'P', '6')
 
 typedef struct EaDemuxContext {
     int big_endian;
@@ -458,6 +459,7 @@ static int ea_probe(AVProbeData *p)
     case MPCh_TAG:
     case MVhd_TAG:
     case MVIh_TAG:
+    case AVP6_TAG:
         break;
     default:
         return 0;

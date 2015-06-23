@@ -49,5 +49,6 @@ void ff_blockdsp_init_x86(BlockDSPContext *c, unsigned high_bit_depth,
 #else
 void ff_blockdsp_init_x86(BlockDSPContext *c, unsigned high_bit_depth);
 #endif /* FF_API_XVMC */
+void ff_blockdsp_init_mips(BlockDSPContext *c, unsigned high_bit_depth);
 
 #endif /* AVCODEC_BLOCKDSP_H */

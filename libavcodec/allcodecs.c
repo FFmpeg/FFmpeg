@@ -140,6 +140,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER(CPIA,              cpia);
     REGISTER_DECODER(CSCD,              cscd);
     REGISTER_DECODER(CYUV,              cyuv);
+    REGISTER_DECODER(DDS,               dds);
     REGISTER_DECODER(DFA,               dfa);
     REGISTER_DECODER(DIRAC,             dirac);
     REGISTER_ENCDEC (DNXHD,             dnxhd);
@@ -181,6 +182,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER(H264_QSV,          h264_qsv);
     REGISTER_DECODER(H264_VDA,          h264_vda);
     REGISTER_DECODER(H264_VDPAU,        h264_vdpau);
+    REGISTER_ENCDEC (HAP,               hap);
     REGISTER_DECODER(HEVC,              hevc);
     REGISTER_DECODER(HNM4_VIDEO,        hnm4_video);
     REGISTER_DECODER(HQ_HQA,            hq_hqa);

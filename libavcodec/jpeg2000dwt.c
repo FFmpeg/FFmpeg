@@ -693,18 +693,19 @@ static int test_dwtf(float *array, float *ref, uint16_t border[2][2], int decomp
     }
     ff_dwt_destroy(s);
 
-    printf("9/7f, decomp:%2d border %3d %3d %3d %3d err2:%20.4f\n",
+    printf("9/7f, decomp:%2d border %3d %3d %3d %3d err2:%20.3f\n",
            decomp_levels, border[0][0], border[0][1], border[1][0], border[1][1],
            err2 / ((border[0][1] - border[0][0])*(border[1][1] - border[1][0])));
 
     return 0;
 }
 
+static int array[MAX_W * MAX_W];
+static int ref  [MAX_W * MAX_W];
+static float arrayf[MAX_W * MAX_W];
+static float reff  [MAX_W * MAX_W];
+
 int main(void) {
-    int array[MAX_W * MAX_W];
-    int ref  [MAX_W * MAX_W];
-    float arrayf[MAX_W * MAX_W];
-    float reff  [MAX_W * MAX_W];
     AVLFG prng;
     int i,j;
     uint16_t border[2][2];
@@ -728,7 +729,7 @@ int main(void) {
         ret = test_dwt(array, ref, border, decomp_levels, FF_DWT97_INT, FFMIN(7+5*decomp_levels, 15+3*decomp_levels));
         if (ret)
             return ret;
-        ret = test_dwtf(arrayf, reff, border, decomp_levels, 1.0);
+        ret = test_dwtf(arrayf, reff, border, decomp_levels, 0.05);
         if (ret)
             return ret;
     }

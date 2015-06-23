@@ -322,8 +322,22 @@ static inline void shuffle_bytes_2103_c(const uint8_t *src, uint8_t *dst,
     uint8_t *d       = dst - idx;
 
     for (; idx < 15; idx += 4) {
-        register int v        = *(const uint32_t *)&s[idx], g = v & 0xff00ff00;
+        register unsigned v   = *(const uint32_t *)&s[idx], g = v & 0xff00ff00;
         v                    &= 0xff00ff;
+        *(uint32_t *)&d[idx]  = (v >> 16) + g + (v << 16);
+    }
+}
+
+static inline void shuffle_bytes_0321_c(const uint8_t *src, uint8_t *dst,
+                                        int src_size)
+{
+    int idx          = 15  - src_size;
+    const uint8_t *s = src - idx;
+    uint8_t *d       = dst - idx;
+
+    for (; idx < 15; idx += 4) {
+        register unsigned v   = *(const uint32_t *)&s[idx], g = v & 0x00ff00ff;
+        v                    &= 0xff00ff00;
         *(uint32_t *)&d[idx]  = (v >> 16) + g + (v << 16);
     }
 }
@@ -929,7 +943,13 @@ static av_cold void rgb2rgb_init_c(void)
     rgb24to15          = rgb24to15_c;
     rgb24to16          = rgb24to16_c;
     rgb24tobgr24       = rgb24tobgr24_c;
+#if HAVE_BIGENDIAN
+    shuffle_bytes_0321 = shuffle_bytes_2103_c;
+    shuffle_bytes_2103 = shuffle_bytes_0321_c;
+#else
+    shuffle_bytes_0321 = shuffle_bytes_0321_c;
     shuffle_bytes_2103 = shuffle_bytes_2103_c;
+#endif
     rgb32tobgr16       = rgb32tobgr16_c;
     rgb32tobgr15       = rgb32tobgr15_c;
     yv12toyuy2         = yv12toyuy2_c;

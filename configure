@@ -239,6 +239,7 @@ External library support:
   --enable-libschroedinger enable Dirac de/encoding via libschroedinger [no]
   --enable-libshine        enable fixed-point MP3 encoding via libshine [no]
   --enable-libsmbclient    enable Samba protocol via libsmbclient [no]
+  --enable-libsnappy       enable Snappy compression [no]
   --enable-libsoxr         enable Include libsoxr resampling [no]
   --enable-libspeex        enable Speex de/encoding via libspeex [no]
   --enable-libssh          enable SFTP protocol via libssh [no]
@@ -1396,6 +1397,7 @@ EXTERNAL_LIBRARY_LIST="
     libschroedinger
     libshine
     libsmbclient
+    libsnappy
     libsoxr
     libspeex
     libssh
@@ -1928,7 +1930,10 @@ CONFIG_EXTRA="
     rtpdec
     rtpenc_chain
     sinewin
+    snappy
     startcode
+    texturedsp
+    texturedspenc
     tpeldsp
     videodsp
     vp3dsp
@@ -2153,6 +2158,7 @@ cook_decoder_select="audiodsp mdct sinewin"
 cscd_decoder_select="lzo"
 cscd_decoder_suggest="zlib"
 dca_decoder_select="fmtconvert mdct"
+dds_decoder_select="texturedsp"
 dirac_decoder_select="dwt golomb videodsp mpegvideoenc"
 dnxhd_decoder_select="blockdsp idctdsp"
 dnxhd_encoder_select="aandcttables blockdsp fdctdsp idctdsp mpegvideoenc pixblockdsp"
@@ -2195,6 +2201,9 @@ h264_qsv_decoder_deps="libmfx"
 h264_qsv_decoder_select="h264_mp4toannexb_bsf h264_parser qsvdec h264_qsv_hwaccel"
 h264_qsv_encoder_deps="libmfx"
 h264_qsv_encoder_select="qsvenc"
+hap_decoder_select="snappy texturedsp"
+hap_encoder_deps="libsnappy"
+hap_encoder_select="texturedspenc"
 hevc_decoder_select="bswapdsp cabac golomb videodsp"
 huffyuv_decoder_select="bswapdsp huffyuvdsp llviddsp"
 huffyuv_encoder_select="bswapdsp huffman huffyuvencdsp llviddsp"
@@ -2290,6 +2299,7 @@ truemotion2_decoder_select="bswapdsp"
 truespeech_decoder_select="bswapdsp"
 tscc_decoder_select="zlib"
 twinvq_decoder_select="mdct lsp sinewin"
+txd_decoder_select="texturedsp"
 utvideo_decoder_select="bswapdsp"
 utvideo_encoder_select="bswapdsp huffman huffyuvencdsp"
 vble_decoder_select="huffyuvdsp"
@@ -5125,6 +5135,7 @@ enabled libschroedinger   && require_pkg_config schroedinger-1.0 schroedinger/sc
 enabled libshine          && require_pkg_config shine shine/layer3.h shine_encode_buffer
 enabled libsmbclient      && { use_pkg_config smbclient libsmbclient.h smbc_init ||
                                require smbclient libsmbclient.h smbc_init -lsmbclient; }
+enabled libsnappy         && require snappy snappy-c.h snappy_compress -lsnappy
 enabled libsoxr           && require libsoxr soxr.h soxr_create -lsoxr
 enabled libssh            && require_pkg_config libssh libssh/sftp.h sftp_init
 enabled libspeex          && require_pkg_config speex speex/speex.h speex_decoder_init -lspeex

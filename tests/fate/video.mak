@@ -168,6 +168,18 @@ fate-id-cin-video: CMD = framecrc -i $(TARGET_SAMPLES)/idcin/idlog-2MB.cin -pix_
 FATE_VIDEO-$(call ENCDEC, ROQ PGMYUV, ROQ IMAGE2) += fate-idroq-video-encode
 fate-idroq-video-encode: CMD = md5 -f image2 -vcodec pgmyuv -i $(TARGET_SAMPLES)/ffmpeg-synthetic/vsynth1/%02d.pgm -r 30 -sws_flags +bitexact -vf pad=512:512:80:112 -f roq -t 0.2
 
+FATE_HAP += fate-hap1
+fate-hap1: CMD = framecrc -i $(TARGET_SAMPLES)/hap/hap1.mov
+
+FATE_HAP += fate-hap5
+fate-hap5: CMD = framecrc -i $(TARGET_SAMPLES)/hap/hap5.mov
+
+FATE_HAP += fate-hapy
+fate-hapy: CMD = framecrc -i $(TARGET_SAMPLES)/hap/hapy.mov
+
+FATE_SAMPLES_AVCONV-$(call DEMDEC, MOV, HAP) += $(FATE_HAP)
+fate-hap: $(FATE_HAP)
+
 FATE_IFF-$(CONFIG_IFF_BYTERUN1_DECODER) += fate-iff-byterun1
 fate-iff-byterun1: CMD = framecrc -i $(TARGET_SAMPLES)/iff/ASH.LBM -pix_fmt rgb24
 
@@ -279,6 +291,9 @@ fate-tmv: CMD = framecrc -i $(TARGET_SAMPLES)/tmv/pop-partial.tmv -pix_fmt rgb24
 
 FATE_TXD += fate-txd-16bpp
 fate-txd-16bpp: CMD = framecrc -i $(TARGET_SAMPLES)/txd/misc.txd -pix_fmt bgra -an
+
+FATE_TXD += fate-txd-odd
+fate-txd-odd: CMD = framecrc -i $(TARGET_SAMPLES)/txd/odd.txd -pix_fmt bgra -an
 
 FATE_TXD += fate-txd-pal8
 fate-txd-pal8: CMD = framecrc -i $(TARGET_SAMPLES)/txd/outro.txd -pix_fmt rgb24 -an
