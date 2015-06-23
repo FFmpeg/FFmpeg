@@ -363,7 +363,7 @@ static int refine_colors(const uint8_t *block, ptrdiff_t stride,
     const int prods[4] = { 0x090000, 0x000900, 0x040102, 0x010402 };
 
     /* Check if all pixels have the same index */
-    if (mask ^ (mask << 2) < 4) {
+    if ((mask ^ (mask << 2)) < 4) {
         /* If so, linear system would be singular; solve using optimal
          * single-color match on average color. */
         int r = 8, g = 8, b = 8;
