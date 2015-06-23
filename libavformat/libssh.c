@@ -24,6 +24,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/opt.h"
 #include "libavutil/attributes.h"
+#include "libavformat/avio.h"
 #include "avformat.h"
 #include "internal.h"
 #include "url.h"
@@ -33,6 +34,7 @@ typedef struct {
     ssh_session session;
     sftp_session sftp;
     sftp_file file;
+    sftp_dir dir;
     int64_t filesize;
     int rw_timeout;
     int trunc;
@@ -187,11 +189,11 @@ static av_cold int libssh_close(URLContext *h)
     return 0;
 }
 
-static av_cold int libssh_open(URLContext *h, const char *url, int flags)
+static av_cold int libssh_connect(URLContext *h, const char *url, char *path, size_t path_size)
 {
     LIBSSHContext *libssh = h->priv_data;
-    char proto[10], path[MAX_URL_SIZE], hostname[1024], credencials[1024];
-    int port, ret;
+    char proto[10], hostname[1024], credencials[1024];
+    int port = 22, ret;
     const char *user = NULL, *pass = NULL;
     char *end = NULL;
 
@@ -199,7 +201,7 @@ static av_cold int libssh_open(URLContext *h, const char *url, int flags)
                  credencials, sizeof(credencials),
                  hostname, sizeof(hostname),
                  &port,
-                 path, sizeof(path),
+                 path, path_size,
                  url);
 
     // a port of 0 will use a port from ~/.ssh/config or the default value 22
@@ -207,15 +209,27 @@ static av_cold int libssh_open(URLContext *h, const char *url, int flags)
         port = 0;
 
     if ((ret = libssh_create_ssh_session(libssh, hostname, port)) < 0)
-        goto fail;
+        return ret;
 
     user = av_strtok(credencials, ":", &end);
     pass = av_strtok(end, ":", &end);
 
     if ((ret = libssh_authentication(libssh, user, pass)) < 0)
-        goto fail;
+        return ret;
 
     if ((ret = libssh_create_sftp_session(libssh)) < 0)
+        return ret;
+
+    return 0;
+}
+
+static av_cold int libssh_open(URLContext *h, const char *url, int flags)
+{
+    int ret;
+    LIBSSHContext *libssh = h->priv_data;
+    char path[MAX_URL_SIZE];
+
+    if ((ret = libssh_connect(h, url, path, sizeof(path))) < 0)
         goto fail;
 
     if ((ret = libssh_open_file(libssh, flags, path)) < 0)
@@ -293,6 +307,88 @@ static int libssh_write(URLContext *h, const unsigned char *buf, int size)
     return bytes_written;
 }
 
+static int libssh_open_dir(URLContext *h)
+{
+    LIBSSHContext *libssh = h->priv_data;
+    int ret;
+    char path[MAX_URL_SIZE];
+
+    if ((ret = libssh_connect(h, h->filename, path, sizeof(path))) < 0)
+        goto fail;
+
+    if (!(libssh->dir = sftp_opendir(libssh->sftp, path))) {
+        av_log(libssh, AV_LOG_ERROR, "Error opening sftp dir: %s\n", ssh_get_error(libssh->session));
+        ret = AVERROR(EIO);
+        goto fail;
+    }
+
+    return 0;
+
+  fail:
+    libssh_close(h);
+    return ret;
+}
+
+static int libssh_read_dir(URLContext *h, AVIODirEntry **next)
+{
+    LIBSSHContext *libssh = h->priv_data;
+    sftp_attributes attr = NULL;
+    AVIODirEntry *entry;
+
+    *next = entry = ff_alloc_dir_entry();
+    if (!entry)
+        return AVERROR(ENOMEM);
+
+    do {
+        if (attr)
+            sftp_attributes_free(attr);
+        attr = sftp_readdir(libssh->sftp, libssh->dir);
+        if (!attr) {
+            av_freep(next);
+            if (sftp_dir_eof(libssh->dir))
+                return 0;
+            return AVERROR(EIO);
+        }
+    } while (!strcmp(attr->name, ".") || !strcmp(attr->name, ".."));
+
+    entry->name = av_strdup(attr->name);
+    entry->group_id = attr->gid;
+    entry->user_id = attr->uid;
+    entry->size = attr->size;
+    entry->access_timestamp = INT64_C(1000000) * attr->atime;
+    entry->modification_timestamp = INT64_C(1000000) * attr->mtime;
+    entry->filemode = attr->permissions & 0777;
+    switch(attr->type) {
+    case SSH_FILEXFER_TYPE_REGULAR:
+        entry->type = AVIO_ENTRY_FILE;
+        break;
+    case SSH_FILEXFER_TYPE_DIRECTORY:
+        entry->type = AVIO_ENTRY_DIRECTORY;
+        break;
+    case SSH_FILEXFER_TYPE_SYMLINK:
+        entry->type = AVIO_ENTRY_SYMBOLIC_LINK;
+        break;
+    case SSH_FILEXFER_TYPE_SPECIAL:
+        /* Special type includes: sockets, char devices, block devices and pipes.
+           It is probably better to return unknown type, to not confuse anybody. */
+    case SSH_FILEXFER_TYPE_UNKNOWN:
+    default:
+        entry->type = AVIO_ENTRY_UNKNOWN;
+    }
+    sftp_attributes_free(attr);
+    return 0;
+}
+
+static int libssh_close_dir(URLContext *h)
+{
+    LIBSSHContext *libssh = h->priv_data;
+    if (libssh->dir)
+        sftp_closedir(libssh->dir);
+    libssh->dir = NULL;
+    libssh_close(h);
+    return 0;
+}
+
 #define OFFSET(x) offsetof(LIBSSHContext, x)
 #define D AV_OPT_FLAG_DECODING_PARAM
 #define E AV_OPT_FLAG_ENCODING_PARAM
@@ -317,6 +413,9 @@ URLProtocol ff_libssh_protocol = {
     .url_write           = libssh_write,
     .url_seek            = libssh_seek,
     .url_close           = libssh_close,
+    .url_open_dir        = libssh_open_dir,
+    .url_read_dir        = libssh_read_dir,
+    .url_close_dir       = libssh_close_dir,
     .priv_data_size      = sizeof(LIBSSHContext),
     .priv_data_class     = &libssh_context_class,
     .flags               = URL_PROTOCOL_FLAG_NETWORK,
