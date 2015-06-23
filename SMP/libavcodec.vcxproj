@@ -347,7 +347,13 @@
     </ClCompile>
     <ClCompile Include="..\libavcodec\sinewin.c">
     </ClCompile>
+    <ClCompile Include="..\libavcodec\snappy.c">
+    </ClCompile>
     <ClCompile Include="..\libavcodec\startcode.c">
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\texturedsp.c">
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\texturedspenc.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\tpeldsp.c">
     </ClCompile>
@@ -588,6 +594,8 @@
     </ClCompile>
     <ClCompile Include="..\libavcodec\dcaenc.c">
     </ClCompile>
+    <ClCompile Include="..\libavcodec\dds.c">
+    </ClCompile>
     <ClCompile Include="..\libavcodec\diracdec.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\dirac.c">
@@ -783,6 +791,8 @@
     <ClCompile Include="..\libavcodec\qsvdec_h264.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\qsvenc_h264.c">
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\hapdec.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\hevc.c">
     </ClCompile>
@@ -1195,8 +1205,6 @@
     <ClCompile Include="..\libavcodec\twinvqdec.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\txd.c">
-    </ClCompile>
-    <ClCompile Include="..\libavcodec\s3tc.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\ulti.c">
     </ClCompile>
