@@ -880,7 +880,7 @@ following image formats are supported:
 @item ADPCM MS IMA           @tab  X  @tab  X
 @item ADPCM Nintendo Gamecube AFC  @tab     @tab  X
 @item ADPCM Nintendo Gamecube DTK  @tab     @tab  X
-@item ADPCM Nintendo Gamecube THP  @tab     @tab  X
+@item ADPCM Nintendo THP  @tab     @tab  X
 @item ADPCM QT IMA           @tab  X  @tab  X
 @item ADPCM SEGA CRI ADX     @tab  X  @tab  X
     @tab Used in Sega Dreamcast games.
