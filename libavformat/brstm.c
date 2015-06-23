@@ -93,6 +93,7 @@ static int read_header(AVFormatContext *s)
     uint32_t size, asize, start = 0;
     AVStream *st;
     int ret = AVERROR_EOF;
+    int loop = 0;
     int bfstm = !strcmp("bfstm", s->iformat->name);
 
     st = avformat_new_stream(s, NULL);
@@ -195,7 +196,7 @@ static int read_header(AVFormatContext *s)
         return AVERROR_PATCHWELCOME;
     }
 
-    avio_skip(s->pb, 1); // loop flag
+    loop = avio_r8(s->pb); // loop flag
     st->codec->codec_id = codec;
     st->codec->channels = avio_r8(s->pb);
     if (!st->codec->channels)
@@ -209,7 +210,17 @@ static int read_header(AVFormatContext *s)
 
     if (!bfstm)
         avio_skip(s->pb, 2); // padding
-    avio_skip(s->pb, 4); // loop start sample
+
+    if (loop) {
+        if (av_dict_set_int(&s->metadata, "loop_start",
+                            av_rescale(read32(s), AV_TIME_BASE,
+                                       st->codec->sample_rate),
+                            0) < 0)
+            return AVERROR(ENOMEM);
+    } else {
+        avio_skip(s->pb, 4);
+    }
+
     st->start_time = 0;
     st->duration = read32(s);
     avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
