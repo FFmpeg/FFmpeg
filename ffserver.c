@@ -786,7 +786,6 @@ static void close_connection(HTTPContext *c)
     HTTPContext **cp, *c1;
     int i, nb_streams;
     AVFormatContext *ctx;
-    URLContext *h;
     AVStream *st;
 
     /* remove connection from list */
@@ -831,9 +830,7 @@ static void close_connection(HTTPContext *c)
             av_freep(&ctx->streams[0]);
             av_freep(&ctx);
         }
-        h = c->rtp_handles[i];
-        if (h)
-            ffurl_close(h);
+        ffurl_close(c->rtp_handles[i]);
     }
 
     ctx = &c->fmt_ctx;
