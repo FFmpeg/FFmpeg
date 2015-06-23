@@ -66,22 +66,28 @@ static int set_pix_fmt(AVCodecContext *avctx, struct vpx_image *img)
         return AVERROR_INVALIDDATA;
     switch (img->fmt) {
     case VPX_IMG_FMT_I420:
+        if (avctx->codec_id == AV_CODEC_ID_VP9)
+            avctx->profile = FF_PROFILE_VP9_0;
         avctx->pix_fmt = AV_PIX_FMT_YUV420P;
         return 0;
 #if CONFIG_LIBVPX_VP9_DECODER
     case VPX_IMG_FMT_I422:
+        avctx->profile = FF_PROFILE_VP9_1;
         avctx->pix_fmt = AV_PIX_FMT_YUV422P;
         return 0;
 #if VPX_IMAGE_ABI_VERSION >= 3
     case VPX_IMG_FMT_I440:
+        avctx->profile = FF_PROFILE_VP9_1;
         avctx->pix_fmt = AV_PIX_FMT_YUV440P;
         return 0;
 #endif
     case VPX_IMG_FMT_I444:
+        avctx->profile = FF_PROFILE_VP9_1;
         avctx->pix_fmt = AV_PIX_FMT_YUV444P;
         return 0;
 #ifdef VPX_IMG_FMT_HIGHBITDEPTH
     case VPX_IMG_FMT_I42016:
+        avctx->profile = FF_PROFILE_VP9_2;
         if (img->bit_depth == 10) {
             avctx->pix_fmt = AV_PIX_FMT_YUV420P10LE;
             return 0;
@@ -92,6 +98,7 @@ static int set_pix_fmt(AVCodecContext *avctx, struct vpx_image *img)
             return AVERROR_INVALIDDATA;
         }
     case VPX_IMG_FMT_I42216:
+        avctx->profile = FF_PROFILE_VP9_3;
         if (img->bit_depth == 10) {
             avctx->pix_fmt = AV_PIX_FMT_YUV422P10LE;
             return 0;
@@ -103,6 +110,7 @@ static int set_pix_fmt(AVCodecContext *avctx, struct vpx_image *img)
         }
 #if VPX_IMAGE_ABI_VERSION >= 3
     case VPX_IMG_FMT_I44016:
+        avctx->profile = FF_PROFILE_VP9_3;
         if (img->bit_depth == 10) {
             avctx->pix_fmt = AV_PIX_FMT_YUV440P10LE;
             return 0;
@@ -114,6 +122,7 @@ static int set_pix_fmt(AVCodecContext *avctx, struct vpx_image *img)
         }
 #endif
     case VPX_IMG_FMT_I44416:
+        avctx->profile = FF_PROFILE_VP9_3;
         if (img->bit_depth == 10) {
             avctx->pix_fmt = AV_PIX_FMT_YUV444P10LE;
             return 0;
@@ -211,6 +220,14 @@ static av_cold int vp9_init(AVCodecContext *avctx)
     return vpx_init(avctx, &vpx_codec_vp9_dx_algo);
 }
 
+static const AVProfile profiles[] = {
+    { FF_PROFILE_VP9_0, "Profile 0" },
+    { FF_PROFILE_VP9_1, "Profile 1" },
+    { FF_PROFILE_VP9_2, "Profile 2" },
+    { FF_PROFILE_VP9_3, "Profile 3" },
+    { FF_PROFILE_UNKNOWN },
+};
+
 AVCodec ff_libvpx_vp9_decoder = {
     .name           = "libvpx-vp9",
     .long_name      = NULL_IF_CONFIG_SMALL("libvpx VP9"),
@@ -222,5 +239,6 @@ AVCodec ff_libvpx_vp9_decoder = {
     .decode         = vp8_decode,
     .capabilities   = CODEC_CAP_AUTO_THREADS | CODEC_CAP_DR1,
     .init_static_data = ff_vp9_init_static,
+    .profiles       = NULL_IF_CONFIG_SMALL(profiles),
 };
 #endif /* CONFIG_LIBVPX_VP9_DECODER */
