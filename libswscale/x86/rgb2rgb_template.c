@@ -1090,7 +1090,7 @@ static inline void RENAME(shuffle_bytes_2103)(const uint8_t *src, uint8_t *dst, 
         : "r" (s), "r" (d), "m" (mask32b), "m" (mask32r), "m" (mmx_one)
         : "memory");
     for (; idx<15; idx+=4) {
-        register int v = *(const uint32_t *)&s[idx], g = v & 0xff00ff00;
+        register unsigned v  = *(const uint32_t *)&s[idx], g = v & 0xff00ff00;
         v &= 0xff00ff;
         *(uint32_t *)&d[idx] = (v>>16) + g + (v<<16);
     }
