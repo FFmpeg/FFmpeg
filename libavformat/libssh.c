@@ -392,6 +392,86 @@ static int libssh_close_dir(URLContext *h)
     return 0;
 }
 
+static int libssh_delete(URLContext *h)
+{
+    int ret;
+    LIBSSHContext *libssh = h->priv_data;
+    sftp_attributes attr = NULL;
+    char path[MAX_URL_SIZE];
+
+    if ((ret = libssh_connect(h, h->filename, path, sizeof(path))) < 0)
+        goto cleanup;
+
+    if (!(attr = sftp_stat(libssh->sftp, path))) {
+        ret = AVERROR(sftp_get_error(libssh->sftp));
+        goto cleanup;
+    }
+
+    if (attr->type == SSH_FILEXFER_TYPE_DIRECTORY) {
+        if (sftp_rmdir(libssh->sftp, path) < 0) {
+            ret = AVERROR(sftp_get_error(libssh->sftp));
+            goto cleanup;
+        }
+    } else {
+        if (sftp_unlink(libssh->sftp, path) < 0) {
+            ret = AVERROR(sftp_get_error(libssh->sftp));
+            goto cleanup;
+        }
+    }
+
+    ret = 0;
+
+cleanup:
+    if (attr)
+        sftp_attributes_free(attr);
+    libssh_close(h);
+    return ret;
+}
+
+static int libssh_move(URLContext *h_src, URLContext *h_dst)
+{
+    int ret;
+    LIBSSHContext *libssh = h_src->priv_data;
+    char path_src[MAX_URL_SIZE], path_dst[MAX_URL_SIZE];
+    char hostname_src[1024], hostname_dst[1024];
+    char credentials_src[1024], credentials_dst[1024];
+    int port_src = 22, port_dst = 22;
+
+    av_url_split(NULL, 0,
+                 credentials_src, sizeof(credentials_src),
+                 hostname_src, sizeof(hostname_src),
+                 &port_src,
+                 path_src, sizeof(path_src),
+                 h_src->filename);
+
+    av_url_split(NULL, 0,
+                 credentials_dst, sizeof(credentials_dst),
+                 hostname_dst, sizeof(hostname_dst),
+                 &port_dst,
+                 path_dst, sizeof(path_dst),
+                 h_dst->filename);
+
+    if (strcmp(credentials_src, credentials_dst) ||
+            strcmp(hostname_src, hostname_dst) ||
+            port_src != port_dst) {
+        return AVERROR(EINVAL);
+    }
+
+    if ((ret = libssh_connect(h_src, h_src->filename, path_src, sizeof(path_src))) < 0)
+        goto cleanup;
+
+    if (sftp_rename(libssh->sftp, path_src, path_dst) < 0) {
+        ret = AVERROR(sftp_get_error(libssh->sftp));
+        goto cleanup;
+    }
+
+    ret = 0;
+
+cleanup:
+    libssh_close(h_src);
+    return ret;
+}
+
 #define OFFSET(x) offsetof(LIBSSHContext, x)
 #define D AV_OPT_FLAG_DECODING_PARAM
 #define E AV_OPT_FLAG_ENCODING_PARAM
@@ -416,6 +496,8 @@ URLProtocol ff_libssh_protocol = {
     .url_write           = libssh_write,
     .url_seek            = libssh_seek,
     .url_close           = libssh_close,
+    .url_delete          = libssh_delete,
+    .url_move            = libssh_move,
     .url_open_dir        = libssh_open_dir,
     .url_read_dir        = libssh_read_dir,
     .url_close_dir       = libssh_close_dir,
