@@ -1905,7 +1905,7 @@ static void RENAME(interleaveBytes)(const uint8_t *src1, const uint8_t *src2, ui
             "cmp                     %3, %%"REG_a"  \n\t"
             " jb                     1b             \n\t"
             ::"r"(dest), "r"(src1), "r"(src2), "r" ((x86_reg)width-15)
-            : "memory", "%"REG_a""
+            : "memory", XMM_CLOBBERS("xmm0", "xmm1", "xmm2",) "%"REG_a
         );
 #else
         __asm__(
