@@ -31,7 +31,7 @@
 
 #include "texturedsp.h"
 
-#define RGBA(r, g, b, a) (r) | ((g) << 8) | ((b) << 16) | ((a) << 24)
+#define RGBA(r, g, b, a) ((r) | ((g) << 8) | ((b) << 16) | ((a) << 24))
 
 static av_always_inline void extract_color(uint32_t colors[4],
                                            uint16_t color0,
