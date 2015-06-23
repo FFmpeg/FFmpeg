@@ -421,7 +421,7 @@ int avio_check(const char *url, int flags)
     return ret;
 }
 
-int avio_move(const char *url_src, const char *url_dst)
+int avpriv_io_move(const char *url_src, const char *url_dst)
 {
     URLContext *h_src, *h_dst;
     int ret = ffurl_alloc(&h_src, url_src, AVIO_FLAG_READ_WRITE, NULL);
@@ -443,7 +443,7 @@ int avio_move(const char *url_src, const char *url_dst)
     return ret;
 }
 
-int avio_delete(const char *url)
+int avpriv_io_delete(const char *url)
 {
     URLContext *h;
     int ret = ffurl_alloc(&h, url, AVIO_FLAG_WRITE, NULL);

@@ -238,7 +238,7 @@ int avio_check(const char *url, int flags);
  * @param url_dst new url to resource if the operation succeeded
  * @return >=0 on success or negative on error.
  */
-int avio_move(const char *url_src, const char *url_dst);
+int avpriv_io_move(const char *url_src, const char *url_dst);
 
 /**
  * Delete a resource.
@@ -246,7 +246,7 @@ int avio_move(const char *url_src, const char *url_dst);
  * @param url resource to be deleted.
  * @return >=0 on success or negative on error.
  */
-int avio_delete(const char *url);
+int avpriv_io_delete(const char *url);
 
 /**
  * Open directory for reading.
