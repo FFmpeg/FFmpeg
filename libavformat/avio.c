@@ -485,6 +485,7 @@ int avio_open_dir(AVIODirContext **s, const char *url, AVDictionary **options)
     if (ret < 0)
         goto fail;
 
+    h->is_connected = 1;
     ctx->url_context = h;
     *s = ctx;
     return 0;
