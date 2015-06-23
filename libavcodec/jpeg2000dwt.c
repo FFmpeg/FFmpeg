@@ -88,9 +88,9 @@ static void sd_1d53(int *p, int i0, int i1)
 
     extend53(p, i0, i1);
 
-    for (i = (i0+1)/2 - 1; i < (i1+1)/2; i++)
+    for (i = ((i0+1)>>1) - 1; i < (i1+1)>>1; i++)
         p[2*i+1] -= (p[2*i] + p[2*i+2]) >> 1;
-    for (i = (i0+1)/2; i < (i1+1)/2; i++)
+    for (i = ((i0+1)>>1); i < (i1+1)>>1; i++)
         p[2*i] += (p[2*i-1] + p[2*i+1] + 2) >> 2;
 }
 
@@ -159,13 +159,13 @@ static void sd_1d97_float(float *p, int i0, int i1)
     extend97_float(p, i0, i1);
     i0++; i1++;
 
-    for (i = i0/2 - 2; i < i1/2 + 1; i++)
+    for (i = (i0>>1) - 2; i < (i1>>1) + 1; i++)
         p[2*i+1] -= 1.586134 * (p[2*i] + p[2*i+2]);
-    for (i = i0/2 - 1; i < i1/2 + 1; i++)
+    for (i = (i0>>1) - 1; i < (i1>>1) + 1; i++)
         p[2*i] -= 0.052980 * (p[2*i-1] + p[2*i+1]);
-    for (i = i0/2 - 1; i < i1/2; i++)
+    for (i = (i0>>1) - 1; i < (i1>>1); i++)
         p[2*i+1] += 0.882911 * (p[2*i] + p[2*i+2]);
-    for (i = i0/2; i < i1/2; i++)
+    for (i = (i0>>1); i < (i1>>1); i++)
         p[2*i] += 0.443506 * (p[2*i-1] + p[2*i+1]);
 }
 
@@ -235,13 +235,13 @@ static void sd_1d97_int(int *p, int i0, int i1)
     extend97_int(p, i0, i1);
     i0++; i1++;
 
-    for (i = i0/2 - 2; i < i1/2 + 1; i++)
+    for (i = (i0>>1) - 2; i < (i1>>1) + 1; i++)
         p[2 * i + 1] -= (I_LFTG_ALPHA * (p[2 * i]     + p[2 * i + 2]) + (1 << 15)) >> 16;
-    for (i = i0/2 - 1; i < i1/2 + 1; i++)
+    for (i = (i0>>1) - 1; i < (i1>>1) + 1; i++)
         p[2 * i]     -= (I_LFTG_BETA  * (p[2 * i - 1] + p[2 * i + 1]) + (1 << 15)) >> 16;
-    for (i = i0/2 - 1; i < i1/2; i++)
+    for (i = (i0>>1) - 1; i < (i1>>1); i++)
         p[2 * i + 1] += (I_LFTG_GAMMA * (p[2 * i]     + p[2 * i + 2]) + (1 << 15)) >> 16;
-    for (i = i0/2; i < i1/2; i++)
+    for (i = (i0>>1); i < (i1>>1); i++)
         p[2 * i]     += (I_LFTG_DELTA * (p[2 * i - 1] + p[2 * i + 1]) + (1 << 15)) >> 16;
 }
 
@@ -317,9 +317,9 @@ static void sr_1d53(int *p, int i0, int i1)
 
     extend53(p, i0, i1);
 
-    for (i = i0 / 2; i < i1 / 2 + 1; i++)
+    for (i = (i0 >> 1); i < (i1 >> 1) + 1; i++)
         p[2 * i] -= (p[2 * i - 1] + p[2 * i + 1] + 2) >> 2;
-    for (i = i0 / 2; i < i1 / 2; i++)
+    for (i = (i0 >> 1); i < (i1 >> 1); i++)
         p[2 * i + 1] += (p[2 * i] + p[2 * i + 2]) >> 1;
 }
 
@@ -386,16 +386,16 @@ static void sr_1d97_float(float *p, int i0, int i1)
 
     extend97_float(p, i0, i1);
 
-    for (i = i0 / 2 - 1; i < i1 / 2 + 2; i++)
+    for (i = (i0 >> 1) - 1; i < (i1 >> 1) + 2; i++)
         p[2 * i]     -= F_LFTG_DELTA * (p[2 * i - 1] + p[2 * i + 1]);
     /* step 4 */
-    for (i = i0 / 2 - 1; i < i1 / 2 + 1; i++)
+    for (i = (i0 >> 1) - 1; i < (i1 >> 1) + 1; i++)
         p[2 * i + 1] -= F_LFTG_GAMMA * (p[2 * i]     + p[2 * i + 2]);
     /*step 5*/
-    for (i = i0 / 2; i < i1 / 2 + 1; i++)
+    for (i = (i0 >> 1); i < (i1 >> 1) + 1; i++)
         p[2 * i]     += F_LFTG_BETA  * (p[2 * i - 1] + p[2 * i + 1]);
     /* step 6 */
-    for (i = i0 / 2; i < i1 / 2; i++)
+    for (i = (i0 >> 1); i < (i1 >> 1); i++)
         p[2 * i + 1] += F_LFTG_ALPHA * (p[2 * i]     + p[2 * i + 2]);
 }
 
@@ -463,16 +463,16 @@ static void sr_1d97_int(int32_t *p, int i0, int i1)
 
     extend97_int(p, i0, i1);
 
-    for (i = i0 / 2 - 1; i < i1 / 2 + 2; i++)
+    for (i = (i0 >> 1) - 1; i < (i1 >> 1) + 2; i++)
         p[2 * i]     -= (I_LFTG_DELTA * (p[2 * i - 1] + p[2 * i + 1]) + (1 << 15)) >> 16;
     /* step 4 */
-    for (i = i0 / 2 - 1; i < i1 / 2 + 1; i++)
+    for (i = (i0 >> 1) - 1; i < (i1 >> 1) + 1; i++)
         p[2 * i + 1] -= (I_LFTG_GAMMA * (p[2 * i]     + p[2 * i + 2]) + (1 << 15)) >> 16;
     /*step 5*/
-    for (i = i0 / 2; i < i1 / 2 + 1; i++)
+    for (i = (i0 >> 1); i < (i1 >> 1) + 1; i++)
         p[2 * i]     += (I_LFTG_BETA  * (p[2 * i - 1] + p[2 * i + 1]) + (1 << 15)) >> 16;
     /* step 6 */
-    for (i = i0 / 2; i < i1 / 2; i++)
+    for (i = (i0 >> 1); i < (i1 >> 1); i++)
         p[2 * i + 1] += (I_LFTG_ALPHA * (p[2 * i]     + p[2 * i + 2]) + (1 << 15)) >> 16;
 }
 
