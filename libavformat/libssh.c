@@ -204,6 +204,9 @@ static av_cold int libssh_connect(URLContext *h, const char *url, char *path, si
                  path, path_size,
                  url);
 
+    if (!(*path))
+        av_strlcpy(path, "/", path_size);
+
     // a port of 0 will use a port from ~/.ssh/config or the default value 22
     if (port < 0 || port > 65535)
         port = 0;
