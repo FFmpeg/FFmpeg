@@ -392,6 +392,8 @@
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_spp.c">
     </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_ssim.c">
+    </ClCompile>
     <ClCompile Include="..\libavfilter\vf_stereo3d.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_super2xsai.c">
