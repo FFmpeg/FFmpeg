@@ -117,6 +117,7 @@ OBJS-$(CONFIG_DELOGO_FILTER)                 += vf_delogo.o
 OBJS-$(CONFIG_DESHAKE_FILTER)                += vf_deshake.o
 OBJS-$(CONFIG_DETELECINE_FILTER)             += vf_detelecine.o
 OBJS-$(CONFIG_DRAWBOX_FILTER)                += vf_drawbox.o
+OBJS-$(CONFIG_DRAWGRAPH_FILTER)              += f_drawgraph.o
 OBJS-$(CONFIG_DRAWGRID_FILTER)               += vf_drawbox.o
 OBJS-$(CONFIG_DRAWTEXT_FILTER)               += vf_drawtext.o
 OBJS-$(CONFIG_ELBG_FILTER)                   += vf_elbg.o
@@ -237,6 +238,7 @@ OBJS-$(CONFIG_TESTSRC_FILTER)                += vsrc_testsrc.o
 OBJS-$(CONFIG_NULLSINK_FILTER)               += vsink_nullsink.o
 
 # multimedia filters
+OBJS-$(CONFIG_ADRAWGRAPH_FILTER)             += f_drawgraph.o
 OBJS-$(CONFIG_AVECTORSCOPE_FILTER)           += avf_avectorscope.o
 OBJS-$(CONFIG_CONCAT_FILTER)                 += avf_concat.o
 OBJS-$(CONFIG_SHOWCQT_FILTER)                += avf_showcqt.o

@@ -4000,6 +4000,105 @@ drawbox=x=-t:y=0.5*(ih-iw/2.4)-t:w=iw+t*2:h=iw/2.4+t*2:t=2:c=red
 @end example
 @end itemize
 
+@section drawgraph, adrawgraph
+
+Draw a graph using input video or audio metadata.
+
+It accepts the following parameters:
+
+@table @option
+@item m1
+Set 1st frame metadata key from which metadata values will be used to draw a graph.
+
+@item fg1
+Set 1st foreground color expression.
+
+@item m2
+Set 2nd frame metadata key from which metadata values will be used to draw a graph.
+
+@item fg2
+Set 2nd foreground color expression.
+
+@item m3
+Set 3rd frame metadata key from which metadata values will be used to draw a graph.
+
+@item fg3
+Set 3rd foreground color expression.
+
+@item m4
+Set 4th frame metadata key from which metadata values will be used to draw a graph.
+
+@item fg4
+Set 4th foreground color expression.
+
+@item min
+Set minimal value of metadata value.
+
+@item max
+Set maximal value of metadata value.
+
+@item bg
+Set graph background color. Default is white.
+
+@item mode
+Set graph mode.
+
+Available values for mode is:
+@table @samp
+@item bar
+@item dot
+@item line
+@end table
+
+Default is @code{line}.
+
+@item slide
+Set slide mode.
+
+Available values for slide is:
+@table @samp
+@item frame
+Draw new frame when right border is reached.
+
+@item replace
+Replace old columns with new ones.
+
+@item scroll
+Scroll from right to left.
+@end table
+
+Default is @code{frame}.
+
+@item size
+Set size of graph video. For the syntax of this option, check the
+@ref{video size syntax,,"Video size" section in the ffmpeg-utils manual,ffmpeg-utils}.
+The default value is @code{900x256}.
+
+The foreground color expressions can use the following variables:
+@table @option
+@item MIN
+Minimal value of metadata value.
+
+@item MAX
+Maximal value of metadata value.
+
+@item VAL
+Current metadata key value.
+@end table
+
+The color is defined as 0xAABBGGRR.
+@end table
+
+Example using metadata from @ref{signalstats} filter:
+@example
+signalstats,drawgraph=lavfi.signalstats.YAVG:min=0:max=255
+@end example
+
+Example using metadata from @ref{ebur128} filter:
+@example
+ebur128=metadata=1,adrawgraph=lavfi.r128.M:min=-120:max=5
+@end example
+
 @section drawgrid
 
 Draw a grid on the input image.
@@ -8639,6 +8738,7 @@ Swap the second and third planes of the input:
 ffmpeg -i INPUT -vf shuffleplanes=0:2:1:3 OUTPUT
 @end example
 
+@anchor{signalstats}
 @section signalstats
 Evaluate various visual metrics that assist in determining issues associated
 with the digitization of analog video media.
@@ -11069,6 +11169,7 @@ do not have exactly the same duration in the first file.
 
 @end itemize
 
+@anchor{ebur128}
 @section ebur128
 
 EBU R128 scanner filter. This filter takes an audio stream as input and outputs
