@@ -327,7 +327,7 @@ static int read_header(AVFormatContext *s)
 
             b->data_start = avio_tell(s->pb);
 
-            if ((major != 1 || minor) && !bfstm)
+            if (!bfstm && (major != 1 || minor))
                 avpriv_request_sample(s, "Version %d.%d", major, minor);
 
             return 0;
