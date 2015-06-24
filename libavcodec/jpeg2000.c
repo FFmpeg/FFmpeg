@@ -395,23 +395,23 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
                 /* TODO: Verify with previous count of codeblocks per band */
 
                 /* Compute P_x0 */
-                prec->coord[0][0] = ((band->coord[0][0] >> reslevel->log2_prec_width) + precno % reslevel->num_precincts_x) *
+                prec->coord[0][0] = ((band->coord[0][0] >> log2_band_prec_width) + precno % reslevel->num_precincts_x) *
                                     (1 << log2_band_prec_width);
-                prec->coord[0][0] = FFMAX(prec->coord[0][0], band->coord[0][0]);
 
                 /* Compute P_y0 */
-                prec->coord[1][0] = ((band->coord[1][0] >> reslevel->log2_prec_height) + precno / reslevel->num_precincts_x) *
+                prec->coord[1][0] = ((band->coord[1][0] >> log2_band_prec_height) + precno / reslevel->num_precincts_x) *
                                     (1 << log2_band_prec_height);
-                prec->coord[1][0] = FFMAX(prec->coord[1][0], band->coord[1][0]);
 
                 /* Compute P_x1 */
                 prec->coord[0][1] = prec->coord[0][0] +
                                     (1 << log2_band_prec_width);
+                prec->coord[0][0] = FFMAX(prec->coord[0][0], band->coord[0][0]);
                 prec->coord[0][1] = FFMIN(prec->coord[0][1], band->coord[0][1]);
 
                 /* Compute P_y1 */
                 prec->coord[1][1] = prec->coord[1][0] +
                                     (1 << log2_band_prec_height);
+                prec->coord[1][0] = FFMAX(prec->coord[1][0], band->coord[1][0]);
                 prec->coord[1][1] = FFMIN(prec->coord[1][1], band->coord[1][1]);
 
                 prec->nb_codeblocks_width =
