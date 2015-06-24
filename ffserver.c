@@ -209,6 +209,7 @@ static void close_connection(HTTPContext *c);
 
 /* HTTP handling */
 static int handle_connection(HTTPContext *c);
+static inline void print_stream_params(AVIOContext *pb, FFServerStream *stream);
 static void compute_status(HTTPContext *c);
 static int open_input_stream(HTTPContext *c, const char *info);
 static int http_parse_request(HTTPContext *c);
@@ -1750,6 +1751,52 @@ static void fmt_bytecount(AVIOContext *pb, int64_t count)
     avio_printf(pb, "%"PRId64"%c", count, *s);
 }
 
+static inline void print_stream_params(AVIOContext *pb, FFServerStream *stream)
+{
+    int i, stream_no;
+    const char *type = "unknown";
+    char parameters[64];
+    AVStream *st;
+    AVCodec *codec;
+
+    stream_no = stream->nb_streams;
+
+    avio_printf(pb, "<table cellspacing=0 cellpadding=4><tr><th>Stream<th>"
+                    "type<th>kbits/s<th align=left>codec<th align=left>"
+                    "Parameters\n");
+
+    for (i = 0; i < stream_no; i++) {
+        st = stream->streams[i];
+        codec = avcodec_find_encoder(st->codec->codec_id);
+
+        parameters[0] = 0;
+
+        switch(st->codec->codec_type) {
+        case AVMEDIA_TYPE_AUDIO:
+            type = "audio";
+            snprintf(parameters, sizeof(parameters), "%d channel(s), %d Hz",
+                     st->codec->channels, st->codec->sample_rate);
+            break;
+        case AVMEDIA_TYPE_VIDEO:
+            type = "video";
+            snprintf(parameters, sizeof(parameters),
+                     "%dx%d, q=%d-%d, fps=%d", st->codec->width,
+                     st->codec->height, st->codec->qmin, st->codec->qmax,
+                     st->codec->time_base.den / st->codec->time_base.num);
+            break;
+        default:
+            abort();
+        }
+
+        avio_printf(pb, "<tr><td align=right>%d<td>%s<td align=right>%d"
+                        "<td>%s<td>%s\n",
+                    i, type, st->codec->bit_rate/1000,
+                    codec ? codec->name : "", parameters);
+     }
+
+     avio_printf(pb, "</table>\n");
+}
+
 static void compute_status(HTTPContext *c)
 {
     HTTPContext *c1;
@@ -1920,42 +1967,7 @@ static void compute_status(HTTPContext *c)
             avio_printf(pb, "<p>");
         }
 
-        avio_printf(pb, "<table cellspacing=0 cellpadding=4><tr><th>Stream<th>"
-                        "type<th>kbits/s<th align=left>codec<th align=left>"
-                        "Parameters\n");
-
-        for (i = 0; i < stream->nb_streams; i++) {
-            AVStream *st = stream->streams[i];
-            AVCodec *codec = avcodec_find_encoder(st->codec->codec_id);
-            const char *type = "unknown";
-            char parameters[64];
-
-            parameters[0] = 0;
-
-            switch(st->codec->codec_type) {
-            case AVMEDIA_TYPE_AUDIO:
-                type = "audio";
-                snprintf(parameters, sizeof(parameters), "%d channel(s), %d Hz",
-                         st->codec->channels, st->codec->sample_rate);
-                break;
-            case AVMEDIA_TYPE_VIDEO:
-                type = "video";
-                snprintf(parameters, sizeof(parameters),
-                         "%dx%d, q=%d-%d, fps=%d", st->codec->width,
-                         st->codec->height, st->codec->qmin, st->codec->qmax,
-                         st->codec->time_base.den / st->codec->time_base.num);
-                break;
-            default:
-                abort();
-            }
-
-            avio_printf(pb, "<tr><td align=right>%d<td>%s<td align=right>%d"
-                            "<td>%s<td>%s\n",
-                        i, type, st->codec->bit_rate/1000,
-                        codec ? codec->name : "", parameters);
-        }
-
-        avio_printf(pb, "</table>\n");
+        print_stream_params(pb, stream);
         stream = stream->next;
     }
 
