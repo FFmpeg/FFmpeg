@@ -289,7 +289,8 @@ do {                                                                            
 
         s->hwaccel_context = vdpau_ctx;
     } else
-    if (av_vdpau_bind_context(s, ctx->device, ctx->get_proc_address, 0))
+    if (av_vdpau_bind_context(s, ctx->device, ctx->get_proc_address,
+                              AV_HWACCEL_FLAG_IGNORE_LEVEL))
         goto fail;
 
     ctx->get_information_string(&vendor);
