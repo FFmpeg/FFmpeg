@@ -439,8 +439,8 @@ static int get_cox(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *c)
         return AVERROR_INVALIDDATA;
     }
 
-    if (c->log2_cblk_width > 6 || c->log2_cblk_height > 6) {
-        avpriv_request_sample(s->avctx, "cblk size > 64");
+    if (c->log2_cblk_width > 7 || c->log2_cblk_height > 7) {
+        avpriv_request_sample(s->avctx, "cblk size > 128");
         return AVERROR_PATCHWELCOME;
     }
 
