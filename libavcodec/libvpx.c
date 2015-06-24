@@ -40,7 +40,7 @@ enum AVPixelFormat ff_vpx_imgfmt_to_pixfmt(vpx_img_fmt_t img)
     case VPX_IMG_FMT_I422:      return AV_PIX_FMT_YUV422P;
     case VPX_IMG_FMT_I444:      return AV_PIX_FMT_YUV444P;
     case VPX_IMG_FMT_444A:      return AV_PIX_FMT_YUVA444P;
-#ifdef VPX_IMAGE_ABI_VERSION >= 3
+#if VPX_IMAGE_ABI_VERSION >= 3
     case VPX_IMG_FMT_I440:      return AV_PIX_FMT_YUV440P;
     case VPX_IMG_FMT_I42016:    return AV_PIX_FMT_YUV420P16BE;
     case VPX_IMG_FMT_I42216:    return AV_PIX_FMT_YUV422P16BE;
@@ -68,7 +68,7 @@ vpx_img_fmt_t ff_vpx_pixfmt_to_imgfmt(enum AVPixelFormat pix)
     case AV_PIX_FMT_YUV422P:      return VPX_IMG_FMT_I422;
     case AV_PIX_FMT_YUV444P:      return VPX_IMG_FMT_I444;
     case AV_PIX_FMT_YUVA444P:     return VPX_IMG_FMT_444A;
-#ifdef VPX_IMAGE_ABI_VERSION >= 3
+#if VPX_IMAGE_ABI_VERSION >= 3
     case AV_PIX_FMT_YUV440P:      return VPX_IMG_FMT_I440;
     case AV_PIX_FMT_YUV420P16BE:  return VPX_IMG_FMT_I42016;
     case AV_PIX_FMT_YUV422P16BE:  return VPX_IMG_FMT_I42216;
