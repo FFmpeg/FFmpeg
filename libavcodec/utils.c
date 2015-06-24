@@ -2893,6 +2893,7 @@ static enum AVCodecID remap_deprecated_codec_id(enum AVCodecID id)
         case AV_CODEC_ID_OPUS_DEPRECATED                : return AV_CODEC_ID_OPUS;
         case AV_CODEC_ID_TAK_DEPRECATED                 : return AV_CODEC_ID_TAK;
         case AV_CODEC_ID_PAF_AUDIO_DEPRECATED           : return AV_CODEC_ID_PAF_AUDIO;
+        case AV_CODEC_ID_PCM_S16BE_PLANAR_DEPRECATED    : return AV_CODEC_ID_PCM_S16BE_PLANAR;
         case AV_CODEC_ID_PCM_S24LE_PLANAR_DEPRECATED    : return AV_CODEC_ID_PCM_S24LE_PLANAR;
         case AV_CODEC_ID_PCM_S32LE_PLANAR_DEPRECATED    : return AV_CODEC_ID_PCM_S32LE_PLANAR;
         case AV_CODEC_ID_ADPCM_VIMA_DEPRECATED          : return AV_CODEC_ID_ADPCM_VIMA;
