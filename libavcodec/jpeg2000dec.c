@@ -439,8 +439,8 @@ static int get_cox(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *c)
         return AVERROR_INVALIDDATA;
     }
 
-    if (c->log2_cblk_width > 6 || c->log2_cblk_height > 6) {
-        avpriv_request_sample(s->avctx, "cblk size > 64");
+    if (c->log2_cblk_width > 7 || c->log2_cblk_height > 7) {
+        avpriv_request_sample(s->avctx, "cblk size > 128");
         return AVERROR_PATCHWELCOME;
     }
 
@@ -1436,8 +1436,14 @@ static void dequantization_int(int x, int y, Jpeg2000Cblk *cblk,
     for (j = 0; j < (cblk->coord[1][1] - cblk->coord[1][0]); ++j) {
         int32_t *datap = &comp->i_data[(comp->coord[0][1] - comp->coord[0][0]) * (y + j) + x];
         int *src = t1->data[j];
-        for (i = 0; i < w; ++i)
-            datap[i] = (src[i] * band->i_stepsize) / 32768;
+        if (band->i_stepsize == 16384) {
+            for (i = 0; i < w; ++i)
+                datap[i] = src[i] / 2;
+        } else {
+            // This should be VERY uncommon
+            for (i = 0; i < w; ++i)
+                datap[i] = (src[i] * (int64_t)band->i_stepsize) / 32768;
+        }
     }
 }
 
@@ -1451,7 +1457,7 @@ static void dequantization_int_97(int x, int y, Jpeg2000Cblk *cblk,
         int32_t *datap = &comp->i_data[(comp->coord[0][1] - comp->coord[0][0]) * (y + j) + x];
         int *src = t1->data[j];
         for (i = 0; i < w; ++i)
-            datap[i] = (src[i] * band->i_stepsize + (1<<14)) >> 15;
+            datap[i] = (src[i] * (int64_t)band->i_stepsize + (1<<14)) >> 15;
     }
 }
 
