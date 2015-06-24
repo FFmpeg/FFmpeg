@@ -1075,9 +1075,8 @@ static int jpeg2000_decode_packets(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile
         ok_reslevel = 1;
         for (reslevelno = 0; ok_reslevel; reslevelno++) {
             ok_reslevel = 0;
-
-            step_x = 32;
-            step_y = 32;
+            step_x = 30;
+            step_y = 30;
             for (compno = 0; compno < s->ncomponents; compno++) {
                 Jpeg2000Component *comp     = tile->comp + compno;
                 Jpeg2000CodingStyle *codsty = tile->codsty + compno;
