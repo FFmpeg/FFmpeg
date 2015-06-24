@@ -124,7 +124,7 @@ enum Jpeg2000Quantsty { // quantization style
 
 typedef struct Jpeg2000T1Context {
     int data[JPEG2000_MAX_CBLKW][JPEG2000_MAX_CBLKH];
-    int flags[JPEG2000_MAX_CBLKW + 2][JPEG2000_MAX_CBLKH + 2];
+    uint16_t flags[JPEG2000_MAX_CBLKW + 2][JPEG2000_MAX_CBLKH + 2];
     MqcState mqc;
 } Jpeg2000T1Context;
 
