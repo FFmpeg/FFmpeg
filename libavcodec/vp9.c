@@ -594,7 +594,7 @@ static int decode_frame_header(AVCodecContext *ctx,
                 av_log(ctx, AV_LOG_ERROR, "Invalid sync code\n");
                 return AVERROR_INVALIDDATA;
             }
-            if (ctx->profile == 1) {
+            if (ctx->profile >= 1) {
                 if ((fmt = read_colorspace_details(ctx)) < 0)
                     return fmt;
             } else {
