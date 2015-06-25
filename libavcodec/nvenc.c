@@ -881,9 +881,9 @@ static int nvenc_copy_frame(NV_ENC_LOCK_INPUT_BUFFER *in, const AVFrame *frame)
                             frame->width, frame->height);
         buf += off;
 
-        av_image_copy_plane(buf, in->pitch >> 1,
+        av_image_copy_plane(buf, in->pitch,
                             frame->data[1], frame->linesize[1],
-                            frame->width >> 1, frame->height >> 1);
+                            frame->width, frame->height >> 1);
         break;
     case AV_PIX_FMT_YUV444P:
         av_image_copy_plane(buf, in->pitch,
