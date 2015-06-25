@@ -2810,11 +2810,7 @@ ln_s="ln -s -f"
 nm_default="nm -g"
 objformat="elf"
 pkg_config_default=pkg-config
-if ranlib 2>&1 | grep -q "\-D "; then
-    ranlib_default="ranlib -D"
-else
-    ranlib_default="ranlib"
-fi
+ranlib_default="ranlib"
 strip_default="strip"
 yasmexe_default="yasm"
 windres_default="windres"
@@ -3188,7 +3184,11 @@ cc_default="${cross_prefix}${cc_default}"
 cxx_default="${cross_prefix}${cxx_default}"
 nm_default="${cross_prefix}${nm_default}"
 pkg_config_default="${cross_prefix}${pkg_config_default}"
-ranlib_default="${cross_prefix}${ranlib_default}"
+if ${cross_prefix}${ranlib_default} 2>&1 | grep -q "\-D "; then
+    ranlib_default="${cross_prefix}${ranlib_default} -D"
+else
+    ranlib_default="${cross_prefix}${ranlib_default}"
+fi
 strip_default="${cross_prefix}${strip_default}"
 windres_default="${cross_prefix}${windres_default}"
 
