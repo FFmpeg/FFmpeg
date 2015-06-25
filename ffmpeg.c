@@ -322,8 +322,9 @@ sigterm_handler(int sig)
     received_nb_signals++;
     term_exit_sigsafe();
     if(received_nb_signals > 3) {
-        write(STDERR_FILENO, "Received > 3 system signals, hard exiting\n",
-                      strlen("Received > 3 system signals, hard exiting\n"));
+        write(2/*STDERR_FILENO*/, "Received > 3 system signals, hard exiting\n",
+                           strlen("Received > 3 system signals, hard exiting\n"));
+
         exit(123);
     }
 }
