@@ -461,6 +461,13 @@ static int get_cox(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *c)
             byte = bytestream2_get_byte(&s->g);
             c->log2_prec_widths[i]  =  byte       & 0x0F;    // precinct PPx
             c->log2_prec_heights[i] = (byte >> 4) & 0x0F;    // precinct PPy
+            if (i)
+                if (c->log2_prec_widths[i] == 0 || c->log2_prec_heights[i] == 0) {
+                    av_log(s->avctx, AV_LOG_ERROR, "PPx %d PPy %d invalid\n",
+                           c->log2_prec_widths[i], c->log2_prec_heights[i]);
+                    c->log2_prec_widths[i] = c->log2_prec_heights[i] = 1;
+                    return AVERROR_INVALIDDATA;
+                }
         }
     } else {
         memset(c->log2_prec_widths , 15, sizeof(c->log2_prec_widths ));
@@ -1068,9 +1075,8 @@ static int jpeg2000_decode_packets(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile
         ok_reslevel = 1;
         for (reslevelno = 0; ok_reslevel; reslevelno++) {
             ok_reslevel = 0;
-
-            step_x = 32;
-            step_y = 32;
+            step_x = 30;
+            step_y = 30;
             for (compno = 0; compno < s->ncomponents; compno++) {
                 Jpeg2000Component *comp     = tile->comp + compno;
                 Jpeg2000CodingStyle *codsty = tile->codsty + compno;
