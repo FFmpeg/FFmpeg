@@ -1880,6 +1880,7 @@ static av_cold int decode_init_mp3on4(AVCodecContext * avctx)
         s->mp3decctx[i]->adu_mode = 1;
         s->mp3decctx[i]->avctx = avctx;
         s->mp3decctx[i]->mpadsp = s->mp3decctx[0]->mpadsp;
+        s->mp3decctx[i]->fdsp = s->mp3decctx[0]->fdsp;
     }
 
     return 0;
