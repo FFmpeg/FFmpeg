@@ -530,7 +530,7 @@ static void ffmpeg_cleanup(int ret)
     avformat_network_deinit();
 
     if (received_sigterm) {
-        av_log(NULL, AV_LOG_INFO, "Received signal %d: terminating.\n",
+        av_log(NULL, AV_LOG_INFO, "Exiting normally, received signal %d.\n",
                (int) received_sigterm);
     } else if (ret && transcode_init_done) {
         av_log(NULL, AV_LOG_INFO, "Conversion failed!\n");
