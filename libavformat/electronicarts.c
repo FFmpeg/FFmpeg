@@ -59,6 +59,9 @@
 #define MVhd_TAG MKTAG('M', 'V', 'h', 'd')
 #define MV0K_TAG MKTAG('M', 'V', '0', 'K')
 #define MV0F_TAG MKTAG('M', 'V', '0', 'F')
+#define AVhd_TAG MKTAG('A', 'V', 'h', 'd')
+#define AV0K_TAG MKTAG('A', 'V', '0', 'K')
+#define AV0F_TAG MKTAG('A', 'V', '0', 'F')
 #define MVIh_TAG MKTAG('M', 'V', 'I', 'h')  /* CMV header */
 #define MVIf_TAG MKTAG('M', 'V', 'I', 'f')  /* CMV I-frame */
 #define AVP6_TAG MKTAG('A', 'V', 'P', '6')
@@ -74,7 +77,7 @@ typedef struct VideoProperties {
 typedef struct EaDemuxContext {
     int big_endian;
 
-    VideoProperties video;
+    VideoProperties video, alpha;
 
     enum AVCodecID audio_codec;
     int audio_stream_index;
@@ -431,6 +434,10 @@ static int process_ea_header(AVFormatContext *s)
         case MVhd_TAG:
             err = process_video_header_vp6(s, &ea->video);
             break;
+
+        case AVhd_TAG:
+            err = process_video_header_vp6(s, &ea->alpha);
+            break;
         }
 
         if (err < 0) {
@@ -511,7 +518,7 @@ static int ea_read_header(AVFormatContext *s)
     if (process_ea_header(s)<=0)
         return AVERROR(EIO);
 
-    if (init_video_stream(s, &ea->video))
+    if (init_video_stream(s, &ea->video) || init_video_stream(s, &ea->alpha))
         return AVERROR(ENOMEM);
 
     if (ea->audio_codec) {
@@ -672,10 +679,12 @@ static int ea_read_packet(AVFormatContext *s, AVPacket *pkt)
             goto get_video_packet;
 
         case MV0K_TAG:
+        case AV0K_TAG:
         case MPCh_TAG:
         case pIQT_TAG:
             key = AV_PKT_FLAG_KEY;
         case MV0F_TAG:
+        case AV0F_TAG:
 get_video_packet:
             if (!chunk_size)
                 continue;
@@ -689,7 +698,10 @@ get_video_packet:
                 break;
             }
             partial_packet = chunk_type == MVIh_TAG;
-            pkt->stream_index = ea->video.stream_index;
+            if (chunk_type == AV0K_TAG || chunk_type == AV0F_TAG)
+                pkt->stream_index = ea->alpha.stream_index;
+            else
+                pkt->stream_index = ea->video.stream_index;
             pkt->flags       |= key;
             packet_read       = 1;
             break;
