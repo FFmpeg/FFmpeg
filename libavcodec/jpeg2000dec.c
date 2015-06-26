@@ -1163,9 +1163,8 @@ static int jpeg2000_decode_packets(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile
         step_x = 1<<step_x;
         step_y = 1<<step_y;
 
-        //FIXME we could iterate over less than the whole image
-        for (y = 0; y < s->height; y += step_y) {
-            for (x = 0; x < s->width; x += step_x) {
+        for (y = tile->coord[1][0]; y < tile->coord[1][1]; y = (y/step_y + 1)*step_y) {
+            for (x = tile->coord[0][0]; x < tile->coord[0][1]; x = (x/step_x + 1)*step_x) {
                 for (compno = 0; compno < s->ncomponents; compno++) {
                     Jpeg2000Component *comp     = tile->comp + compno;
                     Jpeg2000CodingStyle *codsty = tile->codsty + compno;
@@ -1178,10 +1177,10 @@ static int jpeg2000_decode_packets(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile
                         uint8_t reducedresno = codsty->nreslevels - 1 -reslevelno; //  ==> N_L - r
                         Jpeg2000ResLevel *rlevel = comp->reslevel + reslevelno;
 
-                        if (yc % (1 << (rlevel->log2_prec_height + reducedresno)))
+                        if (yc % (1 << (rlevel->log2_prec_height + reducedresno)) && y != tile->coord[1][0]) //FIXME this is a subset of the check
                             continue;
 
-                        if (xc % (1 << (rlevel->log2_prec_width + reducedresno)))
+                        if (xc % (1 << (rlevel->log2_prec_width + reducedresno)) && x != tile->coord[0][0]) //FIXME this is a subset of the check
                             continue;
 
                         // check if a precinct exists
