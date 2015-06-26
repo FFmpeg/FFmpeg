@@ -183,6 +183,7 @@ typedef struct Jpeg2000Prec {
     Jpeg2000TgtNode *zerobits;
     Jpeg2000TgtNode *cblkincl;
     Jpeg2000Cblk *cblk;
+    int decoded_layers;
     uint16_t coord[2][2]; // border coordinates {{x0, x1}, {y0, y1}}
 } Jpeg2000Prec; // precinct
 

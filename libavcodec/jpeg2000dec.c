@@ -893,6 +893,10 @@ static int jpeg2000_decode_packet(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
     int bandno, cblkno, ret, nb_code_blocks;
     int cwsno;
 
+    if (layno < rlevel->band[0].prec[precno].decoded_layers)
+        return 0;
+    rlevel->band[0].prec[precno].decoded_layers = layno + 1;
+
     if (bytestream2_get_bytes_left(&s->g) == 0 && s->bit_index == 8) {
         if (*tp_index < FF_ARRAY_ELEMS(tile->tile_part) - 1) {
             s->g = tile->tile_part[++(*tp_index)].tpg;
@@ -1026,7 +1030,10 @@ static int jpeg2000_decode_packet(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
     return 0;
 }
 
-static int jpeg2000_decode_packets(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile)
+static int jpeg2000_decode_packets_po_iteration(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
+                                             int RSpoc, int CSpoc,
+                                             int LYEpoc, int REpoc, int CEpoc,
+                                             int Ppoc)
 {
     int ret = 0;
     int layno, reslevelno, compno, precno, ok_reslevel;
@@ -1034,15 +1041,14 @@ static int jpeg2000_decode_packets(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile
     int tp_index = 0;
     int step_x, step_y;
 
-    s->bit_index = 8;
-    switch (tile->codsty[0].prog_order) {
+    switch (Ppoc) {
     case JPEG2000_PGOD_RLCP:
         av_log(s->avctx, AV_LOG_DEBUG, "Progression order RLCP\n");
         ok_reslevel = 1;
-        for (reslevelno = 0; ok_reslevel; reslevelno++) {
+        for (reslevelno = RSpoc; ok_reslevel && reslevelno < REpoc; reslevelno++) {
             ok_reslevel = 0;
-            for (layno = 0; layno < tile->codsty[0].nlayers; layno++) {
-                for (compno = 0; compno < s->ncomponents; compno++) {
+            for (layno = 0; layno < LYEpoc; layno++) {
+                for (compno = CSpoc; compno < CEpoc; compno++) {
                     Jpeg2000CodingStyle *codsty = tile->codsty + compno;
                     Jpeg2000QuantStyle *qntsty  = tile->qntsty + compno;
                     if (reslevelno < codsty->nreslevels) {
@@ -1064,11 +1070,11 @@ static int jpeg2000_decode_packets(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile
 
     case JPEG2000_PGOD_LRCP:
         av_log(s->avctx, AV_LOG_DEBUG, "Progression order LRCP\n");
-        for (layno = 0; layno < tile->codsty[0].nlayers; layno++) {
+        for (layno = 0; layno < LYEpoc; layno++) {
             ok_reslevel = 1;
-            for (reslevelno = 0; ok_reslevel; reslevelno++) {
+            for (reslevelno = RSpoc; ok_reslevel && reslevelno < REpoc; reslevelno++) {
                 ok_reslevel = 0;
-                for (compno = 0; compno < s->ncomponents; compno++) {
+                for (compno = CSpoc; compno < CEpoc; compno++) {
                     Jpeg2000CodingStyle *codsty = tile->codsty + compno;
                     Jpeg2000QuantStyle *qntsty  = tile->qntsty + compno;
                     if (reslevelno < codsty->nreslevels) {
@@ -1090,14 +1096,14 @@ static int jpeg2000_decode_packets(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile
 
     case JPEG2000_PGOD_CPRL:
         av_log(s->avctx, AV_LOG_DEBUG, "Progression order CPRL\n");
-        for (compno = 0; compno < s->ncomponents; compno++) {
+        for (compno = CSpoc; compno < CEpoc; compno++) {
             Jpeg2000Component *comp     = tile->comp + compno;
             Jpeg2000CodingStyle *codsty = tile->codsty + compno;
             Jpeg2000QuantStyle *qntsty  = tile->qntsty + compno;
             step_x = 32;
             step_y = 32;
 
-            for (reslevelno = 0; reslevelno < codsty->nreslevels; reslevelno++) {
+            for (reslevelno = RSpoc; reslevelno < FFMIN(codsty->nreslevels, REpoc); reslevelno++) {
                 uint8_t reducedresno = codsty->nreslevels - 1 -reslevelno; //  ==> N_L - r
                 Jpeg2000ResLevel *rlevel = comp->reslevel + reslevelno;
                 step_x = FFMIN(step_x, rlevel->log2_prec_width  + reducedresno);
@@ -1108,7 +1114,7 @@ static int jpeg2000_decode_packets(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile
 
             for (y = tile->coord[1][0]; y < tile->coord[1][1]; y = (y/step_y + 1)*step_y) {
                 for (x = tile->coord[0][0]; x < tile->coord[0][1]; x = (x/step_x + 1)*step_x) {
-                    for (reslevelno = 0; reslevelno < codsty->nreslevels; reslevelno++) {
+                    for (reslevelno = RSpoc; reslevelno < FFMIN(codsty->nreslevels, REpoc); reslevelno++) {
                         unsigned prcx, prcy;
                         uint8_t reducedresno = codsty->nreslevels - 1 -reslevelno; //  ==> N_L - r
                         Jpeg2000ResLevel *rlevel = comp->reslevel + reslevelno;
@@ -1135,7 +1141,7 @@ static int jpeg2000_decode_packets(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile
                             continue;
                         }
 
-                        for (layno = 0; layno < tile->codsty[0].nlayers; layno++) {
+                        for (layno = 0; layno < LYEpoc; layno++) {
                             if ((ret = jpeg2000_decode_packet(s, tile, &tp_index, codsty, rlevel,
                                                               precno, layno,
                                                               qntsty->expn + (reslevelno ? 3 * (reslevelno - 1) + 1 : 0),
@@ -1151,11 +1157,11 @@ static int jpeg2000_decode_packets(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile
     case JPEG2000_PGOD_RPCL:
         av_log(s->avctx, AV_LOG_WARNING, "Progression order RPCL\n");
         ok_reslevel = 1;
-        for (reslevelno = 0; ok_reslevel; reslevelno++) {
+        for (reslevelno = RSpoc; ok_reslevel && reslevelno < REpoc; reslevelno++) {
             ok_reslevel = 0;
             step_x = 30;
             step_y = 30;
-            for (compno = 0; compno < s->ncomponents; compno++) {
+            for (compno = CSpoc; compno < CEpoc; compno++) {
                 Jpeg2000Component *comp     = tile->comp + compno;
                 Jpeg2000CodingStyle *codsty = tile->codsty + compno;
 
@@ -1171,7 +1177,7 @@ static int jpeg2000_decode_packets(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile
 
             for (y = tile->coord[1][0]; y < tile->coord[1][1]; y = (y/step_y + 1)*step_y) {
                 for (x = tile->coord[0][0]; x < tile->coord[0][1]; x = (x/step_x + 1)*step_x) {
-                    for (compno = 0; compno < s->ncomponents; compno++) {
+                    for (compno = CSpoc; compno < CEpoc; compno++) {
                         Jpeg2000Component *comp     = tile->comp + compno;
                         Jpeg2000CodingStyle *codsty = tile->codsty + compno;
                         Jpeg2000QuantStyle *qntsty  = tile->qntsty + compno;
@@ -1206,7 +1212,7 @@ static int jpeg2000_decode_packets(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile
                             continue;
                         }
 
-                            for (layno = 0; layno < tile->codsty[0].nlayers; layno++) {
+                            for (layno = 0; layno < LYEpoc; layno++) {
                                 if ((ret = jpeg2000_decode_packet(s, tile, &tp_index,
                                                                 codsty, rlevel,
                                                                 precno, layno,
@@ -1224,12 +1230,12 @@ static int jpeg2000_decode_packets(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile
         av_log(s->avctx, AV_LOG_WARNING, "Progression order PCRL\n");
         step_x = 32;
         step_y = 32;
-        for (compno = 0; compno < s->ncomponents; compno++) {
+        for (compno = CSpoc; compno < CEpoc; compno++) {
             Jpeg2000Component *comp     = tile->comp + compno;
             Jpeg2000CodingStyle *codsty = tile->codsty + compno;
             Jpeg2000QuantStyle *qntsty  = tile->qntsty + compno;
 
-            for (reslevelno = 0; reslevelno < codsty->nreslevels; reslevelno++) {
+            for (reslevelno = RSpoc; reslevelno < FFMIN(codsty->nreslevels, REpoc); reslevelno++) {
                 uint8_t reducedresno = codsty->nreslevels - 1 -reslevelno; //  ==> N_L - r
                 Jpeg2000ResLevel *rlevel = comp->reslevel + reslevelno;
                 step_x = FFMIN(step_x, rlevel->log2_prec_width  + reducedresno);
@@ -1241,14 +1247,14 @@ static int jpeg2000_decode_packets(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile
 
         for (y = tile->coord[1][0]; y < tile->coord[1][1]; y = (y/step_y + 1)*step_y) {
             for (x = tile->coord[0][0]; x < tile->coord[0][1]; x = (x/step_x + 1)*step_x) {
-                for (compno = 0; compno < s->ncomponents; compno++) {
+                for (compno = CSpoc; compno < CEpoc; compno++) {
                     Jpeg2000Component *comp     = tile->comp + compno;
                     Jpeg2000CodingStyle *codsty = tile->codsty + compno;
                     Jpeg2000QuantStyle *qntsty  = tile->qntsty + compno;
                     int xc = x / s->cdx[compno];
                     int yc = y / s->cdy[compno];
 
-                    for (reslevelno = 0; reslevelno < codsty->nreslevels; reslevelno++) {
+                    for (reslevelno = RSpoc; reslevelno < FFMIN(codsty->nreslevels, REpoc); reslevelno++) {
                         unsigned prcx, prcy;
                         uint8_t reducedresno = codsty->nreslevels - 1 -reslevelno; //  ==> N_L - r
                         Jpeg2000ResLevel *rlevel = comp->reslevel + reslevelno;
@@ -1273,7 +1279,7 @@ static int jpeg2000_decode_packets(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile
                             continue;
                         }
 
-                        for (layno = 0; layno < tile->codsty[0].nlayers; layno++) {
+                        for (layno = 0; layno < LYEpoc; layno++) {
                             if ((ret = jpeg2000_decode_packet(s, tile, &tp_index, codsty, rlevel,
                                                               precno, layno,
                                                               qntsty->expn + (reslevelno ? 3 * (reslevelno - 1) + 1 : 0),
@@ -1290,6 +1296,34 @@ static int jpeg2000_decode_packets(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile
         break;
     }
 
+    return ret;
+}
+
+static int jpeg2000_decode_packets(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile)
+{
+    int ret, i;
+
+    s->bit_index = 8;
+    if (tile->poc.nb_poc) {
+        for (i=0; i<tile->poc.nb_poc; i++) {
+            Jpeg2000POCEntry *e = &tile->poc.poc[i];
+            ret = jpeg2000_decode_packets_po_iteration(s, tile,
+                e->RSpoc, e->CSpoc,
+                e->LYEpoc, e->REpoc, e->CEpoc,
+                e->Ppoc
+                );
+            if (ret < 0)
+                return ret;
+        }
+    } else {
+        ret = jpeg2000_decode_packets_po_iteration(s, tile,
+            0, 0,
+            tile->codsty[0].nlayers,
+            33,
+            s->ncomponents,
+            tile->codsty[0].prog_order
+        );
+    }
     /* EOC marker reached */
     bytestream2_skip(&s->g, 2);
 
