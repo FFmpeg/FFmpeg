@@ -1033,12 +1033,11 @@ static int jpeg2000_decode_packet(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
 static int jpeg2000_decode_packets_po_iteration(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
                                              int RSpoc, int CSpoc,
                                              int LYEpoc, int REpoc, int CEpoc,
-                                             int Ppoc)
+                                             int Ppoc, int *tp_index)
 {
     int ret = 0;
     int layno, reslevelno, compno, precno, ok_reslevel;
     int x, y;
-    int tp_index = 0;
     int step_x, step_y;
 
     switch (Ppoc) {
@@ -1056,7 +1055,7 @@ static int jpeg2000_decode_packets_po_iteration(Jpeg2000DecoderContext *s, Jpeg2
                                                 reslevelno;
                         ok_reslevel = 1;
                         for (precno = 0; precno < rlevel->num_precincts_x * rlevel->num_precincts_y; precno++)
-                            if ((ret = jpeg2000_decode_packet(s, tile, &tp_index,
+                            if ((ret = jpeg2000_decode_packet(s, tile, tp_index,
                                                               codsty, rlevel,
                                                               precno, layno,
                                                               qntsty->expn + (reslevelno ? 3 * (reslevelno - 1) + 1 : 0),
@@ -1082,7 +1081,7 @@ static int jpeg2000_decode_packets_po_iteration(Jpeg2000DecoderContext *s, Jpeg2
                                                 reslevelno;
                         ok_reslevel = 1;
                         for (precno = 0; precno < rlevel->num_precincts_x * rlevel->num_precincts_y; precno++)
-                            if ((ret = jpeg2000_decode_packet(s, tile, &tp_index,
+                            if ((ret = jpeg2000_decode_packet(s, tile, tp_index,
                                                               codsty, rlevel,
                                                               precno, layno,
                                                               qntsty->expn + (reslevelno ? 3 * (reslevelno - 1) + 1 : 0),
@@ -1142,7 +1141,7 @@ static int jpeg2000_decode_packets_po_iteration(Jpeg2000DecoderContext *s, Jpeg2
                         }
 
                         for (layno = 0; layno < LYEpoc; layno++) {
-                            if ((ret = jpeg2000_decode_packet(s, tile, &tp_index, codsty, rlevel,
+                            if ((ret = jpeg2000_decode_packet(s, tile, tp_index, codsty, rlevel,
                                                               precno, layno,
                                                               qntsty->expn + (reslevelno ? 3 * (reslevelno - 1) + 1 : 0),
                                                               qntsty->nguardbits)) < 0)
@@ -1213,7 +1212,7 @@ static int jpeg2000_decode_packets_po_iteration(Jpeg2000DecoderContext *s, Jpeg2
                         }
 
                             for (layno = 0; layno < LYEpoc; layno++) {
-                                if ((ret = jpeg2000_decode_packet(s, tile, &tp_index,
+                                if ((ret = jpeg2000_decode_packet(s, tile, tp_index,
                                                                 codsty, rlevel,
                                                                 precno, layno,
                                                                 qntsty->expn + (reslevelno ? 3 * (reslevelno - 1) + 1 : 0),
@@ -1280,7 +1279,7 @@ static int jpeg2000_decode_packets_po_iteration(Jpeg2000DecoderContext *s, Jpeg2
                         }
 
                         for (layno = 0; layno < LYEpoc; layno++) {
-                            if ((ret = jpeg2000_decode_packet(s, tile, &tp_index, codsty, rlevel,
+                            if ((ret = jpeg2000_decode_packet(s, tile, tp_index, codsty, rlevel,
                                                               precno, layno,
                                                               qntsty->expn + (reslevelno ? 3 * (reslevelno - 1) + 1 : 0),
                                                               qntsty->nguardbits)) < 0)
@@ -1302,6 +1301,7 @@ static int jpeg2000_decode_packets_po_iteration(Jpeg2000DecoderContext *s, Jpeg2
 static int jpeg2000_decode_packets(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile)
 {
     int ret, i;
+    int tp_index = 0;
 
     s->bit_index = 8;
     if (tile->poc.nb_poc) {
@@ -1310,7 +1310,7 @@ static int jpeg2000_decode_packets(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile
             ret = jpeg2000_decode_packets_po_iteration(s, tile,
                 e->RSpoc, e->CSpoc,
                 e->LYEpoc, e->REpoc, e->CEpoc,
-                e->Ppoc
+                e->Ppoc, &tp_index
                 );
             if (ret < 0)
                 return ret;
@@ -1321,7 +1321,8 @@ static int jpeg2000_decode_packets(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile
             tile->codsty[0].nlayers,
             33,
             s->ncomponents,
-            tile->codsty[0].prog_order
+            tile->codsty[0].prog_order,
+            &tp_index
         );
     }
     /* EOC marker reached */
