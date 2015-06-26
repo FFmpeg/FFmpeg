@@ -30,6 +30,7 @@
 #include <limits.h>
 
 #include "libavutil/attributes.h"
+#include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
 #include "libavutil/mathematics.h"
 #include "avcodec.h"
@@ -868,7 +869,7 @@ end:
 /* most is hardcoded. should extend to handle all h263 streams */
 int ff_h263_decode_picture_header(MpegEncContext *s)
 {
-    int format, width, height, i;
+    int format, width, height, i, ret;
     uint32_t startcode;
 
     align_get_bits(&s->gb);
@@ -919,8 +920,6 @@ int ff_h263_decode_picture_header(MpegEncContext *s)
         /* H.263v1 */
         width = ff_h263_format[format][0];
         height = ff_h263_format[format][1];
-        if (!width)
-            return -1;
 
         s->pict_type = AV_PICTURE_TYPE_I + get_bits1(&s->gb);
 
@@ -1072,6 +1071,9 @@ int ff_h263_decode_picture_header(MpegEncContext *s)
 
         s->qscale = get_bits(&s->gb, 5);
     }
+
+    if ((ret = av_image_check_size(s->width, s->height, 0, s)) < 0)
+        return ret;
 
     s->mb_width = (s->width  + 15) / 16;
     s->mb_height = (s->height  + 15) / 16;
