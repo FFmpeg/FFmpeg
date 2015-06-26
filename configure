@@ -5157,7 +5157,7 @@ enabled libx264           && { use_pkg_config x264 "stdint.h x264.h" x264_encode
                                  warn "using libx264 without pkg-config"; } } &&
                              { check_cpp_condition x264.h "X264_BUILD >= 118" ||
                                die "ERROR: libx264 must be installed and version must be >= 0.118."; }
-enabled libx265           && require_pkg_config x265 x265.h x265_encoder_encode &&
+enabled libx265           && require_pkg_config x265 x265.h x265_api_get &&
                              { check_cpp_condition x265.h "X265_BUILD >= 57" ||
                                die "ERROR: libx265 version must be >= 57."; }
 enabled libxavs           && require libxavs xavs.h xavs_encoder_encode -lxavs
