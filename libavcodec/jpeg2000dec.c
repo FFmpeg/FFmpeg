@@ -47,6 +47,23 @@
 #define HAD_COC 0x01
 #define HAD_QCC 0x02
 
+#define MAX_POCS 32
+
+typedef struct Jpeg2000POCEntry {
+    uint16_t LYEpoc;
+    uint16_t CSpoc;
+    uint16_t CEpoc;
+    uint8_t RSpoc;
+    uint8_t REpoc;
+    uint8_t Ppoc;
+} Jpeg2000POCEntry;
+
+typedef struct Jpeg2000POC {
+    Jpeg2000POCEntry poc[MAX_POCS];
+    int nb_poc;
+    int is_default;
+} Jpeg2000POC;
+
 typedef struct Jpeg2000TilePart {
     uint8_t tile_index;                 // Tile index who refers the tile-part
     const uint8_t *tp_end;
@@ -60,6 +77,7 @@ typedef struct Jpeg2000Tile {
     uint8_t             properties[4];
     Jpeg2000CodingStyle codsty[4];
     Jpeg2000QuantStyle  qntsty[4];
+    Jpeg2000POC         poc;
     Jpeg2000TilePart    tile_part[256];
     uint16_t tp_idx;                    // Tile-part index
     int coord[2][2];                    // border coordinates {{x0, x1}, {y0, y1}}
@@ -89,6 +107,7 @@ typedef struct Jpeg2000DecoderContext {
 
     Jpeg2000CodingStyle codsty[4];
     Jpeg2000QuantStyle  qntsty[4];
+    Jpeg2000POC         poc;
 
     int             bit_index;
 
@@ -624,6 +643,67 @@ static int get_qcc(Jpeg2000DecoderContext *s, int n, Jpeg2000QuantStyle *q,
     return get_qcx(s, n - 1, q + compno);
 }
 
+static int get_poc(Jpeg2000DecoderContext *s, int size, Jpeg2000POC *p)
+{
+    int i;
+    int elem_size = s->ncomponents <= 257 ? 7 : 9;
+    Jpeg2000POC tmp = {{{0}}};
+
+    if (bytestream2_get_bytes_left(&s->g) < 5 || size < 2 + elem_size) {
+        av_log(s->avctx, AV_LOG_ERROR, "Insufficient space for POC\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    if (elem_size > 7) {
+        avpriv_request_sample(s->avctx, "Fat POC not supported\n");
+        return AVERROR_PATCHWELCOME;
+    }
+
+    tmp.nb_poc = (size - 2) / elem_size;
+    if (tmp.nb_poc > MAX_POCS) {
+        avpriv_request_sample(s->avctx, "Too many POCs (%d)\n", tmp.nb_poc);
+        return AVERROR_PATCHWELCOME;
+    }
+
+    for (i = 0; i<tmp.nb_poc; i++) {
+        Jpeg2000POCEntry *e = &tmp.poc[i];
+        e->RSpoc  = bytestream2_get_byteu(&s->g);
+        e->CSpoc  = bytestream2_get_byteu(&s->g);
+        e->LYEpoc = bytestream2_get_be16u(&s->g);
+        e->REpoc  = bytestream2_get_byteu(&s->g);
+        e->CEpoc  = bytestream2_get_byteu(&s->g);
+        e->Ppoc   = bytestream2_get_byteu(&s->g);
+        if (!e->CEpoc)
+            e->CEpoc = 256;
+        if (e->CEpoc > s->ncomponents)
+            e->CEpoc = s->ncomponents;
+        if (   e->RSpoc >= e->REpoc || e->REpoc > 33
+            || e->CSpoc >= e->CEpoc || e->CEpoc > s->ncomponents
+            || !e->LYEpoc) {
+            av_log(s->avctx, AV_LOG_ERROR, "POC Entry %d is invalid (%d, %d, %d, %d, %d, %d)\n", i,
+                e->RSpoc, e->CSpoc, e->LYEpoc, e->REpoc, e->CEpoc, e->Ppoc
+            );
+            return AVERROR_INVALIDDATA;
+        }
+    }
+
+    if (!p->nb_poc || p->is_default) {
+        *p = tmp;
+    } else {
+        if (p->nb_poc + tmp.nb_poc > MAX_POCS) {
+            av_log(s->avctx, AV_LOG_ERROR, "Insufficient space for POC\n");
+            return AVERROR_INVALIDDATA;
+        }
+        memcpy(p->poc + p->nb_poc, tmp.poc, tmp.nb_poc * sizeof(tmp.poc[0]));
+        p->nb_poc += tmp.nb_poc;
+    }
+
+    p->is_default = 0;
+
+    return 0;
+}
+
+
 /* Get start of tile segment. */
 static int get_sot(Jpeg2000DecoderContext *s, int n)
 {
@@ -668,6 +748,8 @@ static int get_sot(Jpeg2000DecoderContext *s, int n)
         /* copy defaults */
         memcpy(tile->codsty, s->codsty, s->ncomponents * sizeof(Jpeg2000CodingStyle));
         memcpy(tile->qntsty, s->qntsty, s->ncomponents * sizeof(Jpeg2000QuantStyle));
+        memcpy(&tile->poc  , &s->poc  , sizeof(tile->poc));
+        tile->poc.is_default = 1;
     }
 
     return 0;
@@ -1680,6 +1762,7 @@ static void jpeg2000_dec_cleanup(Jpeg2000DecoderContext *s)
     av_freep(&s->tile);
     memset(s->codsty, 0, sizeof(s->codsty));
     memset(s->qntsty, 0, sizeof(s->qntsty));
+    memset(&s->poc  , 0, sizeof(s->poc));
     s->numXtiles = s->numYtiles = 0;
 }
 
@@ -1687,6 +1770,7 @@ static int jpeg2000_read_main_headers(Jpeg2000DecoderContext *s)
 {
     Jpeg2000CodingStyle *codsty = s->codsty;
     Jpeg2000QuantStyle *qntsty  = s->qntsty;
+    Jpeg2000POC         *poc    = &s->poc;
     uint8_t *properties         = s->properties;
 
     for (;;) {
@@ -1753,11 +1837,15 @@ static int jpeg2000_read_main_headers(Jpeg2000DecoderContext *s)
         case JPEG2000_QCD:
             ret = get_qcd(s, len, qntsty, properties);
             break;
+        case JPEG2000_POC:
+            ret = get_poc(s, len, poc);
+            break;
         case JPEG2000_SOT:
             if (!(ret = get_sot(s, len))) {
                 av_assert1(s->curtileno >= 0);
                 codsty = s->tile[s->curtileno].codsty;
                 qntsty = s->tile[s->curtileno].qntsty;
+                poc    = &s->tile[s->curtileno].poc;
                 properties = s->tile[s->curtileno].properties;
             }
             break;
