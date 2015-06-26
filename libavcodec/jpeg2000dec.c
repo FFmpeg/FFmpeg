@@ -994,7 +994,7 @@ static int jpeg2000_decode_packet(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
         if (bytestream2_peek_be16(&s->g) == JPEG2000_EPH)
             bytestream2_skip(&s->g, 2);
         else
-            av_log(s->avctx, AV_LOG_ERROR, "EPH marker not found.\n");
+            av_log(s->avctx, AV_LOG_ERROR, "EPH marker not found. instead %X\n", bytestream2_peek_be32(&s->g));
     }
 
     for (bandno = 0; bandno < rlevel->nbands; bandno++) {
