@@ -781,6 +781,9 @@ typedef struct H264Context {
 
     int missing_fields;
 
+    uint8_t afd;
+    int has_afd;
+
 
     // Timestamp stuff
     int sei_buffering_period_present;   ///< Buffering period SEI flag

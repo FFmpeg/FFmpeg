@@ -132,7 +132,13 @@ static int decode_user_data_itu_t_t35(H264Context *h, int size)
                     return -1;
                 skip_bits(&h->gb, 4);
                 dtg_active_format = get_bits(&h->gb, 4);
+#if FF_API_AFD
+FF_DISABLE_DEPRECATION_WARNINGS
                 h->avctx->dtg_active_format = dtg_active_format;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif /* FF_API_AFD */
+                h->has_afd = 1;
+                h->afd     = dtg_active_format;
             } else {
                 skip_bits(&h->gb, 6);
             }
