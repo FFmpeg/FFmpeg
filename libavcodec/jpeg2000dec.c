@@ -1145,7 +1145,7 @@ static int jpeg2000_decode_packets(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile
         break;
 
     case JPEG2000_PGOD_PCRL:
-        av_log(s->avctx, AV_LOG_WARNING, "Progression order PCRL");
+        av_log(s->avctx, AV_LOG_WARNING, "Progression order PCRL\n");
         step_x = 32;
         step_y = 32;
         for (compno = 0; compno < s->ncomponents; compno++) {
