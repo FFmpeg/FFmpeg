@@ -24,14 +24,39 @@
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/mem.h"
+#include "libavutil/common.h"
 #include "ass_split.h"
 #include "ass.h"
 
+#define STYLE_FLAG_BOLD         (1<<0)
+#define STYLE_FLAG_ITALIC       (1<<1)
+#define STYLE_FLAG_UNDERLINE    (1<<2)
+#define STYLE_RECORD_SIZE       12
+#define SIZE_ADD                10
+
+#define av_bprint_append_any(buf, data, size)   av_bprint_append_data(buf, ((const char*)data), size)
+
+typedef struct {
+    uint16_t style_start;
+    uint16_t style_end;
+    uint8_t style_flag;
+} StyleBox;
+
 typedef struct {
     ASSSplitContext *ass_ctx;
-    char buffer[2048];
-    char *ptr;
-    char *end;
+    AVBPrint buffer;
+    StyleBox **style_attributes;
+    StyleBox *style_attributes_temp;
+    int count;
+    uint8_t style_box_flag;
+    uint32_t tsmb_size;
+    uint32_t tsmb_type;
+    uint16_t style_entries;
+    uint16_t style_fontID;
+    uint8_t style_fontsize;
+    uint32_t style_color;
+    uint16_t text_pos;
 } MovTextContext;
 
 
@@ -79,32 +104,110 @@ static av_cold int mov_text_encode_init(AVCodecContext *avctx)
     if (!avctx->extradata)
         return AVERROR(ENOMEM);
 
+    av_bprint_init(&s->buffer, 0, AV_BPRINT_SIZE_UNLIMITED);
+
     memcpy(avctx->extradata, text_sample_entry, avctx->extradata_size);
 
     s->ass_ctx = ff_ass_split(avctx->subtitle_header);
     return s->ass_ctx ? 0 : AVERROR_INVALIDDATA;
 }
 
+static void mov_text_style_cb(void *priv, const char style, int close)
+{
+    MovTextContext *s = priv;
+    if (!close) {
+        if (s->style_box_flag == 0) {   //first style entry
+
+            s->style_attributes_temp = av_malloc(sizeof(*s->style_attributes_temp));
+
+            if (!s->style_attributes_temp) {
+                av_bprint_clear(&s->buffer);
+                s->style_box_flag = 0;
+                return;
+            }
+
+            s->style_attributes_temp->style_flag = 0;
+            s->style_attributes_temp->style_start = AV_RB16(&s->text_pos);
+        } else {
+            if (s->style_attributes_temp->style_flag) { //break the style record here and start a new one
+                s->style_attributes_temp->style_end = AV_RB16(&s->text_pos);
+                av_dynarray_add(&s->style_attributes, &s->count, s->style_attributes_temp);
+
+                s->style_attributes_temp = av_malloc(sizeof(*s->style_attributes_temp));
+
+                if (!s->style_attributes_temp) {
+                    av_bprint_clear(&s->buffer);
+                    s->style_box_flag = 0;
+                    return;
+                }
+
+                s->style_attributes_temp->style_flag = s->style_attributes[s->count - 1]->style_flag;
+                s->style_attributes_temp->style_start = AV_RB16(&s->text_pos);
+            } else {
+                s->style_attributes_temp->style_flag = 0;
+                s->style_attributes_temp->style_start = AV_RB16(&s->text_pos);
+            }
+        }
+        switch (style){
+        case 'b':
+            s->style_attributes_temp->style_flag |= STYLE_FLAG_BOLD;
+            break;
+        case 'i':
+            s->style_attributes_temp->style_flag |= STYLE_FLAG_ITALIC;
+            break;
+        case 'u':
+            s->style_attributes_temp->style_flag |= STYLE_FLAG_UNDERLINE;
+            break;
+        }
+    } else {
+        s->style_attributes_temp->style_end = AV_RB16(&s->text_pos);
+        av_dynarray_add(&s->style_attributes, &s->count, s->style_attributes_temp);
+
+        s->style_attributes_temp = av_malloc(sizeof(*s->style_attributes_temp));
+
+        if (!s->style_attributes_temp) {
+            av_bprint_clear(&s->buffer);
+            s->style_box_flag = 0;
+            return;
+        }
+
+        s->style_attributes_temp->style_flag = s->style_attributes[s->count - 1]->style_flag;
+        switch (style){
+        case 'b':
+            s->style_attributes_temp->style_flag &= ~STYLE_FLAG_BOLD;
+            break;
+        case 'i':
+            s->style_attributes_temp->style_flag &= ~STYLE_FLAG_ITALIC;
+            break;
+        case 'u':
+            s->style_attributes_temp->style_flag &= ~STYLE_FLAG_UNDERLINE;
+            break;
+        }
+        if (s->style_attributes_temp->style_flag) { //start of new style record
+            s->style_attributes_temp->style_start = AV_RB16(&s->text_pos);
+        }
+    }
+    s->style_box_flag = 1;
+}
+
 static void mov_text_text_cb(void *priv, const char *text, int len)
 {
     MovTextContext *s = priv;
-    av_assert0(s->end >= s->ptr);
-    av_strlcpy(s->ptr, text, FFMIN(s->end - s->ptr, len + 1));
-    s->ptr += FFMIN(s->end - s->ptr, len);
+    av_bprint_append_data(&s->buffer, text, len);
+    s->text_pos += len;
 }
 
 static void mov_text_new_line_cb(void *priv, int forced)
 {
     MovTextContext *s = priv;
-    av_assert0(s->end >= s->ptr);
-    av_strlcpy(s->ptr, "\n", FFMIN(s->end - s->ptr, 2));
-    if (s->end > s->ptr)
-        s->ptr++;
+    av_bprint_append_data(&s->buffer, "\n", 1);
+    s->text_pos += 1;
 }
 
 static const ASSCodesCallbacks mov_text_callbacks = {
     .text     = mov_text_text_cb,
     .new_line = mov_text_new_line_cb,
+    .style    = mov_text_style_cb,
 };
 
 static int mov_text_encode_frame(AVCodecContext *avctx, unsigned char *buf,
@@ -112,10 +215,12 @@ static int mov_text_encode_frame(AVCodecContext *avctx, unsigned char *buf,
 {
     MovTextContext *s = avctx->priv_data;
     ASSDialog *dialog;
-    int i, len, num;
+    int i, j, num, length;
 
-    s->ptr = s->buffer;
-    s->end = s->ptr + sizeof(s->buffer);
+    s->text_pos = 0;
+    s->count = 0;
+    s->style_box_flag = 0;
+    s->style_entries = 0;
 
     for (i = 0; i < sub->num_rects; i++) {
 
@@ -128,28 +233,67 @@ static int mov_text_encode_frame(AVCodecContext *avctx, unsigned char *buf,
         for (; dialog && num--; dialog++) {
             ff_ass_split_override_codes(&mov_text_callbacks, s, dialog->text);
         }
+        if (s->style_box_flag) {
+            s->tsmb_size = s->count * STYLE_RECORD_SIZE + SIZE_ADD;  //size of one style record is 12 bytes
+            s->tsmb_size = AV_RB32(&s->tsmb_size);
+            s->tsmb_type = MKTAG('s','t','y','l');
+            s->style_entries = AV_RB16(&s->count);
+            s->style_fontID = 0x00 | 0x01<<8;
+            s->style_fontsize = 0x12;
+            s->style_color = MKTAG(0xFF, 0xFF, 0xFF, 0xFF);
+            /*The above three attributes are hard coded for now
+            but will come from ASS style in the future*/
+            av_bprint_append_any(&s->buffer, &s->tsmb_size, 4);
+            av_bprint_append_any(&s->buffer, &s->tsmb_type, 4);
+            av_bprint_append_any(&s->buffer, &s->style_entries, 2);
+            for (j = 0; j < s->count; j++) {
+                av_bprint_append_any(&s->buffer, &s->style_attributes[j]->style_start, 2);
+                av_bprint_append_any(&s->buffer, &s->style_attributes[j]->style_end, 2);
+                av_bprint_append_any(&s->buffer, &s->style_fontID, 2);
+                av_bprint_append_any(&s->buffer, &s->style_attributes[j]->style_flag, 1);
+                av_bprint_append_any(&s->buffer, &s->style_fontsize, 1);
+                av_bprint_append_any(&s->buffer, &s->style_color, 4);
+            }
+            for (j = 0; j < s->count; j++) {
+                av_freep(&s->style_attributes[j]);
+            }
+            av_freep(&s->style_attributes);
+            av_freep(&s->style_attributes_temp);
+        }
     }
 
-    if (s->ptr == s->buffer)
-        return 0;
-
-    AV_WB16(buf, strlen(s->buffer));
+    AV_WB16(buf, s->text_pos);
     buf += 2;
 
-    len = av_strlcpy(buf, s->buffer, bufsize - 2);
-
-    if (len > bufsize-3) {
-        av_log(avctx, AV_LOG_ERROR, "Buffer too small for ASS event.\n");
-        return AVERROR(EINVAL);
+    if (!av_bprint_is_complete(&s->buffer)) {
+        length = AVERROR(ENOMEM);
+        goto exit;
     }
 
-    return len + 2;
+    if (!s->buffer.len) {
+        length = 0;
+        goto exit;
+    }
+
+    if (s->buffer.len > bufsize - 3) {
+        av_log(avctx, AV_LOG_ERROR, "Buffer too small for ASS event.\n");
+        length = AVERROR(EINVAL);
+        goto exit;
+    }
+
+    memcpy(buf, s->buffer.str, s->buffer.len);
+    length = s->buffer.len + 2;
+
+exit:
+    av_bprint_clear(&s->buffer);
+    return length;
 }
 
 static int mov_text_encode_close(AVCodecContext *avctx)
 {
     MovTextContext *s = avctx->priv_data;
     ff_ass_split_free(s->ass_ctx);
+    av_bprint_finalize(&s->buffer, NULL);
     return 0;
 }
 
