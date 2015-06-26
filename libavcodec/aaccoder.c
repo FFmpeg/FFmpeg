@@ -338,7 +338,7 @@ typedef struct BandCodingPath {
 static void encode_window_bands_info(AACEncContext *s, SingleChannelElement *sce,
                                      int win, int group_len, const float lambda)
 {
-    BandCodingPath path[120][CB_TOT];
+    BandCodingPath path[120][CB_TOT_ALL];
     int w, swb, cb, start, size;
     int i, j;
     const int max_sfb  = sce->ics.max_sfb;
@@ -351,7 +351,7 @@ static void encode_window_bands_info(AACEncContext *s, SingleChannelElement *sce
 
     abs_pow34_v(s->scoefs, sce->coeffs, 1024);
     start = win*128;
-    for (cb = 0; cb < CB_TOT; cb++) {
+    for (cb = 0; cb < CB_TOT_ALL; cb++) {
         path[0][cb].cost     = 0.0f;
         path[0][cb].prev_idx = -1;
         path[0][cb].run      = 0;
@@ -359,7 +359,7 @@ static void encode_window_bands_info(AACEncContext *s, SingleChannelElement *sce
     for (swb = 0; swb < max_sfb; swb++) {
         size = sce->ics.swb_sizes[swb];
         if (sce->zeroes[win*16 + swb]) {
-            for (cb = 0; cb < CB_TOT; cb++) {
+            for (cb = 0; cb < CB_TOT_ALL; cb++) {
                 path[swb+1][cb].prev_idx = cb;
                 path[swb+1][cb].cost     = path[swb][cb].cost;
                 path[swb+1][cb].run      = path[swb][cb].run + 1;
@@ -369,9 +369,16 @@ static void encode_window_bands_info(AACEncContext *s, SingleChannelElement *sce
             int mincb = next_mincb;
             next_minrd = INFINITY;
             next_mincb = 0;
-            for (cb = 0; cb < CB_TOT; cb++) {
+            for (cb = 0; cb < CB_TOT_ALL; cb++) {
                 float cost_stay_here, cost_get_here;
                 float rd = 0.0f;
+                if (cb >= 12 && sce->band_type[win*16+swb] < aac_cb_out_map[cb] ||
+                    cb  < aac_cb_in_map[sce->band_type[win*16+swb]] && sce->band_type[win*16+swb] > aac_cb_out_map[cb]) {
+                    path[swb+1][cb].prev_idx = -1;
+                    path[swb+1][cb].cost     = INFINITY;
+                    path[swb+1][cb].run      = path[swb][cb].run + 1;
+                    continue;
+                }
                 for (w = 0; w < group_len; w++) {
                     FFPsyBand *band = &s->psy.ch[s->cur_channel].psy_bands[(win+w)*16+swb];
                     rd += quantize_band_cost(s, sce->coeffs + start + w*128,
@@ -405,11 +412,12 @@ static void encode_window_bands_info(AACEncContext *s, SingleChannelElement *sce
     //convert resulting path from backward-linked list
     stack_len = 0;
     idx       = 0;
-    for (cb = 1; cb < CB_TOT; cb++)
+    for (cb = 1; cb < CB_TOT_ALL; cb++)
         if (path[max_sfb][cb].cost < path[max_sfb][idx].cost)
             idx = cb;
     ppos = max_sfb;
     while (ppos > 0) {
+        av_assert1(idx >= 0);
         cb = idx;
         stackrun[stack_len] = path[ppos][cb].run;
         stackcb [stack_len] = cb;
@@ -440,7 +448,7 @@ static void encode_window_bands_info(AACEncContext *s, SingleChannelElement *sce
 static void codebook_trellis_rate(AACEncContext *s, SingleChannelElement *sce,
                                   int win, int group_len, const float lambda)
 {
-    BandCodingPath path[120][CB_TOT];
+    BandCodingPath path[120][CB_TOT_ALL];
     int w, swb, cb, start, size;
     int i, j;
     const int max_sfb  = sce->ics.max_sfb;
