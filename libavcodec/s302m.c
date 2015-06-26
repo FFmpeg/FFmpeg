@@ -79,10 +79,6 @@ static int s302m_parse_frame_header(AVCodecContext *avctx, const uint8_t *buf,
         case 8:
             avctx->channel_layout = AV_CH_LAYOUT_5POINT1_BACK | AV_CH_LAYOUT_STEREO_DOWNMIX;
     }
-    avctx->bit_rate    = 48000 * avctx->channels * (avctx->bits_per_raw_sample + 4) +
-                         32 * (48000 / (buf_size * 8 /
-                                        (avctx->channels *
-                                         (avctx->bits_per_raw_sample + 4))));
 
     return frame_size;
 }
@@ -108,6 +104,8 @@ static int s302m_decode_frame(AVCodecContext *avctx, void *data,
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
 
+    avctx->bit_rate = 48000 * avctx->channels * (avctx->bits_per_raw_sample + 4) +
+                      32 * 48000 / frame->nb_samples;
     buf_size = (frame->nb_samples * avctx->channels / 2) * block_size;
 
     if (avctx->bits_per_raw_sample == 24) {
