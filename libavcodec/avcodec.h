@@ -894,6 +894,12 @@ typedef struct RcOverride{
  */
 #define CODEC_CAP_LOSSLESS         0x80000000
 
+/**
+ * HWAccel is experimental and is thus avoided in favor of non experimental
+ * codecs
+ */
+#define HWACCEL_CODEC_CAP_EXPERIMENTAL     0x0200
+
 #if FF_API_MB_TYPE
 //The following defines may change, don't expect compatibility if you use them.
 #define MB_TYPE_INTRA4x4   0x0001
@@ -3336,7 +3342,7 @@ typedef struct AVHWAccel {
 
     /**
      * Hardware accelerated codec capabilities.
-     * see FF_HWACCEL_CODEC_CAP_*
+     * see HWACCEL_CODEC_CAP_*
      */
     int capabilities;
 

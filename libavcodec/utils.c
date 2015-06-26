@@ -1176,6 +1176,13 @@ static int setup_hwaccel(AVCodecContext *avctx,
         return AVERROR(ENOENT);
     }
 
+    if (hwa->capabilities & HWACCEL_CODEC_CAP_EXPERIMENTAL &&
+        avctx->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
+        av_log(avctx, AV_LOG_WARNING, "Ignoring experimental hwaccel: %s\n",
+               hwa->name);
+        return AVERROR(ENOTSUP);
+    }
+
     if (hwa->priv_data_size) {
         avctx->internal->hwaccel_priv_data = av_mallocz(hwa->priv_data_size);
         if (!avctx->internal->hwaccel_priv_data)
