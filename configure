@@ -2375,6 +2375,8 @@ hevc_d3d11va_hwaccel_deps="d3d11va DXVA_PicParams_HEVC"
 hevc_d3d11va_hwaccel_select="hevc_decoder"
 hevc_dxva2_hwaccel_deps="dxva2 DXVA_PicParams_HEVC"
 hevc_dxva2_hwaccel_select="hevc_decoder"
+hevc_vdpau_hwaccel_deps="vdpau VdpPictureInfoHEVC"
+hevc_vdpau_hwaccep_select="hevc_decoder"
 mpeg_vdpau_decoder_deps="vdpau"
 mpeg_vdpau_decoder_select="mpeg2video_decoder"
 mpeg_xvmc_hwaccel_deps="xvmc"
@@ -2810,11 +2812,7 @@ ln_s="ln -s -f"
 nm_default="nm -g"
 objformat="elf"
 pkg_config_default=pkg-config
-if ranlib 2>&1 | grep -q "\-D "; then
-    ranlib_default="ranlib -D"
-else
-    ranlib_default="ranlib"
-fi
+ranlib_default="ranlib"
 strip_default="strip"
 yasmexe_default="yasm"
 windres_default="windres"
@@ -3188,7 +3186,11 @@ cc_default="${cross_prefix}${cc_default}"
 cxx_default="${cross_prefix}${cxx_default}"
 nm_default="${cross_prefix}${nm_default}"
 pkg_config_default="${cross_prefix}${pkg_config_default}"
-ranlib_default="${cross_prefix}${ranlib_default}"
+if ${cross_prefix}${ranlib_default} 2>&1 | grep -q "\-D "; then
+    ranlib_default="${cross_prefix}${ranlib_default} -D"
+else
+    ranlib_default="${cross_prefix}${ranlib_default}"
+fi
 strip_default="${cross_prefix}${strip_default}"
 windres_default="${cross_prefix}${windres_default}"
 
@@ -5030,6 +5032,8 @@ check_struct "sys/time.h sys/resource.h" "struct rusage" ru_maxrss
 check_type "windows.h dxva.h" "DXVA_PicParams_HEVC"
 check_type "windows.h d3d11.h" "ID3D11VideoDecoder"
 check_type "d3d9.h dxva2api.h" DXVA2_ConfigPictureDecode -D_WIN32_WINNT=0x0600
+
+check_type "vdpau/vdpau.h" "VdpPictureInfoHEVC"
 
 if ! disabled w32threads && ! enabled pthreads; then
     check_func_headers "windows.h process.h" _beginthreadex &&

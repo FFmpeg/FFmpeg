@@ -1085,6 +1085,8 @@ reload:
 
         ret = open_input(c, v);
         if (ret < 0) {
+            if (ff_check_interrupt(c->interrupt_callback))
+                return AVERROR_EXIT;
             av_log(v->parent, AV_LOG_WARNING, "Failed to open segment of playlist %d\n",
                    v->index);
             v->cur_seq_no += 1;

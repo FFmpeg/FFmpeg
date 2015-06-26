@@ -26,6 +26,7 @@
  */
 
 #include "libavutil/mathematics.h"
+#include "libavutil/opt.h"
 #include "avcodec.h"
 #include "internal.h"
 #include "get_bits.h"
@@ -66,6 +67,10 @@ typedef struct EVRCAFrame {
 } EVRCAFrame;
 
 typedef struct EVRCContext {
+    AVClass *class;
+
+    int              postfilter;
+
     GetBitContext    gb;
     evrc_packet_rate bitrate;
     evrc_packet_rate last_valid_bitrate;
@@ -876,9 +881,11 @@ static int evrc_decode_frame(AVCodecContext *avctx, void *data,
         memmove(e->pitch, e->pitch + subframe_size, ACB_SIZE * sizeof(float));
 
         synthesis_filter(e->pitch + ACB_SIZE, ilpc,
-                         e->synthesis, subframe_size, tmp);
-        postfilter(e, tmp, ilpc, samples, pitch_lag,
-                   &postfilter_coeffs[e->bitrate], subframe_size);
+                         e->synthesis, subframe_size,
+                         e->postfilter ? tmp : samples);
+        if (e->postfilter)
+            postfilter(e, tmp, ilpc, samples, pitch_lag,
+                       &postfilter_coeffs[e->bitrate], subframe_size);
 
         samples += subframe_size;
     }
@@ -906,6 +913,21 @@ erasure:
     return avpkt->size;
 }
 
+#define OFFSET(x) offsetof(EVRCContext, x)
+#define AD AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_DECODING_PARAM
+
+static const AVOption options[] = {
+    { "postfilter", "enable postfilter", OFFSET(postfilter), AV_OPT_TYPE_INT, {.i64 = 1}, 0, 1, AD },
+    { NULL }
+};
+
+static const AVClass evrcdec_class = {
+    .class_name = "evrc",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVCodec ff_evrc_decoder = {
     .name           = "evrc",
     .long_name      = NULL_IF_CONFIG_SMALL("EVRC (Enhanced Variable Rate Codec)"),
@@ -915,4 +937,5 @@ AVCodec ff_evrc_decoder = {
     .decode         = evrc_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
     .priv_data_size = sizeof(EVRCContext),
+    .priv_class     = &evrcdec_class,
 };

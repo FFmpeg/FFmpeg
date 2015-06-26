@@ -2027,6 +2027,7 @@ loop_end:
                 if(o->    data_disable && ist->st->codec->codec_type == AVMEDIA_TYPE_DATA)
                     continue;
 
+                ost = NULL;
                 switch (ist->st->codec->codec_type) {
                 case AVMEDIA_TYPE_VIDEO:      ost = new_video_stream     (o, oc, src_idx); break;
                 case AVMEDIA_TYPE_AUDIO:      ost = new_audio_stream     (o, oc, src_idx); break;
@@ -2050,6 +2051,9 @@ loop_end:
                         exit_program(1);
                     }
                 }
+                if (ost)
+                    ost->sync_ist = input_streams[  input_files[map->sync_file_index]->ist_index
+                                                  + map->sync_stream_index];
             }
         }
     }

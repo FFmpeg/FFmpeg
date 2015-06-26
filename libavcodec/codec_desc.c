@@ -1835,14 +1835,14 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .id        = AV_CODEC_ID_ADPCM_THP,
         .type      = AVMEDIA_TYPE_AUDIO,
         .name      = "adpcm_thp",
-        .long_name = NULL_IF_CONFIG_SMALL("ADPCM Nintendo Gamecube THP"),
+        .long_name = NULL_IF_CONFIG_SMALL("ADPCM Nintendo THP"),
         .props     = AV_CODEC_PROP_LOSSY,
     },
     {
         .id        = AV_CODEC_ID_ADPCM_THP_LE,
         .type      = AVMEDIA_TYPE_AUDIO,
         .name      = "adpcm_thp_le",
-        .long_name = NULL_IF_CONFIG_SMALL("ADPCM Nintendo Gamecube THP (Little-Endian)"),
+        .long_name = NULL_IF_CONFIG_SMALL("ADPCM Nintendo THP (Little-Endian)"),
         .props     = AV_CODEC_PROP_LOSSY,
     },
     {

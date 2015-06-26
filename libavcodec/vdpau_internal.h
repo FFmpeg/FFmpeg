@@ -50,6 +50,9 @@ union VDPAUPictureInfo {
 #ifdef VDP_DECODER_PROFILE_H264_HIGH_444_PREDICTIVE
     VdpPictureInfoH264Predictive h264_predictive;
 #endif
+#ifdef VDP_DECODER_PROFILE_HEVC_MAIN
+    VdpPictureInfoHEVC        hevc;
+#endif
 };
 
 #include "vdpau.h"

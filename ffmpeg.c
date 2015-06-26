@@ -322,8 +322,9 @@ sigterm_handler(int sig)
     received_nb_signals++;
     term_exit_sigsafe();
     if(received_nb_signals > 3) {
-        write(STDERR_FILENO, "Received > 3 system signals, hard exiting\n",
-                      strlen("Received > 3 system signals, hard exiting\n"));
+        write(2/*STDERR_FILENO*/, "Received > 3 system signals, hard exiting\n",
+                           strlen("Received > 3 system signals, hard exiting\n"));
+
         exit(123);
     }
 }
@@ -530,7 +531,7 @@ static void ffmpeg_cleanup(int ret)
     avformat_network_deinit();
 
     if (received_sigterm) {
-        av_log(NULL, AV_LOG_INFO, "Received signal %d: terminating.\n",
+        av_log(NULL, AV_LOG_INFO, "Exiting normally, received signal %d.\n",
                (int) received_sigterm);
     } else if (ret && transcode_init_done) {
         av_log(NULL, AV_LOG_INFO, "Conversion failed!\n");
