@@ -62,6 +62,7 @@ typedef struct Jpeg2000Tile {
     Jpeg2000QuantStyle  qntsty[4];
     Jpeg2000TilePart    tile_part[256];
     uint16_t tp_idx;                    // Tile-part index
+    int coord[2][2];                    // border coordinates {{x0, x1}, {y0, y1}}
 } Jpeg2000Tile;
 
 typedef struct Jpeg2000DecoderContext {
@@ -740,16 +741,21 @@ static int init_tile(Jpeg2000DecoderContext *s, int tileno)
     if (!tile->comp)
         return AVERROR(ENOMEM);
 
+    tile->coord[0][0] = FFMAX(tilex       * s->tile_width  + s->tile_offset_x, s->image_offset_x);
+    tile->coord[0][1] = FFMIN((tilex + 1) * s->tile_width  + s->tile_offset_x, s->width);
+    tile->coord[1][0] = FFMAX(tiley       * s->tile_height + s->tile_offset_y, s->image_offset_y);
+    tile->coord[1][1] = FFMIN((tiley + 1) * s->tile_height + s->tile_offset_y, s->height);
+
     for (compno = 0; compno < s->ncomponents; compno++) {
         Jpeg2000Component *comp = tile->comp + compno;
         Jpeg2000CodingStyle *codsty = tile->codsty + compno;
         Jpeg2000QuantStyle  *qntsty = tile->qntsty + compno;
         int ret; // global bandno
 
-        comp->coord_o[0][0] = FFMAX(tilex       * s->tile_width  + s->tile_offset_x, s->image_offset_x);
-        comp->coord_o[0][1] = FFMIN((tilex + 1) * s->tile_width  + s->tile_offset_x, s->width);
-        comp->coord_o[1][0] = FFMAX(tiley       * s->tile_height + s->tile_offset_y, s->image_offset_y);
-        comp->coord_o[1][1] = FFMIN((tiley + 1) * s->tile_height + s->tile_offset_y, s->height);
+        comp->coord_o[0][0] = tile->coord[0][0];
+        comp->coord_o[0][1] = tile->coord[0][1];
+        comp->coord_o[1][0] = tile->coord[1][0];
+        comp->coord_o[1][1] = tile->coord[1][1];
         if (compno) {
             comp->coord_o[0][0] /= s->cdx[compno];
             comp->coord_o[0][1] /= s->cdx[compno];
