@@ -391,6 +391,8 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
                 Jpeg2000Prec *prec = band->prec + precno;
                 int nb_codeblocks;
 
+                prec->decoded_layers = 0;
+
                 /* TODO: Explain formula for JPEG200 DCINEMA. */
                 /* TODO: Verify with previous count of codeblocks per band */
 

@@ -369,6 +369,15 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
         size    = b->last_block_used_bytes;
         samples = b->last_block_samples;
         skip    = b->last_block_size - b->last_block_used_bytes;
+
+        if (samples < size * 14 / 8) {
+            uint32_t adjusted_size = samples / 14 * 8;
+            if (samples % 14)
+                adjusted_size += (samples % 14 + 1) / 2 + 1;
+
+            skip += size - adjusted_size;
+            size = adjusted_size;
+        }
     } else if (b->current_block < b->block_count) {
         size    = b->block_size;
         samples = b->samples_per_block;

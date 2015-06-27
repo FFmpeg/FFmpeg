@@ -608,6 +608,7 @@ static int h264_init_context(AVCodecContext *avctx, H264Context *h)
     h->frame_recovered       = 0;
     h->prev_frame_num        = -1;
     h->sei_fpa.frame_packing_arrangement_cancel_flag = -1;
+    h->has_afd               = 0;
 
     h->next_outputed_poc = INT_MIN;
     for (i = 0; i < MAX_DELAYED_PIC_COUNT; i++)
@@ -866,6 +867,15 @@ static void decode_postinit(H264Context *h, int setup_finished)
             av_display_rotation_set((int32_t *)rotation->data, angle);
             av_display_matrix_flip((int32_t *)rotation->data,
                                    h->sei_hflip, h->sei_vflip);
+        }
+    }
+
+    if (h->has_afd) {
+        AVFrameSideData *sd =
+            av_frame_new_side_data(cur->f, AV_FRAME_DATA_AFD, 1);
+        if (sd) {
+            *sd->data   = h->afd;
+            h->has_afd = 0;
         }
     }
 

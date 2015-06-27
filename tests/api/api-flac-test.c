@@ -27,7 +27,7 @@
  * after that.
  */
 
-#include "avcodec.h"
+#include "libavcodec/avcodec.h"
 #include "libavutil/common.h"
 #include "libavutil/samplefmt.h"
 

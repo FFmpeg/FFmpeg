@@ -16,7 +16,8 @@ ffservertest: ffserver$(EXESUF) tests/vsynth1/00.pgm tests/data/asynth1.sw
 	@echo
 	$(SRC_PATH)/tests/ffserver-regression.sh $(FFSERVER_REFFILE) $(SRC_PATH)/tests/ffserver.conf
 
-OBJDIRS += tests/data tests/vsynth1 tests/data/filtergraphs
+APITESTSDIR := tests/api
+OBJDIRS += tests/data tests/vsynth1 tests/data/filtergraphs $(APITESTSDIR)
 
 $(VREF): tests/videogen$(HOSTEXESUF) | tests/vsynth1
 	$(M)./$< 'tests/vsynth1/'
@@ -89,6 +90,8 @@ FILTERDEMDECENCMUX = $(call ALLYES, $(1:%=%_FILTER) $(2)_DEMUXER $(3)_DECODER $(
 
 PARSERDEMDEC       = $(call ALLYES, $(1)_PARSER $(2)_DEMUXER $(3)_DECODER)
 
+include $(SRC_PATH)/$(APITESTSDIR)/Makefile
+
 include $(SRC_PATH)/tests/fate/acodec.mak
 include $(SRC_PATH)/tests/fate/vcodec.mak
 include $(SRC_PATH)/tests/fate/avformat.mak
@@ -101,6 +104,7 @@ include $(SRC_PATH)/tests/fate/alac.mak
 include $(SRC_PATH)/tests/fate/als.mak
 include $(SRC_PATH)/tests/fate/amrnb.mak
 include $(SRC_PATH)/tests/fate/amrwb.mak
+include $(SRC_PATH)/tests/fate/api.mak
 include $(SRC_PATH)/tests/fate/atrac.mak
 include $(SRC_PATH)/tests/fate/audio.mak
 include $(SRC_PATH)/tests/fate/bmp.mak
@@ -218,7 +222,7 @@ lcov-reset:
 
 clean:: testclean
 
-testclean:
+testclean::
 	$(RM) -r tests/vsynth1 tests/data tools/lavfi-showfiltfmts$(EXESUF)
 	$(RM) $(CLEANSUFFIXES:%=tests/%)
 	$(RM) $(TESTTOOLS:%=tests/%$(HOSTEXESUF))
