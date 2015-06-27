@@ -1309,7 +1309,9 @@ static int jpeg2000_decode_packets(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile
             Jpeg2000POCEntry *e = &tile->poc.poc[i];
             ret = jpeg2000_decode_packets_po_iteration(s, tile,
                 e->RSpoc, e->CSpoc,
-                e->LYEpoc, e->REpoc, e->CEpoc,
+                FFMIN(e->LYEpoc, tile->codsty[0].nlayers),
+                e->REpoc,
+                FFMIN(e->CEpoc, s->ncomponents),
                 e->Ppoc, &tp_index
                 );
             if (ret < 0)
