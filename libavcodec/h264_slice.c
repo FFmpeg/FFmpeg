@@ -1155,6 +1155,9 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
     int mb_aff_frame, last_mb_aff_frame;
     PPS *pps;
 
+    if (first_slice)
+        av_assert0(!h->setup_finished);
+
     h->qpel_put = h->h264qpel.put_h264_qpel_pixels_tab;
     h->qpel_avg = h->h264qpel.avg_h264_qpel_pixels_tab;
 
@@ -1162,6 +1165,7 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
 
     if (first_mb_in_slice == 0) { // FIXME better field boundary detection
         if (h->current_slice) {
+            av_assert0(!h->setup_finished);
             if (h->cur_pic_ptr && FIELD_PICTURE(h) && h->first_field) {
                 ff_h264_field_end(h, h->slice_ctx, 1);
                 h->current_slice = 0;
@@ -1249,7 +1253,7 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
         return AVERROR_INVALIDDATA;
     }
 
-    if (first_slice && !h->setup_finished) {
+    if (first_slice) {
         h->pps = *h->pps_buffers[pps_id];
     } else if (h->setup_finished && h->dequant_coeff_pps != pps_id) {
         av_log(h->avctx, AV_LOG_ERROR, "PPS changed between slices\n");
