@@ -950,6 +950,9 @@ static int read_sm_data(AVFormatContext *s, AVIOContext *bc, AVPacket *pkt, int 
         AV_WL32(dst+4, skip_end);
     }
 
+    if (avio_tell(bc) >= maxpos)
+        return AVERROR_INVALIDDATA;
+
     return 0;
 }
 
