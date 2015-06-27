@@ -25,4 +25,4 @@ FATE_SAMPLES_AVCONV-$(call DEMDEC, TTA, TTA) += fate-lossless-tta
 fate-lossless-tta: CMD = crc -i $(TARGET_SAMPLES)/lossless-audio/inside.tta
 
 FATE_SAMPLES_AVCONV-$(call DEMDEC, ASF, WMALOSSLESS) += fate-lossless-wma
-fate-lossless-wma: CMD = md5 -i $(TARGET_SAMPLES)/lossless-audio/luckynight-partial.wma -f s16le
+fate-lossless-wma: CMD = md5 -i $(TARGET_SAMPLES)/lossless-audio/luckynight-partial.wma -f s16le -frames 209
