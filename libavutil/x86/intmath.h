@@ -41,7 +41,7 @@
 
 #if AV_GCC_VERSION_AT_LEAST(5,1)
 #define av_mod_uintp2 __builtin_ia32_bzhi_si
-#else
+#elif HAVE_INLINE_ASM
 /* GCC releases before 5.1.0 have a broken bzhi builtin, so for those we
  * implement it using inline assembly
  */
