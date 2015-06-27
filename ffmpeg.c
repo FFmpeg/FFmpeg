@@ -2268,8 +2268,13 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt)
             return -1;
         }
 
-        if (ret < 0 && !(!pkt && ist->decoding_needed))
-            return ret;
+        if (ret < 0) {
+            av_log(NULL, AV_LOG_ERROR, "Error while decoding stream #%d:%d: %s\n",
+                   ist->file_index, ist->st->index, av_err2str(ret));
+            if (exit_on_error)
+                exit_program(1);
+            break;
+        }
 
         avpkt.dts=
         avpkt.pts= AV_NOPTS_VALUE;
@@ -3772,13 +3777,7 @@ static int process_input(int file_index)
 
     sub2video_heartbeat(ist, pkt.pts);
 
-    ret = process_input_packet(ist, &pkt);
-    if (ret < 0) {
-        av_log(NULL, AV_LOG_ERROR, "Error while decoding stream #%d:%d: %s\n",
-               ist->file_index, ist->st->index, av_err2str(ret));
-        if (exit_on_error)
-            exit_program(1);
-    }
+    process_input_packet(ist, &pkt);
 
 discard_packet:
     av_free_packet(&pkt);
