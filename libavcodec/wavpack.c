@@ -155,7 +155,7 @@ static int wv_get_value(WavpackFrameContext *ctx, GetBitContext *gb,
             if (t >= 2) {
                 if (get_bits_left(gb) < t - 1)
                     goto error;
-                t = get_bits(gb, t - 1) | (1 << (t - 1));
+                t = get_bits_long(gb, t - 1) | (1 << (t - 1));
             } else {
                 if (get_bits_left(gb) < 0)
                     goto error;
@@ -186,7 +186,7 @@ static int wv_get_value(WavpackFrameContext *ctx, GetBitContext *gb,
             } else {
                 if (get_bits_left(gb) < t2 - 1)
                     goto error;
-                t += get_bits(gb, t2 - 1) | (1 << (t2 - 1));
+                t += get_bits_long(gb, t2 - 1) | (1 << (t2 - 1));
             }
         }
 
