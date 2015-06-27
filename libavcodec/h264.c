@@ -974,8 +974,12 @@ static void decode_postinit(H264Context *h, int setup_finished)
         h->next_output_pic->recovered |= !!(h->frame_recovered & FRAME_RECOVERED_SEI);
     }
 
-    if (setup_finished && !h->avctx->hwaccel)
+    if (setup_finished && !h->avctx->hwaccel) {
         ff_thread_finish_setup(h->avctx);
+
+        if (h->avctx->active_thread_type & FF_THREAD_FRAME)
+            h->setup_finished = 1;
+    }
 }
 
 int ff_pred_weight_table(H264Context *h, H264SliceContext *sl)
@@ -1746,6 +1750,7 @@ static int h264_decode_frame(AVCodecContext *avctx, void *data,
     int ret;
 
     h->flags = avctx->flags;
+    h->setup_finished = 0;
 
     if (h->backup_width != -1) {
         avctx->width    = h->backup_width;
