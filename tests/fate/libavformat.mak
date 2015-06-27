@@ -14,9 +14,5 @@ FATE_LIBAVFORMAT-yes += fate-url
 fate-url: libavformat/url-test$(EXESUF)
 fate-url: CMD = run libavformat/url-test
 
-FATE_SAMPLES_AVCONV-$(call DEMDEC, H264, H264) += fate-api-h264
-fate-api-h264: libavformat/api-h264-test$(EXESUF)
-fate-api-h264: CMD = run libavformat/api-h264-test $(TARGET_SAMPLES)/h264-conformance/SVA_NL2_E.264
-
 FATE-$(CONFIG_AVFORMAT) += $(FATE_LIBAVFORMAT-yes)
 fate-libavformat: $(FATE_LIBAVFORMAT)

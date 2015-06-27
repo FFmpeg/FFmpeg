@@ -549,7 +549,6 @@ TESTPROGS = seek                                                        \
             url                                                         \
 
 TESTPROGS-$(CONFIG_NETWORK)              += noproxy
-TESTPROGS-yes                            += api-h264
 TESTPROGS-$(CONFIG_FFRTMPCRYPT_PROTOCOL) += rtmpdh
 
 TOOLS     = aviocat                                                     \
