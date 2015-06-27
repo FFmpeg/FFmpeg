@@ -667,15 +667,18 @@ int ff_h264_execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count)
                 remove_short_at_index(h, 0);
             }
 
-            if (h->long_ref[mmco[i].long_arg] != h->cur_pic_ptr) {
-                if (h->cur_pic_ptr->long_ref) {
-                    for(j=0; j<16; j++) {
-                        if(h->long_ref[j] == h->cur_pic_ptr) {
-                            remove_long(h, j, 0);
+            /* make sure the current picture is not already assigned as a long ref */
+            if (h->cur_pic_ptr->long_ref) {
+                for (j = 0; j < FF_ARRAY_ELEMS(h->long_ref); j++) {
+                    if (h->long_ref[j] == h->cur_pic_ptr) {
+                        if (j != mmco[i].long_arg)
                             av_log(h->avctx, AV_LOG_ERROR, "mmco: cannot assign current picture to 2 long term references\n");
-                        }
+                        remove_long(h, j, 0);
                     }
                 }
+            }
+
+            if (h->long_ref[mmco[i].long_arg] != h->cur_pic_ptr) {
                 av_assert0(!h->cur_pic_ptr->long_ref);
                 remove_long(h, mmco[i].long_arg, 0);
 
