@@ -322,6 +322,7 @@ Toolchain options:
   --extra-cxxflags=ECFLAGS add ECFLAGS to CXXFLAGS [$CXXFLAGS]
   --extra-ldflags=ELDFLAGS add ELDFLAGS to LDFLAGS [$LDFLAGS]
   --extra-ldexeflags=ELDFLAGS add ELDFLAGS to LDEXEFLAGS [$LDEXEFLAGS]
+  --extra-ldlibflags=ELDFLAGS add ELDFLAGS to LDLIBFLAGS [$LDLIBFLAGS]
   --extra-libs=ELIBS       add ELIBS [$ELIBS]
   --extra-version=STRING   version string suffix []
   --optflags=OPTFLAGS      override optimization-related compiler flags
@@ -790,6 +791,10 @@ add_ldflags(){
 
 add_ldexeflags(){
     append LDEXEFLAGS $($ldflags_filter "$@")
+}
+
+add_ldlibflags(){
+    append LDLIBFLAGS $($ldflags_filter "$@")
 }
 
 add_stripflags(){
@@ -3011,6 +3016,9 @@ for opt do
         ;;
         --extra-ldexeflags=*)
             add_ldexeflags $optval
+        ;;
+        --extra-ldlibflags=*)
+            add_ldlibflags $optval
         ;;
         --extra-libs=*)
             add_extralibs $optval
@@ -5449,6 +5457,7 @@ check_disable_warning -Wno-pointer-sign
 check_ldflags -Wl,--warn-common
 check_ldflags -Wl,-rpath-link=libpostproc:libswresample:libswscale:libavfilter:libavdevice:libavformat:libavcodec:libavutil:libavresample
 enabled rpath && add_ldexeflags -Wl,-rpath,$libdir
+enabled rpath && add_ldlibflags -Wl,-rpath,$libdir
 test_ldflags -Wl,-Bsymbolic && append SHFLAGS -Wl,-Bsymbolic
 
 # add some strip flags
@@ -5917,6 +5926,7 @@ DEPWINDRES=$dep_cc
 DOXYGEN=$doxygen
 LDFLAGS=$LDFLAGS
 LDEXEFLAGS=$LDEXEFLAGS
+LDLIBFLAGS=$LDLIBFLAGS
 SHFLAGS=$(echo $($ldflags_filter $SHFLAGS))
 ASMSTRIPFLAGS=$ASMSTRIPFLAGS
 YASMFLAGS=$YASMFLAGS
