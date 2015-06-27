@@ -397,10 +397,9 @@ static void copy_picture_range(H264Picture **to, H264Picture **from, int count,
     int i;
 
     for (i = 0; i < count; i++) {
-        av_assert1((IN_RANGE(from[i], old_base, 1) ||
-                IN_RANGE(from[i], old_base->DPB,
-                         H264_MAX_PICTURE_COUNT) ||
-                !from[i]));
+        av_assert1(!from[i] ||
+                   IN_RANGE(from[i], old_base, 1) ||
+                   IN_RANGE(from[i], old_base->DPB, H264_MAX_PICTURE_COUNT));
         to[i] = REBASE_PICTURE(from[i], new_base, old_base);
     }
 }
