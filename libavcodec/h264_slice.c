@@ -383,7 +383,7 @@ void ff_h264_init_dequant_tables(H264Context *h)
     }
 }
 
-#define IN_RANGE(a, b, size) (((a) >= (b)) && ((a) < ((b) + (size))))
+#define IN_RANGE(a, b, size) (((void*)(a) >= (void*)(b)) && ((void*)(a) < (void*)((b) + (size))))
 
 #define REBASE_PICTURE(pic, new_ctx, old_ctx)             \
     (((pic) && (pic) >= (old_ctx)->DPB &&                       \
