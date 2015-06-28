@@ -1692,6 +1692,7 @@ HEADERS_LIST="
     dev_video_bktr_ioctl_bt848_h
     dev_video_meteor_ioctl_meteor_h
     direct_h
+    dirent_h
     dlfcn_h
     d3d11_h
     dxva_h
@@ -5104,6 +5105,7 @@ enabled xlib &&
 
 check_header CoreServices/CoreServices.h
 check_header direct.h
+check_header dirent.h
 check_header dlfcn.h
 check_header d3d11.h
 check_header dxva.h

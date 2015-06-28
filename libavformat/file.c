@@ -23,7 +23,9 @@
 #include "libavutil/internal.h"
 #include "libavutil/opt.h"
 #include "avformat.h"
+#if HAVE_DIRENT_H
 #include <dirent.h>
+#endif
 #include <fcntl.h>
 #if HAVE_IO_H
 #include <io.h>
@@ -45,6 +47,24 @@
 #  endif
 #endif
 
+/* Not available in POSIX.1-1996 */
+#ifndef S_ISLNK
+#  ifdef S_IFLNK
+#    define S_ISLNK(m) (((m) & S_IFLNK) == S_IFLNK)
+#  else
+#    define S_ISLNK(m) 0
+#  endif
+#endif
+
+/* Not available in POSIX.1-1996 */
+#ifndef S_ISSOCK
+#  ifdef S_IFSOCK
+#    define S_ISSOCK(m) (((m) & S_IFMT) == S_IFSOCK)
+#  else
+#    define S_ISSOCK(m) 0
+#  endif
+#endif
+
 /* standard file protocol */
 
 typedef struct FileContext {
@@ -52,7 +72,9 @@ typedef struct FileContext {
     int fd;
     int trunc;
     int blocksize;
+#if HAVE_DIRENT_H
     DIR *dir;
+#endif
 } FileContext;
 
 static const AVOption file_options[] = {
@@ -229,6 +251,7 @@ static int file_close(URLContext *h)
 
 static int file_open_dir(URLContext *h)
 {
+#if HAVE_DIRENT_H
     FileContext *c = h->priv_data;
 
     c->dir = opendir(h->filename);
@@ -236,10 +259,14 @@ static int file_open_dir(URLContext *h)
         return AVERROR(errno);
 
     return 0;
+#else
+    return AVERROR(ENOSYS);
+#endif /* HAVE_DIRENT_H */
 }
 
 static int file_read_dir(URLContext *h, AVIODirEntry **next)
 {
+#if HAVE_DIRENT_H
     FileContext *c = h->priv_data;
     struct dirent *dir;
     char *fullpath = NULL;
@@ -259,7 +286,24 @@ static int file_read_dir(URLContext *h, AVIODirEntry **next)
     fullpath = av_append_path_component(h->filename, dir->d_name);
     if (fullpath) {
         struct stat st;
-        if (!stat(fullpath, &st)) {
+        if (!lstat(fullpath, &st)) {
+            if (S_ISDIR(st.st_mode))
+                (*next)->type = AVIO_ENTRY_DIRECTORY;
+            else if (S_ISFIFO(st.st_mode))
+                (*next)->type = AVIO_ENTRY_NAMED_PIPE;
+            else if (S_ISCHR(st.st_mode))
+                (*next)->type = AVIO_ENTRY_CHARACTER_DEVICE;
+            else if (S_ISBLK(st.st_mode))
+                (*next)->type = AVIO_ENTRY_BLOCK_DEVICE;
+            else if (S_ISLNK(st.st_mode))
+                (*next)->type = AVIO_ENTRY_SYMBOLIC_LINK;
+            else if (S_ISSOCK(st.st_mode))
+                (*next)->type = AVIO_ENTRY_SOCKET;
+            else if (S_ISREG(st.st_mode))
+                (*next)->type = AVIO_ENTRY_FILE;
+            else
+                (*next)->type = AVIO_ENTRY_UNKNOWN;
+
             (*next)->group_id = st.st_gid;
             (*next)->user_id = st.st_uid;
             (*next)->size = st.st_size;
@@ -272,41 +316,21 @@ static int file_read_dir(URLContext *h, AVIODirEntry **next)
     }
 
     (*next)->name = av_strdup(dir->d_name);
-    switch (dir->d_type) {
-    case DT_FIFO:
-        (*next)->type = AVIO_ENTRY_NAMED_PIPE;
-        break;
-    case DT_CHR:
-        (*next)->type = AVIO_ENTRY_CHARACTER_DEVICE;
-        break;
-    case DT_DIR:
-        (*next)->type = AVIO_ENTRY_DIRECTORY;
-        break;
-    case DT_BLK:
-        (*next)->type = AVIO_ENTRY_BLOCK_DEVICE;
-        break;
-    case DT_REG:
-        (*next)->type = AVIO_ENTRY_FILE;
-        break;
-    case DT_LNK:
-        (*next)->type = AVIO_ENTRY_SYMBOLIC_LINK;
-        break;
-    case DT_SOCK:
-        (*next)->type = AVIO_ENTRY_SOCKET;
-        break;
-    case DT_UNKNOWN:
-    default:
-        (*next)->type = AVIO_ENTRY_UNKNOWN;
-        break;
-    }
     return 0;
+#else
+    return AVERROR(ENOSYS);
+#endif /* HAVE_DIRENT_H */
 }
 
 static int file_close_dir(URLContext *h)
 {
+#if HAVE_DIRENT_H
     FileContext *c = h->priv_data;
     closedir(c->dir);
     return 0;
+#else
+    return AVERROR(ENOSYS);
+#endif /* HAVE_DIRENT_H */
 }
 
 URLProtocol ff_file_protocol = {
