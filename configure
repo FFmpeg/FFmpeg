@@ -2503,6 +2503,7 @@ nvenc_hevc_encoder_deps="nvenc"
 # demuxers / muxers
 ac3_demuxer_select="ac3_parser"
 asf_demuxer_select="riffdec"
+asf_o_demuxer_select="riffdec"
 asf_muxer_select="riffenc"
 asf_stream_muxer_select="asf_muxer"
 avi_demuxer_select="riffdec exif"

@@ -77,6 +77,7 @@ void av_register_all(void)
     REGISTER_MUXDEMUX(APNG,             apng);
     REGISTER_DEMUXER (AQTITLE,          aqtitle);
     REGISTER_MUXDEMUX(ASF,              asf);
+    REGISTER_DEMUXER (ASF_O,            asf_o);
     REGISTER_MUXDEMUX(ASS,              ass);
     REGISTER_MUXDEMUX(AST,              ast);
     REGISTER_MUXER   (ASF_STREAM,       asf_stream);

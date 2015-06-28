@@ -8,6 +8,7 @@ version <next>:
 - Hap decoder and encoder
 - DirectDraw Surface image/texture decoder
 - ssim filter
+- rewritten ASF demuxer
 
 
 version 2.7:
