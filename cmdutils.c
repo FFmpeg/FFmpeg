@@ -1396,61 +1396,6 @@ int read_yesno(void)
     return yesno;
 }
 
-int cmdutils_read_file(const char *filename, char **bufptr, size_t *size)
-{
-    int ret;
-    FILE *f = fopen(filename, "rb");
-
-    if (!f) {
-        av_log(NULL, AV_LOG_ERROR, "Cannot read file '%s': %s\n", filename,
-               strerror(errno));
-        return AVERROR(errno);
-    }
-
-    ret = fseek(f, 0, SEEK_END);
-    if (ret == -1) {
-        ret = AVERROR(errno);
-        goto out;
-    }
-
-    ret = ftell(f);
-    if (ret < 0) {
-        ret = AVERROR(errno);
-        goto out;
-    }
-    *size = ret;
-
-    ret = fseek(f, 0, SEEK_SET);
-    if (ret == -1) {
-        ret = AVERROR(errno);
-        goto out;
-    }
-
-    *bufptr = av_malloc(*size + 1);
-    if (!*bufptr) {
-        av_log(NULL, AV_LOG_ERROR, "Could not allocate file buffer\n");
-        ret = AVERROR(ENOMEM);
-        goto out;
-    }
-    ret = fread(*bufptr, 1, *size, f);
-    if (ret < *size) {
-        av_free(*bufptr);
-        if (ferror(f)) {
-            av_log(NULL, AV_LOG_ERROR, "Error while reading file '%s': %s\n",
-                   filename, strerror(errno));
-            ret = AVERROR(errno);
-        } else
-            ret = AVERROR_EOF;
-    } else {
-        ret = 0;
-        (*bufptr)[(*size)++] = '\0';
-    }
-
-out:
-    fclose(f);
-    return ret;
-}
-
 void init_pts_correction(PtsCorrectionContext *ctx)
 {
     ctx->num_faulty_pts = ctx->num_faulty_dts = 0;

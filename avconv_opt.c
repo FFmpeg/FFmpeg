@@ -1196,9 +1196,9 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc)
                     }
                     ost->logfile = f;
                 } else {
-                    char  *logbuffer;
-                    size_t logbuffer_size;
-                    if (cmdutils_read_file(logfilename, &logbuffer, &logbuffer_size) < 0) {
+                    char  *logbuffer = read_file(logfilename);
+
+                    if (!logbuffer) {
                         av_log(NULL, AV_LOG_FATAL, "Error reading log file '%s' for pass-2 encoding\n",
                                logfilename);
                         exit_program(1);
