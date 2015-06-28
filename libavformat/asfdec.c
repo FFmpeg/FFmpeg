@@ -132,7 +132,7 @@ static const AVClass asf_class = {
 #include <assert.h>
 
 #define ASF_MAX_STREAMS 127
-#define FRAME_HEADER_SIZE 16
+#define FRAME_HEADER_SIZE 11
 // Fix Me! FRAME_HEADER_SIZE may be different. (17 is known to be too large)
 
 #ifdef DEBUG
