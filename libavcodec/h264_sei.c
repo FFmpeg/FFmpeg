@@ -42,6 +42,7 @@ void ff_h264_reset_sei(H264Context *h)
     h->sei_buffering_period_present =  0;
     h->sei_frame_packing_present    =  0;
     h->sei_display_orientation_present = 0;
+    h->sei_reguserdata_afd_present  =  0;
 }
 
 static int decode_picture_timing(H264Context *h)
@@ -99,6 +100,51 @@ static int decode_picture_timing(H264Context *h)
             av_log(h->avctx, AV_LOG_DEBUG, "ct_type:%X pic_struct:%d\n",
                    h->sei_ct_type, h->sei_pic_struct);
     }
+    return 0;
+}
+
+static int decode_registered_user_data(H264Context *h, int size)
+{
+    uint32_t country_code;
+    uint32_t user_identifier;
+    int flag;
+
+    if (size < 7)
+        return AVERROR_INVALIDDATA;
+    size -= 7;
+
+    country_code = get_bits(&h->gb, 8); // itu_t_t35_country_code
+    if (country_code == 0xFF) {
+        skip_bits(&h->gb, 8);           // itu_t_t35_country_code_extension_byte
+        size--;
+    }
+
+    /* itu_t_t35_payload_byte follows */
+    skip_bits(&h->gb, 8);              // terminal provider code
+    skip_bits(&h->gb, 8);              // terminal provider oriented code
+    user_identifier = get_bits_long(&h->gb, 32);
+
+    switch (user_identifier) {
+        case MKBETAG('D', 'T', 'G', '1'):       // afd_data
+            if (size-- < 1)
+                return AVERROR_INVALIDDATA;
+            skip_bits(&h->gb, 1);               // 0
+            flag = get_bits(&h->gb, 1);         // active_format_flag
+            skip_bits(&h->gb, 6);               // reserved
+
+            if (flag) {
+                if (size-- < 1)
+                    return AVERROR_INVALIDDATA;
+                skip_bits(&h->gb, 4);           // reserved
+                h->active_format_description   = get_bits(&h->gb, 4);
+                h->sei_reguserdata_afd_present = 1;
+            }
+            break;
+        default:
+            skip_bits(&h->gb, size * 8);
+            break;
+    }
+
     return 0;
 }
 
@@ -246,6 +292,9 @@ int ff_h264_decode_sei(H264Context *h)
         switch (type) {
         case SEI_TYPE_PIC_TIMING: // Picture timing SEI
             ret = decode_picture_timing(h);
+            break;
+        case SEI_TYPE_USER_DATA_REGISTERED:
+            ret = decode_registered_user_data(h, size);
             break;
         case SEI_TYPE_USER_DATA_UNREGISTERED:
             ret = decode_unregistered_user_data(h, size);

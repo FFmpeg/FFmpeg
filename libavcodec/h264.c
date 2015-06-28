@@ -822,6 +822,16 @@ static void decode_postinit(H264Context *h, int setup_finished)
                                h->sei_hflip, h->sei_vflip);
     }
 
+    if (h->sei_reguserdata_afd_present) {
+        AVFrameSideData *sd = av_frame_new_side_data(cur->f, AV_FRAME_DATA_AFD,
+                                                     sizeof(uint8_t));
+        if (!sd)
+            return;
+
+        *sd->data = h->active_format_description;
+        h->sei_reguserdata_afd_present = 0;
+    }
+
     // FIXME do something with unavailable reference frames
 
     /* Sort B-frames into display order */
