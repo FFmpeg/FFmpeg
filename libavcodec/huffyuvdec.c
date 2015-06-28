@@ -37,6 +37,7 @@
 #include "huffyuv.h"
 #include "huffyuvdsp.h"
 #include "thread.h"
+#include "libavutil/imgutils.h"
 #include "libavutil/pixdesc.h"
 
 #define classic_shift_luma_table_size 42
@@ -276,6 +277,10 @@ static av_cold int decode_init(AVCodecContext *avctx)
 {
     HYuvContext *s = avctx->priv_data;
     int ret;
+
+    ret = av_image_check_size(avctx->width, avctx->height, 0, avctx);
+    if (ret < 0)
+        return ret;
 
     ff_huffyuvdsp_init(&s->hdsp);
     memset(s->vlc, 0, 4 * sizeof(VLC));
