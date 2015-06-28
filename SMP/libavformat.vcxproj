@@ -225,6 +225,8 @@
     </ClCompile>
     <ClCompile Include="..\libavformat\avlanguage.c">
     </ClCompile>
+    <ClCompile Include="..\libavformat\asfdec-o.c">
+    </ClCompile>
     <ClCompile Include="..\libavformat\asfenc.c">
     </ClCompile>
     <ClCompile Include="..\libavformat\assdec.c">

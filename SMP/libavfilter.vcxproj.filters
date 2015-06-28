@@ -605,6 +605,9 @@
     <ClCompile Include="..\libavfilter\avf_showspectrum.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\avf_showvolume.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\avf_showwaves.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>

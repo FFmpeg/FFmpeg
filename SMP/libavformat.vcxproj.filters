@@ -267,6 +267,9 @@
     <ClCompile Include="..\libavformat\avlanguage.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavformat\asfdec-o.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavformat\asfenc.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>

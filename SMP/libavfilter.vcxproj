@@ -447,6 +447,8 @@
     </ClCompile>
     <ClCompile Include="..\libavfilter\avf_showspectrum.c">
     </ClCompile>
+    <ClCompile Include="..\libavfilter\avf_showvolume.c">
+    </ClCompile>
     <ClCompile Include="..\libavfilter\avf_showwaves.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\src_movie.c">
