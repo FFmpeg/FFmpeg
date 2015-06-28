@@ -1175,6 +1175,9 @@ static int asf_parse_packet(AVFormatContext *s, AVIOContext *pb, AVPacket *pkt)
             asf->packet_segments < 1 && asf->packet_time_start == 0) {
             int ret = asf->packet_size_left + asf->packet_padsize;
 
+            if (asf->packet_size_left && asf->packet_size_left < FRAME_HEADER_SIZE)
+                av_log(s, AV_LOG_WARNING, "Skip due to FRAME_HEADER_SIZE\n");
+
             assert(ret >= 0);
             /* fail safe */
             avio_skip(pb, ret);
