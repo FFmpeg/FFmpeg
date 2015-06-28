@@ -17,7 +17,7 @@ ffservertest: ffserver$(EXESUF) tests/vsynth1/00.pgm tests/data/asynth1.sw
 	$(SRC_PATH)/tests/ffserver-regression.sh $(FFSERVER_REFFILE) $(SRC_PATH)/tests/ffserver.conf
 
 APITESTSDIR := tests/api
-OBJDIRS += tests/data tests/vsynth1 tests/data/filtergraphs $(APITESTSDIR)
+OBJDIRS += tests/data tests/vsynth1 tests/data/filtergraphs $(APITESTSDIR)/
 
 $(VREF): tests/videogen$(HOSTEXESUF) | tests/vsynth1
 	$(M)./$< 'tests/vsynth1/'
