@@ -1559,13 +1559,13 @@ static void dequantization_int(int x, int y, Jpeg2000Cblk *cblk,
     for (j = 0; j < (cblk->coord[1][1] - cblk->coord[1][0]); ++j) {
         int32_t *datap = &comp->i_data[(comp->coord[0][1] - comp->coord[0][0]) * (y + j) + x];
         int *src = t1->data + j*t1->stride;
-        if (band->i_stepsize == 16384) {
+        if (band->i_stepsize == 32768) {
             for (i = 0; i < w; ++i)
                 datap[i] = src[i] / 2;
         } else {
             // This should be VERY uncommon
             for (i = 0; i < w; ++i)
-                datap[i] = (src[i] * (int64_t)band->i_stepsize) / 32768;
+                datap[i] = (src[i] * (int64_t)band->i_stepsize) / 65536;
         }
     }
 }
@@ -1580,7 +1580,7 @@ static void dequantization_int_97(int x, int y, Jpeg2000Cblk *cblk,
         int32_t *datap = &comp->i_data[(comp->coord[0][1] - comp->coord[0][0]) * (y + j) + x];
         int *src = t1->data + j*t1->stride;
         for (i = 0; i < w; ++i)
-            datap[i] = (src[i] * (int64_t)band->i_stepsize + (1<<14)) >> 15;
+            datap[i] = (src[i] * (int64_t)band->i_stepsize + (1<<15)) >> 16;
     }
 }
 

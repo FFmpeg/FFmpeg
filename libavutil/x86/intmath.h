@@ -39,6 +39,12 @@
 
 #if defined(__BMI2__)
 
+#if AV_GCC_VERSION_AT_LEAST(5,1)
+#define av_mod_uintp2 __builtin_ia32_bzhi_si
+#elif HAVE_INLINE_ASM
+/* GCC releases before 5.1.0 have a broken bzhi builtin, so for those we
+ * implement it using inline assembly
+ */
 #define av_mod_uintp2 av_mod_uintp2_bmi2
 static av_always_inline av_const unsigned av_mod_uintp2_bmi2(unsigned a, unsigned p)
 {
@@ -50,6 +56,7 @@ static av_always_inline av_const unsigned av_mod_uintp2_bmi2(unsigned a, unsigne
         return x;
     }
 }
+#endif /* AV_GCC_VERSION_AT_LEAST */
 
 #endif /* __BMI2__ */
 

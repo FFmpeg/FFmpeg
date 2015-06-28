@@ -67,7 +67,7 @@ enum Jpeg2000Quantsty { // quantization style
     JPEG2000_QSTY_SE    // scalar expounded
 };
 
-#define JPEG2000_MAX_DECLEVELS 32
+#define JPEG2000_MAX_DECLEVELS 33
 #define JPEG2000_MAX_RESLEVELS (JPEG2000_MAX_DECLEVELS + 1)
 
 #define JPEG2000_MAX_PASSES 100
@@ -215,7 +215,7 @@ typedef struct Jpeg2000Component {
 /* misc tools */
 static inline int ff_jpeg2000_ceildivpow2(int a, int b)
 {
-    return (a + (1 << b) - 1) >> b;
+    return -(((int64_t)(-a)) >> b);
 }
 
 static inline int ff_jpeg2000_ceildiv(int a, int b)

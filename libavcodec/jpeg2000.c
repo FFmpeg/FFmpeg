@@ -330,12 +330,13 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
                     band->f_stepsize *= pow(F_LFTG_K, 2*(codsty->nreslevels2decode - reslevelno) + lband - 2);
                 }
             }
+
+            band->i_stepsize = band->f_stepsize * (1 << 15);
+
             /* FIXME: In openjepg code stespize = stepsize * 0.5. Why?
              * If not set output of entropic decoder is not correct. */
             if (!av_codec_is_encoder(avctx->codec))
                 band->f_stepsize *= 0.5;
-
-            band->i_stepsize = band->f_stepsize * (1 << 15);
 
             /* computation of tbx_0, tbx_1, tby_0, tby_1
              * see ISO/IEC 15444-1:2002 B.5 eq. B-15 and tbl B.1
@@ -363,7 +364,7 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
                         /* Formula example for tbx_0 = ceildiv((tcx_0 - 2 ^ (declvl - 1) * x0_b) / declvl) */
                         band->coord[i][j] =
                             ff_jpeg2000_ceildivpow2(comp->coord_o[i][j] -
-                                                    (((bandno + 1 >> i) & 1) << declvl - 1),
+                                                    (((bandno + 1 >> i) & 1LL) << declvl - 1),
                                                     declvl);
                 /* TODO: Manage case of 3 band offsets here or
                  * in coding/decoding function? */

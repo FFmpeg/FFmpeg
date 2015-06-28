@@ -76,9 +76,10 @@ enum BandType {
     ZERO_BT        = 0,     ///< Scalefactors and spectral data are all zero.
     FIRST_PAIR_BT  = 5,     ///< This and later band types encode two values (rather than four) with one code word.
     ESC_BT         = 11,    ///< Spectral data are coded with an escape sequence.
+    RESERVED_BT    = 12,    ///< Band types following are encoded differently from others.
     NOISE_BT       = 13,    ///< Spectral data are scaled white noise not coded in the bitstream.
-    INTENSITY_BT2  = 14,    ///< Scalefactor data are intensity stereo positions.
-    INTENSITY_BT   = 15,    ///< Scalefactor data are intensity stereo positions.
+    INTENSITY_BT2  = 14,    ///< Scalefactor data are intensity stereo positions (out of phase).
+    INTENSITY_BT   = 15,    ///< Scalefactor data are intensity stereo positions (in phase).
 };
 
 #define IS_CODEBOOK_UNSIGNED(x) (((x) - 1) & 10)
@@ -237,6 +238,8 @@ typedef struct SingleChannelElement {
     float sf[120];                                  ///< scalefactors
     int sf_idx[128];                                ///< scalefactor indices (used by encoder)
     uint8_t zeroes[128];                            ///< band is not coded (used by encoder)
+    float  is_ener[128];                            ///< Intensity stereo pos (used by encoder)
+    float pns_ener[128];                            ///< Noise energy values (used by encoder)
     DECLARE_ALIGNED(32, float,   pcoeffs)[1024];    ///< coefficients for IMDCT, pristine
     DECLARE_ALIGNED(32, float,   coeffs)[1024];     ///< coefficients for IMDCT, maybe processed
     DECLARE_ALIGNED(32, float,   saved)[1536];      ///< overlap
@@ -254,7 +257,9 @@ typedef struct ChannelElement {
     // CPE specific
     int common_window;        ///< Set if channels share a common 'IndividualChannelStream' in bitstream.
     int     ms_mode;          ///< Signals mid/side stereo flags coding mode (used by encoder)
+    uint8_t is_mode;          ///< Set if any bands have been encoded using intensity stereo (used by encoder)
     uint8_t ms_mask[128];     ///< Set if mid/side stereo is used for each scalefactor window band
+    uint8_t is_mask[128];     ///< Set if intensity stereo is used (used by encoder)
     // shared
     SingleChannelElement ch[2];
     // CCE specific

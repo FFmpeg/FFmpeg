@@ -123,6 +123,8 @@ static int mpjpeg_read_header(AVFormatContext *s)
         return AVERROR_INVALIDDATA;
 
     st = avformat_new_stream(s, NULL);
+    if (!st)
+        return AVERROR(ENOMEM);
 
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id   = AV_CODEC_ID_MJPEG;
