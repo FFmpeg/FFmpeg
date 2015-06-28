@@ -31,10 +31,12 @@
 
 int ff_get_guid(AVIOContext *s, ff_asf_guid *g)
 {
+    int ret;
     av_assert0(sizeof(*g) == 16); //compiler will optimize this out
-    if (avio_read(s, *g, sizeof(*g)) < (int)sizeof(*g)) {
+    ret = avio_read(s, *g, sizeof(*g));
+    if (ret < (int)sizeof(*g)) {
         memset(*g, 0, sizeof(*g));
-        return AVERROR_INVALIDDATA;
+        return ret < 0 ? ret : AVERROR_INVALIDDATA;
     }
     return 0;
 }
