@@ -246,38 +246,28 @@ int ff_h264_decode_sei(H264Context *h)
         switch (type) {
         case SEI_TYPE_PIC_TIMING: // Picture timing SEI
             ret = decode_picture_timing(h);
-            if (ret < 0)
-                return ret;
             break;
         case SEI_TYPE_USER_DATA_UNREGISTERED:
             ret = decode_unregistered_user_data(h, size);
-            if (ret < 0)
-                return ret;
             break;
         case SEI_TYPE_RECOVERY_POINT:
             ret = decode_recovery_point(h);
-            if (ret < 0)
-                return ret;
             break;
         case SEI_TYPE_BUFFERING_PERIOD:
             ret = decode_buffering_period(h);
-            if (ret < 0)
-                return ret;
             break;
         case SEI_TYPE_FRAME_PACKING:
             ret = decode_frame_packing_arrangement(h);
-            if (ret < 0)
-                return ret;
             break;
         case SEI_TYPE_DISPLAY_ORIENTATION:
             ret = decode_display_orientation(h);
-            if (ret < 0)
-                return ret;
             break;
         default:
             av_log(h->avctx, AV_LOG_DEBUG, "unknown SEI type %d\n", type);
             skip_bits(&h->gb, 8 * size);
         }
+        if (ret < 0)
+            return ret;
 
         // FIXME check bits here
         align_get_bits(&h->gb);
