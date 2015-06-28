@@ -1982,7 +1982,14 @@ static int wmavoice_decode_packet(AVCodecContext *ctx, void *data,
                     *got_frame_ptr) {
                     cnt += s->spillover_nbits;
                     s->skip_bits_next = cnt & 7;
-                    return cnt >> 3;
+                    res = cnt >> 3;
+                    if (res > avpkt->size) {
+                        av_log(ctx, AV_LOG_ERROR,
+                               "Trying to skip %d bytes in packet of size %d\n",
+                               res, avpkt->size);
+                        return AVERROR_INVALIDDATA;
+                    }
+                    return res;
                 } else
                     skip_bits_long (gb, s->spillover_nbits - cnt +
                                     get_bits_count(gb)); // resync
@@ -2001,7 +2008,14 @@ static int wmavoice_decode_packet(AVCodecContext *ctx, void *data,
     } else if (*got_frame_ptr) {
         int cnt = get_bits_count(gb);
         s->skip_bits_next = cnt & 7;
-        return cnt >> 3;
+        res = cnt >> 3;
+        if (res > avpkt->size) {
+            av_log(ctx, AV_LOG_ERROR,
+                   "Trying to skip %d bytes in packet of size %d\n",
+                   res, avpkt->size);
+            return AVERROR_INVALIDDATA;
+        }
+        return res;
     } else if ((s->sframe_cache_size = pos) > 0) {
         /* rewind bit reader to start of last (incomplete) superframe... */
         init_get_bits(gb, avpkt->data, size << 3);
