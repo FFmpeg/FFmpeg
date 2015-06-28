@@ -1232,7 +1232,6 @@ static int jpeg2000_decode_packets_po_iteration(Jpeg2000DecoderContext *s, Jpeg2
         for (compno = CSpoc; compno < CEpoc; compno++) {
             Jpeg2000Component *comp     = tile->comp + compno;
             Jpeg2000CodingStyle *codsty = tile->codsty + compno;
-            Jpeg2000QuantStyle *qntsty  = tile->qntsty + compno;
 
             for (reslevelno = RSpoc; reslevelno < FFMIN(codsty->nreslevels, REpoc); reslevelno++) {
                 uint8_t reducedresno = codsty->nreslevels - 1 -reslevelno; //  ==> N_L - r
@@ -1458,7 +1457,7 @@ static int decode_cblk(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *codsty,
                        Jpeg2000T1Context *t1, Jpeg2000Cblk *cblk,
                        int width, int height, int bandpos)
 {
-    int passno = cblk->npasses, pass_t = 2, bpno = cblk->nonzerobits - 1, y;
+    int passno = cblk->npasses, pass_t = 2, bpno = cblk->nonzerobits - 1;
     int pass_cnt = 0;
     int vert_causal_ctx_csty_symbol = codsty->cblk_style & JPEG2000_CBLK_VSC;
     int term_cnt = 0;
