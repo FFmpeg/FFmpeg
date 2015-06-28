@@ -747,12 +747,6 @@ static int asf_read_stream_properties(AVFormatContext *s, const GUIDParseTable *
     av_init_packet(&asf_st->pkt.avpkt);
     asf_st->pkt.data_size        = 0;
     avio_skip(pb, 4); // skip reserved field
-    if (!ts_data_len) {
-        av_log(s, AV_LOG_WARNING, "Suspicious data found! ASF stream #%d will be ignored.\n",
-               asf_st->stream_index);
-        align_position(pb, asf->offset, size);
-        return 0;
-    }
 
     switch (type) {
     case AVMEDIA_TYPE_AUDIO:
