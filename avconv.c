@@ -256,65 +256,6 @@ static void abort_codec_experimental(AVCodec *c, int encoder)
     exit_program(1);
 }
 
-/*
- * Update the requested input sample format based on the output sample format.
- * This is currently only used to request float output from decoders which
- * support multiple sample formats, one of which is AV_SAMPLE_FMT_FLT.
- * Ideally this will be removed in the future when decoders do not do format
- * conversion and only output in their native format.
- */
-static void update_sample_fmt(AVCodecContext *dec, AVCodec *dec_codec,
-                              AVCodecContext *enc)
-{
-    /* if sample formats match or a decoder sample format has already been
-       requested, just return */
-    if (enc->sample_fmt == dec->sample_fmt ||
-        dec->request_sample_fmt > AV_SAMPLE_FMT_NONE)
-        return;
-
-    /* if decoder supports more than one output format */
-    if (dec_codec && dec_codec->sample_fmts &&
-        dec_codec->sample_fmts[0] != AV_SAMPLE_FMT_NONE &&
-        dec_codec->sample_fmts[1] != AV_SAMPLE_FMT_NONE) {
-        const enum AVSampleFormat *p;
-        int min_dec = INT_MAX, min_inc = INT_MAX;
-        enum AVSampleFormat dec_fmt = AV_SAMPLE_FMT_NONE;
-        enum AVSampleFormat inc_fmt = AV_SAMPLE_FMT_NONE;
-
-        /* find a matching sample format in the encoder */
-        for (p = dec_codec->sample_fmts; *p != AV_SAMPLE_FMT_NONE; p++) {
-            if (*p == enc->sample_fmt) {
-                dec->request_sample_fmt = *p;
-                return;
-            } else {
-                enum AVSampleFormat dfmt = av_get_packed_sample_fmt(*p);
-                enum AVSampleFormat efmt = av_get_packed_sample_fmt(enc->sample_fmt);
-                int fmt_diff = 32 * abs(dfmt - efmt);
-                if (av_sample_fmt_is_planar(*p) !=
-                    av_sample_fmt_is_planar(enc->sample_fmt))
-                    fmt_diff++;
-                if (dfmt == efmt) {
-                    min_inc = fmt_diff;
-                    inc_fmt = *p;
-                } else if (dfmt > efmt) {
-                    if (fmt_diff < min_inc) {
-                        min_inc = fmt_diff;
-                        inc_fmt = *p;
-                    }
-                } else {
-                    if (fmt_diff < min_dec) {
-                        min_dec = fmt_diff;
-                        dec_fmt = *p;
-                    }
-                }
-            }
-        }
-
-        /* if none match, provide the one that matches quality closest */
-        dec->request_sample_fmt = min_inc != INT_MAX ? inc_fmt : dec_fmt;
-    }
-}
-
 static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
 {
     AVBitStreamFilterContext *bsfc = ost->bitstream_filters;
@@ -1551,7 +1492,7 @@ static int get_buffer(AVCodecContext *s, AVFrame *frame, int flags)
 
 static int init_input_stream(int ist_index, char *error, int error_len)
 {
-    int i, ret;
+    int ret;
     InputStream *ist = input_streams[ist_index];
     if (ist->decoding_needed) {
         AVCodec *codec = ist->dec;
@@ -1559,16 +1500,6 @@ static int init_input_stream(int ist_index, char *error, int error_len)
             snprintf(error, error_len, "Decoder (codec id %d) not found for input stream #%d:%d",
                     ist->dec_ctx->codec_id, ist->file_index, ist->st->index);
             return AVERROR(EINVAL);
-        }
-
-        /* update requested sample format for the decoder based on the
-           corresponding encoder sample format */
-        for (i = 0; i < nb_output_streams; i++) {
-            OutputStream *ost = output_streams[i];
-            if (ost->source_index == ist_index) {
-                update_sample_fmt(ist->dec_ctx, codec, ost->enc_ctx);
-                break;
-            }
         }
 
         ist->dec_ctx->opaque                = ist;
