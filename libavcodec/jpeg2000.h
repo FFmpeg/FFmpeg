@@ -215,7 +215,7 @@ typedef struct Jpeg2000Component {
 /* misc tools */
 static inline int ff_jpeg2000_ceildivpow2(int a, int b)
 {
-    return -((-a) >> b);
+    return -(((int64_t)(-a)) >> b);
 }
 
 static inline int ff_jpeg2000_ceildiv(int a, int b)
