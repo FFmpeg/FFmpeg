@@ -41,6 +41,8 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/pixfmt.h"
 
+#define DEFAULT_PASS_LOGFILENAME_PREFIX "av2pass"
+
 #define MATCH_PER_STREAM_OPT(name, type, outvar, fmtctx, st)\
 {\
     int i, ret;\
@@ -1173,6 +1175,38 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc)
         if (ost->logfile_prefix &&
             !(ost->logfile_prefix = av_strdup(ost->logfile_prefix)))
             exit_program(1);
+
+        if (do_pass) {
+            char logfilename[1024];
+            FILE *f;
+
+            snprintf(logfilename, sizeof(logfilename), "%s-%d.log",
+                     ost->logfile_prefix ? ost->logfile_prefix :
+                                           DEFAULT_PASS_LOGFILENAME_PREFIX,
+                     i);
+            if (!strcmp(ost->enc->name, "libx264")) {
+                av_dict_set(&ost->encoder_opts, "stats", logfilename, AV_DICT_DONT_OVERWRITE);
+            } else {
+                if (video_enc->flags & CODEC_FLAG_PASS1) {
+                    f = fopen(logfilename, "wb");
+                    if (!f) {
+                        av_log(NULL, AV_LOG_FATAL, "Cannot write log file '%s' for pass-1 encoding: %s\n",
+                               logfilename, strerror(errno));
+                        exit_program(1);
+                    }
+                    ost->logfile = f;
+                } else {
+                    char  *logbuffer;
+                    size_t logbuffer_size;
+                    if (cmdutils_read_file(logfilename, &logbuffer, &logbuffer_size) < 0) {
+                        av_log(NULL, AV_LOG_FATAL, "Error reading log file '%s' for pass-2 encoding\n",
+                               logfilename);
+                        exit_program(1);
+                    }
+                    video_enc->stats_in = logbuffer;
+                }
+            }
+        }
 
         MATCH_PER_STREAM_OPT(forced_key_frames, str, ost->forced_keyframes, oc, st);
         if (ost->forced_keyframes)

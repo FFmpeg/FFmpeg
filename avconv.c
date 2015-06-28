@@ -93,8 +93,6 @@ static int nb_frames_drop = 0;
 static int transcoding_finished;
 #endif
 
-#define DEFAULT_PASS_LOGFILENAME_PREFIX "av2pass"
-
 InputStream **input_streams = NULL;
 int        nb_input_streams = 0;
 InputFile   **input_files   = NULL;
@@ -1859,38 +1857,6 @@ static int transcode_init(void)
             default:
                 abort();
                 break;
-            }
-            /* two pass mode */
-            if ((enc_ctx->flags & (CODEC_FLAG_PASS1 | CODEC_FLAG_PASS2))) {
-                char logfilename[1024];
-                FILE *f;
-
-                snprintf(logfilename, sizeof(logfilename), "%s-%d.log",
-                         ost->logfile_prefix ? ost->logfile_prefix :
-                                               DEFAULT_PASS_LOGFILENAME_PREFIX,
-                         i);
-                if (!strcmp(ost->enc->name, "libx264")) {
-                    av_dict_set(&ost->encoder_opts, "stats", logfilename, AV_DICT_DONT_OVERWRITE);
-                } else {
-                    if (enc_ctx->flags & CODEC_FLAG_PASS1) {
-                        f = fopen(logfilename, "wb");
-                        if (!f) {
-                            av_log(NULL, AV_LOG_FATAL, "Cannot write log file '%s' for pass-1 encoding: %s\n",
-                                   logfilename, strerror(errno));
-                            exit_program(1);
-                        }
-                        ost->logfile = f;
-                    } else {
-                        char  *logbuffer;
-                        size_t logbuffer_size;
-                        if (cmdutils_read_file(logfilename, &logbuffer, &logbuffer_size) < 0) {
-                            av_log(NULL, AV_LOG_FATAL, "Error reading log file '%s' for pass-2 encoding\n",
-                                   logfilename);
-                            exit_program(1);
-                        }
-                        enc_ctx->stats_in = logbuffer;
-                    }
-                }
             }
         }
     }
