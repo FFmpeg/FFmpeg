@@ -1549,6 +1549,60 @@ static InputStream *get_input_stream(OutputStream *ost)
     return NULL;
 }
 
+static int init_output_stream(OutputStream *ost, char *error, int error_len)
+{
+    int ret = 0;
+
+    if (ost->encoding_needed) {
+        AVCodec      *codec = ost->enc;
+        AVCodecContext *dec = NULL;
+        InputStream *ist;
+
+        if ((ist = get_input_stream(ost)))
+            dec = ist->dec_ctx;
+        if (dec && dec->subtitle_header) {
+            ost->enc_ctx->subtitle_header = av_malloc(dec->subtitle_header_size);
+            if (!ost->enc_ctx->subtitle_header)
+                return AVERROR(ENOMEM);
+            memcpy(ost->enc_ctx->subtitle_header, dec->subtitle_header, dec->subtitle_header_size);
+            ost->enc_ctx->subtitle_header_size = dec->subtitle_header_size;
+        }
+        if (!av_dict_get(ost->encoder_opts, "threads", NULL, 0))
+            av_dict_set(&ost->encoder_opts, "threads", "auto", 0);
+        av_dict_set(&ost->encoder_opts, "side_data_only_packets", "1", 0);
+
+        if ((ret = avcodec_open2(ost->enc_ctx, codec, &ost->encoder_opts)) < 0) {
+            if (ret == AVERROR_EXPERIMENTAL)
+                abort_codec_experimental(codec, 1);
+            snprintf(error, error_len,
+                     "Error while opening encoder for output stream #%d:%d - "
+                     "maybe incorrect parameters such as bit_rate, rate, width or height",
+                    ost->file_index, ost->index);
+            return ret;
+        }
+        assert_avoptions(ost->encoder_opts);
+        if (ost->enc_ctx->bit_rate && ost->enc_ctx->bit_rate < 1000)
+            av_log(NULL, AV_LOG_WARNING, "The bitrate parameter is set too low."
+                                         "It takes bits/s as argument, not kbits/s\n");
+
+        ret = avcodec_copy_context(ost->st->codec, ost->enc_ctx);
+        if (ret < 0) {
+            av_log(NULL, AV_LOG_FATAL,
+                   "Error initializing the output stream codec context.\n");
+            exit_program(1);
+        }
+
+        ost->st->time_base = ost->enc_ctx->time_base;
+    } else {
+        ret = av_opt_set_dict(ost->enc_ctx, &ost->encoder_opts);
+        if (ret < 0)
+            return ret;
+        ost->st->time_base = ost->st->codec->time_base;
+    }
+
+    return ret;
+}
+
 static void parse_forced_key_frames(char *kf, OutputStream *ost,
                                     AVCodecContext *avctx)
 {
@@ -1863,52 +1917,9 @@ static int transcode_init(void)
 
     /* open each encoder */
     for (i = 0; i < nb_output_streams; i++) {
-        ost = output_streams[i];
-        if (ost->encoding_needed) {
-            AVCodec      *codec = ost->enc;
-            AVCodecContext *dec = NULL;
-
-            if ((ist = get_input_stream(ost)))
-                dec = ist->dec_ctx;
-            if (dec && dec->subtitle_header) {
-                ost->enc_ctx->subtitle_header = av_malloc(dec->subtitle_header_size);
-                if (!ost->enc_ctx->subtitle_header) {
-                    ret = AVERROR(ENOMEM);
-                    goto dump_format;
-                }
-                memcpy(ost->enc_ctx->subtitle_header, dec->subtitle_header, dec->subtitle_header_size);
-                ost->enc_ctx->subtitle_header_size = dec->subtitle_header_size;
-            }
-            if (!av_dict_get(ost->encoder_opts, "threads", NULL, 0))
-                av_dict_set(&ost->encoder_opts, "threads", "auto", 0);
-            av_dict_set(&ost->encoder_opts, "side_data_only_packets", "1", 0);
-
-            if ((ret = avcodec_open2(ost->enc_ctx, codec, &ost->encoder_opts)) < 0) {
-                if (ret == AVERROR_EXPERIMENTAL)
-                    abort_codec_experimental(codec, 1);
-                snprintf(error, sizeof(error), "Error while opening encoder for output stream #%d:%d - maybe incorrect parameters such as bit_rate, rate, width or height",
-                        ost->file_index, ost->index);
-                goto dump_format;
-            }
-            assert_avoptions(ost->encoder_opts);
-            if (ost->enc_ctx->bit_rate && ost->enc_ctx->bit_rate < 1000)
-                av_log(NULL, AV_LOG_WARNING, "The bitrate parameter is set too low."
-                                             "It takes bits/s as argument, not kbits/s\n");
-
-            ret = avcodec_copy_context(ost->st->codec, ost->enc_ctx);
-            if (ret < 0) {
-                av_log(NULL, AV_LOG_FATAL,
-                       "Error initializing the output stream codec context.\n");
-                exit_program(1);
-            }
-
-            ost->st->time_base = ost->enc_ctx->time_base;
-        } else {
-            ret = av_opt_set_dict(ost->enc_ctx, &ost->encoder_opts);
-            if (ret < 0)
-                return ret;
-            ost->st->time_base = ost->st->codec->time_base;
-        }
+        ret = init_output_stream(output_streams[i], error, sizeof(error));
+        if (ret < 0)
+            goto dump_format;
     }
 
     /* init input streams */
