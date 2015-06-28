@@ -9,7 +9,7 @@ $(APITESTOBJS): | $(sort $(dir $(APITESTOBJS)))
 $(APITESTOBJS) $(APITESTOBJS:.o=.i): CPPFLAGS += -DTEST
 $(APITESTOBJS) $(APITESTOBJS:.o=.i): CFLAGS += -Umain
 
-$(APITESTPROGS): %$(EXESUF): %.o $(EXEOBJS)
+$(APITESTPROGS): %$(EXESUF): %.o $(EXEOBJS) $(FF_DEP_LIBS)
 	$(LD) $(LDFLAGS) $(LDEXEFLAGS) $(LD_O) $(filter %.o,$^) $(FF_DEP_LIBS) $(FFEXTRALIBS) $(ELIBS)
 
 testclean::
