@@ -67,7 +67,7 @@ enum Jpeg2000Quantsty { // quantization style
     JPEG2000_QSTY_SE    // scalar expounded
 };
 
-#define JPEG2000_MAX_DECLEVELS 32
+#define JPEG2000_MAX_DECLEVELS 33
 #define JPEG2000_MAX_RESLEVELS (JPEG2000_MAX_DECLEVELS + 1)
 
 #define JPEG2000_MAX_PASSES 100
