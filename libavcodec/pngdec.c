@@ -588,6 +588,11 @@ static int decode_frame(AVCodecContext *avctx,
                 goto fail;
             }
 
+            if (s->state & PNG_IHDR) {
+                av_log(avctx, AV_LOG_ERROR, "Multiple IHDR\n");
+                goto fail;
+            }
+
             s->width  = bytestream2_get_be32(&s->gb);
             s->height = bytestream2_get_be32(&s->gb);
             if (av_image_check_size(s->width, s->height, 0, avctx)) {
