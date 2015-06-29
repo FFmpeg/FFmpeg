@@ -609,6 +609,17 @@ static int bmp_probe(AVProbeData *p)
     return AVPROBE_SCORE_EXTENSION / 4;
 }
 
+static int dds_probe(AVProbeData *p)
+{
+    const uint8_t *b = p->buf;
+
+    if (   AV_RB64(b) == 0x444453207c000000
+        && AV_RL32(b +  8)
+        && AV_RL32(b + 12))
+        return AVPROBE_SCORE_MAX - 1;
+    return 0;
+}
+
 static int dpx_probe(AVProbeData *p)
 {
     const uint8_t *b = p->buf;
@@ -799,6 +810,7 @@ AVInputFormat ff_image_ ## imgname ## _pipe_demuxer = {\
 };
 
 IMAGEAUTO_DEMUXER(bmp,     AV_CODEC_ID_BMP)
+IMAGEAUTO_DEMUXER(dds,     AV_CODEC_ID_DDS)
 IMAGEAUTO_DEMUXER(dpx,     AV_CODEC_ID_DPX)
 IMAGEAUTO_DEMUXER(exr,     AV_CODEC_ID_EXR)
 IMAGEAUTO_DEMUXER(j2k,     AV_CODEC_ID_JPEG2000)
