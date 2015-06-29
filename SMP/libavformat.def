@@ -104,7 +104,6 @@ EXPORTS
     avio_close_dir
     avio_close_dyn_buf
     avio_closep
-    avio_delete
     avio_enum_protocols
     avio_feof
     avio_find_protocol_name
@@ -113,7 +112,6 @@ EXPORTS
     avio_get_str
     avio_get_str16be
     avio_get_str16le
-    avio_move
     avio_open
     avio_open2
     avio_open_dir
@@ -152,6 +150,8 @@ EXPORTS
     avpriv_dv_get_packet
     avpriv_dv_init_demux
     avpriv_dv_produce_packet
+    avpriv_io_delete
+    avpriv_io_move
     avpriv_mpegts_parse_close
     avpriv_mpegts_parse_open
     avpriv_mpegts_parse_packet
