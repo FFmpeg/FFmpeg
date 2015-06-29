@@ -44,6 +44,7 @@ typedef struct {
     uint64_t tc_samples;
     double time_constant;
     double mult;
+    int metadata;
 } AudioStatsContext;
 
 #define OFFSET(x) offsetof(AudioStatsContext, x)
@@ -51,6 +52,7 @@ typedef struct {
 
 static const AVOption astats_options[] = {
     { "length", "set the window length", OFFSET(time_constant), AV_OPT_TYPE_DOUBLE, {.dbl=.05}, .01, 10, FLAGS },
+    { "metadata", "inject metadata in the filtergraph", OFFSET(metadata), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS },
     { NULL }
 };
 
@@ -146,9 +148,82 @@ static inline void update_stat(AudioStatsContext *s, ChannelStats *p, double d)
     p->nb_samples++;
 }
 
+static void set_meta(AVDictionary **metadata, int chan, const char *key,
+                     const char *fmt, double val)
+{
+    uint8_t value[128];
+    uint8_t key2[128];
+
+    snprintf(value, sizeof(value), fmt, val);
+    if (chan)
+        snprintf(key2, sizeof(key2), "lavfi.astats.%d.%s", chan, key);
+    else
+        snprintf(key2, sizeof(key2), "lavfi.astats.%s", key);
+    av_dict_set(metadata, key2, value, 0);
+}
+
+#define LINEAR_TO_DB(x) (log10(x) * 20)
+
+static void set_metadata(AudioStatsContext *s, AVDictionary **metadata)
+{
+    uint64_t min_count = 0, max_count = 0, nb_samples = 0;
+    double min_runs = 0, max_runs = 0,
+           min = DBL_MAX, max = DBL_MIN,
+           max_sigma_x = 0,
+           sigma_x = 0,
+           sigma_x2 = 0,
+           min_sigma_x2 = DBL_MAX,
+           max_sigma_x2 = DBL_MIN;
+    int c;
+
+    for (c = 0; c < s->nb_channels; c++) {
+        ChannelStats *p = &s->chstats[c];
+
+        if (p->nb_samples < s->tc_samples)
+            p->min_sigma_x2 = p->max_sigma_x2 = p->sigma_x2 / p->nb_samples;
+
+        min = FFMIN(min, p->min);
+        max = FFMAX(max, p->max);
+        min_sigma_x2 = FFMIN(min_sigma_x2, p->min_sigma_x2);
+        max_sigma_x2 = FFMAX(max_sigma_x2, p->max_sigma_x2);
+        sigma_x += p->sigma_x;
+        sigma_x2 += p->sigma_x2;
+        min_count += p->min_count;
+        max_count += p->max_count;
+        min_runs += p->min_runs;
+        max_runs += p->max_runs;
+        nb_samples += p->nb_samples;
+        if (fabs(p->sigma_x) > fabs(max_sigma_x))
+            max_sigma_x = p->sigma_x;
+
+        set_meta(metadata, c + 1, "DC_offset", "%f", p->sigma_x / p->nb_samples);
+        set_meta(metadata, c + 1, "Min_level", "%f", p->min);
+        set_meta(metadata, c + 1, "Max_level", "%f", p->max);
+        set_meta(metadata, c + 1, "Peak_level", "%f", LINEAR_TO_DB(FFMAX(-p->min, p->max)));
+        set_meta(metadata, c + 1, "RMS_level", "%f", LINEAR_TO_DB(sqrt(p->sigma_x2 / p->nb_samples)));
+        set_meta(metadata, c + 1, "RMS_peak", "%f", LINEAR_TO_DB(sqrt(p->max_sigma_x2)));
+        set_meta(metadata, c + 1, "RMS_trough", "%f", LINEAR_TO_DB(sqrt(p->min_sigma_x2)));
+        set_meta(metadata, c + 1, "Crest_factor", "%f", p->sigma_x2 ? FFMAX(-p->min, p->max) / sqrt(p->sigma_x2 / p->nb_samples) : 1);
+        set_meta(metadata, c + 1, "Flat_factor", "%f", LINEAR_TO_DB((p->min_runs + p->max_runs) / (p->min_count + p->max_count)));
+        set_meta(metadata, c + 1, "Peak_count", "%f", (float)(p->min_count + p->max_count));
+    }
+
+    set_meta(metadata, 0, "Overall.DC_offset", "%f", max_sigma_x / (nb_samples / s->nb_channels));
+    set_meta(metadata, 0, "Overall.Min_level", "%f", min);
+    set_meta(metadata, 0, "Overall.Max_level", "%f", max);
+    set_meta(metadata, 0, "Overall.Peak_level", "%f", LINEAR_TO_DB(FFMAX(-min, max)));
+    set_meta(metadata, 0, "Overall.RMS_level", "%f", LINEAR_TO_DB(sqrt(sigma_x2 / nb_samples)));
+    set_meta(metadata, 0, "Overall.RMS_peak", "%f", LINEAR_TO_DB(sqrt(max_sigma_x2)));
+    set_meta(metadata, 0, "Overall.RMS_trough", "%f", LINEAR_TO_DB(sqrt(min_sigma_x2)));
+    set_meta(metadata, 0, "Overall.Flat_factor", "%f", LINEAR_TO_DB((min_runs + max_runs) / (min_count + max_count)));
+    set_meta(metadata, 0, "Overall.Peak_count", "%f", (float)(min_count + max_count) / (double)s->nb_channels);
+    set_meta(metadata, 0, "Overall.Number_of_samples", "%f", nb_samples / s->nb_channels);
+}
+
 static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
 {
     AudioStatsContext *s = inlink->dst->priv;
+    AVDictionary **metadata = avpriv_frame_get_metadatap(buf);
     const int channels = s->nb_channels;
     const double *src;
     int i, c;
@@ -173,10 +248,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
         break;
     }
 
+    if (s->metadata)
+        set_metadata(s, metadata);
+
     return ff_filter_frame(inlink->dst->outputs[0], buf);
 }
-
-#define LINEAR_TO_DB(x) (log10(x) * 20)
 
 static void print_stats(AVFilterContext *ctx)
 {

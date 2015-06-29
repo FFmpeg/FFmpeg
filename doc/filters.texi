@@ -941,6 +941,41 @@ It accepts the following option:
 @item length
 Short window length in seconds, used for peak and trough RMS measurement.
 Default is @code{0.05} (50 milliseconds). Allowed range is @code{[0.1 - 10]}.
+
+@item metadata
+
+Set metadata injection. All the metadata keys are prefixed with @code{lavfi.astats.X},
+where @code{X} is channel number starting from 1 or string @code{Overall}. Default is
+disabled.
+
+Available keys for each channel are:
+DC_offset
+Min_level
+Max_level
+Peak_level
+RMS_peak
+RMS_trough
+Crest_factor
+Flat_factor
+Peak_count
+
+and for Overall:
+DC_offset
+Min_level
+Max_level
+Peak_level
+RMS_level
+RMS_peak
+RMS_trough
+Flat_factor
+Peak_count
+Number_of_samples
+
+For example full key look like this @code{lavfi.astats.1.DC_offset} or
+this @code{lavfi.astats.Overall.Peak_count}.
+
+For description what each key means read bellow.
+
 @end table
 
 A description of each shown parameter follows:
