@@ -2192,11 +2192,13 @@ the_end:
                     }
                 } else if (s->upscale_h[p] == 2) {
                     if (is16bit) {
-                        ((uint16_t*)line)[w - 1] =
-                        ((uint16_t*)line)[w - 2] = ((uint16_t*)line)[(w - 1) / 3];
+                        ((uint16_t*)line)[w - 1] = ((uint16_t*)line)[(w - 1) / 3];
+                        if (w > 1)
+                            ((uint16_t*)line)[w - 2] = ((uint16_t*)line)[w - 1];
                     } else {
-                        line[w - 1] =
-                        line[w - 2] = line[(w - 1) / 3];
+                        line[w - 1] = line[(w - 1) / 3];
+                        if (w > 1)
+                            line[w - 2] = line[w - 1];
                     }
                     for (index = w - 3; index > 0; index--) {
                         line[index] = (line[index / 3] + line[(index + 1) / 3] + line[(index + 2) / 3] + 1) / 3;
