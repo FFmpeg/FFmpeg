@@ -547,17 +547,12 @@ static int decode_ihdr_chunk(AVCodecContext *avctx, PNGDecContext *s,
         return AVERROR_INVALIDDATA;
     }
 
-    s->width  = bytestream2_get_be32(&s->gb);
-    s->height = bytestream2_get_be32(&s->gb);
+    s->width  = s->cur_w = bytestream2_get_be32(&s->gb);
+    s->height = s->cur_h = bytestream2_get_be32(&s->gb);
     if (av_image_check_size(s->width, s->height, 0, avctx)) {
-        s->width = s->height = 0;
+        s->cur_w = s->cur_h = s->width = s->height = 0;
         av_log(avctx, AV_LOG_ERROR, "Invalid image size\n");
         return AVERROR_INVALIDDATA;
-    }
-    if (s->cur_w == 0 && s->cur_h == 0) {
-        // Only set cur_w/h if update_thread_context() has not set it
-        s->cur_w = s->width;
-        s->cur_h = s->height;
     }
     s->bit_depth        = bytestream2_get_byte(&s->gb);
     s->color_type       = bytestream2_get_byte(&s->gb);
@@ -1269,11 +1264,23 @@ static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
         (ret = ff_thread_ref_frame(&pdst->picture, &psrc->picture)) < 0)
         return ret;
     if (CONFIG_APNG_DECODER && dst->codec_id == AV_CODEC_ID_APNG) {
+        pdst->width             = psrc->width;
+        pdst->height            = psrc->height;
+        pdst->bit_depth         = psrc->bit_depth;
+        pdst->color_type        = psrc->color_type;
+        pdst->compression_type  = psrc->compression_type;
+        pdst->interlace_type    = psrc->interlace_type;
+        pdst->filter_type       = psrc->filter_type;
         pdst->cur_w = psrc->cur_w;
         pdst->cur_h = psrc->cur_h;
         pdst->x_offset = psrc->x_offset;
         pdst->y_offset = psrc->y_offset;
+
         pdst->dispose_op = psrc->dispose_op;
+
+        memcpy(pdst->palette, psrc->palette, sizeof(pdst->palette));
+
+        pdst->state |= psrc->state & (PNG_IHDR | PNG_PLTE);
 
         ff_thread_release_buffer(dst, &pdst->last_picture);
         if (psrc->last_picture.f->data[0])
