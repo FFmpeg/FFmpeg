@@ -114,7 +114,7 @@ int ff_get_wav_header(AVFormatContext *s, AVIOContext *pb,
         if (cbSize > 0) {
             av_free(codec->extradata);
             codec->extradata = av_mallocz(codec->extradata_size +
-                                          FF_INPUT_BUFFER_PADDING_SIZE);
+                                          AV_INPUT_BUFFER_PADDING_SIZE);
             if (!codec->extradata)
                 return AVERROR(ENOMEM);
             avio_read(pb, codec->extradata, codec->extradata_size);

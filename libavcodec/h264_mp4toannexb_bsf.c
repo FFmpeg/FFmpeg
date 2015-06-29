@@ -41,7 +41,7 @@ static int alloc_and_copy(uint8_t **poutbuf, int *poutbuf_size,
 
     *poutbuf_size += sps_pps_size + in_size + nal_header_size;
     if ((err = av_reallocp(poutbuf,
-                           *poutbuf_size + FF_INPUT_BUFFER_PADDING_SIZE)) < 0) {
+                           *poutbuf_size + AV_INPUT_BUFFER_PADDING_SIZE)) < 0) {
         *poutbuf_size = 0;
         return err;
     }
@@ -109,7 +109,7 @@ static int h264_extradata_to_annexb(AVCodecContext *avctx, const int padding)
     }
 
     if (out)
-        memset(out + total_size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
+        memset(out + total_size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
     if (!sps_seen)
         av_log(avctx, AV_LOG_WARNING,
@@ -150,7 +150,7 @@ static int h264_mp4toannexb_filter(AVBitStreamFilterContext *bsfc,
 
     /* retrieve sps and pps NAL units from extradata */
     if (!ctx->extradata_parsed) {
-        ret = h264_extradata_to_annexb(avctx, FF_INPUT_BUFFER_PADDING_SIZE);
+        ret = h264_extradata_to_annexb(avctx, AV_INPUT_BUFFER_PADDING_SIZE);
         if (ret < 0)
             return ret;
         ctx->length_size      = ret;

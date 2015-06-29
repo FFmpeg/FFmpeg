@@ -67,18 +67,18 @@ static int hevc_extradata_to_annexb(AVCodecContext *avctx)
         for (j = 0; j < cnt; j++) {
             int nalu_len = bytestream2_get_be16(&gb);
 
-            if (4 + FF_INPUT_BUFFER_PADDING_SIZE + nalu_len > SIZE_MAX - new_extradata_size) {
+            if (4 + AV_INPUT_BUFFER_PADDING_SIZE + nalu_len > SIZE_MAX - new_extradata_size) {
                 ret = AVERROR_INVALIDDATA;
                 goto fail;
             }
-            ret = av_reallocp(&new_extradata, new_extradata_size + nalu_len + 4 + FF_INPUT_BUFFER_PADDING_SIZE);
+            ret = av_reallocp(&new_extradata, new_extradata_size + nalu_len + 4 + AV_INPUT_BUFFER_PADDING_SIZE);
             if (ret < 0)
                 goto fail;
 
             AV_WB32(new_extradata + new_extradata_size, 1); // add the startcode
             bytestream2_get_buffer(&gb, new_extradata + new_extradata_size + 4, nalu_len);
             new_extradata_size += 4 + nalu_len;
-            memset(new_extradata + new_extradata_size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
+            memset(new_extradata + new_extradata_size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
         }
     }
 

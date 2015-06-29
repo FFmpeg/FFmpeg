@@ -586,7 +586,7 @@ static int svq1_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     if (!pkt->data &&
         (ret = av_new_packet(pkt, s->y_block_width * s->y_block_height *
-                             MAX_MB_BYTES * 3 + FF_MIN_BUFFER_SIZE)) < 0) {
+                             MAX_MB_BYTES * 3 + AV_INPUT_BUFFER_MIN_SIZE)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "Error getting output packet.\n");
         return ret;
     }

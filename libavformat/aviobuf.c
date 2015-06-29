@@ -983,7 +983,7 @@ int avio_close_dyn_buf(AVIOContext *s, uint8_t **pbuffer)
 {
     DynBuffer *d;
     int size;
-    static const char padbuf[FF_INPUT_BUFFER_PADDING_SIZE] = {0};
+    static const char padbuf[AV_INPUT_BUFFER_PADDING_SIZE] = {0};
     int padding = 0;
 
     if (!s) {
@@ -994,7 +994,7 @@ int avio_close_dyn_buf(AVIOContext *s, uint8_t **pbuffer)
     /* don't attempt to pad fixed-size packet buffers */
     if (!s->max_packet_size) {
         avio_write(s, padbuf, sizeof(padbuf));
-        padding = FF_INPUT_BUFFER_PADDING_SIZE;
+        padding = AV_INPUT_BUFFER_PADDING_SIZE;
     }
 
     avio_flush(s);

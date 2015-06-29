@@ -2241,7 +2241,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
             if (i > 0 && i < FF_MAX_EXTRADATA_SIZE) {
                 st->codec->extradata_size = i;
                 st->codec->extradata = av_mallocz(st->codec->extradata_size +
-                                                  FF_INPUT_BUFFER_PADDING_SIZE);
+                                                  AV_INPUT_BUFFER_PADDING_SIZE);
                 if (!st->codec->extradata)
                     return AVERROR(ENOMEM);
                 memcpy(st->codec->extradata, pkt->data,
@@ -3083,7 +3083,7 @@ int ff_generate_avci_extradata(AVStream *st)
 
     av_freep(&st->codec->extradata);
     st->codec->extradata_size = 0;
-    st->codec->extradata      = av_mallocz(size + FF_INPUT_BUFFER_PADDING_SIZE);
+    st->codec->extradata      = av_mallocz(size + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!st->codec->extradata)
         return AVERROR(ENOMEM);
 

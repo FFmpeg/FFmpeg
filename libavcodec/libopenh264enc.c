@@ -143,7 +143,7 @@ static av_cold int svc_encode_init(AVCodecContext *avctx)
         (*s->encoder)->EncodeParameterSets(s->encoder, &fbi);
         for (i = 0; i < fbi.sLayerInfo[0].iNalCount; i++)
             size += fbi.sLayerInfo[0].pNalLengthInByte[i];
-        avctx->extradata = av_mallocz(size + FF_INPUT_BUFFER_PADDING_SIZE);
+        avctx->extradata = av_mallocz(size + AV_INPUT_BUFFER_PADDING_SIZE);
         if (!avctx->extradata) {
             err = AVERROR(ENOMEM);
             goto fail;

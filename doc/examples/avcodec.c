@@ -226,7 +226,7 @@ static void audio_decode_example(const char *outfilename, const char *filename)
     AVCodecContext *c= NULL;
     int len;
     FILE *f, *outfile;
-    uint8_t inbuf[AUDIO_INBUF_SIZE + FF_INPUT_BUFFER_PADDING_SIZE];
+    uint8_t inbuf[AUDIO_INBUF_SIZE + AV_INPUT_BUFFER_PADDING_SIZE];
     AVPacket avpkt;
     AVFrame *decoded_frame = NULL;
 
@@ -459,14 +459,14 @@ static void video_decode_example(const char *outfilename, const char *filename)
     int frame, got_picture, len;
     FILE *f;
     AVFrame *picture;
-    uint8_t inbuf[INBUF_SIZE + FF_INPUT_BUFFER_PADDING_SIZE];
+    uint8_t inbuf[INBUF_SIZE + AV_INPUT_BUFFER_PADDING_SIZE];
     char buf[1024];
     AVPacket avpkt;
 
     av_init_packet(&avpkt);
 
     /* set end of buffer to 0 (this ensures that no overreading happens for damaged mpeg streams) */
-    memset(inbuf + INBUF_SIZE, 0, FF_INPUT_BUFFER_PADDING_SIZE);
+    memset(inbuf + INBUF_SIZE, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
     printf("Video decoding\n");
 

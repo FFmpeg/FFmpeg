@@ -259,7 +259,7 @@ static int aiff_read_header(AVFormatContext *s)
         case MKTAG('w', 'a', 'v', 'e'):
             if ((uint64_t)size > (1<<30))
                 return -1;
-            st->codec->extradata = av_mallocz(size + FF_INPUT_BUFFER_PADDING_SIZE);
+            st->codec->extradata = av_mallocz(size + AV_INPUT_BUFFER_PADDING_SIZE);
             if (!st->codec->extradata)
                 return AVERROR(ENOMEM);
             st->codec->extradata_size = size;

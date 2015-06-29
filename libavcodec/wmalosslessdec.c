@@ -69,7 +69,7 @@ typedef struct WmallDecodeCtx {
     /* generic decoder variables */
     AVCodecContext  *avctx;
     AVFrame         *frame;
-    uint8_t         frame_data[MAX_FRAMESIZE + FF_INPUT_BUFFER_PADDING_SIZE];  ///< compressed frame data
+    uint8_t         frame_data[MAX_FRAMESIZE + AV_INPUT_BUFFER_PADDING_SIZE];  ///< compressed frame data
     PutBitContext   pb;                             ///< context for filling the frame_data buffer
 
     /* frame size dependent frame information (set during initialization) */

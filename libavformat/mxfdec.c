@@ -895,7 +895,7 @@ static int mxf_read_generic_descriptor(void *arg, AVIOContext *pb, int tag, int 
         if (IS_KLV_KEY(uid, mxf_sony_mpeg4_extradata)) {
             av_free(descriptor->extradata);
             descriptor->extradata_size = 0;
-            descriptor->extradata = av_malloc(size + FF_INPUT_BUFFER_PADDING_SIZE);
+            descriptor->extradata = av_malloc(size + AV_INPUT_BUFFER_PADDING_SIZE);
             if (!descriptor->extradata)
                 return AVERROR(ENOMEM);
             descriptor->extradata_size = size;
@@ -1653,7 +1653,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
             }
         }
         if (descriptor->extradata) {
-            st->codec->extradata = av_mallocz(descriptor->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
+            st->codec->extradata = av_mallocz(descriptor->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
             if (st->codec->extradata) {
                 memcpy(st->codec->extradata, descriptor->extradata, descriptor->extradata_size);
                 st->codec->extradata_size = descriptor->extradata_size;

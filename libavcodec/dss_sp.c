@@ -65,7 +65,7 @@ typedef struct DssSpContext {
     int pulse_dec_mode;
 
     DECLARE_ALIGNED(16, uint8_t, bits)[DSS_SP_FRAME_SIZE +
-                                       FF_INPUT_BUFFER_PADDING_SIZE];
+                                       AV_INPUT_BUFFER_PADDING_SIZE];
 } DssSpContext;
 
 /*

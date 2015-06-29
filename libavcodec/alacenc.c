@@ -519,7 +519,7 @@ static av_cold int alac_encode_init(AVCodecContext *avctx)
                                                  avctx->channels,
                                                  avctx->bits_per_raw_sample);
 
-    avctx->extradata = av_mallocz(ALAC_EXTRADATA_SIZE + FF_INPUT_BUFFER_PADDING_SIZE);
+    avctx->extradata = av_mallocz(ALAC_EXTRADATA_SIZE + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!avctx->extradata) {
         ret = AVERROR(ENOMEM);
         goto error;

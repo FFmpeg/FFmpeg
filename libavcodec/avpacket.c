@@ -66,14 +66,14 @@ FF_ENABLE_DEPRECATION_WARNINGS
 static int packet_alloc(AVBufferRef **buf, int size)
 {
     int ret;
-    if ((unsigned)size >= (unsigned)size + FF_INPUT_BUFFER_PADDING_SIZE)
+    if ((unsigned)size >= (unsigned)size + AV_INPUT_BUFFER_PADDING_SIZE)
         return AVERROR(EINVAL);
 
-    ret = av_buffer_realloc(buf, size + FF_INPUT_BUFFER_PADDING_SIZE);
+    ret = av_buffer_realloc(buf, size + AV_INPUT_BUFFER_PADDING_SIZE);
     if (ret < 0)
         return ret;
 
-    memset((*buf)->data + size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
+    memset((*buf)->data + size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
     return 0;
 }
@@ -103,20 +103,20 @@ void av_shrink_packet(AVPacket *pkt, int size)
     if (pkt->size <= size)
         return;
     pkt->size = size;
-    memset(pkt->data + size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
+    memset(pkt->data + size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 }
 
 int av_grow_packet(AVPacket *pkt, int grow_by)
 {
     int new_size;
-    av_assert0((unsigned)pkt->size <= INT_MAX - FF_INPUT_BUFFER_PADDING_SIZE);
+    av_assert0((unsigned)pkt->size <= INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE);
     if (!pkt->size)
         return av_new_packet(pkt, grow_by);
     if ((unsigned)grow_by >
-        INT_MAX - (pkt->size + FF_INPUT_BUFFER_PADDING_SIZE))
+        INT_MAX - (pkt->size + AV_INPUT_BUFFER_PADDING_SIZE))
         return -1;
 
-    new_size = pkt->size + grow_by + FF_INPUT_BUFFER_PADDING_SIZE;
+    new_size = pkt->size + grow_by + AV_INPUT_BUFFER_PADDING_SIZE;
     if (pkt->buf) {
         int ret = av_buffer_realloc(&pkt->buf, new_size);
         if (ret < 0)
@@ -134,17 +134,17 @@ FF_ENABLE_DEPRECATION_WARNINGS
     }
     pkt->data  = pkt->buf->data;
     pkt->size += grow_by;
-    memset(pkt->data + pkt->size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
+    memset(pkt->data + pkt->size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
     return 0;
 }
 
 int av_packet_from_data(AVPacket *pkt, uint8_t *data, int size)
 {
-    if (size >= INT_MAX - FF_INPUT_BUFFER_PADDING_SIZE)
+    if (size >= INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE)
         return AVERROR(EINVAL);
 
-    pkt->buf = av_buffer_create(data, size + FF_INPUT_BUFFER_PADDING_SIZE,
+    pkt->buf = av_buffer_create(data, size + AV_INPUT_BUFFER_PADDING_SIZE,
                                 av_buffer_default_free, NULL, 0);
     if (!pkt->buf)
         return AVERROR(ENOMEM);
@@ -172,9 +172,9 @@ do {                                         \
         void *data;                                                     \
         if (padding) {                                                  \
             if ((unsigned)(size) >                                      \
-                (unsigned)(size) + FF_INPUT_BUFFER_PADDING_SIZE)        \
+                (unsigned)(size) + AV_INPUT_BUFFER_PADDING_SIZE)        \
                 goto failed_alloc;                                      \
-            ALLOC(data, size + FF_INPUT_BUFFER_PADDING_SIZE);           \
+            ALLOC(data, size + AV_INPUT_BUFFER_PADDING_SIZE);           \
         } else {                                                        \
             ALLOC(data, size);                                          \
         }                                                               \
@@ -183,7 +183,7 @@ do {                                         \
         memcpy(data, src, size);                                        \
         if (padding)                                                    \
             memset((uint8_t *)data + size, 0,                           \
-                   FF_INPUT_BUFFER_PADDING_SIZE);                       \
+                   AV_INPUT_BUFFER_PADDING_SIZE);                       \
         dst = data;                                                     \
     } while (0)
 
@@ -266,7 +266,7 @@ uint8_t *av_packet_new_side_data(AVPacket *pkt, enum AVPacketSideDataType type,
 
     if ((unsigned)elems + 1 > INT_MAX / sizeof(*pkt->side_data))
         return NULL;
-    if ((unsigned)size > INT_MAX - FF_INPUT_BUFFER_PADDING_SIZE)
+    if ((unsigned)size > INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE)
         return NULL;
 
     pkt->side_data = av_realloc(pkt->side_data,
@@ -274,7 +274,7 @@ uint8_t *av_packet_new_side_data(AVPacket *pkt, enum AVPacketSideDataType type,
     if (!pkt->side_data)
         return NULL;
 
-    pkt->side_data[elems].data = av_malloc(size + FF_INPUT_BUFFER_PADDING_SIZE);
+    pkt->side_data[elems].data = av_malloc(size + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!pkt->side_data[elems].data)
         return NULL;
     pkt->side_data[elems].size = size;

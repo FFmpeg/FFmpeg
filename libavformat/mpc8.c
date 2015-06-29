@@ -154,7 +154,7 @@ static void mpc8_parse_seektable(AVFormatContext *s, int64_t off)
         av_log(s, AV_LOG_ERROR, "Bad seek table size\n");
         return;
     }
-    if(!(buf = av_malloc(size + FF_INPUT_BUFFER_PADDING_SIZE)))
+    if(!(buf = av_malloc(size + AV_INPUT_BUFFER_PADDING_SIZE)))
         return;
     avio_read(s->pb, buf, size);
     init_get_bits(&gb, buf, size * 8);
@@ -242,7 +242,7 @@ static int mpc8_read_header(AVFormatContext *s)
     st->codec->bits_per_coded_sample = 16;
 
     st->codec->extradata_size = 2;
-    st->codec->extradata = av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
+    st->codec->extradata = av_mallocz(st->codec->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
     avio_read(pb, st->codec->extradata, st->codec->extradata_size);
 
     st->codec->channels = (st->codec->extradata[1] >> 4) + 1;

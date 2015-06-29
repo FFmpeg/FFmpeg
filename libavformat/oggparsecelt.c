@@ -47,7 +47,7 @@ static int celt_header(AVFormatContext *s, int idx)
         uint8_t *extradata;
 
         extradata = av_malloc(2 * sizeof(uint32_t) +
-                              FF_INPUT_BUFFER_PADDING_SIZE);
+                              AV_INPUT_BUFFER_PADDING_SIZE);
         priv = av_malloc(sizeof(struct oggcelt_private));
         if (!extradata || !priv) {
             av_free(extradata);

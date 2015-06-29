@@ -948,7 +948,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     pkt_size = ctx->frame_size_upper_bound;
 
-    if ((ret = ff_alloc_packet(pkt, pkt_size + FF_MIN_BUFFER_SIZE)) < 0) {
+    if ((ret = ff_alloc_packet(pkt, pkt_size + AV_INPUT_BUFFER_MIN_SIZE)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "Error getting output packet.\n");
         return ret;
     }

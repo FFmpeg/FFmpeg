@@ -81,7 +81,7 @@ static int encode_nals(AVCodecContext *ctx, AVPacket *pkt,
 {
     XavsContext *x4 = ctx->priv_data;
     uint8_t *p;
-    int i, s, ret, size = x4->sei_size + FF_MIN_BUFFER_SIZE;
+    int i, s, ret, size = x4->sei_size + AV_INPUT_BUFFER_MIN_SIZE;
 
     if (!nnal)
         return 0;

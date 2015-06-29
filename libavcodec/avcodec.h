@@ -535,15 +535,24 @@ typedef struct AVCodecDescriptor {
  * Note: If the first 23 bits of the additional bytes are not 0, then damaged
  * MPEG bitstreams could cause overread and segfault.
  */
-#define FF_INPUT_BUFFER_PADDING_SIZE 8
+#define AV_INPUT_BUFFER_PADDING_SIZE 8
 
 /**
  * @ingroup lavc_encoding
  * minimum encoding buffer size
  * Used to avoid some checks during header writing.
  */
-#define FF_MIN_BUFFER_SIZE 16384
+#define AV_INPUT_BUFFER_MIN_SIZE 16384
 
+/**
+ * @deprecated use AV_INPUT_BUFFER_PADDING_SIZE instead
+ */
+#define FF_INPUT_BUFFER_PADDING_SIZE 8
+
+/**
+ * @deprecated use AV_INPUT_BUFFER_MIN_SIZE instead
+ */
+#define FF_MIN_BUFFER_SIZE 16384
 
 /**
  * @ingroup lavc_encoding
@@ -1362,7 +1371,7 @@ typedef struct AVCodecContext {
      * mjpeg: Huffman tables
      * rv10: additional flags
      * mpeg4: global headers (they can be in the bitstream or here)
-     * The allocated memory should be FF_INPUT_BUFFER_PADDING_SIZE bytes larger
+     * The allocated memory should be AV_INPUT_BUFFER_PADDING_SIZE bytes larger
      * than extradata_size to avoid prolems if it is read with the bitstream reader.
      * The bytewise contents of extradata must not depend on the architecture or CPU endianness.
      * - encoding: Set/allocated/freed by libavcodec.
@@ -3627,7 +3636,7 @@ int av_grow_packet(AVPacket *pkt, int grow_by);
  *        function returns successfully, the data is owned by the underlying AVBuffer.
  *        The caller may not access the data through other means.
  * @param size size of data in bytes, without the padding. I.e. the full buffer
- *        size is assumed to be size + FF_INPUT_BUFFER_PADDING_SIZE.
+ *        size is assumed to be size + AV_INPUT_BUFFER_PADDING_SIZE.
  *
  * @return 0 on success, a negative AVERROR on error
  */
@@ -3843,7 +3852,7 @@ void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height,
  * returning samples. It is safe to flush even those decoders that are not
  * marked with AV_CODEC_CAP_DELAY, then no samples will be returned.
  *
- * @warning The input buffer, avpkt->data must be FF_INPUT_BUFFER_PADDING_SIZE
+ * @warning The input buffer, avpkt->data must be AV_INPUT_BUFFER_PADDING_SIZE
  *          larger than the actual read bytes because some optimized bitstream
  *          readers read 32 or 64 bits at once and could read over the end.
  *
@@ -3883,7 +3892,7 @@ int avcodec_decode_audio4(AVCodecContext *avctx, AVFrame *frame,
  * Some decoders may support multiple frames in a single AVPacket, such
  * decoders would then just decode the first frame.
  *
- * @warning The input buffer must be FF_INPUT_BUFFER_PADDING_SIZE larger than
+ * @warning The input buffer must be AV_INPUT_BUFFER_PADDING_SIZE larger than
  * the actual read bytes because some optimized bitstream readers read 32 or 64
  * bits at once and could read over the end.
  *
@@ -4612,7 +4621,7 @@ AVBitStreamFilter *av_bitstream_filter_next(const AVBitStreamFilter *f);
  * Allocate a buffer with padding, reusing the given one if large enough.
  *
  * Same behaviour av_fast_malloc but the buffer has additional
- * FF_INPUT_PADDING_SIZE at the end which will always memset to 0.
+ * AV_INPUT_PADDING_SIZE at the end which will always memset to 0.
  *
  */
 void av_fast_padded_malloc(void *ptr, unsigned int *size, size_t min_size);

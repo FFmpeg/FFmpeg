@@ -625,7 +625,7 @@ static int avi_read_header(AVFormatContext *s)
                     if (size > 10 * 4 && size < (1 << 30)) {
                         st->codec->extradata_size = size - 10 * 4;
                         st->codec->extradata      = av_malloc(st->codec->extradata_size +
-                                                              FF_INPUT_BUFFER_PADDING_SIZE);
+                                                              AV_INPUT_BUFFER_PADDING_SIZE);
                         if (!st->codec->extradata) {
                             st->codec->extradata_size = 0;
                             return AVERROR(ENOMEM);
@@ -696,7 +696,7 @@ static int avi_read_header(AVFormatContext *s)
                         st->codec->extradata_size += 9;
                         if ((ret = av_reallocp(&st->codec->extradata,
                                                st->codec->extradata_size +
-                                               FF_INPUT_BUFFER_PADDING_SIZE)) < 0) {
+                                               AV_INPUT_BUFFER_PADDING_SIZE)) < 0) {
                             st->codec->extradata_size = 0;
                             return ret;
                         } else

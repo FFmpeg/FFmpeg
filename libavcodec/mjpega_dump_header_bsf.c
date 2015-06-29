@@ -44,7 +44,7 @@ static int mjpega_dump_header(AVBitStreamFilterContext *bsfc, AVCodecContext *av
     }
 
     *poutbuf_size = 0;
-    *poutbuf = av_malloc(buf_size + 44 + FF_INPUT_BUFFER_PADDING_SIZE);
+    *poutbuf = av_malloc(buf_size + 44 + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!*poutbuf)
         return AVERROR(ENOMEM);
     poutbufp = *poutbuf;

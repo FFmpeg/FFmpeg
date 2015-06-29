@@ -62,7 +62,7 @@ flac_header (AVFormatContext * s, int idx)
         st->need_parsing = AVSTREAM_PARSE_HEADERS;
 
         st->codec->extradata =
-            av_malloc(FLAC_STREAMINFO_SIZE + FF_INPUT_BUFFER_PADDING_SIZE);
+            av_malloc(FLAC_STREAMINFO_SIZE + AV_INPUT_BUFFER_PADDING_SIZE);
         memcpy(st->codec->extradata, streaminfo_start, FLAC_STREAMINFO_SIZE);
         st->codec->extradata_size = FLAC_STREAMINFO_SIZE;
 

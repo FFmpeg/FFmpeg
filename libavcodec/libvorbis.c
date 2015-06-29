@@ -206,7 +206,7 @@ static av_cold int libvorbis_encode_init(AVCodecContext *avctx)
                                 xiph_len(header_comm.bytes) +
                                 header_code.bytes;
     p = avctx->extradata = av_malloc(avctx->extradata_size +
-                                     FF_INPUT_BUFFER_PADDING_SIZE);
+                                     AV_INPUT_BUFFER_PADDING_SIZE);
     if (!p) {
         ret = AVERROR(ENOMEM);
         goto error;

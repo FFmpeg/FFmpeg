@@ -120,7 +120,7 @@ static int read_header(AVFormatContext *s)
 
     vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     vst->codec->codec_id   = AV_CODEC_ID_BINKVIDEO;
-    vst->codec->extradata  = av_mallocz(4 + FF_INPUT_BUFFER_PADDING_SIZE);
+    vst->codec->extradata  = av_mallocz(4 + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!vst->codec->extradata)
         return AVERROR(ENOMEM);
     vst->codec->extradata_size = 4;
@@ -156,7 +156,7 @@ static int read_header(AVFormatContext *s)
                 ast->codec->channels       = 1;
                 ast->codec->channel_layout = AV_CH_LAYOUT_MONO;
             }
-            ast->codec->extradata = av_mallocz(4 + FF_INPUT_BUFFER_PADDING_SIZE);
+            ast->codec->extradata = av_mallocz(4 + AV_INPUT_BUFFER_PADDING_SIZE);
             if (!ast->codec->extradata)
                 return AVERROR(ENOMEM);
             ast->codec->extradata_size = 4;

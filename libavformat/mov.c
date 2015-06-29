@@ -963,7 +963,7 @@ static int mov_read_smi(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     // currently SVQ3 decoder expect full STSD header - so let's fake it
     // this should be fixed and just SMI header should be passed
     av_free(st->codec->extradata);
-    st->codec->extradata = av_mallocz(atom.size + 0x5a + FF_INPUT_BUFFER_PADDING_SIZE);
+    st->codec->extradata = av_mallocz(atom.size + 0x5a + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!st->codec->extradata)
         return AVERROR(ENOMEM);
     st->codec->extradata_size = 0x5a + atom.size;
@@ -1127,7 +1127,7 @@ static int mov_read_extradata(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     if (c->fc->nb_streams < 1) // will happen with jp2 files
         return 0;
     st= c->fc->streams[c->fc->nb_streams-1];
-    size= (uint64_t)st->codec->extradata_size + atom.size + 8 + FF_INPUT_BUFFER_PADDING_SIZE;
+    size= (uint64_t)st->codec->extradata_size + atom.size + 8 + AV_INPUT_BUFFER_PADDING_SIZE;
     if (size > INT_MAX || (uint64_t)atom.size > INT_MAX)
         return AVERROR_INVALIDDATA;
     if ((err = av_reallocp(&st->codec->extradata, size)) < 0) {
@@ -1135,7 +1135,7 @@ static int mov_read_extradata(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return err;
     }
     buf = st->codec->extradata + st->codec->extradata_size;
-    st->codec->extradata_size= size - FF_INPUT_BUFFER_PADDING_SIZE;
+    st->codec->extradata_size= size - AV_INPUT_BUFFER_PADDING_SIZE;
     AV_WB32(       buf    , atom.size + 8);
     AV_WL32(       buf + 4, atom.type);
 
@@ -1161,7 +1161,7 @@ static int mov_read_wave(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     if (st->codec->codec_id == AV_CODEC_ID_QDM2 || st->codec->codec_id == AV_CODEC_ID_QDMC) {
         // pass all frma atom to codec, needed at least for QDMC and QDM2
         av_free(st->codec->extradata);
-        st->codec->extradata = av_mallocz(atom.size + FF_INPUT_BUFFER_PADDING_SIZE);
+        st->codec->extradata = av_mallocz(atom.size + AV_INPUT_BUFFER_PADDING_SIZE);
         if (!st->codec->extradata)
             return AVERROR(ENOMEM);
         st->codec->extradata_size = atom.size;
@@ -1203,7 +1203,7 @@ static int mov_read_glbl(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             return mov_read_default(c, pb, atom);
     }
     av_free(st->codec->extradata);
-    st->codec->extradata = av_mallocz(atom.size + FF_INPUT_BUFFER_PADDING_SIZE);
+    st->codec->extradata = av_mallocz(atom.size + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!st->codec->extradata)
         return AVERROR(ENOMEM);
     st->codec->extradata_size = atom.size;
@@ -1233,7 +1233,7 @@ static int mov_read_dvc1(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return 0;
 
     av_free(st->codec->extradata);
-    st->codec->extradata = av_mallocz(atom.size - 7 + FF_INPUT_BUFFER_PADDING_SIZE);
+    st->codec->extradata = av_mallocz(atom.size - 7 + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!st->codec->extradata)
         return AVERROR(ENOMEM);
     st->codec->extradata_size = atom.size - 7;
@@ -1266,7 +1266,7 @@ static int mov_read_strf(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return AVERROR_INVALIDDATA;
 
     av_free(st->codec->extradata);
-    st->codec->extradata = av_mallocz(atom.size - 40 + FF_INPUT_BUFFER_PADDING_SIZE);
+    st->codec->extradata = av_mallocz(atom.size - 40 + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!st->codec->extradata)
         return AVERROR(ENOMEM);
     st->codec->extradata_size = atom.size - 40;
@@ -1629,7 +1629,7 @@ static int mov_rewrite_dvd_sub_extradata(AVStream *st)
 
     av_freep(&st->codec->extradata);
     st->codec->extradata_size = 0;
-    st->codec->extradata = av_mallocz(strlen(buf) + FF_INPUT_BUFFER_PADDING_SIZE);
+    st->codec->extradata = av_mallocz(strlen(buf) + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!st->codec->extradata)
         return AVERROR(ENOMEM);
     st->codec->extradata_size = strlen(buf);
@@ -1646,7 +1646,7 @@ static int mov_parse_stsd_data(MOVContext *c, AVIOContext *pb,
 
     if (st->codec->codec_tag == MKTAG('t','m','c','d')) {
         st->codec->extradata_size = size;
-        st->codec->extradata = av_malloc(size + FF_INPUT_BUFFER_PADDING_SIZE);
+        st->codec->extradata = av_malloc(size + AV_INPUT_BUFFER_PADDING_SIZE);
         if (!st->codec->extradata)
             return AVERROR(ENOMEM);
         ret = ffio_read_size(pb, st->codec->extradata, size);
@@ -2003,7 +2003,7 @@ static int mov_read_stsz(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     num_bytes = (entries*field_size+4)>>3;
 
-    buf = av_malloc(num_bytes+FF_INPUT_BUFFER_PADDING_SIZE);
+    buf = av_malloc(num_bytes+AV_INPUT_BUFFER_PADDING_SIZE);
     if (!buf) {
         av_freep(&sc->sample_sizes);
         return AVERROR(ENOMEM);

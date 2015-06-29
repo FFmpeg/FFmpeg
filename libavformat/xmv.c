@@ -393,7 +393,7 @@ static int xmv_process_packet_header(AVFormatContext *s)
                     av_free(vst->codec->extradata);
 
                     vst->codec->extradata =
-                        av_malloc(4 + FF_INPUT_BUFFER_PADDING_SIZE);
+                        av_malloc(4 + AV_INPUT_BUFFER_PADDING_SIZE);
                     vst->codec->extradata_size = 4;
                 }
 

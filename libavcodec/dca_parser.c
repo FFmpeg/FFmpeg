@@ -113,7 +113,7 @@ static int dca_parse_params(const uint8_t *buf, int buf_size, int *duration,
                             int *sample_rate, int *framesize)
 {
     GetBitContext gb;
-    uint8_t hdr[12 + FF_INPUT_BUFFER_PADDING_SIZE] = { 0 };
+    uint8_t hdr[12 + AV_INPUT_BUFFER_PADDING_SIZE] = { 0 };
     int ret, sample_blocks, sr_code;
 
     if (buf_size < 12)

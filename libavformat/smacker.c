@@ -213,7 +213,7 @@ static int smacker_read_header(AVFormatContext *s)
 
     /* load trees to extradata, they will be unpacked by decoder */
     st->codec->extradata = av_mallocz(smk->treesize + 16 +
-                                      FF_INPUT_BUFFER_PADDING_SIZE);
+                                      AV_INPUT_BUFFER_PADDING_SIZE);
     st->codec->extradata_size = smk->treesize + 16;
     if(!st->codec->extradata){
         av_log(s, AV_LOG_ERROR,

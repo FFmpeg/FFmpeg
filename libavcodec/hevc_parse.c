@@ -89,7 +89,7 @@ int ff_hevc_extract_rbsp(const uint8_t *src, int length,
     }
 
     av_fast_malloc(&nal->rbsp_buffer, &nal->rbsp_buffer_size,
-                   length + FF_INPUT_BUFFER_PADDING_SIZE);
+                   length + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!nal->rbsp_buffer)
         return AVERROR(ENOMEM);
 
@@ -119,7 +119,7 @@ int ff_hevc_extract_rbsp(const uint8_t *src, int length,
         dst[di++] = src[si++];
 
 nsc:
-    memset(dst + di, 0, FF_INPUT_BUFFER_PADDING_SIZE);
+    memset(dst + di, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
     nal->data = dst;
     nal->size = di;

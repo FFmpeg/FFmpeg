@@ -747,7 +747,7 @@ static int ebml_read_ascii(AVIOContext *pb, int size, char **str)
 static int ebml_read_binary(AVIOContext *pb, int length, EbmlBin *bin)
 {
     av_free(bin->data);
-    if (!(bin->data = av_mallocz(length + FF_INPUT_BUFFER_PADDING_SIZE)))
+    if (!(bin->data = av_mallocz(length + AV_INPUT_BUFFER_PADDING_SIZE)))
         return AVERROR(ENOMEM);
 
     bin->size = length;
@@ -1205,7 +1205,7 @@ static void matroska_fix_ass_packet(MatroskaDemuxContext *matroska,
         es     = ec / 100;
         ec    -= 100 * es;
         *ptr++ = '\0';
-        len    = 50 + end - ptr + FF_INPUT_BUFFER_PADDING_SIZE;
+        len    = 50 + end - ptr + AV_INPUT_BUFFER_PADDING_SIZE;
         if (!(line = av_buffer_alloc(len)))
             return;
         snprintf(line->data, len,
@@ -1644,7 +1644,7 @@ static int matroska_parse_tracks(AVFormatContext *s)
         } else if (codec_id == AV_CODEC_ID_AAC && !track->codec_priv.size) {
             int profile = matroska_aac_profile(track->codec_id);
             int sri     = matroska_aac_sri(track->audio.samplerate);
-            extradata   = av_mallocz(5 + FF_INPUT_BUFFER_PADDING_SIZE);
+            extradata   = av_mallocz(5 + AV_INPUT_BUFFER_PADDING_SIZE);
             if (!extradata)
                 return AVERROR(ENOMEM);
             extradata[0] = (profile << 3) | ((sri & 0x0E) >> 1);
@@ -1663,7 +1663,7 @@ static int matroska_parse_tracks(AVFormatContext *s)
              * decoder expects manually. */
             extradata_size = 12 + track->codec_priv.size;
             extradata      = av_mallocz(extradata_size +
-                                        FF_INPUT_BUFFER_PADDING_SIZE);
+                                        AV_INPUT_BUFFER_PADDING_SIZE);
             if (!extradata)
                 return AVERROR(ENOMEM);
             AV_WB32(extradata, extradata_size);
@@ -1768,7 +1768,7 @@ static int matroska_parse_tracks(AVFormatContext *s)
                 st->codec->extradata_size = extradata_size;
             } else if (track->codec_priv.data && track->codec_priv.size > 0) {
                 st->codec->extradata = av_mallocz(track->codec_priv.size +
-                                                  FF_INPUT_BUFFER_PADDING_SIZE);
+                                                  AV_INPUT_BUFFER_PADDING_SIZE);
                 if (!st->codec->extradata)
                     return AVERROR(ENOMEM);
                 st->codec->extradata_size = track->codec_priv.size;

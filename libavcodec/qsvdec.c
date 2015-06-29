@@ -341,7 +341,7 @@ int ff_qsv_process_data(AVCodecContext *avctx, QSVContext *q,
             return AVERROR(ENOMEM);
 
         if (avctx->extradata) {
-            q->avctx_internal->extradata = av_mallocz(avctx->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
+            q->avctx_internal->extradata = av_mallocz(avctx->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
             if (!q->avctx_internal->extradata)
                 return AVERROR(ENOMEM);
 

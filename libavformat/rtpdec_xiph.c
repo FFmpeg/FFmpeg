@@ -262,8 +262,8 @@ parse_packed_headers(const uint8_t * packed_headers,
     /* allocate extra space:
      * -- length/255 +2 for xiphlacing
      * -- one for the '2' marker
-     * -- FF_INPUT_BUFFER_PADDING_SIZE required */
-    extradata_alloc = length + length/255 + 3 + FF_INPUT_BUFFER_PADDING_SIZE;
+     * -- AV_INPUT_BUFFER_PADDING_SIZE required */
+    extradata_alloc = length + length/255 + 3 + AV_INPUT_BUFFER_PADDING_SIZE;
 
     ptr = codec->extradata = av_malloc(extradata_alloc);
     if (!ptr) {

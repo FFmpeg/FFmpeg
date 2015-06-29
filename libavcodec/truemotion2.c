@@ -856,7 +856,7 @@ static int decode_frame(AVCodecContext *avctx,
     int i, t, ret;
     uint8_t *swbuf;
 
-    swbuf = av_malloc(buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
+    swbuf = av_malloc(buf_size + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!swbuf) {
         av_log(avctx, AV_LOG_ERROR, "Cannot allocate temporary buffer\n");
         return AVERROR(ENOMEM);

@@ -132,7 +132,7 @@ static av_cold int rl2_read_header(AVFormatContext *s)
         st->codec->extradata_size += back_size;
 
     st->codec->extradata = av_mallocz(st->codec->extradata_size +
-                                          FF_INPUT_BUFFER_PADDING_SIZE);
+                                          AV_INPUT_BUFFER_PADDING_SIZE);
     if(!st->codec->extradata)
         return AVERROR(ENOMEM);
 

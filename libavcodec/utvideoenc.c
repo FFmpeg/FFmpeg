@@ -157,7 +157,7 @@ static av_cold int utvideo_encode_init(AVCodecContext *avctx)
     avctx->extradata_size = 16;
 
     avctx->extradata = av_mallocz(avctx->extradata_size +
-                                  FF_INPUT_BUFFER_PADDING_SIZE);
+                                  AV_INPUT_BUFFER_PADDING_SIZE);
 
     if (!avctx->extradata) {
         av_log(avctx, AV_LOG_ERROR, "Could not allocate extradata.\n");
@@ -167,7 +167,7 @@ static av_cold int utvideo_encode_init(AVCodecContext *avctx)
 
     for (i = 0; i < c->planes; i++) {
         c->slice_buffer[i] = av_malloc(c->slice_stride * (avctx->height + 2) +
-                                       FF_INPUT_BUFFER_PADDING_SIZE);
+                                       AV_INPUT_BUFFER_PADDING_SIZE);
         if (!c->slice_buffer[i]) {
             av_log(avctx, AV_LOG_ERROR, "Cannot allocate temporary buffer 1.\n");
             utvideo_encode_close(avctx);
@@ -547,7 +547,7 @@ static int utvideo_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     bytestream2_init_writer(&pb, dst, pkt->size);
 
     av_fast_malloc(&c->slice_bits, &c->slice_bits_size,
-                   width * height + FF_INPUT_BUFFER_PADDING_SIZE);
+                   width * height + AV_INPUT_BUFFER_PADDING_SIZE);
 
     if (!c->slice_bits) {
         av_log(avctx, AV_LOG_ERROR, "Cannot allocate temporary buffer 2.\n");

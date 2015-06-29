@@ -53,7 +53,7 @@ static int apc_read_header(AVFormatContext *s)
 
     st->codec->extradata_size = 2 * 4;
     st->codec->extradata = av_malloc(st->codec->extradata_size +
-                                     FF_INPUT_BUFFER_PADDING_SIZE);
+                                     AV_INPUT_BUFFER_PADDING_SIZE);
     if (!st->codec->extradata)
         return AVERROR(ENOMEM);
 

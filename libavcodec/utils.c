@@ -59,14 +59,14 @@ static void *avformat_mutex;
 void av_fast_padded_malloc(void *ptr, unsigned int *size, size_t min_size)
 {
     void **p = ptr;
-    if (min_size > SIZE_MAX - FF_INPUT_BUFFER_PADDING_SIZE) {
+    if (min_size > SIZE_MAX - AV_INPUT_BUFFER_PADDING_SIZE) {
         av_freep(p);
         *size = 0;
         return;
     }
-    av_fast_malloc(p, size, min_size + FF_INPUT_BUFFER_PADDING_SIZE);
+    av_fast_malloc(p, size, min_size + AV_INPUT_BUFFER_PADDING_SIZE);
     if (*size)
-        memset((uint8_t *)*p + min_size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
+        memset((uint8_t *)*p + min_size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 }
 
 /* encoder management */
@@ -1324,7 +1324,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
 int ff_alloc_packet(AVPacket *avpkt, int size)
 {
-    if (size > INT_MAX - FF_INPUT_BUFFER_PADDING_SIZE)
+    if (size > INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE)
         return AVERROR(EINVAL);
 
     if (avpkt->data) {

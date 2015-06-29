@@ -57,7 +57,7 @@ static int opus_header(AVFormatContext *avf, int idx)
         st->codec->channels   = AV_RL8(packet + 9);
         priv->pre_skip        = AV_RL16(packet + 10);
 
-        extradata = av_malloc(os->psize + FF_INPUT_BUFFER_PADDING_SIZE);
+        extradata = av_malloc(os->psize + AV_INPUT_BUFFER_PADDING_SIZE);
         if (!extradata)
             return AVERROR(ENOMEM);
 

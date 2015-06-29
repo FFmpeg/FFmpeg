@@ -105,7 +105,7 @@ static int xwma_read_header(AVFormatContext *s)
                                   st->codec->extradata_size);
         } else {
             st->codec->extradata_size = 6;
-            st->codec->extradata      = av_mallocz(6 + FF_INPUT_BUFFER_PADDING_SIZE);
+            st->codec->extradata      = av_mallocz(6 + AV_INPUT_BUFFER_PADDING_SIZE);
             if (!st->codec->extradata)
                 return AVERROR(ENOMEM);
 

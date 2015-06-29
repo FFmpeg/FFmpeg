@@ -302,7 +302,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
             av_log(avctx, AV_LOG_ERROR, "Packet is too small\n");
             return AVERROR_INVALIDDATA;
         }
-        buf = av_realloc(s->packet_buffer, avpkt->size + FF_INPUT_BUFFER_PADDING_SIZE);
+        buf = av_realloc(s->packet_buffer, avpkt->size + AV_INPUT_BUFFER_PADDING_SIZE);
         if (!buf)
             return AVERROR(ENOMEM);
         s->packet_buffer = buf;

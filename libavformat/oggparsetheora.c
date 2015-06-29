@@ -126,7 +126,7 @@ static int theora_header(AVFormatContext *s, int idx)
     }
 
     if ((err = av_reallocp(&st->codec->extradata,
-                           cds + FF_INPUT_BUFFER_PADDING_SIZE)) < 0) {
+                           cds + AV_INPUT_BUFFER_PADDING_SIZE)) < 0) {
         st->codec->extradata_size = 0;
         return err;
     }

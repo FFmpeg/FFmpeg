@@ -49,7 +49,7 @@ int ff_raw_read_partial_packet(AVFormatContext *s, AVPacket *pkt)
     } else if (ret < size) {
         /* initialize end of packet for partial reads to avoid reading
          * uninitialized data on allowed overreads */
-        memset(pkt->data + ret, 0, FF_INPUT_BUFFER_PADDING_SIZE);
+        memset(pkt->data + ret, 0, AV_INPUT_BUFFER_PADDING_SIZE);
     }
     pkt->size = ret;
     return ret;

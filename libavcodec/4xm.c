@@ -446,13 +446,13 @@ static int decode_p_frame(FourXContext *f, const uint8_t *buf, int length)
     }
 
     av_fast_malloc(&f->bitstream_buffer, &f->bitstream_buffer_size,
-                   bitstream_size + FF_INPUT_BUFFER_PADDING_SIZE);
+                   bitstream_size + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!f->bitstream_buffer)
         return AVERROR(ENOMEM);
     f->bbdsp.bswap_buf(f->bitstream_buffer, (const uint32_t *) (buf + extra),
                        bitstream_size / 4);
     memset((uint8_t*)f->bitstream_buffer + bitstream_size,
-           0, FF_INPUT_BUFFER_PADDING_SIZE);
+           0, AV_INPUT_BUFFER_PADDING_SIZE);
     init_get_bits(&f->gb, f->bitstream_buffer, 8 * bitstream_size);
 
     wordstream_offset = extra + bitstream_size;
@@ -769,13 +769,13 @@ static int decode_i_frame(FourXContext *f, const uint8_t *buf, int length)
     prestream_size = length + buf - prestream;
 
     av_fast_malloc(&f->bitstream_buffer, &f->bitstream_buffer_size,
-                   prestream_size + FF_INPUT_BUFFER_PADDING_SIZE);
+                   prestream_size + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!f->bitstream_buffer)
         return AVERROR(ENOMEM);
     f->bbdsp.bswap_buf(f->bitstream_buffer, (const uint32_t *) prestream,
                        prestream_size / 4);
     memset((uint8_t*)f->bitstream_buffer + prestream_size,
-           0, FF_INPUT_BUFFER_PADDING_SIZE);
+           0, AV_INPUT_BUFFER_PADDING_SIZE);
     init_get_bits(&f->pre_gb, f->bitstream_buffer, 8 * prestream_size);
 
     f->last_dc = 0 * 128 * 8 * 8;
@@ -849,7 +849,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
         cfrm = &f->cfrm[i];
 
         cfrm->data = av_fast_realloc(cfrm->data, &cfrm->allocated_size,
-                                     cfrm->size + data_size + FF_INPUT_BUFFER_PADDING_SIZE);
+                                     cfrm->size + data_size + AV_INPUT_BUFFER_PADDING_SIZE);
         // explicit check needed as memcpy below might not catch a NULL
         if (!cfrm->data) {
             av_log(f->avctx, AV_LOG_ERROR, "realloc failure");

@@ -688,7 +688,7 @@ static int xvid_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     xvid_enc_stats_t xvid_enc_stats = { 0 };
 
     if (!user_packet &&
-        (ret = av_new_packet(pkt, mb_width * mb_height * MAX_MB_BYTES + FF_MIN_BUFFER_SIZE)) < 0) {
+        (ret = av_new_packet(pkt, mb_width * mb_height * MAX_MB_BYTES + AV_INPUT_BUFFER_MIN_SIZE)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "Error getting output packet.\n");
         return ret;
     }

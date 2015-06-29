@@ -62,7 +62,7 @@ static int svq3_parse_packet (AVFormatContext *s, PayloadContext *sv,
         st->codec->extradata_size = 0;
 
         if (len < 2 || !(st->codec->extradata =
-                         av_malloc(len + 8 + FF_INPUT_BUFFER_PADDING_SIZE)))
+                         av_malloc(len + 8 + AV_INPUT_BUFFER_PADDING_SIZE)))
             return AVERROR_INVALIDDATA;
 
         st->codec->extradata_size = len + 8;

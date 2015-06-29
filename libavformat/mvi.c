@@ -55,7 +55,7 @@ static int read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
 
     vst->codec->extradata_size = 2;
-    vst->codec->extradata = av_mallocz(2 + FF_INPUT_BUFFER_PADDING_SIZE);
+    vst->codec->extradata = av_mallocz(2 + AV_INPUT_BUFFER_PADDING_SIZE);
 
     version                  = avio_r8(pb);
     vst->codec->extradata[0] = avio_r8(pb);

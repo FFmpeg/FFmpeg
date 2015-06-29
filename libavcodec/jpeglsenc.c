@@ -268,7 +268,7 @@ static int encode_picture_ls(AVCodecContext *avctx, AVPacket *pkt,
         comps = 3;
 
     if ((ret = ff_alloc_packet(pkt, avctx->width * avctx->height * comps * 4 +
-                               FF_MIN_BUFFER_SIZE)) < 0) {
+                               AV_INPUT_BUFFER_MIN_SIZE)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "Error getting output packet.\n");
         return ret;
     }

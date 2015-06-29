@@ -161,7 +161,7 @@ static int smush_read_header(AVFormatContext *ctx)
         av_free(vst->codec->extradata);
         vst->codec->extradata_size = 1024 + 2;
         vst->codec->extradata = av_malloc(vst->codec->extradata_size +
-                                          FF_INPUT_BUFFER_PADDING_SIZE);
+                                          AV_INPUT_BUFFER_PADDING_SIZE);
         if (!vst->codec->extradata)
             return AVERROR(ENOMEM);
 

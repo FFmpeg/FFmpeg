@@ -119,7 +119,7 @@ int ff_h264_parse_sprop_parameter_sets(AVFormatContext *s,
             uint8_t *dest = av_realloc(*data_ptr,
                                        packet_size + sizeof(start_sequence) +
                                        *size_ptr +
-                                       FF_INPUT_BUFFER_PADDING_SIZE);
+                                       AV_INPUT_BUFFER_PADDING_SIZE);
             if (!dest) {
                 av_log(s, AV_LOG_ERROR,
                        "Unable to allocate memory for extradata!\n");
@@ -132,7 +132,7 @@ int ff_h264_parse_sprop_parameter_sets(AVFormatContext *s,
             memcpy(dest + *size_ptr + sizeof(start_sequence),
                    decoded_packet, packet_size);
             memset(dest + *size_ptr + sizeof(start_sequence) +
-                   packet_size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
+                   packet_size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
             *size_ptr += sizeof(start_sequence) + packet_size;
         }

@@ -71,7 +71,7 @@ static int tak_read_header(AVFormatContext *s)
         case TAK_METADATA_STREAMINFO:
         case TAK_METADATA_LAST_FRAME:
         case TAK_METADATA_ENCODER:
-            buffer = av_malloc(size + FF_INPUT_BUFFER_PADDING_SIZE);
+            buffer = av_malloc(size + AV_INPUT_BUFFER_PADDING_SIZE);
             if (!buffer)
                 return AVERROR(ENOMEM);
 

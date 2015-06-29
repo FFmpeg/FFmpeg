@@ -120,7 +120,7 @@ static int vmd_read_header(AVFormatContext *s)
         vst->codec->height >>= 1;
     }
     vst->codec->extradata_size = VMD_HEADER_SIZE;
-    vst->codec->extradata = av_mallocz(VMD_HEADER_SIZE + FF_INPUT_BUFFER_PADDING_SIZE);
+    vst->codec->extradata = av_mallocz(VMD_HEADER_SIZE + AV_INPUT_BUFFER_PADDING_SIZE);
     memcpy(vst->codec->extradata, vmd->vmd_header, VMD_HEADER_SIZE);
 
     /* if sample rate is 0, assume no audio */

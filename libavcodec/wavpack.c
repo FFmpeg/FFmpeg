@@ -446,7 +446,7 @@ static float wv_get_value_float(WavpackFrameContext *s, uint32_t *crc, int S)
         const int max_bits  = 1 + 23 + 8 + 1;
         const int left_bits = get_bits_left(&s->gb_extra_bits);
 
-        if (left_bits + 8 * FF_INPUT_BUFFER_PADDING_SIZE < max_bits)
+        if (left_bits + 8 * AV_INPUT_BUFFER_PADDING_SIZE < max_bits)
             return 0.0;
     }
 

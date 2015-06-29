@@ -157,7 +157,7 @@ int avpriv_unlock_avformat(void);
  * This value was chosen such that every bit of the buffer is
  * addressable by a 32-bit signed integer as used by get_bits.
  */
-#define FF_MAX_EXTRADATA_SIZE ((1 << 28) - FF_INPUT_BUFFER_PADDING_SIZE)
+#define FF_MAX_EXTRADATA_SIZE ((1 << 28) - AV_INPUT_BUFFER_PADDING_SIZE)
 
 /**
  * Check AVPacket size and/or allocate data.

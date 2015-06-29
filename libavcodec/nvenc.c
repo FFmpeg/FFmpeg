@@ -747,7 +747,7 @@ static int nvenc_setup_extradata(AVCodecContext *avctx)
     NV_ENC_SEQUENCE_PARAM_PAYLOAD payload = { 0 };
     int ret;
 
-    avctx->extradata = av_mallocz(EXTRADATA_SIZE + FF_INPUT_BUFFER_PADDING_SIZE);
+    avctx->extradata = av_mallocz(EXTRADATA_SIZE + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!avctx->extradata)
         return AVERROR(ENOMEM);
 

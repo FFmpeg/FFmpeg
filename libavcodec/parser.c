@@ -126,7 +126,7 @@ int av_parser_parse2(AVCodecParserContext *s, AVCodecContext *avctx,
                      int64_t pts, int64_t dts, int64_t pos)
 {
     int index, i;
-    uint8_t dummy_buf[FF_INPUT_BUFFER_PADDING_SIZE];
+    uint8_t dummy_buf[AV_INPUT_BUFFER_PADDING_SIZE];
 
     if (!(s->flags & PARSER_FLAG_FETCHED_OFFSET)) {
         s->next_frame_offset =
@@ -195,13 +195,13 @@ int av_parser_change(AVCodecParserContext *s, AVCodecContext *avctx,
             int size = buf_size + avctx->extradata_size;
 
             *poutbuf_size = size;
-            *poutbuf      = av_malloc(size + FF_INPUT_BUFFER_PADDING_SIZE);
+            *poutbuf      = av_malloc(size + AV_INPUT_BUFFER_PADDING_SIZE);
             if (!*poutbuf)
                 return AVERROR(ENOMEM);
 
             memcpy(*poutbuf, avctx->extradata, avctx->extradata_size);
             memcpy(*poutbuf + avctx->extradata_size, buf,
-                   buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
+                   buf_size + AV_INPUT_BUFFER_PADDING_SIZE);
             return 1;
         }
     }
@@ -243,7 +243,7 @@ int ff_combine_frame(ParseContext *pc, int next,
     if (next == END_NOT_FOUND) {
         void *new_buffer = av_fast_realloc(pc->buffer, &pc->buffer_size,
                                            *buf_size + pc->index +
-                                           FF_INPUT_BUFFER_PADDING_SIZE);
+                                           AV_INPUT_BUFFER_PADDING_SIZE);
 
         if (!new_buffer)
             return AVERROR(ENOMEM);
@@ -260,14 +260,14 @@ int ff_combine_frame(ParseContext *pc, int next,
     if (pc->index) {
         void *new_buffer = av_fast_realloc(pc->buffer, &pc->buffer_size,
                                            next + pc->index +
-                                           FF_INPUT_BUFFER_PADDING_SIZE);
+                                           AV_INPUT_BUFFER_PADDING_SIZE);
 
         if (!new_buffer)
             return AVERROR(ENOMEM);
         pc->buffer = new_buffer;
-        if (next > -FF_INPUT_BUFFER_PADDING_SIZE)
+        if (next > -AV_INPUT_BUFFER_PADDING_SIZE)
             memcpy(&pc->buffer[pc->index], *buf,
-                   next + FF_INPUT_BUFFER_PADDING_SIZE);
+                   next + AV_INPUT_BUFFER_PADDING_SIZE);
         pc->index = 0;
         *buf      = pc->buffer;
     }

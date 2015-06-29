@@ -357,7 +357,7 @@ static int oma_read_header(AVFormatContext *s)
         /* fake the ATRAC3 extradata
          * (wav format, makes stream copy to wav work) */
         st->codec->extradata_size = 14;
-        edata = av_mallocz(14 + FF_INPUT_BUFFER_PADDING_SIZE);
+        edata = av_mallocz(14 + AV_INPUT_BUFFER_PADDING_SIZE);
         if (!edata)
             return AVERROR(ENOMEM);
 

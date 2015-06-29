@@ -262,7 +262,7 @@ static int av_cold libopus_encode_init(AVCodecContext *avctx)
     }
 
     header_size = 19 + (avctx->channels > 2 ? 2 + avctx->channels : 0);
-    avctx->extradata = av_malloc(header_size + FF_INPUT_BUFFER_PADDING_SIZE);
+    avctx->extradata = av_malloc(header_size + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!avctx->extradata) {
         av_log(avctx, AV_LOG_ERROR, "Failed to allocate extradata.\n");
         ret = AVERROR(ENOMEM);

@@ -57,7 +57,7 @@ static int ape_tag_read_field(AVFormatContext *s)
         av_log(s, AV_LOG_WARNING, "Invalid APE tag key '%s'.\n", key);
         return -1;
     }
-    if (size > INT32_MAX - FF_INPUT_BUFFER_PADDING_SIZE) {
+    if (size > INT32_MAX - AV_INPUT_BUFFER_PADDING_SIZE) {
         av_log(s, AV_LOG_ERROR, "APE tag size too large.\n");
         return AVERROR_INVALIDDATA;
     }
@@ -94,7 +94,7 @@ static int ape_tag_read_field(AVFormatContext *s)
             st->attached_pic.stream_index = st->index;
             st->attached_pic.flags       |= AV_PKT_FLAG_KEY;
         } else {
-            st->codec->extradata = av_malloc(size + FF_INPUT_BUFFER_PADDING_SIZE);
+            st->codec->extradata = av_malloc(size + AV_INPUT_BUFFER_PADDING_SIZE);
             if (!st->codec->extradata)
                 return AVERROR(ENOMEM);
             if (avio_read(pb, st->codec->extradata, size) != size) {

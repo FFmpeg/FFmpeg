@@ -102,7 +102,7 @@ static int wsvqa_read_header(AVFormatContext *s)
 
     /* the VQA header needs to go to the decoder */
     st->codec->extradata_size = VQA_HEADER_SIZE;
-    st->codec->extradata = av_mallocz(VQA_HEADER_SIZE + FF_INPUT_BUFFER_PADDING_SIZE);
+    st->codec->extradata = av_mallocz(VQA_HEADER_SIZE + AV_INPUT_BUFFER_PADDING_SIZE);
     header = (unsigned char *)st->codec->extradata;
     if (avio_read(pb, st->codec->extradata, VQA_HEADER_SIZE) !=
         VQA_HEADER_SIZE) {
@@ -224,7 +224,7 @@ static int wsvqa_read_packet(AVFormatContext *s,
                     case SND2_TAG:
                         st->codec->codec_id = AV_CODEC_ID_ADPCM_IMA_WS;
                         st->codec->extradata_size = 2;
-                        st->codec->extradata = av_mallocz(2 + FF_INPUT_BUFFER_PADDING_SIZE);
+                        st->codec->extradata = av_mallocz(2 + AV_INPUT_BUFFER_PADDING_SIZE);
                         if (!st->codec->extradata)
                             return AVERROR(ENOMEM);
                         AV_WL16(st->codec->extradata, wsvqa->version);

@@ -453,7 +453,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     int i, j, size = 0, ret;
 
     if (!pkt->data &&
-        (ret = av_new_packet(pkt, width * height * 3 * 4 + FF_MIN_BUFFER_SIZE)) < 0) {
+        (ret = av_new_packet(pkt, width * height * 3 * 4 + AV_INPUT_BUFFER_MIN_SIZE)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "Error allocating output packet.\n");
         return ret;
     }
