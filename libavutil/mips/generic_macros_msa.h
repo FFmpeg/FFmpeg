@@ -1262,6 +1262,15 @@
 }
 #define HADD_UB3_UH(...) HADD_UB3(v8u16, __VA_ARGS__)
 
+#define HADD_UB4(RTYPE, in0, in1, in2, in3, out0, out1, out2, out3)  \
+{                                                                    \
+    HADD_UB2(RTYPE, in0, in1, out0, out1);                           \
+    HADD_UB2(RTYPE, in2, in3, out2, out3);                           \
+}
+#define HADD_UB4_UB(...) HADD_UB4(v16u8, __VA_ARGS__)
+#define HADD_UB4_UH(...) HADD_UB4(v8u16, __VA_ARGS__)
+#define HADD_UB4_SH(...) HADD_UB4(v8i16, __VA_ARGS__)
+
 /* Description : Horizontal subtraction of unsigned byte vector elements
    Arguments   : Inputs  - in0, in1
                  Outputs - out0, out1
@@ -1770,6 +1779,15 @@
 }
 #define SPLATI_H2_SB(...) SPLATI_H2(v16i8, __VA_ARGS__)
 #define SPLATI_H2_SH(...) SPLATI_H2(v8i16, __VA_ARGS__)
+
+#define SPLATI_H3(RTYPE, in, idx0, idx1, idx2,        \
+                  out0, out1, out2)                   \
+{                                                     \
+    SPLATI_H2(RTYPE, in, idx0, idx1, out0, out1);     \
+    out2 = (RTYPE) __msa_splati_h((v8i16) in, idx2);  \
+}
+#define SPLATI_H3_SB(...) SPLATI_H3(v16i8, __VA_ARGS__)
+#define SPLATI_H3_SH(...) SPLATI_H3(v8i16, __VA_ARGS__)
 
 #define SPLATI_H4(RTYPE, in, idx0, idx1, idx2, idx3,  \
                   out0, out1, out2, out3)             \
@@ -2823,4 +2841,20 @@
     tmp_m = __msa_pckev_b((v16i8) in1, (v16i8) in0);  \
     ST_SB(tmp_m, (pdst));                             \
 }
+
+/* Description : Horizontal 2 tap filter kernel code
+   Arguments   : Inputs  - in0, in1, mask, coeff, shift
+*/
+#define HORIZ_2TAP_FILT_UH(in0, in1, mask, coeff, shift)            \
+( {                                                                 \
+    v16i8 tmp0_m;                                                   \
+    v8u16 tmp1_m;                                                   \
+                                                                    \
+    tmp0_m = __msa_vshf_b((v16i8) mask, (v16i8) in1, (v16i8) in0);  \
+    tmp1_m = __msa_dotp_u_h((v16u8) tmp0_m, (v16u8) coeff);         \
+    tmp1_m = (v8u16) __msa_srari_h((v8i16) tmp1_m, shift);          \
+    tmp1_m = __msa_sat_u_h(tmp1_m, shift);                          \
+                                                                    \
+    tmp1_m;                                                         \
+} )
 #endif  /* AVUTIL_MIPS_GENERIC_MACROS_MSA_H */
