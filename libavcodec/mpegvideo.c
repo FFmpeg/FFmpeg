@@ -312,6 +312,8 @@ static av_cold int dct_init(MpegEncContext *s)
         ff_mpv_common_init_ppc(s);
     if (ARCH_X86)
         ff_mpv_common_init_x86(s);
+    if (ARCH_MIPS)
+        ff_mpv_common_init_mips(s);
 
     return 0;
 }
