@@ -815,6 +815,7 @@ static int decode_fctl_chunk(AVCodecContext *avctx, PNGDecContext *s,
                              uint32_t length)
 {
     uint32_t sequence_number;
+    int cur_w, cur_h, x_offset, y_offset, dispose_op, blend_op;
 
     if (length != 26)
         return AVERROR_INVALIDDATA;
@@ -831,23 +832,23 @@ static int decode_fctl_chunk(AVCodecContext *avctx, PNGDecContext *s,
     s->last_dispose_op = s->dispose_op;
 
     sequence_number = bytestream2_get_be32(&s->gb);
-    s->cur_w        = bytestream2_get_be32(&s->gb);
-    s->cur_h        = bytestream2_get_be32(&s->gb);
-    s->x_offset     = bytestream2_get_be32(&s->gb);
-    s->y_offset     = bytestream2_get_be32(&s->gb);
+    cur_w           = bytestream2_get_be32(&s->gb);
+    cur_h           = bytestream2_get_be32(&s->gb);
+    x_offset        = bytestream2_get_be32(&s->gb);
+    y_offset        = bytestream2_get_be32(&s->gb);
     bytestream2_skip(&s->gb, 4); /* delay_num (2), delay_den (2) */
-    s->dispose_op   = bytestream2_get_byte(&s->gb);
-    s->blend_op     = bytestream2_get_byte(&s->gb);
+    dispose_op      = bytestream2_get_byte(&s->gb);
+    blend_op        = bytestream2_get_byte(&s->gb);
     bytestream2_skip(&s->gb, 4); /* crc */
 
     if (sequence_number == 0 &&
-        (s->cur_w != s->width ||
-         s->cur_h != s->height ||
-         s->x_offset != 0 ||
-         s->y_offset != 0) ||
-        s->cur_w <= 0 || s->cur_h <= 0 ||
-        s->x_offset < 0 || s->y_offset < 0 ||
-        s->cur_w > s->width - s->x_offset|| s->cur_h > s->height - s->y_offset)
+        (cur_w != s->width ||
+         cur_h != s->height ||
+         x_offset != 0 ||
+         y_offset != 0) ||
+        cur_w <= 0 || cur_h <= 0 ||
+        x_offset < 0 || y_offset < 0 ||
+        cur_w > s->width - x_offset|| cur_h > s->height - y_offset)
             return AVERROR_INVALIDDATA;
 
     if (sequence_number == 0 && s->dispose_op == APNG_DISPOSE_OP_PREVIOUS) {
@@ -867,6 +868,13 @@ static int decode_fctl_chunk(AVCodecContext *avctx, PNGDecContext *s,
         // APNG_DISPOSE_OP_OVER is the same as APNG_DISPOSE_OP_SOURCE when there is no alpha channel
         s->dispose_op = APNG_BLEND_OP_SOURCE;
     }
+
+    s->cur_w      = cur_w;
+    s->cur_h      = cur_h;
+    s->x_offset   = x_offset;
+    s->y_offset   = y_offset;
+    s->dispose_op = dispose_op;
+    s->blend_op   = blend_op;
 
     return 0;
 }
