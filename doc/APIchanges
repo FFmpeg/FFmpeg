@@ -15,10 +15,6 @@ libavutil:     2014-08-09
 
 API changes, most recent first:
 
-2015-xx-xx - xxxxxxx - lavf 56.38.100 - avio.h url.h
-  Add avio_move(), avio_delete().
-  Extend URLProtocol with url_move(), url_delete().
-
 -------- 8< --------- FFmpeg 2.7 was cut here -------- 8< ---------
 
 2015-06-04 - cc17b43 - lswr  1.2.100

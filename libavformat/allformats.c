@@ -335,6 +335,7 @@ void av_register_all(void)
 
     /* image demuxers */
     REGISTER_DEMUXER (IMAGE_BMP_PIPE,        image_bmp_pipe);
+    REGISTER_DEMUXER (IMAGE_DDS_PIPE,        image_dds_pipe);
     REGISTER_DEMUXER (IMAGE_DPX_PIPE,        image_dpx_pipe);
     REGISTER_DEMUXER (IMAGE_EXR_PIPE,        image_exr_pipe);
     REGISTER_DEMUXER (IMAGE_J2K_PIPE,        image_j2k_pipe);

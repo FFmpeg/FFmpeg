@@ -10,6 +10,7 @@ version <next>:
 - ssim filter
 - rewritten ASF demuxer
 - showvolume filter
+- Many improvements to the JPEG 2000 decoder
 
 
 version 2.7:

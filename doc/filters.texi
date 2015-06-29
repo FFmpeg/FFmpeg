@@ -8853,7 +8853,7 @@ The description of the accepted parameters follows.
 
 @table @option
 @item stats_file, f
-If specified the filter will use the named file to save the PSNR of
+If specified the filter will use the named file to save the SSIM of
 each individual frame.
 @end table
 

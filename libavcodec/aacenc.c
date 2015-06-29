@@ -389,7 +389,7 @@ static void encode_scale_factors(AVCodecContext *avctx, AACEncContext *s,
                                  SingleChannelElement *sce)
 {
     int diff, off_sf = sce->sf_idx[0], off_pns = sce->sf_idx[0] - NOISE_OFFSET;
-    int noise_flag = 1;
+    int off_is = 0, noise_flag = 1;
     int i, w;
 
     for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
@@ -402,6 +402,10 @@ static void encode_scale_factors(AVCodecContext *avctx, AACEncContext *s,
                         put_bits(&s->pb, NOISE_PRE_BITS, diff + NOISE_PRE);
                         continue;
                     }
+                } else if (sce->band_type[w*16 + i] == INTENSITY_BT  ||
+                           sce->band_type[w*16 + i] == INTENSITY_BT2) {
+                    diff = sce->sf_idx[w*16 + i] - off_is;
+                    off_is = sce->sf_idx[w*16 + i];
                 } else {
                     diff = sce->sf_idx[w*16 + i] - off_sf;
                     off_sf = sce->sf_idx[w*16 + i];
