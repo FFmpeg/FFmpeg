@@ -1063,7 +1063,7 @@ static int asf_read_frame_header(AVFormatContext *s, AVIOContext *pb)
         AVRational aspect;
         asfst->packet_obj_size = avio_rl32(pb);
         if (asfst->packet_obj_size >= (1 << 24) || asfst->packet_obj_size <= 0) {
-            av_log(s, AV_LOG_ERROR, "packet_obj_size invalid\n");
+            av_log(s, AV_LOG_ERROR, "packet_obj_size %d invalid\n", asfst->packet_obj_size);
             asfst->packet_obj_size = 0;
             return AVERROR_INVALIDDATA;
         }
