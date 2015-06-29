@@ -725,9 +725,15 @@ static int qdraw_probe(AVProbeData *p)
 {
     const uint8_t *b = p->buf;
 
-    if (!b[10] && AV_RB32(b+11) == 0x1102ff0c && !b[15] ||
-        p->buf_size >= 528 && !b[522] && AV_RB32(b+523) == 0x1102ff0c && !b[527])
-        return AVPROBE_SCORE_EXTENSION + 1;
+    if (   p->buf_size >= 528
+        && (AV_RB64(b + 520) & 0xFFFFFFFFFFFF) == 0x001102ff0c00
+        && AV_RB16(b + 520)
+        && AV_RB16(b + 518))
+        return AVPROBE_SCORE_MAX * 3 / 4;
+    if (   (AV_RB64(b + 8) & 0xFFFFFFFFFFFF) == 0x001102ff0c00
+        && AV_RB16(b + 8)
+        && AV_RB16(b + 6))
+        return AVPROBE_SCORE_EXTENSION / 4;
     return 0;
 }
 
