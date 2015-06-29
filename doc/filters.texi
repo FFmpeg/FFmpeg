@@ -12023,6 +12023,9 @@ The expression can use the following variables:
 @item VOLUME
 Current max volume of channel in dB.
 @end table
+
+@item t
+If set, displays channel names. Default is enabled.
 @end table
 
 @section showwaves
