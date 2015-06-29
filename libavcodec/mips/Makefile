@@ -29,6 +29,7 @@ OBJS-$(CONFIG_QPELDSP)                    += mips/qpeldsp_init_mips.o
 OBJS-$(CONFIG_HPELDSP)                    += mips/hpeldsp_init_mips.o
 OBJS-$(CONFIG_BLOCKDSP)                   += mips/blockdsp_init_mips.o
 OBJS-$(CONFIG_PIXBLOCKDSP)                += mips/pixblockdsp_init_mips.o
+OBJS-$(CONFIG_IDCTDSP)                    += mips/idctdsp_init_mips.o
 OBJS-$(CONFIG_MPEGVIDEO)                  += mips/mpegvideo_init_mips.o
 OBJS-$(CONFIG_MPEGVIDEOENC)               += mips/mpegvideoencdsp_init_mips.o
 OBJS-$(CONFIG_ME_CMP)                     += mips/me_cmp_init_mips.o
@@ -50,6 +51,8 @@ MSA-OBJS-$(CONFIG_QPELDSP)                += mips/qpeldsp_msa.o
 MSA-OBJS-$(CONFIG_HPELDSP)                += mips/hpeldsp_msa.o
 MSA-OBJS-$(CONFIG_BLOCKDSP)               += mips/blockdsp_msa.o
 MSA-OBJS-$(CONFIG_PIXBLOCKDSP)            += mips/pixblockdsp_msa.o
+MSA-OBJS-$(CONFIG_IDCTDSP)                += mips/idctdsp_msa.o           \
+                                             mips/simple_idct_msa.o
 MSA-OBJS-$(CONFIG_MPEGVIDEO)              += mips/mpegvideo_msa.o
 MSA-OBJS-$(CONFIG_MPEGVIDEOENC)           += mips/mpegvideoencdsp_msa.o
 MSA-OBJS-$(CONFIG_ME_CMP)                 += mips/me_cmp_msa.o
