@@ -814,6 +814,11 @@ static int decode_fctl_chunk(AVCodecContext *avctx, PNGDecContext *s,
     if (length != 26)
         return AVERROR_INVALIDDATA;
 
+    if (!(s->state & PNG_IHDR)) {
+        av_log(avctx, AV_LOG_ERROR, "fctl before IHDR\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     sequence_number = bytestream2_get_be32(&s->gb);
     s->cur_w        = bytestream2_get_be32(&s->gb);
     s->cur_h        = bytestream2_get_be32(&s->gb);
