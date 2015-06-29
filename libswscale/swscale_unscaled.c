@@ -1242,6 +1242,11 @@ static rgbConvFn findRgbConvFn(SwsContext *c)
     if ((dstFormat == AV_PIX_FMT_RGB32_1 || dstFormat == AV_PIX_FMT_BGR32_1) && !isRGBA32(srcFormat) && ALT32_CORR<0)
         return NULL;
 
+    // Maintain symmetry between endianness
+    if (c->flags & SWS_BITEXACT)
+        if ((dstFormat == AV_PIX_FMT_RGB32   || dstFormat == AV_PIX_FMT_BGR32  ) && !isRGBA32(srcFormat) && ALT32_CORR>0)
+            return NULL;
+
     return conv;
 }
 
