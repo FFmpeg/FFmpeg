@@ -2439,7 +2439,7 @@ static int mpegts_probe(AVProbeData *p)
 #define CHECK_BLOCK 100
 
     if (check_count < CHECK_COUNT)
-        return AVERROR_INVALIDDATA;
+        return 0;
 
     for (i = 0; i<check_count; i+=CHECK_BLOCK) {
         int left = FFMIN(check_count - i, CHECK_BLOCK);
@@ -2459,7 +2459,7 @@ static int mpegts_probe(AVProbeData *p)
     if      (sumscore > 6) return AVPROBE_SCORE_MAX   + sumscore - CHECK_COUNT;
     else if (maxscore > 6) return AVPROBE_SCORE_MAX/2 + sumscore - CHECK_COUNT;
     else
-        return AVERROR_INVALIDDATA;
+        return 0;
 }
 
 /* return the 90kHz PCR and the extension for the 27MHz PCR. return
