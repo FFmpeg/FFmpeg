@@ -539,6 +539,11 @@ static int decode_ihdr_chunk(AVCodecContext *avctx, PNGDecContext *s,
         return AVERROR_INVALIDDATA;
     }
 
+    if (s->state & PNG_IHDR) {
+        av_log(avctx, AV_LOG_ERROR, "Multiple IHDR\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     s->width  = s->cur_w = bytestream2_get_be32(&s->gb);
     s->height = s->cur_h = bytestream2_get_be32(&s->gb);
     if (av_image_check_size(s->width, s->height, 0, avctx)) {
