@@ -2208,7 +2208,7 @@ int ff_celt_init(AVCodecContext *avctx, CeltContext **ps, int output_channels)
             goto fail;
     }
 
-    avpriv_float_dsp_init(&s->dsp, avctx->flags & CODEC_FLAG_BITEXACT);
+    avpriv_float_dsp_init(&s->dsp, avctx->flags & AV_CODEC_FLAG_BITEXACT);
 
     ff_celt_flush(s);
 

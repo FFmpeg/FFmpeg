@@ -207,7 +207,7 @@ static av_cold int encode_init(AVCodecContext* avc_context)
     av_pix_fmt_get_chroma_sub_sample(avc_context->pix_fmt,
                                      &h->uv_hshift, &h->uv_vshift);
 
-    if (avc_context->flags & CODEC_FLAG_QSCALE) {
+    if (avc_context->flags & AV_CODEC_FLAG_QSCALE) {
         /* to be constant with the libvorbis implementation, clip global_quality to 0 - 10
            Theora accepts a quality parameter p, which is:
                 * 0 <= p <=63
@@ -238,10 +238,10 @@ static av_cold int encode_init(AVCodecContext* avc_context)
     }
 
     // need to enable 2 pass (via TH_ENCCTL_2PASS_) before encoding headers
-    if (avc_context->flags & CODEC_FLAG_PASS1) {
+    if (avc_context->flags & AV_CODEC_FLAG_PASS1) {
         if (get_stats(avc_context, 0))
             return -1;
-    } else if (avc_context->flags & CODEC_FLAG_PASS2) {
+    } else if (avc_context->flags & AV_CODEC_FLAG_PASS2) {
         if (submit_stats(avc_context))
             return -1;
     }
@@ -278,7 +278,7 @@ static int encode_frame(AVCodecContext* avc_context, AVPacket *pkt,
     // EOS, finish and get 1st pass stats if applicable
     if (!frame) {
         th_encode_packetout(h->t_state, 1, &o_packet);
-        if (avc_context->flags & CODEC_FLAG_PASS1)
+        if (avc_context->flags & AV_CODEC_FLAG_PASS1)
             if (get_stats(avc_context, 1))
                 return -1;
         return 0;
@@ -292,7 +292,7 @@ static int encode_frame(AVCodecContext* avc_context, AVPacket *pkt,
         t_yuv_buffer[i].data   = frame->data[i];
     }
 
-    if (avc_context->flags & CODEC_FLAG_PASS2)
+    if (avc_context->flags & AV_CODEC_FLAG_PASS2)
         if (submit_stats(avc_context))
             return -1;
 
@@ -315,7 +315,7 @@ static int encode_frame(AVCodecContext* avc_context, AVPacket *pkt,
         return -1;
     }
 
-    if (avc_context->flags & CODEC_FLAG_PASS1)
+    if (avc_context->flags & AV_CODEC_FLAG_PASS1)
         if (get_stats(avc_context, 0))
             return -1;
 

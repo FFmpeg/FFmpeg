@@ -446,7 +446,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     ADD_ENTRY(s,  TIFF_YRES,         TIFF_RATIONAL, 1,      res);
     ADD_ENTRY1(s, TIFF_RES_UNIT,     TIFF_SHORT,    2);
 
-    if (!(avctx->flags & CODEC_FLAG_BITEXACT))
+    if (!(avctx->flags & AV_CODEC_FLAG_BITEXACT))
         ADD_ENTRY(s, TIFF_SOFTWARE_NAME, TIFF_STRING,
                   strlen(LIBAVCODEC_IDENT) + 1, LIBAVCODEC_IDENT);
 

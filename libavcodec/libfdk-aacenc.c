@@ -184,7 +184,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
         goto error;
     }
 
-    if (avctx->flags & CODEC_FLAG_QSCALE || s->vbr) {
+    if (avctx->flags & AV_CODEC_FLAG_QSCALE || s->vbr) {
         int mode = s->vbr ? s->vbr : avctx->global_quality;
         if (mode <  1 || mode > 5) {
             av_log(avctx, AV_LOG_WARNING,
@@ -224,7 +224,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     /* Choose bitstream format - if global header is requested, use
      * raw access units, otherwise use ADTS. */
     if ((err = aacEncoder_SetParam(s->handle, AACENC_TRANSMUX,
-                                   avctx->flags & CODEC_FLAG_GLOBAL_HEADER ? 0 : s->latm ? 10 : 2)) != AACENC_OK) {
+                                   avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER ? 0 : s->latm ? 10 : 2)) != AACENC_OK) {
         av_log(avctx, AV_LOG_ERROR, "Unable to set the transmux format: %s\n",
                aac_get_error(err));
         goto error;
@@ -243,7 +243,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
      * if using mp4 mode (raw access units, with global header) and
      * implicit signaling if using ADTS. */
     if (s->signaling < 0)
-        s->signaling = avctx->flags & CODEC_FLAG_GLOBAL_HEADER ? 2 : 0;
+        s->signaling = avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER ? 2 : 0;
 
     if ((err = aacEncoder_SetParam(s->handle, AACENC_SIGNALING_MODE,
                                    s->signaling)) != AACENC_OK) {
@@ -289,7 +289,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     avctx->initial_padding = info.encoderDelay;
     ff_af_queue_init(avctx, &s->afq);
 
-    if (avctx->flags & CODEC_FLAG_GLOBAL_HEADER) {
+    if (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) {
         avctx->extradata_size = info.confSize;
         avctx->extradata      = av_mallocz(avctx->extradata_size +
                                            FF_INPUT_BUFFER_PADDING_SIZE);

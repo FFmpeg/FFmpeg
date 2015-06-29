@@ -77,7 +77,7 @@ static av_cold int twolame_encode_init(AVCodecContext *avctx)
     twolame_set_num_channels(s->glopts, avctx->channels);
     twolame_set_in_samplerate(s->glopts, avctx->sample_rate);
     twolame_set_out_samplerate(s->glopts, avctx->sample_rate);
-    if (avctx->flags & CODEC_FLAG_QSCALE || !avctx->bit_rate) {
+    if (avctx->flags & AV_CODEC_FLAG_QSCALE || !avctx->bit_rate) {
         twolame_set_VBR(s->glopts, TRUE);
         twolame_set_VBR_level(s->glopts,
                               avctx->global_quality / (float) FF_QP2LAMBDA);

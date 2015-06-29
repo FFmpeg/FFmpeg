@@ -243,7 +243,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     uint8_t *rgba_buf        = NULL;
     uint8_t *top_buf         = NULL;
 
-    is_progressive = !!(avctx->flags & CODEC_FLAG_INTERLACED_DCT);
+    is_progressive = !!(avctx->flags & AV_CODEC_FLAG_INTERLACED_DCT);
     switch (avctx->pix_fmt) {
     case AV_PIX_FMT_RGBA64BE:
         bit_depth = 16;

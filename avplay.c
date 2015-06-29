@@ -2089,7 +2089,8 @@ static int stream_component_open(VideoState *is, int stream_index)
     avctx->skip_loop_filter  = skip_loop_filter;
     avctx->error_concealment = error_concealment;
 
-    if (fast)   avctx->flags2 |= CODEC_FLAG2_FAST;
+    if (fast)
+        avctx->flags2 |= AV_CODEC_FLAG2_FAST;
 
     if (!av_dict_get(opts, "threads", NULL, 0))
         av_dict_set(&opts, "threads", "auto", 0);

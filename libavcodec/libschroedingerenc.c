@@ -174,7 +174,7 @@ static av_cold int libschroedinger_encode_init(AVCodecContext *avctx)
     }
 
     /* FIXME - Need to handle SCHRO_ENCODER_RATE_CONTROL_LOW_DELAY. */
-    if (avctx->flags & CODEC_FLAG_QSCALE) {
+    if (avctx->flags & AV_CODEC_FLAG_QSCALE) {
         if (!avctx->global_quality) {
             /* lossless coding */
             schro_encoder_setting_set_double(p_schro_params->encoder,
@@ -201,14 +201,14 @@ static av_cold int libschroedinger_encode_init(AVCodecContext *avctx)
                                          "bitrate", avctx->bit_rate);
     }
 
-    if (avctx->flags & CODEC_FLAG_INTERLACED_ME)
+    if (avctx->flags & AV_CODEC_FLAG_INTERLACED_ME)
         /* All material can be coded as interlaced or progressive
            irrespective of the type of source material. */
         schro_encoder_setting_set_double(p_schro_params->encoder,
                                          "interlaced_coding", 1);
 
     schro_encoder_setting_set_double(p_schro_params->encoder, "open_gop",
-                                     !(avctx->flags & CODEC_FLAG_CLOSED_GOP));
+                                     !(avctx->flags & AV_CODEC_FLAG_CLOSED_GOP));
 
     /* FIXME: Signal range hardcoded to 8-bit data until both libschroedinger
      * and libdirac support other bit-depth data. */

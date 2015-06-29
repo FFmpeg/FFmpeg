@@ -1015,7 +1015,7 @@ static av_cold int vorbis_decode_init(AVCodecContext *avctx)
 
     vc->avctx = avctx;
     ff_vorbisdsp_init(&vc->dsp);
-    avpriv_float_dsp_init(&vc->fdsp, avctx->flags & CODEC_FLAG_BITEXACT);
+    avpriv_float_dsp_init(&vc->fdsp, avctx->flags & AV_CODEC_FLAG_BITEXACT);
 
     avctx->sample_fmt = AV_SAMPLE_FMT_FLTP;
 

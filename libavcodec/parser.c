@@ -179,8 +179,8 @@ int av_parser_change(AVCodecParserContext *s, AVCodecContext *avctx,
                      const uint8_t *buf, int buf_size, int keyframe)
 {
     if (s && s->parser->split) {
-        if (avctx->flags  & CODEC_FLAG_GLOBAL_HEADER ||
-            avctx->flags2 & CODEC_FLAG2_LOCAL_HEADER) {
+        if (avctx->flags  & AV_CODEC_FLAG_GLOBAL_HEADER ||
+            avctx->flags2 & AV_CODEC_FLAG2_LOCAL_HEADER) {
             int i = s->parser->split(avctx, buf, buf_size);
             buf      += i;
             buf_size -= i;
@@ -191,7 +191,7 @@ int av_parser_change(AVCodecParserContext *s, AVCodecContext *avctx,
     *poutbuf      = (uint8_t *) buf;
     *poutbuf_size = buf_size;
     if (avctx->extradata) {
-        if (keyframe && (avctx->flags2 & CODEC_FLAG2_LOCAL_HEADER)) {
+        if (keyframe && (avctx->flags2 & AV_CODEC_FLAG2_LOCAL_HEADER)) {
             int size = buf_size + avctx->extradata_size;
 
             *poutbuf_size = size;

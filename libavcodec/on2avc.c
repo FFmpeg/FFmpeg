@@ -951,7 +951,7 @@ static av_cold int on2avc_decode_init(AVCodecContext *avctx)
     ff_fft_init(&c->fft256,  7, 0);
     ff_fft_init(&c->fft512,  8, 1);
     ff_fft_init(&c->fft1024, 9, 1);
-    avpriv_float_dsp_init(&c->fdsp, avctx->flags & CODEC_FLAG_BITEXACT);
+    avpriv_float_dsp_init(&c->fdsp, avctx->flags & AV_CODEC_FLAG_BITEXACT);
 
     if (init_vlc(&c->scale_diff, 9, ON2AVC_SCALE_DIFFS,
                  ff_on2avc_scale_diff_bits,  1, 1,

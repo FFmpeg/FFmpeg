@@ -91,14 +91,14 @@ static av_cold int libvorbis_setup(vorbis_info *vi, AVCodecContext *avctx)
     double cfreq;
     int ret;
 
-    if (avctx->flags & CODEC_FLAG_QSCALE || !avctx->bit_rate) {
+    if (avctx->flags & AV_CODEC_FLAG_QSCALE || !avctx->bit_rate) {
         /* variable bitrate
          * NOTE: we use the oggenc range of -1 to 10 for global_quality for
          *       user convenience, but libvorbis uses -0.1 to 1.0.
          */
         float q = avctx->global_quality / (float)FF_QP2LAMBDA;
         /* default to 3 if the user did not set quality or bitrate */
-        if (!(avctx->flags & CODEC_FLAG_QSCALE))
+        if (!(avctx->flags & AV_CODEC_FLAG_QSCALE))
             q = 3.0;
         if ((ret = vorbis_encode_setup_vbr(vi, avctx->channels,
                                            avctx->sample_rate,

@@ -130,7 +130,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     memcpy (buf +   8, "V1.0", 4);
     write32(buf +  20, 1); /* new image */
     write32(buf +  24, HEADER_SIZE);
-    if (!(avctx->flags & CODEC_FLAG_BITEXACT))
+    if (!(avctx->flags & AV_CODEC_FLAG_BITEXACT))
         memcpy (buf + 160, LIBAVCODEC_IDENT, FFMIN(sizeof(LIBAVCODEC_IDENT), 100));
     write32(buf + 660, 0xFFFFFFFF); /* unencrypted */
 

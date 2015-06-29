@@ -1256,7 +1256,7 @@ av_cold void ff_me_cmp_init_x86(MECmpContext *c, AVCodecContext *avctx)
         c->nsse[0] = nsse16_mmx;
         c->nsse[1] = nsse8_mmx;
 
-        if (!(avctx->flags & CODEC_FLAG_BITEXACT)) {
+        if (!(avctx->flags & AV_CODEC_FLAG_BITEXACT)) {
             c->vsad[0] = vsad16_mmx;
         }
     }
@@ -1272,7 +1272,7 @@ av_cold void ff_me_cmp_init_x86(MECmpContext *c, AVCodecContext *avctx)
         c->sad[0] = sad16_mmxext;
         c->sad[1] = sad8_mmxext;
 
-        if (!(avctx->flags & CODEC_FLAG_BITEXACT)) {
+        if (!(avctx->flags & AV_CODEC_FLAG_BITEXACT)) {
             c->pix_abs[0][1] = sad16_x2_mmxext;
             c->pix_abs[0][2] = sad16_y2_mmxext;
             c->pix_abs[0][3] = sad16_xy2_mmxext;

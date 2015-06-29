@@ -686,7 +686,7 @@ static int svq1_decode_frame(AVCodecContext *avctx, void *data,
             width    = FFALIGN(s->width,  16);
             height   = FFALIGN(s->height, 16);
         } else {
-            if (avctx->flags & CODEC_FLAG_GRAY)
+            if (avctx->flags & AV_CODEC_FLAG_GRAY)
                 break;
             width    = FFALIGN(s->width  / 4, 16);
             height   = FFALIGN(s->height / 4, 16);

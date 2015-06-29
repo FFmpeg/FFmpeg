@@ -581,7 +581,7 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
         init_put_bits(&s->pb, avpkt->data, avpkt->size);
 
-        if ((avctx->frame_number & 0xFF)==1 && !(avctx->flags & CODEC_FLAG_BITEXACT))
+        if ((avctx->frame_number & 0xFF)==1 && !(avctx->flags & AV_CODEC_FLAG_BITEXACT))
             put_bitstream_info(s, LIBAVCODEC_IDENT);
         start_ch = 0;
         memset(chan_el_counter, 0, sizeof(chan_el_counter));
@@ -654,7 +654,7 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     avctx->frame_bits = put_bits_count(&s->pb);
 
     // rate control stuff
-    if (!(avctx->flags & CODEC_FLAG_QSCALE)) {
+    if (!(avctx->flags & AV_CODEC_FLAG_QSCALE)) {
         float ratio = avctx->bit_rate * 1024.0f / avctx->sample_rate / avctx->frame_bits;
         s->lambda *= ratio;
         s->lambda = FFMIN(s->lambda, 65536.f);
@@ -690,7 +690,7 @@ static av_cold int dsp_init(AVCodecContext *avctx, AACEncContext *s)
 {
     int ret = 0;
 
-    avpriv_float_dsp_init(&s->fdsp, avctx->flags & CODEC_FLAG_BITEXACT);
+    avpriv_float_dsp_init(&s->fdsp, avctx->flags & AV_CODEC_FLAG_BITEXACT);
 
     // window init
     ff_kbd_window_init(ff_aac_kbd_long_1024, 4.0, 1024);

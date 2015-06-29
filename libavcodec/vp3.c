@@ -1081,7 +1081,7 @@ static int unpack_dct_coeffs(Vp3DecodeContext *s, GetBitContext *gb)
         return residual_eob_run;
 
     /* reverse prediction of the C-plane DC coefficients */
-    if (!(s->avctx->flags & CODEC_FLAG_GRAY)) {
+    if (!(s->avctx->flags & AV_CODEC_FLAG_GRAY)) {
         reverse_dc_prediction(s, s->fragment_start[1],
                               s->fragment_width[1], s->fragment_height[1]);
         reverse_dc_prediction(s, s->fragment_start[2],
@@ -1504,7 +1504,7 @@ static void render_slice(Vp3DecodeContext *s, int slice)
 
         if (!s->flipped_image)
             stride = -stride;
-        if (CONFIG_GRAY && plane && (s->avctx->flags & CODEC_FLAG_GRAY))
+        if (CONFIG_GRAY && plane && (s->avctx->flags & AV_CODEC_FLAG_GRAY))
             continue;
 
         /* for each superblock row in the slice (both of them)... */
@@ -1728,7 +1728,7 @@ static av_cold int vp3_decode_init(AVCodecContext *avctx)
     if (avctx->pix_fmt == AV_PIX_FMT_NONE)
         avctx->pix_fmt = AV_PIX_FMT_YUV420P;
     avctx->chroma_sample_location = AVCHROMA_LOC_CENTER;
-    ff_hpeldsp_init(&s->hdsp, avctx->flags | CODEC_FLAG_BITEXACT);
+    ff_hpeldsp_init(&s->hdsp, avctx->flags | AV_CODEC_FLAG_BITEXACT);
     ff_videodsp_init(&s->vdsp, 8);
     ff_vp3dsp_init(&s->vp3dsp, avctx->flags);
 
@@ -2282,7 +2282,7 @@ static int theora_decode_header(AVCodecContext *avctx, GetBitContext *gb)
     ret = ff_set_dimensions(avctx, s->width, s->height);
     if (ret < 0)
         return ret;
-    if (!(avctx->flags2 & CODEC_FLAG2_IGNORE_CROP) &&
+    if (!(avctx->flags2 & AV_CODEC_FLAG2_IGNORE_CROP) &&
         (visible_width != s->width || visible_height != s->height)) {
         avctx->width  = visible_width;
         avctx->height = visible_height;
@@ -2291,7 +2291,7 @@ static int theora_decode_header(AVCodecContext *avctx, GetBitContext *gb)
         s->offset_x = offset_x;
         s->offset_y = s->height - visible_height - offset_y;
 
-        if ((s->offset_x & 0x1F) && !(avctx->flags & CODEC_FLAG_UNALIGNED)) {
+        if ((s->offset_x & 0x1F) && !(avctx->flags & AV_CODEC_FLAG_UNALIGNED)) {
             s->offset_x &= ~0x1F;
             av_log(avctx, AV_LOG_WARNING, "Reducing offset_x from %d to %d"
                    "chroma samples to preserve alignment.\n",

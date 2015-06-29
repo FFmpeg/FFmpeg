@@ -85,7 +85,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     params.sampleRate = avctx->sample_rate;
     params.bitRate    = avctx->bit_rate;
     params.nChannels  = avctx->channels;
-    params.adtsUsed   = !(avctx->flags & CODEC_FLAG_GLOBAL_HEADER);
+    params.adtsUsed   = !(avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER);
     if (s->codec_api.SetParam(s->handle, VO_PID_AAC_ENCPARAM, &params)
         != VO_ERR_NONE) {
         av_log(avctx, AV_LOG_ERROR, "Unable to set encoding parameters\n");
@@ -102,7 +102,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
         ret = AVERROR(ENOSYS);
         goto error;
     }
-    if (avctx->flags & CODEC_FLAG_GLOBAL_HEADER) {
+    if (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) {
         avctx->extradata_size = 2;
         avctx->extradata      = av_mallocz(avctx->extradata_size +
                                            FF_INPUT_BUFFER_PADDING_SIZE);

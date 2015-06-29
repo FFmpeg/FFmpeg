@@ -249,7 +249,7 @@ static av_always_inline void mc_dir_part(const H264Context *h, H264SliceContext 
     if (!square)
         qpix_op[luma_xy](dest_y + delta, src_y + delta, sl->mb_linesize);
 
-    if (CONFIG_GRAY && h->flags & CODEC_FLAG_GRAY)
+    if (CONFIG_GRAY && h->flags & AV_CODEC_FLAG_GRAY)
         return;
 
     if (chroma_idc == 3 /* yuv444 */) {
@@ -562,7 +562,7 @@ static av_always_inline void xchg_mb_border(const H264Context *h, H264SliceConte
                  src_y + (17 << pixel_shift), 1);
         }
     }
-    if (simple || !CONFIG_GRAY || !(h->flags & CODEC_FLAG_GRAY)) {
+    if (simple || !CONFIG_GRAY || !(h->flags & AV_CODEC_FLAG_GRAY)) {
         if (chroma444) {
             if (deblock_top) {
                 if (deblock_topleft) {

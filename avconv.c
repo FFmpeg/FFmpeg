@@ -508,7 +508,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     } else {
         int got_packet;
 
-        if (enc->flags & (CODEC_FLAG_INTERLACED_DCT|CODEC_FLAG_INTERLACED_ME) &&
+        if (enc->flags & (AV_CODEC_FLAG_INTERLACED_DCT | AV_CODEC_FLAG_INTERLACED_ME) &&
             ost->top_field_first >= 0)
             in_picture->top_field_first = !!ost->top_field_first;
 
@@ -576,7 +576,7 @@ static void do_video_stats(OutputStream *ost, int frame_size)
 
 #if FF_API_CODED_FRAME
 FF_DISABLE_DEPRECATION_WARNINGS
-        if (enc->flags&CODEC_FLAG_PSNR)
+        if (enc->flags & AV_CODEC_FLAG_PSNR)
             fprintf(vstats_file, "PSNR= %6.2f ", psnr(enc->coded_frame->error[0] / (enc->width * enc->height * 255.0 * 255.0)));
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
@@ -891,7 +891,7 @@ static void print_report(int is_last_report, int64_t timer_start)
 
 #if FF_API_CODED_FRAME
 FF_DISABLE_DEPRECATION_WARNINGS
-            if (enc->flags&CODEC_FLAG_PSNR) {
+            if (enc->flags & AV_CODEC_FLAG_PSNR) {
                 int j;
                 double error, error_sum = 0;
                 double scale, scale_sum = 0;

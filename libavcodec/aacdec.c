@@ -1063,7 +1063,7 @@ static av_cold int aac_decode_init(AVCodecContext *avctx)
 
     ff_aac_sbr_init();
 
-    avpriv_float_dsp_init(&ac->fdsp, avctx->flags & CODEC_FLAG_BITEXACT);
+    avpriv_float_dsp_init(&ac->fdsp, avctx->flags & AV_CODEC_FLAG_BITEXACT);
 
     ac->random_state = 0x1f2e3d4c;
 

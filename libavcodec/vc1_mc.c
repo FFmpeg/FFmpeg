@@ -136,7 +136,7 @@ void ff_vc1_mc_1mv(VC1Context *v, int dir)
     }
 
     /* for grayscale we should not try to read from unknown area */
-    if (s->avctx->flags & CODEC_FLAG_GRAY) {
+    if (s->avctx->flags & AV_CODEC_FLAG_GRAY) {
         srcU = s->sc.edge_emu_buffer + 18 * s->linesize;
         srcV = s->sc.edge_emu_buffer + 18 * s->linesize;
     }
@@ -228,7 +228,7 @@ void ff_vc1_mc_1mv(VC1Context *v, int dir)
             s->hdsp.put_no_rnd_pixels_tab[0][dxy](s->dest[0], srcY, s->linesize, 16);
     }
 
-    if (s->avctx->flags & CODEC_FLAG_GRAY)
+    if (s->avctx->flags & AV_CODEC_FLAG_GRAY)
         return;
     /* Chroma MC always uses qpel bilinear */
     uvmx = (uvmx & 3) << 1;
@@ -515,7 +515,7 @@ void ff_vc1_mc_4mv_chroma(VC1Context *v, int dir)
 
     if (!v->field_mode && !v->s.last_picture.f->data[0])
         return;
-    if (s->avctx->flags & CODEC_FLAG_GRAY)
+    if (s->avctx->flags & AV_CODEC_FLAG_GRAY)
         return;
 
     for (k = 0; k < 4; k++) {
@@ -686,7 +686,7 @@ void ff_vc1_mc_4mv_chroma4(VC1Context *v, int dir, int dir2, int avg)
     int use_ic;
     uint8_t (*lutuv)[256];
 
-    if (s->avctx->flags & CODEC_FLAG_GRAY)
+    if (s->avctx->flags & AV_CODEC_FLAG_GRAY)
         return;
 
     for (i = 0; i < 4; i++) {
@@ -837,7 +837,7 @@ void ff_vc1_interp_mc(VC1Context *v)
     }
 
     /* for grayscale we should not try to read from unknown area */
-    if (s->avctx->flags & CODEC_FLAG_GRAY) {
+    if (s->avctx->flags & AV_CODEC_FLAG_GRAY) {
         srcU = s->sc.edge_emu_buffer + 18 * s->linesize;
         srcV = s->sc.edge_emu_buffer + 18 * s->linesize;
     }
@@ -934,7 +934,7 @@ void ff_vc1_interp_mc(VC1Context *v)
             s->hdsp.avg_no_rnd_pixels_tab[dxy](s->dest[0] + off, srcY, s->linesize, 16);
     }
 
-    if (s->avctx->flags & CODEC_FLAG_GRAY)
+    if (s->avctx->flags & AV_CODEC_FLAG_GRAY)
         return;
     /* Chroma MC always uses qpel blilinear */
     uvmx = (uvmx & 3) << 1;

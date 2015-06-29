@@ -104,7 +104,7 @@ static void add_audio_stream(OutputStream *ost, AVFormatContext *oc,
 
     // some formats want stream headers to be separate
     if (oc->oformat->flags & AVFMT_GLOBALHEADER)
-        c->flags |= CODEC_FLAG_GLOBAL_HEADER;
+        c->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 
     /* initialize sample format conversion;
      * to simplify the code, we always pass the data through lavr, even
@@ -358,7 +358,7 @@ static void add_video_stream(OutputStream *ost, AVFormatContext *oc,
     }
     /* Some formats want stream headers to be separate. */
     if (oc->oformat->flags & AVFMT_GLOBALHEADER)
-        c->flags |= CODEC_FLAG_GLOBAL_HEADER;
+        c->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 }
 
 static AVFrame *alloc_picture(enum AVPixelFormat pix_fmt, int width, int height)

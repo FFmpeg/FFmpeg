@@ -197,7 +197,7 @@ static av_always_inline PutBitContext *dv_encode_ac(EncBlockInfo *bi,
 static av_always_inline int dv_guess_dct_mode(DVVideoContext *s, uint8_t *data,
                                               int linesize)
 {
-    if (s->avctx->flags & CODEC_FLAG_INTERLACED_DCT) {
+    if (s->avctx->flags & AV_CODEC_FLAG_INTERLACED_DCT) {
         int ps = s->ildct_cmp(NULL, data, NULL, linesize, 8) - 400;
         if (ps > 0) {
             int is = s->ildct_cmp(NULL, data,            NULL, linesize << 1, 4) +

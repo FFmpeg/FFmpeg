@@ -119,7 +119,7 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
     ctx->params->fpsDenom        = avctx->time_base.num * avctx->ticks_per_frame;
     ctx->params->sourceWidth     = avctx->width;
     ctx->params->sourceHeight    = avctx->height;
-    ctx->params->bEnablePsnr     = !!(avctx->flags & CODEC_FLAG_PSNR);
+    ctx->params->bEnablePsnr     = !!(avctx->flags & AV_CODEC_FLAG_PSNR);
 
     if ((avctx->color_primaries <= AVCOL_PRI_BT2020 &&
          avctx->color_primaries != AVCOL_PRI_UNSPECIFIED) ||
@@ -179,7 +179,7 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
         ctx->params->rc.rateControlMode = X265_RC_ABR;
     }
 
-    if (!(avctx->flags & CODEC_FLAG_GLOBAL_HEADER))
+    if (!(avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER))
         ctx->params->bRepeatHeaders = 1;
 
     if (ctx->x265_opts) {
@@ -214,7 +214,7 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     }
 
-    if (avctx->flags & CODEC_FLAG_GLOBAL_HEADER) {
+    if (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) {
         x265_nal *nal;
         int nnal;
 

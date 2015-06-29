@@ -102,7 +102,7 @@ static inline void init_ref(MotionEstContext *c, uint8_t *src[3], uint8_t *ref[3
 }
 
 static int get_flags(MotionEstContext *c, int direct, int chroma){
-    return   ((c->avctx->flags&CODEC_FLAG_QPEL) ? FLAG_QPEL : 0)
+    return   ((c->avctx->flags&AV_CODEC_FLAG_QPEL) ? FLAG_QPEL : 0)
            + (direct ? FLAG_DIRECT : 0)
            + (chroma ? FLAG_CHROMA : 0);
 }
@@ -345,7 +345,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     c->mb_flags = get_flags(c, 0, c->avctx->mb_cmp    &FF_CMP_CHROMA);
 
 /*FIXME s->no_rounding b_type*/
-    if (s->avctx->flags & CODEC_FLAG_QPEL) {
+    if (s->avctx->flags & AV_CODEC_FLAG_QPEL) {
         c->sub_motion_search= qpel_motion_search;
         c->qpel_avg = s->qdsp.avg_qpel_pixels_tab;
         if (s->no_rounding)
@@ -973,7 +973,7 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
             mx <<=shift;
             my <<=shift;
         }
-        if ((s->avctx->flags & CODEC_FLAG_4MV)
+        if ((s->avctx->flags & AV_CODEC_FLAG_4MV)
            && !c->skip && varc>50<<8 && vard>10<<8){
             if(h263_mv4_search(s, mx, my, shift) < INT_MAX)
                 mb_type|=CANDIDATE_MB_TYPE_INTER4V;
@@ -981,7 +981,7 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
             set_p_mv_tables(s, mx, my, 0);
         }else
             set_p_mv_tables(s, mx, my, 1);
-        if ((s->avctx->flags & CODEC_FLAG_INTERLACED_ME)
+        if ((s->avctx->flags & AV_CODEC_FLAG_INTERLACED_ME)
            && !c->skip){ //FIXME varc/d checks
             if(interlaced_search(s, 0, s->p_field_mv_table, s->p_field_select_table, mx, my, 0) < INT_MAX)
                 mb_type |= CANDIDATE_MB_TYPE_INTER_I;
@@ -994,7 +994,7 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
         if(c->avctx->me_sub_cmp != c->avctx->mb_cmp && !c->skip)
             dmin= get_mb_score(s, mx, my, 0, 0, 0, 16, 1);
 
-        if ((s->avctx->flags & CODEC_FLAG_4MV)
+        if ((s->avctx->flags & AV_CODEC_FLAG_4MV)
            && !c->skip && varc>50<<8 && vard>10<<8){
             int dmin4= h263_mv4_search(s, mx, my, shift);
             if(dmin4 < dmin){
@@ -1002,7 +1002,7 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
                 dmin=dmin4;
             }
         }
-        if ((s->avctx->flags & CODEC_FLAG_INTERLACED_ME)
+        if ((s->avctx->flags & AV_CODEC_FLAG_INTERLACED_ME)
            && !c->skip){ //FIXME varc/d checks
             int dmin_i= interlaced_search(s, 0, s->p_field_mv_table, s->p_field_select_table, mx, my, 0);
             if(dmin_i < dmin){
@@ -1520,7 +1520,7 @@ void ff_estimate_b_frame_motion(MpegEncContext * s,
     fbmin= bidir_refine(s, mb_x, mb_y) + penalty_factor;
     ff_dlog(s, "%d %d %d %d\n", dmin, fmin, bmin, fbmin);
 
-    if (s->avctx->flags & CODEC_FLAG_INTERLACED_ME) {
+    if (s->avctx->flags & AV_CODEC_FLAG_INTERLACED_ME) {
 //FIXME mb type penalty
         c->skip=0;
         c->current_mv_penalty= c->mv_penalty[s->f_code] + MAX_MV;
@@ -1651,7 +1651,7 @@ void ff_fix_long_p_mvs(MpegEncContext * s)
 
     if(c->avctx->me_range && range > c->avctx->me_range) range= c->avctx->me_range;
 
-    if (s->avctx->flags & CODEC_FLAG_4MV) {
+    if (s->avctx->flags & AV_CODEC_FLAG_4MV) {
         const int wrap= s->b8_stride;
 
         /* clip / convert to intra 8x8 type MVs */

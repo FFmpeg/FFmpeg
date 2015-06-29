@@ -478,8 +478,8 @@ static int nvenc_setup_h264_config(AVCodecContext *avctx)
 
     vui->videoFullRangeFlag = avctx->color_range == AVCOL_RANGE_JPEG;
 
-    h264->disableSPSPPS = (avctx->flags & CODEC_FLAG_GLOBAL_HEADER) ? 1 : 0;
-    h264->repeatSPSPPS  = (avctx->flags & CODEC_FLAG_GLOBAL_HEADER) ? 0 : 1;
+    h264->disableSPSPPS = (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) ? 1 : 0;
+    h264->repeatSPSPPS  = (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) ? 0 : 1;
 
     h264->maxNumRefFrames = avctx->refs;
     h264->idrPeriod       = cc->gopLength;
@@ -521,8 +521,8 @@ static int nvenc_setup_hevc_config(AVCodecContext *avctx)
     NV_ENC_CONFIG *cc                      = &ctx->config;
     NV_ENC_CONFIG_HEVC *hevc               = &cc->encodeCodecConfig.hevcConfig;
 
-    hevc->disableSPSPPS = (avctx->flags & CODEC_FLAG_GLOBAL_HEADER) ? 1 : 0;
-    hevc->repeatSPSPPS  = (avctx->flags & CODEC_FLAG_GLOBAL_HEADER) ? 0 : 1;
+    hevc->disableSPSPPS = (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) ? 1 : 0;
+    hevc->repeatSPSPPS  = (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) ? 0 : 1;
 
     hevc->maxNumRefFramesInDPB = avctx->refs;
     hevc->idrPeriod            = cc->gopLength;
@@ -629,7 +629,7 @@ static int nvenc_setup_encoder(AVCodecContext *avctx)
 
     nvenc_setup_rate_control(avctx);
 
-    if (avctx->flags & CODEC_FLAG_INTERLACED_DCT) {
+    if (avctx->flags & AV_CODEC_FLAG_INTERLACED_DCT) {
         ctx->config.frameFieldMode = NV_ENC_PARAMS_FRAME_FIELD_MODE_FIELD;
     } else {
         ctx->config.frameFieldMode = NV_ENC_PARAMS_FRAME_FIELD_MODE_FRAME;
@@ -812,7 +812,7 @@ av_cold int ff_nvenc_encode_init(AVCodecContext *avctx)
     if ((ret = nvenc_setup_surfaces(avctx)) < 0)
         return ret;
 
-    if (avctx->flags & CODEC_FLAG_GLOBAL_HEADER) {
+    if (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) {
         if ((ret = nvenc_setup_extradata(avctx)) < 0)
             return ret;
     }
@@ -1088,7 +1088,7 @@ int ff_nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         params.outputBitstream = out->out;
         params.inputTimeStamp  = frame->pts;
 
-        if (avctx->flags & CODEC_FLAG_INTERLACED_DCT) {
+        if (avctx->flags & AV_CODEC_FLAG_INTERLACED_DCT) {
             if (frame->top_field_first)
                 params.pictureStruct = NV_ENC_PIC_STRUCT_FIELD_TOP_BOTTOM;
             else

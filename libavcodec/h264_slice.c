@@ -632,7 +632,7 @@ static av_always_inline void backup_mb_border(const H264Context *h, H264SliceCon
                 AV_COPY128(top_border, src_y + 15 * linesize);
                 if (pixel_shift)
                     AV_COPY128(top_border + 16, src_y + 15 * linesize + 16);
-                if (simple || !CONFIG_GRAY || !(h->flags & CODEC_FLAG_GRAY)) {
+                if (simple || !CONFIG_GRAY || !(h->flags & AV_CODEC_FLAG_GRAY)) {
                     if (chroma444) {
                         if (pixel_shift) {
                             AV_COPY128(top_border + 32, src_cb + 15 * uvlinesize);
@@ -675,7 +675,7 @@ static av_always_inline void backup_mb_border(const H264Context *h, H264SliceCon
     if (pixel_shift)
         AV_COPY128(top_border + 16, src_y + 16 * linesize + 16);
 
-    if (simple || !CONFIG_GRAY || !(h->flags & CODEC_FLAG_GRAY)) {
+    if (simple || !CONFIG_GRAY || !(h->flags & AV_CODEC_FLAG_GRAY)) {
         if (chroma444) {
             if (pixel_shift) {
                 AV_COPY128(top_border + 32, src_cb + 16 * linesize);
@@ -1125,7 +1125,7 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
             h->chroma_format_idc != h->sps.chroma_format_idc)
             needs_reinit         = 1;
 
-        if (h->flags & CODEC_FLAG_LOW_DELAY ||
+        if (h->flags & AV_CODEC_FLAG_LOW_DELAY ||
             (h->sps.bitstream_restriction_flag &&
              !h->sps.num_reorder_frames)) {
             if (h->avctx->has_b_frames > 1 || h->delayed_pic[0])
@@ -1610,7 +1610,7 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
         sl->deblocking_filter = 0;
 
     if (sl->deblocking_filter == 1 && h->max_contexts > 1) {
-        if (h->avctx->flags2 & CODEC_FLAG2_FAST) {
+        if (h->avctx->flags2 & AV_CODEC_FLAG2_FAST) {
             /* Cheat slightly for speed:
              * Do not bother to deblock across slices. */
             sl->deblocking_filter = 2;
@@ -2093,7 +2093,7 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
 
     sl->is_complex = FRAME_MBAFF(h) || h->picture_structure != PICT_FRAME ||
                      avctx->codec_id != AV_CODEC_ID_H264 ||
-                     (CONFIG_GRAY && (h->flags & CODEC_FLAG_GRAY));
+                     (CONFIG_GRAY && (h->flags & AV_CODEC_FLAG_GRAY));
 
     if (h->pps.cabac) {
         /* realign */

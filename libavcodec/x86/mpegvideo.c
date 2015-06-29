@@ -454,7 +454,7 @@ av_cold void ff_mpv_common_init_x86(MpegEncContext *s)
         s->dct_unquantize_h263_inter = dct_unquantize_h263_inter_mmx;
         s->dct_unquantize_mpeg1_intra = dct_unquantize_mpeg1_intra_mmx;
         s->dct_unquantize_mpeg1_inter = dct_unquantize_mpeg1_inter_mmx;
-        if (!(s->avctx->flags & CODEC_FLAG_BITEXACT))
+        if (!(s->avctx->flags & AV_CODEC_FLAG_BITEXACT))
             s->dct_unquantize_mpeg2_intra = dct_unquantize_mpeg2_intra_mmx;
         s->dct_unquantize_mpeg2_inter = dct_unquantize_mpeg2_inter_mmx;
     }

@@ -150,7 +150,7 @@ void ff_vc1_smooth_overlap_filter_iblk(VC1Context *v)
                                       v->block[v->cur_blk_idx][0]);
             v->vc1dsp.vc1_h_s_overlap(v->block[v->left_blk_idx][3],
                                       v->block[v->cur_blk_idx][2]);
-            if (!(s->avctx->flags & CODEC_FLAG_GRAY)) {
+            if (!(s->avctx->flags & AV_CODEC_FLAG_GRAY)) {
                 v->vc1dsp.vc1_h_s_overlap(v->block[v->left_blk_idx][4],
                                           v->block[v->cur_blk_idx][4]);
                 v->vc1dsp.vc1_h_s_overlap(v->block[v->left_blk_idx][5],
@@ -169,7 +169,7 @@ void ff_vc1_smooth_overlap_filter_iblk(VC1Context *v)
                                           v->block[v->cur_blk_idx][0]);
                 v->vc1dsp.vc1_v_s_overlap(v->block[v->top_blk_idx][3],
                                           v->block[v->cur_blk_idx][1]);
-                if (!(s->avctx->flags & CODEC_FLAG_GRAY)) {
+                if (!(s->avctx->flags & AV_CODEC_FLAG_GRAY)) {
                     v->vc1dsp.vc1_v_s_overlap(v->block[v->top_blk_idx][4],
                                               v->block[v->cur_blk_idx][4]);
                     v->vc1dsp.vc1_v_s_overlap(v->block[v->top_blk_idx][5],
@@ -189,7 +189,7 @@ void ff_vc1_smooth_overlap_filter_iblk(VC1Context *v)
                                       v->block[v->left_blk_idx][0]);
             v->vc1dsp.vc1_v_s_overlap(v->block[v->topleft_blk_idx][3],
                                       v->block[v->left_blk_idx][1]);
-            if (!(s->avctx->flags & CODEC_FLAG_GRAY)) {
+            if (!(s->avctx->flags & AV_CODEC_FLAG_GRAY)) {
                 v->vc1dsp.vc1_v_s_overlap(v->block[v->topleft_blk_idx][4],
                                           v->block[v->left_blk_idx][4]);
                 v->vc1dsp.vc1_v_s_overlap(v->block[v->topleft_blk_idx][5],

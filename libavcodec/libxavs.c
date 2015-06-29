@@ -251,8 +251,8 @@ static av_cold int XAVS_init(AVCodecContext *avctx)
     }
     x4->params.rc.i_vbv_buffer_size = avctx->rc_buffer_size / 1000;
     x4->params.rc.i_vbv_max_bitrate = avctx->rc_max_rate    / 1000;
-    x4->params.rc.b_stat_write      = avctx->flags & CODEC_FLAG_PASS1;
-    if (avctx->flags & CODEC_FLAG_PASS2) {
+    x4->params.rc.b_stat_write      = avctx->flags & AV_CODEC_FLAG_PASS1;
+    if (avctx->flags & AV_CODEC_FLAG_PASS2) {
         x4->params.rc.b_stat_read = 1;
     } else {
         if (x4->crf >= 0) {
@@ -323,7 +323,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     x4->params.i_scenecut_threshold        = avctx->scenechange_threshold;
 
-   // x4->params.b_deblocking_filter       = avctx->flags & CODEC_FLAG_LOOP_FILTER;
+   // x4->params.b_deblocking_filter       = avctx->flags & AV_CODEC_FLAG_LOOP_FILTER;
 
     x4->params.rc.i_qp_min                 = avctx->qmin;
     x4->params.rc.i_qp_max                 = avctx->qmax;
@@ -348,7 +348,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     x4->params.analyse.b_chroma_me        = avctx->me_cmp & FF_CMP_CHROMA;
     /* AVS P2 only enables 8x8 transform */
-    x4->params.analyse.b_transform_8x8    = 1; //avctx->flags2 & CODEC_FLAG2_8X8DCT;
+    x4->params.analyse.b_transform_8x8    = 1; //avctx->flags2 & AV_CODEC_FLAG2_8X8DCT;
 
     x4->params.analyse.i_trellis          = avctx->trellis;
     x4->params.analyse.i_noise_reduction  = avctx->noise_reduction;
@@ -372,12 +372,12 @@ FF_ENABLE_DEPRECATION_WARNINGS
     x4->params.rc.f_pb_factor             = avctx->b_quant_factor;
     x4->params.analyse.i_chroma_qp_offset = avctx->chromaoffset;
 
-    x4->params.analyse.b_psnr = avctx->flags & CODEC_FLAG_PSNR;
+    x4->params.analyse.b_psnr = avctx->flags & AV_CODEC_FLAG_PSNR;
     x4->params.i_log_level    = XAVS_LOG_DEBUG;
     x4->params.i_threads      = avctx->thread_count;
-    x4->params.b_interlaced   = avctx->flags & CODEC_FLAG_INTERLACED_DCT;
+    x4->params.b_interlaced   = avctx->flags & AV_CODEC_FLAG_INTERLACED_DCT;
 
-    if (avctx->flags & CODEC_FLAG_GLOBAL_HEADER)
+    if (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER)
         x4->params.b_repeat_headers = 0;
 
     x4->enc = xavs_encoder_open(&x4->params);
@@ -389,7 +389,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     /* TAG: Do we have GLOBAL HEADER in AVS */
     /* We Have PPS and SPS in AVS */
-    if (avctx->flags & CODEC_FLAG_GLOBAL_HEADER) {
+    if (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) {
         xavs_nal_t *nal;
         int nnal, s, i, size;
         uint8_t *p;
