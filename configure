@@ -239,7 +239,7 @@ External library support:
   --enable-libschroedinger enable Dirac de/encoding via libschroedinger [no]
   --enable-libshine        enable fixed-point MP3 encoding via libshine [no]
   --enable-libsmbclient    enable Samba protocol via libsmbclient [no]
-  --enable-libsnappy       enable Snappy compression [no]
+  --enable-libsnappy       enable Snappy compression, needed for hap encoding [no]
   --enable-libsoxr         enable Include libsoxr resampling [no]
   --enable-libspeex        enable Speex de/encoding via libspeex [no]
   --enable-libssh          enable SFTP protocol via libssh [no]
