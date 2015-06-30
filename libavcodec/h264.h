@@ -132,7 +132,7 @@ enum {
 typedef enum {
     SEI_TYPE_BUFFERING_PERIOD       = 0,   ///< buffering period (H.264, D.1.1)
     SEI_TYPE_PIC_TIMING             = 1,   ///< picture timing
-    SEI_TYPE_USER_DATA_ITU_T_T35    = 4,   ///< user data registered by ITU-T Recommendation T.35
+    SEI_TYPE_USER_DATA_REGISTERED   = 4,   ///< registered user data as specified by Rec. ITU-T T.35
     SEI_TYPE_USER_DATA_UNREGISTERED = 5,   ///< unregistered user data
     SEI_TYPE_RECOVERY_POINT         = 6,   ///< recovery point (frame # to decoder sync)
     SEI_TYPE_FRAME_PACKING          = 45,  ///< frame packing arrangement
@@ -725,6 +725,12 @@ typedef struct H264Context {
     int sei_hflip, sei_vflip;
 
     /**
+     * User data registered by Rec. ITU-T T.35 SEI
+     */
+    int sei_reguserdata_afd_present;
+    uint8_t active_format_description;
+
+    /**
      * Bit set of clock types for fields/frames in picture timing SEI message.
      * For each found ct_type, appropriate bit is set (e.g., bit 1 for
      * interlaced).
@@ -781,9 +787,6 @@ typedef struct H264Context {
     int has_recovery_point;
 
     int missing_fields;
-
-    uint8_t afd;
-    int has_afd;
 
 
 /* for frame threading, this is set to 1

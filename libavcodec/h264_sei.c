@@ -42,6 +42,7 @@ void ff_h264_reset_sei(H264Context *h)
     h->sei_buffering_period_present =  0;
     h->sei_frame_packing_present    =  0;
     h->sei_display_orientation_present = 0;
+    h->sei_reguserdata_afd_present  =  0;
 }
 
 static int decode_picture_timing(H264Context *h)
@@ -108,39 +109,47 @@ static int decode_picture_timing(H264Context *h)
     return 0;
 }
 
-static int decode_user_data_itu_t_t35(H264Context *h, int size)
+static int decode_registered_user_data(H264Context *h, int size)
 {
+    uint32_t country_code;
     uint32_t user_identifier;
     int dtg_active_format;
+    int flag;
 
     if (size < 7)
-        return -1;
+        return AVERROR_INVALIDDATA;
     size -= 7;
 
-    skip_bits(&h->gb, 8);   // country_code
-    skip_bits(&h->gb, 16);  // provider_code
+    country_code = get_bits(&h->gb, 8); // itu_t_t35_country_code
+    if (country_code == 0xFF) {
+        skip_bits(&h->gb, 8);           // itu_t_t35_country_code_extension_byte
+        size--;
+    }
+
+    /* itu_t_t35_payload_byte follows */
+    skip_bits(&h->gb, 8);              // terminal provider code
+    skip_bits(&h->gb, 8);              // terminal provider oriented code
     user_identifier = get_bits_long(&h->gb, 32);
 
     switch (user_identifier) {
-        case 0x44544731:    // "DTG1" - AFD_data
-            if (size < 1)
-                return -1;
-            skip_bits(&h->gb, 1);
-            if (get_bits(&h->gb, 1)) {
-                skip_bits(&h->gb, 6);
-                if (size < 2)
-                    return -1;
-                skip_bits(&h->gb, 4);
-                dtg_active_format = get_bits(&h->gb, 4);
+        case MKBETAG('D', 'T', 'G', '1'):       // afd_data
+            if (size-- < 1)
+                return AVERROR_INVALIDDATA;
+            skip_bits(&h->gb, 1);               // 0
+            flag = get_bits(&h->gb, 1);         // active_format_flag
+            skip_bits(&h->gb, 6);               // reserved
+
+            if (flag) {
+                if (size-- < 1)
+                    return AVERROR_INVALIDDATA;
+                skip_bits(&h->gb, 4);           // reserved
+                h->active_format_description   = get_bits(&h->gb, 4);
+                h->sei_reguserdata_afd_present = 1;
 #if FF_API_AFD
 FF_DISABLE_DEPRECATION_WARNINGS
-                h->avctx->dtg_active_format = dtg_active_format;
+                h->avctx->dtg_active_format = h->active_format_description;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif /* FF_API_AFD */
-                h->has_afd = 1;
-                h->afd     = dtg_active_format;
-            } else {
-                skip_bits(&h->gb, 6);
             }
             break;
         default:
@@ -319,9 +328,8 @@ int ff_h264_decode_sei(H264Context *h)
         case SEI_TYPE_PIC_TIMING: // Picture timing SEI
             ret = decode_picture_timing(h);
             break;
-        case SEI_TYPE_USER_DATA_ITU_T_T35:
-            if (decode_user_data_itu_t_t35(h, size) < 0)
-                return -1;
+        case SEI_TYPE_USER_DATA_REGISTERED:
+            ret = decode_registered_user_data(h, size);
             break;
         case SEI_TYPE_USER_DATA_UNREGISTERED:
             ret = decode_unregistered_user_data(h, size);
