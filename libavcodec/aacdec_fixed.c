@@ -61,7 +61,6 @@
 #define FFT_FLOAT 0
 #define FFT_FIXED_32 1
 #define USE_FIXED 1
-#define CONFIG_FIXED 1
 
 #include "libavutil/fixed_dsp.h"
 #include "libavutil/opt.h"
