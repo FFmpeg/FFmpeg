@@ -1342,6 +1342,21 @@ disabled
 A description of some of the currently available video encoders
 follows.
 
+@section jpeg2000
+
+The native jpeg 2000 encoder is lossy by default, the @code{-q:v}
+option can be used to set the encoding quality. Lossless encoding
+can be selected with @code{-pred 1}.
+
+@subsection Options
+
+@table @option
+@item format
+Can be set to either @code{j2k} or @code{jp2} (the default) that
+allows to store non-rgb pix_fmts.
+
+@end table
+
 @section libtheora
 
 libtheora Theora encoder wrapper.

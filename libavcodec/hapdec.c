@@ -177,7 +177,8 @@ static int hap_decode(AVCodecContext *avctx, void *data,
     ret = ff_thread_get_buffer(avctx, &tframe, 0);
     if (ret < 0)
         return ret;
-    ff_thread_finish_setup(avctx);
+    if (avctx->codec->update_thread_context)
+        ff_thread_finish_setup(avctx);
 
     /* Use the decompress function on the texture, one block per thread */
     avctx->execute2(avctx, decompress_texture_thread, tframe.f, NULL, blocks);

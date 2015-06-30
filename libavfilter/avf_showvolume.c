@@ -23,6 +23,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
+#include "libavutil/xga_font_data.h"
 #include "avfilter.h"
 #include "formats.h"
 #include "audio.h"
@@ -38,6 +39,7 @@ typedef struct ShowVolumeContext {
 
     AVFrame *out;
     AVExpr *c_expr;
+    int draw_text;
 } ShowVolumeContext;
 
 #define OFFSET(x) offsetof(ShowVolumeContext, x)
@@ -51,6 +53,7 @@ static const AVOption showvolume_options[] = {
     { "h", "set channel height", OFFSET(h), AV_OPT_TYPE_INT, {.i64=20}, 1, 100, FLAGS },
     { "f", "set fade",           OFFSET(f), AV_OPT_TYPE_INT, {.i64=20}, 1, 255, FLAGS },
     { "c", "set volume color expression", OFFSET(color), AV_OPT_TYPE_STRING, {.str="if(gte(VOLUME,-2), if(gte(VOLUME,-1),0xff, 0xffff),0xff00)"}, 0, 0, FLAGS },
+    { "t", "display channel names", OFFSET(draw_text), AV_OPT_TYPE_INT, {.i64=1}, 0, 1, FLAGS },
     { NULL }
 };
 
@@ -133,6 +136,29 @@ static int config_output(AVFilterLink *outlink)
     return 0;
 }
 
+static void drawtext(AVFrame *pic, int x, int y, const char *txt)
+{
+    const uint8_t *font;
+    int font_height;
+    int i;
+
+    font = avpriv_cga_font,   font_height =  8;
+
+    for (i = 0; txt[i]; i++) {
+        int char_y, mask;
+        uint8_t *p = pic->data[0] + y*pic->linesize[0] + (x + i*8)*4;
+
+        for (char_y = 0; char_y < font_height; char_y++) {
+            for (mask = 0x80; mask; mask >>= 1) {
+                if (font[txt[i] * font_height + char_y] & mask)
+                    AV_WN32(p, ~AV_RN32(p));
+                p += 4;
+            }
+            p += pic->linesize[0] - 8*4;
+        }
+    }
+}
+
 static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
 {
     AVFilterContext *ctx = inlink->dst;
@@ -183,6 +209,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
             for (k = 0; k < s->w * max; k++)
                 AV_WN32A(dst + k * 4, color);
         }
+
+        if (s->h >= 8 && s->draw_text)
+            drawtext(s->out, 2, c * (s->h + s->b) + (s->h - 8) / 2,
+                     av_get_channel_name(av_channel_layout_extract_channel(insamples->channel_layout, c)));
     }
 
     av_frame_free(&insamples);
