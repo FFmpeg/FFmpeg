@@ -19,19 +19,3 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
-
-#include <stdlib.h>
-#define CONFIG_HARDCODED_TABLES 0
-#include "cbrt_tablegen.h"
-#include "tableprint.h"
-
-int main(void)
-{
-    cbrt_tableinit();
-
-    write_fileheader();
-
-    WRITE_ARRAY("static const", uint32_t, cbrt_tab);
-
-    return 0;
-}
