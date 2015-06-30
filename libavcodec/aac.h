@@ -30,6 +30,29 @@
 #ifndef AVCODEC_AAC_H
 #define AVCODEC_AAC_H
 
+#ifndef USE_FIXED
+#define USE_FIXED 0
+#endif
+
+#if USE_FIXED
+
+#include "libavutil/softfloat.h"
+
+#define FFT_FLOAT    0
+#define FFT_FIXED_32 1
+
+#define Q30(x)              (int)((x)*1073741824.0 + 0.5)
+#define Q31(x)              (int)((x)*2147483648.0 + 0.5)
+
+#else
+
+#define FFT_FLOAT    1
+#define FFT_FIXED_32 0
+
+#define Q30(x)              x
+#define Q31(x)              x
+#endif /* USE_FIXED */
+
 #include "libavutil/float_dsp.h"
 #include "avcodec.h"
 #include "imdct15.h"

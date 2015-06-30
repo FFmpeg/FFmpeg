@@ -19,3 +19,6 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
+
+#define USE_FIXED 0
+#include "cbrt_tablegen_template.c"

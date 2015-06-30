@@ -16,6 +16,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#define USE_FIXED 0
+#define USE_FIXED 1
 #include "sinewin.h"
 #include "sinewin_tablegen.h"

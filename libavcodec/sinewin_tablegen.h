@@ -41,26 +41,41 @@ SINETABLE(2048);
 SINETABLE(4096);
 SINETABLE(8192);
 #else
+#if USE_FIXED
+#include "libavcodec/sinewin_fixed_tables.h"
+#else
 #include "libavcodec/sinewin_tables.h"
 #endif
+#endif
 
-SINETABLE_CONST float * const ff_sine_windows[] = {
+#if USE_FIXED
+#define SINEWIN_SUFFIX(a) a ## _fixed
+#define INTFLOAT int
+#define SIN_FIX(a) (int)floor((a) * 0x80000000 + 0.5)
+#else
+#define SINEWIN_SUFFIX(a) a
+#define INTFLOAT float
+#define SIN_FIX(a) a
+#endif
+
+SINETABLE_CONST INTFLOAT * const SINEWIN_SUFFIX(ff_sine_windows)[] = {
     NULL, NULL, NULL, NULL, NULL, // unused
-    ff_sine_32 , ff_sine_64 ,
-    ff_sine_128, ff_sine_256, ff_sine_512, ff_sine_1024, ff_sine_2048, ff_sine_4096, ff_sine_8192
+    SINEWIN_SUFFIX(ff_sine_32) , SINEWIN_SUFFIX(ff_sine_64), SINEWIN_SUFFIX(ff_sine_128),
+    SINEWIN_SUFFIX(ff_sine_256), SINEWIN_SUFFIX(ff_sine_512), SINEWIN_SUFFIX(ff_sine_1024),
+    SINEWIN_SUFFIX(ff_sine_2048), SINEWIN_SUFFIX(ff_sine_4096), SINEWIN_SUFFIX(ff_sine_8192)
 };
 
 // Generate a sine window.
-av_cold void ff_sine_window_init(float *window, int n) {
+av_cold void SINEWIN_SUFFIX(ff_sine_window_init)(INTFLOAT *window, int n) {
     int i;
     for(i = 0; i < n; i++)
-        window[i] = sinf((i + 0.5) * (M_PI / (2.0 * n)));
+        window[i] = SIN_FIX(sinf((i + 0.5) * (M_PI / (2.0 * n))));
 }
 
-av_cold void ff_init_ff_sine_windows(int index) {
-    assert(index >= 0 && index < FF_ARRAY_ELEMS(ff_sine_windows));
+av_cold void SINEWIN_SUFFIX(ff_init_ff_sine_windows)(int index) {
+    assert(index >= 0 && index < FF_ARRAY_ELEMS(SINEWIN_SUFFIX(ff_sine_windows)));
 #if !CONFIG_HARDCODED_TABLES
-    ff_sine_window_init(ff_sine_windows[index], 1 << index);
+    SINEWIN_SUFFIX(ff_sine_window_init)(SINEWIN_SUFFIX(ff_sine_windows)[index], 1 << index);
 #endif
 }
 

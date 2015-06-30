@@ -1,4 +1,8 @@
 /*
+ * Generate a header file for hardcoded AAC cube-root table
+ *
+ * Copyright (c) 2010 Reimar Döffinger <Reimar.Doeffinger@gmx.de>
+ *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -16,6 +20,5 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#define USE_FIXED 0
-#include "sinewin.h"
-#include "sinewin_tablegen.h"
+#define USE_FIXED 1
+#include "cbrt_tablegen_template.c"

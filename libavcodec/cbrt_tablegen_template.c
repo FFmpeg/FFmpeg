@@ -27,7 +27,7 @@
 
 int main(void)
 {
-    cbrt_tableinit();
+    CBRT_RENAME(cbrt_tableinit)();
 
     write_fileheader();
 
