@@ -2573,7 +2573,7 @@ static int mov_write_track_udta_tag(AVIOContext *pb, MOVMuxContext *mov,
     int ret, size;
     uint8_t *buf;
 
-    if (!st || mov->fc->flags & AVFMT_FLAG_BITEXACT)
+    if (!st)
         return 0;
 
     ret = avio_open_dyn_buf(&pb_buf);
@@ -2919,9 +2919,10 @@ static int mov_write_ilst_tag(AVIOContext *pb, MOVMuxContext *mov,
     mov_write_string_metadata(s, pb, "\251wrt", "composer" , 1);
     mov_write_string_metadata(s, pb, "\251alb", "album"    , 1);
     mov_write_string_metadata(s, pb, "\251day", "date"     , 1);
-    if (!mov->exact &&
-        !mov_write_string_metadata(s, pb, "\251too", "encoding_tool", 1))
-        mov_write_string_tag(pb, "\251too", LIBAVFORMAT_IDENT, 0, 1);
+    if (!mov_write_string_metadata(s, pb, "\251too", "encoding_tool", 1)) {
+        if (!(s->flags & AVFMT_FLAG_BITEXACT))
+            mov_write_string_tag(pb, "\251too", LIBAVFORMAT_IDENT, 0, 1);
+    }
     mov_write_string_metadata(s, pb, "\251cmt", "comment"  , 1);
     mov_write_string_metadata(s, pb, "\251gen", "genre"    , 1);
     mov_write_string_metadata(s, pb, "\251cpy", "copyright", 1);
