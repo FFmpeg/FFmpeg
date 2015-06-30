@@ -1699,8 +1699,8 @@ int ff_h264_decode_slice_header(H264Context *h, H264Context *h0)
                                   (const uint8_t **)prev->f.data,
                                   prev->f.linesize,
                                   prev->f.format,
-                                  h->mb_width  * 16,
-                                  h->mb_height * 16);
+                                  prev->f.width,
+                                  prev->f.height);
                     h->short_ref[0]->poc = prev->poc + 2;
                 }
                 h->short_ref[0]->frame_num = h->prev_frame_num;
