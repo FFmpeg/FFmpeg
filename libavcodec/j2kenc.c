@@ -317,6 +317,26 @@ static int put_qcd(Jpeg2000EncoderContext *s, int compno)
     return 0;
 }
 
+static int put_com(Jpeg2000EncoderContext *s, int compno)
+{
+    int i;
+    int size = 4 + strlen(LIBAVCODEC_IDENT);
+
+    if (s->avctx->flags & CODEC_FLAG_BITEXACT)
+        return 0;
+
+    if (s->buf_end - s->buf < size + 2)
+        return -1;
+
+    bytestream_put_be16(&s->buf, JPEG2000_COM);
+    bytestream_put_be16(&s->buf, size);
+    bytestream_put_be16(&s->buf, 1); // General use (ISO/IEC 8859-15 (Latin) values)
+
+    bytestream_put_buffer(&s->buf, LIBAVCODEC_IDENT, strlen(LIBAVCODEC_IDENT));
+
+    return 0;
+}
+
 static uint8_t *put_sot(Jpeg2000EncoderContext *s, int tileno)
 {
     uint8_t *psotptr;
@@ -1009,6 +1029,8 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     if ((ret = put_cod(s)) < 0)
         return ret;
     if ((ret = put_qcd(s, 0)) < 0)
+        return ret;
+    if ((ret = put_com(s, 0)) < 0)
         return ret;
 
     for (tileno = 0; tileno < s->numXtiles * s->numYtiles; tileno++){
