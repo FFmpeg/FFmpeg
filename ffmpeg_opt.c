@@ -25,6 +25,8 @@
 
 #include "libavformat/avformat.h"
 
+#include "libavformat/utils.c"
+
 #include "libavcodec/avcodec.h"
 
 #include "libavfilter/avfilter.h"
@@ -152,6 +154,7 @@ static void init_options(OptionsContext *o)
     memset(o, 0, sizeof(*o));
 
     o->stop_time = INT64_MAX;
+    o->stop_bytes = INT64_MAX;
     o->mux_max_delay  = 0.7;
     o->start_time     = AV_NOPTS_VALUE;
     o->recording_time = INT64_MAX;
@@ -950,6 +953,19 @@ static int open_input_file(OptionsContext *o, const char *filename)
         }
     }
 
+    av_log(NULL, AV_LOG_INFO, "Stopping at %0" PRId64 "\n", o->stop_bytes);
+    
+    /* if byte seeking requested */
+    if (o->start_bytes != AV_NOPTS_VALUE) {
+        av_log(NULL, AV_LOG_INFO, "Seeking to %0" PRId64 "\n", o->start_bytes);
+        ff_read_frame_flush(ic);
+        ret = seek_frame_byte(ic, 0, o->start_bytes, 0);
+        if (ret < 0) {
+            av_log(NULL, AV_LOG_WARNING, "%s: could not seek to position %0" PRId64 "\n",
+                   filename, o->start_bytes);
+        }
+    }
+
     /* update the current parameters so that they match the one of the input stream */
     add_input_streams(o, ic);
 
@@ -965,6 +981,8 @@ static int open_input_file(OptionsContext *o, const char *filename)
     f->ctx        = ic;
     f->ist_index  = nb_input_streams - ic->nb_streams;
     f->start_time = o->start_time;
+    f->start_bytes = o->start_bytes;
+    f->stop_bytes = o->stop_bytes;
     f->recording_time = o->recording_time;
     f->input_ts_offset = o->input_ts_offset;
     f->ts_offset  = o->input_ts_offset - (copy_ts ? (start_at_zero && ic->start_time != AV_NOPTS_VALUE ? ic->start_time : 0) : timestamp);
@@ -2936,11 +2954,16 @@ const OptionDef options[] = {
         "duration" },
     { "to",             HAS_ARG | OPT_TIME | OPT_OFFSET | OPT_OUTPUT,  { .off = OFFSET(stop_time) },
         "record or transcode stop time", "time_stop" },
+    { "bto",             HAS_ARG | OPT_INT64 | OPT_OFFSET | OPT_INPUT | OPT_OUTPUT,  { .off = OFFSET(stop_bytes) },
+        "record or transcode stop bytes", "byte_stop" },
     { "fs",             HAS_ARG | OPT_INT64 | OPT_OFFSET | OPT_OUTPUT, { .off = OFFSET(limit_filesize) },
         "set the limit file size in bytes", "limit_size" },
     { "ss",             HAS_ARG | OPT_TIME | OPT_OFFSET |
                         OPT_INPUT | OPT_OUTPUT,                      { .off = OFFSET(start_time) },
         "set the start time offset", "time_off" },
+    { "bss",             HAS_ARG | OPT_INT64 | OPT_OFFSET |
+                        OPT_INPUT | OPT_OUTPUT,                      { .off = OFFSET(start_bytes) },
+      "set the start byte offset", "byte_off" },
     { "seek_timestamp", HAS_ARG | OPT_INT | OPT_OFFSET |
                         OPT_INPUT,                                   { .off = OFFSET(seek_timestamp) },
         "enable/disable seeking by timestamp with -ss" },

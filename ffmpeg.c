@@ -98,6 +98,7 @@
 #endif
 
 #include <time.h>
+#include <process.h>
 
 #include "ffmpeg.h"
 #include "cmdutils.h"
@@ -899,10 +900,14 @@ static void do_video_out(AVFormatContext *s,
     double duration = 0;
     int frame_size = 0;
     InputStream *ist = NULL;
+    InputFile *f = NULL;
     AVFilterContext *filter = ost->filter->filter;
 
     if (ost->source_index >= 0)
         ist = input_streams[ost->source_index];
+    
+    if (ist)
+        f = input_files[ist->file_index];
 
     if (filter->inputs[0]->frame_rate.num > 0 &&
         filter->inputs[0]->frame_rate.den > 0)
@@ -1039,7 +1044,12 @@ static void do_video_out(AVFormatContext *s,
         return;
 
     in_picture->pts = ost->sync_opts;
-
+    
+    if (f && in_picture->pkt_pos >= f->stop_bytes) {
+      close_output_stream(ost);
+      return;
+    }
+    
 #if 1
     if (!check_recording_time(ost))
 #else
@@ -1769,7 +1779,11 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
             return;
         }
     }
-
+    
+    if (pkt->pos >= f->stop_bytes) {
+	close_output_stream(ost);
+	return;
+    }
     /* force the input stream PTS */
     if (ost->enc_ctx->codec_type == AVMEDIA_TYPE_VIDEO)
         ost->sync_opts++;

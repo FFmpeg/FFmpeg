@@ -29,6 +29,7 @@
 #include <limits.h>
 #include <signal.h>
 #include <stdint.h>
+#include <stdio.h>
 
 #include "libavutil/avstring.h"
 #include "libavutil/colorspace.h"
@@ -353,6 +354,8 @@ static AVPacket flush_pkt;
 #define FF_QUIT_EVENT    (SDL_USEREVENT + 2)
 
 static SDL_Surface *screen;
+
+SDL_Thread *ipc_thread = NULL;
 
 #if CONFIG_AVFILTER
 static int opt_add_vfilter(void *optctx, const char *opt, const char *arg)
@@ -1346,7 +1349,7 @@ static int video_open(VideoState *is, int force_set_video_mode, Frame *vp)
     int w,h;
 
     if (is_full_screen) flags |= SDL_FULLSCREEN;
-    else                flags |= SDL_RESIZABLE;
+    else                flags |= SDL_NOFRAME;
 
     if (vp && vp->width)
         set_default_window_size(vp->width, vp->height, vp->sar);
@@ -1366,6 +1369,7 @@ static int video_open(VideoState *is, int force_set_video_mode, Frame *vp)
        && is->height== screen->h && screen->h == h && !force_set_video_mode)
         return 0;
     screen = SDL_SetVideoMode(w, h, 0, flags);
+    
     if (!screen) {
         av_log(NULL, AV_LOG_FATAL, "SDL: could not set video mode - exiting\n");
         do_exit(is);
@@ -3394,6 +3398,118 @@ static void seek_chapter(VideoState *is, int incr)
                                  AV_TIME_BASE_Q), 0, 0);
 }
 
+static int ipc_loop(void *arg)
+{
+  VideoState *cur_stream = arg;
+  char input[4096];
+  double incr, pos, frac;
+  
+  for (;;) {
+    double x;
+    // Read from stdin
+    if (fgets(input, sizeof(input), stdin) == NULL) continue;
+    switch(input[0]) {
+      case 'p':
+	toggle_pause(cur_stream);
+	break;
+      case 's':
+	step_to_next_frame(cur_stream);
+	break;
+      case 'a':
+        stream_cycle_channel(cur_stream, AVMEDIA_TYPE_AUDIO);
+	break;
+      case 'v':
+	stream_cycle_channel(cur_stream, AVMEDIA_TYPE_VIDEO);
+	break;
+      case 'c':
+	stream_cycle_channel(cur_stream, AVMEDIA_TYPE_VIDEO);
+        stream_cycle_channel(cur_stream, AVMEDIA_TYPE_AUDIO);
+        stream_cycle_channel(cur_stream, AVMEDIA_TYPE_SUBTITLE);
+	break;
+      case 'w':
+	#if CONFIG_AVFILTER
+        if (cur_stream->show_mode == SHOW_MODE_VIDEO && cur_stream->vfilter_idx < nb_vfilters - 1) {
+	  if (++cur_stream->vfilter_idx >= nb_vfilters)
+	    cur_stream->vfilter_idx = 0;
+	} else {
+            cur_stream->vfilter_idx = 0;
+            toggle_audio_display(cur_stream);
+        }
+#else
+        toggle_audio_display(cur_stream);
+#endif
+	break;
+      case 'U':
+	if (cur_stream->ic->nb_chapters <= 1) {
+	  incr = 600.0;
+	  goto do_seek;
+	}
+	seek_chapter(cur_stream, 1);
+	break;
+      case 'D':
+	if (cur_stream->ic->nb_chapters <= 1) {
+	  incr = -600.0;
+	  goto do_seek;
+	}
+	seek_chapter(cur_stream, -1);
+      case 'l':
+	incr = -10.0;
+	goto do_seek;
+      case 'r':
+	incr = 10.0;
+	goto do_seek;
+      case 'u':
+	incr = 60.0;
+	goto do_seek;
+      case 'd':
+	incr = -60.0;
+	do_seek:
+	if (seek_by_bytes) {
+	  pos = -1;
+	  if (pos < 0 && cur_stream->video_stream >= 0)
+	    pos = frame_queue_last_pos(&cur_stream->pictq);
+	  if (pos < 0 && cur_stream->audio_stream >= 0)
+	    pos = frame_queue_last_pos(&cur_stream->sampq);
+	  if (pos < 0)
+	    pos = avio_tell(cur_stream->ic->pb);
+	  if (cur_stream->ic->bit_rate)
+	    incr *= cur_stream->ic->bit_rate / 8.0;
+	  else
+	    incr *= 180000.0;
+	  pos += incr;
+	  stream_seek(cur_stream, pos, incr, 1);
+	} else {
+	  pos = get_master_clock(cur_stream);
+	  if (isnan(pos))
+	    pos = (double)cur_stream->seek_pos / AV_TIME_BASE;
+	  pos += incr;
+	  if (cur_stream->ic->start_time != AV_NOPTS_VALUE && pos < cur_stream->ic->start_time / (double)AV_TIME_BASE)
+	    pos = cur_stream->ic->start_time / (double)AV_TIME_BASE;
+	  stream_seek(cur_stream, (int64_t)(pos * AV_TIME_BASE), (int64_t)(incr * AV_TIME_BASE), 0);
+	}
+	break;
+      case 'x':
+	// Parse everything after x as decimal
+	if (sscanf(input, "x%lf", &x) != 1) break;
+	if (seek_by_bytes || cur_stream->ic->duration <= 0) {
+	  uint64_t size =  avio_size(cur_stream->ic->pb);
+	  stream_seek(cur_stream, size*x/cur_stream->width, 0, 1);
+	} else {
+	  int64_t ts;
+	  frac = x / cur_stream->width;
+	  ts = frac * cur_stream->ic->duration;
+	  if (cur_stream->ic->start_time != AV_NOPTS_VALUE)
+	    ts += cur_stream->ic->start_time;
+	  stream_seek(cur_stream, ts, 0, 0);
+	}
+	break;
+      default:
+	break;
+    }
+  }
+  return 0;
+}
+
 /* handle an event sent by the GUI */
 static void event_loop(VideoState *cur_stream)
 {
@@ -3554,7 +3670,7 @@ static void event_loop(VideoState *cur_stream)
             break;
         case SDL_VIDEORESIZE:
                 screen = SDL_SetVideoMode(FFMIN(16383, event.resize.w), event.resize.h, 0,
-                                          SDL_HWSURFACE|(is_full_screen?SDL_FULLSCREEN:SDL_RESIZABLE)|SDL_ASYNCBLIT|SDL_HWACCEL);
+                                          SDL_HWSURFACE|SDL_NOFRAME|SDL_ASYNCBLIT|SDL_HWACCEL);
                 if (!screen) {
                     av_log(NULL, AV_LOG_FATAL, "Failed to set video mode\n");
                     do_exit(cur_stream);
@@ -3794,6 +3910,8 @@ int main(int argc, char **argv)
     VideoState *is;
     char dummy_videodriver[] = "SDL_VIDEODRIVER=dummy";
 
+    setvbuf(stderr,NULL,_IONBF,0); /* win32 runtime needs this */
+    
     av_log_set_flags(AV_LOG_SKIP_REPEATED);
     parse_loglevel(argc, argv, options);
 
@@ -3865,6 +3983,7 @@ int main(int argc, char **argv)
         do_exit(NULL);
     }
 
+    ipc_thread = SDL_CreateThread(ipc_loop, is);
     event_loop(is);
 
     /* never returns */
