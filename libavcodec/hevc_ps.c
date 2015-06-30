@@ -106,18 +106,15 @@ static void remove_vps(HEVCContext *s, int id)
     av_buffer_unref(&s->vps_list[id]);
 }
 
-int ff_hevc_decode_short_term_rps(HEVCContext *s, ShortTermRPS *rps,
-                                  const HEVCSPS *sps, int is_slice_header)
+int ff_hevc_decode_short_term_rps(GetBitContext *gb, AVCodecContext *avctx,
+                                  ShortTermRPS *rps, const HEVCSPS *sps, int is_slice_header)
 {
-    HEVCLocalContext *lc = &s->HEVClc;
     uint8_t rps_predict = 0;
     int delta_poc;
     int k0 = 0;
     int k1 = 0;
     int k  = 0;
     int i;
-
-    GetBitContext *gb = &lc->gb;
 
     if (rps != sps->st_rps && sps->nb_st_rps)
         rps_predict = get_bits1(gb);
@@ -131,7 +128,7 @@ int ff_hevc_decode_short_term_rps(HEVCContext *s, ShortTermRPS *rps,
         if (is_slice_header) {
             unsigned int delta_idx = get_ue_golomb_long(gb) + 1;
             if (delta_idx > sps->nb_st_rps) {
-                av_log(s->avctx, AV_LOG_ERROR,
+                av_log(avctx, AV_LOG_ERROR,
                        "Invalid value of delta_idx in slice header RPS: %d > %d.\n",
                        delta_idx, sps->nb_st_rps);
                 return AVERROR_INVALIDDATA;
@@ -203,7 +200,7 @@ int ff_hevc_decode_short_term_rps(HEVCContext *s, ShortTermRPS *rps,
 
         if (rps->num_negative_pics >= MAX_REFS ||
             nb_positive_pics >= MAX_REFS) {
-            av_log(s->avctx, AV_LOG_ERROR, "Too many refs in a short term RPS.\n");
+            av_log(avctx, AV_LOG_ERROR, "Too many refs in a short term RPS.\n");
             return AVERROR_INVALIDDATA;
         }
 
@@ -229,22 +226,22 @@ int ff_hevc_decode_short_term_rps(HEVCContext *s, ShortTermRPS *rps,
 }
 
 
-static void decode_profile_tier_level(HEVCContext *s, PTLCommon *ptl)
+static void decode_profile_tier_level(GetBitContext *gb, AVCodecContext *avctx,
+                                      PTLCommon *ptl)
 {
     int i;
-    GetBitContext *gb = &s->HEVClc.gb;
 
     ptl->profile_space = get_bits(gb, 2);
     ptl->tier_flag     = get_bits1(gb);
     ptl->profile_idc   = get_bits(gb, 5);
     if (ptl->profile_idc == FF_PROFILE_HEVC_MAIN)
-        av_log(s->avctx, AV_LOG_DEBUG, "Main profile bitstream\n");
+        av_log(avctx, AV_LOG_DEBUG, "Main profile bitstream\n");
     else if (ptl->profile_idc == FF_PROFILE_HEVC_MAIN_10)
-        av_log(s->avctx, AV_LOG_DEBUG, "Main 10 profile bitstream\n");
+        av_log(avctx, AV_LOG_DEBUG, "Main 10 profile bitstream\n");
     else if (ptl->profile_idc == FF_PROFILE_HEVC_MAIN_STILL_PICTURE)
-        av_log(s->avctx, AV_LOG_DEBUG, "Main Still Picture profile bitstream\n");
+        av_log(avctx, AV_LOG_DEBUG, "Main Still Picture profile bitstream\n");
     else
-        av_log(s->avctx, AV_LOG_WARNING, "Unknown HEVC profile: %d\n", ptl->profile_idc);
+        av_log(avctx, AV_LOG_WARNING, "Unknown HEVC profile: %d\n", ptl->profile_idc);
 
     for (i = 0; i < 32; i++)
         ptl->profile_compatibility_flag[i] = get_bits1(gb);
@@ -258,11 +255,11 @@ static void decode_profile_tier_level(HEVCContext *s, PTLCommon *ptl)
     skip_bits(gb, 12); // XXX_reserved_zero_44bits[32..43]
 }
 
-static void parse_ptl(HEVCContext *s, PTL *ptl, int max_num_sub_layers)
+static void parse_ptl(GetBitContext *gb, AVCodecContext *avctx,
+                      PTL *ptl, int max_num_sub_layers)
 {
     int i;
-    GetBitContext *gb = &s->HEVClc.gb;
-    decode_profile_tier_level(s, &ptl->general_ptl);
+    decode_profile_tier_level(gb, avctx, &ptl->general_ptl);
     ptl->general_ptl.level_idc = get_bits(gb, 8);
 
     for (i = 0; i < max_num_sub_layers - 1; i++) {
@@ -274,16 +271,15 @@ static void parse_ptl(HEVCContext *s, PTL *ptl, int max_num_sub_layers)
             skip_bits(gb, 2); // reserved_zero_2bits[i]
     for (i = 0; i < max_num_sub_layers - 1; i++) {
         if (ptl->sub_layer_profile_present_flag[i])
-            decode_profile_tier_level(s, &ptl->sub_layer_ptl[i]);
+            decode_profile_tier_level(gb, avctx, &ptl->sub_layer_ptl[i]);
         if (ptl->sub_layer_level_present_flag[i])
             ptl->sub_layer_ptl[i].level_idc = get_bits(gb, 8);
     }
 }
 
-static void decode_sublayer_hrd(HEVCContext *s, unsigned int nb_cpb,
+static void decode_sublayer_hrd(GetBitContext *gb, unsigned int nb_cpb,
                                 int subpic_params_present)
 {
-    GetBitContext *gb = &s->HEVClc.gb;
     int i;
 
     for (i = 0; i < nb_cpb; i++) {
@@ -298,10 +294,9 @@ static void decode_sublayer_hrd(HEVCContext *s, unsigned int nb_cpb,
     }
 }
 
-static void decode_hrd(HEVCContext *s, int common_inf_present,
+static void decode_hrd(GetBitContext *gb, int common_inf_present,
                        int max_sublayers)
 {
-    GetBitContext *gb = &s->HEVClc.gb;
     int nal_params_present = 0, vcl_params_present = 0;
     int subpic_params_present = 0;
     int i;
@@ -349,9 +344,9 @@ static void decode_hrd(HEVCContext *s, int common_inf_present,
             nb_cpb = get_ue_golomb_long(gb) + 1;
 
         if (nal_params_present)
-            decode_sublayer_hrd(s, nb_cpb, subpic_params_present);
+            decode_sublayer_hrd(gb, nb_cpb, subpic_params_present);
         if (vcl_params_present)
-            decode_sublayer_hrd(s, nb_cpb, subpic_params_present);
+            decode_sublayer_hrd(gb, nb_cpb, subpic_params_present);
     }
 }
 
@@ -395,7 +390,7 @@ int ff_hevc_decode_nal_vps(HEVCContext *s)
         goto err;
     }
 
-    parse_ptl(s, &vps->ptl, vps->vps_max_sub_layers);
+    parse_ptl(gb, s->avctx, &vps->ptl, vps->vps_max_sub_layers);
 
     vps->vps_sub_layer_ordering_info_present_flag = get_bits1(gb);
 
@@ -438,7 +433,7 @@ int ff_hevc_decode_nal_vps(HEVCContext *s)
             get_ue_golomb_long(gb); // hrd_layer_set_idx
             if (i)
                 common_inf_present = get_bits1(gb);
-            decode_hrd(s, common_inf_present, vps->vps_max_sub_layers);
+            decode_hrd(gb, common_inf_present, vps->vps_max_sub_layers);
         }
     }
     get_bits1(gb); /* vps_extension_flag */
@@ -458,13 +453,13 @@ err:
     return AVERROR_INVALIDDATA;
 }
 
-static void decode_vui(HEVCContext *s, HEVCSPS *sps)
+static void decode_vui(GetBitContext *gb, AVCodecContext *avctx,
+                       int apply_defdispwin, HEVCSPS *sps)
 {
     VUI *vui          = &sps->vui;
-    GetBitContext *gb = &s->HEVClc.gb;
     int sar_present;
 
-    av_log(s->avctx, AV_LOG_DEBUG, "Decoding VUI\n");
+    av_log(avctx, AV_LOG_DEBUG, "Decoding VUI\n");
 
     sar_present = get_bits1(gb);
     if (sar_present) {
@@ -475,7 +470,7 @@ static void decode_vui(HEVCContext *s, HEVCSPS *sps)
             vui->sar.num = get_bits(gb, 16);
             vui->sar.den = get_bits(gb, 16);
         } else
-            av_log(s->avctx, AV_LOG_WARNING,
+            av_log(avctx, AV_LOG_WARNING,
                    "Unknown SAR index: %u.\n", sar_idx);
     }
 
@@ -523,9 +518,9 @@ static void decode_vui(HEVCContext *s, HEVCSPS *sps)
         vui->def_disp_win.top_offset    = get_ue_golomb_long(gb) * 2;
         vui->def_disp_win.bottom_offset = get_ue_golomb_long(gb) * 2;
 
-        if (s->apply_defdispwin &&
-            s->avctx->flags2 & CODEC_FLAG2_IGNORE_CROP) {
-            av_log(s->avctx, AV_LOG_DEBUG,
+        if (apply_defdispwin &&
+            avctx->flags2 & CODEC_FLAG2_IGNORE_CROP) {
+            av_log(avctx, AV_LOG_DEBUG,
                    "discarding vui default display window, "
                    "original values are l:%u r:%u t:%u b:%u\n",
                    vui->def_disp_win.left_offset,
@@ -549,7 +544,7 @@ static void decode_vui(HEVCContext *s, HEVCSPS *sps)
             vui->vui_num_ticks_poc_diff_one_minus1 = get_ue_golomb_long(gb);
         vui->vui_hrd_parameters_present_flag = get_bits1(gb);
         if (vui->vui_hrd_parameters_present_flag)
-            decode_hrd(s, 1, sps->max_sub_layers);
+            decode_hrd(gb, 1, sps->max_sub_layers);
     }
 
     vui->bitstream_restriction_flag = get_bits1(gb);
@@ -591,9 +586,8 @@ static void set_default_scaling_list_data(ScalingList *sl)
     memcpy(sl->sl[3][1], default_scaling_list_inter, 64);
 }
 
-static int scaling_list_data(HEVCContext *s, ScalingList *sl)
+static int scaling_list_data(GetBitContext *gb, AVCodecContext *avctx, ScalingList *sl)
 {
-    GetBitContext *gb = &s->HEVClc.gb;
     uint8_t scaling_list_pred_mode_flag[4][6];
     int32_t scaling_list_dc_coef[2][6];
     int size_id, matrix_id, i, pos;
@@ -608,7 +602,7 @@ static int scaling_list_data(HEVCContext *s, ScalingList *sl)
                 if (delta) {
                     // Copy from previous array.
                     if (matrix_id < delta) {
-                        av_log(s->avctx, AV_LOG_ERROR,
+                        av_log(avctx, AV_LOG_ERROR,
                                "Invalid delta in scaling list data: %d.\n", delta);
                         return AVERROR_INVALIDDATA;
                     }
@@ -648,36 +642,26 @@ static int scaling_list_data(HEVCContext *s, ScalingList *sl)
     return 0;
 }
 
-int ff_hevc_decode_nal_sps(HEVCContext *s)
+int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
+                      int apply_defdispwin, AVBufferRef **vps_list, AVCodecContext *avctx)
 {
     const AVPixFmtDescriptor *desc;
-    GetBitContext *gb = &s->HEVClc.gb;
     int ret = 0;
-    unsigned int sps_id = 0;
     int log2_diff_max_min_transform_block_size;
     int bit_depth_chroma, start, vui_present, sublayer_ordering_info;
     int i;
-
-    HEVCSPS *sps;
-    AVBufferRef *sps_buf = av_buffer_allocz(sizeof(*sps));
-
-    if (!sps_buf)
-        return AVERROR(ENOMEM);
-    sps = (HEVCSPS*)sps_buf->data;
-
-    av_log(s->avctx, AV_LOG_DEBUG, "Decoding SPS\n");
 
     // Coded parameters
 
     sps->vps_id = get_bits(gb, 4);
     if (sps->vps_id >= MAX_VPS_COUNT) {
-        av_log(s->avctx, AV_LOG_ERROR, "VPS id out of range: %d\n", sps->vps_id);
+        av_log(avctx, AV_LOG_ERROR, "VPS id out of range: %d\n", sps->vps_id);
         ret = AVERROR_INVALIDDATA;
         goto err;
     }
 
-    if (!s->vps_list[sps->vps_id]) {
-        av_log(s->avctx, AV_LOG_ERROR, "VPS %d does not exist\n",
+    if (vps_list && !vps_list[sps->vps_id]) {
+        av_log(avctx, AV_LOG_ERROR, "VPS %d does not exist\n",
                sps->vps_id);
         ret = AVERROR_INVALIDDATA;
         goto err;
@@ -685,7 +669,7 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
 
     sps->max_sub_layers = get_bits(gb, 3) + 1;
     if (sps->max_sub_layers > MAX_SUB_LAYERS) {
-        av_log(s->avctx, AV_LOG_ERROR, "sps_max_sub_layers out of range: %d\n",
+        av_log(avctx, AV_LOG_ERROR, "sps_max_sub_layers out of range: %d\n",
                sps->max_sub_layers);
         ret = AVERROR_INVALIDDATA;
         goto err;
@@ -693,18 +677,18 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
 
     skip_bits1(gb); // temporal_id_nesting_flag
 
-    parse_ptl(s, &sps->ptl, sps->max_sub_layers);
+    parse_ptl(gb, avctx, &sps->ptl, sps->max_sub_layers);
 
-    sps_id = get_ue_golomb_long(gb);
-    if (sps_id >= MAX_SPS_COUNT) {
-        av_log(s->avctx, AV_LOG_ERROR, "SPS id out of range: %d\n", sps_id);
+    *sps_id = get_ue_golomb_long(gb);
+    if (*sps_id >= MAX_SPS_COUNT) {
+        av_log(avctx, AV_LOG_ERROR, "SPS id out of range: %d\n", *sps_id);
         ret = AVERROR_INVALIDDATA;
         goto err;
     }
 
     sps->chroma_format_idc = get_ue_golomb_long(gb);
     if (sps->chroma_format_idc != 1) {
-        avpriv_report_missing_feature(s->avctx, "chroma_format_idc != 1\n");
+        avpriv_report_missing_feature(avctx, "chroma_format_idc != 1\n");
         ret = AVERROR_PATCHWELCOME;
         goto err;
     }
@@ -715,7 +699,7 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
     sps->width  = get_ue_golomb_long(gb);
     sps->height = get_ue_golomb_long(gb);
     if ((ret = av_image_check_size(sps->width,
-                                   sps->height, 0, s->avctx)) < 0)
+                                   sps->height, 0, avctx)) < 0)
         goto err;
 
     if (get_bits1(gb)) { // pic_conformance_flag
@@ -725,8 +709,8 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
         sps->pic_conf_win.top_offset    = get_ue_golomb_long(gb) * 2;
         sps->pic_conf_win.bottom_offset = get_ue_golomb_long(gb) * 2;
 
-        if (s->avctx->flags2 & CODEC_FLAG2_IGNORE_CROP) {
-            av_log(s->avctx, AV_LOG_DEBUG,
+        if (avctx->flags2 & CODEC_FLAG2_IGNORE_CROP) {
+            av_log(avctx, AV_LOG_DEBUG,
                    "discarding sps conformance window, "
                    "original values are l:%u r:%u t:%u b:%u\n",
                    sps->pic_conf_win.left_offset,
@@ -745,7 +729,7 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
     sps->bit_depth   = get_ue_golomb_long(gb) + 8;
     bit_depth_chroma = get_ue_golomb_long(gb) + 8;
     if (bit_depth_chroma != sps->bit_depth) {
-        av_log(s->avctx, AV_LOG_ERROR,
+        av_log(avctx, AV_LOG_ERROR,
                "Luma bit depth (%d) is different from chroma bit depth (%d), "
                "this is unsupported.\n",
                sps->bit_depth, bit_depth_chroma);
@@ -759,13 +743,13 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
         case 9:  sps->pix_fmt = AV_PIX_FMT_YUV420P9;  break;
         case 10: sps->pix_fmt = AV_PIX_FMT_YUV420P10; break;
         default:
-            av_log(s->avctx, AV_LOG_ERROR, "Unsupported bit depth: %d\n",
+            av_log(avctx, AV_LOG_ERROR, "Unsupported bit depth: %d\n",
                    sps->bit_depth);
             ret = AVERROR_PATCHWELCOME;
             goto err;
         }
     } else {
-        av_log(s->avctx, AV_LOG_ERROR,
+        av_log(avctx, AV_LOG_ERROR,
                "non-4:2:0 support is currently unspecified.\n");
         return AVERROR_PATCHWELCOME;
     }
@@ -784,7 +768,7 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
 
     sps->log2_max_poc_lsb = get_ue_golomb_long(gb) + 4;
     if (sps->log2_max_poc_lsb > 16) {
-        av_log(s->avctx, AV_LOG_ERROR, "log2_max_pic_order_cnt_lsb_minus4 out range: %d\n",
+        av_log(avctx, AV_LOG_ERROR, "log2_max_pic_order_cnt_lsb_minus4 out range: %d\n",
                sps->log2_max_poc_lsb - 4);
         ret = AVERROR_INVALIDDATA;
         goto err;
@@ -797,15 +781,15 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
         sps->temporal_layer[i].num_reorder_pics      = get_ue_golomb_long(gb);
         sps->temporal_layer[i].max_latency_increase  = get_ue_golomb_long(gb) - 1;
         if (sps->temporal_layer[i].max_dec_pic_buffering > MAX_DPB_SIZE) {
-            av_log(s->avctx, AV_LOG_ERROR, "sps_max_dec_pic_buffering_minus1 out of range: %d\n",
+            av_log(avctx, AV_LOG_ERROR, "sps_max_dec_pic_buffering_minus1 out of range: %d\n",
                    sps->temporal_layer[i].max_dec_pic_buffering - 1);
             ret = AVERROR_INVALIDDATA;
             goto err;
         }
         if (sps->temporal_layer[i].num_reorder_pics > sps->temporal_layer[i].max_dec_pic_buffering - 1) {
-            av_log(s->avctx, AV_LOG_WARNING, "sps_max_num_reorder_pics out of range: %d\n",
+            av_log(avctx, AV_LOG_WARNING, "sps_max_num_reorder_pics out of range: %d\n",
                    sps->temporal_layer[i].num_reorder_pics);
-            if (s->avctx->err_recognition & AV_EF_EXPLODE ||
+            if (avctx->err_recognition & AV_EF_EXPLODE ||
                 sps->temporal_layer[i].num_reorder_pics > MAX_DPB_SIZE - 1) {
                 ret = AVERROR_INVALIDDATA;
                 goto err;
@@ -830,7 +814,7 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
                                                sps->log2_min_tb_size;
 
     if (sps->log2_min_tb_size >= sps->log2_min_cb_size) {
-        av_log(s->avctx, AV_LOG_ERROR, "Invalid value for log2_min_tb_size");
+        av_log(avctx, AV_LOG_ERROR, "Invalid value for log2_min_tb_size");
         ret = AVERROR_INVALIDDATA;
         goto err;
     }
@@ -842,7 +826,7 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
         set_default_scaling_list_data(&sps->scaling_list);
 
         if (get_bits1(gb)) {
-            ret = scaling_list_data(s, &sps->scaling_list);
+            ret = scaling_list_data(gb, avctx, &sps->scaling_list);
             if (ret < 0)
                 goto err;
         }
@@ -859,7 +843,7 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
         sps->pcm.log2_max_pcm_cb_size = sps->pcm.log2_min_pcm_cb_size +
                                         get_ue_golomb_long(gb);
         if (sps->pcm.bit_depth > sps->bit_depth) {
-            av_log(s->avctx, AV_LOG_ERROR,
+            av_log(avctx, AV_LOG_ERROR,
                    "PCM bit depth (%d) is greater than normal bit depth (%d)\n",
                    sps->pcm.bit_depth, sps->bit_depth);
             ret = AVERROR_INVALIDDATA;
@@ -871,13 +855,13 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
 
     sps->nb_st_rps = get_ue_golomb_long(gb);
     if (sps->nb_st_rps > MAX_SHORT_TERM_RPS_COUNT) {
-        av_log(s->avctx, AV_LOG_ERROR, "Too many short term RPS: %d.\n",
+        av_log(avctx, AV_LOG_ERROR, "Too many short term RPS: %d.\n",
                sps->nb_st_rps);
         ret = AVERROR_INVALIDDATA;
         goto err;
     }
     for (i = 0; i < sps->nb_st_rps; i++) {
-        if ((ret = ff_hevc_decode_short_term_rps(s, &sps->st_rps[i],
+        if ((ret = ff_hevc_decode_short_term_rps(gb, avctx, &sps->st_rps[i],
                                                  sps, 0)) < 0)
             goto err;
     }
@@ -896,19 +880,19 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
     sps->vui.sar = (AVRational){0, 1};
     vui_present = get_bits1(gb);
     if (vui_present)
-        decode_vui(s, sps);
+        decode_vui(gb, avctx, apply_defdispwin, sps);
     skip_bits1(gb); // sps_extension_flag
 
-    if (s->apply_defdispwin) {
+    if (apply_defdispwin) {
         sps->output_window.left_offset   += sps->vui.def_disp_win.left_offset;
         sps->output_window.right_offset  += sps->vui.def_disp_win.right_offset;
         sps->output_window.top_offset    += sps->vui.def_disp_win.top_offset;
         sps->output_window.bottom_offset += sps->vui.def_disp_win.bottom_offset;
     }
     if (sps->output_window.left_offset & (0x1F >> (sps->pixel_shift)) &&
-        !(s->avctx->flags & CODEC_FLAG_UNALIGNED)) {
+        !(avctx->flags & CODEC_FLAG_UNALIGNED)) {
         sps->output_window.left_offset &= ~(0x1F >> (sps->pixel_shift));
-        av_log(s->avctx, AV_LOG_WARNING, "Reducing left output window to %d "
+        av_log(avctx, AV_LOG_WARNING, "Reducing left output window to %d "
                "chroma samples to preserve alignment.\n",
                sps->output_window.left_offset);
     }
@@ -917,13 +901,13 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
     sps->output_height = sps->height -
                          (sps->output_window.top_offset + sps->output_window.bottom_offset);
     if (sps->output_width <= 0 || sps->output_height <= 0) {
-        av_log(s->avctx, AV_LOG_WARNING, "Invalid visible frame dimensions: %dx%d.\n",
+        av_log(avctx, AV_LOG_WARNING, "Invalid visible frame dimensions: %dx%d.\n",
                sps->output_width, sps->output_height);
-        if (s->avctx->err_recognition & AV_EF_EXPLODE) {
+        if (avctx->err_recognition & AV_EF_EXPLODE) {
             ret = AVERROR_INVALIDDATA;
             goto err;
         }
-        av_log(s->avctx, AV_LOG_WARNING,
+        av_log(avctx, AV_LOG_WARNING,
                "Displaying the whole video surface.\n");
         sps->output_window.left_offset   =
         sps->output_window.right_offset  =
@@ -953,29 +937,56 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
 
     if (sps->width  & ((1 << sps->log2_min_cb_size) - 1) ||
         sps->height & ((1 << sps->log2_min_cb_size) - 1)) {
-        av_log(s->avctx, AV_LOG_ERROR, "Invalid coded frame dimensions.\n");
+        av_log(avctx, AV_LOG_ERROR, "Invalid coded frame dimensions.\n");
         goto err;
     }
 
     if (sps->log2_ctb_size > MAX_LOG2_CTB_SIZE) {
-        av_log(s->avctx, AV_LOG_ERROR, "CTB size out of range: 2^%d\n", sps->log2_ctb_size);
+        av_log(avctx, AV_LOG_ERROR, "CTB size out of range: 2^%d\n", sps->log2_ctb_size);
         goto err;
     }
     if (sps->max_transform_hierarchy_depth_inter > sps->log2_ctb_size - sps->log2_min_tb_size) {
-        av_log(s->avctx, AV_LOG_ERROR, "max_transform_hierarchy_depth_inter out of range: %d\n",
+        av_log(avctx, AV_LOG_ERROR, "max_transform_hierarchy_depth_inter out of range: %d\n",
                sps->max_transform_hierarchy_depth_inter);
         goto err;
     }
     if (sps->max_transform_hierarchy_depth_intra > sps->log2_ctb_size - sps->log2_min_tb_size) {
-        av_log(s->avctx, AV_LOG_ERROR, "max_transform_hierarchy_depth_intra out of range: %d\n",
+        av_log(avctx, AV_LOG_ERROR, "max_transform_hierarchy_depth_intra out of range: %d\n",
                sps->max_transform_hierarchy_depth_intra);
         goto err;
     }
     if (sps->log2_max_trafo_size > FFMIN(sps->log2_ctb_size, 5)) {
-        av_log(s->avctx, AV_LOG_ERROR,
+        av_log(avctx, AV_LOG_ERROR,
                "max transform block size out of range: %d\n",
                sps->log2_max_trafo_size);
         goto err;
+    }
+
+    return 0;
+
+err:
+    return ret;
+}
+
+int ff_hevc_decode_nal_sps(HEVCContext *s)
+{
+    HEVCSPS *sps;
+    AVBufferRef *sps_buf = av_buffer_allocz(sizeof(*sps));
+    unsigned int sps_id;
+    int ret;
+
+    if (!sps_buf)
+        return AVERROR(ENOMEM);
+    sps = (HEVCSPS*)sps_buf->data;
+
+    av_log(s->avctx, AV_LOG_DEBUG, "Decoding SPS\n");
+
+    ret = ff_hevc_parse_sps(sps, &s->HEVClc.gb, &sps_id,
+                            s->apply_defdispwin,
+                            s->vps_list, s->avctx);
+    if (ret < 0) {
+        av_buffer_unref(&sps_buf);
+        return ret;
     }
 
     if (s->avctx->debug & FF_DEBUG_BITSTREAM) {
@@ -999,10 +1010,6 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
     }
 
     return 0;
-
-err:
-    av_buffer_unref(&sps_buf);
-    return ret;
 }
 
 static void hevc_pps_free(void *opaque, uint8_t *data)
@@ -1202,7 +1209,7 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
     pps->scaling_list_data_present_flag = get_bits1(gb);
     if (pps->scaling_list_data_present_flag) {
         set_default_scaling_list_data(&pps->scaling_list);
-        ret = scaling_list_data(s, &pps->scaling_list);
+        ret = scaling_list_data(gb, s->avctx, &pps->scaling_list);
         if (ret < 0)
             goto err;
     }
