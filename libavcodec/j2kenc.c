@@ -982,6 +982,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         bytestream_put_buffer(&s->buf, "ftyp", 4);
         bytestream_put_buffer(&s->buf, "jp2\040\040", 4);
         bytestream_put_be32(&s->buf, 0);
+        bytestream_put_buffer(&s->buf, "jp2\040", 4);
         update_size(chunkstart, s->buf);
 
         jp2hstart = s->buf;
