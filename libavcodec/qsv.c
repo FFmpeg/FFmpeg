@@ -77,6 +77,21 @@ int ff_qsv_error(int mfx_err)
     }
 }
 
+/**
+ * @brief Initialize a MSDK session
+ *
+ * Media SDK is based on sessions, so this is the prerequisite
+ * initialization for HW acceleration.  For Windows the session is
+ * complete and ready to use, for Linux a display handle is
+ * required.  For releases of Media Server Studio >= 2015 R4 the
+ * render nodes interface is preferred (/dev/dri/renderD).
+ * Using Media Server Studio 2015 R4 or newer is recommended
+ * but the older /dev/dri/card interface is also searched
+ * for broader compatibility.
+ *
+ * @param avctx    ffmpeg metadata for this codec context
+ * @param session  the MSDK session used
+ */
 int ff_qsv_init_internal_session(AVCodecContext *avctx, mfxSession *session)
 {
     mfxIMPL impl   = MFX_IMPL_AUTO_ANY;
@@ -90,6 +105,61 @@ int ff_qsv_init_internal_session(AVCodecContext *avctx, mfxSession *session)
         av_log(avctx, AV_LOG_ERROR, "Error initializing an internal MFX session\n");
         return ff_qsv_error(ret);
     }
+
+
+    // this code is only required for Linux.  It searches for a valid
+    // display handle.  First in /dev/dri/renderD then in /dev/dri/card
+#ifdef AVCODEC_QSV_LINUX_SESSION_HANDLE
+    // VAAPI display handle
+    VADisplay va_dpy = NULL;
+    VAStatus va_res = VA_STATUS_SUCCESS;
+    int major_version = 0, minor_version = 0;
+    int fd = -1;
+    char adapterpath[256];
+    int adapter_num;
+
+    //search for valid graphics device
+    for (adapter_num = 0;adapter_num < 6;adapter_num++) {
+
+        if (adapter_num<3) {
+            snprintf(adapterpath,sizeof(adapterpath),
+                "/dev/dri/renderD%d", adapter_num+128);
+        } else {
+            snprintf(adapterpath,sizeof(adapterpath),
+                "/dev/dri/card%d", adapter_num-3);
+        }
+
+        fd = open(adapterpath, O_RDWR);
+        if (fd < 0) {
+            av_log(avctx, AV_LOG_ERROR,
+                "mfx init: %s fd open failed\n", adapterpath);
+            continue;
+        }
+
+        va_dpy = vaGetDisplayDRM(fd);
+        if (!va_dpy) {
+            av_log(avctx, AV_LOG_ERROR,
+                "mfx init: %s vaGetDisplayDRM failed\n", adapterpath);
+            close(fd);
+            continue;
+        }
+
+        va_res = vaInitialize(va_dpy, &major_version, &minor_version);
+        if (VA_STATUS_SUCCESS != va_res) {
+            av_log(avctx, AV_LOG_ERROR,
+                "mfx init: %s vaInitialize failed\n", adapterpath);
+            close(fd);
+            fd = -1;
+            continue;
+        } else {
+            av_log(avctx, AV_LOG_VERBOSE,
+            "mfx initialization: %s vaInitialize successful\n",adapterpath);
+            break;
+        }
+    }
+    MFXVideoCORE_SetHandle((*session), (mfxHandleType)MFX_HANDLE_VA_DISPLAY, (mfxHDL)va_dpy);
+
+#endif //AVCODEC_QSV_LINUX_SESSION_HANDLE
 
     MFXQueryIMPL(*session, &impl);
 

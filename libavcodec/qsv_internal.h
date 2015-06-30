@@ -21,12 +21,27 @@
 #ifndef AVCODEC_QSV_INTERNAL_H
 #define AVCODEC_QSV_INTERNAL_H
 
+#if CONFIG_VAAPI
+#define AVCODEC_QSV_LINUX_SESSION_HANDLE
+#endif //CONFIG_VAAPI
+
+#ifdef AVCODEC_QSV_LINUX_SESSION_HANDLE
+#include <stdio.h>
+#include <string.h>
+#if HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+#include <fcntl.h>
+#include <va/va.h>
+#include <va/va_drm.h>
+#endif
+
 #include <mfx/mfxvideo.h>
 
 #include "libavutil/frame.h"
 
 #define QSV_VERSION_MAJOR 1
-#define QSV_VERSION_MINOR 1
+#define QSV_VERSION_MINOR 9
 
 #define ASYNC_DEPTH_DEFAULT 4       // internal parallelism
 
