@@ -1013,7 +1013,7 @@ static int mov_read_colr(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
     char color_parameter_type[5] = { 0 };
-    int color_primaries, color_trc, color_matrix;
+    uint16_t color_primaries, color_trc, color_matrix;
     int ret;
 
     if (c->fc->nb_streams < 1)
