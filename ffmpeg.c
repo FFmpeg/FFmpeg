@@ -1877,6 +1877,9 @@ static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
     if (*got_output || ret<0 || pkt->size)
         decode_error_stat[ret<0] ++;
 
+    if (ret < 0 && exit_on_error)
+        exit_program(1);
+
     if (!*got_output || ret < 0) {
         if (!pkt->size) {
             for (i = 0; i < ist->nb_filters; i++)
@@ -2022,6 +2025,9 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output)
     if (*got_output || ret<0 || pkt->size)
         decode_error_stat[ret<0] ++;
 
+    if (ret < 0 && exit_on_error)
+        exit_program(1);
+
     if (*got_output && ret >= 0) {
         if (ist->dec_ctx->width  != decoded_frame->width ||
             ist->dec_ctx->height != decoded_frame->height ||
@@ -2139,6 +2145,9 @@ static int transcode_subtitles(InputStream *ist, AVPacket *pkt, int *got_output)
 
     if (*got_output || ret<0 || pkt->size)
         decode_error_stat[ret<0] ++;
+
+    if (ret < 0 && exit_on_error)
+        exit_program(1);
 
     if (ret < 0 || !*got_output) {
         if (!pkt->size)
