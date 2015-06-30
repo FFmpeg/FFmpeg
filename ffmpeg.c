@@ -1870,7 +1870,7 @@ static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
         ret = AVERROR_INVALIDDATA;
     }
 
-    if (*got_output || ret<0 || pkt->size)
+    if (*got_output || ret<0)
         decode_error_stat[ret<0] ++;
 
     if (ret < 0 && exit_on_error)
@@ -2009,7 +2009,7 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output)
             );
     }
 
-    if (*got_output || ret<0 || pkt->size)
+    if (*got_output || ret<0)
         decode_error_stat[ret<0] ++;
 
     if (ret < 0 && exit_on_error)
@@ -2121,7 +2121,7 @@ static int transcode_subtitles(InputStream *ist, AVPacket *pkt, int *got_output)
     int i, ret = avcodec_decode_subtitle2(ist->dec_ctx,
                                           &subtitle, got_output, pkt);
 
-    if (*got_output || ret<0 || pkt->size)
+    if (*got_output || ret<0)
         decode_error_stat[ret<0] ++;
 
     if (ret < 0 && exit_on_error)
