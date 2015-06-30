@@ -32,6 +32,11 @@
  * @author Maxim Gavrilov ( maxim.gavrilov gmail com )
  */
 
+#define FFT_FLOAT 1
+#define FFT_FIXED_32 0
+#define USE_FIXED 0
+#define CONFIG_FIXED 0
+
 #include "libavutil/float_dsp.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"
