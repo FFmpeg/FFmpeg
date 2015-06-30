@@ -217,7 +217,7 @@
     </ClCompile>
     <ClCompile Include="..\libavformat\subtitles.c">
     </ClCompile>
-    <ClCompile Include="..\libavformat\asfdec.c">
+    <ClCompile Include="..\libavformat\asfdec_f.c">
     </ClCompile>
     <ClCompile Include="..\libavformat\asf.c">
     </ClCompile>
@@ -225,7 +225,7 @@
     </ClCompile>
     <ClCompile Include="..\libavformat\avlanguage.c">
     </ClCompile>
-    <ClCompile Include="..\libavformat\asfdec-o.c">
+    <ClCompile Include="..\libavformat\asfdec_o.c">
     </ClCompile>
     <ClCompile Include="..\libavformat\asfenc.c">
     </ClCompile>
