@@ -779,6 +779,7 @@ static int asf_read_header(AVFormatContext *s)
 
     for (;;) {
         uint64_t gpos = avio_tell(pb);
+        int ret = 0;
         ff_get_guid(pb, &g);
         gsize = avio_rl64(pb);
         print_guid(&g);
@@ -795,13 +796,9 @@ static int asf_read_header(AVFormatContext *s)
         if (gsize < 24)
             return AVERROR_INVALIDDATA;
         if (!ff_guidcmp(&g, &ff_asf_file_header)) {
-            int ret = asf_read_file_properties(s, gsize);
-            if (ret < 0)
-                return ret;
+            ret = asf_read_file_properties(s, gsize);
         } else if (!ff_guidcmp(&g, &ff_asf_stream_header)) {
-            int ret = asf_read_stream_properties(s, gsize);
-            if (ret < 0)
-                return ret;
+            ret = asf_read_stream_properties(s, gsize);
         } else if (!ff_guidcmp(&g, &ff_asf_comment_header)) {
             asf_read_content_desc(s, gsize);
         } else if (!ff_guidcmp(&g, &ff_asf_language_guid)) {
@@ -830,7 +827,6 @@ static int asf_read_header(AVFormatContext *s)
             if (!s->keylen) {
                 if (!ff_guidcmp(&g, &ff_asf_content_encryption)) {
                     unsigned int len;
-                    int ret;
                     AVPacket pkt;
                     av_log(s, AV_LOG_WARNING,
                            "DRM protected stream detected, decoding will likely fail!\n");
@@ -856,6 +852,9 @@ static int asf_read_header(AVFormatContext *s)
                 }
             }
         }
+        if (ret < 0)
+            return ret;
+
         if (avio_tell(pb) != gpos + gsize)
             av_log(s, AV_LOG_DEBUG,
                    "gpos mismatch our pos=%"PRIu64", end=%"PRId64"\n",
