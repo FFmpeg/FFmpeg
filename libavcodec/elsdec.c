@@ -362,7 +362,7 @@ unsigned ff_els_decode_unsigned(ElsDecCtx *ctx, ElsUnsignedRung *ur)
 
     /* handle the error/overflow case */
     if (ctx->err || n >= ELS_EXPGOLOMB_LEN) {
-        ctx->err = AVERROR(EOVERFLOW);
+        ctx->err = AVERROR_INVALIDDATA;
         return 0;
     }
 
