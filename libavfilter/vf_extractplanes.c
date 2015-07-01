@@ -39,7 +39,7 @@ typedef struct {
     int requested_planes;
     int map[4];
     int linesize[4];
-    int is_packed_rgb;
+    int is_packed;
     int depth;
     int step;
 } ExtractPlanesContext;
@@ -154,7 +154,7 @@ static int config_input(AVFilterLink *inlink)
 
     s->depth = (desc->comp[0].depth_minus1 + 1) >> 3;
     s->step = av_get_padded_bits_per_pixel(desc) >> 3;
-    s->is_packed_rgb = !(desc->flags & AV_PIX_FMT_FLAG_PLANAR);
+    s->is_packed = !(desc->flags & AV_PIX_FMT_FLAG_PLANAR);
     if (desc->flags & AV_PIX_FMT_FLAG_RGB) {
         ff_fill_rgba_map(rgba_map, inlink->format);
         for (i = 0; i < 4; i++)
@@ -226,7 +226,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
         }
         av_frame_copy_props(out, frame);
 
-        if (s->is_packed_rgb) {
+        if (s->is_packed) {
             extract_from_packed(out->data[0], out->linesize[0],
                                 frame->data[0], frame->linesize[0],
                                 outlink->w, outlink->h,
