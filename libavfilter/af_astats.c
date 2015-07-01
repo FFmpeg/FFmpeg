@@ -45,6 +45,8 @@ typedef struct {
     double time_constant;
     double mult;
     int metadata;
+    int reset_count;
+    int nb_frames;
 } AudioStatsContext;
 
 #define OFFSET(x) offsetof(AudioStatsContext, x)
@@ -53,6 +55,7 @@ typedef struct {
 static const AVOption astats_options[] = {
     { "length", "set the window length", OFFSET(time_constant), AV_OPT_TYPE_DOUBLE, {.dbl=.05}, .01, 10, FLAGS },
     { "metadata", "inject metadata in the filtergraph", OFFSET(metadata), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS },
+    { "reset", "recalculate stats after this many frames", OFFSET(reset_count), AV_OPT_TYPE_INT, {.i64=0}, 0, INT_MAX, FLAGS },
     { NULL }
 };
 
@@ -88,10 +91,23 @@ static int query_formats(AVFilterContext *ctx)
     return ff_set_common_samplerates(ctx, formats);
 }
 
+static void reset_stats(AudioStatsContext *s)
+{
+    int c;
+
+    memset(s->chstats, 0, sizeof(*s->chstats));
+
+    for (c = 0; c < s->nb_channels; c++) {
+        ChannelStats *p = &s->chstats[c];
+
+        p->min = p->min_sigma_x2 = DBL_MAX;
+        p->max = p->max_sigma_x2 = DBL_MIN;
+    }
+}
+
 static int config_output(AVFilterLink *outlink)
 {
     AudioStatsContext *s = outlink->src->priv;
-    int c;
 
     s->chstats = av_calloc(sizeof(*s->chstats), outlink->channels);
     if (!s->chstats)
@@ -100,12 +116,7 @@ static int config_output(AVFilterLink *outlink)
     s->mult = exp((-1 / s->time_constant / outlink->sample_rate));
     s->tc_samples = 5 * s->time_constant * outlink->sample_rate + .5;
 
-    for (c = 0; c < s->nb_channels; c++) {
-        ChannelStats *p = &s->chstats[c];
-
-        p->min = p->min_sigma_x2 = DBL_MAX;
-        p->max = p->max_sigma_x2 = DBL_MIN;
-    }
+    reset_stats(s);
 
     return 0;
 }
@@ -250,6 +261,14 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
 
     if (s->metadata)
         set_metadata(s, metadata);
+
+    if (s->reset_count > 0) {
+        s->nb_frames++;
+        if (s->nb_frames >= s->reset_count) {
+            reset_stats(s);
+            s->nb_frames = 0;
+        }
+    }
 
     return ff_filter_frame(inlink->dst->outputs[0], buf);
 }
