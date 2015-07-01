@@ -1919,7 +1919,7 @@ static int open_output_file(OptionsContext *o, const char *filename)
             for (i = 0; i < nb_input_streams; i++) {
                 int new_area;
                 ist = input_streams[i];
-                new_area = ist->st->codec->width * ist->st->codec->height;
+                new_area = ist->st->codec->width * ist->st->codec->height + 100000000*!!ist->st->codec_info_nb_frames;
                 if((qcr!=MKTAG('A', 'P', 'I', 'C')) && (ist->st->disposition & AV_DISPOSITION_ATTACHED_PIC))
                     new_area = 1;
                 if (ist->st->codec->codec_type == AVMEDIA_TYPE_VIDEO &&
