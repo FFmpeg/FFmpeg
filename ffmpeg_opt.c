@@ -1203,6 +1203,7 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
         uint32_t tag = strtol(codec_tag, &next, 0);
         if (*next)
             tag = AV_RL32(codec_tag);
+        ost->st->codec->codec_tag =
         ost->enc_ctx->codec_tag = tag;
     }
 
