@@ -771,7 +771,7 @@ static void fill_decode_caches(const H264Context *h, H264SliceContext *sl, int m
 
 #define MAP_F2F(idx, mb_type)                                           \
     if (!IS_INTERLACED(mb_type) && sl->ref_cache[list][idx] >= 0) {     \
-        sl->ref_cache[list][idx]    <<= 1;                              \
+        sl->ref_cache[list][idx]     *= 2;                              \
         sl->mv_cache[list][idx][1]   /= 2;                              \
         sl->mvd_cache[list][idx][1] >>= 1;                              \
     }
@@ -783,7 +783,7 @@ static void fill_decode_caches(const H264Context *h, H264SliceContext *sl, int m
 #define MAP_F2F(idx, mb_type)                                           \
     if (IS_INTERLACED(mb_type) && sl->ref_cache[list][idx] >= 0) {      \
         sl->ref_cache[list][idx]    >>= 1;                              \
-        sl->mv_cache[list][idx][1]  <<= 1;                              \
+        sl->mv_cache[list][idx][1]   *= 2;                              \
         sl->mvd_cache[list][idx][1] <<= 1;                              \
     }
 
