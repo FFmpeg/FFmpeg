@@ -30,13 +30,13 @@ FATE_SCREEN-$(call DEMDEC, AVI, FRAPS) += $(FATE_FRAPS)
 fate-fraps: $(FATE_FRAPS)
 
 FATE_G2M += fate-g2m2
-fate-g2m2: CMD = framecrc -i $(TARGET_SAMPLES)/g2m/g2m2.asf -an
+fate-g2m2: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/g2m/g2m2.asf -an
 
 FATE_G2M += fate-g2m3
-fate-g2m3: CMD = framecrc -i $(TARGET_SAMPLES)/g2m/g2m3.asf -frames:v 20
+fate-g2m3: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/g2m/g2m3.asf -frames:v 20
 
 FATE_G2M += fate-g2m4
-fate-g2m4: CMD = framecrc -i $(TARGET_SAMPLES)/g2m/g2m4.asf
+fate-g2m4: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/g2m/g2m4.asf
 
 FATE_SAMPLES_AVCONV-$(call DEMDEC, ASF, G2M) += $(FATE_G2M)
 fate-g2m: $(FATE_G2M)
