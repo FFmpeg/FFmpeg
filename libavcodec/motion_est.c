@@ -183,8 +183,8 @@ static av_always_inline int cmp_inline(MpegEncContext *s, const int x, const int
     const int stride= c->stride;
     const int uvstride= c->uvstride;
     const int dxy= subx + (suby<<(1+qpel)); //FIXME log2_subpel?
-    const int hx= subx + (x<<(1+qpel));
-    const int hy= suby + (y<<(1+qpel));
+    const int hx= subx + x*(1<<(1+qpel));
+    const int hy= suby + y*(1<<(1+qpel));
     uint8_t * const * const ref= c->ref[ref_index];
     uint8_t * const * const src= c->src[src_index];
     int d;
