@@ -327,12 +327,15 @@ static void get_tag(AVFormatContext *s, const char *key, int type, int len, int 
     if (!value)
         goto finish;
 
-    if (type == 0) {         // UTF16-LE
+    switch (type) {
+    case ASF_UNICODE:
         avio_get_str16le(s->pb, len, value, 2 * len + 1);
-    } else if (type == -1) { // ASCII
+        break;
+    case -1: // ASCI
         avio_read(s->pb, value, len);
         value[len]=0;
-    } else if (type == 1) {  // byte array
+        break;
+    case ASF_BYTE_ARRAY:
         if (!strcmp(key, "WM/Picture")) { // handle cover art
             asf_read_picture(s, len);
         } else if (!strcmp(key, "ID3")) { // handle ID3 tag
@@ -341,13 +344,18 @@ static void get_tag(AVFormatContext *s, const char *key, int type, int len, int 
             av_log(s, AV_LOG_VERBOSE, "Unsupported byte array in tag %s.\n", key);
         }
         goto finish;
-    } else if (type > 1 && type <= 5) {  // boolean or DWORD or QWORD or WORD
+    case ASF_BOOL:
+    case ASF_DWORD:
+    case ASF_QWORD:
+    case ASF_WORD: {
         uint64_t num = get_value(s->pb, type, type2_size);
         snprintf(value, LEN, "%"PRIu64, num);
-    } else if (type == 6) { // (don't) handle GUID
+        break;
+    }
+    case ASF_GUID:
         av_log(s, AV_LOG_DEBUG, "Unsupported GUID value in tag %s.\n", key);
         goto finish;
-    } else {
+    default:
         av_log(s, AV_LOG_DEBUG,
                "Unsupported value type %d in tag %s.\n", type, key);
         goto finish;
