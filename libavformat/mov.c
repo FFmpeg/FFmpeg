@@ -1993,9 +1993,10 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
 
         id = mov_codec_id(st, format);
 
-        av_log(c->fc, AV_LOG_TRACE, "size=%"PRId64" 4CC= %c%c%c%c codec_type=%d\n", size,
+        av_log(c->fc, AV_LOG_TRACE,
+               "size=%"PRId64" 4CC= %c%c%c%c/0x%08x codec_type=%d\n", size,
                 (format >> 0) & 0xff, (format >> 8) & 0xff, (format >> 16) & 0xff,
-                (format >> 24) & 0xff, st->codec->codec_type);
+                (format >> 24) & 0xff, format, st->codec->codec_type);
 
         if (st->codec->codec_type==AVMEDIA_TYPE_VIDEO) {
             st->codec->codec_id = id;
