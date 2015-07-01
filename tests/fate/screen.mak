@@ -33,7 +33,7 @@ FATE_G2M += fate-g2m2
 fate-g2m2: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/g2m/g2m2.asf -an
 
 FATE_G2M += fate-g2m3
-fate-g2m3: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/g2m/g2m3.asf -frames:v 20
+fate-g2m3: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/g2m/g2m3.asf -frames:v 20 -an
 
 FATE_G2M += fate-g2m4
 fate-g2m4: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/g2m/g2m4.asf
