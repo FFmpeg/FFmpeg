@@ -154,7 +154,8 @@ static int config_input(AVFilterLink *inlink)
 
     s->depth = (desc->comp[0].depth_minus1 + 1) >> 3;
     s->step = av_get_padded_bits_per_pixel(desc) >> 3;
-    s->is_packed = !(desc->flags & AV_PIX_FMT_FLAG_PLANAR);
+    s->is_packed = !(desc->flags & AV_PIX_FMT_FLAG_PLANAR) &&
+                    (desc->nb_components > 1);
     if (desc->flags & AV_PIX_FMT_FLAG_RGB) {
         ff_fill_rgba_map(rgba_map, inlink->format);
         for (i = 0; i < 4; i++)
