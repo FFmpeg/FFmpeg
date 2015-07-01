@@ -386,16 +386,6 @@ static int jpg_decode_data(JPGContext *c, int width, int height,
 #define G_shift  8
 #define B_shift  0
 
-static inline int log2_ceil(uint32_t x)
-{
-    int c = 0;
-
-    for (--x; x > 0; x >>= 1)
-        c++;
-
-    return c;
-}
-
 /* improved djb2 hash from http://www.cse.yorku.ca/~oz/hash.html */
 static int djb2_hash(uint32_t key)
 {
@@ -701,7 +691,7 @@ static int epic_decode_run_length(ePICContext *dc, int x, int y, int tile_width,
                 if (!(above_row[pos] == pix))
                     break;
             run = pos - start_pos - 1;
-            idx = log2_ceil(run);
+            idx = av_ceil_log2(run);
             if (ff_els_decode_bit(&dc->els_ctx, &dc->prev_row_rung[idx]))
                 *pRun += run;
             else {
