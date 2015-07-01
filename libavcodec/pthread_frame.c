@@ -475,7 +475,7 @@ int ff_thread_decode_frame(AVCodecContext *avctx,
     fctx->next_finished = finished;
 
     /*
-     * When no frame was found while flushing, but an error occured in
+     * When no frame was found while flushing, but an error occurred in
      * any thread, return it instead of 0.
      * Otherwise the error can get lost.
      */
