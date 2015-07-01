@@ -399,7 +399,7 @@ static inline int log2_ceil(uint32_t x)
 /* improved djb2 hash from http://www.cse.yorku.ca/~oz/hash.html */
 static int djb2_hash(uint32_t key)
 {
-    int h = 5381;
+    uint32_t h = 5381;
 
     h = (h * 33) ^ ((key >> 24) & 0xFF); // xxx: probably not needed at all
     h = (h * 33) ^ ((key >> 16) & 0xFF);
