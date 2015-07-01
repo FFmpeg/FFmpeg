@@ -1208,7 +1208,8 @@ static int asf_parse_packet(AVFormatContext *s, AVIOContext *pb, AVPacket *pkt)
                 continue;
             }
             asf->asf_st = &asf->streams[s->streams[asf->stream_index]->id];
-            asf->asf_st->skip_to_key = 0;
+            if (!asf->packet_frag_offset)
+                asf->asf_st->skip_to_key = 0;
         }
         asf_st = asf->asf_st;
         av_assert0(asf_st);
