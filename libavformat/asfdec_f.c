@@ -1513,6 +1513,7 @@ static int64_t asf_read_pts(AVFormatContext *s, int stream_index,
 
 //            assert((asf_st->packet_pos - s->data_offset) % s->packet_size == 0);
             pos = asf_st->packet_pos;
+            av_assert1(pkt->pos == asf_st->packet_pos);
 
             av_add_index_entry(s->streams[i], pos, pts, pkt->size,
                                pos - start_pos[i] + 1, AVINDEX_KEYFRAME);
