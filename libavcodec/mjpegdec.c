@@ -719,7 +719,7 @@ static int decode_dc_progressive(MJpegDecodeContext *s, int16_t *block,
         av_log(s->avctx, AV_LOG_ERROR, "error dc\n");
         return AVERROR_INVALIDDATA;
     }
-    val = (val * quant_matrix[0] << Al) + s->last_dc[component];
+    val = (val * (quant_matrix[0] << Al)) + s->last_dc[component];
     s->last_dc[component] = val;
     block[0] = val;
     return 0;
@@ -762,14 +762,14 @@ static int decode_block_progressive(MJpegDecodeContext *s, int16_t *block,
                 if (i >= se) {
                     if (i == se) {
                         j = s->scantable.permutated[se];
-                        block[j] = level * quant_matrix[j] << Al;
+                        block[j] = level * (quant_matrix[j] << Al);
                         break;
                     }
                     av_log(s->avctx, AV_LOG_ERROR, "error count: %d\n", i);
                     return AVERROR_INVALIDDATA;
                 }
                 j = s->scantable.permutated[i];
-                block[j] = level * quant_matrix[j] << Al;
+                block[j] = level * (quant_matrix[j] << Al);
             } else {
                 if (run == 0xF) {// ZRL - skip 15 coefficients
                     i += 15;
@@ -848,7 +848,7 @@ static int decode_block_refinement(MJpegDecodeContext *s, int16_t *block,
                 ZERO_RUN;
                 j = s->scantable.permutated[i];
                 val--;
-                block[j] = ((quant_matrix[j]^val) - val) << Al;
+                block[j] = ((quant_matrix[j] << Al) ^ val) - val;
                 if (i == se) {
                     if (i > *last_nnz)
                         *last_nnz = i;
