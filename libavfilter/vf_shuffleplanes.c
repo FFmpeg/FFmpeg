@@ -134,12 +134,7 @@ static const AVOption shuffleplanes_options[] = {
     { NULL },
 };
 
-static const AVClass shuffleplanes_class = {
-    .class_name = "shuffleplanes",
-    .item_name  = av_default_item_name,
-    .option     = shuffleplanes_options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
+AVFILTER_DEFINE_CLASS(shuffleplanes);
 
 static const AVFilterPad shuffleplanes_inputs[] = {
     {

@@ -315,7 +315,7 @@ static int request_frame(AVFilterLink *outlink)
 
 #define OFFSET(x) offsetof(FramepackContext, x)
 #define V AV_OPT_FLAG_VIDEO_PARAM
-static const AVOption options[] = {
+static const AVOption framepack_options[] = {
     { "format", "Frame pack output format", OFFSET(format), AV_OPT_TYPE_INT,
         { .i64 = AV_STEREO3D_SIDEBYSIDE }, 0, INT_MAX, .flags = V, .unit = "format" },
     { "sbs", "Views are packed next to each other", 0, AV_OPT_TYPE_CONST,
@@ -331,12 +331,7 @@ static const AVOption options[] = {
     { NULL },
 };
 
-static const AVClass framepack_class = {
-    .class_name = "framepack",
-    .item_name  = av_default_item_name,
-    .option     = options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
+AVFILTER_DEFINE_CLASS(framepack);
 
 static const AVFilterPad framepack_inputs[] = {
     {
