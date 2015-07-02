@@ -26,7 +26,7 @@
 /avprobe
 /config.*
 /coverage.info
-/version.h
+/avversion.h
 /doc/*.1
 /doc/*.html
 /doc/*.pod

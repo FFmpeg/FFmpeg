@@ -162,8 +162,8 @@ GIT_LOG     = $(SRC_PATH)/.git/logs/HEAD
 .version: $(wildcard $(GIT_LOG)) $(VERSION_SH) config.mak
 .version: M=@
 
-version.h .version:
-	$(M)$(VERSION_SH) $(SRC_PATH) version.h $(EXTRA_VERSION)
+avversion.h .version:
+	$(M)$(VERSION_SH) $(SRC_PATH) avversion.h $(EXTRA_VERSION)
 	$(Q)touch .version
 
 # force version.sh to run whenever version might have changed
@@ -204,7 +204,7 @@ clean::
 
 distclean::
 	$(RM) $(DISTCLEANSUFFIXES)
-	$(RM) config.* .config libavutil/avconfig.h .version version.h
+	$(RM) config.* .config libavutil/avconfig.h .version avversion.h
 
 config:
 	$(SRC_PATH)/configure $(value LIBAV_CONFIGURATION)
