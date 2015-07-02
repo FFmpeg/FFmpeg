@@ -41,7 +41,16 @@
 #include "aactab.h"
 
 /** Frequency in Hz for lower limit of noise substitution **/
-#define NOISE_LOW_LIMIT 4000
+#define NOISE_LOW_LIMIT 4500
+
+/* Energy spread threshold value below which no PNS is used, this corresponds to
+ * typically around 17Khz, after which PNS usage decays ending at 19Khz */
+#define NOISE_SPREAD_THRESHOLD 0.5f
+
+/* This constant gets divided by lambda to return ~1.65 which when multiplied
+ * by the band->threshold and compared to band->energy is the boundary between
+ * excessive PNS and little PNS usage. */
+#define NOISE_LAMBDA_NUMERATOR 252.1f
 
 /** Total number of usable codebooks **/
 #define CB_TOT 12
@@ -1132,6 +1141,43 @@ static void search_for_quantizers_fast(AVCodecContext *avctx, AACEncContext *s,
                 sce->sf_idx[(w+w2)*16+g] = sce->sf_idx[w*16+g];
 }
 
+static void search_for_pns(AACEncContext *s, AVCodecContext *avctx, SingleChannelElement *sce,
+                           const float lambda)
+{
+    int start = 0, w, w2, g;
+    const float freq_mult = avctx->sample_rate/(1024.0f/sce->ics.num_windows)/2.0f;
+    const float spread_threshold = NOISE_SPREAD_THRESHOLD*(lambda/120.f);
+    const float thr_mult = NOISE_LAMBDA_NUMERATOR/lambda;
+
+    /* Coders !twoloop don't reset the band_types */
+    for (w = 0; w < 128; w++)
+        if (sce->band_type[w] == NOISE_BT)
+            sce->band_type[w] = 0;
+
+    for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
+        start = 0;
+        for (g = 0;  g < sce->ics.num_swb; g++) {
+            if (start*freq_mult > NOISE_LOW_LIMIT*(lambda/170.0f)) {
+                float energy = 0.0f, threshold = 0.0f, spread = 0.0f;
+                for (w2 = 0; w2 < sce->ics.group_len[w]; w2++) {
+                    FFPsyBand *band = &s->psy.ch[s->cur_channel+0].psy_bands[(w+w2)*16+g];
+                    energy += band->energy;
+                    threshold += band->threshold;
+                    spread += band->spread;
+                }
+                if (spread > spread_threshold*sce->ics.group_len[w] &&
+                    ((sce->zeroes[w*16+g] && energy >= threshold) ||
+                    energy < threshold*thr_mult*sce->ics.group_len[w])) {
+                    sce->band_type[w*16+g] = NOISE_BT;
+                    sce->pns_ener[w*16+g] = energy / sce->ics.group_len[w];
+                    sce->zeroes[w*16+g] = 0;
+                }
+            }
+            start += sce->ics.swb_sizes[g];
+        }
+    }
+}
+
 static void search_for_ms(AACEncContext *s, ChannelElement *cpe,
                           const float lambda)
 {
@@ -1200,6 +1246,7 @@ AACCoefficientsEncoder ff_aac_coders[AAC_CODER_NB] = {
         encode_window_bands_info,
         quantize_and_encode_band,
         set_special_band_scalefactors,
+        search_for_pns,
         search_for_ms,
     },
     [AAC_CODER_ANMR] = {
@@ -1207,6 +1254,7 @@ AACCoefficientsEncoder ff_aac_coders[AAC_CODER_NB] = {
         encode_window_bands_info,
         quantize_and_encode_band,
         set_special_band_scalefactors,
+        search_for_pns,
         search_for_ms,
     },
     [AAC_CODER_TWOLOOP] = {
@@ -1214,6 +1262,7 @@ AACCoefficientsEncoder ff_aac_coders[AAC_CODER_NB] = {
         codebook_trellis_rate,
         quantize_and_encode_band,
         set_special_band_scalefactors,
+        search_for_pns,
         search_for_ms,
     },
     [AAC_CODER_FAST] = {
@@ -1221,6 +1270,7 @@ AACCoefficientsEncoder ff_aac_coders[AAC_CODER_NB] = {
         encode_window_bands_info,
         quantize_and_encode_band,
         set_special_band_scalefactors,
+        search_for_pns,
         search_for_ms,
     },
 };

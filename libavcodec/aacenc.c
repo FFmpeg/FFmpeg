@@ -641,6 +641,12 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                     }
                 }
             }
+            if (s->options.pns && s->coder->search_for_pns) {
+                for (ch = 0; ch < chans; ch++) {
+                    s->cur_channel = start_ch + ch;
+                    s->coder->search_for_pns(s, avctx, &cpe->ch[ch], s->lambda);
+                }
+            }
             s->cur_channel = start_ch;
             if (s->options.stereo_mode && cpe->common_window) {
                 if (s->options.stereo_mode > 0) {
