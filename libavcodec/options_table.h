@@ -40,6 +40,7 @@
 
 #define AV_CODEC_DEFAULT_BITRATE 200*1000
 
+FF_DISABLE_DEPRECATION_WARNINGS
 static const AVOption avcodec_options[] = {
 {"b", "set bitrate (in bits/s)", OFFSET(bit_rate), AV_OPT_TYPE_INT, {.i64 = AV_CODEC_DEFAULT_BITRATE }, INT_MIN, INT_MAX, V|A|E},
 {"bt", "Set video bitrate tolerance (in bits/s). In 1-pass mode, bitrate tolerance specifies how far "
@@ -475,6 +476,7 @@ static const AVOption avcodec_options[] = {
 {"side_data_only_packets", NULL, OFFSET(side_data_only_packets), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, A|V|E },
 {NULL},
 };
+FF_DISABLE_DEPRECATION_WARNINGS
 
 #undef A
 #undef V
