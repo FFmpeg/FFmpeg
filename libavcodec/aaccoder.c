@@ -1166,6 +1166,7 @@ static void search_for_ms(AACEncContext *s, ChannelElement *cpe,
     if (!cpe->common_window)
         return;
     for (w = 0; w < sce0->ics.num_windows; w += sce0->ics.group_len[w]) {
+        start = 0;
         for (g = 0;  g < sce0->ics.num_swb; g++) {
             if (!cpe->ch[0].zeroes[w*16+g] && !cpe->ch[1].zeroes[w*16+g]) {
                 float dist1 = 0.0f, dist2 = 0.0f;
@@ -1175,22 +1176,22 @@ static void search_for_ms(AACEncContext *s, ChannelElement *cpe,
                     float minthr = FFMIN(band0->threshold, band1->threshold);
                     float maxthr = FFMAX(band0->threshold, band1->threshold);
                     for (i = 0; i < sce0->ics.swb_sizes[g]; i++) {
-                        M[i] = (sce0->pcoeffs[start+w2*128+i]
-                              + sce1->pcoeffs[start+w2*128+i]) * 0.5;
+                        M[i] = (sce0->pcoeffs[start+(w+w2)*128+i]
+                              + sce1->pcoeffs[start+(w+w2)*128+i]) * 0.5;
                         S[i] =  M[i]
-                              - sce1->pcoeffs[start+w2*128+i];
+                              - sce1->pcoeffs[start+(w+w2)*128+i];
                     }
-                    abs_pow34_v(L34, sce0->coeffs+start+w2*128, sce0->ics.swb_sizes[g]);
-                    abs_pow34_v(R34, sce1->coeffs+start+w2*128, sce0->ics.swb_sizes[g]);
+                    abs_pow34_v(L34, sce0->coeffs+start+(w+w2)*128, sce0->ics.swb_sizes[g]);
+                    abs_pow34_v(R34, sce1->coeffs+start+(w+w2)*128, sce0->ics.swb_sizes[g]);
                     abs_pow34_v(M34, M,                         sce0->ics.swb_sizes[g]);
                     abs_pow34_v(S34, S,                         sce0->ics.swb_sizes[g]);
-                    dist1 += quantize_band_cost(s, sce0->coeffs + start + w2*128,
+                    dist1 += quantize_band_cost(s, sce0->coeffs + start + (w+w2)*128,
                                                 L34,
                                                 sce0->ics.swb_sizes[g],
                                                 sce0->sf_idx[(w+w2)*16+g],
                                                 sce0->band_type[(w+w2)*16+g],
                                                 lambda / band0->threshold, INFINITY, NULL);
-                    dist1 += quantize_band_cost(s, sce1->coeffs + start + w2*128,
+                    dist1 += quantize_band_cost(s, sce1->coeffs + start + (w+w2)*128,
                                                 R34,
                                                 sce1->ics.swb_sizes[g],
                                                 sce1->sf_idx[(w+w2)*16+g],
