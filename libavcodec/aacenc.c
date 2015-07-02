@@ -617,6 +617,8 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             tag      = s->chan_map[i+1];
             chans    = tag == TYPE_CPE ? 2 : 1;
             cpe      = &s->cpe[i];
+            memset(cpe->is_mask, 0, sizeof(cpe->is_mask));
+            memset(cpe->ms_mask, 0, sizeof(cpe->ms_mask));
             put_bits(&s->pb, 3, tag);
             put_bits(&s->pb, 4, chan_el_counter[tag]++);
             for (ch = 0; ch < chans; ch++)
