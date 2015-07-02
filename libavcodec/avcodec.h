@@ -544,6 +544,7 @@ typedef struct AVCodecDescriptor {
  */
 #define AV_INPUT_BUFFER_MIN_SIZE 16384
 
+#if FF_API_WITHOUT_PREFIX
 /**
  * @deprecated use AV_INPUT_BUFFER_PADDING_SIZE instead
  */
@@ -553,6 +554,7 @@ typedef struct AVCodecDescriptor {
  * @deprecated use AV_INPUT_BUFFER_MIN_SIZE instead
  */
 #define FF_MIN_BUFFER_SIZE 16384
+#endif /* FF_API_WITHOUT_PREFIX */
 
 /**
  * @ingroup lavc_encoding
@@ -806,6 +808,7 @@ typedef struct RcOverride{
  */
 #define AV_CODEC_CAP_VARIABLE_FRAME_SIZE (1 << 16)
 
+#if FF_API_WITHOUT_PREFIX
 /**
  * Allow decoders to produce frames with data planes that are not aligned
  * to CPU requirements (e.g. due to cropping).
@@ -972,6 +975,7 @@ typedef struct RcOverride{
  * Audio encoder supports receiving a different number of samples in each call.
  */
 #define CODEC_CAP_VARIABLE_FRAME_SIZE 0x10000
+#endif /* FF_API_WITHOUT_PREFIX */
 
 #if FF_API_MB_TYPE
 //The following defines may change, don't expect compatibility if you use them.
