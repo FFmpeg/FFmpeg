@@ -129,6 +129,25 @@ directive) will be reduced based on their specified In point.
 Because of potential packets before the specified In point, packet timestamps
 may overlap between two concatenated files.
 
+@item @code{outpoint @var{timestamp}}
+Out point of the file. When the demuxer reaches the specified decoding
+timestamp in any of the streams, it handles it as an end of file condition and
+skips the current and all the remaining packets from all streams.
+
+Out point is exclusive, which means that the demuxer will not output packets
+with a decoding timestamp greater or equal to Out point.
+
+This directive works best with intra frame codecs and formats where all streams
+are tightly interleaved. For non-intra frame codecs you will usually get
+additional packets with presentation timestamp after Out point therefore the
+decoded content will most likely contain frames after Out point too. If your
+streams are not tightly interleaved you may not get all the packets from all
+streams before Out point and you may only will be able to decode the earliest
+stream until Out point.
+
+The duration of the files (if not specified by the @code{duration}
+directive) will be reduced based on their specified Out point.
+
 @item @code{stream}
 Introduce a stream in the virtual file.
 All subsequent stream-related directives apply to the last introduced
