@@ -112,6 +112,23 @@ file is not available or accurate.
 If the duration is set for all files, then it is possible to seek in the
 whole concatenated video.
 
+@item @code{inpoint @var{timestamp}}
+In point of the file. When the demuxer opens the file it instantly seeks to the
+specified timestamp. Seeking is done so that all streams can be presented
+successfully at In point.
+
+This directive works best with intra frame codecs, because for non-intra frame
+ones you will usually get extra packets before the actual In point and the
+decoded content will most likely contain frames before In point too.
+
+For each file, packets before the file In point will have timestamps less than
+the calculated start timestamp of the file (negative in case of the first
+file), and the duration of the files (if not specified by the @code{duration}
+directive) will be reduced based on their specified In point.
+
+Because of potential packets before the specified In point, packet timestamps
+may overlap between two concatenated files.
+
 @item @code{stream}
 Introduce a stream in the virtual file.
 All subsequent stream-related directives apply to the last introduced

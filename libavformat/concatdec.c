@@ -41,8 +41,11 @@ typedef struct ConcatStream {
 typedef struct {
     char *url;
     int64_t start_time;
+    int64_t file_start_time;
+    int64_t file_inpoint;
     int64_t duration;
     ConcatStream *streams;
+    int64_t inpoint;
     int nb_streams;
 } ConcatFile;
 
@@ -142,6 +145,7 @@ static int add_file(AVFormatContext *avf, char *filename, ConcatFile **rfile,
     file->url        = url;
     file->start_time = AV_NOPTS_VALUE;
     file->duration   = AV_NOPTS_VALUE;
+    file->inpoint    = AV_NOPTS_VALUE;
 
     return 0;
 
@@ -306,8 +310,14 @@ static int open_file(AVFormatContext *avf, unsigned fileno)
         file->start_time = !fileno ? 0 :
                            cat->files[fileno - 1].start_time +
                            cat->files[fileno - 1].duration;
+    file->file_start_time = (avf->start_time == AV_NOPTS_VALUE) ? 0 : avf->start_time;
+    file->file_inpoint = (file->file_inpoint == AV_NOPTS_VALUE) ? file->file_start_time : file->inpoint;
     if ((ret = match_streams(avf)) < 0)
         return ret;
+    if (file->inpoint != AV_NOPTS_VALUE) {
+       if ((ret = avformat_seek_file(cat->avf, -1, INT64_MIN, file->inpoint, file->inpoint, 0)) < 0)
+           return ret;
+    }
     return 0;
 }
 
@@ -353,20 +363,23 @@ static int concat_read_header(AVFormatContext *avf)
             }
             if ((ret = add_file(avf, filename, &file, &nb_files_alloc)) < 0)
                 goto fail;
-        } else if (!strcmp(keyword, "duration")) {
+        } else if (!strcmp(keyword, "duration") || !strcmp(keyword, "inpoint")) {
             char *dur_str = get_keyword(&cursor);
             int64_t dur;
             if (!file) {
-                av_log(avf, AV_LOG_ERROR, "Line %d: duration without file\n",
-                       line);
+                av_log(avf, AV_LOG_ERROR, "Line %d: %s without file\n",
+                       line, keyword);
                 FAIL(AVERROR_INVALIDDATA);
             }
             if ((ret = av_parse_time(&dur, dur_str, 1)) < 0) {
-                av_log(avf, AV_LOG_ERROR, "Line %d: invalid duration '%s'\n",
-                       line, dur_str);
+                av_log(avf, AV_LOG_ERROR, "Line %d: invalid %s '%s'\n",
+                       line, keyword, dur_str);
                 goto fail;
             }
-            file->duration = dur;
+            if (!strcmp(keyword, "duration"))
+                file->duration = dur;
+            else if (!strcmp(keyword, "inpoint"))
+                file->inpoint = dur;
         } else if (!strcmp(keyword, "stream")) {
             if (!avformat_new_stream(avf, NULL))
                 FAIL(AVERROR(ENOMEM));
@@ -428,8 +441,11 @@ static int open_next_file(AVFormatContext *avf)
     ConcatContext *cat = avf->priv_data;
     unsigned fileno = cat->cur_file - cat->files;
 
-    if (cat->cur_file->duration == AV_NOPTS_VALUE)
+    if (cat->cur_file->duration == AV_NOPTS_VALUE) {
         cat->cur_file->duration = cat->avf->duration;
+        if (cat->cur_file->inpoint != AV_NOPTS_VALUE)
+            cat->cur_file->duration -= (cat->cur_file->inpoint - cat->cur_file->file_start_time);
+    }
 
     if (++fileno >= cat->nb_files)
         return AVERROR_EOF;
@@ -480,7 +496,7 @@ static int concat_read_packet(AVFormatContext *avf, AVPacket *pkt)
 {
     ConcatContext *cat = avf->priv_data;
     int ret;
-    int64_t file_start_time, delta;
+    int64_t delta;
     ConcatStream *cs;
     AVStream *st;
 
@@ -517,10 +533,7 @@ static int concat_read_packet(AVFormatContext *avf, AVPacket *pkt)
            av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, &st->time_base),
            av_ts2str(pkt->dts), av_ts2timestr(pkt->dts, &st->time_base));
 
-    file_start_time = cat->avf->start_time;
-    if (file_start_time == AV_NOPTS_VALUE)
-        file_start_time = 0;
-    delta = av_rescale_q(cat->cur_file->start_time - file_start_time,
+    delta = av_rescale_q(cat->cur_file->start_time - cat->cur_file->file_inpoint,
                          AV_TIME_BASE_Q,
                          cat->avf->streams[pkt->stream_index]->time_base);
     if (pkt->pts != AV_NOPTS_VALUE)
@@ -547,7 +560,7 @@ static int try_seek(AVFormatContext *avf, int stream,
                     int64_t min_ts, int64_t ts, int64_t max_ts, int flags)
 {
     ConcatContext *cat = avf->priv_data;
-    int64_t t0 = cat->cur_file->start_time - cat->avf->start_time;
+    int64_t t0 = cat->cur_file->start_time - cat->cur_file->file_inpoint;
 
     ts -= t0;
     min_ts = min_ts == INT64_MIN ? INT64_MIN : min_ts - t0;
