@@ -729,6 +729,7 @@ static int asf_read_metadata(AVFormatContext *s, int64_t size)
         } else {
             get_tag(s, name, value_type, value_len, 16);
         }
+        av_freep(&name);
     }
 
     return 0;
