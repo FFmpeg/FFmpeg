@@ -572,7 +572,8 @@ static int asf_read_metadata_obj(AVFormatContext *s, const GUIDParseTable *g)
                 if ((ret = process_metadata(s, name, name_len, val_len, type,
                                             &asf->asf_sd[st_num].asf_met)) < 0)
                     break;
-            }
+            } else
+                av_freep(&name);
         }
     }
 
