@@ -792,11 +792,9 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
 {
     int start = 0, i, w, w2, g;
     int destbits = avctx->bit_rate * 1024.0 / avctx->sample_rate / avctx->channels * (lambda / 120.f);
-    const float freq_mult = avctx->sample_rate/(1024.0f/sce->ics.num_windows)/2.0f;
     float dists[128] = { 0 }, uplims[128] = { 0 };
     float maxvals[128];
-    int noise_sf[128] = { 0 };
-    int fflag, minscaler, minscaler_n;
+    int fflag, minscaler;
     int its  = 0;
     int allz = 0;
     float minthr = INFINITY;
@@ -807,13 +805,12 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
     //XXX: some heuristic to determine initial quantizers will reduce search time
     //determine zero bands and upper limits
     for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
-        start = 0;
         for (g = 0;  g < sce->ics.num_swb; g++) {
             int nz = 0;
             float uplim = 0.0f, energy = 0.0f;
             for (w2 = 0; w2 < sce->ics.group_len[w]; w2++) {
                 FFPsyBand *band = &s->psy.ch[s->cur_channel].psy_bands[(w+w2)*16+g];
-                uplim += band->threshold;
+                uplim  += band->threshold;
                 energy += band->energy;
                 if (band->energy <= band->threshold || band->threshold == 0.0f) {
                     sce->zeroes[(w+w2)*16+g] = 1;
@@ -822,18 +819,10 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
                 nz = 1;
             }
             uplims[w*16+g] = uplim *512;
-            if (s->options.pns && start*freq_mult > NOISE_LOW_LIMIT && energy < uplim * 1.2f) {
-                noise_sf[w*16+g] = av_clip(4+FFMIN(log2f(energy)*2,255), -100, 155);
-                sce->band_type[w*16+g] = NOISE_BT;
-                nz= 1;
-            } else { /** Band type will be determined by the twoloop algorithm */
-                sce->band_type[w*16+g] = 0;
-            }
             sce->zeroes[w*16+g] = !nz;
             if (nz)
                 minthr = FFMIN(minthr, uplim);
             allz |= nz;
-            start += sce->ics.swb_sizes[g];
         }
     }
     for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
@@ -864,7 +853,6 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
     do {
         int tbits, qstep;
         minscaler = sce->sf_idx[0];
-        minscaler_n = sce->sf_idx[0];
         //inner loop - quantize spectrum to fit into given number of bits
         qstep = its ? 1 : 32;
         do {
@@ -879,11 +867,7 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
                     int cb;
                     float dist = 0.0f;
 
-                    if (sce->band_type[w*16+g] == NOISE_BT) {
-                        minscaler_n = FFMIN(minscaler_n, noise_sf[w*16+g]);
-                        start += sce->ics.swb_sizes[g];
-                        continue;
-                    } else if (sce->zeroes[w*16+g] || sce->sf_idx[w*16+g] >= 218) {
+                    if (sce->zeroes[w*16+g] || sce->sf_idx[w*16+g] >= 218) {
                         start += sce->ics.swb_sizes[g];
                         continue;
                     }
@@ -927,16 +911,9 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
         fflag = 0;
         minscaler = av_clip(minscaler, 60, 255 - SCALE_MAX_DIFF);
 
-        for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w])
-            for (g = 0; g < sce->ics.num_swb; g++)
-                if (sce->band_type[w*16+g] == NOISE_BT)
-                    sce->sf_idx[w*16+g] = av_clip(noise_sf[w*16+g], minscaler_n, minscaler_n + SCALE_MAX_DIFF);
-
         for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
             for (g = 0; g < sce->ics.num_swb; g++) {
                 int prevsc = sce->sf_idx[w*16+g];
-                if (sce->band_type[w*16+g] == NOISE_BT)
-                    continue;
                 if (dists[w*16+g] > uplims[w*16+g] && sce->sf_idx[w*16+g] > 60) {
                     if (find_min_book(maxvals[w*16+g], sce->sf_idx[w*16+g]-1))
                         sce->sf_idx[w*16+g]--;
