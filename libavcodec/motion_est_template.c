@@ -358,8 +358,8 @@ static int qpel_motion_search(MpegEncContext * s,
 
 #define CHECK_MV(x,y)\
 {\
-    const unsigned key = ((y)<<ME_MAP_MV_BITS) + (x) + map_generation;\
-    const int index= (((y)<<ME_MAP_SHIFT) + (x))&(ME_MAP_SIZE-1);\
+    const unsigned key = ((unsigned)(y)<<ME_MAP_MV_BITS) + (x) + map_generation;\
+    const int index= (((unsigned)(y)<<ME_MAP_SHIFT) + (x))&(ME_MAP_SIZE-1);\
     av_assert2((x) >= xmin);\
     av_assert2((x) <= xmax);\
     av_assert2((y) >= ymin);\
@@ -368,7 +368,7 @@ static int qpel_motion_search(MpegEncContext * s,
         d= cmp(s, x, y, 0, 0, size, h, ref_index, src_index, cmpf, chroma_cmpf, flags);\
         map[index]= key;\
         score_map[index]= d;\
-        d += (mv_penalty[((x)<<shift)-pred_x] + mv_penalty[((y)<<shift)-pred_y])*penalty_factor;\
+        d += (mv_penalty[((x)*(1<<shift))-pred_x] + mv_penalty[((y)*(1<<shift))-pred_y])*penalty_factor;\
         COPY3_IF_LT(dmin, d, best[0], x, best[1], y)\
     }\
 }
