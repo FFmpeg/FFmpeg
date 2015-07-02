@@ -359,7 +359,7 @@ static int vda_h264_end_frame(AVCodecContext *avctx)
                                      sizeof(vda->frame),
                                      release_buffer, NULL,
                                      AV_BUFFER_FLAG_READONLY);
-    if (!frame->buf)
+    if (!frame->buf[0])
         return AVERROR(ENOMEM);
 
     frame->data[3] = (uint8_t*)vda->frame;
