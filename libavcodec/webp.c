@@ -1387,7 +1387,7 @@ static int webp_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     }
 
     av_dict_free(&s->exif_metadata);
-    while (bytestream2_get_bytes_left(&gb) > 0) {
+    while (bytestream2_get_bytes_left(&gb) > 8) {
         char chunk_str[5] = { 0 };
 
         chunk_type = bytestream2_get_le32(&gb);
