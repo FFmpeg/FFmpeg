@@ -611,6 +611,7 @@ void ff_mpv_common_init_axp(MpegEncContext *s);
 void ff_mpv_common_init_neon(MpegEncContext *s);
 void ff_mpv_common_init_ppc(MpegEncContext *s);
 void ff_mpv_common_init_x86(MpegEncContext *s);
+void ff_mpv_common_init_mips(MpegEncContext *s);
 
 int ff_mpv_common_frame_size_change(MpegEncContext *s);
 void ff_mpv_common_end(MpegEncContext *s);

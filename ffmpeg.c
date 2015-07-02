@@ -79,6 +79,10 @@
 #include <windows.h>
 #include <psapi.h>
 #endif
+#if HAVE_SETCONSOLECTRLHANDLER
+#include <windows.h>
+#endif
+
 
 #if HAVE_SYS_SELECT_H
 #include <sys/select.h>
@@ -313,6 +317,7 @@ void term_exit(void)
 static volatile int received_sigterm = 0;
 static volatile int received_nb_signals = 0;
 static volatile int transcode_init_done = 0;
+static volatile int ffmpeg_exited = 0;
 static int main_return_code = 0;
 
 static void
@@ -328,6 +333,38 @@ sigterm_handler(int sig)
         exit(123);
     }
 }
+
+#if HAVE_SETCONSOLECTRLHANDLER
+static BOOL WINAPI CtrlHandler(DWORD fdwCtrlType)
+{
+    av_log(NULL, AV_LOG_DEBUG, "\nReceived windows signal %ld\n", fdwCtrlType);
+
+    switch (fdwCtrlType)
+    {
+    case CTRL_C_EVENT:
+    case CTRL_BREAK_EVENT:
+        sigterm_handler(SIGINT);
+        return TRUE;
+
+    case CTRL_CLOSE_EVENT:
+    case CTRL_LOGOFF_EVENT:
+    case CTRL_SHUTDOWN_EVENT:
+        sigterm_handler(SIGTERM);
+        /* Basically, with these 3 events, when we return from this method the
+           process is hard terminated, so stall as long as we need to
+           to try and let the main thread(s) clean up and gracefully terminate
+           (we have at most 5 seconds, but should be done far before that). */
+        while (!ffmpeg_exited) {
+            Sleep(0);
+        }
+        return TRUE;
+
+    default:
+        av_log(NULL, AV_LOG_ERROR, "Received unknown windows signal %ld\n", fdwCtrlType);
+        return FALSE;
+    }
+}
+#endif
 
 void term_init(void)
 {
@@ -361,6 +398,9 @@ void term_init(void)
     signal(SIGTERM, sigterm_handler); /* Termination (ANSI).  */
 #ifdef SIGXCPU
     signal(SIGXCPU, sigterm_handler);
+#endif
+#if HAVE_SETCONSOLECTRLHANDLER
+    SetConsoleCtrlHandler((PHANDLER_ROUTINE) CtrlHandler, TRUE);
 #endif
 }
 
@@ -537,6 +577,7 @@ static void ffmpeg_cleanup(int ret)
         av_log(NULL, AV_LOG_INFO, "Conversion failed!\n");
     }
     term_exit();
+    ffmpeg_exited = 1;
 }
 
 void remove_avoptions(AVDictionary **a, AVDictionary *b)
@@ -1870,8 +1911,11 @@ static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
         ret = AVERROR_INVALIDDATA;
     }
 
-    if (*got_output || ret<0 || pkt->size)
+    if (*got_output || ret<0)
         decode_error_stat[ret<0] ++;
+
+    if (ret < 0 && exit_on_error)
+        exit_program(1);
 
     if (!*got_output || ret < 0)
         return ret;
@@ -2006,8 +2050,11 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output)
             );
     }
 
-    if (*got_output || ret<0 || pkt->size)
+    if (*got_output || ret<0)
         decode_error_stat[ret<0] ++;
+
+    if (ret < 0 && exit_on_error)
+        exit_program(1);
 
     if (*got_output && ret >= 0) {
         if (ist->dec_ctx->width  != decoded_frame->width ||
@@ -2115,8 +2162,11 @@ static int transcode_subtitles(InputStream *ist, AVPacket *pkt, int *got_output)
     int i, ret = avcodec_decode_subtitle2(ist->dec_ctx,
                                           &subtitle, got_output, pkt);
 
-    if (*got_output || ret<0 || pkt->size)
+    if (*got_output || ret<0)
         decode_error_stat[ret<0] ++;
+
+    if (ret < 0 && exit_on_error)
+        exit_program(1);
 
     if (ret < 0 || !*got_output) {
         if (!pkt->size)

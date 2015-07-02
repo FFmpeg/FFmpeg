@@ -120,6 +120,7 @@ AVCodec ff_amv_decoder = {
     .close          = ff_mjpeg_decode_end,
     .decode         = sp5x_decode_frame,
     .max_lowres     = 3,
+    .capabilities   = CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif

@@ -183,8 +183,8 @@ static av_always_inline int cmp_inline(MpegEncContext *s, const int x, const int
     const int stride= c->stride;
     const int uvstride= c->uvstride;
     const int dxy= subx + (suby<<(1+qpel)); //FIXME log2_subpel?
-    const int hx= subx + (x<<(1+qpel));
-    const int hy= suby + (y<<(1+qpel));
+    const int hx= subx + x*(1<<(1+qpel));
+    const int hy= suby + y*(1<<(1+qpel));
     uint8_t * const * const ref= c->ref[ref_index];
     uint8_t * const * const src= c->src[src_index];
     int d;
@@ -426,13 +426,13 @@ static int sad_hpel_motion_search(MpegEncContext * s,
         my > ymin && my < ymax) {
         int dx=0, dy=0;
         int d, pen_x, pen_y;
-        const int index= (my<<ME_MAP_SHIFT) + mx;
+        const int index= my*(1<<ME_MAP_SHIFT) + mx;
         const int t= score_map[(index-(1<<ME_MAP_SHIFT))&(ME_MAP_SIZE-1)];
         const int l= score_map[(index- 1               )&(ME_MAP_SIZE-1)];
         const int r= score_map[(index+ 1               )&(ME_MAP_SIZE-1)];
         const int b= score_map[(index+(1<<ME_MAP_SHIFT))&(ME_MAP_SIZE-1)];
-        mx<<=1;
-        my<<=1;
+        mx += mx;
+        my += my;
 
 
         pen_x= pred_x + mx;
@@ -490,8 +490,8 @@ static int sad_hpel_motion_search(MpegEncContext * s,
         my+=dy;
 
     }else{
-        mx<<=1;
-        my<<=1;
+        mx += mx;
+        my += my;
     }
 
     *mx_ptr = mx;

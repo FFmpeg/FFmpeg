@@ -806,7 +806,7 @@ static int ebml_read_sint(AVIOContext *pb, int size, int64_t *num)
 
         /* big-endian ordering; build up number */
         while (n++ < size)
-            *num = (*num << 8) | avio_r8(pb);
+            *num = ((uint64_t)*num << 8) | avio_r8(pb);
     }
 
     return 0;

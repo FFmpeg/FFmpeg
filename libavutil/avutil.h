@@ -171,6 +171,13 @@
 unsigned avutil_version(void);
 
 /**
+ * Return an informative version string. This usually the actual release version
+ * number and a git hash. This string has no fixed format and can change any
+ * time. It should never be parsed by code.
+ */
+const char *avutil_version_info(void);
+
+/**
  * Return the libavutil build-time configuration.
  */
 const char *avutil_configuration(void);

@@ -172,6 +172,8 @@ static int copy_stream_props(AVStream *st, AVStream *source_st)
     st->avg_frame_rate      = source_st->avg_frame_rate;
     st->time_base           = source_st->time_base;
     st->sample_aspect_ratio = source_st->sample_aspect_ratio;
+
+    av_dict_copy(&st->metadata, source_st->metadata, 0);
     return 0;
 }
 

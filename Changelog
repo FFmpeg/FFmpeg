@@ -11,6 +11,7 @@ version <next>:
 - rewritten ASF demuxer
 - showvolume filter
 - Many improvements to the JPEG 2000 decoder
+- Go2Meeting decoding support
 
 
 version 2.7:

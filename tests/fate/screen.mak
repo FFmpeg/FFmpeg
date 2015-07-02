@@ -29,6 +29,18 @@ fate-fraps-v5: CMD = framecrc -i $(TARGET_SAMPLES)/fraps/fraps-v5-bouncing-balls
 FATE_SCREEN-$(call DEMDEC, AVI, FRAPS) += $(FATE_FRAPS)
 fate-fraps: $(FATE_FRAPS)
 
+FATE_G2M += fate-g2m2
+fate-g2m2: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/g2m/g2m2.asf -an
+
+FATE_G2M += fate-g2m3
+fate-g2m3: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/g2m/g2m3.asf -frames:v 20 -an
+
+FATE_G2M += fate-g2m4
+fate-g2m4: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/g2m/g2m4.asf
+
+FATE_SAMPLES_AVCONV-$(call DEMDEC, ASF, G2M) += $(FATE_G2M)
+fate-g2m: $(FATE_G2M)
+
 FATE_SAMPLES_AVCONV-$(call DEMDEC, ASF, TDSC) += fate-tdsc
 fate-tdsc: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/tdsc/tdsc.asf -an -pix_fmt bgr24
 

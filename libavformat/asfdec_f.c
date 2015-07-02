@@ -327,12 +327,15 @@ static void get_tag(AVFormatContext *s, const char *key, int type, int len, int 
     if (!value)
         goto finish;
 
-    if (type == 0) {         // UTF16-LE
+    switch (type) {
+    case ASF_UNICODE:
         avio_get_str16le(s->pb, len, value, 2 * len + 1);
-    } else if (type == -1) { // ASCII
+        break;
+    case -1: // ASCI
         avio_read(s->pb, value, len);
         value[len]=0;
-    } else if (type == 1) {  // byte array
+        break;
+    case ASF_BYTE_ARRAY:
         if (!strcmp(key, "WM/Picture")) { // handle cover art
             asf_read_picture(s, len);
         } else if (!strcmp(key, "ID3")) { // handle ID3 tag
@@ -341,13 +344,18 @@ static void get_tag(AVFormatContext *s, const char *key, int type, int len, int 
             av_log(s, AV_LOG_VERBOSE, "Unsupported byte array in tag %s.\n", key);
         }
         goto finish;
-    } else if (type > 1 && type <= 5) {  // boolean or DWORD or QWORD or WORD
+    case ASF_BOOL:
+    case ASF_DWORD:
+    case ASF_QWORD:
+    case ASF_WORD: {
         uint64_t num = get_value(s->pb, type, type2_size);
         snprintf(value, LEN, "%"PRIu64, num);
-    } else if (type == 6) { // (don't) handle GUID
+        break;
+    }
+    case ASF_GUID:
         av_log(s, AV_LOG_DEBUG, "Unsupported GUID value in tag %s.\n", key);
         goto finish;
-    } else {
+    default:
         av_log(s, AV_LOG_DEBUG,
                "Unsupported value type %d in tag %s.\n", type, key);
         goto finish;
@@ -686,24 +694,29 @@ static int asf_read_metadata(AVFormatContext *s, int64_t size)
 {
     AVIOContext *pb = s->pb;
     ASFContext *asf = s->priv_data;
-    int n, stream_num, name_len, value_len;
+    int n, stream_num, name_len_utf16, name_len_utf8, value_len;
     int ret, i;
     n = avio_rl16(pb);
 
     for (i = 0; i < n; i++) {
-        char name[1024];
+        uint8_t *name;
         int value_type;
 
         avio_rl16(pb);  // lang_list_index
         stream_num = avio_rl16(pb);
-        name_len   = avio_rl16(pb);
+        name_len_utf16 = avio_rl16(pb);
         value_type = avio_rl16(pb); /* value_type */
         value_len  = avio_rl32(pb);
 
-        if ((ret = avio_get_str16le(pb, name_len, name, sizeof(name))) < name_len)
-            avio_skip(pb, name_len - ret);
+        name_len_utf8 = 2*name_len_utf16 + 1;
+        name          = av_malloc(name_len_utf8);
+        if (!name)
+            return AVERROR(ENOMEM);
+
+        if ((ret = avio_get_str16le(pb, name_len_utf16, name, name_len_utf8)) < name_len_utf16)
+            avio_skip(pb, name_len_utf16 - ret);
         av_log(s, AV_LOG_TRACE, "%d stream %d name_len %2d type %d len %4d <%s>\n",
-                i, stream_num, name_len, value_type, value_len, name);
+                i, stream_num, name_len_utf16, value_type, value_len, name);
 
         if (!strcmp(name, "AspectRatioX")){
             int aspect_x = get_value(s->pb, value_type, 16);
@@ -716,6 +729,7 @@ static int asf_read_metadata(AVFormatContext *s, int64_t size)
         } else {
             get_tag(s, name, value_type, value_len, 16);
         }
+        av_freep(&name);
     }
 
     return 0;
@@ -779,6 +793,7 @@ static int asf_read_header(AVFormatContext *s)
 
     for (;;) {
         uint64_t gpos = avio_tell(pb);
+        int ret = 0;
         ff_get_guid(pb, &g);
         gsize = avio_rl64(pb);
         print_guid(&g);
@@ -795,13 +810,9 @@ static int asf_read_header(AVFormatContext *s)
         if (gsize < 24)
             return AVERROR_INVALIDDATA;
         if (!ff_guidcmp(&g, &ff_asf_file_header)) {
-            int ret = asf_read_file_properties(s, gsize);
-            if (ret < 0)
-                return ret;
+            ret = asf_read_file_properties(s, gsize);
         } else if (!ff_guidcmp(&g, &ff_asf_stream_header)) {
-            int ret = asf_read_stream_properties(s, gsize);
-            if (ret < 0)
-                return ret;
+            ret = asf_read_stream_properties(s, gsize);
         } else if (!ff_guidcmp(&g, &ff_asf_comment_header)) {
             asf_read_content_desc(s, gsize);
         } else if (!ff_guidcmp(&g, &ff_asf_language_guid)) {
@@ -830,7 +841,6 @@ static int asf_read_header(AVFormatContext *s)
             if (!s->keylen) {
                 if (!ff_guidcmp(&g, &ff_asf_content_encryption)) {
                     unsigned int len;
-                    int ret;
                     AVPacket pkt;
                     av_log(s, AV_LOG_WARNING,
                            "DRM protected stream detected, decoding will likely fail!\n");
@@ -856,6 +866,9 @@ static int asf_read_header(AVFormatContext *s)
                 }
             }
         }
+        if (ret < 0)
+            return ret;
+
         if (avio_tell(pb) != gpos + gsize)
             av_log(s, AV_LOG_DEBUG,
                    "gpos mismatch our pos=%"PRIu64", end=%"PRId64"\n",
@@ -1208,7 +1221,8 @@ static int asf_parse_packet(AVFormatContext *s, AVIOContext *pb, AVPacket *pkt)
                 continue;
             }
             asf->asf_st = &asf->streams[s->streams[asf->stream_index]->id];
-            asf->asf_st->skip_to_key = 0;
+            if (!asf->packet_frag_offset)
+                asf->asf_st->skip_to_key = 0;
         }
         asf_st = asf->asf_st;
         av_assert0(asf_st);
@@ -1512,6 +1526,7 @@ static int64_t asf_read_pts(AVFormatContext *s, int stream_index,
 
 //            assert((asf_st->packet_pos - s->data_offset) % s->packet_size == 0);
             pos = asf_st->packet_pos;
+            av_assert1(pkt->pos == asf_st->packet_pos);
 
             av_add_index_entry(s->streams[i], pos, pts, pkt->size,
                                pos - start_pos[i] + 1, AVINDEX_KEYFRAME);

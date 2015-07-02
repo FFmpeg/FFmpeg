@@ -475,6 +475,9 @@ per-block quantization parameter (QP)
 motion vector
 @item dct_coeff
 
+@item green_metadata
+display complexity metadata for the upcoming frame, GoP or for a given duration.
+
 @item skip
 
 @item startcode

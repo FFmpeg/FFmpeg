@@ -42,6 +42,7 @@ void ff_h264_reset_sei(H264Context *h)
     h->sei_buffering_period_present =  0;
     h->sei_frame_packing_present    =  0;
     h->sei_display_orientation_present = 0;
+    h->sei_reguserdata_afd_present  =  0;
 }
 
 static int decode_picture_timing(H264Context *h)
@@ -108,39 +109,47 @@ static int decode_picture_timing(H264Context *h)
     return 0;
 }
 
-static int decode_user_data_itu_t_t35(H264Context *h, int size)
+static int decode_registered_user_data(H264Context *h, int size)
 {
+    uint32_t country_code;
     uint32_t user_identifier;
     int dtg_active_format;
+    int flag;
 
     if (size < 7)
-        return -1;
+        return AVERROR_INVALIDDATA;
     size -= 7;
 
-    skip_bits(&h->gb, 8);   // country_code
-    skip_bits(&h->gb, 16);  // provider_code
+    country_code = get_bits(&h->gb, 8); // itu_t_t35_country_code
+    if (country_code == 0xFF) {
+        skip_bits(&h->gb, 8);           // itu_t_t35_country_code_extension_byte
+        size--;
+    }
+
+    /* itu_t_t35_payload_byte follows */
+    skip_bits(&h->gb, 8);              // terminal provider code
+    skip_bits(&h->gb, 8);              // terminal provider oriented code
     user_identifier = get_bits_long(&h->gb, 32);
 
     switch (user_identifier) {
-        case 0x44544731:    // "DTG1" - AFD_data
-            if (size < 1)
-                return -1;
-            skip_bits(&h->gb, 1);
-            if (get_bits(&h->gb, 1)) {
-                skip_bits(&h->gb, 6);
-                if (size < 2)
-                    return -1;
-                skip_bits(&h->gb, 4);
-                dtg_active_format = get_bits(&h->gb, 4);
+        case MKBETAG('D', 'T', 'G', '1'):       // afd_data
+            if (size-- < 1)
+                return AVERROR_INVALIDDATA;
+            skip_bits(&h->gb, 1);               // 0
+            flag = get_bits(&h->gb, 1);         // active_format_flag
+            skip_bits(&h->gb, 6);               // reserved
+
+            if (flag) {
+                if (size-- < 1)
+                    return AVERROR_INVALIDDATA;
+                skip_bits(&h->gb, 4);           // reserved
+                h->active_format_description   = get_bits(&h->gb, 4);
+                h->sei_reguserdata_afd_present = 1;
 #if FF_API_AFD
 FF_DISABLE_DEPRECATION_WARNINGS
-                h->avctx->dtg_active_format = dtg_active_format;
+                h->avctx->dtg_active_format = h->active_format_description;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif /* FF_API_AFD */
-                h->has_afd = 1;
-                h->afd     = dtg_active_format;
-            } else {
-                skip_bits(&h->gb, 6);
             }
             break;
         default:
@@ -285,6 +294,66 @@ static int decode_display_orientation(H264Context *h)
     return 0;
 }
 
+static int decode_GreenMetadata(H264Context *h)
+{
+    if (h->avctx->debug & FF_DEBUG_GREEN_MD)
+        av_log(h->avctx, AV_LOG_DEBUG,          "Green Metadata Info SEI message\n");
+
+    h->sei_green_metadata.green_metadata_type=get_bits(&h->gb, 8);
+
+    if (h->avctx->debug & FF_DEBUG_GREEN_MD)
+        av_log(h->avctx, AV_LOG_DEBUG,          "green_metadata_type                            = %d\n",
+               h->sei_green_metadata.green_metadata_type);
+
+    if (h->sei_green_metadata.green_metadata_type==0){
+        h->sei_green_metadata.period_type=get_bits(&h->gb, 8);
+
+        if (h->avctx->debug & FF_DEBUG_GREEN_MD)
+            av_log(h->avctx, AV_LOG_DEBUG,      "green_metadata_period_type                     = %d\n",
+                   h->sei_green_metadata.period_type);
+
+        if (h->sei_green_metadata.green_metadata_type==2){
+            h->sei_green_metadata.num_seconds = get_bits(&h->gb, 16);
+            if (h->avctx->debug & FF_DEBUG_GREEN_MD)
+                av_log(h->avctx, AV_LOG_DEBUG,  "green_metadata_num_seconds                     = %d\n",
+                       h->sei_green_metadata.num_seconds);
+        }
+        else if (h->sei_green_metadata.period_type==3){
+            h->sei_green_metadata.num_pictures = get_bits(&h->gb, 16);
+            if (h->avctx->debug & FF_DEBUG_GREEN_MD)
+                av_log(h->avctx, AV_LOG_DEBUG,  "green_metadata_num_pictures                    = %d\n",
+                       h->sei_green_metadata.num_pictures);
+        }
+
+        h->sei_green_metadata.percent_non_zero_macroblocks=get_bits(&h->gb, 8);
+        h->sei_green_metadata.percent_intra_coded_macroblocks=get_bits(&h->gb, 8);
+        h->sei_green_metadata.percent_six_tap_filtering=get_bits(&h->gb, 8);
+        h->sei_green_metadata.percent_alpha_point_deblocking_instance=get_bits(&h->gb, 8);
+
+        if (h->avctx->debug & FF_DEBUG_GREEN_MD)
+            av_log(h->avctx, AV_LOG_DEBUG,      "SEI GREEN Complexity Metrics                   = %f %f %f %f\n",
+                                           (float)h->sei_green_metadata.percent_non_zero_macroblocks/255,
+                                           (float)h->sei_green_metadata.percent_intra_coded_macroblocks/255,
+                                           (float)h->sei_green_metadata.percent_six_tap_filtering/255,
+                                           (float)h->sei_green_metadata.percent_alpha_point_deblocking_instance/255);
+
+    }else if( h->sei_green_metadata.green_metadata_type==1){
+        h->sei_green_metadata.xsd_metric_type=get_bits(&h->gb, 8);
+        h->sei_green_metadata.xsd_metric_value=get_bits(&h->gb, 16);
+
+        if (h->avctx->debug & FF_DEBUG_GREEN_MD)
+            av_log(h->avctx, AV_LOG_DEBUG,      "xsd_metric_type                                = %d\n",
+                   h->sei_green_metadata.xsd_metric_type);
+        if ( h->sei_green_metadata.xsd_metric_type==0){
+            if (h->avctx->debug & FF_DEBUG_GREEN_MD)
+                av_log(h->avctx, AV_LOG_DEBUG,  "xsd_metric_value                               = %f\n",
+                       (float)h->sei_green_metadata.xsd_metric_value/100);
+        }
+    }
+
+    return 0;
+}
+
 int ff_h264_decode_sei(H264Context *h)
 {
     while (get_bits_left(&h->gb) > 16 && show_bits(&h->gb, 16)) {
@@ -318,41 +387,34 @@ int ff_h264_decode_sei(H264Context *h)
         switch (type) {
         case SEI_TYPE_PIC_TIMING: // Picture timing SEI
             ret = decode_picture_timing(h);
-            if (ret < 0)
-                return ret;
             break;
-        case SEI_TYPE_USER_DATA_ITU_T_T35:
-            if (decode_user_data_itu_t_t35(h, size) < 0)
-                return -1;
+        case SEI_TYPE_USER_DATA_REGISTERED:
+            ret = decode_registered_user_data(h, size);
             break;
         case SEI_TYPE_USER_DATA_UNREGISTERED:
             ret = decode_unregistered_user_data(h, size);
-            if (ret < 0)
-                return ret;
             break;
         case SEI_TYPE_RECOVERY_POINT:
             ret = decode_recovery_point(h);
-            if (ret < 0)
-                return ret;
             break;
         case SEI_TYPE_BUFFERING_PERIOD:
             ret = decode_buffering_period(h);
-            if (ret < 0)
-                return ret;
             break;
         case SEI_TYPE_FRAME_PACKING:
             ret = decode_frame_packing_arrangement(h);
-            if (ret < 0)
-                return ret;
             break;
         case SEI_TYPE_DISPLAY_ORIENTATION:
             ret = decode_display_orientation(h);
-            if (ret < 0)
-                return ret;
+            break;
+        case SEI_TYPE_GREEN_METADATA:
+            ret = decode_GreenMetadata(h);
             break;
         default:
             av_log(h->avctx, AV_LOG_DEBUG, "unknown SEI type %d\n", type);
         }
+        if (ret < 0)
+            return ret;
+
         skip_bits_long(&h->gb, next - get_bits_count(&h->gb));
 
         // FIXME check bits here

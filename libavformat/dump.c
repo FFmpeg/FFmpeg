@@ -509,7 +509,7 @@ void av_dump_format(AVFormatContext *ic, int index,
             int secs, us;
             av_log(NULL, AV_LOG_INFO, ", start: ");
             secs = ic->start_time / AV_TIME_BASE;
-            us   = abs(ic->start_time % AV_TIME_BASE);
+            us   = llabs(ic->start_time % AV_TIME_BASE);
             av_log(NULL, AV_LOG_INFO, "%d.%06d",
                    secs, (int) av_rescale(us, 1000000, AV_TIME_BASE));
         }

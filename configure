@@ -1787,6 +1787,7 @@ SYSTEM_FUNCS="
     pthread_cancel
     sched_getaffinity
     SetConsoleTextAttribute
+    SetConsoleCtrlHandler
     setmode
     setrlimit
     Sleep
@@ -4990,6 +4991,7 @@ check_func_headers windows.h GetSystemTimeAsFileTime
 check_func_headers windows.h MapViewOfFile
 check_func_headers windows.h PeekNamedPipe
 check_func_headers windows.h SetConsoleTextAttribute
+check_func_headers windows.h SetConsoleCtrlHandler
 check_func_headers windows.h Sleep
 check_func_headers windows.h VirtualAlloc
 check_struct windows.h "CONDITION_VARIABLE" Ptr

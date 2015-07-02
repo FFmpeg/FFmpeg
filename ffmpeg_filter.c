@@ -947,8 +947,27 @@ int configure_filtergraph(FilterGraph *fg)
         return ret;
 
     if (simple && (!inputs || inputs->next || !outputs || outputs->next)) {
-        av_log(NULL, AV_LOG_ERROR, "Simple filtergraph '%s' does not have "
-               "exactly one input and output.\n", graph_desc);
+        const char *num_inputs;
+        const char *num_outputs;
+        if (!outputs) {
+            num_outputs = "0";
+        } else if (outputs->next) {
+            num_outputs = ">1";
+        } else {
+            num_outputs = "1";
+        }
+        if (!inputs) {
+            num_inputs = "0";
+        } else if (inputs->next) {
+            num_inputs = ">1";
+        } else {
+            num_inputs = "1";
+        }
+        av_log(NULL, AV_LOG_ERROR, "Simple filtergraph '%s' was expected "
+               "to have exactly 1 input and 1 output."
+               " However, it had %s input(s) and %s output(s)."
+               " Please adjust, or use a complex filtergraph (-filter_complex) instead.\n",
+               graph_desc, num_inputs, num_outputs);
         return AVERROR(EINVAL);
     }
 
