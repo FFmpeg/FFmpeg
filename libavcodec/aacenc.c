@@ -652,6 +652,9 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                     s->coder->search_for_ms(s, cpe, s->lambda);
                 }
             }
+            if (s->coder->set_special_band_scalefactors)
+                for (ch = 0; ch < chans; ch++)
+                    s->coder->set_special_band_scalefactors(s, &cpe->ch[ch]);
             adjust_frame_information(cpe, chans);
             if (chans == 2) {
                 put_bits(&s->pb, 1, cpe->common_window);

@@ -1222,24 +1222,28 @@ AACCoefficientsEncoder ff_aac_coders[AAC_CODER_NB] = {
         search_for_quantizers_faac,
         encode_window_bands_info,
         quantize_and_encode_band,
+        set_special_band_scalefactors,
         search_for_ms,
     },
     [AAC_CODER_ANMR] = {
         search_for_quantizers_anmr,
         encode_window_bands_info,
         quantize_and_encode_band,
+        set_special_band_scalefactors,
         search_for_ms,
     },
     [AAC_CODER_TWOLOOP] = {
         search_for_quantizers_twoloop,
         codebook_trellis_rate,
         quantize_and_encode_band,
+        set_special_band_scalefactors,
         search_for_ms,
     },
     [AAC_CODER_FAST] = {
         search_for_quantizers_fast,
         encode_window_bands_info,
         quantize_and_encode_band,
+        set_special_band_scalefactors,
         search_for_ms,
     },
 };
