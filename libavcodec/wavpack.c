@@ -271,7 +271,7 @@ static inline int wv_get_value_integer(WavpackFrameContext *s, uint32_t *crc,
 
         if (s->got_extra_bits &&
             get_bits_left(&s->gb_extra_bits) >= s->extra_bits) {
-            S   |= get_bits(&s->gb_extra_bits, s->extra_bits);
+            S   |= get_bits_long(&s->gb_extra_bits, s->extra_bits);
             *crc = *crc * 9 + (S & 0xffff) * 3 + ((unsigned)S >> 16);
         }
     }
@@ -835,7 +835,11 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
                 continue;
             }
             bytestream2_get_buffer(&gb, val, 4);
-            if (val[0]) {
+            if (val[0] > 32) {
+                av_log(avctx, AV_LOG_ERROR,
+                       "Invalid INT32INFO, extra_bits = %d (> 32)\n", val[0]);
+                continue;
+            } else if (val[0]) {
                 s->extra_bits = val[0];
             } else if (val[1]) {
                 s->shift = val[1];
