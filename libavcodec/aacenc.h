@@ -43,6 +43,7 @@ typedef struct AACEncOptions {
     int stereo_mode;
     int aac_coder;
     int pns;
+    int intensity_stereo;
 } AACEncOptions;
 
 struct AACEncContext;
@@ -57,6 +58,7 @@ typedef struct AACCoefficientsEncoder {
     void (*set_special_band_scalefactors)(struct AACEncContext *s, SingleChannelElement *sce);
     void (*search_for_pns)(struct AACEncContext *s, AVCodecContext *avctx, SingleChannelElement *sce, const float lambda);
     void (*search_for_ms)(struct AACEncContext *s, ChannelElement *cpe, const float lambda);
+    void (*search_for_is)(struct AACEncContext *s, AVCodecContext *avctx, ChannelElement *cpe, const float lambda);
 } AACCoefficientsEncoder;
 
 extern AACCoefficientsEncoder ff_aac_coders[];
