@@ -47,6 +47,7 @@ typedef struct {
     ConcatStream *streams;
     int64_t inpoint;
     int64_t outpoint;
+    AVDictionary *metadata;
     int nb_streams;
 } ConcatFile;
 
@@ -334,6 +335,7 @@ static int concat_read_close(AVFormatContext *avf)
     for (i = 0; i < cat->nb_files; i++) {
         av_freep(&cat->files[i].url);
         av_freep(&cat->files[i].streams);
+        av_dict_free(&cat->files[i].metadata);
     }
     av_freep(&cat->files);
     return 0;
@@ -385,6 +387,19 @@ static int concat_read_header(AVFormatContext *avf)
                 file->inpoint = dur;
             else if (!strcmp(keyword, "outpoint"))
                 file->outpoint = dur;
+        } else if (!strcmp(keyword, "file_packet_metadata")) {
+            char *metadata;
+            metadata = av_get_token((const char **)&cursor, SPACE_CHARS);
+            if (!metadata) {
+                av_log(avf, AV_LOG_ERROR, "Line %d: packet metadata required\n", line);
+                FAIL(AVERROR_INVALIDDATA);
+            }
+            if ((ret = av_dict_parse_string(&file->metadata, metadata, "=", "", 0)) < 0) {
+                av_log(avf, AV_LOG_ERROR, "Line %d: failed to parse metadata string\n", line);
+                av_freep(&metadata);
+                FAIL(AVERROR_INVALIDDATA);
+            }
+            av_freep(&metadata);
         } else if (!strcmp(keyword, "stream")) {
             if (!avformat_new_stream(avf, NULL))
                 FAIL(AVERROR(ENOMEM));
@@ -570,6 +585,19 @@ static int concat_read_packet(AVFormatContext *avf, AVPacket *pkt)
     av_log(avf, AV_LOG_DEBUG, " -> pts:%s pts_time:%s dts:%s dts_time:%s\n",
            av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, &st->time_base),
            av_ts2str(pkt->dts), av_ts2timestr(pkt->dts, &st->time_base));
+    if (cat->cur_file->metadata) {
+        uint8_t* metadata;
+        int metadata_len;
+        char* packed_metadata = av_packet_pack_dictionary(cat->cur_file->metadata, &metadata_len);
+        if (!packed_metadata)
+            return AVERROR(ENOMEM);
+        if (!(metadata = av_packet_new_side_data(pkt, AV_PKT_DATA_STRINGS_METADATA, metadata_len))) {
+            av_freep(&packed_metadata);
+            return AVERROR(ENOMEM);
+        }
+        memcpy(metadata, packed_metadata, metadata_len);
+        av_freep(&packed_metadata);
+    }
     return ret;
 }
 
