@@ -787,7 +787,7 @@ static void psy_3gpp_analyze_channel(FFPsyContext *ctx, int channel,
 
             psy_band->threshold = band->thr;
             psy_band->energy    = band->energy;
-            psy_band->spread    = spread_en[w+g];
+            psy_band->spread    = band->active_lines * 2.0f / band_sizes[g];
         }
     }
 
