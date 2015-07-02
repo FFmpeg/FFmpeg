@@ -542,10 +542,16 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
         s->inter_quant_bias = -(1 << (QUANT_BIAS_SHIFT - 2));
     }
 
-    if (avctx->intra_quant_bias != FF_DEFAULT_QUANT_BIAS)
+#if FF_API_QUANT_BIAS
+FF_DISABLE_DEPRECATION_WARNINGS
+    if (s->intra_quant_bias == FF_DEFAULT_QUANT_BIAS &&
+        avctx->intra_quant_bias != FF_DEFAULT_QUANT_BIAS)
         s->intra_quant_bias = avctx->intra_quant_bias;
-    if (avctx->inter_quant_bias != FF_DEFAULT_QUANT_BIAS)
+    if (s->inter_quant_bias == FF_DEFAULT_QUANT_BIAS &&
+        avctx->inter_quant_bias != FF_DEFAULT_QUANT_BIAS)
         s->inter_quant_bias = avctx->inter_quant_bias;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     if (avctx->codec_id == AV_CODEC_ID_MPEG4 &&
         s->avctx->time_base.den > (1 << 16) - 1) {

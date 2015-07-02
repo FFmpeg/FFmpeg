@@ -45,6 +45,9 @@
 static const AVOption options[] = {
     { "nitris_compat", "encode with Avid Nitris compatibility",
         offsetof(DNXHDEncContext, nitris_compat), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VE },
+    { "ibias", "intra quant bias",
+        offsetof(DNXHDEncContext, intra_quant_bias), AV_OPT_TYPE_INT,
+        { .i64 = FF_DEFAULT_QUANT_BIAS }, INT_MIN, INT_MAX, VE },
     { NULL }
 };
 
@@ -205,14 +208,14 @@ static av_cold int dnxhd_init_qmat(DNXHDEncContext *ctx, int lbias, int cbias)
             weight_matrix[j] = ctx->cid_table->luma_weight[i];
         }
         ff_convert_matrix(&ctx->m, ctx->qmatrix_l, ctx->qmatrix_l16,
-                          weight_matrix, ctx->m.intra_quant_bias, 1,
+                          weight_matrix, ctx->intra_quant_bias, 1,
                           ctx->m.avctx->qmax, 1);
         for (i = 1; i < 64; i++) {
             int j = ctx->m.idsp.idct_permutation[ff_zigzag_direct[i]];
             weight_matrix[j] = ctx->cid_table->chroma_weight[i];
         }
         ff_convert_matrix(&ctx->m, ctx->qmatrix_c, ctx->qmatrix_c16,
-                          weight_matrix, ctx->m.intra_quant_bias, 1,
+                          weight_matrix, ctx->intra_quant_bias, 1,
                           ctx->m.avctx->qmax, 1);
 
         for (qscale = 1; qscale <= ctx->m.avctx->qmax; qscale++) {
@@ -339,10 +342,15 @@ static av_cold int dnxhd_encode_init(AVCodecContext *avctx)
 
     ctx->m.mb_num = ctx->m.mb_height * ctx->m.mb_width;
 
-    if (avctx->intra_quant_bias != FF_DEFAULT_QUANT_BIAS)
-        ctx->m.intra_quant_bias = avctx->intra_quant_bias;
+#if FF_API_QUANT_BIAS
+FF_DISABLE_DEPRECATION_WARNINGS
+    if (ctx->intra_quant_bias == FF_DEFAULT_QUANT_BIAS &&
+        avctx->intra_quant_bias != FF_DEFAULT_QUANT_BIAS)
+        ctx->intra_quant_bias = avctx->intra_quant_bias;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     // XXX tune lbias/cbias
-    if ((ret = dnxhd_init_qmat(ctx, ctx->m.intra_quant_bias, 0)) < 0)
+    if ((ret = dnxhd_init_qmat(ctx, ctx->intra_quant_bias, 0)) < 0)
         return ret;
 
     /* Avid Nitris hardware decoder requires a minimum amount of padding
