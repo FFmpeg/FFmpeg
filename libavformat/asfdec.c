@@ -1591,6 +1591,8 @@ static int detect_unknown_subobject(AVFormatContext *s, int64_t offset, int64_t 
     int ret;
 
     while (avio_tell(pb) <= offset + size) {
+        if (avio_tell(pb) == asf->offset)
+            break;
         asf->offset = avio_tell(pb);
         if ((ret = ff_get_guid(pb, &guid)) < 0)
             return ret;
