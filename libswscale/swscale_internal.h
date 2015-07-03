@@ -790,6 +790,8 @@ static av_always_inline int isALPHA(enum AVPixelFormat pix_fmt)
         || (x)==AV_PIX_FMT_YA8       \
         || (x)==AV_PIX_FMT_YA16LE      \
         || (x)==AV_PIX_FMT_YA16BE      \
+        || (x)==AV_PIX_FMT_AYUV64LE    \
+        || (x)==AV_PIX_FMT_AYUV64BE    \
         ||  isRGBinInt(x)           \
         ||  isBGRinInt(x)           \
     )
