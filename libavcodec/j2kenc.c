@@ -1082,8 +1082,10 @@ static av_cold int j2kenc_init(AVCodecContext *avctx)
 
     qntsty->nguardbits       = 1;
 
-    s->tile_width            = 256;
-    s->tile_height           = 256;
+    if ((s->tile_width  & (s->tile_width -1)) ||
+        (s->tile_height & (s->tile_height-1))) {
+        av_log(avctx, AV_LOG_WARNING, "Tile dimension not a power of 2\n");
+    }
 
     if (codsty->transform == FF_DWT53)
         qntsty->quantsty = JPEG2000_QSTY_NONE;
@@ -1136,6 +1138,9 @@ static const AVOption options[] = {
     { "format",        "Codec Format",      OFFSET(format),        AV_OPT_TYPE_INT,   { .i64 = CODEC_JP2   }, CODEC_J2K, CODEC_JP2,   VE, "format"      },
     { "j2k",           NULL,                0,                     AV_OPT_TYPE_CONST, { .i64 = CODEC_J2K   }, 0,         0,           VE, "format"      },
     { "jp2",           NULL,                0,                     AV_OPT_TYPE_CONST, { .i64 = CODEC_JP2   }, 0,         0,           VE, "format"      },
+    { "tile_width",    "Tile Width",        OFFSET(tile_width),    AV_OPT_TYPE_INT,   { .i64 = 256         }, 1,     1<<30,           VE, },
+    { "tile_height",   "Tile Height",       OFFSET(tile_height),   AV_OPT_TYPE_INT,   { .i64 = 256         }, 1,     1<<30,           VE, },
+
     { NULL }
 };
 
