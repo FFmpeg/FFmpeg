@@ -59,8 +59,8 @@ static const AVOption showvolume_options[] = {
 
 AVFILTER_DEFINE_CLASS(showvolume);
 
-static const char *const var_names[] = {   "VOLUME", NULL };
-enum                                   { VAR_VOLUME, VAR_VARS_NB };
+static const char *const var_names[] = {   "VOLUME",   "CHANNEL",        NULL };
+enum                                   { VAR_VOLUME, VAR_CHANNEL, VAR_VARS_NB };
 
 static av_cold int init(AVFilterContext *ctx)
 {
@@ -201,6 +201,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
 
         max = av_clipf(max, 0, 1);
         values[VAR_VOLUME] = 20.0 * log(max) / M_LN10;
+        values[VAR_CHANNEL] = c;
         color = av_expr_eval(s->c_expr, values, NULL);
 
         for (j = 0; j < s->h; j++) {

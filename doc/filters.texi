@@ -12158,6 +12158,9 @@ The expression can use the following variables:
 @table @option
 @item VOLUME
 Current max volume of channel in dB.
+
+@item CHANNEL
+Current channel number, starting from 0.
 @end table
 
 @item t
