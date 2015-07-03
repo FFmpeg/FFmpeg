@@ -20,6 +20,8 @@
 #include "avformat.h"
 #include "avio_internal.h"
 #include "internal.h"
+
+#include "libavutil/internal.h"
 #include "libavutil/opt.h"
 
 /**
@@ -27,7 +29,9 @@
  * Options definition for AVFormatContext.
  */
 
+FF_DISABLE_DEPRECATION_WARNINGS
 #include "options_table.h"
+FF_ENABLE_DEPRECATION_WARNINGS
 
 static const char* format_to_name(void* ptr)
 {

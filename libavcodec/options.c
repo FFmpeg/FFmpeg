@@ -33,7 +33,9 @@
 #include <float.h>              /* FLT_MIN, FLT_MAX */
 #include <string.h>
 
+FF_DISABLE_DEPRECATION_WARNINGS
 #include "options_table.h"
+FF_ENABLE_DEPRECATION_WARNINGS
 
 static const char* context_to_name(void* ptr) {
     AVCodecContext *avc= ptr;
