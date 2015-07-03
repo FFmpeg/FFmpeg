@@ -15,7 +15,7 @@ libavutil:     2014-08-09
 
 API changes, most recent first:
 
-2015-xx-xx - xxxxxxx - lavu 56.xx.0
+2015-xx-xx - xxxxxxx - lavu 56.15.0
   Add av_version_info().
 
 -------- 8< --------- FFmpeg 2.7 was cut here -------- 8< ---------
