@@ -70,8 +70,6 @@
     </ClCompile>
     <ClCompile Include="..\libavutil\aes.c">
     </ClCompile>
-    <ClCompile Include="..\libavutil\atomic.c">
-    </ClCompile>
     <ClCompile Include="..\libavutil\audio_fifo.c">
     </ClCompile>
     <ClCompile Include="..\libavutil\avstring.c">

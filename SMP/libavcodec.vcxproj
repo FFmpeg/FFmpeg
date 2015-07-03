@@ -716,6 +716,8 @@
     </ClCompile>
     <ClCompile Include="..\libavcodec\g2meet.c">
     </ClCompile>
+    <ClCompile Include="..\libavcodec\elsdec.c">
+    </ClCompile>
     <ClCompile Include="..\libavcodec\g723_1.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\g729dec.c">

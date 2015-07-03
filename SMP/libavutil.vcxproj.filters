@@ -50,9 +50,6 @@
     <ClCompile Include="..\libavutil\aes.c">
       <Filter>Source Files\libavutil</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavutil\atomic.c">
-      <Filter>Source Files\libavutil</Filter>
-    </ClCompile>
     <ClCompile Include="..\libavutil\audio_fifo.c">
       <Filter>Source Files\libavutil</Filter>
     </ClCompile>
