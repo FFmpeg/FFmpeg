@@ -33,7 +33,10 @@ static int mpjpeg_write_header(AVFormatContext *s)
 
 static int mpjpeg_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    avio_printf(s->pb, "Content-type: image/jpeg\n\n");
+    avio_printf(s->pb,
+                "Content-length: %i\n"
+                "Content-type: image/jpeg\n\n",
+                pkt->size);
     avio_write(s->pb, pkt->data, pkt->size);
 
     avio_printf(s->pb, "\n--%s\n", BOUNDARY_TAG);
