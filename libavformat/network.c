@@ -187,12 +187,11 @@ int ff_socket(int af, int type, int proto)
     return fd;
 }
 
-int ff_listen_bind(int fd, const struct sockaddr *addr,
-                   socklen_t addrlen, int timeout, URLContext *h)
+int ff_listen(int fd, const struct sockaddr *addr,
+              socklen_t addrlen)
 {
     int ret;
     int reuse = 1;
-    struct pollfd lp = { fd, POLLIN, 0 };
     if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse))) {
         av_log(NULL, AV_LOG_WARNING, "setsockopt(SO_REUSEADDR) failed\n");
     }
@@ -203,6 +202,13 @@ int ff_listen_bind(int fd, const struct sockaddr *addr,
     ret = listen(fd, 1);
     if (ret)
         return ff_neterrno();
+    return ret;
+}
+
+int ff_accept(int fd, int timeout, URLContext *h)
+{
+    int ret;
+    struct pollfd lp = { fd, POLLIN, 0 };
 
     ret = ff_poll_interrupt(&lp, 1, timeout, &h->interrupt_callback);
     if (ret < 0)
@@ -211,12 +217,21 @@ int ff_listen_bind(int fd, const struct sockaddr *addr,
     ret = accept(fd, NULL, NULL);
     if (ret < 0)
         return ff_neterrno();
-
-    closesocket(fd);
-
     if (ff_socket_nonblock(ret, 1) < 0)
         av_log(NULL, AV_LOG_DEBUG, "ff_socket_nonblock failed\n");
 
+    return ret;
+}
+
+int ff_listen_bind(int fd, const struct sockaddr *addr,
+                   socklen_t addrlen, int timeout, URLContext *h)
+{
+    int ret;
+    if ((ret = ff_listen(fd, addr, addrlen)) < 0)
+        return ret;
+    if ((ret = ff_accept(fd, timeout, h)) < 0)
+        return ret;
+    closesocket(fd);
     return ret;
 }
 
