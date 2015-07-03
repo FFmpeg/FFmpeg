@@ -466,7 +466,8 @@ static int shorten_decode_frame(AVCodecContext *avctx, void *data,
         }
     }
     /* init and position bitstream reader */
-    init_get_bits(&s->gb, buf, buf_size * 8);
+    if ((ret = init_get_bits8(&s->gb, buf, buf_size)) < 0)
+        return ret;
     skip_bits(&s->gb, s->bitindex);
 
     /* process header or next subblock */
