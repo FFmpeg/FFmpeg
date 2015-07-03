@@ -63,6 +63,7 @@ typedef struct DNXHDEncContext {
 
     int nitris_compat;
     unsigned min_padding;
+    int intra_quant_bias;
 
     DECLARE_ALIGNED(16, int16_t, blocks)[8][64];
 
