@@ -1957,13 +1957,13 @@ yuv2ya8_2_c(SwsContext *c, const int16_t *buf[2],
     int i;
 
     for (i = 0; i < dstW; i++) {
-        int Y = (buf0[i * 2] * yalpha1 + buf1[i * 2] * yalpha) >> 19;
+        int Y = (buf0[i] * yalpha1 + buf1[i] * yalpha) >> 19;
         int A;
 
         Y = av_clip_uint8(Y);
 
         if (hasAlpha) {
-            A = (abuf0[i * 2] * yalpha1 + abuf1[i * 2] * yalpha) >> 19;
+            A = (abuf0[i] * yalpha1 + abuf1[i] * yalpha) >> 19;
             A = av_clip_uint8(A);
         }
 
