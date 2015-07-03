@@ -374,7 +374,7 @@ Optimization options (experts only):
   --disable-mipsdspr2      disable MIPS DSP ASE R2 optimizations
   --disable-msa            disable MSA optimizations
   --disable-mipsfpu        disable floating point MIPS optimizations
-  --disable-loongson3      disable Loongson-3 SIMD optimizations
+  --disable-mmi            disable Loongson SIMD optimizations
   --disable-fast-unaligned consider unaligned accesses slow
 
 Developer options (useful when working on FFmpeg itself):
@@ -1591,7 +1591,7 @@ ARCH_EXT_LIST_MIPS="
 "
 
 ARCH_EXT_LIST_LOONGSON="
-    loongson3
+    mmi
 "
 
 ARCH_EXT_LIST_X86_SIMD="
@@ -2046,7 +2046,7 @@ mips32r2_deps="mips"
 mips32r5_deps="mips"
 mips64r6_deps="mips"
 msa_deps="mips"
-loongson3_deps="mips"
+mmi_deps="mips"
 
 altivec_deps="ppc"
 dcbzl_deps="ppc"
@@ -4737,6 +4737,8 @@ EOF
 
 elif enabled mips; then
 
+    enabled mmi && check_inline_asm mmi '"punpcklhw $f0, $f0, $f0"'
+
     # Enable minimum ISA based on selected options
     if enabled mips64 && (enabled mipsdspr1 || enabled mipsdspr2); then
         add_cflags "-mips64r2"
@@ -5779,7 +5781,7 @@ if enabled mips; then
     echo "MIPS DSP R1 enabled       ${mipsdspr1-no}"
     echo "MIPS DSP R2 enabled       ${mipsdspr2-no}"
     echo "MIPS MSA enabled          ${msa-no}"
-    echo "LOONGSON3 enabled         ${loongson3-no}"
+    echo "LOONGSON MMI enabled      ${mmi-no}"
 fi
 if enabled ppc; then
     echo "AltiVec enabled           ${altivec-no}"
