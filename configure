@@ -1591,6 +1591,8 @@ ARCH_EXT_LIST_MIPS="
 "
 
 ARCH_EXT_LIST_LOONGSON="
+    loongson2
+    loongson3
     mmi
 "
 
@@ -3964,7 +3966,7 @@ elif enabled mips; then
             check_cflags "-mtune=i6400 -mabi=64"
             check_ldflags "-mabi=64"
         ;;
-        loongson3*)
+        loongson*)
             disable mipsfpu
             disable mips32r2
             disable mips32r5
@@ -3979,7 +3981,17 @@ elif enabled mips; then
             enable fast_cmov
             enable fast_unaligned
             disable aligned_stack
-            cpuflags="-march=loongson3a -mhard-float"
+            case $cpu in
+                loongson3*)
+                    cpuflags="-march=loongson3a -mhard-float"
+                ;;
+                loongson2e)
+                    cpuflags="-march=loongson2e -mhard-float"
+                ;;
+                loongson2f)
+                    cpuflags="-march=loongson2f -mhard-float"
+                ;;
+            esac
         ;;
         generic)
             disable mips32r5
@@ -4737,13 +4749,15 @@ EOF
 
 elif enabled mips; then
 
+    enabled loongson2 && check_inline_asm loongson2 '"dmult.g $8, $9, $10"'
+    enabled loongson3 && check_inline_asm loongson3 '"gsldxc1 $f0, 0($2, $3)"'
     enabled mmi && check_inline_asm mmi '"punpcklhw $f0, $f0, $f0"'
 
     # Enable minimum ISA based on selected options
     if enabled mips64 && (enabled mipsdspr1 || enabled mipsdspr2); then
         add_cflags "-mips64r2"
         add_asflags "-mips64r2"
-    elif enabled mips64 && enabled mipsfpu && disabled loongson3; then
+    elif enabled mips64 && enabled mipsfpu && disabled loongson2 && disabled loongson3; then
         add_cflags "-mips64"
         add_asflags "-mips64"
     elif enabled mipsdspr1 || enabled mipsdspr2; then
@@ -4768,7 +4782,6 @@ elif enabled mips; then
      check_inline_asm mipsfpu   '"madd.d $f0, $f2, $f4, $f6"'
     enabled msa       && check_cflags "-mmsa" && check_ldflags "-mmsa" &&
      check_inline_asm msa       '"addvi.b $w0, $w1, 1"'
-    enabled loongson3 && check_inline_asm loongson3 '"gsldxc1 $f0, 0($2, $3)"'
 
     enabled mips32r5 && add_asflags "-mips32r5 -mfp64"
     enabled mips64r6 && add_asflags "-mips64r6 -mfp64"
