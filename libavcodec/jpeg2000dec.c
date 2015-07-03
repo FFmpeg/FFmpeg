@@ -1702,13 +1702,13 @@ static int jpeg2000_decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
                 plane = s->cdef[compno] ? s->cdef[compno]-1 : (s->ncomponents-1);
 
 
-            y    = tile->comp[compno].coord[1][0] - s->image_offset_y;
-            line = picture->data[plane] + y / s->cdy[compno] * picture->linesize[plane];
+            y    = tile->comp[compno].coord[1][0] - s->image_offset_y / s->cdy[compno];
+            line = picture->data[plane] + y * picture->linesize[plane];
             for (; y < tile->comp[compno].coord[1][1] - s->image_offset_y; y ++) {
                 uint8_t *dst;
 
-                x   = tile->comp[compno].coord[0][0] - s->image_offset_x;
-                dst = line + x / s->cdx[compno] * pixelsize + compno*!planar;
+                x   = tile->comp[compno].coord[0][0] - s->image_offset_x / s->cdx[compno];
+                dst = line + x * pixelsize + compno*!planar;
 
                 if (codsty->transform == FF_DWT97) {
                     for (; x < w; x ++) {
@@ -1751,13 +1751,13 @@ static int jpeg2000_decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
             if (planar)
                 plane = s->cdef[compno] ? s->cdef[compno]-1 : (s->ncomponents-1);
 
-            y     = tile->comp[compno].coord[1][0] - s->image_offset_y;
-            linel = (uint16_t *)picture->data[plane] + y / s->cdy[compno] * (picture->linesize[plane] >> 1);
+            y     = tile->comp[compno].coord[1][0] - s->image_offset_y / s->cdy[compno];
+            linel = (uint16_t *)picture->data[plane] + y * (picture->linesize[plane] >> 1);
             for (; y < tile->comp[compno].coord[1][1] - s->image_offset_y; y ++) {
                 uint16_t *dst;
 
-                x   = tile->comp[compno].coord[0][0] - s->image_offset_x;
-                dst = linel + (x / s->cdx[compno] * pixelsize + compno*!planar);
+                x   = tile->comp[compno].coord[0][0] - s->image_offset_x / s->cdx[compno];
+                dst = linel + (x * pixelsize + compno*!planar);
                 if (codsty->transform == FF_DWT97) {
                     for (; x < w; x ++) {
                         int  val = lrintf(*datap) + (1 << (cbps - 1));
