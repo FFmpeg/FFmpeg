@@ -25,6 +25,7 @@
  */
 
 #include "libavutil/attributes.h"
+#include "libavutil/bswap.h"
 #include "libavutil/common.h"
 #include "libavutil/eval.h"
 #include "libavutil/opt.h"
