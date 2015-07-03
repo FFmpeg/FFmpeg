@@ -433,6 +433,7 @@ EXPORTS
     av_usleep
     av_utf8_decode
     av_vbprintf
+    av_version_info
     av_vlog
     av_write_image_line
     av_xtea_crypt
@@ -456,7 +457,6 @@ EXPORTS
     avutil_configuration
     avutil_license
     avutil_version
-    avutil_version_info
     av_aes_size DATA
     av_camellia_size DATA
     av_cast5_size DATA
