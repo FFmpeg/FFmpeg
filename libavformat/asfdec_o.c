@@ -572,7 +572,8 @@ static int asf_read_metadata_obj(AVFormatContext *s, const GUIDParseTable *g)
                 if ((ret = process_metadata(s, name, name_len, val_len, type,
                                             &asf->asf_sd[st_num].asf_met)) < 0)
                     break;
-            }
+            } else
+                av_freep(&name);
         }
     }
 
@@ -1590,6 +1591,8 @@ static int detect_unknown_subobject(AVFormatContext *s, int64_t offset, int64_t 
     int ret;
 
     while (avio_tell(pb) <= offset + size) {
+        if (avio_tell(pb) == asf->offset)
+            break;
         asf->offset = avio_tell(pb);
         if ((ret = ff_get_guid(pb, &guid)) < 0)
             return ret;

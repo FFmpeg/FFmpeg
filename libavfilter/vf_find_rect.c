@@ -45,7 +45,7 @@ typedef struct FOCContext {
 
 #define OFFSET(x) offsetof(FOCContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
-static const AVOption foc_options[] = {
+static const AVOption find_rect_options[] = {
     { "object", "object bitmap filename", OFFSET(obj_filename), AV_OPT_TYPE_STRING, {.str = NULL}, .flags = FLAGS },
     { "threshold", "set threshold", OFFSET(threshold), AV_OPT_TYPE_FLOAT, {.dbl = 0.5}, 0, 1.0, FLAGS },
     { "mipmaps", "set mipmaps", OFFSET(mipmaps), AV_OPT_TYPE_INT, {.i64 = 3}, 1, MAX_MIPMAPS, FLAGS },
@@ -56,13 +56,7 @@ static const AVOption foc_options[] = {
     { NULL }
 };
 
-static const AVClass foc_class = {
-    .class_name       = "find_rect",
-    .item_name        = av_default_item_name,
-    .option           = foc_options,
-    .version          = LIBAVUTIL_VERSION_INT,
-    .category         = AV_CLASS_CATEGORY_FILTER,
-};
+AVFILTER_DEFINE_CLASS(find_rect);
 
 static int query_formats(AVFilterContext *ctx)
 {
@@ -307,5 +301,5 @@ AVFilter ff_vf_find_rect = {
     .query_formats   = query_formats,
     .inputs          = foc_inputs,
     .outputs         = foc_outputs,
-    .priv_class      = &foc_class,
+    .priv_class      = &find_rect_class,
 };

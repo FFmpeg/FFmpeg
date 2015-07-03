@@ -28,6 +28,7 @@
 /ffserver
 /config.*
 /coverage.info
+/avversion.h
 /doc/*.1
 /doc/*.3
 /doc/*.html
