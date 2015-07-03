@@ -1949,7 +1949,7 @@ yuv2ya8_2_c(SwsContext *c, const int16_t *buf[2],
             const int16_t *abuf[2], uint8_t *dest, int dstW,
             int yalpha, int uvalpha, int y)
 {
-    int hasAlpha = abuf[0] && abuf[1];
+    int hasAlpha = abuf && abuf[0] && abuf[1];
     const int16_t *buf0  = buf[0],  *buf1  = buf[1],
                   *abuf0 = hasAlpha ? abuf[0] : NULL,
                   *abuf1 = hasAlpha ? abuf[1] : NULL;
