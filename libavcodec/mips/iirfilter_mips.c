@@ -55,7 +55,6 @@
 #include "libavcodec/iirfilter.h"
 
 #if HAVE_INLINE_ASM
-#if !HAVE_LOONGSON3
 typedef struct FFIIRFilterCoeffs {
     int   order;
     float gain;
@@ -196,13 +195,10 @@ static void ff_iir_filter_flt_mips(const struct FFIIRFilterCoeffs *c,
         }
     }
 }
-#endif /* !HAVE_LOONGSON3 */
 #endif /* HAVE_INLINE_ASM */
 
 void ff_iir_filter_init_mips(FFIIRFilterContext *f) {
 #if HAVE_INLINE_ASM
-#if !HAVE_LOONGSON3
     f->filter_flt = ff_iir_filter_flt_mips;
-#endif /* !HAVE_LOONGSON3 */
 #endif /* HAVE_INLINE_ASM */
 }
