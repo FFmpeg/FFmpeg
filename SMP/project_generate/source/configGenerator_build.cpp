@@ -165,6 +165,7 @@ bool configGenerator::buildDefaultValues( )
     fastToggleConfigValue( "rdtsc", true );
     fastToggleConfigValue( "rsync_contimeout", true );
     fastToggleConfigValue( "SetConsoleTextAttribute", true );
+    fastToggleConfigValue( "SetConsoleCtrlHandler", true );
     fastToggleConfigValue( "setmode", true );
     fastToggleConfigValue( "Sleep", true );
     fastToggleConfigValue( "CONDITION_VARIABLE_Ptr", true );

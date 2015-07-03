@@ -1973,7 +1973,7 @@ bool projectGenerator::passStaticInclude( uint uiILength, StaticList & vStaticIn
     return true;
 }
 
-bool projectGenerator::passDynamicIncludeObject( uint & uiStartPos, uint & uiEndPos, const string & sIdent, StaticList & vIncludes )
+bool projectGenerator::passDynamicIncludeObject( uint & uiStartPos, uint & uiEndPos, string & sIdent, StaticList & vIncludes )
 {
     //Check if this is A valid File or a past compile option
     if( m_sInLine.at( uiStartPos ) == '$' )
@@ -2019,6 +2019,13 @@ bool projectGenerator::passDynamicIncludeObject( uint & uiStartPos, uint & uiEnd
     }
     else
     {
+        //Check for condition
+        string sCompare = "1";
+        if( sIdent.at( 0 ) == '!' )
+        {
+            sIdent = sIdent.substr(1);
+            sCompare = "0";
+        }
         uiEndPos = m_sInLine.find_first_of( ". \t", uiStartPos );
         //Add the found string to internal storage
         string sTag = m_sInLine.substr( uiStartPos, uiEndPos-uiStartPos );
@@ -2032,7 +2039,7 @@ bool projectGenerator::passDynamicIncludeObject( uint & uiStartPos, uint & uiEnd
                 cout << "  Warning: Unknown dynamic configuration option (" << sIdent << ") used when passing object (" << sTag << ")" << endl;
                 return true;
             }
-            if( vitOption->m_sValue.compare("1") == 0 )
+            if( vitOption->m_sValue.compare( sCompare ) == 0 )
             {
                 vIncludes.push_back( sTag );
                 //cout << "  Found Dynamic: '" << sTag << "', '" << sIdent << "'" << endl;
@@ -2042,7 +2049,7 @@ bool projectGenerator::passDynamicIncludeObject( uint & uiStartPos, uint & uiEnd
     return true;
 }
 
-bool projectGenerator::passDynamicIncludeLine( uint uiStartPos, const string & sIdent, StaticList & vIncludes )
+bool projectGenerator::passDynamicIncludeLine( uint uiStartPos, string & sIdent, StaticList & vIncludes )
 {
     uint uiEndPos;
     if( !passDynamicIncludeObject( uiStartPos, uiEndPos, sIdent, vIncludes ) )

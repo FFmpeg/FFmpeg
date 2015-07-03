@@ -67,9 +67,9 @@ private:
 
     bool passStaticInclude( uint uiILength, StaticList & vStaticIncludes );
 
-    bool passDynamicIncludeObject( uint & uiStartPos, uint & uiEndPos, const string & sIdent, StaticList & vIncludes );
+    bool passDynamicIncludeObject( uint & uiStartPos, uint & uiEndPos, string & sIdent, StaticList & vIncludes );
 
-    bool passDynamicIncludeLine( uint uiStartPos, const string & sIdent, StaticList & vIncludes );
+    bool passDynamicIncludeLine( uint uiStartPos, string & sIdent, StaticList & vIncludes );
 
     bool passDynamicInclude( uint uiILength, StaticList & vIncludes );
 
