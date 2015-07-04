@@ -57,6 +57,7 @@ typedef struct {
     AVFormatContext *avf;
     int safe;
     int seekable;
+    int eof;
     ConcatMatchMode stream_match_mode;
     unsigned auto_convert;
 } ConcatContext;
@@ -447,8 +448,10 @@ static int open_next_file(AVFormatContext *avf)
             cat->cur_file->duration -= (cat->cur_file->inpoint - cat->cur_file->file_start_time);
     }
 
-    if (++fileno >= cat->nb_files)
+    if (++fileno >= cat->nb_files) {
+        cat->eof = 1;
         return AVERROR_EOF;
+    }
     return open_file(avf, fileno);
 }
 
@@ -499,6 +502,9 @@ static int concat_read_packet(AVFormatContext *avf, AVPacket *pkt)
     int64_t delta;
     ConcatStream *cs;
     AVStream *st;
+
+    if (cat->eof)
+        return AVERROR_EOF;
 
     if (!cat->avf)
         return AVERROR(EIO);
@@ -631,6 +637,7 @@ static int concat_seek(AVFormatContext *avf, int stream,
         cat->cur_file = cur_file_saved;
     } else {
         avformat_close_input(&cur_avf_saved);
+        cat->eof = 0;
     }
     return ret;
 }
