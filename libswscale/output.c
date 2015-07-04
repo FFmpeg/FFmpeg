@@ -1949,7 +1949,7 @@ yuv2ya8_2_c(SwsContext *c, const int16_t *buf[2],
             const int16_t *abuf[2], uint8_t *dest, int dstW,
             int yalpha, int uvalpha, int y)
 {
-    int hasAlpha = abuf[0] && abuf[1];
+    int hasAlpha = abuf && abuf[0] && abuf[1];
     const int16_t *buf0  = buf[0],  *buf1  = buf[1],
                   *abuf0 = hasAlpha ? abuf[0] : NULL,
                   *abuf1 = hasAlpha ? abuf[1] : NULL;
@@ -1957,13 +1957,13 @@ yuv2ya8_2_c(SwsContext *c, const int16_t *buf[2],
     int i;
 
     for (i = 0; i < dstW; i++) {
-        int Y = (buf0[i * 2] * yalpha1 + buf1[i * 2] * yalpha) >> 19;
+        int Y = (buf0[i] * yalpha1 + buf1[i] * yalpha) >> 19;
         int A;
 
         Y = av_clip_uint8(Y);
 
         if (hasAlpha) {
-            A = (abuf0[i * 2] * yalpha1 + abuf1[i * 2] * yalpha) >> 19;
+            A = (abuf0[i] * yalpha1 + abuf1[i] * yalpha) >> 19;
             A = av_clip_uint8(A);
         }
 
