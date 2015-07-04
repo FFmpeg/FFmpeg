@@ -13,6 +13,7 @@ version <next>:
 - Many improvements to the JPEG 2000 decoder
 - Go2Meeting decoding support
 - adrawgraph audio and drawgraph video filter
+- removegrain video filter
 
 
 version 2.7:
