@@ -51,7 +51,7 @@ static int raw_encode(AVCodecContext *avctx, AVPacket *pkt,
     if (ret < 0)
         return ret;
 
-    if ((ret = ff_alloc_packet2(avctx, pkt, ret)) < 0)
+    if ((ret = ff_alloc_packet(pkt, ret)) < 0)
         return ret;
     if ((ret = avpicture_layout((const AVPicture *)frame, avctx->pix_fmt, avctx->width,
                                 avctx->height, pkt->data, pkt->size)) < 0)
