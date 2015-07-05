@@ -41,7 +41,19 @@
 #include "aactab.h"
 
 /** Frequency in Hz for lower limit of noise substitution **/
-#define NOISE_LOW_LIMIT 4000
+#define NOISE_LOW_LIMIT 4500
+
+/* Energy spread threshold value below which no PNS is used, this corresponds to
+ * typically around 17Khz, after which PNS usage decays ending at 19Khz */
+#define NOISE_SPREAD_THRESHOLD 0.5f
+
+/* This constant gets divided by lambda to return ~1.65 which when multiplied
+ * by the band->threshold and compared to band->energy is the boundary between
+ * excessive PNS and little PNS usage. */
+#define NOISE_LAMBDA_NUMERATOR 252.1f
+
+/** Frequency in Hz for lower limit of intensity stereo   **/
+#define INT_STEREO_LOW_LIMIT 6100
 
 /** Total number of usable codebooks **/
 #define CB_TOT 12
@@ -792,11 +804,9 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
 {
     int start = 0, i, w, w2, g;
     int destbits = avctx->bit_rate * 1024.0 / avctx->sample_rate / avctx->channels * (lambda / 120.f);
-    const float freq_mult = avctx->sample_rate/(1024.0f/sce->ics.num_windows)/2.0f;
     float dists[128] = { 0 }, uplims[128] = { 0 };
     float maxvals[128];
-    int noise_sf[128] = { 0 };
-    int fflag, minscaler, minscaler_n;
+    int fflag, minscaler;
     int its  = 0;
     int allz = 0;
     float minthr = INFINITY;
@@ -807,13 +817,12 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
     //XXX: some heuristic to determine initial quantizers will reduce search time
     //determine zero bands and upper limits
     for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
-        start = 0;
         for (g = 0;  g < sce->ics.num_swb; g++) {
             int nz = 0;
             float uplim = 0.0f, energy = 0.0f;
             for (w2 = 0; w2 < sce->ics.group_len[w]; w2++) {
                 FFPsyBand *band = &s->psy.ch[s->cur_channel].psy_bands[(w+w2)*16+g];
-                uplim += band->threshold;
+                uplim  += band->threshold;
                 energy += band->energy;
                 if (band->energy <= band->threshold || band->threshold == 0.0f) {
                     sce->zeroes[(w+w2)*16+g] = 1;
@@ -822,18 +831,10 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
                 nz = 1;
             }
             uplims[w*16+g] = uplim *512;
-            if (s->options.pns && start*freq_mult > NOISE_LOW_LIMIT && energy < uplim * 1.2f) {
-                noise_sf[w*16+g] = av_clip(4+FFMIN(log2f(energy)*2,255), -100, 155);
-                sce->band_type[w*16+g] = NOISE_BT;
-                nz= 1;
-            } else { /** Band type will be determined by the twoloop algorithm */
-                sce->band_type[w*16+g] = 0;
-            }
             sce->zeroes[w*16+g] = !nz;
             if (nz)
                 minthr = FFMIN(minthr, uplim);
             allz |= nz;
-            start += sce->ics.swb_sizes[g];
         }
     }
     for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
@@ -864,7 +865,6 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
     do {
         int tbits, qstep;
         minscaler = sce->sf_idx[0];
-        minscaler_n = sce->sf_idx[0];
         //inner loop - quantize spectrum to fit into given number of bits
         qstep = its ? 1 : 32;
         do {
@@ -879,11 +879,7 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
                     int cb;
                     float dist = 0.0f;
 
-                    if (sce->band_type[w*16+g] == NOISE_BT) {
-                        minscaler_n = FFMIN(minscaler_n, noise_sf[w*16+g]);
-                        start += sce->ics.swb_sizes[g];
-                        continue;
-                    } else if (sce->zeroes[w*16+g] || sce->sf_idx[w*16+g] >= 218) {
+                    if (sce->zeroes[w*16+g] || sce->sf_idx[w*16+g] >= 218) {
                         start += sce->ics.swb_sizes[g];
                         continue;
                     }
@@ -927,16 +923,9 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
         fflag = 0;
         minscaler = av_clip(minscaler, 60, 255 - SCALE_MAX_DIFF);
 
-        for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w])
-            for (g = 0; g < sce->ics.num_swb; g++)
-                if (sce->band_type[w*16+g] == NOISE_BT)
-                    sce->sf_idx[w*16+g] = av_clip(noise_sf[w*16+g], minscaler_n, minscaler_n + SCALE_MAX_DIFF);
-
         for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
             for (g = 0; g < sce->ics.num_swb; g++) {
                 int prevsc = sce->sf_idx[w*16+g];
-                if (sce->band_type[w*16+g] == NOISE_BT)
-                    continue;
                 if (dists[w*16+g] > uplims[w*16+g] && sce->sf_idx[w*16+g] > 60) {
                     if (find_min_book(maxvals[w*16+g], sce->sf_idx[w*16+g]-1))
                         sce->sf_idx[w*16+g]--;
@@ -1155,6 +1144,141 @@ static void search_for_quantizers_fast(AVCodecContext *avctx, AACEncContext *s,
                 sce->sf_idx[(w+w2)*16+g] = sce->sf_idx[w*16+g];
 }
 
+static void search_for_pns(AACEncContext *s, AVCodecContext *avctx, SingleChannelElement *sce,
+                           const float lambda)
+{
+    int start = 0, w, w2, g;
+    const float freq_mult = avctx->sample_rate/(1024.0f/sce->ics.num_windows)/2.0f;
+    const float spread_threshold = NOISE_SPREAD_THRESHOLD*(lambda/120.f);
+    const float thr_mult = NOISE_LAMBDA_NUMERATOR/lambda;
+
+    /* Coders !twoloop don't reset the band_types */
+    for (w = 0; w < 128; w++)
+        if (sce->band_type[w] == NOISE_BT)
+            sce->band_type[w] = 0;
+
+    for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
+        start = 0;
+        for (g = 0;  g < sce->ics.num_swb; g++) {
+            if (start*freq_mult > NOISE_LOW_LIMIT*(lambda/170.0f)) {
+                float energy = 0.0f, threshold = 0.0f, spread = 0.0f;
+                for (w2 = 0; w2 < sce->ics.group_len[w]; w2++) {
+                    FFPsyBand *band = &s->psy.ch[s->cur_channel+0].psy_bands[(w+w2)*16+g];
+                    energy += band->energy;
+                    threshold += band->threshold;
+                    spread += band->spread;
+                }
+                if (spread > spread_threshold*sce->ics.group_len[w] &&
+                    ((sce->zeroes[w*16+g] && energy >= threshold) ||
+                    energy < threshold*thr_mult*sce->ics.group_len[w])) {
+                    sce->band_type[w*16+g] = NOISE_BT;
+                    sce->pns_ener[w*16+g] = energy / sce->ics.group_len[w];
+                    sce->zeroes[w*16+g] = 0;
+                }
+            }
+            start += sce->ics.swb_sizes[g];
+        }
+    }
+}
+
+static void search_for_is(AACEncContext *s, AVCodecContext *avctx, ChannelElement *cpe,
+                          const float lambda)
+{
+    float IS[128];
+    float *L34  = s->scoefs + 128*0, *R34  = s->scoefs + 128*1;
+    float *I34  = s->scoefs + 128*2;
+    SingleChannelElement *sce0 = &cpe->ch[0];
+    SingleChannelElement *sce1 = &cpe->ch[1];
+    int start = 0, count = 0, i, w, w2, g;
+    const float freq_mult = avctx->sample_rate/(1024.0f/sce0->ics.num_windows)/2.0f;
+
+    for (w = 0; w < 128; w++)
+        if (sce1->band_type[w] >= INTENSITY_BT2)
+            sce1->band_type[w] = 0;
+
+    if (!cpe->common_window)
+        return;
+    for (w = 0; w < sce0->ics.num_windows; w += sce0->ics.group_len[w]) {
+        start = 0;
+        for (g = 0;  g < sce0->ics.num_swb; g++) {
+            if (start*freq_mult > INT_STEREO_LOW_LIMIT*(lambda/170.0f) &&
+                cpe->ch[0].band_type[w*16+g] != NOISE_BT && !cpe->ch[0].zeroes[w*16+g] &&
+                cpe->ch[1].band_type[w*16+g] != NOISE_BT && !cpe->ch[1].zeroes[w*16+g]) {
+                int phase = 0;
+                float ener0 = 0.0f, ener1 = 0.0f, ener01 = 0.0f;
+                float dist1 = 0.0f, dist2 = 0.0f;
+                for (w2 = 0; w2 < sce0->ics.group_len[w]; w2++) {
+                    for (i = 0; i < sce0->ics.swb_sizes[g]; i++) {
+                        float coef0 = sce0->pcoeffs[start+(w+w2)*128+i];
+                        float coef1 = sce1->pcoeffs[start+(w+w2)*128+i];
+                        phase += coef0*coef1 >= 0.0f ? 1 : -1;
+                        ener0 += coef0*coef0;
+                        ener1 += coef1*coef1;
+                        ener01 += (coef0 + coef1)*(coef0 + coef1);
+                    }
+                }
+                if (!phase) { /* Too much phase difference between channels */
+                    start += sce0->ics.swb_sizes[g];
+                    continue;
+                }
+                phase = av_clip(phase, -1, 1);
+                for (w2 = 0; w2 < sce0->ics.group_len[w]; w2++) {
+                    FFPsyBand *band0 = &s->psy.ch[s->cur_channel+0].psy_bands[(w+w2)*16+g];
+                    FFPsyBand *band1 = &s->psy.ch[s->cur_channel+1].psy_bands[(w+w2)*16+g];
+                    int is_band_type, is_sf_idx = FFMAX(1, sce0->sf_idx[(w+w2)*16+g]-4);
+                    float e01_34 = phase*pow(sqrt(ener1/ener0), 3.0/4.0);
+                    float maxval, dist_spec_err = 0.0f;
+                    float minthr = FFMIN(band0->threshold, band1->threshold);
+                    for (i = 0; i < sce0->ics.swb_sizes[g]; i++)
+                        IS[i] = (sce0->pcoeffs[start+(w+w2)*128+i] + phase*sce1->pcoeffs[start+(w+w2)*128+i]) * sqrt(ener0/ener01);
+                    abs_pow34_v(L34, sce0->coeffs+start+(w+w2)*128, sce0->ics.swb_sizes[g]);
+                    abs_pow34_v(R34, sce1->coeffs+start+(w+w2)*128, sce0->ics.swb_sizes[g]);
+                    abs_pow34_v(I34, IS,                            sce0->ics.swb_sizes[g]);
+                    maxval = find_max_val(1, sce0->ics.swb_sizes[g], I34);
+                    is_band_type = find_min_book(maxval, is_sf_idx);
+                    dist1 += quantize_band_cost(s, sce0->coeffs + start + (w+w2)*128,
+                                                L34,
+                                                sce0->ics.swb_sizes[g],
+                                                sce0->sf_idx[(w+w2)*16+g],
+                                                sce0->band_type[(w+w2)*16+g],
+                                                lambda / band0->threshold, INFINITY, NULL);
+                    dist1 += quantize_band_cost(s, sce1->coeffs + start + (w+w2)*128,
+                                                R34,
+                                                sce1->ics.swb_sizes[g],
+                                                sce1->sf_idx[(w+w2)*16+g],
+                                                sce1->band_type[(w+w2)*16+g],
+                                                lambda / band1->threshold, INFINITY, NULL);
+                    dist2 += quantize_band_cost(s, IS,
+                                                I34,
+                                                sce0->ics.swb_sizes[g],
+                                                is_sf_idx,
+                                                is_band_type,
+                                                lambda / minthr, INFINITY, NULL);
+                    for (i = 0; i < sce0->ics.swb_sizes[g]; i++) {
+                        dist_spec_err += (L34[i] - I34[i])*(L34[i] - I34[i]);
+                        dist_spec_err += (R34[i] - I34[i]*e01_34)*(R34[i] - I34[i]*e01_34);
+                    }
+                    dist_spec_err *= lambda / minthr;
+                    dist2 += dist_spec_err;
+                }
+                if (dist2 <= dist1) {
+                    cpe->is_mask[w*16+g] = 1;
+                    cpe->ms_mask[w*16+g] = 0;
+                    cpe->ch[0].is_ener[w*16+g] = sqrt(ener0/ener01);
+                    cpe->ch[1].is_ener[w*16+g] = ener0/ener1;
+                    if (phase)
+                        cpe->ch[1].band_type[w*16+g] = INTENSITY_BT;
+                    else
+                        cpe->ch[1].band_type[w*16+g] = INTENSITY_BT2;
+                    count++;
+                }
+            }
+            start += sce0->ics.swb_sizes[g];
+        }
+    }
+    cpe->is_mode = !!count;
+}
+
 static void search_for_ms(AACEncContext *s, ChannelElement *cpe,
                           const float lambda)
 {
@@ -1168,7 +1292,7 @@ static void search_for_ms(AACEncContext *s, ChannelElement *cpe,
     for (w = 0; w < sce0->ics.num_windows; w += sce0->ics.group_len[w]) {
         start = 0;
         for (g = 0;  g < sce0->ics.num_swb; g++) {
-            if (!cpe->ch[0].zeroes[w*16+g] && !cpe->ch[1].zeroes[w*16+g]) {
+            if (!cpe->ch[0].zeroes[w*16+g] && !cpe->ch[1].zeroes[w*16+g] && !cpe->is_mask[w*16+g]) {
                 float dist1 = 0.0f, dist2 = 0.0f;
                 for (w2 = 0; w2 < sce0->ics.group_len[w]; w2++) {
                     FFPsyBand *band0 = &s->psy.ch[s->cur_channel+0].psy_bands[(w+w2)*16+g];
@@ -1222,24 +1346,36 @@ AACCoefficientsEncoder ff_aac_coders[AAC_CODER_NB] = {
         search_for_quantizers_faac,
         encode_window_bands_info,
         quantize_and_encode_band,
+        set_special_band_scalefactors,
+        search_for_pns,
         search_for_ms,
+        search_for_is,
     },
     [AAC_CODER_ANMR] = {
         search_for_quantizers_anmr,
         encode_window_bands_info,
         quantize_and_encode_band,
+        set_special_band_scalefactors,
+        search_for_pns,
         search_for_ms,
+        search_for_is,
     },
     [AAC_CODER_TWOLOOP] = {
         search_for_quantizers_twoloop,
         codebook_trellis_rate,
         quantize_and_encode_band,
+        set_special_band_scalefactors,
+        search_for_pns,
         search_for_ms,
+        search_for_is,
     },
     [AAC_CODER_FAST] = {
         search_for_quantizers_fast,
         encode_window_bands_info,
         quantize_and_encode_band,
+        set_special_band_scalefactors,
+        search_for_pns,
         search_for_ms,
+        search_for_is,
     },
 };

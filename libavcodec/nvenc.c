@@ -401,7 +401,7 @@ static av_cold int nvenc_check_cuda(AVCodecContext *avctx)
 
     switch (avctx->codec->id) {
     case AV_CODEC_ID_H264:
-        target_smver = 0x30;
+        target_smver = avctx->pix_fmt == AV_PIX_FMT_YUV444P ? 0x52 : 0x30;
         break;
     case AV_CODEC_ID_H265:
         target_smver = 0x52;
@@ -552,6 +552,7 @@ static av_cold int nvenc_encode_init(AVCodecContext *avctx)
     int surfaceCount = 0;
     int i, num_mbs;
     int isLL = 0;
+    int lossless = 0;
     int res = 0;
     int dw, dh;
 
@@ -627,10 +628,16 @@ static av_cold int nvenc_encode_init(AVCodecContext *avctx)
         } else if (!strcmp(ctx->preset, "llhq")) {
             encoder_preset = NV_ENC_PRESET_LOW_LATENCY_HQ_GUID;
             isLL = 1;
+        } else if (!strcmp(ctx->preset, "lossless")) {
+            encoder_preset = NV_ENC_PRESET_LOSSLESS_DEFAULT_GUID;
+            lossless = 1;
+        } else if (!strcmp(ctx->preset, "losslesshp")) {
+            encoder_preset = NV_ENC_PRESET_LOSSLESS_HP_GUID;
+            lossless = 1;
         } else if (!strcmp(ctx->preset, "default")) {
             encoder_preset = NV_ENC_PRESET_DEFAULT_GUID;
         } else {
-            av_log(avctx, AV_LOG_FATAL, "Preset \"%s\" is unknown! Supported presets: hp, hq, bd, ll, llhp, llhq, default\n", ctx->preset);
+            av_log(avctx, AV_LOG_FATAL, "Preset \"%s\" is unknown! Supported presets: hp, hq, bd, ll, llhp, llhq, lossless, losslesshp, default\n", ctx->preset);
             res = AVERROR(EINVAL);
             goto error;
         }
@@ -753,7 +760,16 @@ static av_cold int nvenc_encode_init(AVCodecContext *avctx)
     if (avctx->rc_max_rate > 0)
         ctx->encode_config.rcParams.maxBitRate = avctx->rc_max_rate;
 
-    if (ctx->cbr) {
+    if (lossless) {
+      ctx->encode_config.encodeCodecConfig.h264Config.qpPrimeYZeroTransformBypassFlag = 1;
+      ctx->encode_config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_CONSTQP;
+      ctx->encode_config.rcParams.constQP.qpInterB = 0;
+      ctx->encode_config.rcParams.constQP.qpInterP = 0;
+      ctx->encode_config.rcParams.constQP.qpIntra = 0;
+
+      avctx->qmin = -1;
+      avctx->qmax = -1;
+    } else if (ctx->cbr) {
         if (!ctx->twopass) {
             ctx->encode_config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_CBR;
         } else if (ctx->twopass == 1 || isLL) {
@@ -817,6 +833,9 @@ static av_cold int nvenc_encode_init(AVCodecContext *avctx)
 
         if (!ctx->profile) {
             switch (avctx->profile) {
+            case FF_PROFILE_H264_HIGH_444_PREDICTIVE:
+                ctx->encode_config.profileGUID = NV_ENC_H264_PROFILE_HIGH_444_GUID;
+                break;
             case FF_PROFILE_H264_BASELINE:
                 ctx->encode_config.profileGUID = NV_ENC_H264_PROFILE_BASELINE_GUID;
                 break;
@@ -842,12 +861,17 @@ static av_cold int nvenc_encode_init(AVCodecContext *avctx)
             } else if (!strcmp(ctx->profile, "baseline")) {
                 ctx->encode_config.profileGUID = NV_ENC_H264_PROFILE_BASELINE_GUID;
                 avctx->profile = FF_PROFILE_H264_BASELINE;
+            } else if (!strcmp(ctx->profile, "high444p")) {
+                ctx->encode_config.profileGUID = NV_ENC_H264_PROFILE_HIGH_444_GUID;
+                avctx->profile = FF_PROFILE_H264_HIGH_444_PREDICTIVE;
             } else {
                 av_log(avctx, AV_LOG_FATAL, "Profile \"%s\" is unknown! Supported profiles: high, main, baseline\n", ctx->profile);
                 res = AVERROR(EINVAL);
                 goto error;
             }
         }
+
+        ctx->encode_config.encodeCodecConfig.h264Config.chromaFormatIDC = avctx->profile == FF_PROFILE_H264_HIGH_444_PREDICTIVE ? 3 : 1;
 
         if (ctx->level) {
             res = input_string_to_uint32(avctx, nvenc_h264_level_pairs, ctx->level, &ctx->encode_config.encodeCodecConfig.h264Config.level);
@@ -1378,6 +1402,7 @@ static int nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 static const enum AVPixelFormat pix_fmts_nvenc[] = {
     AV_PIX_FMT_YUV420P,
     AV_PIX_FMT_NV12,
+    AV_PIX_FMT_YUV444P,
     AV_PIX_FMT_NONE
 };
 
