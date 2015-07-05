@@ -739,6 +739,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
     }
 }
 
+static int add_metadata_from_side_data(AVPacket *avpkt, AVFrame *frame);
+
 int ff_init_buffer_info(AVCodecContext *avctx, AVFrame *frame)
 {
     AVPacket *pkt = avctx->internal->pkt;
@@ -772,6 +774,7 @@ int ff_init_buffer_info(AVCodecContext *avctx, AVFrame *frame)
                 memcpy(frame_sd->data, packet_sd, size);
             }
         }
+        add_metadata_from_side_data(pkt, frame);
     } else {
         frame->pkt_pts = AV_NOPTS_VALUE;
         av_frame_set_pkt_pos     (frame, -1);
@@ -2406,7 +2409,6 @@ int attribute_align_arg avcodec_decode_video2(AVCodecContext *avctx, AVFrame *pi
                 if (picture->format == AV_PIX_FMT_NONE)   picture->format              = avctx->pix_fmt;
             }
         }
-        add_metadata_from_side_data(avctx->internal->pkt, picture);
 
 fail:
         emms_c(); //needed to avoid an emms_c() call before every return;
@@ -2548,7 +2550,6 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
             frame->pkt_dts = avpkt->dts;
         }
         if (ret >= 0 && *got_frame_ptr) {
-            add_metadata_from_side_data(avctx->internal->pkt, frame);
             avctx->frame_number++;
             av_frame_set_best_effort_timestamp(frame,
                                                guess_correct_pts(avctx,
