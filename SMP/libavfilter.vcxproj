@@ -255,6 +255,8 @@
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_drawbox.c">
     </ClCompile>
+    <ClCompile Include="..\libavfilter\f_drawgraph.c">
+    </ClCompile>
     <ClCompile Include="..\libavfilter\vf_drawtext.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_elbg.c">
