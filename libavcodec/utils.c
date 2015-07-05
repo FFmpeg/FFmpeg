@@ -892,8 +892,6 @@ static int get_buffer_internal(AVCodecContext *avctx, AVFrame *frame, int flags)
     ret = ff_decode_frame_props(avctx, frame);
     if (ret < 0)
         return ret;
-    if ((ret = ff_init_buffer_info(avctx, frame)) < 0)
-        return ret;
 
     if (hwaccel) {
         if (hwaccel->alloc_frame) {
