@@ -43,6 +43,9 @@ void ff_h264_reset_sei(H264Context *h)
     h->sei_frame_packing_present    =  0;
     h->sei_display_orientation_present = 0;
     h->sei_reguserdata_afd_present  =  0;
+    if (h->a53_caption)
+        av_freep(&h->a53_caption);
+    h->a53_caption_size = 0;
 }
 
 static int decode_picture_timing(H264Context *h)
@@ -113,8 +116,7 @@ static int decode_registered_user_data(H264Context *h, int size)
 {
     uint32_t country_code;
     uint32_t user_identifier;
-    int dtg_active_format;
-    int flag;
+    int flag, cc_count, user_data_type_code;
 
     if (size < 7)
         return AVERROR_INVALIDDATA;
@@ -150,6 +152,39 @@ FF_DISABLE_DEPRECATION_WARNINGS
                 h->avctx->dtg_active_format = h->active_format_description;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif /* FF_API_AFD */
+            }
+            break;
+        case MKBETAG('G', 'A', '9', '4'): // "GA94" closed captions
+            if (size < 3)
+                return AVERROR(EINVAL);
+            user_data_type_code = get_bits(&h->gb, 8);
+            if (user_data_type_code == 0x3) {
+                skip_bits(&h->gb, 1);
+                if (get_bits(&h->gb, 1)) {
+                    skip_bits(&h->gb, 1);
+                    cc_count = get_bits(&h->gb, 5);
+                    skip_bits(&h->gb, 8);
+                    size -= 2;
+                    if (cc_count && size >= cc_count*3) {
+                        int i;
+                        uint8_t *tmp;
+                        if ((int64_t)h->a53_caption_size + (int64_t)cc_count*3 > INT_MAX)
+                            return AVERROR(EINVAL);
+
+                        // Allow merging of the cc data from two fields
+                        tmp = av_realloc(h->a53_caption, h->a53_caption_size + cc_count*3);
+                        if (!tmp)
+                            return AVERROR(ENOMEM);
+                        h->a53_caption = tmp;
+                        for (i = 0; i < cc_count; i++) {
+                            h->a53_caption[h->a53_caption_size++] = get_bits(&h->gb, 8);
+                            h->a53_caption[h->a53_caption_size++] = get_bits(&h->gb, 8);
+                            h->a53_caption[h->a53_caption_size++] = get_bits(&h->gb, 8);
+                        }
+
+                        skip_bits(&h->gb, 8);
+                    }
+                }
             }
             break;
         default:

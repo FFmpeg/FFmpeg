@@ -65,18 +65,29 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
     q->param.mfx.BufferSizeInKB     = 0;
 
     q->param.mfx.FrameInfo.FourCC         = MFX_FOURCC_NV12;
-    q->param.mfx.FrameInfo.Width          = FFALIGN(avctx->width, 16);
-    q->param.mfx.FrameInfo.Height         = FFALIGN(avctx->height, 32);
     q->param.mfx.FrameInfo.CropX          = 0;
     q->param.mfx.FrameInfo.CropY          = 0;
     q->param.mfx.FrameInfo.CropW          = avctx->width;
     q->param.mfx.FrameInfo.CropH          = avctx->height;
     q->param.mfx.FrameInfo.AspectRatioW   = avctx->sample_aspect_ratio.num;
     q->param.mfx.FrameInfo.AspectRatioH   = avctx->sample_aspect_ratio.den;
-    q->param.mfx.FrameInfo.PicStruct      = MFX_PICSTRUCT_PROGRESSIVE;
     q->param.mfx.FrameInfo.ChromaFormat   = MFX_CHROMAFORMAT_YUV420;
     q->param.mfx.FrameInfo.BitDepthLuma   = 8;
     q->param.mfx.FrameInfo.BitDepthChroma = 8;
+    q->param.mfx.FrameInfo.Width          = FFALIGN(avctx->width, 16);
+
+    if (avctx->flags & CODEC_FLAG_INTERLACED_DCT) {
+       /* A true field layout (TFF or BFF) is not important here,
+          it will specified later during frame encoding. But it is important
+          to specify is frame progressive or not because allowed heigh alignment
+          does depend by this.
+        */
+        q->param.mfx.FrameInfo.PicStruct = MFX_PICSTRUCT_FIELD_TFF;
+        q->param.mfx.FrameInfo.Height    = FFALIGN(avctx->height, 32);
+    } else {
+        q->param.mfx.FrameInfo.PicStruct = MFX_PICSTRUCT_PROGRESSIVE;
+        q->param.mfx.FrameInfo.Height    = FFALIGN(avctx->height, 16);
+    }
 
     if (avctx->framerate.den > 0 && avctx->framerate.num > 0) {
         q->param.mfx.FrameInfo.FrameRateExtN = avctx->framerate.num;
@@ -215,7 +226,9 @@ int ff_qsv_enc_init(AVCodecContext *avctx, QSVEncContext *q)
     }
 
     ret = MFXVideoENCODE_Init(q->session, &q->param);
-    if (ret < 0) {
+    if (MFX_WRN_PARTIAL_ACCELERATION==ret) {
+        av_log(avctx, AV_LOG_WARNING, "Encoder will work with partial HW acceleration\n");
+    } else if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR, "Error initializing the encoder\n");
         return ff_qsv_error(ret);
     }

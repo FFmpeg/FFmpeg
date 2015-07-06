@@ -67,10 +67,11 @@ static int avui_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         skip = 16;
     }
     size = 2 * avctx->width * (avctx->height + skip) + 8 * interlaced;
-    if ((ret = ff_alloc_packet2(avctx, pkt, size)) < 0)
+    if ((ret = ff_alloc_packet(pkt, size)) < 0)
         return ret;
     dst = pkt->data;
     if (!interlaced) {
+        memset(dst, 0, avctx->width * skip);
         dst += avctx->width * skip;
     }
 
@@ -84,6 +85,7 @@ static int avui_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         } else {
             src = pic->data[0] + i * pic->linesize[0];
         }
+        memset(dst, 0, avctx->width * skip + 4 * i);
         dst += avctx->width * skip + 4 * i;
         for (j = 0; j < avctx->height; j += interlaced + 1) {
             memcpy(dst, src, avctx->width * 2);

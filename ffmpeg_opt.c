@@ -231,6 +231,7 @@ static int opt_map(void *optctx, const char *opt, const char *arg)
     int sync_file_idx = -1, sync_stream_idx = 0;
     char *p, *sync;
     char *map;
+    char *allow_unused;
 
     if (*arg == '-') {
         negative = 1;
@@ -275,6 +276,8 @@ static int opt_map(void *optctx, const char *opt, const char *arg)
             exit_program(1);
         }
     } else {
+        if (allow_unused = strchr(map, '?'))
+            *allow_unused = 0;
         file_idx = strtol(map, &p, 0);
         if (file_idx >= nb_input_files || file_idx < 0) {
             av_log(NULL, AV_LOG_FATAL, "Invalid input file index: %d.\n", file_idx);
@@ -312,8 +315,13 @@ static int opt_map(void *optctx, const char *opt, const char *arg)
     }
 
     if (!m) {
-        av_log(NULL, AV_LOG_FATAL, "Stream map '%s' matches no streams.\n", arg);
-        exit_program(1);
+        if (allow_unused) {
+            av_log(NULL, AV_LOG_VERBOSE, "Stream map '%s' matches no streams; ignoring.\n", arg);
+        } else {
+            av_log(NULL, AV_LOG_FATAL, "Stream map '%s' matches no streams.\n"
+                                       "To ignore this, add a trailing '?' to the map.\n", arg);
+            exit_program(1);
+        }
     }
 
     av_freep(&map);

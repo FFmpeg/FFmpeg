@@ -805,6 +805,8 @@ typedef struct H264Context {
 
     int missing_fields;
 
+    int a53_caption_size;
+    uint8_t *a53_caption;
 
 /* for frame threading, this is set to 1
      * after finish_setup() has been called, so we cannot modify
