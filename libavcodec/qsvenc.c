@@ -226,7 +226,9 @@ int ff_qsv_enc_init(AVCodecContext *avctx, QSVEncContext *q)
     }
 
     ret = MFXVideoENCODE_Init(q->session, &q->param);
-    if (ret < 0) {
+    if (MFX_WRN_PARTIAL_ACCELERATION==ret) {
+        av_log(avctx, AV_LOG_WARNING, "Encoder will work with partial HW acceleration\n");
+    } else if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR, "Error initializing the encoder\n");
         return ff_qsv_error(ret);
     }
