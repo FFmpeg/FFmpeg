@@ -23,6 +23,7 @@
 
 #include <stdlib.h>
 #include <xcb/xcb.h>
+#include <xcb/shape.h>
 
 #if CONFIG_LIBXCB_XFIXES
 #include <xcb/xfixes.h>
