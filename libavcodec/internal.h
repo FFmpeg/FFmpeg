@@ -225,7 +225,7 @@ int avpriv_unlock_avformat(void);
  */
 int ff_alloc_packet2(AVCodecContext *avctx, AVPacket *avpkt, int64_t size, int64_t min_size);
 
-int ff_alloc_packet(AVPacket *avpkt, int size);
+attribute_deprecated int ff_alloc_packet(AVPacket *avpkt, int size);
 
 /**
  * Rescale from sample rate to AVCodecContext.time_base.
