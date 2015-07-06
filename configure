@@ -3974,7 +3974,7 @@ elif enabled mips; then
             disable mipsdspr1
             disable mipsdspr2
             disable msa
-            enable local_aligned_8 local_aligned_16
+            enable local_aligned_8 local_aligned_16 local_aligned_32
             enable simd_align_16
             enable fast_64bit
             enable fast_clz
