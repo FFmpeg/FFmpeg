@@ -48,6 +48,7 @@ struct gdigrab {
     int        draw_mouse;  /**< Draw mouse cursor (private option) */
     int        show_region; /**< Draw border (private option) */
     AVRational framerate;   /**< Capture framerate (private option) */
+	int        dpi;
     int        width;       /**< Width of the grab frame (private option) */
     int        height;      /**< Height of the grab frame (private option) */
     int        offset_x;    /**< Capture x offset (private option) */
@@ -70,6 +71,7 @@ struct gdigrab {
     av_log(s1, AV_LOG_ERROR, str " (error %li)\n", GetLastError())
 
 #define REGION_WND_BORDER 3
+#defin DEFAULT_DPI 96
 
 /**
  * Callback to handle Windows messages for the region outline window.
@@ -212,6 +214,31 @@ gdigrab_region_wnd_update(AVFormatContext *s1, struct gdigrab *gdigrab)
     }
 }
 
+static RECT transform_rect(RECT rect,int dpi,AVFormatContext *s1)
+{
+//high dpi handle
+	HDC dc = GetDC(NULL);
+	int dpiX=dpi;//GetDeviceCaps(dc, LOGPIXELSX);
+	int dpiY = dpi;//GetDeviceCaps(dc, LOGPIXELSY);
+	float dpiXScale=(float)dpiX/DEFAULT_DPI;
+	float dpiYScale=(float)dpiY/DEFAULT_DPI;
+	
+	//av_log(s1, AV_LOG_INFO,
+     //          "dpiX ,dpiY,xScale,yScale (%d,%d,%d,%d)\n",
+	//		   dpiX,dpiY,dpiXScale,dpiYScale);
+			   
+	RECT result;
+	//rect->left=rect->left*dpiXScale;
+	//rect->top=rect->top*dpiXScale;
+	//rect->right=rect->right*dpiYScale;
+	//rect->bottom=rect->bottom*dpiYScale;
+	result.left=rect.left*dpiXScale;
+	result.top=rect.top*dpiYScale;
+	result.right=rect.right*dpiXScale;
+	result.bottom=rect.bottom*dpiYScale;
+	return result;
+}
+
 /**
  * Initializes the gdi grab device demuxer (public device demuxer API).
  *
@@ -272,6 +299,8 @@ gdigrab_read_header(AVFormatContext *s1)
         virtual_rect.bottom = virtual_rect.top + GetSystemMetrics(SM_CYVIRTUALSCREEN);
     }
 
+	virtual_rect=transform_rect(virtual_rect,gdigrab->dpi,s1);
+	
     /* If no width or height set, use full screen/window area */
     if (!gdigrab->width || !gdigrab->height) {
         clip_rect.left = virtual_rect.left;
@@ -458,13 +487,20 @@ static void paint_mouse_pointer(AVFormatContext *s1, struct gdigrab *gdigrab)
             goto icon_error;
         }
 
-        pos.x = ci.ptScreenPos.x - clip_rect.left - info.xHotspot;
-        pos.y = ci.ptScreenPos.y - clip_rect.top - info.yHotspot;
+		float dpifactor=1.0;
+        if(gdigrab->dpi>120)
+        {
+        	dpifactor=(double)(gdigrab->dpi)/(double)DEFAULT_DPI;
+        }
+		
+        pos.x = ci.ptScreenPos.x*dpifactor - clip_rect.left - info.xHotspot;
+        pos.y = ci.ptScreenPos.y*dpifactor - clip_rect.top - info.yHotspot;
 
         if (hwnd) {
             RECT rect;
 
             if (GetWindowRect(hwnd, &rect)) {
+                rect=transform_rect(rect,gdigrab->dpi,s1);
                 pos.x -= rect.left;
                 pos.y -= rect.top;
             } else {
@@ -478,8 +514,22 @@ static void paint_mouse_pointer(AVFormatContext *s1, struct gdigrab *gdigrab)
 
         if (pos.x >= 0 && pos.x <= clip_rect.right - clip_rect.left &&
                 pos.y >= 0 && pos.y <= clip_rect.bottom - clip_rect.top) {
-            if (!DrawIcon(gdigrab->dest_hdc, pos.x, pos.y, icon))
-                CURSOR_ERROR("Couldn't draw icon");
+            if(gdigrab->dpi==96)
+        	{
+        		if (!DrawIcon(gdigrab->dest_hdc, pos.x, pos.y, icon))
+        			CURSOR_ERROR("Couldn't draw icon");
+        	}else
+        	{
+        		int xWidth=GetSystemMetrics(SM_CXCURSOR)*dpifactor;
+        		int yWidth=GetSystemMetrics(SM_CYCURSOR)*dpifactor;
+        		xWidth=xWidth-xWidth%2;
+        		yWidth=yWidth-yWidth%2;
+        		//av_log(s1, AV_LOG_WARNING, "cursor size (%i,%i)",xWidth,yWidth);
+        		if(!DrawIconEx(gdigrab->dest_hdc,pos.x,pos.y,icon,xWidth,yWidth,0,NULL,0x0003|0x0004)){
+        			//av_log(s1, AV_LOG_WARNING, "error drawing icon");
+        			CURSOR_ERROR("Couldn't draw icon");
+        		}
+        	}
         }
 
 icon_error:
@@ -608,7 +658,8 @@ static int gdigrab_read_close(AVFormatContext *s1)
 #define DEC AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
     { "draw_mouse", "draw the mouse pointer", OFFSET(draw_mouse), AV_OPT_TYPE_INT, {.i64 = 1}, 0, 1, DEC },
-    { "show_region", "draw border around capture area", OFFSET(show_region), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, DEC },
+    { "dpi", "system dpi setting", OFFSET(dpi), AV_OPT_TYPE_INT, {.i64 = 96}, 96, INT_MAX, DEC },
+	{ "show_region", "draw border around capture area", OFFSET(show_region), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, DEC },
     { "framerate", "set video frame rate", OFFSET(framerate), AV_OPT_TYPE_VIDEO_RATE, {.str = "ntsc"}, 0, 0, DEC },
     { "video_size", "set video frame size", OFFSET(width), AV_OPT_TYPE_IMAGE_SIZE, {.str = NULL}, 0, 0, DEC },
     { "offset_x", "capture area x offset", OFFSET(offset_x), AV_OPT_TYPE_INT, {.i64 = 0}, INT_MIN, INT_MAX, DEC },
