@@ -76,41 +76,13 @@ int ff_qsv_error(int mfx_err)
         return AVERROR_UNKNOWN;
     }
 }
-
-/**
- * @brief Initialize a MSDK session
- *
- * Media SDK is based on sessions, so this is the prerequisite
- * initialization for HW acceleration.  For Windows the session is
- * complete and ready to use, for Linux a display handle is
- * required.  For releases of Media Server Studio >= 2015 R4 the
- * render nodes interface is preferred (/dev/dri/renderD).
- * Using Media Server Studio 2015 R4 or newer is recommended
- * but the older /dev/dri/card interface is also searched
- * for broader compatibility.
- *
- * @param avctx    ffmpeg metadata for this codec context
- * @param session  the MSDK session used
- */
-int ff_qsv_init_internal_session(AVCodecContext *avctx, mfxSession *session)
+static int ff_qsv_set_display_handle(AVCodecContext *avctx, mfxSession session)
 {
-    mfxIMPL impl   = MFX_IMPL_AUTO_ANY;
-    mfxVersion ver = { { QSV_VERSION_MINOR, QSV_VERSION_MAJOR } };
-
-    const char *desc;
-    int ret;
-
-    ret = MFXInit(impl, &ver, session);
-    if (ret < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Error initializing an internal MFX session\n");
-        return ff_qsv_error(ret);
-    }
-
-
     // this code is only required for Linux.  It searches for a valid
     // display handle.  First in /dev/dri/renderD then in /dev/dri/card
 #ifdef AVCODEC_QSV_LINUX_SESSION_HANDLE
     // VAAPI display handle
+    int ret = 0;
     VADisplay va_dpy = NULL;
     VAStatus va_res = VA_STATUS_SUCCESS;
     int major_version = 0, minor_version = 0;
@@ -154,12 +126,51 @@ int ff_qsv_init_internal_session(AVCodecContext *avctx, mfxSession *session)
         } else {
             av_log(avctx, AV_LOG_VERBOSE,
             "mfx initialization: %s vaInitialize successful\n",adapterpath);
+            ret = MFXVideoCORE_SetHandle(session,
+                  (mfxHandleType)MFX_HANDLE_VA_DISPLAY, (mfxHDL)va_dpy);
+            if (ret < 0) {
+                av_log(avctx, AV_LOG_ERROR,
+                "Error %d during set display handle\n", ret);
+                return ff_qsv_error(ret);
+            }
             break;
         }
     }
-    MFXVideoCORE_SetHandle((*session), (mfxHandleType)MFX_HANDLE_VA_DISPLAY, (mfxHDL)va_dpy);
-
 #endif //AVCODEC_QSV_LINUX_SESSION_HANDLE
+    return 0;
+}
+/**
+ * @brief Initialize a MSDK session
+ *
+ * Media SDK is based on sessions, so this is the prerequisite
+ * initialization for HW acceleration.  For Windows the session is
+ * complete and ready to use, for Linux a display handle is
+ * required.  For releases of Media Server Studio >= 2015 R4 the
+ * render nodes interface is preferred (/dev/dri/renderD).
+ * Using Media Server Studio 2015 R4 or newer is recommended
+ * but the older /dev/dri/card interface is also searched
+ * for broader compatibility.
+ *
+ * @param avctx    ffmpeg metadata for this codec context
+ * @param session  the MSDK session used
+ */
+int ff_qsv_init_internal_session(AVCodecContext *avctx, mfxSession *session)
+{
+    mfxIMPL impl   = MFX_IMPL_AUTO_ANY;
+    mfxVersion ver = { { QSV_VERSION_MINOR, QSV_VERSION_MAJOR } };
+
+    const char *desc;
+    int ret;
+
+    ret = MFXInit(impl, &ver, session);
+    if (ret < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Error initializing an internal MFX session\n");
+        return ff_qsv_error(ret);
+    }
+
+    ret = ff_qsv_set_display_handle(avctx, *session);
+    if (ret < 0)
+        return ret;
 
     MFXQueryIMPL(*session, &impl);
 

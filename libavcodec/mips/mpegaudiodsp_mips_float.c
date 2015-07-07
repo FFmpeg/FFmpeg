@@ -278,7 +278,6 @@ static void ff_mpadsp_apply_window_mips_float(float *synth_buf, float *window,
     );
 }
 
-#if !HAVE_LOONGSON3
 static void ff_dct32_mips_float(float *out, const float *tab)
 {
     float val0 , val1 , val2 , val3 , val4 , val5 , val6 , val7,
@@ -787,7 +786,6 @@ static void ff_dct32_mips_float(float *out, const float *tab)
     out[15] = val30 + val17;
     out[31] = val31;
 }
-#endif /* !HAVE_LOONGSON3 */
 
 static void imdct36_mips_float(float *out, float *buf, float *in, float *win)
 {
@@ -1226,7 +1224,6 @@ static void imdct36_mips_float(float *out, float *buf, float *in, float *win)
     );
 }
 
-#if !HAVE_LOONGSON3
 static void ff_imdct36_blocks_mips_float(float *out, float *buf, float *in,
                                int count, int switch_point, int block_type)
 {
@@ -1245,13 +1242,10 @@ static void ff_imdct36_blocks_mips_float(float *out, float *buf, float *in,
         out++;
     }
 }
-#endif /* !HAVE_LOONGSON3 */
 
 void ff_mpadsp_init_mipsfpu(MPADSPContext *s)
 {
     s->apply_window_float   = ff_mpadsp_apply_window_mips_float;
-#if !HAVE_LOONGSON3
     s->imdct36_blocks_float = ff_imdct36_blocks_mips_float;
     s->dct32_float          = ff_dct32_mips_float;
-#endif /* !HAVE_LOONGSON3 */
 }

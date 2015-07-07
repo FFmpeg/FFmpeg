@@ -1262,6 +1262,15 @@
 }
 #define HADD_UB3_UH(...) HADD_UB3(v8u16, __VA_ARGS__)
 
+#define HADD_UB4(RTYPE, in0, in1, in2, in3, out0, out1, out2, out3)  \
+{                                                                    \
+    HADD_UB2(RTYPE, in0, in1, out0, out1);                           \
+    HADD_UB2(RTYPE, in2, in3, out2, out3);                           \
+}
+#define HADD_UB4_UB(...) HADD_UB4(v16u8, __VA_ARGS__)
+#define HADD_UB4_UH(...) HADD_UB4(v8u16, __VA_ARGS__)
+#define HADD_UB4_SH(...) HADD_UB4(v8i16, __VA_ARGS__)
+
 /* Description : Horizontal subtraction of unsigned byte vector elements
    Arguments   : Inputs  - in0, in1
                  Outputs - out0, out1
@@ -1285,6 +1294,29 @@
 }
 #define HSUB_UB4_UH(...) HSUB_UB4(v8u16, __VA_ARGS__)
 #define HSUB_UB4_SH(...) HSUB_UB4(v8i16, __VA_ARGS__)
+
+/* Description : SAD (Sum of Absolute Difference)
+   Arguments   : Inputs  - in0, in1, ref0, ref1  (unsigned byte src & ref)
+                 Outputs - sad_m                 (halfword vector with sad)
+                 Return Type - unsigned halfword
+   Details     : Absolute difference of all the byte elements from 'in0' with
+                 'ref0' is calculated and preserved in 'diff0'. From the 16
+                 unsigned absolute diff values, even-odd pairs are added
+                 together to generate 8 halfword results.
+*/
+#define SAD_UB2_UH(in0, in1, ref0, ref1)                        \
+( {                                                             \
+    v16u8 diff0_m, diff1_m;                                     \
+    v8u16 sad_m = { 0 };                                        \
+                                                                \
+    diff0_m = __msa_asub_u_b((v16u8) in0, (v16u8) ref0);        \
+    diff1_m = __msa_asub_u_b((v16u8) in1, (v16u8) ref1);        \
+                                                                \
+    sad_m += __msa_hadd_u_h((v16u8) diff0_m, (v16u8) diff0_m);  \
+    sad_m += __msa_hadd_u_h((v16u8) diff1_m, (v16u8) diff1_m);  \
+                                                                \
+    sad_m;                                                      \
+} )
 
 /* Description : Insert specified word elements from input vectors to 1
                  destination vector
@@ -1770,6 +1802,15 @@
 }
 #define SPLATI_H2_SB(...) SPLATI_H2(v16i8, __VA_ARGS__)
 #define SPLATI_H2_SH(...) SPLATI_H2(v8i16, __VA_ARGS__)
+
+#define SPLATI_H3(RTYPE, in, idx0, idx1, idx2,        \
+                  out0, out1, out2)                   \
+{                                                     \
+    SPLATI_H2(RTYPE, in, idx0, idx1, out0, out1);     \
+    out2 = (RTYPE) __msa_splati_h((v8i16) in, idx2);  \
+}
+#define SPLATI_H3_SB(...) SPLATI_H3(v16i8, __VA_ARGS__)
+#define SPLATI_H3_SH(...) SPLATI_H3(v8i16, __VA_ARGS__)
 
 #define SPLATI_H4(RTYPE, in, idx0, idx1, idx2, idx3,  \
                   out0, out1, out2, out3)             \
@@ -2411,6 +2452,42 @@
 }
 #define TRANSPOSE8x8_UB_UB(...) TRANSPOSE8x8_UB(v16u8, __VA_ARGS__)
 #define TRANSPOSE8x8_UB_UH(...) TRANSPOSE8x8_UB(v8u16, __VA_ARGS__)
+
+/* Description : Transposes 16x4 block into 4x16 with byte elements in vectors
+   Arguments   : Inputs  - in0, in1, in2, in3, in4, in5, in6, in7,
+                           in8, in9, in10, in11, in12, in13, in14, in15
+                 Outputs - out0, out1, out2, out3
+                 Return Type - unsigned byte
+   Details     :
+*/
+#define TRANSPOSE16x4_UB_UB(in0, in1, in2, in3, in4, in5, in6, in7,        \
+                            in8, in9, in10, in11, in12, in13, in14, in15,  \
+                            out0, out1, out2, out3)                        \
+{                                                                          \
+    v2i64 tmp0_m, tmp1_m, tmp2_m, tmp3_m;                                  \
+                                                                           \
+    ILVEV_W2_SD(in0, in4, in8, in12, tmp0_m, tmp1_m);                      \
+    out1 = (v16u8) __msa_ilvev_d(tmp1_m, tmp0_m);                          \
+                                                                           \
+    ILVEV_W2_SD(in1, in5, in9, in13, tmp0_m, tmp1_m);                      \
+    out3 = (v16u8) __msa_ilvev_d(tmp1_m, tmp0_m);                          \
+                                                                           \
+    ILVEV_W2_SD(in2, in6, in10, in14, tmp0_m, tmp1_m);                     \
+                                                                           \
+    tmp2_m = __msa_ilvev_d(tmp1_m, tmp0_m);                                \
+    ILVEV_W2_SD(in3, in7, in11, in15, tmp0_m, tmp1_m);                     \
+                                                                           \
+    tmp3_m = __msa_ilvev_d(tmp1_m, tmp0_m);                                \
+    ILVEV_B2_SD(out1, out3, tmp2_m, tmp3_m, tmp0_m, tmp1_m);               \
+    out0 = (v16u8) __msa_ilvev_h((v8i16) tmp1_m, (v8i16) tmp0_m);          \
+    out2 = (v16u8) __msa_ilvod_h((v8i16) tmp1_m, (v8i16) tmp0_m);          \
+                                                                           \
+    tmp0_m = (v2i64) __msa_ilvod_b((v16i8) out3, (v16i8) out1);            \
+    tmp1_m = (v2i64) __msa_ilvod_b((v16i8) tmp3_m, (v16i8) tmp2_m);        \
+    out1 = (v16u8) __msa_ilvev_h((v8i16) tmp1_m, (v8i16) tmp0_m);          \
+    out3 = (v16u8) __msa_ilvod_h((v8i16) tmp1_m, (v8i16) tmp0_m);          \
+}
+
 /* Description : Transposes 16x8 block into 8x16 with byte elements in vectors
    Arguments   : Inputs  - in0, in1, in2, in3, in4, in5, in6, in7,
                            in8, in9, in10, in11, in12, in13, in14, in15
@@ -2823,4 +2900,20 @@
     tmp_m = __msa_pckev_b((v16i8) in1, (v16i8) in0);  \
     ST_SB(tmp_m, (pdst));                             \
 }
+
+/* Description : Horizontal 2 tap filter kernel code
+   Arguments   : Inputs  - in0, in1, mask, coeff, shift
+*/
+#define HORIZ_2TAP_FILT_UH(in0, in1, mask, coeff, shift)            \
+( {                                                                 \
+    v16i8 tmp0_m;                                                   \
+    v8u16 tmp1_m;                                                   \
+                                                                    \
+    tmp0_m = __msa_vshf_b((v16i8) mask, (v16i8) in1, (v16i8) in0);  \
+    tmp1_m = __msa_dotp_u_h((v16u8) tmp0_m, (v16u8) coeff);         \
+    tmp1_m = (v8u16) __msa_srari_h((v8i16) tmp1_m, shift);          \
+    tmp1_m = __msa_sat_u_h(tmp1_m, shift);                          \
+                                                                    \
+    tmp1_m;                                                         \
+} )
 #endif  /* AVUTIL_MIPS_GENERIC_MACROS_MSA_H */

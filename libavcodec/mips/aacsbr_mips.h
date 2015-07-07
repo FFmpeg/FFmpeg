@@ -149,7 +149,7 @@ static void sbr_qmf_analysis_mips(AVFloatDSPContext *fdsp, FFTContext *mdct,
     }
 }
 
-#if (HAVE_MIPSFPU && !HAVE_LOONGSON3)
+#if HAVE_MIPSFPU
 static void sbr_qmf_synthesis_mips(FFTContext *mdct,
                               SBRDSPContext *sbrdsp, AVFloatDSPContext *fdsp,
                               float *out, float X[2][38][64],
@@ -488,7 +488,7 @@ static void sbr_qmf_synthesis_mips(FFTContext *mdct,
 #define sbr_qmf_analysis sbr_qmf_analysis_mips
 #define sbr_qmf_synthesis sbr_qmf_synthesis_mips
 
-#endif /* (HAVE_MIPSFPU && !HAVE_LOONGSON3) */
+#endif /* HAVE_MIPSFPU */
 #endif /* HAVE_INLINE_ASM */
 
 #endif /* AVCODEC_MIPS_AACSBR_FLOAT_H */

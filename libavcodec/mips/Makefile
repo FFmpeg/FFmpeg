@@ -30,6 +30,8 @@ OBJS-$(CONFIG_HPELDSP)                    += mips/hpeldsp_init_mips.o
 OBJS-$(CONFIG_BLOCKDSP)                   += mips/blockdsp_init_mips.o
 OBJS-$(CONFIG_PIXBLOCKDSP)                += mips/pixblockdsp_init_mips.o
 OBJS-$(CONFIG_MPEGVIDEO)                  += mips/mpegvideo_init_mips.o
+OBJS-$(CONFIG_MPEGVIDEOENC)               += mips/mpegvideoencdsp_init_mips.o
+OBJS-$(CONFIG_ME_CMP)                     += mips/me_cmp_init_mips.o
 MSA-OBJS-$(CONFIG_HEVC_DECODER)           += mips/hevcdsp_msa.o            \
                                              mips/hevc_mc_uni_msa.o        \
                                              mips/hevc_mc_uniw_msa.o       \
@@ -49,5 +51,7 @@ MSA-OBJS-$(CONFIG_HPELDSP)                += mips/hpeldsp_msa.o
 MSA-OBJS-$(CONFIG_BLOCKDSP)               += mips/blockdsp_msa.o
 MSA-OBJS-$(CONFIG_PIXBLOCKDSP)            += mips/pixblockdsp_msa.o
 MSA-OBJS-$(CONFIG_MPEGVIDEO)              += mips/mpegvideo_msa.o
-LOONGSON3-OBJS-$(CONFIG_H264DSP)          += mips/h264dsp_mmi.o
-LOONGSON3-OBJS-$(CONFIG_H264CHROMA)       += mips/h264chroma_mmi.o
+MSA-OBJS-$(CONFIG_MPEGVIDEOENC)           += mips/mpegvideoencdsp_msa.o
+MSA-OBJS-$(CONFIG_ME_CMP)                 += mips/me_cmp_msa.o
+MMI-OBJS-$(CONFIG_H264DSP)                += mips/h264dsp_mmi.o
+MMI-OBJS-$(CONFIG_H264CHROMA)             += mips/h264chroma_mmi.o

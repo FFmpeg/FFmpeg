@@ -438,7 +438,6 @@ static void sbr_qmf_deint_bfly_mips(float *v, const float *src0, const float *sr
     }
 }
 
-#if !HAVE_LOONGSON3
 static void sbr_autocorrelate_mips(const float x[40][2], float phi[3][2][2])
 {
     int i;
@@ -607,7 +606,6 @@ static void sbr_autocorrelate_mips(const float x[40][2], float phi[3][2][2])
         : "memory"
     );
 }
-#endif /* !HAVE_LOONGSON3 */
 
 static void sbr_hf_gen_mips(float (*X_high)[2], const float (*X_low)[2],
                          const float alpha0[2], const float alpha1[2],
@@ -896,9 +894,7 @@ void ff_sbrdsp_init_mips(SBRDSPContext *s)
     s->sum64x5 = sbr_sum64x5_mips;
     s->sum_square = sbr_sum_square_mips;
     s->qmf_deint_bfly = sbr_qmf_deint_bfly_mips;
-#if !HAVE_LOONGSON3
     s->autocorrelate = sbr_autocorrelate_mips;
-#endif /* !HAVE_LOONGSON3 */
     s->hf_gen = sbr_hf_gen_mips;
     s->hf_g_filt = sbr_hf_g_filt_mips;
 

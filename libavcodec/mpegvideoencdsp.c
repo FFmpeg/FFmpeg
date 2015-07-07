@@ -176,4 +176,6 @@ av_cold void ff_mpegvideoencdsp_init(MpegvideoEncDSPContext *c,
         ff_mpegvideoencdsp_init_ppc(c, avctx);
     if (ARCH_X86)
         ff_mpegvideoencdsp_init_x86(c, avctx);
+    if (ARCH_MIPS)
+        ff_mpegvideoencdsp_init_mips(c, avctx);
 }

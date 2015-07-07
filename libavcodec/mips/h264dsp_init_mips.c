@@ -81,7 +81,7 @@ static av_cold void h264dsp_init_msa(H264DSPContext *c,
 }
 #endif  // #if HAVE_MSA
 
-#if HAVE_LOONGSON3
+#if HAVE_MMI
 static av_cold void h264dsp_init_mmi(H264DSPContext * c,
                                      const int bit_depth,
                                      const int chroma_format_idc)
@@ -96,7 +96,7 @@ static av_cold void h264dsp_init_mmi(H264DSPContext * c,
         c->biweight_h264_pixels_tab[2] = ff_h264_biweight_pixels4_8_mmi;
     }
 }
-#endif /* HAVE_LOONGSON3 */
+#endif /* HAVE_MMI */
 
 av_cold void ff_h264dsp_init_mips(H264DSPContext *c, const int bit_depth,
                                   const int chroma_format_idc)
@@ -104,7 +104,7 @@ av_cold void ff_h264dsp_init_mips(H264DSPContext *c, const int bit_depth,
 #if HAVE_MSA
     h264dsp_init_msa(c, bit_depth, chroma_format_idc);
 #endif  // #if HAVE_MSA
-#if HAVE_LOONGSON3
+#if HAVE_MMI
     h264dsp_init_mmi(c, bit_depth, chroma_format_idc);
-#endif /* HAVE_LOONGSON3 */
+#endif /* HAVE_MMI */
 }
