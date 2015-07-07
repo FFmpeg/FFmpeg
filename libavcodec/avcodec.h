@@ -548,7 +548,9 @@ typedef struct AVCodecDescriptor {
 /**
  * @ingroup lavc_encoding
  * motion estimation type.
+ * @deprecated use codec private option instead
  */
+#if FF_API_MOTION_EST
 enum Motion_Est_ID {
     ME_ZERO = 1,    ///< no search, that is use 0,0 vector whenever one is needed
     ME_FULL,
@@ -560,6 +562,7 @@ enum Motion_Est_ID {
     ME_UMH,         ///< uneven multi-hexagon search
     ME_TESA,        ///< transformed exhaustive search algorithm
 };
+#endif
 
 /**
  * @ingroup lavc_decoding
@@ -1281,14 +1284,13 @@ typedef struct AVCodecContext {
      */
     enum AVPixelFormat pix_fmt;
 
+#if FF_API_MOTION_EST
     /**
-     * Motion estimation algorithm used for video coding.
-     * 1 (zero), 2 (full), 3 (log), 4 (phods), 5 (epzs), 6 (x1), 7 (hex),
-     * 8 (umh), 10 (tesa) [7, 8, 10 are x264 specific]
-     * - encoding: MUST be set by user.
-     * - decoding: unused
+     * This option does nothing
+     * @deprecated use codec private options instead
      */
-    int me_method;
+    attribute_deprecated int me_method;
+#endif
 
     /**
      * If non NULL, 'draw_horiz_band' is called by the libavcodec

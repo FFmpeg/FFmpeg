@@ -603,8 +603,6 @@ options follow the Libav ones.
 @tab Noise reduction.
 @item me_range          @tab merange
 @tab Maximum range of the motion search in pixels.
-@item me_method         @tab me
-@tab Full-pixel motion estimation method.
 @item subq              @tab subme
 @tab Sub-pixel motion estimation method.
 @item b_strategy        @tab b-adapt

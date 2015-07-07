@@ -53,6 +53,7 @@ typedef struct XavsContext {
     int direct_pred;
     int aud;
     int fast_pskip;
+    int motion_est;
     int mbtree;
     int mixed_refs;
 
@@ -271,12 +272,40 @@ static av_cold int XAVS_init(AVCodecContext *avctx)
         x4->params.analyse.i_direct_mv_pred   = x4->direct_pred;
     if (x4->fast_pskip >= 0)
         x4->params.analyse.b_fast_pskip       = x4->fast_pskip;
+    if (x4->motion_est >= 0)
+        x4->params.analyse.i_me_method        = x4->motion_est;
     if (x4->mixed_refs >= 0)
         x4->params.analyse.b_mixed_references = x4->mixed_refs;
     if (x4->b_bias != INT_MIN)
         x4->params.i_bframe_bias              = x4->b_bias;
     if (x4->cplxblur >= 0)
         x4->params.rc.f_complexity_blur = x4->cplxblur;
+
+#if FF_API_MOTION_EST
+FF_DISABLE_DEPRECATION_WARNINGS
+    if (x4->motion_est < 0) {
+        switch (avctx->me_method) {
+        case  ME_EPZS:
+            x4->params.analyse.i_me_method = XAVS_ME_DIA;
+            break;
+        case  ME_HEX:
+            x4->params.analyse.i_me_method = XAVS_ME_HEX;
+            break;
+        case  ME_UMH:
+            x4->params.analyse.i_me_method = XAVS_ME_UMH;
+            break;
+        case  ME_FULL:
+            x4->params.analyse.i_me_method = XAVS_ME_ESA;
+            break;
+        case  ME_TESA:
+            x4->params.analyse.i_me_method = XAVS_ME_TESA;
+            break;
+        default:
+            x4->params.analyse.i_me_method = XAVS_ME_HEX;
+        }
+    }
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     x4->params.i_bframe          = avctx->max_b_frames;
     /* cabac is not included in AVS JiZhun Profile */
@@ -313,26 +342,6 @@ static av_cold int XAVS_init(AVCodecContext *avctx)
     x4->params.i_fps_num            = avctx->time_base.den;
     x4->params.i_fps_den            = avctx->time_base.num;
     x4->params.analyse.inter        = XAVS_ANALYSE_I8x8 |XAVS_ANALYSE_PSUB16x16| XAVS_ANALYSE_BSUB16x16;
-
-    switch (avctx->me_method) {
-         case  ME_EPZS:
-               x4->params.analyse.i_me_method = XAVS_ME_DIA;
-               break;
-         case  ME_HEX:
-               x4->params.analyse.i_me_method = XAVS_ME_HEX;
-               break;
-         case  ME_UMH:
-               x4->params.analyse.i_me_method = XAVS_ME_UMH;
-               break;
-         case  ME_FULL:
-               x4->params.analyse.i_me_method = XAVS_ME_ESA;
-               break;
-         case  ME_TESA:
-               x4->params.analyse.i_me_method = XAVS_ME_TESA;
-               break;
-         default:
-               x4->params.analyse.i_me_method = XAVS_ME_HEX;
-    }
 
     x4->params.analyse.i_me_range = avctx->me_range;
     x4->params.analyse.i_subpel_refine    = avctx->me_subpel_quality;
@@ -423,6 +432,13 @@ static const AVOption options[] = {
     { "mbtree",        "Use macroblock tree ratecontrol.",                OFFSET(mbtree),        AV_OPT_TYPE_INT,    {.i64 = -1 }, -1, 1, VE},
     { "mixed-refs",    "One reference per partition, as opposed to one reference per macroblock", OFFSET(mixed_refs), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 1, VE },
     { "fast-pskip",    NULL,                                              OFFSET(fast_pskip),    AV_OPT_TYPE_INT,    {.i64 = -1 }, -1, 1, VE},
+    { "motion-est",   "Set motion estimation method",                     OFFSET(motion_est),    AV_OPT_TYPE_INT,    { .i64 = -1 }, -1, XAVS_ME_TESA, VE, "motion-est"},
+    { "dia",           NULL,      0,    AV_OPT_TYPE_CONST, { .i64 = XAVS_ME_DIA },               INT_MIN, INT_MAX, VE, "motion-est" },
+    { "hex",           NULL,      0,    AV_OPT_TYPE_CONST, { .i64 = XAVS_ME_HEX },               INT_MIN, INT_MAX, VE, "motion-est" },
+    { "umh",           NULL,      0,    AV_OPT_TYPE_CONST, { .i64 = XAVS_ME_UMH },               INT_MIN, INT_MAX, VE, "motion-est" },
+    { "esa",           NULL,      0,    AV_OPT_TYPE_CONST, { .i64 = XAVS_ME_ESA },               INT_MIN, INT_MAX, VE, "motion-est" },
+    { "tesa",          NULL,      0,    AV_OPT_TYPE_CONST, { .i64 = XAVS_ME_TESA },              INT_MIN, INT_MAX, VE, "motion-est" },
+
     { NULL },
 };
 

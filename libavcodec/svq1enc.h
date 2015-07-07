@@ -72,6 +72,8 @@ typedef struct SVQ1EncContext {
 
     uint8_t *scratchbuf;
 
+    int motion_est;
+
     int (*ssd_int8_vs_int16)(const int8_t *pix1, const int16_t *pix2,
                              int size);
 } SVQ1EncContext;

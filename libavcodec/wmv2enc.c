@@ -216,12 +216,20 @@ void ff_wmv2_encode_mb(MpegEncContext *s, int16_t block[6][64],
         ff_msmpeg4_encode_block(s, block[i], i);
 }
 
+static const AVClass wmv2_class = {
+    .class_name = "wmv2 encoder",
+    .item_name  = av_default_item_name,
+    .option     = ff_mpv_generic_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVCodec ff_wmv2_encoder = {
     .name           = "wmv2",
     .long_name      = NULL_IF_CONFIG_SMALL("Windows Media Video 8"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_WMV2,
     .priv_data_size = sizeof(Wmv2Context),
+    .priv_class     = &wmv2_class,
     .init           = wmv2_encode_init,
     .encode2        = ff_mpv_encode_picture,
     .close          = ff_mpv_encode_end,
