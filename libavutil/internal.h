@@ -238,8 +238,8 @@ void avpriv_request_sample(void *avc,
 #if HAVE_LIBC_MSVCRT
 #include <crtversion.h>
 #if defined(_VC_CRT_MAJOR_VERSION) && _VC_CRT_MAJOR_VERSION < 14
-#pragma comment(linker, "/include:"EXTERN_PREFIX"avpriv_strtod")
-#pragma comment(linker, "/include:"EXTERN_PREFIX"avpriv_snprintf")
+#pragma comment(linker, "/include:" EXTERN_PREFIX "avpriv_strtod")
+#pragma comment(linker, "/include:" EXTERN_PREFIX "avpriv_snprintf")
 #endif
 
 #define avpriv_open ff_open
