@@ -216,22 +216,13 @@ gdigrab_region_wnd_update(AVFormatContext *s1, struct gdigrab *gdigrab)
 
 static RECT transform_rect(RECT rect,int dpi,AVFormatContext *s1)
 {
-//high dpi handle
 	HDC dc = GetDC(NULL);
-	int dpiX=dpi;//GetDeviceCaps(dc, LOGPIXELSX);
-	int dpiY = dpi;//GetDeviceCaps(dc, LOGPIXELSY);
+	int dpiX=dpi;
+	int dpiY = dpi;
 	float dpiXScale=(float)dpiX/DEFAULT_DPI;
 	float dpiYScale=(float)dpiY/DEFAULT_DPI;
-	
-	//av_log(s1, AV_LOG_INFO,
-     //          "dpiX ,dpiY,xScale,yScale (%d,%d,%d,%d)\n",
-	//		   dpiX,dpiY,dpiXScale,dpiYScale);
 			   
 	RECT result;
-	//rect->left=rect->left*dpiXScale;
-	//rect->top=rect->top*dpiXScale;
-	//rect->right=rect->right*dpiYScale;
-	//rect->bottom=rect->bottom*dpiYScale;
 	result.left=rect.left*dpiXScale;
 	result.top=rect.top*dpiYScale;
 	result.right=rect.right*dpiXScale;
