@@ -2010,5 +2010,5 @@ AVCodec ff_qdm2_decoder = {
     .init_static_data = qdm2_init_static_data,
     .close            = qdm2_decode_close,
     .decode           = qdm2_decode_frame,
-    .capabilities     = CODEC_CAP_DR1,
+    .capabilities     = AV_CODEC_CAP_DR1,
 };

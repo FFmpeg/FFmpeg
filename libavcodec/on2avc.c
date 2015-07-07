@@ -1012,7 +1012,7 @@ AVCodec ff_on2avc_decoder = {
     .init           = on2avc_decode_init,
     .decode         = on2avc_decode_frame,
     .close          = on2avc_decode_close,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
                                                       AV_SAMPLE_FMT_NONE },
 };

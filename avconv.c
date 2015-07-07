@@ -249,7 +249,7 @@ static void abort_codec_experimental(AVCodec *c, int encoder)
             "results.\nAdd '-strict experimental' if you want to use it.\n",
             codec_string, c->name);
     codec = encoder ? avcodec_find_encoder(c->id) : avcodec_find_decoder(c->id);
-    if (!(codec->capabilities & CODEC_CAP_EXPERIMENTAL))
+    if (!(codec->capabilities & AV_CODEC_CAP_EXPERIMENTAL))
         av_log(NULL, AV_LOG_FATAL, "Or use the non experimental %s '%s'.\n",
                codec_string, codec->name);
     exit_program(1);
@@ -614,7 +614,7 @@ static int poll_filter(OutputStream *ost)
     filtered_frame = ost->filtered_frame;
 
     if (ost->enc->type == AVMEDIA_TYPE_AUDIO &&
-        !(ost->enc->capabilities & CODEC_CAP_VARIABLE_FRAME_SIZE))
+        !(ost->enc->capabilities & AV_CODEC_CAP_VARIABLE_FRAME_SIZE))
         ret = av_buffersink_get_samples(ost->filter->filter, filtered_frame,
                                          ost->enc_ctx->frame_size);
     else
@@ -1353,7 +1353,7 @@ static void process_input_packet(InputStream *ist, const AVPacket *pkt)
         ist->last_dts = ist->next_dts;
 
         if (avpkt.size && avpkt.size != pkt->size &&
-            !(ist->dec->capabilities & CODEC_CAP_SUBFRAMES)) {
+            !(ist->dec->capabilities & AV_CODEC_CAP_SUBFRAMES)) {
             av_log(NULL, ist->showed_multi_packet_warning ? AV_LOG_VERBOSE : AV_LOG_WARNING,
                    "Multiple frames in a packet from stream %d\n", pkt->stream_index);
             ist->showed_multi_packet_warning = 1;

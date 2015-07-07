@@ -1404,6 +1404,6 @@ AVCodec ff_mpeg4_encoder = {
     .encode2        = ff_mpv_encode_picture,
     .close          = ff_mpv_encode_end,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE },
-    .capabilities   = CODEC_CAP_DELAY | CODEC_CAP_SLICE_THREADS,
+    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_SLICE_THREADS,
     .priv_class     = &mpeg4enc_class,
 };

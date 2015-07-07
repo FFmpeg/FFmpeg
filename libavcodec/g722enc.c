@@ -390,7 +390,7 @@ AVCodec ff_adpcm_g722_encoder = {
     .init           = g722_encode_init,
     .close          = g722_encode_close,
     .encode2        = g722_encode_frame,
-    .capabilities   = CODEC_CAP_SMALL_LAST_FRAME,
+    .capabilities   = AV_CODEC_CAP_SMALL_LAST_FRAME,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_NONE },
 };

@@ -261,8 +261,8 @@ AVCodec ff_hap_decoder = {
     .decode         = hap_decode,
     .close          = hap_close,
     .priv_data_size = sizeof(HapContext),
-    .capabilities   = CODEC_CAP_FRAME_THREADS | CODEC_CAP_SLICE_THREADS |
-                      CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_FRAME_THREADS | AV_CODEC_CAP_SLICE_THREADS |
+                      AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |
                       FF_CODEC_CAP_INIT_CLEANUP,
 };

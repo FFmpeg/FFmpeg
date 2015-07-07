@@ -274,7 +274,7 @@ AVCodec ff_mvc1_decoder = {
     .init           = mvc_decode_init,
     .close          = mvc_decode_end,
     .decode         = mvc_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };
 #endif
 
@@ -288,6 +288,6 @@ AVCodec ff_mvc2_decoder = {
     .init           = mvc_decode_init,
     .close          = mvc_decode_end,
     .decode         = mvc_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };
 #endif

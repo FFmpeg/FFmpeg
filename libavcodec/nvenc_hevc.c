@@ -103,6 +103,6 @@ AVCodec ff_hevc_nvenc_encoder = {
                                                     AV_PIX_FMT_YUV420P,
                                                     AV_PIX_FMT_YUV444P,
                                                     AV_PIX_FMT_NONE },
-    .capabilities   = CODEC_CAP_DELAY,
+    .capabilities   = AV_CODEC_CAP_DELAY,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };

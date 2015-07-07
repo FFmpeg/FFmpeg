@@ -2074,6 +2074,6 @@ AVCodec ff_wmavoice_decoder = {
     .init_static_data = wmavoice_init_static_data,
     .close            = wmavoice_decode_end,
     .decode           = wmavoice_decode_packet,
-    .capabilities     = CODEC_CAP_SUBFRAMES | CODEC_CAP_DR1,
+    .capabilities     = AV_CODEC_CAP_SUBFRAMES | AV_CODEC_CAP_DR1,
     .flush            = wmavoice_flush,
 };

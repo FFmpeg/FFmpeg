@@ -384,7 +384,7 @@ AVCodec ff_hq_hqa_decoder = {
     .init           = hq_hqa_decode_init,
     .decode         = hq_hqa_decode_frame,
     .close          = hq_hqa_decode_close,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |
                       FF_CODEC_CAP_INIT_CLEANUP,
 };

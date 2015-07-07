@@ -643,7 +643,7 @@ AVCodec ff_alac_encoder = {
     .init           = alac_encode_init,
     .encode2        = alac_encode_frame,
     .close          = alac_encode_close,
-    .capabilities   = CODEC_CAP_SMALL_LAST_FRAME,
+    .capabilities   = AV_CODEC_CAP_SMALL_LAST_FRAME,
     .channel_layouts = ff_alac_channel_layouts,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S32P,
                                                      AV_SAMPLE_FMT_S16P,

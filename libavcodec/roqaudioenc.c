@@ -200,7 +200,7 @@ AVCodec ff_roq_dpcm_encoder = {
     .init           = roq_dpcm_encode_init,
     .encode2        = roq_dpcm_encode_frame,
     .close          = roq_dpcm_encode_close,
-    .capabilities   = CODEC_CAP_DELAY,
+    .capabilities   = AV_CODEC_CAP_DELAY,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_NONE },
 };

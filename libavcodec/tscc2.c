@@ -384,5 +384,5 @@ AVCodec ff_tscc2_decoder = {
     .init           = tscc2_decode_init,
     .close          = tscc2_decode_end,
     .decode         = tscc2_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

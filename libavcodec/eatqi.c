@@ -163,5 +163,5 @@ AVCodec ff_eatqi_decoder = {
     .init           = tqi_decode_init,
     .close          = tqi_decode_end,
     .decode         = tqi_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

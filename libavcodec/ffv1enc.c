@@ -1098,7 +1098,7 @@ AVCodec ff_ffv1_encoder = {
     .init           = ffv1_encode_init,
     .encode2        = ffv1_encode_frame,
     .close          = ffv1_encode_close,
-    .capabilities   = CODEC_CAP_SLICE_THREADS,
+    .capabilities   = AV_CODEC_CAP_SLICE_THREADS,
     .pix_fmts       = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_YUV420P,   AV_PIX_FMT_YUV422P,   AV_PIX_FMT_YUV444P,
         AV_PIX_FMT_YUV411P,   AV_PIX_FMT_YUV410P,

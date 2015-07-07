@@ -415,5 +415,5 @@ AVCodec ff_dvvideo_decoder = {
     .priv_data_size = sizeof(DVVideoContext),
     .init           = dvvideo_decode_init,
     .decode         = dvvideo_decode_frame,
-    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_SLICE_THREADS,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SLICE_THREADS,
 };

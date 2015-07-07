@@ -854,5 +854,5 @@ AVCodec ff_mss2_decoder = {
     .init           = mss2_decode_init,
     .close          = mss2_decode_end,
     .decode         = mss2_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

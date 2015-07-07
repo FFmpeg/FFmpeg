@@ -737,5 +737,5 @@ AVCodec ff_tiff_decoder = {
     .init           = tiff_init,
     .close          = tiff_end,
     .decode         = decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

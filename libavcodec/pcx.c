@@ -244,5 +244,5 @@ AVCodec ff_pcx_decoder = {
     .type         = AVMEDIA_TYPE_VIDEO,
     .id           = AV_CODEC_ID_PCX,
     .decode       = pcx_decode_frame,
-    .capabilities = CODEC_CAP_DR1,
+    .capabilities = AV_CODEC_CAP_DR1,
 };

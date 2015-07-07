@@ -694,6 +694,6 @@ AVCodec ff_dds_decoder = {
     .id             = AV_CODEC_ID_DDS,
     .decode         = dds_decode,
     .priv_data_size = sizeof(DDSContext),
-    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_SLICE_THREADS,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SLICE_THREADS,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE
 };

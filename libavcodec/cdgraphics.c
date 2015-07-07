@@ -372,5 +372,5 @@ AVCodec ff_cdgraphics_decoder = {
     .init           = cdg_decode_init,
     .close          = cdg_decode_end,
     .decode         = cdg_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

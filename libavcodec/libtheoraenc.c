@@ -378,7 +378,7 @@ AVCodec ff_libtheora_encoder = {
     .init           = encode_init,
     .close          = encode_close,
     .encode2        = encode_frame,
-    .capabilities   = CODEC_CAP_DELAY, // needed to get the statsfile summary
+    .capabilities   = AV_CODEC_CAP_DELAY, // needed to get the statsfile summary
     .pix_fmts       = (const enum AVPixelFormat[]){
         AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV444P, AV_PIX_FMT_NONE
     },

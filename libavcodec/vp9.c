@@ -1309,5 +1309,5 @@ AVCodec ff_vp9_decoder = {
     .decode         = vp9_decode_packet,
     .flush          = vp9_decode_flush,
     .close          = vp9_decode_free,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };
