@@ -32,6 +32,8 @@ void FUNC(ff_emulated_edge_mc)(uint8_t *buf, const uint8_t *src,
     if (!w || !h)
         return;
 
+    av_assert2(block_w * sizeof(pixel) <= FFABS(buf_linesize));
+
     if (src_y >= h) {
         src -= src_y * src_linesize;
         src += (h - 1) * src_linesize;
