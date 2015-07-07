@@ -41,6 +41,7 @@ static int dcadec_decode_frame(AVCodecContext *avctx, void *data,
 {
     DCADecContext *s = avctx->priv_data;
     AVFrame *frame = data;
+    struct dcadec_exss_info *exss;
     int ret, i, k;
     int **samples, nsamples, channel_mask, sample_rate, bits_per_sample, profile;
     uint32_t mrk;
@@ -126,6 +127,26 @@ static int dcadec_decode_frame(AVCodecContext *avctx, void *data,
         dcadec_context_free_core_info(info);
     } else
         avctx->bit_rate = 0;
+
+#if HAVE_STRUCT_DCADEC_EXSS_INFO_MATRIX_ENCODING
+    if (exss = dcadec_context_get_exss_info(s->ctx)) {
+        enum AVMatrixEncoding matrix_encoding = AV_MATRIX_ENCODING_NONE;
+
+        switch(exss->matrix_encoding) {
+        case DCADEC_MATRIX_ENCODING_SURROUND:
+            matrix_encoding = AV_MATRIX_ENCODING_DOLBY;
+            break;
+        case DCADEC_MATRIX_ENCODING_HEADPHONE:
+            matrix_encoding = AV_MATRIX_ENCODING_DOLBYHEADPHONE;
+            break;
+        }
+        dcadec_context_free_exss_info(exss);
+
+        if (matrix_encoding != AV_MATRIX_ENCODING_NONE &&
+            (ret = ff_side_data_update_matrix_encoding(frame, matrix_encoding)) < 0)
+            return ret;
+    }
+#endif
 
     frame->nb_samples = nsamples;
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
