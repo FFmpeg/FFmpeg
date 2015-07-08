@@ -42,7 +42,8 @@ static int mpjpeg_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     MPJPEGContext *mpj = s->priv_data;
     avio_printf(s->pb, "Content-type: image/jpeg\r\n");
-    avio_printf(s->pb, "Content-length: %d\r\n\r\n", pkt->size);
+    avio_printf(s->pb, "Content-length: %d\r\n\r\n",
+                pkt->size);
     avio_write(s->pb, pkt->data, pkt->size);
 
     avio_printf(s->pb, "\r\n--%s\r\n", mpj->boundary_tag);
