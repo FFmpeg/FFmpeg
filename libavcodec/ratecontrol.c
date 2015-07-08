@@ -26,6 +26,8 @@
  */
 
 #include "libavutil/attributes.h"
+#include "libavutil/internal.h"
+
 #include "avcodec.h"
 #include "internal.h"
 #include "ratecontrol.h"
@@ -144,6 +146,13 @@ av_cold int ff_rate_control_init(MpegEncContext *s)
         return res;
     }
 
+#if FF_API_RC_STRATEGY
+FF_DISABLE_DEPRECATION_WARNINGS
+    if (!s->rc_strategy)
+        s->rc_strategy = s->avctx->rc_strategy;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
     for (i = 0; i < 5; i++) {
         rcc->pred[i].coeff = FF_QP2LAMBDA * 7.0;
         rcc->pred[i].count = 1.0;
@@ -229,7 +238,7 @@ av_cold int ff_rate_control_init(MpegEncContext *s)
         }
 
         // FIXME maybe move to end
-        if ((s->avctx->flags & CODEC_FLAG_PASS2) && s->avctx->rc_strategy == FF_RC_STRATEGY_XVID) {
+        if ((s->avctx->flags & CODEC_FLAG_PASS2) && s->rc_strategy == 1) {
 #if CONFIG_LIBXVID
             return ff_xvid_rate_control_init(s);
 #else
@@ -309,7 +318,7 @@ av_cold void ff_rate_control_uninit(MpegEncContext *s)
     av_freep(&rcc->entry);
 
 #if CONFIG_LIBXVID
-    if ((s->avctx->flags & CODEC_FLAG_PASS2) && s->avctx->rc_strategy == FF_RC_STRATEGY_XVID)
+    if ((s->avctx->flags & CODEC_FLAG_PASS2) && s->rc_strategy == 1)
         ff_xvid_rate_control_uninit(s);
 #endif
 }
@@ -762,8 +771,7 @@ float ff_rate_estimate_qscale(MpegEncContext *s, int dry_run)
     emms_c();
 
 #if CONFIG_LIBXVID
-    if ((s->avctx->flags & CODEC_FLAG_PASS2) &&
-        s->avctx->rc_strategy == FF_RC_STRATEGY_XVID)
+    if ((s->avctx->flags & CODEC_FLAG_PASS2) && s->rc_strategy == 1)
         return ff_xvid_rate_estimate_qscale(s, dry_run);
 #endif
 
