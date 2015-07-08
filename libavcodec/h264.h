@@ -680,6 +680,8 @@ typedef struct H264Context {
      */
     int sei_reguserdata_afd_present;
     uint8_t active_format_description;
+    int a53_caption_size;
+    uint8_t *a53_caption;
 
     /**
      * Bit set of clock types for fields/frames in picture timing SEI message.
