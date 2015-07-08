@@ -407,7 +407,7 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
             }
             if (st->codec->pix_fmt != AV_PIX_FMT_NONE && st->codec->pix_fmt != pix_fmt) {
                 av_log(s, AV_LOG_ERROR, "pixel format change unsupported\n");
-            }else
+            } else
                 st->codec->pix_fmt = pix_fmt;
 
             if (linesize * height > pkt->size) {
