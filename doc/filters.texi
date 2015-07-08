@@ -530,7 +530,7 @@ the input.
 
 To fix a 5.1 WAV improperly encoded in AAC's native channel order
 @example
-avconv -i in.wav -filter 'channelmap=1|2|0|5|3|4:channel_layout=5.1' out.wav
+avconv -i in.wav -filter 'channelmap=1|2|0|5|3|4:5.1' out.wav
 @end example
 
 @section compand
