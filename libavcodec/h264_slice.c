@@ -980,7 +980,10 @@ static int init_dimensions(H264Context *h)
 
     /* handle container cropping */
     if (FFALIGN(h->avctx->width,  16) == FFALIGN(width,  16) &&
-        FFALIGN(h->avctx->height, 16) == FFALIGN(height, 16)) {
+        FFALIGN(h->avctx->height, 16) == FFALIGN(height, 16) &&
+        h->avctx->width  <= width &&
+        h->avctx->height <= height
+    ) {
         width  = h->avctx->width;
         height = h->avctx->height;
     }
