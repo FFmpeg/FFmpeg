@@ -2257,6 +2257,7 @@ static int apply_param_change(AVCodecContext *avctx, AVPacket *avpkt)
     int size = 0, ret;
     const uint8_t *data;
     uint32_t flags;
+    int64_t val;
 
     data = av_packet_get_side_data(avpkt, AV_PKT_DATA_PARAM_CHANGE, &size);
     if (!data)
@@ -2277,7 +2278,12 @@ static int apply_param_change(AVCodecContext *avctx, AVPacket *avpkt)
     if (flags & AV_SIDE_DATA_PARAM_CHANGE_CHANNEL_COUNT) {
         if (size < 4)
             goto fail;
-        avctx->channels = bytestream_get_le32(&data);
+        val = bytestream_get_le32(&data);
+        if (val <= 0 || val > INT_MAX) {
+            av_log(avctx, AV_LOG_ERROR, "Invalid channel count");
+            return AVERROR_INVALIDDATA;
+        }
+        avctx->channels = val;
         size -= 4;
     }
     if (flags & AV_SIDE_DATA_PARAM_CHANGE_CHANNEL_LAYOUT) {
@@ -2289,7 +2295,12 @@ static int apply_param_change(AVCodecContext *avctx, AVPacket *avpkt)
     if (flags & AV_SIDE_DATA_PARAM_CHANGE_SAMPLE_RATE) {
         if (size < 4)
             goto fail;
-        avctx->sample_rate = bytestream_get_le32(&data);
+        val = bytestream_get_le32(&data);
+        if (val <= 0 || val > INT_MAX) {
+            av_log(avctx, AV_LOG_ERROR, "Invalid sample rate");
+            return AVERROR_INVALIDDATA;
+        }
+        avctx->sample_rate = val;
         size -= 4;
     }
     if (flags & AV_SIDE_DATA_PARAM_CHANGE_DIMENSIONS) {

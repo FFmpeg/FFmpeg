@@ -8005,6 +8005,110 @@ qp=2+2*sin(PI*qp)
 @end example
 @end itemize
 
+@section removegrain
+
+The removegrain filter is a spatial denoiser for progressive video.
+
+@table @option
+@item m0
+Set mode for the first plane.
+
+@item m1
+Set mode for the second plane.
+
+@item m2
+Set mode for the third plane.
+
+@item m3
+Set mode for the fourth plane.
+@end table
+
+Range of mode is from 0 to 24. Description of each mode follows:
+
+@table @var
+@item 0
+Leave input plane unchanged. Default.
+
+@item 1
+Clips the pixel with the minimum and maximum of the 8 neighbour pixels.
+
+@item 2
+Clips the pixel with the second minimum and maximum of the 8 neighbour pixels.
+
+@item 3
+Clips the pixel with the third minimum and maximum of the 8 neighbour pixels.
+
+@item 4
+Clips the pixel with the fourth minimum and maximum of the 8 neighbour pixels.
+This is equivalent to a median filter.
+
+@item 5
+Line-sensitive clipping giving the minimal change.
+
+@item 6
+Line-sensitive clipping, intermediate.
+
+@item 7
+Line-sensitive clipping, intermediate.
+
+@item 8
+Line-sensitive clipping, intermediate.
+
+@item 9
+Line-sensitive clipping on a line where the neighbours pixels are the closest.
+
+@item 10
+Replaces the target pixel with the closest neighbour.
+
+@item 11
+[1 2 1] horizontal and vertical kernel blur.
+
+@item 12
+Same as mode 11.
+
+@item 13
+Bob mode, interpolates top field from the line where the neighbours
+pixels are the closest.
+
+@item 14
+Bob mode, interpolates bottom field from the line where the neighbours
+pixels are the closest.
+
+@item 15
+Bob mode, interpolates top field. Same as 13 but with a more complicated
+interpolation formula.
+
+@item 16
+Bob mode, interpolates bottom field. Same as 14 but with a more complicated
+interpolation formula.
+
+@item 17
+Clips the pixel with the minimum and maximum of respectively the maximum and
+minimum of each pair of opposite neighbour pixels.
+
+@item 18
+Line-sensitive clipping using opposite neighbours whose greatest distance from
+the current pixel is minimal.
+
+@item 19
+Replaces the pixel with the average of its 8 neighbours.
+
+@item 20
+Averages the 9 pixels ([1 1 1] horizontal and vertical blur).
+
+@item 21
+Clips pixels using the averages of opposite neighbour.
+
+@item 22
+Same as mode 21 but simpler and faster.
+
+@item 23
+Small edge and halo removal, but reputed useless.
+
+@item 24
+Similar as 23.
+@end table
+
 @section removelogo
 
 Suppress a TV station logo, using an image file to determine which

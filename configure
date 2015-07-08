@@ -322,6 +322,7 @@ Toolchain options:
   --extra-cxxflags=ECFLAGS add ECFLAGS to CXXFLAGS [$CXXFLAGS]
   --extra-ldflags=ELDFLAGS add ELDFLAGS to LDFLAGS [$LDFLAGS]
   --extra-ldexeflags=ELDFLAGS add ELDFLAGS to LDEXEFLAGS [$LDEXEFLAGS]
+  --extra-ldlibflags=ELDFLAGS add ELDFLAGS to LDLIBFLAGS [$LDLIBFLAGS]
   --extra-libs=ELIBS       add ELIBS [$ELIBS]
   --extra-version=STRING   version string suffix []
   --optflags=OPTFLAGS      override optimization-related compiler flags
@@ -790,6 +791,10 @@ add_ldflags(){
 
 add_ldexeflags(){
     append LDEXEFLAGS $($ldflags_filter "$@")
+}
+
+add_ldlibflags(){
+    append LDLIBFLAGS $($ldflags_filter "$@")
 }
 
 add_stripflags(){
@@ -1829,6 +1834,7 @@ TYPES_LIST="
     CONDITION_VARIABLE_Ptr
     socklen_t
     struct_addrinfo
+    struct_dcadec_exss_info_matrix_encoding
     struct_group_source_req
     struct_ip_mreq_source
     struct_ipv6_mreq
@@ -3011,6 +3017,9 @@ for opt do
         --extra-ldexeflags=*)
             add_ldexeflags $optval
         ;;
+        --extra-ldlibflags=*)
+            add_ldlibflags $optval
+        ;;
         --extra-libs=*)
             add_extralibs $optval
         ;;
@@ -3974,7 +3983,7 @@ elif enabled mips; then
             disable mipsdspr1
             disable mipsdspr2
             disable msa
-            enable local_aligned_8 local_aligned_16
+            enable local_aligned_8 local_aligned_16 local_aligned_32
             enable simd_align_16
             enable fast_64bit
             enable fast_clz
@@ -5121,7 +5130,8 @@ enabled libcelt           && require libcelt celt/celt.h celt_decode -lcelt0 &&
                              { check_lib celt/celt.h celt_decoder_create_custom -lcelt0 ||
                                die "ERROR: libcelt must be installed and version must be >= 0.11.0."; }
 enabled libcaca           && require_pkg_config caca caca.h caca_create_canvas
-enabled libdcadec         && require_pkg_config dcadec libdcadec/dca_context.h dcadec_context_create
+enabled libdcadec         && require_pkg_config dcadec libdcadec/dca_context.h dcadec_context_create &&
+                             check_struct libdcadec/dca_context.h "struct dcadec_exss_info" matrix_encoding
 enabled libfaac           && require2 libfaac "stdint.h faac.h" faacEncGetVersion -lfaac
 enabled libfdk_aac        && { use_pkg_config fdk-aac "fdk-aac/aacenc_lib.h" aacEncOpen ||
                                { require libfdk_aac fdk-aac/aacenc_lib.h aacEncOpen -lfdk-aac &&
@@ -5447,6 +5457,7 @@ check_disable_warning -Wno-pointer-sign
 check_ldflags -Wl,--warn-common
 check_ldflags -Wl,-rpath-link=libpostproc:libswresample:libswscale:libavfilter:libavdevice:libavformat:libavcodec:libavutil:libavresample
 enabled rpath && add_ldexeflags -Wl,-rpath,$libdir
+enabled rpath && add_ldlibflags -Wl,-rpath,$libdir
 test_ldflags -Wl,-Bsymbolic && append SHFLAGS -Wl,-Bsymbolic
 
 # add some strip flags
@@ -5915,6 +5926,7 @@ DEPWINDRES=$dep_cc
 DOXYGEN=$doxygen
 LDFLAGS=$LDFLAGS
 LDEXEFLAGS=$LDEXEFLAGS
+LDLIBFLAGS=$LDLIBFLAGS
 SHFLAGS=$(echo $($ldflags_filter $SHFLAGS))
 ASMSTRIPFLAGS=$ASMSTRIPFLAGS
 YASMFLAGS=$YASMFLAGS
