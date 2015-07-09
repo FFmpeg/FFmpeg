@@ -63,7 +63,7 @@ void ff_rtp_send_jpeg(AVFormatContext *s1, const uint8_t *buf, int size)
             continue;
 
         if (buf[i + 1] == DQT) {
-            if (buf[i + 4])
+            if (buf[i + 4] & 0xF0)
                 av_log(s1, AV_LOG_WARNING,
                        "Only 8-bit precision is supported.\n");
 
