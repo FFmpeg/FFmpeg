@@ -2503,13 +2503,7 @@ static int decode_nal_unit(HEVCContext *s, const HEVCNAL *nal)
     if (ret < 0)
         return ret;
 
-    ret = hls_nal_unit(s);
-    if (ret < 0) {
-        av_log(s->avctx, AV_LOG_ERROR, "Invalid NAL unit %d, skipping.\n",
-               s->nal_unit_type);
-        goto fail;
-    } else if (!ret)
-        return 0;
+    hls_nal_unit(s);
 
     switch (s->nal_unit_type) {
     case NAL_VPS:
@@ -2709,12 +2703,22 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
         ret = init_get_bits8(&s->HEVClc.gb, nal->data, nal->size);
         if (ret < 0)
             goto fail;
-        hls_nal_unit(s);
+
+        ret = hls_nal_unit(s);
+        if (ret <= 0) {
+            if (ret < 0) {
+                av_log(s->avctx, AV_LOG_ERROR, "Invalid NAL unit %d, skipping.\n",
+                       s->nal_unit_type);
+            }
+            s->nb_nals--;
+            goto skip_nal;
+        }
 
         if (s->nal_unit_type == NAL_EOB_NUT ||
             s->nal_unit_type == NAL_EOS_NUT)
             s->eos = 1;
 
+skip_nal:
         buf    += consumed;
         length -= consumed;
     }
