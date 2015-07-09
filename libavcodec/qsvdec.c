@@ -245,6 +245,13 @@ int ff_qsv_decode(AVCodecContext *avctx, QSVContext *q,
         return ff_qsv_error(ret);
     }
 
+    /* make sure we do not enter an infinite loop if the SDK
+     * did not consume any data and did not return anything */
+    if (!sync && !bs.DataOffset) {
+        av_log(avctx, AV_LOG_WARNING, "A decode call did not consume any data\n");
+        bs.DataOffset = avpkt->size;
+    }
+
     if (sync) {
         QSVFrame *out_frame = find_frame(q, outsurf);
 
