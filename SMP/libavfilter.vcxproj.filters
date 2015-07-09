@@ -482,6 +482,9 @@
     <ClCompile Include="..\libavfilter\vf_qp.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_removegrain.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\lswsutils.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>

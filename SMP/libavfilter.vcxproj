@@ -364,6 +364,8 @@
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_qp.c">
     </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_removegrain.c">
+    </ClCompile>
     <ClCompile Include="..\libavfilter\lswsutils.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_removelogo.c">
