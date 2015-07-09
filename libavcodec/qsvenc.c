@@ -417,12 +417,20 @@ int ff_qsv_encode(AVCodecContext *avctx, QSVEncContext *q,
         break;
     } while ( 1 );
 
-    if (ret < 0)
-        return (ret == MFX_ERR_MORE_DATA) ? 0 : ff_qsv_error(ret);
+    if (ret < 0) {
+        if (ret == MFX_ERR_MORE_DATA)
+            return 0;
+        av_log(avctx, AV_LOG_ERROR, "EncodeFrameAsync returned %d\n", ret);
+        return ff_qsv_error(ret);
+    }
 
-    if (ret == MFX_WRN_INCOMPATIBLE_VIDEO_PARAM && frame->interlaced_frame)
-        print_interlace_msg(avctx, q);
-
+    if (ret == MFX_WRN_INCOMPATIBLE_VIDEO_PARAM) {
+        if (frame->interlaced_frame)
+            print_interlace_msg(avctx, q);
+        else
+            av_log(avctx, AV_LOG_WARNING,
+                   "EncodeFrameAsync returned 'incompatible param' code\n");
+    }
     if (sync) {
         MFXVideoCORE_SyncOperation(q->session, sync, 60000);
 
