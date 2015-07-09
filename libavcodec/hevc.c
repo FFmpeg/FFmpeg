@@ -2341,32 +2341,6 @@ static int hls_slice_data(HEVCContext *s)
     return ctb_addr_ts;
 }
 
-/**
- * @return AVERROR_INVALIDDATA if the packet is not a valid NAL unit,
- * 0 if the unit should be skipped, 1 otherwise
- */
-static int hls_nal_unit(HEVCNAL *nal, AVCodecContext *avctx)
-{
-    GetBitContext *gb = &nal->gb;
-    int nuh_layer_id;
-
-    if (get_bits1(gb) != 0)
-        return AVERROR_INVALIDDATA;
-
-    nal->type = get_bits(gb, 6);
-
-    nuh_layer_id   = get_bits(gb, 6);
-    nal->temporal_id = get_bits(gb, 3) - 1;
-    if (nal->temporal_id < 0)
-        return AVERROR_INVALIDDATA;
-
-    av_log(avctx, AV_LOG_DEBUG,
-           "nal_unit_type: %d, nuh_layer_id: %dtemporal_id: %d\n",
-           nal->type, nuh_layer_id, nal->temporal_id);
-
-    return nuh_layer_id == 0;
-}
-
 static void restore_tqb_pixels(HEVCContext *s)
 {
     int min_pu_size = 1 << s->ps.sps->log2_min_pu_size;
@@ -2638,92 +2612,30 @@ fail:
 
 static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
 {
-    int i, consumed, ret = 0;
+    int i, ret = 0;
 
     s->ref = NULL;
     s->eos = 0;
 
     /* split the input packet into NAL units, so we know the upper bound on the
      * number of slices in the frame */
-    s->nb_nals = 0;
-    while (length >= 4) {
-        HEVCNAL *nal;
-        int extract_length = 0;
+    ret = ff_hevc_split_packet(&s->pkt, buf, length, s->avctx, s->is_nalff,
+                               s->nal_length_size);
+    if (ret < 0) {
+        av_log(s->avctx, AV_LOG_ERROR,
+               "Error splitting the input into NAL units.\n");
+        return ret;
+    }
 
-        if (s->is_nalff) {
-            int i;
-            for (i = 0; i < s->nal_length_size; i++)
-                extract_length = (extract_length << 8) | buf[i];
-            buf    += s->nal_length_size;
-            length -= s->nal_length_size;
-
-            if (extract_length > length) {
-                av_log(s->avctx, AV_LOG_ERROR, "Invalid NAL unit size.\n");
-                ret = AVERROR_INVALIDDATA;
-                goto fail;
-            }
-        } else {
-            if (buf[2] == 0) {
-                length--;
-                buf++;
-                continue;
-            }
-            if (buf[0] != 0 || buf[1] != 0 || buf[2] != 1) {
-                ret = AVERROR_INVALIDDATA;
-                goto fail;
-            }
-
-            buf           += 3;
-            length        -= 3;
-            extract_length = length;
-        }
-
-        if (s->nals_allocated < s->nb_nals + 1) {
-            int new_size = s->nals_allocated + 1;
-            HEVCNAL *tmp = av_realloc_array(s->nals, new_size, sizeof(*tmp));
-            if (!tmp) {
-                ret = AVERROR(ENOMEM);
-                goto fail;
-            }
-            s->nals = tmp;
-            memset(s->nals + s->nals_allocated, 0,
-                   (new_size - s->nals_allocated) * sizeof(*tmp));
-            s->nals_allocated = new_size;
-        }
-        nal = &s->nals[s->nb_nals++];
-
-        consumed = ff_hevc_extract_rbsp(buf, extract_length, nal);
-        if (consumed < 0) {
-            ret = consumed;
-            goto fail;
-        }
-
-        ret = init_get_bits8(&nal->gb, nal->data, nal->size);
-        if (ret < 0)
-            goto fail;
-
-        ret = hls_nal_unit(nal, s->avctx);
-        if (ret <= 0) {
-            if (ret < 0) {
-                av_log(s->avctx, AV_LOG_ERROR, "Invalid NAL unit %d, skipping.\n",
-                       nal->type);
-            }
-            s->nb_nals--;
-            goto skip_nal;
-        }
-
-        if (nal->type == NAL_EOB_NUT ||
-            nal->type == NAL_EOS_NUT)
+    for (i = 0; i < s->pkt.nb_nals; i++) {
+        if (s->pkt.nals[i].type == NAL_EOB_NUT ||
+            s->pkt.nals[i].type == NAL_EOS_NUT)
             s->eos = 1;
-
-skip_nal:
-        buf    += consumed;
-        length -= consumed;
     }
 
     /* parse the NAL units */
-    for (i = 0; i < s->nb_nals; i++) {
-        ret = decode_nal_unit(s, &s->nals[i]);
+    for (i = 0; i < s->pkt.nb_nals; i++) {
+        ret = decode_nal_unit(s, &s->pkt.nals[i]);
         if (ret < 0) {
             av_log(s->avctx, AV_LOG_WARNING,
                    "Error parsing NAL unit #%d.\n", i);
@@ -2924,10 +2836,10 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
     for (i = 0; i < FF_ARRAY_ELEMS(s->ps.pps_list); i++)
         av_buffer_unref(&s->ps.pps_list[i]);
 
-    for (i = 0; i < s->nals_allocated; i++)
-        av_freep(&s->nals[i].rbsp_buffer);
-    av_freep(&s->nals);
-    s->nals_allocated = 0;
+    for (i = 0; i < s->pkt.nals_allocated; i++)
+        av_freep(&s->pkt.nals[i].rbsp_buffer);
+    av_freep(&s->pkt.nals);
+    s->pkt.nals_allocated = 0;
 
     return 0;
 }
