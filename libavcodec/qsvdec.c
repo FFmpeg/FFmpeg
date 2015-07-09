@@ -52,7 +52,7 @@ static int qsv_init_session(AVCodecContext *avctx, QSVContext *q, mfxSession ses
 {
     if (!session) {
         if (!q->internal_session) {
-            int ret = ff_qsv_init_internal_session(avctx, &q->internal_session);
+            int ret = ff_qsv_init_internal_session(avctx, &q->internal_session, NULL);
             if (ret < 0)
                 return ret;
         }

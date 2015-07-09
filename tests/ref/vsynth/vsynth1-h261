@@ -1,4 +1,4 @@
-be41f18a8c3120b730270a9ec45545aa *tests/data/fate/vsynth1-h261.avi
+5a1114f9356235172ba9ad13f88108cf *tests/data/fate/vsynth1-h261.avi
 707550 tests/data/fate/vsynth1-h261.avi
 85fde92037c2ccecc02e2d6c21a169b0 *tests/data/fate/vsynth1-h261.out.rawvideo
 stddev:    9.11 PSNR: 28.93 MAXDIFF:  113 bytes:  7603200/  7603200

@@ -924,15 +924,25 @@ typedef struct HEVCContext {
     int picture_struct;
 } HEVCContext;
 
-int ff_hevc_decode_short_term_rps(HEVCContext *s, ShortTermRPS *rps,
-                                  const HEVCSPS *sps, int is_slice_header);
+int ff_hevc_decode_short_term_rps(GetBitContext *gb, AVCodecContext *avctx,
+                                  ShortTermRPS *rps, const HEVCSPS *sps, int is_slice_header);
+
+/**
+ * Parse the SPS from the bitstream into the provided HEVCSPS struct.
+ *
+ * @param sps_id the SPS id will be written here
+ * @param apply_defdispwin if set 1, the default display window from the VUI
+ *                         will be applied to the video dimensions
+ * @param vps_list if non-NULL, this function will validate that the SPS refers
+ *                 to an existing VPS
+ */
+int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
+                      int apply_defdispwin, AVBufferRef **vps_list, AVCodecContext *avctx);
+
 int ff_hevc_decode_nal_vps(HEVCContext *s);
 int ff_hevc_decode_nal_sps(HEVCContext *s);
 int ff_hevc_decode_nal_pps(HEVCContext *s);
 int ff_hevc_decode_nal_sei(HEVCContext *s);
-
-int ff_hevc_extract_rbsp(HEVCContext *s, const uint8_t *src, int length,
-                         HEVCNAL *nal);
 
 /**
  * Mark all frames in DPB as unused for reference.
@@ -1037,6 +1047,15 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
 
 void ff_hevc_hls_mvd_coding(HEVCContext *s, int x0, int y0, int log2_cb_size);
 
+
+/**
+ * Extract the raw (unescaped) HEVC bitstream.
+ */
+int ff_hevc_extract_rbsp(HEVCContext *s, const uint8_t *src, int length,
+                         HEVCNAL *nal);
+
+int ff_hevc_encode_nal_vps(HEVCVPS *vps, unsigned int id,
+                           uint8_t *buf, int buf_size);
 
 extern const uint8_t ff_hevc_qpel_extra_before[4];
 extern const uint8_t ff_hevc_qpel_extra_after[4];

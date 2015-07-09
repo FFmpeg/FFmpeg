@@ -1538,9 +1538,11 @@ typedef struct AVCodecContext {
      */
     float b_quant_factor;
 
-    /** obsolete FIXME remove */
-    int rc_strategy;
+#if FF_API_RC_STRATEGY
+    /** @deprecated use codec private option instead */
+    attribute_deprecated int rc_strategy;
 #define FF_RC_STRATEGY_XVID 1
+#endif
 
     int b_frame_strategy;
 
