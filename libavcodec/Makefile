@@ -352,6 +352,7 @@ OBJS-$(CONFIG_MPEG1VIDEO_DECODER)      += mpeg12dec.o mpeg12.o mpeg12data.o
 OBJS-$(CONFIG_MPEG1VIDEO_ENCODER)      += mpeg12enc.o mpeg12.o
 OBJS-$(CONFIG_MPEG2VIDEO_DECODER)      += mpeg12dec.o mpeg12.o mpeg12data.o
 OBJS-$(CONFIG_MPEG2VIDEO_ENCODER)      += mpeg12enc.o mpeg12.o
+OBJS-$(CONFIG_MPEG2_QSV_ENCODER)       += qsvenc_mpeg2.o
 OBJS-$(CONFIG_MPEG4_DECODER)           += xvididct.o
 OBJS-$(CONFIG_MPL2_DECODER)            += mpl2dec.o ass.o
 OBJS-$(CONFIG_MSMPEG4V1_DECODER)       += msmpeg4dec.o msmpeg4.o msmpeg4data.o
