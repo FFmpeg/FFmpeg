@@ -473,7 +473,7 @@ static void ffmpeg_cleanup(int ret)
 
     if (do_benchmark) {
         int maxrss = getmaxrss() / 1024;
-        printf("bench: maxrss=%ikB\n", maxrss);
+        av_log(NULL, AV_LOG_INFO, "bench: maxrss=%ikB\n", maxrss);
     }
 
     for (i = 0; i < nb_filtergraphs; i++) {
@@ -614,7 +614,7 @@ static void update_benchmark(const char *fmt, ...)
             va_start(va, fmt);
             vsnprintf(buf, sizeof(buf), fmt, va);
             va_end(va);
-            printf("bench: %8"PRIu64" %s \n", t - current_time, buf);
+            av_log(NULL, AV_LOG_INFO, "bench: %8"PRIu64" %s \n", t - current_time, buf);
         }
         current_time = t;
     }
@@ -4154,7 +4154,7 @@ int main(int argc, char **argv)
         exit_program(1);
     ti = getutime() - ti;
     if (do_benchmark) {
-        printf("bench: utime=%0.3fs\n", ti / 1000000.0);
+        av_log(NULL, AV_LOG_INFO, "bench: utime=%0.3fs\n", ti / 1000000.0);
     }
     av_log(NULL, AV_LOG_DEBUG, "%"PRIu64" frames successfully decoded, %"PRIu64" decoding errors\n",
            decode_error_stat[0], decode_error_stat[1]);
