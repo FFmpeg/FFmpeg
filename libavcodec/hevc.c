@@ -2633,7 +2633,7 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
             s->eos = 1;
     }
 
-    /* parse the NAL units */
+    /* decode the NAL units */
     for (i = 0; i < s->pkt.nb_nals; i++) {
         ret = decode_nal_unit(s, &s->pkt.nals[i]);
         if (ret < 0) {
