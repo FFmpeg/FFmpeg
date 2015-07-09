@@ -2345,24 +2345,24 @@ static int hls_slice_data(HEVCContext *s)
  * @return AVERROR_INVALIDDATA if the packet is not a valid NAL unit,
  * 0 if the unit should be skipped, 1 otherwise
  */
-static int hls_nal_unit(HEVCContext *s)
+static int hls_nal_unit(HEVCNAL *nal, AVCodecContext *avctx)
 {
-    GetBitContext *gb = &s->HEVClc.gb;
+    GetBitContext *gb = &nal->gb;
     int nuh_layer_id;
 
     if (get_bits1(gb) != 0)
         return AVERROR_INVALIDDATA;
 
-    s->nal_unit_type = get_bits(gb, 6);
+    nal->type = get_bits(gb, 6);
 
     nuh_layer_id   = get_bits(gb, 6);
-    s->temporal_id = get_bits(gb, 3) - 1;
-    if (s->temporal_id < 0)
+    nal->temporal_id = get_bits(gb, 3) - 1;
+    if (nal->temporal_id < 0)
         return AVERROR_INVALIDDATA;
 
-    av_log(s->avctx, AV_LOG_DEBUG,
+    av_log(avctx, AV_LOG_DEBUG,
            "nal_unit_type: %d, nuh_layer_id: %dtemporal_id: %d\n",
-           s->nal_unit_type, nuh_layer_id, s->temporal_id);
+           nal->type, nuh_layer_id, nal->temporal_id);
 
     return nuh_layer_id == 0;
 }
@@ -2499,11 +2499,9 @@ static int decode_nal_unit(HEVCContext *s, const HEVCNAL *nal)
     GetBitContext *gb    = &lc->gb;
     int ctb_addr_ts, ret;
 
-    ret = init_get_bits8(gb, nal->data, nal->size);
-    if (ret < 0)
-        return ret;
-
-    hls_nal_unit(s);
+    *gb              = nal->gb;
+    s->nal_unit_type = nal->type;
+    s->temporal_id   = nal->temporal_id;
 
     switch (s->nal_unit_type) {
     case NAL_VPS:
@@ -2700,22 +2698,22 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
             goto fail;
         }
 
-        ret = init_get_bits8(&s->HEVClc.gb, nal->data, nal->size);
+        ret = init_get_bits8(&nal->gb, nal->data, nal->size);
         if (ret < 0)
             goto fail;
 
-        ret = hls_nal_unit(s);
+        ret = hls_nal_unit(nal, s->avctx);
         if (ret <= 0) {
             if (ret < 0) {
                 av_log(s->avctx, AV_LOG_ERROR, "Invalid NAL unit %d, skipping.\n",
-                       s->nal_unit_type);
+                       nal->type);
             }
             s->nb_nals--;
             goto skip_nal;
         }
 
-        if (s->nal_unit_type == NAL_EOB_NUT ||
-            s->nal_unit_type == NAL_EOS_NUT)
+        if (nal->type == NAL_EOB_NUT ||
+            nal->type == NAL_EOS_NUT)
             s->eos = 1;
 
 skip_nal:

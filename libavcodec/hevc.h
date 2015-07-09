@@ -711,6 +711,11 @@ typedef struct HEVCNAL {
 
     int raw_size;
     const uint8_t *raw_data;
+
+    GetBitContext gb;
+
+    enum NALUnitType type;
+    int temporal_id;
 } HEVCNAL;
 
 struct HEVCContext;
