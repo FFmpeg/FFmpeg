@@ -21,6 +21,7 @@
 
 #include "libavcodec/bytestream.h"
 #include "libavcodec/mjpeg.h"
+#include "libavcodec/jpegtables.h"
 #include "libavutil/intreadwrite.h"
 #include "rtpenc.h"
 
@@ -79,6 +80,25 @@ void ff_rtp_send_jpeg(AVFormatContext *s1, const uint8_t *buf, int size)
             if (buf[i + 14] != 17 || buf[i + 17] != 17) {
                 av_log(s1, AV_LOG_ERROR,
                        "Only 1x1 chroma blocks are supported. Aborted!\n");
+                return;
+            }
+        } else if (buf[i + 1] == DHT) {
+            if (   AV_RB16(&buf[i + 2]) < 418
+                || i + 420 >= size
+                || buf[i +   4] != 0x00
+                || buf[i +  33] != 0x01
+                || buf[i +  62] != 0x10
+                || buf[i + 241] != 0x11
+                || memcmp(buf + i +   5, avpriv_mjpeg_bits_dc_luminance   + 1, 16)
+                || memcmp(buf + i +  21, avpriv_mjpeg_val_dc, 12)
+                || memcmp(buf + i +  34, avpriv_mjpeg_bits_dc_chrominance + 1, 16)
+                || memcmp(buf + i +  50, avpriv_mjpeg_val_dc, 12)
+                || memcmp(buf + i +  63, avpriv_mjpeg_bits_ac_luminance   + 1, 16)
+                || memcmp(buf + i +  79, avpriv_mjpeg_val_ac_luminance, 162)
+                || memcmp(buf + i + 242, avpriv_mjpeg_bits_ac_chrominance + 1, 16)
+                || memcmp(buf + i + 258, avpriv_mjpeg_val_ac_chrominance, 162)) {
+                av_log(s1, AV_LOG_ERROR,
+                       "RFC 2435 requires standard Huffman tables for jpeg\n");
                 return;
             }
         } else if (buf[i + 1] == SOS) {
