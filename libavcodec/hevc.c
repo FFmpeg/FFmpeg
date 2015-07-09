@@ -521,7 +521,7 @@ static int hls_slice_header(HEVCContext *s)
             sh->short_term_ref_pic_set_sps_flag = get_bits1(gb);
             pos = get_bits_left(gb);
             if (!sh->short_term_ref_pic_set_sps_flag) {
-                ret = ff_hevc_decode_short_term_rps(s, &sh->slice_rps, s->sps, 1);
+                ret = ff_hevc_decode_short_term_rps(gb, s->avctx, &sh->slice_rps, s->sps, 1);
                 if (ret < 0)
                     return ret;
 
