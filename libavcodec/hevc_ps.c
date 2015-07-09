@@ -998,6 +998,7 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
                                                  sps, 0)) < 0)
             goto err;
     }
+    ret = AVERROR_INVALIDDATA;
 
     sps->long_term_ref_pics_present_flag = get_bits1(gb);
     if (sps->long_term_ref_pics_present_flag) {
