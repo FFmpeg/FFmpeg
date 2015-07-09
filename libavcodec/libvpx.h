@@ -21,6 +21,8 @@
 #ifndef AVCODEC_LIBVPX_H
 #define AVCODEC_LIBVPX_H
 
+#include <vpx/vpx_codec.h>
+
 #include "avcodec.h"
 
 enum AVPixelFormat ff_vpx_imgfmt_to_pixfmt(vpx_img_fmt_t img);
