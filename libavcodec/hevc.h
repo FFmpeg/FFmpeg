@@ -944,9 +944,6 @@ int ff_hevc_decode_nal_sps(HEVCContext *s);
 int ff_hevc_decode_nal_pps(HEVCContext *s);
 int ff_hevc_decode_nal_sei(HEVCContext *s);
 
-int ff_hevc_extract_rbsp(HEVCContext *s, const uint8_t *src, int length,
-                         HEVCNAL *nal);
-
 /**
  * Mark all frames in DPB as unused for reference.
  */
@@ -1050,6 +1047,12 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
 
 void ff_hevc_hls_mvd_coding(HEVCContext *s, int x0, int y0, int log2_cb_size);
 
+
+/**
+ * Extract the raw (unescaped) HEVC bitstream.
+ */
+int ff_hevc_extract_rbsp(HEVCContext *s, const uint8_t *src, int length,
+                         HEVCNAL *nal);
 
 extern const uint8_t ff_hevc_qpel_extra_before[4];
 extern const uint8_t ff_hevc_qpel_extra_after[4];

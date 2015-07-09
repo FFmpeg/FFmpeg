@@ -2786,119 +2786,6 @@ fail:
     return 0;
 }
 
-/* FIXME: This is adapted from ff_h264_decode_nal, avoiding duplication
- * between these functions would be nice. */
-int ff_hevc_extract_rbsp(HEVCContext *s, const uint8_t *src, int length,
-                         HEVCNAL *nal)
-{
-    int i, si, di;
-    uint8_t *dst;
-
-    s->skipped_bytes = 0;
-#define STARTCODE_TEST                                                  \
-        if (i + 2 < length && src[i + 1] == 0 && src[i + 2] <= 3) {     \
-            if (src[i + 2] != 3) {                                      \
-                /* startcode, so we must be past the end */             \
-                length = i;                                             \
-            }                                                           \
-            break;                                                      \
-        }
-#if HAVE_FAST_UNALIGNED
-#define FIND_FIRST_ZERO                                                 \
-        if (i > 0 && !src[i])                                           \
-            i--;                                                        \
-        while (src[i])                                                  \
-            i++
-#if HAVE_FAST_64BIT
-    for (i = 0; i + 1 < length; i += 9) {
-        if (!((~AV_RN64A(src + i) &
-               (AV_RN64A(src + i) - 0x0100010001000101ULL)) &
-              0x8000800080008080ULL))
-            continue;
-        FIND_FIRST_ZERO;
-        STARTCODE_TEST;
-        i -= 7;
-    }
-#else
-    for (i = 0; i + 1 < length; i += 5) {
-        if (!((~AV_RN32A(src + i) &
-               (AV_RN32A(src + i) - 0x01000101U)) &
-              0x80008080U))
-            continue;
-        FIND_FIRST_ZERO;
-        STARTCODE_TEST;
-        i -= 3;
-    }
-#endif /* HAVE_FAST_64BIT */
-#else
-    for (i = 0; i + 1 < length; i += 2) {
-        if (src[i])
-            continue;
-        if (i > 0 && src[i - 1] == 0)
-            i--;
-        STARTCODE_TEST;
-    }
-#endif /* HAVE_FAST_UNALIGNED */
-
-    if (i >= length - 1) { // no escaped 0
-        nal->data     =
-        nal->raw_data = src;
-        nal->size     =
-        nal->raw_size = length;
-        return length;
-    }
-
-    av_fast_malloc(&nal->rbsp_buffer, &nal->rbsp_buffer_size,
-                   length + FF_INPUT_BUFFER_PADDING_SIZE);
-    if (!nal->rbsp_buffer)
-        return AVERROR(ENOMEM);
-
-    dst = nal->rbsp_buffer;
-
-    memcpy(dst, src, i);
-    si = di = i;
-    while (si + 2 < length) {
-        // remove escapes (very rare 1:2^22)
-        if (src[si + 2] > 3) {
-            dst[di++] = src[si++];
-            dst[di++] = src[si++];
-        } else if (src[si] == 0 && src[si + 1] == 0) {
-            if (src[si + 2] == 3) { // escape
-                dst[di++] = 0;
-                dst[di++] = 0;
-                si       += 3;
-
-                s->skipped_bytes++;
-                if (s->skipped_bytes_pos_size < s->skipped_bytes) {
-                    s->skipped_bytes_pos_size *= 2;
-                    av_reallocp_array(&s->skipped_bytes_pos,
-                            s->skipped_bytes_pos_size,
-                            sizeof(*s->skipped_bytes_pos));
-                    if (!s->skipped_bytes_pos)
-                        return AVERROR(ENOMEM);
-                }
-                if (s->skipped_bytes_pos)
-                    s->skipped_bytes_pos[s->skipped_bytes-1] = di - 1;
-                continue;
-            } else // next start code
-                goto nsc;
-        }
-
-        dst[di++] = src[si++];
-    }
-    while (si < length)
-        dst[di++] = src[si++];
-
-nsc:
-    memset(dst + di, 0, FF_INPUT_BUFFER_PADDING_SIZE);
-
-    nal->data = dst;
-    nal->size = di;
-    nal->raw_data = src;
-    nal->raw_size = si;
-    return si;
-}
-
 static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
 {
     int i, consumed, ret = 0;
@@ -2982,16 +2869,14 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
         nal = &s->nals[s->nb_nals];
 
         consumed = ff_hevc_extract_rbsp(s, buf, extract_length, nal);
-
-        s->skipped_bytes_nal[s->nb_nals] = s->skipped_bytes;
-        s->skipped_bytes_pos_size_nal[s->nb_nals] = s->skipped_bytes_pos_size;
-        s->skipped_bytes_pos_nal[s->nb_nals++] = s->skipped_bytes_pos;
-
-
         if (consumed < 0) {
             ret = consumed;
             goto fail;
         }
+
+        s->skipped_bytes_nal[s->nb_nals] = s->skipped_bytes;
+        s->skipped_bytes_pos_size_nal[s->nb_nals] = s->skipped_bytes_pos_size;
+        s->skipped_bytes_pos_nal[s->nb_nals++] = s->skipped_bytes_pos;
 
         ret = init_get_bits8(&s->HEVClc->gb, nal->data, nal->size);
         if (ret < 0)
