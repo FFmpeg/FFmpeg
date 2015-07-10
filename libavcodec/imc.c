@@ -420,7 +420,7 @@ static void imc_decode_level_coefficients_raw(IMCContext *q, int *levlCoeffBuf,
 
     pos = q->coef0_pos;
     flcoeffs1[pos] = 20000.0 / pow (2, levlCoeffBuf[0] * 0.18945); // 0.18945 = log2(10) * 0.05703125
-    flcoeffs2[pos] = log2f(flcoeffs1[0]);
+    flcoeffs2[pos] = log2f(flcoeffs1[pos]);
     tmp  = flcoeffs1[pos];
     tmp2 = flcoeffs2[pos];
 
