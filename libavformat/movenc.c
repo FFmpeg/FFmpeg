@@ -3163,19 +3163,17 @@ static void build_chunks(MOVTrack *trk,MOVMuxContext *mov)
         return;
     trk->chunkCount = 1;
     //av_log(trk->enc,AV_LOG_WARNING,"samples -> %d\n",chunk->samples_in_chunk);
-    if (mov->moov_commit_period && chunk->samples_in_chunk < 4) // Workaround
-        chunk->samples_in_chunk = 1; // TODO do not build built chunks
+    chunk->samples_in_chunk = chunk->samples_in_chunk_first;
     for (i = 1; i<trk->entry; i++){
         if (chunk->pos + chunkSize == trk->cluster[i].pos &&
             chunkSize + trk->cluster[i].size < (1<<20)){
             chunkSize             += trk->cluster[i].size;
-            chunk->samples_in_chunk += trk->cluster[i].entries;
+           	chunk->samples_in_chunk += trk->cluster[i].entries;
         } else {
             trk->cluster[i].chunkNum = chunk->chunkNum+1;
             chunk=&trk->cluster[i];
             //av_log(trk->enc,AV_LOG_WARNING,"samples -> %d\n",chunk->samples_in_chunk);
-            if (mov->moov_commit_period && chunk->samples_in_chunk < 4) // Workaround
-                chunk->samples_in_chunk = 1; // TODO do not build built chunks
+            chunk->samples_in_chunk = chunk->samples_in_chunk_first;
             chunkSize = chunk->size;
             trk->chunkCount++;
         }
@@ -4502,6 +4500,7 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
       	trk->cluster[trk->entry].pos = avio_tell(pb) - size;
     }
     trk->cluster[trk->entry].samples_in_chunk = samples_in_chunk;
+    trk->cluster[trk->entry].samples_in_chunk_first = samples_in_chunk;
     trk->cluster[trk->entry].chunkNum         = 0;
     trk->cluster[trk->entry].size             = size;
     trk->cluster[trk->entry].entries          = samples_in_chunk;
