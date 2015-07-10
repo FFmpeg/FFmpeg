@@ -125,7 +125,7 @@ static int read_header(AVFormatContext *s)
         if (avio_rl32(s->pb) != MKTAG('H','E','A','D'))
             return AVERROR_INVALIDDATA;
     } else {
-        uint32_t info_offset = 0, info_size;
+        uint32_t info_offset = 0;
         uint16_t section_count, header_size, i;
 
         header_size = read16(s); // 6
@@ -142,7 +142,7 @@ static int read_header(AVFormatContext *s)
             switch (flag) {
             case 0x4000:
                 info_offset = read32(s);
-                info_size   = read32(s);
+                /*info_size =*/ read32(s);
                 break;
             case 0x4001:
                 avio_skip(s->pb, 4); // seek offset
