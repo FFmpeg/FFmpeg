@@ -4,6 +4,20 @@ releases are sorted from youngest to oldest.
 version <next>:
 
 version 2.7.2:
+- imc: use correct position for flcoeffs2 calculation
+- hevc: check slice address length
+- snow: remove an obsolete av_assert2
+- webp: fix infinite loop in webp_decode_frame
+- wavpack: limit extra_bits to 32 and use get_bits_long
+- ffmpeg: only count got_output/errors in decode_error_stat
+- ffmpeg: exit_on_error if decoding a packet failed
+- pthread_frame: forward error codes when flushing
+- huffyuvdec: validate image size
+- wavpack: use get_bits_long to read up to 32 bits
+- nutdec: check maxpos in read_sm_data before returning success
+- s302m: fix arithmetic exception
+- vc1dec: use get_bits_long and limit the read bits to 32
+- mpegaudiodec: copy AVFloatDSPContext from first context to all contexts
 - avcodec/vp8: Check buffer size in vp8_decode_frame_header()
 - avcodec/vp8: Fix null pointer dereference in ff_vp8_decode_free()
 - avcodec/diracdec: Check for hpel_base allocation failure
