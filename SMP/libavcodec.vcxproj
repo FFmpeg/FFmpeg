@@ -347,6 +347,8 @@
     </ClCompile>
     <ClCompile Include="..\libavcodec\sinewin.c">
     </ClCompile>
+    <ClCompile Include="..\libavcodec\sinewin_fixed.c">
+    </ClCompile>
     <ClCompile Include="..\libavcodec\snappy.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\startcode.c">
@@ -389,6 +391,8 @@
       <ObjectFileName>$(IntDir)\libavcodec_sbrdsp.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavcodec\aacpsdsp.c">
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\aacdec_fixed.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\aacenc.c">
     </ClCompile>
@@ -814,6 +818,12 @@
     </ClCompile>
     <ClCompile Include="..\libavcodec\hevc_filter.c">
     </ClCompile>
+    <ClCompile Include="..\libavcodec\hevc_parse.c">
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\qsvenc_hevc.c">
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\hevc_ps_enc.c">
+    </ClCompile>
     <ClCompile Include="..\libavcodec\hnm4video.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\hq_hqa.c">
@@ -941,6 +951,8 @@
     <ClCompile Include="..\libavcodec\mpeg12dec.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\mpeg12enc.c">
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\qsvenc_mpeg2.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\xvididct.c">
       <ObjectFileName>$(IntDir)\libavcodec_xvididct.obj</ObjectFileName>
