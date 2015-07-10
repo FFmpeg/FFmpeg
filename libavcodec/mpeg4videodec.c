@@ -1354,6 +1354,11 @@ static int mpeg4_decode_mb(MpegEncContext *s, int16_t block[6][64])
         else
             s->mcsel = 0;
         cbpy = get_vlc2(&s->gb, ff_h263_cbpy_vlc.table, CBPY_VLC_BITS, 1) ^ 0x0F;
+        if (cbpy < 0) {
+            av_log(s->avctx, AV_LOG_ERROR,
+                   "P cbpy damaged at %d %d\n", s->mb_x, s->mb_y);
+            return AVERROR_INVALIDDATA;
+        }
 
         cbp = (cbpc & 3) | (cbpy << 2);
         if (dquant)
