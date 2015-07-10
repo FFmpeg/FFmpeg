@@ -1607,6 +1607,7 @@ CONFIG_EXTRA="
     imdct15
     intrax8
     jpegtables
+    libx262
     lgplv3
     lpc
     me_cmp
@@ -2108,6 +2109,7 @@ libvpx_vp9_decoder_deps="libvpx"
 libvpx_vp9_encoder_deps="libvpx"
 libwavpack_encoder_deps="libwavpack"
 libwebp_encoder_deps="libwebp"
+libx262_encoder_deps="libx262"
 libx264_encoder_deps="libx264"
 libx265_encoder_deps="libx265"
 libxavs_encoder_deps="libxavs"
@@ -4351,7 +4353,9 @@ enabled libwavpack        && require libwavpack wavpack/wavpack.h WavpackOpenFil
 enabled libwebp           && require_pkg_config libwebp webp/encode.h WebPGetEncoderVersion
 enabled libx264           && require_pkg_config x264 "stdint.h x264.h" x264_encoder_encode &&
                              { check_cpp_condition x264.h "X264_BUILD >= 118" ||
-                               die "ERROR: libx264 version must be >= 0.118."; }
+                               die "ERROR: libx264 version must be >= 0.118."; } &&
+                             { check_cpp_condition x264.h "X264_MPEG2" &&
+                               enable libx262; }
 enabled libx265           && require_pkg_config x265 x265.h x265_api_get &&
                              { check_cpp_condition x265.h "X265_BUILD >= 57" ||
                                die "ERROR: libx265 version must be >= 57."; }
