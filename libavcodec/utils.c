@@ -424,10 +424,12 @@ void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height,
 
     *width  = FFALIGN(*width, w_align);
     *height = FFALIGN(*height, h_align);
-    if (s->codec_id == AV_CODEC_ID_H264 || s->lowres)
+    if (s->codec_id == AV_CODEC_ID_H264 || s->lowres) {
         // some of the optimized chroma MC reads one line too much
         // which is also done in mpeg decoders with lowres > 0
         *height += 2;
+        *width = FFMAX(*width, 32);
+    }
 
     for (i = 0; i < 4; i++)
         linesize_align[i] = STRIDE_ALIGN;
