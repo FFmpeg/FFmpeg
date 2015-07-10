@@ -426,8 +426,8 @@ static av_always_inline int small_diamond_search(MpegEncContext * s, int *best, 
     chroma_cmpf = s->mecc.me_cmp[size + 1];
 
     { /* ensure that the best point is in the MAP as h/qpel refinement needs it */
-        const unsigned key = (best[1]<<ME_MAP_MV_BITS) + best[0] + map_generation;
-        const int index= ((best[1]<<ME_MAP_SHIFT) + best[0])&(ME_MAP_SIZE-1);
+        const unsigned key = ((unsigned)best[1]<<ME_MAP_MV_BITS) + best[0] + map_generation;
+        const int index= (((unsigned)best[1]<<ME_MAP_SHIFT) + best[0])&(ME_MAP_SIZE-1);
         if(map[index]!=key){ //this will be executed only very rarey
             score_map[index]= cmp(s, best[0], best[1], 0, 0, size, h, ref_index, src_index, cmpf, chroma_cmpf, flags);
             map[index]= key;
