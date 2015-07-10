@@ -1,5 +1,7 @@
 /*
- * Copyright (c) 2013 Guillaume Martres <smarter@ubuntu.com>
+ * Generate a header file for hardcoded sine windows
+ *
+ * Copyright (c) 2009 Reimar Döffinger <Reimar.Doeffinger@gmx.de>
  *
  * This file is part of FFmpeg.
  *
@@ -18,17 +20,5 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_LIBVPX_H
-#define AVCODEC_LIBVPX_H
-
-#include <vpx/vpx_codec.h>
-
-#include "avcodec.h"
-
-void ff_vp9_init_static(AVCodec *codec);
-#if 0
-enum AVPixelFormat ff_vpx_imgfmt_to_pixfmt(vpx_img_fmt_t img);
-vpx_img_fmt_t ff_vpx_pixfmt_to_imgfmt(enum AVPixelFormat pix);
-#endif
-
-#endif /* AVCODEC_LIBVPX_H */
+#define USE_FIXED 1
+#include "sinewin_tablegen_template.c"

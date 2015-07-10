@@ -46,7 +46,11 @@
  */
 DECLARE_ALIGNED(32, extern float,  ff_aac_kbd_long_1024)[1024];
 DECLARE_ALIGNED(32, extern float,  ff_aac_kbd_short_128)[128];
+DECLARE_ALIGNED(32, extern int,    ff_aac_kbd_long_1024_fixed)[1024];
+DECLARE_ALIGNED(32, extern int,    ff_aac_kbd_long_512_fixed)[512];
+DECLARE_ALIGNED(32, extern int,    ff_aac_kbd_short_128_fixed)[128];
 const DECLARE_ALIGNED(32, extern float, ff_aac_eld_window_512)[1920];
+const DECLARE_ALIGNED(32, extern int,   ff_aac_eld_window_512_fixed)[1920];
 const DECLARE_ALIGNED(32, extern float, ff_aac_eld_window_480)[1800];
 // @}
 

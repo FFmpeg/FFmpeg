@@ -167,10 +167,10 @@ static int mode06(int c, int a1, int a2, int a3, int a4, int a5, int a6, int a7,
     const int cli3 = av_clip(c, mi3, ma3);
     const int cli4 = av_clip(c, mi4, ma4);
 
-    const int c1 = av_clip_uint8((FFABS(c - cli1) << 1) + d1);
-    const int c2 = av_clip_uint8((FFABS(c - cli2) << 1) + d2);
-    const int c3 = av_clip_uint8((FFABS(c - cli3) << 1) + d3);
-    const int c4 = av_clip_uint8((FFABS(c - cli4) << 1) + d4);
+    const int c1 = av_clip_uint16((FFABS(c - cli1) << 1) + d1);
+    const int c2 = av_clip_uint16((FFABS(c - cli2) << 1) + d2);
+    const int c3 = av_clip_uint16((FFABS(c - cli3) << 1) + d3);
+    const int c4 = av_clip_uint16((FFABS(c - cli4) << 1) + d4);
 
     const int mindiff = FFMIN(FFMIN(c1, c2), FFMIN(c3, c4));
 
@@ -231,10 +231,10 @@ static int mode08(int c, int a1, int a2, int a3, int a4, int a5, int a6, int a7,
     const int cli3 = av_clip(c, mi3, ma3);
     const int cli4 = av_clip(c, mi4, ma4);
 
-    const int c1 = av_clip_uint8(FFABS(c - cli1) + (d1 << 1));
-    const int c2 = av_clip_uint8(FFABS(c - cli2) + (d2 << 1));
-    const int c3 = av_clip_uint8(FFABS(c - cli3) + (d3 << 1));
-    const int c4 = av_clip_uint8(FFABS(c - cli4) + (d4 << 1));
+    const int c1 = av_clip_uint16(FFABS(c - cli1) + (d1 << 1));
+    const int c2 = av_clip_uint16(FFABS(c - cli2) + (d2 << 1));
+    const int c3 = av_clip_uint16(FFABS(c - cli3) + (d3 << 1));
+    const int c4 = av_clip_uint16(FFABS(c - cli4) + (d4 << 1));
 
     const int mindiff = FFMIN(FFMIN(c1, c2), FFMIN(c3, c4));
 

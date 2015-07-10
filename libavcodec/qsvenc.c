@@ -85,11 +85,12 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
           does depend by this.
         */
         q->param.mfx.FrameInfo.PicStruct = MFX_PICSTRUCT_FIELD_TFF;
-        q->param.mfx.FrameInfo.Height    = FFALIGN(avctx->height, 32);
+        q->height_align = 32;
     } else {
         q->param.mfx.FrameInfo.PicStruct = MFX_PICSTRUCT_PROGRESSIVE;
-        q->param.mfx.FrameInfo.Height    = FFALIGN(avctx->height, avctx->codec_id == AV_CODEC_ID_HEVC ? 32 : 16);
+        q->height_align = 16;
     }
+   q->param.mfx.FrameInfo.Height    = FFALIGN(avctx->height, q->height_align);
 
     if (avctx->framerate.den > 0 && avctx->framerate.num > 0) {
         q->param.mfx.FrameInfo.FrameRateExtN = avctx->framerate.num;
@@ -323,8 +324,9 @@ static int submit_frame(QSVEncContext *q, const AVFrame *frame,
     }
 
     /* make a copy if the input is not padded as libmfx requires */
-    if (frame->height & 31 || frame->linesize[0] & (q->width_align - 1)) {
-        qf->frame->height = FFALIGN(frame->height, 32);
+    if (     frame->height & (q->height_align - 1) ||
+        frame->linesize[0] & (q->width_align - 1)) {
+        qf->frame->height = FFALIGN(frame->height, q->height_align);
         qf->frame->width  = FFALIGN(frame->width, q->width_align);
 
         ret = ff_get_buffer(q->avctx, qf->frame, AV_GET_BUFFER_FLAG_REF);
@@ -415,12 +417,20 @@ int ff_qsv_encode(AVCodecContext *avctx, QSVEncContext *q,
         break;
     } while ( 1 );
 
-    if (ret < 0)
-        return (ret == MFX_ERR_MORE_DATA) ? 0 : ff_qsv_error(ret);
+    if (ret < 0) {
+        if (ret == MFX_ERR_MORE_DATA)
+            return 0;
+        av_log(avctx, AV_LOG_ERROR, "EncodeFrameAsync returned %d\n", ret);
+        return ff_qsv_error(ret);
+    }
 
-    if (ret == MFX_WRN_INCOMPATIBLE_VIDEO_PARAM && frame->interlaced_frame)
-        print_interlace_msg(avctx, q);
-
+    if (ret == MFX_WRN_INCOMPATIBLE_VIDEO_PARAM) {
+        if (frame->interlaced_frame)
+            print_interlace_msg(avctx, q);
+        else
+            av_log(avctx, AV_LOG_WARNING,
+                   "EncodeFrameAsync returned 'incompatible param' code\n");
+    }
     if (sync) {
         MFXVideoCORE_SyncOperation(q->session, sync, 60000);
 

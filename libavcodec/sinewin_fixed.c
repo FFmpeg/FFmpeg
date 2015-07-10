@@ -1,6 +1,4 @@
 /*
- * Copyright (c) 2013 Guillaume Martres <smarter@ubuntu.com>
- *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -18,17 +16,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_LIBVPX_H
-#define AVCODEC_LIBVPX_H
-
-#include <vpx/vpx_codec.h>
-
-#include "avcodec.h"
-
-void ff_vp9_init_static(AVCodec *codec);
-#if 0
-enum AVPixelFormat ff_vpx_imgfmt_to_pixfmt(vpx_img_fmt_t img);
-vpx_img_fmt_t ff_vpx_pixfmt_to_imgfmt(enum AVPixelFormat pix);
-#endif
-
-#endif /* AVCODEC_LIBVPX_H */
+#define USE_FIXED 1
+#include "sinewin.h"
+#include "sinewin_tablegen.h"

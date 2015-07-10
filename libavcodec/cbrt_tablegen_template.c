@@ -1,5 +1,7 @@
 /*
- * Copyright (c) 2013 Guillaume Martres <smarter@ubuntu.com>
+ * Generate a header file for hardcoded AAC cube-root table
+ *
+ * Copyright (c) 2010 Reimar Döffinger <Reimar.Doeffinger@gmx.de>
  *
  * This file is part of FFmpeg.
  *
@@ -18,17 +20,18 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_LIBVPX_H
-#define AVCODEC_LIBVPX_H
+#include <stdlib.h>
+#define CONFIG_HARDCODED_TABLES 0
+#include "cbrt_tablegen.h"
+#include "tableprint.h"
 
-#include <vpx/vpx_codec.h>
+int main(void)
+{
+    CBRT_RENAME(cbrt_tableinit)();
 
-#include "avcodec.h"
+    write_fileheader();
 
-void ff_vp9_init_static(AVCodec *codec);
-#if 0
-enum AVPixelFormat ff_vpx_imgfmt_to_pixfmt(vpx_img_fmt_t img);
-vpx_img_fmt_t ff_vpx_pixfmt_to_imgfmt(enum AVPixelFormat pix);
-#endif
+    WRITE_ARRAY("static const", uint32_t, cbrt_tab);
 
-#endif /* AVCODEC_LIBVPX_H */
+    return 0;
+}
