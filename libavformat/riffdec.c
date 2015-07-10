@@ -103,6 +103,14 @@ int ff_get_wav_header(AVFormatContext *s, AVIOContext *pb,
         codec->bit_rate    = avio_rb32(pb) * 8;
         codec->block_align = avio_rb16(pb);
     }
+    if (codec->bit_rate < 0) {
+        av_log(s, AV_LOG_WARNING,
+               "Invalid bit rate: %d\n", codec->bit_rate);
+        if (s->error_recognition & AV_EF_EXPLODE)
+            return AVERROR_INVALIDDATA;
+        else
+            codec->bit_rate = 0;
+    }
     if (size == 14) {  /* We're dealing with plain vanilla WAVEFORMAT */
         codec->bits_per_coded_sample = 8;
     } else {
