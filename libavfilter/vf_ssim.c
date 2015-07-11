@@ -34,6 +34,7 @@
  * Caculate the SSIM between two input videos.
  */
 
+#include "libavutil/avstring.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
@@ -50,13 +51,14 @@ typedef struct SSIMContext {
     char *stats_file_str;
     int nb_components;
     uint64_t nb_frames;
-    double ssim[4];
+    double ssim[4], ssim_total;
     char comps[4];
-    int *coefs;
+    float coefs[4];
     uint8_t rgba_map[4];
     int planewidth[4];
     int planeheight[4];
     int *temp;
+    int is_rgb;
 } SSIMContext;
 
 #define OFFSET(x) offsetof(SSIMContext, x)
@@ -69,10 +71,6 @@ static const AVOption ssim_options[] = {
 };
 
 AVFILTER_DEFINE_CLASS(ssim);
-
-static const int rgb_coefs[4]  = { 1, 1, 1, 3};
-static const int yuv_coefs[4]  = { 4, 1, 1, 6};
-static const int gray_coefs[4] = { 1, 0, 0, 1};
 
 static void set_meta(AVDictionary **metadata, const char *key, char comp, float d)
 {
@@ -186,36 +184,37 @@ static AVFrame *do_ssim(AVFilterContext *ctx, AVFrame *main,
 {
     AVDictionary **metadata = avpriv_frame_get_metadatap(main);
     SSIMContext *s = ctx->priv;
-    float c[4], ssimv;
+    float c[4], ssimv = 0.0;
     int i;
 
     s->nb_frames++;
 
-    for (i = 0; i < s->nb_components; i++)
+    for (i = 0; i < s->nb_components; i++) {
         c[i] = ssim_plane(main->data[i], main->linesize[i],
                           ref->data[i], ref->linesize[i],
                           s->planewidth[i], s->planeheight[i], s->temp);
-
-    ssimv = (c[0] * s->coefs[0] + c[1] * s->coefs[1] + c[2] * s->coefs[2]) / s->coefs[3];
-
-    for (i = 0; i < s->nb_components; i++)
-        set_meta(metadata, "lavfi.ssim.", s->comps[i], c[i]);
+        ssimv += s->coefs[i] * c[i];
+        s->ssim[i] += c[i];
+    }
+    for (i = 0; i < s->nb_components; i++) {
+        int cidx = s->is_rgb ? s->rgba_map[i] : i;
+        set_meta(metadata, "lavfi.ssim.", s->comps[i], c[cidx]);
+    }
+    s->ssim_total += ssimv;
 
     set_meta(metadata, "lavfi.ssim.All", 0, ssimv);
-    set_meta(metadata, "lavfi.ssim.dB", 0, ssim_db(c[0] * s->coefs[0] + c[1] * s->coefs[1] + c[2] * s->coefs[2], s->coefs[3]));
+    set_meta(metadata, "lavfi.ssim.dB", 0, ssim_db(ssimv, 1.0));
 
     if (s->stats_file) {
         fprintf(s->stats_file, "n:%"PRId64" ", s->nb_frames);
 
-        for (i = 0; i < s->nb_components; i++)
-            fprintf(s->stats_file, "%c:%f ", s->comps[i], c[i]);
+        for (i = 0; i < s->nb_components; i++) {
+            int cidx = s->is_rgb ? s->rgba_map[i] : i;
+            fprintf(s->stats_file, "%c:%f ", s->comps[i], c[cidx]);
+        }
 
-        fprintf(s->stats_file, "All:%f (%f)\n", ssimv, ssim_db(c[0] * s->coefs[0] + c[1] * s->coefs[1] + c[2] * s->coefs[2], s->coefs[3]));
+        fprintf(s->stats_file, "All:%f (%f)\n", ssimv, ssim_db(ssimv, 1.0));
     }
-
-    s->ssim[0] += c[0];
-    s->ssim[1] += c[1];
-    s->ssim[2] += c[2];
 
     return main;
 }
@@ -265,7 +264,7 @@ static int config_input_ref(AVFilterLink *inlink)
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
     AVFilterContext *ctx  = inlink->dst;
     SSIMContext *s = ctx->priv;
-    int is_rgb;
+    int sum = 0, i;
 
     s->nb_components = desc->nb_components;
 
@@ -279,24 +278,20 @@ static int config_input_ref(AVFilterLink *inlink)
         return AVERROR(EINVAL);
     }
 
-    is_rgb = ff_fill_rgba_map(s->rgba_map, inlink->format) >= 0;
-    s->comps[0] = is_rgb ? 'R' : 'Y';
-    s->comps[1] = is_rgb ? 'G' : 'U';
-    s->comps[2] = is_rgb ? 'B' : 'V';
+    s->is_rgb = ff_fill_rgba_map(s->rgba_map, inlink->format) >= 0;
+    s->comps[0] = s->is_rgb ? 'R' : 'Y';
+    s->comps[1] = s->is_rgb ? 'G' : 'U';
+    s->comps[2] = s->is_rgb ? 'B' : 'V';
     s->comps[3] = 'A';
-
-    if (is_rgb) {
-        s->coefs = rgb_coefs;
-    } else if (s->nb_components == 1) {
-        s->coefs = gray_coefs;
-    } else {
-        s->coefs = yuv_coefs;
-    }
 
     s->planeheight[1] = s->planeheight[2] = FF_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
     s->planeheight[0] = s->planeheight[3] = inlink->h;
     s->planewidth[1]  = s->planewidth[2]  = FF_CEIL_RSHIFT(inlink->w, desc->log2_chroma_w);
     s->planewidth[0]  = s->planewidth[3]  = inlink->w;
+    for (i = 0; i < s->nb_components; i++)
+        sum += s->planeheight[i] * s->planewidth[i];
+    for (i = 0; i < s->nb_components; i++)
+        s->coefs[i] = (double) s->planeheight[i] * s->planewidth[i] / sum;
 
     s->temp = av_malloc((2 * inlink->w + 12) * sizeof(*s->temp));
     if (!s->temp)
@@ -341,17 +336,15 @@ static av_cold void uninit(AVFilterContext *ctx)
     SSIMContext *s = ctx->priv;
 
     if (s->nb_frames > 0) {
-        if (s->nb_components == 3) {
-            av_log(ctx, AV_LOG_INFO, "SSIM %c:%f %c:%f %c:%f All:%f (%f)\n",
-               s->comps[0], s->ssim[0] / s->nb_frames,
-               s->comps[1], s->ssim[1] / s->nb_frames,
-               s->comps[2], s->ssim[2] / s->nb_frames,
-               (s->ssim[0] * 4 + s->ssim[1] + s->ssim[2]) / (s->nb_frames * 6),
-               ssim_db(s->ssim[0] * 4 + s->ssim[1] + s->ssim[2], s->nb_frames * 6));
-        } else if (s->nb_components == 1) {
-            av_log(ctx, AV_LOG_INFO, "SSIM All:%f (%f)\n",
-               s->ssim[0] / s->nb_frames, ssim_db(s->ssim[0], s->nb_frames));
+        char buf[256];
+        int i;
+        buf[0] = 0;
+        for (i = 0; i < s->nb_components; i++) {
+            int c = s->is_rgb ? s->rgba_map[i] : i;
+            av_strlcatf(buf, sizeof(buf), " %c:%f", s->comps[i], s->ssim[c] / s->nb_frames);
         }
+        av_log(ctx, AV_LOG_INFO, "SSIM%s All:%f (%f)\n", buf,
+               s->ssim_total / s->nb_frames, ssim_db(s->ssim_total, s->nb_frames));
     }
 
     ff_dualinput_uninit(&s->dinput);
