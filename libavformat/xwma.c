@@ -75,7 +75,7 @@ static int xwma_read_header(AVFormatContext *s)
     if (!st)
         return AVERROR(ENOMEM);
 
-    ret = ff_get_wav_header(pb, st->codec, size);
+    ret = ff_get_wav_header(s, pb, st->codec, size);
     if (ret < 0)
         return ret;
     st->need_parsing = AVSTREAM_PARSE_NONE;

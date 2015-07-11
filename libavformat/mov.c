@@ -758,7 +758,7 @@ static int mov_read_wfex(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return 0;
     st = c->fc->streams[c->fc->nb_streams-1];
 
-    return ff_get_wav_header(pb, st->codec, atom.size);
+    return ff_get_wav_header(c->fc, pb, st->codec, atom.size);
 }
 
 static int mov_read_pasp(MOVContext *c, AVIOContext *pb, MOVAtom atom)

@@ -752,7 +752,7 @@ static int asf_read_stream_properties(AVFormatContext *s, const GUIDParseTable *
     switch (type) {
     case AVMEDIA_TYPE_AUDIO:
         asf_st->type = AVMEDIA_TYPE_AUDIO;
-        if ((ret = ff_get_wav_header(pb, st->codec, ts_data_len)) < 0)
+        if ((ret = ff_get_wav_header(s, pb, st->codec, ts_data_len)) < 0)
             return ret;
         break;
     case AVMEDIA_TYPE_VIDEO:
