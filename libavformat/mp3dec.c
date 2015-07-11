@@ -366,6 +366,67 @@ static int mp3_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
+#define SEEK_PACKETS 4
+#define SEEK_WINDOW (SEEK_PACKETS * MP3_PACKET_SIZE)
+
+/* The toc entry can position to the wrong byte offset, try to pick
+ * the closest frame by probing the data in a window of 4 packets.
+ */
+
+static int check(AVIOContext *pb, int64_t pos, int64_t *out_pos)
+{
+    MPADecodeHeader mh = { 0 };
+    int i;
+    uint32_t header;
+    int64_t off = 0;
+
+
+    for (i = 0; i < SEEK_PACKETS; i++) {
+        off = avio_seek(pb, pos + mh.frame_size, SEEK_SET);
+        if (off < 0)
+            break;
+
+        header = avio_rb32(pb);
+
+        if (ff_mpa_check_header(header) < 0 ||
+            avpriv_mpegaudio_decode_header(&mh, header))
+            break;
+        out_pos[i] = off;
+    }
+
+    return i;
+}
+
+static int reposition(AVFormatContext *s, int64_t pos)
+{
+    int ret, best_valid = -1;
+    int64_t p, best_pos = -1;
+
+    for (p = FFMAX(pos - SEEK_WINDOW / 2, 0); p < pos + SEEK_WINDOW / 2; p++) {
+        int64_t out_pos[SEEK_PACKETS];
+        ret = check(s->pb, p, out_pos);
+
+        if (best_valid < ret) {
+            int i;
+            for (i = 0; i < ret; i++) {
+                if (llabs(best_pos - pos) > llabs(out_pos[i] - pos)) {
+                    best_pos   = out_pos[i];
+                    best_valid = ret;
+                }
+            }
+            if (best_pos == pos && best_valid == SEEK_PACKETS)
+                break;
+        }
+    }
+
+    if (best_valid <= 0)
+        return AVERROR(ENOSYS);
+
+    avio_seek(s->pb, best_pos, SEEK_SET);
+
+    return 0;
+}
+
 static int mp3_seek(AVFormatContext *s, int stream_index, int64_t timestamp,
                     int flags)
 {
@@ -373,7 +434,6 @@ static int mp3_seek(AVFormatContext *s, int stream_index, int64_t timestamp,
     AVIndexEntry *ie;
     AVStream *st = s->streams[0];
     int64_t ret  = av_index_search_timestamp(st, timestamp, flags);
-    uint32_t header = 0;
 
     if (!mp3->xing_toc)
         return AVERROR(ENOSYS);
@@ -382,20 +442,14 @@ static int mp3_seek(AVFormatContext *s, int stream_index, int64_t timestamp,
         return ret;
 
     ie = &st->index_entries[ret];
-    ret = avio_seek(s->pb, ie->pos, SEEK_SET);
+
+    ret = reposition(s, ie->pos);
     if (ret < 0)
         return ret;
 
-    while (!s->pb->eof_reached) {
-        header = (header << 8) + avio_r8(s->pb);
-        if (ff_mpa_check_header(header) >= 0) {
-            ff_update_cur_dts(s, st, ie->timestamp);
-            ret = avio_seek(s->pb, -4, SEEK_CUR);
-            return (ret >= 0) ? 0 : ret;
-        }
-    }
+    ff_update_cur_dts(s, st, ie->timestamp);
 
-    return AVERROR_EOF;
+    return 0;
 }
 
 AVInputFormat ff_mp3_demuxer = {
