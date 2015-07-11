@@ -270,7 +270,7 @@ static int yuv4_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int i;
     char header[MAX_FRAME_HEADER+1];
-    int width, height, ret, off = avio_tell(s->pb);
+    int ret, off = avio_tell(s->pb);
     AVStream *st = s->streams[0];
 
     for (i = 0; i < MAX_FRAME_HEADER; i++) {
@@ -289,9 +289,6 @@ static int yuv4_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     if (strncmp(header, Y4M_FRAME_MAGIC, strlen(Y4M_FRAME_MAGIC)))
         return AVERROR_INVALIDDATA;
-
-    width  = st->codec->width;
-    height = st->codec->height;
 
     ret = av_get_packet(s->pb, pkt, s->packet_size - Y4M_FRAME_MAGIC_LEN);
     if (ret < 0)
