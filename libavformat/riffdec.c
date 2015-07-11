@@ -79,6 +79,7 @@ int ff_get_wav_header(AVFormatContext *s, AVIOContext *pb,
                       AVCodecContext *codec, int size)
 {
     int id;
+    uint64_t bitrate;
 
     if (size < 14)
         return AVERROR_INVALIDDATA;
@@ -87,7 +88,7 @@ int ff_get_wav_header(AVFormatContext *s, AVIOContext *pb,
     codec->codec_type  = AVMEDIA_TYPE_AUDIO;
     codec->channels    = avio_rl16(pb);
     codec->sample_rate = avio_rl32(pb);
-    codec->bit_rate    = avio_rl32(pb) * 8;
+    bitrate            = avio_rl32(pb) * 8;
     codec->block_align = avio_rl16(pb);
     if (size == 14) {  /* We're dealing with plain vanilla WAVEFORMAT */
         codec->bits_per_coded_sample = 8;
@@ -124,6 +125,23 @@ int ff_get_wav_header(AVFormatContext *s, AVIOContext *pb,
         if (size > 0)
             avio_skip(pb, size);
     }
+
+    if (bitrate > INT_MAX) {
+        if (s->error_recognition & AV_EF_EXPLODE) {
+            av_log(s, AV_LOG_ERROR,
+                   "The bitrate %"PRIu64" is too large.\n",
+                    bitrate);
+            return AVERROR_INVALIDDATA;
+        } else {
+            av_log(s, AV_LOG_WARNING,
+                   "The bitrate %"PRIu64" is too large, resetting to 0.",
+                   bitrate);
+            codec->bit_rate = 0;
+        }
+    } else {
+        codec->bit_rate = bitrate;
+    }
+
     if (codec->sample_rate <= 0) {
         av_log(s, AV_LOG_ERROR,
                "Invalid sample rate: %d\n", codec->sample_rate);
