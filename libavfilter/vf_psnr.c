@@ -260,33 +260,10 @@ static int config_input_ref(AVFilterLink *inlink)
         return AVERROR(EINVAL);
     }
 
-    switch (inlink->format) {
-    case AV_PIX_FMT_GRAY8:
-    case AV_PIX_FMT_GRAY16:
-    case AV_PIX_FMT_GBRP:
-    case AV_PIX_FMT_GBRP9:
-    case AV_PIX_FMT_GBRP10:
-    case AV_PIX_FMT_GBRP12:
-    case AV_PIX_FMT_GBRP14:
-    case AV_PIX_FMT_GBRP16:
-    case AV_PIX_FMT_GBRAP:
-    case AV_PIX_FMT_GBRAP16:
-    case AV_PIX_FMT_YUVJ411P:
-    case AV_PIX_FMT_YUVJ420P:
-    case AV_PIX_FMT_YUVJ422P:
-    case AV_PIX_FMT_YUVJ440P:
-    case AV_PIX_FMT_YUVJ444P:
-        s->max[0] = (1 << (desc->comp[0].depth_minus1 + 1)) - 1;
-        s->max[1] = (1 << (desc->comp[1].depth_minus1 + 1)) - 1;
-        s->max[2] = (1 << (desc->comp[2].depth_minus1 + 1)) - 1;
-        s->max[3] = (1 << (desc->comp[3].depth_minus1 + 1)) - 1;
-        break;
-    default:
-        s->max[0] = 235 * (1 << (desc->comp[0].depth_minus1 - 7));
-        s->max[1] = 240 * (1 << (desc->comp[1].depth_minus1 - 7));
-        s->max[2] = 240 * (1 << (desc->comp[2].depth_minus1 - 7));
-        s->max[3] = (1 << (desc->comp[3].depth_minus1 + 1)) - 1;
-    }
+    s->max[0] = (1 << (desc->comp[0].depth_minus1 + 1)) - 1;
+    s->max[1] = (1 << (desc->comp[1].depth_minus1 + 1)) - 1;
+    s->max[2] = (1 << (desc->comp[2].depth_minus1 + 1)) - 1;
+    s->max[3] = (1 << (desc->comp[3].depth_minus1 + 1)) - 1;
 
     s->is_rgb = ff_fill_rgba_map(s->rgba_map, inlink->format) >= 0;
     s->comps[0] = s->is_rgb ? 'r' : 'y' ;
