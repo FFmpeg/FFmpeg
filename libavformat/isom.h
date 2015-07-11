@@ -198,6 +198,14 @@ typedef struct MOVContext {
     MOVFragmentIndex** fragment_index_data;
     unsigned fragment_index_count;
     int atom_depth;
+    unsigned int aax_mode;  ///< 'aax' file has been detected
+    uint8_t file_key[20];
+    uint8_t file_iv[20];
+    void *activation_bytes;
+    int activation_bytes_size;
+    void *audible_fixed_key;
+    int audible_fixed_key_size;
+    struct AVAES *aes_decrypt;
 } MOVContext;
 
 int ff_mp4_read_descr_len(AVIOContext *pb);
