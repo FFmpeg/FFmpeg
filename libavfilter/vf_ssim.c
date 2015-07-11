@@ -132,7 +132,7 @@ static float ssim_end1(int s1, int s2, int ss, int s12)
          / ((float)(fs1 * fs1 + fs2 * fs2 + ssim_c1) * (float)(vars + ssim_c2));
 }
 
-static float ssim_end4(int sum0[5][4], int sum1[5][4], int width)
+static float ssim_endn(int (*sum0)[4], int (*sum1)[4], int width)
 {
     float ssim = 0.0;
     int i;
@@ -167,8 +167,7 @@ static float ssim_plane(uint8_t *main, int main_stride,
                                 &sum0[x]);
         }
 
-        for (x = 0; x < width - 1; x += 4)
-            ssim += ssim_end4(sum0 + x, sum1 + x, FFMIN(4, width - x - 1));
+        ssim += ssim_endn(sum0, sum1, width - 1);
     }
 
     return ssim / ((height - 1) * (width - 1));
