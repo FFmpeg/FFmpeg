@@ -271,7 +271,6 @@ static int yuv4_read_packet(AVFormatContext *s, AVPacket *pkt)
     int i;
     char header[MAX_FRAME_HEADER+1];
     int ret, off = avio_tell(s->pb);
-    AVStream *st = s->streams[0];
 
     for (i = 0; i < MAX_FRAME_HEADER; i++) {
         header[i] = avio_r8(s->pb);
