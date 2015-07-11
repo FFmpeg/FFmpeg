@@ -23,5 +23,6 @@
 
 #define Y4M_MAGIC "YUV4MPEG2"
 #define Y4M_FRAME_MAGIC "FRAME"
+#define Y4M_FRAME_MAGIC_LEN 6
 
 #endif /* AVFORMAT_YUV4MPEG_H */
