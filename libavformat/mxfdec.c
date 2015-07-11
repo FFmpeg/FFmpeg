@@ -233,6 +233,7 @@ typedef struct MXFIndexTable {
     int nb_segments;
     MXFIndexTableSegment **segments;    /* sorted by IndexStartPosition */
     AVIndexEntry *fake_index;   /* used for calling ff_index_search_timestamp() */
+    int8_t *offsets;            /* temporal offsets for display order to stored order conversion */
 } MXFIndexTable;
 
 typedef struct MXFContext {
@@ -1334,6 +1335,7 @@ static int mxf_compute_ptses_fake_index(MXFContext *mxf, MXFIndexTable *index_ta
 {
     int i, j, x;
     int8_t max_temporal_offset = -128;
+    uint8_t *flags;
 
     /* first compute how many entries we have */
     for (i = 0; i < index_table->nb_segments; i++) {
@@ -1352,8 +1354,12 @@ static int mxf_compute_ptses_fake_index(MXFContext *mxf, MXFIndexTable *index_ta
         return 0;
 
     if (!(index_table->ptses      = av_calloc(index_table->nb_ptses, sizeof(int64_t))) ||
-        !(index_table->fake_index = av_calloc(index_table->nb_ptses, sizeof(AVIndexEntry)))) {
+        !(index_table->fake_index = av_calloc(index_table->nb_ptses, sizeof(AVIndexEntry))) ||
+        !(index_table->offsets    = av_calloc(index_table->nb_ptses, sizeof(int8_t))) ||
+        !(flags                   = av_calloc(index_table->nb_ptses, sizeof(uint8_t)))) {
         av_freep(&index_table->ptses);
+        av_freep(&index_table->fake_index);
+        av_freep(&index_table->offsets);
         return AVERROR(ENOMEM);
     }
 
@@ -1411,8 +1417,7 @@ static int mxf_compute_ptses_fake_index(MXFContext *mxf, MXFIndexTable *index_ta
                 break;
             }
 
-            index_table->fake_index[x].timestamp = x;
-            index_table->fake_index[x].flags = !(s->flag_entries[j] & 0x30) ? AVINDEX_KEYFRAME : 0;
+            flags[x] = !(s->flag_entries[j] & 0x30) ? AVINDEX_KEYFRAME : 0;
 
             if (index < 0 || index >= index_table->nb_ptses) {
                 av_log(mxf->fc, AV_LOG_ERROR,
@@ -1421,10 +1426,19 @@ static int mxf_compute_ptses_fake_index(MXFContext *mxf, MXFIndexTable *index_ta
                 continue;
             }
 
+            index_table->offsets[x] = offset;
             index_table->ptses[index] = x;
             max_temporal_offset = FFMAX(max_temporal_offset, offset);
         }
     }
+
+    /* calculate the fake index table in display order */
+    for (x = 0; x < index_table->nb_ptses; x++) {
+        index_table->fake_index[x].timestamp = x;
+        if (index_table->ptses[x] != AV_NOPTS_VALUE)
+            index_table->fake_index[index_table->ptses[x]].flags = flags[x];
+    }
+    av_freep(&flags);
 
     index_table->first_dts = -max_temporal_offset;
 
@@ -3085,6 +3099,7 @@ static int mxf_read_close(AVFormatContext *s)
             av_freep(&mxf->index_tables[i].segments);
             av_freep(&mxf->index_tables[i].ptses);
             av_freep(&mxf->index_tables[i].fake_index);
+            av_freep(&mxf->index_tables[i].offsets);
         }
     }
     av_freep(&mxf->index_tables);
@@ -3158,6 +3173,8 @@ static int mxf_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
             /* behave as if we have a proper index */
             if ((sample_time = ff_index_search_timestamp(t->fake_index, t->nb_ptses, sample_time, flags)) < 0)
                 return sample_time;
+            /* get the stored order index from the display order index */
+            sample_time += t->offsets[sample_time];
         } else {
             /* no IndexEntryArray (one or more CBR segments)
              * make sure we don't seek past the end */
