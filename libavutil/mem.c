@@ -480,7 +480,7 @@ void *av_fast_realloc(void *ptr, unsigned int *size, size_t min_size)
     if (min_size < *size)
         return ptr;
 
-    min_size = FFMAX(17 * min_size / 16 + 32, min_size);
+    min_size = FFMAX(min_size + min_size / 16 + 32, min_size);
 
     ptr = av_realloc(ptr, min_size);
     /* we could set this to the unmodified min_size but this is safer
@@ -500,7 +500,7 @@ static inline int ff_fast_malloc(void *ptr, unsigned int *size, size_t min_size,
 
     if (min_size < *size)
         return 0;
-    min_size = FFMAX(17 * min_size / 16 + 32, min_size);
+    min_size = FFMAX(min_size + min_size / 16 + 32, min_size);
     av_freep(ptr);
     val = zero_realloc ? av_mallocz(min_size) : av_malloc(min_size);
     memcpy(ptr, &val, sizeof(val));
