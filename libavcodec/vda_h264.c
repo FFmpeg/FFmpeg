@@ -32,20 +32,7 @@ struct vda_buffer {
     CVPixelBufferRef cv_buffer;
 };
 #include "internal.h"
-#include "vda_internal.h"
-
-typedef struct VDAContext {
-    // The current bitstream buffer.
-    uint8_t             *bitstream;
-
-    // The current size of the bitstream.
-    int                  bitstream_size;
-
-    // The reference size used for fast reallocation.
-    int                  allocated_size;
-
-    CVImageBufferRef frame;
-} VDAContext;
+#include "vda_vt_internal.h"
 
 /* Decoder callback that adds the vda frame to the queue in display order. */
 static void vda_decoder_callback(void *vda_hw_ctx,
@@ -68,7 +55,7 @@ static void vda_decoder_callback(void *vda_hw_ctx,
     vda_ctx->cv_buffer = CVPixelBufferRetain(image_buffer);
 }
 
-static int vda_sync_decode(VDAContext *ctx, struct vda_context *vda_ctx)
+static int vda_sync_decode(VTContext *ctx, struct vda_context *vda_ctx)
 {
     OSStatus status;
     CFDataRef coded_frame;
@@ -93,7 +80,7 @@ static int vda_old_h264_start_frame(AVCodecContext *avctx,
                                 av_unused const uint8_t *buffer,
                                 av_unused uint32_t size)
 {
-    VDAContext *vda = avctx->internal->hwaccel_priv_data;
+    VTContext *vda = avctx->internal->hwaccel_priv_data;
     struct vda_context *vda_ctx = avctx->hwaccel_context;
 
     if (!vda_ctx->decoder)
@@ -108,7 +95,7 @@ static int vda_old_h264_decode_slice(AVCodecContext *avctx,
                                  const uint8_t *buffer,
                                  uint32_t size)
 {
-    VDAContext *vda             = avctx->internal->hwaccel_priv_data;
+    VTContext *vda              = avctx->internal->hwaccel_priv_data;
     struct vda_context *vda_ctx = avctx->hwaccel_context;
     void *tmp;
 
@@ -141,7 +128,7 @@ static void vda_h264_release_buffer(void *opaque, uint8_t *data)
 static int vda_old_h264_end_frame(AVCodecContext *avctx)
 {
     H264Context *h                      = avctx->priv_data;
-    VDAContext *vda                     = avctx->internal->hwaccel_priv_data;
+    VTContext *vda                      = avctx->internal->hwaccel_priv_data;
     struct vda_context *vda_ctx         = avctx->hwaccel_context;
     AVFrame *frame                      = h->cur_pic_ptr->f;
     struct vda_buffer *context;
@@ -271,17 +258,6 @@ int ff_vda_destroy_decoder(struct vda_context *vda_ctx)
     return status;
 }
 
-static int vda_h264_uninit(AVCodecContext *avctx)
-{
-    VDAContext *vda = avctx->internal->hwaccel_priv_data;
-    if (vda) {
-        av_freep(&vda->bitstream);
-        if (vda->frame)
-            CVPixelBufferRelease(vda->frame);
-    }
-    return 0;
-}
-
 AVHWAccel ff_h264_vda_old_hwaccel = {
     .name           = "h264_vda",
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -290,8 +266,8 @@ AVHWAccel ff_h264_vda_old_hwaccel = {
     .start_frame    = vda_old_h264_start_frame,
     .decode_slice   = vda_old_h264_decode_slice,
     .end_frame      = vda_old_h264_end_frame,
-    .uninit         = vda_h264_uninit,
-    .priv_data_size = sizeof(VDAContext),
+    .uninit         = ff_videotoolbox_uninit,
+    .priv_data_size = sizeof(VTContext),
 };
 
 void ff_vda_output_callback(void *opaque,
@@ -301,7 +277,7 @@ void ff_vda_output_callback(void *opaque,
                             CVImageBufferRef image_buffer)
 {
     AVCodecContext *ctx = opaque;
-    VDAContext *vda = ctx->internal->hwaccel_priv_data;
+    VTContext *vda = ctx->internal->hwaccel_priv_data;
 
 
     if (vda->frame) {
@@ -315,65 +291,10 @@ void ff_vda_output_callback(void *opaque,
     vda->frame = CVPixelBufferRetain(image_buffer);
 }
 
-static int vda_h264_start_frame(AVCodecContext *avctx,
-                                const uint8_t *buffer,
-                                uint32_t size)
-{
-    VDAContext *vda = avctx->internal->hwaccel_priv_data;
-    H264Context *h  = avctx->priv_data;
-
-    if (h->is_avc == 1) {
-        void *tmp;
-        vda->bitstream_size = 0;
-        tmp = av_fast_realloc(vda->bitstream,
-                              &vda->allocated_size,
-                              size);
-        vda->bitstream = tmp;
-        memcpy(vda->bitstream, buffer, size);
-        vda->bitstream_size = size;
-    } else {
-        vda->bitstream_size = 0;
-    }
-    return 0;
-}
-
-static int vda_h264_decode_slice(AVCodecContext *avctx,
-                                 const uint8_t *buffer,
-                                 uint32_t size)
-{
-    VDAContext *vda       = avctx->internal->hwaccel_priv_data;
-    H264Context *h  = avctx->priv_data;
-    void *tmp;
-
-    if (h->is_avc == 1)
-        return 0;
-
-    tmp = av_fast_realloc(vda->bitstream,
-                          &vda->allocated_size,
-                          vda->bitstream_size + size + 4);
-    if (!tmp)
-        return AVERROR(ENOMEM);
-
-    vda->bitstream = tmp;
-
-    AV_WB32(vda->bitstream + vda->bitstream_size, size);
-    memcpy(vda->bitstream + vda->bitstream_size + 4, buffer, size);
-
-    vda->bitstream_size += size + 4;
-
-    return 0;
-}
-
-static void release_buffer(void *opaque, uint8_t *data)
-{
-    CVImageBufferRef frame = (CVImageBufferRef)data;
-    CVPixelBufferRelease(frame);
-}
-
 static int vda_h264_end_frame(AVCodecContext *avctx)
 {
     H264Context *h        = avctx->priv_data;
-    VDAContext *vda       = avctx->internal->hwaccel_priv_data;
+    VTContext *vda        = avctx->internal->hwaccel_priv_data;
     AVVDAContext *vda_ctx = avctx->hwaccel_context;
     AVFrame *frame        = h->cur_pic_ptr->f;
     uint32_t flush_flags  = 1 << 0; ///< kVDADecoderFlush_emitFrames
@@ -403,19 +324,7 @@ static int vda_h264_end_frame(AVCodecContext *avctx)
         return AVERROR_UNKNOWN;
     }
 
-    av_buffer_unref(&frame->buf[0]);
-
-    frame->buf[0] = av_buffer_create((uint8_t*)vda->frame,
-                                     sizeof(vda->frame),
-                                     release_buffer, NULL,
-                                     AV_BUFFER_FLAG_READONLY);
-    if (!frame->buf[0])
-        return AVERROR(ENOMEM);
-
-    frame->data[3] = (uint8_t*)vda->frame;
-    vda->frame = NULL;
-
-    return 0;
+    return ff_videotoolbox_buffer_create(vda, frame);
 }
 
 int ff_vda_default_init(AVCodecContext *avctx)
@@ -434,26 +343,7 @@ int ff_vda_default_init(AVCodecContext *avctx)
 
     // kCVPixelFormatType_420YpCbCr8Planar;
 
-    /* Each VCL NAL in the bitstream sent to the decoder
-     * is preceded by a 4 bytes length header.
-     * Change the avcC atom header if needed, to signal headers of 4 bytes. */
-    if (avctx->extradata_size >= 4 && (avctx->extradata[4] & 0x03) != 0x03) {
-        uint8_t *rw_extradata;
-
-        if (!(rw_extradata = av_malloc(avctx->extradata_size)))
-            return AVERROR(ENOMEM);
-
-        memcpy(rw_extradata, avctx->extradata, avctx->extradata_size);
-
-        rw_extradata[4] |= 0x03;
-
-        avc_data = CFDataCreate(kCFAllocatorDefault, rw_extradata, avctx->extradata_size);
-
-        av_freep(&rw_extradata);
-    } else {
-        avc_data = CFDataCreate(kCFAllocatorDefault,
-                                avctx->extradata, avctx->extradata_size);
-    }
+    avc_data = ff_videotoolbox_avcc_extradata_create(avctx);
 
     config_info = CFDictionaryCreateMutable(kCFAllocatorDefault,
                                             4,
@@ -521,27 +411,15 @@ int ff_vda_default_init(AVCodecContext *avctx)
     }
 }
 
-static int vda_h264_alloc_frame(AVCodecContext *avctx, AVFrame *frame)
-{
-    frame->width  = avctx->width;
-    frame->height = avctx->height;
-    frame->format = avctx->pix_fmt;
-    frame->buf[0] = av_buffer_alloc(1);
-
-    if (!frame->buf[0])
-        return AVERROR(ENOMEM);
-    return 0;
-}
-
 AVHWAccel ff_h264_vda_hwaccel = {
     .name           = "h264_vda",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_H264,
     .pix_fmt        = AV_PIX_FMT_VDA,
-    .alloc_frame    = vda_h264_alloc_frame,
-    .start_frame    = vda_h264_start_frame,
-    .decode_slice   = vda_h264_decode_slice,
+    .alloc_frame    = ff_videotoolbox_alloc_frame,
+    .start_frame    = ff_videotoolbox_h264_start_frame,
+    .decode_slice   = ff_videotoolbox_h264_decode_slice,
     .end_frame      = vda_h264_end_frame,
-    .uninit         = vda_h264_uninit,
-    .priv_data_size = sizeof(VDAContext),
+    .uninit         = ff_videotoolbox_uninit,
+    .priv_data_size = sizeof(VTContext),
 };
