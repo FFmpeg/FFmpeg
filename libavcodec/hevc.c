@@ -1494,7 +1494,7 @@ static void luma_mc(HEVCContext *s, int16_t *dst, ptrdiff_t dststride,
 
     x_off += mv->x >> 2;
     y_off += mv->y >> 2;
-    src   += y_off * srcstride + (x_off << s->ps.sps->pixel_shift);
+    src   += y_off * srcstride + (x_off * (1 << s->ps.sps->pixel_shift));
 
     if (x_off < extra_left || y_off < extra_top ||
         x_off >= pic_width - block_w - ff_hevc_qpel_extra_after[mx] ||
@@ -1548,8 +1548,8 @@ static void chroma_mc(HEVCContext *s, int16_t *dst1, int16_t *dst2,
 
     x_off += mv->x >> 3;
     y_off += mv->y >> 3;
-    src1  += y_off * src1stride + (x_off << s->ps.sps->pixel_shift);
-    src2  += y_off * src2stride + (x_off << s->ps.sps->pixel_shift);
+    src1  += y_off * src1stride + (x_off * (1 << s->ps.sps->pixel_shift));
+    src2  += y_off * src2stride + (x_off * (1 << s->ps.sps->pixel_shift));
 
     if (x_off < EPEL_EXTRA_BEFORE || y_off < EPEL_EXTRA_AFTER ||
         x_off >= pic_width - block_w - EPEL_EXTRA_AFTER ||
