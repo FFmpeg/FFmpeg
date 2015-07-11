@@ -173,10 +173,10 @@ static AVFrame *do_psnr(AVFilterContext *ctx, AVFrame *main,
     for (j = 0; j < s->nb_components; j++) {
         c = s->is_rgb ? s->rgba_map[j] : j;
         set_meta(metadata, "lavfi.psnr.mse.", s->comps[j], comp_mse[c]);
-        set_meta(metadata, "lavfi.psnr.mse_avg", 0, mse);
         set_meta(metadata, "lavfi.psnr.psnr.", s->comps[j], get_psnr(comp_mse[c], 1, s->max[c]));
-        set_meta(metadata, "lavfi.psnr.psnr_avg", 0, get_psnr(mse, 1, s->average_max));
     }
+    set_meta(metadata, "lavfi.psnr.mse_avg", 0, mse);
+    set_meta(metadata, "lavfi.psnr.psnr_avg", 0, get_psnr(mse, 1, s->average_max));
 
     if (s->stats_file) {
         fprintf(s->stats_file, "n:%"PRId64" mse_avg:%0.2f ", s->nb_frames, mse);
