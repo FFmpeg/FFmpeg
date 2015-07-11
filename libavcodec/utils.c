@@ -127,8 +127,10 @@ static inline int ff_fast_malloc(void *ptr, unsigned int *size, size_t min_size,
     void *val;
 
     memcpy(&val, ptr, sizeof(val));
-    if (min_size <= *size && val)
+    if (min_size <= *size) {
+        av_assert0(val || !min_size);
         return 0;
+    }
     min_size = FFMAX(min_size + min_size / 16 + 32, min_size);
     av_freep(ptr);
     val = zero_realloc ? av_mallocz(min_size) : av_malloc(min_size);
