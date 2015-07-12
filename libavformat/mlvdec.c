@@ -142,7 +142,7 @@ static int scan_file(AVFormatContext *avctx, AVStream *vst, AVStream *ast, int f
             vst->codec->codec_tag = MKTAG('B', 'I', 'T', 16);
             size -= 164;
         } else if (ast && type == MKTAG('W', 'A', 'V', 'I') && size >= 16) {
-            ret = ff_get_wav_header(pb, ast->codec, 16);
+            ret = ff_get_wav_header(avctx, pb, ast->codec, 16);
             if (ret < 0)
                 return ret;
             size -= 16;

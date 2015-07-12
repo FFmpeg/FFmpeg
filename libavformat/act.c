@@ -75,7 +75,7 @@ static int read_header(AVFormatContext *s)
 
     avio_skip(pb, 16);
     size=avio_rl32(pb);
-    ff_get_wav_header(pb, st->codec, size);
+    ff_get_wav_header(s, pb, st->codec, size);
 
     /*
       8000Hz (Fine-rec) file format has 10 bytes long
