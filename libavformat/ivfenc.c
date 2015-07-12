@@ -20,6 +20,11 @@
 #include "avformat.h"
 #include "libavutil/intreadwrite.h"
 
+typedef struct IVFEncContext {
+    unsigned frame_cnt;
+    uint64_t last_pts, sum_delta_pts;
+} IVFEncContext;
+
 static int ivf_write_header(AVFormatContext *s)
 {
     AVCodecContext *ctx;
@@ -43,7 +48,7 @@ static int ivf_write_header(AVFormatContext *s)
     avio_wl16(pb, ctx->height);
     avio_wl32(pb, s->streams[0]->time_base.den);
     avio_wl32(pb, s->streams[0]->time_base.num);
-    avio_wl64(pb, s->streams[0]->duration); // TODO: duration or number of frames?!?
+    avio_wl64(pb, 0xFFFFFFFFFFFFFFFFULL);
 
     return 0;
 }
@@ -51,14 +56,36 @@ static int ivf_write_header(AVFormatContext *s)
 static int ivf_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     AVIOContext *pb = s->pb;
+    IVFEncContext *ctx = s->priv_data;
+
     avio_wl32(pb, pkt->size);
     avio_wl64(pb, pkt->pts);
     avio_write(pb, pkt->data, pkt->size);
+    if (ctx->frame_cnt)
+        ctx->sum_delta_pts += pkt->pts - ctx->last_pts;
+    ctx->frame_cnt++;
+    ctx->last_pts = pkt->pts;
+
+    return 0;
+}
+
+static int ivf_write_trailer(AVFormatContext *s)
+{
+    AVIOContext *pb = s->pb;
+    if (pb->seekable) {
+        IVFEncContext *ctx = s->priv_data;
+        size_t end = avio_tell(pb);
+
+        avio_seek(pb, 24, SEEK_SET);
+        avio_wl64(pb, ctx->frame_cnt * ctx->sum_delta_pts / (ctx->frame_cnt - 1));
+        avio_seek(pb, end, SEEK_SET);
+    }
 
     return 0;
 }
 
 AVOutputFormat ff_ivf_muxer = {
+    .priv_data_size = sizeof(IVFEncContext),
     .name         = "ivf",
     .long_name    = NULL_IF_CONFIG_SMALL("On2 IVF"),
     .extensions   = "ivf",
@@ -66,4 +93,5 @@ AVOutputFormat ff_ivf_muxer = {
     .video_codec  = AV_CODEC_ID_VP8,
     .write_header = ivf_write_header,
     .write_packet = ivf_write_packet,
+    .write_trailer = ivf_write_trailer,
 };
