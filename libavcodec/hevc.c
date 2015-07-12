@@ -2781,7 +2781,7 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
 
     /* decode the NAL units */
     for (i = 0; i < s->pkt.nb_nals; i++) {
-        s->skipped_bytes_pos = s->skipped_bytes_pos_nal[i];
+        s->skipped_bytes_pos = s->pkt.nals[i].skipped_bytes_pos_nal;
 
         ret = decode_nal_unit(s, &s->pkt.nals[i]);
         if (ret < 0) {
@@ -2971,11 +2971,6 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
 
     av_freep(&s->md5_ctx);
 
-    for(i=0; i < s->pkt.nals_allocated; i++) {
-        av_freep(&s->skipped_bytes_pos_nal[i]);
-    }
-    av_freep(&s->skipped_bytes_pos_nal);
-
     av_freep(&s->cabac_state);
 
     for (i = 0; i < 3; i++) {
@@ -3014,8 +3009,10 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
         s->HEVClc = NULL;
     av_freep(&s->HEVClcList[0]);
 
-    for (i = 0; i < s->pkt.nals_allocated; i++)
+    for (i = 0; i < s->pkt.nals_allocated; i++) {
         av_freep(&s->pkt.nals[i].rbsp_buffer);
+        av_freep(&s->pkt.nals[i].skipped_bytes_pos_nal);
+    }
     av_freep(&s->pkt.nals);
     s->pkt.nals_allocated = 0;
 
