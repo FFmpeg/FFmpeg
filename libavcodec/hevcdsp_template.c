@@ -1033,10 +1033,10 @@ static void FUNC(put_unweighted_pred)(uint8_t *_dst, ptrdiff_t _dststride,
     }
 }
 
-static void FUNC(put_weighted_pred_avg)(uint8_t *_dst, ptrdiff_t _dststride,
-                                        int16_t *src1, int16_t *src2,
-                                        ptrdiff_t srcstride,
-                                        int width, int height)
+static void FUNC(put_unweighted_pred_avg)(uint8_t *_dst, ptrdiff_t _dststride,
+                                          int16_t *src1, int16_t *src2,
+                                          ptrdiff_t srcstride,
+                                          int width, int height)
 {
     int x, y;
     pixel *dst          = (pixel *)_dst;

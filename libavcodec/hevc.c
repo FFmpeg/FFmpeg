@@ -1806,8 +1806,8 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
                                          dst0, s->frame->linesize[0],
                                          tmp, tmp2, tmpstride, nPbW, nPbH);
         } else {
-            s->hevcdsp.put_weighted_pred_avg(dst0, s->frame->linesize[0],
-                                             tmp, tmp2, tmpstride, nPbW, nPbH);
+            s->hevcdsp.put_unweighted_pred_avg(dst0, s->frame->linesize[0],
+                                               tmp, tmp2, tmpstride, nPbW, nPbH);
         }
 
         chroma_mc(s, tmp, tmp2, tmpstride, ref0->frame,
@@ -1832,8 +1832,8 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
                                          dst2, s->frame->linesize[2], tmp2, tmp4,
                                          tmpstride, nPbW / 2, nPbH / 2);
         } else {
-            s->hevcdsp.put_weighted_pred_avg(dst1, s->frame->linesize[1], tmp, tmp3, tmpstride, nPbW/2, nPbH/2);
-            s->hevcdsp.put_weighted_pred_avg(dst2, s->frame->linesize[2], tmp2, tmp4, tmpstride, nPbW/2, nPbH/2);
+            s->hevcdsp.put_unweighted_pred_avg(dst1, s->frame->linesize[1], tmp, tmp3, tmpstride, nPbW/2, nPbH/2);
+            s->hevcdsp.put_unweighted_pred_avg(dst2, s->frame->linesize[2], tmp2, tmp4, tmpstride, nPbW/2, nPbH/2);
         }
     }
 }
