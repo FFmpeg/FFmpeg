@@ -90,6 +90,7 @@ static inline int parse_nal_units(AVCodecParserContext *s, AVCodecContext *avctx
     HEVCContext   *h  = &((HEVCParseContext *)s->priv_data)->h;
     GetBitContext *gb = &h->HEVClc->gb;
     SliceHeader   *sh = &h->sh;
+    HEVCParamSets *ps = &h->ps;
     const uint8_t *buf_end = buf + buf_size;
     int state = -1, i;
     HEVCNAL *nal;
@@ -137,13 +138,13 @@ static inline int parse_nal_units(AVCodecParserContext *s, AVCodecContext *avctx
         init_get_bits8(gb, nal->data + 2, nal->size);
         switch (h->nal_unit_type) {
         case NAL_VPS:
-            ff_hevc_decode_nal_vps(h);
+            ff_hevc_decode_nal_vps(gb, avctx, ps);
             break;
         case NAL_SPS:
-            ff_hevc_decode_nal_sps(h);
+            ff_hevc_decode_nal_sps(gb, avctx, ps, h->apply_defdispwin);
             break;
         case NAL_PPS:
-            ff_hevc_decode_nal_pps(h);
+            ff_hevc_decode_nal_pps(gb, avctx, ps);
             break;
         case NAL_SEI_PREFIX:
         case NAL_SEI_SUFFIX:
@@ -175,33 +176,33 @@ static inline int parse_nal_units(AVCodecParserContext *s, AVCodecContext *avctx
             }
 
             sh->pps_id = get_ue_golomb(gb);
-            if (sh->pps_id >= MAX_PPS_COUNT || !h->pps_list[sh->pps_id]) {
+            if (sh->pps_id >= MAX_PPS_COUNT || !ps->pps_list[sh->pps_id]) {
                 av_log(h->avctx, AV_LOG_ERROR, "PPS id out of range: %d\n", sh->pps_id);
                 return AVERROR_INVALIDDATA;
             }
-            h->pps = (HEVCPPS*)h->pps_list[sh->pps_id]->data;
+            ps->pps = (HEVCPPS*)ps->pps_list[sh->pps_id]->data;
 
-            if (h->pps->sps_id >= MAX_SPS_COUNT || !h->sps_list[h->pps->sps_id]) {
-                av_log(h->avctx, AV_LOG_ERROR, "SPS id out of range: %d\n", h->pps->sps_id);
+            if (ps->pps->sps_id >= MAX_SPS_COUNT || !ps->sps_list[ps->pps->sps_id]) {
+                av_log(h->avctx, AV_LOG_ERROR, "SPS id out of range: %d\n", ps->pps->sps_id);
                 return AVERROR_INVALIDDATA;
             }
-            if (h->sps != (HEVCSPS*)h->sps_list[h->pps->sps_id]->data) {
-                h->sps = (HEVCSPS*)h->sps_list[h->pps->sps_id]->data;
-                h->vps = (HEVCVPS*)h->vps_list[h->sps->vps_id]->data;
+            if (ps->sps != (HEVCSPS*)ps->sps_list[ps->pps->sps_id]->data) {
+                ps->sps = (HEVCSPS*)ps->sps_list[ps->pps->sps_id]->data;
+                ps->vps = (HEVCVPS*)ps->vps_list[ps->sps->vps_id]->data;
             }
 
             if (!sh->first_slice_in_pic_flag) {
                 int slice_address_length;
 
-                if (h->pps->dependent_slice_segments_enabled_flag)
+                if (ps->pps->dependent_slice_segments_enabled_flag)
                     sh->dependent_slice_segment_flag = get_bits1(gb);
                 else
                     sh->dependent_slice_segment_flag = 0;
 
-                slice_address_length = av_ceil_log2_c(h->sps->ctb_width *
-                                                      h->sps->ctb_height);
+                slice_address_length = av_ceil_log2_c(ps->sps->ctb_width *
+                                                      ps->sps->ctb_height);
                 sh->slice_segment_addr = slice_address_length ? get_bits(gb, slice_address_length) : 0;
-                if (sh->slice_segment_addr >= h->sps->ctb_width * h->sps->ctb_height) {
+                if (sh->slice_segment_addr >= ps->sps->ctb_width * ps->sps->ctb_height) {
                     av_log(h->avctx, AV_LOG_ERROR, "Invalid slice segment address: %u.\n",
                            sh->slice_segment_addr);
                     return AVERROR_INVALIDDATA;
@@ -212,7 +213,7 @@ static inline int parse_nal_units(AVCodecParserContext *s, AVCodecContext *avctx
             if (sh->dependent_slice_segment_flag)
                 break;
 
-            for (i = 0; i < h->pps->num_extra_slice_header_bits; i++)
+            for (i = 0; i < ps->pps->num_extra_slice_header_bits; i++)
                 skip_bits(gb, 1); // slice_reserved_undetermined_flag[]
 
             sh->slice_type = get_ue_golomb(gb);
@@ -226,14 +227,14 @@ static inline int parse_nal_units(AVCodecParserContext *s, AVCodecContext *avctx
                            sh->slice_type == P_SLICE ? AV_PICTURE_TYPE_P :
                                                        AV_PICTURE_TYPE_I;
 
-            if (h->pps->output_flag_present_flag)
+            if (ps->pps->output_flag_present_flag)
                 sh->pic_output_flag = get_bits1(gb);
 
-            if (h->sps->separate_colour_plane_flag)
+            if (ps->sps->separate_colour_plane_flag)
                 sh->colour_plane_id = get_bits(gb, 2);
 
             if (!IS_IDR(h)) {
-                sh->pic_order_cnt_lsb = get_bits(gb, h->sps->log2_max_poc_lsb);
+                sh->pic_order_cnt_lsb = get_bits(gb, ps->sps->log2_max_poc_lsb);
                 s->output_picture_number = h->poc = ff_hevc_compute_poc(h, sh->pic_order_cnt_lsb);
             } else
                 s->output_picture_number = h->poc = 0;
@@ -321,19 +322,20 @@ static void hevc_close(AVCodecParserContext *s)
     int i;
     HEVCContext  *h  = &((HEVCParseContext *)s->priv_data)->h;
     ParseContext *pc = &((HEVCParseContext *)s->priv_data)->pc;
+    HEVCParamSets *ps = &h->ps;
 
     av_freep(&h->skipped_bytes_pos);
     av_freep(&h->HEVClc);
     av_freep(&pc->buffer);
 
-    for (i = 0; i < FF_ARRAY_ELEMS(h->vps_list); i++)
-        av_buffer_unref(&h->vps_list[i]);
-    for (i = 0; i < FF_ARRAY_ELEMS(h->sps_list); i++)
-        av_buffer_unref(&h->sps_list[i]);
-    for (i = 0; i < FF_ARRAY_ELEMS(h->pps_list); i++)
-        av_buffer_unref(&h->pps_list[i]);
+    for (i = 0; i < FF_ARRAY_ELEMS(ps->vps_list); i++)
+        av_buffer_unref(&ps->vps_list[i]);
+    for (i = 0; i < FF_ARRAY_ELEMS(ps->sps_list); i++)
+        av_buffer_unref(&ps->sps_list[i]);
+    for (i = 0; i < FF_ARRAY_ELEMS(ps->pps_list); i++)
+        av_buffer_unref(&ps->pps_list[i]);
 
-    h->sps = NULL;
+    ps->sps = NULL;
 
     for (i = 0; i < h->nals_allocated; i++)
         av_freep(&h->nals[i].rbsp_buffer);
