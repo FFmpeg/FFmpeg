@@ -1714,7 +1714,7 @@ static int matroska_parse_tracks(AVFormatContext *s)
             ffio_init_context(&b, track->codec_priv.data,
                               track->codec_priv.size,
                               0, NULL, NULL, NULL, NULL);
-            ret = ff_get_wav_header(&b, st->codec, track->codec_priv.size);
+            ret = ff_get_wav_header(s, &b, st->codec, track->codec_priv.size);
             if (ret < 0)
                 return ret;
             codec_id         = st->codec->codec_id;

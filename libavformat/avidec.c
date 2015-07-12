@@ -811,7 +811,7 @@ static int avi_read_header(AVFormatContext *s)
 //                    avio_skip(pb, size - 5 * 4);
                     break;
                 case AVMEDIA_TYPE_AUDIO:
-                    ret = ff_get_wav_header(pb, st->codec, size);
+                    ret = ff_get_wav_header(s, pb, st->codec, size);
                     if (ret < 0)
                         return ret;
                     ast->dshow_block_align = st->codec->block_align;

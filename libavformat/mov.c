@@ -696,7 +696,7 @@ static int mov_read_wfex(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return 0;
     st = c->fc->streams[c->fc->nb_streams-1];
 
-    if (ff_get_wav_header(pb, st->codec, atom.size) < 0) {
+    if (ff_get_wav_header(c->fc, pb, st->codec, atom.size) < 0) {
         av_log(c->fc, AV_LOG_WARNING, "get_wav_header failed\n");
     }
 
