@@ -642,10 +642,41 @@ static int scaling_list_data(GetBitContext *gb, AVCodecContext *avctx, ScalingLi
     return 0;
 }
 
+static int map_pixel_format(AVCodecContext *avctx, HEVCSPS *sps)
+{
+    const AVPixFmtDescriptor *desc;
+    if (sps->chroma_format_idc == 1) {
+        switch (sps->bit_depth) {
+        case 8:  sps->pix_fmt = AV_PIX_FMT_YUV420P;   break;
+        case 9:  sps->pix_fmt = AV_PIX_FMT_YUV420P9;  break;
+        case 10: sps->pix_fmt = AV_PIX_FMT_YUV420P10; break;
+        default:
+            av_log(avctx, AV_LOG_ERROR, "Unsupported bit depth: %d\n",
+                   sps->bit_depth);
+            return AVERROR_PATCHWELCOME;
+        }
+    } else {
+        av_log(avctx, AV_LOG_ERROR,
+               "non-4:2:0 support is currently unspecified.\n");
+        return AVERROR_PATCHWELCOME;
+    }
+
+    desc = av_pix_fmt_desc_get(sps->pix_fmt);
+    if (!desc)
+        return AVERROR(EINVAL);
+
+    sps->hshift[0] = sps->vshift[0] = 0;
+    sps->hshift[2] = sps->hshift[1] = desc->log2_chroma_w;
+    sps->vshift[2] = sps->vshift[1] = desc->log2_chroma_h;
+
+    sps->pixel_shift = sps->bit_depth > 8;
+
+    return 0;
+}
+
 int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
                       int apply_defdispwin, AVBufferRef **vps_list, AVCodecContext *avctx)
 {
-    const AVPixFmtDescriptor *desc;
     int ret = 0;
     int log2_diff_max_min_transform_block_size;
     int bit_depth_chroma, start, vui_present, sublayer_ordering_info;
@@ -737,34 +768,10 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
         goto err;
     }
 
-    if (sps->chroma_format_idc == 1) {
-        switch (sps->bit_depth) {
-        case 8:  sps->pix_fmt = AV_PIX_FMT_YUV420P;   break;
-        case 9:  sps->pix_fmt = AV_PIX_FMT_YUV420P9;  break;
-        case 10: sps->pix_fmt = AV_PIX_FMT_YUV420P10; break;
-        default:
-            av_log(avctx, AV_LOG_ERROR, "Unsupported bit depth: %d\n",
-                   sps->bit_depth);
-            ret = AVERROR_PATCHWELCOME;
-            goto err;
-        }
-    } else {
-        av_log(avctx, AV_LOG_ERROR,
-               "non-4:2:0 support is currently unspecified.\n");
-        return AVERROR_PATCHWELCOME;
-    }
 
-    desc = av_pix_fmt_desc_get(sps->pix_fmt);
-    if (!desc) {
-        ret = AVERROR(EINVAL);
+    ret = map_pixel_format(avctx, sps);
+    if (ret < 0)
         goto err;
-    }
-
-    sps->hshift[0] = sps->vshift[0] = 0;
-    sps->hshift[2] = sps->hshift[1] = desc->log2_chroma_w;
-    sps->vshift[2] = sps->vshift[1] = desc->log2_chroma_h;
-
-    sps->pixel_shift = sps->bit_depth > 8;
 
     sps->log2_max_poc_lsb = get_ue_golomb_long(gb) + 4;
     if (sps->log2_max_poc_lsb > 16) {
