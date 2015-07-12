@@ -319,7 +319,6 @@ static int put_qcd(Jpeg2000EncoderContext *s, int compno)
 
 static int put_com(Jpeg2000EncoderContext *s, int compno)
 {
-    int i;
     int size = 4 + strlen(LIBAVCODEC_IDENT);
 
     if (s->avctx->flags & CODEC_FLAG_BITEXACT)

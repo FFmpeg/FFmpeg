@@ -15,6 +15,14 @@ fate-filter-yadif16: CMD = framecrc -flags bitexact -idct simple -i $(TARGET_SAM
 
 FATE_FILTER-$(call FILTERDEMDEC, YADIF, MPEGTS, MPEG2VIDEO) += $(FATE_YADIF)
 
+FATE_W3FDIF += fate-filter-w3fdif-simple
+fate-filter-w3fdif-simple: CMD = framecrc -flags bitexact -idct simple -i $(TARGET_SAMPLES)/mpeg2/mpeg2_field_encoding.ts -vframes 30 -vf w3fdif=0
+
+FATE_W3FDIF += fate-filter-w3fdif-complex
+fate-filter-w3fdif-complex: CMD = framecrc -flags bitexact -idct simple -i $(TARGET_SAMPLES)/mpeg2/mpeg2_field_encoding.ts -vframes 30 -vf w3fdif=1
+
+FATE_FILTER-$(call FILTERDEMDEC, W3FDIF, MPEGTS, MPEG2VIDEO) += $(FATE_W3FDIF)
+
 FATE_MCDEINT += fate-filter-mcdeint-fast
 fate-filter-mcdeint-fast: CMD = framecrc -flags bitexact -idct simple -i $(TARGET_SAMPLES)/mpeg2/mpeg2_field_encoding.ts -vframes 30 -vf mcdeint=fast
 

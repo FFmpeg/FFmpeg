@@ -124,13 +124,18 @@ static void *avformat_mutex;
 
 static inline int ff_fast_malloc(void *ptr, unsigned int *size, size_t min_size, int zero_realloc)
 {
-    void **p = ptr;
-    if (min_size <= *size && *p)
+    void *val;
+
+    memcpy(&val, ptr, sizeof(val));
+    if (min_size <= *size) {
+        av_assert0(val || !min_size);
         return 0;
-    min_size = FFMAX(17 * min_size / 16 + 32, min_size);
-    av_free(*p);
-    *p = zero_realloc ? av_mallocz(min_size) : av_malloc(min_size);
-    if (!*p)
+    }
+    min_size = FFMAX(min_size + min_size / 16 + 32, min_size);
+    av_freep(ptr);
+    val = zero_realloc ? av_mallocz(min_size) : av_malloc(min_size);
+    memcpy(ptr, &val, sizeof(val));
+    if (!val)
         min_size = 0;
     *size = min_size;
     return 1;
@@ -432,6 +437,11 @@ void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height,
         // some of the optimized chroma MC reads one line too much
         // which is also done in mpeg decoders with lowres > 0
         *height += 2;
+
+        // H.264 uses edge emulation for out of frame motion vectors, for this
+        // it requires a temporary area large enough to hold a 21x21 block,
+        // increasing witdth ensure that the temporary area is large enough,
+        // the next rounded up width is 32
         *width = FFMAX(*width, 32);
     }
 

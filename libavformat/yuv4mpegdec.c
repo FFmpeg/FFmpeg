@@ -256,6 +256,12 @@ static int yuv4_read_header(AVFormatContext *s)
     st->sample_aspect_ratio           = (AVRational){ aspectn, aspectd };
     st->codec->chroma_sample_location = chroma_sample_location;
     st->codec->field_order            = field_order;
+    s->packet_size = avpicture_get_size(st->codec->pix_fmt, width, height) + Y4M_FRAME_MAGIC_LEN;
+    if ((int) s->packet_size < 0)
+        return s->packet_size;
+    s->internal->data_offset = avio_tell(pb);
+
+    st->duration = (avio_size(pb) - avio_tell(pb)) / s->packet_size;
 
     return 0;
 }
@@ -264,8 +270,8 @@ static int yuv4_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int i;
     char header[MAX_FRAME_HEADER+1];
-    int packet_size, width, height, ret;
-    AVStream *st = s->streams[0];
+    int ret;
+    int64_t off = avio_tell(s->pb);
 
     for (i = 0; i < MAX_FRAME_HEADER; i++) {
         header[i] = avio_r8(s->pb);
@@ -284,20 +290,22 @@ static int yuv4_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (strncmp(header, Y4M_FRAME_MAGIC, strlen(Y4M_FRAME_MAGIC)))
         return AVERROR_INVALIDDATA;
 
-    width  = st->codec->width;
-    height = st->codec->height;
-
-    packet_size = avpicture_get_size(st->codec->pix_fmt, width, height);
-    if (packet_size < 0)
-        return packet_size;
-
-    ret = av_get_packet(s->pb, pkt, packet_size);
+    ret = av_get_packet(s->pb, pkt, s->packet_size - Y4M_FRAME_MAGIC_LEN);
     if (ret < 0)
         return ret;
-    else if (ret != packet_size)
+    else if (ret != s->packet_size - Y4M_FRAME_MAGIC_LEN)
         return s->pb->eof_reached ? AVERROR_EOF : AVERROR(EIO);
 
     pkt->stream_index = 0;
+    pkt->pts = (off - s->internal->data_offset) / s->packet_size;
+    pkt->duration = 1;
+    return 0;
+}
+
+static int yuv4_read_seek(AVFormatContext *s, int stream_index,
+                          int64_t pts, int flags)
+{
+    avio_seek(s->pb, pts * s->packet_size + s->internal->data_offset, SEEK_SET);
     return 0;
 }
 
@@ -316,5 +324,6 @@ AVInputFormat ff_yuv4mpegpipe_demuxer = {
     .read_probe     = yuv4_probe,
     .read_header    = yuv4_read_header,
     .read_packet    = yuv4_read_packet,
+    .read_seek      = yuv4_read_seek,
     .extensions     = "y4m",
 };

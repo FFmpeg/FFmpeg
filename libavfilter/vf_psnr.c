@@ -25,6 +25,7 @@
  * Caculate the PSNR between two input videos.
  */
 
+#include "libavutil/avstring.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
@@ -37,7 +38,7 @@
 typedef struct PSNRContext {
     const AVClass *class;
     FFDualInputContext dinput;
-    double mse, min_mse, max_mse;
+    double mse, min_mse, max_mse, mse_comp[4];
     uint64_t nb_frames;
     FILE *stats_file;
     char *stats_file_str;
@@ -48,6 +49,7 @@ typedef struct PSNRContext {
     int nb_components;
     int planewidth[4];
     int planeheight[4];
+    double planeweight[4];
 
     void (*compute_mse)(struct PSNRContext *s,
                         const uint8_t *m[4], const int ml[4],
@@ -158,22 +160,23 @@ static AVFrame *do_psnr(AVFilterContext *ctx, AVFrame *main,
                        main->width, main->height, comp_mse);
 
     for (j = 0; j < s->nb_components; j++)
-        mse += comp_mse[j];
-    mse /= s->nb_components;
+        mse += comp_mse[j] * s->planeweight[j];
 
     s->min_mse = FFMIN(s->min_mse, mse);
     s->max_mse = FFMAX(s->max_mse, mse);
 
     s->mse += mse;
+    for (j = 0; j < s->nb_components; j++)
+        s->mse_comp[j] += comp_mse[j];
     s->nb_frames++;
 
     for (j = 0; j < s->nb_components; j++) {
         c = s->is_rgb ? s->rgba_map[j] : j;
         set_meta(metadata, "lavfi.psnr.mse.", s->comps[j], comp_mse[c]);
-        set_meta(metadata, "lavfi.psnr.mse_avg", 0, mse);
         set_meta(metadata, "lavfi.psnr.psnr.", s->comps[j], get_psnr(comp_mse[c], 1, s->max[c]));
-        set_meta(metadata, "lavfi.psnr.psnr_avg", 0, get_psnr(mse, 1, s->average_max));
     }
+    set_meta(metadata, "lavfi.psnr.mse_avg", 0, mse);
+    set_meta(metadata, "lavfi.psnr.psnr_avg", 0, get_psnr(mse, 1, s->average_max));
 
     if (s->stats_file) {
         fprintf(s->stats_file, "n:%"PRId64" mse_avg:%0.2f ", s->nb_frames, mse);
@@ -243,6 +246,7 @@ static int config_input_ref(AVFilterLink *inlink)
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
     AVFilterContext *ctx  = inlink->dst;
     PSNRContext *s = ctx->priv;
+    unsigned sum;
     int j;
 
     s->nb_components = desc->nb_components;
@@ -256,33 +260,10 @@ static int config_input_ref(AVFilterLink *inlink)
         return AVERROR(EINVAL);
     }
 
-    switch (inlink->format) {
-    case AV_PIX_FMT_GRAY8:
-    case AV_PIX_FMT_GRAY16:
-    case AV_PIX_FMT_GBRP:
-    case AV_PIX_FMT_GBRP9:
-    case AV_PIX_FMT_GBRP10:
-    case AV_PIX_FMT_GBRP12:
-    case AV_PIX_FMT_GBRP14:
-    case AV_PIX_FMT_GBRP16:
-    case AV_PIX_FMT_GBRAP:
-    case AV_PIX_FMT_GBRAP16:
-    case AV_PIX_FMT_YUVJ411P:
-    case AV_PIX_FMT_YUVJ420P:
-    case AV_PIX_FMT_YUVJ422P:
-    case AV_PIX_FMT_YUVJ440P:
-    case AV_PIX_FMT_YUVJ444P:
-        s->max[0] = (1 << (desc->comp[0].depth_minus1 + 1)) - 1;
-        s->max[1] = (1 << (desc->comp[1].depth_minus1 + 1)) - 1;
-        s->max[2] = (1 << (desc->comp[2].depth_minus1 + 1)) - 1;
-        s->max[3] = (1 << (desc->comp[3].depth_minus1 + 1)) - 1;
-        break;
-    default:
-        s->max[0] = 235 * (1 << (desc->comp[0].depth_minus1 - 7));
-        s->max[1] = 240 * (1 << (desc->comp[1].depth_minus1 - 7));
-        s->max[2] = 240 * (1 << (desc->comp[2].depth_minus1 - 7));
-        s->max[3] = (1 << (desc->comp[3].depth_minus1 + 1)) - 1;
-    }
+    s->max[0] = (1 << (desc->comp[0].depth_minus1 + 1)) - 1;
+    s->max[1] = (1 << (desc->comp[1].depth_minus1 + 1)) - 1;
+    s->max[2] = (1 << (desc->comp[2].depth_minus1 + 1)) - 1;
+    s->max[3] = (1 << (desc->comp[3].depth_minus1 + 1)) - 1;
 
     s->is_rgb = ff_fill_rgba_map(s->rgba_map, inlink->format) >= 0;
     s->comps[0] = s->is_rgb ? 'r' : 'y' ;
@@ -290,14 +271,17 @@ static int config_input_ref(AVFilterLink *inlink)
     s->comps[2] = s->is_rgb ? 'b' : 'v' ;
     s->comps[3] = 'a';
 
-    for (j = 0; j < s->nb_components; j++)
-        s->average_max += s->max[j];
-    s->average_max /= s->nb_components;
-
     s->planeheight[1] = s->planeheight[2] = FF_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
     s->planeheight[0] = s->planeheight[3] = inlink->h;
     s->planewidth[1]  = s->planewidth[2]  = FF_CEIL_RSHIFT(inlink->w, desc->log2_chroma_w);
     s->planewidth[0]  = s->planewidth[3]  = inlink->w;
+    sum = 0;
+    for (j = 0; j < s->nb_components; j++)
+        sum += s->planeheight[j] * s->planewidth[j];
+    for (j = 0; j < s->nb_components; j++) {
+        s->planeweight[j] = (double) s->planeheight[j] * s->planewidth[j] / sum;
+        s->average_max += s->max[j] * s->planeweight[j];
+    }
 
     s->compute_mse = desc->comp[0].depth_minus1 > 7 ? compute_images_mse_16bit : compute_images_mse;
 
@@ -339,7 +323,17 @@ static av_cold void uninit(AVFilterContext *ctx)
     PSNRContext *s = ctx->priv;
 
     if (s->nb_frames > 0) {
-        av_log(ctx, AV_LOG_INFO, "PSNR average:%0.2f min:%0.2f max:%0.2f\n",
+        int j;
+        char buf[256];
+
+        buf[0] = 0;
+        for (j = 0; j < s->nb_components; j++) {
+            int c = s->is_rgb ? s->rgba_map[j] : j;
+            av_strlcatf(buf, sizeof(buf), " %c:%0.2f", s->comps[j],
+                        get_psnr(s->mse_comp[c], s->nb_frames, s->max[c]));
+        }
+        av_log(ctx, AV_LOG_INFO, "PSNR%s average:%0.2f min:%0.2f max:%0.2f\n",
+               buf,
                get_psnr(s->mse, s->nb_frames, s->average_max),
                get_psnr(s->max_mse, 1, s->average_max),
                get_psnr(s->min_mse, 1, s->average_max));

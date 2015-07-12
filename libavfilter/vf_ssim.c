@@ -70,9 +70,9 @@ static const AVOption ssim_options[] = {
 
 AVFILTER_DEFINE_CLASS(ssim);
 
-static int rgb_coefs[4]  = { 1, 1, 1, 3};
-static int yuv_coefs[4]  = { 4, 1, 1, 6};
-static int gray_coefs[4] = { 1, 0, 0, 1};
+static const int rgb_coefs[4]  = { 1, 1, 1, 3};
+static const int yuv_coefs[4]  = { 4, 1, 1, 6};
+static const int gray_coefs[4] = { 1, 0, 0, 1};
 
 static void set_meta(AVDictionary **metadata, const char *key, char comp, float d)
 {
