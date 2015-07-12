@@ -1558,11 +1558,9 @@ static int asf_read_seek(AVFormatContext *s, int stream_index,
     } else {
         if ((ret = ff_seek_frame_binary(s, stream_index, timestamp, flags)) < 0)
             return ret;
-
-        // asf_read_timestamp is called inside ff_seek_frame_binary and leaves state dirty,
-        // so reset_packet_state have to be called after it.
-        reset_packet_state(s);
     }
+
+    reset_packet_state(s);
 
     return 0;
 }
