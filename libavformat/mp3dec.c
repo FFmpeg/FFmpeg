@@ -54,7 +54,7 @@ typedef struct {
     int is_cbr;
 } MP3DecContext;
 
-static int check(AVFormatContext *s, int64_t pos);
+static int check(AVIOContext *pb, int64_t pos);
 
 /* mp3 read */
 
@@ -376,7 +376,7 @@ static int mp3_read_header(AVFormatContext *s)
     for (i = 0; i < 64 * 1024; i++) {
         if (!(i&1023))
             ffio_ensure_seekback(s->pb, i + 1024 + 4);
-        if (check(s, off + i) >= 0) {
+        if (check(s->pb, off + i) >= 0) {
             av_log(s, AV_LOG_INFO, "Skipping %d bytes of junk at %"PRId64".\n", i, off);
             avio_seek(s->pb, off + i, SEEK_SET);
             break;
@@ -418,18 +418,22 @@ static int mp3_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
-static int check(AVFormatContext *s, int64_t pos)
+#define SEEK_WINDOW 4096
+
+static int check(AVIOContext *pb, int64_t pos)
 {
-    int64_t ret = avio_seek(s->pb, pos, SEEK_SET);
+    int64_t ret = avio_seek(pb, pos, SEEK_SET);
     unsigned header;
     MPADecodeHeader sd;
     if (ret < 0)
         return ret;
-    header = avio_rb32(s->pb);
+
+    header = avio_rb32(pb);
     if (ff_mpa_check_header(header) < 0)
         return -1;
     if (avpriv_mpegaudio_decode_header(&sd, header) == 1)
         return -1;
+
     return sd.frame_size;
 }
 
@@ -466,7 +470,7 @@ static int mp3_seek(AVFormatContext *s, int stream_index, int64_t timestamp,
         return -1;
     }
 
-    avio_seek(s->pb, FFMAX(ie->pos - 4096, 0), SEEK_SET);
+    avio_seek(s->pb, FFMAX(ie->pos - SEEK_WINDOW, 0), SEEK_SET);
     ret = avio_seek(s->pb, ie->pos, SEEK_SET);
     if (ret < 0)
         return ret;
@@ -474,8 +478,8 @@ static int mp3_seek(AVFormatContext *s, int stream_index, int64_t timestamp,
 #define MIN_VALID 3
     best_pos = ie->pos;
     best_score = 999;
-    for(i=0; i<4096; i++) {
-        int64_t pos = ie->pos + (dir > 0 ? i - 1024 : -i);
+    for(i=0; i<SEEK_WINDOW; i++) {
+        int64_t pos = ie->pos + (dir > 0 ? i - SEEK_WINDOW/4 : -i);
         int64_t candidate = -1;
         int score = 999;
 
@@ -483,7 +487,7 @@ static int mp3_seek(AVFormatContext *s, int stream_index, int64_t timestamp,
             continue;
 
         for(j=0; j<MIN_VALID; j++) {
-            ret = check(s, pos);
+            ret = check(s->pb, pos);
             if(ret < 0)
                 break;
             if ((ie->pos - pos)*dir <= 0 && abs(MIN_VALID/2-j) < score) {
