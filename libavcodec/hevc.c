@@ -2974,7 +2974,6 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
     for(i=0; i < s->pkt.nals_allocated; i++) {
         av_freep(&s->skipped_bytes_pos_nal[i]);
     }
-    av_freep(&s->skipped_bytes_pos_size_nal);
     av_freep(&s->skipped_bytes_pos_nal);
 
     av_freep(&s->cabac_state);

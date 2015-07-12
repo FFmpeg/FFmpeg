@@ -218,32 +218,28 @@ int ff_hevc_split_packet(HEVCContext *s, HEVCPacket *pkt, const uint8_t *buf, in
             memset(pkt->nals + pkt->nals_allocated, 0,
                    (new_size - pkt->nals_allocated) * sizeof(*pkt->nals));
 
-            tmp = av_realloc_array(s->skipped_bytes_pos_size_nal, new_size, sizeof(*s->skipped_bytes_pos_size_nal));
-            if (!tmp)
-                return AVERROR(ENOMEM);
-            s->skipped_bytes_pos_size_nal = tmp;
-
             tmp = av_realloc_array(s->skipped_bytes_pos_nal, new_size, sizeof(*s->skipped_bytes_pos_nal));
             if (!tmp)
                 return AVERROR(ENOMEM);
             s->skipped_bytes_pos_nal = tmp;
 
-            s->skipped_bytes_pos_size_nal[pkt->nals_allocated] = 1024; // initial buffer size
-            s->skipped_bytes_pos_nal[pkt->nals_allocated] = av_malloc_array(s->skipped_bytes_pos_size_nal[pkt->nals_allocated], sizeof(*s->skipped_bytes_pos));
+            nal = &pkt->nals[pkt->nb_nals];
+            nal->skipped_bytes_pos_size_nal = 1024; // initial buffer size
+            s->skipped_bytes_pos_nal[pkt->nals_allocated] = av_malloc_array(nal->skipped_bytes_pos_size_nal, sizeof(*s->skipped_bytes_pos));
             if (!s->skipped_bytes_pos_nal[pkt->nals_allocated])
                 return AVERROR(ENOMEM);
 
             pkt->nals_allocated = new_size;
         }
-        s->skipped_bytes_pos_size = s->skipped_bytes_pos_size_nal[pkt->nb_nals];
-        s->skipped_bytes_pos = s->skipped_bytes_pos_nal[pkt->nb_nals];
         nal = &pkt->nals[pkt->nb_nals];
+        s->skipped_bytes_pos_size = nal->skipped_bytes_pos_size_nal;
+        s->skipped_bytes_pos = s->skipped_bytes_pos_nal[pkt->nb_nals];
 
         consumed = ff_hevc_extract_rbsp(s, buf, extract_length, nal);
         if (consumed < 0)
             return consumed;
 
-        s->skipped_bytes_pos_size_nal[pkt->nb_nals] = s->skipped_bytes_pos_size;
+        nal->skipped_bytes_pos_size_nal = s->skipped_bytes_pos_size;
         s->skipped_bytes_pos_nal[pkt->nb_nals++] = s->skipped_bytes_pos;
 
         ret = init_get_bits8(&nal->gb, nal->data, nal->size);
