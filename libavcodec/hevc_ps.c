@@ -719,7 +719,8 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
 
     sps->chroma_format_idc = get_ue_golomb_long(gb);
     if (sps->chroma_format_idc != 1) {
-        avpriv_report_missing_feature(avctx, "chroma_format_idc != 1\n");
+        avpriv_report_missing_feature(avctx, "chroma_format_idc %d",
+                                      sps->chroma_format_idc);
         ret = AVERROR_PATCHWELCOME;
         goto err;
     }
