@@ -110,18 +110,21 @@ int ff_hevc_extract_rbsp(HEVCContext *s, const uint8_t *src, int length,
                 dst[di++] = 0;
                 si       += 3;
 
-                if (s) {
-                        nal->skipped_bytes++;
-                        if (s->skipped_bytes_pos_size < nal->skipped_bytes) {
-                        s->skipped_bytes_pos_size *= 2;
-                        av_reallocp_array(&s->skipped_bytes_pos,
-                                s->skipped_bytes_pos_size,
-                                sizeof(*s->skipped_bytes_pos));
-                        if (!s->skipped_bytes_pos)
-                                return AVERROR(ENOMEM);
+                if (s && nal->skipped_bytes_pos) {
+                    nal->skipped_bytes++;
+                    if (nal->skipped_bytes_pos_size < nal->skipped_bytes) {
+                        nal->skipped_bytes_pos_size *= 2;
+                        av_assert0(nal->skipped_bytes_pos_size >= nal->skipped_bytes);
+                        av_reallocp_array(&nal->skipped_bytes_pos,
+                                nal->skipped_bytes_pos_size,
+                                sizeof(*nal->skipped_bytes_pos));
+                        if (!nal->skipped_bytes_pos) {
+                            nal->skipped_bytes_pos_size = 0;
+                            return AVERROR(ENOMEM);
                         }
-                        if (s->skipped_bytes_pos)
-                        s->skipped_bytes_pos[nal->skipped_bytes-1] = di - 1;
+                    }
+                    if (nal->skipped_bytes_pos)
+                        nal->skipped_bytes_pos[nal->skipped_bytes-1] = di - 1;
                 }
                 continue;
             } else // next start code
@@ -219,23 +222,19 @@ int ff_hevc_split_packet(HEVCContext *s, HEVCPacket *pkt, const uint8_t *buf, in
                    (new_size - pkt->nals_allocated) * sizeof(*pkt->nals));
 
             nal = &pkt->nals[pkt->nb_nals];
-            nal->skipped_bytes_pos_size_nal = 1024; // initial buffer size
-            nal->skipped_bytes_pos_nal = av_malloc_array(nal->skipped_bytes_pos_size_nal, sizeof(*s->skipped_bytes_pos));
-            if (!nal->skipped_bytes_pos_nal)
+            nal->skipped_bytes_pos_size = 1024; // initial buffer size
+            nal->skipped_bytes_pos = av_malloc_array(nal->skipped_bytes_pos_size, sizeof(*nal->skipped_bytes_pos));
+            if (!nal->skipped_bytes_pos)
                 return AVERROR(ENOMEM);
 
             pkt->nals_allocated = new_size;
         }
         nal = &pkt->nals[pkt->nb_nals];
-        s->skipped_bytes_pos_size = nal->skipped_bytes_pos_size_nal;
-        s->skipped_bytes_pos = nal->skipped_bytes_pos_nal;
 
         consumed = ff_hevc_extract_rbsp(s, buf, extract_length, nal);
         if (consumed < 0)
             return consumed;
 
-        nal->skipped_bytes_pos_size_nal = s->skipped_bytes_pos_size;
-        nal->skipped_bytes_pos_nal      = s->skipped_bytes_pos;
         pkt->nb_nals++;
 
         ret = init_get_bits8(&nal->gb, nal->data, nal->size);

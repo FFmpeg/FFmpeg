@@ -313,7 +313,6 @@ static int hevc_init(AVCodecParserContext *s)
     h->HEVClc = av_mallocz(sizeof(HEVCLocalContext));
     if (!h->HEVClc)
         return AVERROR(ENOMEM);
-    h->skipped_bytes_pos_size = INT_MAX;
 
     return 0;
 }
@@ -326,7 +325,6 @@ static void hevc_close(AVCodecParserContext *s)
     HEVCParamSets *ps = &h->ps;
     HEVCPacket   *pkt = &h->pkt;
 
-    av_freep(&h->skipped_bytes_pos);
     av_freep(&h->HEVClc);
     av_freep(&pc->buffer);
 
@@ -339,8 +337,10 @@ static void hevc_close(AVCodecParserContext *s)
 
     ps->sps = NULL;
 
-    for (i = 0; i < pkt->nals_allocated; i++)
+    for (i = 0; i < pkt->nals_allocated; i++) {
         av_freep(&pkt->nals[i].rbsp_buffer);
+        av_freep(&pkt->nals[i].skipped_bytes_pos);
+    }
     av_freep(&pkt->nals);
     pkt->nals_allocated = 0;
 }

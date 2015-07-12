@@ -761,8 +761,8 @@ typedef struct HEVCNAL {
     int temporal_id;
 
     int skipped_bytes;
-    int skipped_bytes_pos_size_nal;
-    int *skipped_bytes_pos_nal;
+    int skipped_bytes_pos_size;
+    int *skipped_bytes_pos;
 } HEVCNAL;
 
 /* an input packet split into unescaped NAL units */
@@ -901,8 +901,6 @@ typedef struct HEVCContext {
 
     int enable_parallel_tiles;
     int wpp_err;
-    int *skipped_bytes_pos;
-    int skipped_bytes_pos_size;
 
     const uint8_t *data;
 

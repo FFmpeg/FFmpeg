@@ -2455,7 +2455,7 @@ static int hls_slice_data_wpp(HEVCContext *s, const HEVCNAL *nal)
     offset = (lc->gb.index >> 3);
 
     for (j = 0, cmpt = 0, startheader = offset + s->sh.entry_point_offset[0]; j < nal->skipped_bytes; j++) {
-        if (s->skipped_bytes_pos[j] >= offset && s->skipped_bytes_pos[j] < startheader) {
+        if (nal->skipped_bytes_pos[j] >= offset && nal->skipped_bytes_pos[j] < startheader) {
             startheader--;
             cmpt++;
         }
@@ -2465,7 +2465,7 @@ static int hls_slice_data_wpp(HEVCContext *s, const HEVCNAL *nal)
         offset += (s->sh.entry_point_offset[i - 1] - cmpt);
         for (j = 0, cmpt = 0, startheader = offset
              + s->sh.entry_point_offset[i]; j < nal->skipped_bytes; j++) {
-            if (s->skipped_bytes_pos[j] >= offset && s->skipped_bytes_pos[j] < startheader) {
+            if (nal->skipped_bytes_pos[j] >= offset && nal->skipped_bytes_pos[j] < startheader) {
                 startheader--;
                 cmpt++;
             }
@@ -2781,8 +2781,6 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
 
     /* decode the NAL units */
     for (i = 0; i < s->pkt.nb_nals; i++) {
-        s->skipped_bytes_pos = s->pkt.nals[i].skipped_bytes_pos_nal;
-
         ret = decode_nal_unit(s, &s->pkt.nals[i]);
         if (ret < 0) {
             av_log(s->avctx, AV_LOG_WARNING,
@@ -3011,7 +3009,7 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
 
     for (i = 0; i < s->pkt.nals_allocated; i++) {
         av_freep(&s->pkt.nals[i].rbsp_buffer);
-        av_freep(&s->pkt.nals[i].skipped_bytes_pos_nal);
+        av_freep(&s->pkt.nals[i].skipped_bytes_pos);
     }
     av_freep(&s->pkt.nals);
     s->pkt.nals_allocated = 0;
