@@ -2422,8 +2422,10 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
     return 0;
 }
 
-static int hls_slice_data_wpp(HEVCContext *s, const uint8_t *nal, int length)
+static int hls_slice_data_wpp(HEVCContext *s, const HEVCNAL *nal)
 {
+    const uint8_t *data = nal->data;
+    int length          = nal->size;
     HEVCLocalContext *lc = s->HEVClc;
     int *ret = av_malloc_array(s->sh.num_entry_point_offsets + 1, sizeof(int));
     int *arg = av_malloc_array(s->sh.num_entry_point_offsets + 1, sizeof(int));
@@ -2452,7 +2454,7 @@ static int hls_slice_data_wpp(HEVCContext *s, const uint8_t *nal, int length)
 
     offset = (lc->gb.index >> 3);
 
-    for (j = 0, cmpt = 0, startheader = offset + s->sh.entry_point_offset[0]; j < s->skipped_bytes; j++) {
+    for (j = 0, cmpt = 0, startheader = offset + s->sh.entry_point_offset[0]; j < nal->skipped_bytes; j++) {
         if (s->skipped_bytes_pos[j] >= offset && s->skipped_bytes_pos[j] < startheader) {
             startheader--;
             cmpt++;
@@ -2462,7 +2464,7 @@ static int hls_slice_data_wpp(HEVCContext *s, const uint8_t *nal, int length)
     for (i = 1; i < s->sh.num_entry_point_offsets; i++) {
         offset += (s->sh.entry_point_offset[i - 1] - cmpt);
         for (j = 0, cmpt = 0, startheader = offset
-             + s->sh.entry_point_offset[i]; j < s->skipped_bytes; j++) {
+             + s->sh.entry_point_offset[i]; j < nal->skipped_bytes; j++) {
             if (s->skipped_bytes_pos[j] >= offset && s->skipped_bytes_pos[j] < startheader) {
                 startheader--;
                 cmpt++;
@@ -2478,7 +2480,7 @@ static int hls_slice_data_wpp(HEVCContext *s, const uint8_t *nal, int length)
         s->sh.offset[s->sh.num_entry_point_offsets - 1] = offset;
 
     }
-    s->data = nal;
+    s->data = data;
 
     for (i = 1; i < s->threads_number; i++) {
         s->sList[i]->HEVClc->first_qp_group = 1;
@@ -2720,7 +2722,7 @@ static int decode_nal_unit(HEVCContext *s, const HEVCNAL *nal)
                 goto fail;
         } else {
             if (s->threads_number > 1 && s->sh.num_entry_point_offsets > 0)
-                ctb_addr_ts = hls_slice_data_wpp(s, nal->data, nal->size);
+                ctb_addr_ts = hls_slice_data_wpp(s, nal);
             else
                 ctb_addr_ts = hls_slice_data(s);
             if (ctb_addr_ts >= (s->ps.sps->ctb_width * s->ps.sps->ctb_height)) {
@@ -2779,7 +2781,6 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
 
     /* decode the NAL units */
     for (i = 0; i < s->pkt.nb_nals; i++) {
-        s->skipped_bytes = s->skipped_bytes_nal[i];
         s->skipped_bytes_pos = s->skipped_bytes_pos_nal[i];
 
         ret = decode_nal_unit(s, &s->pkt.nals[i]);
@@ -2974,7 +2975,6 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
         av_freep(&s->skipped_bytes_pos_nal[i]);
     }
     av_freep(&s->skipped_bytes_pos_size_nal);
-    av_freep(&s->skipped_bytes_nal);
     av_freep(&s->skipped_bytes_pos_nal);
 
     av_freep(&s->cabac_state);

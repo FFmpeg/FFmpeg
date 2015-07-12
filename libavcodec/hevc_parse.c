@@ -36,7 +36,7 @@ int ff_hevc_extract_rbsp(HEVCContext *s, const uint8_t *src, int length,
     uint8_t *dst;
 
     if (s)
-        s->skipped_bytes = 0;
+        nal->skipped_bytes = 0;
 #define STARTCODE_TEST                                                  \
         if (i + 2 < length && src[i + 1] == 0 && src[i + 2] <= 3) {     \
             if (src[i + 2] != 3) {                                      \
@@ -111,8 +111,8 @@ int ff_hevc_extract_rbsp(HEVCContext *s, const uint8_t *src, int length,
                 si       += 3;
 
                 if (s) {
-                        s->skipped_bytes++;
-                        if (s->skipped_bytes_pos_size < s->skipped_bytes) {
+                        nal->skipped_bytes++;
+                        if (s->skipped_bytes_pos_size < nal->skipped_bytes) {
                         s->skipped_bytes_pos_size *= 2;
                         av_reallocp_array(&s->skipped_bytes_pos,
                                 s->skipped_bytes_pos_size,
@@ -121,7 +121,7 @@ int ff_hevc_extract_rbsp(HEVCContext *s, const uint8_t *src, int length,
                                 return AVERROR(ENOMEM);
                         }
                         if (s->skipped_bytes_pos)
-                        s->skipped_bytes_pos[s->skipped_bytes-1] = di - 1;
+                        s->skipped_bytes_pos[nal->skipped_bytes-1] = di - 1;
                 }
                 continue;
             } else // next start code
@@ -218,11 +218,6 @@ int ff_hevc_split_packet(HEVCContext *s, HEVCPacket *pkt, const uint8_t *buf, in
             memset(pkt->nals + pkt->nals_allocated, 0,
                    (new_size - pkt->nals_allocated) * sizeof(*pkt->nals));
 
-            tmp = av_realloc_array(s->skipped_bytes_nal, new_size, sizeof(*s->skipped_bytes_nal));
-            if (!tmp)
-                return AVERROR(ENOMEM);
-            s->skipped_bytes_nal = tmp;
-
             tmp = av_realloc_array(s->skipped_bytes_pos_size_nal, new_size, sizeof(*s->skipped_bytes_pos_size_nal));
             if (!tmp)
                 return AVERROR(ENOMEM);
@@ -248,7 +243,6 @@ int ff_hevc_split_packet(HEVCContext *s, HEVCPacket *pkt, const uint8_t *buf, in
         if (consumed < 0)
             return consumed;
 
-        s->skipped_bytes_nal[pkt->nb_nals] = s->skipped_bytes;
         s->skipped_bytes_pos_size_nal[pkt->nb_nals] = s->skipped_bytes_pos_size;
         s->skipped_bytes_pos_nal[pkt->nb_nals++] = s->skipped_bytes_pos;
 
