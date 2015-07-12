@@ -134,7 +134,7 @@ static int wav_parse_fmt_tag(AVFormatContext *s, int64_t size, AVStream **st)
     if (!*st)
         return AVERROR(ENOMEM);
 
-    ret = ff_get_wav_header(pb, (*st)->codec, size, wav->rifx);
+    ret = ff_get_wav_header(s, pb, (*st)->codec, size, wav->rifx);
     if (ret < 0)
         return ret;
     handle_stream_probing(*st);
@@ -689,7 +689,7 @@ static int w64_read_header(AVFormatContext *s)
 
         if (!memcmp(guid, ff_w64_guid_fmt, 16)) {
             /* subtract chunk header size - normal wav file doesn't count it */
-            ret = ff_get_wav_header(pb, st->codec, size - 24, 0);
+            ret = ff_get_wav_header(s, pb, st->codec, size - 24, 0);
             if (ret < 0)
                 return ret;
             avio_skip(pb, FFALIGN(size, INT64_C(8)) - size);
