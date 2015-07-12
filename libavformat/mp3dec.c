@@ -422,7 +422,9 @@ static int reposition(AVFormatContext *s, int64_t pos)
     if (best_valid <= 0)
         return AVERROR(ENOSYS);
 
-    avio_seek(s->pb, best_pos, SEEK_SET);
+    p = avio_seek(s->pb, best_pos, SEEK_SET);
+    if (p < 0)
+        return p;
 
     return 0;
 }
