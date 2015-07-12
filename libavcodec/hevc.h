@@ -761,6 +761,13 @@ typedef struct HEVCNAL {
     int temporal_id;
 } HEVCNAL;
 
+/* an input packet split into unescaped NAL units */
+typedef struct HEVCPacket {
+    HEVCNAL *nals;
+    int nb_nals;
+    int nals_allocated;
+} HEVCPacket;
+
 typedef struct HEVCLocalContext {
     uint8_t cabac_state[HEVC_CONTEXTS];
 
@@ -900,9 +907,7 @@ typedef struct HEVCContext {
 
     const uint8_t *data;
 
-    HEVCNAL *nals;
-    int nb_nals;
-    int nals_allocated;
+    HEVCPacket pkt;
     // type of the first VCL NAL of the current frame
     enum NALUnitType first_nal_type;
 
@@ -1067,6 +1072,12 @@ void ff_hevc_hls_mvd_coding(HEVCContext *s, int x0, int y0, int log2_cb_size);
  */
 int ff_hevc_extract_rbsp(HEVCContext *s, const uint8_t *src, int length,
                          HEVCNAL *nal);
+
+/**
+ * Split an input packet into NAL units.
+ */
+int ff_hevc_split_packet(HEVCContext *s, HEVCPacket *pkt, const uint8_t *buf, int length,
+                         AVCodecContext *avctx, int is_nalff, int nal_length_size);
 
 int ff_hevc_encode_nal_vps(HEVCVPS *vps, unsigned int id,
                            uint8_t *buf, int buf_size);

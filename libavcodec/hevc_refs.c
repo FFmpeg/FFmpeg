@@ -91,7 +91,7 @@ static HEVCFrame *alloc_frame(HEVCContext *s)
         if (ret < 0)
             return NULL;
 
-        frame->rpl_buf = av_buffer_allocz(s->nb_nals * sizeof(RefPicListTab));
+        frame->rpl_buf = av_buffer_allocz(s->pkt.nb_nals * sizeof(RefPicListTab));
         if (!frame->rpl_buf)
             goto fail;
 

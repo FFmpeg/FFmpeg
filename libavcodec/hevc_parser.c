@@ -91,6 +91,7 @@ static inline int parse_nal_units(AVCodecParserContext *s, AVCodecContext *avctx
     GetBitContext *gb = &h->HEVClc->gb;
     SliceHeader   *sh = &h->sh;
     HEVCParamSets *ps = &h->ps;
+    HEVCPacket   *pkt = &h->pkt;
     const uint8_t *buf_end = buf + buf_size;
     int state = -1, i;
     HEVCNAL *nal;
@@ -105,16 +106,16 @@ static inline int parse_nal_units(AVCodecParserContext *s, AVCodecContext *avctx
     if (!buf_size)
         return 0;
 
-    if (h->nals_allocated < 1) {
-        HEVCNAL *tmp = av_realloc_array(h->nals, 1, sizeof(*tmp));
+    if (pkt->nals_allocated < 1) {
+        HEVCNAL *tmp = av_realloc_array(pkt->nals, 1, sizeof(*tmp));
         if (!tmp)
             return AVERROR(ENOMEM);
-        h->nals = tmp;
-        memset(h->nals, 0, sizeof(*tmp));
-        h->nals_allocated = 1;
+        pkt->nals = tmp;
+        memset(pkt->nals, 0, sizeof(*tmp));
+        pkt->nals_allocated = 1;
     }
 
-    nal = &h->nals[0];
+    nal = &pkt->nals[0];
 
     for (;;) {
         int src_length, consumed;
@@ -323,6 +324,7 @@ static void hevc_close(AVCodecParserContext *s)
     HEVCContext  *h  = &((HEVCParseContext *)s->priv_data)->h;
     ParseContext *pc = &((HEVCParseContext *)s->priv_data)->pc;
     HEVCParamSets *ps = &h->ps;
+    HEVCPacket   *pkt = &h->pkt;
 
     av_freep(&h->skipped_bytes_pos);
     av_freep(&h->HEVClc);
@@ -337,10 +339,10 @@ static void hevc_close(AVCodecParserContext *s)
 
     ps->sps = NULL;
 
-    for (i = 0; i < h->nals_allocated; i++)
-        av_freep(&h->nals[i].rbsp_buffer);
-    av_freep(&h->nals);
-    h->nals_allocated = 0;
+    for (i = 0; i < pkt->nals_allocated; i++)
+        av_freep(&pkt->nals[i].rbsp_buffer);
+    av_freep(&pkt->nals);
+    pkt->nals_allocated = 0;
 }
 
 AVCodecParser ff_hevc_parser = {
