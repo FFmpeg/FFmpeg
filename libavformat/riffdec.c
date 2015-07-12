@@ -99,13 +99,13 @@ int ff_get_wav_header(AVFormatContext *s, AVIOContext *pb,
         id                 = avio_rl16(pb);
         codec->channels    = avio_rl16(pb);
         codec->sample_rate = avio_rl32(pb);
-        bitrate            = avio_rl32(pb) * 8;
+        bitrate            = avio_rl32(pb) * 8LL;
         codec->block_align = avio_rl16(pb);
     } else {
         id                 = avio_rb16(pb);
         codec->channels    = avio_rb16(pb);
         codec->sample_rate = avio_rb32(pb);
-        bitrate            = avio_rb32(pb) * 8;
+        bitrate            = avio_rb32(pb) * 8LL;
         codec->block_align = avio_rb16(pb);
     }
     if (size == 14) {  /* We're dealing with plain vanilla WAVEFORMAT */
