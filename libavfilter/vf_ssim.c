@@ -42,6 +42,7 @@
 #include "drawutils.h"
 #include "formats.h"
 #include "internal.h"
+#include "ssim.h"
 #include "video.h"
 
 typedef struct SSIMContext {
@@ -59,6 +60,7 @@ typedef struct SSIMContext {
     int planeheight[4];
     int *temp;
     int is_rgb;
+    SSIMDSPContext dsp;
 } SSIMContext;
 
 #define OFFSET(x) offsetof(SSIMContext, x)
@@ -85,8 +87,8 @@ static void set_meta(AVDictionary **metadata, const char *key, char comp, float 
     }
 }
 
-static void ssim_4x4xn(const uint8_t *main, int main_stride,
-                       const uint8_t *ref, int ref_stride,
+static void ssim_4x4xn(const uint8_t *main, ptrdiff_t main_stride,
+                       const uint8_t *ref, ptrdiff_t ref_stride,
                        int (*sums)[4], int width)
 {
     int x, y, z;
@@ -132,7 +134,7 @@ static float ssim_end1(int s1, int s2, int ss, int s12)
          / ((float)(fs1 * fs1 + fs2 * fs2 + ssim_c1) * (float)(vars + ssim_c2));
 }
 
-static float ssim_endn(int (*sum0)[4], int (*sum1)[4], int width)
+static float ssim_endn(const int (*sum0)[4], const int (*sum1)[4], int width)
 {
     float ssim = 0.0;
     int i;
@@ -145,7 +147,8 @@ static float ssim_endn(int (*sum0)[4], int (*sum1)[4], int width)
     return ssim;
 }
 
-static float ssim_plane(uint8_t *main, int main_stride,
+static float ssim_plane(SSIMDSPContext *dsp,
+                        uint8_t *main, int main_stride,
                         uint8_t *ref, int ref_stride,
                         int width, int height, void *temp)
 {
@@ -160,12 +163,12 @@ static float ssim_plane(uint8_t *main, int main_stride,
     for (y = 1; y < height; y++) {
         for (; z <= y; z++) {
             FFSWAP(void*, sum0, sum1);
-            ssim_4x4xn(&main[4 * z * main_stride], main_stride,
-                       &ref[4 * z * ref_stride], ref_stride,
-                       sum0, width);
+            dsp->ssim_4x4_line(&main[4 * z * main_stride], main_stride,
+                               &ref[4 * z * ref_stride], ref_stride,
+                               sum0, width);
         }
 
-        ssim += ssim_endn(sum0, sum1, width - 1);
+        ssim += dsp->ssim_end_line(sum0, sum1, width - 1);
     }
 
     return ssim / ((height - 1) * (width - 1));
@@ -187,7 +190,7 @@ static AVFrame *do_ssim(AVFilterContext *ctx, AVFrame *main,
     s->nb_frames++;
 
     for (i = 0; i < s->nb_components; i++) {
-        c[i] = ssim_plane(main->data[i], main->linesize[i],
+        c[i] = ssim_plane(&s->dsp, main->data[i], main->linesize[i],
                           ref->data[i], ref->linesize[i],
                           s->planewidth[i], s->planeheight[i], s->temp);
         ssimv += s->coefs[i] * c[i];
@@ -293,6 +296,11 @@ static int config_input_ref(AVFilterLink *inlink)
     s->temp = av_malloc((2 * inlink->w + 12) * sizeof(*s->temp));
     if (!s->temp)
         return AVERROR(ENOMEM);
+
+    s->dsp.ssim_4x4_line = ssim_4x4xn;
+    s->dsp.ssim_end_line = ssim_endn;
+    if (ARCH_X86)
+        ff_ssim_init_x86(&s->dsp);
 
     return 0;
 }
