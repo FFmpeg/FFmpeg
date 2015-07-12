@@ -670,7 +670,7 @@ static AVStream * parse_media_type(AVFormatContext *s, AVStream *st, int sid,
         if (!st)
             return NULL;
         if (!ff_guidcmp(formattype, ff_format_waveformatex)) {
-            int ret = ff_get_wav_header(pb, st->codec, size, 0);
+            int ret = ff_get_wav_header(s, pb, st->codec, size, 0);
             if (ret < 0)
                 return NULL;
         } else {

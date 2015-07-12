@@ -81,7 +81,8 @@ static void parse_waveformatex(AVIOContext *pb, AVCodecContext *c)
 }
 
 /* "big_endian" values are needed for RIFX file format */
-int ff_get_wav_header(AVIOContext *pb, AVCodecContext *codec, int size, int big_endian)
+int ff_get_wav_header(AVFormatContext *s, AVIOContext *pb,
+                      AVCodecContext *codec, int size, int big_endian)
 {
     int id;
 
@@ -143,7 +144,7 @@ int ff_get_wav_header(AVIOContext *pb, AVCodecContext *codec, int size, int big_
             avio_skip(pb, size);
     }
     if (codec->sample_rate <= 0) {
-        av_log(NULL, AV_LOG_ERROR,
+        av_log(s, AV_LOG_ERROR,
                "Invalid sample rate: %d\n", codec->sample_rate);
         return AVERROR_INVALIDDATA;
     }
