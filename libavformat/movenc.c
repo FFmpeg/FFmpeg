@@ -82,7 +82,7 @@ static const AVOption options[] = {
     { "fragment_index", "Fragment number of the next fragment", offsetof(MOVMuxContext, fragments), AV_OPT_TYPE_INT, {.i64 = 1}, 1, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM},
     { "mov_gamma", "gamma value for gama atom", offsetof(MOVMuxContext, gamma), AV_OPT_TYPE_FLOAT, {.dbl = 0.0 }, 0.0, 10, AV_OPT_FLAG_ENCODING_PARAM},
     { "frag_interleave", "Interleave samples within fragments (max number of consecutive samples, lower is tighter interleaving, but with more overhead)", offsetof(MOVMuxContext, frag_interleave), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
-	{ "moov_commit_period", "MOOV commit period", offsetof(MOVMuxContext, moov_commit_period), AV_OPT_TYPE_INT, {.dbl = 0}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM},
+	{ "moov_commit_period", "MOOV commit period (seconds)", offsetof(MOVMuxContext, moov_commit_period), AV_OPT_TYPE_INT, {.dbl = 0}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM},
     { NULL },
 };
 
@@ -4350,12 +4350,12 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
         if (enc->codec_type == AVMEDIA_TYPE_VIDEO) {
          	// check if should commit
             int64_t duration = av_rescale_q(trk->track_duration,s->streams[pkt->stream_index]->time_base,AV_TIME_BASE_Q);
-            if (duration != 0 && (duration % mov->moov_commit_period)==0) {
+            if (duration != 0 && (duration % (mov->moov_commit_period * 1000000))==0) {
               	mov->moov_commit_on_next_keyframe = 1;
-              	av_log(s, AV_LOG_DEBUG, "should commit at %i\n",duration);
+              	av_log(s, AV_LOG_DEBUG, "should commit at %ld\n",duration);
             }
             if (mov->moov_commit_on_next_keyframe == 1 && (pkt->flags & AV_PKT_FLAG_KEY) && track->mdat_buf) {
-              	av_log(s, AV_LOG_DEBUG, "commit at %i\n",duration);
+              	av_log(s, AV_LOG_DEBUG, "commit at %ld\n",duration);
                	mov->moov_commit_on_next_keyframe = 0;
                	// flush buffer
                	uint8_t *buf;
