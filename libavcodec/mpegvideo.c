@@ -1107,6 +1107,9 @@ void ff_mpv_common_end(MpegEncContext *s)
 {
     int i;
 
+    if (!s)
+        return ;
+
     if (s->slice_context_count > 1) {
         for (i = 0; i < s->slice_context_count; i++) {
             free_duplicate_context(s->thread_context[i]);
