@@ -773,6 +773,9 @@ static int map_pixel_format(AVCodecContext *avctx, HEVCSPS *sps)
     default:
         av_log(avctx, AV_LOG_ERROR,
                "4:2:0, 4:2:2, 4:4:4 supports are currently specified for 8, 10 and 12 bits.\n");
+        av_log(avctx, AV_LOG_ERROR,
+               "chroma_format_idc is %d",
+               sps->chroma_format_idc);
         return AVERROR_INVALIDDATA;
     }
 
