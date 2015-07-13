@@ -457,6 +457,7 @@ static void destroy_buffers(SANMVideoContext *ctx)
     ctx->frm0_size =
     ctx->frm1_size =
     ctx->frm2_size = 0;
+    init_sizes(ctx, 0, 0);
 }
 
 static av_cold int init_buffers(SANMVideoContext *ctx)
