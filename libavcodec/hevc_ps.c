@@ -965,7 +965,7 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
     return 0;
 
 err:
-    return ret;
+    return ret < 0 ? ret : AVERROR_INVALIDDATA;
 }
 
 int ff_hevc_decode_nal_sps(GetBitContext *gb, AVCodecContext *avctx,
