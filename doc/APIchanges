@@ -16,6 +16,10 @@ API changes, most recent first:
 2015-xx-xx - xxxxxxx - lavu 56.15.0
   Add av_version_info().
 
+2015-xx-xx - xxxxxxx - lavfi 5.1.0 - version.h
+             xxxxxxx - lavd 55.2.0 - version.h
+  Add library identification symbols, LIBAVFILTER_IDENT and LIBAVDEVICE_IDENT.
+
 2015-xx-xx - xxxxxxx - lavf 56.20.0 - avio.h
   Add avio_put_str16be.
 
