@@ -573,7 +573,7 @@ void ff_frame_thread_free(AVCodecContext *avctx, int thread_count)
             pthread_join(p->thread, NULL);
         p->thread_init=0;
 
-        if (codec->close)
+        if (codec->close && p->avctx)
             codec->close(p->avctx);
 
         avctx->codec = NULL;
@@ -593,12 +593,13 @@ void ff_frame_thread_free(AVCodecContext *avctx, int thread_count)
         av_packet_unref(&p->avpkt);
         av_freep(&p->released_buffers);
 
-        if (i) {
+        if (i && p->avctx) {
             av_freep(&p->avctx->priv_data);
             av_freep(&p->avctx->slice_offset);
         }
 
-        av_freep(&p->avctx->internal);
+        if (p->avctx)
+            av_freep(&p->avctx->internal);
         av_freep(&p->avctx);
     }
 
