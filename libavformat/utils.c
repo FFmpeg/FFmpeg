@@ -1785,6 +1785,11 @@ void ff_configure_buffers_for_index(AVFormatContext *s, int64_t time_tolerance)
 {
     int ist1, ist2;
     int64_t pos_delta = 0;
+    //We could use URLProtocol flags here but as many user applications do not use URLProtocols this would be unreliable
+    const char *proto = avio_find_protocol_name(s->filename);
+
+    if (!(strcmp(proto, "file") && strcmp(proto, "pipe") && strcmp(proto, "cache")))
+        return;
 
     for (ist1 = 0; ist1 < s->nb_streams; ist1++) {
         AVStream *st1 = s->streams[ist1];
