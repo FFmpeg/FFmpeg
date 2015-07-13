@@ -109,7 +109,7 @@ static int write_packet(struct AVFormatContext *s, AVPacket *pkt)
 		// try to flush buffer
         if (codec->codec_type == AVMEDIA_TYPE_VIDEO) {
          	// check if should commit
-            if (c->duration != 0 && (c->duration % (c->moov_commit_period * 1000000))==0) {
+            if (c->duration != 0 && (c->duration % (c->moov_commit_period * 1000000)) < 4000) {
               	c->moov_commit_on_next_keyframe = 1;
               	av_log(s, AV_LOG_DEBUG, "should commit at %ld\n",c->duration);
             }

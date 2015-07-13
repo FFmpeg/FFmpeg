@@ -4350,7 +4350,7 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
         if (enc->codec_type == AVMEDIA_TYPE_VIDEO) {
          	// check if should commit
             int64_t duration = av_rescale_q(trk->track_duration,s->streams[pkt->stream_index]->time_base,AV_TIME_BASE_Q);
-            if (duration != 0 && (duration % (mov->moov_commit_period * 1000000))==0) {
+            if (duration != 0 && (duration % (mov->moov_commit_period * 1000000)) < 4000) {
               	mov->moov_commit_on_next_keyframe = 1;
               	av_log(s, AV_LOG_DEBUG, "should commit at %ld\n",duration);
             }
