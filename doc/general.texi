@@ -192,6 +192,17 @@ end user having AviSynth or AvxSynth installed - they'll only need to be
 installed to use AviSynth scripts (obviously).
 @end float
 
+@section Intel QuickSync Video
+
+FFmpeg can use Intel QuickSync Video (QSV) for accelerated encoding and decoding
+of multiple codecs. To use QSV, FFmpeg must be linked against the @code{libmfx}
+dispatcher, which loads the actual decoding libraries.
+
+The dispatcher is open source and can be downloaded from
+@url{https://github.com/lu-zero/mfx_dispatch.git}. FFmpeg needs to be configured
+with the @code{--enable-libmfx} option and @code{pkg-config} needs to be able to
+locate the dispatcher's @code{.pc} files.
+
 
 @chapter Supported File Formats, Codecs or Features
 

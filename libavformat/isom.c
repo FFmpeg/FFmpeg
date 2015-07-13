@@ -451,18 +451,23 @@ static const AVCodecTag mp4_audio_types[] = {
 int ff_mp4_read_dec_config_descr(AVFormatContext *fc, AVStream *st, AVIOContext *pb)
 {
     enum AVCodecID codec_id;
+    unsigned v;
     int len, tag;
     int ret;
     int object_type_id = avio_r8(pb);
     avio_r8(pb); /* stream type */
     avio_rb24(pb); /* buffer size db */
-    avio_rb32(pb); /* max bitrate */
-    avio_rb32(pb); /* avg bitrate */
 
     if(avcodec_is_open(st->codec)) {
         av_log(fc, AV_LOG_DEBUG, "codec open in read_dec_config_descr\n");
         return -1;
     }
+
+    v = avio_rb32(pb);
+    if (v < INT32_MAX)
+        st->codec->rc_max_rate = v;
+
+    st->codec->bit_rate = avio_rb32(pb); /* avg bitrate */
 
     codec_id= ff_codec_get_id(ff_mp4_obj_type, object_type_id);
     if (codec_id)

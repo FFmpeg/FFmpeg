@@ -37,8 +37,8 @@ static int vdpau_hevc_start_frame(AVCodecContext *avctx,
 
     VdpPictureInfoHEVC *info = &pic_ctx->info.hevc;
 
-    const HEVCSPS *sps = h->sps;
-    const HEVCPPS *pps = h->pps;
+    const HEVCSPS *sps = h->ps.sps;
+    const HEVCPPS *pps = h->ps.pps;
     const SliceHeader *sh = &h->sh;
     const ScalingList *sl = pps->scaling_list_data_present_flag ?
                             &pps->scaling_list : &sps->scaling_list;

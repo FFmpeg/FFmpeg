@@ -47,6 +47,8 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
     int set_dim_ret = 0;
     int bit_rate = 0;
     int vbv_delay = 0;
+    int chroma_format;
+    enum AVPixelFormat pix_fmt = AV_PIX_FMT_NONE;
 //FIXME replace the crap with get_bits()
     s->repeat_pict = 0;
 
@@ -70,6 +72,7 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
                     set_dim_ret = ff_set_dimensions(avctx, pc->width, pc->height);
                     did_set_size=1;
                 }
+                pix_fmt = AV_PIX_FMT_YUV420P;
                 frame_rate_index = buf[3] & 0xf;
                 pc->frame_rate = avctx->framerate = ff_mpeg12_frame_rate_tab[frame_rate_index];
                 bit_rate = (buf[4]<<10) | (buf[5]<<2) | (buf[6]>>6);
@@ -90,6 +93,13 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
                         frame_rate_ext_d = (buf[5] & 0x1f);
                         pc->progressive_sequence = buf[1] & (1 << 3);
                         avctx->has_b_frames= !(buf[5] >> 7);
+
+                        chroma_format = (buf[1] >> 1) & 3;
+                        switch (chroma_format) {
+                        case 1: pix_fmt = AV_PIX_FMT_YUV420P; break;
+                        case 2: pix_fmt = AV_PIX_FMT_YUV422P; break;
+                        case 3: pix_fmt = AV_PIX_FMT_YUV444P; break;
+                        }
 
                         pc->width  = (pc->width & 0xFFF) | (horiz_size_ext << 12);
                         pc->height = (pc->height& 0xFFF) | ( vert_size_ext << 12);
@@ -155,6 +165,13 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
         ((avctx->codec_id == AV_CODEC_ID_MPEG1VIDEO && bit_rate != 0x3FFFF) || vbv_delay != 0xFFFF)) {
         avctx->bit_rate = 400*bit_rate;
     }
+
+    if (pix_fmt != AV_PIX_FMT_NONE) {
+        s->format = pix_fmt;
+        s->width  = s->coded_width  = pc->width;
+        s->height = s->coded_height = pc->height;
+    }
+
 #if FF_API_AVCTX_TIMEBASE
     if (avctx->framerate.num)
         avctx->time_base = av_inv_q(av_mul_q(avctx->framerate, (AVRational){avctx->ticks_per_frame, 1}));

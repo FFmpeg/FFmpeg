@@ -142,6 +142,7 @@ typedef struct Stereo3DContext {
     int pixstep[4];
     AVFrame *prev;
     double ts_unit;
+    int in_off_left[4], in_off_right[4];
 } Stereo3DContext;
 
 #define OFFSET(x) offsetof(Stereo3DContext, x)
@@ -485,6 +486,42 @@ static inline uint8_t ana_convert(const int *coeff, const uint8_t *left, const u
     return av_clip_uint8(sum >> 16);
 }
 
+typedef struct ThreadData {
+    AVFrame *ileft, *iright;
+    AVFrame *out;
+} ThreadData;
+
+static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    Stereo3DContext *s = ctx->priv;
+    ThreadData *td = arg;
+    AVFrame *ileft = td->ileft;
+    AVFrame *iright = td->iright;
+    AVFrame *out = td->out;
+    int height = s->out.height;
+    int start = (height *  jobnr   ) / nb_jobs;
+    int end   = (height * (jobnr+1)) / nb_jobs;
+    uint8_t *dst = out->data[0];
+    const int **ana_matrix = s->ana_matrix;
+    int x, y, il, ir, o;
+    const uint8_t *lsrc = ileft->data[0];
+    const uint8_t *rsrc = iright->data[0];
+    int out_width = s->out.width;
+
+    for (y = start; y < end; y++) {
+        o   = out->linesize[0] * y;
+        il  = s->in_off_left[0]  + y * ileft->linesize[0];
+        ir  = s->in_off_right[0] + y * iright->linesize[0];
+        for (x = 0; x < out_width; x++, il += 3, ir += 3, o+= 3) {
+            dst[o    ] = ana_convert(ana_matrix[0], lsrc + il, rsrc + ir);
+            dst[o + 1] = ana_convert(ana_matrix[1], lsrc + il, rsrc + ir);
+            dst[o + 2] = ana_convert(ana_matrix[2], lsrc + il, rsrc + ir);
+        }
+    }
+
+    return 0;
+}
+
 static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
 {
     AVFilterContext *ctx  = inlink->dst;
@@ -492,7 +529,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
     AVFilterLink *outlink = ctx->outputs[0];
     AVFrame *out, *oleft, *oright, *ileft, *iright;
     int out_off_left[4], out_off_right[4];
-    int in_off_left[4], in_off_right[4];
     int i;
 
     switch (s->in.format) {
@@ -534,8 +570,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
     for (i = 0; i < 4; i++) {
         int hsub = i == 1 || i == 2 ? s->hsub : 0;
         int vsub = i == 1 || i == 2 ? s->vsub : 0;
-        in_off_left[i]   = (FF_CEIL_RSHIFT(s->in.row_left,   vsub) + s->in.off_lstep)  * ileft->linesize[i]  + FF_CEIL_RSHIFT(s->in.off_left   * s->pixstep[i], hsub);
-        in_off_right[i]  = (FF_CEIL_RSHIFT(s->in.row_right,  vsub) + s->in.off_rstep)  * iright->linesize[i] + FF_CEIL_RSHIFT(s->in.off_right  * s->pixstep[i], hsub);
+        s->in_off_left[i]   = (FF_CEIL_RSHIFT(s->in.row_left,   vsub) + s->in.off_lstep)  * ileft->linesize[i]  + FF_CEIL_RSHIFT(s->in.off_left   * s->pixstep[i], hsub);
+        s->in_off_right[i]  = (FF_CEIL_RSHIFT(s->in.row_right,  vsub) + s->in.off_rstep)  * iright->linesize[i] + FF_CEIL_RSHIFT(s->in.off_right  * s->pixstep[i], hsub);
         out_off_left[i]  = (FF_CEIL_RSHIFT(s->out.row_left,  vsub) + s->out.off_lstep) * oleft->linesize[i]  + FF_CEIL_RSHIFT(s->out.off_left  * s->pixstep[i], hsub);
         out_off_right[i] = (FF_CEIL_RSHIFT(s->out.row_right, vsub) + s->out.off_rstep) * oright->linesize[i] + FF_CEIL_RSHIFT(s->out.off_right * s->pixstep[i], hsub);
     }
@@ -556,12 +592,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
         for (i = 0; i < s->nb_planes; i++) {
             av_image_copy_plane(oleft->data[i] + out_off_left[i],
                                 oleft->linesize[i] * s->row_step,
-                                ileft->data[i] + in_off_left[i],
+                                ileft->data[i] + s->in_off_left[i],
                                 ileft->linesize[i] * s->row_step,
                                 s->linesize[i], s->pheight[i]);
             av_image_copy_plane(oright->data[i] + out_off_right[i],
                                 oright->linesize[i] * s->row_step,
-                                iright->data[i] + in_off_right[i],
+                                iright->data[i] + s->in_off_right[i],
                                 iright->linesize[i] * s->row_step,
                                 s->linesize[i], s->pheight[i]);
         }
@@ -571,7 +607,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
     case MONO_R:
         for (i = 0; i < s->nb_planes; i++) {
             av_image_copy_plane(out->data[i], out->linesize[i],
-                                iright->data[i] + in_off_left[i],
+                                iright->data[i] + s->in_off_left[i],
                                 iright->linesize[i],
                                 s->linesize[i], s->pheight[i]);
         }
@@ -590,23 +626,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
     case ANAGLYPH_YB_HALF:
     case ANAGLYPH_YB_COLOR:
     case ANAGLYPH_YB_DUBOIS: {
-        int x, y, il, ir, o;
-        const uint8_t *lsrc = ileft->data[0];
-        const uint8_t *rsrc = iright->data[0];
-        uint8_t *dst = out->data[0];
-        int out_width = s->out.width;
-        const int **ana_matrix = s->ana_matrix;
+        ThreadData td;
 
-        for (y = 0; y < s->out.height; y++) {
-            o   = out->linesize[0] * y;
-            il  = in_off_left[0]  + y * ileft->linesize[0];
-            ir  = in_off_right[0] + y * iright->linesize[0];
-            for (x = 0; x < out_width; x++, il += 3, ir += 3, o+= 3) {
-                dst[o    ] = ana_convert(ana_matrix[0], lsrc + il, rsrc + ir);
-                dst[o + 1] = ana_convert(ana_matrix[1], lsrc + il, rsrc + ir);
-                dst[o + 2] = ana_convert(ana_matrix[2], lsrc + il, rsrc + ir);
-            }
-        }
+        td.ileft = ileft; td.iright = iright; td.out = out;
+        ctx->internal->execute(ctx, filter_slice, &td, NULL,
+                               FFMIN(s->out.height, ctx->graph->nb_threads));
         break;
     }
     default:
@@ -663,4 +687,5 @@ AVFilter ff_vf_stereo3d = {
     .inputs        = stereo3d_inputs,
     .outputs       = stereo3d_outputs,
     .priv_class    = &stereo3d_class,
+    .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };

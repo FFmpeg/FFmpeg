@@ -1669,11 +1669,18 @@ static int dca_decode_frame(AVCodecContext *avctx, void *data,
 
     /* If we have XXCH then the channel layout is managed differently */
     /* note that XLL will also have another way to do things */
+#if FF_API_REQUEST_CHANNELS
+FF_DISABLE_DEPRECATION_WARNINGS
     if (!(s->core_ext_mask & DCA_EXT_XXCH)
         || (s->core_ext_mask & DCA_EXT_XXCH && avctx->request_channels > 0
             && avctx->request_channels
             < num_core_channels + !!s->lfe + s->xxch_chset_nch[0]))
-    { /* xxx should also do MA extensions */
+    {
+FF_ENABLE_DEPRECATION_WARNINGS
+#else
+    if (!(s->core_ext_mask & DCA_EXT_XXCH)) {
+#endif
+        /* xxx should also do MA extensions */
         if (s->amode < 16) {
             avctx->channel_layout = ff_dca_core_channel_layout[s->amode];
 
@@ -1750,6 +1757,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
         /* we only get here if an XXCH channel set can be added to the mix */
         channel_mask = s->xxch_core_spkmask;
 
+#if FF_API_REQUEST_CHANNELS
+FF_DISABLE_DEPRECATION_WARNINGS
         if (avctx->request_channels > 0
             && avctx->request_channels < s->prim_channels) {
             channels = num_core_channels + !!s->lfe;
@@ -1758,7 +1767,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 channels += s->xxch_chset_nch[i];
                 channel_mask |= s->xxch_spk_masks[i];
             }
-        } else {
+FF_ENABLE_DEPRECATION_WARNINGS
+        } else
+#endif
+        {
             channels = s->prim_channels + !!s->lfe;
             for (i = 0; i < s->xxch_chset; i++) {
                 channel_mask |= s->xxch_spk_masks[i];

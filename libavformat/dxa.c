@@ -106,7 +106,7 @@ static int dxa_read_header(AVFormatContext *s)
         ast = avformat_new_stream(s, NULL);
         if (!ast)
             return AVERROR(ENOMEM);
-        ret = ff_get_wav_header(pb, ast->codec, fsize, 0);
+        ret = ff_get_wav_header(s, pb, ast->codec, fsize, 0);
         if (ret < 0)
             return ret;
         if (ast->codec->sample_rate > 0)

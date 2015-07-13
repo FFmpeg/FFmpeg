@@ -557,6 +557,17 @@ typedef struct HEVCPPS {
     int *min_tb_addr_zs_tab;///< MinTbAddrZS
 } HEVCPPS;
 
+typedef struct HEVCParamSets {
+    AVBufferRef *vps_list[MAX_VPS_COUNT];
+    AVBufferRef *sps_list[MAX_SPS_COUNT];
+    AVBufferRef *pps_list[MAX_PPS_COUNT];
+
+    /* currently active parameter sets */
+    const HEVCVPS *vps;
+    const HEVCSPS *sps;
+    const HEVCPPS *pps;
+} HEVCParamSets;
+
 typedef struct SliceHeader {
     unsigned int pps_id;
 
@@ -743,7 +754,23 @@ typedef struct HEVCNAL {
 
     int raw_size;
     const uint8_t *raw_data;
+
+    GetBitContext gb;
+
+    enum NALUnitType type;
+    int temporal_id;
+
+    int skipped_bytes;
+    int skipped_bytes_pos_size;
+    int *skipped_bytes_pos;
 } HEVCNAL;
+
+/* an input packet split into unescaped NAL units */
+typedef struct HEVCPacket {
+    HEVCNAL *nals;
+    int nb_nals;
+    int nals_allocated;
+} HEVCPacket;
 
 typedef struct HEVCLocalContext {
     uint8_t cabac_state[HEVC_CONTEXTS];
@@ -813,12 +840,7 @@ typedef struct HEVCContext {
     uint8_t *sao_pixel_buffer_h[3];
     uint8_t *sao_pixel_buffer_v[3];
 
-    const HEVCVPS *vps;
-    const HEVCSPS *sps;
-    const HEVCPPS *pps;
-    AVBufferRef *vps_list[MAX_VPS_COUNT];
-    AVBufferRef *sps_list[MAX_SPS_COUNT];
-    AVBufferRef *pps_list[MAX_PPS_COUNT];
+    HEVCParamSets ps;
 
     AVBufferPool *tab_mvf_pool;
     AVBufferPool *rpl_tab_pool;
@@ -879,19 +901,10 @@ typedef struct HEVCContext {
 
     int enable_parallel_tiles;
     int wpp_err;
-    int skipped_bytes;
-    int *skipped_bytes_pos;
-    int skipped_bytes_pos_size;
-
-    int *skipped_bytes_nal;
-    int **skipped_bytes_pos_nal;
-    int *skipped_bytes_pos_size_nal;
 
     const uint8_t *data;
 
-    HEVCNAL *nals;
-    int nb_nals;
-    int nals_allocated;
+    HEVCPacket pkt;
     // type of the first VCL NAL of the current frame
     enum NALUnitType first_nal_type;
 
@@ -939,9 +952,12 @@ int ff_hevc_decode_short_term_rps(GetBitContext *gb, AVCodecContext *avctx,
 int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
                       int apply_defdispwin, AVBufferRef **vps_list, AVCodecContext *avctx);
 
-int ff_hevc_decode_nal_vps(HEVCContext *s);
-int ff_hevc_decode_nal_sps(HEVCContext *s);
-int ff_hevc_decode_nal_pps(HEVCContext *s);
+int ff_hevc_decode_nal_vps(GetBitContext *gb, AVCodecContext *avctx,
+                           HEVCParamSets *ps);
+int ff_hevc_decode_nal_sps(GetBitContext *gb, AVCodecContext *avctx,
+                           HEVCParamSets *ps, int apply_defdispwin);
+int ff_hevc_decode_nal_pps(GetBitContext *gb, AVCodecContext *avctx,
+                           HEVCParamSets *ps);
 int ff_hevc_decode_nal_sei(HEVCContext *s);
 
 /**
@@ -1053,6 +1069,12 @@ void ff_hevc_hls_mvd_coding(HEVCContext *s, int x0, int y0, int log2_cb_size);
  */
 int ff_hevc_extract_rbsp(HEVCContext *s, const uint8_t *src, int length,
                          HEVCNAL *nal);
+
+/**
+ * Split an input packet into NAL units.
+ */
+int ff_hevc_split_packet(HEVCContext *s, HEVCPacket *pkt, const uint8_t *buf, int length,
+                         AVCodecContext *avctx, int is_nalff, int nal_length_size);
 
 int ff_hevc_encode_nal_vps(HEVCVPS *vps, unsigned int id,
                            uint8_t *buf, int buf_size);

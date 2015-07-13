@@ -254,6 +254,8 @@ int ff_add_index_entry(AVIndexEntry **index_entries,
                        unsigned int *index_entries_allocated_size,
                        int64_t pos, int64_t timestamp, int size, int distance, int flags);
 
+void ff_configure_buffers_for_index(AVFormatContext *s, int64_t time_tolerance);
+
 /**
  * Add a new chapter.
  *

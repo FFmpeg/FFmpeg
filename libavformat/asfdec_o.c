@@ -752,7 +752,7 @@ static int asf_read_stream_properties(AVFormatContext *s, const GUIDParseTable *
     switch (type) {
     case AVMEDIA_TYPE_AUDIO:
         asf_st->type = AVMEDIA_TYPE_AUDIO;
-        if ((ret = ff_get_wav_header(pb, st->codec, ts_data_len, 0)) < 0)
+        if ((ret = ff_get_wav_header(s, pb, st->codec, ts_data_len, 0)) < 0)
             return ret;
         break;
     case AVMEDIA_TYPE_VIDEO:
@@ -1558,11 +1558,9 @@ static int asf_read_seek(AVFormatContext *s, int stream_index,
     } else {
         if ((ret = ff_seek_frame_binary(s, stream_index, timestamp, flags)) < 0)
             return ret;
-
-        // asf_read_timestamp is called inside ff_seek_frame_binary and leaves state dirty,
-        // so reset_packet_state have to be called after it.
-        reset_packet_state(s);
     }
+
+    reset_packet_state(s);
 
     return 0;
 }

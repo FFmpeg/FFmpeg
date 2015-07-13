@@ -83,9 +83,11 @@ static void parse_waveformatex(AVIOContext *pb, AVCodecContext *c)
 }
 
 /* "big_endian" values are needed for RIFX file format */
-int ff_get_wav_header(AVIOContext *pb, AVCodecContext *codec, int size, int big_endian)
+int ff_get_wav_header(AVFormatContext *s, AVIOContext *pb,
+                      AVCodecContext *codec, int size, int big_endian)
 {
     int id;
+    uint64_t bitrate;
 
     if (size < 14) {
         avpriv_request_sample(codec, "wav header size < 14");
@@ -97,13 +99,13 @@ int ff_get_wav_header(AVIOContext *pb, AVCodecContext *codec, int size, int big_
         id                 = avio_rl16(pb);
         codec->channels    = avio_rl16(pb);
         codec->sample_rate = avio_rl32(pb);
-        codec->bit_rate    = avio_rl32(pb) * 8;
+        bitrate            = avio_rl32(pb) * 8LL;
         codec->block_align = avio_rl16(pb);
     } else {
         id                 = avio_rb16(pb);
         codec->channels    = avio_rb16(pb);
         codec->sample_rate = avio_rb32(pb);
-        codec->bit_rate    = avio_rb32(pb) * 8;
+        bitrate            = avio_rb32(pb) * 8LL;
         codec->block_align = avio_rb16(pb);
     }
     if (size == 14) {  /* We're dealing with plain vanilla WAVEFORMAT */
@@ -146,8 +148,25 @@ int ff_get_wav_header(AVIOContext *pb, AVCodecContext *codec, int size, int big_
         if (size > 0)
             avio_skip(pb, size);
     }
+
+    if (bitrate > INT_MAX) {
+        if (s->error_recognition & AV_EF_EXPLODE) {
+            av_log(s, AV_LOG_ERROR,
+                   "The bitrate %"PRIu64" is too large.\n",
+                    bitrate);
+            return AVERROR_INVALIDDATA;
+        } else {
+            av_log(s, AV_LOG_WARNING,
+                   "The bitrate %"PRIu64" is too large, resetting to 0.",
+                   bitrate);
+            codec->bit_rate = 0;
+        }
+    } else {
+        codec->bit_rate = bitrate;
+    }
+
     if (codec->sample_rate <= 0) {
-        av_log(NULL, AV_LOG_ERROR,
+        av_log(s, AV_LOG_ERROR,
                "Invalid sample rate: %d\n", codec->sample_rate);
         return AVERROR_INVALIDDATA;
     }
