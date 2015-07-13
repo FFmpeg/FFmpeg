@@ -220,7 +220,6 @@ AVOutputFormat ff_wfm_muxer = {
     .write_header      = write_header,
     .write_packet      = write_packet,
     .write_trailer     = write_trailer,
-    .flags             = AVFMT_VARIABLE_FPS | AVFMT_TS_NONSTRICT |
-                         AVFMT_TS_NEGATIVE,
+    .flags             = 0,
     .priv_class        = &wfm_class,
 };
