@@ -332,12 +332,18 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps, enum AVPixelFormat pix_fm
     enum AVPixelFormat pix_fmts[HWACCEL_MAX + 2], *fmt = pix_fmts;
     int ret, i;
 
-    export_stream_params(s->avctx, &s->ps, sps);
-
     pic_arrays_free(s);
+    s->ps.sps = NULL;
+    s->ps.vps = NULL;
+
+    if (!sps)
+        return 0;
+
     ret = pic_arrays_init(s, sps);
     if (ret < 0)
         goto fail;
+
+    export_stream_params(s->avctx, &s->ps, sps);
 
     if (sps->pix_fmt == AV_PIX_FMT_YUV420P || sps->pix_fmt == AV_PIX_FMT_YUVJ420P) {
 #if CONFIG_HEVC_DXVA2_HWACCEL
