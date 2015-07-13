@@ -2441,8 +2441,6 @@ wmv3_vdpau_hwaccel_select="vc1_vdpau_hwaccel"
 # parsers
 h264_parser_select="h264_decoder"
 hevc_parser_select="golomb"
-#If ADVANCED_PARSER is enabled then the decoder is needed otherwise the next line can be removed
-hevc_parser_select="hevc_decoder"
 mpegvideo_parser_select="mpegvideo"
 mpeg4video_parser_select="error_resilience h263dsp mpeg_er mpegvideo qpeldsp"
 vc1_parser_select="mpegvideo startcode vc1_decoder"

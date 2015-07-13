@@ -30,7 +30,7 @@
 
 #define IS_IRAP_NAL(nal) (nal->type >= 16 && nal->type <= 23)
 
-#define ADVANCED_PARSER
+#define ADVANCED_PARSER CONFIG_HEVC_DECODER
 
 typedef struct HEVCParserContext {
     ParseContext pc;
@@ -40,11 +40,12 @@ typedef struct HEVCParserContext {
 
     int parsed_extradata;
 
-#ifdef ADVANCED_PARSER
+#if ADVANCED_PARSER
     HEVCContext h;
 #endif
 } HEVCParserContext;
 
+#if !ADVANCED_PARSER
 static int hevc_parse_slice_header(AVCodecParserContext *s, HEVCNAL *nal,
                                    AVCodecContext *avctx)
 {
@@ -81,7 +82,6 @@ static int hevc_parse_slice_header(AVCodecParserContext *s, HEVCNAL *nal,
     return 0;
 }
 
-#ifndef ADVANCED_PARSER
 static int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
                            int buf_size, AVCodecContext *avctx)
 {
@@ -166,6 +166,7 @@ static int hevc_find_frame_end(AVCodecParserContext *s, const uint8_t *buf,
     return END_NOT_FOUND;
 }
 
+#if ADVANCED_PARSER
 /**
  * Parse NAL units of found picture and decode some basic information.
  *
@@ -174,7 +175,6 @@ static int hevc_find_frame_end(AVCodecParserContext *s, const uint8_t *buf,
  * @param buf buffer with field/frame data.
  * @param buf_size size of the buffer.
  */
-#ifdef ADVANCED_PARSER
 static inline int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
                            int buf_size, AVCodecContext *avctx)
 {
@@ -418,7 +418,7 @@ static void hevc_parser_close(AVCodecParserContext *s)
     HEVCParserContext *ctx = s->priv_data;
     int i;
 
-#ifdef ADVANCED_PARSER
+#if ADVANCED_PARSER
     HEVCContext  *h  = &ctx->h;
     av_freep(&h->HEVClc);
 #endif
