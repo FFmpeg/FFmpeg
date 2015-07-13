@@ -742,10 +742,56 @@ static int scaling_list_data(GetBitContext *gb, AVCodecContext *avctx, ScalingLi
     return 0;
 }
 
+static int map_pixel_format(AVCodecContext *avctx, HEVCSPS *sps)
+{
+    const AVPixFmtDescriptor *desc;
+    switch (sps->bit_depth) {
+    case 8:
+        if (sps->chroma_format_idc == 0) sps->pix_fmt = AV_PIX_FMT_GRAY8;
+        if (sps->chroma_format_idc == 1) sps->pix_fmt = AV_PIX_FMT_YUV420P;
+        if (sps->chroma_format_idc == 2) sps->pix_fmt = AV_PIX_FMT_YUV422P;
+        if (sps->chroma_format_idc == 3) sps->pix_fmt = AV_PIX_FMT_YUV444P;
+       break;
+    case 9:
+        if (sps->chroma_format_idc == 0) sps->pix_fmt = AV_PIX_FMT_GRAY16;
+        if (sps->chroma_format_idc == 1) sps->pix_fmt = AV_PIX_FMT_YUV420P9;
+        if (sps->chroma_format_idc == 2) sps->pix_fmt = AV_PIX_FMT_YUV422P9;
+        if (sps->chroma_format_idc == 3) sps->pix_fmt = AV_PIX_FMT_YUV444P9;
+        break;
+    case 10:
+        if (sps->chroma_format_idc == 0) sps->pix_fmt = AV_PIX_FMT_GRAY16;
+        if (sps->chroma_format_idc == 1) sps->pix_fmt = AV_PIX_FMT_YUV420P10;
+        if (sps->chroma_format_idc == 2) sps->pix_fmt = AV_PIX_FMT_YUV422P10;
+        if (sps->chroma_format_idc == 3) sps->pix_fmt = AV_PIX_FMT_YUV444P10;
+        break;
+    case 12:
+        if (sps->chroma_format_idc == 0) sps->pix_fmt = AV_PIX_FMT_GRAY16;
+        if (sps->chroma_format_idc == 1) sps->pix_fmt = AV_PIX_FMT_YUV420P12;
+        if (sps->chroma_format_idc == 2) sps->pix_fmt = AV_PIX_FMT_YUV422P12;
+        if (sps->chroma_format_idc == 3) sps->pix_fmt = AV_PIX_FMT_YUV444P12;
+        break;
+    default:
+        av_log(avctx, AV_LOG_ERROR,
+               "4:2:0, 4:2:2, 4:4:4 supports are currently specified for 8, 10 and 12 bits.\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    desc = av_pix_fmt_desc_get(sps->pix_fmt);
+    if (!desc)
+        return AVERROR(EINVAL);
+
+    sps->hshift[0] = sps->vshift[0] = 0;
+    sps->hshift[2] = sps->hshift[1] = desc->log2_chroma_w;
+    sps->vshift[2] = sps->vshift[1] = desc->log2_chroma_h;
+
+    sps->pixel_shift = sps->bit_depth > 8;
+
+    return 0;
+}
+
 int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
                       int apply_defdispwin, AVBufferRef **vps_list, AVCodecContext *avctx)
 {
-    const AVPixFmtDescriptor *desc;
     int ret = 0;
     int log2_diff_max_min_transform_block_size;
     int bit_depth_chroma, start, vui_present, sublayer_ordering_info;
@@ -831,47 +877,9 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
         return AVERROR_INVALIDDATA;
     }
 
-    switch (sps->bit_depth) {
-    case 8:
-        if (sps->chroma_format_idc == 0) sps->pix_fmt = AV_PIX_FMT_GRAY8;
-        if (sps->chroma_format_idc == 1) sps->pix_fmt = AV_PIX_FMT_YUV420P;
-        if (sps->chroma_format_idc == 2) sps->pix_fmt = AV_PIX_FMT_YUV422P;
-        if (sps->chroma_format_idc == 3) sps->pix_fmt = AV_PIX_FMT_YUV444P;
-       break;
-    case 9:
-        if (sps->chroma_format_idc == 0) sps->pix_fmt = AV_PIX_FMT_GRAY16;
-        if (sps->chroma_format_idc == 1) sps->pix_fmt = AV_PIX_FMT_YUV420P9;
-        if (sps->chroma_format_idc == 2) sps->pix_fmt = AV_PIX_FMT_YUV422P9;
-        if (sps->chroma_format_idc == 3) sps->pix_fmt = AV_PIX_FMT_YUV444P9;
-        break;
-    case 10:
-        if (sps->chroma_format_idc == 0) sps->pix_fmt = AV_PIX_FMT_GRAY16;
-        if (sps->chroma_format_idc == 1) sps->pix_fmt = AV_PIX_FMT_YUV420P10;
-        if (sps->chroma_format_idc == 2) sps->pix_fmt = AV_PIX_FMT_YUV422P10;
-        if (sps->chroma_format_idc == 3) sps->pix_fmt = AV_PIX_FMT_YUV444P10;
-        break;
-    case 12:
-        if (sps->chroma_format_idc == 0) sps->pix_fmt = AV_PIX_FMT_GRAY16;
-        if (sps->chroma_format_idc == 1) sps->pix_fmt = AV_PIX_FMT_YUV420P12;
-        if (sps->chroma_format_idc == 2) sps->pix_fmt = AV_PIX_FMT_YUV422P12;
-        if (sps->chroma_format_idc == 3) sps->pix_fmt = AV_PIX_FMT_YUV444P12;
-        break;
-    default:
-        av_log(avctx, AV_LOG_ERROR,
-               "4:2:0, 4:2:2, 4:4:4 supports are currently specified for 8, 10 and 12 bits.\n");
-        return AVERROR_INVALIDDATA;
-    }
-
-    desc = av_pix_fmt_desc_get(sps->pix_fmt);
-    if (!desc) {
-        return AVERROR(EINVAL);
-    }
-
-    sps->hshift[0] = sps->vshift[0] = 0;
-    sps->hshift[2] = sps->hshift[1] = desc->log2_chroma_w;
-    sps->vshift[2] = sps->vshift[1] = desc->log2_chroma_h;
-
-    sps->pixel_shift = sps->bit_depth > 8;
+    ret = map_pixel_format(avctx, sps);
+    if (ret < 0)
+        return ret;
 
     sps->log2_max_poc_lsb = get_ue_golomb_long(gb) + 4;
     if (sps->log2_max_poc_lsb > 16) {
