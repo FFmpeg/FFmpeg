@@ -524,7 +524,7 @@ int ff_mpeg_update_thread_context(AVCodecContext *dst,
     if(s->picture)
     for (i = 0; i < MAX_PICTURE_COUNT; i++) {
         ff_mpeg_unref_picture(s->avctx, &s->picture[i]);
-        if (s1->picture[i].f->buf[0] &&
+        if (s1->picture && s1->picture[i].f->buf[0] &&
             (ret = ff_mpeg_ref_picture(s->avctx, &s->picture[i], &s1->picture[i])) < 0)
             return ret;
     }
