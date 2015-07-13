@@ -65,6 +65,7 @@ static int write_header(struct AVFormatContext *s)
     found = 0;
     for (i = 0; i < s->nb_streams; i ++) {
     	AVStream* stream = s->streams[i];
+    	avpriv_set_pts_info(stream,64,1,90000);
     	if (stream->codec->codec_type != AVMEDIA_TYPE_AUDIO)
     		continue;
     	if (stream->codec->codec_id != AV_CODEC_ID_PCM_S16LE) {
@@ -220,6 +221,6 @@ AVOutputFormat ff_wfm_muxer = {
     .write_header      = write_header,
     .write_packet      = write_packet,
     .write_trailer     = write_trailer,
-    .flags             = 0,
+    .flags             = AVFMT_VARIABLE_FPS | AVFMT_TS_NONSTRICT,
     .priv_class        = &wfm_class,
 };
