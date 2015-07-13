@@ -51,13 +51,13 @@ int ff_qsv_map_pixfmt(enum AVPixelFormat format)
 static int qsv_init_session(AVCodecContext *avctx, QSVContext *q, mfxSession session)
 {
     if (!session) {
-        if (!q->internal_session) {
-            int ret = ff_qsv_init_internal_session(avctx, &q->internal_session, NULL);
+        if (!q->internal_qs.session) {
+            int ret = ff_qsv_init_internal_session(avctx, &q->internal_qs, NULL);
             if (ret < 0)
                 return ret;
         }
 
-        q->session = q->internal_session;
+        q->session = q->internal_qs.session;
     } else {
         q->session = session;
     }
@@ -282,9 +282,7 @@ int ff_qsv_decode_close(QSVContext *q)
         av_freep(&cur);
         cur = q->work_frames;
     }
-
-    if (q->internal_session)
-        MFXClose(q->internal_session);
+    ff_qsv_close_internal_session(&q->internal_qs);
 
     return 0;
 }

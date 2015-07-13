@@ -217,12 +217,12 @@ int ff_qsv_enc_init(AVCodecContext *avctx, QSVEncContext *q)
     }
 
     if (!q->session) {
-        ret = ff_qsv_init_internal_session(avctx, &q->internal_session,
+        ret = ff_qsv_init_internal_session(avctx, &q->internal_qs,
                                            q->load_plugins);
         if (ret < 0)
             return ret;
 
-        q->session = q->internal_session;
+        q->session = q->internal_qs.session;
     }
 
     ret = init_video_param(avctx, q);
@@ -460,10 +460,9 @@ int ff_qsv_enc_close(AVCodecContext *avctx, QSVEncContext *q)
     QSVFrame *cur;
 
     MFXVideoENCODE_Close(q->session);
-    if (q->internal_session)
-        MFXClose(q->internal_session);
-    q->session          = NULL;
-    q->internal_session = NULL;
+    q->session = NULL;
+
+    ff_qsv_close_internal_session(&q->internal_qs);
 
     cur = q->work_frames;
     while (cur) {

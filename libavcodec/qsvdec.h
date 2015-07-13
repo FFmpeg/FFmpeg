@@ -40,7 +40,7 @@ typedef struct QSVContext {
 
     // the session we allocated internally, in case the caller did not provide
     // one
-    mfxSession internal_session;
+    QSVSession internal_qs;
 
     /**
      * a linked list of frames currently being used by QSV
