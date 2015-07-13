@@ -183,7 +183,7 @@ static inline int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
     GetBitContext      *gb;
     SliceHeader        *sh = &h->sh;
     HEVCParamSets *ps = &h->ps;
-    HEVCPacket   *pkt = &h->pkt;
+    HEVCPacket   *pkt = &ctx->pkt;
     const uint8_t *buf_end = buf + buf_size;
     int state = -1, i;
     HEVCNAL *nal;
@@ -420,6 +420,16 @@ static void hevc_parser_close(AVCodecParserContext *s)
 
 #if ADVANCED_PARSER
     HEVCContext  *h  = &ctx->h;
+
+    for (i = 0; i < FF_ARRAY_ELEMS(h->ps.vps_list); i++)
+        av_buffer_unref(&h->ps.vps_list[i]);
+    for (i = 0; i < FF_ARRAY_ELEMS(h->ps.sps_list); i++)
+        av_buffer_unref(&h->ps.sps_list[i]);
+    for (i = 0; i < FF_ARRAY_ELEMS(h->ps.pps_list); i++)
+        av_buffer_unref(&h->ps.pps_list[i]);
+
+    h->ps.sps = NULL;
+
     av_freep(&h->HEVClc);
 #endif
 
