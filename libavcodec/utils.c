@@ -1576,6 +1576,12 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
                 goto free_and_end;
             }
         }
+        if (avctx->sample_rate < 0) {
+            av_log(avctx, AV_LOG_ERROR, "Specified sample rate %d is not supported\n",
+                    avctx->sample_rate);
+            ret = AVERROR(EINVAL);
+            goto free_and_end;
+        }
         if (avctx->codec->channel_layouts) {
             if (!avctx->channel_layout) {
                 av_log(avctx, AV_LOG_WARNING, "Channel layout not specified\n");
