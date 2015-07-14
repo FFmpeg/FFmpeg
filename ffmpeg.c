@@ -3529,7 +3529,7 @@ static void free_input_threads(void)
         InputFile *f = input_files[i];
         AVPacket pkt;
 
-        if (!f->in_thread_queue)
+        if (!f || !f->in_thread_queue)
             continue;
         av_thread_message_queue_set_err_send(f->in_thread_queue, AVERROR_EOF);
         while (av_thread_message_queue_recv(f->in_thread_queue, &pkt, 0) >= 0)
