@@ -2,6 +2,7 @@
  * Copyright (c) 2012 Laurent de Soras
  * Copyright (c) 2013 Fredrik Mellbin
  * Copyright (c) 2015 Paul B Mahol
+ * Copyright (c) 2015 James Darnley
  *
  * This file is part of FFmpeg.
  *
@@ -20,31 +21,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-/*
- * TODO: add SIMD
- */
-
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"
+#include "removegrain.h"
 #include "video.h"
-
-typedef struct RemoveGrainContext {
-    const AVClass *class;
-
-    int mode[4];
-
-    int nb_planes;
-    int planewidth[4];
-    int planeheight[4];
-    int skip_even;
-    int skip_odd;
-
-    int (*rg[4])(int c, int a1, int a2, int a3, int a4, int a5, int a6, int a7, int a8);
-} RemoveGrainContext;
 
 #define OFFSET(x) offsetof(RemoveGrainContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
@@ -142,6 +126,7 @@ static int mode05(int c, int a1, int a2, int a3, int a4, int a5, int a6, int a7,
 
     const int mindiff = FFMIN(FFMIN(c1, c2), FFMIN(c3, c4));
 
+    /* When adding SIMD notice the return order here: 4, 2, 3, 1. */
     if (mindiff == c4) {
         return av_clip(c, mi4, ma4);
     } else if (mindiff == c2) {
@@ -524,6 +509,9 @@ static int config_input(AVFilterLink *inlink)
         }
     }
 
+    if (ARCH_X86)
+        ff_removegrain_init_x86(s);
+
     return 0;
 }
 
@@ -566,7 +554,19 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
         }
 
         *dst++ = *src++;
-        for (x = 1; x < s->planewidth[i] - 1; x++) {
+
+        if (s->fl[i]) {
+            int w_asm = (s->planewidth[i] - 2) & ~15;
+
+            s->fl[i](dst, src, in->linesize[i], w_asm);
+
+            x = 1 + w_asm;
+            dst += w_asm;
+            src += w_asm;
+        } else
+            x = 1;
+
+        for (; x < s->planewidth[i] - 1; x++) {
             const int a1 = src[-op];
             const int a2 = src[-o0];
             const int a3 = src[-om];
