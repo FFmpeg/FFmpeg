@@ -168,7 +168,7 @@ static float ssim_plane(SSIMDSPContext *dsp,
                                sum0, width);
         }
 
-        ssim += dsp->ssim_end_line(sum0, sum1, width - 1);
+        ssim += dsp->ssim_end_line((const int (*)[4])sum0, (const int (*)[4])sum1, width - 1);
     }
 
     return ssim / ((height - 1) * (width - 1));
