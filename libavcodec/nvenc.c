@@ -93,7 +93,7 @@ typedef struct NvencData
     union {
         int64_t timestamp;
         NvencOutputSurface *surface;
-    };
+    } u;
 } NvencData;
 
 typedef struct NvencDataList
@@ -296,7 +296,7 @@ static int data_queue_enqueue(NvencDataList* queue, NvencData *data)
 static int out_surf_queue_enqueue(NvencDataList* queue, NvencOutputSurface* surface)
 {
     NvencData data;
-    data.surface = surface;
+    data.u.surface = surface;
 
     return data_queue_enqueue(queue, &data);
 }
@@ -308,13 +308,13 @@ static NvencOutputSurface* out_surf_queue_dequeue(NvencDataList* queue)
     if (!res)
         return NULL;
 
-    return res->surface;
+    return res->u.surface;
 }
 
 static int timestamp_queue_enqueue(NvencDataList* queue, int64_t timestamp)
 {
     NvencData data;
-    data.timestamp = timestamp;
+    data.u.timestamp = timestamp;
 
     return data_queue_enqueue(queue, &data);
 }
@@ -326,7 +326,7 @@ static int64_t timestamp_queue_dequeue(NvencDataList* queue)
     if (!res)
         return AV_NOPTS_VALUE;
 
-    return res->timestamp;
+    return res->u.timestamp;
 }
 
 #define CHECK_LOAD_FUNC(t, f, s) \
