@@ -3517,6 +3517,9 @@ static int mov_read_close(AVFormatContext *s)
         AVStream *st = s->streams[i];
         MOVStreamContext *sc = st->priv_data;
 
+        if (!sc)
+            continue;
+
         av_freep(&sc->ctts_data);
         for (j = 0; j < sc->drefs_count; j++) {
             av_freep(&sc->drefs[j].path);
