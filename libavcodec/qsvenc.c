@@ -197,6 +197,11 @@ int ff_qsv_enc_init(AVCodecContext *avctx, QSVEncContext *q)
     q->param.IOPattern  = MFX_IOPATTERN_IN_SYSTEM_MEMORY;
     q->param.AsyncDepth = q->async_depth;
 
+    q->async_fifo = av_fifo_alloc((1 + q->async_depth) *
+                                  (sizeof(AVPacket) + sizeof(mfxSyncPoint) + sizeof(mfxBitstream*)));
+    if (!q->async_fifo)
+        return AVERROR(ENOMEM);
+
     if (avctx->hwaccel_context) {
         AVQSVContext *qsv = avctx->hwaccel_context;
 
@@ -371,7 +376,8 @@ static void print_interlace_msg(AVCodecContext *avctx, QSVEncContext *q)
 int ff_qsv_encode(AVCodecContext *avctx, QSVEncContext *q,
                   AVPacket *pkt, const AVFrame *frame, int *got_packet)
 {
-    mfxBitstream bs = { { { 0 } } };
+    AVPacket new_pkt = { 0 };
+    mfxBitstream *bs;
 
     mfxFrameSurface1 *surf = NULL;
     mfxSyncPoint sync      = NULL;
@@ -385,43 +391,86 @@ int ff_qsv_encode(AVCodecContext *avctx, QSVEncContext *q,
         }
     }
 
-    ret = ff_alloc_packet(pkt, q->packet_size);
+    ret = av_new_packet(&new_pkt, q->packet_size);
     if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR, "Error allocating the output packet\n");
         return ret;
     }
-    bs.Data      = pkt->data;
-    bs.MaxLength = pkt->size;
+
+    bs = av_mallocz(sizeof(*bs));
+    if (!bs) {
+        av_packet_unref(&new_pkt);
+        return AVERROR(ENOMEM);
+    }
+    bs->Data      = new_pkt.data;
+    bs->MaxLength = new_pkt.size;
 
     do {
-        ret = MFXVideoENCODE_EncodeFrameAsync(q->session, NULL, surf, &bs, &sync);
+        ret = MFXVideoENCODE_EncodeFrameAsync(q->session, NULL, surf, bs, &sync);
         if (ret == MFX_WRN_DEVICE_BUSY)
             av_usleep(1);
     } while (ret > 0);
 
-    if (ret < 0)
+    if (ret < 0) {
+        av_packet_unref(&new_pkt);
+        av_freep(&bs);
         return (ret == MFX_ERR_MORE_DATA) ? 0 : ff_qsv_error(ret);
+    }
 
     if (ret == MFX_WRN_INCOMPATIBLE_VIDEO_PARAM && frame->interlaced_frame)
         print_interlace_msg(avctx, q);
 
     if (sync) {
+        av_fifo_generic_write(q->async_fifo, &new_pkt, sizeof(new_pkt), NULL);
+        av_fifo_generic_write(q->async_fifo, &sync,    sizeof(sync),    NULL);
+        av_fifo_generic_write(q->async_fifo, &bs,      sizeof(bs),    NULL);
+    } else {
+        av_packet_unref(&new_pkt);
+        av_freep(&bs);
+    }
+
+    if (!av_fifo_space(q->async_fifo) ||
+        (!frame && av_fifo_size(q->async_fifo))) {
+        av_fifo_generic_read(q->async_fifo, &new_pkt, sizeof(new_pkt), NULL);
+        av_fifo_generic_read(q->async_fifo, &sync,    sizeof(sync),    NULL);
+        av_fifo_generic_read(q->async_fifo, &bs,      sizeof(bs),      NULL);
+
         MFXVideoCORE_SyncOperation(q->session, sync, 60000);
 
-        if (bs.FrameType & MFX_FRAMETYPE_I || bs.FrameType & MFX_FRAMETYPE_xI)
+        new_pkt.dts  = av_rescale_q(bs->DecodeTimeStamp, (AVRational){1, 90000}, avctx->time_base);
+        new_pkt.pts  = av_rescale_q(bs->TimeStamp,       (AVRational){1, 90000}, avctx->time_base);
+        new_pkt.size = bs->DataLength;
+
+        if (bs->FrameType & MFX_FRAMETYPE_IDR ||
+            bs->FrameType & MFX_FRAMETYPE_xIDR)
+            new_pkt.flags |= AV_PKT_FLAG_KEY;
+
+        if (bs->FrameType & MFX_FRAMETYPE_I || bs->FrameType & MFX_FRAMETYPE_xI)
             avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
-        else if (bs.FrameType & MFX_FRAMETYPE_P || bs.FrameType & MFX_FRAMETYPE_xP)
+        else if (bs->FrameType & MFX_FRAMETYPE_P || bs->FrameType & MFX_FRAMETYPE_xP)
             avctx->coded_frame->pict_type = AV_PICTURE_TYPE_P;
-        else if (bs.FrameType & MFX_FRAMETYPE_B || bs.FrameType & MFX_FRAMETYPE_xB)
+        else if (bs->FrameType & MFX_FRAMETYPE_B || bs->FrameType & MFX_FRAMETYPE_xB)
             avctx->coded_frame->pict_type = AV_PICTURE_TYPE_B;
 
-        pkt->dts  = av_rescale_q(bs.DecodeTimeStamp, (AVRational){1, 90000}, avctx->time_base);
-        pkt->pts  = av_rescale_q(bs.TimeStamp,       (AVRational){1, 90000}, avctx->time_base);
-        pkt->size = bs.DataLength;
+        av_freep(&bs);
 
-        if (bs.FrameType & MFX_FRAMETYPE_IDR ||
-            bs.FrameType & MFX_FRAMETYPE_xIDR)
-            pkt->flags |= AV_PKT_FLAG_KEY;
+        if (pkt->data) {
+            if (pkt->size < new_pkt.size) {
+                av_log(avctx, AV_LOG_ERROR, "Submitted buffer not large enough: %d < %d\n",
+                       pkt->size, new_pkt.size);
+                av_packet_unref(&new_pkt);
+                return AVERROR(EINVAL);
+            }
+
+            memcpy(pkt->data, new_pkt.data, new_pkt.size);
+            pkt->size = new_pkt.size;
+
+            ret = av_packet_copy_props(pkt, &new_pkt);
+            av_packet_unref(&new_pkt);
+            if (ret < 0)
+                return ret;
+        } else
+            *pkt = new_pkt;
 
         *got_packet = 1;
     }
@@ -446,6 +495,21 @@ int ff_qsv_enc_close(AVCodecContext *avctx, QSVEncContext *q)
         av_freep(&cur);
         cur = q->work_frames;
     }
+
+    while (q->async_fifo && av_fifo_size(q->async_fifo)) {
+        AVPacket pkt;
+        mfxSyncPoint sync;
+        mfxBitstream *bs;
+
+        av_fifo_generic_read(q->async_fifo, &pkt,  sizeof(pkt),  NULL);
+        av_fifo_generic_read(q->async_fifo, &sync, sizeof(sync), NULL);
+        av_fifo_generic_read(q->async_fifo, &bs,   sizeof(bs),   NULL);
+
+        av_freep(&bs);
+        av_packet_unref(&pkt);
+    }
+    av_fifo_free(q->async_fifo);
+    q->async_fifo = NULL;
 
     av_frame_free(&avctx->coded_frame);
 
