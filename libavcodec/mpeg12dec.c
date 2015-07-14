@@ -1938,7 +1938,6 @@ static int mpeg_decode_slice(MpegEncContext *s, int mb_y,
             // area, we detect this here instead of running into the end expecting
             // more data
             if (s->mb_y >= ((s->height + 15) >> 4) &&
-                s->progressive_frame &&
                 !s->progressive_sequence &&
                 get_bits_left(&s->gb) <= 8 &&
                 get_bits_left(&s->gb) >= 0 &&
