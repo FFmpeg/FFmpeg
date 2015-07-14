@@ -40,6 +40,8 @@ typedef struct QSVFrame {
 
     mfxFrameSurface1 surface_internal;
 
+    int queued;
+
     struct QSVFrame *next;
 } QSVFrame;
 

@@ -28,6 +28,7 @@
 
 #include <mfx/mfxvideo.h>
 
+#include "libavutil/fifo.h"
 #include "libavutil/frame.h"
 #include "libavutil/pixfmt.h"
 
@@ -46,6 +47,8 @@ typedef struct QSVContext {
      * a linked list of frames currently being used by QSV
      */
     QSVFrame *work_frames;
+
+    AVFifoBuffer *async_fifo;
 
     // options set by the caller
     int async_depth;
