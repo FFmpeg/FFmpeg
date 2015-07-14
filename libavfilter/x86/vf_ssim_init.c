@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002 Fabrice Bellard
+ * Copyright (c) 2015 Ronald S. Bultje <rsbultje@gmail.com>
  *
  * This file is part of FFmpeg.
  *
@@ -18,28 +18,21 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVUTIL_MEM_INTERNAL_H
-#define AVUTIL_MEM_INTERNAL_H
+#include "libavutil/x86/cpu.h"
 
-#include "avassert.h"
-#include "mem.h"
+#include "libavfilter/ssim.h"
 
-static inline int ff_fast_malloc(void *ptr, unsigned int *size, size_t min_size, int zero_realloc)
+void ff_ssim_4x4_line_ssse3(const uint8_t *buf, ptrdiff_t buf_stride,
+                            const uint8_t *ref, ptrdiff_t ref_stride,
+                            int (*sums)[4], int w);
+float ff_ssim_end_line_sse4(const int (*sum0)[4], const int (*sum1)[4], int w);
+
+void ff_ssim_init_x86(SSIMDSPContext *dsp)
 {
-    void *val;
+    int cpu_flags = av_get_cpu_flags();
 
-    memcpy(&val, ptr, sizeof(val));
-    if (min_size <= *size) {
-        av_assert0(val || !min_size);
-        return 0;
-    }
-    min_size = FFMAX(min_size + min_size / 16 + 32, min_size);
-    av_freep(ptr);
-    val = zero_realloc ? av_mallocz(min_size) : av_malloc(min_size);
-    memcpy(ptr, &val, sizeof(val));
-    if (!val)
-        min_size = 0;
-    *size = min_size;
-    return 1;
+    if (ARCH_X86_64 && EXTERNAL_SSSE3(cpu_flags))
+        dsp->ssim_4x4_line = ff_ssim_4x4_line_ssse3;
+    if (EXTERNAL_SSE4(cpu_flags))
+        dsp->ssim_end_line = ff_ssim_end_line_sse4;
 }
-#endif /* AVUTIL_MEM_INTERNAL_H */

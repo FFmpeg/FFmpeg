@@ -463,6 +463,9 @@ void av_frame_unref(AVFrame *frame)
 {
     int i;
 
+    if (!frame)
+        return;
+
     wipe_side_data(frame);
 
     for (i = 0; i < FF_ARRAY_ELEMS(frame->buf); i++)

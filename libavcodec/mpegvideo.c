@@ -524,7 +524,7 @@ int ff_mpeg_update_thread_context(AVCodecContext *dst,
     if(s->picture)
     for (i = 0; i < MAX_PICTURE_COUNT; i++) {
         ff_mpeg_unref_picture(s->avctx, &s->picture[i]);
-        if (s1->picture[i].f->buf[0] &&
+        if (s1->picture && s1->picture[i].f->buf[0] &&
             (ret = ff_mpeg_ref_picture(s->avctx, &s->picture[i], &s1->picture[i])) < 0)
             return ret;
     }
@@ -1106,6 +1106,9 @@ int ff_mpv_common_frame_size_change(MpegEncContext *s)
 void ff_mpv_common_end(MpegEncContext *s)
 {
     int i;
+
+    if (!s)
+        return ;
 
     if (s->slice_context_count > 1) {
         for (i = 0; i < s->slice_context_count; i++) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002 Fabrice Bellard
+ * Copyright (c) 2015 Ronald S. Bultje <rsbultje@gmail.com>
  *
  * This file is part of FFmpeg.
  *
@@ -18,28 +18,19 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVUTIL_MEM_INTERNAL_H
-#define AVUTIL_MEM_INTERNAL_H
+#ifndef LIBAVFILTER_SSIM_H
+#define LIBAVFILTER_SSIM_H
 
-#include "avassert.h"
-#include "mem.h"
+#include <stddef.h>
+#include <stdint.h>
 
-static inline int ff_fast_malloc(void *ptr, unsigned int *size, size_t min_size, int zero_realloc)
-{
-    void *val;
+typedef struct SSIMDSPContext {
+    void (*ssim_4x4_line)(const uint8_t *buf, ptrdiff_t buf_stride,
+                          const uint8_t *ref, ptrdiff_t ref_stride,
+                          int (*sums)[4], int w);
+    float (*ssim_end_line)(const int (*sum0)[4], const int (*sum1)[4], int w);
+} SSIMDSPContext;
 
-    memcpy(&val, ptr, sizeof(val));
-    if (min_size <= *size) {
-        av_assert0(val || !min_size);
-        return 0;
-    }
-    min_size = FFMAX(min_size + min_size / 16 + 32, min_size);
-    av_freep(ptr);
-    val = zero_realloc ? av_mallocz(min_size) : av_malloc(min_size);
-    memcpy(ptr, &val, sizeof(val));
-    if (!val)
-        min_size = 0;
-    *size = min_size;
-    return 1;
-}
-#endif /* AVUTIL_MEM_INTERNAL_H */
+void ff_ssim_init_x86(SSIMDSPContext *dsp);
+
+#endif /* LIBAVFILTER_SSIM_H */

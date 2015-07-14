@@ -281,8 +281,10 @@ static int asf_read_value(AVFormatContext *s, uint8_t *name, uint16_t name_len,
             av_log(s, AV_LOG_WARNING, "av_dict_set failed.\n");
     } else {
         char buf[256];
-        if (val_len > sizeof(buf))
-            return AVERROR_INVALIDDATA;
+        if (val_len > sizeof(buf)) {
+            ret = AVERROR_INVALIDDATA;
+            goto failed;
+        }
         if ((ret = avio_read(pb, value, val_len)) < 0)
             goto failed;
         if (ret < 2 * val_len)
@@ -404,8 +406,10 @@ static int asf_read_picture(AVFormatContext *s, int len)
     }
     asf->asf_st[asf->nb_streams] = av_mallocz(sizeof(*asf_st));
     asf_st = asf->asf_st[asf->nb_streams];
-    if (!asf_st)
-        return AVERROR(ENOMEM);
+    if (!asf_st) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
 
     st->disposition              |= AV_DISPOSITION_ATTACHED_PIC;
     st->codec->codec_type         = asf_st->type = AVMEDIA_TYPE_VIDEO;

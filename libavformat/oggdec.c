@@ -60,6 +60,7 @@ static const struct ogg_codec * const ogg_codecs[] = {
 
 static int64_t ogg_calc_pts(AVFormatContext *s, int idx, int64_t *dts);
 static int ogg_new_stream(AVFormatContext *s, uint32_t serial);
+static int ogg_restore(AVFormatContext *s, int discard);
 
 //FIXME We could avoid some structure duplication
 static int ogg_save(AVFormatContext *s)
@@ -68,6 +69,7 @@ static int ogg_save(AVFormatContext *s)
     struct ogg_state *ost =
         av_malloc(sizeof(*ost) + (ogg->nstreams - 1) * sizeof(*ogg->streams));
     int i;
+    int ret = 0;
 
     if (!ost)
         return AVERROR(ENOMEM);
@@ -81,14 +83,20 @@ static int ogg_save(AVFormatContext *s)
     for (i = 0; i < ogg->nstreams; i++) {
         struct ogg_stream *os = ogg->streams + i;
         os->buf = av_mallocz(os->bufsize + FF_INPUT_BUFFER_PADDING_SIZE);
-        memcpy(os->buf, ost->streams[i].buf, os->bufpos);
+        if (os->buf)
+            memcpy(os->buf, ost->streams[i].buf, os->bufpos);
+        else
+            ret = AVERROR(ENOMEM);
         os->new_metadata      = NULL;
         os->new_metadata_size = 0;
     }
 
     ogg->state = ost;
 
-    return 0;
+    if (ret < 0)
+        ogg_restore(s, 0);
+
+    return ret;
 }
 
 static int ogg_restore(AVFormatContext *s, int discard)

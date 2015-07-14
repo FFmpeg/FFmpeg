@@ -1947,6 +1947,8 @@ static int vp3_update_thread_context(AVCodecContext *dst, const AVCodecContext *
     }
 
     if (s != s1) {
+        if (!s->current_frame.f)
+            return AVERROR(ENOMEM);
         // init tables if the first frame hasn't been decoded
         if (!s->current_frame.f->data[0]) {
             int y_fragment_count, c_fragment_count;

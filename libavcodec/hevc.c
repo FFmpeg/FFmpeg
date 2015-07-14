@@ -280,10 +280,10 @@ static int decode_lt_rps(HEVCContext *s, LongTermRPS *rps, GetBitContext *gb)
     return 0;
 }
 
-static void export_stream_params(AVCodecContext *avctx,
-                                 const HEVCContext *s, const HEVCSPS *sps)
+static void export_stream_params(AVCodecContext *avctx, const HEVCParamSets *ps,
+                                 const HEVCSPS *sps)
 {
-    const HEVCVPS *vps = (const HEVCVPS*)s->ps.vps_list[sps->vps_id]->data;
+    const HEVCVPS *vps = (const HEVCVPS*)ps->vps_list[sps->vps_id]->data;
     unsigned int num = 0, den = 0;
 
     avctx->pix_fmt             = sps->pix_fmt;
@@ -332,12 +332,18 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps, enum AVPixelFormat pix_fm
     enum AVPixelFormat pix_fmts[HWACCEL_MAX + 2], *fmt = pix_fmts;
     int ret, i;
 
-    export_stream_params(s->avctx, s, sps);
-
     pic_arrays_free(s);
+    s->ps.sps = NULL;
+    s->ps.vps = NULL;
+
+    if (!sps)
+        return 0;
+
     ret = pic_arrays_init(s, sps);
     if (ret < 0)
         goto fail;
+
+    export_stream_params(s->avctx, &s->ps, sps);
 
     if (sps->pix_fmt == AV_PIX_FMT_YUV420P || sps->pix_fmt == AV_PIX_FMT_YUVJ420P) {
 #if CONFIG_HEVC_DXVA2_HWACCEL
@@ -3204,7 +3210,7 @@ static int hevc_decode_extradata(HEVCContext *s)
     for (i = 0; i < FF_ARRAY_ELEMS(s->ps.sps_list); i++) {
         if (s->ps.sps_list[i]) {
             const HEVCSPS *sps = (const HEVCSPS*)s->ps.sps_list[i]->data;
-            export_stream_params(s->avctx, s, sps);
+            export_stream_params(s->avctx, &s->ps, sps);
             break;
         }
     }
