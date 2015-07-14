@@ -4045,7 +4045,7 @@ int main(int argc, char **argv)
 
     setvbuf(stderr,NULL,_IONBF,0); /* win32 runtime needs this */
 
-    av_log_set_flags(AV_LOG_SKIP_REPEATED);
+    av_log_set_flags(AV_LOG_SKIP_REPEATED | AV_LOG_PRINT_LEVEL);
     parse_loglevel(argc, argv, options);
 
     if(argc>1 && !strcmp(argv[1], "-d")){
