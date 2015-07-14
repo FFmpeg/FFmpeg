@@ -129,7 +129,8 @@ int av_fifo_generic_write(AVFifoBuffer *f, void *src, int size,
     do {
         int len = FFMIN(f->end - wptr, size);
         if (func) {
-            if (func(src, wptr, len) <= 0)
+            len = func(src, wptr, len);
+            if (len <= 0)
                 break;
         } else {
             memcpy(wptr, src, len);
