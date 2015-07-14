@@ -34,6 +34,7 @@
 
 #include "avcodec.h"
 #include "internal.h"
+#include "qsv.h"
 #include "qsv_internal.h"
 #include "qsvdec.h"
 
@@ -48,37 +49,28 @@ int ff_qsv_map_pixfmt(enum AVPixelFormat format)
     }
 }
 
-static int qsv_init_session(AVCodecContext *avctx, QSVContext *q, mfxSession session)
-{
-    if (!session) {
-        if (!q->internal_qs.session) {
-            int ret = ff_qsv_init_internal_session(avctx, &q->internal_qs, NULL);
-            if (ret < 0)
-                return ret;
-        }
-
-        q->session = q->internal_qs.session;
-    } else {
-        q->session = session;
-    }
-
-    /* make sure the decoder is uninitialized */
-    MFXVideoDECODE_Close(q->session);
-
-    return 0;
-}
-
-int ff_qsv_decode_init(AVCodecContext *avctx, QSVContext *q, mfxSession session)
+int ff_qsv_decode_init(AVCodecContext *avctx, QSVContext *q)
 {
     mfxVideoParam param = { { 0 } };
     int ret;
 
-    ret = qsv_init_session(avctx, q, session);
-    if (ret < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Error initializing an MFX session\n");
-        return ret;
-    }
+    q->iopattern  = MFX_IOPATTERN_OUT_SYSTEM_MEMORY;
 
+    if (avctx->hwaccel_context) {
+        AVQSVContext *qsv = avctx->hwaccel_context;
+
+        q->session        = qsv->session;
+        q->iopattern      = qsv->iopattern;
+        q->ext_buffers    = qsv->ext_buffers;
+        q->nb_ext_buffers = qsv->nb_ext_buffers;
+    }
+    if (!q->session) {
+        ret = ff_qsv_init_internal_session(avctx, &q->internal_qs, NULL);
+        if (ret < 0)
+            return ret;
+
+        q->session = q->internal_qs.session;
+    }
 
     ret = ff_qsv_codec_id_to_mfx(avctx->codec_id);
     if (ret < 0)
