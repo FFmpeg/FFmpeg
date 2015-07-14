@@ -820,6 +820,8 @@
     </ClCompile>
     <ClCompile Include="..\libavcodec\hevc_parse.c">
     </ClCompile>
+    <ClCompile Include="..\libavcodec\hevc_data.c">
+    </ClCompile>
     <ClCompile Include="..\libavcodec\qsvenc_hevc.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\hevc_ps_enc.c">

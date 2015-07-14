@@ -1232,6 +1232,9 @@
     <ClCompile Include="..\libavcodec\hevc_parse.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\hevc_data.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\qsvenc_hevc.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
