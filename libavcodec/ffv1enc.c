@@ -863,12 +863,12 @@ static void encode_slice_header(FFV1Context *f, FFV1Context *fs)
         put_symbol(c, state, f->plane[j].quant_table_index, 0);
         av_assert0(f->plane[j].quant_table_index == f->avctx->context_model);
     }
-    if (!f->avctx->coded_frame->interlaced_frame)
+    if (!f->frame->interlaced_frame)
         put_symbol(c, state, 3, 0);
     else
-        put_symbol(c, state, 1 + !f->avctx->coded_frame->top_field_first, 0);
-    put_symbol(c, state, f->avctx->coded_frame->sample_aspect_ratio.num, 0);
-    put_symbol(c, state, f->avctx->coded_frame->sample_aspect_ratio.den, 0);
+        put_symbol(c, state, 1 + !f->frame->top_field_first, 0);
+    put_symbol(c, state, f->frame->sample_aspect_ratio.num, 0);
+    put_symbol(c, state, f->frame->sample_aspect_ratio.den, 0);
 }
 
 static int encode_slice(AVCodecContext *c, void *arg)
