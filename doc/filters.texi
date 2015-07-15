@@ -952,23 +952,27 @@ Available keys for each channel are:
 DC_offset
 Min_level
 Max_level
+Max_difference
 Peak_level
 RMS_peak
 RMS_trough
 Crest_factor
 Flat_factor
 Peak_count
+Bit_depth
 
 and for Overall:
 DC_offset
 Min_level
 Max_level
+Max_difference
 Peak_level
 RMS_level
 RMS_peak
 RMS_trough
 Flat_factor
 Peak_count
+Bit_depth
 Number_of_samples
 
 For example full key look like this @code{lavfi.astats.1.DC_offset} or
@@ -976,6 +980,9 @@ this @code{lavfi.astats.Overall.Peak_count}.
 
 For description what each key means read bellow.
 
+@item reset
+Set number of frame after which stats are going to be recalculated.
+Default is disabled.
 @end table
 
 A description of each shown parameter follows:
@@ -989,6 +996,9 @@ Minimal sample level.
 
 @item Max level
 Maximal sample level.
+
+@item Max difference
+Maximal difference between two consecutive samples.
 
 @item Peak level dB
 @item RMS level dB
@@ -1008,6 +1018,9 @@ Flatness (i.e. consecutive samples with the same value) of the signal at its pea
 @item Peak count
 Number of occasions (not the number of samples) that the signal attained either
 @var{Min level} or @var{Max level}.
+
+@item Bit depth
+Overall bit depth of audio. Number of bits used for each sample.
 @end table
 
 @section astreamsync

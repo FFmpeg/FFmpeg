@@ -33,6 +33,7 @@ typedef struct ChannelStats {
     double min, max;
     double min_run, max_run;
     double min_runs, max_runs;
+    double max_diff;
     uint64_t mask;
     uint64_t min_count, max_count;
     uint64_t nb_samples;
@@ -160,6 +161,7 @@ static inline void update_stat(AudioStatsContext *s, ChannelStats *p, double d)
     p->sigma_x += d;
     p->sigma_x2 += d * d;
     p->avg_sigma_x2 = p->avg_sigma_x2 * s->mult + (1.0 - s->mult) * d * d;
+    p->max_diff = FFMAX(p->max_diff, FFABS(d - p->last));
     p->last = d;
     p->mask |= llrint(d * (1LLU<<63));
 
@@ -190,7 +192,7 @@ static void set_metadata(AudioStatsContext *s, AVDictionary **metadata)
 {
     uint64_t mask = 0, min_count = 0, max_count = 0, nb_samples = 0;
     double min_runs = 0, max_runs = 0,
-           min = DBL_MAX, max = DBL_MIN,
+           min = DBL_MAX, max = DBL_MIN, max_diff = 0,
            max_sigma_x = 0,
            sigma_x = 0,
            sigma_x2 = 0,
@@ -206,6 +208,7 @@ static void set_metadata(AudioStatsContext *s, AVDictionary **metadata)
 
         min = FFMIN(min, p->min);
         max = FFMAX(max, p->max);
+        max_diff = FFMAX(max_diff, p->max_diff);
         min_sigma_x2 = FFMIN(min_sigma_x2, p->min_sigma_x2);
         max_sigma_x2 = FFMAX(max_sigma_x2, p->max_sigma_x2);
         sigma_x += p->sigma_x;
@@ -222,6 +225,7 @@ static void set_metadata(AudioStatsContext *s, AVDictionary **metadata)
         set_meta(metadata, c + 1, "DC_offset", "%f", p->sigma_x / p->nb_samples);
         set_meta(metadata, c + 1, "Min_level", "%f", p->min);
         set_meta(metadata, c + 1, "Max_level", "%f", p->max);
+        set_meta(metadata, c + 1, "Max_difference", "%f", p->max_diff);
         set_meta(metadata, c + 1, "Peak_level", "%f", LINEAR_TO_DB(FFMAX(-p->min, p->max)));
         set_meta(metadata, c + 1, "RMS_level", "%f", LINEAR_TO_DB(sqrt(p->sigma_x2 / p->nb_samples)));
         set_meta(metadata, c + 1, "RMS_peak", "%f", LINEAR_TO_DB(sqrt(p->max_sigma_x2)));
@@ -235,6 +239,7 @@ static void set_metadata(AudioStatsContext *s, AVDictionary **metadata)
     set_meta(metadata, 0, "Overall.DC_offset", "%f", max_sigma_x / (nb_samples / s->nb_channels));
     set_meta(metadata, 0, "Overall.Min_level", "%f", min);
     set_meta(metadata, 0, "Overall.Max_level", "%f", max);
+    set_meta(metadata, 0, "Overall.Max_difference", "%f", max_diff);
     set_meta(metadata, 0, "Overall.Peak_level", "%f", LINEAR_TO_DB(FFMAX(-min, max)));
     set_meta(metadata, 0, "Overall.RMS_level", "%f", LINEAR_TO_DB(sqrt(sigma_x2 / nb_samples)));
     set_meta(metadata, 0, "Overall.RMS_peak", "%f", LINEAR_TO_DB(sqrt(max_sigma_x2)));
@@ -292,7 +297,7 @@ static void print_stats(AVFilterContext *ctx)
     AudioStatsContext *s = ctx->priv;
     uint64_t mask = 0, min_count = 0, max_count = 0, nb_samples = 0;
     double min_runs = 0, max_runs = 0,
-           min = DBL_MAX, max = DBL_MIN,
+           min = DBL_MAX, max = DBL_MIN, max_diff = 0,
            max_sigma_x = 0,
            sigma_x = 0,
            sigma_x2 = 0,
@@ -308,6 +313,7 @@ static void print_stats(AVFilterContext *ctx)
 
         min = FFMIN(min, p->min);
         max = FFMAX(max, p->max);
+        max_diff = FFMAX(max_diff, p->max_diff);
         min_sigma_x2 = FFMIN(min_sigma_x2, p->min_sigma_x2);
         max_sigma_x2 = FFMAX(max_sigma_x2, p->max_sigma_x2);
         sigma_x += p->sigma_x;
@@ -325,6 +331,7 @@ static void print_stats(AVFilterContext *ctx)
         av_log(ctx, AV_LOG_INFO, "DC offset: %f\n", p->sigma_x / p->nb_samples);
         av_log(ctx, AV_LOG_INFO, "Min level: %f\n", p->min);
         av_log(ctx, AV_LOG_INFO, "Max level: %f\n", p->max);
+        av_log(ctx, AV_LOG_INFO, "Max difference: %f\n", p->max_diff);
         av_log(ctx, AV_LOG_INFO, "Peak level dB: %f\n", LINEAR_TO_DB(FFMAX(-p->min, p->max)));
         av_log(ctx, AV_LOG_INFO, "RMS level dB: %f\n", LINEAR_TO_DB(sqrt(p->sigma_x2 / p->nb_samples)));
         av_log(ctx, AV_LOG_INFO, "RMS peak dB: %f\n", LINEAR_TO_DB(sqrt(p->max_sigma_x2)));
@@ -340,6 +347,7 @@ static void print_stats(AVFilterContext *ctx)
     av_log(ctx, AV_LOG_INFO, "DC offset: %f\n", max_sigma_x / (nb_samples / s->nb_channels));
     av_log(ctx, AV_LOG_INFO, "Min level: %f\n", min);
     av_log(ctx, AV_LOG_INFO, "Max level: %f\n", max);
+    av_log(ctx, AV_LOG_INFO, "Max difference: %f\n", max_diff);
     av_log(ctx, AV_LOG_INFO, "Peak level dB: %f\n", LINEAR_TO_DB(FFMAX(-min, max)));
     av_log(ctx, AV_LOG_INFO, "RMS level dB: %f\n", LINEAR_TO_DB(sqrt(sigma_x2 / nb_samples)));
     av_log(ctx, AV_LOG_INFO, "RMS peak dB: %f\n", LINEAR_TO_DB(sqrt(max_sigma_x2)));
