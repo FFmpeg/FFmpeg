@@ -3965,7 +3965,7 @@ elif enabled mips; then
             enable fast_cmov
             enable fast_unaligned
             disable aligned_stack
-            cpuflags="-march=loongson3a -mhard-float"
+            cpuflags="-march=loongson3a -mhard-float -fno-expensive-optimizations"
         ;;
         generic)
             disable mips32r5
