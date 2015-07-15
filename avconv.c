@@ -1679,16 +1679,6 @@ static int transcode_init(void)
                 input_streams[j + ifile->ist_index]->start = av_gettime_relative();
     }
 
-    /* output stream init */
-    for (i = 0; i < nb_output_files; i++) {
-        oc = output_files[i]->ctx;
-        if (!oc->nb_streams && !(oc->oformat->flags & AVFMT_NOSTREAMS)) {
-            av_dump_format(oc, i, oc->filename, 1);
-            av_log(NULL, AV_LOG_ERROR, "Output file #%d does not contain any stream\n", i);
-            return AVERROR(EINVAL);
-        }
-    }
-
     /* init complex filtergraphs */
     for (i = 0; i < nb_filtergraphs; i++)
         if ((ret = avfilter_graph_config(filtergraphs[i]->graph, NULL)) < 0)
