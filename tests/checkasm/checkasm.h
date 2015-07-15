@@ -30,6 +30,7 @@
 #include "libavutil/timer.h"
 
 void checkasm_check_h264pred(void);
+void checkasm_check_h264qpel(void);
 
 intptr_t (*checkasm_check_func(intptr_t (*func)(), const char *name, ...))() av_printf_format(2, 3);
 int checkasm_bench_func(void);
