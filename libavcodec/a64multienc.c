@@ -44,7 +44,8 @@ static const int mc_colors[5]={0x0,0xb,0xc,0xf,0x1};
 //static const int mc_colors[5]={0x0,0x8,0xa,0xf,0x7};
 //static const int mc_colors[5]={0x0,0x9,0x8,0xa,0x3};
 
-static void to_meta_with_crop(AVCodecContext *avctx, AVFrame *p, int *dest)
+static void to_meta_with_crop(AVCodecContext *avctx,
+                              const AVFrame *p, int *dest)
 {
     int blockx, blocky, x, y;
     int luma = 0;
@@ -252,7 +253,6 @@ static int a64multi_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                                  const AVFrame *pict, int *got_packet)
 {
     A64Context *c = avctx->priv_data;
-    AVFrame *const p = avctx->coded_frame;
 
     int frame;
     int x, y;
@@ -296,10 +296,9 @@ static int a64multi_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     } else {
         /* fill up mc_meta_charset with data until lifetime exceeds */
         if (c->mc_frame_counter < c->mc_lifetime) {
-            *p = *pict;
-            p->pict_type = AV_PICTURE_TYPE_I;
-            p->key_frame = 1;
-            to_meta_with_crop(avctx, p, meta + 32000 * c->mc_frame_counter);
+            avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
+            avctx->coded_frame->key_frame = 1;
+            to_meta_with_crop(avctx, pict, meta + 32000 * c->mc_frame_counter);
             c->mc_frame_counter++;
             if (c->next_pts == AV_NOPTS_VALUE)
                 c->next_pts = pict->pts;
