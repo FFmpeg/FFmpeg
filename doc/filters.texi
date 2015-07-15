@@ -8279,6 +8279,24 @@ qp=2+2*sin(PI*qp)
 @end example
 @end itemize
 
+@section random
+
+Flush video frames from internal cache of frames into a random order.
+No frame is discarded.
+Inspired by @ref{frei0r} nervous filter.
+
+@table @option
+@item frames
+Set size in number of frames of internal cache, in range from @code{2} to
+@code{512}. Default is @code{30}.
+
+@item seed
+Set seed for random number generator, must be an integer included between
+@code{0} and @code{UINT32_MAX}. If not specified, or if explicitly set to
+less than @code{0}, the filter will try to use a good random seed on a
+best effort basis.
+@end table
+
 @section removegrain
 
 The removegrain filter is a spatial denoiser for progressive video.
