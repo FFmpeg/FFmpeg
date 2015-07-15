@@ -1679,11 +1679,6 @@ static int transcode_init(void)
                 input_streams[j + ifile->ist_index]->start = av_gettime_relative();
     }
 
-    /* init complex filtergraphs */
-    for (i = 0; i < nb_filtergraphs; i++)
-        if ((ret = avfilter_graph_config(filtergraphs[i]->graph, NULL)) < 0)
-            return ret;
-
     /* for each output stream, we compute the right encoding parameters */
     for (i = 0; i < nb_output_streams; i++) {
         AVCodecContext *enc_ctx;

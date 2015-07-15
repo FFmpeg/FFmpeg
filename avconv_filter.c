@@ -176,6 +176,45 @@ static void init_input_filter(FilterGraph *fg, AVFilterInOut *in)
     ist->filters[ist->nb_filters - 1] = fg->inputs[fg->nb_inputs - 1];
 }
 
+int init_complex_filtergraph(FilterGraph *fg)
+{
+    AVFilterInOut *inputs, *outputs, *cur;
+    AVFilterGraph *graph;
+    int ret = 0;
+
+    /* this graph is only used for determining the kinds of inputs
+     * and outputs we have, and is discarded on exit from this function */
+    graph = avfilter_graph_alloc();
+    if (!graph)
+        return AVERROR(ENOMEM);
+
+    ret = avfilter_graph_parse2(graph, fg->graph_desc, &inputs, &outputs);
+    if (ret < 0)
+        goto fail;
+
+    for (cur = inputs; cur; cur = cur->next)
+        init_input_filter(fg, cur);
+
+    for (cur = outputs; cur;) {
+        GROW_ARRAY(fg->outputs, fg->nb_outputs);
+        fg->outputs[fg->nb_outputs - 1] = av_mallocz(sizeof(*fg->outputs[0]));
+        if (!fg->outputs[fg->nb_outputs - 1])
+            exit(1);
+
+        fg->outputs[fg->nb_outputs - 1]->graph   = fg;
+        fg->outputs[fg->nb_outputs - 1]->out_tmp = cur;
+        fg->outputs[fg->nb_outputs - 1]->type    = avfilter_pad_get_type(cur->filter_ctx->output_pads,
+                                                                         cur->pad_idx);
+        cur = cur->next;
+        fg->outputs[fg->nb_outputs - 1]->out_tmp->next = NULL;
+    }
+
+fail:
+    avfilter_inout_free(&inputs);
+    avfilter_graph_free(&graph);
+    return ret;
+}
+
 static int insert_trim(int64_t start_time, int64_t duration,
                        AVFilterContext **last_filter, int *pad_idx,
                        const char *filter_name)
@@ -622,7 +661,7 @@ static int configure_input_filter(FilterGraph *fg, InputFilter *ifilter,
 int configure_filtergraph(FilterGraph *fg)
 {
     AVFilterInOut *inputs, *outputs, *cur;
-    int ret, i, init = !fg->graph, simple = !fg->graph_desc;
+    int ret, i, simple = !fg->graph_desc;
     const char *graph_desc = simple ? fg->outputs[0]->ost->avfilter :
                                       fg->graph_desc;
 
@@ -657,35 +696,17 @@ int configure_filtergraph(FilterGraph *fg)
         return AVERROR(EINVAL);
     }
 
-    for (cur = inputs; !simple && init && cur; cur = cur->next)
-        init_input_filter(fg, cur);
-
     for (cur = inputs, i = 0; cur; cur = cur->next, i++)
         if ((ret = configure_input_filter(fg, fg->inputs[i], cur)) < 0)
             return ret;
     avfilter_inout_free(&inputs);
 
-    if (!init || simple) {
-        /* we already know the mappings between lavfi outputs and output streams,
-         * so we can finish the setup */
-        for (cur = outputs, i = 0; cur; cur = cur->next, i++)
-            configure_output_filter(fg, fg->outputs[i], cur);
-        avfilter_inout_free(&outputs);
+    for (cur = outputs, i = 0; cur; cur = cur->next, i++)
+        configure_output_filter(fg, fg->outputs[i], cur);
+    avfilter_inout_free(&outputs);
 
-        if ((ret = avfilter_graph_config(fg->graph, NULL)) < 0)
-            return ret;
-    } else {
-        /* wait until output mappings are processed */
-        for (cur = outputs; cur;) {
-            GROW_ARRAY(fg->outputs, fg->nb_outputs);
-            if (!(fg->outputs[fg->nb_outputs - 1] = av_mallocz(sizeof(*fg->outputs[0]))))
-                exit(1);
-            fg->outputs[fg->nb_outputs - 1]->graph   = fg;
-            fg->outputs[fg->nb_outputs - 1]->out_tmp = cur;
-            cur = cur->next;
-            fg->outputs[fg->nb_outputs - 1]->out_tmp->next = NULL;
-        }
-    }
+    if ((ret = avfilter_graph_config(fg->graph, NULL)) < 0)
+        return ret;
 
     return 0;
 }
