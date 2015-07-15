@@ -78,6 +78,7 @@ typedef struct FFV1Context {
     int transparency;
     int flags;
     int picture_number;
+    int key_frame;
     const AVFrame *frame;
     AVFrame *last_picture;
 

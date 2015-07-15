@@ -884,7 +884,7 @@ static int encode_slice(AVCodecContext *c, void *arg)
                        ? (f->bits_per_raw_sample > 8) + 1
                        : 4;
 
-    if (c->coded_frame->key_frame)
+    if (f->key_frame)
         ffv1_clear_slice_state(f, fs);
     if (f->version > 2) {
         encode_slice_header(f, fs);
@@ -931,7 +931,6 @@ static int ffv1_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 {
     FFV1Context *f      = avctx->priv_data;
     RangeCoder *const c = &f->slice_context[0]->c;
-    AVFrame *const p    = avctx->coded_frame;
     int used_count      = 0;
     uint8_t keystate    = 128;
     uint8_t *buf_p;
@@ -951,12 +950,12 @@ static int ffv1_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     if (avctx->gop_size == 0 || f->picture_number % avctx->gop_size == 0) {
         put_rac(c, &keystate, 1);
-        p->key_frame = 1;
+        f->key_frame = 1;
         f->gob_count++;
         write_header(f);
     } else {
         put_rac(c, &keystate, 0);
-        p->key_frame = 0;
+        f->key_frame = 0;
     }
 
     if (f->ac > 1) {
@@ -1050,9 +1049,11 @@ static int ffv1_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     } else if (avctx->flags & CODEC_FLAG_PASS1)
         avctx->stats_out[0] = '\0';
 
+    avctx->coded_frame->key_frame = f->key_frame;
+
     f->picture_number++;
     pkt->size   = buf_p - pkt->data;
-    pkt->flags |= AV_PKT_FLAG_KEY * p->key_frame;
+    pkt->flags |= AV_PKT_FLAG_KEY * f->key_frame;
     *got_packet = 1;
 
     return 0;
