@@ -238,14 +238,13 @@ static int svq1_encode_plane(SVQ1EncContext *s, int plane,
                              unsigned char *decoded_plane,
                              int width, int height, int src_stride, int stride)
 {
-    const AVFrame *f = s->avctx->coded_frame;
     int x, y;
     int i;
     int block_width, block_height;
     int level;
     int threshold[6];
     uint8_t *src     = s->scratchbuf + stride * 16;
-    const int lambda = (f->quality * f->quality) >>
+    const int lambda = (s->quality * s->quality) >>
                        (2 * FF_LAMBDA_SHIFT);
 
     /* figure out the acceptable level thresholds in advance */
@@ -256,7 +255,7 @@ static int svq1_encode_plane(SVQ1EncContext *s, int plane,
     block_width  = (width  + 15) / 16;
     block_height = (height + 15) / 16;
 
-    if (f->pict_type == AV_PICTURE_TYPE_P) {
+    if (s->pict_type == AV_PICTURE_TYPE_P) {
         s->m.avctx                         = s->avctx;
         s->m.current_picture_ptr           = &s->m.current_picture;
         s->m.last_picture_ptr              = &s->m.last_picture;
@@ -272,12 +271,12 @@ static int svq1_encode_plane(SVQ1EncContext *s, int plane,
         s->m.mb_stride                     = s->m.mb_width + 1;
         s->m.b8_stride                     = 2 * s->m.mb_width + 1;
         s->m.f_code                        = 1;
-        s->m.pict_type                     = f->pict_type;
+        s->m.pict_type                     = s->pict_type;
         s->m.me_method                     = s->avctx->me_method;
         s->m.me.scene_change_score         = 0;
         // s->m.out_format                    = FMT_H263;
         // s->m.unrestricted_mv               = 1;
-        s->m.lambda                        = f->quality;
+        s->m.lambda                        = s->quality;
         s->m.qscale                        = s->m.lambda * 139 +
                                              FF_LAMBDA_SCALE * 64 >>
                                              FF_LAMBDA_SHIFT + 7;
@@ -372,13 +371,13 @@ static int svq1_encode_plane(SVQ1EncContext *s, int plane,
             ff_init_block_index(&s->m);
             ff_update_block_index(&s->m);
 
-            if (f->pict_type == AV_PICTURE_TYPE_I ||
+            if (s->pict_type == AV_PICTURE_TYPE_I ||
                 (s->m.mb_type[x + y * s->m.mb_stride] &
                  CANDIDATE_MB_TYPE_INTRA)) {
                 for (i = 0; i < 6; i++)
                     init_put_bits(&s->reorder_pb[i], reorder_buffer[0][i],
                                   7 * 32);
-                if (f->pict_type == AV_PICTURE_TYPE_P) {
+                if (s->pict_type == AV_PICTURE_TYPE_P) {
                     const uint8_t *vlc = ff_svq1_block_type_vlc[SVQ1_BLOCK_INTRA];
                     put_bits(&s->reorder_pb[5], vlc[1], vlc[0]);
                     score[0] = vlc[1] * lambda;
@@ -394,7 +393,7 @@ static int svq1_encode_plane(SVQ1EncContext *s, int plane,
 
             best = 0;
 
-            if (f->pict_type == AV_PICTURE_TYPE_P) {
+            if (s->pict_type == AV_PICTURE_TYPE_P) {
                 const uint8_t *vlc = ff_svq1_block_type_vlc[SVQ1_BLOCK_INTER];
                 int mx, my, pred_x, pred_y, dxy;
                 int16_t *motion_ptr;
@@ -571,7 +570,6 @@ static int svq1_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                              const AVFrame *pict, int *got_packet)
 {
     SVQ1EncContext *const s = avctx->priv_data;
-    AVFrame *const p        = avctx->coded_frame;
     int i, ret;
 
     if (!pkt->data &&
@@ -606,12 +604,16 @@ static int svq1_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     init_put_bits(&s->pb, pkt->data, pkt->size);
 
-    p->pict_type = avctx->gop_size && avctx->frame_number % avctx->gop_size ?
-                   AV_PICTURE_TYPE_P : AV_PICTURE_TYPE_I;
-    p->key_frame = p->pict_type == AV_PICTURE_TYPE_I;
-    p->quality   = pict->quality;
+    if (avctx->gop_size && (avctx->frame_number % avctx->gop_size))
+        s->pict_type = AV_PICTURE_TYPE_P;
+    else
+        s->pict_type = AV_PICTURE_TYPE_I;
+    s->quality = pict->quality;
 
-    svq1_write_header(s, p->pict_type);
+    avctx->coded_frame->pict_type = s->pict_type;
+    avctx->coded_frame->key_frame = s->pict_type == AV_PICTURE_TYPE_I;
+
+    svq1_write_header(s, s->pict_type);
     for (i = 0; i < 3; i++)
         if (svq1_encode_plane(s, i,
                               pict->data[i],
@@ -637,7 +639,7 @@ static int svq1_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     flush_put_bits(&s->pb);
 
     pkt->size = put_bits_count(&s->pb) / 8;
-    if (p->pict_type == AV_PICTURE_TYPE_I)
+    if (s->pict_type == AV_PICTURE_TYPE_I)
         pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;
 
