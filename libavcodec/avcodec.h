@@ -930,6 +930,13 @@ enum AVPacketSideDataType {
      * to enum AVAudioServiceType.
      */
     AV_PKT_DATA_AUDIO_SERVICE_TYPE,
+
+    /**
+     * This side data contains an integer value representing the quality
+     * factor of the compressed frame. Allowed range is between 1 (good)
+     * and FF_LAMBDA_MAX (bad).
+     */
+    AV_PKT_DATA_QUALITY_FACTOR,
 };
 
 typedef struct AVPacketSideData {

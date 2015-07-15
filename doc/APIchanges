@@ -13,6 +13,9 @@ libavutil:     2014-08-09
 
 API changes, most recent first:
 
+2015-xx-xx - xxxxxxx - lavc 56.33.0 - avcodec.h
+  Add AV_PKT_DATA_QUALITY_FACTOR to export the quality value of an AVPacket.
+
 2015-xx-xx - xxxxxxx - lavu 56.15.0
   Add av_version_info().
 

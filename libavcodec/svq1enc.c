@@ -569,6 +569,7 @@ static int svq1_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 {
     SVQ1EncContext *const s = avctx->priv_data;
     int i, ret;
+    uint8_t *sd;
 
     if (!pkt->data &&
         (ret = av_new_packet(pkt, s->y_block_width * s->y_block_height *
@@ -610,6 +611,11 @@ static int svq1_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     avctx->coded_frame->pict_type = s->pict_type;
     avctx->coded_frame->key_frame = s->pict_type == AV_PICTURE_TYPE_I;
+
+    sd = av_packet_new_side_data(pkt, AV_PKT_DATA_QUALITY_FACTOR, sizeof(int));
+    if (!sd)
+        return AVERROR(ENOMEM);
+    *(int *)sd = pict->quality;
 
     svq1_write_header(s, s->pict_type);
     for (i = 0; i < 3; i++)

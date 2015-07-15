@@ -1036,7 +1036,7 @@ static int dnxhd_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
     DNXHDEncContext *ctx = avctx->priv_data;
     int first_field = 1;
     int offset, i, ret;
-    uint8_t *buf;
+    uint8_t *buf, *sd;
 
     if ((ret = ff_alloc_packet(pkt, ctx->cid_table->frame_size)) < 0) {
         av_log(avctx, AV_LOG_ERROR,
@@ -1091,6 +1091,11 @@ encode_coding_unit:
     }
 
     avctx->coded_frame->quality = ctx->qscale * FF_QP2LAMBDA;
+
+    sd = av_packet_new_side_data(pkt, AV_PKT_DATA_QUALITY_FACTOR, sizeof(int));
+    if (!sd)
+        return AVERROR(ENOMEM);
+    *(int *)sd = ctx->qscale * FF_QP2LAMBDA;
 
     pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;

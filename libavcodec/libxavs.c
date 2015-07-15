@@ -119,6 +119,7 @@ static int XAVS_frame(AVCodecContext *avctx, AVPacket *pkt,
     xavs_nal_t *nal;
     int nnal, i, ret;
     xavs_picture_t pic_out;
+    uint8_t *sd;
 
     x4->pic.img.i_csp   = XAVS_CSP_I420;
     x4->pic.img.i_plane = 3;
@@ -192,6 +193,11 @@ static int XAVS_frame(AVCodecContext *avctx, AVPacket *pkt,
     }
 
     avctx->coded_frame->quality = (pic_out.i_qpplus1 - 1) * FF_QP2LAMBDA;
+
+    sd = av_packet_new_side_data(pkt, AV_PKT_DATA_QUALITY_FACTOR, sizeof(int));
+    if (!sd)
+        return AVERROR(ENOMEM);
+    *(int *)sd = (pic_out.i_qpplus1 - 1) * FF_QP2LAMBDA;
 
     x4->out_frame_count++;
     *got_packet = ret;
