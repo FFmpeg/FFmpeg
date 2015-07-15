@@ -1789,6 +1789,13 @@ void ff_configure_buffers_for_index(AVFormatContext *s, int64_t time_tolerance)
     //We could use URLProtocol flags here but as many user applications do not use URLProtocols this would be unreliable
     const char *proto = avio_find_protocol_name(s->filename);
 
+    if (!proto) {
+        av_log(s, AV_LOG_INFO,
+               "Protocol name not provided, cannot determine if input is local or "
+               "a network protocol, buffers and access patterns cannot be configured "
+               "optimally without knowing the protocol\n");
+    }
+
     if (proto && !(strcmp(proto, "file") && strcmp(proto, "pipe") && strcmp(proto, "cache")))
         return;
 
