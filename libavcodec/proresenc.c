@@ -1097,8 +1097,6 @@ static av_cold int encode_close(AVCodecContext *avctx)
     ProresContext *ctx = avctx->priv_data;
     int i;
 
-    av_freep(&avctx->coded_frame);
-
     if (ctx->tdata) {
         for (i = 0; i < avctx->thread_count; i++)
             av_free(ctx->tdata[i].nodes);
@@ -1132,9 +1130,6 @@ static av_cold int encode_init(AVCodecContext *avctx)
     int interlaced = !!(avctx->flags & CODEC_FLAG_INTERLACED_DCT);
 
     avctx->bits_per_raw_sample = 10;
-    avctx->coded_frame = av_frame_alloc();
-    if (!avctx->coded_frame)
-        return AVERROR(ENOMEM);
 
     ctx->fdct      = prores_fdct;
     ctx->scantable = interlaced ? ff_prores_interlaced_scan

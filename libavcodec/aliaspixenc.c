@@ -27,14 +27,6 @@
 
 #define ALIAS_HEADER_SIZE 10
 
-static av_cold int encode_init(AVCodecContext *avctx)
-{
-    avctx->coded_frame = av_frame_alloc();
-    if (!avctx->coded_frame)
-        return AVERROR(ENOMEM);
-    return 0;
-}
-
 static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                         const AVFrame *frame, int *got_packet)
 {
@@ -114,20 +106,12 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     return 0;
 }
 
-static av_cold int encode_close(AVCodecContext *avctx)
-{
-    av_frame_free(&avctx->coded_frame);
-    return 0;
-}
-
 AVCodec ff_alias_pix_encoder = {
     .name      = "alias_pix",
     .long_name = NULL_IF_CONFIG_SMALL("Alias/Wavefront PIX image"),
     .type      = AVMEDIA_TYPE_VIDEO,
     .id        = AV_CODEC_ID_ALIAS_PIX,
-    .init      = encode_init,
     .encode2   = encode_frame,
-    .close     = encode_close,
     .pix_fmts  = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_BGR24, AV_PIX_FMT_GRAY8, AV_PIX_FMT_NONE
     },

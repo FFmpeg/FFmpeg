@@ -721,10 +721,6 @@ static av_cold int ffv1_encode_init(AVCodecContext *avctx)
     if ((ret = ffv1_allocate_initial_states(s)) < 0)
         return ret;
 
-    avctx->coded_frame = av_frame_alloc();
-    if (!avctx->coded_frame)
-        return AVERROR(ENOMEM);
-
     avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
 
     if (!s->transparency)
@@ -1061,7 +1057,6 @@ static int ffv1_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
 static av_cold int ffv1_encode_close(AVCodecContext *avctx)
 {
-    av_frame_free(&avctx->coded_frame);
     ffv1_close(avctx);
     return 0;
 }

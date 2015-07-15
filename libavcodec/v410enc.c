@@ -32,13 +32,6 @@ static av_cold int v410_encode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     }
 
-    avctx->coded_frame = av_frame_alloc();
-
-    if (!avctx->coded_frame) {
-        av_log(avctx, AV_LOG_ERROR, "Could not allocate frame.\n");
-        return AVERROR(ENOMEM);
-    }
-
     return 0;
 }
 
@@ -81,13 +74,6 @@ static int v410_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     return 0;
 }
 
-static av_cold int v410_encode_close(AVCodecContext *avctx)
-{
-    av_freep(&avctx->coded_frame);
-
-    return 0;
-}
-
 AVCodec ff_v410_encoder = {
     .name         = "v410",
     .long_name    = NULL_IF_CONFIG_SMALL("Uncompressed 4:4:4 10-bit"),
@@ -95,6 +81,5 @@ AVCodec ff_v410_encoder = {
     .id           = AV_CODEC_ID_V410,
     .init         = v410_encode_init,
     .encode2      = v410_encode_frame,
-    .close        = v410_encode_close,
     .pix_fmts     = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV444P10, AV_PIX_FMT_NONE },
 };

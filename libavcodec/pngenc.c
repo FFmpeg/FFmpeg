@@ -455,10 +455,6 @@ static av_cold int png_enc_init(AVCodecContext *avctx)
 {
     PNGEncContext *s = avctx->priv_data;
 
-    avctx->coded_frame = av_frame_alloc();
-    if (!avctx->coded_frame)
-        return AVERROR(ENOMEM);
-
     avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
     avctx->coded_frame->key_frame = 1;
 
@@ -473,12 +469,6 @@ static av_cold int png_enc_init(AVCodecContext *avctx)
     return 0;
 }
 
-static av_cold int png_enc_close(AVCodecContext *avctx)
-{
-    av_frame_free(&avctx->coded_frame);
-    return 0;
-}
-
 AVCodec ff_png_encoder = {
     .name           = "png",
     .long_name      = NULL_IF_CONFIG_SMALL("PNG (Portable Network Graphics) image"),
@@ -486,7 +476,6 @@ AVCodec ff_png_encoder = {
     .id             = AV_CODEC_ID_PNG,
     .priv_data_size = sizeof(PNGEncContext),
     .init           = png_enc_init,
-    .close          = png_enc_close,
     .encode2        = encode_frame,
     .pix_fmts       = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_RGB24, AV_PIX_FMT_RGB32, AV_PIX_FMT_PAL8, AV_PIX_FMT_GRAY8,

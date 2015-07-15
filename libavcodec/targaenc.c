@@ -150,19 +150,9 @@ static int targa_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
 static av_cold int targa_encode_init(AVCodecContext *avctx)
 {
-    avctx->coded_frame = av_frame_alloc();
-    if (!avctx->coded_frame)
-        return AVERROR(ENOMEM);
-
     avctx->coded_frame->key_frame = 1;
     avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
 
-    return 0;
-}
-
-static av_cold int targa_encode_close(AVCodecContext *avctx)
-{
-    av_frame_free(&avctx->coded_frame);
     return 0;
 }
 
@@ -172,7 +162,6 @@ AVCodec ff_targa_encoder = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_TARGA,
     .init           = targa_encode_init,
-    .close          = targa_encode_close,
     .encode2        = targa_encode_frame,
     .pix_fmts       = (const enum AVPixelFormat[]){
         AV_PIX_FMT_BGR24, AV_PIX_FMT_BGRA, AV_PIX_FMT_RGB555LE, AV_PIX_FMT_GRAY8,

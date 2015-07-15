@@ -1475,8 +1475,7 @@ static void frame_end(MpegEncContext *s)
         }
     }
 
-    s->avctx->coded_frame = s->current_picture_ptr->f;
-
+    av_frame_copy_props(s->avctx->coded_frame, s->current_picture.f);
 }
 
 static void update_noise_reduction(MpegEncContext *s)

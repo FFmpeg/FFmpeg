@@ -287,8 +287,6 @@ static av_cold int X264_close(AVCodecContext *avctx)
         x4->enc = NULL;
     }
 
-    av_frame_free(&avctx->coded_frame);
-
     return 0;
 }
 
@@ -545,10 +543,6 @@ static av_cold int X264_init(AVCodecContext *avctx)
     x4->enc = x264_encoder_open(&x4->params);
     if (!x4->enc)
         return AVERROR_UNKNOWN;
-
-    avctx->coded_frame = av_frame_alloc();
-    if (!avctx->coded_frame)
-        return AVERROR(ENOMEM);
 
     if (avctx->flags & CODEC_FLAG_GLOBAL_HEADER) {
         x264_nal_t *nal;

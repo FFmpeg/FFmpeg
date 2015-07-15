@@ -771,8 +771,6 @@ av_cold int ff_nvenc_encode_close(AVCodecContext *avctx)
     NV_ENCODE_API_FUNCTION_LIST *nv = &ctx->nvel.nvenc_funcs;
     int i;
 
-    av_frame_free(&avctx->coded_frame);
-
     if (ctx->in) {
         for (i = 0; i < ctx->nb_surfaces; ++i) {
             nv->nvEncDestroyInputBuffer(ctx->nvenc_ctx, ctx->in[i].in);
@@ -818,10 +816,6 @@ av_cold int ff_nvenc_encode_init(AVCodecContext *avctx)
         if ((ret = nvenc_setup_extradata(avctx)) < 0)
             return ret;
     }
-
-    avctx->coded_frame = av_frame_alloc();
-    if (!avctx->coded_frame)
-        return AVERROR(ENOMEM);
 
     return 0;
 }

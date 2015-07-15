@@ -30,15 +30,6 @@
 #define WINDOW_NAME         "lavcxwdenc"
 #define WINDOW_NAME_SIZE    11
 
-static av_cold int xwd_encode_init(AVCodecContext *avctx)
-{
-    avctx->coded_frame = av_frame_alloc();
-    if (!avctx->coded_frame)
-        return AVERROR(ENOMEM);
-
-    return 0;
-}
-
 static int xwd_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                             const AVFrame *p, int *got_packet)
 {
@@ -213,21 +204,12 @@ static int xwd_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     return 0;
 }
 
-static av_cold int xwd_encode_close(AVCodecContext *avctx)
-{
-    av_freep(&avctx->coded_frame);
-
-    return 0;
-}
-
 AVCodec ff_xwd_encoder = {
     .name         = "xwd",
     .long_name    = NULL_IF_CONFIG_SMALL("XWD (X Window Dump) image"),
     .type         = AVMEDIA_TYPE_VIDEO,
     .id           = AV_CODEC_ID_XWD,
-    .init         = xwd_encode_init,
     .encode2      = xwd_encode_frame,
-    .close        = xwd_encode_close,
     .pix_fmts     = (const enum AVPixelFormat[]) { AV_PIX_FMT_BGRA,
                                                  AV_PIX_FMT_RGBA,
                                                  AV_PIX_FMT_ARGB,

@@ -261,8 +261,6 @@ static av_cold int encode_end(AVCodecContext *avctx)
     deflateEnd(&c->zstream);
     av_freep(&c->prev);
 
-    av_frame_free(&avctx->coded_frame);
-
     return 0;
 }
 
@@ -324,12 +322,6 @@ static av_cold int encode_init(AVCodecContext *avctx)
     if (zret != Z_OK) {
         av_log(avctx, AV_LOG_ERROR, "Inflate init error: %d\n", zret);
         return -1;
-    }
-
-    avctx->coded_frame = av_frame_alloc();
-    if (!avctx->coded_frame) {
-        encode_end(avctx);
-        return AVERROR(ENOMEM);
     }
 
     return 0;

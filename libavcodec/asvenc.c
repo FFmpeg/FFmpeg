@@ -282,9 +282,6 @@ static av_cold int encode_init(AVCodecContext *avctx)
     int i;
     const int scale = avctx->codec_id == AV_CODEC_ID_ASV1 ? 1 : 2;
 
-    avctx->coded_frame = av_frame_alloc();
-    if (!avctx->coded_frame)
-        return AVERROR(ENOMEM);
     avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
     avctx->coded_frame->key_frame = 1;
 
@@ -313,13 +310,6 @@ static av_cold int encode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static av_cold int asv_encode_close(AVCodecContext *avctx)
-{
-    av_frame_free(&avctx->coded_frame);
-
-    return 0;
-}
-
 #if CONFIG_ASV1_ENCODER
 AVCodec ff_asv1_encoder = {
     .name           = "asv1",
@@ -329,11 +319,9 @@ AVCodec ff_asv1_encoder = {
     .priv_data_size = sizeof(ASV1Context),
     .init           = encode_init,
     .encode2        = encode_frame,
-    .close          = asv_encode_close,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV420P,
                                                      AV_PIX_FMT_NONE },
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |
-                      FF_CODEC_CAP_INIT_CLEANUP,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif
 
@@ -346,10 +334,8 @@ AVCodec ff_asv2_encoder = {
     .priv_data_size = sizeof(ASV1Context),
     .init           = encode_init,
     .encode2        = encode_frame,
-    .close          = asv_encode_close,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV420P,
                                                      AV_PIX_FMT_NONE },
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |
-                      FF_CODEC_CAP_INIT_CLEANUP,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif

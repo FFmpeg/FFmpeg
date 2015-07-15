@@ -490,19 +490,9 @@ fail:
 
 static av_cold int encode_init(AVCodecContext *avctx)
 {
-    avctx->coded_frame = av_frame_alloc();
-    if (!avctx->coded_frame)
-        return AVERROR(ENOMEM);
-
     avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
     avctx->coded_frame->key_frame = 1;
 
-    return 0;
-}
-
-static av_cold int encode_close(AVCodecContext *avctx)
-{
-    av_frame_free(&avctx->coded_frame);
     return 0;
 }
 
@@ -533,7 +523,6 @@ AVCodec ff_tiff_encoder = {
     .id             = AV_CODEC_ID_TIFF,
     .priv_data_size = sizeof(TiffEncoderContext),
     .init           = encode_init,
-    .close          = encode_close,
     .encode2        = encode_frame,
     .pix_fmts       = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_RGB24, AV_PIX_FMT_RGB48LE, AV_PIX_FMT_PAL8,

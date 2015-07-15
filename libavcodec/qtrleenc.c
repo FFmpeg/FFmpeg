@@ -66,8 +66,6 @@ static av_cold int qtrle_encode_end(AVCodecContext *avctx)
 {
     QtrleEncContext *s = avctx->priv_data;
 
-    av_frame_free(&avctx->coded_frame);
-
     avpicture_free(&s->previous_frame);
     av_free(s->rlecode_table);
     av_free(s->length_table);
@@ -116,12 +114,6 @@ static av_cold int qtrle_encode_init(AVCodecContext *avctx)
                       + 15                                           /* header + footer */
                       + s->avctx->height*2                           /* skip code+rle end */
                       + s->avctx->width/MAX_RLE_BULK + 1             /* rle codes */;
-
-    avctx->coded_frame = av_frame_alloc();
-    if (!avctx->coded_frame) {
-        qtrle_encode_end(avctx);
-        return AVERROR(ENOMEM);
-    }
 
     return 0;
 }
