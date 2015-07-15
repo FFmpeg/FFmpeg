@@ -663,7 +663,6 @@ static int xvid_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 {
     int xerr, i, ret, user_packet = !!pkt->data;
     struct xvid_context *x = avctx->priv_data;
-    AVFrame *p             = avctx->coded_frame;
     int mb_width  = (avctx->width  + 15) / 16;
     int mb_height = (avctx->height + 15) / 16;
     char *tmp;
@@ -749,23 +748,24 @@ static int xvid_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     if (xerr > 0) {
         *got_packet = 1;
 
-        p->quality = xvid_enc_stats.quant * FF_QP2LAMBDA;
+        avctx->coded_frame->quality = xvid_enc_stats.quant * FF_QP2LAMBDA;
         if (xvid_enc_stats.type == XVID_TYPE_PVOP)
-            p->pict_type = AV_PICTURE_TYPE_P;
+            avctx->coded_frame->pict_type = AV_PICTURE_TYPE_P;
         else if (xvid_enc_stats.type == XVID_TYPE_BVOP)
-            p->pict_type = AV_PICTURE_TYPE_B;
+            avctx->coded_frame->pict_type = AV_PICTURE_TYPE_B;
         else if (xvid_enc_stats.type == XVID_TYPE_SVOP)
-            p->pict_type = AV_PICTURE_TYPE_S;
+            avctx->coded_frame->pict_type = AV_PICTURE_TYPE_S;
         else
-            p->pict_type = AV_PICTURE_TYPE_I;
+            avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
         if (xvid_enc_frame.out_flags & XVID_KEYFRAME) {
-            p->key_frame = 1;
+            avctx->coded_frame->key_frame = 1;
             pkt->flags  |= AV_PKT_FLAG_KEY;
             if (x->quicktime_format)
                 return xvid_strip_vol_header(avctx, pkt,
                                              xvid_enc_stats.hlength, xerr);
-        } else
-            p->key_frame = 0;
+        } else {
+            avctx->coded_frame->key_frame = 0;
+        }
 
         pkt->size = xerr;
 
