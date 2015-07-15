@@ -30,7 +30,7 @@ void ff_dct_unquantize_h263_intra_mmi(MpegEncContext *s, int16_t *block,
     int64_t level, qmul, qadd, nCoeffs;
 
     qmul = qscale << 1;
-    assert(s->block_last_index[n]>=0 || s->h263_aic);
+    av_assert2(s->block_last_index[n]>=0 || s->h263_aic);
 
     if (!s->h263_aic) {
         if (n<4)
@@ -103,7 +103,7 @@ void ff_dct_unquantize_h263_inter_mmi(MpegEncContext *s, int16_t *block,
 
     qmul = qscale << 1;
     qadd = (qscale - 1) | 1;
-    assert(s->block_last_index[n]>=0 || s->h263_aic);
+    av_assert2(s->block_last_index[n]>=0 || s->h263_aic);
     nCoeffs = s->inter_scantable.raster_end[s->block_last_index[n]];
 
     __asm__ volatile (
@@ -159,7 +159,7 @@ void ff_dct_unquantize_mpeg1_intra_mmi(MpegEncContext *s, int16_t *block,
     const uint16_t *quant_matrix;
     int block0;
 
-    assert(s->block_last_index[n]>=0);
+    av_assert2(s->block_last_index[n]>=0);
     nCoeffs = s->intra_scantable.raster_end[s->block_last_index[n]] + 1;
 
     if (n<4)
@@ -236,7 +236,7 @@ void ff_dct_unquantize_mpeg1_inter_mmi(MpegEncContext *s, int16_t *block,
     int64_t nCoeffs;
     const uint16_t *quant_matrix;
 
-    assert(s->block_last_index[n] >= 0);
+    av_assert2(s->block_last_index[n] >= 0);
     nCoeffs = s->intra_scantable.raster_end[s->block_last_index[n]] + 1;
     quant_matrix = s->inter_matrix;
 
