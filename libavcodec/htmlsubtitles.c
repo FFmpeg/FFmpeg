@@ -92,15 +92,18 @@ void ff_htmlmarkup_to_ass(void *log_ctx, AVBPrint *dst, const char *in)
             tag_close = in[1] == '/';
             len = 0;
             if (sscanf(in+tag_close+1, "%127[^>]>%n", buffer, &len) >= 1 && len > 0) {
-                if ((param = strchr(buffer, ' ')))
+                const char *tagname = buffer;
+                while (*tagname == ' ')
+                    tagname++;
+                if ((param = strchr(tagname, ' ')))
                     *param++ = 0;
                 if ((!tag_close && sptr < FF_ARRAY_ELEMS(stack)) ||
-                    ( tag_close && sptr > 0 && !strcmp(stack[sptr-1].tag, buffer))) {
+                    ( tag_close && sptr > 0 && !strcmp(stack[sptr-1].tag, tagname))) {
                     int i, j, unknown = 0;
                     in += len + tag_close;
                     if (!tag_close)
                         memset(stack+sptr, 0, sizeof(*stack));
-                    if (!strcmp(buffer, "font")) {
+                    if (!strcmp(tagname, "font")) {
                         if (tag_close) {
                             for (i=PARAM_NUMBER-1; i>=0; i--)
                                 if (stack[sptr-1].param[i][0])
@@ -143,11 +146,11 @@ void ff_htmlmarkup_to_ass(void *log_ctx, AVBPrint *dst, const char *in)
                                 if (stack[sptr].param[i][0])
                                     av_bprintf(dst, "%s", stack[sptr].param[i]);
                         }
-                    } else if (!buffer[1] && strspn(buffer, "bisu") == 1) {
-                        av_bprintf(dst, "{\\%c%d}", buffer[0], !tag_close);
+                    } else if (!tagname[1] && strspn(tagname, "bisu") == 1) {
+                        av_bprintf(dst, "{\\%c%d}", tagname[0], !tag_close);
                     } else {
                         unknown = 1;
-                        snprintf(tmp, sizeof(tmp), "</%s>", buffer);
+                        snprintf(tmp, sizeof(tmp), "</%s>", tagname);
                     }
                     if (tag_close) {
                         sptr--;
@@ -155,7 +158,7 @@ void ff_htmlmarkup_to_ass(void *log_ctx, AVBPrint *dst, const char *in)
                         in -= len + tag_close;
                         av_bprint_chars(dst, *in, 1);
                     } else
-                        av_strlcpy(stack[sptr++].tag, buffer,
+                        av_strlcpy(stack[sptr++].tag, tagname,
                                    sizeof(stack[0].tag));
                     break;
                 }
