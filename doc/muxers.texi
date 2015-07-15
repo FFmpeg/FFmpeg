@@ -810,6 +810,8 @@ Option mpegts_flags may take a set of such flags:
 Reemit PAT/PMT before writing the next packet.
 @item latm
 Use LATM packetization for AAC.
+@item pat_pmt_at_frames
+Reemit PAT and PMT at each video frame.
 @end table
 
 @subsection Example

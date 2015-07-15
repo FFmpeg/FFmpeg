@@ -98,6 +98,7 @@ typedef struct MpegTSWrite {
     int pcr_period;
 #define MPEGTS_FLAG_REEMIT_PAT_PMT  0x01
 #define MPEGTS_FLAG_AAC_LATM        0x02
+#define MPEGTS_FLAG_PAT_PMT_AT_FRAMES           0x04
     int flags;
     int copyts;
     int tables_version;
@@ -971,6 +972,11 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
     int64_t delay = av_rescale(s->max_delay, 90000, AV_TIME_BASE);
     int force_pat = st->codec->codec_type == AVMEDIA_TYPE_VIDEO && key && !ts_st->prev_payload_key;
 
+    av_assert0(ts_st->payload != buf || st->codec->codec_type != AVMEDIA_TYPE_VIDEO);
+    if (ts->flags & MPEGTS_FLAG_PAT_PMT_AT_FRAMES && st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
+        force_pat = 1;
+    }
+
     is_start = 1;
     while (payload_size > 0) {
         retransmit_si_info(s, force_pat);
@@ -1504,6 +1510,9 @@ static const AVOption options[] = {
       AV_OPT_FLAG_ENCODING_PARAM, "mpegts_flags" },
     { "latm", "Use LATM packetization for AAC",
       0, AV_OPT_TYPE_CONST, { .i64 = MPEGTS_FLAG_AAC_LATM }, 0, INT_MAX,
+      AV_OPT_FLAG_ENCODING_PARAM, "mpegts_flags" },
+    { "pat_pmt_at_frames", "Reemit PAT and PMT at each video frame",
+      0, AV_OPT_TYPE_CONST, { .i64 = MPEGTS_FLAG_PAT_PMT_AT_FRAMES}, 0, INT_MAX,
       AV_OPT_FLAG_ENCODING_PARAM, "mpegts_flags" },
     // backward compatibility
     { "resend_headers", "Reemit PAT/PMT before writing the next packet",
