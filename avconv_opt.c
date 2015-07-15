@@ -1418,11 +1418,6 @@ static int open_output_file(OptionsContext *o, const char *filename)
     AVDictionary *unused_opts = NULL;
     AVDictionaryEntry *e = NULL;
 
-    if (configure_complex_filters() < 0) {
-        av_log(NULL, AV_LOG_FATAL, "Error configuring filters.\n");
-        exit_program(1);
-    }
-
     GROW_ARRAY(output_files, nb_output_files);
     of = av_mallocz(sizeof(*of));
     if (!of)
@@ -2229,6 +2224,13 @@ int avconv_parse_options(int argc, char **argv)
     ret = open_files(&octx.groups[GROUP_INFILE], "input", open_input_file);
     if (ret < 0) {
         av_log(NULL, AV_LOG_FATAL, "Error opening input files: ");
+        goto fail;
+    }
+
+    /* create the complex filtergraphs */
+    ret = configure_complex_filters();
+    if (ret < 0) {
+        av_log(NULL, AV_LOG_FATAL, "Error configuring filters.\n");
         goto fail;
     }
 
