@@ -309,7 +309,7 @@ int ff_poll_frame(AVFilterLink *link);
  * request from an internal buffer or any other means specific to its function.
  *
  * When the end of a stream is reached AVERROR_EOF is returned and no further
- * frames.
+ * frames are returned after that.
  *
  * When a filter is unable to output a frame for example due to its sources
  * being unable to do so or because it depends on external means pushing data
