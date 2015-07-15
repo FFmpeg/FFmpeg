@@ -4000,13 +4000,13 @@ elif enabled mips; then
             disable aligned_stack
             case $cpu in
                 loongson3*)
-                    cpuflags="-march=loongson3a -mhard-float"
+                    cpuflags="-march=loongson3a -mhard-float -fno-expensive-optimizations"
                 ;;
                 loongson2e)
-                    cpuflags="-march=loongson2e -mhard-float"
+                    cpuflags="-march=loongson2e -mhard-float -fno-expensive-optimizations"
                 ;;
                 loongson2f)
-                    cpuflags="-march=loongson2f -mhard-float"
+                    cpuflags="-march=loongson2f -mhard-float -fno-expensive-optimizations"
                 ;;
             esac
         ;;
