@@ -384,12 +384,16 @@ static int libschroedinger_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     }
 
     memcpy(pkt->data, p_frame_output->p_encbuf, p_frame_output->size);
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
     avctx->coded_frame->key_frame = p_frame_output->key_frame;
+    avctx->coded_frame->pts = p_frame_output->frame_num;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     /* Use the frame number of the encoded frame as the pts. It is OK to
      * do so since Dirac is a constant frame rate codec. It expects input
      * to be of constant frame rate. */
-    pkt->pts =
-    avctx->coded_frame->pts = p_frame_output->frame_num;
+    pkt->pts = p_frame_output->frame_num;
     pkt->dts = p_schro_params->dts++;
     enc_size = p_frame_output->size;
 

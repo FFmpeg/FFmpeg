@@ -939,8 +939,12 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     uint8_t frame_flags;
 
     ctx->pic = pic;
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
     avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
     avctx->coded_frame->key_frame = 1;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     pkt_size = ctx->frame_size_upper_bound;
 

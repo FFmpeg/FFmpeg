@@ -1475,7 +1475,11 @@ static void frame_end(MpegEncContext *s)
         }
     }
 
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
     av_frame_copy_props(s->avctx->coded_frame, s->current_picture.f);
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 }
 
 static void update_noise_reduction(MpegEncContext *s)

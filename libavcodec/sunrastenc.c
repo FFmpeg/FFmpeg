@@ -153,8 +153,12 @@ static av_cold int sunrast_encode_init(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
 
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
     avctx->coded_frame->key_frame = 1;
     avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     s->maptype                    = RMT_NONE;
     s->maplength                  = 0;
 

@@ -217,8 +217,12 @@ static av_cold int a64multi_encode_init(AVCodecContext *avctx)
     AV_WB32(avctx->extradata, c->mc_lifetime);
     AV_WB32(avctx->extradata + 16, INTERLACED);
 
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
     avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
     avctx->coded_frame->key_frame = 1;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     if (!avctx->codec_tag)
          avctx->codec_tag = AV_RL32("a64m");
 
@@ -289,8 +293,12 @@ static int a64multi_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     } else {
         /* fill up mc_meta_charset with data until lifetime exceeds */
         if (c->mc_frame_counter < c->mc_lifetime) {
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
             avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
             avctx->coded_frame->key_frame = 1;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
             to_meta_with_crop(avctx, pict, meta + 32000 * c->mc_frame_counter);
             c->mc_frame_counter++;
             if (c->next_pts == AV_NOPTS_VALUE)

@@ -146,8 +146,12 @@ static int xwd_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     }
     buf = pkt->data;
 
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
     avctx->coded_frame->key_frame = 1;
     avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     bytestream_put_be32(&buf, header_size);
     bytestream_put_be32(&buf, XWD_VERSION);   // file version

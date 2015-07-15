@@ -1037,6 +1037,8 @@ static int nvenc_get_frame(AVCodecContext *avctx, AVPacket *pkt)
     switch (params.pictureType) {
     case NV_ENC_PIC_TYPE_IDR:
         pkt->flags |= AV_PKT_FLAG_KEY;
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
     case NV_ENC_PIC_TYPE_INTRA_REFRESH:
     case NV_ENC_PIC_TYPE_I:
         avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
@@ -1050,6 +1052,8 @@ static int nvenc_get_frame(AVCodecContext *avctx, AVPacket *pkt)
     case NV_ENC_PIC_TYPE_BI:
         avctx->coded_frame->pict_type = AV_PICTURE_TYPE_BI;
         break;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     }
 
     return 0;

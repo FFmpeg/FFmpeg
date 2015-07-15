@@ -38,6 +38,7 @@
 #include "libavutil/parseutils.h"
 #include "libavutil/samplefmt.h"
 #include "libavutil/fifo.h"
+#include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/dict.h"
 #include "libavutil/mathematics.h"
@@ -492,8 +493,12 @@ static void do_video_out(AVFormatContext *s,
         /* raw pictures are written as AVPicture structure to
            avoid any copies. We support temporarily the older
            method. */
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
         enc->coded_frame->interlaced_frame = in_picture->interlaced_frame;
         enc->coded_frame->top_field_first  = in_picture->top_field_first;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
         pkt.data   = (uint8_t *)in_picture;
         pkt.size   =  sizeof(AVPicture);
         pkt.pts    = av_rescale_q(in_picture->pts, enc->time_base, ost->st->time_base);
@@ -568,8 +573,13 @@ static void do_video_stats(OutputStream *ost, int frame_size)
         frame_number = ost->frame_number;
         fprintf(vstats_file, "frame= %5d q= %2.1f ", frame_number,
                 ost->quality / (float)FF_QP2LAMBDA);
+
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
         if (enc->flags&CODEC_FLAG_PSNR)
             fprintf(vstats_file, "PSNR= %6.2f ", psnr(enc->coded_frame->error[0] / (enc->width * enc->height * 255.0 * 255.0)));
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
         fprintf(vstats_file,"f_size= %6d ", frame_size);
         /* compute pts value */
@@ -581,7 +591,11 @@ static void do_video_stats(OutputStream *ost, int frame_size)
         avg_bitrate = (double)(ost->data_size * 8) / ti1 / 1000.0;
         fprintf(vstats_file, "s_size= %8.0fkB time= %0.3f br= %7.1fkbits/s avg_br= %7.1fkbits/s ",
                (double)ost->data_size / 1024, ti1, bitrate, avg_bitrate);
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
         fprintf(vstats_file, "type= %c\n", av_get_picture_type_char(enc->coded_frame->pict_type));
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     }
 }
 
@@ -874,6 +888,9 @@ static void print_report(int is_last_report, int64_t timer_start)
                 for (j = 0; j < 32; j++)
                     snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "%X", (int)lrintf(log2(qp_histogram[j] + 1)));
             }
+
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
             if (enc->flags&CODEC_FLAG_PSNR) {
                 int j;
                 double error, error_sum = 0;
@@ -896,6 +913,8 @@ static void print_report(int is_last_report, int64_t timer_start)
                 }
                 snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "*:%2.2f ", psnr(error_sum / scale_sum));
             }
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
             vid = 1;
         }
         /* compute min output value */
