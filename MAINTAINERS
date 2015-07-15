@@ -200,6 +200,7 @@ Codecs:
   libcelt_dec.c                         Nicolas George
   libdirac*                             David Conrad
   libgsm.c                              Michel Bardiaux
+  libkvazaar.c                          Arttu Ylä-Outinen
   libopenjpeg.c                         Jaikrishnan Menon
   libopenjpegenc.c                      Michael Bradshaw
   libschroedinger*                      David Conrad
