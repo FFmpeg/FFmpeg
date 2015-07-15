@@ -349,7 +349,7 @@ static int encode_frame(AVCodecContext* avc_context, AVPacket *pkt,
     // multithreaded (which will be disabled unless explicitly requested)
     pkt->pts = pkt->dts = frame->pts;
     avc_context->coded_frame->key_frame = !(o_packet.granulepos & h->keyframe_mask);
-    if (avc_context->coded_frame->key_frame)
+    if (!(o_packet.granulepos & h->keyframe_mask))
         pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;
 
