@@ -104,6 +104,7 @@ static void reset_stats(AudioStatsContext *s)
 
         p->min = p->min_sigma_x2 = DBL_MAX;
         p->max = p->max_sigma_x2 = DBL_MIN;
+        p->max_diff = -1;
     }
 }
 
@@ -161,7 +162,7 @@ static inline void update_stat(AudioStatsContext *s, ChannelStats *p, double d)
     p->sigma_x += d;
     p->sigma_x2 += d * d;
     p->avg_sigma_x2 = p->avg_sigma_x2 * s->mult + (1.0 - s->mult) * d * d;
-    p->max_diff = FFMAX(p->max_diff, FFABS(d - p->last));
+    p->max_diff = FFMAX(p->max_diff, FFABS(d - (p->max_diff == -1 ? d : p->last)));
     p->last = d;
     p->mask |= llrint(d * (1LLU<<63));
 
