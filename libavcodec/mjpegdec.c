@@ -2059,6 +2059,7 @@ int ff_mjpeg_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                 goto fail;
             break;
         case SOF3:
+            s->avctx->properties |= FF_CODEC_PROPERTY_LOSSLESS;
             s->lossless    = 1;
             s->ls          = 0;
             s->progressive = 0;
@@ -2066,6 +2067,7 @@ int ff_mjpeg_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                 goto fail;
             break;
         case SOF48:
+            s->avctx->properties |= FF_CODEC_PROPERTY_LOSSLESS;
             s->lossless    = 1;
             s->ls          = 1;
             s->progressive = 0;

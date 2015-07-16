@@ -1685,6 +1685,7 @@ static int mpeg_field_start(MpegEncContext *s, const uint8_t *buf, int buf_size)
             if (sd)
                 memcpy(sd->data, s1->a53_caption, s1->a53_caption_size);
             av_freep(&s1->a53_caption);
+            avctx->properties |= FF_CODEC_PROPERTY_CLOSED_CAPTIONS;
         }
 
         if (s1->has_stereo3d) {
