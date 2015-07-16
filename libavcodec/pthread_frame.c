@@ -671,6 +671,7 @@ int ff_frame_thread_init(AVCodecContext *avctx)
 
         copy->internal = av_malloc(sizeof(AVCodecInternal));
         if (!copy->internal) {
+            copy->priv_data = NULL;
             err = AVERROR(ENOMEM);
             goto error;
         }
