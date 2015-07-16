@@ -2654,6 +2654,7 @@ x11grab_indev_deps="x11grab"
 x11grab_xcb_indev_deps="libxcb"
 
 # protocols
+async_protocol_deps="pthreads"
 bluray_protocol_deps="libbluray"
 ffrtmpcrypt_protocol_deps="!librtmp_protocol"
 ffrtmpcrypt_protocol_deps_any="gcrypt gmp openssl"
