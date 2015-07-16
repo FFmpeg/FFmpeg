@@ -107,7 +107,7 @@ static int write_packet(struct AVFormatContext *s, AVPacket *pkt)
 
 	if (c->moov_commit_period) {
 		// try to flush buffer
-        if (codec->codec_type == AVMEDIA_TYPE_VIDEO) {
+        if (codec->codec_type == AVMEDIA_TYPE_VIDEO || s->nb_streams == 1) {
          	// check if should commit
             if (c->duration != 0 && (c->duration % (c->moov_commit_period * 1000000)) < 4000) {
               	c->moov_commit_on_next_keyframe = 1;
@@ -146,7 +146,7 @@ static int write_packet(struct AVFormatContext *s, AVPacket *pkt)
 	}
 
 	// update duration
-	if (codec->codec_type == AVMEDIA_TYPE_VIDEO)
+	if (codec->codec_type == AVMEDIA_TYPE_VIDEO || s->nb_streams == 1)
 		c->duration += av_rescale_q(pkt->duration,s->streams[pkt->stream_index]->time_base,AV_TIME_BASE_Q);
 
 	// skip non-audio
