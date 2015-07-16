@@ -107,8 +107,13 @@ static int setup_texture(AVCodecContext *avctx, size_t length)
         compressorstr = "none";
         break;
     case HAP_COMP_SNAPPY:
+        snappy_size = ff_snappy_peek_uncompressed_length(gbc);
+        ret = av_reallocp(&ctx->snappied, snappy_size);
+        if (ret < 0) {
+            return ret;
+        }
         /* Uncompress the frame */
-        ret = ff_snappy_uncompress(gbc, &ctx->snappied, &snappy_size);
+        ret = ff_snappy_uncompress(gbc, ctx->snappied, &snappy_size);
         if (ret < 0) {
              av_log(avctx, AV_LOG_ERROR, "Snappy uncompress error\n");
              return ret;
