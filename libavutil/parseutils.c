@@ -80,6 +80,10 @@ static const VideoSizeAbbr video_size_abbrs[] = {
     { "hd480",     852, 480 },
     { "hd720",    1280, 720 },
     { "hd1080",   1920,1080 },
+    { "2kdci",    2048,1080 },
+    { "4kdci",    4096,2160 },
+    { "uhd1",     3840,2160 },
+    { "uhd2",     7680,4320 },
 };
 
 static const VideoRateAbbr video_rate_abbrs[]= {

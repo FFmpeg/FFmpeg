@@ -493,6 +493,14 @@ abbreviations are recognized:
 1280x720
 @item hd1080
 1920x1080
+@item 2kdci
+2048x1080
+@item 4kdci
+4096x2160
+@item uhd1
+3840x2160
+@item uhd2
+7680x4320
 @end table
 
 @item -aspect[:@var{stream_specifier}] @var{aspect} (@emph{output,per-stream})
