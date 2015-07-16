@@ -1607,6 +1607,7 @@ CONFIG_EXTRA="
     iirfilter
     imdct15
     intrax8
+    ividsp
     jpegtables
     libx262
     lgplv3
@@ -1878,6 +1879,8 @@ huffyuv_encoder_select="bswapdsp huffman huffyuvencdsp"
 iac_decoder_select="imc_decoder"
 imc_decoder_select="bswapdsp fft mdct sinewin"
 indeo3_decoder_select="hpeldsp"
+indeo4_decoder_select="ividsp"
+indeo5_decoder_select="ividsp"
 interplay_video_decoder_select="hpeldsp"
 jpegls_decoder_select="golomb mjpeg_decoder"
 jpegls_encoder_select="golomb"
