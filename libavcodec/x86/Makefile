@@ -30,6 +30,7 @@ OBJS-$(CONFIG_QPELDSP)                 += x86/qpeldsp_init.o
 OBJS-$(CONFIG_RV34DSP)                 += x86/rv34dsp_init.o
 OBJS-$(CONFIG_VIDEODSP)                += x86/videodsp_init.o
 OBJS-$(CONFIG_VP3DSP)                  += x86/vp3dsp_init.o
+OBJS-$(CONFIG_VP8DSP)                  += x86/vp8dsp_init.o
 OBJS-$(CONFIG_XMM_CLOBBER_TEST)        += x86/w64xmmtest.o
 
 # decoders/encoders
@@ -50,8 +51,6 @@ OBJS-$(CONFIG_V210_ENCODER)            += x86/v210enc_init.o
 OBJS-$(CONFIG_VC1_DECODER)             += x86/vc1dsp_init.o
 OBJS-$(CONFIG_VORBIS_DECODER)          += x86/vorbisdsp_init.o
 OBJS-$(CONFIG_VP6_DECODER)             += x86/vp6dsp_init.o
-OBJS-$(CONFIG_VP7_DECODER)             += x86/vp8dsp_init.o
-OBJS-$(CONFIG_VP8_DECODER)             += x86/vp8dsp_init.o
 OBJS-$(CONFIG_VP9_DECODER)             += x86/vp9dsp_init.o
 
 
@@ -111,6 +110,8 @@ YASM-OBJS-$(CONFIG_RV34DSP)            += x86/rv34dsp.o
 YASM-OBJS-$(CONFIG_V210_ENCODER)       += x86/v210enc.o
 YASM-OBJS-$(CONFIG_VIDEODSP)           += x86/videodsp.o
 YASM-OBJS-$(CONFIG_VP3DSP)             += x86/vp3dsp.o
+YASM-OBJS-$(CONFIG_VP8DSP)             += x86/vp8dsp.o                  \
+                                          x86/vp8dsp_loopfilter.o
 
 # decoders/encoders
 YASM-OBJS-$(CONFIG_AAC_DECODER)        += x86/sbrdsp.o
@@ -123,8 +124,4 @@ YASM-OBJS-$(CONFIG_RV40_DECODER)       += x86/rv40dsp.o
 YASM-OBJS-$(CONFIG_VC1_DECODER)        += x86/vc1dsp.o
 YASM-OBJS-$(CONFIG_VORBIS_DECODER)     += x86/vorbisdsp.o
 YASM-OBJS-$(CONFIG_VP6_DECODER)        += x86/vp6dsp.o
-YASM-OBJS-$(CONFIG_VP7_DECODER)        += x86/vp8dsp.o                  \
-                                          x86/vp8dsp_loopfilter.o
-YASM-OBJS-$(CONFIG_VP8_DECODER)        += x86/vp8dsp.o                  \
-                                          x86/vp8dsp_loopfilter.o
 YASM-OBJS-$(CONFIG_VP9_DECODER)        += x86/vp9dsp.o
