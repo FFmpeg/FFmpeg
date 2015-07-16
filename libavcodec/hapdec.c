@@ -78,20 +78,19 @@ static int setup_texture(AVCodecContext *avctx, size_t length)
     const char *compressorstr;
     int ret;
 
+    if ((avctx->codec_tag == MKTAG('H','a','p','1') && (ctx->section_type & 0x0F) != HAP_FMT_RGBDXT1)
+        || (avctx->codec_tag == MKTAG('H','a','p','5') && (ctx->section_type & 0x0F) != HAP_FMT_RGBADXT5)
+        || (avctx->codec_tag == MKTAG('H','a','p','Y') && (ctx->section_type & 0x0F) != HAP_FMT_YCOCGDXT5))
+        return AVERROR_INVALIDDATA;
+
     switch (ctx->section_type & 0x0F) {
     case HAP_FMT_RGBDXT1:
-        ctx->tex_rat = 8;
-        ctx->tex_fun = ctx->dxtc.dxt1_block;
         texture_name = "DXT1";
         break;
     case HAP_FMT_RGBADXT5:
-        ctx->tex_rat = 16;
-        ctx->tex_fun = ctx->dxtc.dxt5_block;
         texture_name = "DXT5";
         break;
     case HAP_FMT_YCOCGDXT5:
-        ctx->tex_rat = 16;
-        ctx->tex_fun = ctx->dxtc.dxt5ys_block;
         texture_name = "DXT5-YCoCg-scaled";
         break;
     default:
@@ -211,6 +210,22 @@ static av_cold int hap_init(AVCodecContext *avctx)
 
     ff_texturedsp_init(&ctx->dxtc);
 
+    switch (avctx->codec_tag) {
+    case MKTAG('H','a','p','1'):
+        ctx->tex_rat = 8;
+        ctx->tex_fun = ctx->dxtc.dxt1_block;
+        break;
+    case MKTAG('H','a','p','5'):
+        ctx->tex_rat = 16;
+        ctx->tex_fun = ctx->dxtc.dxt5_block;
+        break;
+    case MKTAG('H','a','p','Y'):
+        ctx->tex_rat = 16;
+        ctx->tex_fun = ctx->dxtc.dxt5ys_block;
+        break;
+    default:
+        return AVERROR_DECODER_NOT_FOUND;
+    }
     return 0;
 }
 
