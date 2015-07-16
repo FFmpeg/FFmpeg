@@ -3090,6 +3090,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
     int flush_codecs;
     int64_t max_analyze_duration = ic->max_analyze_duration2;
     int64_t max_stream_analyze_duration;
+    int64_t max_subtitle_analyze_duration;
     int64_t probesize = ic->probesize2;
 
     if (!max_analyze_duration)
@@ -3101,9 +3102,11 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
     av_opt_set(ic, "skip_clear", "1", AV_OPT_SEARCH_CHILDREN);
 
     max_stream_analyze_duration = max_analyze_duration;
+    max_subtitle_analyze_duration = max_analyze_duration;
     if (!max_analyze_duration) {
         max_stream_analyze_duration =
         max_analyze_duration        = 5*AV_TIME_BASE;
+        max_subtitle_analyze_duration = 30*AV_TIME_BASE;
         if (!strcmp(ic->iformat->name, "flv"))
             max_stream_analyze_duration = 30*AV_TIME_BASE;
     }
@@ -3321,6 +3324,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
         }
         if (st->codec_info_nb_frames>1) {
             int64_t t = 0;
+            int64_t limit;
 
             if (st->time_base.den > 0)
                 t = av_rescale_q(st->info->codec_info_duration, st->time_base, AV_TIME_BASE_Q);
@@ -3333,7 +3337,11 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
                 && st->info->fps_last_dts  != AV_NOPTS_VALUE)
                 t = FFMAX(t, av_rescale_q(st->info->fps_last_dts - st->info->fps_first_dts, st->time_base, AV_TIME_BASE_Q));
 
-            if (t >= (analyzed_all_streams ? max_analyze_duration : max_stream_analyze_duration)) {
+            if (analyzed_all_streams)                                limit = max_analyze_duration;
+            else if (st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE) limit = max_subtitle_analyze_duration;
+            else                                                     limit = max_stream_analyze_duration;
+
+            if (t >= limit) {
                 av_log(ic, AV_LOG_VERBOSE, "max_analyze_duration %"PRId64" reached at %"PRId64" microseconds st:%d\n",
                        max_analyze_duration,
                        t, pkt->stream_index);
