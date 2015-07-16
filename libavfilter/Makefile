@@ -186,6 +186,7 @@ OBJS-$(CONFIG_QP_FILTER)                     += vf_qp.o
 OBJS-$(CONFIG_REMOVEGRAIN_FILTER)            += vf_removegrain.o
 OBJS-$(CONFIG_REMOVELOGO_FILTER)             += bbox.o lswsutils.o lavfutils.o vf_removelogo.o
 OBJS-$(CONFIG_REPEATFIELDS_FILTER)           += vf_repeatfields.o
+OBJS-$(CONFIG_REVERSE_FILTER)                += vf_reverse.o
 OBJS-$(CONFIG_ROTATE_FILTER)                 += vf_rotate.o
 OBJS-$(CONFIG_SEPARATEFIELDS_FILTER)         += vf_separatefields.o
 OBJS-$(CONFIG_SAB_FILTER)                    += vf_sab.o
