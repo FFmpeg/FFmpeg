@@ -102,6 +102,8 @@ typedef struct MpegTSWrite {
     int flags;
     int copyts;
     int tables_version;
+    float pat_period;
+    int64_t last_pat_ts;
 
     int omit_video_pes_length;
 } MpegTSWrite;
@@ -784,6 +786,12 @@ static int mpegts_write_header(AVFormatContext *s)
             service->pcr_packet_period = 1;
     }
 
+    ts->last_pat_ts = AV_NOPTS_VALUE;
+    // The user specified a period, use only it
+    if (ts->pat_period < INT_MAX/2) {
+        ts->pat_packet_period = INT_MAX;
+    }
+
     // output a PCR as soon as possible
     service->pcr_packet_count = service->pcr_packet_period;
     ts->pat_packet_count      = ts->pat_packet_period - 1;
@@ -834,7 +842,7 @@ fail:
 }
 
 /* send SDT, PAT and PMT tables regulary */
-static void retransmit_si_info(AVFormatContext *s, int force_pat)
+static void retransmit_si_info(AVFormatContext *s, int force_pat, int64_t dts)
 {
     MpegTSWrite *ts = s->priv_data;
     int i;
@@ -843,8 +851,13 @@ static void retransmit_si_info(AVFormatContext *s, int force_pat)
         ts->sdt_packet_count = 0;
         mpegts_write_sdt(s);
     }
-    if (++ts->pat_packet_count == ts->pat_packet_period || force_pat) {
+    if (++ts->pat_packet_count == ts->pat_packet_period ||
+        (dts != AV_NOPTS_VALUE && ts->last_pat_ts == AV_NOPTS_VALUE) ||
+        (dts != AV_NOPTS_VALUE && dts - ts->last_pat_ts >= ts->pat_period*90000.0) ||
+        force_pat) {
         ts->pat_packet_count = 0;
+        if (dts != AV_NOPTS_VALUE)
+            ts->last_pat_ts = FFMAX(dts, ts->last_pat_ts);
         mpegts_write_pat(s);
         for (i = 0; i < ts->nb_services; i++)
             mpegts_write_pmt(s, ts->services[i]);
@@ -979,7 +992,7 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
 
     is_start = 1;
     while (payload_size > 0) {
-        retransmit_si_info(s, force_pat);
+        retransmit_si_info(s, force_pat, dts);
         force_pat = 0;
 
         write_pcr = 0;
@@ -1530,6 +1543,9 @@ static const AVOption options[] = {
     { "pcr_period", "PCR retransmission time",
       offsetof(MpegTSWrite, pcr_period), AV_OPT_TYPE_INT,
       { .i64 = PCR_RETRANS_TIME }, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
+    { "pat_period", "PAT/PMT retransmission time limit in seconds",
+      offsetof(MpegTSWrite, pat_period), AV_OPT_TYPE_FLOAT,
+      { .dbl = INT_MAX }, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
     { NULL },
 };
 

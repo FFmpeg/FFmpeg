@@ -759,6 +759,8 @@ Set a constant muxrate (default VBR).
 @item -pcr_period @var{numer}
 Override the default PCR retransmission time (default 20ms), ignored
 if variable muxrate is selected.
+@item pat_period @var{number}
+Maximal time in seconds between PAT/PMT tables.
 @item -pes_payload_size @var{number}
 Set minimum PES packet payload in bytes.
 @item -mpegts_flags @var{flags}
