@@ -20,6 +20,7 @@ OBJS-$(CONFIG_IDCTDSP)                 += arm/idctdsp_init_arm.o        \
                                           arm/simple_idct_arm.o
 OBJS-$(CONFIG_FLACDSP)                 += arm/flacdsp_init_arm.o        \
                                           arm/flacdsp_arm.o
+OBJS-$(CONFIG_G722DSP)                 += arm/g722dsp_init_arm.o
 OBJS-$(CONFIG_ME_CMP)                  += arm/me_cmp_init_arm.o
 OBJS-$(CONFIG_MPEGAUDIODSP)            += arm/mpegaudiodsp_init_arm.o
 OBJS-$(CONFIG_MPEGVIDEO)               += arm/mpegvideo_arm.o
@@ -36,8 +37,6 @@ OBJS-$(CONFIG_AAC_DECODER)             += arm/aacpsdsp_init_arm.o       \
                                           arm/sbrdsp_init_arm.o
 OBJS-$(CONFIG_APE_DECODER)             += arm/apedsp_init_arm.o
 OBJS-$(CONFIG_DCA_DECODER)             += arm/dcadsp_init_arm.o
-OBJS-$(CONFIG_ADPCM_G722_DECODER)      += arm/g722dsp_init_arm.o
-OBJS-$(CONFIG_ADPCM_G722_ENCODER)      += arm/g722dsp_init_arm.o
 OBJS-$(CONFIG_MLP_DECODER)             += arm/mlpdsp_init_arm.o
 OBJS-$(CONFIG_RV40_DECODER)            += arm/rv40dsp_init_arm.o
 OBJS-$(CONFIG_VC1_DECODER)             += arm/vc1dsp_init_arm.o
@@ -103,6 +102,7 @@ NEON-OBJS-$(CONFIG_BLOCKDSP)           += arm/blockdsp_init_neon.o      \
 NEON-OBJS-$(CONFIG_FFT)                += arm/fft_neon.o                \
                                           arm/fft_fixed_neon.o
 NEON-OBJS-$(CONFIG_FMTCONVERT)         += arm/fmtconvert_neon.o
+NEON-OBJS-$(CONFIG_G722DSP)            += arm/g722dsp_neon.o
 NEON-OBJS-$(CONFIG_H264CHROMA)         += arm/h264cmc_neon.o
 NEON-OBJS-$(CONFIG_H264DSP)            += arm/h264dsp_neon.o            \
                                           arm/h264idct_neon.o
@@ -128,8 +128,6 @@ NEON-OBJS-$(CONFIG_AAC_DECODER)        += arm/aacpsdsp_neon.o           \
 NEON-OBJS-$(CONFIG_APE_DECODER)        += arm/apedsp_neon.o
 NEON-OBJS-$(CONFIG_DCA_DECODER)        += arm/dcadsp_neon.o             \
                                           arm/synth_filter_neon.o
-NEON-OBJS-$(CONFIG_ADPCM_G722_DECODER) += arm/g722dsp_neon.o
-NEON-OBJS-$(CONFIG_ADPCM_G722_ENCODER) += arm/g722dsp_neon.o
 NEON-OBJS-$(CONFIG_RV30_DECODER)       += arm/rv34dsp_neon.o
 NEON-OBJS-$(CONFIG_RV40_DECODER)       += arm/rv34dsp_neon.o            \
                                           arm/rv40dsp_neon.o
