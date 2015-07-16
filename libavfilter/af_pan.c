@@ -37,7 +37,7 @@
 #include "formats.h"
 #include "internal.h"
 
-#define MAX_CHANNELS 63
+#define MAX_CHANNELS 64
 
 typedef struct PanContext {
     const AVClass *class;
