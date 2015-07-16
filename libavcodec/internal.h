@@ -65,7 +65,7 @@
 #define FF_DEFAULT_QUANT_BIAS 999999
 #endif
 
-#define FF_SANE_NB_CHANNELS 63U
+#define FF_SANE_NB_CHANNELS 64U
 
 #define FF_SIGNBIT(x) ((x) >> CHAR_BIT * sizeof(x) - 1)
 
