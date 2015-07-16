@@ -56,6 +56,7 @@ MSA-OBJS-$(CONFIG_IDCTDSP)                += mips/idctdsp_msa.o           \
 MSA-OBJS-$(CONFIG_MPEGVIDEO)              += mips/mpegvideo_msa.o
 MSA-OBJS-$(CONFIG_MPEGVIDEOENC)           += mips/mpegvideoencdsp_msa.o
 MSA-OBJS-$(CONFIG_ME_CMP)                 += mips/me_cmp_msa.o
+MMI-OBJS                                  += mips/constants.o
 MMI-OBJS-$(CONFIG_H264DSP)                += mips/h264dsp_mmi.o
 MMI-OBJS-$(CONFIG_H264CHROMA)             += mips/h264chroma_mmi.o
 MMI-OBJS-$(CONFIG_H264PRED)               += mips/h264pred_mmi.o
