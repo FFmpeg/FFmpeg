@@ -137,16 +137,30 @@ static int setup_texture(AVCodecContext *avctx, size_t length)
 }
 
 static int decompress_texture_thread(AVCodecContext *avctx, void *arg,
-                                     int block_nb, int thread_nb)
+                                     int slice, int thread_nb)
 {
     HapContext *ctx = avctx->priv_data;
     AVFrame *frame = arg;
-    int x = (TEXTURE_BLOCK_W * block_nb) % avctx->coded_width;
-    int y = TEXTURE_BLOCK_H * (TEXTURE_BLOCK_W * block_nb / avctx->coded_width);
-    uint8_t *p = frame->data[0] + x * 4 + y * frame->linesize[0];
-    const uint8_t *d = ctx->tex_data + block_nb * ctx->tex_rat;
+    const uint8_t *d = ctx->tex_data;
+    int w_block = avctx->coded_width / TEXTURE_BLOCK_W;
+    int x, y;
+    int start_slice, end_slice;
 
-    ctx->tex_fun(p, frame->linesize[0], d);
+    start_slice = slice * ctx->slice_size;
+    end_slice   = FFMIN(start_slice + ctx->slice_size, avctx->coded_height);
+
+    start_slice /= TEXTURE_BLOCK_H;
+    end_slice   /= TEXTURE_BLOCK_H;
+
+    for (y = start_slice; y < end_slice; y++) {
+        uint8_t *p = frame->data[0] + y * frame->linesize[0] * TEXTURE_BLOCK_H;
+        int off  = y * w_block;
+        for (x = 0; x < w_block; x++) {
+            ctx->tex_fun(p + x * 16, frame->linesize[0],
+                         d + (off + x) * ctx->tex_rat);
+        }
+    }
+
     return 0;
 }
 
@@ -156,7 +170,10 @@ static int hap_decode(AVCodecContext *avctx, void *data,
     HapContext *ctx = avctx->priv_data;
     ThreadFrame tframe;
     int ret, length;
-    int blocks = avctx->coded_width * avctx->coded_height / (TEXTURE_BLOCK_W * TEXTURE_BLOCK_H);
+    int slices = FFMIN(avctx->thread_count,
+                       avctx->coded_height / TEXTURE_BLOCK_H);
+
+    ctx->slice_size = avctx->coded_height / slices;
 
     bytestream2_init(&ctx->gbc, avpkt->data, avpkt->size);
 
@@ -180,7 +197,7 @@ static int hap_decode(AVCodecContext *avctx, void *data,
     ff_thread_finish_setup(avctx);
 
     /* Use the decompress function on the texture, one block per thread */
-    avctx->execute2(avctx, decompress_texture_thread, tframe.f, NULL, blocks);
+    avctx->execute2(avctx, decompress_texture_thread, tframe.f, NULL, slices);
 
     /* Frame is ready to be output */
     tframe.f->pict_type = AV_PICTURE_TYPE_I;

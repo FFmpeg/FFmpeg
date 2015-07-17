@@ -46,6 +46,8 @@ typedef struct HapContext {
     uint8_t *snappied;       /* Buffer interacting with snappy */
     size_t max_snappy;       /* Maximum compressed size for snappy buffer */
 
+    int slice_size;          /* Optimal slice size */
+
     /* Pointer to the selected compress or decompress function */
     int (*tex_fun)(uint8_t *dst, ptrdiff_t stride, const uint8_t *block);
 } HapContext;
