@@ -952,7 +952,9 @@ Available keys for each channel are:
 DC_offset
 Min_level
 Max_level
+Min_difference
 Max_difference
+Mean_difference
 Peak_level
 RMS_peak
 RMS_trough
@@ -965,7 +967,9 @@ and for Overall:
 DC_offset
 Min_level
 Max_level
+Min_difference
 Max_difference
+Mean_difference
 Peak_level
 RMS_level
 RMS_peak
@@ -997,8 +1001,15 @@ Minimal sample level.
 @item Max level
 Maximal sample level.
 
+@item Min difference
+Minimal difference between two consecutive samples.
+
 @item Max difference
 Maximal difference between two consecutive samples.
+
+@item Mean difference
+Mean difference between two consecutive samples.
+The average of each difference between two consecutive samples.
 
 @item Peak level dB
 @item RMS level dB
