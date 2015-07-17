@@ -1953,6 +1953,7 @@ CONFIG_EXTRA="
     tpeldsp
     videodsp
     vp3dsp
+    vp56dsp
     wma_freqs
 "
 
@@ -2333,8 +2334,8 @@ vc1image_decoder_select="vc1_decoder"
 vorbis_decoder_select="mdct"
 vorbis_encoder_select="mdct"
 vp3_decoder_select="hpeldsp vp3dsp videodsp"
-vp5_decoder_select="h264chroma hpeldsp videodsp vp3dsp"
-vp6_decoder_select="h264chroma hpeldsp huffman videodsp vp3dsp"
+vp5_decoder_select="h264chroma hpeldsp videodsp vp3dsp vp56dsp"
+vp6_decoder_select="h264chroma hpeldsp huffman videodsp vp3dsp vp56dsp"
 vp6a_decoder_select="vp6_decoder"
 vp6f_decoder_select="vp6_decoder"
 vp7_decoder_select="h264pred videodsp"
