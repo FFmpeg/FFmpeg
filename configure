@@ -1900,6 +1900,7 @@ CONFIG_EXTRA="
     faandct
     faanidct
     fdctdsp
+    flacdsp
     fmtconvert
     frame_thread_encoder
     gcrypt
@@ -2189,8 +2190,8 @@ ffv1_encoder_select="rangecoder"
 ffvhuff_decoder_select="huffyuv_decoder"
 ffvhuff_encoder_select="huffyuv_encoder"
 fic_decoder_select="golomb"
-flac_decoder_select="golomb"
-flac_encoder_select="bswapdsp golomb lpc"
+flac_decoder_select="flacdsp golomb"
+flac_encoder_select="bswapdsp flacdsp golomb lpc"
 flashsv_decoder_select="zlib"
 flashsv_encoder_select="zlib"
 flashsv2_encoder_select="zlib"
