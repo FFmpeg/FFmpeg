@@ -24,6 +24,7 @@ version <next>:
 - Random filter
 - deband filter
 - AAC fixed-point decoding
+- sidechaincompress audio filter
 
 
 version 2.7:
