@@ -95,8 +95,6 @@ typedef struct AACEncContext {
     } buffer;
 } AACEncContext;
 
-extern float ff_aac_pow34sf_tab[428];
-
 void ff_aac_coder_init_mips(AACEncContext *c);
 
 #endif /* AVCODEC_AACENC_H */
