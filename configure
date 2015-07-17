@@ -1954,6 +1954,7 @@ CONFIG_EXTRA="
     videodsp
     vp3dsp
     vp56dsp
+    vp8dsp
     wma_freqs
 "
 
@@ -2338,8 +2339,8 @@ vp5_decoder_select="h264chroma hpeldsp videodsp vp3dsp vp56dsp"
 vp6_decoder_select="h264chroma hpeldsp huffman videodsp vp3dsp vp56dsp"
 vp6a_decoder_select="vp6_decoder"
 vp6f_decoder_select="vp6_decoder"
-vp7_decoder_select="h264pred videodsp"
-vp8_decoder_select="h264pred videodsp"
+vp7_decoder_select="h264pred videodsp vp8dsp"
+vp8_decoder_select="h264pred videodsp vp8dsp"
 vp9_decoder_select="videodsp vp9_parser"
 webp_decoder_select="vp8_decoder"
 wmalossless_decoder_select="llauddsp"
