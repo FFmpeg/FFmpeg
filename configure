@@ -1944,6 +1944,7 @@ CONFIG_EXTRA="
     riffenc
     rtpdec
     rtpenc_chain
+    rv34dsp
     sinewin
     snappy
     startcode
@@ -2298,8 +2299,8 @@ rv10_decoder_select="error_resilience h263_decoder h263dsp mpeg_er"
 rv10_encoder_select="h263_encoder"
 rv20_decoder_select="error_resilience h263_decoder h263dsp mpeg_er"
 rv20_encoder_select="h263_encoder"
-rv30_decoder_select="error_resilience golomb h264chroma h264pred h264qpel mpeg_er mpegvideo videodsp"
-rv40_decoder_select="error_resilience golomb h264chroma h264pred h264qpel mpeg_er mpegvideo videodsp"
+rv30_decoder_select="error_resilience golomb h264chroma h264pred h264qpel mpeg_er mpegvideo rv34dsp videodsp"
+rv40_decoder_select="error_resilience golomb h264chroma h264pred h264qpel mpeg_er mpegvideo rv34dsp videodsp"
 shorten_decoder_select="golomb"
 sipr_decoder_select="lsp"
 snow_decoder_select="dwt h264qpel hpeldsp me_cmp rangecoder videodsp"

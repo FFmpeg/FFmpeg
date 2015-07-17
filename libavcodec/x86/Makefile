@@ -31,6 +31,7 @@ OBJS-$(CONFIG_MPEGVIDEOENC)            += x86/mpegvideoenc.o           \
                                           x86/mpegvideoencdsp_init.o
 OBJS-$(CONFIG_PIXBLOCKDSP)             += x86/pixblockdsp_init.o
 OBJS-$(CONFIG_QPELDSP)                 += x86/qpeldsp_init.o
+OBJS-$(CONFIG_RV34DSP)                 += x86/rv34dsp_init.o
 OBJS-$(CONFIG_VIDEODSP)                += x86/videodsp_init.o
 OBJS-$(CONFIG_VP3DSP)                  += x86/vp3dsp_init.o
 OBJS-$(CONFIG_XMM_CLOBBER_TEST)        += x86/w64xmmtest.o
@@ -50,9 +51,7 @@ OBJS-$(CONFIG_MPEG4_DECODER)           += x86/xvididct_init.o
 OBJS-$(CONFIG_PNG_DECODER)             += x86/pngdsp_init.o
 OBJS-$(CONFIG_PRORES_DECODER)          += x86/proresdsp_init.o
 OBJS-$(CONFIG_PRORES_LGPL_DECODER)     += x86/proresdsp_init.o
-OBJS-$(CONFIG_RV30_DECODER)            += x86/rv34dsp_init.o
-OBJS-$(CONFIG_RV40_DECODER)            += x86/rv34dsp_init.o            \
-                                          x86/rv40dsp_init.o
+OBJS-$(CONFIG_RV40_DECODER)            += x86/rv40dsp_init.o
 OBJS-$(CONFIG_SVQ1_ENCODER)            += x86/svq1enc_init.o
 OBJS-$(CONFIG_TRUEHD_DECODER)          += x86/mlpdsp_init.o
 OBJS-$(CONFIG_TTA_DECODER)             += x86/ttadsp_init.o
@@ -125,6 +124,7 @@ YASM-OBJS-$(CONFIG_PIXBLOCKDSP)        += x86/pixblockdsp.o
 YASM-OBJS-$(CONFIG_QPELDSP)            += x86/qpeldsp.o                 \
                                           x86/fpel.o                    \
                                           x86/qpel.o
+YASM-OBJS-$(CONFIG_RV34DSP)            += x86/rv34dsp.o
 YASM-OBJS-$(CONFIG_VIDEODSP)           += x86/videodsp.o
 YASM-OBJS-$(CONFIG_VP3DSP)             += x86/vp3dsp.o
 
@@ -145,9 +145,7 @@ YASM-OBJS-$(CONFIG_MPEG4_DECODER)      += x86/xvididct.o
 YASM-OBJS-$(CONFIG_PNG_DECODER)        += x86/pngdsp.o
 YASM-OBJS-$(CONFIG_PRORES_DECODER)     += x86/proresdsp.o
 YASM-OBJS-$(CONFIG_PRORES_LGPL_DECODER) += x86/proresdsp.o
-YASM-OBJS-$(CONFIG_RV30_DECODER)       += x86/rv34dsp.o
-YASM-OBJS-$(CONFIG_RV40_DECODER)       += x86/rv34dsp.o                 \
-                                          x86/rv40dsp.o
+YASM-OBJS-$(CONFIG_RV40_DECODER)       += x86/rv40dsp.o
 YASM-OBJS-$(CONFIG_SVQ1_ENCODER)       += x86/svq1enc.o
 YASM-OBJS-$(CONFIG_TRUEHD_DECODER)     += x86/mlpdsp.o
 YASM-OBJS-$(CONFIG_TTA_DECODER)        += x86/ttadsp.o
