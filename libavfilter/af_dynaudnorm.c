@@ -430,8 +430,9 @@ static void update_gain_history(DynamicAudioNormalizerContext *s, int channel,
     cqueue_enqueue(s->gain_history_original[channel], current_gain_factor);
 
     while (cqueue_size(s->gain_history_original[channel]) >= s->filter_size) {
+        double minimum;
         av_assert0(cqueue_size(s->gain_history_original[channel]) == s->filter_size);
-        const double minimum = minimum_filter(s->gain_history_original[channel]);
+        minimum = minimum_filter(s->gain_history_original[channel]);
 
         cqueue_enqueue(s->gain_history_minimum[channel], minimum);
 
@@ -439,8 +440,9 @@ static void update_gain_history(DynamicAudioNormalizerContext *s, int channel,
     }
 
     while (cqueue_size(s->gain_history_minimum[channel]) >= s->filter_size) {
+        double smoothed;
         av_assert0(cqueue_size(s->gain_history_minimum[channel]) == s->filter_size);
-        const double smoothed = gaussian_filter(s, s->gain_history_minimum[channel]);
+        smoothed = gaussian_filter(s, s->gain_history_minimum[channel]);
 
         cqueue_enqueue(s->gain_history_smoothed[channel], smoothed);
 
@@ -463,11 +465,12 @@ static void perform_dc_correction(DynamicAudioNormalizerContext *s, AVFrame *fra
     for (c = 0; c < s->channels; c++) {
         double *dst_ptr = (double *)frame->extended_data[c];
         double current_average_value = 0.0;
+        double prev_value;
 
         for (i = 0; i < frame->nb_samples; i++)
             current_average_value += dst_ptr[i] * diff;
 
-        const double prev_value = is_first_frame ? current_average_value : s->dc_correction_value[c];
+        prev_value = is_first_frame ? current_average_value : s->dc_correction_value[c];
         s->dc_correction_value[c] = is_first_frame ? current_average_value : update_value(current_average_value, s->dc_correction_value[c], 0.1);
 
         for (i = 0; i < frame->nb_samples; i++) {
@@ -534,10 +537,11 @@ static void perform_compression(DynamicAudioNormalizerContext *s, AVFrame *frame
         const double current_threshold  = FFMIN(1.0, s->compress_factor * standard_deviation);
 
         const double prev_value = is_first_frame ? current_threshold : s->compress_threshold[0];
+        double prev_actual_thresh, curr_actual_thresh;
         s->compress_threshold[0] = is_first_frame ? current_threshold : update_value(current_threshold, s->compress_threshold[0], (1.0/3.0));
 
-        const double prev_actual_thresh = setup_compress_thresh(prev_value);
-        const double curr_actual_thresh = setup_compress_thresh(s->compress_threshold[0]);
+        prev_actual_thresh = setup_compress_thresh(prev_value);
+        curr_actual_thresh = setup_compress_thresh(s->compress_threshold[0]);
 
         for (c = 0; c < s->channels; c++) {
             double *const dst_ptr = (double *)frame->extended_data[c];
@@ -552,12 +556,14 @@ static void perform_compression(DynamicAudioNormalizerContext *s, AVFrame *frame
             const double current_threshold  = setup_compress_thresh(FFMIN(1.0, s->compress_factor * standard_deviation));
 
             const double prev_value = is_first_frame ? current_threshold : s->compress_threshold[c];
+            double prev_actual_thresh, curr_actual_thresh;
+            double *dst_ptr;
             s->compress_threshold[c] = is_first_frame ? current_threshold : update_value(current_threshold, s->compress_threshold[c], 1.0/3.0);
 
-            const double prev_actual_thresh = setup_compress_thresh(prev_value);
-            const double curr_actual_thresh = setup_compress_thresh(s->compress_threshold[c]);
+            prev_actual_thresh = setup_compress_thresh(prev_value);
+            curr_actual_thresh = setup_compress_thresh(s->compress_threshold[c]);
 
-            double *const dst_ptr = (double *)frame->extended_data[c];
+            dst_ptr = (double *)frame->extended_data[c];
             for (i = 0; i < frame->nb_samples; i++) {
                 const double localThresh = fade(prev_actual_thresh, curr_actual_thresh, i, s->fade_factors);
                 dst_ptr[i] = copysign(bound(localThresh, fabs(dst_ptr[i])), dst_ptr[i]);
