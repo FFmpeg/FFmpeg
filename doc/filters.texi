@@ -1462,6 +1462,8 @@ situations, the attack time (response to the audio getting louder) should be
 shorter than the decay time, because the human ear is more sensitive to sudden
 loud audio than sudden soft audio. A typical value for attack is 0.3 seconds and
 a typical value for decay is 0.8 seconds.
+If specified number of attacks & decays is lower than number of channels, the last
+set attack/decay will be used for all remaining channels.
 
 @item points
 A list of points for the transfer function, specified in dB relative to the
