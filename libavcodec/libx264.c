@@ -389,9 +389,8 @@ static av_cold int X264_init(AVCodecContext *avctx)
         x4->params.b_mpeg2 = 1;
         x264_param_default_mpeg2(&x4->params);
     } else
-#else
-    x264_param_default(&x4->params);
 #endif
+    x264_param_default(&x4->params);
 
     x4->params.b_deblocking_filter         = avctx->flags & CODEC_FLAG_LOOP_FILTER;
 
