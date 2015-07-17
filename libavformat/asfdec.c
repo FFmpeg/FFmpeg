@@ -1123,17 +1123,19 @@ static int asf_read_multiple_payload(AVFormatContext *s, AVPacket *pkt,
         if ((ret = asf_read_subpayload(s, pkt, 1)) < 0)
             return ret;
     } else {
-        if (!asf_pkt->data_size) {
-            asf_pkt->data_size = asf_pkt->size_left = avio_rl32(pb); // read media object size
-            if (asf_pkt->data_size <= 0)
-                return AVERROR_EOF;
-            if ((ret = av_new_packet(&asf_pkt->avpkt, asf_pkt->data_size)) < 0)
-                return ret;
-        } else
-            avio_skip(pb, 4); // reading of media object size is already done
-        asf_pkt->dts = avio_rl32(pb); // read presentation time
-        if ((asf->rep_data_len - 8) > 0)
-            avio_skip(pb, asf->rep_data_len - 8); // skip replicated data
+        if (asf->rep_data_len) {
+            if (!asf_pkt->data_size) {
+                asf_pkt->data_size = asf_pkt->size_left = avio_rl32(pb); // read media object size
+                if (asf_pkt->data_size <= 0)
+                    return AVERROR_EOF;
+                if ((ret = av_new_packet(&asf_pkt->avpkt, asf_pkt->data_size)) < 0)
+                    return ret;
+            } else
+                avio_skip(pb, 4); // reading of media object size is already done
+            asf_pkt->dts = avio_rl32(pb); // read presentation time
+            if (asf->rep_data_len && ((asf->rep_data_len - 8) > 0))
+                avio_skip(pb, asf->rep_data_len - 8); // skip replicated data
+        }
         pay_len = avio_rl16(pb); // payload length should be WORD
         if (pay_len > asf->packet_size) {
             av_log(s, AV_LOG_ERROR,
