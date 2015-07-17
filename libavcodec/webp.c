@@ -1417,6 +1417,7 @@ static int webp_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                                                 chunk_size, 0);
                 if (ret < 0)
                     return ret;
+                avctx->properties |= FF_CODEC_PROPERTY_LOSSLESS;
             }
             bytestream2_skip(&gb, chunk_size);
             break;

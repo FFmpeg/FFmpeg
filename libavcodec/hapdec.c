@@ -78,20 +78,19 @@ static int setup_texture(AVCodecContext *avctx, size_t length)
     const char *compressorstr;
     int ret;
 
+    if ((avctx->codec_tag == MKTAG('H','a','p','1') && (ctx->section_type & 0x0F) != HAP_FMT_RGBDXT1)
+        || (avctx->codec_tag == MKTAG('H','a','p','5') && (ctx->section_type & 0x0F) != HAP_FMT_RGBADXT5)
+        || (avctx->codec_tag == MKTAG('H','a','p','Y') && (ctx->section_type & 0x0F) != HAP_FMT_YCOCGDXT5))
+        return AVERROR_INVALIDDATA;
+
     switch (ctx->section_type & 0x0F) {
     case HAP_FMT_RGBDXT1:
-        ctx->tex_rat = 8;
-        ctx->tex_fun = ctx->dxtc.dxt1_block;
         texture_name = "DXT1";
         break;
     case HAP_FMT_RGBADXT5:
-        ctx->tex_rat = 16;
-        ctx->tex_fun = ctx->dxtc.dxt5_block;
         texture_name = "DXT5";
         break;
     case HAP_FMT_YCOCGDXT5:
-        ctx->tex_rat = 16;
-        ctx->tex_fun = ctx->dxtc.dxt5ys_block;
         texture_name = "DXT5-YCoCg-scaled";
         break;
     default:
@@ -108,8 +107,13 @@ static int setup_texture(AVCodecContext *avctx, size_t length)
         compressorstr = "none";
         break;
     case HAP_COMP_SNAPPY:
+        snappy_size = ff_snappy_peek_uncompressed_length(gbc);
+        ret = av_reallocp(&ctx->snappied, snappy_size);
+        if (ret < 0) {
+            return ret;
+        }
         /* Uncompress the frame */
-        ret = ff_snappy_uncompress(gbc, &ctx->snappied, &snappy_size);
+        ret = ff_snappy_uncompress(gbc, ctx->snappied, &snappy_size);
         if (ret < 0) {
              av_log(avctx, AV_LOG_ERROR, "Snappy uncompress error\n");
              return ret;
@@ -211,6 +215,22 @@ static av_cold int hap_init(AVCodecContext *avctx)
 
     ff_texturedsp_init(&ctx->dxtc);
 
+    switch (avctx->codec_tag) {
+    case MKTAG('H','a','p','1'):
+        ctx->tex_rat = 8;
+        ctx->tex_fun = ctx->dxtc.dxt1_block;
+        break;
+    case MKTAG('H','a','p','5'):
+        ctx->tex_rat = 16;
+        ctx->tex_fun = ctx->dxtc.dxt5_block;
+        break;
+    case MKTAG('H','a','p','Y'):
+        ctx->tex_rat = 16;
+        ctx->tex_fun = ctx->dxtc.dxt5ys_block;
+        break;
+    default:
+        return AVERROR_DECODER_NOT_FOUND;
+    }
     return 0;
 }
 

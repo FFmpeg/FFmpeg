@@ -20,6 +20,7 @@ MIPSDSPR1-OBJS-$(CONFIG_AAC_ENCODER)      += mips/aaccoder_mips.o
 MIPSFPU-OBJS-$(CONFIG_AAC_ENCODER)        += mips/iirfilter_mips.o
 OBJS-$(CONFIG_HEVC_DECODER)               += mips/hevcdsp_init_mips.o      \
                                              mips/hevcpred_init_mips.o
+OBJS-$(CONFIG_VP9_DECODER)                += mips/vp9dsp_init_mips.o
 OBJS-$(CONFIG_H264DSP)                    += mips/h264dsp_init_mips.o
 OBJS-$(CONFIG_H264QPEL)                   += mips/h264qpel_init_mips.o
 OBJS-$(CONFIG_H264CHROMA)                 += mips/h264chroma_init_mips.o
@@ -41,6 +42,7 @@ MSA-OBJS-$(CONFIG_HEVC_DECODER)           += mips/hevcdsp_msa.o            \
                                              mips/hevc_idct_msa.o          \
                                              mips/hevc_lpf_sao_msa.o       \
                                              mips/hevcpred_msa.o
+MSA-OBJS-$(CONFIG_VP9_DECODER)            += mips/vp9_mc_msa.o
 MSA-OBJS-$(CONFIG_H264DSP)                += mips/h264dsp_msa.o            \
                                              mips/h264idct_msa.o
 MSA-OBJS-$(CONFIG_H264QPEL)               += mips/h264qpel_msa.o
@@ -56,5 +58,9 @@ MSA-OBJS-$(CONFIG_IDCTDSP)                += mips/idctdsp_msa.o           \
 MSA-OBJS-$(CONFIG_MPEGVIDEO)              += mips/mpegvideo_msa.o
 MSA-OBJS-$(CONFIG_MPEGVIDEOENC)           += mips/mpegvideoencdsp_msa.o
 MSA-OBJS-$(CONFIG_ME_CMP)                 += mips/me_cmp_msa.o
+MMI-OBJS                                  += mips/constants.o
 MMI-OBJS-$(CONFIG_H264DSP)                += mips/h264dsp_mmi.o
 MMI-OBJS-$(CONFIG_H264CHROMA)             += mips/h264chroma_mmi.o
+MMI-OBJS-$(CONFIG_H264PRED)               += mips/h264pred_mmi.o
+MMI-OBJS-$(CONFIG_MPEGVIDEO)              += mips/mpegvideo_mmi.o
+MMI-OBJS-$(CONFIG_IDCTDSP)                += mips/idctdsp_mmi.o

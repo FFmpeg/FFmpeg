@@ -57,6 +57,9 @@ static void (* const tests[])(void) = {
 #if CONFIG_H264PRED
     checkasm_check_h264pred,
 #endif
+#if CONFIG_H264QPEL
+    checkasm_check_h264qpel,
+#endif
     NULL
 };
 

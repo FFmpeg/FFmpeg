@@ -2698,6 +2698,35 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
     }
 }
 
+static int test_same_origin(const char *src, const char *ref) {
+    char src_proto[64];
+    char ref_proto[64];
+    char src_auth[256];
+    char ref_auth[256];
+    char src_host[256];
+    char ref_host[256];
+    int src_port=-1;
+    int ref_port=-1;
+
+    av_url_split(src_proto, sizeof(src_proto), src_auth, sizeof(src_auth), src_host, sizeof(src_host), &src_port, NULL, 0, src);
+    av_url_split(ref_proto, sizeof(ref_proto), ref_auth, sizeof(ref_auth), ref_host, sizeof(ref_host), &ref_port, NULL, 0, ref);
+
+    if (strlen(src) == 0) {
+        return -1;
+    } else if (strlen(src_auth) + 1 >= sizeof(src_auth) ||
+        strlen(ref_auth) + 1 >= sizeof(ref_auth) ||
+        strlen(src_host) + 1 >= sizeof(src_host) ||
+        strlen(ref_host) + 1 >= sizeof(ref_host)) {
+        return 0;
+    } else if (strcmp(src_proto, ref_proto) ||
+               strcmp(src_auth, ref_auth) ||
+               strcmp(src_host, ref_host) ||
+               src_port != ref_port) {
+        return 0;
+    } else
+        return 1;
+}
+
 static int mov_open_dref(MOVContext *c, AVIOContext **pb, const char *src, MOVDref *ref,
                          AVIOInterruptCB *int_cb)
 {
@@ -2708,7 +2737,7 @@ static int mov_open_dref(MOVContext *c, AVIOContext **pb, const char *src, MOVDr
 
     /* try relative path, we do not try the absolute because it can leak information about our
        system to an attacker */
-    if (ref->nlvl_to > 0 && ref->nlvl_from > 0 && ref->path[0] != '/') {
+    if (ref->nlvl_to > 0 && ref->nlvl_from > 0) {
         char filename[1025];
         const char *src_path;
         int i, l;
@@ -2738,9 +2767,23 @@ static int mov_open_dref(MOVContext *c, AVIOContext **pb, const char *src, MOVDr
                 av_strlcat(filename, "../", sizeof(filename));
 
             av_strlcat(filename, ref->path + l + 1, sizeof(filename));
-            if (!c->use_absolute_path && !c->fc->open_cb)
-                if(strstr(ref->path + l + 1, "..") || ref->nlvl_from > 1)
+            if (!c->use_absolute_path && !c->fc->open_cb) {
+                int same_origin = test_same_origin(src, filename);
+
+                if (!same_origin) {
+                    av_log(c->fc, AV_LOG_ERROR,
+                        "Reference with mismatching origin, %s not tried for security reasons, "
+                        "set demuxer option use_absolute_path to allow it anyway\n",
+                        ref->path);
                     return AVERROR(ENOENT);
+                }
+
+                if(strstr(ref->path + l + 1, "..") ||
+                   strstr(ref->path + l + 1, ":") ||
+                   (ref->nlvl_from > 1 && same_origin < 0) ||
+                   (filename[0] == '/' && src_path == src))
+                    return AVERROR(ENOENT);
+            }
 
             if (strlen(filename) + 1 == sizeof(filename))
                 return AVERROR(ENOENT);
@@ -3972,6 +4015,9 @@ static int mov_read_close(AVFormatContext *s)
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
         MOVStreamContext *sc = st->priv_data;
+
+        if (!sc)
+            continue;
 
         av_freep(&sc->ctts_data);
         for (j = 0; j < sc->drefs_count; j++) {

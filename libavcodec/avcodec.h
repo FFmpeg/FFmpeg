@@ -3173,6 +3173,16 @@ typedef struct AVCodecContext {
      * - decoding: set by user through AVOPtions (NO direct access)
      */
     char *codec_whitelist;
+
+    /*
+     * Properties of the stream that gets decoded
+     * To be accessed through av_codec_get_properties() (NO direct access)
+     * - encoding: unused
+     * - decoding: set by libavcodec
+     */
+    unsigned properties;
+#define FF_CODEC_PROPERTY_LOSSLESS        0x00000001
+#define FF_CODEC_PROPERTY_CLOSED_CAPTIONS 0x00000002
 } AVCodecContext;
 
 AVRational av_codec_get_pkt_timebase         (const AVCodecContext *avctx);
@@ -3180,6 +3190,8 @@ void       av_codec_set_pkt_timebase         (AVCodecContext *avctx, AVRational 
 
 const AVCodecDescriptor *av_codec_get_codec_descriptor(const AVCodecContext *avctx);
 void                     av_codec_set_codec_descriptor(AVCodecContext *avctx, const AVCodecDescriptor *desc);
+
+unsigned av_codec_get_codec_properties(const AVCodecContext *avctx);
 
 int  av_codec_get_lowres(const AVCodecContext *avctx);
 void av_codec_set_lowres(AVCodecContext *avctx, int val);

@@ -1685,6 +1685,7 @@ static int mpeg_field_start(MpegEncContext *s, const uint8_t *buf, int buf_size)
             if (sd)
                 memcpy(sd->data, s1->a53_caption, s1->a53_caption_size);
             av_freep(&s1->a53_caption);
+            avctx->properties |= FF_CODEC_PROPERTY_CLOSED_CAPTIONS;
         }
 
         if (s1->has_stereo3d) {
@@ -1938,7 +1939,6 @@ static int mpeg_decode_slice(MpegEncContext *s, int mb_y,
             // area, we detect this here instead of running into the end expecting
             // more data
             if (s->mb_y >= ((s->height + 15) >> 4) &&
-                s->progressive_frame &&
                 !s->progressive_sequence &&
                 get_bits_left(&s->gb) <= 8 &&
                 get_bits_left(&s->gb) >= 0 &&

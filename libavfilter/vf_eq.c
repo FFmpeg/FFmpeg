@@ -98,7 +98,7 @@ static void check_values(EQParameters *param, EQContext *eq)
 {
     if (param->contrast == 1.0 && param->brightness == 0.0 && param->gamma == 1.0)
         param->adjust = NULL;
-    else if (param->gamma == 1.0)
+    else if (param->gamma == 1.0 && fabs(param->contrast) < 7.9)
         param->adjust = eq->process;
     else
         param->adjust = apply_lut;
@@ -106,7 +106,7 @@ static void check_values(EQParameters *param, EQContext *eq)
 
 static void set_contrast(EQContext *eq)
 {
-    eq->contrast = av_clipf(av_expr_eval(eq->contrast_pexpr, eq->var_values, eq), -2.0, 2.0);
+    eq->contrast = av_clipf(av_expr_eval(eq->contrast_pexpr, eq->var_values, eq), -1000.0, 1000.0);
     eq->param[0].contrast = eq->contrast;
     eq->param[0].lut_clean = 0;
     check_values(&eq->param[0], eq);

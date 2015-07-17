@@ -33,9 +33,7 @@
 
 #include "avcodec.h"
 #include "internal.h"
-#include "qsv_internal.h"
 #include "qsvdec.h"
-#include "qsv.h"
 
 typedef struct QSVH264Context {
     AVClass *class;
@@ -130,8 +128,6 @@ static av_cold int qsv_decode_init(AVCodecContext *avctx)
     }
     s->parser->flags |= PARSER_FLAG_COMPLETE_FRAMES;
 
-    s->qsv.iopattern = MFX_IOPATTERN_OUT_SYSTEM_MEMORY;
-
     return 0;
 fail:
     qsv_decode_close(avctx);
@@ -157,7 +153,6 @@ static int qsv_process_data(AVCodecContext *avctx, AVFrame *frame,
     if (s->parser->format       != s->orig_pix_fmt    ||
         s->parser->coded_width  != avctx->coded_width ||
         s->parser->coded_height != avctx->coded_height) {
-        mfxSession session = NULL;
 
         enum AVPixelFormat pix_fmts[3] = { AV_PIX_FMT_QSV,
                                            AV_PIX_FMT_NONE,
@@ -187,15 +182,7 @@ static int qsv_process_data(AVCodecContext *avctx, AVFrame *frame,
 
         avctx->pix_fmt = ret;
 
-        if (avctx->hwaccel_context) {
-            AVQSVContext *user_ctx = avctx->hwaccel_context;
-            session               = user_ctx->session;
-            s->qsv.iopattern      = user_ctx->iopattern;
-            s->qsv.ext_buffers    = user_ctx->ext_buffers;
-            s->qsv.nb_ext_buffers = user_ctx->nb_ext_buffers;
-        }
-
-        ret = ff_qsv_decode_init(avctx, &s->qsv, session);
+        ret = ff_qsv_decode_init(avctx, &s->qsv);
         if (ret < 0)
             goto reinit_fail;
     }

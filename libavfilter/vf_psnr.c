@@ -33,6 +33,7 @@
 #include "drawutils.h"
 #include "formats.h"
 #include "internal.h"
+#include "psnr.h"
 #include "video.h"
 
 typedef struct PSNRContext {
@@ -50,11 +51,7 @@ typedef struct PSNRContext {
     int planewidth[4];
     int planeheight[4];
     double planeweight[4];
-
-    void (*compute_mse)(struct PSNRContext *s,
-                        const uint8_t *m[4], const int ml[4],
-                        const uint8_t *r[4], const int rl[4],
-                        int w, int h, double mse[4]);
+    PSNRDSPContext dsp;
 } PSNRContext;
 
 #define OFFSET(x) offsetof(PSNRContext, x)
@@ -78,13 +75,37 @@ static inline double get_psnr(double mse, uint64_t nb_frames, int max)
     return 10.0 * log(pow2(max) / (mse / nb_frames)) / log(10.0);
 }
 
+static uint64_t sse_line_8bit(const uint8_t *main_line,  const uint8_t *ref_line, int outw)
+{
+    int j;
+    unsigned m2 = 0;
+
+    for (j = 0; j < outw; j++)
+        m2 += pow2(main_line[j] - ref_line[j]);
+
+    return m2;
+}
+
+static uint64_t sse_line_16bit(const uint8_t *_main_line, const uint8_t *_ref_line, int outw)
+{
+    int j;
+    uint64_t m2 = 0;
+    const uint16_t *main_line = (const uint16_t *) _main_line;
+    const uint16_t *ref_line = (const uint16_t *) _ref_line;
+
+    for (j = 0; j < outw; j++)
+        m2 += pow2(main_line[j] - ref_line[j]);
+
+    return m2;
+}
+
 static inline
 void compute_images_mse(PSNRContext *s,
                         const uint8_t *main_data[4], const int main_linesizes[4],
                         const uint8_t *ref_data[4], const int ref_linesizes[4],
                         int w, int h, double mse[4])
 {
-    int i, c, j;
+    int i, c;
 
     for (c = 0; c < s->nb_components; c++) {
         const int outw = s->planewidth[c];
@@ -94,39 +115,8 @@ void compute_images_mse(PSNRContext *s,
         const int ref_linesize = ref_linesizes[c];
         const int main_linesize = main_linesizes[c];
         uint64_t m = 0;
-
         for (i = 0; i < outh; i++) {
-            int m2 = 0;
-            for (j = 0; j < outw; j++)
-                m2 += pow2(main_line[j] - ref_line[j]);
-            m += m2;
-            ref_line += ref_linesize;
-            main_line += main_linesize;
-        }
-        mse[c] = m / (double)(outw * outh);
-    }
-}
-
-static inline
-void compute_images_mse_16bit(PSNRContext *s,
-                        const uint8_t *main_data[4], const int main_linesizes[4],
-                        const uint8_t *ref_data[4], const int ref_linesizes[4],
-                        int w, int h, double mse[4])
-{
-    int i, c, j;
-
-    for (c = 0; c < s->nb_components; c++) {
-        const int outw = s->planewidth[c];
-        const int outh = s->planeheight[c];
-        const uint16_t *main_line = (uint16_t *)main_data[c];
-        const uint16_t *ref_line = (uint16_t *)ref_data[c];
-        const int ref_linesize = ref_linesizes[c] / 2;
-        const int main_linesize = main_linesizes[c] / 2;
-        uint64_t m = 0;
-
-        for (i = 0; i < outh; i++) {
-            for (j = 0; j < outw; j++)
-                m += pow2(main_line[j] - ref_line[j]);
+            m += s->dsp.sse_line(main_line, ref_line, outw);
             ref_line += ref_linesize;
             main_line += main_linesize;
         }
@@ -155,9 +145,9 @@ static AVFrame *do_psnr(AVFilterContext *ctx, AVFrame *main,
     int j, c;
     AVDictionary **metadata = avpriv_frame_get_metadatap(main);
 
-    s->compute_mse(s, (const uint8_t **)main->data, main->linesize,
-                      (const uint8_t **)ref->data, ref->linesize,
-                       main->width, main->height, comp_mse);
+    compute_images_mse(s, (const uint8_t **)main->data, main->linesize,
+                          (const uint8_t **)ref->data, ref->linesize,
+                          main->width, main->height, comp_mse);
 
     for (j = 0; j < s->nb_components; j++)
         mse += comp_mse[j] * s->planeweight[j];
@@ -283,7 +273,9 @@ static int config_input_ref(AVFilterLink *inlink)
         s->average_max += s->max[j] * s->planeweight[j];
     }
 
-    s->compute_mse = desc->comp[0].depth_minus1 > 7 ? compute_images_mse_16bit : compute_images_mse;
+    s->dsp.sse_line = desc->comp[0].depth_minus1 > 7 ? sse_line_16bit : sse_line_8bit;
+    if (ARCH_X86)
+        ff_psnr_init_x86(&s->dsp, desc->comp[0].depth_minus1 + 1);
 
     return 0;
 }

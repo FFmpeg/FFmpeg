@@ -1293,6 +1293,11 @@ MAKE_ACCESSORS(AVCodecContext, codec, int, lowres)
 MAKE_ACCESSORS(AVCodecContext, codec, int, seek_preroll)
 MAKE_ACCESSORS(AVCodecContext, codec, uint16_t*, chroma_intra_matrix)
 
+unsigned av_codec_get_codec_properties(const AVCodecContext *codec)
+{
+    return codec->properties;
+}
+
 int av_codec_get_max_lowres(const AVCodec *codec)
 {
     return codec->max_lowres;
@@ -3147,6 +3152,13 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
         if (encode) {
             snprintf(buf + strlen(buf), buf_size - strlen(buf),
                      ", q=%d-%d", enc->qmin, enc->qmax);
+        } else {
+            if (enc->properties & FF_CODEC_PROPERTY_CLOSED_CAPTIONS)
+                snprintf(buf + strlen(buf), buf_size - strlen(buf),
+                         ", Closed Captions");
+            if (enc->properties & FF_CODEC_PROPERTY_LOSSLESS)
+                snprintf(buf + strlen(buf), buf_size - strlen(buf),
+                         ", lossless");
         }
         break;
     case AVMEDIA_TYPE_AUDIO:

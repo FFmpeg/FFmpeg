@@ -37,4 +37,5 @@ av_cold void ff_vp9dsp_init(VP9DSPContext *dsp, int bpp)
     }
 
     if (ARCH_X86) ff_vp9dsp_init_x86(dsp, bpp);
+    if (ARCH_MIPS) ff_vp9dsp_init_mips(dsp, bpp);
 }

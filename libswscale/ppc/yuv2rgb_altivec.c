@@ -222,6 +222,7 @@ static const vector unsigned char
  * optimized for JPEG decoding.
  */
 
+#if HAVE_BIGENDIAN
 #define vec_unh(x)                                                      \
     (vector signed short)                                               \
         vec_perm(x, (__typeof__(x)) { 0 },                              \
@@ -235,6 +236,10 @@ static const vector unsigned char
                  ((vector unsigned char) {                              \
                      0x10, 0x08, 0x10, 0x09, 0x10, 0x0A, 0x10, 0x0B,    \
                      0x10, 0x0C, 0x10, 0x0D, 0x10, 0x0E, 0x10, 0x0F }))
+#else
+#define vec_unh(x)(vector signed short) vec_mergeh(x,(__typeof__(x)) { 0 })
+#define vec_unl(x)(vector signed short) vec_mergel(x,(__typeof__(x)) { 0 })
+#endif
 
 #define vec_clip_s16(x)                                                 \
     vec_max(vec_min(x, ((vector signed short) {                         \

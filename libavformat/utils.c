@@ -1785,10 +1785,18 @@ void ff_configure_buffers_for_index(AVFormatContext *s, int64_t time_tolerance)
 {
     int ist1, ist2;
     int64_t pos_delta = 0;
+    int64_t skip = 0;
     //We could use URLProtocol flags here but as many user applications do not use URLProtocols this would be unreliable
     const char *proto = avio_find_protocol_name(s->filename);
 
-    if (!(strcmp(proto, "file") && strcmp(proto, "pipe") && strcmp(proto, "cache")))
+    if (!proto) {
+        av_log(s, AV_LOG_INFO,
+               "Protocol name not provided, cannot determine if input is local or "
+               "a network protocol, buffers and access patterns cannot be configured "
+               "optimally without knowing the protocol\n");
+    }
+
+    if (proto && !(strcmp(proto, "file") && strcmp(proto, "pipe") && strcmp(proto, "cache")))
         return;
 
     for (ist1 = 0; ist1 < s->nb_streams; ist1++) {
@@ -1804,6 +1812,7 @@ void ff_configure_buffers_for_index(AVFormatContext *s, int64_t time_tolerance)
                 AVIndexEntry *e1 = &st1->index_entries[i1];
                 int64_t e1_pts = av_rescale_q(e1->timestamp, st1->time_base, AV_TIME_BASE_Q);
 
+                skip = FFMAX(skip, e1->size);
                 for (; i2 < st2->nb_index_entries; i2++) {
                     AVIndexEntry *e2 = &st2->index_entries[i2];
                     int64_t e2_pts = av_rescale_q(e2->timestamp, st2->time_base, AV_TIME_BASE_Q);
@@ -1822,6 +1831,10 @@ void ff_configure_buffers_for_index(AVFormatContext *s, int64_t time_tolerance)
         av_log(s, AV_LOG_VERBOSE, "Reconfiguring buffers to size %"PRId64"\n", pos_delta);
         ffio_set_buf_size(s->pb, pos_delta);
         s->pb->short_seek_threshold = FFMAX(s->pb->short_seek_threshold, pos_delta/2);
+    }
+
+    if (skip < (1<<23)) {
+        s->pb->short_seek_threshold = FFMAX(s->pb->short_seek_threshold, skip);
     }
 }
 
@@ -3077,6 +3090,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
     int flush_codecs;
     int64_t max_analyze_duration = ic->max_analyze_duration2;
     int64_t max_stream_analyze_duration;
+    int64_t max_subtitle_analyze_duration;
     int64_t probesize = ic->probesize2;
 
     if (!max_analyze_duration)
@@ -3088,9 +3102,11 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
     av_opt_set(ic, "skip_clear", "1", AV_OPT_SEARCH_CHILDREN);
 
     max_stream_analyze_duration = max_analyze_duration;
+    max_subtitle_analyze_duration = max_analyze_duration;
     if (!max_analyze_duration) {
         max_stream_analyze_duration =
         max_analyze_duration        = 5*AV_TIME_BASE;
+        max_subtitle_analyze_duration = 30*AV_TIME_BASE;
         if (!strcmp(ic->iformat->name, "flv"))
             max_stream_analyze_duration = 30*AV_TIME_BASE;
     }
@@ -3308,6 +3324,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
         }
         if (st->codec_info_nb_frames>1) {
             int64_t t = 0;
+            int64_t limit;
 
             if (st->time_base.den > 0)
                 t = av_rescale_q(st->info->codec_info_duration, st->time_base, AV_TIME_BASE_Q);
@@ -3320,10 +3337,14 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
                 && st->info->fps_last_dts  != AV_NOPTS_VALUE)
                 t = FFMAX(t, av_rescale_q(st->info->fps_last_dts - st->info->fps_first_dts, st->time_base, AV_TIME_BASE_Q));
 
-            if (t >= (analyzed_all_streams ? max_analyze_duration : max_stream_analyze_duration)) {
-                av_log(ic, AV_LOG_VERBOSE, "max_analyze_duration %"PRId64" reached at %"PRId64" microseconds\n",
+            if (analyzed_all_streams)                                limit = max_analyze_duration;
+            else if (st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE) limit = max_subtitle_analyze_duration;
+            else                                                     limit = max_stream_analyze_duration;
+
+            if (t >= limit) {
+                av_log(ic, AV_LOG_VERBOSE, "max_analyze_duration %"PRId64" reached at %"PRId64" microseconds st:%d\n",
                        max_analyze_duration,
-                       t);
+                       t, pkt->stream_index);
                 if (ic->flags & AVFMT_FLAG_NOBUFFER)
                     av_packet_unref(pkt);
                 break;

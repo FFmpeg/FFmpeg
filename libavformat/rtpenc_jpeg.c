@@ -28,7 +28,7 @@
 void ff_rtp_send_jpeg(AVFormatContext *s1, const uint8_t *buf, int size)
 {
     RTPMuxContext *s = s1->priv_data;
-    const uint8_t *qtables = NULL;
+    const uint8_t *qtables[4] = { NULL };
     int nb_qtables = 0;
     uint8_t type;
     uint8_t w, h;
@@ -64,18 +64,25 @@ void ff_rtp_send_jpeg(AVFormatContext *s1, const uint8_t *buf, int size)
             continue;
 
         if (buf[i + 1] == DQT) {
+            int tables, j;
             if (buf[i + 4] & 0xF0)
                 av_log(s1, AV_LOG_WARNING,
                        "Only 8-bit precision is supported.\n");
 
             /* a quantization table is 64 bytes long */
-            nb_qtables = AV_RB16(&buf[i + 2]) / 65;
-            if (i + 4 + nb_qtables * 65 > size) {
+            tables = AV_RB16(&buf[i + 2]) / 65;
+            if (i + 5 + tables * 65 > size) {
                 av_log(s1, AV_LOG_ERROR, "Too short JPEG header. Aborted!\n");
                 return;
             }
+            if (nb_qtables + tables > 4) {
+                av_log(s1, AV_LOG_ERROR, "Invalid number of quantisation tables\n");
+                return;
+            }
 
-            qtables = &buf[i + 4];
+            for (j = 0; j < tables; j++)
+                qtables[nb_qtables + j] = buf + i + 5 + j * 65;
+            nb_qtables += tables;
         } else if (buf[i + 1] == SOF0) {
             if (buf[i + 14] != 17 || buf[i + 17] != 17) {
                 av_log(s1, AV_LOG_ERROR,
@@ -150,7 +157,7 @@ void ff_rtp_send_jpeg(AVFormatContext *s1, const uint8_t *buf, int size)
             bytestream_put_be16(&p, 64 * nb_qtables);
 
             for (i = 0; i < nb_qtables; i++)
-                bytestream_put_buffer(&p, &qtables[65 * i + 1], 64);
+                bytestream_put_buffer(&p, qtables[i], 64);
         }
 
         /* copy payload data */

@@ -886,6 +886,7 @@ static void decode_postinit(H264Context *h, int setup_finished)
             memcpy(sd->data, h->a53_caption, h->a53_caption_size);
         av_freep(&h->a53_caption);
         h->a53_caption_size = 0;
+        h->avctx->properties |= FF_CODEC_PROPERTY_CLOSED_CAPTIONS;
     }
 
     cur->mmco_reset = h->mmco_reset;
