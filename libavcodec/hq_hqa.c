@@ -307,9 +307,11 @@ static int hq_hqa_decode_frame(AVCodecContext *avctx, void *data,
         return AVERROR_INVALIDDATA;
     }
 
-    info_tag = bytestream2_get_le32(&ctx->gbc);
+    info_tag = bytestream2_peek_le32(&ctx->gbc);
     if (info_tag == MKTAG('I', 'N', 'F', 'O')) {
-        int info_size = bytestream2_get_le32(&ctx->gbc);
+        int info_size;
+        bytestream2_skip(&ctx->gbc, 4);
+        info_size = bytestream2_get_le32(&ctx->gbc);
         if (bytestream2_get_bytes_left(&ctx->gbc) < info_size) {
             av_log(avctx, AV_LOG_ERROR, "Invalid INFO size (%d).\n", info_size);
             return AVERROR_INVALIDDATA;
