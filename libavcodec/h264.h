@@ -746,6 +746,8 @@ typedef struct H264Context {
      */
     int sei_reguserdata_afd_present;
     uint8_t active_format_description;
+    int a53_caption_size;
+    uint8_t *a53_caption;
 
     /**
      * Bit set of clock types for fields/frames in picture timing SEI message.
@@ -804,9 +806,6 @@ typedef struct H264Context {
     int has_recovery_point;
 
     int missing_fields;
-
-    int a53_caption_size;
-    uint8_t *a53_caption;
 
 /* for frame threading, this is set to 1
      * after finish_setup() has been called, so we cannot modify
