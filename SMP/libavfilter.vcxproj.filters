@@ -39,7 +39,13 @@
     <YASM Include="..\libavfilter\x86\vf_pp7.asm">
       <Filter>Source Files\libavfilter\x86</Filter>
     </YASM>
+    <YASM Include="..\libavfilter\x86\vf_psnr.asm">
+      <Filter>Source Files\libavfilter\x86</Filter>
+    </YASM>
     <YASM Include="..\libavfilter\x86\vf_pullup.asm">
+      <Filter>Source Files\libavfilter\x86</Filter>
+    </YASM>
+    <YASM Include="..\libavfilter\x86\vf_removegrain.asm">
       <Filter>Source Files\libavfilter\x86</Filter>
     </YASM>
     <YASM Include="..\libavfilter\x86\vf_ssim.asm">
@@ -315,6 +321,9 @@
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_decimate.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_neighbor.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_dejudder.c">
@@ -653,7 +662,13 @@
     <ClCompile Include="..\libavfilter\x86\vf_pp7_init.c">
       <Filter>Source Files\libavfilter\x86</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\x86\vf_psnr_init.c">
+      <Filter>Source Files\libavfilter\x86</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\x86\vf_pullup_init.c">
+      <Filter>Source Files\libavfilter\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\x86\vf_removegrain_init.c">
       <Filter>Source Files\libavfilter\x86</Filter>
     </ClCompile>
     <ClCompile Include="..\libavfilter\x86\vf_spp.c">
