@@ -1903,6 +1903,7 @@ CONFIG_EXTRA="
     flacdsp
     fmtconvert
     frame_thread_encoder
+    g722dsp
     gcrypt
     gmp
     golomb
@@ -2150,6 +2151,8 @@ ac3_decoder_select="ac3_parser ac3dsp bswapdsp fmtconvert mdct"
 ac3_fixed_decoder_select="ac3_parser ac3dsp bswapdsp mdct"
 ac3_encoder_select="ac3dsp audiodsp mdct me_cmp"
 ac3_fixed_encoder_select="ac3dsp audiodsp mdct me_cmp"
+adpcm_g722_decoder_select="g722dsp"
+adpcm_g722_encoder_select="g722dsp"
 aic_decoder_select="golomb idctdsp"
 alac_encoder_select="lpc"
 als_decoder_select="bswapdsp"
