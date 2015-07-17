@@ -105,6 +105,7 @@ typedef struct DDSContext {
 
     const uint8_t *tex_data; // Compressed texture
     int tex_ratio;           // Compression ratio
+    int slice_size;          // Optimal slice size
 
     /* Pointer to the selected compress or decompress function. */
     int (*tex_funct)(uint8_t *dst, ptrdiff_t stride, const uint8_t *block);
@@ -414,16 +415,30 @@ static int parse_pixel_format(AVCodecContext *avctx)
 }
 
 static int decompress_texture_thread(AVCodecContext *avctx, void *arg,
-                                     int block_nb, int thread_nb)
+                                     int slice, int thread_nb)
 {
     DDSContext *ctx = avctx->priv_data;
     AVFrame *frame = arg;
-    int x = (TEXTURE_BLOCK_W * block_nb) % avctx->coded_width;
-    int y = TEXTURE_BLOCK_H * (TEXTURE_BLOCK_W * block_nb / avctx->coded_width);
-    uint8_t *p = frame->data[0] + x * 4 + y * frame->linesize[0];
-    const uint8_t *d = ctx->tex_data + block_nb * ctx->tex_ratio;
+    const uint8_t *d = ctx->tex_data;
+    int w_block = avctx->coded_width / TEXTURE_BLOCK_W;
+    int x, y;
+    int start_slice, end_slice;
 
-    ctx->tex_funct(p, frame->linesize[0], d);
+    start_slice = slice * ctx->slice_size;
+    end_slice   = FFMIN(start_slice + ctx->slice_size, avctx->coded_height);
+
+    start_slice /= TEXTURE_BLOCK_H;
+    end_slice   /= TEXTURE_BLOCK_H;
+
+    for (y = start_slice; y < end_slice; y++) {
+        uint8_t *p = frame->data[0] + y * frame->linesize[0] * TEXTURE_BLOCK_H;
+        int off  = y * w_block;
+        for (x = 0; x < w_block; x++) {
+            ctx->tex_funct(p + x * 16, frame->linesize[0],
+                           d + (off + x) * ctx->tex_ratio);
+        }
+    }
+
     return 0;
 }
 
@@ -568,7 +583,7 @@ static int dds_decode(AVCodecContext *avctx, void *data,
     DDSContext *ctx = avctx->priv_data;
     GetByteContext *gbc = &ctx->gbc;
     AVFrame *frame = data;
-    int blocks, mipmap;
+    int mipmap;
     int ret;
 
     ff_texturedsp_init(&ctx->texdsp);
@@ -618,10 +633,13 @@ static int dds_decode(AVCodecContext *avctx, void *data,
         return ret;
 
     if (ctx->compressed) {
+        int slices = FFMIN(avctx->thread_count,
+                           avctx->coded_height / TEXTURE_BLOCK_H);
+        ctx->slice_size = avctx->coded_height / slices;
+
         /* Use the decompress function on the texture, one block per thread. */
         ctx->tex_data = gbc->buffer;
-        blocks = avctx->coded_width * avctx->coded_height / (TEXTURE_BLOCK_W * TEXTURE_BLOCK_H);
-        avctx->execute2(avctx, decompress_texture_thread, frame, NULL, blocks);
+        avctx->execute2(avctx, decompress_texture_thread, frame, NULL, slices);
     } else {
         int linesize = av_image_get_linesize(avctx->pix_fmt, frame->width, 0);
 
