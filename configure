@@ -1920,6 +1920,7 @@ CONFIG_EXTRA="
     imdct15
     intrax8
     jpegtables
+    libx262
     lgplv3
     llauddsp
     llviddsp
@@ -2504,6 +2505,7 @@ libvpx_vp9_encoder_deps="libvpx"
 libwavpack_encoder_deps="libwavpack"
 libwebp_encoder_deps="libwebp"
 libwebp_anim_encoder_deps="libwebp"
+libx262_encoder_deps="libx262"
 libx264_encoder_deps="libx264"
 libx264rgb_encoder_deps="libx264"
 libx264rgb_encoder_select="libx264_encoder"
@@ -5228,7 +5230,9 @@ enabled libx264           && { use_pkg_config x264 "stdint.h x264.h" x264_encode
                                { require libx264 x264.h x264_encoder_encode -lx264 &&
                                  warn "using libx264 without pkg-config"; } } &&
                              { check_cpp_condition x264.h "X264_BUILD >= 118" ||
-                               die "ERROR: libx264 must be installed and version must be >= 0.118."; }
+                               die "ERROR: libx264 must be installed and version must be >= 0.118."; } &&
+                             { check_cpp_condition x264.h "X264_MPEG2" &&
+                               enable libx262; }
 enabled libx265           && require_pkg_config x265 x265.h x265_api_get &&
                              { check_cpp_condition x265.h "X265_BUILD >= 57" ||
                                die "ERROR: libx265 version must be >= 57."; }
