@@ -54,6 +54,9 @@
 
 /* List of tests to invoke */
 static void (* const tests[])(void) = {
+#if CONFIG_BSWAPDSP
+    checkasm_check_bswapdsp,
+#endif
 #if CONFIG_H264PRED
     checkasm_check_h264pred,
 #endif
