@@ -111,7 +111,7 @@ void checkasm_stack_clobber(uint64_t clobber, ...);
         }\
     } while (0)
 #else
-#define bench_new(...)
+#define bench_new(...) while(0)
 #endif
 
 #endif
