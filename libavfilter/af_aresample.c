@@ -86,15 +86,24 @@ static int query_formats(AVFilterContext *ctx)
     AVFilterLink *inlink  = ctx->inputs[0];
     AVFilterLink *outlink = ctx->outputs[0];
 
-    AVFilterFormats        *in_formats      = ff_all_formats(AVMEDIA_TYPE_AUDIO);
-    AVFilterFormats        *out_formats;
-    AVFilterFormats        *in_samplerates  = ff_all_samplerates();
-    AVFilterFormats        *out_samplerates;
-    AVFilterChannelLayouts *in_layouts      = ff_all_channel_counts();
-    AVFilterChannelLayouts *out_layouts;
+    AVFilterFormats        *in_formats, *out_formats;
+    AVFilterFormats        *in_samplerates, *out_samplerates;
+    AVFilterChannelLayouts *in_layouts, *out_layouts;
 
+
+    in_formats      = ff_all_formats(AVMEDIA_TYPE_AUDIO);
+    if (!in_formats)
+        return AVERROR(ENOMEM);
     ff_formats_ref  (in_formats,      &inlink->out_formats);
+
+    in_samplerates  = ff_all_samplerates();
+    if (!in_samplerates)
+        return AVERROR(ENOMEM);
     ff_formats_ref  (in_samplerates,  &inlink->out_samplerates);
+
+    in_layouts      = ff_all_channel_counts();
+    if (!in_layouts)
+         return AVERROR(ENOMEM);
     ff_channel_layouts_ref(in_layouts,      &inlink->out_channel_layouts);
 
     if(out_rate > 0) {
