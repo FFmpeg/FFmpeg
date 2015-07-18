@@ -103,7 +103,9 @@ typedef struct MpegTSWrite {
     int copyts;
     int tables_version;
     float pat_period;
+    float sdt_period;
     int64_t last_pat_ts;
+    int64_t last_sdt_ts;
 
     int omit_video_pes_length;
 } MpegTSWrite;
@@ -787,9 +789,13 @@ static int mpegts_write_header(AVFormatContext *s)
     }
 
     ts->last_pat_ts = AV_NOPTS_VALUE;
+    ts->last_sdt_ts = AV_NOPTS_VALUE;
     // The user specified a period, use only it
     if (ts->pat_period < INT_MAX/2) {
         ts->pat_packet_period = INT_MAX;
+    }
+    if (ts->sdt_period < INT_MAX/2) {
+        ts->sdt_packet_period = INT_MAX;
     }
 
     // output a PCR as soon as possible
@@ -847,8 +853,13 @@ static void retransmit_si_info(AVFormatContext *s, int force_pat, int64_t dts)
     MpegTSWrite *ts = s->priv_data;
     int i;
 
-    if (++ts->sdt_packet_count == ts->sdt_packet_period) {
+    if (++ts->sdt_packet_count == ts->sdt_packet_period ||
+        (dts != AV_NOPTS_VALUE && ts->last_sdt_ts == AV_NOPTS_VALUE) ||
+        (dts != AV_NOPTS_VALUE && dts - ts->last_sdt_ts >= ts->sdt_period*90000.0)
+    ) {
         ts->sdt_packet_count = 0;
+        if (dts != AV_NOPTS_VALUE)
+            ts->last_sdt_ts = FFMAX(dts, ts->last_sdt_ts);
         mpegts_write_sdt(s);
     }
     if (++ts->pat_packet_count == ts->pat_packet_period ||
@@ -1545,6 +1556,9 @@ static const AVOption options[] = {
       { .i64 = PCR_RETRANS_TIME }, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
     { "pat_period", "PAT/PMT retransmission time limit in seconds",
       offsetof(MpegTSWrite, pat_period), AV_OPT_TYPE_FLOAT,
+      { .dbl = INT_MAX }, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
+    { "sdt_period", "SDT retransmission time limit in seconds",
+      offsetof(MpegTSWrite, sdt_period), AV_OPT_TYPE_FLOAT,
       { .dbl = INT_MAX }, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
     { NULL },
 };
