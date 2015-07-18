@@ -39,7 +39,7 @@ static av_always_inline av_const unsigned av_bswap16(unsigned x)
 }
 #endif /* !AV_GCC_VERSION_AT_LEAST(4,1) */
 
-#if !AV_GCC_VERSION_AT_LEAST(4,5)
+#if !AV_GCC_VERSION_AT_LEAST(4,5) || defined(__INTEL_COMPILER)
 #define av_bswap32 av_bswap32
 static av_always_inline av_const uint32_t av_bswap32(uint32_t x)
 {
