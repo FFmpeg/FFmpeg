@@ -384,6 +384,12 @@ static av_cold int X264_init(AVCodecContext *avctx)
     if (avctx->global_quality > 0)
         av_log(avctx, AV_LOG_WARNING, "-qscale is ignored, -crf is recommended.\n");
 
+#if CONFIG_LIBX262_ENCODER
+    if (avctx->codec_id == AV_CODEC_ID_MPEG2VIDEO) {
+        x4->params.b_mpeg2 = 1;
+        x264_param_default_mpeg2(&x4->params);
+    } else
+#endif
     x264_param_default(&x4->params);
 
     x4->params.b_deblocking_filter         = avctx->flags & CODEC_FLAG_LOOP_FILTER;
@@ -842,20 +848,6 @@ static const AVOption options[] = {
     { NULL },
 };
 
-static const AVClass x264_class = {
-    .class_name = "libx264",
-    .item_name  = av_default_item_name,
-    .option     = options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
-
-static const AVClass rgbclass = {
-    .class_name = "libx264rgb",
-    .item_name  = av_default_item_name,
-    .option     = options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
-
 static const AVCodecDefault x264_defaults[] = {
     { "b",                "0" },
     { "bf",               "-1" },
@@ -885,6 +877,21 @@ static const AVCodecDefault x264_defaults[] = {
     { "flags",            "+cgop" },
     { "rc_init_occupancy","-1" },
     { NULL },
+};
+
+#if CONFIG_LIBX264_ENCODER
+static const AVClass x264_class = {
+    .class_name = "libx264",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
+static const AVClass rgbclass = {
+    .class_name = "libx264rgb",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
 };
 
 AVCodec ff_libx264_encoder = {
@@ -918,3 +925,30 @@ AVCodec ff_libx264rgb_encoder = {
     .defaults       = x264_defaults,
     .pix_fmts       = pix_fmts_8bit_rgb,
 };
+#endif
+
+#if CONFIG_LIBX262_ENCODER
+static const AVClass X262_class = {
+    .class_name = "libx262",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
+AVCodec ff_libx262_encoder = {
+    .name             = "libx262",
+    .long_name        = NULL_IF_CONFIG_SMALL("libx262 MPEG2VIDEO"),
+    .type             = AVMEDIA_TYPE_VIDEO,
+    .id               = AV_CODEC_ID_MPEG2VIDEO,
+    .priv_data_size   = sizeof(X264Context),
+    .init             = X264_init,
+    .encode2          = X264_frame,
+    .close            = X264_close,
+    .capabilities     = CODEC_CAP_DELAY | CODEC_CAP_AUTO_THREADS,
+    .priv_class       = &X262_class,
+    .defaults         = x264_defaults,
+    .pix_fmts         = pix_fmts_8bit,
+    .caps_internal    = FF_CODEC_CAP_INIT_THREADSAFE |
+                        FF_CODEC_CAP_INIT_CLEANUP,
+};
+#endif

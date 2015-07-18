@@ -54,6 +54,9 @@
 
 /* List of tests to invoke */
 static void (* const tests[])(void) = {
+#if CONFIG_BSWAPDSP
+    checkasm_check_bswapdsp,
+#endif
 #if CONFIG_H264PRED
     checkasm_check_h264pred,
 #endif
@@ -69,7 +72,21 @@ static const struct {
     const char *suffix;
     int flag;
 } cpus[] = {
-#if ARCH_X86
+#if   ARCH_AARCH64
+    { "ARMV8",    "armv8",    AV_CPU_FLAG_ARMV8 },
+    { "NEON",     "neon",     AV_CPU_FLAG_NEON },
+#elif ARCH_ARM
+    { "ARMV5TE",  "armv5te",  AV_CPU_FLAG_ARMV5TE },
+    { "ARMV6",    "armv6",    AV_CPU_FLAG_ARMV6 },
+    { "ARMV6T2",  "armv6t2",  AV_CPU_FLAG_ARMV6T2 },
+    { "VFP",      "vfp",      AV_CPU_FLAG_VFP },
+    { "VFPV3",    "vfp3",     AV_CPU_FLAG_VFPV3 },
+    { "NEON",     "neon",     AV_CPU_FLAG_NEON },
+#elif ARCH_PPC
+    { "ALTIVEC",  "altivec",  AV_CPU_FLAG_ALTIVEC },
+    { "VSX",      "vsx",      AV_CPU_FLAG_VSX },
+    { "POWER8",   "power8",   AV_CPU_FLAG_POWER8 },
+#elif ARCH_X86
     { "MMX",      "mmx",      AV_CPU_FLAG_MMX|AV_CPU_FLAG_CMOV },
     { "MMXEXT",   "mmxext",   AV_CPU_FLAG_MMXEXT },
     { "3DNOW",    "3dnow",    AV_CPU_FLAG_3DNOW },
@@ -317,7 +334,7 @@ int main(int argc, char *argv[])
 
     if (!tests[0] || !cpus[0].flag) {
         fprintf(stderr, "checkasm: no tests to perform\n");
-        return 1;
+        return 0;
     }
 
     if (argc > 1 && !strncmp(argv[1], "--bench", 7)) {

@@ -398,6 +398,11 @@ static int config_output(AVFilterLink *outlink)
         return AVERROR(EINVAL);
     }
 
+    for (i = nb_decays; i < channels; i++) {
+        s->channels[i].attack = s->channels[nb_decays - 1].attack;
+        s->channels[i].decay = s->channels[nb_decays - 1].decay;
+    }
+
 #define S(x) s->segments[2 * ((x) + 1)]
     p = s->points;
     for (i = 0, new_nb_items = 0; i < nb_points; i++) {

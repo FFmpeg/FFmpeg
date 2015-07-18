@@ -880,8 +880,9 @@ static void decode_postinit(H264Context *h, int setup_finished)
     }
 
     if (h->a53_caption) {
-        AVFrameSideData *sd =
-            av_frame_new_side_data(cur->f, AV_FRAME_DATA_A53_CC, h->a53_caption_size);
+        AVFrameSideData *sd = av_frame_new_side_data(cur->f,
+                                                     AV_FRAME_DATA_A53_CC,
+                                                     h->a53_caption_size);
         if (sd)
             memcpy(sd->data, h->a53_caption, h->a53_caption_size);
         av_freep(&h->a53_caption);

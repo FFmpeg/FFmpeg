@@ -43,9 +43,9 @@ void ff_h264_reset_sei(H264Context *h)
     h->sei_frame_packing_present    =  0;
     h->sei_display_orientation_present = 0;
     h->sei_reguserdata_afd_present  =  0;
-    if (h->a53_caption)
-        av_freep(&h->a53_caption);
+
     h->a53_caption_size = 0;
+    av_freep(&h->a53_caption);
 }
 
 static int decode_picture_timing(H264Context *h)
@@ -159,13 +159,16 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 return AVERROR(EINVAL);
             user_data_type_code = get_bits(&h->gb, 8);
             if (user_data_type_code == 0x3) {
-                skip_bits(&h->gb, 1);
-                if (get_bits(&h->gb, 1)) {
-                    skip_bits(&h->gb, 1);
+                skip_bits(&h->gb, 1);           // reserved
+
+                flag = get_bits(&h->gb, 1);     // process_cc_data_flag
+                if (flag) {
+                    skip_bits(&h->gb, 1);       // zero bit
                     cc_count = get_bits(&h->gb, 5);
-                    skip_bits(&h->gb, 8);
+                    skip_bits(&h->gb, 8);       // reserved
                     size -= 2;
-                    if (cc_count && size >= cc_count*3) {
+
+                    if (cc_count && size >= cc_count * 3) {
                         int i;
                         uint8_t *tmp;
                         if ((int64_t)h->a53_caption_size + (int64_t)cc_count*3 > INT_MAX)
@@ -176,13 +179,14 @@ FF_ENABLE_DEPRECATION_WARNINGS
                         if (!tmp)
                             return AVERROR(ENOMEM);
                         h->a53_caption = tmp;
+
                         for (i = 0; i < cc_count; i++) {
                             h->a53_caption[h->a53_caption_size++] = get_bits(&h->gb, 8);
                             h->a53_caption[h->a53_caption_size++] = get_bits(&h->gb, 8);
                             h->a53_caption[h->a53_caption_size++] = get_bits(&h->gb, 8);
                         }
 
-                        skip_bits(&h->gb, 8);
+                        skip_bits(&h->gb, 8);   // marker_bits
                     }
                 }
             }

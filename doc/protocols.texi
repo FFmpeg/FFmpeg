@@ -19,6 +19,18 @@ supported protocols.
 
 A description of the currently available protocols follows.
 
+@section async
+
+Asynchronous data filling wrapper for input stream.
+
+Fill data in a background thread, to decouple I/O operation from demux thread.
+
+@example
+async:@var{URL}
+async:http://host/resource
+async:cache:http://host/resource
+@end example
+
 @section bluray
 
 Read BluRay playlist.

@@ -83,6 +83,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER(CHORUS,         chorus,         af);
     REGISTER_FILTER(COMPAND,        compand,        af);
     REGISTER_FILTER(DCSHIFT,        dcshift,        af);
+    REGISTER_FILTER(DYNAUDNORM,     dynaudnorm,     af);
     REGISTER_FILTER(EARWAX,         earwax,         af);
     REGISTER_FILTER(EBUR128,        ebur128,        af);
     REGISTER_FILTER(EQUALIZER,      equalizer,      af);

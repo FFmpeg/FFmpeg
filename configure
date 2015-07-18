@@ -1900,8 +1900,10 @@ CONFIG_EXTRA="
     faandct
     faanidct
     fdctdsp
+    flacdsp
     fmtconvert
     frame_thread_encoder
+    g722dsp
     gcrypt
     gmp
     golomb
@@ -1919,7 +1921,9 @@ CONFIG_EXTRA="
     iirfilter
     imdct15
     intrax8
+    ividsp
     jpegtables
+    libx262
     lgplv3
     llauddsp
     llviddsp
@@ -1930,6 +1934,7 @@ CONFIG_EXTRA="
     mpegaudiodsp
     mpegvideo
     mpegvideoenc
+    mss34dsp
     pixblockdsp
     qpeldsp
     qsv
@@ -1940,6 +1945,7 @@ CONFIG_EXTRA="
     riffenc
     rtpdec
     rtpenc_chain
+    rv34dsp
     sinewin
     snappy
     startcode
@@ -1948,7 +1954,10 @@ CONFIG_EXTRA="
     tpeldsp
     videodsp
     vp3dsp
+    vp56dsp
+    vp8dsp
     wma_freqs
+    wmv2dsp
 "
 
 CMDLINE_SELECT="
@@ -2142,6 +2151,8 @@ ac3_decoder_select="ac3_parser ac3dsp bswapdsp fmtconvert mdct"
 ac3_fixed_decoder_select="ac3_parser ac3dsp bswapdsp mdct"
 ac3_encoder_select="ac3dsp audiodsp mdct me_cmp"
 ac3_fixed_encoder_select="ac3dsp audiodsp mdct me_cmp"
+adpcm_g722_decoder_select="g722dsp"
+adpcm_g722_encoder_select="g722dsp"
 aic_decoder_select="golomb idctdsp"
 alac_encoder_select="lpc"
 als_decoder_select="bswapdsp"
@@ -2188,8 +2199,8 @@ ffv1_encoder_select="rangecoder"
 ffvhuff_decoder_select="huffyuv_decoder"
 ffvhuff_encoder_select="huffyuv_encoder"
 fic_decoder_select="golomb"
-flac_decoder_select="golomb"
-flac_encoder_select="bswapdsp golomb lpc"
+flac_decoder_select="flacdsp golomb"
+flac_encoder_select="bswapdsp flacdsp golomb lpc"
 flashsv_decoder_select="zlib"
 flashsv_encoder_select="zlib"
 flashsv2_encoder_select="zlib"
@@ -2224,6 +2235,8 @@ huffyuv_encoder_select="bswapdsp huffman huffyuvencdsp llviddsp"
 iac_decoder_select="imc_decoder"
 imc_decoder_select="bswapdsp fft mdct sinewin"
 indeo3_decoder_select="hpeldsp"
+indeo4_decoder_select="ividsp"
+indeo5_decoder_select="ividsp"
 interplay_video_decoder_select="hpeldsp"
 jpegls_decoder_select="golomb mjpeg_decoder"
 jpegls_encoder_select="golomb"
@@ -2262,12 +2275,14 @@ mpeg2_qsv_encoder_deps="libmfx"
 mpeg2_qsv_encoder_select="qsvenc"
 mpeg4_decoder_select="h263_decoder mpeg4video_parser"
 mpeg4_encoder_select="h263_encoder"
+msa1_decoder_select="mss34dsp"
 msmpeg4v1_decoder_select="h263_decoder"
 msmpeg4v2_decoder_select="h263_decoder"
 msmpeg4v2_encoder_select="h263_encoder"
 msmpeg4v3_decoder_select="h263_decoder"
 msmpeg4v3_encoder_select="h263_encoder"
 mss2_decoder_select="error_resilience mpeg_er qpeldsp vc1_decoder"
+mts2_decoder_select="mss34dsp"
 mxpeg_decoder_select="mjpeg_decoder"
 nellymoser_decoder_select="mdct sinewin"
 nellymoser_encoder_select="audio_frame_queue mdct sinewin"
@@ -2290,8 +2305,8 @@ rv10_decoder_select="error_resilience h263_decoder h263dsp mpeg_er"
 rv10_encoder_select="h263_encoder"
 rv20_decoder_select="error_resilience h263_decoder h263dsp mpeg_er"
 rv20_encoder_select="h263_encoder"
-rv30_decoder_select="error_resilience golomb h264chroma h264pred h264qpel mpeg_er mpegvideo videodsp"
-rv40_decoder_select="error_resilience golomb h264chroma h264pred h264qpel mpeg_er mpegvideo videodsp"
+rv30_decoder_select="error_resilience golomb h264chroma h264pred h264qpel mpeg_er mpegvideo rv34dsp videodsp"
+rv40_decoder_select="error_resilience golomb h264chroma h264pred h264qpel mpeg_er mpegvideo rv34dsp videodsp"
 shorten_decoder_select="golomb"
 sipr_decoder_select="lsp"
 snow_decoder_select="dwt h264qpel hpeldsp me_cmp rangecoder videodsp"
@@ -2324,12 +2339,12 @@ vc1image_decoder_select="vc1_decoder"
 vorbis_decoder_select="mdct"
 vorbis_encoder_select="mdct"
 vp3_decoder_select="hpeldsp vp3dsp videodsp"
-vp5_decoder_select="h264chroma hpeldsp videodsp vp3dsp"
-vp6_decoder_select="h264chroma hpeldsp huffman videodsp vp3dsp"
+vp5_decoder_select="h264chroma hpeldsp videodsp vp3dsp vp56dsp"
+vp6_decoder_select="h264chroma hpeldsp huffman videodsp vp3dsp vp56dsp"
 vp6a_decoder_select="vp6_decoder"
 vp6f_decoder_select="vp6_decoder"
-vp7_decoder_select="h264pred videodsp"
-vp8_decoder_select="h264pred videodsp"
+vp7_decoder_select="h264pred videodsp vp8dsp"
+vp8_decoder_select="h264pred videodsp vp8dsp"
 vp9_decoder_select="videodsp vp9_parser"
 webp_decoder_select="vp8_decoder"
 wmalossless_decoder_select="llauddsp"
@@ -2341,8 +2356,8 @@ wmav2_encoder_select="mdct sinewin wma_freqs"
 wmavoice_decoder_select="lsp rdft dct mdct sinewin"
 wmv1_decoder_select="h263_decoder"
 wmv1_encoder_select="h263_encoder"
-wmv2_decoder_select="blockdsp h263_decoder idctdsp intrax8 videodsp"
-wmv2_encoder_select="h263_encoder"
+wmv2_decoder_select="blockdsp h263_decoder idctdsp intrax8 videodsp wmv2dsp"
+wmv2_encoder_select="h263_encoder wmv2dsp"
 wmv3_decoder_select="vc1_decoder"
 wmv3image_decoder_select="wmv3_decoder"
 zerocodec_decoder_select="zlib"
@@ -2504,6 +2519,7 @@ libvpx_vp9_encoder_deps="libvpx"
 libwavpack_encoder_deps="libwavpack"
 libwebp_encoder_deps="libwebp"
 libwebp_anim_encoder_deps="libwebp"
+libx262_encoder_deps="libx262"
 libx264_encoder_deps="libx264"
 libx264rgb_encoder_deps="libx264"
 libx264rgb_encoder_select="libx264_encoder"
@@ -2638,6 +2654,7 @@ x11grab_indev_deps="x11grab"
 x11grab_xcb_indev_deps="libxcb"
 
 # protocols
+async_protocol_deps="pthreads"
 bluray_protocol_deps="libbluray"
 ffrtmpcrypt_protocol_deps="!librtmp_protocol"
 ffrtmpcrypt_protocol_deps_any="gcrypt gmp openssl"
@@ -5228,7 +5245,9 @@ enabled libx264           && { use_pkg_config x264 "stdint.h x264.h" x264_encode
                                { require libx264 x264.h x264_encoder_encode -lx264 &&
                                  warn "using libx264 without pkg-config"; } } &&
                              { check_cpp_condition x264.h "X264_BUILD >= 118" ||
-                               die "ERROR: libx264 must be installed and version must be >= 0.118."; }
+                               die "ERROR: libx264 must be installed and version must be >= 0.118."; } &&
+                             { check_cpp_condition x264.h "X264_MPEG2" &&
+                               enable libx262; }
 enabled libx265           && require_pkg_config x265 x265.h x265_api_get &&
                              { check_cpp_condition x265.h "X265_BUILD >= 57" ||
                                die "ERROR: libx265 version must be >= 57."; }
