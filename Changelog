@@ -3,6 +3,58 @@ releases are sorted from youngest to oldest.
 
 version <next>:
 
+version 2.7.2:
+- avcodec/vp8: Check buffer size in vp8_decode_frame_header()
+- avcodec/vp8: Fix null pointer dereference in ff_vp8_decode_free()
+- avcodec/diracdec: Check for hpel_base allocation failure
+- avcodec/rv34: Clear pointers in ff_rv34_decode_init_thread_copy()
+- avfilter/af_aresample: Check ff_all_* for allocation failures
+- avcodec/pthread_frame: clear priv_data, avoid stale pointer in error case
+- swscale/utils: Clear pix buffers
+- avutil/fifo: Fix the case where func() returns less bytes than requested in av_fifo_generic_write()
+- ffmpeg: Fix cleanup after failed allocation of output_files
+- avformat/mov: Fix deallocation when MOVStreamContext failed to allocate
+- ffmpeg: Fix crash with ost->last_frame allocation failure
+- ffmpeg: Fix cleanup with ost = NULL
+- avcodec/pthread_frame: check avctx on deallocation
+- avcodec/sanm: Reset sizes in destroy_buffers()
+- avcodec/alac: Clear pointers in allocate_buffers()
+- bytestream2: set the reader to the end when reading more than available
+- avcodec/utils: use a minimum 32pixel width in  avcodec_align_dimensions2() for H.264
+- avcodec/mpegvideo: Clear pointers in ff_mpv_common_init()
+- oggparsedirac: check return value of init_get_bits
+- wmalosslessdec: reset frame->nb_samples on packet loss
+- wmalosslessdec: avoid reading 0 bits with get_bits
+- Put a space between string literals and macros.
+- avcodec/rawenc: Use ff_alloc_packet() instead of ff_alloc_packet2()
+- avcodec/aacsbr: check that the element type matches before applying SBR
+- avcodec/h264_slice: Use w/h from the AVFrame instead of mb_w/h
+- vp9/update_prob: prevent out of bounds table read
+- avfilter/vf_transpose: Fix rounding error
+- avcodec/h264_refs: discard mismatching references
+- avcodec/mjpegdec: Fix small picture upscale
+- avcodec/pngdec: Check values before updating context in decode_fctl_chunk()
+- avcodec/pngdec: Copy IHDR & plte state from last thread
+- avcodec/pngdec: Require a IHDR chunk before fctl
+- avcodec/pngdec: Only allow one IHDR chunk
+- wmavoice: limit wmavoice_decode_packet return value to packet size
+- swscale/swscale_unscaled: Fix rounding difference with RGBA output between little and big endian
+- ffmpeg: Do not use the data/size of a bitstream filter after failure
+- swscale/x86/rgb2rgb_template: fix signedness of v in shuffle_bytes_2103_{mmx,mmxext}
+- vda: unlock the pixel buffer base address.
+- swscale/rgb2rgb_template: Fix signedness of v in shuffle_bytes_2103_c()
+- swscale/rgb2rgb_template: Implement shuffle_bytes_0321_c and fix shuffle_bytes_2103_c on BE
+- swscale/rgb2rgb_template: Disable shuffle_bytes_2103_c on big endian
+- swr: Remember previously set int_sample_format from user
+- swresample: soxr implementation for swr_get_out_samples()
+- avformat/swfdec: Do not error out on pixel format changes
+- ffmpeg_opt: Fix forcing fourccs
+- configure: Check for x265_api_get
+- swscale/x86/rgb2rgb_template: don't call emms on sse2/avx functions
+- swscale/x86/rgb2rgb_template: add missing xmm clobbers
+- library.mak: Workaround SDL redefining main and breaking fate tests on mingw
+- vaapi_h264: fix RefPicList[] field flags.
+
 version 2.7.1:
 - postproc: fix unaligned access
 - avformat: clarify what package needs to be compiled with SSL support
