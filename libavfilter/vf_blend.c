@@ -423,35 +423,36 @@ static av_cold void uninit(AVFilterContext *ctx)
         av_expr_free(b->params[i].e);
 }
 
-#if CONFIG_BLEND_FILTER
-
 static int config_output(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
     AVFilterLink *toplink = ctx->inputs[TOP];
-    AVFilterLink *bottomlink = ctx->inputs[BOTTOM];
     BlendContext *b = ctx->priv;
     const AVPixFmtDescriptor *pix_desc = av_pix_fmt_desc_get(toplink->format);
     int ret, plane, is_16bit;
 
-    if (toplink->format != bottomlink->format) {
-        av_log(ctx, AV_LOG_ERROR, "inputs must be of same pixel format\n");
-        return AVERROR(EINVAL);
-    }
-    if (toplink->w                       != bottomlink->w ||
-        toplink->h                       != bottomlink->h ||
-        toplink->sample_aspect_ratio.num != bottomlink->sample_aspect_ratio.num ||
-        toplink->sample_aspect_ratio.den != bottomlink->sample_aspect_ratio.den) {
-        av_log(ctx, AV_LOG_ERROR, "First input link %s parameters "
-               "(size %dx%d, SAR %d:%d) do not match the corresponding "
-               "second input link %s parameters (%dx%d, SAR %d:%d)\n",
-               ctx->input_pads[TOP].name, toplink->w, toplink->h,
-               toplink->sample_aspect_ratio.num,
-               toplink->sample_aspect_ratio.den,
-               ctx->input_pads[BOTTOM].name, bottomlink->w, bottomlink->h,
-               bottomlink->sample_aspect_ratio.num,
-               bottomlink->sample_aspect_ratio.den);
-        return AVERROR(EINVAL);
+    if (!b->tblend) {
+        AVFilterLink *bottomlink = ctx->inputs[BOTTOM];
+
+        if (toplink->format != bottomlink->format) {
+            av_log(ctx, AV_LOG_ERROR, "inputs must be of same pixel format\n");
+            return AVERROR(EINVAL);
+        }
+        if (toplink->w                       != bottomlink->w ||
+            toplink->h                       != bottomlink->h ||
+            toplink->sample_aspect_ratio.num != bottomlink->sample_aspect_ratio.num ||
+            toplink->sample_aspect_ratio.den != bottomlink->sample_aspect_ratio.den) {
+            av_log(ctx, AV_LOG_ERROR, "First input link %s parameters "
+                   "(size %dx%d, SAR %d:%d) do not match the corresponding "
+                   "second input link %s parameters (%dx%d, SAR %d:%d)\n",
+                   ctx->input_pads[TOP].name, toplink->w, toplink->h,
+                   toplink->sample_aspect_ratio.num,
+                   toplink->sample_aspect_ratio.den,
+                   ctx->input_pads[BOTTOM].name, bottomlink->w, bottomlink->h,
+                   bottomlink->sample_aspect_ratio.num,
+                   bottomlink->sample_aspect_ratio.den);
+            return AVERROR(EINVAL);
+        }
     }
 
     outlink->w = toplink->w;
@@ -466,8 +467,10 @@ static int config_output(AVFilterLink *outlink)
     is_16bit = pix_desc->comp[0].depth_minus1 == 15;
     b->nb_planes = av_pix_fmt_count_planes(toplink->format);
 
-    if ((ret = ff_dualinput_init(ctx, &b->dinput)) < 0)
-        return ret;
+    if (b->tblend)
+        outlink->flags |= FF_LINK_FLAG_REQUEST_LOOP;
+    else if ((ret = ff_dualinput_init(ctx, &b->dinput)) < 0)
+            return ret;
 
     for (plane = 0; plane < FF_ARRAY_ELEMS(b->params); plane++) {
         FilterParams *param = &b->params[plane];
@@ -525,6 +528,8 @@ static int config_output(AVFilterLink *outlink)
     return 0;
 }
 
+#if CONFIG_BLEND_FILTER
+
 static int request_frame(AVFilterLink *outlink)
 {
     BlendContext *b = outlink->src->priv;
@@ -577,21 +582,6 @@ AVFilter ff_vf_blend = {
 
 #if CONFIG_TBLEND_FILTER
 
-static int tblend_config_output(AVFilterLink *outlink)
-{
-    AVFilterContext *ctx = outlink->src;
-    AVFilterLink *inlink = ctx->inputs[0];
-    BlendContext *b = ctx->priv;
-    const AVPixFmtDescriptor *pix_desc = av_pix_fmt_desc_get(inlink->format);
-
-    b->hsub = pix_desc->log2_chroma_w;
-    b->vsub = pix_desc->log2_chroma_h;
-    b->nb_planes = av_pix_fmt_count_planes(inlink->format);
-    outlink->flags |= FF_LINK_FLAG_REQUEST_LOOP;
-
-    return 0;
-}
-
 static int tblend_filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
     BlendContext *b = inlink->dst->priv;
@@ -627,7 +617,7 @@ static const AVFilterPad tblend_outputs[] = {
     {
         .name          = "default",
         .type          = AVMEDIA_TYPE_VIDEO,
-        .config_props  = tblend_config_output,
+        .config_props  = config_output,
     },
     { NULL }
 };
