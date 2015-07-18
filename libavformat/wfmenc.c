@@ -109,12 +109,11 @@ static int write_packet(struct AVFormatContext *s, AVPacket *pkt)
 		// try to flush buffer
         if (codec->codec_type == AVMEDIA_TYPE_VIDEO || s->nb_streams == 1) {
          	// check if should commit
-            if (c->duration != 0 && (c->duration % (c->moov_commit_period * 1000000)) < 4000) {
+            if (c->duration != 0 && (c->duration % (c->moov_commit_period * 1000000)) < 1000000) {
               	c->moov_commit_on_next_keyframe = 1;
               	av_log(s, AV_LOG_DEBUG, "should commit at %ld\n",c->duration);
-            }
-            // commit if should
-            if (c->moov_commit_on_next_keyframe == 1 && (pkt->flags & AV_PKT_FLAG_KEY) && c->pb) {
+            } else if (c->moov_commit_on_next_keyframe == 1 && (pkt->flags & AV_PKT_FLAG_KEY) && c->pb) {
+            	// commit if should
               	av_log(s, AV_LOG_DEBUG, "commit at %ld\n",c->duration);
                	c->moov_commit_on_next_keyframe = 0;
                	// flush buffer
