@@ -171,6 +171,8 @@
     </ClCompile>
     <ClCompile Include="..\libavfilter\af_dcshift.c">
     </ClCompile>
+    <ClCompile Include="..\libavfilter\af_dynaudnorm.c">
+    </ClCompile>
     <ClCompile Include="..\libavfilter\af_earwax.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\f_ebur128.c">
