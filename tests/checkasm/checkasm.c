@@ -320,7 +320,7 @@ int main(int argc, char *argv[])
 
     if (!tests[0] || !cpus[0].flag) {
         fprintf(stderr, "checkasm: no tests to perform\n");
-        return 1;
+        return 0;
     }
 
     if (argc > 1 && !strncmp(argv[1], "--bench", 7)) {
