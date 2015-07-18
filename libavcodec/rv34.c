@@ -1534,7 +1534,14 @@ int ff_rv34_decode_init_thread_copy(AVCodecContext *avctx)
 
     if (avctx->internal->is_copy) {
         r->tmp_b_block_base = NULL;
+        r->cbp_chroma       = NULL;
+        r->cbp_luma         = NULL;
+        r->deblock_coefs    = NULL;
+        r->intra_types_hist = NULL;
+        r->mb_type          = NULL;
+
         ff_mpv_idct_init(&r->s);
+
         if ((err = ff_mpv_common_init(&r->s)) < 0)
             return err;
         if ((err = rv34_decoder_alloc(r)) < 0) {
