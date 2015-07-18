@@ -334,7 +334,7 @@ static double find_peak_magnitude(AVFrame *frame, int channel)
     int c, i;
 
     if (channel == -1) {
-        for (c = 0; c < frame->channels; c++) {
+        for (c = 0; c < av_frame_get_channels(frame); c++) {
             double *data_ptr = (double *)frame->extended_data[c];
 
             for (i = 0; i < frame->nb_samples; i++)
@@ -356,7 +356,7 @@ static double compute_frame_rms(AVFrame *frame, int channel)
     int c, i;
 
     if (channel == -1) {
-        for (c = 0; c < frame->channels; c++) {
+        for (c = 0; c < av_frame_get_channels(frame); c++) {
             const double *data_ptr = (double *)frame->extended_data[c];
 
             for (i = 0; i < frame->nb_samples; i++) {
@@ -364,7 +364,7 @@ static double compute_frame_rms(AVFrame *frame, int channel)
             }
         }
 
-        rms_value /= frame->nb_samples * frame->channels;
+        rms_value /= frame->nb_samples * av_frame_get_channels(frame);
     } else {
         const double *data_ptr = (double *)frame->extended_data[channel];
         for (i = 0; i < frame->nb_samples; i++) {
