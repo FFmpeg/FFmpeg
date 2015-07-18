@@ -1561,7 +1561,7 @@ static void select_dsp_funcs(DiracContext *s, int width, int height, int xblen, 
     }
 }
 
-static void interpolate_refplane(DiracContext *s, DiracFrame *ref, int plane, int width, int height)
+static int interpolate_refplane(DiracContext *s, DiracFrame *ref, int plane, int width, int height)
 {
     /* chroma allocates an edge of 8 when subsampled
        which for 4:2:2 means an h edge of 16 and v edge of 8
@@ -1573,11 +1573,14 @@ static void interpolate_refplane(DiracContext *s, DiracFrame *ref, int plane, in
 
     /* no need for hpel if we only have fpel vectors */
     if (!s->mv_precision)
-        return;
+        return 0;
 
     for (i = 1; i < 4; i++) {
         if (!ref->hpel_base[plane][i])
             ref->hpel_base[plane][i] = av_malloc((height+2*edge) * ref->avframe->linesize[plane] + 32);
+        if (!ref->hpel_base[plane][i]) {
+            return AVERROR(ENOMEM);
+        }
         /* we need to be 16-byte aligned even for chroma */
         ref->hpel[plane][i] = ref->hpel_base[plane][i] + edge*ref->avframe->linesize[plane] + 16;
     }
@@ -1591,6 +1594,8 @@ static void interpolate_refplane(DiracContext *s, DiracFrame *ref, int plane, in
         s->mpvencdsp.draw_edges(ref->hpel[plane][3], ref->avframe->linesize[plane], width, height, edge, edge, EDGE_TOP | EDGE_BOTTOM);
     }
     ref->interpolated[plane] = 1;
+
+    return 0;
 }
 
 /**
@@ -1640,8 +1645,11 @@ static int dirac_decode_frame_internal(DiracContext *s)
 
             select_dsp_funcs(s, p->width, p->height, p->xblen, p->yblen);
 
-            for (i = 0; i < s->num_refs; i++)
-                interpolate_refplane(s, s->ref_pics[i], comp, p->width, p->height);
+            for (i = 0; i < s->num_refs; i++) {
+                int ret = interpolate_refplane(s, s->ref_pics[i], comp, p->width, p->height);
+                if (ret < 0)
+                    return ret;
+            }
 
             memset(s->mctmp, 0, 4*p->yoffset*p->stride);
 
