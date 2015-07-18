@@ -4298,6 +4298,8 @@ case $target_os in
         else
             target_os=mingw32
         fi
+        decklink_outdev_extralibs="$decklink_outdev_extralibs -lole32 -loleaut32"
+        decklink_indev_extralibs="$decklink_indev_extralibs -lole32 -loleaut32"
         LIBTARGET=i386
         if enabled x86_64; then
             LIBTARGET="i386:x86-64"
