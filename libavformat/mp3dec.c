@@ -98,7 +98,7 @@ static int mp3_read_probe(AVProbeData *p)
     avcodec_free_context(&avctx);
     // keep this in sync with ac3 probe, both need to avoid
     // issues with MPEG-files!
-    if   (first_frames>=4) return AVPROBE_SCORE_EXTENSION + 1;
+    if   (first_frames>=7) return AVPROBE_SCORE_EXTENSION + 1;
     else if(max_frames>200)return AVPROBE_SCORE_EXTENSION;
     else if(max_frames>=4 && max_frames >= p->buf_size/10000) return AVPROBE_SCORE_EXTENSION / 2;
     else if(ff_id3v2_match(buf0, ID3v2_DEFAULT_MAGIC) && 2*ff_id3v2_tag_len(buf0) >= p->buf_size)
