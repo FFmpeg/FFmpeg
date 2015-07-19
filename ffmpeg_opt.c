@@ -1782,8 +1782,7 @@ static void init_output_filter(OutputFilter *ofilter, OptionsContext *o,
 {
     OutputStream *ost;
 
-    switch (avfilter_pad_get_type(ofilter->out_tmp->filter_ctx->output_pads,
-                                  ofilter->out_tmp->pad_idx)) {
+    switch (ofilter->type) {
     case AVMEDIA_TYPE_VIDEO: ost = new_video_stream(o, oc, -1); break;
     case AVMEDIA_TYPE_AUDIO: ost = new_audio_stream(o, oc, -1); break;
     default:
@@ -1816,11 +1815,19 @@ static void init_output_filter(OutputFilter *ofilter, OptionsContext *o,
         exit_program(1);
     }
 
-    if (configure_output_filter(ofilter->graph, ofilter, ofilter->out_tmp) < 0) {
-        av_log(NULL, AV_LOG_FATAL, "Error configuring filter.\n");
-        exit_program(1);
-    }
     avfilter_inout_free(&ofilter->out_tmp);
+}
+
+static int init_complex_filters(void)
+{
+    int i, ret = 0;
+
+    for (i = 0; i < nb_filtergraphs; i++) {
+        ret = init_complex_filtergraph(filtergraphs[i]);
+        if (ret < 0)
+            return ret;
+    }
+    return 0;
 }
 
 static int configure_complex_filters(void)
@@ -1899,8 +1906,7 @@ static int open_output_file(OptionsContext *o, const char *filename)
             if (!ofilter->out_tmp || ofilter->out_tmp->name)
                 continue;
 
-            switch (avfilter_pad_get_type(ofilter->out_tmp->filter_ctx->output_pads,
-                                          ofilter->out_tmp->pad_idx)) {
+            switch (ofilter->type) {
             case AVMEDIA_TYPE_VIDEO:    o->video_disable    = 1; break;
             case AVMEDIA_TYPE_AUDIO:    o->audio_disable    = 1; break;
             case AVMEDIA_TYPE_SUBTITLE: o->subtitle_disable = 1; break;
@@ -2919,9 +2925,9 @@ int ffmpeg_parse_options(int argc, char **argv)
     }
 
     /* create the complex filtergraphs */
-    ret = configure_complex_filters();
+    ret = init_complex_filters();
     if (ret < 0) {
-        av_log(NULL, AV_LOG_FATAL, "Error configuring filters.\n");
+        av_log(NULL, AV_LOG_FATAL, "Error initializing complex filters.\n");
         goto fail;
     }
 
@@ -2929,6 +2935,13 @@ int ffmpeg_parse_options(int argc, char **argv)
     ret = open_files(&octx.groups[GROUP_OUTFILE], "output", open_output_file);
     if (ret < 0) {
         av_log(NULL, AV_LOG_FATAL, "Error opening output files: ");
+        goto fail;
+    }
+
+    /* configure the complex filtergraphs */
+    ret = configure_complex_filters();
+    if (ret < 0) {
+        av_log(NULL, AV_LOG_FATAL, "Error configuring complex filters.\n");
         goto fail;
     }
 
