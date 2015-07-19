@@ -437,6 +437,50 @@ static int check(AVIOContext *pb, int64_t pos)
     return sd.frame_size;
 }
 
+static int64_t sync(AVFormatContext *s, int64_t target_pos, int flags)
+{
+    int dir = (flags&AVSEEK_FLAG_BACKWARD) ? -1 : 1;
+    int64_t best_pos;
+    int best_score, i, j;
+    int64_t ret;
+
+    avio_seek(s->pb, FFMAX(target_pos - SEEK_WINDOW, 0), SEEK_SET);
+    ret = avio_seek(s->pb, target_pos, SEEK_SET);
+    if (ret < 0)
+        return ret;
+
+#define MIN_VALID 3
+    best_pos = target_pos;
+    best_score = 999;
+    for(i=0; i<SEEK_WINDOW; i++) {
+        int64_t pos = target_pos + (dir > 0 ? i - SEEK_WINDOW/4 : -i);
+        int64_t candidate = -1;
+        int score = 999;
+
+        if (pos < 0)
+            continue;
+
+        for(j=0; j<MIN_VALID; j++) {
+            ret = check(s->pb, pos);
+            if(ret < 0)
+                break;
+            if ((target_pos - pos)*dir <= 0 && abs(MIN_VALID/2-j) < score) {
+                candidate = pos;
+                score = abs(MIN_VALID/2-j);
+            }
+            pos += ret;
+        }
+        if (best_score > score && j == MIN_VALID) {
+            best_pos = candidate;
+            best_score = score;
+            if(score == 0)
+                break;
+        }
+    }
+
+    return avio_seek(s->pb, best_pos, SEEK_SET);
+}
+
 static int mp3_seek(AVFormatContext *s, int stream_index, int64_t timestamp,
                     int flags)
 {
@@ -444,10 +488,8 @@ static int mp3_seek(AVFormatContext *s, int stream_index, int64_t timestamp,
     AVIndexEntry *ie, ie1;
     AVStream *st = s->streams[0];
     int64_t ret  = av_index_search_timestamp(st, timestamp, flags);
-    int i, j;
-    int dir = (flags&AVSEEK_FLAG_BACKWARD) ? -1 : 1;
     int64_t best_pos;
-    int best_score;
+    int i;
 
     if (mp3->usetoc == 2)
         return -1; // generic index code
@@ -470,43 +512,9 @@ static int mp3_seek(AVFormatContext *s, int stream_index, int64_t timestamp,
         return -1;
     }
 
-    avio_seek(s->pb, FFMAX(ie->pos - SEEK_WINDOW, 0), SEEK_SET);
-    ret = avio_seek(s->pb, ie->pos, SEEK_SET);
-    if (ret < 0)
-        return ret;
-
-#define MIN_VALID 3
-    best_pos = ie->pos;
-    best_score = 999;
-    for(i=0; i<SEEK_WINDOW; i++) {
-        int64_t pos = ie->pos + (dir > 0 ? i - SEEK_WINDOW/4 : -i);
-        int64_t candidate = -1;
-        int score = 999;
-
-        if (pos < 0)
-            continue;
-
-        for(j=0; j<MIN_VALID; j++) {
-            ret = check(s->pb, pos);
-            if(ret < 0)
-                break;
-            if ((ie->pos - pos)*dir <= 0 && abs(MIN_VALID/2-j) < score) {
-                candidate = pos;
-                score = abs(MIN_VALID/2-j);
-            }
-            pos += ret;
-        }
-        if (best_score > score && j == MIN_VALID) {
-            best_pos = candidate;
-            best_score = score;
-            if(score == 0)
-                break;
-        }
-    }
-
-    ret = avio_seek(s->pb, best_pos, SEEK_SET);
-    if (ret < 0)
-        return ret;
+    best_pos = sync(s, ie->pos, flags);
+    if (best_pos < 0)
+        return best_pos;
 
     if (mp3->is_cbr && ie == &ie1) {
         int frame_duration = av_rescale(st->duration, 1, mp3->frames);
