@@ -629,9 +629,13 @@ static int dds_decode(AVCodecContext *avctx, void *data,
             int i;
             /* Use the first 1024 bytes as palette, then copy the rest. */
             bytestream2_get_buffer(gbc, frame->data[1], 256 * 4);
-            if (HAVE_BIGENDIAN)
-                for (i = 0; i < 256; i++)
-                    AV_WB32(frame->data[1] + i*4, AV_RL32(frame->data[1] + i*4));
+            for (i = 0; i < 256; i++)
+                AV_WN32(frame->data[1] + i*4,
+                        (frame->data[1][2+i*4]<<0)+
+                        (frame->data[1][1+i*4]<<8)+
+                        (frame->data[1][0+i*4]<<16)+
+                        (frame->data[1][3+i*4]<<24)
+                );
 
             frame->palette_has_changed = 1;
         }
