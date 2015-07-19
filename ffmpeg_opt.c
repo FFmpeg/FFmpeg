@@ -2092,7 +2092,7 @@ loop_end:
         avio_read(pb, attachment, len);
 
         ost = new_attachment_stream(o, oc, -1);
-        ost->stream_copy               = 0;
+        ost->stream_copy               = 1;
         ost->attachment_filename       = o->attachments[i];
         ost->finished                  = 1;
         ost->st->codec->extradata      = attachment;
