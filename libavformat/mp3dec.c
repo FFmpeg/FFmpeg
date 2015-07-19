@@ -489,7 +489,6 @@ static int mp3_seek(AVFormatContext *s, int stream_index, int64_t timestamp,
     AVStream *st = s->streams[0];
     int64_t ret  = av_index_search_timestamp(st, timestamp, flags);
     int64_t best_pos;
-    int i;
 
     if (mp3->usetoc == 2)
         return -1; // generic index code
