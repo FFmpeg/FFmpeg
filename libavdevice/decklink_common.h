@@ -19,6 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <DeckLinkAPIVersion.h>
+
 #include "decklink_common_c.h"
 
 class decklink_output_callback;
@@ -82,7 +84,11 @@ struct decklink_ctx {
 typedef enum { DIRECTION_IN, DIRECTION_OUT} decklink_direction_t;
 
 #ifdef _WIN32
+#if BLACKMAGIC_DECKLINK_API_VERSION < 0x0a040000
 typedef unsigned long buffercount_type;
+#else
+typedef unsigned int buffercount_type;
+#endif
 IDeckLinkIterator *CreateDeckLinkIteratorInstance(void);
 #else
 typedef uint32_t buffercount_type;
