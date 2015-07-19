@@ -121,6 +121,10 @@ FATE_LIBAVUTIL += fate-xtea
 fate-xtea: libavutil/xtea-test$(EXESUF)
 fate-xtea: CMD = run libavutil/xtea-test
 
+FATE_LIBAVUTIL += fate-tea
+fate-tea: libavutil/tea-test$(EXESUF)
+fate-tea: CMD = run libavutil/tea-test
+
 FATE_LIBAVUTIL += fate-opt
 fate-opt: libavutil/opt-test$(EXESUF)
 fate-opt: CMD = run libavutil/opt-test

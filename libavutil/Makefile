@@ -63,6 +63,7 @@ HEADERS = adler32.h                                                     \
           twofish.h                                                     \
           version.h                                                     \
           xtea.h                                                        \
+          tea.h                                                         \
 
 HEADERS-$(CONFIG_LZO)                   += lzo.h
 
@@ -135,6 +136,7 @@ OBJS = adler32.o                                                        \
        utils.o                                                          \
        xga_font_data.o                                                  \
        xtea.o                                                           \
+       tea.o                                                            \
 
 OBJS-$(!HAVE_ATOMICS_NATIVE)            += atomic.o                     \
 
@@ -192,6 +194,7 @@ TESTPROGS = adler32                                                     \
             twofish                                                     \
             utf8                                                        \
             xtea                                                        \
+            tea                                                         \
 
 TESTPROGS-$(HAVE_LZO1X_999_COMPRESS) += lzo
 
