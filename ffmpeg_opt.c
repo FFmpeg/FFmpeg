@@ -2156,6 +2156,17 @@ loop_end:
     }
     av_dict_free(&unused_opts);
 
+    /* set the encoding/decoding_needed flags */
+    for (i = of->ost_index; i < nb_output_streams; i++) {
+        OutputStream *ost = output_streams[i];
+
+        ost->encoding_needed = !ost->stream_copy;
+        if (ost->encoding_needed && ost->source_index >= 0) {
+            InputStream *ist = input_streams[ost->source_index];
+            ist->decoding_needed |= DECODING_FOR_OST;
+        }
+    }
+
     /* check filename in case of an image number is expected */
     if (oc->oformat->flags & AVFMT_NEEDNUMBER) {
         if (!av_filename_number_test(oc->filename)) {

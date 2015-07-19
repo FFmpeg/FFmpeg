@@ -2925,10 +2925,6 @@ static int transcode_init(void)
                 goto dump_format;
             }
 
-            if (ist)
-                ist->decoding_needed |= DECODING_FOR_OST;
-            ost->encoding_needed = 1;
-
             set_encoder_id(output_files[ost->file_index], ost);
 
             if (!ost->filter &&
