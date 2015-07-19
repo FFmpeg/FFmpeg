@@ -469,6 +469,9 @@ static int get_cox(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *c)
     /* set integer 9/7 DWT in case of BITEXACT flag */
     if ((s->avctx->flags & CODEC_FLAG_BITEXACT) && (c->transform == FF_DWT97))
         c->transform = FF_DWT97_INT;
+    else if (c->transform == FF_DWT53) {
+        s->avctx->properties |= FF_CODEC_PROPERTY_LOSSLESS;
+    }
 
     if (c->csty & JPEG2000_CSTY_PREC) {
         int i;
