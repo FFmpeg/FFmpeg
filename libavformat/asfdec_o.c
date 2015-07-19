@@ -134,7 +134,7 @@ typedef struct ASFContext {
 
     // packet state
     uint64_t sub_left;  // subpayloads left or not
-    int nb_sub; // number of subpayloads read so far from the current ASF packet
+    unsigned int nb_sub; // number of subpayloads read so far from the current ASF packet
     uint16_t mult_sub_len; // total length of subpayloads array inside multiple payload
     uint64_t nb_mult_left; // multiple payloads left
     int return_subpayload;
