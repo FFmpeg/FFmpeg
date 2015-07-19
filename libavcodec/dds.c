@@ -357,13 +357,13 @@ static int parse_pixel_format(AVCodecContext *avctx)
             avctx->pix_fmt = AV_PIX_FMT_BGR24;
         /* 32 bpp */
         else if (bpp == 32 && r == 0xff0000 && g == 0xff00 && b == 0xff && a == 0)
-            avctx->pix_fmt = AV_PIX_FMT_RGBA; // opaque
+            avctx->pix_fmt = AV_PIX_FMT_BGR0; // opaque
         else if (bpp == 32 && r == 0xff && g == 0xff00 && b == 0xff0000 && a == 0)
-            avctx->pix_fmt = AV_PIX_FMT_BGRA; // opaque
+            avctx->pix_fmt = AV_PIX_FMT_RGB0; // opaque
         else if (bpp == 32 && r == 0xff0000 && g == 0xff00 && b == 0xff && a == 0xff000000)
-            avctx->pix_fmt = AV_PIX_FMT_RGBA;
-        else if (bpp == 32 && r == 0xff && g == 0xff00 && b == 0xff0000 && a == 0xff000000)
             avctx->pix_fmt = AV_PIX_FMT_BGRA;
+        else if (bpp == 32 && r == 0xff && g == 0xff00 && b == 0xff0000 && a == 0xff000000)
+            avctx->pix_fmt = AV_PIX_FMT_RGBA;
         /* give up */
         else {
             av_log(avctx, AV_LOG_ERROR, "Unknown pixel format "
@@ -646,7 +646,11 @@ static int dds_decode(AVCodecContext *avctx, void *data,
     }
 
     /* Run any post processing here if needed. */
-    if (avctx->pix_fmt == AV_PIX_FMT_RGBA || avctx->pix_fmt == AV_PIX_FMT_YA8)
+    if (avctx->pix_fmt == AV_PIX_FMT_BGRA ||
+        avctx->pix_fmt == AV_PIX_FMT_RGBA ||
+        avctx->pix_fmt == AV_PIX_FMT_RGB0 ||
+        avctx->pix_fmt == AV_PIX_FMT_BGR0 ||
+        avctx->pix_fmt == AV_PIX_FMT_YA8)
         run_postproc(avctx, frame);
 
     /* Frame is ready to be output. */
