@@ -40,6 +40,7 @@ typedef struct ResampleContext {
     AVAudioResampleContext *avr;
     AVDictionary *options;
 
+    int resampling;
     int64_t next_pts;
     int64_t next_in_pts;
 
@@ -117,6 +118,8 @@ static int config_output(AVFilterLink *outlink)
     char buf1[64], buf2[64];
     int ret;
 
+    int64_t resampling_forced;
+
     if (s->avr) {
         avresample_close(s->avr);
         avresample_free(&s->avr);
@@ -155,9 +158,15 @@ static int config_output(AVFilterLink *outlink)
     if ((ret = avresample_open(s->avr)) < 0)
         return ret;
 
-    outlink->time_base = (AVRational){ 1, outlink->sample_rate };
-    s->next_pts        = AV_NOPTS_VALUE;
-    s->next_in_pts     = AV_NOPTS_VALUE;
+    av_opt_get_int(s->avr, "force_resampling", 0, &resampling_forced);
+    s->resampling = resampling_forced || (inlink->sample_rate != outlink->sample_rate);
+
+    if (s->resampling) {
+        outlink->time_base = (AVRational){ 1, outlink->sample_rate };
+        s->next_pts        = AV_NOPTS_VALUE;
+        s->next_in_pts     = AV_NOPTS_VALUE;
+    } else
+        outlink->time_base = inlink->time_base;
 
     av_get_channel_layout_string(buf1, sizeof(buf1),
                                  -1, inlink ->channel_layout);
@@ -240,7 +249,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
         av_assert0(!avresample_available(s->avr));
 
-        if (s->next_pts == AV_NOPTS_VALUE) {
+        if (s->resampling && s->next_pts == AV_NOPTS_VALUE) {
             if (in->pts == AV_NOPTS_VALUE) {
                 av_log(ctx, AV_LOG_WARNING, "First timestamp is missing, "
                        "assuming 0.\n");
@@ -259,22 +268,25 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                 goto fail;
             }
 
-            out->sample_rate = outlink->sample_rate;
-            /* Only convert in->pts if there is a discontinuous jump.
-               This ensures that out->pts tracks the number of samples actually
-               output by the resampler in the absence of such a jump.
-               Otherwise, the rounding in av_rescale_q() and av_rescale()
-               causes off-by-1 errors. */
-            if (in->pts != AV_NOPTS_VALUE && in->pts != s->next_in_pts) {
-                out->pts = av_rescale_q(in->pts, inlink->time_base,
-                                            outlink->time_base) -
-                               av_rescale(delay, outlink->sample_rate,
-                                          inlink->sample_rate);
-            } else
-                out->pts = s->next_pts;
+            if (s->resampling) {
+                out->sample_rate = outlink->sample_rate;
+                /* Only convert in->pts if there is a discontinuous jump.
+                   This ensures that out->pts tracks the number of samples actually
+                   output by the resampler in the absence of such a jump.
+                   Otherwise, the rounding in av_rescale_q() and av_rescale()
+                   causes off-by-1 errors. */
+                if (in->pts != AV_NOPTS_VALUE && in->pts != s->next_in_pts) {
+                    out->pts = av_rescale_q(in->pts, inlink->time_base,
+                                                outlink->time_base) -
+                                   av_rescale(delay, outlink->sample_rate,
+                                              inlink->sample_rate);
+                } else
+                    out->pts = s->next_pts;
 
-            s->next_pts = out->pts + out->nb_samples;
-            s->next_in_pts = in->pts + in->nb_samples;
+                s->next_pts = out->pts + out->nb_samples;
+                s->next_in_pts = in->pts + in->nb_samples;
+            } else
+                out->pts = in->pts;
 
             ret = ff_filter_frame(outlink, out);
             s->got_output = 1;
