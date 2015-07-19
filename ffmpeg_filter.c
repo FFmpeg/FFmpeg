@@ -641,6 +641,11 @@ int configure_output_filter(FilterGraph *fg, OutputFilter *ofilter, AVFilterInOu
     av_freep(&ofilter->name);
     DESCRIBE_FILTER_LINK(ofilter, out, 0);
 
+    if (!ofilter->ost) {
+        av_log(NULL, AV_LOG_FATAL, "Filter %s has a unconnected output\n", ofilter->name);
+        exit_program(1);
+    }
+
     switch (avfilter_pad_get_type(out->filter_ctx->output_pads, out->pad_idx)) {
     case AVMEDIA_TYPE_VIDEO: return configure_output_video_filter(fg, ofilter, out);
     case AVMEDIA_TYPE_AUDIO: return configure_output_audio_filter(fg, ofilter, out);
