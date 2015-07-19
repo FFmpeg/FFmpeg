@@ -119,6 +119,10 @@ void ff_rtp_send_jpeg(AVFormatContext *s1, const uint8_t *buf, int size)
             break;
         }
     }
+    if (nb_qtables && nb_qtables != 2)
+        av_log(s1, AV_LOG_WARNING,
+               "RFC 2435 suggests two quantization tables, %d provided\n",
+               nb_qtables);
 
     /* skip JPEG header */
     buf  += i;
