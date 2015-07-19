@@ -114,6 +114,10 @@ fate-filter-histogram-levels: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf histogram
 FATE_FILTER_VSYNTH-$(CONFIG_HISTOGRAM_FILTER) += fate-filter-histogram-waveform
 fate-filter-histogram-waveform: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf format=yuv444p,histogram=mode=waveform -flags +bitexact -sws_flags +accurate_rnd+bitexact
 
+FATE_FILTER_VSYNTH-$(CONFIG_MERGEPLANES_FILTER) += fate-filter-mergeplanes
+fate-filter-mergeplanes: tests/data/filtergraphs/mergeplanes
+fate-filter-mergeplanes: CMD = framecrc -c:v pgmyuv -i $(SRC) -c:v pgmyuv -i $(SRC) -filter_complex_script $(TARGET_PATH)/tests/data/filtergraphs/mergeplanes
+
 FATE_FILTER_VSYNTH-$(CONFIG_OVERLAY_FILTER) += fate-filter-overlay
 fate-filter-overlay: tests/data/filtergraphs/overlay
 fate-filter-overlay: CMD = framecrc -c:v pgmyuv -i $(SRC) -c:v pgmyuv -i $(SRC) -filter_complex_script $(TARGET_PATH)/tests/data/filtergraphs/overlay
@@ -233,6 +237,9 @@ FATE_SHUFFLEPLANES += fate-filter-shuffleplanes-swapuv
 fate-filter-shuffleplanes-swapuv: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf shuffleplanes=0:2:1
 
 FATE_FILTER_VSYNTH-$(CONFIG_SHUFFLEPLANES_FILTER) += $(FATE_SHUFFLEPLANES)
+
+FATE_FILTER_VSYNTH-$(CONFIG_TBLEND_FILTER) += fate-filter-tblend
+fate-filter-tblend: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf tblend=all_mode=difference128
 
 FATE_FILTER_VSYNTH-$(CONFIG_TELECINE_FILTER) += fate-filter-telecine
 fate-filter-telecine: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf telecine

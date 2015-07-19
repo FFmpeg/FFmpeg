@@ -115,7 +115,13 @@ static int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
         case NAL_RADL_N:
         case NAL_RADL_R:
         case NAL_RASL_N:
-        case NAL_RASL_R: hevc_parse_slice_header(s, nal, avctx); break;
+        case NAL_RASL_R:
+            if (buf == avctx->extradata) {
+                av_log(avctx, AV_LOG_ERROR, "Invalid NAL unit: %d\n", nal->type);
+                return AVERROR_INVALIDDATA;
+            }
+            hevc_parse_slice_header(s, nal, avctx);
+            break;
         }
     }
 
@@ -187,6 +193,7 @@ static inline int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
     const uint8_t *buf_end = buf + buf_size;
     int state = -1, i;
     HEVCNAL *nal;
+    int is_global = buf == avctx->extradata;
 
     if (!h->HEVClc)
         h->HEVClc = av_mallocz(sizeof(HEVCLocalContext));
@@ -266,6 +273,12 @@ static inline int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
         case NAL_IDR_W_RADL:
         case NAL_IDR_N_LP:
         case NAL_CRA_NUT:
+
+            if (is_global) {
+                av_log(avctx, AV_LOG_ERROR, "Invalid NAL unit: %d\n", h->nal_unit_type);
+                return AVERROR_INVALIDDATA;
+            }
+
             sh->first_slice_in_pic_flag = get_bits1(gb);
             s->picture_structure = h->picture_struct;
             s->field_order = h->picture_struct;
@@ -354,7 +367,8 @@ static inline int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
         buf += consumed;
     }
     /* didn't find a picture! */
-    av_log(h->avctx, AV_LOG_ERROR, "missing picture in access unit\n");
+    if (!is_global)
+        av_log(h->avctx, AV_LOG_ERROR, "missing picture in access unit\n");
     return -1;
 }
 #endif

@@ -98,9 +98,14 @@ typedef struct MpegTSWrite {
     int pcr_period;
 #define MPEGTS_FLAG_REEMIT_PAT_PMT  0x01
 #define MPEGTS_FLAG_AAC_LATM        0x02
+#define MPEGTS_FLAG_PAT_PMT_AT_FRAMES           0x04
     int flags;
     int copyts;
     int tables_version;
+    float pat_period;
+    float sdt_period;
+    int64_t last_pat_ts;
+    int64_t last_sdt_ts;
 
     int omit_video_pes_length;
 } MpegTSWrite;
@@ -783,6 +788,16 @@ static int mpegts_write_header(AVFormatContext *s)
             service->pcr_packet_period = 1;
     }
 
+    ts->last_pat_ts = AV_NOPTS_VALUE;
+    ts->last_sdt_ts = AV_NOPTS_VALUE;
+    // The user specified a period, use only it
+    if (ts->pat_period < INT_MAX/2) {
+        ts->pat_packet_period = INT_MAX;
+    }
+    if (ts->sdt_period < INT_MAX/2) {
+        ts->sdt_packet_period = INT_MAX;
+    }
+
     // output a PCR as soon as possible
     service->pcr_packet_count = service->pcr_packet_period;
     ts->pat_packet_count      = ts->pat_packet_period - 1;
@@ -833,17 +848,27 @@ fail:
 }
 
 /* send SDT, PAT and PMT tables regulary */
-static void retransmit_si_info(AVFormatContext *s, int force_pat)
+static void retransmit_si_info(AVFormatContext *s, int force_pat, int64_t dts)
 {
     MpegTSWrite *ts = s->priv_data;
     int i;
 
-    if (++ts->sdt_packet_count == ts->sdt_packet_period) {
+    if (++ts->sdt_packet_count == ts->sdt_packet_period ||
+        (dts != AV_NOPTS_VALUE && ts->last_sdt_ts == AV_NOPTS_VALUE) ||
+        (dts != AV_NOPTS_VALUE && dts - ts->last_sdt_ts >= ts->sdt_period*90000.0)
+    ) {
         ts->sdt_packet_count = 0;
+        if (dts != AV_NOPTS_VALUE)
+            ts->last_sdt_ts = FFMAX(dts, ts->last_sdt_ts);
         mpegts_write_sdt(s);
     }
-    if (++ts->pat_packet_count == ts->pat_packet_period || force_pat) {
+    if (++ts->pat_packet_count == ts->pat_packet_period ||
+        (dts != AV_NOPTS_VALUE && ts->last_pat_ts == AV_NOPTS_VALUE) ||
+        (dts != AV_NOPTS_VALUE && dts - ts->last_pat_ts >= ts->pat_period*90000.0) ||
+        force_pat) {
         ts->pat_packet_count = 0;
+        if (dts != AV_NOPTS_VALUE)
+            ts->last_pat_ts = FFMAX(dts, ts->last_pat_ts);
         mpegts_write_pat(s);
         for (i = 0; i < ts->nb_services; i++)
             mpegts_write_pmt(s, ts->services[i]);
@@ -971,9 +996,14 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
     int64_t delay = av_rescale(s->max_delay, 90000, AV_TIME_BASE);
     int force_pat = st->codec->codec_type == AVMEDIA_TYPE_VIDEO && key && !ts_st->prev_payload_key;
 
+    av_assert0(ts_st->payload != buf || st->codec->codec_type != AVMEDIA_TYPE_VIDEO);
+    if (ts->flags & MPEGTS_FLAG_PAT_PMT_AT_FRAMES && st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
+        force_pat = 1;
+    }
+
     is_start = 1;
     while (payload_size > 0) {
-        retransmit_si_info(s, force_pat);
+        retransmit_si_info(s, force_pat, dts);
         force_pat = 0;
 
         write_pcr = 0;
@@ -1505,6 +1535,9 @@ static const AVOption options[] = {
     { "latm", "Use LATM packetization for AAC",
       0, AV_OPT_TYPE_CONST, { .i64 = MPEGTS_FLAG_AAC_LATM }, 0, INT_MAX,
       AV_OPT_FLAG_ENCODING_PARAM, "mpegts_flags" },
+    { "pat_pmt_at_frames", "Reemit PAT and PMT at each video frame",
+      0, AV_OPT_TYPE_CONST, { .i64 = MPEGTS_FLAG_PAT_PMT_AT_FRAMES}, 0, INT_MAX,
+      AV_OPT_FLAG_ENCODING_PARAM, "mpegts_flags" },
     // backward compatibility
     { "resend_headers", "Reemit PAT/PMT before writing the next packet",
       offsetof(MpegTSWrite, reemit_pat_pmt), AV_OPT_TYPE_INT,
@@ -1521,6 +1554,12 @@ static const AVOption options[] = {
     { "pcr_period", "PCR retransmission time",
       offsetof(MpegTSWrite, pcr_period), AV_OPT_TYPE_INT,
       { .i64 = PCR_RETRANS_TIME }, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
+    { "pat_period", "PAT/PMT retransmission time limit in seconds",
+      offsetof(MpegTSWrite, pat_period), AV_OPT_TYPE_FLOAT,
+      { .dbl = INT_MAX }, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
+    { "sdt_period", "SDT retransmission time limit in seconds",
+      offsetof(MpegTSWrite, sdt_period), AV_OPT_TYPE_FLOAT,
+      { .dbl = INT_MAX }, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
     { NULL },
 };
 

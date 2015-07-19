@@ -759,6 +759,10 @@ Set a constant muxrate (default VBR).
 @item -pcr_period @var{numer}
 Override the default PCR retransmission time (default 20ms), ignored
 if variable muxrate is selected.
+@item pat_period @var{number}
+Maximal time in seconds between PAT/PMT tables.
+@item sdt_period @var{number}
+Maximal time in seconds between SDT tables.
 @item -pes_payload_size @var{number}
 Set minimum PES packet payload in bytes.
 @item -mpegts_flags @var{flags}
@@ -810,6 +814,8 @@ Option mpegts_flags may take a set of such flags:
 Reemit PAT/PMT before writing the next packet.
 @item latm
 Use LATM packetization for AAC.
+@item pat_pmt_at_frames
+Reemit PAT and PMT at each video frame.
 @end table
 
 @subsection Example
