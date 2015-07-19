@@ -32,7 +32,7 @@
 #include "bufferqueue.h"
 #include "internal.h"
 
-#define SWR_CH_MAX 32
+#define SWR_CH_MAX 64
 
 typedef struct {
     const AVClass *class;
