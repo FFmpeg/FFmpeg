@@ -399,6 +399,7 @@ Generic parts:
 
 Muxers/Demuxers:
   4xm.c                                 Mike Melanson
+  aadec.c                               Vesselin Bontchev (vesselin.bontchev at yandex dot com)
   adtsenc.c                             Robert Swain
   afc.c                                 Paul B Mahol
   aiffdec.c                             Baptiste Coudurier, Matthieu Bouron
