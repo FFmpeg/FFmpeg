@@ -530,18 +530,6 @@ int show_colors(void *optctx, const char *opt, const char *arg);
 int read_yesno(void);
 
 /**
- * Read the file with name filename, and put its content in a newly
- * allocated 0-terminated buffer.
- *
- * @param filename file to read from
- * @param bufptr location where pointer to buffer is returned
- * @param size   location where size of buffer is returned
- * @return >= 0 in case of success, a negative value corresponding to an
- * AVERROR error code in case of failure.
- */
-int cmdutils_read_file(const char *filename, char **bufptr, size_t *size);
-
-/**
  * Get a file corresponding to a preset file.
  *
  * If is_path is non-zero, look for the file in the path preset_name.
