@@ -645,11 +645,15 @@ static int dds_decode(AVCodecContext *avctx, void *data,
 
         if (ctx->paletted) {
             int i;
-            uint32_t *p = (uint32_t *)frame->data[1];
+            uint8_t *p = frame->data[1];
 
             /* Use the first 1024 bytes as palette, then copy the rest. */
-            for (i = 0; i < 256; i++)
-                p[i] = bytestream2_get_le32(gbc);
+            for (i = 0; i < 256; i++) {
+                p[i * 4 + 2] = bytestream2_get_byte(gbc);
+                p[i * 4 + 1] = bytestream2_get_byte(gbc);
+                p[i * 4 + 0] = bytestream2_get_byte(gbc);
+                p[i * 4 + 3] = bytestream2_get_byte(gbc);
+            }
 
             frame->palette_has_changed = 1;
         }
