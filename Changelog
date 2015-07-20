@@ -21,6 +21,7 @@ version <next>:
 - Reverse filter
 - Random filter
 - deband filter
+- AAC fixed-point decoding
 
 
 version 2.7:

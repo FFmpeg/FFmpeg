@@ -863,7 +863,7 @@ following image formats are supported:
 @item Name @tab Encoding @tab Decoding @tab Comments
 @item 8SVX exponential       @tab     @tab  X
 @item 8SVX fibonacci         @tab     @tab  X
-@item AAC+                   @tab  E  @tab  X
+@item AAC+                   @tab  E  @tab  IX
     @tab encoding supported through external library libaacplus
 @item AAC                    @tab  E  @tab  X
     @tab encoding supported through external library libfaac and libvo-aacenc
