@@ -26,12 +26,11 @@
 #include <stdint.h>
 #include <math.h>
 #include "libavutil/attributes.h"
+#include "libavcodec/aac_defines.h"
 
 #if USE_FIXED
-#define CBRT_RENAME(a) a ## _fixed
 #define CBRT(x) (int)floor((x).f * 8192 + 0.5)
 #else
-#define CBRT_RENAME(a) a
 #define CBRT(x) x.i
 #endif
 
@@ -46,7 +45,7 @@
 #else
 static uint32_t cbrt_tab[1 << 13];
 
-static av_cold void CBRT_RENAME(cbrt_tableinit)(void)
+static av_cold void AAC_RENAME(cbrt_tableinit)(void)
 {
     if (!cbrt_tab[(1<<13) - 1]) {
         int i;
