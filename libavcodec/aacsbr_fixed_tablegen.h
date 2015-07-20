@@ -20,21 +20,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <stdlib.h>
-#define CONFIG_HARDCODED_TABLES 0
-#define USE_FIXED 0
-#include "libavutil/common.h"
-#include "aacsbr_tablegen.h"
-#include "tableprint.h"
+#ifndef AVCODEC_AACSBR_FIXED_TABLEGEN_H
+#define AVCODEC_AACSBR_FIXED_TABLEGEN_H
 
-int main(void)
-{
-    aacsbr_tableinit();
+#include "aacsbr_tablegen_common.h"
 
-    write_fileheader();
+#if CONFIG_HARDCODED_TABLES
+#include "libavcodec/aacsbr_fixed_tables.h"
+#endif /* CONFIG_HARDCODED_TABLES */
 
-    WRITE_ARRAY_ALIGNED("static const", 32, float, sbr_qmf_window_ds);
-    WRITE_ARRAY_ALIGNED("static const", 32, float, sbr_qmf_window_us);
-
-    return 0;
-}
+#endif /* AVCODEC_AACSBR_FIXED_TABLEGEN_H */

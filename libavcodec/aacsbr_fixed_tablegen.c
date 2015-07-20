@@ -22,9 +22,9 @@
 
 #include <stdlib.h>
 #define CONFIG_HARDCODED_TABLES 0
-#define USE_FIXED 0
+#define USE_FIXED 1
 #include "libavutil/common.h"
-#include "aacsbr_tablegen.h"
+#include "aacsbr_fixed_tablegen.h"
 #include "tableprint.h"
 
 int main(void)
@@ -33,8 +33,8 @@ int main(void)
 
     write_fileheader();
 
-    WRITE_ARRAY_ALIGNED("static const", 32, float, sbr_qmf_window_ds);
-    WRITE_ARRAY_ALIGNED("static const", 32, float, sbr_qmf_window_us);
+    WRITE_ARRAY_ALIGNED("static const", 32, int32_t, sbr_qmf_window_ds);
+    WRITE_ARRAY_ALIGNED("static const", 32, int32_t, sbr_qmf_window_us);
 
     return 0;
 }
