@@ -36,6 +36,8 @@
 #define SIZE_ADD                10
 
 #define STYL_BOX   (1<<0)
+#define HLIT_BOX   (1<<1)
+#define HCLR_BOX   (1<<2)
 
 #define av_bprint_append_any(buf, data, size)   av_bprint_append_data(buf, ((const char*)data), size)
 
@@ -46,10 +48,21 @@ typedef struct {
 } StyleBox;
 
 typedef struct {
+    uint16_t start;
+    uint16_t end;
+} HighlightBox;
+
+typedef struct {
+   uint32_t color;
+} HilightcolorBox;
+
+typedef struct {
     ASSSplitContext *ass_ctx;
     AVBPrint buffer;
     StyleBox **style_attributes;
     StyleBox *style_attributes_temp;
+    HighlightBox hlit;
+    HilightcolorBox hclr;
     int count;
     uint8_t box_flags;
     uint16_t style_entries;
@@ -103,8 +116,35 @@ static void encode_styl(MovTextContext *s, uint32_t tsmb_type)
     }
 }
 
+static void encode_hlit(MovTextContext *s, uint32_t tsmb_type)
+{
+    uint32_t tsmb_size;
+    if (s->box_flags & HLIT_BOX) {
+        tsmb_size = 12;
+        tsmb_size = AV_RB32(&tsmb_size);
+        av_bprint_append_any(&s->buffer, &tsmb_size, 4);
+        av_bprint_append_any(&s->buffer, &tsmb_type, 4);
+        av_bprint_append_any(&s->buffer, &s->hlit.start, 2);
+        av_bprint_append_any(&s->buffer, &s->hlit.end, 2);
+    }
+}
+
+static void encode_hclr(MovTextContext *s, uint32_t tsmb_type)
+{
+    uint32_t tsmb_size;
+    if (s->box_flags & HCLR_BOX) {
+        tsmb_size = 12;
+        tsmb_size = AV_RB32(&tsmb_size);
+        av_bprint_append_any(&s->buffer, &tsmb_size, 4);
+        av_bprint_append_any(&s->buffer, &tsmb_type, 4);
+        av_bprint_append_any(&s->buffer, &s->hclr.color, 4);
+    }
+}
+
 static const Box box_types[] = {
     { MKTAG('s','t','y','l'), encode_styl },
+    { MKTAG('h','l','i','t'), encode_hlit },
+    { MKTAG('h','c','l','r'), encode_hclr },
 };
 
 const static size_t box_count = FF_ARRAY_ELEMS(box_types);
@@ -239,6 +279,25 @@ static void mov_text_style_cb(void *priv, const char style, int close)
     s->box_flags |= STYL_BOX;
 }
 
+static void mov_text_color_cb(void *priv, unsigned int color, unsigned int color_id)
+{
+    MovTextContext *s = priv;
+    if (color_id == 2) {    //secondary color changes
+        if (s->box_flags & HLIT_BOX) {  //close tag
+            s->hlit.end = AV_RB16(&s->text_pos);
+        } else {
+            s->box_flags |= HCLR_BOX;
+            s->box_flags |= HLIT_BOX;
+            s->hlit.start = AV_RB16(&s->text_pos);
+            s->hclr.color = color | (0xFF << 24);  //set alpha value to FF
+        }
+    }
+    /* If there are more than one secondary color changes in ASS, take start of
+       first section and end of last section. Movtext allows only one
+       highlight box per sample.
+     */
+}
+
 static void mov_text_text_cb(void *priv, const char *text, int len)
 {
     MovTextContext *s = priv;
@@ -257,6 +316,7 @@ static const ASSCodesCallbacks mov_text_callbacks = {
     .text     = mov_text_text_cb,
     .new_line = mov_text_new_line_cb,
     .style    = mov_text_style_cb,
+    .color    = mov_text_color_cb,
 };
 
 static int mov_text_encode_frame(AVCodecContext *avctx, unsigned char *buf,
