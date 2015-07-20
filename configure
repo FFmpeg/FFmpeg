@@ -1730,7 +1730,9 @@ MATH_FUNCS="
     atan2f
     cbrt
     cbrtf
+    copysign
     cosf
+    erf
     exp2
     exp2f
     expf
@@ -2718,6 +2720,7 @@ cropdetect_filter_deps="gpl"
 delogo_filter_deps="gpl"
 deshake_filter_select="pixelutils"
 drawtext_filter_deps="libfreetype"
+dynaudnorm_filter_deps="copysign erf"
 ebur128_filter_deps="gpl"
 eq_filter_deps="gpl"
 fftfilt_filter_deps="avcodec"
@@ -5130,6 +5133,7 @@ check_lib math.h sin -lm && LIBM="-lm"
 disabled crystalhd || check_lib libcrystalhd/libcrystalhd_if.h DtsCrystalHDVersion -lcrystalhd || disable crystalhd
 
 atan2f_args=2
+copysign_args=2
 ldexpf_args=2
 powf_args=2
 
