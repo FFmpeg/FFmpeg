@@ -857,8 +857,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
     ff_pixblockdsp_init(&s->pdsp, avctx);
     ff_qpeldsp_init(&s->qdsp);
 
-    s->avctx->coded_frame = s->current_picture.f;
-
     if (s->msmpeg4_version) {
         FF_ALLOCZ_OR_GOTO(s->avctx, s->ac_stats,
                           2 * 2 * (MAX_LEVEL + 1) *
