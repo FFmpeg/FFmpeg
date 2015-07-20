@@ -25,6 +25,7 @@
  * AAC Spectral Band Replication decoding functions
  * @author Robert Swain ( rob opendot cl )
  */
+#define USE_FIXED 0
 
 #include "aac.h"
 #include "sbr.h"

@@ -22,29 +22,31 @@
 #define AVCODEC_SBRDSP_H
 
 #include <stdint.h>
+#include "aac_defines.h"
+#include "libavutil/softfloat.h"
 
 typedef struct SBRDSPContext {
-    void (*sum64x5)(float *z);
-    float (*sum_square)(float (*x)[2], int n);
-    void (*neg_odd_64)(float *x);
-    void (*qmf_pre_shuffle)(float *z);
-    void (*qmf_post_shuffle)(float W[32][2], const float *z);
-    void (*qmf_deint_neg)(float *v, const float *src);
-    void (*qmf_deint_bfly)(float *v, const float *src0, const float *src1);
-    void (*autocorrelate)(const float x[40][2], float phi[3][2][2]);
-    void (*hf_gen)(float (*X_high)[2], const float (*X_low)[2],
-                   const float alpha0[2], const float alpha1[2],
-                   float bw, int start, int end);
-    void (*hf_g_filt)(float (*Y)[2], const float (*X_high)[40][2],
-                      const float *g_filt, int m_max, intptr_t ixh);
-    void (*hf_apply_noise[4])(float (*Y)[2], const float *s_m,
-                              const float *q_filt, int noise,
+    void (*sum64x5)(INTFLOAT *z);
+    AAC_FLOAT (*sum_square)(INTFLOAT (*x)[2], int n);
+    void (*neg_odd_64)(INTFLOAT *x);
+    void (*qmf_pre_shuffle)(INTFLOAT *z);
+    void (*qmf_post_shuffle)(INTFLOAT W[32][2], const INTFLOAT *z);
+    void (*qmf_deint_neg)(INTFLOAT *v, const INTFLOAT *src);
+    void (*qmf_deint_bfly)(INTFLOAT *v, const INTFLOAT *src0, const INTFLOAT *src1);
+    void (*autocorrelate)(const INTFLOAT x[40][2], AAC_FLOAT phi[3][2][2]);
+    void (*hf_gen)(INTFLOAT (*X_high)[2], const INTFLOAT (*X_low)[2],
+                   const INTFLOAT alpha0[2], const INTFLOAT alpha1[2],
+                   INTFLOAT bw, int start, int end);
+    void (*hf_g_filt)(INTFLOAT (*Y)[2], const INTFLOAT (*X_high)[40][2],
+                      const AAC_FLOAT *g_filt, int m_max, intptr_t ixh);
+    void (*hf_apply_noise[4])(INTFLOAT (*Y)[2], const AAC_FLOAT *s_m,
+                              const AAC_FLOAT *q_filt, int noise,
                               int kx, int m_max);
 } SBRDSPContext;
 
-extern const float ff_sbr_noise_table[][2];
+extern const INTFLOAT AAC_RENAME(ff_sbr_noise_table)[][2];
 
-void ff_sbrdsp_init(SBRDSPContext *s);
+void AAC_RENAME(ff_sbrdsp_init)(SBRDSPContext *s);
 void ff_sbrdsp_init_arm(SBRDSPContext *s);
 void ff_sbrdsp_init_x86(SBRDSPContext *s);
 void ff_sbrdsp_init_mips(SBRDSPContext *s);
