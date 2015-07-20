@@ -222,8 +222,7 @@ AVFilterFormats *ff_all_formats(enum AVMediaType type)
     if (type == AVMEDIA_TYPE_VIDEO) {
         const AVPixFmtDescriptor *desc = NULL;
         while ((desc = av_pix_fmt_desc_next(desc))) {
-            if (!(desc->flags & AV_PIX_FMT_FLAG_HWACCEL))
-                ff_add_format(&ret, av_pix_fmt_desc_get_id(desc));
+            ff_add_format(&ret, av_pix_fmt_desc_get_id(desc));
         }
     } else if (type == AVMEDIA_TYPE_AUDIO) {
         enum AVSampleFormat fmt = 0;
