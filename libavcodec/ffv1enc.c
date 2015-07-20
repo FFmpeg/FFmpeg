@@ -755,6 +755,8 @@ static av_cold int encode_init(AVCodecContext *avctx)
         s->transparency = desc->nb_components == 4;
         if (!avctx->bits_per_raw_sample && !s->bits_per_raw_sample)
             s->bits_per_raw_sample = 8;
+        else if (!s->bits_per_raw_sample)
+            s->bits_per_raw_sample = 8;
         break;
     case AV_PIX_FMT_RGB32:
         s->colorspace = 1;
