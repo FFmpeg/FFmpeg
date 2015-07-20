@@ -111,9 +111,11 @@ static const VideoSizeAbbr video_size_abbrs[] = {
     { "hd720",    1280, 720 },
     { "hd1080",   1920,1080 },
     { "2k",       2048,1080 }, /* Digital Cinema System Specification */
+    { "2kdci",    2048,1080 },
     { "2kflat",   1998,1080 },
     { "2kscope",  2048, 858 },
     { "4k",       4096,2160 }, /* Digital Cinema System Specification */
+    { "4kdci",    4096,2160 },
     { "4kflat",   3996,2160 },
     { "4kscope",  4096,1716 },
     { "nhd",       640,360  },
@@ -122,6 +124,8 @@ static const VideoSizeAbbr video_size_abbrs[] = {
     { "fwqvga",    432,240  },
     { "hvga",      480,320  },
     { "qhd",       960,540  },
+    { "uhd1",     3840,2160 },
+    { "uhd2",     7680,4320 },
 };
 
 static const VideoRateAbbr video_rate_abbrs[]= {
