@@ -2213,8 +2213,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     if (ret < 0 || !*got_packet_ptr)
         av_free_packet(avpkt);
-    else
-        av_packet_merge_side_data(avpkt);
 
     emms_c();
     return ret;
