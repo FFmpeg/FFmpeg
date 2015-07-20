@@ -23,31 +23,36 @@
 #include "libavutil/mem.h"
 #include "constants.h"
 
-const uint64_t __attribute__ ((aligned(8))) ff_pw_1 =       {0x0001000100010001ULL};
-const uint64_t __attribute__ ((aligned(8))) ff_pw_4 =       {0x0004000400040004ULL};
-const uint64_t __attribute__ ((aligned(8))) ff_pw_5 =       {0x0005000500050005ULL};
-const uint64_t __attribute__ ((aligned(8))) ff_pw_3 =       {0x0003000300030003ULL};
-const uint64_t __attribute__ ((aligned(8))) ff_pw_8 =       {0x0008000800080008ULL};
-const uint64_t __attribute__ ((aligned(8))) ff_pw_9 =       {0x0009000900090009ULL};
-const uint64_t __attribute__ ((aligned(8))) ff_pw_16 =      {0x0010001000100010ULL};
-const uint64_t __attribute__ ((aligned(8))) ff_pw_18 =      {0x0012001200120012ULL};
-const uint64_t __attribute__ ((aligned(8))) ff_pw_28 =      {0x001C001C001C001CULL};
-const uint64_t __attribute__ ((aligned(8))) ff_pw_32 =      {0x0020002000200020ULL};
-const uint64_t __attribute__ ((aligned(8))) ff_pw_53 =      {0x0035003500350035ULL};
-const uint64_t __attribute__ ((aligned(8))) ff_pw_64 =      {0x0040004000400040ULL};
-const uint64_t __attribute__ ((aligned(8))) ff_pw_128 =     {0x0080008000800080ULL};
-const uint64_t __attribute__ ((aligned(8))) ff_pw_m8tom5 =  {0xFFFBFFFAFFF9FFF8ULL};
-const uint64_t __attribute__ ((aligned(8))) ff_pw_m4tom1 =  {0xFFFFFFFEFFFDFFFCULL};
-const uint64_t __attribute__ ((aligned(8))) ff_pw_1to4 =    {0x0004000300020001ULL};
-const uint64_t __attribute__ ((aligned(8))) ff_pw_5to8 =    {0x0008000700060005ULL};
-const uint64_t __attribute__ ((aligned(8))) ff_pw_0to3 =    {0x0003000200010000ULL};
-const uint64_t __attribute__ ((aligned(8))) ff_pw_4to7 =    {0x0007000600050004ULL};
+DECLARE_ALIGNED(8, const uint64_t, ff_pw_1) =       {0x0001000100010001ULL};
+DECLARE_ALIGNED(8, const uint64_t, ff_pw_4) =       {0x0004000400040004ULL};
+DECLARE_ALIGNED(8, const uint64_t, ff_pw_5) =       {0x0005000500050005ULL};
+DECLARE_ALIGNED(8, const uint64_t, ff_pw_3) =       {0x0003000300030003ULL};
+DECLARE_ALIGNED(8, const uint64_t, ff_pw_8) =       {0x0008000800080008ULL};
+DECLARE_ALIGNED(8, const uint64_t, ff_pw_9) =       {0x0009000900090009ULL};
+DECLARE_ALIGNED(8, const uint64_t, ff_pw_16) =      {0x0010001000100010ULL};
+DECLARE_ALIGNED(8, const uint64_t, ff_pw_18) =      {0x0012001200120012ULL};
+DECLARE_ALIGNED(8, const uint64_t, ff_pw_28) =      {0x001C001C001C001CULL};
+DECLARE_ALIGNED(8, const uint64_t, ff_pw_32) =      {0x0020002000200020ULL};
+DECLARE_ALIGNED(8, const uint64_t, ff_pw_53) =      {0x0035003500350035ULL};
+DECLARE_ALIGNED(8, const uint64_t, ff_pw_64) =      {0x0040004000400040ULL};
+DECLARE_ALIGNED(8, const uint64_t, ff_pw_128) =     {0x0080008000800080ULL};
+DECLARE_ALIGNED(8, const uint64_t, ff_pw_m8tom5) =  {0xFFFBFFFAFFF9FFF8ULL};
+DECLARE_ALIGNED(8, const uint64_t, ff_pw_m4tom1) =  {0xFFFFFFFEFFFDFFFCULL};
+DECLARE_ALIGNED(8, const uint64_t, ff_pw_1to4) =    {0x0004000300020001ULL};
+DECLARE_ALIGNED(8, const uint64_t, ff_pw_5to8) =    {0x0008000700060005ULL};
+DECLARE_ALIGNED(8, const uint64_t, ff_pw_0to3) =    {0x0003000200010000ULL};
+DECLARE_ALIGNED(8, const uint64_t, ff_pw_4to7) =    {0x0007000600050004ULL};
+DECLARE_ALIGNED(8, const uint64_t, ff_pw_8tob) =    {0x000b000a00090008ULL};
+DECLARE_ALIGNED(8, const uint64_t, ff_pw_ctof) =    {0x000f000e000d000cULL};
 
-const uint64_t __attribute__ ((aligned(8))) ff_pb_1 =       {0x0101010101010101ULL};
-const uint64_t __attribute__ ((aligned(8))) ff_pb_3 =       {0x0303030303030303ULL};
-const uint64_t __attribute__ ((aligned(8))) ff_pb_80 =      {0x8080808080808080ULL};
-const uint64_t __attribute__ ((aligned(8))) ff_pb_A1 =      {0xA1A1A1A1A1A1A1A1ULL};
+DECLARE_ALIGNED(8, const uint64_t, ff_pb_1) =       {0x0101010101010101ULL};
+DECLARE_ALIGNED(8, const uint64_t, ff_pb_3) =       {0x0303030303030303ULL};
+DECLARE_ALIGNED(8, const uint64_t, ff_pb_80) =      {0x8080808080808080ULL};
+DECLARE_ALIGNED(8, const uint64_t, ff_pb_A1) =      {0xA1A1A1A1A1A1A1A1ULL};
 
-const uint64_t __attribute__ ((aligned(8))) ff_rnd =        {0x0004000400040004ULL};
-const uint64_t __attribute__ ((aligned(8))) ff_rnd2 =       {0x0040004000400040ULL};
-const uint64_t __attribute__ ((aligned(8))) ff_rnd3 =       {0x0020002000200020ULL};
+DECLARE_ALIGNED(8, const uint64_t, ff_rnd) =        {0x0004000400040004ULL};
+DECLARE_ALIGNED(8, const uint64_t, ff_rnd2) =       {0x0040004000400040ULL};
+DECLARE_ALIGNED(8, const uint64_t, ff_rnd3) =       {0x0020002000200020ULL};
+
+DECLARE_ALIGNED(8, const uint64_t, ff_wm1010) =     {0xFFFF0000FFFF0000ULL};
+DECLARE_ALIGNED(8, const uint64_t, ff_d40000) =     {0x0000000000040000ULL};

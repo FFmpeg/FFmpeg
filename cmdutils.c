@@ -1875,64 +1875,6 @@ int read_yesno(void)
     return yesno;
 }
 
-int cmdutils_read_file(const char *filename, char **bufptr, size_t *size)
-{
-    int64_t ret;
-    FILE *f = av_fopen_utf8(filename, "rb");
-
-    if (!f) {
-        ret = AVERROR(errno);
-        av_log(NULL, AV_LOG_ERROR, "Cannot read file '%s': %s\n", filename,
-               strerror(errno));
-        return ret;
-    }
-
-    ret = fseek(f, 0, SEEK_END);
-    if (ret == -1) {
-        ret = AVERROR(errno);
-        goto out;
-    }
-
-    ret = ftell(f);
-    if (ret < 0) {
-        ret = AVERROR(errno);
-        goto out;
-    }
-    *size = ret;
-
-    ret = fseek(f, 0, SEEK_SET);
-    if (ret == -1) {
-        ret = AVERROR(errno);
-        goto out;
-    }
-
-    *bufptr = av_malloc(*size + 1);
-    if (!*bufptr) {
-        av_log(NULL, AV_LOG_ERROR, "Could not allocate file buffer\n");
-        ret = AVERROR(ENOMEM);
-        goto out;
-    }
-    ret = fread(*bufptr, 1, *size, f);
-    if (ret < *size) {
-        av_free(*bufptr);
-        if (ferror(f)) {
-            ret = AVERROR(errno);
-            av_log(NULL, AV_LOG_ERROR, "Error while reading file '%s': %s\n",
-                   filename, strerror(errno));
-        } else
-            ret = AVERROR_EOF;
-    } else {
-        ret = 0;
-        (*bufptr)[(*size)++] = '\0';
-    }
-
-out:
-    if (ret < 0)
-        av_log(NULL, AV_LOG_ERROR, "IO error: %s\n", av_err2str(ret));
-    fclose(f);
-    return ret;
-}
-
 FILE *get_preset_file(char *filename, size_t filename_size,
                       const char *preset_name, int is_path,
                       const char *codec_name)

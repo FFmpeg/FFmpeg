@@ -36,8 +36,6 @@
 #define ROW_SHIFT 11
 #define COL_SHIFT 20
 
-DECLARE_ASM_CONST(8, uint64_t, wm1010)= 0xFFFF0000FFFF0000ULL;
-DECLARE_ASM_CONST(8, uint64_t, d40000)= 0x0000000000040000ULL;
 DECLARE_ALIGNED(8, static const int16_t, coeffs)[]= {
     1<<(ROW_SHIFT-1),   0, 1<<(ROW_SHIFT-1),   0,
     1<<(ROW_SHIFT-1),   1, 1<<(ROW_SHIFT-1),   0,
@@ -815,7 +813,7 @@ static void simple_idct_mmi(int16_t *block)
         //IDCT(  24(%1), 88(%1), 56(%1), 120(%1), 12(%0), 20)
 
         "9:                             \n\t"
-        ::"r"(block),"r"(temp),"r"(coeffs),"m"(wm1010),"m"(d40000)
+        ::"r"(block),"r"(temp),"r"(coeffs),"m"(ff_wm1010),"m"(ff_d40000)
         : "$10","$11"
     );
 }
@@ -886,7 +884,7 @@ void ff_put_signed_pixels_clamped_mmi(const int16_t *block,
     int64_t line_skip3;
 
     __asm__ volatile (
-        "ldc1 $f0, %4                   \n\t"
+        "dmtc1 %4, $f0                  \n\t"
         "daddu %1, %3, %3               \n\t"
         "ldc1 $f2, 0(%2)                \n\t"
         "ldc1 $f10, 8(%2)               \n\t"
@@ -933,7 +931,7 @@ void ff_put_signed_pixels_clamped_mmi(const int16_t *block,
         "gssdxc1 $f6, 0(%0, $10)        \n\t"
         "gssdxc1 $f8, 0(%0, %1)         \n\t"
         : "+&r"(pixels),"=&r"(line_skip3)
-        : "r"(block),"r"(line_skip),"m"(ff_pb_80)
+        : "r"(block),"r"(line_skip),"r"(ff_pb_80)
         : "$10","memory"
     );
 }

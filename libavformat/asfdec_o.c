@@ -134,7 +134,7 @@ typedef struct ASFContext {
 
     // packet state
     uint64_t sub_left;  // subpayloads left or not
-    int nb_sub; // number of subpayloads read so far from the current ASF packet
+    unsigned int nb_sub; // number of subpayloads read so far from the current ASF packet
     uint16_t mult_sub_len; // total length of subpayloads array inside multiple payload
     uint64_t nb_mult_left; // multiple payloads left
     int return_subpayload;
@@ -1105,6 +1105,27 @@ static void reset_packet(ASFPacket *asf_pkt)
     av_init_packet(&asf_pkt->avpkt);
 }
 
+static int asf_read_replicated_data(AVFormatContext *s, ASFPacket *asf_pkt)
+{
+    ASFContext *asf = s->priv_data;
+    AVIOContext *pb = s->pb;
+    int ret;
+
+    if (!asf_pkt->data_size) {
+        asf_pkt->data_size = asf_pkt->size_left = avio_rl32(pb); // read media object size
+        if (asf_pkt->data_size <= 0)
+            return AVERROR_EOF;
+        if ((ret = av_new_packet(&asf_pkt->avpkt, asf_pkt->data_size)) < 0)
+            return ret;
+    } else
+        avio_skip(pb, 4); // reading of media object size is already done
+    asf_pkt->dts = avio_rl32(pb); // read presentation time
+    if (asf->rep_data_len && (asf->rep_data_len >= 8))
+        avio_skip(pb, asf->rep_data_len - 8); // skip replicated data
+
+    return 0;
+}
+
 static int asf_read_multiple_payload(AVFormatContext *s, AVPacket *pkt,
                                  ASFPacket *asf_pkt)
 {
@@ -1123,17 +1144,9 @@ static int asf_read_multiple_payload(AVFormatContext *s, AVPacket *pkt,
         if ((ret = asf_read_subpayload(s, pkt, 1)) < 0)
             return ret;
     } else {
-        if (!asf_pkt->data_size) {
-            asf_pkt->data_size = asf_pkt->size_left = avio_rl32(pb); // read media object size
-            if (asf_pkt->data_size <= 0)
-                return AVERROR_EOF;
-            if ((ret = av_new_packet(&asf_pkt->avpkt, asf_pkt->data_size)) < 0)
+        if (asf->rep_data_len)
+            if ((ret = asf_read_replicated_data(s, asf_pkt)) < 0)
                 return ret;
-        } else
-            avio_skip(pb, 4); // reading of media object size is already done
-        asf_pkt->dts = avio_rl32(pb); // read presentation time
-        if ((asf->rep_data_len - 8) > 0)
-            avio_skip(pb, asf->rep_data_len - 8); // skip replicated data
         pay_len = avio_rl16(pb); // payload length should be WORD
         if (pay_len > asf->packet_size) {
             av_log(s, AV_LOG_ERROR,
@@ -1181,7 +1194,7 @@ static int asf_read_single_payload(AVFormatContext *s, AVPacket *pkt,
     } else
         avio_skip(pb, 4); // skip media object size
     asf_pkt->dts = avio_rl32(pb); // read presentation time
-    if ((asf->rep_data_len - 8) > 0)
+    if (asf->rep_data_len >= 8)
         avio_skip(pb, asf->rep_data_len - 8); // skip replicated data
     offset = avio_tell(pb);
 

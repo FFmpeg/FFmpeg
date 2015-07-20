@@ -357,13 +357,13 @@ static int parse_pixel_format(AVCodecContext *avctx)
             avctx->pix_fmt = AV_PIX_FMT_BGR24;
         /* 32 bpp */
         else if (bpp == 32 && r == 0xff0000 && g == 0xff00 && b == 0xff && a == 0)
-            avctx->pix_fmt = AV_PIX_FMT_RGBA; // opaque
+            avctx->pix_fmt = AV_PIX_FMT_BGR0; // opaque
         else if (bpp == 32 && r == 0xff && g == 0xff00 && b == 0xff0000 && a == 0)
-            avctx->pix_fmt = AV_PIX_FMT_BGRA; // opaque
+            avctx->pix_fmt = AV_PIX_FMT_RGB0; // opaque
         else if (bpp == 32 && r == 0xff0000 && g == 0xff00 && b == 0xff && a == 0xff000000)
-            avctx->pix_fmt = AV_PIX_FMT_RGBA;
-        else if (bpp == 32 && r == 0xff && g == 0xff00 && b == 0xff0000 && a == 0xff000000)
             avctx->pix_fmt = AV_PIX_FMT_BGRA;
+        else if (bpp == 32 && r == 0xff && g == 0xff00 && b == 0xff0000 && a == 0xff000000)
+            avctx->pix_fmt = AV_PIX_FMT_RGBA;
         /* give up */
         else {
             av_log(avctx, AV_LOG_ERROR, "Unknown pixel format "
@@ -629,9 +629,13 @@ static int dds_decode(AVCodecContext *avctx, void *data,
             int i;
             /* Use the first 1024 bytes as palette, then copy the rest. */
             bytestream2_get_buffer(gbc, frame->data[1], 256 * 4);
-            if (HAVE_BIGENDIAN)
-                for (i = 0; i < 256; i++)
-                    AV_WB32(frame->data[1] + i*4, AV_RL32(frame->data[1] + i*4));
+            for (i = 0; i < 256; i++)
+                AV_WN32(frame->data[1] + i*4,
+                        (frame->data[1][2+i*4]<<0)+
+                        (frame->data[1][1+i*4]<<8)+
+                        (frame->data[1][0+i*4]<<16)+
+                        (frame->data[1][3+i*4]<<24)
+                );
 
             frame->palette_has_changed = 1;
         }
@@ -642,7 +646,11 @@ static int dds_decode(AVCodecContext *avctx, void *data,
     }
 
     /* Run any post processing here if needed. */
-    if (avctx->pix_fmt == AV_PIX_FMT_RGBA || avctx->pix_fmt == AV_PIX_FMT_YA8)
+    if (avctx->pix_fmt == AV_PIX_FMT_BGRA ||
+        avctx->pix_fmt == AV_PIX_FMT_RGBA ||
+        avctx->pix_fmt == AV_PIX_FMT_RGB0 ||
+        avctx->pix_fmt == AV_PIX_FMT_BGR0 ||
+        avctx->pix_fmt == AV_PIX_FMT_YA8)
         run_postproc(avctx, frame);
 
     /* Frame is ready to be output. */

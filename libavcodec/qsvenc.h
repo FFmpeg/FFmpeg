@@ -29,6 +29,7 @@
 #include <mfx/mfxvideo.h>
 
 #include "libavutil/avutil.h"
+#include "libavutil/fifo.h"
 
 #include "avcodec.h"
 #include "qsv_internal.h"
@@ -50,6 +51,8 @@ typedef struct QSVEncContext {
 
     mfxExtCodingOption  extco;
     mfxExtBuffer *extparam[1];
+
+    AVFifoBuffer *async_fifo;
 
     // options set by the caller
     int async_depth;

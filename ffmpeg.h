@@ -229,6 +229,7 @@ typedef struct OutputFilter {
 
     /* temporary storage until stream maps are processed */
     AVFilterInOut       *out_tmp;
+    enum AVMediaType     type;
 } OutputFilter;
 
 typedef struct FilterGraph {
@@ -536,6 +537,7 @@ int configure_filtergraph(FilterGraph *fg);
 int configure_output_filter(FilterGraph *fg, OutputFilter *ofilter, AVFilterInOut *out);
 int ist_in_filtergraph(FilterGraph *fg, InputStream *ist);
 FilterGraph *init_simple_filtergraph(InputStream *ist, OutputStream *ost);
+int init_complex_filtergraph(FilterGraph *fg);
 
 int ffmpeg_parse_options(int argc, char **argv);
 

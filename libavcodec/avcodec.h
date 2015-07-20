@@ -1311,7 +1311,8 @@ typedef struct AVCodecContext {
     /**
      * the average bitrate
      * - encoding: Set by user; unused for constant quantizer encoding.
-     * - decoding: Set by libavcodec. 0 or some bitrate if this info is available in the stream.
+     * - decoding: Set by user, may be overwritten by libavcodec
+     *             if this info is available in the stream
      */
     int bit_rate;
 
@@ -2349,7 +2350,7 @@ typedef struct AVCodecContext {
     /**
      * maximum bitrate
      * - encoding: Set by user.
-     * - decoding: Set by libavcodec.
+     * - decoding: Set by user, may be overwritten by libavcodec.
      */
     int rc_max_rate;
 

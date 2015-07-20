@@ -23,6 +23,7 @@
  */
 
 #include "h264pred_mips.h"
+#include "constants.h"
 
 void ff_pred16x16_vertical_8_mmi(uint8_t *src, ptrdiff_t stride)
 {
@@ -50,14 +51,12 @@ void ff_pred16x16_vertical_8_mmi(uint8_t *src, ptrdiff_t stride)
 void ff_pred16x16_horizontal_8_mmi(uint8_t *src, ptrdiff_t stride)
 {
     __asm__ volatile (
-        ".set arch=loongson3a               \r\n"
         "daddiu $2, %0, -1                  \r\n"
         "daddu $3, %0, $0                   \r\n"
         "dli $6, 0x10                       \r\n"
-        "dli $7, 0x0101010101010101         \r\n"
         "1:                                 \r\n"
         "lbu $4, 0($2)                      \r\n"
-        "dmul $5, $4, $7                    \r\n"
+        "dmul $5, $4, %2                    \r\n"
         "sdl $5, 7($3)                      \r\n"
         "sdr $5, 0($3)                      \r\n"
         "sdl $5, 15($3)                     \r\n"
@@ -66,7 +65,7 @@ void ff_pred16x16_horizontal_8_mmi(uint8_t *src, ptrdiff_t stride)
         "daddu $3, %1                       \r\n"
         "daddiu $6, -1                      \r\n"
         "bnez $6, 1b                        \r\n"
-        ::"r"(src),"r"(stride)
+        ::"r"(src),"r"(stride),"r"(ff_pb_1)
         : "$2","$3","$4","$5","$6","memory"
     );
 }
@@ -74,7 +73,6 @@ void ff_pred16x16_horizontal_8_mmi(uint8_t *src, ptrdiff_t stride)
 void ff_pred16x16_dc_8_mmi(uint8_t *src, ptrdiff_t stride)
 {
     __asm__ volatile (
-        ".set arch=loongson3a               \r\n"
         "daddiu $2, %0, -1                  \r\n"
         "dli $6, 0x10                       \r\n"
         "xor $8, $8, $8                     \r\n"
@@ -93,10 +91,9 @@ void ff_pred16x16_dc_8_mmi(uint8_t *src, ptrdiff_t stride)
         "daddiu $2, $2, 1                   \r\n"
         "daddiu $6, $6, -1                  \r\n"
         "bnez $6, 2b                        \r\n"
-        "dli $7, 0x0101010101010101         \r\n"
         "daddiu $8, $8, 0x10                \r\n"
         "dsra $8, 5                         \r\n"
-        "dmul $5, $8, $7                    \r\n"
+        "dmul $5, $8, %2                    \r\n"
         "daddu $2, %0, $0                   \r\n"
         "dli $6, 0x10                       \r\n"
         "3:                                 \r\n"
@@ -107,8 +104,8 @@ void ff_pred16x16_dc_8_mmi(uint8_t *src, ptrdiff_t stride)
         "daddu $2, $2, %1                   \r\n"
         "daddiu $6, $6, -1                  \r\n"
         "bnez $6, 3b                        \r\n"
-        ::"r"(src),"r"(stride)
-        : "$2","$3","$4","$5","$6","$7","$8","memory"
+        ::"r"(src),"r"(stride),"r"(ff_pb_1)
+        : "$2","$3","$4","$5","$6","$8","memory"
     );
 }
 
@@ -348,10 +345,8 @@ void ff_pred4x4_dc_8_mmi(uint8_t *src, const uint8_t *topright,
                  + src[-1+2*stride] + src[-1+3*stride] + 4) >>3;
 
     __asm__ volatile (
-        ".set arch=loongson3a               \r\n"
-        "dli $4, 0x01010101010101           \r\n"
         "daddu $2, %2, $0                   \r\n"
-        "dmul $3, $2, $4                    \r\n"
+        "dmul $3, $2, %3                    \r\n"
         "xor $4, $4, $4                     \r\n"
         "gsswx $3, 0(%0,$4)                 \r\n"
         "daddu $4, %1                       \r\n"
@@ -360,7 +355,7 @@ void ff_pred4x4_dc_8_mmi(uint8_t *src, const uint8_t *topright,
         "gsswx $3, 0(%0,$4)                 \r\n"
         "daddu $4, %1                       \r\n"
         "gsswx $3, 0(%0,$4)                 \r\n"
-        ::"r"(src),"r"(stride),"r"(dc)
+        ::"r"(src),"r"(stride),"r"(dc),"r"(ff_pb_1)
         : "$2","$3","$4","memory"
     );
 }
@@ -387,21 +382,19 @@ void ff_pred8x8_vertical_8_mmi(uint8_t *src, ptrdiff_t stride)
 void ff_pred8x8_horizontal_8_mmi(uint8_t *src, ptrdiff_t stride)
 {
     __asm__ volatile (
-        ".set arch=loongson3a               \r\n"
         "daddiu $2, %0, -1                  \r\n"
         "daddu $3, %0, $0                   \r\n"
         "dli $6, 0x8                        \r\n"
-        "dli $7, 0x0101010101010101         \r\n"
         "1:                                 \r\n"
         "lbu $4, 0($2)                      \r\n"
-        "dmul $5, $4, $7                    \r\n"
+        "dmul $5, $4, %2                    \r\n"
         "sdl $5, 7($3)                      \r\n"
         "sdr $5, 0($3)                      \r\n"
         "daddu $2, %1                       \r\n"
         "daddu $3, %1                       \r\n"
         "daddiu $6, -1                      \r\n"
         "bnez $6, 1b                        \r\n"
-        ::"r"(src),"r"(stride)
+        ::"r"(src),"r"(stride),"r"(ff_pb_1)
         : "$2","$3","$4","$5","$6","memory"
     );
 }
@@ -425,14 +418,10 @@ static void ff_pred16x16_plane_compat_8_mmi(uint8_t *src, ptrdiff_t stride,
         "punpcklbh $f2, $f2, $f8            \r\n"
         "punpcklbh $f4, $f4, $f8            \r\n"
         "punpcklbh $f6, $f6, $f8            \r\n"
-        "dli $4, 0xfffbfffafff9fff8         \r\n"
-        "dmtc1 $4, $f20                     \r\n"
-        "dli $4, 0xfffffffefffdfffc         \r\n"
-        "dmtc1 $4, $f22                     \r\n"
-        "dli $4, 0x0004000300020001         \r\n"
-        "dmtc1 $4, $f24                     \r\n"
-        "dli $4, 0x0008000700060005         \r\n"
-        "dmtc1 $4, $f26                     \r\n"
+        "dmtc1 %4, $f20                     \r\n"
+        "dmtc1 %5, $f22                     \r\n"
+        "dmtc1 %6, $f24                     \r\n"
+        "dmtc1 %7, $f26                     \r\n"
         "pmullh $f0, $f0, $f20              \r\n"
         "pmullh $f2, $f2, $f22              \r\n"
         "pmullh $f4, $f4, $f24              \r\n"
@@ -576,17 +565,13 @@ static void ff_pred16x16_plane_compat_8_mmi(uint8_t *src, ptrdiff_t stride,
         "pshufh $f12, $f12, $f8             \r\n"
         "dli $4, 5                          \r\n"
         "dmtc1 $4, $f14                     \r\n"
-        "dli $4, 0x0003000200010000         \r\n"
-        "dmtc1 $4, $f2                      \r\n"
+        "dmtc1 %8, $f2                      \r\n"
         "pmullh $f2, $f2, $f0               \r\n"
-        "dli $4, 0x0007000600050004         \r\n"
-        "dmtc1 $4, $f4                      \r\n"
+        "dmtc1 %9, $f4                      \r\n"
         "pmullh $f4, $f4, $f0               \r\n"
-        "dli $4, 0x000b000a00090008         \r\n"
-        "dmtc1 $4, $f6                      \r\n"
+        "dmtc1 %10, $f6                      \r\n"
         "pmullh $f6, $f6, $f0               \r\n"
-        "dli $4, 0x000f000e000d000c         \r\n"
-        "dmtc1 $4, $f8                      \r\n"
+        "dmtc1 %11, $f8                      \r\n"
         "pmullh $f8, $f8, $f0               \r\n"
         "daddu $3, %0, $0                   \r\n"
         "dli $2, 16                         \r\n"
@@ -609,7 +594,9 @@ static void ff_pred16x16_plane_compat_8_mmi(uint8_t *src, ptrdiff_t stride,
         "daddu $3, %1                       \r\n"
         "daddiu $2, -1                      \r\n"
         "bnez $2, 1b                        \r\n"
-        ::"r"(src),"r"(stride),"r"(svq3),"r"(rv40)
+        ::"r"(src),"r"(stride),"r"(svq3),"r"(rv40),
+          "r"(ff_pw_m8tom5),"r"(ff_pw_m4tom1),"r"(ff_pw_1to4),"r"(ff_pw_5to8),
+          "r"(ff_pw_0to3),"r"(ff_pw_4to7),"r"(ff_pw_8tob),"r"(ff_pw_ctof)
         : "$2","$3","$4","$5","$6","$7","$8","memory"
     );
 }
@@ -784,21 +771,19 @@ void ff_pred8x16_vertical_8_mmi(uint8_t *src, ptrdiff_t stride)
 void ff_pred8x16_horizontal_8_mmi(uint8_t *src, ptrdiff_t stride)
 {
     __asm__ volatile (
-        ".set arch=loongson3a               \r\n"
         "daddiu $2, %0, -1                  \r\n"
         "daddu $3, %0, $0                   \r\n"
         "dli $6, 0x10                       \r\n"
-        "dli $7, 0x0101010101010101         \r\n"
         "1:                                 \r\n"
         "lbu $4, 0($2)                      \r\n"
-        "dmul $5, $4, $7                    \r\n"
+        "dmul $5, $4, %2                    \r\n"
         "sdl $5, 7($3)                      \r\n"
         "sdr $5, 0($3)                      \r\n"
         "daddu $2, %1                       \r\n"
         "daddu $3, %1                       \r\n"
         "daddiu $6, -1                      \r\n"
         "bnez $6, 1b                        \r\n"
-        ::"r"(src),"r"(stride)
+        ::"r"(src),"r"(stride),"r"(ff_pb_1)
         : "$2","$3","$4","$5","$6","memory"
     );
 }
