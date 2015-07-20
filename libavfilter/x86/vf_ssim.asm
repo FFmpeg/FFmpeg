@@ -97,8 +97,8 @@ cglobal ssim_4x4_line, 6, 8, 16, buf, buf_stride, ref, ref_stride, sums, w, buf_
     phaddd            m1, m6                    ; [dword] s2 a, b, s12 a, b
     punpckhdq     m2, m0, m1                    ; [dword] ss a, s12 a, ss b, s12 b
     punpckldq         m0, m1                    ; [dword] s1 a, s2 a, s1 b, s2 b
-    punpckhqdq    m1, m0, m2                    ; [dword] a s1, s2, ss, s12
-    punpcklqdq        m0, m2                    ; [dword] b s1, s2, ss, s12
+    punpckhqdq    m1, m0, m2                    ; [dword] b s1, s2, ss, s12
+    punpcklqdq        m0, m2                    ; [dword] a s1, s2, ss, s12
 
     mova  [sumsq+     0], m0
     mova  [sumsq+mmsize], m1
