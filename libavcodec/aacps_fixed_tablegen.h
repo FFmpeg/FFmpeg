@@ -288,7 +288,7 @@ static void ps_tableinit(void)
                 int im_smooth = pd0_im + pd1_im + pd2_im;
 
                 SoftFloat pd_mag = av_int2sf(((ipdopd_cos[(pd0-pd1)&7]+8)>>4) + ((ipdopd_cos[(pd0-pd2)&7]+4)>>3) +
-                                               ((ipdopd_cos[(pd1-pd2)&7]+2)>>2) + 0x15000000, 2);
+                                               ((ipdopd_cos[(pd1-pd2)&7]+2)>>2) + 0x15000000, 28);
                 pd_mag = av_div_sf(FLOAT_1, av_sqrt_sf(pd_mag));
                 shift = 30 - pd_mag.exp;
                 round = 1 << (shift-1);

@@ -64,7 +64,7 @@ av_cold void AAC_RENAME(ff_aac_sbr_init)(void)
 
     aacsbr_tableinit();
 
-    ff_ps_init();
+    AAC_RENAME(ff_ps_init)();
 }
 
 /** Places SBR in pure upsampling mode. */
@@ -91,7 +91,7 @@ av_cold void AAC_RENAME(ff_aac_sbr_ctx_init)(AACContext *ac, SpectralBandReplica
      * and scale back down at synthesis. */
     AAC_RENAME_32(ff_mdct_init)(&sbr->mdct,     7, 1, 1.0 / (64 * 32768.0));
     AAC_RENAME_32(ff_mdct_init)(&sbr->mdct_ana, 7, 1, -2.0 * 32768.0);
-    ff_ps_ctx_init(&sbr->ps);
+    AAC_RENAME(ff_ps_ctx_init)(&sbr->ps);
     AAC_RENAME(ff_sbrdsp_init)(&sbr->dsp);
     aacsbr_func_ptr_init(&sbr->c);
 }
@@ -945,7 +945,7 @@ static void read_sbr_extension(AACContext *ac, SpectralBandReplication *sbr,
             *num_bits_left = 0;
         } else {
 #if 1
-            *num_bits_left -= ff_ps_read_data(ac->avctx, gb, &sbr->ps, *num_bits_left);
+            *num_bits_left -= AAC_RENAME(ff_ps_read_data)(ac->avctx, gb, &sbr->ps, *num_bits_left);
             ac->avctx->profile = FF_PROFILE_AAC_HE_V2;
 #else
             avpriv_report_missing_feature(ac->avctx, "Parametric Stereo");
@@ -1501,7 +1501,7 @@ void AAC_RENAME(ff_sbr_apply)(AACContext *ac, SpectralBandReplication *sbr, int 
 
     if (ac->oc[1].m4ac.ps == 1) {
         if (sbr->ps.start) {
-            ff_ps_apply(ac->avctx, &sbr->ps, sbr->X[0], sbr->X[1], sbr->kx[1] + sbr->m[1]);
+            AAC_RENAME(ff_ps_apply)(ac->avctx, &sbr->ps, sbr->X[0], sbr->X[1], sbr->kx[1] + sbr->m[1]);
         } else {
             memcpy(sbr->X[1], sbr->X[0], sizeof(sbr->X[0]));
         }
