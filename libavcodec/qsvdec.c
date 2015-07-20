@@ -49,60 +49,80 @@ int ff_qsv_map_pixfmt(enum AVPixelFormat format)
     }
 }
 
-int ff_qsv_decode_init(AVCodecContext *avctx, QSVContext *q)
+int ff_qsv_decode_init(AVCodecContext *avctx, QSVContext *q, AVPacket *avpkt)
 {
     mfxVideoParam param = { { 0 } };
+    mfxBitstream bs   = { { { 0 } } };
     int ret;
 
-    q->async_fifo = av_fifo_alloc((1 + q->async_depth) *
-                                  (sizeof(mfxSyncPoint) + sizeof(QSVFrame*)));
-    if (!q->async_fifo)
-        return AVERROR(ENOMEM);
-
     q->iopattern  = MFX_IOPATTERN_OUT_SYSTEM_MEMORY;
-
-    if (avctx->hwaccel_context) {
-        AVQSVContext *qsv = avctx->hwaccel_context;
-
-        q->session        = qsv->session;
-        q->iopattern      = qsv->iopattern;
-        q->ext_buffers    = qsv->ext_buffers;
-        q->nb_ext_buffers = qsv->nb_ext_buffers;
-    }
     if (!q->session) {
-        ret = ff_qsv_init_internal_session(avctx, &q->internal_qs, NULL);
-        if (ret < 0)
-            return ret;
+        if (avctx->hwaccel_context) {
+            AVQSVContext *qsv = avctx->hwaccel_context;
 
-        q->session = q->internal_qs.session;
+            q->session        = qsv->session;
+            q->iopattern      = qsv->iopattern;
+            q->ext_buffers    = qsv->ext_buffers;
+            q->nb_ext_buffers = qsv->nb_ext_buffers;
+        }
+        if (!q->session) {
+            ret = ff_qsv_init_internal_session(avctx, &q->internal_qs, NULL);
+            if (ret < 0)
+                return ret;
+
+            q->session = q->internal_qs.session;
+        }
     }
+
+    if (avpkt->size) {
+        bs.Data       = avpkt->data;
+        bs.DataLength = avpkt->size;
+        bs.MaxLength  = bs.DataLength;
+        bs.TimeStamp  = avpkt->pts;
+    } else
+        return AVERROR_INVALIDDATA;
 
     ret = ff_qsv_codec_id_to_mfx(avctx->codec_id);
-    if (ret < 0)
+    if (ret < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Unsupported codec_id %08x\n", avctx->codec_id);
         return ret;
+    }
 
-    param.mfx.CodecId      = ret;
-    param.mfx.CodecProfile = avctx->profile;
-    param.mfx.CodecLevel   = avctx->level;
+    param.mfx.CodecId = ret;
 
-    param.mfx.FrameInfo.BitDepthLuma   = 8;
-    param.mfx.FrameInfo.BitDepthChroma = 8;
-    param.mfx.FrameInfo.Shift          = 0;
-    param.mfx.FrameInfo.FourCC         = MFX_FOURCC_NV12;
-    param.mfx.FrameInfo.Width          = avctx->coded_width;
-    param.mfx.FrameInfo.Height         = avctx->coded_height;
-    param.mfx.FrameInfo.ChromaFormat   = MFX_CHROMAFORMAT_YUV420;
-
+    ret = MFXVideoDECODE_DecodeHeader(q->session, &bs, &param);
+    if (MFX_ERR_MORE_DATA==ret) {
+        return AVERROR(EAGAIN);
+    } else if (ret < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Decode header error %d\n", ret);
+        return ff_qsv_error(ret);
+    }
     param.IOPattern   = q->iopattern;
     param.AsyncDepth  = q->async_depth;
     param.ExtParam    = q->ext_buffers;
     param.NumExtParam = q->nb_ext_buffers;
+    param.mfx.FrameInfo.BitDepthLuma   = 8;
+    param.mfx.FrameInfo.BitDepthChroma = 8;
 
     ret = MFXVideoDECODE_Init(q->session, &param);
     if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR, "Error initializing the MFX video decoder\n");
         return ff_qsv_error(ret);
     }
+
+    avctx->pix_fmt      = AV_PIX_FMT_NV12;
+    avctx->profile      = param.mfx.CodecProfile;
+    avctx->level        = param.mfx.CodecLevel;
+    avctx->coded_width  = param.mfx.FrameInfo.Width;
+    avctx->coded_height = param.mfx.FrameInfo.Height;
+    avctx->width        = param.mfx.FrameInfo.CropW - param.mfx.FrameInfo.CropX;
+    avctx->height       = param.mfx.FrameInfo.CropH - param.mfx.FrameInfo.CropY;
+
+    q->async_fifo = av_fifo_alloc((1 + q->async_depth) *
+                                  (sizeof(mfxSyncPoint) + sizeof(QSVFrame*)));
+    if (!q->async_fifo)
+        return AVERROR(ENOMEM);
+
 
     return 0;
 }
