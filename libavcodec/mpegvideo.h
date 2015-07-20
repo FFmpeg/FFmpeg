@@ -38,6 +38,7 @@
 #include "h263dsp.h"
 #include "hpeldsp.h"
 #include "idctdsp.h"
+#include "internal.h"
 #include "me_cmp.h"
 #include "motion_est.h"
 #include "mpegpicture.h"
