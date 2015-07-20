@@ -271,7 +271,7 @@ static int flashsv_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         avctx->coded_frame->key_frame = 0;
     }
 
-    if (avctx->coded_frame->key_frame)
+    if (I_frame)
         pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;
 
