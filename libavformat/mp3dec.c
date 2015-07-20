@@ -437,7 +437,7 @@ static int check(AVIOContext *pb, int64_t pos)
     return sd.frame_size;
 }
 
-static int64_t sync(AVFormatContext *s, int64_t target_pos, int flags)
+static int64_t mp3_sync(AVFormatContext *s, int64_t target_pos, int flags)
 {
     int dir = (flags&AVSEEK_FLAG_BACKWARD) ? -1 : 1;
     int64_t best_pos;
@@ -511,7 +511,7 @@ static int mp3_seek(AVFormatContext *s, int stream_index, int64_t timestamp,
         return -1;
     }
 
-    best_pos = sync(s, ie->pos, flags);
+    best_pos = mp3_sync(s, ie->pos, flags);
     if (best_pos < 0)
         return best_pos;
 
