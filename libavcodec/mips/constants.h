@@ -43,6 +43,8 @@ extern const uint64_t ff_pw_1to4;
 extern const uint64_t ff_pw_5to8;
 extern const uint64_t ff_pw_0to3;
 extern const uint64_t ff_pw_4to7;
+extern const uint64_t ff_pw_8tob;
+extern const uint64_t ff_pw_ctof;
 
 extern const uint64_t ff_pb_1;
 extern const uint64_t ff_pb_3;
@@ -52,5 +54,8 @@ extern const uint64_t ff_pb_A1;
 extern const uint64_t ff_rnd;
 extern const uint64_t ff_rnd2;
 extern const uint64_t ff_rnd3;
+
+extern const uint64_t ff_wm1010;
+extern const uint64_t ff_d40000;
 
 #endif /* AVCODEC_MIPS_CONSTANTS_H */

@@ -42,6 +42,8 @@ DECLARE_ALIGNED(8, const uint64_t, ff_pw_1to4) =    {0x0004000300020001ULL};
 DECLARE_ALIGNED(8, const uint64_t, ff_pw_5to8) =    {0x0008000700060005ULL};
 DECLARE_ALIGNED(8, const uint64_t, ff_pw_0to3) =    {0x0003000200010000ULL};
 DECLARE_ALIGNED(8, const uint64_t, ff_pw_4to7) =    {0x0007000600050004ULL};
+DECLARE_ALIGNED(8, const uint64_t, ff_pw_8tob) =    {0x000b000a00090008ULL};
+DECLARE_ALIGNED(8, const uint64_t, ff_pw_ctof) =    {0x000f000e000d000cULL};
 
 DECLARE_ALIGNED(8, const uint64_t, ff_pb_1) =       {0x0101010101010101ULL};
 DECLARE_ALIGNED(8, const uint64_t, ff_pb_3) =       {0x0303030303030303ULL};
@@ -51,3 +53,6 @@ DECLARE_ALIGNED(8, const uint64_t, ff_pb_A1) =      {0xA1A1A1A1A1A1A1A1ULL};
 DECLARE_ALIGNED(8, const uint64_t, ff_rnd) =        {0x0004000400040004ULL};
 DECLARE_ALIGNED(8, const uint64_t, ff_rnd2) =       {0x0040004000400040ULL};
 DECLARE_ALIGNED(8, const uint64_t, ff_rnd3) =       {0x0020002000200020ULL};
+
+DECLARE_ALIGNED(8, const uint64_t, ff_wm1010) =     {0xFFFF0000FFFF0000ULL};
+DECLARE_ALIGNED(8, const uint64_t, ff_d40000) =     {0x0000000000040000ULL};
