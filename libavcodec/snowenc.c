@@ -122,8 +122,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     ff_set_cmp(&s->mecc, s->mecc.me_sub_cmp, s->avctx->me_sub_cmp);
 
     s->input_picture = av_frame_alloc();
-    avctx->coded_frame = av_frame_alloc();
-    if (!s->input_picture || !avctx->coded_frame)
+    if (!s->input_picture)
         return AVERROR(ENOMEM);
 
     if ((ret = ff_snow_get_buffer(s, s->input_picture)) < 0)
@@ -1852,7 +1851,7 @@ redo_frame:
     emms_c();
 
     pkt->size = ff_rac_terminate(c);
-    if (avctx->coded_frame->key_frame)
+    if (s->current_picture->key_frame)
         pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;
 
@@ -1866,7 +1865,6 @@ static av_cold int encode_end(AVCodecContext *avctx)
     ff_snow_common_end(s);
     ff_rate_control_uninit(&s->m);
     av_frame_free(&s->input_picture);
-    av_frame_free(&avctx->coded_frame);
     av_freep(&avctx->stats_out);
 
     return 0;

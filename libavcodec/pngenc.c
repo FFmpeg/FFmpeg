@@ -627,10 +627,6 @@ static av_cold int png_enc_init(AVCodecContext *avctx)
         avctx->bits_per_coded_sample = 8;
     }
 
-    avctx->coded_frame = av_frame_alloc();
-    if (!avctx->coded_frame)
-        return AVERROR(ENOMEM);
-
     avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
     avctx->coded_frame->key_frame = 1;
 
@@ -713,7 +709,6 @@ static av_cold int png_enc_close(AVCodecContext *avctx)
     PNGEncContext *s = avctx->priv_data;
 
     deflateEnd(&s->zstream);
-    av_frame_free(&avctx->coded_frame);
     return 0;
 }
 

@@ -1092,8 +1092,6 @@ static av_cold int encode_close(AVCodecContext *avctx)
     ProresContext *ctx = avctx->priv_data;
     int i;
 
-    av_frame_free(&avctx->coded_frame);
-
     if (ctx->tdata) {
         for (i = 0; i < avctx->thread_count; i++)
             av_freep(&ctx->tdata[i].nodes);
@@ -1127,9 +1125,6 @@ static av_cold int encode_init(AVCodecContext *avctx)
     int interlaced = !!(avctx->flags & CODEC_FLAG_INTERLACED_DCT);
 
     avctx->bits_per_raw_sample = 10;
-    avctx->coded_frame = av_frame_alloc();
-    if (!avctx->coded_frame)
-        return AVERROR(ENOMEM);
     avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
     avctx->coded_frame->key_frame = 1;
 

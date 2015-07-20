@@ -388,10 +388,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
     FF_ALLOCZ_OR_GOTO(ctx->m.avctx, ctx->mb_qscale,
                       ctx->m.mb_num * sizeof(uint8_t), fail);
 
-    avctx->coded_frame = av_frame_alloc();
-    if (!avctx->coded_frame)
-        return AVERROR(ENOMEM);
-
     avctx->coded_frame->key_frame = 1;
     avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
 
@@ -1137,8 +1133,6 @@ static av_cold int dnxhd_encode_end(AVCodecContext *avctx)
 
     for (i = 1; i < avctx->thread_count; i++)
         av_freep(&ctx->thread[i]);
-
-    av_frame_free(&avctx->coded_frame);
 
     return 0;
 }

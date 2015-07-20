@@ -1617,8 +1617,7 @@ static void frame_end(MpegEncContext *s)
     if (s->pict_type!= AV_PICTURE_TYPE_B)
         s->last_non_b_pict_type = s->pict_type;
 
-    s->avctx->coded_frame = s->current_picture_ptr->f;
-
+    av_frame_copy_props(s->avctx->coded_frame, s->current_picture.f);
 }
 
 static void update_noise_reduction(MpegEncContext *s)

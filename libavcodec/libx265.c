@@ -66,8 +66,6 @@ static av_cold int libx265_encode_close(AVCodecContext *avctx)
 {
     libx265Context *ctx = avctx->priv_data;
 
-    av_frame_free(&avctx->coded_frame);
-
     ctx->api->param_free(ctx->params);
 
     if (ctx->encoder)
@@ -90,12 +88,6 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
                "4:2:2 and 4:4:4 support is not fully defined for HEVC yet. "
                "Set -strict experimental to encode anyway.\n");
         return AVERROR(ENOSYS);
-    }
-
-    avctx->coded_frame = av_frame_alloc();
-    if (!avctx->coded_frame) {
-        av_log(avctx, AV_LOG_ERROR, "Could not allocate frame.\n");
-        return AVERROR(ENOMEM);
     }
 
     ctx->params = ctx->api->param_alloc();

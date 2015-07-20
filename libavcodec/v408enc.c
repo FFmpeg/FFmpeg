@@ -26,12 +26,6 @@
 
 static av_cold int v408_encode_init(AVCodecContext *avctx)
 {
-    avctx->coded_frame = av_frame_alloc();
-
-    if (!avctx->coded_frame) {
-        av_log(avctx, AV_LOG_ERROR, "Could not allocate frame.\n");
-        return AVERROR(ENOMEM);
-    }
 
     return 0;
 }
@@ -82,8 +76,6 @@ static int v408_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
 static av_cold int v408_encode_close(AVCodecContext *avctx)
 {
-    av_frame_free(&avctx->coded_frame);
-
     return 0;
 }
 

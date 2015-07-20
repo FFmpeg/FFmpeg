@@ -504,7 +504,6 @@ static av_cold int svq1_encode_end(AVCodecContext *avctx)
 
     av_frame_free(&s->current_picture);
     av_frame_free(&s->last_picture);
-    av_frame_free(&avctx->coded_frame);
 
     return 0;
 }
@@ -518,10 +517,9 @@ static av_cold int svq1_encode_init(AVCodecContext *avctx)
     ff_me_cmp_init(&s->mecc, avctx);
     ff_mpegvideoencdsp_init(&s->m.mpvencdsp, avctx);
 
-    avctx->coded_frame = av_frame_alloc();
     s->current_picture = av_frame_alloc();
     s->last_picture    = av_frame_alloc();
-    if (!avctx->coded_frame || !s->current_picture || !s->last_picture) {
+    if (!s->current_picture || !s->last_picture) {
         svq1_encode_end(avctx);
         return AVERROR(ENOMEM);
     }

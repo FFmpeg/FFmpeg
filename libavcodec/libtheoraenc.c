@@ -267,11 +267,6 @@ static av_cold int encode_init(AVCodecContext* avc_context)
 
     th_comment_clear(&t_comment);
 
-    /* Set up the output AVFrame */
-    avc_context->coded_frame = av_frame_alloc();
-    if (!avc_context->coded_frame)
-        return AVERROR(ENOMEM);
-
     return 0;
 }
 
@@ -363,7 +358,6 @@ static av_cold int encode_close(AVCodecContext* avc_context)
 
     th_encode_free(h->t_state);
     av_freep(&h->stats);
-    av_frame_free(&avc_context->coded_frame);
     av_freep(&avc_context->stats_out);
     av_freep(&avc_context->extradata);
     avc_context->extradata_size = 0;

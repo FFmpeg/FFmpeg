@@ -563,12 +563,6 @@ static av_cold int nvenc_encode_init(AVCodecContext *avctx)
     if (!nvenc_dyload_nvenc(avctx))
         return AVERROR_EXTERNAL;
 
-    avctx->coded_frame = av_frame_alloc();
-    if (!avctx->coded_frame) {
-        res = AVERROR(ENOMEM);
-        goto error;
-    }
-
     ctx->last_dts = AV_NOPTS_VALUE;
 
     ctx->encode_config.version = NV_ENC_CONFIG_VER;
@@ -1051,8 +1045,6 @@ error:
     if (ctx->cu_context)
         dl_fn->cu_ctx_destroy(ctx->cu_context);
 
-    av_frame_free(&avctx->coded_frame);
-
     nvenc_unload_nvenc(avctx);
 
     ctx->nvencoder = NULL;
@@ -1085,8 +1077,6 @@ static av_cold int nvenc_encode_close(AVCodecContext *avctx)
     ctx->cu_context = NULL;
 
     nvenc_unload_nvenc(avctx);
-
-    av_frame_free(&avctx->coded_frame);
 
     return 0;
 }

@@ -44,11 +44,6 @@ static av_cold int avui_encode_init(AVCodecContext *avctx)
     AV_WB32(avctx->extradata + 48, avctx->height);
     memcpy(avctx->extradata + 52, "\0\0\0\x1\0\0\0\x20\0\0\0\x2", 12);
 
-    avctx->coded_frame = av_frame_alloc();
-    if (!avctx->coded_frame) {
-        av_log(avctx, AV_LOG_ERROR, "Could not allocate frame.\n");
-        return AVERROR(ENOMEM);
-    }
 
     return 0;
 }
@@ -99,13 +94,6 @@ static int avui_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     return 0;
 }
 
-static av_cold int avui_encode_close(AVCodecContext *avctx)
-{
-    av_frame_free(&avctx->coded_frame);
-
-    return 0;
-}
-
 AVCodec ff_avui_encoder = {
     .name         = "avui",
     .long_name    = NULL_IF_CONFIG_SMALL("Avid Meridien Uncompressed"),
@@ -113,7 +101,6 @@ AVCodec ff_avui_encoder = {
     .id           = AV_CODEC_ID_AVUI,
     .init         = avui_encode_init,
     .encode2      = avui_encode_frame,
-    .close        = avui_encode_close,
     .capabilities = CODEC_CAP_EXPERIMENTAL,
     .pix_fmts     = (const enum AVPixelFormat[]){ AV_PIX_FMT_UYVY422, AV_PIX_FMT_NONE },
 };

@@ -207,8 +207,6 @@ static av_cold int XAVS_close(AVCodecContext *avctx)
     if (x4->enc)
         xavs_encoder_close(x4->enc);
 
-    av_frame_free(&avctx->coded_frame);
-
     return 0;
 }
 
@@ -355,10 +353,6 @@ static av_cold int XAVS_init(AVCodecContext *avctx)
         return -1;
 
     if (!(x4->pts_buffer = av_mallocz_array((avctx->max_b_frames+1), sizeof(*x4->pts_buffer))))
-        return AVERROR(ENOMEM);
-
-    avctx->coded_frame = av_frame_alloc();
-    if (!avctx->coded_frame)
         return AVERROR(ENOMEM);
 
     /* TAG: Do we have GLOBAL HEADER in AVS */

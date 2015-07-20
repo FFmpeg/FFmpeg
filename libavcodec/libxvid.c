@@ -680,9 +680,6 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)
     }
 
     x->encoder_handle  = xvid_enc_create.handle;
-    avctx->coded_frame = av_frame_alloc();
-    if (!avctx->coded_frame)
-        return AVERROR(ENOMEM);
 
     return 0;
 }
@@ -818,7 +815,6 @@ static av_cold int xvid_encode_close(AVCodecContext *avctx)
         x->encoder_handle = NULL;
     }
 
-    av_frame_free(&avctx->coded_frame);
     av_freep(&avctx->extradata);
     if (x->twopassbuffer) {
         av_freep(&x->twopassbuffer);

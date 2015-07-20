@@ -60,10 +60,6 @@ static av_cold int bmp_encode_init(AVCodecContext *avctx){
         return AVERROR(EINVAL);
     }
 
-    avctx->coded_frame = av_frame_alloc();
-    if (!avctx->coded_frame)
-        return AVERROR(ENOMEM);
-
     return 0;
 }
 
@@ -163,12 +159,6 @@ static int bmp_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     return 0;
 }
 
-static av_cold int bmp_encode_close(AVCodecContext *avctx)
-{
-    av_frame_free(&avctx->coded_frame);
-    return 0;
-}
-
 AVCodec ff_bmp_encoder = {
     .name           = "bmp",
     .long_name      = NULL_IF_CONFIG_SMALL("BMP (Windows and OS/2 bitmap)"),
@@ -176,7 +166,6 @@ AVCodec ff_bmp_encoder = {
     .id             = AV_CODEC_ID_BMP,
     .init           = bmp_encode_init,
     .encode2        = bmp_encode_frame,
-    .close          = bmp_encode_close,
     .pix_fmts       = (const enum AVPixelFormat[]){
         AV_PIX_FMT_BGRA, AV_PIX_FMT_BGR24,
         AV_PIX_FMT_RGB565, AV_PIX_FMT_RGB555, AV_PIX_FMT_RGB444,

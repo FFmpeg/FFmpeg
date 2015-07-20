@@ -254,10 +254,6 @@ int ff_qsv_enc_init(AVCodecContext *avctx, QSVEncContext *q)
         return ret;
     }
 
-    avctx->coded_frame = av_frame_alloc();
-    if (!avctx->coded_frame)
-        return AVERROR(ENOMEM);
-
     q->avctx = avctx;
 
     return 0;
@@ -534,8 +530,6 @@ int ff_qsv_enc_close(AVCodecContext *avctx, QSVEncContext *q)
     }
     av_fifo_free(q->async_fifo);
     q->async_fifo = NULL;
-
-    av_frame_free(&avctx->coded_frame);
 
     return 0;
 }

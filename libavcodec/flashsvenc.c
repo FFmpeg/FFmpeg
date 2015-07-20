@@ -98,8 +98,6 @@ static av_cold int flashsv_encode_end(AVCodecContext *avctx)
     av_freep(&s->previous_frame);
     av_freep(&s->tmpblock);
 
-    av_frame_free(&avctx->coded_frame);
-
     return 0;
 }
 
@@ -128,12 +126,6 @@ static av_cold int flashsv_encode_init(AVCodecContext *avctx)
 
     if (!s->tmpblock || !s->encbuffer) {
         av_log(avctx, AV_LOG_ERROR, "Memory allocation failed.\n");
-        return AVERROR(ENOMEM);
-    }
-
-    avctx->coded_frame = av_frame_alloc();
-    if (!avctx->coded_frame) {
-        flashsv_encode_end(avctx);
         return AVERROR(ENOMEM);
     }
 
