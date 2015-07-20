@@ -771,6 +771,12 @@ static int xvid_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     }
 
     if (xerr > 0) {
+        uint8_t *sd = av_packet_new_side_data(pkt, AV_PKT_DATA_QUALITY_FACTOR,
+                                              sizeof(int));
+        if (!sd)
+            return AVERROR(ENOMEM);
+        *(int *)sd = xvid_enc_stats.quant * FF_QP2LAMBDA;
+
         *got_packet = 1;
 
         avctx->coded_frame->quality = xvid_enc_stats.quant * FF_QP2LAMBDA;

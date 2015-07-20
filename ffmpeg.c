@@ -667,6 +667,11 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
         }
         ost->frame_number++;
     }
+    if (avctx->codec_type == AVMEDIA_TYPE_VIDEO) {
+        uint8_t *sd = av_packet_get_side_data(pkt, AV_PKT_DATA_QUALITY_FACTOR,
+                                              NULL);
+        ost->quality = sd ? *(int *)sd : -1;
+    }
 
     if (bsfc)
         av_packet_split_side_data(pkt);
@@ -1257,7 +1262,8 @@ static void do_video_stats(OutputStream *ost, int frame_size)
     enc = ost->enc_ctx;
     if (enc->codec_type == AVMEDIA_TYPE_VIDEO) {
         frame_number = ost->st->nb_frames;
-        fprintf(vstats_file, "frame= %5d q= %2.1f ", frame_number, enc->coded_frame ? enc->coded_frame->quality / (float)FF_QP2LAMBDA : 0);
+        fprintf(vstats_file, "frame= %5d q= %2.1f ", frame_number,
+                ost->quality / (float)FF_QP2LAMBDA);
         if (enc->coded_frame && (enc->flags&CODEC_FLAG_PSNR))
             fprintf(vstats_file, "PSNR= %6.2f ", psnr(enc->coded_frame->error[0] / (enc->width * enc->height * 255.0 * 255.0)));
 
@@ -1548,8 +1554,9 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
         float q = -1;
         ost = output_streams[i];
         enc = ost->enc_ctx;
-        if (!ost->stream_copy && enc->coded_frame)
-            q = enc->coded_frame->quality / (float)FF_QP2LAMBDA;
+        if (!ost->stream_copy)
+            q = ost->quality / (float) FF_QP2LAMBDA;
+
         if (vid && enc->codec_type == AVMEDIA_TYPE_VIDEO) {
             snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "q=%2.1f ", q);
             av_bprintf(&buf_script, "stream_%d_%d_q=%.1f\n",

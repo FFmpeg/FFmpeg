@@ -456,6 +456,9 @@ typedef struct OutputStream {
     // number of frames/samples sent to the encoder
     uint64_t frames_encoded;
     uint64_t samples_encoded;
+
+    /* packet quality factor */
+    int quality;
 } OutputStream;
 
 typedef struct OutputFile {
