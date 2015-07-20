@@ -21,9 +21,11 @@
  */
 
 #include <stdlib.h>
+#include "libavutil/internal.h"
+#include "libavutil/common.h"
+#undef CONFIG_HARDCODED_TABLES
 #define CONFIG_HARDCODED_TABLES 0
 #define USE_FIXED 0
-#include "libavutil/common.h"
 #include "aacsbr_tablegen.h"
 #include "tableprint.h"
 
