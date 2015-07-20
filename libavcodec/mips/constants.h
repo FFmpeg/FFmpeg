@@ -24,33 +24,33 @@
 
 #include <stdint.h>
 
-extern const uint64_t __attribute__ ((aligned(8))) ff_pw_1;
-extern const uint64_t __attribute__ ((aligned(8))) ff_pw_3;
-extern const uint64_t __attribute__ ((aligned(8))) ff_pw_4;
-extern const uint64_t __attribute__ ((aligned(8))) ff_pw_5;
-extern const uint64_t __attribute__ ((aligned(8))) ff_pw_8;
-extern const uint64_t __attribute__ ((aligned(8))) ff_pw_9;
-extern const uint64_t __attribute__ ((aligned(8))) ff_pw_16;
-extern const uint64_t __attribute__ ((aligned(8))) ff_pw_18;
-extern const uint64_t __attribute__ ((aligned(8))) ff_pw_28;
-extern const uint64_t __attribute__ ((aligned(8))) ff_pw_32;
-extern const uint64_t __attribute__ ((aligned(8))) ff_pw_53;
-extern const uint64_t __attribute__ ((aligned(8))) ff_pw_64;
-extern const uint64_t __attribute__ ((aligned(8))) ff_pw_128;
-extern const uint64_t __attribute__ ((aligned(8))) ff_pw_m8tom5;
-extern const uint64_t __attribute__ ((aligned(8))) ff_pw_m4tom1;
-extern const uint64_t __attribute__ ((aligned(8))) ff_pw_1to4;
-extern const uint64_t __attribute__ ((aligned(8))) ff_pw_5to8;
-extern const uint64_t __attribute__ ((aligned(8))) ff_pw_0to3;
-extern const uint64_t __attribute__ ((aligned(8))) ff_pw_4to7;
+extern const uint64_t ff_pw_1;
+extern const uint64_t ff_pw_3;
+extern const uint64_t ff_pw_4;
+extern const uint64_t ff_pw_5;
+extern const uint64_t ff_pw_8;
+extern const uint64_t ff_pw_9;
+extern const uint64_t ff_pw_16;
+extern const uint64_t ff_pw_18;
+extern const uint64_t ff_pw_28;
+extern const uint64_t ff_pw_32;
+extern const uint64_t ff_pw_53;
+extern const uint64_t ff_pw_64;
+extern const uint64_t ff_pw_128;
+extern const uint64_t ff_pw_m8tom5;
+extern const uint64_t ff_pw_m4tom1;
+extern const uint64_t ff_pw_1to4;
+extern const uint64_t ff_pw_5to8;
+extern const uint64_t ff_pw_0to3;
+extern const uint64_t ff_pw_4to7;
 
-extern const uint64_t __attribute__ ((aligned(8))) ff_pb_1;
-extern const uint64_t __attribute__ ((aligned(8))) ff_pb_3;
-extern const uint64_t __attribute__ ((aligned(8))) ff_pb_80;
-extern const uint64_t __attribute__ ((aligned(8))) ff_pb_A1;
+extern const uint64_t ff_pb_1;
+extern const uint64_t ff_pb_3;
+extern const uint64_t ff_pb_80;
+extern const uint64_t ff_pb_A1;
 
-extern const uint64_t __attribute__ ((aligned(8))) ff_rnd;
-extern const uint64_t __attribute__ ((aligned(8))) ff_rnd2;
-extern const uint64_t __attribute__ ((aligned(8))) ff_rnd3;
+extern const uint64_t ff_rnd;
+extern const uint64_t ff_rnd2;
+extern const uint64_t ff_rnd3;
 
 #endif /* AVCODEC_MIPS_CONSTANTS_H */
