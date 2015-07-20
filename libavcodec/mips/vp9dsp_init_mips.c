@@ -80,9 +80,34 @@ static av_cold void vp9dsp_mc_init_msa(VP9DSPContext *dsp, int bpp)
     }
 }
 
+static av_cold void vp9dsp_loopfilter_init_msa(VP9DSPContext *dsp, int bpp)
+{
+    if (bpp == 8) {
+        dsp->loop_filter_8[0][0] = ff_loop_filter_h_4_8_msa;
+        dsp->loop_filter_8[0][1] = ff_loop_filter_v_4_8_msa;
+        dsp->loop_filter_8[1][0] = ff_loop_filter_h_8_8_msa;
+        dsp->loop_filter_8[1][1] = ff_loop_filter_v_8_8_msa;
+        dsp->loop_filter_8[2][0] = ff_loop_filter_h_16_8_msa;
+        dsp->loop_filter_8[2][1] = ff_loop_filter_v_16_8_msa;
+
+        dsp->loop_filter_16[0] = ff_loop_filter_h_16_16_msa;
+        dsp->loop_filter_16[1] = ff_loop_filter_v_16_16_msa;
+
+        dsp->loop_filter_mix2[0][0][0] = ff_loop_filter_h_44_16_msa;
+        dsp->loop_filter_mix2[0][0][1] = ff_loop_filter_v_44_16_msa;
+        dsp->loop_filter_mix2[0][1][0] = ff_loop_filter_h_48_16_msa;
+        dsp->loop_filter_mix2[0][1][1] = ff_loop_filter_v_48_16_msa;
+        dsp->loop_filter_mix2[1][0][0] = ff_loop_filter_h_84_16_msa;
+        dsp->loop_filter_mix2[1][0][1] = ff_loop_filter_v_84_16_msa;
+        dsp->loop_filter_mix2[1][1][0] = ff_loop_filter_h_88_16_msa;
+        dsp->loop_filter_mix2[1][1][1] = ff_loop_filter_v_88_16_msa;
+    }
+}
+
 static av_cold void vp9dsp_init_msa(VP9DSPContext *dsp, int bpp)
 {
     vp9dsp_mc_init_msa(dsp, bpp);
+    vp9dsp_loopfilter_init_msa(dsp, bpp);
 }
 #endif  // #if HAVE_MSA
 
