@@ -167,7 +167,7 @@ static inline void update_stat(AudioStatsContext *s, ChannelStats *p, double d)
     p->max_diff = FFMAX(p->max_diff, FFABS(d - (p->max_diff == -1 ? d : p->last)));
     p->diff1_sum += FFABS(d - p->last);
     p->last = d;
-    p->mask |= llrint(d * (1LLU<<63));
+    p->mask |= llrint(d * (UINT64_C(1) << 63));
 
     if (p->nb_samples >= s->tc_samples) {
         p->max_sigma_x2 = FFMAX(p->max_sigma_x2, p->avg_sigma_x2);
