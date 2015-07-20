@@ -1529,11 +1529,15 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
 
     if (av_codec_is_encoder(avctx->codec)) {
         int i;
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
         avctx->coded_frame = av_frame_alloc();
         if (!avctx->coded_frame) {
             ret = AVERROR(ENOMEM);
             goto free_and_end;
         }
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
         if (avctx->codec->sample_fmts) {
             for (i = 0; avctx->codec->sample_fmts[i] != AV_SAMPLE_FMT_NONE; i++) {
                 if (avctx->sample_fmt == avctx->codec->sample_fmts[i])
@@ -1756,7 +1760,11 @@ free_and_end:
         av_opt_free(avctx->priv_data);
     av_opt_free(avctx);
 
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
     av_frame_free(&avctx->coded_frame);
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     av_dict_free(&tmp);
     av_freep(&avctx->priv_data);
@@ -2907,7 +2915,11 @@ av_cold int avcodec_close(AVCodecContext *avctx)
     av_freep(&avctx->priv_data);
     if (av_codec_is_encoder(avctx->codec)) {
         av_freep(&avctx->extradata);
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
         av_frame_free(&avctx->coded_frame);
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     }
     avctx->codec = NULL;
     avctx->active_thread_type = 0;

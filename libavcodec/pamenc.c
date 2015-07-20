@@ -129,8 +129,12 @@ static int pam_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
 static av_cold int pam_encode_init(AVCodecContext *avctx)
 {
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
     avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
     avctx->coded_frame->key_frame = 1;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     return 0;
 }

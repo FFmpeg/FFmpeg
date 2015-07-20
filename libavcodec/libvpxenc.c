@@ -692,14 +692,26 @@ static int storeframe(AVCodecContext *avctx, struct FrameListData *cx_frame,
     if (ret >= 0) {
         memcpy(pkt->data, cx_frame->buf, pkt->size);
         pkt->pts = pkt->dts = cx_frame->pts;
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
         avctx->coded_frame->pts       = cx_frame->pts;
         avctx->coded_frame->key_frame = !!(cx_frame->flags & VPX_FRAME_IS_KEY);
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
         if (!!(cx_frame->flags & VPX_FRAME_IS_KEY)) {
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
             avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
             pkt->flags |= AV_PKT_FLAG_KEY;
         } else {
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
             avctx->coded_frame->pict_type = AV_PICTURE_TYPE_P;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
         }
 
         if (cx_frame->have_sse) {

@@ -385,8 +385,12 @@ static int qtrle_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     av_picture_copy(&s->previous_frame, (const AVPicture *)pict,
                     avctx->pix_fmt, avctx->width, avctx->height);
 
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
     avctx->coded_frame->key_frame = s->key_frame;
     avctx->coded_frame->pict_type = pict_type;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     if (s->key_frame)
         pkt->flags |= AV_PKT_FLAG_KEY;

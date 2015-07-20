@@ -466,12 +466,16 @@ int ff_qsv_encode(AVCodecContext *avctx, QSVEncContext *q,
             bs->FrameType & MFX_FRAMETYPE_xIDR)
             new_pkt.flags |= AV_PKT_FLAG_KEY;
 
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
         if (bs->FrameType & MFX_FRAMETYPE_I || bs->FrameType & MFX_FRAMETYPE_xI)
             avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
         else if (bs->FrameType & MFX_FRAMETYPE_P || bs->FrameType & MFX_FRAMETYPE_xP)
             avctx->coded_frame->pict_type = AV_PICTURE_TYPE_P;
         else if (bs->FrameType & MFX_FRAMETYPE_B || bs->FrameType & MFX_FRAMETYPE_xB)
             avctx->coded_frame->pict_type = AV_PICTURE_TYPE_B;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
         av_freep(&bs);
 

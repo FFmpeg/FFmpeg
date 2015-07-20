@@ -159,7 +159,11 @@ static int XAVS_frame(AVCodecContext *avctx, AVPacket *pkt,
         return 0;
     }
 
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
     avctx->coded_frame->pts = pic_out.i_pts;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     pkt->pts = pic_out.i_pts;
     if (avctx->has_b_frames) {
         if (!x4->out_frame_count)
@@ -169,6 +173,8 @@ static int XAVS_frame(AVCodecContext *avctx, AVPacket *pkt,
     } else
         pkt->dts = pkt->pts;
 
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
     switch (pic_out.i_type) {
     case XAVS_TYPE_IDR:
     case XAVS_TYPE_I:
@@ -182,15 +188,25 @@ static int XAVS_frame(AVCodecContext *avctx, AVPacket *pkt,
         avctx->coded_frame->pict_type = AV_PICTURE_TYPE_B;
         break;
     }
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     /* There is no IDR frame in AVS JiZhun */
     /* Sequence header is used as a flag */
     if (pic_out.i_type == XAVS_TYPE_I) {
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
         avctx->coded_frame->key_frame = 1;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
         pkt->flags |= AV_PKT_FLAG_KEY;
     }
 
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
     avctx->coded_frame->quality = (pic_out.i_qpplus1 - 1) * FF_QP2LAMBDA;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     sd = av_packet_new_side_data(pkt, AV_PKT_DATA_QUALITY_FACTOR, sizeof(int));
     if (!sd)

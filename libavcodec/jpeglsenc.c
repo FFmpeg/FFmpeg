@@ -414,8 +414,12 @@ memfail:
 
 static av_cold int encode_init_ls(AVCodecContext *ctx)
 {
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
     ctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
     ctx->coded_frame->key_frame = 1;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     if (ctx->pix_fmt != AV_PIX_FMT_GRAY8  &&
         ctx->pix_fmt != AV_PIX_FMT_GRAY16 &&

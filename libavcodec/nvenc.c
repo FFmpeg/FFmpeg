@@ -1137,6 +1137,8 @@ static int process_output_surface(AVCodecContext *avctx, AVPacket *pkt, AVFrame 
     switch (lock_params.pictureType) {
     case NV_ENC_PIC_TYPE_IDR:
         pkt->flags |= AV_PKT_FLAG_KEY;
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
     case NV_ENC_PIC_TYPE_I:
         avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
         break;
@@ -1154,6 +1156,8 @@ static int process_output_surface(AVCodecContext *avctx, AVPacket *pkt, AVFrame 
         av_log(avctx, AV_LOG_ERROR, "Please report this error and include as much information on how to reproduce it as possible.\n");
         res = AVERROR_EXTERNAL;
         goto error;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     }
 
     pkt->pts = lock_params.outputTimeStamp;
