@@ -1065,9 +1065,9 @@ static int asf_read_frame_header(AVFormatContext *s, AVIOContext *pb)
     DO_2BITS(asf->packet_property >> 4, asf->packet_seq, 0);
     DO_2BITS(asf->packet_property >> 2, asf->packet_frag_offset, 0);
     DO_2BITS(asf->packet_property, asf->packet_replic_size, 0);
-    av_log(asf, AV_LOG_TRACE, "key:%d stream:%d seq:%d offset:%d replic_size:%d\n",
+    av_log(asf, AV_LOG_TRACE, "key:%d stream:%d seq:%d offset:%d replic_size:%d num:%X packet_property %X\n",
             asf->packet_key_frame, asf->stream_index, asf->packet_seq,
-            asf->packet_frag_offset, asf->packet_replic_size);
+            asf->packet_frag_offset, asf->packet_replic_size, num, asf->packet_property);
     if (rsize+(int64_t)asf->packet_replic_size > asf->packet_size_left) {
         av_log(s, AV_LOG_ERROR, "packet_replic_size %d is invalid\n", asf->packet_replic_size);
         return AVERROR_INVALIDDATA;
@@ -1146,8 +1146,8 @@ static int asf_read_frame_header(AVFormatContext *s, AVIOContext *pb)
             return AVERROR_INVALIDDATA;
         } else if (asf->packet_frag_size > asf->packet_size_left - rsize) {
             if (asf->packet_frag_size > asf->packet_size_left - rsize + asf->packet_padsize) {
-                av_log(s, AV_LOG_ERROR, "packet_frag_size is invalid (%d-%d)\n",
-                       asf->packet_size_left, rsize);
+                av_log(s, AV_LOG_ERROR, "packet_frag_size is invalid (%d>%d-%d+%d)\n",
+                       asf->packet_frag_size, asf->packet_size_left, rsize, asf->packet_padsize);
                 return AVERROR_INVALIDDATA;
             } else {
                 int diff = asf->packet_frag_size - (asf->packet_size_left - rsize);
