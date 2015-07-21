@@ -113,6 +113,8 @@ typedef struct ASFContext {
 
     int no_resync_search;
     int export_xmp;
+
+    int uses_std_ecc;
 } ASFContext;
 
 static const AVOption options[] = {
@@ -956,44 +958,53 @@ static int asf_get_packet(AVFormatContext *s, AVIOContext *pb)
     int rsize = 8;
     int c, d, e, off;
 
-    // if we do not know packet size, allow skipping up to 32 kB
-    off = 32768;
-    if (asf->no_resync_search)
-        off = 3;
-    else if (s->packet_size > 0)
-        off = (avio_tell(pb) - s->internal->data_offset) % s->packet_size + 3;
+    if (asf->uses_std_ecc >= 0) {
+        // if we do not know packet size, allow skipping up to 32 kB
+        off = 32768;
+        if (asf->no_resync_search)
+            off = 3;
+        else if (s->packet_size > 0)
+            off = (avio_tell(pb) - s->internal->data_offset) % s->packet_size + 3;
 
-    c = d = e = -1;
-    while (off-- > 0) {
-        c = d;
-        d = e;
-        e = avio_r8(pb);
-        if (c == 0x82 && !d && !e)
-            break;
-    }
-
-    if (c != 0x82) {
-        /* This code allows handling of -EAGAIN at packet boundaries (i.e.
-         * if the packet sync code above triggers -EAGAIN). This does not
-         * imply complete -EAGAIN handling support at random positions in
-         * the stream. */
-        if (pb->error == AVERROR(EAGAIN))
-            return AVERROR(EAGAIN);
-        if (!avio_feof(pb))
-            av_log(s, AV_LOG_ERROR,
-                   "ff asf bad header %x  at:%"PRId64"\n", c, avio_tell(pb));
-    }
-    if ((c & 0x8f) == 0x82) {
-        if (d || e) {
-            if (!avio_feof(pb))
-                av_log(s, AV_LOG_ERROR, "ff asf bad non zero\n");
-            return AVERROR_INVALIDDATA;
+        c = d = e = -1;
+        while (off-- > 0) {
+            c = d;
+            d = e;
+            e = avio_r8(pb);
+            if (c == 0x82 && !d && !e)
+                break;
         }
-        c      = avio_r8(pb);
-        d      = avio_r8(pb);
-        rsize += 3;
-    } else if(!avio_feof(pb)) {
-        avio_seek(pb, -1, SEEK_CUR); // FIXME
+
+        if (!asf->uses_std_ecc) {
+            asf->uses_std_ecc =  (c == 0x82 && !d && !e) ? 1 : -1;
+        }
+
+        if (c != 0x82) {
+            /* This code allows handling of -EAGAIN at packet boundaries (i.e.
+            * if the packet sync code above triggers -EAGAIN). This does not
+            * imply complete -EAGAIN handling support at random positions in
+            * the stream. */
+            if (pb->error == AVERROR(EAGAIN))
+                return AVERROR(EAGAIN);
+            if (!avio_feof(pb))
+                av_log(s, AV_LOG_ERROR,
+                    "ff asf bad header %x  at:%"PRId64"\n", c, avio_tell(pb));
+        }
+        if ((c & 0x8f) == 0x82) {
+            if (d || e) {
+                if (!avio_feof(pb))
+                    av_log(s, AV_LOG_ERROR, "ff asf bad non zero\n");
+                return AVERROR_INVALIDDATA;
+            }
+            c      = avio_r8(pb);
+            d      = avio_r8(pb);
+            rsize += 3;
+        } else if(!avio_feof(pb)) {
+            avio_seek(pb, -1, SEEK_CUR); // FIXME
+        }
+    } else {
+        c = avio_r8(pb);
+        d = avio_r8(pb);
     }
 
     asf->packet_flags    = c;
