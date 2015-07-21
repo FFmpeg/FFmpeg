@@ -3481,12 +3481,12 @@ It accepts the following parameters:
 @item w, out_w
 The width of the output video. It defaults to @code{iw}.
 This expression is evaluated only once during the filter
-configuration.
+configuration, or when the @samp{w} or @samp{out_w} command is sent.
 
 @item h, out_h
 The height of the output video. It defaults to @code{ih}.
 This expression is evaluated only once during the filter
-configuration.
+configuration, or when the @samp{h} or @samp{out_h} command is sent.
 
 @item x
 The horizontal position, in the input video, of the left edge of the output
@@ -3645,6 +3645,22 @@ Set x depending on the value of y:
 crop=in_w/2:in_h/2:y:10+10*sin(n/10)
 @end example
 @end itemize
+
+@subsection Commands
+
+This filter supports the following commands:
+@table @option
+@item w, out_w
+@item h, out_h
+@item x
+@item y
+Set width/height of the output video and the horizontal/vertical position
+in the input video.
+The command accepts the same syntax of the corresponding option.
+
+If the specified expression is not valid, it is kept at its current
+value.
+@end table
 
 @section cropdetect
 

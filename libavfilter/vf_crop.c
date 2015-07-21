@@ -296,6 +296,42 @@ static int filter_frame(AVFilterLink *link, AVFrame *frame)
     return ff_filter_frame(link->dst->outputs[0], frame);
 }
 
+static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
+                           char *res, int res_len, int flags)
+{
+    CropContext *s = ctx->priv;
+    int ret;
+
+    if (   !strcmp(cmd, "out_w")  || !strcmp(cmd, "w")
+        || !strcmp(cmd, "out_h")  || !strcmp(cmd, "h")
+        || !strcmp(cmd, "x")      || !strcmp(cmd, "y")) {
+
+        int old_x = s->x;
+        int old_y = s->y;
+        int old_w = s->w;
+        int old_h = s->h;
+
+        AVFilterLink *outlink = ctx->outputs[0];
+        AVFilterLink *inlink  = ctx->inputs[0];
+
+        av_opt_set(s, cmd, args, 0);
+
+        if ((ret = config_input(inlink)) < 0) {
+            s->x = old_x;
+            s->y = old_y;
+            s->w = old_w;
+            s->h = old_h;
+            return ret;
+        }
+
+        ret = config_output(outlink);
+
+    } else
+        ret = AVERROR(ENOSYS);
+
+    return ret;
+}
+
 #define OFFSET(x) offsetof(CropContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
 
@@ -332,12 +368,13 @@ static const AVFilterPad avfilter_vf_crop_outputs[] = {
 };
 
 AVFilter ff_vf_crop = {
-    .name          = "crop",
-    .description   = NULL_IF_CONFIG_SMALL("Crop the input video."),
-    .priv_size     = sizeof(CropContext),
-    .priv_class    = &crop_class,
-    .query_formats = query_formats,
-    .uninit        = uninit,
-    .inputs        = avfilter_vf_crop_inputs,
-    .outputs       = avfilter_vf_crop_outputs,
+    .name            = "crop",
+    .description     = NULL_IF_CONFIG_SMALL("Crop the input video."),
+    .priv_size       = sizeof(CropContext),
+    .priv_class      = &crop_class,
+    .query_formats   = query_formats,
+    .uninit          = uninit,
+    .inputs          = avfilter_vf_crop_inputs,
+    .outputs         = avfilter_vf_crop_outputs,
+    .process_command = process_command,
 };
