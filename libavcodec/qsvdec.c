@@ -73,10 +73,12 @@ int ff_qsv_decode_init(AVCodecContext *avctx, QSVContext *q, mfxSession session)
     mfxVideoParam param = { { 0 } };
     int ret;
 
-    q->async_fifo = av_fifo_alloc((1 + q->async_depth) *
-                                  (sizeof(mfxSyncPoint) + sizeof(QSVFrame*)));
-    if (!q->async_fifo)
-        return AVERROR(ENOMEM);
+    if (!q->async_fifo) {
+        q->async_fifo = av_fifo_alloc((1 + q->async_depth) *
+                                      (sizeof(mfxSyncPoint) + sizeof(QSVFrame*)));
+        if (!q->async_fifo)
+            return AVERROR(ENOMEM);
+    }
 
     ret = qsv_init_session(avctx, q, session);
     if (ret < 0) {
