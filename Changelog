@@ -18,7 +18,7 @@ version <next>:
 - libkvazaar HEVC encoder
 - erosion, dilation, deflate and inflate video filters
 - Dynamic Audio Normalizer as dynaudnorm filter
-- Reverse filter
+- Reverse video and areverse audio filter
 - Random filter
 - deband filter
 - AAC fixed-point decoding
