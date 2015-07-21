@@ -100,6 +100,7 @@ include $(SRC_PATH)/common.mak
 
 FF_EXTRALIBS := $(FFEXTRALIBS)
 FF_DEP_LIBS  := $(DEP_LIBS)
+FF_STATIC_DEP_LIBS := $(STATIC_DEP_LIBS)
 
 all: $(AVPROGS)
 
