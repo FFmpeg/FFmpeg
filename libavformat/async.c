@@ -75,13 +75,12 @@ static int async_interrupt_callback(void *arg)
 {
     URLContext *h   = arg;
     Context    *c   = h->priv_data;
-    int         ret = 0;
 
-    if (c->interrupt_callback.callback) {
-        ret = c->interrupt_callback.callback(c->interrupt_callback.opaque);
-        if (!ret)
-            return ret;
-    }
+    if (c->abort_request)
+        return 1;
+
+    if (ff_check_interrupt(&c->interrupt_callback))
+        c->abort_request = 1;
 
     return c->abort_request;
 }
