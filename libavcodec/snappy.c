@@ -128,7 +128,17 @@ static int64_t decode_len(GetByteContext *gb)
     return len;
 }
 
-int ff_snappy_uncompress(GetByteContext *gb, uint8_t **buf, int64_t *size)
+int64_t ff_snappy_peek_uncompressed_length(GetByteContext *gb)
+{
+    int pos = bytestream2_get_bytes_left(gb);
+    int64_t len = decode_len(gb);
+
+    bytestream2_seek(gb, -pos, SEEK_END);
+
+    return len;
+}
+
+int ff_snappy_uncompress(GetByteContext *gb, uint8_t *buf, int64_t *size)
 {
     int64_t len = decode_len(gb);
     int ret     = 0;
@@ -137,11 +147,11 @@ int ff_snappy_uncompress(GetByteContext *gb, uint8_t **buf, int64_t *size)
     if (len < 0)
         return len;
 
-    if ((ret = av_reallocp(buf, len)) < 0)
-        return AVERROR(ENOMEM);
+    if (len > *size)
+        return AVERROR_BUG;
 
     *size = len;
-    p     = *buf;
+    p     = buf;
 
     while (bytestream2_get_bytes_left(gb) > 0) {
         uint8_t s = bytestream2_get_byte(gb);
@@ -152,13 +162,13 @@ int ff_snappy_uncompress(GetByteContext *gb, uint8_t **buf, int64_t *size)
             ret = snappy_literal(gb, p, len, val);
             break;
         case SNAPPY_COPY_1:
-            ret = snappy_copy1(gb, *buf, p, len, val);
+            ret = snappy_copy1(gb, buf, p, len, val);
             break;
         case SNAPPY_COPY_2:
-            ret = snappy_copy2(gb, *buf, p, len, val);
+            ret = snappy_copy2(gb, buf, p, len, val);
             break;
         case SNAPPY_COPY_4:
-            ret = snappy_copy4(gb, *buf, p, len, val);
+            ret = snappy_copy4(gb, buf, p, len, val);
             break;
         }
 
