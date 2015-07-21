@@ -67,3 +67,4 @@ MMI-OBJS-$(CONFIG_MPEGVIDEO)              += mips/mpegvideo_mmi.o
 MMI-OBJS-$(CONFIG_IDCTDSP)                += mips/idctdsp_mmi.o           \
                                              mips/simple_idct_mmi.o
 MMI-OBJS-$(CONFIG_MPEG4_DECODER)          += mips/xvid_idct_mmi.o
+MMI-OBJS-$(CONFIG_BLOCKDSP)               += mips/blockdsp_mmi.o
