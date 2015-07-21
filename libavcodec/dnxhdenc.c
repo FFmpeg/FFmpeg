@@ -1115,10 +1115,7 @@ FF_DISABLE_DEPRECATION_WARNINGS
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
-    sd = av_packet_new_side_data(pkt, AV_PKT_DATA_QUALITY_FACTOR, sizeof(int));
-    if (!sd)
-        return AVERROR(ENOMEM);
-    *(int *)sd = ctx->qscale * FF_QP2LAMBDA;
+    ff_side_data_set_encoder_stats(pkt, ctx->qscale * FF_QP2LAMBDA, NULL, 0, 0);
 
     pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;

@@ -208,10 +208,7 @@ FF_DISABLE_DEPRECATION_WARNINGS
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
-    sd = av_packet_new_side_data(pkt, AV_PKT_DATA_QUALITY_FACTOR, sizeof(int));
-    if (!sd)
-        return AVERROR(ENOMEM);
-    *(int *)sd = (pic_out.i_qpplus1 - 1) * FF_QP2LAMBDA;
+    ff_side_data_set_encoder_stats(pkt, (pic_out.i_qpplus1 - 1) * FF_QP2LAMBDA, NULL, 0, 0);
 
     x4->out_frame_count++;
     *got_packet = ret;

@@ -307,11 +307,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     pkt->flags |= AV_PKT_FLAG_KEY*pic_out.b_keyframe;
     if (ret) {
-        uint8_t *sd = av_packet_new_side_data(pkt, AV_PKT_DATA_QUALITY_FACTOR,
-                                              sizeof(int));
-        if (!sd)
-            return AVERROR(ENOMEM);
-        *(int *)sd = (pic_out.i_qpplus1 - 1) * FF_QP2LAMBDA;
+        ff_side_data_set_encoder_stats(pkt, (pic_out.i_qpplus1 - 1) * FF_QP2LAMBDA, NULL, 0, 0);
 
 #if FF_API_CODED_FRAME
 FF_DISABLE_DEPRECATION_WARNINGS

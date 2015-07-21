@@ -1786,11 +1786,7 @@ vbv_retry:
 
         frame_end(s);
 
-        sd = av_packet_new_side_data(pkt, AV_PKT_DATA_QUALITY_FACTOR,
-                                     sizeof(int));
-        if (!sd)
-            return AVERROR(ENOMEM);
-        *(int *)sd = s->current_picture.f->quality;
+        ff_side_data_set_encoder_stats(pkt, s->current_picture.f->quality, NULL, 0, s->pict_type);
 
         if (CONFIG_MJPEG_ENCODER && s->out_format == FMT_MJPEG)
             ff_mjpeg_encode_picture_trailer(&s->pb, s->header_bits);

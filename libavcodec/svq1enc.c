@@ -618,10 +618,7 @@ FF_DISABLE_DEPRECATION_WARNINGS
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
-    sd = av_packet_new_side_data(pkt, AV_PKT_DATA_QUALITY_FACTOR, sizeof(int));
-    if (!sd)
-        return AVERROR(ENOMEM);
-    *(int *)sd = pict->quality;
+    ff_side_data_set_encoder_stats(pkt, pict->quality, NULL, 0, s->pict_type);
 
     svq1_write_header(s, s->pict_type);
     for (i = 0; i < 3; i++)
