@@ -63,4 +63,5 @@ MMI-OBJS-$(CONFIG_H264DSP)                += mips/h264dsp_mmi.o
 MMI-OBJS-$(CONFIG_H264CHROMA)             += mips/h264chroma_mmi.o
 MMI-OBJS-$(CONFIG_H264PRED)               += mips/h264pred_mmi.o
 MMI-OBJS-$(CONFIG_MPEGVIDEO)              += mips/mpegvideo_mmi.o
-MMI-OBJS-$(CONFIG_IDCTDSP)                += mips/idctdsp_mmi.o
+MMI-OBJS-$(CONFIG_IDCTDSP)                += mips/idctdsp_mmi.o           \
+                                             mips/simple_idct_mmi.o
