@@ -175,4 +175,7 @@ AVCodec ff_mpeg2_qsv_decoder = {
     .close          = qsv_decode_close,
     .capabilities   = CODEC_CAP_DELAY | CODEC_CAP_DR1,
     .priv_class     = &class,
+    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_NV12,
+                                                    AV_PIX_FMT_QSV,
+                                                    AV_PIX_FMT_NONE },
 };

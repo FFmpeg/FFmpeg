@@ -243,6 +243,9 @@ AVCodec ff_hevc_qsv_decoder = {
     .close          = qsv_decode_close,
     .capabilities   = CODEC_CAP_DELAY | CODEC_CAP_DR1,
     .priv_class     = &hevc_class,
+    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_NV12,
+                                                    AV_PIX_FMT_QSV,
+                                                    AV_PIX_FMT_NONE },
 };
 #endif
 
@@ -278,5 +281,8 @@ AVCodec ff_h264_qsv_decoder = {
     .close          = qsv_decode_close,
     .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_DR1,
     .priv_class     = &class,
+    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_NV12,
+                                                    AV_PIX_FMT_QSV,
+                                                    AV_PIX_FMT_NONE },
 };
 #endif
