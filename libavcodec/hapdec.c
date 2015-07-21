@@ -79,8 +79,10 @@ static int setup_texture(AVCodecContext *avctx, size_t length)
 
     if ((avctx->codec_tag == MKTAG('H','a','p','1') && (ctx->section_type & 0x0F) != HAP_FMT_RGBDXT1)
         || (avctx->codec_tag == MKTAG('H','a','p','5') && (ctx->section_type & 0x0F) != HAP_FMT_RGBADXT5)
-        || (avctx->codec_tag == MKTAG('H','a','p','Y') && (ctx->section_type & 0x0F) != HAP_FMT_YCOCGDXT5))
+        || (avctx->codec_tag == MKTAG('H','a','p','Y') && (ctx->section_type & 0x0F) != HAP_FMT_YCOCGDXT5)) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid texture format %#04x.\n", ctx->section_type & 0x0F);
         return AVERROR_INVALIDDATA;
+    }
 
     switch (ctx->section_type & 0xF0) {
     case HAP_COMP_NONE:
