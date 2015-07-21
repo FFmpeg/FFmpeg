@@ -504,6 +504,7 @@ Muxers/Demuxers:
   wvenc.c                               Paul B Mahol
 
 Protocols:
+  async.c                               Zhang Rui
   bluray.c                              Petri Hintukainen
   ftp.c                                 Lukasz Marek
   http.c                                Ronald S. Bultje
