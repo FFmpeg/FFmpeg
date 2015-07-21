@@ -41,11 +41,6 @@ typedef struct QSVH264Context {
     AVClass *class;
     QSVContext qsv;
 
-    // the internal parser and codec context for parsing the data
-    AVCodecParserContext *parser;
-    AVCodecContext *avctx_internal;
-    enum AVPixelFormat orig_pix_fmt;
-
     // the filter for converting to Annex B
     AVBitStreamFilterContext *bsf;
 
@@ -81,8 +76,6 @@ static av_cold int qsv_decode_close(AVCodecContext *avctx)
     av_fifo_free(s->packet_fifo);
 
     av_bitstream_filter_close(s->bsf);
-    av_parser_close(s->parser);
-    avcodec_free_context(&s->avctx_internal);
 
     return 0;
 }
@@ -92,7 +85,6 @@ static av_cold int qsv_decode_init(AVCodecContext *avctx)
     QSVH264Context *s = avctx->priv_data;
     int ret;
 
-    s->orig_pix_fmt = AV_PIX_FMT_NONE;
 
     s->packet_fifo = av_fifo_alloc(sizeof(AVPacket));
     if (!s->packet_fifo) {
@@ -106,104 +98,11 @@ static av_cold int qsv_decode_init(AVCodecContext *avctx)
         goto fail;
     }
 
-    s->avctx_internal = avcodec_alloc_context3(NULL);
-    if (!s->avctx_internal) {
-        ret = AVERROR(ENOMEM);
-        goto fail;
-    }
-
-    if (avctx->extradata) {
-        s->avctx_internal->extradata = av_mallocz(avctx->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
-        if (!s->avctx_internal->extradata) {
-            ret = AVERROR(ENOMEM);
-            goto fail;
-        }
-        memcpy(s->avctx_internal->extradata, avctx->extradata,
-               avctx->extradata_size);
-        s->avctx_internal->extradata_size = avctx->extradata_size;
-    }
-
-    s->parser = av_parser_init(AV_CODEC_ID_H264);
-    if (!s->parser) {
-        ret = AVERROR(ENOMEM);
-        goto fail;
-    }
-    s->parser->flags |= PARSER_FLAG_COMPLETE_FRAMES;
-
     s->qsv.iopattern = MFX_IOPATTERN_OUT_SYSTEM_MEMORY;
 
     return 0;
 fail:
     qsv_decode_close(avctx);
-    return ret;
-}
-
-static int qsv_process_data(AVCodecContext *avctx, AVFrame *frame,
-                            int *got_frame, AVPacket *pkt)
-{
-    QSVH264Context *s = avctx->priv_data;
-    uint8_t *dummy_data;
-    int dummy_size;
-    int ret;
-
-    /* we assume the packets are already split properly and want
-     * just the codec parameters here */
-    av_parser_parse2(s->parser, s->avctx_internal,
-                     &dummy_data, &dummy_size,
-                     pkt->data, pkt->size, pkt->pts, pkt->dts,
-                     pkt->pos);
-
-    /* TODO: flush delayed frames on reinit */
-    if (s->parser->format       != s->orig_pix_fmt    ||
-        s->parser->coded_width  != avctx->coded_width ||
-        s->parser->coded_height != avctx->coded_height) {
-        mfxSession session = NULL;
-
-        enum AVPixelFormat pix_fmts[3] = { AV_PIX_FMT_QSV,
-                                           AV_PIX_FMT_NONE,
-                                           AV_PIX_FMT_NONE };
-        enum AVPixelFormat qsv_format;
-
-        qsv_format = ff_qsv_map_pixfmt(s->parser->format);
-        if (qsv_format < 0) {
-            av_log(avctx, AV_LOG_ERROR,
-                   "Only 8-bit YUV420 streams are supported.\n");
-            ret = AVERROR(ENOSYS);
-            goto reinit_fail;
-        }
-
-        s->orig_pix_fmt     = s->parser->format;
-        avctx->pix_fmt      = pix_fmts[1] = qsv_format;
-        avctx->width        = s->parser->width;
-        avctx->height       = s->parser->height;
-        avctx->coded_width  = s->parser->coded_width;
-        avctx->coded_height = s->parser->coded_height;
-        avctx->level        = s->avctx_internal->level;
-        avctx->profile      = s->avctx_internal->profile;
-
-        ret = ff_get_format(avctx, pix_fmts);
-        if (ret < 0)
-            goto reinit_fail;
-
-        avctx->pix_fmt = ret;
-
-        if (avctx->hwaccel_context) {
-            AVQSVContext *user_ctx = avctx->hwaccel_context;
-            session               = user_ctx->session;
-            s->qsv.iopattern      = user_ctx->iopattern;
-            s->qsv.ext_buffers    = user_ctx->ext_buffers;
-            s->qsv.nb_ext_buffers = user_ctx->nb_ext_buffers;
-        }
-
-        ret = ff_qsv_decode_init(avctx, &s->qsv, session);
-        if (ret < 0)
-            goto reinit_fail;
-    }
-
-    return ff_qsv_decode(avctx, &s->qsv, frame, got_frame, &s->pkt_filtered);
-
-reinit_fail:
-    s->orig_pix_fmt = s->parser->format = avctx->pix_fmt = AV_PIX_FMT_NONE;
     return ret;
 }
 
@@ -239,7 +138,7 @@ static int qsv_decode_frame(AVCodecContext *avctx, void *data,
 
             /* no more data */
             if (av_fifo_size(s->packet_fifo) < sizeof(AVPacket))
-                return avpkt->size ? avpkt->size : ff_qsv_decode(avctx, &s->qsv, frame, got_frame, avpkt);
+                return avpkt->size ? avpkt->size : ff_qsv_process_data(avctx, &s->qsv, frame, got_frame, avpkt);
 
             if (s->filtered_data != s->input_ref.data)
                 av_freep(&s->filtered_data);
@@ -259,7 +158,7 @@ static int qsv_decode_frame(AVCodecContext *avctx, void *data,
             s->pkt_filtered.size = size;
         }
 
-        ret = qsv_process_data(avctx, frame, got_frame, &s->pkt_filtered);
+        ret = ff_qsv_process_data(avctx, &s->qsv, frame, got_frame, &s->pkt_filtered);
         if (ret < 0)
             return ret;
 
@@ -275,7 +174,7 @@ static void qsv_decode_flush(AVCodecContext *avctx)
     QSVH264Context *s = avctx->priv_data;
 
     qsv_clear_buffers(s);
-    s->orig_pix_fmt = AV_PIX_FMT_NONE;
+    ff_qsv_decode_flush(avctx, &s->qsv);
 }
 
 AVHWAccel ff_h264_qsv_hwaccel = {

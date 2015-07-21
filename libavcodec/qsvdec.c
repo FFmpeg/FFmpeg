@@ -34,6 +34,7 @@
 
 #include "avcodec.h"
 #include "internal.h"
+#include "qsv.h"
 #include "qsv_internal.h"
 #include "qsvdec.h"
 
@@ -209,9 +210,9 @@ static QSVFrame *find_frame(QSVContext *q, mfxFrameSurface1 *surf)
     return NULL;
 }
 
-int ff_qsv_decode(AVCodecContext *avctx, QSVContext *q,
-                  AVFrame *frame, int *got_frame,
-                  AVPacket *avpkt)
+static int qsv_decode(AVCodecContext *avctx, QSVContext *q,
+                      AVFrame *frame, int *got_frame,
+                      AVPacket *avpkt)
 {
     QSVFrame *out_frame;
     mfxFrameSurface1 *insurf;
@@ -317,8 +318,110 @@ int ff_qsv_decode_close(QSVContext *q)
     av_fifo_free(q->async_fifo);
     q->async_fifo = NULL;
 
+    av_parser_close(q->parser);
+    avcodec_free_context(&q->avctx_internal);
+
     if (q->internal_session)
         MFXClose(q->internal_session);
 
     return 0;
+}
+
+int ff_qsv_process_data(AVCodecContext *avctx, QSVContext *q,
+                        AVFrame *frame, int *got_frame, AVPacket *pkt)
+{
+    uint8_t *dummy_data;
+    int dummy_size;
+    int ret;
+
+    if (!q->avctx_internal) {
+        q->avctx_internal = avcodec_alloc_context3(NULL);
+        if (!q->avctx_internal)
+            return AVERROR(ENOMEM);
+
+        if (avctx->extradata) {
+            q->avctx_internal->extradata = av_mallocz(avctx->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
+            if (!q->avctx_internal->extradata)
+                return AVERROR(ENOMEM);
+
+            memcpy(q->avctx_internal->extradata, avctx->extradata,
+                   avctx->extradata_size);
+            q->avctx_internal->extradata_size = avctx->extradata_size;
+        }
+
+        q->parser = av_parser_init(avctx->codec_id);
+        if (!q->parser)
+            return AVERROR(ENOMEM);
+
+        q->parser->flags |= PARSER_FLAG_COMPLETE_FRAMES;
+        q->orig_pix_fmt   = AV_PIX_FMT_NONE;
+    }
+
+    if (!pkt->size)
+        return qsv_decode(avctx, q, frame, got_frame, pkt);
+
+    /* we assume the packets are already split properly and want
+     * just the codec parameters here */
+    av_parser_parse2(q->parser, q->avctx_internal,
+                     &dummy_data, &dummy_size,
+                     pkt->data, pkt->size, pkt->pts, pkt->dts,
+                     pkt->pos);
+
+    /* TODO: flush delayed frames on reinit */
+    if (q->parser->format       != q->orig_pix_fmt    ||
+        q->parser->coded_width  != avctx->coded_width ||
+        q->parser->coded_height != avctx->coded_height) {
+        mfxSession session = NULL;
+
+        enum AVPixelFormat pix_fmts[3] = { AV_PIX_FMT_QSV,
+                                           AV_PIX_FMT_NONE,
+                                           AV_PIX_FMT_NONE };
+        enum AVPixelFormat qsv_format;
+
+        qsv_format = ff_qsv_map_pixfmt(q->parser->format);
+        if (qsv_format < 0) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "Only 8-bit YUV420 streams are supported.\n");
+            ret = AVERROR(ENOSYS);
+            goto reinit_fail;
+        }
+
+        q->orig_pix_fmt     = q->parser->format;
+        avctx->pix_fmt      = pix_fmts[1] = qsv_format;
+        avctx->width        = q->parser->width;
+        avctx->height       = q->parser->height;
+        avctx->coded_width  = q->parser->coded_width;
+        avctx->coded_height = q->parser->coded_height;
+        avctx->level        = q->avctx_internal->level;
+        avctx->profile      = q->avctx_internal->profile;
+
+        ret = ff_get_format(avctx, pix_fmts);
+        if (ret < 0)
+            goto reinit_fail;
+
+        avctx->pix_fmt = ret;
+
+        if (avctx->hwaccel_context) {
+            AVQSVContext *user_ctx = avctx->hwaccel_context;
+            session           = user_ctx->session;
+            q->iopattern      = user_ctx->iopattern;
+            q->ext_buffers    = user_ctx->ext_buffers;
+            q->nb_ext_buffers = user_ctx->nb_ext_buffers;
+        }
+
+        ret = ff_qsv_decode_init(avctx, q, session);
+        if (ret < 0)
+            goto reinit_fail;
+    }
+
+    return qsv_decode(avctx, q, frame, got_frame, pkt);
+
+reinit_fail:
+    q->orig_pix_fmt = q->parser->format = avctx->pix_fmt = AV_PIX_FMT_NONE;
+    return ret;
+}
+
+void ff_qsv_decode_flush(AVCodecContext *avctx, QSVContext *q)
+{
+    q->orig_pix_fmt = AV_PIX_FMT_NONE;
 }
