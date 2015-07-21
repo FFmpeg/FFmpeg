@@ -1,4 +1,6 @@
 /*
+ * Copyright (c) 2015 Zhou Xiaoyong <zhouxiaoyong@loongson.cn>
+ *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -16,21 +18,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_XVIDIDCT_H
-#define AVCODEC_XVIDIDCT_H
+#ifndef AVCODEC_MIPS_XVIDIDCT_MIPS_H
+#define AVCODEC_MIPS_XVIDIDCT_MIPS_H
 
-#include <stdint.h>
+#include "libavcodec/xvididct.h"
 
-#include "avcodec.h"
-#include "idctdsp.h"
+void ff_xvid_idct_mmi(int16_t *block);
+void ff_xvid_idct_put_mmi(uint8_t *dest, int32_t line_size, int16_t *block);
+void ff_xvid_idct_add_mmi(uint8_t *dest, int32_t line_size, int16_t *block);
 
-void ff_xvid_idct(int16_t *const in);
-
-void ff_xvid_idct_init(IDCTDSPContext *c, AVCodecContext *avctx);
-
-void ff_xvid_idct_init_x86(IDCTDSPContext *c, AVCodecContext *avctx,
-                           unsigned high_bit_depth);
-void ff_xvid_idct_init_mips(IDCTDSPContext *c, AVCodecContext *avctx,
-                            unsigned high_bit_depth);
-
-#endif /* AVCODEC_XVIDIDCT_H */
+#endif /* AVCODEC_MIPS_XVIDIDCT_MIPS_H */

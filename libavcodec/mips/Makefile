@@ -34,6 +34,7 @@ OBJS-$(CONFIG_IDCTDSP)                    += mips/idctdsp_init_mips.o
 OBJS-$(CONFIG_MPEGVIDEO)                  += mips/mpegvideo_init_mips.o
 OBJS-$(CONFIG_MPEGVIDEOENC)               += mips/mpegvideoencdsp_init_mips.o
 OBJS-$(CONFIG_ME_CMP)                     += mips/me_cmp_init_mips.o
+OBJS-$(CONFIG_MPEG4_DECODER)              += mips/xvididct_init_mips.o
 MSA-OBJS-$(CONFIG_HEVC_DECODER)           += mips/hevcdsp_msa.o            \
                                              mips/hevc_mc_uni_msa.o        \
                                              mips/hevc_mc_uniw_msa.o       \
@@ -65,3 +66,4 @@ MMI-OBJS-$(CONFIG_H264PRED)               += mips/h264pred_mmi.o
 MMI-OBJS-$(CONFIG_MPEGVIDEO)              += mips/mpegvideo_mmi.o
 MMI-OBJS-$(CONFIG_IDCTDSP)                += mips/idctdsp_mmi.o           \
                                              mips/simple_idct_mmi.o
+MMI-OBJS-$(CONFIG_MPEG4_DECODER)          += mips/xvid_idct_mmi.o

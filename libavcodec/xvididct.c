@@ -348,6 +348,8 @@ av_cold void ff_xvid_idct_init(IDCTDSPContext *c, AVCodecContext *avctx)
 
     if (ARCH_X86)
         ff_xvid_idct_init_x86(c, avctx, high_bit_depth);
+    if (ARCH_MIPS)
+        ff_xvid_idct_init_mips(c, avctx, high_bit_depth);
 
     ff_init_scantable_permutation(c->idct_permutation, c->perm_type);
 }
