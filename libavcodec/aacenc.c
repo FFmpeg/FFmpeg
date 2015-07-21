@@ -472,8 +472,28 @@ static void encode_spectral_coeffs(AACEncContext *s, SingleChannelElement *sce)
                                                    sce->ics.swb_sizes[i],
                                                    sce->sf_idx[w*16 + i],
                                                    sce->band_type[w*16 + i],
-                                                   s->lambda);
+                                                   s->lambda, sce->ics.window_clipping[w]);
             start += sce->ics.swb_sizes[i];
+        }
+    }
+}
+
+/**
+ * Downscale spectral coefficients for near-clipping windows to avoid artifacts
+ */
+static void avoid_clipping(AACEncContext *s, SingleChannelElement *sce)
+{
+    int start, i, j, w;
+
+    if (sce->ics.clip_avoidance_factor < 1.0f) {
+        for (w = 0; w < sce->ics.num_windows; w++) {
+            start = 0;
+            for (i = 0; i < sce->ics.max_sfb; i++) {
+                float *swb_coeffs = sce->coeffs + start + w*128;
+                for (j = 0; j < sce->ics.swb_sizes[i]; j++)
+                    swb_coeffs[j] *= sce->ics.clip_avoidance_factor;
+                start += sce->ics.swb_sizes[i];
+            }
         }
     }
 }
@@ -578,6 +598,7 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         for (ch = 0; ch < chans; ch++) {
             IndividualChannelStream *ics = &cpe->ch[ch].ics;
             int cur_channel = start_ch + ch;
+            float clip_avoidance_factor;
             overlap  = &samples[cur_channel][0];
             samples2 = overlap + 1024;
             la       = samples2 + (448+64);
@@ -605,14 +626,29 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             ics->num_windows        = wi[ch].num_windows;
             ics->swb_sizes          = s->psy.bands    [ics->num_windows == 8];
             ics->num_swb            = tag == TYPE_LFE ? ics->num_swb : s->psy.num_bands[ics->num_windows == 8];
+            clip_avoidance_factor = 0.0f;
             for (w = 0; w < ics->num_windows; w++)
                 ics->group_len[w] = wi[ch].grouping[w];
+            for (w = 0; w < ics->num_windows; w++) {
+                if (wi[ch].clipping[w] > CLIP_AVOIDANCE_FACTOR) {
+                    ics->window_clipping[w] = 1;
+                    clip_avoidance_factor = FFMAX(clip_avoidance_factor, wi[ch].clipping[w]);
+                } else {
+                    ics->window_clipping[w] = 0;
+                }
+            }
+            if (clip_avoidance_factor > CLIP_AVOIDANCE_FACTOR) {
+                ics->clip_avoidance_factor = CLIP_AVOIDANCE_FACTOR / clip_avoidance_factor;
+            } else {
+                ics->clip_avoidance_factor = 1.0f;
+            }
 
             apply_window_and_mdct(s, &cpe->ch[ch], overlap);
             if (isnan(cpe->ch->coeffs[0])) {
                 av_log(avctx, AV_LOG_ERROR, "Input contains NaN\n");
                 return AVERROR(EINVAL);
             }
+            avoid_clipping(s, &cpe->ch[ch]);
         }
         start_ch += chans;
     }

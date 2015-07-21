@@ -50,6 +50,8 @@
 #define TNS_MAX_ORDER 20
 #define MAX_LTP_LONG_SFB 40
 
+#define CLIP_AVOIDANCE_FACTOR 0.95f
+
 enum RawDataBlockType {
     TYPE_SCE,
     TYPE_CPE,
@@ -180,6 +182,8 @@ typedef struct IndividualChannelStream {
     int predictor_initialized;
     int predictor_reset_group;
     uint8_t prediction_used[41];
+    uint8_t window_clipping[8]; ///< set if a certain window is near clipping
+    float clip_avoidance_factor; ///< set if any window is near clipping to the necessary atennuation factor to avoid it
 } IndividualChannelStream;
 
 /**
