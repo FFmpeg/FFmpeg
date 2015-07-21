@@ -620,6 +620,12 @@
     <ClCompile Include="..\libavcodec\aacdec_fixed.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\aacsbr_fixed.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\sbrdsp_fixed.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\aacenc.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>

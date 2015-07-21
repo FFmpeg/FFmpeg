@@ -411,6 +411,10 @@
     </ClCompile>
     <ClCompile Include="..\libavcodec\aacdec_fixed.c">
     </ClCompile>
+    <ClCompile Include="..\libavcodec\aacsbr_fixed.c">
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\sbrdsp_fixed.c">
+    </ClCompile>
     <ClCompile Include="..\libavcodec\aacenc.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\aaccoder.c">
