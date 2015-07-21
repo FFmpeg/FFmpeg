@@ -46,7 +46,6 @@ typedef struct HapContext {
 
     TextureDSPContext dxtc;
     GetByteContext gbc;
-    PutByteContext pbc;
 
     int section_type;        /* Header type */
 
