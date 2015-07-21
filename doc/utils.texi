@@ -242,9 +242,9 @@ The following abbreviations are recognized:
 2048x1080
 @item 4kdci
 4096x2160
-@item uhd1
+@item uhd2160
 3840x2160
-@item uhd2
+@item uhd4320
 7680x4320
 @end table
 

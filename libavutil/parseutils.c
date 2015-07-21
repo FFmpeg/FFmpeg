@@ -124,8 +124,8 @@ static const VideoSizeAbbr video_size_abbrs[] = {
     { "fwqvga",    432,240  },
     { "hvga",      480,320  },
     { "qhd",       960,540  },
-    { "uhd1",     3840,2160 },
-    { "uhd2",     7680,4320 },
+    { "uhd2160",  3840,2160 },
+    { "uhd4320",  7680,4320 },
 };
 
 static const VideoRateAbbr video_rate_abbrs[]= {
