@@ -95,15 +95,15 @@ static void *async_buffer_task(void *arg)
     while (1) {
         int fifo_space, to_copy;
 
+        pthread_mutex_lock(&c->mutex);
         if (async_check_interrupt(h)) {
             c->io_eof_reached = 1;
             c->io_error       = AVERROR_EXIT;
+            pthread_mutex_unlock(&c->mutex);
             break;
         }
 
         if (c->seek_request) {
-            pthread_mutex_lock(&c->mutex);
-
             ret = ffurl_seek(c->inner, c->seek_pos, c->seek_whence);
             if (ret < 0) {
                 c->io_eof_reached = 1;
@@ -126,15 +126,17 @@ static void *async_buffer_task(void *arg)
 
         fifo_space = av_fifo_space(fifo);
         if (c->io_eof_reached || fifo_space <= 0) {
-            pthread_mutex_lock(&c->mutex);
             pthread_cond_signal(&c->cond_wakeup_main);
             pthread_cond_wait(&c->cond_wakeup_background, &c->mutex);
             pthread_mutex_unlock(&c->mutex);
             continue;
         }
+        pthread_mutex_unlock(&c->mutex);
 
         to_copy = FFMIN(4096, fifo_space);
         ret = av_fifo_generic_write(fifo, c->inner, to_copy, (void *)ffurl_read);
+
+        pthread_mutex_lock(&c->mutex);
         if (ret <= 0) {
             c->io_eof_reached = 1;
             if (ret < 0) {
@@ -142,7 +144,6 @@ static void *async_buffer_task(void *arg)
             }
         }
 
-        pthread_mutex_lock(&c->mutex);
         pthread_cond_signal(&c->cond_wakeup_main);
         pthread_mutex_unlock(&c->mutex);
     }
