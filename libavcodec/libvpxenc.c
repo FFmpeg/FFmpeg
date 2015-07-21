@@ -265,7 +265,6 @@ static av_cold int vp8_free(AVCodecContext *avctx)
     if (ctx->is_alpha)
         vpx_codec_destroy(&ctx->encoder_alpha);
     av_freep(&ctx->twopass_stats.buf);
-    av_frame_free(&avctx->coded_frame);
     av_freep(&avctx->stats_out);
     free_frame_list(ctx->coded_frame_list);
     return 0;
@@ -640,12 +639,6 @@ static av_cold int vpx_init(AVCodecContext *avctx,
         vpx_img_wrap(&ctx->rawimg_alpha, VPX_IMG_FMT_I420, avctx->width, avctx->height, 1,
                      (unsigned char*)1);
 
-    avctx->coded_frame = av_frame_alloc();
-    if (!avctx->coded_frame) {
-        av_log(avctx, AV_LOG_ERROR, "Error allocating coded frame\n");
-        vp8_free(avctx);
-        return AVERROR(ENOMEM);
-    }
     return 0;
 }
 
@@ -692,31 +685,44 @@ static inline void cx_pktcpy(struct FrameListData *dst,
  * @return a negative AVERROR on error
  */
 static int storeframe(AVCodecContext *avctx, struct FrameListData *cx_frame,
-                      AVPacket *pkt, AVFrame *coded_frame)
+                      AVPacket *pkt)
 {
     int ret = ff_alloc_packet2(avctx, pkt, cx_frame->sz);
     uint8_t *side_data;
     if (ret >= 0) {
         memcpy(pkt->data, cx_frame->buf, pkt->size);
-        pkt->pts = pkt->dts    = cx_frame->pts;
-        coded_frame->pts       = cx_frame->pts;
-        coded_frame->key_frame = !!(cx_frame->flags & VPX_FRAME_IS_KEY);
+        pkt->pts = pkt->dts = cx_frame->pts;
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
+        avctx->coded_frame->pts       = cx_frame->pts;
+        avctx->coded_frame->key_frame = !!(cx_frame->flags & VPX_FRAME_IS_KEY);
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
-        if (coded_frame->key_frame) {
-            coded_frame->pict_type = AV_PICTURE_TYPE_I;
-            pkt->flags            |= AV_PKT_FLAG_KEY;
-        } else
-            coded_frame->pict_type = AV_PICTURE_TYPE_P;
+        if (!!(cx_frame->flags & VPX_FRAME_IS_KEY)) {
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
+            avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+            pkt->flags |= AV_PKT_FLAG_KEY;
+        } else {
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
+            avctx->coded_frame->pict_type = AV_PICTURE_TYPE_P;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+        }
 
         if (cx_frame->have_sse) {
             int i;
             /* Beware of the Y/U/V/all order! */
-            coded_frame->error[0] = cx_frame->sse[1];
-            coded_frame->error[1] = cx_frame->sse[2];
-            coded_frame->error[2] = cx_frame->sse[3];
-            coded_frame->error[3] = 0;    // alpha
+            avctx->coded_frame->error[0] = cx_frame->sse[1];
+            avctx->coded_frame->error[1] = cx_frame->sse[2];
+            avctx->coded_frame->error[2] = cx_frame->sse[3];
+            avctx->coded_frame->error[3] = 0;    // alpha
             for (i = 0; i < 4; ++i) {
-                avctx->error[i] += coded_frame->error[i];
+                avctx->error[i] += avctx->coded_frame->error[i];
             }
             cx_frame->have_sse = 0;
         }
@@ -746,8 +752,7 @@ static int storeframe(AVCodecContext *avctx, struct FrameListData *cx_frame,
  * @return AVERROR(EINVAL) on output size error
  * @return AVERROR(ENOMEM) on coded frame queue data allocation error
  */
-static int queue_frames(AVCodecContext *avctx, AVPacket *pkt_out,
-                        AVFrame *coded_frame)
+static int queue_frames(AVCodecContext *avctx, AVPacket *pkt_out)
 {
     VP8Context *ctx = avctx->priv_data;
     const struct vpx_codec_cx_pkt *pkt;
@@ -759,7 +764,7 @@ static int queue_frames(AVCodecContext *avctx, AVPacket *pkt_out,
     if (ctx->coded_frame_list) {
         struct FrameListData *cx_frame = ctx->coded_frame_list;
         /* return the leading frame if we've already begun queueing */
-        size = storeframe(avctx, cx_frame, pkt_out, coded_frame);
+        size = storeframe(avctx, cx_frame, pkt_out);
         if (size < 0)
             return size;
         ctx->coded_frame_list = cx_frame->next;
@@ -780,7 +785,7 @@ static int queue_frames(AVCodecContext *avctx, AVPacket *pkt_out,
                    provided a frame for output */
                 av_assert0(!ctx->coded_frame_list);
                 cx_pktcpy(&cx_frame, pkt, pkt_alpha, ctx);
-                size = storeframe(avctx, &cx_frame, pkt_out, coded_frame);
+                size = storeframe(avctx, &cx_frame, pkt_out);
                 if (size < 0)
                     return size;
             } else {
@@ -907,7 +912,7 @@ static int vp8_encode(AVCodecContext *avctx, AVPacket *pkt,
         }
     }
 
-    coded_size = queue_frames(avctx, pkt, avctx->coded_frame);
+    coded_size = queue_frames(avctx, pkt);
 
     if (!frame && avctx->flags & CODEC_FLAG_PASS1) {
         unsigned int b64_size = AV_BASE64_SIZE(ctx->twopass_stats.sz);

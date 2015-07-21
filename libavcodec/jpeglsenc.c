@@ -412,20 +412,14 @@ memfail:
     return AVERROR(ENOMEM);
 }
 
-static av_cold int encode_close(AVCodecContext *avctx)
-{
-    av_frame_free(&avctx->coded_frame);
-    return 0;
-}
-
 static av_cold int encode_init_ls(AVCodecContext *ctx)
 {
-    ctx->coded_frame = av_frame_alloc();
-    if (!ctx->coded_frame)
-        return AVERROR(ENOMEM);
-
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
     ctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
     ctx->coded_frame->key_frame = 1;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     if (ctx->pix_fmt != AV_PIX_FMT_GRAY8  &&
         ctx->pix_fmt != AV_PIX_FMT_GRAY16 &&
@@ -444,7 +438,6 @@ AVCodec ff_jpegls_encoder = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_JPEGLS,
     .init           = encode_init_ls,
-    .close          = encode_close,
     .capabilities   = CODEC_CAP_FRAME_THREADS | CODEC_CAP_INTRA_ONLY,
     .encode2        = encode_picture_ls,
     .pix_fmts       = (const enum AVPixelFormat[]) {

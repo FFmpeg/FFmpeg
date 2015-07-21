@@ -66,8 +66,6 @@ static av_cold int libx265_encode_close(AVCodecContext *avctx)
 {
     libx265Context *ctx = avctx->priv_data;
 
-    av_frame_free(&avctx->coded_frame);
-
     ctx->api->param_free(ctx->params);
 
     if (ctx->encoder)
@@ -90,12 +88,6 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
                "4:2:2 and 4:4:4 support is not fully defined for HEVC yet. "
                "Set -strict experimental to encode anyway.\n");
         return AVERROR(ENOSYS);
-    }
-
-    avctx->coded_frame = av_frame_alloc();
-    if (!avctx->coded_frame) {
-        av_log(avctx, AV_LOG_ERROR, "Could not allocate frame.\n");
-        return AVERROR(ENOMEM);
     }
 
     ctx->params = ctx->api->param_alloc();
@@ -306,6 +298,8 @@ static int libx265_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     pkt->pts = x265pic_out.pts;
     pkt->dts = x265pic_out.dts;
 
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
     switch (x265pic_out.sliceType) {
     case X265_TYPE_IDR:
     case X265_TYPE_I:
@@ -318,6 +312,8 @@ static int libx265_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         avctx->coded_frame->pict_type = AV_PICTURE_TYPE_B;
         break;
     }
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     *got_packet = 1;
     return 0;

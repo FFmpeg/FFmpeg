@@ -287,6 +287,8 @@ static int X264_frame(AVCodecContext *ctx, AVPacket *pkt, const AVFrame *frame,
     pkt->pts = pic_out.i_pts;
     pkt->dts = pic_out.i_dts;
 
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
     switch (pic_out.i_type) {
     case X264_TYPE_IDR:
     case X264_TYPE_I:
@@ -300,10 +302,23 @@ static int X264_frame(AVCodecContext *ctx, AVPacket *pkt, const AVFrame *frame,
         ctx->coded_frame->pict_type = AV_PICTURE_TYPE_B;
         break;
     }
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     pkt->flags |= AV_PKT_FLAG_KEY*pic_out.b_keyframe;
-    if (ret)
+    if (ret) {
+        uint8_t *sd = av_packet_new_side_data(pkt, AV_PKT_DATA_QUALITY_FACTOR,
+                                              sizeof(int));
+        if (!sd)
+            return AVERROR(ENOMEM);
+        *(int *)sd = (pic_out.i_qpplus1 - 1) * FF_QP2LAMBDA;
+
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
         ctx->coded_frame->quality = (pic_out.i_qpplus1 - 1) * FF_QP2LAMBDA;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+    }
 
     *got_packet = ret;
     return 0;
@@ -320,8 +335,6 @@ static av_cold int X264_close(AVCodecContext *avctx)
         x264_encoder_close(x4->enc);
         x4->enc = NULL;
     }
-
-    av_frame_free(&avctx->coded_frame);
 
     return 0;
 }
@@ -707,10 +720,6 @@ static av_cold int X264_init(AVCodecContext *avctx)
     x4->enc = x264_encoder_open(&x4->params);
     if (!x4->enc)
         return AVERROR_EXTERNAL;
-
-    avctx->coded_frame = av_frame_alloc();
-    if (!avctx->coded_frame)
-        return AVERROR(ENOMEM);
 
     if (avctx->flags & CODEC_FLAG_GLOBAL_HEADER) {
         x264_nal_t *nal;

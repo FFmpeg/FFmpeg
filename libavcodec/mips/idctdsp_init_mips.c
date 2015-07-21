@@ -43,7 +43,7 @@ static av_cold void idctdsp_init_msa(IDCTDSPContext *c, AVCodecContext *avctx,
 
 #if HAVE_MMI
 static av_cold void idctdsp_init_mmi(IDCTDSPContext *c, AVCodecContext *avctx,
-                                     unsigned high_bit_depth)
+        unsigned high_bit_depth)
 {
     if ((avctx->lowres != 1) && (avctx->lowres != 2) && (avctx->lowres != 3) &&
         (avctx->bits_per_raw_sample != 10) &&
@@ -61,7 +61,7 @@ static av_cold void idctdsp_init_mmi(IDCTDSPContext *c, AVCodecContext *avctx,
 }
 #endif /* HAVE_MMI */
 
-void ff_idctdsp_init_mips(IDCTDSPContext *c, AVCodecContext *avctx,
+av_cold void ff_idctdsp_init_mips(IDCTDSPContext *c, AVCodecContext *avctx,
                           unsigned high_bit_depth)
 {
 #if HAVE_MSA

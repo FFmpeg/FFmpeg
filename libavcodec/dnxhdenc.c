@@ -388,12 +388,12 @@ FF_ENABLE_DEPRECATION_WARNINGS
     FF_ALLOCZ_OR_GOTO(ctx->m.avctx, ctx->mb_qscale,
                       ctx->m.mb_num * sizeof(uint8_t), fail);
 
-    avctx->coded_frame = av_frame_alloc();
-    if (!avctx->coded_frame)
-        return AVERROR(ENOMEM);
-
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
     avctx->coded_frame->key_frame = 1;
     avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     if (avctx->thread_count > MAX_THREADS) {
         av_log(avctx, AV_LOG_ERROR, "too many threads\n");
@@ -1044,7 +1044,11 @@ static void dnxhd_load_picture(DNXHDEncContext *ctx, const AVFrame *frame)
         ctx->thread[i]->dct_uv_offset = ctx->m.uvlinesize*8;
     }
 
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
     ctx->m.avctx->coded_frame->interlaced_frame = frame->interlaced_frame;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     ctx->cur_field = frame->interlaced_frame && !frame->top_field_first;
 }
 
@@ -1054,7 +1058,7 @@ static int dnxhd_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
     DNXHDEncContext *ctx = avctx->priv_data;
     int first_field = 1;
     int offset, i, ret;
-    uint8_t *buf;
+    uint8_t *buf, *sd;
 
     if ((ret = ff_alloc_packet2(avctx, pkt, ctx->cid_table->frame_size)) < 0)
         return ret;
@@ -1105,7 +1109,16 @@ encode_coding_unit:
         goto encode_coding_unit;
     }
 
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
     avctx->coded_frame->quality = ctx->qscale * FF_QP2LAMBDA;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
+    sd = av_packet_new_side_data(pkt, AV_PKT_DATA_QUALITY_FACTOR, sizeof(int));
+    if (!sd)
+        return AVERROR(ENOMEM);
+    *(int *)sd = ctx->qscale * FF_QP2LAMBDA;
 
     pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;
@@ -1137,8 +1150,6 @@ static av_cold int dnxhd_encode_end(AVCodecContext *avctx)
 
     for (i = 1; i < avctx->thread_count; i++)
         av_freep(&ctx->thread[i]);
-
-    av_frame_free(&avctx->coded_frame);
 
     return 0;
 }

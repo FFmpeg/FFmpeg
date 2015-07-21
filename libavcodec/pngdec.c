@@ -851,13 +851,13 @@ static int decode_fctl_chunk(AVCodecContext *avctx, PNGDecContext *s,
         cur_w > s->width - x_offset|| cur_h > s->height - y_offset)
             return AVERROR_INVALIDDATA;
 
-    if (sequence_number == 0 && s->dispose_op == APNG_DISPOSE_OP_PREVIOUS) {
+    if (sequence_number == 0 && dispose_op == APNG_DISPOSE_OP_PREVIOUS) {
         // No previous frame to revert to for the first frame
         // Spec says to just treat it as a APNG_DISPOSE_OP_BACKGROUND
-        s->dispose_op = APNG_DISPOSE_OP_BACKGROUND;
+        dispose_op = APNG_DISPOSE_OP_BACKGROUND;
     }
 
-    if (s->dispose_op == APNG_BLEND_OP_OVER && !s->has_trns && (
+    if (blend_op == APNG_BLEND_OP_OVER && !s->has_trns && (
             avctx->pix_fmt == AV_PIX_FMT_RGB24 ||
             avctx->pix_fmt == AV_PIX_FMT_RGB48BE ||
             avctx->pix_fmt == AV_PIX_FMT_PAL8 ||
@@ -865,8 +865,8 @@ static int decode_fctl_chunk(AVCodecContext *avctx, PNGDecContext *s,
             avctx->pix_fmt == AV_PIX_FMT_GRAY16BE ||
             avctx->pix_fmt == AV_PIX_FMT_MONOBLACK
         )) {
-        // APNG_DISPOSE_OP_OVER is the same as APNG_DISPOSE_OP_SOURCE when there is no alpha channel
-        s->dispose_op = APNG_BLEND_OP_SOURCE;
+        // APNG_BLEND_OP_OVER is the same as APNG_BLEND_OP_SOURCE when there is no alpha channel
+        blend_op = APNG_BLEND_OP_SOURCE;
     }
 
     s->cur_w      = cur_w;
@@ -1283,6 +1283,7 @@ static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
         pdst->cur_h = psrc->cur_h;
         pdst->x_offset = psrc->x_offset;
         pdst->y_offset = psrc->y_offset;
+        pdst->has_trns = psrc->has_trns;
 
         pdst->dispose_op = psrc->dispose_op;
 

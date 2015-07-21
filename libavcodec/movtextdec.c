@@ -181,14 +181,14 @@ static int text_to_ass(AVBPrint *buf, const char *text, const char *text_end,
                     av_bprintf(buf, "{\\2c&H%02x%02x%02x&}", m->c.hlit_color[2],
                                 m->c.hlit_color[1], m->c.hlit_color[0]);
                 } else {
-                    av_bprintf(buf, "{\\1c&H000000&}{\\2c&HFFFFFF}");
+                    av_bprintf(buf, "{\\1c&H000000&}{\\2c&HFFFFFF&}");
                 }
             }
             if (text_pos == m->h.hlit_end) {
                 if (m->box_flags & HCLR_BOX) {
-                    av_bprintf(buf, "{\\2c&H000000}");
+                    av_bprintf(buf, "{\\2c&H000000&}");
                 } else {
-                    av_bprintf(buf, "{\\1c&HFFFFFF&}{\\2c&H000000}");
+                    av_bprintf(buf, "{\\1c&HFFFFFF&}{\\2c&H000000&}");
                 }
             }
         }

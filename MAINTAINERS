@@ -238,6 +238,7 @@ Codecs:
   qdm2.c, qdm2data.h                    Roberto Togni, Benjamin Larsson
   qdrw.c                                Kostya Shishkov
   qpeg.c                                Kostya Shishkov
+  qsv*                                  Ivan Uskov
   qtrle.c                               Mike Melanson
   ra144.c, ra144.h, ra288.c, ra288.h    Roberto Togni
   resample2.c                           Michael Niedermayer
@@ -503,6 +504,7 @@ Muxers/Demuxers:
   wvenc.c                               Paul B Mahol
 
 Protocols:
+  async.c                               Zhang Rui
   bluray.c                              Petri Hintukainen
   ftp.c                                 Lukasz Marek
   http.c                                Ronald S. Bultje

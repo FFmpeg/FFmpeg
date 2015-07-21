@@ -74,28 +74,13 @@ static int setup_texture(AVCodecContext *avctx, size_t length)
     HapContext *ctx = avctx->priv_data;
     GetByteContext *gbc = &ctx->gbc;
     int64_t snappy_size;
-    const char *texture_name;
     const char *compressorstr;
     int ret;
 
     if ((avctx->codec_tag == MKTAG('H','a','p','1') && (ctx->section_type & 0x0F) != HAP_FMT_RGBDXT1)
         || (avctx->codec_tag == MKTAG('H','a','p','5') && (ctx->section_type & 0x0F) != HAP_FMT_RGBADXT5)
-        || (avctx->codec_tag == MKTAG('H','a','p','Y') && (ctx->section_type & 0x0F) != HAP_FMT_YCOCGDXT5))
-        return AVERROR_INVALIDDATA;
-
-    switch (ctx->section_type & 0x0F) {
-    case HAP_FMT_RGBDXT1:
-        texture_name = "DXT1";
-        break;
-    case HAP_FMT_RGBADXT5:
-        texture_name = "DXT5";
-        break;
-    case HAP_FMT_YCOCGDXT5:
-        texture_name = "DXT5-YCoCg-scaled";
-        break;
-    default:
-        av_log(avctx, AV_LOG_ERROR,
-               "Invalid format mode %02X.\n", ctx->section_type);
+        || (avctx->codec_tag == MKTAG('H','a','p','Y') && (ctx->section_type & 0x0F) != HAP_FMT_YCOCGDXT5)) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid texture format %#04x.\n", ctx->section_type & 0x0F);
         return AVERROR_INVALIDDATA;
     }
 
@@ -134,8 +119,7 @@ static int setup_texture(AVCodecContext *avctx, size_t length)
         return AVERROR_INVALIDDATA;
     }
 
-    av_log(avctx, AV_LOG_DEBUG, "%s texture with %s compressor\n",
-           texture_name, compressorstr);
+    av_log(avctx, AV_LOG_DEBUG, "%s compressor\n", compressorstr);
 
     return 0;
 }
@@ -198,6 +182,7 @@ static int hap_decode(AVCodecContext *avctx, void *data,
 static av_cold int hap_init(AVCodecContext *avctx)
 {
     HapContext *ctx = avctx->priv_data;
+    const char *texture_name;
     int ret = av_image_check_size(avctx->width, avctx->height, 0, avctx);
 
     if (ret < 0) {
@@ -217,20 +202,26 @@ static av_cold int hap_init(AVCodecContext *avctx)
 
     switch (avctx->codec_tag) {
     case MKTAG('H','a','p','1'):
+        texture_name = "DXT1";
         ctx->tex_rat = 8;
         ctx->tex_fun = ctx->dxtc.dxt1_block;
         break;
     case MKTAG('H','a','p','5'):
+        texture_name = "DXT5";
         ctx->tex_rat = 16;
         ctx->tex_fun = ctx->dxtc.dxt5_block;
         break;
     case MKTAG('H','a','p','Y'):
+        texture_name = "DXT5-YCoCg-scaled";
         ctx->tex_rat = 16;
         ctx->tex_fun = ctx->dxtc.dxt5ys_block;
         break;
     default:
         return AVERROR_DECODER_NOT_FOUND;
     }
+
+    av_log(avctx, AV_LOG_DEBUG, "%s texture\n", texture_name);
+
     return 0;
 }
 

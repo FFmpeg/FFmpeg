@@ -300,6 +300,9 @@ int ff_qsv_decode_close(QSVContext *q)
     av_fifo_free(q->async_fifo);
     q->async_fifo = NULL;
 
+    MFXVideoDECODE_Close(q->session);
+    q->session = NULL;
+
     ff_qsv_close_internal_session(&q->internal_qs);
 
     return 0;

@@ -521,13 +521,12 @@ fail:
 static av_cold int encode_init(AVCodecContext *avctx)
 {
     TiffEncoderContext *s = avctx->priv_data;
-
-    avctx->coded_frame = av_frame_alloc();
-    if (!avctx->coded_frame)
-        return AVERROR(ENOMEM);
-
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
     avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
     avctx->coded_frame->key_frame = 1;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     s->avctx = avctx;
 
     return 0;
@@ -537,7 +536,6 @@ static av_cold int encode_close(AVCodecContext *avctx)
 {
     TiffEncoderContext *s = avctx->priv_data;
 
-    av_frame_free(&avctx->coded_frame);
     av_freep(&s->strip_sizes);
     av_freep(&s->strip_offsets);
     av_freep(&s->yuv_line);

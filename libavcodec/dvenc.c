@@ -65,10 +65,6 @@ static av_cold int dvvideo_encode_init(AVCodecContext *avctx)
         return ret;
     }
 
-    avctx->coded_frame = av_frame_alloc();
-    if (!avctx->coded_frame)
-        return AVERROR(ENOMEM);
-
     dv_vlc_map_tableinit();
 
     memset(&fdsp,0, sizeof(fdsp));
@@ -726,8 +722,12 @@ static int dvvideo_encode_frame(AVCodecContext *c, AVPacket *pkt,
 
     c->pix_fmt                = s->sys->pix_fmt;
     s->frame                  = frame;
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
     c->coded_frame->key_frame = 1;
     c->coded_frame->pict_type = AV_PICTURE_TYPE_I;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     s->buf = pkt->data;
     c->execute(c, dv_encode_video_segment, s->work_chunks, NULL,
@@ -743,12 +743,6 @@ static int dvvideo_encode_frame(AVCodecContext *c, AVPacket *pkt,
     return 0;
 }
 
-static int dvvideo_encode_close(AVCodecContext *avctx)
-{
-    av_frame_free(&avctx->coded_frame);
-    return 0;
-}
-
 AVCodec ff_dvvideo_encoder = {
     .name           = "dvvideo",
     .long_name      = NULL_IF_CONFIG_SMALL("DV (Digital Video)"),
@@ -757,7 +751,6 @@ AVCodec ff_dvvideo_encoder = {
     .priv_data_size = sizeof(DVVideoContext),
     .init           = dvvideo_encode_init,
     .encode2        = dvvideo_encode_frame,
-    .close          = dvvideo_encode_close,
     .capabilities   = CODEC_CAP_SLICE_THREADS | CODEC_CAP_FRAME_THREADS | CODEC_CAP_INTRA_ONLY,
     .pix_fmts       = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_YUV411P, AV_PIX_FMT_YUV422P,

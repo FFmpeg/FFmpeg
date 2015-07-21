@@ -98,8 +98,6 @@ static av_cold int flashsv_encode_end(AVCodecContext *avctx)
     av_freep(&s->previous_frame);
     av_freep(&s->tmpblock);
 
-    av_frame_free(&avctx->coded_frame);
-
     return 0;
 }
 
@@ -128,12 +126,6 @@ static av_cold int flashsv_encode_init(AVCodecContext *avctx)
 
     if (!s->tmpblock || !s->encbuffer) {
         av_log(avctx, AV_LOG_ERROR, "Memory allocation failed.\n");
-        return AVERROR(ENOMEM);
-    }
-
-    avctx->coded_frame = av_frame_alloc();
-    if (!avctx->coded_frame) {
-        flashsv_encode_end(avctx);
         return AVERROR(ENOMEM);
     }
 
@@ -262,16 +254,24 @@ static int flashsv_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     //mark the frame type so the muxer can mux it correctly
     if (I_frame) {
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
         avctx->coded_frame->pict_type      = AV_PICTURE_TYPE_I;
         avctx->coded_frame->key_frame      = 1;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
         s->last_key_frame = avctx->frame_number;
         ff_dlog(avctx, "Inserting keyframe at frame %d\n", avctx->frame_number);
     } else {
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
         avctx->coded_frame->pict_type = AV_PICTURE_TYPE_P;
         avctx->coded_frame->key_frame = 0;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     }
 
-    if (avctx->coded_frame->key_frame)
+    if (I_frame)
         pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;
 

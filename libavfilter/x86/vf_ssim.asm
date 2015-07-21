@@ -30,16 +30,50 @@ ssim_c2: times 4 dd 235963 ;(.03*.03*255*255*64*63 + .5)
 
 SECTION .text
 
+%macro SSIM_4X4_LINE 1
 %if ARCH_X86_64
-
-INIT_XMM ssse3
-cglobal ssim_4x4_line, 6, 8, 16, buf, buf_stride, ref, ref_stride, sums, w, buf_stride3, ref_stride3
+cglobal ssim_4x4_line, 6, 8, %1, buf, buf_stride, ref, ref_stride, sums, w, buf_stride3, ref_stride3
+%else
+cglobal ssim_4x4_line, 5, 7, %1, buf, buf_stride, ref, ref_stride, sums, buf_stride3, ref_stride3
+%define wd r5mp
+%endif
     lea     ref_stride3q, [ref_strideq*3]
     lea     buf_stride3q, [buf_strideq*3]
+%if notcpuflag(xop)
     pxor              m7, m7
     mova             m15, [pw_1]
+%endif
 
 .loop:
+%if cpuflag(xop)
+    pmovzxbw          m0, [bufq+buf_strideq*0]
+    pmovzxbw          m1, [refq+ref_strideq*0]
+    pmaddwd           m4, m0, m0
+    pmaddwd           m6, m0, m1
+    pmovzxbw          m2, [bufq+buf_strideq*1]
+    vpmadcswd         m4, m1, m1, m4
+    pmovzxbw          m3, [refq+ref_strideq*1]
+    paddw             m0, m2
+    vpmadcswd         m4, m2, m2, m4
+    vpmadcswd         m6, m2, m3, m6
+    paddw             m1, m3
+    vpmadcswd         m4, m3, m3, m4
+
+    pmovzxbw          m2, [bufq+buf_strideq*2]
+    pmovzxbw          m3, [refq+ref_strideq*2]
+    vpmadcswd         m4, m2, m2, m4
+    vpmadcswd         m6, m2, m3, m6
+    pmovzxbw          m5, [bufq+buf_stride3q]
+    pmovzxbw          m7, [refq+ref_stride3q]
+    vpmadcswd         m4, m3, m3, m4
+    vpmadcswd         m6, m5, m7, m6
+    paddw             m0, m2
+    paddw             m1, m3
+    vpmadcswd         m4, m5, m5, m4
+    paddw             m0, m5
+    paddw             m1, m7
+    vpmadcswd         m4, m7, m7, m4
+%else
     movh              m0, [bufq+buf_strideq*0]  ; a1
     movh              m1, [refq+ref_strideq*0]  ; b1
     movh              m2, [bufq+buf_strideq*1]  ; a2
@@ -85,20 +119,34 @@ cglobal ssim_4x4_line, 6, 8, 16, buf, buf_stride, ref, ref_stride, sums, w, buf_
     paddd             m4, m9
     paddd             m6, m14
     paddd             m4, m12
+%endif
 
     ; m0 = [word] s1 a,a,a,a,b,b,b,b
     ; m1 = [word] s2 a,a,a,a,b,b,b,b
     ; m4 = [dword] ss a,a,b,b
     ; m6 = [dword] s12 a,a,b,b
 
+%if cpuflag(xop)
+    vphaddwq          m0, m0                    ; [dword] s1  a, 0, b, 0
+    vphaddwq          m1, m1                    ; [dword] s2  a, 0, b, 0
+    vphadddq          m4, m4                    ; [dword] ss  a, 0, b, 0
+    vphadddq          m6, m6                    ; [dword] s12 a, 0, b, 0
+    punpckhdq     m2, m0, m1                    ; [dword] s1  b, s2 b, 0, 0
+    punpckldq         m0, m1                    ; [dword] s1  a, s2 a, 0, 0
+    punpckhdq     m3, m4, m6                    ; [dword] ss  b, s12 b, 0, 0
+    punpckldq         m4, m6                    ; [dword] ss  a, s12 a, 0, 0
+    punpcklqdq    m1, m2, m3                    ; [dword] b s1, s2, ss, s12
+    punpcklqdq        m0, m4                    ; [dword] a s1, s2, ss, s12
+%else
     pmaddwd           m0, m15                   ; [dword] s1 a,a,b,b
     pmaddwd           m1, m15                   ; [dword] s2 a,a,b,b
     phaddd            m0, m4                    ; [dword] s1 a, b, ss a, b
     phaddd            m1, m6                    ; [dword] s2 a, b, s12 a, b
     punpckhdq     m2, m0, m1                    ; [dword] ss a, s12 a, ss b, s12 b
     punpckldq         m0, m1                    ; [dword] s1 a, s2 a, s1 b, s2 b
-    punpckhqdq    m1, m0, m2                    ; [dword] a s1, s2, ss, s12
-    punpcklqdq        m0, m2                    ; [dword] b s1, s2, ss, s12
+    punpckhqdq    m1, m0, m2                    ; [dword] b s1, s2, ss, s12
+    punpcklqdq        m0, m2                    ; [dword] a s1, s2, ss, s12
+%endif
 
     mova  [sumsq+     0], m0
     mova  [sumsq+mmsize], m1
@@ -109,7 +157,15 @@ cglobal ssim_4x4_line, 6, 8, 16, buf, buf_stride, ref, ref_stride, sums, w, buf_
     sub               wd, mmsize/8
     jg .loop
     RET
+%endmacro
 
+%if ARCH_X86_64
+INIT_XMM ssse3
+SSIM_4X4_LINE 16
+%endif
+%if HAVE_XOP_EXTERNAL
+INIT_XMM xop
+SSIM_4X4_LINE 8
 %endif
 
 INIT_XMM sse4

@@ -853,11 +853,11 @@ static av_cold int encode_init(AVCodecContext *avctx)
     if ((ret = ffv1_allocate_initial_states(s)) < 0)
         return ret;
 
-    avctx->coded_frame = av_frame_alloc();
-    if (!avctx->coded_frame)
-        return AVERROR(ENOMEM);
-
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
     avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     if (!s->transparency)
         s->plane_count = 2;
@@ -1138,7 +1138,7 @@ static int encode_slice(AVCodecContext *c, void *arg)
     }
 
 retry:
-    if (c->coded_frame->key_frame)
+    if (f->key_frame)
         ffv1_clear_slice_state(f, fs);
     if (f->version > 2) {
         encode_slice_header(f, fs);
@@ -1260,12 +1260,12 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     if (avctx->gop_size == 0 || f->picture_number % avctx->gop_size == 0) {
         put_rac(c, &keystate, 1);
-        avctx->coded_frame->key_frame = 1;
+        f->key_frame = 1;
         f->gob_count++;
         write_header(f);
     } else {
         put_rac(c, &keystate, 0);
-        avctx->coded_frame->key_frame = 0;
+        f->key_frame = 0;
     }
 
     if (f->ac > 1) {
@@ -1318,11 +1318,17 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     if (avctx->flags & CODEC_FLAG_PASS1)
         avctx->stats_out[0] = '\0';
 
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
+    avctx->coded_frame->key_frame = f->key_frame;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
     f->picture_number++;
     pkt->size   = buf_p - pkt->data;
     pkt->pts    =
     pkt->dts    = pict->pts;
-    pkt->flags |= AV_PKT_FLAG_KEY * avctx->coded_frame->key_frame;
+    pkt->flags |= AV_PKT_FLAG_KEY * f->key_frame;
     *got_packet = 1;
 
     return 0;
@@ -1330,7 +1336,6 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
 static av_cold int encode_close(AVCodecContext *avctx)
 {
-    av_frame_free(&avctx->coded_frame);
     ffv1_close(avctx);
     return 0;
 }

@@ -857,8 +857,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
     ff_pixblockdsp_init(&s->pdsp, avctx);
     ff_qpeldsp_init(&s->qdsp);
 
-    s->avctx->coded_frame = s->current_picture.f;
-
     if (s->msmpeg4_version) {
         FF_ALLOCZ_OR_GOTO(s->avctx, s->ac_stats,
                           2 * 2 * (MAX_LEVEL + 1) *
@@ -1619,8 +1617,11 @@ static void frame_end(MpegEncContext *s)
     if (s->pict_type!= AV_PICTURE_TYPE_B)
         s->last_non_b_pict_type = s->pict_type;
 
-    s->avctx->coded_frame = s->current_picture_ptr->f;
-
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
+    av_frame_copy_props(s->avctx->coded_frame, s->current_picture.f);
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 }
 
 static void update_noise_reduction(MpegEncContext *s)
@@ -1734,6 +1735,7 @@ int ff_mpv_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
 
     /* output? */
     if (s->new_picture.f->data[0]) {
+        uint8_t *sd;
         int growing_buffer = context_count == 1 && !pkt->data && !s->data_partitioning;
         int pkt_size = growing_buffer ? FFMAX(s->mb_width*s->mb_height*64+10000, avctx->internal->byte_buffer_size) - FF_INPUT_BUFFER_PADDING_SIZE
                                               :
@@ -1783,6 +1785,12 @@ vbv_retry:
         avctx->skip_count  = s->skip_count;
 
         frame_end(s);
+
+        sd = av_packet_new_side_data(pkt, AV_PKT_DATA_QUALITY_FACTOR,
+                                     sizeof(int));
+        if (!sd)
+            return AVERROR(ENOMEM);
+        *(int *)sd = s->current_picture.f->quality;
 
         if (CONFIG_MJPEG_ENCODER && s->out_format == FMT_MJPEG)
             ff_mjpeg_encode_picture_trailer(&s->pb, s->header_bits);

@@ -58,7 +58,6 @@
         av_log(avctx, AV_LOG_WARNING, __VA_ARGS__); \
     }
 
-float ff_aac_pow34sf_tab[428];
 
 static const uint8_t swb_size_1024_96[] = {
     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 8, 8, 8, 8, 8,
@@ -854,9 +853,6 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     s->lambda = avctx->global_quality > 0 ? avctx->global_quality : 120;
 
     ff_aac_tableinit();
-
-    for (i = 0; i < 428; i++)
-        ff_aac_pow34sf_tab[i] = sqrt(ff_aac_pow2sf_tab[i] * sqrt(ff_aac_pow2sf_tab[i]));
 
     avctx->initial_padding = 1024;
     ff_af_queue_init(avctx, &s->afq);

@@ -66,7 +66,8 @@ static const int mc_colors[5]={0x0,0xb,0xc,0xf,0x1};
 //static const int mc_colors[5]={0x0,0x8,0xa,0xf,0x7};
 //static const int mc_colors[5]={0x0,0x9,0x8,0xa,0x3};
 
-static void to_meta_with_crop(AVCodecContext *avctx, const AVFrame *p, int *dest)
+static void to_meta_with_crop(AVCodecContext *avctx,
+                              const AVFrame *p, int *dest)
 {
     int blockx, blocky, x, y;
     int luma = 0;

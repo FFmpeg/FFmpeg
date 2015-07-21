@@ -81,7 +81,6 @@ static av_cold int utvideo_encode_init(AVCodecContext *avctx)
     flags = ((avctx->prediction_method + 1) << 8) | (avctx->thread_count - 1);
 
     avctx->priv_data = utv;
-    avctx->coded_frame = av_frame_alloc();
 
     /* Alloc extradata buffer */
     info = (UtVideoExtra *)av_malloc(sizeof(*info));
@@ -211,7 +210,6 @@ static av_cold int utvideo_encode_close(AVCodecContext *avctx)
 {
     UtVideoContext *utv = (UtVideoContext *)avctx->priv_data;
 
-    av_frame_free(&avctx->coded_frame);
     av_freep(&avctx->extradata);
     av_freep(&utv->buffer);
 

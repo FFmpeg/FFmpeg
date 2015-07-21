@@ -265,7 +265,6 @@ static av_cold int ljpeg_encode_close(AVCodecContext *avctx)
 {
     LJpegEncContext *s = avctx->priv_data;
 
-    av_frame_free(&avctx->coded_frame);
     av_freep(&s->scratch);
 
     return 0;
@@ -286,12 +285,12 @@ static av_cold int ljpeg_encode_init(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
 
-    avctx->coded_frame = av_frame_alloc();
-    if (!avctx->coded_frame)
-        return AVERROR(ENOMEM);
-
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
     avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
     avctx->coded_frame->key_frame = 1;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     s->scratch = av_malloc_array(avctx->width + 1, sizeof(*s->scratch));
     if (!s->scratch)

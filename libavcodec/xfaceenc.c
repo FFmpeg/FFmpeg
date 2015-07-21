@@ -126,9 +126,6 @@ static void encode_block(char *bitmap, int w, int h, int level, ProbRangesQueue 
 
 static av_cold int xface_encode_init(AVCodecContext *avctx)
 {
-    avctx->coded_frame = av_frame_alloc();
-    if (!avctx->coded_frame)
-        return AVERROR(ENOMEM);
     avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
 
     return 0;
@@ -223,8 +220,6 @@ static int xface_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
 static av_cold int xface_encode_close(AVCodecContext *avctx)
 {
-    av_frame_free(&avctx->coded_frame);
-
     return 0;
 }
 

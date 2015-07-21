@@ -37,10 +37,6 @@ static av_cold int encode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     }
 
-    avctx->coded_frame = av_frame_alloc();
-    if (!avctx->coded_frame)
-        return AVERROR(ENOMEM);
-
     return 0;
 }
 
@@ -54,8 +50,12 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     unsigned int bytes_per_channel, pixmax, put_be;
     unsigned char *end_buf;
 
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
     avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
     avctx->coded_frame->key_frame = 1;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     width  = avctx->width;
     height = avctx->height;
@@ -206,12 +206,6 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     return 0;
 }
 
-static av_cold int encode_close(AVCodecContext *avctx)
-{
-    av_frame_free(&avctx->coded_frame);
-    return 0;
-}
-
 AVCodec ff_sgi_encoder = {
     .name      = "sgi",
     .long_name = NULL_IF_CONFIG_SMALL("SGI image"),
@@ -219,7 +213,6 @@ AVCodec ff_sgi_encoder = {
     .id        = AV_CODEC_ID_SGI,
     .init      = encode_init,
     .encode2   = encode_frame,
-    .close     = encode_close,
     .pix_fmts  = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_RGB24, AV_PIX_FMT_RGBA,
         AV_PIX_FMT_RGB48LE, AV_PIX_FMT_RGB48BE,

@@ -228,12 +228,15 @@ static av_cold int encode_init(AVCodecContext *avctx)
     }
     s->version = 2;
 
-    avctx->coded_frame = av_frame_alloc();
-    if (!avctx->extradata || !avctx->coded_frame)
+    if (!avctx->extradata)
         return AVERROR(ENOMEM);
 
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
     avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
     avctx->coded_frame->key_frame = 1;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     s->bps = desc->comp[0].depth_minus1 + 1;
     s->yuv = !(desc->flags & AV_PIX_FMT_FLAG_RGB) && desc->nb_components >= 2;
@@ -1036,8 +1039,6 @@ static av_cold int encode_end(AVCodecContext *avctx)
 
     av_freep(&avctx->extradata);
     av_freep(&avctx->stats_out);
-
-    av_frame_free(&avctx->coded_frame);
 
     return 0;
 }

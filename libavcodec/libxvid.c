@@ -680,9 +680,6 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)
     }
 
     x->encoder_handle  = xvid_enc_create.handle;
-    avctx->coded_frame = av_frame_alloc();
-    if (!avctx->coded_frame)
-        return AVERROR(ENOMEM);
 
     return 0;
 }
@@ -692,7 +689,6 @@ static int xvid_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 {
     int xerr, i, ret, user_packet = !!pkt->data;
     struct xvid_context *x = avctx->priv_data;
-    AVFrame *p             = avctx->coded_frame;
     int mb_width  = (avctx->width  + 15) / 16;
     int mb_height = (avctx->height + 15) / 16;
     char *tmp;
@@ -775,25 +771,44 @@ static int xvid_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     }
 
     if (xerr > 0) {
+        uint8_t *sd = av_packet_new_side_data(pkt, AV_PKT_DATA_QUALITY_FACTOR,
+                                              sizeof(int));
+        if (!sd)
+            return AVERROR(ENOMEM);
+        *(int *)sd = xvid_enc_stats.quant * FF_QP2LAMBDA;
+
         *got_packet = 1;
 
-        p->quality = xvid_enc_stats.quant * FF_QP2LAMBDA;
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
+        avctx->coded_frame->quality = xvid_enc_stats.quant * FF_QP2LAMBDA;
         if (xvid_enc_stats.type == XVID_TYPE_PVOP)
-            p->pict_type = AV_PICTURE_TYPE_P;
+            avctx->coded_frame->pict_type = AV_PICTURE_TYPE_P;
         else if (xvid_enc_stats.type == XVID_TYPE_BVOP)
-            p->pict_type = AV_PICTURE_TYPE_B;
+            avctx->coded_frame->pict_type = AV_PICTURE_TYPE_B;
         else if (xvid_enc_stats.type == XVID_TYPE_SVOP)
-            p->pict_type = AV_PICTURE_TYPE_S;
+            avctx->coded_frame->pict_type = AV_PICTURE_TYPE_S;
         else
-            p->pict_type = AV_PICTURE_TYPE_I;
+            avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
         if (xvid_enc_frame.out_flags & XVID_KEYFRAME) {
-            p->key_frame = 1;
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
+            avctx->coded_frame->key_frame = 1;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
             pkt->flags  |= AV_PKT_FLAG_KEY;
             if (x->quicktime_format)
                 return xvid_strip_vol_header(avctx, pkt,
                                              xvid_enc_stats.hlength, xerr);
-        } else
-            p->key_frame = 0;
+        } else {
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
+            avctx->coded_frame->key_frame = 0;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+        }
 
         pkt->size = xerr;
 
@@ -818,7 +833,6 @@ static av_cold int xvid_encode_close(AVCodecContext *avctx)
         x->encoder_handle = NULL;
     }
 
-    av_frame_free(&avctx->coded_frame);
     av_freep(&avctx->extradata);
     if (x->twopassbuffer) {
         av_freep(&x->twopassbuffer);

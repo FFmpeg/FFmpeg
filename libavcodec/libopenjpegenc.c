@@ -242,18 +242,11 @@ static av_cold int libopenjpeg_encode_init(AVCodecContext *avctx)
         goto fail;
     }
 
-    avctx->coded_frame = av_frame_alloc();
-    if (!avctx->coded_frame) {
-        av_log(avctx, AV_LOG_ERROR, "Error allocating coded frame\n");
-        goto fail;
-    }
-
     return 0;
 
 fail:
     opj_image_destroy(ctx->image);
     ctx->image = NULL;
-    av_frame_free(&avctx->coded_frame);
     return err;
 }
 
@@ -608,7 +601,6 @@ static av_cold int libopenjpeg_encode_close(AVCodecContext *avctx)
 
     opj_image_destroy(ctx->image);
     ctx->image = NULL;
-    av_frame_free(&avctx->coded_frame);
     return 0;
 }
 

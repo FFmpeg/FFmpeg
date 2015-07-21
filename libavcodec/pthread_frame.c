@@ -242,7 +242,11 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     if (for_user) {
         dst->delay       = src->thread_count - 1;
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
         dst->coded_frame = src->coded_frame;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     } else {
         if (dst->codec->update_thread_context)
             err = dst->codec->update_thread_context(dst, src);

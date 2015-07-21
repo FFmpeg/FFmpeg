@@ -199,6 +199,7 @@ typedef struct ProresContext {
                  int linesize, int16_t *block);
     FDCTDSPContext fdsp;
 
+    const AVFrame *pic;
     int mb_width, mb_height;
     int mbs_per_slice;
     int num_chroma_blocks, chroma_factor;
@@ -745,7 +746,7 @@ static int estimate_alpha_plane(ProresContext *ctx, int *error,
     return bits;
 }
 
-static int find_slice_quant(AVCodecContext *avctx, const AVFrame *pic,
+static int find_slice_quant(AVCodecContext *avctx,
                             int trellis_node, int x, int y, int mbs_per_slice,
                             ProresThreadData *td)
 {
@@ -767,7 +768,7 @@ static int find_slice_quant(AVCodecContext *avctx, const AVFrame *pic,
     if (ctx->pictures_per_frame == 1)
         line_add = 0;
     else
-        line_add = ctx->cur_picture_idx ^ !pic->top_field_first;
+        line_add = ctx->cur_picture_idx ^ !ctx->pic->top_field_first;
     mbs = x + mbs_per_slice;
 
     for (i = 0; i < ctx->num_planes; i++) {
@@ -787,9 +788,9 @@ static int find_slice_quant(AVCodecContext *avctx, const AVFrame *pic,
             pwidth         = avctx->width >> 1;
         }
 
-        linesize[i] = pic->linesize[i] * ctx->pictures_per_frame;
-        src = (const uint16_t*)(pic->data[i] + yp * linesize[i] +
-                                line_add * pic->linesize[i]) + xp;
+        linesize[i] = ctx->pic->linesize[i] * ctx->pictures_per_frame;
+        src = (const uint16_t *)(ctx->pic->data[i] + yp * linesize[i] +
+                                 line_add * ctx->pic->linesize[i]) + xp;
 
         if (i < 3) {
             get_slice_data(ctx, src, linesize[i], xp, yp,
@@ -912,7 +913,7 @@ static int find_quant_thread(AVCodecContext *avctx, void *arg,
     for (x = mb = 0; x < ctx->mb_width; x += mbs_per_slice, mb++) {
         while (ctx->mb_width - x < mbs_per_slice)
             mbs_per_slice >>= 1;
-        q = find_slice_quant(avctx, arg,
+        q = find_slice_quant(avctx,
                              (mb + 1) * TRELLIS_WIDTH, x, y,
                              mbs_per_slice, td);
     }
@@ -940,6 +941,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     int max_slice_size = (ctx->frame_size_upper_bound - 200) / (ctx->pictures_per_frame * ctx->slices_per_picture + 1);
     uint8_t frame_flags;
 
+    ctx->pic = pic;
     pkt_size = ctx->frame_size_upper_bound;
 
     if ((ret = ff_alloc_packet2(avctx, pkt, pkt_size + FF_MIN_BUFFER_SIZE)) < 0)
@@ -1090,8 +1092,6 @@ static av_cold int encode_close(AVCodecContext *avctx)
     ProresContext *ctx = avctx->priv_data;
     int i;
 
-    av_frame_free(&avctx->coded_frame);
-
     if (ctx->tdata) {
         for (i = 0; i < avctx->thread_count; i++)
             av_freep(&ctx->tdata[i].nodes);
@@ -1125,11 +1125,12 @@ static av_cold int encode_init(AVCodecContext *avctx)
     int interlaced = !!(avctx->flags & CODEC_FLAG_INTERLACED_DCT);
 
     avctx->bits_per_raw_sample = 10;
-    avctx->coded_frame = av_frame_alloc();
-    if (!avctx->coded_frame)
-        return AVERROR(ENOMEM);
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
     avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
     avctx->coded_frame->key_frame = 1;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     ctx->fdct      = prores_fdct;
     ctx->scantable = interlaced ? ff_prores_interlaced_scan

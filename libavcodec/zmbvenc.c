@@ -133,8 +133,12 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     c->curfrm++;
     if(c->curfrm == c->keyint)
         c->curfrm = 0;
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
     avctx->coded_frame->pict_type = keyframe ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
     avctx->coded_frame->key_frame = keyframe;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     chpal = !keyframe && memcmp(p->data[1], c->pal2, 1024);
 
     palptr = (uint32_t*)p->data[1];
@@ -259,8 +263,6 @@ static av_cold int encode_end(AVCodecContext *avctx)
     deflateEnd(&c->zstream);
     av_freep(&c->prev);
 
-    av_frame_free(&avctx->coded_frame);
-
     return 0;
 }
 
@@ -322,12 +324,6 @@ static av_cold int encode_init(AVCodecContext *avctx)
     if (zret != Z_OK) {
         av_log(avctx, AV_LOG_ERROR, "Inflate init error: %d\n", zret);
         return -1;
-    }
-
-    avctx->coded_frame = av_frame_alloc();
-    if (!avctx->coded_frame) {
-        encode_end(avctx);
-        return AVERROR(ENOMEM);
     }
 
     return 0;
