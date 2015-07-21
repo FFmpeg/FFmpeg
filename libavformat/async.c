@@ -99,6 +99,7 @@ static void *async_buffer_task(void *arg)
         if (async_check_interrupt(h)) {
             c->io_eof_reached = 1;
             c->io_error       = AVERROR_EXIT;
+            pthread_cond_signal(&c->cond_wakeup_main);
             pthread_mutex_unlock(&c->mutex);
             break;
         }
