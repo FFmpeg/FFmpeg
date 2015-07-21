@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include "avformat.h"
+#include "libavutil/avassert.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/opt.h"
 #include "libavutil/time.h"
@@ -163,6 +164,22 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     return ret;
 }
 
+static int tcp_accept(URLContext *s, URLContext **c)
+{
+    TCPContext *sc = s->priv_data;
+    TCPContext *cc;
+    int ret;
+    av_assert0(sc->listen);
+    if ((ret = ffurl_alloc(c, s->filename, s->flags, &s->interrupt_callback)) < 0)
+        return ret;
+    cc = (*c)->priv_data;
+    ret = ff_accept(sc->fd, sc->listen_timeout, s);
+    if (ret < 0)
+        return ff_neterrno();
+    cc->fd = ret;
+    return 0;
+}
+
 static int tcp_read(URLContext *h, uint8_t *buf, int size)
 {
     TCPContext *s = h->priv_data;
@@ -223,6 +240,7 @@ static int tcp_get_file_handle(URLContext *h)
 URLProtocol ff_tcp_protocol = {
     .name                = "tcp",
     .url_open            = tcp_open,
+    .url_accept          = tcp_accept,
     .url_read            = tcp_read,
     .url_write           = tcp_write,
     .url_close           = tcp_close,
