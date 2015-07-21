@@ -71,7 +71,7 @@ typedef struct Context {
     AVIOInterruptCB interrupt_callback;
 } Context;
 
-static int async_interrupt_callback(void *arg)
+static int async_check_interrupt(void *arg)
 {
     URLContext *h   = arg;
     Context    *c   = h->priv_data;
@@ -95,7 +95,7 @@ static void *async_buffer_task(void *arg)
     while (1) {
         int fifo_space, to_copy;
 
-        if (async_interrupt_callback(h)) {
+        if (async_check_interrupt(h)) {
             c->io_eof_reached = 1;
             c->io_error       = AVERROR_EXIT;
             break;
@@ -154,7 +154,7 @@ static int async_open(URLContext *h, const char *arg, int flags, AVDictionary **
 {
     Context         *c = h->priv_data;
     int              ret;
-    AVIOInterruptCB  interrupt_callback = {.callback = async_interrupt_callback, .opaque = h};
+    AVIOInterruptCB  interrupt_callback = {.callback = async_check_interrupt, .opaque = h};
 
     av_strstart(arg, "async:", &arg);
 
@@ -250,7 +250,7 @@ static int async_read_internal(URLContext *h, void *dest, int size, int read_com
 
     while (to_read > 0) {
         int fifo_size, to_copy;
-        if (async_interrupt_callback(h)) {
+        if (async_check_interrupt(h)) {
             ret = AVERROR_EXIT;
             break;
         }
@@ -342,7 +342,7 @@ static int64_t async_seek(URLContext *h, int64_t pos, int whence)
     c->seek_ret       = 0;
 
     while (1) {
-        if (async_interrupt_callback(h)) {
+        if (async_check_interrupt(h)) {
             ret = AVERROR_EXIT;
             break;
         }
