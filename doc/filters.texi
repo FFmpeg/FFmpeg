@@ -8906,6 +8906,19 @@ scale=w='min(500\, iw*3/2):h=-1'
 @end example
 @end itemize
 
+@subsection Commands
+
+This filter supports the following commands:
+@table @option
+@item width, w
+@item height, h
+Set the output video dimension expression.
+The command accepts the same syntax of the corresponding option.
+
+If the specified expression is not valid, it is kept at its current
+value.
+@end table
+
 @section separatefields
 
 The @code{separatefields} takes a frame-based video input and splits
