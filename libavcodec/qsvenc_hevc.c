@@ -36,11 +36,11 @@
 #include "qsv_internal.h"
 #include "qsvenc.h"
 
-enum {
+enum LoadPlugin {
     LOAD_PLUGIN_NONE,
     LOAD_PLUGIN_HEVC_SW,
     LOAD_PLUGIN_HEVC_HW,
-} LoadPlugin;
+};
 
 typedef struct QSVHEVCEncContext {
     AVClass *class;
