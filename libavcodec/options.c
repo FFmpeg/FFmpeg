@@ -318,7 +318,6 @@ static int dummy_init(AVCodecContext *ctx)
     //TODO: this code should set every possible pointer that could be set by codec and is not an option;
     ctx->extradata_size = 8;
     ctx->extradata = av_malloc(ctx->extradata_size);
-    ctx->coded_frame = av_frame_alloc();
     return 0;
 }
 
@@ -326,7 +325,6 @@ static int dummy_close(AVCodecContext *ctx)
 {
     av_freep(&ctx->extradata);
     ctx->extradata_size = 0;
-    av_frame_free(&ctx->coded_frame);
     return 0;
 }
 
