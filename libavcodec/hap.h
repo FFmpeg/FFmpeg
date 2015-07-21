@@ -29,6 +29,18 @@
 #include "bytestream.h"
 #include "texturedsp.h"
 
+enum HapTextureFormat {
+    HAP_FMT_RGBDXT1   = 0x0B,
+    HAP_FMT_RGBADXT5  = 0x0E,
+    HAP_FMT_YCOCGDXT5 = 0x0F,
+};
+
+enum HapCompressor {
+    HAP_COMP_NONE    = 0xA0,
+    HAP_COMP_SNAPPY  = 0xB0,
+    HAP_COMP_COMPLEX = 0xC0,
+};
+
 typedef struct HapContext {
     AVClass *class;
 
@@ -49,17 +61,5 @@ typedef struct HapContext {
     /* Pointer to the selected compress or decompress function */
     int (*tex_fun)(uint8_t *dst, ptrdiff_t stride, const uint8_t *block);
 } HapContext;
-
-enum {
-    HAP_FMT_RGBDXT1   = 0x0B,
-    HAP_FMT_RGBADXT5  = 0x0E,
-    HAP_FMT_YCOCGDXT5 = 0x0F,
-};
-
-enum {
-    HAP_COMP_NONE    = 0xA0,
-    HAP_COMP_SNAPPY  = 0xB0,
-    HAP_COMP_COMPLEX = 0xC0,
-};
 
 #endif /* AVCODEC_HAP_H */
