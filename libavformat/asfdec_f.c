@@ -963,7 +963,7 @@ static int asf_get_packet(AVFormatContext *s, AVIOContext *pb)
         off = 32768;
         if (asf->no_resync_search)
             off = 3;
-        else if (s->packet_size > 0)
+        else if (s->packet_size > 0 && !asf->uses_std_ecc)
             off = (avio_tell(pb) - s->internal->data_offset) % s->packet_size + 3;
 
         c = d = e = -1;
