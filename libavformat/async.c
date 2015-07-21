@@ -439,7 +439,7 @@ static int64_t async_test_seek(URLContext *h, int64_t pos, int whence)
 
     if (whence == AVSEEK_SIZE) {
         return c->logical_size;
-    } if (whence == SEEK_CUR) {
+    } else if (whence == SEEK_CUR) {
         new_logical_pos = pos + c->logical_pos;
     } else if (whence == SEEK_SET){
         new_logical_pos = pos;
