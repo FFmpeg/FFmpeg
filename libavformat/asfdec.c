@@ -905,7 +905,7 @@ static int asf_read_data(AVFormatContext *s, const GUIDParseTable *g)
     uint64_t size   = asf->data_size = avio_rl64(pb);
     int i;
 
-    if (!asf->data_reached && pb->seekable) {
+    if (!asf->data_reached) {
         asf->data_reached       = 1;
         asf->data_offset        = asf->offset;
     }
