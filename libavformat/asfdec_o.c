@@ -1659,14 +1659,14 @@ static int asf_read_header(AVFormatContext *s)
             if (ret == AVERROR_EOF && asf->data_reached)
                 break;
             else
-                return ret;
+                goto failed;
         }
         g = find_guid(guid);
         if (g) {
             asf->unknown_offset = asf->offset;
             asf->is_header = 1;
             if ((ret = g->read_object(s, g)) < 0)
-                return ret;
+                goto failed;
         } else {
             size = avio_rl64(pb);
             align_position(pb, asf->offset, size);
@@ -1677,7 +1677,8 @@ static int asf_read_header(AVFormatContext *s)
 
     if (!asf->data_reached) {
         av_log(s, AV_LOG_ERROR, "Data Object was not found.\n");
-        return AVERROR_INVALIDDATA;
+        ret = AVERROR_INVALIDDATA;
+        goto failed;
     }
     if (pb->seekable)
         avio_seek(pb, asf->first_packet_offset, SEEK_SET);
@@ -1702,6 +1703,10 @@ static int asf_read_header(AVFormatContext *s)
     }
 
     return 0;
+
+failed:
+    asf_read_close(s);
+    return ret;
 }
 
 AVInputFormat ff_asf_o_demuxer = {
