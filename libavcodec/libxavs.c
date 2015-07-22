@@ -117,7 +117,6 @@ static int XAVS_frame(AVCodecContext *avctx, AVPacket *pkt,
     xavs_nal_t *nal;
     int nnal, i, ret;
     xavs_picture_t pic_out;
-    uint8_t *sd;
     int pict_type;
 
     x4->pic.img.i_csp   = XAVS_CSP_I420;

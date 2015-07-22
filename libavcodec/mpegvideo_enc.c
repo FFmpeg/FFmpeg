@@ -1735,7 +1735,6 @@ int ff_mpv_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
 
     /* output? */
     if (s->new_picture.f->data[0]) {
-        uint8_t *sd;
         int growing_buffer = context_count == 1 && !pkt->data && !s->data_partitioning;
         int pkt_size = growing_buffer ? FFMAX(s->mb_width*s->mb_height*64+10000, avctx->internal->byte_buffer_size) - FF_INPUT_BUFFER_PADDING_SIZE
                                               :
