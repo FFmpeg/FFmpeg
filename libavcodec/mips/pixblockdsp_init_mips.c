@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2015 Shivraj Patil (Shivraj.Patil@imgtec.com)
+ *                    Zhou Xiaoyong <zhouxiaoyong@loongson.cn>
  *
  * This file is part of FFmpeg.
  *
@@ -44,10 +45,25 @@ static av_cold void pixblockdsp_init_msa(PixblockDSPContext *c,
 }
 #endif  // #if HAVE_MSA
 
+#if HAVE_MMI
+static av_cold void pixblockdsp_init_mmi(PixblockDSPContext *c,
+        AVCodecContext *avctx, unsigned high_bit_depth)
+{
+    c->diff_pixels = ff_diff_pixels_mmi;
+
+    if (!high_bit_depth || avctx->codec_type != AVMEDIA_TYPE_VIDEO) {
+        c->get_pixels = ff_get_pixels_8_mmi;
+    }
+}
+#endif /* HAVE_MMI */
+
 void ff_pixblockdsp_init_mips(PixblockDSPContext *c, AVCodecContext *avctx,
                               unsigned high_bit_depth)
 {
 #if HAVE_MSA
     pixblockdsp_init_msa(c, avctx, high_bit_depth);
 #endif  // #if HAVE_MSA
+#if HAVE_MMI
+    pixblockdsp_init_mmi(c, avctx, high_bit_depth);
+#endif /* HAVE_MMI */
 }
