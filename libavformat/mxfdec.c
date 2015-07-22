@@ -2045,12 +2045,16 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
                                                   &descriptor->essence_codec_ul);
                     st->codec->pix_fmt = (enum AVPixelFormat)pix_fmt_ul->id;
                     if (st->codec->pix_fmt == AV_PIX_FMT_NONE) {
+                        st->codec->codec_tag = mxf_get_codec_ul(ff_mxf_codec_tag_uls,
+                                                                &descriptor->essence_codec_ul)->id;
+                        if (!st->codec->codec_tag) {
                         /* support files created before RP224v10 by defaulting to UYVY422
                            if subsampling is 4:2:2 and component depth is 8-bit */
                         if (descriptor->horiz_subsampling == 2 &&
                             descriptor->vert_subsampling == 1 &&
                             descriptor->component_depth == 8) {
                             st->codec->pix_fmt = AV_PIX_FMT_UYVY422;
+                        }
                         }
                     }
                 }
