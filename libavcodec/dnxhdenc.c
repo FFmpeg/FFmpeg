@@ -1115,7 +1115,7 @@ FF_DISABLE_DEPRECATION_WARNINGS
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
-    ff_side_data_set_encoder_stats(pkt, ctx->qscale * FF_QP2LAMBDA, NULL, 0, 0);
+    ff_side_data_set_encoder_stats(pkt, ctx->qscale * FF_QP2LAMBDA, NULL, 0, AV_PICTURE_TYPE_I);
 
     pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;
