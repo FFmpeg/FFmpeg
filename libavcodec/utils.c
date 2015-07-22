@@ -2090,10 +2090,15 @@ int attribute_align_arg avcodec_encode_audio(AVCodecContext *avctx,
 
     got_packet = 0;
     ret = avcodec_encode_audio2(avctx, &pkt, frame, &got_packet);
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
     if (!ret && got_packet && avctx->coded_frame) {
         avctx->coded_frame->pts       = pkt.pts;
         avctx->coded_frame->key_frame = !!(pkt.flags & AV_PKT_FLAG_KEY);
     }
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
     /* free any side data since we cannot return it */
     av_packet_free_side_data(&pkt);
 
@@ -2123,10 +2128,14 @@ int attribute_align_arg avcodec_encode_video(AVCodecContext *avctx, uint8_t *buf
     pkt.size = buf_size;
 
     ret = avcodec_encode_video2(avctx, &pkt, pict, &got_packet);
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
     if (!ret && got_packet && avctx->coded_frame) {
         avctx->coded_frame->pts       = pkt.pts;
         avctx->coded_frame->key_frame = !!(pkt.flags & AV_PKT_FLAG_KEY);
     }
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     /* free any side data since we cannot return it */
     if (pkt.side_data_elems > 0) {
@@ -2492,6 +2501,8 @@ int attribute_align_arg avcodec_decode_audio3(AVCodecContext *avctx, int16_t *sa
 
     if (!frame)
         return AVERROR(ENOMEM);
+#if FF_API_GET_BUFFER
+FF_DISABLE_DEPRECATION_WARNINGS
     if (avctx->get_buffer != avcodec_default_get_buffer) {
         av_log(avctx, AV_LOG_ERROR, "Custom get_buffer() for use with"
                                     "avcodec_decode_audio3() detected. Overriding with avcodec_default_get_buffer\n");
@@ -2500,6 +2511,8 @@ int attribute_align_arg avcodec_decode_audio3(AVCodecContext *avctx, int16_t *sa
         avctx->get_buffer = avcodec_default_get_buffer;
         avctx->release_buffer = avcodec_default_release_buffer;
     }
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     ret = avcodec_decode_audio4(avctx, frame, &got_frame, avpkt);
 

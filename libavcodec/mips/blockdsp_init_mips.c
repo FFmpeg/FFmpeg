@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2015 Parag Salasakar (parag.salasakar@imgtec.com)
+ *                    Zhou Xiaoyong <zhouxiaoyong@loongson.cn>
  *
  * This file is part of FFmpeg.
  *
@@ -32,9 +33,24 @@ static av_cold void blockdsp_init_msa(BlockDSPContext *c,
 }
 #endif  // #if HAVE_MSA
 
+#if HAVE_MMI
+static av_cold void blockdsp_init_mmi(BlockDSPContext *c,
+        unsigned high_bit_depth)
+{
+    c->clear_block = ff_clear_block_mmi;
+    c->clear_blocks = ff_clear_blocks_mmi;
+
+    c->fill_block_tab[0] = ff_fill_block16_mmi;
+    c->fill_block_tab[1] = ff_fill_block8_mmi;
+}
+#endif /* HAVE_MMI */
+
 void ff_blockdsp_init_mips(BlockDSPContext *c, unsigned high_bit_depth)
 {
 #if HAVE_MSA
     blockdsp_init_msa(c, high_bit_depth);
 #endif  // #if HAVE_MSA
+#if HAVE_MMI
+    blockdsp_init_mmi(c, high_bit_depth);
+#endif /* HAVE_MMI */
 }
