@@ -23,6 +23,7 @@
 #include "libavcodec/avcodec.h"
 #include "libavcodec/h264pred.h"
 #include "libavutil/common.h"
+#include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 
 static const int codec_ids[4] = { AV_CODEC_ID_H264, AV_CODEC_ID_VP8, AV_CODEC_ID_RV40, AV_CODEC_ID_SVQ3 };
@@ -232,8 +233,8 @@ void checkasm_check_h264pred(void)
         { check_pred8x8l,  "pred8x8l"  },
     };
 
-    DECLARE_ALIGNED(16, uint8_t, buf0)[BUF_SIZE];
-    DECLARE_ALIGNED(16, uint8_t, buf1)[BUF_SIZE];
+    LOCAL_ALIGNED_16(uint8_t, buf0, [BUF_SIZE]);
+    LOCAL_ALIGNED_16(uint8_t, buf1, [BUF_SIZE]);
     H264PredContext h;
     int test, codec, chroma_format, bit_depth;
 
