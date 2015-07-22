@@ -87,8 +87,7 @@ static const char * const pred8x8_modes[4][11] = {
         [LEFT_DC_PRED8x8] = "left_dc_rv40",
         [TOP_DC_PRED8x8 ] = "top_dc_rv40",
     },
-    { /* SVQ3 */
-    },
+    /* nothing for SVQ3 */
 };
 
 static const char * const pred16x16_modes[4][9] = {
