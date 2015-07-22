@@ -776,6 +776,8 @@ static int asf_read_stream_properties(AVFormatContext *s, const GUIDParseTable *
                 asf_st->span              = span;
                 asf_st->virtual_pkt_len   = avio_rl16(pb);
                 asf_st->virtual_chunk_len = avio_rl16(pb);
+                if (!asf_st->virtual_chunk_len || !asf_st->virtual_pkt_len)
+                    return AVERROR_INVALIDDATA;
                 avio_skip(pb, err_data_len - 5);
             } else
                 avio_skip(pb, err_data_len - 1);
