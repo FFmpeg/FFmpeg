@@ -24,6 +24,29 @@
 #include "vp9dsp_mips.h"
 
 #if HAVE_MSA
+static av_cold void vp9dsp_itxfm_init_msa(VP9DSPContext *dsp, int bpp)
+{
+    if (bpp == 8) {
+#define init_itxfm(tx, sz)                                         \
+    dsp->itxfm_add[tx][DCT_DCT]   = ff_idct_idct_##sz##_add_msa;   \
+    dsp->itxfm_add[tx][DCT_ADST]  = ff_iadst_idct_##sz##_add_msa;  \
+    dsp->itxfm_add[tx][ADST_DCT]  = ff_idct_iadst_##sz##_add_msa;  \
+    dsp->itxfm_add[tx][ADST_ADST] = ff_iadst_iadst_##sz##_add_msa  \
+
+#define init_idct(tx, nm)                        \
+    dsp->itxfm_add[tx][DCT_DCT]   =              \
+    dsp->itxfm_add[tx][ADST_DCT]  =              \
+    dsp->itxfm_add[tx][DCT_ADST]  =              \
+    dsp->itxfm_add[tx][ADST_ADST] = nm##_add_msa
+
+    init_itxfm(TX_4X4, 4x4);
+    init_itxfm(TX_8X8, 8x8);
+    init_itxfm(TX_16X16, 16x16);
+    init_idct(TX_32X32, ff_idct_idct_32x32);
+#undef init_itxfm
+#undef init_idct
+    }
+}
 
 static av_cold void vp9dsp_mc_init_msa(VP9DSPContext *dsp, int bpp)
 {
@@ -106,6 +129,7 @@ static av_cold void vp9dsp_loopfilter_init_msa(VP9DSPContext *dsp, int bpp)
 
 static av_cold void vp9dsp_init_msa(VP9DSPContext *dsp, int bpp)
 {
+    vp9dsp_itxfm_init_msa(dsp, bpp);
     vp9dsp_mc_init_msa(dsp, bpp);
     vp9dsp_loopfilter_init_msa(dsp, bpp);
 }
