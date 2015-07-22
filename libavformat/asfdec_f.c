@@ -958,13 +958,13 @@ static int asf_get_packet(AVFormatContext *s, AVIOContext *pb)
     int rsize = 8;
     int c, d, e, off;
 
-    if (asf->uses_std_ecc >= 0) {
+    if (asf->uses_std_ecc > 0) {
         // if we do not know packet size, allow skipping up to 32 kB
         off = 32768;
         if (asf->no_resync_search)
             off = 3;
-        else if (s->packet_size > 0 && !asf->uses_std_ecc)
-            off = (avio_tell(pb) - s->internal->data_offset) % s->packet_size + 3;
+//         else if (s->packet_size > 0 && !asf->uses_std_ecc)
+//             off = (avio_tell(pb) - s->internal->data_offset) % s->packet_size + 3;
 
         c = d = e = -1;
         while (off-- > 0) {
@@ -973,10 +973,6 @@ static int asf_get_packet(AVFormatContext *s, AVIOContext *pb)
             e = avio_r8(pb);
             if (c == 0x82 && !d && !e)
                 break;
-        }
-
-        if (!asf->uses_std_ecc) {
-            asf->uses_std_ecc =  (c == 0x82 && !d && !e) ? 1 : -1;
         }
 
         if (c != 0x82) {
@@ -1004,6 +1000,24 @@ static int asf_get_packet(AVFormatContext *s, AVIOContext *pb)
         }
     } else {
         c = avio_r8(pb);
+        if (c & 0x80) {
+            rsize ++;
+            if (!(c & 0x60)) {
+                d = avio_r8(pb);
+                e = avio_r8(pb);
+                avio_seek(pb, (c & 0xF) - 2, SEEK_CUR);
+                rsize += c & 0xF;
+            }
+
+            if (c != 0x82)
+                avpriv_request_sample(s, "Invalid ECC byte\n");
+
+            if (!asf->uses_std_ecc)
+                asf->uses_std_ecc =  (c == 0x82 && !d && !e) ? 1 : -1;
+
+            c = avio_r8(pb);
+        } else
+            asf->uses_std_ecc =  -1;
         d = avio_r8(pb);
     }
 
