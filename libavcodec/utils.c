@@ -1603,9 +1603,11 @@ void avsubtitle_free(AVSubtitle *sub)
 
 av_cold int avcodec_close(AVCodecContext *avctx)
 {
+    int i;
+
     if (avcodec_is_open(avctx)) {
         FramePool *pool = avctx->internal->pool;
-        int i;
+
         if (HAVE_THREADS && avctx->internal->thread_ctx)
             ff_thread_free(avctx);
         if (avctx->codec && avctx->codec->close)
@@ -1621,6 +1623,11 @@ av_cold int avcodec_close(AVCodecContext *avctx)
 
         av_freep(&avctx->internal);
     }
+
+    for (i = 0; i < avctx->nb_coded_side_data; i++)
+        av_freep(&avctx->coded_side_data[i].data);
+    av_freep(&avctx->coded_side_data);
+    avctx->nb_coded_side_data = 0;
 
     if (avctx->priv_data && avctx->codec && avctx->codec->priv_class)
         av_opt_free(avctx->priv_data);

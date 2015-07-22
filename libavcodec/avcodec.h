@@ -2925,6 +2925,16 @@ typedef struct AVCodecContext {
      * - decoding: Set by libavcodec before calling get_format()
      */
     enum AVPixelFormat sw_pix_fmt;
+
+    /**
+     * Additional data associated with the entire coded stream.
+     *
+     * - decoding: unused
+     * - encoding: may be set by libavcodec after avcodec_open2().
+     */
+    AVPacketSideData *coded_side_data;
+    int            nb_coded_side_data;
+
 } AVCodecContext;
 
 /**
