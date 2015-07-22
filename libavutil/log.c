@@ -271,6 +271,9 @@ static void format_line(void *avcl, int level, const char *fmt, va_list vl,
 
         if (flags & AV_LOG_PRINT_LEVEL)
             av_bprintf(part+2, "[%s] ", get_level_str(level));
+    } else {
+    	if ((flags & AV_LOG_PRINT_LEVEL) && level < AV_LOG_INFO)
+    		av_bprintf(part+0, "[%s] ", get_level_str(level));
     }
 
     av_vbprintf(part+3, fmt, vl);
