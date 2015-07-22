@@ -1652,17 +1652,13 @@ static int asf_read_header(AVFormatContext *s)
      */
     while (1) {
         // for the cases when object size is invalid
-        if (avio_tell(pb) == asf->offset) {
-            if (asf->data_reached)
-                avio_seek(pb, asf->first_packet_offset, SEEK_SET);
+        if (avio_tell(pb) == asf->offset)
             break;
-        }
         asf->offset = avio_tell(pb);
         if ((ret = ff_get_guid(pb, &guid)) < 0) {
-            if (ret == AVERROR_EOF && asf->data_reached) {
-                avio_seek(pb, asf->first_packet_offset, SEEK_SET);
+            if (ret == AVERROR_EOF && asf->data_reached)
                 break;
-            } else
+            else
                 return ret;
         }
         g = find_guid(guid);
@@ -1678,6 +1674,13 @@ static int asf_read_header(AVFormatContext *s)
         if (asf->data_reached && !pb->seekable)
             break;
     }
+
+    if (!asf->data_reached) {
+        av_log(s, AV_LOG_ERROR, "Data Object was not found.\n");
+        return AVERROR_INVALIDDATA;
+    }
+    if (pb->seekable)
+        avio_seek(pb, asf->first_packet_offset, SEEK_SET);
 
     for (i = 0; i < asf->nb_streams; i++) {
         const char *rfc1766 = asf->asf_sd[asf->asf_st[i]->lang_idx].langs;
