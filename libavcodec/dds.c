@@ -54,7 +54,7 @@ enum DDSPostProc {
     DDS_SWIZZLE_XGBR,
     DDS_SWIZZLE_XRBG,
     DDS_SWIZZLE_XGXR,
-} DDSPostProc;
+};
 
 enum DDSDXGIFormat {
     DXGI_FORMAT_R16G16B16A16_TYPELESS       =  9,
@@ -93,7 +93,7 @@ enum DDSDXGIFormat {
     DXGI_FORMAT_B8G8R8A8_UNORM_SRGB         = 91,
     DXGI_FORMAT_B8G8R8X8_TYPELESS           = 92,
     DXGI_FORMAT_B8G8R8X8_UNORM_SRGB         = 93,
-} DDSDXGIFormat;
+};
 
 typedef struct DDSContext {
     TextureDSPContext texdsp;
