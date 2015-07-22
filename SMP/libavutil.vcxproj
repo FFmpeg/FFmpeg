@@ -187,6 +187,8 @@
     </ClCompile>
     <ClCompile Include="..\libavutil\xtea.c">
     </ClCompile>
+    <ClCompile Include="..\libavutil\tea.c">
+    </ClCompile>
     <ClCompile Include="..\libavutil\lzo.c">
     </ClCompile>
     <ClCompile Include="..\libavutil\opencl.c">
@@ -271,6 +273,7 @@
     <ClInclude Include="..\libavutil\twofish.h" />
     <ClInclude Include="..\libavutil\version.h" />
     <ClInclude Include="..\libavutil\xtea.h" />
+    <ClInclude Include="..\libavutil\tea.h" />
     <ClInclude Include="..\libavutil\lzo.h" />
     <ClInclude Include="..\libavutil\opencl.h" />
   </ItemGroup>
@@ -583,6 +586,7 @@ copy ..\libavutil\timestamp.h $(OutDir)\include\libavutil
 copy ..\libavutil\twofish.h $(OutDir)\include\libavutil
 copy ..\libavutil\version.h $(OutDir)\include\libavutil
 copy ..\libavutil\xtea.h $(OutDir)\include\libavutil
+copy ..\libavutil\tea.h $(OutDir)\include\libavutil
 copy ..\libavutil\lzo.h $(OutDir)\include\libavutil
 copy ..\libavutil\opencl.h $(OutDir)\include\libavutil
 mkdir $(OutDir)\licenses
@@ -707,6 +711,7 @@ copy ..\libavutil\timestamp.h $(OutDir)\include\libavutil
 copy ..\libavutil\twofish.h $(OutDir)\include\libavutil
 copy ..\libavutil\version.h $(OutDir)\include\libavutil
 copy ..\libavutil\xtea.h $(OutDir)\include\libavutil
+copy ..\libavutil\tea.h $(OutDir)\include\libavutil
 copy ..\libavutil\lzo.h $(OutDir)\include\libavutil
 copy ..\libavutil\opencl.h $(OutDir)\include\libavutil
 mkdir $(OutDir)\licenses
@@ -838,6 +843,7 @@ copy ..\libavutil\timestamp.h $(OutDir)\include\libavutil
 copy ..\libavutil\twofish.h $(OutDir)\include\libavutil
 copy ..\libavutil\version.h $(OutDir)\include\libavutil
 copy ..\libavutil\xtea.h $(OutDir)\include\libavutil
+copy ..\libavutil\tea.h $(OutDir)\include\libavutil
 copy ..\libavutil\lzo.h $(OutDir)\include\libavutil
 copy ..\libavutil\opencl.h $(OutDir)\include\libavutil
 mkdir $(OutDir)\licenses
@@ -972,6 +978,7 @@ copy ..\libavutil\timestamp.h $(OutDir)\include\libavutil
 copy ..\libavutil\twofish.h $(OutDir)\include\libavutil
 copy ..\libavutil\version.h $(OutDir)\include\libavutil
 copy ..\libavutil\xtea.h $(OutDir)\include\libavutil
+copy ..\libavutil\tea.h $(OutDir)\include\libavutil
 copy ..\libavutil\lzo.h $(OutDir)\include\libavutil
 copy ..\libavutil\opencl.h $(OutDir)\include\libavutil
 mkdir $(OutDir)\licenses
@@ -1108,6 +1115,7 @@ copy ..\libavutil\timestamp.h $(OutDir)\include\libavutil
 copy ..\libavutil\twofish.h $(OutDir)\include\libavutil
 copy ..\libavutil\version.h $(OutDir)\include\libavutil
 copy ..\libavutil\xtea.h $(OutDir)\include\libavutil
+copy ..\libavutil\tea.h $(OutDir)\include\libavutil
 copy ..\libavutil\lzo.h $(OutDir)\include\libavutil
 copy ..\libavutil\opencl.h $(OutDir)\include\libavutil
 mkdir $(OutDir)\licenses
@@ -1242,6 +1250,7 @@ copy ..\libavutil\timestamp.h $(OutDir)\include\libavutil
 copy ..\libavutil\twofish.h $(OutDir)\include\libavutil
 copy ..\libavutil\version.h $(OutDir)\include\libavutil
 copy ..\libavutil\xtea.h $(OutDir)\include\libavutil
+copy ..\libavutil\tea.h $(OutDir)\include\libavutil
 copy ..\libavutil\lzo.h $(OutDir)\include\libavutil
 copy ..\libavutil\opencl.h $(OutDir)\include\libavutil
 mkdir $(OutDir)\licenses
@@ -1380,6 +1389,7 @@ copy ..\libavutil\timestamp.h $(OutDir)\include\libavutil
 copy ..\libavutil\twofish.h $(OutDir)\include\libavutil
 copy ..\libavutil\version.h $(OutDir)\include\libavutil
 copy ..\libavutil\xtea.h $(OutDir)\include\libavutil
+copy ..\libavutil\tea.h $(OutDir)\include\libavutil
 copy ..\libavutil\lzo.h $(OutDir)\include\libavutil
 copy ..\libavutil\opencl.h $(OutDir)\include\libavutil
 mkdir $(OutDir)\licenses
@@ -1512,6 +1522,7 @@ copy ..\libavutil\timestamp.h $(OutDir)\include\libavutil
 copy ..\libavutil\twofish.h $(OutDir)\include\libavutil
 copy ..\libavutil\version.h $(OutDir)\include\libavutil
 copy ..\libavutil\xtea.h $(OutDir)\include\libavutil
+copy ..\libavutil\tea.h $(OutDir)\include\libavutil
 copy ..\libavutil\lzo.h $(OutDir)\include\libavutil
 copy ..\libavutil\opencl.h $(OutDir)\include\libavutil
 mkdir $(OutDir)\licenses
@@ -1651,6 +1662,7 @@ copy ..\libavutil\timestamp.h $(OutDir)\include\libavutil
 copy ..\libavutil\twofish.h $(OutDir)\include\libavutil
 copy ..\libavutil\version.h $(OutDir)\include\libavutil
 copy ..\libavutil\xtea.h $(OutDir)\include\libavutil
+copy ..\libavutil\tea.h $(OutDir)\include\libavutil
 copy ..\libavutil\lzo.h $(OutDir)\include\libavutil
 copy ..\libavutil\opencl.h $(OutDir)\include\libavutil
 mkdir $(OutDir)\licenses
@@ -1788,6 +1800,7 @@ copy ..\libavutil\timestamp.h $(OutDir)\include\libavutil
 copy ..\libavutil\twofish.h $(OutDir)\include\libavutil
 copy ..\libavutil\version.h $(OutDir)\include\libavutil
 copy ..\libavutil\xtea.h $(OutDir)\include\libavutil
+copy ..\libavutil\tea.h $(OutDir)\include\libavutil
 copy ..\libavutil\lzo.h $(OutDir)\include\libavutil
 copy ..\libavutil\opencl.h $(OutDir)\include\libavutil
 mkdir $(OutDir)\licenses
@@ -1927,6 +1940,7 @@ copy ..\libavutil\timestamp.h $(OutDir)\include\libavutil
 copy ..\libavutil\twofish.h $(OutDir)\include\libavutil
 copy ..\libavutil\version.h $(OutDir)\include\libavutil
 copy ..\libavutil\xtea.h $(OutDir)\include\libavutil
+copy ..\libavutil\tea.h $(OutDir)\include\libavutil
 copy ..\libavutil\lzo.h $(OutDir)\include\libavutil
 copy ..\libavutil\opencl.h $(OutDir)\include\libavutil
 mkdir $(OutDir)\licenses
@@ -2064,6 +2078,7 @@ copy ..\libavutil\timestamp.h $(OutDir)\include\libavutil
 copy ..\libavutil\twofish.h $(OutDir)\include\libavutil
 copy ..\libavutil\version.h $(OutDir)\include\libavutil
 copy ..\libavutil\xtea.h $(OutDir)\include\libavutil
+copy ..\libavutil\tea.h $(OutDir)\include\libavutil
 copy ..\libavutil\lzo.h $(OutDir)\include\libavutil
 copy ..\libavutil\opencl.h $(OutDir)\include\libavutil
 mkdir $(OutDir)\licenses
@@ -2196,6 +2211,7 @@ copy ..\libavutil\timestamp.h $(OutDir)\include\libavutil
 copy ..\libavutil\twofish.h $(OutDir)\include\libavutil
 copy ..\libavutil\version.h $(OutDir)\include\libavutil
 copy ..\libavutil\xtea.h $(OutDir)\include\libavutil
+copy ..\libavutil\tea.h $(OutDir)\include\libavutil
 copy ..\libavutil\lzo.h $(OutDir)\include\libavutil
 copy ..\libavutil\opencl.h $(OutDir)\include\libavutil
 mkdir $(OutDir)\licenses
@@ -2327,6 +2343,7 @@ copy ..\libavutil\timestamp.h $(OutDir)\include\libavutil
 copy ..\libavutil\twofish.h $(OutDir)\include\libavutil
 copy ..\libavutil\version.h $(OutDir)\include\libavutil
 copy ..\libavutil\xtea.h $(OutDir)\include\libavutil
+copy ..\libavutil\tea.h $(OutDir)\include\libavutil
 copy ..\libavutil\lzo.h $(OutDir)\include\libavutil
 copy ..\libavutil\opencl.h $(OutDir)\include\libavutil
 mkdir $(OutDir)\licenses

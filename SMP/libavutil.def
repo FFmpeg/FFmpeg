@@ -406,6 +406,9 @@ EXPORTS
     av_strtod
     av_strtok
     av_sub_q
+    av_tea_alloc
+    av_tea_crypt
+    av_tea_init
     av_tempfile
     av_thread_message_queue_alloc
     av_thread_message_queue_free
@@ -466,6 +469,7 @@ EXPORTS
     av_ripemd_size DATA
     av_sha512_size DATA
     av_sha_size DATA
+    av_tea_size DATA
     av_tree_node_size DATA
     av_twofish_size DATA
     av_util_ffversion DATA

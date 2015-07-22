@@ -818,6 +818,8 @@
     </ClCompile>
     <ClCompile Include="..\libavcodec\hapdec.c">
     </ClCompile>
+    <ClCompile Include="..\libavcodec\hap.c">
+    </ClCompile>
     <ClCompile Include="..\libavcodec\hevc.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\hevc_mvs.c">
