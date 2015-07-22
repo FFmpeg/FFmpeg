@@ -118,6 +118,7 @@ static int XAVS_frame(AVCodecContext *avctx, AVPacket *pkt,
     int nnal, i, ret;
     xavs_picture_t pic_out;
     uint8_t *sd;
+    int pict_type;
 
     x4->pic.img.i_csp   = XAVS_CSP_I420;
     x4->pic.img.i_plane = 3;
@@ -173,21 +174,24 @@ FF_ENABLE_DEPRECATION_WARNINGS
     } else
         pkt->dts = pkt->pts;
 
-#if FF_API_CODED_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
     switch (pic_out.i_type) {
     case XAVS_TYPE_IDR:
     case XAVS_TYPE_I:
-        avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
+        pict_type = AV_PICTURE_TYPE_I;
         break;
     case XAVS_TYPE_P:
-        avctx->coded_frame->pict_type = AV_PICTURE_TYPE_P;
+        pict_type = AV_PICTURE_TYPE_P;
         break;
     case XAVS_TYPE_B:
     case XAVS_TYPE_BREF:
-        avctx->coded_frame->pict_type = AV_PICTURE_TYPE_B;
+        pict_type = AV_PICTURE_TYPE_B;
         break;
+    default:
+        pict_type = AV_PICTURE_TYPE_NONE;
     }
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
+    avctx->coded_frame->pict_type = pict_type;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
@@ -208,7 +212,7 @@ FF_DISABLE_DEPRECATION_WARNINGS
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
-    ff_side_data_set_encoder_stats(pkt, (pic_out.i_qpplus1 - 1) * FF_QP2LAMBDA, NULL, 0, 0);
+    ff_side_data_set_encoder_stats(pkt, (pic_out.i_qpplus1 - 1) * FF_QP2LAMBDA, NULL, 0, pict_type);
 
     x4->out_frame_count++;
     *got_packet = ret;
