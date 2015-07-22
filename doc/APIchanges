@@ -16,6 +16,7 @@ API changes, most recent first:
 2015-xx-xx - xxxxxxx - lavc 57.11.0 - avcodec.h
   xxxxxxx - Add av_packet_add_side_data().
   xxxxxxx - Add AVCodecContext.coded_side_data.
+  xxxxxxx - Add AVCPBProperties API.
 
 2015-xx-xx - xxxxxxx - lavc 57.9.1 - avcodec.h
   Deprecate rtp_callback without replacement, i.e. it won't be possible to

@@ -2369,3 +2369,17 @@ const uint8_t *avpriv_find_start_code(const uint8_t *restrict p,
 
     return p + 4;
 }
+
+AVCPBProperties *av_cpb_properties_alloc(size_t *size)
+{
+    AVCPBProperties *props = av_mallocz(sizeof(AVCPBProperties));
+    if (!props)
+        return NULL;
+
+    if (size)
+        *size = sizeof(*props);
+
+    props->vbv_delay = UINT64_MAX;
+
+    return props;
+}
