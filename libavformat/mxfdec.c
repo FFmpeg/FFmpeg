@@ -2002,10 +2002,6 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
             st->codec->width = descriptor->width;
             st->codec->height = descriptor->height; /* Field height, not frame height */
             switch (descriptor->frame_layout) {
-                case SegmentedFrame:
-                    /* This one is a weird layout I don't fully understand. */
-                    av_log(mxf->fc, AV_LOG_INFO, "SegmentedFrame layout isn't currently supported\n");
-                    break;
                 case FullFrame:
                     st->codec->field_order = AV_FIELD_PROGRESSIVE;
                     break;
@@ -2017,6 +2013,8 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
                               It's also for compatibility with the old behavior. */
                 case MixedFields:
                     break;
+                case SegmentedFrame:
+                    st->codec->field_order = AV_FIELD_PROGRESSIVE;
                 case SeparateFields:
                     switch (descriptor->field_dominance) {
                     case MXF_TFF:
