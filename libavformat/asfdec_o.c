@@ -1457,6 +1457,7 @@ static int asf_read_close(AVFormatContext *s)
         av_dict_free(&asf->asf_sd[i].asf_met);
     }
 
+    asf->nb_streams = 0;
     return 0;
 }
 
