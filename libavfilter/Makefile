@@ -126,6 +126,7 @@ OBJS-$(CONFIG_DELOGO_FILTER)                 += vf_delogo.o
 OBJS-$(CONFIG_DESHAKE_FILTER)                += vf_deshake.o
 OBJS-$(CONFIG_DETELECINE_FILTER)             += vf_detelecine.o
 OBJS-$(CONFIG_DILATION_FILTER)               += vf_neighbor.o
+OBJS-$(CONFIG_DISPLACE_FILTER)               += vf_displace.o framesync.o
 OBJS-$(CONFIG_DRAWBOX_FILTER)                += vf_drawbox.o
 OBJS-$(CONFIG_DRAWGRAPH_FILTER)              += f_drawgraph.o
 OBJS-$(CONFIG_DRAWGRID_FILTER)               += vf_drawbox.o

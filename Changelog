@@ -16,6 +16,7 @@ version <next>:
 - Screenpresso SPV1 decoding
 - chromaprint fingerprinting muxer
 - ffplay dynamic volume control
+- displace filter
 
 
 version 2.8:
