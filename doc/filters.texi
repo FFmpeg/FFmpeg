@@ -8493,7 +8493,8 @@ fields based on its value.
 
 Reverse a clip.
 
-Warning: This iflter qequires memory to buffer the entire clip, so trimming is suggested.
+Warning: This filter requires memory to buffer the entire clip, so trimming
+is suggested.
 
 @subsection Examples
 
