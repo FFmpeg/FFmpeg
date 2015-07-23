@@ -101,24 +101,6 @@ fail:
     return ret;
 }
 
-static int qsv_process_data(AVCodecContext *avctx, AVFrame *frame,
-                            int *got_frame, AVPacket *pkt)
-{
-    QSVH264Context *s = avctx->priv_data;
-    int ret;
-
-    if (!s->qsv.session || AV_PIX_FMT_NONE==avctx->pix_fmt) {
-        ret = ff_qsv_decode_init(avctx, &s->qsv, pkt);
-        /* consume packet without a header */
-        if (AVERROR(EAGAIN)==ret)
-            return pkt->size;
-        if (ret < 0)
-            return ret;
-    }
-
-    return ff_qsv_decode(avctx, &s->qsv, frame, got_frame, pkt);
-}
-
 static int qsv_decode_frame(AVCodecContext *avctx, void *data,
                             int *got_frame, AVPacket *avpkt)
 {
@@ -171,7 +153,7 @@ static int qsv_decode_frame(AVCodecContext *avctx, void *data,
             s->pkt_filtered.size = size;
         }
 
-        ret = qsv_process_data(avctx, frame, got_frame, &s->pkt_filtered);
+        ret = ff_qsv_decode(avctx, &s->qsv, frame, got_frame, &s->pkt_filtered);
         if (ret < 0)
             return ret;
 

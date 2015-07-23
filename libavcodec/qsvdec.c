@@ -92,7 +92,10 @@ int ff_qsv_decode_init(AVCodecContext *avctx, QSVContext *q, AVPacket *avpkt)
 
     ret = MFXVideoDECODE_DecodeHeader(q->session, &bs, &param);
     if (MFX_ERR_MORE_DATA==ret) {
-        return AVERROR(EAGAIN);
+        /* this code means that header not found so we return packet size to skip
+           a current packet
+         */
+        return avpkt->size;
     } else if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR, "Decode header error %d\n", ret);
         return ff_qsv_error(ret);
@@ -123,6 +126,7 @@ int ff_qsv_decode_init(AVCodecContext *avctx, QSVContext *q, AVPacket *avpkt)
     if (!q->async_fifo)
         return AVERROR(ENOMEM);
 
+    q->engine_ready = 1;
 
     return 0;
 }
@@ -230,6 +234,11 @@ int ff_qsv_decode(AVCodecContext *avctx, QSVContext *q,
     mfxBitstream bs = { { { 0 } } };
     int ret;
 
+    if (!q->engine_ready) {
+        ret = ff_qsv_decode_init(avctx, q, avpkt);
+        if (ret)
+            return ret;
+    }
     if (avpkt->size) {
         bs.Data       = avpkt->data;
         bs.DataLength = avpkt->size;
@@ -324,6 +333,8 @@ int ff_qsv_decode_close(QSVContext *q)
     q->session = NULL;
 
     ff_qsv_close_internal_session(&q->internal_qs);
+
+    q->engine_ready = 0;
 
     return 0;
 }
