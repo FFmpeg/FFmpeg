@@ -745,6 +745,7 @@ static int asf_read_stream_properties(AVFormatContext *s, const GUIDParseTable *
     if (!asf->asf_st[asf->nb_streams])
         return AVERROR(ENOMEM);
     asf_st                       = asf->asf_st[asf->nb_streams];
+    asf->nb_streams++;
     asf_st->stream_index         = stream_index;
     asf_st->index                = st->index;
     asf_st->indexed              = 0;
@@ -776,6 +777,8 @@ static int asf_read_stream_properties(AVFormatContext *s, const GUIDParseTable *
                 asf_st->span              = span;
                 asf_st->virtual_pkt_len   = avio_rl16(pb);
                 asf_st->virtual_chunk_len = avio_rl16(pb);
+                if (!asf_st->virtual_chunk_len || !asf_st->virtual_pkt_len)
+                    return AVERROR_INVALIDDATA;
                 avio_skip(pb, err_data_len - 5);
             } else
                 avio_skip(pb, err_data_len - 1);
@@ -783,7 +786,6 @@ static int asf_read_stream_properties(AVFormatContext *s, const GUIDParseTable *
             avio_skip(pb, err_data_len);
     }
 
-    asf->nb_streams++;
     align_position(pb, asf->offset, size);
 
     return 0;
@@ -903,7 +905,7 @@ static int asf_read_data(AVFormatContext *s, const GUIDParseTable *g)
     uint64_t size   = asf->data_size = avio_rl64(pb);
     int i;
 
-    if (!asf->data_reached && pb->seekable) {
+    if (!asf->data_reached) {
         asf->data_reached       = 1;
         asf->data_offset        = asf->offset;
     }
@@ -1455,6 +1457,7 @@ static int asf_read_close(AVFormatContext *s)
         av_dict_free(&asf->asf_sd[i].asf_met);
     }
 
+    asf->nb_streams = 0;
     return 0;
 }
 
@@ -1652,25 +1655,21 @@ static int asf_read_header(AVFormatContext *s)
      */
     while (1) {
         // for the cases when object size is invalid
-        if (avio_tell(pb) == asf->offset) {
-            if (asf->data_reached)
-                avio_seek(pb, asf->first_packet_offset, SEEK_SET);
+        if (avio_tell(pb) == asf->offset)
             break;
-        }
         asf->offset = avio_tell(pb);
         if ((ret = ff_get_guid(pb, &guid)) < 0) {
-            if (ret == AVERROR_EOF && asf->data_reached) {
-                avio_seek(pb, asf->first_packet_offset, SEEK_SET);
+            if (ret == AVERROR_EOF && asf->data_reached)
                 break;
-            } else
-                return ret;
+            else
+                goto failed;
         }
         g = find_guid(guid);
         if (g) {
             asf->unknown_offset = asf->offset;
             asf->is_header = 1;
             if ((ret = g->read_object(s, g)) < 0)
-                return ret;
+                goto failed;
         } else {
             size = avio_rl64(pb);
             align_position(pb, asf->offset, size);
@@ -1678,6 +1677,14 @@ static int asf_read_header(AVFormatContext *s)
         if (asf->data_reached && !pb->seekable)
             break;
     }
+
+    if (!asf->data_reached) {
+        av_log(s, AV_LOG_ERROR, "Data Object was not found.\n");
+        ret = AVERROR_INVALIDDATA;
+        goto failed;
+    }
+    if (pb->seekable)
+        avio_seek(pb, asf->first_packet_offset, SEEK_SET);
 
     for (i = 0; i < asf->nb_streams; i++) {
         const char *rfc1766 = asf->asf_sd[asf->asf_st[i]->lang_idx].langs;
@@ -1699,6 +1706,10 @@ static int asf_read_header(AVFormatContext *s)
     }
 
     return 0;
+
+failed:
+    asf_read_close(s);
+    return ret;
 }
 
 AVInputFormat ff_asf_o_demuxer = {

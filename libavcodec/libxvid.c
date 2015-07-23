@@ -771,27 +771,28 @@ static int xvid_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     }
 
     if (xerr > 0) {
-        uint8_t *sd = av_packet_new_side_data(pkt, AV_PKT_DATA_QUALITY_FACTOR,
-                                              sizeof(int));
-        if (!sd)
-            return AVERROR(ENOMEM);
-        *(int *)sd = xvid_enc_stats.quant * FF_QP2LAMBDA;
+        int pict_type;
 
         *got_packet = 1;
 
+        if (xvid_enc_stats.type == XVID_TYPE_PVOP)
+            pict_type = AV_PICTURE_TYPE_P;
+        else if (xvid_enc_stats.type == XVID_TYPE_BVOP)
+            pict_type = AV_PICTURE_TYPE_B;
+        else if (xvid_enc_stats.type == XVID_TYPE_SVOP)
+            pict_type = AV_PICTURE_TYPE_S;
+        else
+            pict_type = AV_PICTURE_TYPE_I;
+
 #if FF_API_CODED_FRAME
 FF_DISABLE_DEPRECATION_WARNINGS
+        avctx->coded_frame->pict_type = pict_type;
         avctx->coded_frame->quality = xvid_enc_stats.quant * FF_QP2LAMBDA;
-        if (xvid_enc_stats.type == XVID_TYPE_PVOP)
-            avctx->coded_frame->pict_type = AV_PICTURE_TYPE_P;
-        else if (xvid_enc_stats.type == XVID_TYPE_BVOP)
-            avctx->coded_frame->pict_type = AV_PICTURE_TYPE_B;
-        else if (xvid_enc_stats.type == XVID_TYPE_SVOP)
-            avctx->coded_frame->pict_type = AV_PICTURE_TYPE_S;
-        else
-            avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
+
+        ff_side_data_set_encoder_stats(pkt, xvid_enc_stats.quant * FF_QP2LAMBDA, NULL, 0, pict_type);
+
         if (xvid_enc_frame.out_flags & XVID_KEYFRAME) {
 #if FF_API_CODED_FRAME
 FF_DISABLE_DEPRECATION_WARNINGS

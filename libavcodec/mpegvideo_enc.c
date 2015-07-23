@@ -1735,7 +1735,6 @@ int ff_mpv_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
 
     /* output? */
     if (s->new_picture.f->data[0]) {
-        uint8_t *sd;
         int growing_buffer = context_count == 1 && !pkt->data && !s->data_partitioning;
         int pkt_size = growing_buffer ? FFMAX(s->mb_width*s->mb_height*64+10000, avctx->internal->byte_buffer_size) - FF_INPUT_BUFFER_PADDING_SIZE
                                               :
@@ -1786,11 +1785,7 @@ vbv_retry:
 
         frame_end(s);
 
-        sd = av_packet_new_side_data(pkt, AV_PKT_DATA_QUALITY_FACTOR,
-                                     sizeof(int));
-        if (!sd)
-            return AVERROR(ENOMEM);
-        *(int *)sd = s->current_picture.f->quality;
+        ff_side_data_set_encoder_stats(pkt, s->current_picture.f->quality, NULL, 0, s->pict_type);
 
         if (CONFIG_MJPEG_ENCODER && s->out_format == FMT_MJPEG)
             ff_mjpeg_encode_picture_trailer(&s->pb, s->header_bits);

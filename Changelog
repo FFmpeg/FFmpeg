@@ -20,6 +20,8 @@ version <next>:
 - Dynamic Audio Normalizer as dynaudnorm filter
 - Reverse filter
 - Random filter
+- deband filter
+- AAC fixed-point decoding
 
 
 version 2.7:

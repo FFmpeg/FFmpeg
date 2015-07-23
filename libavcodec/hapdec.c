@@ -271,14 +271,23 @@ static int decompress_texture_thread(AVCodecContext *avctx, void *arg,
     AVFrame *frame = arg;
     const uint8_t *d = ctx->tex_data;
     int w_block = avctx->coded_width / TEXTURE_BLOCK_W;
+    int h_block = avctx->coded_height / TEXTURE_BLOCK_H;
     int x, y;
     int start_slice, end_slice;
+    int base_blocks_per_slice = h_block / ctx->slice_count;
+    int remainder_blocks = h_block % ctx->slice_count;
 
-    start_slice = slice * ctx->slice_size;
-    end_slice   = FFMIN(start_slice + ctx->slice_size, avctx->coded_height);
+    /* When the frame height (in blocks) doesn't divide evenly between the
+     * number of slices, spread the remaining blocks evenly between the first
+     * operations */
+    start_slice = slice * base_blocks_per_slice;
+    /* Add any extra blocks (one per slice) that have been added before this slice */
+    start_slice += FFMIN(slice, remainder_blocks);
 
-    start_slice /= TEXTURE_BLOCK_H;
-    end_slice   /= TEXTURE_BLOCK_H;
+    end_slice = start_slice + base_blocks_per_slice;
+    /* Add an extra block if there are still remainder blocks to be accounted for */
+    if (slice < remainder_blocks)
+        end_slice++;
 
     for (y = start_slice; y < end_slice; y++) {
         uint8_t *p = frame->data[0] + y * frame->linesize[0] * TEXTURE_BLOCK_H;
@@ -298,10 +307,6 @@ static int hap_decode(AVCodecContext *avctx, void *data,
     HapContext *ctx = avctx->priv_data;
     ThreadFrame tframe;
     int ret, i;
-    int slices = FFMIN(avctx->thread_count,
-                       avctx->coded_height / TEXTURE_BLOCK_H);
-
-    ctx->slice_size = avctx->coded_height / slices;
 
     bytestream2_init(&ctx->gbc, avpkt->data, avpkt->size);
 
@@ -340,7 +345,7 @@ static int hap_decode(AVCodecContext *avctx, void *data,
     }
 
     /* Use the decompress function on the texture, one block per thread */
-    avctx->execute2(avctx, decompress_texture_thread, tframe.f, NULL, slices);
+    avctx->execute2(avctx, decompress_texture_thread, tframe.f, NULL, ctx->slice_count);
 
     /* Frame is ready to be output */
     tframe.f->pict_type = AV_PICTURE_TYPE_I;
@@ -392,6 +397,9 @@ static av_cold int hap_init(AVCodecContext *avctx)
     }
 
     av_log(avctx, AV_LOG_DEBUG, "%s texture\n", texture_name);
+
+    ctx->slice_count = av_clip(avctx->thread_count, 1,
+                               avctx->coded_height / TEXTURE_BLOCK_H);
 
     return 0;
 }

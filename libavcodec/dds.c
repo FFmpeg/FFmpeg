@@ -54,7 +54,7 @@ enum DDSPostProc {
     DDS_SWIZZLE_XGBR,
     DDS_SWIZZLE_XRBG,
     DDS_SWIZZLE_XGXR,
-} DDSPostProc;
+};
 
 enum DDSDXGIFormat {
     DXGI_FORMAT_R16G16B16A16_TYPELESS       =  9,
@@ -93,7 +93,7 @@ enum DDSDXGIFormat {
     DXGI_FORMAT_B8G8R8A8_UNORM_SRGB         = 91,
     DXGI_FORMAT_B8G8R8X8_TYPELESS           = 92,
     DXGI_FORMAT_B8G8R8X8_UNORM_SRGB         = 93,
-} DDSDXGIFormat;
+};
 
 typedef struct DDSContext {
     TextureDSPContext texdsp;
@@ -105,7 +105,7 @@ typedef struct DDSContext {
 
     const uint8_t *tex_data; // Compressed texture
     int tex_ratio;           // Compression ratio
-    int slice_size;          // Optimal slice size
+    int slice_count;         // Number of slices for threaded operations
 
     /* Pointer to the selected compress or decompress function. */
     int (*tex_funct)(uint8_t *dst, ptrdiff_t stride, const uint8_t *block);
@@ -421,14 +421,23 @@ static int decompress_texture_thread(AVCodecContext *avctx, void *arg,
     AVFrame *frame = arg;
     const uint8_t *d = ctx->tex_data;
     int w_block = avctx->coded_width / TEXTURE_BLOCK_W;
+    int h_block = avctx->coded_height / TEXTURE_BLOCK_H;
     int x, y;
     int start_slice, end_slice;
+    int base_blocks_per_slice = h_block / ctx->slice_count;
+    int remainder_blocks = h_block % ctx->slice_count;
 
-    start_slice = slice * ctx->slice_size;
-    end_slice   = FFMIN(start_slice + ctx->slice_size, avctx->coded_height);
+    /* When the frame height (in blocks) doesn't divide evenly between the
+     * number of slices, spread the remaining blocks evenly between the first
+     * operations */
+    start_slice = slice * base_blocks_per_slice;
+    /* Add any extra blocks (one per slice) that have been added before this slice */
+    start_slice += FFMIN(slice, remainder_blocks);
 
-    start_slice /= TEXTURE_BLOCK_H;
-    end_slice   /= TEXTURE_BLOCK_H;
+    end_slice = start_slice + base_blocks_per_slice;
+    /* Add an extra block if there are still remainder blocks to be accounted for */
+    if (slice < remainder_blocks)
+        end_slice++;
 
     for (y = start_slice; y < end_slice; y++) {
         uint8_t *p = frame->data[0] + y * frame->linesize[0] * TEXTURE_BLOCK_H;
@@ -633,13 +642,12 @@ static int dds_decode(AVCodecContext *avctx, void *data,
         return ret;
 
     if (ctx->compressed) {
-        int slices = FFMIN(avctx->thread_count,
-                           avctx->coded_height / TEXTURE_BLOCK_H);
-        ctx->slice_size = avctx->coded_height / slices;
+        ctx->slice_count = av_clip(avctx->thread_count, 1,
+                                   avctx->coded_height / TEXTURE_BLOCK_H);
 
         /* Use the decompress function on the texture, one block per thread. */
         ctx->tex_data = gbc->buffer;
-        avctx->execute2(avctx, decompress_texture_thread, frame, NULL, slices);
+        avctx->execute2(avctx, decompress_texture_thread, frame, NULL, ctx->slice_count);
     } else {
         int linesize = av_image_get_linesize(avctx->pix_fmt, frame->width, 0);
 

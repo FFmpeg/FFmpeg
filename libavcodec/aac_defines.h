@@ -35,6 +35,7 @@
 #define AAC_RENAME(x)       x ## _fixed
 #define AAC_RENAME_32(x)    x ## _fixed_32
 #define INTFLOAT int
+#define INT64FLOAT          int64_t
 #define SHORTFLOAT int16_t
 #define AAC_FLOAT SoftFloat
 #define AAC_SIGNE           int
@@ -45,9 +46,33 @@
 #define Q31(x)              (int)((x)*2147483648.0 + 0.5)
 #define RANGE15(x)          x
 #define GET_GAIN(x, y)      (-(y) << (x)) + 1024
+#define AAC_MUL16(x, y)     (int)(((int64_t)(x) * (y) + 0x8000) >> 16)
 #define AAC_MUL26(x, y)     (int)(((int64_t)(x) * (y) + 0x2000000) >> 26)
 #define AAC_MUL30(x, y)     (int)(((int64_t)(x) * (y) + 0x20000000) >> 30)
 #define AAC_MUL31(x, y)     (int)(((int64_t)(x) * (y) + 0x40000000) >> 31)
+#define AAC_MADD28(x, y, a, b) (int)((((int64_t)(x) * (y)) + \
+                                      ((int64_t)(a) * (b)) + \
+                                        0x8000000) >> 28)
+#define AAC_MADD30(x, y, a, b) (int)((((int64_t)(x) * (y)) + \
+                                      ((int64_t)(a) * (b)) + \
+                                        0x20000000) >> 30)
+#define AAC_MADD30_V8(x, y, a, b, c, d, e, f) (int)((((int64_t)(x) * (y)) + \
+                                                     ((int64_t)(a) * (b)) + \
+                                                     ((int64_t)(c) * (d)) + \
+                                                     ((int64_t)(e) * (f)) + \
+                                                       0x20000000) >> 30)
+#define AAC_MSUB30(x, y, a, b) (int)((((int64_t)(x) * (y)) - \
+                                      ((int64_t)(a) * (b)) + \
+                                        0x20000000) >> 30)
+#define AAC_MSUB30_V8(x, y, a, b, c, d, e, f) (int)((((int64_t)(x) * (y)) + \
+                                                     ((int64_t)(a) * (b)) - \
+                                                     ((int64_t)(c) * (d)) - \
+                                                     ((int64_t)(e) * (f)) + \
+                                                       0x20000000) >> 30)
+#define AAC_MSUB31_V3(x, y, z)    (int)((((int64_t)(x) * (z)) - \
+                                      ((int64_t)(y) * (z)) + \
+                                        0x40000000) >> 31)
+#define AAC_HALF_SUM(x, y)  (x) >> 1 + (y) >> 1
 #define AAC_SRA_R(x, y)     (int)(((x) + (1 << ((y) - 1))) >> (y))
 
 #else
@@ -58,6 +83,7 @@
 #define AAC_RENAME(x)       x
 #define AAC_RENAME_32(x)    x
 #define INTFLOAT float
+#define INT64FLOAT          float
 #define SHORTFLOAT float
 #define AAC_FLOAT float
 #define AAC_SIGNE           unsigned
@@ -68,9 +94,19 @@
 #define Q31(x)              x
 #define RANGE15(x)          (32768.0 * (x))
 #define GET_GAIN(x, y)      powf((x), -(y))
+#define AAC_MUL16(x, y)     ((x) * (y))
 #define AAC_MUL26(x, y)     ((x) * (y))
 #define AAC_MUL30(x, y)     ((x) * (y))
 #define AAC_MUL31(x, y)     ((x) * (y))
+#define AAC_MADD28(x, y, a, b) ((x) * (y) + (a) * (b))
+#define AAC_MADD30(x, y, a, b) ((x) * (y) + (a) * (b))
+#define AAC_MADD30_V8(x, y, a, b, c, d, e, f) ((x) * (y) + (a) * (b) + \
+                                               (c) * (d) + (e) * (f))
+#define AAC_MSUB30(x, y, a, b) ((x) * (y) - (a) * (b))
+#define AAC_MSUB30_V8(x, y, a, b, c, d, e, f) ((x) * (y) + (a) * (b) - \
+                                               (c) * (d) - (e) * (f))
+#define AAC_MSUB31_V3(x, y, z)    ((x) - (y)) * (z)
+#define AAC_HALF_SUM(x, y)  ((x) + (y)) * 0.5f
 #define AAC_SRA_R(x, y)     (x)
 
 #endif /* USE_FIXED */

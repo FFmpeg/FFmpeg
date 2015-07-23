@@ -1055,11 +1055,16 @@ enum AVPacketSideDataType {
     AV_PKT_DATA_AUDIO_SERVICE_TYPE,
 
     /**
-     * This side data contains an integer value representing the quality
-     * factor of the compressed frame. Allowed range is between 1 (good)
-     * and FF_LAMBDA_MAX (bad).
+     * This side data contains quality related information from the encoder.
+     * @code
+     * u32le quality factor of the compressed frame. Allowed range is between 1 (good) and FF_LAMBDA_MAX (bad).
+     * u8    picture type
+     * u8    error count
+     * u16   reserved
+     * u64le[error count] sum of squared differences between encoder in and output
+     * @endcode
      */
-    AV_PKT_DATA_QUALITY_FACTOR,
+    AV_PKT_DATA_QUALITY_STATS,
 
     /**
      * Recommmends skipping the specified number of samples
@@ -1125,6 +1130,8 @@ enum AVPacketSideDataType {
      */
     AV_PKT_DATA_METADATA_UPDATE,
 };
+
+#define AV_PKT_DATA_QUALITY_FACTOR AV_PKT_DATA_QUALITY_STATS //DEPRECATED
 
 typedef struct AVPacketSideData {
     uint8_t *data;

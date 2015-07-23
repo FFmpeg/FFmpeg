@@ -1,6 +1,4 @@
 /*
- * Generate a header file for hardcoded Parametric Stereo tables
- *
  * Copyright (c) 2010 Alex Converse <alex.converse@gmail.com>
  *
  * This file is part of FFmpeg.
@@ -21,4 +19,5 @@
  */
 
 #define USE_FIXED 0
-#include "aacps_tablegen_template.c"
+
+#include "aacpsdsp_template.c"

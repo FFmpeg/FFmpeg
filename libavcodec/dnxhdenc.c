@@ -1058,7 +1058,7 @@ static int dnxhd_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
     DNXHDEncContext *ctx = avctx->priv_data;
     int first_field = 1;
     int offset, i, ret;
-    uint8_t *buf, *sd;
+    uint8_t *buf;
 
     if ((ret = ff_alloc_packet2(avctx, pkt, ctx->cid_table->frame_size)) < 0)
         return ret;
@@ -1115,10 +1115,7 @@ FF_DISABLE_DEPRECATION_WARNINGS
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
-    sd = av_packet_new_side_data(pkt, AV_PKT_DATA_QUALITY_FACTOR, sizeof(int));
-    if (!sd)
-        return AVERROR(ENOMEM);
-    *(int *)sd = ctx->qscale * FF_QP2LAMBDA;
+    ff_side_data_set_encoder_stats(pkt, ctx->qscale * FF_QP2LAMBDA, NULL, 0, AV_PICTURE_TYPE_I);
 
     pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;

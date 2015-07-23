@@ -669,9 +669,9 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
         ost->frame_number++;
     }
     if (avctx->codec_type == AVMEDIA_TYPE_VIDEO) {
-        uint8_t *sd = av_packet_get_side_data(pkt, AV_PKT_DATA_QUALITY_FACTOR,
+        uint8_t *sd = av_packet_get_side_data(pkt, AV_PKT_DATA_QUALITY_STATS,
                                               NULL);
-        ost->quality = sd ? *(int *)sd : -1;
+        ost->quality = sd ? AV_RL32(sd) : -1;
     }
 
     if (bsfc)

@@ -27,7 +27,7 @@
 
 int main(void)
 {
-    CBRT_RENAME(cbrt_tableinit)();
+    AAC_RENAME(cbrt_tableinit)();
 
     write_fileheader();
 

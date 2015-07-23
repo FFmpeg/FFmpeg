@@ -602,3 +602,28 @@ void av_packet_rescale_ts(AVPacket *pkt, AVRational src_tb, AVRational dst_tb)
     if (pkt->convergence_duration > 0)
         pkt->convergence_duration = av_rescale_q(pkt->convergence_duration, src_tb, dst_tb);
 }
+
+int ff_side_data_set_encoder_stats(AVPacket *pkt, int quality, int64_t *error, int error_count, int pict_type)
+{
+    uint8_t *side_data;
+    int side_data_size;
+    int i;
+
+    side_data = av_packet_get_side_data(pkt, AV_PKT_DATA_QUALITY_STATS, &side_data_size);
+    if (!side_data) {
+        side_data_size = 4+4+8*error_count;
+        side_data = av_packet_new_side_data(pkt, AV_PKT_DATA_QUALITY_STATS,
+                                            side_data_size);
+    }
+
+    if (!side_data || side_data_size < 4+4+8*error_count)
+        return AVERROR(ENOMEM);
+
+    AV_WL32(side_data   , quality  );
+    side_data[4] = pict_type;
+    side_data[5] = error_count;
+    for (i = 0; i<error_count; i++)
+        AV_WL64(side_data+8 + 8*i , error[i]);
+
+    return 0;
+}
