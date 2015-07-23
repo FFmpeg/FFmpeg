@@ -3650,14 +3650,14 @@ probe_cc(){
         # with MSVC which enables it by default.
         _cflags='-D_USE_MATH_DEFINES -FIstdlib.h -Dstrtoll=_strtoi64 -Qms0 -Qvec- -Qsimd- -GS -fp:precise'
         disable stripping
-    elif $_cc 2>&1 | grep -q Microsoft; then
+    elif $_cc -nologo- 2>&1 | grep -q Microsoft; then
         _type=msvc
         _ident=$($_cc 2>&1 | head -n1)
         _DEPCMD='$(DEP$(1)) $(DEP$(1)FLAGS) $($(1)DEP_FLAGS) $< 2>&1 | awk '\''/including/ { sub(/^.*file: */, ""); gsub(/\\/, "/"); if (!match($$0, / /)) print "$@:", $$0 }'\'' > $(@:.o=.d)'
         _DEPFLAGS='$(CPPFLAGS) $(CFLAGS) -showIncludes -Zs'
         _cflags_speed="-O2"
         _cflags_size="-O1"
-        if $_cc 2>&1 | grep -q Linker; then
+        if $_cc -nologo- 2>&1 | grep -q Linker; then
             _ld_o='-out:$@'
         else
             _ld_o='-Fe$@'
