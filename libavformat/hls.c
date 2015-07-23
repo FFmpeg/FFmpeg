@@ -103,6 +103,7 @@ typedef struct HLSContext {
     int64_t seek_timestamp;
     int seek_flags;
     AVIOInterruptCB *interrupt_callback;
+    AVDictionary *avio_opts;
 } HLSContext;
 
 static int read_chomp_line(AVIOContext *s, char *buf, int maxlen)
@@ -199,6 +200,51 @@ static void handle_key_args(struct key_info *info, const char *key,
     }
 }
 
+static int open_in(HLSContext *c, AVIOContext **in, const char *url)
+{
+    AVDictionary *tmp = NULL;
+    int ret;
+
+    av_dict_copy(&tmp, c->avio_opts, 0);
+
+    ret = avio_open2(in, url, AVIO_FLAG_READ, c->interrupt_callback, &tmp);
+
+    av_dict_free(&tmp);
+    return ret;
+}
+
+static int url_connect(struct variant *var, AVDictionary *opts)
+{
+    AVDictionary *tmp = NULL;
+    int ret;
+
+    av_dict_copy(&tmp, opts, 0);
+
+    av_opt_set_dict(var->input, &tmp);
+
+    if ((ret = ffurl_connect(var->input, NULL)) < 0) {
+        ffurl_close(var->input);
+        var->input = NULL;
+    }
+
+    av_dict_free(&tmp);
+    return ret;
+}
+
+static int open_url(HLSContext *c, URLContext **uc, const char *url)
+{
+    AVDictionary *tmp = NULL;
+    int ret;
+
+    av_dict_copy(&tmp, c->avio_opts, 0);
+
+    ret = ffurl_open(uc, url, AVIO_FLAG_READ, c->interrupt_callback, &tmp);
+
+    av_dict_free(&tmp);
+
+    return ret;
+}
+
 static int parse_playlist(HLSContext *c, const char *url,
                           struct variant *var, AVIOContext *in)
 {
@@ -214,10 +260,10 @@ static int parse_playlist(HLSContext *c, const char *url,
     uint8_t *new_url = NULL;
 
     if (!in) {
-        close_in = 1;
-        if ((ret = avio_open2(&in, url, AVIO_FLAG_READ,
-                              c->interrupt_callback, NULL)) < 0)
+        ret = open_in(c, &in, url);
+        if (ret < 0)
             return ret;
+        close_in = 1;
     }
 
     if (av_opt_get(in, "location", AV_OPT_SEARCH_CHILDREN, &new_url) >= 0)
@@ -333,15 +379,14 @@ static int open_input(struct variant *var)
 {
     struct segment *seg = var->segments[var->cur_seq_no - var->start_seq_no];
     if (seg->key_type == KEY_NONE) {
-        return ffurl_open(&var->input, seg->url, AVIO_FLAG_READ,
-                          &var->parent->interrupt_callback, NULL);
+        return  open_url(var->parent->priv_data, &var->input, seg->url);
     } else if (seg->key_type == KEY_AES_128) {
+        HLSContext *c = var->parent->priv_data;
         char iv[33], key[33], url[MAX_URL_SIZE];
         int ret;
         if (strcmp(seg->key, var->key_url)) {
             URLContext *uc;
-            if (ffurl_open(&uc, seg->key, AVIO_FLAG_READ,
-                           &var->parent->interrupt_callback, NULL) == 0) {
+            if (open_url(var->parent->priv_data, &uc, seg->key) == 0) {
                 if (ffurl_read_complete(uc, var->key, sizeof(var->key))
                     != sizeof(var->key)) {
                     av_log(NULL, AV_LOG_ERROR, "Unable to read key file %s\n",
@@ -366,12 +411,8 @@ static int open_input(struct variant *var)
             return ret;
         av_opt_set(var->input->priv_data, "key", key, 0);
         av_opt_set(var->input->priv_data, "iv", iv, 0);
-        if ((ret = ffurl_connect(var->input, NULL)) < 0) {
-            ffurl_close(var->input);
-            var->input = NULL;
-            return ret;
-        }
-        return 0;
+
+        return url_connect(var, c->avio_opts);
     }
     return AVERROR(ENOSYS);
 }
@@ -449,6 +490,26 @@ reload:
     goto restart;
 }
 
+static int save_avio_options(AVFormatContext *s)
+{
+    HLSContext *c = s->priv_data;
+    const char *opts[] = { "headers", "user_agent", NULL }, **opt = opts;
+    uint8_t *buf;
+    int ret = 0;
+
+    while (*opt) {
+        if (av_opt_get(s->pb, *opt, AV_OPT_SEARCH_CHILDREN, &buf) >= 0) {
+            ret = av_dict_set(&c->avio_opts, *opt, buf,
+                              AV_DICT_DONT_STRDUP_VAL);
+            if (ret < 0)
+                return ret;
+        }
+        opt++;
+    }
+
+    return ret;
+}
+
 static int hls_read_header(AVFormatContext *s)
 {
     HLSContext *c = s->priv_data;
@@ -457,6 +518,9 @@ static int hls_read_header(AVFormatContext *s)
     c->interrupt_callback = &s->interrupt_callback;
 
     if ((ret = parse_playlist(c, s->filename, NULL, s->pb)) < 0)
+        goto fail;
+
+    if ((ret = save_avio_options(s)) < 0)
         goto fail;
 
     if (c->n_variants == 0) {
@@ -712,6 +776,9 @@ static int hls_close(AVFormatContext *s)
     HLSContext *c = s->priv_data;
 
     free_variant_list(c);
+
+    av_dict_free(&c->avio_opts);
+
     return 0;
 }
 
