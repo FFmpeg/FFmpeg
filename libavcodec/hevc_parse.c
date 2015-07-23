@@ -146,6 +146,38 @@ nsc:
     return si;
 }
 
+static const char *nal_unit_name(int nal_type)
+{
+    switch(nal_type) {
+    case NAL_TRAIL_N    : return "TRAIL_N";
+    case NAL_TRAIL_R    : return "TRAIL_R";
+    case NAL_TSA_N      : return "TSA_N";
+    case NAL_TSA_R      : return "TSA_R";
+    case NAL_STSA_N     : return "STSA_N";
+    case NAL_STSA_R     : return "STSA_R";
+    case NAL_RADL_N     : return "RADL_N";
+    case NAL_RADL_R     : return "RADL_R";
+    case NAL_RASL_N     : return "RASL_N";
+    case NAL_RASL_R     : return "RASL_R";
+    case NAL_BLA_W_LP   : return "BLA_W_LP";
+    case NAL_BLA_W_RADL : return "BLA_W_RADL";
+    case NAL_BLA_N_LP   : return "BLA_N_LP";
+    case NAL_IDR_W_RADL : return "IDR_W_RADL";
+    case NAL_IDR_N_LP   : return "IDR_N_LP";
+    case NAL_CRA_NUT    : return "CRA_NUT";
+    case NAL_VPS        : return "VPS";
+    case NAL_SPS        : return "SPS";
+    case NAL_PPS        : return "PPS";
+    case NAL_AUD        : return "AUD";
+    case NAL_EOS_NUT    : return "EOS_NUT";
+    case NAL_EOB_NUT    : return "EOB_NUT";
+    case NAL_FD_NUT     : return "FD_NUT";
+    case NAL_SEI_PREFIX : return "SEI_PREFIX";
+    case NAL_SEI_SUFFIX : return "SEI_SUFFIX";
+    default : return "?";
+    }
+}
+
 /**
  * @return AVERROR_INVALIDDATA if the packet is not a valid NAL unit,
  * 0 if the unit should be skipped, 1 otherwise
@@ -166,8 +198,8 @@ static int hls_nal_unit(HEVCNAL *nal, AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
 
     av_log(avctx, AV_LOG_DEBUG,
-           "nal_unit_type: %d, nuh_layer_id: %d, temporal_id: %d\n",
-           nal->type, nuh_layer_id, nal->temporal_id);
+           "nal_unit_type: %d(%s), nuh_layer_id: %d, temporal_id: %d\n",
+           nal->type, nal_unit_name(nal->type), nuh_layer_id, nal->temporal_id);
 
     return nuh_layer_id == 0;
 }
