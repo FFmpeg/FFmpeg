@@ -133,8 +133,10 @@ static int hap_compress_frame(AVCodecContext *avctx, uint8_t *dst)
 
 static int hap_decode_instructions_length(HapContext *ctx)
 {
-    /* = Second-Stage Compressor Table + Chunk Size Table + headers for both sections
-     * = chunk_count + (4 * chunk_count) + 4 + 4 */
+    /*    Second-Stage Compressor Table (one byte per entry)
+     *  + Chunk Size Table (four bytes per entry)
+     *  + headers for both sections (short versions)
+     *  = chunk_count + (4 * chunk_count) + 4 + 4 */
     return (5 * ctx->chunk_count) + 8;
 }
 
