@@ -2648,6 +2648,21 @@ end:
     avio_seek(s->pb, mxf->run_in, SEEK_SET);
 }
 
+static int has_duration(AVFormatContext *ic)
+{
+    int i;
+    AVStream *st;
+
+    for (i = 0; i < ic->nb_streams; i++) {
+        st = ic->streams[i];
+        if (st->duration != AV_NOPTS_VALUE)
+            return 1;
+    }
+    if (ic->duration != AV_NOPTS_VALUE)
+        return 1;
+    return 0;
+}
+
 static int mxf_read_header(AVFormatContext *s)
 {
     MXFContext *mxf = s->priv_data;
@@ -2771,6 +2786,36 @@ static int mxf_read_header(AVFormatContext *s)
         av_log(mxf->fc, AV_LOG_ERROR, "cannot demux OPAtom without an index\n");
         ret = AVERROR_INVALIDDATA;
         goto fail;
+    } else if (mxf->nb_index_tables > 0 && !has_duration(s)) {
+    	int64_t filesize, position, duration;
+    	MXFIndexTable *t;
+    	int ret;
+    	av_log(mxf->fc, AV_LOG_WARNING, "Estimating duration from index tables, this may be inaccurate\n");
+    	//
+    	filesize = avio_size(s->pb);
+    	position = 0;
+    	duration = 0;
+    	t = &mxf->index_tables[0];
+    	//
+    	while (position < filesize) {
+    		if (ret = mxf_edit_unit_absolute_offset(mxf, t, duration, &duration, &position, 1) < 0) {
+    			duration = 0;
+    			break;
+    		}
+    		duration++;
+    	}
+    	//
+    	if (duration > 0) {
+    		int i;
+    		AVStream *st;
+    		MXFTrack *track;
+    		for (i = 0; i < s->nb_streams; i++) {
+    			st = s->streams[i];
+    			track = st->priv_data;
+    			track->original_duration = duration;
+    			st->duration = av_rescale_q(duration, av_inv_q(track->edit_rate), st->time_base);
+    		}
+    	}
     }
 
     mxf_handle_small_eubc(s);
