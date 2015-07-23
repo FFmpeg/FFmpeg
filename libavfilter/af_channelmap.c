@@ -57,7 +57,6 @@ enum MappingMode {
 #define MAX_CH 64
 typedef struct ChannelMapContext {
     const AVClass *class;
-    AVFilterChannelLayouts *channel_layouts;
     char *mapping_str;
     char *channel_layout_str;
     uint64_t output_layout;
@@ -289,6 +288,9 @@ static int channelmap_query_formats(AVFilterContext *ctx)
 {
     ChannelMapContext *s = ctx->priv;
     AVFilterChannelLayouts *layouts;
+    AVFilterChannelLayouts *channel_layouts = NULL;
+
+    ff_add_channel_layout(&channel_layouts, s->output_layout);
 
     ff_set_common_formats(ctx, ff_planar_sample_fmts());
     ff_set_common_samplerates(ctx, ff_all_samplerates());
@@ -297,9 +299,8 @@ static int channelmap_query_formats(AVFilterContext *ctx)
     if (!layouts)
         return AVERROR(ENOMEM);
 
-    ff_add_channel_layout(&s->channel_layouts, s->output_layout);
     ff_channel_layouts_ref(layouts, &ctx->inputs[0]->out_channel_layouts);
-    ff_channel_layouts_ref(s->channel_layouts,       &ctx->outputs[0]->in_channel_layouts);
+    ff_channel_layouts_ref(channel_layouts,          &ctx->outputs[0]->in_channel_layouts);
 
     return 0;
 }
