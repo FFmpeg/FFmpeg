@@ -24,6 +24,36 @@
 #include "vp9dsp_mips.h"
 
 #if HAVE_MSA
+static av_cold void vp9dsp_intrapred_init_msa(VP9DSPContext *dsp, int bpp)
+{
+    if (bpp == 8) {
+#define init_intra_pred_msa(tx, sz)                             \
+    dsp->intra_pred[tx][VERT_PRED]    = ff_vert_##sz##_msa;     \
+    dsp->intra_pred[tx][HOR_PRED]     = ff_hor_##sz##_msa;      \
+    dsp->intra_pred[tx][DC_PRED]      = ff_dc_##sz##_msa;       \
+    dsp->intra_pred[tx][LEFT_DC_PRED] = ff_dc_left_##sz##_msa;  \
+    dsp->intra_pred[tx][TOP_DC_PRED]  = ff_dc_top_##sz##_msa;   \
+    dsp->intra_pred[tx][DC_128_PRED]  = ff_dc_128_##sz##_msa;   \
+    dsp->intra_pred[tx][DC_127_PRED]  = ff_dc_127_##sz##_msa;   \
+    dsp->intra_pred[tx][DC_129_PRED]  = ff_dc_129_##sz##_msa;   \
+    dsp->intra_pred[tx][TM_VP8_PRED]  = ff_tm_##sz##_msa;       \
+
+    init_intra_pred_msa(TX_16X16, 16x16);
+    init_intra_pred_msa(TX_32X32, 32x32);
+#undef init_intra_pred_msa
+
+#define init_intra_pred_msa(tx, sz)                             \
+    dsp->intra_pred[tx][DC_PRED]      = ff_dc_##sz##_msa;       \
+    dsp->intra_pred[tx][LEFT_DC_PRED] = ff_dc_left_##sz##_msa;  \
+    dsp->intra_pred[tx][TOP_DC_PRED]  = ff_dc_top_##sz##_msa;   \
+    dsp->intra_pred[tx][TM_VP8_PRED]  = ff_tm_##sz##_msa;       \
+
+    init_intra_pred_msa(TX_4X4, 4x4);
+    init_intra_pred_msa(TX_8X8, 8x8);
+#undef init_intra_pred_msa
+    }
+}
+
 static av_cold void vp9dsp_itxfm_init_msa(VP9DSPContext *dsp, int bpp)
 {
     if (bpp == 8) {
@@ -129,6 +159,7 @@ static av_cold void vp9dsp_loopfilter_init_msa(VP9DSPContext *dsp, int bpp)
 
 static av_cold void vp9dsp_init_msa(VP9DSPContext *dsp, int bpp)
 {
+    vp9dsp_intrapred_init_msa(dsp, bpp);
     vp9dsp_itxfm_init_msa(dsp, bpp);
     vp9dsp_mc_init_msa(dsp, bpp);
     vp9dsp_loopfilter_init_msa(dsp, bpp);
