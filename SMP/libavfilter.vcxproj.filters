@@ -323,6 +323,9 @@
     <ClCompile Include="..\libavfilter\vf_dctdnoiz.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_deband.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\vf_decimate.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>

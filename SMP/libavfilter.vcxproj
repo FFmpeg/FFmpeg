@@ -248,6 +248,8 @@
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_dctdnoiz.c">
     </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_deband.c">
+    </ClCompile>
     <ClCompile Include="..\libavfilter\vf_decimate.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_neighbor.c">

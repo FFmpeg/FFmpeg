@@ -396,7 +396,7 @@
     </ClCompile>
     <ClCompile Include="..\libavcodec\aacsbr.c">
     </ClCompile>
-    <ClCompile Include="..\libavcodec\aacps.c">
+    <ClCompile Include="..\libavcodec\aacps_float.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\aacadtsdec.c">
     </ClCompile>
@@ -407,13 +407,17 @@
     <ClCompile Include="..\libavcodec\sbrdsp.c">
       <ObjectFileName>$(IntDir)\libavcodec_sbrdsp.obj</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="..\libavcodec\aacpsdsp.c">
+    <ClCompile Include="..\libavcodec\aacpsdsp_float.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\aacdec_fixed.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\aacsbr_fixed.c">
     </ClCompile>
+    <ClCompile Include="..\libavcodec\aacps_fixed.c">
+    </ClCompile>
     <ClCompile Include="..\libavcodec\sbrdsp_fixed.c">
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\aacpsdsp_fixed.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\aacenc.c">
     </ClCompile>

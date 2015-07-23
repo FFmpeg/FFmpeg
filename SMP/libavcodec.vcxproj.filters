@@ -599,7 +599,7 @@
     <ClCompile Include="..\libavcodec\aacsbr.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavcodec\aacps.c">
+    <ClCompile Include="..\libavcodec\aacps_float.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\aacadtsdec.c">
@@ -614,7 +614,7 @@
     <ClCompile Include="..\libavcodec\sbrdsp.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavcodec\aacpsdsp.c">
+    <ClCompile Include="..\libavcodec\aacpsdsp_float.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\aacdec_fixed.c">
@@ -623,7 +623,13 @@
     <ClCompile Include="..\libavcodec\aacsbr_fixed.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\aacps_fixed.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\sbrdsp_fixed.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\aacpsdsp_fixed.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\aacenc.c">
