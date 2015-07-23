@@ -30,7 +30,7 @@
  * rgbtestsrc is ported from MPlayer libmpcodecs/vf_rgbtest.c by
  * Michael Niedermayer.
  *
- * smptebars and smptehdbars are by Paul B Mahol.
+ * allyuv, smptebars and smptehdbars are by Paul B Mahol.
  */
 
 #include <float.h>
@@ -1080,3 +1080,84 @@ AVFilter ff_vsrc_smptehdbars = {
 
 #endif  /* CONFIG_SMPTEHDBARS_FILTER */
 #endif  /* CONFIG_SMPTEBARS_FILTER || CONFIG_SMPTEHDBARS_FILTER */
+
+#if CONFIG_ALLYUV_FILTER
+
+static const AVOption allyuv_options[] = {
+    COMMON_OPTIONS_NOSIZE
+    { NULL }
+};
+
+AVFILTER_DEFINE_CLASS(allyuv);
+
+static void allyuv_fill_picture(AVFilterContext *ctx, AVFrame *frame)
+{
+    const int ys = frame->linesize[0];
+    const int us = frame->linesize[1];
+    const int vs = frame->linesize[2];
+    int x, y, j;
+
+    for (y = 0; y < 4096; y++) {
+        for (x = 0; x < 2048; x++) {
+            frame->data[0][y * ys + x] = ((x / 8) % 256);
+            frame->data[0][y * ys + 4095 - x] = ((x / 8) % 256);
+        }
+
+        for (x = 0; x < 2048; x+=8) {
+            for (j = 0; j < 8; j++) {
+                frame->data[1][vs * y + x + j]        = (y%16 + (j % 8) * 16);
+                frame->data[1][vs * y + 4095 - x - j] = (128 + y%16 + (j % 8) * 16);
+            }
+        }
+
+        for (x = 0; x < 4096; x++)
+            frame->data[2][y * us + x] = 256 * y / 4096;
+    }
+}
+
+static av_cold int allyuv_init(AVFilterContext *ctx)
+{
+    TestSourceContext *test = ctx->priv;
+
+    test->w = test->h = 4096;
+    test->draw_once = 1;
+    test->fill_picture_fn = allyuv_fill_picture;
+    return init(ctx);
+}
+
+static int allyuv_query_formats(AVFilterContext *ctx)
+{
+    static const enum AVPixelFormat pix_fmts[] = {
+        AV_PIX_FMT_YUV444P, AV_PIX_FMT_GBRP,
+        AV_PIX_FMT_NONE
+    };
+
+    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
+    if (!fmts_list)
+        return AVERROR(ENOMEM);
+    return ff_set_common_formats(ctx, fmts_list);
+}
+
+static const AVFilterPad avfilter_vsrc_allyuv_outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_VIDEO,
+        .request_frame = request_frame,
+        .config_props  = config_props,
+    },
+    { NULL }
+};
+
+AVFilter ff_vsrc_allyuv = {
+    .name          = "allyuv",
+    .description   = NULL_IF_CONFIG_SMALL("Generate all yuv colors."),
+    .priv_size     = sizeof(TestSourceContext),
+    .priv_class    = &allyuv_class,
+    .init          = allyuv_init,
+    .uninit        = uninit,
+    .query_formats = allyuv_query_formats,
+    .inputs        = NULL,
+    .outputs       = avfilter_vsrc_allyuv_outputs,
+};
+
+#endif /* CONFIG_ALLYUV_FILTER */

@@ -27,6 +27,7 @@ version <next>:
 - sidechaincompress audio filter
 - bitstream filter for converting HEVC from MP4 to Annex B
 - acrossfade audio filter
+- allyuv video source
 
 
 version 2.7:
