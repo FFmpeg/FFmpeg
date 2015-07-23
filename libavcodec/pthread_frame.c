@@ -454,6 +454,9 @@ int ff_thread_decode_frame(AVCodecContext *avctx,
         *got_picture_ptr = p->got_frame;
         picture->pkt_dts = p->avpkt.dts;
 
+        if (p->result < 0)
+            err = p->result;
+
         /*
          * A later call with avkpt->size == 0 may loop over all threads,
          * including this one, searching for a frame to return before being
@@ -470,6 +473,14 @@ int ff_thread_decode_frame(AVCodecContext *avctx,
     if (fctx->next_decoding >= avctx->thread_count) fctx->next_decoding = 0;
 
     fctx->next_finished = finished;
+
+    /*
+     * When no frame was found while flushing, but an error occured in
+     * any thread, return it instead of 0.
+     * Otherwise the error can get lost.
+     */
+    if (!avpkt->size && !*got_picture_ptr)
+        return err;
 
     /* return the size of the consumed packet if no error occurred */
     return (p->result >= 0) ? avpkt->size : p->result;
@@ -572,7 +583,7 @@ void ff_frame_thread_free(AVCodecContext *avctx, int thread_count)
             pthread_join(p->thread, NULL);
         p->thread_init=0;
 
-        if (codec->close)
+        if (codec->close && p->avctx)
             codec->close(p->avctx);
 
         release_delayed_buffers(p);
@@ -590,12 +601,13 @@ void ff_frame_thread_free(AVCodecContext *avctx, int thread_count)
         av_packet_unref(&p->avpkt);
         av_freep(&p->released_buffers);
 
-        if (i) {
+        if (i && p->avctx) {
             av_freep(&p->avctx->priv_data);
             av_freep(&p->avctx->slice_offset);
         }
 
-        av_freep(&p->avctx->internal);
+        if (p->avctx)
+            av_freep(&p->avctx->internal);
         av_freep(&p->avctx);
     }
 
@@ -678,6 +690,7 @@ int ff_frame_thread_init(AVCodecContext *avctx)
 
         copy->internal = av_malloc(sizeof(AVCodecInternal));
         if (!copy->internal) {
+            copy->priv_data = NULL;
             err = AVERROR(ENOMEM);
             goto error;
         }

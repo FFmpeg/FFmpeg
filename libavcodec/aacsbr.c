@@ -1019,6 +1019,8 @@ static unsigned int read_sbr_data(AACContext *ac, SpectralBandReplication *sbr,
 {
     unsigned int cnt = get_bits_count(gb);
 
+    sbr->id_aac = id_aac;
+
     if (id_aac == TYPE_SCE || id_aac == TYPE_CCE) {
         if (read_sbr_single_channel_element(ac, sbr, gb)) {
             sbr_turnoff(sbr);
@@ -1695,6 +1697,12 @@ void ff_sbr_apply(AACContext *ac, SpectralBandReplication *sbr, int id_aac,
     int nch = (id_aac == TYPE_CPE) ? 2 : 1;
     int err;
 
+    if (id_aac != sbr->id_aac) {
+        av_log(ac->avctx, AV_LOG_ERROR,
+            "element type mismatch %d != %d\n", id_aac, sbr->id_aac);
+        sbr_turnoff(sbr);
+    }
+
     if (!sbr->kx_and_m_pushed) {
         sbr->kx[0] = sbr->kx[1];
         sbr->m[0] = sbr->m[1];
@@ -1718,6 +1726,7 @@ void ff_sbr_apply(AACContext *ac, SpectralBandReplication *sbr, int id_aac,
             sbr->c.sbr_hf_inverse_filter(&sbr->dsp, sbr->alpha0, sbr->alpha1,
                                          (const float (*)[40][2]) sbr->X_low, sbr->k[0]);
             sbr_chirp(sbr, &sbr->data[ch]);
+            av_assert0(sbr->data[ch].bs_num_env > 0);
             sbr_hf_gen(ac, sbr, sbr->X_high,
                        (const float (*)[40][2]) sbr->X_low,
                        (const float (*)[2]) sbr->alpha0,

@@ -456,7 +456,10 @@ static void ffmpeg_cleanup(int ret)
     /* close files */
     for (i = 0; i < nb_output_files; i++) {
         OutputFile *of = output_files[i];
-        AVFormatContext *s = of->ctx;
+        AVFormatContext *s;
+        if (!of)
+            continue;
+        s = of->ctx;
         if (s && s->oformat && !(s->oformat->flags & AVFMT_NOFILE))
             avio_closep(&s->pb);
         avformat_free_context(s);
@@ -466,7 +469,12 @@ static void ffmpeg_cleanup(int ret)
     }
     for (i = 0; i < nb_output_streams; i++) {
         OutputStream *ost = output_streams[i];
-        AVBitStreamFilterContext *bsfc = ost->bitstream_filters;
+        AVBitStreamFilterContext *bsfc;
+
+        if (!ost)
+            continue;
+
+        bsfc = ost->bitstream_filters;
         while (bsfc) {
             AVBitStreamFilterContext *next = bsfc->next;
             av_bitstream_filter_close(bsfc);
@@ -650,6 +658,7 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
             if (!new_pkt.buf)
                 exit_program(1);
         } else if (a < 0) {
+            new_pkt = *pkt;
             av_log(NULL, AV_LOG_ERROR, "Failed to open bitstream filter %s for stream %d with codec %s",
                    bsfc->filter->name, pkt->stream_index,
                    avctx->codec ? avctx->codec->name : "copy");
@@ -1176,7 +1185,7 @@ static void do_video_out(AVFormatContext *s,
     if (!ost->last_frame)
         ost->last_frame = av_frame_alloc();
     av_frame_unref(ost->last_frame);
-    if (next_picture)
+    if (next_picture && ost->last_frame)
         av_frame_ref(ost->last_frame, next_picture);
     else
         av_frame_free(&ost->last_frame);
@@ -1865,8 +1874,11 @@ static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
         ret = AVERROR_INVALIDDATA;
     }
 
-    if (*got_output || ret<0 || pkt->size)
+    if (*got_output || ret<0)
         decode_error_stat[ret<0] ++;
+
+    if (ret < 0 && exit_on_error)
+        exit_program(1);
 
     if (!*got_output || ret < 0) {
         if (!pkt->size) {
@@ -2010,8 +2022,11 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output)
             );
     }
 
-    if (*got_output || ret<0 || pkt->size)
+    if (*got_output || ret<0)
         decode_error_stat[ret<0] ++;
+
+    if (ret < 0 && exit_on_error)
+        exit_program(1);
 
     if (*got_output && ret >= 0) {
         if (ist->dec_ctx->width  != decoded_frame->width ||
@@ -2128,8 +2143,11 @@ static int transcode_subtitles(InputStream *ist, AVPacket *pkt, int *got_output)
     int i, ret = avcodec_decode_subtitle2(ist->dec_ctx,
                                           &subtitle, got_output, pkt);
 
-    if (*got_output || ret<0 || pkt->size)
+    if (*got_output || ret<0)
         decode_error_stat[ret<0] ++;
+
+    if (ret < 0 && exit_on_error)
+        exit_program(1);
 
     if (ret < 0 || !*got_output) {
         if (!pkt->size)
