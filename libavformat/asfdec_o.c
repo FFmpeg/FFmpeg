@@ -745,6 +745,7 @@ static int asf_read_stream_properties(AVFormatContext *s, const GUIDParseTable *
     if (!asf->asf_st[asf->nb_streams])
         return AVERROR(ENOMEM);
     asf_st                       = asf->asf_st[asf->nb_streams];
+    asf->nb_streams++;
     asf_st->stream_index         = stream_index;
     asf_st->index                = st->index;
     asf_st->indexed              = 0;
@@ -785,7 +786,6 @@ static int asf_read_stream_properties(AVFormatContext *s, const GUIDParseTable *
             avio_skip(pb, err_data_len);
     }
 
-    asf->nb_streams++;
     align_position(pb, asf->offset, size);
 
     return 0;
