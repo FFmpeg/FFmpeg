@@ -1177,7 +1177,7 @@ static void vp9_idct16x16_10_colcol_addblk_msa(int16_t *input, uint8_t *dst,
     /* short case just considers top 4 rows as valid output */
     out += 4 * 16;
     for (i = 12; i--;) {
-        __asm__ __volatile__ (
+        __asm__ volatile (
             "sw     $zero,   0(%[out])     \n\t"
             "sw     $zero,   4(%[out])     \n\t"
             "sw     $zero,   8(%[out])     \n\t"
@@ -1938,7 +1938,7 @@ static void vp9_idct32x32_34_colcol_addblk_msa(int16_t *input, uint8_t *dst,
     int16_t tmp_buf[8 * 32] ALLOC_ALIGNED(ALIGNMENT);
 
     for (i = 32; i--;) {
-        __asm__ __volatile__ (
+        __asm__ volatile (
             "sw     $zero,       (%[out_ptr])     \n\t"
             "sw     $zero,      4(%[out_ptr])     \n\t"
             "sw     $zero,      8(%[out_ptr])     \n\t"
