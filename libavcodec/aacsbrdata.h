@@ -30,6 +30,7 @@
 
 #include <stdint.h>
 #include "libavutil/mem.h"
+#include "aac_defines.h"
 
 ///< Huffman tables for SBR
 
