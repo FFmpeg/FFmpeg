@@ -775,9 +775,11 @@ static void FUNC(sao_edge_filter_3)(uint8_t *_dst, uint8_t *_src,
 #undef TR_16
 #undef TR_32
 
-static void FUNC(put_hevc_qpel_pixels)(int16_t *dst, ptrdiff_t dststride,
-                                       uint8_t *_src, ptrdiff_t _srcstride,
-                                       int width, int height, int16_t* mcbuffer)
+static av_always_inline void
+FUNC(put_hevc_qpel_pixels)(int16_t *dst, ptrdiff_t dststride,
+                           uint8_t *_src, ptrdiff_t _srcstride,
+                           int width, int height, int mx, int my,
+                           int16_t* mcbuffer)
 {
     int x, y;
     pixel *src          = (pixel *)_src;
@@ -905,6 +907,80 @@ PUT_HEVC_QPEL_HV(2, 3)
 PUT_HEVC_QPEL_HV(3, 1)
 PUT_HEVC_QPEL_HV(3, 2)
 PUT_HEVC_QPEL_HV(3, 3)
+
+#define QPEL(W)                                                                             \
+static void FUNC(put_hevc_qpel_pixels_ ## W)(int16_t *dst, ptrdiff_t dststride,             \
+                                             uint8_t *src, ptrdiff_t srcstride,             \
+                                             int height, int mx, int my,                    \
+                                             int16_t *mcbuffer)                             \
+{                                                                                           \
+    FUNC(put_hevc_qpel_pixels)(dst, dststride, src, srcstride, W, height,                   \
+                               mx, my, mcbuffer);                                           \
+}                                                                                           \
+                                                                                            \
+static void FUNC(put_hevc_qpel_h_ ## W)(int16_t *dst, ptrdiff_t dststride,                  \
+                                        uint8_t *src, ptrdiff_t srcstride,                  \
+                                        int height, int mx, int my,                         \
+                                        int16_t *mcbuffer)                                  \
+{                                                                                           \
+    if (mx == 1)                                                                            \
+        FUNC(put_hevc_qpel_h1)(dst, dststride, src, srcstride, W, height, mcbuffer);        \
+    else if (mx == 2)                                                                       \
+        FUNC(put_hevc_qpel_h2)(dst, dststride, src, srcstride, W, height, mcbuffer);        \
+    else                                                                                    \
+        FUNC(put_hevc_qpel_h3)(dst, dststride, src, srcstride, W, height, mcbuffer);        \
+}                                                                                           \
+                                                                                            \
+static void FUNC(put_hevc_qpel_v_ ## W)(int16_t *dst, ptrdiff_t dststride,                  \
+                                             uint8_t *src, ptrdiff_t srcstride,             \
+                                             int height, int mx, int my,                    \
+                                             int16_t *mcbuffer)                             \
+{                                                                                           \
+    if (my == 1)                                                                            \
+        FUNC(put_hevc_qpel_v1)(dst, dststride, src, srcstride, W, height, mcbuffer);        \
+    else if (my == 2)                                                                       \
+        FUNC(put_hevc_qpel_v2)(dst, dststride, src, srcstride, W, height, mcbuffer);        \
+    else                                                                                    \
+        FUNC(put_hevc_qpel_v3)(dst, dststride, src, srcstride, W, height, mcbuffer);        \
+}                                                                                           \
+                                                                                            \
+static void FUNC(put_hevc_qpel_hv_ ## W)(int16_t *dst, ptrdiff_t dststride,                 \
+                                             uint8_t *src, ptrdiff_t srcstride,             \
+                                             int height, int mx, int my,                    \
+                                             int16_t *mcbuffer)                             \
+{                                                                                           \
+    if (my == 1) {                                                                          \
+        if (mx == 1)                                                                        \
+            FUNC(put_hevc_qpel_h1v1)(dst, dststride, src, srcstride, W, height, mcbuffer);  \
+        else if (mx == 2)                                                                   \
+            FUNC(put_hevc_qpel_h2v1)(dst, dststride, src, srcstride, W, height, mcbuffer);  \
+        else                                                                                \
+            FUNC(put_hevc_qpel_h3v1)(dst, dststride, src, srcstride, W, height, mcbuffer);  \
+    } else if (my == 2) {                                                                   \
+        if (mx == 1)                                                                        \
+            FUNC(put_hevc_qpel_h1v2)(dst, dststride, src, srcstride, W, height, mcbuffer);  \
+        else if (mx == 2)                                                                   \
+            FUNC(put_hevc_qpel_h2v2)(dst, dststride, src, srcstride, W, height, mcbuffer);  \
+        else                                                                                \
+            FUNC(put_hevc_qpel_h3v2)(dst, dststride, src, srcstride, W, height, mcbuffer);  \
+    } else {                                                                                \
+        if (mx == 1)                                                                        \
+            FUNC(put_hevc_qpel_h1v3)(dst, dststride, src, srcstride, W, height, mcbuffer);  \
+        else if (mx == 2)                                                                   \
+            FUNC(put_hevc_qpel_h2v3)(dst, dststride, src, srcstride, W, height, mcbuffer);  \
+        else                                                                                \
+            FUNC(put_hevc_qpel_h3v3)(dst, dststride, src, srcstride, W, height, mcbuffer);  \
+    }                                                                                       \
+}
+
+QPEL(64)
+QPEL(48)
+QPEL(32)
+QPEL(24)
+QPEL(16)
+QPEL(12)
+QPEL(8)
+QPEL(4)
 
 static void FUNC(put_hevc_epel_pixels)(int16_t *dst, ptrdiff_t dststride,
                                        uint8_t *_src, ptrdiff_t _srcstride,

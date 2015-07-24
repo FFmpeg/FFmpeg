@@ -1479,7 +1479,7 @@ static void hls_mvd_coding(HEVCContext *s, int x0, int y0, int log2_cb_size)
  */
 static void luma_mc(HEVCContext *s, int16_t *dst, ptrdiff_t dststride,
                     AVFrame *ref, const Mv *mv, int x_off, int y_off,
-                    int block_w, int block_h)
+                    int block_w, int block_h, int pred_idx)
 {
     HEVCLocalContext *lc = &s->HEVClc;
     uint8_t *src         = ref->data[0];
@@ -1513,8 +1513,8 @@ static void luma_mc(HEVCContext *s, int16_t *dst, ptrdiff_t dststride,
         src = lc->edge_emu_buffer + buf_offset;
         srcstride = edge_emu_stride;
     }
-    s->hevcdsp.put_hevc_qpel[my][mx](dst, dststride, src, srcstride, block_w,
-                                     block_h, lc->mc_buffer);
+    s->hevcdsp.put_hevc_qpel[!!my][!!mx][pred_idx](dst, dststride, src, srcstride,
+                                                   block_h, mx, my, lc->mc_buffer);
 }
 
 /**
@@ -1651,6 +1651,11 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
                                 int nPbW, int nPbH,
                                 int log2_cb_size, int partIdx)
 {
+    static const int pred_indices[] = {
+        [4] = 0, [8] = 1, [12] = 2, [16] = 3, [24] = 4, [32] = 5, [48] = 6, [64] = 7,
+    };
+    const int pred_idx = pred_indices[nPbW];
+
 #define POS(c_idx, x, y)                                                              \
     &s->frame->data[c_idx][((y) >> s->ps.sps->vshift[c_idx]) * s->frame->linesize[c_idx] + \
                            (((x) >> s->ps.sps->hshift[c_idx]) << s->ps.sps->pixel_shift)]
@@ -1719,7 +1724,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
         DECLARE_ALIGNED(16, int16_t, tmp2[MAX_PB_SIZE * MAX_PB_SIZE]);
 
         luma_mc(s, tmp, tmpstride, ref0->frame,
-                &current_mv.mv[0], x0, y0, nPbW, nPbH);
+                &current_mv.mv[0], x0, y0, nPbW, nPbH, pred_idx);
 
         if ((s->sh.slice_type == P_SLICE && s->ps.pps->weighted_pred_flag) ||
             (s->sh.slice_type == B_SLICE && s->ps.pps->weighted_bipred_flag)) {
@@ -1755,7 +1760,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
         DECLARE_ALIGNED(16, int16_t, tmp2[MAX_PB_SIZE * MAX_PB_SIZE]);
 
         luma_mc(s, tmp, tmpstride, ref1->frame,
-                &current_mv.mv[1], x0, y0, nPbW, nPbH);
+                &current_mv.mv[1], x0, y0, nPbW, nPbH, pred_idx);
 
         if ((s->sh.slice_type == P_SLICE && s->ps.pps->weighted_pred_flag) ||
             (s->sh.slice_type == B_SLICE && s->ps.pps->weighted_bipred_flag)) {
@@ -1792,9 +1797,9 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
         DECLARE_ALIGNED(16, int16_t, tmp4[MAX_PB_SIZE * MAX_PB_SIZE]);
 
         luma_mc(s, tmp, tmpstride, ref0->frame,
-                &current_mv.mv[0], x0, y0, nPbW, nPbH);
+                &current_mv.mv[0], x0, y0, nPbW, nPbH, pred_idx);
         luma_mc(s, tmp2, tmpstride, ref1->frame,
-                &current_mv.mv[1], x0, y0, nPbW, nPbH);
+                &current_mv.mv[1], x0, y0, nPbW, nPbH, pred_idx);
 
         if ((s->sh.slice_type == P_SLICE && s->ps.pps->weighted_pred_flag) ||
             (s->sh.slice_type == B_SLICE && s->ps.pps->weighted_bipred_flag)) {

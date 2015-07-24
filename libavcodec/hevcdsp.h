@@ -58,9 +58,9 @@ typedef struct HEVCDSPContext {
                                int height, int c_idx, uint8_t vert_edge,
                                uint8_t horiz_edge, uint8_t diag_edge);
 
-    void (*put_hevc_qpel[4][4])(int16_t *dst, ptrdiff_t dststride, uint8_t *src,
-                                ptrdiff_t srcstride, int width, int height,
-                                int16_t *mcbuffer);
+    void (*put_hevc_qpel[2][2][8])(int16_t *dst, ptrdiff_t dststride, uint8_t *src,
+                                   ptrdiff_t srcstride, int height,
+                                   int mx, int my, int16_t *mcbuffer);
     void (*put_hevc_epel[2][2])(int16_t *dst, ptrdiff_t dststride, uint8_t *src,
                                 ptrdiff_t srcstride, int width, int height,
                                 int mx, int my, int16_t *mcbuffer);
