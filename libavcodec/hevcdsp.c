@@ -122,6 +122,12 @@ void ff_hevc_dsp_init(HEVCDSPContext *hevcdsp, int bit_depth)
     hevcdsp->put_hevc_qpel[1][0][i] = FUNC(put_hevc_qpel_v_      ## width, depth);  \
     hevcdsp->put_hevc_qpel[1][1][i] = FUNC(put_hevc_qpel_hv_     ## width, depth);  \
 
+#define EPEL_FUNC(i, width, depth)                                                  \
+    hevcdsp->put_hevc_epel[0][0][i] = FUNC(put_hevc_epel_pixels_ ## width, depth);  \
+    hevcdsp->put_hevc_epel[0][1][i] = FUNC(put_hevc_epel_h_      ## width, depth);  \
+    hevcdsp->put_hevc_epel[1][0][i] = FUNC(put_hevc_epel_v_      ## width, depth);  \
+    hevcdsp->put_hevc_epel[1][1][i] = FUNC(put_hevc_epel_hv_     ## width, depth);  \
+
 #define HEVC_DSP(depth)                                                     \
     hevcdsp->put_pcm                = FUNC(put_pcm, depth);                 \
     hevcdsp->transquant_bypass[0]   = FUNC(transquant_bypass4x4, depth);    \
@@ -154,10 +160,14 @@ void ff_hevc_dsp_init(HEVCDSPContext *hevcdsp, int bit_depth)
     QPEL_FUNC(6, 48, depth);                                                \
     QPEL_FUNC(7, 64, depth);                                                \
                                                                             \
-    hevcdsp->put_hevc_epel[0][0] = FUNC(put_hevc_epel_pixels, depth);       \
-    hevcdsp->put_hevc_epel[0][1] = FUNC(put_hevc_epel_h, depth);            \
-    hevcdsp->put_hevc_epel[1][0] = FUNC(put_hevc_epel_v, depth);            \
-    hevcdsp->put_hevc_epel[1][1] = FUNC(put_hevc_epel_hv, depth);           \
+    EPEL_FUNC(0, 2,  depth);                                                \
+    EPEL_FUNC(1, 4,  depth);                                                \
+    EPEL_FUNC(2, 6, depth);                                                 \
+    EPEL_FUNC(3, 8, depth);                                                 \
+    EPEL_FUNC(4, 12, depth);                                                \
+    EPEL_FUNC(5, 16, depth);                                                \
+    EPEL_FUNC(6, 24, depth);                                                \
+    EPEL_FUNC(7, 32, depth);                                                \
                                                                             \
     hevcdsp->put_unweighted_pred   = FUNC(put_unweighted_pred, depth);      \
     hevcdsp->put_unweighted_pred_avg = FUNC(put_unweighted_pred_avg, depth);    \

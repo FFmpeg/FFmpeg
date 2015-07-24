@@ -982,10 +982,10 @@ QPEL(12)
 QPEL(8)
 QPEL(4)
 
-static void FUNC(put_hevc_epel_pixels)(int16_t *dst, ptrdiff_t dststride,
-                                       uint8_t *_src, ptrdiff_t _srcstride,
-                                       int width, int height, int mx, int my,
-                                       int16_t* mcbuffer)
+static inline void FUNC(put_hevc_epel_pixels)(int16_t *dst, ptrdiff_t dststride,
+                                              uint8_t *_src, ptrdiff_t _srcstride,
+                                              int width, int height, int mx, int my,
+                                              int16_t* mcbuffer)
 {
     int x, y;
     pixel *src          = (pixel *)_src;
@@ -1005,10 +1005,10 @@ static void FUNC(put_hevc_epel_pixels)(int16_t *dst, ptrdiff_t dststride,
      filter_2 * src[x + stride] +               \
      filter_3 * src[x + 2 * stride])
 
-static void FUNC(put_hevc_epel_h)(int16_t *dst, ptrdiff_t dststride,
-                                  uint8_t *_src, ptrdiff_t _srcstride,
-                                  int width, int height, int mx, int my,
-                                  int16_t* mcbuffer)
+static inline void FUNC(put_hevc_epel_h)(int16_t *dst, ptrdiff_t dststride,
+                                         uint8_t *_src, ptrdiff_t _srcstride,
+                                         int width, int height, int mx, int my,
+                                         int16_t* mcbuffer)
 {
     int x, y;
     pixel *src = (pixel *)_src;
@@ -1026,10 +1026,10 @@ static void FUNC(put_hevc_epel_h)(int16_t *dst, ptrdiff_t dststride,
     }
 }
 
-static void FUNC(put_hevc_epel_v)(int16_t *dst, ptrdiff_t dststride,
-                                  uint8_t *_src, ptrdiff_t _srcstride,
-                                  int width, int height, int mx, int my,
-                                  int16_t* mcbuffer)
+static inline void FUNC(put_hevc_epel_v)(int16_t *dst, ptrdiff_t dststride,
+                                         uint8_t *_src, ptrdiff_t _srcstride,
+                                         int width, int height, int mx, int my,
+                                         int16_t* mcbuffer)
 {
     int x, y;
     pixel *src = (pixel *)_src;
@@ -1048,10 +1048,10 @@ static void FUNC(put_hevc_epel_v)(int16_t *dst, ptrdiff_t dststride,
     }
 }
 
-static void FUNC(put_hevc_epel_hv)(int16_t *dst, ptrdiff_t dststride,
-                                   uint8_t *_src, ptrdiff_t _srcstride,
-                                   int width, int height, int mx, int my,
-                                   int16_t* mcbuffer)
+static inline void FUNC(put_hevc_epel_hv)(int16_t *dst, ptrdiff_t dststride,
+                                          uint8_t *_src, ptrdiff_t _srcstride,
+                                          int width, int height, int mx, int my,
+                                          int16_t* mcbuffer)
 {
     int x, y;
     pixel *src = (pixel *)_src;
@@ -1086,6 +1086,49 @@ static void FUNC(put_hevc_epel_hv)(int16_t *dst, ptrdiff_t dststride,
         dst += dststride;
     }
 }
+
+#define EPEL(W)                                                                 \
+static void FUNC(put_hevc_epel_pixels_ ## W)(int16_t *dst, ptrdiff_t dststride, \
+                                             uint8_t *src, ptrdiff_t srcstride, \
+                                             int height, int mx, int my,        \
+                                             int16_t *mcbuffer)                 \
+{                                                                               \
+    FUNC(put_hevc_epel_pixels)(dst, dststride, src, srcstride,                  \
+                               W, height, mx, my, mcbuffer);                    \
+}                                                                               \
+static void FUNC(put_hevc_epel_h_ ## W)(int16_t *dst, ptrdiff_t dststride,      \
+                                        uint8_t *src, ptrdiff_t srcstride,      \
+                                        int height, int mx, int my,             \
+                                        int16_t *mcbuffer)                      \
+{                                                                               \
+    FUNC(put_hevc_epel_h)(dst, dststride, src, srcstride,                       \
+                          W, height, mx, my, mcbuffer);                         \
+}                                                                               \
+static void FUNC(put_hevc_epel_v_ ## W)(int16_t *dst, ptrdiff_t dststride,      \
+                                        uint8_t *src, ptrdiff_t srcstride,      \
+                                        int height, int mx, int my,             \
+                                        int16_t *mcbuffer)                      \
+{                                                                               \
+    FUNC(put_hevc_epel_v)(dst, dststride, src, srcstride,                       \
+                          W, height, mx, my, mcbuffer);                         \
+}                                                                               \
+static void FUNC(put_hevc_epel_hv_ ## W)(int16_t *dst, ptrdiff_t dststride,     \
+                                         uint8_t *src, ptrdiff_t srcstride,     \
+                                         int height, int mx, int my,            \
+                                         int16_t *mcbuffer)                     \
+{                                                                               \
+    FUNC(put_hevc_epel_hv)(dst, dststride, src, srcstride,                      \
+                           W, height, mx, my, mcbuffer);                        \
+}
+
+EPEL(32)
+EPEL(24)
+EPEL(16)
+EPEL(12)
+EPEL(8)
+EPEL(6)
+EPEL(4)
+EPEL(2)
 
 static void FUNC(put_unweighted_pred)(uint8_t *_dst, ptrdiff_t _dststride,
                                       int16_t *src, ptrdiff_t srcstride,
