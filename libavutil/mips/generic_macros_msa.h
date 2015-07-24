@@ -24,6 +24,9 @@
 #include <stdint.h>
 #include <msa.h>
 
+#define ALIGNMENT           16
+#define ALLOC_ALIGNED(align) __attribute__ ((aligned((align) << 1)))
+
 #define LD_B(RTYPE, psrc) *((RTYPE *)(psrc))
 #define LD_UB(...) LD_B(v16u8, __VA_ARGS__)
 #define LD_SB(...) LD_B(v16i8, __VA_ARGS__)

@@ -24,6 +24,29 @@
 #include "vp9dsp_mips.h"
 
 #if HAVE_MSA
+static av_cold void vp9dsp_itxfm_init_msa(VP9DSPContext *dsp, int bpp)
+{
+    if (bpp == 8) {
+#define init_itxfm(tx, sz)                                         \
+    dsp->itxfm_add[tx][DCT_DCT]   = ff_idct_idct_##sz##_add_msa;   \
+    dsp->itxfm_add[tx][DCT_ADST]  = ff_iadst_idct_##sz##_add_msa;  \
+    dsp->itxfm_add[tx][ADST_DCT]  = ff_idct_iadst_##sz##_add_msa;  \
+    dsp->itxfm_add[tx][ADST_ADST] = ff_iadst_iadst_##sz##_add_msa  \
+
+#define init_idct(tx, nm)                        \
+    dsp->itxfm_add[tx][DCT_DCT]   =              \
+    dsp->itxfm_add[tx][ADST_DCT]  =              \
+    dsp->itxfm_add[tx][DCT_ADST]  =              \
+    dsp->itxfm_add[tx][ADST_ADST] = nm##_add_msa
+
+    init_itxfm(TX_4X4, 4x4);
+    init_itxfm(TX_8X8, 8x8);
+    init_itxfm(TX_16X16, 16x16);
+    init_idct(TX_32X32, ff_idct_idct_32x32);
+#undef init_itxfm
+#undef init_idct
+    }
+}
 
 static av_cold void vp9dsp_mc_init_msa(VP9DSPContext *dsp, int bpp)
 {
@@ -80,9 +103,35 @@ static av_cold void vp9dsp_mc_init_msa(VP9DSPContext *dsp, int bpp)
     }
 }
 
+static av_cold void vp9dsp_loopfilter_init_msa(VP9DSPContext *dsp, int bpp)
+{
+    if (bpp == 8) {
+        dsp->loop_filter_8[0][0] = ff_loop_filter_h_4_8_msa;
+        dsp->loop_filter_8[0][1] = ff_loop_filter_v_4_8_msa;
+        dsp->loop_filter_8[1][0] = ff_loop_filter_h_8_8_msa;
+        dsp->loop_filter_8[1][1] = ff_loop_filter_v_8_8_msa;
+        dsp->loop_filter_8[2][0] = ff_loop_filter_h_16_8_msa;
+        dsp->loop_filter_8[2][1] = ff_loop_filter_v_16_8_msa;
+
+        dsp->loop_filter_16[0] = ff_loop_filter_h_16_16_msa;
+        dsp->loop_filter_16[1] = ff_loop_filter_v_16_16_msa;
+
+        dsp->loop_filter_mix2[0][0][0] = ff_loop_filter_h_44_16_msa;
+        dsp->loop_filter_mix2[0][0][1] = ff_loop_filter_v_44_16_msa;
+        dsp->loop_filter_mix2[0][1][0] = ff_loop_filter_h_48_16_msa;
+        dsp->loop_filter_mix2[0][1][1] = ff_loop_filter_v_48_16_msa;
+        dsp->loop_filter_mix2[1][0][0] = ff_loop_filter_h_84_16_msa;
+        dsp->loop_filter_mix2[1][0][1] = ff_loop_filter_v_84_16_msa;
+        dsp->loop_filter_mix2[1][1][0] = ff_loop_filter_h_88_16_msa;
+        dsp->loop_filter_mix2[1][1][1] = ff_loop_filter_v_88_16_msa;
+    }
+}
+
 static av_cold void vp9dsp_init_msa(VP9DSPContext *dsp, int bpp)
 {
+    vp9dsp_itxfm_init_msa(dsp, bpp);
     vp9dsp_mc_init_msa(dsp, bpp);
+    vp9dsp_loopfilter_init_msa(dsp, bpp);
 }
 #endif  // #if HAVE_MSA
 

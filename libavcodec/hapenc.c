@@ -46,8 +46,10 @@
 #define HAP_MAX_CHUNKS 64
 
 enum HapHeaderLength {
-    HAP_HDR_4_BYTE = 4,
-    HAP_HDR_8_BYTE = 8,
+    /* Short header: four bytes with a 24 bit size value */
+    HAP_HDR_SHORT = 4,
+    /* Long header: eight bytes with a 32 bit size value */
+    HAP_HDR_LONG = 8,
 };
 
 static void compress_texture(AVCodecContext *avctx, const AVFrame *f)
@@ -75,10 +77,10 @@ static void hap_write_section_header(PutByteContext *pbc,
      * header) or zero if using an eight-byte header.
      * For an eight-byte header, the length is in the last four bytes.
      * The fourth byte stores the section type. */
-    bytestream2_put_le24(pbc, header_length == HAP_HDR_8_BYTE ? 0 : section_length);
+    bytestream2_put_le24(pbc, header_length == HAP_HDR_LONG ? 0 : section_length);
     bytestream2_put_byte(pbc, section_type);
 
-    if (header_length == HAP_HDR_8_BYTE) {
+    if (header_length == HAP_HDR_LONG) {
         bytestream2_put_le32(pbc, section_length);
     }
 }
@@ -133,19 +135,21 @@ static int hap_compress_frame(AVCodecContext *avctx, uint8_t *dst)
 
 static int hap_decode_instructions_length(HapContext *ctx)
 {
-    /* = Second-Stage Compressor Table + Chunk Size Table + headers for both sections
-     * = chunk_count + (4 * chunk_count) + 4 + 4 */
+    /*    Second-Stage Compressor Table (one byte per entry)
+     *  + Chunk Size Table (four bytes per entry)
+     *  + headers for both sections (short versions)
+     *  = chunk_count + (4 * chunk_count) + 4 + 4 */
     return (5 * ctx->chunk_count) + 8;
 }
 
 static int hap_header_length(HapContext *ctx)
 {
     /* Top section header (long version) */
-    int length = HAP_HDR_8_BYTE;
+    int length = HAP_HDR_LONG;
 
     if (ctx->chunk_count > 1) {
         /* Decode Instructions header (short) + Decode Instructions Container */
-        length += HAP_HDR_4_BYTE + hap_decode_instructions_length(ctx);
+        length += HAP_HDR_SHORT + hap_decode_instructions_length(ctx);
     }
 
     return length;
@@ -159,22 +163,22 @@ static void hap_write_frame_header(HapContext *ctx, uint8_t *dst, int frame_leng
     bytestream2_init_writer(&pbc, dst, frame_length);
     if (ctx->chunk_count == 1) {
         /* Write a simple header */
-        hap_write_section_header(&pbc, HAP_HDR_8_BYTE, frame_length - 8,
+        hap_write_section_header(&pbc, HAP_HDR_LONG, frame_length - 8,
                                  ctx->chunks[0].compressor | ctx->opt_tex_fmt);
     } else {
         /* Write a complex header with Decode Instructions Container */
-        hap_write_section_header(&pbc, HAP_HDR_8_BYTE, frame_length - 8,
+        hap_write_section_header(&pbc, HAP_HDR_LONG, frame_length - 8,
                                  HAP_COMP_COMPLEX | ctx->opt_tex_fmt);
-        hap_write_section_header(&pbc, HAP_HDR_4_BYTE, hap_decode_instructions_length(ctx),
+        hap_write_section_header(&pbc, HAP_HDR_SHORT, hap_decode_instructions_length(ctx),
                                  HAP_ST_DECODE_INSTRUCTIONS);
-        hap_write_section_header(&pbc, HAP_HDR_4_BYTE, ctx->chunk_count,
+        hap_write_section_header(&pbc, HAP_HDR_SHORT, ctx->chunk_count,
                                  HAP_ST_COMPRESSOR_TABLE);
 
         for (i = 0; i < ctx->chunk_count; i++) {
             bytestream2_put_byte(&pbc, ctx->chunks[i].compressor >> 4);
         }
 
-        hap_write_section_header(&pbc, HAP_HDR_4_BYTE, ctx->chunk_count * 4,
+        hap_write_section_header(&pbc, HAP_HDR_SHORT, ctx->chunk_count * 4,
                                  HAP_ST_SIZE_TABLE);
 
         for (i = 0; i < ctx->chunk_count; i++) {

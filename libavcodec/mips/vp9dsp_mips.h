@@ -88,4 +88,65 @@ VP9_COPY_AVG_MIPS_MSA_FUNC(4);
 #undef VP9_8TAP_MIPS_MSA_FUNC
 #undef VP9_COPY_AVG_MIPS_MSA_FUNC
 
+void ff_loop_filter_h_4_8_msa(uint8_t *dst, ptrdiff_t stride, int32_t e,
+                              int32_t i, int32_t h);
+void ff_loop_filter_h_8_8_msa(uint8_t *dst, ptrdiff_t stride, int32_t e,
+                              int32_t i, int32_t h);
+void ff_loop_filter_h_16_8_msa(uint8_t *dst, ptrdiff_t stride, int32_t e,
+                               int32_t i, int32_t h);
+void ff_loop_filter_v_4_8_msa(uint8_t *dst, ptrdiff_t stride, int32_t e,
+                              int32_t i, int32_t h);
+void ff_loop_filter_v_8_8_msa(uint8_t *dst, ptrdiff_t stride, int32_t e,
+                              int32_t i, int32_t h);
+void ff_loop_filter_v_16_8_msa(uint8_t *dst, ptrdiff_t stride, int32_t e,
+                               int32_t i, int32_t h);
+void ff_loop_filter_h_44_16_msa(uint8_t *dst, ptrdiff_t stride, int32_t e,
+                                int32_t i, int32_t h);
+void ff_loop_filter_h_88_16_msa(uint8_t *dst, ptrdiff_t stride, int32_t e,
+                                int32_t i, int32_t h);
+void ff_loop_filter_h_16_16_msa(uint8_t *dst, ptrdiff_t stride, int32_t e,
+                                int32_t i, int32_t h);
+void ff_loop_filter_v_44_16_msa(uint8_t *dst, ptrdiff_t stride, int32_t e,
+                                int32_t i, int32_t h);
+void ff_loop_filter_v_88_16_msa(uint8_t *dst, ptrdiff_t stride, int32_t e,
+                                int32_t i, int32_t h);
+void ff_loop_filter_v_16_16_msa(uint8_t *dst, ptrdiff_t stride, int32_t e,
+                                int32_t i, int32_t h);
+void ff_loop_filter_h_48_16_msa(uint8_t *dst, ptrdiff_t stride, int32_t e,
+                                int32_t i, int32_t h);
+void ff_loop_filter_h_84_16_msa(uint8_t *dst, ptrdiff_t stride, int32_t e,
+                                int32_t i, int32_t h);
+void ff_loop_filter_v_48_16_msa(uint8_t *dst, ptrdiff_t stride, int32_t e,
+                                int32_t i, int32_t h);
+void ff_loop_filter_v_84_16_msa(uint8_t *dst, ptrdiff_t stride, int32_t e,
+                                int32_t i, int32_t h);
+void ff_idct_idct_4x4_add_msa(uint8_t *dst, ptrdiff_t stride,
+                              int16_t *block, int eob);
+void ff_idct_idct_8x8_add_msa(uint8_t *dst, ptrdiff_t stride,
+                              int16_t *block, int eob);
+void ff_idct_idct_16x16_add_msa(uint8_t *dst, ptrdiff_t stride,
+                                int16_t *block, int eob);
+void ff_idct_idct_32x32_add_msa(uint8_t *dst, ptrdiff_t stride,
+                                int16_t *block, int eob);
+void ff_iadst_iadst_4x4_add_msa(uint8_t *dst, ptrdiff_t stride,
+                                int16_t *block, int eob);
+void ff_iadst_iadst_8x8_add_msa(uint8_t *dst, ptrdiff_t stride,
+                                int16_t *block, int eob);
+void ff_iadst_iadst_16x16_add_msa(uint8_t *dst, ptrdiff_t stride,
+                                  int16_t *block, int eob);
+void ff_iadst_idct_4x4_add_msa(uint8_t *dst, ptrdiff_t stride,
+                               int16_t *block, int eob);
+void ff_iadst_idct_8x8_add_msa(uint8_t *dst, ptrdiff_t stride,
+                               int16_t *block, int eob);
+void ff_iadst_idct_16x16_add_msa(uint8_t *dst, ptrdiff_t stride,
+                                 int16_t *block, int eob);
+void ff_idct_iadst_4x4_add_msa(uint8_t *pu8Dest, ptrdiff_t stride,
+                               int16_t *block, int eob);
+void ff_idct_iadst_8x8_add_msa(uint8_t *pu8Dest, ptrdiff_t stride,
+                               int16_t *block, int eob);
+void ff_idct_iadst_16x16_add_msa(uint8_t *pu8Dest, ptrdiff_t stride,
+                                 int16_t *block, int eob);
+void ff_iwht_iwht_4x4_add_msa(uint8_t *dst, ptrdiff_t stride,
+                              int16_t *block, int eob);
+
 #endif  // #ifndef AVCODEC_MIPS_VP9DSP_MIPS_H

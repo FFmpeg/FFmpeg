@@ -307,6 +307,7 @@ static int hap_decode(AVCodecContext *avctx, void *data,
     HapContext *ctx = avctx->priv_data;
     ThreadFrame tframe;
     int ret, i;
+    int tex_size;
 
     bytestream2_init(&ctx->gbc, avpkt->data, avpkt->size);
 
@@ -327,6 +328,7 @@ static int hap_decode(AVCodecContext *avctx, void *data,
     if (hap_can_use_tex_in_place(ctx)) {
         /* Only DXTC texture compression in a contiguous block */
         ctx->tex_data = ctx->gbc.buffer;
+        tex_size = bytestream2_get_bytes_left(&ctx->gbc);
     } else {
         /* Perform the second-stage decompression */
         ret = av_reallocp(&ctx->tex_buf, ctx->tex_size);
@@ -342,6 +344,14 @@ static int hap_decode(AVCodecContext *avctx, void *data,
         }
 
         ctx->tex_data = ctx->tex_buf;
+        tex_size = ctx->tex_size;
+    }
+
+    if (tex_size < (avctx->coded_width  / TEXTURE_BLOCK_W)
+                  *(avctx->coded_height / TEXTURE_BLOCK_H)
+                  *ctx->tex_rat) {
+        av_log(avctx, AV_LOG_ERROR, "Insufficient data\n");
+        return AVERROR_INVALIDDATA;
     }
 
     /* Use the decompress function on the texture, one block per thread */

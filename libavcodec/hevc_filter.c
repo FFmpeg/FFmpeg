@@ -843,7 +843,8 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
 void ff_hevc_hls_filter(HEVCContext *s, int x, int y, int ctb_size)
 {
     int x_end = x >= s->ps.sps->width  - ctb_size;
-    deblocking_filter_CTB(s, x, y);
+    if (s->avctx->skip_loop_filter < AVDISCARD_ALL)
+        deblocking_filter_CTB(s, x, y);
     if (s->ps.sps->sao_enabled) {
         int y_end = y >= s->ps.sps->height - ctb_size;
         if (y && x)

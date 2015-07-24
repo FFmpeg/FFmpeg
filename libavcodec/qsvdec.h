@@ -49,6 +49,11 @@ typedef struct QSVContext {
     QSVFrame *work_frames;
 
     AVFifoBuffer *async_fifo;
+    AVFifoBuffer *input_fifo;
+
+    // this flag indicates that header parsed,
+    // decoder instance created and ready to general decoding
+    int engine_ready;
 
     // options set by the caller
     int async_depth;
