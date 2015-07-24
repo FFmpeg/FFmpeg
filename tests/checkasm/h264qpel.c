@@ -22,6 +22,7 @@
 #include "checkasm.h"
 #include "libavcodec/h264qpel.h"
 #include "libavutil/common.h"
+#include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 
 static const uint32_t pixel_mask[3] = { 0xffffffff, 0x01ff01ff, 0x03ff03ff };
@@ -48,10 +49,10 @@ static const uint32_t pixel_mask[3] = { 0xffffffff, 0x01ff01ff, 0x03ff03ff };
 
 void checkasm_check_h264qpel(void)
 {
-    DECLARE_ALIGNED(16, uint8_t, buf0)[BUF_SIZE];
-    DECLARE_ALIGNED(16, uint8_t, buf1)[BUF_SIZE];
-    DECLARE_ALIGNED(16, uint8_t, dst0)[BUF_SIZE];
-    DECLARE_ALIGNED(16, uint8_t, dst1)[BUF_SIZE];
+    LOCAL_ALIGNED_16(uint8_t, buf0, [BUF_SIZE]);
+    LOCAL_ALIGNED_16(uint8_t, buf1, [BUF_SIZE]);
+    LOCAL_ALIGNED_16(uint8_t, dst0, [BUF_SIZE]);
+    LOCAL_ALIGNED_16(uint8_t, dst1, [BUF_SIZE]);
     H264QpelContext h;
     int op, bit_depth, i, j;
 

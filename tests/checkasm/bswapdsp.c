@@ -22,6 +22,7 @@
 #include "checkasm.h"
 #include "libavcodec/bswapdsp.h"
 #include "libavutil/common.h"
+#include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 
 #define BUF_SIZE 512
@@ -55,10 +56,10 @@
 
 void checkasm_check_bswapdsp(void)
 {
-    DECLARE_ALIGNED(16, uint8_t, src0)[BUF_SIZE];
-    DECLARE_ALIGNED(16, uint8_t, src1)[BUF_SIZE];
-    DECLARE_ALIGNED(16, uint8_t, dst0)[BUF_SIZE];
-    DECLARE_ALIGNED(16, uint8_t, dst1)[BUF_SIZE];
+    LOCAL_ALIGNED_16(uint8_t, src0, [BUF_SIZE]);
+    LOCAL_ALIGNED_16(uint8_t, src1, [BUF_SIZE]);
+    LOCAL_ALIGNED_16(uint8_t, dst0, [BUF_SIZE]);
+    LOCAL_ALIGNED_16(uint8_t, dst1, [BUF_SIZE]);
     BswapDSPContext h;
 
     ff_bswapdsp_init(&h);
