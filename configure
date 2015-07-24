@@ -3183,7 +3183,7 @@ case "$toolchain" in
         else
             cc_default="c99wrap cl"
         fi
-        ld_default="link"
+        ld_default="$source_path/compat/windows/mslink"
         nm_default="dumpbin -symbols"
         ar_default="lib"
         target_os_default="win32"
