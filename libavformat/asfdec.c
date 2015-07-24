@@ -1308,12 +1308,14 @@ static int asf_read_packet_header(AVFormatContext *s)
 
     asf->packet_offset = avio_tell(pb);
     error_flags = avio_r8(pb); // read Error Correction Flags
-    if (error_flags & ASF_PACKET_FLAG_ERROR_CORRECTION_PRESENT)
+    if (error_flags & ASF_PACKET_FLAG_ERROR_CORRECTION_PRESENT) {
         if (!(error_flags & ASF_ERROR_CORRECTION_LENGTH_TYPE)) {
             size = error_flags & ASF_PACKET_ERROR_CORRECTION_DATA_SIZE;
             avio_skip(pb, size);
         }
-    len_flags       = avio_r8(pb);
+        len_flags       = avio_r8(pb);
+    } else
+        len_flags = error_flags;
     asf->prop_flags = avio_r8(pb);
     READ_LEN(len_flags & ASF_PPI_MASK_PACKET_LENGTH_FIELD_SIZE,
              ASF_PPI_FLAG_PACKET_LENGTH_FIELD_, asf->packet_size_internal);
