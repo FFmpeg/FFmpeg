@@ -1018,7 +1018,7 @@ static inline void FUNC(put_hevc_epel_h)(int16_t *dst, ptrdiff_t dststride,
     int x, y;
     pixel *src = (pixel *)_src;
     ptrdiff_t srcstride  = _srcstride / sizeof(pixel);
-    const int8_t *filter = ff_hevc_epel_filters[mx - 1];
+    const int16_t *filter = ff_hevc_epel_coeffs[mx - 1];
     int8_t filter_0 = filter[0];
     int8_t filter_1 = filter[1];
     int8_t filter_2 = filter[2];
@@ -1040,7 +1040,7 @@ static inline void FUNC(put_hevc_epel_v)(int16_t *dst, ptrdiff_t dststride,
     int x, y;
     pixel *src = (pixel *)_src;
     ptrdiff_t srcstride = _srcstride / sizeof(pixel);
-    const int8_t *filter = ff_hevc_epel_filters[my - 1];
+    const int16_t *filter = ff_hevc_epel_coeffs[my - 1];
     int8_t filter_0 = filter[0];
     int8_t filter_1 = filter[1];
     int8_t filter_2 = filter[2];
@@ -1063,8 +1063,8 @@ static inline void FUNC(put_hevc_epel_hv)(int16_t *dst, ptrdiff_t dststride,
     int x, y;
     pixel *src = (pixel *)_src;
     ptrdiff_t srcstride = _srcstride / sizeof(pixel);
-    const int8_t *filter_h = ff_hevc_epel_filters[mx - 1];
-    const int8_t *filter_v = ff_hevc_epel_filters[my - 1];
+    const int16_t *filter_h = ff_hevc_epel_coeffs[mx - 1];
+    const int16_t *filter_v = ff_hevc_epel_coeffs[my - 1];
     int8_t filter_0 = filter_h[0];
     int8_t filter_1 = filter_h[1];
     int8_t filter_2 = filter_h[2];

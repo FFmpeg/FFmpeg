@@ -38,9 +38,9 @@
 #include "golomb.h"
 #include "hevc.h"
 
-const uint8_t ff_hevc_qpel_extra_before[4] = { 0, 3, 3, 2 };
-const uint8_t ff_hevc_qpel_extra_after[4]  = { 0, 3, 4, 4 };
-const uint8_t ff_hevc_qpel_extra[4]        = { 0, 6, 7, 6 };
+const uint8_t ff_hevc_qpel_extra_before[4] = { 0, 3, 3, 3 };
+const uint8_t ff_hevc_qpel_extra_after[4]  = { 0, 4, 4, 4 };
+const uint8_t ff_hevc_qpel_extra[4]        = { 0, 7, 7, 7 };
 
 static const uint8_t scan_1x1[1] = { 0 };
 
