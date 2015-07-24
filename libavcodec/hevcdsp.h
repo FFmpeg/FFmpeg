@@ -65,18 +65,30 @@ typedef struct HEVCDSPContext {
                                    ptrdiff_t srcstride, int height,
                                    int mx, int my, int16_t *mcbuffer);
 
-    void (*put_unweighted_pred)(uint8_t *dst, ptrdiff_t dststride, int16_t *src,
-                                ptrdiff_t srcstride, int width, int height);
-    void (*put_unweighted_pred_avg)(uint8_t *dst, ptrdiff_t dststride,
-                                    int16_t *src1, int16_t *src2,
-                                    ptrdiff_t srcstride, int width, int height);
-    void (*weighted_pred)(uint8_t denom, int16_t wlxFlag, int16_t olxFlag,
-                          uint8_t *dst, ptrdiff_t dststride, int16_t *src,
-                          ptrdiff_t srcstride, int width, int height);
-    void (*weighted_pred_avg)(uint8_t denom, int16_t wl0Flag, int16_t wl1Flag,
-                              int16_t ol0Flag, int16_t ol1Flag, uint8_t *dst,
-                              ptrdiff_t dststride, int16_t *src1, int16_t *src2,
-                              ptrdiff_t srcstride, int width, int height);
+    void (*put_unweighted_pred[8])(uint8_t *dst, ptrdiff_t dststride, int16_t *src,
+                                   ptrdiff_t srcstride, int height);
+    void (*put_unweighted_pred_chroma[8])(uint8_t *dst, ptrdiff_t dststride, int16_t *src,
+                                          ptrdiff_t srcstride, int height);
+    void (*put_unweighted_pred_avg[8])(uint8_t *dst, ptrdiff_t dststride,
+                                       int16_t *src1, int16_t *src2,
+                                       ptrdiff_t srcstride, int height);
+    void (*put_unweighted_pred_avg_chroma[8])(uint8_t *dst, ptrdiff_t dststride,
+                                              int16_t *src1, int16_t *src2,
+                                              ptrdiff_t srcstride, int height);
+    void (*weighted_pred[8])(uint8_t denom, int16_t wlxFlag, int16_t olxFlag,
+                             uint8_t *dst, ptrdiff_t dststride, int16_t *src,
+                             ptrdiff_t srcstride, int height);
+    void (*weighted_pred_chroma[8])(uint8_t denom, int16_t wlxFlag, int16_t olxFlag,
+                                    uint8_t *dst, ptrdiff_t dststride, int16_t *src,
+                                    ptrdiff_t srcstride, int height);
+    void (*weighted_pred_avg[8])(uint8_t denom, int16_t wl0Flag, int16_t wl1Flag,
+                                 int16_t ol0Flag, int16_t ol1Flag, uint8_t *dst,
+                                 ptrdiff_t dststride, int16_t *src1, int16_t *src2,
+                                 ptrdiff_t srcstride, int height);
+    void (*weighted_pred_avg_chroma[8])(uint8_t denom, int16_t wl0Flag, int16_t wl1Flag,
+                                        int16_t ol0Flag, int16_t ol1Flag, uint8_t *dst,
+                                        ptrdiff_t dststride, int16_t *src1, int16_t *src2,
+                                        ptrdiff_t srcstride, int height);
 
     void (*hevc_h_loop_filter_luma)(uint8_t *pix, ptrdiff_t stride,
                                     int beta, int *tc,

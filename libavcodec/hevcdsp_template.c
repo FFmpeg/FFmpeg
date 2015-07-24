@@ -1130,9 +1130,10 @@ EPEL(6)
 EPEL(4)
 EPEL(2)
 
-static void FUNC(put_unweighted_pred)(uint8_t *_dst, ptrdiff_t _dststride,
-                                      int16_t *src, ptrdiff_t srcstride,
-                                      int width, int height)
+static av_always_inline void
+FUNC(put_unweighted_pred)(uint8_t *_dst, ptrdiff_t _dststride,
+                          int16_t *src, ptrdiff_t srcstride,
+                          int width, int height)
 {
     int x, y;
     pixel *dst          = (pixel *)_dst;
@@ -1152,10 +1153,11 @@ static void FUNC(put_unweighted_pred)(uint8_t *_dst, ptrdiff_t _dststride,
     }
 }
 
-static void FUNC(put_unweighted_pred_avg)(uint8_t *_dst, ptrdiff_t _dststride,
-                                          int16_t *src1, int16_t *src2,
-                                          ptrdiff_t srcstride,
-                                          int width, int height)
+static av_always_inline void
+FUNC(put_unweighted_pred_avg)(uint8_t *_dst, ptrdiff_t _dststride,
+                              int16_t *src1, int16_t *src2,
+                              ptrdiff_t srcstride,
+                              int width, int height)
 {
     int x, y;
     pixel *dst          = (pixel *)_dst;
@@ -1177,10 +1179,11 @@ static void FUNC(put_unweighted_pred_avg)(uint8_t *_dst, ptrdiff_t _dststride,
     }
 }
 
-static void FUNC(weighted_pred)(uint8_t denom, int16_t wlxFlag, int16_t olxFlag,
-                                uint8_t *_dst, ptrdiff_t _dststride,
-                                int16_t *src, ptrdiff_t srcstride,
-                                int width, int height)
+static av_always_inline void
+FUNC(weighted_pred)(uint8_t denom, int16_t wlxFlag, int16_t olxFlag,
+                    uint8_t *_dst, ptrdiff_t _dststride,
+                    int16_t *src, ptrdiff_t srcstride,
+                    int width, int height)
 {
     int shift, log2Wd, wx, ox, x, y, offset;
     pixel *dst          = (pixel *)_dst;
@@ -1205,13 +1208,14 @@ static void FUNC(weighted_pred)(uint8_t denom, int16_t wlxFlag, int16_t olxFlag,
     }
 }
 
-static void FUNC(weighted_pred_avg)(uint8_t denom,
-                                    int16_t wl0Flag, int16_t wl1Flag,
-                                    int16_t ol0Flag, int16_t ol1Flag,
-                                    uint8_t *_dst, ptrdiff_t _dststride,
-                                    int16_t *src1, int16_t *src2,
-                                    ptrdiff_t srcstride,
-                                    int width, int height)
+static av_always_inline void
+FUNC(weighted_pred_avg)(uint8_t denom,
+                        int16_t wl0Flag, int16_t wl1Flag,
+                        int16_t ol0Flag, int16_t ol1Flag,
+                        uint8_t *_dst, ptrdiff_t _dststride,
+                        int16_t *src1, int16_t *src2,
+                        ptrdiff_t srcstride,
+                        int width, int height)
 {
     int shift, log2Wd, w0, w1, o0, o1, x, y;
     pixel *dst = (pixel *)_dst;
@@ -1233,6 +1237,47 @@ static void FUNC(weighted_pred_avg)(uint8_t denom,
         src2 += srcstride;
     }
 }
+
+#define PUT_PRED(w)                                                                            \
+static void FUNC(put_unweighted_pred_ ## w)(uint8_t *dst, ptrdiff_t dststride,                 \
+                                            int16_t *src, ptrdiff_t srcstride,                 \
+                                            int height)                                        \
+{                                                                                              \
+    FUNC(put_unweighted_pred)(dst, dststride, src, srcstride, w, height);                      \
+}                                                                                              \
+static void FUNC(put_unweighted_pred_avg_ ## w)(uint8_t *dst, ptrdiff_t dststride,             \
+                                                int16_t *src1, int16_t *src2,                  \
+                                                ptrdiff_t srcstride, int height)               \
+{                                                                                              \
+    FUNC(put_unweighted_pred_avg)(dst, dststride, src1, src2, srcstride, w, height);           \
+}                                                                                              \
+static void FUNC(put_weighted_pred_ ## w)(uint8_t denom, int16_t weight, int16_t offset,       \
+                                          uint8_t *dst, ptrdiff_t dststride,                   \
+                                          int16_t *src, ptrdiff_t srcstride, int height)       \
+{                                                                                              \
+    FUNC(weighted_pred)(denom, weight, offset,                                                 \
+                        dst, dststride, src, srcstride, w, height);                            \
+}                                                                                              \
+static void FUNC(put_weighted_pred_avg_ ## w)(uint8_t denom, int16_t weight0, int16_t weight1, \
+                                              int16_t offset0, int16_t offset1,                \
+                                              uint8_t *dst, ptrdiff_t dststride,               \
+                                              int16_t *src1, int16_t *src2,                    \
+                                              ptrdiff_t srcstride, int height)                 \
+{                                                                                              \
+    FUNC(weighted_pred_avg)(denom, weight0, weight1, offset0, offset1,                         \
+                            dst, dststride, src1, src2, srcstride, w, height);                 \
+}
+
+PUT_PRED(64)
+PUT_PRED(48)
+PUT_PRED(32)
+PUT_PRED(24)
+PUT_PRED(16)
+PUT_PRED(12)
+PUT_PRED(8)
+PUT_PRED(6)
+PUT_PRED(4)
+PUT_PRED(2)
 
 // line zero
 #define P3 pix[-4 * xstride]
