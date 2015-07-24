@@ -1507,7 +1507,7 @@ again:
                     (avctx->skip_frame < AVDISCARD_BIDIR  ||
                      sl->slice_type_nos != AV_PICTURE_TYPE_B) &&
                     (avctx->skip_frame < AVDISCARD_NONKEY ||
-                     sl->slice_type_nos == AV_PICTURE_TYPE_I) &&
+                     h->cur_pic_ptr->f->key_frame) &&
                     avctx->skip_frame < AVDISCARD_ALL) {
                     if (avctx->hwaccel) {
                         ret = avctx->hwaccel->decode_slice(avctx,
