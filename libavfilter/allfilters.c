@@ -158,6 +158,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER(FORMAT,         format,         vf);
     REGISTER_FILTER(FPS,            fps,            vf);
     REGISTER_FILTER(FRAMEPACK,      framepack,      vf);
+    REGISTER_FILTER(FRAMERATE,      framerate,      vf);
     REGISTER_FILTER(FRAMESTEP,      framestep,      vf);
     REGISTER_FILTER(FREI0R,         frei0r,         vf);
     REGISTER_FILTER(FSPP,           fspp,           vf);
