@@ -3794,8 +3794,19 @@ probe_libc(){
         # in such new versions and producing binaries requiring windows 7.0.
         # Therefore explicitly set the default to XP unless the user has
         # set something else on the command line.
+        # Don't do this if WINAPI_FAMILY is set and is set to a non-desktop
+        # family. For these cases, configure is free to use any functions
+        # found in the SDK headers by default. (Alternatively, we could force
+        # _WIN32_WINNT to 0x0602 in that case.)
         check_${pfx}cpp_condition stdlib.h "defined(_WIN32_WINNT)" ||
-            add_${pfx}cppflags -D_WIN32_WINNT=0x0502
+            { check_${pfx}cpp <<EOF && add_${pfx}cppflags -D_WIN32_WINNT=0x0502; }
+#ifdef WINAPI_FAMILY
+#include <winapifamily.h>
+#if !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
+#error not desktop
+#endif
+#endif
+EOF
     elif check_${pfx}cpp_condition stddef.h "defined __KLIBC__"; then
         eval ${pfx}libc_type=klibc
     elif check_${pfx}cpp_condition sys/cdefs.h "defined __BIONIC__"; then
