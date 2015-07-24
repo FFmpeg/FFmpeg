@@ -55,7 +55,7 @@ static av_unused intptr_t (*func_new)();
 #define fail() checkasm_fail_func("%s:%d", av_basename(__FILE__), __LINE__)
 
 /* Print the test outcome */
-#define report(...) checkasm_report("" __VA_ARGS__)
+#define report checkasm_report
 
 /* Call the reference function */
 #define call_ref(...) func_ref(__VA_ARGS__)
