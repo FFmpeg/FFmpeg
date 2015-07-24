@@ -294,6 +294,7 @@ static int dv_decode_video_segment(AVCodecContext *avctx, void *arg)
     int vs_bit_buffer_damaged = 0;
     int mb_bit_buffer_damaged[5] = {0};
     int retried = 0;
+    int sta;
 
     av_assert1((((int) mb_bit_buffer) & 7) == 0);
     av_assert1((((int) vs_bit_buffer) & 7) == 0);
@@ -310,6 +311,12 @@ retry:
     for (mb_index = 0; mb_index < 5; mb_index++, mb1 += s->sys->bpm, block1 += s->sys->bpm * 64) {
         /* skip header */
         quant    = buf_ptr[3] & 0x0f;
+        if ((buf_ptr[3] >> 4) == 0x0E)
+            vs_bit_buffer_damaged = 1;
+        if (!mb_index) {
+            sta = buf_ptr[3] >> 4;
+        } else if (sta != (buf_ptr[3] >> 4))
+            vs_bit_buffer_damaged = 1;
         buf_ptr += 4;
         init_put_bits(&pb, mb_bit_buffer, 80);
         mb    = mb1;
