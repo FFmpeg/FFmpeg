@@ -18,6 +18,7 @@ EXAMPLES=       avio_list_dir                      \
                 extract_mvs                        \
                 filtering_video                    \
                 filtering_audio                    \
+                http_multiclient                   \
                 metadata                           \
                 muxing                             \
                 remuxing                           \
