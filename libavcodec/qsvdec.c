@@ -125,10 +125,12 @@ int ff_qsv_decode_init(AVCodecContext *avctx, QSVContext *q, AVPacket *avpkt)
        HEVC which is 16 for both cases.
        So weare  pre-allocating fifo big enough for 17 elements:
      */
-    q->async_fifo = av_fifo_alloc((1 + 16) *
-                                  (sizeof(mfxSyncPoint) + sizeof(QSVFrame*)));
-    if (!q->async_fifo)
-        return AVERROR(ENOMEM);
+    if (!q->async_fifo) {
+        q->async_fifo = av_fifo_alloc((1 + 16) *
+                                      (sizeof(mfxSyncPoint) + sizeof(QSVFrame*)));
+        if (!q->async_fifo)
+            return AVERROR(ENOMEM);
+    }
 
     q->input_fifo = av_fifo_alloc(1024*16);
     if (!q->input_fifo)
