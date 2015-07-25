@@ -840,6 +840,8 @@ static int nvenc_setup_surfaces(AVCodecContext *avctx)
 
     ctx->nb_surfaces = FFMAX(4 + avctx->max_b_frames,
                              ctx->nb_surfaces);
+    ctx->async_depth = FFMIN(ctx->async_depth, ctx->nb_surfaces - 1);
+
 
     ctx->frames = av_mallocz_array(ctx->nb_surfaces, sizeof(*ctx->frames));
     if (!ctx->frames)
@@ -1301,13 +1303,19 @@ FF_ENABLE_DEPRECATION_WARNINGS
 static int output_ready(AVCodecContext *avctx, int flush)
 {
     NVENCContext *ctx = avctx->priv_data;
+    int nb_ready, nb_pending;
 
     /* when B-frames are enabled, we wait for two initial timestamps to
      * calculate the first dts */
     if (!flush && avctx->max_b_frames > 0 &&
         (ctx->initial_pts[0] == AV_NOPTS_VALUE || ctx->initial_pts[1] == AV_NOPTS_VALUE))
         return 0;
-    return av_fifo_size(ctx->ready) > 0;
+
+    nb_ready   = av_fifo_size(ctx->ready)   / sizeof(NVENCFrame*);
+    nb_pending = av_fifo_size(ctx->pending) / sizeof(NVENCFrame*);
+    if (flush)
+        return nb_ready > 0;
+    return (nb_ready > 0) && (nb_ready + nb_pending >= ctx->async_depth);
 }
 
 int ff_nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
