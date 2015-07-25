@@ -25,6 +25,7 @@ version <next>:
 - deband filter
 - AAC fixed-point decoding
 - sidechaincompress audio filter
+- bitstream filter for converting HEVC from MP4 to Annex B
 
 
 version 2.7:
