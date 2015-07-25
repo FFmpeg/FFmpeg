@@ -224,5 +224,7 @@ av_cold void AAC_RENAME(ff_psdsp_init)(PSDSPContext *s)
         ff_psdsp_init_arm(s);
     if (ARCH_MIPS)
         ff_psdsp_init_mips(s);
+    if (ARCH_X86)
+        ff_psdsp_init_x86(s);
 #endif /* !USE_FIXED */
 }
