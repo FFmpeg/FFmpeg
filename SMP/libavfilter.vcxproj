@@ -137,6 +137,8 @@
     </ClCompile>
     <ClCompile Include="..\libavfilter\af_aresample.c">
     </ClCompile>
+    <ClCompile Include="..\libavfilter\f_reverse.c">
+    </ClCompile>
     <ClCompile Include="..\libavfilter\f_select.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\f_sendcmd.c">
@@ -384,8 +386,6 @@
     <ClCompile Include="..\libavfilter\vf_removelogo.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_repeatfields.c">
-    </ClCompile>
-    <ClCompile Include="..\libavfilter\vf_reverse.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_rotate.c">
     </ClCompile>
