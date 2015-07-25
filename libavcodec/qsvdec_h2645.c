@@ -241,7 +241,7 @@ AVCodec ff_hevc_qsv_decoder = {
     .decode         = qsv_decode_frame,
     .flush          = qsv_decode_flush,
     .close          = qsv_decode_close,
-    .capabilities   = CODEC_CAP_DELAY,
+    .capabilities   = CODEC_CAP_DELAY | CODEC_CAP_DR1,
     .priv_class     = &hevc_class,
 };
 #endif
@@ -276,7 +276,7 @@ AVCodec ff_h264_qsv_decoder = {
     .decode         = qsv_decode_frame,
     .flush          = qsv_decode_flush,
     .close          = qsv_decode_close,
-    .capabilities   = CODEC_CAP_DELAY,
+    .capabilities   = CODEC_CAP_DELAY | CODEC_CAP_DR1,
     .priv_class     = &class,
 };
 #endif

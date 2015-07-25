@@ -174,6 +174,6 @@ AVCodec ff_mpeg2_qsv_decoder = {
     .decode         = qsv_decode_frame,
     .flush          = qsv_decode_flush,
     .close          = qsv_decode_close,
-    .capabilities   = CODEC_CAP_DELAY,
+    .capabilities   = CODEC_CAP_DELAY | CODEC_CAP_DR1,
     .priv_class     = &class,
 };
