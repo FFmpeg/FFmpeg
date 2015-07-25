@@ -311,12 +311,14 @@ retry:
     for (mb_index = 0; mb_index < 5; mb_index++, mb1 += s->sys->bpm, block1 += s->sys->bpm * 64) {
         /* skip header */
         quant    = buf_ptr[3] & 0x0f;
-        if ((buf_ptr[3] >> 4) == 0x0E)
-            vs_bit_buffer_damaged = 1;
-        if (!mb_index) {
-            sta = buf_ptr[3] >> 4;
-        } else if (sta != (buf_ptr[3] >> 4))
-            vs_bit_buffer_damaged = 1;
+        if (avctx->error_concealment) {
+            if ((buf_ptr[3] >> 4) == 0x0E)
+                vs_bit_buffer_damaged = 1;
+            if (!mb_index) {
+                sta = buf_ptr[3] >> 4;
+            } else if (sta != (buf_ptr[3] >> 4))
+                vs_bit_buffer_damaged = 1;
+        }
         buf_ptr += 4;
         init_put_bits(&pb, mb_bit_buffer, 80);
         mb    = mb1;
