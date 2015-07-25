@@ -3057,7 +3057,7 @@ probe_cc(){
         _ld_lib='lib%.a'
         _ld_path='-libpath:'
         _flags='-nologo'
-        _cflags='-D_USE_MATH_DEFINES -D_CRT_SECURE_NO_WARNINGS -Dinline=__inline -Dstrtoll=_strtoi64'
+        _cflags='-D_USE_MATH_DEFINES -D_CRT_SECURE_NO_WARNINGS -Dstrtoll=_strtoi64'
     elif $_cc 2>&1 | grep -q Intel; then
         _type=icl
         _ident=$($_cc 2>&1 | head -n1)
@@ -4690,6 +4690,17 @@ __declspec($_restrict) void* foo(int);
 EOF
     fi
 fi
+
+for pfx in "" host_; do
+    pfx_no_=${pfx%_}
+    varname=${pfx_no_}cc_type
+    eval "type=\$$varname"
+    if [ $type = "msvc" ]; then
+        check_${pfx}cc <<EOF || add_${pfx}cflags -Dinline=__inline
+static inline int foo(int a) { return a; }
+EOF
+    fi
+done
 
 case $as_type in
     clang)
