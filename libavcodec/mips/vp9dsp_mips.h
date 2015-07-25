@@ -149,4 +149,57 @@ void ff_idct_iadst_16x16_add_msa(uint8_t *pu8Dest, ptrdiff_t stride,
 void ff_iwht_iwht_4x4_add_msa(uint8_t *dst, ptrdiff_t stride,
                               int16_t *block, int eob);
 
+void ff_vert_16x16_msa(uint8_t *dst, ptrdiff_t stride, const uint8_t *left,
+                       const uint8_t *top);
+void ff_vert_32x32_msa(uint8_t *dst, ptrdiff_t stride, const uint8_t *left,
+                       const uint8_t *top);
+void ff_hor_16x16_msa(uint8_t *dst, ptrdiff_t stride, const uint8_t *left,
+                      const uint8_t *top);
+void ff_hor_32x32_msa(uint8_t *dst, ptrdiff_t stride, const uint8_t *left,
+                      const uint8_t *top);
+void ff_dc_4x4_msa(uint8_t *dst, ptrdiff_t stride, const uint8_t *left,
+                   const uint8_t *top);
+void ff_dc_8x8_msa(uint8_t *dst, ptrdiff_t stride, const uint8_t *left,
+                   const uint8_t *top);
+void ff_dc_16x16_msa(uint8_t *dst, ptrdiff_t stride, const uint8_t *left,
+                     const uint8_t *top);
+void ff_dc_32x32_msa(uint8_t *dst, ptrdiff_t stride, const uint8_t *left,
+                     const uint8_t *top);
+void ff_dc_left_4x4_msa(uint8_t *dst, ptrdiff_t stride, const uint8_t *left,
+                        const uint8_t *top);
+void ff_dc_left_8x8_msa(uint8_t *dst, ptrdiff_t stride, const uint8_t *left,
+                        const uint8_t *top);
+void ff_dc_left_16x16_msa(uint8_t *dst, ptrdiff_t stride,
+                          const uint8_t *left, const uint8_t *top);
+void ff_dc_left_32x32_msa(uint8_t *dst, ptrdiff_t stride,
+                          const uint8_t *left, const uint8_t *top);
+void ff_dc_top_4x4_msa(uint8_t *dst, ptrdiff_t stride, const uint8_t *left,
+                       const uint8_t *top);
+void ff_dc_top_8x8_msa(uint8_t *dst, ptrdiff_t stride, const uint8_t *left,
+                       const uint8_t *top);
+void ff_dc_top_16x16_msa(uint8_t *dst, ptrdiff_t stride,
+                         const uint8_t *left, const uint8_t *top);
+void ff_dc_top_32x32_msa(uint8_t *dst, ptrdiff_t stride,
+                         const uint8_t *left, const uint8_t *top);
+void ff_dc_128_16x16_msa(uint8_t *dst, ptrdiff_t stride,
+                         const uint8_t *left, const uint8_t *top);
+void ff_dc_128_32x32_msa(uint8_t *dst, ptrdiff_t stride,
+                         const uint8_t *left, const uint8_t *top);
+void ff_dc_127_16x16_msa(uint8_t *dst, ptrdiff_t stride,
+                         const uint8_t *left, const uint8_t *top);
+void ff_dc_127_32x32_msa(uint8_t *dst, ptrdiff_t stride,
+                         const uint8_t *left, const uint8_t *top);
+void ff_dc_129_16x16_msa(uint8_t *dst, ptrdiff_t stride,
+                         const uint8_t *left, const uint8_t *top);
+void ff_dc_129_32x32_msa(uint8_t *dst, ptrdiff_t stride,
+                         const uint8_t *left, const uint8_t *top);
+void ff_tm_4x4_msa(uint8_t *dst, ptrdiff_t stride, const uint8_t *left,
+                   const uint8_t *top);
+void ff_tm_8x8_msa(uint8_t *dst, ptrdiff_t stride, const uint8_t *left,
+                   const uint8_t *top);
+void ff_tm_16x16_msa(uint8_t *dst, ptrdiff_t stride, const uint8_t *left,
+                     const uint8_t *top);
+void ff_tm_32x32_msa(uint8_t *dst, ptrdiff_t stride, const uint8_t *left,
+                     const uint8_t *top);
+
 #endif  // #ifndef AVCODEC_MIPS_VP9DSP_MIPS_H

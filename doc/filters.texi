@@ -8489,7 +8489,7 @@ pixels will slow things down on a large logo.
 This filter uses the repeat_field flag from the Video ES headers and hard repeats
 fields based on its value.
 
-@section reverse
+@section reverse, areverse
 
 Reverse a clip.
 

@@ -3183,7 +3183,7 @@ case "$toolchain" in
         else
             cc_default="c99wrap cl"
         fi
-        ld_default="link"
+        ld_default="$source_path/compat/windows/mslink"
         nm_default="dumpbin -symbols"
         ar_default="lib"
         target_os_default="win32"
@@ -3382,6 +3382,7 @@ msvc_common_flags(){
             -lavifil32)           echo vfw32.lib ;;
             -lavicap32)           echo vfw32.lib user32.lib ;;
             -l*)                  echo ${flag#-l}.lib ;;
+            -LARGEADDRESSAWARE)   echo $flag ;;
             -L*)                  echo -libpath:${flag#-L} ;;
             *)                    echo $flag ;;
         esac

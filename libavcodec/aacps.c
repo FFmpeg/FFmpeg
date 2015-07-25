@@ -670,7 +670,7 @@ static void decorrelation(PSContext *ps, INTFLOAT (*out)[32][2], const INTFLOAT 
     const int8_t *k_to_i = is34 ? k_to_i_34 : k_to_i_20;
     int i, k, m, n;
     int n0 = 0, nL = 32;
-    const INTFLOAT peak_decay_factor = Q31(0.76592833836465f);;
+    const INTFLOAT peak_decay_factor = Q31(0.76592833836465f);
 
     memset(power, 0, 34 * sizeof(*power));
 

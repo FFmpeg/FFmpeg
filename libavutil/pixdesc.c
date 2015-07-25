@@ -1965,6 +1965,32 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
         .name = "mmal",
         .flags = AV_PIX_FMT_FLAG_HWACCEL,
     },
+    [AV_PIX_FMT_AYUV64LE] = {
+        .name = "ayuv64le",
+        .nb_components = 4,
+        .log2_chroma_w = 0,
+        .log2_chroma_h = 0,
+        .comp = {
+            { 0, 7, 3, 0, 15 },        /* Y */
+            { 0, 7, 5, 0, 15 },        /* U */
+            { 0, 7, 7, 0, 15 },        /* V */
+            { 0, 7, 1, 0, 15 },        /* A */
+        },
+        .flags = AV_PIX_FMT_FLAG_ALPHA,
+    },
+    [AV_PIX_FMT_AYUV64BE] = {
+        .name = "ayuv64be",
+        .nb_components = 4,
+        .log2_chroma_w = 0,
+        .log2_chroma_h = 0,
+        .comp = {
+            { 0, 7, 3, 0, 15 },        /* Y */
+            { 0, 7, 5, 0, 15 },        /* U */
+            { 0, 7, 7, 0, 15 },        /* V */
+            { 0, 7, 1, 0, 15 },        /* A */
+        },
+        .flags = AV_PIX_FMT_FLAG_BE | AV_PIX_FMT_FLAG_ALPHA,
+    },
 };
 
 static const char *color_range_names[AVCOL_RANGE_NB] = {
