@@ -2010,11 +2010,15 @@ yuv2ya8_X_c(SwsContext *c, const int16_t *lumFilter,
 
 static void
 yuv2ayuv64le_X_c(SwsContext *c, const int16_t *lumFilter,
-                 const int32_t **lumSrc, int lumFilterSize,
-                 const int16_t *chrFilter, const int32_t **chrUSrc,
-                 const int32_t **chrVSrc, int chrFilterSize,
-                 const int32_t **alpSrc, uint8_t *dest, int dstW, int y)
+                 const int16_t **_lumSrc, int lumFilterSize,
+                 const int16_t *chrFilter, const int16_t **_chrUSrc,
+                 const int16_t **_chrVSrc, int chrFilterSize,
+                 const int16_t **_alpSrc, uint8_t *dest, int dstW, int y)
 {
+    const int32_t **lumSrc  = (const int32_t **) _lumSrc,
+                  **chrUSrc = (const int32_t **) _chrUSrc,
+                  **chrVSrc = (const int32_t **) _chrVSrc,
+                  **alpSrc  = (const int32_t **) _alpSrc;
     int hasAlpha = !!alpSrc;
     int i;
 
