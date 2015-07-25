@@ -27,14 +27,14 @@
 #include "avcodec.h"
 #include "qsvdec.h"
 
-typedef struct QSVMPVContext {
+typedef struct QSVMPEG2Context {
     AVClass *class;
     QSVContext qsv;
-} QSVMPVContext;
+} QSVMPEG2Context;
 
 static av_cold int qsv_decode_close(AVCodecContext *avctx)
 {
-    QSVMPVContext *s = avctx->priv_data;
+    QSVMPEG2Context *s = avctx->priv_data;
 
     ff_qsv_decode_close(&s->qsv);
 
@@ -49,7 +49,7 @@ static av_cold int qsv_decode_init(AVCodecContext *avctx)
 static int qsv_decode_frame(AVCodecContext *avctx, void *data,
                             int *got_frame, AVPacket *avpkt)
 {
-    QSVMPVContext *s = avctx->priv_data;
+    QSVMPEG2Context *s = avctx->priv_data;
     AVFrame *frame    = data;
 
     return ff_qsv_decode(avctx, &s->qsv, frame, got_frame, avpkt);
@@ -66,7 +66,7 @@ AVHWAccel ff_mpeg2_qsv_hwaccel = {
     .pix_fmt        = AV_PIX_FMT_QSV,
 };
 
-#define OFFSET(x) offsetof(QSVMPVContext, x)
+#define OFFSET(x) offsetof(QSVMPEG2Context, x)
 #define VD AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
     { "async_depth", "Internal parallelization depth, the higher the value the higher the latency.", OFFSET(qsv.async_depth), AV_OPT_TYPE_INT, { .i64 = ASYNC_DEPTH_DEFAULT }, 0, INT_MAX, VD },
@@ -83,7 +83,7 @@ static const AVClass class = {
 AVCodec ff_mpeg2_qsv_decoder = {
     .name           = "mpeg2_qsv",
     .long_name      = NULL_IF_CONFIG_SMALL("MPEG-2 video (Intel Quick Sync Video acceleration)"),
-    .priv_data_size = sizeof(QSVMPVContext),
+    .priv_data_size = sizeof(QSVMPEG2Context),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_MPEG2VIDEO,
     .init           = qsv_decode_init,
