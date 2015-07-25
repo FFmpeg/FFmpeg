@@ -115,7 +115,7 @@ static int qsv_decode_frame(AVCodecContext *avctx, void *data,
 
         } else {
             /* no annex-b prefix. try to restore: */
-            ret = av_bitstream_filter_filter(s->bsf, avctx, NULL,
+            ret = av_bitstream_filter_filter(s->bsf, avctx, "private_spspps_buf",
                                          &p_filtered, &n_filtered,
                                          avpkt->data, avpkt->size, 0);
             if (ret>=0) {
