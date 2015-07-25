@@ -1081,7 +1081,7 @@ static av_cold int nvenc_encode_close(AVCodecContext *avctx)
     return 0;
 }
 
-static int process_output_surface(AVCodecContext *avctx, AVPacket *pkt, AVFrame *coded_frame, NvencOutputSurface *tmpoutsurf)
+static int process_output_surface(AVCodecContext *avctx, AVPacket *pkt, NvencOutputSurface *tmpoutsurf)
 {
     NvencContext *ctx = avctx->priv_data;
     NvencDynLoadFunctions *dl_fn = &ctx->nvenc_dload_funcs;
@@ -1376,7 +1376,7 @@ static int nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     if (ctx->output_surface_ready_queue.count) {
         tmpoutsurf = out_surf_queue_dequeue(&ctx->output_surface_ready_queue);
 
-        res = process_output_surface(avctx, pkt, avctx->coded_frame, tmpoutsurf);
+        res = process_output_surface(avctx, pkt, tmpoutsurf);
 
         if (res)
             return res;
