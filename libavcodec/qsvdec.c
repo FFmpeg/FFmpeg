@@ -66,7 +66,8 @@ int ff_qsv_decode_init(AVCodecContext *avctx, QSVContext *q, AVPacket *avpkt)
             q->nb_ext_buffers = qsv->nb_ext_buffers;
         }
         if (!q->session) {
-            ret = ff_qsv_init_internal_session(avctx, &q->internal_qs, NULL);
+            ret = ff_qsv_init_internal_session(avctx, &q->internal_qs,
+                                               q->load_plugins);
             if (ret < 0)
                 return ret;
 
