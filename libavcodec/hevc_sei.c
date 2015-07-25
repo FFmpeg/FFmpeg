@@ -25,6 +25,34 @@
 #include "golomb.h"
 #include "hevc.h"
 
+enum HEVC_SEI_TYPE {
+    SEI_TYPE_BUFFERING_PERIOD                     = 0,
+    SEI_TYPE_PICTURE_TIMING                       = 1,
+    SEI_TYPE_PAN_SCAN_RECT                        = 2,
+    SEI_TYPE_FILLER_PAYLOAD                       = 3,
+    SEI_TYPE_USER_DATA_REGISTERED_ITU_T_T35       = 4,
+    SEI_TYPE_USER_DATA_UNREGISTERED               = 5,
+    SEI_TYPE_RECOVERY_POINT                       = 6,
+    SEI_TYPE_SCENE_INFO                           = 9,
+    SEI_TYPE_FULL_FRAME_SNAPSHOT                  = 15,
+    SEI_TYPE_PROGRESSIVE_REFINEMENT_SEGMENT_START = 16,
+    SEI_TYPE_PROGRESSIVE_REFINEMENT_SEGMENT_END   = 17,
+    SEI_TYPE_FILM_GRAIN_CHARACTERISTICS           = 19,
+    SEI_TYPE_POST_FILTER_HINT                     = 22,
+    SEI_TYPE_TONE_MAPPING_INFO                    = 23,
+    SEI_TYPE_FRAME_PACKING                        = 45,
+    SEI_TYPE_DISPLAY_ORIENTATION                  = 47,
+    SEI_TYPE_SOP_DESCRIPTION                      = 128,
+    SEI_TYPE_ACTIVE_PARAMETER_SETS                = 129,
+    SEI_TYPE_DECODING_UNIT_INFO                   = 130,
+    SEI_TYPE_TEMPORAL_LEVEL0_INDEX                = 131,
+    SEI_TYPE_DECODED_PICTURE_HASH                 = 132,
+    SEI_TYPE_SCALABLE_NESTING                     = 133,
+    SEI_TYPE_REGION_REFRESH_INFO                  = 134,
+    SEI_TYPE_MASTERING_DISPLAY_INFO               = 137,
+    SEI_TYPE_CONTENT_LIGHT_LEVEL_INFO             = 144,
+};
+
 static void decode_nal_sei_decoded_picture_hash(HEVCContext *s)
 {
     int cIdx, i;
@@ -105,18 +133,18 @@ static int decode_nal_sei_message(HEVCContext *s)
         payload_size += byte;
     }
     if (s->nal_unit_type == NAL_SEI_PREFIX) {
-        if (payload_type == 256)
+        if (payload_type == 256) // Mismatched value from HM 8.1
             decode_nal_sei_decoded_picture_hash(s);
-        else if (payload_type == 45)
+        else if (payload_type == SEI_TYPE_FRAME_PACKING)
             decode_nal_sei_frame_packing_arrangement(s);
-        else if (payload_type == 47)
+        else if (payload_type == SEI_TYPE_DISPLAY_ORIENTATION)
             decode_nal_sei_display_orientation(s);
         else {
             av_log(s->avctx, AV_LOG_DEBUG, "Skipped PREFIX SEI %d\n", payload_type);
             skip_bits(gb, 8 * payload_size);
         }
     } else { /* nal_unit_type == NAL_SEI_SUFFIX */
-        if (payload_type == 132)
+        if (payload_type == SEI_TYPE_DECODED_PICTURE_HASH)
             decode_nal_sei_decoded_picture_hash(s);
         else {
             av_log(s->avctx, AV_LOG_DEBUG, "Skipped SUFFIX SEI %d\n", payload_type);
