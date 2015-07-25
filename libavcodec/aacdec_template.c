@@ -2598,7 +2598,7 @@ static void imdct_and_windowing_eld(AACContext *ac, SingleChannelElement *sce)
     const int n  = ac->oc[1].m4ac.frame_length_short ? 480 : 512;
     const int n2 = n >> 1;
     const int n4 = n >> 2;
-    const INTFLOAT *const window = n == 480 ? ff_aac_eld_window_480 :
+    const INTFLOAT *const window = n == 480 ? AAC_RENAME(ff_aac_eld_window_480) :
                                            AAC_RENAME(ff_aac_eld_window_512);
 
     // Inverse transform, mapped to the conventional IMDCT by
