@@ -16,6 +16,7 @@ version <next>:
 - removegrain video filter
 - Intel QSV-accelerated MPEG-2 video and HEVC encoding
 - Intel QSV-accelerated MPEG-2 video decoding
+- Intel QSV-accelerated VC-1 video decoding
 - libkvazaar HEVC encoder
 - erosion, dilation, deflate and inflate video filters
 - Dynamic Audio Normalizer as dynaudnorm filter

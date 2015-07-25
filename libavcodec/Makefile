@@ -521,6 +521,7 @@ OBJS-$(CONFIG_VC1_DECODER)             += vc1dec.o vc1_block.o vc1_loopfilter.o 
                                           vc1dsp.o \
                                           msmpeg4dec.o msmpeg4.o msmpeg4data.o \
                                           wmv2dsp.o
+OBJS-$(CONFIG_VC1_QSV_DECODER)         += qsvdec_vc1.o
 OBJS-$(CONFIG_VCR1_DECODER)            += vcr1.o
 OBJS-$(CONFIG_VMDAUDIO_DECODER)        += vmdaudio.o
 OBJS-$(CONFIG_VMDVIDEO_DECODER)        += vmdvideo.o
