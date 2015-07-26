@@ -212,6 +212,31 @@ static int load_ipmovie_packet(IPMVEContext *s, AVIOContext *pb,
     return chunk_type;
 }
 
+static int init_audio(AVFormatContext *s)
+{
+    IPMVEContext *ipmovie = s->priv_data;
+    AVStream *st = avformat_new_stream(s, NULL);
+    if (!st)
+        return AVERROR(ENOMEM);
+    avpriv_set_pts_info(st, 32, 1, ipmovie->audio_sample_rate);
+    ipmovie->audio_stream_index = st->index;
+    st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
+    st->codec->codec_id = ipmovie->audio_type;
+    st->codec->codec_tag = 0;  /* no tag */
+    st->codec->channels = ipmovie->audio_channels;
+    st->codec->channel_layout = st->codec->channels == 1 ? AV_CH_LAYOUT_MONO :
+                                                            AV_CH_LAYOUT_STEREO;
+    st->codec->sample_rate = ipmovie->audio_sample_rate;
+    st->codec->bits_per_coded_sample = ipmovie->audio_bits;
+    st->codec->bit_rate = st->codec->channels * st->codec->sample_rate *
+        st->codec->bits_per_coded_sample;
+    if (st->codec->codec_id == AV_CODEC_ID_INTERPLAY_DPCM)
+        st->codec->bit_rate /= 2;
+    st->codec->block_align = st->codec->channels * st->codec->bits_per_coded_sample;
+
+    return 0;
+}
+
 /* This function loads and processes a single chunk in an IP movie file.
  * It returns the type of chunk that was processed. */
 static int process_ipmovie_chunk(IPMVEContext *s, AVIOContext *pb,
@@ -600,24 +625,7 @@ static int ipmovie_read_header(AVFormatContext *s)
     st->codec->bits_per_coded_sample = ipmovie->video_bpp;
 
     if (ipmovie->audio_type) {
-        st = avformat_new_stream(s, NULL);
-        if (!st)
-            return AVERROR(ENOMEM);
-        avpriv_set_pts_info(st, 32, 1, ipmovie->audio_sample_rate);
-        ipmovie->audio_stream_index = st->index;
-        st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-        st->codec->codec_id = ipmovie->audio_type;
-        st->codec->codec_tag = 0;  /* no tag */
-        st->codec->channels = ipmovie->audio_channels;
-        st->codec->channel_layout = st->codec->channels == 1 ? AV_CH_LAYOUT_MONO :
-                                                               AV_CH_LAYOUT_STEREO;
-        st->codec->sample_rate = ipmovie->audio_sample_rate;
-        st->codec->bits_per_coded_sample = ipmovie->audio_bits;
-        st->codec->bit_rate = st->codec->channels * st->codec->sample_rate *
-            st->codec->bits_per_coded_sample;
-        if (st->codec->codec_id == AV_CODEC_ID_INTERPLAY_DPCM)
-            st->codec->bit_rate /= 2;
-        st->codec->block_align = st->codec->channels * st->codec->bits_per_coded_sample;
+        return init_audio(s);
     }
 
     return 0;
