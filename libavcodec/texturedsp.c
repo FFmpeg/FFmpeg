@@ -425,7 +425,7 @@ static inline void rgtc_block_internal(uint8_t *dst, ptrdiff_t stride,
             int i = indices[x + y * 4];
             /* Interval expansion from [-1 1] or [0 1] to [0 255]. */
             int c = color_tab[i];
-            uint32_t pixel = RGBA(c, c, c, 255);
+            uint32_t pixel = RGBA(c, c, c, 255U);
             AV_WL32(dst + x * 4 + y * stride, pixel);
         }
     }

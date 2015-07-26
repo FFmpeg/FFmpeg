@@ -149,7 +149,7 @@ cglobal put_signed_rect_clamped_%1, 5,9,3, dst, dst_stride, src, src_stride, w, 
     %define hd r5mp
 %endif
 
-.loopy
+.loopy:
     lea     src2q, [srcq+src_strideq*2]
     lea     dst2q, [dstq+dst_strideq]
 .loopx:

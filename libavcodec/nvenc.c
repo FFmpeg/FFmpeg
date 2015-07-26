@@ -163,6 +163,7 @@ typedef struct NvencContext
     int cbr;
     int twopass;
     int gpu;
+    int buffer_delay;
 } NvencContext;
 
 static const NvencValuePair nvenc_h264_level_pairs[] = {
@@ -692,6 +693,9 @@ static av_cold int nvenc_encode_init(AVCodecContext *avctx)
     num_mbs = ((avctx->width + 15) >> 4) * ((avctx->height + 15) >> 4);
     ctx->max_surface_count = (num_mbs >= 8160) ? 32 : 48;
 
+    if (ctx->buffer_delay >= ctx->max_surface_count)
+        ctx->buffer_delay = ctx->max_surface_count - 1;
+
     ctx->init_encode_params.enableEncodeAsync = 0;
     ctx->init_encode_params.enablePTD = 1;
 
@@ -1081,7 +1085,7 @@ static av_cold int nvenc_encode_close(AVCodecContext *avctx)
     return 0;
 }
 
-static int process_output_surface(AVCodecContext *avctx, AVPacket *pkt, AVFrame *coded_frame, NvencOutputSurface *tmpoutsurf)
+static int process_output_surface(AVCodecContext *avctx, AVPacket *pkt, NvencOutputSurface *tmpoutsurf)
 {
     NvencContext *ctx = avctx->priv_data;
     NvencDynLoadFunctions *dl_fn = &ctx->nvenc_dload_funcs;
@@ -1373,10 +1377,10 @@ static int nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         }
     }
 
-    if (ctx->output_surface_ready_queue.count) {
+    if (ctx->output_surface_ready_queue.count && (!frame || ctx->output_surface_ready_queue.count + ctx->output_surface_queue.count >= ctx->buffer_delay)) {
         tmpoutsurf = out_surf_queue_dequeue(&ctx->output_surface_ready_queue);
 
-        res = process_output_surface(avctx, pkt, avctx->coded_frame, tmpoutsurf);
+        res = process_output_surface(avctx, pkt, tmpoutsurf);
 
         if (res)
             return res;
@@ -1410,6 +1414,7 @@ static const AVOption options[] = {
     { "cbr", "Use cbr encoding mode", OFFSET(cbr), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VE },
     { "2pass", "Use 2pass cbr encoding mode (low latency mode only)", OFFSET(twopass), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 1, VE },
     { "gpu", "Selects which NVENC capable GPU to use. First GPU is 0, second is 1, and so on.", OFFSET(gpu), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE },
+    { "delay", "Delays frame output by the given amount of frames.", OFFSET(buffer_delay), AV_OPT_TYPE_INT, { .i64 = INT_MAX }, 0, INT_MAX, VE },
     { NULL }
 };
 

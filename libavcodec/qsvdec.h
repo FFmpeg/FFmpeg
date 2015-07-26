@@ -59,6 +59,8 @@ typedef struct QSVContext {
     int async_depth;
     int iopattern;
 
+    char *load_plugins;
+
     mfxExtBuffer **ext_buffers;
     int         nb_ext_buffers;
 } QSVContext;

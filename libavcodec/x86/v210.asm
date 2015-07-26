@@ -45,7 +45,7 @@ cglobal v210_planar_unpack_%1, 5, 5, 7
     mova   m4, [v210_mask]
     mova   m5, [v210_luma_shuf]
     mova   m6, [v210_chroma_shuf]
-.loop
+.loop:
 %ifidn %1, unaligned
     movu   m0, [r0]
 %else

@@ -1,5 +1,5 @@
 /*
- * Intel MediaSDK QSV based H.264 decoder
+ * Intel MediaSDK QSV based H.264 / HEVC decoder
  *
  * copyright (c) 2013 Luca Barbato
  * copyright (c) 2015 Anton Khirnov
@@ -35,18 +35,25 @@
 #include "internal.h"
 #include "qsvdec.h"
 
-typedef struct QSVH264Context {
+enum LoadPlugin {
+    LOAD_PLUGIN_NONE,
+    LOAD_PLUGIN_HEVC_SW,
+};
+
+typedef struct QSVH2645Context {
     AVClass *class;
     QSVContext qsv;
+
+    int load_plugin;
 
     // the filter for converting to Annex B
     AVBitStreamFilterContext *bsf;
 
-} QSVH264Context;
+} QSVH2645Context;
 
 static av_cold int qsv_decode_close(AVCodecContext *avctx)
 {
-    QSVH264Context *s = avctx->priv_data;
+    QSVH2645Context *s = avctx->priv_data;
 
     ff_qsv_decode_close(&s->qsv);
 
@@ -57,10 +64,28 @@ static av_cold int qsv_decode_close(AVCodecContext *avctx)
 
 static av_cold int qsv_decode_init(AVCodecContext *avctx)
 {
-    QSVH264Context *s = avctx->priv_data;
+    QSVH2645Context *s = avctx->priv_data;
     int ret;
 
-    s->bsf = av_bitstream_filter_init("h264_mp4toannexb");
+    if (avctx->codec_id == AV_CODEC_ID_HEVC && s->load_plugin != LOAD_PLUGIN_NONE) {
+        static const char *uid_hevcenc_sw = "15dd936825ad475ea34e35f3f54217a6";
+
+        if (s->qsv.load_plugins[0]) {
+            av_log(avctx, AV_LOG_WARNING,
+                   "load_plugins is not empty, but load_plugin is not set to 'none'."
+                   "The load_plugin value will be ignored.\n");
+        } else {
+            av_freep(&s->qsv.load_plugins);
+            s->qsv.load_plugins = av_strdup(uid_hevcenc_sw);
+            if (!s->qsv.load_plugins)
+                return AVERROR(ENOMEM);
+        }
+    }
+
+    if (avctx->codec_id == AV_CODEC_ID_H264)
+        s->bsf = av_bitstream_filter_init("h264_mp4toannexb");
+    else
+        s->bsf = av_bitstream_filter_init("hevc_mp4toannexb");
     if (!s->bsf) {
         ret = AVERROR(ENOMEM);
         goto fail;
@@ -75,7 +100,7 @@ fail:
 static int qsv_decode_frame(AVCodecContext *avctx, void *data,
                             int *got_frame, AVPacket *avpkt)
 {
-    QSVH264Context *s = avctx->priv_data;
+    QSVH2645Context *s = avctx->priv_data;
     AVFrame *frame    = data;
     int ret;
     uint8_t *p_filtered = NULL;
@@ -90,7 +115,7 @@ static int qsv_decode_frame(AVCodecContext *avctx, void *data,
 
         } else {
             /* no annex-b prefix. try to restore: */
-            ret = av_bitstream_filter_filter(s->bsf, avctx, NULL,
+            ret = av_bitstream_filter_filter(s->bsf, avctx, "private_spspps_buf",
                                          &p_filtered, &n_filtered,
                                          avpkt->data, avpkt->size, 0);
             if (ret>=0) {
@@ -112,10 +137,56 @@ static int qsv_decode_frame(AVCodecContext *avctx, void *data,
 
 static void qsv_decode_flush(AVCodecContext *avctx)
 {
-//    QSVH264Context *s = avctx->priv_data;
+//    QSVH2645Context *s = avctx->priv_data;
     /* TODO: flush qsv engine if necessary */
 }
 
+#define OFFSET(x) offsetof(QSVH2645Context, x)
+#define VD AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM
+
+#if CONFIG_HEVC_QSV_DECODER
+AVHWAccel ff_hevc_qsv_hwaccel = {
+    .name           = "hevc_qsv",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = AV_CODEC_ID_HEVC,
+    .pix_fmt        = AV_PIX_FMT_QSV,
+};
+
+static const AVOption hevc_options[] = {
+    { "async_depth", "Internal parallelization depth, the higher the value the higher the latency.", OFFSET(qsv.async_depth), AV_OPT_TYPE_INT, { .i64 = ASYNC_DEPTH_DEFAULT }, 0, INT_MAX, VD },
+
+    { "load_plugin", "A user plugin to load in an internal session", OFFSET(load_plugin), AV_OPT_TYPE_INT, { .i64 = LOAD_PLUGIN_HEVC_SW }, LOAD_PLUGIN_NONE, LOAD_PLUGIN_HEVC_SW, VD, "load_plugin" },
+    { "none",     NULL, 0, AV_OPT_TYPE_CONST, { .i64 = LOAD_PLUGIN_NONE },    0, 0, VD, "load_plugin" },
+    { "hevc_sw",  NULL, 0, AV_OPT_TYPE_CONST, { .i64 = LOAD_PLUGIN_HEVC_SW }, 0, 0, VD, "load_plugin" },
+
+    { "load_plugins", "A :-separate list of hexadecimal plugin UIDs to load in an internal session",
+        OFFSET(qsv.load_plugins), AV_OPT_TYPE_STRING, { .str = "" }, 0, 0, VD },
+    { NULL },
+};
+
+static const AVClass hevc_class = {
+    .class_name = "hevc_qsv",
+    .item_name  = av_default_item_name,
+    .option     = hevc_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
+AVCodec ff_hevc_qsv_decoder = {
+    .name           = "hevc_qsv",
+    .long_name      = NULL_IF_CONFIG_SMALL("HEVC (Intel Quick Sync Video acceleration)"),
+    .priv_data_size = sizeof(QSVH2645Context),
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = AV_CODEC_ID_HEVC,
+    .init           = qsv_decode_init,
+    .decode         = qsv_decode_frame,
+    .flush          = qsv_decode_flush,
+    .close          = qsv_decode_close,
+    .capabilities   = CODEC_CAP_DELAY,
+    .priv_class     = &hevc_class,
+};
+#endif
+
+#if CONFIG_H264_QSV_DECODER
 AVHWAccel ff_h264_qsv_hwaccel = {
     .name           = "h264_qsv",
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -123,8 +194,6 @@ AVHWAccel ff_h264_qsv_hwaccel = {
     .pix_fmt        = AV_PIX_FMT_QSV,
 };
 
-#define OFFSET(x) offsetof(QSVH264Context, x)
-#define VD AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
     { "async_depth", "Internal parallelization depth, the higher the value the higher the latency.", OFFSET(qsv.async_depth), AV_OPT_TYPE_INT, { .i64 = ASYNC_DEPTH_DEFAULT }, 0, INT_MAX, VD },
     { NULL },
@@ -140,7 +209,7 @@ static const AVClass class = {
 AVCodec ff_h264_qsv_decoder = {
     .name           = "h264_qsv",
     .long_name      = NULL_IF_CONFIG_SMALL("H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 (Intel Quick Sync Video acceleration)"),
-    .priv_data_size = sizeof(QSVH264Context),
+    .priv_data_size = sizeof(QSVH2645Context),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_H264,
     .init           = qsv_decode_init,
@@ -150,3 +219,4 @@ AVCodec ff_h264_qsv_decoder = {
     .capabilities   = CODEC_CAP_DELAY,
     .priv_class     = &class,
 };
+#endif

@@ -66,7 +66,8 @@ int ff_qsv_decode_init(AVCodecContext *avctx, QSVContext *q, AVPacket *avpkt)
             q->nb_ext_buffers = qsv->nb_ext_buffers;
         }
         if (!q->session) {
-            ret = ff_qsv_init_internal_session(avctx, &q->internal_qs, NULL);
+            ret = ff_qsv_init_internal_session(avctx, &q->internal_qs,
+                                               q->load_plugins);
             if (ret < 0)
                 return ret;
 
@@ -125,10 +126,12 @@ int ff_qsv_decode_init(AVCodecContext *avctx, QSVContext *q, AVPacket *avpkt)
        HEVC which is 16 for both cases.
        So weare  pre-allocating fifo big enough for 17 elements:
      */
-    q->async_fifo = av_fifo_alloc((1 + 16) *
-                                  (sizeof(mfxSyncPoint) + sizeof(QSVFrame*)));
-    if (!q->async_fifo)
-        return AVERROR(ENOMEM);
+    if (!q->async_fifo) {
+        q->async_fifo = av_fifo_alloc((1 + 16) *
+                                      (sizeof(mfxSyncPoint) + sizeof(QSVFrame*)));
+        if (!q->async_fifo)
+            return AVERROR(ENOMEM);
+    }
 
     q->input_fifo = av_fifo_alloc(1024*16);
     if (!q->input_fifo)
@@ -337,6 +340,13 @@ int ff_qsv_decode(AVCodecContext *avctx, QSVContext *q,
         }
         if (MFX_ERR_MORE_SURFACE != ret && ret < 0)
             break;
+    }
+
+    /* make sure we do not enter an infinite loop if the SDK
+     * did not consume any data and did not return anything */
+    if (!sync && !bs.DataOffset) {
+        av_log(avctx, AV_LOG_WARNING, "A decode call did not consume any data\n");
+        bs.DataOffset = avpkt->size;
     }
 
     if (buffered) {

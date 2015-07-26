@@ -349,7 +349,8 @@ static void ps_tableinit(void)
     }
 
     for (k = 0; k < NR_ALLPASS_BANDS20; k++) {
-        int theta, f_center;
+        int theta;
+        int64_t f_center;
         int c, s;
 
         if (k < FF_ARRAY_ELEMS(f_center_20))
@@ -377,7 +378,7 @@ static void ps_tableinit(void)
         if (k < FF_ARRAY_ELEMS(f_center_34))
             f_center = f_center_34[k];
         else
-            f_center = (k << 26) - (53 << 25);
+            f_center = ((int64_t)k << 26) - (53 << 25);
 
         for (m = 0; m < PS_AP_LINKS; m++) {
             theta = (int)(((int64_t)fractional_delay_links[m] * f_center + 0x10000000) >> 27);

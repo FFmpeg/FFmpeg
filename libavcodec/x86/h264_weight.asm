@@ -139,12 +139,12 @@ WEIGHT_FUNC_HALF_MM 8, 8
     je .nonnormal
     cmp        r5, 128
     jne .normal
-.nonnormal
+.nonnormal:
     sar        r5, 1
     sar        r6, 1
     sar  off_regd, 1
     sub        r4, 1
-.normal
+.normal:
 %if cpuflag(ssse3)
     movd       m4, r5d
     movd       m0, r6d

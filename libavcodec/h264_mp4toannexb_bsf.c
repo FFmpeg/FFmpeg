@@ -33,6 +33,18 @@ typedef struct H264BSFContext {
     uint8_t  idr_sps_seen;
     uint8_t  idr_pps_seen;
     int      extradata_parsed;
+
+    /* When private_spspps is zero then spspps_buf points to global extradata
+       and bsf does replace a global extradata to own-allocated version (default
+       behaviour).
+       When private_spspps is non-zero the bsf uses a private version of spspps buf.
+       This mode necessary when bsf uses in decoder, else bsf has issues after
+       decoder re-initialization. Use the "private_spspps_buf" argument to
+       activate this mode.
+     */
+    int      private_spspps;
+    uint8_t *spspps_buf;
+    uint32_t spspps_size;
 } H264BSFContext;
 
 static int alloc_and_copy(uint8_t **poutbuf, int *poutbuf_size,
@@ -129,9 +141,13 @@ pps:
                "Warning: PPS NALU missing or invalid. "
                "The resulting stream may not play.\n");
 
-    av_free(avctx->extradata);
-    avctx->extradata      = out;
-    avctx->extradata_size = total_size;
+    if (!ctx->private_spspps) {
+        av_free(avctx->extradata);
+        avctx->extradata      = out;
+        avctx->extradata_size = total_size;
+    }
+    ctx->spspps_buf  = out;
+    ctx->spspps_size = total_size;
 
     return length_size;
 }
@@ -159,6 +175,9 @@ static int h264_mp4toannexb_filter(AVBitStreamFilterContext *bsfc,
 
     /* retrieve sps and pps NAL units from extradata */
     if (!ctx->extradata_parsed) {
+        if (args && strstr(args, "private_spspps_buf"))
+            ctx->private_spspps = 1;
+
         ret = h264_extradata_to_annexb(ctx, avctx, FF_INPUT_BUFFER_PADDING_SIZE);
         if (ret < 0)
             return ret;
@@ -195,8 +214,8 @@ static int h264_mp4toannexb_filter(AVBitStreamFilterContext *bsfc,
                     av_log(avctx, AV_LOG_WARNING, "SPS not present in the stream, nor in AVCC, stream may be unreadable\n");
                 else {
                     if ((ret = alloc_and_copy(poutbuf, poutbuf_size,
-                                         avctx->extradata + ctx->sps_offset,
-                                         ctx->pps_offset != -1 ? ctx->pps_offset : avctx->extradata_size - ctx->sps_offset,
+                                         ctx->spspps_buf + ctx->sps_offset,
+                                         ctx->pps_offset != -1 ? ctx->pps_offset : ctx->spspps_size - ctx->sps_offset,
                                          buf, nal_size)) < 0)
                         goto fail;
                     ctx->idr_sps_seen = 1;
@@ -214,7 +233,7 @@ static int h264_mp4toannexb_filter(AVBitStreamFilterContext *bsfc,
         /* prepend only to the first type 5 NAL unit of an IDR picture, if no sps/pps are already present */
         if (ctx->new_idr && unit_type == 5 && !ctx->idr_sps_seen && !ctx->idr_pps_seen) {
             if ((ret=alloc_and_copy(poutbuf, poutbuf_size,
-                               avctx->extradata, avctx->extradata_size,
+                               ctx->spspps_buf, ctx->spspps_size,
                                buf, nal_size)) < 0)
                 goto fail;
             ctx->new_idr = 0;
@@ -226,7 +245,7 @@ static int h264_mp4toannexb_filter(AVBitStreamFilterContext *bsfc,
                                      NULL, 0, buf, nal_size)) < 0)
                     goto fail;
             } else if ((ret = alloc_and_copy(poutbuf, poutbuf_size,
-                                        avctx->extradata + ctx->pps_offset, avctx->extradata_size - ctx->pps_offset,
+                                        ctx->spspps_buf + ctx->pps_offset, ctx->spspps_size - ctx->pps_offset,
                                         buf, nal_size)) < 0)
                 goto fail;
         } else {
@@ -253,8 +272,16 @@ fail:
     return ret;
 }
 
+static void h264_mp4toannexb_filter_close(AVBitStreamFilterContext *bsfc)
+{
+    H264BSFContext *ctx = bsfc->priv_data;
+    if (ctx->private_spspps)
+        av_free(ctx->spspps_buf);
+}
+
 AVBitStreamFilter ff_h264_mp4toannexb_bsf = {
     .name           = "h264_mp4toannexb",
     .priv_data_size = sizeof(H264BSFContext),
     .filter         = h264_mp4toannexb_filter,
+    .close          = h264_mp4toannexb_filter_close,
 };
