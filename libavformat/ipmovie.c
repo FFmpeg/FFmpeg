@@ -631,7 +631,8 @@ static int ipmovie_read_header(AVFormatContext *s)
 
     if (ipmovie->audio_type) {
         return init_audio(s);
-    }
+    } else
+       s->ctx_flags |= AVFMTCTX_NOHEADER;
 
     return 0;
 }
@@ -656,7 +657,7 @@ static int ipmovie_read_packet(AVFormatContext *s,
     else if (ret == CHUNK_INIT_VIDEO || ret == CHUNK_INIT_AUDIO)
         continue;
     else
-        ret = -1;
+        continue;
 
     return ret;
     }
