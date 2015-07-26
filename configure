@@ -3660,7 +3660,7 @@ probe_cc(){
         _flags='-nologo -Qdiag-error:4044,10157'
         # -Qvec- -Qsimd- to prevent miscompilation, -GS, fp:precise for consistency
         # with MSVC which enables it by default.
-        _cflags='-D_USE_MATH_DEFINES -Dstrtoll=_strtoi64 -Qms0 -Qvec- -Qsimd- -GS -fp:precise'
+        _cflags='-D_USE_MATH_DEFINES -Qms0 -Qvec- -Qsimd- -GS -fp:precise'
         disable stripping
     elif $_cc -nologo- 2>&1 | grep -q Microsoft; then
         _type=msvc
@@ -3680,7 +3680,7 @@ probe_cc(){
         _ld_lib='lib%.a'
         _ld_path='-libpath:'
         _flags='-nologo'
-        _cflags='-D_USE_MATH_DEFINES -D_CRT_SECURE_NO_WARNINGS -Dstrtoll=_strtoi64'
+        _cflags='-D_USE_MATH_DEFINES -D_CRT_SECURE_NO_WARNINGS'
         disable stripping
     elif $_cc --version 2>/dev/null | grep -q ^cparser; then
         _type=cparser
@@ -5681,6 +5681,7 @@ elif enabled_any msvc icl; then
 __declspec($_restrict) void* foo(int);
 EOF
     fi
+    check_func strtoll || add_cflags -Dstrtoll=_strtoi64
 fi
 
 for pfx in "" host_; do
