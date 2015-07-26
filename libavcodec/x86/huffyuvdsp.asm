@@ -196,7 +196,7 @@ cglobal add_bytes, 3,4,2, dst, src, w, size
     add   dstq, wq
     add   srcq, wq
     neg     wq
-.3
+.3:
     mov  sizeb, [srcq + wq]
     add [dstq + wq], sizeb
     inc     wq

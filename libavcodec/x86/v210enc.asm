@@ -60,7 +60,7 @@ cglobal v210_planar_pack_10, 5, 5, 4, y, u, v, dst, width
     mova    m2, [v210_enc_min_10]
     mova    m3, [v210_enc_max_10]
 
-.loop
+.loop:
     movu    m0, [yq+2*widthq]
     CLIPW   m0, m2, m3
 
@@ -102,7 +102,7 @@ cglobal v210_planar_pack_8, 5, 5, 7, y, u, v, dst, width
     mova    m5, [v210_enc_max_8]
     pxor    m6, m6
 
-.loop
+.loop:
     movu    m1, [yq+2*widthq]
     CLIPUB  m1, m4, m5
 

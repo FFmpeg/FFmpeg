@@ -333,7 +333,7 @@ cglobal synth_filter_inner, 0, 6 + 4 * ARCH_X86_64, 7 + 6 * ARCH_X86_64, \
 %if ARCH_X86_32
     mov         buf2, synth_buf2mp
 %endif
-.mainloop
+.mainloop:
     ; m1 = a  m2 = b  m3 = c  m4 = d
     SETZERO       m3
     SETZERO       m4
