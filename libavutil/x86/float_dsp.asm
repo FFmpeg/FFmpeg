@@ -203,7 +203,7 @@ cglobal vector_fmul_window, 5, 6, 6, dst, src0, src1, win, len, len1
     add     dstq, lenq
     add     winq, lenq
     neg     lenq
-.loop
+.loop:
     mova      m0, [winq  + lenq]
     mova      m4, [src0q + lenq]
 %if cpuflag(sse)
