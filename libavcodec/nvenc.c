@@ -770,14 +770,15 @@ static av_cold int nvenc_encode_init(AVCodecContext *avctx)
     } else if (ctx->cbr) {
         if (!ctx->twopass) {
             ctx->encode_config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_CBR;
-        } else if (ctx->twopass == 1) {
+        } else if (ctx->twopass == 1 || isLL) {
             ctx->encode_config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_2_PASS_QUALITY;
 
             if (avctx->codec->id == AV_CODEC_ID_H264) {
                 ctx->encode_config.encodeCodecConfig.h264Config.adaptiveTransformMode = NV_ENC_H264_ADAPTIVE_TRANSFORM_ENABLE;
                 ctx->encode_config.encodeCodecConfig.h264Config.fmoMode = NV_ENC_H264_FMO_DISABLE;
             }
-
+        } else {
+            ctx->encode_config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_CBR;
         }
     } else if (avctx->global_quality > 0) {
         ctx->encode_config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_CONSTQP;
