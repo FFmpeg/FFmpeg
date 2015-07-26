@@ -187,6 +187,8 @@
     </ClCompile>
     <ClCompile Include="..\libavfilter\af_replaygain.c">
     </ClCompile>
+    <ClCompile Include="..\libavfilter\af_sidechaincompress.c">
+    </ClCompile>
     <ClCompile Include="..\libavfilter\af_silencedetect.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\af_silenceremove.c">
@@ -290,11 +292,11 @@
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_format.c">
     </ClCompile>
-    <ClCompile Include="..\libavfilter\vf_framestep.c">
-    </ClCompile>
     <ClCompile Include="..\libavfilter\vf_fps.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_framepack.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_framestep.c">
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_fspp.c">
       <ObjectFileName>$(IntDir)\libavfilter_vf_fspp.obj</ObjectFileName>

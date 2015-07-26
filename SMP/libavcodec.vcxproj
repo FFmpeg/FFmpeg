@@ -816,7 +816,7 @@
     </ClCompile>
     <ClCompile Include="..\libavcodec\h264_slice.c">
     </ClCompile>
-    <ClCompile Include="..\libavcodec\qsvdec_h264.c">
+    <ClCompile Include="..\libavcodec\qsvdec_h2645.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\qsvenc_h264.c">
     </ClCompile>
@@ -975,6 +975,8 @@
     <ClCompile Include="..\libavcodec\mpeg12dec.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\mpeg12enc.c">
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\qsvdec_mpeg2.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\qsvenc_mpeg2.c">
     </ClCompile>
@@ -1283,6 +1285,8 @@
     <ClCompile Include="..\libavcodec\vc1dsp.c">
       <ObjectFileName>$(IntDir)\libavcodec_vc1dsp.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\qsvdec_vc1.c">
+    </ClCompile>
     <ClCompile Include="..\libavcodec\vcr1.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\vmdaudio.c">
@@ -1557,6 +1561,8 @@
     <ClCompile Include="..\libavcodec\dump_extradata_bsf.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\h264_mp4toannexb_bsf.c">
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\hevc_mp4toannexb_bsf.c">
     </ClCompile>
     <ClCompile Include="..\libavcodec\imx_dump_header_bsf.c">
     </ClCompile>
