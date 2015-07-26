@@ -1346,6 +1346,13 @@ bool configGenerator::passDependencyCheck( const ValuesList::iterator vitOption 
                 //Check if this variable has been initialized already
                 if( vitTemp > vitOption )
                 {
+                    // Enable it if it is not currently initialised
+                    if( vitTemp->m_sValue.length( ) == 0 )
+                    {
+                        string sOptionLower2 = vitTemp->m_sOption;
+                        transform( sOptionLower2.begin( ), sOptionLower2.end( ), sOptionLower2.begin( ), ::tolower );
+                        toggleConfigValue( sOptionLower2, true );
+                    }
                     if( !passDependencyCheck( vitTemp ) )
                     {
                         return false;
