@@ -44,7 +44,7 @@ cglobal pack_2ch_%2_to_%1_%3, 3, 4, 6, dst, src, len, src2
     test src2q, mmsize-1
         jne pack_2ch_%2_to_%1_u_int %+ SUFFIX
 %else
-pack_2ch_%2_to_%1_u_int %+ SUFFIX
+pack_2ch_%2_to_%1_u_int %+ SUFFIX:
 %endif
     lea     srcq , [srcq  + (1<<%5)*lenq]
     lea     src2q, [src2q + (1<<%5)*lenq]
@@ -101,7 +101,7 @@ cglobal unpack_2ch_%2_to_%1_%3, 3, 4, 7, dst, src, len, dst2
     test dst2q, mmsize-1
         jne unpack_2ch_%2_to_%1_u_int %+ SUFFIX
 %else
-unpack_2ch_%2_to_%1_u_int %+ SUFFIX
+unpack_2ch_%2_to_%1_u_int %+ SUFFIX:
 %endif
     lea     srcq , [srcq  + (2<<%5)*lenq]
     lea     dstq , [dstq  + (1<<%4)*lenq]
@@ -170,7 +170,7 @@ cglobal %2_to_%1_%3, 3, 3, 6, dst, src, len
     test srcq, mmsize-1
         jne %2_to_%1_u_int %+ SUFFIX
 %else
-%2_to_%1_u_int %+ SUFFIX
+%2_to_%1_u_int %+ SUFFIX:
 %endif
     lea     srcq , [srcq  + (1<<%5)*lenq]
     lea     dstq , [dstq  + (1<<%4)*lenq]
@@ -232,7 +232,7 @@ cglobal pack_6ch_%2_to_%1_%3, 2,8,7, dst, src, src1, src2, src3, src4, src5, len
     test src5q, mmsize-1
         jne pack_6ch_%2_to_%1_u_int %+ SUFFIX
 %else
-pack_6ch_%2_to_%1_u_int %+ SUFFIX
+pack_6ch_%2_to_%1_u_int %+ SUFFIX:
 %endif
     sub    src1q, srcq
     sub    src2q, srcq
@@ -335,7 +335,7 @@ cglobal unpack_6ch_%2_to_%1_%3, 2, 8, 8, dst, src, dst1, dst2, dst3, dst4, dst5,
     test dst5q, mmsize-1
         jne unpack_6ch_%2_to_%1_u_int %+ SUFFIX
 %else
-unpack_6ch_%2_to_%1_u_int %+ SUFFIX
+unpack_6ch_%2_to_%1_u_int %+ SUFFIX:
 %endif
     sub    dst1q, dstq
     sub    dst2q, dstq
@@ -443,7 +443,7 @@ cglobal pack_8ch_%2_to_%1_%3, 2,PACK_8CH_GPRS,10, ARCH_X86_32*48, dst, src, len,
 %endif
         jne pack_8ch_%2_to_%1_u_int %+ SUFFIX
 %else
-pack_8ch_%2_to_%1_u_int %+ SUFFIX
+pack_8ch_%2_to_%1_u_int %+ SUFFIX:
 %endif
     sub    src1q, srcq
     sub    src2q, srcq
