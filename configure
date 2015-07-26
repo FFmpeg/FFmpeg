@@ -3660,7 +3660,7 @@ probe_cc(){
         _flags='-nologo -Qdiag-error:4044,10157'
         # -Qvec- -Qsimd- to prevent miscompilation, -GS, fp:precise for consistency
         # with MSVC which enables it by default.
-        _cflags='-D_USE_MATH_DEFINES -FIstdlib.h -Dstrtoll=_strtoi64 -Qms0 -Qvec- -Qsimd- -GS -fp:precise'
+        _cflags='-D_USE_MATH_DEFINES -Dstrtoll=_strtoi64 -Qms0 -Qvec- -Qsimd- -GS -fp:precise'
         disable stripping
     elif $_cc -nologo- 2>&1 | grep -q Microsoft; then
         _type=msvc
@@ -3680,7 +3680,7 @@ probe_cc(){
         _ld_lib='lib%.a'
         _ld_path='-libpath:'
         _flags='-nologo'
-        _cflags='-D_USE_MATH_DEFINES -D_CRT_SECURE_NO_WARNINGS -Dinline=__inline -FIstdlib.h -Dstrtoll=_strtoi64'
+        _cflags='-D_USE_MATH_DEFINES -D_CRT_SECURE_NO_WARNINGS -Dinline=__inline -Dstrtoll=_strtoi64'
         disable stripping
     elif $_cc --version 2>/dev/null | grep -q ^cparser; then
         _type=cparser
@@ -5670,6 +5670,17 @@ elif enabled_any msvc icl; then
     fi
     # msvcrt10 x64 incorrectly enables log2, only msvcrt12 (MSVC 2013) onwards actually has log2.
     check_cpp_condition crtversion.h "_VC_CRT_MAJOR_VERSION >= 12" || disable log2
+    # The CRT headers contain __declspec(restrict) in a few places, but if redefining
+    # restrict, this might break. MSVC 2010 and 2012 fail with __declspec(__restrict)
+    # (as it ends up if the restrict redefine is done before including stdlib.h), while
+    # MSVC 2013 and newer can handle it fine.
+    # If this declspec fails, force including stdlib.h before the restrict redefinition
+    # happens in config.h.
+    if [ $_restrict != restrict ]; then
+        check_cc <<EOF || add_cflags -FIstdlib.h
+__declspec($_restrict) void* foo(int);
+EOF
+    fi
 fi
 
 case $as_type in
