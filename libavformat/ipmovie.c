@@ -78,7 +78,7 @@
 #define PALETTE_COUNT 256
 
 typedef struct IPMVEContext {
-
+    AVFormatContext *avf;
     unsigned char *buf;
     int buf_size;
 
@@ -541,6 +541,9 @@ static int process_ipmovie_chunk(IPMVEContext *s, AVIOContext *pb,
         }
     }
 
+    if (s->avf->nb_streams == 1 && s->audio_type)
+        init_audio(s->avf);
+
     /* make a note of where the stream is sitting */
     s->next_chunk_offset = avio_tell(pb);
 
@@ -575,6 +578,8 @@ static int ipmovie_read_header(AVFormatContext *s)
     unsigned char chunk_preamble[CHUNK_PREAMBLE_SIZE];
     int chunk_type, i;
     uint8_t signature_buffer[sizeof(signature)];
+
+    ipmovie->avf = s;
 
     avio_read(pb, signature_buffer, sizeof(signature_buffer));
     while (memcmp(signature_buffer, signature, sizeof(signature))) {
