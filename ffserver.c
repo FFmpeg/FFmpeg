@@ -2541,9 +2541,8 @@ static int http_start_receive_data(HTTPContext *c)
             http_log("Error reading write index from feed file '%s': %s\n",
                      c->stream->feed_filename, strerror(errno));
             return ret;
-        } else {
-            c->stream->feed_write_index = ret;
         }
+        c->stream->feed_write_index = ret;
     }
 
     c->stream->feed_write_index = FFMAX(ffm_read_write_index(fd),
