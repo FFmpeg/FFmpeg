@@ -351,7 +351,7 @@ static int g726_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     int i, ret, out_size;
 
     out_size = (frame->nb_samples * c->code_size + 7) / 8;
-    if ((ret = ff_alloc_packet2(avctx, avpkt, out_size)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, avpkt, out_size, 0)) < 0)
         return ret;
     init_put_bits(&pb, avpkt->data, avpkt->size);
 

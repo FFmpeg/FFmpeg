@@ -85,7 +85,7 @@ static int targa_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         return AVERROR(EINVAL);
     }
     picsize = avpicture_get_size(avctx->pix_fmt, avctx->width, avctx->height);
-    if ((ret = ff_alloc_packet2(avctx, pkt, picsize + 45)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, pkt, picsize + 45, 0)) < 0)
         return ret;
 
     /* zero out the header and only set applicable fields */

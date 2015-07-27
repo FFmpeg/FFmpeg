@@ -494,7 +494,7 @@ static int prores_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     int frame_size = FFALIGN(avctx->width, 16) * FFALIGN(avctx->height, 16)*16 + 500 + FF_MIN_BUFFER_SIZE; //FIXME choose tighter limit
 
 
-    if ((ret = ff_alloc_packet2(avctx, pkt, frame_size + FF_MIN_BUFFER_SIZE)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, pkt, frame_size + FF_MIN_BUFFER_SIZE, 0)) < 0)
         return ret;
 
     buf = pkt->data;

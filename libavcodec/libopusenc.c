@@ -335,7 +335,7 @@ static int libopus_encode(AVCodecContext *avctx, AVPacket *avpkt,
     /* Maximum packet size taken from opusenc in opus-tools. 60ms packets
      * consist of 3 frames in one packet. The maximum frame size is 1275
      * bytes along with the largest possible packet header of 7 bytes. */
-    if ((ret = ff_alloc_packet2(avctx, avpkt, (1275 * 3 + 7) * opus->stream_count)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, avpkt, (1275 * 3 + 7) * opus->stream_count, 0)) < 0)
         return ret;
 
     if (avctx->sample_fmt == AV_SAMPLE_FMT_FLT)

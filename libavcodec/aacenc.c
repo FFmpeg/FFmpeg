@@ -652,7 +652,7 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         }
         start_ch += chans;
     }
-    if ((ret = ff_alloc_packet2(avctx, avpkt, 8192 * s->channels)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, avpkt, 8192 * s->channels, 0)) < 0)
         return ret;
     do {
         int frame_bits;

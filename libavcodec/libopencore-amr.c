@@ -236,7 +236,7 @@ static int amr_nb_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         s->enc_bitrate = avctx->bit_rate;
     }
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, 32)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, avpkt, 32, 0)) < 0)
         return ret;
 
     if (frame) {

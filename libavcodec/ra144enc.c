@@ -447,7 +447,7 @@ static int ra144_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     if (ractx->last_frame)
         return 0;
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, FRAME_SIZE)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, avpkt, FRAME_SIZE, 0)) < 0)
         return ret;
 
     /**

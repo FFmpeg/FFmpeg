@@ -1390,7 +1390,7 @@ static int flac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         }
     }
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, frame_bytes)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, avpkt, frame_bytes, 0)) < 0)
         return ret;
 
     out_bytes = write_frame(s, avpkt);

@@ -717,7 +717,7 @@ static int dvvideo_encode_frame(AVCodecContext *c, AVPacket *pkt,
     DVVideoContext *s = c->priv_data;
     int ret;
 
-    if ((ret = ff_alloc_packet2(c, pkt, s->sys->frame_size)) < 0)
+    if ((ret = ff_alloc_packet2(c, pkt, s->sys->frame_size, 0)) < 0)
         return ret;
 
     c->pix_fmt                = s->sys->pix_fmt;

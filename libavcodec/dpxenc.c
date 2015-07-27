@@ -195,7 +195,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         need_align = size - len;
         size *= avctx->height;
     }
-    if ((ret = ff_alloc_packet2(avctx, pkt, size + HEADER_SIZE)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, pkt, size + HEADER_SIZE, 0)) < 0)
         return ret;
     buf = pkt->data;
 

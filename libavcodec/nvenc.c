@@ -1124,7 +1124,7 @@ static int process_output_surface(AVCodecContext *avctx, AVPacket *pkt, NvencOut
         goto error;
     }
 
-    if (res = ff_alloc_packet2(avctx, pkt, lock_params.bitstreamSizeInBytes)) {
+    if (res = ff_alloc_packet2(avctx, pkt, lock_params.bitstreamSizeInBytes, 0)) {
         p_nvenc->nvEncUnlockBitstream(ctx->nvencoder, tmpoutsurf->output_surface);
         goto error;
     }

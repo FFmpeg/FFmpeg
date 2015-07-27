@@ -1033,7 +1033,7 @@ static int vorbis_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         return 0;
     samples = 1 << (venc->log2_blocksize[0] - 1);
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, 8192)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, avpkt, 8192, 0)) < 0)
         return ret;
 
     init_put_bits(&pb, avpkt->data, avpkt->size);

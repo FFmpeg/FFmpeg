@@ -181,7 +181,7 @@ static int sunrast_encode_frame(AVCodecContext *avctx,  AVPacket *avpkt,
     SUNRASTContext *s = avctx->priv_data;
     int ret;
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, s->size)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, avpkt, s->size, 0)) < 0)
         return ret;
 
     bytestream2_init_writer(&s->p, avpkt->data, avpkt->size);

@@ -379,7 +379,7 @@ static int libschroedinger_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     pkt_size = p_frame_output->size;
     if (last_frame_in_sequence && p_schro_params->enc_buf_size > 0)
         pkt_size += p_schro_params->enc_buf_size;
-    if ((ret = ff_alloc_packet2(avctx, pkt, pkt_size)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, pkt, pkt_size, 0)) < 0)
         goto error;
 
     memcpy(pkt->data, p_frame_output->p_encbuf, p_frame_output->size);

@@ -536,7 +536,7 @@ static int utvideo_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     /* Allocate a new packet if needed, and set it to the pointer dst */
     ret = ff_alloc_packet2(avctx, pkt, (256 + 4 * c->slices + width * height) *
-                           c->planes + 4);
+                           c->planes + 4, 0);
 
     if (ret < 0)
         return ret;

@@ -687,7 +687,7 @@ static inline void cx_pktcpy(struct FrameListData *dst,
 static int storeframe(AVCodecContext *avctx, struct FrameListData *cx_frame,
                       AVPacket *pkt)
 {
-    int ret = ff_alloc_packet2(avctx, pkt, cx_frame->sz);
+    int ret = ff_alloc_packet2(avctx, pkt, cx_frame->sz, 0);
     uint8_t *side_data;
     if (ret >= 0) {
         memcpy(pkt->data, cx_frame->buf, pkt->size);

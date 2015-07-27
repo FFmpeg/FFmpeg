@@ -727,7 +727,7 @@ static int sonic_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     const short *samples = (const int16_t*)frame->data[0];
     uint8_t state[32];
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, s->frame_size * 5 + 1000)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, avpkt, s->frame_size * 5 + 1000, 0)) < 0)
         return ret;
 
     ff_init_range_encoder(&c, avpkt->data, avpkt->size);

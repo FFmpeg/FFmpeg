@@ -56,7 +56,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
          return AVERROR_EXPERIMENTAL;
     }
 
-    if ((ret = ff_alloc_packet2(avctx, pkt, 32*avctx->height*avctx->width/4)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, pkt, 32*avctx->height*avctx->width/4, 0)) < 0)
         return ret;
 
     init_put_bits(&pb, pkt->data, pkt->size);

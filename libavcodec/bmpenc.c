@@ -118,7 +118,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 #define SIZE_BITMAPINFOHEADER 40
     hsize = SIZE_BITMAPFILEHEADER + SIZE_BITMAPINFOHEADER + (pal_entries << 2);
     n_bytes = n_bytes_image + hsize;
-    if ((ret = ff_alloc_packet2(avctx, pkt, n_bytes)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, pkt, n_bytes, 0)) < 0)
         return ret;
     buf = pkt->data;
     bytestream_put_byte(&buf, 'B');                   // BITMAPFILEHEADER.bfType

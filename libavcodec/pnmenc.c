@@ -32,7 +32,7 @@ static int pnm_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     if ((ret = ff_alloc_packet2(avctx, pkt, avpicture_get_size(avctx->pix_fmt,
                                                        avctx->width,
-                                                       avctx->height) + 200)) < 0)
+                                                       avctx->height) + 200, 0)) < 0)
         return ret;
 
     bytestream_start =

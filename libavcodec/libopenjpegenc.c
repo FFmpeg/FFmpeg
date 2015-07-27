@@ -579,7 +579,7 @@ static int libopenjpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     }
 
     len = cio_tell(stream);
-    if ((ret = ff_alloc_packet2(avctx, pkt, len)) < 0) {
+    if ((ret = ff_alloc_packet2(avctx, pkt, len, 0)) < 0) {
         return ret;
     }
 

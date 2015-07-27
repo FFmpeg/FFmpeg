@@ -78,7 +78,7 @@ static int s302m_encode2_frame(AVCodecContext *avctx, AVPacket *avpkt,
     uint8_t *o;
     PutBitContext pb;
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, buf_size)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, avpkt, buf_size, 0)) < 0)
         return ret;
 
     o = avpkt->data;

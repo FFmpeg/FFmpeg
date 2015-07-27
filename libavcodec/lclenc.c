@@ -79,7 +79,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     int zret; // Zlib return code
     int max_size = deflateBound(&c->zstream, avctx->width * avctx->height * 3);
 
-    if ((ret = ff_alloc_packet2(avctx, pkt, max_size)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, pkt, max_size, 0)) < 0)
         return ret;
 
     if(avctx->pix_fmt != AV_PIX_FMT_BGR24){

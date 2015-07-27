@@ -1777,7 +1777,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     goto end;
 }
 
-int ff_alloc_packet2(AVCodecContext *avctx, AVPacket *avpkt, int64_t size)
+int ff_alloc_packet2(AVCodecContext *avctx, AVPacket *avpkt, int64_t size, int64_t min_size)
 {
     if (avpkt->size < 0) {
         av_log(avctx, AV_LOG_ERROR, "Invalid negative user packet size %d\n", avpkt->size);
@@ -1835,7 +1835,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
 int ff_alloc_packet(AVPacket *avpkt, int size)
 {
-    return ff_alloc_packet2(NULL, avpkt, size);
+    return ff_alloc_packet2(NULL, avpkt, size, 0);
 }
 
 /**

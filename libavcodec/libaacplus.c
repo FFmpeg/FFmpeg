@@ -101,7 +101,7 @@ static int aacPlus_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     int32_t *input_buffer = (int32_t *)frame->data[0];
     int ret;
 
-    if ((ret = ff_alloc_packet2(avctx, pkt, s->max_output_bytes)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, pkt, s->max_output_bytes, 0)) < 0)
         return ret;
 
     pkt->size = aacplusEncEncode(s->aacplus_handle, input_buffer,

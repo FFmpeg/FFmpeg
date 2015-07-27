@@ -217,9 +217,13 @@ int avpriv_unlock_avformat(void);
  *                avpkt->size is set to the specified size.
  *                All other AVPacket fields will be reset with av_init_packet().
  * @param size    the minimum required packet size
+ * @param min_size the smallest the packet might be down sized to, can be set to
+ *                0, setting this roughly correctly allows the allocation code
+ *                to choose between several allocation stragies to improve
+ *                speed slightly.
  * @return        non negative on success, negative error code on failure
  */
-int ff_alloc_packet2(AVCodecContext *avctx, AVPacket *avpkt, int64_t size);
+int ff_alloc_packet2(AVCodecContext *avctx, AVPacket *avpkt, int64_t size, int64_t min_size);
 
 int ff_alloc_packet(AVPacket *avpkt, int size);
 

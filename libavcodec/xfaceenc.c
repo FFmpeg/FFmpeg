@@ -202,7 +202,7 @@ static int xface_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         intbuf[i++] = r + XFACE_FIRST_PRINT;
     }
 
-    if ((ret = ff_alloc_packet2(avctx, pkt, i+2)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, pkt, i+2, 0)) < 0)
         return ret;
 
     /* revert the number, and close the buffer */
