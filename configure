@@ -4693,8 +4693,7 @@ EOF
 fi
 
 for pfx in "" host_; do
-    pfx_no_=${pfx%_}
-    varname=${pfx_no_}cc_type
+    varname=${pfx%_}cc_type
     eval "type=\$$varname"
     if [ $type = "msvc" ]; then
         check_${pfx}cc <<EOF || add_${pfx}cflags -Dinline=__inline
