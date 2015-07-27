@@ -459,6 +459,9 @@ typedef struct OutputStream {
 
     /* packet quality factor */
     int quality;
+
+    /* frame encode sum of squared error values */
+    int64_t error[4];
 } OutputStream;
 
 typedef struct OutputFile {

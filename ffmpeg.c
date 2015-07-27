@@ -669,9 +669,17 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
         ost->frame_number++;
     }
     if (avctx->codec_type == AVMEDIA_TYPE_VIDEO) {
+        int i;
         uint8_t *sd = av_packet_get_side_data(pkt, AV_PKT_DATA_QUALITY_STATS,
                                               NULL);
         ost->quality = sd ? AV_RL32(sd) : -1;
+
+        for (i = 0; i<FF_ARRAY_ELEMS(ost->error); i++) {
+            if (sd && i < sd[5])
+                ost->error[i] = AV_RL64(sd + 8 + 8*i);
+            else
+                ost->error[i] = -1;
+        }
     }
 
     if (bsfc)
@@ -1266,8 +1274,8 @@ static void do_video_stats(OutputStream *ost, int frame_size)
         fprintf(vstats_file, "frame= %5d q= %2.1f ", frame_number,
                 ost->quality / (float)FF_QP2LAMBDA);
 
-        if (enc->coded_frame && (enc->flags & AV_CODEC_FLAG_PSNR))
-            fprintf(vstats_file, "PSNR= %6.2f ", psnr(enc->coded_frame->error[0] / (enc->width * enc->height * 255.0 * 255.0)));
+        if (ost->error[0]>=0 && (enc->flags & AV_CODEC_FLAG_PSNR))
+            fprintf(vstats_file, "PSNR= %6.2f ", psnr(ost->error[0] / (enc->width * enc->height * 255.0 * 255.0)));
 
         fprintf(vstats_file,"f_size= %6d ", frame_size);
         /* compute pts value */
@@ -1598,7 +1606,7 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
                         error = enc->error[j];
                         scale = enc->width * enc->height * 255.0 * 255.0 * frame_number;
                     } else {
-                        error = enc->coded_frame->error[j];
+                        error = ost->error[j];
                         scale = enc->width * enc->height * 255.0 * 255.0;
                     }
                     if (j)
