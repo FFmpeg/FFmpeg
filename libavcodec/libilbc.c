@@ -111,7 +111,7 @@ AVCodec ff_libilbc_decoder = {
     .priv_data_size = sizeof(ILBCDecContext),
     .init           = ilbc_decode_init,
     .decode         = ilbc_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
     .priv_class     = &ilbc_dec_class,
 };
 

@@ -479,7 +479,7 @@ AVCodec ff_mimic_decoder = {
     .init                  = mimic_decode_init,
     .close                 = mimic_decode_end,
     .decode                = mimic_decode_frame,
-    .capabilities          = CODEC_CAP_DR1 | CODEC_CAP_FRAME_THREADS,
+    .capabilities          = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
     .update_thread_context = ONLY_IF_THREADS_ENABLED(mimic_decode_update_thread_context),
     .init_thread_copy      = ONLY_IF_THREADS_ENABLED(mimic_init_thread_copy),
 };

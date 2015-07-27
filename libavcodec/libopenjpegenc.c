@@ -649,7 +649,7 @@ AVCodec ff_libopenjpeg_encoder = {
     .init           = libopenjpeg_encode_init,
     .encode2        = libopenjpeg_encode_frame,
     .close          = libopenjpeg_encode_close,
-    .capabilities   = CODEC_CAP_FRAME_THREADS | CODEC_CAP_INTRA_ONLY,
+    .capabilities   = AV_CODEC_CAP_FRAME_THREADS | AV_CODEC_CAP_INTRA_ONLY,
     .pix_fmts       = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_RGB24, AV_PIX_FMT_RGBA, AV_PIX_FMT_RGB48,
         AV_PIX_FMT_RGBA64, AV_PIX_FMT_GBR24P,

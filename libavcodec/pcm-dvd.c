@@ -311,7 +311,7 @@ AVCodec ff_pcm_dvd_decoder = {
     .init           = pcm_dvd_decode_init,
     .decode         = pcm_dvd_decode_frame,
     .close          = pcm_dvd_decode_uninit,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
     .sample_fmts    = (const enum AVSampleFormat[]) {
         AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_S32, AV_SAMPLE_FMT_NONE
     }

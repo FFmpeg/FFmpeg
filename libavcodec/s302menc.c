@@ -173,6 +173,6 @@ AVCodec ff_s302m_encoder = {
     .sample_fmts           = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S32,
                                                             AV_SAMPLE_FMT_S16,
                                                             AV_SAMPLE_FMT_NONE },
-    .capabilities          = CODEC_CAP_VARIABLE_FRAME_SIZE | CODEC_CAP_EXPERIMENTAL,
+    .capabilities          = AV_CODEC_CAP_VARIABLE_FRAME_SIZE | AV_CODEC_CAP_EXPERIMENTAL,
     .supported_samplerates = (const int[]) { 48000, 0 },
 };

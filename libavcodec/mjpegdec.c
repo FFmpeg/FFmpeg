@@ -2404,7 +2404,7 @@ AVCodec ff_mjpeg_decoder = {
     .close          = ff_mjpeg_decode_end,
     .decode         = ff_mjpeg_decode_frame,
     .flush          = decode_flush,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
     .max_lowres     = 3,
     .priv_class     = &mjpegdec_class,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
@@ -2421,7 +2421,7 @@ AVCodec ff_thp_decoder = {
     .close          = ff_mjpeg_decode_end,
     .decode         = ff_mjpeg_decode_frame,
     .flush          = decode_flush,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
     .max_lowres     = 3,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

@@ -267,7 +267,7 @@ AVCodec ff_h264_vda_decoder = {
     .init           = vdadec_init,
     .close          = vdadec_close,
     .decode         = vdadec_decode,
-    .capabilities   = CODEC_CAP_DELAY,
+    .capabilities   = AV_CODEC_CAP_DELAY,
     .flush          = vdadec_flush,
     .long_name      = NULL_IF_CONFIG_SMALL("H.264 (VDA acceleration)"),
 };

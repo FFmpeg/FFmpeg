@@ -647,7 +647,7 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
         return buf_size;
     }
 
-    if (s->avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU) {
+    if (s->avctx->codec->capabilities&AV_CODEC_CAP_HWACCEL_VDPAU) {
         if (v->profile < PROFILE_ADVANCED)
             avctx->pix_fmt = AV_PIX_FMT_VDPAU_WMV3;
         else
@@ -673,14 +673,14 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
                 switch (AV_RB32(start)) {
                 case VC1_CODE_FRAME:
                     if (avctx->hwaccel ||
-                        s->avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU)
+                        s->avctx->codec->capabilities&AV_CODEC_CAP_HWACCEL_VDPAU)
                         buf_start = start;
                     buf_size2 = vc1_unescape_buffer(start + 4, size, buf2);
                     break;
                 case VC1_CODE_FIELD: {
                     int buf_size3;
                     if (avctx->hwaccel ||
-                        s->avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU)
+                        s->avctx->codec->capabilities&AV_CODEC_CAP_HWACCEL_VDPAU)
                         buf_start_second_field = start;
                     tmp = av_realloc_array(slices, sizeof(*slices), (n_slices+1));
                     if (!tmp)
@@ -734,7 +734,7 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
                 goto err;
             } else { // found field marker, unescape second field
                 if (avctx->hwaccel ||
-                    s->avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU)
+                    s->avctx->codec->capabilities&AV_CODEC_CAP_HWACCEL_VDPAU)
                     buf_start_second_field = divider;
                 tmp = av_realloc_array(slices, sizeof(*slices), (n_slices+1));
                 if (!tmp)
@@ -874,7 +874,7 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
     s->me.qpel_avg = s->qdsp.avg_qpel_pixels_tab;
 
     if ((CONFIG_VC1_VDPAU_DECODER)
-        &&s->avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU) {
+        &&s->avctx->codec->capabilities&AV_CODEC_CAP_HWACCEL_VDPAU) {
         if (v->field_mode && buf_start_second_field) {
             ff_vdpau_vc1_decode_picture(s, buf_start, buf_start_second_field - buf_start);
             ff_vdpau_vc1_decode_picture(s, buf_start_second_field, (buf + buf_size) - buf_start_second_field);
@@ -1098,7 +1098,7 @@ AVCodec ff_vc1_decoder = {
     .close          = ff_vc1_decode_end,
     .decode         = vc1_decode_frame,
     .flush          = ff_mpeg_flush,
-    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_DELAY,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
     .pix_fmts       = vc1_hwaccel_pixfmt_list_420,
     .profiles       = NULL_IF_CONFIG_SMALL(profiles)
 };
@@ -1114,7 +1114,7 @@ AVCodec ff_wmv3_decoder = {
     .close          = ff_vc1_decode_end,
     .decode         = vc1_decode_frame,
     .flush          = ff_mpeg_flush,
-    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_DELAY,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
     .pix_fmts       = vc1_hwaccel_pixfmt_list_420,
     .profiles       = NULL_IF_CONFIG_SMALL(profiles)
 };
@@ -1130,7 +1130,7 @@ AVCodec ff_wmv3_vdpau_decoder = {
     .init           = vc1_decode_init,
     .close          = ff_vc1_decode_end,
     .decode         = vc1_decode_frame,
-    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_DELAY | CODEC_CAP_HWACCEL_VDPAU,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HWACCEL_VDPAU,
     .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_VDPAU_WMV3, AV_PIX_FMT_NONE },
     .profiles       = NULL_IF_CONFIG_SMALL(profiles)
 };
@@ -1146,7 +1146,7 @@ AVCodec ff_vc1_vdpau_decoder = {
     .init           = vc1_decode_init,
     .close          = ff_vc1_decode_end,
     .decode         = vc1_decode_frame,
-    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_DELAY | CODEC_CAP_HWACCEL_VDPAU,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HWACCEL_VDPAU,
     .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_VDPAU_VC1, AV_PIX_FMT_NONE },
     .profiles       = NULL_IF_CONFIG_SMALL(profiles)
 };
@@ -1162,7 +1162,7 @@ AVCodec ff_wmv3image_decoder = {
     .init           = vc1_decode_init,
     .close          = ff_vc1_decode_end,
     .decode         = vc1_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
     .flush          = vc1_sprite_flush,
     .pix_fmts       = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_YUV420P,
@@ -1181,7 +1181,7 @@ AVCodec ff_vc1image_decoder = {
     .init           = vc1_decode_init,
     .close          = ff_vc1_decode_end,
     .decode         = vc1_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
     .flush          = vc1_sprite_flush,
     .pix_fmts       = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_YUV420P,

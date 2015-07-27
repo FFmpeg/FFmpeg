@@ -292,7 +292,7 @@ AVCodec ff_mace3_decoder = {
     .priv_data_size = sizeof(MACEContext),
     .init           = mace_decode_init,
     .decode         = mace_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16P,
                                                       AV_SAMPLE_FMT_NONE },
 };
@@ -305,7 +305,7 @@ AVCodec ff_mace6_decoder = {
     .priv_data_size = sizeof(MACEContext),
     .init           = mace_decode_init,
     .decode         = mace_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16P,
                                                       AV_SAMPLE_FMT_NONE },
 };

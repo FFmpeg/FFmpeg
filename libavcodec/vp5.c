@@ -290,5 +290,5 @@ AVCodec ff_vp5_decoder = {
     .init           = vp5_decode_init,
     .close          = ff_vp56_free,
     .decode         = ff_vp56_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

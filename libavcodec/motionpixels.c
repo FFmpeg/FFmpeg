@@ -351,5 +351,5 @@ AVCodec ff_motionpixels_decoder = {
     .init           = mp_decode_init,
     .close          = mp_decode_end,
     .decode         = mp_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

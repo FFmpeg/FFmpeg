@@ -83,6 +83,6 @@ AVCodec ff_vc1_qsv_decoder = {
     .decode         = qsv_decode_frame,
     .flush          = NULL,
     .close          = qsv_decode_close,
-    .capabilities   = CODEC_CAP_DELAY,
+    .capabilities   = AV_CODEC_CAP_DELAY,
     .priv_class     = &class,
 };

@@ -826,6 +826,112 @@ typedef struct RcOverride{
  */
 #define AV_CODEC_FLAG2_SKIP_MANUAL   0x20000000
 
+/* Unsupported options :
+ *              Syntax Arithmetic coding (SAC)
+ *              Reference Picture Selection
+ *              Independent Segment Decoding */
+/* /Fx */
+/* codec capabilities */
+
+/**
+ * Decoder can use draw_horiz_band callback.
+ */
+#define AV_CODEC_CAP_DRAW_HORIZ_BAND     (1 <<  0)
+/**
+ * Codec uses get_buffer() for allocating buffers and supports custom allocators.
+ * If not set, it might not use get_buffer() at all or use operations that
+ * assume the buffer was allocated by avcodec_default_get_buffer.
+ */
+#define AV_CODEC_CAP_DR1                 (1 <<  1)
+#define AV_CODEC_CAP_TRUNCATED           (1 <<  3)
+/**
+ * Encoder or decoder requires flushing with NULL input at the end in order to
+ * give the complete and correct output.
+ *
+ * NOTE: If this flag is not set, the codec is guaranteed to never be fed with
+ *       with NULL data. The user can still send NULL data to the public encode
+ *       or decode function, but libavcodec will not pass it along to the codec
+ *       unless this flag is set.
+ *
+ * Decoders:
+ * The decoder has a non-zero delay and needs to be fed with avpkt->data=NULL,
+ * avpkt->size=0 at the end to get the delayed data until the decoder no longer
+ * returns frames.
+ *
+ * Encoders:
+ * The encoder needs to be fed with NULL data at the end of encoding until the
+ * encoder no longer returns data.
+ *
+ * NOTE: For encoders implementing the AVCodec.encode2() function, setting this
+ *       flag also means that the encoder must set the pts and duration for
+ *       each output packet. If this flag is not set, the pts and duration will
+ *       be determined by libavcodec from the input frame.
+ */
+#define AV_CODEC_CAP_DELAY               (1 <<  5)
+/**
+ * Codec can be fed a final frame with a smaller size.
+ * This can be used to prevent truncation of the last audio samples.
+ */
+#define AV_CODEC_CAP_SMALL_LAST_FRAME    (1 <<  6)
+
+#if FF_API_CAP_VDPAU
+/**
+ * Codec can export data for HW decoding (VDPAU).
+ */
+#define AV_CODEC_CAP_HWACCEL_VDPAU       (1 <<  7)
+#endif
+
+/**
+ * Codec can output multiple frames per AVPacket
+ * Normally demuxers return one frame at a time, demuxers which do not do
+ * are connected to a parser to split what they return into proper frames.
+ * This flag is reserved to the very rare category of codecs which have a
+ * bitstream that cannot be split into frames without timeconsuming
+ * operations like full decoding. Demuxers carring such bitstreams thus
+ * may return multiple frames in a packet. This has many disadvantages like
+ * prohibiting stream copy in many cases thus it should only be considered
+ * as a last resort.
+ */
+#define AV_CODEC_CAP_SUBFRAMES           (1 <<  8)
+/**
+ * Codec is experimental and is thus avoided in favor of non experimental
+ * encoders
+ */
+#define AV_CODEC_CAP_EXPERIMENTAL        (1 <<  9)
+/**
+ * Codec should fill in channel configuration and samplerate instead of container
+ */
+#define AV_CODEC_CAP_CHANNEL_CONF        (1 << 10)
+/**
+ * Codec supports frame-level multithreading.
+ */
+#define AV_CODEC_CAP_FRAME_THREADS       (1 << 12)
+/**
+ * Codec supports slice-based (or partition-based) multithreading.
+ */
+#define AV_CODEC_CAP_SLICE_THREADS       (1 << 13)
+/**
+ * Codec supports changed parameters at any point.
+ */
+#define AV_CODEC_CAP_PARAM_CHANGE        (1 << 14)
+/**
+ * Codec supports avctx->thread_count == 0 (auto).
+ */
+#define AV_CODEC_CAP_AUTO_THREADS        (1 << 15)
+/**
+ * Audio encoder supports receiving a different number of samples in each call.
+ */
+#define AV_CODEC_CAP_VARIABLE_FRAME_SIZE (1 << 16)
+/**
+ * Codec is intra only.
+ */
+#define AV_CODEC_CAP_INTRA_ONLY       0x40000000
+/**
+ * Codec is lossless.
+ */
+#define AV_CODEC_CAP_LOSSLESS         0x80000000
+
+
 /**
  * Allow decoders to produce frames with data planes that are not aligned
  * to CPU requirements (e.g. due to cropping).
@@ -2156,7 +2262,7 @@ typedef struct AVCodecContext {
      *
      * - encoding: set by libavcodec in avcodec_open2(). Each submitted frame
      *   except the last must contain exactly frame_size samples per channel.
-     *   May be 0 when the codec has CODEC_CAP_VARIABLE_FRAME_SIZE set, then the
+     *   May be 0 when the codec has AV_CODEC_CAP_VARIABLE_FRAME_SIZE set, then the
      *   frame size is not restricted.
      * - decoding: may be set by some decoders to indicate constant frame size
      */
@@ -2358,7 +2464,7 @@ typedef struct AVCodecContext {
      *   buffers than buf[] can hold. extended_buf will be freed in
      *   av_frame_unref().
      *
-     * If CODEC_CAP_DR1 is not set then get_buffer2() must call
+     * If AV_CODEC_CAP_DR1 is not set then get_buffer2() must call
      * avcodec_default_get_buffer2() instead of providing buffers allocated by
      * some other means.
      *
@@ -3369,7 +3475,7 @@ typedef struct AVCodec {
     enum AVCodecID id;
     /**
      * Codec capabilities.
-     * see CODEC_CAP_*
+     * see AV_CODEC_CAP_*
      */
     int capabilities;
     const AVRational *supported_framerates; ///< array of supported framerates, or NULL if any, array is terminated by {0,0}
@@ -4154,7 +4260,7 @@ attribute_deprecated int avcodec_default_reget_buffer(AVCodecContext *s, AVFrame
 /**
  * The default callback for AVCodecContext.get_buffer2(). It is made public so
  * it can be called by custom get_buffer2() implementations for decoders without
- * CODEC_CAP_DR1 set.
+ * AV_CODEC_CAP_DR1 set.
  */
 int avcodec_default_get_buffer2(AVCodecContext *s, AVFrame *frame, int flags);
 
@@ -4178,7 +4284,7 @@ unsigned avcodec_get_edge_width(void);
  * buffer that is acceptable for the codec if you do not use any horizontal
  * padding.
  *
- * May only be used if a codec with CODEC_CAP_DR1 has been opened.
+ * May only be used if a codec with AV_CODEC_CAP_DR1 has been opened.
  */
 void avcodec_align_dimensions(AVCodecContext *s, int *width, int *height);
 
@@ -4187,7 +4293,7 @@ void avcodec_align_dimensions(AVCodecContext *s, int *width, int *height);
  * buffer that is acceptable for the codec if you also ensure that all
  * line sizes are a multiple of the respective linesize_align[i].
  *
- * May only be used if a codec with CODEC_CAP_DR1 has been opened.
+ * May only be used if a codec with AV_CODEC_CAP_DR1 has been opened.
  */
 void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height,
                                int linesize_align[AV_NUM_DATA_POINTERS]);
@@ -4285,13 +4391,13 @@ attribute_deprecated int avcodec_decode_audio3(AVCodecContext *avctx, int16_t *s
  * needs to be fed to the decoder with remaining data until it is completely
  * consumed or an error occurs.
  *
- * Some decoders (those marked with CODEC_CAP_DELAY) have a delay between input
+ * Some decoders (those marked with AV_CODEC_CAP_DELAY) have a delay between input
  * and output. This means that for some packets they will not immediately
  * produce decoded output and need to be flushed at the end of decoding to get
  * all the decoded data. Flushing is done by calling this function with packets
  * with avpkt->data set to NULL and avpkt->size set to 0 until it stops
  * returning samples. It is safe to flush even those decoders that are not
- * marked with CODEC_CAP_DELAY, then no samples will be returned.
+ * marked with AV_CODEC_CAP_DELAY, then no samples will be returned.
  *
  * @warning The input buffer, avpkt->data must be FF_INPUT_BUFFER_PADDING_SIZE
  *          larger than the actual read bytes because some optimized bitstream
@@ -4316,7 +4422,7 @@ attribute_deprecated int avcodec_decode_audio3(AVCodecContext *avctx, int16_t *s
  * @param[out] got_frame_ptr Zero if no frame could be decoded, otherwise it is
  *                           non-zero. Note that this field being set to zero
  *                           does not mean that an error has occurred. For
- *                           decoders with CODEC_CAP_DELAY set, no given decode
+ *                           decoders with AV_CODEC_CAP_DELAY set, no given decode
  *                           call is guaranteed to produce a frame.
  * @param[in]  avpkt The input AVPacket containing the input buffer.
  *                   At least avpkt->data and avpkt->size should be set. Some
@@ -4340,7 +4446,7 @@ int avcodec_decode_audio4(AVCodecContext *avctx, AVFrame *frame,
  * @warning The end of the input buffer buf should be set to 0 to ensure that
  * no overreading happens for damaged MPEG streams.
  *
- * @note Codecs which have the CODEC_CAP_DELAY capability set have a delay
+ * @note Codecs which have the AV_CODEC_CAP_DELAY capability set have a delay
  * between input and output, these need to be fed with avpkt->data=NULL,
  * avpkt->size=0 at the end to return the remaining frames.
  *
@@ -4380,7 +4486,7 @@ int avcodec_decode_video2(AVCodecContext *avctx, AVFrame *picture,
  * Return a negative value on error, otherwise return the number of bytes used.
  * If no subtitle could be decompressed, got_sub_ptr is zero.
  * Otherwise, the subtitle is stored in *sub.
- * Note that CODEC_CAP_DR1 is not available for subtitle codecs. This is for
+ * Note that AV_CODEC_CAP_DR1 is not available for subtitle codecs. This is for
  * simplicity, because the performance difference is expect to be negligible
  * and reusing a get_buffer written for video codecs would probably perform badly
  * due to a potentially very different allocation pattern.
@@ -4742,8 +4848,8 @@ int attribute_deprecated avcodec_encode_audio(AVCodecContext *avctx,
  *                  called to free the user supplied buffer).
  * @param[in] frame AVFrame containing the raw audio data to be encoded.
  *                  May be NULL when flushing an encoder that has the
- *                  CODEC_CAP_DELAY capability set.
- *                  If CODEC_CAP_VARIABLE_FRAME_SIZE is set, then each frame
+ *                  AV_CODEC_CAP_DELAY capability set.
+ *                  If AV_CODEC_CAP_VARIABLE_FRAME_SIZE is set, then each frame
  *                  can have any number of samples.
  *                  If it is not set, frame->nb_samples must be equal to
  *                  avctx->frame_size for all frames except the last.
@@ -4804,7 +4910,7 @@ int avcodec_encode_video(AVCodecContext *avctx, uint8_t *buf, int buf_size,
  *                  called to free the user supplied buffer).
  * @param[in] frame AVFrame containing the raw video data to be encoded.
  *                  May be NULL when flushing an encoder that has the
- *                  CODEC_CAP_DELAY capability set.
+ *                  AV_CODEC_CAP_DELAY capability set.
  * @param[out] got_packet_ptr This field is set to 1 by libavcodec if the
  *                            output packet is non-empty, and to 0 if it is
  *                            empty. If the function returns an error, the

@@ -139,7 +139,7 @@ AVCodec ff_libshine_encoder = {
     .init                  = libshine_encode_init,
     .encode2               = libshine_encode_frame,
     .close                 = libshine_encode_close,
-    .capabilities          = CODEC_CAP_DELAY,
+    .capabilities          = AV_CODEC_CAP_DELAY,
     .sample_fmts           = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16P,
                                                             AV_SAMPLE_FMT_NONE },
     .supported_samplerates = libshine_sample_rates,

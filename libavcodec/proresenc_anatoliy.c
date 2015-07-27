@@ -614,7 +614,7 @@ AVCodec ff_prores_aw_encoder = {
     .close          = prores_encode_close,
     .encode2        = prores_encode_frame,
     .pix_fmts       = (const enum AVPixelFormat[]){AV_PIX_FMT_YUV422P10, AV_PIX_FMT_NONE},
-    .capabilities   = CODEC_CAP_FRAME_THREADS | CODEC_CAP_INTRA_ONLY,
+    .capabilities   = AV_CODEC_CAP_FRAME_THREADS | AV_CODEC_CAP_INTRA_ONLY,
     .profiles       = profiles
 };
 
@@ -628,6 +628,6 @@ AVCodec ff_prores_encoder = {
     .close          = prores_encode_close,
     .encode2        = prores_encode_frame,
     .pix_fmts       = (const enum AVPixelFormat[]){AV_PIX_FMT_YUV422P10, AV_PIX_FMT_NONE},
-    .capabilities   = CODEC_CAP_FRAME_THREADS | CODEC_CAP_INTRA_ONLY,
+    .capabilities   = AV_CODEC_CAP_FRAME_THREADS | AV_CODEC_CAP_INTRA_ONLY,
     .profiles       = profiles
 };

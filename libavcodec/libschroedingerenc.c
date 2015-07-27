@@ -449,7 +449,7 @@ AVCodec ff_libschroedinger_encoder = {
     .init           = libschroedinger_encode_init,
     .encode2        = libschroedinger_encode_frame,
     .close          = libschroedinger_encode_close,
-    .capabilities   = CODEC_CAP_DELAY,
+    .capabilities   = AV_CODEC_CAP_DELAY,
     .pix_fmts       = (const enum AVPixelFormat[]){
         AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV444P, AV_PIX_FMT_NONE
     },

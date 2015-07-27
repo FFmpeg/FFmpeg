@@ -1205,7 +1205,7 @@ AVCodec ff_vorbis_encoder = {
     .init           = vorbis_encode_init,
     .encode2        = vorbis_encode_frame,
     .close          = vorbis_encode_close,
-    .capabilities   = CODEC_CAP_DELAY | CODEC_CAP_EXPERIMENTAL,
+    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_EXPERIMENTAL,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLTP,
                                                      AV_SAMPLE_FMT_NONE },
 };

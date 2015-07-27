@@ -814,5 +814,5 @@ AVCodec ff_flic_decoder = {
     .init           = flic_decode_init,
     .close          = flic_decode_end,
     .decode         = flic_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

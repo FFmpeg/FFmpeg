@@ -977,7 +977,7 @@ AVCodec ff_wmav1_decoder = {
     .close          = ff_wma_end,
     .decode         = wma_decode_superframe,
     .flush          = flush,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
                                                       AV_SAMPLE_FMT_NONE },
 };
@@ -993,7 +993,7 @@ AVCodec ff_wmav2_decoder = {
     .close          = ff_wma_end,
     .decode         = wma_decode_superframe,
     .flush          = flush,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
                                                       AV_SAMPLE_FMT_NONE },
 };

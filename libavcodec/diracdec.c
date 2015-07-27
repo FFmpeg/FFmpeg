@@ -2040,6 +2040,6 @@ AVCodec ff_dirac_decoder = {
     .init           = dirac_decode_init,
     .close          = dirac_decode_end,
     .decode         = dirac_decode_frame,
-    .capabilities   = CODEC_CAP_DELAY,
+    .capabilities   = AV_CODEC_CAP_DELAY,
     .flush          = dirac_decode_flush,
 };

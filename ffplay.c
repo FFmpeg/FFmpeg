@@ -2698,7 +2698,7 @@ static int stream_component_open(VideoState *is, int stream_index)
     if(stream_lowres) avctx->flags |= CODEC_FLAG_EMU_EDGE;
     if (fast)
         avctx->flags2 |= AV_CODEC_FLAG2_FAST;
-    if(codec->capabilities & CODEC_CAP_DR1)
+    if(codec->capabilities & AV_CODEC_CAP_DR1)
         avctx->flags |= CODEC_FLAG_EMU_EDGE;
 
     opts = filter_codec_opts(codec_opts, avctx->codec_id, ic, ic->streams[stream_index], codec);

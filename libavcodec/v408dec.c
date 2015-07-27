@@ -87,7 +87,7 @@ AVCodec ff_ayuv_decoder = {
     .id           = AV_CODEC_ID_AYUV,
     .init         = v408_decode_init,
     .decode       = v408_decode_frame,
-    .capabilities = CODEC_CAP_DR1,
+    .capabilities = AV_CODEC_CAP_DR1,
 };
 #endif
 #if CONFIG_V408_DECODER
@@ -98,6 +98,6 @@ AVCodec ff_v408_decoder = {
     .id           = AV_CODEC_ID_V408,
     .init         = v408_decode_init,
     .decode       = v408_decode_frame,
-    .capabilities = CODEC_CAP_DR1,
+    .capabilities = AV_CODEC_CAP_DR1,
 };
 #endif

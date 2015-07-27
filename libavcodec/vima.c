@@ -214,7 +214,7 @@ AVCodec ff_adpcm_vima_decoder = {
     .id           = AV_CODEC_ID_ADPCM_VIMA,
     .init         = decode_init,
     .decode       = decode_frame,
-    .capabilities = CODEC_CAP_DR1,
+    .capabilities = AV_CODEC_CAP_DR1,
 };
 
 #if FF_API_VIMA_DECODER
@@ -225,6 +225,6 @@ AVCodec ff_vima_decoder = {
     .id           = AV_CODEC_ID_ADPCM_VIMA,
     .init         = decode_init,
     .decode       = decode_frame,
-    .capabilities = CODEC_CAP_DR1,
+    .capabilities = AV_CODEC_CAP_DR1,
 };
 #endif

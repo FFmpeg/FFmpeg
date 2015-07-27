@@ -887,7 +887,7 @@ AVCodec ff_iff_ilbm_decoder = {
     .init           = decode_init,
     .close          = decode_end,
     .decode         = decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };
 #endif
 #if CONFIG_IFF_BYTERUN1_DECODER
@@ -900,6 +900,6 @@ AVCodec ff_iff_byterun1_decoder = {
     .init           = decode_init,
     .close          = decode_end,
     .decode         = decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };
 #endif

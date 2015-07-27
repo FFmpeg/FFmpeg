@@ -1125,5 +1125,5 @@ AVCodec ff_wavpack_decoder = {
     .decode         = wavpack_decode_frame,
     .flush          = wavpack_decode_flush,
     .init_thread_copy = ONLY_IF_THREADS_ENABLED(init_thread_copy),
-    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_FRAME_THREADS,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
 };

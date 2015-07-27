@@ -1243,8 +1243,8 @@ AVCodec ff_huffyuv_decoder = {
     .init             = decode_init,
     .close            = decode_end,
     .decode           = decode_frame,
-    .capabilities     = CODEC_CAP_DR1 | CODEC_CAP_DRAW_HORIZ_BAND |
-                        CODEC_CAP_FRAME_THREADS,
+    .capabilities     = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DRAW_HORIZ_BAND |
+                        AV_CODEC_CAP_FRAME_THREADS,
     .init_thread_copy = ONLY_IF_THREADS_ENABLED(decode_init_thread_copy),
 };
 
@@ -1258,8 +1258,8 @@ AVCodec ff_ffvhuff_decoder = {
     .init             = decode_init,
     .close            = decode_end,
     .decode           = decode_frame,
-    .capabilities     = CODEC_CAP_DR1 | CODEC_CAP_DRAW_HORIZ_BAND |
-                        CODEC_CAP_FRAME_THREADS,
+    .capabilities     = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DRAW_HORIZ_BAND |
+                        AV_CODEC_CAP_FRAME_THREADS,
     .init_thread_copy = ONLY_IF_THREADS_ENABLED(decode_init_thread_copy),
 };
 #endif /* CONFIG_FFVHUFF_DECODER */

@@ -334,7 +334,7 @@ AVCodec ff_ ## name_ ## _decoder = {                        \
     .priv_data_size = sizeof(DPCMContext),                  \
     .init           = dpcm_decode_init,                     \
     .decode         = dpcm_decode_frame,                    \
-    .capabilities   = CODEC_CAP_DR1,                        \
+    .capabilities   = AV_CODEC_CAP_DR1,                     \
 }
 
 DPCM_DECODER(AV_CODEC_ID_INTERPLAY_DPCM, interplay_dpcm, "DPCM Interplay");

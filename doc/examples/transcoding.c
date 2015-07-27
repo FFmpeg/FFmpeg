@@ -449,7 +449,7 @@ static int flush_encoder(unsigned int stream_index)
     int got_frame;
 
     if (!(ofmt_ctx->streams[stream_index]->codec->codec->capabilities &
-                CODEC_CAP_DELAY))
+                AV_CODEC_CAP_DELAY))
         return 0;
 
     while (1) {

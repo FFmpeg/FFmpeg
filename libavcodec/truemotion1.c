@@ -912,5 +912,5 @@ AVCodec ff_truemotion1_decoder = {
     .init           = truemotion1_decode_init,
     .close          = truemotion1_decode_end,
     .decode         = truemotion1_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

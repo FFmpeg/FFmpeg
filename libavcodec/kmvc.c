@@ -421,5 +421,5 @@ AVCodec ff_kmvc_decoder = {
     .priv_data_size = sizeof(KmvcContext),
     .init           = decode_init,
     .decode         = decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

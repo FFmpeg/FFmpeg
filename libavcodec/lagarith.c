@@ -748,5 +748,5 @@ AVCodec ff_lagarith_decoder = {
     .init           = lag_decode_init,
     .close          = lag_decode_end,
     .decode         = lag_decode_frame,
-    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_FRAME_THREADS,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
 };

@@ -1198,7 +1198,7 @@ static void do_video_out(AVFormatContext *s,
                        av_ts2str(pkt.dts), av_ts2timestr(pkt.dts, &enc->time_base));
             }
 
-            if (pkt.pts == AV_NOPTS_VALUE && !(enc->codec->capabilities & CODEC_CAP_DELAY))
+            if (pkt.pts == AV_NOPTS_VALUE && !(enc->codec->capabilities & AV_CODEC_CAP_DELAY))
                 pkt.pts = ost->sync_opts;
 
             av_packet_rescale_ts(&pkt, enc->time_base, ost->st->time_base);
@@ -1377,7 +1377,7 @@ static int reap_filters(int flush)
                 do_video_out(of->ctx, ost, filtered_frame, float_pts);
                 break;
             case AVMEDIA_TYPE_AUDIO:
-                if (!(enc->codec->capabilities & CODEC_CAP_PARAM_CHANGE) &&
+                if (!(enc->codec->capabilities & AV_CODEC_CAP_PARAM_CHANGE) &&
                     enc->channels != av_frame_get_channels(filtered_frame)) {
                     av_log(NULL, AV_LOG_ERROR,
                            "Audio filter graph output is not normalized and encoder does not support parameter changes\n");
@@ -2297,7 +2297,7 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt)
         ist->dts = ist->next_dts;
 
         if (avpkt.size && avpkt.size != pkt->size &&
-            !(ist->dec->capabilities & CODEC_CAP_SUBFRAMES)) {
+            !(ist->dec->capabilities & AV_CODEC_CAP_SUBFRAMES)) {
             av_log(NULL, ist->showed_multi_packet_warning ? AV_LOG_VERBOSE : AV_LOG_WARNING,
                    "Multiple frames in a packet from stream %d\n", pkt->stream_index);
             ist->showed_multi_packet_warning = 1;
@@ -2592,7 +2592,7 @@ static int init_output_stream(OutputStream *ost, char *error, int error_len)
             return ret;
         }
         if (ost->enc->type == AVMEDIA_TYPE_AUDIO &&
-            !(ost->enc->capabilities & CODEC_CAP_VARIABLE_FRAME_SIZE))
+            !(ost->enc->capabilities & AV_CODEC_CAP_VARIABLE_FRAME_SIZE))
             av_buffersink_set_frame_size(ost->filter->filter,
                                             ost->enc_ctx->frame_size);
         assert_avoptions(ost->encoder_opts);

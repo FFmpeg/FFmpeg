@@ -373,5 +373,5 @@ AVCodec ff_escape124_decoder = {
     .init           = escape124_decode_init,
     .close          = escape124_decode_close,
     .decode         = escape124_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

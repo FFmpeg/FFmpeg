@@ -1369,7 +1369,7 @@ AVCodec ff_ffv1_encoder = {
     .init           = encode_init,
     .encode2        = encode_frame,
     .close          = encode_close,
-    .capabilities   = CODEC_CAP_SLICE_THREADS | CODEC_CAP_DELAY,
+    .capabilities   = AV_CODEC_CAP_SLICE_THREADS | AV_CODEC_CAP_DELAY,
     .pix_fmts       = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_YUV420P,   AV_PIX_FMT_YUVA420P,  AV_PIX_FMT_YUVA422P,  AV_PIX_FMT_YUV444P,
         AV_PIX_FMT_YUVA444P,  AV_PIX_FMT_YUV440P,   AV_PIX_FMT_YUV422P,   AV_PIX_FMT_YUV411P,

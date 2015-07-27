@@ -1388,5 +1388,5 @@ AVCodec ff_tiff_decoder = {
     .close          = tiff_end,
     .decode         = decode_frame,
     .init_thread_copy = ONLY_IF_THREADS_ENABLED(tiff_init),
-    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_FRAME_THREADS,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
 };

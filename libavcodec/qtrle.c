@@ -523,5 +523,5 @@ AVCodec ff_qtrle_decoder = {
     .init           = qtrle_decode_init,
     .close          = qtrle_decode_end,
     .decode         = qtrle_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

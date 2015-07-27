@@ -148,5 +148,5 @@ AVCodec ff_zerocodec_decoder = {
     .init           = zerocodec_decode_init,
     .decode         = zerocodec_decode_frame,
     .close          = zerocodec_decode_close,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

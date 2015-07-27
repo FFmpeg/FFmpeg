@@ -1088,7 +1088,7 @@ AVCodec ff_amrnb_decoder = {
     .priv_data_size = sizeof(AMRContext),
     .init           = amrnb_decode_init,
     .decode         = amrnb_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLT,
                                                      AV_SAMPLE_FMT_NONE },
 };

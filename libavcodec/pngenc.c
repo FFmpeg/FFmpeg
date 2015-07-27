@@ -747,7 +747,7 @@ AVCodec ff_png_encoder = {
     .init           = png_enc_init,
     .close          = png_enc_close,
     .encode2        = encode_png,
-    .capabilities   = CODEC_CAP_FRAME_THREADS | CODEC_CAP_INTRA_ONLY,
+    .capabilities   = AV_CODEC_CAP_FRAME_THREADS | AV_CODEC_CAP_INTRA_ONLY,
     .pix_fmts       = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_RGB24, AV_PIX_FMT_RGBA,
         AV_PIX_FMT_RGB48BE, AV_PIX_FMT_RGBA64BE,

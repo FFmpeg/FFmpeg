@@ -603,7 +603,7 @@ retry:
     if (!s->divx_packed && !avctx->hwaccel)
         ff_thread_finish_setup(avctx);
 
-    if (CONFIG_MPEG4_VDPAU_DECODER && (s->avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU)) {
+    if (CONFIG_MPEG4_VDPAU_DECODER && (s->avctx->codec->capabilities & AV_CODEC_CAP_HWACCEL_VDPAU)) {
         ff_vdpau_mpeg4_decode_picture(avctx->priv_data, s->gb.buffer, s->gb.buffer_end - s->gb.buffer);
         goto frame_end;
     }
@@ -736,8 +736,8 @@ AVCodec ff_h263_decoder = {
     .init           = ff_h263_decode_init,
     .close          = ff_h263_decode_end,
     .decode         = ff_h263_decode_frame,
-    .capabilities   = CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1 |
-                      CODEC_CAP_TRUNCATED | CODEC_CAP_DELAY,
+    .capabilities   = AV_CODEC_CAP_DRAW_HORIZ_BAND | AV_CODEC_CAP_DR1 |
+                      AV_CODEC_CAP_TRUNCATED | AV_CODEC_CAP_DELAY,
     .flush          = ff_mpeg_flush,
     .max_lowres     = 3,
     .pix_fmts       = ff_h263_hwaccel_pixfmt_list_420,
@@ -752,8 +752,8 @@ AVCodec ff_h263p_decoder = {
     .init           = ff_h263_decode_init,
     .close          = ff_h263_decode_end,
     .decode         = ff_h263_decode_frame,
-    .capabilities   = CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1 |
-                      CODEC_CAP_TRUNCATED | CODEC_CAP_DELAY,
+    .capabilities   = AV_CODEC_CAP_DRAW_HORIZ_BAND | AV_CODEC_CAP_DR1 |
+                      AV_CODEC_CAP_TRUNCATED | AV_CODEC_CAP_DELAY,
     .flush          = ff_mpeg_flush,
     .max_lowres     = 3,
     .pix_fmts       = ff_h263_hwaccel_pixfmt_list_420,

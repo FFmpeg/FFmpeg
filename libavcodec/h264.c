@@ -1562,7 +1562,7 @@ again:
                         (ret = h->avctx->hwaccel->start_frame(h->avctx, buf, buf_size)) < 0)
                         goto end;
                     if (CONFIG_H264_VDPAU_DECODER &&
-                        h->avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU)
+                        h->avctx->codec->capabilities & AV_CODEC_CAP_HWACCEL_VDPAU)
                         ff_vdpau_h264_picture_start(h);
                 }
 
@@ -1574,7 +1574,7 @@ again:
                         if (ret < 0)
                             goto end;
                     } else if (CONFIG_H264_VDPAU_DECODER &&
-                               h->avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU) {
+                               h->avctx->codec->capabilities & AV_CODEC_CAP_HWACCEL_VDPAU) {
                         ff_vdpau_add_data_chunk(h->cur_pic_ptr->f->data[0],
                                                 start_code,
                                                 sizeof(start_code));
@@ -1981,9 +1981,9 @@ AVCodec ff_h264_decoder = {
     .init                  = ff_h264_decode_init,
     .close                 = h264_decode_end,
     .decode                = h264_decode_frame,
-    .capabilities          = /*CODEC_CAP_DRAW_HORIZ_BAND |*/ CODEC_CAP_DR1 |
-                             CODEC_CAP_DELAY | CODEC_CAP_SLICE_THREADS |
-                             CODEC_CAP_FRAME_THREADS,
+    .capabilities          = /*AV_CODEC_CAP_DRAW_HORIZ_BAND |*/ AV_CODEC_CAP_DR1 |
+                             AV_CODEC_CAP_DELAY | AV_CODEC_CAP_SLICE_THREADS |
+                             AV_CODEC_CAP_FRAME_THREADS,
     .flush                 = flush_dpb,
     .init_thread_copy      = ONLY_IF_THREADS_ENABLED(decode_init_thread_copy),
     .update_thread_context = ONLY_IF_THREADS_ENABLED(ff_h264_update_thread_context),
@@ -2008,7 +2008,7 @@ AVCodec ff_h264_vdpau_decoder = {
     .init           = ff_h264_decode_init,
     .close          = h264_decode_end,
     .decode         = h264_decode_frame,
-    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_DELAY | CODEC_CAP_HWACCEL_VDPAU,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HWACCEL_VDPAU,
     .flush          = flush_dpb,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_VDPAU_H264,
                                                      AV_PIX_FMT_NONE},

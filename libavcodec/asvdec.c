@@ -322,7 +322,7 @@ AVCodec ff_asv1_decoder = {
     .init           = decode_init,
     .close          = decode_end,
     .decode         = decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };
 #endif
 
@@ -336,6 +336,6 @@ AVCodec ff_asv2_decoder = {
     .init           = decode_init,
     .close          = decode_end,
     .decode         = decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };
 #endif

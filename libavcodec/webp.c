@@ -1540,5 +1540,5 @@ AVCodec ff_webp_decoder = {
     .priv_data_size = sizeof(WebPContext),
     .decode         = webp_decode_frame,
     .close          = webp_decode_close,
-    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_FRAME_THREADS,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
 };

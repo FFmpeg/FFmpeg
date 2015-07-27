@@ -249,5 +249,5 @@ AVCodec ff_eatgq_decoder = {
     .priv_data_size = sizeof(TgqContext),
     .init           = tgq_decode_init,
     .decode         = tgq_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

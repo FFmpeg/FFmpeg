@@ -194,7 +194,7 @@ AVCodec ff_eightsvx_fib_decoder = {
   .init           = eightsvx_decode_init,
   .decode         = eightsvx_decode_frame,
   .close          = eightsvx_decode_close,
-  .capabilities   = CODEC_CAP_DR1,
+  .capabilities   = AV_CODEC_CAP_DR1,
   .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_U8P,
                                                     AV_SAMPLE_FMT_NONE },
 };
@@ -209,7 +209,7 @@ AVCodec ff_eightsvx_exp_decoder = {
   .init           = eightsvx_decode_init,
   .decode         = eightsvx_decode_frame,
   .close          = eightsvx_decode_close,
-  .capabilities   = CODEC_CAP_DR1,
+  .capabilities   = AV_CODEC_CAP_DR1,
   .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_U8P,
                                                     AV_SAMPLE_FMT_NONE },
 };

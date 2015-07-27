@@ -2848,9 +2848,9 @@ AVCodec ff_mpeg1video_decoder = {
     .init                  = mpeg_decode_init,
     .close                 = mpeg_decode_end,
     .decode                = mpeg_decode_frame,
-    .capabilities          = CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1 |
-                             CODEC_CAP_TRUNCATED | CODEC_CAP_DELAY |
-                             CODEC_CAP_SLICE_THREADS,
+    .capabilities          = AV_CODEC_CAP_DRAW_HORIZ_BAND | AV_CODEC_CAP_DR1 |
+                             AV_CODEC_CAP_TRUNCATED | AV_CODEC_CAP_DELAY |
+                             AV_CODEC_CAP_SLICE_THREADS,
     .flush                 = flush,
     .max_lowres            = 3,
     .update_thread_context = ONLY_IF_THREADS_ENABLED(mpeg_decode_update_thread_context)
@@ -2865,9 +2865,9 @@ AVCodec ff_mpeg2video_decoder = {
     .init           = mpeg_decode_init,
     .close          = mpeg_decode_end,
     .decode         = mpeg_decode_frame,
-    .capabilities   = CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1 |
-                      CODEC_CAP_TRUNCATED | CODEC_CAP_DELAY |
-                      CODEC_CAP_SLICE_THREADS,
+    .capabilities   = AV_CODEC_CAP_DRAW_HORIZ_BAND | AV_CODEC_CAP_DR1 |
+                      AV_CODEC_CAP_TRUNCATED | AV_CODEC_CAP_DELAY |
+                      AV_CODEC_CAP_SLICE_THREADS,
     .flush          = flush,
     .max_lowres     = 3,
     .profiles       = NULL_IF_CONFIG_SMALL(mpeg2_video_profiles),
@@ -2883,7 +2883,7 @@ AVCodec ff_mpegvideo_decoder = {
     .init           = mpeg_decode_init,
     .close          = mpeg_decode_end,
     .decode         = mpeg_decode_frame,
-    .capabilities   = CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED | CODEC_CAP_DELAY | CODEC_CAP_SLICE_THREADS,
+    .capabilities   = AV_CODEC_CAP_DRAW_HORIZ_BAND | AV_CODEC_CAP_DR1 | AV_CODEC_CAP_TRUNCATED | AV_CODEC_CAP_DELAY | AV_CODEC_CAP_SLICE_THREADS,
     .flush          = flush,
     .max_lowres     = 3,
 };
@@ -2916,8 +2916,9 @@ AVCodec ff_mpeg_xvmc_decoder = {
     .init           = mpeg_mc_decode_init,
     .close          = mpeg_decode_end,
     .decode         = mpeg_decode_frame,
-    .capabilities   = CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1 |
-                      CODEC_CAP_TRUNCATED | CODEC_CAP_HWACCEL | CODEC_CAP_DELAY,
+    .capabilities   = AV_CODEC_CAP_DRAW_HORIZ_BAND | AV_CODEC_CAP_DR1 |
+                      AV_CODEC_CAP_TRUNCATED | AV_CODEC_CAP_HWACCEL |
+                      AV_CODEC_CAP_DELAY,
     .flush          = flush,
 };
 
@@ -2934,8 +2935,8 @@ AVCodec ff_mpeg_vdpau_decoder = {
     .init           = mpeg_decode_init,
     .close          = mpeg_decode_end,
     .decode         = mpeg_decode_frame,
-    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED |
-                      CODEC_CAP_HWACCEL_VDPAU | CODEC_CAP_DELAY,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_TRUNCATED |
+                      AV_CODEC_CAP_HWACCEL_VDPAU | AV_CODEC_CAP_DELAY,
     .flush          = flush,
 };
 #endif
@@ -2950,8 +2951,8 @@ AVCodec ff_mpeg1_vdpau_decoder = {
     .init           = mpeg_decode_init,
     .close          = mpeg_decode_end,
     .decode         = mpeg_decode_frame,
-    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED |
-                      CODEC_CAP_HWACCEL_VDPAU | CODEC_CAP_DELAY,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_TRUNCATED |
+                      AV_CODEC_CAP_HWACCEL_VDPAU | AV_CODEC_CAP_DELAY,
     .flush          = flush,
 };
 #endif

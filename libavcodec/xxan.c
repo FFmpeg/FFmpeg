@@ -447,5 +447,5 @@ AVCodec ff_xan_wc4_decoder = {
     .init           = xan_decode_init,
     .close          = xan_decode_end,
     .decode         = xan_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

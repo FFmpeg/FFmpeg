@@ -62,7 +62,7 @@ av_cold void ff_vp9_init_static(AVCodec *codec)
 {
     if (    vpx_codec_version_major() < 1
         || (vpx_codec_version_major() == 1 && vpx_codec_version_minor() < 3))
-        codec->capabilities |= CODEC_CAP_EXPERIMENTAL;
+        codec->capabilities |= AV_CODEC_CAP_EXPERIMENTAL;
     codec->pix_fmts = vp9_pix_fmts_def;
 #if CONFIG_LIBVPX_VP9_ENCODER
     if (    vpx_codec_version_major() > 1

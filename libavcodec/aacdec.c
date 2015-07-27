@@ -550,7 +550,7 @@ AVCodec ff_aac_decoder = {
     .sample_fmts     = (const enum AVSampleFormat[]) {
         AV_SAMPLE_FMT_FLTP, AV_SAMPLE_FMT_NONE
     },
-    .capabilities    = CODEC_CAP_CHANNEL_CONF | CODEC_CAP_DR1,
+    .capabilities    = AV_CODEC_CAP_CHANNEL_CONF | AV_CODEC_CAP_DR1,
     .channel_layouts = aac_channel_layout,
     .flush = flush,
     .priv_class      = &aac_decoder_class,
@@ -574,7 +574,7 @@ AVCodec ff_aac_latm_decoder = {
     .sample_fmts     = (const enum AVSampleFormat[]) {
         AV_SAMPLE_FMT_FLTP, AV_SAMPLE_FMT_NONE
     },
-    .capabilities    = CODEC_CAP_CHANNEL_CONF | CODEC_CAP_DR1,
+    .capabilities    = AV_CODEC_CAP_CHANNEL_CONF | AV_CODEC_CAP_DR1,
     .channel_layouts = aac_channel_layout,
     .flush = flush,
     .profiles        = profiles,

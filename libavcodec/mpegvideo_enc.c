@@ -4675,7 +4675,7 @@ AVCodec ff_h263p_encoder = {
     .init           = ff_mpv_encode_init,
     .encode2        = ff_mpv_encode_picture,
     .close          = ff_mpv_encode_end,
-    .capabilities   = CODEC_CAP_SLICE_THREADS,
+    .capabilities   = AV_CODEC_CAP_SLICE_THREADS,
     .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE },
     .priv_class     = &h263p_class,
 };

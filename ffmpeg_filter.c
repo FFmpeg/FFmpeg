@@ -85,7 +85,7 @@ void choose_sample_fmt(AVStream *st, AVCodec *codec)
                 break;
         }
         if (*p == -1) {
-            if((codec->capabilities & CODEC_CAP_LOSSLESS) && av_get_sample_fmt_name(st->codec->sample_fmt) > av_get_sample_fmt_name(codec->sample_fmts[0]))
+            if((codec->capabilities & AV_CODEC_CAP_LOSSLESS) && av_get_sample_fmt_name(st->codec->sample_fmt) > av_get_sample_fmt_name(codec->sample_fmts[0]))
                 av_log(NULL, AV_LOG_ERROR, "Conversion will not be lossless.\n");
             if(av_get_sample_fmt_name(st->codec->sample_fmt))
             av_log(NULL, AV_LOG_WARNING,
@@ -1036,7 +1036,7 @@ int configure_filtergraph(FilterGraph *fg)
         OutputStream *ost = fg->outputs[i]->ost;
         if (ost &&
             ost->enc->type == AVMEDIA_TYPE_AUDIO &&
-            !(ost->enc->capabilities & CODEC_CAP_VARIABLE_FRAME_SIZE))
+            !(ost->enc->capabilities & AV_CODEC_CAP_VARIABLE_FRAME_SIZE))
             av_buffersink_set_frame_size(ost->filter->filter,
                                          ost->enc_ctx->frame_size);
     }

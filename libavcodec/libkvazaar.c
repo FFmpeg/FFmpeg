@@ -235,7 +235,7 @@ AVCodec ff_libkvazaar_encoder = {
     .long_name        = NULL_IF_CONFIG_SMALL("libkvazaar H.265 / HEVC"),
     .type             = AVMEDIA_TYPE_VIDEO,
     .id               = AV_CODEC_ID_HEVC,
-    .capabilities     = CODEC_CAP_DELAY,
+    .capabilities     = AV_CODEC_CAP_DELAY,
     .pix_fmts         = pix_fmts,
 
     .priv_class       = &class,

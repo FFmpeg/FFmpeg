@@ -356,7 +356,7 @@ AVCodec ff_libspeex_encoder = {
     .init           = encode_init,
     .encode2        = encode_frame,
     .close          = encode_close,
-    .capabilities   = CODEC_CAP_DELAY,
+    .capabilities   = AV_CODEC_CAP_DELAY,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_NONE },
     .channel_layouts = (const uint64_t[]){ AV_CH_LAYOUT_MONO,
