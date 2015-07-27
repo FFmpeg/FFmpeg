@@ -370,7 +370,11 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
         s->intra_only = 0;
     }
 
+#if FF_API_MOTION_EST
+FF_DISABLE_DEPRECATION_WARNINGS
     s->me_method = avctx->me_method;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     /* Fixed QSCALE */
     s->fixed_qscale = !!(avctx->flags & CODEC_FLAG_QSCALE);

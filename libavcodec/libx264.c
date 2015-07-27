@@ -81,6 +81,7 @@ typedef struct X264Context {
     char *stats;
     int nal_hrd;
     int avcintra_class;
+    int motion_est;
     char *x264_params;
 } X264Context;
 
@@ -470,17 +471,6 @@ static av_cold int X264_init(AVCodecContext *avctx)
     if (avctx->chromaoffset)
         x4->params.analyse.i_chroma_qp_offset = avctx->chromaoffset;
 
-    if (avctx->me_method == ME_EPZS)
-        x4->params.analyse.i_me_method = X264_ME_DIA;
-    else if (avctx->me_method == ME_HEX)
-        x4->params.analyse.i_me_method = X264_ME_HEX;
-    else if (avctx->me_method == ME_UMH)
-        x4->params.analyse.i_me_method = X264_ME_UMH;
-    else if (avctx->me_method == ME_FULL)
-        x4->params.analyse.i_me_method = X264_ME_ESA;
-    else if (avctx->me_method == ME_TESA)
-        x4->params.analyse.i_me_method = X264_ME_TESA;
-
     if (avctx->gop_size >= 0)
         x4->params.i_keyint_max         = avctx->gop_size;
     if (avctx->max_b_frames >= 0)
@@ -632,6 +622,25 @@ static av_cold int X264_init(AVCodecContext *avctx)
 
     if (x4->nal_hrd >= 0)
         x4->params.i_nal_hrd = x4->nal_hrd;
+
+    if (x4->motion_est >= 0) {
+        x4->params.analyse.i_me_method = x4->motion_est;
+#if FF_API_MOTION_EST
+FF_DISABLE_DEPRECATION_WARNINGS
+    } else {
+        if (avctx->me_method == ME_EPZS)
+            x4->params.analyse.i_me_method = X264_ME_DIA;
+        else if (avctx->me_method == ME_HEX)
+            x4->params.analyse.i_me_method = X264_ME_HEX;
+        else if (avctx->me_method == ME_UMH)
+            x4->params.analyse.i_me_method = X264_ME_UMH;
+        else if (avctx->me_method == ME_FULL)
+            x4->params.analyse.i_me_method = X264_ME_ESA;
+        else if (avctx->me_method == ME_TESA)
+            x4->params.analyse.i_me_method = X264_ME_TESA;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+    }
 
     if (x4->profile)
         if (x264_param_apply_profile(&x4->params, x4->profile) < 0) {
@@ -854,6 +863,12 @@ static const AVOption options[] = {
     { "vbr",           NULL, 0, AV_OPT_TYPE_CONST, {.i64 = X264_NAL_HRD_VBR},  INT_MIN, INT_MAX, VE, "nal-hrd" },
     { "cbr",           NULL, 0, AV_OPT_TYPE_CONST, {.i64 = X264_NAL_HRD_CBR},  INT_MIN, INT_MAX, VE, "nal-hrd" },
     { "avcintra-class","AVC-Intra class 50/100/200",                      OFFSET(avcintra_class),AV_OPT_TYPE_INT,     { .i64 = -1 }, -1, 200   , VE},
+    { "motion-est",   "Set motion estimation method",                     OFFSET(motion_est),    AV_OPT_TYPE_INT,    { .i64 = -1 }, -1, X264_ME_TESA, VE, "motion-est"},
+    { "dia",           NULL, 0, AV_OPT_TYPE_CONST, { .i64 = X264_ME_DIA },  INT_MIN, INT_MAX, VE, "motion-est" },
+    { "hex",           NULL, 0, AV_OPT_TYPE_CONST, { .i64 = X264_ME_HEX },  INT_MIN, INT_MAX, VE, "motion-est" },
+    { "umh",           NULL, 0, AV_OPT_TYPE_CONST, { .i64 = X264_ME_UMH },  INT_MIN, INT_MAX, VE, "motion-est" },
+    { "esa",           NULL, 0, AV_OPT_TYPE_CONST, { .i64 = X264_ME_ESA },  INT_MIN, INT_MAX, VE, "motion-est" },
+    { "tesa",          NULL, 0, AV_OPT_TYPE_CONST, { .i64 = X264_ME_TESA }, INT_MIN, INT_MAX, VE, "motion-est" },
     { "x264-params",  "Override the x264 configuration using a :-separated list of key=value parameters", OFFSET(x264_params), AV_OPT_TYPE_STRING, { 0 }, 0, 0, VE },
     { NULL },
 };
@@ -876,7 +891,9 @@ static const AVCodecDefault x264_defaults[] = {
     { "trellis",          "-1" },
     { "nr",               "-1" },
     { "me_range",         "-1" },
+#if FF_API_MOTION_EST
     { "me_method",        "-1" },
+#endif
     { "subq",             "-1" },
     { "b_strategy",       "-1" },
     { "keyint_min",       "-1" },

@@ -77,6 +77,7 @@ struct xvid_context {
     int ssim;                      /**< SSIM information display mode */
     int ssim_acc;                  /**< SSIM accuracy. 0: accurate. 4: fast. */
     int gmc;
+    int me_quality;                /**< Motion estimation quality. 0: fast 6: best. */
 };
 
 /**
@@ -392,26 +393,45 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)
 
     /* Decide which ME quality setting to use */
     x->me_flags = 0;
-    switch (avctx->me_method) {
-    case ME_FULL:   /* Quality 6 */
+    switch (x->me_quality) {
+    case 6:
+    case 5:
         x->me_flags |= XVID_ME_EXTSEARCH16 |
                        XVID_ME_EXTSEARCH8;
-
-    case ME_EPZS:   /* Quality 4 */
+    case 4:
+    case 3:
         x->me_flags |= XVID_ME_ADVANCEDDIAMOND8 |
                        XVID_ME_HALFPELREFINE8   |
                        XVID_ME_CHROMA_PVOP      |
                        XVID_ME_CHROMA_BVOP;
-
-    case ME_LOG:    /* Quality 2 */
-    case ME_PHODS:
-    case ME_X1:
+    case 2:
+    case 1:
         x->me_flags |= XVID_ME_ADVANCEDDIAMOND16 |
                        XVID_ME_HALFPELREFINE16;
-
-    case ME_ZERO:   /* Quality 0 */
-    default:
+#if FF_API_MOTION_EST
+FF_DISABLE_DEPRECATION_WARNINGS
         break;
+    default:
+        switch (avctx->me_method) {
+        case ME_FULL:   /* Quality 6 */
+             x->me_flags |= XVID_ME_EXTSEARCH16 |
+                            XVID_ME_EXTSEARCH8;
+        case ME_EPZS:   /* Quality 4 */
+             x->me_flags |= XVID_ME_ADVANCEDDIAMOND8 |
+                            XVID_ME_HALFPELREFINE8   |
+                            XVID_ME_CHROMA_PVOP      |
+                            XVID_ME_CHROMA_BVOP;
+        case ME_LOG:    /* Quality 2 */
+        case ME_PHODS:
+        case ME_X1:
+             x->me_flags |= XVID_ME_ADVANCEDDIAMOND16 |
+                            XVID_ME_HALFPELREFINE16;
+        case ME_ZERO:   /* Quality 0 */
+        default:
+            break;
+        }
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     }
 
     /* Decide how we should decide blocks */
@@ -863,6 +883,7 @@ static const AVOption options[] = {
     { "frame",       NULL,                                                0, AV_OPT_TYPE_CONST, { .i64 = 2 }, INT_MIN, INT_MAX, VE, "ssim" },
     { "ssim_acc",    "SSIM accuracy",                   OFFSET(ssim_acc),    AV_OPT_TYPE_INT,   { .i64 = 2 },       0,       4, VE         },
     { "gmc",         "use GMC",                         OFFSET(gmc),         AV_OPT_TYPE_INT,   { .i64 = 0 },       0,       1, VE         },
+    { "me_quality",  "Motion estimation quality",       OFFSET(me_quality),  AV_OPT_TYPE_INT,   { .i64 = 0 },       0,       6, VE         },
     { NULL },
 };
 

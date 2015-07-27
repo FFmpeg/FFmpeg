@@ -280,7 +280,20 @@ static int svq1_encode_plane(SVQ1EncContext *s, int plane,
         s->m.b8_stride                     = 2 * s->m.mb_width + 1;
         s->m.f_code                        = 1;
         s->m.pict_type                     = s->pict_type;
+#if FF_API_MOTION_EST
+FF_DISABLE_DEPRECATION_WARNINGS
         s->m.me_method                     = s->avctx->me_method;
+        if (s->motion_est == FF_ME_EPZS) {
+            if (s->avctx->me_method == ME_ZERO)
+                s->motion_est = FF_ME_ZERO;
+            else if (s->avctx->me_method == ME_EPZS)
+                s->motion_est = FF_ME_EPZS;
+            else if (s->avctx->me_method == ME_X1)
+                s->motion_est = FF_ME_XONE;
+        }
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+        s->m.motion_est                    = s->motion_est;
         s->m.me.scene_change_score         = 0;
         // s->m.out_format                    = FMT_H263;
         // s->m.unrestricted_mv               = 1;
@@ -652,12 +665,31 @@ FF_ENABLE_DEPRECATION_WARNINGS
     return 0;
 }
 
+#define OFFSET(x) offsetof(struct SVQ1EncContext, x)
+#define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
+static const AVOption options[] = {
+    { "motion-est", "Motion estimation algorithm", OFFSET(motion_est), AV_OPT_TYPE_INT, { .i64 = FF_ME_EPZS }, FF_ME_ZERO, FF_ME_XONE, VE, "motion-est"},
+        { "zero", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FF_ME_ZERO }, 0, 0, FF_MPV_OPT_FLAGS, "motion-est" },
+        { "epzs", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FF_ME_EPZS }, 0, 0, FF_MPV_OPT_FLAGS, "motion-est" },
+        { "xone", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FF_ME_XONE }, 0, 0, FF_MPV_OPT_FLAGS, "motion-est" },
+
+    { NULL },
+};
+
+static const AVClass svq1enc_class = {
+    .class_name = "svq1enc",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVCodec ff_svq1_encoder = {
     .name           = "svq1",
     .long_name      = NULL_IF_CONFIG_SMALL("Sorenson Vector Quantizer 1 / Sorenson Video 1 / SVQ1"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_SVQ1,
     .priv_data_size = sizeof(SVQ1EncContext),
+    .priv_class     = &svq1enc_class,
     .init           = svq1_encode_init,
     .encode2        = svq1_encode_frame,
     .close          = svq1_encode_end,

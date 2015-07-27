@@ -227,6 +227,7 @@ AVCodec ff_wmv2_encoder = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_WMV2,
     .priv_data_size = sizeof(Wmv2Context),
+    .priv_class     = &wmv2_class,
     .init           = wmv2_encode_init,
     .encode2        = ff_mpv_encode_picture,
     .close          = ff_mpv_encode_end,
