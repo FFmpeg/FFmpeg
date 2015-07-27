@@ -1789,8 +1789,6 @@ vbv_retry:
 
         frame_end(s);
 
-        ff_side_data_set_encoder_stats(pkt, s->current_picture.f->quality, NULL, 0, s->pict_type);
-
         if (CONFIG_MJPEG_ENCODER && s->out_format == FMT_MJPEG)
             ff_mjpeg_encode_picture_trailer(&s->pb, s->header_bits);
 
@@ -1832,6 +1830,8 @@ vbv_retry:
 
             av_assert0(s->avctx->rc_max_rate);
         }
+
+        ff_side_data_set_encoder_stats(pkt, s->current_picture.f->quality, NULL, 0, s->pict_type);
 
         if (s->avctx->flags & AV_CODEC_FLAG_PASS1)
             ff_write_pass1_stats(s);
