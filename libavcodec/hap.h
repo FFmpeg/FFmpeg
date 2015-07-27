@@ -89,6 +89,7 @@ typedef struct HapContext {
  * - any other error occurs
  */
 int ff_hap_set_chunk_count(HapContext *ctx, int count, int first_in_frame);
+
 /*
  * Free resources associated with the context
  */

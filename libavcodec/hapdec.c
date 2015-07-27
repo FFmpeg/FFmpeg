@@ -37,10 +37,10 @@
 #include "bytestream.h"
 #include "hap.h"
 #include "internal.h"
+#include "memory.h"
 #include "snappy.h"
 #include "texturedsp.h"
 #include "thread.h"
-#include "memory.h"
 
 /* The first three bytes are the size of the section past the header, or zero
  * if the length is stored in the next long word. The fourth byte in the first
@@ -252,6 +252,7 @@ static int decompress_chunks_thread(AVCodecContext *avctx, void *arg,
     if (chunk->compressor == HAP_COMP_SNAPPY) {
         int ret;
         int64_t uncompressed_size = ctx->tex_size;
+
         /* Uncompress the frame */
         ret = ff_snappy_uncompress(&gbc, dst, &uncompressed_size);
         if (ret < 0) {
